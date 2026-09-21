@@ -80,7 +80,8 @@ class GroupPickerWiringContractTest {
             groupAt < singlesAt,
             "mục Nhóm phải dựng TRƯỚC vòng lặp lĩnh vực — nằm sau là người dùng phải cuộn qua hàng chục ô rời mới thấy",
         )
-        assertTrue(groupAt < appsAt, "và trước cả danh sách ứng dụng")
+        // #7 (owner 2026-09-21): App đứng ĐẦU (App → Widget app → Thông tin khác: nhóm/thẻ dựng tay/mục lẻ).
+        assertTrue(appsAt < groupAt, "App phải đứng TRƯỚC khối Thông tin khác (nhóm/mục lẻ)")
         assertTrue(
             SourceRoots.body(drawer, "private fun groupSection(").contains("CapabilityPicker.groupPicks()"),
             "và `groupSection` đúng là mục NHÓM",

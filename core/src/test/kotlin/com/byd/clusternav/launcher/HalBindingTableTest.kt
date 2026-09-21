@@ -147,10 +147,9 @@ class HalBindingTableTest {
         val (r2, d2) = HalBindingTable.describeWrite(ControlRegistry.byId("readl")!!)
         assertEquals("feature:0x4f50003a", r2)
         assertEquals("android.hardware.bydauto.setting.BYDAutoSettingDevice", d2)
-        // ion âm `1337982994`: Domain.CLIMATE route thô tới AC (1000) là SAI — thuộc PM2P5 (1008); override sửa.
-        val (r3, d3) = HalBindingTable.describeWrite(ControlRegistry.byId("anion")!!)
-        assertEquals("android.hardware.bydauto.pm2p5.BYDAutoPM2p5Device", d3)
-        assertEquals("feature:0x4fc00012", r3)
+        // ⚠ 1.90 2026-09-21: vế thứ ba (ion âm `anion` → override sang PM2P5) gỡ cùng nút. Bất biến *"halDevice ghi
+        // đè route thô theo Domain"* vẫn được canh bởi vế `readl` ngay trên (LIGHTS → SETTING), nên phép đo không
+        // mất nghĩa — chỉ mất một ví dụ thứ hai.
     }
 
     @Test fun `temp binds real setAcTemperature with (type,value,tempSource,unit) args`() {
@@ -162,7 +161,12 @@ class HalBindingTableTest {
     }
 
     @Test fun `describeWrite local and none`() {
-        assertEquals("local:AudioManager.setStreamVolume" to "AudioManager", HalBindingTable.describeWrite(ControlRegistry.byId("vol")!!))
+        // ⚠ 1.90 2026-09-21: vế `local:` đo trên **datum `media_vol`** thay vì nút `vol` (nút đã xoá). Đường
+        // `AudioManager` vẫn sống thật ở ô đọc *"Âm lượng giải trí"*, nên bất biến không mất chỗ dùng.
+        assertEquals(
+            BindingRoute.Local("AudioManager", "getStreamVolume"),
+            HalBindingTable.routeOf(TelemetryRegistry.byId("media_vol")!!.bindingKey),
+        )
         // ⚠ 1.85: ví dụ cũ là `hood` (`BODYWORK_CMD_HOOD`), nay mã đó đã xoá khỏi registry. Thay bằng `headl`
         // — `INSTRUMENT_HEADLIGHT_ON_OFF` cũng là UPPER_SNAKE command-wrapper chưa map, tức cùng ca cần canh:
         // khoá kiểu ấy phải ra `none`, KHÔNG được âm thầm bị đọc thành một feature-id hay một setting key.
@@ -182,6 +186,7 @@ class HalBindingTableTest {
         assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("win_lf")!!))      // COVER
         assertEquals(1, HalBindingTable.defaultPrimary(ControlRegistry.byId("pm25_clean_now")!!)) // BUTTON
         assertEquals(22, HalBindingTable.defaultPrimary(ControlRegistry.byId("temp")!!))       // STEP def.value
-        assertEquals(0, HalBindingTable.defaultPrimary(ControlRegistry.byId("headlight_mode")!!))  // SELECT
+        // ⚠ 1.90: mốc SELECT cũ `headlight_mode` đã xoá ⇒ dùng `seatc` (SELECT còn sống).
+        assertEquals(0, HalBindingTable.defaultPrimary(ControlRegistry.byId("seatc")!!))          // SELECT
     }
 }

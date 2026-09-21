@@ -41,7 +41,10 @@ class WallGlassContractTest {
             .filter { "KachiGlass.apply(" in code(it) }.map { it.fileName.toString() }
         assertTrue(callers.size >= 3, "KachiGlass.apply phải có chỗ gọi thật (CLAUDE.md §8): $callers")
         assertTrue("WorkspaceView.kt" in callers, "khay ô làm việc — bề mặt lớn nhất — phải là kính")
-        assertTrue("GroupTileViews.kt" in callers && "WidgetViews.kt" in callers, "thẻ nhóm + thẻ widget phải là kính")
+        // ⚠ 2026-09-21 — thẻ widget dời tệp: khung ô nén / ô con bảng tổng hợp (`MiniCard`/`BoardCell`) tách khỏi
+        // `WidgetViews.kt` sang `WidgetTelemetry.kt` khi tệp đó vượt trần 500 dòng. Đổi MỐC theo tệp mới, KHÔNG nới
+        // phép kiểm: vẫn đòi đúng hai bề mặt (thẻ nhóm + thẻ widget) phải là kính.
+        assertTrue("GroupTileViews.kt" in callers && "WidgetTelemetry.kt" in callers, "thẻ nhóm + thẻ widget phải là kính")
         val activity = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
         assertTrue("KachiGlass.refresh(rootFrame)" in activity, "ảnh đổi ⇒ dựng lại nền kính tại chỗ, không recreate")
     }

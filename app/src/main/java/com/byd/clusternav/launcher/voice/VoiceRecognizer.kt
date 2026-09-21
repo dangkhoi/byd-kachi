@@ -184,8 +184,10 @@ class VoiceRecognizer private constructor(
 /**
  * Giữ [OfflineRecognizer] cho cả tiến trình — encoder ONNX nặng, dựng vài giây, không nạp lại mỗi phiên.
  *
- * `@Volatile` + `synchronized`: hai lối vào mic có thể bấm gần nhau. Recognizer dựng cho **một** model id; đổi
- * lựa chọn A/B ([VoiceModelStore.select]) ⇒ [release] rồi lần sau dựng lại bản mới.
+ * `@Volatile` + `synchronized`: hai lối vào mic có thể bấm gần nhau. Recognizer dựng cho **một** model id;
+ * `release()` rồi lần sau dựng lại. ⚠ Từ 2026-09-21 danh mục chỉ còn MỘT mô hình và bề mặt chọn mô hình đã gỡ, nên
+ * đường *"đổi lựa chọn ⇒ dựng lại bản mới"* không còn chỗ gọi nào; phép so `builtFor == model.id` ở lại vì nó
+ * cũng là thứ bắt ca **gỡ rồi cài lại** gói cùng id (`release()` gọi ở đúng đường đó).
  */
 object VoiceEngine {
 
@@ -217,9 +219,9 @@ object VoiceEngine {
      * cầm adb đọc được, còn người ngồi trên xe thì chỉ thấy *"lần bấm mic đầu chờ 15 giây"* mà không có gì giải
      * thích. Giữ lại câu ấy ở đây để hàng Cài đặt hiện nó thành một **ghi chú**.
      *
-     * ⚠ Ghi chú, **không** phải một lượt tự đổi mô hình. Máy thiếu RAM là một dữ kiện; đổi sang gói nhẹ là một
-     * quyết định tốn 74 MB dữ liệu 4G trên một chiếc xe đang chạy — nó thuộc về người dùng (cùng luật
-     * `VoiceModelStore.selected`: máy đã cài fp32 thì GIỮ fp32 tới khi owner tự chọn).
+     * ⚠ Ghi chú, **không** phải một lượt tự đổi mô hình — và từ 2026-09-21 thì cũng không còn mô hình nào khác để
+     * đổi sang (danh mục một gói, bề mặt chọn đã gỡ). Máy thiếu RAM là một **dữ kiện**; cách xử lý nó là việc của
+     * người dùng, không phải một lượt tải 74 MB dữ liệu 4G tự khởi động trên một chiếc xe đang chạy.
      */
     @Volatile
     var lastPreloadSkip: String? = null

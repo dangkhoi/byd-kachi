@@ -130,16 +130,18 @@ object CapabilityGroups {
      * trong xe mà không có mặt ở nhóm đèn thì người dùng phải đi tìm ở chỗ khác. Đèn viền từng là một nhóm riêng
      * (`g_ambient`) vì nó trả lời câu hỏi khác — nhóm đó **đã gỡ** ở WP8 cùng toàn bộ mã đèn viền.
      *
-     * ## ⚠⚠ [SOÁT P1-1] Vì sao KHÔNG có `headl` ở đây, dù nó vẫn còn trong [ControlRegistry]
-     * `headl` ("Đèn pha", TOGGLE) và `headlight_mode` ("Chế độ đèn pha", SELECT) khai **CÙNG** `bindingKey`
-     * `1276153912` **và** [HalBindingTable.writeArgs] sinh **y hệt** tham số cho cả hai — đó là một **nợ xe** đã biết
-     * (`ControlWriteArgsTest.COLLISION_PENDING_CAR`), và nó được miễn trừ ở đó với lý do *"là hai mục RỜI, người dùng
-     * phải cố ý đặt riêng"*. **G1 làm lý do đó hết đúng**: nhóm này đặt cả hai vào **một ô, cạnh nhau, cùng icon** ⇒
-     * hai nút trông như hai việc khác nhau mà gửi cùng một byte, và người dùng không có cách nào biết.
+     * ## ⚠⚠ 1.90 — `headlight_mode` XOÁ, nên `headl` QUAY LẠI đây
+     * Trước 1.90 nhóm này dùng `headlight_mode` ("Chế độ đèn pha", SELECT) và **cố ý loại** `headl` ("Đèn pha",
+     * TOGGLE): hai nút khai **CÙNG** `bindingKey` `1276153912` **và** [HalBindingTable.writeArgs] sinh **y hệt**
+     * tham số, nên đặt cả hai cạnh nhau trong một ô với cùng icon là bày ra hai việc trông khác nhau mà gửi cùng
+     * một byte ([SOÁT P1-1]). Lúc ấy chọn giữ `headlight_mode` vì nó nói được cả bốn trạng thái.
      *
-     * Giữ `headlight_mode` vì nó **nói được cả bốn trạng thái** (Tắt · Auto · Đỗ · Cốt) ⇒ phủ luôn việc bật/tắt mà
-     * `headl` làm. `headl` **vẫn còn** là mục rời (không xoá khả năng của ai đang dùng nó) — chỉ không nằm cạnh
-     * `headlight_mode` trong cùng một ô nữa. Chốt bằng [init] để ca này không mọc lại ở nhóm khác.
+     * Owner 2026-09-21 gỡ hẳn `headlight_mode` (sweep 09-21: không dùng) ⇒ **va chạm tự hết** — chỉ còn `headl`
+     * mang id đó. Nếu để `writes` trống chỗ ấy thì nhóm tên *"Đèn"* không còn nút đèn pha nào, tức lượt xoá một
+     * nút lại lấy đi một nút thứ hai mà owner không nêu. Nên `headl` vào thay đúng chỗ. [init] vẫn canh va chạm
+     * `bindingKey` trong cùng nhóm, nên ca cũ không mọc lại được.
+     *
+     * `readl` (đèn đọc) không có datum ĐỌC tương ứng nhưng vẫn vào phần nút — xem đoạn trên.
      */
     val LIGHTS = CapabilityGroup(
         id = "g_lights", label = "Đèn", labelEn = "Lights",
@@ -148,12 +150,13 @@ object CapabilityGroups {
             "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
             "light_left_turn", "light_right_turn", "light_side", "light_drl", "headlight_feedback",
         ),
-        writes = listOf("headlight_mode", "drl", "readl"),
+        writes = listOf("headl", "drl", "readl"),
         // ⚠ [SOÁT P3-1] Dòng phụ TỪNG nói "đèn ngoài + chế độ pha" trong khi `readl` là **đèn đọc TRONG xe**. KDoc ở
         // trên giải thích vì sao đưa `readl` vào nhưng dòng phụ thì không được sửa theo ⇒ ô nói sai nội dung của
         // chính nó, ở CẢ hai thứ tiếng. Sửa cả hai cùng lúc; luật "không chép tay số" vẫn giữ (không có chữ số nào).
-        sub = "đèn ngoài, chế độ pha, đèn đọc trong xe",
-        subEn = "exterior lights, headlight mode, interior reading light",
+        // ⚠ 1.90 · bỏ chữ "chế độ pha" vì nút chọn chế độ đã xoá — nay là bật/tắt đèn pha.
+        sub = "đèn ngoài, đèn pha, đèn đọc trong xe",
+        subEn = "exterior lights, headlights, interior reading light",
     )
 
     // ⚠ UX-OVERHAUL · WP8 2026-09-20 — nhóm `g_ambient` (*"Đèn viền"*) GỠ HẲN. Cả 5 datum đọc (#39-43) và cả 4

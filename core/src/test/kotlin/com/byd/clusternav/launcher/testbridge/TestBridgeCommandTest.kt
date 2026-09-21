@@ -222,7 +222,7 @@ class TestBridgeCommandTest {
             3,
             ok(
                 TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
-                TestBridgeCommands.EXTRA_ID to "headlight_mode",
+                TestBridgeCommands.EXTRA_ID to "seatc",   // ⚠ 1.90: mốc cũ `headlight_mode` đã xoá
                 TestBridgeCommands.EXTRA_V to 3,
             ).v,
         )
@@ -351,8 +351,11 @@ class TestBridgeCommandTest {
      * một danh sách trắng nữa. Đổi số ở đây phải là một hành động có ý thức, kèm lý do ở dòng này.
      */
     @Test
-    fun `danh sach trang chi co muoi bon khoa, khong cham cast hay cum`() {
-        assertEquals(14, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+    fun `danh sach trang chi co muoi lam khoa, khong cham cast hay cum`() {
+        // 14 → 15 (owner 2026-09-21): +`voice_keep_log`. Ô tích của nó gỡ khỏi Cài đặt cùng mọi bề mặt dev/log ở bản
+        // release production, nên `prefs_set` là đường chỉnh DUY NHẤT còn lại — bỏ nó khỏi đây là biến một công
+        // tắc đang sống thành bất khả chỉnh.
+        assertEquals(15, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

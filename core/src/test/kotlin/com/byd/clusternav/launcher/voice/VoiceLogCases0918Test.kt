@@ -90,7 +90,12 @@ class VoiceLogCases0918Test {
         assertEquals(VoiceIntent.Read("inside_temp"), one("nhiệt độ đang bao nhiêu"))
         assertEquals(VoiceIntent.Read("inside_temp"), one("máy lạnh đang bao nhiêu độ"))
         assertEquals(VoiceIntent.Read("pm25_level"), one("chỉ số bụi mịn"))
-        assertEquals(VoiceIntent.Read("op_mode"), one("xe đang ở chế độ lái nào"))
+        // ⚠ 1.90 2026-09-21: datum `op_mode` đã xoá (owner: xe thuần điện) ⇒ câu này KHÔNG còn đường đọc nào và
+        // nay ra `Unknown`. Ghi đúng sự thật mới thay vì đổi mốc: bài này đo *"cổng câu HỎI không làm câm các câu
+        // đang chạy đúng"*, và vế ấy vẫn được phủ bởi các câu khác trong cùng bài (`window_lf` · `soc` · `temp`).
+        // ⚠ 2026-09-21: ĐÃ thêm `["che","do","lai"]`/`["che","do","phanh"]` vào `VoiceFeatureGone.ALL` (op_mode đã
+        // xoá nên không còn đường đọc để giữ) ⇒ câu chế-độ-lái nay ra FEATURE_GONE ("đã bỏ"), lịch sự hơn "không hiểu".
+        assertEquals(VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, "xe đang ở chế độ lái nào"), one("xe đang ở chế độ lái nào"))  // 2026-09-21: chế độ lái đã bỏ → nói "đã bỏ"
         assertEquals(VoiceIntent.Read("window_lf"), one("xem kính trước trái"))
         // Câu RA LỆNH vẫn ra lệnh — `hay` ở đầu câu là *"hãy"*, không phải *"hoặc"* (cổng 2 của `isChoice`).
         assertEquals(VoiceIntent.Control("readl", 1), one("hãy bật đèn đọc"))
@@ -227,7 +232,8 @@ class VoiceLogCases0918Test {
      */
     @Test fun `D3 · bang tinh nang da bo khong giet duong DOC con song`() {
         assertEquals(VoiceIntent.Read("light_left_turn"), one("xem xi nhan trái"))
-        assertEquals(VoiceIntent.Read("op_mode"), one("xem chế độ lái"))
+        // ⚠ 1.90: xem chú thích ở ca D1 — `op_mode` đã xoá nên câu này ra `Unknown(NO_OBJECT)`.
+        assertEquals(VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, "xem chế độ lái"), one("xem chế độ lái"))  // 2026-09-21: chế độ lái đã bỏ
         // Không có gì để hỏi lại khi tính năng đã bỏ — nói lại cũng ra đúng câu ấy.
         val gone = one("kiểm tra dây an toàn") as VoiceIntent.Unknown
         assertEquals(null, VoiceClarify.ask(gone, 0), "tính năng đã bỏ thì KHÔNG hỏi lại")

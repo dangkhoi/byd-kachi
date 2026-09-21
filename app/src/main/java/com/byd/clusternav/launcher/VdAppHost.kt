@@ -249,11 +249,26 @@ class VdAppHost(
             if (released) return@Thread
             sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)
             runCatching { inputClient?.ensureStarted() }   // B4: hâm nóng daemon bơm chạm (lifecycle qua queue) — chạm sau mượt; không block
+            // #12 (owner 2026-09-21 · [ĐO xe] YouTube ô ĐEN sau NỔ MÁY): trên cold-boot, `am start --display <vd>`
+            // đôi khi TRƯỢT (system chưa sẵn / VD vừa dựng) và KHÔNG có gì thử lại ⇒ ô đen, app KHÔNG chạy. Kiểm
+            // MỘT lần sau 2s: app chưa có tiến trình ⇒ relaunch ĐÚNG MỘT lần nữa. An toàn — chỉ bắn khi app THẬT
+            // SỰ chưa lên (pidof rỗng), nên đường thường (mở được ngay lần đầu) KHÔNG bị nháy. Guard `released`.
+            //
+            // ⚠ [SOÁT 2026-09-21 · P2] Giấc ngủ này đứng SAU lượt hâm nóng daemon chạm, không trước: nó chạy ở MỌI
+            // lần mở app (không chỉ cold-boot), nên đặt trước là dời việc hâm nóng đi 2 giây trên đường thường —
+            // một cái giá trả cho mọi người để chữa một ca chỉ xảy ra lúc nổ máy. Lượt ĐO ô sống (`SlotLiveProbe`)
+            // thì cố ý vẫn nằm sau: nó chỉ được bắt đầu đếm khi lượt thử-mở-lại đã xong.
+            Thread.sleep(2000)
+            if (!released && !appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
             // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
             // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm.
             post { if (!released) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
         }.start()
     }
+
+    /** App đang có tiến trình chưa — `pidof` rỗng ⇒ chưa lên (dùng cho retry mở-lại trên cold boot, #12). */
+    private fun appRunning(pkg: String, sh: (String) -> String): Boolean =
+        runCatching { sh("pidof $pkg").trim().isNotEmpty() }.getOrDefault(false)
 
     private fun resolveComponent(pkg: String, sh: (String) -> String): String? {
         val out = runCatching {

@@ -276,22 +276,22 @@ class SettingsSections(
         // (owner 2026-09-21: "voice nên tách thành 1 menu setting riêng"). Xem [SettingsVoiceSection].
 
         // ── Nâng cao ──
-        // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13 (S3 · R1). Còn lại ở đây là **đồ ĐO**, và từ
-        // UX-OVERHAUL · WP7 chúng đứng SAU cổng [DevMode.unlocked] — xem KDoc [DevMode] về vì sao gác bằng chính
-        // cửa sổ test-mode. Công tắc mở cổng phải dựng TRƯỚC (nếu không thì không có cách nào bật nó lên).
+        // ⚠ Dòng "Màn nâng cao (ClusterNav)" đã XOÁ 2026-09-13 (S3 · R1). Khối này nay còn **đúng một** hàng.
+        //
+        // Owner 2026-09-21 (bản release production): dọn HẾT đồ dev/debug/log khỏi màn Cài đặt, chỉ giữ công tắc
+        // *Chế độ kiểm thử qua adb*. Năm bề mặt đã gỡ: gõ-lệnh-chữ (`VoiceTextConsole`) · kiểm-từng-nút
+        // (`CapTestConsole`) · Dữ liệu VietMap · Chẩn đoán (`DiagActivity`, ở nhóm Cast) · nhật-ký-voice
+        // (`VoiceModelSettings.logRows`).
+        //
+        // ⚠ KHẢ NĂNG không mất, chỉ BỀ MẶT mất — cầu kiểm thử vẫn nhận `say` / `captest` / `prefs_set` /
+        // `voice_dump`, và hai màn chẩn đoán vẫn mở bằng `am start -n <gói>/<lớp>`. Đó là lý do công tắc dưới đây
+        // PHẢI ở lại: nó là cửa duy nhất mở cầu, và từ lượt này nó cũng là cửa duy nhất tới mọi đồ đo.
+        // Bài canh hai chiều: `DevSurfaceGateContractTest`.
+        //
+        // [DevMode] (cổng cũ của WP7) giữ trong cây nguồn theo ý owner nhưng nay **0 chỗ gọi** — ai bày lại một đồ
+        // đo nào thì nối vào đúng cổng đó, đừng dựng cổng thứ hai.
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_advanced)))
         testBridge(body)
-        if (!DevMode.unlocked(context)) return
-        body.addView(rows.note(context.getString(R.string.kachi_dev_tools_note)))
-        body.addView(rows.button(context.getString(R.string.kachi_vietmap_data)) { deps.bridge.openVietMapData() })
-        body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { deps.bridge.openDiagnostics() })
-        // V1 · R6 — đường thử lệnh bằng CHỮ. Cùng loại với hai màn chẩn đoán trên: một chỗ ĐO, không phải một bề
-        // mặt cấu hình (xem KDoc [VoiceTextConsole] về vì sao không cho nó một nhóm riêng).
-        body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_title)))
-        VoiceTextConsole(context, rows, deps).build(body)
-        // Owner 2026-09-15 — công cụ kiểm tra từng nút/thông tin xe, bấm chạy lần lượt, tự chấm OK/Không OK, ghi log.
-        // WP7: bản bấm tay GIỮ (buổi RE cần nhìn đèn/cốp bằng mắt), và có thêm đường adb `captest` cho script.
-        CapTestConsole(context, rows, deps).build(body)
     }
 
     /**

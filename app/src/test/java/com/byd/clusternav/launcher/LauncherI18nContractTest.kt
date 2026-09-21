@@ -276,13 +276,11 @@ class LauncherI18nContractTest {
         "pack.label" to
             "`VoicePack.label` — cùng lý do `model.label`, chỉ là dạng TỔNG QUÁT của nó (T8 gộp gói nghe + gói đọc " +
                 "vào một hợp đồng). Vẫn là tên riêng: \"Piper VN — VAIS-1000 (medium)\"",
-        // VOICE-HOTFIX 1.69 (H6 "đổi sang mô hình nhẹ") — BA cách gọi mới của **cùng** `SherpaModel.label`, nên
-        // cùng một lý do. Phải khai riêng vì phép dò ở dưới so theo CHUỖI CON: `"model.label"` không phủ được
-        // `model?.label` (dấu `?` chen vào) và cũng không phủ hai tên biến mới.
-        "current.label" to
-            "`SherpaModel.label` của gói ĐANG dùng (hàng \"Chuyển sang mô hình nhẹ\") — tên riêng, cùng lý do `model.label`",
-        "light.label" to
-            "`SherpaModel.label` của gói NHẸ hơn — tên riêng, cùng lý do `model.label`",
+        // VOICE-HOTFIX 1.69 (H6 "đổi sang mô hình nhẹ") — thêm ba cách gọi của **cùng** `SherpaModel.label`, phải
+        // khai riêng vì phép dò ở dưới so theo CHUỖI CON (`"model.label"` không phủ `model?.label`, dấu `?` chen
+        // vào). ⚠ Hai mục `current.label` + `light.label` đã GỠ 2026-09-21 cùng khối chọn-mô-hình
+        // (`VoiceModelSettings.lightModelRows`): danh mục mô hình nghe thu về một gói nên hai tên biến ấy không
+        // còn tồn tại. Chính bài này bắt chúng ở lượt đó — đúng việc nó sinh ra để làm.
         "model?.label" to
             "cầu kiểm thử `state.voice_model.label`: một trường MÁY ĐỌC. Ở đây phải là tên riêng ỔN ĐỊNH, không " +
                 "được đổi theo ngôn ngữ giao diện — nếu không thì một phép đo chạy ở máy tiếng Anh và một phép đo " +

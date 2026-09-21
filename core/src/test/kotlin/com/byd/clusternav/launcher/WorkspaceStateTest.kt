@@ -119,8 +119,8 @@ class WorkspaceStateTest {
      * là các mục người dùng có thể đã đặt vào ô/thanh nút ở bản trước (viền cabin, GPS, cell pin, mô-tơ, tay lái,
      * gạt mưa, vị-trí-cốp, gập gương, HUD, tái tạo phanh, mã máy/nước làm mát…). Duyệt từng mã ⇒ không sót.
      *
-     * ⚠ `cast` KHÔNG nằm đây: nó chỉ bị ẩn khỏi bộ chọn (`HIDDEN_FROM_PICKER`), `pick` vẫn tra ra để nút nổi +
-     * giọng nói + ô của ai đã đặt còn chạy — ca *"…chi bi an…"* dưới canh điều đó.
+     * ⚠ `cast` TỪNG được miễn trừ ở đây (chỉ ẩn khỏi bộ chọn, `pick` vẫn tra ra) — **1.90 đổi**: owner xoá hẳn nút,
+     * nên ca *"…chi bi an…"* ở cuối bài nay đòi `pick` trả `null`. Xem lý do đầy đủ tại chính assert ấy.
      */
     @Test fun `sanitized bo het cac ma purge cua luot UX-OVERHAUL WP8`() {
         val gone = listOf(
@@ -149,7 +149,50 @@ class WorkspaceStateTest {
                 "$id phải rụng khỏi ô đã lưu, `soc` ở lại",
             )
         }
-        assertNotNull(CapabilityCatalog.pick("cast"), "`cast` chỉ bị ẩn, KHÔNG xoá — nút nổi/giọng nói vẫn cần nó")
+        assertNull(
+            CapabilityCatalog.pick("cast"),
+            "⚠ 1.90 (owner 2026-09-21): `cast` nay XOÁ HẲN, không còn chỉ-ẩn. Lý do cũ ghi *\"nút nổi/giọng nói vẫn " +
+                "cần nó\"* đã bị số đo bác: [ĐO grep] cả gói `modules/clustercast` (nút nổi · coordinator · bóng " +
+                "VietMap) có 0 tham chiếu tới ControlRegistry/CapabilityCatalog/pick/kindOf, và đường GHI " +
+                "`AutoContainer.sendInfo` chưa bao giờ được nối (BydHalGateway.localSet trả false).",
+        )
+    }
+
+    /**
+     * ═══ 1.90 · 2026-09-21 — 11 MÃ owner gỡ cho **XE THUẦN ĐIỆN** phải rụng khỏi cấu hình ĐÃ LƯU ═══════════════
+     *
+     * Cùng khuôn hai bài trên: bài kia khoá **cơ chế**, bài này khoá **đúng danh sách của lượt xoá này** — duyệt
+     * từng mã nên không có chỗ nào để sót. Xe của owner đang chạy bản trước với hồ sơ đã lưu; mã nào còn trên màn
+     * mà không rụng sẽ thành ô ghi HOA mã + `"—"` vĩnh viễn (lỗi [P0] mà Pass 1 của ADAS-PURGE đã vá).
+     *
+     * ⚠ `cast` KHÔNG nằm trong danh sách này — nó đã có ca riêng ở bài trên (nơi nó từng được miễn trừ), nên để
+     * nguyên chỗ ấy thì lịch sử đọc được: một mã đi từ *"chỉ ẩn"* sang *"xoá hẳn"*.
+     */
+    @Test fun `sanitized bo het 11 ma cua luot 1_90 xe thuan dien`() {
+        val gone = listOf(
+            // 8 nút (không kể `cast` — xem ca riêng ở bài trên)
+            "anion", "headlight_mode", "powertrain_mode", "screen_rotation",
+            "camera_view", "cluster_music", "brightness_gear", "vol",
+            // 2 datum
+            "op_mode", "energy_mode",
+        )
+        assertEquals(10, gone.size, "9 nút + 2 datum = 11 mã, trừ `cast` đã có ca riêng ⇒ 10 mã ở đây")
+        gone.forEach { id ->
+            assertNull(CapabilityCatalog.pick(id), "$id vẫn tra ra được ⇒ chưa xoá khỏi bộ đăng ký nào đó")
+            val s = WorkspaceState().withSlot(0, SlotContent.Widget(listOf(id, "soc")))
+            assertEquals(listOf(id), s.unknownWidgetIds(), "$id phải bị NÓI RA là mã lạ")
+            assertEquals(
+                SlotContent.Widget(listOf("soc")), s.sanitized().slots[0],
+                "$id phải rụng khỏi ô đã lưu, `soc` ở lại",
+            )
+        }
+        // GIỮ LẠI có chủ ý (owner: dành cho PHEV Sealion 6) — nếu một trong ba mã này rụng thì đó là lỗi.
+        listOf("fuel_range_km", "fuel_pct", "oil_level").forEach { id ->
+            assertNotNull(CapabilityCatalog.pick(id), "$id là datum xăng/dầu owner CHỐT GIỮ cho PHEV — không được xoá")
+        }
+        // Và `media_vol` (ĐỌC âm lượng) phải ở lại dù nút `vol` (ĐỔI âm lượng) đã đi — hai câu hỏi khác nhau.
+        assertNotNull(CapabilityCatalog.pick("media_vol"), "`media_vol` là ô ĐỌC, khác nút `vol` đã xoá")
+        assertNotNull(CapabilityCatalog.pick("anion_state"), "`anion_state` là ô ĐỌC, khác nút `anion` đã xoá")
     }
 
     /**

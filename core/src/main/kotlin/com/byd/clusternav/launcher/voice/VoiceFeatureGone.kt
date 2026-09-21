@@ -75,11 +75,11 @@ internal object VoiceFeatureGone {
         Gone(listOf("den", "vien"), "đèn viền", "the ambient light", removed = true),
         Gone(listOf("gat", "mua"), "gạt mưa", "the wipers", removed = true),
         Gone(listOf("muc", "tai", "tao"), "mức tái tạo", "the regen level", removed = true),
-        // ⚠ **KHÔNG** khai `["che","do","lai"]`, dù nút `drive_mode` đã bị gỡ. [ĐO off-car 2026-09-18] thêm nó thì
-        // *"xe đang ở chế độ lái nào"* — một câu log ghi là ĐANG CHẠY ĐÚNG (`Read(op_mode)`, §D4 của findings) —
-        // rơi vào FEATURE_GONE, vì bảng này được hỏi TRƯỚC tầng chữa chính tả và chính tầng ấy mới sửa *"xe"* →
-        // *"xem"* cho câu đó. Datum ĐỌC `op_mode` vẫn còn, nên *"đổi chế độ lái"* dừng ở MISMATCH (*"việc đó
-        // không đi với thứ đó"*) — một câu đã đúng, và nó không giết đường đọc.
+        // 2026-09-21 — owner (xe thuần điện) gỡ nút EV/HEV + datum ĐỌC `op_mode`/`energy_mode` (chế độ lái). Trước
+        // đây KHÔNG khai `["che","do","lai"]` vì `op_mode` còn đọc được (câu hỏi "xe ở chế độ nào" vẫn chạy) — nay
+        // datum ấy đã gỡ nên câu đó không còn đường đọc ⇒ trả lời đúng tên thay vì "không hiểu".
+        Gone(listOf("che", "do", "lai"), "chế độ lái", "the drive mode", removed = true),
+        Gone(listOf("che", "do", "phanh"), "chế độ phanh", "the brake mode", removed = true),
     ).sortedByDescending { it.words.size }
 
     /**

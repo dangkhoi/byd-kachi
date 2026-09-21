@@ -194,19 +194,22 @@ class VoiceRelativeStepTest {
 
     /**
      * Lượt trước chỉ `fan`/`temp`/`recirc` có đường đọc, nên *"tăng âm lượng"* vẫn cộng vào **mặc định RAM** (12) —
-     * đúng cùng một bệnh, chỉ khác cái nút. Nay `vol` đọc bằng `AudioManager.getStreamVolume` (mã datum
-     * `media_vol`), nên mốc là số THẬT.
+     * đúng cùng một bệnh, chỉ khác cái nút.
      *
-     * Bài đi qua [VoiceDispatcher] thật, không qua bảng: nếu ai gỡ `readKey` của `vol` ra thì cổng giả không được
+     * ⚠ 1.90 2026-09-21: nút `vol` bị owner xoá (âm lượng đã có núm cứng + thanh Android), nên bài này đo trên
+     * `fan` — nút STEP còn lại CÓ đường đọc (`ac_wind`). Bất biến KHÔNG đổi và vẫn là thứ dễ hỏng nhất: bước tương
+     * đối phải cộng vào **số THẬT của xe**, không cộng vào giá trị mặc định trong RAM (`fan` mặc định 4).
+     *
+     * Bài đi qua [VoiceDispatcher] thật, không qua bảng: nếu ai gỡ `readKey` của `fan` ra thì cổng giả không được
      * hỏi nữa và ca này ĐỎ ngay ở dòng `readIds`.
      */
     @Test
-    fun `tang am luong cong vao muc THAT cua xe`() {
-        val r = Rig(mapOf("vol" to 7))
-        ControlTileState.shared.setValue("vol", 12)
-        r.dispatcher().execute(up("vol"))
-        assertEquals(listOf("step:vol:8"), r.port.fired, "7 + 1 = 8, KHÔNG phải 12 + 1 = 13")
-        assertEquals(listOf("vol"), r.port.readIds, "phải HỎI XE trước khi cộng")
+    fun `tang gio cong vao muc THAT cua xe`() {
+        val r = Rig(mapOf("fan" to 2))
+        ControlTileState.shared.setValue("fan", 4)
+        r.dispatcher().execute(up("fan"))
+        assertEquals(listOf("step:fan:3"), r.port.fired, "2 + 1 = 3, KHÔNG phải 4 + 1 = 5")
+        assertEquals(listOf("fan"), r.port.readIds, "phải HỎI XE trước khi cộng")
     }
 
     /**

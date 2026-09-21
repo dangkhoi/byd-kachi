@@ -296,6 +296,16 @@ class KachiTopStrip(
             val v = chipViews[idx]
             val color = when (c.tone) {
                 ChipTone.ENERGY -> KachiTheme.GREEN
+                // Trạng thái bật/tắt của datum boolean = MÀU, không phải chữ (owner 2026-09-21). Cả chữ lẫn icon đổi
+                // màu vì [applyChipFace] tint icon bằng CHÍNH màu này — đó là thứ làm "icon sáng / icon mờ".
+                //
+                // Vì sao hai vai này: [KachiTheme.ACCENT_INK] là vai *"màu nhấn dùng làm CHỮ"* — [ĐO] `accent` thuần
+                // (`#4c7dff`) làm chữ thì không đạt tương phản, nên bảng màu đã tách riêng vai này và cho nó đi qua
+                // `ContrastGuard.fitInk`. [KachiTheme.MUT2] là vai chữ mờ nhất còn đạt sàn tương phản. Dùng lại hai
+                // vai có sẵn thay vì thêm vai mới: "mờ" và "nhấn" đã được định nghĩa và đã được bài canh tương phản
+                // đo ở CẢ HAI bảng (tối + sáng) — thêm vai mới là thêm hai hex phải tự chứng minh lại.
+                ChipTone.ACTIVE -> KachiTheme.ACCENT_INK
+                ChipTone.INACTIVE -> KachiTheme.MUT2
                 ChipTone.NEUTRAL -> CHIP_INK
             }
             // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn.

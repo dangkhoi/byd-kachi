@@ -202,4 +202,106 @@ class TelemetryReadoutTest {
      * phải ra cùng số. Dải âm (`or Int.MIN_VALUE`) thì không bao giờ đụng id thật nào đang khai trong registry.
      */
     private fun fakeId(constName: String): Int = constName.hashCode() or Int.MIN_VALUE
+
+    // ══ ICON-STATE (2026-09-21) — cờ [TelemetryView.onOff] cho chip thanh trên ═════════════════════════════
+
+    @Test fun `datum bat-tat mang co onOff, datum so va thang muc thi khong`() {
+        val cl = { b: Boolean? -> CarStatus(climate = CarStatus.Climate(defrostFrontOn = b)) }
+        val on = TelemetryReadout.of("defrost_front_state", cl(true))!!
+        assertEquals(true, on.onOff, "đang sấy ⇒ cờ true")
+        // ⚠ CHỮ GIÁ TRỊ **KHÔNG ĐỔI**: cờ là trường CỘNG THÊM cho bề mặt hẹp; ô lớn vẫn phải đọc được "Bật".
+        // Nếu bài này đỏ thì việc "bỏ chữ" đã bị làm sai tầng (ở :core thay vì ở chip).
+        assertEquals("Bật", on.display)
+
+        val off = TelemetryReadout.of("defrost_front_state", cl(false))!!
+        assertEquals(false, off.onOff, "đang tắt ⇒ cờ false")
+        assertEquals("Tắt", off.display)
+
+        // Chưa đọc được ⇒ null, KHÔNG phải false. "Không biết" khác "đang tắt" — tô icon mờ ở đây là bịa trạng thái.
+        val unread = TelemetryReadout.of("defrost_front_state", cl(null))!!
+        assertNull(unread.onOff)
+        assertEquals("—", unread.display)
+
+        // Datum SỐ không bao giờ mang cờ (chip giữ NEUTRAL + hiện giá trị).
+        assertNull(TelemetryReadout.of("soc", CarStatus(energy = CarStatus.Energy(soc = 82)))!!.onOff)
+        assertNull(TelemetryReadout.of("cabin_temp", CarStatus(climate = CarStatus.Climate(cabinTempC = 24)))!!.onOff)
+        // Thang MỨC 3 bậc cũng không: "Tắt / Mức 1 / Mức 2" không nén được vào một icon sáng-mờ.
+        assertNull(TelemetryReadout.of("seat_vent_state", CarStatus(climate = CarStatus.Climate(seatVentRaw = 1)))!!.onOff)
+        // Cửa/cốp là Mở/Đóng, không phải công tắc — xem KDoc `boolOf` về vì sao cố ý để ngoài.
+        assertNull(TelemetryReadout.of("door_lf", CarStatus(body = CarStatus.Body(doorLfOpen = true)))!!.onOff)
+    }
+
+    @Test fun `ca 13 datum bat-tat deu mang co (khong sot mot cai nao)`() {
+        val expected = setOf(
+            "ac_on", "anion_state", "defrost_front_state", "defrost_rear_state", "emergency_alarm",
+            "light_low_beam", "light_high_beam", "light_front_fog", "light_rear_fog",
+            "light_left_turn", "light_right_turn", "light_side", "light_drl",
+        )
+        val actual = TelemetryRegistry.ALL
+            .filter { TelemetryReadout.of(it.id, wiredStatus("1"))!!.onOff != null }
+            .map { it.id }.toSet()
+        assertEquals(expected, actual, "tập datum bật/tắt đổi ⇒ cập nhật cả `boolOf` lẫn bài này có chủ ý")
+    }
+
+    /**
+     * ⚠⚠ CHỐT CHỐNG-RỮA: **không datum nào được hiện chữ *"Bật"/"Tắt"* mà thiếu cờ** [TelemetryView.onOff].
+     *
+     * Đây là bài quan trọng nhất của lượt ICON-STATE, vì nó canh đúng cái lỗi sẽ xảy ra: ai thêm một datum bật/tắt
+     * thứ 14 vào `format` (thói quen cũ, ~100 dòng ở đó) thay vì vào `boolOf` thì chip lại hiện chữ *"Tắt"* — **im
+     * lặng**, compile xanh, mọi bài khác xanh. Chạy trên CẢ HAI mồi `"1"`/`"0"` nên phủ cả hai chiều bật và tắt.
+     *
+     * Ngoại lệ có lý do (danh sách phải bắt viết lý do, lệ `SettingsCatalog.NOT_SETTINGS`).
+     */
+    @Test fun `KHONG datum nao hien chu Bat-Tat ma thieu co onOff`() {
+        /** Datum hiện chữ *"Tắt"* mà KHÔNG phải công tắc: thang MỨC (raw 0 ⇒ "Tắt", 1 ⇒ "Mức 1", 2 ⇒ "Mức 2"). */
+        val levelScale = mapOf(
+            "seat_vent_state" to "thang 3 mức (ControlLevels) — một icon sáng/mờ không nói được 'Mức 1' vs 'Mức 2'",
+            "seat_heat_state" to "thang 3 mức (ControlLevels) — cùng lý do seat_vent_state",
+        )
+        val onOffWords = setOf("Bật", "Tắt", "On", "Off")
+        listOf("1", "0").forEach { seed ->
+            val status = wiredStatus(seed)
+            TelemetryRegistry.ALL.forEach { spec ->
+                val v = TelemetryReadout.of(spec.id, status)!!
+                if (spec.id in levelScale) return@forEach
+                assertEquals(
+                    v.valueText in onOffWords, v.onOff != null,
+                    "mồi=$seed · ${spec.id}: chữ='${v.valueText}' nhưng cờ onOff=${v.onOff} — datum bật/tắt phải " +
+                        "khai ở TelemetryReadout.boolOf (không phải ở format), nếu không chip mất icon trạng thái",
+                )
+            }
+        }
+    }
+
+    /**
+     * [CarStatus] đã nạp **mọi** datum nối được, bằng gateway giả trả [seed] cho mọi binding — cùng cách hai bài
+     * FULL WIRE / wired-tier ở trên dựng, gom lại để bài mới không chép lần thứ ba.
+     */
+    private fun wiredStatus(seed: String): CarStatus {
+        val getters = mutableMapOf<String, String?>()
+        val features = mutableMapOf<Int, String?>()
+        val settings = mutableMapOf<String, String?>()
+        val names = mutableMapOf<String, Int>()
+        val locals = mutableMapOf<String, String?>()
+        TelemetryRegistry.ALL.forEach { spec ->
+            when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
+                is BindingRoute.NamedMethod -> getters[r.method] = seed
+                is BindingRoute.Feature -> features[r.id] = seed
+                is BindingRoute.Setting -> settings[r.key] = seed
+                is BindingRoute.Local -> locals[r.method] = seed
+                is BindingRoute.FeatureName -> fakeId(r.constName).let { names[r.constName] = it; features[it] = seed }
+                BindingRoute.None -> {}
+            }
+        }
+        getters["getPM2p5Value"] = "[$seed, $seed]"   // getter trả MẢNG — xem chú thích ở bài FULL WIRE
+        val adapter = CarDataAdapter(
+            HalBindingTable(
+                FakeHalGateway(
+                    getters = getters, features = features, settings = settings,
+                    featureNames = names, locals = locals,
+                ),
+            ),
+        )
+        return adapter.readSlow(adapter.readFast(CarStatus()))
+    }
 }

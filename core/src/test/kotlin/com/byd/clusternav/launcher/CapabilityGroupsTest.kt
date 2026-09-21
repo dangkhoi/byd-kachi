@@ -306,8 +306,12 @@ class CapabilityGroupsTest {
         // ⚠ UX-OVERHAUL · WP8 (2026-09-20): 102 → **73** datum và 47 → **39** nút = owner purge 37 mã BỎ (29 đọc
         // + 8 nút) theo triage on-car 1.84 — pin cell/mô-tơ/chân ga-phanh/vô-lăng/độ dốc/nước làm mát/vị trí cốp/
         // gương/gạt mưa/đèn viền ×9/mã máy/GPS ×4/HUD ×2/mức tái tạo. Cùng loại quyết định như hai lượt trên.
-        assertEquals(73, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 73 (WP8 purge 29)")
-        assertEquals(38, ControlRegistry.ALL.size, "nút rời còn 38 (2026-09-21 gỡ seat_memory)")
+        // ⚠⚠ 1.90 (2026-09-21): 73 → **71** datum và 38 → **29** nút = owner gỡ 9 nút + 2 datum cho **xe thuần
+        // điện** (`anion` · `headlight_mode` · `powertrain_mode` · `screen_rotation` · `camera_view` ·
+        // `cluster_music` · `brightness_gear` · `vol` · `cast` · datum `op_mode` · `energy_mode`). Cùng loại
+        // quyết định như ba lượt trên — xem nhật ký ở `ControlRegistry`/`TelemetryRegistry`.
+        assertEquals(71, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 71 (1.90 gỡ op_mode + energy_mode)")
+        assertEquals(29, ControlRegistry.ALL.size, "nút rời còn 29 (1.90 gỡ 9 nút cho xe thuần điện)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -316,7 +320,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            73 + 38 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            71 + 29 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
@@ -371,8 +375,13 @@ class CapabilityGroupsTest {
      *
      * Là **mục rời** thì cặp đó được miễn trừ (`ControlWriteArgsTest.COLLISION_PENDING_CAR`) với lý do *"hai mục RỜI,
      * người dùng phải cố ý đặt riêng"*. **G1 làm lý do đó hết đúng**: trong một nhóm, người dùng không chọn gì — ô tự
-     * bày cả hai ra, trông như hai việc khác nhau. Bản vá bỏ `headl` khỏi nhóm (nó **vẫn còn** là mục rời) và giữ
-     * `headlight_mode` vì nó nói được cả bốn trạng thái.
+     * bày cả hai ra, trông như hai việc khác nhau. Bản vá lúc đó bỏ `headl` khỏi nhóm và giữ `headlight_mode`.
+     *
+     * ## ⚠⚠ 1.90 — ĐẢO CHIỀU, vì `headlight_mode` đã bị XOÁ (owner 2026-09-21)
+     * Va chạm **tự hết**: chỉ còn `headl` mang id `1276153912`. Nếu cứ giữ *"`headl` phải rời khỏi nhóm Đèn"* thì
+     * nhóm tên *"Đèn"* không còn nút đèn pha nào — lượt xoá một nút lại lấy đi một nút thứ hai owner không nêu.
+     * Nên nay bài canh đòi **ngược lại**: `headl` phải Ở TRONG nhóm, và `headlight_mode` phải không còn tồn tại.
+     * Phép chính (`sameWireWrites` rỗng) KHÔNG đổi — nó vẫn là thứ chặn ca cũ mọc lại ở bất kỳ nhóm nào.
      */
     @Test
     fun `khong nhom nao co hai nut gui y het nhau len bus`() {
@@ -380,11 +389,10 @@ class CapabilityGroupsTest {
             emptyList<String>(), CapabilityGroups.sameWireWrites(CapabilityGroups.ALL),
             "hai nút cạnh nhau trong một ô, khác nhãn mà cùng một byte ⇒ người dùng không có cách nào biết",
         )
-        // Và cụ thể: nhóm Đèn không được chứa `headl` nữa, nhưng `headl` vẫn phải CÒN là mục rời (không mất khả năng).
-        assertTrue("headl" !in CapabilityGroups.LIGHTS.writes, "`headl` phải rời khỏi nhóm Đèn")
-        assertTrue("headlight_mode" in CapabilityGroups.LIGHTS.writes, "và `headlight_mode` phải ở lại (phủ cả 4 trạng thái)")
+        // 1.90: `headlight_mode` xoá ⇒ `headl` quay lại nhóm Đèn (nhóm đèn phải có nút đèn pha).
+        assertNull(ControlRegistry.byId("headlight_mode"), "`headlight_mode` đã xoá ở 1.90 — nếu nó quay lại thì va chạm id cũng quay lại")
+        assertTrue("headl" in CapabilityGroups.LIGHTS.writes, "`headl` phải ở TRONG nhóm Đèn (nay không còn ai đụng id của nó)")
         assertNotNull(ControlRegistry.byId("headl"), "`headl` KHÔNG được xoá khỏi registry — đó là mất khả năng")
-        assertTrue(CapabilityGroups.groupsContaining("headl").isEmpty(), "và nó không thuộc nhóm nào khác")
     }
 
     /**

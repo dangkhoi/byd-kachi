@@ -101,7 +101,11 @@ class CapabilityIconsDiversityTest {
             // mô-tơ · mô-men · vòng tua máy · tốc độ bánh · vô-lăng · độ dốc) ⇒ 11 → 4; Khí hậu mất nước làm mát
             // ⇒ 12 → 11; Thân xe mất 3 (vị trí cốp · gương · gạt mưa-đọc, + nút gạt mưa) ⇒ 25 → 22; Đèn mất 9 mã
             // đèn viền ⇒ 16 → 9; Danh tính mất mã máy + mức nước + 4 GPS ⇒ 6 → 2.
-            Domain.ENERGY to 11, Domain.DRIVETRAIN to 4, Domain.CLIMATE to 11,
+            // ⚠ 1.90 (2026-09-21) — sàn Động lực hạ **4 → 2** theo SỐ Ô ĐÃ MẤT: owner gỡ hai datum `op_mode`
+            // (hình núm chọn) + `energy_mode` (hình tia sét) và nút `powertrain_mode` (tia sét) cho **xe thuần
+            // điện** ⇒ lĩnh vực này còn đúng 2 ô (`speed` → `ic-speed`, `gear` → `ic-drive`), tức 2 ô / 2 hình =
+            // vẫn **một hình một ô**, không có ô nào phải dùng chung hình. Hạ theo phép đếm, không hạ cho xanh.
+            Domain.ENERGY to 11, Domain.DRIVETRAIN to 2, Domain.CLIMATE to 11,
             // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
             // ⚠ (V) FEATURE-FILTER 2026-09-17 — **Lốp = 0, và đó là một KẾT LUẬN, không phải một lỗ hổng.** Tám ô
             // lốp LẺ vào [CapabilityCatalog.HIDDEN_FROM_PICKER] theo lệnh owner (*"gôm lại thành 1 widget"*) ⇒ bộ

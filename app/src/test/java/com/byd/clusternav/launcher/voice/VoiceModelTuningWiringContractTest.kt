@@ -28,6 +28,7 @@ class VoiceModelTuningWiringContractTest {
     private val turns by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt") }
     private val log by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceUtteranceLog.kt") }
     private val settings by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelSettings.kt") }
+    private val store by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceModelStore.kt") }
     private val prefsSet by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgePrefsSet.kt") }
     private val state by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeState.kt") }
     // ⚠ WP7 (2026-09-20) dời `voice_dump` (và các lệnh dev khác) sang `TestBridgeNoHome.kt` — nối hai tệp.
@@ -243,17 +244,35 @@ class VoiceModelTuningWiringContractTest {
         assertTrue(log.contains("filesDir"), "thư mục nhật ký phải nằm trong `filesDir`")
     }
 
-    /** Nút xuất + ô tích phải có mặt THẬT trong Cài đặt, và câu chữ phải nói rõ tiếng không rời khỏi xe. */
+    /**
+     * Hai bề mặt của nhật ký trong Cài đặt (ô tích + nút xuất) đã **GỠ** — owner 2026-09-21, bản release
+     * production: dọn hết dev/debug/log UI khỏi màn, chỉ giữ công tắc *Chế độ kiểm thử qua adb*.
+     *
+     * Bài cũ ghim chiều ngược lại (*"phải có mặt THẬT trong Cài đặt"*). Nó đảo chiều thay vì bị xoá, vì thứ cần
+     * canh nay là: **gỡ bề mặt KHÔNG được gỡ theo hành vi**. Ghi vẫn phải chạy (bài
+     * [cong tac giu nhat ky mac dinh BAT] ở trên) và cả hai đường thay thế phải sống:
+     *  • công tắc → `prefs_set --es key voice_keep_log` (danh sách trắng của cầu kiểm thử);
+     *  • xuất zip → `voice_dump` ([bài dưới] ghim nó dùng chung `exportZip`).
+     *
+     * Câu chữ *"tiếng không rời khỏi xe"* cũng chuyển chỗ: nó từng nằm ở `kachi_voice_log_sub` (chuỗi đã xoá cùng
+     * ô tích) nên nay phải đọc được ở KDoc của chính [VoiceUtteranceLog] — người sửa mã là người duy nhất còn đọc
+     * tính chất đó, và nó vẫn là tính chất phải giữ.
+     */
     @Test
-    fun `cai dat co o tich va nut xuat nhat ky`() {
-        assertTrue(settings.contains("VoiceUtteranceLog.enabled(context)"), "ô tích phải đọc trạng thái thật")
-        assertTrue(settings.contains("Prefs.setVoiceKeepLog(context, on)"), "ô tích phải GHI được")
-        assertTrue(settings.contains("VoiceUtteranceLog.exportZip(context)"), "nút xuất phải gọi đường nén thật")
-        assertTrue(settings.contains("R.string.kachi_voice_log_exported"), "xong phải hiện ĐƯỜNG DẪN, không im lặng")
-        val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
-        val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
-        assertTrue(vi.contains("chỉ lưu trên xe, không gửi đi"), "câu chữ VI phải nói thẳng tiếng không rời khỏi xe")
-        assertTrue(en.contains("never sent anywhere"), "câu chữ EN phải nói thẳng điều đó")
+    fun `hai be mat nhat ky da go khoi Cai dat, hanh vi giu nguyen`() {
+        listOf("VoiceUtteranceLog.enabled(", "VoiceUtteranceLog.exportZip(", "Prefs.setVoiceKeepLog(").forEach {
+            assertFalse(settings.contains(it), "`$it` mọc lại trong Cài đặt — owner chốt gỡ mọi bề mặt log khỏi màn")
+        }
+        assertTrue(
+            "voice_keep_log" in TestBridgeCommands.WRITABLE_PREFS_KEYS,
+            "gỡ ô tích thì `prefs_set` phải còn ghi được khoá này, không thì công tắc thành bất khả chỉnh",
+        )
+        val logDoc = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceUtteranceLog.kt")
+        assertTrue(logDoc.contains("Không chạm mạng"), "KDoc phải nói thẳng tiếng không rời khỏi xe")
+        assertTrue(
+            logDoc.contains("xe CHỈ khi có người chạy lệnh `voice_dump`"),
+            "KDoc phải nói ĐÚNG đường duy nhất tiếng rời khỏi xe — nút cũ đã gỡ, câu cũ nay là một lời hứa sai chỗ",
+        )
     }
 
     /** Lệnh cầu `voice_dump` đi qua ĐÚNG hàm nén của nút Cài đặt, và có dây nối trong receiver. */
@@ -271,41 +290,60 @@ class VoiceModelTuningWiringContractTest {
         assertTrue(dump.contains("Thread("), "nén vài chục MB phải ở luồng nền, không phải luồng nhận broadcast")
     }
 
-    // ══ H6 · đổi sang mô hình nhẹ ═════════════════════════════════════════════════════════════════════════
+    // ══ H6 · BỀ MẶT CHỌN MÔ HÌNH — nay phải VẮNG (owner 2026-09-21, bản release production) ═══════════════
 
-    /** Bản nhẹ tính từ **danh mục**, không viết cứng tên mô hình nào ở tầng vẽ (CLAUDE.md §7). */
+    /**
+     * ⚠ Bài này **ĐẢO CHIỀU** ở lượt 2026-09-21, và đó là chủ ý.
+     *
+     * Tới 1.87 hai bài ở đây đòi hàng *"chuyển sang mô hình nhẹ"* + *"gỡ bản nặng"* phải CÓ và phải đổi `selected`
+     * đúng chỗ. Owner chốt chỉ giữ **một** mô hình nghe (gói đang chạy tốt trên xe) và bỏ màn cho-chọn-model, nên
+     * hợp đồng lật: các hàm ấy phải **không còn**, và không đường nào trong Cài đặt được ghi lựa chọn mô hình.
+     *
+     * Xoá hai bài cũ thay vì đảo chúng là mất chính cái chặn: `lighterThan` giờ luôn trả `null`, nên ai đó dựng
+     * lại khối chọn-mô-hình sẽ có một khối mã **không bao giờ chạy** mà chẳng bài nào đỏ. Phép trên **dữ liệu**
+     * (bản nào nhẹ hơn bản nào, gói chưa ghim không được đề nghị) đã về đúng chỗ của nó: `SherpaModelCatalogTest`.
+     */
     @Test
-    fun `ban nhe tinh tu danh muc, khong viet cung ten mo hinh`() {
-        val fp32 = SherpaModelCatalog.ZIPFORMER_VI
-        val light = SherpaModelCatalog.lighterThan(fp32)
-        assertNotNull(light, "fp32 (266 MB) phải có một bản nhẹ hơn tải được")
-        assertTrue(light!!.totalBytes < fp32.totalBytes, "bản đề nghị phải thật sự nhẹ hơn")
-        assertTrue(light.downloadable, "không được đề nghị một gói chưa ghim sha256 (fail-safe)")
-        // Đã ở bản nhẹ nhất ⇒ không còn gì để đề nghị (đó là thứ `state.alt_available` sẽ báo sau khi đổi xong).
-        assertNull(SherpaModelCatalog.lighterThan(light), "bản nhẹ nhất không được tự đề nghị chính nó")
-        // Gói chưa mirror (URL rỗng) không bao giờ được đề nghị, dù nó nhẹ hơn.
-        assertFalse(SherpaModelCatalog.HATAPHU_VI.downloadable, "gói gated phải là `downloadable = false`")
-        assertTrue(
-            settings.contains("SherpaModelCatalog.lighterThan(current)"),
-            "tầng vẽ phải HỎI danh mục, không tự quyết `nếu là int8 thì…`",
+    fun `khong con be mat chon mo hinh trong Cai dat, va khong ai ghi duoc lua chon`() {
+        listOf("lightModelRows", "switchToLight", "dropHeavy", "switchLabel", "lightStatusText", "lightDoneText")
+            .forEach { name ->
+                assertFalse(
+                    settings.contains("fun $name("),
+                    "`$name` là bề mặt chọn mô hình — đã gỡ 2026-09-21; dựng lại thì phải trả lời được câu " +
+                        "\"chọn giữa những gì\" khi danh mục chỉ có một gói",
+                )
+            }
+        assertEquals(
+            0, Regex("""VoiceModelStore\.select\(""").findAll(settings).count(),
+            "Cài đặt không được có đường nào đổi lựa chọn mô hình nữa",
+        )
+        assertFalse(
+            store.contains("fun select("),
+            "`VoiceModelStore.select` là chỗ GHI duy nhất của khoá `model`; không còn ai gọi thì không được để lại " +
+                "— một hàm ghi prefs mà 0 chỗ gọi là một cửa mở sẵn cho lượt sau đi vòng qua hợp đồng một-mô-hình",
+        )
+        // …và lý do gốc: danh mục chỉ còn một gói, nên không có gì để chọn giữa.
+        assertEquals(1, SherpaModelCatalog.ALL.size, "danh mục đổi số ⇒ đọc lại KDoc bài này trước khi ghim số mới")
+        assertNull(
+            SherpaModelCatalog.lighterThan(SherpaModelCatalog.ZIPFORMER_VI_INT8),
+            "một gói duy nhất thì không có bản nào nhẹ hơn để đề nghị",
         )
         assertFalse(settings.contains("int8"), "không tên mô hình nào được viết cứng ở tầng vẽ")
     }
 
-    /** Chỉ đổi lựa chọn khi **cả bốn tệp** đã xong + đã kiểm; và không bao giờ tự xoá bản nặng. */
+    /**
+     * Hàng **trạng thái + Tải/Gỡ** của gói duy nhất thì Ở LẠI — nó không phải bộ chọn.
+     *
+     * Đây là nửa còn lại của bài trên: chỉ canh *"đã gỡ bộ chọn"* thì một lượt dọn quá tay (gỡ luôn cả hàng này)
+     * cũng xanh, và lúc ấy người dùng mất đường **tải** mô hình — tức mất cái tai, im lặng, trên một máy cài mới.
+     */
     @Test
-    fun `chi doi lua chon o nhanh Done, va khong tu go ban nang`() {
-        val fn = SourceRoots.body(settings, "private fun switchToLight(")
-        assertTrue(fn.contains("VoiceModelStore.install(context, light)"), "phải dùng ĐƯỜNG CÀI có sẵn, không viết mới")
-        val done = fn.indexOf("is VoiceModelStore.Step.Done")
-        val select = fn.indexOf("VoiceModelStore.select(context, light.id)")
-        assertTrue(done in 0 until select, "`select` phải nằm TRONG nhánh `Done` — không đổi sớm khi mất sóng giữa chừng")
-        assertTrue(fn.contains("VoiceEngine.release()"), "đổi mô hình phải nhả bản cũ khỏi bộ nhớ native")
-        assertFalse(fn.contains("VoiceModelStore.remove("), "tuyệt đối KHÔNG tự xoá bản nặng sau khi đổi")
-        // Gỡ là một hàng RIÊNG, và nó từ chối khi bản nặng vẫn đang được chọn (guard ở tầng thi hành).
-        val drop = SourceRoots.body(settings, "private fun dropHeavy(")
-        assertTrue(drop.contains("VoiceModelStore.selected(context).id == heavy.id"), "guard phải ở tầng thi hành")
-        assertTrue(drop.contains("R.string.kachi_voice_model_drop_blocked"), "từ chối phải NÓI RA lý do")
+    fun `hang trang thai va nut Tai-Go cua goi duy nhat van con`() {
+        val row = SourceRoots.body(settings, "private fun modelRow(")
+        assertTrue(row.contains("modelStatusText()"), "phải hiện trạng thái đã cài/chưa cài")
+        assertTrue(row.contains("installModel(status, action)"), "phải còn đường TẢI")
+        assertTrue(row.contains("removeModel(status, action)"), "phải còn đường GỠ (lấy lại chỗ trên đĩa)")
+        assertTrue(row.contains("VoiceModelStore.isReady(context)"), "nhánh Tải/Gỡ chọn theo trạng thái THẬT trên đĩa")
     }
 
     /** Thiếu RAM là một **ghi chú**, không bao giờ là một lượt tự đổi mô hình. */
@@ -316,13 +354,11 @@ class VoiceModelTuningWiringContractTest {
             SourceRoots.body(engine, "fun preload(").contains("lastPreloadSkip = why"),
             "chỗ bỏ qua phải ghi lý do lại, không chỉ in logcat",
         )
-        assertTrue(settings.contains("VoiceEngine.lastPreloadSkip"), "Cài đặt phải hiện ghi chú đó")
-        assertTrue(settings.contains("R.string.kachi_voice_model_preload_skipped"))
-        // Và không có đường nào tự gọi `select` ngoài cú bấm của người dùng.
-        assertEquals(
-            1, Regex("""VoiceModelStore\.select\(""").findAll(settings).count(),
-            "chỉ được có ĐÚNG MỘT chỗ đổi lựa chọn mô hình trong Cài đặt",
-        )
+        // ⚠ Ghi chú này từng nằm trong khối chọn-mô-hình vừa gỡ ⇒ nay phải ở TRONG `modelRow`, không thì nó biến
+        // mất cùng khối và người dùng hết biết vì sao lần bấm mic đầu chờ lâu ([ĐO xe] máy còn 56–94 MB trống).
+        val row = SourceRoots.body(settings, "private fun modelRow(")
+        assertTrue(row.contains("VoiceEngine.lastPreloadSkip"), "hàng mô hình phải hiện ghi chú thiếu RAM")
+        assertTrue(row.contains("R.string.kachi_voice_model_preload_skipped"))
     }
 
     /** `state.voice_model` phải mang ba trường mới, và `id` là id ĐANG CHỌN (không phải hằng mặc định). */

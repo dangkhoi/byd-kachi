@@ -126,22 +126,15 @@ class AppDrawer(
             addPickGrid(body, CapabilityPicker.launcherPicks(), cols = COLS_TILE)
             groupSection(body); singlesSection(body)
         } else if (assign) {
-            groupSection(body)
+            // #7 (owner 2026-09-21): thứ tự App → Widget của app → Thông tin khác. App là thứ người dùng đưa vào
+            // ô nhiều nhất nên bày TRƯỚC; "Thông tin khác" (nhóm xe · thẻ dựng tay · mục lẻ) xuống cuối.
 
-            // ── Widget dựng tay (chọn nhiều) ──
-            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.M), 0, dpi(context, Sp.XS)) })
-            addWidgetGrid(body, cols = COLS_TILE)
+            // ── App (chạm đặt vào ô) — ĐẦU ──
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)))
+            apps.grid(body, apps.load(), cols = COLS_APP)
 
-            singlesSection(body)
-
-            // ── Widget của APP KHÁC (T4) — đặt SAU nhóm/thẻ dựng tay và các mục lẻ, TRƯỚC danh sách app ──
-            //
-            // Vì sao ở đây chứ không cạnh "Thẻ dựng tay": nó **ít dùng hơn** (thẻ Kachi đọc dữ liệu xe, cái người ta
-            // mở launcher để xem), và nó là thứ **có thể không chạy được trên xe** — ràng buộc widget cần bind-grant
-            // qua kênh shell. Đặt nó lên trước sẽ đẩy thứ chắc chắn chạy xuống dưới.
-            //
-            // Rỗng thì **vẫn hiện tiêu đề** kèm câu nói rõ "máy chưa có app nào cung cấp widget": im lặng bỏ cả mục
-            // sẽ thành "tính năng biến mất không lý do" — đúng họ lỗi trần-ô-chặn-im-lặng mà G1 đã phải đi vá.
+            // ── Widget của APP KHÁC (T4) ──
+            // Rỗng thì VẪN hiện tiêu đề kèm câu nói rõ "máy chưa có app nào cung cấp widget" (không im lặng bỏ mục).
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_appwidgets)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             if (appWidgetPicks.isEmpty()) {
                 body.addView(note(context.getString(R.string.kachi_drawer_note_appwidgets_none)))
@@ -150,9 +143,11 @@ class AppDrawer(
                 apps.grid(body, appWidgetPicks.map { p -> AppDrawerApps.Item(APPWIDGET_PKG, p.title, { p.icon }, p.onTap) }, cols = COLS_TILE)
             }
 
-            // ── App (chạm đặt vào ô) ──
-            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
-            apps.grid(body, apps.load(), cols = COLS_APP)
+            // ── Thông tin khác: nhóm xe · thẻ dựng tay · mục lẻ ──
+            groupSection(body)
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
+            addWidgetGrid(body, cols = COLS_TILE)
+            singlesSection(body)
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
             val all = apps.load()

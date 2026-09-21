@@ -158,4 +158,12 @@ class VietMapAutostartGateTest {
         assertTrue(VietMapAutostart.SETTLE_MS > 0L)
         assertTrue(VietMapAutostart.POLL_TIMEOUT_MS > VietMapAutostart.SETTLE_MS, "timeout phải đủ chỗ cho ít nhất một lần settle")
     }
+
+    @Test fun `hasBubbleService nhan dien service dung bong`() {
+        // [ĐO xe 2026-09-21] khi bóng CHƯA dựng, dumpsys chỉ có Firebase → false; khi có VMBluetoothService → true.
+        assertFalse(VietMapAutostart.hasBubbleService("  * ServiceRecord{.. vn.vietmap.live/com.google.firebase.sessions.SessionLifecycleService}"))
+        assertTrue(VietMapAutostart.hasBubbleService("  * ServiceRecord{.. vn.vietmap.live/.VMBluetoothService}"))
+        assertFalse(VietMapAutostart.hasBubbleService(""))
+    }
+
 }

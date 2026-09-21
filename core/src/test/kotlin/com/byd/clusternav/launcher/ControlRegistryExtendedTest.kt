@@ -20,11 +20,15 @@ class ControlRegistryExtendedTest {
         // lý do, chứ không lặng lẽ hạ con số.
         // ⚠ UX-OVERHAUL · WP8 2026-09-20 · **19 → 18**: `wiper` (gạt mưa, vị trí 18) purge theo triage owner
         // (#34 — [ĐO xe] ba getter gạt mưa chết, và nút thì owner chấm BỎ). Mã thứ HAI rời khối gốc sau `hood`.
+        // ⚠⚠ 1.90 · 2026-09-21 · **18 → 16**: `vol` (Âm lượng) và `cast` (Chiếu cụm) xoá — owner chốt cho bản
+        // release production. `vol` vì âm lượng đã có núm cứng + thanh Android; `cast` vì [ĐO grep] đường GHI
+        // `AutoContainer.sendInfo` **chưa bao giờ được nối** (nút chết), còn việc chiếu cụm THẬT nằm ở
+        // `SimpleCastRuntime` + nút nổi + nhóm Cài đặt (0 tham chiếu tới registry). Mã thứ BA và TƯ rời khối gốc.
         val original = listOf(
             "lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan",
-            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl", "vol", "cast",
+            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl",
         )
-        assertEquals(original, ControlRegistry.ALL.take(18).map { it.id })
+        assertEquals(original, ControlRegistry.ALL.take(16).map { it.id })
     }
 
     @Test fun `defaultEnabledIds bat bien - 8 nut mac dinh dung thu tu`() {
@@ -32,9 +36,10 @@ class ControlRegistryExtendedTest {
             listOf("lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan"),
             ControlRegistry.defaultEnabledIds(),
         )
-        // Nut moi KHONG duoc tu bat (giu dock mac dinh gon). ⚠ WP8: mốc cũ `wiper` đã purge ⇒ dùng `cast`.
-        assertTrue("cast" !in ControlRegistry.defaultEnabledIds())
-        assertTrue("powertrain_mode" !in ControlRegistry.defaultEnabledIds())   // (V) 2026-09-17: cũ là `drive_mode`
+        // Nut moi KHONG duoc tu bat (giu dock mac dinh gon). ⚠ 1.90: hai mốc cũ `cast` + `powertrain_mode` đã xoá
+        // (owner 2026-09-21) ⇒ dùng hai nút mở-rộng còn sống: `ac_auto` (gió tự động) và `wireless_charge`.
+        assertTrue("ac_auto" !in ControlRegistry.defaultEnabledIds())
+        assertTrue("wireless_charge" !in ControlRegistry.defaultEnabledIds())
     }
 
     @Test fun `moi control bindingKey khong rong`() {
@@ -66,9 +71,13 @@ class ControlRegistryExtendedTest {
 
     @Test fun `control gom nhieu domain (panel)`() {
         val domains = ControlRegistry.ALL.map { it.domain }.toSet()
-        assertTrue(domains.size >= 6, "control chi phu $domains")
-        // drive + energy + infotainment deu co nut. (`Domain.SAFETY` da go 2026-09-16 cung toan bo ADAS/an toan.)
-        listOf(Domain.DRIVETRAIN, Domain.ENERGY, Domain.INFOTAINMENT, Domain.BODY, Domain.LIGHTS, Domain.CLIMATE)
+        // ⚠ 1.90 · sàn hạ **6 → 5**: `powertrain_mode` là nút DUY NHẤT của `Domain.DRIVETRAIN`, và owner xoá nó
+        // 2026-09-21 (xe thuần điện) ⇒ lĩnh vực Động lực nay **không có nút nào**, chỉ có datum ĐỌC (`speed`,
+        // `gear`). Đó là kết luận đúng, không phải lỗ hổng: launcher không đổi chế độ lái/hệ truyền động nữa.
+        assertTrue(domains.size >= 5, "control chi phu $domains")
+        assertTrue(Domain.DRIVETRAIN !in domains, "Động lực KHÔNG còn nút nào — nếu có nút mới thì phải nói ra ở đây")
+        // (`Domain.SAFETY` da go 2026-09-16 cung toan bo ADAS/an toan.)
+        listOf(Domain.ENERGY, Domain.INFOTAINMENT, Domain.BODY, Domain.LIGHTS, Domain.CLIMATE)
             .forEach { d -> assertTrue(ControlRegistry.byDomain(d).isNotEmpty(), "domain $d khong co control") }
     }
 

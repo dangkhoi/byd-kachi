@@ -76,8 +76,8 @@ class CarDataAdapter(
 
     private fun gate() = Gate(table, demand(), absent, clock())
 
-    /** Nhịp NHANH chỉ đáng chạy khi màn đang bày ít nhất một datum nhanh — xem [CarDataDemand.needsFast]. */
-    override fun fastNeeded(): Boolean = CarDataDemand.needsFast(demand())
+    /** Nhịp NHANH đáng chạy khi màn bày ít nhất một datum nhanh, HOẶC có ô điều khiển (để setpoint đọc realtime). */
+    override fun fastNeeded(): Boolean = CarDataDemand.needsFast(demand()) || controlDemand().isNotEmpty()
 
     /**
      * [SOÁT P2-1 · 2026-09-16] Quên mọi kết luận *"xe này không có datum ấy"* ([HalAbsentCache.clear]).
@@ -117,10 +117,12 @@ class CarDataAdapter(
             drivetrain = CarStatus.Drivetrain(
                 speedKmh = g.int("speed", d.speedKmh),
                 gear = g.str("gear", d.gear),
-                opMode = g.str("op_mode", d.opMode),
-                energyMode = g.str("energy_mode", d.energyMode),
             ),
             energy = prev.energy.copy(motorPowerKw = g.int("motor_power", prev.energy.motorPowerKw)),
+            // #5 (owner 2026-09-21 "không realtime"): giá trị Ô ĐIỀU KHIỂN (nhiệt/gió/…) đọc ở nhịp NHANH (1s) để
+            // người lái chỉnh trên màn AC gốc thì launcher đổi trong ~1s, thay vì chờ tới 10s của nhịp chậm. Rẻ:
+            // ≤ số ô control đang hiện có readKey ([controlDemand]); nút đọc-không-ra ⇒ giữ giá trị cũ (không bịa).
+            controls = readControls(prev.controls),
         )
     }
 
@@ -223,13 +225,6 @@ class CarDataAdapter(
             infotainment = CarStatus.Infotainment(
                 mediaVolume = g.int("media_vol", prev.infotainment.mediaVolume),
             ),
-            // ═══ Giá trị THẬT cho các Ô ĐIỀU KHIỂN đang hiện (2026-09-17 · owner "không realtime") ══════════
-            // Đọc mỗi nút qua CHÍNH [HalBindingTable.readState] (readKey → readInt → transform) nên phép biến đổi
-            // (thang mức ghế · đảo AUTO) sống một chỗ. Chỉ các nút đang hiện có đường đọc ([controlDemand]) — nhịp
-            // CHẬM, ≤ số ô điều khiển trên màn, trong ngân sách K1. `null` (đọc không ra) ⇒ loại khỏi map ⇒ ô lùi
-            // về mức RAM (không bịa). Đây là đường đọc TƯỜNG MINH theo nhu cầu, không đi qua [Gate] (Gate lọc field
-            // của cụm; nút đã được [controlDemand] chọn sẵn nên không cần lọc lần hai).
-            controls = readControls(prev.controls),
         )
     }
 

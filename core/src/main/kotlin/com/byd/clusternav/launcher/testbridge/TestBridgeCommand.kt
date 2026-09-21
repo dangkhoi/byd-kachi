@@ -275,6 +275,12 @@ object TestBridgeCommands {
         "voice_hotword_score",
         // Tốc độ đọc Piper (owner 2026-09-17 "nói nhanh quá") — chỉnh mức chậm đúng ý trên xe không cần build.
         "voice_tts_speed",
+        // owner 2026-09-21 (bản release production) — công tắc GIỮ NHẬT KÝ lượt nói. Vào đây vì ô tích của nó vừa
+        // bị gỡ khỏi Cài đặt cùng mọi bề mặt dev/log: không có dòng này thì khoá thành **bất khả chỉnh**, tức dọn
+        // bề mặt hoá ra dọn luôn khả năng. Đây cũng là khoá DUY NHẤT của danh sách này không còn đường đảo lại
+        // bằng một cú chạm trong Cài đặt (xem ràng buộc (3) ở KDoc trên) — nó vẫn nằm trong đường GIỌNG NÓI và vẫn
+        // chỉ ghi được khi chế độ kiểm thử đang mở, nên hai ràng buộc còn lại không đổi.
+        "voice_keep_log",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

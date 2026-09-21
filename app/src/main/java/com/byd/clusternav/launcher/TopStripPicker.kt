@@ -57,6 +57,8 @@ class TopStripPicker(
     private val rows: SettingsRows,
     initial: TopStripConfig,
     private val onToggle: (String, Boolean) -> Unit,
+    // #15 — persist CẢ config khi đổi thứ tự chip (dời trái/phải). null = không cho dời (đường test cũ).
+    private val onConfig: ((TopStripConfig) -> Unit)? = null,
 ) {
     private var strip = initial
     private val tiles = HashMap<String, View>()
@@ -185,6 +187,15 @@ class TopStripPicker(
                 gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
                 setPadding(dpi(context, Sp.XS), dpi(context, Sp.S), dpi(context, Sp.XS), 0)
             })
+            // #15 — chip đang bật + cho phép dời ⇒ hàng ◀ ▶ để đổi vị trí trên thanh (thứ tự = thứ tự hiện).
+            if (onConfig != null && strip.has(pick.id)) {
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+                    setPadding(0, dpi(context, Sp.XS), 0, 0)
+                    addView(arrowBtn("◀") { move(pick.id, earlier = true) })
+                    addView(arrowBtn("▶") { move(pick.id, earlier = false) })
+                })
+            }
             setOnClickListener { toggle(pick.id) }
         }
         tiles[pick.id] = t
@@ -212,6 +223,25 @@ class TopStripPicker(
         // Ô vừa bấm ĐỔI KHỐI (bật ⇒ lên khối "đang bật", tắt ⇒ về lĩnh vực của nó) nên tô lại tại chỗ là chưa đủ —
         // xem KDoc [rebuild].
         rebuild()
+    }
+
+    /** #15 — dời một chip đang bật sớm/muộn hơn trong thứ tự hiện trên thanh; persist cả config. */
+    fun move(id: String, earlier: Boolean) {
+        val cb = onConfig ?: return
+        val next = if (earlier) strip.moveEarlier(id) else strip.moveLater(id)
+        if (next == strip) return
+        strip = next
+        cb(next)
+        rebuild()
+    }
+
+    private fun arrowBtn(glyph: String, onTap: () -> Unit): View = TextView(context).apply {
+        text = glyph; setTextColor(c(KachiTheme.INK))
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
+        gravity = Gravity.CENTER
+        val pad = dpi(context, Sp.S)
+        setPadding(pad, dpi(context, Sp.XS), pad, dpi(context, Sp.XS))
+        setOnClickListener { onTap() }
     }
 
     private fun paint(id: String) {

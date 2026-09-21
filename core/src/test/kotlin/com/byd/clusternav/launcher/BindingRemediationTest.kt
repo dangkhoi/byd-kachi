@@ -36,14 +36,14 @@ class BindingRemediationTest {
     // ── Động lực ───────────────────────────────────────────────────────────────────────────────
     /**
      * ⚠ UX-OVERHAUL · WP8 2026-09-20 — ba mốc `slope_deg` · `steering_deg` · `wheel_speed` đã **purge** (nằm trong
-     * 14 mã của khe #5-18) ⇒ rời bài. Ba mốc còn lại (`gear` · `energy_mode` · `op_mode`) giữ nguyên tính chất:
-     * đường đọc phải là **named-method THẬT**, không phải một feature-id đoán. `gear` còn là mục #19 của nhóm CẦN.
+     * 14 mã của khe #5-18) ⇒ rời bài.
+     * ⚠⚠ 1.90 2026-09-21 — hai mốc `energy_mode` · `op_mode` cũng **xoá** (owner: xe thuần điện) ⇒ bài còn đúng
+     * MỘT mốc là `gear`. Tính chất cần canh KHÔNG đổi: đường đọc phải là **named-method THẬT**, không phải một
+     * feature-id đoán; và `gear` vẫn là mục #19 của nhóm CẦN, nên bài vẫn có việc.
      */
-    @Test fun `dong luc doi sang getter that - gear energy op_mode`() {
+    @Test fun `dong luc doi sang getter that - gear`() {
         assertEquals("BYDAutoGearboxDevice.getCurrentGear", key("gear"))
-        assertEquals("BYDAutoEnergyDevice.getEnergyMode", key("energy_mode"))
-        assertEquals("BYDAutoEnergyDevice.getOperationMode", key("op_mode"))
-        assertEquals("android.hardware.bydauto.energy.BYDAutoEnergyDevice", named("op_mode").fqn)
+        assertEquals("android.hardware.bydauto.gearbox.BYDAutoGearboxDevice", named("gear").fqn)
     }
 
     // ── Khí hậu ─────────────────────────────────────────────────────────────────────────────────
@@ -157,9 +157,7 @@ class BindingRemediationTest {
 
     // ⚠ Bài `avh doi tu command-wrapper sang setAVHState` đã gỡ 2026-09-16 cùng nút `avh` (owner gỡ ADAS/an toàn).
 
-    @Test fun `headlight_mode feature-id di device INSTRUMENT`() {
-        val (route, device) = HalBindingTable.describeWrite(ControlRegistry.byId("headlight_mode")!!)
-        assertEquals("feature:0x4c109038", route)
-        assertEquals("android.hardware.bydauto.instrument.BYDAutoInstrumentDevice", device)
-    }
+    // ⚠ 1.90 2026-09-21: bài `headlight_mode feature-id di device INSTRUMENT` đã gỡ cùng nút (owner xoá
+    // `headlight_mode`). Bất biến *"halDevice ghi đè route thô theo Domain"* vẫn được canh ở
+    // `HalBindingTableTest.describeWrite feature-id gives hex label plus device by domain` (vế `readl`: LIGHTS → SETTING).
 }

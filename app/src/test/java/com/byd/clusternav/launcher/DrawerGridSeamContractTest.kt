@@ -60,7 +60,11 @@ class DrawerGridSeamContractTest {
     fun `khong ai tu dung hang ngang de xep o nua`() {
         gridUsers.forEach { f ->
             val n = Regex("""orientation = LinearLayout\.HORIZONTAL""").findAll(code(f)).count()
-            val allowed = if (f == "AppDrawer.kt") 1 else 0     // 1 = thanh đáy (câu nhắc + nút áp)
+            val allowed = when (f) {
+                "AppDrawer.kt" -> 1        // 1 = thanh đáy (câu nhắc + nút áp)
+                "TopStripPicker.kt" -> 1   // 1 = hàng ◀▶ dời chip (#15) — control trong Ô, KHÔNG phải hàng của lưới
+                else -> 0
+            }
             assertEquals(
                 allowed, n,
                 "$f có $n hàng ngang dựng tay (cho phép $allowed) — hàng của LƯỚI phải do CapabilityTileGrid dựng",

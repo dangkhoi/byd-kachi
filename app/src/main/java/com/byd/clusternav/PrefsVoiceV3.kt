@@ -87,7 +87,8 @@ fun Prefs.setVoiceFollowUpMs(ctx: Context, v: Int) = voicePrefs(ctx).edit().putI
  *  2. không dòng nào của lớp ấy chạm mạng (bài canh *"không tệp Voice\* nào gửi tiếng nói ra mạng"* vẫn nguyên);
  *  3. vòng đệm **30 mục / 30 MB** ⇒ nó không lớn dần theo thời gian, và tiếng cũ tự biến mất.
  *
- * Rời khỏi xe chỉ xảy ra khi người dùng **tự bấm** *Xuất nhật ký voice* (hoặc chạy lệnh `voice_dump`) — một lượt
+ * Rời khỏi xe chỉ xảy ra khi có người **tự chạy** lệnh `voice_dump` qua cầu kiểm thử (nút *Xuất nhật ký voice*
+ * đã gỡ khỏi Cài đặt ở bản release production, owner 2026-09-21) — một lượt
  * nén ra thẻ, do họ quyết định, với câu chữ nói thẳng *"chỉ lưu trên xe, không gửi đi"* ngay cạnh ô tích.
  */
 fun Prefs.voiceKeepLog(ctx: Context): Boolean = voicePrefs(ctx).getBoolean(K_VOICE_KEEP_LOG, true)

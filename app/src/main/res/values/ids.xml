@@ -4,4 +4,9 @@
          để `KachiGlass.refresh` dựng lại đúng nền khi ảnh nền đổi mà không phải dựng lại cả màn. -->
     <item name="kachi_glass_spec" type="id" />
     <item name="kachi_glass_binding" type="id" />
+    <!-- 2026-09-21 · ĐỔ GIÁ TRỊ TẠI CHỖ cho ô giữa màn (WidgetRefreshers): hàm đổ của ô ĐỌC và của ô HÀNH ĐỘNG.
+         Giữ TRÊN VIEW, không trong một map dùng chung — một map có giá trị trỏ về khoá (mọi hàm đổ đều bắt chính
+         view của nó) thì WeakHashMap không dọn được mục nào, tức rò View + Context cả tiến trình. Xem KDoc ở đó. -->
+    <item name="kachi_widget_fill" type="id" />
+    <item name="kachi_widget_action_fill" type="id" />
 </resources>

@@ -30,8 +30,7 @@ object CapabilityDescriptions {
         // ── DRIVETRAIN (INFO) ──
         "speed" to Desc("Tốc độ di chuyển hiện tại của xe", "Current vehicle road speed (km/h)"),
         "gear" to Desc("Số hiện tại đang cài đặt (P/R/N/D)", "Currently selected gear (P/R/N/D)"),
-        "op_mode" to Desc("Chế độ lái đang được kích hoạt", "Currently active drive mode"),
-        "energy_mode" to Desc("Chế độ vận hành năng lượng đang dùng (EV/HEV)", "Current powertrain energy mode (EV/HEV)"),
+        // ⚠ 1.90 · `op_mode`/`energy_mode` xoá (owner 2026-09-21 — xe thuần điện; xem `TelemetryRegistry`).
 
         // ── CLIMATE (INFO) ──
         "pm25_level" to Desc("Mức đánh giá chất lượng không khí trong xe", "Cabin air-quality rating based on fine dust"),
@@ -134,7 +133,7 @@ object CapabilityDescriptions {
         "readl" to Desc("Bật/tắt đèn đọc sách trong cabin", "Turn the cabin reading light on/off"),
         "headl" to Desc("Bật/tắt đèn pha", "Turn the headlights on/off"),
         "drl" to Desc("Bật/tắt đèn chạy ban ngày", "Turn the daytime running lights on/off"),
-        "headlight_mode" to Desc("Chọn chế độ đèn pha (auto/cốt/pha…)", "Pick the headlight mode (auto/low/high beam…)"),
+        // ⚠ 1.90 · `headlight_mode` xoá (owner 2026-09-21). Nút `headl` bật/tắt ở trên vẫn còn.
 
         // ── CLIMATE (ACT) ──
         "pm25" to Desc("Bật/tắt chế độ lọc bụi mịn tự động", "Turn automatic air purification on/off"),
@@ -151,7 +150,7 @@ object CapabilityDescriptions {
             "Turn the AUTO fan on/off (the car picks the fan level). Does not touch temperature — this car has no auto-temp mode",
         ),
         "defrost_rear" to Desc("Bật/tắt sấy kính chắn gió sau", "Turn the rear windscreen defroster on/off"),
-        "anion" to Desc("Bật/tắt chức năng ion âm lọc không khí", "Turn the anion air ioniser on/off"),
+        // ⚠ 1.90 · `anion` xoá (owner 2026-09-21 — chưa verify trên xe). Datum `anion_state` vẫn đọc được.
         "steer_heat" to Desc("Bật/tắt sưởi vô-lăng", "Turn steering wheel heating on/off"),
         "pm25_clean_now" to Desc("Chạy lọc không khí một lần ngay", "Run a one-shot air purification now"),
 
@@ -160,15 +159,12 @@ object CapabilityDescriptions {
 
         // ── INFOTAINMENT (ACT) ──
         "cam" to Desc("Bật/tắt hiển thị camera 360 độ", "Turn the 360-degree camera view on/off"),
-        "vol" to Desc("Tăng/giảm âm lượng hệ thống giải trí", "Raise/lower the infotainment volume"),
-        "cast" to Desc("Bật/tắt chiếu màn hình lên cụm đồng hồ", "Turn screen mirroring to the instrument cluster on/off"),
-        "screen_rotation" to Desc("Chọn hướng xoay màn hình trung tâm", "Pick the centre screen rotation orientation"),
-        "camera_view" to Desc("Chọn góc nhìn camera hỗ trợ đỗ xe", "Pick the parking camera viewing angle"),
-        "cluster_music" to Desc("Bật/tắt hiển thị thông tin nhạc trên cụm đồng hồ", "Turn music info display on the instrument cluster on/off"),
-        "brightness_gear" to Desc("Tăng/giảm độ sáng màn hình trung tâm", "Raise/lower the centre screen brightness"),
+        // ⚠⚠ 1.90 · SÁU nút xoá (owner 2026-09-21): `vol` · `cast` · `screen_rotation` · `camera_view` ·
+        // `cluster_music` · `brightness_gear`. Diễn giải gỡ theo — xem nhật ký ở `ControlRegistry`.
+        // Datum ĐỌC `media_vol` ở trên **Ở LẠI** (nó trả lời *"đang mức mấy"*, không đổi mức).
 
         // ── DRIVETRAIN (ACT) ──
-        "powertrain_mode" to Desc("Chọn chế độ vận hành động cơ (EV/HEV)", "Pick the powertrain mode (EV/HEV)"),
+        // ⚠ 1.90 · `powertrain_mode` (EV/HEV) xoá — xe thuần điện.
 
         // ── ENERGY (ACT) ──
         "wireless_charge" to Desc("Bật/tắt sạc không dây cho điện thoại", "Turn the wireless phone charger on/off"),

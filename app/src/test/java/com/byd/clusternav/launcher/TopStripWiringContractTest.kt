@@ -147,4 +147,54 @@ class TopStripWiringContractTest {
         assertTrue(!picker.contains("WorkspacePrefs"), "bộ chọn không được chạm prefs")
         assertTrue(!picker.contains("setTopStrip("), "bộ chọn không được tự ghi bền")
     }
+
+    // ══ ICON-STATE (2026-09-21) — sắc thái bật/tắt phải thành MÀU thật ════════════════════════════════════
+
+    /**
+     * MỌI [ChipTone] phải được tầng vẽ map sang một vai màu, và bảng map **không được có `else`**.
+     *
+     * Đây là chốt chống-rữa của lượt ICON-STATE ở phía `:app`: `when` trên một enum mà có `else` thì thêm sắc thái
+     * mới **biên dịch xanh** rồi âm thầm vẽ ra màu của nhánh `else` — tức owner xin "icon sáng/mờ" mà nhận lại chip
+     * xám như cũ, không một lỗi nào. Không `else` thì Kotlin bắt buộc khai đủ, và lỗi ấy thành lỗi biên dịch.
+     */
+    @Test
+    fun `moi ChipTone deu co vai mau rieng, khong co nhanh else`() {
+        val map = SourceRoots.body(strip, "val color = when (c.tone)")
+        ChipTone.values().forEach { tone ->
+            assertTrue(map.contains("ChipTone.${tone.name}"), "sắc thái ${tone.name} chưa được map sang màu")
+        }
+        assertFalse(
+            Regex("""\belse\s*->""").containsMatchIn(map),
+            "bảng map sắc thái KHÔNG được có `else` — nó biến một sắc thái mới thành lỗi im lặng",
+        )
+        // Trạng thái bật/tắt = màu, nên hai sắc thái này phải dùng vai KHÁC nhau và khác vai trung tính. Dùng lại
+        // vai có sẵn (đã qua ContrastGuard ở CẢ hai bảng) chứ không thêm hex mới — `0 ma mau viet cung` canh phần đó.
+        assertTrue(map.contains("ChipTone.ACTIVE -> KachiTheme.ACCENT_INK"), "ACTIVE phải là vai màu nhấn dùng làm CHỮ")
+        assertTrue(map.contains("ChipTone.INACTIVE -> KachiTheme.MUT2"), "INACTIVE phải là vai chữ MỜ")
+        assertFalse(
+            map.contains("ChipTone.ACTIVE -> CHIP_INK") || map.contains("ChipTone.INACTIVE -> CHIP_INK"),
+            "bật/tắt KHÔNG được dùng chung màu với chip trung tính — thế thì trạng thái lại vô hình",
+        )
+    }
+
+    /**
+     * Màu của chip phải chảy vào **CẢ icon lẫn chữ**.
+     *
+     * `applyChipFace` là chỗ duy nhất tint icon; nếu bộ vẽ chỉ `setTextColor` thì chữ đổi màu mà **icon vẫn xám** —
+     * đúng thứ owner xin lại bị hụt một nửa, và là họ lỗi đã cắn một lần ở ô điều khiển (icon sai, nhãn đúng, lọt
+     * qua một lượt nhìn nhanh — xem `ThemePaletteContractTest`).
+     */
+    @Test
+    fun `mau chip to ca icon chu khong chi to chu`() {
+        val face = SourceRoots.body(strip, "private fun applyChipFace(")
+        assertTrue(face.contains("setTextColor"), "phải đặt màu CHỮ")
+        assertTrue(face.contains("setTint"), "phải tint ICON — trạng thái bật/tắt nằm ở icon")
+        // Và lượt làm mới phải đặt lại mặt chip khi MÀU đổi, không chỉ khi icon đổi: tone đổi mà icon giữ nguyên
+        // (đúng ca bật→tắt) thì chip sẽ không bao giờ đổi màu.
+        val refresh = SourceRoots.body(strip, "fun refreshChips(")
+        assertTrue(
+            Regex("""tag\s*!=\s*c\.icon\.toString\(\)\s*\+\s*color""").containsMatchIn(refresh),
+            "chốt 'chỉ đặt lại khi đổi' phải tính CẢ màu vào khoá, không thì bật→tắt không đổi được màu",
+        )
+    }
 }

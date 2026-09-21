@@ -208,6 +208,24 @@ object VoiceIntentParser {
         // (b) Động từ đứng đầu, khớp cụm DÀI nhất.
         val verbHit = VoiceGrammar.VERBS.firstOrNull { VoiceLexicon.phraseAt(t, 0, it.first) }
 
+        // "gió ngoài" / "lấy gió ngoài" → recirc TẮT (lấy gió ngoài = tắt tuần hoàn). Scoped ở đây vì cụm "gió
+        // ngoài" là chiều NGƯỢC của nút `recirc` (bật = lấy gió trong) — KHÔNG cho nó vào bảng synonym của recirc
+        // (sẽ BẬT khi người ta xin gió ngoài). (owner 2026-09-21)
+        //
+        // ⚠⚠ [SOÁT 2026-09-21 · P1] Luật này phải đọc ĐỘNG TỪ, nên nó đứng SAU [verbHit] chứ không trước.
+        // Bản đầu trả `Control(recirc, 0)` cho **mọi** câu có "gio"+"ngoai", nên [ĐO] *"tắt gió ngoài"* · *"tắt lấy
+        // gió ngoài"* · *"đóng gió ngoài"* đều **BẬT gió ngoài** — làm đúng điều NGƯỢC LẠI với câu người lái vừa
+        // nói. Một lệnh giọng nói chạy ngược còn tệ hơn một lệnh không hiểu, vì người ta không nói lại.
+        //
+        // `recirc` chỉ có HAI trạng thái nên chiều phủ định là suy ra được, không phải đoán: *thôi lấy gió ngoài*
+        // = lấy gió trong = `recirc` BẬT. (Câu HỎI không tới được đây: [VoiceQuestion.isChoice]/[readsLead] đã cắt ở
+        // trên, và cổng D1 ở [parse] còn đổi mọi câu hỏi-ra-lệnh-GHI về đường ĐỌC.)
+        if (t.any { it.norm == "gio" } && t.any { it.norm == "ngoai" }) {
+            val stop = verbHit?.second == VoiceVerb.OFF || verbHit?.second == VoiceVerb.CLOSE
+            return VoiceIntent.Control("recirc", if (stop) 1 else 0)
+        }
+
+
         // (b') CẢ CÂU chính là TÊN của một việc ⇒ tên thắng động từ.
         //
         // [ĐO] hai họ tên thật trong bộ đăng ký bắt đầu bằng một động từ: gói lệnh *"Mở hết kính"* / *"Đóng hết
@@ -240,6 +258,20 @@ object VoiceIntentParser {
             VoiceMediaNavParse.mediaSearch(t)?.let { return it }
             // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
             if (VoiceLexicon.phraseAt(t, 0, listOf("ha")) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
+            // "điều hòa/máy lạnh <số> độ" KHÔNG có động từ (owner 2026-09-21: "điều hòa 25 độ" ra Unknown vì thiếu
+            // verb). Đẩy qua đường control(ac_auto, SET) sẵn có — nó tự nhận "<số> độ" → đặt nhiệt (nút temp).
+            //
+            // ⚠⚠ [SOÁT 2026-09-21 · P1] CHỈ nhận khi nó THẬT SỰ ra một setpoint nhiệt. Bản đầu `return` thẳng kết
+            // quả của `control(...)`, mà `ac_auto` là TOGGLE: khi `degreesSetpoint` KHÔNG khớp (số không đứng ngay
+            // trước chữ "độ") thì nhánh `TOGGLE + SET` trả `Control(ac_auto, 1)` ⇒ [ĐO] *"điều hòa chế độ hai"* và
+            // *"điều hòa mức độ 3"* **BẬT điều hòa** từ một câu không phải lệnh (trước lượt này cả hai ra
+            // `NO_VERB` = hỏi lại). Đó đúng là họ lỗi [P1] mà 1.83 đã phải vá một lần cho *"bật điều hòa chế độ
+            // hai"* — `degreesSetpoint` đòi số ngay trước "độ" chính là bản vá ấy, và cổng mới này đi vòng qua nó.
+            // Không khớp ⇒ rơi xuống `NO_VERB` như trước (owner: *"không rõ hỏi lại thôi, không cần assume"*).
+            if (mentionsAc(t) && t.any { it.norm == "do" } && VoiceControlParse.hasNumber(t)) {
+                val set = VoiceControlParse.control("ac_auto", VoiceVerb.SET, t, original)
+                if (set is VoiceIntent.Control && set.id == "temp") return set
+            }
             return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
         }
         val verb = verbHit.second
@@ -445,6 +477,21 @@ object VoiceIntentParser {
     // Cụm dẫn *"chỉ số X"* nay khai ở [VoiceQuestion.READ_LEADS] — [VoiceClarify] cần cùng bảng ấy (xem KDoc ở đó).
 
     // ── Tiện ích ─────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Câu có nhắc ĐIỀU HÒA không — cụm **hai từ** (*"điều hòa"* / *"máy lạnh"*), tra ở bất kỳ vị trí.
+     *
+     * ⚠ Cố ý KHÔNG nhận riêng chữ *"điều"* hay *"máy"*: chúng mở đầu hàng loạt từ khác (*"điều chỉnh"*, *"máy"* nói
+     * chung) và cổng gọi hàm này dẫn tới một lệnh GHI nhiệt độ cabin. Dùng [VoiceLexicon.phraseAt] thay vì hai phép
+     * `any` rời để *"máy"* và *"lạnh"* phải **đứng cạnh nhau** — hai `any` rời vẫn khớp *"máy … lạnh"* nằm ở hai đầu
+     * câu, tức hai chuyện khác nhau bị đọc thành một.
+     */
+    private fun mentionsAc(t: List<Token>): Boolean = AC_PHRASES.any { p ->
+        t.indices.any { VoiceLexicon.phraseAt(t, it, p) }
+    }
+
+    /** Cách gọi ĐIỀU HÒA đã bỏ dấu — xem [mentionsAc]. */
+    private val AC_PHRASES = listOf(listOf("dieu", "hoa"), listOf("may", "lanh"))
 
     private fun dropFillers(t: List<Token>): List<Token> = VoiceLexicon.dropLeadingFillers(t)
 }

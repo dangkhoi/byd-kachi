@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -51,12 +52,15 @@ class ControlWriteArgsTest {
      * Danh sách này **không được phình**: bài `danh sach no xe khong duoc muc rua` đòi mỗi mục vẫn còn trùng thật,
      * nên khi ai đó tách được tham số thì phải xoá mục tương ứng khỏi đây.
      */
-    private val COLLISION_PENDING_CAR = mapOf(
-        // 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) đã tách hai cặp khỏi đây:
-        //  • `cam`/`camera_view`: pseudo-id 3001 là bịa — nay `setAVMSwitchState` (ADAS) vs `setDisplayMode` (Panorama);
-        //  • `headl`/`headlight_mode`: id 1276153912 giữ cho `headlight_mode` (INSTRUMENT), `headl` gỡ id (NEEDS-ONCAR).
-        setOf("brightness_gear", "hud_brightness") to "feature-id 1276174360: sáng màn vs sáng HUD — một trong hai SAI id",
-    )
+    private val COLLISION_PENDING_CAR = emptyMap<Set<String>, String>()
+    // 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) đã tách hai cặp khỏi đây:
+    //  • `cam`/`camera_view`: pseudo-id 3001 là bịa — nay `setAVMSwitchState` (ADAS) vs `setDisplayMode` (Panorama);
+    //  • `headl`/`headlight_mode`: id 1276153912 giữ cho `headlight_mode` (INSTRUMENT), `headl` gỡ id (NEEDS-ONCAR).
+    // ⚠⚠ 1.90 2026-09-21 — bảng nay **RỖNG**, và đó là tin tốt: cặp cuối `brightness_gear`/`hud_brightness` (cùng
+    // feature-id 1276174360) hết trùng vì **cả hai mã đều không còn** — `hud_brightness` purge ở WP8,
+    // `brightness_gear` owner xoá lượt này. Cùng lượt, `camera_view` xoá nên `cam` cũng không còn ai để trùng.
+    // ⇒ Toàn bộ nợ "hai nút một byte" của dự án đã đóng. Bài `danh sach no xe khong duoc muc rua` giữ nguyên tác
+    // dụng: thêm một cặp trùng mới mà không khai vào đây là ĐỎ, nên bảng rỗng không nới luật cho ai.
 
     // ── P0: khoá cửa ─────────────────────────────────────────────────────────────────────────────
 
@@ -145,7 +149,10 @@ class ControlWriteArgsTest {
             emptyList<Set<String>>(), stale,
             "cặp này KHÔNG còn trùng tham số nữa ⇒ đã sửa được thì xoá khỏi COLLISION_PENDING_CAR",
         )
-        assertEquals(1, COLLISION_PENDING_CAR.size, "còn đúng 1 cặp nợ xe; thêm cặp mới phải là quyết định tường minh")
+        // ⚠⚠ 1.90 2026-09-21: **0** — nợ "hai nút một byte" của dự án đã đóng hết (xem KDoc COLLISION_PENDING_CAR).
+        // Ghim 0 chứ không xoá dòng: thêm một cặp trùng mới vẫn phải là quyết định TƯỜNG MINH, và bài này là chỗ nó
+        // bị chặn lại.
+        assertEquals(0, COLLISION_PENDING_CAR.size, "không còn cặp nợ xe nào; thêm cặp mới phải là quyết định tường minh")
     }
 
     /**
@@ -220,11 +227,8 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(2), args("drl", 0), "tắt DRL → CLOSE=2 (KHÔNG phải 0)")
     }
 
-    @Test fun `EV HEV setEnergyMode EV=1 HEV=3`() {
-        assertEquals("BYDAutoEnergyDevice.setEnergyMode", ControlRegistry.byId("powertrain_mode")!!.bindingKey)
-        assertArrayEquals(intArrayOf(1), args("powertrain_mode", 0), "args[0]=EV → ENERGY_MODE_EV=1")
-        assertArrayEquals(intArrayOf(3), args("powertrain_mode", 1), "args[1]=HEV → ENERGY_MODE_HEV=3 (KHÔNG phải index 1)")
-    }
+    // ⚠ 1.90 2026-09-21: bài `EV HEV setEnergyMode EV=1 HEV=3` đã gỡ cùng nút `powertrain_mode` (owner: xe thuần
+    // điện) — và cùng nhánh `writeArgs` của nó. Hai datum `op_mode`/`energy_mode` cũng xoá, không đi qua writeArgs.
 
     // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `che do lai setOperationMode map index UI sang enum` đã gỡ cùng nút
     // `drive_mode` (owner chấm NO) — và cùng nhánh `writeArgs` của nó. Ô ĐỌC `op_mode` không đi qua writeArgs.
@@ -250,16 +254,17 @@ class ControlWriteArgsTest {
         assertEquals("BYDAutoADASDevice.setAVMSwitchState", ControlRegistry.byId("cam")!!.bindingKey)
         assertArrayEquals(intArrayOf(2), args("cam", 1), "bật camera → AVM_FUNCTION_ON=2")
         assertArrayEquals(intArrayOf(1), args("cam", 0), "tắt camera → AVM_FUNCTION_OFF=1")
-        assertEquals("BYDAutoPanoramaDevice.setDisplayMode", ControlRegistry.byId("camera_view")!!.bindingKey)
-        assertArrayEquals(intArrayOf(2), args("camera_view", 2), "góc camera gửi index thô (NEEDS-ONCAR map enum)")
+        // ⚠ 1.90: vế `camera_view` gỡ cùng nút (owner 2026-09-21) ⇒ `cam` nay là nút camera DUY NHẤT, không còn
+        // ai để "tách khỏi". Vế enum ON=2/OFF=1 của `cam` ở trên là phần còn giá trị của bài này.
     }
 
-    @Test fun `headl bo id trung voi headlight_mode - hai nut khong con cung mot byte`() {
+    @Test fun `headl van la NEEDS-ONCAR va khong gui mu, sau khi headlight_mode bi xoa`() {
+        // ⚠ 1.90 2026-09-21 — bài này ĐỔI VẾ: `headlight_mode` bị owner xoá nên không còn cặp để so. Phần CÒN giá
+        // trị là nửa sau của bất biến cũ: `headl` đã bị gỡ feature-id (NEEDS-ONCAR) nên nó **không gửi gì mù** lên
+        // bus. Nếu ai đó dán lại một id cho `headl` mà chưa đo trên xe thì bài này ĐỎ — đúng thứ nó sinh ra để canh.
         val headl = ControlRegistry.byId("headl")!!
-        val mode = ControlRegistry.byId("headlight_mode")!!
-        assertEquals("1276153912", mode.bindingKey, "headlight_mode giữ INSTRUMENT_HEADLIGHT_CONTROL_SET")
-        assertEquals("BYDAutoInstrumentDevice", mode.halDevice, "id thuộc INSTRUMENT(1007), không phải LIGHT")
-        assertTrue(headl.bindingKey != mode.bindingKey, "headl không được dùng chung id nữa")
+        assertNull(ControlRegistry.byId("headlight_mode"), "`headlight_mode` đã xoá ở 1.90")
+        assertEquals("INSTRUMENT_HEADLIGHT_ON_OFF", headl.bindingKey, "headl giữ khoá TÊN HẰNG, không phải id số")
         assertEquals(BindingRoute.None, HalBindingTable.routeOf(headl.bindingKey), "headl NEEDS-ONCAR → None (không gửi mù)")
         assertEquals(EvidenceTier.NEEDS_CAR, headl.tier)
     }

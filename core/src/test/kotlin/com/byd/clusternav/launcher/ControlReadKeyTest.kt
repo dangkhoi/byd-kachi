@@ -100,7 +100,9 @@ class ControlReadKeyTest {
     fun `sau nut cua lich T2 da noi het, ba nut CHUA BIET van con rong`() {
         // Hai chiều, và cả hai đều là **hợp đồng với KDoc lớp này**: nối thiếu một nút T2 ⇒ ĐỎ (đúng phần scope
         // owner nói *"làm hết toàn bộ"*); lặng lẽ đoán một getter cho ba mã còn [CHƯA BIẾT] ⇒ cũng ĐỎ.
-        listOf("seatc", "seath", "defrost", "defrost_rear", "ac_auto", "vol").forEach { id ->
+        // ⚠ 1.90 · `vol` rời danh sách này vì **nút đã xoá** (owner 2026-09-21) — không phải vì mất đường đọc.
+        // Đường `AudioManager` vẫn sống ở datum `media_vol`; ca riêng ở cuối tệp nay đo trên datum đó.
+        listOf("seatc", "seath", "defrost", "defrost_rear", "ac_auto").forEach { id ->
             assertTrue(
                 ControlRegistry.byId(id)!!.readKey.isNotBlank(),
                 "$id nằm trong lịch T2 (getter đã ĐO trên xe 2026-09-16) mà vẫn chưa có đường đọc",
@@ -136,10 +138,13 @@ class ControlReadKeyTest {
         // đều nằm trong nhóm chưa có đường đọc, nên độ phủ tương đối còn TĂNG (17/54 → 17/47).
         // ⚠ WP8 2026-09-20: 47 → 39 nút (owner purge 8). [ĐO] độ phủ GIỮ NGUYÊN **17** — cả 8 nút bị gỡ đều nằm
         // trong nhóm chưa có đường đọc, nên độ phủ tương đối TĂNG (17/47 = 36 % → 17/39 = 44 %).
-        assertEquals(38, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
+        // ⚠⚠ 1.90 2026-09-21: 38 → **29** nút (owner gỡ 9 cho xe thuần điện). Lần này độ phủ **GIẢM 2**: `vol`
+        // (đọc qua `AudioManager`) và `anion` (đọc `anion_state`) đều đang có đường đọc, bảy nút còn lại thì không
+        // ⇒ 17 → **15**. Tỉ lệ vẫn TĂNG (44 % → 15/29 = 52 %). Ghi cả hai vế ra để không ai tưởng là mất binding.
+        assertEquals(29, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
-            17, wired.size,
-            "độ phủ đường đọc đổi (thấy ${wired.size}/39; chưa có đường đọc: ${blind.sorted()}). " +
+            15, wired.size,
+            "độ phủ đường đọc đổi (thấy ${wired.size}/29; chưa có đường đọc: ${blind.sorted()}). " +
                 "Sửa dòng T2 trong docs/specs/kachi-live-state-ux.html NGAY trong lượt này (R2.1), đừng chỉ sửa số ở đây.",
         )
     }
@@ -257,7 +262,7 @@ class ControlReadKeyTest {
             "defrost" to ("getAcDefrostState" to 1),
             "defrost_rear" to ("getAcDefrostState" to 2),
             "ac_auto" to ("getAcWindLevelManualSign" to null),   // 1.85: chỉ báo GIÓ auto, xem ca riêng ở §5
-            "vol" to ("getStreamVolume" to null),
+            // ⚠ 1.90 · `vol` → `getStreamVolume` gỡ cùng nút (owner 2026-09-21); đường Local đo ở ca cuối tệp.
         ).forEach { (id, expect) ->
             val path = readPathOf(id)!!
             assertEquals(expect.first, path.key.substringAfter('.'), "$id đọc sai getter")
@@ -278,10 +283,19 @@ class ControlReadKeyTest {
 
     @Test
     fun `am luong doc bang AudioManager cua Android, khong cham HAL xe`() {
-        // [BindingRoute.Local] — đường duy nhất trong registry không đi qua BYDAuto. Gateway giả mồi CẢ một getter
+        // [BindingRoute.Local] — đường duy nhất trong bộ đăng ký không đi qua BYDAuto. Gateway giả mồi CẢ một getter
         // HAL trùng tên: nếu code đi nhầm sang đường HAL thì nó đọc ra 30 và ca này ĐỎ.
+        //
+        // ⚠ 1.90 · đo trên **datum `media_vol`** thay vì nút `vol` (nút đã xoá 2026-09-21). Bất biến cần canh
+        // KHÔNG đổi — nó là *"đường Local phải đi qua AudioManager, không mượn HAL xe"* — và nó vẫn còn chỗ dùng
+        // thật (ô đọc *"Âm lượng giải trí"*). Xoá cả ca này thì lượt gỡ nút lấy luôn phép canh của một đường khác.
         val gw = FakeHalGateway(locals = mapOf("getStreamVolume" to "12"), getters = mapOf("getStreamVolume" to "30"))
-        assertEquals(12, HalBindingTable(gw).readState("vol"))
-        assertEquals(BindingRoute.Local("AudioManager", "getStreamVolume"), HalBindingTable.routeOf(readPathOf("vol")!!.key))
+        // ⚠ `readState` là cửa của NÚT (`ControlRegistry.byId`), nên datum phải đọc qua `readInt` — cùng hàm mà
+        // `CarDataAdapter` dùng cho ô đọc. Đây chính là chỗ bản vá đầu của lượt 1.90 sai và bài này bắt được.
+        assertEquals(12, HalBindingTable(gw).readInt("media_vol"))
+        assertEquals(
+            BindingRoute.Local("AudioManager", "getStreamVolume"),
+            HalBindingTable.routeOf(TelemetryRegistry.byId("media_vol")!!.bindingKey),
+        )
     }
 }

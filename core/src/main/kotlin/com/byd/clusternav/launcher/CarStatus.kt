@@ -63,8 +63,8 @@ data class CarStatus(
     data class Drivetrain(
         val speedKmh: Int? = null,
         val gear: String? = null,
-        val opMode: String? = null,
-        val energyMode: String? = null,
+        // ⚠ 1.90 · `opMode`/`energyMode` xoá cùng hai datum `op_mode`/`energy_mode` (owner 2026-09-21 — xe thuần
+        // điện; xem nhật ký ở `TelemetryRegistry`). Trường nullable không ai đọc là một cột "—" vĩnh viễn.
     )
 
     /** A3 — khí hậu / không khí. */

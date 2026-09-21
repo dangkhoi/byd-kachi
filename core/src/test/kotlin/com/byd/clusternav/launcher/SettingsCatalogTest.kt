@@ -262,23 +262,24 @@ class SettingsCatalogTest {
                 // gói 61 MB: trạng thái đọc **từ đĩa** (`VoiceModelStore.isReady`), không có pref nào để nhớ.
                 // Hai công tắc đi kèm (`voice_speak_replies` · `voice_prefer_offline`) thì CÓ khoá nên không ở đây.
                 "voice_tts_pack",
-                // VOICE-HOTFIX 1.69 — hai VIỆC LÀM mới của đường giọng nói, cùng họ `voice_tts_pack`:
-                //  • `voice_log_export` nén thư mục `files/voice-log/` ra `Download/` rồi hiện đường dẫn — kết quả
-                //    là một TỆP, không có gì để nhớ. (Công tắc đi kèm `voice_keep_log` thì CÓ khoá nên không ở đây.)
-                //  • `voice_model_light` tải 4 tệp int8 rồi đổi `selected` — trạng thái đọc **từ đĩa** qua
-                //    `VoiceModelStore`, đúng như `voice_tts_pack`.
-                "voice_log_export", "voice_model_light",
+                // ⚠ VOICE-HOTFIX 1.69 từng có thêm hai VIỆC LÀM ở đây; cả hai đã rời DANH MỤC 2026-09-21 (bản
+                // release production):
+                //  • `voice_log_export` (nén `voice-log/` ra `Download/`) — gỡ cùng ô tích `voice_keep_log` khi mọi
+                //    bề mặt dev/log rời màn Cài đặt; việc nén vẫn còn, qua lệnh cầu `voice_dump`.
+                //  • `voice_model_light` (tải 4 tệp int8 rồi đổi `selected`) — danh mục mô hình nghe thu về ĐÚNG MỘT
+                //    gói (owner chốt dừng thử nghiệm mô hình), nên bề mặt chọn-mô-hình không còn gì để chọn giữa.
                 "system_permissions",
                 // S5 — nút "Đặt Kachi làm màn hình chính" là VIỆC LÀM (gọi `cmd package set-home-activity`), không
                 // lưu khoá nào; trạng thái đọc live từ PackageManager. Công tắc `system_keep_home_on_boot` thì CÓ
                 // khoá (`keep_home_on_boot`) nên KHÔNG nằm ở đây.
                 "system_default_home",
                 "system_update", "system_nav_stop",
-                "system_vietmap_data", "system_diagnostics",
+                // ⚠ `system_vietmap_data` + `system_diagnostics` cũng rời danh mục 2026-09-21 (cùng lượt dọn dev UI);
+                // hai màn ấy vẫn mở được bằng `am start -n <gói>/<lớp>`.
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "hai mươi mốt mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười bảy mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

@@ -73,11 +73,9 @@ object SherpaSpokenWords {
         "den chieu xa" to "đèn chiếu xa",
         "gio trong" to "gió trong",
         "tuan hoan trong" to "tuần hoàn trong",
-        "tieng" to "tiếng",
-        "am thanh" to "âm thanh",
-        "chieu" to "chiếu",
-        "chieu len cum" to "chiếu lên cụm",
-        "chieu man" to "chiếu màn",
+        // ⚠ 1.90 · dạng có dấu của `vol` (*"tiếng"/"âm thanh"*) và `cast` (*"chiếu"/"chiếu lên cụm"/"chiếu màn"*)
+        // gỡ cùng hai nút (owner 2026-09-21). `SherpaBiasingCoverageTest` đỏ HAI CHIỀU, nên phải gỡ ở đây nữa.
+        // (*"đèn chiếu xa"* ở trên là cách nói của `headl` — nút đó còn, cụm đó Ở LẠI.)
         "dieu hoa" to "điều hòa",
         "may lanh" to "máy lạnh",
         "dieu hoa tu dong" to "điều hòa tự động",
@@ -97,12 +95,8 @@ object SherpaSpokenWords {
         "kinh ghe lai" to "kính ghế lái",
         "kinh ben phu" to "kính bên phụ",
         "kinh ghe phu" to "kính ghế phụ",
-        "do sang man hinh" to "độ sáng màn hình",
-        "sang man" to "sáng màn",
+        // ⚠ 1.90 · dạng có dấu của `brightness_gear` và `powertrain_mode` gỡ cùng hai nút (owner 2026-09-21).
         "loc khong khi ngay" to "lọc không khí ngay",
-        "che do dong co" to "chế độ động cơ",
-        "xang dien" to "xăng điện",
-        "che do nang luong" to "chế độ năng lượng",
         "pin" to "pin",
         "phan tram pin" to "phần trăm pin",
         "muc pin" to "mức pin",
@@ -178,7 +172,7 @@ object SherpaSpokenWords {
         // ⚠ 1.85: "nap ca po"/"nap may" đã xoá cùng nút `hood` — bảng này KHÔNG được giữ mục chết
         // (`SherpaBiasingCoverageTest` đỏ hai chiều: thiếu dạng có dấu, và có dạng có dấu mà cụm đã biến mất).
         "say kieng sau" to "sấy kiếng sau",
-        "khu mui" to "khử mùi",
+        // ⚠ 1.90 · dạng có dấu của `anion` (*"khử mùi"*) gỡ cùng nút (owner 2026-09-21).
         "vo lang nong" to "vô lăng nóng",
         "rem noc" to "rèm nóc",
         "man che nang" to "màn che nắng",
@@ -193,11 +187,88 @@ object SherpaSpokenWords {
         // [ĐO] bản đầu viết *"gió au-tô"* (cách ĐỌC) ⇒ bỏ dấu ra "gio au-to" ≠ "gio auto" ⇒ đỏ đúng chỗ. Cách đọc
         // là việc của `TtsPronunciation`, không phải của bảng bias.
         "gio auto" to "gió auto",
-        "kieu den pha" to "kiểu đèn pha",
+        // ⚠ 1.90 · dạng có dấu của `headlight_mode` · `screen_rotation` · `camera_view` · `cluster_music` gỡ cùng
+        // bốn nút (owner 2026-09-21).
         "sac dien thoai" to "sạc điện thoại",
-        "huong man hinh" to "hướng màn hình",
-        "huong camera" to "hướng camera",
-        "nhac tren dong ho" to "nhạc trên đồng hồ",
+
+        // ═══ 1.91 · MỞ RỘNG DICTIONARY (owner 2026-09-21: *"nhiều câu tương tự nhau cho 1 command"*) ══════════
+        // Dạng CÓ DẤU của các cách nói mới ở [VoiceSynonyms]. Bảng này **chỉ được viết lại dấu** — bài canh
+        // `dang co dau phai bo dau ra dung khoa cua no` ép `deaccent(giá trị) == khoá`, nên đây không phải chỗ
+        // đẻ cách nói mới. Chỗ đặt dấu theo kiểu MỚI ở âm tiết MỞ (`khóa` không phải `khoá`) — bài canh
+        // `luat dat dau chi ap cho am tiet MO` ép luôn.
+        // ── VIỆC 1 · nhánh *"cửa sổ" / "cửa kính"* của nút GỘP 4 kính (sửa bug *"mở hết cửa sổ"*) ────────────
+        "het cua so" to "hết cửa sổ",
+        "toan bo cua so" to "toàn bộ cửa sổ",
+        "tat ca cua so" to "tất cả cửa sổ",
+        "moi cua so" to "mọi cửa sổ",
+        "bon cua so" to "bốn cửa sổ",
+        "het cua kinh" to "hết cửa kính",
+        "toan bo cua kinh" to "toàn bộ cửa kính",
+        "tat ca cua kinh" to "tất cả cửa kính",
+        "bon cua kinh" to "bốn cửa kính",
+        "tat ca kieng" to "tất cả kiếng",
+        // ── VIỆC 2 · thân xe · khoá · cốp · cửa ──────────────────────────────────────────────────────────────
+        "khoa het cua" to "khóa hết cửa",
+        "chot xe" to "chốt xe",
+        "mo chot cua" to "mở chốt cửa",
+        "cop hau" to "cốp hậu",
+        "cua cop" to "cửa cốp",
+        "khoang hanh ly" to "khoang hành lý",
+        // ── kính từng cửa + cửa sổ trời + rèm ────────────────────────────────────────────────────────────────
+        "kinh nguoi lai" to "kính người lái",
+        "cua so tai xe" to "cửa sổ tài xế",
+        "kieng ben lai" to "kiếng bên lái",
+        "kieng ben phu" to "kiếng bên phụ",
+        "kinh noc" to "kính nóc",
+        "rem troi" to "rèm trời",
+        "che nang" to "che nắng",
+        // ── đèn ──────────────────────────────────────────────────────────────────────────────────────────────
+        "den cabin" to "đèn cabin",
+        "chieu xa" to "chiếu xa",
+        "den lon" to "đèn lớn",
+        "den chay ban ngay" to "đèn chạy ban ngày",
+        // ── ghế mát / ghế sưởi / vô-lăng ─────────────────────────────────────────────────────────────────────
+        "mat ghe" to "mát ghế",
+        "mat dit" to "mát đít",
+        "mat mong" to "mát mông",
+        "thoi mat ghe" to "thổi mát ghế",
+        "ghe lai mat" to "ghế lái mát",
+        "am ghe" to "ấm ghế",
+        "lam am ghe" to "làm ấm ghế",
+        "suoi dit" to "sưởi đít",
+        "suoi mong" to "sưởi mông",
+        "vo lang am" to "vô lăng ấm",
+        "lam am vo lang" to "làm ấm vô lăng",
+        // ── điều hòa · gió · nhiệt · sấy · lọc ───────────────────────────────────────────────────────────────
+        "quat tu dong" to "quạt tự động",
+        "lam mat xe" to "làm mát xe",
+        "do nong" to "độ nóng",
+        "nhiet do xe" to "nhiệt độ xe",
+        "muc quat" to "mức quạt",
+        "toc do gio" to "tốc độ gió",
+        "gio dieu hoa" to "gió điều hòa",
+        "tan suong" to "tan sương",
+        "khu suong" to "khử sương",
+        "say kinh hau" to "sấy kính hậu",
+        "tuan hoan gio" to "tuần hoàn gió",
+        "tuan hoan khi" to "tuần hoàn khí",
+        "khu bui" to "khử bụi",
+        "loc khi" to "lọc khí",
+        "loc gap" to "lọc gấp",
+        "camera toan canh" to "camera toàn cảnh",
+        "de sac" to "đế sạc",
+        // ── thông tin đọc ────────────────────────────────────────────────────────────────────────────────────
+        "dung luong pin" to "dung lượng pin",
+        "quang duong con lai" to "quãng đường còn lại",
+        "toc do xe" to "tốc độ xe",
+        "nhiet do ben ngoai" to "nhiệt độ bên ngoài",
+        "muc bui min" to "mức bụi mịn",
+        "so km xe da chay" to "số km xe đã chạy",
+        "binh xang" to "bình xăng",
+        "lop truoc trai" to "lốp trước trái",
+        "lop truoc phai" to "lốp trước phải",
+        "lop sau trai" to "lốp sau trái",
+        "lop sau phai" to "lốp sau phải",
         "con chay duoc bao nhieu" to "còn chạy được bao nhiêu",
         "xang con chay duoc bao xa" to "xăng còn chạy được bao xa",
         // [ĐO xe 2026-09-18] ba cách nói về nhiên liệu (log: «chỉ số xăng» · «xăng còn bao nhiêu» ra Unknown).
@@ -270,10 +341,16 @@ object SherpaSpokenWords {
         "cabin light",
         "cabin temperature",
         "camera 360 do",
-        "cast cluster",
         "central lock",
         "clean air now",
         "destination",
+        // 1.91 — chữ tắt/chữ Anh của hai nút vừa được mở rộng cách nói: mô hình VN không phát ra token ấy.
+        "drl",
+        "sunroof",
+        // 1.91 — dạng viết bằng CHỮ SỐ của nút gộp 4 kính. [SherpaHotwords] bỏ token số, nên bias chúng vô nghĩa
+        // (cùng luật `camera 360 do` ở trên); tầng CHỮ vẫn khớp, nên *"mở 4 cửa sổ"* gõ vào vẫn ra cả bốn.
+        "4 cua so",
+        "4 kinh",
         "every window",
         "high beam",
         "lock car",
@@ -290,7 +367,6 @@ object SherpaSpokenWords {
         "track",
         "unlock",
         "unlock car",
-        "volume",
         "windows",
         // ── H3 · tên app viết NGUYÊN BẢN tiếng Anh ───────────────────────────────────────────────────
         // Cùng lý do với khối trên, có thêm một phép đo: [ĐO] `voice-mishear-2026-09-16.md` §4 — kiểu nói

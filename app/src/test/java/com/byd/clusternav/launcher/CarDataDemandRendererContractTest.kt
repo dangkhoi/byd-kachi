@@ -48,9 +48,20 @@ class CarDataDemandRendererContractTest {
     }
 
     // ── 1. field CarStatus → mã datum, đọc ngược từ TelemetryReadout ─────────────────────────────────────
-    /** `"soc" -> s.energy.soc?.toString()` ⇒ `energy.soc` → `soc`. */
+    /**
+     * `"soc" -> s.energy.soc?.toString()` ⇒ `energy.soc` → `soc`.
+     *
+     * Đọc **HAI dạng nhánh**, vì `TelemetryReadout` có hai bảng `when` từ lượt ICON-STATE (2026-09-21):
+     *  • `format`: `"soc" -> s.energy.soc?.toString()`
+     *  • `boolOf`: `"ac_on" -> Bool(s.climate.acOn)` — 13 datum bật/tắt đã dời sang đây để chip lấy được cờ
+     *    [TelemetryView.onOff] mà không phải so chuỗi `"Bật"`/`"Tắt"`.
+     *
+     * ⚠ Phải phủ CẢ HAI: bỏ dạng thứ hai thì bảng này thiếu 13 field và hai bài dưới **under-report** (chúng chỉ
+     * kiểm `declared.containsAll(rendered)`, nên `rendered` hụt là bài xanh giả). [ĐO] đúng lúc 13 datum dời đi,
+     * sàn tự-kiểm ở dưới tụt 73 → 60 và bắt được ngay — sửa bằng cách đọc đủ, KHÔNG bằng cách hạ sàn.
+     */
     private val fieldToId: Map<String, String> by lazy {
-        val re = Regex("""^\s*"([a-z0-9_]+)"\s*->\s*s\.(\w+)\.(\w+)""", RegexOption.MULTILINE)
+        val re = Regex("""^\s*"([a-z0-9_]+)"\s*->\s*(?:Bool\()?s\.(\w+)\.(\w+)""", RegexOption.MULTILINE)
         val m = re.findAll(source("core/src/main/kotlin/com/byd/clusternav/launcher/TelemetryReadout.kt"))
             .associate { "${it.groupValues[2]}.${it.groupValues[3]}" to it.groupValues[1] }
         // Sàn 100 → 88 sau (V) FEATURE-FILTER 2026-09-17 (112 → 100 datum; 12 nhánh `when` rụng theo).

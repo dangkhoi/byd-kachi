@@ -308,19 +308,25 @@ internal object SettingsCatalogEntries {
             "voice_mic_source", "Microphone source",
         ),
         // ── H2/H6 (1.69) — nhật ký lượt nói + đổi mô hình nghe ──
-        // R-H2 — ô tích GIỮ NHẬT KÝ, mặc định BẬT (owner cần dữ liệu thật trên đường; off-car chỉ có 25 tệp TTS
-        // macOS, mà CLAUDE.md §2 đã ghi số đo trên tập ấy không nói gì về cabin thật). Tiếng nằm trong `filesDir`,
-        // không ra mạng, vòng đệm 30 mục / 30 MB — ba tính chất đo được từ mã, xem `VoiceUtteranceLog`.
-        SettingsEntry(
-            "voice_keep_log", SettingsGroup.VOICE, "Giữ nhật ký lượt nói",
-            "voice_keep_log", "Keep a log of what you say",
-        ),
-        // Không lưu khoá: đây là NÚT nén `voice-log/` ra `Download/` (cùng lối `voice_tts_pack`). Người dùng cắm
-        // USB chép hoặc gửi Zalo — đường DUY NHẤT tiếng rời khỏi xe, và nó luôn do một cú bấm của họ.
-        SettingsEntry("voice_log_export", SettingsGroup.VOICE, "Xuất nhật ký voice", labelEn = "Export the voice log"),
-        // Không lưu khoá: hai NÚT của H6 (chuyển sang mô hình nhẹ · gỡ bản nặng). Lựa chọn mô hình lưu ở tệp prefs
-        // RIÊNG của `VoiceModelStore` (`kachi_voice`), không phải `clusternav_prefs` — nên ở đây chỉ có mục UI.
-        SettingsEntry("voice_model_light", SettingsGroup.VOICE, "Mô hình nghe nhẹ (int8)", labelEn = "Light recognition model"),
+        //
+        // ⚠ `voice_keep_log` (ô tích *Giữ nhật ký lượt nói*) + `voice_log_export` (nút *Xuất nhật ký voice*) đã XOÁ
+        // 2026-09-21 (owner, bản release production): `VoiceModelSettings.logRows` — nơi DỰNG cả hai — đã gỡ cùng
+        // lượt dọn mọi bề mặt dev/debug/log khỏi màn Cài đặt. Danh mục này là bản đồ **của màn hình**, và
+        // `SettingsCatalogControlContractTest` canh hai chiều *"mục ⇔ điều khiển có thật"*, nên để mục ở lại là
+        // dựng một lời hứa rỗng ở rail — đúng bệnh mà cả danh mục sinh ra để chữa.
+        //
+        // KHẢ NĂNG thì KHÔNG mất, chỉ bề mặt mất — và khoá vẫn còn nguyên chủ ở chỗ khác:
+        //   • `voice_keep_log` vẫn **mặc định BẬT**, `VoiceUtteranceLog` vẫn ghi; khoá chuyển sang
+        //     [SettingsCatalogClusterNav.HIDDEN_KEYS] (*"cố ý không có UI"*, kèm lý do) và đọc/ghi qua
+        //     `prefs_set --es key voice_keep_log`;
+        //   • xuất zip vẫn là lệnh cầu `voice_dump` (`TestBridgeVoiceDump` → cùng `VoiceUtteranceLog.exportZip`).
+        //
+        // `voice_model_light` (hai nút *chuyển sang mô hình nhẹ* / *gỡ bản nặng*) cũng rời danh mục CÙNG LƯỢT, vì
+        // lý do khác hai mục trên: nó không phải đồ đo, nó là một bề mặt **chọn mô hình** — và danh mục mô hình
+        // nghe nay chỉ còn ĐÚNG MỘT gói (`SherpaModelCatalog.ALL`, owner chốt dừng thử nghiệm), nên không còn gì
+        // để chọn giữa. `VoiceModelSettings.lightModelRows` — nơi dựng hai nút — đã gỡ. Hàng *trạng thái + Tải/Gỡ*
+        // của gói duy nhất thì Ở LẠI (mục `voice_model` không tồn tại từ trước: nó thuộc khối dựng tay cùng
+        // `voice_tts_pack`).
         // ── Hệ thống & quyền ──
         // Không lưu gì: hàng quyền chỉ ĐỌC trạng thái thật rồi tự xin lại (xem [LauncherRequirements]).
         SettingsEntry("system_permissions", SettingsGroup.SYSTEM, "Quyền còn thiếu", labelEn = "Missing permissions"),
@@ -356,10 +362,13 @@ internal object SettingsCatalogEntries {
         // ⚠ `system_advanced_screen` (mở màn ClusterNav cũ) đã XOÁ 2026-09-13 — màn đó bị gỡ hẳn
         // (docs/specs/kachi-remove-legacy-screen.html R1, đóng OQ1 của IA v2). Không có mục thay thế: mọi cấu
         // hình của nó đã nằm ở các nhóm nav/cast/keys/car từ IA v2 và ghi đúng cùng khoá.
-        // btn_vietmap_widget_diag · kiểm dữ liệu/widget VietMap — VIỆC LÀM
-        SettingsEntry("system_vietmap_data", SettingsGroup.SYSTEM, "Dữ liệu VietMap", labelEn = "VietMap data"),
-        // cast_diagnostics · ClusterDiag/DiagActivity — VIỆC LÀM
-        SettingsEntry("system_diagnostics", SettingsGroup.SYSTEM, "Chẩn đoán và nhật ký", labelEn = "Diagnostics and logs"),
+        //
+        // ⚠ `system_vietmap_data` (btn_vietmap_widget_diag) + `system_diagnostics` (cast_diagnostics/DiagActivity)
+        // đã XOÁ 2026-09-21 (owner, bản release production): mọi bề mặt dev/debug/log gỡ khỏi màn Cài đặt, còn lại
+        // ĐÚNG `system_test_bridge` ngay dưới. Danh mục này canh *"mục khai ở đây phải có một điều khiển trên
+        // màn"* (`SettingsCatalogControlContractTest`) ⇒ giữ mục cho một hàng không còn tồn tại là để rail hứa một
+        // trang trống. Hai màn ấy vẫn mở được qua adb (`am start -n <gói>/<lớp Activity>`), tức KHẢ NĂNG không mất,
+        // chỉ bề mặt mất — cùng lẽ với `voice_keep_log`/`voice_log_export` ở nhóm Giọng nói trên.
         // T-BRIDGE · `KachiTestBridge` — công tắc mở **cầu kiểm thử qua adb** (docs/specs/kachi-test-bridge.html).
         // ⚠ Khoá `test_bridge_until` là TRANSIENT, không phải một sở thích: nó tự hết hạn sau 60 phút và chết theo
         // lần nổ máy (xem `TestBridgeWindow`). Đứng ở "Nâng cao" cạnh hai màn chẩn đoán vì cùng loại — một chỗ ĐO,

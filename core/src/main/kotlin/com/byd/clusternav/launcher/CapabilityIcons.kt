@@ -65,9 +65,10 @@ object CapabilityIcons {
         // "Drive mode" mà một cái là núm chọn, một cái là cần số — người dùng đọc ra hai việc khác nhau.
         //   • chế độ lái  → núm chọn
         //   • chế độ năng lượng → tia sét (nút `powertrain_mode` "EV / HEV" đã mang tia sét từ trước)
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `drive_mode` và ô `drift_mode` đã xoá; `op_mode` (ĐỌC) ở lại và
-        // nay là mục DUY NHẤT mang hình núm chọn trong lĩnh vực Động lực.
-        "op_mode" to "ic-mode", "energy_mode" to "ic-bolt",
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `drive_mode` và ô `drift_mode` đã xoá.
+        // ⚠⚠ 1.90 · `op_mode` và `energy_mode` cũng xoá (owner 2026-09-21 — xe thuần điện) ⇒ lĩnh vực Động lực
+        // nay KHÔNG còn mục nào mang hình núm chọn; `ic-mode` chỉ còn phục vụ nhóm Khí hậu (`ac_mode_auto` ·
+        // `ac_wind_auto`) — xem hai chỗ dùng bên dưới.
         // ── Khí hậu: bụi ≠ nhiệt ≠ quạt ──
         // U6: nước làm mát là mạch ĐỘNG CƠ, không phải không khí cabin ⇒ ký hiệu nhiệt-kế-trên-sóng chuẩn táp-lô.
         // U6: nhóm Khí hậu có BỐN thứ đo bằng nhiệt kế (kể cả nút "Nhiệt độ") — cái duy nhất không nói về không

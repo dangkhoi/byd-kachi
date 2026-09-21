@@ -1,6 +1,8 @@
 package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
@@ -84,19 +86,27 @@ class CarDataAdapterTest {
 
     // ═══ controls map — giá trị THẬT của Ô ĐIỀU KHIỂN đang hiện (2026-09-17 · realtime) ══════════════════
 
-    @Test fun `readSlow doc gia tri THAT cho nut dang hien`() {
+    @Test fun `readFast doc gia tri THAT cho nut dang hien (realtime #5)`() {
         // Xe đặt gió mức 3 ở màn BYD gốc → launcher phải NHẬN 3 (không giữ mặc định RAM 4). Đọc qua readState(fan).
         val a = CarDataAdapter(
             HalBindingTable(FakeHalGateway(getters = mapOf("getAcWindLevel" to "3"))),
             controlDemand = { setOf("fan") },
         )
-        assertEquals(3, a.readSlow(CarStatus()).controls["fan"], "ô Gió phải đọc mức THẬT của xe, không dùng RAM")
+        assertEquals(3, a.readFast(CarStatus()).controls["fan"], "ô Gió phải đọc mức THẬT của xe (nhịp NHANH #5), không dùng RAM")
     }
 
-    @Test fun `readSlow giu gia tri cu khi khong con trong nhu cau`() {
+    @Test fun `fastNeeded bat khi co o control (setpoint realtime #5)`() {
+        // Ô nhiệt/gió trên màn ⇒ nhịp NHANH phải chạy để đọc setpoint trong ~1s (không chờ 10s nhịp chậm).
+        val a = CarDataAdapter(HalBindingTable(FakeHalGateway()), demand = { emptySet() }, controlDemand = { setOf("temp") })
+        assertTrue(a.fastNeeded(), "có ô control có readKey ⇒ nhịp nhanh phải bật")
+        val b = CarDataAdapter(HalBindingTable(FakeHalGateway()), demand = { emptySet() }, controlDemand = { emptySet() })
+        assertFalse(b.fastNeeded(), "không datum nhanh + không control ⇒ nhịp nhanh nghỉ")
+    }
+
+    @Test fun `readFast giu gia tri cu khi khong con trong nhu cau`() {
         // Nút rời khỏi màn một nhịp giao thời ⇒ GIỮ giá trị cũ (không xoá về "—").
         val a = CarDataAdapter(HalBindingTable(FakeHalGateway()), controlDemand = { emptySet() })
-        val s = a.readSlow(CarStatus(controls = mapOf("fan" to 5)))
+        val s = a.readFast(CarStatus(controls = mapOf("fan" to 5)))
         assertEquals(5, s.controls["fan"])
     }
 

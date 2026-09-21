@@ -91,7 +91,11 @@ class SherpaBiasingCoverageTest {
         // ⚠ (V) FEATURE-FILTER 2026-09-17: ca ĐÃ ĐO cũ là cặp «CHẾ ĐỘ LÁI THỂ THAO» / «CHẾ ĐỘ LÁI» của nút
         // `drive_mode` — nút đó đã gỡ theo lệnh owner. Cặp thay thế cùng CƠ CHẾ (nhãn nút SELECT + nhãn lựa
         // chọn) và vẫn còn sống: `headlight_mode` + lựa chọn *Auto*.
-        assertTrue("CHẾ ĐỘ ĐÈN PHA AUTO" in set); assertTrue("CHẾ ĐỘ ĐÈN PHA" !in set)
+        // ⚠ 1.90 2026-09-21: cặp `headlight_mode` + lựa chọn *Auto* cũng hết (nút đã xoá). Mốc thay thế cùng CƠ CHẾ
+        // (nhãn nút SELECT + nhãn lựa chọn) và còn sống: `seatc` ("Ghế mát") + lựa chọn *Mức 1*.
+        // [ĐO] tệp sinh ra là `GHẾ MÁT MỨC` (không có chữ số): `SherpaHotwords` bỏ token số, đúng luật đã khoá ở
+        // bài `dau cau tach nhan…`. Cặp cần canh vì thế là `GHẾ MÁT MỨC` (giữ) / `GHẾ MÁT` (phải rụng vì là tiền tố).
+        assertTrue("GHẾ MÁT MỨC" in set); assertTrue("GHẾ MÁT" !in set)
     }
 
     @Test
@@ -129,7 +133,9 @@ class SherpaBiasingCoverageTest {
         // được sửa khi (và chỉ khi) chúng đứng thành cụm, không có từ rời bên cạnh.
         // `BẬT ĐIỀU HOÀ` cố ý KHÔNG có: nó là tiền tố của `BẬT ĐIỀU HOÀ TỰ ĐỘNG` (luật dropPrefixes) — `BẬT MÁY LẠNH` thay.
         // `MỞ CỬA SỔ` cũng là tiền tố (`MỞ CỬA SỔ NÓC`) ⇒ `MỞ CÁC CỬA SỔ` thay.
-        listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "TĂNG ÂM LƯỢNG", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
+        // ⚠ 1.90 2026-09-21: «TĂNG ÂM LƯỢNG» rời danh sách vì nút `vol` bị owner xoá ⇒ không còn nhãn/cách nói nào
+        // sinh ra cụm ấy. Ca ĐÃ ĐO w12 vì thế không còn đối tượng; năm cụm còn lại vẫn là năm ca đo thật.
+        listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
             .forEach { assertTrue(it in hotwords, "thiếu cụm «$it» — xem spec kachi-voice-hotword-phrases") }
         // ⚠ *"mở khoá cửa"* chấp nhận CẢ HAI chỗ đặt dấu trong lúc chuyển tiếp (xem KDoc [luat dat dau…] dưới):
         // [SherpaSpokenWords] đã đổi sang kiểu MỚI (`KHÓA`), nhãn `ControlRegistry.door` thì do agent khác sửa.

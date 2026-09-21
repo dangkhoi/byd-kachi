@@ -147,10 +147,10 @@ object ControlRegistry {
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219340", readKey = "ac_wind",
             labelEn = "Fan"),
         // Có sẵn trong kho, mặc định TẮT (bật qua Tuỳ biến):
-        ControlDef("defrost", "Sấy kính", "ic-defrost", ControlKind.TOGGLE,
+        ControlDef("defrost", "Sấy kính trước", "ic-defrost", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362",
             readKey = "defrost_front_state",   // T2: đọc `getAcDefrostState(1)` — GHI vẫn là feature-id, khác đường
-            labelEn = "Defrost"),
+            labelEn = "Front defrost"),
         // [ĐO] `setAVMSwitchState(int)` BYDAutoADASDevice.java:348 — AVM_FUNCTION_OFF=1 / ON=2 (:34-35); args ở
         // HalBindingTable.writeArgs. Cũ pseudo-id `3001` không có trong BYDAutoFeatureIds (bịa) và trùng với camera_view.
         ControlDef("cam", "Camera 360", "ic-cam", ControlKind.TOGGLE,
@@ -198,13 +198,21 @@ object ControlRegistry {
             // `shortEn` vì nhãn Anh dài 20 ký tự — trong ô hàng nút của nhóm *Đèn* nó bị cắt thành `"Daytime
             // lights (D…"`. Bản Việt (12 ký tự, ba từ ngắn) tự ngắt dòng vừa nên không cần bản ngắn riêng.
             labelEn = "Daytime lights (DRL)", shortEn = "Daytime (DRL)"),
-        ControlDef("vol", "Âm lượng", "ic-volume", ControlKind.STEP, value = 12, min = 0, max = 30, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.PROVEN, bindingKey = "AudioManager.setStreamVolume",
-            readKey = "media_vol",   // T2: đọc bằng `getStreamVolume` của CHÍNH Android — không mượn HAL xe
-            labelEn = "Volume"),
-        ControlDef("cast", "Chiếu cụm", "ic-cast", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.DASHCAST, bindingKey = "AutoContainer.sendInfo",
-            labelEn = "Cast to cluster"),
+        // ⚠⚠ 1.90 · **`vol` (Âm lượng) và `cast` (Chiếu cụm) ĐÃ XOÁ HẲN** — owner chốt 2026-09-21 sau lượt sweep
+        // trên xe (`docs/diagnostics/oncar-sweep-verify-2026-09-21.md` §mã không dùng). Hai lý do KHÁC nhau:
+        //  • `vol`: âm lượng đã có núm cứng trên vô-lăng + thanh của chính Android; một ô STEP trong launcher là bề
+        //    mặt thứ ba cho cùng một việc. Datum ĐỌC `media_vol` (*"Âm lượng giải trí"*) **Ở LẠI** — nó trả lời câu
+        //    *"đang ở mức mấy"*, khác hẳn việc ĐỔI mức. Đừng gộp hai cái đó khi đọc nhật ký này.
+        //  • `cast`: [ĐO grep 2026-09-21] đường GHI của nó (`AutoContainer.sendInfo`) **chưa bao giờ được nối** —
+        //    `BydHalGateway.localSet` trả `false` cho `AutoContainer` kèm chú thích *"cast do SimpleCastRuntime sở
+        //    hữu, KHÔNG wire ở đây"*. Tức nút này là nút CHẾT từ đầu. Việc chiếu cụm THẬT nằm trọn ở
+        //    `SimpleCastRuntime`/`ClusterNavBridgeCast`/pref `cast_enabled` + nút nổi + nhóm Cài đặt › Chiếu màn
+        //    lên cụm, và [ĐO] cả gói `modules/clustercast` có **0** tham chiếu tới `ControlRegistry`/
+        //    `CapabilityCatalog`/`pick`/`kindOf` ⇒ xoá dòng này KHÔNG đụng tính năng chiếu cụm.
+        //    ⇒ Mục `HIDDEN_FROM_PICKER["cast"]` của WP8 cũng gỡ theo (giữ một mục ẩn cho mã đã chết là ghim
+        //    `HIDDEN_FROM_PICKER.size` vào một thứ hư — cùng lẽ đã ghi cho `hood` ở 1.85).
+        // Cả hai rời **khối nút GỐC** (sau `hood` 1.85 và `seat_memory` 1.89) ⇒ khối đó nay còn **17**.
+        // Ô/thanh nút của ai đã đặt chúng tự rụng khi nạp qua `WorkspaceState.sanitized()`.
 
         // ── MỞ RỘNG catalog §B (mặc định TẮT) ─────────────────────────────────────────────────────
         // Khí hậu
@@ -241,12 +249,8 @@ object ControlRegistry {
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219357",
             readKey = "defrost_rear_state",   // T2: `getAcDefrostState(2)`
             labelEn = "Rear defrost"),
-        ControlDef("anion", "Ion âm", "ic-leaf", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "1337982994", readKey = "anion_state",
-            // [ĐO] RE 2026-09-14 §4: PM25_ANION_STATE_SET thuộc PM2P5(1008), KHÔNG phải AC(1000) mà Domain.CLIMATE
-            // route tới. `setAutoCleanAirState` (PM2P5_SET) đã chạy trên xe ⇒ cổng chữ ký PM2P5 tin cậy cao.
-            halDevice = "BYDAutoPM2p5Device",
-            labelEn = "Negative ions"),
+        // ⚠ 1.90 · **`anion` (Ion âm) ĐÃ XOÁ** — owner chốt 2026-09-21: nút chưa verify được trên xe (sweep
+        // 09-21 xếp nó vào nhóm "mã không dùng"). Datum ĐỌC `anion_state` **Ở LẠI** — nhóm `g_climate` đọc nó.
         ControlDef("steer_heat", "Sưởi vô-lăng", "ic-seat", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setSteeringWheelHeatingState",
             labelEn = "Steering wheel heating"),
@@ -313,24 +317,12 @@ object ControlRegistry {
             halDevice = "BYDAutoDoorLockDevice",
             labelEn = "Child lock right", short = "Khóa trẻ P", shortEn = "Child lock R"),
         // Đèn
-        // [ĐO] 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET (BYDAutoFeatureIds.java) thuộc INSTRUMENT(1007) — Domain.LIGHTS
-        // route thô tới LIGHT(1004) là SAI ⇒ `halDevice` ghi đè. NEEDS-ONCAR: enum index↔giá trị (hiện gửi index thô).
-        ControlDef("headlight_mode", "Chế độ đèn pha", "ic-car-front-headlight-mode", ControlKind.SELECT,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276153912",
-            halDevice = "BYDAutoInstrumentDevice",
-            args = listOf("Tắt", "Auto", "Đỗ", "Cốt"),
-            labelEn = "Headlight mode", argsEn = listOf("Off", "Auto", "Parking", "Low beam")),
+        // ⚠ 1.90 · **`headlight_mode` (Chế độ đèn pha) ĐÃ XOÁ** — owner chốt 2026-09-21 (sweep 09-21: không dùng).
+        // Nút `headl` (bật/tắt đèn pha, NEEDS_CAR) ở trên VẪN CÒN. Hệ quả: cặp feature-id trùng `headl` ↔
+        // `headlight_mode` mà `CapabilityGroups.init` từng phải canh nay **tự hết** — chỉ còn một mã dùng id đó.
+        // ⚠ 1.90 · **`powertrain_mode` (EV / HEV) ĐÃ XOÁ** — owner chốt 2026-09-21: **xe thuần điện**, không có
+        // chế độ HEV để chọn. Nhánh `writeArgs` riêng của nó (EV→1 / HEV→3) gỡ theo.
         // Drive / năng lượng / sạc
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `drive_mode` (chọn chế độ lái) đã xoá — owner chấm NO. Datum
-        // `op_mode` (ĐỌC xe đang ở chế độ nào) vẫn còn ở TelemetryRegistry; đừng nhầm hai cái.
-        // ⚠ Nhãn Anh TRÙNG nhãn Việt: "EV / HEV" là ký hiệu ngành (và `args` cũng vậy) ⇒ có tên trong danh sách cho
-        // phép của `LangCoverageTest`. Dịch thành "Electric / Hybrid" sẽ lệch với chữ trên táp-lô xe.
-        // [ĐO] `setEnergyMode(int)` BYDAutoEnergyDevice.java:173 — ENERGY_MODE_EV=1 / HEV=3 (:18/:21); map ở writeArgs.
-        // Cũ `setEnergyWorkMode` KHÔNG tồn tại.
-        ControlDef("powertrain_mode", "EV / HEV", "ic-bolt", ControlKind.SELECT,
-            domain = Domain.DRIVETRAIN, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoEnergyDevice.setEnergyMode",
-            args = listOf("EV", "HEV"),
-            labelEn = "EV / HEV", argsEn = listOf("EV", "HEV")),
         // ⚠ (V) FEATURE-FILTER 2026-09-17: ba nút SẠC (`target_soc_set` · `charge_cap` · `start_charging`) đã xoá
         // — owner chấm NO cho cả cụm sạc (xem nhật ký cùng tên ở TelemetryRegistry). `wireless_charge` KHÔNG nằm
         // trong danh sách NO nên ở lại.
@@ -344,24 +336,13 @@ object ControlRegistry {
         // lệnh sai vào hệ an toàn chủ động là rủi ro trên đường thật. Người lái chỉnh mấy thứ đó trong **setting
         // gốc của xe**; launcher không can thiệp. Thêm lại = quyết định của owner, không phải của phiên code.
         // Giải trí / cụm / HUD
-        // NEEDS-ONCAR: screen_rotation (enum) / cluster_music (nghi INSTRUMENT_MUSIC_SOURCE 970981412).
-        ControlDef("screen_rotation", "Xoay màn hình", "ic-cast", ControlKind.SELECT,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643005",
-            args = listOf("Ngang", "Dọc"),
-            labelEn = "Screen rotation", argsEn = listOf("Landscape", "Portrait")),
-        // [ĐO] `setDisplayMode(int)` BYDAutoPanoramaDevice.java:265 (cũ pseudo-id 3001 bịa, trùng `cam`). NEEDS-ONCAR:
-        // enum DISPLAY_MODE_* (PANORAMA0/FULL_SCREEN1/WIDGET3/RF_REVERSE4/REVERSE5/3D_PANORAMA6, :46-51) KHÔNG khớp 5
-        // nhãn góc — tạm gửi index thô; chốt map nhãn↔enum trên xe trước khi hứa "Trước/Sau/Trái/Phải".
-        ControlDef("camera_view", "Góc camera", "ic-cam", ControlKind.SELECT,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoPanoramaDevice.setDisplayMode",
-            args = listOf("Trước", "Sau", "Trái", "Phải", "Rộng"),
-            labelEn = "Camera view", argsEn = listOf("Front", "Rear", "Left", "Right", "Wide")),
-        ControlDef("cluster_music", "Nhạc trên cụm", "ic-music", ControlKind.TOGGLE,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1138753546",
-            labelEn = "Music on cluster"),
-        ControlDef("brightness_gear", "Độ sáng màn", "ic-light", ControlKind.STEP, value = 5, min = 0, max = 10, step = 1,
-            domain = Domain.INFOTAINMENT, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276174360",
-            labelEn = "Screen brightness"),
+        // ⚠⚠ 1.90 · **BỐN nút giải trí/cụm ĐÃ XOÁ HẲN** — owner chốt 2026-09-21 sau lượt sweep trên xe
+        // (`docs/diagnostics/oncar-sweep-verify-2026-09-21.md`): `screen_rotation` (Xoay màn hình) ·
+        // `camera_view` (Góc camera) · `cluster_music` (Nhạc trên cụm) · `brightness_gear` (Độ sáng màn).
+        // Cả bốn chưa bao giờ verify được trên xe (enum không khớp nhãn / id nghi sai), và ba trong bốn có bề mặt
+        // gốc của xe tốt hơn. `cam` (Camera 360, TOGGLE) **Ở LẠI** — nó là công tắc bật/tắt, khác việc chọn góc.
+        // ⇒ Cặp feature-id trùng `brightness_gear` ↔ `hud_brightness` mà `ControlWriteArgsTest` phải khai miễn-trừ
+        // nay **tự hết** (`hud_brightness` đã purge ở WP8, `brightness_gear` xoá hôm nay).
     )
 
     fun byId(id: String): ControlDef? = RegistryIndex.CONTROLS[id]   // [SOÁT P3] tra băm — xem KDoc RegistryIndex

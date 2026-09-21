@@ -167,13 +167,14 @@ class SettingsCatalogControlContractTest {
             "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
             // VOICE-HOTFIX 1.69 — ba mục mới, cùng tệp `VoiceModelSettings.kt` với khối Giọng nói còn lại.
             // Dấu vết chọn theo đúng luật ở KDoc: **lời gọi thật**, không phải nhãn.
-            //  • `voice_keep_log` ghi prefs qua `Prefs.setVoiceKeepLog` (công tắc theo XE, không qua `deps.bridge`
-            //    vì nó không thuộc `HomeUiState` — cùng họ với bốn khoá giọng nói khác của `PrefsVoiceV3`);
-            //  • `voice_log_export` là VIỆC LÀM ⇒ dấu vết là chính lời gọi nén zip;
-            //  • `voice_model_light` chỉ hiện khi danh mục có gói nhẹ hơn ⇒ dấu vết là phép chọn ấy.
-            "voice_keep_log" to ("VoiceModelSettings" to "Prefs.setVoiceKeepLog("),
-            "voice_log_export" to ("VoiceModelSettings" to "VoiceUtteranceLog.exportZip("),
-            "voice_model_light" to ("VoiceModelSettings" to "SherpaModelCatalog.lighterThan("),
+            //
+            // ⚠ CẢ BA đã rời danh mục lẫn bảng này (owner 2026-09-21, bản release production):
+            //  • `voice_keep_log` + `voice_log_export` — `VoiceModelSettings.logRows` (ô tích + nút xuất) gỡ cùng
+            //    mọi bề mặt dev/log. Khoá `voice_keep_log` vẫn sống (mặc định BẬT) nhưng nay là khoá **cố ý không
+            //    có UI** (`SettingsCatalogClusterNav.HIDDEN_KEYS`); việc nén zip đi qua lệnh cầu `voice_dump`.
+            //  • `voice_model_light` — hai nút *chuyển sang mô hình nhẹ* / *gỡ bản nặng*. Danh mục mô hình nghe thu
+            //    về ĐÚNG MỘT gói nên không còn gì để chọn giữa; `VoiceModelTuningWiringContractTest` nay canh
+            //    chiều NGƯỢC LẠI (các hàm ấy phải vắng, và không đường nào ghi được lựa chọn mô hình).
             // V3 · R7/R1 — mục "Hỏi xác nhận trước khi chạy" + nguồn micro. Ở tệp RIÊNG (trần 500 dòng) nhưng
             // vẫn thuộc khối *Giọng nói*; bảng này bám nơi control **thật sự** được dựng, không bám tên tệp.
             "voice_confirm_ids" to ("VoiceConfirmSettings" to "deps.bridge.setVoiceConfirmIds("),
@@ -184,8 +185,10 @@ class SettingsCatalogControlContractTest {
             "system_keep_home_on_boot" to ("SettingsSections" to "deps.bridge.setKeepHomeOnBoot("),
             "system_update" to ("SettingsSections" to "deps.bridge.checkUpdate"),
             "system_nav_stop" to ("SettingsSections" to "deps.bridge.navStop()"),
-            "system_vietmap_data" to ("SettingsSections" to "deps.bridge.openVietMapData()"),
-            "system_diagnostics" to ("SettingsSections" to "deps.bridge.openDiagnostics()"),
+            // ⚠ `system_vietmap_data` + `system_diagnostics` đã rời cả DANH MỤC lẫn bảng này (owner 2026-09-21, bản
+            // release production): hai nút ấy gỡ khỏi Cài đặt cùng mọi bề mặt dev. Giữ dòng canh cho một mã đã bỏ
+            // là để bài này canh một thứ không còn — chính ca "bài canh rữa" mà hai phép `assertEquals` dưới đây
+            // sinh ra để bắt. `ClusterNavBridge.openVietMapData()/openDiagnostics()` ở lại cho đường adb.
             // T-BRIDGE — công tắc "Chế độ kiểm thử qua adb" (docs/specs/kachi-test-bridge.html). Control là ô tick
             // ghi thẳng vào `TestBridgeStore`: khoá này là trạng thái PHIÊN (tự hết hạn), không đi qua ViewModel.
             "system_test_bridge" to ("SettingsSections" to "TestBridgeStore.enable("),

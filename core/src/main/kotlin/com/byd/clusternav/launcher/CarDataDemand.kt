@@ -241,6 +241,7 @@ object CarDataDemand {
      * thêm một dòng vào `readFast` mà quên ở đây sẽ ĐỎ off-car chứ không im lặng thành "datum không bao giờ tươi".
      */
     val FAST_IDS: Set<String> = setOf(
-        "speed", "gear", "op_mode", "energy_mode", "motor_power",
+        // ⚠ 1.90 · `op_mode`/`energy_mode` gỡ cùng hai datum (owner 2026-09-21 — xe thuần điện).
+        "speed", "gear", "motor_power",
     )
 }

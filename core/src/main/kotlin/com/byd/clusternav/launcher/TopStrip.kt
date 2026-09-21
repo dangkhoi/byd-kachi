@@ -12,8 +12,18 @@ package com.byd.clusternav.launcher
  */
 data class ChipView(val text: String, val icon: String?, val tone: ChipTone, val desc: String)
 
-/** Sắc thái chip. `:app` dịch sang mã màu — xem [ChipView.tone]. */
-enum class ChipTone { NEUTRAL, ENERGY }
+/**
+ * Sắc thái chip. `:app` dịch sang mã màu — xem [ChipView.tone].
+ *
+ * [ACTIVE]/[INACTIVE] = datum **BẬT/TẮT** đang bật / đang tắt (owner 2026-09-21: *"trạng thái bật/tắt phải thể hiện
+ * bằng icon active/inactive (màu), KHÔNG bằng chữ Tắt/Bật"*). Chip loại này **bỏ hẳn phần chữ giá trị** — trạng thái
+ * nằm ở MÀU của icon + nhãn, xem [TopStripChips.datumChip].
+ *
+ * ⚠ [NEUTRAL] vẫn là sắc thái của datum bật/tắt **chưa đọc được** (off-car / không có trên trim): lúc đó chip hiện
+ * `"—"` như mọi datum khác. Tô nó thành [INACTIVE] là **bịa trạng thái** — nói *"đang tắt"* trong khi sự thật là
+ * *"không biết"*, đúng điều dự án cấm (xem [TelemetryView.PLACEHOLDER]).
+ */
+enum class ChipTone { NEUTRAL, ENERGY, ACTIVE, INACTIVE }
 
 /**
  * MỘT KHỐI của màn chọn chip — xem [TopStripConfig.picks].
@@ -90,6 +100,25 @@ data class TopStripConfig(
     }
 
     fun has(id: String): Boolean = id in ids
+
+    /**
+     * #15 (owner 2026-09-21 "chỉnh vị trí từng thông tin"): dời một chip SANG TRÁI (sớm hơn trong thứ tự hiện) —
+     * thứ tự trong [ids] CHÍNH là thứ tự hiện trên thanh. Mã không có / đã ở đầu ⇒ trả nguyên (no-op an toàn).
+     */
+    fun moveEarlier(id: String): TopStripConfig {
+        val i = ids.indexOf(id)
+        if (i <= 0) return this
+        val m = ids.toMutableList(); m[i] = m[i - 1]; m[i - 1] = id
+        return copy(ids = m)
+    }
+
+    /** Dời một chip SANG PHẢI (muộn hơn). Mã không có / đã ở cuối ⇒ no-op. */
+    fun moveLater(id: String): TopStripConfig {
+        val i = ids.indexOf(id)
+        if (i < 0 || i >= ids.size - 1) return this
+        val m = ids.toMutableList(); m[i] = m[i + 1]; m[i + 1] = id
+        return copy(ids = m)
+    }
 
     companion object {
         /**
@@ -290,17 +319,45 @@ object TopStripChips {
         else -> datumChip(id, status, units, labels)
     }
 
-    /** Chip cho một datum thường: `"<nhãn ngắn> · <giá trị><đơn vị>"`, đi qua ĐÚNG lớp đơn vị như mọi bề mặt khác. */
+    /**
+     * Chip cho một datum thường: `"<nhãn ngắn> · <giá trị><đơn vị>"`, đi qua ĐÚNG lớp đơn vị như mọi bề mặt khác.
+     *
+     * ## Datum BẬT/TẮT thì KHÔNG có phần chữ giá trị
+     * [ĐO xe 2026-09-21] chip `defrost_front_state` hiện `"Sấy kính · Tắt"`. Owner: trạng thái phải là **icon
+     * mờ/sáng**, không phải chữ. Nên khi [TelemetryView.onOff] có giá trị, chip còn **nhãn ngắn + icon** và trạng
+     * thái nằm trong [ChipTone.ACTIVE]/[ChipTone.INACTIVE] ⇒ `:app` tô màu icon + chữ theo đó.
+     *
+     * Ba điều cố ý giữ nguyên:
+     *  1. **[ChipView.desc] vẫn đầy đủ** (`"Sấy kính: Tắt"`). Bỏ chữ là quyết định về **chỗ trên thanh**, không phải
+     *     về nội dung — người dùng trình đọc màn hình không thấy được màu icon, nên với họ chữ là đường DUY NHẤT.
+     *     Cùng lập luận đã ghi ở [chip] cho ca tắt nhãn.
+     *  2. **Chưa đọc được ⇒ về đường thường** ([TelemetryView.onOff] null) ⇒ `"Sấy kính · —"` + [ChipTone.NEUTRAL].
+     *     Icon mờ ở đây sẽ là lời khẳng định *"đang tắt"* mà không ai đo được.
+     *  3. **Datum SỐ không đụng tới** (nhiệt/gió/pin/lốp): chúng không có [TelemetryView.onOff] nên đi nhánh cũ,
+     *     vẫn [ChipTone.NEUTRAL] + hiện giá trị. Một con số không có trạng thái bật/tắt để mà tô.
+     */
     private fun datumChip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
         val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
         val value = view.displayWithUnit()
+        val on = view.onOff
         return ChipView(
             // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
             // phải nhãn đầy — lý do `shortEn` tồn tại.
-            text = if (labels) "${spec.displayShortLabel} · $value" else value,
+            //
+            // Bật/tắt: chỉ nhãn (trạng thái đã ở màu icon). Tắt nhãn NỮA ⇒ chuỗi rỗng = chip chỉ-icon, và đó đúng là
+            // thứ người dùng xin khi gạt cả hai công tắc — icon vẫn nói được trạng thái nhờ màu.
+            text = when {
+                on != null -> if (labels) spec.displayShortLabel else ""
+                labels -> "${spec.displayShortLabel} · $value"
+                else -> value
+            },
             icon = CapabilityIcons.forTelemetry(spec.id, spec.domain),
-            tone = ChipTone.NEUTRAL,
+            tone = when (on) {
+                true -> ChipTone.ACTIVE
+                false -> ChipTone.INACTIVE
+                null -> ChipTone.NEUTRAL
+            },
             desc = "${spec.displayLabel}: $value",
         )
     }

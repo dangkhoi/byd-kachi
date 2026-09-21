@@ -15,37 +15,42 @@ Side-load USB vẫn chạy: `<thẻ>/Android/data/com.byd.launcher/files/sherpa/
 
 ---
 
-## Ghi công mô hình NGHE (nghĩa vụ giấy phép — CC BY-NC-ND 4.0)
+## Mô hình NGHE — **đúng một gói**, Apache-2.0
 
-Từ **1.69** mô hình nhận dạng mặc định cho máy cài mới là **`zipformer-vi-30M-int8-2026-02-09`**:
+Bản release production (owner 2026-09-21) giữ **đúng một** mô hình nhận dạng: gói đang chạy tốt trên xe.
 
 | | |
 |---|---|
-| Tác giả mô hình | **hynt** — `Zipformer-30M-RNNT-6000h` (~30 M tham số, RNNT, ~6 000 giờ tiếng Việt) |
-| Gói sherpa-onnx | `csukuangfj2/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09` |
-| Giấy phép | **CC BY-NC-ND 4.0** — ghi công · phi thương mại · **cấm phái sinh** |
-| Nguồn | `https://huggingface.co/hynt/Zipformer-30M-RNNT-6000h` |
-| Cỡ | ~34 MB (4 tệp, ghim sha256 trong `SherpaModelCatalog`) |
+| Gói | `zipformer-vi-int8-2025-04-20` (`SherpaModelCatalog.ZIPFORMER_VI_INT8`, cũng là `DEFAULT_ID`) |
+| Nguồn trọng số | `zzasdf/viet_iter3_pseudo_label` (~70 000 giờ pseudo-label) |
+| Gói sherpa-onnx | `csukuangfj/sherpa-onnx-zipformer-vi-int8-2025-04-20` — tải trực tiếp, không cổng |
+| Giấy phép | **Apache-2.0** ⇒ **không có nghĩa vụ ghi công** nào phải hiện trên xe |
+| Cỡ | 74 MB (4 tệp, ghim sha256 + kích thước trong `SherpaModelCatalog`) |
+| Bảng BPE | `assets/voice/zipformer-vi-2025-04-20.bpe_vocab.txt` (đóng theo APK, không tải) |
 
-**Vì sao nó ở đây dù spec `kachi-voice-engine-v2.html` từng loại nó (2026-09-14) vì đúng giấy phép này**: ngày
-2026-09-16 **owner quyết định ngược lại** cho dự án của mình — *"phi lợi nhuận, vui vẻ với anh em nên cũng ko
-quan trọng lắm về license đâu nhỉ"*. Đây là quyết định của **owner**, không phải của agent (ranh giới đã ghi ở
-`docs/diagnostics/voice-stream-eval-2026-09-16.md` §9).
+Tệp mô hình **không** nằm trong APK: xe tải thẳng từ HuggingFace khi người dùng bấm *Tải mô hình* trong
+*Cài đặt › Giọng nói*, kiểm sha256 + cỡ từng tệp.
 
-Ba nghĩa vụ và cách dự án giữ:
+> ⚠ Tên asset BPE mang id của bản **fp32** (`zipformer-vi-2025-04-20`) là **cố ý**: hai bản là một bản huấn luyện,
+> `tokens.txt` giống nhau tới từng byte, nên chúng dùng chung bảng BPE — `VoiceEngine` tra asset theo
+> `SherpaModel.bpeVocab`, không theo `id`. Bài canh `SherpaModelCatalogTest` ghim cả điều này lẫn điều ngược lại
+> (hai bản huấn luyện KHÁC nhau thì **không** được dùng chung bảng: [ĐO 2026-09-16] hai bảng cùng 2 000 mảnh mà
+> **1 997/2 000 dòng khác nhau**, và dùng nhầm thì sherpa **lặng lẽ bỏ** mọi cụm hotword — biasing trông như đang
+> bật mà không làm gì).
 
-- **BY** — dòng ghi công hiện ở *Cài đặt › Giọng nói › Về mô hình nghe*, trong lời đáp `state.voice_model` của cầu kiểm thử, và ở đây. Cả ba
-  đọc **cùng một** trường dữ liệu (`SherpaModelCatalog.attributions()`) nên không lệch nhau được.
-- **NC** — điều kiện owner tự khẳng định cho dự án này.
-- **ND** — **không fine-tune, không sửa** mô hình ở bất kỳ đâu trong kho mã; ship đúng bộ tệp int8 đã công bố.
-  Tệp mô hình **không** đóng trong APK: xe tải thẳng từ HuggingFace khi người dùng bấm, nên APK không phát tán
-  lại trọng số.
+### Bốn gói đã BỎ (2026-09-21) — và vì sao ghi lại ở đây
 
-> ⚠ Bảng `assets/voice/zipformer-vi-30M-int8-2026-02-09.bpe_vocab.txt` được sinh **từ** `bpe.model` của gói (sherpa
-> không nhận `bpe.model` nhị phân làm `bpeVocab`). Dự án hiểu đây là một phép **đổi định dạng cho runtime**, không
-> đụng tới trọng số mô hình. Đó là **cách hiểu của dự án, không phải một kết luận pháp lý** — muốn chắc thì hỏi
-> tác giả, và đó là việc của owner.
->
-> ⚠ Bảng BPE này **KHÔNG dùng chung** được với gói `zipformer-vi-2025-04-20`: [ĐO 2026-09-16] cả hai đúng 2 000
-> mảnh mà **1 997/2 000 dòng khác nhau**. Dùng nhầm bảng thì sherpa **lặng lẽ bỏ** mọi cụm hotword — biasing trông
-> như đang bật mà không làm gì. Bài canh `SherpaModelCatalogTest` khoá đúng điều này.
+Tới 1.87 danh mục giữ năm gói để A/B trên xe, kèm hai nút *"chuyển sang mô hình nhẹ"* / *"gỡ bản nặng"* trong Cài
+đặt. Owner chốt dừng thử nghiệm mô hình nghe, nên cả bốn gói **và** bề mặt cho-chọn-mô-hình đã gỡ khỏi mã (sha256
++ URL của chúng còn trong git history):
+
+| Gói | Giấy phép | Vì sao bỏ |
+|---|---|---|
+| `zipformer-vi-2025-04-20` (fp32, 266 MB) | Apache-2.0 | [ĐO xe] nặng gấp 3,6× mà cùng kết quả giải mã với bản int8 — int8 đã thay nó từ 1.66 |
+| `zipformer-hataphu-vi` | MIT | repo HF **có cổng** (401) ⇒ chưa bao giờ ghim sha256 ⇒ chưa bao giờ tải được |
+| `zipformer-vi-30M-int8-2026-02-09` | CC BY-NC-ND 4.0 | [ĐO giọng THẬT owner 2026-09-16] sai **~7/30** câu so với ≈2/30 của gói đang ship (corpus TTS từng chấm nó cao hơn +1,8 điểm — nó **đã đánh lừa**) |
+| `gipformer-vi-ft-ep2` (fine-tune) | MIT | +10 điểm trên **host** với giọng thu sẵn, chưa bao giờ đo trên mic cabin |
+
+⇒ Từ lượt này bản phát hành **không ship gói nào mang giấy phép họ BY**, nên hàng *"Về mô hình nghe"* trong Cài
+đặt tự ẩn. Cơ chế ghi công (`SherpaModelCatalog.attributions()` → Cài đặt · `state.voice_model` · README) vẫn còn
+nguyên và vẫn đọc **cùng một** trường dữ liệu: thêm lại một gói CC BY là ba bề mặt tự hiện lời ghi công.

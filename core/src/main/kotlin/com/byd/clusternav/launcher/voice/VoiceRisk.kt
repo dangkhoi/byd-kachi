@@ -51,9 +51,8 @@ object VoiceRiskTable {
         Rule("windows_all", 1,
             "hạ HẾT 4 kính — mưa, bụi, hoặc đồ để trên ghế; đóng lại mất nhiều giây",
             "lowers ALL four windows — rain, dust, or belongings on the seats; closing takes seconds"),
-        Rule("cast", 0,
-            "dừng chiếu cụm khi đang dẫn đường = mất màn chỉ đường giữa đường",
-            "stopping the cluster cast mid-route removes the turn-by-turn screen"),
+        // ⚠ 1.90 · dòng `cast` (*"dừng chiếu cụm giữa đường"*) gỡ cùng nút — owner 2026-09-21. Chiếu cụm nay chỉ
+        // bật/tắt bằng nút nổi + Cài đặt › Chiếu màn lên cụm, không còn là lệnh giọng nói nên không còn gì để hỏi.
         // V3 · R7 — hai dòng THÊM 2026-09-16: owner liệt kê chúng trong bảng B (B5 cốp · B7 cửa sổ trời) như
         // những việc *có thể* muốn hỏi. Chúng vào đây để **hiện ra trong danh sách chọn**, không phải để bật —
         // mặc định vẫn là KHÔNG hỏi gì (xem [of]).

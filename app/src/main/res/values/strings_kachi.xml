@@ -288,7 +288,6 @@
     <string name="kachi_save">Lưu</string>
     <string name="kachi_dp_value">%1$d dp</string>
     <string name="kachi_px_value">%1$d px</string>
-    <string name="kachi_diagnostics">Chẩn đoán và nhật ký</string>
 
     <!-- ── IA v2 nhóm 2 — Thanh trạng thái & thanh nút (SettingsBarsSection · TopStripPicker) ── -->
     <!-- S4 · R11 (c): ba khoá kachi_topstrip_more/_on/_none đã xoá cùng hộp thoại "Thêm chip khác…" —
@@ -500,8 +499,6 @@
     <string name="kachi_check_update">Kiểm tra cập nhật</string>
     <string name="kachi_nav_stop">Dừng toàn bộ dẫn đường</string>
     <string name="kachi_sub_advanced">Nâng cao</string>
-    <string name="kachi_dev_tools_note">Đồ đo dành cho lúc soát xe: chỉ hiện khi Chế độ kiểm thử qua adb đang mở, và tự biến mất khi cửa sổ đó hết hạn hoặc khi tắt máy.</string>
-    <string name="kachi_vietmap_data">Dữ liệu VietMap</string>
 
     <!-- ── T-BRIDGE — cầu kiểm thử qua adb (docs/specs/kachi-test-bridge.html). Câu chữ phải NÓI THẲNG cái được
          mở ra: đây là công tắc duy nhất đứng giữa một receiver exported và cái xe. ── -->
@@ -552,7 +549,6 @@
     </plurals>
 
     <!-- ══ V1 · đường thử lệnh bằng CHỮ (docs/specs/kachi-voice-command.html R6) ═════════════════════ -->
-    <string name="kachi_voice_title">Gõ lệnh chữ (thử giọng nói)</string>
     <string name="kachi_voice_note">Gõ câu đúng như khi nói, để đo xem máy hiểu gì — ví dụ: “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”. Muốn NÓI thì dùng ô “Nói với xe” trên thanh nút hoặc nút mic ở thanh trên.</string>
     <string name="kachi_voice_hint">Nói gì với xe…</string>
     <string name="kachi_voice_run">Chạy câu lệnh</string>
@@ -585,18 +581,9 @@
     <string name="kachi_voice_model_verifying">Đang kiểm gói (sha256)…</string>
     <string name="kachi_voice_model_extracting">Đang giải nén…</string>
     <string name="kachi_voice_model_failed">Hỏng: %1$s</string>
-    <string name="kachi_voice_model_current">Đang dùng %1$s · %2$s trên đĩa · máy còn %3$s RAM trống. Bản nhẹ %4$s chỉ %5$s.</string>
-    <string name="kachi_voice_model_switch_light">Chuyển sang mô hình nhẹ (%1$s)</string>
-    <string name="kachi_voice_model_switched">Đã chuyển sang %1$s (%2$s). Bản nặng vẫn còn trên đĩa — gỡ khi bạn muốn lấy lại chỗ.</string>
-    <string name="kachi_voice_model_drop_heavy">Gỡ bản nặng (%1$s)</string>
-    <string name="kachi_voice_model_drop_blocked">Chưa gỡ được: bản nặng vẫn đang là mô hình đang dùng. Chuyển sang %1$s trước đã.</string>
     <string name="kachi_voice_model_preload_skipped">Lần khởi động vừa rồi Kachi bỏ qua bước nạp sẵn mô hình (%1$s), nên lần bấm mic đầu tiên sẽ chờ lâu hơn.</string>
     <string name="kachi_voice_model_credits_title">Về mô hình nghe</string>
     <string name="kachi_voice_model_credits_line">%1$s — %2$s · giấy phép %3$s · %4$s</string>
-    <string name="kachi_voice_log_title">Giữ nhật ký lượt nói</string>
-    <string name="kachi_voice_log_sub">Ghi lại tiếng và kết quả của %1$d lượt nói gần nhất để chỉnh cho Kachi nghe chuẩn hơn. Tiếng chỉ lưu trên xe, không gửi đi; lượt cũ tự xoá.</string>
-    <string name="kachi_voice_log_export">Xuất nhật ký voice</string>
-    <string name="kachi_voice_log_exported">Đã lưu %1$s (%2$d tệp)</string>
     <string name="kachi_voice_tts_title">Giọng đọc offline (tại máy)</string>
     <string name="kachi_voice_tts_absent">Chưa cài. Gói giọng Việt %1$s — tải một lần rồi Kachi đọc câu trả lời ngay trên xe, không cần mạng và không cần Google.</string>
     <string name="kachi_voice_tts_ready">Đã cài %1$s · %2$d tệp · %3$s trên đĩa</string>

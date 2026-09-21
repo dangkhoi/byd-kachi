@@ -74,9 +74,9 @@ internal object SettingsCatalogClusterNav {
             // RỜI [HIDDEN_KEYS] sang đây ở 1.66: nó nay có hàng thật trong mục *"Hỏi xác nhận trước khi chạy"*,
             // đúng như dòng lý do cũ đã hẹn (*"đi cùng batch chọn nút nào phải hỏi"*).
             "voice_mic_source", "voice_confirm_ids", "voice_ask_aloud",
-            // H2 (1.69) — công tắc giữ nhật ký lượt nói. Cùng tệp với mọi khoá giọng nói khác, nên câu hỏi
-            // *"cấu hình giọng nói nằm ở đâu"* vẫn có đúng MỘT câu trả lời.
-            "voice_keep_log",
+            // ⚠ `voice_keep_log` (H2 · 1.69) đã RỜI bảng này sang [HIDDEN_KEYS] ở bản release 2026-09-21: ô tích của
+            // nó gỡ khỏi Cài đặt cùng mọi bề mặt dev/log, mà bảng này chỉ nhận khoá **có mặt trên UI**. Khoá vẫn
+            // sống (mặc định BẬT, `VoiceUtteranceLog` vẫn ghi) — chỉ không còn hàng nào để bấm.
             // App dẫn đường mặc định (owner 2026-09-18) — cùng tệp `clusternav_prefs` với mọi khoá giọng nói.
             "voice_nav_default_app",
             // App nhạc mặc định (owner 2026-09-21) — cùng tệp, cùng lẽ với app dẫn đường.
@@ -139,6 +139,15 @@ internal object SettingsCatalogClusterNav {
             "không có nút ở màn cũ — màn chỉ HIỆN nguồn đang dùng (txt_nav_source_active); chọn tay nguồn nào là " +
                 "việc của bộ trọng tài, không phải của người lái",
         "anim_opt" to "ép true — tối ưu hoạt ảnh cụm, không có nút ở màn cũ",
+        // owner 2026-09-21 (bản release production) — RỜI [KEYS] sang đây: ô tích *Giữ nhật ký lượt nói* và nút
+        // *Xuất nhật ký voice* gỡ khỏi Cài đặt cùng mọi bề mặt dev/debug/log, nên khoá này nay là ca kinh điển của
+        // bảng này — **còn sống, cố ý không có UI**. (Chiều ngược lại của `voice_ask_aloud`, khoá đã rời bảng này
+        // sang [KEYS] ở 1.66 khi nó có hàng thật.)
+        "voice_keep_log" to
+            "H2 (1.69) — giữ nhật ký lượt nói, **mặc định BẬT**; `VoiceUtteranceLog` vẫn ghi + tự dọn (30 mục / " +
+                "30 MB) như trước, chỉ hàng bấm là mất. Tắt ghi luôn thì buổi RE sau cắm máy vào sẽ không còn " +
+                "nhật ký của những lượt nói TRƯỚC đó — mất đúng thứ nhật ký sinh ra để giữ. Đọc/ghi qua cầu kiểm " +
+                "thử (`prefs_set --es key voice_keep_log --es text true|false`), lấy zip bằng `voice_dump`",
         "voice_follow_up_ms" to
             "V3 · R9 — quãng GIỮ MICRO sau khi trả lời xong, cho câu tiếp (owner D1: 5 giây). Không lên UI vì " +
                 "công tắc người dùng thật sự cần là *bật/tắt* hội thoại, còn con số thì là một hằng ĐO trên " +

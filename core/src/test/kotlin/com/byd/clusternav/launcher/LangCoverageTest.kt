@@ -50,17 +50,17 @@ class LangCoverageTest {
         // 106 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 123).
         // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
         // 1.85: +1 `ac_wind_auto` (đã có nhãn + nhãn ngắn ở CẢ hai thứ tiếng — chính bài này ép điều đó).
-        // WP8 2026-09-20: 102 → 73 (owner purge 29 datum BỎ).
-        assertEquals(73, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // WP8 2026-09-20: 102 → 73 (purge 29 datum BỎ) → 1.90: 71 (gỡ `op_mode` + `energy_mode`, xe thuần điện).
+        assertEquals(71, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
 
     @Test
     fun `moi nut co nhan EN, dung 39 nut`() {
-        // 47 ((V) 2026-09-17 owner gỡ 7 nút NO — trước đó 54; trước 09-16 là 64).
         // 39 (UX-OVERHAUL WP8 2026-09-20 owner purge 8 nút BỎ: gạt mưa · 4 đèn viền · mức tái tạo · 2 HUD).
-        assertEquals(38, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 38 (gỡ `seat_memory`) → 29 (1.90: 9 nút xe-thuần-điện; danh sách ở `WorkspaceStateTest`).
+        assertEquals(29, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
@@ -116,7 +116,17 @@ class LangCoverageTest {
         // `nav_automation_rules`). Cả hai theo XE.
         // UX-OVERHAUL WP1 (2026-09-20): **+1** — `display_glass_real` (công tắc "Kính thật (làm mờ nền)", khoá
         // `ui_glass_real`, nhóm Hiển thị, theo XE) ⇒ 75 → 76.
-        assertEquals(81, SettingsCatalog.ENTRIES.size)   // +voice_wake (owner 2026-09-21 tách nhóm Giọng nói)
+        // Release production (owner 2026-09-21): **81 → 77 (−4)** = dọn hết dev/debug UI khỏi màn Cài đặt, chỉ giữ
+        // công tắc `system_test_bridge`. Bốn mục rời danh mục vì chúng không còn hàng nào trên màn:
+        // `system_vietmap_data` · `system_diagnostics` (hai màn chẩn đoán) · `voice_keep_log` · `voice_log_export`
+        // (ô tích + nút xuất nhật ký lượt nói). KHẢ NĂNG không mất — cả bốn vẫn chạy qua adb (`am start` cho hai màn,
+        // `prefs_set`/`voice_dump` cho hai cái kia); khoá `voice_keep_log` chuyển sang HIDDEN_KEYS kèm lý do.
+        // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **77 → 76 (−1)** = `voice_model_light` (hai nút *chuyển
+        // sang mô hình nhẹ* / *gỡ bản nặng*). Danh mục mô hình nghe thu về ĐÚNG MỘT gói (`SherpaModelCatalog.ALL`,
+        // owner: *"chỉ giữ model đang OK trên xe, không thử nghiệm gì nữa"*) ⇒ bề mặt chọn-mô-hình không còn gì để
+        // chọn giữa, `VoiceModelSettings.lightModelRows` gỡ. Hàng *trạng thái + Tải/Gỡ* của gói duy nhất Ở LẠI
+        // (nó chưa bao giờ là một mục danh mục — nó thuộc khối dựng tay cùng `voice_tts_pack`).
+        assertEquals(76, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -154,7 +164,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 258`() {
+    fun `tong so nhan co ban EN dung 255`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -195,7 +205,13 @@ class LangCoverageTest {
         // the floating cast button"), khoá `cast_bubble_visible` theo XE; đã có bản EN tại chỗ khai.
         // UX-OVERHAUL WP8 (2026-09-20): **296 → 258 (−38)** = −29 datum −8 nút (owner purge 37 mã BỎ) −1 nhóm
         // (`g_ambient` hết thành viên). Đây là lượt duy nhất con số này GIẢM; mọi lượt trước đều cộng.
-        assertEquals(260, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")   // +VOICE nhóm +voice_wake mục (owner 2026-09-21)
+        // Release production (owner 2026-09-21): **260 → 256 (−4)** = bốn mục Cài đặt rời danh mục cùng lượt dọn
+        // dev/debug UI (`system_vietmap_data` · `system_diagnostics` · `voice_keep_log` · `voice_log_export`) — xem
+        // lý do đầy đủ ở `tong so muc Cai dat…` phía trên. Lượt GIẢM thứ hai của con số này.
+        // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **256 → 255 (−1)** = mục `voice_model_light`. Danh mục mô
+        // hình nghe thu về đúng một gói ⇒ bề mặt chọn-mô-hình gỡ khỏi Cài đặt. Lượt GIẢM thứ ba.
+        // 1.90: **255 → 244 (−11)** = −9 nút −2 datum (xe thuần điện). Lượt GIẢM thứ tư.
+        assertEquals(244, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -263,7 +279,8 @@ class LangCoverageTest {
         // sai. Giữ số đo, không giữ số đoán. 13 (2026-09-16 owner gỡ ADAS/an toàn — trước đó 14 — nút SELECT `adas_lane` đã xoá).
         // 12 ((V) 2026-09-17: nút SELECT `drive_mode` đã xoá — trước đó 13).
         // 12 (WP8 2026-09-20: hai nút SELECT `ambient_color` + `regen_level` đã purge — trước đó 14).
-        assertEquals(12, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        // 8 (1.90: 4 SELECT headlight_mode/powertrain_mode/screen_rotation/camera_view xoá)
+        assertEquals(8, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }
@@ -393,10 +410,8 @@ class LangCoverageTest {
         val res = MacroResult("mac_leave", listOf(MacroStepResult("win_lf", false)))
         assertEquals("Leaving the car: the car took no command", res.notice(ActionMacros.byId("mac_leave")!!.displayLabel))
         // Lựa chọn của nút SELECT cũng theo ngôn ngữ.
-        // ⚠ (V) 2026-09-17: mốc cũ là `drive_mode`/"Sport" — nút đã gỡ. WP8 2026-09-20: mốc thứ hai `regen_level`
-        //    cũng đã purge ⇒ nay dùng `headlight_mode` (SELECT, và "Auto"/"Đỗ"/"Cốt" có bản dịch khác hẳn bản Việt
-        //    nên vẫn bắt được lỗi "quên đổi ngôn ngữ").
-        assertEquals("Parking", ControlTileLogic.selectLabel(ControlRegistry.byId("headlight_mode")!!, 2))
+        // ⚠ Mốc đổi 3 lần theo 3 lượt xoá nút: `drive_mode`→`regen_level`→`headlight_mode` ⇒ nay `seatc` ("Level 2").
+        assertEquals("Level 2", ControlTileLogic.selectLabel(ControlRegistry.byId("seatc")!!, 2))
     }
 
     @Test
@@ -437,13 +452,10 @@ class LangCoverageTest {
          */
         val SAME_ON_PURPOSE: Map<String, String> = mapOf(
             "PM2.5" to "ký hiệu ngành cho bụi mịn 2.5µm — dịch thành câu dài là sai chuẩn (spec §6 OQ2)",
-            "EV / HEV" to "hai chế độ hệ truyền động, viết tắt ngành; xe hiện đúng chữ này",
-            "EV" to "electric vehicle — lựa chọn của nút EV/HEV, không dịch",
-            "HEV" to "hybrid electric vehicle — lựa chọn của nút EV/HEV, không dịch",
-            "Auto" to "từ quốc tế, dùng y nguyên trong cả hai thứ tiếng ở chế độ đèn pha",
             // ⚠ Ba mục "ESP" · "LDW" · "LDP" đã gỡ 2026-09-16 cùng toàn bộ ADAS/an toàn, và mục "Eco" đã gỡ
             // (V) 2026-09-17 cùng nút `drive_mode` — bài
             // `moi muc trong danh sach cho phep trung deu co ly do, va deu dung toi` bắt ngay nếu để lại.
+            // ⚠⚠ 1.90 — 4 mục nữa gỡ cùng luật: "EV / HEV"/"EV"/"HEV" (`powertrain_mode`) + "Auto" (`headlight_mode`).
         )
 
         /** Mọi dòng có nhãn, ở đúng một chỗ để các bài không lệch phạm vi quét. */

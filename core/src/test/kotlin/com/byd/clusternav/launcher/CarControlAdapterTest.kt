@@ -47,15 +47,22 @@ class CarControlAdapterTest {
         assertEquals(listOf(1, 2), gw.namedCalls[2].args, "cover(false) vẫn → CLOSE=2")
     }
 
-    @Test fun `select routes index for feature-id control`() {
-        val gw = FakeHalGateway(featureRc = 0L)
+    @Test fun `select va step day nguyen gia tri xuong duong ghi`() {
+        val gw = FakeHalGateway(featureRc = 0L, namedRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        // ⚠ WP8 2026-09-20: `ambient_color` cũng đã purge (drive_mode từng đứng đây, gỡ ở (V) 2026-09-17) ⇒ mốc
-        // nay là `screen_rotation` — SELECT còn sống DUY NHẤT mà `bindingKey` là một feature-id SỐ (`1330643005`),
-        // tức đúng hình dạng bài này đo. `camera_view` không dùng được: nó route named-method.
-        assertTrue(adapter.select("screen_rotation", 2))
-        assertEquals(1330643005, gw.featureSetCalls[0].id)
-        assertEquals(2, gw.featureSetCalls[0].value)
+        // ⚠⚠ 1.90 2026-09-21 — bài này ĐỔI HÌNH vì mốc cũ đã hết: `drive_mode` gỡ ở (V), `ambient_color` purge ở
+        // WP8, và lượt này owner xoá `screen_rotation` (mốc cuối). [ĐO] registry nay **không còn nút SELECT nào có
+        // `bindingKey` là feature-id SỐ** — hai nút SELECT còn sống (`seatc`/`seath`) đều route named-method.
+        //
+        // Bất biến cần canh vẫn là cái cũ: **chỉ số/mức đi NGUYÊN VẸN xuống đường ghi, không bị nén về 1/0**. Nên
+        // bài đo nó ở CẢ HAI đường còn thật: SELECT qua named-method, và feature-id SỐ qua một nút STEP.
+        assertTrue(adapter.select("seatc", 2))
+        assertEquals("setSeatVentilatingState", gw.namedCalls[0].method)
+        assertEquals(listOf(1, 3), gw.namedCalls[0].args, "index 2 → mức 2 → state khung 3 (ControlLevels), seatID 1")
+        // Đường feature-id SỐ: `fan` (STEP, id 501219340) — giá trị 5 phải tới nguyên, không thành 1.
+        assertTrue(adapter.step("fan", 5))
+        assertEquals(501219340, gw.featureSetCalls[0].id)
+        assertEquals(5, gw.featureSetCalls[0].value)
     }
 
     @Test fun `press fires momentary named-method with arg 1`() {
@@ -70,7 +77,7 @@ class CarControlAdapterTest {
         val gw = FakeHalGateway(namedRc = 0L, featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
         assertTrue(adapter.act("lock", 1))            // TOGGLE (named)
-        assertTrue(adapter.act("headlight_mode", 3))  // SELECT (feature)
+        assertTrue(adapter.act("seatc", 2))           // SELECT (⚠ 1.90: mốc cũ `headlight_mode` đã xoá)
     }
 
     @Test fun `act uy quyen ve actByKind - COVER van dung args (window,state)`() {
@@ -97,19 +104,19 @@ class CarControlAdapterTest {
         assertTrue(p.actByKind("lock", 1))              // TOGGLE
         assertTrue(p.actByKind("fan", 5))               // STEP
         assertTrue(p.actByKind("win_lf", 1))            // COVER
-        assertTrue(p.actByKind("headlight_mode", 2))    // SELECT
+        assertTrue(p.actByKind("seatc", 2))             // SELECT (⚠ 1.90: mốc cũ `headlight_mode` đã xoá)
         assertEquals(
-            listOf("toggle(lock,true)", "step(fan,5)", "cover(win_lf,true)", "select(headlight_mode,2)"),
+            listOf("toggle(lock,true)", "step(fan,5)", "cover(win_lf,true)", "select(seatc,2)"),
             p.calls,
         )
     }
 
     @Test fun `buoc STEP va SELECT KHONG bi nen thanh 1-0`() {
         // Đây là lỗi thật đã vá: ô gói lệnh từng bắn MỌI bước qua toggle ⇒ `step(fan,5)` thành `toggle(fan,true)`
-        // (ghi 1 thay vì 5) và `select(headlight_mode,2)` thành ghi 1.
+        // (ghi 1 thay vì 5) và `select(<SELECT>,2)` thành ghi 1. ⚠ 1.90: mốc cũ `headlight_mode` xoá ⇒ dùng `seatc`.
         val p = RecordingPort()
-        p.actByKind("fan", 5); p.actByKind("headlight_mode", 2)
-        assertEquals(listOf("step(fan,5)", "select(headlight_mode,2)"), p.calls, "tham số phải đi nguyên vẹn")
+        p.actByKind("fan", 5); p.actByKind("seatc", 2)
+        assertEquals(listOf("step(fan,5)", "select(seatc,2)"), p.calls, "tham số phải đi nguyên vẹn")
     }
 
     @Test fun `buoc BUTTON van bam du arg bang 0`() {

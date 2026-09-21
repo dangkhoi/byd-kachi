@@ -10,7 +10,8 @@ import com.byd.clusternav.launcher.voice.VoiceUtteranceLog
  * hình dạng với [TestBridgeWav]/[TestBridgeCtl]/[TestBridgeHal]: receiver lo cổng + vòng đời, tệp này lo một lệnh.
  *
  * ## Vì sao nó đi qua ĐÚNG hàm mà nút trong Cài đặt đi
- * [VoiceUtteranceLog.exportZip] là **một** thân hàm cho cả hai lối vào (nút *Xuất nhật ký voice* · lệnh này). Một
+ * [VoiceUtteranceLog.exportZip] là **một** thân hàm — trước có hai lối vào, nay lệnh này là lối DUY NHẤT (nút
+ * *Xuất nhật ký voice* gỡ khỏi Cài đặt ở bản release production, owner 2026-09-21). Một
  * đường nén thứ hai ở đây sẽ lệch ở đúng lần ai đó sửa một tính chất — vd lượt lùi khi ROM chặn ghi vào `Download`
  * — và lúc ấy phép đo bằng máy sẽ nói về một tệp mà người trên xe không bao giờ nhận được (cùng luật
  * [TestBridgeWav]: không mở một đường đọc thứ hai cho cùng một việc).

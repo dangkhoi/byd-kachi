@@ -40,22 +40,23 @@ class LauncherCatalogTest {
         val byDomain = panels.toMap()
         // ⚠ Panel SAFETY (ADAS) đã gỡ 2026-09-16 cùng cả `Domain.SAFETY` — owner gỡ toàn bộ ADAS/an toàn.
         assertTrue(Domain.values().none { it.name == "SAFETY" }, "không được có panel ADAS/an toàn nào mọc lại")
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: mốc cũ là `drive_mode` — nút đó đã gỡ (owner chấm NO). Nút DRIVETRAIN
-        // còn sống lấy làm mốc: `powertrain_mode` (EV / HEV).
-        assertTrue(byDomain[Domain.DRIVETRAIN]!!.any { it.id == "powertrain_mode" }, "EV/HEV panel DRIVETRAIN")
-        // ⚠ WP8 2026-09-20: hai nút HUD (`hud_switch` · `hud_brightness`) purge theo triage owner (#62 · #63 —
-        // HUD kính lái là cổng coding firmware của XE, ADR 0002, nên nút trong app là nút chết). Mốc INFOTAINMENT
-        // nay là `cast` (chiếu cụm) — nút này vẫn sống, chỉ ẩn khỏi bộ chọn (HIDDEN_FROM_PICKER).
-        assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "cast" }, "cast panel INFOTAINMENT")
+        // ⚠⚠ 1.90 2026-09-21: `powertrain_mode` (mốc DRIVETRAIN cũ, sau `drive_mode`) đã xoá — xe thuần điện ⇒
+        // lĩnh vực Động lực **không còn nút nào**, nên `byDomain` không có khoá đó. Đó là kết luận đúng; bài
+        // `ControlRegistryExtendedTest.control gom nhieu domain` canh riêng điều này.
+        assertTrue(byDomain[Domain.DRIVETRAIN].isNullOrEmpty(), "Động lực không còn nút nào (1.90)")
+        // ⚠ WP8 2026-09-20: hai nút HUD (`hud_switch` · `hud_brightness`) purge theo triage owner (#62 · #63).
+        // ⚠ 1.90: mốc INFOTAINMENT `cast` cũng xoá ⇒ dùng `cam` (Camera 360) — nút INFOTAINMENT còn sống.
+        assertTrue(byDomain[Domain.INFOTAINMENT]!!.any { it.id == "cam" }, "cam panel INFOTAINMENT")
         assertEquals(ControlRegistry.ALL.size, panels.sumOf { it.second.size }, "tổng nút = registry (không sót)")
     }
 
     @Test fun `select cycle vong va nhan dung`() {
-        // ⚠ (V) 2026-09-17: mốc cũ `drive_mode` đã gỡ ⇒ dùng `headlight_mode` (SELECT 4 lựa chọn: Tắt/Auto/Đỗ/Cốt).
-        val def = ControlRegistry.byId("headlight_mode")!!   // args: Tắt/Auto/Đỗ/Cốt
+        // ⚠ (V) 2026-09-17: mốc cũ `drive_mode` đã gỡ ⇒ `headlight_mode`. ⚠ 1.90 2026-09-21: mốc đó cũng xoá ⇒
+        // dùng `seatc` (SELECT 3 lựa chọn: Tắt/Mức 1/Mức 2) — vẫn phủ đúng phép vòng + tra nhãn theo chỉ số.
+        val def = ControlRegistry.byId("seatc")!!   // args: Tắt/Mức 1/Mức 2
         assertEquals(1, ControlTileLogic.nextSelectIndex(0, def.args.size))
         assertEquals(0, ControlTileLogic.nextSelectIndex(def.args.size - 1, def.args.size))   // vòng lại
-        assertEquals("Auto", ControlTileLogic.selectLabel(def, 1))
+        assertEquals("Mức 1", ControlTileLogic.selectLabel(def, 1))
         assertEquals(def.label, ControlTileLogic.selectLabel(def, 99))   // ngoài phạm vi → nhãn nút
         assertEquals(0, ControlTileLogic.nextSelectIndex(0, 0))          // rỗng an toàn
     }
@@ -64,14 +65,15 @@ class LauncherCatalogTest {
         // Tier vẫn là dữ liệu (tra ControlDef.tier), nhưng ControlTileLogic.needsBadge nay luôn false.
         assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("defrost")!!))      // OVERDRIVE
         assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("pm25")!!))         // PROVEN
-        assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("cast")!!))         // DASHCAST
+        // ⚠ 1.90: vế DASHCAST gỡ — `cast` là mã duy nhất mang tier ấy và owner đã xoá nút (xem CarCapabilitiesTest).
+        assertFalse(ControlTileLogic.needsBadge(ControlRegistry.byId("headl")!!))        // NEEDS_CAR
     }
 
     @Test fun `NoCar port off-car deu no-op false + du lieu null`() {
         assertFalse(NoCar.toggle("pm25", true))
         assertFalse(NoCar.step("fan", 3))
         assertFalse(NoCar.cover("win_lf", true))
-        assertFalse(NoCar.select("headlight_mode", 1))
+        assertFalse(NoCar.select("seatc", 1))   // ⚠ 1.90: mốc cũ `headlight_mode` đã xoá
         assertFalse(NoCar.press("pm25_clean_now"))
         assertNull(NoCar.batteryPercent())
         assertNull(NoCar.pm25Level())

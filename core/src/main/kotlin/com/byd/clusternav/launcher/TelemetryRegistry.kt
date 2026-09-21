@@ -171,13 +171,15 @@ object TelemetryRegistry {
         t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
         // BYDAutoGearboxDevice.java:109 — GEAR_P=3/R=1/N=0/D=2/INVALID=255 (:79-83). Cũ `getGearboxState` chỉ ON/OFF.
         t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoGearboxDevice.getCurrentGear"),
-        // BYDAutoEnergyDevice.java:130 — ECONOMY1/SPORT2/NORMAL3/SNOW4/MUDDY5/SAND6 (:24-33).
-        t("op_mode", "Chế độ lái", "Drive mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoEnergyDevice.getOperationMode"),
-        // BYDAutoEnergyDevice.java:112 — STOP0/EV1/FORCE_EV2/HEV3/FUEL4/KEEP5 (:18-23). Cũ `getEnergyWorkMode` không tồn tại.
-        t("energy_mode", "Chế độ năng lượng", "Energy mode", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoEnergyDevice.getEnergyMode"),
+        // ⚠⚠ 1.90 · **`op_mode` (Chế độ lái) và `energy_mode` (Chế độ năng lượng) ĐÃ XOÁ HẲN** — owner chốt
+        // 2026-09-21. `energy_mode` vì **xe thuần điện** (thang STOP/EV/FORCE_EV/HEV/FUEL/KEEP không có nghĩa khi
+        // không có động cơ xăng — [ĐO sweep 09-21] đọc ra `3`=HEV trên một chiếc EV, tức con số vô nghĩa đang được
+        // bày ra như thật); `op_mode` vì nút đổi chế độ lái (`drive_mode`) đã gỡ từ (V) 2026-09-17, nên chỉ còn một
+        // ô CHỈ-ĐỌC cho thứ người lái đã thấy ngay trên táp-lô.
+        // ⇒ Hai trường `CarStatus.Drivetrain.opMode`/`energyMode` + hai mục `FAST_IDS` gỡ theo (chúng không còn ai
+        // đọc). Nút `powertrain_mode` (EV/HEV) cũng xoá cùng lượt ở `ControlRegistry`.
         // ⚠ (V) FEATURE-FILTER 2026-09-17 — `drift_mode` (đọc) và `drive_mode` (nút, ControlRegistry) đã xoá:
-        // owner chấm NO. `op_mode` ngay trên đây GIỮ — nó là **thông tin** (xe đang ở chế độ nào), không phải nút
-        // đổi chế độ lái. Đừng gộp hai thứ đó lại khi đọc nhật ký này.
+        // owner chấm NO.
 
         // ── A3. Khí hậu / không khí ──────────────────────────────────────────────────────────────
         // ⚠⚠ [U6 · ĐO ảnh 2026-09-12] BA Ô GẦN TRÙNG TÊN — "PM2.5 level" · "PM2.5" · "PM2.5 sensor" nằm cạnh nhau

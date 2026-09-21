@@ -32,7 +32,7 @@ class SettingsBarsSection(
 ) {
 
     /** Bộ chọn chip — MỘT thực thể cho một lượt dựng trang (nó giữ bảng tra `mã → view` để tô lại ô). */
-    private val stripPicker = TopStripPicker(context, rows, deps.state().topStrip) { id, on -> deps.onTopStrip(id, on) }
+    private val stripPicker = TopStripPicker(context, rows, deps.state().topStrip, { id, on -> deps.onTopStrip(id, on) }, { cfg -> deps.onTopStripConfig(cfg) })
 
     /**
      * UX-OVERHAUL · WP4 — sắp chỗ các vật trên **thanh trên**.

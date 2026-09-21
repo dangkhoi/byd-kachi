@@ -53,34 +53,26 @@ object VoiceModelStore {
     }
 
     /**
-     * Model NGHE đang chọn (A/B) — lưu ở prefs riêng.
+     * Model NGHE đang dùng.
      *
-     * ## ⚠ V3 · R6 — máy ĐÃ cài fp32 thì GIỮ fp32, dù mặc định đã đổi sang int8
-     * 1.66 đổi [SherpaModelCatalog.DEFAULT_ID] sang bản int8 (74 MB thay 266 MB — lý do ở KDoc
-     * [SherpaModelCatalog.ZIPFORMER_VI_INT8]). Nếu ở đây chỉ trả mặc định thì mọi xe đang chạy tốt với fp32 sẽ
-     * **mất mô hình trong một lượt cập nhật**: `isReady` soi thư mục của mô hình đang chọn, thấy trống, và người
-     * lái bấm mic ra câu *"chưa tải mô hình"* — kèm một lượt tải 74 MB qua 4G mà không ai xin.
+     * ## ⚠ Từ bản release production (owner 2026-09-21) chỉ còn đường ĐỌC, không còn đường CHỌN
+     * Danh mục còn **đúng một** gói ([SherpaModelCatalog.ALL]) và hai nút đổi mô hình trong Cài đặt đã gỡ, nên
+     * `select(ctx, id)` — chỗ ghi DUY NHẤT của [KEY_MODEL] — cũng gỡ theo. Khoá ấy vẫn được **đọc** ở dòng đầu vì
+     * các bản ≤ 1.87 đã ghi nó trên những chiếc xe đang chạy; [SherpaModelCatalog.byId] lùi mọi id không còn trong
+     * danh mục về gói duy nhất, nên một pref cũ không thể làm câm đường nghe.
      *
-     * ⇒ Khi người dùng **chưa từng chọn** (pref trống): mô hình nào **đã nằm trên đĩa** thì dùng nó; không có cái
-     * nào thì mới lấy mặc định. Không ghi pref ở đây — lượt ghi duy nhất vẫn là [select] (một cú chạm của người
-     * dùng), để đường này không lặng lẽ chốt một lựa chọn thay họ.
+     * ## Vì sao hai nhánh dò-trên-đĩa của 1.66/1.70 đã BỎ, và vì sao bỏ được mà không đổi hành vi
+     * Chúng tồn tại để một xe **đã** cài fp32 không mất mô hình khi mặc định đổi sang int8, và để int8 thắng fp32
+     * khi cả hai cùng nằm trên đĩa ([ĐO xe 2026-09-17]: xe owner giải mã fp32 dù int8 đã tải xong, chỉ vì fp32
+     * đứng trước trong `ALL`). Với một danh mục **một phần tử**, cả hai nhánh chỉ có thể trả về đúng gói mà
+     * `default()` đã trả — tức mã không bao giờ chạy, đội lốt một lá chắn còn sống.
+     *
+     * ⚠ Hàm này **không ghi** gì: một lượt đọc không được phép chốt lựa chọn thay người dùng.
      */
-    fun selected(ctx: Context): SherpaModelCatalog.SherpaModel {
-        prefs(ctx).getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() }?.let { return SherpaModelCatalog.byId(it) }
-        val default = SherpaModelCatalog.default()
-        if (isReady(ctx, default)) return default
-        // 1.70 — chưa chọn và mặc định chưa có: ưu tiên gói **int8 không thử nghiệm** đã nằm trên đĩa, rồi mới
-        // tới gói bất kỳ. [ĐO xe 2026-09-17] xe owner có CẢ fp32 lẫn int8 mà vẫn giải mã bằng fp32 (4,3 s cho
-        // 8 s tiếng dưới tải) chỉ vì fp32 đứng trước trong `ALL`; owner đã chốt int8 từ 09-16. Vẫn KHÔNG ghi
-        // pref ở đây (lượt ghi duy nhất là [select]).
-        SherpaModelCatalog.ALL.firstOrNull { !it.experimental && it.isInt8 && isReady(ctx, it) }?.let { return it }
-        return SherpaModelCatalog.ALL.firstOrNull { isReady(ctx, it) } ?: default
-    }
-
-    /** Đổi model đang chọn (Cài đặt A/B). Không tải — chỉ ghi lựa chọn; lần bật mic sau nạp bản mới nếu đã cài. */
-    fun select(ctx: Context, id: String) {
-        prefs(ctx).edit().putString(KEY_MODEL, id).apply()
-    }
+    fun selected(ctx: Context): SherpaModelCatalog.SherpaModel =
+        prefs(ctx).getString(KEY_MODEL, null)?.takeIf { it.isNotBlank() }
+            ?.let { SherpaModelCatalog.byId(it) }
+            ?: SherpaModelCatalog.default()
 
     /** Thư mục của một gói (mặc định: mô hình NGHE đang chọn). */
     fun dir(ctx: Context, pack: VoicePack = selected(ctx)): File =

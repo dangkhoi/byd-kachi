@@ -69,6 +69,54 @@ class VoiceWindowScopeTest {
     )
 
     /**
+     * ⚠⚠ 1.91 (owner 2026-09-21) — *"MỞ HẾT CỬA SỔ"* PHẢI LÀ **CẢ BỐN**, không phải mỗi bên lái.
+     *
+     * Bài này khoá bug owner báo trên xe: nói *"mở hết cửa sổ"* thì chỉ **một** cửa hạ. Gốc là chỗ hụt **đối
+     * xứng** trong [VoiceSynonyms.CONTROL], không phải một luật sai — mọi cụm tường minh-tất-cả dựng trên chữ
+     * *"kính"* (`het kinh` · `toan bo kinh` · `moi kinh` · `bon kinh`), còn chữ *"cửa sổ"* chỉ có đúng một dạng số
+     * nhiều (`cac cua so`). Nên *"hết cửa sổ"* không khớp cụm nào và luật dãy-dài-nhất lùi xuống `cua so` (2 từ) ở
+     * vị trí sau = **kính LÁI** theo đúng lượt D. Hai quyết định trước đó đều đúng; chỉ là nhánh *"tất cả"* chưa
+     * bao giờ được viết bằng thứ tiếng người lái đang dùng.
+     *
+     * Bài cũng khoá **giao điểm** của luật dãy-dài-nhất ở chỗ khó nhất: `het cua so` (3 từ, vị trí 1) phải thắng
+     * `cua so` (2 từ, vị trí 2) — hai cụm LỒNG NHAU, khác vị trí. Gỡ một dòng khỏi nhánh mới là bài này đỏ.
+     */
+    @Test fun `1_91 · luong tu tuong minh + cua so = CA BON kinh`() = expect(
+        "mở hết cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        "mở tất cả cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        "mở toàn bộ cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        "mở mọi cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        "mở bốn cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        // …và chiều ĐÓNG, để cụm mới không chỉ đúng một nửa.
+        "đóng hết cửa sổ" to VoiceIntent.Control("windows_all", 0),
+        "đóng tất cả cửa sổ" to VoiceIntent.Control("windows_all", 0),
+        "đóng toàn bộ cửa sổ" to VoiceIntent.Control("windows_all", 0),
+        // Nhánh *"cửa kính"* + dạng miền Nam *"kiếng"*.
+        "mở hết cửa kính" to VoiceIntent.Control("windows_all", 1),
+        "mở tất cả cửa kính" to VoiceIntent.Control("windows_all", 1),
+        "mở toàn bộ cửa kính" to VoiceIntent.Control("windows_all", 1),
+        "mở bốn cửa kính" to VoiceIntent.Control("windows_all", 1),
+        "mở tất cả kiếng" to VoiceIntent.Control("windows_all", 1),
+        // Dạng viết bằng CHỮ SỐ (gõ trên xe) — cùng nút, dù không bias được ở tầng âm.
+        "mở 4 cửa sổ" to VoiceIntent.Control("windows_all", 1),
+        "mở 4 kính" to VoiceIntent.Control("windows_all", 1),
+    )
+
+    /**
+     * ⚠⚠ Chiều NGƯỢC của bài trên — **cụm mơ hồ KHÔNG được kéo theo**. Đây là phép chống hồi quy của lượt D.
+     *
+     * Nhánh mới của 1.91 chỉ nhận cụm có **lượng từ tường minh đứng TRƯỚC** (hết · toàn bộ · tất cả · mọi · bốn).
+     * Nếu ai đó "đơn giản hoá" bằng cách đẩy `cua so` trần sang nút gộp thì hai dòng dưới đỏ ngay — và đó chính là
+     * bug owner đã báo ở 1.80 (*"mở kính"* hạ cả 4).
+     */
+    @Test fun `1_91 · cum mo ho van la MOT kinh lai`() = expect(
+        "mở cửa sổ" to VoiceIntent.Control("window", 1),
+        "mở kính" to VoiceIntent.Control("window", 1),
+        "đóng cửa sổ" to VoiceIntent.Control("window", 0),
+        "đóng kính" to VoiceIntent.Control("window", 0),
+    )
+
+    /**
      * «nửa / 50%» ⇒ mức NỬA (COVER value 2 → HAL state 4). Không "nửa" ⇒ mở (value 1).
      *
      * ## ⚠⚠ HỆ QUẢ ĐO ĐƯỢC của lượt D — cụm MƠ HỒ mất mức Nửa (câu hỏi cho owner)

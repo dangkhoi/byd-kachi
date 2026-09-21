@@ -271,20 +271,42 @@ object VietMapAutostart {
      */
     private fun pollUntilInMap(sh: (String) -> LocalShellText): Boolean {
         val deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS
-        var resumedSinceMs = 0L
+        var readySinceMs = 0L
         while (System.currentTimeMillis() < deadline) {
             Thread.sleep(POLL_INTERVAL_MS)
             val resumed = runCatching {
                 isInMapActivity(sh("dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity'").output)
             }.getOrDefault(false)
+            // [ĐO xe 2026-09-21] MainActivity resumed ≠ bóng đã dựng: VMBluetoothService (service dựng bóng nổi)
+            // khởi CHẬM hơn map ⇒ hạ nền chỉ theo "resumed" thì bóng chưa kịp lên. Chờ THÊM: service dựng bóng đã
+            // chạy. Đọc lỗi service (rỗng) ⇒ coi như CHƯA sẵn (an toàn: chờ tiếp tới timeout).
+            //
+            // ⚠ [SOÁT 2026-09-21 · P2] Chỉ đọc service KHI ĐÃ resumed — bóng không thể dựng trước khi app lên, nên
+            // một lượt `dumpsys` khi `resumed == false` không bao giờ đổi được kết quả. Vòng này chạy ĐÚNG lúc nổ
+            // máy, nơi [ĐO xe] load đã tới 14; hỏi vô điều kiện là nhân đôi số lệnh dumpsys (tới 2×50 lượt) trên
+            // chính giây phút hệ đang đói CPU.
+            val bubbleUp = resumed && runCatching {
+                hasBubbleService(sh("dumpsys activity services vn.vietmap.live").output)
+            }.getOrDefault(false)
             val nowMs = System.currentTimeMillis()
-            if (resumed) {
-                if (resumedSinceMs == 0L) resumedSinceMs = nowMs
-                if (nowMs - resumedSinceMs >= SETTLE_MS) return true
+            if (resumed && bubbleUp) {
+                if (readySinceMs == 0L) readySinceMs = nowMs
+                if (nowMs - readySinceMs >= SETTLE_MS) return true
             } else {
-                resumedSinceMs = 0L   // còn ở splash/flash (chưa vào MainActivity) ⇒ chờ vào map thật
+                readySinceMs = 0L   // chưa vào map thật HOẶC bóng chưa dựng ⇒ chờ tiếp
             }
         }
         return false
     }
+
+    /**
+     * PURE — từ `dumpsys activity services vn.vietmap.live`, service dựng BÓNG nổi (`VMBluetoothService`) đã chạy
+     * chưa. Đây là service mod VietMap tạo overlay bóng trên cụm (runbook §10); [ĐO xe 2026-09-21] khi nó CHƯA
+     * chạy thì bóng không lên dù MainActivity đã resumed. Rỗng/đọc-lỗi ⇒ false (chờ tiếp).
+     */
+    internal fun hasBubbleService(dumpsysServicesGrep: String, marker: String = BUBBLE_SERVICE): Boolean =
+        dumpsysServicesGrep.contains(marker)
+
+    /** Tên service dựng bóng của mod VietMap (ServiceRecord trong dumpsys). */
+    const val BUBBLE_SERVICE = "VMBluetoothService"
 }

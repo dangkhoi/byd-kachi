@@ -104,9 +104,9 @@
 
 ---
 
-## KẾT QUẢ ON-CAR 2026-09-21 (xe 172.20.10.8, DiLink3.0, đổ xe) — phần EM verify qua adb_raw.py
+## KẾT QUẢ ON-CAR 2026-09-21 (xe <car-ip>, DiLink3.0, đổ xe) — phần EM verify qua adb_raw.py
 
-**Kết nối**: macOS adb bị chặn (`No route to host` dù cổng 5555 mở) — dùng `scripts/vehicle/kachi/adb_raw.py 172.20.10.8 5555` (pure-python, ký adbkey). ⚠ adbd churn (`host-xx already offline`) = BUG2 (Kachi giữ dadb loopback) — chập chờn nhưng dùng được.
+**Kết nối**: macOS adb bị chặn (`No route to host` dù cổng 5555 mở) — dùng `scripts/vehicle/kachi/adb_raw.py <car-ip> 5555` (pure-python, ký adbkey). ⚠ adbd churn (`host-xx already offline`) = BUG2 (Kachi giữ dadb loopback) — chập chờn nhưng dùng được.
 
 | Mục | Kết quả EM verify | Trạng thái |
 |---|---|---|

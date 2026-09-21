@@ -196,6 +196,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         super.onCreate(savedInstanceState)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        // #10 (owner 2026-09-21 · [ĐO xe] taskbar ROM lòi lúc launcher start → đẩy layout, phải nhấn Home): áp
+        // immersive NGAY ở onCreate (trước lượt bố trí đầu), rồi re-apply vài nhịp đầu vì ROM DiLink dựng taskbar
+        // của nó SAU khi Kachi lên ⇒ một lần gọi lúc onResume không đủ, taskbar hiện lại trong ~1-2s đầu.
+        goImmersive()
+        window.decorView.post { goImmersive() }
+        handler.postDelayed({ if (!destroyed) goImmersive() }, 800)
+        handler.postDelayed({ if (!destroyed) goImmersive() }, 2000)
         container = AppContainer.get(this)
         // Owner 2026-09-15: ghi logcat của app ra THẺ suốt phiên (nhẹ head unit, lấy về bằng adb pull) — để có ngữ
         // cảnh khi patch lỗi trên xe. Idempotent + luồng nền daemon; DiagStorageCap dọn không cho phình.

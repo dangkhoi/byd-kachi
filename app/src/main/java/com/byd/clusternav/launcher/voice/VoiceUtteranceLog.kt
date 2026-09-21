@@ -48,7 +48,7 @@ import java.util.zip.ZipOutputStream
  *
  * ## Ba ràng buộc không được vi phạm
  *  1. **Không chạm mạng.** Bài canh `khong tep Voice nao gui tieng noi ra mang` quét đúng tệp này. Tiếng rời khỏi
- *     xe CHỈ khi người dùng tự bấm *Xuất nhật ký voice* (hoặc lệnh `voice_dump`) — một tệp zip trên thẻ, do họ
+ *     xe CHỈ khi có người chạy lệnh `voice_dump` qua cầu kiểm thử — một tệp zip trên thẻ, do họ
  *     cầm đi, không phải một lượt gửi.
  *  2. **Không I/O trên luồng gọi.** Mọi lượt ghi/dọn/nén nằm trên [io] (một luồng nền daemon). [ĐO xe 1.68]
  *     ngân sách `KachiPerf`: shell 27 lần/phút · log 9,8 KB/phút — một lượt ghi 300 KB trên luồng vẽ ở đúng

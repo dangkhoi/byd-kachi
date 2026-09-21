@@ -17,6 +17,24 @@ data class TelemetryView(
     val shape: WidgetShape,
     val tier: EvidenceTier,
     val valueText: String?,
+    /**
+     * Datum **BẬT/TẮT** đang ở trạng thái nào — `true` = đang bật, `false` = đang tắt.
+     *
+     * Sinh ra để bề mặt hẹp (chip thanh trên) vẽ **trạng thái bằng ICON sáng/mờ** thay vì bằng chữ *"Bật"/"Tắt"*
+     * (owner 2026-09-21: *"trạng thái bật/tắt phải thể hiện bằng icon active/inactive, KHÔNG bằng chữ"*). [valueText]
+     * **KHÔNG đổi** — ô lớn vẫn hiện chữ; đây là một trường CỘNG THÊM, không phải một cách trình bày khác.
+     *
+     * ## ⚠ `null` gộp HAI ca, có chủ ý
+     * `null` = *"id này không phải datum bật/tắt"* **hoặc** *"là bật/tắt nhưng chưa đọc được"* (off-car / không có
+     * trên trim). Gộp vì mọi bề mặt xử hai ca ấy **y như nhau**: không có trạng thái để tô thì hiện giá trị (hoặc
+     * `"—"`) ở sắc thái trung tính. Tách thành tri-state chỉ để rồi hai nhánh viết cùng một đoạn mã là mời một cái
+     * `when` thứ hai đi lệch về sau.
+     *
+     * ⚠ **Đây là đường DUY NHẤT** để tầng vẽ biết một datum là bật/tắt. Tuyệt đối KHÔNG so [valueText] với
+     * `"Bật"`/`"Tắt"`: chuỗi đó đổi theo ngôn ngữ (xem cảnh báo ở [TelemetryReadout.onOff]), nên so chuỗi sẽ vỡ
+     * **im lặng** với đúng một nửa người dùng — cùng cái bẫy mà [GroupBoard] đã bị cấm rơi vào.
+     */
+    val onOff: Boolean? = null,
 ) {
     /** Có đọc được giá trị không (off-car/null ⇒ false ⇒ view mờ). */
     val available: Boolean get() = valueText != null
@@ -53,9 +71,57 @@ object TelemetryReadout {
     /** [TelemetryView] cho [id] từ [status], hoặc null nếu [id] không có trong [TelemetryRegistry]. */
     fun of(id: String, status: CarStatus): TelemetryView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
+        // Datum bật/tắt đi qua [boolOf] — MỘT chỗ biết "id nào là bật/tắt", và chính chỗ đó cũng dựng chữ. Tách
+        // thành hai bảng (một để biết, một để format) là đúng bẫy hai-bản-sao: chúng lệch nhau ở đúng lần ai đó
+        // thêm datum thứ 14 mà chỉ sửa một bên, và lỗi ấy im lặng.
+        val bool = boolOf(id, status)
+        val value = if (bool != null) bool.on?.let { onOff(it) } else format(id, status)
         // U5 · T2: nhãn theo ngôn ngữ ngay tại đây — `TelemetryView` là thứ tầng vẽ đọc, nên nếu để nhãn gốc thì
         // `:app` phải tự dịch lại (bản-sao-thứ-hai của phép chọn ngôn ngữ).
-        return TelemetryView(spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, format(id, status))
+        return TelemetryView(spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, value, bool?.on)
+    }
+
+    /**
+     * Một datum BẬT/TẮT đã đọc. `Bool(null)` = là datum bật/tắt nhưng **chưa đọc được**; bản thân [boolOf] trả
+     * `null` khi id **không phải** datum bật/tắt. Hai mức null khác nghĩa nhau, nên phải là hai tầng.
+     */
+    private class Bool(val on: Boolean?)
+
+    /**
+     * ĐÚNG MỘT bản kê các datum **bật/tắt** (giá trị hiện ra là kết quả của [onOff]) — vừa trả lời *"id này có phải
+     * bật/tắt không"*, vừa đưa ra cờ thật để [of] dựng chữ. Id khác ⇒ `null` ⇒ [of] đi đường [format].
+     *
+     * ## Vì sao đọc thẳng field [CarStatus] chứ không phân loại theo registry
+     * *"Là bật/tắt"* là tính chất của **kiểu dữ liệu xe trả về** (`Boolean?`), không phải của dòng registry:
+     * [TelemetrySpec.unit] rỗng cho cả bool, enum (`gear`, `op_mode`) và chuỗi (`vin`), còn
+     * [TelemetrySpec.widgetKind] nói về *hình vẽ*. Cùng lối [GroupBoard.toneOf] đã đi.
+     *
+     * ⚠ CỐ Ý **không** gom [yesNo] (`pm25_online`: Có/Không) và [openShut] (cửa/cốp: Mở/Đóng) vào đây. Chúng cũng là
+     * `Boolean?` nhưng nghĩa khác: *"có kết nối"* và *"đang mở"* không đọc ra được từ một icon sáng/mờ, và *"cửa
+     * đang mở"* là chuyện đáng báo (xem `GroupBoard` xếp nó vào ALERT) chứ không phải một công tắc. Mở phạm vi ở đây
+     * là âm thầm biến một cảnh báo thành một icon mờ.
+     */
+    private fun boolOf(id: String, s: CarStatus): Bool? = when (id) {
+        // ── Khí hậu ─────────────────────────────────────────────────────────────────────
+        "ac_on" -> Bool(s.climate.acOn)
+        "anion_state" -> Bool(s.climate.anionOn)
+        "defrost_front_state" -> Bool(s.climate.defrostFrontOn)
+        "defrost_rear_state" -> Bool(s.climate.defrostRearOn)
+
+        // ── Thân xe ─────────────────────────────────────────────────────────────────────
+        "emergency_alarm" -> Bool(s.body.emergencyAlarm)
+
+        // ── Đèn ─────────────────────────────────────────────────────────────────────────
+        "light_low_beam" -> Bool(s.lights.lowBeam)
+        "light_high_beam" -> Bool(s.lights.highBeam)
+        "light_front_fog" -> Bool(s.lights.frontFog)
+        "light_rear_fog" -> Bool(s.lights.rearFog)
+        "light_left_turn" -> Bool(s.lights.leftTurn)
+        "light_right_turn" -> Bool(s.lights.rightTurn)
+        "light_side" -> Bool(s.lights.sideLight)
+        "light_drl" -> Bool(s.lights.drl)
+
+        else -> null
     }
 
     /** Giá trị hiển thị đã format cho telemetry [id] từ [s]; null = chưa đọc/không có ⇒ "—". */
@@ -79,8 +145,7 @@ object TelemetryReadout {
         // ── A2. Động lực ────────────────────────────────────────────────────────────────
         "speed" -> s.drivetrain.speedKmh?.toString()
         "gear" -> s.drivetrain.gear
-        "op_mode" -> s.drivetrain.opMode
-        "energy_mode" -> s.drivetrain.energyMode
+        // ⚠ 1.90 · `op_mode`/`energy_mode` xoá (owner 2026-09-21 — xe thuần điện; xem `TelemetryRegistry`).
 
         // ── A3. Khí hậu ─────────────────────────────────────────────────────────────────
         "pm25_level" -> s.climate.pm25Level?.toString()
@@ -89,10 +154,8 @@ object TelemetryReadout {
         "pm25_online" -> s.climate.pm25Online?.let { yesNo(it) }
         "cabin_temp" -> s.climate.cabinTempC?.toString()
         "ext_temp" -> s.climate.outsideTempC?.toString()
-        "ac_on" -> s.climate.acOn?.let { onOff(it) }
         "ac_wind" -> s.climate.fanLevel?.toString()
         "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc") else Strings.t("Ngoài", "Fresh") }
-        "anion_state" -> s.climate.anionOn?.let { onOff(it) }
         "inside_temp" -> s.climate.setTempC?.toString()
         "temp_unit" -> s.climate.tempUnit
         // H1 · T2 — ghế đọc ra MÃ mức của khung, phải đổi qua [ControlLevels] mới thành chữ người ta hiểu. Mã NGOÀI
@@ -100,8 +163,6 @@ object TelemetryReadout {
         // MỘT điểm đo — TODO điểm thứ hai ghi ở [ControlLevels]).
         "seat_vent_state" -> s.climate.seatVentRaw?.let { levelText("seatc", it) }
         "seat_heat_state" -> s.climate.seatHeatRaw?.let { levelText("seath", it) }
-        "defrost_front_state" -> s.climate.defrostFrontOn?.let { onOff(it) }
-        "defrost_rear_state" -> s.climate.defrostRearOn?.let { onOff(it) }
         // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
         // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
         "ac_mode_auto" -> s.climate.acModeRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
@@ -137,18 +198,11 @@ object TelemetryReadout {
         "power_level" -> s.body.powerLevel?.toString()
         "vehicle_type" -> s.body.vehicleType
         "sunroof_state" -> s.body.sunroofOpen?.let { openShut(it) }
-        "emergency_alarm" -> s.body.emergencyAlarm?.let { onOff(it) }
 
         // ── A6. Đèn ─────────────────────────────────────────────────────────────────────
-        "light_low_beam" -> s.lights.lowBeam?.let { onOff(it) }
-        "light_high_beam" -> s.lights.highBeam?.let { onOff(it) }
-        "light_front_fog" -> s.lights.frontFog?.let { onOff(it) }
-        "light_drl" -> s.lights.drl?.let { onOff(it) }
+        // 8 datum đèn bật/tắt (cốt/pha/sương trước-sau/xi-nhan/đèn hông/DRL) nằm ở [boolOf] — chỉ `headlight_feedback`
+        // là CHẾ ĐỘ (một con số, không phải công tắc) nên nó ở lại đây.
         "headlight_feedback" -> s.lights.headlightMode?.toString()
-        "light_rear_fog" -> s.lights.rearFog?.let { onOff(it) }
-        "light_left_turn" -> s.lights.leftTurn?.let { onOff(it) }
-        "light_right_turn" -> s.lights.rightTurn?.let { onOff(it) }
-        "light_side" -> s.lights.sideLight?.let { onOff(it) }
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
@@ -158,8 +212,10 @@ object TelemetryReadout {
         "vin" -> s.identity.vin
         "oil_level" -> s.identity.oilLevelPct?.toString()
 
-        // MỌI id trong registry đều có case ở trên (test `every id maps`). Non-resolvable (GPS/NaviInfo,
-        // SET_DR_SOC_TARGET) đọc null (route None) ⇒ "—". else = phòng vệ id ngoài-registry (of() đã chặn).
+        // MỌI id trong registry đều có case — ở ĐÂY hoặc ở [boolOf] (test `moi telemetry id deu of duoc`).
+        // Non-resolvable (GPS/NaviInfo, SET_DR_SOC_TARGET) đọc null (route None) ⇒ "—". else = phòng vệ id
+        // ngoài-registry (of() đã chặn) **và** là đường đi của 13 datum bật/tắt (of() đã lấy chữ từ [boolOf] trước
+        // khi gọi hàm này, nên chúng không bao giờ tới được đây).
         else -> null
     }?.takeIf { it.isNotBlank() }
 
@@ -172,7 +228,9 @@ object TelemetryReadout {
      *
      * ⚠ [GroupBoard] **KHÔNG** được so chuỗi này để quyết định sắc thái (KDoc ở đó đã cấm) — nay lý do càng mạnh:
      * chuỗi đổi theo ngôn ngữ, nên so chuỗi sẽ **vỡ khi người dùng chọn English**, tức lỗi chỉ xảy ra với một nửa
-     * người dùng.
+     * người dùng. Cần biết một datum đang bật/tắt thì đọc [TelemetryView.onOff] — đường DUY NHẤT, và nó là `Boolean`
+     * nên không có ngôn ngữ nào để mà lệch. [onOff] chỉ còn được gọi từ [of] (đường bật/tắt) — đừng gọi nó ở chỗ
+     * khác, vì chỗ gọi mới sẽ là một datum bật/tắt mà [boolOf] không biết ⇒ chip mất icon trạng thái, im lặng.
      */
     private fun yesNo(b: Boolean) = if (b) Strings.t("Có", "Yes") else Strings.t("Không", "No")
     private fun onOff(b: Boolean) = if (b) Strings.t("Bật", "On") else Strings.t("Tắt", "Off")

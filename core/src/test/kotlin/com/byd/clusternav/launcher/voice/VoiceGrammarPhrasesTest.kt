@@ -298,7 +298,19 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-20 · UX-OVERHAUL WP8] **372 → 308 (−64)**: 37 mã purge kéo theo cả cách nói riêng
         // của chúng (10 dòng `VoiceSynonyms` + nhãn nhiều từ của 29 datum + 8 nút) và 5 cụm của nhóm `g_ambient`.
         // Số đọc từ **actual** của chính bài này, như mọi lượt trước.
-        const val EXPECTED_PHRASES_KEPT = 306
+        // [ĐO off-car 2026-09-21 · 1.90] **306 → 284 (−22)**: owner gỡ 9 nút + 2 datum cho **xe thuần điện**, và
+        // cùng lượt gỡ 10 dòng `VoiceSynonyms` của chúng (`vol` ×3 · `cast` ×4 · `brightness_gear` ×2 · `anion` ×1 ·
+        // `headlight_mode` ×1 · `screen_rotation` ×1 · `camera_view` ×1 · `cluster_music` ×1 · `powertrain_mode` ×3)
+        // ⇒ mọi cụm nhiều từ dựng từ nhãn + nhãn ngắn + cách nói của chúng rụng theo. Số đọc từ **actual** của
+        // chính bài này, như mọi lượt trước — không chép tay.
+        // [ĐO off-car 2026-09-21 · 1.91 MỞ RỘNG DICTIONARY] **284 → 350 (+66)** = đúng 66 cách nói NHIỀU TỪ mới
+        // thêm vào `VoiceSynonyms` lượt này (owner: *"nhiều câu tương tự nhau cho 1 command"* + sửa bug *"mở hết
+        // cửa sổ"* chỉ mở mỗi bên lái). Đếm bằng máy trên CHÍNH tệp từ điển của bài này: cả 66 cụm đều tra được
+        // trọn vẹn (không từ nào vắng khỏi 19.529 mục) ⇒ **không** cụm nào rơi sang [EXPECTED_PHRASES_DROPPED] —
+        // đúng như lượt H3/H4 đã thấy, vì cách nói đời thường tiếng Việt là đúng thứ mô hình VN phủ tốt nhất.
+        // Hai dạng mang CHỮ SỐ (`4 cua so` · `4 kinh`) KHÔNG nằm ở con số này: chúng khai ở `NO_VI_FORM`, và chữ
+        // `4` không có trong từ điển nên chúng rơi sang vế BỊ LOẠI. Số đọc từ **actual**, không chép tay.
+        const val EXPECTED_PHRASES_KEPT = 350
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -336,7 +348,17 @@ class VoiceGrammarPhrasesTest {
         //   *"Fan mode"* (+ nhãn ngắn *"Fan auto"*), trừ đi hai cụm EN của `hood` (*"Bonnet"* là một từ nên
         //   không nằm ở con số CỤM). Số đọc từ **actual** của chính bài này.
         // [ĐO off-car 2026-09-20 · WP8] **233 → 193 (−40)**: cụm bị loại cũng teo theo 37 mã purge.
-        const val EXPECTED_PHRASES_DROPPED = 192
+        // [ĐO off-car 2026-09-21 · 1.90] **192 → 171 (−21)** = nhãn tiếng ANH của 9 nút + 2 datum vừa xoá
+        // (*"Volume"* · *"Cast to cluster"* · *"Headlight mode"* + 4 `argsEn` · *"EV / HEV"* + 2 `argsEn` ·
+        // *"Screen rotation"* · *"Camera view"* · *"Music on cluster"* · *"Screen brightness"* · *"Negative ions"* ·
+        // *"Drive mode"* · *"Energy mode"*…). Chúng vốn nằm ở vế BỊ LOẠI (mô hình VN không phát được), nên lượt xoá
+        // làm cả hai vế cùng teo. Số đọc từ **actual**.
+        // [ĐO off-car 2026-09-21 · 1.91 MỞ RỘNG DICTIONARY] **171 → 175 (+4)** = đúng BỐN cách nói mới mà mô hình
+        // tiếng Việt không đọc nổi, và cả bốn đều đã được khai tường minh ở [SherpaSpokenWords.NO_VI_FORM]:
+        // `4 cua so` · `4 kinh` (chữ `4` — [ĐO] `grep -xF 4` trên chính tệp 19.529 mục: KHÔNG có) và `drl` ·
+        // `sunroof` (chữ Anh/chữ tắt — cũng KHÔNG có). 66 cách nói thuần Việt còn lại giữ được HẾT, nên lượt này
+        // hai vế đổi độc lập nhau. Số đọc từ **actual** của chính bài này.
+        const val EXPECTED_PHRASES_DROPPED = 175
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -404,7 +426,16 @@ class VoiceGrammarPhrasesTest {
         // của `hood` (`nắp` · `ca` · `pô` · `máy` — phần lớn đã có sẵn ở từ vựng khác nên rụng ít). Số đọc từ
         // **actual** của chính bài này, không phải phép đoán.
         // [ĐO off-car 2026-09-20 · WP8] **2117 → 1899 (−213)**: 37 mã purge kéo theo mọi mục hotword của chúng.
-        const val EXPECTED_ENTRIES = 1899
+        // [ĐO off-car 2026-09-21 · 1.90] **1899 → 1804 (−95)** = hệ quả của cùng lượt gỡ 9 nút + 2 datum: mỗi nhãn/
+        // cách nói mất đi kéo theo cả chùm mục ngữ pháp nở ra từ nó (động từ × đối tượng × dạng số). Số đọc từ
+        // **actual** của chính bài này.
+        // [ĐO off-car 2026-09-21 · 1.91 MỞ RỘNG DICTIONARY] **1804 → 1946 (+142)** = 66 **cụm** nhiều từ mới
+        // ([EXPECTED_PHRASES_KEPT]) **cộng** 76 mục **TỪ ĐƠN** lần đầu xuất hiện, nở theo họ thanh điệu như mọi
+        // lượt trước: `đít` · `mông` · `ấm` · `sương` · `nóc` · `cabin` · `lớn` · `hậu` · `hành` · `lý` · `chốt` ·
+        // `gấp` · `đế` · `cảnh` · `người` · `rèm` · `trời` · `che` · `nắng` · `lăng` · `tuần` · `khí` · `khử` ·
+        // `quãng` · `bình` · `lốp` … (các từ như `cửa` · `sổ` · `kính` · `ghế` đã có sẵn nên cộng 0). Số đọc từ
+        // **actual** của chính bài này — phần nở theo thanh điệu KHÔNG tính tay được, đúng như KDoc trên đã dặn.
+        const val EXPECTED_ENTRIES = 1946
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

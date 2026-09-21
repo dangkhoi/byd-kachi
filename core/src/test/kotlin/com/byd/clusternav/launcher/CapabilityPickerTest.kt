@@ -80,8 +80,8 @@ class CapabilityPickerTest {
         // ⚠ WP8 2026-09-20: **73** đọc + **39** nút (owner purge 37 mã BỎ) · bảng ẩn +1 mục (`cast` — giữ
         // feature, chỉ ẩn ô khỏi bộ chọn) ⇒ 10 mục ẩn.
         assertEquals(
-            73 + 38 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
-            "mục rời theo lĩnh vực phải còn nguyên 73 đọc + 38 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
+            71 + 29 + 4 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 71 đọc + 29 nút + 4 gói lệnh (trừ mã ẩn có lý do)",
         )
     }
 

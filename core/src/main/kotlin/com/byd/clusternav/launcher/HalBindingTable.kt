@@ -280,8 +280,7 @@ class HalBindingTable(private val gateway: HalGateway) {
             // `../jadx-tmap/sources/android/hardware/bydauto/`, KHÔNG phải 0/1:
             // đèn ban ngày `setDayTimeLightState` — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (BYDAutoLightDevice.java:10/:8).
             "drl" -> intArrayOf(if (primary > 0) 1 else 2)
-            // EV/HEV `setEnergyMode` — index args [EV, HEV] → ENERGY_MODE_EV=1 / HEV=3 (BYDAutoEnergyDevice.java:18/:21).
-            "powertrain_mode" -> intArrayOf(if (primary == 0) 1 else 3)
+            // ⚠ 1.90 · nhánh `powertrain_mode` (EV→1 / HEV→3) gỡ cùng nút — owner 2026-09-21, xe thuần điện.
             // cửa sổ trời `setMoonRoofState` — cùng enum kính mở=1/đóng=2 (OpenBYD CarControlImpl.java:1503-1505).
             "sunroof" -> intArrayOf(if (primary > 0) 1 else 2)
             // sạc không dây `setWirelessChargingSwitchState` — CHARGE_WIRELESS_CHARGING_ON=1 / OFF=2 (:61/:60).

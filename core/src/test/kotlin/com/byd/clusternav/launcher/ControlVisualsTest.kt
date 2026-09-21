@@ -92,16 +92,25 @@ class ControlVisualsTest {
      */
     @Test
     fun `tap lua chon GIU chu va KHONG ra vach`() {
-        // ⚠ WP8 2026-09-20: `ambient_color` + `regen_level` đã purge ⇒ rời danh sách; bốn mã còn lại vẫn phủ cả
-            // hai hình dạng SELECT (2 lựa chọn và ≥4 lựa chọn).
-            listOf("headlight_mode", "powertrain_mode", "screen_rotation", "camera_view")
-            .forEach { id ->
-                val d = def(id)
-                assertFalse(ControlVisuals.isLevelScale(d), "$id là tập lựa chọn, không phải thang mức")
-                val v = ControlVisuals.of(d, 1)
-                assertEquals(0, v.ticks, "$id không được vẽ vạch")
-                assertEquals(d.argsIn(Lang.VI)[1], v.option, "$id phải giữ chữ lựa chọn đang chọn")
-            }
+        // ⚠ WP8 2026-09-20: `ambient_color` + `regen_level` đã purge ⇒ rời danh sách.
+        // ⚠⚠ 1.90 2026-09-21: BỐN mã còn lại (`headlight_mode` · `powertrain_mode` · `screen_rotation` ·
+        // `camera_view`) cũng bị owner xoá ⇒ **registry KHÔNG còn một nút SELECT không-thang-mức nào** ([ĐO] hai
+        // nút SELECT còn sống là `seatc`/`seath`, và cả hai ở trong `ControlLevels.RAW_BY_LEVEL` nên là THANG MỨC;
+        // COVER thì không đi qua nhánh SELECT của `ControlVisuals.of`).
+        //
+        // Vì thế bài này chuyển sang một `ControlDef` **dựng tại chỗ**, và đó là lựa chọn có chủ ý: bất biến cần
+        // canh là LUẬT VẼ của `ControlVisuals` (*"tập lựa chọn thì giữ chữ, không ra vạch"*), không phải nội dung
+        // registry hôm nay. Xoá bài đi thì ngày ai đó thêm lại một nút SELECT không-thang-mức, lỗi *"vẽ 'Xanh lá'
+        // thành 3/5 vạch"* mọc lại mà không bài nào đỏ — đúng họ lỗi mà KDoc phía trên mô tả.
+        val synthetic = ControlDef(
+            id = "test_select_khong_thang_muc", label = "Ô thử", icon = "ic-mode", kind = ControlKind.SELECT,
+            args = listOf("Một", "Hai", "Ba"), argsEn = listOf("One", "Two", "Three"),
+        )
+        assertTrue(ControlLevels.levelCount(synthetic.id) == 0, "tiền đề: mã này KHÔNG nằm trong thang mức")
+        assertFalse(ControlVisuals.isLevelScale(synthetic), "tập lựa chọn, không phải thang mức")
+        val v = ControlVisuals.of(synthetic, 1)
+        assertEquals(0, v.ticks, "không được vẽ vạch")
+        assertEquals(synthetic.argsIn(Lang.VI)[1], v.option, "phải giữ chữ lựa chọn đang chọn")
     }
 
     @Test
@@ -157,8 +166,8 @@ class ControlVisualsTest {
         assertEquals("22°", ControlVisuals.stepText(def("temp"), 22))
         assertEquals("", ControlVisuals.stepUnit(def("fan")), "ac_wind không có đơn vị")
         assertEquals("4", ControlVisuals.stepText(def("fan"), 4))
-        assertEquals("", ControlVisuals.stepUnit(def("vol")), "media_vol không có đơn vị")
-        assertEquals("12", ControlVisuals.stepText(def("vol"), 12))
+        // ⚠ 1.90 · hai mốc `vol` (media_vol, không đơn vị) và `brightness_gear` gỡ cùng nút (owner 2026-09-21).
+        // `fan` ngay trên vẫn phủ đúng ca *"nút STEP đọc một datum KHÔNG có đơn vị"* nên phép canh không mất vế.
         assertEquals("", ControlVisuals.stepUnit(def("defrost")), "nút không phải STEP thì không có ô giá trị")
     }
 
@@ -176,7 +185,10 @@ class ControlVisualsTest {
     @Test
     fun `so ky tu o gia tri suy tu REGISTRY va phu duoc moi nut STEP`() {
         val steps = ControlRegistry.ALL.filter { it.kind == ControlKind.STEP }
-        assertTrue(steps.size >= 3, "tiền đề: registry có nhiều nút STEP (nhiệt · gió · âm lượng …)")
+        // ⚠ 1.90 · sàn hạ **3 → 2**: hai nút STEP `vol` + `brightness_gear` bị owner xoá 2026-09-21 ⇒ còn `temp`
+        // (nhiệt độ) và `fan` (gió). Vẫn đủ hai vế mà bài cần: một nút CÓ đơn vị (`temp` → "33°") và một nút KHÔNG
+        // (`fan` → "7"), nên phép đo bề rộng lớn nhất vẫn có cái để so.
+        assertTrue(steps.size >= 2, "tiền đề: registry có nút STEP (nhiệt · gió)")
         val widest = steps.maxOf { d ->
             maxOf(ControlVisuals.stepText(d, d.min).length, ControlVisuals.stepText(d, d.max).length)
         }

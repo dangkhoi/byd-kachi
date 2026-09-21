@@ -281,12 +281,15 @@ object CapabilityCatalog {
         // Ca thứ BA của bảng này: ẩn vì **có bề mặt tốt hơn cho cùng dữ liệu**, không phải vì trùng
         // (`temp_unit`) hay vì thiếu phần cứng (`hood`, nay đã xoá). Datum GIỮ NGUYÊN trong `TelemetryRegistry` —
         // nhóm `g_tyres` và widget `w_tire` đọc đúng tám mã này; xoá chúng là gỡ luôn cái widget owner muốn.
-        "cast" to
-            "UX-OVERHAUL · WP8 (owner 2026-09-20, mục #58): việc CHIẾU CỤM đã có bề mặt riêng và tốt hơn — nút " +
-                "nổi trên màn (bật/tắt một cú chạm, thấy được cả khi đang mở app khác) + nhóm Cài đặt › Chiếu " +
-                "màn lên cụm + câu nói \"chiếu cụm\". Một ô TOGGLE giữa màn nói cùng việc đó là bề mặt thứ tư, và " +
-                "nó là bề mặt DUY NHẤT không cho biết đang chiếu app nào. GIỮ mã: nút nổi, giọng nói và ô của ai " +
-                "đã đặt từ bản trước đều đi qua `pick`/`kindOf`, nên xoá dòng registry là gỡ luôn cả tính năng.",
+        // ⚠⚠ 1.90 · mục `cast` ĐÃ RỜI bảng này vì mã bị **xoá hẳn** khỏi `ControlRegistry` (owner 2026-09-21).
+        // WP8 chỉ ẩn nó với lý do *"việc chiếu cụm đã có bề mặt riêng và tốt hơn"*; 1.90 bỏ hẳn sau khi [ĐO grep]
+        // xác nhận đường GHI của nó (`AutoContainer.sendInfo`) **chưa bao giờ được nối** — `BydHalGateway.localSet`
+        // trả `false` cho `AutoContainer` vì cast do `SimpleCastRuntime` sở hữu. Tức nút đó chết từ đầu.
+        // ⚠ Lý do cũ ghi *"xoá dòng registry là gỡ luôn cả tính năng"* là **SAI** và đã bị số đo bác: [ĐO grep] cả
+        // gói `modules/clustercast` (nút nổi · coordinator · bóng VietMap) có **0** tham chiếu tới `ControlRegistry`/
+        // `CapabilityCatalog`/`pick`/`kindOf`. Nút nổi + nhóm Cài đặt › Chiếu màn lên cụm chạy độc lập.
+        // Giữ một mục ẩn cho mã không còn tồn tại là ghim `HIDDEN_FROM_PICKER.size` vào một thứ hư — cùng lẽ đã
+        // ghi cho `hood` ở 1.85. Ô của ai đã đặt `cast` rụng qua `WorkspaceState.sanitized()`.
     ) + TYRE_SINGLES.associateWith { TYRE_SINGLE_WHY }
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */

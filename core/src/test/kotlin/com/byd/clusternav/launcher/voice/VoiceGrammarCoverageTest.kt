@@ -237,7 +237,8 @@ class VoiceGrammarCoverageTest {
             VoiceIntent.Control("door", null),
             VoiceIntent.Control("lock", 0),
             VoiceIntent.Control("windows_all", 1),
-            VoiceIntent.Control("cast", 0),
+            // ⚠ 1.90 · `cast` rời hai danh sách này cùng nút (owner 2026-09-21) — nó là mục duy nhất của
+            // `VoiceRisk` rụng theo, nên bảng lý do vẫn phủ đủ các việc CÒN hỏi được.
             VoiceIntent.Control("trunk", 1),
             VoiceIntent.Control("sunroof", 1),
             VoiceIntent.Macro("mac_win_open_all"),
@@ -288,7 +289,6 @@ class VoiceGrammarCoverageTest {
             VoiceIntent.Control("door", null),
             VoiceIntent.Control("lock", 0),
             VoiceIntent.Control("windows_all", 1),
-            VoiceIntent.Control("cast", 0),
             VoiceIntent.Macro("mac_win_open_all"),
             VoiceIntent.Profile("Vợ"),
         ).forEach { i ->

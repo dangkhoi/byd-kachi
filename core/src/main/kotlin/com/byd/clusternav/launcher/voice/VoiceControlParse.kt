@@ -130,6 +130,9 @@ internal object VoiceControlParse {
         return null
     }
 
+    /** Câu có chứa một con số không (dùng ở pre-rule verbless "điều hòa X độ" của VoiceIntentParser). */
+    fun hasNumber(tokens: List<Token>): Boolean = firstNumber(tokens) != null
+
     /**
      * SELECT có mức **"Tắt"/"Off" ở index 0** (ghế mát/sưởi) chấp nhận **bật/tắt trần** khi không nêu mức:
      * *"bật ghế mát"* → mức 1 (bật mặc định) · *"tắt ghế mát"* → 0. Nút SELECT khác (màu viền, EV/HEV…) không có

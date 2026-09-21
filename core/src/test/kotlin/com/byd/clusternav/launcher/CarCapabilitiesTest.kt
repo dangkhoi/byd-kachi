@@ -32,12 +32,19 @@ class CarCapabilitiesTest {
         assertEquals(EvidenceTier.NEEDS_CAR, CarCapabilities.tierOf("tyre_t_fl"))
     }
 
-    @Test fun `2026-09-21 badge da bo - OVERDRIVE va DASHCAST khong con dau`() {
+    @Test fun `2026-09-21 badge da bo - OVERDRIVE khong con dau`() {
         // Tier vẫn là dữ liệu, nhưng UI không vẽ chấm nữa (owner chốt).
         assertEquals(EvidenceTier.OVERDRIVE, CarCapabilities.tierOf("ev_range_km"))
-        assertEquals(EvidenceTier.DASHCAST, CarCapabilities.tierOf("cast"))
         assertFalse(CarCapabilities.needsBadge("ev_range_km"))
-        assertFalse(CarCapabilities.needsBadge("cast"))
+        // ⚠⚠ 1.90 2026-09-21 — vế `DASHCAST` gỡ vì `cast` là mã **DUY NHẤT** mang tier đó, và owner đã xoá nút ấy.
+        // [ĐO] grep: `EvidenceTier.DASHCAST` nay không còn chỗ dùng nào trong dữ liệu registry (chỉ còn trong KDoc
+        // + enum). Giữ giá trị enum là có chủ ý — nó vẫn là một mức bằng chứng có nghĩa (*"đọc từ mã byd-dashcast"*)
+        // và `ActionMacros.tier()` so theo THỨ TỰ KHAI nên bỏ một giá trị giữa dãy sẽ đổi phép so của gói lệnh.
+        assertTrue(
+            ControlRegistry.ALL.none { it.tier == EvidenceTier.DASHCAST } &&
+                TelemetryRegistry.ALL.none { it.tier == EvidenceTier.DASHCAST },
+            "nếu có mã DASHCAST mới thì thêm lại vế đo cho nó ở đây (badge vẫn phải là false)",
+        )
     }
 
     @Test fun `id la tra ve null hoac false an toan`() {

@@ -331,4 +331,84 @@ class TopStripTest {
         assertFalse(cfg.setEnabled(TopStripConfig.TEMP, true).showLabels)
         assertFalse(cfg.setEnabled(TopStripConfig.PM25, false).showLabels)
     }
+
+    // ══ ICON-STATE (2026-09-21) — datum bật/tắt tô TRẠNG THÁI bằng icon, không bằng chữ ════════════════════
+
+    /** Cấu hình một chip duy nhất = datum sấy kính trước, để bài đọc `chips[0]` không phải đếm. */
+    private fun defrostOnly(labels: Boolean = true) =
+        TopStripConfig(listOf("defrost_front_state"), showLabels = labels)
+
+    private fun defrost(on: Boolean?) = CarStatus(climate = CarStatus.Climate(defrostFrontOn = on))
+
+    /**
+     * [ĐO xe 2026-09-21] chip hiện `"Sấy kính · Tắt"`. Owner: *"trạng thái bật/tắt phải thể hiện bằng ICON
+     * active/inactive (màu), KHÔNG bằng chữ Tắt/Bật"*.
+     */
+    @Test
+    fun `chip datum bat-tat KHONG con chu Bat-Tat, trang thai nam o sac thai`() {
+        val onChip = TopStripChips.render(defrostOnly(), defrost(true)).single()
+        assertEquals(ChipTone.ACTIVE, onChip.tone, "đang sấy ⇒ sắc thái ACTIVE (icon sáng + màu nhấn)")
+        val offChip = TopStripChips.render(defrostOnly(), defrost(false)).single()
+        assertEquals(ChipTone.INACTIVE, offChip.tone, "đang tắt ⇒ sắc thái INACTIVE (icon mờ)")
+
+        // Chữ chỉ còn NHÃN NGẮN — không còn giá trị nào trên chip, ở cả hai trạng thái và cả hai thứ tiếng.
+        val short = TelemetryRegistry.byId("defrost_front_state")!!.shortLabel
+        listOf(onChip, offChip).forEach { c ->
+            assertEquals(short, c.text, "chip bật/tắt chỉ còn nhãn ngắn, thấy: '${c.text}'")
+            setOf("Bật", "Tắt", "On", "Off").forEach { w ->
+                assertFalse(c.text.contains(w), "chip KHÔNG được còn chữ '$w', thấy: '${c.text}'")
+            }
+            assertTrue(c.icon != null, "trạng thái nằm ở icon ⇒ chip bật/tắt PHẢI có icon")
+        }
+    }
+
+    @Test
+    fun `cau doc cho trinh doc man hinh VAN day du - mau thi ho khong thay duoc`() {
+        // Cùng lập luận đã ghi cho ca tắt nhãn: bỏ chữ là quyết định về CHỖ trên thanh, không phải về nội dung.
+        // Người dùng trình đọc màn hình không thấy được icon mờ/sáng, nên với họ chữ là đường DUY NHẤT.
+        assertTrue(TopStripChips.render(defrostOnly(), defrost(false)).single().desc.endsWith("Tắt"))
+        assertTrue(TopStripChips.render(defrostOnly(), defrost(true)).single().desc.endsWith("Bật"))
+        // Tắt nhãn ⇒ chip chỉ-icon (chuỗi rỗng), nhưng câu đọc vẫn nguyên.
+        val bare = TopStripChips.render(defrostOnly(labels = false), defrost(true)).single()
+        assertEquals("", bare.text, "tắt nhãn + bật/tắt ⇒ chip chỉ còn icon")
+        assertTrue(bare.desc.endsWith("Bật"), "câu đọc không được rỗng theo, thấy: '${bare.desc}'")
+    }
+
+    @Test
+    fun `chua doc duoc thi TRUNG TINH + dash — KHONG to thanh dang tat`() {
+        // Off-car / không có trên trim: icon mờ ở đây là nói "đang tắt" trong khi sự thật là "không biết".
+        val c = TopStripChips.render(defrostOnly(), defrost(null)).single()
+        assertEquals(ChipTone.NEUTRAL, c.tone, "chưa đọc được ⇒ NEUTRAL, không phải INACTIVE")
+        val short = TelemetryRegistry.byId("defrost_front_state")!!.shortLabel
+        assertEquals("$short · —", c.text, "vẫn hiện '—' như mọi datum chưa đọc được")
+    }
+
+    @Test
+    fun `datum SO khong bi doi - van NEUTRAL va van hien gia tri`() {
+        // Ràng buộc của owner: "ĐỪNG đụng datum số thường (nhiệt/gió/pin)". Bài này canh đúng câu đó.
+        val cfg = TopStripConfig(listOf("tyre_p_fl", "cabin_temp", "soc"))
+        val chips = TopStripChips.render(
+            cfg,
+            CarStatus(
+                tyres = CarStatus.Tyres(pFlKpa = 241.0),
+                climate = CarStatus.Climate(cabinTempC = 24),
+                energy = CarStatus.Energy(soc = 82),
+            ),
+        )
+        assertEquals(List(3) { ChipTone.NEUTRAL }, chips.map { it.tone }, "datum số giữ NEUTRAL")
+        assertTrue(chips[0].text.endsWith("2.4 bar"), "vẫn hiện giá trị đã quy đổi, thấy: ${chips[0].text}")
+        assertTrue(chips[1].text.endsWith("24 °C"), "thấy: ${chips[1].text}")
+        assertTrue(chips[2].text.endsWith("82 %"), "thấy: ${chips[2].text}")
+    }
+
+    @Test fun `moveEarlier va moveLater doi thu tu chip #15`() {
+        val cfg = TopStripConfig(ids = listOf("chip_pm25", "chip_energy", "chip_outside_temp"))
+        assertEquals(listOf("chip_energy", "chip_pm25", "chip_outside_temp"), cfg.moveEarlier("chip_energy").ids)
+        assertEquals(listOf("chip_pm25", "chip_outside_temp", "chip_energy"), cfg.moveLater("chip_energy").ids)
+        // đầu/cuối/không có ⇒ no-op (trả nguyên)
+        assertEquals(cfg, cfg.moveEarlier("chip_pm25"))
+        assertEquals(cfg, cfg.moveLater("chip_outside_temp"))
+        assertEquals(cfg, cfg.moveEarlier("khong_co"))
+    }
+
 }

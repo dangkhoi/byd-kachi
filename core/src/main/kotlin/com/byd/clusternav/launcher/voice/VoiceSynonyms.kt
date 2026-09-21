@@ -54,42 +54,82 @@ object VoiceSynonyms {
         // nó chỉ phá một cụm đã đo. Đây là bẫy "tiền tố giết tiền tố" thứ ba của phiên — hai cái kia
         // (`pin còn nhiêu`, `máy lạnh tự động`) bị chặn ngay lúc nhập, cái này lọt vì nó chạm một cụm ở **bộ
         // đăng ký khác** (`door`) chứ không phải cụm của chính nó.
-        "lock" to listOf("khoa xe", "khoa cua", "lock car", "central lock"),
-        "door" to listOf("mo khoa", "mo khoa xe", "mo khoa cua", "unlock", "unlock car", "chot cua", "mo cua xe"),
-        "trunk" to listOf("cop", "cop xe", "boot", "tailgate", "cua hau", "thung sau"),
+        "lock" to listOf("khoa xe", "khoa cua", "lock car", "central lock",
+            // 1.91 — ⚠ *"khoa cua …"* là dạng BỊ CẤM ở dòng này: cách nói `khoa cua` đứng sau động từ *"mở"* sinh
+            // ra đúng cụm ĐÃ ĐO `MỞ KHÓA CỬA`, và một cụm dài hơn nó (*"mở khóa cửa chính"*) sẽ nuốt mất cụm ấy
+            // qua [SherpaHotwords.dropPrefixes]. `khoa het cua` lệch ngay từ từ thứ hai nên không chạm vào nó.
+            "khoa het cua", "chot xe"),
+        "door" to listOf("mo khoa", "mo khoa xe", "mo khoa cua", "unlock", "unlock car", "chot cua", "mo cua xe",
+            // 1.91 — ⚠ *"mo cua"* (hai từ) CỐ Ý không có: [ĐO off-car] nó khớp tại **vị trí 0** của *"mở cửa sổ"*
+            // nên `headMatch` lấy nó (2 từ > động từ 1 từ) và câu ấy thành **mở khoá cửa**, mất hẳn đường tới
+            // `window`. Đây đúng bẫy *"cụm ngắn ở đầu câu cướp cụm dài phía sau"* mà lượt D đã trả giá một lần.
+            "mo chot cua"),
+        "trunk" to listOf("cop", "cop xe", "boot", "tailgate", "cua hau", "thung sau",
+            "cop hau", "cua cop", "khoang hanh ly"),
         // *"đang đọc sách"* = chuỗi mô hình in ra cho *"đèn đọc sách"* — [ĐO XE 2026-09-16, DL3 bản 1.68, ×2]
         // (bằng chứng mạnh hơn corpus host). NHẬN vì nó là **cụm ba từ**, không phải chữ `đang` đứng trần: không
         // câu lệnh xe nào chứa đúng dãy *"đang đọc sách"*, nên nó không cướp được câu nào. Chữ `đang` một mình thì
         // **BỊ LOẠI** theo đúng luật §2 dưới (một từ đời thường ⇒ nuốt câu người khác mà im lặng).
-        "readl" to listOf("den trong xe", "den doc sach", "cabin light", "den tran", "den noc", "dang doc sach"),
+        "readl" to listOf("den trong xe", "den doc sach", "cabin light", "den tran", "den noc", "dang doc sach",
+            "den cabin"),
         "pm25" to listOf("loc bui", "loc khong khi", "air filter", "purifier",
             "may loc khong khi", "may loc bui", "loc gio cabin",
             // [ĐO xe 2026-09-17 · log] «tắt bụi mịn» ra `OpenApp(Maps)`: *"bụi mịn"* chỉ khớp `pm25_level`
             // (telemetry, chỉ-đọc) ⇒ TẮT nó = MISMATCH ⇒ rơi xuống "mở app". Cho NÚT lọc nhận *"bụi mịn"* để
             // *"tắt/bật bụi mịn"* điều khiển máy lọc; câu HỎI *"bụi mịn bao nhiêu"* vẫn về telemetry (read/action tách).
-            "bui min"),
+            "bui min",
+            // 1.91 — *"khử bụi"* / *"lọc khí"*. `loc khi` KHÔNG phải tiền tố của `loc khong khi` (lệch từ thứ 2).
+            "khu bui", "loc khi"),
         // *"quạt ghế"* / *"làm mát ghế"* đứng cạnh `fan ← "quat"`: luật **dãy dài nhất thắng** giữ đúng nút ghế,
         // và *"quạt"* một mình vẫn là quạt gió — không cần một dòng `if` nào.
-        "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe"),
-        "seath" to listOf("suoi ghe", "ghe am", "ghe nong"),
+        //
+        // ⚠⚠ 1.91 · CỐ Ý **KHÔNG** nhận *"mát ghế phụ"* / *"mát ghế 2"* (owner có nêu). Registry chỉ có MỘT nút
+        // `seatc`, và [ControlLevels]/`HalBindingTable.writeArgs` ghim `seatID = 1` = **ghế LÁI**. Nhận hai cụm
+        // ấy là hứa một việc (làm mát ghế phụ) rồi làm một việc khác (làm mát ghế lái) — và cái sai đó **im
+        // lặng**, vì lời đáp sẽ đọc *"Đã đặt Ghế mát"* nghe như đã đúng. Muốn nói được thì phải có nút riêng cho
+        // từng ghế trước (RE `setSeatVentilatingState(seatID…)` đã có đường, nút thì chưa) — việc của owner.
+        "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe",
+            "mat ghe", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
+        "seath" to listOf("suoi ghe", "ghe am", "ghe nong",
+            "am ghe", "lam am ghe", "suoi dit", "suoi mong"),
+        // ⚠ 1.91 · `nhiet do xe` khai ở CẢ HAI bảng (nút `temp` + datum `inside_temp`) — đúng cơ chế đã có của
+        // `nhiet do` và `quat gio`: `VoiceIntentParser.choose` lấy datum cho động từ ĐỌC, lấy nút cho động từ
+        // hành động. Khai một bên thôi thì nửa kia thành MISMATCH ([ĐO off-car]: chỉ khai cho `temp` ⇒ *"xem
+        // nhiệt độ xe"* rơi khỏi đường đọc).
         "temp" to listOf("nhiet do dieu hoa", "nhiet do trong xe", "cabin temperature",
-            "nhiet do may lanh", "do lanh"),
-        "fan" to listOf("quat", "quat gio", "toc do quat", "suc gio", "blower", "muc gio"),
-        "defrost" to listOf("say kinh truoc", "xa bang", "say kieng"),
-        "cam" to listOf("camera", "camera 360 do", "camera quanh xe", "cam ba sau muoi"),
-        "sunroof" to listOf("noc xe", "cua noc", "cua so noc"),
-        "headl" to listOf("den chieu xa", "high beam", "den cot pha"),
-        "recirc" to listOf("gio trong", "tuan hoan trong", "recirc"),
-        "vol" to listOf("tieng", "am thanh", "volume"),
-        // [SOÁT P2] *"dừng chiếu"* — người ta bỏ chữ *"cụm"*. Một từ `chieu` là đủ vì luật **dãy dài nhất thắng**
-        // giữ nguyên mọi cụm dài hơn có chứa nó (*"chiếu cụm"*, *"đèn chiếu xa"*), nên không nuốt nhãn nào.
-        "cast" to listOf("chieu", "chieu len cum", "chieu man", "cast cluster"),
+            "nhiet do may lanh", "do lanh", "do nong", "nhiet do xe"),
+        "fan" to listOf("quat", "quat gio", "toc do quat", "suc gio", "blower", "muc gio",
+            "muc quat", "toc do gio", "gio dieu hoa"),
+        // ⚠ 1.91 · CỐ Ý **KHÔNG** nhận *"lau kính"* / *"sấy gương"* (owner có nêu): *"lau kính"* là việc của GẠT
+        // MƯA (nút đó đã bị gỡ ở WP8, nói được cũng không làm được), còn *"sấy gương"* là sưởi GƯƠNG hậu —
+        // `mirror_auto`/`mirror_fold_btn` đã gỡ ở lượt FEATURE-FILTER. Nhận chúng là trỏ một câu có nghĩa rõ ràng
+        // sang một bộ phận khác hẳn.
+        "defrost" to listOf("say kinh truoc", "xa bang", "say kieng", "tan suong", "khu suong"),
+        "cam" to listOf("camera", "camera 360 do", "camera quanh xe", "cam ba sau muoi", "camera toan canh"),
+        "sunroof" to listOf("noc xe", "cua noc", "cua so noc", "kinh noc", "sunroof"),
+        "headl" to listOf("den chieu xa", "high beam", "den cot pha", "chieu xa", "den lon"),
+        // ⚠ 1.91 · CỐ Ý **KHÔNG** nhận *"gió ngoài"* / *"lấy gió ngoài"* (owner có nêu): chúng là **chiều NGƯỢC**
+        // của nút này (lấy gió ngoài = recirc TẮT). Cụm trỏ về `recirc` thì *"lấy gió ngoài"* sẽ **BẬT** tuần
+        // hoàn trong — đúng ngược ý người nói, và im lặng. Nói được chiều đó cần một ý định mang sẵn giá trị 0
+        // (họ `offOnSelect` của 1.84 là chỗ đúng để làm), không phải một dòng từ đồng nghĩa.
+        "recirc" to listOf("gio trong", "tuan hoan trong", "recirc", "tuan hoan gio", "tuan hoan khi"),
+        // ⚠⚠ 1.90 · cách nói của `vol` (*"tiếng"/"âm thanh"/"volume"*) và `cast` (*"chiếu"/"chiếu lên cụm"/"chiếu
+        // màn"/"cast cluster"*) gỡ cùng hai nút (owner 2026-09-21). `VoiceGrammarCoverageTest` đòi mọi cụm trỏ về
+        // một mã có thật, nên để lại cách nói mồ côi là ĐỎ off-car.
+        // ⚠ Hệ quả cần biết: *"chiếu cụm"*/*"dừng chiếu"* **không còn là câu lệnh giọng nói**. Việc chiếu cụm vẫn
+        // làm được bằng **nút nổi** + **Cài đặt › Chiếu màn lên cụm** (hai bề mặt đó không đi qua registry). Muốn
+        // nói được bằng giọng thì phải nối một ý định RIÊNG tới `SimpleCastRuntime` — việc đó KHÔNG có ở lượt này,
+        // vì nút `cast` cũ chưa bao giờ nối tới runtime (nó ghi vào `AutoContainer.sendInfo` = no-op).
         // ⚠ 1.85 · nhãn nút này đổi *"Điều hòa AUTO"* → *"Gió tự động"* ([ĐO xe §4] xe không có nhiệt-auto), nhưng
         // các cụm *"điều hoà"/"máy lạnh"* **Ở LẠI ĐÂY** có chủ ý: đó là nút điều hoà DUY NHẤT bật/tắt được (không có
         // control nào cho `getAcStartState`), và owner đã chốt ở 1.82 rằng *"bật/tắt điều hoà"* (không kèm số độ) là
         // nút này. Bỏ chúng đi thì câu người ta hay nói nhất về điều hoà thành NO_OBJECT. Câu có *"<số> độ"* vẫn rẽ
         // sang nút `temp` ở `VoiceControlParse` (fix (c) 1.82) — đường đó không đụng tới nhãn.
-        "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon", "gio auto"),
+        "ac_auto" to listOf("dieu hoa", "may lanh", "dieu hoa tu dong", "air con", "ac", "aircon", "gio auto",
+            // ⚠ 1.91 · KHÔNG thêm cụm nào **bắt đầu** bằng `may lanh` (vd *"máy lạnh tự động"*): nó sinh ra dòng
+            // dài hơn cụm ĐÃ ĐO `BẬT MÁY LẠNH` và nuốt mất cụm ấy qua [SherpaHotwords.dropPrefixes] — chính bẫy
+            // mà KDoc đầu bảng liệt kê ở luật §4. Hai cụm dưới lệch ngay từ từ ĐẦU nên không chạm vào nó.
+            "quat tu dong", "lam mat xe"),
         // ═══ D (owner test xe 2026-09-19) · CỤM MƠ HỒ TRỎ VỀ **MỘT** KÍNH, KHÔNG PHẢI CẢ BỐN ══════════════
         // Owner nói *"mở kính"* và xe hạ **cả 4**. Đây là hồi quy của chính bản vá [SOÁT P2] trước đó: lúc ấy
         // *"mở kính"* / *"mở cửa sổ"* chưa trỏ tới đâu (ra MISMATCH), nên bốn cụm mơ hồ được gắn vào nút GỘP với
@@ -110,8 +150,31 @@ object VoiceSynonyms {
         //
         // Luật **dãy dài nhất thắng** giữ hai bên không cướp nhau: *"mở các cửa sổ"* khớp `cac cua so` (3 từ) ở vị
         // trí 1 nên nó thắng `cua so` (2 từ) ở vị trí 2 — bài canh `VoiceWindowScopeTest` khoá đúng cặp này.
+        //
+        // ═══ 1.91 (owner 2026-09-21) · *"MỞ HẾT CỬA SỔ"* HẠ MỖI BÊN LÁI — bảng này chỉ biết chữ *"kính"* ══════
+        // Owner nói *"mở hết cửa sổ"* và xe hạ **một** cửa. Gốc là một chỗ hụt **đối xứng**, không phải một luật
+        // sai: mọi cụm tường minh-tất-cả ở đây dựng trên chữ *"kính"* (`het kinh` · `toan bo kinh` · `moi kinh` ·
+        // `bon kinh`), còn chữ *"cửa sổ"* thì chỉ có đúng một dạng số nhiều (`cac cua so`). Nên *"hết cửa sổ"*
+        // không khớp cụm nào, luật **dãy dài nhất thắng** lùi xuống `cua so` (2 từ) ở vị trí sau — và cụm ấy,
+        // đúng theo lượt D, là **kính LÁI**. Tức hai lỗi không hề xảy ra: bảng cụm mơ hồ vẫn đúng, chỉ là nhánh
+        // *"tất cả"* chưa bao giờ được viết bằng thứ tiếng mà người lái đang dùng.
+        //
+        // ⇒ Thêm **nhánh `cửa sổ` / `cửa kính`** cho đúng bốn lượng từ đã có ở nhánh `kính` (hết · toàn bộ · tất
+        // cả · mọi · bốn). KHÔNG thêm cụm nào mơ hồ: mỗi dòng dưới đều mang một **lượng từ tường minh** đứng
+        // TRƯỚC, nên `VoiceWindowScopeTest` vẫn khoá được *"mở cửa sổ"* → kính lái. Luật dãy dài nhất tự phân xử:
+        // *"mở hết cửa sổ"* khớp `het cua so` (3 từ) ở vị trí 1 và trả kết quả NGAY, trước khi vòng quét kịp tới
+        // `cua so` (2 từ) ở vị trí 2 — không cần một dòng `if` nào cho cặp này.
+        //
+        // ⚠ `tat ca kinh` KHÔNG khai ở đây: nó **là nhãn** của nút (*"Tất cả kính"*), [VoiceGrammar] sinh sẵn.
+        // ⚠ Hai dạng mang CHỮ SỐ (`4 cua so` · `4 kinh`) khai ở [SherpaSpokenWords.NO_VI_FORM] chứ không ở bảng
+        //   có dấu: [SherpaHotwords] bỏ token số, nên bias chúng là vô nghĩa (đúng luật `camera 360 do` đã có).
+        //   Tầng CHỮ vẫn khớp chúng bình thường — người gõ *"mở 4 cửa sổ"* trên xe vẫn ra cả bốn.
         "windows_all" to listOf("het kinh", "toan bo kinh", "moi kinh", "every window",
-            "het kieng", "bon kinh", "cac cua so", "windows"),
+            "het kieng", "bon kinh", "cac cua so", "windows",
+            "het cua so", "toan bo cua so", "tat ca cua so", "moi cua so", "bon cua so",
+            "het cua kinh", "toan bo cua kinh", "tat ca cua kinh", "bon cua kinh",
+            "tat ca kieng",
+            "4 cua so", "4 kinh"),
         // ═══ V3 · R10 — *"mở kính lái"*, câu [ĐO xe 2026-09-16] mà máy hiểu SAI ═══════════════════════
         // Owner nói *"mở kính lái"*; sherpa nghe **đúng**, nhưng từ vựng không có cụm nào bắt đầu bằng `kinh lai`
         // ⇒ luật dãy-dài-nhất chỉ còn `kinh` ⇒ trỏ về nút GỘP `windows_all` ⇒ hộp *"Hạ hết 4 kính?"*. Tức một câu
@@ -123,55 +186,62 @@ object VoiceSynonyms {
         // cụm dài hơn: *"mở hết kính"* vẫn về nút gộp vì `het kinh` (2 từ) thắng `kinh` (1 từ) tại cùng vị trí.
         "window" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai",
             "kieng lai", "cua kieng lai", "kieng tai xe",
+            "kinh nguoi lai", "cua so tai xe",
             "kinh", "cua so"),
-        "win_lf" to listOf("kinh ben lai", "kinh ghe lai", "kieng truoc trai"),
-        "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai"),
+        "win_lf" to listOf("kinh ben lai", "kinh ghe lai", "kieng truoc trai", "kieng ben lai"),
+        "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai", "kieng ben phu"),
         "win_lr" to listOf("kieng sau trai", "kinh sau ben trai"),
         "win_rr" to listOf("kieng sau phai", "kinh sau ben phai"),
-        "brightness_gear" to listOf("do sang man hinh", "sang man"),
-        "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh"),
+        // ⚠ 1.90 · cách nói của `brightness_gear` (*"độ sáng màn hình"/"sáng màn"*) và `anion` (*"khử mùi"*) gỡ
+        // cùng hai nút (owner 2026-09-21).
+        "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh", "loc gap"),
         // ⚠ 1.85: `hood` ("nap ca po"/"nap may") đã xoá cùng mã — xe không có ca-pô điện ([ĐO xe 2026-09-20 §4]).
         // Không để lại cách nói mồ côi: `VoiceGrammarCoverageTest` đòi mọi cụm trỏ về một mã có thật.
-        "defrost_rear" to listOf("say kieng sau"),
-        "anion" to listOf("khu mui"),
-        "steer_heat" to listOf("vo lang nong"),
-        "sunshade" to listOf("rem noc", "man che nang"),
+        "defrost_rear" to listOf("say kieng sau", "say kinh hau"),
+        "steer_heat" to listOf("vo lang nong", "vo lang am", "lam am vo lang"),
+        "sunshade" to listOf("rem noc", "man che nang", "rem troi", "che nang"),
+        // 1.91 · `drl` là nút DUY NHẤT chưa có dòng nào ở bảng này — nhãn *"Đèn ban ngày"* đã tự khớp, nhưng cách
+        // người ta gọi nó trên xe là *"đèn chạy ban ngày"*. ⚠ *"đèn ngày"* (2 từ) CỐ Ý không nhận: bỏ dấu xong
+        // `den ngay` đụng đúng câu *"bật đèn ngay"* (= *"bật đèn NGAY BÂY GIỜ"*), một câu rất thường — nhận nó là
+        // đổi một câu đang nói về đèn đọc/đèn pha thành lệnh bật đèn ban ngày, mà im lặng.
+        "drl" to listOf("den chay ban ngay", "drl"),
         // 1.85 · khoá trẻ em nay có HAI nút (trái/phải — [ĐO xe 2026-09-20 §3] RE cả hai id).
         // Cụm **MƠ HỒ** (*"khoá trẻ em"*, *"khoá con nít"* — không nêu bên) trỏ về nút TRÁI: đúng tiền lệ owner đã
         // duyệt ở 1.80 cho *"mở kính"* → kính LÁI (`window`), thay vì hỏi lại hay tự ý bắn cả hai bên. Nhãn của nút
         // nói rõ *"trái"* nên câu trả lời đọc lên không giấu chuyện nó chỉ khoá một bên.
         "child_lock" to listOf("khoa con nit", "khoa tre em", "khoa tre em ben trai"),
         "child_lock_r" to listOf("khoa con nit ben phai", "khoa tre em ben phai"),
-        "headlight_mode" to listOf("kieu den pha"),
-        "wireless_charge" to listOf("sac dien thoai"),
-        "screen_rotation" to listOf("huong man hinh"),
-        "camera_view" to listOf("huong camera"),
-        "cluster_music" to listOf("nhac tren dong ho"),
-        // ── Pha NGHE (R10): nhãn có CHỮ VIẾT TẮT / CHỮ SỐ thì mô hình tiếng Việt không có từ để nghe ──
-        // [ĐO] 2026-09-14, từ điển `vosk-model-small-vn-0.4` (19.529 mục): `ev` · `hev` KHÔNG có mặt ⇒ nút này
-        // trước đó **gõ được mà không nói được**, và cái thiếu ấy im lặng.
-        "powertrain_mode" to listOf("che do dong co", "xang dien", "che do nang luong"),
+        // ⚠⚠ 1.90 · cách nói của NĂM nút vừa xoá gỡ theo (owner 2026-09-21): `headlight_mode` (*"kiểu đèn pha"*) ·
+        // `screen_rotation` (*"hướng màn hình"*) · `camera_view` (*"hướng camera"*) · `cluster_music` (*"nhạc trên
+        // đồng hồ"*) · `powertrain_mode` (*"chế độ động cơ"/"xăng điện"/"chế độ năng lượng"* — R10 từng thêm vì
+        // `ev`/`hev` không có trong từ điển mô hình; nay cả nút đã đi nên cách nói cũng đi).
+        "wireless_charge" to listOf("sac dien thoai", "de sac"),
     )
 
     /** Cách nói thêm cho THÔNG TIN ĐỌC (`TelemetryRegistry`) — cùng luật nhập với [CONTROL]. */
     val TELEMETRY: Map<String, List<String>> = mapOf(
-        "soc" to listOf("pin", "phan tram pin", "muc pin", "battery", "state of charge"),
+        // ⚠ 1.91 · KHÔNG thêm cụm nào **bắt đầu** bằng `pin`: cụm ĐÃ ĐO `XEM PIN` (câu được đo nhiều nhất của cả
+        // dự án) sẽ thành tiền tố của dòng dài hơn và bị [SherpaHotwords.dropPrefixes] nuốt. `dung luong pin` để
+        // `pin` ở CUỐI nên nó an toàn — và nó là chỗ hụt thật: câu *"dung lượng pin còn bao nhiêu"* trước đây chỉ
+        // khớp được nhờ `pin` đứng lẻ sau khi cụm hỏi bị cắt.
+        "soc" to listOf("pin", "phan tram pin", "muc pin", "battery", "state of charge", "dung luong pin"),
         "ev_range_km" to listOf("tam hoat dong", "di duoc bao xa", "con di duoc bao nhieu", "range",
-            "con chay duoc bao nhieu"),
+            "con chay duoc bao nhieu", "quang duong con lai"),
         "fuel_range_km" to listOf("xang con chay duoc bao xa"),
         // [ĐO xe 2026-09-18 · log] «chỉ số xăng» ra Unknown và «xăng còn bao nhiêu» cũng vậy: chữ *"xăng"* đứng
         // trần không trỏ tới đâu (nhãn là *"Mức xăng"* / *"Tầm hoạt động xăng"*, đều cần từ thứ hai). Cụm MỘT từ
         // ở đây an toàn theo đúng luật §3 của KDoc: *"xăng"* không phải từ đời thường đa nghĩa, và đường NAV
         // không tra từ vựng nên *"chỉ đường đến trạm xăng gần nhất"* (có bài canh) không bị đụng. Luật dãy dài
         // nhất thắng giữ nguyên *"tầm hoạt động xăng"* → `fuel_range_km`.
-        "fuel_pct" to listOf("xang", "nhien lieu", "muc nhien lieu"),
-        "speed" to listOf("dang chay bao nhieu", "van toc"),
-        "ext_temp" to listOf("nhiet do ngoai troi", "ngoai troi", "outside temperature", "ngoai troi nong khong"),
+        "fuel_pct" to listOf("xang", "nhien lieu", "muc nhien lieu", "binh xang"),
+        "speed" to listOf("dang chay bao nhieu", "van toc", "toc do xe"),
+        "ext_temp" to listOf("nhiet do ngoai troi", "ngoai troi", "outside temperature", "ngoai troi nong khong",
+            "nhiet do ben ngoai"),
         // [ĐO xe 2026-09-17 · log] «nhiệt độ đang bao nhiêu» ra RỖNG (không datum), «máy lạnh bao nhiêu độ» ra
         // media_vol: *"nhiệt độ"* chỉ khớp NÚT `temp`, không có telemetry nào; *"máy lạnh"* chỉ khớp `ac_auto`.
         // `inside_temp` = nhiệt AC ĐANG ĐẶT ("Nhiệt cài đặt") ⇒ đúng câu hỏi. Câu HỎI về telemetry, câu LỆNH
         // *"tăng nhiệt độ"* vẫn về nút `temp` (choose ưu tiên control cho động từ hành động).
-        "inside_temp" to listOf("nhiet do", "may lanh", "nhiet do may lanh", "dieu hoa bao nhieu do"),
+        "inside_temp" to listOf("nhiet do", "may lanh", "nhiet do may lanh", "dieu hoa bao nhieu do", "nhiet do xe"),
         "cabin_temp" to listOf("nhiet trong xe", "nhiet do trong cabin"),
         // [ĐO xe 2026-09-18 · log] *"quạt gió đang mất máy"* + *"quạt điều hòa đang mất máy"* (2 lượt, cùng người)
         // = *"quạt gió đang **mức mấy**"* nghe rụng chữ. Câu ra MISMATCH vì *"quạt gió"* chỉ khớp NÚT `fan`, còn
@@ -179,12 +249,12 @@ object VoiceSynonyms {
         // Cụm trùng với nút `fan` là **hợp lệ** và là cơ chế đã có: `VoiceIntentParser.choose` lấy datum cho động
         // từ ĐỌC, lấy nút cho động từ hành động ⇒ *"tăng quạt gió"* vẫn là nút (cùng khuôn `inside_temp` ↔ `temp`).
         "ac_wind" to listOf("quat gio", "quat dieu hoa", "muc gio", "toc do quat"),
-        "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality"),
-        "odometer" to listOf("so km da di", "odo", "mileage"),
-        "tyre_p_fl" to listOf("ap suat lop truoc trai", "hoi banh truoc trai"),
-        "tyre_p_fr" to listOf("ap suat lop truoc phai", "hoi banh truoc phai"),
-        "tyre_p_rl" to listOf("ap suat lop sau trai", "hoi banh sau trai"),
-        "tyre_p_rr" to listOf("ap suat lop sau phai", "hoi banh sau phai"),
+        "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality", "muc bui min"),
+        "odometer" to listOf("so km da di", "odo", "mileage", "so km xe da chay"),
+        "tyre_p_fl" to listOf("ap suat lop truoc trai", "hoi banh truoc trai", "lop truoc trai"),
+        "tyre_p_fr" to listOf("ap suat lop truoc phai", "hoi banh truoc phai", "lop truoc phai"),
+        "tyre_p_rl" to listOf("ap suat lop sau trai", "hoi banh sau trai", "lop sau trai"),
+        "tyre_p_rr" to listOf("ap suat lop sau phai", "hoi banh sau phai", "lop sau phai"),
         "gear" to listOf("can so"),
         "vin" to listOf("so khung"),
         // ── Pha NGHE (R10) — nhãn mang `PM2.5` · `SOH` · `MCU` · `12V` · `50km` · `%` · `drift`, mà mô hình tiếng

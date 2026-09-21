@@ -183,15 +183,36 @@ class VoiceCommandWiringContractTest {
         assertTrue(fn.contains("def.clamp("), "giá trị mới phải kẹp bằng chính `ControlDef.clamp`")
     }
 
-    // ══ (2) Cổng vào: hàng trong Cài đặt › Hệ thống & quyền › Nâng cao ════════════════════════════════════
+    // ══ (2) Cổng vào: ĐÃ GỠ khỏi Cài đặt — chỉ còn đường adb ═════════════════════════════════════════════
 
+    /**
+     * Hàng *Gõ lệnh chữ* đã **GỠ** khỏi *Cài đặt › Hệ thống › Nâng cao* (owner 2026-09-21, bản release production:
+     * dọn hết dev/debug UI, chỉ giữ công tắc *Chế độ kiểm thử qua adb*).
+     *
+     * Bài cũ ghim chiều ngược lại. Nó **đảo chiều** thay vì bị xoá vì `VoiceTextConsole` còn trong cây nguồn (owner
+     * giữ lại), nên không có gì ngăn nó được `build(body)` lại ở một lượt sửa sau — mà trên xe đó là một ô nhập chữ
+     * giữa màn của người đang lái. Bề mặt rộng hơn (cả năm thứ đã gỡ) do `DevSurfaceGateContractTest` canh.
+     */
     @Test
-    fun `hang go lenh nam trong muc Nang cao cua nhom He thong`() {
-        val fn = SourceRoots.body(sections, "private fun system(")
-        val advanced = fn.substringAfter("R.string.kachi_sub_advanced")
-        assertTrue(advanced.contains("VoiceTextConsole(context, rows, deps).build(body)"),
-            "hàng gõ lệnh phải nằm SAU tiêu đề *Nâng cao* — cùng chỗ với hai màn chẩn đoán kia")
-        assertTrue(advanced.contains("R.string.kachi_voice_title"), "hàng phải có tiêu đề đọc được")
+    fun `hang go lenh chu khong con trong Cai dat`() {
+        assertFalse(
+            sections.contains("VoiceTextConsole("),
+            "ô gõ lệnh chữ được dựng lại trong Cài đặt — owner chốt gỡ mọi bề mặt dev khỏi màn",
+        )
+    }
+
+    /** Nửa còn lại: gỡ BỀ MẶT không được gỡ theo KHẢ NĂNG — `say` vẫn đi đúng đường của console cũ. */
+    @Test
+    fun `duong go lenh chu chi con di qua cau kiem thu`() {
+        val bridge = code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt")
+        assertTrue(bridge.contains("TestBridgeCommands.SAY -> runSay("), "receiver phải còn điều phối `say`")
+        val runSay = SourceRoots.body(bridge, "private fun runSay(")
+        // Cùng cặp `preview` → `execute` mà `VoiceTextConsole` gọi: phân tích MỘT lần rồi thi hành chính danh sách
+        // vừa phân tích. Dựng đường thứ hai ở đây là hai bộ hiểu câu lệch nhau âm thầm.
+        assertTrue(runSay.contains("dispatcher.preview("), "`say` phải phân tích qua chính VoiceDispatcher")
+        assertTrue(runSay.contains("dispatcher.execute("), "…rồi thi hành chính danh sách vừa phân tích")
+        assertTrue(console.contains("dispatcher.preview(") && console.contains("dispatcher.execute("),
+            "console còn trong cây nguồn thì nó phải vẫn là cùng một cặp — bài trên so với nó")
     }
 
     /** Ba cổng mới của [SettingsDeps] phải được nối THẬT tới Activity — mặc định rỗng là một nút chết. */

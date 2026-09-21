@@ -274,7 +274,7 @@ class VoiceActGateReadbackTest {
      */
     @Test
     fun `nhom dien-khi khong duoc mien cau xe khong nhan lenh`() {
-        listOf("recirc", "drl", "anion", "defrost").forEach { id ->
+        listOf("recirc", "drl", "defrost", "defrost_rear").forEach { id ->   // ⚠ 1.90: `anion` đã xoá
             assertFalse(CtlSafetyPolicy.movesSlowly(id),
                 "'$id' đổi mức gần như tức thì ⇒ lệch dai dẳng ĐÚNG là 'lệnh không ăn', không được miễn")
         }

@@ -37,7 +37,7 @@ class CtlSafetyPolicyTest {
     }
 
     @Test fun `control khi hau vo hai khong can confirm`() {
-        listOf("readl", "fan", "temp", "pm25", "seatc", "recirc", "vol").forEach { id ->
+        listOf("readl", "fan", "temp", "pm25", "seatc", "recirc").forEach { id ->   // ⚠ 1.90: `vol` đã xoá
             assertFalse(CtlSafetyPolicy.needsConfirm(id), "'$id' không mở thân xe ⇒ không cần confirm")
         }
     }

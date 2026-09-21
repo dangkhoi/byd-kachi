@@ -79,12 +79,11 @@ class VoiceIntentParserTest {
 
     // ══ C · ÂM LƯỢNG (Kiki §7c #14–#16) ═══════════════════════════════════════════════════════════════
 
-    /** *"tối đa"* là ĐÍCH, không phải một nấc — xem KDoc `VoiceIntentParser.step`. `vol` có `max = 30`. */
-    @Test fun `tang am luong toi da la lenh tuyet doi`() = expect(
-        "Tăng âm lượng tối đa" to VoiceIntent.Control("vol", 30),
-        "Giảm âm lượng" to VoiceIntent.Control("vol", null, -1),
-        "Tăng âm lượng" to VoiceIntent.Control("vol", null, 1),
-        "Đặt âm lượng 12" to VoiceIntent.Control("vol", 12),
+    /** *"tối đa"* là ĐÍCH, không phải một nấc. ⚠ 1.90: đo trên `fan` (`max = 7`, `min = 0`) thay `vol` (đã xoá). */
+    @Test fun `tang gio toi da la lenh tuyet doi`() = expect(
+        "Tăng gió tối đa" to VoiceIntent.Control("fan", 7),
+        "Giảm gió" to VoiceIntent.Control("fan", null, -1),
+        "Tăng gió" to VoiceIntent.Control("fan", null, 1),
     )
 
     // ══ D · NHỮNG THỨ KACHI CỐ Ý KHÔNG LÀM (Kiki §7c #18–#41, #44) ════════════════════════════════════
@@ -140,9 +139,11 @@ class VoiceIntentParserTest {
     // ⚠ UX-OVERHAUL · WP8 2026-09-20: ca `màu đèn viền` (`ambient_color`) gỡ cùng nút. Hai ca còn lại vẫn khoá
     // đúng luật "chọn theo NHÃN lựa chọn, không theo số thứ tự" — và cả hai đều là nhãn **nhiều từ**, tức vẫn phủ
     // ca khó nhất của luật ấy.
+    // ⚠⚠ 1.90: cả HAI ca (`headlight_mode` · `camera_view`) gỡ cùng nút ⇒ mốc nay là `seatc` (*"Mức 1/2"*, nhãn
+    // lựa chọn nhiều từ) — vẫn phủ ca khó nhất: parser đọc theo chỉ số thì *"mức 2"* ra 1.
     @Test fun `SELECT chon theo nhan lua chon`() = expect(
-        "Chỉnh chế độ đèn pha sang auto" to VoiceIntent.Control("headlight_mode", 1),
-        "Chỉnh góc camera sang sau" to VoiceIntent.Control("camera_view", 1),
+        "ghế mát mức 2" to VoiceIntent.Control("seatc", 2),
+        "ghế mát mức 1" to VoiceIntent.Control("seatc", 1),
     )
 
     // ⚠ (V) FEATURE-FILTER 2026-09-17: hai ca `Sạc ngay` (`start_charging`) và `Gập gương` (`mirror_fold_btn`)
@@ -159,10 +160,9 @@ class VoiceIntentParserTest {
      */
     @Test fun `khong nhan nham giua ba cap nhan long nhau`() = expect(
         "Bật camera 360" to VoiceIntent.Control("cam", 1),
-        "Chỉnh góc camera sang trước" to VoiceIntent.Control("camera_view", 0),
         "Bật đèn pha" to VoiceIntent.Control("headl", 1),
-        "Chỉnh chế độ đèn pha sang auto" to VoiceIntent.Control("headlight_mode", 1),
-        "Đặt độ sáng màn 7" to VoiceIntent.Control("brightness_gear", 7),
+        // ⚠⚠ 1.90 — CẢ BA CẶP đã tan (lời giải cuối cho L-RE2): `camera_view` · `headlight_mode` ·
+        // `brightness_gear` đều xoá (`hud_brightness` purge ở WP8). Hai câu còn lại vẫn phải trỏ ĐÚNG nút.
         // ⚠⚠ UX-OVERHAUL · WP8 2026-09-20 — cặp thứ BA (*"độ sáng màn"* vs *"độ sáng HUD"*) **hết tồn tại**:
         // `hud_brightness` purge theo triage owner (#63), và đó cũng là lời giải cho chính bug L-RE2 mà bài này
         // sinh ra để canh — hai nút ấy dùng CHUNG feature-id `1276174360`, nên chỉ một trong hai từng nói thật.
@@ -323,7 +323,7 @@ class VoiceIntentParserTest {
     // khác nhau — mỗi kiểu nay có một dòng vá ở MỘT chỗ (VoiceSynonyms / VoiceGrammar.VERBS / askAt), không
     // chỗ nào là `if (id == "…")`. Giữ nguyên cả mười ở đây để lần sau sửa ngữ pháp còn biết mình phá cái gì.
 
-    @Test fun `muoi cau doi thuong deu hieu duoc`() = expect(
+    @Test fun `cac cau doi thuong deu hieu duoc`() = expect(
         // Trước: MISMATCH (cụm *"sổ"* khớp nhãn "Số" của datum `gear`). Nay: **kính LÁI** — lượt D 2026-09-19 dời
         // cụm mơ hồ này khỏi nút GỘP (owner: *"mở kính"* hạ cả 4 là sai), xem KDoc `VoiceSynonyms.CONTROL`.
         "mở cửa sổ" to VoiceIntent.Control("window", 1),
@@ -333,8 +333,7 @@ class VoiceIntentParserTest {
         "phát nhạc" to VoiceIntent.Media(VoiceMediaOp.PLAY),
         // Trước: NO_VERB (*"bài"* là từ khoá NHẠC, mà `headMatch` không nhận loại đó).
         "bài tiếp" to VoiceIntent.Media(VoiceMediaOp.NEXT),
-        // Trước: NO_OBJECT (từ vựng chỉ có *"chiếu cụm"*).
-        "dừng chiếu" to VoiceIntent.Control("cast", 0),
+        // ⚠ 1.90: ca *"dừng chiếu"* (→ `cast`) gỡ cùng nút. Chiếu cụm nay bật/tắt bằng nút nổi + Cài đặt.
         "mở VietMap Live" to VoiceIntent.OpenApp("VietMap Live"),
     )
 
@@ -422,19 +421,18 @@ class VoiceIntentParserTest {
         "đặt nhiệt độ hăm bốn" to VoiceIntent.Control("temp", 24),
         "đặt nhiệt độ hăm lăm" to VoiceIntent.Control("temp", 25),
         "đặt nhiệt độ hai tư" to VoiceIntent.Control("temp", 24),
-        "đặt âm lượng hai mốt" to VoiceIntent.Control("vol", 21),
-        // Bản đầy đủ vẫn phải y nguyên.
+        // ⚠ 1.90: hai ca *"đặt âm lượng…"* gỡ cùng `vol`. Bản đầy đủ vẫn phải y nguyên.
         "đặt nhiệt độ hai mươi lăm" to VoiceIntent.Control("temp", 25),
-        "đặt âm lượng năm" to VoiceIntent.Control("vol", 5),
     )
 
     // ⚠ Hai bài về PHẠM VI câu nói về kính (cụm mơ hồ vs tường minh · mức Nửa) đã sang
     // `VoiceWindowScopeTest` ở lượt D 2026-09-19 — tệp này đứng sát trần 500 dòng, tách theo CHỦ ĐỀ.
 
-    /** …và cụm *"chiếu"* một từ không được nuốt nhãn nào có chứa nó. */
-    @Test fun `cum chieu mot tu khong nuot nhan dai hon`() = expect(
-        "dừng chiếu" to VoiceIntent.Control("cast", 0),
-        "bật chiếu cụm" to VoiceIntent.Control("cast", 1),
+    /**
+     * …và cụm MỘT TỪ không được nuốt nhãn nào có chứa nó.
+     * ⚠ 1.90: *"chiếu"* (của `cast`) đã gỡ; vế CÒN giá trị: *"bật đèn chiếu xa"* phải trỏ `headl`.
+     */
+    @Test fun `cum mot tu khong nuot nhan dai hon`() = expect(
         "bật đèn chiếu xa" to VoiceIntent.Control("headl", 1),
     )
 
@@ -466,7 +464,7 @@ class VoiceIntentParserTest {
      * nhãn, LAUNCHER tra tên app) ⇒ qua, vì lúc ấy phần đuôi đã là đối số thật.
      */
     @Test fun `cong danh tu dau cau khong sieu qua tay`() = expect(
-        "chiếu cụm" to VoiceIntent.Control("cast", 1),          // tên chiếm cả câu
+        // ⚠ 1.90: ca *"chiếu cụm"* gỡ cùng nút `cast`; *"cốp"* vẫn phủ vế *"tên chiếm cả câu"*.
         "cốp" to VoiceIntent.Control("trunk", 1),               // tên chiếm cả câu
         "mở hết kính ra" to VoiceIntent.Macro("mac_win_open_all"), // có động từ ⇒ đuôi thừa không đổi ý định
         "nhiệt độ hai mươi bốn độ" to VoiceIntent.Control("temp", 24), // STEP đọc đuôi
@@ -501,7 +499,8 @@ class VoiceIntentParserTest {
         "tăng nhiệt độ" to VoiceIntent.Control("temp", null, relative = 1),
         "giảm nhiệt độ" to VoiceIntent.Control("temp", null, relative = -1),
         "tăng quạt gió" to VoiceIntent.Control("fan", null, relative = 1),            // fan min 0 ⇒ luôn tương đối
-        "giảm âm lượng hai" to VoiceIntent.Control("vol", null, relative = -2),       // vol min 0 ⇒ giữ −2
+        // ⚠ 1.90: ca *"giảm âm lượng hai"* gỡ cùng `vol`; vế *"min 0 ⇒ số trần vẫn TƯƠNG ĐỐI"* nay đo bằng `fan`.
+        "giảm gió hai" to VoiceIntent.Control("fan", null, relative = -2),            // fan min 0 ⇒ giữ −2
     )
 
     /**

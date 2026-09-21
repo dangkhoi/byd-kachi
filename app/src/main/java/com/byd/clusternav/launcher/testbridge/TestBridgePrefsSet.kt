@@ -15,6 +15,7 @@ import com.byd.clusternav.setVoiceEndpointMinSpeechMs
 import com.byd.clusternav.setVoiceEndpointSilenceMs
 import com.byd.clusternav.setVoiceFollowUpMs
 import com.byd.clusternav.setVoiceHotwordScore
+import com.byd.clusternav.setVoiceKeepLog
 import com.byd.clusternav.setVoiceTtsSpeed
 import com.byd.clusternav.setVoiceVadMinSilenceMs
 import com.byd.clusternav.setVoiceVadMinSpeechMs
@@ -27,6 +28,7 @@ import com.byd.clusternav.voiceEndpointMinSpeechMs
 import com.byd.clusternav.voiceEndpointSilenceMs
 import com.byd.clusternav.voiceFollowUpMs
 import com.byd.clusternav.voiceHotwordScore
+import com.byd.clusternav.voiceKeepLog
 import com.byd.clusternav.voiceTtsSpeed
 import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
 import com.byd.clusternav.voiceMicSource
@@ -130,6 +132,10 @@ internal object TestBridgePrefsSet {
             "voice_tts_speed" -> raw.toFloatOrNull()
                 ?.takeIf { it in SherpaTtsCatalog.MIN_SPEED..SherpaTtsCatalog.MAX_SPEED }
                 ?.let { Prefs.setVoiceTtsSpeed(app, it); it.toString() }
+            // owner 2026-09-21 — công tắc giữ nhật ký lượt nói. Ô tích của nó đã gỡ khỏi Cài đặt (bản release
+            // production dọn hết bề mặt dev/log), nên ĐÂY là đường chỉnh duy nhất còn lại. Ghi thẳng prefs như ba
+            // khoá theo-xe kia: `VoiceUtteranceLog.enabled` đọc lại ở mỗi lượt ghi, không cache.
+            "voice_keep_log" -> bool(raw)?.let { Prefs.setVoiceKeepLog(app, it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -167,6 +173,7 @@ internal object TestBridgePrefsSet {
             "voice_beam" -> Prefs.voiceBeam(app).toString()
             "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
             "voice_tts_speed" -> Prefs.voiceTtsSpeed(app).toString()
+            "voice_keep_log" -> Prefs.voiceKeepLog(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

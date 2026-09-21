@@ -437,11 +437,12 @@ class SettingsCastSection(
             )
         })
         // UX-OVERHAUL · WP7 — hai nút trên là đường thoát THẬT của người dùng (cụm đang tối/đang bị app khác giữ),
-        // nên chúng ở lại. Nút *Chẩn đoán và nhật ký* mở một màn đầy số cho người viết code ⇒ đứng sau cổng
-        // [DevMode.unlocked]; qua adb là `am start -n <gói>/com.byd.clusternav.modules.clustercast.DiagActivity`.
-        if (DevMode.unlocked(context)) {
-            body.addView(rows.button(context.getString(R.string.kachi_diagnostics)) { bridge.openDiagnostics() })
-        }
+        // nên chúng ở lại.
+        //
+        // ⚠ Nút *Chẩn đoán và nhật ký* đã GỠ (owner 2026-09-21, bản release production): nó mở một màn đầy số cho
+        // người viết code, và cả màn Cài đặt nay chỉ còn ĐÚNG một bề mặt đồ đo — công tắc *Chế độ kiểm thử qua adb*
+        // (`SettingsSections.testBridge`). `ClusterNavBridge.openDiagnostics()` **ở lại** cho đường adb:
+        // `am start -n <gói>/com.byd.clusternav.modules.clustercast.DiagActivity`.
     }
 
     private companion object {
