@@ -69,7 +69,15 @@ private object WakeModelFetch {
 
     fun ensure(app: Context) {
         // `isReady` = 5 lần `stat`; rẻ, và chạy ở đây để ca thường (đã có model) không dựng luồng nào.
-        if (runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false)) return
+        // ⚠ [ĐO xe 2026-09-21] `isReady` chỉ kiểm CÓ tệp + độ dài > 0, KHÔNG so sha. Nếu `keywords.txt` cũ (token
+        // sai vocab ⇒ KWS encode fail, câu gọi không bao giờ nổ) còn nằm trên đĩa, `isReady=true` ⇒ bản mới không
+        // bao giờ về. Nên: nếu ĐỦ tệp NHƯNG `keywords.txt` KHÔNG khớp ghim ⇒ xoá gói + tải lại.
+        val ready = runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false)
+        if (ready && keywordsMatchPin(app)) return
+        if (ready) {
+            Log.i(TAG, "keywords.txt trên đĩa KHÁC bản ghim (token cũ sai vocab) — xoá gói + tải lại")
+            runCatching { VoiceModelStore.remove(app, WakeModelCatalog) }
+        }
         if (!fetching.compareAndSet(false, true)) {
             Log.i(TAG, "đã có một lượt tải model câu gọi đang chạy — bỏ qua lượt này")
             return
@@ -101,6 +109,22 @@ private object WakeModelFetch {
         } finally {
             fetching.set(false)
         }
+    }
+
+    /**
+     * `keywords.txt` trên đĩa có khớp bản GHIM không (so sha256). Dùng để bắt ca "đủ tệp nhưng keywords.txt cũ"
+     * mà `isReady` (chỉ check presence) bỏ sót. Đọc lỗi / chưa ghim ⇒ coi như KHÔNG khớp (an toàn: tải lại).
+     */
+    private fun keywordsMatchPin(app: Context): Boolean {
+        val pin = WakeModelCatalog.files.firstOrNull { it.name == WakeModelCatalog.KEYWORDS } ?: return true
+        if (!pin.pinned) return true
+        return runCatching {
+            val f = java.io.File(VoiceModelStore.dir(app, WakeModelCatalog), WakeModelCatalog.KEYWORDS)
+            if (!f.isFile) return false
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            f.inputStream().use { ins -> val b = ByteArray(8192); var n = ins.read(b); while (n > 0) { md.update(b, 0, n); n = ins.read(b) } }
+            md.digest().joinToString("") { "%02x".format(it) }.equals(pin.sha256, ignoreCase = true)
+        }.getOrDefault(false)
     }
 
     /** Một dòng nhật ký cho mỗi mốc; `Downloading` thì thưa ra (mỗi 20 %) để không nhận chìm logcat. */
