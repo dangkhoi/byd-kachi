@@ -142,7 +142,6 @@ object VoiceSynonyms {
         // nói rõ *"trái"* nên câu trả lời đọc lên không giấu chuyện nó chỉ khoá một bên.
         "child_lock" to listOf("khoa con nit", "khoa tre em", "khoa tre em ben trai"),
         "child_lock_r" to listOf("khoa con nit ben phai", "khoa tre em ben phai"),
-        "seat_memory" to listOf("luu vi tri ghe"),
         "headlight_mode" to listOf("kieu den pha"),
         "wireless_charge" to listOf("sac dien thoai"),
         "screen_rotation" to listOf("huong man hinh"),

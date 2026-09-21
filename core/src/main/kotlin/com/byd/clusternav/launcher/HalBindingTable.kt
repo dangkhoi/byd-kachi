@@ -218,7 +218,7 @@ class HalBindingTable(private val gateway: HalGateway) {
          *  • kính-nhị-phân "window" → cửa lái [1, state]; cốp `setHetchDoorStatus` → [open?1:close?2];
          *  • **khoá cửa `setDoorLockState(state)` → [khoá?2:mở?1]** (xem ⚠ dưới);
          *  • **mưa-tự-đóng-kính `setRainCloseWindow(state)` → [bật?1:tắt?2]**;
-         *  • lọc-ngay/nhớ-ghế/gập-gương (BUTTON) → [1].
+         *  • lọc-ngay/gập-gương (BUTTON) → [1].
          *
          * ## ⚠ [SOÁT P0] Vì sao khoá cửa PHẢI có nhánh riêng
          * [ĐO] 2026-09-11: `lock` ("Khoá xe") và `door` ("Mở cửa") khai **CÙNG** `bindingKey`
@@ -275,7 +275,7 @@ class HalBindingTable(private val gateway: HalGateway) {
             // feature 1330643002 = 0x4F50003A SET_INSIDE_LIGHT_STATE_SET, enum INSIGHT_LIGHT_OFF=1 · ON=2
             // (jadx-tmap BYDAutoSettingDevice.java:218-219, DL3). Cũ gửi 0/1 ⇒ không trúng ON=2. ⇒ ON=2, OFF=1.
             "readl" -> intArrayOf(if (primary > 0) 2 else 1)
-            "pm25_clean_now", "seat_memory" -> intArrayOf(1)
+            "pm25_clean_now" -> intArrayOf(1)
             // ── Bản vá binding 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) — enum lấy từ stub
             // `../jadx-tmap/sources/android/hardware/bydauto/`, KHÔNG phải 0/1:
             // đèn ban ngày `setDayTimeLightState` — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (BYDAutoLightDevice.java:10/:8).

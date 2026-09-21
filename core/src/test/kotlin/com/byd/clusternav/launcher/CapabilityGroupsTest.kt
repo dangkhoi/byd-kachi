@@ -307,7 +307,7 @@ class CapabilityGroupsTest {
         // + 8 nút) theo triage on-car 1.84 — pin cell/mô-tơ/chân ga-phanh/vô-lăng/độ dốc/nước làm mát/vị trí cốp/
         // gương/gạt mưa/đèn viền ×9/mã máy/GPS ×4/HUD ×2/mức tái tạo. Cùng loại quyết định như hai lượt trên.
         assertEquals(73, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 73 (WP8 purge 29)")
-        assertEquals(39, ControlRegistry.ALL.size, "nút rời phải còn nguyên 39 (WP8 purge 8)")
+        assertEquals(38, ControlRegistry.ALL.size, "nút rời còn 38 (2026-09-21 gỡ seat_memory)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -316,7 +316,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            73 + 39 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            73 + 38 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

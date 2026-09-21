@@ -136,7 +136,7 @@ class ControlReadKeyTest {
         // đều nằm trong nhóm chưa có đường đọc, nên độ phủ tương đối còn TĂNG (17/54 → 17/47).
         // ⚠ WP8 2026-09-20: 47 → 39 nút (owner purge 8). [ĐO] độ phủ GIỮ NGUYÊN **17** — cả 8 nút bị gỡ đều nằm
         // trong nhóm chưa có đường đọc, nên độ phủ tương đối TĂNG (17/47 = 36 % → 17/39 = 44 %).
-        assertEquals(39, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
+        assertEquals(38, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
             17, wired.size,
             "độ phủ đường đọc đổi (thấy ${wired.size}/39; chưa có đường đọc: ${blind.sorted()}). " +

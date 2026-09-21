@@ -149,7 +149,6 @@ class VoiceIntentParserTest {
     // đã gỡ cùng hai nút — owner chấm NO.
     @Test fun `BUTTON bam mot phat`() = expect(
         "Lọc ngay" to VoiceIntent.Control("pm25_clean_now", null),
-        "Nhớ ghế lái" to VoiceIntent.Control("seat_memory", null),
     )
 
     // ══ F · BA CẶP NHÃN LỒNG NHAU (backlog L-RE2) — luật "dãy dài nhất thắng" ══════════════════════════

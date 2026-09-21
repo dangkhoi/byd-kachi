@@ -129,7 +129,6 @@ object CapabilityDescriptions {
             "Bật/tắt khoá trẻ em cửa sau BÊN PHẢI — nút riêng, vì xe phơi hai lệnh tách nhau cho hai bên",
             "Turn the RIGHT rear child-safety lock on/off — a separate button, the car exposes one command per side",
         ),
-        "seat_memory" to Desc("Gọi lại vị trí ghế lái đã lưu", "Recall the saved driver seat position"),
 
         // ── LIGHTS (ACT) ──
         "readl" to Desc("Bật/tắt đèn đọc sách trong cabin", "Turn the cabin reading light on/off"),

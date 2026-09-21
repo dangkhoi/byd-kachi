@@ -60,7 +60,7 @@ class LangCoverageTest {
     fun `moi nut co nhan EN, dung 39 nut`() {
         // 47 ((V) 2026-09-17 owner gỡ 7 nút NO — trước đó 54; trước 09-16 là 64).
         // 39 (UX-OVERHAUL WP8 2026-09-20 owner purge 8 nút BỎ: gạt mưa · 4 đèn viền · mức tái tạo · 2 HUD).
-        assertEquals(39, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        assertEquals(38, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
@@ -195,7 +195,7 @@ class LangCoverageTest {
         // the floating cast button"), khoá `cast_bubble_visible` theo XE; đã có bản EN tại chỗ khai.
         // UX-OVERHAUL WP8 (2026-09-20): **296 → 258 (−38)** = −29 datum −8 nút (owner purge 37 mã BỎ) −1 nhóm
         // (`g_ambient` hết thành viên). Đây là lượt duy nhất con số này GIẢM; mọi lượt trước đều cộng.
-        assertEquals(261, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")   // +VOICE nhóm +voice_wake mục (owner 2026-09-21)
+        assertEquals(260, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")   // +VOICE nhóm +voice_wake mục (owner 2026-09-21)
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

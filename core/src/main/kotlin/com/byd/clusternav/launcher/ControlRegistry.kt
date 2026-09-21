@@ -312,11 +312,6 @@ object ControlRegistry {
             bindingKey = "BYDAutoFeatureIds.Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_RIGHT_SET",
             halDevice = "BYDAutoDoorLockDevice",
             labelEn = "Child lock right", short = "Khóa trẻ P", shortEn = "Child lock R"),
-        ControlDef("seat_memory", "Nhớ ghế lái", "ic-car-top-seat-fl", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1276186678",
-            // [ĐO] RE 2026-09-14 §4: SET_LF_MEMORY_LOCATION_SET thuộc SETTING(1023), KHÔNG phải BODYWORK(1001).
-            halDevice = "BYDAutoSettingDevice",
-            labelEn = "Driver seat memory"),
         // Đèn
         // [ĐO] 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET (BYDAutoFeatureIds.java) thuộc INSTRUMENT(1007) — Domain.LIGHTS
         // route thô tới LIGHT(1004) là SAI ⇒ `halDevice` ghi đè. NEEDS-ONCAR: enum index↔giá trị (hiện gửi index thô).

@@ -193,7 +193,6 @@ object SherpaSpokenWords {
         // [ĐO] bản đầu viết *"gió au-tô"* (cách ĐỌC) ⇒ bỏ dấu ra "gio au-to" ≠ "gio auto" ⇒ đỏ đúng chỗ. Cách đọc
         // là việc của `TtsPronunciation`, không phải của bảng bias.
         "gio auto" to "gió auto",
-        "luu vi tri ghe" to "lưu vị trí ghế",
         "kieu den pha" to "kiểu đèn pha",
         "sac dien thoai" to "sạc điện thoại",
         "huong man hinh" to "hướng màn hình",
