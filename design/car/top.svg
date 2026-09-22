@@ -104,10 +104,10 @@
        khi cửa MỞ (CarPartStyle: FLAP đóng/chưa-đọc = HIDDEN, không còn "que" nối thân với bánh). Cốp/ca-pô = nét
        gờ TRÊN thân (panel). Gương = nêm nhỏ ở chân kính lái, peek ~1.4 đơn vị (trước thò ra tận 4.7). -->
   <g id="layer-doors">
-    <path id="door_lf" data-role="flap" d="M7.55,9.1 L5.6,9.8 L5.6,12.4 L7.35,12.5 Z" fill="none"/>
-    <path id="door_rf" data-role="flap" d="M16.45,9.1 L18.4,9.8 L18.4,12.4 L16.65,12.5 Z" fill="none"/>
-    <path id="door_lr" data-role="flap" d="M7.35,13.9 L5.6,14.6 L5.6,17.3 L7.6,17.3 Z" fill="none"/>
-    <path id="door_rr" data-role="flap" d="M16.65,13.9 L18.4,14.6 L18.4,17.3 L16.4,17.3 Z" fill="none"/>
+    <path id="door_lf" data-role="flap" d="M7.55,9.0 L4.2,9.9 L4.2,12.5 L7.35,12.6 Z" fill="none"/>
+    <path id="door_rf" data-role="flap" d="M16.45,9.0 L19.8,9.9 L19.8,12.5 L16.65,12.6 Z" fill="none"/>
+    <path id="door_lr" data-role="flap" d="M7.35,13.8 L4.2,14.7 L4.2,17.4 L7.6,17.4 Z" fill="none"/>
+    <path id="door_rr" data-role="flap" d="M16.65,13.8 L19.8,14.7 L19.8,17.4 L16.4,17.4 Z" fill="none"/>
     <rect id="bonnet" data-role="panel" x="9.5" y="5.6" width="5.0" height="2.0" rx="0.9" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
     <rect id="boot" data-role="panel" x="9.2" y="17.7" width="5.6" height="1.9" rx="0.8" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="0.25"/>
     <g id="mirror" data-role="mirror" data-merge="1" fill="#6b788a">
