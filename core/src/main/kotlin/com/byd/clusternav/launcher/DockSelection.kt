@@ -41,4 +41,20 @@ object DockSelection {
             .forEach { out = out.setEnabled(it, true) }
         return out
     }
+
+    /**
+     * ═══ LỌC MÃ ĐÃ XOÁ khỏi cấu hình thanh nút ĐÃ LƯU ══════════════════════════════════════════════════════════
+     *
+     * Bug 2026-09-22 ("đặt 10 hiện 6"): khi GỠ một control khỏi [ControlRegistry] (lock/door/window/steer_heat +
+     * macro mac_leave/mac_door_light ở 1.94/1.95), cấu hình thanh nút người dùng đã lưu VẪN giữ mã đó.
+     * `ControlDockView.rebuild` gặp mã không resolve thì bỏ qua IM LẶNG (`null -> Unit`) ⇒ "Áp dụng (10)" mà chỉ
+     * 6 nút hiện = un-consistency.
+     *
+     * Đây là **bổ sung còn thiếu** của quy trình gỡ mã: `WorkspaceState.sanitized` đã lọc Ô, `TopStripConfig.decode`
+     * đã lọc CHIP, nhưng THANH NÚT thì chưa. Hàm này bịt lỗ đó, và **tái dùng [DockConfig.setEnabled]** làm cổng
+     * "mã nào vào được thanh" (mã đã gỡ ⇒ `setEnabled` trả nguyên trạng ⇒ không vào) — KHÔNG chép phép kiểm đó
+     * sang đây (bài `ma la khong vao duoc thanh` canh đúng điều đó). Thuần ⇒ test được ở `:core`.
+     */
+    fun sanitize(enabled: List<String>): List<String> =
+        enabled.fold(DockConfig(enabled = emptyList())) { acc, id -> acc.setEnabled(id, true) }.enabled
 }

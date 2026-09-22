@@ -219,10 +219,10 @@ class WorkspacePrefs(context: Context) {
         val edge = runCatching { DockEdge.valueOf(sp.getString(key("dock_edge"), DockEdge.BOTTOM.name)!!) }
             .getOrDefault(DockEdge.BOTTOM)
         val enabled = sp.getString(key("dock_enabled"), null)?.split(",")?.filter { it.isNotBlank() }
-            // 1.95+ (bug 2026-09-22 "đặt 10 hiện 6"): lọc mã đã XOÁ khỏi bộ đăng ký (lock/door/window/mac_door_light
-            // gỡ ở 1.94/1.95) — cấu hình cũ lưu chúng, `ControlDockView.rebuild` bỏ qua IM LẶNG (`null -> Unit`) nên
-            // "10 đang bật" mà chỉ 6 nút hiện. Lọc ở cửa NẠP để số đếm khớp thực tế + ô/thanh tự rụng mã chết.
-            ?.filter { CapabilityCatalog.kindOf(it) != null || ActionMacros.byId(it) != null }
+            // 1.95+ (bug 2026-09-22 "đặt 10 hiện 6"): lọc mã đã XOÁ khỏi bộ đăng ký qua [DockSelection.sanitize]
+            // (một nguồn, test ở :core) — cấu hình cũ lưu lock/door/window/mac_door_light (gỡ 1.94/1.95) thì
+            // `ControlDockView.rebuild` bỏ qua IM LẶNG nên "10 đang bật" mà chỉ 6 nút hiện. Lọc ở cửa NẠP.
+            ?.let { DockSelection.sanitize(it) }
             ?: ControlRegistry.defaultEnabledIds()
         val visible = sp.getBoolean(key("dock_visible"), true)   // S1b — vắng = hiện (giữ hành vi cũ)
         return DockConfig(edge, enabled, visible)
