@@ -57,6 +57,14 @@ object VoiceIntentParser {
         // H4 — cụm NGHE NHẦM chỉ bật khi CẢ CÂU có từ ngữ cảnh, nên phải tính trên `all`, không trên từng vế.
         val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps), all)
 
+        // V2 (owner on-car 2026-09-22) — "sưởi/mát CẢ 2 GHẾ [mức N]" ⇒ hai lệnh ghế. Đứng trước
+        // [splitOnConnectors] vì nó SINH ra câu ghép; chi tiết ở [VoiceControlParse.expandBothSeats].
+        VoiceControlParse.expandBothSeats(all)?.let { (a, b) ->
+            val ia = parseTokens(a, terms, places, text)
+            val ib = parseTokens(b, terms, places, text)
+            if (ia !is VoiceIntent.Unknown && ib !is VoiceIntent.Unknown) return listOf(ia, ib)
+        }
+
         val parts = splitOnConnectors(all)
         if (parts.size > 1) {
             val each = parts.map { parseTokens(it, terms, places, text) }
@@ -252,22 +260,16 @@ object VoiceIntentParser {
         // (dài hơn) giành lấy trước. Và chỉ nhận khi **cả phần đuôi** là một nơi có thật — xem KDoc
         // [VoicePlaces.PLACE_VERBS] về vì sao ba từ này không được vào bảng động từ chung.
         savedPlace(t, places)?.let { return it }
-        // (b''') [ĐO log 1.79] "tìm + TỪ-NHẠC" → tra nhạc; "tìm <phi-nhạc>" giữ NO_VERB (hỏi lại). Đứng sau
-        // headMatch nên "tìm đường đến X" (động từ NAV) đã giải trước — xem [mediaSearch].
+        // (b''') [ĐO log 1.79] "tìm + TỪ-NHẠC" → tra nhạc; "tìm <phi-nhạc>" giữ NO_VERB. Đứng sau headMatch nên "tìm đường đến X" (NAV) đã giải trước — xem [mediaSearch].
         if (verbHit == null) {
             VoiceMediaNavParse.mediaSearch(t)?.let { return it }
             // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
             if (VoiceLexicon.phraseAt(t, 0, listOf("ha")) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
-            // "điều hòa/máy lạnh <số> độ" KHÔNG có động từ (owner 2026-09-21: "điều hòa 25 độ" ra Unknown vì thiếu
-            // verb). Đẩy qua đường control(ac_auto, SET) sẵn có — nó tự nhận "<số> độ" → đặt nhiệt (nút temp).
-            //
-            // ⚠⚠ [SOÁT 2026-09-21 · P1] CHỈ nhận khi nó THẬT SỰ ra một setpoint nhiệt. Bản đầu `return` thẳng kết
-            // quả của `control(...)`, mà `ac_auto` là TOGGLE: khi `degreesSetpoint` KHÔNG khớp (số không đứng ngay
-            // trước chữ "độ") thì nhánh `TOGGLE + SET` trả `Control(ac_auto, 1)` ⇒ [ĐO] *"điều hòa chế độ hai"* và
-            // *"điều hòa mức độ 3"* **BẬT điều hòa** từ một câu không phải lệnh (trước lượt này cả hai ra
-            // `NO_VERB` = hỏi lại). Đó đúng là họ lỗi [P1] mà 1.83 đã phải vá một lần cho *"bật điều hòa chế độ
-            // hai"* — `degreesSetpoint` đòi số ngay trước "độ" chính là bản vá ấy, và cổng mới này đi vòng qua nó.
-            // Không khớp ⇒ rơi xuống `NO_VERB` như trước (owner: *"không rõ hỏi lại thôi, không cần assume"*).
+            // "điều hòa/máy lạnh <số> độ" KHÔNG có động từ (owner 2026-09-21) ⇒ đẩy qua control(ac_auto, SET),
+            // nó tự nhận "<số> độ" → đặt nhiệt (nút temp).
+            // ⚠⚠ [SOÁT 2026-09-21 · P1] CHỈ nhận khi ra ĐÚNG setpoint nhiệt (id=="temp"). `ac_auto` là TOGGLE:
+            // trả thẳng `control(...)` thì "điều hòa chế độ hai"/"mức độ 3" (số không đứng trước "độ") BẬT điều
+            // hòa oan — cùng họ [P1] mà 1.83 đã vá. Không khớp ⇒ rơi `NO_VERB` như trước.
             if (mentionsAc(t) && t.any { it.norm == "do" } && VoiceControlParse.hasNumber(t)) {
                 val set = VoiceControlParse.control("ac_auto", VoiceVerb.SET, t, original)
                 if (set is VoiceIntent.Control && set.id == "temp") return set

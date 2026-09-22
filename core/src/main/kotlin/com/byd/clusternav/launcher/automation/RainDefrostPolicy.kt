@@ -167,19 +167,15 @@ object RainDefrostOwner {
             return RainDefrostStep(action, RainDefrostState())
         }
 
-        // Đang mưa. Người lái vừa tắt cái sấy của automation ⇒ nhả quyền, im tới hết cơn mưa.
-        if (state.owned && !defrostOn) {
-            return RainDefrostStep(RainDefrostAction.Leave, RainDefrostState(owned = false, suppressed = true))
-        }
-
-        // Đã nhả quyền trong cơn mưa này ⇒ không giành nút, kể cả khi luật một-nhịp nói TurnOn.
-        if (state.suppressed) return RainDefrostStep(RainDefrostAction.Leave, state)
-
-        val action = RainDefrostPolicy.decide(rainSpeed, defrostOn, state.owned)
-        // Chỉ nhận chủ quyền ở đúng nhịp mình RA LỆNH bật. Sấy đang bật mà không phải mình bật (người lái bật
-        // trước khi automation kịp thấy mưa) thì `owned` giữ nguyên `false` ⇒ hết mưa sẽ KHÔNG tắt hộ (R1.5).
+        // ═══ Đang mưa ⇒ LUÔN GIỮ SẤY (owner 2026-09-22) ══════════════════════════════════════════════════════
+        // Sấy tắt (dù xe tự timeout hay người lái tự tắt) ⇒ BẬT LẠI. KHÔNG còn phân biệt "người tắt" (bỏ hẳn
+        // `suppressed`/R1.5): [ĐO xe owner] thủ phạm chính là XE TỰ TIMEOUT, và một bit sấy=tắt không phân biệt
+        // được timeout với người tắt. Owner chốt: "cứ luôn bật, tắt thì bật lại; ai không thích thì tắt tính
+        // năng trong Cài đặt › Tiện nghi xe". Ai tắt tay giữa mưa mà vẫn bật là cái giá đã cân — đổi lại đi mưa
+        // lâu KHÔNG BAO GIỜ mất sấy (an toàn nhìn đường > tiện tắt tay).
+        val action = if (defrostOn) RainDefrostAction.Leave else RainDefrostAction.TurnOn
         val owned = if (action == RainDefrostAction.TurnOn) true else state.owned
-        return RainDefrostStep(action, state.copy(owned = owned))
+        return RainDefrostStep(action, RainDefrostState(owned = owned, suppressed = false))
     }
 
     /**

@@ -19,6 +19,49 @@ import org.junit.jupiter.api.Test
 class VoiceSeatTrunk0920Test {
 
     private fun one(s: String): VoiceIntent = VoiceIntentParser.parseOne(s)
+    private fun both(s: String): List<VoiceIntent> = VoiceIntentParser.parse(s)
+
+    // ══ V2 (owner on-car 2026-09-22) — "sưởi/mát CẢ 2 GHẾ [mức N]" ⇒ hai lệnh ghế (lái + phụ) ══════════
+    @Test fun `suoi mat ca 2 ghe no ra hai lenh ghe`() {
+        assertEquals(
+            listOf(VoiceIntent.Control("seath", 2), VoiceIntent.Control("seath_r", 2)),
+            both("sưởi cả 2 ghế mức 2"),
+        )
+        assertEquals(
+            listOf(VoiceIntent.Control("seath", 2), VoiceIntent.Control("seath_r", 2)),
+            both("sưởi cả hai ghế mức 2"),
+        )
+        // Không nêu mức ⇒ bật (mức 1) cả hai ghế.
+        assertEquals(
+            listOf(VoiceIntent.Control("seath", 1), VoiceIntent.Control("seath_r", 1)),
+            both("sưởi hai ghế"),
+        )
+        assertEquals(
+            listOf(VoiceIntent.Control("seatc", 1), VoiceIntent.Control("seatc_r", 1)),
+            both("mát cả 2 ghế"),
+        )
+    }
+
+    /** Câu MỘT ghế (có "lái"/"phụ") KHÔNG bị nở thành hai — vẫn đúng một lệnh. */
+    @Test fun `ca 2 ghe khong nuot cau mot ghe`() {
+        assertEquals(listOf(VoiceIntent.Control("seath", 2)), both("sưởi ghế lái mức 2"))
+        assertEquals(listOf(VoiceIntent.Control("seath_r", 1)), both("sưởi ghế phụ"))
+    }
+
+    // ══ V1 (owner on-car 2026-09-22) — ASR rớt chữ "ghế" ("tắt sưởi ghế phụ"→"tắt sưởi") ⇒ "sưởi" trần = ghế lái
+    @Test fun `suoi tran roi chu ghe van ra ghe lai khong loop`() {
+        assertEquals(VoiceIntent.Control("seath", 0), one("tắt sưởi"))
+        assertEquals(VoiceIntent.Control("seath", 1), one("bật sưởi"))
+        assertEquals(VoiceIntent.Control("seath", 1), one("sưởi"))
+    }
+
+    /** Dài-trước vẫn thắng: có "ghế lái"/"ghế phụ" thì KHÔNG rơi về "sưởi" trần. */
+    @Test fun `suoi tran khong nuot cau co neu ghe`() {
+        assertEquals(VoiceIntent.Control("seath_r", 1), one("sưởi ghế phụ"))
+        assertEquals(VoiceIntent.Control("seath_r", 0), one("tắt sưởi ghế phụ"))
+        // "sấy kính trước" (defrost) dùng "sấy", không phải "sưởi" ⇒ không bị kéo về ghế.
+        assertEquals(VoiceIntent.Control("defrost", 1), one("sấy kính trước"))
+    }
 
     // ══ (1) GHẾ — SELECT 3 mức (Tắt/Mức 1/Mức 2) ══════════════════════════════════════════════════════
     @Test fun `ghe mat nhan muc 1 va muc 2 qua voice`() {

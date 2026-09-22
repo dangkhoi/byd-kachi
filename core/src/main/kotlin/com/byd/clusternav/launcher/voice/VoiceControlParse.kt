@@ -171,4 +171,35 @@ internal object VoiceControlParse {
 
     /** Chữ *"độ"* đã bỏ dấu — đơn vị đi kèm một setpoint nhiệt (xem [degreesSetpoint]). */
     private const val DEGREE_WORD = "do"
+
+    /**
+     * ═══ V2 · "sưởi/mát CẢ 2 GHẾ [mức N]" ⇒ hai vế "<mode> ghế lái [mức N]" + "<mode> ghế phụ [mức N]" ══════════
+     *
+     * Trả `null` nếu câu KHÔNG phải dạng cả-2-ghế (thì mọi thứ đi đường cũ, không đụng câu nào đang chạy).
+     *
+     * ## Vì sao nở thành hai VẾ CHỮ rồi tokenize lại, không tự dựng hai `Control`
+     * Đường parse ghế riêng ([selectIndex] + synonym `seatc/seath/_r`) đã xử đúng mọi mức + mọi cách nói. Tự dựng
+     * `Control(seath, level)` ở đây là chép lại phép suy mức + phép chọn nút = bản sao thứ hai (bài học
+     * `unitPrefs`). Nở ra hai câu "sưởi ghế lái mức 2" / "sưởi ghế phụ mức 2" rồi giao lại cho chính đường ấy.
+     *
+     * Điều kiện (cả ba): có MODE (`suoi`→sưởi / `mat`→mát) · có cụm cả-2-ghế · phần "mức N" (nếu có) giữ vào cả
+     * hai vế. Không có mức ⇒ hai vế không mức (parse ra mức 1 = bật, đúng như "sưởi ghế").
+     */
+    fun expandBothSeats(all: List<Token>): Pair<List<Token>, List<Token>>? {
+        val norms = all.map { it.norm }
+        val mode = when {
+            norms.contains("suoi") -> "sưởi"
+            norms.contains("mat") -> "mát"
+            else -> return null
+        }
+        // Cụm cả-2-ghế: có "ghe" + ("hai"|"2") và KHÔNG nêu ghế cụ thể ("lái"/"phụ" ⇒ câu MỘT ghế, không nở).
+        val bothMark = norms.contains("ghe") && (norms.contains("hai") || norms.contains("2")) &&
+            !norms.contains("lai") && !norms.contains("phu")
+        if (!bothMark) return null
+        // Giữ nguyên phần "mức N" nếu có (số đứng ngay sau chữ "muc"); không có ⇒ chuỗi rỗng ⇒ hai vế không mức.
+        val mucIdx = norms.indexOf("muc")
+        val levelSuffix = if (mucIdx >= 0 && mucIdx + 1 < all.size) " mức ${all[mucIdx + 1].raw}" else ""
+        return VoiceLexicon.tokenize("$mode ghế lái$levelSuffix") to
+            VoiceLexicon.tokenize("$mode ghế phụ$levelSuffix")
+    }
 }

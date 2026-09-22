@@ -83,7 +83,11 @@ object VoiceSynonyms {
         "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe",
             "mat ghe", "ghe mat", "mat ghe lai", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
         "seath" to listOf("suoi ghe", "ghe suoi", "suoi ghe lai", "ghe am", "ghe nong",
-            "am ghe", "lam am ghe", "suoi dit", "suoi mong"),
+            "am ghe", "lam am ghe", "suoi dit", "suoi mong",
+            // V1 (owner on-car 2026-09-22) — ASR hay RỚT chữ "ghế" ("tắt sưởi ghế phụ" nghe thành "tắt sưởi") ⇒
+            // "sưởi" đứng trần trỏ ghế LÁI (cụm mơ hồ → ghế lái, cùng lệ "mở kính"). An toàn: trên xe chỉ GHẾ mới
+            // sưởi; "sấy/xả băng" (kính) dùng "say", "sấy gương" đã gỡ. Dài-trước "suoi ghe" vẫn thắng khi có "ghế".
+            "suoi"),
         // ⚠ 1.91 · `nhiet do xe` khai ở CẢ HAI bảng (nút `temp` + datum `inside_temp`) — đúng cơ chế đã có của
         // `nhiet do` và `quat gio`: `VoiceIntentParser.choose` lấy datum cho động từ ĐỌC, lấy nút cho động từ
         // hành động. Khai một bên thôi thì nửa kia thành MISMATCH ([ĐO off-car]: chỉ khai cho `temp` ⇒ *"xem

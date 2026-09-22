@@ -64,6 +64,7 @@ object SherpaSpokenWords {
         "thoi ghe" to "thổi ghế",
         "ghe thoang" to "ghế thoáng",
         "suoi ghe" to "sưởi ghế",
+        "suoi" to "sưởi",
         "ghe am" to "ghế ấm",
         "nhiet do dieu hoa" to "nhiệt độ điều hòa",
         "nhiet do trong xe" to "nhiệt độ trong xe",

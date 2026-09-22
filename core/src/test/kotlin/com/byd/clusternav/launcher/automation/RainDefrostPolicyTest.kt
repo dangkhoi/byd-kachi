@@ -131,50 +131,40 @@ class RainDefrostPolicyTest {
     }
 
     /**
-     * ⚠⚠ Ca này là lý do [RainDefrostOwner] tồn tại.
+     * ⚠⚠ HÀNH VI ĐỔI (owner 2026-09-22): đang mưa mà sấy tắt ⇒ LUÔN bật lại, KHÔNG phân biệt "người tắt".
      *
-     * Người lái tự tắt sấy giữa cơn mưa. Luật MỘT NHỊP ([RainDefrostPolicy.decide]) thấy *mưa + sấy tắt* ⇒ nói
-     * `TurnOn` — tức automation giành nút, mỗi 5 phút một lần, với người đang lái xe. R1.5 nói ngược lại.
+     * [ĐO xe owner] thủ phạm tắt sấy giữa mưa là XE TỰ TIMEOUT, và một bit sấy=tắt không phân biệt được timeout
+     * với người lái tự tắt. Owner chốt: "cứ luôn bật, tắt thì bật lại; ai không thích thì tắt tính năng trong
+     * Cài đặt". Nên R1.5 cũ ("người tắt thì nhả quyền, im tới hết mưa") bị BỎ — đi mưa lâu không bao giờ mất sấy.
      */
     @Test
-    fun `nguoi lai tu tat giua con mua thi automation nha quyen va KHONG bat lai`() {
-        // Đứng riêng, luật một nhịp vẫn nói TurnOn — đây chính là cái bẫy.
-        assertEquals(
-            RainDefrostAction.TurnOn,
-            RainDefrostPolicy.decide(rainSpeed = rain, defrostOn = false, ownedByAuto = false),
-        )
-
+    fun `dang mua ma say tat thi LUON bat lai - du la timeout hay nguoi tat`() {
         var s = RainDefrostOwner.step(RainDefrostState(), rainSpeed = rain, defrostOn = false).state
         assertTrue(s.owned)
 
-        // Người lái bấm tắt ⇒ nhịp sau đọc từ xe thấy sấy đã tắt.
-        val released = RainDefrostOwner.step(s, rainSpeed = rain, defrostOn = false)
-        assertEquals(RainDefrostAction.Leave, released.action, "KHÔNG được bật lại")
-        assertFalse(released.state.owned)
-        assertTrue(released.state.suppressed)
-        s = released.state
+        // Sấy tắt (xe timeout HOẶC người tắt — không phân biệt) ⇒ nhịp sau BẬT LẠI.
+        val reassert = RainDefrostOwner.step(s, rainSpeed = rain, defrostOn = false)
+        assertEquals(RainDefrostAction.TurnOn, reassert.action, "đang mưa + sấy tắt ⇒ luôn bật lại")
+        assertFalse(reassert.state.suppressed, "không còn cơ chế suppressed")
+        s = reassert.state
 
-        // Mưa tiếp mấy nhịp nữa — vẫn im.
+        // Cứ tắt là bật lại, nhiều lần cũng vậy (timeout 2 lần, 3 lần… đều bật lại).
         repeat(3) {
-            val quiet = RainDefrostOwner.step(s, rainSpeed = rain, defrostOn = false)
-            assertEquals(RainDefrostAction.Leave, quiet.action, "còn trong cơn mưa này ⇒ vẫn nhả quyền")
-            s = quiet.state
+            val again = RainDefrostOwner.step(s, rainSpeed = rain, defrostOn = false)
+            assertEquals(RainDefrostAction.TurnOn, again.action, "mỗi lần sấy tắt trong mưa ⇒ bật lại")
+            s = again.state
         }
     }
 
-    /** "…không bật lại tới **lần mưa sau**" — trời khô đặt lại, cơn mưa kế tiếp automation được bật trở lại. */
+    /** Trời khô ⇒ hết cơn ⇒ ký ức sạch (nếu là sấy của mình thì tắt hộ). */
     @Test
-    fun `troi kho dat lai, con mua sau automation duoc bat tro lai`() {
-        var s = RainDefrostState(owned = false, suppressed = true)
+    fun `troi kho thi het con, ky uc sach`() {
+        var s = RainDefrostOwner.step(RainDefrostState(), rainSpeed = rain, defrostOn = false).state
+        assertTrue(s.owned)
 
-        val dryTick = RainDefrostOwner.step(s, rainSpeed = dry, defrostOn = false)
-        assertEquals(RainDefrostAction.Leave, dryTick.action)
-        assertEquals(RainDefrostState(), dryTick.state, "khô ⇒ hết cơn ⇒ hết nhả quyền")
-        s = dryTick.state
-
-        val again = RainDefrostOwner.step(s, rainSpeed = rain, defrostOn = false)
-        assertEquals(RainDefrostAction.TurnOn, again.action)
-        assertTrue(again.state.owned)
+        val dryTick = RainDefrostOwner.step(s, rainSpeed = dry, defrostOn = true)
+        assertEquals(RainDefrostAction.TurnOff, dryTick.action, "khô + sấy của mình ⇒ tắt hộ")
+        assertEquals(RainDefrostState(), dryTick.state, "khô ⇒ hết cơn ⇒ ký ức sạch")
     }
 
     /**
@@ -223,21 +213,9 @@ class RainDefrostPolicyTest {
         assertFalse(after.owned, "ghi hỏng thì KHÔNG được giữ chủ quyền")
         assertFalse(after.suppressed, "và cũng không được tự khoá mình lại")
 
-        // Nhịp sau: vẫn mưa, sấy vẫn tắt ⇒ THỬ LẠI (không rơi vào nhánh 'người lái tự tắt').
+        // Nhịp sau: vẫn mưa, sấy vẫn tắt ⇒ THỬ LẠI (đang mưa thì luôn bật lại).
         val retry = RainDefrostOwner.step(after, rainSpeed = rain, defrostOn = false)
         assertEquals(RainDefrostAction.TurnOn, retry.action)
-    }
-
-    /**
-     * Đối chứng — nếu KHÔNG nhả chủ quyền thì nhịp sau đọc ra `suppressed`, tức automation tự bỏ cả cơn mưa.
-     * Bài này ghim đúng hành vi cũ để không ai "đơn giản hoá" [RainDefrostOwner.unclaim] đi mất.
-     */
-    @Test
-    fun `giu chu quyen khi ghi hong thi nhip sau tuong nguoi lai tat`() {
-        val step = RainDefrostOwner.step(RainDefrostState(), rainSpeed = rain, defrostOn = false)
-        val next = RainDefrostOwner.step(step.state, rainSpeed = rain, defrostOn = false)
-        assertEquals(RainDefrostAction.Leave, next.action)
-        assertTrue(next.state.suppressed, "đây là cái giá của việc nhận chủ quyền khi ghi hỏng")
     }
 
     /** `unclaim` chỉ chạm nhánh TurnOn: nhánh hết-mưa đã xoá ký ức vì HẾT CƠN, không vì lệnh thành công. */
