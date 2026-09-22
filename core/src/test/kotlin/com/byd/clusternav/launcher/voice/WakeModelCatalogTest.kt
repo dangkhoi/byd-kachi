@@ -40,7 +40,7 @@ class WakeModelCatalogTest {
      */
     @Test
     fun `totalBytes ghim tuong minh khop tong cua bang`() {
-        assertEquals(5253878L, pack.totalBytes, "[ĐO] tổng byte của 5 tệp trong voice/kws/ (keywords.txt sửa 2026-09-21)")
+        assertEquals(5254180L, pack.totalBytes, "[ĐO] tổng byte của 5 tệp trong voice/kws/ (keywords.txt mở rộng biến thể Kachi 2026-09-22)")
         assertEquals(
             pack.files.sumOf { it.bytes }, pack.totalBytes,
             "tổng ghim lệch tổng thật ⇒ có dòng ghim bị sửa nửa vời",

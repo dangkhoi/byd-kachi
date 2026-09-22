@@ -71,8 +71,8 @@ object WakeModelCatalog : VoicePack {
             "eae9da0c7e1e6c6a3f4cc42d167899c388f6c6701b94cb96320e4f55df79624c"),
         pinned("tokens.txt", 5_006L,
             "fd2ded4050a55d2b1578870ba8697d02371980217806b7558bd0a5cc60f3ba53"),
-        pinned("keywords.txt", 348L,
-            "286f7400d38fc8607412a71ec4b691742c689ff15e1c2b3a63de4892cc382251"),
+        pinned("keywords.txt", 650L,
+            "d40dff2e54f54cdb08b4b20594d1f8b90b141849ce5c0d1efbac05c3d7a5f348"),
     )
 
     /**
@@ -82,7 +82,7 @@ object WakeModelCatalog : VoicePack {
      * `sha256`, hay dán lẫn hai tệp) làm **đỏ một bài canh** thay vì lặng lẽ tải về một gói khác. Bài canh so
      * hai vế; lệch là đỏ.
      */
-    override val totalBytes: Long = 5253878L
+    override val totalBytes: Long = 5254180L
 
     /**
      * Được phép tải qua mạng: cả 5 tệp ghim đủ sha256 + bytes.

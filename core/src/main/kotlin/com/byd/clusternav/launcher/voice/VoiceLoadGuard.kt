@@ -56,8 +56,8 @@ class VoiceLoadGuard(
 
     companion object {
         /** [CHƯA BIẾT] — đo trên xe (OQ3). Mặc định thận trọng cho head unit ít lõi (lỗi xe từng ở load 14). */
-        const val DEFAULT_SUSPEND_ABOVE = 6.0
-        const val DEFAULT_RESUME_BELOW = 4.0
+        const val DEFAULT_SUSPEND_ABOVE = 12.0
+        const val DEFAULT_RESUME_BELOW = 9.0
         const val DEFAULT_RESUME_STABLE = 3
     }
 }
