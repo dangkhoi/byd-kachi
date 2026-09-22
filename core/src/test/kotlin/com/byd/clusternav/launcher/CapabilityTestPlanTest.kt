@@ -37,7 +37,7 @@ class CapabilityTestPlanTest {
     fun `hanh dong co runArg — thong tin thi khong`() {
         items.filter { it.kind == CapTestKind.INFO }.forEach { assertEquals(0, it.runArg, "INFO không cần runArg: ${it.id}") }
         // Nút thân xe (kính/cửa/cốp…) phải được đánh dấu cần cảnh báo.
-        assertTrue(items.first { it.id == "window" }.needsConfirm, "kính lái phải cần xác nhận")
+        assertTrue(items.first { it.id == "win_lf" }.needsConfirm, "kính lái phải cần xác nhận")
         assertFalse(items.first { it.id == "readl" }.needsConfirm, "đèn đọc không cần xác nhận")
     }
 
@@ -45,7 +45,7 @@ class CapabilityTestPlanTest {
     fun `nhat ky ma hoa di ve dung`() {
         val map = mapOf(
             "readl" to CapTestResult("readl", CapTestVerdict.OK, 1000L, ""),
-            "window" to CapTestResult("window", CapTestVerdict.NOT_OK, 2000L, "kẹt nửa chừng"),
+            "win_lf" to CapTestResult("win_lf", CapTestVerdict.NOT_OK, 2000L, "kẹt nửa chừng"),
         )
         val back = CapTestCodec.decodeAll(CapTestCodec.encodeAll(map))
         assertEquals(map, back)

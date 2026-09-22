@@ -300,10 +300,10 @@ object TelemetryRegistry {
         // `"Window FL"` ở bản Anh mà `"Kính trước-trái"` (nhãn ĐẦY) ở bản Việt — [ĐO] ảnh máy ảo: bản Việt bị cắt
         // `"Kính trước-p…"` ngay khi ô hẹp lại. Viết tắt theo ĐÚNG quy ước bảng lốp (`"Lốp TT"`), và **khớp** với
         // `short` của bốn nút kính (`win_*`) để hai hàng trong cùng một ô nhóm gọi một cái kính bằng một tên.
-        t("window_lf", "Kính trước-trái", "Window front-left", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính TT", shortEn = "Window FL"),
-        t("window_rf", "Kính trước-phải", "Window front-right", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính TP", shortEn = "Window FR"),
-        t("window_lr", "Kính sau-trái", "Window rear-left", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính ST", shortEn = "Window RL"),
-        t("window_rr", "Kính sau-phải", "Window rear-right", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính SP", shortEn = "Window RR"),
+        t("window_lf", "Kính lái", "Driver window", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính lái", shortEn = "Driver win"),
+        t("window_rf", "Kính phụ", "Passenger window", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính phụ", shortEn = "Pass. win"),
+        t("window_lr", "Kính sau trái", "Rear-left window", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính ST", shortEn = "Win RL"),
+        t("window_rr", "Kính sau phải", "Rear-right window", "%", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getWindowOpenPercent", short = "Kính SP", shortEn = "Win RR"),
         // [ĐO] `int getDoorState(int area)` BYDAutoBodyworkDevice.java:450 — CLOSED0/OPEN1/255; area LEFT_FRONT=1/
         // RIGHT_FRONT=2/LEFT_REAR=3/RIGHT_REAR=4 (:172-176) — HalBindingTable.readArg cấp (cũ feature-id 692060176…9 đọc vỡ §A).
         t("door_lf", "Cửa trước-trái", "Door front-left", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door FL"),

@@ -146,10 +146,11 @@ class VoiceClarifyQuestionTest {
      * nhiêu"* trùng cách nói *"đang chạy bao nhiêu"* của datum `speed` và câu hỏi lại đổi thành *"Đang nào — Tốc
      * độ hay Đèn đọc?"* — một họ không liên quan.
      */
-    @Test fun `cum hoi khong duoc keo cau sang mot ho khac`() {
-        val a = mustAsk("kính lái đang mở bao nhiêu")
-        assertTrue(a.question.startsWith("Kính nào —"), "ra: ${a.question}")
-        assertEquals(VoiceIntent.Read("window_lf"), answer("kính lái đang mở bao nhiêu", "kính trước trái"))
+    @Test fun `cum hoi ve kinh cu the doc thang khong keo sang ho khac`() {
+        // 1.94 (owner 2026-09-22): "kính lái" nay là kính CỤ THỂ (control `win_lf`, đồng bộ datum `window_lf`)
+        // ⇒ "kính lái đang mở bao nhiêu" đọc THẲNG độ mở kính lái, KHÔNG hỏi lại "kính nào" và KHÔNG kéo sang
+        // họ khác (nhiệt độ/đèn). Trước 1.94 "kính" mơ hồ nên phải hỏi; nay tên vị trí đã rõ.
+        assertEquals(VoiceIntent.Read("window_lf"), one("kính lái đang mở bao nhiêu"))
     }
 
     // ══ KHÔNG siết quá tay: câu RA LỆNH vẫn ra lệnh ══════════════════════════════════════════════════
@@ -260,7 +261,7 @@ class VoiceClarifyQuestionTest {
     @Test fun `cong thu tu khong duoc lam cam cau ra lenh`() {
         assertEquals(VoiceIntent.Control("readl", 1), one("bật đèn đọc không"))
         assertEquals(VoiceIntent.Control("readl", 1), one("bật đèn đọc"))
-        assertEquals(VoiceIntent.Control("window", 1), one("mở kính"))   // lượt D: cụm mơ hồ = kính LÁI
+        assertEquals(VoiceIntent.Control("win_lf", 1), one("mở kính"))   // lượt D: cụm mơ hồ = kính LÁI
         // ⚠ RỦI RO CÒN LẠI, ghim để nó không tự đổi: câu mở đầu bằng động từ HÀNH ĐỘNG mà kết bằng *"chưa"* vẫn
         // là một LỆNH. Tiếng Việt thì *"mở cửa sổ trời chưa?"* nghiêng về câu hỏi, nhưng [ĐO log xe] mô hình có
         // thêm/rụng từ ở đuôi câu, nên coi nó là câu hỏi sẽ làm CÂM một lệnh nói đúng. Đổi chiều là quyết định

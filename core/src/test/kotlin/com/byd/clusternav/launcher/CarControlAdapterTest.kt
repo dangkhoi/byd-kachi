@@ -23,28 +23,27 @@ class CarControlAdapterTest {
         assertEquals(5, gw.featureSetCalls[0].value)
     }
 
-    @Test fun `cover open derives (window,state)`() {
+    @Test fun `toggle kinh lai mo derives (window,state)`() {
         val gw = FakeHalGateway(namedRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        assertTrue(adapter.cover("win_lf", true))
+        assertTrue(adapter.toggle("win_lf", true))
         assertEquals(listOf(1, 1), gw.namedCalls[0].args)
     }
 
     /**
-     * T7 (owner 2026-09-15 "nút mở 50%"): mức 2 phải đi THẲNG xuống writeArgs thành WINDOW_OPEN_HALF=4 — qua cả
-     * `coverLevel()` (dock/CapTest bấm nút "Nửa") lẫn `act()`/actByKind (voice/gói lệnh). Nếu một đường nào gập mức
-     * về bool (`level > 0` ⇒ mở) thì nút "Nửa" sẽ MỞ HẾT — đúng lỗi phải khoá.
+     * 1.94 (owner 2026-09-22): nút 50% nay là control RIÊNG `win_half_*` (TOGGLE mở-50%↔đóng), không còn là
+     * mức 2 của COVER. Chạm 1 (primary>0) → WINDOW_OPEN_HALF=4; chạm lại (primary 0) → WINDOW_CLOSE=2.
+     * act()/actByKind (voice/gói lệnh) phải giữ nguyên byte đó.
      */
-    @Test fun `coverLevel 2 di thang xuong OPEN_HALF qua ca coverLevel lan act`() {
+    @Test fun `nut 50% kinh la control rieng mo half dong close`() {
         val gw = FakeHalGateway(namedRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        assertTrue(adapter.coverLevel("win_lf", 2))
-        assertEquals(listOf(1, 4), gw.namedCalls[0].args, "coverLevel(2) → [cửa 1, OPEN_HALF=4], không phải mở hết")
-        assertTrue(adapter.act("win_lf", 2))
-        assertEquals(listOf(1, 4), gw.namedCalls[1].args, "act(2) qua actByKind cũng phải giữ mức, không gập về bool")
-        // 0/1 y như cũ — cover(bool) đi qua coverLevel nhưng byte không đổi.
-        assertTrue(adapter.cover("win_lf", false))
-        assertEquals(listOf(1, 2), gw.namedCalls[2].args, "cover(false) vẫn → CLOSE=2")
+        assertTrue(adapter.toggle("win_half_lf", true))
+        assertEquals(listOf(1, 4), gw.namedCalls[0].args, "50% kính lái → [cửa 1, OPEN_HALF=4]")
+        assertTrue(adapter.act("win_half_lf", 1))
+        assertEquals(listOf(1, 4), gw.namedCalls[1].args, "act qua actByKind giữ nguyên byte")
+        assertTrue(adapter.toggle("win_half_lf", false))
+        assertEquals(listOf(1, 2), gw.namedCalls[2].args, "chạm lại → CLOSE=2")
     }
 
     @Test fun `select va step day nguyen gia tri xuong duong ghi`() {
@@ -103,10 +102,10 @@ class CarControlAdapterTest {
         val p = RecordingPort()
         assertTrue(p.actByKind("lock", 1))              // TOGGLE
         assertTrue(p.actByKind("fan", 5))               // STEP
-        assertTrue(p.actByKind("win_lf", 1))            // COVER
+        assertTrue(p.actByKind("sunshade", 1))          // COVER (kính nay TOGGLE; sunshade còn COVER)
         assertTrue(p.actByKind("seatc", 2))             // SELECT (⚠ 1.90: mốc cũ `headlight_mode` đã xoá)
         assertEquals(
-            listOf("toggle(lock,true)", "step(fan,5)", "cover(win_lf,true)", "select(seatc,2)"),
+            listOf("toggle(lock,true)", "step(fan,5)", "cover(sunshade,true)", "select(seatc,2)"),
             p.calls,
         )
     }
@@ -135,7 +134,7 @@ class CarControlAdapterTest {
     @Test fun `off-car write is a no-op returning false`() {
         val adapter = CarControlAdapter(HalBindingTable(FakeHalGateway()))   // rc null
         assertFalse(adapter.toggle("pm25", true))
-        assertFalse(adapter.cover("win_lf", true))
+        assertFalse(adapter.toggle("win_lf", true))
         assertFalse(adapter.press("pm25_clean_now"))
     }
 

@@ -39,7 +39,8 @@ object CtlSafetyPolicy {
      */
     val CONFIRM_REQUIRED: Set<String> = setOf(
         "lock", "door", "trunk", "sunroof", "sunshade",
-        "window", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
+        "windows_all", "windows_close_all", "win_lf", "win_rf", "win_lr", "win_rr",
+        "win_half_all", "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr",
     )
 
     /** Control [id] có cần `auto_confirm` để bắn qua cầu kiểm thử không (và bị pha WRITE của sweep bỏ qua). */
@@ -97,7 +98,8 @@ object CtlSafetyPolicy {
      */
     val MOVES_SLOWLY: Set<String> = setOf(
         "trunk", "sunroof", "sunshade",
-        "window", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
+        "windows_all", "windows_close_all", "win_lf", "win_rf", "win_lr", "win_rr",
+        "win_half_all", "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr",
     )
 
     /** Control [id] có phải bộ phận chạy bằng mô-tơ (mất vài giây) không — xem [MOVES_SLOWLY]. */

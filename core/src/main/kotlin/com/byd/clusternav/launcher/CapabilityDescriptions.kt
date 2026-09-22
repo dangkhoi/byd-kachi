@@ -107,7 +107,7 @@ object CapabilityDescriptions {
 
         // ── BODY (ACT) ──
         "lock" to Desc("Bật/tắt khoá cửa xe, di chuyển chốt khoá vật lý", "Lock/unlock the car doors (moves the physical latch)"),
-        "window" to Desc("Bật/tắt điều khiển kính cửa lái, dịch chuyển kính vật lý", "Turn the driver's window control on/off (moves the glass)"),
+        "win_lf" to Desc("Mở/đóng kính cửa lái", "Open/close the driver window"),
         "trunk" to Desc("Bật/tắt mở cốp sau, dịch chuyển cốp vật lý", "Turn the boot/tailgate release on/off (moves the boot)"),
         "door" to Desc("Mở khoá cửa xe ngay lập tức", "Unlock the car doors immediately"),
         // ⚠ 1.85: mục `hood` đã xoá cùng mã ([ĐO xe 2026-09-20 §4] xe không có ca-pô điện). `CapabilityTestPlanTest`
@@ -119,6 +119,12 @@ object CapabilityDescriptions {
         "win_lr" to Desc("Mở/đóng kính cửa sau bên trái", "Open/close the rear-left window"),
         "win_rr" to Desc("Mở/đóng kính cửa sau bên phải", "Open/close the rear-right window"),
         "windows_all" to Desc("Mở/đóng đồng thời toàn bộ kính cửa xe", "Open/close all windows at once"),
+        "win_half_lf" to Desc("Mở kính cửa lái tới 50% (chạm lại để đóng)", "Half-open the driver window (tap again to close)"),
+        "win_half_rf" to Desc("Mở kính cửa phụ tới 50% (chạm lại để đóng)", "Half-open the passenger window (tap again to close)"),
+        "win_half_lr" to Desc("Mở kính sau bên trái tới 50% (chạm lại để đóng)", "Half-open the rear-left window (tap again to close)"),
+        "win_half_rr" to Desc("Mở kính sau bên phải tới 50% (chạm lại để đóng)", "Half-open the rear-right window (tap again to close)"),
+        "win_half_all" to Desc("Mở toàn bộ kính tới 50% (chạm lại để đóng)", "Half-open all windows (tap again to close)"),
+        "windows_close_all" to Desc("Đóng toàn bộ kính cửa (nút dự phòng)", "Close all windows (backup button)"),
         "sunshade" to Desc("Mở/đóng rèm che nắng cửa sổ trời", "Open/close the sunroof sunshade"),
         "child_lock" to Desc(
             "Bật/tắt khoá trẻ em cửa sau BÊN TRÁI (chốt trong cửa — trẻ ngồi sau không mở được cửa đó)",

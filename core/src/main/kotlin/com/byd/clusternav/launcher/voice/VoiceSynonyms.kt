@@ -91,8 +91,8 @@ object VoiceSynonyms {
         "seatc_r" to listOf("mat ghe phu", "ghe phu mat", "lam mat ghe phu", "thoi mat ghe phu"),
         "seath_r" to listOf("suoi ghe phu", "ghe phu am", "lam am ghe phu", "suoi ghe ben phu"),
         "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe",
-            "mat ghe", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
-        "seath" to listOf("suoi ghe", "ghe am", "ghe nong",
+            "mat ghe", "ghe mat", "mat ghe lai", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
+        "seath" to listOf("suoi ghe", "ghe suoi", "suoi ghe lai", "ghe am", "ghe nong",
             "am ghe", "lam am ghe", "suoi dit", "suoi mong"),
         // ⚠ 1.91 · `nhiet do xe` khai ở CẢ HAI bảng (nút `temp` + datum `inside_temp`) — đúng cơ chế đã có của
         // `nhiet do` và `quat gio`: `VoiceIntentParser.choose` lấy datum cho động từ ĐỌC, lấy nút cho động từ
@@ -186,14 +186,22 @@ object VoiceSynonyms {
         // ngay trên. Chỉ **hai**, không phải bốn: `cac cua so` / `windows` là dạng SỐ NHIỀU nên ở lại nút gộp
         // ([SOÁT lượt D · P2], lý do đầy đủ ghi ở khối `windows_all`). Luật **dãy dài nhất thắng** giữ nguyên mọi
         // cụm dài hơn: *"mở hết kính"* vẫn về nút gộp vì `het kinh` (2 từ) thắng `kinh` (1 từ) tại cùng vị trí.
-        "window" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai",
+        "win_lf" to listOf("kinh lai", "cua kinh lai", "kinh tai xe", "cua so lai",
             "kieng lai", "cua kieng lai", "kieng tai xe",
             "kinh nguoi lai", "cua so tai xe",
-            "kinh", "cua so"),
-        "win_lf" to listOf("kinh ben lai", "kinh ghe lai", "kieng truoc trai", "kieng ben lai"),
-        "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai", "kieng ben phu"),
-        "win_lr" to listOf("kieng sau trai", "kinh sau ben trai"),
-        "win_rr" to listOf("kieng sau phai", "kinh sau ben phai"),
+            "kinh", "cua so",
+            "kinh ben lai", "kinh ghe lai", "kieng truoc trai", "kieng ben lai",
+            "kinh truoc trai", "cua kinh truoc trai"),
+        "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai", "kieng ben phu",
+            "kinh truoc phai", "cua kinh truoc phai"),
+        "win_lr" to listOf("kieng sau trai", "kinh sau ben trai", "kinh sau trai"),
+        "win_rr" to listOf("kieng sau phai", "kinh sau ben phai", "kinh sau phai"),
+        // 1.94 · nút 50% (win_half_*): nhãn "50% kính…" không tokenize được ⇒ cần cách nói riêng.
+        "win_half_lf" to listOf("nua kinh lai", "mo nua kinh lai", "kinh lai mot nua", "nua kinh truoc trai", "mo nua kinh truoc trai"),
+        "win_half_rf" to listOf("nua kinh phu", "mo nua kinh phu", "kinh phu mot nua"),
+        "win_half_lr" to listOf("nua kinh sau trai", "mo nua kinh sau trai"),
+        "win_half_rr" to listOf("nua kinh sau phai", "mo nua kinh sau phai"),
+        "win_half_all" to listOf("nua het kinh", "mo nua het kinh", "nua tat ca kinh", "mo mot nua tat ca kinh"),
         // ⚠ 1.90 · cách nói của `brightness_gear` (*"độ sáng màn hình"/"sáng màn"*) và `anion` (*"khử mùi"*) gỡ
         // cùng hai nút (owner 2026-09-21).
         "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh", "loc gap"),
@@ -222,6 +230,10 @@ object VoiceSynonyms {
 
     /** Cách nói thêm cho THÔNG TIN ĐỌC (`TelemetryRegistry`) — cùng luật nhập với [CONTROL]. */
     val TELEMETRY: Map<String, List<String>> = mapOf(
+        "window_lf" to listOf("kinh truoc trai"),
+        "window_rf" to listOf("kinh truoc phai", "kinh phu"),
+        "window_lr" to listOf("kinh sau trai"),
+        "window_rr" to listOf("kinh sau phai"),
         // ⚠ 1.91 · KHÔNG thêm cụm nào **bắt đầu** bằng `pin`: cụm ĐÃ ĐO `XEM PIN` (câu được đo nhiều nhất của cả
         // dự án) sẽ thành tiền tố của dòng dài hơn và bị [SherpaHotwords.dropPrefixes] nuốt. `dung luong pin` để
         // `pin` ở CUỐI nên nó an toàn — và nó là chỗ hụt thật: câu *"dung lượng pin còn bao nhiêu"* trước đây chỉ

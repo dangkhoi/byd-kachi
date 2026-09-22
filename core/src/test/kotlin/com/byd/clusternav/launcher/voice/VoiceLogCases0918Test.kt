@@ -99,7 +99,7 @@ class VoiceLogCases0918Test {
         assertEquals(VoiceIntent.Read("window_lf"), one("xem kính trước trái"))
         // Câu RA LỆNH vẫn ra lệnh — `hay` ở đầu câu là *"hãy"*, không phải *"hoặc"* (cổng 2 của `isChoice`).
         assertEquals(VoiceIntent.Control("readl", 1), one("hãy bật đèn đọc"))
-        assertEquals(VoiceIntent.Control("window", 1), one("mở kính"))   // lượt D: cụm mơ hồ = kính LÁI
+        assertEquals(VoiceIntent.Control("win_lf", 1), one("mở kính"))   // lượt D: cụm mơ hồ = kính LÁI
     }
 
     // ══ D2 · CÂU HỢP LỆ MÀ TỪ VỰNG CÒN THIẾU ══════════════════════════════════════════════════════════

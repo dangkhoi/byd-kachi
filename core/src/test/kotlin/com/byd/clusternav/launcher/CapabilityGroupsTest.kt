@@ -90,15 +90,16 @@ class CapabilityGroupsTest {
     }
 
     @Test
-    fun `nhom Kinh chua du 4 kinh va bam duoc ca 4 lan hai goi lenh`() {
+    fun `nhom Kinh chua du 4 kinh va cac nut tuong minh`() {
         val win = CapabilityGroups.byId("g_windows")!!
         assertEquals(listOf("window_lf", "window_rf", "window_lr", "window_rr"), win.reads, "phải đủ 4 kính")
-        listOf("win_lf", "win_rf", "win_lr", "win_rr").forEach {
-            assertTrue(it in win.writes, "thiếu nút $it — R3 đòi XEM và BẤM trong CÙNG một ô")
+        // 1.94 (owner 2026-09-22): nút kính TƯỜNG MINH — 4 kính riêng + windows_all (mở/đóng), 5 nút 50%
+        // (win_half_*), + nút Đóng-tất-cả backup. Không còn gói macro trong nhóm (owner "không cần cái khó hiểu").
+        listOf("win_lf", "win_rf", "win_lr", "win_rr", "windows_all",
+            "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr", "win_half_all", "windows_close_all").forEach {
+            assertTrue(it in win.writes, "thiếu nút $it")
         }
-        assertTrue("mac_win_open_all" in win.writes && "mac_win_close_all" in win.writes, "thiếu gói mở/đóng hết")
-        // Cố ý KHÔNG dùng nút gộp `windows_all`: nó CHƯA kiểm trên xe, còn 4 nút riêng đã chạy thật.
-        assertFalse("windows_all" in win.writes, "nút gộp chưa-kiểm KHÔNG được thay hai gói dựng từ nút đã chạy thật")
+        assertFalse("mac_win_open_all" in win.writes, "1.94: không còn dùng macro trong nhóm Kính")
         assertEquals(WidgetShape.STRIP, win.shape)
     }
 
@@ -279,8 +280,8 @@ class CapabilityGroupsTest {
             "tra ngược phải thấy cả thành viên BẤM, không chỉ thành viên XEM",
         )
         assertEquals(
-            listOf("g_windows"), CapabilityGroups.groupsContaining("mac_win_close_all").map { it.id },
-            "gói lệnh cũng là thành viên của nhóm",
+            listOf("g_windows"), CapabilityGroups.groupsContaining("win_half_lf").map { it.id },
+            "nút 50% cũng là thành viên của nhóm",
         )
         assertTrue(
             CapabilityGroups.groupsContaining("speed").isEmpty(),
@@ -311,7 +312,7 @@ class CapabilityGroupsTest {
         // `cluster_music` · `brightness_gear` · `vol` · `cast` · datum `op_mode` · `energy_mode`). Cùng loại
         // quyết định như ba lượt trên — xem nhật ký ở `ControlRegistry`/`TelemetryRegistry`.
         assertEquals(71, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 71 (1.90 gỡ op_mode + energy_mode)")
-        assertEquals(31, ControlRegistry.ALL.size, "nút rời còn 29 (1.90 gỡ 9 nút cho xe thuần điện)")
+        assertEquals(36, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -320,7 +321,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            71 + 31 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            71 + 36 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

@@ -111,7 +111,7 @@ class VoiceAppNameAndMishearTest {
 
     @Test
     fun `cach goi giong Nam tro dung nut`() {
-        assertEquals("window" to 1, control("bật kiếng lái lên").let { it.id to it.value })
+        assertEquals("win_lf" to 1, control("bật kiếng lái lên").let { it.id to it.value })
         assertEquals("trunk" to 1, control("mở cửa hậu").let { it.id to it.value })
         assertEquals("trunk" to 1, control("mở thùng sau").let { it.id to it.value })
         assertEquals("seatc" to 1, control("mở quạt ghế").let { it.id to it.value })

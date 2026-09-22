@@ -37,10 +37,10 @@ class VoiceWindowScopeTest {
      * `VoiceSynonyms.CONTROL` và KDoc lớp này.
      */
     @Test fun `cum kinh ngan khong nuot cum kinh dai`() = expect(
-        "mở kính" to VoiceIntent.Control("window", 1),
-        "đóng kính" to VoiceIntent.Control("window", 0),
-        "mở cửa sổ" to VoiceIntent.Control("window", 1),
-        "mở kính lái" to VoiceIntent.Control("window", 1),
+        "mở kính" to VoiceIntent.Control("win_lf", 1),
+        "đóng kính" to VoiceIntent.Control("win_lf", 0),
+        "mở cửa sổ" to VoiceIntent.Control("win_lf", 1),
+        "mở kính lái" to VoiceIntent.Control("win_lf", 1),
         "mở kính trước trái" to VoiceIntent.Control("win_lf", 1),
         "xem kính trước trái" to VoiceIntent.Read("window_lf"),
         "mở hết kính" to VoiceIntent.Macro("mac_win_open_all"),
@@ -65,7 +65,7 @@ class VoiceWindowScopeTest {
         "mở các cửa sổ" to VoiceIntent.Control("windows_all", 1),
         "đóng các cửa sổ" to VoiceIntent.Control("windows_all", 0),
         // …trong khi dạng SỐ ÍT ngay bên trong nó vẫn là kính lái (hai chiều của cùng một luật).
-        "mở cửa sổ" to VoiceIntent.Control("window", 1),
+        "mở cửa sổ" to VoiceIntent.Control("win_lf", 1),
     )
 
     /**
@@ -110,10 +110,10 @@ class VoiceWindowScopeTest {
      * bug owner đã báo ở 1.80 (*"mở kính"* hạ cả 4).
      */
     @Test fun `1_91 · cum mo ho van la MOT kinh lai`() = expect(
-        "mở cửa sổ" to VoiceIntent.Control("window", 1),
-        "mở kính" to VoiceIntent.Control("window", 1),
-        "đóng cửa sổ" to VoiceIntent.Control("window", 0),
-        "đóng kính" to VoiceIntent.Control("window", 0),
+        "mở cửa sổ" to VoiceIntent.Control("win_lf", 1),
+        "mở kính" to VoiceIntent.Control("win_lf", 1),
+        "đóng cửa sổ" to VoiceIntent.Control("win_lf", 0),
+        "đóng kính" to VoiceIntent.Control("win_lf", 0),
     )
 
     /**
@@ -135,14 +135,13 @@ class VoiceWindowScopeTest {
      * ấy, đã là COVER + có `readKey` ⇒ được cả lượt đọc-lại E); (b) cho `window` mức Nửa (bỏ phân biệt TOGGLE/COVER
      * đang khoá ở `ControlWriteArgsTest`). Ghi ở `docs/_handoff/cde-done.md`.
      */
-    @Test fun `log xe · mo mot nua kinh = muc Nua`() = expect(
-        "mở nửa kính trước trái" to VoiceIntent.Control("win_lf", 2),
-        "mở một nửa toàn bộ kính" to VoiceIntent.Control("windows_all", 2),
-        "mở toàn bộ kính 50%" to VoiceIntent.Control("windows_all", 2),
-        // ⚠ ba câu MƠ HỒ: nay là kính lái mở TRỌN (mất "nửa") — hệ quả đã đo, xem KDoc trên.
-        "mở một nửa kính" to VoiceIntent.Control("window", 1),
-        "mở kính một nửa" to VoiceIntent.Control("window", 1),
-        "mở kính 50%" to VoiceIntent.Control("window", 1),
-        "mở kính" to VoiceIntent.Control("window", 1),           // không "nửa" ⇒ mở (chống hồi quy)
+    @Test fun `log xe · mo mot nua kinh = nut 50 phan tram rieng`() = expect(
+        // 1.94 (owner 2026-09-22): 50% nay là nút RIÊNG `win_half_*` (TOGGLE mở-50%↔đóng), giá trị 1 = mở 50%.
+        "mở nửa kính trước trái" to VoiceIntent.Control("win_half_lf", 1),
+        "mở nửa kính lái" to VoiceIntent.Control("win_half_lf", 1),
+        "mở một nửa tất cả kính" to VoiceIntent.Control("win_half_all", 1),
+        "mở nửa hết kính" to VoiceIntent.Control("win_half_all", 1),
+        // "mở kính" (không "nửa") ⇒ nút mở/đóng thường (win_lf), mở trọn — chống hồi quy.
+        "mở kính" to VoiceIntent.Control("win_lf", 1),
     )
 }

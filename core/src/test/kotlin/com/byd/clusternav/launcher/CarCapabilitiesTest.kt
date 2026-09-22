@@ -55,7 +55,7 @@ class CarCapabilitiesTest {
     }
 
     @Test fun `control proven cung wired`() {
-        assertTrue(CarCapabilities.isWired("window"))
+        assertTrue(CarCapabilities.isWired("win_lf"))
         assertEquals(EvidenceTier.PROVEN, CarCapabilities.tierOf("seatc"))
     }
 }

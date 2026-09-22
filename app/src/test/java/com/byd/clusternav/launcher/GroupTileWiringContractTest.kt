@@ -430,7 +430,7 @@ class GroupTileWiringContractTest {
             g.id to GroupTileView.rowsOf(g.writes, 6).map { it.size }
         }
         assertEquals(
-            mapOf("g_windows" to listOf(6), "g_doors" to listOf(5), "g_lights" to listOf(3)),
+            mapOf("g_windows" to listOf(6, 5), "g_doors" to listOf(5), "g_lights" to listOf(3)),
             actions,
             "hàng nút (trần 6) đổi hình dạng — nhóm Đèn còn 3 nút sau [SOÁT P1-1] (bỏ `headl` vì trùng byte với " +
                 "`headlight_mode`), nhóm Cửa & khoang còn 5 nút sau (V) FEATURE-FILTER 2026-09-17 (bỏ " +

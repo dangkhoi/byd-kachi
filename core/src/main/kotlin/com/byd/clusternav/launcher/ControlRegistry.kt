@@ -112,9 +112,6 @@ object ControlRegistry {
         // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
         // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
         // làm. Chưa có đường GHI phần trăm nào (chỉ có đường ĐỌC `getWindowOpenPercent`) ⇒ đừng đặt lại nhãn hứa %.
-        ControlDef("window", "Kính cửa lái", "ic-car-top-window-lf", ControlKind.TOGGLE, enabledByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
-            labelEn = "Driver window"),
         ControlDef("trunk", "Cốp sau", "ic-car-top-trunk", ControlKind.COVER, enabledByDefault = true,
             // [ĐO xe 2026-09-17] `setHetchDoorStatus` KHÔNG tồn tại trên ROM này; đường THẬT là
             // `BYDAutoSettingDevice.voiceCtlBackDoor(cmd)` — cmd 1 = MỞ · 3 = ĐÓNG (đo 2 lần mỗi lệnh, cốp mở/đóng
@@ -131,13 +128,13 @@ object ControlRegistry {
         ControlDef("pm25", "Lọc bụi", "ic-filter", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
             labelEn = "Air purifier"),
-        ControlDef("seatc", "Ghế mát", "ic-seat", ControlKind.SELECT, enabledByDefault = true,
+        ControlDef("seatc", "Mát ghế lái", "ic-seat", ControlKind.SELECT, enabledByDefault = true,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             readKey = "seat_vent_state",   // T2 [ĐO xe 2026-09-16] getter ở device Setting; thang mức ở ControlLevels
             // 3 mức (Tắt/Mức1/Mức2) — [ĐO xe 2026-09-17 ControlLevels] getSeatVentilatingState OFF=1·mức1=2·mức2=3.
             // writeArgs đổi index (0/1/2) → state khung (1/2/3) qua ControlLevels.rawForLevel. Voice: "ghế mát mức 1/2".
-            labelEn = "Seat ventilation"),
+            labelEn = "Driver seat ventilation"),
         ControlDef("temp", "Nhiệt độ", "ic-temp", ControlKind.STEP, enabledByDefault = true, value = 22, min = 17, max = 33, step = 1,
             // [ĐO] RE 2026-09-14 §1/§5a: `setTemprature` KHÔNG tồn tại trong HAL ⇒ reflection trượt, không lệnh nào
             // tới xe. Setter thật là `setAcTemperature(type, value, tempSource, unit)` — args ở HalBindingTable.writeArgs.
@@ -183,11 +180,11 @@ object ControlRegistry {
         ControlDef("headl", "Đèn pha", "ic-car-front-highbeam", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.NEEDS_CAR, bindingKey = "INSTRUMENT_HEADLIGHT_ON_OFF",
             labelEn = "Headlights"),
-        ControlDef("seath", "Ghế sưởi", "ic-seat", ControlKind.SELECT,
+        ControlDef("seath", "Sưởi ghế lái", "ic-seat", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
             readKey = "seat_heat_state",   // T2 — cùng device Setting; thang mức ControlLevels (seath [SUY] 1/2/3/4, đo lại)
-            labelEn = "Seat heating"),
+            labelEn = "Driver seat heating"),
         ControlDef("recirc", "Lấy gió trong", "ic-recirc", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219355", readKey = "ac_cycle",   // [ĐO] INLOOP=1 trong / OUTLOOP=0 — BYDAutoAcDevice.java:33-34
             labelEn = "Recirculation"),
@@ -263,32 +260,48 @@ object ControlRegistry {
         // 4/12 màn ⇒ mỗi ô 82px, và nhãn đầy bị cắt thành `"Kính trước-tr…"` / `"Window front-ri…"` ⇒ hai kính TRƯỚC
         // đọc ra y hệt nhau. Viết tắt theo ĐÚNG quy ước đã có ở bảng lốp (`tyre_p_fl` → `"Lốp TT"` / `"Tyre FL"`), để
         // người dùng chỉ phải học một bộ viết tắt cho cả xe.
-        ControlDef("win_lf", "Kính trước-trái", "ic-car-top-window-lf", ControlKind.COVER,
+        // ═══ 1.94 · KÍNH — NÚT TƯỜNG MINH (owner 2026-09-22) ══════════════════════════════════════════════════
+        // Owner chốt: bỏ nút COVER 3-mức cycle (Đóng/Mở/Nửa) khó hiểu. Thay bằng nút TOGGLE rõ ràng:
+        //  • 5 nút MỞ/ĐÓNG (mở hết ↔ đóng): 4 kính · lái · phụ · sau-trái · sau-phải
+        //  • 5 nút 50% (mở 50% ↔ đóng): 4 kính · lái · phụ · sau-trái · sau-phải  — chạm lần 1 mở 50%, lần 2 đóng
+        //  • 1 nút ĐÓNG TẤT CẢ (BUTTON một chiều, backup)
+        // Mỗi nút = MỘT việc, không cycle. writeArgs: TOGGLE primary 1=Mở(hết/50% tuỳ nút)/0=Đóng.
+        // ── 5 nút MỞ/ĐÓNG (mở hết) ──
+        ControlDef("win_lf", "Kính lái", "ic-car-top-window-lf", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState", readKey = "window_lf",
-            args = listOf("Đóng", "Mở", "Nửa"),   // T7: mức 2 = WINDOW_OPEN_HALF=4 (writeArgs)
-            labelEn = "Window front-left", argsEn = listOf("Close", "Open", "Half"),
-            short = "Kính TT", shortEn = "Window FL"),
-        ControlDef("win_rf", "Kính trước-phải", "ic-car-top-window-rf", ControlKind.COVER,
+            labelEn = "Driver window", short = "Kính lái", shortEn = "Driver win"),
+        ControlDef("win_rf", "Kính phụ", "ic-car-top-window-rf", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState", readKey = "window_rf",
-            args = listOf("Đóng", "Mở", "Nửa"),
-            labelEn = "Window front-right", argsEn = listOf("Close", "Open", "Half"),
-            short = "Kính TP", shortEn = "Window FR"),
-        ControlDef("win_lr", "Kính sau-trái", "ic-car-top-window-lr", ControlKind.COVER,
+            labelEn = "Passenger window", short = "Kính phụ", shortEn = "Pass. win"),
+        ControlDef("win_lr", "Kính sau trái", "ic-car-top-window-lr", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState", readKey = "window_lr",
-            args = listOf("Đóng", "Mở", "Nửa"),
-            labelEn = "Window rear-left", argsEn = listOf("Close", "Open", "Half"),
-            short = "Kính ST", shortEn = "Window RL"),
-        ControlDef("win_rr", "Kính sau-phải", "ic-car-top-window-rr", ControlKind.COVER,
+            labelEn = "Rear-left window", short = "Kính ST", shortEn = "Win RL"),
+        ControlDef("win_rr", "Kính sau phải", "ic-car-top-window-rr", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState", readKey = "window_rr",
-            args = listOf("Đóng", "Mở", "Nửa"),
-            labelEn = "Window rear-right", argsEn = listOf("Close", "Open", "Half"),
-            short = "Kính SP", shortEn = "Window RR"),
-        ControlDef("windows_all", "Tất cả kính", "ic-car-top-window-all", ControlKind.COVER,
+            labelEn = "Rear-right window", short = "Kính SP", shortEn = "Win RR"),
+        ControlDef("windows_all", "4 kính", "ic-car-top-window-all", ControlKind.TOGGLE,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
-            // T7 (owner 2026-09-18 "kính 50%"): mức 2 = Nửa → HAL `setAllWindowState(4,4,4,4)` (WINDOW_OPEN_HALF=4,
-            // enum đã proven per-window; ca 4-kính-nửa AWAITING_CAR). «mở một nửa kính» dùng mức này.
-            args = listOf("Đóng", "Mở", "Nửa"),
-            labelEn = "All windows", argsEn = listOf("Close", "Open", "Half")),
+            labelEn = "All windows", short = "4 kính", shortEn = "All win"),
+        // ── 5 nút 50% (chạm 1: mở 50% · chạm 2: đóng) ──
+        ControlDef("win_half_lf", "50% kính lái", "ic-car-top-window-lf", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
+            labelEn = "50% driver window", short = "50% lái", shortEn = "50% drv"),
+        ControlDef("win_half_rf", "50% kính phụ", "ic-car-top-window-rf", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
+            labelEn = "50% passenger window", short = "50% phụ", shortEn = "50% pass"),
+        ControlDef("win_half_lr", "50% kính sau trái", "ic-car-top-window-lr", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
+            labelEn = "50% rear-left window", short = "50% ST", shortEn = "50% RL"),
+        ControlDef("win_half_rr", "50% kính sau phải", "ic-car-top-window-rr", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoBodyworkDevice.setBodyWindowCtrlState",
+            labelEn = "50% rear-right window", short = "50% SP", shortEn = "50% RR"),
+        ControlDef("win_half_all", "50% 4 kính", "ic-car-top-window-all", ControlKind.TOGGLE,
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
+            labelEn = "50% all windows", short = "50% 4 kính", shortEn = "50% all"),
+        // ── nút ĐÓNG TẤT CẢ (backup, một chiều) ──
+        ControlDef("windows_close_all", "Đóng tất cả kính", "ic-car-top-window-all", ControlKind.BUTTON,
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setAllWindowState",
+            labelEn = "Close all windows", short = "Đóng cả cụm", shortEn = "Close all win"),
         ControlDef("sunshade", "Rèm che nắng", "ic-car-top-sunshade", ControlKind.COVER,
             domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330642984", args = listOf("Đóng", "Mở", "Nửa"),
             labelEn = "Sunshade", argsEn = listOf("Close", "Open", "Half")),   // T7: mức 2 = 50% (đường percent)
@@ -346,11 +359,11 @@ object ControlRegistry {
         // B10 (owner 2026-09-22): ghế mát/sưởi PHỤ — cùng setter ghế lái, chỉ khác seatID 2 (writeArgs). Control đã
         // test xe OK, chỉ wire UI. Đặt CUỐI danh sách để KHÔNG phá thứ tự khối nút gốc (ControlRegistryExtendedTest).
         // Không readKey (đường đọc ghế phụ chưa có datum — write-only; không bịa getter).
-        ControlDef("seatc_r", "Ghế mát phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
+        ControlDef("seatc_r", "Mát ghế phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             labelEn = "Passenger seat ventilation"),
-        ControlDef("seath_r", "Ghế sưởi phụ", "ic-sun", ControlKind.SELECT,
+        ControlDef("seath_r", "Sưởi ghế phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
             labelEn = "Passenger seat heating"),

@@ -215,22 +215,25 @@ class ActionMacrosTest {
     // ── R6: nhãn sai đã sửa (kiểm GIÁ TRỊ THẬT, không quét chữ trong source) ─────────────────────
 
     @Test
-    fun `nut kinh cua lai KHONG con hua phan tram`() {
-        val win = ControlRegistry.byId("window")!!
+    fun `nut kinh lai KHONG hua phan tram`() {
+        // 1.94: control cũ "window" (trùng win_lf) đã gỡ. Nút kính lái nay là `win_lf` (TOGGLE mở/đóng) —
+        // nhãn KHÔNG mang "%"/"50" (nó chỉ mở hết/đóng). Việc 50% nằm ở control RIÊNG `win_half_lf` (nhãn có
+        // "50%" là đúng vì nó CÓ đường ghi WINDOW_OPEN_HALF=4 — xem test `khong nut nao hua phan tram...`).
         val winLf = ControlRegistry.byId("win_lf")!!
-        // [ĐO] 2026-09-11: hai nút này ghi ĐÚNG CÙNG một lệnh xe ⇒ nút "window" không thể làm nửa kính.
-        assertEquals(winLf.bindingKey, win.bindingKey,
-            "tiền đề của phép kiểm: hai nút dùng cùng một lệnh xe")
-        assertFalse(win.label.contains("%"), "nhãn KHÔNG được hứa phần trăm khi chưa có đường GHI phần trăm")
-        assertFalse(win.label.contains("50"), "nhãn cũ 'Kính 50%' hứa thứ xe không làm")
+        assertFalse(winLf.label.contains("%"), "nút kính lái mở/đóng KHÔNG hứa phần trăm")
+        assertFalse(winLf.label.contains("50"), "nhãn cũ 'Kính 50%' hứa thứ nút mở/đóng không làm")
     }
 
     @Test
     fun `khong nut nao hua phan tram trong khi chi doc duoc phan tram`() {
-        // Chặn cả họ: đường ĐỌC có getWindowOpenPercent (đã chạy trên xe) nhưng phía GHI không có lệnh phần trăm.
-        val writesPromisingPercent = ControlRegistry.ALL.filter { it.label.contains("%") }.map { it.id }
+        // 1.94 (owner 2026-09-22): nay CÓ nút 50% tường minh (`win_half_*`) — chúng ghi WINDOW_OPEN_HALF=4
+        // (đường GHI 50% THẬT, enum proven per-window). Nhãn "%" của CHÚNG là đúng, không phải hứa suông.
+        // Test vẫn chặn nút KHÁC hứa "%" mà không có đường ghi 50% (đúng bệnh nhãn cũ "Kính 50%").
+        val allowed = ControlRegistry.ALL.filter { it.id.startsWith("win_half_") }.map { it.id }.toSet()
+        val writesPromisingPercent = ControlRegistry.ALL
+            .filter { it.label.contains("%") && it.id !in allowed }.map { it.id }
         assertEquals(emptyList<String>(), writesPromisingPercent,
-            "Nút hứa phần trăm nhưng không có đường ghi phần trăm. Nếu tìm được lệnh ghi % trên xe thì mở test này.")
+            "Nút hứa phần trăm nhưng không có đường ghi phần trăm (nút 50% kính có đường WINDOW_OPEN_HALF được miễn).")
     }
 
     // ── Đóng 3 điểm treo (soát xét lượt 2) ───────────────────────────────────────────────────────
@@ -244,7 +247,7 @@ class ActionMacrosTest {
         val partial = MacroRunner.run(macro3, Recorder(failOn = setOf("win_rf"))::emit)
         val msg = partial.notice("Rời xe")!!
         assertTrue(msg.contains("Rời xe"), "phải nói gói nào")
-        assertTrue(msg.contains("Kính trước-phải"),
+        assertTrue(msg.contains("Kính phụ"),
             "phải gọi bước hỏng bằng NHÃN (câu cho người đọc), không bằng mã")
         assertFalse(msg.contains("win_rf"), "không phơi mã kỹ thuật ra cho người dùng")
     }

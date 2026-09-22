@@ -215,8 +215,8 @@ class VoiceIntentParserTest {
      * tính năng mất.
      */
     @Test fun `chan cung HUD khong giet lenh kinh lai`() = expect(
-        "Mở kính lái" to VoiceIntent.Control("window", 1),
-        "Đóng kính lái" to VoiceIntent.Control("window", 0),
+        "Mở kính lái" to VoiceIntent.Control("win_lf", 1),
+        "Đóng kính lái" to VoiceIntent.Control("win_lf", 0),
     )
 
     // ══ G · NHÃN TRÙNG giữa ĐỌC và HÀNH ĐỘNG — loại động từ quyết định ════════════════════════════════
@@ -326,7 +326,7 @@ class VoiceIntentParserTest {
     @Test fun `cac cau doi thuong deu hieu duoc`() = expect(
         // Trước: MISMATCH (cụm *"sổ"* khớp nhãn "Số" của datum `gear`). Nay: **kính LÁI** — lượt D 2026-09-19 dời
         // cụm mơ hồ này khỏi nút GỘP (owner: *"mở kính"* hạ cả 4 là sai), xem KDoc `VoiceSynonyms.CONTROL`.
-        "mở cửa sổ" to VoiceIntent.Control("window", 1),
+        "mở cửa sổ" to VoiceIntent.Control("win_lf", 1),
         "bật máy lạnh" to VoiceIntent.Control("ac_auto", 1),
         "xem pin" to VoiceIntent.Read("soc"),
         "đổi sang hồ sơ Mặc định" to VoiceIntent.Profile("Mặc định"),

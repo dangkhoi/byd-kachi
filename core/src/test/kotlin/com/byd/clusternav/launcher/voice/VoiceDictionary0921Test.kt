@@ -115,8 +115,8 @@ class VoiceDictionary0921Test {
     )
 
     @Test fun `kinh tung cua, noc, rem, sac co nhieu cach noi`() = expect(
-        "mở kính người lái" to VoiceIntent.Control("window", 1),
-        "mở cửa sổ tài xế" to VoiceIntent.Control("window", 1),
+        "mở kính người lái" to VoiceIntent.Control("win_lf", 1),
+        "mở cửa sổ tài xế" to VoiceIntent.Control("win_lf", 1),
         "mở kiếng bên lái" to VoiceIntent.Control("win_lf", 1),
         "mở kiếng bên phụ" to VoiceIntent.Control("win_rf", 1),
         "mở kính nóc" to VoiceIntent.Control("sunroof", 1),
@@ -175,7 +175,7 @@ class VoiceDictionary0921Test {
             )
         }
         // …và cái mà *"mở cửa"* KHÔNG được phép nuốt: câu dài hơn vẫn tới đúng nút kính lái.
-        assertEquals(VoiceIntent.Control("window", 1), one("mở cửa sổ"))
+        assertEquals(VoiceIntent.Control("win_lf", 1), one("mở cửa sổ"))
         assertEquals(VoiceIntent.Control("door", null), one("mở cửa xe"))
     }
 

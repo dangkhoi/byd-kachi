@@ -137,7 +137,7 @@ class CapabilityCatalogTest {
     @Test
     fun `sau khi phan biet thi KHONG con O nao trung nhau`() {
         // Đây là phép kiểm mạnh nhất: [ĐO] 2026-09-11 có 18 nhãn trùng giữa mục ĐỌC và HÀNH ĐỘNG (vd hai ô đều ghi
-        // "Kính trước-trái": một để XEM độ mở %, một để BẤM đóng/mở). Trước gói 2 chúng ở hai màn khác nhau nên
+        // "Kính lái": một để XEM độ mở %, một để BẤM đóng/mở). Trước gói 2 chúng ở hai màn khác nhau nên
         // trùng không sao; nay nằm cạnh nhau trong cùng lưới ⇒ người dùng không phân biệt được.
         //
         // ⚠ U6 đổi ĐƠN VỊ SO SÁNH, không nới lỏng luật: gợi ý loại đã rời khỏi nhãn chính xuống DÒNG PHỤ (owner đọc
@@ -176,7 +176,7 @@ class CapabilityCatalogTest {
 
     @Test
     fun `chi them goi y loai o dung cho bi trung`() {
-        // [SOÁT] bản cũ ĐÒI danh sách nhãn trùng phải KHÁC RỖNG và phải chứa đúng "Kính trước-trái" — tức nó khoá
+        // [SOÁT] bản cũ ĐÒI danh sách nhãn trùng phải KHÁC RỖNG và phải chứa đúng "Kính lái" — tức nó khoá
         // một hiện trạng SAI: ai sửa gốc (đổi nhãn registry cho khỏi trùng) sẽ làm test đỏ dù vừa làm điều đúng.
         // Luật thật cần khoá: CHỖ TRÙNG thì có gợi ý loại, CHỖ KHÔNG TRÙNG thì nhãn giữ nguyên.
         val colliding = CapabilityCatalog.collidingLabels()
@@ -184,8 +184,8 @@ class CapabilityCatalogTest {
         // Chỗ TRÙNG: hai ô cùng TÊN, phân biệt bằng DÒNG PHỤ (U6 — trước đây gợi ý nằm trong nhãn)
         val readWin = CapabilityCatalog.pick("window_lf")!!
         val writeWin = CapabilityCatalog.pick("win_lf")!!
-        assertEquals("Kính trước-trái", readWin.displayLabel, "nhãn chính là TÊN, không mang loại")
-        assertEquals("Kính trước-trái", writeWin.displayLabel)
+        assertEquals("Kính lái", readWin.displayLabel, "nhãn chính là TÊN, không mang loại")
+        assertEquals("Kính lái", writeWin.displayLabel)
         assertEquals("xem", readWin.displaySub)
         assertEquals("bấm", writeWin.displaySub)
 
@@ -201,7 +201,7 @@ class CapabilityCatalogTest {
         // Nhãn gốc là dữ liệu; gợi ý loại chỉ là chuyện trình bày. Trộn hai thứ sẽ làm bẩn bộ đăng ký.
         // U6: chỗ trình bày đó nay là `displaySub`, và `sub` (TRƯỜNG dữ liệu) vẫn rỗng với mọi mục rời.
         val w = CapabilityCatalog.pick("window_lf")!!
-        assertEquals("Kính trước-trái", w.label, "nhãn GỐC phải nguyên vẹn")
+        assertEquals("Kính lái", w.label, "nhãn GỐC phải nguyên vẹn")
         assertEquals(w.label, w.displayLabel, "nhãn hiển thị = TÊN, gợi ý không được chen vào")
         assertEquals("", w.sub, "gợi ý loại KHÔNG được ghi vào trường dữ liệu")
         assertEquals("xem", w.displaySub, "nó chỉ xuất hiện ở tầng trình bày")

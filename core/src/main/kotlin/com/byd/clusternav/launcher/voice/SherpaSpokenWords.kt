@@ -38,6 +38,19 @@ object SherpaSpokenWords {
      * (`VoiceLexicon.deaccent(giá trị) == khoá`), nên chỗ này không thể trở thành nơi lén thêm câu lệnh.
      */
     val ACCENTED: Map<String, String> = mapOf(
+        "kinh phu" to "kính phụ",
+        "nua kinh truoc trai" to "nửa kính trước trái", "mo nua kinh truoc trai" to "mở nửa kính trước trái",
+        "kinh truoc trai" to "kính trước trái", "cua kinh truoc trai" to "cửa kính trước trái",
+        "kinh truoc phai" to "kính trước phải", "cua kinh truoc phai" to "cửa kính trước phải",
+        "kinh sau trai" to "kính sau trái", "kinh sau phai" to "kính sau phải",
+        "ghe mat" to "ghế mát", "mat ghe lai" to "mát ghế lái",
+        "ghe suoi" to "ghế sưởi", "suoi ghe lai" to "sưởi ghế lái",
+        "nua kinh lai" to "nửa kính lái", "mo nua kinh lai" to "mở nửa kính lái", "kinh lai mot nua" to "kính lái một nửa",
+        "nua kinh phu" to "nửa kính phụ", "mo nua kinh phu" to "mở nửa kính phụ", "kinh phu mot nua" to "kính phụ một nửa",
+        "nua kinh sau trai" to "nửa kính sau trái", "mo nua kinh sau trai" to "mở nửa kính sau trái",
+        "nua kinh sau phai" to "nửa kính sau phải", "mo nua kinh sau phai" to "mở nửa kính sau phải",
+        "nua het kinh" to "nửa hết kính", "mo nua het kinh" to "mở nửa hết kính",
+        "nua tat ca kinh" to "nửa tất cả kính", "mo mot nua tat ca kinh" to "mở một nửa tất cả kính",
         "mat ghe phu" to "mát ghế phụ", "ghe phu mat" to "ghế phụ mát",
         "lam mat ghe phu" to "làm mát ghế phụ", "thoi mat ghe phu" to "thổi mát ghế phụ",
         "suoi ghe phu" to "sưởi ghế phụ", "ghe phu am" to "ghế phụ ấm",

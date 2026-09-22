@@ -253,15 +253,25 @@ class HalBindingTable(private val gateway: HalGateway) {
             // `hal set setBodyWindowCtrlState 1,4` rồi `getWindowOpenPercent(1)` ≈ 50. `windows_all` mức 2 (Nửa) nay
             // gửi `setAllWindowState(4,4,4,4)` — CÙNG enum WINDOW_OPEN_HALF=4 đã đo per-window; ca 4-kính-nửa CHƯA đo
             // trên xe (AWAITING_CAR) nhưng enum đã proven ⇒ làm được, câu trả lời mang nhãn "chưa kiểm trên xe".
-            "win_lf" -> intArrayOf(1, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
-            "win_rf" -> intArrayOf(2, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
-            "win_lr" -> intArrayOf(3, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
-            "win_rr" -> intArrayOf(4, when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 })
-            "windows_all" -> (when (primary) { 2 -> 4; else -> if (primary > 0) 1 else 2 }).let { intArrayOf(it, it, it, it) }
+            // ── 1.94 · KÍNH TƯỜNG MINH (owner 2026-09-22) — nút TOGGLE, không còn COVER 3-mức ──
+            // enum BYDAutoBodyworkDevice: WINDOW_OPEN_FULL=1 · WINDOW_CLOSE=2 · WINDOW_OPEN_HALF=4 (jadx-tmap :367-381).
+            // Full: primary 1 → mở HẾT(1) · 0 → đóng(2).   Half: primary 1 → mở 50%(4) · 0 → đóng(2).
+            "win_lf" -> intArrayOf(1, if (primary > 0) 1 else 2)
+            "win_rf" -> intArrayOf(2, if (primary > 0) 1 else 2)
+            "win_lr" -> intArrayOf(3, if (primary > 0) 1 else 2)
+            "win_rr" -> intArrayOf(4, if (primary > 0) 1 else 2)
+            "win_half_lf" -> intArrayOf(1, if (primary > 0) 4 else 2)
+            "win_half_rf" -> intArrayOf(2, if (primary > 0) 4 else 2)
+            "win_half_lr" -> intArrayOf(3, if (primary > 0) 4 else 2)
+            "win_half_rr" -> intArrayOf(4, if (primary > 0) 4 else 2)
+            // Tất cả kính: full = 4× state (mở=1/đóng=2). 50% = 4× WINDOW_OPEN_HALF=4 (ca 4-kính-nửa AWAITING_CAR,
+            // enum đã proven per-window). Nút Đóng-tất-cả (BUTTON) luôn gửi 2 (WINDOW_CLOSE) cho cả 4 — backup an toàn.
+            "windows_all" -> (if (primary > 0) 1 else 2).let { intArrayOf(it, it, it, it) }
+            "win_half_all" -> (if (primary > 0) 4 else 2).let { intArrayOf(it, it, it, it) }
+            "windows_close_all" -> intArrayOf(2, 2, 2, 2)
             // [ĐO] RE 2026-09-14 §1/§5a: `setAcTemperature(type, value, tempSource, unit)` — lái=0, value=°C thô,
             // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
             "temp" -> intArrayOf(0, primary, 0, 1)
-            "window" -> intArrayOf(1, if (primary > 0) 1 else 2)   // kính lái nhị-phân: cùng enum WINDOW_* (mở=1/đóng=2)
             // [ĐO xe 2026-09-17] cốp = `voiceCtlBackDoor(cmd)` ở Setting device: MỞ=1 · ĐÓNG=3 (đo 2 lần mỗi
             // lệnh). Trước 1.70 gửi 1/2 cho `setHetchDoorStatus` (method KHÔNG tồn tại) ⇒ no-op. cmd 2 = dừng
             // giữa hành trình ([ĐOÁN], chưa thử lúc cốp chạy) — không dùng cho TOGGLE mở/đóng.

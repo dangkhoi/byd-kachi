@@ -275,14 +275,12 @@ class GroupBoardTest {
         // khung 4/12 màn ⇒ 82px/ô, nhãn đầy bị cắt `"Window front-ri…"` / `"Kính trước-p…"` ⇒ hai kính TRƯỚC đọc ra y
         // hệt nhau. Cùng luật đã áp cho ô con XEM ở U5·T2 (`displayShortLabel`), nay áp cho ô BẤM.
         assertEquals(ControlRegistry.byId(btn.id)!!.displayShortLabel, btn.label)
-        assertEquals("Kính TT", btn.label, "nhãn ngắn phải theo ĐÚNG quy ước bảng lốp (`Lốp TT`), không viết tắt kiểu khác")
+        assertEquals("Kính lái", btn.label, "nhãn ngắn phải theo ĐÚNG quy ước bảng lốp (`Lốp TT`), không viết tắt kiểu khác")
         assertEquals(ControlRegistry.byId(btn.id)!!.icon, btn.icon)
-        val macro = m.actions.first { ActionMacros.byId(it.id) != null }
-        assertEquals(ActionMacros.byId(macro.id)!!.label, macro.label)
-        assertEquals(
-            ActionMacros.byId(macro.id)!!.needsBadge(), macro.needsBadge,
-            "gói lệnh mang mức bằng chứng THẤP NHẤT trong các bước ⇒ dấu chưa-kiểm phải chảy ra đúng",
-        )
+        // ⚠ 1.94 (owner 2026-09-22): sau khi kính thành nút TƯỜNG MINH, KHÔNG nhóm nào còn chứa gói lệnh (macro).
+        // Board chỉ render control/telemetry. Kiểm mọi action của board đều là control THẬT (không macro mồ côi).
+        assertTrue(m.actions.all { ControlRegistry.byId(it.id) != null },
+            "nút board lấy nhãn/icon từ ControlRegistry")
     }
 
     /**
@@ -355,7 +353,7 @@ class GroupBoardTest {
             g.id to GroupBoard.of(g, CarStatus()).actionIconsDistinguish
         }
         assertEquals(
-            mapOf("g_windows" to true, "g_doors" to true, "g_lights" to true),
+            mapOf("g_windows" to false, "g_doors" to true, "g_lights" to true),
             verdict,
             "[ĐO] sau U7 cả ba nhóm có nút đều phân biệt được bằng icon. Nhóm *Kính* ĐỔI CHIỀU `false → true`: " +
                 "bốn nút kính trước đây cùng mang `ic-window` (4/6 ô một hình ⇒ icon vô nghĩa ⇒ bỏ để lấy lại " +

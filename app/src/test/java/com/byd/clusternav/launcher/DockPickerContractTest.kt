@@ -34,7 +34,7 @@ class DockPickerContractTest {
 
     @Test
     fun `tap chon tra ve dung tap do`() {
-        val base = DockConfig(enabled = listOf("lock", "window", "trunk"))
+        val base = DockConfig(enabled = listOf("lock", "win_lf", "trunk"))
         val out = DockSelection.apply(base, setOf("lock", "trunk", "fan"))
         assertEquals(setOf("lock", "trunk", "fan"), out.enabled.toSet(), "cấu hình sau khi áp = đúng tập đã chọn")
     }
@@ -47,16 +47,16 @@ class DockPickerContractTest {
      */
     @Test
     fun `bo tich mot o thi o do RA KHOI thanh`() {
-        val base = DockConfig(enabled = listOf("lock", "window", "trunk"))
+        val base = DockConfig(enabled = listOf("lock", "win_lf", "trunk"))
         val out = DockSelection.apply(base, setOf("lock", "trunk"))
-        assertFalse("window" in out.enabled, "mã bị bỏ tích phải rời thanh — chỉ gửi chiều BẬT là bỏ qua im lặng")
+        assertFalse("win_lf" in out.enabled, "mã bị bỏ tích phải rời thanh — chỉ gửi chiều BẬT là bỏ qua im lặng")
         assertEquals(listOf("lock", "trunk"), out.enabled)
     }
 
     /** Bẫy số 2: áp một tập KHÔNG đổi gì thì thứ tự nút trên thanh phải y nguyên (không sắp lại theo catalog). */
     @Test
     fun `ap lai dung tap cu KHONG xao thu tu`() {
-        val base = DockConfig(enabled = listOf("trunk", "lock", "window"))
+        val base = DockConfig(enabled = listOf("trunk", "lock", "win_lf"))
         assertEquals(base.enabled, DockSelection.apply(base, base.enabled.toSet()).enabled)
     }
 

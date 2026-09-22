@@ -93,9 +93,9 @@ class SherpaBiasingCoverageTest {
         // chọn) và vẫn còn sống: `headlight_mode` + lựa chọn *Auto*.
         // ⚠ 1.90 2026-09-21: cặp `headlight_mode` + lựa chọn *Auto* cũng hết (nút đã xoá). Mốc thay thế cùng CƠ CHẾ
         // (nhãn nút SELECT + nhãn lựa chọn) và còn sống: `seatc` ("Ghế mát") + lựa chọn *Mức 1*.
-        // [ĐO] tệp sinh ra là `GHẾ MÁT MỨC` (không có chữ số): `SherpaHotwords` bỏ token số, đúng luật đã khoá ở
-        // bài `dau cau tach nhan…`. Cặp cần canh vì thế là `GHẾ MÁT MỨC` (giữ) / `GHẾ MÁT` (phải rụng vì là tiền tố).
-        assertTrue("GHẾ MÁT MỨC" in set); assertTrue("GHẾ MÁT" !in set)
+        // ⚠ 1.94 2026-09-22: nhãn ghế đổi "Ghế mát" → "Mát ghế lái" (owner). [ĐO] tệp sinh ra `MÁT GHẾ LÁI MỨC`
+        // (SELECT args, bỏ token số), tiền tố `MÁT GHẾ LÁI` phải rụng.
+        assertTrue("MÁT GHẾ LÁI MỨC" in set); assertTrue("MÁT GHẾ LÁI" !in set)
     }
 
     @Test

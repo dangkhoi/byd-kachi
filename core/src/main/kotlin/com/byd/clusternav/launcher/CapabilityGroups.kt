@@ -85,9 +85,10 @@ object CapabilityGroups {
         id = "g_windows", label = "Kính", labelEn = "Windows",
         icon = "ic-group-windows", domain = Domain.BODY, shape = WidgetShape.STRIP,
         reads = listOf("window_lf", "window_rf", "window_lr", "window_rr"),
-        writes = listOf("win_lf", "win_rf", "win_lr", "win_rr", "mac_win_open_all", "mac_win_close_all"),
-        sub = "phần trăm mở + mở/đóng từng kính",
-        subEn = "how far open, plus open/close each window",
+        writes = listOf("win_lf", "win_rf", "win_lr", "win_rr", "windows_all",
+            "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr", "win_half_all", "windows_close_all"),
+        sub = "mở/đóng và mở nửa từng kính · đóng cả cụm",
+        subEn = "open/close and half-open each window · close all",
     )
 
     /**

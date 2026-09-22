@@ -161,8 +161,8 @@ class VoiceActGateReadbackTest {
     @Test
     fun `nut ngoai tap gate van chay khi xe dang chay`() {
         val r = Rig(speedKmh = 80)
-        r.run("window", 1)
-        assertEquals(listOf("toggle:window:true"), r.port.fired)
+        r.run("win_rf", 1)
+        assertEquals(listOf("toggle:win_rf:true"), r.port.fired)
     }
 
     // ══ E · TOGGLE/COVER đọc-được thì ĐỌC LẠI xác nhận ══════════════════════════════════════════════════════
@@ -252,7 +252,7 @@ class VoiceActGateReadbackTest {
         val r = Rig(reads = mapOf("win_lf" to listOf(100, 90)))
         r.run("win_lf", 0)
         val want = VoiceIntent.Control("win_lf", 0)
-        assertEquals(listOf("cover:win_lf:false"), r.port.fired, "lệnh vẫn phải được bắn")
+        assertEquals(listOf("toggle:win_lf:false"), r.port.fired, "lệnh vẫn phải được bắn")
         assertFalse(r.said.single().startsWith("✗"),
             "cửa kính đang đóng dở, 300 ms chưa về 0 — báo ✗ ở đây là khẳng định sai: ${r.said}")
         assertEquals(listOf(VoiceReply.done(want)), r.said, "câu đúng là câu 1.79 (✓ + hedge), không phải ✗")

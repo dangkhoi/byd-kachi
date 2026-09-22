@@ -24,16 +24,21 @@ class ControlRegistryExtendedTest {
         // release production. `vol` vì âm lượng đã có núm cứng + thanh Android; `cast` vì [ĐO grep] đường GHI
         // `AutoContainer.sendInfo` **chưa bao giờ được nối** (nút chết), còn việc chiếu cụm THẬT nằm ở
         // `SimpleCastRuntime` + nút nổi + nhóm Cài đặt (0 tham chiếu tới registry). Mã thứ BA và TƯ rời khối gốc.
+        // ⚠⚠ 1.94 · 2026-09-22 · **16 → 15**: `window` (kính cửa lái nhị-phân, vị trí 2) XOÁ — trùng hệt `win_lf`
+        // ("Kính lái", cùng `setBodyWindowCtrlState`, cùng cửa 1). Owner tái cấu trúc kính thành nút tường minh
+        // (win_lf/rf/lr/rr + windows_all + 5 nút 50% + đóng-tất-cả) ⇒ `window` là bản sao ⇒ gỡ (chống anti-pattern
+        // "hai mã một lệnh"). `win_lf` kế thừa chỗ dock mặc định (enabledByDefault) nhưng nằm ở khối kính (không ở
+        // 15 nút gốc đầu). Khối gốc nay còn **15**.
         val original = listOf(
-            "lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan",
+            "lock", "trunk", "readl", "pm25", "seatc", "temp", "fan",
             "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl",
         )
-        assertEquals(original, ControlRegistry.ALL.take(16).map { it.id })
+        assertEquals(original, ControlRegistry.ALL.take(15).map { it.id })
     }
 
     @Test fun `defaultEnabledIds bat bien - 8 nut mac dinh dung thu tu`() {
         assertEquals(
-            listOf("lock", "window", "trunk", "readl", "pm25", "seatc", "temp", "fan"),
+            listOf("lock", "trunk", "readl", "pm25", "seatc", "temp", "fan", "win_lf"),
             ControlRegistry.defaultEnabledIds(),
         )
         // Nut moi KHONG duoc tu bat (giu dock mac dinh gon). ⚠ 1.90: hai mốc cũ `cast` + `powertrain_mode` đã xoá
@@ -61,11 +66,13 @@ class ControlRegistryExtendedTest {
     @Test fun `COVER va BUTTON co mat`() {
         assertTrue(ControlRegistry.ALL.any { it.kind == ControlKind.COVER })
         assertTrue(ControlRegistry.ALL.any { it.kind == ControlKind.BUTTON })
-        // Kinh tung cua = COVER, proven.
+        // 1.94: kính nay là nút TOGGLE tường minh (mở/đóng), KHÔNG còn COVER 3-mức. COVER còn `sunshade`.
         val winLf = ControlRegistry.byId("win_lf")!!
-        assertEquals(ControlKind.COVER, winLf.kind)
+        assertEquals(ControlKind.TOGGLE, winLf.kind)
         assertEquals(EvidenceTier.PROVEN, winLf.tier)
-        // Loc-ngay = BUTTON, proven.
+        assertEquals(ControlKind.COVER, ControlRegistry.byId("sunshade")!!.kind)
+        // Đóng-tất-cả-kính + Lọc-ngay = BUTTON.
+        assertEquals(ControlKind.BUTTON, ControlRegistry.byId("windows_close_all")!!.kind)
         assertEquals(ControlKind.BUTTON, ControlRegistry.byId("pm25_clean_now")!!.kind)
     }
 
@@ -82,7 +89,7 @@ class ControlRegistryExtendedTest {
     }
 
     @Test fun `nut proven cluster nav dung tier`() {
-        listOf("window", "trunk", "pm25", "seatc", "seath", "pm25_clean_now").forEach { id ->
+        listOf("win_lf", "trunk", "pm25", "seatc", "seath", "pm25_clean_now").forEach { id ->
             assertEquals(EvidenceTier.PROVEN, ControlRegistry.byId(id)?.tier, "$id phai PROVEN")
         }
     }

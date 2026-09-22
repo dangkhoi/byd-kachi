@@ -60,7 +60,7 @@ class LangCoverageTest {
     fun `moi nut co nhan EN, dung 39 nut`() {
         // 39 (UX-OVERHAUL WP8 2026-09-20 owner purge 8 nút BỎ: gạt mưa · 4 đèn viền · mức tái tạo · 2 HUD).
         // 38 (gỡ `seat_memory`) → 29 (1.90: 9 nút xe-thuần-điện; danh sách ở `WorkspaceStateTest`).
-        assertEquals(31, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        assertEquals(36, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
@@ -211,7 +211,7 @@ class LangCoverageTest {
         // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **256 → 255 (−1)** = mục `voice_model_light`. Danh mục mô
         // hình nghe thu về đúng một gói ⇒ bề mặt chọn-mô-hình gỡ khỏi Cài đặt. Lượt GIẢM thứ ba.
         // 1.90: **255 → 244 (−11)** = −9 nút −2 datum (xe thuần điện). Lượt GIẢM thứ tư.
-        assertEquals(246, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        assertEquals(251, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -280,7 +280,7 @@ class LangCoverageTest {
         // 12 ((V) 2026-09-17: nút SELECT `drive_mode` đã xoá — trước đó 13).
         // 12 (WP8 2026-09-20: hai nút SELECT `ambient_color` + `regen_level` đã purge — trước đó 14).
         // 8 (1.90: 4 SELECT headlight_mode/powertrain_mode/screen_rotation/camera_view xoá)
-        assertEquals(10, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
+        assertEquals(5, withArgs.size, "số nút có lựa chọn đổi ⇒ xem lại bản dịch")
         val bad = withArgs.filter { it.argsEn.size != it.args.size }.map { "${it.id}(${it.args.size}≠${it.argsEn.size})" }
         assertTrue(bad.isEmpty(), "lựa chọn EN thiếu/lệch số phần tử — sẽ lùi về CẢ danh sách tiếng Việt: $bad")
     }
@@ -434,9 +434,9 @@ class LangCoverageTest {
     fun `dong phu cua nhom giu so dem tu du lieu o ca hai thu tieng`() {
         val g = CapabilityGroups.WINDOWS
         Strings.current = Lang.VI
-        assertEquals("4 mục · 6 nút · phần trăm mở + mở/đóng từng kính", g.contentLine)
+        assertEquals("4 mục · 11 nút · mở/đóng và mở nửa từng kính · đóng cả cụm", g.contentLine)
         Strings.current = Lang.EN
-        assertEquals("4 items · 6 buttons · how far open, plus open/close each window", g.contentLine)
+        assertEquals("4 items · 11 buttons · open/close and half-open each window · close all", g.contentLine)
     }
 
     private companion object {

@@ -34,10 +34,10 @@ class ControlWriteArgsTest {
      * Cặp mã CÙNG lệnh xe được phép sinh tham số y hệt — vì chúng là **cùng một việc**, chỉ khác kiểu ô.
      * Mỗi mục PHẢI có lý do. Danh sách này là chỗ duy nhất được nới; nới thì phải viết lý do.
      */
-    private val KNOWN_SAME_ACTION = mapOf(
-        // "Kính cửa lái" (TOGGLE) và "Kính trước-trái" (COVER) là CÙNG một cửa kính — cố ý giữ hai ô vì hai kiểu
-        // điều khiển khác nhau (bật/tắt vs mở/đóng/dừng). Cùng nghĩa ⇒ cùng tham số là ĐÚNG.
-        setOf("window", "win_lf") to "cùng cửa kính lái, khác kiểu ô (TOGGLE vs COVER)",
+    private val KNOWN_SAME_ACTION = mapOf<Set<String>, String>(
+        // 1.94: cặp "window"/"win_lf" gỡ (control `window` đã xoá — trùng win_lf, đã hợp nhất). Không còn cặp
+        // CÙNG-lệnh-CÙNG-tham-số nào cần miễn trừ: các nút kính chia sẻ `setBodyWindowCtrlState` nhưng khác cửa
+        // (window index) hoặc khác state (full=1 vs half=4) ⇒ tham số luôn khác nhau.
     )
 
     /**
@@ -186,26 +186,25 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(1, 2), args("seath", 1))
         assertArrayEquals(intArrayOf(2), args("steer_heat", 1))
         assertArrayEquals(intArrayOf(1), args("steer_heat", 0))
-        // Kính: enum WINDOW_* (mở=1/đóng=2). [ĐO xe 2026-09-15] đóng gửi 0 = no-op ⇒ phải là 2.
-        assertArrayEquals(intArrayOf(1, 1), args("win_lf", 1), "kính TT mở → [cửa 1, mở=1]")
-        assertArrayEquals(intArrayOf(1, 2), args("win_lf", 0), "kính TT đóng → [cửa 1, đóng=2] (KHÔNG phải 0)")
-        // T7 (owner 2026-09-15 "mở 50%"): mức 2 = WINDOW_OPEN_HALF=4 (BYDAutoBodyworkDevice.java:378) — cả 4 kính.
-        // NEEDS-ONCAR: hal set setBodyWindowCtrlState 1,4 → getWindowOpenPercent(1) ≈ 50.
-        assertArrayEquals(intArrayOf(1, 4), args("win_lf", 2), "kính TT NỬA → [cửa 1, OPEN_HALF=4]")
-        assertArrayEquals(intArrayOf(2, 4), args("win_rf", 2), "kính TP NỬA → [cửa 2, 4]")
-        assertArrayEquals(intArrayOf(3, 4), args("win_lr", 2), "kính ST NỬA → [cửa 3, 4]")
-        assertArrayEquals(intArrayOf(4, 4), args("win_rr", 2), "kính SP NỬA → [cửa 4, 4]")
-        // [owner 2026-09-18 "kính 50%"] `windows_all` NAY có mức Nửa: mức 2 → `setAllWindowState(4,4,4,4)`
-        // (WINDOW_OPEN_HALF=4, enum proven per-window; 4-kính-nửa AWAITING_CAR). Trước 1.74 mức 2 rơi về MỞ.
-        assertArrayEquals(intArrayOf(4, 4, 4, 4), args("windows_all", 2), "tất cả kính NỬA → 4× state 4")
-        assertEquals(3, com.byd.clusternav.launcher.ControlRegistry.byId("windows_all")!!.args.size, "windows_all khai nút Nửa (kính 50%)")
-        assertArrayEquals(intArrayOf(2, 2), args("win_rf", 0), "kính TP đóng → [cửa 2, đóng=2]")
+        // 1.94 · KÍNH TƯỜNG MINH (owner 2026-09-22) — nút TOGGLE, không còn COVER 3-mức.
+        // Full: mở=WINDOW_OPEN_FULL=1 / đóng=WINDOW_CLOSE=2. [ĐO xe 2026-09-15] đóng gửi 0 = no-op ⇒ phải là 2.
+        assertArrayEquals(intArrayOf(1, 1), args("win_lf", 1), "kính lái mở → [cửa 1, mở=1]")
+        assertArrayEquals(intArrayOf(1, 2), args("win_lf", 0), "kính lái đóng → [cửa 1, đóng=2] (KHÔNG phải 0)")
+        assertArrayEquals(intArrayOf(2, 2), args("win_rf", 0), "kính phụ đóng → [cửa 2, đóng=2]")
         assertArrayEquals(intArrayOf(3, 1), args("win_lr", 1))
         assertArrayEquals(intArrayOf(4, 1), args("win_rr", 1))
+        // Nút 50% riêng (win_half_*): mở=WINDOW_OPEN_HALF=4 / đóng=2. [ĐO] enum proven per-window (BYDAutoBodyworkDevice.java:378).
+        assertArrayEquals(intArrayOf(1, 4), args("win_half_lf", 1), "50% kính lái → [cửa 1, OPEN_HALF=4]")
+        assertArrayEquals(intArrayOf(1, 2), args("win_half_lf", 0), "50% kính lái · chạm lại → đóng=2")
+        assertArrayEquals(intArrayOf(2, 4), args("win_half_rf", 1), "50% kính phụ → [cửa 2, 4]")
+        assertArrayEquals(intArrayOf(3, 4), args("win_half_lr", 1), "50% ST → [cửa 3, 4]")
+        assertArrayEquals(intArrayOf(4, 4), args("win_half_rr", 1), "50% SP → [cửa 4, 4]")
+        // Tất cả kính: full mở=1 / đóng=2 (4×). 50% = 4× WINDOW_OPEN_HALF=4. Đóng-tất-cả (BUTTON) = 4× đóng=2.
         assertArrayEquals(intArrayOf(1, 1, 1, 1), args("windows_all", 1))
         assertArrayEquals(intArrayOf(2, 2, 2, 2), args("windows_all", 0), "tất cả kính đóng → 4× đóng=2")
-        assertArrayEquals(intArrayOf(1, 1), args("window", 1))
-        assertArrayEquals(intArrayOf(1, 2), args("window", 0), "kính lái đóng → [1, đóng=2]")
+        assertArrayEquals(intArrayOf(4, 4, 4, 4), args("win_half_all", 1), "50% tất cả kính → 4× state 4")
+        assertArrayEquals(intArrayOf(2, 2, 2, 2), args("win_half_all", 0), "50% tất cả · chạm lại → 4× đóng")
+        assertArrayEquals(intArrayOf(2, 2, 2, 2), args("windows_close_all", 0), "nút Đóng-tất-cả (backup) → 4× đóng=2")
         assertArrayEquals(intArrayOf(1), args("trunk", 1), "cốp mở → voiceCtlBackDoor(1) [ĐO xe 2026-09-17]")
         assertArrayEquals(intArrayOf(3), args("trunk", 0), "cốp đóng → voiceCtlBackDoor(3) [ĐO xe 2026-09-17]")
         assertArrayEquals(intArrayOf(1), args("pm25_clean_now", 1))
