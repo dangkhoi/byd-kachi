@@ -589,6 +589,8 @@
     <string name="kachi_voice_tts_ready">Đã cài %1$s · %2$d tệp · %3$s trên đĩa</string>
     <string name="kachi_voice_tts_get">Tải gói giọng đọc</string>
     <string name="kachi_voice_tts_remove">Gỡ gói giọng đọc</string>
+    <string name="kachi_voice_tts_update">Cập nhật gói giọng đọc</string>
+    <string name="kachi_voice_tts_has_update">Đã có bản mới của \"%1$s\" — bấm Cập nhật để tải bản mới.</string>
     <string name="kachi_voice_tts_sideload">Xe không có mạng: chép cả cây thư mục gói vào Android/data/%1$s/files/sherpa/import/%2$s/ rồi bấm Tải — máy vẫn kiểm sha256 từng tệp.</string>
     <string name="kachi_voice_speak_title">Đọc phản hồi bằng giọng</string>
     <string name="kachi_voice_speak_sub">Kachi đọc to câu trả lời thay vì chỉ hiện chữ.</string>

@@ -209,7 +209,10 @@ class VoiceModelSettings(
 
         val action = rows.button(ttsActionLabel()) {} as TextView
         action.setOnClickListener {
-            if (ttsReady()) removeTts(status, action) else installTts(status, action)
+            // 3 trạng thái: chưa có ⇒ Tải · có bản mới ⇒ Cập nhật (tải đè) · đã mới nhất ⇒ Gỡ. (owner 2026-09-22)
+            if (!ttsReady()) installTts(status, action)
+            else if (VoiceModelStore.needsUpdate(context, ttsPack)) installTts(status, action)
+            else removeTts(status, action)
         }
         body.addView(action)
         // ⚠ [SOÁT Pass 4 · P1] Đường dẫn side-load phải sinh từ **dữ liệu thật**, không chép tay vào chuỗi:
@@ -255,11 +258,17 @@ class VoiceModelSettings(
     private fun ttsReady(): Boolean = VoiceModelStore.isReady(context, ttsPack)
 
     private fun ttsActionLabel(): String = context.getString(
-        if (ttsReady()) R.string.kachi_voice_tts_remove else R.string.kachi_voice_tts_get,
+        when {
+            !ttsReady() -> R.string.kachi_voice_tts_get
+            VoiceModelStore.needsUpdate(context, ttsPack) -> R.string.kachi_voice_tts_update
+            else -> R.string.kachi_voice_tts_remove
+        },
     )
 
     private fun ttsStatusText(): String = if (!ttsReady()) {
         context.getString(R.string.kachi_voice_tts_absent, mb(ttsPack.totalBytes))
+    } else if (VoiceModelStore.needsUpdate(context, ttsPack)) {
+        context.getString(R.string.kachi_voice_tts_has_update, ttsPack.label)
     } else {
         context.getString(
             R.string.kachi_voice_tts_ready,

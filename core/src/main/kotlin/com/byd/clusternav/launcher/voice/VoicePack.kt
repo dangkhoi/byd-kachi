@@ -50,6 +50,16 @@ interface VoicePack {
      * vì tải mù (fail-safe — CLAUDE.md §4.1).
      */
     val downloadable: Boolean
+
+    /**
+     * ═══ PHIÊN BẢN GÓI — cho phép "kiểm tra cập nhật" như update app (owner 2026-09-22) ═══════════════════════
+     *
+     * Tăng số này mỗi lần asset trên máy chủ ĐỔI NỘI DUNG (sha256 mới). `VoiceModelStore` ghi số này ra file
+     * `.version` trong thư mục gói lúc cài; lần mở Cài đặt sau, so số-trên-đĩa với số-catalog: lệch ⇒ nút hiện
+     * **"Cập nhật"** (tải bản mới đè). Không so sha256 mỗi lần mở (băm hàng chục MB = chậm/tốn pin) — chỉ đọc 1
+     * số nhỏ, đúng cách app store làm. Mặc định `1`; gói nào chưa từng đổi asset thì để nguyên.
+     */
+    val version: Int get() = 1
 }
 
 /**

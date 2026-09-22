@@ -36,6 +36,7 @@ import java.security.MessageDigest
 object VoiceModelStore {
 
     private const val TAG = "KachiVoiceModel"
+    private const val VERSION_FILE = ".version"
 
     private const val READ_TIMEOUT_MS = 60_000
     private const val MB = 1024L * 1024L
@@ -91,6 +92,17 @@ object VoiceModelStore {
         if (!root.isDirectory) return false
         return pack.files.map { it.name }.all { File(root, it).let { f -> f.isFile && f.length() > 0L } }
     }
+
+    /** Phiên bản gói ĐANG nằm trên đĩa (đọc `.version`); `0` nếu chưa cài hoặc file cũ (trước khi có cơ chế này). */
+    fun installedVersion(ctx: Context, pack: VoicePack = selected(ctx)): Int =
+        runCatching { File(dir(ctx, pack), VERSION_FILE).readText().trim().toInt() }.getOrDefault(0)
+
+    /**
+     * Gói đã cài NHƯNG có bản MỚI trên máy chủ (asset đổi ⇒ [VoicePack.version] catalog > số trên đĩa).
+     * `false` khi chưa cài (dùng [isReady] cho ca đó) hoặc đã đúng bản mới nhất. Owner 2026-09-22 — nút "Cập nhật".
+     */
+    fun needsUpdate(ctx: Context, pack: VoicePack = selected(ctx)): Boolean =
+        isReady(ctx, pack) && installedVersion(ctx, pack) < pack.version
 
     /** Cỡ thật đang chiếm trên đĩa (byte) cho một gói. */
     fun sizeOnDisk(ctx: Context, pack: VoicePack = selected(ctx)): Long =
@@ -172,7 +184,9 @@ object VoiceModelStore {
                 return
             }
             staging.deleteRecursively()
-            Log.i(TAG, "gói sẵn sàng: ${dest.absolutePath} (${pack.files.size} tệp)")
+            // Ghi phiên bản gói ra `.version` để lần mở Cài đặt sau biết có bản mới không (owner 2026-09-22).
+            runCatching { File(dest, VERSION_FILE).writeText(pack.version.toString()) }
+            Log.i(TAG, "gói sẵn sàng: ${dest.absolutePath} (${pack.files.size} tệp, v${pack.version})")
             onStep(Step.Done(pack.files.size))
         } finally {
             installing.set(false)
