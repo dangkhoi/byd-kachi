@@ -281,6 +281,18 @@ object PermissionPreflight {
             Log.i("Preflight", "sau khi tự cấp: " + check(activity, shellUsable, awaitingApproval).logLine())
         }
 
+        // B1 · P8-BOUND (owner 2026-09-22): kiểm accessibility đã BOUND chưa, KHÔNG chỉ ENABLED. `accessibilityGranted`
+        // ở trên chỉ soi `enabled_accessibility_services` + cờ ⇒ ca "enabled-nhưng-chưa-bound" (sau reboot / CPU cao)
+        // KHÔNG lọt vào `selfFixable`, phím vô-lăng chết mà preflight vẫn xanh. Nay: voice-key BẬT + cờ in-process
+        // nói CHƯA bound ⇒ force-rebind ngay lúc start. `NavConnect.grantAccessibility` idempotent (verify `dumpsys`
+        // bound TRƯỚC, chỉ toggle khi cần) nên gọi thừa vô hại. Cùng đường heal với watchdog nền (B2).
+        if (com.byd.clusternav.Prefs.voiceKeyEnabled(activity) &&
+            !com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected
+        ) {
+            runCatching { com.byd.clusternav.NavConnect.grantAccessibility(activity.applicationContext) }
+                .onFailure { Log.e("Preflight", "accessibility bound-heal (B1) failed", it) }
+        }
+
         // Chỉ NÓI khi thiếu thứ làm mất TÍNH NĂNG LÕI (app vào ô). Thiếu mục nhỏ mà báo mỗi lần mở là nhiễu —
         // đúng thứ việc này đi dọn. Danh sách đầy đủ nằm trong bảng Tuỳ biến.
         val after = check(activity, shellUsable, awaitingApproval)

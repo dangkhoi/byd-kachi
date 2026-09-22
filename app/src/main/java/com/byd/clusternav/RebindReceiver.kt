@@ -31,6 +31,18 @@ class RebindReceiver : BroadcastReceiver() {
         val action = intent?.action ?: return
         Log.i(TAG, "rebind trigger: $action")
         rebind(context)
+        // B2 · BIND-SELFHEAL (owner 2026-09-22): vòng NỀN định kỳ tự chữa binding PHÍM VÔ-LĂNG (accessibility)
+        // khi enabled-nhưng-chưa-BOUND — ca "phím chết giữa lúc lái do CPU cao" mà người dùng KHÔNG mở app.
+        // `rebind()` ở trên chỉ lo notification-listener; phím vô-lăng đi qua NavAccessibilityService, cần đường
+        // heal RIÊNG. `NavConnect.grantAccessibility` idempotent (verify `dumpsys` bound TRƯỚC, chỉ toggle khi
+        // enabled-nhưng-chưa-bound) ⇒ gọi định kỳ an toàn. Gate: chỉ khi voice-key BẬT và cờ in-process nói CHƯA
+        // bound (tránh dadb thừa mỗi 60s khi đang bound tốt).
+        if (Prefs.voiceKeyEnabled(context) &&
+            !com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected
+        ) {
+            runCatching { NavConnect.grantAccessibility(context.applicationContext) }
+                .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }
+        }
         when (action) {
             Intent.ACTION_BOOT_COMPLETED -> {
                 scheduleWatchdog(context)
