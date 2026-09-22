@@ -181,6 +181,9 @@ class TopStripPicker(
             // của app (88 ô) — đúng chỗ cần phân biệt nhất. `AppDrawer` đã làm việc này qua `PickerBadge.retint`;
             // ở đây ô biết ngay lúc dựng nên truyền thẳng.
             addView(PickerBadge.icon(context, iconRes(pick), pick.needsBadge, Sp.ICON_L, strip.has(pick.id)))
+            // Owner 2026-09-22: huy hiệu MẮT (view) — chip header toàn là mục XEM (thông tin), nói rõ bằng icon con
+            // mắt để đồng nhất với ngăn kéo (mắt=xem / nút=hành động). Chip chỉ nhận READ nên luôn là mắt.
+            addView(viewBadge())
             addView(TextView(context).apply {
                 text = pick.displayLabel; setTextColor(c(KachiTheme.INK))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.CAPTION)
@@ -261,8 +264,22 @@ class TopStripPicker(
     }
 
     /** Icon của khả năng; chưa map → icon đại diện nhóm (khỏi ô trống icon). */
+    /** Huy hiệu MẮT (view) — chip header toàn mục XEM; icon con mắt trên nền cyan, giống ngăn kéo. */
+    private fun viewBadge(): View {
+        val sz = dpi(context, Sp.ICON_S)
+        return android.widget.ImageView(context).apply {
+            setImageResource(R.drawable.ic_kind_view)
+            background = KachiTheme.pill(context, KachiTheme.CYAN)
+            val pad = dpi(context, Sp.HAIRLINE); setPadding(pad, pad, pad, pad)
+            layoutParams = LinearLayout.LayoutParams(sz, sz).apply { topMargin = dpi(context, Sp.XS) }
+        }
+    }
+
     private fun iconRes(pick: CapabilityPick): Int {
-        val r = KachiIcons.res(pick.icon, Sp.ICON_L)
+        // R1 (owner 2026-09-22): MỘT bộ icon — datum-trạng-thái (seat_vent_state) dùng icon của control (seatc)
+        // ⇒ màn chọn chip header khớp dock/widget/picker, không còn hai hình cho cùng khái niệm.
+        val name = CapabilityDots.iconOverride(pick.id) ?: pick.icon
+        val r = KachiIcons.res(name, Sp.ICON_L)
         if (r != 0) return r
         val d = pick.domain ?: return 0
         return KachiIcons.res(WidgetCatalog.iconFor(d), Sp.ICON_L)
