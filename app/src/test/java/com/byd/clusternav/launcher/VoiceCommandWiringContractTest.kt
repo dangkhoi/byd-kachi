@@ -475,10 +475,6 @@ class VoiceCommandWiringContractTest {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
         assertTrue(session.contains("preferOffline = { Prefs.voicePreferOffline(ctx) }"),
             "công tắc 'ưu tiên giọng offline' phải truyền dạng lambda để đọc lại ở MỖI câu")
-        // 1.70 (voice-clone T7) — giọng phản hồi (Piper/giọng bé) cũng là lambda: đổi lựa chọn trong Cài đặt là
-        // câu tiếp theo đã đi đường mới, không phải khởi động lại launcher.
-        assertTrue(session.contains("feedbackVoice = { Prefs.voiceFeedbackVoice(ctx) }"),
-            "giọng phản hồi phải truyền dạng lambda để đọc lại ở MỖI câu")
         // ⚠ 1.66: [speakLines] nay phải gọi `onDone` ở MỌI đường thoát (hội thoại R9 treo trên mốc đó), nên cổng
         // không còn là một `return` trần. Thứ phải canh vẫn y nguyên — **THỨ TỰ**: công tắc chặn TRƯỚC phép gộp.
         // 1.70: speakLines tách sang VoiceSessionTurns (extension) theo VAI, trần 500 dòng.

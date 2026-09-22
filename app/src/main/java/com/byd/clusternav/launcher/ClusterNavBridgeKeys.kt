@@ -6,10 +6,8 @@ import com.byd.clusternav.modules.voicekey.AssistantLauncher
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import com.byd.clusternav.setVoiceConfirmIds
-import com.byd.clusternav.setVoiceFeedbackVoice
 import com.byd.clusternav.setVoiceMicSource
 import com.byd.clusternav.voiceConfirmIds
-import com.byd.clusternav.voiceFeedbackVoice
 import com.byd.clusternav.voiceFollowUpMs
 import com.byd.clusternav.voiceMicSource
 
@@ -325,14 +323,6 @@ internal fun ClusterNavBridge.voicePreferOffline(): Boolean = Prefs.voicePreferO
 /** Xem [voicePreferOffline]. */
 internal fun ClusterNavBridge.setVoicePreferOffline(on: Boolean) = Prefs.setVoicePreferOffline(app, on)
 
-/**
- * Giọng phản hồi đang chọn — `1` = Piper (mặc định), `2` = giọng bé (clone). Xem [Prefs.voiceFeedbackVoice].
- * Cùng lẽ [voicePreferOffline]: tầng vẽ không mở cửa riêng vào nơi lưu bền.
- */
-internal fun ClusterNavBridge.voiceFeedbackVoice(): Int = Prefs.voiceFeedbackVoice(app)
-
-/** Xem [voiceFeedbackVoice]. */
-internal fun ClusterNavBridge.setVoiceFeedbackVoice(v: Int) = Prefs.setVoiceFeedbackVoice(app, v)
 
 /**
  * ═══ V3 · R1/R7 — ba cửa mới của đường giọng nói (spec `kachi-voice-fast-natural.html`) ══════════════════════

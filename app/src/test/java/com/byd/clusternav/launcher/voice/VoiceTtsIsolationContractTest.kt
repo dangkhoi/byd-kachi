@@ -57,10 +57,6 @@ class VoiceTtsIsolationContractTest {
                 "dựng lại đúng lỗi SIGSEGV làm chết binding phím)",
         )
         // Giọng bé vẫn nhường đường Piper (chia sẻ, không dựng engine thứ hai) — cùng biểu thức như trước khi tách.
-        assertTrue(
-            router.contains("ClipSpeaker(ctx, fallback = sherpa)"),
-            "ClipSpeaker phải tiếp tục lùi về CHÍNH đường Piper này, không mở đường thứ hai",
-        )
     }
 
     /**

@@ -163,7 +163,6 @@ class SettingsCatalogControlContractTest {
             // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),
-            "voice_feedback_voice" to ("VoiceModelSettings" to "deps.bridge.setVoiceFeedbackVoice("),
             "voice_tts_pack" to ("VoiceModelSettings" to "SherpaTtsCatalog.PIPER_VI_VAIS1000"),
             // VOICE-HOTFIX 1.69 — ba mục mới, cùng tệp `VoiceModelSettings.kt` với khối Giọng nói còn lại.
             // Dấu vết chọn theo đúng luật ở KDoc: **lời gọi thật**, không phải nhãn.

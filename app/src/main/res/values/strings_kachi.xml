@@ -590,15 +590,10 @@
     <string name="kachi_voice_tts_get">Tải gói giọng đọc</string>
     <string name="kachi_voice_tts_remove">Gỡ gói giọng đọc</string>
     <string name="kachi_voice_tts_sideload">Xe không có mạng: chép cả cây thư mục gói vào Android/data/%1$s/files/sherpa/import/%2$s/ rồi bấm Tải — máy vẫn kiểm sha256 từng tệp.</string>
-    <string name="kachi_clip_voice_title">Giọng Kachi bé (tuỳ chọn)</string>
-    <string name="kachi_clip_voice_absent">Chưa cài. Gói giọng bé %1$s — tải một lần (một tệp nén), Kachi giải nén trên xe rồi dùng làm giọng phản hồi số 2 (chọn ở trên).</string>
-    <string name="kachi_clip_voice_ready">Đã cài giọng bé · %1$s trên đĩa</string>
     <string name="kachi_voice_speak_title">Đọc phản hồi bằng giọng</string>
     <string name="kachi_voice_speak_sub">Kachi đọc to câu trả lời thay vì chỉ hiện chữ.</string>
     <string name="kachi_voice_offline_title">Ưu tiên giọng offline</string>
     <string name="kachi_voice_offline_sub">Chỉ có tác dụng khi gói giọng đọc đã cài; chưa cài thì vẫn dùng máy đọc của hệ thống.</string>
-    <string name="kachi_voice_feedback_title">Giọng phản hồi giọng bé (thử nghiệm)</string>
-    <string name="kachi_voice_feedback_sub">Mặc định đọc bằng giọng Piper. Bật để nghe giọng bé — giọng clone, chưa hoàn hảo; câu lạ vẫn đọc bằng Piper.</string>
     <string name="kachi_voice_wav_try">Nhận dạng tệp WAV thử</string>
     <string name="kachi_voice_wav_running">Đang nhận dạng tệp thử…</string>
     <string name="kachi_voice_wav_heard">WAV nghe được: %1$s</string>

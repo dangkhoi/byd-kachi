@@ -67,9 +67,6 @@ internal object SettingsCatalogClusterNav {
             // V1 pha NÓI · R4 (spec `kachi-voice-feedback.html` T9) — hai công tắc của đường ra TIẾNG. Khoá nằm
             // cùng tệp với `voice_mic_pill` (cũng của `Prefs`), nên "cấu hình giọng nói ở đâu" có một câu trả lời.
             "voice_speak_replies", "voice_prefer_offline",
-            // 1.70 (voice-clone T7) — chọn giọng phản hồi Piper/giọng bé. Cùng tệp `clusternav_prefs`
-            // (`PrefsVoiceV3.K_VOICE_FEEDBACK_VOICE`), nên "cấu hình giọng nói ở đâu" vẫn một câu trả lời.
-            "voice_feedback_voice",
             // V3 (spec `kachi-voice-fast-natural.html`) — ba khoá của đợt "nhanh + tự nhiên". `voice_ask_aloud`
             // RỜI [HIDDEN_KEYS] sang đây ở 1.66: nó nay có hàng thật trong mục *"Hỏi xác nhận trước khi chạy"*,
             // đúng như dòng lý do cũ đã hẹn (*"đi cùng batch chọn nút nào phải hỏi"*).

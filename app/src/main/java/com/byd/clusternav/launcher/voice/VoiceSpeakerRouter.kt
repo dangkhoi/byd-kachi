@@ -6,27 +6,15 @@ import android.util.Log
 /**
  * ═══ CHỌN ĐƯỜNG RA TIẾNG — mỗi câu đo lại, không rẽ nhánh theo cờ RAM ════════════════════════════════════════
  *
- * Spec `kachi-voice-feedback.html` R2 (Piper/Android) + `kachi-voice-clone.html` R4/R6 (giọng bé).
+ * Spec `kachi-voice-feedback.html` R2 (Piper/Android).
  *
- * ## Hai trục quyết định, độc lập nhau
- *  1. **Giọng phản hồi** người dùng chọn (`voice_feedback_voice`): Piper (mặc định) hay giọng bé (clip). Trục
- *     này đứng TRƯỚC, vì nó là lựa chọn tường minh; giọng bé chỉ thắng khi được chọn **và** gói clip đã có trên
- *     đĩa (`VoiceSpeakerSelector.usesChildVoice`). Thiếu một trong hai ⇒ rơi về trục 2.
- *  2. **Máy đọc nào cho đường Piper**: máy đọc hệ thống (`vi-VN` thật) hay gói Piper offline — do
- *     [VoiceSpeakerSelector] đo lại mỗi câu, y như trước.
- *
- * ## ⚠ [ClipSpeaker] nhận chuỗi GỐC, đường Piper nhận chuỗi ĐÃ PHIÊN ÂM
- * [TtsPronunciation.normalise] là cửa đổi chữ Latin → âm Việt, và nó nằm SAU chỗ tra clip (KDoc [TtsPronunciation]
- * mục 3): bảng clip khoá theo **chuỗi gốc**. Nên khi đi đường clip, Router chuyển thẳng [text] gốc cho
- * [ClipSpeaker]; [ClipSpeaker] tự gọi `normalise` cho **đường lùi Piper của nó**. Khi đi đường Piper/Android,
- * Router phiên âm ngay tại đây như cũ. KHÔNG phiên âm hai lần.
+ * **Máy đọc nào**: máy đọc hệ thống (`vi-VN` thật) hay gói Piper offline — do [VoiceSpeakerSelector] đo lại mỗi
+ * câu. (Trục "giọng bé" clip đã GỠ ở C5 · owner 2026-09-22 — chỉ còn Piper/Android.)
  */
 class VoiceSpeakerRouter(
     ctx: Context,
     /** Pha 2 — công tắc *"ưu tiên giọng offline"* trong Cài đặt. Chưa có ⇒ luôn `false`, xem KDoc probe. */
     private val preferOffline: () -> Boolean = { false },
-    /** Giọng phản hồi đang chọn (`voice_feedback_voice`); mặc định Piper. Đọc **mỗi câu** như [preferOffline]. */
-    private val feedbackVoice: () -> Int = { VoiceSpeakerSelector.FEEDBACK_PIPER },
 ) : VoiceSpeaker {
 
     private val android = AndroidTtsSpeaker(ctx)
@@ -44,19 +32,9 @@ class VoiceSpeakerRouter(
      */
     private val sherpa = RemotePiperSpeaker(ctx)
 
-    /** Giọng bé — DÙNG [sherpa] làm đường lùi (chia sẻ, không dựng engine thứ hai); Router sở hữu vòng đời [sherpa]. */
-    private val clip = ClipSpeaker(ctx, fallback = sherpa)
-
-    /** Có rẽ sang giọng bé không — luật thuần ở [VoiceSpeakerSelector.usesChildVoice] (mặc định Piper). */
-    private fun usingChild(): Boolean =
-        VoiceSpeakerSelector.usesChildVoice(
-            runCatching { feedbackVoice() }.getOrDefault(VoiceSpeakerSelector.FEEDBACK_PIPER),
-            childReady = clip.available(),
-        )
-
     /** Đường **đang** được chọn — chỉ để báo cáo (nhật ký / cầu kiểm thử). */
     override val kind: VoiceSpeakerKind
-        get() = if (usingChild()) clip.kind else VoiceSpeakerSelector.choose(probe())
+        get() = VoiceSpeakerSelector.choose(probe())
 
     /** Ảnh chụp phép đo, dùng cho cả [VoiceSpeakerSelector.choose] lẫn cầu kiểm thử (`TestBridgeState`). */
     fun probe(): VoiceSpeakerSelector.VoiceSpeakerProbe {
@@ -84,7 +62,7 @@ class VoiceSpeakerRouter(
         VoiceSpeakerKind.NONE -> SilentSpeaker
     }
 
-    override fun available(): Boolean = usingChild() || active() !== SilentSpeaker
+    override fun available(): Boolean = active() !== SilentSpeaker
 
     override fun speak(text: String): Boolean = route(text, null)
 
@@ -97,12 +75,8 @@ class VoiceSpeakerRouter(
     override fun speak(text: String, onDone: () -> Unit): Boolean = route(text, onDone)
 
     private fun route(text: String, onDone: (() -> Unit)?): Boolean {
-        // Đường kia có thể còn đang đọc câu trước ⇒ dừng cả ba rồi mới nói (rẻ, và chặn ca hai giọng chồng).
+        // Đường kia có thể còn đang đọc câu trước ⇒ dừng cả hai rồi mới nói (rẻ, và chặn ca hai giọng chồng).
         stop()
-        if (usingChild()) {
-            // §4.7 — [ClipSpeaker] tra bảng bằng chuỗi GỐC; nó tự phiên âm cho đường lùi Piper của nó.
-            return if (onDone == null) clip.speak(text) else clip.speak(text, onDone)
-        }
         val target = active()
         if (target === SilentSpeaker) {
             // Không có đường nào đọc được ⇒ *"đọc xong"* là ngay bây giờ (vế (1) của hợp đồng).
@@ -119,13 +93,11 @@ class VoiceSpeakerRouter(
     override fun stop() {
         android.stop()
         sherpa.stop()
-        clip.stop()
     }
 
     override fun shutdown() {
         android.shutdown()
         sherpa.shutdown()
-        clip.shutdown()
     }
 
     companion object {

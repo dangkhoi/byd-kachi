@@ -203,29 +203,4 @@ fun Prefs.voiceTtsSpeed(ctx: Context): Float =
 fun Prefs.setVoiceTtsSpeed(ctx: Context, v: Float) =
     voicePrefs(ctx).edit().putFloat(K_VOICE_TTS_SPEED, v).apply()
 
-// ── Giọng PHẢN HỒI: chọn Piper (chuẩn) hay giọng bé (clone) — owner chốt 2026-09-17 ─────────────────
-
-private const val K_VOICE_FEEDBACK_VOICE = "voice_feedback_voice"
-
-/**
- * ═══ Người dùng chọn GIỌNG nào đọc câu trả lời — spec `kachi-voice-clone.html` **T7/T8/R6** ══════════════════
- *
- * **Int** chứ không **Boolean**: hôm nay chỉ hai giá trị ([VoiceSpeakerSelector.FEEDBACK_PIPER] ·
- * [VoiceSpeakerSelector.FEEDBACK_CHILD]), nhưng đường đọc có thể mọc thêm giọng thứ ba (owner đã nhắc *"Giọng
- * Kachi bố"* — spec T12) và một `Boolean` sẽ phải đổi kiểu lúc đó, kéo theo mọi chỗ đọc. Hằng khai MỘT chỗ ở
- * `:core` ([VoiceSpeakerSelector]) để bộ chọn thuần và bài canh cùng dùng.
- *
- * ## ⚠ MẶC ĐỊNH BẮT BUỘC là Piper (owner 2026-09-17)
- * Giọng bé owner nghe ~80 % (việt-kiều, gãy khúc) nên **KHÔNG** được là mặc định — nó là một lựa chọn người dùng
- * tự bật. `getInt(..., FEEDBACK_PIPER)` giữ đúng điều đó: máy chưa ai chỉnh đọc bằng Piper y như 1.69, và
- * `VoiceSpeakerRouter` chỉ rẽ sang `ClipSpeaker` khi giá trị = [VoiceSpeakerSelector.FEEDBACK_CHILD] **và** gói
- * clip đã có trên đĩa (`VoiceSpeakerSelector.usesChildVoice`). Bài canh khoá cả hai điều đó.
- *
- * Theo XE ([com.byd.clusternav.launcher.ProfileScope.DEVICE_KEYS]) như mọi khoá giọng nói khác: gói clip nằm
- * trên đĩa của chính xe này, không đi theo hồ sơ.
- */
-fun Prefs.voiceFeedbackVoice(ctx: Context): Int =
-    voicePrefs(ctx).getInt(K_VOICE_FEEDBACK_VOICE, VoiceSpeakerSelector.FEEDBACK_PIPER)
-
-fun Prefs.setVoiceFeedbackVoice(ctx: Context, v: Int) =
-    voicePrefs(ctx).edit().putInt(K_VOICE_FEEDBACK_VOICE, v).apply()
+// ── Giọng PHẢN HỒI: chỉ còn Piper/Android (giọng bé clip GỠ ở C5 · owner 2026-09-22) ─────────────────

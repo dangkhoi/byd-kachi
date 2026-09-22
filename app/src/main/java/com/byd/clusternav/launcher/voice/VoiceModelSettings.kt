@@ -7,10 +7,8 @@ import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.SettingsDeps
 import com.byd.clusternav.launcher.SettingsRows
-import com.byd.clusternav.launcher.setVoiceFeedbackVoice
 import com.byd.clusternav.launcher.setVoicePreferOffline
 import com.byd.clusternav.launcher.setVoiceSpeakReplies
-import com.byd.clusternav.launcher.voiceFeedbackVoice
 import com.byd.clusternav.launcher.voicePreferOffline
 import com.byd.clusternav.launcher.voiceSpeakReplies
 
@@ -58,7 +56,6 @@ class VoiceModelSettings(
         // từng đứng. Danh mục chỉ còn MỘT mô hình nghe, nên không còn gì để chọn giữa.
         attributionRows(body)
         ttsRow(body)
-        ClipVoiceRow(context, rows).build(body)
         speakToggles(body)
         // ⚠ `logRows(body)` đã BỎ cùng khối nhật ký lượt nói (owner 2026-09-21) — xem chú thích ở chỗ hàm đó từng
         // đứng. Gọi một hàm rỗng thì không ai thấy nó rỗng; bỏ hẳn lời gọi mới là thứ đọc ra được.
@@ -291,32 +288,8 @@ class VoiceModelSettings(
             title = context.getString(R.string.kachi_voice_offline_title),
             sub = context.getString(R.string.kachi_voice_offline_sub),
         ) { on -> deps.bridge.setVoicePreferOffline(on) })
-        feedbackVoiceRow(body)
     }
 
-    /**
-     * ═══ *"Giọng phản hồi giọng bé"* — chọn Piper (mặc định) hay "Giọng Kachi bé" (spec `kachi-voice-clone.html` T8) ══
-     *
-     * Một **ô tích**, không phải một dãy chọn: chỉ có hai giọng, và một trong hai là mặc định rõ ràng (Piper) —
-     * đúng dạng bật/tắt. TẮT = Piper ([VoiceSpeakerSelector.FEEDBACK_PIPER], mặc định); BẬT = giọng bé
-     * ([VoiceSpeakerSelector.FEEDBACK_CHILD]). Pref vẫn là **Int** (không phải Boolean) để còn chỗ cho giọng thứ
-     * ba mai sau; ô tích chỉ là bề mặt của hai giá trị đầu.
-     *
-     * Câu phụ nói thẳng ba điều owner cần biết: mặc định Piper · giọng bé là **clip clone chưa hoàn hảo** · câu
-     * lạ vẫn đọc bằng Piper (để không ai tưởng giọng bé đọc được mọi thứ). Đi qua `deps.bridge` như mọi khoá
-     * THEO XE khác — tầng vẽ không mở cửa riêng vào nơi lưu bền.
-     */
-    private fun feedbackVoiceRow(body: LinearLayout) {
-        body.addView(rows.checkRow(
-            on = deps.bridge.voiceFeedbackVoice() == VoiceSpeakerSelector.FEEDBACK_CHILD,
-            title = context.getString(R.string.kachi_voice_feedback_title),
-            sub = context.getString(R.string.kachi_voice_feedback_sub),
-        ) { on ->
-            deps.bridge.setVoiceFeedbackVoice(
-                if (on) VoiceSpeakerSelector.FEEDBACK_CHILD else VoiceSpeakerSelector.FEEDBACK_PIPER,
-            )
-        })
-    }
 
     // ── chữ ──────────────────────────────────────────────────────────────────────────────────────
 

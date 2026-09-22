@@ -256,12 +256,6 @@ object ProfileScope {
                 "có tác dụng khi **gói 61 MB đã nằm trên đĩa của chính xe này**, mà đĩa thì không đi theo hồ sơ",
         )
         put(
-            "voice_feedback_voice",
-            "voice-clone T7 (2026-09-17) — chọn giọng phản hồi: Piper (mặc định) hay 'Giọng Kachi bé' (gói clip). " +
-                "Cùng lý do [voice_prefer_offline]: gói clip 10 MB nằm trên đĩa của chính xe này, không đi theo hồ " +
-                "sơ; và mặc định phải là Piper bất kể hồ sơ nào (owner chốt: giọng bé chỉ là lựa chọn)",
-        )
-        put(
             "rain_defrost_enabled",
             "AUTOMATION #1 (1.85, spec kachi-automation R1/R5) — 'Tự sấy kính khi mưa'. Theo XE: nó đọc một CẢM " +
                 "BIẾN của chiếc xe này ([ĐO] SETTING_FRONT_RAIN_WIPER_SPEED) và ghi hai nút sấy của chính nó, " +

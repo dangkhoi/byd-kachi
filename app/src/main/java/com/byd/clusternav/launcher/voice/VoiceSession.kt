@@ -7,7 +7,6 @@ import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.VoiceDispatcher
-import com.byd.clusternav.voiceFeedbackVoice
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -77,7 +76,6 @@ class VoiceSession(
             VoiceSpeakerRouter(
                 ctx,
                 preferOffline = { Prefs.voicePreferOffline(ctx) },
-                feedbackVoice = { Prefs.voiceFeedbackVoice(ctx) },
             )
         }
             .onFailure { Log.w(TAG, "không dựng được đường ra tiếng — chỉ còn chữ", it) }

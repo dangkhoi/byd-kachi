@@ -272,7 +272,7 @@ class SettingsSections(
         body.addView(update)
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
 
-        // ⚠ Khối GIỌNG NÓI (Hey Kachi + tải mô hình NGHE/ĐỌC + giọng bé) ĐÃ TÁCH sang [SettingsGroup.VOICE]
+        // ⚠ Khối GIỌNG NÓI (Hey Kachi + tải mô hình NGHE/ĐỌC) ĐÃ TÁCH sang [SettingsGroup.VOICE]
         // (owner 2026-09-21: "voice nên tách thành 1 menu setting riêng"). Xem [SettingsVoiceSection].
 
         // ── Nâng cao ──

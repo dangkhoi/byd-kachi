@@ -275,11 +275,6 @@ internal object SettingsCatalogEntries {
             "voice_prefer_offline", SettingsGroup.VOICE, "Ưu tiên giọng offline",
             "voice_prefer_offline", "Prefer the offline voice",
         ),
-        // 1.70 (voice-clone T7/T8) — chọn giọng phản hồi Piper (mặc định) hay "Giọng Kachi bé" (clip clone).
-        SettingsEntry(
-            "voice_feedback_voice", SettingsGroup.VOICE, "Giọng phản hồi",
-            "voice_feedback_voice", "Feedback voice",
-        ),
         // App nhạc mặc định (owner 2026-09-21) — cùng lẽ `nav_default_app` ở nhóm NAV; khoá `clusternav_prefs`.
         SettingsEntry(
             "voice_music_default_app", SettingsGroup.VOICE, "App nhạc mặc định",

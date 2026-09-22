@@ -84,18 +84,12 @@ object VoiceModelStore {
     /**
      * Gói đã sẵn sàng chưa — kiểm **từng tệp** (tồn tại + khác rỗng), không chỉ kiểm thư mục.
      * Một thư mục thiếu tệp là cách chắc chắn nhất để onnxruntime ngã trong mã native.
-     *
-     * ⚠ **Gói archive hỏi dấu hiệu KHÁC** ([KachiClipVoiceCatalog.EXTRACTED_FILES]): thành viên duy nhất của nó là
-     * cái `.zip`, và [install] **xoá** cái zip sau khi bung ⇒ hỏi `pack.files` sẽ báo *"chưa cài"* cho một gói đã
-     * lắp đủ, rồi [install] bỏ qua đường thoát sớm và `remove()` mất gói đang chạy tốt. Lý do đầy đủ ở KDoc bên đó.
+
      */
     fun isReady(ctx: Context, pack: VoicePack = selected(ctx)): Boolean {
         val root = dir(ctx, pack)
         if (!root.isDirectory) return false
-        val names =
-            if (KachiClipVoiceCatalog.isArchivePack(pack)) KachiClipVoiceCatalog.EXTRACTED_FILES
-            else pack.files.map { it.name }
-        return names.all { File(root, it).let { f -> f.isFile && f.length() > 0L } }
+        return pack.files.map { it.name }.all { File(root, it).let { f -> f.isFile && f.length() > 0L } }
     }
 
     /** Cỡ thật đang chiếm trên đĩa (byte) cho một gói. */
@@ -168,16 +162,6 @@ object VoiceModelStore {
                 return
             }
 
-            // WP9 (T9): gói clip là MỘT `.zip` (ghim sha256 của chính archive) ⇒ bung vào chỗ nó vừa tải rồi
-            // xoá tệp nén, để `renameTo(dest)` dưới đây đưa CÂY CLIP (không phải cái zip) vào `filesDir/<DIR>`.
-            if (KachiClipVoiceCatalog.isArchivePack(pack)) {
-                onStep(Step.Extracting)
-                val zip = File(out, KachiClipVoiceCatalog.ZIP_NAME)
-                val err = unzipInPlace(zip, out)
-                if (err != null) { out.deleteRecursively(); onStep(Step.Failed(err)); return }
-                zip.delete()
-            }
-
             onStep(Step.Extracting)   // "đang hoàn tất" — đổi tên là bước làm gói "xuất hiện"
             val dest = dir(app, pack)
             dest.parentFile?.mkdirs()
@@ -197,47 +181,6 @@ object VoiceModelStore {
 
     private val installing = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /**
-     * WP9 (T9) — bung `.zip` clip vào thư mục dựng dở, dùng `java.util.zip` có sẵn (không viết decompressor).
-     *
-     * ## Bốn chốt an toàn (mỗi cái là một lỗ zip kinh điển)
-     *  1. **Zip-slip**: mọi đường dẫn đi qua [requireSafe] (cấm `..`/tuyệt đối) rồi CÒN kiểm `canonicalPath` nằm
-     *     trong `dest` — một mục tên `foo/../../etc` có thể lọt `requireSafe` theo từng đoạn nhưng canonical thì không.
-     *  2. **Thư mục cha**: tạo `parentFile` TRƯỚC khi mở `outputStream()` (cây `num/`, `unit/`… nhiều tầng).
-     *  3. **Mục thư mục**: bỏ qua `entry.isDirectory` (không cố mở stream ghi cho một thư mục).
-     *  4. **Trả LÝ DO, không ném**: người gọi đã có đường `Step.Failed` + dọn thư mục dở; ném ra ngoài sẽ bỏ qua
-     *     phần dọn đó và để lại nửa gói.
-     *
-     * @return `null` nếu bung xong, hoặc câu lý do (song ngữ) nếu hỏng.
-     */
-    private fun unzipInPlace(zip: File, dest: File): String? {
-        val destRoot = runCatching { dest.canonicalFile }.getOrNull()
-            ?: return Lang.t("không mở được thư mục đích", "cannot resolve destination")
-        return runCatching {
-            java.util.zip.ZipInputStream(java.io.BufferedInputStream(zip.inputStream())).use { zin ->
-                var entry = zin.nextEntry
-                while (entry != null) {
-                    val name = entry.name
-                    if (!entry.isDirectory) {
-                        val safe = requireSafe(name)
-                            ?: return Lang.t("mục zip không hợp lệ: $name", "invalid zip entry: $name")
-                        val target = File(dest, safe)
-                        val canon = target.canonicalFile
-                        if (!canon.path.startsWith(destRoot.path + File.separator)) {
-                            return Lang.t("mục zip leo ra ngoài: $name", "zip entry escapes root: $name")
-                        }
-                        canon.parentFile?.mkdirs()
-                        canon.outputStream().use { out -> zin.copyTo(out) }
-                    }
-                    zin.closeEntry()
-                    entry = zin.nextEntry
-                }
-            }
-            null
-        }.getOrElse { e ->
-            Lang.t("giải nén hỏng: ${e.message}", "unzip failed: ${e.message}")
-        }
-    }
 
     /**
      * Thư mục dựng dở của [pack] — luật chỗ đặt ở `:core` ([VoicePackPaths.stagingDir], có bài canh off-car).

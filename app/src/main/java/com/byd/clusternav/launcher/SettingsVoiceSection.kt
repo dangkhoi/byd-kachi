@@ -12,7 +12,7 @@ import com.byd.clusternav.R
  * Tách khỏi [SettingsSections.system] (nhóm *Hệ thống & quyền*) thành [SettingsGroup.VOICE] riêng. Ba khối, tất cả
  * là bề mặt NGƯỜI DÙNG (không phải đồ dev — đồ dev như *Gõ lệnh chữ* vẫn ở Hệ thống › Nâng cao, sau cổng test-mode):
  *  1. **Hey Kachi** — công tắc nghe câu gọi rảnh tay (mặc định TẮT; nghe nền tốn CPU/pin).
- *  2. **Nói với xe / giọng đọc** — [voice.VoiceModelSettings]: tải mô hình NGHE, gói giọng ĐỌC Piper, giọng bé OTA,
+ *  2. **Nói với xe / giọng đọc** — [voice.VoiceModelSettings]: tải mô hình NGHE, gói giọng ĐỌC Piper,
  *     công tắc đọc phản hồi, hỏi-xác-nhận, nguồn micro. (Nhật ký lượt nói bên trong nó vẫn gác sau test-mode.)
  *
  * KHÔNG mang thêm khoá lưu bền mới: mọi công tắc đi qua `deps.bridge` (theo XE) như trước — chỉ đổi CHỖ ĐỨNG trong
@@ -55,7 +55,7 @@ class SettingsVoiceSection(
             override fun onViewDetachedFromWindow(v: android.view.View) { h.removeCallbacks(tick) }
         })
 
-        // Nói với xe: mô hình NGHE + giọng ĐỌC + giọng bé + công tắc + hỏi-xác-nhận + nguồn micro.
+        // Nói với xe: mô hình NGHE + giọng ĐỌC + công tắc + hỏi-xác-nhận + nguồn micro.
         com.byd.clusternav.launcher.voice.VoiceModelSettings(context, rows, deps).build(body)
 
         // App NHẠC mặc định (owner 2026-09-21) — nói "phát nhạc" không nêu app + không có nhạc đang phát ⇒ dùng cái

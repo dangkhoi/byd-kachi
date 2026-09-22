@@ -58,28 +58,6 @@ object VoiceSpeakerSelector {
         if (p.sherpaVoiceReady) return VoiceSpeakerKind.SHERPA_OFFLINE
         return VoiceSpeakerKind.NONE
     }
-
-    // ── Giọng PHẢN HỒI: Piper (mặc định) hay giọng bé (clip) — spec `kachi-voice-clone.html` R6 ──
-
-    /** Giá trị `voice_feedback_voice` = Piper (mô hình VITS đang ship) — **MẶC ĐỊNH**. */
-    const val FEEDBACK_PIPER = 1
-
-    /** Giá trị `voice_feedback_voice` = "Giọng Kachi bé" (gói clip clone). Chỉ là lựa chọn. */
-    const val FEEDBACK_CHILD = 2
-
-    /**
-     * Có rẽ sang máy đọc GIỌNG BÉ (clip) không.
-     *
-     * Hai điều kiện, và cả hai đều cần: (a) người dùng đã **chọn** giọng bé (`voice_feedback_voice` =
-     * [FEEDBACK_CHILD]); (b) gói clip **đã có** trên đĩa ([childReady]). Thiếu một trong hai ⇒ Piper.
-     *
-     * ## ⚠ Mặc định BẮT BUỘC là Piper (owner 2026-09-17)
-     * Bất kỳ giá trị nào KHÁC [FEEDBACK_CHILD] — gồm mặc định [FEEDBACK_PIPER] và mọi giá trị rác — đều cho
-     * `false`. Đây là chỗ khoá lời hứa *"Piper vẫn mặc định"*: một pref chưa ai chỉnh, hay một số lạ còn sót,
-     * không bao giờ lỡ bật giọng bé. Bài canh `VoiceSpeakerSelectorTest` giữ đúng điều đó.
-     */
-    fun usesChildVoice(feedbackVoice: Int, childReady: Boolean): Boolean =
-        feedbackVoice == FEEDBACK_CHILD && childReady
 }
 
 /** Ba đường ra tiếng. Tên này đi vào cầu kiểm thử (`TestBridgeState.tts`) nên **không đổi tuỳ tiện**. */
