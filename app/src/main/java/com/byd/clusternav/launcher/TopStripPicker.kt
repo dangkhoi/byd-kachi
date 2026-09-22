@@ -237,10 +237,16 @@ class TopStripPicker(
 
     private fun arrowBtn(glyph: String, onTap: () -> Unit): View = TextView(context).apply {
         text = glyph; setTextColor(c(KachiTheme.INK))
-        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.SECTION)   // B8: to hơn (SECTION > BODY) cho dễ nhìn
         gravity = Gravity.CENTER
+        // B8 (owner 2026-09-22): nút quá bé + tap rơi vào ô → toggle ẩn mất chip. Đích chạm ≥ TOUCH (48dp) + nền
+        // riêng cho thấy vùng bấm; `isClickable=true` để nút NUỐT tap (không rơi xuống setOnClickListener của ô).
+        val touch = dpi(context, Sp.TOUCH)
+        minWidth = touch; minHeight = touch
         val pad = dpi(context, Sp.S)
         setPadding(pad, dpi(context, Sp.XS), pad, dpi(context, Sp.XS))
+        background = KachiTheme.surface(context, Sp.RADIUS_L, SurfaceTone.NEUTRAL, null)
+        isClickable = true; isFocusable = true
         setOnClickListener { onTap() }
     }
 

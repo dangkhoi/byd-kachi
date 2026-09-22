@@ -177,8 +177,8 @@ class TopStripTest {
      * **có chủ ý** (bài này đỏ) chứ không phải một con số ai đó nới lúc vá giao diện — xem lý do ở KDoc [TopStripConfig.CAP].
      */
     @Test
-    fun `tran chip la 8 - khoa o core`() {
-        assertEquals(8, TopStripConfig.CAP, "S4 · R11 (a): 4 → 8 sau khi R7 gỡ 5 nút bố cục khỏi thanh trên")
+    fun `tran chip la 10 - khoa o core`() {
+        assertEquals(10, TopStripConfig.CAP, "B7 (owner 2026-09-22): 8 → 10 item trên header bar")
         assertTrue(
             TopStripConfig.DEFAULT.ids.size < TopStripConfig.CAP,
             "nới trần KHÔNG được kéo theo mặc định: ai không sửa gì vẫn phải thấy đúng 3 chip cũ",

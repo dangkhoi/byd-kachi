@@ -136,7 +136,7 @@ data class TopStripConfig(
          * ⇒ phần lớn chip chỉ còn nhãn cụt, tức thanh trên **có chữ mà không đọc được** — tệ hơn là không bày.
          * Vì thế trần vẫn tồn tại, chỉ đổi số; nó là trần **đọc được**, không còn là trần *vừa khung*.
          */
-        const val CAP = 8
+        const val CAP = 10
 
         /** Ba chip TỔNG HỢP dựng sẵn — xem [TopStripChips]. */
         const val PM25 = "chip_pm25"
@@ -341,6 +341,9 @@ object TopStripChips {
         val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
         val value = view.displayWithUnit()
         val on = view.onOff
+        // B9 (owner 2026-09-22): chip là bề mặt hẹp nhất — với datum mức (ghế mát/sưởi) rút "Mức 2"/"Level 2" → "2"
+        // cho đỡ chật (hình ghế nói rõ là ghế rồi). Chỉ áp cho CHIP, ô lớn giữ "Mức 2".
+        val chipValue = value.removePrefix(Strings.t("Mức ", "Level ")).trim()
         return ChipView(
             // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
             // phải nhãn đầy — lý do `shortEn` tồn tại.
@@ -349,8 +352,8 @@ object TopStripChips {
             // thứ người dùng xin khi gạt cả hai công tắc — icon vẫn nói được trạng thái nhờ màu.
             text = when {
                 on != null -> if (labels) spec.displayShortLabel else ""
-                labels -> "${spec.displayShortLabel} · $value"
-                else -> value
+                labels -> "${spec.displayShortLabel} · $chipValue"
+                else -> chipValue
             },
             icon = CapabilityIcons.forTelemetry(spec.id, spec.domain),
             tone = when (on) {

@@ -123,7 +123,10 @@ class TopStripWiringContractTest {
         )
         val fit = SourceRoots.body(strip, "private fun fitChips()")
         assertTrue(fit.contains("chipRow.width"), "bề rộng còn lại phải đọc từ bố cục thật, không tự cộng trừ lại")
-        assertTrue(Regex("""room\s*/\s*n""").containsMatchIn(fit), "trần mỗi chip = phép CHIA ĐỀU phần còn lại")
+        // B6 (owner 2026-09-22): KHÔNG chia đều `room/n` nữa (cắt chip dài oan). Trần mỗi chip nay là mức RỘNG RÃI
+        // (`room/2`) chỉ để chặn chip cá biệt khổng lồ; chip rộng theo nội dung (WRAP ở chipLp) + margin.
+        assertTrue(Regex("""room\s*/\s*2""").containsMatchIn(fit), "trần mỗi chip = trần rộng rãi (room/2), không chia đều")
+        assertFalse(Regex("""room\s*/\s*n""").containsMatchIn(fit), "KHÔNG chia đều room/n — cắt chip dài oan (bug B6)")
         assertTrue(fit.contains("maxWidth = cap"), "…và phải thật sự áp vào chip (`maxWidth`)")
         // Không cấp phát trong vòng tick: `fitChips` chạy theo nhịp trạng thái xe khi số chip đổi, và theo mỗi lượt
         // bố cục. Tra drawable / dựng paint ở đây là mở lại đúng việc mà bản vá P2-9 vừa dọn.

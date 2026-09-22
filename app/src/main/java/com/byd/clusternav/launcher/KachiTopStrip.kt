@@ -260,7 +260,10 @@ class KachiTopStrip(
         if (r != 0) {
             val d = activity.resources.getDrawable(r, activity.theme)
                 .apply { setBounds(0, 0, dp(Sp.ICON_XS), dp(Sp.ICON_XS)); setTint(c(color)) }
-            v.setCompoundDrawablesRelative(d, null, null, null); v.compoundDrawablePadding = dp(Sp.S)
+            v.setCompoundDrawablesRelative(d, null, null, null)
+            // B6 (owner 2026-09-22): chip CHỈ-ICON (không chữ, vd trạng thái sấy) không cần khoảng đệm icon↔chữ —
+            // để nguyên thì icon thừa lề phải. Chỉ đệm khi có chữ.
+            v.compoundDrawablePadding = if (v.text.isNullOrEmpty()) 0 else dp(Sp.S)
         } else {
             v.setCompoundDrawablesRelative(null, null, null, null)
         }
@@ -348,9 +351,12 @@ class KachiTopStrip(
         if (n == 0) return
         val room = chipRow.width
         if (room <= 0) return                               // chưa qua lượt bố cục nào ⇒ listener sẽ gọi lại
-        // Mỗi chip mang lề trái [Sp.S] (xem [chipLp]) nên phần chữ được hưởng là suất chia trừ đi lề đó. Sàn
-        // [Sp.ICON_M]: hẹp hơn nữa thì chip chỉ còn "…" — giữ một mức mà icon + dấu cắt vẫn đọc ra là một chip.
-        val cap = (room / n - dp(Sp.S)).coerceAtLeast(dp(Sp.ICON_M))
+        // B6 (owner 2026-09-22): KHÔNG cap đều `room/n` — cách cũ ép MỌI chip cùng bề rộng nên chip dài
+        // ("15.9 kWh/50km") bị cắt bằng chip ngắn ("18°C"). Chip nay **rộng theo nội dung** (WRAP + margin ở
+        // [chipLp]); chỉ đặt một TRẦN RỘNG RÃI cho chip cá biệt quá dài (nửa hàng) để một chip khổng lồ không
+        // đẩy hết chip khác ra. Chip ngắn giữ ngắn; hàng chip là `0dp+weight1` nên nếu tổng vượt room thì hệ
+        // thống tự cắt chip cuối — không phải cắt đều mọi chip.
+        val cap = (room / 2).coerceAtLeast(dp(Sp.ICON_M) * 4)
         if (cap == chipCap) return
         chipCap = cap
         chipViews.forEach { it.maxWidth = cap }
