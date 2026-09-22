@@ -355,7 +355,7 @@ object TopStripChips {
                 labels -> "${spec.displayShortLabel} · $chipValue"
                 else -> chipValue
             },
-            icon = CapabilityIcons.forTelemetry(spec.id, spec.domain),
+            icon = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain),
             tone = when (on) {
                 true -> ChipTone.ACTIVE
                 false -> ChipTone.INACTIVE

@@ -408,3 +408,5 @@ Máy tính bố cục hiện tại vốn đã **sinh ra hình chữ nhật** t�
 ## ClusterNav 2.0 — nền tảng DÙNG LẠI (KHÔNG track backlog)
 
 > **Owner chốt 2026-09-10: dự án này CHỈ làm LAUNCHER.** ClusterNav 2.0 là nền tảng **dùng lại** (gom vào mục Cài đặt của launcher), đã ổn định trên xe — **KHÔNG theo dõi backlog cho nó nữa**. Toàn bộ backlog kế thừa (các bản ship v1.32 → v1.38 + phát hiện trên xe + mục A–F + pipeline đọc-màn-hình đã gỡ) đã chuyển sang lưu trữ: `docs/archive/clusternav2-backlog-inherited-2026-09-10.md` (giữ làm ký ức; git history là bản ghi đầy đủ).
+
+> **📋 2026-09-22 · VOICE-MIX-HALF (note để sau)**: câu ghép có "mở nửa kính lái" ở VẾ THỨ HAI → mất chữ "nửa" ra win_lf thay vì win_half_lf ("bật đèn đọc rồi mở nửa kính lái" → [readl, win_lf]). Đứng riêng + vế ĐẦU thì đúng win_half_lf. Cluster ~23 ca trong golden mix. Nghi tương tác term/plusMisheard theo vị trí. Golden VoiceGoldenCoverageTest mix floor=52 (hiện 54%). Chưa gỡ — cần đào sâu.

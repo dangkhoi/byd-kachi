@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kachi — Consistency icon datum (header · widget · picker)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--line:#e5e5ea;--accent:#0071e3;--code:#f5f5f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--mut:#98989d;--line:#2c2c2e;--accent:#0a84ff;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;padding:2.5rem 1.25rem;background:var(--bg);color:var(--fg);
+font:16px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;max-width:52rem;margin-inline:auto}
+h1{font-size:1.9rem;letter-spacing:-.02em;margin:0 0 .3rem}h2{font-size:1.3rem;margin:2.2rem 0 .6rem;letter-spacing:-.01em}
+h3{font-size:1.05rem;margin:1.4rem 0 .4rem}.mut{color:var(--mut)}code{background:var(--code);padding:.1em .4em;border-radius:.3em;font-size:.9em}
+pre{background:var(--code);padding:1rem;border-radius:.6rem;overflow:auto;font-size:.85em}
+table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.92em}th,td{border:1px solid var(--line);padding:.45rem .6rem;text-align:left;vertical-align:top}
+th{background:var(--code)}.tag{display:inline-block;font-size:.75em;padding:.1em .5em;border-radius:1em;background:var(--accent);color:#fff;vertical-align:middle}
+ul{padding-left:1.2rem}hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+</style></head><body>
+
+<h1>Consistency icon datum <span class="tag">Current</span></h1>
+<p class="mut">Cập nhật 2026-09-22 · owner nêu: icon header (chip) và widget (dock/ô) của cùng một datum phải GIỐNG nhau; picker datum có số → icon [số]; status on/off → inactive/active tương phản rõ (light+dark); multi-status (mát ghế off/mức1/mức2) → chấm dưới, mở rộng cho toàn bộ datum picker.</p>
+
+<h2>1. Context — vì sao không nhất quán</h2>
+<p>Ba bề mặt hiện lấy icon khác nguồn cho CÙNG một khái niệm:</p>
+<table><tr><th>Bề mặt</th><th>Nguồn icon</th></tr>
+<tr><td>Header chip (<code>TopStripChips.datumChip</code>)</td><td><code>CapabilityIcons.forTelemetry(id, domain)</code> — theo mã DATUM (telemetry state)</td></tr>
+<tr><td>Widget/ô (<code>ReadTile</code>, <code>ControlDockView</code>)</td><td><code>pick.icon</code> = icon của <code>ControlDef</code>/<code>WidgetRegistry</code>/nhóm</td></tr>
+<tr><td>Picker (<code>AppDrawer</code>)</td><td><code>pick.icon</code> (control) hoặc <code>CapabilityIcons.forTelemetry</code> (datum đọc)</td></tr></table>
+<p>Ví dụ owner: "mát ghế lái" — control <code>seatc</code> mang <code>ic-seat-left</code>, nhưng datum trạng thái <code>seat_vent_state</code> map <code>ic-car-top-seat-fl</code> (CapabilityIcons). ⇒ chip và ô hiện HAI icon khác nhau.</p>
+
+<h2>2. Requirements (owner)</h2>
+<ul>
+<li><b>R1</b> — MỘT nguồn icon cho một datum, dùng chung cả 3 bề mặt (header · widget · picker).</li>
+<li><b>R2</b> — Datum có <b>số</b> (nhiệt độ, áp lốp, %, tầm km…) → icon vẽ kèm <b>[số]</b> (badge số trong picker).</li>
+<li><b>R3</b> — Datum chỉ có <b>status on/off</b> → icon hai trạng thái: <b>inactive</b> (mờ) / <b>active</b> (sáng, tương phản rõ) — đọc được ở CẢ light và dark mode.</li>
+<li><b>R4</b> — Datum <b>multi-status</b> (mát ghế: off/mức1/mức2) → <b>chấm dưới icon</b>: inactive (0 chấm mờ) / active + 1 chấm / active + 2 chấm. Mẫu SeatDiagram owner đã khen; mở rộng cho MỌI datum picker có nhiều mức.</li>
+</ul>
+
+<h2>3. Design</h2>
+<h3>3.1 Một nguồn icon — <code>CapabilityIcons.forPick(pick)</code></h3>
+<p>Gộp về một hàm: control lấy <code>ControlDef.icon</code>, telemetry lấy <code>forTelemetry</code>, nhưng datum-state của một control (vd <code>seat_vent_state</code>) TRỎ VỀ icon của control tương ứng (<code>seatc</code> → <code>ic-seat-left</code>) qua bảng <code>STATE_OF_CONTROL</code>. Cả 3 bề mặt gọi cùng hàm này.</p>
+<h3>3.2 Component icon có trạng thái — <code>DatumIconView</code> (:app custom view)</h3>
+<p>Vẽ: icon nền + (badge số | chấm mức | active/inactive). Kiểu trạng thái suy từ <code>WidgetShape</code>/<code>ControlKind</code> của datum:</p>
+<table><tr><th>Loại datum</th><th>Vẽ</th></tr>
+<tr><td>VALUE có số (temp/áp/%/km)</td><td>icon + badge số góc dưới-phải</td></tr>
+<tr><td>ON/OFF (defrost/lọc bụi)</td><td>icon active (accent, tô đậm) / inactive (mờ, viền); contrast ≥ 4.5:1 cả 2 theme</td></tr>
+<tr><td>Multi-level (mát/sưởi ghế)</td><td>icon + N chấm dưới (0=inactive, 1/2 = active + số chấm)</td></tr></table>
+<h3>3.3 Tương phản light+dark</h3>
+<p>active = màu accent của theme (<code>KachiPalette.accent</code>), inactive = <code>MUT2</code> α thấp. Đo WCAG ≥ 4.5:1 icon-on-tile ở CẢ hai bảng (test <code>testsupport/Wcag</code>). Không hardcode hex — lấy từ palette.</p>
+
+<h2>4. Tasks</h2>
+<ul>
+<li>T1 — <code>CapabilityIcons.forPick</code> + <code>STATE_OF_CONTROL</code> (datum-state → control icon). 1 nguồn.</li>
+<li>T2 — <code>DatumIconView</code>: badge số / chấm mức / active-inactive; lấy màu từ palette.</li>
+<li>T3 — Wire 3 bề mặt (header chip · ReadTile/dock · picker) dùng <code>forPick</code> + <code>DatumIconView</code>.</li>
+<li>T4 — Verify ảnh emulator light+dark; test icon consistency + contrast; full 5 module; OTA.</li>
+</ul>
+
+<h2>5. Open questions</h2>
+<ul>
+<li>Badge số trong picker: hiện số HIỆN TẠI của xe (off-car "—") hay số MẪU? → hiện giá trị thật, off-car ẩn badge.</li>
+</ul>
+</body></html>

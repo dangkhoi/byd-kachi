@@ -33,6 +33,9 @@ class ReadTile internal constructor(
     private val content: View,
     private val value: TextView,
     private val unit: TextView,
+    private val iconView: DatumIconView? = null,
+    private val iconName: String = "",
+    private val maxLevel: Int = 0,
 ) {
     fun bind(v: TelemetryView?) {
         value.text = v?.display ?: TelemetryView.PLACEHOLDER
@@ -48,7 +51,21 @@ class ReadTile internal constructor(
         val dim = if (v?.available == true) 1f else DIM
         value.alpha = dim
         unit.alpha = dim
+        // Icon: mức (chấm) + active/inactive theo giá trị xe. maxLevel≥1 ⇒ mức = số nguyên trong giá trị (0/1/2);
+        // maxLevel=0 ⇒ active theo onOff. Chưa đọc được ⇒ inactive/level 0 (không bịa).
+        iconView?.let { iv ->
+            if (maxLevel >= 1) {
+                val lvl = v?.takeIf { it.available }?.let { levelFrom(it) } ?: 0
+                iv.set(iconName, maxLevel, lvl, active = lvl > 0)
+            } else {
+                iv.set(iconName, 0, 0, active = v?.onOff == true)
+            }
+        }
     }
+
+    /** Mức hiện tại từ một [TelemetryView] có mức: lấy CHỮ SỐ đầu trong `display` ("Mức 2"→2, "2"→2), kẹp 0..maxLevel. */
+    private fun levelFrom(v: TelemetryView): Int =
+        Regex("\\d+").find(v.display)?.value?.toIntOrNull()?.coerceIn(0, maxLevel) ?: (if (v.onOff == true) 1 else 0)
 
     private companion object {
         /** Độ mờ của số chưa đọc được — cùng giá trị bản cũ dùng cho cả ô, nên dấu gạch trông y như trước. */
@@ -85,9 +102,12 @@ internal fun readTileOf(
         background = KachiTheme.surface(ctx, size.radius, domain = pick.domain)
     }
     val r = KachiTheme.iconRes(pick.icon)
-    if (r != 0) content.addView(
-        ImageView(ctx).apply { setImageResource(r); setColorFilter(c(KachiTheme.ICON)) },
-        LinearLayout.LayoutParams(dpi(ctx, size.iconDp - Sp.XS), dpi(ctx, size.iconDp - Sp.XS)).also { it.bottomMargin = dpi(ctx, Sp.XS) },
+    val iconName = CapabilityDots.iconOverride(pick.id) ?: pick.icon
+    val maxLevel = CapabilityDots.maxLevel(pick.id)
+    val iconView = DatumIconView(ctx).apply { set(iconName, maxLevel, level = 0, active = maxLevel == 0) }
+    if (KachiTheme.iconRes(iconName) != 0) content.addView(
+        iconView,
+        LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)).also { it.bottomMargin = dpi(ctx, Sp.XS) },
     )
     val label = TextView(ctx).apply {
         // [ĐO] máy ảo 2026-09-10: một dòng + cắt cuối làm "Áp lốp trước-trái" và "Áp lốp trước-phải" đều thành
@@ -123,6 +143,6 @@ internal fun readTileOf(
             .also { it.marginStart = dpi(ctx, Sp.XS) })
     })
     val outer = if (pick.needsBadge) badge(content) else content
-    return ReadTile(outer, content, value, unit)
+    return ReadTile(outer, content, value, unit, iconView, iconName, maxLevel)
 }
 

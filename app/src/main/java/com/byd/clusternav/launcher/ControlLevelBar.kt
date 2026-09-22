@@ -48,7 +48,9 @@ internal object ControlLevelBar {
             }
             addView(
                 tick,
-                LinearLayout.LayoutParams(dpi(ctx, Sp.LEVEL_TICK_W), dpi(ctx, Sp.BAR_THIN)).also {
+                // Owner 2026-09-22: mức hiện bằng CHẤM TRÒN (đồng nhất [DatumIconView] ở widget/picker) thay vì vạch —
+                // tick VUÔNG + bo hết cỡ = hình tròn. Cạnh = [Sp.DOT] cho một chấm nhỏ gọn, đọc được.
+                LinearLayout.LayoutParams(dpi(ctx, Sp.DOT), dpi(ctx, Sp.DOT)).also {
                     if (i > 0) it.marginStart = dpi(ctx, Sp.XS)
                 },
             )

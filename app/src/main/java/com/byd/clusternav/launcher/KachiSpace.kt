@@ -209,20 +209,6 @@ object KachiSpace {
     /** Đoạn trống của viền đứt. Ngắn hơn [DASH_ON] để viền còn đọc ra là một đường liền mạch. */
     const val DASH_OFF = 4
 
-    /**
-     * **Bề ngang một VẠCH MỨC** của ô điều khiển nhiều mức (WP2 · R2.2 — [ControlLevelBar]).
-     *
-     * Chiều CAO của vạch dùng [BAR_THIN] (nó đúng vai *"chiều cao một vạch mảnh vẽ được"*), nên chỗ này chỉ còn
-     * phải nói bề ngang. **10dp** suy từ chỗ có thật: ô thanh nút ngang dùng được [DOCK_TILE_W] − 2×[S] = 68dp, dải
-     * hai vạch chiếm `2×10 + 4` = **24dp** — đủ nhỏ để nằm gọn dưới nhãn hai dòng, đủ dài để một gạch cao 4dp đọc
-     * ra là *"một mức"* chứ không phải một dấu chấm. Thang mức dài nhất đang có là 2 vạch (ghế mát/sưởi); nếu sau
-     * này có nút 4 mức thì `4×10 + 3×4` = 52dp vẫn vừa.
-     *
-     * **Không thể là một bậc của thang**: đây là cỡ của MỘT VẬT (cùng họ [DOT] / [BAR_THIN] / [DOCK_TILE_W]), không
-     * phải khoảng cách giữa hai vật.
-     */
-    const val LEVEL_TICK_W = 10
-
     // ── Cỡ thành phần một-lần ────────────────────────────────────────────────────────────────────────────
     //
     // Đây là cỡ của những khối CỤ THỂ, không tái sử dụng. Khai ở đây (chứ không để số trần tại chỗ) để mọi

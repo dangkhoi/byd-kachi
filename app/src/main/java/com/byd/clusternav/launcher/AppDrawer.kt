@@ -441,7 +441,9 @@ class AppDrawer(
             // hàng, nếu căn giữa dọc thì ô có dòng phụ đẩy icon/nhãn xuống ~10px lệch với ô cùng hàng.
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
-            addView(PickerBadge.icon(context, KachiIcons.res(pick.icon, Sp.ICON_XL), pick.needsBadge, Sp.ICON_XL))
+            // R1 (owner 2026-09-22): icon một-nguồn — datum-trạng-thái dùng icon của control ⇒ picker khớp header/ô.
+            val iconName = CapabilityDots.iconOverride(pick.id) ?: pick.icon
+            addView(PickerBadge.icon(context, KachiIcons.res(iconName, Sp.ICON_XL), pick.needsBadge, Sp.ICON_XL))
             // 1.95 (owner): huy hiệu LOẠI nhỏ có màu — phân biệt ngay Xem / Bấm / Nhóm / Thẻ mà không tốn chỗ.
             addView(kindPill(pick))
             addView(TextView(context).apply {
