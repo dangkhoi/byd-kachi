@@ -78,6 +78,7 @@ object SherpaSpokenWords {
         "suc gio" to "sức gió",
         "say kinh truoc" to "sấy kính trước",
         // Golden dataset 2026-09-22 — synonym mới cần dạng có dấu để bias.
+        "kieng trai" to "kiếng trái", "kinh trai" to "kính trái", "kieng phai" to "kiếng phải", "kinh phai" to "kính phải",
         "say kinh" to "sấy kính", "say kieng truoc" to "sấy kiếng trước", "tat ca kinh" to "tất cả kính",
         "loc ngay" to "lọc ngay", "loc bui ngay" to "lọc bụi ngay", "bam loc" to "bấm lọc",
         "bam loc bui" to "bấm lọc bụi", "bam loc nhanh" to "bấm lọc nhanh", "chay loc" to "chạy lọc",

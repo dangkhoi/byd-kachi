@@ -187,8 +187,11 @@ object VoiceSynonyms {
             "kinh nguoi lai", "cua so tai xe",
             "kinh", "cua so",
             "kinh ben lai", "kinh ghe lai", "kieng truoc trai", "kieng ben lai",
+            // Dạng NGẮN (mix/phương ngữ): "kiếng trái"/"kính trái" (không "trước") → mặc định KÍNH LÁI (trái=lái).
+            "kieng trai", "kinh trai",
             "kinh truoc trai", "cua kinh truoc trai"),
         "win_rf" to listOf("kinh ben phu", "kinh ghe phu", "kieng truoc phai", "kieng ben phu",
+            "kieng phai", "kinh phai",
             "kinh truoc phai", "cua kinh truoc phai"),
         "win_lr" to listOf("kieng sau trai", "kinh sau ben trai", "kinh sau trai"),
         "win_rr" to listOf("kieng sau phai", "kinh sau ben phai", "kinh sau phai"),

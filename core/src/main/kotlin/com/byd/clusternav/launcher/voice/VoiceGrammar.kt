@@ -257,6 +257,29 @@ object VoiceGrammar {
     fun matchAt(t: List<VoiceLexicon.Token>, i: Int, terms: List<VoiceTerm>): List<VoiceTerm> =
         terms.filter { VoiceLexicon.phraseAt(t, i, it.words) }
 
+    /** Động từ (hoặc từ mở đầu một cụm lệnh) đi cùng multi-command split — xem [ACTION_VERB_HEADS]. */
+    private val ACTION_VERBS = setOf(
+        VoiceVerb.ON, VoiceVerb.OFF, VoiceVerb.OPEN, VoiceVerb.CLOSE, VoiceVerb.UP, VoiceVerb.DOWN, VoiceVerb.SET,
+    )
+
+    /**
+     * Từ MỞ ĐẦU một cụm lệnh mà [VERBS] không khai (chúng resolve qua luật scoped / synonym): "hạ"/"kéo"/"nâng"
+     * (hướng kính) · "lấy" ("lấy gió ngoài/trong"). Dùng cho [actionVerbAt] để tách câu MIX không liên từ.
+     */
+    private val ACTION_VERB_HEADS = setOf("ha", "keo", "nang", "lay", "chuyen")
+
+    /**
+     * Vị trí [i] có phải ĐẦU một cụm lệnh HÀNH ĐỘNG không — cho `VoiceIntentParser.multiVerbSplit` tách câu MIX
+     * không liên từ ("hạ kính lấy gió ngoài tắt máy lạnh"). Nhận [VERBS] có [VoiceVerb] hành động (không NAV/READ/
+     * PLAY — những cái ấy hiếm ghép kiểu này và dễ cắt nhầm tên bài/điểm đến), cộng [ACTION_VERB_HEADS].
+     *
+     * ⚠ An toàn nằm ở CHỖ GỌI (mọi vế phải parse hiểu được), nên ở đây được phép rộng tay.
+     */
+    fun actionVerbAt(t: List<VoiceLexicon.Token>, i: Int): Boolean {
+        VERBS.firstOrNull { VoiceLexicon.phraseAt(t, i, it.first) }?.let { return it.second in ACTION_VERBS }
+        return t.getOrNull(i)?.norm in ACTION_VERB_HEADS
+    }
+
     /**
      * H4 — [terms] cộng thêm các cụm **nghe nhầm** mà câu [tokens] đủ NGỮ CẢNH để bật ([VoiceSynonyms.MISHEARD]).
      *

@@ -4,9 +4,7 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
 
 /**
  * ═══ V1 · BỘ PHÂN TÍCH Ý ĐỊNH — TẤT ĐỊNH, THUẦN KOTLIN ════════════════════════════════════════════════════════
- *
  * Spec `docs/specs/kachi-voice-command.html` R1–R3. `:core`, cấm `android.*` ⇒ 100% kiểm off-car.
- *
  * ## Hình dạng: `động từ × KIỂU ĐỐI TƯỢNG`
  * Lấy thẳng từ [ĐO] RE Kiki §7(c): bộ động từ của người Việt khi nói với xe rất **nhỏ và đều**, nhưng *"Mở"* thì
  * **quá tải nặng** (mở cửa · mở kính · mở app · mở nhạc · mở Cài đặt). Nên động từ **không** quyết định một mình:
@@ -74,6 +72,12 @@ object VoiceIntentParser {
             if (each.none { it is VoiceIntent.Unknown }) return each
             val whole = fuzzy(parseTokens(all, terms, places, text), all, terms, places, text)
             return listOf(whole) + droppedNote(parts, each, whole)
+        }
+        // MIX KHÔNG LIÊN TỪ ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh, 0 chữ "và/rồi") — chi tiết ở
+        // [VoiceControlParse.multiVerbSplit]. CHỈ nhận khi ≥2 vế + MỌI vế hiểu được (an toàn: tên bài không bị cắt).
+        VoiceControlParse.multiVerbSplit(all)?.let { segs ->
+            val each = segs.map { parseTokens(it, terms, places, text) }
+            if (each.size >= 2 && each.none { it is VoiceIntent.Unknown }) return each
         }
         return listOf(fuzzy(parseTokens(all, terms, places, text), all, terms, places, text))
     }
@@ -287,11 +291,9 @@ object VoiceIntentParser {
 
         // (d) Quét từ trái sang, lấy **cách hiểu ĐẦU TIÊN có nghĩa**.
         //
-        // ⚠ Không dừng ở cụm khớp ĐẦU: cụm MỘT TỪ ngắn đụng từ thường ([ĐO] datum `gear` nhãn "Số" ⇒ "chuyển
-        // sang hồ sơ Vợ" khớp "số" giữa câu → MISMATCH, tên hồ sơ sau đó không được xét). Đi tiếp tới cách hiểu
-        // đầu tiên hợp động từ ⇒ ca đó tự giải, không cần liệt kê từ cấm.
-        // (c') H3 — cách gọi app ≥ 2 từ đứng NGAY SAU động từ thắng một nhãn NGẮN ở giữa câu. Chữa hai ca MỞ
-        //      NHẦM APP đo được trên máy ảo; toàn bộ lý do + ba cổng ở KDoc [VoiceTailClause.appAtHead].
+        // ⚠ Không dừng ở cụm khớp ĐẦU: cụm 1 từ ngắn đụng từ thường (datum `gear` nhãn "Số" ⇒ "chuyển sang hồ sơ
+        // Vợ" khớp "số" giữa câu → MISMATCH). Đi tiếp tới cách hiểu đầu tiên hợp động từ ⇒ ca đó tự giải.
+        // (c') H3 — app ≥2 từ ngay sau động từ thắng nhãn NGẮN giữa câu; lý do + ba cổng ở [VoiceTailClause.appAtHead].
         VoiceTailClause.appAtHead(rest, terms, verb)?.let { return it }
         var firstMiss: VoiceIntent? = null
         rest.indices.forEach { i ->
@@ -300,11 +302,9 @@ object VoiceIntentParser {
                 val term = choose(cands, verb)
                 // (d') H3 — **luật dãy dài nhất thắng áp cho cả TÊN APP**, không chỉ cho từ vựng chung.
                 //
-                // [ĐO xe 2026-09-16, tester 1.66]: *"Mở Google được mà Google Map chưa hiểu"*. Cơ chế: nhãn app
-                // đã cài *"Google"* là một cụm MỘT từ trong từ vựng, nên nó khớp tại vị trí 0 và trả ngay một ý
-                // định CÓ NGHĨA (`OpenApp("Google")`) — vòng quét dừng luôn, và cách nói HAI từ *"google map"*
-                // của [VoiceSynonyms.APP_TARGETS] không bao giờ được hỏi tới. Tức luật số 1 của [VoiceGrammar]
-                // (dài trước ngắn) đang bị hụt đúng ở ranh giới giữa hai bảng.
+                // [ĐO xe 2026-09-16, tester 1.66] "Mở Google được mà Google Map chưa hiểu": nhãn app "Google"
+                // (1 từ) khớp ở vị trí 0 → dừng luôn, cách nói 2 từ "google map" không được hỏi tới (luật dài-trước
+                // hụt ở ranh giới hai bảng).
                 //
                 // Chỉ nhận khi cách nói **dài hơn hẳn** cụm vừa khớp ⇒ nhãn thật vẫn thắng khi hoà (*"mở
                 // google"* vẫn mở app Google), đúng cam kết ở KDoc [VoiceTailClause.spokenApp]. Và chỉ cho

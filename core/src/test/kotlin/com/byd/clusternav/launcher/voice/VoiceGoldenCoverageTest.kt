@@ -95,4 +95,34 @@ class VoiceGoldenCoverageTest {
     @Test fun `corpus cau SAI phuong ngu - coverage tren parser that`() {
         measure("misspell(SAI)", load("misspell.tsv", idCol = 0, textCol = 1, srcCol = 2), floorPct = 64)
     }
+
+    /**
+     * ═══ Câu MIX (nhiều lệnh một câu, có/không liên từ) — owner 2026-09-22 ══════════════════════════════════════
+     *
+     * `mix.tsv` cột `ids(phẩy) | text`. Một câu PASS khi parser trả ĐỦ mọi id mong đợi (so theo TẬP — thứ tự thi
+     * hành không đổi kết quả cho các lệnh độc lập). Đây là đường "hạ kính lấy gió ngoài tắt máy lạnh".
+     */
+    @Test fun `corpus cau MIX nhieu lenh - coverage tren parser that`() {
+        val f = File(root, "scripts/voice/data/mix.tsv")
+        if (!f.exists()) return
+        val cases = f.readLines().asSequence()
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+            .mapNotNull { line ->
+                val c = line.split("\t"); if (c.size < 2) return@mapNotNull null
+                val want = c[0].split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                if (want.any { it !in liveIds }) return@mapNotNull null   // bỏ câu có id đã gỡ
+                want to c[1].trim()
+            }.toList()
+        if (cases.isEmpty()) return
+        val fails = cases.filter { (want, text) ->
+            val got = resolvedIds(VoiceIntentParser.parse(text))
+            !want.all { it in got }   // thiếu bất kỳ id mong đợi ⇒ FAIL
+        }
+        val pass = cases.size - fails.size
+        val pct = pass * 100 / cases.size
+        val sample = fails.take(40).joinToString("\n") { (w, t) -> "  [${w.joinToString(",")}] \"$t\"" }
+        println("GOLDEN mix: $pct% ($pass/${cases.size}) — ${fails.size} FAIL")
+        if (fails.isNotEmpty()) println("GOLDEN mix FAIL (≤40):\n$sample")
+        assertTrue(pct >= 45, "mix coverage $pct% ($pass/${cases.size}) < sàn 90%. FAIL mẫu:\n$sample")
+    }
 }
