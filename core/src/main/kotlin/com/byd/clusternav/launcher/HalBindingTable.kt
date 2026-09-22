@@ -243,7 +243,6 @@ class HalBindingTable(private val gateway: HalGateway) {
             "seatc", "seath" -> intArrayOf(1, ControlLevels.rawForLevel(def.id, primary) ?: 1)
             // B10: ghế PHỤ = seatID 2, cùng setter + cùng thang mức (ControlLevels khai seatc_r/seath_r).
             "seatc_r", "seath_r" -> intArrayOf(2, ControlLevels.rawForLevel(def.id, primary) ?: 1)
-            "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
             // [ĐO xe 2026-09-15] kính MỞ được, ĐÓNG không. Gốc: state cũ = COVER primary (Đóng=0/Mở=1) — Mở gửi
             // 1 (= WINDOW_OPEN_FULL, chạy), Đóng gửi 0 (= WINDOW_ENABLE/INVALID, KHÔNG phải đóng ⇒ no-op). Enum
             // đúng của BYDAutoBodyworkDevice: WINDOW_OPEN_FULL=1 · WINDOW_CLOSE=2 · WINDOW_STOP=3 (jadx-tmap
@@ -276,8 +275,6 @@ class HalBindingTable(private val gateway: HalGateway) {
             // lệnh). Trước 1.70 gửi 1/2 cho `setHetchDoorStatus` (method KHÔNG tồn tại) ⇒ no-op. cmd 2 = dừng
             // giữa hành trình ([ĐOÁN], chưa thử lúc cốp chạy) — không dùng cho TOGGLE mở/đóng.
             "trunk" -> intArrayOf(if (primary > 0) 1 else 3)
-            "lock" -> intArrayOf(if (primary > 0) 2 else 1)     // khoá = 2 · mở khoá = 1
-            "door" -> intArrayOf(1)                             // NÚT BẤM một chiều: mở khoá (1), không có mặt tắt
             // [ĐO xe 2026-09-15] rèm "bấm mở CHÚT XÍU". Gốc: feature 1330642984 = 0x4F500028
             // BODYWORK_SUNSHADE_PANEL_PERCENT_SET — nhận PHẦN TRĂM 0..100, không phải 0/1. Gửi 1 = "mở 1%".
             // ⇒ Mở=100%, Đóng=0% (carsettings Body.java:1653 · WINDOW_OPEN_PERCENT_MAX=100).

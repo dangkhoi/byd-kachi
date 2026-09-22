@@ -110,21 +110,23 @@ class ActionMacrosTest {
 
     @Test
     fun `muc bang chung cua goi la THAP NHAT trong cac buoc`() {
-        // win_lf = đã chạy trên xe; door = chỉ xác nhận được trên xe ⇒ gói phải lấy mức YẾU
+        // win_lf = đã chạy trên xe (PROVEN); windows_all = mở-hết chưa xác nhận (OVERDRIVE) ⇒ gói lấy mức YẾU.
         val mixed = ActionMacro("m", "l", "i", Domain.BODY,
-            listOf(MacroStep("win_lf", 1), MacroStep("door", 1)))
-        assertEquals(EvidenceTier.PROVEN, ControlRegistry.byId("win_lf")!!.tier, "tiền đề: kính đã chạy trên xe")
-        assertEquals(EvidenceTier.NEEDS_CAR, ControlRegistry.byId("door")!!.tier, "tiền đề: cửa chưa xác nhận")
-        assertEquals(EvidenceTier.NEEDS_CAR, mixed.tier(),
+            listOf(MacroStep("win_lf", 1), MacroStep("windows_all", 1)))
+        assertEquals(EvidenceTier.PROVEN, ControlRegistry.byId("win_lf")!!.tier, "tiền đề: kính lái đã chạy trên xe")
+        assertEquals(EvidenceTier.OVERDRIVE, ControlRegistry.byId("windows_all")!!.tier, "tiền đề: mở-hết chưa xác nhận")
+        assertEquals(EvidenceTier.OVERDRIVE, mixed.tier(),
             "gói phải lấy mức YẾU nhất — lấy mức cao nhất là hứa quá")
     }
 
     @Test
     fun `2026-09-21 badge goi lenh da bo - luon false`() {
         // owner chốt bỏ hẳn chấm. tier() vẫn là dữ liệu (mức yếu nhất), chỉ needsBadge() luôn false.
+        // 1.94: không còn control NEEDS_CAR (lock/door đã gỡ) ⇒ dùng win_lf(PROVEN)+windows_all(OVERDRIVE),
+        // tier() lấy mức YẾU NHẤT = OVERDRIVE.
         val mixed = ActionMacro("m", "l", "i", Domain.BODY,
-            listOf(MacroStep("win_lf", 1), MacroStep("door", 1)))
-        assertEquals(EvidenceTier.NEEDS_CAR, mixed.tier(), "tier vẫn là dữ liệu")
+            listOf(MacroStep("win_lf", 1), MacroStep("windows_all", 1)))
+        assertEquals(EvidenceTier.OVERDRIVE, mixed.tier(), "tier vẫn là dữ liệu (mức yếu nhất)")
         assertFalse(mixed.needsBadge(), "chấm đã bỏ hẳn")
         ActionMacros.ALL.forEach {
             assertFalse(it.needsBadge(), "gói ${it.id}: không gói nào còn mang dấu")
@@ -180,24 +182,6 @@ class ActionMacrosTest {
         val close = ActionMacros.byId("mac_win_close_all")!!
         assertEquals(open.steps.map { it.controlId }, close.steps.map { it.controlId }, "cùng 4 kính")
         assertTrue(close.steps.all { it.arg == 0 }, "đóng = 0")
-    }
-
-    @Test
-    fun `goi mo cua kem den dung dung yeu cau owner`() {
-        val m = ActionMacros.byId("mac_door_light")!!
-        assertEquals(listOf("door", "readl"), m.steps.map { it.controlId }, "mở cửa RỒI bật đèn đọc")
-        assertTrue(m.steps.first().waitAfterMs > 0, "phải chờ sau khi mở cửa — xe cần thời gian")
-    }
-
-    @Test
-    fun `goi roi xe chi gom viec dao lai duoc`() {
-        val m = ActionMacros.byId("mac_leave")!!
-        val ids = m.steps.map { it.controlId }
-        assertTrue(ids.containsAll(listOf("win_lf", "win_rf", "win_lr", "win_rr")), "đóng hết kính")
-        assertTrue("lock" in ids, "khoá xe ở bước cuối")
-        assertEquals("lock", ids.last(), "khoá phải là bước CUỐI (khoá trước rồi đóng kính là vô nghĩa)")
-        // C5: không gộp việc không đảo lại được
-        assertFalse("trunk" in ids, "không gộp cốp vào gói rời xe")
     }
 
     @Test
@@ -267,7 +251,7 @@ class ActionMacrosTest {
 
     @Test
     fun `tra goi theo ma`() {
-        assertNotNull(ActionMacros.byId("mac_leave"))
+        assertNotNull(ActionMacros.byId("mac_win_close_all"))
         assertNull(ActionMacros.byId("khong_co"), "mã lạ ⇒ null, không sập")
     }
 }

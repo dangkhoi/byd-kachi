@@ -82,20 +82,20 @@ class VoiceDispatcherSafetyTest {
     @Test
     fun `ve sau KHONG chay truoc khi ve CONFIRM duoc dong y`() {
         val r = Rig()
-        r.dispatcher.submit("mở khoá cửa và bật đèn đọc")
+        r.dispatcher.submit("mở cốp và bật đèn đọc")
 
-        assertEquals(1, r.ask.asked.size, "phải hỏi đúng một lần, cho vế mở khoá")
+        assertEquals(1, r.ask.asked.size, "phải hỏi đúng một lần, cho vế mở cốp")
         assertEquals(emptyList<String>(), r.port.fired, "CHƯA đồng ý mà đã có lệnh bắn — cổng xác nhận vô nghĩa")
 
         r.ask.agreeLast()
-        assertEquals(listOf("press:door", "toggle:readl:true"), r.port.fired,
+        assertEquals(listOf("cover:trunk:true", "toggle:readl:true"), r.port.fired,
             "đồng ý rồi thì chạy vế CONFIRM TRƯỚC, xong mới tới vế sau — đúng thứ tự nói")
     }
 
     @Test
     fun `huy thi ca chuoi dung, va noi ro con may viec khong chay`() {
         val r = Rig()
-        r.dispatcher.submit("mở khoá cửa và bật đèn đọc")
+        r.dispatcher.submit("mở cốp và bật đèn đọc")
         r.ask.cancelLast()
 
         assertEquals(emptyList<String>(), r.port.fired, "huỷ mà vẫn bắn là mất trắng cổng an toàn")
@@ -107,7 +107,7 @@ class VoiceDispatcherSafetyTest {
     @Test
     fun `hai ve CONFIRM hoi lan luot, khong chong hop`() {
         val r = Rig()
-        r.dispatcher.submit("mở khoá cửa và đổi sang hồ sơ Vợ")
+        r.dispatcher.submit("mở cốp và đổi sang hồ sơ Vợ")
         assertEquals(1, r.ask.asked.size, "hai hộp hỏi chồng nhau thì người lái không biết đang trả lời cho vế nào")
 
         r.ask.agreeLast()
@@ -147,7 +147,7 @@ class VoiceDispatcherSafetyTest {
     @Test
     fun `preview khong thi hanh bat cu thu gi`() {
         val r = Rig()
-        val intents = r.dispatcher.preview("mở khoá cửa và bật đèn đọc")
+        val intents = r.dispatcher.preview("mở cốp và bật đèn đọc")
         assertEquals(2, intents.size)
         assertTrue(intents.first() is VoiceIntent.Control)
         assertEquals(emptyList<String>(), r.port.fired)

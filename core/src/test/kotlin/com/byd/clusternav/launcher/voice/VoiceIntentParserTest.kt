@@ -258,14 +258,7 @@ class VoiceIntentParserTest {
     @Test fun `goi lenh thang nut cung ten`() = expect(
         "Mở hết kính" to VoiceIntent.Macro("mac_win_open_all"),
         "Đóng hết kính" to VoiceIntent.Macro("mac_win_close_all"),
-        "Rời xe" to VoiceIntent.Macro("mac_leave"),
         "Close all" to VoiceIntent.Macro("mac_win_close_all"),
-    )
-
-    @Test fun `mo khoa cua la nut BUTTON chu khong phai tat nut khoa`() = expect(
-        "Mở khoá cửa" to VoiceIntent.Control("door", null),
-        "Khoá xe" to VoiceIntent.Control("lock", 1),
-        "Unlock" to VoiceIntent.Control("door", null),
     )
 
     @Test fun `launcher ho so va app`() = expect(
@@ -285,8 +278,8 @@ class VoiceIntentParserTest {
             all("Chỉ đường đến Bitexco và mở nhạc trẻ"),
         )
         assertEquals(
-            listOf(VoiceIntent.Macro("mac_win_close_all"), VoiceIntent.Control("lock", 1)),
-            all("Đóng hết kính rồi khoá cửa"),
+            listOf(VoiceIntent.Macro("mac_win_close_all"), VoiceIntent.Control("readl", 1)),
+            all("Đóng hết kính rồi bật đèn đọc"),
         )
         assertEquals(
             listOf(VoiceIntent.Control("readl", 1), VoiceIntent.Control("headl", 0)),

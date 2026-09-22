@@ -43,8 +43,9 @@ class CtlSafetyPolicyTest {
     }
 
     @Test fun `denylist phu dung tap task yeu cau`() {
-        // lock/unlock (lock,door) · cốp (trunk) · kính mở-hết + từng kính · nóc/rèm.
-        listOf("lock", "door", "trunk", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr", "sunroof", "sunshade")
+        // cốp (trunk) · kính mở-hết + từng kính + 50% + đóng-tất-cả · nóc/rèm. (lock/door gỡ 1.94)
+        listOf("trunk", "windows_all", "windows_close_all", "win_lf", "win_rf", "win_lr", "win_rr",
+            "win_half_all", "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr", "sunroof", "sunshade")
             .forEach { assertTrue(CtlSafetyPolicy.needsConfirm(it), "denylist thiếu '$it'") }
     }
 
@@ -70,8 +71,8 @@ class CtlSafetyPolicyTest {
      * [CtlSafetyPolicy.REQUIRES_STATIONARY] mà không thuộc diện *"bung khỏi bao xe"* sẽ làm bài này đỏ.
      */
     @Test fun `kinh · cua so troi · den · khoa cua KHONG bi gate theo van toc`() {
-        listOf("window", "windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
-            "sunroof", "sunshade", "readl", "lock", "door", "fan", "temp").forEach { id ->
+        listOf("windows_all", "win_lf", "win_rf", "win_lr", "win_rr",
+            "sunroof", "sunshade", "readl", "fan", "temp").forEach { id ->
             assertFalse(
                 CtlSafetyPolicy.requiresStationary(id),
                 "'$id' mở/bật lúc đang chạy là bình thường ⇒ KHÔNG được gate (gate rộng = lỗi, không phải an toàn)",

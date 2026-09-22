@@ -234,8 +234,6 @@ class VoiceGrammarCoverageTest {
     @Test
     fun `mac dinh KHONG hoi gi ca — tap rong thi moi viec la NORMAL`() {
         listOf(
-            VoiceIntent.Control("door", null),
-            VoiceIntent.Control("lock", 0),
             VoiceIntent.Control("windows_all", 1),
             // ⚠ 1.90 · `cast` rời hai danh sách này cùng nút (owner 2026-09-21) — nó là mục duy nhất của
             // `VoiceRisk` rụng theo, nên bảng lý do vẫn phủ đủ các việc CÒN hỏi được.
@@ -254,14 +252,14 @@ class VoiceGrammarCoverageTest {
 
     @Test
     fun `bat mot ma thi DUNG ma do hoi lai, cac ma khac khong`() {
-        val only = setOf(VoiceRiskTable.PREFIX_CONTROL + "door")
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("door", null), only))
-        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("lock", 0), only))
+        val only = setOf(VoiceRiskTable.PREFIX_CONTROL + "trunk")
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("trunk", 1), only))
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 1), only))
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Profile("Vợ"), only))
-        // Giá trị KHÔNG vào mã: tích "Khoá xe" là tích cả hai chiều (xem KDoc [VoiceRiskTable.confirmId]).
-        val lock = setOf(VoiceRiskTable.PREFIX_CONTROL + "lock")
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("lock", 0), lock))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("lock", 1), lock))
+        // Giá trị KHÔNG vào mã: tích là tích cả hai chiều (xem KDoc [VoiceRiskTable.confirmId]).
+        val sunroof = setOf(VoiceRiskTable.PREFIX_CONTROL + "sunroof")
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 1), sunroof))
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 0), sunroof))
         // Nút KHÔNG nằm trong bảng lý do thì không có mã ⇒ không bao giờ hỏi được, kể cả khi ai đó nhét mã lạ.
         assertEquals(null, VoiceRiskTable.confirmId(VoiceIntent.Control("readl", 1)))
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("readl", 1), setOf("control:readl")))
@@ -286,8 +284,6 @@ class VoiceGrammarCoverageTest {
     @Test
     fun `moi viec CONFIRM deu co ly do doc duoc`() {
         listOf(
-            VoiceIntent.Control("door", null),
-            VoiceIntent.Control("lock", 0),
             VoiceIntent.Control("windows_all", 1),
             VoiceIntent.Macro("mac_win_open_all"),
             VoiceIntent.Profile("Vợ"),

@@ -140,19 +140,19 @@ object TelemetryRegistry {
         t("fuel_pct", "Mức xăng", "Fuel level", "%", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getFuelPercentageValue"),
         t("odometer", "Odo tổng", "Odometer", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getTotalMileageValue"),
         // BYDAutoStatisticDevice.java:167.
-        t("ev_mileage_km", "Km chạy điện", "EV distance driven", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getEVMileageValue", shortEn = "EV distance"),
+        t("ev_mileage_km", "Km chạy điện", "EV distance driven", "km", ENERGY, VALUE, NEEDS_CAR, "BYDAutoStatisticDevice.getEVMileageValue", shortEn = "EV distance"),
         // ═══ V3 · R11 — bind theo TÊN HẰNG, giá trị tra lúc chạy (xem [BindingRoute.FeatureName]) ═══
         // [ĐO nguồn fw-dl3 2026-09-16] `BYDAutoFeatureIds.java`: `INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE`
         // = 1246801948 **chỉ khi** `isCanFD`; không CanFD thì 1230024732 (Toyota) hoặc 602471. Số cũ chép từ
         // jadx-tmap là con số của MỘT cấu hình ⇒ trên xe khác cấu hình nó không tồn tại và HAL từ chối.
         // Tên hằng thuộc lớp lồng `Instrument` ⇒ device đích do `BYDAutoDeviceFeaturesMap` quyết, không đoán.
         // NEEDS-ONCAR (còn lại): scale phút-vs-giờ của DRIVE_TIME.
-        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE,
+        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, NEEDS_CAR,
             "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE",
             short = "Quãng chuyến", shortEn = "Trip dist."),
-        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE,
+        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, NEEDS_CAR,
             "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_TIME"),
-        t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, OVERDRIVE, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
+        t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, NEEDS_CAR, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
         t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh/100km", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
         // V3 · R11 — [ĐO nguồn fw-dl3] `ENGINE_POWER` = 339738656 (CanFD) / 353370144 (Toyota) / 1033203762.
         t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE,
@@ -163,14 +163,14 @@ object TelemetryRegistry {
         // (ghi, ở ControlRegistry). Xe sạc ở trụ/nhà, người lái không theo dõi qua launcher. Thêm lại =
         // quyết định của owner. `target_soc` (đọc, NEEDS_CAR) và `wireless_charge` (nút) KHÔNG nằm trong danh sách NO.
         // NEEDS-ONCAR: batt_temp / soh_oem — feature-id zero-hoá trong decompile, không có named.
-        t("batt_temp", "Nhiệt độ pin", "Battery temp", "°C", ENERGY, VALUE, OVERDRIVE, "BYDAutoChargingDevice.getBatteryTemp"),
+        t("batt_temp", "Nhiệt độ pin", "Battery temp", "°C", ENERGY, VALUE, NEEDS_CAR, "BYDAutoChargingDevice.getBatteryTemp"),
         t("soh_oem", "Sức khỏe pin (SOH)", "Battery health (SOH)", "%", ENERGY, CARD, OVERDRIVE, "1145045032", short = "SOH pin", shortEn = "SOH"),
         t("target_soc", "Mục tiêu sạc", "Charge target", "%", ENERGY, VALUE, NEEDS_CAR, "SET_DR_SOC_TARGET"),
 
         // ── A2. Động lực / tốc độ / chuyển động ──────────────────────────────────────────────────
         t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
         // BYDAutoGearboxDevice.java:109 — GEAR_P=3/R=1/N=0/D=2/INVALID=255 (:79-83). Cũ `getGearboxState` chỉ ON/OFF.
-        t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoGearboxDevice.getCurrentGear"),
+        t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, NEEDS_CAR, "BYDAutoGearboxDevice.getCurrentGear"),
         // ⚠⚠ 1.90 · **`op_mode` (Chế độ lái) và `energy_mode` (Chế độ năng lượng) ĐÃ XOÁ HẲN** — owner chốt
         // 2026-09-21. `energy_mode` vì **xe thuần điện** (thang STOP/EV/FORCE_EV/HEV/FUEL/KEEP không có nghĩa khi
         // không có động cơ xăng — [ĐO sweep 09-21] đọc ra `3`=HEV trên một chiếc EV, tức con số vô nghĩa đang được
@@ -226,7 +226,7 @@ object TelemetryRegistry {
         // không phải một datum thứ ba. ⇒ TODO on-car (`0-PENDING` nhóm D): sweep feature-id này trên device AC
         // (1031798832 = đường hiện tại) rồi đối chiếu với số trên màn AC khi ĐỔI setpoint — nếu hai số dính nhau thì
         // ô này TRÙNG `inside_temp` và nên bỏ, chứ không phải nối thêm một getter.
-        t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "1031798832"),
+        t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, NEEDS_CAR, "1031798832"),
         // ⚠ 1.85 · GỐC của *"nhiệt cài đặt đọc X"* [ĐO xe 2026-09-20] — nằm ở **tham số**, không ở tên getter.
         // `HalReadTables.readArg` khai `inside_temp → 0`, mà **javadoc chính thức BYD** cho `getTemprature(int area)`
         // liệt kê đúng bốn vùng đọc được: `AC_TEMPERATURE_MAIN`(1) · `_DEPUTY`(2) · `_REAR`(3) · `_OUT`(4) — **0
@@ -310,9 +310,9 @@ object TelemetryRegistry {
         t("door_rf", "Cửa trước-phải", "Door front-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door FR"),
         t("door_lr", "Cửa sau-trái", "Door rear-left", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RL"),
         t("door_rr", "Cửa sau-phải", "Door rear-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RR"),
-        t("tailgate_status", "Cốp sau", "Tailgate", "", BODY, STRIP, PROVEN, "BYDAutoBodyworkDevice.getHatchDoorStatus"),
+        t("tailgate_status", "Cốp sau", "Tailgate", "", BODY, STRIP, NEEDS_CAR, "BYDAutoBodyworkDevice.getHatchDoorStatus"),
         t("sunroof_state", "Cửa sổ trời", "Sunroof", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
-        t("sunroof_pos", "Vị trí cửa sổ trời", "Sunroof position", "%", BODY, VALUE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofPosition", shortEn = "Sunroof pos"),
+        t("sunroof_pos", "Vị trí cửa sổ trời", "Sunroof position", "%", BODY, VALUE, NEEDS_CAR, "BYDAutoBodyworkDevice.getSunroofPosition", shortEn = "Sunroof pos"),
         t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
         t("power_level", "Nguồn xe", "Vehicle power", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),
         t("vehicle_type", "Mẫu xe", "Vehicle model", "", BODY, VALUE, PROVEN, "BYDAutoBodyworkDevice.getType"),
@@ -343,7 +343,7 @@ object TelemetryRegistry {
         // `volt_12v*` GIỮ.
         // [ĐO] `double getBatteryVoltage()` BYDAutoOtaDevice.java:87 — Power KHÔNG có method này (chỉ getBatteryLowVoltageState).
         t("volt_12v", "Ắc-quy 12V", "12V battery", "V", ENERGY, VALUE, OVERDRIVE, "BYDAutoOtaDevice.getBatteryVoltage"),
-        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", ENERGY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getBatteryVoltageLevel", shortEn = "12V level"),
+        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", ENERGY, BADGE, NEEDS_CAR, "BYDAutoBodyworkDevice.getBatteryVoltageLevel"),
 
         // ── A8. Danh tính / khoá / máy ──────────────────────────────────────────────────────────
         // VIN = ký hiệu ngành, giữ nguyên (spec §6 OQ2).

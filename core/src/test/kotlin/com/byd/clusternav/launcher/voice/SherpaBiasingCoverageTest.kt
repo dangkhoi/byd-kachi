@@ -137,13 +137,8 @@ class SherpaBiasingCoverageTest {
         // sinh ra cụm ấy. Ca ĐÃ ĐO w12 vì thế không còn đối tượng; năm cụm còn lại vẫn là năm ca đo thật.
         listOf("XEM PIN", "DỪNG NHẠC", "MỞ KÍNH TRƯỚC TRÁI", "BẬT MÁY LẠNH", "MỞ CÁC CỬA SỔ")
             .forEach { assertTrue(it in hotwords, "thiếu cụm «$it» — xem spec kachi-voice-hotword-phrases") }
-        // ⚠ *"mở khoá cửa"* chấp nhận CẢ HAI chỗ đặt dấu trong lúc chuyển tiếp (xem KDoc [luat dat dau…] dưới):
-        // [SherpaSpokenWords] đã đổi sang kiểu MỚI (`KHÓA`), nhãn `ControlRegistry.door` thì do agent khác sửa.
-        // Bài này khoá *"cụm ấy phải được bias"*, không khoá *"ai viết dấu ở đâu"*.
-        assertTrue(
-            "MỞ KHÓA CỬA" in hotwords || "MỞ KHOÁ CỬA" in hotwords,
-            "thiếu cụm «MỞ KHOÁ CỬA» / «MỞ KHÓA CỬA» — xem spec kachi-voice-hotword-phrases",
-        )
+        // ⚠ 1.94 2026-09-22: «MỞ KHOÁ CỬA» rời bài vì nút `door` (mở khoá cửa) đã gỡ (NOT_PROVISIONED, owner "bỏ
+        // hẳn") ⇒ không còn nhãn/cách nói nào sinh ra cụm ấy. Năm cụm trên vẫn là ca đo thật.
     }
 
     /**

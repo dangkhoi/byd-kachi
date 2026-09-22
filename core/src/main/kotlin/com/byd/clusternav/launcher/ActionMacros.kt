@@ -181,18 +181,6 @@ object ActionMacros {
             labelEn = "Open all"),
         ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window-close", Domain.BODY, windows(open = false),
             labelEn = "Close all"),
-        // Yêu cầu số 7 của owner: "mở cửa + tắt/mở đèn".
-        ActionMacro(
-            "mac_door_light", "Mở cửa + đèn đọc", "ic-door", Domain.BODY,
-            listOf(MacroStep("door", 1), MacroStep("readl", 1, waitAfterMs = 0)),
-            labelEn = "Unlock + reading light",
-        ),
-        // Ca dùng thật khi rời xe. Mọi bước đảo lại được (C5).
-        ActionMacro(
-            "mac_leave", "Rời xe", "ic-lock", Domain.BODY,
-            windows(open = false) + listOf(MacroStep("readl", 0), MacroStep("lock", 1, waitAfterMs = 0)),
-            labelEn = "Leaving the car",
-        ),
     )
 
     fun byId(id: String): ActionMacro? = ALL.firstOrNull { it.id == id }

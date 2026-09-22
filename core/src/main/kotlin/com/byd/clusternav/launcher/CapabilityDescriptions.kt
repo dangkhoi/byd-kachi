@@ -106,10 +106,8 @@ object CapabilityDescriptions {
         "oil_level" to Desc("Phần trăm dầu động cơ còn lại", "Engine oil level remaining (%)"),
 
         // ── BODY (ACT) ──
-        "lock" to Desc("Bật/tắt khoá cửa xe, di chuyển chốt khoá vật lý", "Lock/unlock the car doors (moves the physical latch)"),
         "win_lf" to Desc("Mở/đóng kính cửa lái", "Open/close the driver window"),
         "trunk" to Desc("Bật/tắt mở cốp sau, dịch chuyển cốp vật lý", "Turn the boot/tailgate release on/off (moves the boot)"),
-        "door" to Desc("Mở khoá cửa xe ngay lập tức", "Unlock the car doors immediately"),
         // ⚠ 1.85: mục `hood` đã xoá cùng mã ([ĐO xe 2026-09-20 §4] xe không có ca-pô điện). `CapabilityTestPlanTest`
         // đòi mọi mã CÓ diễn giải, không đòi mọi diễn giải có mã — nhưng để lại một mục cho mã đã chết là mời người
         // sau tưởng nút vẫn còn.
@@ -159,7 +157,6 @@ object CapabilityDescriptions {
         ),
         "defrost_rear" to Desc("Bật/tắt sấy kính chắn gió sau", "Turn the rear windscreen defroster on/off"),
         // ⚠ 1.90 · `anion` xoá (owner 2026-09-21 — chưa verify trên xe). Datum `anion_state` vẫn đọc được.
-        "steer_heat" to Desc("Bật/tắt sưởi vô-lăng", "Turn steering wheel heating on/off"),
         "pm25_clean_now" to Desc("Chạy lọc không khí một lần ngay", "Run a one-shot air purification now"),
 
         // ── INFOTAINMENT (INFO) ──

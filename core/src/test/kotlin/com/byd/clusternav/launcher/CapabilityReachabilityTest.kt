@@ -116,10 +116,10 @@ class CapabilityReachabilityTest {
     fun `dat hanh dong vao o thi o giu nguyen ma do`() {
         // Đường ghi (`assignWidgets`) KHÔNG được lọc mã hành động: trước RW0 cổng chặn nằm ở `DockConfig.setEnabled`,
         // và đây là cổng tương ứng của ô giữa màn. Bỏ mã đi im lặng = người dùng bấm Đặt mà không có gì xảy ra.
-        val state = WorkspaceState.DEFAULT.withSlot(0, SlotContent.Widget(listOf("mac_leave", "recirc", "tyre_p_fl")))
+        val state = WorkspaceState.DEFAULT.withSlot(0, SlotContent.Widget(listOf("mac_win_close_all", "recirc", "tyre_p_fl")))
         val ids = (state.slots[0] as SlotContent.Widget).ids
-        assertEquals(listOf("mac_leave", "recirc", "tyre_p_fl"), ids, "ô phải giữ ĐỦ cả gói lệnh, nút và mục đọc")
-        assertTrue(CapabilityCatalog.isWrite("mac_leave"), "gói lệnh phải ra ô BẤM được")
+        assertEquals(listOf("mac_win_close_all", "recirc", "tyre_p_fl"), ids, "ô phải giữ ĐỦ cả gói lệnh, nút và mục đọc")
+        assertTrue(CapabilityCatalog.isWrite("mac_win_close_all"), "gói lệnh phải ra ô BẤM được")
         assertTrue(CapabilityCatalog.isWrite("recirc"), "nút phải ra ô BẤM được")
         assertTrue(!CapabilityCatalog.isWrite("tyre_p_fl"), "mục đọc phải ra ô XEM (không bấm)")
     }

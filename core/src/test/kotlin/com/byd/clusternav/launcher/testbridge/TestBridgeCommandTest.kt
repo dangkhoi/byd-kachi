@@ -233,7 +233,7 @@ class TestBridgeCommandTest {
         assertTrue(
             ok(
                 TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.CTL,
-                TestBridgeCommands.EXTRA_ID to "door",
+                TestBridgeCommands.EXTRA_ID to "win_lf",
                 TestBridgeCommands.EXTRA_AUTO_CONFIRM to true,
             ).autoConfirm,
         )

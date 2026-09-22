@@ -208,7 +208,7 @@ class ControlVisualsTest {
 
     @Test
     fun `nut bam mot phat sang khi dang bam roi ve mac dinh`() {
-        val d = def("door")
+        val d = def("windows_close_all")
         assertTrue(ControlVisuals.of(d, 1).active)
         assertFalse(ControlVisuals.of(d, 0).active)
         assertEquals("", ControlVisuals.of(d, 1).option)

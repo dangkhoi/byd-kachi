@@ -106,9 +106,6 @@ object ControlRegistry {
         // `getDoorLockStatus(int)` (BYDAutoDoorLockDevice.java:41), KHÔNG có `setDoorLockState`. Giữ named-method với
         // tên lớp ĐÚNG để `HalWriteProbe` ghi lại đúng chuỗi ngoại lệ trên xe (bằng chứng cho grab-list) thay vì
         // ClassNotFound vô nghĩa; setter khoá-ngay có thể không expose qua HAL app → chốt trên xe.
-        ControlDef("lock", "Khóa / mở khóa", "ic-car-top-lock", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorLockDevice.setDoorLockState",
-            labelEn = "Lock / unlock"),
         // ⚠ [ĐO] 2026-09-11: nút này TỪNG mang nhãn "Kính 50%" nhưng ghi ĐÚNG CÙNG lệnh với "win_lf"
         // (`setBodyWindowCtrlState(1, state)` — kính CỬA LÁI, chỉ đóng/mở, KHÔNG có nửa). Nhãn cũ hứa thứ xe không
         // làm. Chưa có đường GHI phần trăm nào (chỉ có đường ĐỌC `getWindowOpenPercent`) ⇒ đừng đặt lại nhãn hứa %.
@@ -157,9 +154,6 @@ object ControlRegistry {
         // nói điều đó. Sau khi vá P0 (tắt = gửi 2 = khoá thật) thì đây lại đúng họ lỗi vừa dọn: "nhãn hứa việc A,
         // trạng thái kia làm việc B". Nút BẤM một chiều thì không có mặt-tắt để nói dối: bấm = mở khoá, hết.
         // NEEDS-ONCAR: cùng setter chưa tồn tại như `lock` (xem chú thích ở đó) — chỉ sửa case tên lớp.
-        ControlDef("door", "Mở khóa cửa", "ic-car-top-door-all", ControlKind.BUTTON,
-            domain = Domain.BODY, tier = EvidenceTier.NEEDS_CAR, bindingKey = "BYDAutoDoorLockDevice.setDoorLockState",
-            labelEn = "Unlock doors"),
         // ⚠⚠ 1.85 · **`hood` (Ca-pô) ĐÃ XOÁ HẲN** — [ĐO xe 2026-09-20 §4] owner xác nhận bằng mắt: xe **KHÔNG có
         // ca-pô điện**, chỉ cốp sau điện. Từ 1.66 nó đã bị ẩn khỏi bộ chọn (`HIDDEN_FROM_PICKER`) với lý do ấy; lượt
         // này owner chốt bỏ hẳn nên giữ một dòng registry không ai bấm được nữa chỉ là dead code.
@@ -248,9 +242,6 @@ object ControlRegistry {
             labelEn = "Rear defrost"),
         // ⚠ 1.90 · **`anion` (Ion âm) ĐÃ XOÁ** — owner chốt 2026-09-21: nút chưa verify được trên xe (sweep
         // 09-21 xếp nó vào nhóm "mã không dùng"). Datum ĐỌC `anion_state` **Ở LẠI** — nhóm `g_climate` đọc nó.
-        ControlDef("steer_heat", "Sưởi vô-lăng", "ic-seat", ControlKind.TOGGLE,
-            domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoSettingDevice.setSteeringWheelHeatingState",
-            labelEn = "Steering wheel heating"),
         ControlDef("pm25_clean_now", "Lọc ngay", "ic-filter", ControlKind.BUTTON,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setQuickCleanAirState",
             labelEn = "Clean now"),

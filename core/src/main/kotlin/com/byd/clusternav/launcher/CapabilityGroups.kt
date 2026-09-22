@@ -119,7 +119,7 @@ object CapabilityGroups {
         // ⚠ UX-OVERHAUL · WP8 2026-09-20: hai ô ĐỌC `tailgate_position` (vị trí cốp) và `mirror_fold` (gương) đã
         // xoá theo triage của owner (#29 · #30) ⇒ câu phụ bỏ chữ "gương", và bảng xe không còn chấm gương.
         // `tailgate_status` (đóng/mở) GIỮ — nó là mục #28 nằm trong nhóm CẦN, đang chờ getter trên xe.
-        writes = listOf("lock", "door", "trunk", "sunroof", "sunshade"),
+        writes = listOf("trunk", "sunroof", "sunshade"),
         sub = "cửa, cốp, nóc, rèm",
         subEn = "doors, tailgate, sunroof, sunshade",
     )

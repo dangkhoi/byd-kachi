@@ -29,16 +29,17 @@ class ControlRegistryExtendedTest {
         // (win_lf/rf/lr/rr + windows_all + 5 nút 50% + đóng-tất-cả) ⇒ `window` là bản sao ⇒ gỡ (chống anti-pattern
         // "hai mã một lệnh"). `win_lf` kế thừa chỗ dock mặc định (enabledByDefault) nhưng nằm ở khối kính (không ở
         // 15 nút gốc đầu). Khối gốc nay còn **15**.
+        // ⚠ 1.94 · 2026-09-22 · gỡ thêm `lock`+`door` (NOT_PROVISIONED, owner "bỏ hẳn") ⇒ khối gốc còn **13**.
         val original = listOf(
-            "lock", "trunk", "readl", "pm25", "seatc", "temp", "fan",
-            "defrost", "cam", "door", "sunroof", "headl", "seath", "recirc", "drl",
+            "trunk", "readl", "pm25", "seatc", "temp", "fan",
+            "defrost", "cam", "sunroof", "headl", "seath", "recirc", "drl",
         )
-        assertEquals(original, ControlRegistry.ALL.take(15).map { it.id })
+        assertEquals(original, ControlRegistry.ALL.take(13).map { it.id })
     }
 
     @Test fun `defaultEnabledIds bat bien - 8 nut mac dinh dung thu tu`() {
         assertEquals(
-            listOf("lock", "trunk", "readl", "pm25", "seatc", "temp", "fan", "win_lf"),
+            listOf("trunk", "readl", "pm25", "seatc", "temp", "fan", "win_lf"),
             ControlRegistry.defaultEnabledIds(),
         )
         // Nut moi KHONG duoc tu bat (giu dock mac dinh gon). ⚠ 1.90: hai mốc cũ `cast` + `powertrain_mode` đã xoá

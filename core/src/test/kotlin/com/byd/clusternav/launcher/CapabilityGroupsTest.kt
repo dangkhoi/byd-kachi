@@ -312,16 +312,16 @@ class CapabilityGroupsTest {
         // `cluster_music` · `brightness_gear` · `vol` · `cast` · datum `op_mode` · `energy_mode`). Cùng loại
         // quyết định như ba lượt trên — xem nhật ký ở `ControlRegistry`/`TelemetryRegistry`.
         assertEquals(71, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 71 (1.90 gỡ op_mode + energy_mode)")
-        assertEquals(36, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
+        assertEquals(33, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
-        assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
+        assertEquals(2, ActionMacros.ALL.size, "1.94: 2 gói (mở/đóng hết kính)")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
         assertEquals(
             // U6: `all()` là thứ MÀN CHỌN bày ra nên nó trừ đi các mã cố ý ẩn ([CapabilityCatalog.HIDDEN_FROM_PICKER]);
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            71 + 36 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            71 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

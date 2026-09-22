@@ -34,9 +34,9 @@ class DockPickerContractTest {
 
     @Test
     fun `tap chon tra ve dung tap do`() {
-        val base = DockConfig(enabled = listOf("lock", "win_lf", "trunk"))
-        val out = DockSelection.apply(base, setOf("lock", "trunk", "fan"))
-        assertEquals(setOf("lock", "trunk", "fan"), out.enabled.toSet(), "cấu hình sau khi áp = đúng tập đã chọn")
+        val base = DockConfig(enabled = listOf("readl", "win_lf", "trunk"))
+        val out = DockSelection.apply(base, setOf("readl", "trunk", "fan"))
+        assertEquals(setOf("readl", "trunk", "fan"), out.enabled.toSet(), "cấu hình sau khi áp = đúng tập đã chọn")
     }
 
     /**
@@ -47,16 +47,16 @@ class DockPickerContractTest {
      */
     @Test
     fun `bo tich mot o thi o do RA KHOI thanh`() {
-        val base = DockConfig(enabled = listOf("lock", "win_lf", "trunk"))
-        val out = DockSelection.apply(base, setOf("lock", "trunk"))
+        val base = DockConfig(enabled = listOf("readl", "win_lf", "trunk"))
+        val out = DockSelection.apply(base, setOf("readl", "trunk"))
         assertFalse("win_lf" in out.enabled, "mã bị bỏ tích phải rời thanh — chỉ gửi chiều BẬT là bỏ qua im lặng")
-        assertEquals(listOf("lock", "trunk"), out.enabled)
+        assertEquals(listOf("readl", "trunk"), out.enabled)
     }
 
     /** Bẫy số 2: áp một tập KHÔNG đổi gì thì thứ tự nút trên thanh phải y nguyên (không sắp lại theo catalog). */
     @Test
     fun `ap lai dung tap cu KHONG xao thu tu`() {
-        val base = DockConfig(enabled = listOf("trunk", "lock", "win_lf"))
+        val base = DockConfig(enabled = listOf("trunk", "readl", "win_lf"))
         assertEquals(base.enabled, DockSelection.apply(base, base.enabled.toSet()).enabled)
     }
 
@@ -72,7 +72,7 @@ class DockPickerContractTest {
     /** Tập rỗng = "bỏ hết nút khỏi thanh" — một lựa chọn HỢP LỆ, không phải ca phải chặn. */
     @Test
     fun `tap rong bo het nut khoi thanh`() {
-        assertEquals(emptyList<String>(), DockSelection.apply(DockConfig(enabled = listOf("lock")), emptySet()).enabled)
+        assertEquals(emptyList<String>(), DockSelection.apply(DockConfig(enabled = listOf("readl")), emptySet()).enabled)
     }
 
     /**
@@ -86,14 +86,14 @@ class DockPickerContractTest {
      */
     @Test
     fun `thanh nut nhan hanh dong cua launcher`() {
-        val base = DockConfig(enabled = listOf("lock"))
-        val out = DockSelection.apply(base, setOf("lock", LauncherActions.APPS, LauncherActions.SETTINGS))
+        val base = DockConfig(enabled = listOf("readl"))
+        val out = DockSelection.apply(base, setOf("readl", LauncherActions.APPS, LauncherActions.SETTINGS))
         assertEquals(
-            listOf("lock", LauncherActions.APPS, LauncherActions.SETTINGS), out.enabled,
+            listOf("readl", LauncherActions.APPS, LauncherActions.SETTINGS), out.enabled,
             "hai mã launcher phải vào được thanh, nối vào CUỐI theo thứ tự catalog",
         )
         // Và bỏ tích vẫn gỡ được (chiều TẮT không được quên loại mới).
-        assertEquals(listOf("lock"), DockSelection.apply(out, setOf("lock")).enabled)
+        assertEquals(listOf("readl"), DockSelection.apply(out, setOf("readl")).enabled)
     }
 
     /** Mã lạ vẫn bị `DockConfig.setEnabled` từ chối — [DockSelection] KHÔNG được nhân bản phép kiểm đó. */

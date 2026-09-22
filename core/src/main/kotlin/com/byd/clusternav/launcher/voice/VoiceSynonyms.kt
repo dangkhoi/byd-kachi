@@ -54,16 +54,6 @@ object VoiceSynonyms {
         // nó chỉ phá một cụm đã đo. Đây là bẫy "tiền tố giết tiền tố" thứ ba của phiên — hai cái kia
         // (`pin còn nhiêu`, `máy lạnh tự động`) bị chặn ngay lúc nhập, cái này lọt vì nó chạm một cụm ở **bộ
         // đăng ký khác** (`door`) chứ không phải cụm của chính nó.
-        "lock" to listOf("khoa xe", "khoa cua", "lock car", "central lock",
-            // 1.91 — ⚠ *"khoa cua …"* là dạng BỊ CẤM ở dòng này: cách nói `khoa cua` đứng sau động từ *"mở"* sinh
-            // ra đúng cụm ĐÃ ĐO `MỞ KHÓA CỬA`, và một cụm dài hơn nó (*"mở khóa cửa chính"*) sẽ nuốt mất cụm ấy
-            // qua [SherpaHotwords.dropPrefixes]. `khoa het cua` lệch ngay từ từ thứ hai nên không chạm vào nó.
-            "khoa het cua", "chot xe"),
-        "door" to listOf("mo khoa", "mo khoa xe", "mo khoa cua", "unlock", "unlock car", "chot cua", "mo cua xe",
-            // 1.91 — ⚠ *"mo cua"* (hai từ) CỐ Ý không có: [ĐO off-car] nó khớp tại **vị trí 0** của *"mở cửa sổ"*
-            // nên `headMatch` lấy nó (2 từ > động từ 1 từ) và câu ấy thành **mở khoá cửa**, mất hẳn đường tới
-            // `window`. Đây đúng bẫy *"cụm ngắn ở đầu câu cướp cụm dài phía sau"* mà lượt D đã trả giá một lần.
-            "mo chot cua"),
         "trunk" to listOf("cop", "cop xe", "boot", "tailgate", "cua hau", "thung sau",
             "cop hau", "cua cop", "khoang hanh ly"),
         // *"đang đọc sách"* = chuỗi mô hình in ra cho *"đèn đọc sách"* — [ĐO XE 2026-09-16, DL3 bản 1.68, ×2]
@@ -208,7 +198,6 @@ object VoiceSynonyms {
         // ⚠ 1.85: `hood` ("nap ca po"/"nap may") đã xoá cùng mã — xe không có ca-pô điện ([ĐO xe 2026-09-20 §4]).
         // Không để lại cách nói mồ côi: `VoiceGrammarCoverageTest` đòi mọi cụm trỏ về một mã có thật.
         "defrost_rear" to listOf("say kieng sau", "say kinh hau"),
-        "steer_heat" to listOf("vo lang nong", "vo lang am", "lam am vo lang"),
         "sunshade" to listOf("rem noc", "man che nang", "rem troi", "che nang"),
         // 1.91 · `drl` là nút DUY NHẤT chưa có dòng nào ở bảng này — nhãn *"Đèn ban ngày"* đã tự khớp, nhưng cách
         // người ta gọi nó trên xe là *"đèn chạy ban ngày"*. ⚠ *"đèn ngày"* (2 từ) CỐ Ý không nhận: bỏ dấu xong

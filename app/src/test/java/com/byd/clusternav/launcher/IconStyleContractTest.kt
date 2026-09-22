@@ -316,6 +316,12 @@ class IconStyleContractTest {
     // ── 10. MỌI tên `ic-…` phải tra ra một drawable có thật ─────────────────────────────────────────
 
     private val unusedMapping: Map<String, String> = mapOf(
+        "ic-door" to
+            "gói lệnh 'Mở cửa + đèn' đã gỡ theo control door (1.94, NOT_PROVISIONED); giữ dòng để icon không mồ côi",
+        "ic-car-top-door-all" to
+            "nút 'Mở khoá cửa' (door) đã gỡ 1.94 (NOT_PROVISIONED trên xe); giữ hình cho lần wire lại nếu trim khác cho",
+        "ic-car-top-lock" to
+            "nút 'Khoá / mở khoá' (lock) đã gỡ 1.94 (NOT_PROVISIONED); giữ hình cho lần wire lại nếu trim khác cho",
         "ic-close" to
             "nút ✕ của thanh đầu ô đã gỡ ở S2 (owner: \"chỉ 1 nút ⇄\"); giữ dòng này để `ic_close.xml` không thành " +
                 "tệp mồ côi, và để bày lại nút đóng ở đâu đó là có sẵn đúng hình",

@@ -85,8 +85,8 @@ class CarDataDemandTest {
 
     @Test
     fun `controlsOf bo qua nut CHUA co duong doc`() {
-        // `door` là BUTTON không readKey; `readl` cố ý rỗng readKey ⇒ không vào tập (ô lùi về RAM, không bịa).
-        val out = CarDataDemand.controlsOf(state(dock = listOf("door", "readl")))
+        // `windows_close_all` BUTTON không readKey; `readl` cố ý rỗng readKey ⇒ không vào tập (ô lùi về RAM).
+        val out = CarDataDemand.controlsOf(state(dock = listOf("windows_close_all", "readl")))
         assertTrue(out.isEmpty(), "nút chưa nối đường đọc không được ép poll đọc: $out")
     }
 

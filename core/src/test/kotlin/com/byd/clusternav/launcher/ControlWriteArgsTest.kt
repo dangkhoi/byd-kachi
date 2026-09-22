@@ -64,33 +64,6 @@ class ControlWriteArgsTest {
 
     // ── P0: khoá cửa ─────────────────────────────────────────────────────────────────────────────
 
-    @Test
-    fun `khoa xe va mo cua KHONG duoc gui cung mot byte`() {
-        // Giá trị theo tài liệu dự án (locked=2 / unlocked=1) — xem KDoc writeArgs.
-        assertArrayEquals(intArrayOf(2), args("lock", 1), "bật 'Khoá / mở khoá' phải gửi 2 (khoá)")
-        assertArrayEquals(intArrayOf(1), args("lock", 0), "tắt 'Khoá / mở khoá' phải gửi 1 (mở khoá), KHÔNG phải 0")
-        // `door` là NÚT BẤM một chiều (mở khoá). Trước đây nó là TOGGLE nhãn "Mở cửa" — tức **tắt nó thì khoá xe**
-        // mà nhãn không nói ⇒ đúng họ lỗi P0 vừa dọn. Nút bấm thì không có mặt-tắt để nói dối.
-        assertEquals(ControlKind.BUTTON, ControlRegistry.byId("door")?.kind, "phải là nút BẤM, không phải TOGGLE")
-        assertArrayEquals(intArrayOf(1), args("door", 1), "bấm 'Mở khoá cửa' gửi 1 (mở khoá)")
-        assertArrayEquals(intArrayOf(1), args("door", 0), "nút bấm KHÔNG có mặt tắt ⇒ vẫn là 1, không bao giờ khoá")
-        assertFalse(
-            args("lock", 1).contentEquals(args("door", 1)),
-            "hai nhãn nghĩa đối nghịch mà gửi cùng byte ⇒ ít nhất một nhãn nói dối người lái",
-        )
-    }
-
-    @Test
-    fun `goi Roi xe ket bang buoc KHOA, khong phai buoc mo`() {
-        val leave = requireNotNull(ActionMacros.byId("mac_leave"))
-        val last = leave.steps.last()
-        assertEquals("lock", last.controlId, "bước cuối của 'Rời xe' phải là khoá xe")
-        assertArrayEquals(
-            intArrayOf(2), args(last.controlId, last.arg),
-            "bước cuối 'Rời xe' phải gửi 2 (khoá). Gửi 1 = MỞ khoá rồi rời xe — đúng lỗi P0 đã tìm ra.",
-        )
-    }
-
     // ── Cùng họ: giá trị TẮT phải là giá trị xe hiểu, không phải 0 ───────────────────────────────
     // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `mua tu dong kinh tat gui 2 chu khong phai 0` đã gỡ cùng nút
     // `rain_close` (owner chấm NO). Luật *"giá trị TẮT là giá trị xe hiểu, không phải 0"* vẫn được khoá ở
@@ -184,8 +157,6 @@ class ControlWriteArgsTest {
         assertArrayEquals(intArrayOf(1, 2), args("seatc", 1), "ghế mát bật → [ghế lái, mức 1]")
         assertArrayEquals(intArrayOf(1, 1), args("seatc", 0), "ghế mát tắt → [ghế lái, tắt]")
         assertArrayEquals(intArrayOf(1, 2), args("seath", 1))
-        assertArrayEquals(intArrayOf(2), args("steer_heat", 1))
-        assertArrayEquals(intArrayOf(1), args("steer_heat", 0))
         // 1.94 · KÍNH TƯỜNG MINH (owner 2026-09-22) — nút TOGGLE, không còn COVER 3-mức.
         // Full: mở=WINDOW_OPEN_FULL=1 / đóng=WINDOW_CLOSE=2. [ĐO xe 2026-09-15] đóng gửi 0 = no-op ⇒ phải là 2.
         assertArrayEquals(intArrayOf(1, 1), args("win_lf", 1), "kính lái mở → [cửa 1, mở=1]")
@@ -268,15 +239,6 @@ class ControlWriteArgsTest {
         assertEquals(EvidenceTier.NEEDS_CAR, headl.tier)
     }
 
-    @Test fun `khoa cua sua case ten lop DoorLock de khong ClassNotFound`() {
-        listOf("lock", "door").forEach { id ->
-            assertEquals("BYDAutoDoorLockDevice.setDoorLockState", ControlRegistry.byId(id)!!.bindingKey, id)
-        }
-        assertEquals(
-            "android.hardware.bydauto.doorlock.BYDAutoDoorLockDevice",
-            (HalBindingTable.routeOf(ControlRegistry.byId("lock")!!.bindingKey) as BindingRoute.NamedMethod).fqn,
-        )
-    }
 
     // [ĐO xe 2026-09-15 + RE] hai control có enum RIÊNG, KHÔNG phải 0/1 (xem HalBindingTable.writeArgs):
     //  • đèn đọc `readl` feature 0x4F50003A: INSIGHT_LIGHT_ON=2 / OFF=1 (cũ gửi 0/1 ⇒ on/off tay không ăn).

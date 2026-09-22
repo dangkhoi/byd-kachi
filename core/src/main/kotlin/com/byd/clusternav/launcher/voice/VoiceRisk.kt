@@ -42,12 +42,6 @@ object VoiceRiskTable {
     }
 
     val CONTROL_RULES: List<Rule> = listOf(
-        Rule("door", null,
-            "mở khoá toàn xe — nghe nhầm một câu là xe mở khoá giữa bãi đỗ",
-            "unlocks the whole car — one misheard sentence opens it in a car park"),
-        Rule("lock", 0,
-            "tắt khoá nghĩa là MỞ khoá — cùng hậu quả với nút \"Mở khoá cửa\"",
-            "turning the lock off means UNLOCKING — same consequence as the unlock button"),
         Rule("windows_all", 1,
             "hạ HẾT 4 kính — mưa, bụi, hoặc đồ để trên ghế; đóng lại mất nhiều giây",
             "lowers ALL four windows — rain, dust, or belongings on the seats; closing takes seconds"),

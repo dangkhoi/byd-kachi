@@ -95,15 +95,11 @@ class VoiceDictionary0921Test {
     // ══ 3 · THÂN XE · ĐÈN · TIỆN NGHI ═════════════════════════════════════════════════════════════════
 
     @Test fun `khoa cop cua co nhieu cach noi`() = expect(
-        "khóa hết cửa" to VoiceIntent.Control("lock", 1),
-        "chốt xe" to VoiceIntent.Control("lock", 1),
-        "mở chốt cửa" to VoiceIntent.Control("door", null),
         "mở cốp hậu" to VoiceIntent.Control("trunk", 1),
         "mở cửa cốp" to VoiceIntent.Control("trunk", 1),
         "mở khoang hành lý" to VoiceIntent.Control("trunk", 1),
         "đóng cốp hậu" to VoiceIntent.Control("trunk", 0),
         // ⚠ cụm ĐÃ ĐO `MỞ KHÓA CỬA` phải sống — lượt này cố ý không thêm cụm nào bắt đầu bằng *"khóa cửa"*.
-        "mở khoá cửa" to VoiceIntent.Control("door", null),
     )
 
     @Test fun `den co nhieu cach noi`() = expect(
@@ -123,8 +119,6 @@ class VoiceDictionary0921Test {
         "mở rèm trời" to VoiceIntent.Control("sunshade", 1),
         "mở che nắng" to VoiceIntent.Control("sunshade", 1),
         "bật đế sạc" to VoiceIntent.Control("wireless_charge", 1),
-        "bật vô lăng ấm" to VoiceIntent.Control("steer_heat", 1),
-        "bật làm ấm vô lăng" to VoiceIntent.Control("steer_heat", 1),
         "bật camera toàn cảnh" to VoiceIntent.Control("cam", 1),
         // ⚠ cụm ĐÃ ĐO `MỞ KÍNH TRƯỚC TRÁI` phải sống.
         "mở kính trước trái" to VoiceIntent.Control("win_lf", 1),
@@ -176,7 +170,6 @@ class VoiceDictionary0921Test {
         }
         // …và cái mà *"mở cửa"* KHÔNG được phép nuốt: câu dài hơn vẫn tới đúng nút kính lái.
         assertEquals(VoiceIntent.Control("win_lf", 1), one("mở cửa sổ"))
-        assertEquals(VoiceIntent.Control("door", null), one("mở cửa xe"))
     }
 
     @Test fun `lay gio ngoai → recirc TAT`() {

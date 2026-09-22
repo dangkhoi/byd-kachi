@@ -60,7 +60,7 @@ class LangCoverageTest {
     fun `moi nut co nhan EN, dung 39 nut`() {
         // 39 (UX-OVERHAUL WP8 2026-09-20 owner purge 8 nút BỎ: gạt mưa · 4 đèn viền · mức tái tạo · 2 HUD).
         // 38 (gỡ `seat_memory`) → 29 (1.90: 9 nút xe-thuần-điện; danh sách ở `WorkspaceStateTest`).
-        assertEquals(36, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        assertEquals(33, ControlRegistry.ALL.size, "số nút đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = ControlRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "nút thiếu nhãn tiếng Anh: $missing")
     }
@@ -84,7 +84,7 @@ class LangCoverageTest {
 
     @Test
     fun `moi goi lenh co nhan EN, dung 4 goi`() {
-        assertEquals(4, ActionMacros.ALL.size)
+        assertEquals(2, ActionMacros.ALL.size)
         val missing = ActionMacros.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "gói lệnh thiếu nhãn tiếng Anh: $missing")
     }
@@ -211,7 +211,7 @@ class LangCoverageTest {
         // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **256 → 255 (−1)** = mục `voice_model_light`. Danh mục mô
         // hình nghe thu về đúng một gói ⇒ bề mặt chọn-mô-hình gỡ khỏi Cài đặt. Lượt GIẢM thứ ba.
         // 1.90: **255 → 244 (−11)** = −9 nút −2 datum (xe thuần điện). Lượt GIẢM thứ tư.
-        assertEquals(251, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        assertEquals(246, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -407,8 +407,8 @@ class LangCoverageTest {
         assertTrue(TyreBoard.verdict(TyreBoard.readings(status.tyres)).contains("low"))
         assertEquals("On", TelemetryReadout.of("light_low_beam", CarStatus(lights = CarStatus.Lights(lowBeam = true)))!!.display)
         // Gói lệnh: câu báo cho người dùng gọi tên bước hỏng bằng nhãn EN.
-        val res = MacroResult("mac_leave", listOf(MacroStepResult("win_lf", false)))
-        assertEquals("Leaving the car: the car took no command", res.notice(ActionMacros.byId("mac_leave")!!.displayLabel))
+        val res = MacroResult("mac_win_close_all", listOf(MacroStepResult("win_lf", false)))
+        assertEquals("Close all: the car took no command", res.notice(ActionMacros.byId("mac_win_close_all")!!.displayLabel))
         // Lựa chọn của nút SELECT cũng theo ngôn ngữ.
         // ⚠ Mốc đổi 3 lần theo 3 lượt xoá nút: `drive_mode`→`regen_level`→`headlight_mode` ⇒ nay `seatc` ("Level 2").
         assertEquals("Level 2", ControlTileLogic.selectLabel(ControlRegistry.byId("seatc")!!, 2))

@@ -112,7 +112,7 @@ class CapabilityIconsDiversityTest {
             // chọn không bày ô Lốp nào, mà bài này đo đúng *"những hình nằm CẠNH NHAU trên màn chọn"*. Sàn 0 đi
             // kèm một assert RIÊNG ngay dưới (đúng 0 ô) để con số này không thể là "quên nối" — và hình lốp vẫn
             // được canh ở `CapabilityIconMeaningTest` (từng mã → từng hình theo vị trí bánh).
-            Domain.TYRES to 0, Domain.BODY to 22, Domain.LIGHTS to 9, Domain.IDENTITY to 2,
+            Domain.TYRES to 0, Domain.BODY to 19, Domain.LIGHTS to 9, Domain.IDENTITY to 2,
         )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
         assertEquals(

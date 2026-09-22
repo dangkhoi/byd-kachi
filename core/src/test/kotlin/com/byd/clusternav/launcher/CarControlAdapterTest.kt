@@ -75,7 +75,7 @@ class CarControlAdapterTest {
     @Test fun `act dispatches by ControlKind`() {
         val gw = FakeHalGateway(namedRc = 0L, featureRc = 0L)
         val adapter = CarControlAdapter(HalBindingTable(gw))
-        assertTrue(adapter.act("lock", 1))            // TOGGLE (named)
+        assertTrue(adapter.act("readl", 1))           // TOGGLE (named)
         assertTrue(adapter.act("seatc", 2))           // SELECT (⚠ 1.90: mốc cũ `headlight_mode` đã xoá)
     }
 
@@ -100,12 +100,12 @@ class CarControlAdapterTest {
 
     @Test fun `actByKind di DUNG cua theo ControlKind`() {
         val p = RecordingPort()
-        assertTrue(p.actByKind("lock", 1))              // TOGGLE
+        assertTrue(p.actByKind("readl", 1))             // TOGGLE
         assertTrue(p.actByKind("fan", 5))               // STEP
         assertTrue(p.actByKind("sunshade", 1))          // COVER (kính nay TOGGLE; sunshade còn COVER)
         assertTrue(p.actByKind("seatc", 2))             // SELECT (⚠ 1.90: mốc cũ `headlight_mode` đã xoá)
         assertEquals(
-            listOf("toggle(lock,true)", "step(fan,5)", "cover(sunshade,true)", "select(seatc,2)"),
+            listOf("toggle(readl,true)", "step(fan,5)", "cover(sunshade,true)", "select(seatc,2)"),
             p.calls,
         )
     }

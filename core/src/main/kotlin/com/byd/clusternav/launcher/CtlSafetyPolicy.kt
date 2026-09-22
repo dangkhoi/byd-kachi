@@ -38,7 +38,7 @@ object CtlSafetyPolicy {
      * lái muốn bật ngay khi có trẻ trên xe.
      */
     val CONFIRM_REQUIRED: Set<String> = setOf(
-        "lock", "door", "trunk", "sunroof", "sunshade",
+        "trunk", "sunroof", "sunshade",
         "windows_all", "windows_close_all", "win_lf", "win_rf", "win_lr", "win_rr",
         "win_half_all", "win_half_lf", "win_half_rf", "win_half_lr", "win_half_rr",
     )

@@ -55,11 +55,6 @@ object SherpaSpokenWords {
         "lam mat ghe phu" to "làm mát ghế phụ", "thoi mat ghe phu" to "thổi mát ghế phụ",
         "suoi ghe phu" to "sưởi ghế phụ", "ghe phu am" to "ghế phụ ấm",
         "lam am ghe phu" to "làm ấm ghế phụ", "suoi ghe ben phu" to "sưởi ghế bên phụ",
-        "khoa xe" to "khóa xe",
-        "khoa cua" to "khóa cửa",
-        "mo khoa" to "mở khóa",
-        "mo khoa xe" to "mở khóa xe",
-        "mo khoa cua" to "mở khóa cửa",
         "cop" to "cốp",
         "cop xe" to "cốp xe",
         "den trong xe" to "đèn trong xe",
@@ -154,8 +149,6 @@ object SherpaSpokenWords {
         // ⚠ `"khoa cua xe"` đã bị GỠ khỏi [VoiceSynonyms.CONTROL] — nó nuốt cụm đã đo `MỞ KHÓA CỬA` qua luật
         // tiền tố. Lý do đầy đủ ở chỗ khai (`VoiceSynonyms.kt`, mục `lock`). Bỏ luôn ở đây vì bài canh
         // `SherpaBiasingCoverageTest` đòi bảng này **không có mục chết**.
-        "chot cua" to "chốt cửa",
-        "mo cua xe" to "mở cửa xe",
         "cua hau" to "cửa hậu",
         "thung sau" to "thùng sau",
         "den tran" to "đèn trần",
@@ -190,7 +183,6 @@ object SherpaSpokenWords {
         // (`SherpaBiasingCoverageTest` đỏ hai chiều: thiếu dạng có dấu, và có dạng có dấu mà cụm đã biến mất).
         "say kieng sau" to "sấy kiếng sau",
         // ⚠ 1.90 · dạng có dấu của `anion` (*"khử mùi"*) gỡ cùng nút (owner 2026-09-21).
-        "vo lang nong" to "vô lăng nóng",
         "rem noc" to "rèm nóc",
         "man che nang" to "màn che nắng",
         // 1.85 · khoá trẻ em hai bên + cụm mơ hồ. Dạng CÓ DẤU là thứ mô hình VN mã hoá được bằng BPE — thiếu nó thì
@@ -225,9 +217,6 @@ object SherpaSpokenWords {
         "bon cua kinh" to "bốn cửa kính",
         "tat ca kieng" to "tất cả kiếng",
         // ── VIỆC 2 · thân xe · khoá · cốp · cửa ──────────────────────────────────────────────────────────────
-        "khoa het cua" to "khóa hết cửa",
-        "chot xe" to "chốt xe",
-        "mo chot cua" to "mở chốt cửa",
         "cop hau" to "cốp hậu",
         "cua cop" to "cửa cốp",
         "khoang hanh ly" to "khoang hành lý",
@@ -254,8 +243,6 @@ object SherpaSpokenWords {
         "lam am ghe" to "làm ấm ghế",
         "suoi dit" to "sưởi đít",
         "suoi mong" to "sưởi mông",
-        "vo lang am" to "vô lăng ấm",
-        "lam am vo lang" to "làm ấm vô lăng",
         // ── điều hòa · gió · nhiệt · sấy · lọc ───────────────────────────────────────────────────────────────
         "quat tu dong" to "quạt tự động",
         "lam mat xe" to "làm mát xe",
@@ -358,7 +345,6 @@ object SherpaSpokenWords {
         "cabin light",
         "cabin temperature",
         "camera 360 do",
-        "central lock",
         "clean air now",
         "destination",
         // 1.91 — chữ tắt/chữ Anh của hai nút vừa được mở rộng cách nói: mô hình VN không phát ra token ấy.
@@ -370,7 +356,6 @@ object SherpaSpokenWords {
         "4 kinh",
         "every window",
         "high beam",
-        "lock car",
         "mileage",
         "music",
         "outside temperature",
@@ -382,8 +367,6 @@ object SherpaSpokenWords {
         "state of charge",
         "tailgate",
         "track",
-        "unlock",
-        "unlock car",
         "windows",
         // ── H3 · tên app viết NGUYÊN BẢN tiếng Anh ───────────────────────────────────────────────────
         // Cùng lý do với khối trên, có thêm một phép đo: [ĐO] `voice-mishear-2026-09-16.md` §4 — kiểu nói
