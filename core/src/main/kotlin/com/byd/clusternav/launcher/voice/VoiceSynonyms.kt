@@ -100,7 +100,9 @@ object VoiceSynonyms {
         // MƯA (nút đó đã bị gỡ ở WP8, nói được cũng không làm được), còn *"sấy gương"* là sưởi GƯƠNG hậu —
         // `mirror_auto`/`mirror_fold_btn` đã gỡ ở lượt FEATURE-FILTER. Nhận chúng là trỏ một câu có nghĩa rõ ràng
         // sang một bộ phận khác hẳn.
-        "defrost" to listOf("say kinh truoc", "xa bang", "say kieng", "tan suong", "khu suong"),
+        "defrost" to listOf("say kinh truoc", "xa bang", "say kieng", "tan suong", "khu suong",
+            // [ĐO golden 2026-09-22] "sấy kính" (không "trước") rơi nhầm win_lf ⇒ khai tường minh về defrost trước.
+            "say kinh", "say kieng truoc"),
         "cam" to listOf("camera", "camera 360 do", "camera quanh xe", "cam ba sau muoi", "camera toan canh"),
         "sunroof" to listOf("noc xe", "cua noc", "cua so noc", "kinh noc", "sunroof"),
         "headl" to listOf("den chieu xa", "high beam", "den cot pha", "chieu xa", "den lon"),
@@ -166,7 +168,7 @@ object VoiceSynonyms {
         //   có dấu: [SherpaHotwords] bỏ token số, nên bias chúng là vô nghĩa (đúng luật `camera 360 do` đã có).
         //   Tầng CHỮ vẫn khớp chúng bình thường — người gõ *"mở 4 cửa sổ"* trên xe vẫn ra cả bốn.
         "windows_all" to listOf("het kinh", "toan bo kinh", "moi kinh", "every window",
-            "het kieng", "bon kinh", "cac cua so", "windows",
+            "het kieng", "bon kinh", "cac cua so", "windows", "tat ca kinh",
             "het cua so", "toan bo cua so", "tat ca cua so", "moi cua so", "bon cua so",
             "het cua kinh", "toan bo cua kinh", "tat ca cua kinh", "bon cua kinh",
             "tat ca kieng",
@@ -198,7 +200,10 @@ object VoiceSynonyms {
         "win_half_all" to listOf("nua het kinh", "mo nua het kinh", "nua tat ca kinh", "mo mot nua tat ca kinh"),
         // ⚠ 1.90 · cách nói của `brightness_gear` (*"độ sáng màn hình"/"sáng màn"*) và `anion` (*"khử mùi"*) gỡ
         // cùng hai nút (owner 2026-09-21).
-        "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh", "loc gap"),
+        "pm25_clean_now" to listOf("loc khong khi ngay", "clean air now", "loc nhanh", "loc gap",
+            // [ĐO golden 2026-09-22] nhiều cách nói "lọc ngay một lượt".
+            "loc ngay", "loc bui ngay", "bam loc", "bam loc bui", "bam loc nhanh", "chay loc", "chay loc ngay",
+            "chay loc nhanh", "loc lien", "loc bui lien"),
         // ⚠ 1.85: `hood` ("nap ca po"/"nap may") đã xoá cùng mã — xe không có ca-pô điện ([ĐO xe 2026-09-20 §4]).
         // Không để lại cách nói mồ côi: `VoiceGrammarCoverageTest` đòi mọi cụm trỏ về một mã có thật.
         "defrost_rear" to listOf("say kieng sau", "say kinh hau"),

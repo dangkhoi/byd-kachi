@@ -101,9 +101,13 @@ class VoiceSeatTrunk0920Test {
         assertEquals(VoiceIntent.Control("trunk", 0), one("hạ cốp"))
     }
 
-    /** GUARD: "hạ" KHÔNG vào bảng verb chung — "hạ kính" (kính hạ xuống = MỞ) KHÔNG được hiểu thành đóng. */
-    @Test fun `ha khong pha kinh`() {
-        assertEquals(VoiceUnknownReason.NO_VERB, (one("hạ kính") as? VoiceIntent.Unknown)?.reason)
+    /** "hạ kính" = kính HẠ XUỐNG = MỞ (owner phương ngữ 2026-09-22); "kéo/nâng kính lên" = ĐÓNG. "hạ cốp" vẫn đóng. */
+    @Test fun `ha keo kinh la huong mo dong`() {
+        assertEquals(VoiceIntent.Control("win_lf", 1), one("hạ kính lái"))       // hạ = mở
+        assertEquals(VoiceIntent.Control("win_lf", 1), one("hạ kính trước trái xuống"))
+        assertEquals(VoiceIntent.Control("win_lf", 0), one("kéo kính lái lên"))  // kéo lên = đóng
+        assertEquals(VoiceIntent.Control("win_lf", 0), one("nâng kính trước trái lên"))
+        assertEquals(VoiceIntent.Control("trunk", 0), one("hạ cốp"))             // cốp vẫn đóng (scoped riêng)
     }
 
     // ══ (3) BỤI MỊN NGOÀI XE — datum NEEDS_CAR (getter RE trên xe) ═════════════════════════════════════

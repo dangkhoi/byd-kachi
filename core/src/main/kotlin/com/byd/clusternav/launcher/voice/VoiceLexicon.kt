@@ -298,7 +298,56 @@ object VoiceLexicon {
         // ⚠ `u` cũng là một cụm của [CONFIRM_YES]; hai vai ấy chỉ sống chung được nhờ thứ tự xét ở
         // [confirmAnswer] (bản chưa lọc trước) — đọc KDoc ở đó trước khi đụng vào một trong hai danh sách.
         "u", "um",
+        // Courtesy đơn (owner on-car 2026-09-22 + golden dataset): "ê", "với" mở/đệm câu. KHÔNG thêm "a" (là đầu
+        // cụm "a c"=điều hoà), "cho"/"tôi"/"đi"/"nhé" (nghĩa khác) — xử qua cụm ở [stripCourtesy].
+        "e", "voi",
     )
+
+    /**
+     * Cụm LỊCH SỰ ở ĐẦU câu (đã bỏ dấu, dài trước ngắn) — "làm ơn bật cốp" / "cho tôi bật cốp" / "cho mình xem
+     * pin". [ĐO golden dataset 2026-09-22] đây là nhóm FAIL lớn nhất: động từ không còn ở vị trí 0 ⇒ NO_VERB.
+     */
+    private val LEAD_COURTESY: List<List<String>> = listOf(
+        listOf("lam", "on"), listOf("lam", "phuc"),
+        listOf("cho", "toi"), listOf("cho", "minh"), listOf("cho", "anh"), listOf("cho", "em"),
+        listOf("giup", "toi"), listOf("giup", "minh"), listOf("phien", "ban"),
+    ).sortedByDescending { it.size }
+
+    /**
+     * Cụm LỊCH SỰ/đệm ở CUỐI câu — "... hộ tôi" / "... giúp mình" / "... một chút" / "... đi" / "... nhé".
+     * Cắt ở đuôi để phần lệnh phía trước parse sạch. Dài trước ngắn.
+     */
+    private val TAIL_COURTESY: List<List<String>> = listOf(
+        listOf("ho", "toi"), listOf("ho", "minh"), listOf("giup", "toi"), listOf("giup", "minh"),
+        listOf("gium", "toi"), listOf("gium", "minh"), listOf("dum", "toi"), listOf("dum", "minh"),
+        listOf("dum", "cai"), listOf("gium", "cai"), listOf("giup", "cai"),
+        listOf("mot", "chut"), listOf("mot", "ti"), listOf("mot", "xiu"), listOf("cai", "nao"),
+        listOf("nhe"), listOf("nha"), listOf("di"), listOf("gium"), listOf("dum"), listOf("voi"),
+        listOf("lai"), listOf("cai"),
+    ).sortedByDescending { it.size }
+
+    /**
+     * Cắt cụm lịch sự ĐẦU + CUỐI (courtesy) rồi mới đưa vào [dropLeadingFillers]. Trả nguyên nếu không có gì để cắt.
+     *
+     * ⚠ CẨN TRỌNG: chỉ cắt ĐUÔI khi phần còn lại vẫn ≥ 1 từ (không nuốt cả câu), và không cắt nếu đuôi trùng một
+     * đối tượng có nghĩa — vd "lái" (ghế lái) cắt ở cuối "sưởi ghế lái" sẽ hỏng. Nên "lai"/"cai" chỉ cắt khi
+     * TRƯỚC nó vẫn còn cụm đủ dài. Ở đây giữ luật đơn giản: cắt tối đa MỘT cụm mỗi đầu, và không cắt "lai"/"cai"
+     * nếu ngay trước chúng là "ghe" (ghế lái) hoặc câu chỉ còn ≤ 2 từ.
+     */
+    fun stripCourtesy(t: List<Token>): List<Token> {
+        var out = t
+        // Đầu câu.
+        LEAD_COURTESY.firstOrNull { p -> out.size > p.size && phraseAt(out, 0, p) }
+            ?.let { out = out.subList(it.size, out.size) }
+        // Cuối câu.
+        TAIL_COURTESY.firstOrNull { p ->
+            out.size > p.size && phraseAt(out, out.size - p.size, p) &&
+                // "lai"/"cai" ở cuối chỉ cắt khi câu còn dài (>3 từ) và trước nó KHÔNG phải "ghe" (ghế lái).
+                !((p == listOf("lai") || p == listOf("cai")) &&
+                    (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe"))
+        }?.let { out = out.subList(0, out.size - it.size) }
+        return out
+    }
 
     /**
      * Bỏ các [FILLERS] **ở ĐẦU** dãy, dừng ở từ thật đầu tiên (giữa câu thì không đụng — *"bật hay tắt"* phải còn
@@ -329,6 +378,8 @@ object VoiceLexicon {
      */
     val READ_TAILS: List<List<String>> = listOf(
         listOf("bao", "nhieu"), listOf("the", "nao"), listOf("ra", "sao"),
+        // [ĐO golden 2026-09-22] Nam Bộ hỏi tình trạng: "pin sao rồi" · "mức xăng sao rồi".
+        listOf("sao", "roi"), listOf("the", "nay"), listOf("nhu", "the", "nao"),
         listOf("how", "much"), listOf("how", "many"),
     )
 

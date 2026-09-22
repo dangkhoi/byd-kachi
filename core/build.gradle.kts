@@ -43,6 +43,12 @@ dependencies {
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 
+    // Golden voice-coverage test đọc corpus câu nói ở scripts/voice/data/*.tsv qua clusternav.root.
+    systemProperty("clusternav.root", rootProject.projectDir.absolutePath)
+    inputs.dir(rootProject.layout.projectDirectory.dir("scripts/voice/data"))
+        .withPropertyName("voiceGoldenCorpus")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
     inputs.dir(rootProject.layout.projectDirectory.dir("app/src/main/java"))
         .withPropertyName("appSourceTextForCoreGuardTests")
         .withPathSensitivity(PathSensitivity.RELATIVE)

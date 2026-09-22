@@ -52,8 +52,11 @@ object VoiceIntentParser {
          */
         places: List<String> = emptyList(),
     ): List<VoiceIntent> {
-        val all = VoiceLexicon.tokenize(text)
-        if (all.isEmpty()) return listOf(VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, text))
+        val raw0 = VoiceLexicon.tokenize(text)
+        if (raw0.isEmpty()) return listOf(VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, text))
+        // Cắt cụm LỊCH SỰ đầu/cuối ("làm ơn …", "cho tôi …", "… hộ tôi", "… nhé", "… đi") — [ĐO golden dataset
+        // 2026-09-22] nhóm FAIL lớn nhất: động từ không ở vị trí 0 ⇒ NO_VERB. Chi tiết ở [VoiceLexicon.stripCourtesy].
+        val all = VoiceLexicon.stripCourtesy(raw0).ifEmpty { raw0 }
         // H4 — cụm NGHE NHẦM chỉ bật khi CẢ CÂU có từ ngữ cảnh, nên phải tính trên `all`, không trên từng vế.
         val terms = VoiceGrammar.plusMisheard(VoiceGrammar.terms(profiles, apps), all)
 
@@ -220,11 +223,8 @@ object VoiceIntentParser {
         // ngoài" là chiều NGƯỢC của nút `recirc` (bật = lấy gió trong) — KHÔNG cho nó vào bảng synonym của recirc
         // (sẽ BẬT khi người ta xin gió ngoài). (owner 2026-09-21)
         //
-        // ⚠⚠ [SOÁT 2026-09-21 · P1] Luật này phải đọc ĐỘNG TỪ, nên nó đứng SAU [verbHit] chứ không trước.
-        // Bản đầu trả `Control(recirc, 0)` cho **mọi** câu có "gio"+"ngoai", nên [ĐO] *"tắt gió ngoài"* · *"tắt lấy
-        // gió ngoài"* · *"đóng gió ngoài"* đều **BẬT gió ngoài** — làm đúng điều NGƯỢC LẠI với câu người lái vừa
-        // nói. Một lệnh giọng nói chạy ngược còn tệ hơn một lệnh không hiểu, vì người ta không nói lại.
-        //
+        // ⚠⚠ [SOÁT 2026-09-21 · P1] Luật này đọc ĐỘNG TỪ nên đứng SAU [verbHit]. Bản đầu trả `Control(recirc,0)`
+        // cho mọi câu "gio"+"ngoai" ⇒ "tắt gió ngoài" lại BẬT gió ngoài (chạy NGƯỢC — tệ hơn không hiểu).
         // `recirc` chỉ có HAI trạng thái nên chiều phủ định là suy ra được, không phải đoán: *thôi lấy gió ngoài*
         // = lấy gió trong = `recirc` BẬT. (Câu HỎI không tới được đây: [VoiceQuestion.isChoice]/[readsLead] đã cắt ở
         // trên, và cổng D1 ở [parse] còn đổi mọi câu hỏi-ra-lệnh-GHI về đường ĐỌC.)
@@ -256,15 +256,16 @@ object VoiceIntentParser {
         VoiceLayouts.match(t)?.let { return VoiceIntent.Layout(it) }
         // (b'') *"về nhà"* · *"đi làm"* · *"đến công ty"* — động từ CÓ ĐIỀU KIỆN của sổ địa chỉ.
         //
-        // Đứng SAU [headMatch] có chủ ý: bỏ dấu thì *"đến"* = *"đèn"*, nên câu *"đèn đọc"* phải được nhãn nút
-        // (dài hơn) giành lấy trước. Và chỉ nhận khi **cả phần đuôi** là một nơi có thật — xem KDoc
-        // [VoicePlaces.PLACE_VERBS] về vì sao ba từ này không được vào bảng động từ chung.
+        // Đứng SAU [headMatch] có chủ ý: bỏ dấu thì "đến"="đèn" nên "đèn đọc" phải được nhãn nút giành trước.
+        // Chỉ nhận khi cả phần đuôi là một nơi có thật — xem KDoc [VoicePlaces.PLACE_VERBS].
         savedPlace(t, places)?.let { return it }
         // (b''') [ĐO log 1.79] "tìm + TỪ-NHẠC" → tra nhạc; "tìm <phi-nhạc>" giữ NO_VERB. Đứng sau headMatch nên "tìm đường đến X" (NAV) đã giải trước — xem [mediaSearch].
         if (verbHit == null) {
             VoiceMediaNavParse.mediaSearch(t)?.let { return it }
             // "hạ [cái] cốp [sau]" → ĐÓNG cốp — scoped: "hạ" mơ hồ theo vật (hạ kính=MỞ) nên KHÔNG vào bảng verb chung.
             if (VoiceLexicon.phraseAt(t, 0, listOf("ha")) && t.any { it.norm == "cop" }) return VoiceIntent.Control("trunk", 0)
+            // Hướng KÍNH "hạ/kéo/nâng … [lên/xuống]" (owner phương ngữ) — chi tiết ở [VoiceControlParse.rewriteWindowDirection].
+            VoiceControlParse.rewriteWindowDirection(t)?.let { return parseTokens(it, terms, places, original) }
             // "điều hòa/máy lạnh <số> độ" KHÔNG có động từ (owner 2026-09-21) ⇒ đẩy qua control(ac_auto, SET),
             // nó tự nhận "<số> độ" → đặt nhiệt (nút temp).
             // ⚠⚠ [SOÁT 2026-09-21 · P1] CHỈ nhận khi ra ĐÚNG setpoint nhiệt (id=="temp"). `ac_auto` là TOGGLE:
@@ -286,10 +287,9 @@ object VoiceIntentParser {
 
         // (d) Quét từ trái sang, lấy **cách hiểu ĐẦU TIÊN có nghĩa**.
         //
-        // ⚠ Không được dừng ở cụm khớp đầu tiên rồi thôi: từ vựng của xe có những cụm MỘT TỪ rất ngắn đụng vào từ
-        // thường ([ĐO] datum `gear` mang nhãn *"Số"* ⇒ *"chuyển sang hồ sơ Vợ"* khớp *"số"* ở giữa câu, rồi
-        // "chuyển" + một datum = MISMATCH, và cái tên hồ sơ đứng ngay sau đó không bao giờ được xét tới).
-        // Đi tiếp cho tới cách hiểu đầu tiên hợp với động từ thì ca đó tự giải, mà không phải liệt kê từ cấm.
+        // ⚠ Không dừng ở cụm khớp ĐẦU: cụm MỘT TỪ ngắn đụng từ thường ([ĐO] datum `gear` nhãn "Số" ⇒ "chuyển
+        // sang hồ sơ Vợ" khớp "số" giữa câu → MISMATCH, tên hồ sơ sau đó không được xét). Đi tiếp tới cách hiểu
+        // đầu tiên hợp động từ ⇒ ca đó tự giải, không cần liệt kê từ cấm.
         // (c') H3 — cách gọi app ≥ 2 từ đứng NGAY SAU động từ thắng một nhãn NGẮN ở giữa câu. Chữa hai ca MỞ
         //      NHẦM APP đo được trên máy ảo; toàn bộ lý do + ba cổng ở KDoc [VoiceTailClause.appAtHead].
         VoiceTailClause.appAtHead(rest, terms, verb)?.let { return it }

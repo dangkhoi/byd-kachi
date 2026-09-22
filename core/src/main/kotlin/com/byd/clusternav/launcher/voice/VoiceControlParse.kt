@@ -202,4 +202,36 @@ internal object VoiceControlParse {
         return VoiceLexicon.tokenize("$mode ghế lái$levelSuffix") to
             VoiceLexicon.tokenize("$mode ghế phụ$levelSuffix")
     }
+
+    /** Từ chỉ KÍNH cửa (đã bỏ dấu) — để [rewriteWindowDirection] biết câu có nói về kính không. */
+    private val WINDOW_WORDS = setOf("kinh", "kieng", "kim", "kieng")
+
+    /**
+     * ═══ Hướng KÍNH bằng "hạ/kéo/nâng … [lên/xuống]" ⇒ viết lại thành "mở/đóng …" ══════════════════════════════
+     *
+     * Trả `null` nếu câu KHÔNG phải dạng này. Owner phương ngữ · [ĐO golden 2026-09-22]:
+     *  • "hạ kính [X]" / "hạ [X] xuống" ⇒ MỞ (hạ kính xuống = mở).
+     *  • "kéo/nâng kính [X] lên" ⇒ ĐÓNG.
+     *
+     * Chỉ nhận khi câu nhắc KÍNH ([WINDOW_WORDS] hoặc "cửa sổ") và KHÔNG nhắc "cốp" (cốp có luật riêng: hạ cốp =
+     * đóng). Viết lại bằng cách bỏ động-từ-hướng + "lên"/"xuống" rồi ghép "mở"/"đóng" vào đầu, giao lại
+     * [VoiceIntentParser] — nút kính lái/phụ/sau vẫn do đường synonym giải (một nguồn).
+     */
+    fun rewriteWindowDirection(t: List<Token>): List<Token>? {
+        val norms = t.map { it.norm }
+        if (norms.isEmpty()) return null
+        val mentionsWindow = norms.any { it in WINDOW_WORDS } ||
+            (0 until norms.size - 1).any { norms[it] == "cua" && norms[it + 1] == "so" }
+        if (!mentionsWindow || norms.contains("cop")) return null
+        val head = norms[0]
+        val verb: String = when {
+            head == "ha" -> "mở"
+            (head == "keo" || head == "nang") && norms.contains("len") -> "đóng"
+            else -> return null
+        }
+        // Bỏ động-từ-hướng ở đầu + mọi "lên"/"xuống" ⇒ còn lại là "kính [X]". Ghép động từ chuẩn vào trước.
+        val body = t.drop(1).filterNot { it.norm == "len" || it.norm == "xuong" }
+        if (body.isEmpty()) return null
+        return VoiceLexicon.tokenize(verb) + body
+    }
 }

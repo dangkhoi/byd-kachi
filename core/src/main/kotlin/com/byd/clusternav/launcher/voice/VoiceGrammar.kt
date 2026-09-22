@@ -106,6 +106,8 @@ object VoiceGrammar {
         listOf("chinh") to VoiceVerb.SET,
         listOf("set") to VoiceVerb.SET,
         listOf("xem") to VoiceVerb.READ,
+        listOf("coi") to VoiceVerb.READ,
+        listOf("coi", "thu") to VoiceVerb.READ,
         listOf("doc") to VoiceVerb.READ,
         listOf("hien") to VoiceVerb.READ,
         listOf("show") to VoiceVerb.READ,

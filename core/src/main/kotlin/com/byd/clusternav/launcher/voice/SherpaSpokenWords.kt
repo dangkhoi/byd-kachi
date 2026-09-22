@@ -77,6 +77,12 @@ object SherpaSpokenWords {
         "toc do quat" to "tốc độ quạt",
         "suc gio" to "sức gió",
         "say kinh truoc" to "sấy kính trước",
+        // Golden dataset 2026-09-22 — synonym mới cần dạng có dấu để bias.
+        "say kinh" to "sấy kính", "say kieng truoc" to "sấy kiếng trước", "tat ca kinh" to "tất cả kính",
+        "loc ngay" to "lọc ngay", "loc bui ngay" to "lọc bụi ngay", "bam loc" to "bấm lọc",
+        "bam loc bui" to "bấm lọc bụi", "bam loc nhanh" to "bấm lọc nhanh", "chay loc" to "chạy lọc",
+        "chay loc ngay" to "chạy lọc ngay", "chay loc nhanh" to "chạy lọc nhanh", "loc lien" to "lọc liền",
+        "loc bui lien" to "lọc bụi liền",
         "xa bang" to "xả băng",
         "camera" to "camera",
         "camera quanh xe" to "camera quanh xe",

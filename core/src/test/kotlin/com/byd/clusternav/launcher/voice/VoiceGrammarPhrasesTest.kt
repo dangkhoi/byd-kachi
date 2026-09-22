@@ -310,7 +310,7 @@ class VoiceGrammarPhrasesTest {
         // đúng như lượt H3/H4 đã thấy, vì cách nói đời thường tiếng Việt là đúng thứ mô hình VN phủ tốt nhất.
         // Hai dạng mang CHỮ SỐ (`4 cua so` · `4 kinh`) KHÔNG nằm ở con số này: chúng khai ở `NO_VI_FORM`, và chữ
         // `4` không có trong từ điển nên chúng rơi sang vế BỊ LOẠI. Số đọc từ **actual**, không chép tay.
-        const val EXPECTED_PHRASES_KEPT = 366
+        const val EXPECTED_PHRASES_KEPT = 379
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -435,7 +435,7 @@ class VoiceGrammarPhrasesTest {
         // `gấp` · `đế` · `cảnh` · `người` · `rèm` · `trời` · `che` · `nắng` · `lăng` · `tuần` · `khí` · `khử` ·
         // `quãng` · `bình` · `lốp` … (các từ như `cửa` · `sổ` · `kính` · `ghế` đã có sẵn nên cộng 0). Số đọc từ
         // **actual** của chính bài này — phần nở theo thanh điệu KHÔNG tính tay được, đúng như KDoc trên đã dặn.
-        const val EXPECTED_ENTRIES = 1944
+        const val EXPECTED_ENTRIES = 2002
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính
