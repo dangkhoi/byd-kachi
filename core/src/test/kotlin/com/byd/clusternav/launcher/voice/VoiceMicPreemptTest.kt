@@ -57,13 +57,15 @@ class VoiceMicPreemptTest {
     @Test fun `cau chi trong luc cho thi rut`() {
         // ⚠ [VoiceMicPreempt.preempt] xin chốt bằng **đồng hồ thật** (đúng cho bản chạy thật), nên cửa sổ cầu chì
         // phải được lấp quanh `System.currentTimeMillis()` — lấp bằng mốc giả nhỏ thì `trim` dọn hết và không nổ.
+        // ⚠ Dùng nhãn AUTO ("hoi-lai"): nhãn người-bấm ("chinh") nay MIỄN cầu chì (vá "seri ngu",
+        // [VoiceSingleFlight.LABEL_COMMAND]) nên nó không đi vào nhánh Fused này — đúng là điều ta muốn.
         val now = System.currentTimeMillis()
         for (i in 0 until VoiceSingleFlight.MAX_OPENS_PER_MINUTE) {
             VoiceSingleFlight.acquire("x$i", now - 1_000 + i); VoiceSingleFlight.release()
         }
         VoiceSingleFlight.acquireWake("wake#4") // không tiêu hạn mức, nhưng hạn mức đã đầy vì 12 lượt trên
         var steps = 0
-        val ok = VoiceMicPreempt.preempt("chinh", waitMs = 600L, stepMs = 30L) {
+        val ok = VoiceMicPreempt.preempt("hoi-lai", waitMs = 600L, stepMs = 30L) {
             if (++steps == 1) VoiceSingleFlight.release("wake#4")
             true
         }

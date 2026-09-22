@@ -126,4 +126,46 @@ class VoiceSingleFlightTest {
             VoiceSingleFlight.release()
         }
     }
+
+    // ── "seri ngu" — team 2026-09-22: nói gì cũng không hiểu, phải tắt voice mở lại ──────────────
+
+    /**
+     * **Ca thật team báo**: cầu chì cháy (12 lượt auto trong 60 s từ một câu nghe nhầm qua vòng hỏi-lại) rồi
+     * **KHẸT** — mọi lượt sau nhận `Fused` ⇒ chuỗi rỗng ⇒ *"không nghe thấy"* tới khi tắt voice mở lại.
+     *
+     * Sau vá: lượt do NGƯỜI chủ động mở ([VoiceSingleFlight.LABEL_COMMAND] = `"chinh"`) **luôn được cấp**, kể
+     * cả khi cầu chì đã cháy — nên một cú bấm nút mic mới không bao giờ bị *"seri ngu"*.
+     */
+    @Test
+    fun `cau chi chay roi — nut mic cua nguoi bam VAN duoc cap`() {
+        // Vòng auto tự nuôi đốt hết quỹ (nhãn KHÔNG phải "chinh").
+        repeat(VoiceSingleFlight.MAX_OPENS_PER_MINUTE) { i ->
+            VoiceSingleFlight.acquire("hoi-lai-$i", i.toLong()); VoiceSingleFlight.release()
+        }
+        assertTrue(
+            VoiceSingleFlight.acquire("hoi-lai-x", 100L) is VoiceSingleFlight.Grant.Fused,
+            "vòng auto phải bị cầu chì",
+        )
+        // Nhưng người bấm nút mic (lượt "chinh") thì KHÔNG bị chặn — đây là vá "seri ngu".
+        assertEquals(
+            VoiceSingleFlight.Grant.Ok, VoiceSingleFlight.acquire("chinh", 200L),
+            "lượt do người chủ động mở không bao giờ bị cầu chì từ chối",
+        )
+    }
+
+    /** Lượt "chinh" vẫn GHI một suất — để các lượt AUTO sau nó trong cùng phiên vẫn bị đếm và chặn được. */
+    @Test
+    fun `luot chinh van ghi mot suat — khong mo cua cho vong auto lach cau chi`() {
+        assertEquals(VoiceSingleFlight.Grant.Ok, VoiceSingleFlight.acquire("chinh", 0L))
+        VoiceSingleFlight.release()
+        assertEquals(1, VoiceSingleFlight.opensInWindow(0L), "lượt chinh phải ghi vào quỹ, không miễn đếm")
+        // 11 lượt auto tiếp theo lấp đầy quỹ (1 + 11 = 12), lượt auto thứ 13 bị chặn đúng như trước.
+        repeat(VoiceSingleFlight.MAX_OPENS_PER_MINUTE - 1) { i ->
+            VoiceSingleFlight.acquire("hoi-lai-$i", (i + 1).toLong()); VoiceSingleFlight.release()
+        }
+        assertTrue(
+            VoiceSingleFlight.acquire("hoi-lai-tran", 50L) is VoiceSingleFlight.Grant.Fused,
+            "vòng auto vẫn phải bị chặn ở trần — lượt chinh không được mở đường lách cho nó",
+        )
+    }
 }

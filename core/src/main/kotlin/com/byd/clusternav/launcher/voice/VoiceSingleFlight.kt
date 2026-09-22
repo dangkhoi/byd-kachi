@@ -59,6 +59,26 @@ object VoiceSingleFlight {
      *  2. **Nó nhường được** ([requestYield]) — vì nếu không thì người lái bấm nút mic sẽ chỉ nhận `Busy("wake")`
      *     mãi mãi.
      */
+    /**
+     * Nhãn lượt nghe **do NGƯỜI bấm mở** — nút mic / ô thanh nút / phím vô-lăng / cầu kiểm thử đều mở lượt
+     * ĐẦU của phiên bằng nhãn này (khớp `VoiceCapture.LABEL_MAIN = "chinh"`, cùng lệ ASCII).
+     *
+     * ## Vì sao lượt này KHÔNG bao giờ bị cầu chì từ chối ([acquire] `userInitiated`)
+     * [ĐO xe — team 2026-09-22] người dùng gặp *"seri ngu: nói gì cũng không hiểu, phải tắt voice mở lại"*.
+     * Gốc: một câu nghe nhầm (vd *"tắt kính lái"*) đi qua vòng hỏi-lại/hội-thoại (mỗi lượt là một lần mở mic,
+     * tối đa `MAX_FOLLOW_UPS` = 5) cộng vài lần bấm lại ⇒ đốt hết [MAX_OPENS_PER_MINUTE] = 12 trong 60 s ⇒ mọi
+     * lượt sau nhận `Fused` ⇒ chuỗi rỗng ⇒ *"không nghe thấy"* tới khi các suất **già đi** (≤ 60 s) hoặc tiến
+     * trình chết (đó là điều *"tắt voice mở lại"* làm — [opens] là quỹ mức tiến-trình, [start] một phiên mới
+     * KHÔNG xoá nó). Trần 12/phút sinh ra để chặn **vòng lặp phiên tự nuôi** (309 lượt/12 phút từ ảo giác từ
+     * đệm) — thứ ấy do **vòng auto** (hỏi-lại/hội-thoại/xác-nhận) tự đẻ, KHÔNG phải người bấm nút 309 lần. Nên
+     * lượt do người chủ động mở **luôn được cấp** (vẫn ghi một suất để các lượt auto SAU nó trong cùng phiên
+     * vẫn bị đếm và vẫn chặn được vòng auto). Cùng tinh thần [acquireWake] không tiêu quỹ.
+     */
+    const val LABEL_COMMAND = "chinh"
+
+    /** Lượt này có phải do NGƯỜI chủ động mở không — xem [LABEL_COMMAND]. */
+    fun isCommandLabel(label: String): Boolean = label == LABEL_COMMAND
+
     const val LABEL_WAKE = "wake"
 
     /** Chủ hiện tại có phải bộ nghe wake không (nhãn có thể mang hậu tố `#<số>` của từng lượt chạy). */
@@ -99,7 +119,9 @@ object VoiceSingleFlight {
         trim(nowMs)
         // ⚠ Cầu chì đếm lượt **ĐƯỢC CẤP**, không đếm lượt XIN. Đếm lượt xin thì một tràng bị chốt một-lượt chắn
         // lại (tức đã vô hại) vẫn đốt hết hạn mức, và người lái mất micro vì một lỗi mà lớp trước đã chặn xong.
-        if (opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
+        // ⚠ Lượt do NGƯỜI chủ động mở ([LABEL_COMMAND]) KHÔNG bao giờ bị `Fused` — xem KDoc [LABEL_COMMAND]
+        // (vá "seri ngu"). Vẫn ghi một suất để các lượt AUTO sau nó trong cùng phiên vẫn bị đếm và chặn được.
+        if (!isCommandLabel(label) && opens.size >= MAX_OPENS_PER_MINUTE) return Grant.Fused(opens.size)
         opens.addLast(nowMs)
         holder = label
         yieldWanted = false

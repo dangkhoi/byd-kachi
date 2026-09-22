@@ -459,7 +459,9 @@ internal class VoiceCapture(private val ctx: Context) {
          * Nhãn lượt cho [VoiceSingleFlight] — ASCII, cố ý không dịch: chúng chỉ đi vào logcat, và hai lượt đo
          * trên hai máy khác ngôn ngữ phải grep được bằng MỘT chuỗi (cùng luật `PermissionReport.logLine`).
          */
-        const val LABEL_MAIN = "chinh"
+        // Một nguồn cho nhãn lượt do NGƯỜI mở: cầu chì [VoiceSingleFlight] miễn cầu-chì cho đúng nhãn này
+        // (vá "seri ngu"), nên hai bên phải là CÙNG một chuỗi — trỏ thẳng về đó thay vì chép "chinh" lần hai.
+        val LABEL_MAIN = VoiceSingleFlight.LABEL_COMMAND
         const val LABEL_FOLLOW_UP = "hoi-thoai"
         const val LABEL_CLARIFY = "hoi-lai"
         const val LABEL_CONFIRM = "xac-nhan"
