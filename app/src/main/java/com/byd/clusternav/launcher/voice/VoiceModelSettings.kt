@@ -86,7 +86,10 @@ class VoiceModelSettings(
 
         val action = rows.button(modelActionLabel()) {} as TextView
         action.setOnClickListener {
-            if (VoiceModelStore.isReady(context)) removeModel(status, action) else installModel(status, action)
+            // 3 trạng thái như gói giọng đọc: chưa có ⇒ Tải · có bản mới ⇒ Cập nhật · mới nhất ⇒ Gỡ (owner 2026-09-22).
+            if (!VoiceModelStore.isReady(context)) installModel(status, action)
+            else if (VoiceModelStore.needsUpdate(context)) installModel(status, action)
+            else removeModel(status, action)
         }
         body.addView(action)
     }
@@ -118,13 +121,19 @@ class VoiceModelSettings(
     }
 
     private fun modelActionLabel(): String = context.getString(
-        if (VoiceModelStore.isReady(context)) R.string.kachi_voice_model_remove else R.string.kachi_voice_model_get,
+        when {
+            !VoiceModelStore.isReady(context) -> R.string.kachi_voice_model_get
+            VoiceModelStore.needsUpdate(context) -> R.string.kachi_voice_model_update
+            else -> R.string.kachi_voice_model_remove
+        },
     )
 
     private fun modelStatusText(): String {
         val model = VoiceModelStore.selected(context)
         return if (!VoiceModelStore.isReady(context)) {
             context.getString(R.string.kachi_voice_model_absent, mb(model.totalBytes))
+        } else if (VoiceModelStore.needsUpdate(context)) {
+            context.getString(R.string.kachi_voice_model_has_update, model.label)
         } else {
             context.getString(
                 R.string.kachi_voice_model_ready,

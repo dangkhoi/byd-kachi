@@ -575,6 +575,8 @@
     <string name="kachi_voice_model_ready">Đã cài %1$s · %2$d từ · %3$s trên đĩa</string>
     <string name="kachi_voice_model_get">Tải mô hình tiếng Việt</string>
     <string name="kachi_voice_model_remove">Gỡ mô hình</string>
+    <string name="kachi_voice_model_update">Cập nhật mô hình tiếng Việt</string>
+    <string name="kachi_voice_model_has_update">Đã có bản mới của mô hình \"%1$s\" — bấm Cập nhật để tải bản mới.</string>
     <string name="kachi_voice_model_working">Đang làm…</string>
     <string name="kachi_voice_model_downloading">Đang tải… %1$d%%</string>
     <string name="kachi_voice_model_downloading_unknown">Đang tải…</string>

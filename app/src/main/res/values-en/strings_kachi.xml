@@ -559,6 +559,8 @@
     <string name="kachi_voice_model_ready">%1$s installed · %2$d words · %3$s on disk</string>
     <string name="kachi_voice_model_get">Download the Vietnamese model</string>
     <string name="kachi_voice_model_remove">Remove the model</string>
+    <string name="kachi_voice_model_update">Update the Vietnamese model</string>
+    <string name="kachi_voice_model_has_update">A new version of the "%1$s" model is available — tap Update to download it.</string>
     <string name="kachi_voice_model_working">Working…</string>
     <string name="kachi_voice_model_downloading">Downloading… %1$d%%</string>
     <string name="kachi_voice_model_downloading_unknown">Downloading…</string>
