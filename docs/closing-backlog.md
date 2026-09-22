@@ -46,6 +46,7 @@ Mốc hiện tại: **1.90 (91)** đã OTA + cài emulator. Phần lớn UI/dọ
 | C2 | **ASR-VI-TONE** — model nghe hụt âm cuối/thanh nặng ("đãng") | Cần model nghe tiếng Việt tốt hơn (tên bài là từ-vựng-mở, không sửa bằng luật) |
 | C3 | **V-TTS / voice pha 2** — gói giọng ĐỌC phản hồi ("Đã tăng nhiệt độ 24...") | Cần đăng asset TTS Piper (13 tệp `voice/tts/piper-vi_VN-vais1000-medium/`) + đo `isLanguageAvailable(vi)` trên xe. T8 giải nén không cần (tải từng tệp) |
 | C4 | **W (voice-clone)** — giọng con gái owner làm giọng phản hồi | Gói 1546 clip đang dựng nền; cần T3(:core) + T6 danh mục sha256 + T7 ClipSpeaker + T8 Cài đặt + T9 đăng gói + 🚗 T10 độ trễ AAC |
+| C5 | **VOICE-FEMALE-SN** (owner 2026-09-22) — **BỎ giọng bé** (voice-clone C4 gác/bỏ) + tìm **model TTS giọng NỮ MIỀN NAM** làm giọng phản hồi | Khảo model TTS tiếng Việt giọng nữ Nam (Piper/VITS/…); giấy phép cho phép; tích hợp qua `VoicePack`/`SherpaTtsCatalog` như Piper hiện tại. C4 (giọng bé) coi như thay bằng C5 |
 
 ---
 
@@ -59,6 +60,7 @@ Mốc hiện tại: **1.90 (91)** đã OTA + cài emulator. Phần lớn UI/dọ
 | D4 | **L-RE** — verify feature-id số + method theo trim trên xe | catalog ≈187 feature-id đã thu; còn verify theo trim |
 | D5 | **X1 cast-side** — dọn kiến trúc cast (gộp geometry-writer vào FreeformSeedPolicy, cast-side AppLocationRegistry) | Không E2E-verify off-car được |
 | D6 | **INPUTD** — chốt sepolicy `avc denied connectto` trên ROM DL3 thật (mới đo máy ảo) | 3 lệnh ~1 phút; owner quyết gỡ daemon hay giữ |
+| D8 | **PM25-AUTO-INVESTIGATE** (owner 2026-09-22) — bật lọc bụi tự động thì trong xe cứ 1 lúc lại KÉM rồi lại lọc (dao động); TẮT thì đi lâu vẫn thấy PM2.5 TỐT. Nghi `setAutoCleanAirState(1)` trên trim owner KHÔNG phải "tự lọc" mà là "tự trao đổi khí / lấy gió ngoài định kỳ" ⇒ kéo bụi ngoài vào → kém → quick-clean bù → cưa răng. Cần trace on-car: bật lọc rồi đọc `getPM2p5Level` + trạng thái recirc/lấy-gió theo thời gian; so với TẮT. Nếu đúng ⇒ BỎ `setAutoCleanAirState`, chỉ dùng poll+`setQuickCleanAirState` (hoặc bỏ luôn auto, chỉ giữ nút "Lọc ngay"). ⚠ ĐỌC (`getPM2p5Level`) không có vẻ sai — nghi ở lệnh GHI `setAutoCleanAirState`. |
 | D7 | **Voice on-car (đã trace, chờ owner cho làm)** — VietMap dẫn (parser tách "bằng <app>") + YT/YT Music auto-play (đổi UA desktop) | Doc `oncar-voice-music-vietmap-2026-09-18.md` |
 
 ---
