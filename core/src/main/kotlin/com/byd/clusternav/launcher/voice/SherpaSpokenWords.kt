@@ -38,6 +38,10 @@ object SherpaSpokenWords {
      * (`VoiceLexicon.deaccent(giá trị) == khoá`), nên chỗ này không thể trở thành nơi lén thêm câu lệnh.
      */
     val ACCENTED: Map<String, String> = mapOf(
+        "mat ghe phu" to "mát ghế phụ", "ghe phu mat" to "ghế phụ mát",
+        "lam mat ghe phu" to "làm mát ghế phụ", "thoi mat ghe phu" to "thổi mát ghế phụ",
+        "suoi ghe phu" to "sưởi ghế phụ", "ghe phu am" to "ghế phụ ấm",
+        "lam am ghe phu" to "làm ấm ghế phụ", "suoi ghe ben phu" to "sưởi ghế bên phụ",
         "khoa xe" to "khóa xe",
         "khoa cua" to "khóa cửa",
         "mo khoa" to "mở khóa",

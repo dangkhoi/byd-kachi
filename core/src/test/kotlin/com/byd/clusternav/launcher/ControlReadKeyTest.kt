@@ -141,7 +141,7 @@ class ControlReadKeyTest {
         // ⚠⚠ 1.90 2026-09-21: 38 → **29** nút (owner gỡ 9 cho xe thuần điện). Lần này độ phủ **GIẢM 2**: `vol`
         // (đọc qua `AudioManager`) và `anion` (đọc `anion_state`) đều đang có đường đọc, bảy nút còn lại thì không
         // ⇒ 17 → **15**. Tỉ lệ vẫn TĂNG (44 % → 15/29 = 52 %). Ghi cả hai vế ra để không ai tưởng là mất binding.
-        assertEquals(29, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
+        assertEquals(31, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
             15, wired.size,
             "độ phủ đường đọc đổi (thấy ${wired.size}/29; chưa có đường đọc: ${blind.sorted()}). " +

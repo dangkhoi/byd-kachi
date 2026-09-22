@@ -138,10 +138,12 @@ object CapabilityDescriptions {
         // ── CLIMATE (ACT) ──
         "pm25" to Desc("Bật/tắt chế độ lọc bụi mịn tự động", "Turn automatic air purification on/off"),
         "seatc" to Desc("Bật/tắt quạt làm mát ghế", "Turn seat ventilation on/off"),
+        "seatc_r" to Desc("Bật/tắt quạt làm mát ghế phụ", "Turn passenger seat ventilation on/off"),
         "temp" to Desc("Tăng/giảm nhiệt độ điều hoà", "Raise/lower the A/C temperature"),
         "fan" to Desc("Tăng/giảm mức quạt gió điều hoà", "Raise/lower the A/C fan speed"),
         "defrost" to Desc("Bật/tắt sấy kính chắn gió trước", "Turn the front windscreen defroster on/off"),
         "seath" to Desc("Bật/tắt sưởi ghế", "Turn seat heating on/off"),
+        "seath_r" to Desc("Bật/tắt sưởi ghế phụ", "Turn passenger seat heating on/off"),
         "recirc" to Desc("Bật/tắt chế độ lấy gió trong xe", "Turn cabin air recirculation on/off"),
         // ⚠ 1.85: [ĐO xe 2026-09-20 §4] xe KHÔNG có nhiệt-auto — id này bật/tắt **gió** auto, nên diễn giải (và
         // nhãn nút) nói đúng chừng đó. Nhiệt độ vẫn chỉnh bằng nút `temp`.

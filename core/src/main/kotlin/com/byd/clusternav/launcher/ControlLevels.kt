@@ -46,9 +46,12 @@ object ControlLevels {
         // có mức 3** (raw 4 không bao giờ xuất hiện). Bỏ `4` khỏi thang: một mã 4 nếu có sẽ trả `null` (hiện ⚠)
         // đúng hơn là bịa ra "mức 3" mà xe này không có.
         "seatc" to listOf(1, 2, 3),
+        // B10 (owner 2026-09-22): ghế PHỤ cùng thang mức với ghế lái (cùng getter/setter, chỉ khác seatID).
+        "seatc_r" to listOf(1, 2, 3),
         // `seath` (ghế sưởi): getter cùng họ ở `BYDAutoSettingDevice` nhưng **CHƯA đo thang trên xe** — giữ
         // [SUY] bốn mức cho tới lượt xe sau (handoff 2026-09-17 §6.7: `seath` chờ đo).
         "seath" to listOf(1, 2, 3, 4),
+        "seath_r" to listOf(1, 2, 3, 4),
     )
 
     /**

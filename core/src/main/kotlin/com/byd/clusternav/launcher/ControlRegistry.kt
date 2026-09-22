@@ -343,6 +343,17 @@ object ControlRegistry {
         // gốc của xe tốt hơn. `cam` (Camera 360, TOGGLE) **Ở LẠI** — nó là công tắc bật/tắt, khác việc chọn góc.
         // ⇒ Cặp feature-id trùng `brightness_gear` ↔ `hud_brightness` mà `ControlWriteArgsTest` phải khai miễn-trừ
         // nay **tự hết** (`hud_brightness` đã purge ở WP8, `brightness_gear` xoá hôm nay).
+        // B10 (owner 2026-09-22): ghế mát/sưởi PHỤ — cùng setter ghế lái, chỉ khác seatID 2 (writeArgs). Control đã
+        // test xe OK, chỉ wire UI. Đặt CUỐI danh sách để KHÔNG phá thứ tự khối nút gốc (ControlRegistryExtendedTest).
+        // Không readKey (đường đọc ghế phụ chưa có datum — write-only; không bịa getter).
+        ControlDef("seatc_r", "Ghế mát phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
+            args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
+            labelEn = "Passenger seat ventilation"),
+        ControlDef("seath_r", "Ghế sưởi phụ", "ic-sun", ControlKind.SELECT,
+            args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
+            domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
+            labelEn = "Passenger seat heating"),
     )
 
     fun byId(id: String): ControlDef? = RegistryIndex.CONTROLS[id]   // [SOÁT P3] tra băm — xem KDoc RegistryIndex

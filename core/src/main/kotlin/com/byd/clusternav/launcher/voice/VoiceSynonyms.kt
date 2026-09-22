@@ -88,6 +88,8 @@ object VoiceSynonyms {
         // ấy là hứa một việc (làm mát ghế phụ) rồi làm một việc khác (làm mát ghế lái) — và cái sai đó **im
         // lặng**, vì lời đáp sẽ đọc *"Đã đặt Ghế mát"* nghe như đã đúng. Muốn nói được thì phải có nút riêng cho
         // từng ghế trước (RE `setSeatVentilatingState(seatID…)` đã có đường, nút thì chưa) — việc của owner.
+        "seatc_r" to listOf("mat ghe phu", "ghe phu mat", "lam mat ghe phu", "thoi mat ghe phu"),
+        "seath_r" to listOf("suoi ghe phu", "ghe phu am", "lam am ghe phu", "suoi ghe ben phu"),
         "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe",
             "mat ghe", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
         "seath" to listOf("suoi ghe", "ghe am", "ghe nong",

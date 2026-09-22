@@ -311,7 +311,7 @@ class CapabilityGroupsTest {
         // `cluster_music` · `brightness_gear` · `vol` · `cast` · datum `op_mode` · `energy_mode`). Cùng loại
         // quyết định như ba lượt trên — xem nhật ký ở `ControlRegistry`/`TelemetryRegistry`.
         assertEquals(71, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 71 (1.90 gỡ op_mode + energy_mode)")
-        assertEquals(29, ControlRegistry.ALL.size, "nút rời còn 29 (1.90 gỡ 9 nút cho xe thuần điện)")
+        assertEquals(31, ControlRegistry.ALL.size, "nút rời còn 29 (1.90 gỡ 9 nút cho xe thuần điện)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(4, ActionMacros.ALL.size, "gói lệnh phải còn nguyên 4")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
@@ -320,7 +320,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            71 + 29 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            71 + 31 + 9 + 4 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

@@ -241,6 +241,8 @@ class HalBindingTable(private val gateway: HalGateway) {
          */
         fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
             "seatc", "seath" -> intArrayOf(1, ControlLevels.rawForLevel(def.id, primary) ?: 1)
+            // B10: ghế PHỤ = seatID 2, cùng setter + cùng thang mức (ControlLevels khai seatc_r/seath_r).
+            "seatc_r", "seath_r" -> intArrayOf(2, ControlLevels.rawForLevel(def.id, primary) ?: 1)
             "steer_heat" -> intArrayOf(if (primary > 0) 2 else 1)
             // [ĐO xe 2026-09-15] kính MỞ được, ĐÓNG không. Gốc: state cũ = COVER primary (Đóng=0/Mở=1) — Mở gửi
             // 1 (= WINDOW_OPEN_FULL, chạy), Đóng gửi 0 (= WINDOW_ENABLE/INVALID, KHÔNG phải đóng ⇒ no-op). Enum
