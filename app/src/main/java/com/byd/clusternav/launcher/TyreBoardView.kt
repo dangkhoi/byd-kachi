@@ -100,9 +100,13 @@ class TyreBoardView(context: Context) : View(context) {
         val wheelSpanY = (CarLayout.wheel(TyreCorner.REAR_LEFT).y - CarLayout.wheel(TyreCorner.FRONT_LEFT).y) * content.height()
         val cellH = minOf(h * 0.24f, wheelSpanY - m * 0.035f).coerceAtLeast(m * 0.10f)
 
-        bigP.textSize = minOf(m * 0.150f, cellH * 0.58f)
+        // B4 (owner 2026-09-22): số lốp bị QUÁ BÉ ở khung nhỏ (font co theo `m` không có sàn). Thêm SÀN đọc-được
+        // (min ~13sp cho số, ~8sp cho phụ) + giữ trần theo cỡ ô để khung to vẫn to. minOf trần rồi coerceAtLeast sàn.
+        val minBig = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_VALUE_SP, resources.displayMetrics)
+        val minSub = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_SUB_SP, resources.displayMetrics)
+        bigP.textSize = minOf(m * 0.150f, cellH * 0.58f).coerceAtLeast(minBig)
         unitP.textSize = bigP.textSize * 0.45f
-        subP.textSize = minOf(m * 0.042f, cellH * 0.22f)
+        subP.textSize = minOf(m * 0.042f, cellH * 0.22f).coerceAtLeast(minSub)
         midP.textSize = maxOf(minOf(m * 0.072f, verdictCapPx), subP.textSize)
 
         val gap = m * 0.03f
@@ -170,6 +174,9 @@ class TyreBoardView(context: Context) : View(context) {
     private companion object {
         const val SEMANTIC_MIX = 0.20
         const val VERDICT_CAP_SP = 16f
+        // B4: sàn cỡ chữ đọc-được (số lốp không bao giờ bé hơn dù khung nhỏ).
+        const val MIN_VALUE_SP = 13f
+        const val MIN_SUB_SP = 8f
         /** Cột giữa dành cho ảnh xe (0.30..0.70 của bề ngang) — hai bên cho ô giá trị. */
         const val CAR_LEFT = 0.30f
         const val CAR_RIGHT = 0.70f
