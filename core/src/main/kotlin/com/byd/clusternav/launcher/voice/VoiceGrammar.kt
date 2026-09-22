@@ -276,8 +276,14 @@ object VoiceGrammar {
      * ⚠ An toàn nằm ở CHỖ GỌI (mọi vế phải parse hiểu được), nên ở đây được phép rộng tay.
      */
     fun actionVerbAt(t: List<VoiceLexicon.Token>, i: Int): Boolean {
+        // ⚠ "tất cả" bỏ dấu = "tat ca" — "tat" TRÙNG "tắt" (OFF). "mở TẤT CẢ kính" không được coi "tất" là ranh
+        // giới lệnh, nếu không "mở tất cả kính" bị cắt thành "mở" + "tất cả kính" (vế "mở" rỗng nghĩa ⇒ hỏng).
+        if (t.getOrNull(i)?.norm == "tat" && t.getOrNull(i + 1)?.norm == "ca") return false
+        // ACTION_VERB_HEADS xét TRƯỚC: "chuyen" cũng là VERB SWITCH ("chuyển hồ sơ") nên nếu hỏi VERBS trước thì
+        // "chuyển gió ngoài" không bao giờ thành ranh giới. An toàn nhờ cổng chỗ gọi (mọi vế phải hiểu được).
+        if (t.getOrNull(i)?.norm in ACTION_VERB_HEADS) return true
         VERBS.firstOrNull { VoiceLexicon.phraseAt(t, i, it.first) }?.let { return it.second in ACTION_VERBS }
-        return t.getOrNull(i)?.norm in ACTION_VERB_HEADS
+        return false
     }
 
     /**

@@ -123,6 +123,6 @@ class VoiceGoldenCoverageTest {
         val sample = fails.take(40).joinToString("\n") { (w, t) -> "  [${w.joinToString(",")}] \"$t\"" }
         println("GOLDEN mix: $pct% ($pass/${cases.size}) — ${fails.size} FAIL")
         if (fails.isNotEmpty()) println("GOLDEN mix FAIL (≤40):\n$sample")
-        assertTrue(pct >= 45, "mix coverage $pct% ($pass/${cases.size}) < sàn 90%. FAIL mẫu:\n$sample")
+        assertTrue(pct >= 52, "mix coverage $pct% ($pass/${cases.size}) < sàn 90%. FAIL mẫu:\n$sample")
     }
 }

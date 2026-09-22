@@ -9,7 +9,6 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
  * Lấy thẳng từ [ĐO] RE Kiki §7(c): bộ động từ của người Việt khi nói với xe rất **nhỏ và đều**, nhưng *"Mở"* thì
  * **quá tải nặng** (mở cửa · mở kính · mở app · mở nhạc · mở Cài đặt). Nên động từ **không** quyết định một mình:
  * nó chỉ chọn *loại việc*, còn việc cụ thể do **kiểu của đối tượng** quyết ([VoiceTermKind]).
- *
  * ## Ba luật giải nhập nhằng, không luật nào là `if (id == "…")`
  *  1. **Dãy từ dài nhất thắng** — giải ba cặp nhãn lồng nhau của L-RE2 (xem KDoc [VoiceGrammar]).
  *  2. **Loại động từ chọn ứng viên** — cùng một cụm *"Kính trước-trái"* trỏ tới CẢ datum (xem % mở) lẫn nút
@@ -22,7 +21,6 @@ object VoiceIntentParser {
 
     /**
      * Liên từ nối hai lệnh trong một câu ([ĐO] RE Kiki §7c #42: *"… và …"* là tính năng hạng nhất).
-     *
      * `internal` từ pha NGHE: [VoicePhrases] phải khai bốn từ này với bộ nhận dạng, nếu không thì câu ghép
      * **nghe** được từng vế mà mất đúng cái từ nối chúng. Đọc lại ở đây thay vì chép sang đó — chép là để lệch.
      */
@@ -30,7 +28,6 @@ object VoiceIntentParser {
 
     /**
      * Phân tích một câu, trả về **danh sách** ý định theo đúng thứ tự nói (R3).
-     *
      * ## Luật tách câu ghép — và vì sao nó không tách bừa
      * Tách ở *"và"/"rồi"* rồi phân tích từng vế; **chỉ chấp nhận** nếu **mọi** vế đều hiểu được. Ngược lại thì
      * phân tích lại NGUYÊN câu như một vế.
@@ -66,9 +63,12 @@ object VoiceIntentParser {
             if (ia !is VoiceIntent.Unknown && ib !is VoiceIntent.Unknown) return listOf(ia, ib)
         }
 
+        // Mỗi vế cũng qua [fuzzy] (chữa phương ngữ) — không thì "tắt máy nạnh" (l=n) trong câu ghép rớt DROPPED_CLAUSE.
+        fun seg(p: List<Token>) = fuzzy(parseTokens(p, terms, places, text), p, terms, places, text)
+
         val parts = splitOnConnectors(all)
         if (parts.size > 1) {
-            val each = parts.map { parseTokens(it, terms, places, text) }
+            val each = parts.map { seg(it) }
             if (each.none { it is VoiceIntent.Unknown }) return each
             val whole = fuzzy(parseTokens(all, terms, places, text), all, terms, places, text)
             return listOf(whole) + droppedNote(parts, each, whole)
@@ -76,7 +76,7 @@ object VoiceIntentParser {
         // MIX KHÔNG LIÊN TỪ ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh, 0 chữ "và/rồi") — chi tiết ở
         // [VoiceControlParse.multiVerbSplit]. CHỈ nhận khi ≥2 vế + MỌI vế hiểu được (an toàn: tên bài không bị cắt).
         VoiceControlParse.multiVerbSplit(all)?.let { segs ->
-            val each = segs.map { parseTokens(it, terms, places, text) }
+            val each = segs.map { seg(it) }
             if (each.size >= 2 && each.none { it is VoiceIntent.Unknown }) return each
         }
         return listOf(fuzzy(parseTokens(all, terms, places, text), all, terms, places, text))
