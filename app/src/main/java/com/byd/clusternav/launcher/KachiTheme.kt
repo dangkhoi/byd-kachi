@@ -315,6 +315,7 @@ object KachiTheme {
         "ic-window" -> R.drawable.ic_window
         "ic-readlight" -> R.drawable.ic_readlight
         "ic-leaf" -> R.drawable.ic_leaf
+        "ic-seat-left" -> R.drawable.ic_seat_left
         "ic-seat" -> R.drawable.ic_seat
         "ic-temp" -> R.drawable.ic_temp
         "ic-fan" -> R.drawable.ic_fan

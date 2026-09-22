@@ -125,7 +125,7 @@ object ControlRegistry {
         ControlDef("pm25", "Lọc bụi", "ic-filter", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
             labelEn = "Air purifier"),
-        ControlDef("seatc", "Mát ghế lái", "ic-seat", ControlKind.SELECT, enabledByDefault = true,
+        ControlDef("seatc", "Mát ghế lái", "ic-seat-left", ControlKind.SELECT, enabledByDefault = true,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             readKey = "seat_vent_state",   // T2 [ĐO xe 2026-09-16] getter ở device Setting; thang mức ở ControlLevels
@@ -174,7 +174,7 @@ object ControlRegistry {
         ControlDef("headl", "Đèn pha", "ic-car-front-highbeam", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.NEEDS_CAR, bindingKey = "INSTRUMENT_HEADLIGHT_ON_OFF",
             labelEn = "Headlights"),
-        ControlDef("seath", "Sưởi ghế lái", "ic-seat", ControlKind.SELECT,
+        ControlDef("seath", "Sưởi ghế lái", "ic-seat-left", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
             readKey = "seat_heat_state",   // T2 — cùng device Setting; thang mức ControlLevels (seath [SUY] 1/2/3/4, đo lại)
@@ -350,11 +350,11 @@ object ControlRegistry {
         // B10 (owner 2026-09-22): ghế mát/sưởi PHỤ — cùng setter ghế lái, chỉ khác seatID 2 (writeArgs). Control đã
         // test xe OK, chỉ wire UI. Đặt CUỐI danh sách để KHÔNG phá thứ tự khối nút gốc (ControlRegistryExtendedTest).
         // Không readKey (đường đọc ghế phụ chưa có datum — write-only; không bịa getter).
-        ControlDef("seatc_r", "Mát ghế phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
+        ControlDef("seatc_r", "Mát ghế phụ", "ic-seat", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             labelEn = "Passenger seat ventilation"),
-        ControlDef("seath_r", "Sưởi ghế phụ", "ic-car-top-seat-fl", ControlKind.SELECT,
+        ControlDef("seath_r", "Sưởi ghế phụ", "ic-seat", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
             labelEn = "Passenger seat heating"),

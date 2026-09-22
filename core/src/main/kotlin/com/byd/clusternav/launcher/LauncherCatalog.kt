@@ -200,6 +200,13 @@ data class CapabilityPick(
     val typeHint: String get() = if (label in CapabilityCatalog.collidingLabels()) kindHint else ""
 
     /**
+     * ⚠ 1.95 (owner 2026-09-22): LOẠI Ô luôn hiển thị (huy hiệu nhỏ có màu ở góc ô picker), KHÔNG chỉ khi nhãn
+     * trùng như [typeHint]. Owner: *"chưa phân biệt được cái nào action, cái nào thông tin"*. Đây là NHÃN NGẮN
+     * cho huy hiệu; MÀU do tầng vẽ quyết (READ=xanh · WRITE/LAUNCHER=cam · nhóm/thẻ=trung tính).
+     */
+    val kindLabel: String get() = kindHint
+
+    /**
      * DÒNG PHỤ để hiển thị: gợi ý loại (khi trùng) · nội dung nhóm (khi là nhóm). Rỗng với hầu hết ô rời.
      *
      * Ghép bằng `·` đúng như dấu cũ từng dùng trong nhãn, nên với ô nhóm trùng tên thì người đọc thấy

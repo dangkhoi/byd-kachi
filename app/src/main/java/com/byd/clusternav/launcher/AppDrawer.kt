@@ -399,6 +399,30 @@ class AppDrawer(
     private fun addPickGrid(parent: LinearLayout, picks: List<CapabilityPick>, cols: Int) =
         CapabilityTileGrid.rows(context, parent, picks.size, cols) { i -> pickTile(picks[i]) }
 
+    /**
+     * 1.95 (owner 2026-09-22): huy hiệu LOẠI nhỏ có màu ở đầu ô picker — trả lời ngay *"ô này XEM hay BẤM"*.
+     * READ = xanh (thông tin) · WRITE/LAUNCHER = cam (bấm được) · nhóm/thẻ = trung tính. Nhãn từ `pick.kindLabel`
+     * (một nguồn ở `:core`), màu quyết ở đây (màu là chuyện trình bày). Cỡ nhỏ, chỉ icon+chữ ngắn — không tốn chỗ.
+     */
+    private fun kindPill(pick: CapabilityPick): View {
+        val fill = when {
+            pick.group || pick.curated -> KachiTheme.MUT2
+            pick.kind == CapabilityKind.READ -> KachiTheme.CYAN
+            else -> KachiTheme.AMBER
+        }
+        return TextView(context).apply {
+            text = pick.kindLabel
+            setTextColor(c(KachiTheme.INK_ON_ACCENT))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 8.5f)   // [type scale] huy hiệu loại — nhỏ hơn dòng phụ 10sp
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            background = KachiTheme.pill(context, fill)
+            setPadding(dpi(context, Sp.XS), dpi(context, Sp.HAIRLINE), dpi(context, Sp.XS), dpi(context, Sp.HAIRLINE))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dpi(context, Sp.XS) }
+        }
+    }
+
     private fun pickTile(pick: CapabilityPick): View {
         val inner = LinearLayout(context).apply {
             // ⚠ [R5] Căn NGANG-giữa nhưng DỌC-TRÊN — cùng luật với lưới trong Cài đặt: ô cao `MATCH_PARENT` theo
@@ -406,6 +430,8 @@ class AppDrawer(
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
             setPadding(dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M))
             addView(PickerBadge.icon(context, KachiIcons.res(pick.icon, Sp.ICON_XL), pick.needsBadge, Sp.ICON_XL))
+            // 1.95 (owner): huy hiệu LOẠI nhỏ có màu — phân biệt ngay Xem / Bấm / Nhóm / Thẻ mà không tốn chỗ.
+            addView(kindPill(pick))
             addView(TextView(context).apply {
                 // Nhãn = TÊN của khả năng, không mang gợi ý loại (U6): loại xuống dòng phụ bên dưới. [ĐO] ảnh
                 // 2026-09-12 owner đọc được "Charge target · view" trên lưới — thuật ngữ nội bộ lọt vào tên.

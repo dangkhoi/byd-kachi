@@ -80,7 +80,7 @@ class TypeScaleContractTest {
      * một ngoại lệ thứ tư thì phải sửa con số này ⇒ nó hiện ra trong diff và người review phải đồng ý, thay vì một
      * dòng comment lọt qua.
      */
-    private val EXEMPT_LINES = 3
+    private val EXEMPT_LINES = 4
 
     /**
      * BA cách đặt cỡ chữ bằng số TAY — phải chặn **cả ba**, không chỉ cách hay gặp nhất.

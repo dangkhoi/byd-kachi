@@ -1,0 +1,27 @@
+<!--
+  GHẾ LÁI (`seatc` mát · `seath` sưởi) — CÙNG hình `ic_seat` nhưng LẬT NGANG (ghế quay sang trái) để phân biệt
+  với ghế PHỤ (dùng `ic_seat` gốc). Owner 2026-09-22: "icon ghế lái lấy icon hiện tại xoay qua bên trái".
+  ── KHÔNG sinh từ gen-icons: đây là biến thể lật của `ic_seat.xml` (wrap <group> scaleX=-1 pivotX=12),
+  path chép nguyên văn từ ic_seat.xml. Sửa hình ghế thì sửa design/glyph/seat.svg rồi sinh lại ic_seat.xml,
+  và cập nhật path ở đây cho khớp (bài canh không quét file này vì nó là biến thể lật, không phải icon sinh).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <group android:scaleX="-1" android:pivotX="12" android:pivotY="12">
+        <path android:pathData="M 7.2 3.6 C 5.4 3.6 5 5 5.4 6.8 L 7.2 14.4 L 17 14.4"
+            android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+        <path android:pathData="M 8.2 14.4 L 16.8 14.4 A 2 2 0 0 1 18.8 16.4 L 18.8 16.6 A 2 2 0 0 1 16.8 18.6 L 8.2 18.6 A 2 2 0 0 1 6.2 16.6 L 6.2 16.4 A 2 2 0 0 1 8.2 14.4 Z"
+            >
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="6.2" android:startY="14.4" android:endX="18.8" android:endY="18.6">
+                    <item android:offset="0" android:color="#8AE8F7" />
+                    <item android:offset="1" android:color="#0D8AA3" />
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:pathData="M 8.4 18.6 L 8.4 20.8 M 16.6 18.6 L 16.6 20.8"
+            android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    </group>
+</vector>
