@@ -195,7 +195,7 @@ fun Prefs.setVoiceHotwordScore(ctx: Context, v: Float) =
 
 // ── Tốc độ đọc Piper (owner 2026-09-17: "Piper nói nhanh quá") — nhỏ hơn = chậm hơn ─────────────────
 
-/** Tốc độ đọc TTS, kẹp [MIN_SPEED, MAX_SPEED]; mặc định [SherpaTtsCatalog.DEFAULT_SPEED] = 0.9 (chậm hơn gốc). */
+/** Tốc độ đọc TTS, kẹp [MIN_SPEED, MAX_SPEED]; mặc định [SherpaTtsCatalog.DEFAULT_SPEED] = 0.8 (chậm hơn gốc). */
 fun Prefs.voiceTtsSpeed(ctx: Context): Float =
     voicePrefs(ctx).getFloat(K_VOICE_TTS_SPEED, SherpaTtsCatalog.DEFAULT_SPEED)
         .coerceIn(SherpaTtsCatalog.MIN_SPEED, SherpaTtsCatalog.MAX_SPEED)

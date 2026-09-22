@@ -222,7 +222,7 @@ class SherpaTtsSpeaker(
             if (my != generation.get()) return
             val tts = ensureEngine() ?: return
             // Tốc độ đọc lấy từ pref (owner 2026-09-17 "Piper nói nhanh quá"; chỉnh trên xe qua `voice_tts_speed`),
-            // mặc định 0.9 (chậm hơn gốc 10 %). runCatching + mặc định: lỗi đọc pref không được làm câm máy đọc.
+            // mặc định 0.8 (chậm hơn gốc 20 %, owner chốt 2026-09-22). runCatching: lỗi đọc pref không được làm câm máy đọc.
             // ⚠ #0 (2026-09-18) lớp này nay chạy ở tiến trình `:tts` ⇒ `SharedPreferences` là bộ đệm RIÊNG của
             // tiến trình đó: núm chỉnh ở launcher chỉ ăn sau khi `:tts` dựng lại (unbind → bind, hoặc mở lại app).
             // Chấp nhận có chủ ý — `MULTI_PROCESS` đã deprecated và không tin được; một núm chỉnh trễ vài giây

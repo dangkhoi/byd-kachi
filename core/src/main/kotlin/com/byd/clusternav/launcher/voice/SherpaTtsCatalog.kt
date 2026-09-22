@@ -172,11 +172,11 @@ object SherpaTtsCatalog {
     /**
      * Tốc độ đọc mặc định cho `OfflineTts.generate(text, sid, speed)` — nhỏ hơn 1.0 = **chậm hơn**.
      *
-     * **0.9 (chậm hơn gốc 10 %)** — [ĐO tai owner 2026-09-17]: Piper ở 1.0 *"nói nhanh quá, nghe không kịp"*.
+     * **0.8 (chậm hơn gốc 20 %)** — [ĐO tai owner]: 1.0 "nói nhanh quá"; 0.9 vẫn nhanh; owner chốt 0.8 (2026-09-22).
      * Owner nghe thử ⇒ cho phép chậm lại (tai owner là bằng chứng, thay cho ràng buộc "chưa đo xe" cũ). Chỉnh
      * được trên xe qua núm `voice_tts_speed` (0.7–1.2) mà không cần build lại — xem `SherpaTtsSpeaker`.
      */
-    const val DEFAULT_SPEED = 0.9f
+    const val DEFAULT_SPEED = 0.8f
 
     /** Dải cho phép của núm `voice_tts_speed` — dưới 0.7 thì méo kéo dài, trên 1.2 thì lại nhanh như cũ. */
     const val MIN_SPEED = 0.7f
