@@ -405,12 +405,15 @@ class AppDrawer(
      * (một nguồn ở `:core`), màu quyết ở đây (màu là chuyện trình bày). Cỡ nhỏ, chỉ icon+chữ ngắn — không tốn chỗ.
      */
     private fun kindPill(pick: CapabilityPick): View {
+        val group = pick.group || pick.curated
+        val read = pick.kind == CapabilityKind.READ
         val fill = when {
-            pick.group || pick.curated -> KachiTheme.MUT2
-            pick.kind == CapabilityKind.READ -> KachiTheme.CYAN
+            group -> KachiTheme.MUT2
+            read -> KachiTheme.CYAN
             else -> KachiTheme.AMBER
         }
-        return TextView(context).apply {
+        // Nhóm/thẻ hiếm gặp ⇒ giữ chữ ngắn. READ/WRITE (đại đa số) dùng ICON: mắt = thông tin · nút = hành động.
+        if (group) return TextView(context).apply {
             text = pick.kindLabel
             setTextColor(c(KachiTheme.INK_ON_ACCENT))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 8.5f)   // [type scale] huy hiệu loại — nhỏ hơn dòng phụ 10sp
@@ -420,6 +423,15 @@ class AppDrawer(
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dpi(context, Sp.XS) }
+        }
+        val sz = dpi(context, Sp.ICON_S)
+        return android.widget.ImageView(context).apply {
+            setImageResource(if (read) R.drawable.ic_kind_view else R.drawable.ic_kind_act)
+            background = KachiTheme.pill(context, fill)
+            val pad = dpi(context, Sp.HAIRLINE)
+            setPadding(pad, pad, pad, pad)
+            layoutParams = LinearLayout.LayoutParams(sz, sz).apply { topMargin = dpi(context, Sp.XS) }
+            contentDescription = pick.kindLabel
         }
     }
 

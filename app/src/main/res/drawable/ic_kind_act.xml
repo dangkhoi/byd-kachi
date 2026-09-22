@@ -1,0 +1,13 @@
+<!--
+  HUY HIỆU LOẠI Ô · HÀNH ĐỘNG — NÚT BẤM: vòng tròn ngoài (thân nút) + chấm đặc giữa (điểm nhấn) như nút
+  công tắc tròn. Vẽ trên nền huy hiệu màu (amber) ⇒ nét TRẮNG. Không phải hình ngón tay (owner: "nhìn hơi ghê").
+  Không sinh từ gen-icons: icon nội bộ của huy hiệu picker (owner 2026-09-22).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="14dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 12 3.5 A 8.5 8.5 0 1 0 12.01 3.5 Z"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12 8.2 A 3.8 3.8 0 1 0 12.01 8.2 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

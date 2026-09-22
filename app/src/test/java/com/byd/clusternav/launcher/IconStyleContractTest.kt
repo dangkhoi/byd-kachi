@@ -41,6 +41,8 @@ class IconStyleContractTest {
     private val legacy: Map<String, String> = mapOf(
         "ic_launcher.xml" to "icon app hoa anh đào (R7) — smallIcon thông báo, hợp đồng riêng (một tông, hệ tô lại)",
         "ic_seat_left.xml" to "biến thể LẬT NGANG của ic_seat cho ghế LÁI (owner 2026-09-22) — wrap <group> scaleX=-1, path chép từ ic_seat.xml, không phải icon sinh riêng",
+        "ic_kind_view.xml" to "huy hiệu THÔNG TIN (mắt) của picker — vẽ nét trắng trên nền pill màu, không thuộc đường ống icon lĩnh vực (owner 2026-09-22)",
+        "ic_kind_act.xml" to "huy hiệu HÀNH ĐỘNG (nút bấm) của picker — vẽ nét trắng trên nền pill màu, không thuộc đường ống icon lĩnh vực (owner 2026-09-22)",
         "ic_turn_left.xml" to "mũi tên rẽ của màn dẫn đường (bảng NEW_ICON/CAN 2026-08-14), không thuộc launcher",
         "ic_turn_right.xml" to "mũi tên rẽ của màn dẫn đường — như trên",
         "ic_turn_straight.xml" to "mũi tên đi thẳng của màn dẫn đường — như trên",
