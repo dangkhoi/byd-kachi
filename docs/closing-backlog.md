@@ -9,14 +9,14 @@ Mốc hiện tại: **1.90 (91)** đã OTA + cài emulator. Phần lớn UI/dọ
 
 ## A. CẦN OWNER NỔ MÁY VERIFY (từ 1.90 — code đã sửa, chỉ chờ xác nhận trên xe)
 
-| # | Việc | Verify gì |
-|---|------|-----------|
-| A1 | Taskbar ROM lòi lúc boot | Nổ máy → launcher lên, taskbar KHÔNG lòi/đẩy layout, không phải nhấn Home |
-| A2 | Bóng VietMap không lên khi boot | Nổ máy → bóng VietMap TỰ lên trên cụm (không cần bấm) |
-| A3 | YouTube trong ô ĐEN sau boot | Nổ máy → app trong ô hiện hình (không đen) |
-| A4 | Chip header đổi màu | Bật/tắt (sấy kính, đèn...) → chip sáng (bật) / mờ (tắt), không còn chữ Tắt/Bật |
-| A5 | Control realtime | Chỉnh nhiệt/gió trên màn xe → launcher đổi trong ~1s |
-| A6 | "mở hết cửa sổ" | Nói/gõ → mở CẢ 4 kính (không chỉ bên lái) |
+| # | Việc | Verify gì | KQ 2026-09-22 |
+|---|------|-----------|---------------|
+| A1 | Taskbar ROM lòi lúc boot | Nổ máy → taskbar KHÔNG lòi | ✅ OK |
+| A2 | Bóng VietMap không lên khi boot | Nổ máy → bóng TỰ lên trên cụm | ⚠ VietMap lên nhưng **KHÔNG có bóng trên cụm** → **TRACE TRÊN XE** (xe offline lúc kiểm): kiểm `VMBluetoothService` có chạy + `byd_float_app_list` có VietMap + VietMap bản MOD hay gốc (bóng chỉ có ở bản MOD). Fix #11 chờ service đó nhưng nếu service không lên thì vô ích |
+| A3 | YouTube trong ô đen sau boot | app hiện hình | ✅ OK |
+| A4 | Chip header đổi màu | sáng/mờ, hết chữ Tắt/Bật | ⬜ chưa test |
+| A5 | Control realtime | chỉnh nhiệt/gió → launcher ~1s | ✅ OK |
+| A6 | "mở hết cửa sổ" mở cả 4 | | ✅ OK |
 
 ---
 
@@ -27,6 +27,14 @@ Mốc hiện tại: **1.90 (91)** đã OTA + cài emulator. Phần lớn UI/dọ
 | B1 | **P8-BOUND** — vòng kiểm quyền lúc start kiểm accessibility **BOUND** (không chỉ ENABLED); chưa bound → tự toggle rebind ngay, không báo lỗi | `PermissionPreflight`/`LauncherRequirements` + `FixBy.SELF`; đọc `dumpsys accessibility` "Bound services" |
 | B2 | **BIND-SELFHEAL** — vòng NỀN định kỳ (~15-30s, trong FGS đã chạy) tự kiểm enabled-nhưng-không-bound → tự toggle rebind → phím tự sống lại giữa lúc lái khi CPU cao MÀ không cần mở app | Đi cùng B1. Verify off-car bằng test parse dumpsys; on-car khi tải cao |
 | B3 | **LOC-500** — nợ trần 500 dòng: tách theo VAI `SimpleCastCoordinator.kt`(784) · `BydHal.kt`(654) · `FloatingBubbleService.kt`(537) · `VietMapWidgetBridge.kt`(505) · `AppDrawer.kt`(508) · `KachiHomeActivity.kt`(552) · `VoiceCapture.kt`(499) | Dọn kỹ thuật, không đổi hành vi |
+| B4 | **WIDGET-FONT** (owner 2026-09-22) — số áp suất/nhiệt lốp (và các widget thông tin) hiện **quá bé**; cần **min/max font size co giãn theo cỡ khung** (khung to chữ to, khung nhỏ chữ vừa đọc được, không bé quá) | Áp cho mọi widget đọc số; `TyreBoardView`/`WidgetTelemetry`/mini-card |
+| B5 | **WIDGET-MINI** (owner 2026-09-22) — thông tin xe đưa vào **khung NHỎ**: icon bị **nhỏ quá mức** + **chữ mất tiêu**; cần sàn icon + luôn giữ chữ đọc được (hoặc bỏ icon, ưu tiên số) khi khung nhỏ | `telemetryMini`/`MiniCard`/lưới compact |
+| B6 | **HEADER-WIDTH** (owner 2026-09-22) — header bar đang **fix width từng icon/chip** ⇒ thông tin dài bị CẮT (vd "15.9 kWh/50km" còn "15.9 kWh…"); icon (sấy...) thừa khoảng trắng 2 bên. Cần bỏ fix-width, để **margin/wrap_content** — chip rộng theo nội dung, icon không thừa lề | `KachiTopStrip.fitChips`/`applyChipFace` |
+| B7 | **HEADER-CAP-10** (owner 2026-09-22) — nâng trần header bar **8 → 10** item | `TopStripConfig.CAP` + KDoc lý do |
+| B8 | **HEADER-ARROW** (owner 2026-09-22) — nút ◀▶ dời vị trí chip **quá bé, khó nhấn, nhấn nhầm lại ẩn mất chip**. Cần: đích chạm to hơn + tách hẳn khỏi vùng chạm toggle (nhấn ◀▶ KHÔNG được vô tình tắt chip) | `TopStripPicker.arrowBtn` + tách sự kiện |
+| B9 | **HEADER-SEAT-CHIP** (owner 2026-09-22) — thêm ghế mát/sưởi lên header bar: hình ghế + mức, nhưng **chỉ số "2"** (bỏ chữ "Mức" cho đỡ chật) | chip cho `seatc`/`seath` với nhãn số ngắn |
+| B10 | **SEAT-PASSENGER** (owner 2026-09-22) — ghế mát/sưởi hiện **chỉ có ghế LÁI**, chưa có ghế PHỤ. Thêm nút ghế phụ (seatID 2) | `ControlRegistry` +`seatc_r`/`seath_r` (RE seatID phụ) — ⚠ có thể cần verify HAL trên xe |
+| B11 | **WINDOW-HALF/EACH/ALL** (owner 2026-09-22) — chưa có nút **mở 50% kính**, **từng kính**, **tất cả kính** | records: đường GHI % (`setBodyWindowCtrlState` state 4 = HALF) proven; nút từng kính đã có (win_lf/rf/lr/rr), thiếu nút HALF + gộp — spec §4.5 |
 
 ---
 
