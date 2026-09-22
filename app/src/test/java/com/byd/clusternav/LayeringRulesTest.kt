@@ -126,6 +126,9 @@ class LayeringRulesTest {
         // :core trong khi bảng là #34d399 ⇒ hai bảng màu lệch nhau ngay dòng đầu). Đây LÀ bảng màu, nên nó thuần về
         // kỹ thuật nhưng thuộc `:app` về layering. `GroupTileWiringContractTest` canh chiều còn lại (:core = 0 hex).
         "KachiPalette.kt" to "là bảng MÃ MÀU — :core bị cấm giữ hex (luật ChipTone)",
+        // Interface glue cho engine wake: hai thi hành (VoiceWakeKws/VoiceWakeAsr) đều dùng native sherpa +
+        // Android, sống ở :app. Interface thuần theo phép đo nhưng thuộc :app về layering (cùng lẽ ChipTone).
+        "WakeEngine.kt" to "interface hoán đổi engine wake — thi hành dùng native/Android, thuộc :app",
         // Bridge extension W-WAKE: gọi VoiceWakeService (FGS Android) + Prefs(Context) qua lời gọi; "thuần" chỉ
         // vì phép đo soi `import android.*` + vài tên lớp, không soi phụ thuộc bắc cầu. Thực thuộc :app.
         "ClusterNavBridgeWake.kt" to "cầu Settings gọi VoiceWakeService/Prefs — không chuyển được sang :core",

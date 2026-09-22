@@ -35,6 +35,14 @@ fun Prefs.rainDefrostEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(
 fun Prefs.setRainDefrostEnabled(ctx: Context, v: Boolean) =
     autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST, v).apply()
 
+// ── CAMERA theo xi-nhan (owner 2026-09-22) — mặc định TẮT ("đang phát triển") ────────────────────
+private const val K_CAMERA_SIGNAL = "camera_signal_enabled"
+
+/** Camera theo xi-nhan (xi-nhan → mở camera bên đó, overlay). Mặc định **false** (đang phát triển). */
+fun Prefs.cameraSignalEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_CAMERA_SIGNAL, false)
+fun Prefs.setCameraSignalEnabled(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_CAMERA_SIGNAL, v).apply()
+
 // ── AUTOMATION #2 · Tự dẫn đường theo lịch (R2) ───────────────────────────────────────────────────
 // Hai khoá, hai VAI khác nhau — cố ý KHÔNG gộp:
 //  • `nav_automation_rules` = CẤU HÌNH (sổ luật người dùng đặt trong Cài đặt › Dẫn đường), mã hoá bởi

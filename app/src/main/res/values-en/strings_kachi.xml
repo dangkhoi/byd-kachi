@@ -143,6 +143,8 @@
     <string name="kachi_music_default_app">Default music app</string>
     <string name="kachi_music_auto">Auto</string>
     <string name="kachi_wake_title">"Hey Kachi" — voice wake word (experimental)</string>
+    <string name="kachi_wake_engine_title">"Hey Kachi" listener: ASR (no training)</string>
+    <string name="kachi_wake_engine_sub">On = use the Vietnamese model to hear "kachi" (no samples). Off = use KWS.</string>
     <string name="kachi_wake_sub">Say the wake phrase to open voice commands, no tap needed. Listens in the background while the screen is on. Off by default (uses battery/CPU). Experimental — it may not recognise you well yet; please report problems.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
     <string name="kachi_wake_notif_text">Listening for the wake phrase</string>
@@ -304,6 +306,9 @@
 
     <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
     <!-- #1 · Auto-defrost when it rains (Car comfort group) -->
+    <string name="kachi_sub_camera_signal">Camera on turn signal</string>
+    <string name="kachi_camera_signal_title">Camera on indicator (in development)</string>
+    <string name="kachi_camera_signal_sub">Left indicator → left camera overlay on the left; right → right. Not car-verified.</string>
     <string name="kachi_sub_rain_defrost">Auto-defrost when it rains</string>
     <string name="kachi_rain_defrost_title">Turn the defroster on when it rains</string>
     <string name="kachi_rain_defrost_sub">Reads the rain sensor every 5 minutes; turns the front and rear windscreen defrosters on while it rains and off again afterwards.</string>

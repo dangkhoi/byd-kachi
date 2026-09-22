@@ -41,8 +41,25 @@ class SettingsCarSection(
     fun build(body: LinearLayout) {
         recirc(body)
         rainDefrost(body)
+        cameraSignal(body)
         seats(body)
         pm25(body)
+    }
+
+    // ── Camera theo xi-nhan (owner 2026-09-22) — ĐANG PHÁT TRIỂN, mặc định TẮT ────────────────────
+    /**
+     * Công tắc *"Camera theo xi-nhan"* — xi-nhan trái → camera trái (overlay bên trái), phải → phải. RE
+     * `docs/diagnostics/camera-panorama-RE-2026-09-22.md` (`BYDAutoPanoramaDevice`). Mặc định TẮT vì tín hiệu
+     * video vào overlay của app CHƯA verify trên xe (runbook option A–J). Dùng `Lang.t` inline (feature dev, chưa
+     * đưa vào danh mục SettingsCatalog/i18n — tránh ghim số khi còn thử nghiệm).
+     */
+    private fun cameraSignal(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_sub_camera_signal)))
+        body.addView(rows.checkRow(
+            on = bridge.cameraSignal(),
+            title = context.getString(R.string.kachi_camera_signal_title),
+            sub = context.getString(R.string.kachi_camera_signal_sub),
+        ) { on -> bridge.setCameraSignal(on) })
     }
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────

@@ -113,6 +113,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
     private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
+    private val cameraSignal by lazy { com.byd.clusternav.launcher.camera.CameraSignalController(applicationContext) }  // camera theo xi-nhan (owner 2026-09-22)
 
     /**
      * Glue intent theo-ô (gắn app/widget · mở · xoá · đổi chỗ) — thân ở [KachiHomeSlots] (trần 500 dòng). Nhận
@@ -365,6 +366,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
             dock.setCarStatus(state.carStatus, unitPrefs)
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
+            // Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — đọc xi-nhan mỗi nhịp trạng thái (1Hz đủ nhanh
+            // cho đèn báo rẽ). Controller tự gate pref + chỉ đổi khi bên xi-nhan khác nhịp trước.
+            cameraSignal.tick(state.carStatus.lights.leftTurn, state.carStatus.lights.rightTurn)
         }
         // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
         // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.

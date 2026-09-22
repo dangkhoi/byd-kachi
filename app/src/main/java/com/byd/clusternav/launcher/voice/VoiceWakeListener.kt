@@ -54,7 +54,7 @@ class VoiceWakeListener(
     private val ctx: Context,
     private val onWake: () -> Unit,
     private val onAutoDisable: () -> Unit,
-    private val kwsFactory: (Context) -> VoiceWakeKws? = { defaultKws(it) },
+    private val kwsFactory: (Context) -> WakeEngine? = { defaultEngine(it) },
 ) {
     private val controller = VoiceWakeController()
 
@@ -124,7 +124,7 @@ class VoiceWakeListener(
     // ═══ VÒNG NGOÀI ══════════════════════════════════════════════════════════════════════════════════════════
 
     private fun runOuter() {
-        var kws: VoiceWakeKws? = null
+        var kws: WakeEngine? = null
         var kwsTried = false
         var idleSteps = 0
         try {
@@ -201,7 +201,7 @@ class VoiceWakeListener(
     // ═══ VÒNG TRONG (mic đang giữ) ════════════════════════════════════════════════════════════════════════════
 
     /** Đọc khung với mic đang giữ tới khi có sự kiện phải nhả mic. Mic được nhả trên MỌI đường ra (`finally`). */
-    private fun inner(kws: VoiceWakeKws?): Inner {
+    private fun inner(kws: WakeEngine?): Inner {
         // Không mở được mic (app khác giữ phần cứng dù chốt đã cho) ⇒ lượt này **không** khoẻ: xoá mốc khoẻ để
         // bậc nghỉ ở vòng ngoài tăng dần, thay vì xin lại đều đặn 2 s suốt thời gian sự cố.
         val rec = openRecord() ?: run { lastSessionFrames = 0; return Inner.ERROR }
@@ -314,6 +314,18 @@ class VoiceWakeListener(
          * Chép tên tệp lần thứ hai ở đây là mở đúng cái khe im lặng: gói tải về đủ 5 tệp, engine soi một tên
          * khác, `build` trả `null`, và "Hey Kachi" chạy mà không bao giờ nhận — không log nào nói vì sao.
          */
+        /**
+         * Chọn engine wake theo pref (owner 2026-09-22, mặc định **ASR** no-train). ASR nghe "kachi" bằng chính
+         * mô hình tiếng Việt (không train); KWS gigaspeech là đường lùi. Engine nào null (chưa có model) ⇒ thử
+         * engine kia; cả hai null ⇒ degrade chỉ-RMS (vòng vẫn chạy).
+         */
+        private fun defaultEngine(ctx: Context): WakeEngine? {
+            val preferAsr = com.byd.clusternav.Prefs.wakeEngineAsr(ctx)
+            val asr = { VoiceWakeAsr.create(ctx) }
+            val kws = { defaultKws(ctx) }
+            return if (preferAsr) (asr() ?: kws()) else (kws() ?: asr())
+        }
+
         private fun defaultKws(ctx: Context): VoiceWakeKws? {
             val dir = File(ctx.filesDir, WakeModelCatalog.dir)
             return VoiceWakeKws.build(

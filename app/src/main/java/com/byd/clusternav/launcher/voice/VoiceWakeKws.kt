@@ -25,7 +25,7 @@ import java.io.File
  * (BPE). Việc tokenize cần bảng token của chính model ⇒ chốt **offline khi model được chọn** (`sherpa-onnx-cli
  * text2token`), rồi ghim chuỗi token vào [VoiceWakePhrase]/keywords-file. Tới lúc đó KWS không khớp gì (degrade).
  */
-class VoiceWakeKws private constructor(private val spotter: KeywordSpotter, keywords: String?) {
+class VoiceWakeKws private constructor(private val spotter: KeywordSpotter, keywords: String?) : WakeEngine {
 
     private val stream: OnlineStream = spotter.createStream(keywords ?: "")
     private val lock = Any()
@@ -40,7 +40,7 @@ class VoiceWakeKws private constructor(private val spotter: KeywordSpotter, keyw
     private var released = false
 
     /** Nạp PCM float [-1,1]; `true` nếu VỪA khớp câu gọi (đã `reset` để bắt lượt kế). Gọi trên luồng nghe. */
-    fun feed(pcm: FloatArray, n: Int): Boolean = synchronized(lock) {
+    override fun feed(pcm: FloatArray, n: Int): Boolean = synchronized(lock) {
         if (released) return false
         runCatching {
             stream.acceptWaveform(if (n == pcm.size) pcm else pcm.copyOf(n), SAMPLE_RATE)
@@ -49,7 +49,7 @@ class VoiceWakeKws private constructor(private val spotter: KeywordSpotter, keyw
         }.getOrDefault(false)
     }
 
-    fun release() = synchronized(lock) {
+    override fun release(): Unit = synchronized(lock) {
         if (released) return@synchronized
         released = true
         runCatching { stream.release() }

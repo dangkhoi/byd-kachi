@@ -1,0 +1,78 @@
+package com.byd.clusternav.launcher.voice
+
+import android.content.Context
+import android.util.Log
+
+/**
+ * ═══ "HEY KACHI" — ENGINE KHÔNG-TRAIN: ASR CỬA-SỔ + FUZZY "kachi" ═══════════════════════════════════════════
+ *
+ * Owner 2026-09-22: KWS gigaspeech (tiếng Anh) nghe "Kachi" kém. Cách NO-TRAIN đơn giản: dùng CHÍNH mô hình ASR
+ * tiếng Việt đang có (`zipformer-vi-int8`) — nó ĐÃ nghe được "kachi" (nằm trong `VoiceLexicon.FILLERS`) — chạy
+ * trên **cửa sổ cuộn ngắn** rồi khớp mờ bằng [WakeAsrMatcher] (`:core`, đã test). Không thu mẫu, không train.
+ *
+ * Drop-in cho [VoiceWakeKws]: cùng `feed(pcm, n): Boolean` + `release()`, nên [VoiceWakeListener] hoán engine mà
+ * KHÔNG đổi vòng nghe. Khác biệt cơ chế:
+ *  • KWS: streaming, chốt tức thì mỗi frame.
+ *  • ASR: offline — phải GOM một cửa sổ (~[WINDOW_MS]) rồi giải mã MỘT lần mỗi [DECODE_EVERY_MS] (không giải mã
+ *    mỗi frame: mô hình 74MB, giải mã liên tục sẽ bão hoà CPU — đây chính là biến số cần đo trên xe).
+ *
+ * ⚠ **CHỖ CHỈ XE TRẢ LỜI** (runbook): (1) CPU khi giải mã ~2 lần/giây trong cabin; (2) tỉ lệ nghe đúng "kachi"
+ *   vs KWS; (3) false-accept trong lúc nói chuyện. Off-car chỉ đo được: dựng được engine, feed không crash,
+ *   [WakeAsrMatcher] nổ đúng biến thể (đã có test).
+ *
+ * ⚠ Cửa sổ nhận PCM **float [-1,1]** (giống [VoiceWakeKws.feed]); ASR muốn `ShortArray` 16-bit ⇒ đổi tại chỗ.
+ */
+class VoiceWakeAsr private constructor(private val rec: VoiceRecognizer) : WakeEngine {
+
+    private val lock = Any()
+    private var released = false
+    // Cửa sổ cuộn: giữ WINDOW_SAMPLES mẫu gần nhất (ring đơn giản bằng dịch trái khi đầy).
+    private val window = ShortArray(WINDOW_SAMPLES)
+    private var filled = 0
+    private var sinceDecode = 0
+
+    /** Nạp PCM float; `true` nếu cửa sổ vừa khớp "kachi". Gọi trên luồng nghe. */
+    override fun feed(pcm: FloatArray, n: Int): Boolean = synchronized(lock) {
+        if (released) return false
+        appendFloat(pcm, n)
+        sinceDecode += n
+        if (sinceDecode < DECODE_EVERY_SAMPLES || filled < MIN_SAMPLES) return false
+        sinceDecode = 0
+        val text = runCatching { rec.decodeAll(window, filled) }.getOrDefault("")
+        if (text.isBlank()) return false
+        val hit = WakeAsrMatcher.isWake(text)
+        if (hit) { Log.i(TAG, "WAKE khớp: \"$text\""); filled = 0 }  // reset cửa sổ để không nổ lại cùng câu
+        hit
+    }
+
+    override fun release(): Unit = synchronized(lock) { released = true }
+
+    /** Nối n mẫu float (đổi sang short), dịch trái nếu tràn cửa sổ. */
+    private fun appendFloat(pcm: FloatArray, n: Int) {
+        val take = minOf(n, pcm.size)
+        if (filled + take > window.size) {
+            val drop = filled + take - window.size
+            System.arraycopy(window, drop, window, 0, filled - drop)
+            filled -= drop
+        }
+        for (i in 0 until take) {
+            window[filled + i] = (pcm[i].coerceIn(-1f, 1f) * 32767f).toInt().toShort()
+        }
+        filled += take
+    }
+
+    companion object {
+        const val TAG = "KachiWakeAsr"
+        const val SAMPLE_RATE = 16_000
+        const val WINDOW_MS = 1_600
+        const val DECODE_EVERY_MS = 500          // giải mã ~2 lần/giây (biến số CPU — đo trên xe)
+        const val MIN_MS = 500
+        const val WINDOW_SAMPLES = SAMPLE_RATE * WINDOW_MS / 1000
+        const val DECODE_EVERY_SAMPLES = SAMPLE_RATE * DECODE_EVERY_MS / 1000
+        const val MIN_SAMPLES = SAMPLE_RATE * MIN_MS / 1000
+
+        /** null nếu mô hình ASR chưa sẵn (off-car / chưa tải) ⇒ [VoiceWakeListener] degrade như khi kws null. */
+        fun create(ctx: Context): VoiceWakeAsr? =
+            VoiceRecognizer.openFree(ctx.applicationContext)?.let { VoiceWakeAsr(it) }
+    }
+}

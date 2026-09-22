@@ -35,6 +35,13 @@ fun ClusterNavBridge.setWakeEnabled(on: Boolean) {
     if (on) WakeModelFetch.ensure(app)
 }
 
+/** Engine wake: true = ASR no-train (mặc định), false = KWS. Đổi cần sync lại service để engine mới nạp. */
+fun ClusterNavBridge.wakeEngineAsr(): Boolean = Prefs.wakeEngineAsr(app)
+fun ClusterNavBridge.setWakeEngineAsr(asr: Boolean) {
+    Prefs.setWakeEngineAsr(app, asr)
+    VoiceWakeService.sync(app)
+}
+
 /**
  * Thử lại lượt tải model KWS ở **mỗi lần nổ máy**, nếu công tắc đang BẬT mà gói chưa có — gọi từ `KachiAutostart`.
  *

@@ -410,7 +410,7 @@ class VoiceCommandWiringContractTest {
 
         // Chỉ hai chỗ được gọi: phiên nghe thật và đường đo bằng WAV (phải đi cùng một con đường — R14).
         val users = voiceSources().filter { (_, src) -> src.contains("openFree(") }.map { it.first }.sorted()
-        assertEquals(listOf("VoiceFreeTail.kt", "VoiceRecognizer.kt", "VoiceWavProbe.kt"), users,
+        assertEquals(listOf("VoiceFreeTail.kt", "VoiceRecognizer.kt", "VoiceWakeAsr.kt", "VoiceWavProbe.kt"), users,
             "bộ giải mã tự do bị gọi ở chỗ lạ: $users")
     }
 

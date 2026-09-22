@@ -32,6 +32,14 @@ class SettingsVoiceSection(
             sub = context.getString(R.string.kachi_wake_sub),
         ) { on -> deps.bridge.setWakeEnabled(on) })
 
+        // Engine nhận "Hey Kachi" (owner 2026-09-22): ASR no-train (mặc định) vs KWS. ASR nghe "kachi" bằng chính
+        // mô hình tiếng Việt nên không cần train/thu mẫu.
+        body.addView(rows.checkRow(
+            on = deps.bridge.wakeEngineAsr(),
+            title = context.getString(R.string.kachi_wake_engine_title),
+            sub = context.getString(R.string.kachi_wake_engine_sub),
+        ) { on -> deps.bridge.setWakeEngineAsr(on) })
+
         // Dòng TRẠNG THÁI model câu gọi (owner 2026-09-21: "không có gì để biết đã tải xong chưa").
         // Tự làm mới mỗi 1.5s để thấy % tải + lúc "sẵn sàng". Dừng poll khi view rời cửa sổ.
         val st0 = deps.bridge.wakeModelStatus()

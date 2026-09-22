@@ -151,6 +151,8 @@
     <string name="kachi_music_default_app">App nhạc mặc định</string>
     <string name="kachi_music_auto">Tự chọn</string>
     <string name="kachi_wake_title">"Hey Kachi" — gọi bằng giọng (thử nghiệm)</string>
+    <string name="kachi_wake_engine_title">Cách nghe "Hey Kachi": ASR (không cần train)</string>
+    <string name="kachi_wake_engine_sub">Bật = dùng mô hình tiếng Việt để nghe "kachi" (không thu mẫu). Tắt = dùng KWS.</string>
     <string name="kachi_wake_sub">Nói câu gọi để mở lệnh thoại, không cần chạm. Nghe nền khi màn sáng. Mặc định tắt (tốn pin/CPU). Đang thử nghiệm — có thể chưa nhận tốt, gặp lỗi thì báo lại.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
     <string name="kachi_wake_notif_text">Đang nghe câu gọi</string>
@@ -316,6 +318,9 @@
 
     <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
     <!-- #1 · Tự sấy kính khi mưa (nhóm Tiện nghi xe) -->
+    <string name="kachi_sub_camera_signal">Camera theo xi-nhan</string>
+    <string name="kachi_camera_signal_title">Bật camera khi xi-nhan (đang phát triển)</string>
+    <string name="kachi_camera_signal_sub">Xi-nhan trái → camera trái nổi bên trái màn; phải → bên phải. Chưa kiểm trên xe.</string>
     <string name="kachi_sub_rain_defrost">Tự sấy kính khi mưa</string>
     <string name="kachi_rain_defrost_title">Mưa thì tự bật sấy kính</string>
     <string name="kachi_rain_defrost_sub">Đọc cảm biến mưa mỗi 5 phút; có mưa thì bật sấy kính trước + sau, hết mưa thì tắt lại.</string>

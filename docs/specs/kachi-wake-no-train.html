@@ -1,0 +1,51 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kachi — "Hey Kachi" wake KHÔNG-train</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--line:#e5e5ea;--acc:#0071e3;--code:#f5f5f7;--ok:#1a7f37;--warn:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--mut:#98989d;--line:#2c2c2e;--acc:#0a84ff;--code:#1c1c1e;--ok:#30d158;--warn:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;padding:2.5rem 1.25rem;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,system-ui,sans-serif;max-width:52rem;margin-inline:auto}
+h1{font-size:1.9rem;margin:0 0 .3rem}h2{font-size:1.3rem;margin:2rem 0 .5rem;border-top:1px solid var(--line);padding-top:1rem}h3{font-size:1.05rem;margin:1.2rem 0 .3rem}
+code{background:var(--code);padding:.1em .4em;border-radius:.3em}table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.9em}th,td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left;vertical-align:top}th{background:var(--code)}
+.mut{color:var(--mut)}.ok{color:var(--ok)}.warn{color:var(--warn)}.pick{background:var(--acc);color:#fff;padding:.1em .5em;border-radius:1em;font-size:.75em}
+</style></head><body>
+<h1>"Hey Kachi" — wake KHÔNG train <span class="pick">Current</span></h1>
+<p class="mut">2026-09-22 · owner: "listen nền đã tốt, chỉ nghe đúng «Hey Kachi/Kachi» là vật lộn. Chắc đang overthinking, tìm cách đơn giản KHÔNG train, KHÔNG thu mẫu. Giữ tên Kachi."</p>
+
+<h2>1. Vì sao đang khó</h2>
+<p>Hiện dùng <b>sherpa KeywordSpotter</b> (model KWS gigaspeech tiếng ANH) + tự chế biến thể phiên âm "Kachi" trong <code>keywords.txt</code>. "Kachi" là từ LẠ với model tiếng Anh ⇒ tokenize chật vật, threshold khó. Đây là chỗ overthinking: dựng cả một tầng KWS riêng cho một từ mà <b>chính model NGHE (ASR tiếng Việt) đã nghe được</b> — <code>"kachi"</code> nằm trong <code>VoiceLexicon.FILLERS</code> vì ASR THẬT phát ra chuỗi đó.</p>
+
+<h2>2. Mười hướng KHÔNG-train (đánh giá)</h2>
+<table><tr><th>#</th><th>Hướng</th><th>Train?</th><th>Đánh giá</th></tr>
+<tr><td>1</td><td><b>ASR-cửa-sổ-ngắn + fuzzy "kachi"</b> — chạy chính model NGHE tiếng Việt (đã ship) trên cửa sổ ~1.5s trượt, nghe ra text, khớp mờ "kachi/ca chi/ka chi/ga chi" → nổ.</td><td class="ok">KHÔNG</td><td class="ok"><b>CHỌN.</b> Tái dùng model có sẵn (model đã hiểu "kachi"), 0 train, 0 model mới. Chỉ tốn CPU hơn KWS — đã có VoiceLoadGuard + duty-cycle gate. Fuzzy dùng VoicePhoneticConfusions sẵn có.</td></tr>
+<tr><td>2</td><td>openWakeWord pretrained</td><td class="ok">KHÔNG</td><td>Không có sẵn model "kachi"; các model có sẵn là "alexa/hey jarvis"... ⇒ phải train "kachi" = loại.</td></tr>
+<tr><td>3</td><td>Porcupine custom keyword</td><td class="warn">tạo trên web</td><td>Chính xác cao nhưng cần key + tạo keyword trên console Picovoice (miễn phí giới hạn) + .ppn riêng. Không "thu mẫu" nhưng phụ thuộc dịch vụ ⇒ dự phòng.</td></tr>
+<tr><td>4</td><td>sherpa KWS + tokenize "kachi" bằng chính tokens.txt model NGHE (thay model gigaspeech Anh)</td><td class="ok">KHÔNG</td><td>Khả thi: dùng model KWS/ASR tiếng Việt cùng tokens ⇒ "kachi" mã hoá được. Nhưng KeywordSpotter cần model streaming riêng ⇒ phức tạp hơn #1.</td></tr>
+<tr><td>5</td><td>RMS + mẫu năng lượng "ka-chi" (2 âm tiết, khoảng lặng giữa)</td><td class="ok">KHÔNG</td><td>Quá nhiều false-accept (mọi 2 âm tiết) ⇒ chỉ làm cổng RẺ tầng 1, không phải quyết định.</td></tr>
+<tr><td>6</td><td>Phím vô-lăng thay wake-word (đã có)</td><td class="ok">KHÔNG</td><td>Đã chạy — nhưng owner muốn wake bằng GIỌNG, đây là bổ trợ.</td></tr>
+<tr><td>7</td><td>Google/Android SpeechRecognizer hotword</td><td class="ok">KHÔNG</td><td>API 33+ (xe API 29) + cần GMS/mạng ⇒ loại.</td></tr>
+<tr><td>8</td><td>Đổi từ dễ nhận hơn (giữ "kachi"): "OK Kachi" / "Kachi ơi"</td><td class="ok">KHÔNG</td><td>Bổ trợ #1: thêm biến thể "kachi ơi"/"ok kachi" vào fuzzy set (người Việt hay thêm "ơi").</td></tr>
+<tr><td>9</td><td>Vosk KWS grammar (từ điển đóng chỉ "kachi")</td><td class="ok">KHÔNG</td><td>Vosk đã bỏ (yếu). Loại.</td></tr>
+<tr><td>10</td><td>Two-stage: RMS gate (rẻ) → ASR-cửa-sổ (#1) chỉ khi có tiếng</td><td class="ok">KHÔNG</td><td><b>Kèm #1</b> — RMS gate lọc im lặng để ASR không chạy 100% thời gian (tiết kiệm CPU).</td></tr>
+</table>
+
+<h2>3. Chọn: #1 + #10 + #8 (ASR-cửa-sổ fuzzy "kachi", có RMS gate + biến thể "ơi")</h2>
+<p>Đơn giản nhất, KHÔNG train, KHÔNG model mới, tái dùng đúng model NGHE đã hiểu "kachi". Luồng:</p>
+<ol>
+<li>Mic nền (đã có <code>VoiceWakeListener</code>) → RMS gate (đã có) lọc im lặng.</li>
+<li>Có tiếng ⇒ gom cửa sổ PCM ~1.5s → chạy <b>model NGHE hiện tại</b> (OfflineRecognizer, cùng model command) → text.</li>
+<li><b>Fuzzy-match "kachi"</b> ở BẤT KỲ vị trí trong text (dùng <code>VoicePhoneticConfusions</code> + tập biến thể: kachi·ca chi·ka chi·ga chi·co chi·ka chi·gà chi·kachi ơi·ok kachi). Khớp ⇒ nổ wake → mở phiên lệnh (đường proven).</li>
+<li>Cửa sổ trượt (overlap ~0.5s) để không cắt giữa "ka|chi".</li>
+</ol>
+<p><b>CPU</b>: ASR nặng hơn KWS, nhưng: RMS gate + duty-cycle (chỉ decode khi có tiếng) + VoiceLoadGuard (suspend khi load cao) đã có. Model int8 (~74MB) decode 1.5s window nhanh (RTF ~0.01–0.1). Đo baseline trên xe.</p>
+
+<h2>4. Tasks</h2>
+<ul>
+<li>T1 — <code>WakeAsrMatcher</code> (:core thuần): nhận text ASR → có "kachi" (fuzzy) không. Test off-car với chuỗi giả (kachi/ca chi/nghe nhầm/câu thường).</li>
+<li>T2 — <code>VoiceWakeAsr</code> (:app): gom cửa sổ PCM + gọi VoiceRecognizer (model NGHE) + WakeAsrMatcher. Thay/song song <code>VoiceWakeKws</code>.</li>
+<li>T3 — wire vào <code>VoiceWakeListener</code>: RMS gate → cửa sổ → ASR-match → fireWake (đường proven). Công tắc chọn engine KWS vs ASR (default ASR — không cần model KWS riêng).</li>
+<li>T4 — runbook on-car: đo hit/false-accept + CPU cho từng option.</li>
+</ul>
+
+<h2>5. Off-car test được / cần xe</h2>
+<p><b>Off-car</b>: WakeAsrMatcher (fuzzy đúng/sai), wiring, WAV-probe (đẩy WAV "hey kachi" qua đường ASR-wake). <b>Cần xe</b>: CPU thật khi chạy nền + tỉ lệ nổ giọng thật + false-accept trong cabin ồn (runbook đo từng option).</p>
+</body></html>

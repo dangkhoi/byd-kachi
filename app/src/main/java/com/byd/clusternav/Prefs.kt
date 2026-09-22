@@ -264,6 +264,10 @@ object Prefs {
     fun wakePhraseId(ctx: Context): String = sp(ctx).getString("voice_wake_phrase", "hey_kachi") ?: "hey_kachi"
     fun setWakePhraseId(ctx: Context, id: String) = sp(ctx).edit().putString("voice_wake_phrase", id).apply()
 
+    /** Engine wake: true = ASR no-train (mặc định, owner 2026-09-22), false = KWS gigaspeech. */
+    fun wakeEngineAsr(ctx: Context): Boolean = sp(ctx).getBoolean("voice_wake_engine_asr", true)
+    fun setWakeEngineAsr(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("voice_wake_engine_asr", v).apply()
+
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)
