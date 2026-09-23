@@ -38,11 +38,23 @@ class VoiceWakeAsr private constructor(private val rec: VoiceRecognizer) : WakeE
         sinceDecode += n
         if (sinceDecode < DECODE_EVERY_SAMPLES || filled < MIN_SAMPLES) return false
         sinceDecode = 0
+        // #1 RMS-GATE (owner 2026-09-23, gốc :wake ~130% CPU): bản cũ giải mã mô hình 74MB MỖI 500ms VÔ ĐIỀU
+        // KIỆN — kể cả cabin IM (log "sherpa ra: ''"). Đó là nguồn CPU nền cao. Chỉ giải mã khi cửa sổ có tiếng đủ
+        // to. Im lặng → bỏ decode (giữ cửa sổ để khi có tiếng vẫn đủ ngữ cảnh). Ngưỡng RMS_GATE đo trên short PCM.
+        if (windowRms() < RMS_GATE) return false
         val text = runCatching { rec.decodeAll(window, filled) }.getOrDefault("")
         if (text.isBlank()) return false
         val hit = WakeAsrMatcher.isWake(text)
         if (hit) { Log.i(TAG, "WAKE khớp: \"$text\""); filled = 0 }  // reset cửa sổ để không nổ lại cùng câu
         hit
+    }
+
+    /** RMS (0..1 chuẩn hoá) của cửa sổ hiện có — dùng để cổng decode (bỏ giải mã khi im lặng). */
+    private fun windowRms(): Double {
+        if (filled <= 0) return 0.0
+        var sum = 0.0
+        for (i in 0 until filled) { val s = window[i].toDouble() / 32768.0; sum += s * s }
+        return Math.sqrt(sum / filled)
     }
 
     override fun release(): Unit = synchronized(lock) { released = true }
@@ -65,8 +77,11 @@ class VoiceWakeAsr private constructor(private val rec: VoiceRecognizer) : WakeE
         const val TAG = "KachiWakeAsr"
         const val SAMPLE_RATE = 16_000
         const val WINDOW_MS = 1_600
-        const val DECODE_EVERY_MS = 500          // giải mã ~2 lần/giây (biến số CPU — đo trên xe)
+        const val DECODE_EVERY_MS = 1_000       // #1: 500→1000 — giải mã ~1 lần/giây (giảm nửa tải CPU decode)
         const val MIN_MS = 500
+        // #1 RMS-GATE: cửa sổ RMS < ngưỡng ⇒ coi là im lặng ⇒ KHÔNG giải mã (bỏ decode 74MB vô ích khi im).
+        // 0.010 ≈ nền cabin im; tiếng nói thật RMS cao hơn nhiều. Nới lỏng để không bỏ sót "Hey Kachi" nói nhỏ.
+        const val RMS_GATE = 0.010
         const val WINDOW_SAMPLES = SAMPLE_RATE * WINDOW_MS / 1000
         const val DECODE_EVERY_SAMPLES = SAMPLE_RATE * DECODE_EVERY_MS / 1000
         const val MIN_SAMPLES = SAMPLE_RATE * MIN_MS / 1000
