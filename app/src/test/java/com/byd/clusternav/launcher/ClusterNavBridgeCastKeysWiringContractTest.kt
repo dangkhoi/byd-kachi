@@ -164,17 +164,17 @@ class ClusterNavBridgeCastKeysWiringContractTest {
         )
     }
 
-    /** Trạng thái phím đọc ground-truth `NavAccessibilitySource.connected`, không đoán theo pref. */
+    /** Trạng thái phím đọc BOUND THẬT (AccessibilityManager), KHÔNG cờ connected in-process (kẹt khi hệ unbind ngầm). */
     @Test
     fun `trang thai phim doc co bound that`() {
         assertTrue(
             "accessibilityBound()" in body(keys(), "fun ClusterNavBridge.voiceKeyStatus()"),
-            "trạng thái phím phải đọc cờ connected của service (đã BOUND chưa), không suy từ setting",
+            "trạng thái phím phải đọc bound thật, không suy từ setting",
         )
         assertTrue(
-            "com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected" in
-                body(bridge(), "fun accessibilityBound(): Boolean"),
-            "ground-truth là NavAccessibilitySource.connected",
+            "NavConnect.isAccessibilityBound" in body(bridge(), "fun accessibilityBound(): Boolean"),
+            "ground-truth = NavConnect.isAccessibilityBound (AccessibilityManager) — KHÔNG dùng cờ connected kẹt " +
+                "(gốc bug 'báo OK mà chả OK / reset mới hết' 2026-09-23)",
         )
     }
 

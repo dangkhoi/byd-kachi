@@ -38,7 +38,7 @@ class RebindReceiver : BroadcastReceiver() {
         // enabled-nhưng-chưa-bound) ⇒ gọi định kỳ an toàn. Gate: chỉ khi voice-key BẬT và cờ in-process nói CHƯA
         // bound (tránh dadb thừa mỗi 60s khi đang bound tốt).
         if (Prefs.voiceKeyEnabled(context) &&
-            !com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected
+            !NavConnect.isAccessibilityBound(context)
         ) {
             runCatching { NavConnect.grantAccessibility(context.applicationContext) }
                 .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }

@@ -5,6 +5,7 @@ import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.carexec.LocalShellText
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import dadb.AdbKeyPair
+import com.byd.clusternav.modules.navaccess.NavAccessibilitySource
 import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
@@ -50,6 +51,21 @@ object NavConnect {
     // TRỰC TIẾP (settings, không dadb) thì bind lại NGAY cả khi load 14 ⇒ cơ chế đúng, chỉ thiếu thời gian.
     // Nới 20s để hoàn tất dưới tải nặng; single-flight vẫn được nhả sau timeout (không kẹt vĩnh viễn).
     private const val GRANT_TIMEOUT_MS = 30_000L
+
+    /**
+     * NavAccessibilityService đã BOUND THẬT chưa — đọc [android.view.accessibility.AccessibilityManager]
+     * (API chính thức, phản ánh service ĐANG CHẠY, không cần dadb). NGUỒN CHUNG cho watchdog + bridge.
+     *
+     * ⚠ KHÔNG dùng cờ `NavAccessibilitySource.connected` để GATE heal: cờ đó set ở onServiceConnected/onUnbind,
+     * mà hệ có thể unbind KHÔNG gọi onUnbind (ngủ đông/CPU pressure) ⇒ cờ KẸT true ⇒ watchdog không bao giờ heal
+     * (gốc "reset mới hết", owner 2026-09-23, chung v1/v2/launcher).
+     */
+    fun isAccessibilityBound(ctx: Context): Boolean = runCatching {
+        val am = ctx.getSystemService(Context.ACCESSIBILITY_SERVICE) as? android.view.accessibility.AccessibilityManager
+            ?: return@runCatching NavAccessibilitySource.connected
+        am.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any { it.resolveInfo?.serviceInfo?.let { s -> s.packageName == ctx.packageName && s.name.contains("NavAccessibilityService") } == true }
+    }.getOrElse { NavAccessibilitySource.connected }
 
     /** Reconnect NGAY qua dadb (chạy nền). An toàn gọi nhiều lần. */
     fun reconnect(ctx: Context) {

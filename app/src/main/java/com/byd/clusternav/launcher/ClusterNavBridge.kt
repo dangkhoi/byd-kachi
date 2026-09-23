@@ -238,9 +238,17 @@ class ClusterNavBridge(
         ComponentName(app, com.byd.clusternav.modules.navaccess.NavAccessibilityService::class.java),
     )
 
-    /** Service Hỗ trợ đã **BOUND** chưa (ground-truth `onServiceConnected`) — `MainActivity.kt:126`. */
-    fun accessibilityBound(): Boolean =
-        com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected
+    /**
+     * Service Hỗ trợ đã **BOUND THẬT** chưa — đọc từ [android.view.accessibility.AccessibilityManager]
+     * (`getEnabledAccessibilityServiceList`, API chính thức phản ánh service ĐANG CHẠY, không cần dadb).
+     *
+     * ⚠⚠ GỐC BUG "báo OK mà chả OK / reset mới hết" (owner 2026-09-23, chung cả ClusterNav v1/v2/launcher):
+     * bản cũ đọc `NavAccessibilitySource.connected` — cờ IN-PROCESS set ở `onServiceConnected`/`onUnbind`. Khi xe
+     * NGỦ ĐÔNG / CPU pressure, hệ UNBIND service **mà KHÔNG gọi `onUnbind`** (Android không đảm bảo onUnbind chạy
+     * khi đóng băng/kill ngầm) ⇒ cờ KẸT `true` dù service đã chết ⇒ (a) status báo ACTIVE dối, (b) watchdog gate
+     * `!connected`=false nên KHÔNG heal ⇒ chỉ reset process (owner reset) mới về false. Nay đọc SỰ THẬT từ hệ.
+     */
+    fun accessibilityBound(): Boolean = com.byd.clusternav.NavConnect.isAccessibilityBound(app)
 
     private fun hasSecureComponent(setting: String, expected: ComponentName): Boolean {
         val flat = Settings.Secure.getString(app.contentResolver, setting) ?: return false

@@ -287,7 +287,7 @@ object PermissionPreflight {
         // nói CHƯA bound ⇒ force-rebind ngay lúc start. `NavConnect.grantAccessibility` idempotent (verify `dumpsys`
         // bound TRƯỚC, chỉ toggle khi cần) nên gọi thừa vô hại. Cùng đường heal với watchdog nền (B2).
         if (com.byd.clusternav.Prefs.voiceKeyEnabled(activity) &&
-            !com.byd.clusternav.modules.navaccess.NavAccessibilitySource.connected
+            !com.byd.clusternav.NavConnect.isAccessibilityBound(activity)
         ) {
             runCatching { com.byd.clusternav.NavConnect.grantAccessibility(activity.applicationContext) }
                 .onFailure { Log.e("Preflight", "accessibility bound-heal (B1) failed", it) }
