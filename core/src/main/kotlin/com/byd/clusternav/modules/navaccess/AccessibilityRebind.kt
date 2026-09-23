@@ -27,6 +27,24 @@ object AccessibilityRebind {
     private const val KEY = "enabled_accessibility_services"
 
     /**
+     * Hai chuỗi `pkg/cls` có cùng ComponentName không, chịu dạng SHORT (`pkg/.Cls` = `pkg.Cls`) lẫn FULL
+     * (`pkg/pkg.sub.Cls`). #9 (deep-pass 2026-09-23): nếu enabled list OS lưu SHORT mà lệnh remove dùng FULL thì
+     * so-sánh-chuỗi-trần TRƯỢT ⇒ không remove ⇒ framework thấy 'không đổi' ⇒ KHÔNG rebind (phím chết mà toggle
+     * tưởng đã làm). Chuẩn hoá cả hai vế về pkg + class-đầy-đủ rồi so.
+     */
+    internal fun sameComponent(a: String, b: String): Boolean = normalizeComponent(a) == normalizeComponent(b)
+
+    private fun normalizeComponent(s: String): String {
+        val slash = s.indexOf('/')
+        if (slash < 0) return s.trim()
+        val pkg = s.substring(0, slash).trim()
+        var cls = s.substring(slash + 1).trim()
+        if (cls.startsWith(".")) cls = pkg + cls          // dạng short `/.Cls` → `pkg.Cls`
+        else if (!cls.contains(".")) cls = "$pkg.$cls"    // dạng chỉ tên lớp trần → `pkg.Cls`
+        return "$pkg/$cls"
+    }
+
+    /**
      * The ordered `settings put secure ...` commands that force a REBIND via a remove -> re-add toggle.
      *
      * Returns an EMPTY list when [boundContainsClusterNav] is already true — if the service is genuinely bound
@@ -50,7 +68,7 @@ object AccessibilityRebind {
             .split(':')
             .map { it.trim() }
             .filter { it.isNotEmpty() && it != "null" }
-        val without = entries.filter { it != component }
+        val without = entries.filter { !sameComponent(it, component) }
         val readd = without + component
         return listOf(
             "settings put secure $KEY \"${without.joinToString(":")}\"",

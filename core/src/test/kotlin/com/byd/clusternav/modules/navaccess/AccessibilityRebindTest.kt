@@ -124,6 +124,16 @@ class AccessibilityRebindTest {
         )
     }
 
+    /** #9 (deep-pass 2026-09-23): enabled list lưu dạng SHORT phải vẫn được remove (không thì không rebind). */
+    @Test
+    fun `remove khop ca dang SHORT cua component`() {
+        val shortForm = "com.byd.clusternav/.modules.navaccess.NavAccessibilityService"  // pkg/.Cls
+        val w = AccessibilityRebind.accessibilityRebindWrites("$sysui:$shortForm", false)
+        val removed = quotedValue(w[0])
+        assertFalse(removed.contains("NavAccessibilityService"), "clusternav dạng short phải bị strip khi remove")
+        assertTrue(removed.contains(sysui), "OEM giữ nguyên")
+    }
+
     // ── isClusterNavBound ────────────────────────────────────────────────────
     @Test
     fun `null or blank dump = NOT bound (khong doc duoc thi khong xac nhan bound)`() {
