@@ -15,6 +15,11 @@ class WakeAsrGoldenTest {
         "cá chì hay cá", "cá chì ok cá", "các chị các chị ơi các chị ơi", "chi hay các chị các chị ơi",
         "chị ơi các chị ơi các chị", "hay cá hay cá", "hay ka chê hay ca", "hay kach hay cá",
         "hay kach hay kach hay", "hay kach hay kach", "kach hay kach hai", "kacha cá ok", "ke hay kach hay ka",
+        // Mẻ 2 (drive) 2026-09-23 — model ra "kat/katy/cay/ky/cả chị" khi owner gọi Hey Kachi.
+        "a chi hay ka", "cả chị à cả chị ơ", "các chị hay", "các chị ơi ok", "cay hay ca chí", "cay ky cay",
+        "chi hay kach hay", "chị ơi ok cay", "đấy hay kach hay", "gì hay kach hay", "hay ca chế", "hay cá hay ca",
+        "hay cá", "hay cay ca", "hay cay hay ca", "hay kach hay ca", "hay kat hay kat", "kach hay kat",
+        "ke hay katy hay", "ok cay ky ca",
     )
     // Text ASR câu THƯỜNG (giờ giấc / lệnh khác) — KHÔNG được khớp.
     private val negative = listOf(
@@ -24,6 +29,8 @@ class WakeAsrGoldenTest {
         "hai mươi đến hai mươi", "mình bán ấy", "mở nhạc bật điều hòa", "mười đến hai mươi ba giờ năm",
         "nếu như mà tuyệt đối thì ông", "nó không trưởng đường về nhà mình bắt", "tám giờ đêm tới hai mươi bốn giờ",
         "tháng a ấy", "tới hai mươi bốn giờ có ngày", "tối thì bao tiêu", "từ hồi năm hai mươi sáu",
+        // Mẻ 2 negative — câu thường / "ca sĩ" KHÔNG được khớp (cay/ca sĩ hay lẫn trong nói chuyện).
+        "ca sĩ cá", "lại một cách khác lại", "tỉnh lại ca",
     )
 
     @Test fun `positive khop cao`() {

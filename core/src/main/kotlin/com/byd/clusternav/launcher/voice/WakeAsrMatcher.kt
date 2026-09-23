@@ -41,7 +41,16 @@ object WakeAsrMatcher {
         if (words.isEmpty()) return false
         // (a) MỘT từ đã dính "kach"/"kacha"/"kachi"… trong cụm KHÔNG quá dài. Golden: câu gọi ra tối đa ~6 từ
         // (chèn "hay/hai"); câu THƯỜNG chứa "kachi" giữa (vd "con kachi màu đỏ hôm qua" 8 từ) thì KHÔNG nổ.
-        if (words.size <= WAKE_MAX_WORDS && words.any { oneWordKachi(it) }) return true
+        // ⚠ Từ c-start (cach/cac…) TRÙNG tiếng thường ("một cách khác") ⇒ chỉ nổ khi cụm wake-dominated; k-start
+        // (kach/kat) không lẫn tiếng thường ⇒ nổ luôn.
+        if (words.size <= WAKE_MAX_WORDS) {
+            val kw = words.filter { oneWordKachi(it) }
+            if (kw.any { it.startsWith("k") }) return true
+            if (kw.isNotEmpty()) {
+                val core0 = words.filterNot { it in FILLER }
+                if (core0.all { wakeToken(it) }) return true
+            }
+        }
         // (b) "các chị"/"cac chi" hai từ liền = "Kachi ơi" (golden, kể cả lặp "các chị ơi các chị ơi"). Cho cụm
         // dài NẾU nó CHỦ YẾU là âm-wake (cac/chi/đệm) — chặn câu thường "các chị em ơi lại đây" (có em/lai/day).
         var cacChi = false
@@ -59,8 +68,22 @@ object WakeAsrMatcher {
             if (core[i] in HEAD && core[i + 1] in TAIL) return true
         }
         // (d) có CẢ một head và một tail trong lõi ngắn (không cần liền) — "cá chì cá", "ka che ca".
-        return core.any { it in HEAD } && core.any { it in TAIL }
+        if (core.any { it in HEAD } && core.any { it in TAIL }) return true
+        // (e) WAKE-DOMINATION (golden mẻ 2 2026-09-23): model rụng "ch" ra "kat/katy/cay/ky". Các từ này TRÙNG
+        // tiếng Việt thường ("cay", "ký") ⇒ chỉ nhận khi CỤM NGẮN và MỌI từ không-đệm đều là âm-wake + có ≥1 từ
+        // wake thật. "hay cay ca"/"ok cay ky ca"/"hay kat hay kat" ⇒ nổ; "ca sĩ cá" (có "si"), "một cách khác"
+        // (có mot/khac/lai) ⇒ KHÔNG (còn từ lạ ⇒ đang nói chuyện khác, không phải gọi).
+        if (core.size <= WAKE_MAX_WORDS && core.all { wakeToken(it) } && core.any { strongWake(it) }) return true
+        return false
     }
+
+    /** Từ "âm-wake" (chấp nhận trong cụm dominated): head/tail/oneWordKachi + biến thể rụng-âm kat/katy/cay/ky. */
+    private fun wakeToken(w: String): Boolean =
+        w in HEAD || w in TAIL || oneWordKachi(w) || strongWake(w) || w == "cac" || w.startsWith("chi")
+
+    /** Biến thể "kachi" rụng âm cuối mà model hay ra: kat/katy/cay/ky (ka/ca-start ngắn). */
+    private fun strongWake(w: String): Boolean =
+        w in setOf("kat", "katy", "cay", "ky", "kach", "cach", "kacha", "cachi", "kachi", "cachy")
 
     /** Một từ đã dính "kachi"/"kach"/"kacha"/"cach"/"gachi"… (ASR gộp). Bắt đầu ka/ca/ga/kha + chứa "ch". */
     private fun oneWordKachi(w: String): Boolean =
