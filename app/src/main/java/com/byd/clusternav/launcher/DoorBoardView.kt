@@ -84,9 +84,7 @@ internal class DoorBoardView(context: Context) : View(context) {
         footerP.textSize = maxOf(min * FOOTER_RATIO, labelFloorPx)
         footerP.color = colMut
         val room = w - pad * 2f
-        val need = footerP.measureText(p.footer)
-        if (need > room && need > 0f) footerP.textSize = maxOf(footerP.textSize * room / need, labelFloorPx)
-        canvas.drawText(clip(p.footer, room), w / 2f, h * FOOTER_BASELINE, footerP)
+        // Owner 2026-09-23: bỏ dòng footer kết luận ("N bộ phận đã đóng/chưa đọc…") dưới bảng cửa.
     }
 
     private fun clip(s: String, room: Float): String {

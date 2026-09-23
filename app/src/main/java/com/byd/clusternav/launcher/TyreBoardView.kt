@@ -127,9 +127,7 @@ class TyreBoardView(context: Context) : View(context) {
                 canvas.drawCircle(wheelX, wheelY, minOf(content.width(), content.height()) * DOT_RATIO, dot)
             }
         }
-
-        midP.color = colMut
-        canvas.drawText(verdict, w / 2f, h * 0.965f, midP)
+        // Owner 2026-09-23: bỏ dòng kết luận ("áp suất lốp OK/…") dưới bảng — giữ số từng bánh, không câu tóm tắt.
     }
 
     private fun drawCell(canvas: Canvas, m: Float, corner: TyreCorner, rd: TyreReading?, value: String?, temp: String?) {

@@ -75,9 +75,7 @@ object GroupTiles {
                 ImageView(ctx).apply { setImageResource(r); setColorFilter(c(GroupTileView.tintOf(worst))) },
                 LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) },
             )
-            addView(GroupTileView.text(ctx, m.summary(), 15f, GroupTileView.tintOf(worst), bold = true).apply {
-                maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            })
+            // Owner 2026-09-23: bỏ dòng tóm tắt ("7 bộ phận"/"2 cảnh báo") dưới ô nhóm — giữ icon + nhãn nhóm.
             addView(GroupTileView.text(ctx, m.label, 10.5f, KachiTheme.MUT).apply {
                 maxLines = 1; ellipsize = TextUtils.TruncateAt.END
             })
