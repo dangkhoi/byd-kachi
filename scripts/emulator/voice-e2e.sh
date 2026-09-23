@@ -111,6 +111,9 @@ cleanup() {
       || true
     echo "── đã tắt chế độ kiểm thử"
   fi
+  # DEBT-E2E-SH(c) 2026-09-23: dọn WAV đã đẩy vào máy + adb unroot (adb root bật ở §196 không bao giờ nhả).
+  "$ADB" -s "$SERIAL" shell "rm -f /sdcard/Android/data/$PKG/files/wavin/*" </dev/null >/dev/null 2>&1 || true
+  "$ADB" -s "$SERIAL" unroot </dev/null >/dev/null 2>&1 || true
   return $rc
 }
 trap cleanup EXIT
@@ -271,6 +274,12 @@ ensure_model() {
   for f in encoder.onnx decoder.onnx joiner.onnx tokens.txt; do
     [ -f "$MODELDIR/$f" ] || die "thiếu $MODELDIR/$f"
     put_app_file "$MODELDIR/$f" "files/sherpa/$MODEL_ID/$f" || die "chép $f hỏng"
+    # DEBT-E2E-SH(b) 2026-09-23: verify sha256 sau chép — hỏng ngầm (chép cụt) biểu hiện thành "model init lỗi"
+    # khó lần. So sha local vs trên máy; lệch ⇒ die NGAY với đúng nguyên nhân.
+    local want got
+    want="$(shasum -a 256 "$MODELDIR/$f" 2>/dev/null | cut -d' ' -f1)"
+    got="$(adbs shell "run-as $PKG sha256sum files/sherpa/$MODEL_ID/$f 2>/dev/null || sha256sum /data/data/$PKG/files/sherpa/$MODEL_ID/$f 2>/dev/null" | tr -d '\r' | cut -d' ' -f1)"
+    [ -n "$want" ] && [ -n "$got" ] && [ "$want" != "$got" ] && die "chép $f LỆCH sha256 (local=$want máy=$got) — chép cụt/hỏng"
   done
   # Đổi mô hình dưới chân tiến trình đang chạy: `VoiceEngine` giữ recognizer cho cả tiến trình ⇒ khởi động lại
   # cho chắc (và cũng là cách duy nhất để `isReady` được đọc lại từ đĩa).

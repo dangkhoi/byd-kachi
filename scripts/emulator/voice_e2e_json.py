@@ -89,9 +89,15 @@ def _verdict(row, d):
         if pkg not in (real or ""):
             why.append("app KHÔNG lên màn (%s)" % (real or "-"))
     elif side.startswith("slot:"):
-        _, pkg = side[len("slot:"):].split(":", 1)
-        if pkg not in (real or ""):
-            why.append("ô không mang %s (đang là %s)" % (pkg, real or "∅"))
+        # DEBT-E2E-SH (2026-09-23): ô thiếu `pkg` (`slot:N` không kèm gói) trước đây làm split(":",1) ném
+        # ValueError → chết CẢ BẢNG sau khi đã chạy xong 67 ca. Guard: thiếu pkg = ghi lý do, không ném.
+        parts = side[len("slot:"):].split(":", 1)
+        if len(parts) < 2:
+            why.append("ca sai định dạng: `slot:N:pkg` thiếu pkg (%s)" % side)
+        else:
+            pkg = parts[1]
+            if pkg not in (real or ""):
+                why.append("ô không mang %s (đang là %s)" % (pkg, real or "∅"))
     elif side.startswith("preset:"):
         want = side.split(":", 1)[1]
         if (real or "").strip() != want:

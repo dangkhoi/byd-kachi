@@ -63,6 +63,9 @@ internal object SettingsCatalogClusterNav {
             "vm_bubble_enabled", "vm_bubble_x", "vm_bubble_y",
             "voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons", "voicekey_learn",
             "seat_comfort_enabled", "seat_comfort_mode", "seat_level_0",
+            // S4-SEAT (owner 2026-09-23): 3 ghế còn lại cùng tệp với ghế lái → vào ảnh chụp theo hồ sơ. Không có
+            // dòng này thì snapshotClusterNav (lặp CLUSTERNAV_KEYS) bỏ sót chúng dù đã khai COMPANION.
+            "seat_level_1", "seat_level_2", "seat_level_3",
             "pm25_filter_enabled", "recirc_on_start_enabled", "headless_autostart",
             // V1 pha NÓI · R4 (spec `kachi-voice-feedback.html` T9) — hai công tắc của đường ra TIẾNG. Khoá nằm
             // cùng tệp với `voice_mic_pill` (cũng của `Prefs`), nên "cấu hình giọng nói ở đâu" có một câu trả lời.
@@ -109,6 +112,13 @@ internal object SettingsCatalogClusterNav {
     val COMPANION_KEYS: Map<String, String> = mapOf(
         "badge_center_y" to "badge_center",
         "vm_bubble_y" to "vm_bubble_pos",
+        // S4-SEAT (owner 2026-09-23): 3 ghế còn lại đi kèm ghế lái. `Prefs.setSeatComfortLevel` ghi
+        // `"seat_level_$seatIndex"` cho 4 ghế trong MỘT hàm; chỉ `seat_level_0` được khai trong CLUSTERNAV_KEYS nên
+        // ProfileScope (sinh từ bảng đó) chỉ phủ ghế lái ⇒ đổi hồ sơ, 3 ghế kia giữ mức người trước. Khai đi-kèm để
+        // cả 4 vào ảnh chụp theo hồ sơ. (Cùng tệp `kachi_workspace` như seat_level_0.)
+        "seat_level_1" to "car_seat_levels",
+        "seat_level_2" to "car_seat_levels",
+        "seat_level_3" to "car_seat_levels",
         // IA v2 · R3 — chip sáng/tối của Kachi ghi CẢ `theme_mode` (nguồn sự thật của launcher) lẫn `theme_choice`
         // (màn nâng cao đọc ở attachBaseContext). Một khái niệm, một công tắc, hai chỗ lưu vì hai màn đọc khác nhau.
         "theme_choice" to "display_theme",
