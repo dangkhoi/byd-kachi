@@ -56,8 +56,12 @@ class VoiceKeyMatcher {
                 if (fire) firedDownTime[keyCode] = downTimeMs
                 VoiceKeyDecision(fire = fire, consume = true, targetSpec = if (fire) target else null)
             }
-            // Nuốt UP/OTHER của phím đã gán để phím không lọt xuống hệ thống (khỏi mở nhầm trợ lý mặc định).
-            VoiceKeyAction.UP, VoiceKeyAction.OTHER -> VoiceKeyDecision(fire = false, consume = true)
+            // #10 (deep-pass 2026-09-23): UP kết thúc lần nhấn ⇒ XOÁ entry. Chống-lặp dựa trên chu kỳ DOWN→UP,
+            // KHÔNG chỉ dựa 'downTime khác' — nếu ROM TÁI DÙNG cùng downTimeMs cho lần nhấn mới thì (không xoá)
+            // fire=false MÃI ⇒ phím chết trong khi service VẪN bound (status ACTIVE, watchdog không chữa được vì
+            // không phải lỗi bind). Xoá ở UP: DOWN của lần nhấn kế luôn khác entry (đã trống) ⇒ fire lại đúng 1 lần.
+            VoiceKeyAction.UP -> { firedDownTime.remove(keyCode); VoiceKeyDecision(fire = false, consume = true) }
+            VoiceKeyAction.OTHER -> VoiceKeyDecision(fire = false, consume = true)
         }
     }
 

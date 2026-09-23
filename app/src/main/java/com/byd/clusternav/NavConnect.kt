@@ -31,6 +31,7 @@ object NavConnect {
     private val ACC_COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
     private val reconnecting = java.util.concurrent.atomic.AtomicBoolean(false)   // single-flight: tap dồn dập / ensure trùng → 1 chu kỳ disallow→allow
     private val grantingAcc = java.util.concurrent.atomic.AtomicBoolean(false)    // single-flight cho grantAccessibility (dadb read-modify-write)
+    private val grantGen = java.util.concurrent.atomic.AtomicInteger(0)          // #6: dấu thế hệ chống session timed-out ghi chồng
 
     // Force-rebind toggle timings (post-reboot ENABLED-but-NOT-BOUND heal). SETTLE lets a JUST-written enable
     // bind naturally first (fresh grants usually self-bind) so we don't toggle needlessly; TOGGLE_PAUSE is the
@@ -159,6 +160,10 @@ object NavConnect {
         if (worker.isAlive) {
             Log.e(TAG, "grantAccessibility TIMEOUT ${GRANT_TIMEOUT_MS}ms → interrupt + nhả single-flight")
             worker.interrupt()
+            // #6 (deep-pass 2026-09-23): interrupt() KHÔNG cắt được Socket.read → worker cũ có thể còn sống.
+            // Tăng gen: worker cũ khi hồi sẽ thấy gen đổi ⇒ BỎ pha toggle (khỏi ghi chồng lên grant mới). Combined
+            // command + finally re-add đã đảm bảo list không kẹt REMOVED; gen chỉ tránh 2 session toggle chồng lãng phí.
+            grantGen.incrementAndGet()
             grantingAcc.set(false)   // never let a hung dadb session pin the single-flight forever
             return false
         }
@@ -167,6 +172,7 @@ object NavConnect {
 
     private fun doGrantAccessibility(app: Context): Boolean {
         if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return false }
+        val myGen = grantGen.incrementAndGet()   // #6: dấu thế hệ của lượt grant này
         try {
             return runCatching {
                 val keyPair = AdbKeys.ensure(app)
@@ -190,6 +196,9 @@ object NavConnect {
                     // KHÔNG chạy (không ở "Bound services") → onKeyEvent/booster chết. Ép rebind trên CÙNG phiên.
                     // #2 (owner 2026-09-23): trả BOUND THẬT (verify sau toggle), KHÔNG phải "dadb chạy xong" —
                     // để "Kiểm tra/Sửa ngay" báo đúng OK/FAIL khớp status, không nói dối.
+                    // #6: nếu đã có grant mới hơn (myGen != grantGen) → worker này là session TIMED-OUT còn sót;
+                    // bỏ pha toggle để khỏi ghi chồng lên lượt grant mới. Trả false (không xác nhận bound).
+                    if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session false }
                     forceRebindIfNeeded(keyPair, sh)
                 } ?: false
             }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb LỖI (popup Allow chưa bấm?)", it); false }
