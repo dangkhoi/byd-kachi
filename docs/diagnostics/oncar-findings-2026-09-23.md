@@ -127,3 +127,11 @@ Load 15–18.7 (đang lái). Không crash/ANR Kachi. 3 finding:
 - **a11y BIND RỚT dưới load cao**: [ĐO] `NavConnect: accessibility force-rebind xong: bound=FALSE` (18:31:49, load 18.68). Watchdog REBIND_WATCHDOG chạy đều, toggle CHẠY nhưng hệ **KHÔNG bind lại** ⇒ phím vô-lăng chết lúc này. Fix 2.20 (gộp lệnh) giảm round-trip NHƯNG root sâu hơn = **dưới load cực cao hệ không bind service** (không phải dadb treo — lệnh xong, đọc bound=false). Hướng: (a) chờ+retry nhiều nhịp khi bound=false; (b) GIẢM TẢI CPU (xem dưới) để hệ bind kịp.
 - **`:wake` (Hey Kachi ASR) ngốn 39% CPU** [ĐO dumpsys cpuinfo]: `39% com.byd.launcher:wake`. [ĐO log] `KachiVoiceRec: sherpa ra` liên tục mỗi ~1.5–2s ("ừm"/"ờ"/câu nền) — decode model 74MB 2 lần/giây trong cabin ồn. Vượt xa ngưỡng runbook B3 (<15%). Góp phần load 18 + có thể làm a11y bind rớt (hệ đói CPU). **Hướng off-car: tăng DECODE_EVERY_MS 500→1000+ · thêm RMS-gate (chỉ decode khi có tiếng đủ to) · duty-cycle.** ⚠ Đây là mặt trái ASR-window đã lường; cần siết.
 - **surfaceflinger 76% + com.byd.cdr 42%** — compositing 3 display + recorder BYD (không phải Kachi; đã biết).
+
+## 14. GOLDEN Hey Kachi MẺ 2 (2026-09-23 19:35, đậu xe) → scripts/voice/data/wake-golden-oncar-2026-09-23-drive.txt
+24 dòng. ASR "Hey Kachi" ra biến thể MỚI mà WakeAsrMatcher hiện MISS (chỉ 1 WAKE khớp "cay hay ca chí"):
+- **"kat"/"katy"**: "hay kat hay kat", "kach hay kat", "ke hay katy hay" — TAIL/HEAD chưa có "kat"/"katy".
+- **"cay"/"ky"**: "cay hay ca chí", "hay cay ca", "ok cay ky ca" — "cay" (ca+y), "ky".
+- **"cá chí"/"ca chế"**: "hay ca chế", "ca sĩ cá" — "chí"→chi, "chế"→che (đã có).
+- **"các chị"/"cả chị"**: "các chị hay", "cả chị à cả chị ơ", "các chị ơi ok".
+- → off-car chỉnh matcher: thêm "kat"/"kach"/"katy" (kach+t), "cay"/"ky" HEAD, "cả chị"; đo lại trên CẢ 2 mẻ golden (39+24 dòng). ⚠ cân bằng false-accept ("ca sĩ", "cay" có thể trong câu thường).
