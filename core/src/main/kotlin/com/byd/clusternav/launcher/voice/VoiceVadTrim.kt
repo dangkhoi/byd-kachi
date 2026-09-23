@@ -53,7 +53,7 @@ object VoiceVadTrim {
     // ── Tham số đã CHỐT BẰNG LƯỚI ([ĐO host §8]) ─────────────────────────────────────────────────
 
     /**
-     * Ngưỡng xác suất của Silero. `0.5` — mặc định của chính mô hình, và là điểm lưới đã chọn.
+     * Ngưỡng xác suất của Silero. 0.35 — hạ từ 0.5 (mặc định Silero) sau on-car 2026-09-23: mic xe/giọng nhỏ nhiều câu doan=0 → hết trần. Chỉnh pref voice_vad_threshold nếu false-accept.
      *
      * Với bộ tham số này [ĐO host §5]: endpoint **p50 660 ms** · p90 780 ms · **0/1 899 cắt giữa câu** ·
      * **0/1 899 không nổ**. So với bộ RMS đang chạy trên xe (`chot=4200ms` ở 165/299 lượt, có lượt 8 400 ms).
@@ -62,7 +62,7 @@ object VoiceVadTrim {
      * ([MIN_SILENCE_MS]) ⇒ cộng thẳng ~450 ms vào cả p50 lẫn p90 (≈ 1 110 / 1 230 ms). Ngưỡng xác suất và hai
      * tính chất *"cắt giữa câu"* / *"không nổ"* thì không đụng tới.
      */
-    const val THRESHOLD = 0.5f
+    const val THRESHOLD = 0.35f
 
     /** Phải có ngần này tiếng thì VAD mới mở một đoạn. 0,10 s — điểm lưới. */
     const val MIN_SPEECH_MS = 100

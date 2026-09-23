@@ -142,7 +142,7 @@ class VoiceVadTrimTest {
      */
     @Test
     fun `tham so mac dinh bang dung bo dang chay`() {
-        assertEquals(0.5f, VoiceVadTrim.THRESHOLD)
+        assertEquals(0.35f, VoiceVadTrim.THRESHOLD)       // hạ từ 0.5 sau on-car 2026-09-23 (mic xe nghe hụt)
         assertEquals(100, VoiceVadTrim.MIN_SPEECH_MS)     // 0,10 s — lưới host §8
         assertEquals(600, VoiceVadTrim.MIN_SILENCE_MS)    // 0,60 s — [ĐO xe 2026-09-18], KHÔNG còn là 0,15 s host
         assertEquals(0, VoiceVadTrim.MARGIN_MS)

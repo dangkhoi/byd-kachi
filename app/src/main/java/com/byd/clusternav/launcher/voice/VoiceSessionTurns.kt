@@ -133,6 +133,7 @@ internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>, my: Int): Bo
     if (VoiceClarify.ask(only, 0) == null) return false
     clarifyRound = 0
     val line = VoiceClarify.giveUp()
+    VoiceChime.error()   // R1 voice-ux: earcon "chưa hiểu"
     overlay?.render(R.string.kachi_voice_heard, line)
     scheduleClose(VoiceSpeakBudget.estimateMs(listOf(line), VoiceSession.SPEAK_SAFETY_MS))
     speakLines(listOf(line)) { post { if (!stale(my)) scheduleClose(VoiceSession.LINGER_MS) } }
@@ -292,12 +293,12 @@ private fun VoiceSession.listenOnce(
     val labels = appsByLabel()
     VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet(), places())?.use {
         whileCapturing {
+            post { if (!stale(my)) overlay?.setPhase(true) }   // R3: lượt nối → waveform sống lại
             capture.listen(
                 it, maxMs, { cancelled.get() || stale(my) }, keepPcm = false, beep = beep,
-                // [P0-1a] Mọi lượt NỐI đều bỏ giải mã khi không có tiếng nào. Ở đây im lặng là trạng thái
-                // THƯỜNG (người ta nói xong rồi thôi), nên một lượt giải mã 1,3–2 s chỉ để mô hình bịa ra
-                // `"ừ"` là vừa tốn CPU vừa là thứ nuôi vòng lặp — xem KDoc tham số `decodeOnlyIfSpeech`.
+                // [P0-1a] Lượt NỐI bỏ giải mã khi không có tiếng (im lặng là THƯỜNG; giải mã 1,3–2s chỉ để mô hình bịa "ừ" = nuôi loop) — xem `decodeOnlyIfSpeech`.
                 decodeOnlyIfSpeech = true, label = label,
+                onLevel = { rms -> post { if (!stale(my)) overlay?.level(rms) } },
             ) { partial ->
                 post { if (!stale(my)) overlay?.render(hint, partial) }
             }.text
@@ -469,8 +470,7 @@ internal fun VoiceSession.fail(my: Int, msgRes: Int, openSettingsAction: Boolean
  */
 internal fun VoiceSession.onReplyDone(my: Int, pending: Boolean) {
     if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-    // Đọc xong: nán [LINGER_MS] rồi đóng (mặc định). Vế còn tra mạng ⇒ chờ tới câu trả lời thật (~20 s), lúc nó
-    // về + đọc xong sẽ tự rút lại về [LINGER_MS] (xem nhánh `flushed` trong `execute`).
+    // Đọc xong: nán [LINGER_MS] rồi đóng. Vế còn tra mạng ⇒ chờ câu trả lời thật (~20s), về+đọc xong tự rút về [LINGER_MS] (nhánh `flushed` ở `execute`).
     scheduleClose(if (pending) VoiceSession.NETWORK_WAIT_MS else VoiceSession.LINGER_MS)
     // Mở hội thoại nếu được — nếu mở, nó dời hẹn đóng ra xa hơn (window + LINGER).
     followUp(my, pending)

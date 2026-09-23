@@ -148,6 +148,7 @@ class ZeroBorderContractTest {
             // đường tách vùng tô (chấm màu FILL trên ảnh), nên nó hết dùng STROKE — để lại là "mục chết".
             "SeatDiagramView.kt" to "đường bao thân xe + đệm/ốp/tựa của ghế — nét LÀ hình cái ghế",
             "DatumIconView.kt" to "chấm MỨC rỗng dưới icon (viền tròn) = trạng thái datum (mức 1/2) — nét LÀ cái chấm chưa đầy, gỡ là mất mức",
+            "VoiceWaveView.kt" to "hai vòng ripple mờ (STROKE) quanh vòng tròn khi ĐANG NGHE = tín hiệu 'máy đang nghe' (voice-ux R2) — nét LÀ waveform, không phải khung",
             "GridEditorView.kt" to "LƯỚI ô của trình vẽ bố cục — thứ người dùng canh theo khi kéo khung " +
                 "(viền quanh từng khung đã GỠ ở WP1; chỉ còn lưới)",
             "ClusterPreviewView.kt" to "vạch chia hai nửa cụm = nội dung; khung quanh mặt cụm đã tắt từ chỗ gọi " +

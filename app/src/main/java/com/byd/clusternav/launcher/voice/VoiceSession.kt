@@ -251,11 +251,13 @@ class VoiceSession(
                 // xe sau biết phần nào (nhãn app · dựng recognizer · tấm chữ) ăn thời gian đó.
                 Log.i(VoiceEngine.TIMING_TAG, "sẵn sàng nghe sau ${System.currentTimeMillis() - tStart} ms kể từ lúc bấm")
                 val heard = whileCapturing {
-                    capture.listen(it, MAX_LISTEN_MS, cancelled::get, keepPcm = true) { partial ->
+                    capture.listen(it, MAX_LISTEN_MS, cancelled::get, keepPcm = true,
+                        onLevel = { rms -> post { if (!stale(my)) overlay?.level(rms) } }) { partial ->
                         post { if (!stale(my)) overlay?.render(R.string.kachi_voice_listening, partial) }
                     }
                 }
                 if (cancelled.get() || stale(my)) { closeIfMine(my); return }
+                post { if (!stale(my)) overlay?.setPhase(false) }   // R3: hết nghe → waveform đứng yên (đang hiểu)
                 Log.i(TAG, "lượt 1 (ngữ pháp) nghe được: \"${heard.text}\"")
                 // LƯỢT 2 — chỉ chạy khi lượt 1 có cụm MỞ TỪ VỰNG; xem KDoc [VoiceFreeTail] và [VoiceOpenVocab].
                 val sentence = VoiceFreeTail.decode(ctx, heard)
@@ -362,6 +364,7 @@ class VoiceSession(
         scheduleClose(VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS))
         logDone(intents, batch)
         clarifyRound = 0
+        VoiceChime.success()   // R1 voice-ux: earcon "đã hiểu/xong"
         speakLines(batch) { post { onReplyDone(my, pending) } }
     }
 

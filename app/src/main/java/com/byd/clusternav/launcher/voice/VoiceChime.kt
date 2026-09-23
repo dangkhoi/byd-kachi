@@ -32,14 +32,19 @@ import kotlin.math.sin
 internal object VoiceChime {
     private const val TAG = "KachiVoiceChime"
 
-    /** Tần số/độ dài hai tiếng: đầu lượt cao-ngắn, cuối lượt thấp-ngắn — đủ khác nhau để nghe ra "bắt đầu/thôi". */
-    private const val START_HZ = 1_320.0
-    private const val END_HZ = 880.0
+    /**
+     * Earcon (owner 2026-09-23: bíp DỄ CHỊU). Mỗi earcon là chuỗi 1–2 nốt hoà âm (thang trưởng) có fade, nghe
+     * "mềm" chứ không chói: **ready** 2 nốt ĐI LÊN (E5→A5, "tôi nghe đây") · **success** 1 nốt sáng ngắn (A5) ·
+     * **error** 2 nốt ĐI XUỐNG (A5→E5, "chưa hiểu"). Đủ khác nhau để nghe ra, đủ ngắn để không phiền.
+     */
+    private const val N_E5 = 659.3
+    private const val N_A5 = 880.0
+    private const val N_C6 = 1046.5
     const val START_MS = 90
-    const val END_MS = 60
+    const val END_MS = 70
     private const val RATE = 16_000
-    private const val FADE_MS = 8
-    private const val AMPLITUDE = 0.35
+    private const val FADE_MS = 10
+    private const val AMPLITUDE = 0.42
 
     /** Quá ngần này để `play()` bắt đầu là coi như đường ra tiếng hỏng — không bao giờ thử lại. */
     const val MAX_START_MS = 400L
@@ -47,26 +52,32 @@ internal object VoiceChime {
     private val disabled = AtomicBoolean(false)
     private val io = Executors.newSingleThreadExecutor { r -> Thread(r, "KachiVoiceChime").apply { isDaemon = true } }
 
-    private val startPcm: ShortArray by lazy { render(START_HZ, START_MS) }
-    private val endPcm: ShortArray by lazy { render(END_HZ, END_MS) }
+    // Chuỗi nốt (hz, ms) — nối liền thành một PCM.
+    private val readyPcm: ShortArray by lazy { renderSeq(listOf(N_E5 to 80, N_A5 to 110)) }
+    private val successPcm: ShortArray by lazy { renderSeq(listOf(N_C6 to 90)) }
+    private val errorPcm: ShortArray by lazy { renderSeq(listOf(N_A5 to 80, N_E5 to 110)) }
 
-    /** Tiếng "tôi bắt đầu nghe". Trả về ngay. */
-    fun start() = enqueue(startPcm, START_MS)
-
-    /** Tiếng "tôi thôi nghe". Trả về ngay. */
-    fun end() = enqueue(endPcm, END_MS)
+    /** Tiếng "tôi bắt đầu nghe" (ready). Trả về ngay. */
+    fun start() = enqueue(readyPcm)
+    /** Tiếng "đã hiểu / xong". */
+    fun success() = enqueue(successPcm)
+    /** Tiếng "chưa hiểu / lỗi". */
+    fun error() = enqueue(errorPcm)
+    /** Tiếng "tôi thôi nghe" (dùng lại success, mềm). */
+    fun end() = enqueue(successPcm)
 
     /** Cầu chì đã ngắt chưa — cho nhật ký/cầu kiểm thử; không có bề mặt người dùng. */
     fun disabled(): Boolean = disabled.get()
 
-    private fun enqueue(pcm: ShortArray, ms: Int) {
+    private fun enqueue(pcm: ShortArray) {
         if (disabled.get()) return
-        runCatching { io.execute { playBlocking(pcm, ms) } }
+        runCatching { io.execute { playBlocking(pcm) } }
     }
 
     /** Chạy trên luồng riêng — chặn ở đây là chặn đúng chỗ, không ai chờ. */
-    private fun playBlocking(pcm: ShortArray, ms: Int) {
+    private fun playBlocking(pcm: ShortArray) {
         if (disabled.get()) return
+        val ms = pcm.size * 1000 / RATE
         val t0 = System.currentTimeMillis()
         val track = runCatching {
             AudioTrack.Builder()
@@ -114,6 +125,15 @@ internal object VoiceChime {
     }
 
     private const val RELEASE_PAD_MS = 40L
+
+    /** Nối chuỗi nốt (hz, ms) thành một PCM liền — cho earcon nhiều nốt. */
+    private fun renderSeq(notes: List<Pair<Double, Int>>): ShortArray {
+        val parts = notes.map { (hz, ms) -> render(hz, ms) }
+        val out = ShortArray(parts.sumOf { it.size })
+        var off = 0
+        for (p in parts) { p.copyInto(out, off); off += p.size }
+        return out
+    }
 
     /** Sóng sin [hz] dài [ms] ở [RATE], fade vào/ra [FADE_MS] để không "cạch" ở hai đầu. */
     private fun render(hz: Double, ms: Int): ShortArray {

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kachi — Voice UX thành sản phẩm thật</title>
+<style>
+:root{--bg:#0f1420;--fg:#e8ecf4;--mut:#9aa4b8;--card:#171d2b;--line:#26304a;--accent:#5b8cff;--ok:#34d399;--warn:#f5b942;--bad:#f2626b}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fc;--fg:#121826;--mut:#5b667e;--card:#fff;--line:#e2e8f4;--accent:#2f6bff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif;padding:32px;max-width:960px;margin:auto}
+h1{font-size:26px;letter-spacing:-.02em}h2{font-size:19px;margin-top:34px;border-bottom:1px solid var(--line);padding-bottom:6px}h3{font-size:15px;color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+.mut{color:var(--mut)}code{background:var(--line);padding:1px 6px;border-radius:5px;font-size:13px}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}th{background:var(--card)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:20px;border:1px solid var(--line)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}.fnode{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}.arr{color:var(--mut)}
+</style></head><body>
+
+<h1>Kachi — Voice UX: từ "chạy được" thành sản phẩm thật</h1>
+<p class="mut">Trạng thái: <b>Draft — chờ owner duyệt</b> · Cập nhật 2026-09-23 · Mục đích: đánh bóng trải nghiệm voice (core feature đã đi xa) theo chuẩn trợ lý giọng nói thật (Google Assistant · Siri · NN/g), off-car làm được phần lớn.</p>
+
+<h2>1. Context — vấn đề owner nêu (on-car 2026-09-23)</h2>
+<div class="card">
+<ol>
+<li>Start <b>không có tín hiệu READY</b> (không chào/không bíp) — không biết được nói chưa.</li>
+<li><b>Phản hồi chậm</b>: text overlay hiện trước, rất lâu mới nghe voice.</li>
+<li><b>Overlay chập chờn</b>: lúc còn lúc mất mà vẫn có tiếng.</li>
+<li>Overlay <b>không giống UI trợ lý AI</b> — thiếu waveform/tần số nhảy khi nghe.</li>
+<li>Nói 2-3 lượt <b>bị văng ra</b>, không biết còn nghe không (overlay mất).</li>
+<li>Vào hội thoại là <b>loop</b>.</li>
+</ol>
+</div>
+
+<h2>2. Chuẩn học từ sản phẩm thật (làm theo, không phát minh)</h2>
+<table>
+<tr><th>Nguyên tắc</th><th>Nguồn</th><th>Áp vào Kachi</th></tr>
+<tr><td><b>Earcon 2-tông khi bắt đầu nghe</b> ("listening")</td><td>Siri (NN/g)</td><td>Bíp READY ngay khi mic mở — R1</td></tr>
+<tr><td><b>Có màn thì luôn kèm visual signifier</b></td><td>NN/g</td><td>Waveform/level nhảy = "đang nghe" — R2</td></tr>
+<tr><td><b>Earcon ngắn, phân biệt được, nhất quán</b> (start/success/error)</td><td>Google earcons</td><td>3 earcon: nghe / xong / lỗi — R1</td></tr>
+<tr><td><b>Guess & confirm</b> + <b>implicit cue</b> ("…nhé?") thay hỏi dài</td><td>NN/g</td><td>Hỏi lại ngắn, tự nhiên — R5</td></tr>
+<tr><td><b>Sequential, không hỏi dồn</b>; câu chi tiết → ít bước</td><td>NN/g (Echo)</td><td>Conversation 1 câu hỏi/lượt — R5</td></tr>
+<tr><td><b>Visual + voice bổ trợ nhau</b>, không lệ thuộc 1 kênh</td><td>Google</td><td>Overlay + TTS đồng bộ trạng thái — R3</td></tr>
+</table>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>Off-car?</th></tr>
+<tr><td>R1</td><td><b>Earcon READY + success + error.</b> Bíp 2-tông NGAY khi mic mở (owner phải nghe được — hiện `VoiceChime` bị phẳng/không nghe trên DL3, cần chỉnh biên độ/tần số/thời lượng). Earcon "xong" khi hiểu, "lỗi" khi không hiểu. Ngắn (&lt;300ms), nhất quán.</td><td>✅ (đo âm cần xe)</td></tr>
+<tr><td>R2</td><td><b>Waveform "đang nghe".</b> View mới vẽ mức âm (RMS) nhảy theo thời gian thực khi LISTENING — dải cột/sóng như trợ lý AI. Đứng yên/mờ khi DECODING/nói.</td><td>✅</td></tr>
+<tr><td>R3</td><td><b>Overlay = máy trạng thái, SỐNG suốt phiên.</b> Bám <code>VoiceTurnPhase</code> (:core đã có): LISTENING (waveform) → DECODING ("đang hiểu…" + spinner) → SPEAKING (câu trả lời) → CLARIFYING (câu hỏi lại + waveform tiếp). KHÔNG dismiss giữa phiên hội thoại. Trạng thái hiển thị khớp âm thanh (hết cảnh "mất overlay mà còn tiếng").</td><td>✅</td></tr>
+<tr><td>R4</td><td><b>Feedback nhanh.</b> Chốt endpoint sớm (mục 3c findings: VAD đang nghe hết trần 5s). Text + voice gần nhau; câu ngắn nói ngay.</td><td>✅</td></tr>
+<tr><td>R5</td><td><b>Conversation không loop, tự nhiên.</b> Golden dataset multi-turn ("mở kính"→"kính nào?"→"kính lái"→"đã mở kính lái"). Trần lượt rõ, hết trần nói "chưa hiểu, thử lại sau" và ĐÓNG sạch (không văng ngầm). Implicit cue.</td><td>✅</td></tr>
+<tr><td>R6</td><td><b>Persona nhất quán</b> — câu chào/hỏi/xác nhận/lỗi cùng giọng, ngắn gọn, tiếng Việt tự nhiên (dùng lại `VoiceReply`).</td><td>✅</td></tr>
+<tr><td>R7</td><td><b>Overlay nổi ĐỘC LẬP — KHÔNG kéo launcher lên</b> (owner 2026-09-23). Wake/wake-word chỉ hiện overlay voice (như Siri trượt lên), KHÔNG `startActivity(KachiHomeActivity)` đè app đang xem. Nghe xong overlay tắt → về đúng app đang xem. Gốc: `VoiceSession` phải tách khỏi `KachiHomeActivity`, cho `VoiceWakeService` (FGS nền) sở hữu bản riêng dùng `applicationContext` + mở overlay thẳng qua WindowManager. Nút mic/"Nói với xe" mở từ trong launcher giữ đường Activity cũ. (Lợi ích kép: giảm loop — hết START Activity mỗi lần wake.)</td><td>✅ (overlay-từ-nền cần verify ROM DL3)</td></tr>
+</table>
+
+<h2>4. Design</h2>
+<h3>4.1 Máy trạng thái overlay (bám VoiceTurnPhase :core)</h3>
+<div class="flow">
+<span class="fnode">READY earcon + waveform</span><span class="arr">→</span>
+<span class="fnode">LISTENING (waveform nhảy)</span><span class="arr">→</span>
+<span class="fnode">DECODING (đang hiểu…)</span><span class="arr">→</span>
+<span class="fnode">SPEAKING (trả lời + earcon xong)</span><span class="arr">→</span>
+<span class="fnode">CLARIFYING (hỏi lại + waveform)</span><span class="arr">↺</span>
+<span class="fnode">CLOSING (dismiss)</span>
+</div>
+<div class="card mut">Overlay chỉ dismiss ở CLOSING. Mỗi pha có: earcon (nếu có) + visual + (tuỳ) TTS. `VoiceSession` đã có <code>phase</code> AtomicReference — overlay đăng ký theo phase thay vì render rời rạc.</div>
+
+<h3>4.2 Waveform view (R2)</h3>
+<div class="card">Custom View <code>VoiceWaveView</code> (:app) — nhận mức RMS mỗi khung (đã có từ <code>VoiceCapture.listen</code> partial/level), vẽ N cột dao động (như Google Assistant). Chạy 60fps nhẹ (Canvas, không bitmap). Mờ dần khi rời LISTENING.</div>
+
+<h3>4.3 Earcon (R1)</h3>
+<div class="card">Sửa <code>VoiceChime</code>: 3 tông PCM dựng sẵn — <b>ready</b> (2 nốt lên, ~200ms), <b>success</b> (nốt ngắn), <b>error</b> (2 nốt xuống). Tăng biên độ + tần số nghe rõ trong cabin (hiện phẳng trên DL3 — cần đo lại trên xe). Phát qua AudioTrack (đường Piper đã đi được), fail thì degrade im lặng.</div>
+
+<h3>4.4 Endpoint nhanh (R4)</h3>
+<div class="card">Findings mục 3c: VAD nghe hết trần 5s. Chốt câu sớm khi hết tiếng (khôi phục hành vi RMS-endpoint bản trước, hoặc hạ <code>nguong_im</code>). Đo timing trước/sau.</div>
+
+<h3>4.5 Conversation (R5)</h3>
+<div class="card">Golden multi-turn <code>scripts/voice/data/conversation.tsv</code>: mỗi dòng = chuỗi lượt (câu người → phản hồi máy mong đợi). Test off-car chạy <code>VoiceSession</code>/parser thật qua nhiều lượt, kiểm KHÔNG loop + đóng sạch khi hết trần. Sửa gốc loop (clarifyRound/followUps + đóng phiên).</div>
+
+<h2>5. Tasks</h2>
+<ol>
+<li>T1 — <code>VoiceWaveView</code> + đấu mức RMS từ VoiceCapture (R2).</li>
+<li>T2 — Overlay bám phase, sống suốt phiên, trạng thái đồng bộ (R3).</li>
+<li>T3 — Earcon 3-tông <code>VoiceChime</code> (R1).</li>
+<li>T4 — Endpoint sớm (R4) + đo timing.</li>
+<li>T5 — Golden conversation.tsv + test multi-turn + fix loop (R5).</li>
+<li>T6 — Persona/reply rà lại (R6). Full 5-module test. Build 2.16.</li>
+</ol>
+
+<h2>6. Verification</h2>
+<div class="card">Off-car: test waveform (mức→cột), overlay state (phase→hiển thị), earcon dựng PCM, conversation multi-turn 0 loop, endpoint timing giảm. On-car (lần sau): nghe earcon rõ không, waveform mượt, feedback nhanh, hội thoại 3-4 lượt không văng.</div>
+
+<h2>7. Quyết định (owner chốt 2026-09-23)</h2>
+<ul>
+<li><b>Earcon</b>: bíp <b>dễ chịu</b>, KHÔNG câu chào (bíp nhanh, không tốn TTS).</li>
+<li><b>Waveform</b>: <b>vòng tròn</b> (kiểu Siri) — mức âm làm vòng phập phồng.</li>
+<li><b>Vị trí overlay</b>: <b>GIỮA, phía DƯỚI</b> màn (giữ nhỏ, không che đường).</li>
+<li><b>R7 overlay độc lập</b>: LÀM — wake không kéo launcher lên.</li>
+</ul>
+</body></html>

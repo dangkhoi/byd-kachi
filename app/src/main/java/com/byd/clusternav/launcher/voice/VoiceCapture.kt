@@ -133,6 +133,8 @@ internal class VoiceCapture(private val ctx: Context) {
         decodeOnlyIfSpeech: Boolean = false,
         /** Nhãn lượt cho chốt một-micro + nhật ký (`chinh` · `hoi-thoai` · `hoi-lai` · `xac-nhan`). */
         label: String = LABEL_MAIN,
+        /** R2 (voice-ux) — mức âm RMS mỗi khối (0..32767) cho waveform overlay. Mặc định no-op (không đụng call cũ). */
+        onLevel: (Int) -> Unit = {},
         onPartial: (String) -> Unit,
     ): Heard {
         val kept = if (keepPcm) ShortArray(MAX_KEPT_SAMPLES) else EMPTY
@@ -167,7 +169,7 @@ internal class VoiceCapture(private val ctx: Context) {
             VoiceSingleFlight.Grant.Ok -> Unit
         }
         try {
-            return listenGranted(rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onPartial)
+            return listenGranted(rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onLevel, onPartial)
         } finally {
             VoiceSingleFlight.release()
         }
@@ -184,6 +186,7 @@ internal class VoiceCapture(private val ctx: Context) {
         beep: Boolean,
         decodeOnlyIfSpeech: Boolean,
         kept: ShortArray,
+        onLevel: (Int) -> Unit,
         onPartial: (String) -> Unit,
     ): Heard {
         var keptN = 0
@@ -258,6 +261,7 @@ internal class VoiceCapture(private val ctx: Context) {
                 // Ngắt câu — đặt SAU `rec.accept` (khối đã vào bộ gom) và TRƯỚC `partial`: thoát ở đây thì
                 // khúc tiếng đã đầy đủ, phép cắt + giải mã dưới kia làm việc trên đúng thứ vừa nói.
                 val rmsChunk = kotlin.math.sqrt(chunkSq / n).toInt()
+                onLevel(rmsChunk)   // R2 voice-ux: feed waveform overlay
                 val stop = ep.accept(buf, n, rmsChunk, n * 1000 / SAMPLE_RATE)
                 // Cửa sổ đo nền (chỉ đường LÙI có) đã đóng ⇒ giờ bíp mới an toàn — xem [P0-2] ở trên.
                 if (beepPending && !ep.floorWindowOpen()) {
@@ -397,8 +401,7 @@ internal class VoiceCapture(private val ctx: Context) {
         // partial, một app khác giành CPU).
         val floor = SAMPLE_RATE * MIN_BUFFER_MS / 1000 * 2
         val size = maxOf(if (min > 0) min * 2 else CHUNK_SAMPLES * 2 * 8, floor)
-        // V3 · R1 — thứ tự lấy từ `:core` ([VoiceMicSource]) + lựa chọn của người dùng. Xem KDoc ở đó để biết
-        // vì sao MIC đứng trước ([ĐO xe 2026-09-16]) và vì sao ép một nguồn vẫn còn đường lùi.
+        // V3 · R1 — thứ tự nguồn từ `:core` ([VoiceMicSource]) + lựa chọn người dùng; MIC trước ([ĐO xe 2026-09-16]), ép nguồn vẫn có đường lùi.
         val pref = runCatching { Prefs.voiceMicSource(ctx) }.getOrDefault(VoiceMicSource.PREF_AUTO)
         for (source in VoiceMicSource.order(pref)) {
             val r = runCatching {

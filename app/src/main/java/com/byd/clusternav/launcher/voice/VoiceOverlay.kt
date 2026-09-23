@@ -50,7 +50,17 @@ class VoiceOverlay(
     private lateinit var title: TextView
     private lateinit var body: TextView
     private lateinit var action: TextView
+    private lateinit var wave: VoiceWaveView
     private var root: View? = null
+
+    /** R2/R3 voice-ux — cấp mức âm cho waveform (gọi từ luồng nghe). No-op nếu chưa dựng. */
+    fun level(rms: Int) { if (::wave.isInitialized) wave.setLevel(rms) }
+
+    /**
+     * R3 — đổi hiển thị theo pha hội thoại (bám `VoiceTurnPhase` ở `VoiceSession`). Overlay SỐNG suốt phiên,
+     * chỉ [dismiss] ở CLOSING. LISTENING/CLARIFYING = waveform phập phồng; DECODING/EXECUTING = đứng yên mờ.
+     */
+    fun setPhase(listening: Boolean) { if (::wave.isInitialized) wave.setListening(listening) }
 
     /** Đang hiện hay không — [VoiceSession] hỏi để khỏi gỡ hai lần. */
     val showing: Boolean get() = root != null
@@ -109,6 +119,11 @@ class VoiceOverlay(
             val p = dpi(ctx, Sp.L)
             setPadding(p, p, p, p)
         }
+        // R2/R3 — waveform vòng tròn (kiểu Siri) ở đầu card, căn giữa.
+        wave = VoiceWaveView(ctx).apply { setListening(true) }
+        card.addView(wave, LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_XL) * 2, dpi(ctx, Sp.ICON_XL) * 2).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+        })
         val head = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         }
@@ -203,9 +218,8 @@ class VoiceOverlay(
             addView(
                 card,
                 FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    gravity = Gravity.BOTTOM or Gravity.END
-                    val m = dpi(ctx, Sp.XXL)
-                    marginEnd = m; bottomMargin = m
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL   // R3 voice-ux: GIỮA, dưới
+                    bottomMargin = dpi(ctx, Sp.XXL)
                 },
             )
             setOnTouchListener { _, ev ->
