@@ -126,15 +126,31 @@ class AccessibilityRebindTest {
 
     // ── isClusterNavBound ────────────────────────────────────────────────────
     @Test
-    fun `null or blank dump fails safe as bound (no toggle)`() {
-        assertTrue(AccessibilityRebind.isClusterNavBound(null))
-        assertTrue(AccessibilityRebind.isClusterNavBound(""))
-        assertTrue(AccessibilityRebind.isClusterNavBound("   "))
+    fun `null or blank dump = NOT bound (khong doc duoc thi khong xac nhan bound)`() {
+        assertFalse(AccessibilityRebind.isClusterNavBound(null))
+        assertFalse(AccessibilityRebind.isClusterNavBound(""))
+        assertFalse(AccessibilityRebind.isClusterNavBound("   "))
     }
 
     @Test
-    fun `missing Bound services header fails safe as bound`() {
-        assertTrue(AccessibilityRebind.isClusterNavBound("Accessibility manager state:\n    Enabled services:{{$acc}}\n"))
+    fun `missing Bound services header = NOT bound`() {
+        assertFalse(AccessibilityRebind.isClusterNavBound("Accessibility manager state:\n    Enabled services:{{$acc}}\n"))
+    }
+
+    /** GỐC [P0] deep-pass 2026-09-23: app anh em com.byd.clusternav2 CÙNG FQN lớp — không được nhận là bound của launcher. */
+    @Test
+    fun `bound cua app anh em clusternav2 KHONG tinh la bound cua launcher`() {
+        val launcher = "com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
+        val sibling = "com.byd.clusternav2/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
+        val dump = "Bound services:{Service[label=ClusterNav booster, componentName=ComponentInfo{$sibling}]}\nEnabled services:{{$launcher}}"
+        assertFalse(
+            AccessibilityRebind.isClusterNavBound(dump, launcher),
+            "clusternav2 bound, launcher chưa bound → phải NOT bound (heal chạy), không nhận nhầm qua token chung",
+        )
+        assertTrue(
+            AccessibilityRebind.isClusterNavBound("Bound services:{Service[componentName=ComponentInfo{$launcher}]}", launcher),
+            "launcher thật bound → bound",
+        )
     }
 
     @Test

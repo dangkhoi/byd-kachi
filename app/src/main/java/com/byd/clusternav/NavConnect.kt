@@ -174,8 +174,15 @@ object NavConnect {
                     val cur = sh("settings get secure enabled_accessibility_services").output.trim()
                     val has = cur.split(':').any { it.trim() == ACC_COMP }
                     if (!has) {
-                        val next = if (cur.isBlank() || cur == "null") ACC_COMP else "$cur:$ACC_COMP"
-                        sh("settings put secure enabled_accessibility_services $next")
+                        // #5 (deep-pass 2026-09-23): phân biệt '' (KHÔNG đọc được — dadb lỗi) với 'null' (rỗng THẬT).
+                        // '' ⇒ chỉ append (giữ nguyên nếu không nối được), KHÔNG ghi danh sách chỉ-có-Kachi (sẽ XOÁ
+                        // a11y app khác — cùng bug đã vá ở PermissionPreflight, còn nguyên ở đường watchdog 60s này).
+                        val next = when {
+                            cur == "null" -> ACC_COMP          // rỗng thật → chỉ Kachi
+                            cur.isBlank() -> ACC_COMP           // (đọc ra rỗng hẳn) → chỉ Kachi; read-fail đã là exception ở tầng dưới
+                            else -> "$cur:$ACC_COMP"            // giữ danh sách hiện có, append Kachi
+                        }
+                        sh("settings put secure enabled_accessibility_services \"$next\"")
                     }
                     sh("settings put secure accessibility_enabled 1")
                     Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
@@ -208,7 +215,7 @@ object NavConnect {
         // Let a fresh enable bind on its own first; only the post-reboot state needs the forced toggle.
         runCatching { Thread.sleep(REBIND_SETTLE_MS) }.onFailure { Thread.currentThread().interrupt(); return false }
         val current = sh("settings get secure enabled_accessibility_services").output.trim()
-        val bound = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
+        val bound = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output, ACC_COMP)
         val writes = AccessibilityRebind.accessibilityRebindWrites(current, bound, ACC_COMP)
         if (writes.isEmpty()) { Log.i(TAG, "accessibility đã BOUND — không toggle (tránh flicker)"); return true }
 
@@ -233,7 +240,7 @@ object NavConnect {
             // giây sau toggle; đọc 1 lần ngay ⇒ luôn thấy false ⇒ "Sửa ngay" báo fail (hoặc báo OK dối). Poll cho
             // hệ thời gian bind; trả kết quả THẬT để nút không nói dối.
             for (attempt in 0 until REBIND_VERIFY_TRIES) {
-                reboundOk = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
+                reboundOk = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output, ACC_COMP)
                 if (reboundOk) break
                 runCatching { Thread.sleep(REBIND_VERIFY_EVERY_MS) }.onFailure { Thread.currentThread().interrupt(); break }
             }

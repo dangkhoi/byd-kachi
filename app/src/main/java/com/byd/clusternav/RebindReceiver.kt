@@ -69,6 +69,7 @@ class RebindReceiver : BroadcastReceiver() {
                 castBootWork(context, automation = false)
             }
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
+                scheduleWatchdog(context)   // #4: alarm mất sau replace/force-stop; đặt lại (idempotent FLAG_UPDATE_CURRENT)
                 castBootWork(context, automation = false)
                 // OTA auto-reopen (owner 2026-08-12): the installer kills us on update and does NOT
                 // relaunch. Bring the app back to the foreground so the user lands on Home after an

@@ -74,13 +74,29 @@ object AccessibilityRebind {
      * bound) so the caller does NOT toggle — never risk a flicker on an unreadable/unexpected dump. The real
      * on-car dump is readable by the uid=shell dadb session, so the heal path still triggers when needed.
      */
-    fun isClusterNavBound(dumpsysAccessibility: String?): Boolean {
+    /**
+     * Whether **THIS app's** accessibility service appears in the **Bound services** section of
+     * `dumpsys accessibility` — i.e. really running, not merely "Enabled".
+     *
+     * ⚠⚠ GỐC 2×[P0] (deep-pass 2026-09-23): bản cũ khớp token `"clusternav"` dùng CHUNG — mà app anh em
+     * `com.byd.clusternav2` cài SONG SONG có CÙNG FQN lớp (`com.byd.clusternav.modules.navaccess...`) + CÙNG
+     * label ⇒ nếu a11y của clusternav2 bound thì Kachi tưởng MÌNH bound → KHÔNG BAO GIỜ heal (log báo ổn). Nay
+     * scope theo **package của chính component** ([pkg] tách từ [component] = phần trước dấu `/`). Package là duy
+     * nhất (`com.byd.launcher` vs `com.byd.clusternav2`), không trùng.
+     *
+     * ⚠ Đổi FAIL-MODE: dump null/blank/không thấy section ⇒ **KHÔNG XÁC NHẬN ĐƯỢC bound** ⇒ trả `false` (chưa
+     * bound). Bản cũ `return true` (fail-safe "no flicker") = báo OK DỐI + heal không chạy khi dump lỗi. Với đường
+     * HEAL: không đọc được thì THỬ toggle (flicker nhẹ, hoạ hoằn) tốt hơn phím chết mãi. Với REPORT ("Sửa ngay"):
+     * không xác nhận = FAIL, không nói dối OK.
+     */
+    fun isClusterNavBound(dumpsysAccessibility: String?, component: String = ACC_COMP): Boolean {
         val dump = dumpsysAccessibility
-        if (dump.isNullOrBlank()) return true
+        if (dump.isNullOrBlank()) return false
+        val pkg = component.substringBefore('/').ifBlank { component }
         val header = dump.indexOf("Bound services", ignoreCase = true, startIndex = 0)
-        if (header < 0) return true
+        if (header < 0) return false
         val open = dump.indexOf('{', header)
-        if (open < 0) return true
+        if (open < 0) return false
         var depth = 0
         var close = -1
         var i = open
@@ -95,6 +111,9 @@ object AccessibilityRebind {
             i++
         }
         val section = if (close > open) dump.substring(open, close + 1) else dump.substring(open)
-        return section.contains("clusternav", ignoreCase = true)
+        // Match theo PACKAGE của chính app trong section Bound. Dùng ranh giới `pkg/` (dạng ComponentInfo/flatten
+        // `pkg/cls`) HOẶC full component — KHÔNG substring trần `pkg` (vì "com.byd.clusternav2" CHỨA
+        // "com.byd.clusternav" ⇒ lại dương-tính-giả với app anh em).
+        return section.contains(component, ignoreCase = true) || section.contains("$pkg/", ignoreCase = true)
     }
 }
