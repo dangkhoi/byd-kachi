@@ -37,9 +37,14 @@ class RebindReceiver : BroadcastReceiver() {
         // heal RIÊNG. `NavConnect.grantAccessibility` idempotent (verify `dumpsys` bound TRƯỚC, chỉ toggle khi
         // enabled-nhưng-chưa-bound) ⇒ gọi định kỳ an toàn. Gate: chỉ khi voice-key BẬT và cờ in-process nói CHƯA
         // bound (tránh dadb thừa mỗi 60s khi đang bound tốt).
-        if (Prefs.voiceKeyEnabled(context) &&
-            !NavConnect.isAccessibilityBound(context)
-        ) {
+        // ⚠ Cửa fail đã soi (owner 2026-09-23 "còn cửa nào fail?"): KHÔNG gate heal bằng tín hiệu IN-PROCESS.
+        // Cả cờ `connected` LẪN `AccessibilityManager.getEnabledAccessibilityServiceList` đều có thể DƯƠNG-TÍNH-GIẢ
+        // khi service CHẾT mà settings vẫn liệt kê "enabled" (Android giữ enabled qua crash/unbind ngầm — xác nhận
+        // tài liệu). Nguồn SỰ THẬT duy nhất về BOUND = `dumpsys accessibility` "Bound services", mà chỉ đọc được
+        // qua dadb. `grantAccessibility` idempotent: nó verify `dumpsys` bound TRƯỚC, đã bound → no-op/no-toggle,
+        // chưa bound → toggle ép rebind. Nên watchdog GỌI THẲNG (không gate in-process) — 1 lệnh dumpsys/60s là
+        // giá chấp nhận để tự-heal ĐÚNG cả ca "enabled nhưng instance chết". Single-flight `grantingAcc` chống trùng.
+        if (Prefs.voiceKeyEnabled(context)) {
             runCatching { NavConnect.grantAccessibility(context.applicationContext) }
                 .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }
         }

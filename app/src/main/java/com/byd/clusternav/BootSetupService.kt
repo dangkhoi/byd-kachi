@@ -60,7 +60,7 @@ class BootSetupService : Service() {
                 // flicker nếu đã bound). Async trên thread riêng, báo về main looper → đếm latch; giữ FGS sống tới
                 // khi grant xong (bounded GRANT_TIMEOUT_MS).
                 if (Prefs.enabled(applicationContext) || Prefs.voiceKeyEnabled(applicationContext)) {
-                    if (!NavAccessibilitySource.connected) {
+                    if (!NavConnect.isAccessibilityBound(applicationContext)) {
                         val latch = CountDownLatch(1)
                         NavConnect.grantAccessibility(applicationContext) { latch.countDown() }
                         latch.await(GRANT_TIMEOUT_MS, TimeUnit.MILLISECONDS)

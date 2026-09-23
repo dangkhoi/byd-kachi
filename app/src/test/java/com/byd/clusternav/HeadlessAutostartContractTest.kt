@@ -146,8 +146,8 @@ class HeadlessAutostartContractTest {
     fun `boot setup grant only escalates when the accessibility service is not already bound`() {
         val onStart = functionBody(bootSetup, "override fun onStartCommand")
         assertTrue(
-            onStart.contains("NavAccessibilitySource.connected"),
-            "grant is gated on the bound flag (already-bound is a no-op — no flicker)",
+            onStart.contains("NavConnect.isAccessibilityBound"),
+            "grant gated on REAL bound (không cờ connected in-process kẹt khi hệ unbind ngầm) — đã bound là no-op",
         )
     }
 
