@@ -101,7 +101,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onPhotoSource = { paths, sec -> workspace.setPhotoSource(paths, sec) },
             // P1b: ảnh mờ đổi ⇒ dựng lại nền KÍNH của các thẻ tại chỗ (không recreate); bảng màu chỉ đổi khi người
             // dùng chọn màu nhấn *theo ảnh nền* — khi đó đi đúng đường của nút chủ đề (`render` → recreate).
-            onArtChanged = { KachiGlass.refresh(rootFrame); if (ThemeHost.sync(viewModel.uiState.value)) recreate() },
+            onArtChanged = { if (ThemeHost.sync(viewModel.uiState.value)) applyThemeInPlace() else KachiGlass.refresh(rootFrame) },
         )
     }
     private lateinit var drawerController: DrawerController
@@ -113,7 +113,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
     private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
-    private val cameraSignal by lazy { com.byd.clusternav.launcher.camera.CameraSignalController(applicationContext) }  // camera theo xi-nhan (owner 2026-09-22)
+    private val cameraSignal by lazy { com.byd.clusternav.launcher.camera.CameraSignalController(applicationContext) }
 
     /**
      * Glue intent theo-ô (gắn app/widget · mở · xoá · đổi chỗ) — thân ở [KachiHomeSlots] (trần 500 dòng). Nhận
@@ -346,10 +346,22 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * Áp [state] lên VIEW (duy nhất một chỗ, do collector gọi) — chỉ đọc-vẽ, KHÔNG đổi state. Diff so với [shownState]
      * để chỉ làm việc khi phần liên quan đổi. Side-effect cửa sổ theo-ô ở handler; ở đây chỉ reflow khi preset/viền đổi.
      */
+    /**
+     * #10 (owner 2026-09-23) — ĐỔI MÀU theme mà GIỮ STATE, KHÔNG recreate Activity: re-áp bảng màu mới lên các
+     * view chrome (nền · thanh trên · thanh nút · chrome ô), GIỮ ô App đang chiếu (VdAppHost sống ⇒ app KHÔNG
+     * restart). Nguyên tắc launcher: dù đổi gì màn cũng chạy tiếp.
+     */
+    private fun applyThemeInPlace() {
+        runCatching { KachiGlass.refresh(rootFrame) }; wall.invalidate()   // nền kính + dải nền theo palette
+        topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
+    }
+
     private fun render(state: HomeUiState) {
         val prev = shownState
-        // T1/T3 — bảng màu HOẶC ngôn ngữ đổi ⇒ dựng lại màn; `or` KHÔNG ngắn mạch vì `sync` là chỗ ÁP bảng màu.
-        if ((ThemeHost.sync(state) or LangHost.changed(prev, state)) && prev != null) { recreate(); return }
+        // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.
+        val themeChanged = ThemeHost.sync(state)
+        if (LangHost.changed(prev, state) && prev != null) { recreate(); return }
+        if (themeChanged && prev != null) applyThemeInPlace()
         // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
         prev?.let { appWidgets.reclaim(it, state) }
         workspace.render(state.workspace, state.carStatus)
@@ -366,9 +378,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
             dock.setCarStatus(state.carStatus, unitPrefs)
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
-            // Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — đọc xi-nhan mỗi nhịp trạng thái (1Hz đủ nhanh
-            // cho đèn báo rẽ). Controller tự gate pref + chỉ đổi khi bên xi-nhan khác nhịp trước.
-            cameraSignal.tick()   // tự đọc xi-nhan qua HAL (carStatus.lights không được poll — findings 2026-09-23)
+            cameraSignal.tick()   // camera theo xi-nhan (tự đọc xi-nhan qua HAL — findings 2026-09-23; pref mặc định TẮT)
         }
         // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
         // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.

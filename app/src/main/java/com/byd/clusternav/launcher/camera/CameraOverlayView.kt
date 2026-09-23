@@ -28,20 +28,20 @@ class CameraOverlayView(private val appCtx: Context) {
     private var wm: WindowManager? = null
     private var surface: SurfaceView? = null
 
-    /** Hiện overlay ở [side] (trái/phải). setZOrderOnTop để layer camera nổi (runbook thử cả 2 z-order). */
-    fun show(side: Side, onCluster: Boolean = false) {
+    /** Hiện overlay ở [side]. [option] (runbook): "B"=setZOrderMediaOverlay thay setZOrderOnTop. */
+    fun show(side: Side, onCluster: Boolean = false, option: String = "A") {
         hide()
         runCatching {
             val ctx = appCtx
             val w = wmOf(ctx) ?: return
             val sv = SurfaceView(ctx).apply {
-                setZOrderOnTop(true)          // option G: layer nổi (thử setZOrderMediaOverlay nếu không đổ tín hiệu)
+                if (option.contains("B")) setZOrderMediaOverlay(true) else setZOrderOnTop(true)   // B: media overlay
                 setBackgroundColor(Color.BLACK)
                 holder.setFormat(PixelFormat.OPAQUE)
             }
             w.addView(sv, layoutParams(ctx, side))
             wm = w; surface = sv
-            Log.i(PanoramaHal.TAG, "overlay show side=$side cluster=$onCluster")
+            Log.i(PanoramaHal.TAG, "overlay show side=$side cluster=$onCluster opt=$option")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
     }
 

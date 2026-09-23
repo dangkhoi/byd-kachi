@@ -89,6 +89,9 @@ class ControlDockView(context: Context) : LinearLayout(context) {
         GroupBoard.summaryView(id, carStatus, unitPrefs)
             ?: TelemetryReadout.of(id, carStatus)?.let { UnitFormat.apply(it, unitPrefs) }
 
+    /** #10 (2026-09-23) — dựng lại nút với bảng màu theme MỚI (dock không giữ ô app nên rebuild an toàn). */
+    fun restyle() = rebuild()
+
     private fun rebuild() {
         orientation = if (config.isVertical()) VERTICAL else HORIZONTAL
         removeAllViews(); readTiles.clear(); actionRefreshers.clear()

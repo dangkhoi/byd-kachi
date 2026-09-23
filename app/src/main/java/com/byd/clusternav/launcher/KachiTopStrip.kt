@@ -203,6 +203,14 @@ class KachiTopStrip(
      * một lần lúc dựng thì cả hai thao tác đó **không đổi gì trên màn** cho tới lần dựng lại màn chính — tức
      * đúng hình dạng "bấm nút mà màn hình không đổi gì" mà P9 đã trả giá một lần (bố cục sẵn).
      */
+    /** #10 (2026-09-23) — re-áp bảng màu theme MỚI lên các view đã dựng (thanh trên không giữ ô app). */
+    fun restyle() {
+        stripRow.background = KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP)
+        clock.setTextColor(c(KachiTheme.INK)); dateText.setTextColor(c(KachiTheme.MUT))
+        chipViews.forEach { it.tag = null }   // ép applyChipFace chạy lại (đổi màu icon/chữ) ở refreshChips kế
+        refreshChips(lastStatus, lastUnits, chipConfig)
+    }
+
     fun refreshVoicePill() {
         voicePill?.visibility = if (voicePillEnabled()) View.VISIBLE else View.GONE
     }
@@ -285,6 +293,7 @@ class KachiTopStrip(
      * chia; ở đây chỉ gọi lại nó khi **số chip** đổi (bề rộng đổi thì `addOnLayoutChangeListener` tự gọi).
      */
     fun refreshChips(status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT, config: TopStripConfig = chipConfig) {
+        lastStatus = status; lastUnits = units
         chipConfig = config
         val chips = TopStripChips.render(config, status, units)
         if (chipViews.size != chips.size) {                 // danh sách đổi (hoặc lượt đầu) ⇒ dựng lại
@@ -363,6 +372,8 @@ class KachiTopStrip(
     }
 
     private var chipConfig: TopStripConfig = TopStripConfig.DEFAULT
+    private var lastStatus: CarStatus = CarStatus()
+    private var lastUnits: UnitPrefs = UnitPrefs.DEFAULT
     private val chipViews = ArrayList<TextView>()
 
     /** Trần bề rộng đang áp cho mỗi chip (px). `-1` = chưa tính / vừa dựng lại hàng chip. */

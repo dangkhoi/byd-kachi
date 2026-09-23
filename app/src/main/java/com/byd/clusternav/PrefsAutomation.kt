@@ -43,6 +43,13 @@ fun Prefs.cameraSignalEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean
 fun Prefs.setCameraSignalEnabled(ctx: Context, v: Boolean) =
     autoPrefs(ctx).edit().putBoolean(K_CAMERA_SIGNAL, v).apply()
 
+// Phương án LVDS/hiển thị camera để thử NHANH trên xe không cần rebuild (findings 2026-09-23, runbook A–J).
+// Chuỗi 1 ký tự: "A"(mặc định) · "B"(zOrderMediaOverlay) · "C"(setLVDS trước) · "D"(FULL_SCREEN) · "G"(cụm) ·
+// "H"(chờ workState ON). Chỉnh qua prefs_set khi test 10 option, chốt được rồi đặt mặc định.
+private const val K_CAMERA_LVDS = "camera_lvds_option"
+fun Prefs.cameraLvdsOption(ctx: Context): String = autoPrefs(ctx).getString(K_CAMERA_LVDS, "A") ?: "A"
+fun Prefs.setCameraLvdsOption(ctx: Context, v: String) = autoPrefs(ctx).edit().putString(K_CAMERA_LVDS, v).apply()
+
 // ── AUTOMATION #2 · Tự dẫn đường theo lịch (R2) ───────────────────────────────────────────────────
 // Hai khoá, hai VAI khác nhau — cố ý KHÔNG gộp:
 //  • `nav_automation_rules` = CẤU HÌNH (sổ luật người dùng đặt trong Cài đặt › Dẫn đường), mã hoá bởi

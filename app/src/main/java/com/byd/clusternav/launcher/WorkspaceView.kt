@@ -258,6 +258,22 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * Dựng lại CHỈ những ô đang là widget — dùng cho việc đổi thứ mà chỉ widget đọc (hiện tại: lựa chọn đơn vị).
      * Ô App và ô trống giữ nguyên view ⇒ bộ chiếu app trong ô không bị nhả/gắn lại (C5).
      */
+    /**
+     * #10 (owner 2026-09-23) — ĐỔI MÀU theme mà GIỮ STATE: dựng lại ô widget + ô trống với bảng màu mới, nhưng
+     * **KHÔNG đụng ô App** (giữ `VdAppHost` ⇒ app trong ô KHÔNG bị giết/restart). Gọi khi theme đổi (light↔dark)
+     * thay cho `recreate()` cả Activity. Nền/thẻ ô chrome lấy màu mới; app đang chiếu chạy tiếp.
+     */
+    fun restyle() {
+        for (i in slotViews.indices) {
+            val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
+            if (content is SlotContent.App) continue   // GIỮ ô App — không nhả VD, app chạy tiếp
+            removeView(slotViews[i])
+            val v = makeSlot(i, content)
+            addView(v); slotViews[i] = v
+        }
+        requestLayout(); invalidate()
+    }
+
     private fun rebuildWidgetSlots() {
         for (i in slotViews.indices) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }

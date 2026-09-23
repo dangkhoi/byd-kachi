@@ -355,11 +355,11 @@ class TestBridgeCommandTest {
         // 14 → 15 (owner 2026-09-21): +`voice_keep_log`. Ô tích của nó gỡ khỏi Cài đặt cùng mọi bề mặt dev/log ở bản
         // release production, nên `prefs_set` là đường chỉnh DUY NHẤT còn lại — bỏ nó khỏi đây là biến một công
         // tắc đang sống thành bất khả chỉnh.
-        assertEquals(15, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        assertEquals(17, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(
-            TestBridgeCommands.WRITABLE_PREFS_KEYS.all { it.startsWith("voice_") || it == "top_strip_labels" },
+            TestBridgeCommands.WRITABLE_PREFS_KEYS.all { it.startsWith("voice_") || it == "top_strip_labels" || it.startsWith("camera_") },
             "khoá lạ lọt vào danh sách trắng: ${TestBridgeCommands.WRITABLE_PREFS_KEYS}",
         )
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.cameraSignalEnabled
+import com.byd.clusternav.cameraLvdsOption
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 
 /**
@@ -50,9 +51,10 @@ class CameraSignalController(private val appCtx: Context) {
             else -> {
                 val view = CameraSignalPolicy.defaultView(turn) ?: return
                 val side = CameraSignalPolicy.defaultSide(turn) ?: return
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} overlay $side")
-                overlay.show(side)
-                hal.open(view)
+                val opt = Prefs.cameraLvdsOption(appCtx)   // phương án thử (runbook A–J) qua pref
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} overlay $side opt=$opt")
+                overlay.show(side, onCluster = opt.contains("G"), option = opt)   // G: chiếu lên cụm
+                hal.open(view, opt)
             }
         }
     }

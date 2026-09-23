@@ -20,12 +20,19 @@ class PanoramaHal(private val ctx: Context) {
 
     private val gw by lazy { BydHalGateway(ctx.applicationContext) }
 
-    /** Bật hệ panorama + chọn view + chế độ hiện (WIDGET để không chiếm toàn màn). Trả rc (null=off-car/từ chối). */
-    fun open(view: CamView): Boolean {
+    /**
+     * Bật hệ panorama + chọn view. [option] (từ pref `camera_lvds_option`, runbook A–J) đổi phương án thử trên xe
+     * KHÔNG cần rebuild: "C"=setLVDS trước · "D"=FULL_SCREEN thay WIDGET · "H"=chờ workState ON trước setOutput.
+     * Trả rc (null=off-car/từ chối).
+     */
+    fun open(view: CamView, option: String = "A"): Boolean {
+        if (option.contains("C")) gw.namedInt(FQN, "setLVDSState", intArrayOf(LVDS_PANORMA_RF_VIEW))   // C: LVDS trước
         val op = gw.namedInt(FQN, "setPanoOperation", intArrayOf(WORK_ON))
-        val mode = gw.namedInt(FQN, "setDisplayMode", intArrayOf(DISPLAY_MODE_WIDGET))
+        if (option.contains("H")) gw.namedInt(FQN, "getPanoWorkState", intArrayOf())                    // H: đọc chờ ON
+        val mode = if (option.contains("D")) DISPLAY_MODE_FULL_SCREEN else DISPLAY_MODE_WIDGET           // D: full-screen
+        gw.namedInt(FQN, "setDisplayMode", intArrayOf(mode))
         val out = gw.namedInt(FQN, "setPanoOutputState", intArrayOf(view.outputState))
-        Log.i(TAG, "open(${view.name}) op=$op mode=$mode out=$out")
+        Log.i(TAG, "open(${view.name}) opt=$option op=$op mode=$mode out=$out")
         return out != null
     }
 

@@ -2,6 +2,8 @@ package com.byd.clusternav.launcher.testbridge
 
 import android.content.Context
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.setCameraLvdsOption
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
 import com.byd.clusternav.launcher.voice.VoiceEndpointer
@@ -136,6 +138,10 @@ internal object TestBridgePrefsSet {
             // production dọn hết bề mặt dev/log), nên ĐÂY là đường chỉnh duy nhất còn lại. Ghi thẳng prefs như ba
             // khoá theo-xe kia: `VoiceUtteranceLog.enabled` đọc lại ở mỗi lượt ghi, không cache.
             "voice_keep_log" -> bool(raw)?.let { Prefs.setVoiceKeepLog(app, it); it.toString() }
+            // Camera theo xi-nhan (findings 2026-09-23): bật/tắt + đổi phương án LVDS (A–J) để thử NHANH trên xe.
+            "camera_signal_enabled" -> bool(raw)?.let { Prefs.setCameraSignalEnabled(app, it); it.toString() }
+            "camera_lvds_option" -> raw.trim().uppercase().takeIf { it.isNotEmpty() }
+                ?.let { Prefs.setCameraLvdsOption(app, it); it }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
