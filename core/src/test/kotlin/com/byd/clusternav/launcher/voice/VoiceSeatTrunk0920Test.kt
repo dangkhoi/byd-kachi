@@ -63,6 +63,13 @@ class VoiceSeatTrunk0920Test {
         assertEquals(VoiceIntent.Control("defrost", 1), one("sấy kính trước"))
     }
 
+    /** V2 (owner off-car 2026-09-23) "mát ghế phụ cứ hỏi lại" — biến thể phải ra seatc_r (ghế PHỤ), KHÔNG seatc. */
+    @Test fun `mat ghe phu bien the ra dung ghe phu`() {
+        for (s in listOf("mát ghế phụ", "mát ghế bên phụ", "mát ghế phải", "quạt ghế phụ", "mát ghế người ngồi")) {
+            assertEquals(VoiceIntent.Control("seatc_r", 1), one(s), "câu \"$s\" phải ra ghế PHỤ (seatc_r)")
+        }
+    }
+
     // ══ (1) GHẾ — SELECT 3 mức (Tắt/Mức 1/Mức 2) ══════════════════════════════════════════════════════
     @Test fun `ghe mat nhan muc 1 va muc 2 qua voice`() {
         assertEquals(VoiceIntent.Control("seatc", 1), one("ghế mát mức 1"))

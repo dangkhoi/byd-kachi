@@ -78,8 +78,16 @@ object VoiceSynonyms {
         // ấy là hứa một việc (làm mát ghế phụ) rồi làm một việc khác (làm mát ghế lái) — và cái sai đó **im
         // lặng**, vì lời đáp sẽ đọc *"Đã đặt Ghế mát"* nghe như đã đúng. Muốn nói được thì phải có nút riêng cho
         // từng ghế trước (RE `setSeatVentilatingState(seatID…)` đã có đường, nút thì chưa) — việc của owner.
-        "seatc_r" to listOf("mat ghe phu", "ghe phu mat", "lam mat ghe phu", "thoi mat ghe phu"),
-        "seath_r" to listOf("suoi ghe phu", "ghe phu am", "lam am ghe phu", "suoi ghe ben phu"),
+        // V2 (owner off-car 2026-09-23) — "mát ghế phụ" CỨ HỎI LẠI: [ĐO probe] biến thể "ghế BÊN phụ"/"ghế PHẢI"/
+        // "quạt ghế phụ"/"cái ghế phụ"/"người ngồi"/"cho mát..." rơi về seatc (ghế LÁI) hoặc Unknown. Bổ sung để
+        // ghế phụ nhận đủ cách nói (dài-trước vẫn thắng seatc 2-từ).
+        "seatc_r" to listOf("mat ghe phu", "ghe phu mat", "lam mat ghe phu", "thoi mat ghe phu",
+            "mat ghe ben phu", "mat ghe phai", "mat ghe ben phai", "quat ghe phu", "quat ghe ben phu",
+            "thoi ghe phu", "thong gio ghe phu", "mat cai ghe phu", "mat ghe nguoi ngoi", "lam mat ghe ben phu",
+            "ghe phu thoang", "seat cooling passenger"),
+        "seath_r" to listOf("suoi ghe phu", "ghe phu am", "lam am ghe phu", "suoi ghe ben phu",
+            "suoi ghe phai", "suoi ghe ben phai", "am ghe phu", "nong ghe phu", "suoi cai ghe phu",
+            "suoi ghe nguoi ngoi"),
         "seatc" to listOf("thoi ghe", "ghe thoang", "seat cooling", "quat ghe", "lam mat ghe", "thong gio ghe",
             "mat ghe", "ghe mat", "mat ghe lai", "mat dit", "mat mong", "thoi mat ghe", "ghe lai mat"),
         "seath" to listOf("suoi ghe", "ghe suoi", "suoi ghe lai", "ghe am", "ghe nong",

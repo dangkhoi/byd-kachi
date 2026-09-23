@@ -89,8 +89,13 @@ class ControlDockView(context: Context) : LinearLayout(context) {
         GroupBoard.summaryView(id, carStatus, unitPrefs)
             ?: TelemetryReadout.of(id, carStatus)?.let { UnitFormat.apply(it, unitPrefs) }
 
-    /** #10 (2026-09-23) — dựng lại nút với bảng màu theme MỚI (dock không giữ ô app nên rebuild an toàn). */
-    fun restyle() = rebuild()
+    /** #10 (2026-09-23) — đổi màu theme MỚI: nền khay (BAR) + dựng lại nút (dock không giữ ô app nên an toàn). */
+    fun restyle() {
+        background = GradientDrawable().apply {
+            cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR))
+        }
+        rebuild()
+    }
 
     private fun rebuild() {
         orientation = if (config.isVertical()) VERTICAL else HORIZONTAL

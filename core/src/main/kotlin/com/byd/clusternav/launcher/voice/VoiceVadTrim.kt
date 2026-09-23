@@ -62,7 +62,7 @@ object VoiceVadTrim {
      * ([MIN_SILENCE_MS]) ⇒ cộng thẳng ~450 ms vào cả p50 lẫn p90 (≈ 1 110 / 1 230 ms). Ngưỡng xác suất và hai
      * tính chất *"cắt giữa câu"* / *"không nổ"* thì không đụng tới.
      */
-    const val THRESHOLD = 0.35f
+    const val THRESHOLD = 0.45f
 
     /** Phải có ngần này tiếng thì VAD mới mở một đoạn. 0,10 s — điểm lưới. */
     const val MIN_SPEECH_MS = 100

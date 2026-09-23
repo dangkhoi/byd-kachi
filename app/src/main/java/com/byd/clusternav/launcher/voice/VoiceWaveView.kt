@@ -43,15 +43,16 @@ class VoiceWaveView(ctx: Context) : View(ctx) {
         val goal = if (listening) target else 0f
         level += (goal - level) * 0.25f
         val cx = width / 2f; val cy = height / 2f
-        val base = min(width, height) / 2f * 0.42f          // bán kính lõi khi im
-        val r = base * (1f + level * 0.9f)                  // phồng theo mức
-        // Hai vòng ripple mờ (chỉ khi đang nghe).
+        val half = min(width, height) / 2f
+        val base = half * 0.28f                              // lõi khi im — nhỏ để ripple KHÔNG tràn bounds (đè chữ)
+        val r = base * (1f + level * 0.8f)                   // phồng theo mức
+        // Hai vòng ripple mờ (chỉ khi đang nghe) — bán kính giữ ≤ half để không vẽ ra ngoài view.
         if (listening) {
             ring.strokeWidth = base * 0.06f
             ring.alpha = (60 * (1f - level * 0.3f)).toInt().coerceIn(20, 90)
-            canvas.drawCircle(cx, cy, r + base * 0.35f, ring)
+            canvas.drawCircle(cx, cy, (r + base * 0.9f).coerceAtMost(half * 0.98f), ring)
             ring.alpha = (30 * (1f - level * 0.3f)).toInt().coerceIn(10, 60)
-            canvas.drawCircle(cx, cy, r + base * 0.7f, ring)
+            canvas.drawCircle(cx, cy, (r + base * 1.6f).coerceAtMost(half * 0.99f), ring)
         }
         core.alpha = if (listening) 255 else (level * 255).toInt().coerceIn(0, 160)
         canvas.drawCircle(cx, cy, r, core)

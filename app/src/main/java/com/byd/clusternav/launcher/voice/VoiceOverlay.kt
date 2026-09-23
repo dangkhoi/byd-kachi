@@ -115,58 +115,47 @@ class VoiceOverlay(
     private fun build(): View {
         val card = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.BAR_TOP)   // WP1 · R1.1 — không viền
-            val p = dpi(ctx, Sp.L)
-            setPadding(p, p, p, p)
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = KachiTheme.card(ctx, Sp.RADIUS_XL, KachiTheme.BAR_TOP)
+            val p = dpi(ctx, Sp.XL)
+            setPadding(p, dpi(ctx, Sp.L), p, dpi(ctx, Sp.L))
         }
-        // R2/R3 — waveform vòng tròn (kiểu Siri) ở đầu card, căn giữa.
+        // R2/R3 — waveform vòng tròn (kiểu Siri) ở TRÊN, căn giữa. Nó CHÍNH là chỉ báo "đang nghe" (bỏ mic-icon
+        // riêng để hết chồng chữ — owner 2026-09-23 "đè chữ tùm lum").
         wave = VoiceWaveView(ctx).apply { setListening(true) }
-        card.addView(wave, LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_XL) * 2, dpi(ctx, Sp.ICON_XL) * 2).apply {
+        card.addView(wave, LinearLayout.LayoutParams(dpi(ctx, WAVE_DP), dpi(ctx, WAVE_DP)).apply {
             gravity = Gravity.CENTER_HORIZONTAL
         })
-        val head = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-        }
-        head.addView(
-            ImageView(ctx).apply {
-                KachiTheme.iconRes("ic-mic").let { if (it != 0) setImageResource(it) }
-                setColorFilter(c(KachiTheme.ACCENT))
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-            },
-            LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_M), dpi(ctx, Sp.ICON_M)),
-        )
+        // Tiêu đề ("Đang nghe…") — căn giữa, ngay dưới vòng tròn.
         title = TextView(ctx).apply {
             setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true)
-            setPadding(dpi(ctx, Sp.S), 0, 0, 0)
+            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.S), 0, 0)
             setText(R.string.kachi_voice_listening)
         }
-        head.addView(title)
-        card.addView(head)
-
+        card.addView(title, LinearLayout.LayoutParams(MATCH, WRAP))
+        // Thân: chữ đang nghe / câu trả lời — căn giữa, ẩn khi rỗng (không để dòng trống làm card nhảy).
         body = TextView(ctx).apply {
             setTextColor(c(KachiTheme.INK2)); KachiType.apply(this, KachiType.BODY)
-            setPadding(0, dpi(ctx, Sp.S), 0, 0)
+            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
             maxLines = MAX_BODY_LINES
             ellipsize = android.text.TextUtils.TruncateAt.END
-            maxWidth = dpi(ctx, CARD_MAX_W)
             visibility = View.GONE
         }
-        card.addView(body)
-
+        card.addView(body, LinearLayout.LayoutParams(MATCH, WRAP))
+        // Nút gợi ý (Mở Cài đặt…) — căn giữa, ẩn khi không có.
         action = TextView(ctx).apply {
             setTextColor(c(KachiTheme.ACCENT)); KachiType.apply(this, KachiType.BODY, bold = true)
-            minHeight = dpi(ctx, Sp.TOUCH)
-            gravity = Gravity.CENTER_VERTICAL
+            minHeight = dpi(ctx, Sp.TOUCH); gravity = Gravity.CENTER
             visibility = View.GONE
         }
-        card.addView(action)
-
+        card.addView(action, LinearLayout.LayoutParams(MATCH, WRAP))
+        // Gợi ý huỷ — nhỏ, mờ, dưới cùng.
         val hint = TextView(ctx).apply {
             setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
-            setPadding(0, dpi(ctx, Sp.XS), 0, 0)
+            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.S), 0, 0)
             setText(R.string.kachi_voice_cancel_hint)
         }
-        card.addView(hint)
+        card.addView(hint, LinearLayout.LayoutParams(MATCH, WRAP))
 
         // Lớp phủ trong suốt bắt cú chạm ra ngoài + phím Back. Xem KDoc lớp về vì sao nó phủ toàn màn.
         return object : FrameLayout(ctx) {
@@ -217,8 +206,8 @@ class VoiceOverlay(
             }
             addView(
                 card,
-                FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL   // R3 voice-ux: GIỮA, dưới
+                FrameLayout.LayoutParams(dpi(ctx, CARD_MAX_W), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL   // R3 voice-ux: GIỮA, dưới; rộng CỐ ĐỊNH (không nhảy)
                     bottomMargin = dpi(ctx, Sp.XXL)
                 },
             )
@@ -259,5 +248,10 @@ class VoiceOverlay(
 
         /** Câu trả lời dài (vd gói lệnh báo từng bước) vẫn phải đọc được mà không đẩy tấm chữ cao lên mãi. */
         const val MAX_BODY_LINES = 4
+
+        /** Cỡ vòng tròn waveform (dp) — vừa phải, không lấn chữ. */
+        const val WAVE_DP = 72
+        private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
+        private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
     }
 }
