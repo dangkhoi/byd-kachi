@@ -101,3 +101,11 @@ Owner mô tả:
 - **GỐC**: VAD `THRESHOLD=0.5` (điểm lưới Silero mặc định) quá cao cho mic xe / giọng nhỏ ⇒ nhiều câu không tạo đoạn ⇒ hết trần.
 - **KHÔNG đổi default mù** (hạ threshold dễ false-accept trong cabin ồn — đúng cảnh báo mục 3c). Pref `voice_vad_threshold` ĐÃ CÓ (chỉnh trên xe không cần build).
 - **On-car**: chỉnh `voice_vad_threshold` 0.5 → 0.40 → 0.35, đo hit (chốt sớm) vs false (cắt lời). Chốt giá trị tốt rồi mới đổi default. `MIN_SILENCE_MS=600` có thể hạ 450 nếu chốt còn chậm.
+
+## ✅ ĐÃ SỬA OFF-CAR (build Kachi-2.17 vc118, feat branch, CHƯA OTA) — 2026-09-23
+- Voice UX (2.16): waveform vòng tròn (VoiceWaveView) + earcon 3-tông (VoiceChime) + overlay GIỮA-DƯỚI bám phase + VAD threshold 0.5→0.35 + golden conversation test.
+- **Mục 3a/3b số↔chữ**: VoiceNumberNorm (:core) — "công ty một"↔"Công ty 1" (VoicePlaces.match chuẩn 2 vế), "sáu bảy hồ văn thái"→"67 hồ văn thái" (runNav normalizeSpokenNumbers). Test 6 ca.
+- **Mục 6 camera**: CameraSignalController.tick() TỰ đọc xi-nhan qua getLightStatus(4/5) — hết phụ thuộc carStatus.lights null.
+- **Mục 8 PM2.5**: cooldown 10 phút sau mỗi lần lọc tự động; nút Lọc ngay giữ chủ động.
+- **R7**: wake mở overlay ĐỘC LẬP (voiceSession riêng ở VoiceWakeService), KHÔNG kéo KachiHomeActivity lên đè app.
+- CÒN cần xe: earcon nghe rõ + waveform mượt + overlay-từ-service không bị ROM chặn + camera LVDS-vào-surface (runbook A5) + Hey Kachi matcher (chờ golden dataset thu on-car) + FQN BYDAutoLightDevice verify.

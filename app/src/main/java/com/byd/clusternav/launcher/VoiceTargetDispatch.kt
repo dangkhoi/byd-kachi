@@ -88,11 +88,15 @@ class VoiceTargetDispatch(
         if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i)); return }
         val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
 
-        if (!target.needsCoords) { deliver(i, target, pkg, i.query, null); return }
+        // "67 hoàng văn thái" → ASR "sáu bảy hồ văn thái" ⇒ đổi chuỗi số đọc → chữ số trước khi gửi bản đồ
+        // (findings 2026-09-23 mục 3b). Không đụng phần chữ (giữ dấu).
+        val q = com.byd.clusternav.launcher.voice.VoiceNumberNorm.normalizeSpokenNumbers(i.query)
+
+        if (!target.needsCoords) { deliver(i, target, pkg, q, null); return }
         // Cần toạ độ ⇒ lượt mạng/dịch vụ: **luồng nền**, và người lái phải biết là máy đang làm gì.
         say(VoiceReply.resolving(i))
         background {
-            val coords = runCatching { geocode(i.query) }.getOrNull()
+            val coords = runCatching { geocode(q) }.getOrNull()
             onUi {
                 // [owner 2026-09-18] KHÔNG fallback chéo: geocode hỏng thì mở CHÍNH app đã chọn + nói rõ chưa
                 // tra được điểm đến — "cái nào ra cái đó", KHÔNG lặng lẽ chuyển sang Google Maps.

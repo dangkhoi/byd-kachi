@@ -51,6 +51,8 @@ object Pm25FilterApplier {
      * (`setQuickCleanAirState(1)`) — thứ THẬT SỰ lọc. ClusterNav chạy nền liên tục nên vòng sống theo process.
      */
     const val POLL_INTERVAL_MS = 45_000L
+    /** COOLDOWN sau mỗi lần lọc-ngay tự động (owner 2026-09-23): 10 phút. */
+    const val QUICK_CLEAN_COOLDOWN_MS = 10 * 60_000L
 
     /**
      * Guard vòng poll. [polling] = "đang có vòng poll của THẾ HỆ HIỆN TẠI" (chặn khởi trùng khi enable/
@@ -62,6 +64,8 @@ object Pm25FilterApplier {
      */
     @Volatile private var polling = false
     @Volatile private var pollGeneration = 0
+    /** COOLDOWN lọc-ngay tự động (owner 2026-09-23): mốc lần quick-clean gần nhất (elapsedRealtime); 0 = chưa lọc. */
+    @Volatile private var lastQuickCleanAt = 0L
 
     /** Gọi lúc mở app / boot nền. Công tắc TẮT ⇒ no-op. BẬT ⇒ bật lọc sau ~5 s trên thread nền. */
     fun applyOnStart(ctx: Context) {
@@ -123,7 +127,7 @@ object Pm25FilterApplier {
             acInt(acDev, "enablePurificationFunctionPrompt", 0, bestEffort = true)   // best-effort tắt popup (trim có thể không hỗ trợ)
             val level = readLevel(app)
             Log.i(TAG, "read level=$level (${Pm25Filter.levelLabelEn(level)})")
-            if (Pm25Filter.isDirty(level)) acInt(acDev, "setQuickCleanAirState", 1)   // đang bẩn → lọc ngay
+            if (Pm25Filter.isDirty(level)) quickCleanThrottled(app)   // đang bẩn → lọc ngay (có cooldown)
             Log.i(TAG, "bật lọc PM2.5 xong (autoClean=1, prompt=best-effort)")
         }.onFailure { Log.w(TAG, "bật lọc thất bại (degrade-safe, bỏ qua)", it) }
         startPollLoop(app)   // duy trì tự-lọc: poll định kỳ, bụi ≥ ngưỡng → lọc-ngay (bug on-car 2026-09-08)
@@ -156,8 +160,24 @@ object Pm25FilterApplier {
                 return@runCatching
             }
             acInt(acDev, "setQuickCleanAirState", 1)
+            lastQuickCleanAt = android.os.SystemClock.elapsedRealtime()   // COOLDOWN: mốc lần lọc gần nhất
             Log.i(TAG, "lọc-ngay: setQuickCleanAirState(1) gửi xong")
         }.onFailure { Log.w(TAG, "lọc-ngay thất bại (degrade-safe, bỏ qua)", it) }
+    }
+
+    /**
+     * Lọc-ngay có COOLDOWN (owner 2026-09-23): poll bụi cao dai dẳng KHÔNG bắn `setQuickCleanAirState` mỗi 45s —
+     * chỉ lọc lại sau [QUICK_CLEAN_COOLDOWN_MS] = 10 phút. Poll VẪN đọc mức mỗi 45s (chỉ chặn lọc lại). Nút "Lọc
+     * ngay" ([cleanNow]) đi thẳng [quickClean] (KHÔNG cooldown — người bấm chủ động thì lọc luôn).
+     */
+    private fun quickCleanThrottled(app: Context) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        val since = now - lastQuickCleanAt
+        if (lastQuickCleanAt > 0L && since in 0 until QUICK_CLEAN_COOLDOWN_MS) {
+            Log.i(TAG, "bụi ≥ ngưỡng nhưng còn cooldown (${since / 1000}s < ${QUICK_CLEAN_COOLDOWN_MS / 1000}s) — chưa lọc lại")
+            return
+        }
+        quickClean(app)   // ghi lastQuickCleanAt bên trong
     }
 
     /**
@@ -186,7 +206,7 @@ object Pm25FilterApplier {
                     val level = readLevel(app)
                     if (Pm25Filter.isDirty(level)) {
                         Log.i(TAG, "poll: mức=$level (${Pm25Filter.levelLabelEn(level)}) ≥ ngưỡng → lọc-ngay")
-                        quickClean(app)
+                        quickCleanThrottled(app)
                     } else {
                         Log.d(TAG, "poll: mức=$level (${Pm25Filter.levelLabelEn(level)}) < ngưỡng → bỏ qua")
                     }

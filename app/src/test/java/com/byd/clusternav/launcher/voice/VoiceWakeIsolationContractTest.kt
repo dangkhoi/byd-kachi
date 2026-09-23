@@ -199,22 +199,25 @@ class VoiceWakeIsolationContractTest {
     // ══ (2) Nhường micro cho phiên lệnh — cross-process thì phải theo THỜI GIAN ═══════════════════════════
 
     /**
-     * **Thứ tự trong [fireWake] là hợp đồng**: nhả mic TRƯỚC `startActivity`, hẹn nghe lại SAU.
+     * **Thứ tự trong [fireWake] là hợp đồng**: nhả mic TRƯỚC khi mở phiên nghe, hẹn nghe lại SAU.
      *
      * Từ lượt tách `:wake`, `VoiceSingleFlight` có **hai bản** (mỗi tiến trình một) và chúng không thấy nhau ⇒
      * cái chốt một-mic không còn bắc qua ranh giới. Nếu `:wake` giữ `AudioRecord` khi phiên lệnh mở ra thì hai
      * bên giành phần cứng, và triệu chứng là *"gọi được nhưng nó không nghe mình nói gì"*.
+     *
+     * R7 (2026-09-23): phiên lệnh mở bằng `voiceSession.start()` (overlay ĐỘC LẬP, không kéo Activity) thay
+     * `startActivity` — thứ tự nhả-mic-trước vẫn là hợp đồng.
      */
     @Test
     fun `fireWake nha mic truoc roi moi mo phien lenh`() {
         val fn = SourceRoots.body(service, "private fun fireWake()")
         val release = fn.indexOf("listener?.setListening(false)")
-        val start = fn.indexOf("startActivity(")
+        val start = fn.indexOf("voiceSession.start()")
         assertTrue(release > 0, "fireWake phải nhả micro (`setListening(false)`) — xem KDoc tại chỗ")
-        assertTrue(start > 0, "fireWake vẫn phải mở phiên nghe lệnh")
+        assertTrue(start > 0, "fireWake vẫn phải mở phiên nghe lệnh (voiceSession.start)")
         assertTrue(
             release < start,
-            "nhả micro phải nằm TRƯỚC startActivity — mở phiên lệnh trong lúc `:wake` còn giữ mic là hai mic",
+            "nhả micro phải nằm TRƯỚC khi mở phiên — mở phiên lệnh trong lúc `:wake` còn giữ mic là hai mic",
         )
     }
 

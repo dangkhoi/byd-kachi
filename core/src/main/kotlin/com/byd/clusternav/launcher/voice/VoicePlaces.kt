@@ -106,7 +106,11 @@ object VoicePlaces {
      */
     fun match(words: List<String>, savedLabels: List<String>): String? {
         if (words.isEmpty()) return null
+        // Khớp trực tiếp trước (giữ nguyên hành vi cũ).
         savedLabels.firstOrNull { norm(it) == words }?.let { return it }
+        // Chuẩn hoá số đọc↔chữ số CẢ hai vế rồi khớp lại: "công ty một"(nghe) == "Công ty 1"(lưu) — findings 2026-09-23.
+        val wDig = VoiceNumberNorm.wordsToDigits(words)
+        savedLabels.firstOrNull { VoiceNumberNorm.wordsToDigits(norm(it)) == wDig }?.let { return it }
         val canonical = ALIASES.entries.firstOrNull { (_, spoken) -> spoken.any { norm(it) == words } }?.key
             ?: return null
         return savedLabels.firstOrNull { SavedPlaces.keyOf(it) == SavedPlaces.keyOf(canonical) } ?: canonical

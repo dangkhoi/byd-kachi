@@ -368,7 +368,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
             // Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — đọc xi-nhan mỗi nhịp trạng thái (1Hz đủ nhanh
             // cho đèn báo rẽ). Controller tự gate pref + chỉ đổi khi bên xi-nhan khác nhịp trước.
-            cameraSignal.tick(state.carStatus.lights.leftTurn, state.carStatus.lights.rightTurn)
+            cameraSignal.tick()   // tự đọc xi-nhan qua HAL (carStatus.lights không được poll — findings 2026-09-23)
         }
         // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
         // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.

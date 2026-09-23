@@ -20,9 +20,26 @@ class CameraSignalController(private val appCtx: Context) {
 
     private val hal by lazy { PanoramaHal(appCtx) }
     private val overlay by lazy { CameraOverlayView(appCtx) }
+    private val gw by lazy { com.byd.clusternav.launcher.BydHalGateway(appCtx.applicationContext) }
     private var current: Turn = Turn.NONE
 
-    /** Một nhịp. [left]/[right] = trạng thái xi-nhan đọc từ xe (null = chưa đọc được ⇒ coi như tắt). */
+    /**
+     * Một nhịp — **tự đọc xi-nhan trực tiếp** qua HAL (findings 2026-09-23 mục 6: `carStatus.lights` LUÔN null vì
+     * datum xi-nhan không nằm trong tập poll của HOME). `BYDAutoLightDevice.getLightStatus(4/5)` [ĐO
+     * `HalReadTables:33` LIGHT_LEFT_TURN=4 · LIGHT_RIGHT_TURN=5]. Giá trị ≠ 0/rỗng ⇒ đang bật.
+     */
+    fun tick() {
+        if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
+        tick(readTurn(4), readTurn(5))
+    }
+
+    /** Đọc một đèn xi-nhan (type 4=trái/5=phải). null (off-car/không đọc được) ⇒ coi như tắt. */
+    private fun readTurn(type: Int): Boolean? {
+        val raw = gw.getter(LIGHT_DEVICE, "getLightStatus", type) ?: return null
+        return raw.trim().toIntOrNull()?.let { it != 0 } ?: false
+    }
+
+    /** Một nhịp với trạng thái xi-nhan cho sẵn (cho test/off-car). null = coi như tắt. */
     fun tick(left: Boolean?, right: Boolean?) {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
         val turn = CameraSignalPolicy.turnOf(left == true, right == true)
@@ -43,5 +60,9 @@ class CameraSignalController(private val appCtx: Context) {
     private fun stop() {
         hal.close()
         overlay.hide()
+    }
+
+    companion object {
+        const val LIGHT_DEVICE = "android.hardware.bydauto.light.BYDAutoLightDevice"
     }
 }

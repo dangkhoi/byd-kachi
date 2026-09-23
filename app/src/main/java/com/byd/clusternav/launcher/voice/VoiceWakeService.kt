@@ -53,6 +53,15 @@ class VoiceWakeService : Service() {
     private val main = Handler(Looper.getMainLooper())
 
     /**
+     * R7 (2026-09-23) — phiên nghe RIÊNG của `:wake`, mở overlay ĐỘC LẬP (KHÔNG kéo `KachiHomeActivity` lên đè
+     * app đang xem). Owner: *"chỉ cần overlay lên, đừng mở Kachi đè hết"*. Dùng `applicationContext` + overlay
+     * `TYPE_APPLICATION_OVERLAY` (đường bóng cast/VietMap đã proven từ nền). Lambda service-an-toàn: điều khiển
+     * xe/nav/nhạc chạy thẳng (không cần Activity); mở-app dùng `startActivity(NEW_TASK)` (launch app ĐÍCH, không
+     * phải Kachi); mở Cài đặt/ngăn kéo/đổi hồ sơ MỚI đưa Kachi lên (hành động tường minh, hiếm).
+     */
+    private val voiceSession: VoiceSession by lazy { buildSession() }
+
+    /**
      * Mốc **hết hạn** của lượt nhường micro (`elapsedRealtime`); `0` = không nhường. Xem KDoc [fireWake].
      *
      * ## ⚠ Vì sao lượt nhường cần một MỐC, không chỉ cần một hẹn giờ (soát 2026-09-19)
@@ -201,19 +210,58 @@ class VoiceWakeService : Service() {
     private fun fireWake() {
         // (1) Chặn lượt xin mic kế tiếp TRƯỚC khi phiên lệnh mở ra — xem KDoc (mic đã nhả từ trước, đây là kéo dài).
         listener?.setListening(false)
-        // (2) Ghi mốc nhường NGAY, trước cả `startActivity`: một `SCREEN_ON`/`sync()` xen vào đúng khe này cũng
-        //     phải thấy "đang nhường" (xem KDoc [handoffUntil]).
+        // (2) Ghi mốc nhường NGAY.
         handoffUntil = SystemClock.elapsedRealtime() + WAKE_HANDOFF_MS
-        runCatching {
-            startActivity(
-                Intent(this, KachiHomeActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    .putExtra(EXTRA_START_VOICE, true),
-            )
-        }.onFailure { Log.w(TAG, "fireWake mở activity lỗi", it) }
-        // (3) Hẹn nghe lại — vô điều kiện, kể cả khi (2) bị nền tảng chặn im lặng.
+        // (3) R7 — mở PHIÊN NGHE của chính `:wake` với overlay ĐỘC LẬP, KHÔNG kéo KachiHomeActivity lên đè app
+        //     đang xem (owner 2026-09-23). Overlay `TYPE_APPLICATION_OVERLAY` nổi trên mọi thứ; điều khiển/nav/nhạc
+        //     chạy thẳng từ service. Đường Activity (nút mic/"Nói với xe") KHÔNG đổi.
+        runCatching { main.post { voiceSession.start() } }
+            .onFailure { Log.w(TAG, "fireWake mở phiên nghe lỗi", it) }
+        // (4) Hẹn nghe lại — vô điều kiện, kể cả khi overlay bị nền tảng chặn im lặng.
         main.removeCallbacks(resumeTask)
         main.postDelayed(resumeTask, WAKE_HANDOFF_MS)
+    }
+
+    /**
+     * Dựng [VoiceSession] service-an-toàn (R7). Lambda dùng `applicationContext`:
+     *  • điều khiển xe / đọc / nav-generic / nhạc — chạy thẳng, KHÔNG cần Activity.
+     *  • mở app đích — `startActivity(NEW_TASK)` (launch app kia, không phải Kachi).
+     *  • mở Cài đặt / ngăn kéo / đổi hồ sơ — MỚI đưa Kachi lên (hành động tường minh, hiếm khi từ wake).
+     */
+    private fun buildSession(): VoiceSession {
+        val app = applicationContext
+        val openHome = { extra: String ->
+            runCatching {
+                startActivity(Intent(app, KachiHomeActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra(extra, true))
+            }; Unit
+        }
+        return VoiceSession(
+            ctx = app,
+            profiles = { emptyList() },
+            appsByLabel = { VoiceWiring.appsByLabel(app) },
+            places = { emptyList() },
+            dispatcher = { say, confirm ->
+                VoiceWiring.dispatcher(
+                    ctx = app,
+                    state = { com.byd.clusternav.launcher.HomeUiState() },
+                    appsByLabel = { VoiceWiring.appsByLabel(app) },
+                    openApp = { pkg ->
+                        runCatching {
+                            val i = packageManager.getLaunchIntentForPackage(pkg)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            if (i != null) { startActivity(i); true } else false
+                        }.getOrDefault(false)
+                    },
+                    openAppList = { openHome(EXTRA_START_VOICE) },
+                    openSettings = { openHome(EXTRA_START_VOICE) },
+                    onSwitchProfile = { },
+                    onListen = { },
+                    confirm = confirm,
+                    say = say,
+                )
+            },
+            openPermissions = { openHome(EXTRA_START_VOICE) },
+        )
     }
 
     /** Cầu chì false-accept: [P2] ghi cờ tệp RIÊNG (KHÔNG đụng `clusternav_prefs` chung) + báo + dừng service. */
