@@ -166,17 +166,17 @@ class VoicePlacesParseTest {
     private val allInstalled: Set<String> = NavApps.VIETMAP + NavApps.GMAPS + NavApps.WAZE
 
     /**
-     * ⚠⚠ Bài quan trọng nhất của R3. VietMap đứng ĐẦU thứ tự ưu tiên và [ĐO] nó **chỉ nhận toạ độ**; một mục chỉ
-     * có chữ mà đẩy vào đó là mở app rồi bảo người ta tự gõ — trong khi Google Maps ngay dưới nhận được nguyên văn.
+     * ⚠⚠ Cập nhật 2026-09-23 (owner + RE): VietMap NAY nhận CHỮ (google.com/maps) ⇒ mục chỉ-có-chữ chọn VietMap
+     * (đầu ưu tiên) và giao được bằng chữ — KHÔNG còn phải lùi xuống Google Maps.
      */
     @Test
     fun `muc chi co chu thi chon app NHAN DUOC CHU`() {
         val target = VoiceAppTargets.navFor(hasCoords = false, preference, allInstalled)
-        assertEquals(VoiceAppTargets.GMAPS, target?.key)
-        assertFalse(target?.needsCoords ?: true)
+        assertEquals(VoiceAppTargets.VIETMAP, target?.key, "VietMap đầu ưu tiên + nay nhận chữ")
+        assertFalse(target?.needsCoords ?: true, "dẫn bằng chữ, không cần toạ độ")
     }
 
-    /** Có toạ độ ⇒ VietMap dùng được, và nó là app đứng đầu thứ tự ưu tiên trên xe owner. */
+    /** Có toạ độ ⇒ VietMap vẫn dùng đường toạ độ (coord), app đứng đầu ưu tiên trên xe owner. */
     @Test
     fun `muc co toa do thi VietMap dung duoc va duoc uu tien`() {
         val target = VoiceAppTargets.navFor(hasCoords = true, preference, allInstalled)
@@ -184,12 +184,12 @@ class VoicePlacesParseTest {
         assertTrue(target?.destinationLaunch(true) != null, "app đứng đầu phải THẬT SỰ giao được, không chỉ được chọn")
     }
 
-    /** Chỉ cài VietMap + mục không toạ độ ⇒ vẫn trả VietMap để chỗ gọi **mở app và nói rõ**, không trả `null`. */
+    /** Chỉ cài VietMap + mục không toạ độ ⇒ trả VietMap, nay giao được bằng CHỮ (không cần toạ độ). */
     @Test
     fun `khong app nao giao duoc thi van tra app de con noi ra`() {
         val target = VoiceAppTargets.navFor(hasCoords = false, preference, NavApps.VIETMAP)
         assertEquals(VoiceAppTargets.VIETMAP, target?.key)
-        assertTrue(target!!.needsCoords, "…và chỗ gọi đọc cờ này để nói 'thêm lat/lng cho mục này'")
+        assertFalse(target!!.needsCoords, "VietMap nay dẫn bằng chữ — giao được ngay, không cần lat/lng")
     }
 
     /** Không có app dẫn đường nào trên máy ⇒ `null` (chỗ gọi nói `noNavApp`), không sập. */

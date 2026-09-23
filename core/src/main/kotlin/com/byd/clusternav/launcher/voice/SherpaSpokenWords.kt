@@ -342,6 +342,13 @@ object SherpaSpokenWords {
         "viet lap" to "việt láp",
         "viet mat" to "việt mát",
         "ban do viet" to "bản đồ việt",
+        // owner 2026-09-23: dạng "VietMap Live" (việt máp lay/live).
+        "viet map lay" to "việt máp lay",
+        "viet map live" to "việt máp live",
+        "vietmap live" to "vietmap live",
+        "vietmap lay" to "vietmap lay",
+        "map lay" to "máp lay",
+        "map live" to "máp live",
     )
 
     /**

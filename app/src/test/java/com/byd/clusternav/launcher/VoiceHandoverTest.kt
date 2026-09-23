@@ -185,47 +185,32 @@ class VoiceHandoverTest {
     }
 
     /**
-     * VietMap **không** có cửa chữ ⇒ tra toạ độ, **đọc lại tên nơi tra được**, rồi mới bắn URI toạ độ.
-     *
-     * Hai điều được khoá ở đây: có một cổng hỏi lại thứ hai (tên do bên tra cứu trả về khác câu người ta nói),
-     * và URI đi ra là khuôn `vietmaplive://` lấy từ nguồn Kiki.
+     * VietMap NAY có cửa chữ (RE 2026-09-23) ⇒ giao thẳng URL text tới VietMap, KHÔNG geocode, KHÔNG đọc-lại-tên.
      */
     @Test
-    fun `VietMap tra toa do, doc lai ten roi moi ban`() {
+    fun `VietMap dan bang chu — giao text thang, khong geocode`() {
         val r = Rig(
             labels = mapOf("VietMap Live" to VIETMAP),
             geocoded = VoiceAppIntents.Coords(10.7717, 106.7043, "Chợ Bến Thành"),
         )
         r.run("dẫn đường tới chợ bến thành bằng việt map")
-        assertEquals(1, r.geocodeCalls)
-        assertTrue(r.asked.any { it.contains("Chợ Bến Thành") }, "phải đọc lại TÊN tra được; đã hỏi: ${r.asked}")
+        assertEquals(0, r.geocodeCalls, "dẫn bằng chữ ⇒ KHÔNG geocode")
         val h = r.sent.single()
         assertEquals(VIETMAP, h.pkg)
-        assertTrue((h.launch as VoiceLaunch.Uri).template.startsWith("vietmaplive://companion/navigation?"))
-        assertEquals(10.7717, h.coords!!.lat)
+        assertTrue((h.launch as VoiceLaunch.Uri).template.startsWith("https://www.google.com/maps/"),
+            "URL chữ chuẩn Google, VietMap tự geocode")
     }
 
     /**
-     * Tra không ra toạ độ ⇒ **mở app** rồi nói rõ là chưa giao được — không có dấu ✓ rỗng.
-     *
-     * [SOÁT Pass 3 · P2] Và câu nói phải là *"chưa tra được điểm đến"*, **không** phải *"app này không nhận
-     * điểm đến"*: cái sau là một kết luận đã đo (đúng mãi), cái này là một lượt mạng hỏng (thử lại có thể được).
-     * Dùng chung một câu là đổ lỗi cho app về một lần mất sóng, và người lái sẽ thôi không thử lại nữa.
+     * VietMap nhận chữ ⇒ giao được ngay dù không có toạ độ (không còn ca "mở app trơn vì geocode hỏng").
      */
     @Test
-    fun `khong tra duoc toa do thi mo app va noi ro LA DO TRA CUU`() {
+    fun `VietMap giao duoc bang chu du khong co toa do`() {
         val r = Rig(labels = mapOf("VietMap Live" to VIETMAP), geocoded = null)
         r.run("dẫn đường tới chợ bến thành bằng việt map")
-        assertTrue(r.sent.isEmpty(), "không có toạ độ mà vẫn bắn một URI thiếu tham số")
-        assertEquals(listOf(VIETMAP), r.opened, "vẫn phải mở app — đó là phần chắc chắn làm được")
-
-        val target = VoiceAppTargets.byKey(VoiceAppTargets.VIETMAP)!!
-        val intent = VoiceIntent.Nav("chợ bến thành", VoiceAppTargets.VIETMAP)
-        assertEquals(VoiceReply.navNoPlace(intent, target), r.said.last())
-        assertTrue(
-            r.said.last() != VoiceReply.navOpenedNoHandover(intent, target),
-            "lượt tra cứu hỏng KHÁC 'app không có cửa nhận điểm đến' — hai câu, hai chuyện",
-        )
+        val h = r.sent.single()
+        assertEquals(VIETMAP, h.pkg, "giao thẳng cho VietMap bằng chữ")
+        assertEquals(0, r.geocodeCalls, "không geocode")
     }
 
     /** Không app dẫn đường nào trên xe ⇒ nói thẳng, không bắn gì. */

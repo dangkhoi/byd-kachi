@@ -360,6 +360,8 @@ object VoiceSynonyms {
         VoiceAppTargets.VIETMAP to listOf(
             "viet map", "vietmap", "viet mat", "ban do viet",
             "viet mep", "viet mop", "viet mup", "viet lap",
+            // owner 2026-09-23: user đọc "việt máp lay" / "vietmap live" (tên đầy đủ) không nhận. Thêm dạng có "live/lay".
+            "viet map lay", "viet map live", "vietmap live", "vietmap lay", "map lay", "map live",
         ),
     )
 

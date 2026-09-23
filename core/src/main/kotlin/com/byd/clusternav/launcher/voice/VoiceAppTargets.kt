@@ -320,8 +320,11 @@ object VoiceAppTargets {
             label = "VietMap",
             kind = VoiceAppKind.NAV,
             packages = NavApps.VIETMAP.toList(),
-            // Không có cửa CHỮ — đó là kết luận đã đo, xem [VoiceLaunch.OpenOnly].
-            launch = VoiceLaunch.OpenOnly,
+            // [ĐO RE manifest 2026-09-23 · /tmp/vmre/dec/AndroidManifest.xml] `vn.vietmap.live.MainActivity` đăng
+            // ký VIEW `https://www.google.com/maps/…` + `goo.gl/maps/…` ⇒ VietMap CÓ cửa nhận điểm đến bằng CHỮ (tự
+            // geocode). BÁC kết luận cũ "chỉ nhận toạ độ" (suy từ RE Kiki — Kiki đã có lat/lng ở server). Owner
+            // 2026-09-23: "dẫn bằng chữ, bias toạ độ có vẻ không đúng" — ĐÚNG. URL search chuẩn Google + setPackage.
+            launch = VoiceLaunch.Uri("https://www.google.com/maps/search/?api=1&query=${VoiceLaunch.SLOT}"),
             evidence = VoiceAppEvidence.MEASURED,
             coord = VoiceLaunch.Uri(
                 "vietmaplive://companion/navigation?lat=${VoiceLaunch.LAT}&lng=${VoiceLaunch.LNG}" +

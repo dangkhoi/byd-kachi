@@ -133,21 +133,18 @@ class VoiceAppTargetsTest {
     /**
      * [ĐO] VietMap **không có cửa chữ** — và cơ chế đúng (toạ độ) lấy từ nguồn Kiki đã decompile.
      *
-     * Đây là dòng dễ bị "sửa cho đẹp" nhất: ai đó thấy `OpenOnly` sẽ tưởng là chỗ chưa làm xong và nhét một
-     * `geo:` vào. [ĐO] `geo:` kèm `-p vn.vietmap.live` ⇒ *unable to resolve intent*. Bài này chặn đúng việc đó.
+     * ⚠ Cập nhật 2026-09-23 (owner + RE manifest): VietMap CÓ cửa chữ (`vn.vietmap.live.MainActivity` nhận VIEW
+     * `https://www.google.com/maps/…`). Bài này nay chốt VietMap dẫn bằng CHỮ, KHÔNG bias toạ độ.
      */
     @Test
-    fun `VietMap chi mo app bang duong chu, va nhan diem den bang TOA DO`() {
+    fun `VietMap dan bang CHU qua google maps url, khong bias toa do`() {
         val t = VoiceAppTargets.byKey(VoiceAppTargets.VIETMAP)!!
-        assertEquals(VoiceLaunch.OpenOnly, t.launch, "[ĐO] VietMap không đăng ký cửa chữ nào")
-        assertFalse(t.handsOver)
-        assertTrue(t.needsCoords, "phải đi đường toạ độ, không thì câu dẫn đường VietMap không bao giờ giao được")
-        val uri = t.coord!!.template
-        assertTrue(uri.startsWith("vietmaplive://companion/navigation?"), "khuôn lấy từ nguồn Kiki; đang là `$uri`")
-        listOf(VoiceLaunch.LAT, VoiceLaunch.LNG, VoiceLaunch.SLOT).forEach {
-            assertTrue(uri.contains(it), "khuôn VietMap thiếu chỗ trống $it")
-        }
-        assertEquals(VoiceAppEvidence.AWAITING_CAR, t.coordEvidence, "máy ảo không có GPS fix ⇒ chờ xe, không phải chưa biết")
+        assertTrue(t.handsOver, "VietMap nay có cửa chữ (RE manifest: nhận VIEW www.google.com/maps)")
+        assertFalse(t.needsCoords, "dẫn bằng chữ — KHÔNG buộc geocode/toạ độ (VietMap tự geocode)")
+        val uri = (t.launch as VoiceLaunch.Uri).template
+        assertTrue(uri.startsWith("https://www.google.com/maps/"), "khuôn URL chữ chuẩn Google; đang là `$uri`")
+        assertTrue(uri.contains(VoiceLaunch.SLOT), "khuôn phải mang chỗ trống địa chỉ")
+        assertFalse(uri.contains(VoiceLaunch.LAT) || uri.contains(VoiceLaunch.LNG), "đường chính KHÔNG được mang lat/lng")
     }
 
     // ══ (3) Luật chọn đường — CLAUDE.md §6 ═══════════════════════════════════════════════════════════════
@@ -168,12 +165,12 @@ class VoiceAppTargetsTest {
         }
     }
 
-    /** App KHÔNG có cửa chữ thì chỉ đi được khi có toạ độ; không có thì `null` (⇒ mở app trơn + nói rõ). */
+    /** VietMap NAY có cửa chữ (RE 2026-09-23) ⇒ destinationLaunch trả đường CHỮ ở cả hai ca, luôn giao được. */
     @Test
     fun `app khong co cua chu chi di duoc khi co toa do`() {
         val t = VoiceAppTargets.byKey(VoiceAppTargets.VIETMAP)!!
-        assertEquals(t.coord, t.destinationLaunch(hasCoords = true))
-        assertNull(t.destinationLaunch(hasCoords = false), "không có toạ độ mà vẫn trả một đường ⇒ bắn một URI thiếu tham số")
+        assertEquals(t.launch, t.destinationLaunch(hasCoords = true), "handsOver ⇒ dùng đường chữ kể cả khi có toạ độ")
+        assertEquals(t.launch, t.destinationLaunch(hasCoords = false), "không toạ độ vẫn giao được bằng chữ")
     }
 
     // ══ (4) Tra cứu ══════════════════════════════════════════════════════════════════════════════════════
