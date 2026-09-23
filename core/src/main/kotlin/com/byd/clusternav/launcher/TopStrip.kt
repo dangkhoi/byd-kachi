@@ -341,6 +341,11 @@ object TopStripChips {
         val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
         val value = view.displayWithUnit()
         val on = view.onOff
+        // B10 (owner 2026-09-23): datum BẬT/TẮT (sấy kính…) mà CHƯA đọc được (on==null) — trên xe owner nhiều datum
+        // này không bao giờ có tín hiệu ⇒ "· —" là dấu gạch VÔ NGHĨA + chiếm chỗ đẩy icon xa nhau. Coi như một
+        // datum bật/tắt: chỉ icon (mờ = INACTIVE), KHÔNG hiện giá trị "—". Chỉ áp cho datum bật/tắt (isOnOff),
+        // datum SỐ chưa đọc vẫn hiện "· —" (số thật sẽ về).
+        val isBool = TelemetryReadout.isOnOff(id)
         // B9 (owner 2026-09-22): chip là bề mặt hẹp nhất — với datum mức (ghế mát/sưởi) rút "Mức 2"/"Level 2" → "2"
         // cho đỡ chật (hình ghế nói rõ là ghế rồi). Chỉ áp cho CHIP, ô lớn giữ "Mức 2".
         val chipValue = value.removePrefix(Strings.t("Mức ", "Level ")).trim()
@@ -351,7 +356,7 @@ object TopStripChips {
             // Bật/tắt: chỉ nhãn (trạng thái đã ở màu icon). Tắt nhãn NỮA ⇒ chuỗi rỗng = chip chỉ-icon, và đó đúng là
             // thứ người dùng xin khi gạt cả hai công tắc — icon vẫn nói được trạng thái nhờ màu.
             text = when {
-                on != null -> if (labels) spec.displayShortLabel else ""
+                on != null || isBool -> if (labels) spec.displayShortLabel else ""   // bật/tắt: chỉ nhãn (chưa đọc = icon mờ, không "· —")
                 labels -> "${spec.displayShortLabel} · $chipValue"
                 else -> chipValue
             },
@@ -359,6 +364,8 @@ object TopStripChips {
             tone = when (on) {
                 true -> ChipTone.ACTIVE
                 false -> ChipTone.INACTIVE
+                // Chưa đọc: giữ NEUTRAL — "không biết" ≠ "đang tắt" (lập luận cũ). Chỉ BỎ dấu "· —" (B10 owner
+                // 2026-09-23): dấu vô nghĩa + chiếm chỗ đẩy icon xa nhau. Icon trung tính, không mờ hẳn.
                 null -> ChipTone.NEUTRAL
             },
             desc = "${spec.displayLabel}: $value",

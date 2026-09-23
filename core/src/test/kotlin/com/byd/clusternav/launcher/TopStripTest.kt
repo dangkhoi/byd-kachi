@@ -49,6 +49,16 @@ class TopStripTest {
     }
 
     @Test
+    fun `datum bat tat chua doc thi chip khong hien gach — (B10)`() {
+        // Sấy kính (defrost_front_state) trên xe owner không bao giờ có tín hiệu ⇒ trước đây "Sấy trước · —".
+        // Nay: datum bật/tắt chưa đọc = chỉ nhãn/icon + tone INACTIVE (icon mờ), KHÔNG "· —".
+        val cfg = TopStripConfig(listOf(TopStripConfig.PM25)).setEnabled("defrost_front_state", true)
+        val chip = TopStripChips.render(cfg, CarStatus()).first { it.icon != "ic-leaf" }
+        assertFalse(chip.text.contains("—"), "datum bật/tắt chưa đọc KHÔNG được hiện dấu — (vô nghĩa + chiếm chỗ), thấy: \"${chip.text}\"")
+        assertEquals(ChipTone.NEUTRAL, chip.tone, "chưa đọc = NEUTRAL (không khẳng định tắt)")
+    }
+
+    @Test
     fun `mot datum bat ky dat duoc len thanh tren`() {
         val cfg = TopStripConfig(listOf(TopStripConfig.PM25)).setEnabled("tyre_p_fl", true)
         assertTrue(cfg.has("tyre_p_fl"))
@@ -375,12 +385,14 @@ class TopStripTest {
     }
 
     @Test
-    fun `chua doc duoc thi TRUNG TINH + dash — KHONG to thanh dang tat`() {
-        // Off-car / không có trên trim: icon mờ ở đây là nói "đang tắt" trong khi sự thật là "không biết".
+    fun `chua doc duoc thi TRUNG TINH va KHONG hien dash (B10)`() {
+        // Off-car / không có trên trim: icon MỜ ở đây là nói "đang tắt" trong khi sự thật là "không biết" ⇒ giữ
+        // NEUTRAL. NHƯNG dấu "· —" là vô nghĩa + chiếm chỗ (owner 2026-09-23) ⇒ BỎ, còn nhãn ngắn (khi bật nhãn).
         val c = TopStripChips.render(defrostOnly(), defrost(null)).single()
         assertEquals(ChipTone.NEUTRAL, c.tone, "chưa đọc được ⇒ NEUTRAL, không phải INACTIVE")
+        assertFalse(c.text.contains("—"), "KHÔNG hiện dấu — cho datum bật/tắt chưa đọc, thấy: \"${c.text}\"")
         val short = TelemetryRegistry.byId("defrost_front_state")!!.shortLabel
-        assertEquals("$short · —", c.text, "vẫn hiện '—' như mọi datum chưa đọc được")
+        assertEquals(short, c.text, "còn nhãn ngắn (bật nhãn), không có '· —'")
     }
 
     @Test

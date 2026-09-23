@@ -124,6 +124,14 @@ object TelemetryReadout {
         else -> null
     }
 
+    /**
+     * Id này có phải datum BẬT/TẮT không (thuộc bản kê [boolOf]) — dù giá trị đã đọc được hay chưa.
+     * Dùng cho chip header (B10 owner 2026-09-23): datum bật/tắt CHƯA đọc được thì hiện **icon mờ**, KHÔNG hiện
+     * "· —" (dấu gạch vô nghĩa + chiếm chỗ đẩy icon xa nhau). `CarStatus()` rỗng ⇒ boolOf vẫn dựng `Bool(null)`
+     * cho id thuộc bản kê ⇒ non-null = là bật/tắt.
+     */
+    fun isOnOff(id: String): Boolean = boolOf(id, CarStatus()) != null
+
     /** Giá trị hiển thị đã format cho telemetry [id] từ [s]; null = chưa đọc/không có ⇒ "—". */
     private fun format(id: String, s: CarStatus): String? = when (id) {
         // ── A1. Năng lượng ──────────────────────────────────────────────────────────────
