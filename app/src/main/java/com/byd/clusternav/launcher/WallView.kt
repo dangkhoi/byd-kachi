@@ -58,6 +58,17 @@ class WallView(context: Context) : View(context) {
     /** Có đang vẽ ảnh không (cho test dây nối / nhật ký). */
     fun hasPhoto(): Boolean = photo?.isRecycled == false
 
+    /**
+     * #4 (owner 2026-09-23 · keep-state theme): re-đọc màu theme vào [base] (paint này lấy [KachiTheme.BG] MỘT LẦN
+     * lúc dựng ⇒ đổi Sáng↔Tối tại chỗ mà `invalidate()` cũ vẽ lại bằng màu CŨ → nền tổng không đổi). glow/scrim
+     * đọc mỗi onDraw nên tự đúng; band đọc ở onSizeChanged nên dựng lại đây. Gọi từ `applyThemeInPlace`.
+     */
+    fun restyle() {
+        base.color = Color.parseColor(KachiTheme.BG)
+        if (width > 0 && height > 0) onSizeChanged(width, height, width, height)  // dựng lại band theo BAR_TOP mới
+        invalidate()
+    }
+
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         if (w <= 0f || h <= 0f) return

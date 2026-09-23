@@ -352,7 +352,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * restart). Nguyên tắc launcher: dù đổi gì màn cũng chạy tiếp.
      */
     private fun applyThemeInPlace() {
-        runCatching { KachiGlass.refresh(rootFrame) }; wall.invalidate()   // nền kính + dải nền theo palette
+        runCatching { KachiGlass.refresh(rootFrame) }; wall.restyle()   // nền kính + màu nền tổng theo palette (#4)
         topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
     }
 
