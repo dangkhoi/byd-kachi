@@ -320,11 +320,11 @@ object VoiceAppTargets {
             label = "VietMap",
             kind = VoiceAppKind.NAV,
             packages = NavApps.VIETMAP.toList(),
-            // [ĐO RE manifest 2026-09-23 · /tmp/vmre/dec/AndroidManifest.xml] `vn.vietmap.live.MainActivity` đăng
-            // ký VIEW `https://www.google.com/maps/…` + `goo.gl/maps/…` ⇒ VietMap CÓ cửa nhận điểm đến bằng CHỮ (tự
-            // geocode). BÁC kết luận cũ "chỉ nhận toạ độ" (suy từ RE Kiki — Kiki đã có lat/lng ở server). Owner
-            // 2026-09-23: "dẫn bằng chữ, bias toạ độ có vẻ không đúng" — ĐÚNG. URL search chuẩn Google + setPackage.
-            launch = VoiceLaunch.Uri("https://www.google.com/maps/search/?api=1&query=${VoiceLaunch.SLOT}"),
+            // Không có cửa CHỮ — [ĐO emulator 2026-09-23, VietMap 3.3.4 đã login] thử 5 URL text đều FAIL:
+            // /maps/search|dir|place + vietmaplive://…?poiName=<text> (→ lỗi 1037) + vietmaplive://search?q= —
+            // đều panel "VM Connect share" không điểm đến. `/maps` filter là kênh share-link CÓ toạ độ nhúng, KHÔNG
+            // geocode text. ⇒ VietMap BẮT BUỘC toạ độ (đường `coord`). ĐỪNG thử lại google.com/maps text — đã đo.
+            launch = VoiceLaunch.OpenOnly,
             evidence = VoiceAppEvidence.MEASURED,
             coord = VoiceLaunch.Uri(
                 "vietmaplive://companion/navigation?lat=${VoiceLaunch.LAT}&lng=${VoiceLaunch.LNG}" +

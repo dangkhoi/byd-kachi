@@ -41,19 +41,27 @@ class VoiceNavFallbackTest {
     )
 
     @Test
-    fun `VietMap dan bang CHU — giao handoff text toi VietMap, KHONG geocode, KHONG GMaps`() {
+    fun `VietMap geocode HONG thi mo VietMap tron, KHONG nhay GMaps`() {
         val handoffs = ArrayList<VoiceAppIntents.Handoff>()
         val opened = ArrayList<String>()
         dispatch(geocodeResult = null, handoffs = handoffs, opened = opened)
             .runNav(VoiceIntent.Nav(query = "chợ bến thành", app = VoiceAppTargets.VIETMAP), labels)
 
-        assertEquals(1, handoffs.size, "VietMap nay nhận chữ ⇒ giao thẳng, không cần geocode")
-        assertEquals(vietmapPkg, handoffs[0].pkg, "giao đúng VietMap")
-        assertTrue(
-            (handoffs[0].launch as VoiceLaunch.Uri).template.startsWith("https://www.google.com/maps/"),
-            "URL chữ chuẩn Google (VietMap tự geocode)",
-        )
-        assertTrue(handoffs.none { it.pkg == gmapsPkg }, "KHÔNG nhảy sang Google Maps — cái nào ra cái đó")
+        assertTrue(handoffs.none { it.pkg == gmapsPkg }, "geocode hỏng KHÔNG được nhảy sang Google Maps — cái nào ra cái đó")
+        assertTrue(opened.contains(vietmapPkg), "mở CHÍNH VietMap (app đã chọn), không đổi app")
+    }
+
+    @Test
+    fun `VietMap geocode OK thi giao toa do cho VietMap`() {
+        val handoffs = ArrayList<VoiceAppIntents.Handoff>()
+        val coords = VoiceAppIntents.Coords(10.77, 106.70, "Chợ Bến Thành")
+        dispatch(geocodeResult = coords, handoffs = handoffs)
+            .runNav(VoiceIntent.Nav(query = "chợ bến thành", app = VoiceAppTargets.VIETMAP), labels)
+
+        assertEquals(1, handoffs.size)
+        val h = handoffs[0]
+        assertEquals(vietmapPkg, h.pkg, "geocode được ⇒ giao thẳng cho VietMap")
+        assertEquals(coords, h.coords, "kèm toạ độ đã giải")
     }
 
     @Test
@@ -68,13 +76,13 @@ class VoiceNavFallbackTest {
     }
 
     @Test
-    fun `khong neu app + mac dinh VietMap ⇒ VietMap dan bang chu, KHONG GMaps`() {
+    fun `khong neu app + mac dinh VietMap + geocode HONG ⇒ mo VietMap tron, KHONG GMaps`() {
         val handoffs = ArrayList<VoiceAppIntents.Handoff>()
-        dispatch(geocodeResult = null, handoffs = handoffs, navDefault = "vietmap")
+        val opened = ArrayList<String>()
+        dispatch(geocodeResult = null, handoffs = handoffs, opened = opened, navDefault = "vietmap")
             .runNav(VoiceIntent.Nav(query = "chợ bến thành", app = null), labels)
 
-        assertEquals(1, handoffs.size, "mặc định VietMap ⇒ giao chữ thẳng cho VietMap")
-        assertEquals(vietmapPkg, handoffs[0].pkg)
-        assertTrue(handoffs.none { it.pkg == gmapsPkg }, "KHÔNG nhảy GMaps")
+        assertTrue(handoffs.none { it.pkg == gmapsPkg }, "mặc định VietMap + geocode hỏng KHÔNG được nhảy GMaps")
+        assertTrue(opened.contains(vietmapPkg), "mở CHÍNH VietMap (app mặc định)")
     }
 }
