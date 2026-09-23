@@ -36,6 +36,9 @@ object NavConnect {
     // brief gap between the remove and the re-add that makes the framework observe the OUT state and rebind.
     private const val REBIND_SETTLE_MS = 1200L
     private const val REBIND_TOGGLE_PAUSE_MS = 800L
+    // #2 — POLL bound sau toggle: dưới CPU load cao hệ bind CHẬM; poll cho đủ thời gian, trả kết quả THẬT.
+    private const val REBIND_VERIFY_TRIES = 6
+    private const val REBIND_VERIFY_EVERY_MS = 1000L
 
     // TASK 3 (R2 · docs/specs/clusternav-closeout-1.28.html) — grant-body timeout. A HUNG dadb session (stuck
     // socket read/write during the accessibility read-modify-write or the force-rebind toggle) must NOT pin the
@@ -46,7 +49,7 @@ object NavConnect {
     // verify vượt 9s ⇒ worker bị cắt GIỮA toggle ⇒ rebind thất bại ("phím gán không ăn"). [ĐO] toggle a11y
     // TRỰC TIẾP (settings, không dadb) thì bind lại NGAY cả khi load 14 ⇒ cơ chế đúng, chỉ thiếu thời gian.
     // Nới 20s để hoàn tất dưới tải nặng; single-flight vẫn được nhả sau timeout (không kẹt vĩnh viễn).
-    private const val GRANT_TIMEOUT_MS = 20_000L
+    private const val GRANT_TIMEOUT_MS = 30_000L
 
     /** Reconnect NGAY qua dadb (chạy nền). An toàn gọi nhiều lần. */
     fun reconnect(ctx: Context) {
@@ -162,8 +165,9 @@ object NavConnect {
                     Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
                     // ENABLED ≠ BOUND: sau reboot service liệt kê trong enabled_accessibility_services nhưng
                     // KHÔNG chạy (không ở "Bound services") → onKeyEvent/booster chết. Ép rebind trên CÙNG phiên.
+                    // #2 (owner 2026-09-23): trả BOUND THẬT (verify sau toggle), KHÔNG phải "dadb chạy xong" —
+                    // để "Kiểm tra/Sửa ngay" báo đúng OK/FAIL khớp status, không nói dối.
                     forceRebindIfNeeded(keyPair, sh)
-                    true
                 } ?: false
             }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb LỖI (popup Allow chưa bấm?)", it); false }
         } finally { grantingAcc.set(false) }
@@ -184,13 +188,13 @@ object NavConnect {
      *    chết thì mở PHIÊN MỚI để re-add (adbd loopback vẫn sống, chỉ 1 kết nối rớt), nên setting không bao giờ
      *    kẹt ở trạng thái removed dù phiên đứt giữa toggle. Mọi lỗi được catch/log, không làm văng app.
      */
-    private fun forceRebindIfNeeded(keyPair: AdbKeyPair, sh: (String) -> LocalShellText) {
+    private fun forceRebindIfNeeded(keyPair: AdbKeyPair, sh: (String) -> LocalShellText): Boolean {
         // Let a fresh enable bind on its own first; only the post-reboot state needs the forced toggle.
-        runCatching { Thread.sleep(REBIND_SETTLE_MS) }.onFailure { Thread.currentThread().interrupt(); return }
+        runCatching { Thread.sleep(REBIND_SETTLE_MS) }.onFailure { Thread.currentThread().interrupt(); return false }
         val current = sh("settings get secure enabled_accessibility_services").output.trim()
         val bound = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
         val writes = AccessibilityRebind.accessibilityRebindWrites(current, bound, ACC_COMP)
-        if (writes.isEmpty()) { Log.i(TAG, "accessibility đã BOUND — không toggle (tránh flicker)"); return }
+        if (writes.isEmpty()) { Log.i(TAG, "accessibility đã BOUND — không toggle (tránh flicker)"); return true }
 
         val remove = writes.first()
         val reAdd = writes.drop(1)   // [re-add danh sách đầy đủ, accessibility_enabled 1] = trạng thái AN TOÀN cuối
@@ -203,12 +207,20 @@ object NavConnect {
         // remove ; sleep <pause> ; <re-add lệnh 1> ; <re-add lệnh 2...>  — tất cả trên MỘT dòng shell.
         val combined = "$remove ; sleep $pauseSec ; " + reAdd.joinToString(" ; ")
         var inRemovedState = false
+        var reboundOk = false
         try {
             Log.i(TAG, "accessibility ENABLED nhưng CHƯA BOUND → toggle ép rebind (1 lệnh gộp, chống treo dưới load)")
             inRemovedState = true
             sh(combined)                 // 1 round-trip: cả remove+sleep+re-add chạy trên xe
             inRemovedState = false
-            val reboundOk = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
+            // #2 (owner 2026-09-23) — POLL bound NHIỀU NHỊP, không đọc 1 lần: dưới CPU load cao hệ bind CHẬM vài
+            // giây sau toggle; đọc 1 lần ngay ⇒ luôn thấy false ⇒ "Sửa ngay" báo fail (hoặc báo OK dối). Poll cho
+            // hệ thời gian bind; trả kết quả THẬT để nút không nói dối.
+            for (attempt in 0 until REBIND_VERIFY_TRIES) {
+                reboundOk = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
+                if (reboundOk) break
+                runCatching { Thread.sleep(REBIND_VERIFY_EVERY_MS) }.onFailure { Thread.currentThread().interrupt(); break }
+            }
             Log.i(TAG, "accessibility force-rebind xong: bound=$reboundOk")
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
@@ -230,6 +242,7 @@ object NavConnect {
                 }
             }
         }
+        return reboundOk
     }
 
     /**
