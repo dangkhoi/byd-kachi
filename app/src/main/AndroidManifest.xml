@@ -199,6 +199,13 @@
             android:exported="false"
             android:foregroundServiceType="specialUse">
         </service>
+        <!-- FGS mảnh giữ tiến trình sống khi phím-thoại bật → ssc_skip không DROP watchdog broadcast
+             (deep-pass 2026-09-23 [P1] #3). IMPORTANCE_MIN, không mic. Never exported. -->
+        <service
+            android:name=".VoiceKeyKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+        </service>
 
         <!-- AUTOMATION (1.85, spec kachi-automation R4): MỘT động cơ nền cho cả hai automation — "tự sấy kính khi
              mưa" (nhịp ~5 phút) + "tự dẫn đường theo lịch" (nhịp ~1 phút). KHÁC ba service trên: chúng là việc

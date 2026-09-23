@@ -429,6 +429,7 @@ internal fun Activity.bringUpShellChannel(
 ) {
     // #4 (deep-pass 2026-09-23): watchdog alarm mất khi force-stop; đặt lại mỗi lần launcher lên (idempotent).
     runCatching { com.byd.clusternav.RebindReceiver.scheduleWatchdog(applicationContext) }
+    runCatching { com.byd.clusternav.VoiceKeyKeepAliveService.sync(applicationContext) }  // #3: giữ tiến trình khi phím-thoại bật
     if (!dadb.probe()) {
         // Không có kênh shell: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng biết vì
         // sao app không vào được ô, thay vì ngồi đoán.

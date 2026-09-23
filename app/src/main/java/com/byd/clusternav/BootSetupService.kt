@@ -66,6 +66,8 @@ class BootSetupService : Service() {
                         latch.await(GRANT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     }
                 }
+                // #3 (deep-pass 2026-09-23): giữ tiến trình sống khi phím-thoại bật (ssc_skip không DROP watchdog).
+                runCatching { VoiceKeyKeepAliveService.sync(applicationContext) }
                 // S3 (2026-09-13) — HUD kính lái ép TẮT, chuyển từ `MainActivity.onCreate` (màn cũ đã gỡ:
                 // docs/specs/kachi-remove-legacy-screen.html R2). Khoá `hud` mặc định FALSE và KHÔNG còn nơi nào
                 // ghi TRUE, nhưng máy đã từng bật ở bản trước 08 thì pref đó còn nguyên — mà đường ép tắt duy

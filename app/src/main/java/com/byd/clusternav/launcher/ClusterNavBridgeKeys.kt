@@ -39,6 +39,7 @@ fun ClusterNavBridge.voiceKeyEnabled(): Boolean = Prefs.voiceKeyEnabled(app)
  */
 fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit = {}) {
     Prefs.setVoiceKeyEnabled(app, on)
+    runCatching { com.byd.clusternav.VoiceKeyKeepAliveService.sync(app) }  // #3: bật→giữ tiến trình, tắt→đứng xuống
     if (!on) {
         ui(Runnable { onDone(true) })
         return
