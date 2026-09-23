@@ -194,16 +194,20 @@ object NavConnect {
 
         val remove = writes.first()
         val reAdd = writes.drop(1)   // [re-add danh sách đầy đủ, accessibility_enabled 1] = trạng thái AN TOÀN cuối
+        // BIND-SELFHEAL (2026-09-23, team báo phím vẫn tạch dưới CPU load cao): gộp remove + sleep + re-add thành
+        // MỘT lệnh shell chạy TRÊN XE (một `sh()` = một round-trip dadb). Trước đây 4 lượt round-trip riêng
+        // (remove → sleep máy chủ → re-add → enable) — dưới load 14, dadb chậm giữa các lượt ⇒ dễ bị cắt GIỮA
+        // toggle (danh sách kẹt REMOVED / hết timeout). Gộp: nếu lệnh LỌT vào xe thì cả chuỗi (kể cả re-add)
+        // chạy trên xe bất kể client đọc kết quả có timeout hay không ⇒ KHÔNG còn cửa "chỉ remove landed".
+        val pauseSec = REBIND_TOGGLE_PAUSE_MS / 1000.0
+        // remove ; sleep <pause> ; <re-add lệnh 1> ; <re-add lệnh 2...>  — tất cả trên MỘT dòng shell.
+        val combined = "$remove ; sleep $pauseSec ; " + reAdd.joinToString(" ; ")
         var inRemovedState = false
         try {
-            Log.i(TAG, "accessibility ENABLED nhưng CHƯA BOUND → toggle ép rebind")
-            // Arm recovery BEFORE issuing the remove: if sh(remove) executes on-device but then throws while
-            // reading the response, `finally` must still re-add (re-adding when the remove never landed is a
-            // harmless idempotent write). This closes the last never-leave-removed window.
+            Log.i(TAG, "accessibility ENABLED nhưng CHƯA BOUND → toggle ép rebind (1 lệnh gộp, chống treo dưới load)")
             inRemovedState = true
-            sh(remove)
-            Thread.sleep(REBIND_TOGGLE_PAUSE_MS)
-            reAdd.forEach { sh(it) }; inRemovedState = false
+            sh(combined)                 // 1 round-trip: cả remove+sleep+re-add chạy trên xe
+            inRemovedState = false
             val reboundOk = AccessibilityRebind.isClusterNavBound(sh("dumpsys accessibility").output)
             Log.i(TAG, "accessibility force-rebind xong: bound=$reboundOk")
         } catch (e: InterruptedException) {

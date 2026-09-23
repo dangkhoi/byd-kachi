@@ -109,3 +109,9 @@ Owner mô tả:
 - **Mục 8 PM2.5**: cooldown 10 phút sau mỗi lần lọc tự động; nút Lọc ngay giữ chủ động.
 - **R7**: wake mở overlay ĐỘC LẬP (voiceSession riêng ở VoiceWakeService), KHÔNG kéo KachiHomeActivity lên đè app.
 - CÒN cần xe: earcon nghe rõ + waveform mượt + overlay-từ-service không bị ROM chặn + camera LVDS-vào-surface (runbook A5) + Hey Kachi matcher (chờ golden dataset thu on-car) + FQN BYDAutoLightDevice verify.
+
+## 11. Bind phím vô-lăng vẫn tạch + "Sửa ngay" không ăn (team báo 2026-09-23) — SỬA MỘT PHẦN
+- **GỐC [ĐO trước, backlog BIND-SELFHEAL]**: dưới CPU load cao (>10), chuỗi toggle rebind qua dadb có NHIỀU round-trip (remove → sleep máy chủ → re-add → enable → verify) — dadb chậm giữa các lượt ⇒ bị cắt GIỮA toggle / vượt timeout 20s ⇒ rebind thất bại. [ĐO cũ] toggle a11y TRỰC TIẾP (settings, không dadb) bind lại NGAY cả khi load 14.
+- **SỬA (2.20, off-car [SUY])**: gộp remove + sleep + re-add + enable thành **MỘT lệnh shell** chạy trên xe (`NavConnect.forceRebindIfNeeded`) — 1 round-trip dadb thay 4. Nếu lệnh lọt vào xe thì cả chuỗi chạy trên xe bất kể client đọc timeout ⇒ hết cửa "chỉ remove landed" + giảm điểm treo dưới load.
+- **⚠ CHƯA verify trên xe** (xe offline). Nếu ROOT là dadb KHÔNG establish nổi dưới load (không chỉ chậm giữa lệnh) thì gộp round-trip giúp NHƯNG có thể chưa đủ.
+- **"Sửa ngay" không ăn** có thể là ROOT KHÁC — cần log on-car khi bấm: `grantAccessibility TIMEOUT` (dadb treo) hay `force-rebind xong bound=false` (toggle không bind). Chạy runbook §D + đọc log `NavConnect`/`Preflight` khi bấm Sửa ngay.
