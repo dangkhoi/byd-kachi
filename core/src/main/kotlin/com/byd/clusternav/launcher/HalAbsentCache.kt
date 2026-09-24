@@ -82,6 +82,9 @@ class HalAbsentCache(
     /** Quên sạch (đổi hồ sơ / người dùng bấm "đọc lại" / test). */
     fun clear() = entries.clear()
 
+    /** Quên trạng thái nguội của MỘT datum — nhịp poll sau đọc lại NGAY (dùng khi user vừa tác động control). */
+    fun forget(id: String) { entries.remove(id) }
+
     companion object {
         /** Ba lần `null` liên tiếp — đủ để loại một lần shell/HAL chớp, chưa đủ để kết luận vội. */
         const val DEFAULT_MISSES = 3

@@ -129,6 +129,10 @@ class LayeringRulesTest {
         // Interface glue cho engine wake: hai thi hành (VoiceWakeKws/VoiceWakeAsr) đều dùng native sherpa +
         // Android, sống ở :app. Interface thuần theo phép đo nhưng thuộc :app về layering (cùng lẽ ChipTone).
         "WakeEngine.kt" to "interface hoán đổi engine wake — thi hành dùng native/Android, thuộc :app",
+        // Glue DI của AppContainer: bọc CarControlAdapter + CarDataAdapter để sau write đánh thức read-cache
+        // (owner 2026-09-24 "action phải chuyển ngay"). Nối HAI adapter cụ thể của :app ⇒ thuộc :app, dù "thuần"
+        // theo phép đo (không import android.*). :core không có hai adapter đó để nối.
+        "WakeOnWriteControl.kt" to "glue DI nối control-write ↔ read-cache của AppContainer — thuộc :app",
         // Bridge extension W-WAKE: gọi VoiceWakeService (FGS Android) + Prefs(Context) qua lời gọi; "thuần" chỉ
         // vì phép đo soi `import android.*` + vài tên lớp, không soi phụ thuộc bắc cầu. Thực thuộc :app.
         "ClusterNavBridgeWake.kt" to "cầu Settings gọi VoiceWakeService/Prefs — không chuyển được sang :core",

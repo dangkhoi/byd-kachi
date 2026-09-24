@@ -85,8 +85,14 @@ class AppContainer internal constructor(
     /** Cổng đọc xe LIVE cho widget/thanh trạng thái — off-car mọi field null ⇒ "—". */
     val carData: CarDataPort get() = carDataAdapter
 
-    /** Cổng điều khiển xe (toggle/step/cover/select/press) — **KHÔNG gate**; off-car no-op (false). */
-    val carControl: CarControlPort by lazy { CarControlAdapter(halBindingTable) }
+    /** Cổng điều khiển xe (toggle/step/cover/select/press) — **KHÔNG gate**; off-car no-op (false).
+     *
+     * Bọc để SAU mỗi lệnh GHI, ĐÁNH THỨC đường đọc của chính datum đó (`readKey` → [CarDataAdapter.forgetAbsent]):
+     * datum khí hậu (nhiệt/gió/gió-trong) bị `HalAbsentCache` xử "nguội" sau 3 lần null lúc boot ⇒ giữ default
+     * (22/gió 4) tới 10 phút. Owner 2026-09-24: "khi có action phải chuyển NGAY". Quên nguội ⇒ nhịp poll kế đọc
+     * lại tức thì (grace-window của tile chặn đọc-rách giữa lúc HAL chưa settle). KHÔNG đọc thẳng ở đây (giữ mô
+     * hình luồng: đọc nằm ở vòng poll của repo). */
+    val carControl: CarControlPort by lazy { WakeOnWriteControl(CarControlAdapter(halBindingTable), carDataAdapter) }
 
     /**
      * Đọc MỘT datum theo id → chuỗi hiển thị kèm đơn vị (cho công cụ kiểm tra từng nút). `null` = off-car / chưa map.

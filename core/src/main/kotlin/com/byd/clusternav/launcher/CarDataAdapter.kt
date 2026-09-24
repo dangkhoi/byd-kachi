@@ -91,6 +91,7 @@ class CarDataAdapter(
      * nào** — nó chỉ làm lượt đọc-hết ấy thật sự đọc hết.
      */
     fun forgetAbsent() = absent.clear()
+    fun forgetAbsent(id: String) = absent.forget(id)
 
     // ── 6 method CŨ (tương thích WorkspaceView/WidgetViews) ────────────────────────────────────────────
     override fun batteryPercent(): Int? = table.readInt("soc")

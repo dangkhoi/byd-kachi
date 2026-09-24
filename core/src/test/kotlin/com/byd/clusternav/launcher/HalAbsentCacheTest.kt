@@ -71,4 +71,15 @@ class HalAbsentCacheTest {
         repeat(5) { a.readSlow(CarStatus()) }
         assertEquals(0, absent.coldCount(0), "datum không hiện thì không được ghi là vắng mặt")
     }
+
+    @Test
+    fun `forget lam datum nguoi doc lai NGAY`() {
+        // owner 2026-09-24: khi có action, control datum phải chuyển ngay. forget(id) xoá nguội.
+        val c = HalAbsentCache(missesBeforeCold = 3, firstRetryMs = 60_000)
+        repeat(3) { c.record("inside_temp", got = false, nowMs = it * 1_000L) }
+        assertFalse(c.shouldRead("inside_temp", 3_000), "đã nguội")
+        c.forget("inside_temp")
+        assertTrue(c.shouldRead("inside_temp", 3_100), "sau forget phải đọc lại ngay (không đợi 60s)")
+    }
+
 }
