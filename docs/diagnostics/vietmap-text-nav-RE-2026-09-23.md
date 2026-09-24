@@ -35,4 +35,14 @@ curl → HTTP 302 → location: https://vietmap.live/shareLocation/?latitude=10.
 - Code giữ đường `coord` (đã revert khỏi google.com/maps text — commit `33229ff`).
 
 ## Việc còn (owner quyết)
-Muốn "dẫn bằng chữ" cho VietMap thì chỉ còn: **geocode text→toạ độ** (thêm bước mạng, dùng geocode API) rồi bắn `vietmaplive://...lat&lng`. Đây là toạ-độ-ẩn (người dùng vẫn nói chữ, Kachi tự tra toạ độ) — KHÁC "bias toạ độ" ở chỗ người dùng không thấy toạ độ. Owner cân nhắc có làm bước geocode này không, hay để VietMap = OpenOnly (mở app, user tự gõ) và ưu tiên GMaps cho lệnh dẫn-bằng-chữ (GMaps nhận text thẳng qua `google.navigation:q=`).
+**ĐÃ CHỐT 2026-09-24:** xe **KHÔNG có Google Play Services** ⇒ `android.location.Geocoder` on-device (dựa Play Services) KHÔNG chạy trên xe (`isPresent()`=false → trả null). Owner chốt **(B)**: cho HTTP free ra ngoài (không API key/tiền), cấm API key phức tạp.
+
+⇒ **Đường cuối (đã đúng trong code, không cần sửa thêm):**
+1. VietMap `launch=OpenOnly` + `coord=vietmaplive://companion/navigation?lat&lng&poiName` ⇒ `needsCoords=true`.
+2. `VoiceTargetDispatch.runNav` geocode text→lat/lng qua `VoiceGeocoder.resolve` = `onDevice ?: online`. Trên xe: `onDevice` (Geocoder.isPresent=false vì không GMS) trả null NHANH → `online` = **Nominatim/OSM** (free, không key, chỉ HTTP ra ngoài — đúng B).
+3. Bắn `vietmaplive://…lat&lng` → VietMap **BẮT ĐẦU DẪN THẬT** [ĐO emulator 2026-09-23/24: tuyến polyline + chevron + panel có nút X huỷ + thanh tiến độ; số liệu rỗng `--` vì GPS mock đặt LỆCH tuyến, không phải lỗi cửa].
+4. Geocode hỏng → mở VietMap trơn + "chưa tra được điểm đến".
+
+Người dùng nói CHỮ; Kachi tra toạ độ qua Nominatim (không key); VietMap nhận toạ độ. KHÔNG "bias toạ độ" trên bề mặt (user không gõ lat/lng). GMaps vẫn nhận text thẳng (`google.navigation:q=`) không cần geocode.
+
+⚠ CÒN đo trên xe: (a) Nominatim geocode địa chỉ VN có đủ tốt không (hẻm nhỏ/địa chỉ mới có thể thiếu); (b) `vietmaplive://…lat&lng` với GPS THẬT (không mock lệch) có sinh số liệu dẫn (ETA/km) đầy đủ không.

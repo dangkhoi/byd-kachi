@@ -33,8 +33,10 @@ import org.json.JSONArray
  *
  * ## Thứ tự: máy TRƯỚC, mạng SAU
  * [Geocoder] của nền tảng chạy **tại máy** trên một số ROM (có bộ dữ liệu ngoại tuyến) và đi qua dịch vụ của
- * Google trên số còn lại. `isPresent()` là cách duy nhất biết ROM này có cài dịch vụ ấy không — **[CHƯA BIẾT]**
- * trên DiLink, nên phải hỏi chứ không giả định. Không có thì mới tới Nominatim.
+ * Google trên số còn lại. `isPresent()` cho biết ROM có cài dịch vụ ấy không.
+ * ⚠ [ĐO owner 2026-09-24] Xe DiLink **KHÔNG có Google Play Services** ⇒ `isPresent()`=false ⇒ đường máy trả
+ * null NGAY (nhanh, không treo) ⇒ trên xe **luôn về Nominatim** (OSM, free, không key — owner chốt cho HTTP ra
+ * ngoài, chỉ cấm API key tốn tiền). Đường máy giữ lại cho ROM khác có GMS.
  */
 object VoiceGeocoder {
 
