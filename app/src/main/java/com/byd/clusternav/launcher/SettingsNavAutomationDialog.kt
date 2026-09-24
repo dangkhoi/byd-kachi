@@ -158,11 +158,16 @@ internal object SettingsNavAutomationDialog {
         // Khoá app lấy từ `:core` (nguồn sự thật), NHÃN tra tài nguyên launcher — xem KDoc
         // [SettingsNavAutomationFormat.navAppLabel] về vì sao không đọc `VoiceAppTarget.label`.
         val appKeys = VoiceAppTargets.NAV.map { it.key }
-        val appPick = Picker(
-            context,
-            appKeys.map { SettingsNavAutomationFormat.navAppLabel(context, it) },
-            appKeys.indexOf(initial?.navApp).coerceAtLeast(0),
-        )
+        // Multi-choice (owner 2026-09-24): chọn NHIỀU app dẫn đường (gmaps + vietmap) — tới giờ mở cả hai. Dùng
+        // checkbox như dãy THỨ, không Picker chọn-một. Mặc định tick app đầu tiên nếu luật mới (đỡ luật trống app).
+        val initialApps = initial?.navApps?.toSet() ?: setOf(appKeys.firstOrNull().orEmpty())
+        val appBoxes: Map<String, CheckBox> = appKeys.associateWith { key ->
+            CheckBox(context).apply {
+                text = SettingsNavAutomationFormat.navAppLabel(context, key)
+                setTextColor(KachiTheme.c(KachiTheme.INK))
+                isChecked = key in initialApps
+            }
+        }
 
         val body = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -185,7 +190,7 @@ internal object SettingsNavAutomationDialog {
             addView(label(context, R.string.kachi_nav_auto_place))
             addView(placePick.view)
             addView(label(context, R.string.kachi_nav_auto_app))
-            addView(appPick.view)
+            appBoxes.values.forEach { addView(it) }
         }
         AlertDialog.Builder(context)
             .setTitle(title)
@@ -204,7 +209,7 @@ internal object SettingsNavAutomationDialog {
                         days = dayBoxes.filterValues { it.isChecked }.keys,
                         requireGps = gps.isChecked,
                         placeId = placeIds.getOrElse(placePick.chosen) { "" },
-                        navApp = appKeys.getOrElse(appPick.chosen) { "" },
+                        navApp = appBoxes.filterValues { it.isChecked }.keys.joinToString("+"),
                     ),
                 )
             }

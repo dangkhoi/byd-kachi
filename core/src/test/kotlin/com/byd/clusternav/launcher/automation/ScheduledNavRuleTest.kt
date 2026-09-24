@@ -188,4 +188,22 @@ class ScheduledNavRuleTest {
         assertEquals(setOf(1, 2, 3, 4, 5), ScheduledNavRules.WEEKDAYS)
         assertEquals((1..7).toSet(), ScheduledNavRules.ALL_DAYS)
     }
+
+    @Test
+    fun `multi-app tach navApps va round-trip qua encode`() {
+        // owner 2026-09-24: chọn NHIỀU app dẫn đường (gmaps + vietmap) — tới giờ mở cả hai.
+        val r = req(ScheduledNavRules.of(
+            id = "r1", enabled = true, startMin = 16 * 60, endMin = 20 * 60,
+            days = ScheduledNavRules.ALL_DAYS, requireGps = true, placeId = "nhà", navApp = "gmaps+vietmap",
+        ))
+        assertEquals(listOf("gmaps", "vietmap"), r.navApps)
+        val back = ScheduledNavRules.decodeLine(ScheduledNavRules.encodeLine(r))
+        assertEquals(listOf("gmaps", "vietmap"), back?.navApps, "round-trip giữ nhiều app")
+        // Backward-compat: luật cũ 1-app đọc ra list 1 phần tử.
+        assertEquals(listOf("gmaps"), req(ScheduledNavRules.of(
+            id = "r2", enabled = true, startMin = 0, endMin = 60,
+            days = ScheduledNavRules.WEEKDAYS, requireGps = false, placeId = "cty", navApp = "gmaps",
+        )).navApps)
+    }
+
 }

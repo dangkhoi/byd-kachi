@@ -21,7 +21,7 @@ object CapabilityDescriptions {
         "trip_km" to Desc("Quãng đường của chuyến đi hiện tại", "Distance covered on the current trip (km)"),
         "trip_hours" to Desc("Thời gian đã đi của chuyến hiện tại", "Elapsed time of the current trip (h)"),
         "trip_kwh" to Desc("Điện năng đã tiêu thụ trong chuyến", "Electricity consumed on the current trip (kWh)"),
-        "consumption_50km" to Desc("Mức tiêu thụ điện trung bình 50km gần nhất", "Average power consumption over the last 50km (kWh/100km)"),
+        "consumption_50km" to Desc("Mức tiêu thụ điện trung bình 50km gần nhất", "Average power consumption over the last 50km"),
         "motor_power" to Desc("Công suất mô-tơ điện đang phát ra", "Electric motor power output (kW)"),
         "batt_temp" to Desc("Nhiệt độ hiện tại của pin cao áp", "Current high-voltage battery temperature (°C)"),
         "soh_oem" to Desc("Tình trạng sức khoẻ pin so với lúc mới", "Battery health versus original capacity (%)"),

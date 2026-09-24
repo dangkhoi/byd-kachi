@@ -131,9 +131,22 @@ object ScheduledNavApplier {
             return false
         }
         val installed = installedPackages(app)
-        val target = VoiceAppTargets.byKey(rule.navApp)
+        // Multi-app (owner 2026-09-24): mở dẫn TỪNG app đã chọn (gmaps + vietmap…). Thành công nếu ÍT NHẤT một
+        // app dẫn được — các app kia lỗi/chưa cài chỉ bỏ lượt của nó, không huỷ cả luật. Đóng dấu sổ đã-dẫn nếu
+        // có ≥1 app lên (ScheduledNavPolicy đọc kết quả này).
+        var anyOk = false
+        for (key in rule.navApps) {
+            if (launchOne(app, rule, place, installed, key)) anyOk = true
+        }
+        return anyOk
+    }
+
+    private fun launchOne(
+        app: Context, rule: ScheduledNavRule, place: SavedPlace, installed: Set<String>, navApp: String,
+    ): Boolean {
+        val target = VoiceAppTargets.byKey(navApp)
         if (target == null) {
-            Log.i(TAG, "luật ${rule.id}: mã app \"${rule.navApp}\" không còn trong bảng đích ⇒ bỏ lượt")
+            Log.i(TAG, "luật ${rule.id}: mã app \"$navApp\" không còn trong bảng đích ⇒ bỏ lượt")
             return false
         }
         val pkg = target.packageIn(installed)

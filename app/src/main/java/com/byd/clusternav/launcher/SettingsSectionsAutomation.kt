@@ -98,7 +98,7 @@ class SettingsNavAutomationSection(
      */
     private fun subtitle(rule: ScheduledNavRule): String {
         val days = SettingsNavAutomationFormat.days(context, rule.days)
-        val app = SettingsNavAutomationFormat.navAppLabel(context, rule.navApp)
+        val app = rule.navApps.joinToString(" + ") { SettingsNavAutomationFormat.navAppLabel(context, it) }
         val gps = context.getString(
             if (rule.requireGps) R.string.kachi_nav_auto_gps_on else R.string.kachi_nav_auto_gps_off,
         )

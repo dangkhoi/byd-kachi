@@ -26,8 +26,12 @@ data class ScheduledNavRule(
     val days: Set<Int>,
     val requireGps: Boolean,
     val placeId: String,
+    /** Storage: một hoặc NHIỀU mã app nối bằng `+` ("gmaps+vietmap") — owner 2026-09-24 multi-choice. Đọc qua [navApps]. */
     val navApp: String,
-)
+) {
+    /** Danh sách mã app dẫn đường (tách `+`, bỏ rỗng). Luật cũ 1-app ("gmaps") → `["gmaps"]` (backward-compat). */
+    val navApps: List<String> get() = navApp.split('+').map { it.trim() }.filter { it.isNotEmpty() }
+}
 
 /**
  * ═══ LUẬT DẪN ĐƯỜNG THEO LỊCH · MÔ HÌNH + MÃ HOÁ MỘT DÒNG, **NGUỒN DUY NHẤT** ═════════════════════════════════

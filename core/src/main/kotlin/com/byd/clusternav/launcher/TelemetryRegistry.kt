@@ -153,7 +153,7 @@ object TelemetryRegistry {
         t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, NEEDS_CAR,
             "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_TIME"),
         t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, NEEDS_CAR, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
-        t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh/100km", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
+        t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
         // V3 · R11 — [ĐO nguồn fw-dl3] `ENGINE_POWER` = 339738656 (CanFD) / 353370144 (Toyota) / 1033203762.
         t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE,
             "BYDAutoFeatureIds.Engine.ENGINE_POWER"),
