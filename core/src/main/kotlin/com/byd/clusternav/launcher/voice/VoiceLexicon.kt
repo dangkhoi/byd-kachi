@@ -264,6 +264,24 @@ object VoiceLexicon {
 
         // Tiếng Việt: "<đơn vị> mươi [<đơn vị>]" = 20..99; "<đơn vị>" đơn lẻ = 0..9.
         val unit = VI_UNITS[w] ?: return null
+        // Tiếng Việt hàng TRĂM: "<đơn vị> trăm [lẻ/linh <đơn vị>] | [<đơn vị> mươi [<đơn vị>]]" = 100..999.
+        // "bảy trăm hai mươi"→720 · "bảy trăm lẻ năm"→705 · "một trăm"→100 (findings 2026-09-24 số nhà).
+        if (t.getOrNull(i + 1)?.norm == "tram") {
+            var value = unit * 100
+            var consumed = 2                                   // "<đơn vị> trăm"
+            val a = t.getOrNull(i + 2)?.norm                   // lẻ/linh HOẶC hàng chục
+            if (a == "linh" || a == "le") {                    // "trăm lẻ năm" = 705
+                val ones = t.getOrNull(i + 3)?.norm?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }
+                if (ones != null) { value += ones; consumed += 2 }
+                else consumed += 1                             // "một trăm lẻ" cụt ⇒ = 100
+            } else if (a != null) {
+                // phần sau trăm là một số 0..99 — đọc lại bằng chính readNumber (đệ quy một tầng, không vòng vô hạn
+                // vì phần sau KHÔNG bắt đầu bằng "<đơn vị> trăm").
+                val rest = readNumber(t, i + 2)
+                if (rest != null && rest.value in 1..99) { value += rest.value; consumed += rest.consumed }
+            }
+            return Num(value, consumed)
+        }
         if (t.getOrNull(i + 1)?.norm == "muoi") {
             val tail = t.getOrNull(i + 2)?.norm
             val add = tail?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }

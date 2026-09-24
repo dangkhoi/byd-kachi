@@ -38,4 +38,22 @@ class VoiceNumberNormTest {
         val hit = VoicePlaces.match(norm("cong ty 1"), listOf("Công ty một"))
         assertEquals("Công ty một", hit)
     }
+
+    @Test fun `so hang tram — bay tram hai muoi thanh 720`() {
+        assertEquals("720 hoàng văn thái", VoiceNumberNorm.normalizeSpokenNumbers("bảy trăm hai mươi hoàng văn thái"))
+    }
+
+    @Test fun `tram le — bay tram le nam thanh 705`() {
+        assertEquals("705", VoiceNumberNorm.normalizeSpokenNumbers("bảy trăm lẻ năm"))
+    }
+
+    @Test fun `mot tram thanh 100`() {
+        assertEquals("100 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("một trăm lý thường kiệt"))
+    }
+
+    @Test fun `so nho van dung — sau bay van la 67, hai muoi tu van 24`() {
+        assertEquals("67 hồ văn thái", VoiceNumberNorm.normalizeSpokenNumbers("sáu bảy hồ văn thái"))
+        assertEquals("24", VoiceNumberNorm.normalizeSpokenNumbers("hai mươi tư"))
+    }
+
 }
