@@ -21,6 +21,9 @@ package com.byd.clusternav.launcher.voice
  */
 sealed interface VoiceIntent {
 
+    /** owner 2026-09-24 — câu KẾT THÚC phiên ("bye/tạm biệt/xong rồi/thôi/cảm ơn") ⇒ đóng voice ngay. */
+    data object EndSession : VoiceIntent
+
     /**
      * Bấm một nút trong [com.byd.clusternav.launcher.ControlRegistry].
      *

@@ -247,6 +247,8 @@ class VoiceDispatcher(
                     VoiceReply.layoutNotHere(intent)
                 })
             is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent))
+            // Req2 (owner 2026-09-24) — câu kết thúc: nói ngắn rồi để phiên tự đóng (không mở hội thoại nối).
+            VoiceIntent.EndSession -> say(VoiceReply.bye())
         }
     }
 

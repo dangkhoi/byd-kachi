@@ -24,6 +24,7 @@ object VoiceDecision {
         is VoiceIntent.Media -> "Media(${i.op}${if (i.query.isNotEmpty()) " ${i.query}" else ""})"
         is VoiceIntent.OpenApp -> "OpenApp(${i.appName}${i.slot?.let { "→ô $it" } ?: ""})"
         is VoiceIntent.Layout -> "Layout(${i.preset})"
+        VoiceIntent.EndSession -> "EndSession"
         is VoiceIntent.Unknown -> "không hiểu: ${i.reason}"
     }
 }

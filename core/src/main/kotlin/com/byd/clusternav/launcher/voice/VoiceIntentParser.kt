@@ -49,6 +49,7 @@ object VoiceIntentParser {
     ): List<VoiceIntent> {
         val raw0 = VoiceLexicon.tokenize(text)
         if (raw0.isEmpty()) return listOf(VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, text))
+        if (VoiceEndWords.isEnd(text)) return listOf(VoiceIntent.EndSession)
         // Cắt cụm LỊCH SỰ đầu/cuối ("làm ơn …", "cho tôi …", "… hộ tôi", "… nhé", "… đi") — [ĐO golden dataset
         // 2026-09-22] nhóm FAIL lớn nhất: động từ không ở vị trí 0 ⇒ NO_VERB. Chi tiết ở [VoiceLexicon.stripCourtesy].
         val all = VoiceLexicon.stripCourtesy(raw0).ifEmpty { raw0 }
@@ -236,7 +237,6 @@ object VoiceIntentParser {
             val stop = verbHit?.second == VoiceVerb.OFF || verbHit?.second == VoiceVerb.CLOSE
             return VoiceIntent.Control("recirc", if (stop) 1 else 0)
         }
-
 
         // (b') CẢ CÂU chính là TÊN của một việc ⇒ tên thắng động từ.
         //

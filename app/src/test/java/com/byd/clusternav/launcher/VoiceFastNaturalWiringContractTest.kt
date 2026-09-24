@@ -146,7 +146,7 @@ class VoiceFastNaturalWiringContractTest {
         val fn = SourceRoots.body(session, "internal fun execute(")
         // 1.70 — fix "overlay tắt giữa câu": execute gọi onReplyDone ở mốc ĐỌC XONG (onDone), onReplyDone mới
         // nán overlay + mở hội thoại. Micro chỉ mở lại SAU mốc đọc xong (mở sớm là Kachi nghe chính mình).
-        assertTrue(fn.contains("speakLines(batch) { post { onReplyDone(my, pending) } }"),
+        assertTrue(fn.contains("speakLines(batch) { post { onReplyDone(my, pending, endSession) } }"),
             "micro chỉ mở lại SAU mốc 'đọc xong' — qua onReplyDone (onDone của speakLines)")
         // [ĐO xe 2026-09-18 §B] Lưới an toàn phải theo ĐỘ DÀI CÂU. Hằng 10 s cũ đóng tấm chữ giữa lúc Piper còn
         // đang đọc (load 14) — tức chính lưới an toàn thành thủ phạm của lỗi nó sinh ra để phòng.

@@ -57,6 +57,7 @@ object VoiceReply {
         // ở Cài đặt đang vẽ đúng chuỗi đó, nên câu nói và màn hình không thể gọi một bố cục bằng hai cái tên.
         is VoiceIntent.Layout -> Strings.t("Bố cục ", "Layout ") + i.preset.label
         is VoiceIntent.Media -> mediaPreview(i)
+        VoiceIntent.EndSession -> bye()
         is VoiceIntent.Unknown -> unknown(i)
     }
 
@@ -112,6 +113,9 @@ object VoiceReply {
 
     /** Việc đã làm xong. */
     fun done(i: VoiceIntent): String = "✓ " + preview(i) + unverified(i)
+
+    /** Req2 (owner 2026-09-24) — câu tạm biệt ngắn khi kết thúc phiên voice. */
+    fun bye(): String = Strings.t("Tạm biệt", "Bye")
 
     /**
      * ═══ E (owner test xe 2026-09-19) · ĐÃ **ĐỌC LẠI XÁC NHẬN** ⇒ BỎ ĐUÔI *"chưa kiểm trên xe"* ════════════════

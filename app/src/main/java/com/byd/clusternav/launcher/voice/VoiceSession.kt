@@ -357,15 +357,13 @@ class VoiceSession(
         // hội thoại ở ca đó: micro sẽ đóng trước khi người lái biết việc xong hay hỏng (owner D1 nói về lệnh đã
         // xong, không phải lệnh đang chạy).
         val pending = batch.any { VoiceFeedbackPhrase.isInterim(it) }
-        // 1.70 [ĐO owner 2026-09-17] "feedback chưa nói hết câu đã tắt overlay": bản cũ hẹn đóng NGAY lúc execute
-        // (LINGER 2,5 s) mà câu ~12 từ đọc 3–4 s. Nay lưới an toàn dài; mốc ĐỌC XONG ([onReplyDone]) mới nán lại.
-        // [ĐO xe 2026-09-18] và lưới ấy phải theo ĐỘ DÀI CÂU, không phải một hằng 10 s: dưới load 14 Piper tổng
-        // hợp câu dài quá 10 s ⇒ chính lưới an toàn đóng tấm chữ giữa lúc đọc. Xem KDoc [VoiceSpeakBudget].
+        val endSession = intents.any { it is VoiceIntent.EndSession }   // Req2: câu kết thúc ⇒ không mở hội thoại nối.
+        // Lưới an toàn = ước theo ĐỘ DÀI CÂU (không hằng cố định); mốc ĐỌC XONG (onReplyDone) mới nán. Xem VoiceSpeakBudget.
         scheduleClose(VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS))
         logDone(intents, batch)
         clarifyRound = 0
         VoiceChime.success()   // R1 voice-ux: earcon "đã hiểu/xong"
-        speakLines(batch) { post { onReplyDone(my, pending) } }
+        speakLines(batch) { post { onReplyDone(my, pending, endSession) } }
     }
 
     /**
@@ -460,7 +458,7 @@ class VoiceSession(
         const val ASK_ALOUD_CAP_MS = 6_000L
 
         /** Tấm chữ nán lại bao lâu sau khi đã trả lời (đủ đọc một dòng, không đủ để vướng mắt). */
-        const val LINGER_MS = 2_500L
+        const val LINGER_MS = 1_200L   // owner 2026-09-24: nán NGẮN sau khi ĐỌC XONG (2500→1200), "đừng chờ lâu".
 
         /**
          * V3 · R8 — lượt nghe câu trả lời cho một câu **hỏi lại**. 4 giây: câu trả lời là một-hai từ (*"kính

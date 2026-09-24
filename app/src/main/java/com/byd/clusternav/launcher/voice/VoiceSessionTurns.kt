@@ -468,10 +468,10 @@ internal fun VoiceSession.fail(my: Int, msgRes: Int, openSettingsAction: Boolean
  * "đọc xong" tường minh: [ĐO owner 2026-09-17] tấm chữ từng biến giữa câu vì hẹn đóng theo hằng số ngay lúc
  * execute; nay nó chỉ bắt đầu đếm nán SAU khi loa đã đọc hết, nên người lái nghe/nhìn trọn câu rồi tấm chữ mới đi.
  */
-internal fun VoiceSession.onReplyDone(my: Int, pending: Boolean) {
+internal fun VoiceSession.onReplyDone(my: Int, pending: Boolean, endSession: Boolean = false) {
     if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-    // Đọc xong: nán [LINGER_MS] rồi đóng. Vế còn tra mạng ⇒ chờ câu trả lời thật (~20s), về+đọc xong tự rút về [LINGER_MS] (nhánh `flushed` ở `execute`).
-    scheduleClose(if (pending) VoiceSession.NETWORK_WAIT_MS else VoiceSession.LINGER_MS)
+    if (endSession) { scheduleClose(VoiceSession.LINGER_MS); return }   // Req2: câu kết thúc ⇒ đóng nhanh, không hội thoại nối.
+    scheduleClose(if (pending) VoiceSession.NETWORK_WAIT_MS else VoiceSession.LINGER_MS)   // nán LINGER; vế tra mạng chờ ~20s.
     // Mở hội thoại nếu được — nếu mở, nó dời hẹn đóng ra xa hơn (window + LINGER).
     followUp(my, pending)
 }
