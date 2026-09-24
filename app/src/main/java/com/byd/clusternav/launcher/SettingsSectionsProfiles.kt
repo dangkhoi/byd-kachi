@@ -102,6 +102,25 @@ class SettingsProfilesSection(
                 context.getString(R.string.kachi_profile_copy_of, active),
             ) { name -> deps.onDuplicateProfile(name) }
         })
+        // #4 (owner 2026-09-24) — Xuất/Nhập hồ sơ để backup + chia sẻ (file ở thư mục app, chép qua USB).
+        body.addView(rows.button(context.getString(R.string.kachi_profile_export)) {
+            val path = deps.onExportProfile()
+            Toast.makeText(
+                context,
+                if (path != null) context.getString(R.string.kachi_profile_exported, path)
+                else context.getString(R.string.kachi_profile_export_fail),
+                Toast.LENGTH_LONG,
+            ).show()
+        })
+        body.addView(rows.button(context.getString(R.string.kachi_profile_import)) {
+            val n = deps.onImportProfiles()
+            Toast.makeText(
+                context,
+                if (n > 0) context.getString(R.string.kachi_profile_imported, n)
+                else context.getString(R.string.kachi_profile_import_none, deps.profileFolderPath()),
+                Toast.LENGTH_LONG,
+            ).show()
+        })
     }
 
     /**

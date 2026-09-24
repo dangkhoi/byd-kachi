@@ -172,4 +172,16 @@ interface WorkspaceRepository {
      * mặc định này là *"hồ sơ mới trống"* — khó chịu nhưng không mất dữ liệu của ai.
      */
     fun duplicateProfile(name: String): HomeUiState = addProfile(name)
+
+    /**
+     * #4 (owner 2026-09-24) — EXPORT hồ sơ đang dùng ra chuỗi (để ghi file backup/chia sẻ). `null` = không xuất được.
+     * Mặc định `null` (bản giả in-memory không có tệp prefs thật để serialize).
+     */
+    fun exportActiveProfile(): String? = null
+
+    /**
+     * IMPORT một hồ sơ từ chuỗi [data] (đọc từ file). Trả state mới (đã thêm hồ sơ) nếu nhập được, `null` nếu hỏng
+     * (header sai / tên trùng). Mặc định `null`.
+     */
+    fun importProfileData(data: String): HomeUiState? = null
 }

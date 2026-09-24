@@ -101,6 +101,16 @@ class HomeViewModel(
 
     fun addProfile(name: String) = reload { repository.addProfile(name) }
 
+    /** #4 — chuỗi export của hồ sơ đang dùng (wiring ghi ra file). null nếu không xuất được. */
+    fun exportActiveProfile(): String? = repository.exportActiveProfile()
+
+    /** #4 — nhập hồ sơ từ chuỗi (wiring đọc từ file); reload nếu thêm được. Trả true nếu ít nhất một cái vào. */
+    fun importProfiles(dataList: List<String>): Boolean {
+        var any = false
+        dataList.forEach { data -> repository.importProfileData(data)?.let { _uiState.value = it.copy(embedded = _uiState.value.embedded, carStatus = _uiState.value.carStatus); any = true } }
+        return any
+    }
+
     /**
      * S4 · R8 — **thêm hồ sơ = BẢN SAO của hồ sơ đang dùng** (owner 2026-09-14: hồ sơ nay giữ *tất cả*, nên một hồ sơ
      * mới hoàn toàn trống là thứ không ai muốn dựng — họ muốn "giống cái đang dùng rồi sửa vài chỗ").

@@ -214,6 +214,13 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         return load()
     }
 
+    /** #4 — xuất hồ sơ đang dùng ra chuỗi (WorkspacePrefsProfile.exportProfile). */
+    override fun exportActiveProfile(): String? = prefs.exportProfile(prefs.activeProfile())
+
+    /** #4 — nhập hồ sơ từ chuỗi; trả state mới nếu thêm được, null nếu header sai / tên trùng. */
+    override fun importProfileData(data: String): HomeUiState? =
+        if (prefs.importProfile(data)) load() else null
+
     override fun bootProfile(): String? = prefs.bootProfile()
 
     override fun setBootProfile(name: String?) = prefs.setBootProfile(name)

@@ -284,3 +284,46 @@ fun WorkspacePrefs.renameProfile(old: String, new: String): Boolean {
     e.apply()
     return true
 }
+
+
+// ═══ #4 EXPORT / IMPORT HỒ SƠ (owner 2026-09-24: backup + chia sẻ) ═══════════════════════════════════════════
+//
+// Serialize TOÀN BỘ hồ sơ (bố cục · chip · đơn vị · theme · ảnh chụp ClusterNav) qua [PrefSnapshot] (đã typed,
+// đã test) — KHÔNG nghĩ format thứ hai. Một dòng đầu = header "kachi-profile\tv1\t<tên>" để nhận dạng + đặt tên khi
+// nhập. KHÔNG xuất khoá nhạy cảm: PROFILE_SUFFIXES chỉ là cấu hình launcher (không có IP xe/token — những thứ đó
+// nằm ở tệp prefs khác, không theo hồ sơ).
+
+private const val PROFILE_IO_HEADER = "kachi-profile"
+private const val PROFILE_IO_VERSION = "v1"
+
+/** Xuất hồ sơ [profile] ra chuỗi (ghi file để backup/chia sẻ). Chụp ClusterNav trước cho tươi (như duplicate). */
+internal fun WorkspacePrefs.exportProfile(profile: String): String {
+    snapshotClusterNav(profile)
+    val values: Map<String, Any?> = WorkspacePrefs.PROFILE_SUFFIXES.associateWith { sp.all[keyOf(profile, it)] }
+        .filterValues { it != null }
+    val header = listOf(PROFILE_IO_HEADER, PROFILE_IO_VERSION, profile).joinToString("\t")
+    return header + "\n" + PrefSnapshot.encode(values)
+}
+
+/**
+ * Nhập hồ sơ từ chuỗi [data] thành hồ sơ tên [name] (mặc định lấy tên trong header). Trả `true` nếu nhập được.
+ * Tên trùng ⇒ KHÔNG đè (trả false) — nhập là tạo mới, đè sẽ xoá cấu hình hồ sơ đang có. Header sai ⇒ false.
+ */
+internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean {
+    val lines = data.trim().split("\n", limit = 2)
+    if (lines.size < 2) return false
+    val head = lines[0].split("\t")
+    if (head.getOrNull(0) != PROFILE_IO_HEADER) return false
+    val target = (name ?: head.getOrNull(2))?.trim()?.replace(Regex("[\\r\\n]"), " ").orEmpty()
+    if (target.isEmpty()) return false
+    val list = profiles().toMutableList()
+    if (target in list) return false                                  // không đè hồ sơ đang có
+    val values = PrefSnapshot.decode(lines[1])
+    val e = sp.edit()
+    list.add(target)
+    e.putString(WorkspacePrefs.K_PROFILES, list.joinToString("\n"))
+    // Chỉ ghi các hậu tố HỢP LỆ (PROFILE_SUFFIXES) — chống chuỗi lạ nhét khoá ngoài phạm vi hồ sơ.
+    values.filterKeys { it in WorkspacePrefs.PROFILE_SUFFIXES }.forEach { (suffix, v) -> copyValue(e, keyOf(target, suffix), v) }
+    e.apply()
+    return true
+}

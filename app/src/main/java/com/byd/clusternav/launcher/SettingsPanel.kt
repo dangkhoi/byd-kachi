@@ -115,6 +115,12 @@ class SettingsDeps(
      */
     val onDuplicateProfile: (String) -> Unit,
     val onDeleteProfile: (String) -> Unit,
+    /** #4 (owner 2026-09-24) — xuất hồ sơ đang dùng ra file (backup/chia sẻ). Trả đường dẫn file đã ghi (hiện toast), null nếu hỏng. */
+    val onExportProfile: () -> String? = { null },
+    /** #4 — nhập mọi file hồ sơ trong thư mục. Trả số hồ sơ nhập được. */
+    val onImportProfiles: () -> Int = { 0 },
+    /** #4 — đường dẫn thư mục file hồ sơ (hiện cho user biết chép vào/ra đâu). */
+    val profileFolderPath: () -> String = { "" },
     /** V3 · R13 (owner E5) — đổi tên hồ sơ: `(tên cũ, tên mới)`. Phép kiểm ở `:core` ([ProfileRename]). */
     val onRenameProfile: (String, String) -> Unit,
     /**

@@ -116,6 +116,12 @@
     <string name="kachi_lang_note">"Theo xe" = theo ngôn ngữ của máy: máy tiếng Việt thì tiếng Việt, còn lại tiếng Anh. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
+    <string name="kachi_profile_export">Xuất hồ sơ (backup)</string>
+    <string name="kachi_profile_import">Nhập hồ sơ từ file</string>
+    <string name="kachi_profile_exported">Đã xuất: %1$s</string>
+    <string name="kachi_profile_export_fail">Không xuất được hồ sơ</string>
+    <string name="kachi_profile_imported">Đã nhập %1$d hồ sơ</string>
+    <string name="kachi_profile_import_none">Không có file hồ sơ hợp lệ trong %1$s</string>
     <string name="kachi_profiles_note">Mỗi hồ sơ giữ RIÊNG gần như mọi thứ: bố cục, nội dung ô, thanh nút, chip, hình nền, giao diện, đơn vị, ngôn ngữ và cả cấu hình dẫn đường. Chạm một hồ sơ để đổi sang nó — chip hồ sơ ở thanh trên cũng đổi được, nhưng tạo và xoá thì chỉ ở đây.</string>
     <string name="kachi_profiles_add">Thêm hồ sơ (bản sao của %1$s)</string>
     <string name="kachi_profile_sub_active">Đang dùng · %1$s</string>

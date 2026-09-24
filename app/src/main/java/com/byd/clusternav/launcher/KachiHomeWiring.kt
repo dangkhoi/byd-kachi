@@ -157,6 +157,9 @@ internal fun homePanels(
     // (`SettingsDialogs.askName`); ở đây chỉ còn intent, đúng khuôn mọi lambda khác của khối này.
     onDuplicateProfile = { name -> viewModel.duplicateProfile(name) },
     onDeleteProfile = { name -> viewModel.deleteProfile(name) },
+    onExportProfileData = { viewModel.exportActiveProfile() },
+    onImportProfilesData = { list -> if (viewModel.importProfiles(list)) list.size else 0 },
+    activeProfileName = { viewModel.uiState.value.activeProfile },
     onRenameProfile = { old, new -> viewModel.renameProfile(old, new) },
     // S4 · R6 — hồ sơ lúc nổ máy. ĐỌC từ state chứ không mở một cửa `WorkspaceRepository` thứ hai ở tầng UI:
     // `load()` đã nạp `bootProfile` vào `HomeUiState` (khoá theo XE, không đổi khi đổi hồ sơ), nên đọc ở đây là
