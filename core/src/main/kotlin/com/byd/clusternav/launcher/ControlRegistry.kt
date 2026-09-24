@@ -184,8 +184,11 @@ object ControlRegistry {
             labelEn = "Recirculation"),
         // [ĐO] `setDayTimeLightState(int)` BYDAutoLightDevice.java:209 — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (:10/:8); args ở
         // HalBindingTable.writeArgs. Cũ ghi feature 985661476 = hằng `_STATE` (đọc) ⇒ no-op.
+        // ⚠ readKey BỎ (owner 2026-09-24 [ĐO xe follow]): lệnh GHI CHẠY THẬT (đèn ban ngày đổi) nhưng đọc lại
+        // `light_drl` KHÔNG phản ánh đúng state ⇒ readback lệch ⇒ báo DỐI "xe không nhận tín hiệu" cho một nút
+        // work. Bỏ verify → nút báo best-effort "đã bật/tắt", không false-report (dự án cấm nút nói dối).
         ControlDef("drl", "Đèn ban ngày", "ic-car-front-drl", ControlKind.TOGGLE,
-            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoLightDevice.setDayTimeLightState", readKey = "light_drl",
+            domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoLightDevice.setDayTimeLightState", readKey = "",
             // `shortEn` vì nhãn Anh dài 20 ký tự — trong ô hàng nút của nhóm *Đèn* nó bị cắt thành `"Daytime
             // lights (D…"`. Bản Việt (12 ký tự, ba từ ngắn) tự ngắt dòng vừa nên không cần bản ngắn riêng.
             labelEn = "Daytime lights (DRL)", shortEn = "Daytime (DRL)"),

@@ -140,10 +140,10 @@ class ControlReadKeyTest {
         // trong nhóm chưa có đường đọc, nên độ phủ tương đối TĂNG (17/47 = 36 % → 17/39 = 44 %).
         // ⚠⚠ 1.90 2026-09-21: 38 → **29** nút (owner gỡ 9 cho xe thuần điện). Lần này độ phủ **GIẢM 2**: `vol`
         // (đọc qua `AudioManager`) và `anion` (đọc `anion_state`) đều đang có đường đọc, bảy nút còn lại thì không
-        // ⇒ 17 → **15**. Tỉ lệ vẫn TĂNG (44 % → 15/29 = 52 %). Ghi cả hai vế ra để không ai tưởng là mất binding.
+        // ⇒ 17 → 15 → **14** (bỏ readKey `drl` 2026-09-24: readback báo dối "không nhận tín hiệu" cho nút work). Tỉ lệ 14/29 = 48 %.
         assertEquals(33, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
-            15, wired.size,
+            14, wired.size,
             "độ phủ đường đọc đổi (thấy ${wired.size}/29; chưa có đường đọc: ${blind.sorted()}). " +
                 "Sửa dòng T2 trong docs/specs/kachi-live-state-ux.html NGAY trong lượt này (R2.1), đừng chỉ sửa số ở đây.",
         )
