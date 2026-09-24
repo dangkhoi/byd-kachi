@@ -342,6 +342,7 @@ object SherpaSpokenWords {
         "viet lap" to "việt láp",
         "viet mat" to "việt mát",
         "ban do viet" to "bản đồ việt",
+        "quang duong da di" to "quãng đường đã đi", "quang duong di duoc" to "quãng đường đi được", "quang duong da chay" to "quãng đường đã chạy",
         // owner 2026-09-23: dạng "VietMap Live" (việt máp lay/live).
         "viet map lay" to "việt máp lay",
         "viet map live" to "việt máp live",

@@ -16,51 +16,81 @@ WD=/tmp/kachi-audio-e2e; mkdir -p "$WD"
 BRIDGE="am broadcast -a com.byd.launcher.TEST -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge"
 
 # id \t câu \t kind_mong_đợi(Nav/Control/Read/Media/Launcher/Profile/EndSession/OpenApp; '-'=không kiểm)
+# Đa dạng như ĐỜI THẬT: biến thể cách nói · thêm lịch sự · câu dài · đọc tắt · số nhà đủ dạng.
 CASES=$(cat <<'EOF'
 n01	dẫn đường đến sáu chín hoàng văn thái	Nav
 n02	dẫn tới chợ bến thành	Nav
 n03	dẫn đến sân bay tân sơn nhất	Nav
 n04	dẫn đường đến một trăm ba mươi tư a điện biên phủ	Nav
 n05	dẫn đường đến một hai ba xẹt ba tư huỳnh tấn phát	Nav
-n06	dẫn đường đến bảy trăm hai mươi lý thường kiệt	Nav
+n06	cho tôi dẫn đường đến bảy trăm hai mươi lý thường kiệt nhé	Nav
 n07	dẫn đường đến một nghìn tám trăm chín mươi tám cách mạng tháng tám	Nav
 n08	dẫn đường về nhà	Nav
-n09	dẫn đường đến quận một	Nav
+n09	làm ơn dẫn đường đến quận một	Nav
 n10	chỉ đường tới bệnh viện chợ rẫy	Nav
 n11	dẫn đường đến hai ba xuyệt năm nguyễn văn cừ	Nav
 n12	dẫn đường tới vincom đồng khởi	Nav
+n13	dẫn tôi đến công viên tao đàn	Nav
+n14	đưa tôi tới landmark tám mốt	Nav
+n15	tìm đường đến ga sài gòn	Nav
+n16	dẫn đường đến năm trăm linh năm nguyễn trãi	Nav
+n17	dẫn đường đến hai mươi bảy nguyễn huệ quận một	Nav
+n18	dẫn đường về cơ quan	Nav
+n19	dẫn đường đến trường đại học bách khoa	Nav
+n20	navigate to bitexco	Nav
 c01	bật đèn đọc	Control
 c02	tắt đèn đọc	Control
 c03	mở điều hòa	Control
 c04	tắt điều hòa	Control
 c05	tăng nhiệt độ hai mươi tư độ	Control
 c06	giảm nhiệt độ	Control
-c07	mở kính lái	Control
+c07	mở kính	Control
 c08	đóng cửa sổ trời	Control
 c09	bật ghế mát	Control
 c10	tắt đèn ban ngày	Control
 c11	bật sưởi ghế	Control
-c12	mở cốp	Control
-c13	khoá cửa	Control
-c14	bật lọc bụi	Control
+c12	đóng cốp	Control
+c13	bật lọc bụi	Control
+c14	tăng gió lên	Control
+c15	giảm âm lượng	Control
+c16	bật đèn pha	Control
+c17	tắt đèn pha	Control
+c18	mở hết kính	Control
+c19	làm ơn bật điều hòa giúp tôi	Control
+c20	đặt nhiệt độ hai lăm độ	Control
+c21	bật ghế sưởi bên phụ	Control
+c22	đóng tất cả cửa kính	Control
 r01	nhiệt độ bao nhiêu	Read
-r02	pin còn bao nhiêu	Read
-r03	áp suất lốp thế nào	Read
+r02	pin còn bao nhiêu phần trăm	Read
+r03	xem áp suất lốp	Read
 r04	xem tốc độ	Read
 r05	bụi mịn bao nhiêu	Read
+r06	còn bao nhiêu cây số	Read
+r07	nhiệt độ ngoài trời bao nhiêu	Read
+r08	mức xăng còn bao nhiêu	Read
+r09	tốc độ hiện tại thế nào	Read
+r10	xem quãng đường đã đi	Read
 m01	mở nhạc sơn tùng	Media
 m02	phát bài hạ còn vương nắng	Media
 m03	mở nhạc trên youtube	Media
 m04	dừng nhạc	Media
 m05	bài tiếp theo	Media
+m06	bài trước	Media
+m07	phát nhạc trịnh	Media
+m08	mở nhạc trẻ	Media
+m09	tạm dừng	Media
+m10	phát nhạc trên youtube music	Media
 l01	mở youtube	Launcher
-l02	mở bản đồ	Launcher
-l03	mở cài đặt	Launcher
+l02	mở cài đặt	Launcher
+l03	mở danh sách ứng dụng	Launcher
 e01	tạm biệt	EndSession
 e02	xong rồi	EndSession
 e03	cảm ơn	EndSession
 e04	thôi	EndSession
 e05	đủ rồi	EndSession
+e06	tắt đi	EndSession
+e07	thoát	EndSession
+e08	cảm ơn nhé	EndSession
 EOF
 )
 
@@ -78,7 +108,7 @@ if [ -n "$BID" ] && [ "$UPMS" != 0 ]; then
 fi
 
 pass=0; fail=0; mishear=0; total=0
-: > "$WD/findings.txt"
+: > "$WD/findings.txt"; : > "$WD/perf.tsv"
 while IFS=$'\t' read -r -u 3 id s want; do
   [ -z "${id:-}" ] && continue
   total=$((total+1))
@@ -89,20 +119,37 @@ while IFS=$'\t' read -r -u 3 id s want; do
   heard=$(printf '%s' "$j" | grep -oE '"heard":"[^"]*"' | head -1 | sed 's/"heard":"//;s/"$//')
   kind=$(printf '%s' "$j" | grep -oE '"kind":"[^"]*"' | head -1 | sed 's/"kind":"//;s/"$//')
   ms=$(printf '%s' "$j" | grep -oE '"ms":[0-9]*' | head -1 | sed 's/"ms"://')
-  # phân loại
+  # phân loại QUALITY
   status="PASS"
   if [ "$want" != "-" ] && [ "$kind" != "$want" ]; then
     if [ "$heard" != "$s" ]; then status="MISHEAR"; else status="FAIL"; fi
   fi
   case "$status" in PASS) pass=$((pass+1));; FAIL) fail=$((fail+1));; MISHEAR) mishear=$((mishear+1));; esac
   printf '%-4s %-8s want=%-10s got=%-10s ms=%-4s | said[%s] heard[%s]\n' "$id" "$status" "$want" "${kind:-?}" "${ms:-?}" "$s" "$heard"
-  if [ "$status" != "PASS" ]; then
-    printf '%s\t%s\tsaid=%s\theard=%s\twant=%s\tgot=%s\n' "$id" "$status" "$s" "$heard" "$want" "${kind:-?}" >> "$WD/findings.txt"
-  fi
+  # PERFORMANCE: nhóm (chữ đầu id) + ms decode+parse
+  [ -n "${ms:-}" ] && printf '%s\t%s\n' "${id:0:1}" "$ms" >> "$WD/perf.tsv"
+  [ "$status" != "PASS" ] && printf '%s\t%s\tsaid=%s\theard=%s\twant=%s\tgot=%s\n' "$id" "$status" "$s" "$heard" "$want" "${kind:-?}" >> "$WD/findings.txt"
   sleep 1
 done 3<<< "$CASES"
 
 echo "═══════════════════════════════════════════════"
-echo "TỔNG $total · PASS $pass · FAIL(parser) $fail · MISHEAR(ASR nghe sai) $mishear"
-echo "── FINDINGS (câu không đạt) ──"
-cat "$WD/findings.txt"
+echo "① QUALITY — TỔNG $total · PASS $pass ($((pass*100/total))%) · FAIL(parser) $fail · MISHEAR(ASR) $mishear"
+echo "── FINDINGS (câu không đạt) ──"; cat "$WD/findings.txt"
+echo "═══════════════════════════════════════════════"
+echo "② PERFORMANCE — decode+parse ms (đường ASR thật). p50/p95/max mỗi nhóm + tổng:"
+python3 - "$WD/perf.tsv" <<'PY'
+import sys, collections
+rows=[l.split("\t") for l in open(sys.argv[1]) if "\t" in l]
+by=collections.defaultdict(list); allms=[]
+names={"n":"Nav","c":"Control","r":"Read","m":"Media","l":"Launcher","e":"EndSession"}
+for g,ms in rows:
+    try: v=int(ms)
+    except: continue
+    by[g].append(v); allms.append(v)
+def pct(a,p):
+    if not a: return 0
+    a=sorted(a); import math; return a[min(len(a)-1, int(math.ceil(p/100*len(a))-1))]
+print(f"  {'nhóm':<12}{'n':>4}{'p50':>7}{'p95':>7}{'max':>7}")
+for g in sorted(by): a=by[g]; print(f"  {names.get(g,g):<12}{len(a):>4}{pct(a,50):>7}{pct(a,95):>7}{max(a):>7}")
+print(f"  {'TỔNG':<12}{len(allms):>4}{pct(allms,50):>7}{pct(allms,95):>7}{max(allms):>7}  (ms)")
+PY

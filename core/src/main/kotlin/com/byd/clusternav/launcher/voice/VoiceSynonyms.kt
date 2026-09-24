@@ -273,7 +273,7 @@ object VoiceSynonyms {
         // từ ĐỌC, lấy nút cho động từ hành động ⇒ *"tăng quạt gió"* vẫn là nút (cùng khuôn `inside_temp` ↔ `temp`).
         "ac_wind" to listOf("quat gio", "quat dieu hoa", "muc gio", "toc do quat"),
         "pm25_level" to listOf("bui min", "chat luong khong khi", "air quality", "muc bui min"),
-        "odometer" to listOf("so km da di", "odo", "mileage", "so km xe da chay"),
+        "odometer" to listOf("so km da di", "odo", "mileage", "so km xe da chay", "quang duong da di", "quang duong di duoc", "quang duong da chay"),
         "tyre_p_fl" to listOf("ap suat lop truoc trai", "hoi banh truoc trai", "lop truoc trai"),
         "tyre_p_fr" to listOf("ap suat lop truoc phai", "hoi banh truoc phai", "lop truoc phai"),
         "tyre_p_rl" to listOf("ap suat lop sau trai", "hoi banh sau trai", "lop sau trai"),
