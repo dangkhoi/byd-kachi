@@ -236,9 +236,13 @@ class HomeViewModel(
         repository.persist(next)
     }
 
-    /** Nạp lại state từ repository (đổi/thêm/xoá hồ sơ) — giữ nguyên cờ [HomeUiState.embedded] runtime. */
+    /** Nạp lại state từ repository (đổi/thêm/xoá hồ sơ) — giữ nguyên cờ runtime [HomeUiState.embedded] VÀ [carStatus]. */
     private fun reload(loader: () -> HomeUiState) {
         val embedded = _uiState.value.embedded
-        _uiState.value = loader().copy(embedded = embedded)
+        // #3 (owner 2026-09-24): GIỮ carStatus LIVE qua reload. carStatus là dữ liệu xe theo thời gian thực (không
+        // thuộc hồ sơ) — loader() dựng HomeUiState mới với carStatus mặc định (null), nên không giữ thì đổi hồ sơ =
+        // MẤT áp suất lốp + mọi datum xe cho tới nhịp poll sau. Giống [embedded]: runtime, không phải cấu hình hồ sơ.
+        val car = _uiState.value.carStatus
+        _uiState.value = loader().copy(embedded = embedded, carStatus = car)
     }
 }

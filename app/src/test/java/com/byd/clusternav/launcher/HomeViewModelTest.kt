@@ -201,6 +201,21 @@ class HomeViewModelTest {
         assertEquals(2, fake.persistCount)
     }
 
+    @Test fun `switchProfile GIU carStatus live (khong mat ap suat lop)`() = runTest {
+        val fake = repo(HomeUiState(workspace = WorkspaceState(preset = LayoutPreset.ONE), activeProfile = "P1", profiles = listOf("P1", "P2")))
+        fake.seed("P2", HomeUiState(workspace = WorkspaceState(preset = LayoutPreset.QUAD), activeProfile = "P2"))
+        val vm = HomeViewModel(fake)
+        vm.uiState.test {
+            awaitItem()                                                  // initial
+            vm.setCarStatus(CarStatus().copy(energy = CarStatus().energy.copy(soc = 77)))
+            assertEquals(77, awaitItem().carStatus.energy.soc)           // car live
+            vm.switchProfile("P2")
+            val s = awaitItem()
+            assertEquals(LayoutPreset.QUAD, s.preset)                    // hồ sơ đổi
+            assertEquals(77, s.carStatus.energy.soc, "đổi hồ sơ KHÔNG được mất carStatus live")
+        }
+    }
+
     @Test fun `switchProfile nap lai workspace cua ho so khac`() = runTest {
         val fake = repo(HomeUiState(
             workspace = WorkspaceState(preset = LayoutPreset.ONE), activeProfile = "P1", profiles = listOf("P1", "P2"),
