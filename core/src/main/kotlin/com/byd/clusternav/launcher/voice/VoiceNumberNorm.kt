@@ -30,7 +30,7 @@ object VoiceNumberNorm {
         var i = 0
         while (i < words.size) {
             val w = words[i]
-            if (w in ONES && words.getOrNull(i + 1) in ARITH) {   // số học: hai mươi tư…
+            if ((w in ONES || w.toIntOrNull() in 0..9) && words.getOrNull(i + 1) in ARITH) {   // số học (kể cả "1 ngàn")
                 val num = VoiceLexicon.readNumber(toks, i)
                 if (num != null && num.consumed > 0) { out.add(num.value.toString()); i += num.consumed; continue }
             }
@@ -55,7 +55,7 @@ object VoiceNumberNorm {
         var i = 0
         while (i < raw.size) {
             val n = norm[i]
-            if (n in ONES && norm.getOrNull(i + 1) in ARITH) {     // số học
+            if ((n in ONES || n.toIntOrNull() in 0..9) && norm.getOrNull(i + 1) in ARITH) {     // số học (kể cả đọc tắt chữ số "1 ngàn")
                 val num = VoiceLexicon.readNumber(norm.map { VoiceLexicon.Token(it, it) }, i)
                 if (num != null && num.consumed > 0) { out.add(num.value.toString()); i += num.consumed; continue }
             }
@@ -70,7 +70,7 @@ object VoiceNumberNorm {
     }
 
     /** Ký tự đọc là dấu "/" trong SỐ NHÀ Việt: "xẹt"/"sẹt"/"trên" (123 xẹt 34 → 123/34). */
-    private val SLASH_WORDS = setOf("xet", "set", "tren")
+    private val SLASH_WORDS = setOf("xet", "xuyet", "set", "suyet", "tren")
 
     /**
      * Ghép các mảnh SỐ NHÀ sau khi đã đổi từ-số → chữ số:

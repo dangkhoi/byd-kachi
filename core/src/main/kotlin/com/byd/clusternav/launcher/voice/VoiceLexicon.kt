@@ -238,7 +238,12 @@ object VoiceLexicon {
 
         // Chữ số thuần (cho phép hậu tố % hoặc đơn vị dính liền bị bỏ bởi tokenize).
         val digits = w.trimEnd('%')
-        digits.toIntOrNull()?.let { return Num(it, 1) }
+        digits.toIntOrNull()?.let { d ->
+            // ⚠ Nhưng nếu là chữ số ĐƠN 0..9 và NGAY SAU là bậc VN (trăm/nghìn/ngàn/mươi), người nói đọc TẮT
+            // ("1 ngàn 3 trăm" thay "một ngàn ba trăm") ⇒ ĐỪNG trả về chữ số đơn, để rơi xuống nhánh VN dùng `unit`.
+            val nx = t.getOrNull(i + 1)?.norm
+            if (!(d in 0..9 && (nx == "tram" || nx == "nghin" || nx == "ngan" || nx == "muoi"))) return Num(d, 1)
+        }
 
         // Tiếng Anh.
         EN_UNITS[w]?.let { return Num(it, 1) }
@@ -263,7 +268,7 @@ object VoiceLexicon {
         }
 
         // Tiếng Việt: "<đơn vị> mươi [<đơn vị>]" = 20..99; "<đơn vị>" đơn lẻ = 0..9.
-        val unit = VI_UNITS[w] ?: return null
+        val unit = VI_UNITS[w] ?: w.toIntOrNull()?.takeIf { it in 0..9 } ?: return null
         // Tiếng Việt hàng NGHÌN: "<đơn vị> nghìn/ngàn [phần 1..999]" = 1000..9999. Phần sau nghìn đọc lại bằng
         // readNumber (đệ quy — phần đó KHÔNG bắt đầu bằng "nghìn" nên không vòng vô hạn). "một nghìn tám trăm chín
         // mươi tám"→1898 · "hai ngàn"→2000 (findings 2026-09-24 số nhà hàng nghìn).
