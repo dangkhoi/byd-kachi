@@ -123,6 +123,7 @@ object TestBridgeCommands {
 
     const val SAY = "say"
     const val WAV = "wav"
+    const val KWS = "kws"
     const val TTS = "tts"
     const val LISTEN = "listen"
     const val PROFILE = "profile"
@@ -316,6 +317,7 @@ object TestBridgeCommands {
     val SPECS: List<Spec> = listOf(
         Spec(SAY, listOf(EXTRA_TEXT), listOf(EXTRA_AUTO_CONFIRM)),
         Spec(WAV, emptyList(), listOf(EXTRA_PATH)),
+        Spec(KWS, emptyList(), listOf(EXTRA_PATH)),
         Spec(TTS, listOf(EXTRA_TEXT)),
         Spec(LISTEN, emptyList()),
         Spec(STATE, emptyList()),
