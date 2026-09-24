@@ -375,16 +375,21 @@ object VoiceLexicon {
      */
     fun stripCourtesy(t: List<Token>): List<Token> {
         var out = t
-        // Đầu câu.
-        LEAD_COURTESY.firstOrNull { p -> out.size > p.size && phraseAt(out, 0, p) }
-            ?.let { out = out.subList(it.size, out.size) }
-        // Cuối câu.
-        TAIL_COURTESY.firstOrNull { p ->
-            out.size > p.size && phraseAt(out, out.size - p.size, p) &&
-                // "lai"/"cai" ở cuối chỉ cắt khi câu còn dài (>3 từ) và trước nó KHÔNG phải "ghe" (ghế lái).
-                !((p == listOf("lai") || p == listOf("cai")) &&
-                    (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe"))
-        }?.let { out = out.subList(0, out.size - it.size) }
+        // Đầu câu — LẶP: "làm ơn cho tôi" = "lam on" + "cho toi" là HAI cụm lịch sự nối nhau ([ĐO harness
+        // 2026-09-24, ~60 ca FAIL vì bản cũ chỉ cắt MỘT). Cắt hết cụm lead liên tiếp, chừa ≥1 từ lệnh.
+        while (true) {
+            val lead = LEAD_COURTESY.firstOrNull { p -> out.size > p.size && phraseAt(out, 0, p) } ?: break
+            out = out.subList(lead.size, out.size)
+        }
+        // Cuối câu — cũng LẶP ("... giúp tôi nhé" = hai cụm đuôi).
+        while (true) {
+            val tail = TAIL_COURTESY.firstOrNull { p ->
+                out.size > p.size && phraseAt(out, out.size - p.size, p) &&
+                    !((p == listOf("lai") || p == listOf("cai")) &&
+                        (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe"))
+            } ?: break
+            out = out.subList(0, out.size - tail.size)
+        }
         return out
     }
 

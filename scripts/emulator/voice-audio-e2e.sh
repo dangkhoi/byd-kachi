@@ -107,6 +107,8 @@ if [ -n "$BID" ] && [ "$UPMS" != 0 ]; then
   $ADB shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity >/dev/null 2>&1; sleep 4
 fi
 
+[ -n "${CASE_FILE:-}" ] && [ -f "$CASE_FILE" ] && CASES=$(cat "$CASE_FILE")
+
 pass=0; fail=0; mishear=0; total=0
 : > "$WD/findings.txt"; : > "$WD/perf.tsv"
 while IFS=$'\t' read -r -u 3 id s want; do
