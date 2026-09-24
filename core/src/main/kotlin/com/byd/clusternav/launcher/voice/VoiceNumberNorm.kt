@@ -66,6 +66,39 @@ object VoiceNumberNorm {
             }
             out.add(raw[i]); i++                                    // giữ TỪ GỐC (còn dấu)
         }
+        return joinHouseNumber(out)
+    }
+
+    /** Ký tự đọc là dấu "/" trong SỐ NHÀ Việt: "xẹt"/"sẹt"/"trên" (123 xẹt 34 → 123/34). */
+    private val SLASH_WORDS = setOf("xet", "set", "tren")
+
+    /**
+     * Ghép các mảnh SỐ NHÀ sau khi đã đổi từ-số → chữ số:
+     *  • `<số> xẹt/trên <số>` → `<số>/<số>` (123/34/24) — dán liền không khoảng trắng.
+     *  • `<số> <chữ-cái-đơn>` → `<số><CHỮ HOA>` (134 a → 134A) — hậu tố nhà đất.
+     * Chỉ tác động khi vế trước là CHỮ SỐ thuần; từ thường không bị đụng.
+     */
+    private fun joinHouseNumber(tokens: List<String>): String {
+        val out = ArrayList<String>()
+        var i = 0
+        while (i < tokens.size) {
+            val cur = tokens[i]
+            if (cur.all { it.isDigit() } && cur.isNotEmpty()) {
+                val sb = StringBuilder(cur)
+                // nối chuỗi "xẹt <số>" và "<chữ-cái-đơn>" ngay sau số nhà.
+                while (i + 1 < tokens.size) {
+                    val nxt = tokens[i + 1]
+                    val nxtNorm = VoiceLexicon.tokenize(nxt).firstOrNull()?.norm ?: nxt.lowercase()
+                    val after = tokens.getOrNull(i + 2)
+                    if (nxtNorm in SLASH_WORDS && after != null && after.all { it.isDigit() } && after.isNotEmpty()) {
+                        sb.append('/').append(after); i += 2                 // "xẹt 34" → "/34"
+                    } else if (nxt.length == 1 && nxt[0].isLetter()) {
+                        sb.append(nxt.uppercase()); i += 1                   // "a" → "A" (134A)
+                    } else break
+                }
+                out.add(sb.toString()); i++
+            } else { out.add(cur); i++ }
+        }
         return out.joinToString(" ")
     }
 }

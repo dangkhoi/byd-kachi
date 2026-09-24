@@ -264,6 +264,22 @@ object VoiceLexicon {
 
         // Tiếng Việt: "<đơn vị> mươi [<đơn vị>]" = 20..99; "<đơn vị>" đơn lẻ = 0..9.
         val unit = VI_UNITS[w] ?: return null
+        // Tiếng Việt hàng NGHÌN: "<đơn vị> nghìn/ngàn [phần 1..999]" = 1000..9999. Phần sau nghìn đọc lại bằng
+        // readNumber (đệ quy — phần đó KHÔNG bắt đầu bằng "nghìn" nên không vòng vô hạn). "một nghìn tám trăm chín
+        // mươi tám"→1898 · "hai ngàn"→2000 (findings 2026-09-24 số nhà hàng nghìn).
+        if (t.getOrNull(i + 1)?.norm == "nghin" || t.getOrNull(i + 1)?.norm == "ngan") {
+            var value = unit * 1000
+            var consumed = 2
+            val a = t.getOrNull(i + 2)?.norm
+            if (a == "linh" || a == "le") {                    // "hai nghìn lẻ năm" = 2005
+                val ones = t.getOrNull(i + 3)?.norm?.let { VI_AFTER_TEN[it] ?: VI_UNITS[it] }
+                if (ones != null) { value += ones; consumed += 2 } else consumed += 1
+            } else if (a != null) {
+                val rest = readNumber(t, i + 2)
+                if (rest != null && rest.value in 1..999) { value += rest.value; consumed += rest.consumed }
+            }
+            return Num(value, consumed)
+        }
         // Tiếng Việt hàng TRĂM: "<đơn vị> trăm [lẻ/linh <đơn vị>] | [<đơn vị> mươi [<đơn vị>]]" = 100..999.
         // "bảy trăm hai mươi"→720 · "bảy trăm lẻ năm"→705 · "một trăm"→100 (findings 2026-09-24 số nhà).
         if (t.getOrNull(i + 1)?.norm == "tram") {

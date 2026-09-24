@@ -56,4 +56,11 @@ class VoiceNumberNormTest {
         assertEquals("24", VoiceNumberNorm.normalizeSpokenNumbers("hai mươi tư"))
     }
 
+
+    @Test fun `so nha kho — nghin, chu cai hau to, gach cheo`() {
+        assertEquals("1898 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("một nghìn tám trăm chín mươi tám lý thường kiệt"))
+        assertEquals("134A điện biên phủ", VoiceNumberNorm.normalizeSpokenNumbers("một trăm ba mươi tư a điện biên phủ"))
+        assertEquals("123/34/24 huỳnh tấn phát", VoiceNumberNorm.normalizeSpokenNumbers("một hai ba xẹt ba tư xẹt hai tư huỳnh tấn phát"))
+    }
+
 }
