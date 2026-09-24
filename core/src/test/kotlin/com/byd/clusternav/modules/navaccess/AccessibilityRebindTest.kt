@@ -147,6 +147,25 @@ class AccessibilityRebindTest {
         assertFalse(AccessibilityRebind.isClusterNavBound("Accessibility manager state:\n    Enabled services:{{$acc}}\n"))
     }
 
+    /** [ĐO xe 2026-09-24] ROM DiLink Bound section CHỈ in LABEL (không package) → phải match label + self-enabled. */
+    @Test
+    fun `ROM in LABEL khong package — booster bound + self enabled = bound`() {
+        val launcher = "com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
+        // Bound in LABEL only (giống xe owner), Enabled in package.
+        val dump = "Bound services:{Service[label=ClusterNav — booster đọ…, capabilities=9]}\n" +
+            "Enabled services:{{com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService}}"
+        assertTrue(AccessibilityRebind.isClusterNavBound(dump, launcher), "label 'ClusterNav' bound + pkg mình Enabled → bound")
+    }
+
+    @Test
+    fun `ROM in LABEL — clusternav2 label bound nhung self KHONG enabled = not bound`() {
+        val launcher = "com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
+        // Chỉ clusternav2 enabled (launcher không) — label 'ClusterNav' trong Bound là của clusternav2.
+        val dump = "Bound services:{Service[label=ClusterNav — booster đọ…, capabilities=9]}\n" +
+            "Enabled services:{{com.byd.clusternav2/com.byd.clusternav.modules.navaccess.NavAccessibilityService}}"
+        assertFalse(AccessibilityRebind.isClusterNavBound(dump, launcher), "launcher không enabled → không phải mình bound")
+    }
+
     /** GỐC [P0] deep-pass 2026-09-23: app anh em com.byd.clusternav2 CÙNG FQN lớp — không được nhận là bound của launcher. */
     @Test
     fun `bound cua app anh em clusternav2 KHONG tinh la bound cua launcher`() {

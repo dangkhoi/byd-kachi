@@ -129,9 +129,24 @@ object AccessibilityRebind {
             i++
         }
         val section = if (close > open) dump.substring(open, close + 1) else dump.substring(open)
-        // Match theo PACKAGE của chính app trong section Bound. Dùng ranh giới `pkg/` (dạng ComponentInfo/flatten
-        // `pkg/cls`) HOẶC full component — KHÔNG substring trần `pkg` (vì "com.byd.clusternav2" CHỨA
-        // "com.byd.clusternav" ⇒ lại dương-tính-giả với app anh em).
-        return section.contains(component, ignoreCase = true) || section.contains("$pkg/", ignoreCase = true)
+        // Bound section IN THEO ROM khác nhau:
+        //  • ROM in COMPONENT: `ComponentInfo{com.byd.launcher/…}` → match `pkg/` / full component (phân biệt clusternav2).
+        //  • ROM DiLink [ĐO xe 2026-09-24]: Bound CHỈ in LABEL (`Service[label=ClusterNav — booster…, capabilities=9]`),
+        //    KHÔNG in package ⇒ match `pkg/` TRƯỢT dù đang bound thật (regression fix deep-pass gây ra). Phải match
+        //    LABEL token `clusternav`. Để KHÔNG nhận nhầm app anh em `com.byd.clusternav2` (cùng label): chỉ nhận
+        //    label-token khi PACKAGE CỦA MÌNH có trong "Enabled services" (chỉ app enabled mới bound được). Nếu cả
+        //    hai app cùng enabled+bound+label (cài song song, cả hai bật voice-key — ca hiếm) thì Bound thiếu package
+        //    nên vẫn mơ hồ; ưu tiên ĐÚNG cho ca thực tế (một app) + không dối.
+        val byComponent = section.contains(component, ignoreCase = true) || section.contains("$pkg/", ignoreCase = true)
+        if (byComponent) return true
+        // label fallback CHỈ khi Bound section KHÔNG in component nào (ROM label-only). Nếu Bound có `.../` (componentInfo)
+        // thì nó ĐÃ in package → component-match ở trên là đủ; dùng label lúc đó sẽ nhận nhầm componentInfo của
+        // clusternav2 (chứa token 'clusternav'). Dấu hiệu label-only: section không có ký tự '/'.
+        if (section.contains('/')) return false
+        val selfEnabled = run {
+            val eh = dump.indexOf("Enabled services", ignoreCase = true)
+            eh >= 0 && dump.substring(eh).contains("$pkg/", ignoreCase = true)
+        }
+        return section.contains("clusternav", ignoreCase = true) && selfEnabled
     }
 }
