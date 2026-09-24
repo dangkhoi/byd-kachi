@@ -373,6 +373,9 @@ object VoiceLexicon {
      * TRƯỚC nó vẫn còn cụm đủ dài. Ở đây giữ luật đơn giản: cắt tối đa MỘT cụm mỗi đầu, và không cắt "lai"/"cai"
      * nếu ngay trước chúng là "ghe" (ghế lái) hoặc câu chỉ còn ≤ 2 từ.
      */
+    /** Từ CHUYỂN ĐỘNG đứng ngay trước nơi đến — chặn cắt đuôi 'nha'(nhà)/'di'(đi) nhầm là đệm. */
+    private val MOVEMENT_BEFORE_PLACE = setOf("ve", "den", "toi", "ra", "vao", "len", "xuong", "di")
+
     fun stripCourtesy(t: List<Token>): List<Token> {
         var out = t
         // Đầu câu — LẶP: "làm ơn cho tôi" = "lam on" + "cho toi" là HAI cụm lịch sự nối nhau ([ĐO harness
@@ -386,7 +389,12 @@ object VoiceLexicon {
             val tail = TAIL_COURTESY.firstOrNull { p ->
                 out.size > p.size && phraseAt(out, out.size - p.size, p) &&
                     !((p == listOf("lai") || p == listOf("cai")) &&
-                        (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe"))
+                        (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe")) &&
+                    // ⚠ [P0 fix 2026-09-24] "nha" bỏ dấu = «nhé» (đệm) LẪN «nhà» (nơi ở, nhãn HOME); "di" = «đi» đệm
+                    // LẪN động từ. KHÔNG cắt khi ngay TRƯỚC là từ CHUYỂN ĐỘNG (về/đến/tới/ra/vào/lên/xuống) ⇒ giữ
+                    // "về nhà"/"đến nhà"/"đi về nhà" (trước đây bị cắt thành "về"/rỗng ⇒ mất điểm đến — LIVE 2.23).
+                    !((p == listOf("nha") || p == listOf("di")) &&
+                        out.getOrNull(out.size - p.size - 1)?.norm in MOVEMENT_BEFORE_PLACE)
             } ?: break
             out = out.subList(0, out.size - tail.size)
         }

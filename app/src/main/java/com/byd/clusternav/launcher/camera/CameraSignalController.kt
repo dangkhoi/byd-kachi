@@ -61,6 +61,7 @@ class CameraSignalController(private val appCtx: Context) {
     }
 
     private fun stop() {
+        current = Turn.NONE   // [P1 fix] reset để bật lại KHỚP lượt rẽ sau (không kẹt current cũ → return sớm)
         hal.close()
         overlay.hide()
     }

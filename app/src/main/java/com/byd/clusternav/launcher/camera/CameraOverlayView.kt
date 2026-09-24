@@ -78,13 +78,14 @@ class CameraOverlayView(private val appCtx: Context) {
     private fun wmOf(ctx: Context): WindowManager? =
         ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
 
-    /** WindowManager của DISPLAY CỤM (dò như SpeedBadgeOverlay: id 1 rồi PRESENTATION ≠ 0). null nếu chưa có cụm. */
+    /** WindowManager của DISPLAY CỤM. Ưu tiên display PRESENTATION ≠ 0 (cụm DiLink3.0 = display 2, KHÔNG hardcode 1
+     *  — regression X2). null nếu chưa có cụm (off-car ⇒ rơi màn chính). */
     private fun clusterWm(ctx: Context): WindowManager? = runCatching {
         val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
             ?: return null
-        val display = dm.getDisplay(1)
-            ?: dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-                .firstOrNull { it.displayId != 0 }
+        val display = dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+            .firstOrNull { it.displayId != 0 }
+            ?: dm.displays.firstOrNull { it.displayId != 0 }
             ?: return null
         ctx.createDisplayContext(display).getSystemService(Context.WINDOW_SERVICE) as? WindowManager
     }.getOrNull()

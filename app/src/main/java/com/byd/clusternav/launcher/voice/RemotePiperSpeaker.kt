@@ -159,7 +159,12 @@ class RemotePiperSpeaker(ctx: Context) : VoiceSpeaker {
     override fun warm() {
         if (dead.get() || !available()) return
         val need = synchronized(lock) { if (bound) false else { bound = true; true } }
-        if (need && !bindRemote()) onRemoteGone()
+        if (need) {
+            if (!bindRemote()) onRemoteGone()
+            // [P2 fix] warm chạy luồng NỀN, có thể chạy SAU shutdown() (luồng chính): nếu đã dead thì nhả ngay,
+            // không để tiến trình :tts bám (rò ~61MB suốt đời launcher).
+            else if (dead.get()) onRemoteGone()
+        }
     }
 
     override fun speak(text: String): Boolean = speakInternal(text, null)

@@ -134,6 +134,8 @@ object ScheduledNavRules {
         val cleanPlace = SavedPlaces.keyOf(sanitize(placeId))
         val cleanApp = sanitize(navApp)
         if (cleanId.isEmpty() || cleanPlace.isEmpty() || cleanApp.isEmpty()) return null
+        // [P2 fix] navApp chỉ toàn '+' (vd "+") ⇒ không mã app nào ⇒ luật lặp 0 lần: từ chối như KDoc hứa.
+        if (cleanApp.split('+').none { it.trim().isNotEmpty() }) return null
         if (days.isEmpty() || days.any { it < MON || it > SUN }) return null
         if (startMin < 0 || endMin < 0 || startMin > MAX_MIN || endMin > MAX_MIN) return null
         if (startMin > endMin) return null

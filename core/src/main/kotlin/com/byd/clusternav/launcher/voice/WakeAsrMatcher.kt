@@ -77,16 +77,20 @@ object WakeAsrMatcher {
         // wake thật. "hay cay ca"/"ok cay ky ca"/"hay kat hay kat" ⇒ nổ; "ca sĩ cá" (có "si"), "một cách khác"
         // (có mot/khac/lai) ⇒ KHÔNG (còn từ lạ ⇒ đang nói chuyện khác, không phải gọi).
         if (core.size <= WAKE_MAX_WORDS && core.all { wakeToken(it) } && core.any { strongWake(it) }) return true
-        // (f) LEAD gọi ("hê/hây/này/ok" — người hay mở đầu câu gọi) + fragment head/tail trong cụm NGẮN. Model
-        // rụng "ka" của "hê kachi" → "hê chi" ([ĐO harness 2026-09-24, wake-rate 71%). LEAD phải là từ ĐẦU (câu
-        // gọi mở bằng nó), không phải giữa câu, nên câu thường ("chào chị", "ca sĩ") KHÔNG có lead ⇒ không nổ.
-        if (words.size <= WAKE_MAX_WORDS && words.firstOrNull() in CALL_LEAD &&
-            words.any { it in HEAD || it in TAIL || strongWake(it) }
-        ) return true
-        // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"kha"/"ku"…). Model rụng "chi" của "ka chi"
-        // → chỉ còn "ka" ([ĐO harness 2026-09-24). K-start KHÔNG lẫn tiếng thường (xem (a)); NEG "kê khai"/"kỳ
-        // nghỉ" có từ non-wake ("khai"/"nghi") nên lõi >0 từ lạ ⇒ không rơi vào đây.
-        if (core.size in 1..2 && core.all { it in HEAD && it.startsWith("k") }) return true
+        // (f) LEAD gọi ("hê/hây/này/ok") + fragment LIỀN sau, và fragment phải MẠNH (strongWake hoặc HEAD k-start
+        // — KHÔNG nhận TAIL trần "chi"/"ti": [ĐO 2026-09-24] "này chị"/"ok chị"/"hay quá chị" sẽ nổ nhầm). Model
+        // rụng "ka" của "hê kachi" → "hê kach"/"hê ka". "này em"/"ok anh" không có fragment mạnh ⇒ không nổ.
+        if (words.size >= 2 && words.size <= WAKE_MAX_WORDS && words[0] in CALL_LEAD) {
+            val next = words[1]
+            // k-start / strongWake: nhận trong cụm tới WAKE_MAX_WORDS. c-start HEAD ("ca"/"cac"/"co" — lẫn "cà"
+            // /"các") CHỈ nhận khi cụm ĐÚNG 2 từ (lead+head, câu gọi ngắn dứt khoát) ⇒ "ok cà phê"/"này các bạn"
+            // (≥3 từ) KHÔNG lọt.
+            if (strongWake(next) || (next in HEAD && next.startsWith("k"))) return true
+            if (words.size == 2 && next in HEAD) return true
+        }
+        // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"ku"…, KHÔNG "kha"=«khá»). Model rụng "chi"
+        // của "ka chi" → "ka". NEG "kê khai"/"kỳ nghỉ"/"khá hay" ⇒ có từ non-wake / "kha" bị loại ⇒ không nổ.
+        if (core.size in 1..2 && core.all { it in HEAD && it.startsWith("k") && it != "kha" }) return true
         return false
     }
 

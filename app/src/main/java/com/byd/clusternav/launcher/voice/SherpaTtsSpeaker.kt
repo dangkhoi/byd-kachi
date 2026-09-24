@@ -233,6 +233,9 @@ class SherpaTtsSpeaker(
             //    Cả câu dài (85 ký tự ~3,8 s tổng hợp) ⇒ im 3,8 s rồi mới ra tiếng. Tách câu ⇒ câu đầu ngắn ⇒
             //    tiếng ra gần như tức thì, các câu sau tổng hợp trong lúc câu trước đang phát-nốt (drain).
             //  • #2 "ngắt nửa chừng": nếu bị cắt (đổi thế hệ), nó dừng ở RANH GIỚI câu, không cụt giữa từ.
+            // [P2 fix] Xin tiêu điểm MỘT LẦN quanh cả câu (nhiều mảnh) — không nhấp-nhả focus mỗi mảnh (ducking
+            // nhạc giật + mở N cửa cho app khác giật focus). Nhả ở finally ngoài.
+            requestFocus()
             for (part in splitSentences(text)) {
                 if (my != generation.get()) return
                 val audio = tts.generate(part, 0, speed)
@@ -245,6 +248,7 @@ class SherpaTtsSpeaker(
         } finally {
             // OQ4 — MỘT chỗ đóng sổ cho MỌI đường thoát (phát hết · bị cắt · ném · lỗi thời). Đặt ở `finally`
             // chứ không sau `play()`: ba trong bốn đường thoát ở trên là `return` hoặc `catch`.
+            abandonFocus()   // [P2 fix] nhả tiêu điểm 1 lần cho cả câu (mọi đường thoát)
             // ⚠ `settle(my)` chứ không `settle(null)`: xem KDoc [Waiter] — lượt này chỉ được đóng sổ cho CHÍNH
             // việc chờ của nó, không được vớ việc chờ của câu xếp sau.
             settle(my)
@@ -265,7 +269,7 @@ class SherpaTtsSpeaker(
         for (ch in text) {
             buf.append(ch)
             val hard = ch == '.' || ch == '!' || ch == '?' || ch == '…' || ch == ';' || ch == '\n' || ch == '—'
-            val soft = (ch == ',' || ch == ' ') && buf.length >= SPLIT_SOFT_CHARS
+            val soft = ch == ',' && buf.length >= SPLIT_SOFT_CHARS
             if (hard || soft) flush()
         }
         flush()
@@ -302,7 +306,6 @@ class SherpaTtsSpeaker(
     /** Đẩy PCM float ra loa. **CHẶN** cho tới khi phát xong ⇒ chỉ gọi trên luồng `KachiSpeak`. */
     private fun play(samples: FloatArray, sampleRate: Int, my: Int) {
         if (samples.isEmpty()) return
-        requestFocus()
         val minBuf = AudioTrack.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_OUT_MONO,
@@ -336,7 +339,6 @@ class SherpaTtsSpeaker(
         } finally {
             track.compareAndSet(t, null)
             runCatching { t.release() }
-            abandonFocus()
         }
     }
 

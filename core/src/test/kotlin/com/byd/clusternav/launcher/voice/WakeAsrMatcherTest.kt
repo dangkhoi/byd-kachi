@@ -21,6 +21,8 @@ class WakeAsrMatcherTest {
         listOf(
             "hôm nay trời đẹp quá", "bật đèn đọc", "mở kính lái", "cho tôi nghe nhạc",
             "", "ừ", "cái gì đó tôi không biết nói dài dòng lắm luôn", "chào buổi sáng",
+            // [P1 fix 2026-09-24] câu thường mở đầu hay/này/ok + fragment yếu — luật (f)/(g) KHÔNG được nổ.
+            "này chị ơi", "ok chị", "hoặc chỉ", "khá hay", "hai quá trình", "ok anh", "này em", "hay là các bạn",
         ).forEach { assertFalse(WakeAsrMatcher.isWake(it), "KHÔNG được nổ: \"$it\"") }
     }
 
