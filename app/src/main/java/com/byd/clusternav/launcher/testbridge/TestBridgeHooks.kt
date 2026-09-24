@@ -75,6 +75,8 @@ internal class TestBridgeHooks(
     val shellUsable: () -> Boolean,
     /** Cầu ClusterNav (cho lệnh `reapply`). */
     val bridge: () -> ClusterNavBridge,
+    /** Camera theo xi-nhan: ép một nhịp với xi-nhan giả (trái,phải) — verify E2E overlay off-car (HAL null). */
+    val cameraTick: (Boolean, Boolean) -> Unit = { _, _ -> },
 )
 
 /**
@@ -135,6 +137,7 @@ internal fun Activity.attachTestBridge(
     shell: () -> ((String) -> String)?,
     /** Cổng điều khiển xe của [com.byd.clusternav.AppContainer] — CÙNG cổng mà thanh nút bắn. */
     carControl: CarControlPort,
+    cameraTick: (Boolean, Boolean) -> Unit,
 ) {
     val hooks =
         TestBridgeHooks(
@@ -176,6 +179,7 @@ internal fun Activity.attachTestBridge(
             listen = { voice().start() },
             shellUsable = { shell() != null },
             bridge = { clusterNavBridge() },
+            cameraTick = cameraTick,
         )
     KachiTestHooks.attach(hooks)
     val host = application

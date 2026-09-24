@@ -648,4 +648,6 @@
     <string name="kachi_captest_logs_where">Logs on the card: %1$s\nPull with: %2$s</string>
     <string name="kachi_captest_snapshot_done">Log snapshot saved: %s</string>
     <string name="kachi_captest_report_saved">Report saved to the card: %s</string>
+    <string name="kachi_camera_left">Left camera · in development</string>
+    <string name="kachi_camera_right">Right camera · in development</string>
 </resources>

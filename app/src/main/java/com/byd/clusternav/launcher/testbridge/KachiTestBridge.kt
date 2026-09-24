@@ -152,6 +152,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.WAV -> TestBridgeWav.run(app, cmd, hooks, reply)
             TestBridgeCommands.TTS -> TestBridgeTts.run(app, cmd, reply)
             TestBridgeCommands.KWS -> TestBridgeKws.run(app, cmd, reply)
+            TestBridgeCommands.CAMERA -> TestBridgeCamera.run(cmd, hooks, reply)
             TestBridgeCommands.LISTEN -> runListen(hooks, reply)
             TestBridgeCommands.PROFILES -> reply.ok(
                 "active" to hooks.state().activeProfile,

@@ -332,7 +332,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         startVoiceIfRequested(intent, voice)
         // T-BRIDGE — móc cho cầu kiểm thử qua adb; lượt tháo tự nối theo vòng đời (xem KDoc `attachTestBridge`).
         // Gắn móc KHÔNG mở cửa nào: mọi lệnh vẫn bị chặn bởi công tắc ở Cài đặt (`KachiTestBridge`).
-        attachTestBridge(viewModel, { slots }, { voice }, { drawerController }, { panels }, { shell }, container.carControl)
+        attachTestBridge(viewModel, { slots }, { voice }, { drawerController }, { panels }, { shell }, container.carControl) { l, r -> cameraSignal.tick(l, r) }
     }
 
     /** `singleTask` ⇒ lời gọi thứ hai về ĐÂY, không phải [onCreate] (bấm bong bóng khi Kachi đang mở sẵn). */

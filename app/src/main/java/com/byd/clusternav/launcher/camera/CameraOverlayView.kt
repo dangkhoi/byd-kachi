@@ -27,6 +27,12 @@ class CameraOverlayView(private val appCtx: Context) {
 
     private var wm: WindowManager? = null
     private var surface: SurfaceView? = null
+    private var container: android.view.View? = null
+
+    private companion object {
+        const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        const val WRAP = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+    }
 
     /** Hiện overlay ở [side]. [option] (runbook): "B"=setZOrderMediaOverlay thay setZOrderOnTop. */
     fun show(side: Side, onCluster: Boolean = false, option: String = "A") {
@@ -39,15 +45,29 @@ class CameraOverlayView(private val appCtx: Context) {
                 setBackgroundColor(Color.BLACK)
                 holder.setFormat(PixelFormat.OPAQUE)
             }
-            w.addView(sv, layoutParams(ctx, side))
-            wm = w; surface = sv
+            // Nhãn nổi trên SurfaceView: off-car (chưa có tín hiệu LVDS) vẫn NHÌN THẤY overlay hiện đúng bên/đúng
+            // lúc ⇒ verify wiring E2E bằng mắt. Khi tín hiệu video thật đổ vào SurfaceView, nhãn nằm trên góc.
+            val frame = android.widget.FrameLayout(ctx).apply {
+                addView(sv, android.widget.FrameLayout.LayoutParams(MATCH, MATCH))
+                addView(android.widget.TextView(ctx).apply {
+                    text = ctx.getString(
+                        if (side == Side.LEFT) com.byd.clusternav.R.string.kachi_camera_left
+                        else com.byd.clusternav.R.string.kachi_camera_right,
+                    )
+                    setTextColor(Color.WHITE)
+                    textSize = 16f
+                    setPadding(24, 16, 24, 16)
+                }, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
+            }
+            w.addView(frame, layoutParams(ctx, side))
+            wm = w; surface = sv; container = frame
             Log.i(PanoramaHal.TAG, "overlay show side=$side cluster=$onCluster opt=$option")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
     }
 
     fun hide() {
-        runCatching { surface?.let { wm?.removeView(it) } }
-        surface = null; wm = null
+        runCatching { container?.let { wm?.removeView(it) } }
+        surface = null; container = null; wm = null
     }
 
     /** Surface để [PanoramaHal]/LVDS đổ video vào (nếu ROM cho). null khi chưa hiện. */
