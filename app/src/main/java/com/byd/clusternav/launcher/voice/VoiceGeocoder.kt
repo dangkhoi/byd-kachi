@@ -44,6 +44,7 @@ object VoiceGeocoder {
 
     /** Thời hạn cho lượt hỏi máy chủ — ngắn: người lái đang chờ, và mạng của xe hay treo (CLAUDE.md §11). */
     private const val READ_TIMEOUT_MS = 5_000
+    private const val GEO_CONNECT_TIMEOUT_MS = 4_000   // ngắn hơn TOTAL_BUDGET (7s) — connect chưa xong đã cắt là vô nghĩa
 
     /** Thời hạn CỨNG cho cả lượt giải (gồm cả đường on-device không có timeout) — xem [resolveBounded]. */
     private const val TOTAL_BUDGET_MS = 7_000L
@@ -152,6 +153,12 @@ object VoiceGeocoder {
         Log.i(TAG, "tra online (Nominatim): \"$place\"")
         throttle()
         val conn = HttpConn.open(NOMINATIM + android.net.Uri.encode(place), READ_TIMEOUT_MS, ACCEPT_JSON)
+        // [ĐO xe+emulator 2026-09-24] geocode "quá hạn 7000ms": mạng xe/emulator tới Nominatim chậm/treo (curl máy
+        // 300ms nhưng trong máy ảo/xe treo), + connectTimeout HttpConn=15s > budget 7s ⇒ connect chưa xong đã cắt.
+        //  (a) connectTimeout ngắn hơn budget để CÒN thời gian đọc; (b) UA đúng CHUẨN Nominatim (điều khoản đòi UA
+        //  nhận dạng được + contact) — UA chung "ClusterNav-Updater" dễ bị tarpit/rate-limit ⇒ treo.
+        conn.connectTimeout = GEO_CONNECT_TIMEOUT_MS
+        conn.setRequestProperty("User-Agent", "KachiLauncher/1.0 (BYD DiLink; https://github.com/dangkhoi/byd-kachi)")
         try {
             if (conn.responseCode != 200) {
                 Log.w(TAG, "máy chủ tra cứu trả ${conn.responseCode}")
