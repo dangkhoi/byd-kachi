@@ -50,6 +50,10 @@ object VoiceGrammar {
     val VERBS: List<Pair<List<String>, VoiceVerb>> = listOf(
         listOf("dan", "duong", "den") to VoiceVerb.NAV,
         listOf("dan", "duong", "toi") to VoiceVerb.NAV,
+        // owner 2026-09-24 [ĐO emulator]: "dẫn tới X" / "dẫn đến X" (THIẾU "đường") → Unknown. "dẫn" đủ đặc trưng
+        // dẫn đường (khác "về/đi/đến" đơn mơ hồ), nên "dẫn tới/đến" an toàn là NAV. Đặt SAU cụm 3-từ để dãy dài thắng.
+        listOf("dan", "toi") to VoiceVerb.NAV,
+        listOf("dan", "den") to VoiceVerb.NAV,
         listOf("chi", "duong", "den") to VoiceVerb.NAV,
         listOf("chi", "duong", "toi") to VoiceVerb.NAV,
         listOf("tim", "duong", "den") to VoiceVerb.NAV,

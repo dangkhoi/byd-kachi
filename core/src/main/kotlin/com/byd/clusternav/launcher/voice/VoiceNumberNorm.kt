@@ -70,7 +70,7 @@ object VoiceNumberNorm {
     }
 
     /** Ký tự đọc là dấu "/" trong SỐ NHÀ Việt: "xẹt"/"sẹt"/"trên" (123 xẹt 34 → 123/34). */
-    private val SLASH_WORDS = setOf("xet", "xuyet", "set", "suyet", "tren")
+    private val SLASH_WORDS = setOf("xet", "xuyet", "set", "sep", "suyet", "suet", "tren")
 
     /**
      * Ghép các mảnh SỐ NHÀ sau khi đã đổi từ-số → chữ số:
