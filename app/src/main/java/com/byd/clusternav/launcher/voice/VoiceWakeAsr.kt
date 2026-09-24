@@ -77,7 +77,7 @@ class VoiceWakeAsr private constructor(private val rec: VoiceRecognizer) : WakeE
         const val TAG = "KachiWakeAsr"
         const val SAMPLE_RATE = 16_000
         const val WINDOW_MS = 1_600
-        const val DECODE_EVERY_MS = 1_000       // #1: 500→1000 — giải mã ~1 lần/giây (giảm nửa tải CPU decode)
+        const val DECODE_EVERY_MS = 500         // 2026-09-24: 1000→500 cắt nửa độ trễ "lâu mới lên" (owner). RMS-gate (windowRms<RMS_GATE) đã bỏ decode khi IM ⇒ CPU idle vẫn thấp, chỉ decode khi CÓ tiếng (đúng lúc cần bắt wake).
         const val MIN_MS = 500
         // #1 RMS-GATE: cửa sổ RMS < ngưỡng ⇒ coi là im lặng ⇒ KHÔNG giải mã (bỏ decode 74MB vô ích khi im).
         // 0.010 ≈ nền cabin im; tiếng nói thật RMS cao hơn nhiều. Nới lỏng để không bỏ sót "Hey Kachi" nói nhỏ.

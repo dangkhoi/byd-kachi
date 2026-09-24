@@ -30,6 +30,9 @@ object WakeAsrMatcher {
     /** Từ đệm/bao quanh người hay nói HOẶC ASR chèn giữa: "ơi"/"ok"/"hey"/"hay"/"hai"… — bỏ trước khi soi cặp. */
     private val FILLER = setOf("oi", "o", "ok", "okay", "hey", "hay", "hai", "hi", "he", "a", "e", "va", "cai")
 
+    /** Từ MỞ ĐẦU câu gọi ("hê/hây/này/ok kachi") — chỉ ở vị trí ĐẦU; luật (f) dùng để bắt ca model rụng "ka". */
+    private val CALL_LEAD = setOf("he", "hay", "hey", "nay", "ok", "okay", "hi")
+
     /**
      * Text ASR (một cửa sổ) có phải câu gọi "Kachi" không — chỉnh theo GOLDEN on-car 2026-09-23
      * (`scripts/voice/data/wake-golden-oncar-2026-09-23.txt`): model ra "kach"/"kacha"/"cá chì"/"các chị" +
@@ -74,6 +77,12 @@ object WakeAsrMatcher {
         // wake thật. "hay cay ca"/"ok cay ky ca"/"hay kat hay kat" ⇒ nổ; "ca sĩ cá" (có "si"), "một cách khác"
         // (có mot/khac/lai) ⇒ KHÔNG (còn từ lạ ⇒ đang nói chuyện khác, không phải gọi).
         if (core.size <= WAKE_MAX_WORDS && core.all { wakeToken(it) } && core.any { strongWake(it) }) return true
+        // (f) LEAD gọi ("hê/hây/này/ok" — người hay mở đầu câu gọi) + fragment head/tail trong cụm NGẮN. Model
+        // rụng "ka" của "hê kachi" → "hê chi" ([ĐO harness 2026-09-24, wake-rate 71%). LEAD phải là từ ĐẦU (câu
+        // gọi mở bằng nó), không phải giữa câu, nên câu thường ("chào chị", "ca sĩ") KHÔNG có lead ⇒ không nổ.
+        if (words.size <= WAKE_MAX_WORDS && words.firstOrNull() in CALL_LEAD &&
+            words.any { it in HEAD || it in TAIL || strongWake(it) }
+        ) return true
         return false
     }
 

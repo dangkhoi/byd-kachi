@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.testbridge
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
+import com.byd.clusternav.launcher.voice.WakeAsrMatcher
 import com.byd.clusternav.launcher.voice.VoiceWiring
 import java.io.File
 
@@ -40,6 +41,7 @@ internal object TestBridgeWav {
                     "path" to probe.path,
                     "staged_from" to cmd.path.ifBlank { null },
                     "heard" to probe.heard,
+                    "wake" to WakeAsrMatcher.isWake(probe.heard),
                     "grammar" to probe.grammarText,
                     "free" to probe.freeText,
                     "probe_error" to probe.error,
