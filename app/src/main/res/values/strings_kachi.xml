@@ -664,6 +664,8 @@
     <string name="kachi_captest_logs_where">Log ghi ở thẻ nhớ: %1$s\nLấy về bằng: %2$s</string>
     <string name="kachi_captest_snapshot_done">Đã chụp log: %s</string>
     <string name="kachi_captest_report_saved">Đã lưu báo cáo ra thẻ: %s</string>
+    <string name="kachi_camera_cluster_title">Hiện camera lên màn cụm</string>
+    <string name="kachi_camera_cluster_sub">Overlay camera hiện trên cụm đồng hồ thay màn chính</string>
     <string name="kachi_camera_left">Camera trái · đang phát triển</string>
     <string name="kachi_camera_right">Camera phải · đang phát triển</string>
 </resources>

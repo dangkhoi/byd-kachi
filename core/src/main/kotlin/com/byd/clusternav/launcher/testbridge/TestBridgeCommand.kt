@@ -286,6 +286,7 @@ object TestBridgeCommands {
         "voice_keep_log",
         // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + đổi phương án LVDS (A–J) test nhanh trên xe.
         "camera_signal_enabled",
+        "camera_on_cluster",
         "camera_lvds_option",
     )
 

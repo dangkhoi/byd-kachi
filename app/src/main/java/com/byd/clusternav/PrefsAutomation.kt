@@ -43,6 +43,12 @@ fun Prefs.cameraSignalEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean
 fun Prefs.setCameraSignalEnabled(ctx: Context, v: Boolean) =
     autoPrefs(ctx).edit().putBoolean(K_CAMERA_SIGNAL, v).apply()
 
+private const val K_CAMERA_ON_CLUSTER = "camera_on_cluster"
+/** Hiện overlay camera lên MÀN CỤM thay màn chính (owner 2026-09-24). Mặc định false = màn chính. */
+fun Prefs.cameraOnCluster(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_CAMERA_ON_CLUSTER, false)
+fun Prefs.setCameraOnCluster(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_CAMERA_ON_CLUSTER, v).apply()
+
 // Phương án LVDS/hiển thị camera để thử NHANH trên xe không cần rebuild (findings 2026-09-23, runbook A–J).
 // Chuỗi 1 ký tự: "A"(mặc định) · "B"(zOrderMediaOverlay) · "C"(setLVDS trước) · "D"(FULL_SCREEN) · "G"(cụm) ·
 // "H"(chờ workState ON). Chỉnh qua prefs_set khi test 10 option, chốt được rồi đặt mặc định.

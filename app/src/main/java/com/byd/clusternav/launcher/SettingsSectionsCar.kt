@@ -60,6 +60,11 @@ class SettingsCarSection(
             title = context.getString(R.string.kachi_camera_signal_title),
             sub = context.getString(R.string.kachi_camera_signal_sub),
         ) { on -> bridge.setCameraSignal(on) })
+        body.addView(rows.checkRow(
+            on = bridge.cameraOnCluster(),
+            title = context.getString(R.string.kachi_camera_cluster_title),
+            sub = context.getString(R.string.kachi_camera_cluster_sub),
+        ) { on -> bridge.setCameraOnCluster(on) })
     }
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────

@@ -11,6 +11,9 @@ import com.byd.clusternav.setNavAutomationRules
 import com.byd.clusternav.setRainDefrostEnabled
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.cameraOnCluster
+import com.byd.clusternav.setCameraOnCluster
+import com.byd.clusternav.setCameraSignalEnabled
 
 /**
  * ═══ AUTOMATION trên cầu Settings (hàm mở rộng của [ClusterNavBridge]) ═══════════════════════════════════════
@@ -45,6 +48,8 @@ fun ClusterNavBridge.setRainDefrost(on: Boolean) {
 /** Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — công tắc đi qua cầu như mọi mục Cài đặt. */
 fun ClusterNavBridge.cameraSignal(): Boolean = Prefs.cameraSignalEnabled(app)
 fun ClusterNavBridge.setCameraSignal(on: Boolean) = Prefs.setCameraSignalEnabled(app, on)
+fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
+fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
 
 /** AUTOMATION #2 — sổ luật dẫn-đường-theo-lịch, đã giải mã (rỗng = chưa có luật nào). */
 fun ClusterNavBridge.navRules(): List<ScheduledNavRule> =

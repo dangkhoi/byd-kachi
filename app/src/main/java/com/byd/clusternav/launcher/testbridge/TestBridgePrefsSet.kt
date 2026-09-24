@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.testbridge
 import android.content.Context
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.setCameraOnCluster
 import com.byd.clusternav.setCameraLvdsOption
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
@@ -140,6 +141,7 @@ internal object TestBridgePrefsSet {
             "voice_keep_log" -> bool(raw)?.let { Prefs.setVoiceKeepLog(app, it); it.toString() }
             // Camera theo xi-nhan (findings 2026-09-23): bật/tắt + đổi phương án LVDS (A–J) để thử NHANH trên xe.
             "camera_signal_enabled" -> bool(raw)?.let { Prefs.setCameraSignalEnabled(app, it); it.toString() }
+            "camera_on_cluster" -> bool(raw)?.let { Prefs.setCameraOnCluster(app, it); it.toString() }
             "camera_lvds_option" -> raw.trim().uppercase().takeIf { it.isNotEmpty() }
                 ?.let { Prefs.setCameraLvdsOption(app, it); it }
             KEY_TOP_STRIP_LABELS -> {

@@ -39,7 +39,9 @@ class CameraOverlayView(private val appCtx: Context) {
         hide()
         runCatching {
             val ctx = appCtx
-            val w = wmOf(ctx) ?: return
+            // onCluster: dựng cửa sổ trên DISPLAY CỤM (createDisplayContext) — cùng cách SpeedBadgeOverlay. Không
+            // có cụm (off-car / chưa chiếu) ⇒ rơi về màn chính, không crash (overlay vẫn hiện để verify).
+            val w = (if (onCluster) clusterWm(ctx) else null) ?: wmOf(ctx) ?: return
             val sv = SurfaceView(ctx).apply {
                 if (option.contains("B")) setZOrderMediaOverlay(true) else setZOrderOnTop(true)   // B: media overlay
                 setBackgroundColor(Color.BLACK)
@@ -75,6 +77,17 @@ class CameraOverlayView(private val appCtx: Context) {
 
     private fun wmOf(ctx: Context): WindowManager? =
         ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+
+    /** WindowManager của DISPLAY CỤM (dò như SpeedBadgeOverlay: id 1 rồi PRESENTATION ≠ 0). null nếu chưa có cụm. */
+    private fun clusterWm(ctx: Context): WindowManager? = runCatching {
+        val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+            ?: return null
+        val display = dm.getDisplay(1)
+            ?: dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+                .firstOrNull { it.displayId != 0 }
+            ?: return null
+        ctx.createDisplayContext(display).getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+    }.getOrNull()
 
     /** Nửa màn bên [side], cao ~60% màn, dính mép. Cỡ tỉ lệ ⇒ không hardcode px. */
     private fun layoutParams(ctx: Context, side: Side): WindowManager.LayoutParams {
