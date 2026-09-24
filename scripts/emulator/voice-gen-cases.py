@@ -28,13 +28,14 @@ POLITE_PRE=["","làm ơn ","cho tôi ","giúp tôi ","làm ơn cho tôi "]
 POLITE_POST=["",""," nhé"," giúp tôi"," đi"]
 NAV_VERB=["dẫn đường đến","dẫn tới","dẫn đến","chỉ đường tới","đưa tôi đến","dẫn đường tới"]
 
+# ⚠ KHÔNG thêm "tăng/giảm âm lượng": vol control đã XOÁ HẲN (owner 2026-09-21 — đã có núm vô-lăng + thanh Android).
 CONTROLS=[  # (nhãn nói, kind)
  ("bật đèn đọc","Control"),("tắt đèn đọc","Control"),("mở điều hòa","Control"),("tắt điều hòa","Control"),
  ("bật ghế mát","Control"),("tắt ghế mát","Control"),("bật sưởi ghế","Control"),("mở kính","Control"),
  ("đóng kính","Control"),("mở cửa sổ trời","Control"),("đóng cửa sổ trời","Control"),("đóng cốp","Control"),
  ("bật lọc bụi","Control"),("tắt lọc bụi","Control"),("bật đèn pha","Control"),("tắt đèn pha","Control"),
  ("tắt đèn ban ngày","Control"),("tăng nhiệt độ","Control"),("giảm nhiệt độ","Control"),("tăng gió","Control"),
- ("giảm gió","Control"),("tăng âm lượng","Control"),("giảm âm lượng","Control"),("mở hết kính","Macro"),("đóng hết kính","Macro")]
+ ("giảm gió","Control"),("mở hết kính","Macro"),("đóng hết kính","Macro")]
 READS=[("nhiệt độ bao nhiêu","Read"),("pin còn bao nhiêu","Read"),("xem tốc độ","Read"),("bụi mịn bao nhiêu","Read"),
  ("nhiệt độ ngoài trời bao nhiêu","Read"),("mức xăng còn bao nhiêu","Read"),("quãng đường đã chạy bao nhiêu","Read"),
  ("còn bao nhiêu cây số","Read"),("tốc độ hiện tại thế nào","Read"),("nhiệt độ trong xe thế nào","Read")]
