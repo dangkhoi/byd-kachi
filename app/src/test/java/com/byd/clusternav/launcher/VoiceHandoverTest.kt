@@ -188,17 +188,18 @@ class VoiceHandoverTest {
      * VietMap **không** có cửa chữ ⇒ tra toạ độ, **đọc lại tên nơi tra được**, rồi mới bắn URI toạ độ.
      *
      * Hai điều được khoá ở đây: có một cổng hỏi lại thứ hai (tên do bên tra cứu trả về khác câu người ta nói),
-     * và URI đi ra là khuôn `vietmaplive://` lấy từ nguồn Kiki.
+     * và URI đi ra là khuôn `vietmaplive://` lấy từ nguồn Kiki. ⚠ owner 2026-09-24: BỎ hỏi xác nhận — dẫn thẳng.
      */
     @Test
-    fun `VietMap tra toa do, doc lai ten roi moi ban`() {
+    fun `VietMap tra toa do xong dan THANG khong hoi`() {
         val r = Rig(
             labels = mapOf("VietMap Live" to VIETMAP),
             geocoded = VoiceAppIntents.Coords(10.7717, 106.7043, "Chợ Bến Thành"),
         )
         r.run("dẫn đường tới chợ bến thành bằng việt map")
         assertEquals(1, r.geocodeCalls)
-        assertTrue(r.asked.any { it.contains("Chợ Bến Thành") }, "phải đọc lại TÊN tra được; đã hỏi: ${r.asked}")
+        // owner 2026-09-24: Nav KHÔNG hỏi xác nhận — dẫn THẲNG (geocode → deliver), không cổng nào.
+        assertTrue(r.asked.isEmpty(), "Nav không hỏi xác nhận (đã bỏ nav_query); đã hỏi: ${r.asked}")
         val h = r.sent.single()
         assertEquals(VIETMAP, h.pkg)
         assertTrue((h.launch as VoiceLaunch.Uri).template.startsWith("vietmaplive://companion/navigation?"))

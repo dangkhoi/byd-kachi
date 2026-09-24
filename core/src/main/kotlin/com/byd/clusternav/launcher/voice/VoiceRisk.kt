@@ -88,7 +88,10 @@ object VoiceRiskTable {
         is VoiceIntent.Control ->
             if (CONTROL_RULES.any { it.controlId == intent.id }) PREFIX_CONTROL + intent.id else null
         is VoiceIntent.Macro -> if (intent.id in MACRO_IDS) PREFIX_MACRO + intent.id else null
-        is VoiceIntent.Nav -> if (intent.query.isBlank()) null else ID_NAV_QUERY
+        // owner 2026-09-24: Nav KHÔNG hỏi xác nhận (cổng nav_query "lòng vòng khó đoán, khỏi đi"). Dẫn THẲNG —
+        // geocode được thì đi, không được thì mở app + nói chưa tra được. `ID_NAV_QUERY` giữ để tương thích chuỗi
+        // `voice_confirm_ids` cũ đã lưu (đọc lên không lỗi) nhưng KHÔNG còn là mã hỏi-được.
+        is VoiceIntent.Nav -> null
         is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY && intent.query.isNotBlank()) ID_MEDIA_QUERY else null
         else -> null
     }
@@ -97,7 +100,7 @@ object VoiceRiskTable {
     fun askableIds(): List<String> =
         CONTROL_RULES.map { PREFIX_CONTROL + it.controlId } +
             MACRO_IDS.sorted().map { PREFIX_MACRO + it } +
-            listOf(ID_PROFILE, ID_NAV_QUERY, ID_MEDIA_QUERY)
+            listOf(ID_PROFILE, ID_MEDIA_QUERY)   // owner 2026-09-24: bỏ ID_NAV_QUERY (nav không hỏi nữa)
 
     /**
      * ═══ V3 · R7 — MẶC ĐỊNH **KHÔNG HỎI GÌ CẢ** ═════════════════════════════════════════════════════════════

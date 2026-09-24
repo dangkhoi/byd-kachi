@@ -104,13 +104,10 @@ class VoiceTargetDispatch(
                     say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target) else VoiceReply.cannotOpen(i))
                     return@onUi
                 }
-                // Tên do bên giải trả về KHÁC câu người ta nói (*"chợ bến thành"* → *"Chợ Bến Thành"*, hoặc một
-                // nơi trùng tên). Đọc lại rồi mới bắn — cùng lý do với cổng CONFIRM của từ vựng mở.
-                confirm(
-                    VoiceReply.confirmPlace(i, target, coords.place),
-                    { deliver(i, target, pkg, coords.place, coords) },
-                    { say(VoiceReply.cancelled(i, 0)) },
-                )
+                // owner 2026-09-24: BỎ cổng hỏi xác nhận tên geocode ("Cobi Tower?" — "lòng vòng khó đoán"). Tra
+                // được toạ độ thì DẪN THẲNG. Vẫn dùng chính câu người nói (`q`) làm nhãn đọc, không đọc lại tên tra
+                // (tên tra thường lạ/không khớp câu ⇒ gây rối). Toạ độ vẫn là toạ độ đã tra.
+                deliver(i, target, pkg, q, coords)
             }
         }
     }

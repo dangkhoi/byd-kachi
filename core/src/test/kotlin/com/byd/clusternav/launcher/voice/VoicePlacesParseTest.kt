@@ -154,7 +154,8 @@ class VoicePlacesParseTest {
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco")))
         assertEquals(null, VoiceRiskTable.confirmId(saved("về nhà")), "sổ địa chỉ KHÔNG bật hỏi lại được")
         val all = VoiceRiskTable.askableIds().toSet()
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco"), all), "điểm đến MỞ bật được")
+        // owner 2026-09-24: Nav KHÔNG còn hỏi xác nhận (nav_query đã bỏ) — dù bật hết vẫn NORMAL.
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Nav("Bitexco"), all), "điểm đến KHÔNG hỏi nữa")
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(saved("về nhà"), all), "nơi đã lưu thì không")
     }
 
