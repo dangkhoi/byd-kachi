@@ -323,6 +323,8 @@
     <string name="kachi_nav_auto_need_place">There is no saved address to navigate to yet. Add one under "Address book" above first.</string>
     <string name="kachi_nav_auto_bad">Not saved: the times need to read HH:mm, the end time must not be earlier than the start (no crossing midnight), and at least one day must be ticked.</string>
     <string name="kachi_nav_auto_row">%1$s–%2$s → %3$s</string>
+    <string name="kachi_on">On</string>
+    <string name="kachi_off">Off</string>
     <string name="kachi_nav_auto_row_off">%1$s (off)</string>
     <string name="kachi_nav_auto_gps_on">waits for GPS</string>
     <string name="kachi_nav_auto_gps_off">no GPS needed</string>

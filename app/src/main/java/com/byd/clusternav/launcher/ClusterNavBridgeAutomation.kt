@@ -65,3 +65,10 @@ fun ClusterNavBridge.setNavRules(rules: List<ScheduledNavRule>) {
     ScheduledNavApplier.pruneFired(app)
     AutomationService.sync(app)
 }
+
+/**
+ * Bật/tắt NHANH một lịch (owner 2026-09-24) — user active/inactive tuỳ trường hợp mà không phải mở hộp Sửa.
+ * Đi qua [NavAutomationBook.setEnabled] (thuần) rồi [setNavRules] (cổng ghi CHUNG — không mở đường ghi thứ hai).
+ */
+fun ClusterNavBridge.setNavRuleEnabled(id: String, enabled: Boolean) =
+    setNavRules(NavAutomationBook.setEnabled(navRules(), id, enabled))

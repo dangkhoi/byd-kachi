@@ -68,7 +68,10 @@ class SettingsNavAutomationSection(
                     // Nhãn **Sửa** (không phải Xoá): sửa giờ/thứ là việc hay làm, xoá là việc một lần — và xoá
                     // nằm trong chính hộp sửa, sau khi người dùng đã thấy mình đang đứng ở luật nào.
                     actionLabel = context.getString(R.string.kachi_edit),
-                ) { edit(rule) },
+                    onAction = { edit(rule) },
+                    // owner 2026-09-24: toggle Bật/Tắt nhanh từng lịch — active/inactive tuỳ trường hợp, không phải mở Sửa.
+                    toggle = rule.enabled to { on -> bridge.setNavRuleEnabled(rule.id, on); rebuild() },
+                ),
             )
         }
         if (rules.size >= NavAutomationBook.MAX) {

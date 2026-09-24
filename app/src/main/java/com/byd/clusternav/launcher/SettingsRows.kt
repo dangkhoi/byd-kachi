@@ -436,7 +436,7 @@ class SettingsRows(internal val context: Context) {
      * Nhãn hành động do chỗ gọi cấp (không hardcode "Xoá") để hàng này còn dùng được cho "Đổi"/"Chọn" — luật
      * *generic, không case-by-case* của CLAUDE.md §7.
      */
-    fun listRow(title: String, sub: String, actionLabel: String, onAction: () -> Unit): View {
+    fun listRow(title: String, sub: String, actionLabel: String, toggle: Pair<Boolean, (Boolean) -> Unit>? = null, onAction: () -> Unit): View {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             background = KachiTheme.surface(context, Sp.RADIUS_L)
@@ -451,6 +451,15 @@ class SettingsRows(internal val context: Context) {
                     text = sub; setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
                 })
             }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            toggle?.let { (on, onToggle) ->
+                addView(TextView(context).apply {
+                    text = context.getString(if (on) R.string.kachi_on else R.string.kachi_off)
+                    paintButton(this, Sp.RADIUS_PILL)
+                    // Tắt hiển thị mờ hơn (INK khi bật) để nhìn 1 phát biết lịch nào đang active.
+                    alpha = if (on) 1f else 0.55f
+                    setOnClickListener { onToggle(!on) }
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.rightMargin = dpi(context, Sp.S) })
+            }
             addView(TextView(context).apply {
                 text = actionLabel
                 paintButton(this, Sp.RADIUS_PILL)

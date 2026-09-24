@@ -335,6 +335,8 @@
     <string name="kachi_nav_auto_need_place">Chưa có địa chỉ nào để dẫn tới. Thêm ở “Sổ địa chỉ” phía trên trước đã.</string>
     <string name="kachi_nav_auto_bad">Chưa lưu được: cần giờ đúng dạng HH:mm, giờ kết thúc không sớm hơn giờ bắt đầu (không bắc qua nửa đêm), và tick ít nhất một thứ.</string>
     <string name="kachi_nav_auto_row">%1$s–%2$s → %3$s</string>
+    <string name="kachi_on">Bật</string>
+    <string name="kachi_off">Tắt</string>
     <string name="kachi_nav_auto_row_off">%1$s (đang tắt)</string>
     <string name="kachi_nav_auto_gps_on">chờ có GPS</string>
     <string name="kachi_nav_auto_gps_off">không cần GPS</string>
