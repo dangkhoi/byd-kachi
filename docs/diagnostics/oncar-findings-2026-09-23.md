@@ -1,6 +1,6 @@
 # On-car findings 2026-09-23 — bóng VietMap · HOME restart · voice dẫn đường
 
-> Điều tra trên xe `172.20.10.8` (adb_raw.py, macOS chặn adb LAN) · Kachi **2.14 (vc115)** lúc điều tra ·
+> Điều tra trên xe `<car-ip>` (adb_raw.py, macOS chặn adb LAN) · Kachi **2.14 (vc115)** lúc điều tra ·
 > **KHÔNG fix gì trong buổi này** (chỉ finding) · cuối buổi đã cài **2.15 (vc116)** lên xe (Hey Kachi ASR +
 > camera xi-nhan, đều mặc định TẮT/ASR). Bằng chứng là log thật, đánh dấu [ĐO]/[SUY].
 >
