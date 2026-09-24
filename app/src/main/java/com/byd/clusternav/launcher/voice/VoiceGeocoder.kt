@@ -103,6 +103,11 @@ object VoiceGeocoder {
         return onDevice(ctx, place) ?: online(place)
     }
 
+    // [ĐO xe 2026-09-24] Xe không GMS: Geocoder.isPresent()=true nhưng getFromLocationName ném
+    // IOException "Service not Available" MỖI lượt (tốn thời gian, và làm nhiễu chẩn đoán). Nhớ 1 lần rồi skip
+    // onDevice → đi thẳng online (Nominatim). @Volatile vì đọc/ghi từ luồng nền geocode.
+    @Volatile private var onDeviceDead = false
+
     /**
      * [resolve] với **thời hạn CỨNG** — chống `Geocoder` của nền tảng treo vô hạn (owner báo "VietMap đơ" 09-17).
      *
@@ -126,7 +131,7 @@ object VoiceGeocoder {
 
     /** Đường của nền tảng. `isPresent()` false ⇒ ROM không có dịch vụ nào đứng sau, gọi cũng chỉ trả rỗng. */
     private fun onDevice(ctx: Context, place: String): VoiceAppIntents.Coords? {
-        if (!Geocoder.isPresent()) return null
+        if (onDeviceDead || !Geocoder.isPresent()) return null
         return runCatching {
             @Suppress("DEPRECATION")   // Bản `GeocodeListener` chỉ có từ API 33; app chạy từ API 29.
             // `LangHost.locale()` chứ không `Locale.getDefault()`: ngôn ngữ của **người dùng chọn trong Kachi**,
@@ -135,11 +140,16 @@ object VoiceGeocoder {
             hit?.let {
                 VoiceAppIntents.Coords(it.latitude, it.longitude, it.featureName ?: place)
             }
-        }.onFailure { Log.i(TAG, "Geocoder của máy không trả lời được \"$place\"", it) }.getOrNull()
+        }.onFailure {
+            // "Service not Available" = ROM không có backend geocode (xe không GMS) — nhớ để lần sau khỏi ném lại.
+            if (it is java.io.IOException) { onDeviceDead = true; Log.i(TAG, "Geocoder máy không có backend → từ nay dùng online (Nominatim)") }
+            else Log.i(TAG, "Geocoder của máy không trả lời được \"$place\"", it)
+        }.getOrNull()
     }
 
     /** Đường mạng — xem khối ⚠ ở KDoc lớp về vì sao nó được phép tồn tại. */
     private fun online(place: String): VoiceAppIntents.Coords? = runCatching {
+        Log.i(TAG, "tra online (Nominatim): \"$place\"")
         throttle()
         val conn = HttpConn.open(NOMINATIM + android.net.Uri.encode(place), READ_TIMEOUT_MS, ACCEPT_JSON)
         try {
