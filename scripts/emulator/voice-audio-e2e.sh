@@ -119,15 +119,22 @@ while IFS=$'\t' read -r -u 3 id s want; do
   heard=$(printf '%s' "$j" | grep -oE '"heard":"[^"]*"' | head -1 | sed 's/"heard":"//;s/"$//')
   kind=$(printf '%s' "$j" | grep -oE '"kind":"[^"]*"' | head -1 | sed 's/"kind":"//;s/"$//')
   ms=$(printf '%s' "$j" | grep -oE '"ms":[0-9]*' | head -1 | sed 's/"ms"://')
+  prev=$(printf '%s' "$j" | grep -oE '"preview":"[^"]*"' | head -1 | sed 's/"preview":"//;s/"$//')
+  # ĐO TTS synth thật (feed preview qua Piper) — full-chain = decode+parse + synth
+  synth=""
+  if [ -n "$prev" ] && [ "${TTS_ON:-1}" = 1 ]; then
+    jt=$($ADB shell "$BRIDGE --es cmd tts --es text \"'$prev'\"" </dev/null 2>&1)
+    synth=$(printf '%s' "$jt" | grep -oE '"synth_ms":[0-9]*' | head -1 | sed 's/"synth_ms"://')
+  fi
   # phân loại QUALITY
   status="PASS"
   if [ "$want" != "-" ] && [ "$kind" != "$want" ]; then
     if [ "$heard" != "$s" ]; then status="MISHEAR"; else status="FAIL"; fi
   fi
   case "$status" in PASS) pass=$((pass+1));; FAIL) fail=$((fail+1));; MISHEAR) mishear=$((mishear+1));; esac
-  printf '%-4s %-8s want=%-10s got=%-10s ms=%-4s | said[%s] heard[%s]\n' "$id" "$status" "$want" "${kind:-?}" "${ms:-?}" "$s" "$heard"
+  printf '%-4s %-8s want=%-10s got=%-10s dec=%-4s synth=%-5s | said[%s] heard[%s]\n' "$id" "$status" "$want" "${kind:-?}" "${ms:-?}" "${synth:-—}" "$s" "$heard"
   # PERFORMANCE: nhóm (chữ đầu id) + ms decode+parse
-  [ -n "${ms:-}" ] && printf '%s\t%s\n' "${id:0:1}" "$ms" >> "$WD/perf.tsv"
+  printf '%s\t%s\t%s\n' "${id:0:1}" "${ms:-}" "${synth:-}" >> "$WD/perf.tsv"
   [ "$status" != "PASS" ] && printf '%s\t%s\tsaid=%s\theard=%s\twant=%s\tgot=%s\n' "$id" "$status" "$s" "$heard" "$want" "${kind:-?}" >> "$WD/findings.txt"
   sleep 1
 done 3<<< "$CASES"
@@ -137,19 +144,24 @@ echo "① QUALITY — TỔNG $total · PASS $pass ($((pass*100/total))%) · FAIL
 echo "── FINDINGS (câu không đạt) ──"; cat "$WD/findings.txt"
 echo "═══════════════════════════════════════════════"
 echo "② PERFORMANCE — decode+parse ms (đường ASR thật). p50/p95/max mỗi nhóm + tổng:"
-python3 - "$WD/perf.tsv" <<'PY'
-import sys, collections
-rows=[l.split("\t") for l in open(sys.argv[1]) if "\t" in l]
-by=collections.defaultdict(list); allms=[]
+python3 - "$WD/perf.tsv" <<'PYEOF'
+import sys, collections, math
+rows=[l.rstrip("\n").split("\t") for l in open(sys.argv[1]) if "\t" in l]
 names={"n":"Nav","c":"Control","r":"Read","m":"Media","l":"Launcher","e":"EndSession"}
-for g,ms in rows:
-    try: v=int(ms)
-    except: continue
-    by[g].append(v); allms.append(v)
+dec=collections.defaultdict(list); syn=collections.defaultdict(list); full=collections.defaultdict(list)
+ad=[]; asy=[]; af=[]
+for r in rows:
+    g=r[0]; d=r[1] if len(r)>1 else ""; s=r[2] if len(r)>2 else ""
+    di=int(d) if d.isdigit() else None; si=int(s) if s.isdigit() else None
+    if di is not None: dec[g].append(di); ad.append(di)
+    if si is not None: syn[g].append(si); asy.append(si)
+    if di is not None and si is not None: full[g].append(di+si); af.append(di+si)
 def pct(a,p):
     if not a: return 0
-    a=sorted(a); import math; return a[min(len(a)-1, int(math.ceil(p/100*len(a))-1))]
-print(f"  {'nhóm':<12}{'n':>4}{'p50':>7}{'p95':>7}{'max':>7}")
-for g in sorted(by): a=by[g]; print(f"  {names.get(g,g):<12}{len(a):>4}{pct(a,50):>7}{pct(a,95):>7}{max(a):>7}")
-print(f"  {'TỔNG':<12}{len(allms):>4}{pct(allms,50):>7}{pct(allms,95):>7}{max(allms):>7}  (ms)")
-PY
+    a=sorted(a); return a[min(len(a)-1,int(math.ceil(p/100*len(a))-1))]
+def row(lbl,d,s,f):
+    return f"  {lbl:<11}{len(d):>4}{pct(d,50):>6}{pct(d,95):>6}{pct(s,50):>7}{pct(s,95):>7}{pct(f,50):>7}{pct(f,95):>7}{(max(f) if f else 0):>7}"
+print(f"  {'nhóm':<11}{'n':>4}{'dec50':>6}{'dec95':>6}{'syn50':>7}{'syn95':>7}{'e2e50':>7}{'e2e95':>7}{'e2emx':>7}")
+for g in sorted(dec): print(row(names.get(g,g),dec[g],syn[g],full[g]))
+print(row("TỔNG",ad,asy,af)+"  (ms · e2e=decode+parse+TTS synth)")
+PYEOF

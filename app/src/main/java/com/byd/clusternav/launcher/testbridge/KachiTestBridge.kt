@@ -150,6 +150,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.SAY -> runSay(cmd, hooks, reply)
             // Thân ở [TestBridgeWav] (trần 500 dòng, CLAUDE.md §4.1) — cùng cách tách với `ctl`/`hal`/`sweep`.
             TestBridgeCommands.WAV -> TestBridgeWav.run(app, cmd, hooks, reply)
+            TestBridgeCommands.TTS -> TestBridgeTts.run(app, cmd, reply)
             TestBridgeCommands.LISTEN -> runListen(hooks, reply)
             TestBridgeCommands.PROFILES -> reply.ok(
                 "active" to hooks.state().activeProfile,

@@ -454,8 +454,8 @@ object VoiceReply {
                 "No action word — try \"turn on…\", \"open…\", \"show…\"",
             )
             VoiceUnknownReason.NO_OBJECT -> Strings.t(
-                "Không tìm thấy thứ đó trong xe hay trong launcher",
-                "No such thing on this car or in the launcher",
+                "Không tìm thấy thứ đó trong xe hay trong ứng dụng",
+                "No such thing on this car or in the app",
             )
             VoiceUnknownReason.MISMATCH -> Strings.t(
                 "Việc đó không đi với thứ đó — thử nêu mức, hoặc đổi động từ",

@@ -228,10 +228,17 @@ class SherpaTtsSpeaker(
             // Chấp nhận có chủ ý — `MULTI_PROCESS` đã deprecated và không tin được; một núm chỉnh trễ vài giây
             // không đáng đổi lấy một cơ chế đồng bộ nữa để hỏng.
             val speed = runCatching { Prefs.voiceTtsSpeed(app) }.getOrDefault(SherpaTtsCatalog.DEFAULT_SPEED)
-            val audio = tts.generate(text, 0, speed)
-            // Câu đã lỗi thời trong lúc tổng hợp ⇒ **không phát**. Xem KDoc [generation].
-            if (my != generation.get()) return
-            play(audio.samples, audio.sampleRate, my)
+            // #1/#2 (owner 2026-09-24) — tách câu rồi tổng hợp+phát TỪNG câu:
+            //  • #1 "chờ lâu mới bắt đầu nói": `generate` là lời gọi native CHẶN, phát chỉ sau khi tổng hợp XONG.
+            //    Cả câu dài (85 ký tự ~3,8 s tổng hợp) ⇒ im 3,8 s rồi mới ra tiếng. Tách câu ⇒ câu đầu ngắn ⇒
+            //    tiếng ra gần như tức thì, các câu sau tổng hợp trong lúc câu trước đang phát-nốt (drain).
+            //  • #2 "ngắt nửa chừng": nếu bị cắt (đổi thế hệ), nó dừng ở RANH GIỚI câu, không cụt giữa từ.
+            for (part in splitSentences(text)) {
+                if (my != generation.get()) return
+                val audio = tts.generate(part, 0, speed)
+                if (my != generation.get()) return
+                play(audio.samples, audio.sampleRate, my)
+            }
         } catch (t: Throwable) {
             Log.w(TAG, "đọc offline hỏng", t)
             abandonFocus()
@@ -242,6 +249,27 @@ class SherpaTtsSpeaker(
             // việc chờ của nó, không được vớ việc chờ của câu xếp sau.
             settle(my)
         }
+    }
+
+    /**
+     * Tách [text] thành các mảnh để tổng hợp+phát tuần tự — mảnh đầu ngắn ⇒ tiếng ra gần tức thì (#1).
+     *
+     * Cắt ở dấu kết câu (`. ! ? … ; —` + xuống dòng); mảnh còn dài hơn [SPLIT_SOFT_CHARS] thì cắt tiếp ở dấu
+     * phẩy để "Đang dẫn đường đến số 69 Hoàng Văn Thái, quận 7" ra tiếng ngay ở vế đầu. Mảnh rỗng bị bỏ. Không
+     * có dấu nào ⇒ trả nguyên câu (một mảnh) — không bao giờ trả danh sách rỗng cho [text] không trắng.
+     */
+    private fun splitSentences(text: String): List<String> {
+        val out = ArrayList<String>()
+        val buf = StringBuilder()
+        fun flush() { val s = buf.toString().trim(); if (s.isNotEmpty()) out.add(s); buf.setLength(0) }
+        for (ch in text) {
+            buf.append(ch)
+            val hard = ch == '.' || ch == '!' || ch == '?' || ch == '…' || ch == ';' || ch == '\n' || ch == '—'
+            val soft = (ch == ',' || ch == ' ') && buf.length >= SPLIT_SOFT_CHARS
+            if (hard || soft) flush()
+        }
+        flush()
+        return if (out.isEmpty()) listOf(text.trim()) else out
     }
 
     private fun ensureEngine(): OfflineTts? {
@@ -401,7 +429,9 @@ class SherpaTtsSpeaker(
         private const val DRAIN_POLL_MS = 20L
 
         /** Dôi ra ngoài thời lượng câu: đệm phần cứng + nhịp nạp của ROM. */
-        private const val DRAIN_MARGIN_MS = 300L
+        /** Vế dài hơn ngần này thì cắt tiếp ở dấu phẩy (để câu địa chỉ dài ra tiếng sớm). */
+    private const val SPLIT_SOFT_CHARS = 40
+    private const val DRAIN_MARGIN_MS = 300L
 
         private const val MS_PER_SECOND = 1_000L
     }
