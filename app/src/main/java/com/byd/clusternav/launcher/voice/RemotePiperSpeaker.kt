@@ -147,6 +147,21 @@ class RemotePiperSpeaker(ctx: Context) : VoiceSpeaker {
      */
     override fun available(): Boolean = !dead.get() && SherpaTtsSpeaker.voiceFilesPresent(app)
 
+    /**
+     * NỐI SỚM tiến trình `:tts` (không đọc gì) — gọi lúc mở voice để câu trả lời ĐẦU không tốn ~500ms
+     * spin-up + bind (owner 2026-09-24: rút thời gian phản hồi). Idempotent: đã nối/đang nối ⇒ no-op.
+     *
+     * An toàn với máy trạng thái: đặt `bound = true` + `bindService` giống [speakInternal] nhưng KHÔNG xếp
+     * `queued` ⇒ [onServiceConnected] thấy `queued == null` (đã xử ca đó: chỉ set `remote`, không gửi gì).
+     * Bind hỏng ⇒ [onRemoteGone] mở lại `bound=false` (câu thật sau tự bind lại). Không đọc, không tốn engine
+     * (ONNX chỉ nạp ở `ensureEngine` của câu thật đầu) nên đây chỉ tiết kiệm phần **spin-up tiến trình**.
+     */
+    override fun warm() {
+        if (dead.get() || !available()) return
+        val need = synchronized(lock) { if (bound) false else { bound = true; true } }
+        if (need && !bindRemote()) onRemoteGone()
+    }
+
     override fun speak(text: String): Boolean = speakInternal(text, null)
 
     override fun speak(text: String, onDone: () -> Unit): Boolean = speakInternal(text, onDone)

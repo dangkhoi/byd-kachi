@@ -83,6 +83,10 @@ object WakeAsrMatcher {
         if (words.size <= WAKE_MAX_WORDS && words.firstOrNull() in CALL_LEAD &&
             words.any { it in HEAD || it in TAIL || strongWake(it) }
         ) return true
+        // (g) Cụm RẤT ngắn (lõi ≤2) mà MỌI lõi là HEAD k-start ("ka"/"kha"/"ku"…). Model rụng "chi" của "ka chi"
+        // → chỉ còn "ka" ([ĐO harness 2026-09-24). K-start KHÔNG lẫn tiếng thường (xem (a)); NEG "kê khai"/"kỳ
+        // nghỉ" có từ non-wake ("khai"/"nghi") nên lõi >0 từ lạ ⇒ không rơi vào đây.
+        if (core.size in 1..2 && core.all { it in HEAD && it.startsWith("k") }) return true
         return false
     }
 

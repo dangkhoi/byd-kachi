@@ -64,6 +64,8 @@ class VoiceSpeakerRouter(
 
     override fun available(): Boolean = active() !== SilentSpeaker
 
+    override fun warm() { runCatching { sherpa.warm() } }
+
     override fun speak(text: String): Boolean = route(text, null)
 
     /**

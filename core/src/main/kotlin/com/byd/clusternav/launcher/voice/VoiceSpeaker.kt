@@ -40,6 +40,9 @@ interface VoiceSpeaker {
      */
     fun speak(text: String): Boolean
 
+    /** Nối sớm máy đọc (không phát) để câu đầu nhanh hơn. Mặc định no-op — chỉ đường Piper offline có tác dụng. */
+    fun warm() {}
+
     /**
      * Như [speak], nhưng gọi [onDone] khi câu đã **đọc xong** (hoặc bị cắt / hỏng giữa chừng).
      *

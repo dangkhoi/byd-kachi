@@ -178,6 +178,8 @@ class VoiceSession(
         overlay = ov
         ov.show()
         ov.render(R.string.kachi_voice_preparing, "")
+        // Warm máy đọc NGAY khi mở voice (nền): câu trả lời đầu bỏ được ~500ms spin-up :tts (owner 2026-09-24).
+        background { runCatching { speaker.warm() } }
         val my = generation.incrementAndGet()
         background { runSession(my) }
     }
