@@ -191,6 +191,7 @@ internal class VoiceCapture(private val ctx: Context) {
     ): Heard {
         var keptN = 0
         val tOpen = System.currentTimeMillis()
+        if (beep) VoiceChime.start()   // #1 (owner 2026-09-24) — earcon READY TRƯỚC khi mở mic: kêu ngay + không nhiễm nền.
         val opened = openRecord() ?: return Heard("", kept, keptN)
         val record = opened.record
         val focus = VoiceAudioFocus.request(ctx)
@@ -211,8 +212,7 @@ internal class VoiceCapture(private val ctx: Context) {
             // [VoiceTurnEndpoint.floorWindowOpen]. Đường VAD không có cửa sổ ấy nên nó bíp ngay như cũ.
             // ⚠ 1.70: [tone] trả về NGAY (luồng riêng, xem [VoiceChime]) — [ĐO xe 2026-09-17] bản cũ chặn 3,0 s
             // ở đúng dòng này và làm rơi 3 s tiếng đầu của MỌI lượt chính.
-            var beepPending = beep
-            if (beepPending && !ep.floorWindowOpen()) { tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS); beepPending = false }
+            var beepPending = false   // #1: bíp READY đã phát trước khi mở mic (đầu hàm) ⇒ không bíp lại; giữ biến cho nhánh partial.
             val buf = ShortArray(CHUNK_SAMPLES)
             val tListen = System.currentTimeMillis()
             val deadline = tListen + maxMs

@@ -576,7 +576,6 @@
     <string name="kachi_voice_heard">Đã nghe</string>
     <!-- V3 · R9 — tấm chữ khi micro còn mở cho câu tiếp (hội thoại, owner D1 2026-09-16) -->
     <string name="kachi_voice_follow_up">Nói tiếp…</string>
-    <string name="kachi_voice_cancel_hint">Chạm ra ngoài hoặc bấm Back để huỷ</string>
     <string name="kachi_voice_no_mic">Chưa có quyền micro</string>
     <string name="kachi_voice_no_model">Chưa tải mô hình nhận dạng</string>
     <string name="kachi_voice_engine_failed">Bộ nhận dạng không khởi động được</string>

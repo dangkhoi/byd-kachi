@@ -169,21 +169,18 @@ class VoiceLoopGuardWiringContractTest {
         )
     }
 
-    // ── [P0-2] Tiếng bíp không được rơi vào cửa sổ đo nền ────────────────────────────────────────
+    // ── #1 (owner 2026-09-24 "mở voice không kêu gì") — bíp READY phát TRƯỚC khi mở mic ──────────
 
     @Test
-    fun `bip dau luot cho toi khi nen da chot`() {
+    fun `bip ready phat truoc khi mo mic`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
-        assertTrue(body.contains("var beepPending"), "tiếng bíp phải được HOÃN, không phát ngay khi mở micro")
-        assertEquals(
-            2, Regex("""beepPending && !ep\.floorWindowOpen\(\)""").findAll(body).count(),
-            "cả hai chỗ bíp phải hỏi CÙNG một cổng — bíp trong cửa sổ đo nền là nguồn của nền 531/602/888/4317",
-        )
-        val turn = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceTurnEndpoint.kt")
-        assertTrue(
-            turn.contains("vad == null && rms?.phase == VoiceEndpointer.Phase.FLOOR"),
-            "chỉ đường LÙI mới có cửa sổ đo nền; đường VAD phải bíp ngay như trước [P0-2]",
-        )
+        // Bíp READY (VoiceChime.start) phải đứng TRƯỚC openRecord() — mic chưa mở nên bíp KHÔNG nhiễm nền RMS,
+        // và người dùng biết máy đang nghe NGAY (đường hoãn-bíp-sau-cửa-sổ-nền cũ khiến owner "không nghe gì").
+        val startIdx = body.indexOf("VoiceChime.start()")
+        val openIdx = body.indexOf("openRecord()")
+        assertTrue(startIdx in 0 until openIdx, "VoiceChime.start() phải đứng trước openRecord() (bíp trước khi mở mic)")
+        // Không còn phát bíp trong vòng đọc theo cửa sổ nền (đã bíp trước mic) — beepPending khởi false.
+        assertTrue(body.contains("var beepPending = false"), "không bíp lại trong vòng đọc (đã bíp trước mic)")
     }
 
     @Test

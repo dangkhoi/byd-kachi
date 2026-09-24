@@ -102,9 +102,10 @@ class VoiceOverlay(
      */
     fun render(titleRes: Int, text: String, actionText: String? = null, onAction: (() -> Unit)? = null) {
         if (root == null) return
-        title.setText(titleRes)
-        body.text = text
-        body.visibility = if (text.isBlank()) View.GONE else View.VISIBLE
+        // #2 (owner 2026-09-24 "to vật, nhiều chữ lộn xộn"): gọn như Mimi — chỉ MỘT dòng. Có chữ nghe/đáp (`text`)
+        // thì hiện chữ đó; chưa có thì hiện gợi ý ngắn của trạng thái (`titleRes`, vd "Thử nói…"/"Đang nghe…").
+        val line = if (text.isNotBlank()) text else ctx.getString(titleRes)
+        body.text = line
         action.visibility = if (actionText == null) View.GONE else View.VISIBLE
         action.text = actionText.orEmpty()
         action.setOnClickListener { onAction?.invoke() }
@@ -120,42 +121,28 @@ class VoiceOverlay(
             val p = dpi(ctx, Sp.XL)
             setPadding(p, dpi(ctx, Sp.L), p, dpi(ctx, Sp.L))
         }
-        // R2/R3 — waveform vòng tròn (kiểu Siri) ở TRÊN, căn giữa. Nó CHÍNH là chỉ báo "đang nghe" (bỏ mic-icon
-        // riêng để hết chồng chữ — owner 2026-09-23 "đè chữ tùm lum").
+        // Waveform vòng tròn (kiểu Mimi/Siri) — chỉ báo "đang nghe" DUY NHẤT (không mic-icon, không title lớn).
         wave = VoiceWaveView(ctx).apply { setListening(true) }
         card.addView(wave, LinearLayout.LayoutParams(dpi(ctx, WAVE_DP), dpi(ctx, WAVE_DP)).apply {
             gravity = Gravity.CENTER_HORIZONTAL
         })
-        // Tiêu đề ("Đang nghe…") — căn giữa, ngay dưới vòng tròn.
-        title = TextView(ctx).apply {
-            setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true)
-            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.S), 0, 0)
-            setText(R.string.kachi_voice_listening)
-        }
-        card.addView(title, LinearLayout.LayoutParams(MATCH, WRAP))
-        // Thân: chữ đang nghe / câu trả lời — căn giữa, ẩn khi rỗng (không để dòng trống làm card nhảy).
+        // MỘT dòng chữ: gợi ý / partial đang nghe / câu trả lời — gọn (BODY, không SECTION to). Luôn hiện (không
+        // ẩn để card khỏi nhảy cỡ); giữ 1 chỗ trống bằng gợi ý mặc định.
         body = TextView(ctx).apply {
-            setTextColor(c(KachiTheme.INK2)); KachiType.apply(this, KachiType.BODY)
-            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
+            setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY)
+            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.S), 0, 0)
             maxLines = MAX_BODY_LINES
             ellipsize = android.text.TextUtils.TruncateAt.END
-            visibility = View.GONE
         }
         card.addView(body, LinearLayout.LayoutParams(MATCH, WRAP))
-        // Nút gợi ý (Mở Cài đặt…) — căn giữa, ẩn khi không có.
+        // Nút gợi ý (Mở Cài đặt…) — ẩn khi không có. title/hint CŨ đã bỏ (owner: lộn xộn).
+        title = body   // giữ tham chiếu `title` cho code cũ (render dùng body làm dòng chính) — không dựng view riêng.
         action = TextView(ctx).apply {
             setTextColor(c(KachiTheme.ACCENT)); KachiType.apply(this, KachiType.BODY, bold = true)
             minHeight = dpi(ctx, Sp.TOUCH); gravity = Gravity.CENTER
             visibility = View.GONE
         }
         card.addView(action, LinearLayout.LayoutParams(MATCH, WRAP))
-        // Gợi ý huỷ — nhỏ, mờ, dưới cùng.
-        val hint = TextView(ctx).apply {
-            setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
-            gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.S), 0, 0)
-            setText(R.string.kachi_voice_cancel_hint)
-        }
-        card.addView(hint, LinearLayout.LayoutParams(MATCH, WRAP))
 
         // Lớp phủ trong suốt bắt cú chạm ra ngoài + phím Back. Xem KDoc lớp về vì sao nó phủ toàn màn.
         return object : FrameLayout(ctx) {
