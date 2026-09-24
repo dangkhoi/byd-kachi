@@ -65,6 +65,18 @@ class SettingsCarSection(
             title = context.getString(R.string.kachi_camera_cluster_title),
             sub = context.getString(R.string.kachi_camera_cluster_sub),
         ) { on -> bridge.setCameraOnCluster(on) })
+        // 10 CÁCH thử LVDS (owner 2026-09-24): lên xe chọn từng cách xem camera hiện không, KHÔNG cần adb.
+        // Mã = tổ hợp cờ trong PanoramaHal/overlay: B=media-overlay z-order · C=setLVDS trước · D=full-screen ·
+        // H=chờ workState. Cách 1 (A)=mặc định (WIDGET + zOrderOnTop).
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_option_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_option_title),
+            listOf(
+                "A" to "1", "B" to "2", "C" to "3", "D" to "4", "CD" to "5",
+                "BD" to "6", "CH" to "7", "CDH" to "8", "BCD" to "9", "BCDH" to "10",
+            ),
+            current = bridge.cameraLvdsOption(),
+        ) { code -> bridge.setCameraLvdsOption(code) })
     }
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────
