@@ -307,17 +307,23 @@ internal fun WorkspacePrefs.exportProfile(profile: String): String {
 
 /**
  * Nhập hồ sơ từ chuỗi [data] thành hồ sơ tên [name] (mặc định lấy tên trong header). Trả `true` nếu nhập được.
- * Tên trùng ⇒ KHÔNG đè (trả false) — nhập là tạo mới, đè sẽ xoá cấu hình hồ sơ đang có. Header sai ⇒ false.
+ *
+ * Tên TRÙNG ⇒ **sinh tên duy nhất** "<tên> 2", "<tên> 3"… (owner 2026-09-25: export hồ sơ đang dùng rồi import
+ * lại — tên khớp hồ sơ đang có, trước đây bị `return false` ⇒ "không có file hợp lệ" dù file có thật). KHÔNG đè
+ * hồ sơ đang có (đè = xoá cấu hình đang dùng). Header sai / rỗng ⇒ false.
  */
 internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean {
     val lines = data.trim().split("\n", limit = 2)
     if (lines.size < 2) return false
     val head = lines[0].split("\t")
     if (head.getOrNull(0) != PROFILE_IO_HEADER) return false
-    val target = (name ?: head.getOrNull(2))?.trim()?.replace(Regex("[\\r\\n]"), " ").orEmpty()
-    if (target.isEmpty()) return false
+    val base = (name ?: head.getOrNull(2))?.trim()?.replace(Regex("[\\r\\n]"), " ").orEmpty()
+    if (base.isEmpty()) return false
     val list = profiles().toMutableList()
-    if (target in list) return false                                  // không đè hồ sơ đang có
+    // Trùng tên ⇒ thêm hậu tố số cho tới khi duy nhất (backup-restore luôn ra một hồ sơ mới, không đè cái đang có).
+    var target = base
+    var n = 2
+    while (target in list) { target = "$base $n"; n++ }
     val values = PrefSnapshot.decode(lines[1])
     val e = sp.edit()
     list.add(target)
