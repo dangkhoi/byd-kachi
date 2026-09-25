@@ -650,12 +650,15 @@
     <string name="kachi_captest_snapshot_done">Log snapshot saved: %s</string>
     <string name="kachi_captest_report_saved">Report saved to the card: %s</string>
     <string name="kachi_camera_cluster_title">Show camera on cluster</string>
-    <string name="kachi_camera_option_sub">Camera display method (try on car)</string>
-    <string name="kachi_camera_option_title">Method</string>
+    <string name="kachi_camera_pos_sub">Camera position on screen (top corners)</string>
+    <string name="kachi_camera_pos_left">Left signal shows at</string>
+    <string name="kachi_camera_pos_right">Right signal shows at</string>
+    <string name="kachi_pos_tl">Top left</string>
+    <string name="kachi_pos_tr">Top right</string>
     <string name="kachi_camera_pick_sub">Pick camera per turn signal (left→left cam)</string>
     <string name="kachi_camera_pick_left">Left signal</string>
     <string name="kachi_camera_pick_right">Right signal</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
-    <string name="kachi_camera_left">Left camera · in development</string>
-    <string name="kachi_camera_right">Right camera · in development</string>
+    <string name="kachi_camera_left">Left camera</string>
+    <string name="kachi_camera_right">Right camera</string>
 </resources>

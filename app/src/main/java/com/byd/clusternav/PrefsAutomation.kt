@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
 /**
  * ═══ Khoá của hai AUTOMATION — tách khỏi [Prefs] theo VAI (1.85, trần 500 dòng) ═══════════════════════════════
@@ -52,9 +53,34 @@ fun Prefs.setCameraOnCluster(ctx: Context, v: Boolean) =
 // Phương án LVDS/hiển thị camera để thử NHANH trên xe không cần rebuild (findings 2026-09-23, runbook A–J).
 // Chuỗi 1 ký tự: "A"(mặc định) · "B"(zOrderMediaOverlay) · "C"(setLVDS trước) · "D"(FULL_SCREEN) · "G"(cụm) ·
 // "H"(chờ workState ON). Chỉnh qua prefs_set khi test 10 option, chốt được rồi đặt mặc định.
-private const val K_CAMERA_LVDS = "camera_lvds_option"
-fun Prefs.cameraLvdsOption(ctx: Context): String = autoPrefs(ctx).getString(K_CAMERA_LVDS, "A") ?: "A"
-fun Prefs.setCameraLvdsOption(ctx: Context, v: String) = autoPrefs(ctx).edit().putString(K_CAMERA_LVDS, v).apply()
+// ⚠ GỠ HẲN 2026-09-25 (spec `camera-turn-signal-hal-socket.html` R6): mười option A–J là **thử nghiệm LVDS**, và
+// [ĐO xe 2026-09-25] đường có HÌNH là AVMCamera đổ frame vào Surface, không phải LVDS thụ động ⇒ cả họ option
+// mất lý do tồn tại. Giữ lại một pref chết thì nó sẽ còn được `prefs_set` ghi trên xe và không ai đọc — tệ hơn
+// là không có. Chỗ trống này nay là VỊ TRÍ GÓC (dưới đây), thứ owner thật sự cần chỉnh trên xe.
+
+// ── Vị trí GÓC của overlay camera, RIÊNG từng bên xi-nhan (spec R3 · R4) ─────────────────────────
+// Hai khoá vì đây là hai lựa chọn ĐỘC LẬP: owner chốt *"trái vẫn có thể hiện bên phải"* (R4) — người lái ngồi
+// bên trái nên góc trên-trái có thể bị vành lái/cột A che ở một số cách ngồi. Một khoá dùng chung sẽ buộc hai
+// bên đối xứng, tức làm mất đúng thứ yêu cầu xin.
+// Mặc định = [CameraSignalPolicy.defaultCorner] (trái→TL, phải→TR) — hằng ở `:core`, KHÔNG chép số vào đây.
+private fun cameraPosKey(left: Boolean) = if (left) "camera_pos_left" else "camera_pos_right"
+
+/**
+ * Góc hiện overlay camera cho bên xi-nhan [left] — `"TL"` (trên-trái) hoặc `"TR"` (trên-phải).
+ *
+ * Giá trị lạ trên đĩa (prefs sửa tay qua `prefs_set`, hoặc dữ liệu của bản trước) ⇒ trả về mặc định thay vì trả
+ * nguyên văn: tầng vẽ chỉ biết hai góc, nên một chuỗi thứ ba đi tới đó sẽ thành *"rơi vào nhánh else"* — tức
+ * overlay lặng lẽ nằm sai góc mà không ai biết vì sao.
+ */
+fun Prefs.cameraPos(ctx: Context, left: Boolean): String {
+    val fallback = CameraSignalPolicy.defaultCorner(left)
+    val raw = autoPrefs(ctx).getString(cameraPosKey(left), fallback) ?: fallback
+    return if (CameraSignalPolicy.isCorner(raw)) raw else fallback
+}
+
+/** Xem [cameraPos]. Nhận `"TL"`/`"TR"`; chuỗi khác ghi được nhưng lượt đọc sẽ bỏ qua (xem KDoc trên). */
+fun Prefs.setCameraPos(ctx: Context, left: Boolean, v: String) =
+    autoPrefs(ctx).edit().putString(cameraPosKey(left), v).apply()
 
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {

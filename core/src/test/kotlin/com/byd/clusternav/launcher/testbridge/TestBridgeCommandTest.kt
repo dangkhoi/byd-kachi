@@ -355,7 +355,11 @@ class TestBridgeCommandTest {
         // 14 → 15 (owner 2026-09-21): +`voice_keep_log`. Ô tích của nó gỡ khỏi Cài đặt cùng mọi bề mặt dev/log ở bản
         // release production, nên `prefs_set` là đường chỉnh DUY NHẤT còn lại — bỏ nó khỏi đây là biến một công
         // tắc đang sống thành bất khả chỉnh.
-        assertEquals(20, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        // 20 → 21 (owner 2026-09-25, spec `camera-turn-signal-hal-socket.html` R3 · R6): −`camera_lvds_option`
+        // (mười option LVDS gỡ hẳn — đường có HÌNH là AVMCamera, không phải LVDS thụ động) và
+        // +`camera_pos_left`/`camera_pos_right` (góc hiện overlay từng bên). Cả hai khoá mới đảo lại được bằng một
+        // cú chạm trong Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc danh sách trắng vẫn giữ.
+        assertEquals(21, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

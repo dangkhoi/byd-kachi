@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.cameraSignalEnabled
-import com.byd.clusternav.cameraLvdsOption
+import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
@@ -24,29 +24,34 @@ class CameraSignalController(private val appCtx: Context) {
     private val hal by lazy { PanoramaHal(appCtx) }
     private val avm by lazy { AvmCamera() }
     private val overlay by lazy { CameraOverlayView(appCtx) }
-    private val gw by lazy { com.byd.clusternav.launcher.BydHalGateway(appCtx.applicationContext) }
     private var current: Turn = Turn.NONE
 
-    // Nguồn xi-nhan THẬT = listener sự kiện (getLightStatus poll trả 0 trên trim này — [ĐO xe 2026-09-25]).
+    // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] subscribe.
+    // [ĐO xe 2026-09-25] register listener dưới uid APP bị SecurityException BYDAUTO_LIGHT_GET (perm signature);
+    // chạy dưới uid shell (mô hình kinex) thì OK. getLightStatus poll trả 0 trên trim này ⇒ không dùng poll.
     @Volatile private var evtLeft = false
     @Volatile private var evtRight = false
-    private var registered = false
-    private var registerTries = 0
-    private val turnListener by lazy {
-        TurnSignalListener(appCtx) { l, r -> evtLeft = l; evtRight = r; tick(readTurn(4) == true || l, readTurn(5) == true || r) }
+    @Volatile private var started = false
+    private val signal by lazy { HalSignalClient() }
+    private val bg = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "kachi-camera-hal").apply { isDaemon = true }
     }
 
     fun tick() {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
-        if (!registered && registerTries < 3) { registerTries++; registered = turnListener.register() }   // thử đăng ký tối đa 3 lần (khỏi spam mỗi nhịp)
-        // OR poll getLightStatus (thường 0) với cờ SỰ KIỆN (listener onLightOn/off) — event là nguồn chính.
-        tick(readTurn(4) == true || evtLeft, readTurn(5) == true || evtRight)
+        ensureSignal()
+        // Nguồn chính = sự kiện socket (evtLeft/evtRight). tick() nhịp chỉ giữ HOLD sống (không đọc poll — trả 0).
+        tick(evtLeft, evtRight)
     }
 
-    /** Đọc một đèn xi-nhan (type 4=trái/5=phải). null (off-car/không đọc được) ⇒ coi như tắt. */
-    private fun readTurn(type: Int): Boolean? {
-        val raw = gw.getter(LIGHT_DEVICE, "getLightStatus", type) ?: return null
-        return raw.trim().toIntOrNull()?.let { it != 0 } ?: false
+    /** Khởi HAL helper (uid shell) + socket client MỘT lần, trên thread NỀN (ensure() chặn: push jar + shell). */
+    private fun ensureSignal() {
+        if (started) return
+        started = true
+        bg.execute {
+            runCatching { HalHelperLauncher.ensure(appCtx) }.onFailure { Log.w(PanoramaHal.TAG, "HAL helper ensure lỗi: ${it.message}") }
+            runCatching { signal.start { l, r -> evtLeft = l; evtRight = r; tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
+        }
     }
 
     /**
@@ -73,18 +78,20 @@ class CameraSignalController(private val appCtx: Context) {
             else -> {
                 val view = CameraSignalPolicy.defaultView(turn) ?: return
                 val side = CameraSignalPolicy.defaultSide(turn) ?: return
-                val opt = Prefs.cameraLvdsOption(appCtx)   // phương án thử (runbook A–J) qua pref
+                // Góc hiện overlay = pref TỪNG BÊN (`camera_pos_left/right`, mặc định trái→TL / phải→TR). KHÔNG suy
+                // từ `side`: owner chốt xi-nhan trái vẫn được hiện ở góc trên-phải (spec R4).
+                val corner = Prefs.cameraPos(appCtx, left = turn == Turn.LEFT)
                 // cameraId đổi được trên xe (chưa chắc map — thử): pref camera_cam_left/right, mặc định theo CamView.
                 val camId = if (turn == Turn.LEFT) Prefs.cameraCamId(appCtx, left = true, view.cameraId)
                             else Prefs.cameraCamId(appCtx, left = false, view.cameraId)
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId overlay $side opt=$opt")
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId overlay $side góc=$corner")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
-                hal.open(view, opt)
+                hal.open(view)
                 overlay.show(
-                    side,
-                    onCluster = Prefs.cameraOnCluster(appCtx) || opt.contains("G"),
-                    option = opt,
+                    corner = corner,
+                    side = side,
+                    onCluster = Prefs.cameraOnCluster(appCtx),
                 ) { surface -> runCatching { avm.open(camId, surface) } }
             }
         }

@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camera theo xi-nhan — HAL helper (uid shell) + socket + overlay bo góc</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--card:#f5f5f7;--line:#d2d2d7;--acc:#0071e3}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--mut:#86868b;--card:#1c1c1e;--line:#38383c;--acc:#0a84ff}}
+*{box-sizing:border-box}body{font:15px/1.6 -apple-system,SF Pro,system-ui,sans-serif;color:var(--fg);background:var(--bg);max-width:900px;margin:0 auto;padding:32px}
+h1{font-size:26px;letter-spacing:-.02em}h2{font-size:19px;margin-top:32px;border-top:1px solid var(--line);padding-top:20px}
+code{background:var(--card);padding:1px 6px;border-radius:5px;font-size:13px}pre{background:var(--card);padding:14px;border-radius:10px;overflow:auto;font-size:12.5px}
+table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid var(--line);padding:7px 10px;text-align:left;font-size:13.5px}th{background:var(--card)}
+.mut{color:var(--mut)}.tag{display:inline-block;background:var(--acc);color:#fff;font-size:11px;padding:1px 8px;border-radius:20px}
+</style></head><body>
+<h1>Camera theo xi-nhan — HAL helper (uid shell) + socket + overlay bo góc</h1>
+<p class="mut">Trạng thái: Current · 2026-09-25 · <code>com.byd.launcher</code> · nhánh feat/voice-hotword-phrases</p>
+
+<h2>Changelog</h2>
+<ul>
+<li><b>2026-09-25</b> — Spec mới. Owner off-car. Chuyển từ đường "register listener dưới uid app" (bị <code>SecurityException BYDAUTO_LIGHT_GET</code>, perm <code>signature</code>) sang <b>mô hình kinex</b> đã RE: HAL helper chạy dưới uid shell + socket 19322.</li>
+</ul>
+
+<h2>Context — vì sao đổi hướng (RE kinex, đã đo)</h2>
+<table>
+<tr><th>Sự thật [ĐO]</th><th>Bằng chứng</th></tr>
+<tr><td>Tín hiệu xi-nhan gốc = MCU <code>mcu_log_collection turn light sound val</code> nhấp nháy 1↔2 (pid 154)</td><td>logcat xe 2026-09-25</td></tr>
+<tr><td><code>getLightStatus(4/5)</code> chạy KHÔNG cần perm nhưng LUÔN trả 0 (trim này không phơi turn qua getter)</td><td>logcat xe</td></tr>
+<tr><td><code>BYDAutoLightDevice.registerListener</code> (uid app) → <code>SecurityException: android.permission.BYDAUTO_LIGHT_GET</code> (protectionLevel=<b>signature</b>, chỉ com.byd.* có)</td><td>logcat "Caused by" 2026-09-25</td></tr>
+<tr><td><b>kinex</b> (app Flutter thường, KHÔNG khai BYDAUTO perm) đọc được xi-nhan bằng cách: push <code>kinex_hal_api_service.jar</code> → chạy <code>app_process</code> qua shell (<b>uid 2000</b>) class <code>com.lexwah.kinex.hal.HalApiServiceMain 19322</code> → helper đó register <code>AbsBYDAutoLightListener</code> (OK vì uid shell privileged) → publish JSON topic <code>light.onLightOn</code> ra ServerSocket <code>127.0.0.1:19322</code>. App nối socket subscribe → mở AVMCamera hiện video.</td><td>jadx-kinex <code>Y0/F.java</code>, <code>p005b1/L.java</code>, jar strings, ps uid shell</td></tr>
+<tr><td>Kachi đã chạy được <b>AVMCamera</b> (2.32, <code>StartPreview brc=0</code>) + có hạ tầng <b>dadb/ShellTransport</b> (OTA/cast)</td><td>bản 2.32 + code</td></tr>
+</table>
+
+<h2>Requirements (owner 2026-09-25)</h2>
+<ol>
+<li><b>Đọc xi-nhan realtime qua HAL socket</b> — helper uid shell + ServerSocket 19322; app subscribe. Bật xi-nhan là cam lên NGAY (socket, không poll).</li>
+<li><b>Overlay video bo góc tròn</b> giống khung launcher (radius khung Kachi), <b>cỡ nhỏ</b> ở góc TRÊN của khung chính launcher (KHÔNG đè header bar). Góc trên-trái hoặc trên-phải.</li>
+<li><b>Default:</b> xi-nhan trái → góc trên-trái; xi-nhan phải → góc trên-phải.</li>
+<li><b>Chọn vị trí từng bên:</b> mỗi bên (trái/phải) chọn hiện ở góc nào (trên-trái / trên-phải) — trái vẫn có thể hiện bên phải.</li>
+<li><b>Cho chỉnh vị trí</b> video (offset/pick).</li>
+<li><b>BỎ HẲN</b> chipRow "Cách" 10 options (A/B/C/D...) + pref <code>camera_lvds_option</code> + mọi nhánh opt A–J (thử nghiệm LVDS, không dùng).</li>
+<li><b>Giữ:</b> toggle bật camera, picker cameraId trái/phải, toggle hiện lên cụm.</li>
+</ol>
+
+<h2>Design</h2>
+<h3>Phần 1 — HAL helper (module dex mới)</h3>
+<ul>
+<li><code>hal-helper/</code>: class thuần Java/Kotlin <code>KachiHalMain.main(port)</code> — register <code>AbsBYDAutoLightListener</code> (reflection, tránh compile-dep runtime class), <code>onLightOn(type)</code>/<code>onLightOff(type)</code> (4=trái,5=phải) → ServerSocket, mỗi client nhận dòng JSON <code>{"topic":"light.onLightOn","type":4}\n</code>.</li>
+<li>Build thành <b>dex</b> (d8) → đóng <code>app/src/main/assets/kachi_hal.dex</code> (hoặc .jar CLASSPATH).</li>
+<li><code>HalHelperLauncher.kt</code> (:app): copy asset → push <code>/data/local/tmp/kachi_hal.jar</code> qua dadb (Dadb.push) → chạy <code>CLASSPATH=... app_process / com.byd.clusternav.hal.KachiHalMain 19322</code> qua ShellTransport (đúng lệnh kinex). Idempotent: nếu socket đã mở thì bỏ qua.</li>
+</ul>
+<h3>Phần 2 — Socket client</h3>
+<ul>
+<li><code>HalSignalClient.kt</code> (:app): thread nối <code>127.0.0.1:19322</code>, đọc dòng JSON, callback <code>onTurn(left,right)</code>. Reconnect backoff. Realtime.</li>
+</ul>
+<h3>Phần 3 — Controller</h3>
+<ul>
+<li>Bỏ <code>TurnSignalListener</code>. <code>CameraSignalController</code> khởi <code>HalHelperLauncher.ensure()</code> + <code>HalSignalClient</code> khi bật camera; nhận <code>onTurn</code> → <code>tick(left,right)</code> (giữ HOLD chống nháy). Bỏ nhánh <code>opt</code>.</li>
+</ul>
+<h3>Phần 4 — Overlay (UI mới)</h3>
+<ul>
+<li><code>CameraOverlayView</code>: cỡ nhỏ (~30% rộng × ~26% cao), <b>bo góc tròn</b> (radius khung launcher), đặt góc TRÊN (dưới header ~header height + margin). Góc = pref <code>camera_pos_left</code>/<code>camera_pos_right</code> ∈ {TL, TR}, default trái=TL/phải=TR. Có offset chỉnh.</li>
+</ul>
+<h3>Phần 5 — Settings + Prefs</h3>
+<ul>
+<li>Xóa <code>K_CAMERA_LVDS</code>/<code>cameraLvdsOption</code>/<code>setCameraLvdsOption</code> + chipRow "Cách" + bridge cameraLvdsOption + testbridge key <code>camera_lvds_option</code>.</li>
+<li>Thêm <code>cameraPos(left)</code>/<code>setCameraPos(left, "TL"/"TR")</code> + chipRow vị trí trái/phải.</li>
+</ul>
+
+<h2>Tasks</h2>
+<ol>
+<li>[x] Module <code>hal-helper</code> + <code>KachiHalMain.java</code> + build dex vào assets (<code>scripts/build-hal-helper.sh</code> → <code>app/src/main/assets/kachi_hal.jar</code> 5366B, chạy thật emulator).</li>
+<li>[x] <code>HalHelperLauncher</code> (base64 push jar + <code>nohup app_process &</code> qua ShellTransport, idempotent probe 19322).</li>
+<li>[x] <code>HalSignalClient</code> (socket 19322 subscribe, parseLine testable, reconnect backoff).</li>
+<li>[x] Controller: gỡ <code>TurnSignalListener</code> (xóa file) + <code>gw</code> poll; dùng <code>HalHelperLauncher.ensure</code> (thread nền) + <code>HalSignalClient.start{tick}</code>. Gỡ compileOnly stub + perm BYDAUTO_LIGHT_GET (app không register nữa).</li>
+<li>[x] Overlay bo góc (GradientDrawable radius + clipToOutline + ViewOutlineProvider) + góc từng bên (corner TL/TR) + đặt dưới header. <b>Lên cụm qua <code>onCluster</code>+<code>clusterWm</code></b> (toggle "hiện lên cụm").</li>
+<li>[x] Prefs: xóa LVDS, thêm <code>cameraPos</code>. Settings: xóa 10 options, thêm chipRow vị trí trái/phải.</li>
+<li>[x] Full 5-module test 0 fail (2026-09-25). APK 2.36 (versionCode 137, kachi_hal.jar đóng trong APK).</li>
+</ol>
+<p class="mut">⚠ [CHƯA BIẾT on-car]: (1) bo góc LỚP VIDEO — SurfaceView là layer riêng SurfaceFlinger, ROM có bo theo outline cha không (vá: đổi TextureView, avm.open không đổi); (2) register HAL thật dưới uid shell (emulator ClassNotFound đúng kỳ vọng); (3) video AVMCamera lên đúng cụm display.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Off-car: full test 5 module 0 fail; overlay dựng bo góc đúng vị trí (mắt/emulator); helper launcher + socket client compile + unit test parse JSON.</li>
+<li>On-car (sau): bật xi-nhan → helper log onLightOn → socket → cam lên đúng góc realtime.</li>
+</ul>
+
+<h2>Open Questions</h2>
+<ul>
+<li>cameraId cho gương phải (khác cam trước-phải): dùng picker cameraId owner tự chọn on-car. [CHƯA BIẾT] map — không chặn off-car.</li>
+<li>Radius/kích thước overlay chính xác: lấy từ hằng khung launcher (KachiSpace/theme).</li>
+</ul>
+</body></html>

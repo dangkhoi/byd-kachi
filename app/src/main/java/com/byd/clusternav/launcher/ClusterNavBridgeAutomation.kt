@@ -13,8 +13,8 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.setCameraOnCluster
-import com.byd.clusternav.cameraLvdsOption
-import com.byd.clusternav.setCameraLvdsOption
+import com.byd.clusternav.cameraPos
+import com.byd.clusternav.setCameraPos
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
@@ -57,8 +57,21 @@ fun ClusterNavBridge.setCameraSignal(on: Boolean) {
 }
 fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
 fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
-fun ClusterNavBridge.cameraLvdsOption(): String = Prefs.cameraLvdsOption(app)
-fun ClusterNavBridge.setCameraLvdsOption(v: String) = Prefs.setCameraLvdsOption(app, v)
+
+/**
+ * Góc hiện overlay camera cho từng bên xi-nhan (spec `camera-turn-signal-hal-socket.html` R3 · R4) — `"TL"`/`"TR"`.
+ *
+ * Hai hàm đọc RIÊNG (không một hàm nhận `left: Boolean`) vì chipRow trong Cài đặt cần **một biểu thức cho một
+ * hàng**, đúng khuôn `cameraCamLeft`/`cameraCamRight` ngay trên. Lượt GHI thì dùng chung [setCameraPos] — ghi là
+ * một việc có tham số, đọc là hai hàng trên màn.
+ *
+ * KHÔNG kèm `AutomationService.sync`: đây là *chỗ hiện*, không phải công tắc bật/tắt động cơ nền. Lượt rẽ sau đọc
+ * lại pref (vòng nhịp gọi `Prefs.cameraPos` mỗi lần dựng overlay) nên giá trị mới ăn ngay mà không cần đánh thức
+ * gì — khác `setCameraSignal`, nơi thiếu `sync` là tính năng không lên.
+ */
+fun ClusterNavBridge.cameraPosLeft(): String = Prefs.cameraPos(app, left = true)
+fun ClusterNavBridge.cameraPosRight(): String = Prefs.cameraPos(app, left = false)
+fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos(app, left, v)
 fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 0)
 fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
 fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)

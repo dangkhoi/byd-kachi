@@ -284,12 +284,14 @@ object TestBridgeCommands {
         // bằng một cú chạm trong Cài đặt (xem ràng buộc (3) ở KDoc trên) — nó vẫn nằm trong đường GIỌNG NÓI và vẫn
         // chỉ ghi được khi chế độ kiểm thử đang mở, nên hai ràng buộc còn lại không đổi.
         "voice_keep_log",
-        // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + đổi phương án LVDS (A–J) test nhanh trên xe.
+        // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + chọn cam + chọn GÓC hiện từng bên, test nhanh
+        // trên xe. `camera_lvds_option` đã GỠ cùng mười option LVDS (spec camera-turn-signal-hal-socket R6).
         "camera_signal_enabled",
         "camera_on_cluster",
         "camera_cam_left",
         "camera_cam_right",
-        "camera_lvds_option",
+        "camera_pos_left",
+        "camera_pos_right",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

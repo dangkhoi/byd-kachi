@@ -21,6 +21,33 @@ object CameraSignalPolicy {
     /** Vị trí overlay trên màn. */
     enum class Side { LEFT, RIGHT }
 
+    // ── GÓC hiện overlay (spec `camera-turn-signal-hal-socket.html` R2–R4) ───────────────────────
+    //
+    // Chuỗi, KHÔNG enum: đây là **giá trị lưu bền** của `camera_pos_left`/`camera_pos_right` và cũng là mã của
+    // chip trong Cài đặt. Một enum sẽ cần bảng đổi enum↔chuỗi ở CẢ HAI đầu (prefs + chipRow) — tức hai bản sao
+    // của cùng một sự thật, đúng bẫy mà `ProfileNames` (khoá ≠ nhãn) đã trả giá.
+    //
+    // Chỉ có hai góc TRÊN: overlay phải nằm dưới thanh trên và KHÔNG đè nội dung dưới cùng của khung làm việc
+    // (R2). Góc dưới không có trong tập chọn vì đó là chỗ thanh nút xe.
+
+    /** Góc trên-TRÁI của khung launcher. */
+    const val CORNER_TOP_LEFT = "TL"
+
+    /** Góc trên-PHẢI của khung launcher. */
+    const val CORNER_TOP_RIGHT = "TR"
+
+    /** R4 — mặc định "cùng bên": xi-nhan trái → [CORNER_TOP_LEFT], phải → [CORNER_TOP_RIGHT]. */
+    fun defaultCorner(left: Boolean): String = if (left) CORNER_TOP_LEFT else CORNER_TOP_RIGHT
+
+    /**
+     * Chuỗi góc đọc lên có dùng được không.
+     *
+     * Cần vì prefs là dữ liệu **sửa tay được** (`prefs_set`) và còn giữ giá trị của bản cũ (`camera_lvds_option`
+     * từng nhận "A".."BCDH"). Giá trị lạ ⇒ chỗ đọc rơi về [defaultCorner], KHÔNG ném và cũng không im lặng đặt
+     * overlay vào một góc thứ ba không tồn tại.
+     */
+    fun isCorner(v: String): Boolean = v == CORNER_TOP_LEFT || v == CORNER_TOP_RIGHT
+
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
     enum class CamView(val outputState: Int, val cameraId: Int, val labelVi: String, val labelEn: String) {
         // cameraId = tham số AVMCamera.open (đoán ban đầu; đổi được trên xe qua pref camera_cam_left/right).

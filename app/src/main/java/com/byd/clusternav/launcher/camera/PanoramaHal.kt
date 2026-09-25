@@ -21,9 +21,12 @@ class PanoramaHal(private val ctx: Context) {
     private val gw by lazy { BydHalGateway(ctx.applicationContext) }
 
     /**
-     * Bật hệ panorama + chọn view. [option] (từ pref `camera_lvds_option`, runbook A–J) đổi phương án thử trên xe
-     * KHÔNG cần rebuild: "C"=setLVDS trước · "D"=FULL_SCREEN thay WIDGET · "H"=chờ workState ON trước setOutput.
-     * Trả rc (null=off-car/từ chối).
+     * Bật hệ panorama + chọn view. [option] là tổ hợp cờ thử: "C"=setLVDS trước · "D"=FULL_SCREEN thay WIDGET ·
+     * "H"=chờ workState ON trước setOutput. Trả rc (null=off-car/từ chối).
+     *
+     * ⚠ Pref `camera_lvds_option` từng nuôi tham số này đã **gỡ hẳn** (spec `camera-turn-signal-hal-socket.html`
+     * R6): [ĐO xe 2026-09-25] đường có HÌNH là AVMCamera đổ frame vào Surface, không phải LVDS thụ động. Mọi chỗ
+     * gọi nay dùng mặc định `"A"`; tham số ở lại để một lượt thử trên xe không phải sửa lại thân hàm.
      */
     fun open(view: CamView, option: String = "A"): Boolean {
         if (option.contains("C")) gw.namedInt(FQN, "setLVDSState", intArrayOf(LVDS_PANORMA_RF_VIEW))   // C: LVDS trước
