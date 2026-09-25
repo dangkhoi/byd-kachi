@@ -22,15 +22,18 @@ class CarMiniView(context: Context) : View(context) {
     private val dst = RectF()
     private val content = RectF()
 
-    /** Cửa mở? (`null` = chưa đọc), thứ tự [CarPart.DOOR_LF]·RF·LR·RR; cốp riêng. */
+    /**
+     * Cửa mở? (`null` = chưa đọc), thứ tự [CarPart.DOOR_LF]·RF·LR·RR.
+     *
+     * ⚠ 2026-09-25 — chấm CỐP đã gỡ cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus` rỗng với mọi arg:
+     * cốp xe này không có cảm biến trạng thái). Giữ chấm mà không có đường đọc nào điền được thì nó vĩnh viễn im.
+     */
     private var doors: List<Boolean?> = emptyList()
-    private var tailgate: Boolean? = null
 
-    fun set(doors: List<Boolean?>, tailgate: Boolean?) {
+    fun set(doors: List<Boolean?>) {
         // (owner 2026-09-25 nháy hình xe): chỉ vẽ lại khi ĐỔI — trước invalidate mỗi nhịp dù trạng thái y hệt.
-        val unchanged = this.doors == doors && this.tailgate == tailgate
+        val unchanged = this.doors == doors
         this.doors = doors
-        this.tailgate = tailgate
         if (!unchanged) invalidate()
     }
 
@@ -51,7 +54,6 @@ class CarMiniView(context: Context) : View(context) {
         parts.forEachIndexed { i, part ->
             if (doors.getOrNull(i) == true) markAt(canvas, part, r, open)
         }
-        if (tailgate == true) markAt(canvas, CarPart.TAILGATE, r, open)
     }
 
     private fun markAt(canvas: Canvas, part: CarPart, r: Float, color: Int) {

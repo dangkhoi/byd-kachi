@@ -34,7 +34,7 @@ object VoiceSynonyms {
      *
      * ### Luật LOẠI khi nhập (giống hệt luật của [APP_TARGETS], xem KDoc ở đó)
      *  1. mã phải **có thật** trong `ControlRegistry`/`TelemetryRegistry` — `ac_on`, `wiper_state`,
-     *     `sunroof_state`, `tailgate_status`, `mac_*`, `launcher_*` là mã của **bộ khác** ⇒ bỏ;
+     *     `sunroof_state`, `mac_*`, `launcher_*` là mã của **bộ khác** ⇒ bỏ;
      *  2. cụm mà **nhãn đã phủ** thì bỏ (*"máy lạnh"*, *"gạt nước"*, *"nóc xe"*, *"tiếng"*, *"sáng màn"*,
      *     *"chế độ chạy"*, *"đang chạy bao nhiêu"* — đã có sẵn ở dưới hoặc trùng nhãn);
      *  3. cụm **một từ trùng từ thường** thì bỏ: `volt_12v ← "bình"` (bình thường / bình tĩnh / bình xăng) —
@@ -288,7 +288,9 @@ object VoiceSynonyms {
         "soh_oem" to listOf("suc khoe pin", "do chai pin"),
         "consumption_50km" to listOf("muc tieu thu", "tieu thu dien"),
         "volt_12v" to listOf("ac quy", "dien ap ac quy"),
-        "volt_12v_level" to listOf("muc ac quy"),
+        // ⚠ 2026-09-25 · bí danh của `volt_12v_level` (*"muc ac quy"*) đã gỡ cùng datum (getter = 65535 sentinel).
+        // Đừng dời cụm ấy sang `volt_12v`: *"mức ắc-quy"* và *"điện áp ắc-quy"* là hai câu hỏi khác nhau, và ô còn
+        // lại chỉ trả lời được câu thứ hai.
     )
 
     /** Cụm chỉ **loại đối tượng**, không chỉ một mã — dùng để gỡ nghĩa cho động từ quá tải (RE Kiki §7c: *"Mở"*). */

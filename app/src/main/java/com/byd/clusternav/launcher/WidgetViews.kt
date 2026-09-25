@@ -415,18 +415,17 @@ object WidgetViews {
     }
 
     private fun carState(ctx: Context, data: WidgetData): View {
-        val art = CarMiniView(ctx)      // P3: cửa/cốp tô trên hình xe
+        val art = CarMiniView(ctx)      // P3: cửa tô trên hình xe
         val doorLine = tv(ctx, "", 13f, KachiTheme.GREEN).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) }
-        val tailLine = tv(ctx, "", 13f, KachiTheme.MUT)
         val root = col(ctx).apply {
             addView(art, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(doorLine)
-            addView(tailLine)
         }
+        // ⚠ 2026-09-25 — dòng CỐP đã gỡ cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus` rỗng với mọi
+        // arg). Widget này trước luôn hiện *"Cốp sau —"* ở mọi lần chạy, tức một dòng chỉ nói "chưa đọc được".
         fun fillCarState(d: WidgetData) {
             val doors = listOf(d.car.body.doorLfOpen, d.car.body.doorRfOpen, d.car.body.doorLrOpen, d.car.body.doorRrOpen)
-            val tail = d.car.body.tailgateOpen
-            art.set(doors, tail)
+            art.set(doors)
             val anyOpen = doors.any { it == true }
             doorLine.setText(
                 when {
@@ -436,14 +435,6 @@ object WidgetViews {
                 },
             )
             doorLine.setTextColor(c(if (anyOpen) KachiTheme.AMBER else KachiTheme.GREEN))
-            tailLine.setText(
-                when (tail) {
-                    true -> R.string.kachi_tailgate_open
-                    false -> R.string.kachi_tailgate_closed
-                    null -> R.string.kachi_tailgate_unknown
-                },
-            )
-            tailLine.setTextColor(c(if (tail == true) KachiTheme.AMBER else KachiTheme.MUT))
         }
         fillCarState(data)
         return WidgetRefreshers.live(root, ::fillCarState)

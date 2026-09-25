@@ -241,9 +241,6 @@
     <string name="kachi_doors_unknown">Trạng thái cửa —</string>
     <string name="kachi_doors_open">Có cửa đang mở</string>
     <string name="kachi_doors_closed">4 cửa đóng</string>
-    <string name="kachi_tailgate_open">Cốp sau đang mở</string>
-    <string name="kachi_tailgate_closed">Cốp sau đóng</string>
-    <string name="kachi_tailgate_unknown">Cốp sau —</string>
     <string name="kachi_tyre_pressure_unit">Áp suất lốp (%1$s)</string>
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->

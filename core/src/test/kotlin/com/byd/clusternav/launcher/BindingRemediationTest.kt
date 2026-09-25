@@ -79,7 +79,7 @@ class BindingRemediationTest {
     @Test fun `nang luong ten method dung theo device`() {
         assertEquals("BYDAutoStatisticDevice.getFuelDrivingRangeValue", key("fuel_range_km"))
         assertEquals("BYDAutoStatisticDevice.getFuelPercentageValue", key("fuel_pct"))
-        assertEquals("BYDAutoStatisticDevice.getEVMileageValue", key("ev_mileage_km"))
+        // ⚠ 2026-09-25: dòng `ev_mileage_km` (`getEVMileageValue`) gỡ cùng datum — [ĐO xe] getter trả rỗng.
         // ⚠ (V) FEATURE-FILTER 2026-09-17: năm dòng SẠC (`charge_power` · `charging_pct` · `charging_capacity_kwh`
         // · `charger_work_state` · `charging_state`) đã gỡ cùng datum — owner chấm NO cho cả cụm sạc.
         assertEquals("BYDAutoOtaDevice.getBatteryVoltage", key("volt_12v"), "Power không có getBatteryVoltage")

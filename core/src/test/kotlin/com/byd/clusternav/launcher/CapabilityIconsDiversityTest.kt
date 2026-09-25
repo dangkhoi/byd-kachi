@@ -105,14 +105,22 @@ class CapabilityIconsDiversityTest {
             // (hình núm chọn) + `energy_mode` (hình tia sét) và nút `powertrain_mode` (tia sét) cho **xe thuần
             // điện** ⇒ lĩnh vực này còn đúng 2 ô (`speed` → `ic-speed`, `gear` → `ic-drive`), tức 2 ô / 2 hình =
             // vẫn **một hình một ô**, không có ô nào phải dùng chung hình. Hạ theo phép đếm, không hạ cho xanh.
-            Domain.ENERGY to 11, Domain.DRIVETRAIN to 2, Domain.CLIMATE to 11,
+            // ⚠ 2026-09-25 — sàn Năng lượng hạ **11 → 9** theo SỐ Ô ĐÃ MẤT: owner gỡ 5 datum năng lượng CHẾT
+            // (`batt_temp` → `ic-temp` · `target_soc` → `ic-target` · `trip_kwh` và `ev_mileage_km` dùng CHUNG hình
+            // với `consumption_50km`/`odometer` · `volt_12v_level` → `ic-cell-volt`) ⇒ 12 ô còn 9 hình. Ba hình
+            // biến mất là ba hình **chỉ có đúng một mã dùng**, nên số ô-dùng-chung-hình KHÔNG tăng: 9 hình / 12 ô
+            // thay vì 11 hình / 17 ô. Hạ theo phép đếm, không hạ cho xanh.
+            Domain.ENERGY to 9, Domain.DRIVETRAIN to 2, Domain.CLIMATE to 11,
             // U7 — năm lĩnh vực còn lại, sau khi bộ hình xe theo vị trí thay cho gộp-theo-tiền-tố.
             // ⚠ (V) FEATURE-FILTER 2026-09-17 — **Lốp = 0, và đó là một KẾT LUẬN, không phải một lỗ hổng.** Tám ô
             // lốp LẺ vào [CapabilityCatalog.HIDDEN_FROM_PICKER] theo lệnh owner (*"gôm lại thành 1 widget"*) ⇒ bộ
             // chọn không bày ô Lốp nào, mà bài này đo đúng *"những hình nằm CẠNH NHAU trên màn chọn"*. Sàn 0 đi
             // kèm một assert RIÊNG ngay dưới (đúng 0 ô) để con số này không thể là "quên nối" — và hình lốp vẫn
             // được canh ở `CapabilityIconMeaningTest` (từng mã → từng hình theo vị trí bánh).
-            Domain.TYRES to 0, Domain.BODY to 19, Domain.LIGHTS to 9, Domain.IDENTITY to 2,
+            // ⚠ 2026-09-25 — sàn Thân xe hạ **19 → 18**: gỡ `sunroof_pos` làm hình `ic-car-top-sunroof-pos` mất
+            // chủ (nó chỉ có đúng một mã dùng). `tailgate_status` gỡ nhưng `ic-car-top-trunk` GIỮ chủ (nút
+            // `trunk`) ⇒ không mất hình thứ hai. Hạ đúng bằng số hình mất chủ.
+            Domain.TYRES to 0, Domain.BODY to 18, Domain.LIGHTS to 9, Domain.IDENTITY to 2,
         )
         assertEquals(doneDomains.toSet(), floor.keys, "sàn phải phủ đúng các nhóm đã chữa")
         assertEquals(
@@ -163,11 +171,13 @@ class CapabilityIconsDiversityTest {
     @Test
     fun `cong suat mo-to KHONG dung hinh cua pin`() {
         // ⚠ (V) 2026-09-17: `charging_pct`/`is_charging` rời danh sách cùng datum của chúng (owner chấm NO).
+        // ⚠ 2026-09-25: `target_soc`/`volt_12v_level` rời tiếp (hai datum CHẾT) ⇒ họ PIN còn `soc`+`soh_oem`,
+        // cả hai mang `ic-battery`. Tính chất canh KHÔNG đổi: công suất mô-tơ không được mang hình pin.
         // ⚠⚠ UX-OVERHAUL · WP8 2026-09-20: cả năm mốc cũ (`motor_front_rpm` · `motor_rear_rpm` ·
         // `motor_front_torque` · `engine_rpm` + `wheel_speed`) đã **purge** ⇒ bài này giữ đúng tính chất nó sinh ra
         // để canh (*"đại lượng của mô-tơ không được mang hình PIN"*) trên mã còn lại duy nhất của họ mô-tơ:
         // `motor_power`. Vòng-tua-≠-mô-men không còn đo được ở đây vì không còn mã nào của cặp đó.
-        val batteryIcons = listOf("soc", "soh_oem", "target_soc", "volt_12v_level")
+        val batteryIcons = listOf("soc", "soh_oem")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
         val icon = CapabilityIcons.forTelemetry("motor_power", Domain.ENERGY)
         assertTrue(
@@ -181,12 +191,13 @@ class CapabilityIconsDiversityTest {
     @Test
     fun `tam hoat dong KHAC quang duong da di`() {
         // ⚠ (V) 2026-09-17: `batt_range_bodywork` (mục thứ ba) đã gỡ — owner chấm NO.
+        // ⚠ 2026-09-25: `ev_mileage_km` cũng gỡ (getter rỗng) ⇒ họ "đã đi được bao xa" còn `odometer`+`trip_km`.
         val range = listOf("ev_range_km", "fuel_range_km")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
-        val driven = listOf("odometer", "ev_mileage_km", "trip_km")
+        val driven = listOf("odometer", "trip_km")
             .map { CapabilityIcons.forTelemetry(it, Domain.ENERGY) }.toSet()
-        assertEquals(1, range.size, "ba mục tầm chạy phải cùng MỘT hình (chúng cùng khái niệm)")
-        assertEquals(1, driven.size, "ba mục quãng đường đã đi phải cùng MỘT hình")
+        assertEquals(1, range.size, "hai mục tầm chạy phải cùng MỘT hình (chúng cùng khái niệm)")
+        assertEquals(1, driven.size, "hai mục quãng đường đã đi phải cùng MỘT hình")
         assertTrue(range.first() != driven.first(), "tầm chạy và odo là hai câu hỏi khác nhau")
     }
 

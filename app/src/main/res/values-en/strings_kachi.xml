@@ -231,9 +231,6 @@
     <string name="kachi_doors_unknown">Door status —</string>
     <string name="kachi_doors_open">A door is open</string>
     <string name="kachi_doors_closed">All 4 doors closed</string>
-    <string name="kachi_tailgate_open">Boot open</string>
-    <string name="kachi_tailgate_closed">Boot closed</string>
-    <string name="kachi_tailgate_unknown">Boot —</string>
     <string name="kachi_tyre_pressure_unit">Tyre pressure (%1$s)</string>
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->

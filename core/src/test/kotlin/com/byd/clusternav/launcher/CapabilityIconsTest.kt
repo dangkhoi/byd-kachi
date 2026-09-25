@@ -26,10 +26,11 @@ class CapabilityIconsTest {
                 "Đang có: theo nhóm=$byDomainOnly · theo khái niệm=$byConcept",
         )
         // U6 nâng sàn: 34 → 56 icon phân biệt (18 hình mới cho 3 nhóm dày nhất). Sàn là số ĐO ĐƯỢC, không phải số
-        // mong muốn — nó chỉ được đi lên.
+        // mong muốn — nó chỉ được đi lên… **trừ khi mã mang hình bị XOÁ**: 2026-09-25 owner gỡ 7 datum chết, và
+        // `ic-target` (chỉ `target_soc` dùng) mất chủ ⇒ 56 → **55**. Hạ đúng bằng số hình mất chủ, không hạ cho xanh.
         assertTrue(
-            byConcept >= 56,
-            "sàn đã đạt được là 56 icon phân biệt — tụt xuống dưới là hồi quy (đang có $byConcept). " +
+            byConcept >= 55,
+            "sàn đã đạt được là 55 icon phân biệt — tụt xuống dưới là hồi quy (đang có $byConcept). " +
                 "Thêm icon thì NÂNG số này lên, đừng hạ.",
         )
     }

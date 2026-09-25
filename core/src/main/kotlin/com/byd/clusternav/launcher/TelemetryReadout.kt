@@ -140,14 +140,10 @@ object TelemetryReadout {
         "fuel_range_km" -> s.energy.fuelRangeKm?.toString()
         "odometer" -> s.energy.odometerKm?.toString()
         "motor_power" -> s.energy.motorPowerKw?.toString()
-        "batt_temp" -> s.energy.battTempC?.toString()
         "soh_oem" -> s.energy.sohPct?.toString()
-        "target_soc" -> s.energy.targetSoc?.toString()
         "fuel_pct" -> s.energy.fuelPct?.toString()
-        "ev_mileage_km" -> s.energy.evMileageKm?.toString()
         "trip_km" -> s.energy.tripKm?.let { dec1(it) }
         "trip_hours" -> s.energy.tripHours?.let { hoursToHm(it) }
-        "trip_kwh" -> s.energy.tripKwh?.let { dec1(it) }
         "consumption_50km" -> s.energy.consumption50?.let { dec1(it) }
 
         // ── A2. Động lực ────────────────────────────────────────────────────────────────
@@ -200,8 +196,6 @@ object TelemetryReadout {
         "door_rf" -> s.body.doorRfOpen?.let { openShut(it) }
         "door_lr" -> s.body.doorLrOpen?.let { openShut(it) }
         "door_rr" -> s.body.doorRrOpen?.let { openShut(it) }
-        "tailgate_status" -> s.body.tailgateOpen?.let { openShut(it) }
-        "sunroof_pos" -> s.body.sunroofPct?.toString()
         "sunshade_pct" -> s.body.sunshadePct?.toString()
         "power_level" -> s.body.powerLevel?.toString()
         "vehicle_type" -> s.body.vehicleType
@@ -214,7 +208,6 @@ object TelemetryReadout {
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
-        "volt_12v_level" -> s.energy.volt12vLevel?.toString()
 
         // ── A8. Danh tính ───────────────────────────────────────────────────────────────
         "vin" -> s.identity.vin

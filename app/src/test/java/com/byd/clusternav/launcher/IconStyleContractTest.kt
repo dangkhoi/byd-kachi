@@ -328,6 +328,12 @@ class IconStyleContractTest {
         "ic-close" to
             "nút ✕ của thanh đầu ô đã gỡ ở S2 (owner: \"chỉ 1 nút ⇄\"); giữ dòng này để `ic_close.xml` không thành " +
                 "tệp mồ côi, và để bày lại nút đóng ở đâu đó là có sẵn đúng hình",
+        "ic-target" to
+            "datum 'Mục tiêu sạc' (target_soc) đã gỡ 2026-09-25 — SET_DR_SOC_TARGET không phân giải trên ROM xe " +
+                "owner; icon là tài sản SINH (design/icon-grammar.json) nên xoá tệp sẽ làm gen-icons --check lệch byte",
+        "ic-car-top-sunroof-pos" to
+            "datum 'Vị trí cửa sổ trời' (sunroof_pos) đã gỡ 2026-09-25 — getSunroofPosition = 65535, xe owner không " +
+                "có cửa sổ trời; hình xe là tài sản SINH (design/car/manifest.json), xoá tệp làm gen-car --check lệch",
     )
 
     @Test

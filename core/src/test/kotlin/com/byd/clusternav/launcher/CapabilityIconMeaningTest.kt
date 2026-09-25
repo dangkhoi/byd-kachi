@@ -94,7 +94,12 @@ class CapabilityIconMeaningTest {
             // đây là chiều danh sách PHẢI rữa. Còn lại hai nhóm mà ô con khác nhau ở ĐẠI LƯỢNG chứ không ở chỗ.
             // WP8: `g_battery` rời danh sách — 5 ô pin dùng chung hình (3 nhiệt cell + 2 áp cell) đã purge,
             // nên nhóm pin còn lại phân biệt được hình.
-            listOf("g_trip"),
+            // ⚠⚠ 2026-09-25: `g_trip` rời danh sách ⇒ **danh sách RỖNG**. Nhóm Chuyến đi từng mù icon vì
+            // `trip_kwh`+`consumption_50km` cùng `ic-consumption` và `odometer`+`ev_mileage_km`+`trip_km` cùng
+            // `ic-road`; gỡ `trip_kwh`/`ev_mileage_km` (hai datum CHẾT trên xe) làm bốn ô còn lại thành bốn hình
+            // khác nhau. Đây là chiều danh sách PHẢI rữa — nhưng rỗng cũng là một con số, nên nếu một nhóm mù icon
+            // mới xuất hiện thì ca này ĐỎ ngay và phải ghi ra lý do tại đây.
+            emptyList<String>(),
             blind,
             "danh sách nhóm mà icon ô con KHÔNG phân biệt được đã đổi — cập nhật danh sách và xem lại bộ vẽ",
         )

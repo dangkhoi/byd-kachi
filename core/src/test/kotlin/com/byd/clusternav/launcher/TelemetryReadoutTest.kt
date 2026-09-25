@@ -42,7 +42,9 @@ class TelemetryReadoutTest {
         assertEquals("Tắt", TelemetryReadout.of("ac_on", CarStatus(climate = CarStatus.Climate(acOn = false)))!!.display)
         // ⚠ (V) 2026-09-17: ca `is_charging` ("Có") đã gỡ cùng datum; `door_lf` ngay dưới vẫn khoá nhánh yesNo/onOff.
         assertEquals("Mở", TelemetryReadout.of("door_lf", CarStatus(body = CarStatus.Body(doorLfOpen = true)))!!.display)
-        assertEquals("Đóng", TelemetryReadout.of("tailgate_status", CarStatus(body = CarStatus.Body(tailgateOpen = false)))!!.display)
+        // ⚠ 2026-09-25: mốc "Đóng" đổi từ `tailgate_status` (đã gỡ — cốp không có cảm biến) sang `door_rr`; vẫn là
+        // nhánh `openShut(false)`, tức đúng vế thứ hai mà ca này sinh ra để canh.
+        assertEquals("Đóng", TelemetryReadout.of("door_rr", CarStatus(body = CarStatus.Body(doorRrOpen = false)))!!.display)
     }
 
     @Test fun `double format lam tron`() {
@@ -56,26 +58,43 @@ class TelemetryReadoutTest {
         assertEquals("P", TelemetryReadout.of("gear", CarStatus(drivetrain = CarStatus.Drivetrain(gear = "P")))!!.display)
     }
 
-    @Test fun `genuine NEEDS_CAR (GPS - binding None) van co case va tra dash`() {
-        // ⚠ WP8 — bốn datum GPS (`gps_lat/lon/elevation/heading`, #53-56) đã XOÁ khỏi registry: đường đọc qua HAL
-        // không tồn tại (`BYDAutoLocationDevice` chỉ có setter) và automation dẫn-đường-theo-lịch dùng
-        // `LocationManager` của Android. Còn lại `target_soc` giữ đúng tính chất: binding None ⇒ luôn "—", mà
-        // `of()` vẫn KHÁC null vì id có trong registry.
-        listOf("target_soc").forEach { id ->
+    /**
+     * ⚠ 2026-09-25 — ca này ĐỔI CHỦ ĐỀ vì chủ đề cũ đã hết đối tượng, không phải vì luật đổi.
+     *
+     * WP8 gỡ bốn datum GPS (`gps_lat/lon/elevation/heading`) và để lại `target_soc` làm mốc duy nhất cho tính chất
+     * *"binding [BindingRoute.None] ⇒ luôn `—`, mà `of()` vẫn KHÁC null vì id có trong registry"*. Lượt 2026-09-25 gỡ
+     * luôn `target_soc` (`SET_DR_SOC_TARGET` không phân giải trên ROM xe owner) ⇒ **không còn datum nào** khai một
+     * khoá chết. Nên bài giữ hai vế đo được thật:
+     *  1. off-car (mọi field `null`) thì datum vẫn ra `of() != null` + `available = false` + `"—"` — KHÔNG null,
+     *     KHÔNG số bịa. Đo trên `tyre_t_fl` (NEEDS_CAR, feature-id chưa ai đọc được trên xe);
+     *  2. **và bộ đăng ký nay KHÔNG còn khoá chết nào** — ai thêm lại một datum mang khoá không phân giải được thì
+     *     vế này ĐỎ và người thêm phải nói ra lý do tại chỗ (thay vì lặng lẽ bày một ô vĩnh viễn `"—"`).
+     */
+    @Test fun `off-car moi datum tra dash chu khong null, va khong con khoa chet nao`() {
+        listOf("tyre_t_fl", "soh_oem", "volt_12v").forEach { id ->
             val v = TelemetryReadout.of(id, CarStatus())
             assertTrue(v != null, "of($id) phải khác null (id trong registry)")
-            assertFalse(v!!.available, "$id (binding None) phải là —")
+            assertFalse(v!!.available, "$id off-car phải là —")
             assertEquals("—", v.display)
         }
+        val dead = TelemetryRegistry.ALL
+            .filter { HalBindingTable.routeOf(it.bindingKey) == BindingRoute.None }
+            .map { "${it.id}='${it.bindingKey}'" }
+        assertEquals(
+            emptyList<String>(), dead,
+            "datum khai khoá KHÔNG phân giải được = ô bày ra mà vĩnh viễn '—'. Thêm lại thì ghi lý do tại chỗ: $dead",
+        )
     }
 
-    @Test fun `datum moi noi (trip_km, batt_temp) hien gia tri khi CarStatus co field`() {
-        // Stage 5: trip_km / nhiệt pin từng "—" cả trên xe (thiếu field). Nay có field → hiện giá trị.
-        // ⚠ WP8: `cell_temp_high` đã purge ⇒ ca thứ hai đo bằng `batt_temp` (cùng nhóm pin, cùng đường đọc int).
-        val s = CarStatus(energy = CarStatus.Energy(tripKm = 12.4, battTempC = 31))
+    @Test fun `datum moi noi (trip_km, soh_oem) hien gia tri khi CarStatus co field`() {
+        // Stage 5: trip_km / sức khoẻ pin từng "—" cả trên xe (thiếu field). Nay có field → hiện giá trị.
+        // ⚠ WP8: `cell_temp_high` đã purge ⇒ ca thứ hai từng đo bằng `batt_temp`.
+        // ⚠ 2026-09-25: `batt_temp` cũng gỡ (`getBatteryTemp` rỗng) ⇒ ca thứ hai đo bằng `soh_oem` — cùng nhóm pin,
+        // cùng đường đọc int, và nó là mã pin DUY NHẤT còn đọc được.
+        val s = CarStatus(energy = CarStatus.Energy(tripKm = 12.4, sohPct = 31))
         assertEquals("12.4", TelemetryReadout.of("trip_km", s)!!.display)
         assertTrue(TelemetryReadout.of("trip_km", s)!!.available)
-        assertEquals("31", TelemetryReadout.of("batt_temp", s)!!.display)
+        assertEquals("31", TelemetryReadout.of("soh_oem", s)!!.display)
     }
 
     @Test fun `id la khong co trong registry tra null`() {

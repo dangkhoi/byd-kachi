@@ -114,7 +114,11 @@ object ControlRegistry {
             // `BYDAutoSettingDevice.voiceCtlBackDoor(cmd)` — cmd 1 = MỞ · 3 = ĐÓNG (đo 2 lần mỗi lệnh, cốp mở/đóng
             // thật; cmd 2 không thấy tác dụng khi cốp đứng yên — [ĐOÁN] dừng-giữa-hành-trình, chưa thử lúc chạy).
             // Đọc trạng thái từ `getBackDoorOpenedHeight` cũng ở Setting device (Bodywork trả rỗng).
-            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.voiceCtlBackDoor", readKey = "tailgate_status",
+            // ⚠ 2026-09-25 · `readKey` ĐÃ GỠ cùng datum `tailgate_status`: [ĐO xe] `getHatchDoorStatus` rỗng với
+            // MỌI arg ⇒ cốp xe này không có cảm biến trạng thái. Nút vẫn GHI được (cmd 1/3 đo thật), nên lượt đọc
+            // lại của `VoiceReadback` nay trả về câu *"đã gửi lệnh"* kèm hedge thay vì *"đã xác nhận"* — đúng sự
+            // thật. Nối lại chỉ khi có một phép ĐO mới (nghi `getBackDoorOpenedHeight`), không phải đoán tên getter.
+            domain = Domain.BODY, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.voiceCtlBackDoor",
             labelEn = "Tailgate"),
         ControlDef("readl", "Đèn đọc", "ic-readlight", ControlKind.TOGGLE, enabledByDefault = true,
             domain = Domain.LIGHTS, tier = EvidenceTier.OVERDRIVE, bindingKey = "1330643002",

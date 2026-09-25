@@ -43,7 +43,9 @@ class IconSetInventoryTest {
         ActionMacros.ALL.forEach { m -> n++; resolves(m.icon)?.let { bad += "macro ${m.id}: $it" } }
         LauncherActions.ALL.forEach { a -> n++; resolves(a.icon)?.let { bad += "hành động ${a.id}: $it" } }
         // Sàn 150 → 120 sau UX-OVERHAUL WP8 2026-09-20 (purge 29 datum + 8 nút + 1 nhóm ⇒ [ĐO] 136 mục).
-        assertTrue(n >= 120) { "đọc hụt registry (thấy $n mục)" }
+        // → 112 sau lượt gỡ 7 datum CHẾT 2026-09-25 ([ĐO] 119 mục). Sàn = số thật trừ ~6 %, để bắt "đọc hụt
+        // registry" mà không đỏ vì một lượt xoá có chủ ý.
+        assertTrue(n >= 112) { "đọc hụt registry (thấy $n mục)" }
         assertEquals(emptyList<String>(), bad, "id có trong registry mà tra ra 0 = ô trống icon, KHÔNG lỗi gì")
     }
 

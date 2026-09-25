@@ -52,8 +52,11 @@ object GroupBoard {
         DoorPartSpec(CarPart.DOOR_RF, "door_rf"),
         DoorPartSpec(CarPart.DOOR_LR, "door_lr"),
         DoorPartSpec(CarPart.DOOR_RR, "door_rr"),
-        DoorPartSpec(CarPart.TAILGATE, "tailgate_status"),
-        DoorPartSpec(CarPart.SUNROOF, "sunroof_state", "sunroof_pos"),
+        // ⚠ 2026-09-25 — bộ phận **CỐP** đã rời bảng cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus`
+        // rỗng với mọi arg — cốp xe này không có cảm biến trạng thái), và nóc mất `sunroof_pos` (getter = 65535,
+        // xe không có cửa sổ trời) nên chỉ còn datum TRẠNG THÁI. Giữ một `DoorPartSpec` không có datum nào vẫn vẽ
+        // được một chấm trên hình xe, nhưng chấm đó không bao giờ nói được gì — đúng ô-nút-chết mà steering cấm.
+        DoorPartSpec(CarPart.SUNROOF, "sunroof_state"),
         // Rèm chỉ có MỘT datum, và nó đã là phần trăm ⇒ vừa là trạng thái vừa là số.
         DoorPartSpec(CarPart.SUNSHADE, "sunshade_pct", "sunshade_pct"),
         // ⚠ UX-OVERHAUL · WP8 — bộ phận GƯƠNG đã rời bảng cùng datum `mirror_fold` (#30 trong danh sách BỎ). Một
@@ -131,9 +134,10 @@ object GroupBoard {
      * [CarPart].
      *
      * ## Hai datum cho MỘT bộ phận là chuyện thường, và phải gộp
-     * Cốp có `tailgate_status` (mở/đóng) **và** `tailgate_position` (%); nóc có `sunroof_state` **và** `sunroof_pos`.
-     * Vẽ chúng thành hai vùng tô riêng thì cùng một nắp cốp hiện hai lần với hai màu. Gộp: sắc thái lấy cái **nặng
-     * nhất** ([worst]), số hiển thị lấy cái **có số**.
+     * Cốp từng có `tailgate_status` (mở/đóng) **và** `tailgate_position` (%); nóc từng có `sunroof_state` **và**
+     * `sunroof_pos`. Vẽ chúng thành hai vùng tô riêng thì cùng một nắp cốp hiện hai lần với hai màu. Gộp: sắc thái
+     * lấy cái **nặng nhất** ([worst]), số hiển thị lấy cái **có số**. (Cả bốn mã ấy nay đã gỡ — xem [DOOR_PARTS] —
+     * nhưng phép gộp GIỮ: rèm vẫn dùng nó, và mã mới có hai datum thì không phải dựng lại luật.)
      *
      * ⚠ Nhóm không có datum nào của một bộ phận ⇒ bộ phận đó **không vào danh sách** (không vẽ), chứ không vào với
      * trạng thái "chưa đọc": hai câu đó khác nhau — *"xe này không có cửa sổ trời"* và *"chưa đọc được cửa sổ trời"*.
@@ -284,7 +288,6 @@ object GroupBoard {
             "window_rf" -> openPct(s.body.windowRfPct)
             "window_lr" -> openPct(s.body.windowLrPct)
             "window_rr" -> openPct(s.body.windowRrPct)
-            "sunroof_pos" -> openPct(s.body.sunroofPct)
             "sunshade_pct" -> openPct(s.body.sunshadePct)
             // Nóc/rèm mở là LỰA CHỌN của người lái, không phải chuyện đáng lo ⇒ ACTIVE. Cửa và cốp thì khác (xem
             // nhánh cảnh báo dưới): xe tự kêu khi chúng mở lúc đang đi.
@@ -306,7 +309,6 @@ object GroupBoard {
             "door_rf" -> alertIf(s.body.doorRfOpen)
             "door_lr" -> alertIf(s.body.doorLrOpen)
             "door_rr" -> alertIf(s.body.doorRrOpen)
-            "tailgate_status" -> alertIf(s.body.tailgateOpen)
             // Ngưỡng bụi dùng LẠI [Pm25Filter] (đã có, đang chạy trên xe) — không đặt ngưỡng thứ hai.
             "pm25_level" -> s.climate.pm25Level?.let {
                 when {

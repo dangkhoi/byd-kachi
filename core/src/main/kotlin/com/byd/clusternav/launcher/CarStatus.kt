@@ -37,26 +37,27 @@ data class CarStatus(
      */
     val controls: Map<String, Int> = emptyMap(),
 ) {
-    /** A1 — năng lượng / pin (mọi ô SẠC đã gỡ ở lượt (V) 2026-09-17 — owner chấm NO). */
+    /**
+     * A1 — năng lượng / pin (mọi ô SẠC đã gỡ ở lượt (V) 2026-09-17 — owner chấm NO).
+     *
+     * ⚠ 2026-09-25 — **năm trường đã gỡ** cùng năm datum chết: `battTempC` · `targetSoc` · `evMileageKm` ·
+     * `tripKwh` · `volt12vLevel` (nhật ký ở [TelemetryRegistry]). Trường nullable mà không đường đọc nào điền
+     * được là một cột `"—"` vĩnh viễn — cùng lý do `opMode`/`energyMode` rời [Drivetrain].
+     */
     data class Energy(
         val soc: Int? = null,
         val evRangeKm: Int? = null,
         val fuelRangeKm: Int? = null,
         val odometerKm: Int? = null,
         val motorPowerKw: Int? = null,
-        val battTempC: Int? = null,
         val sohPct: Int? = null,
-        val targetSoc: Int? = null,
         val fuelPct: Int? = null,
-        val evMileageKm: Int? = null,
         val tripKm: Double? = null,
         val tripHours: Double? = null,
-        val tripKwh: Double? = null,
         val consumption50: Double? = null,
         // ── Điện phụ 12V + nguồn máy — chuyển từ `Safety` sang đây 2026-09-16 khi owner gỡ toàn bộ ADAS/an toàn.
         // Ắc-quy 12V không phải hệ an toàn lái; nó là câu hỏi về NĂNG LƯỢNG. (`mcuStatus` xoá ở lượt (V).)
         val volt12v: Double? = null,
-        val volt12vLevel: Int? = null,
     )
 
     /** A2 — động lực / tốc độ. */
@@ -130,7 +131,13 @@ data class CarStatus(
         val tRrC: Int? = null,
     )
 
-    /** A5 — thân xe / cửa / kính. Kính = % mở (0..100); cửa/cốp = mở?(Boolean). */
+    /**
+     * A5 — thân xe / cửa / kính. Kính = % mở (0..100); cửa = mở?(Boolean).
+     *
+     * ⚠ 2026-09-25 — `tailgateOpen` (cốp không có cảm biến trạng thái) và `sunroofPct` (xe không có cửa sổ trời,
+     * getter = 65535) đã gỡ cùng hai datum của chúng. Nóc còn `sunroofOpen`; cốp không còn đường ĐỌC nào (nút
+     * `trunk` vẫn GHI được — ghi được ≠ đọc được).
+     */
     data class Body(
         val windowLfPct: Int? = null,
         val windowRfPct: Int? = null,
@@ -140,8 +147,6 @@ data class CarStatus(
         val doorRfOpen: Boolean? = null,
         val doorLrOpen: Boolean? = null,
         val doorRrOpen: Boolean? = null,
-        val tailgateOpen: Boolean? = null,
-        val sunroofPct: Int? = null,
         val sunshadePct: Int? = null,
         val powerLevel: Int? = null,
         val vehicleType: String? = null,

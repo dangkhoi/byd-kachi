@@ -56,7 +56,8 @@ object SlotSwapButton {
         }
         addView(
             hit,
-            FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.TOUCH), KachiTheme.dpi(context, Sp.SLOT_HEAD_CLEAR), Gravity.TOP or Gravity.CENTER_HORIZONTAL),
+            // ⇄ ở góc trên PHẢI (owner 2026-09-25: không để giữa panel). Đích chạm TOUCH×SLOT_HEAD_CLEAR ở góc phải.
+            FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.TOUCH), KachiTheme.dpi(context, Sp.SLOT_HEAD_CLEAR), Gravity.TOP or Gravity.END),
         )
     }
 

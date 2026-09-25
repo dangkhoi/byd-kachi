@@ -152,7 +152,8 @@ object SherpaSpokenWords {
         "tieu thu dien" to "tiêu thụ điện",
         "ac quy" to "ắc quy",
         "dien ap ac quy" to "điện áp ắc quy",
-        "muc ac quy" to "mức ắc quy",
+        // ⚠ 2026-09-25 · dạng có dấu của *"muc ac quy"* gỡ cùng bí danh `volt_12v_level` ở `VoiceSynonyms`
+        // (`SherpaBiasingCoverageTest.khong co muc chet trong SherpaSpokenWords` canh đúng cặp này).
         "bai hat" to "bài hát",
         "bai" to "bài",
         "nhac" to "nhạc",

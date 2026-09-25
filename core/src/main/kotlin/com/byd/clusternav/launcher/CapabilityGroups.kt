@@ -114,14 +114,17 @@ object CapabilityGroups {
         icon = "ic-group-doors", domain = Domain.BODY, shape = WidgetShape.BOARD,
         reads = listOf(
             "door_lf", "door_rf", "door_lr", "door_rr",
-            "tailgate_status", "sunroof_state", "sunroof_pos", "sunshade_pct",
+            "sunroof_state", "sunshade_pct",
         ),
         // ⚠ UX-OVERHAUL · WP8 2026-09-20: hai ô ĐỌC `tailgate_position` (vị trí cốp) và `mirror_fold` (gương) đã
         // xoá theo triage của owner (#29 · #30) ⇒ câu phụ bỏ chữ "gương", và bảng xe không còn chấm gương.
-        // `tailgate_status` (đóng/mở) GIỮ — nó là mục #28 nằm trong nhóm CẦN, đang chờ getter trên xe.
+        // ⚠⚠ 2026-09-25: `tailgate_status` và `sunroof_pos` cũng đã xoá — [ĐO xe] `getHatchDoorStatus` rỗng với
+        // MỌI arg (cốp xe này không có cảm biến trạng thái) và `getSunroofPosition` = 65535 (xe **không có** cửa sổ
+        // trời). ⇒ dòng phụ bỏ chữ "cốp"; bảng xe không còn chấm cốp (`GroupBoard.DOOR_PARTS`). Nút `trunk` GIỮ —
+        // cốp GHI được (`voiceCtlBackDoor` cmd 1/3, [ĐO xe 2026-09-17]), chỉ không đọc lại được.
         writes = listOf("trunk", "sunroof", "sunshade"),
-        sub = "cửa, cốp, nóc, rèm",
-        subEn = "doors, tailgate, sunroof, sunshade",
+        sub = "cửa, nóc, rèm",
+        subEn = "doors, sunroof, sunshade",
     )
 
     /**
@@ -225,14 +228,15 @@ object CapabilityGroups {
         icon = "ic-group-battery", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
         reads = listOf(
-            "batt_temp", "soh_oem",
-            "volt_12v", "volt_12v_level",
+            "soh_oem", "volt_12v",
         ),
-        sub = "nhiệt và điện áp cell, SOH, ắc-quy",
+        // ⚠ 2026-09-25 · `batt_temp` (`getBatteryTemp` rỗng) và `volt_12v_level` (65535) đã xoá ⇒ nhóm còn HAI ô,
+        // và dòng phụ phải bỏ chữ "nhiệt" (nó hứa một con số không còn đường nào đọc ra).
+        sub = "sức khoẻ pin, điện áp ắc-quy",
         // ⚠ [ĐO] bản dịch đầu của tôi viết *"…, SOH, 12V battery"* và `init` **đỏ ngay 86 bài**: luật "dòng phụ không
         // được chép tay số" bắt đúng chữ `12`. Ở đây con số là điện áp chứ không phải số thành viên, nhưng bản tiếng
         // Việt cũng chỉ viết "ắc-quy" (không có số) ⇒ giữ hai bản nói CÙNG một thứ, và luật giữ nguyên độ chặt.
-        subEn = "cell temperature and voltage, SOH, auxiliary battery",
+        subEn = "battery health, auxiliary battery voltage",
     )
 
     /** *"Chuyến này tôi đi bao nhiêu, tốn bao nhiêu?"* — quãng đường, thời gian, điện tiêu thụ, odo. */
@@ -240,7 +244,9 @@ object CapabilityGroups {
         id = "g_trip", label = "Chuyến đi", labelEn = "Trip",
         icon = "ic-group-trip", domain = Domain.ENERGY,
         shape = WidgetShape.CARD,
-        reads = listOf("trip_km", "trip_hours", "trip_kwh", "consumption_50km", "odometer", "ev_mileage_km"),
+        // ⚠ 2026-09-25 · `trip_kwh` (feature-id 1246801976 rỗng) và `ev_mileage_km` (`getEVMileageValue` rỗng) đã
+        // xoá. Dòng phụ giữ chữ "điện tiêu thụ" vì `consumption_50km` ("Tiêu thụ 50km") vẫn trả lời câu đó.
+        reads = listOf("trip_km", "trip_hours", "consumption_50km", "odometer"),
         sub = "quãng đường, thời gian, điện tiêu thụ, odo",
         subEn = "distance, time, energy used, odometer",
     )

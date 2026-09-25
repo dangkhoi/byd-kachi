@@ -66,7 +66,8 @@ object CarDataDemand {
             "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
             "tyre_t_fl", "tyre_t_fr", "tyre_t_rl", "tyre_t_rr",
         ),
-        "w_car" to setOf("door_lf", "door_rf", "door_lr", "door_rr", "tailgate_status"),
+        // ⚠ 2026-09-25: `tailgate_status` gỡ ⇒ widget này chỉ còn BỐN cửa (cốp không có đường đọc nào).
+        "w_car" to setOf("door_lf", "door_rf", "door_lr", "door_rr"),
         // ⚠ [SOÁT P1-1] Bốn mã NHIỆT lốp có mặt dù ô tổng hợp chỉ *in ra* áp suất: bộ vẽ chuyền **cả cụm**
         // `CarStatus.Tyres` cho `TyreBoard.readings(...)` rồi đọc `status.alert` của kết quả. Hôm nay phép xét
         // ấy chỉ dùng áp suất — nhưng nó là quyết định của MỘT LỚP KHÁC, và ngày ai đó cho nhiệt vào ngưỡng thì

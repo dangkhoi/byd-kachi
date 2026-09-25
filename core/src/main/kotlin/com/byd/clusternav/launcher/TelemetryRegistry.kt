@@ -139,8 +139,6 @@ object TelemetryRegistry {
         // BYDAutoStatisticDevice.java:200.
         t("fuel_pct", "Mức xăng", "Fuel level", "%", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getFuelPercentageValue"),
         t("odometer", "Odo tổng", "Odometer", "km", ENERGY, VALUE, OVERDRIVE, "BYDAutoStatisticDevice.getTotalMileageValue"),
-        // BYDAutoStatisticDevice.java:167.
-        t("ev_mileage_km", "Km chạy điện", "EV distance driven", "km", ENERGY, VALUE, NEEDS_CAR, "BYDAutoStatisticDevice.getEVMileageValue", shortEn = "EV distance"),
         // ═══ V3 · R11 — bind theo TÊN HẰNG, giá trị tra lúc chạy (xem [BindingRoute.FeatureName]) ═══
         // [ĐO nguồn fw-dl3 2026-09-16] `BYDAutoFeatureIds.java`: `INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE`
         // = 1246801948 **chỉ khi** `isCanFD`; không CanFD thì 1230024732 (Toyota) hoặc 602471. Số cũ chép từ
@@ -154,7 +152,6 @@ object TelemetryRegistry {
             short = "Quãng chuyến", shortEn = "Trip dist."),
         t("trip_hours", "Thời gian chuyến", "Trip time", "", ENERGY, VALUE, OVERDRIVE,
             "BYDAutoInstrumentDevice.getCurrentJourneyDriveTime"),
-        t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, NEEDS_CAR, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
         t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
         // V3 · R11 — [ĐO nguồn fw-dl3] `ENGINE_POWER` = 339738656 (CanFD) / 353370144 (Toyota) / 1033203762.
         t("motor_power", "Công suất mô-tơ", "Motor power", "kW", ENERGY, GAUGE, OVERDRIVE,
@@ -163,11 +160,24 @@ object TelemetryRegistry {
         // `charging_pct` · `charging_eta_hour` · `charging_eta_min` · `charging_capacity_kwh` · `charging_state` ·
         // `charger_work_state` · `batt_range_bodywork` (đọc) và `target_soc_set` · `charge_cap` · `start_charging`
         // (ghi, ở ControlRegistry). Xe sạc ở trụ/nhà, người lái không theo dõi qua launcher. Thêm lại =
-        // quyết định của owner. `target_soc` (đọc, NEEDS_CAR) và `wireless_charge` (nút) KHÔNG nằm trong danh sách NO.
-        // NEEDS-ONCAR: batt_temp / soh_oem — feature-id zero-hoá trong decompile, không có named.
-        t("batt_temp", "Nhiệt độ pin", "Battery temp", "°C", ENERGY, VALUE, NEEDS_CAR, "BYDAutoChargingDevice.getBatteryTemp"),
+        // quyết định của owner. `wireless_charge` (nút) KHÔNG nằm trong danh sách NO.
+        //
+        // ⚠⚠ 2026-09-25 · **BẢY DATUM CHẾT ĐÃ GỠ HẲN** — owner chốt *"bỏ đi, gỡ khỏi giao diện và code luôn"* sau
+        // lượt sweep NEEDS_CAR trên xe (`docs/diagnostics/oncar-sweep-verify-2026-09-21.md` + phiên 09-25). Cả bảy
+        // đều là đường ĐỌC **rỗng/sentinel trên ROM+trim xe owner**, tức một ô bày ra mà vĩnh viễn hiện `"—"`:
+        //   • `batt_temp`       — `BYDAutoChargingDevice.getBatteryTemp` trả rỗng;
+        //   • `target_soc`      — `SET_DR_SOC_TARGET` không phân giải (nút `target_soc_set` đã gỡ ở (V) 09-17);
+        //   • `ev_mileage_km`   — `getEVMileageValue` rỗng;
+        //   • `trip_kwh`        — feature-id 1246801976 rỗng;
+        //   • `volt_12v_level`  — `getBatteryVoltageLevel` = 65535 (sentinel);
+        //   • `tailgate_status` — `getHatchDoorStatus` rỗng với MỌI arg (cốp xe này không có cảm biến trạng thái);
+        //   • `sunroof_pos`     — `getSunroofPosition` = 65535 (xe owner **không có** cửa sổ trời).
+        // Gỡ kéo theo: 5 trường `CarStatus.Energy` + 2 `CarStatus.Body` · 7 dòng `CarDataAdapter` · 7 case
+        // `TelemetryReadout` · icon/diễn giải · thành viên 3 nhóm (`g_doors` · `g_battery` · `g_trip`) · bộ phận
+        // CỐP của bảng cửa (`GroupBoard.DOOR_PARTS`) · dòng cốp của widget `w_car` · `readKey` của nút `trunk`.
+        // **Thêm lại là quyết định của owner** — và chỉ có nghĩa khi có một phép ĐO mới trên xe, không phải một
+        // getter đoán thêm (`soh_oem` ở lại vì nó ĐỌC ĐƯỢC; `volt_12v` ở lại vì cùng lý do).
         t("soh_oem", "Sức khỏe pin (SOH)", "Battery health (SOH)", "%", ENERGY, CARD, OVERDRIVE, "1145045032", short = "SOH pin", shortEn = "SOH"),
-        t("target_soc", "Mục tiêu sạc", "Charge target", "%", ENERGY, VALUE, NEEDS_CAR, "SET_DR_SOC_TARGET"),
 
         // ── A2. Động lực / tốc độ / chuyển động ──────────────────────────────────────────────────
         t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
@@ -312,9 +322,9 @@ object TelemetryRegistry {
         t("door_rf", "Cửa trước-phải", "Door front-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door FR"),
         t("door_lr", "Cửa sau-trái", "Door rear-left", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RL"),
         t("door_rr", "Cửa sau-phải", "Door rear-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RR"),
-        t("tailgate_status", "Cốp sau", "Tailgate", "", BODY, STRIP, NEEDS_CAR, "BYDAutoBodyworkDevice.getHatchDoorStatus"),
+        // ⚠ 2026-09-25 · `tailgate_status` (cốp không có cảm biến) và `sunroof_pos` (xe không có cửa sổ trời) đã
+        // gỡ — xem nhật ký ở cụm A1. `sunroof_state` GIỮ: nó vẫn đọc ra được, và nút `sunroof` vẫn tồn tại.
         t("sunroof_state", "Cửa sổ trời", "Sunroof", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
-        t("sunroof_pos", "Vị trí cửa sổ trời", "Sunroof position", "%", BODY, VALUE, NEEDS_CAR, "BYDAutoBodyworkDevice.getSunroofPosition", shortEn = "Sunroof pos"),
         t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),
         t("power_level", "Nguồn xe", "Vehicle power", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getPowerLevel"),
         t("vehicle_type", "Mẫu xe", "Vehicle model", "", BODY, VALUE, PROVEN, "BYDAutoBodyworkDevice.getType"),
@@ -341,11 +351,11 @@ object TelemetryRegistry {
         // người ngồi · phát hiện trẻ em · cảnh báo quá tốc · điểm mù · chuyển làn · cắt ngang sau · cảnh báo mở cửa ·
         // 8 vùng cảm biến đỗ · âm lượng cảm biến · ESP) đã xoá cùng `Domain.SAFETY`. Ba mục dưới đây KHÔNG thuộc hệ
         // an toàn lái: chúng nói về **điện 12V và nguồn máy**, nên ở lại dưới [ENERGY].
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: `mcu_status` (mục thứ ba của cụm này) đã xoá — owner chấm NO. Hai vai
-        // `volt_12v*` GIỮ.
+        // ⚠ (V) FEATURE-FILTER 2026-09-17: `mcu_status` (mục thứ ba của cụm này) đã xoá — owner chấm NO.
+        // ⚠ 2026-09-25: `volt_12v_level` cũng đã xoá (`getBatteryVoltageLevel` = 65535 sentinel) ⇒ còn MỘT vai
+        // `volt_12v` — điện áp thô, thứ duy nhất xe này trả ra thật.
         // [ĐO] `double getBatteryVoltage()` BYDAutoOtaDevice.java:87 — Power KHÔNG có method này (chỉ getBatteryLowVoltageState).
         t("volt_12v", "Ắc-quy 12V", "12V battery", "V", ENERGY, VALUE, OVERDRIVE, "BYDAutoOtaDevice.getBatteryVoltage"),
-        t("volt_12v_level", "Mức ắc-quy 12V", "12V battery level", "", ENERGY, BADGE, NEEDS_CAR, "BYDAutoBodyworkDevice.getBatteryVoltageLevel"),
 
         // ── A8. Danh tính / khoá / máy ──────────────────────────────────────────────────────────
         // VIN = ký hiệu ngành, giữ nguyên (spec §6 OQ2).

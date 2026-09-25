@@ -43,18 +43,16 @@ object CapabilityIcons {
         // U6: PIN chỉ còn nghĩa "trạng thái của gói pin" (mức · sức khoẻ · mức muốn sạc tới). Việc NẠP có hình
         // riêng (pin + tia sét) vì đó là một trạng thái khác hẳn, và trước đây nó lẫn vào cả hai phía.
         "soc" to "ic-battery", "soh_oem" to "ic-battery",
-        // MỤC TIÊU sạc là con số MONG MUỐN, không phải trạng thái hiện tại ⇒ vòng ngắm, không phải pin.
-        // ⚠ (V) FEATURE-FILTER 2026-09-17: nút `target_soc_set` đã xoá, chỉ còn ô ĐỌC `target_soc`.
-        "target_soc" to "ic-target",
-        "trip_kwh" to "ic-consumption", "consumption_50km" to "ic-consumption",
+        // ⚠ 2026-09-25: `target_soc` (ic-target) · `trip_kwh` · `ev_mileage_km` · `batt_temp` (ic-temp) đã gỡ cùng
+        // bảy datum chết — nhật ký ở `TelemetryRegistry`. `ic-target`/`ic-temp` vẫn ở `KachiTheme.iconRes` (icon
+        // SINH, xoá tệp là làm `IconStyleContractTest` lệch byte) nhưng không còn mã nào tra tới chúng.
+        "consumption_50km" to "ic-consumption",
         // [KIỂM TOÁN UX mục 4d] Xăng KHÔNG dùng icon PIN: trên xe hybrid đó là hai bình chứa khác nhau.
         "fuel_pct" to "ic-fuel",
         // U6: "còn đi được bao xa" (tầm) ≠ "đã đi được bao xa" (odo/chuyến) — trước đây cả sáu cùng ic-road.
         "ev_range_km" to "ic-range", "fuel_range_km" to "ic-range",
-        "odometer" to "ic-road", "ev_mileage_km" to "ic-road", "trip_km" to "ic-road",
+        "odometer" to "ic-road", "trip_km" to "ic-road",
         "trip_hours" to "ic-clock",
-        // U6: nhiệt/áp của CELL tách khỏi nhiệt của cả gói pin — dãy cell + đại lượng, hai hình cùng họ.
-        "batt_temp" to "ic-temp",
         // ── Động lực ──
         // U6: bàn đạp và độ dốc trước đây lùi về icon LĨNH VỰC (đồng hồ tốc) ⇒ 6/14 ô cùng một hình.
         // [KIỂM TOÁN UX mục 4a] Bốn mục CHẾ ĐỘ LÁI trước đây tra ra `ic-grid` (⊞) — cùng hình với widget "Bảng tổng
@@ -98,8 +96,9 @@ object CapabilityIcons {
         "power_level" to "ic-bolt", "vehicle_type" to "ic-car", "emergency_alarm" to "ic-alert",
         // U7 lượt 2 · [ĐO bài mù Pass 1] hai cặp này trước dùng CHUNG một hình: `sunroof_state` ↔ `sunroof_pos`
         // khác nhau 0 pixel, `tailgate_status` ↔ `tailgate_position` khác 2% — mà chúng nằm KỀ NHAU trong
-        // nhóm Thân xe. Nay: ô TRẠNG THÁI = nắp/tấm kín liền khối; ô VỊ TRÍ = hé mở + mũi tên mức.
-        "tailgate_status" to "ic-car-top-trunk", "sunroof_state" to "ic-car-top-sunroof", "sunroof_pos" to "ic-car-top-sunroof-pos",
+        // nhóm Thân xe. ⚠ 2026-09-25 cả ba mã kia đã gỡ (cốp không cảm biến · xe không có cửa sổ trời) ⇒ chỉ còn
+        // `sunroof_state`, va chạm hình tự hết.
+        "sunroof_state" to "ic-car-top-sunroof",
         "sunshade_pct" to "ic-car-top-sunshade",
         // U7 · BỐN CỬA và BỐN KÍNH — mã đã mang vị trí (`_lf`/`_rf`/`_lr`/`_rr`), nay HÌNH cũng mang.
         // Cửa vẽ VẠT CỬA MỞ RA NGOÀI thân; kính vẽ THANH KÍNH TRONG vách ⇒ hai họ không lẫn nhau.
@@ -124,7 +123,8 @@ object CapabilityIcons {
         // `CapabilityIconsDiversityTest` báo `ic-bolt ×6` trong lĩnh vực Năng lượng ngay lượt chạy đầu (trần là 3).
         // Nên mỗi mục lấy đúng hình của thứ nó đo: ĐIỆN ÁP (cùng họ với áp cell) · MỨC pin · THIẾT BỊ còn sống.
         // ⚠ (V) FEATURE-FILTER 2026-09-17: `mcu_status` (mục thứ ba của cụm này) đã xoá — owner chấm NO.
-        "volt_12v" to "ic-cell-volt", "volt_12v_level" to "ic-battery",
+        // ⚠ 2026-09-25: `volt_12v_level` cũng xoá (getter = 65535) ⇒ cụm còn MỘT mục, mang hình ĐIỆN ÁP.
+        "volt_12v" to "ic-cell-volt",
         // ── Lốp (U7) — vị trí bánh nằm trong mã, nay nằm cả trong hình ──
         // Áp suất: ba bánh kia là NÉT, bánh đang nói tới TÔ ĐẶC. Nhiệt: bánh đó TÔ + nhiệt kế giữa xe.
         "tyre_p_fl" to "ic-car-top-tyre-fl", "tyre_p_fr" to "ic-car-top-tyre-fr",

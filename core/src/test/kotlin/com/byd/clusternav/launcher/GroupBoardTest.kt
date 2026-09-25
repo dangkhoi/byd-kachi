@@ -203,12 +203,12 @@ class GroupBoardTest {
         // Cố ý: tự nghĩ ngưỡng cho nhiệt pin / sức khoẻ pin rồi tô đỏ là **bịa cảnh báo**. Bài này khoá quyết định
         // đó lại, để lần sau ai thêm ngưỡng thì phải sửa bài test (tức phải nhìn thấy quyết định).
         // ⚠ WP8 — `cell_v_high` đã purge (#5-18), nên ca "điện áp cell" đo bằng `soh_oem` (số sức khoẻ còn lại
-        // trong nhóm pin). Tính chất canh không đổi: KHÔNG tự nghĩ ngưỡng rồi tô màu.
+        // trong nhóm pin). ⚠⚠ 2026-09-25 — `batt_temp` cũng gỡ (getter rỗng) ⇒ nhóm còn HAI ô. Tính chất canh
+        // không đổi: KHÔNG tự nghĩ ngưỡng rồi tô màu.
         val car = CarStatus(
-            energy = CarStatus.Energy(battTempC = 61, sohPct = 71, soc = 3, volt12v = 10.9),
+            energy = CarStatus.Energy(sohPct = 71, soc = 3, volt12v = 10.9),
         )
         val batt = GroupBoard.of(CapabilityGroups.BATTERY, car).cells
-        assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "batt_temp" }.tone)
         assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "soh_oem" }.tone)
         assertEquals(GroupTone.NEUTRAL, batt.first { it.id == "volt_12v" }.tone)
         assertEquals(

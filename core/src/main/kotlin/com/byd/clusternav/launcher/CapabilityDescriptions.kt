@@ -17,15 +17,12 @@ object CapabilityDescriptions {
         "fuel_range_km" to Desc("Quãng đường ước tính còn chạy bằng xăng", "Estimated remaining driving range on petrol (km)"),
         "fuel_pct" to Desc("Phần trăm nhiên liệu xăng còn lại", "Petrol fuel level remaining (%)"),
         "odometer" to Desc("Tổng quãng đường xe đã đi", "Total lifetime distance driven (km)"),
-        "ev_mileage_km" to Desc("Quãng đường đã chạy bằng điện", "Distance driven on electric power (km)"),
         "trip_km" to Desc("Quãng đường của chuyến đi hiện tại", "Distance covered on the current trip (km)"),
         "trip_hours" to Desc("Thời gian đã đi của chuyến hiện tại", "Elapsed time of the current trip (h)"),
-        "trip_kwh" to Desc("Điện năng đã tiêu thụ trong chuyến", "Electricity consumed on the current trip (kWh)"),
         "consumption_50km" to Desc("Mức tiêu thụ điện trung bình 50km gần nhất", "Average power consumption over the last 50km"),
         "motor_power" to Desc("Công suất mô-tơ điện đang phát ra", "Electric motor power output (kW)"),
-        "batt_temp" to Desc("Nhiệt độ hiện tại của pin cao áp", "Current high-voltage battery temperature (°C)"),
         "soh_oem" to Desc("Tình trạng sức khoẻ pin so với lúc mới", "Battery health versus original capacity (%)"),
-        "target_soc" to Desc("Mức pin mục tiêu đã đặt cho sạc", "Target charge level configured for charging (%)"),
+        // ⚠ 2026-09-25 · diễn giải của `ev_mileage_km` · `trip_kwh` · `batt_temp` · `target_soc` gỡ cùng datum.
 
         // ── DRIVETRAIN (INFO) ──
         "speed" to Desc("Tốc độ di chuyển hiện tại của xe", "Current vehicle road speed (km/h)"),
@@ -78,9 +75,7 @@ object CapabilityDescriptions {
         "door_rf" to Desc("Trạng thái đóng/mở cửa trước bên phải", "Front-right door open/closed state"),
         "door_lr" to Desc("Trạng thái đóng/mở cửa sau bên trái", "Rear-left door open/closed state"),
         "door_rr" to Desc("Trạng thái đóng/mở cửa sau bên phải", "Rear-right door open/closed state"),
-        "tailgate_status" to Desc("Trạng thái đóng/mở cốp sau", "Rear tailgate open/closed state"),
         "sunroof_state" to Desc("Trạng thái đóng/mở cửa sổ trời", "Sunroof open/closed state"),
-        "sunroof_pos" to Desc("Vị trí mở hiện tại của cửa sổ trời", "Current sunroof open position (%)"),
         "sunshade_pct" to Desc("Vị trí mở hiện tại của rèm che nắng", "Current sunshade open position (%)"),
         "power_level" to Desc("Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)", "Current vehicle power level (off/ACC/on)"),
         "vehicle_type" to Desc("Mã model của xe", "Vehicle model identifier"),
@@ -99,7 +94,6 @@ object CapabilityDescriptions {
 
         // ── Điện phụ 12V / nguồn máy (nhóm ADAS/an toàn đã gỡ 2026-09-16) ──
         "volt_12v" to Desc("Điện áp ắc-quy 12V hiện tại", "Current 12V auxiliary battery voltage (V)"),
-        "volt_12v_level" to Desc("Mức đánh giá tình trạng ắc-quy 12V", "12V auxiliary battery health level rating"),
 
         // ── IDENTITY (INFO) ──
         "vin" to Desc("Số khung nhận dạng xe (VIN)", "Vehicle identification number (VIN)"),

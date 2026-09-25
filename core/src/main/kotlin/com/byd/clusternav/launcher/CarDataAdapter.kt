@@ -138,18 +138,14 @@ class CarDataAdapter(
                 evRangeKm = g.int("ev_range_km", e.evRangeKm),
                 fuelRangeKm = g.int("fuel_range_km", e.fuelRangeKm),
                 odometerKm = g.int("odometer", e.odometerKm),
-                battTempC = g.int("batt_temp", e.battTempC),
                 sohPct = g.int("soh_oem", e.sohPct),
-                targetSoc = g.int("target_soc", e.targetSoc),
                 fuelPct = g.int("fuel_pct", e.fuelPct),
-                evMileageKm = g.int("ev_mileage_km", e.evMileageKm),
                 tripKm = g.dbl("trip_km", e.tripKm),
                 tripHours = g.dbl("trip_hours", e.tripHours),
-                tripKwh = g.dbl("trip_kwh", e.tripKwh),
                 consumption50 = g.dbl("consumption_50km", e.consumption50),
-                // Điện 12V + nguồn MCU — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS.
+                // Điện 12V — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS. (`volt_12v_level`
+                // gỡ 2026-09-25 cùng bốn datum năng lượng chết khác — nhật ký ở `TelemetryRegistry`.)
                 volt12v = g.dbl("volt_12v", e.volt12v),
-                volt12vLevel = g.int("volt_12v_level", e.volt12vLevel),
             ),
             climate = CarStatus.Climate(
                 pm25Level = g.int("pm25_level", c.pm25Level),
@@ -198,8 +194,6 @@ class CarDataAdapter(
                 doorRfOpen = g.bool("door_rf", b.doorRfOpen),
                 doorLrOpen = g.bool("door_lr", b.doorLrOpen),
                 doorRrOpen = g.bool("door_rr", b.doorRrOpen),
-                tailgateOpen = g.bool("tailgate_status", b.tailgateOpen),
-                sunroofPct = g.int("sunroof_pos", b.sunroofPct),
                 sunshadePct = g.int("sunshade_pct", b.sunshadePct),
                 powerLevel = g.int("power_level", b.powerLevel),
                 vehicleType = g.str("vehicle_type", b.vehicleType),

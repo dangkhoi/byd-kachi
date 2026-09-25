@@ -260,13 +260,14 @@ class CapabilityGroupsTest {
      *
      * ⚠ (V) FEATURE-FILTER 2026-09-17: mốc cũ là `tyre_p_fl` — tám ô lốp LẺ nay **ẩn khỏi bộ chọn**
      * ([CapabilityCatalog.HIDDEN_FROM_PICKER]) theo lệnh owner *"gôm lại thành 1 widget"*, nên nó không còn
-     * chứng minh được vế thứ hai. Đổi sang `batt_temp`: cùng là mục ĐỌC rời, không ẩn. Luật *"ẩn ≠ cấm chip"*
+     * chứng minh được vế thứ hai. Đổi sang `soh_oem`: cùng là mục ĐỌC rời, không ẩn. Luật *"ẩn ≠ cấm chip"*
      * vẫn giữ — `isChippable` vẫn nói CÓ cho `tyre_p_fl`, chỉ màn chọn không bày nó nữa.
+     * (Mốc giữa là `batt_temp`, gỡ 2026-09-25 cùng bảy datum chết ⇒ nay `soh_oem`.)
      */
     @Test
     fun `chan nhom len chip - khong va qua tay`() {
-        assertTrue(TopStripConfig.isChippable("batt_temp"), "mục ĐỌC rời vẫn phải chip được")
-        assertTrue(TopStripConfig.choices().any { it.id == "batt_temp" }, "và màn chọn vẫn phải bày nó")
+        assertTrue(TopStripConfig.isChippable("soh_oem"), "mục ĐỌC rời vẫn phải chip được")
+        assertTrue(TopStripConfig.choices().any { it.id == "soh_oem" }, "và màn chọn vẫn phải bày nó")
         assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "ẩn khỏi bộ chọn KHÔNG phải cấm chip (mã vẫn sống)")
         assertEquals(3, TopStripConfig.DEFAULT.ids.size, "mặc định vẫn đúng 3 chip như owner đang thấy")
     }
@@ -311,7 +312,11 @@ class CapabilityGroupsTest {
         // điện** (`anion` · `headlight_mode` · `powertrain_mode` · `screen_rotation` · `camera_view` ·
         // `cluster_music` · `brightness_gear` · `vol` · `cast` · datum `op_mode` · `energy_mode`). Cùng loại
         // quyết định như ba lượt trên — xem nhật ký ở `ControlRegistry`/`TelemetryRegistry`.
-        assertEquals(71, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 71 (1.90 gỡ op_mode + energy_mode)")
+        // ⚠⚠ 2026-09-25: 71 → **64** datum = owner gỡ **7 datum CHẾT** (`batt_temp` · `target_soc` ·
+        // `ev_mileage_km` · `trip_kwh` · `volt_12v_level` · `tailgate_status` · `sunroof_pos`) sau lượt sweep
+        // NEEDS_CAR trên xe: cả bảy đều đọc ra rỗng/sentinel trên ROM+trim này ⇒ một ô vĩnh viễn "—". Số NÚT
+        // **không đổi** (33): `trunk` chỉ mất `readKey`, không mất nút. Nhật ký ở `TelemetryRegistry`.
+        assertEquals(64, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 64 (2026-09-25 gỡ 7 datum chết)")
         assertEquals(33, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(2, ActionMacros.ALL.size, "1.94: 2 gói (mở/đóng hết kính)")
@@ -321,7 +326,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            71 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            64 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",
@@ -338,7 +343,10 @@ class CapabilityGroupsTest {
         )
         // WP8: sàn hạ 65 → 55 vì tử số và mẫu số cùng teo (73 datum, nhóm phủ 57) — tỉ lệ phủ **tăng** (64 % →
         // 78 %), nên đây là cập nhật theo phép đếm mới, không phải nới luật.
-        assertTrue(covered.size >= 55, "8 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
+        // 2026-09-25: hạ tiếp 55 → **50** (64 datum, nhóm phủ 51). Cả 7 datum gỡ đều ĐANG thuộc nhóm (g_doors 2 ·
+        // g_battery 2 · g_trip 2 · và `target_soc` không thuộc nhóm nào) ⇒ tử số giảm 6, mẫu số giảm 7; tỉ lệ phủ
+        // vẫn **tăng** (78 % → 80 %). Cùng loại cập nhật như WP8.
+        assertTrue(covered.size >= 50, "8 nhóm phải phủ phần lớn datum, đang phủ ${covered.size}")
         // KHÔNG đòi phủ 100%: động lực/danh tính/GPS chưa có nhóm là đúng bảng §4.1, và mục rời vẫn đặt được.
         assertTrue("speed" in ungrouped, "tiền đề: tốc độ chưa thuộc nhóm nào (vẫn đặt được như mục rời)")
         // Không datum nào bị đếm hai lần trong CÙNG một nhóm.

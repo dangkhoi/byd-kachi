@@ -51,7 +51,8 @@ class LangCoverageTest {
         // 100 ((V) FEATURE-FILTER 2026-09-17 owner gỡ 12 datum NO — trước đó 112).
         // 1.85: +1 `ac_wind_auto` (đã có nhãn + nhãn ngắn ở CẢ hai thứ tiếng — chính bài này ép điều đó).
         // WP8 2026-09-20: 102 → 73 (purge 29 datum BỎ) → 1.90: 71 (gỡ `op_mode` + `energy_mode`, xe thuần điện).
-        assertEquals(71, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 2026-09-25: 71 → 64 (owner gỡ 7 datum CHẾT — nhật ký ở TelemetryRegistry).
+        assertEquals(64, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -211,7 +212,8 @@ class LangCoverageTest {
         // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **256 → 255 (−1)** = mục `voice_model_light`. Danh mục mô
         // hình nghe thu về đúng một gói ⇒ bề mặt chọn-mô-hình gỡ khỏi Cài đặt. Lượt GIẢM thứ ba.
         // 1.90: **255 → 244 (−11)** = −9 nút −2 datum (xe thuần điện). Lượt GIẢM thứ tư.
-        assertEquals(245, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2026-09-25: **245 → 238 (−7)** = 7 datum CHẾT bị gỡ. Lượt GIẢM thứ năm.
+        assertEquals(238, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
