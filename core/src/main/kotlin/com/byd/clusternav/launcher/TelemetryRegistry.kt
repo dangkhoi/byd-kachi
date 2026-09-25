@@ -147,11 +147,13 @@ object TelemetryRegistry {
         // jadx-tmap là con số của MỘT cấu hình ⇒ trên xe khác cấu hình nó không tồn tại và HAL từ chối.
         // Tên hằng thuộc lớp lồng `Instrument` ⇒ device đích do `BYDAutoDeviceFeaturesMap` quyết, không đoán.
         // NEEDS-ONCAR (còn lại): scale phút-vs-giờ của DRIVE_TIME.
-        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, NEEDS_CAR,
-            "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_MILEAGE",
+        // [ĐO RE tmap 2026-09-25] getter TRỰC TIẾP (không feature-id): BYDAutoInstrumentDevice.getCurrentJourney*.
+        // Trước dùng tên feature-id INSTRUMENT_2IN1_* ⇒ gateway không gọi được như method ⇒ trip KHÔNG lên.
+        t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE,
+            "BYDAutoInstrumentDevice.getCurrentJourneyDriveMileage",
             short = "Quãng chuyến", shortEn = "Trip dist."),
-        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, NEEDS_CAR,
-            "BYDAutoFeatureIds.Instrument.INSTRUMENT_2IN1_CURRENT_JOURNEY_DRIVE_TIME"),
+        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE,
+            "BYDAutoInstrumentDevice.getCurrentJourneyDriveTime"),
         t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, NEEDS_CAR, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
         t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),
         // V3 · R11 — [ĐO nguồn fw-dl3] `ENGINE_POWER` = 339738656 (CanFD) / 353370144 (Toyota) / 1033203762.
