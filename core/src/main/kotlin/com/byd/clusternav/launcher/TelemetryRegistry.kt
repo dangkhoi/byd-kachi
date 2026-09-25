@@ -172,7 +172,7 @@ object TelemetryRegistry {
         // ── A2. Động lực / tốc độ / chuyển động ──────────────────────────────────────────────────
         t("speed", "Tốc độ", "Speed", "km/h", DRIVETRAIN, DIAL, PROVEN, "BYDAutoSpeedDevice.getCurrentSpeed"),
         // BYDAutoGearboxDevice.java:109 — GEAR_P=3/R=1/N=0/D=2/INVALID=255 (:79-83). Cũ `getGearboxState` chỉ ON/OFF.
-        t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, NEEDS_CAR, "BYDAutoGearboxDevice.getCurrentGear"),
+        t("gear", "Số", "Gear", "", DRIVETRAIN, BADGE, OVERDRIVE, "BYDAutoGearboxDevice.getCurrentGear"),  // [ĐO xe: =3]
         // ⚠⚠ 1.90 · **`op_mode` (Chế độ lái) và `energy_mode` (Chế độ năng lượng) ĐÃ XOÁ HẲN** — owner chốt
         // 2026-09-21. `energy_mode` vì **xe thuần điện** (thang STOP/EV/FORCE_EV/HEV/FUEL/KEEP không có nghĩa khi
         // không có động cơ xăng — [ĐO sweep 09-21] đọc ra `3`=HEV trên một chiếc EV, tức con số vô nghĩa đang được
@@ -218,7 +218,7 @@ object TelemetryRegistry {
         // ⚠ TIER GIỮ `NEEDS_CAR` — có chủ ý. Thứ tự phần tử là [ĐO nguồn] (vendor doc) + [ĐO log] chứ **chưa** có
         // một lượt đọc `getPM2p5Value()` nào trên xe owner in ra cả hai ô để đối chiếu. Đường đã nối nên nó có thể
         // hiện số thật ngay; dấu "chưa kiểm" ở lại tới khi sweep đọc được ([ĐO] out ≈ 22 khi in ≈ 8 ⇒ lên PROVEN).
-        t("pm25_outside", "Bụi mịn ngoài xe", "Outside fine dust", "µg/m³", CLIMATE, VALUE, NEEDS_CAR, "BYDAutoPM2p5Device.getPM2p5Value", short = "Bụi ngoài", shortEn = "Outside dust"),
+        t("pm25_outside", "Bụi mịn ngoài xe", "Outside fine dust", "µg/m³", CLIMATE, VALUE, OVERDRIVE, "BYDAutoPM2p5Device.getPM2p5Value", short = "Bụi ngoài", shortEn = "Outside dust"),  // [ĐO xe: ô[1]=18]
         // ⚠ 1.85 · [ĐO xe 2026-09-20] ô này đọc **X** (hiện "—") trong khi xe CÓ số nhiệt ([ĐO car log]
         // `AmapService: temp=22`). **KHÔNG sửa route ở lượt này, và đây là lý do** (task: *"không chắc thì ghi TODO,
         // không bịa"*): [ĐO nguồn] cả `jadx-tmap`/`jadx-kim`/`jadx-dashcast`/`jadx-openbyd` lẫn **javadoc chính thức
@@ -228,7 +228,7 @@ object TelemetryRegistry {
         // không phải một datum thứ ba. ⇒ TODO on-car (`0-PENDING` nhóm D): sweep feature-id này trên device AC
         // (1031798832 = đường hiện tại) rồi đối chiếu với số trên màn AC khi ĐỔI setpoint — nếu hai số dính nhau thì
         // ô này TRÙNG `inside_temp` và nên bỏ, chứ không phải nối thêm một getter.
-        t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, NEEDS_CAR, "1031798832"),
+        t("cabin_temp", "Nhiệt trong cabin", "Cabin temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getTemprature"),  // [ĐO xe: getTemprature(1)=24]
         // ⚠ 1.85 · GỐC của *"nhiệt cài đặt đọc X"* [ĐO xe 2026-09-20] — nằm ở **tham số**, không ở tên getter.
         // `HalReadTables.readArg` khai `inside_temp → 0`, mà **javadoc chính thức BYD** cho `getTemprature(int area)`
         // liệt kê đúng bốn vùng đọc được: `AC_TEMPERATURE_MAIN`(1) · `_DEPUTY`(2) · `_REAR`(3) · `_OUT`(4) — **0

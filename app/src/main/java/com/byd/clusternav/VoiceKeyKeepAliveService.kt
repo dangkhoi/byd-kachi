@@ -28,6 +28,30 @@ import android.util.Log
  */
 class VoiceKeyKeepAliveService : Service() {
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile private var watching = false
+
+    /**
+     * Watchdog IN-PROCESS (owner 2026-09-25 "anh em lỗi mãi"). [ĐO xe] a11y ENABLED mà KHÔNG BOUND, và broadcast
+     * `REBIND_WATCHDOG` bị ROM **`ssc_skip` DROP** dù tiến trình đang RUNNING ⇒ watchdog-qua-AlarmManager-broadcast
+     * KHÔNG tin cậy trên DiLink. Đây là vòng kiểm chạy THẲNG trong tiến trình sống (FGS): mỗi [WATCHDOG_MS] đọc
+     * [NavConnect.isAccessibilityBound] (AccessibilityManager, không cờ kẹt) — chưa bound thì `grantAccessibility`
+     * (idempotent: verify dumpsys, toggle rebind qua dadb khi cần). Không broadcast, không AlarmManager ⇒ ROM
+     * không có gì để drop. Đây là đường tự-heal CHÍNH; broadcast/alarm giữ làm lưới phụ.
+     */
+    private val watchdog = object : Runnable {
+        override fun run() {
+            if (!Prefs.voiceKeyEnabled(applicationContext)) return
+            runCatching {
+                if (!NavConnect.isAccessibilityBound(applicationContext)) {
+                    Log.w(TAG, "a11y KHÔNG bound → re-grant (in-process watchdog)")
+                    NavConnect.grantAccessibility(applicationContext)
+                }
+            }.onFailure { Log.w(TAG, "watchdog re-grant lỗi: ${it.message}") }
+            handler.postDelayed(this, WATCHDOG_MS)
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -36,14 +60,22 @@ class VoiceKeyKeepAliveService : Service() {
         // Phím-thoại TẮT ⇒ không cần giữ tiến trình → đứng xuống (stopSelf sau startForeground là hợp lệ).
         if (!Prefs.voiceKeyEnabled(applicationContext)) {
             Log.i(TAG, "voice key OFF → keep-alive stand down")
+            handler.removeCallbacks(watchdog); watching = false
             runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
             stopSelf(startId)
             return START_NOT_STICKY
         }
-        // Đảm bảo watchdog alarm còn sống (idempotent) — cùng nhịp giữ-tiến-trình.
+        // Đảm bảo watchdog alarm còn sống (idempotent) — LƯỚI PHỤ (broadcast bị ssc_skip nên không đủ tin).
         runCatching { RebindReceiver.scheduleWatchdog(applicationContext) }
-        Log.i(TAG, "voice-key keep-alive foreground (giữ tiến trình cho watchdog/onKeyEvent)")
+        // Watchdog IN-PROCESS — đường tự-heal CHÍNH (không bị ssc_skip). Chạy một lần, tự lặp.
+        if (!watching) { watching = true; handler.postDelayed(watchdog, WATCHDOG_FIRST_MS) }
+        Log.i(TAG, "voice-key keep-alive foreground + in-process a11y watchdog")
         return START_STICKY   // hệ dựng lại nếu bị kill → tiến trình quay lại RUNNING
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacks(watchdog); watching = false
+        super.onDestroy()
     }
 
     private fun startForegroundOnce(): Boolean = runCatching {
@@ -71,6 +103,12 @@ class VoiceKeyKeepAliveService : Service() {
         // Riêng với FloatingBubble(1042)/BootSetup(1043)/VMAutostart(1044) để cùng tồn tại.
         private const val NOTIFICATION_ID = 1045
         private const val CHANNEL_ID = "clusternav_voicekey_keepalive"
+
+        /** Chu kỳ watchdog in-process. 30s: đủ nhanh để phím rớt tự về trong nửa phút, đủ thưa để không tốn. */
+        private const val WATCHDOG_MS = 30_000L
+
+        /** Lần kiểm đầu sau khi FGS lên (cho hệ ổn định trước khi đọc bound). */
+        private const val WATCHDOG_FIRST_MS = 5_000L
 
         /** Bật/tắt theo pref phím-thoại. Gọi lúc boot, mở app, và khi toggle phím-thoại. */
         fun sync(ctx: Context) {

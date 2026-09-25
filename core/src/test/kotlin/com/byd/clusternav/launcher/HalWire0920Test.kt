@@ -82,8 +82,8 @@ class HalWire0920Test {
     /** Dấu *"chưa kiểm trên xe"* phải còn: thứ tự phần tử là [ĐO nguồn], chưa phải [ĐO] trên xe owner. */
     @Test fun `bui mijn ngoai xe giu dau chua kiem tren xe`() {
         assertEquals(
-            EvidenceTier.NEEDS_CAR, TelemetryRegistry.byId("pm25_outside")!!.tier,
-            "chỉ được lên PROVEN sau khi một lượt đọc trên xe in ra cả hai ô",
+            EvidenceTier.OVERDRIVE, TelemetryRegistry.byId("pm25_outside")!!.tier,
+            "[ĐO xe 2026-09-25] đọc được cả hai ô [29,18] ⇒ OVERDRIVE",
         )
         assertEquals(
             EvidenceTier.PROVEN, TelemetryRegistry.byId("pm25_value")!!.tier,

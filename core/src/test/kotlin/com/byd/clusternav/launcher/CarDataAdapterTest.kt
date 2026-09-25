@@ -26,6 +26,7 @@ class CarDataAdapterTest {
                 gettersByArg = mapOf(
                     "getTyrePressureValue" to mapOf(1 to "240", 2 to "235", 3 to "230", 4 to "210"),   // kPa
                     "getLightStatus" to mapOf(2 to "1"),                                                   // light_low_beam
+                    "getTemprature" to mapOf(1 to "24"),                                                   // cabin_temp [ĐO xe]
                 ),
                 features = mapOf(
                     1031798832 to "24",    // cabin_temp

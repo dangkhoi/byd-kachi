@@ -33,6 +33,8 @@ object HalReadTables {
         "light_left_turn" -> 4; "light_right_turn" -> 5
         "light_front_fog" -> 6; "light_rear_fog" -> 7
         "inside_temp" -> 1
+        // [ĐO xe 2026-09-25] cabin_temp = getTemprature(1) = 24 (area 0 = sentinel -2147482645; area 1/2 = 24).
+        "cabin_temp" -> 1
         // H1 · T2 [ĐO xe 2026-09-16]: ghế `get…State(seatID)` — 1 = ghế LÁI (2 = phụ, cùng giá trị lúc đo);
         // sấy kính `getAcDefrostState(area)` — 1 = kính trước · 2 = kính sau (`hal-reads.txt:2-3,22-25`).
         "seat_vent_state" -> 1; "seat_heat_state" -> 1

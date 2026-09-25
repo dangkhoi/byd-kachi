@@ -121,7 +121,7 @@ class VoiceSeatTrunk0920Test {
     @Test fun `co datum bui min ngoai xe cho RE tren xe`() {
         val d = TelemetryRegistry.ALL.firstOrNull { it.id == "pm25_outside" }
         assertNotNull(d, "phải có datum pm25_outside (bụi mịn ngoài xe)")
-        assertEquals(EvidenceTier.NEEDS_CAR, d!!.tier, "chưa có getter thật off-car ⇒ NEEDS_CAR, sweep trên xe")
+        assertEquals(EvidenceTier.OVERDRIVE, d!!.tier, "[ĐO xe 2026-09-25] getPM2p5Value ô[1]=18 ⇒ OVERDRIVE")
         assertEquals("µg/m³", d.unit)
     }
 }
