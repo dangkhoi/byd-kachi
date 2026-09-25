@@ -89,6 +89,9 @@ enum class BridgeMsg {
      */
     ACCESSIBILITY_FAILED,
 
+    /** dadb CHẠY nhưng service chưa BIND (xe tải cao/ROM) — KHÔNG phải lỗi USB debugging. */
+    ACCESSIBILITY_NOT_BOUND,
+
     /** VI "Đang kiểm tra…" · EN "Checking…" — `MainActivity.kt:873`. */
     CHECKING,
 

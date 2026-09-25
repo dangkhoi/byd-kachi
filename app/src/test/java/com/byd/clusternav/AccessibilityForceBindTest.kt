@@ -140,8 +140,8 @@ class AccessibilityForceBindTest {
         // must call the RESET entry (not the plain grant) so a hung single-flight is cleared and the key bind is
         // force-re-requested — recovering the post-reboot enabled-but-not-bound state without an app restart.
         assertTrue(
-            bridgeKeys.contains("NavConnect.grantAccessibility(app, reset = true)"),
-            "the voice-key switch OFF→ON calls grantAccessibility(reset = true) to reset + force-rebind",
+            bridgeKeys.contains("NavConnect.grantAccessibilityDetailed(app, reset = true)"),
+            "the voice-key switch OFF→ON calls grantAccessibilityDetailed(reset = true) to reset + force-rebind",
         )
         assertTrue(
             bridgeKeys.contains("Prefs.setVoiceKeyEnabled(app, on)"),

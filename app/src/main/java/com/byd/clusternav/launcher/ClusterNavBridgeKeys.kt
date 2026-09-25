@@ -45,14 +45,21 @@ fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit =
         return
     }
     toast(BridgeMsg.ENABLING_ACCESSIBILITY)
-    NavConnect.grantAccessibility(app, reset = true) { ok ->
+    NavConnect.grantAccessibilityDetailed(app, reset = true) { r ->
         ui(
             Runnable {
-                toast(if (ok) BridgeMsg.ACCESSIBILITY_ENABLED else BridgeMsg.ACCESSIBILITY_FAILED)
-                onDone(ok)
+                toast(msgFor(r, ok = BridgeMsg.ACCESSIBILITY_ENABLED))
+                onDone(r == NavConnect.GrantResult.BOUND)
             },
         )
     }
+}
+
+/** GrantResult → BridgeMsg: BOUND→[ok]; NOT_BOUND→NOT_BOUND (dadb chạy nhưng chưa bind); DADB_FAILED→FAILED (USB). */
+private fun msgFor(r: NavConnect.GrantResult, ok: BridgeMsg): BridgeMsg = when (r) {
+    NavConnect.GrantResult.BOUND -> ok
+    NavConnect.GrantResult.NOT_BOUND -> BridgeMsg.ACCESSIBILITY_NOT_BOUND
+    NavConnect.GrantResult.DADB_FAILED -> BridgeMsg.ACCESSIBILITY_FAILED
 }
 
 /**
@@ -67,11 +74,11 @@ fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit =
 fun ClusterNavBridge.checkFix(onDone: (Boolean) -> Unit = {}) {
     toast(BridgeMsg.CHECKING)
     reapplyGeminiAssistant()
-    NavConnect.grantAccessibility(app, reset = true) { ok ->
+    NavConnect.grantAccessibilityDetailed(app, reset = true) { r ->
         ui(
             Runnable {
-                toast(if (ok) BridgeMsg.VOICE_KEY_READY else BridgeMsg.ACCESSIBILITY_FAILED)
-                onDone(ok)
+                toast(msgFor(r, ok = BridgeMsg.VOICE_KEY_READY))
+                onDone(r == NavConnect.GrantResult.BOUND)
             },
         )
     }

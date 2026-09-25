@@ -134,44 +134,46 @@ object NavConnect {
      * @param onResult gọi trên MAIN thread: true nếu phiên dadb chạy được (đã append + bật accessibility).
      */
     fun grantAccessibility(ctx: Context, reset: Boolean = false, onResult: ((Boolean) -> Unit)? = null) {
-        val app = ctx.applicationContext
-        val main = Handler(Looper.getMainLooper())
-        Thread {
-            // RESET (toggle OFF→ON): clear a stuck single-flight left by a PRIOR HUNG grant BEFORE attempting, so
-            // a pinned grantingAcc can't turn this (and every later) call into a no-op that only an app restart
-            // could recover. The fresh grant + forceRebindIfNeeded then run inside doGrantAccessibility as usual.
-            if (reset) grantingAcc.set(false)
-            val ok = doGrantAccessibilityWithTimeout(app)
-            onResult?.let { cb -> main.post { cb(ok) } }
-        }.start()
+        grantAccessibilityDetailed(ctx, reset) { r -> onResult?.invoke(r == GrantResult.BOUND) }
     }
 
     /**
-     * Chạy [doGrantAccessibility] trên worker thread rồi JOIN có TIMEOUT ([GRANT_TIMEOUT_MS]): một phiên dadb
-     * TREO (đọc/ghi kẹt) KHÔNG thể ghim [grantingAcc] mãi mãi. Hết giờ → interrupt worker + ép
-     * `grantingAcc.set(false)` để lần grant sau (kể cả reset toggle) chạy được thay vì no-op tới khi restart app.
-     * MỘT lần thử / lời gọi — KHÔNG loop/backoff. doGrantAccessibility vẫn tự nhả cờ trong finally khi chạy xong.
+     * Kết quả cấp quyền Hỗ trợ, PHÂN BIỆT ba ca — để UI báo ĐÚNG (owner 2026-09-25: toast cũ đổ oan "bấm Allow
+     * USB debugging" trong khi dadb rõ ràng chạy được, app cài xong mọi thứ đều qua dadb):
+     *  • [BOUND] — service đã gắn thật (dumpsys "Bound services"), phím sống.
+     *  • [NOT_BOUND] — dadb CHẠY, đã ghi enabled_accessibility_services, nhưng service chưa BIND (xe tải cao /
+     *    ROM `ssc_skip` drop bind). KHÔNG phải lỗi USB debugging. Thử lại / bật tay ở Cài đặt > Hỗ trợ.
+     *  • [DADB_FAILED] — phiên dadb NÉM (auth/kết nối) — đây MỚI là ca "bấm Allow USB debugging".
      */
-    private fun doGrantAccessibilityWithTimeout(app: Context): Boolean {
-        val result = java.util.concurrent.atomic.AtomicBoolean(false)
-        val worker = Thread { result.set(doGrantAccessibility(app)) }
+    enum class GrantResult { BOUND, NOT_BOUND, DADB_FAILED }
+
+    fun grantAccessibilityDetailed(ctx: Context, reset: Boolean = false, onResult: ((GrantResult) -> Unit)? = null) {
+        val app = ctx.applicationContext
+        val main = Handler(Looper.getMainLooper())
+        Thread {
+            if (reset) grantingAcc.set(false)
+            val r = doGrantResultWithTimeout(app)
+            onResult?.let { cb -> main.post { cb(r) } }
+        }.start()
+    }
+
+    private fun doGrantResultWithTimeout(app: Context): GrantResult {
+        val result = java.util.concurrent.atomic.AtomicReference(GrantResult.DADB_FAILED)
+        val worker = Thread { result.set(doGrantResult(app)) }
         worker.start()
         worker.join(GRANT_TIMEOUT_MS)
         if (worker.isAlive) {
             Log.e(TAG, "grantAccessibility TIMEOUT ${GRANT_TIMEOUT_MS}ms → interrupt + nhả single-flight")
             worker.interrupt()
-            // #6 (deep-pass 2026-09-23): interrupt() KHÔNG cắt được Socket.read → worker cũ có thể còn sống.
-            // Tăng gen: worker cũ khi hồi sẽ thấy gen đổi ⇒ BỎ pha toggle (khỏi ghi chồng lên grant mới). Combined
-            // command + finally re-add đã đảm bảo list không kẹt REMOVED; gen chỉ tránh 2 session toggle chồng lãng phí.
             grantGen.incrementAndGet()
-            grantingAcc.set(false)   // never let a hung dadb session pin the single-flight forever
-            return false
+            grantingAcc.set(false)
+            return GrantResult.DADB_FAILED
         }
         return result.get()
     }
 
-    private fun doGrantAccessibility(app: Context): Boolean {
-        if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return false }
+    private fun doGrantResult(app: Context): GrantResult {
+        if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return GrantResult.NOT_BOUND }
         val myGen = grantGen.incrementAndGet()   // #6: dấu thế hệ của lượt grant này
         try {
             return runCatching {
@@ -180,28 +182,20 @@ object NavConnect {
                     val cur = sh("settings get secure enabled_accessibility_services").output.trim()
                     val has = cur.split(':').any { it.trim() == ACC_COMP }
                     if (!has) {
-                        // #5 (deep-pass 2026-09-23): phân biệt '' (KHÔNG đọc được — dadb lỗi) với 'null' (rỗng THẬT).
-                        // '' ⇒ chỉ append (giữ nguyên nếu không nối được), KHÔNG ghi danh sách chỉ-có-Kachi (sẽ XOÁ
-                        // a11y app khác — cùng bug đã vá ở PermissionPreflight, còn nguyên ở đường watchdog 60s này).
                         val next = when {
-                            cur == "null" -> ACC_COMP          // rỗng thật → chỉ Kachi
-                            cur.isBlank() -> ACC_COMP           // (đọc ra rỗng hẳn) → chỉ Kachi; read-fail đã là exception ở tầng dưới
-                            else -> "$cur:$ACC_COMP"            // giữ danh sách hiện có, append Kachi
+                            cur == "null" -> ACC_COMP
+                            cur.isBlank() -> ACC_COMP
+                            else -> "$cur:$ACC_COMP"
                         }
                         sh("settings put secure enabled_accessibility_services \"$next\"")
                     }
                     sh("settings put secure accessibility_enabled 1")
                     Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
-                    // ENABLED ≠ BOUND: sau reboot service liệt kê trong enabled_accessibility_services nhưng
-                    // KHÔNG chạy (không ở "Bound services") → onKeyEvent/booster chết. Ép rebind trên CÙNG phiên.
-                    // #2 (owner 2026-09-23): trả BOUND THẬT (verify sau toggle), KHÔNG phải "dadb chạy xong" —
-                    // để "Kiểm tra/Sửa ngay" báo đúng OK/FAIL khớp status, không nói dối.
-                    // #6: nếu đã có grant mới hơn (myGen != grantGen) → worker này là session TIMED-OUT còn sót;
-                    // bỏ pha toggle để khỏi ghi chồng lên lượt grant mới. Trả false (không xác nhận bound).
-                    if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session false }
-                    forceRebindIfNeeded(keyPair, sh)
-                } ?: false
-            }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb LỖI (popup Allow chưa bấm?)", it); false }
+                    if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session GrantResult.NOT_BOUND }
+                    // dadb CHẠY tới đây (ghi được settings) ⇒ KHÔNG phải lỗi USB debugging. forceRebind trả BOUND thật.
+                    if (forceRebindIfNeeded(keyPair, sh)) GrantResult.BOUND else GrantResult.NOT_BOUND
+                } ?: GrantResult.DADB_FAILED   // session mở không được ⇒ dadb/auth
+            }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb NÉM (auth/kết nối)", it); GrantResult.DADB_FAILED }
         } finally { grantingAcc.set(false) }
     }
 

@@ -268,6 +268,7 @@
     <string name="kachi_bridge_deep_rescue_running">Deep-cleaning cluster…</string>
     <string name="kachi_bridge_enabling_accessibility">Enabling accessibility service…</string>
     <string name="kachi_bridge_accessibility_enabled">Enabled. Press the mapped button to open the app.</string>
+    <string name="kachi_bridge_accessibility_not_bound">Accessibility granted but the service isn\'t bound yet (car under load) — retry in a few seconds, or toggle it in system Settings > Accessibility.</string>
     <string name="kachi_bridge_accessibility_failed">Couldn\'t enable accessibility — tap Allow USB debugging on the car and retry, or enable it in Settings > Accessibility.</string>
     <string name="kachi_bridge_checking">Checking…</string>
     <string name="kachi_bridge_voice_key_ready">Voice key ready.</string>

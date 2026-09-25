@@ -278,6 +278,7 @@
     <string name="kachi_bridge_deep_rescue_running">Đang dọn sạch cụm…</string>
     <string name="kachi_bridge_enabling_accessibility">Đang bật dịch vụ Hỗ trợ…</string>
     <string name="kachi_bridge_accessibility_enabled">Đã bật. Bấm nút đã gán để mở app.</string>
+    <string name="kachi_bridge_accessibility_not_bound">Đã bật quyền Hỗ trợ nhưng dịch vụ chưa gắn được (xe đang tải cao) — thử lại vài giây, hoặc bật/tắt tay ở Cài đặt hệ thống > Hỗ trợ.</string>
     <string name="kachi_bridge_accessibility_failed">Chưa bật được Hỗ trợ — bấm Allow USB debugging trên xe rồi thử lại, hoặc bật tay ở Cài đặt > Hỗ trợ.</string>
     <string name="kachi_bridge_checking">Đang kiểm tra…</string>
     <string name="kachi_bridge_voice_key_ready">Phím-thoại đã sẵn sàng.</string>

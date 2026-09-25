@@ -147,7 +147,7 @@ class ClusterNavBridgeCastKeysWiringContractTest {
     // ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Toggle OFF→ON phải `grantAccessibility(reset = true)` — đó là nơi owner yêu cầu xoá single-flight
+     * Toggle OFF→ON phải `grantAccessibilityDetailed(reset = true)` — đó là nơi owner yêu cầu xoá single-flight
      * kẹt rồi cấp lại + force-rebind, để phím-thoại tự lành sau reboot mà KHÔNG phải khởi động lại app.
      */
     @Test
@@ -155,11 +155,11 @@ class ClusterNavBridgeCastKeysWiringContractTest {
         val b = body(keys(), "fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit = {})")
         assertTrue("Prefs.setVoiceKeyEnabled(app, on)" in b, "phải ghi đúng khoá voicekey_enabled")
         assertTrue(
-            "NavConnect.grantAccessibility(app, reset = true)" in b,
+            "NavConnect.grantAccessibilityDetailed(app, reset = true)" in b,
             "OFF→ON phải reset=true (xoá cờ kẹt + force-rebind) — thiếu thì sau reboot phím chết cho tới khi cài lại",
         )
         assertTrue(
-            "NavConnect.grantAccessibility(app, reset = true)" in body(keys(), "fun ClusterNavBridge.checkFix(onDone: (Boolean) -> Unit = {})"),
+            "NavConnect.grantAccessibilityDetailed(app, reset = true)" in body(keys(), "fun ClusterNavBridge.checkFix(onDone: (Boolean) -> Unit = {})"),
             "nút Kiểm tra/Sửa ngay phải dùng CÙNG đường heal, không được nghĩ ra đường thứ hai",
         )
     }

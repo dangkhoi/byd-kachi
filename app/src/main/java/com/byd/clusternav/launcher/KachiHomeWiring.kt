@@ -75,6 +75,7 @@ internal fun bridgeMsgRes(msg: BridgeMsg): Int = when (msg) {
     BridgeMsg.ENABLING_ACCESSIBILITY -> R.string.kachi_bridge_enabling_accessibility
     BridgeMsg.ACCESSIBILITY_ENABLED -> R.string.kachi_bridge_accessibility_enabled
     BridgeMsg.ACCESSIBILITY_FAILED -> R.string.kachi_bridge_accessibility_failed
+    BridgeMsg.ACCESSIBILITY_NOT_BOUND -> R.string.kachi_bridge_accessibility_not_bound
     BridgeMsg.CHECKING -> R.string.kachi_bridge_checking
     BridgeMsg.VOICE_KEY_READY -> R.string.kachi_bridge_voice_key_ready
     BridgeMsg.BINDING_REMOVED -> R.string.kachi_bridge_binding_removed
