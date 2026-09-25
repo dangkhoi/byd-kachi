@@ -160,6 +160,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val oldStatus = displayedStatus
         displayed = s; displayedStatus = status; carStatus = status
         // Luật "ô nào cần dựng lại" nằm ở :core (WorkspaceRenderPlanner) → test được off-car, kể cả ca P-bug2.
+        var structural = false
         when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged,
             // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ
             // làm bộ quyết định thấy 'số view lệch số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục.
@@ -175,14 +176,18 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 val onlyValues = !embedChanged && WorkspaceRenderPlanner.sameContent(oc, nc)
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
-                ) return@forEach
+                ) return@forEach          // refresh SỐ tại chỗ — widget tự invalidate, KHÔNG relayout workspace
                 releaseSlotHost(i)          // ô đổi nội dung ⇒ nhả màn ảo của ô TRƯỚC khi tháo view
                 removeView(slotViews[i])
                 val v = makeSlot(i, nc)
                 addView(v); slotViews[i] = v
+                structural = true           // có add/remove view ⇒ mới cần relayout cả workspace
             }
         }
-        requestLayout(); invalidate()
+        // (owner 2026-09-25 "refresh datum lại nháy dựt cả widget"): CHỈ relayout khi có thay đổi CẤU TRÚC (dựng/tháo
+        // ô). Lượt chỉ làm-mới-số (refreshRead in-place) KHÔNG gọi requestLayout — trước đây requestLayout mỗi nhịp
+        // (1s) ép CẢ workspace đo lại ⇒ widget nhấp/giật liên tục dù số là thứ duy nhất đổi. Widget tự invalidate.
+        if (structural) { requestLayout(); invalidate() }
     }
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
