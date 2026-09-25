@@ -43,13 +43,11 @@ class OverlayHeads(private val activity: Activity) {
         clear()
         if (!android.provider.Settings.canDrawOverlays(activity)) return
         val minH = SlotSwapButton.overlayHeightPx(activity)
-        val caption = KachiTheme.dpi(activity, Sp.CAPTION_COVER)   // phủ hết caption freeform của hệ (KDoc hằng)
         heads.forEach { hd ->
-            // Dải màu khung ô trải hết bề rộng ô, cao ít nhất bằng khung nút và PHỦ HẾT caption (từ mép trên cửa sổ app
-            // xuống đủ một caption) — [ĐO 2026-09-13] dải cao đúng SLOT_HEAD_CLEAR để hở caption phía dưới. Nút ⇄
-            // vẫn ở giữa mép trên; vì sao có nền: xem KDoc [SlotSwapButton.strip].
-            val h = maxOf(minH, (hd.appTop - hd.top) + caption)
-            addOverlay(SlotSwapButton.strip(activity, hd.onSwap), hd.width, h, hd.left, hd.top)
+            // owner 2026-09-25 (ảnh xe): "launcher KHÔNG cần thanh trắng đó cho bất cứ trường hợp nào" — thanh trắng
+            // (strip che caption freeform) là bug: kẹt đè cả GMaps. Dùng [centered] TRONG SUỐT, chỉ nút ⇄, cao đúng
+            // khung nút — không nền trắng, không phủ caption. Caption của hệ (nếu ROM vẽ) không phải việc của ta.
+            addOverlay(SlotSwapButton.centered(activity, hd.onSwap), hd.width, minH, hd.left, hd.top)
         }
     }
 
