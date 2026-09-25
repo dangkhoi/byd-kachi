@@ -7,7 +7,6 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
-import com.byd.clusternav.cameraCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 
 /**
@@ -99,10 +98,9 @@ class CameraSignalController(private val appCtx: Context) {
                 // ⇒ KHÔNG crop (crop [0.25-0.35]/[0.65-0.75] chỉ đúng ảnh fisheye 5120×960 của Seal; xe khác cam khác).
                 val defId = view.cameraId
                 val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
-                // crop [0.25-0.35]/[0.65-0.75] chỉ đúng ảnh fisheye 5120×960 (Seal). SL6/xe cam THƯỜNG crop ra
-                // vùng sai = ĐEN ⇒ owner tắt công tắc "Cắt vùng gương" (camera_crop, mặc định BẬT cho Seal) để hiện
-                // FULL khung. Cũng bỏ crop nếu chọn cam KHÁC mặc định (không phải fisheye).
-                val crop = if (Prefs.cameraCrop(appCtx) && camId == defId) view.crop else null
+                // crop = view.crop khi dùng cam MẶC ĐỊNH (Seal: gương=id 1 fisheye, crop vùng trái/phải chạy OK).
+                // Chọn cam KHÁC mặc định ⇒ bỏ crop (crop chỉ đúng trên fisheye nguồn của view đó).
+                val crop = if (camId == defId) view.crop else null
                 Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).

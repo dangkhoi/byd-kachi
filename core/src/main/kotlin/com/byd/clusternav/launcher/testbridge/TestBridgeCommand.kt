@@ -288,7 +288,6 @@ object TestBridgeCommands {
         // trên xe. `camera_lvds_option` đã GỠ cùng mười option LVDS (spec camera-turn-signal-hal-socket R6).
         "camera_signal_enabled",
         "camera_on_cluster",
-        "camera_crop",
         "camera_cam_left",
         "camera_cam_right",
         "camera_pos_left",

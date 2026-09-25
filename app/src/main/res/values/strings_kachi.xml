@@ -680,8 +680,6 @@
     <string name="kachi_camera_pick_left">Cam xi-nhan trái</string>
     <string name="kachi_camera_pick_right">Cam xi-nhan phải</string>
     <string name="kachi_camera_cluster_sub">Overlay camera hiện trên cụm đồng hồ thay màn chính</string>
-    <string name="kachi_camera_crop_title">Cắt vùng gương (Seal fisheye)</string>
-    <string name="kachi_camera_crop_sub">Xe Seal cam gương là fisheye — cần cắt. Xe khác (SL6) nếu overlay ĐEN thì TẮT để hiện full camera.</string>
     <string name="kachi_camera_left">Camera trái</string>
     <string name="kachi_camera_right">Camera phải</string>
 </resources>
