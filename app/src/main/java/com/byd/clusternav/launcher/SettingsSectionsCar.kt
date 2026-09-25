@@ -67,6 +67,11 @@ class SettingsCarSection(
             title = context.getString(R.string.kachi_camera_cluster_title),
             sub = context.getString(R.string.kachi_camera_cluster_sub),
         ) { on -> bridge.setCameraOnCluster(on) })
+        body.addView(rows.checkRow(
+            on = bridge.cameraCrop(),
+            title = context.getString(R.string.kachi_camera_crop_title),
+            sub = context.getString(R.string.kachi_camera_crop_sub),
+        ) { on -> bridge.setCameraCrop(on) })
         // VỊ TRÍ GÓC từng bên (spec `camera-turn-signal-hal-socket.html` R3 · R4). Hai hàng RIÊNG vì owner chốt
         // "trái vẫn có thể hiện bên phải" — người lái ngồi bên trái nên góc trên-trái có thể bị vành lái che.
         // Mã chip = đúng giá trị lưu bền ("TL"/"TR", hằng ở `:core`) ⇒ không có bảng đổi mã↔nhãn thứ hai.

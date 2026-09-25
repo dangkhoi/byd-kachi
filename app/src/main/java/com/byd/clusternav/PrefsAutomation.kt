@@ -135,6 +135,11 @@ fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {
 fun Prefs.setCameraCamId(ctx: Context, left: Boolean, v: Int) =
     autoPrefs(ctx).edit().putInt(if (left) "camera_cam_left" else "camera_cam_right", v).apply()
 
+// Cắt vùng gương (crop) — Seal: cam gương là fisheye 5120×960 ⇒ CẦN crop vùng trái/phải; SL6/xe khác: cam thường
+// ⇒ crop ra sai/đen ⇒ TẮT để hiện full khung. Mặc định BẬT (giữ hành vi Seal đang chạy ngon).
+fun Prefs.cameraCrop(ctx: Context): Boolean = autoPrefs(ctx).getBoolean("camera_crop", true)
+fun Prefs.setCameraCrop(ctx: Context, v: Boolean) = autoPrefs(ctx).edit().putBoolean("camera_crop", v).apply()
+
 // ── AUTOMATION #2 · Tự dẫn đường theo lịch (R2) ───────────────────────────────────────────────────
 // Hai khoá, hai VAI khác nhau — cố ý KHÔNG gộp:
 //  • `nav_automation_rules` = CẤU HÌNH (sổ luật người dùng đặt trong Cài đặt › Dẫn đường), mã hoá bởi

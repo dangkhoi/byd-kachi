@@ -664,6 +664,8 @@
     <string name="kachi_camera_pick_left">Left signal camera</string>
     <string name="kachi_camera_pick_right">Right signal camera</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
+    <string name="kachi_camera_crop_title">Crop mirror region (Seal fisheye)</string>
+    <string name="kachi_camera_crop_sub">Seal\'s mirror cam is a fisheye — needs cropping. On other cars (SL6) if the overlay is BLACK, turn OFF to show the full camera.</string>
     <string name="kachi_camera_left">Left camera</string>
     <string name="kachi_camera_right">Right camera</string>
 </resources>

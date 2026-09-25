@@ -18,7 +18,9 @@ import com.byd.clusternav.setRainDefrostFront
 import com.byd.clusternav.setRainDefrostRear
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.cameraCrop
 import com.byd.clusternav.cameraOnCluster
+import com.byd.clusternav.setCameraCrop
 import com.byd.clusternav.setCameraOnCluster
 import com.byd.clusternav.cameraPos
 import com.byd.clusternav.setCameraPos
@@ -141,6 +143,8 @@ fun ClusterNavBridge.setCameraSignal(on: Boolean) {
     Prefs.setCameraSignalEnabled(app, on)
     com.byd.clusternav.automation.AutomationService.sync(app)   // camera chạy trong FGS nền (cả khi lái) — bật/tắt phải đồng bộ service
 }
+fun ClusterNavBridge.cameraCrop(): Boolean = Prefs.cameraCrop(app)
+fun ClusterNavBridge.setCameraCrop(on: Boolean) = Prefs.setCameraCrop(app, on)
 fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
 fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
 
