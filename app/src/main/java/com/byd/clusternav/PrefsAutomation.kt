@@ -56,6 +56,14 @@ private const val K_CAMERA_LVDS = "camera_lvds_option"
 fun Prefs.cameraLvdsOption(ctx: Context): String = autoPrefs(ctx).getString(K_CAMERA_LVDS, "A") ?: "A"
 fun Prefs.setCameraLvdsOption(ctx: Context, v: String) = autoPrefs(ctx).edit().putString(K_CAMERA_LVDS, v).apply()
 
+// cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
+fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {
+    val k = if (left) "camera_cam_left" else "camera_cam_right"
+    return autoPrefs(ctx).getInt(k, default)
+}
+fun Prefs.setCameraCamId(ctx: Context, left: Boolean, v: Int) =
+    autoPrefs(ctx).edit().putInt(if (left) "camera_cam_left" else "camera_cam_right", v).apply()
+
 // ── AUTOMATION #2 · Tự dẫn đường theo lịch (R2) ───────────────────────────────────────────────────
 // Hai khoá, hai VAI khác nhau — cố ý KHÔNG gộp:
 //  • `nav_automation_rules` = CẤU HÌNH (sổ luật người dùng đặt trong Cài đặt › Dẫn đường), mã hoá bởi

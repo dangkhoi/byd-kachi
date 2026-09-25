@@ -22,13 +22,14 @@ object CameraSignalPolicy {
     enum class Side { LEFT, RIGHT }
 
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
-    enum class CamView(val outputState: Int, val labelVi: String, val labelEn: String) {
-        FRONT_LEFT(1, "Trước-trái", "Front-left"),
-        FRONT_RIGHT(2, "Trước-phải", "Front-right"),
-        REAR_LEFT(3, "Sau-trái", "Rear-left"),
-        REAR_RIGHT(4, "Sau-phải", "Rear-right"),
-        LEFT_FRONT(13, "Trái (trước)", "Left (front)"),
-        RIGHT_FRONT(14, "Phải (trước)", "Right (front)"),
+    enum class CamView(val outputState: Int, val cameraId: Int, val labelVi: String, val labelEn: String) {
+        // cameraId = tham số AVMCamera.open (đoán ban đầu; đổi được trên xe qua pref camera_cam_left/right).
+        FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
+        FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
+        REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),
+        REAR_RIGHT(4, 3, "Sau-phải", "Rear-right"),
+        LEFT_FRONT(13, 0, "Trái (trước)", "Left (front)"),
+        RIGHT_FRONT(14, 1, "Phải (trước)", "Right (front)"),
     }
 
     /** Mặc định: xi-nhan trái → camera FRONT_LEFT; phải → FRONT_RIGHT (owner có thể đổi loại trong Setting). */

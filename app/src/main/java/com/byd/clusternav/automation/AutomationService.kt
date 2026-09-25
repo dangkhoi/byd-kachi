@@ -14,6 +14,8 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.automation.NavAutomationBook
 import com.byd.clusternav.navAutomationRules
 import com.byd.clusternav.rainDefrostEnabled
+import com.byd.clusternav.cameraSignalEnabled
+import com.byd.clusternav.launcher.camera.CameraSignalController
 
 /**
  * ═══ MỘT ĐỘNG CƠ NỀN CHO CẢ HAI AUTOMATION ═══════════════════════════════════════════════════════════════════
@@ -105,6 +107,9 @@ class AutomationService : Service() {
         /** Nhịp chính. Luật dẫn-theo-lịch cần độ phân giải một phút (R2.3: *"kiểm mỗi ~1 phút"*). */
         const val TICK_MS = 60_000L
 
+        /** Nhịp camera khi bật: 250ms < pha ON của nháy (~340ms) ⇒ bắt kịp xi-nhan nhấp nháy ([ĐO xe]). */
+        const val CAMERA_TICK_MS = 250L
+
         /**
          * Rule mưa chạy mỗi ngần này nhịp ⇒ ≈5 phút (R1.2).
          *
@@ -132,6 +137,7 @@ class AutomationService : Service() {
         fun anyEnabled(ctx: Context): Boolean {
             val app = ctx.applicationContext
             if (Prefs.rainDefrostEnabled(app)) return true
+            if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) return true
             return runCatching {
                 NavAutomationBook.decode(Prefs.navAutomationRules(app)).any { it.enabled }
             }.getOrDefault(false)
@@ -181,23 +187,37 @@ class AutomationService : Service() {
             }
             Thread({
                 var ticks = 0
+                var lastNavMs = 0L
+                var lastRainMs = 0L
+                val camera = runCatching { CameraSignalController(app) }.getOrNull()
                 try {
                     // Nhịp ĐẦU chạy ngay (không ngủ trước): bật công tắc lúc 7h05 mà phải chờ tới 7h06 mới đánh
                     // giá là một phút không giải thích được với người vừa bấm.
                     while (myGen == generation && anyEnabled(app)) {
-                        runCatching { ScheduledNavApplier.tick(app) }
-                            .onFailure { Log.w(TAG, "tick nav lỗi", it) }
-                        if (ticks % RAIN_EVERY_TICKS == 0) {
-                            runCatching { RainDefrostApplier.tick(app) }
-                                .onFailure { Log.w(TAG, "tick mưa lỗi", it) }
+                        val nowMs = android.os.SystemClock.elapsedRealtime()
+                        // Camera theo xi-nhan — MỖI nhịp (nhanh khi camera bật). Chạy Ở ĐÂY (FGS nền) chứ không ở
+                        // render của HOME: [ĐO xe 2026-09-24] lái xe thì app bản-đồ trên tiền cảnh ⇒ HOME stopped ⇒
+                        // render (và tick camera cũ) KHÔNG chạy ⇒ xi-nhan không lên camera. FGS chạy bất kể tiền cảnh.
+                        runCatching { camera?.tick() }.onFailure { Log.w(TAG, "tick camera lỗi", it) }
+                        // Nav/mưa theo THỜI GIAN TRÔI (không theo đếm nhịp — nhịp đổi tốc độ theo camera).
+                        if (nowMs - lastNavMs >= TICK_MS) {
+                            lastNavMs = nowMs
+                            runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
+                        }
+                        if (nowMs - lastRainMs >= TICK_MS * RAIN_EVERY_TICKS) {
+                            lastRainMs = nowMs
+                            runCatching { RainDefrostApplier.tick(app) }.onFailure { Log.w(TAG, "tick mưa lỗi", it) }
                         }
                         ticks++
-                        runCatching { Thread.sleep(TICK_MS) }
+                        // Camera bật ⇒ nhịp NHANH (bắt xi-nhan kịp); không thì giữ nhịp phút (tiết kiệm).
+                        val sleepMs = if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) CAMERA_TICK_MS else TICK_MS
+                        runCatching { Thread.sleep(sleepMs) }
                         // Kiểm LẠI sau khi ngủ: công tắc có thể đã tắt trong lúc đó. KHÔNG đọc [running] ở đây —
                         // một thread của thế hệ khác có thể vừa bật lại cờ ấy; danh tính thế hệ mới là điều kiện đúng.
                         if (myGen != generation) break
                     }
                 } finally {
+                    runCatching { camera?.tick() }   // one last no-op tick may close overlay if pref just turned off
                     // CHỈ thế hệ hiện tại được nhả cờ — tránh `finally` của thread cũ xoá cờ của thread mới.
                     synchronized(GUARD) { if (myGen == generation) running = false }
                     Log.i(TAG, "vòng automation (gen $myGen) kết thúc sau $ticks nhịp")

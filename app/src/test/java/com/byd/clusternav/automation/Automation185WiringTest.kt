@@ -157,7 +157,9 @@ class Automation185WiringTest {
     fun `mot dong co, mot vong, hai nhip`() {
         assertEquals(60_000L, AutomationService.TICK_MS)
         assertEquals(5, AutomationService.RAIN_EVERY_TICKS)
-        assertTrue("ticks % RAIN_EVERY_TICKS == 0" in service, "rule mưa phải đếm nhịp, không phải vòng riêng")
+        // 2026-09-24: rule mưa nay theo THỜI GIAN TRÔI (nhịp base đổi tốc độ theo camera 1s/60s ⇒ không đếm nhịp được).
+        assertTrue("nowMs - lastRainMs >= TICK_MS * RAIN_EVERY_TICKS" in service, "rule mưa theo mốc thời gian ~5 phút")
+        assertTrue("camera?.tick()" in service, "camera tick chạy trong FGS nền (owner 2026-09-24: lái xe HOME stopped)")
         assertEquals(
             1,
             Regex("""Thread\(\{""").findAll(service).count(),

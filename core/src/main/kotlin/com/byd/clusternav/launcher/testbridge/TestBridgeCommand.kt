@@ -287,6 +287,8 @@ object TestBridgeCommands {
         // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + đổi phương án LVDS (A–J) test nhanh trên xe.
         "camera_signal_enabled",
         "camera_on_cluster",
+        "camera_cam_left",
+        "camera_cam_right",
         "camera_lvds_option",
     )
 

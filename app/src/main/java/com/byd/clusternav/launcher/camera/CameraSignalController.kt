@@ -6,6 +6,7 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraLvdsOption
 import com.byd.clusternav.cameraOnCluster
+import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 
 /**
@@ -21,6 +22,7 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 class CameraSignalController(private val appCtx: Context) {
 
     private val hal by lazy { PanoramaHal(appCtx) }
+    private val avm by lazy { AvmCamera() }
     private val overlay by lazy { CameraOverlayView(appCtx) }
     private val gw by lazy { com.byd.clusternav.launcher.BydHalGateway(appCtx.applicationContext) }
     private var current: Turn = Turn.NONE
@@ -41,11 +43,24 @@ class CameraSignalController(private val appCtx: Context) {
         return raw.trim().toIntOrNull()?.let { it != 0 } ?: false
     }
 
-    /** Một nhịp với trạng thái xi-nhan cho sẵn (cho test/off-car). null = coi như tắt. */
+    /**
+     * Một nhịp với trạng thái xi-nhan cho sẵn (cho test/off-car). null = coi như tắt.
+     *
+     * ⚠ [ĐO xe 2026-09-24] Xi-nhan NHẤP NHÁY (~1.5Hz, sáng/tắt ~340ms). Poll thấy pha TẮT ⇒ đọc 0 dù
+     * đang bật ⇒ camera không lên / nhấp nháy. Giữ MỐC lần thấy ON gần nhất mỗi bên; bên nào ON trong [HOLD_MS]
+     * (> chu kỳ nháy) thì coi như ĐANG bật. Nhờ đó pha TẮT của nháy không đóng camera; chỉ đóng khi tắt hẳn
+     * (không thấy ON quá [HOLD_MS]). Gọi ở nhịp NHANH ([AutomationService.CAMERA_TICK_MS] 250ms < 340ms ⇒ bắt kịp
+     * pha ON của nháy).
+     */
     fun tick(left: Boolean?, right: Boolean?) {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
-        val turn = CameraSignalPolicy.turnOf(left == true, right == true)
-        if (turn == current) return   // không đổi ⇒ giữ nguyên (không dựng lại)
+        val now = clockMs()
+        if (left == true) lastLeftOnMs = now
+        if (right == true) lastRightOnMs = now
+        val leftHeld = now - lastLeftOnMs <= HOLD_MS
+        val rightHeld = now - lastRightOnMs <= HOLD_MS
+        val turn = CameraSignalPolicy.turnOf(leftHeld, rightHeld)
+        if (turn == current) return   // không đổi ⇒ giữ nguyên (không dựng lại, không nháy theo đèn)
         current = turn
         when (turn) {
             Turn.NONE -> stop()
@@ -53,20 +68,40 @@ class CameraSignalController(private val appCtx: Context) {
                 val view = CameraSignalPolicy.defaultView(turn) ?: return
                 val side = CameraSignalPolicy.defaultSide(turn) ?: return
                 val opt = Prefs.cameraLvdsOption(appCtx)   // phương án thử (runbook A–J) qua pref
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} overlay $side opt=$opt")
-                overlay.show(side, onCluster = Prefs.cameraOnCluster(appCtx) || opt.contains("G"), option = opt)   // pref cụm / opt G
+                // cameraId đổi được trên xe (chưa chắc map — thử): pref camera_cam_left/right, mặc định theo CamView.
+                val camId = if (turn == Turn.LEFT) Prefs.cameraCamId(appCtx, left = true, view.cameraId)
+                            else Prefs.cameraCamId(appCtx, left = false, view.cameraId)
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId overlay $side opt=$opt")
+                // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
+                // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
                 hal.open(view, opt)
+                overlay.show(
+                    side,
+                    onCluster = Prefs.cameraOnCluster(appCtx) || opt.contains("G"),
+                    option = opt,
+                ) { surface -> runCatching { avm.open(camId, surface) } }
             }
         }
     }
 
+    /** Đồng hồ ĐƠN ĐIỆU cho HOLD (test override được). */
+    internal var clockMs: () -> Long = { android.os.SystemClock.elapsedRealtime() }
+    private var lastLeftOnMs = -HOLD_MS
+    private var lastRightOnMs = -HOLD_MS
+
     private fun stop() {
         current = Turn.NONE   // [P1 fix] reset để bật lại KHỚP lượt rẽ sau (không kẹt current cũ → return sớm)
+        lastLeftOnMs = -HOLD_MS; lastRightOnMs = -HOLD_MS
+        runCatching { avm.close() }
         hal.close()
         overlay.hide()
     }
 
     companion object {
         const val LIGHT_DEVICE = "android.hardware.bydauto.light.BYDAutoLightDevice"
+
+        /** Giữ camera qua pha TẮT của nháy: > chu kỳ nháy (~700ms) đủ để một lần nháy không đóng; đủ ngắn để tắt
+         *  hẳn xi-nhan thì camera đóng nhanh. [ĐO xe: nháy ~1.5Hz]. */
+        const val HOLD_MS = 1_200L
     }
 }

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.util.Log
 import android.view.Gravity
+import android.view.Surface
 import android.view.SurfaceView
 import android.view.WindowManager
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
@@ -35,7 +36,7 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /** Hiện overlay ở [side]. [option] (runbook): "B"=setZOrderMediaOverlay thay setZOrderOnTop. */
-    fun show(side: Side, onCluster: Boolean = false, option: String = "A") {
+    fun show(side: Side, onCluster: Boolean = false, option: String = "A", onSurfaceReady: (Surface) -> Unit = {}) {
         hide()
         runCatching {
             val ctx = appCtx
@@ -46,6 +47,14 @@ class CameraOverlayView(private val appCtx: Context) {
                 if (option.contains("B")) setZOrderMediaOverlay(true) else setZOrderOnTop(true)   // B: media overlay
                 setBackgroundColor(Color.BLACK)
                 holder.setFormat(PixelFormat.OPAQUE)
+                // Surface sẵn sàng ⇒ controller đổ camera (AVMCamera.addPreviewSurface) vào — RE kinex.
+                holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                    override fun surfaceCreated(h: android.view.SurfaceHolder) {
+                        runCatching { onSurfaceReady(h.surface) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
+                    }
+                    override fun surfaceChanged(h: android.view.SurfaceHolder, f: Int, w2: Int, h2: Int) {}
+                    override fun surfaceDestroyed(h: android.view.SurfaceHolder) {}
+                })
             }
             // Nhãn nổi trên SurfaceView: off-car (chưa có tín hiệu LVDS) vẫn NHÌN THẤY overlay hiện đúng bên/đúng
             // lúc ⇒ verify wiring E2E bằng mắt. Khi tín hiệu video thật đổ vào SurfaceView, nhãn nằm trên góc.

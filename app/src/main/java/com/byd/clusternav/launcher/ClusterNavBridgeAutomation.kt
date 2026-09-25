@@ -49,7 +49,10 @@ fun ClusterNavBridge.setRainDefrost(on: Boolean) {
 
 /** Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — công tắc đi qua cầu như mọi mục Cài đặt. */
 fun ClusterNavBridge.cameraSignal(): Boolean = Prefs.cameraSignalEnabled(app)
-fun ClusterNavBridge.setCameraSignal(on: Boolean) = Prefs.setCameraSignalEnabled(app, on)
+fun ClusterNavBridge.setCameraSignal(on: Boolean) {
+    Prefs.setCameraSignalEnabled(app, on)
+    com.byd.clusternav.automation.AutomationService.sync(app)   // camera chạy trong FGS nền (cả khi lái) — bật/tắt phải đồng bộ service
+}
 fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
 fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
 fun ClusterNavBridge.cameraLvdsOption(): String = Prefs.cameraLvdsOption(app)
