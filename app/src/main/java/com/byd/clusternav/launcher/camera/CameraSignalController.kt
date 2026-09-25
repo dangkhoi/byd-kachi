@@ -27,14 +27,20 @@ class CameraSignalController(private val appCtx: Context) {
     private val gw by lazy { com.byd.clusternav.launcher.BydHalGateway(appCtx.applicationContext) }
     private var current: Turn = Turn.NONE
 
-    /**
-     * Một nhịp — **tự đọc xi-nhan trực tiếp** qua HAL (findings 2026-09-23 mục 6: `carStatus.lights` LUÔN null vì
-     * datum xi-nhan không nằm trong tập poll của HOME). `BYDAutoLightDevice.getLightStatus(4/5)` [ĐO
-     * `HalReadTables:33` LIGHT_LEFT_TURN=4 · LIGHT_RIGHT_TURN=5]. Giá trị ≠ 0/rỗng ⇒ đang bật.
-     */
+    // Nguồn xi-nhan THẬT = listener sự kiện (getLightStatus poll trả 0 trên trim này — [ĐO xe 2026-09-25]).
+    @Volatile private var evtLeft = false
+    @Volatile private var evtRight = false
+    private var registered = false
+    private var registerTries = 0
+    private val turnListener by lazy {
+        TurnSignalListener(appCtx) { l, r -> evtLeft = l; evtRight = r; tick(readTurn(4) == true || l, readTurn(5) == true || r) }
+    }
+
     fun tick() {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
-        tick(readTurn(4), readTurn(5))
+        if (!registered && registerTries < 3) { registerTries++; registered = turnListener.register() }   // thử đăng ký tối đa 3 lần (khỏi spam mỗi nhịp)
+        // OR poll getLightStatus (thường 0) với cờ SỰ KIỆN (listener onLightOn/off) — event là nguồn chính.
+        tick(readTurn(4) == true || evtLeft, readTurn(5) == true || evtRight)
     }
 
     /** Đọc một đèn xi-nhan (type 4=trái/5=phải). null (off-car/không đọc được) ⇒ coi như tắt. */
