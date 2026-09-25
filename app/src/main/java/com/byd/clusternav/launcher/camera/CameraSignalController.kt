@@ -29,8 +29,6 @@ class CameraSignalController(private val appCtx: Context) {
     // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] subscribe.
     // [ĐO xe 2026-09-25] register listener dưới uid APP bị SecurityException BYDAUTO_LIGHT_GET (perm signature);
     // chạy dưới uid shell (mô hình kinex) thì OK. getLightStatus poll trả 0 trên trim này ⇒ không dùng poll.
-    @Volatile private var evtLeft = false
-    @Volatile private var evtRight = false
     @Volatile private var started = false
     private val signal by lazy { HalSignalClient() }
     private val bg = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
@@ -40,8 +38,11 @@ class CameraSignalController(private val appCtx: Context) {
     fun tick() {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
         ensureSignal()
-        // Nguồn chính = sự kiện socket (evtLeft/evtRight). tick() nhịp chỉ giữ HOLD sống (không đọc poll — trả 0).
-        tick(evtLeft, evtRight)
+        // FGS nhịp: gọi tick(false,false) — CHỈ để HOLD tự HẾT HẠN khi không còn sự kiện ON. Sự kiện xi-nhan ON
+        // đến từ socket ([HalSignalClient] onTurn → tick(l,r) refresh lastOnMs). KHÔNG đọc evtLeft/evtRight sticky ở
+        // đây: [ĐO xe 2026-09-25] xi-nhan nhấp nháy → nếu tài xế tắt đúng pha ON, evt kẹt true ⇒ FGS refresh HOLD
+        // mãi ⇒ camera KHÔNG tắt (bug lúc-bị-lúc-không). Để HOLD tự hết theo mốc ON gần nhất là đường tin cậy.
+        tick(false, false)
     }
 
     /** Khởi HAL helper (uid shell) + socket client MỘT lần, trên thread NỀN (ensure() chặn: push jar + shell). */
@@ -50,7 +51,7 @@ class CameraSignalController(private val appCtx: Context) {
         started = true
         bg.execute {
             runCatching { HalHelperLauncher.ensure(appCtx) }.onFailure { Log.w(PanoramaHal.TAG, "HAL helper ensure lỗi: ${it.message}") }
-            runCatching { signal.start { l, r -> evtLeft = l; evtRight = r; tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
+            runCatching { signal.start { l, r -> tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
         }
     }
 
