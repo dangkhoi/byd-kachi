@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.view.View
 import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.comfort.Pm25Filter
@@ -95,15 +96,58 @@ class SettingsCarSection(
      *
      * Bật/tắt đi qua cầu (`bridge.setRainDefrost`), và chính cầu đồng bộ động cơ nền ngay trong lượt đó — xem ⚠ ở
      * KDoc `ClusterNavBridgeAutomation` về vì sao lượt `sync` không được để chỗ gọi nhớ.
+     *
+     * ## V7 (owner 2026-09-25) — hai ô CON: *"Sấy kính trước"* · *"Sấy kính sau + gương"*
+     * Owner chốt tách hai lựa chọn để dùng riêng được từng cái (kính sau + gương ăn điện liên tục). Cả hai **mặc
+     * định BẬT** ⇒ ai không vào đây thì hành vi y như 1.85. Bỏ tích cả hai = tính năng tắt trên thực tế
+     * ([RainDefrostApplier.selection] rỗng) — cố ý KHÔNG lùi về *"ghi cả hai"*, vì một người vừa bỏ tích cả hai ô
+     * mà thấy xe bật cả hai cái sấy sẽ không có cách nào hiểu vì sao.
      */
     private fun rainDefrost(body: LinearLayout) {
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_rain_defrost)))
+        // V7 (owner 2026-09-25) — hai ô CON: chọn kính nào được sấy. Dựng TRƯỚC công tắc chính để cú gạt công tắc
+        // có tham chiếu tới chúng mà làm mờ/khoá ngay; thứ tự trên MÀN vẫn là chính → con (addView bên dưới).
+        val front = rows.checkRow(
+            on = bridge.rainDefrostFront(),
+            title = context.getString(R.string.kachi_rain_defrost_front),
+            sub = context.getString(R.string.kachi_rain_defrost_front_sub),
+        ) { on -> bridge.setRainDefrostFront(on) }
+        val rear = rows.checkRow(
+            on = bridge.rainDefrostRear(),
+            title = context.getString(R.string.kachi_rain_defrost_rear),
+            sub = context.getString(R.string.kachi_rain_defrost_rear_sub),
+        ) { on -> bridge.setRainDefrostRear(on) }
         body.addView(rows.checkRow(
             on = bridge.rainDefrost(),
             title = context.getString(R.string.kachi_rain_defrost_title),
             sub = context.getString(R.string.kachi_rain_defrost_sub),
-        ) { on -> bridge.setRainDefrost(on) })
+        ) { on ->
+            bridge.setRainDefrost(on)
+            gateRainGlass(front, rear, on)
+        })
+        body.addView(front)
+        body.addView(rear)
+        gateRainGlass(front, rear, bridge.rainDefrost())
         body.addView(rows.note(context.getString(R.string.kachi_rain_defrost_note)))
+    }
+
+    /**
+     * Công tắc chính TẮT ⇒ hai ô con **mờ + không bấm được** (V7). MỜ, không ẩn — bài học U12: *"cắt vì nhóm dài
+     * không được biến thành ẩn tính năng"*; ẩn đi thì người bật công tắc lên không biết là có hai lựa chọn.
+     *
+     * ## Vì sao `isEnabled` trên hàng là ĐỦ ở đây (và vì sao thường thì không)
+     * [SettingsRows.Stepper.isEnabled] có một KDoc dài về việc cờ `enabled` của cha **không** lan xuống con
+     * ([ĐO] AOSP `View.setEnabled` không đệ quy, `ViewGroup.dispatchTouchEvent` không đọc cờ đó) — nên tắt một
+     * hàng có **nút con bấm được** là khoá giả. Hàng của [SettingsRows.checkRow] thì khác: nó giữ
+     * `setOnClickListener` trên **chính** `LinearLayout` gốc và **không con nào clickable**, nên cú chạm rơi về
+     * `onTouchEvent` của đúng view đang bị tắt (`View.java` nhánh `DISABLED` trả về mà KHÔNG gọi listener).
+     * Không dựa vào `alpha`: alpha chỉ là chuyện VẼ, một hàng mờ vẫn ăn cú chạm.
+     */
+    private fun gateRainGlass(front: View, rear: View, on: Boolean) {
+        listOf(front, rear).forEach {
+            it.isEnabled = on
+            it.alpha = if (on) 1f else 0.4f
+        }
     }
 
     // ── Lấy gió trong ────────────────────────────────────────────────────────────────────────────

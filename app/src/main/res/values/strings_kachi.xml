@@ -136,7 +136,7 @@
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
     <string name="kachi_sec_recirc">Lấy gió trong</string>
     <string name="kachi_recirc_title">Nổ máy thì tự lấy gió trong</string>
-    <string name="kachi_recirc_sub">Xe quên chế độ này mỗi lần khởi động. ⚠ Lệnh chưa kiểm trên xe — có thể xe không nhận.</string>
+    <string name="kachi_recirc_sub">Xe quên chế độ này mỗi lần khởi động — Kachi tự bật lại.</string>
     <string name="kachi_sec_permissions">Quyền</string>
     <string name="kachi_perm_all_ok">Đủ quyền — không thiếu gì. Kachi tự xin lại mỗi lần mở nếu hệ thống thu hồi.</string>
     <string name="kachi_perm_some_missing">Kachi tự xin lại phần tự xin được; phần còn lại nói rõ việc cần làm.</string>
@@ -326,12 +326,17 @@
     <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
     <!-- #1 · Tự sấy kính khi mưa (nhóm Tiện nghi xe) -->
     <string name="kachi_sub_camera_signal">Camera theo xi-nhan</string>
-    <string name="kachi_camera_signal_title">Bật camera khi xi-nhan (đang phát triển)</string>
-    <string name="kachi_camera_signal_sub">Xi-nhan trái → camera trái nổi bên trái màn; phải → bên phải. Chưa kiểm trên xe.</string>
+    <string name="kachi_camera_signal_title">Bật camera khi xi-nhan</string>
+    <string name="kachi_camera_signal_sub">Xi-nhan trái → hiện camera trái; xi-nhan phải → camera phải.</string>
     <string name="kachi_sub_rain_defrost">Tự sấy kính khi mưa</string>
     <string name="kachi_rain_defrost_title">Mưa thì tự bật sấy kính</string>
-    <string name="kachi_rain_defrost_sub">Đọc cảm biến mưa mỗi 5 phút; có mưa thì bật sấy kính trước + sau, hết mưa thì tắt lại.</string>
-    <string name="kachi_rain_defrost_note">Chỉ tắt cái sấy do Kachi bật. Bạn tự bật sấy thì Kachi không đụng vào; bạn tự tắt giữa cơn mưa thì Kachi cũng không bật lại.</string>
+    <string name="kachi_rain_defrost_sub">Đọc cảm biến mưa mỗi 5 phút; có mưa thì tự bật sấy kính (chọn bên dưới), hết mưa thì tắt.</string>
+    <string name="kachi_rain_defrost_note">Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng.</string>
+    <!-- V7 (owner 2026-09-25) — hai ô con: chọn kính nào được sấy. Mặc định cả hai BẬT. -->
+    <string name="kachi_rain_defrost_front">Sấy kính trước</string>
+    <string name="kachi_rain_defrost_front_sub">Kính chắn gió phía trước.</string>
+    <string name="kachi_rain_defrost_rear">Sấy kính sau + gương</string>
+    <string name="kachi_rain_defrost_rear_sub">Kính sau và gương chiếu hậu.</string>
     <!-- #2 · Tự dẫn đường theo lịch (nhóm Dẫn đường) -->
     <string name="kachi_sec_nav_auto">Tự dẫn đường theo lịch</string>
     <string name="kachi_nav_auto_note">Đúng giờ, đúng thứ thì tự mở app dẫn đường tới một địa chỉ đã lưu. Mỗi khung giờ chỉ dẫn một lần trong ngày.</string>
@@ -510,6 +515,9 @@
     <string name="kachi_headless_title">Chạy dịch vụ dẫn đường/cụm ở nền khi nổ máy</string>
     <string name="kachi_headless_sub">KHÁC dòng trên: dòng trên mở màn hình Kachi, dòng này chỉ chạy dịch vụ mà không mở màn nào.</string>
     <string name="kachi_sub_maint">Bảo trì</string>
+    <!-- V8 (owner 2026-09-25) — công tắc tự cập nhật, độc lập với Nav+HUD. Mặc định TẮT. -->
+    <string name="kachi_auto_update_title">Tự động cập nhật</string>
+    <string name="kachi_auto_update_sub">Mở Kachi thì tự dò bản mới; có bản mới sẽ hỏi trước khi tải và cài đè. Không có bản mới thì im lặng.</string>
     <string name="kachi_check_update">Kiểm tra cập nhật</string>
     <string name="kachi_nav_stop">Dừng toàn bộ dẫn đường</string>
     <string name="kachi_sub_advanced">Nâng cao</string>
@@ -669,8 +677,8 @@
     <string name="kachi_camera_pos_sub">Vị trí camera trên màn (góc trên)</string>
     <string name="kachi_camera_pos_left">Xi-nhan trái hiện ở</string>
     <string name="kachi_camera_pos_right">Xi-nhan phải hiện ở</string>
-    <string name="kachi_pos_tl">Trên trái</string>
-    <string name="kachi_pos_tr">Trên phải</string>
+    <string name="kachi_pos_tl">Trái</string>
+    <string name="kachi_pos_tr">Phải</string>
     <string name="kachi_camera_cluster_sub">Overlay camera hiện trên cụm đồng hồ thay màn chính</string>
     <string name="kachi_camera_left">Camera trái</string>
     <string name="kachi_camera_right">Camera phải</string>

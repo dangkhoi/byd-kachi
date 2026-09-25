@@ -27,9 +27,11 @@ class CarMiniView(context: Context) : View(context) {
     private var tailgate: Boolean? = null
 
     fun set(doors: List<Boolean?>, tailgate: Boolean?) {
+        // (owner 2026-09-25 nháy hình xe): chỉ vẽ lại khi ĐỔI — trước invalidate mỗi nhịp dù trạng thái y hệt.
+        val unchanged = this.doors == doors && this.tailgate == tailgate
         this.doors = doors
         this.tailgate = tailgate
-        invalidate()
+        if (!unchanged) invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {

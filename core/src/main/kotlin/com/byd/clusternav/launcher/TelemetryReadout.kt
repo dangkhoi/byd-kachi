@@ -146,7 +146,7 @@ object TelemetryReadout {
         "fuel_pct" -> s.energy.fuelPct?.toString()
         "ev_mileage_km" -> s.energy.evMileageKm?.toString()
         "trip_km" -> s.energy.tripKm?.let { dec1(it) }
-        "trip_hours" -> s.energy.tripHours?.let { dec1(it) }
+        "trip_hours" -> s.energy.tripHours?.let { hoursToHm(it) }
         "trip_kwh" -> s.energy.tripKwh?.let { dec1(it) }
         "consumption_50km" -> s.energy.consumption50?.let { dec1(it) }
 
@@ -256,6 +256,12 @@ object TelemetryReadout {
 
     private fun dec0(d: Double) = Math.round(d).toString()
     private fun dec1(d: Double) = String.format(Locale.US, "%.1f", d)
+
+    /** V4 (owner 2026-09-25): giờ thập phân → "h:mm" (1.6h → "1:36") — dễ đọc hơn "1.6h". Phút làm tròn, kẹp 0..59. */
+    private fun hoursToHm(h: Double): String {
+        val totalMin = (h * 60.0).toInt().coerceAtLeast(0)
+        return "${totalMin / 60}:${String.format(Locale.US, "%02d", totalMin % 60)}"
+    }
     private fun dec2(d: Double) = String.format(Locale.US, "%.2f", d)
     private fun dec5(d: Double) = String.format(Locale.US, "%.5f", d)
 }

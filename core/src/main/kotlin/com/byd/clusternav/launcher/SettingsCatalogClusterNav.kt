@@ -86,6 +86,13 @@ internal object SettingsCatalogClusterNav {
             // ⚠ Khoá thứ ba `nav_automation_fired` KHÔNG ở đây: nó là TRẠNG THÁI CHẠY, khai ở
             // `SettingsCatalog.NOT_SETTINGS` — bảng này chỉ nhận khoá **có mặt trên UI**.
             "rain_defrost_enabled", "nav_automation_rules",
+            // V7 (owner 2026-09-25) — hai ô CON của công tắc #1 (*"chọn kính nào được sấy"*). Khai ở
+            // `PrefsAutomation.kt`, cùng tệp `clusternav_prefs`. Chủ của chúng là mục `car_rain_defrost` — xem
+            // [COMPANION_KEYS] về vì sao KHÔNG mở hai mục danh mục riêng.
+            "rain_defrost_front", "rain_defrost_rear",
+            // V8 (owner 2026-09-25) — công tắc *"Tự động cập nhật"*. Chủ là mục `system_update` (hàng *Kiểm tra
+            // cập nhật* của nhóm Hệ thống nay có một công tắc **và** một nút) — xem [COMPANION_KEYS].
+            "auto_update_enabled",
         ).forEach { put(it, "clusternav_prefs") }
         // ── simple_cast_prefs (SimpleCastRuntime.kt) ──
         listOf(
@@ -122,6 +129,22 @@ internal object SettingsCatalogClusterNav {
         // IA v2 · R3 — chip sáng/tối của Kachi ghi CẢ `theme_mode` (nguồn sự thật của launcher) lẫn `theme_choice`
         // (màn nâng cao đọc ở attachBaseContext). Một khái niệm, một công tắc, hai chỗ lưu vì hai màn đọc khác nhau.
         "theme_choice" to "display_theme",
+        // ── V7 (owner 2026-09-25) — hai ô CON của *"Tự sấy kính khi mưa"* ──
+        // Đây là dạng TỔNG QUÁT của ca `badge_center_x`/`badge_center_y` ngay trên: **một MỤC ghi nhiều khoá**,
+        // không phải nhiều mục. Mục `car_rain_defrost` sở hữu cả ba khoá của tính năng (bật/tắt + chọn kính nào),
+        // và một khoá vẫn có đúng MỘT chủ — bất biến của [SettingsCatalog] nguyên vẹn.
+        //
+        // Vì sao KHÔNG mở hai mục danh mục riêng: `car_rain_defrost_front`/`_rear` sẽ là hai dòng nữa ở rail đếm
+        // *"nhóm này có N mục"* cho hai ô tích **không tự đứng được** (chúng vô nghĩa khi công tắc chính tắt — và
+        // giao diện đã nói điều đó bằng cách làm mờ chúng). Cùng lẽ `badge_center_y`: tách ra thành mục riêng là
+        // dựng một trạng thái mà người dùng đặt được nửa vời.
+        "rain_defrost_front" to "car_rain_defrost",
+        "rain_defrost_rear" to "car_rain_defrost",
+        // ── V8 (owner 2026-09-25) — công tắc *"Tự động cập nhật"* ──
+        // Chủ là `system_update`, mục vốn KHÔNG có khoá (nó là một VIỆC LÀM: nút *Kiểm tra cập nhật*). Nay hàng đó
+        // có hai nửa của cùng một việc — *tự* dò và *tự tay* dò — nên mục ấy nhận khoá của nửa thứ nhất. Không mở
+        // mục mới cùng lý do hai dòng V7 ở trên.
+        "auto_update_enabled" to "system_update",
     )
 
     /**

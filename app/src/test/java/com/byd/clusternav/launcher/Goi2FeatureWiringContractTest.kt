@@ -169,9 +169,9 @@ class Goi2FeatureWiringContractTest {
         assertTrue(car.contains("R.string.kachi_recirc_title"), "ô tick phải nằm trong màn Cài đặt (dựng bằng code)")
         // U5·T3 — chữ dời sang tài nguyên; kiểm cả dây nối lẫn nội dung (xem [res]).
         assertTrue(car.contains("R.string.kachi_recirc_sub"), "dòng phụ của ô tick phải là chuỗi cảnh báo đó")
-        assertTrue(
-            res("kachi_recirc_sub").contains("chưa kiểm trên xe"),
-            "PHẢI có chú thích chưa-kiểm cạnh ô tick (R10) — lệnh lấy gió chưa xác nhận trên xe owner",
+        assertFalse(
+            res("kachi_recirc_sub").contains("chưa kiểm"),
+            "V1 (owner 2026-09-25): lấy gió ĐÃ kiểm trên xe — bỏ chú thích chưa-kiểm thừa",
         )
     }
 

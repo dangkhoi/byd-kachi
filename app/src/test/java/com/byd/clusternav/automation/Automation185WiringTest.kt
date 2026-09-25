@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.SettingsNavAutomationFormat
 import com.byd.clusternav.launcher.automation.ScheduledNavRules
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -77,21 +78,48 @@ class Automation185WiringTest {
     /**
      * R1: sấy đọc trạng thái **TỪ XE**, không từ một cờ RAM. Cờ RAM không thấy người lái bấm nút sấy trên màn xe
      * ⇒ R1.5 (*"chỉ tắt cái sấy do automation bật"*) chết im lặng.
+     *
+     * ⚠ V7 (owner 2026-09-25): nút được đọc không còn CỐ ĐỊNH là sấy trước — nó là **mỏ neo** = phần tử đầu của
+     * `selection()`. Bài canh vì thế đòi hai điều thay cho một chuỗi cứng: đọc qua `readState` của **một mã truyền
+     * vào**, và mã ấy lấy từ `pick.first()`. Đó là bất biến thật sự cần giữ — *cái được ĐỌC phải là một cái đang
+     * được GHI*; đọc `defrost` trong khi chỉ ghi `defrost_rear` thì mỗi nhịp đều đọc về `tắt`, ra lệnh bật, rồi
+     * lại đọc về `tắt` = ghi HAL mỗi 5 phút suốt chuyến mà không bao giờ thấy việc mình làm.
      */
     @Test
     fun `say doc trang thai tu xe qua readState`() {
-        assertTrue("carControl.readState(CTL_FRONT)" in rain, "phải đọc sấy trước qua đường readKey của nút")
+        assertTrue("carControl.readState(controlId)" in rain, "phải đọc sấy qua đường readKey của nút")
+        assertTrue("val anchor = pick.first()" in rain, "nút được đọc = MỎ NEO của selection(), không phải mã cứng")
+        assertTrue("readDefrost(app, anchor)" in rain, "và lượt đọc phải dùng chính mỏ neo đó")
         assertTrue("RainDefrostPolicy.plausible(" in rain, "lần đọc mưa phải qua bộ lọc sentinel của :core")
         assertTrue("RainDefrostOwner.step(" in rain, "quyết định phải đi qua máy trạng thái R1.5")
         assertTrue("RainDefrostOwner.stepUnknown(" in rain, "đọc không được ⇒ giữ nguyên, KHÔNG coi như trời khô")
     }
 
-    /** R1.3 owner chốt: bật/tắt **cả hai** nút sấy, không chỉ kính lái. */
+    /**
+     * V7 (owner 2026-09-25) — **ĐẢO CHIỀU bài canh của 1.85.**
+     *
+     * R1.3 cũ chốt *"bật/tắt cả hai nút sấy"* và bài này khoá đúng chuỗi `listOf(CTL_FRONT, CTL_REAR)`. Owner nay
+     * chốt hai ô CHỌN riêng (trước · sau+gương · cả hai), nên chuỗi cũ phải biến mất — và điều cần khoá đổi thành:
+     *  1. lượt ghi chỉ chạm **những nút đã chọn** (`pick.forEachIndexed`), không phải một danh sách cứng;
+     *  2. `selection()` dựng từ đúng HAI khoá prefs — không có đường thứ ba nào quyết định kính nào được sấy;
+     *  3. **cả hai bỏ tích ⇒ no-op**: `pick.isEmpty()` phải gác ngay ở cửa `tick`, và phải `reset()` ký ức. Thiếu
+     *     cổng này thì bỏ tích cả hai ô là *"vẫn đọc cảm biến mỗi 5 phút rồi không ghi gì"* — vô hại nhưng dối, và
+     *     lượt sau ai thêm một nút thứ ba sẽ thừa hưởng một `pick` rỗng chạy qua cả thân hàm.
+     *
+     * Hai hằng mã nút vẫn phải đúng nguyên văn: chúng là mã của `ControlRegistry`, gõ sai là ghi vào hư không.
+     */
     @Test
-    fun `say ghi ca truoc va sau`() {
+    fun `say chi ghi nhung nut da chon`() {
         assertTrue("CTL_FRONT = \"defrost\"" in rain)
         assertTrue("CTL_REAR = \"defrost_rear\"" in rain)
-        assertTrue("listOf(CTL_FRONT, CTL_REAR)" in rain, "một lượt ghi phải chạm cả hai nút")
+        assertTrue("pick.forEachIndexed" in rain, "một lượt ghi chỉ chạm các nút ĐÃ CHỌN")
+        assertFalse(
+            "listOf(CTL_FRONT, CTL_REAR)" in rain,
+            "danh sách CỨNG hai nút đã bị V7 thay bằng selection() — còn nó là còn đường ghi cả hai bất chấp lựa chọn",
+        )
+        assertTrue("Prefs.rainDefrostFront(app)" in rain, "selection() phải đọc đúng khoá của ô TRƯỚC")
+        assertTrue("Prefs.rainDefrostRear(app)" in rain, "selection() phải đọc đúng khoá của ô SAU")
+        assertTrue("pick.isEmpty()" in rain, "cả hai bỏ tích ⇒ coi như tính năng TẮT, gác ngay ở cửa tick")
     }
 
     /**

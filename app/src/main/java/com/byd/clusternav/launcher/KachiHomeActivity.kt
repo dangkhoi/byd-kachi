@@ -1,5 +1,4 @@
 package com.byd.clusternav.launcher
-
 import android.util.Log
 import android.app.Activity
 import android.os.Bundle
@@ -462,6 +461,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onResume() {
         super.onResume(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         goImmersive(); topStrip.updateClock(); wallpaper.reload(); handler.post(tick); ensureCastBubble(bridge)
+        runCatching { bridge.autoUpdateOnceIfEnabled() }   // V8 (owner 2026-09-25) tự cập nhật 1 lần/tiến trình (cổng trong cầu)
         topStrip.refreshVoicePill()   // V1 pha NGHE: mô hình có thể vừa được tải/gỡ ở một màn khác
         // "Hey Kachi": bộ nghe FGS chết theo tiến trình (app bị kill/cài lại) và KHÔNG có gì dựng lại ngoài boot
         // thật / gạt công tắc. [ĐO xe 2026-09-21] sau reinstall service = 0 ⇒ "thử một loạt không lên". Mở màn

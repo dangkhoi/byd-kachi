@@ -416,6 +416,7 @@ class KachiTopStrip(
             setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY, bold = true)
             maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; maxWidth = dp(Sp.LABEL_COL)
             setPadding(dp(Sp.S), 0, 0, 0)
+            visibility = View.GONE   // V5 (owner 2026-09-25): chỉ icon hồ sơ, bỏ chữ tên (đỡ chật header)
         }
         addView(profileInitialView); addView(profileNameView)
         setOnClickListener { onProfileTap() }

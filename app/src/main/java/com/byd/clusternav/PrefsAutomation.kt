@@ -36,6 +36,51 @@ fun Prefs.rainDefrostEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(
 fun Prefs.setRainDefrostEnabled(ctx: Context, v: Boolean) =
     autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST, v).apply()
 
+// ── V7 (owner 2026-09-25) — CHỌN kính nào được sấy: trước · sau+gương · cả hai ────────────────────
+// Owner: *"tách 2 option riêng, user chọn cả 2 hoặc 1 trong 2"*. Hai khoá con, KHÔNG phải một khoá 3 giá trị
+// ("front"/"rear"/"both"): ba-giá-trị-trong-một-chuỗi là chỗ sinh ra trạng thái thứ tư không ai định nghĩa khi
+// prefs bị sửa tay (`prefs_set` trên xe), và nó cũng không nói được ca "cả hai TẮT".
+//
+// ⚠ Quan hệ với [K_RAIN_DEFROST]: đó là công tắc CHÍNH (bật/tắt tính năng); hai khoá này chỉ có nghĩa khi chính
+// đang bật. Cả hai TẮT ⇒ `RainDefrostApplier` coi như tính năng tắt (không đọc cảm biến, không ghi nút nào) — xem
+// KDoc `RainDefrostApplier.selection`.
+//
+// MẶC ĐỊNH CẢ HAI BẬT = giữ NGUYÊN hành vi của bản trước (1.85 ghi cả hai nút, R1.3): người đã bật tính năng rồi
+// nâng cấp lên bản này không được thấy nó lặng lẽ làm ít hơn hôm qua.
+private const val K_RAIN_DEFROST_FRONT = "rain_defrost_front"
+private const val K_RAIN_DEFROST_REAR = "rain_defrost_rear"
+
+/** V7 — mưa thì bật sấy kính TRƯỚC. Mặc định **true** (hành vi 1.85). */
+fun Prefs.rainDefrostFront(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_RAIN_DEFROST_FRONT, true)
+
+/** Xem [rainDefrostFront]. Chỗ gọi phải `AutomationService.sync` sau khi ghi (xem `ClusterNavBridge`). */
+fun Prefs.setRainDefrostFront(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST_FRONT, v).apply()
+
+/** V7 — mưa thì bật sấy kính SAU + gương chiếu hậu (`defrost_rear`). Mặc định **true** (hành vi 1.85). */
+fun Prefs.rainDefrostRear(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_RAIN_DEFROST_REAR, true)
+
+/** Xem [rainDefrostRear]. */
+fun Prefs.setRainDefrostRear(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST_REAR, v).apply()
+
+// ── V8 (owner 2026-09-25) — TỰ CẬP NHẬT khi mở app ───────────────────────────────────────────────
+// Owner: *"tách auto-update thành 1 toggle riêng ở Hệ thống, KHÔNG gắn với Nav+HUD"*. Trước V8 lượt dò bản mới
+// chỉ đi kèm đường Nav+HUD / nút bấm tay, tức ai tắt dẫn đường thì không bao giờ được cập nhật mà không có gì
+// nói ra điều đó.
+//
+// MẶC ĐỊNH TẮT: nó mở một kết nối HTTPS ra GitHub mỗi lần mở launcher và có thể dựng hộp thoại *"cài bản mới?"*
+// trước mặt người đang lái. Một tính năng tự-tải-về-rồi-cài-đè phải do chủ xe bật tường minh — cùng lẽ
+// `rain_defrost_enabled` / `voice_wake_enabled` mặc định TẮT.
+private const val K_AUTO_UPDATE = "auto_update_enabled"
+
+/** V8 — "Tự động cập nhật": mở launcher thì tự dò bản mới trong `apk/`. Mặc định **false**. */
+fun Prefs.autoUpdateEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_AUTO_UPDATE, false)
+
+/** Xem [autoUpdateEnabled]. Không có tác dụng phụ nào phải đồng bộ: lượt dò đọc khoá này mỗi lần màn chính lên. */
+fun Prefs.setAutoUpdateEnabled(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_AUTO_UPDATE, v).apply()
+
 // ── CAMERA theo xi-nhan (owner 2026-09-22) — mặc định TẮT ("đang phát triển") ────────────────────
 private const val K_CAMERA_SIGNAL = "camera_signal_enabled"
 

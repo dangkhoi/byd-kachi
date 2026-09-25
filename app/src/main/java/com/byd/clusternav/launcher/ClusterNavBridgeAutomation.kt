@@ -2,13 +2,20 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.automation.AutomationService
+import com.byd.clusternav.automation.RainDefrostApplier
 import com.byd.clusternav.automation.ScheduledNavApplier
 import com.byd.clusternav.launcher.automation.NavAutomationBook
 import com.byd.clusternav.launcher.automation.ScheduledNavRule
 import com.byd.clusternav.navAutomationRules
 import com.byd.clusternav.rainDefrostEnabled
+import com.byd.clusternav.rainDefrostFront
+import com.byd.clusternav.rainDefrostRear
+import com.byd.clusternav.autoUpdateEnabled
+import com.byd.clusternav.setAutoUpdateEnabled
 import com.byd.clusternav.setNavAutomationRules
 import com.byd.clusternav.setRainDefrostEnabled
+import com.byd.clusternav.setRainDefrostFront
+import com.byd.clusternav.setRainDefrostRear
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.cameraOnCluster
@@ -25,6 +32,11 @@ import com.byd.clusternav.setCameraSignalEnabled
  * Spec `docs/specs/kachi-automation.html` R1 · R2 · R4. Cùng khuôn `ClusterNavBridgeWake`/`…Home`/`…Keys`: màn
  * Cài đặt KHÔNG ghi `Prefs.set` trực tiếp (`SettingsScreenWiringContractTest` cấm — state trên màn và state bền
  * phải đi qua MỘT cửa). Tách tệp vì `ClusterNavBridge.kt` đã 499 dòng (trần 500, CLAUDE.md §4.1).
+ *
+ * ⚠ **V8 (owner 2026-09-25) thêm một khoá KHÔNG phải automation vào đây**: công tắc *"Tự động cập nhật"*. Nó ở
+ * cùng tệp vì nó thuộc **cùng họ**: những việc chiếc xe tự làm hộ khi mở máy (sấy khi mưa · dẫn theo lịch · dò
+ * bản mới), và khoá của nó cũng nằm ở `PrefsAutomation.kt`. Mở một tệp `ClusterNavBridgeUpdate.kt` cho đúng ba
+ * hàm sẽ thêm một tệp nữa phải giải trình ở `LayeringRulesTest` mà không chia được việc gì.
  *
  * ## ⚠⚠ Mỗi lượt GHI phải kèm một lượt `AutomationService.sync` — đây là phần dễ quên nhất
  * [ĐO] S4 · T2: **0 chỗ nào trong toàn dự án** đăng ký `registerOnSharedPreferenceChangeListener`. Nghĩa là ghi
@@ -47,6 +59,80 @@ fun ClusterNavBridge.rainDefrost(): Boolean = Prefs.rainDefrostEnabled(app)
 fun ClusterNavBridge.setRainDefrost(on: Boolean) {
     Prefs.setRainDefrostEnabled(app, on)
     AutomationService.sync(app)
+}
+
+/**
+ * V7 (owner 2026-09-25) — **hai ô con** của công tắc #1: sấy kính TRƯỚC · sấy kính SAU + gương.
+ *
+ * Hai hàm đọc RIÊNG (không một hàm nhận `front: Boolean`) vì ô tích trong Cài đặt cần **một biểu thức cho một
+ * hàng** — cùng khuôn `cameraPosLeft`/`cameraPosRight` ở dưới.
+ *
+ * ⚠ Lượt GHI vẫn phải `AutomationService.sync`, y như công tắc chính: bỏ tích **cả hai** ô là *"không còn việc
+ * gì"* ([RainDefrostApplier.selection] rỗng ⇒ `tick` no-op), nhưng `anyEnabled` chỉ đọc công tắc CHÍNH nên động
+ * cơ nền vẫn chạy. `sync` ở đây là chỗ **quên ký ức** R1.5 (`RainDefrostApplier.reset`) — thiếu nó thì bỏ tích ô
+ * TRƯỚC giữa lúc Kachi đang giữ cái sấy đó sẽ để lại `owned = true` cho một nút không còn ai ghi, và nhịp sau đọc
+ * mỏ neo MỚI (sấy sau) với ký ức của mỏ neo CŨ.
+ */
+fun ClusterNavBridge.rainDefrostFront(): Boolean = Prefs.rainDefrostFront(app)
+fun ClusterNavBridge.setRainDefrostFront(on: Boolean) {
+    Prefs.setRainDefrostFront(app, on)
+    AutomationService.sync(app)
+    RainDefrostApplier.reset()
+}
+
+/** Xem [rainDefrostFront]. */
+fun ClusterNavBridge.rainDefrostRear(): Boolean = Prefs.rainDefrostRear(app)
+fun ClusterNavBridge.setRainDefrostRear(on: Boolean) {
+    Prefs.setRainDefrostRear(app, on)
+    AutomationService.sync(app)
+    RainDefrostApplier.reset()
+}
+
+// ── V8 · TỰ CẬP NHẬT (owner 2026-09-25) ──────────────────────────────────────────────────────────
+
+/** V8 — công tắc "Tự động cập nhật" (theo XE, mặc định TẮT). */
+fun ClusterNavBridge.autoUpdate(): Boolean = Prefs.autoUpdateEnabled(app)
+
+/**
+ * Đặt công tắc V8. **Không** `AutomationService.sync`: lượt dò bản mới không chạy trong động cơ nền — nó đọc khoá
+ * này ở [autoUpdateOnceIfEnabled] mỗi lần màn chính lên, nên giá trị mới ăn ngay mà không cần đánh thức gì.
+ */
+fun ClusterNavBridge.setAutoUpdate(on: Boolean) = Prefs.setAutoUpdateEnabled(app, on)
+
+/**
+ * V8 — lượt dò bản mới TỰ ĐỘNG, gọi từ `KachiHomeActivity.onResume`. Im lặng khi đã ở bản mới nhất.
+ *
+ * ## Ba cổng, mỗi cổng một lý do
+ *  1. **công tắc TẮT ⇒ không làm gì** — mặc định TẮT, và nó mở một kết nối ra Internet;
+ *  2. **đúng MỘT lần cho mỗi tiến trình** ([checkedThisProcess]) — `onResume` chạy lại mỗi lần người lái đóng một
+ *     app toàn màn, tức hàng chục lần một chuyến; không có cổng này thì mỗi lần quay về HOME là một lượt tải
+ *     `apk/` từ GitHub, và nếu **có** bản mới thì hộp thoại *"cài đè?"* dựng lại mỗi lần người ta bấm "Để sau";
+ *  3. **đi qua [ClusterNavBridge.checkUpdate]** (không gọi `UpdateFlow.start` trực tiếp) — nó là chỗ DUY NHẤT
+ *     biết lấy `Activity` ở đâu, và `UpdateFlow` bắt buộc phải có `Activity` thật (dialog + `startActivity` cài
+ *     APK). Mở đường thứ hai tới `UpdateFlow` là mở đường thứ hai giữ Activity.
+ *
+ * "Im lặng" = bỏ chuỗi trạng thái (`onText` no-op): hai nhánh *đang kiểm* và *đã mới nhất* không có gì để nói với
+ * người lái. Nhánh **có bản mới** vẫn hỏi — tải ~40 MB rồi cài đè + khởi động lại app **không** phải việc được
+ * làm sau lưng chủ xe (đó cũng là hợp đồng của `UpdateFlow.confirm`, giữ nguyên).
+ *
+ * ⚠ Cờ nằm ở **companion của tiến trình** (`@Volatile` trong [AutoUpdateOnce]) chứ không phải một field của cầu:
+ * cầu được dựng lại mỗi lần Activity dựng lại (đổi ngôn ngữ ⇒ `recreate()`), mà *"đã kiểm chưa"* là câu hỏi của
+ * **tiến trình**. Để nó theo cầu thì mỗi lượt `recreate` lại là một lượt tải mới.
+ */
+fun ClusterNavBridge.autoUpdateOnceIfEnabled() {
+    if (!Prefs.autoUpdateEnabled(app)) return
+    if (!AutoUpdateOnce.claim()) return
+    checkUpdate { /* im lặng: không có bề mặt nào để hiện chuỗi trạng thái ở màn chính */ }
+}
+
+/** Cờ *"tiến trình này đã dò bản mới chưa"* — xem KDoc [autoUpdateOnceIfEnabled]. */
+private object AutoUpdateOnce {
+    @Volatile private var done = false
+
+    /** `true` đúng MỘT lần cho mỗi tiến trình. `synchronized` vì `onResume` của hai màn có thể chen nhau. */
+    fun claim(): Boolean = synchronized(this) {
+        if (done) false else { done = true; true }
+    }
 }
 
 /** Camera theo xi-nhan (owner 2026-09-22, mặc định TẮT) — công tắc đi qua cầu như mọi mục Cài đặt. */

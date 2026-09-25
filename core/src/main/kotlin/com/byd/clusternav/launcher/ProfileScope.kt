@@ -280,6 +280,26 @@ object ProfileScope {
                 "vẫn phải có phạm vi — cùng ca `home_chosen`/`recent_apps`",
         )
         put(
+            "rain_defrost_front",
+            "V7 (owner 2026-09-25) — ô con *'Sấy kính trước'* của automation #1. Theo XE **cùng phạm vi với** " +
+                "`rain_defrost_enabled` mà nó phụ thuộc: để hai khoá của CÙNG một tính năng ở hai phạm vi khác " +
+                "nhau là mời chúng lệch nhau (công tắc theo xe mà lựa chọn kính theo hồ sơ ⇒ đổi hồ sơ giữa cơn " +
+                "mưa là sấy đổi bên mà không ai hiểu vì sao). Nó cũng là một quyết định về PHẦN CỨNG của chiếc xe " +
+                "này (cái nào ăn điện, cái nào cần), không phải sở thích đi theo người lái",
+        )
+        put(
+            "rain_defrost_rear",
+            "V7 — ô con *'Sấy kính sau + gương'*. Cùng lý do [rain_defrost_front]: cùng tính năng thì cùng phạm vi",
+        )
+        put(
+            "auto_update_enabled",
+            "V8 (owner 2026-09-25) — *'Tự động cập nhật'*. Theo XE: nó tải một APK về **đĩa của chính máy này** rồi " +
+                "cài đè lên bản đang chạy ở đây — một việc mức MÁY, không phải lựa chọn hiển thị của một tài xế. " +
+                "Chép nó theo hồ sơ thì đổi hồ sơ có thể khởi động một lượt tải ~40 MB giữa chuyến, hoặc lặng lẽ " +
+                "tắt việc cập nhật của cả xe. Cùng họ `sherpa_model_id`/`doze_whitelist_applied` — trạng thái/" +
+                "quyết định mức máy",
+        )
+        put(
             "cast_bubble_visible",
             "UX-OVERHAUL WP6 · R6.1 (owner 2026-09-20) — 'Hiện nút nổi chiếu cụm'. Theo XE, **cùng phạm vi với " +
                 "`cast_enabled`** mà nó phụ thuộc: để nó theo hồ sơ thì hai khoá của CÙNG một tính năng nằm ở hai " +

@@ -136,7 +136,13 @@ class AutomationService : Service() {
          */
         fun anyEnabled(ctx: Context): Boolean {
             val app = ctx.applicationContext
-            if (Prefs.rainDefrostEnabled(app)) return true
+            // V7 (owner 2026-09-25): công tắc chính BẬT nhưng bỏ tích **cả hai** ô kính = không còn việc gì. Phải
+            // xét cả `selection()` ở đây, không chỉ công tắc: nếu không thì FGS thường trú với một thông báo mà
+            // `RainDefrostApplier.tick` chỉ trả `Leave` mỗi 5 phút — đúng thứ KDoc lớp này gọi là "chi phí ròng"
+            // (giữ tiến trình, chiếm một dòng thông báo, và làm người đọc log tin rằng automation đang chạy).
+            // Bỏ tích đi qua `ClusterNavBridge.setRainDefrostFront/Rear`, mà hai hàm đó gọi `sync` ⇒ service tự
+            // dừng ngay lượt đó, và tự dựng lại khi tích lại.
+            if (Prefs.rainDefrostEnabled(app) && RainDefrostApplier.selection(app).isNotEmpty()) return true
             if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) return true
             return runCatching {
                 NavAutomationBook.decode(Prefs.navAutomationRules(app)).any { it.enabled }

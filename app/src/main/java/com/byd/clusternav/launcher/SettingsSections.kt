@@ -265,6 +265,14 @@ class SettingsSections(
 
         // ── Bảo trì ──
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_maint)))
+        // V8 (owner 2026-09-25) — công tắc *Tự động cập nhật*, ĐỘC LẬP với Nav+HUD. Trước V8 lượt dò bản mới chỉ đi
+        // kèm đường Nav+HUD hoặc cú bấm tay ⇒ ai tắt dẫn đường thì không bao giờ được cập nhật, và không có gì nói
+        // ra điều đó. Đứng NGAY TRÊN nút bấm tay vì hai hàng là hai nửa của cùng một việc: *tự* dò và *tự tay* dò.
+        body.addView(rows.checkRow(
+            on = deps.bridge.autoUpdate(),
+            title = context.getString(R.string.kachi_auto_update_title),
+            sub = context.getString(R.string.kachi_auto_update_sub),
+        ) { on -> deps.bridge.setAutoUpdate(on) })
         // Nút kiểm tra cập nhật ĐỔI CHỮ theo kết quả (đang kiểm… / đã mới nhất / có bản mới): luồng này mất vài
         // giây trên mạng xe, và một nút im lặng vài giây thì người dùng bấm lại lần hai.
         val update = rows.button(context.getString(R.string.kachi_check_update)) {} as TextView

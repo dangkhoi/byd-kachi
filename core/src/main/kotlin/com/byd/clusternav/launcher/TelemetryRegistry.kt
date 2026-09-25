@@ -152,7 +152,7 @@ object TelemetryRegistry {
         t("trip_km", "Quãng đường chuyến", "Trip distance", "km", ENERGY, VALUE, OVERDRIVE,
             "BYDAutoInstrumentDevice.getCurrentJourneyDriveMileage",
             short = "Quãng chuyến", shortEn = "Trip dist."),
-        t("trip_hours", "Thời gian chuyến", "Trip time", "h", ENERGY, VALUE, OVERDRIVE,
+        t("trip_hours", "Thời gian chuyến", "Trip time", "", ENERGY, VALUE, OVERDRIVE,
             "BYDAutoInstrumentDevice.getCurrentJourneyDriveTime"),
         t("trip_kwh", "Điện tiêu thụ chuyến", "Trip energy used", "kWh", ENERGY, VALUE, NEEDS_CAR, "1246801976", short = "Điện chuyến", shortEn = "Trip energy"),
         t("consumption_50km", "Tiêu thụ 50km", "Consumption last 50 km", "kWh", ENERGY, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getLast50KmPowerConsume", shortEn = "Use 50 km"),

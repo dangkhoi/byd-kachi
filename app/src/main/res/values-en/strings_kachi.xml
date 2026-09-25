@@ -128,7 +128,7 @@
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
     <string name="kachi_sec_recirc">Recirculation</string>
     <string name="kachi_recirc_title">Recirculate cabin air on engine start</string>
-    <string name="kachi_recirc_sub">The car forgets this mode on every start. ⚠ The command is unverified on a car — it may be rejected.</string>
+    <string name="kachi_recirc_sub">The car forgets this mode on every start — Kachi re-enables it.</string>
     <string name="kachi_sec_permissions">Permissions</string>
     <string name="kachi_perm_all_ok">All permissions granted. Kachi re-requests them every time it opens, in case the system revoked them.</string>
     <string name="kachi_perm_some_missing">Kachi re-requests what it can; the rest states exactly what you need to do.</string>
@@ -314,12 +314,17 @@
     <!-- ── AUTOMATION (1.85) — docs/specs/kachi-automation.html ── -->
     <!-- #1 · Auto-defrost when it rains (Car comfort group) -->
     <string name="kachi_sub_camera_signal">Camera on turn signal</string>
-    <string name="kachi_camera_signal_title">Camera on indicator (in development)</string>
-    <string name="kachi_camera_signal_sub">Left indicator → left camera overlay on the left; right → right. Not car-verified.</string>
+    <string name="kachi_camera_signal_title">Camera on turn signal</string>
+    <string name="kachi_camera_signal_sub">Left signal shows left camera; right signal shows right camera.</string>
     <string name="kachi_sub_rain_defrost">Auto-defrost when it rains</string>
     <string name="kachi_rain_defrost_title">Turn the defroster on when it rains</string>
-    <string name="kachi_rain_defrost_sub">Reads the rain sensor every 5 minutes; turns the front and rear windscreen defrosters on while it rains and off again afterwards.</string>
-    <string name="kachi_rain_defrost_note">Only switches off a defroster Kachi turned on itself. If you turn it on, Kachi leaves it alone; if you turn it off mid-shower, Kachi will not turn it back on.</string>
+    <string name="kachi_rain_defrost_sub">Reads the rain sensor every 5 minutes; turns on the selected defrosters (below) while it rains, off afterwards.</string>
+    <string name="kachi_rain_defrost_note">Only switches off a defroster Kachi turned on itself; if you turn it on, Kachi leaves it alone.</string>
+    <!-- V7 (owner 2026-09-25) — two sub-options: which glass gets defrosted. Both on by default. -->
+    <string name="kachi_rain_defrost_front">Front defrost</string>
+    <string name="kachi_rain_defrost_front_sub">The windscreen at the front.</string>
+    <string name="kachi_rain_defrost_rear">Rear defrost + mirrors</string>
+    <string name="kachi_rain_defrost_rear_sub">The rear window and the door mirrors.</string>
     <!-- #2 · Scheduled navigation (Navigation group) -->
     <string name="kachi_sec_nav_auto">Scheduled navigation</string>
     <string name="kachi_nav_auto_note">At the right time on the right day, opens your navigation app to a saved address. Each window navigates once per day.</string>
@@ -498,6 +503,9 @@
     <string name="kachi_headless_title">Run the navigation/cluster service in the background on engine start</string>
     <string name="kachi_headless_sub">DIFFERENT from the row above: that one opens the Kachi screen, this one only starts the service without any screen.</string>
     <string name="kachi_sub_maint">Maintenance</string>
+    <!-- V8 (owner 2026-09-25) — auto-update switch, independent of Nav+HUD. Off by default. -->
+    <string name="kachi_auto_update_title">Auto-update</string>
+    <string name="kachi_auto_update_sub">Checks for a newer build whenever Kachi opens; if there is one it asks before downloading and installing over the top. Stays quiet when you are already up to date.</string>
     <string name="kachi_check_update">Check for updates</string>
     <string name="kachi_nav_stop">Stop all navigation</string>
     <string name="kachi_sub_advanced">Advanced</string>
@@ -653,8 +661,8 @@
     <string name="kachi_camera_pos_sub">Camera position on screen (top corners)</string>
     <string name="kachi_camera_pos_left">Left signal shows at</string>
     <string name="kachi_camera_pos_right">Right signal shows at</string>
-    <string name="kachi_pos_tl">Top left</string>
-    <string name="kachi_pos_tr">Top right</string>
+    <string name="kachi_pos_tl">Left</string>
+    <string name="kachi_pos_tr">Right</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
     <string name="kachi_camera_left">Left camera</string>
     <string name="kachi_camera_right">Right camera</string>

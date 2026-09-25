@@ -136,7 +136,7 @@ data class TopStripConfig(
          * ⇒ phần lớn chip chỉ còn nhãn cụt, tức thanh trên **có chữ mà không đọc được** — tệ hơn là không bày.
          * Vì thế trần vẫn tồn tại, chỉ đổi số; nó là trần **đọc được**, không còn là trần *vừa khung*.
          */
-        const val CAP = 10
+        const val CAP = 16
 
         /** Ba chip TỔNG HỢP dựng sẵn — xem [TopStripChips]. */
         const val PM25 = "chip_pm25"
