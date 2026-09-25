@@ -93,10 +93,13 @@ class CameraSignalController(private val appCtx: Context) {
                 // Góc hiện overlay = pref TỪNG BÊN (`camera_pos_left/right`, mặc định trái→TL / phải→TR). KHÔNG suy
                 // từ `side`: owner chốt xi-nhan trái vẫn được hiện ở góc trên-phải (spec R4).
                 val corner = Prefs.cameraPos(appCtx, left = turn == Turn.LEFT)
-                // cameraId lấy thẳng từ view [ĐO owner: gương = id 1]. Picker đã dẹp (owner 2026-09-25) ⇒ không đọc
-                // pref camera_cam_* nữa (pref cũ có thể đè sai id).
-                val camId = view.cameraId
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId overlay $side góc=$corner")
+                // cameraId: đọc pref TỪNG BÊN (SL6/xe khác tự chọn cam nào lên — owner 2026-09-25 "cho chọn cam như cũ").
+                // Mặc định = view.cameraId (xe owner Seal: gương=id 1 fisheye). Nếu người dùng chọn cam KHÁC mặc định
+                // ⇒ KHÔNG crop (crop [0.25-0.35]/[0.65-0.75] chỉ đúng ảnh fisheye 5120×960 của Seal; xe khác cam khác).
+                val defId = view.cameraId
+                val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
+                val crop = if (camId == defId) view.crop else null
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) overlay $side góc=$corner")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
                 hal.open(view)
@@ -104,7 +107,7 @@ class CameraSignalController(private val appCtx: Context) {
                     corner = corner,
                     side = side,
                     onCluster = Prefs.cameraOnCluster(appCtx),
-                    crop = view.crop,
+                    crop = crop,
                 ) { surface -> runCatching { avm.open(camId, surface) } }
             }
         }

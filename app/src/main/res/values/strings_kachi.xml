@@ -676,6 +676,9 @@
     <string name="kachi_camera_pos_right">Xi-nhan phải hiện ở</string>
     <string name="kachi_pos_tl">Trái</string>
     <string name="kachi_pos_tr">Phải</string>
+    <string name="kachi_camera_pick_sub">Chọn camera cho mỗi bên xi-nhan (nếu cam không lên, thử id khác 0–5)</string>
+    <string name="kachi_camera_pick_left">Cam xi-nhan trái</string>
+    <string name="kachi_camera_pick_right">Cam xi-nhan phải</string>
     <string name="kachi_camera_cluster_sub">Overlay camera hiện trên cụm đồng hồ thay màn chính</string>
     <string name="kachi_camera_left">Camera trái</string>
     <string name="kachi_camera_right">Camera phải</string>

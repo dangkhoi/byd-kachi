@@ -81,6 +81,11 @@ class SettingsCarSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_pos_right), corners, bridge.cameraPosRight(),
         ) { v -> bridge.setCameraPos(left = false, v = v) })
+        // Chọn cameraId từng bên (owner 2026-09-25: cho SL6/xe khác tự dò cam nào lên — cam gương xe khác id khác).
+        val camIds = listOf("0" to "0", "1" to "1", "2" to "2", "3" to "3", "4" to "4", "5" to "5")
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pick_sub)))
+        body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_left), camIds, bridge.cameraCamLeft().toString()) { v -> bridge.setCameraCamLeft(v.toInt()) })
+        body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_right), camIds, bridge.cameraCamRight().toString()) { v -> bridge.setCameraCamRight(v.toInt()) })
     }
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────
