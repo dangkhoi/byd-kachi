@@ -10,14 +10,14 @@ class CameraSignalPolicyTest {
     @Test fun `xi nhan trai to camera trai + overlay ben trai`() {
         val t = CameraSignalPolicy.turnOf(left = true, right = false)
         assertEquals(CameraSignalPolicy.Turn.LEFT, t)
-        assertEquals(CameraSignalPolicy.CamView.FRONT_LEFT, CameraSignalPolicy.defaultView(t))
+        assertEquals(CameraSignalPolicy.CamView.MIRROR_LEFT, CameraSignalPolicy.defaultView(t))
         assertEquals(CameraSignalPolicy.Side.LEFT, CameraSignalPolicy.defaultSide(t))
     }
 
     @Test fun `xi nhan phai to camera phai + overlay ben phai`() {
         val t = CameraSignalPolicy.turnOf(left = false, right = true)
         assertEquals(CameraSignalPolicy.Turn.RIGHT, t)
-        assertEquals(CameraSignalPolicy.CamView.FRONT_RIGHT, CameraSignalPolicy.defaultView(t))
+        assertEquals(CameraSignalPolicy.CamView.MIRROR_RIGHT, CameraSignalPolicy.defaultView(t))
         assertEquals(CameraSignalPolicy.Side.RIGHT, CameraSignalPolicy.defaultSide(t))
     }
 

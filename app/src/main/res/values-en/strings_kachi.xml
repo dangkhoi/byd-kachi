@@ -655,9 +655,6 @@
     <string name="kachi_camera_pos_right">Right signal shows at</string>
     <string name="kachi_pos_tl">Top left</string>
     <string name="kachi_pos_tr">Top right</string>
-    <string name="kachi_camera_pick_sub">Pick camera per turn signal (left→left cam)</string>
-    <string name="kachi_camera_pick_left">Left signal</string>
-    <string name="kachi_camera_pick_right">Right signal</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
     <string name="kachi_camera_left">Left camera</string>
     <string name="kachi_camera_right">Right camera</string>
