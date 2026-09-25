@@ -94,13 +94,13 @@ class CameraSignalController(private val appCtx: Context) {
                 // từ `side`: owner chốt xi-nhan trái vẫn được hiện ở góc trên-phải (spec R4).
                 val corner = Prefs.cameraPos(appCtx, left = turn == Turn.LEFT)
                 // cameraId: đọc pref TỪNG BÊN (SL6/xe khác tự chọn cam nào lên — owner 2026-09-25 "cho chọn cam như cũ").
-                // Mặc định = view.cameraId (xe owner Seal: gương=id 1 fisheye). Nếu người dùng chọn cam KHÁC mặc định
-                // ⇒ KHÔNG crop (crop [0.25-0.35]/[0.65-0.75] chỉ đúng ảnh fisheye 5120×960 của Seal; xe khác cam khác).
+                // cameraId: picker TỪNG BÊN. defId = view.cameraId (Seal fisheye = id 1). SL6 fisheye = id 0
+                // (ảnh owner: cam 0 ra 4-in-1) ⇒ SL6 chọn id 0 trong Cài đặt. crop [0.25-0.35]/[0.65-0.75] là VÙNG
+                // GƯƠNG của ẢNH FISHEYE — đúng cho CẢ id 0 (SL6) lẫn id 1 (Seal), nên LUÔN áp view.crop (đừng gate
+                // theo camId: gate camId==defId từng chặn SL6-chọn-id-0 khỏi crop = REGRESSION 2.42→2.44 khi đổi id 0→1).
                 val defId = view.cameraId
                 val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
-                // crop = view.crop khi dùng cam MẶC ĐỊNH (Seal: gương=id 1 fisheye, crop vùng trái/phải chạy OK).
-                // Chọn cam KHÁC mặc định ⇒ bỏ crop (crop chỉ đúng trên fisheye nguồn của view đó).
-                val crop = if (camId == defId) view.crop else null
+                val crop = view.crop
                 Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
