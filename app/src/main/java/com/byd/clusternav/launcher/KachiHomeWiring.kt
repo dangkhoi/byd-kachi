@@ -340,6 +340,12 @@ internal fun Activity.goImmersiveWindow() {
             or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
             or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         )
+    // #10 fix (owner 2026-09-25 "lệch khung giữa, phải nhấn Home mới fix"): ROM DiLink dựng taskbar SAU khi Kachi
+    // lên → window bounds đổi → workspace đo theo bounds có-taskbar rồi KHÔNG remeasure khi taskbar ẩn ⇒ nội dung
+    // lệch. Nhấn Home ép relayout nên hết. Ta ép luôn: sau khi ẩn taskbar, requestLayout cả cây view (như nhấn
+    // Home) — off-car no-op vô hại.
+    window.decorView.requestLayout()
+    (window.decorView as? android.view.ViewGroup)?.getChildAt(0)?.requestLayout()
 }
 
 /**
