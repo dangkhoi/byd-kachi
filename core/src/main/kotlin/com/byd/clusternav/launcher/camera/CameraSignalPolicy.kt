@@ -49,20 +49,36 @@ object CameraSignalPolicy {
     fun isCorner(v: String): Boolean = v == CORNER_TOP_LEFT || v == CORNER_TOP_RIGHT
 
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
-    enum class CamView(val outputState: Int, val cameraId: Int, val labelVi: String, val labelEn: String) {
-        // cameraId = tham số AVMCamera.open (đoán ban đầu; đổi được trên xe qua pref camera_cam_left/right).
+    /**
+     * Một góc camera. `cameraId` = tham số AVMCamera.open. `crop` = vùng cắt (x0,y0,x1,y1 chuẩn hoá 0..1) của
+     * ảnh camera; `null` = hiện nguyên khung.
+     *
+     * [ĐO xe 2026-09-25] AVMCamera **CHỈ mở được id 0 (fisheye 4-in-1, 5120×960) và id 1 (cam trước)**; id 2/3/4/5
+     * KHÔNG lên hình. Cam GƯƠNG trái/phải KHÔNG phải cameraId riêng — chúng là **CROP vùng trái/phải của ảnh
+     * fisheye id 0** (RE kinex `C0094o`: pano crop trái x[0.25..0.35], phải x[0.65..0.75] của ảnh 5120×960).
+     */
+    enum class CamView(
+        val outputState: Int,
+        val cameraId: Int,
+        val labelVi: String,
+        val labelEn: String,
+        val crop: FloatArray? = null,
+    ) {
+        // Gương = fisheye id 0 + crop vùng trái/phải (kinex pano crop).
+        MIRROR_LEFT(1, 0, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f)),
+        MIRROR_RIGHT(2, 0, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f)),
         FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
         FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
         REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),
         REAR_RIGHT(4, 3, "Sau-phải", "Rear-right"),
         LEFT_FRONT(13, 0, "Trái (trước)", "Left (front)"),
-        RIGHT_FRONT(14, 1, "Phải (trước)", "Right (front)"),
+        RIGHT_FRONT(14, 1, "Phải (trước)", "Right (front)");
     }
 
-    /** Mặc định: xi-nhan trái → camera FRONT_LEFT; phải → FRONT_RIGHT (owner có thể đổi loại trong Setting). */
+    /** Mặc định: xi-nhan trái → cam GƯƠNG trái (crop fisheye); phải → gương phải — owner đổi được qua picker. */
     fun defaultView(turn: Turn): CamView? = when (turn) {
-        Turn.LEFT -> CamView.FRONT_LEFT
-        Turn.RIGHT -> CamView.FRONT_RIGHT
+        Turn.LEFT -> CamView.MIRROR_LEFT
+        Turn.RIGHT -> CamView.MIRROR_RIGHT
         Turn.NONE -> null
     }
 

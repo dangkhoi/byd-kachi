@@ -72,8 +72,8 @@ fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(
 fun ClusterNavBridge.cameraPosLeft(): String = Prefs.cameraPos(app, left = true)
 fun ClusterNavBridge.cameraPosRight(): String = Prefs.cameraPos(app, left = false)
 fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos(app, left, v)
-fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 0)
-fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
+fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 4)
+fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 5)
 fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)
 fun ClusterNavBridge.setCameraCamRight(v: Int) = Prefs.setCameraCamId(app, left = false, v)
 

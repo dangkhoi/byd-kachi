@@ -57,8 +57,8 @@ class CameraOverlayView(private val appCtx: Context) {
         const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
         const val WRAP = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 
-        /** Cạnh overlay VUÔNG = 26% CHIỀU CAO màn (owner 2026-09-25: cam ra hình vuông, không ngang). */
-        const val SQUARE_RATIO = 0.26f
+        /** Cạnh overlay VUÔNG = 50% CHIỀU CAO màn (owner 2026-09-25: to gấp 2 so với 26% trước). */
+        const val SQUARE_RATIO = 0.50f
 
         /** Lề trên màn CHÍNH = 14% chiều cao ⇒ nằm hẳn DƯỚI thanh trên (trước bị đè header). */
         const val MAIN_TOP_RATIO = 0.14f
@@ -83,6 +83,7 @@ class CameraOverlayView(private val appCtx: Context) {
         corner: String,
         side: Side? = null,
         onCluster: Boolean = false,
+        crop: FloatArray? = null,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -98,9 +99,10 @@ class CameraOverlayView(private val appCtx: Context) {
                 isOpaque = true
                 surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                     override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {
+                        applyCrop(this@apply, w2, h2, crop)
                         runCatching { onSurfaceReady(Surface(st)) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                     }
-                    override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {}
+                    override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) { applyCrop(this@apply, w2, h2, crop) }
                     override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture) = true
                     override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
                 }
@@ -153,6 +155,28 @@ class CameraOverlayView(private val appCtx: Context) {
             textSize = 12f
             setPadding(pad, pad, pad, pad)
         }
+    }
+
+    /**
+     * Crop vùng ảnh camera cho TextureView. [crop] = (x0,y0,x1,y1) chuẩn hoá 0..1 của ẢNH NGUỒN cần hiện; `null`
+     * hoặc toàn khung ⇒ không transform. Cam gương = crop vùng trái/phải của fisheye 4-in-1 (RE kinex).
+     *
+     * TextureView mặc định căng SurfaceTexture lấp đầy view. Để chỉ hiện vùng [x0,x1]×[y0,y1]: phóng
+     * `1/(x1-x0)` × `1/(y1-y0)` quanh gốc rồi dịch để vùng crop về (0,0). `setTransform` là ma trận trên toạ độ
+     * VIEW (px), nên nhân theo `vw`/`vh`.
+     */
+    private fun applyCrop(tv: android.view.TextureView, vw: Int, vh: Int, crop: FloatArray?) {
+        if (crop == null || crop.size < 4 || vw <= 0 || vh <= 0) return
+        val (x0, y0, x1, y1) = crop
+        val cw = (x1 - x0).coerceAtLeast(0.001f)
+        val ch = (y1 - y0).coerceAtLeast(0.001f)
+        if (cw >= 0.999f && ch >= 0.999f) return   // toàn khung ⇒ khỏi transform
+        val m = android.graphics.Matrix()
+        val sx = 1f / cw
+        val sy = 1f / ch
+        m.setScale(sx, sy)
+        m.postTranslate(-x0 * sx * vw, -y0 * sy * vh)
+        tv.setTransform(m)
     }
 
     /** Bo góc cây view: outline tròn + [View.setClipToOutline]. Xem ⚠ ở KDoc lớp về giới hạn với lớp video. */

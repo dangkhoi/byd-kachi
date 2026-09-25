@@ -92,9 +92,11 @@ class CameraSignalController(private val appCtx: Context) {
                 // Góc hiện overlay = pref TỪNG BÊN (`camera_pos_left/right`, mặc định trái→TL / phải→TR). KHÔNG suy
                 // từ `side`: owner chốt xi-nhan trái vẫn được hiện ở góc trên-phải (spec R4).
                 val corner = Prefs.cameraPos(appCtx, left = turn == Turn.LEFT)
-                // cameraId đổi được trên xe (chưa chắc map — thử): pref camera_cam_left/right, mặc định theo CamView.
-                val camId = if (turn == Turn.LEFT) Prefs.cameraCamId(appCtx, left = true, view.cameraId)
-                            else Prefs.cameraCamId(appCtx, left = false, view.cameraId)
+                // cameraId: cam có CROP (gương = crop fisheye) BUỘC dùng id của view (0=fisheye) — crop chỉ đúng
+                // trên ảnh nguồn đó, pref KHÔNG được đè (nếu đè sang id 1 thì crop vào cam trước = sai). Cam KHÔNG
+                // crop (trước/sau) mới cho pref camera_cam_left/right đổi id để dò trên xe.
+                val camId = if (view.crop != null) view.cameraId
+                            else Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, view.cameraId)
                 Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId overlay $side góc=$corner")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
@@ -103,6 +105,7 @@ class CameraSignalController(private val appCtx: Context) {
                     corner = corner,
                     side = side,
                     onCluster = Prefs.cameraOnCluster(appCtx),
+                    crop = view.crop,
                 ) { surface -> runCatching { avm.open(camId, surface) } }
             }
         }
