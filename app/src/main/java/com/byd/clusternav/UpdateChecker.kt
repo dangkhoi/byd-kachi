@@ -6,6 +6,7 @@ import com.byd.clusternav.carexec.LocalInstallOutcome
 import com.byd.clusternav.carexec.LocalShellFailure
 import com.byd.clusternav.carexec.LocalShellRetry
 import android.content.Context
+import android.util.Log
 import org.json.JSONArray
 import java.io.File
 import com.byd.clusternav.net.HttpConn
@@ -26,6 +27,8 @@ import com.byd.clusternav.net.HttpConn
  * này thấy được thì bản phát hành phải có trên nhánh này (mặc định nhánh mặc định của repo).
  */
 object UpdateChecker {
+
+    private const val TAG = "UpdateChecker"
 
     /**
      * L2 (2026-09-13) — kênh cập nhật RIÊNG của Kachi: repo `dangkhoi/byd-kachi` (đúng remote của mã này), thư mục
@@ -89,27 +92,61 @@ object UpdateChecker {
      * Tải APK về thư mục riêng của app. Trả file, hoặc null nếu lỗi.
      * @param onProgress phần trăm 0..100 (hoặc -1 khi không biết tổng cỡ)
      */
-    fun download(ctx: Context, url: String, onProgress: (Int) -> Unit): File? = runCatching {
-        val dir = File(ctx.applicationContext.filesDir, "update").apply { mkdirs() }
-        dir.listFiles()?.forEach { runCatching { it.delete() } }   // chỉ giữ 1 bản đang tải
-        val out = File(dir, url.substringAfterLast('/').ifBlank { "update.apk" })
+    fun download(ctx: Context, url: String, onProgress: (Int) -> Unit): File? {
+        val out = runCatching {
+            val dir = File(ctx.applicationContext.filesDir, "update").apply { mkdirs() }
+            dir.listFiles()?.forEach { runCatching { it.delete() } }   // chỉ giữ 1 bản đang tải
+            File(dir, url.substringAfterLast('/').ifBlank { "update.apk" })
+        }.getOrElse { Log.w(TAG, "download: không chuẩn bị được thư mục (${it.javaClass.simpleName}: ${it.message})"); return null }
         // Một cửa duy nhất mở kết nối (CLAUDE.md §4.1 DRY) — cùng thiết lập với đường tải mô hình nhận dạng
         // của V1 pha NGHE. Thời hạn/chuyển hướng/nhãn giữ NGUYÊN như bản đang chạy trên xe; chỗ này chỉ đổi
         // NƠI KHAI chúng, không đổi giá trị nào (CLAUDE.md §6 — không đảo đường đã chạy tốt).
-        val conn = HttpConn.open(url, readTimeoutMs = 60_000)
-        conn.inputStream.use { input ->
-            val total = conn.contentLength
-            out.outputStream().use { output ->
-                val buf = ByteArray(64 * 1024); var read = 0L; var n: Int
-                while (input.read(buf).also { n = it } > 0) {
-                    output.write(buf, 0, n); read += n
-                    onProgress(if (total > 0) ((read * 100) / total).toInt() else -1)
+        val conn = runCatching { HttpConn.open(url, readTimeoutMs = 60_000) }
+            .getOrElse { Log.w(TAG, "download: không mở được kết nối (${it.javaClass.simpleName}: ${it.message}) url=${url.take(80)}"); return null }
+        return fetchTo(
+            out = out,
+            open = { conn.inputStream to conn.contentLength.toLong() },
+            close = { conn.disconnect() },
+            onProgress = onProgress,
+            onError = { Log.w(TAG, "download failed (${it.javaClass.simpleName}: ${it.message}) url=${url.take(80)}") },
+        )
+    }
+
+    /**
+     * Chép luồng [open] vào [out], báo tiến độ, **luôn** [close] (hardening 2026-09-25 · audit F3 [P2]: trước đây
+     * `disconnect()` không nằm `finally` ⇒ ném là rò socket; và lỗi thành `null` im ⇒ UI chỉ nói "tải thất bại").
+     * Hỏng ⇒ [onError] một lần, **xoá tệp cụt** (không để `.apk` nửa chừng trong `files/update/`), trả `null`.
+     * THUẦN (không Android) ⇒ `UpdateCheckerHardeningTest` khoá off-device.
+     *
+     * @param open trả (luồng, tổng byte hoặc ≤0 nếu không biết); [onProgress] nhận 0..100 hoặc -1 khi không biết.
+     */
+    internal fun fetchTo(
+        out: File,
+        open: () -> Pair<java.io.InputStream, Long>,
+        close: () -> Unit,
+        onProgress: (Int) -> Unit,
+        onError: (Throwable) -> Unit,
+    ): File? {
+        try {
+            val (input, total) = open()
+            input.use { inp ->
+                out.outputStream().use { output ->
+                    val buf = ByteArray(64 * 1024); var read = 0L; var n: Int
+                    while (inp.read(buf).also { n = it } > 0) {
+                        output.write(buf, 0, n); read += n
+                        onProgress(if (total > 0) ((read * 100) / total).toInt() else -1)
+                    }
                 }
             }
+            return out.takeIf { it.length() > 0 }
+        } catch (t: Throwable) {
+            onError(t)
+            runCatching { out.delete() }
+            return null
+        } finally {
+            runCatching { close() }
         }
-        conn.disconnect()
-        out.takeIf { it.length() > 0 }
-    }.getOrNull()
+    }
 
     /**
      * Cài APK qua dadb loopback. Trả chuỗi kết quả để hiển thị.
@@ -128,12 +165,44 @@ object UpdateChecker {
      */
     fun install(ctx: Context, apk: File): String {
         val app = ctx.applicationContext
-        UpdateRelaunch.schedule(app) // arm BEFORE install: a successful -r kills us mid-call.
-        val outcome = LocalDeviceShell.installApk(AdbKeys.ensure(app), apk, "-r", socketTimeoutMs = LocalShellRetry.BACKGROUND_READ_CAP.socketTimeoutMs)
+        return installWith(
+            apkPath = apk.absolutePath,
+            arm = { UpdateRelaunch.schedule(app) },
+            disarm = { UpdateRelaunch.cancel(app) },
+            keys = { AdbKeys.ensure(app) },
+            installApk = { k -> LocalDeviceShell.installApk(k, apk, "-r", socketTimeoutMs = LocalShellRetry.BACKGROUND_READ_CAP.socketTimeoutMs) },
+            onKeysError = { Log.w(TAG, "install: không có khoá adb (${it.javaClass.simpleName}: ${it.message})") },
+        )
+    }
+
+    /**
+     * Trình tự cài, THUẦN (mọi đường ra tiêm vào) ⇒ `UpdateCheckerHardeningTest` khoá off-device.
+     *
+     * Hardening 2026-09-25 · audit F4 [P1]: `AdbKeys.ensure` **ném** (`check(rename…)` → `IllegalStateException`;
+     * `AdbKeyPair.generate` → `IOException` khi `filesDir` đầy) mà chỗ gọi là `Thread({ … }, "update-download")`
+     * TRẦN ⇒ ngoại lệ thoát ⇒ **launcher (HOME) chết giữa lúc lái**. Cùng khuôn đã vá ở
+     * `ClusterNavBridgeHome.kt` (bọc `AdbKeys.ensure` → `NoShellChannel(UNKNOWN)`); nay chỗ này cũng vậy:
+     * khoá hỏng ⇒ [disarm] (không có gì được thay ⇒ không relaunch) + câu "không kiểm tra/cài được" lên UI.
+     */
+    internal fun installWith(
+        apkPath: String,
+        arm: () -> Unit,
+        disarm: () -> Unit,
+        keys: () -> dadb.AdbKeyPair,
+        installApk: (dadb.AdbKeyPair) -> LocalInstallOutcome,
+        onKeysError: (Throwable) -> Unit,
+    ): String {
+        arm() // arm BEFORE install: a successful -r kills us mid-call.
+        val k = runCatching(keys).getOrElse {
+            onKeysError(it)
+            disarm()
+            return installMessage(LocalInstallOutcome.NoShellChannel(LocalShellFailure.UNKNOWN), apkPath)
+        }
+        val outcome = installApk(k)
         // Chỉ MỘT chỗ dựng câu ([installMessage]) — kể cả câu thành công. Để nhánh Ok tự viết lại câu ở đây là
         // hai bản sao của một chuỗi, đúng thứ lần sau sẽ lệch nhau.
-        if (outcome !is LocalInstallOutcome.Ok) UpdateRelaunch.cancel(app) // nothing was replaced → don't relaunch.
-        return installMessage(outcome, apk.absolutePath)
+        if (outcome !is LocalInstallOutcome.Ok) disarm() // nothing was replaced → don't relaunch.
+        return installMessage(outcome, apkPath)
     }
 
     /**

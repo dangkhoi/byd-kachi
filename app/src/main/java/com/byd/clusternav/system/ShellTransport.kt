@@ -95,9 +95,17 @@ class ShellTransport private constructor(context: Context) {
         }
     }
 
-    /** `allOutput` of [cmd], or "" if BOTH attempts failed — byte-for-byte the legacy `DadbShell.run()` contract. */
+    /**
+     * `allOutput` of [cmd], or "" if BOTH attempts failed — byte-for-byte the legacy `DadbShell.run()` contract.
+     *
+     * Hardening 2026-09-25 (audit F1): hỏng thì vẫn trả `""` (consumer không đổi), nhưng **ghi một dòng W** có lệnh
+     * rút gọn + lớp lỗi, tiết chế theo lớp lỗi ([ShellRunFailureLog]) để dadb chết không thành bão log.
+     */
     fun run(cmd: String, priority: MutationPriority = MutationPriority.NORMAL): String =
-        runCatching { exec(cmd, priority).allOutput }.getOrDefault("")
+        runCatching { exec(cmd, priority).allOutput }.getOrElse { t ->
+            ShellRunFailureLog.line(cmd, t, android.os.SystemClock.elapsedRealtime())?.let { android.util.Log.w(TAG, it) }
+            ""
+        }
 
     /** One-command seam for [com.byd.clusternav.launcher.ShellAppLauncher] / reflow / VdAppHost. */
     val seam: (String) -> String = { run(it) }
@@ -112,6 +120,8 @@ class ShellTransport private constructor(context: Context) {
     private fun <T> onOwner(priority: MutationPriority, body: () -> T): T = owner.submit(priority, body)
 
     companion object {
+        private const val TAG = "ShellTransport"
+
         /** Timeout kết nối/đọc cho dadb (P0-2). Cùng giá trị proven của shell runner đánh giá trong `car-integration`. */
         private const val CONNECT_TIMEOUT_MS = 3_000
         private const val SOCKET_TIMEOUT_MS = 10_000

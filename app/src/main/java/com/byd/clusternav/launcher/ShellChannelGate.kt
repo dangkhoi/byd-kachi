@@ -278,7 +278,10 @@ internal object ShellApprovalProbe {
 
     /** `null` = kênh lên được; khác `null` = lý do đã phân loại. ⚠ CHẶN — chỉ gọi trên thread nền. */
     fun probe(ctx: Context): LocalShellFailure? {
-        val keys = runCatching { AdbKeys.ensure(ctx) }.getOrNull() ?: return LocalShellFailure.UNKNOWN
+        // Audit F7 (2026-09-25): "sinh khoá hỏng" từng bị gộp im vào UNKNOWN — cùng bệnh F4 (đi sửa nhầm kênh).
+        val keys = runCatching { AdbKeys.ensure(ctx) }
+            .onFailure { android.util.Log.w("ShellApprovalProbe", "AdbKeys.ensure: ${it.javaClass.simpleName}: ${it.message}") }
+            .getOrNull() ?: return LocalShellFailure.UNKNOWN
         val result = LocalDeviceShell.sessionResult(keys, FirstOpenApproval.PROBE) { sh ->
             sh(PROBE_CMD).output.contains(TOKEN)
         }

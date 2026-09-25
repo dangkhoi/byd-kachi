@@ -51,11 +51,12 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 </head>
 <body><div class="wrap">
 <h1>Cầu kiểm thử qua adb (T-BRIDGE)</h1>
-<p class="muted">Slug: <code>kachi-test-bridge</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt</span></p>
+<p class="muted">Slug: <code>kachi-test-bridge</code> · Branch <code>main</code> · <span class="pill ok">Trạng thái: Đã ship 1.53 → 2.65 (dùng hằng ngày) — owner duyệt sau (autonomous)</span></p>
 <p class="muted">Tuân thủ <code>.kiro/steering/{project-context,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code> và <code>CLAUDE.md</code> §2 §4 §5 §8 §10 §11 §15.</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass doc — 2026-09-25</b>: đổi pill "Draft / chờ duyệt" → "Đã ship 1.53 → 2.65 — owner duyệt sau (autonomous)". Cầu đã dùng hằng ngày từ 1.5x (13+ lệnh, thêm <code>ctl</code>/<code>hal</code>/<code>sweep</code>/<code>tts</code>/<code>kws</code>…; gọi tường minh <code>-n</code> từ 1.85); bảng lệnh trong spec thiếu các lệnh thêm sau (backlog DOC-TBRIDGE-TABLE). Spec chưa được owner duyệt chính thức — ghi để hết mâu thuẫn với backlog (R2.4).</li>
 <li><b>Pass 0 — 2026-09-14</b>: Khởi tạo + implement. Owner: <i>“sẽ adb vào xe, nên chuẩn bị toàn bộ script test automation trên xe thông qua adb, log liếc các loại”</i>. Đã dựng receiver + 13 lệnh + công tắc 60 phút; 5 module 0 đỏ; [ĐO] máy ảo <code>emulator-5554</code> trên bản 1.53 (54).</li>
 <li><b>Pass 1 — 2026-09-14</b>: Thêm lệnh <b><code>ctl</code></b> (bắn MỘT control theo mã registry) + <b>§9 grab-list HAL</b> (R9). Owner: <i>“làm sao test full và ghi nhận lại”</i>. Đi qua đúng applier <code>CarControlAdapter.actByKind</code>, đọc kết quả HAL trong tiến trình qua <code>HalWriteProbe</code> (route · device · accepted · hal_line), cổng CONFIRM cho control mở/khoá thân xe (<code>CtlSafetyPolicy</code>). Kèm script <code>scripts/vehicle/kachi/71-hal-sweep.sh</code>. [ĐO] <code>emulator-5554</code> bản 1.54 (55): 64 control quét ra route/device đúng, off-car ⇒ <code>accepted:false · hal_line:off_car</code>.</li>
 </ul>

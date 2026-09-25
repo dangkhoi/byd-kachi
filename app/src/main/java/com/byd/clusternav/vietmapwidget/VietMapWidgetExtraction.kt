@@ -16,7 +16,6 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 // §7 — MỘT nguồn sự thật cho tên gói (sửa 08-23 vòng 2b). Trước đây mỗi file widget tự chép chuỗi
 // "vn.vietmap.live"; `NavPackageRosterSyncTest` không canh tới đây nên bản chép này trôi im lặng.
@@ -37,6 +36,18 @@ internal class VietMapWidgetExtraction(context: Context) {
     @Volatile var remoteResources: Resources? = null
         private set
 
+    /**
+     * Lượt băm gần nhất của MỘT icon: khúc pixel **và** chuỗi hash của đúng khúc ấy, trong MỘT đối tượng bất biến.
+     * Hai field rời (`lastPixels` + `lastHash`) sẽ xé được cặp: chỗ đọc thấy pixel MỚI rồi mới đọc hash nên có thể
+     * ghép quyết định "giống lượt trước" của bản này với hash của bản kia. Một tham chiếu `@Volatile` ⇒ một lần đọc,
+     * cặp luôn khớp. Xem KDoc [hashAlerts].
+     */
+    private class HashMemo(val pixels: IntArray?, val hash: String?)
+
+    // Ghi ở luồng `widget-hash` (tuần tự — executor một luồng), đọc ở main. Mảng KHÔNG bị sửa sau khi công bố.
+    @Volatile private var firstMemo: HashMemo? = null
+    @Volatile private var secondMemo: HashMemo? = null
+
     fun reloadRemoteResources() {
         remoteResources = try {
             appContext.packageManager.getResourcesForApplication(VIETMAP_PACKAGE)
@@ -45,8 +56,15 @@ internal class VietMapWidgetExtraction(context: Context) {
         }
     }
 
+    /**
+     * Gọi khi bridge thôi nghe (`stop()`): nhả `Resources` của gói VietMap **và** khúc pixel đang giữ để so
+     * ([HashMemo], ≤ 2 × 256 KiB — [SOÁT Pass 2 · 2026-09-26]). Không dùng [close] ở đường này: [close] tắt hẳn
+     * executor, mà bridge còn `start()` lại được ⇒ lượt hash sau sẽ bị `RejectedExecutionException`.
+     */
     fun releaseResources() {
         remoteResources = null
+        firstMemo = null
+        secondMemo = null
     }
 
     fun extractSpeed(root: AppWidgetHostView): VietMapWidgetRawValues? {
@@ -113,24 +131,58 @@ internal class VietMapWidgetExtraction(context: Context) {
     }
 
     /**
-     * Submit drawable hashing work to background thread. Returns a future pair of (firstHash, secondHash).
-     * Caller must capture the bitmap data on main thread (drawable → pixel array) then hash off-thread.
+     * Hash hai icon cảnh báo và trao kết quả qua [onResult]. Chụp pixel vẫn ở main (drawable đòi main), SHA-256 ở
+     * luồng nền.
+     *
+     * ⚠ [onResult] chạy trên **luồng `widget-hash`**, TRỪ khi cả hai icon y nguyên như lượt trước — lúc đó không có
+     * việc gì phải làm nền nên nó được gọi **ngay trên luồng gọi** (main). Chỗ gọi vì thế phải tự `post` về main
+     * (và phải chịu được lượt gọi đồng bộ này: `VietMapWidgetBridge` dùng `main.post`, an toàn ở cả hai lối).
+     *
+     * Giá: mỗi bên GIỮ khúc pixel gần nhất để so ([HashMemo]) — ≤ [MAX_HASH_EDGE]² × 4 B mỗi bên (≤ 256 KiB, icon
+     * cảnh báo thật nhỏ hơn nhiều bậc), nhả ở [close]. Đó là đổi RAM lấy CPU có chủ ý: xem mục 2 dưới đây.
+     *
+     * ## [SOÁT Pass 1 · 2026-09-25 · P2] hai thứ đã bỏ
+     *  1. **Luồng mỗi lượt cập nhật.** Trước đây hàm này trả `Future` và chỗ gọi dựng `Thread { future.get() }`
+     *     cho MỖI lượt VietMap đẩy RemoteViews (≈1 Hz khi đang dẫn) — một luồng mới mỗi giây chỉ để *chờ*.
+     *     Nay kết quả tự chảy về qua [onResult] từ chính luồng đã tính, không ai phải chờ.
+     *  2. **Hash lại ảnh không đổi.** Icon cảnh báo đổi rất thưa, còn RemoteViews thì đẩy liên tục:
+     *     [ĐO máy ảo 2026-09-25, `top -H`] luồng `widget-hash` ăn 2,4 % một lõi liên tục vì băm lại tới
+     *     256×256 px mỗi lượt. Nay so **đúng từng pixel** với lượt trước ([samePixels], O(n) so sánh Int, rẻ hơn
+     *     SHA-256 nhiều bậc) — giống hệt ⇒ dùng lại chuỗi hash cũ; giống CẢ HAI bên ⇒ không cần lượt nền nào.
+     *     So bằng nội dung nên không có nguy cơ "ảnh đổi mà hash cũ": hash chỉ được dùng lại khi pixel y nguyên.
+     *
+     * Bộ nhớ đệm ([HashMemo]) chỉ GHI từ luồng `widget-hash` và ĐỌC từ main: đọc cũ nhất cũng chỉ làm ta băm lại
+     * một lượt, không bao giờ trả hash của một ảnh khác (quyết định + hash lấy từ CÙNG một ảnh chụp bất biến).
      */
-    fun hashAlertsAsync(root: AppWidgetHostView): Future<Pair<String?, String?>> {
+    fun hashAlerts(root: AppWidgetHostView, onResult: (String?, String?) -> Unit) {
         val firstImage = view(root, VietMapWidgetViewNames.FIRST_ALERT_IMAGE) as? ImageView
         val secondImage = view(root, VietMapWidgetViewNames.SECOND_ALERT_IMAGE) as? ImageView
         // Capture pixel arrays on main thread (drawable access requires it), hash off-thread.
         val firstPixels = firstImage?.let { capturePixels(it) }
         val secondPixels = secondImage?.let { capturePixels(it) }
-        return hashExecutor.submit<Pair<String?, String?>> {
-            val h1 = firstPixels?.let { computeHash(it) }
-            val h2 = secondPixels?.let { computeHash(it) }
-            h1 to h2
+        // MỘT lần đọc cho mỗi bên ⇒ "giống lượt trước?" và hash tái dùng luôn thuộc cùng một ảnh chụp.
+        val firstHit = firstMemo?.takeIf { samePixels(firstPixels, it.pixels) }
+        val secondHit = secondMemo?.takeIf { samePixels(secondPixels, it.pixels) }
+        if (firstHit != null && secondHit != null) {
+            onResult(firstHit.hash, secondHit.hash)   // không đổi bên nào ⇒ không cần lượt nền
+            return
+        }
+        hashExecutor.execute {
+            runCatching {
+                val h1 = if (firstHit != null) firstHit.hash else firstPixels?.let { computeHash(it) }
+                val h2 = if (secondHit != null) secondHit.hash else secondPixels?.let { computeHash(it) }
+                if (firstHit == null) firstMemo = HashMemo(firstPixels, h1)
+                if (secondHit == null) secondMemo = HashMemo(secondPixels, h2)
+                onResult(h1, h2)
+            }.onFailure { Log.w(TAG, "alert hash failed: ${it.javaClass.simpleName}: ${it.message}") }
         }
     }
 
     fun close() {
         hashExecutor.shutdownNow()
+        // Nhả khúc pixel đang giữ để so (≤ 2 × 256 KiB) — bridge có thể `close()` rồi sống tiếp mà không nghe nữa.
+        firstMemo = null
+        secondMemo = null
     }
 
     // --- Private helpers ---
@@ -156,6 +208,16 @@ internal class VietMapWidgetExtraction(context: Context) {
             Log.w(TAG, "pixel capture failed: ${error.javaClass.simpleName}")
             null
         }
+    }
+
+    /**
+     * Khúc pixel [now] có y nguyên như lượt trước ([last]) không — `null` ↔ `null` cũng là "không đổi" (vẫn không có
+     * drawable). So NỘI DUNG (không phải `hashCode`) để không bao giờ dùng lại hash của một ảnh khác. Xem [hashAlerts].
+     */
+    private fun samePixels(now: IntArray?, last: IntArray?): Boolean = when {
+        now == null -> last == null
+        last == null -> false
+        else -> now.contentEquals(last)
     }
 
     private fun computeHash(pixels: IntArray): String {

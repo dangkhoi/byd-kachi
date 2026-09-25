@@ -35,6 +35,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *
  * Tier OVERDRIVE/DASHCAST ⇒ chấm mờ "chưa kiểm trên xe" (cả hai loại; U10 — vẽ bằng [PickerBadge.dot], xem
  * [withBadge]). **KHÔNG gate an toàn** — mọi ô bấm được bất kể tốc độ/số (owner bỏ gate 2026-09-10).
+ *
+ * **Luồng (P1-main · 2026-09-25):** cú chạm đổi UI lạc quan NGAY trên luồng chính, còn lượt ghi HAL (và lượt đọc
+ * của STEP) đi qua [writer] xuống làn tuần tự nền; hỏng ⇒ về giá trị cũ. Xem KDoc [ControlTileWrite].
  */
 class ControlTileFactory(
     private val ctx: Context,
@@ -50,6 +53,8 @@ class ControlTileFactory(
      * Mặc định `true` ⇒ thanh nút và ô giữa màn **không đổi một pixel**.
      */
     private val icons: Boolean = true,
+    /** Đường ghi HAL của ô đơn — nền, tuần tự (test tiêm bản đồng bộ). */
+    private val writer: ControlTileWrite = ControlTileWrite(warn = { m, t -> Log.w(TAG_WRITE, m, t) }),
 ) {
 
     // ── HÀNH ĐỘNG ───────────────────────────────────────────────────────────────────────────────────────
@@ -103,8 +108,12 @@ class ControlTileFactory(
         look(def, tile, icon, label, on(def))
         tile.setOnClickListener {
             state.touch(def.id)   // ân hạn: đừng để nhịp poll nháy ngược ngay sau khi vừa bấm
-            val nv = !state.isOn(def.id); state.setOn(def.id, nv)
-            look(def, tile, icon, label, on(def)); control().toggle(def.id, nv)
+            val old = state.isOn(def.id); val nv = !old; state.setOn(def.id, nv)
+            look(def, tile, icon, label, on(def))
+            // Ghi HAL xuống nền; hỏng ⇒ về giá trị cũ — CHỈ khi cú bấm sau chưa đè (xem KDoc ControlTileWrite).
+            writer.submit(def.id, { control().toggle(def.id, nv) }, { state.isOn(def.id) == nv }, { control().writeFailureIsReal(def.id) }) {
+                state.setOn(def.id, old); tile.post { look(def, tile, icon, label, on(def)) }
+            }
         }
         // Đọc lại trạng thái THẬT của xe (0/1) — bỏ qua trong cửa sổ ân hạn, và chỉ đổi khi khác để không vẽ thừa.
         return refresh@{ car ->
@@ -135,12 +144,20 @@ class ControlTileFactory(
         // gió ở màn BYD gốc thì bảng kia không biết, nên nó vẫn giữ mặc định (gió 4 · nhiệt 22) và một cú bấm "+" nhảy
         // mấy nấc cùng lúc — đúng lỗi tester 1.66 báo. Đọc `null` (off-car · nút chưa có đường đọc) ⇒ lùi về hành vi
         // 1.68. MỘT lượt đọc cho MỘT cú chạm, KHÔNG đọc lúc dựng ô hay theo nhịp vẽ (ngân sách [ĐO xe 1.68] 33 lượt
-        // đọc HAL/phút) — nên nó chạy trên luồng vẽ y như lượt `step()` ghi ngay sau, không đổi mô hình luồng tệp này.
+        // đọc HAL/phút). P1-main: cả ĐỌC lẫn GHI đi cùng một lượt trên làn nền ([writer]); chữ/màu đổi qua `post`
+        // ngay sau khi đọc xong (trước khi ghi); ghi hỏng ⇒ về con số cũ nếu cú bấm sau chưa đè.
         fun nudge(delta: Int) {
             state.touch(def.id)
-            val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
-            val nv = def.clamp(base + delta); state.setValue(def.id, nv)
-            vtext.text = ControlVisuals.stepText(def, nv); look(def, tile, icon, label, nv); control().step(def.id, nv)
+            val old = state.value(def); var nv = old
+            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v); look(def, tile, icon, label, v) }
+            writer.submit(def.id, act = {
+                val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
+                val v = def.clamp(base + delta); nv = v; state.setValue(def.id, v)
+                tile.post { draw(v) }
+                control().step(def.id, v)
+            }, stillMine = { state.value(def) == nv }, failureIsReal = { control().writeFailureIsReal(def.id) }) {
+                state.setValue(def.id, old); tile.post { draw(old) }
+            }
         }
         minus.setOnClickListener { nudge(-def.step) }
         plus.setOnClickListener { nudge(def.step) }
@@ -188,8 +205,11 @@ class ControlTileFactory(
         show(state.sel(def.id).coerceIn(0, levels - 1))
         tile.setOnClickListener {
             state.touch(def.id)
-            val next = ControlTileLogic.nextSelectIndex(state.sel(def.id), levels)
-            state.setSel(def.id, next); show(next); control().coverLevel(def.id, next)
+            val old = state.sel(def.id); val next = ControlTileLogic.nextSelectIndex(old, levels)
+            state.setSel(def.id, next); show(next)
+            writer.submit(def.id, { control().coverLevel(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
+                state.setSel(def.id, old); tile.post { show(old) }
+            }
         }
         // WP2 · R2.3 — đang mở ⇒ ô mang màu nhấn; đọc lại xe theo nhịp poll, bỏ qua trong ân hạn, chỉ vẽ lại khi ĐỔI
         // (`applyBg` dựng Drawable mới mỗi lượt, nhịp 1 Hz). Cốp đọc cờ mở/đóng · kính đọc % · nút không readKey ⇒ null.
@@ -222,8 +242,11 @@ class ControlTileFactory(
         show(state.sel(def.id))
         tile.setOnClickListener {
             state.touch(def.id)
-            val next = ControlTileLogic.nextSelectIndex(state.sel(def.id), def.args.size)
-            state.setSel(def.id, next); show(next); control().select(def.id, next)
+            val old = state.sel(def.id); val next = ControlTileLogic.nextSelectIndex(old, def.args.size)
+            state.setSel(def.id, next); show(next)
+            writer.submit(def.id, { control().select(def.id, next) }, { state.sel(def.id) == next }, { control().writeFailureIsReal(def.id) }) {
+                state.setSel(def.id, old); tile.post { show(old) }
+            }
         }
         // Đọc lại chỉ số lựa chọn THẬT của xe — bỏ qua trong ân hạn, chỉ nhận chỉ số hợp lệ (trong phạm vi args).
         return refresh@{ car ->
@@ -238,7 +261,7 @@ class ControlTileFactory(
         tile.setOnClickListener {
             look(def, tile, icon, label, 1)
             state.touch(def.id)
-            control().press(def.id)
+            writer.submit(def.id, { control().press(def.id) }) {}   // bấm-một-phát: không có trạng thái bền để hoàn nguyên; lỗi vẫn lên nhật ký
             tile.postDelayed({ look(def, tile, icon, label, 0) }, 220)   // nháy sáng momentary
         }
     }
@@ -447,6 +470,9 @@ class ControlTileFactory(
 
         /** Thẻ nhật ký của gói lệnh — một chỗ để `adb logcat -s ActionMacro` bắt đủ cả lượt chạy lẫn lượt hỏng. */
         const val TAG_MACRO = "ActionMacro"
+
+        /** Thẻ nhật ký đường ghi của Ô ĐƠN (P1-main) — `adb logcat -s ControlWrite` thấy mọi cú ghi hỏng. */
+        const val TAG_WRITE = "ControlWrite"
 
         /**
          * WP2 · R2.1 — độ đục của ICON khi ô đang TẮT. **0.72** lấy đúng con số [KachiIcons] đang dùng cho ô

@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.media.AudioManager
+import android.util.Log
 import com.byd.clusternav.modules.hal.BydHal
 
 /**
@@ -69,14 +70,36 @@ class BydHalGateway(context: Context) : HalGateway {
         }
         val missAt = deviceMissAt[fqn]
         if (missAt != null && now - missAt in 0 until MISS_TTL_MS) return null
-        val d = runCatching { BydHal.device(fqn, BydHal.systemBypassContext(), BydHal.bypass(app)) }.getOrNull()
-        if (d != null) { deviceCache[fqn] = Handle(d, now); deviceMissAt.remove(fqn) } else deviceMissAt[fqn] = now
+        val d = runCatching { BydHal.device(fqn, BydHal.systemBypassContext(), BydHal.bypass(app)) }
+            .getOrElse { warnOnce(fqn, "getInstance", it); null }
+        if (d != null) {
+            deviceCache[fqn] = Handle(d, now); deviceMissAt.remove(fqn)
+            // Device vừa sống lại ⇒ lỗi sau đó là lỗi MỚI, phải được log lại một lần (audit F5, KDoc [HalLogOnce]).
+            HalLogOnce.forgetDevice(fqn)
+        } else {
+            deviceMissAt[fqn] = now
+            if (HalLogOnce.first("$fqn#getInstance")) Log.w(TAG, "HAL $fqn#getInstance: null (off-car / service HAL chưa lên) — thử lại sau ${MISS_TTL_MS / 1000}s")
+        }
         return d
+    }
+
+    /**
+     * Hardening 2026-09-25 · audit F5 [P2]: MỖI khoá `fqn#method` được một dòng W (kèm gốc [BydHal.root]) thay vì
+     * im lặng — binder chết không còn là "mọi ô hiện —" không dấu vết. Giá trị trả về của mọi đường KHÔNG đổi.
+     */
+    private fun warnOnce(deviceFqn: String, method: String, t: Throwable) {
+        if (HalLogOnce.first("$deviceFqn#$method")) Log.w(TAG, "HAL $deviceFqn#$method: ${BydHal.root(t)}")
+    }
+
+    /** Như [warnOnce] cho đường ghi, nơi [BydHal.callNamedInt]/[BydHal.root] đã rút lỗi thành chuỗi. */
+    private fun warnOnceRaw(deviceFqn: String, method: String, raw: String) {
+        if (!raw.startsWith("rc=") && HalLogOnce.first("$deviceFqn#$method")) Log.w(TAG, "HAL $deviceFqn#$method: $raw")
     }
 
     override fun getter(deviceFqn: String, method: String, arg: Int?): String? {
         KachiPerf.add(KachiPerf.Counter.HAL_READ)
-        return runCatching { device(deviceFqn)?.let { BydHal.callGetter(it, method, arg) } }.getOrNull()
+        return runCatching { device(deviceFqn)?.let { BydHal.callGetter(it, method, arg) { t -> warnOnce(deviceFqn, method, t) } } }
+            .getOrElse { warnOnce(deviceFqn, method, it); null }
     }
 
     /**
@@ -90,8 +113,9 @@ class BydHalGateway(context: Context) : HalGateway {
         val dev = device(deviceFqn) ?: run { HalWriteProbe.record(deviceFqn, method, OFF_CAR); return null }
         val raw = BydHal.callNamedInt(dev, method, *args)
         HalWriteProbe.record(deviceFqn, method, raw)
+        warnOnceRaw(deviceFqn, method, raw)
         parseRc(raw)
-    }.getOrNull()
+    }.getOrElse { warnOnce(deviceFqn, method, it); null }
 
     /**
      * Đọc feature-id qua `get(int[], Class)` 2-arg [ĐO `AbsBYDAutoDevice.java:84`; OpenBYD `CarControlImpl.java:239-240`]
@@ -101,8 +125,8 @@ class BydHalGateway(context: Context) : HalGateway {
     override fun featureGet(deviceFqn: String, id: Int): String? = runCatching {
         KachiPerf.add(KachiPerf.Counter.HAL_READ)
         val dev = device(deviceFqn) ?: return null
-        BydHal.readFeature(dev, id)
-    }.getOrNull()
+        BydHal.readFeature(dev, id) { t -> warnOnce(deviceFqn, "0x%08x".format(id), t) }
+    }.getOrElse { warnOnce(deviceFqn, "0x%08x".format(id), it); null }
 
     /** Ghi feature-id + ghi trộm kết quả vào [HalWriteProbe] (bắt cả `rc=…` lẫn ngoại lệ "no permission …"). */
     override fun featureSet(deviceFqn: String, id: Int, value: Int): Long? = runCatching {
@@ -110,8 +134,9 @@ class BydHalGateway(context: Context) : HalGateway {
         val dev = device(deviceFqn) ?: run { HalWriteProbe.record(deviceFqn, label, OFF_CAR); return null }
         val raw = runCatching { "rc=${BydHal.setInt(dev, id, value)}" }.getOrElse { BydHal.root(it) }
         HalWriteProbe.record(deviceFqn, label, raw)
+        warnOnceRaw(deviceFqn, label, raw)
         parseRc(raw)
-    }.getOrNull()
+    }.getOrElse { warnOnce(deviceFqn, "0x%08x".format(id), it); null }
 
     // Car-setting: đường ghi/đọc setting BYD chưa proven trên trim → để null (grab-list §9). Off-car null anyway.
     override fun settingGet(key: String): String? = null
@@ -173,6 +198,8 @@ class BydHalGateway(context: Context) : HalGateway {
         if (s.startsWith("rc=")) s.removePrefix("rc=").trim().toLongOrNull() else null
 
     private companion object {
+        const val TAG = "BydHalGateway"
+
         /** [HalWriteProbe] ghi khi `device()` null (emulator / ngoài xe) — cầu kiểm thử đọc thành `hal_line`. */
         const val OFF_CAR = "off_car"
 

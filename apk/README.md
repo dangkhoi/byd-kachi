@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-18 (Kachi-1.84-release.apk vc85 sha256 fd02e878…) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (**`Kachi-2.66-release.apk` vc167**, 43 342 022 B, sha256 `d5b37eb7…10e1` [ĐO `shasum -a 256`]) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
@@ -12,6 +12,9 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **2.66 (167) — 2026-09-26** (`Kachi-2.66-release.apk`, 43 342 022 B, sha256 `d5b37eb728d2bd1e902608b692a36b4b2df5d055d292c707515076efa8c910e1`, CLOSE-1 đóng dự án: profiling/hardening/lint 0/doc — `docs/CLOSEOUT-2026-09-25.md`; apksigner cert SHA-256 `92:57:…:99:17` không đổi, không debuggable, 0 bề mặt test)
+- **2.65 (166) — 2026-09-25** (`Kachi-2.65-release.apk`, 43 260 174 B, sha256 `9f6224b731e07acd6ef4cf8d1f226faf6df80b0fab09831fcd6a0247a13585c1`, commit `93dc1b4`, thay 2.64). Bản cuối trước phiên đóng dự án (CLOSE-1). Nội dung 2.55→2.65 (11 bump trong ngày 2026-09-25: tách layer hình xe · gỡ 7 datum chết · camera SL6 picker + crop luôn áp · voice overlay độc lập · nút Khởi động lại launcher · import hồ sơ trùng tên · nút Đổi tên/Xoá thẳng hàng) — chi tiết từng sha ở `docs/PROJECT-BACKLOG.md` (mục "CHUỖI BUMP 2.55 → 2.65").
+- **1.85 → 2.64 — 2026-09-20 → 2026-09-25**: nhật ký kênh không ghi từng bản ở đây (mỗi bản đều đã đăng lên `main` rồi bị bản sau thay); tra `docs/PROJECT-BACKLOG.md` (ghi chú theo ngày) + `git log -- apk/`.
 - **1.78 (79) — 2026-09-18** (`Kachi-1.78-release.apk`, sha256 `bcfe70c2…da21`, thay 1.77). **Sửa "phím gán không ăn"
   dưới tải nặng** [ĐO on-car live <car-ip>, load 14]: `NavAccessibilityService` rớt bind dưới áp lực CPU/RAM →
   phím chết; Kachi tự-rebind THUA vì `GRANT_TIMEOUT_MS=9s` (rebind qua dadb, dưới load 14 dadb chậm > 9s → cắt giữa

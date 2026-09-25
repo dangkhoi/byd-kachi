@@ -35,6 +35,19 @@ import com.byd.clusternav.system.PackageQueries
 internal val ClusterNavBridge.coordinator: SimpleCastCoordinator
     get() = SimpleCastRuntime.coordinator(app)
 
+private const val CAST_TAG = "BridgeCast"
+
+private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+
+/**
+ * Hẹn "mở lại chiếu" của [restoreCluster] — MỘT việc chờ cho cả tiến trình (coordinator cũng là process-singleton),
+ * huỷ được ở [setCastEnabled] OFF / [deepRescue], và tự hỏi lại công tắc trước khi chạy (audit F14, KDoc [DelayedGatedRun]).
+ */
+internal val clusterReopen = DelayedGatedRun(
+    post = { r, delay -> mainHandler.postDelayed(r, delay) },
+    remove = { mainHandler.removeCallbacks(it) },
+)
+
 // ── Công tắc chính "Bật Cluster Cast" — lặp lại CastEnableSwitch.kt:44–80 ────────────────────────
 
 /** `CastEnableSwitch.kt:45`. */
@@ -54,12 +67,18 @@ fun ClusterNavBridge.setCastEnabled(on: Boolean) {
     coordinator.prefs.setCastEnabled(on)
     if (on) {
         coordinator.openProjection()
+        // Audit F7: Android 12 (DL5) chặn FGS từ nền ⇒ toast "Đã bật" mà nút nổi không hiện, trước đây im lặng.
         runCatching { app.startForegroundService(Intent(app, FloatingBubbleService::class.java)) }
+            .onFailure { android.util.Log.w(CAST_TAG, "startForegroundService(FloatingBubble): ${it.javaClass.simpleName}: ${it.message}") }
         toast(BridgeMsg.CAST_ON)
     } else {
+        clusterReopen.cancel()   // audit F14: "Trả cụm" đang hẹn mở lại ⇒ rút hẹn — người dùng vừa TẮT
         runCatching { coordinator.dispatch(SimpleCastIntent.Stop()) }
+            .onFailure { android.util.Log.w(CAST_TAG, "OFF: dispatch(Stop) ${it.javaClass.simpleName}: ${it.message}") }
         runCatching { coordinator.closeProjection() }
+            .onFailure { android.util.Log.w(CAST_TAG, "OFF: đóng chiếu ${it.javaClass.simpleName}: ${it.message}") }
         runCatching { app.stopService(Intent(app, FloatingBubbleService::class.java)) }
+            .onFailure { android.util.Log.w(CAST_TAG, "OFF: stopService(FloatingBubble) ${it.javaClass.simpleName}: ${it.message}") }
         toast(BridgeMsg.CAST_OFF)
     }
 }
@@ -174,7 +193,9 @@ fun ClusterNavBridge.restoreCluster() {
     coordinator.dispatch(SimpleCastIntent.Stop())
     coordinator.closeProjection()
     toast(BridgeMsg.CLUSTER_RESET_REOPENING)
-    Handler(Looper.getMainLooper()).postDelayed({ coordinator.openProjection() }, 2_000)
+    // Audit F14: giữ token + huỷ được ở [setCastEnabled] OFF, và đọc lại công tắc NGAY TRƯỚC khi mở (CLAUDE.md §5:
+    // sự thật lúc chạy, không phải cờ lúc hẹn). Người dùng tắt cast trong 2 s ⇒ không giành lại cụm.
+    clusterReopen.schedule(2_000, gate = { castEnabled() }) { coordinator.openProjection() }
 }
 
 /**
@@ -208,7 +229,8 @@ fun ClusterNavBridge.deepRescue(
     onConfirm {
         toast(BridgeMsg.DEEP_RESCUE_RUNNING)
         Thread({
-            // 1. Đứng hẳn xuống — thôi giành cụm. KHÔNG mở lại chiếu (khác [restoreCluster]).
+            // 1. Đứng hẳn xuống — thôi giành cụm. KHÔNG mở lại chiếu (khác [restoreCluster]) — kể cả hẹn còn treo.
+            clusterReopen.cancel()
             runCatching { coordinator.dispatch(SimpleCastIntent.Stop()) }
             runCatching { coordinator.closeProjection() }
             runCatching { app.stopService(Intent(app, FloatingBubbleService::class.java)) }

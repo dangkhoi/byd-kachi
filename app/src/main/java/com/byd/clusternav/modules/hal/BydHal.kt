@@ -180,12 +180,21 @@ object BydHal {
      *  2026-09-15: `int[].toString()` = `"[I@hash"` → `coerceInt` null → UI "—" cho `getPM2p5Level/Value` [ĐO
      *  `BYDAutoPM2p5Device.java:84,92` trả `int[]`], `getAllRadarProbeStates` [`BYDAutoRadarDevice.java:64`]). */
     private val getterCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Method>()
-    fun callGetter(dev: Any, name: String, arg: Int? = null): String? {
-        val key = "${dev.javaClass.name}#$name#${if (arg == null) 0 else 1}"
+    /**
+     * @param onError hardening 2026-09-25 (audit F5): NGUYÊN NHÂN của `null` (ROM thiếu method ⇒
+     *   `NoSuchMethodException`; HAL ném ⇒ ngoại lệ gốc) được đưa ra seam này để gateway log-once. Giá trị trả về
+     *   KHÔNG đổi — `null` vẫn là `null`; mặc định `null` = mọi call site cũ y nguyên.
+     */
+    fun callGetter(dev: Any, name: String, arg: Int? = null, onError: ((Throwable) -> Unit)? = null): String? {
+        val arity = if (arg == null) 0 else 1
+        val key = "${dev.javaClass.name}#$name#$arity"
         val m = getterCache[key] ?: dev.javaClass.methods.firstOrNull {
-            it.name == name && it.parameterTypes.size == (if (arg == null) 0 else 1) &&
+            it.name == name && it.parameterTypes.size == arity &&
                 (arg == null || it.parameterTypes[0] == Int::class.javaPrimitiveType)
-        }?.also { getterCache[key] = it } ?: return null
+        }?.also { getterCache[key] = it } ?: run {
+            onError?.invoke(NoSuchMethodException("${dev.javaClass.simpleName}.$name/$arity"))
+            return null
+        }
         return runCatching {
             val r = if (arg == null) m.invoke(dev) else m.invoke(dev, arg)
             when {
@@ -193,7 +202,7 @@ object BydHal {
                 r.javaClass.isArray -> arrayToStr(r)
                 else -> r.toString()
             }
-        }.getOrNull()
+        }.getOrElse { onError?.invoke(it); null }
     }
 
     /**
@@ -244,9 +253,12 @@ object BydHal {
      * qua [readValue]/[readFeature]). [type] = `Integer.TYPE` (mặc định — cách OpenBYD đọc) hoặc `Float.TYPE`.
      * **Degrade-safe:** null nếu device không có method 2-arg / HAL ném / HAL trả null.
      */
-    fun tryGet(dev: Any, id: Int, type: Class<*> = Integer.TYPE): Any? {
-        val get = getMethodOrNull(dev) ?: return null
-        return runCatching { get.invoke(dev, intArrayOf(id), type) }.getOrNull()
+    fun tryGet(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): Any? {
+        val get = getMethodOrNull(dev) ?: run {
+            onError?.invoke(NoSuchMethodException("${dev.javaClass.simpleName}.get(int[], Class)"))
+            return null
+        }
+        return runCatching { get.invoke(dev, intArrayOf(id), type) }.getOrElse { onError?.invoke(it); null }
     }
 
     /** Sentinel "không có giá trị" của `BYDAutoEventValue` [ĐO `BYDAutoEventValue.java:5,7,12-13`]: HAL trả object
@@ -268,8 +280,8 @@ object BydHal {
      * của :core chỉ biết rc `-2147482648/-2147482645`, KHÔNG biết sentinel EventValue). Ô bị rút không khớp regex
      * `int=(-?\d+)` / `float=(-?[0-9.]+)` ⇒ :core tự lùi sang ô còn lại.
      */
-    fun readFeature(dev: Any, id: Int, type: Class<*> = Integer.TYPE): String? {
-        val ev = tryGet(dev, id, type) ?: return null
+    fun readFeature(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): String? {
+        val ev = tryGet(dev, id, type, onError) ?: return null
         val item = if (ev.javaClass.isArray) (if (RArray.getLength(ev) > 0) RArray.get(ev, 0) else null) else ev
         if (item == null) return null
         val i = runCatching { item.javaClass.getField("intValue").getInt(item) }.getOrNull()

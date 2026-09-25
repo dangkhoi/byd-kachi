@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.hardware.display.DisplayManager
@@ -140,6 +141,10 @@ class VdAppHost(
                     // xoay nay làm bằng `wm set-fix-to-user-rotation` qua shell SAU khi tạo VD (xem [maybeLaunch]) —
                     // khoá hướng mà KHÔNG đổi cờ hiển thị nên không đổi đường composite (app vẫn vẽ vào ô như cũ).
                     val name = "kachi-slot-$slot-${System.currentTimeMillis()}"
+                    // lint WrongConstant: 256 = VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL là hằng @hide của
+                    // DisplayManager (8 = OWN_CONTENT_ONLY là public). Cờ ẩn dùng CỐ Ý — đường cast đang chạy ngoài
+                    // hiện trường (CLAUDE.md §6): KHÔNG đổi giá trị, chỉ tắt cảnh báo tại đúng một dòng.
+                    @SuppressLint("WrongConstant")
                     val created = dm.createVirtualDisplay(name, w, ht, slotDensity(w, ht), h.surface, 8 or 256)
                     vd = created
                     dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất

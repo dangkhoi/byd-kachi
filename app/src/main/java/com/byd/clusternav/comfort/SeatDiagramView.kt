@@ -96,6 +96,11 @@ class SeatDiagramView @JvmOverloads constructor(
     }
     private val bodyPath = Path()
     private val bodyRadii = FloatArray(8)
+    /** Khung thân xe + gradient thân xe dùng lại giữa các khung hình (lint DrawAllocation). Gradient chỉ dựng lại
+     *  khi hình học hoặc màu đổi — [bodyShaderKey] là khoá so sánh. */
+    private val bodyRect = RectF()
+    private var bodyShader: LinearGradient? = null
+    private var bodyShaderKey = 0L
 
     fun setSeatCount(count: Int) {
         val c = if (count >= 4) 4 else 2
@@ -179,11 +184,11 @@ class SeatDiagramView @JvmOverloads constructor(
         val topR = carW * 0.21f   // ~26/120
         val botR = carW * 0.16f   // ~20/120
 
-        val bodyRect = RectF(carLeft, carTop, carRight, carBottom)
+        bodyRect.set(carLeft, carTop, carRight, carBottom)
         setRadii(bodyRadii, topR, botR)
         bodyPath.reset()
         bodyPath.addRoundRect(bodyRect, bodyRadii, Path.Direction.CW)
-        fillPaint.shader = LinearGradient(carLeft, carTop, carLeft, carBottom, bodyTop, bodyBottom, Shader.TileMode.CLAMP)
+        fillPaint.shader = bodyGradient(carLeft, carTop, carBottom)
         canvas.drawPath(bodyPath, fillPaint)
         fillPaint.shader = null
         strokePaint.color = bodyStroke
@@ -216,6 +221,16 @@ class SeatDiagramView @JvmOverloads constructor(
         out[2] = top; out[3] = top       // top-right
         out[4] = bottom; out[5] = bottom // bottom-right
         out[6] = bottom; out[7] = bottom // bottom-left
+    }
+
+    /** Gradient thân xe: dựng lại CHỈ khi (x, top, bottom, 2 màu) đổi — mỗi khung hình còn lại là 0 cấp phát. */
+    private fun bodyGradient(x: Float, top: Float, bottom: Float): LinearGradient {
+        val key = (x.toRawBits().toLong() * 31 + top.toRawBits()) * 31 + bottom.toRawBits() +
+            (bodyTop.toLong() shl 32) + bodyBottom
+        val cached = bodyShader
+        if (cached != null && key == bodyShaderKey) return cached
+        return LinearGradient(x, top, x, bottom, bodyTop, bodyBottom, Shader.TileMode.CLAMP)
+            .also { bodyShader = it; bodyShaderKey = key }
     }
 
     private fun seatRect(cx: Float, cy: Float, sw: Float, sh: Float): RectF =

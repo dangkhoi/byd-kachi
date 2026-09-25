@@ -139,6 +139,14 @@ class HalBindingTable(private val gateway: HalGateway) {
     fun featureAbsentOnCar(id: String): Boolean =
         ControlRegistry.byId(id)?.let { featureAbsentOnCar(gateway, it.bindingKey) } ?: false
 
+    /**
+     * Máy này có **bảng feature-id THẬT** của xe không (uỷ quyền [HalGateway.featureMapAvailable]).
+     *
+     * Tách khỏi [featureAbsentOnCar] vì hai câu hỏi khác nhau: *"nút này vắng"* vs *"máy này không có xe nào cả"*.
+     * Chỗ gọi: `CarControlAdapter.writeFailureIsReal` — xem KDoc `CarControlPort.writeFailureIsReal`.
+     */
+    fun featureMapPresent(): Boolean = gateway.featureMapAvailable()
+
     // ── Tra registry (id toàn cục duy nhất: telemetry trước, control sau) ──────────────────────────────
     /** FQN thiết bị cho đường feature-id, chọn theo [Domain] (best-effort — id↔device chính xác = grab-list §9). */
     private fun featureDeviceFqn(domain: Domain): String = Companion.featureDeviceFqn(domain)

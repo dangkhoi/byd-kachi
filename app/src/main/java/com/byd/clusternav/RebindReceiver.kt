@@ -10,6 +10,7 @@ import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.util.Log
 import com.byd.clusternav.launcher.KachiHomeActivity
+import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 
 /**
  * SELF-HEAL nav listener — auto-rebind KHÔNG cần mở app / không cần disallow→allow tay.
@@ -44,9 +45,22 @@ class RebindReceiver : BroadcastReceiver() {
         // qua dadb. `grantAccessibility` idempotent: nó verify `dumpsys` bound TRƯỚC, đã bound → no-op/no-toggle,
         // chưa bound → toggle ép rebind. Nên watchdog GỌI THẲNG (không gate in-process) — 1 lệnh dumpsys/60s là
         // giá chấp nhận để tự-heal ĐÚNG cả ca "enabled nhưng instance chết". Single-flight `grantingAcc` chống trùng.
-        if (Prefs.voiceKeyEnabled(context)) {
+        // B1 (BG-14, 2026-09-25) — hai sửa, KHÔNG bỏ đường heal:
+        //  (a) Đoạn trên nói `getEnabledAccessibilityServiceList` có thể dương-tính-giả — [ĐO AOSP android-10.0.0_r47
+        //      `AccessibilityManagerService.java:653-679`] nó duyệt `mBoundServices`, CÙNG danh sách `dumpsys` in ở
+        //      "Bound services:{" (`:2563`) ⇒ hai nguồn là một. `grantAccessibility` nay hỏi binder trước, đã bound ⇒
+        //      0 lệnh shell (xem `AccessibilityHealGates`); chưa bound / binder ném ⇒ dadb đầy đủ như cũ.
+        //  (b) Alarm là LƯỚI PHỤ: FGS keep-alive sống ⇒ watchdog in-process 30 s đã lo ⇒ alarm no-op (cờ tĩnh chết
+        //      theo tiến trình ⇒ FGS chết thì alarm lại heal — đúng ca nó sinh ra). Alarm KHÔNG cancel: giữ cho ca chết.
+        if (AccessibilityHealGates.alarmShouldHeal(
+                voiceKeyEnabled = Prefs.voiceKeyEnabled(context),
+                inProcessWatchdogAlive = VoiceKeyKeepAliveService.inProcessWatchdogAlive,
+            )
+        ) {
             runCatching { NavConnect.grantAccessibility(context.applicationContext) }
                 .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }
+        } else if (action == ACTION_WATCHDOG) {
+            Log.d(TAG, "watchdog alarm no-op: FGS keep-alive đang chạy watchdog in-process (hoặc phím-thoại tắt)")
         }
         when (action) {
             Intent.ACTION_BOOT_COMPLETED -> {

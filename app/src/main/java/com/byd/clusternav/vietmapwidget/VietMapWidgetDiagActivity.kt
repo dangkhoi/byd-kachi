@@ -153,9 +153,13 @@ class VietMapWidgetDiagActivity : Activity() {
                 if (allowGrantRetry && result.reason == VietMapWidgetUnavailableReason.BIND_UI_UNAVAILABLE) {
                     toast(Lang.t("Đang tự cấp quyền bind…", "Granting bind permission…"))
                     Thread({
-                        val granted = LocalDeviceShell.grantAppWidgetBind(
-                            AdbKeys.ensure(applicationContext), packageName,
-                        )
+                        // Hardening 2026-09-25 (audit F2/F4): khoá adb + phiên shell đều có thể hỏng trên Thread TRẦN
+                        // — bọc, và nói LÝ DO ra logcat thay vì một chữ `false` câm.
+                        val granted = runCatching {
+                            LocalDeviceShell.grantAppWidgetBind(AdbKeys.ensure(applicationContext), packageName) { reason ->
+                                android.util.Log.w("VmWidgetDiag", "grantbind: không có kênh shell ($reason)")
+                            }
+                        }.getOrElse { android.util.Log.w("VmWidgetDiag", "grantbind: ${it.javaClass.simpleName}: ${it.message}"); false }
                         runOnUiThread {
                             if (granted) {
                                 bindNextMissing(allowGrantRetry = false)

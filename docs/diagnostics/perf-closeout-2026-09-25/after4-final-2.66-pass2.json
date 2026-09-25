@@ -1,0 +1,1 @@
+{"label":"after4-final-2.66-pass2","window_s":300,"nproc":2,"procs":[{"name":"com.byd.launcher","pid":13468,"cpu_pct":0.82,"pss_kb":51353,"rss_kb":112404,"threads":35},{"name":"com.byd.launcher:wake","pid":13605,"cpu_pct":0.13,"pss_kb":257571,"rss_kb":308520,"threads":18}],"gfx":"9 6 (66.67%)","wakelock_lines":0,"alarms":4,"jobs":0,"log_total":168,"log_app":35}

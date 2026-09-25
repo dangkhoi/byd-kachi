@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.Process
 import android.os.SystemClock
 import android.util.Log
 import java.io.File
@@ -17,9 +18,19 @@ import kotlin.math.sqrt
 /**
  * ═══ "Hey Kachi" — VÒNG NGHE NỀN (mic liên tục → cổng rẻ → KWS), driven bởi [VoiceWakeController] đã test ══════
  *
- * Lớp GLUE Android: mở micro, đọc khung, tính RMS, đọc `/proc/loadavg`, hỏi [VoiceWakeController] (bộ não đã
+ * Lớp GLUE Android: mở micro, đọc khung, tính RMS, đọc tải ([LoadSource]), hỏi [VoiceWakeController] (bộ não đã
  * kiểm off-car), chạy KWS khi được phép. Mọi lý lẽ chống-hang-CPU nằm ở controller; đây chỉ thi hành quyết định
  * — cộng bốn chốt mà **chỉ tầng Android có thể sai** (đọc mic lỗi · luồng · nhả mic · nhường mic).
+ *
+ * ## Nguồn tải: dò `/proc/loadavg` MỘT lần, hỏng ⇒ CPU của chính tiến trình (2026-09-25 · wake)
+ * [ĐO máy ảo 2.65] `avc: denied { read } name="loadavg"` **1 dòng/giây** = bản cũ đọc `/proc/loadavg` mỗi
+ * `LOAD_EVERY_MS`, SELinux `untrusted_app` API 29 chặn, `getOrDefault(0.0)` ⇒ [VoiceLoadGuard] nhận `0` mãi ⇒ **lá
+ * chắn mù** + 1 ngoại lệ/giây + audit spam. [SUY] xe cùng API/chính sách ⇒ cùng kết quả. Nay [LoadSource] dò đúng
+ * MỘT lần trên luồng nghe: đọc được ⇒ dùng như cũ (đời ROM khác); không ⇒ ghi W **một** dòng rồi chuyển hẳn sang
+ * `Process.getElapsedCpuTime()` ([ĐO source AOSP r47 `android_util_Process.cpp:1075-1087`] =
+ * `clock_gettime(CLOCK_PROCESS_CPUTIME_ID)` — syscall, không tệp, không SELinux) qua [VoiceSelfCpuMeter], và
+ * controller được dựng với [VoiceLoadGuard.forSelfCpu] (thang "lõi", ngưỡng theo `nproc`). Không còn ngoại lệ
+ * nào mỗi giây.
  *
  * ## MỘT luồng cho cả vòng đời service, đỗ xe khi không nghe (soát 2026-09-18)
  * Bản đầu dựng/huỷ một [VoiceWakeListener] **mỗi lần màn bật/tắt**. Đó là đúng họ lỗi *"đường sống lâu hơn thứ
@@ -56,7 +67,12 @@ class VoiceWakeListener(
     private val onAutoDisable: () -> Unit,
     private val kwsFactory: (Context) -> WakeEngine? = { defaultEngine(it) },
 ) {
-    private val controller = VoiceWakeController()
+    /**
+     * Dựng lại MỘT lần ở đầu [runOuter] theo nguồn tải mà [LoadSource.probe] chọn (guard thang `load1` hay thang
+     * "lõi tự-CPU"). `@Volatile` vì [start] (`reset`) ở luồng main còn vòng nghe ở luồng `kachi-wake`.
+     */
+    @Volatile private var controller = VoiceWakeController()
+    private val loadSource = LoadSource()
 
     /** Nhãn chốt micro **của riêng lượt chạy này** — xem KDoc lớp (chống nhả chốt của lượt khác). */
     private val label = "${VoiceSingleFlight.LABEL_WAKE}#${SEQ.incrementAndGet()}"
@@ -101,8 +117,11 @@ class VoiceWakeListener(
      * (~100 ms) cộng `stop`/`release`, và chỗ đỗ thức ngay bằng `interrupt`. Hết trần mà luồng còn sống thì
      * **không** nhả chốt micro hộ nó: chốt còn nghĩa là `AudioRecord` của nó có thể còn mở, và cướp chốt lúc ấy
      * chính là cách tạo ra hai mic. Nó tự nhả bằng `finally` của chính nó (nhả theo nhãn ⇒ không đụng ai).
+     *
+     * @return `true` khi luồng **đã chết thật** (hoặc chưa từng có) — chỗ gọi dùng để biết engine native bên dưới
+     *   còn có thể đang được luồng này dùng hay không (`VoiceWakeService.onDestroy` chỉ nhả recognizer khi `true`).
      */
-    fun stop() {
+    fun stop(): Boolean {
         running = false
         listening = false
         gateLock.withLock { gateWake.signalAll() }
@@ -110,11 +129,13 @@ class VoiceWakeListener(
         thread = null
         t?.interrupt()
         runCatching { t?.join(JOIN_MS) }
-        if (t == null || !t.isAlive) {
+        val dead = t == null || !t.isAlive
+        if (dead) {
             VoiceSingleFlight.release(label) // lưới an toàn: luồng đã chết thật thì chốt không được kẹt
         } else {
             Log.w(TAG, "luồng wake chưa dừng sau $JOIN_MS ms — để nó tự nhả chốt (không cướp, tránh hai mic)")
         }
+        return dead
     }
 
     fun isRunning(): Boolean = running
@@ -128,6 +149,9 @@ class VoiceWakeListener(
         var kwsTried = false
         var idleSteps = 0
         try {
+            // Dò nguồn tải MỘT lần, ở đây (luồng nền) chứ không ở [start] (luồng main) — xem KDoc lớp. Controller
+            // dựng lại theo thang của nguồn; chưa có khung nào đi qua controller cũ nên không mất trạng thái gì.
+            controller = VoiceWakeController(loadGuard = loadSource.probe())
             while (alive()) {
                 if (!park()) break
                 // Nạp model **lần đầu được nghe**, không phải lúc dựng luồng: máy khởi động với màn tắt thì
@@ -244,7 +268,7 @@ class VoiceWakeListener(
                 for (i in 0 until n) { val s = buf[i].toDouble(); sum += s * s }
                 val rms = sqrt(sum / n)
                 val now = SystemClock.elapsedRealtime()
-                if (now - lastLoadAt >= LOAD_EVERY_MS) { load = readLoad1(); lastLoadAt = now }
+                if (now - lastLoadAt >= LOAD_EVERY_MS) { load = loadSource.read(now); lastLoadAt = now }
                 when (controller.onFrame(rms, load, now)) {
                     VoiceWakeController.Frame.SUSPENDED -> return if (controller.isFused()) Inner.FUSED else Inner.SUSPEND
                     VoiceWakeController.Frame.IDLE -> Unit
@@ -269,22 +293,67 @@ class VoiceWakeListener(
     }
 
     private fun openRecord(): AudioRecord? = runCatching {
+        // Quyền RUNTIME có thể bị thu hồi khi vòng nghe đang chạy ⇒ hỏi lại trước mỗi lần mở (lint
+        // MissingPermission). Thiếu ⇒ null ⇒ vòng ngoài coi như mic hỏng: nghỉ theo bậc rồi thử lại, không ném.
+        if (!VoiceCapture.micGranted(ctx)) { Log.w(TAG, "chưa có quyền RECORD_AUDIO — không mở mic wake"); return null }
         val min = AudioRecord.getMinBufferSize(VoiceWakeKws.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         // Sàn đệm **một giây tiếng** (cùng lẽ với `VoiceCapture.MIN_BUFFER_MS`): một lượt suy diễn KWS hoặc một
         // lượt GC dài hơn thời lượng đệm là mất mẫu, và mất kiểu đó không có lỗi nào báo — chỉ là "sao gọi mãi
         // không nghe". 32 KB.
         val floor = VoiceWakeKws.SAMPLE_RATE * 2
         val size = maxOf(min, floor)
-        AudioRecord(MediaRecorder.AudioSource.MIC, VoiceWakeKws.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size)
-            .let { r ->
+        // `SecurityException` bắt TƯỜNG MINH: quyền có thể bị thu hồi giữa lượt hỏi ở trên và dòng này (lint
+        // MissingPermission cũng cần thấy nó) — trả null như mọi ca mic hỏng, vòng ngoài nghỉ theo bậc.
+        val rec = try {
+            AudioRecord(MediaRecorder.AudioSource.MIC, VoiceWakeKws.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "quyền RECORD_AUDIO bị thu hồi giữa chừng — không mở mic wake"); return null
+        }
+        rec.let { r ->
                 if (r.state == AudioRecord.STATE_INITIALIZED) r
                 else { Log.w(TAG, "AudioRecord chưa init"); runCatching { r.release() }; null }
             }
     }.getOrElse { Log.w(TAG, "mở mic wake lỗi", it); null }
 
-    private fun readLoad1(): Double = runCatching {
-        File("/proc/loadavg").readText().trim().substringBefore(' ').toDouble()
-    }.getOrDefault(0.0)
+    /**
+     * Nguồn tải cho [VoiceLoadGuard] — xem KDoc lớp. Chỉ luồng `kachi-wake` chạm (không cần khoá).
+     *
+     * Hai chế độ, chốt ở [probe]:
+     *  • `LOADAVG` — `/proc/loadavg` đọc được (đời ROM khác) ⇒ `load1` như cũ, guard mặc định.
+     *  • `SELF_CPU` — bị chặn ⇒ [VoiceSelfCpuMeter] trên `Process.getElapsedCpuTime()` ⇒ "số lõi tiến trình này
+     *    đang dùng", guard [VoiceLoadGuard.forSelfCpu]. Không còn ngoại lệ/`avc: denied` nào mỗi giây.
+     */
+    private class LoadSource {
+        private enum class Mode { LOADAVG, SELF_CPU }
+        private var mode = Mode.SELF_CPU
+        private val meter = VoiceSelfCpuMeter()
+        private val nproc = Runtime.getRuntime().availableProcessors()
+
+        /** Dò một lần; trả guard đúng thang. Ghi W đúng MỘT dòng khi `/proc/loadavg` không đọc được. */
+        fun probe(): VoiceLoadGuard {
+            val first = runCatching { VoiceLoadGuard.parseLoadavg(File(LOADAVG).readText()) }
+            mode = if (first.isSuccess && first.getOrNull() != null) Mode.LOADAVG else Mode.SELF_CPU
+            return if (mode == Mode.LOADAVG) {
+                Log.i(TAG, "nguồn tải: /proc/loadavg (load1=${first.getOrNull()})")
+                VoiceLoadGuard()
+            } else {
+                Log.w(
+                    TAG,
+                    "nguồn tải: /proc/loadavg không đọc được (${first.exceptionOrNull()?.javaClass?.simpleName ?: "rác"}" +
+                        ") — chuyển sang CPU của chính tiến trình, ngưỡng theo $nproc lõi",
+                )
+                VoiceLoadGuard.forSelfCpu(nproc)
+            }
+        }
+
+        fun read(nowMs: Long): Double = when (mode) {
+            // Đọc được lúc dò mà hỏng giữa chừng (hiếm) ⇒ 0.0 như cũ, KHÔNG đổi chế độ giữa vòng (guard đã theo thang này).
+            Mode.LOADAVG -> runCatching { VoiceLoadGuard.parseLoadavg(File(LOADAVG).readText()) }.getOrNull() ?: 0.0
+            Mode.SELF_CPU -> meter.sample(Process.getElapsedCpuTime(), nowMs)
+        }
+
+        private companion object { const val LOADAVG = "/proc/loadavg" }
+    }
 
     private fun nap(ms: Long) = runCatching { Thread.sleep(ms) }.getOrElse { Thread.currentThread().interrupt() }
     private fun safe(f: () -> Unit) = runCatching { f() }.onFailure { Log.w(TAG, "callback wake lỗi", it) }
@@ -292,7 +361,7 @@ class VoiceWakeListener(
     companion object {
         private const val TAG = "WakeListen"
         private const val FRAME = 1_600            // 100 ms @ 16 kHz
-        private const val LOAD_EVERY_MS = 1_000L   // đọc /proc/loadavg mỗi giây (không mỗi khung)
+        private const val LOAD_EVERY_MS = 1_000L   // đọc tải mỗi giây (không mỗi khung) — xem [LoadSource]
         private const val SUSPEND_NAP_MS = 2_000L  // bậc nghỉ đầu khi hệ nóng / mic hỏng
         private const val MAX_NAP_MS = 30_000L     // trần bậc nghỉ — sự cố dài không thành vòng xin lại đều đặn
         private const val BUSY_NAP_MS = 2_000L     // phiên lệnh đang giữ mic

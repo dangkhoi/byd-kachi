@@ -3,6 +3,7 @@ package com.byd.clusternav
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.carexec.LocalShellText
+import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import dadb.AdbKeyPair
 import com.byd.clusternav.modules.navaccess.NavAccessibilitySource
@@ -61,12 +62,24 @@ object NavConnect {
      * mà hệ có thể unbind KHÔNG gọi onUnbind (ngủ đông/CPU pressure) ⇒ cờ KẸT true ⇒ watchdog không bao giờ heal
      * (gốc "reset mới hết", owner 2026-09-23, chung v1/v2/launcher).
      */
-    fun isAccessibilityBound(ctx: Context): Boolean = runCatching {
+    fun isAccessibilityBound(ctx: Context): Boolean =
+        boundPerAccessibilityManager(ctx) ?: NavAccessibilitySource.connected
+
+    /**
+     * BOUND theo AccessibilityManager, hoặc `null` khi binder không hỏi được (service null / ném) — KHÔNG rơi về cờ RAM
+     * ở đây, để [doGrantResult] chỉ bỏ đường shell khi có câu trả lời THẬT "đã bound".
+     *
+     * [ĐO AOSP android-10.0.0_r47 `AccessibilityManagerService.java:653-679`] `getEnabledAccessibilityServiceList`
+     * duyệt `userState.mBoundServices` — CÙNG danh sách mà `dumpsys accessibility` in ở "Bound services:{" (`:2563`).
+     * ⇒ đây chính là "Bound services" đọc qua binder, không phải "Enabled services" (`mEnabledServices`, `:2575`).
+     * Xem KDoc [AccessibilityHealGates].
+     */
+    fun boundPerAccessibilityManager(ctx: Context): Boolean? = runCatching {
         val am = ctx.getSystemService(Context.ACCESSIBILITY_SERVICE) as? android.view.accessibility.AccessibilityManager
-            ?: return@runCatching NavAccessibilitySource.connected
+            ?: return@runCatching null
         am.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
             .any { it.resolveInfo?.serviceInfo?.let { s -> s.packageName == ctx.packageName && s.name.contains("NavAccessibilityService") } == true }
-    }.getOrElse { NavAccessibilitySource.connected }
+    }.getOrNull()
 
     /** Reconnect NGAY qua dadb (chạy nền). An toàn gọi nhiều lần. */
     fun reconnect(ctx: Context) {
@@ -176,28 +189,38 @@ object NavConnect {
         if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return GrantResult.NOT_BOUND }
         val myGen = grantGen.incrementAndGet()   // #6: dấu thế hệ của lượt grant này
         try {
-            return runCatching {
-                val keyPair = AdbKeys.ensure(app)
-                LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
-                    val cur = sh("settings get secure enabled_accessibility_services").output.trim()
-                    val has = cur.split(':').any { it.trim() == ACC_COMP }
-                    if (!has) {
-                        val next = when {
-                            cur == "null" -> ACC_COMP
-                            cur.isBlank() -> ACC_COMP
-                            else -> "$cur:$ACC_COMP"
-                        }
-                        sh("settings put secure enabled_accessibility_services \"$next\"")
-                    }
-                    sh("settings put secure accessibility_enabled 1")
-                    Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
-                    if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session GrantResult.NOT_BOUND }
-                    // dadb CHẠY tới đây (ghi được settings) ⇒ KHÔNG phải lỗi USB debugging. forceRebind trả BOUND thật.
-                    if (forceRebindIfNeeded(keyPair, sh)) GrantResult.BOUND else GrantResult.NOT_BOUND
-                } ?: GrantResult.DADB_FAILED   // session mở không được ⇒ dadb/auth
-            }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb NÉM (auth/kết nối)", it); GrantResult.DADB_FAILED }
+            // B1 (BG-11/BG-14): hỏi binder TRƯỚC — đã bound ⇒ 0 lệnh shell, 0 ghi Secure Settings (trước đây mỗi lượt
+            // watchdog ghi `accessibility_enabled 1` + sleep 1,2 s + dumpsys chỉ để kết luận "đã BOUND — không toggle").
+            // Binder không trả lời được (null) ⇒ đi đường shell như cũ — không mất tự-heal 1.78.
+            return AccessibilityHealGates.grantOrSkip(
+                boundPerAccessibilityManager(app),
+                skipped = { Log.i(TAG, "accessibility đã BOUND (AccessibilityManager) → bỏ dadb"); GrantResult.BOUND },
+            ) { grantViaShell(app, myGen) }
         } finally { grantingAcc.set(false) }
     }
+
+    /** Đường dadb đầy đủ (đọc-sửa-ghi enabled list → verify dumpsys → toggle ép rebind). Chỉ chạy khi CHƯA bound. */
+    private fun grantViaShell(app: Context, myGen: Int): GrantResult =
+        runCatching {
+            val keyPair = AdbKeys.ensure(app)
+            LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
+                val cur = sh("settings get secure enabled_accessibility_services").output.trim()
+                val has = cur.split(':').any { it.trim() == ACC_COMP }
+                if (!has) {
+                    val next = when {
+                        cur == "null" -> ACC_COMP
+                        cur.isBlank() -> ACC_COMP
+                        else -> "$cur:$ACC_COMP"
+                    }
+                    sh("settings put secure enabled_accessibility_services \"$next\"")
+                }
+                sh("settings put secure accessibility_enabled 1")
+                Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
+                if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session GrantResult.NOT_BOUND }
+                // dadb CHẠY tới đây (ghi được settings) ⇒ KHÔNG phải lỗi USB debugging. forceRebind trả BOUND thật.
+                if (forceRebindIfNeeded(keyPair, sh)) GrantResult.BOUND else GrantResult.NOT_BOUND
+            } ?: GrantResult.DADB_FAILED   // session mở không được ⇒ dadb/auth
+        }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb NÉM (auth/kết nối)", it); GrantResult.DADB_FAILED }
 
     /**
      * FORCE-REBIND accessibility service khi ENABLED-nhưng-CHƯA-BOUND (trạng thái sau reboot: có trong

@@ -86,17 +86,49 @@ object LocalDeviceShell {
     private const val HOST = "localhost"
     private const val PORT = 5555
 
-    /** Chạy một lệnh, trả về stdout+stderr đã trim, hoặc null nếu không nối được. */
-    fun run(keys: AdbKeyPair, command: String): String? = runCatching {
-        Dadb.create(HOST, PORT, keys).use { adb -> (adb.shell(command).allOutput ?: "").trim() }
-    }.getOrNull()
+    /**
+     * Chạy một lệnh, trả về stdout+stderr đã trim, hoặc `null` nếu không nối được.
+     *
+     * Hardening 2026-09-25 (audit F2 [P2]) — hai điều đổi, giá trị trả về KHÔNG đổi:
+     *  • **có hạn đọc** ([LocalShellRetry.BACKGROUND_READ_CAP], 30 s): trước đây `Dadb.create(host, port, keys)` =
+     *    socket timeout 0 ([ĐO] javap `dadb-2.0.0` `Dadb$Companion.create(String,int,AdbKeyPair,int,int)` là overload
+     *    có `connectTimeout, socketTimeout`; 3-arg = mặc định 0) ⇒ adbd câm chờ "Cho phép gỡ lỗi USB" là luồng gọi
+     *    treo vĩnh viễn;
+     *  • **có lý do**: [onFailure] nhận [LocalShellFailure] đã phân loại (cùng bộ [LocalShellFailures.classify]
+     *    của `sessionResult`) thay cho một chữ `null` câm. Mặc định `{}` = mọi chỗ gọi cũ y nguyên.
+     * Đi qua đúng vòng [LocalShellSessions.run] (1 lần thử, không phát lại lệnh) — không mở đường transport thứ hai.
+     */
+    fun run(keys: AdbKeyPair, command: String, onFailure: (LocalShellFailure) -> Unit = {}): String? =
+        runWith(DadbLoopbackConnector, keys, listOf(command), onFailure)?.firstOrNull()
 
-    /** Chạy nhiều lệnh trên cùng một phiên; trả về danh sách output theo thứ tự, hoặc null nếu phiên lỗi. */
-    fun runAll(keys: AdbKeyPair, commands: List<String>): List<String>? = runCatching {
-        Dadb.create(HOST, PORT, keys).use { adb ->
-            commands.map { (adb.shell(it).allOutput ?: "").trim() }
+    /** Chạy nhiều lệnh trên cùng một phiên; trả về danh sách output theo thứ tự, hoặc `null` nếu phiên lỗi. Xem [run]. */
+    fun runAll(keys: AdbKeyPair, commands: List<String>, onFailure: (LocalShellFailure) -> Unit = {}): List<String>? =
+        runWith(DadbLoopbackConnector, keys, commands, onFailure)
+
+    /**
+     * Thân chung của [run]/[runAll], connector tiêm được để `LocalDeviceShellRunTest` khoá off-car: hạn đọc đúng
+     * số của [LocalShellRetry.BACKGROUND_READ_CAP], `null` + [onFailure] đúng lý do khi hỏng, output = stdout+stderr
+     * đã trim theo thứ tự lệnh (y hệt `AdbShellResponse.allOutput` = `output + errorOutput` — [ĐO] javap 2.0.0).
+     */
+    internal fun runWith(
+        connector: LocalShellConnector,
+        keys: AdbKeyPair,
+        commands: List<String>,
+        onFailure: (LocalShellFailure) -> Unit,
+    ): List<String>? {
+        val result = LocalShellSessions.run(
+            connector = connector,
+            keys = keys,
+            retry = LocalShellRetry.BACKGROUND_READ_CAP,
+            onProgress = { _, _, _ -> },
+            nowMs = System::currentTimeMillis,
+            sleepMs = Thread::sleep,
+        ) { sh -> commands.map { cmd -> sh(cmd).let { (it.output + it.errorOutput).trim() } } }
+        return when (result) {
+            is LocalShellResult.Ok -> result.value
+            is LocalShellResult.Failed -> { onFailure(result.reason); null }
         }
-    }.getOrNull()
+    }
 
     /**
      * Mở một phiên và trao vào một hàm chạy lệnh.
@@ -267,7 +299,7 @@ object LocalDeviceShell {
      * (tùy build). Trả true nếu phiên nối được (đã phát lệnh) — dấu hiệu thành công thật là lần
      * `bindAppWidgetIdIfAllowed()` thử lại sau đó, vì grantbind không in gì khi thành công.
      */
-    fun grantAppWidgetBind(keys: AdbKeyPair, pkg: String): Boolean {
+    fun grantAppWidgetBind(keys: AdbKeyPair, pkg: String, onFailure: (LocalShellFailure) -> Unit = {}): Boolean {
         // CLAUDE.md §4 — "nhắm đúng app nào? (allow-list, không phải 'mọi thứ trừ…')". [pkg] chảy THẲNG vào một
         // lệnh chạy ở uid-2000 shell; một chuỗi mang khoảng trắng / `;` / `$(…)` / `&&` sẽ chạy thành lệnh KHÁC
         // với quyền shell. Hôm nay chỗ gọi duy nhất truyền `packageName` của chính app, nhưng hàm này là API
@@ -281,6 +313,7 @@ object LocalDeviceShell {
                 "appwidget grantbind --package $pkg --user 0",
                 "cmd appwidget grantbind --package $pkg --user 0",
             ),
+            onFailure,
         ) != null
     }
 

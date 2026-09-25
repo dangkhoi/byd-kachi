@@ -76,8 +76,27 @@ class CarDataAdapter(
 
     private fun gate() = Gate(table, demand(), absent, clock())
 
-    /** Nhịp NHANH đáng chạy khi màn bày ít nhất một datum nhanh, HOẶC có ô điều khiển (để setpoint đọc realtime). */
-    override fun fastNeeded(): Boolean = CarDataDemand.needsFast(demand()) || controlDemand().isNotEmpty()
+    /**
+     * Nhịp NHANH đáng chạy khi màn bày ít nhất một datum nhanh, HOẶC có ô điều khiển **còn đáng hỏi** (để setpoint
+     * đọc realtime — #5 owner 2026-09-21, GIỮ NGUYÊN).
+     *
+     * ## K1b (2026-09-25) — vì sao không còn là `controlDemand().isNotEmpty()`
+     * [ĐO máy ảo clusternav10 · 2.65 · màn chính đứng yên · KachiPerf 3 cửa sổ 60 s]: `HAL đọc = 420/phút` trong khi
+     * vòng 09-16 đo idle = 0/phút. Dock mặc định mang 10 nút ⇒ điều kiện cũ luôn `true` ⇒ vòng 1 Hz **không bao giờ
+     * ngủ**, kể cả khi mọi nút đều đã bị [HalAbsentCache] xử nguội (off-car / trim không provision / HAL từ chối).
+     *
+     * Nay: mọi nút đang hiện đều nguội **và** không có datum nhanh ⇒ `false` ⇒ [CarStatusRepository] lùi về hỏi lại
+     * mỗi `slowMs`. Đường phục hồi KHÔNG bị gate bằng dữ liệu mà chỉ chính nó làm mới (CLAUDE.md §3): mốc thử lại
+     * nằm trong cache theo **đồng hồ**, không theo lượt đọc — tới hạn thì [HalAbsentCache.shouldRead] tự `true`,
+     * hàm này tự `true`, vòng nhanh tự dậy trong vòng một nhịp chậm (khoá bằng `CarDataAdapterTest` K1b(e)).
+     */
+    override fun fastNeeded(): Boolean {
+        if (CarDataDemand.needsFast(demand())) return true
+        val want = controlDemand()
+        if (want.isEmpty()) return false
+        val now = clock()
+        return want.any { absent.shouldRead(it, now) }
+    }
 
     /**
      * [SOÁT P2-1 · 2026-09-16] Quên mọi kết luận *"xe này không có datum ấy"* ([HalAbsentCache.clear]).
@@ -92,6 +111,19 @@ class CarDataAdapter(
      */
     fun forgetAbsent() = absent.clear()
     fun forgetAbsent(id: String) = absent.forget(id)
+
+    /**
+     * K1b (2026-09-25) — người dùng vừa **tác động** nút [controlId] ⇒ quên nguội cho CẢ HAI khoá mà nút ấy có thể
+     * nằm dưới: khoá **nút** (đường [readControls] · `readState(nút)`) và khoá **datum** `readKey` (đường nhịp
+     * chậm · `Gate.read(datum)`). Hai đường đọc cùng một getter nhưng nhớ riêng, vì `readState` còn có thể `null`
+     * do thang mức chưa khớp ([ControlLevels]) chứ không chỉ do xe không có — trộn chung là để một lỗi thang mức
+     * làm câm cả ô cụm. Chỗ gọi: `WakeOnWriteControl` (`:app`) sau mỗi lệnh ghi. Nút không có `readKey` ⇒ chỉ
+     * quên khoá nút.
+     */
+    fun forgetAbsentControl(controlId: String) {
+        absent.forget(controlId)
+        ControlRegistry.byId(controlId)?.readKey?.takeIf { it.isNotBlank() }?.let(absent::forget)
+    }
 
     // ── 6 method CŨ (tương thích WorkspaceView/WidgetViews) ────────────────────────────────────────────
     override fun batteryPercent(): Int? = table.readInt("soc")
@@ -227,13 +259,27 @@ class CarDataAdapter(
      * Giá trị THẬT của các nút đang hiện, giữ giá trị CŨ cho nút không còn trong [controlDemand] (một nhịp giao
      * thời không nên xoá về "—"). Nút đọc ra `null` (off-car / getter chưa provision) ⇒ **loại khỏi map** để ô lùi
      * về mức RAM thay vì hiện số bịa. Đọc qua [HalBindingTable.readState] — cùng đường mà nút ± dùng ở [ControlTileFactory].
+     *
+     * ## K1b (2026-09-25) — đi qua CÙNG cổng vắng [HalAbsentCache] như [Gate.read]
+     * Trước K1b hàm này gọi thẳng `readState` mỗi nhịp nhanh, **không** hỏi cache ⇒ nút off-car / chưa provision /
+     * HAL từ chối bị hỏi 1 Hz mãi mãi: [ĐO máy ảo 2.65, màn chính đứng yên] `HAL đọc = 420/phút · bỏ-không-hiện =
+     * 426 · bỏ-xe-không-có = 120` dù vòng 09-16 đo idle = 0/phút; trên xe [ĐO 09-16] ≈23 ms/lượt HAL ⇒ 7 lượt/s ≈ 16 %
+     * một lõi chỉ để nuôi dock. Nay: 3 lần `null` liên tiếp ⇒ nguội, thử lại giãn dần 60 s → 10 phút (luật sẵn có
+     * của cache), đếm [KachiPerf.Counter.HAL_SKIP_ABSENT]. Khoá cache = **mã nút** (không phải `readKey`) — xem
+     * [forgetAbsentControl] vì sao hai khoá tách nhau; hai không gian mã không giao nhau (`readPathOf` đã dựa vào đó).
+     *
+     * Nút có giá trị thật ⇒ `record(got = true)` xoá entry ⇒ vẫn đọc MỖI nhịp (#5 không đổi). Người dùng bấm nút ⇒
+     * [forgetAbsentControl] ⇒ nhịp kế đọc lại ngay dù đang nguội.
      */
     private fun readControls(prev: Map<String, Int>): Map<String, Int> {
         val want = controlDemand()
         if (want.isEmpty()) return prev
+        val now = clock()
         val out = HashMap<String, Int>(prev)   // giữ nút cũ (ngoài nhu cầu lượt này) — tránh nháy "—" khi giao thời
         for (id in want) {
+            if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); continue }
             val v = runCatching { table.readState(id) }.getOrNull()
+            absent.record(id, v != null, now)
             if (v != null) out[id] = v   // đọc không ra ⇒ GIỮ giá trị cũ nếu có, không ghi đè bằng bịa
         }
         return out

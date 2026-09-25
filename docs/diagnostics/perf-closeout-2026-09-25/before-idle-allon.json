@@ -1,0 +1,1 @@
+{"label":"before-idle-allon","window_s":300,"nproc":2,"procs":[{"name":"com.byd.launcher","pid":4288,"cpu_pct":1.99,"pss_kb":178487,"rss_kb":253632,"threads":51},{"name":"com.byd.launcher:wake","pid":4410,"cpu_pct":0.16,"pss_kb":266300,"rss_kb":333180,"threads":18}],"gfx":"67 49 (73.13%)","wakelock_lines":0,"alarms":5,"jobs":0,"log_total":350,"log_app":202}

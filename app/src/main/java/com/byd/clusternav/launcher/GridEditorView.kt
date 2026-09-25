@@ -36,6 +36,9 @@ class GridEditorView(context: Context) : View(context) {
     }
     private val handle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor(KachiTheme.INK) }
     private val box = RectF()
+    /** Dùng lại giữa các khung hình (lint DrawAllocation): chỉ số khung đè nhau + bảng màu khung. */
+    private val overlapping = HashSet<Int>()
+    private val palette = listOf(KachiTheme.ACCENT, KachiTheme.GREEN, KachiTheme.CYAN, KachiTheme.ACCENT2)
 
     /**
      * Độ đục vùng tô của khung — **hai con số này gánh luôn phần mà viền từng góp** (WP1 · R1.1).
@@ -159,12 +162,12 @@ class GridEditorView(context: Context) : View(context) {
         for (r in 0..WorkspaceGrid.ROWS) canvas.drawLine(gx, gy + r * chh, gx + gw, gy + r * chh, cell)
 
         // Khung nào đang đè nhau — tô đỏ để thấy ĐÍCH DANH, không chỉ báo chung "bố cục lỗi".
-        val bad = HashSet<Int>()
+        val bad = overlapping
+        bad.clear()
         for (i in layout.frames.indices) for (j in i + 1 until layout.frames.size) {
             if (layout.frames[i].overlaps(layout.frames[j])) { bad.add(i); bad.add(j) }
         }
 
-        val palette = listOf(KachiTheme.ACCENT, KachiTheme.GREEN, KachiTheme.CYAN, KachiTheme.ACCENT2)
         layout.frames.forEachIndexed { i, f ->
             val r = frameRect(f)
             box.set(r.left + 2f, r.top + 2f, r.right - 2f, r.bottom - 2f)

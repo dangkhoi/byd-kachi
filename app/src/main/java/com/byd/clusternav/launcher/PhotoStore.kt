@@ -30,7 +30,7 @@ object PhotoStore {
     fun folder(ctx: Context): File? = runCatching {
         val base = ctx.applicationContext.getExternalFilesDir(null) ?: return null
         File(base, FOLDER).apply { if (!exists()) mkdirs() }
-    }.getOrNull()
+    }.onFailure { Log.w(TAG, "folder: ${it.javaClass.simpleName}: ${it.message}") }.getOrNull()   // audit F7: widget trống phải có lý do
 
     /** Đường dẫn để chỉ cho người dùng biết bỏ ảnh vào đâu. */
     fun folderHint(ctx: Context): String =

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cấu hình lint của :app (AGP tự nạp `lint.xml` ở thư mục module).
+
+  Hai tệp dưới là HIỆN VẬT NIÊM PHONG theo byte (T11 · SHA-256 ở
+  `offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionTransportFenceTest.kt`; canh thêm bởi
+  `LegacyScreenAbsenceContractTest` + `ClusterNavBridgeWiringContractTest.khong dung vao hai tep niem phong`).
+  Màn ClusterNav cũ dùng chúng đã GỠ 2026-09-13 (spec `docs/specs/kachi-remove-legacy-screen.html` R1/R5): không mã
+  nào inflate `activity_main.xml`, và 19/24 khoá trong `strings.xml` không còn ai đọc. Không được sửa/xoá một byte
+  (kể cả thêm `tools:ignore`) ⇒ tắt lint theo ĐƯỜNG DẪN ở đây, không phải trong tệp.
+
+  - MissingClass: layout tham chiếu `com.byd.clusternav.ui.SpeedDialView` / `SegmentedControlView` (lớp đã gỡ cùng
+    màn cũ). Layout mồ côi, không bao giờ inflate ⇒ không có runtime crash.
+  - MissingTranslation: 5 khoá còn sống (`app_name`, `nav_listener_label`, `idle`, `acc_label`, `acc_desc`) đã có
+    bản EN ở `values-en/strings.xml`; 19 khoá còn lại chết cùng màn cũ, xoá khi gỡ niêm phong (quyết định owner).
+-->
+<lint>
+    <issue id="MissingClass">
+        <ignore path="src/main/res/layout/activity_main.xml" />
+    </issue>
+    <issue id="MissingTranslation">
+        <ignore path="src/main/res/values/strings.xml" />
+    </issue>
+</lint>

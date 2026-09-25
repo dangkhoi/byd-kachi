@@ -197,17 +197,30 @@ object Pm25FilterApplier {
             myGen = ++pollGeneration          // danh tính vòng NÀY
         }
         Thread({
+            // F7 (B1 2026-09-25): [ĐO máy ảo] `poll: mức=0 (—)` mỗi 45 s mãi mãi khi không có HAL. INVALID liên tiếp
+            // ≥ 3 ⇒ giãn ×2 tới trần 10 phút (Pm25PollBackoff, thuần); đọc được ⇒ về 45 s NGAY; bật lại công tắc ⇒
+            // vòng mới ⇒ đếm lại từ 0. Không khoá vĩnh viễn (CLAUDE.md §3).
+            var consecutiveInvalid = 0
             try {
                 while (myGen == pollGeneration && Prefs.pm25FilterEnabled(app)) {
-                    runCatching { Thread.sleep(POLL_INTERVAL_MS) }
+                    val waitMs = Pm25PollBackoff.nextIntervalMs(consecutiveInvalid, POLL_INTERVAL_MS)
+                    runCatching { Thread.sleep(waitMs) }
                     // Thoát nếu bị TẮT (disable ++thế hệ) hoặc pref về false — KHÔNG đọc `polling` (thread mới
                     // có thể vừa bật lại cờ đó cho thế hệ khác); danh tính thế hệ mới là điều kiện đúng.
                     if (myGen != pollGeneration || !Prefs.pm25FilterEnabled(app)) break
                     val level = readLevel(app)
+                    if (level == Pm25Filter.INVALID) {
+                        consecutiveInvalid++
+                        if (consecutiveInvalid == Pm25PollBackoff.INVALID_BEFORE_BACKOFF) {
+                            Log.i(TAG, "poll: INVALID $consecutiveInvalid lần liên tiếp (không HAL?) → giãn nhịp ×2, trần ${Pm25PollBackoff.MAX_INTERVAL_MS / 60_000} phút")
+                        }
+                    } else {
+                        consecutiveInvalid = 0
+                    }
                     if (Pm25Filter.isDirty(level)) {
                         Log.i(TAG, "poll: mức=$level (${Pm25Filter.levelLabelEn(level)}) ≥ ngưỡng → lọc-ngay")
                         quickCleanThrottled(app)
-                    } else {
+                    } else if (level != Pm25Filter.INVALID) {
                         Log.d(TAG, "poll: mức=$level (${Pm25Filter.levelLabelEn(level)}) < ngưỡng → bỏ qua")
                     }
                 }

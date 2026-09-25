@@ -1,6 +1,8 @@
 # Hướng dẫn LẤY LOG bản DIAG (chẩn đoán VietMap/Waze) — cho người KHÔNG rành IT
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-08-26 · **Mục đích**: Anh em cài **bản DIAG v1.28**, lái thử VietMap/Waze, log **tự bật + tự ra thẻ nhớ**, rồi gửi cả thư mục về để phân tích (tìm thông tin còn thiếu để bắn hướng rẽ lên HUD).
+> ⚠ **Đời ClusterNav 1.x — Kachi (2.65) xem [`HUONG-DAN-KACHI.md`](HUONG-DAN-KACHI.md)** · Trạng thái: Historical (2026-09-25).
+
+> **Trạng thái**: Historical (đời ClusterNav 1.x; thay bằng `HUONG-DAN-KACHI.md` 2026-09-25) · **Cập nhật**: 2026-08-26 · **Mục đích**: Anh em cài **bản DIAG v1.28**, lái thử VietMap/Waze, log **tự bật + tự ra thẻ nhớ**, rồi gửi cả thư mục về để phân tích (tìm thông tin còn thiếu để bắn hướng rẽ lên HUD).
 
 > ⚠️ Bản **DIAG** này KHÁC bản thường: **log bật sẵn** (để anh em khỏi phải nhớ bật) và **tự copy log ra thẻ nhớ** cho dễ lấy. Chỉ dùng để thu thập dữ liệu, xong thì cài lại bản thường.
 

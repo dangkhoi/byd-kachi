@@ -29,26 +29,32 @@ class CameraSignalController(private val appCtx: Context) {
     // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] subscribe.
     // [ĐO xe 2026-09-25] register listener dưới uid APP bị SecurityException BYDAUTO_LIGHT_GET (perm signature);
     // chạy dưới uid shell (mô hình kinex) thì OK. getLightStatus poll trả 0 trên trim này ⇒ không dùng poll.
-    @Volatile private var started = false
+    // BG-15 + [SOÁT Pass 1 · 2026-09-25]: MỘT controller dùng chung ⇒ `tick()` chạy CẢ trên main (HOME) lẫn luồng
+    // vòng `AutomationService`. Cờ phải đổi bằng **một phép nguyên tử**: `if (started) … started = true` cho hai
+    // luồng đi qua cùng lúc ⇒ hai lượt `start` xếp hàng (hoặc một `stop` lọt giữa) ⇒ cờ nói khác sự thật của socket.
+    private val started = java.util.concurrent.atomic.AtomicBoolean(false)
     private val signal by lazy { HalSignalClient() }
     private val bg = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
         Thread(r, "kachi-camera-hal").apply { isDaemon = true }
     }
 
+    /**
+     * Đồng bộ với công tắc — gọi từ `AutomationService` (mỗi nhịp 60 s + ngay khi `sync`) và từ HOME khi state đổi.
+     * Bật ⇒ đảm bảo helper + socket đang nghe; tắt ⇒ dừng luồng socket (BG-15) và đóng overlay (trên main).
+     *
+     * Sự kiện xi-nhan ON đến từ socket ([HalSignalClient] onTurn → tick(l,r) refresh mốc ON). Ở đây KHÔNG đọc
+     * evtLeft/evtRight sticky: [ĐO xe 2026-09-25] xi-nhan nhấp nháy → nếu tài xế tắt đúng pha ON, evt kẹt true ⇒
+     * refresh HOLD mãi ⇒ camera KHÔNG tắt (bug lúc-bị-lúc-không). Để HOLD tự hết theo mốc ON gần nhất là đường tin
+     * cậy — và mốc hết hạn được HẸN đúng lúc bằng [expiry] (BG-13), không cần vòng 250 ms nào gọi vào đây nữa.
+     */
     fun tick() {
-        if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
-        ensureSignal()
-        // FGS nhịp: gọi tick(false,false) — CHỈ để HOLD tự HẾT HẠN khi không còn sự kiện ON. Sự kiện xi-nhan ON
-        // đến từ socket ([HalSignalClient] onTurn → tick(l,r) refresh lastOnMs). KHÔNG đọc evtLeft/evtRight sticky ở
-        // đây: [ĐO xe 2026-09-25] xi-nhan nhấp nháy → nếu tài xế tắt đúng pha ON, evt kẹt true ⇒ FGS refresh HOLD
-        // mãi ⇒ camera KHÔNG tắt (bug lúc-bị-lúc-không). Để HOLD tự hết theo mốc ON gần nhất là đường tin cậy.
-        tick(false, false)
+        if (Prefs.cameraSignalEnabled(appCtx)) ensureSignal() else release()
+        tick(null, null)
     }
 
     /** Khởi HAL helper (uid shell) + socket client MỘT lần, trên thread NỀN (ensure() chặn: push jar + shell). */
     private fun ensureSignal() {
-        if (started) return
-        started = true
+        if (!started.compareAndSet(false, true)) return
         bg.execute {
             runCatching { HalHelperLauncher.ensure(appCtx) }.onFailure { Log.w(PanoramaHal.TAG, "HAL helper ensure lỗi: ${it.message}") }
             runCatching { signal.start { l, r -> tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
@@ -56,13 +62,23 @@ class CameraSignalController(private val appCtx: Context) {
     }
 
     /**
-     * Một nhịp với trạng thái xi-nhan cho sẵn (cho test/off-car). null = coi như tắt.
+     * BG-15 (2026-09-25): dừng luồng socket `KachiHalSignal` khi không còn ai cần (công tắc TẮT / automation hết
+     * việc). Trước đây không có đường này ⇒ mỗi controller một luồng sống tới khi xe tắt máy. Idempotent; đi qua
+     * [bg] để KHÔNG vượt mặt một `start` đang xếp hàng (executor một luồng giữ thứ tự). Bật lại ⇒ [ensureSignal]
+     * dựng lại (helper `ensure` idempotent: dò cổng trước khi khởi).
+     */
+    fun release() {
+        if (!started.compareAndSet(true, false)) return
+        bg.execute { runCatching { signal.stop() }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal stop lỗi: ${it.message}") } }
+    }
+
+    /**
+     * Một nhịp với trạng thái xi-nhan cho sẵn (từ socket, test bridge, hoặc null = không có tin mới).
      *
-     * ⚠ [ĐO xe 2026-09-24] Xi-nhan NHẤP NHÁY (~1.5Hz, sáng/tắt ~340ms). Poll thấy pha TẮT ⇒ đọc 0 dù
-     * đang bật ⇒ camera không lên / nhấp nháy. Giữ MỐC lần thấy ON gần nhất mỗi bên; bên nào ON trong [HOLD_MS]
-     * (> chu kỳ nháy) thì coi như ĐANG bật. Nhờ đó pha TẮT của nháy không đóng camera; chỉ đóng khi tắt hẳn
-     * (không thấy ON quá [HOLD_MS]). Gọi ở nhịp NHANH ([AutomationService.CAMERA_TICK_MS] 250ms < 340ms ⇒ bắt kịp
-     * pha ON của nháy).
+     * ⚠ [ĐO xe 2026-09-24] Xi-nhan NHẤP NHÁY (~1.5Hz, sáng/tắt ~340ms). Nhìn pha TẮT mà đóng thì camera nháy theo
+     * đèn. Luật giữ nằm ở [CameraHold] (thuần, test với đồng hồ giả): bên nào ON trong [HOLD_MS] coi như ĐANG bật;
+     * chỉ đóng khi không thấy ON quá [HOLD_MS]. Mốc hết hạn được hẹn bằng [expiry] sau MỖI nhịp (BG-13) — trước
+     * 2026-09-25 cần vòng automation 250 ms gọi `tick(false,false)` chỉ để HOLD hết hạn.
      */
     fun tick(left: Boolean?, right: Boolean?) {
         // overlay/hal/avm là op WindowManager + View ⇒ PHẢI main thread. tick(l,r) có thể được gọi từ LUỒNG ĐỌC
@@ -78,11 +94,11 @@ class CameraSignalController(private val appCtx: Context) {
     private fun tickMain(left: Boolean?, right: Boolean?) {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
         val now = clockMs()
-        if (left == true) lastLeftOnMs = now
-        if (right == true) lastRightOnMs = now
-        val leftHeld = now - lastLeftOnMs <= HOLD_MS
-        val rightHeld = now - lastRightOnMs <= HOLD_MS
-        val turn = CameraSignalPolicy.turnOf(leftHeld, rightHeld)
+        val turn = hold.observe(left, right, now)
+        // BG-13: hẹn ĐÚNG mốc HOLD hết hạn gần nhất (đặt lại mỗi nhịp — sự kiện ON mới đẩy mốc lùi). Không có bên
+        // nào đang giữ ⇒ không hẹn gì. Handler main ⇒ [expiry] cũng chạy trên main.
+        main.removeCallbacks(expiry)
+        hold.expiresInMs(now)?.let { main.postDelayed(expiry, it) }
         if (turn == current) return   // không đổi ⇒ giữ nguyên (không dựng lại, không nháy theo đèn)
         current = turn
         when (turn) {
@@ -117,12 +133,14 @@ class CameraSignalController(private val appCtx: Context) {
 
     /** Đồng hồ ĐƠN ĐIỆU cho HOLD (test override được). */
     internal var clockMs: () -> Long = { android.os.SystemClock.elapsedRealtime() }
-    private var lastLeftOnMs = -HOLD_MS
-    private var lastRightOnMs = -HOLD_MS
+    private val hold = CameraHold(HOLD_MS)
+    /** Hẹn hết hạn HOLD (BG-13): `observe(null,null)` đúng lúc mốc ON cuối + HOLD_MS trôi qua ⇒ đóng camera. */
+    private val expiry = Runnable { tickMain(null, null) }
 
     private fun stop() {
         current = Turn.NONE   // [P1 fix] reset để bật lại KHỚP lượt rẽ sau (không kẹt current cũ → return sớm)
-        lastLeftOnMs = -HOLD_MS; lastRightOnMs = -HOLD_MS
+        hold.reset()
+        main.removeCallbacks(expiry)
         runCatching { avm.close() }
         hal.close()
         overlay.hide()
@@ -131,8 +149,7 @@ class CameraSignalController(private val appCtx: Context) {
     companion object {
         const val LIGHT_DEVICE = "android.hardware.bydauto.light.BYDAutoLightDevice"
 
-        /** Giữ camera qua pha TẮT của nháy: > chu kỳ nháy (~700ms) đủ để một lần nháy không đóng; đủ ngắn để tắt
-         *  hẳn xi-nhan thì camera đóng nhanh. [ĐO xe: nháy ~1.5Hz]. */
-        const val HOLD_MS = 1_200L
+        /** Giữ camera qua pha TẮT của nháy — giá trị + lý do ở [CameraHold.HOLD_MS]. */
+        const val HOLD_MS = CameraHold.HOLD_MS
     }
 }

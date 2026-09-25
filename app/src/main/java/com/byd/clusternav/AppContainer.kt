@@ -14,6 +14,7 @@ import com.byd.clusternav.launcher.HomeViewModelFactory
 import com.byd.clusternav.launcher.KachiLog
 import com.byd.clusternav.launcher.PrefsWorkspaceRepository
 import com.byd.clusternav.launcher.WorkspaceRepository
+import com.byd.clusternav.launcher.camera.CameraSignalController
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.system.ShellTransport
 import com.byd.clusternav.system.WindowCommandDispatcher
@@ -51,6 +52,8 @@ class AppContainer internal constructor(
     private val workspaceRepositoryInit: () -> WorkspaceRepository,
     private val inputDaemonClientInit: (WindowCommandDispatcher) -> InputDaemonClient?,
     private val carGatewayInit: () -> HalGateway,
+    // BG-15 (2026-09-25): controller camera-theo-xi-nhan — mặc định `error` để container test thuần không dựng Android.
+    private val cameraSignalInit: () -> CameraSignalController = { error("cameraSignal không được cấu hình (test container)") },
     // Poll trạng thái xe = HAL binder reflection (IPC CHẶN) → chạy trên Dispatchers.IO (đúng pool cho blocking I/O),
     // KHÔNG phải Default (pool CPU) — tránh chiếm luồng CPU khi đọc HAL trên xe. Off-car (gateway null) vô hại.
     private val carScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -135,6 +138,17 @@ class AppContainer internal constructor(
     /** Cast folded BY REFERENCE — process-singleton object hiện có; KHÔNG sở hữu/không dựng coordinator ở đây. */
     val castRuntime: SimpleCastRuntime get() = SimpleCastRuntime
 
+    /**
+     * BG-15/BG-16 (2026-09-25): **MỘT** [CameraSignalController] cho cả tiến trình. Trước đây `KachiHomeActivity`
+     * dựng một cái và MỖI thế hệ vòng `AutomationService` dựng thêm một cái nữa — không cái nào `stop()` luồng
+     * socket `KachiHalSignal` ⇒ [ĐO máy ảo 2.65] 2× `KachiHalSignal` + 2× `kachi-camera-hal` khi đứng yên.
+     */
+    private val cameraSignalLazy: Lazy<CameraSignalController> = lazy(cameraSignalInit)
+    val cameraSignal: CameraSignalController get() = cameraSignalLazy.value
+
+    /** `true` khi controller đã được dựng — đường TẮT dùng để không dựng chỉ để dừng. */
+    val cameraSignalCreated: Boolean get() = cameraSignalLazy.isInitialized()
+
     /** Factory chuẩn AndroidX cấp [HomeViewModel] nối [workspaceRepository] + cờ [embedded] runtime. */
     fun homeViewModelFactory(embedded: Boolean): ViewModelProvider.Factory =
         HomeViewModelFactory(workspaceRepository, embedded)
@@ -156,6 +170,7 @@ class AppContainer internal constructor(
             workspaceRepositoryInit = { PrefsWorkspaceRepository(app) },
             inputDaemonClientInit = { dispatcher -> buildInputDaemonClient(app, dispatcher) },
             carGatewayInit = { BydHalGateway(app) },
+            cameraSignalInit = { CameraSignalController(app) },
         )
 
         /**

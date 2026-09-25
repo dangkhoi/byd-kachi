@@ -117,6 +117,25 @@ object KachiLog {
     /** Trần thời gian giữa hai lần xả cho dòng D/I — cửa sổ mất mát tối đa khi app chết đột ngột. */
     const val FLUSH_EVERY_MS = 2_000L
 
+    /**
+     * Ghi **đồng bộ** một ngoại lệ chưa bắt ra `crash-<ts>-<pid>.log` (hardening 2026-09-25 · audit F23).
+     *
+     * Vì sao không dựa vào [startCapture]: luồng chụp logcat đọc **bất đồng bộ** trong cùng tiến trình — tiến
+     * trình chết ngay sau `Log.e` thì dòng ấy có thể chưa kịp qua pipe. Đường này ghi thẳng + `flush` trước khi
+     * handler mặc định của Android kill tiến trình. Dùng được ở MỌI tiến trình (`:tts`/`:wake` không chạy
+     * [startCapture] nhưng `getExternalFilesDir` thì tiến trình nào cũng gọi được, không cần init).
+     * Trả tệp, hoặc `null` nếu không ghi được (vắng thẻ) — không ném, không log (đang ở giữa một crash).
+     */
+    fun writeCrash(ctx: Context, thread: Thread, error: Throwable): File? = runCatching {
+        val f = File(dir(ctx) ?: return null, "crash-${System.currentTimeMillis()}-${Process.myPid()}.log")
+        f.printWriter().use { w ->
+            w.println("process=${runCatching { android.app.Application.getProcessName() }.getOrDefault("?")} pid=${Process.myPid()} thread=${thread.name}")
+            error.printStackTrace(w)
+            w.flush()
+        }
+        f
+    }.getOrNull()
+
     /** Chụp một phát toàn bộ logcat gần đây (gồm hệ thống). Trả tệp hoặc `null`. */
     fun snapshot(ctx: Context): File? = runCatching {
         val f = File(dir(ctx) ?: return null, "snapshot-${System.currentTimeMillis()}.log")

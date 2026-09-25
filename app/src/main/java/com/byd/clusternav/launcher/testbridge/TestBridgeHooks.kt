@@ -19,6 +19,7 @@ import com.byd.clusternav.launcher.VoiceDispatcher
 import com.byd.clusternav.launcher.clusterNavBridge
 import com.byd.clusternav.launcher.voice.VoiceSession
 import com.byd.clusternav.launcher.voice.VoiceWiring
+import java.lang.ref.WeakReference
 
 /**
  * ═══ T-BRIDGE · MÓC CỦA MÀN CHÍNH — thứ DUY NHẤT nối receiver với launcher đang chạy ══════════════════════════
@@ -39,8 +40,12 @@ import com.byd.clusternav.launcher.voice.VoiceWiring
  * Mọi lambda ở đây trỏ tới **đúng** thứ mà một cú chạm dùng — không có ngoại lệ nào.
  */
 internal class TestBridgeHooks(
-    /** Ai gắn móc này — để [KachiTestHooks.detach] không cho màn CŨ gỡ móc của màn MỚI (hai màn Kachi chồng nhau). */
-    val owner: Activity,
+    /**
+     * Ai gắn móc này — để [KachiTestHooks.detach] không cho màn CŨ gỡ móc của màn MỚI (hai màn Kachi chồng nhau).
+     * Giữ **yếu**: [KachiTestHooks] là `object` sống hết tiến trình, một tham chiếu mạnh tới Activity ở đây là rò
+     * (lint StaticFieldLeak) nếu lượt tháo vì lý do gì không chạy. Chỉ dùng để SO DANH TÍNH (`===`), không gọi.
+     */
+    owner: Activity,
     /** Activity còn sống, `null` khi đang đóng — chỗ gọi phải hỏi lại mỗi lần, không chụp sẵn. */
     val activity: () -> Activity?,
     val state: () -> HomeUiState,
@@ -77,7 +82,12 @@ internal class TestBridgeHooks(
     val bridge: () -> ClusterNavBridge,
     /** Camera theo xi-nhan: ép một nhịp với xi-nhan giả (trái,phải) — verify E2E overlay off-car (HAL null). */
     val cameraTick: (Boolean, Boolean) -> Unit = { _, _ -> },
-)
+) {
+    private val ownerRef = WeakReference(owner)
+
+    /** Màn đã gắn móc có đúng là [a] không — đường so danh tính DUY NHẤT, không phơi Activity ra ngoài. */
+    fun ownedBy(a: Activity): Boolean = ownerRef.get() === a
+}
 
 /**
  * Bản móc DUY NHẤT của cả tiến trình.
@@ -108,7 +118,7 @@ internal object KachiTestHooks {
      * so thì cầu kiểm thử chết im lặng đúng sau một lần đổi chủ đề/ngôn ngữ (hai ca dựng lại màn).
      */
     fun detach(owner: Activity) {
-        if (current?.owner === owner) {
+        if (current?.ownedBy(owner) == true) {
             current = null
             Log.i(TAG, "hooks detached")
         }
@@ -185,7 +195,7 @@ internal fun Activity.attachTestBridge(
     val host = application
     host.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
         override fun onActivityDestroyed(activity: Activity) {
-            if (activity !== hooks.owner) return
+            if (!hooks.ownedBy(activity)) return
             // Tự gỡ CẢ hai thứ: lượt theo dõi vòng đời và móc. Giữ lại bộ theo dõi là giữ một tham chiếu tới
             // Activity đã huỷ trong `Application` — thứ sống tới hết tiến trình.
             host.unregisterActivityLifecycleCallbacks(this)

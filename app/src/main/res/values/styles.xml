@@ -363,14 +363,15 @@
          dimens.xml has no matching token and this file is the only value-resource in scope. -->
 
     <!-- Cockpit.Group — the standard L2 feature container (mockup `.group`): gradient surf2→surf face with a
-         1px hairline stroke + 20dp corners (@drawable/group_bg), a soft drop shadow via elevation, and
-         clipToOutline so child rows/dividers are clipped to the rounded corners. Apply to a vertical
-         LinearLayout that stacks Cockpit.Row + Cockpit.RowDivider children. -->
+         1px hairline stroke + 20dp corners (@drawable/group_bg), a soft drop shadow via elevation. Apply to a
+         vertical LinearLayout that stacks Cockpit.Row + Cockpit.RowDivider children.
+         2026-09-25 lint: `android:clipToOutline` (XML attr = API 31, minSdk 29 ⇒ NewApi) đã bỏ — trên xe (API 29)
+         attr này vốn bị bỏ qua im lặng, và style chỉ còn `activity_main.xml` (niêm phong, không inflate) dùng.
+         Cần bo góc con ở màn mới ⇒ `view.clipToOutline = true` trong code (API 21+). -->
     <style name="Cockpit.Group" parent="">
         <item name="android:background">@drawable/group_bg</item>
         <item name="android:orientation">vertical</item>
         <item name="android:elevation">10dp</item>
-        <item name="android:clipToOutline">true</item>
     </style>
 
     <!-- Cockpit.Row — a single feature/setting row inside a Group (mockup `.row`): horizontal, children centred
@@ -422,7 +423,7 @@
     <!-- Cockpit.HeroCard — the top glanceable status card (mockup `.hcard`): gradient surf2→surf face with a
          hairline stroke + 20dp corners + inset top-highlight (@drawable/hero_card_bg), a deeper elevation for
          a floating feel. v1.34: horizontal padding RESTORED to 18dp (text fit); vertical padding kept at 13dp
-         (~70%) so the card is shorter. clipToOutline rounds the content. -->
+         (~70%) so the card is shorter. -->
     <style name="Cockpit.HeroCard" parent="">
         <item name="android:background">@drawable/hero_card_bg</item>
         <item name="android:orientation">vertical</item>
@@ -431,7 +432,7 @@
         <item name="android:paddingTop">17dp</item>
         <item name="android:paddingBottom">17dp</item>
         <item name="android:elevation">14dp</item>
-        <item name="android:clipToOutline">true</item>
+        <!-- `android:clipToOutline` bỏ 2026-09-25 (NewApi, cùng lý do Cockpit.Group ở trên). -->
     </style>
 
     <!-- Cockpit.HeroLead — the small uppercase lead label of a hero card (mockup `.hlead`): 12sp muted medium

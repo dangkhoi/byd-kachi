@@ -1,6 +1,8 @@
 # Hướng dẫn LẤY LOG lái thử — ClusterNav 2.0 (cho người KHÔNG rành IT)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-08-17 · **Mục đích**: Cách lấy log + ảnh sau khi lái thử (Cách A không cần máy tính / Cách B dùng máy tính).
+> ⚠ **Đời ClusterNav 1.x — Kachi (2.65) xem [`HUONG-DAN-KACHI.md`](HUONG-DAN-KACHI.md)** · Trạng thái: Historical (2026-09-25).
+
+> **Trạng thái**: Historical (đời ClusterNav 1.x; thay bằng `HUONG-DAN-KACHI.md` 2026-09-25) · **Cập nhật**: 2026-08-17 · **Mục đích**: Cách lấy log + ảnh sau khi lái thử (Cách A không cần máy tính / Cách B dùng máy tính).
 
 > Mục đích: sau khi lái thử, lấy toàn bộ **log + ảnh chụp** từ xe về máy tính để gửi lại phân tích.
 > Làm theo đúng thứ tự. Mỗi bước chỉ vài phút. Có 2 cách — **Cách A (dễ nhất, không cần máy tính)** và **Cách B (dùng máy tính)**.

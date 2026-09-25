@@ -18,7 +18,8 @@ html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#383
 <div class="eyebrow">Navigation track · background AppWidgetHost POC · 2026-08-04</div>
 <h1>Đọc speed limit VietMap khi ứng dụng chạy nền.</h1>
 <p class="lead">Thay BLE self-loopback và Accessibility bằng giao thức Android chính thống: ClusterNav bind widget VietMap một lần, duy trì <code>AppWidgetHost</code> trong Navigation lifecycle, rồi đọc dữ liệu đã được VietMap chủ động đẩy qua <code>RemoteViews</code>.</p>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Scope: acquisition POC only · Android baseline: API 29 / DiLink3</p>
+<p class="meta">Owner: dangkhoi · Scope: acquisition POC only · Android baseline: API 29 / DiLink3</p>
+<p class="meta"><b>Trạng thái</b>: Historical — POC 2026-08-04 (đời ClusterNav 2.0); đường sống nay là widget VietMap <code>vietmapwidget/*</code> → biển báo tốc độ trên cụm (Kachi gom vào Cài đặt › Dẫn đường & cụm đồng hồ) · <b>Cập nhật</b>: 2026-09-25 · <b>Mục đích</b>: đọc speed limit VietMap khi app chạy nền qua <code>AppWidgetHost</code>.</p>
 <div class="stats"><div class="stat"><b>2</b><span>VietMap widget providers</span></div><div class="stat"><b>1×</b><span>system bind consent</span></div><div class="stat"><b>0</b><span>Accessibility dependency</span></div><div class="stat"><b>0</b><span>BLE hardware dependency</span></div></div>
 <nav class="toc"><a href="#changelog">Changelog</a><a href="#context">Context</a><a href="#requirements">Requirements</a><a href="#design">Design</a><a href="#tasks">Tasks</a><a href="#verification">Verification</a><a href="#questions">Open Questions</a><a href="#references">References</a><a href="#reviewers">Reviewer Log</a></nav>
 </header>

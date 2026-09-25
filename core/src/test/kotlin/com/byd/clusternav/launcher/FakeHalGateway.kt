@@ -30,7 +30,15 @@ class FakeHalGateway(
      * đường Local sẽ *"không bao giờ chảy giá trị"* trong bài FULL WIRE — một ô trống mà không bài nào giải thích.
      */
     private val locals: Map<String, String?> = emptyMap(),
+    /**
+     * Máy giả này có **bảng feature-id THẬT** không (`HalGateway.featureMapAvailable`). Mặc định `false` = off-car,
+     * giữ nguyên nghĩa của mọi bài kiểm cũ; đặt `true` để dựng một "chiếc xe có bảng" cho `writeFailureIsReal` /
+     * `featureAbsentOnCar` (thêm ở review Pass 2 · 2026-09-26).
+     */
+    private val featureMapPresent: Boolean = false,
 ) : HalGateway {
+
+    override fun featureMapAvailable(): Boolean = featureMapPresent
 
     override fun featureIdByName(constName: String): Int? = featureNames[constName]
 

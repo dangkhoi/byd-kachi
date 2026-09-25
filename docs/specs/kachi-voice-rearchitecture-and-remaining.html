@@ -35,7 +35,8 @@ ul{padding-left:22px}li{margin:3px 0}
 <body><div class="wrap">
 
 <h1>Kế hoạch: tái kiến trúc VOICE + làm hết phần còn lại</h1>
-<p class="muted">Kachi launcher (<code>com.byd.launcher</code>) · cây làm việc 1.70 (71) · <span class="pill wait">CHỜ OWNER DUYỆT — chưa code gì mới</span></p>
+<p class="muted">Kachi launcher (<code>com.byd.launcher</code>) · cây làm việc 1.70 (71) · <span class="pill ok">Đã ship 1.70 (71) — owner duyệt sau (autonomous)</span> · cập nhật 2026-09-25</p>
+<p class="muted"><b>Changelog</b> · <b>2026-09-25</b>: đổi pill "CHỜ OWNER DUYỆT — chưa code gì mới" → "Đã ship 1.70 (71) — owner duyệt sau (autonomous)": project-context/backlog 2026-09-17 ghi 1.70 (71) ship theo spec này (B1 máy trạng thái = <code>VoiceTurnPhase</code>/<code>VoiceTurnMachine</code> trong cây, VAD preload, chime async, model G); §6 ghi quyết định owner 2026-09-17 nhưng spec chưa được duyệt chính thức từng dòng — ghi để hết mâu thuẫn (R2.4). Engine hiện hành = sherpa-onnx. · <b>2026-09-17</b>: bản đầu.</p>
 <p class="muted">Đây là kế hoạch, không phải lệnh thi hành. Mọi khẳng định gắn [ĐO]/[SUY]/[ĐOÁN]/[CHƯA BIẾT] theo <code>conversation-protocol.md</code>. Nguồn: đọc code thật (<code>VoiceSession</code>/<code>VoiceCapture</code>/<code>VoiceRecognizer</code>/<code>VoiceChime</code>/<code>VoiceSessionTurns</code>) + handoff 2026-09-17 + backlog.</p>
 
 <h2>0. Trạng thái ngay lúc này (bắt buộc đọc trước)</h2>

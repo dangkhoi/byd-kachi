@@ -87,9 +87,12 @@ class DeadReckonRetirementTest {
     @Test
     fun `the shipped manifest requests no mock or broad location permission`() {
         val manifest = app("src/main/AndroidManifest.xml").toFile().readText()
+        // Owner 2026-09-16 mở khoá ĐÚNG phần ĐỌC (spec `kachi-rain-defrost-and-rebind.html` R5/§4.7): FINE + COARSE
+        // cùng xin — Android 12+ bỏ qua lời xin FINE đơn lẻ (lint CoarseFineLocation). Phần GHI và phần NỀN vẫn đóng.
+        assertTrue(manifest.contains("android.permission.ACCESS_FINE_LOCATION"), "manifest phải xin FINE (đọc)")
+        assertTrue(manifest.contains("android.permission.ACCESS_COARSE_LOCATION"), "COARSE phải đi kèm FINE")
         listOf(
             "ACCESS_MOCK_LOCATION",
-            "ACCESS_COARSE_LOCATION",
             "ACCESS_BACKGROUND_LOCATION",
             "FOREGROUND_SERVICE_LOCATION",
         ).forEach { permission ->

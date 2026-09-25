@@ -44,8 +44,7 @@ import com.byd.clusternav.voiceMicSource
 internal class VoiceCapture(private val ctx: Context) {
 
     /** Micro đã được cấp quyền chưa. */
-    fun hasPermission(): Boolean =
-        ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    fun hasPermission(): Boolean = micGranted(ctx)
 
     /**
      * Chữ nghe được + **khúc PCM đã thu** của chính lượt ấy.
@@ -217,13 +216,8 @@ internal class VoiceCapture(private val ctx: Context) {
             val tListen = System.currentTimeMillis()
             val deadline = tListen + maxMs
             var lastPartial = ""
-            // [ĐO bug voice 2026-09-15] Mức tín hiệu micro — chốt "câm/không nghe được" TRONG MỘT lượt nói: đỉnh
-            // gần 0 ⇒ mic câm; đỉnh kịch 32767 liên tục ⇒ méo/clip; đỉnh vừa mà sherpa ra rỗng ⇒ định dạng.
-            var peak = 0
-            var sumSq = 0.0
-            var samples = 0L
-            // Số mẫu đã đọc được trong cửa sổ — mốc để đổi mẫu ↔ ms và là trần trên của phép cắt đuôi.
-            // Tách khỏi `samples` (Long, dùng cho phép đo mức) vì phép cắt làm việc trên chỉ số mảng (Int).
+            val meter = MicLevelMeter(SAMPLE_RATE)   // mức tín hiệu (câm/clip) — KDoc [MicLevelMeter]
+            // Số mẫu đã đọc được trong cửa sổ — mốc để đổi mẫu ↔ ms và là trần trên của phép cắt đuôi (Int: chỉ số mảng).
             var fed = 0
             var ended = false
             while (!cancelled() && System.currentTimeMillis() < deadline) {
@@ -234,14 +228,7 @@ internal class VoiceCapture(private val ctx: Context) {
                     if (n < 0) { Log.w(TAG, "đọc micro trả $n — dừng phiên"); break }
                     continue
                 }
-                var chunkSq = 0.0
-                for (i in 0 until n) {
-                    val a = kotlin.math.abs(buf[i].toInt())
-                    if (a > peak) peak = a
-                    chunkSq += a.toDouble() * a
-                }
-                sumSq += chunkSq
-                samples += n
+                val rmsChunk = meter.feed(buf, n)   // đỉnh/RMS cả lượt gom trong meter; RMS khúc cho ngắt câu + waveform
                 fed += n
                 // Chép TRƯỚC khi giải mã: `accept` có thể chốt câu và thoát ngay ở dòng dưới.
                 if (keepPcm && keptN < kept.size) {
@@ -250,7 +237,7 @@ internal class VoiceCapture(private val ctx: Context) {
                     keptN += room
                 }
                 if (rec.accept(buf, n)) {
-                    logLevel(peak, sumSq, samples)
+                    Log.i(TAG, meter.line())
                     return Heard(
                         rec.finalResult(ep.trimSamples(fed)), kept, keptN,   // [SOÁT 1.69 · P2] xem KDoc `finalResult`
                         speechMs = ep.speechEndMs() - maxOf(0, ep.speechStartMs()),
@@ -260,7 +247,6 @@ internal class VoiceCapture(private val ctx: Context) {
                 }
                 // Ngắt câu — đặt SAU `rec.accept` (khối đã vào bộ gom) và TRƯỚC `partial`: thoát ở đây thì
                 // khúc tiếng đã đầy đủ, phép cắt + giải mã dưới kia làm việc trên đúng thứ vừa nói.
-                val rmsChunk = kotlin.math.sqrt(chunkSq / n).toInt()
                 onLevel(rmsChunk)   // R2 voice-ux: feed waveform overlay
                 val stop = ep.accept(buf, n, rmsChunk, n * 1000 / SAMPLE_RATE)
                 // Cửa sổ đo nền (chỉ đường LÙI có) đã đóng ⇒ giờ bíp mới an toàn — xem [P0-2] ở trên.
@@ -280,7 +266,7 @@ internal class VoiceCapture(private val ctx: Context) {
             if (!ended) { ep.flush(); Log.i(VoiceEngine.TIMING_TAG, "hết trần: ${ep.summary(fed)}") }
             val listenMs = System.currentTimeMillis() - tListen
             Log.i(VoiceEngine.TIMING_TAG, "nghe $listenMs ms")
-            logLevel(peak, sumSq, samples)
+            Log.i(TAG, meter.line())
             val speechStart = ep.speechStartMs()
             val speechEnd = ep.speechEndMs()
             // ═══ [P0-1a] KHÔNG GIẢI MÃ một lượt chưa bao giờ nghe thấy tiếng ═══════════════════════════
@@ -378,15 +364,6 @@ internal class VoiceCapture(private val ctx: Context) {
     }
 
     /**
-     * Ghi mức tín hiệu của một lượt nghe (bug voice 2026-09-15) — đỉnh biên độ + RMS, cả hai theo thang 0..32767.
-     * Một dòng, đọc được ngay trong logcat trên xe để phân biệt câm / clip / chất-lượng mà không cần lưu tệp.
-     */
-    private fun logLevel(peak: Int, sumSq: Double, samples: Long) {
-        val rms = if (samples > 0) kotlin.math.sqrt(sumSq / samples).toInt() else 0
-        Log.i(TAG, "mức micro: đỉnh $peak/32767 · rms $rms · $samples mẫu (${samples / 16}ms)")
-    }
-
-    /**
      * Dựng [AudioRecord]: thử `VOICE_RECOGNITION` rồi mới `MIC` — xem KDoc lớp, quyết định (1).
      *
      * Bộ đệm lấy **gấp đôi** mức tối thiểu của ROM: mức tối thiểu là ngưỡng *"không tràn nếu đọc đúng nhịp"*,
@@ -394,6 +371,8 @@ internal class VoiceCapture(private val ctx: Context) {
      * và mất kiểu đó không có lỗi nào báo.
      */
     private fun openRecord(): Opened? {
+        // Quyền RUNTIME có thể bị thu hồi sau khi phiên đã dựng ⇒ hỏi lại ngay trước khi dựng AudioRecord; thiếu ⇒ null.
+        if (!hasPermission()) { Log.w(TAG, "chưa có quyền RECORD_AUDIO — không mở micro"); return null }
         val min = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         // 1.70 — đệm ≥ [MIN_BUFFER_MS] tiếng: [ĐO xe 2026-09-17] `min*2` = **2 560 byte = 80 ms** trên DL3, và
         // một lượt chặn 3 s (âm báo) trên luồng đọc làm rơi **toàn bộ** tiếng của khoảng đó, không lỗi nào báo.
@@ -404,9 +383,16 @@ internal class VoiceCapture(private val ctx: Context) {
         // V3 · R1 — thứ tự nguồn từ `:core` ([VoiceMicSource]) + lựa chọn người dùng; MIC trước ([ĐO xe 2026-09-16]), ép nguồn vẫn có đường lùi.
         val pref = runCatching { Prefs.voiceMicSource(ctx) }.getOrDefault(VoiceMicSource.PREF_AUTO)
         for (source in VoiceMicSource.order(pref)) {
-            val r = runCatching {
+            // `SecurityException` tường minh: quyền có thể bị thu hồi giữa lượt hỏi ở trên và dòng này.
+            val r = try {
                 AudioRecord(source, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size)
-            }.getOrNull() ?: continue
+            } catch (e: SecurityException) {
+                Log.w(TAG, "quyền RECORD_AUDIO bị thu hồi giữa chừng — không mở micro", e); return null
+            } catch (e: RuntimeException) {
+                // Giữ nguyên hành vi hiện trường trước 2026-09-25 (`runCatching … ?: continue`): ROM từ chối nguồn
+                // (IllegalArgumentException theo tài liệu, nhưng ROM lệch có thể ném loại khác) ⇒ thử nguồn sau.
+                Log.w(TAG, "nguồn $source bị ROM từ chối (${e.javaClass.simpleName}: ${e.message}) — thử nguồn sau"); continue
+            }
             if (r.state == AudioRecord.STATE_INITIALIZED) {
                 Log.i(TAG, "micro mở bằng nguồn ${VoiceMicSource.sourceName(source)} (đệm $size byte · pref=$pref)")
                 return Opened(r, source)
@@ -456,6 +442,13 @@ internal class VoiceCapture(private val ctx: Context) {
     }
 
     companion object {
+        /**
+         * Quyền micro (`RECORD_AUDIO`) — MỘT chỗ hỏi cho cả phiên lệnh ([VoiceCapture]) lẫn vòng nghe hotword
+         * ([VoiceWakeListener]); `checkSelfPermission` là API `Context` từ API 23, không cần bọc.
+         */
+        fun micGranted(ctx: Context): Boolean =
+            ctx.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+
         private const val TAG = "KachiVoiceMic"
 
         /**

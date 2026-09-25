@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bản EN cho các khoá CÒN SỐNG của `values/strings.xml` (tệp gốc niêm phong byte T11 — xem `app/lint.xml`).
+  Chỉ 5 khoá còn call site (manifest label · activity_cluster_nav.xml · nav_accessibility_config.xml); 19 khoá còn
+  lại chết cùng màn ClusterNav cũ (gỡ 2026-09-13), không dịch để khỏi nuôi thêm tài nguyên mồ côi.
+  Chuỗi launcher (`kachi_*`) KHÔNG đặt ở đây — chúng ở `strings_kachi.xml` (LauncherI18nContractTest canh).
+-->
+<resources>
+    <string name="app_name">Kachi</string>
+    <string name="nav_listener_label">ClusterNav — navigation reader</string>
+    <string name="idle">Waiting for navigation…</string>
+    <string name="acc_label">ClusterNav — map reading booster</string>
+    <string name="acc_desc">Reads the distance to the next turn shown in Google Maps to feed the cluster more precisely. Reads only while Google Maps is open; no touch, no personal data collected.</string>
+</resources>

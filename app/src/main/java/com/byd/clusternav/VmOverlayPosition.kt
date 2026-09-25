@@ -3,7 +3,9 @@ package com.byd.clusternav
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.byd.clusternav.launcher.InstalledPackageGate
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
+import com.byd.clusternav.system.PackageQueries
 
 /**
  * Điều khiển VỊ TRÍ bong bóng VietMap-mod trên CỤM (item 4, spec `docs/specs/vietmap-overlay-position-ui.html`).
@@ -92,11 +94,24 @@ object VmOverlayPosition {
     fun applyOnOpen(ctx: Context) {
         if (!castOn(ctx)) return
         val app = ctx.applicationContext
+        // F6 (B1 2026-09-25): [ĐO máy ảo] broadcast + log mỗi 16 s tới VietMap KHÔNG cài. Gate "gói có cài" (PackageManager,
+        // nhớ 60 s) TRƯỚC ResendGate — không gửi, không ghi nhận, log "bỏ" đúng một lần.
+        if (!vietMapInstalled(app)) return
         val xy = x(app) to y(app)
         val go = synchronized(gate) { gate.shouldSend(System.currentTimeMillis(), xy) }
         if (go) send(app)
     }
 
+    private fun vietMapInstalled(app: Context): Boolean = synchronized(installedGate) {
+        installedGate.installed(
+            System.currentTimeMillis(),
+            probe = { PackageQueries.packageInfo(app.packageManager, VIETMAP_PKG) != null },
+            onFirstAbsence = { Log.i(TAG, "bỏ gửi vị trí: $VIETMAP_PKG không cài (dò lại mỗi ${PKG_TTL_MS / 1000}s)") },
+        )
+    }
+
     private const val RESEND_MIN_MS = 15_000L
     private val gate = com.byd.clusternav.launcher.ResendGate(RESEND_MIN_MS)
+    private const val PKG_TTL_MS = 60_000L
+    private val installedGate = InstalledPackageGate(PKG_TTL_MS)
 }

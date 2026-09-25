@@ -26,6 +26,9 @@ class WallView(context: Context) : View(context) {
     private val bandTop = Paint()
     private val bandBottom = Paint()
     private var bandH = 0f
+    /** Hai vầng sáng của nền mặc định — shader dựng ở [onSizeChanged] (và [restyle]), không mỗi khung (lint DrawAllocation). */
+    private var glow1: Shader? = null
+    private var glow2: Shader? = null
     private val src = Rect()
     private val dst = Rect()
 
@@ -60,12 +63,12 @@ class WallView(context: Context) : View(context) {
 
     /**
      * #4 (owner 2026-09-23 · keep-state theme): re-đọc màu theme vào [base] (paint này lấy [KachiTheme.BG] MỘT LẦN
-     * lúc dựng ⇒ đổi Sáng↔Tối tại chỗ mà `invalidate()` cũ vẽ lại bằng màu CŨ → nền tổng không đổi). glow/scrim
-     * đọc mỗi onDraw nên tự đúng; band đọc ở onSizeChanged nên dựng lại đây. Gọi từ `applyThemeInPlace`.
+     * lúc dựng ⇒ đổi Sáng↔Tối tại chỗ mà `invalidate()` cũ vẽ lại bằng màu CŨ → nền tổng không đổi). scrim đọc
+     * mỗi onDraw nên tự đúng; glow + band dựng ở onSizeChanged nên dựng lại đây. Gọi từ `applyThemeInPlace`.
      */
     fun restyle() {
         base.color = Color.parseColor(KachiTheme.BG)
-        if (width > 0 && height > 0) onSizeChanged(width, height, width, height)  // dựng lại band theo BAR_TOP mới
+        if (width > 0 && height > 0) onSizeChanged(width, height, width, height)  // dựng lại glow + band theo vai màu mới
         invalidate()
     }
 
@@ -79,15 +82,23 @@ class WallView(context: Context) : View(context) {
             return
         }
 
-        // Đường mặc định / đường lùi — byte-giữ so với bản trước U4.
+        // Đường mặc định / đường lùi — cùng hình học/màu với bản trước U4; hai RadialGradient nay dựng sẵn ở
+        // [buildGlow] (theo kích thước + vai màu), onDraw chỉ gán shader.
         canvas.drawRect(0f, 0f, w, h, base)
+        if (glow1 == null) buildGlow(w, h)   // phòng onDraw chạy trước onSizeChanged — rẻ, chỉ một lần
+        glow.shader = glow1
+        canvas.drawRect(0f, 0f, w, h, glow)
+        glow.shader = glow2
+        canvas.drawRect(0f, 0f, w, h, glow)
+    }
+
+    /** Dựng hai vầng sáng theo kích thước hiện tại + [KachiTheme.GLOW1]/[KachiTheme.GLOW2] (đổi theme ⇒ [restyle] gọi lại). */
+    private fun buildGlow(w: Float, h: Float) {
         val r = maxOf(w, h)
-        glow.shader = RadialGradient(w * 0.13f, h * -0.06f, r * 0.42f,
+        glow1 = RadialGradient(w * 0.13f, h * -0.06f, r * 0.42f,
             Color.parseColor(KachiTheme.GLOW1), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, w, h, glow)
-        glow.shader = RadialGradient(w * 0.94f, h * 1.08f, r * 0.40f,
+        glow2 = RadialGradient(w * 0.94f, h * 1.08f, r * 0.40f,
             Color.parseColor(KachiTheme.GLOW2), Color.TRANSPARENT, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, w, h, glow)
     }
 
     private fun drawPhoto(canvas: Canvas, p: Bitmap, w: Float, h: Float) {
@@ -130,7 +141,8 @@ class WallView(context: Context) : View(context) {
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        if (w <= 0 || h <= 0) { bandH = 0f; return }
+        if (w <= 0 || h <= 0) { bandH = 0f; glow1 = null; glow2 = null; return }
+        buildGlow(w.toFloat(), h.toFloat())
         bandH = h * BAND_FRACTION
         val bar = Color.parseColor(KachiTheme.BAR_TOP)
         bandTop.shader = LinearGradient(0f, 0f, 0f, bandH, bar, Color.TRANSPARENT, Shader.TileMode.CLAMP)

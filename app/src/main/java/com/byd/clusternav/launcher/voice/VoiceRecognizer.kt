@@ -11,6 +11,10 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * ═══ V2 pha NGHE · BỘ NHẬN DẠNG — sherpa-onnx OfflineRecognizer, **TẠI MÁY**, GIẢI MÃ TỰ DO + BIASING ════════
@@ -113,7 +117,10 @@ class VoiceRecognizer private constructor(
         if (length <= 0) return ""
         val n = minOf(length, pcm.size)
         val samples = FloatArray(n) { pcm[it] / 32768f }
-        return runCatching {
+        // 2026-09-25 · wake: giữ khoá DÙNG suốt lượt giải mã để `VoiceEngine.release()` (BG-20 stand-down / gỡ gói)
+        // không thể giải phóng recognizer native dưới chân một `decode` đang chạy — đó là SIGSEGV, không phải ngoại
+        // lệ. Recognizer đã bị nhả (bản này không còn là bản hiện hành) ⇒ trả rỗng, có log, không chạm native.
+        return VoiceEngine.withUse(recognizer) {
             // [ĐO cần trên xe] spec `kachi-voice-hotword-phrases` R-nf1/OQ2(b): dựng đồ thị hotword (1902 cụm) mỗi
             // phiên — host 6,6 ms, ngân sách xe ≤ 150 ms. Mốc giờ này là số duy nhất để chốt, đọc qua logcat tag này.
             val t0 = System.currentTimeMillis()
@@ -129,7 +136,7 @@ class VoiceRecognizer private constructor(
             } finally {
                 runCatching { stream.release() }
             }
-        }.onFailure { Log.w(TAG, "giải mã hỏng", it) }.getOrDefault("")
+        } ?: "".also { Log.w(TAG, "giải mã bỏ qua: recognizer đã bị nhả (gỡ gói / stand-down)") }
     }
 
     /** Đóng phiên — chỉ quên khúc PCM; KHÔNG đóng recognizer chung (nó sống cả tiến trình, [VoiceEngine] giữ). */
@@ -213,6 +220,22 @@ object VoiceEngine {
     @Volatile private var biasing = false
 
     /**
+     * Một lượt nạp sẵn đang chạy (giữ suốt đời luồng `KachiVoicePreload`, nhả ở `finally`). [ĐO máy ảo 2.65] tiến
+     * trình chính có 3 luồng mang tên ấy sau 10 phút — [SUY khớp số, ORT 1.28.2 `posix/env.cc:178` không
+     * `pthread_setname_np`] đó là worker intra-op của 3 session (encoder/decoder/joiner) **thừa kế tên** luồng đã
+     * dựng chúng, không phải 3 lượt `preload`. Cờ này vẫn đúng chỗ: hai lời gọi gần nhau không được đẻ hai luồng.
+     */
+    private val preloading = AtomicBoolean(false)
+
+    /**
+     * Khoá DÙNG/NHẢ: giải mã giữ `read`, [release] giữ `write`. Không có nó, `release()` trong lúc một `decode`
+     * đang chạy (phiên lệnh, hoặc bộ nghe câu gọi ở `:wake`) là use-after-free native. Chỉ [decode] và [release]
+     * chạm; [recognizer] (`synchronized(this)`) gọi [release] khi đổi gói ⇒ monitor rồi mới `write`, còn `decode`
+     * không bao giờ lấy monitor ⇒ không có vòng chờ.
+     */
+    private val useLock = ReentrantReadWriteLock()
+
+    /**
      * ═══ H6 — LÝ DO lượt nạp sẵn gần nhất bị BỎ QUA, hoặc `null` nếu không bị ═══════════════════════════
      *
      * [VoicePreloadPolicy] đã quyết định đúng và đã ghi lý do vào logcat từ 1.67 — nhưng logcat là thứ chỉ người
@@ -240,10 +263,26 @@ object VoiceEngine {
     /** Engine hiện tại có bật được biasing không (đã nạp bpe vocab). Đọc sau [recognizer]. */
     fun biasingReady(): Boolean = biasing
 
-    /** Trả recognizer về hệ thống — gọi khi người dùng **gỡ** / **đổi** mô hình. */
+    /**
+     * Trả recognizer về hệ thống — gọi khi người dùng **gỡ** / **đổi** mô hình, và (2026-09-25 · wake, BG-20) khi
+     * `:wake` đứng xuống sau một phiên nghe headless mà "Hey Kachi" đang TẮT. **Chờ** lượt giải mã đang chạy xong
+     * rồi mới nhả (xem [useLock]); gọi từ luồng main của một service không UI thì trần chờ là một lượt giải mã.
+     */
     fun release() = synchronized(this) {
-        recognizer?.let { runCatching { it.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) } }
-        recognizer = null; builtFor = null; biasing = false
+        useLock.write {
+            recognizer?.let { runCatching { it.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) } }
+            recognizer = null; builtFor = null; biasing = false
+        }
+    }
+
+    /**
+     * Chạy [block] với `rec` khi nó **vẫn là** recognizer hiện hành, dưới khoá đọc; đã bị [release] ⇒ `null`, không
+     * chạm native. Lỗi trong [block] được nuốt thành `""` (cùng luật cũ của `decode`: một tính năng phụ không được
+     * giết phiên).
+     */
+    internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = useLock.read {
+        if (recognizer !== rec) return@read null
+        runCatching(block).onFailure { Log.w(TAG, "giải mã hỏng", it) }.getOrDefault("")
     }
 
     /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
@@ -268,13 +307,26 @@ object VoiceEngine {
      *  3. **Không ném, không chặn** — chưa tải mô hình / máy hết RAM ⇒ [recognizer] trả `null` và đây im lặng rút
      *     lui. Một tính năng phụ không được giết launcher (cùng luật `VoiceSession.runSession`).
      *
-     * An toàn khi gọi nhiều lần: [recognizer] tự khoá `synchronized` và tự nhận ra mô hình đã nạp.
+     * An toàn khi gọi nhiều lần: [recognizer] tự khoá `synchronized` và tự nhận ra mô hình đã nạp; và từ 2026-09-25
+     * hai lời gọi chồng nhau chỉ đẻ **một** luồng ([preloading]). Hàm này chỉ có nghĩa ở tiến trình **launcher**
+     * (`KachiApplication` chặn `:tts`/`:wake`); wake BẬT ⇒ tự rút lui, xem [VoicePreloadPolicy.shouldPreloadInMain].
      */
     fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS) {
         val app = ctx.applicationContext
+        // 2026-09-25 · wake: tối đa MỘT luồng nạp sẵn sống tại một thời điểm (xem [preloading]).
+        if (!preloading.compareAndSet(false, true)) { Log.i(TAG, "nạp sẵn: đã có lượt đang chạy — bỏ qua"); return }
         Thread({
-            runCatching {
+            try { runCatching {
                 if (delayMs > 0) Thread.sleep(delayMs)
+                // 2026-09-25 · wake — MỘT mô hình cho cả máy: wake BẬT ⇒ `:wake` giữ recognizer, chính không nạp
+                // bản thứ hai. Đọc pref ở đây (luồng nền, sau 3 s), không ở `Application.onCreate`. Xem
+                // [VoicePreloadPolicy.shouldPreloadInMain].
+                val wakeOn = runCatching { Prefs.wakeEnabled(app) }.getOrDefault(false)
+                if (!VoicePreloadPolicy.shouldPreloadInMain(wakeOn)) {
+                    lastPreloadSkip = VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL}")
+                    return@runCatching
+                }
                 if (!VoiceModelStore.isReady(app)) {
                     Log.i(TAG, "nạp sẵn: chưa có mô hình trên đĩa — bỏ qua")
                     return@runCatching
@@ -297,6 +349,7 @@ object VoiceEngine {
                 val ok = recognizer(app) != null
                 Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok)")
             }.onFailure { Log.w(TAG, "nạp sẵn hỏng — lần bấm mic đầu sẽ nạp như cũ", it) }
+            } finally { preloading.set(false) }
         }, "KachiVoicePreload").apply {
             isDaemon = true
             priority = Thread.MIN_PRIORITY

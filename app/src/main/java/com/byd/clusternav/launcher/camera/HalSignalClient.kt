@@ -5,6 +5,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ═══ NGHE XI-NHAN TỪ HELPER HAL QUA SOCKET 127.0.0.1 ═════════════════════════════════════════════════════════
@@ -24,8 +25,19 @@ import java.net.Socket
  *
  * Mất kết nối ⇒ nối lại với backoff [BACKOFF_START_MS] → [BACKOFF_CAP_MS] (helper có thể chưa lên, hoặc vừa bị
  * ROM giết). Backoff có trần để một helper chết hẳn không thành vòng quay 100% CPU.
+ *
+ * BG-15 (2026-09-25): thất bại liên tiếp ≥ [IDLE_AFTER_FAILURES] lần (máy ảo / xe không helper) ⇒ trần lùi lên
+ * [BACKOFF_CAP_IDLE_MS] — KHÔNG dừng hẳn (helper lên muộn vẫn nối được), chỉ thưa đi. Nối được ⇒ đặt lại từ đầu.
+ *
+ * @param sleeper ngủ giữa hai lần nối lại — test thay bằng đồng hồ giả (không chờ thật).
  */
-class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
+class HalSignalClient(
+    private val port: Int = HalHelperLauncher.PORT,
+    private val sleeper: (Long) -> Unit = { Thread.sleep(it) },
+) {
+
+    /** Số lần đã gọi `connect` (test đếm; không dùng cho logic). */
+    internal val connectAttempts = AtomicInteger(0)
 
     private var thread: Thread? = null
     @Volatile private var running = false
@@ -63,30 +75,34 @@ class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
 
     private fun loop(onTurn: (Boolean, Boolean) -> Unit) {
         var backoff = BACKOFF_START_MS
+        var failures = 0
         while (running) {
             try {
+                connectAttempts.incrementAndGet()
                 Socket().use { s ->
                     s.connect(InetSocketAddress("127.0.0.1", port), CONNECT_TIMEOUT_MS)
                     s.tcpNoDelay = true
                     socket = s
                     backoff = BACKOFF_START_MS   // nối được ⇒ đặt lại backoff
-                    Log.i(TAG, "đã nối 127.0.0.1:$port")
+                    failures = 0
+                    logI("đã nối 127.0.0.1:$port")
                     read(s, onTurn)
                 }
             } catch (t: Throwable) {
-                if (running) Log.d(TAG, "mất kết nối ($t), thử lại sau ${backoff}ms")
+                if (running) logD("mất kết nối ($t), thử lại sau ${backoff}ms")
             } finally {
                 socket = null
             }
             if (!running) break
+            failures++
             try {
-                Thread.sleep(backoff)
+                sleeper(backoff)
             } catch (e: InterruptedException) {
                 return   // stop() gọi interrupt — thoát, không nuốt rồi chạy tiếp
             }
-            backoff = (backoff * 2).coerceAtMost(BACKOFF_CAP_MS)
+            backoff = nextBackoffMs(backoff, failures)
         }
-        Log.i(TAG, "dừng nghe")
+        logI("dừng nghe")
     }
 
     private fun read(s: Socket, onTurn: (Boolean, Boolean) -> Unit) {
@@ -95,7 +111,7 @@ class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
             val line = reader.readLine() ?: break   // null = helper đóng đầu bên kia
             val parsed = parseLine(line)
             if (parsed == null) {
-                Log.d(TAG, "bỏ dòng lạ: $line")
+                logD("bỏ dòng lạ: $line")
                 continue
             }
             val (topic, type) = parsed
@@ -103,7 +119,7 @@ class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
                 TOPIC_ON -> true
                 TOPIC_OFF -> false
                 else -> {
-                    Log.d(TAG, "bỏ topic lạ: $topic")
+                    logD("bỏ topic lạ: $topic")
                     continue
                 }
             }
@@ -113,12 +129,18 @@ class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
                 else -> false
             }
             if (changed) {
-                Log.i(TAG, "xi-nhan trái=$left phải=$right")
+                logI("xi-nhan trái=$left phải=$right")
                 runCatching { onTurn(left, right) }
-                    .onFailure { Log.w(TAG, "onTurn ném: $it") }   // bên nhận ném KHÔNG được giết luồng đọc
+                    .onFailure { logW("onTurn ném: $it") }   // bên nhận ném KHÔNG được giết luồng đọc
             }
         }
     }
+
+    // Log bọc runCatching: luồng này chạy được trong test JVM thuần (android.jar stub ném "Stub!" ở mọi Log.*) —
+    // test backoff/đếm luồng dùng socket THẬT trên cổng không lắng nghe, không cần Robolectric. Chỉ nuốt lỗi của Log.
+    private fun logI(msg: String) { runCatching { Log.i(TAG, msg) } }
+    private fun logD(msg: String) { runCatching { Log.d(TAG, msg) } }
+    private fun logW(msg: String) { runCatching { Log.w(TAG, msg) } }
 
     companion object {
         private const val TAG = "KachiHalSignal"
@@ -129,8 +151,24 @@ class HalSignalClient(private val port: Int = HalHelperLauncher.PORT) {
         const val TYPE_RIGHT = 5
 
         private const val CONNECT_TIMEOUT_MS = 800
-        private const val BACKOFF_START_MS = 1_000L
-        private const val BACKOFF_CAP_MS = 8_000L
+        const val BACKOFF_START_MS = 1_000L
+        const val BACKOFF_CAP_MS = 8_000L
+
+        /** Sau ngần này lần thất bại LIÊN TIẾP (≈39 s với 1→8 s) thì coi helper vắng — thưa nhịp thử. */
+        const val IDLE_AFTER_FAILURES = 8
+
+        /** Trần khi helper vắng: 60 s — vẫn thử, không vĩnh viễn. */
+        const val BACKOFF_CAP_IDLE_MS = 60_000L
+
+        /**
+         * Backoff kế tiếp — THUẦN, test off-car. Nhân đôi tới trần; trần = [BACKOFF_CAP_MS] khi mới thất bại vài
+         * lần (helper đang lên / vừa bị giết — cần nối lại nhanh), = [BACKOFF_CAP_IDLE_MS] khi đã thất bại
+         * ≥ [IDLE_AFTER_FAILURES] lần liên tiếp.
+         */
+        fun nextBackoffMs(currentMs: Long, consecutiveFailures: Int): Long {
+            val cap = if (consecutiveFailures >= IDLE_AFTER_FAILURES) BACKOFF_CAP_IDLE_MS else BACKOFF_CAP_MS
+            return (currentMs * 2).coerceAtMost(cap)
+        }
 
         /**
          * Hai phép tìm RỜI thay vì một khuôn cả dòng: tách ra thì thêm trường mới vào giao thức (hoặc đổi thứ

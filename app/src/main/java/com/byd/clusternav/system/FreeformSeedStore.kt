@@ -1,5 +1,6 @@
 package com.byd.clusternav.system
 
+import android.annotation.SuppressLint
 import android.content.Context
 
 /**
@@ -22,6 +23,9 @@ class FreeformSeedStore(context: Context) : FreeformSeedPolicy.MarkerStore {
     override fun read(): FreeformSeedPolicy.SeedState =
         FreeformSeedPolicy.SeedState.of(prefs.getInt(KEY, FreeformSeedPolicy.SeedState.NONE.code))
 
+    // lint ApplySharedPref: `commit()` đồng bộ là CỐ Ý — marker phải nằm trên đĩa TRƯỚC khi ghi Settings.Global
+    // (CLAUDE.md §5: state đổi ngoài hệ thống sống dai hơn tiến trình; chết giữa chừng không được mất dấu).
+    @SuppressLint("ApplySharedPref")
     override fun commit(state: FreeformSeedPolicy.SeedState) {
         prefs.edit().putInt(KEY, state.code).commit()
     }

@@ -44,6 +44,10 @@
          RECORD_AUDIO, xem `LauncherRequirements.LOCATION` + `PermissionPreflight`. Thiếu ⇒ cổng GPS trả
          "chưa biết" và luật chờ-GPS **không dẫn bừa**; hàng quyền trong Cài đặt nói ra lý do. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- COARSE đi kèm FINE (lint CoarseFineLocation; Android 12+ bỏ qua lời xin FINE đơn lẻ). Vẫn chỉ ĐỌC — spec
+         `kachi-rain-defrost-and-rebind.html` R5/§4.7 (owner 2026-09-16); mock/background/FGS-location vẫn CẤM
+         (bài canh quyền định vị chỉ-ĐỌC ở app/src/test). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -301,10 +305,13 @@
              ⚠ Vì exported nên mọi app trên xe bắn vào được; cổng thật là công tắc "Chế độ kiểm thử qua adb"
              (Cài đặt › Hệ thống & quyền › Nâng cao) — tự tắt sau 60 phút, chết theo lần nổ máy, KHÔNG bật được
              bằng broadcast. Tắt ⇒ mọi lệnh trả `test_mode_off` và không nhánh nào chạy (KachiTestBridge).
-             Action dùng ${applicationId} để tên gói là MỘT nguồn cho cả manifest lẫn KachiTestBridge.action(). -->
+             Action dùng ${applicationId} để tên gói là MỘT nguồn cho cả manifest lẫn KachiTestBridge.action().
+             lint ExportedReceiver: KHÔNG thêm android:permission — uid shell (2000) không giữ được permission tự
+             khai ⇒ chặn luôn adb, mất mục đích cầu; cổng thật là công tắc test-mode ở trên. -->
         <receiver
             android:name=".launcher.testbridge.KachiTestBridge"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="${applicationId}.TEST" />
             </intent-filter>

@@ -1,6 +1,8 @@
 package com.byd.clusternav.launcher
+import android.annotation.SuppressLint
 import android.util.Log
 import android.app.Activity
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -112,7 +114,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
     private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
-    private val cameraSignal by lazy { com.byd.clusternav.launcher.camera.CameraSignalController(applicationContext) }
+    private val cameraSignal by lazy { container.cameraSignal }   // BG-15: MỘT controller cả tiến trình (AppContainer)
 
     /**
      * Glue intent theo-ô (gắn app/widget · mở · xoá · đổi chỗ) — thân ở [KachiHomeSlots] (trần 500 dòng). Nhận
@@ -195,6 +197,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        PredictiveBack.attach(this) { onBackPressed() }   // API 33+ (xe API 29: no-op), lý do ở KDoc [PredictiveBack]
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         // #10 (owner 2026-09-21 · [ĐO xe] taskbar ROM lòi lúc launcher start → đẩy layout, phải nhấn Home): áp
         // immersive NGAY ở onCreate (trước lượt bố trí đầu), rồi re-apply vài nhịp đầu vì ROM DiLink dựng taskbar
@@ -418,7 +421,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         windows.updateOverlayHeads()
     }
 
+    /**
+     * Back — API 29–32 (xe) vào đây từ nền tảng; API 33+ vào từ [PredictiveBack] (đăng ký ở [onCreate]). Kế thừa
+     * `android.app.Activity` thuần (không `ComponentActivity`, xem KDoc lớp) nên không có `onBackPressedDispatcher`
+     * của AndroidX — lint `GestureBackNavigation` không biết ca đăng ký thủ công này ⇒ tắt tại đúng hàm.
+     */
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    @SuppressLint("GestureBackNavigation")
     override fun onBackPressed() {
         // [SOÁT P3] Bảng vẽ bố cục từng bị bỏ sót ở đây: mở nó ra rồi bấm Back là **không có gì xảy ra** (Back của
         // HOME vốn không làm gì), người dùng tưởng bảng bị treo. Thứ tự: lớp phủ trên cùng đóng trước.
@@ -499,34 +508,32 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         shellGate.onHidden()     // F4 — màn khuất ⇒ dừng vòng dò (không dựng hộp thoại lên app người lái đang dùng)
     }
 
+    /**
+     * Huỷ màn — thứ tự QUAN TRỌNG, mỗi bước có lý do riêng:
+     *  • [SOÁT P2-4] đánh dấu đã huỷ + gỡ mọi lượt đã hẹn TRƯỚC khi tắt thread nền; làm ngược lại thì một lượt đã hẹn
+     *    chen vào giữa và nộp việc cho executor vừa tắt (RejectedExecutionException, không ai bắt) hoặc dựng cửa sổ
+     *    overlay bằng WindowManager của activity đã chết.
+     *  • Ngăn kéo có thể được gắn như CỬA SỔ RIÊNG (TYPE_APPLICATION_OVERLAY) → KHÔNG chết cùng activity; không đóng
+     *    thì rò view + giữ activity, và một cú chạm vào nó chạy vào `winExec` ĐÃ shutdown.
+     *  • [SOÁT Pass 2 · P1] tấm chữ phiên nghe cùng loại cửa sổ ⇒ cùng lý do; hỏi `isInitialized` để không DỰNG phiên
+     *    nghe ngay lúc huỷ (KDoc [voiceLazy]).
+     *  • [SOÁT S1 · P3] `HomePanels.closeAll()` từng là mã chết; nối vào đây vì màn Cài đặt giữ 7 trang đã dựng.
+     *  • H2·1 [ĐO 2026-09-14]: `dumpsys display` có 4 `kachi-slot-*` cho 2 ô vì màn đời trước mang cờ "đang kết thúc"
+     *    mà view chưa tháo ⇒ nhả màn ảo TƯỜNG MINH, không treo vòng đời tài nguyên hệ thống vào `onDetachedFromWindow`.
+     */
     override fun onDestroy() {
+        PredictiveBack.detach(this)
         super.onDestroy(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         if (isFinishing) vmStore.clear()
-        // [SOÁT P2-4] Thứ tự QUAN TRỌNG: đánh dấu đã huỷ + gỡ mọi lượt đã hẹn TRƯỚC khi tắt thread nền. Làm ngược
-        // lại thì một lượt đã hẹn có thể chen vào giữa và nộp việc cho executor vừa tắt (RejectedExecutionException,
-        // không ai bắt) hoặc dựng cửa sổ overlay bằng WindowManager của activity đã chết.
         destroyed = true
-        shellGate.onHidden()   // F4 — gỡ lượt dò đã hẹn TRƯỚC khi tắt thread nền (cùng lý do khối ngay trên)
+        shellGate.onHidden()   // F4 — gỡ lượt dò đã hẹn TRƯỚC khi tắt thread nền
         workspace.removeCallbacks(overlayHeadsKick)
         handler.removeCallbacksAndMessages(null)
         windows.cancelPending()
-        // Ngăn kéo có thể được gắn như CỬA SỔ RIÊNG (TYPE_APPLICATION_OVERLAY qua WindowManager) → nó KHÔNG chết
-        // cùng activity. Không đóng ở đây thì cửa sổ đó sống tiếp (rò rỉ view + giữ activity), và một cái chạm vào
-        // nó sẽ chạy vào `winExec` ĐÃ shutdown (RejectedExecutionException) hoặc mở activity từ activity đã huỷ.
         drawerController.close()
-        // [SOÁT Pass 2 · P1] Tấm chữ của phiên nghe là **cùng loại cửa sổ** với ngăn kéo ngay trên
-        // (`TYPE_APPLICATION_OVERLAY`) ⇒ cùng lý do: không đóng tay thì nó sống tiếp sau khi màn chết, ăn mọi cú
-        // chạm toàn màn, và giữ cả micro đang mở lẫn một `VoiceDispatcher` trỏ vào activity đã huỷ.
-        // Hỏi `isInitialized` để không DỰNG một phiên nghe ngay lúc đang huỷ màn (xem KDoc [voiceLazy]).
         if (voiceLazy.isInitialized()) voice.stop()
-        // [SOÁT S1 · P3] `HomePanels.closeAll()` tự nhận là "gọi lúc huỷ màn (lớp phủ giữ view là giữ activity)"
-        // nhưng [ĐO] nó KHÔNG có chỗ gọi nào — mã chết + một câu KDoc nói sai. Nối vào đây: màn Cài đặt giữ 7 trang
-        // đã dựng (trang "Màn hình chính" một mình là 187 ô) nên nhả sớm là việc đúng, và từ nay câu KDoc thành thật.
         panels.closeAll()
         wallpaper.release()   // U4: nhả ảnh nền, không để giữ bộ nhớ sau khi màn đã huỷ
-        // H2·1 [ĐO 2026-09-14]: `dumpsys display` có 4 `kachi-slot-*` cho 2 ô vì màn Kachi đời trước mang cờ "đang
-        // kết thúc" mà view chưa tháo ⇒ màn ảo của nó sống tiếp. Nhả TƯỜNG MINH ở đây thay vì chờ `onDetachedFromWindow`
-        // — vòng đời tài nguyên hệ thống không được treo vào một sự kiện mà hệ điều hành có quyền hoãn.
         workspace.releaseAppHosts()
         winExec.shutdownNow(); ioExec.shutdownNow(); windows.clearOverlays()
     }
@@ -561,6 +568,5 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
     companion object {
         private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
-        private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
     }
 }

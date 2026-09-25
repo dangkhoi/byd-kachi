@@ -1,6 +1,8 @@
 package com.byd.clusternav.automation
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.SystemClock
 import android.util.Log
@@ -58,8 +60,13 @@ object GpsAvailability {
             Log.d(TAG, "GPS provider đang TẮT ⇒ chưa có định vị")
             return@runCatching false
         }
-        // Thiếu quyền ⇒ `SecurityException` ⇒ `runCatching` ngoài trả null = "không đọc được" (ĐÚNG, không phải
-        // "không có GPS"). Đây là lý do lời gọi này KHÔNG có `runCatching` riêng.
+        // Quyền RUNTIME có thể bị thu hồi giữa chuyến (Cài đặt hệ thống) ⇒ hỏi tường minh TRƯỚC khi gọi, trả
+        // null = "không đọc được" (ĐÚNG, không phải "không có GPS"). `SecurityException` bên dưới vẫn được
+        // `runCatching` ngoài đỡ cho ROM lệch — hai lớp, cùng một nghĩa.
+        if (ctx.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "chưa có quyền ACCESS_FINE_LOCATION ⇒ chưa biết")
+            return@runCatching null
+        }
         val fix = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             ?: run {
                 Log.d(TAG, "chưa có fix nào (provider bật) ⇒ chưa có định vị")

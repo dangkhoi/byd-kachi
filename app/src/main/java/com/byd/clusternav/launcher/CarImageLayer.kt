@@ -19,12 +19,18 @@ import java.util.concurrent.Executors
  * · nhả đúng lúc. Gom vào MỘT component để không chép ba lần (và ba lần lệch nhau).
  *
  * ## Luồng
- *  • [ensure] gọi từ `onDraw` (rẻ khi đã cache): cỡ/ảnh đổi ⇒ xếp một lượt giải mã lên [io] (daemon), xong thì
- *    post về luồng chính, nhả ảnh cũ **sau** khi gán ảnh mới, gọi [onReady] (= `invalidate`). Thẻ thế hệ [gen]
+ *  • [ensure] gọi từ `onDraw` (rẻ khi đã cache): cỡ/ảnh đổi ⇒ hỏi kho chung [CarImageStore.peek] trước — có sẵn thì
+ *    gán NGAY (không lượt nền, không khung placeholder, không `invalidate` thêm); chưa có ⇒ xếp một lượt lên [io]
+ *    (daemon) gọi [CarImageStore.shared], xong post về luồng chính, gọi [onReady] (= `invalidate`). Thẻ thế hệ [gen]
  *    bỏ lượt cũ về muộn (đổi cỡ liên tục / ô bị nhả) — cùng bất biến [WallpaperController].
  *  • [draw] blit ảnh feather **giữ tỉ lệ, canh giữa** vào khung; chưa có ảnh ⇒ [drawPlaceholder] (silhouette mờ,
  *    KHÔNG vector cũ, KHÔNG viền).
- *  • [release] gọi lúc ô bị tháo: huỷ lượt đang bay + nhả ảnh (nhịp/ảnh sống lâu hơn ô = rò rỉ).
+ *  • [release] gọi lúc ô bị tháo: huỷ lượt đang bay + bỏ tham chiếu.
+ *
+ * ## Quyền sở hữu bitmap (closeout 2026-09-25): thuộc KHO [CarImageStore], KHÔNG thuộc lớp này
+ * Trước, mỗi lớp giải mã một bản riêng và `recycle()` khi thay/tháo. Nay ba lớp (lốp · cửa · mini) có thể cùng trỏ
+ * một bitmap ⇒ lớp này **không bao giờ** `recycle()` (recycle ở đây = lớp khác vẽ trúng ảnh đã huỷ ⇒ crash trên
+ * luồng vẽ). Bản không còn ai dùng do GC nhả. `isRecycled` vẫn được kiểm phòng hờ ở [draw].
  *
  * ## Ràng buộc (WP1/WP3-v5): 0 blur runtime · 0 shadow · 0 viền. Feather đã tính sẵn ([CarImageStore.feather]).
  */
@@ -33,8 +39,8 @@ internal class CarImageLayer(
     private val onReady: () -> Unit,
 ) {
     private var bmp: Bitmap? = null
-    private var loadedKey: String = ""
-    private var requestedKey: String = ""
+    private var loadedKey: CarImageStore.CacheKey? = null
+    private var requestedKey: CarImageStore.CacheKey? = null
     private var gen = 0
 
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
@@ -46,23 +52,31 @@ internal class CarImageLayer(
     /** Đảm bảo có ảnh cho khung [w]×[h]; nạp nền nếu cỡ/ảnh đổi. Trả `true` nếu đã có ảnh dùng được ngay. */
     fun ensure(w: Int, h: Int): Boolean {
         if (w <= 0 || h <= 0) return hasImage()
-        // Gom cỡ về bậc 32px để đổi cỡ nhỏ không nạp lại; kèm dấu-vết-tệp để đổi ảnh thì nạp lại.
-        val key = "${CarImageStore.signature(ctx)}|${bucket(w)}x${bucket(h)}"
-        if (key == loadedKey && hasImage()) return true
+        // Khoá = dấu-vết-tệp + khung gom bậc 32px (đổi cỡ nhỏ không nạp lại; đổi ảnh thì nạp lại).
+        val key = CarImageStore.cacheKey(CarImageStore.signature(ctx), w, h)
+        // Khoá đã nạp (kể cả nạp HỎNG ⇒ placeholder) ⇒ không hỏi lại tới khi khoá đổi. Trước: nạp hỏng ⇒ lượt sau lại
+        // xếp nạp ⇒ onReady ⇒ invalidate ⇒ onDraw ⇒ nạp… vòng vô hạn ở tốc độ giải mã (chỉ không lộ vì asset mặc định
+        // luôn có).
+        if (key == loadedKey) return hasImage()
+        // Kho chung đã có bản này (lớp khác nạp rồi / ô gắn lại) ⇒ dùng ngay, không lượt nền, không khung trống.
+        CarImageStore.peek(key)?.let { hit ->
+            gen++                       // huỷ lượt đang bay (nếu có) — về muộn cũng bị bỏ
+            bmp = hit
+            loadedKey = key
+            requestedKey = null
+            return true
+        }
         if (key == requestedKey) return hasImage()   // đang nạp đúng khung này rồi
         requestedKey = key
         val my = ++gen
-        val reqW = w; val reqH = h
         io.execute {
-            val next = CarImageStore.loadFeathered(ctx, reqW, reqH)
+            val next = CarImageStore.shared(ctx, key)   // kho sở hữu; KHÔNG recycle ở lớp này
             main.post {
-                if (my != gen) { next?.recycle(); return@post }
-                val old = bmp
+                if (my != gen) return@post
                 bmp = next
                 loadedKey = key
-                requestedKey = ""
-                old?.recycle()
-                onReady()
+                requestedKey = null
+                if (next != null) onReady()   // hỏng ⇒ placeholder đã vẽ sẵn, không invalidate thêm
             }
         }
         return hasImage()
@@ -117,16 +131,13 @@ internal class CarImageLayer(
         canvas.drawRoundRect(holder, r, r, placeholder)
     }
 
-    /** Ô bị tháo ⇒ huỷ lượt đang bay + nhả ảnh. */
+    /** Ô bị tháo ⇒ huỷ lượt đang bay + bỏ tham chiếu (bitmap thuộc kho chung — KHÔNG recycle, xem KDoc lớp). */
     fun release() {
         gen++
-        requestedKey = ""
-        bmp?.recycle()
+        requestedKey = null
         bmp = null
-        loadedKey = ""
+        loadedKey = null
     }
-
-    private fun bucket(v: Int): Int = ((v + 31) / 32) * 32
 
     private companion object {
         /** Một luồng daemon dùng chung cho MỌI lớp ảnh xe — giải mã ảnh nhỏ, không cần nhiều luồng. */

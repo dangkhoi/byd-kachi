@@ -35,16 +35,31 @@ object VoicePreloadPolicy {
     fun shouldPreload(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): Boolean {
         if (lowMemory) return false
         if (modelBytes <= 0) return true
-        return availMemBytes >= modelBytes + HEADROOM_BYTES
+        return availMemBytes >= modelBytes + headroomBytes(modelBytes)
     }
+
+    /**
+     * ═══ 2026-09-25 · wake — MỘT mô hình cho cả máy: tiến trình CHÍNH có nên nạp sẵn không? ═══════════════
+     *
+     * [SUY, audit RAM 2026-09-25 §1.1] Khi "Hey Kachi" BẬT, `:wake` **cũng** nạp đúng mô hình int8 74 MB này
+     * (`VoiceWakeAsr` → `VoiceEngine.recognizer` của tiến trình `:wake`) và phiên lệnh R7/LISTEN_NOW chạy ở
+     * đó ⇒ nạp sẵn ở chính là **bản thứ hai** (≈ 85–110 MB) trên một đầu xe còn 56–94 MB trống. Wake TẮT ⇒ chính là
+     * nơi duy nhất nghe ⇒ giữ nạp sẵn (spec V3 R4: 15 s lần bấm đầu).
+     *
+     * Đây vẫn là quyết định **hoãn**: wake BẬT mà người lái bấm nút mic trên màn chính thì lần đầu vẫn nạp như cũ.
+     */
+    fun shouldPreloadInMain(wakeEnabled: Boolean): Boolean = !wakeEnabled
 
     /** Câu GIẢI THÍCH cho log (owner đọc log trên xe) — nói rõ vì sao bỏ qua, không im lặng. */
     fun reason(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): String = when {
         lowMemory -> "hệ thống báo thiếu bộ nhớ (lowMemory=true)"
         modelBytes <= 0 -> "chưa biết cỡ mô hình ⇒ nạp như cũ"
-        else -> "còn ${availMemBytes / MB} MB, cần ${(modelBytes + HEADROOM_BYTES) / MB} MB " +
-            "(mô hình ${modelBytes / MB} MB + thở ${HEADROOM_BYTES / MB} MB)"
+        else -> "còn ${availMemBytes / MB} MB, cần ${(modelBytes + headroomBytes(modelBytes)) / MB} MB " +
+            "(mô hình ${modelBytes / MB} MB + thở ${headroomBytes(modelBytes) / MB} MB)"
     }
+
+    /** Lý do bỏ nạp sẵn khi [shouldPreloadInMain] = false — hiện ở ghi chú Cài đặt (`VoiceEngine.lastPreloadSkip`). */
+    const val REASON_WAKE_OWNS_MODEL = "\"Hey Kachi\" đang bật ⇒ mô hình sống ở tiến trình nghe câu gọi, không nạp bản thứ hai"
 
     private const val MB = 1024L * 1024L
 
@@ -55,4 +70,14 @@ object VoicePreloadPolicy {
      * giết tiến trình nền. Chừa đúng bằng dải ấy để lượt nạp sẵn KHÔNG phải là thứ đẩy máy vào dải đó.
      */
     const val HEADROOM_BYTES = 96L * 1024L * 1024L
+
+    /**
+     * Khoảng thở THEO CỠ GÓI = max([HEADROOM_BYTES], 1,5 × gói).
+     *
+     * [SUY, audit RAM 2026-09-25 §4.2, ORT 1.28.2 `session_state.cc:1591,1750,667-673`] lúc nạp, ORT giữ đồng thời
+     * `ModelProto` (≈ cỡ tệp) + bản OrtValue chép ra, rồi mới giải phóng ⇒ **đỉnh transient ≈ +71…+126 MB** trên
+     * mức ổn định với gói int8 74 MB. Sàn 96 MB nhỏ hơn đỉnh ấy ⇒ policy cho qua mà lượt nạp vẫn chạm LMK. 1,5 ×
+     * gói phủ đỉnh cho int8 (111 MB) lẫn fp32 (399 MB); gói nhỏ vẫn được sàn 96 MB.
+     */
+    fun headroomBytes(modelBytes: Long): Long = maxOf(HEADROOM_BYTES, modelBytes.coerceAtLeast(0) * 3 / 2)
 }

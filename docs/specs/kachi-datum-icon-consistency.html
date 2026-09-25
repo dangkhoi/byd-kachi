@@ -15,6 +15,7 @@ ul{padding-left:1.2rem}hr{border:0;border-top:1px solid var(--line);margin:2rem 
 </style></head><body>
 
 <h1>Consistency icon datum <span class="tag">Current</span></h1>
+<p class="mut"><b>Trạng thái</b>: Current — <code>DatumIconView.kt</code> (:app) + <code>ZeroBorderContractTest</code> có trong cây [SUY đã code, owner duyệt sau] · <b>Cập nhật</b>: 2026-09-25 · <b>Mục đích</b>: cùng một datum → cùng một icon ở header/widget/picker; datum số → icon [số]; on/off → inactive/active; multi-status → chấm mức.</p>
 <p class="mut">Cập nhật 2026-09-22 · owner nêu: icon header (chip) và widget (dock/ô) của cùng một datum phải GIỐNG nhau; picker datum có số → icon [số]; status on/off → inactive/active tương phản rõ (light+dark); multi-status (mát ghế off/mức1/mức2) → chấm dưới, mở rộng cho toàn bộ datum picker.</p>
 
 <h2>1. Context — vì sao không nhất quán</h2>

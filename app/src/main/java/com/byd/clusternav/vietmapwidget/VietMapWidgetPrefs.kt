@@ -45,12 +45,14 @@ internal class VietMapWidgetPrefs(context: Context) {
         operation: String,
         edits: SharedPreferences.Editor.() -> SharedPreferences.Editor,
     ): Boolean {
-        val editor = prefs.edit().edits()
+        val editor = prefs.edit()
+        editor.edits()
         val firstAttempt = editor.commit()
         if (firstAttempt) return true
         Log.w(TAG, "$operation: commit failed, retrying once")
         // Retry: re-read + re-apply (editor is single-shot, need fresh editor)
-        val retryEditor = prefs.edit().edits()
+        val retryEditor = prefs.edit()
+        retryEditor.edits()
         val retryResult = retryEditor.commit()
         if (retryResult) {
             Log.i(TAG, "$operation: retry succeeded")

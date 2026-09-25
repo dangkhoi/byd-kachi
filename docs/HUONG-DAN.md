@@ -1,6 +1,8 @@
 # ClusterNav — Hướng dẫn sử dụng
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-08-16 · **Mục đích**: Hướng dẫn dùng ClusterNav 1.30 (bật Nav+HUD, cấp quyền, cluster display, voice-key). VI + EN.
+> ⚠ **Đời ClusterNav 1.x — Kachi (2.65) xem [`HUONG-DAN-KACHI.md`](HUONG-DAN-KACHI.md)** · Trạng thái: Historical (2026-09-25).
+
+> **Trạng thái**: Historical (đời ClusterNav 1.x; thay bằng `HUONG-DAN-KACHI.md` 2026-09-25) · **Cập nhật**: 2026-08-16 · **Mục đích**: Hướng dẫn dùng ClusterNav 1.30 (bật Nav+HUD, cấp quyền, cluster display, voice-key). VI + EN.
 
 > Phiên bản: **1.30** (versionCode 130). Dự án cá nhân thử nghiệm trên BYD DiLink 3.0 (Android 10). Không liên kết với BYD.
 

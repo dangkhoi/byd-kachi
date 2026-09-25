@@ -103,8 +103,9 @@ class VietMapAutostartService : Service() {
 
     companion object {
         private const val TAG = "VMAutostartSvc"
-        // Distinct from FloatingBubbleService (1042) / BootSetupService (1043) so all can coexist.
-        private const val NOTIFICATION_ID = 1044
+        // B1 2026-09-25: 1044 TRÙNG AutomationService ⇒ stopForeground(REMOVE) của bên này gỡ thông báo bên kia.
+        // Bảng ID duy nhất: KDoc `VoiceKeyKeepAliveService.NOTIFICATION_ID` (khoá bởi ForegroundNotificationIdGuardTest).
+        private const val NOTIFICATION_ID = 1046
         private const val CHANNEL_ID = "clusternav_vietmap_autostart"
         private const val EXTRA_RETURN_TO_SELF = "return_to_self_pkg"
 

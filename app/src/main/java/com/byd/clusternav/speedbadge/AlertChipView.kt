@@ -42,6 +42,9 @@ class AlertChipView(context: Context) : View(context) {
     private val distPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.LEFT
     }
+    /** Khung vẽ dùng lại mỗi khung hình (lint DrawAllocation) — chip cập nhật ~1 Hz khi có cảnh báo, không cấp phát trong onDraw. */
+    private val pillRect = RectF()
+    private val glyphRect = RectF()
 
     /** Pixel width the current content needs at height [h] — the overlay uses it to size the window. */
     fun contentWidthPx(h: Int): Int {
@@ -59,7 +62,8 @@ class AlertChipView(context: Context) : View(context) {
         val pad = h * PAD_FRAC
         // Dark rounded pill background.
         val r = h * 0.28f
-        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), h), r, r, bgPaint)
+        pillRect.set(0f, 0f, width.toFloat(), h)
+        canvas.drawRoundRect(pillRect, r, r, bgPaint)
 
         var x = pad
         val cy = h / 2f
@@ -67,8 +71,8 @@ class AlertChipView(context: Context) : View(context) {
         if (hasIcon) {
             val g = h * GLYPH_FRAC
             val top = cy - g / 2f
-            val body = RectF(x, top + g * 0.18f, x + g, top + g)
-            canvas.drawRoundRect(body, g * 0.14f, g * 0.14f, camBody)
+            glyphRect.set(x, top + g * 0.18f, x + g, top + g)
+            canvas.drawRoundRect(glyphRect, g * 0.14f, g * 0.14f, camBody)
             canvas.drawRect(x + g * 0.30f, top, x + g * 0.60f, top + g * 0.22f, camBody)   // viewfinder bump
             canvas.drawCircle(x + g / 2f, top + g * 0.60f, g * 0.24f, camLens)             // lens
             x += g + pad

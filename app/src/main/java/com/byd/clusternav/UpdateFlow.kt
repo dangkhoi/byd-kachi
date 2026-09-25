@@ -2,6 +2,7 @@ package com.byd.clusternav
 
 import android.app.Activity
 import android.app.AlertDialog
+import java.lang.ref.WeakReference
 
 /**
  * Interactive check-for-update flow: GitHub `apk/` → confirm → download → install via dadb loopback.
@@ -68,22 +69,25 @@ object UpdateFlow {
 
     private fun doUpdate(activity: Activity, url: String, setStatus: (String, Boolean) -> Unit) {
         setStatus(Lang.t("đang tải… 0%", "downloading… 0%"), false)
+        // Hardening 2026-09-25 (audit F13): luồng tải sống hàng phút (40 MB) — giữ Activity qua WeakReference và
+        // bỏ qua `setStatus` khi màn đã huỷ (cùng khuôn `start()` ở trên), không vẽ lên view đã tháo.
+        val app = activity.applicationContext
+        val ref = WeakReference(activity)
+        fun ui(text: String, warn: Boolean) {
+            val a = ref.get() ?: return
+            a.runOnUiThread { if (!a.isFinishing && !a.isDestroyed) setStatus(text, warn) }
+        }
         Thread({
-            val f = UpdateChecker.download(activity.applicationContext, url) { pct ->
-                activity.runOnUiThread {
-                    setStatus(
-                        if (pct < 0) Lang.t("đang tải…", "downloading…") else Lang.t("đang tải… $pct%", "downloading… $pct%"),
-                        false,
-                    )
-                }
+            val f = UpdateChecker.download(app, url) { pct ->
+                ui(if (pct < 0) Lang.t("đang tải…", "downloading…") else Lang.t("đang tải… $pct%", "downloading… $pct%"), false)
             }
             if (f == null) {
-                activity.runOnUiThread { setStatus(Lang.t("tải thất bại", "download failed"), true) }
+                ui(Lang.t("tải thất bại", "download failed"), true)
                 return@Thread
             }
-            activity.runOnUiThread { setStatus(Lang.t("đang cài…", "installing…"), false) }
-            val msg = UpdateChecker.install(activity.applicationContext, f)
-            activity.runOnUiThread { setStatus(msg, false) }
+            ui(Lang.t("đang cài…", "installing…"), false)
+            val msg = UpdateChecker.install(app, f)
+            ui(msg, false)
         }, "update-download").start()
     }
 }

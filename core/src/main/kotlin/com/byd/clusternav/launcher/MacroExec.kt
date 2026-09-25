@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ThreadPoolExecutor
@@ -36,7 +38,16 @@ import java.util.concurrent.TimeUnit
  * Tệp này **thuần JVM** (không `Context`, không `View`, không `android.*`) ⇒ `LayeringRulesTest` xếp nó vào
  * `:core`, và nhờ thế bài kiểm của nó chạy trong `:core:test` — đo được **thật** trần luồng và cờ daemon, thay
  * vì chỉ quét chuỗi trong mã nguồn. Nó **công khai** vì `internal` ở `:core` thì `:app` không thấy; thứ giữ nó
- * khỏi bị gọi bừa không phải từ khoá mà là vai của nó: **một** chỗ gọi, ở `ControlTileFactory.macroTile`.
+ * khỏi bị gọi bừa không phải từ khoá mà là vai của nó: [submit] có **một** chỗ gọi (`ControlTileFactory.macroTile`),
+ * [submitSerial] có **một** chỗ gọi ([ControlTileWrite]).
+ *
+ * ## LÀN TUẦN TỰ ([submitSerial], 2026-09-25 · P1-main · spec `kachi-closeout-hardening` R4(b))
+ * Chạm một ô ĐƠN cũng là một lượt ghi HAL (binder, [ĐO xe 09-16] ≈23 ms/lượt) — tới bản này nó chạy **đồng bộ trên
+ * luồng chính**. Đưa xuống nền thì phải giữ **thứ tự**: hai cú bấm liên tiếp cùng một nút mà chạy trên hai luồng
+ * của pool là HAL có thể nhận `tắt` trước `bật`. Không dựng pool mới (CLAUDE.md §4.1 DRY): mỗi làn là một chuỗi
+ * `CompletableFuture` **xâu đuôi** nhau trên CHÍNH pool này — lượt sau chỉ được nộp vào pool khi lượt trước xong,
+ * nên trong một làn không bao giờ có hai lượt chạy song song và thứ tự nộp = thứ tự chạy. Lượt ném vẫn không chặn
+ * lượt kế (`handleAsync` nhận cả lỗi). Pool vẫn trần 2: một gói đang ngủ + làn ô đơn vẫn chạy được cạnh nhau.
  */
 object MacroExec {
 
@@ -63,15 +74,41 @@ object MacroExec {
      * trả lại sau khi xong, vì luồng này còn phục vụ gói khác.
      */
     fun submit(macroId: String, body: () -> Unit) {
-        pool.execute {
-            val t = Thread.currentThread()
-            val name = t.name
-            runCatching { t.name = "macro-$macroId" }
-            try {
-                body()
-            } finally {
-                runCatching { t.name = name }
-            }
+        pool.execute { named("macro-$macroId", body) }
+    }
+
+    /**
+     * Chạy [body] trên luồng nền dùng chung, **tuần tự theo [lane]**: mọi lượt cùng làn chạy đúng thứ tự nộp,
+     * không bao giờ hai lượt cùng làn chạy song song, và một lượt ném không nuốt lượt kế. Xem KDoc lớp.
+     */
+    fun submitSerial(lane: String, body: () -> Unit) {
+        val next = lanes.compute(lane) { _, prev ->
+            (prev ?: CompletableFuture.completedFuture<Void?>(null))
+                .handleAsync<Void?>({ _, _ -> named(lane, body); null }, pool)
+        } ?: return
+        // Đuôi làn đã chạy xong thì bỏ khỏi bảng (chỉ khi nó VẪN là đuôi — `remove(k, v)` nguyên tử).
+        //
+        // ⚠ [SOÁT Pass 1 · 2026-09-25] Dòng này phải nằm **NGOÀI** `compute`: [body] có thể xong TRƯỚC khi luồng gọi
+        // kịp đăng ký (ghi HAL off-car trả `false` tức thì), lúc ấy `whenComplete` chạy **ngay trên luồng gọi** ⇒
+        // `lanes.remove` khi còn trong `compute` là *sửa map lúc đang compute* — điều `ConcurrentHashMap` cấm:
+        // [ĐO JDK 17, khoá chưa có trong bảng] `IllegalStateException: Recursive update` tại
+        // `ConcurrentHashMap.replaceNode:1167`, bị `CompletableFuture` nuốt vào future dẫn xuất (không ai đọc) ⇒
+        // đuôi làn không bao giờ được dọn và một ngoại lệ chìm hẳn. Đăng ký sau khi `compute` trả về thì cùng lượt
+        // dọn ấy chạy trên map đã ổn định.
+        next.whenComplete { _, _ -> lanes.remove(lane, next) }
+    }
+
+    /** Đuôi hiện tại của mỗi làn; lượt mới xâu vào sau đuôi. */
+    private val lanes = ConcurrentHashMap<String, CompletableFuture<Void?>>()
+
+    private fun named(name: String, body: () -> Unit) {
+        val t = Thread.currentThread()
+        val old = t.name
+        runCatching { t.name = name }
+        try {
+            body()
+        } finally {
+            runCatching { t.name = old }
         }
     }
 }

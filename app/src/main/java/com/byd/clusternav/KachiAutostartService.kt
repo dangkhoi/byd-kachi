@@ -91,8 +91,9 @@ class KachiAutostartService : Service() {
 
     companion object {
         private const val TAG = "KachiAutostartSvc"
-        // Distinct from bubble (1042) / BootSetupService (1043) / VietMapAutostartService (1044) so all coexist.
-        private const val NOTIFICATION_ID = 1045
+        // B1 2026-09-25: 1045 TRÙNG VoiceKeyKeepAliveService ⇒ finish() ở đây (stopForeground REMOVE) gỡ thông báo
+        // keep-alive đang thường trú. Bảng ID duy nhất: KDoc `VoiceKeyKeepAliveService.NOTIFICATION_ID`.
+        private const val NOTIFICATION_ID = 1047
         private const val CHANNEL_ID = "clusternav_kachi_autostart"
 
         /** Boot / OTA: run the launcher's surface-independent boot setup. */

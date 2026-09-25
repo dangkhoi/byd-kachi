@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -34,6 +35,16 @@ import java.io.File
  * **MỘT LẦN** lúc nạp (như ảnh mờ của hình nền) ⇒ **0 blur runtime** — bắt buộc vì xe API 29 GPU yếu (spec R1.3).
  * DST_OUT: `dst.alpha × (1 − src.alpha)` ⇒ mép (src đục) bị xoá, giữa (src trong suốt) giữ nguyên. Nếu ảnh vốn có
  * nền trong suốt thì feather chỉ làm mượt thêm mép chữ-nhật; nếu ảnh đục thì mép tan vào màu thẻ.
+ *
+ * ## Cache DÙNG CHUNG theo (nguồn, cỡ đích) — closeout 2026-09-25 (spec `kachi-closeout-hardening` R3, audit RAM §8)
+ * Trước: mỗi [CarImageLayer] (bảng lốp · bảng cửa · xe mini) tự giải mã + feather một bản riêng, và ảnh MẶC ĐỊNH
+ * (678×1397, 3,79 MB ARGB) chỉ có `inSampleSize` (luỹ thừa 2) mà **thiếu bước hạ đúng khung** (`inScaled`) ⇒ có thể
+ * to gấp 2×/trục (4× pixel) so với cần. Nay: (1) giải mã theo ĐÚNG khung đích ([decodePlan] — cùng công thức
+ * [WallpaperStore.loadScaled]); (2) một [SharedLru] nhỏ (≤ [MAX_SHARED] bản) khoá bằng [CacheKey] =
+ * (dấu-vết-tệp, khung gom bậc 32 px): các lớp cùng khoá dùng chung MỘT bitmap đã feather; lớp tạo lại (ô tháo/gắn)
+ * lấy lại ngay không giải mã. **Quyền sở hữu bitmap = KHO**: chỗ dùng KHÔNG `recycle()` (một lớp khác có thể còn
+ * đang vẽ nó); bản bị đẩy khỏi LRU không recycle mà để GC nhả — tránh "trying to use a recycled bitmap" khi 2 view
+ * chia nhau một ảnh.
  */
 object CarImageStore {
 
@@ -55,6 +66,95 @@ object CarImageStore {
 
     /** Mặt nạ ĐỤC cho DST_OUT (alpha 255) — chỉ kênh alpha có tác dụng, RGB không hiển thị (xem [feather]). */
     private const val OPAQUE_MASK = 0xFF000000.toInt()
+
+    /** Bậc gom cỡ khung (px): đổi cỡ nhỏ hơn bậc này KHÔNG sinh khoá mới ⇒ không giải mã lại. */
+    const val BUCKET_PX = 32
+
+    /** Số bản ảnh xe giữ đồng thời trong kho chung (3 bảng dùng ảnh xe ⇒ tối đa 3 cỡ khác nhau). */
+    const val MAX_SHARED = 3
+
+    /**
+     * Khoá cache dùng chung: dấu-vết-tệp ([signature]) + khung đích ĐÃ gom bậc [BUCKET_PX]. [w]/[h] cũng chính là
+     * cỡ yêu cầu khi giải mã ⇒ khoá xác định hoàn toàn bitmap, mọi lớp cùng khoá nhận đúng cùng một bản.
+     */
+    data class CacheKey(val signature: String, val w: Int, val h: Int)
+
+    /** Gom [v] lên bậc [BUCKET_PX] (ceil). `v ≤ 0` ⇒ 0. */
+    fun bucket(v: Int): Int = if (v <= 0) 0 else ((v + BUCKET_PX - 1) / BUCKET_PX) * BUCKET_PX
+
+    fun cacheKey(signature: String, w: Int, h: Int): CacheKey = CacheKey(signature, bucket(w), bucket(h))
+
+    /**
+     * Kế hoạch giải mã một ảnh [srcW]×[srcH] cho khung [reqW]×[reqH] — thuần, test off-car.
+     *
+     * Hai bậc như [WallpaperStore.loadScaled]: [sample] = luỹ thừa 2 lớn nhất mà ảnh còn PHỦ khung (giảm thô ngay
+     * trong bộ giải mã, không sinh ảnh to); rồi [inDensity]→[inTargetDensity] hạ tiếp về ĐÚNG khung (fit, giữ tỉ
+     * lệ) cũng ngay trong lúc giải mã. `inTargetDensity == 0` ⇒ không cần bậc hai.
+     */
+    data class DecodePlan(val sample: Int, val inDensity: Int, val inTargetDensity: Int) {
+        val scaled: Boolean get() = inTargetDensity > 0 && inDensity > 0 && inTargetDensity != inDensity
+    }
+
+    fun decodePlan(srcW: Int, srcH: Int, reqW: Int, reqH: Int): DecodePlan {
+        if (srcW <= 0 || srcH <= 0 || reqW <= 0 || reqH <= 0) return DecodePlan(1, 0, 0)
+        val sample = WallpaperStore.sampleSize(srcW, srcH, reqW, reqH)
+        val sampledW = srcW / sample
+        val sampledH = srcH / sample
+        val targetW = WallpaperStore.scaledWidth(sampledW, sampledH, reqW, reqH)
+        return if (targetW > 0) DecodePlan(sample, sampledW, targetW) else DecodePlan(sample, 0, 0)
+    }
+
+    /** Cỡ bitmap [plan] sẽ cho ra từ ảnh [srcW]×[srcH] (ước, làm tròn như BitmapFactory) — để test đo pixel. */
+    fun plannedSize(srcW: Int, srcH: Int, plan: DecodePlan): Pair<Int, Int> {
+        val sw = srcW / plan.sample; val sh = srcH / plan.sample
+        if (!plan.scaled) return sw to sh
+        val f = plan.inTargetDensity.toFloat() / plan.inDensity
+        return (sw * f + 0.5f).toInt().coerceAtLeast(1) to (sh * f + 0.5f).toInt().coerceAtLeast(1)
+    }
+
+    /**
+     * LRU có chặn cỡ, thuần (không Android) — tách lớp để test off-car. Truy cập = làm mới thứ tự; vượt [max] ⇒ bỏ
+     * bản CŨ NHẤT (không huỷ: cho [Bitmap] thì để GC nhả, xem KDoc lớp). Mọi thao tác đồng bộ theo `this`.
+     */
+    class SharedLru<K : Any, V : Any>(private val max: Int) {
+        private val map = object : LinkedHashMap<K, V>(8, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>): Boolean = size > max
+        }
+        @Synchronized fun get(key: K): V? = map[key]
+        @Synchronized fun put(key: K, value: V) { map[key] = value }
+        @Synchronized fun remove(key: K): V? = map.remove(key)
+        @Synchronized fun size(): Int = map.size
+        @Synchronized fun keys(): List<K> = map.keys.toList()
+
+        /**
+         * Lấy theo [key]; thiếu ⇒ gọi [load] (có thể chậm — gọi NGOÀI khoá) rồi cất. Nếu trong lúc nạp đã có ai cất
+         * cùng khoá thì dùng bản ĐÃ CÓ, bỏ bản mới (không hai bản cho một khoá). `null` từ [load] ⇒ không cất.
+         */
+        fun getOrLoad(key: K, load: () -> V?): V? {
+            get(key)?.let { return it }
+            val fresh = load() ?: return null
+            synchronized(this) {
+                map[key]?.let { return it }
+                map[key] = fresh
+            }
+            return fresh
+        }
+    }
+
+    private val shared = SharedLru<CacheKey, Bitmap>(MAX_SHARED)
+
+    /** Ảnh đã có sẵn trong kho cho [key] (không giải mã) — gọi được từ luồng vẽ, O(1). */
+    fun peek(key: CacheKey): Bitmap? = shared.get(key)?.takeIf { !it.isRecycled }
+
+    /**
+     * Ảnh feather dùng chung cho [key] — gọi ở luồng NỀN (giải mã khi kho chưa có). Bitmap trả về do KHO sở hữu:
+     * chỗ gọi chỉ giữ tham chiếu, **không** `recycle()`.
+     */
+    fun shared(ctx: Context, key: CacheKey): Bitmap? {
+        peek(key)?.let { return it }
+        shared.remove(key)   // bản cũ đã recycled (phòng hờ) ⇒ bỏ, nạp lại
+        return shared.getOrLoad(key) { loadFeathered(ctx, key.w, key.h) }
+    }
 
     /** Thư mục ảnh xe; `null` nếu bộ nhớ ngoài không dùng được. Tự tạo (để người dùng thấy chỗ mà bỏ vào). */
     fun folder(ctx: Context): File? = runCatching {
@@ -111,15 +211,25 @@ object CarImageStore {
         }
     }
 
-    /** Giải mã ảnh xe MẶC ĐỊNH từ assets (giảm cỡ như [WallpaperStore.loadScaled]). `null` nếu asset thiếu/hỏng. */
+    /**
+     * Giải mã ảnh xe MẶC ĐỊNH từ assets **đúng khung** ([decodePlan]: `inSampleSize` + `inScaled` hạ về đích ngay
+     * trong bộ giải mã — trước chỉ có `inSampleSize` ⇒ có thể to 2×/trục). `null` nếu asset thiếu/hỏng.
+     */
     private fun loadDefaultScaled(ctx: Context, reqW: Int, reqH: Int): Bitmap? = runCatching {
         val am = ctx.applicationContext.assets
-        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        am.open(DEFAULT_ASSET).use { android.graphics.BitmapFactory.decodeStream(it, null, bounds) }
-        var sample = 1
-        while (bounds.outWidth / (sample * 2) >= reqW && bounds.outHeight / (sample * 2) >= reqH) sample *= 2
-        val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
-        am.open(DEFAULT_ASSET).use { android.graphics.BitmapFactory.decodeStream(it, null, opts) }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        am.open(DEFAULT_ASSET).use { BitmapFactory.decodeStream(it, null, bounds) }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        val plan = decodePlan(bounds.outWidth, bounds.outHeight, reqW, reqH)
+        val opts = BitmapFactory.Options().apply {
+            inSampleSize = plan.sample
+            if (plan.scaled) {
+                inScaled = true
+                inDensity = plan.inDensity
+                inTargetDensity = plan.inTargetDensity
+            }
+        }
+        am.open(DEFAULT_ASSET).use { BitmapFactory.decodeStream(it, null, opts) }
     }.getOrElse {
         Log.w(TAG, "không đọc được ảnh xe mặc định: ${it.javaClass.simpleName}")
         null

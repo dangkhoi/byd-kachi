@@ -175,6 +175,15 @@ object VoiceModelStore {
             }
 
             onStep(Step.Extracting)   // "đang hoàn tất" — đổi tên là bước làm gói "xuất hiện"
+            // Ghi phiên bản gói ra `.version` (owner 2026-09-22) — TRONG staging, TRƯỚC khi đổi tên (hardening
+            // 2026-09-25 · audit F6): ghi sau rename mà hỏng (thẻ đầy ngay sau 61 MB) là im lặng ⇒ `installedVersion`
+            // = 0 ⇒ `needsUpdate()` true mãi ⇒ mỗi lần bấm "Cập nhật" là tải lại 61 MB rồi hỏng đúng chỗ này. Nay
+            // `.version` là một tệp của gói như mọi tệp khác: hoặc đủ, hoặc không có thư mục (tính chất 1).
+            if (!writeVersionMarker(out, pack.version)) {
+                out.deleteRecursively()
+                onStep(Step.Failed(Lang.t("không ghi được .version (thẻ đầy?)", "could not write .version (storage full?)")))
+                return
+            }
             val dest = dir(app, pack)
             dest.parentFile?.mkdirs()
             dest.deleteRecursively()
@@ -184,8 +193,6 @@ object VoiceModelStore {
                 return
             }
             staging.deleteRecursively()
-            // Ghi phiên bản gói ra `.version` để lần mở Cài đặt sau biết có bản mới không (owner 2026-09-22).
-            runCatching { File(dest, VERSION_FILE).writeText(pack.version.toString()) }
             Log.i(TAG, "gói sẵn sàng: ${dest.absolutePath} (${pack.files.size} tệp, v${pack.version})")
             onStep(Step.Done(pack.files.size))
         } finally {
@@ -194,6 +201,17 @@ object VoiceModelStore {
     }
 
     private val installing = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Ghi `.version` vào [dir] rồi **đọc lại** để xác nhận (một `writeText` không ném vẫn có thể ghi cụt khi thẻ
+     * đầy — `FileOutputStream.write` trên FAT/ext4 có thể thành công tới lúc `close`). `false` = không có tệp đúng
+     * ⇒ chỗ gọi huỷ cả gói. THUẦN (chỉ `java.io.File`) ⇒ `VoiceModelVersionMarkerTest` khoá off-device.
+     */
+    internal fun writeVersionMarker(dir: File, version: Int): Boolean = runCatching {
+        val f = File(dir, VERSION_FILE)
+        f.writeText(version.toString())
+        f.readText().trim().toInt() == version
+    }.getOrDefault(false)
 
 
     /**

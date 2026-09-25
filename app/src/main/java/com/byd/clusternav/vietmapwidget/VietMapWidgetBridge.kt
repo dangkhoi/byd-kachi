@@ -1,5 +1,6 @@
 package com.byd.clusternav.vietmapwidget
 
+import com.byd.clusternav.Prefs
 import com.byd.clusternav.system.PackageQueries
 import com.byd.clusternav.navigation.NavApps
 import android.appwidget.AppWidgetHostView
@@ -12,9 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import java.util.concurrent.CancellationException
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.ExecutionException
 // §7 — MỘT nguồn sự thật cho tên gói (sửa 08-23 vòng 2b). Trước đây mỗi file widget tự chép chuỗi
 // "vn.vietmap.live"; `NavPackageRosterSyncTest` không canh tới đây nên bản chép này trôi im lặng.
 private const val VIETMAP_PACKAGE = NavApps.VIETMAP_LIVE
@@ -66,12 +65,33 @@ class VietMapWidgetBridge private constructor(context: Context) {
     private var listening = false
     @Volatile private var published = unavailable(VietMapWidgetUnavailableReason.NOT_BOUND)
     private val publishDebounced = Runnable { publishSnapshot() }
+    // BG-31 (2026-09-25): nhịp do [VietMapWidgetTickPolicy] quyết — 1 Hz chỉ khi (gói cài ∧ có người dùng ∧ có widget
+    // bind); thiếu một điều kiện ⇒ 10 s. Trước đây 1 Hz vô điều kiện suốt đời tiến trình (~7 binder/s trên main).
     private val freshnessTick = object : Runnable {
         override fun run() {
             if (!listening) return
             publishSnapshot()
-            main.postDelayed(this, FRESHNESS_TICK_MS)
+            main.postDelayed(this, tickIntervalMs())
         }
+    }
+    private fun tickIntervalMs(): Long = VietMapWidgetTickPolicy.tickIntervalMs(
+        installed = providerVersion() != null,
+        enabled = consumerEnabled(),
+        bound = slotsById.isNotEmpty(),
+    )
+    /**
+     * Có ai dùng snapshot không: màn chẩn đoán đang mở, hoặc badge tốc độ bật — đúng ba pref mà
+     * `NavigationSpeedSignOwner.syncFromPrefs` nạp vào coordinator (master + ít nhất một cổng ra).
+     */
+    private fun consumerEnabled(): Boolean =
+        VietMapWidgetOwner.DIAGNOSTICS in owners ||
+            (Prefs.enabled(appContext) && (Prefs.lane(appContext) || Prefs.hud(appContext)))
+    // BG-31: cache provider/version (TTL + receiver gói) — xem [VietMapProviderCatalog]. Chỉ chạm trên main.
+    private val catalog = VietMapProviderCatalog(appContext, manager, VIETMAP_PACKAGE) { _ ->
+        if (!listening) return@VietMapProviderCatalog
+        publishSnapshot()
+        main.removeCallbacks(freshnessTick)   // đánh giá lại nhịp ngay, không chờ hết 10 s
+        main.post(freshnessTick)
     }
     // --- Lifecycle ---
     fun start(owner: VietMapWidgetOwner) = onMain {
@@ -80,6 +100,8 @@ class VietMapWidgetBridge private constructor(context: Context) {
         listenerGeneration++
         listening = true
         try {
+            catalog.refresh(force = true)
+            catalog.register()
             host.startListening()
             restoreBoundViews()
             autoBindMissing()
@@ -96,6 +118,7 @@ class VietMapWidgetBridge private constructor(context: Context) {
         if (!owners.remove(owner) || owners.isNotEmpty() || !listening) return@onMain
         main.removeCallbacks(freshnessTick)
         main.removeCallbacks(publishDebounced)
+        catalog.unregister()
         clearRuntimeValues()
         publishSnapshot()
         listenerGeneration++
@@ -118,11 +141,14 @@ class VietMapWidgetBridge private constructor(context: Context) {
     }
     fun snapshot(): VietMapWidgetSnapshot = published
     // --- Binding ---
-    fun bindingStatuses(): List<VietMapWidgetBindingStatus> = VietMapWidgetSlot.entries.map { slot ->
-        val id = prefs.widgetId(slot)
-        val available = providerInfo(slot) != null
-        val bound = id != null && manager.getAppWidgetInfo(id)?.provider == slot.component
-        VietMapWidgetBindingStatus(slot, id, available, bound)
+    fun bindingStatuses(): List<VietMapWidgetBindingStatus> {
+        catalog.refresh(force = true)   // người dùng đang hỏi (Diag/bind) — đọc tươi, không tin cache
+        return VietMapWidgetSlot.entries.map { slot ->
+            val id = prefs.widgetId(slot)
+            val available = providerInfo(slot) != null
+            val bound = id != null && manager.getAppWidgetInfo(id)?.provider == slot.component
+            VietMapWidgetBindingStatus(slot, id, available, bound)
+        }
     }
     fun beginBinding(slot: VietMapWidgetSlot): VietMapWidgetBindResult {
         val provider = providerInfo(slot)
@@ -236,40 +262,25 @@ class VietMapWidgetBridge private constructor(context: Context) {
                     unsupportedSlots += slot
                 } else {
                     unsupportedSlots -= slot
-                    // Launch background hash and update when ready
-                    val hashFuture = extraction.hashAlertsAsync(view)
                     alertsSnapshot = alertsSnapshot.copy(
                         values = extracted,
                         updatedAtElapsedMs = now,
                         generation = callbackGeneration,
                     )
-                    // Schedule hash result merge (non-blocking on main)
-                    Thread {
-                        try {
-                            val (h1, h2) = hashFuture.get()
-                            main.post {
-                                // Only merge if generation hasn't changed
-                                if (listenerGeneration == callbackGeneration) {
-                                    val current = alertsSnapshot.values
-                                    if (current != null) {
-                                        alertsSnapshot = alertsSnapshot.copy(
-                                            values = current.copy(
-                                                firstAlertImageHash = h1,
-                                                secondAlertImageHash = h2,
-                                            )
-                                        )
-                                        schedulePublish()
-                                    }
-                                }
-                            }
-                        } catch (interrupted: InterruptedException) {
-                            Thread.currentThread().interrupt()
-                        } catch (cancelled: CancellationException) {
-                            Log.d(TAG, "alert hash cancelled", cancelled)
-                        } catch (failed: ExecutionException) {
-                            Log.w(TAG, "alert hash failed", failed.cause ?: failed)
+                    // Hash ở luồng `widget-hash`, kết quả tự về (KHÔNG dựng một Thread chờ cho MỖI lượt cập nhật —
+                    // [SOÁT Pass 1 · 2026-09-25 · P2], xem KDoc `VietMapWidgetExtraction.hashAlerts`). Vẫn chỉ trộn
+                    // vào snapshot khi thế hệ chưa đổi, và vẫn trộn trên main.
+                    extraction.hashAlerts(view) { h1, h2 ->
+                        main.post {
+                            if (listenerGeneration != callbackGeneration) return@post
+                            val current = alertsSnapshot.values ?: return@post
+                            if (current.firstAlertImageHash == h1 && current.secondAlertImageHash == h2) return@post
+                            alertsSnapshot = alertsSnapshot.copy(
+                                values = current.copy(firstAlertImageHash = h1, secondAlertImageHash = h2),
+                            )
+                            schedulePublish()
                         }
-                    }.start()
+                    }
                 }
             }
             VietMapWidgetSlot.ALERT_FULL -> {
@@ -458,12 +469,10 @@ class VietMapWidgetBridge private constructor(context: Context) {
         dispatchToListeners(published)
     }
     // --- Utility ---
-    private fun providerInfo(slot: VietMapWidgetSlot): AppWidgetProviderInfo? =
-        manager.installedProviders.firstOrNull { it.provider == slot.component }
+    private fun providerInfo(slot: VietMapWidgetSlot): AppWidgetProviderInfo? = catalog.info(slot.component)
     // D3(a): rẽ nhánh API 33 + bắt NameNotFound nay nằm ở một cửa PackageQueries (trước đây tệp này tự rẽ — bản gốc
-    // của khuôn đó). Gói không cài ⇒ null.
-    private fun providerVersion(): String? =
-        PackageQueries.packageInfo(appContext.packageManager, VIETMAP_PACKAGE)?.versionName
+    // của khuôn đó). Gói không cài ⇒ null. BG-31: đọc qua cache (TTL / receiver gói).
+    private fun providerVersion(): String? = catalog.version()
     private fun deleteAllocatedId(appWidgetId: Int) {
         try {
             host.deleteAppWidgetId(appWidgetId)
@@ -487,7 +496,6 @@ class VietMapWidgetBridge private constructor(context: Context) {
         private const val TAG = "VietMapWidget"
         private const val HOST_ID = 0x564D
         private const val UPDATE_DEBOUNCE_MS = 120L
-        private const val FRESHNESS_TICK_MS = 1_000L
         @Volatile private var instance: VietMapWidgetBridge? = null
         fun get(context: Context): VietMapWidgetBridge = instance ?: synchronized(this) {
             instance ?: VietMapWidgetBridge(context).also { instance = it }

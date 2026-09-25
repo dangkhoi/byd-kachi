@@ -60,7 +60,7 @@ class VoiceKeyKeepAliveService : Service() {
         // Phím-thoại TẮT ⇒ không cần giữ tiến trình → đứng xuống (stopSelf sau startForeground là hợp lệ).
         if (!Prefs.voiceKeyEnabled(applicationContext)) {
             Log.i(TAG, "voice key OFF → keep-alive stand down")
-            handler.removeCallbacks(watchdog); watching = false
+            handler.removeCallbacks(watchdog); watching = false; inProcessWatchdogAlive = false
             runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
             stopSelf(startId)
             return START_NOT_STICKY
@@ -69,12 +69,13 @@ class VoiceKeyKeepAliveService : Service() {
         runCatching { RebindReceiver.scheduleWatchdog(applicationContext) }
         // Watchdog IN-PROCESS — đường tự-heal CHÍNH (không bị ssc_skip). Chạy một lần, tự lặp.
         if (!watching) { watching = true; handler.postDelayed(watchdog, WATCHDOG_FIRST_MS) }
+        inProcessWatchdogAlive = true   // B1: alarm 60 s thấy cờ này ⇒ no-op (lưới phụ); tiến trình chết ⇒ cờ chết theo
         Log.i(TAG, "voice-key keep-alive foreground + in-process a11y watchdog")
         return START_STICKY   // hệ dựng lại nếu bị kill → tiến trình quay lại RUNNING
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(watchdog); watching = false
+        handler.removeCallbacks(watchdog); watching = false; inProcessWatchdogAlive = false
         super.onDestroy()
     }
 
@@ -100,8 +101,32 @@ class VoiceKeyKeepAliveService : Service() {
 
     companion object {
         private const val TAG = "VoiceKeyKeepAlive"
-        // Riêng với FloatingBubble(1042)/BootSetup(1043)/VMAutostart(1044) để cùng tồn tại.
+
+        /**
+         * BẢNG ID THÔNG BÁO FGS — nguồn duy nhất, khoá bởi `ForegroundNotificationIdGuardTest` (quét `app/src/main`,
+         * mọi ID phải DUY NHẤT). Hai FGS trùng id ⇒ `stopForeground(REMOVE)` cái này GỠ thông báo cái kia (lỗi hợp
+         * đồng FGS, kiểm kê `perf-inventory-2026-09-25.md` BG-09/12/23/10; trước 2026-09-25 1044 ×2 và 1045 ×2).
+         *
+         * | ID   | Service                                   |
+         * |------|-------------------------------------------|
+         * | 1042 | `clustercast.BubbleForegroundNotice.ID` (FloatingBubbleService) |
+         * | 1043 | `BootSetupService`                        |
+         * | 1044 | `automation.AutomationService`            |
+         * | 1045 | `VoiceKeyKeepAliveService` (file này)     |
+         * | 1046 | `VietMapAutostartService`                 |
+         * | 1047 | `KachiAutostartService`                   |
+         * | 4801 | `launcher.voice.VoiceWakeService`         |
+         *
+         * Thêm FGS mới: lấy số kế tiếp, ghi vào bảng này; test sẽ đỏ nếu trùng.
+         */
         private const val NOTIFICATION_ID = 1045
+
+        /**
+         * Sự thật "watchdog in-process đang chạy" cho [RebindReceiver] (alarm 60 s = lưới phụ ⇒ no-op khi cờ này bật).
+         * Cờ tĩnh sống theo tiến trình: FGS/tiến trình chết ⇒ về false ⇒ alarm heal như cũ. Không đọc từ shell.
+         */
+        @Volatile var inProcessWatchdogAlive: Boolean = false
+            private set
         private const val CHANNEL_ID = "clusternav_voicekey_keepalive"
 
         /** Chu kỳ watchdog in-process. 30s: đủ nhanh để phím rớt tự về trong nửa phút, đủ thưa để không tốn. */

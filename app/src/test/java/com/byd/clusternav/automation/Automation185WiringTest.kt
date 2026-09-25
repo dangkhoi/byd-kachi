@@ -187,7 +187,12 @@ class Automation185WiringTest {
         assertEquals(5, AutomationService.RAIN_EVERY_TICKS)
         // 2026-09-24: rule mưa nay theo THỜI GIAN TRÔI (nhịp base đổi tốc độ theo camera 1s/60s ⇒ không đếm nhịp được).
         assertTrue("nowMs - lastRainMs >= TICK_MS * RAIN_EVERY_TICKS" in service, "rule mưa theo mốc thời gian ~5 phút")
-        assertTrue("camera?.tick()" in service, "camera tick chạy trong FGS nền (owner 2026-09-24: lái xe HOME stopped)")
+        // 2026-09-25 (closeout B2/BG-13/BG-15): camera KHÔNG còn nhịp 250 ms; sự kiện xi-nhan tới qua socket + hẹn giờ
+        // HOLD (`CameraHold`), controller dùng chung ở `AppContainer`. FGS vẫn là nơi giữ nó sống khi HOME stopped
+        // (owner 2026-09-24: lái xe HOME stopped) — qua `syncCamera(app)` mỗi nhịp và ở `finally`.
+        assertTrue("syncCamera(app)" in service, "FGS nền phải sync camera (owner 2026-09-24: lái xe HOME stopped)")
+        assertTrue("container.cameraSignal.tick()" in service, "camera đi qua controller dùng chung của AppContainer (BG-15)")
+        assertTrue("CAMERA_TICK_MS" !in service, "BG-13: không còn vòng 250 ms riêng cho camera")
         assertEquals(
             1,
             Regex("""Thread\(\{""").findAll(service).count(),

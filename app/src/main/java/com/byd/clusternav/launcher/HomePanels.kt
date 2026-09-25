@@ -233,5 +233,8 @@ class HomePanels(
     fun closeAll() {
         closeSettings()
         closeLayoutEditor()
+        // Hardening 2026-09-25 (audit F16): đang HỌC phím mà màn `recreate()` (đổi ngôn ngữ) ⇒ `VoiceKeyLearnBus`
+        // (singleton) giữ lambda `ui(...)` của Activity cũ tới lần học sau. Bus là của bridge ⇒ trả lại ở đây.
+        runCatching { bridge.stopLearn() }
     }
 }

@@ -86,6 +86,23 @@ interface CarControlPort {
     fun wiredOnThisCar(id: String): Boolean = true
 
     /**
+     * Một cú GHI vừa trả `false` cho nút [id] — đó là **xe thật từ chối**, hay chỉ là *"máy này không có xe"*?
+     *
+     * ## Vì sao KHÔNG dùng [wiredOnThisCar] cho câu hỏi này (review Pass 2 · 2026-09-26)
+     * [wiredOnThisCar] trả `true` cho CẢ HAI nghĩa *"xe có nút"* và *"không biết"* (xem KDoc của nó) — đúng cho việc
+     * nó sinh ra (chọn CÂU NÓI), nhưng sai làm cổng hoàn nguyên: off-car / máy ảo cũng ra `true`, mà ở đó **mọi** cú
+     * ghi đều trả `false` ⇒ mọi ô bấm xong đều nảy về, đúng cái spec `kachi-closeout-hardening` OQ3 muốn tránh.
+     *
+     * `true` ⇔ **hai** vế cùng đúng: (a) máy này có bảng HAL THẬT của xe ([HalGateway.featureMapAvailable] — off-car /
+     * máy ảo / mọi bản giả đều `false`), **và** (b) nút không bị bảng ấy khai là *vắng* (`featureAbsentOnCar`). Mặc
+     * định `false` = *"không biết ⇒ đừng kết luận gì"*: [NoCar], bản giả trong bài kiểm, máy ảo giữ hành vi lạc quan.
+     *
+     * Chỗ gọi: [ControlTileWrite.submit] (`failureIsReal`). Ai muốn "fail loud" cả off-car thì bỏ cổng ở chỗ gọi, ĐỪNG
+     * đổi mặc định ở đây (mặc định là lời khai "không biết", không phải một lựa chọn hành vi).
+     */
+    fun writeFailureIsReal(id: String): Boolean = false
+
+    /**
      * ═══ H1 · T5 — GIÁ TRỊ THẬT của MỘT NÚT BẤT KỲ (không riêng [ControlKind.STEP]) ══════════════════════
      *
      * `null` = **chưa đọc được**: off-car · máy ảo · trim không provision · nút chưa có đường đọc. Chỗ gọi phải giữ

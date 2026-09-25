@@ -57,6 +57,14 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
         runCatching { !table.featureAbsentOnCar(id) }.getOrDefault(true)
 
     /**
+     * Xem KDoc [CarControlPort.writeFailureIsReal]: `true` chỉ khi bảng HAL thật CÓ MẶT **và** nút không bị khai vắng.
+     * Không có bảng (off-car · máy ảo · trim không provision) ⇒ `false` = *"không biết"*. `runCatching` cùng lẽ với
+     * [wiredOnThisCar] (reflection), nhưng rơi về `false`: một ngoại lệ ở đây cũng là *"không biết"*.
+     */
+    override fun writeFailureIsReal(id: String): Boolean =
+        runCatching { table.featureMapPresent() && !table.featureAbsentOnCar(id) }.getOrDefault(false)
+
+    /**
      * Định tuyến chung theo [ControlDef.kind] — cho UI gọi 1 điểm. [arg]: TOGGLE 1/0, STEP giá trị, COVER 1/0,
      * SELECT index, BUTTON bỏ qua. Id lạ → false.
      *

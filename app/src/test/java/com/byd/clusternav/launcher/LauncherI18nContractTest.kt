@@ -94,7 +94,9 @@ class LauncherI18nContractTest {
      * Phép nhận có tính tới lời gọi **nhiều dòng**: đếm ngoặc để biết lời gọi kết thúc ở đâu, thay vì chỉ soi
      * đúng dòng mang dấu hiệu (bản soi-một-dòng bỏ lọt mọi `Lang.t(` xuống dòng — tức mở một lỗ im lặng).
      */
-    private val DIAGNOSTIC_CALL = Regex("""(\bLog\.[a-z]+\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\()""")
+    // `log[IDWE](` = bọc `Log.*` trong `runCatching` (HalSignalClient 2026-09-25: luồng socket chạy được trong JVM test
+    // thuần, android.jar stub ném ở mọi Log.*) — vẫn là nhật ký, không hiện trên màn.
+    private val DIAGNOSTIC_CALL = Regex("""(\bLog\.[a-z]+\(|\blog[IDWE]\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\()""")
 
     /** Chỉ số dòng nằm TRONG một lời gọi chẩn đoán (kể cả phần xuống dòng của nó). */
     private fun diagnosticLines(src: String): Set<Int> {

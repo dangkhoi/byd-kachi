@@ -146,4 +146,35 @@ class CarControlAdapterTest {
     @Test fun `unknown control id returns false`() {
         assertFalse(CarControlAdapter(HalBindingTable(FakeHalGateway(namedRc = 0L))).toggle("khong_co", true))
     }
+
+    /**
+     * ═══ [SOÁT Pass 2 · 2026-09-26] `writeFailureIsReal` — cổng hoàn nguyên của ô đơn ═══════════════════════════
+     *
+     * Bệnh bài này khoá: chỗ gọi (`ControlTileFactory`) từng hỏi [CarControlPort.wiredOnThisCar], mà hàm ấy trả
+     * `true` cho CẢ *"xe có nút"* lẫn *"không biết"* ⇒ off-car (không bảng feature-id) mọi cú ghi trả `false` vẫn
+     * kéo ô về — đúng thứ spec `kachi-closeout-hardening` OQ3 / review Pass 1 [P2] muốn tránh. `writeFailureIsReal`
+     * đòi **hai** vế: bảng CÓ mặt ∧ nút không bị khai vắng.
+     */
+    @Test fun `writeFailureIsReal doi bang HAL that CO mat`() {
+        // off-car: không bảng ⇒ "không biết" cho MỌI nút, dù `wiredOnThisCar` vẫn nói "cứ thử đi" (true).
+        val off = CarControlAdapter(HalBindingTable(FakeHalGateway()))
+        assertFalse(off.writeFailureIsReal("pm25"), "off-car: cú `false` không phải bằng chứng gì")
+        assertFalse(off.writeFailureIsReal("fan"))
+        assertTrue(off.wiredOnThisCar("fan"), "hai câu hỏi KHÁC nhau: `wiredOnThisCar` off-car vẫn là 'cứ thử đi'")
+    }
+
+    @Test fun `xe co bang thi false la that, tru nut bang khai vang`() {
+        // Xe CÓ bảng: `fan` đi feature-id 501219340 mà không device nào chứa ⇒ vắng thật ⇒ vẫn "không biết".
+        val vang = CarControlAdapter(HalBindingTable(FakeHalGateway(featureMapPresent = true)))
+        assertFalse(vang.writeFailureIsReal("fan"), "nút xe KHÔNG có ⇒ đừng kéo ô về (OQ3)")
+        assertFalse(vang.wiredOnThisCar("fan"))
+        // Cùng chiếc xe ấy, nút đi named-method (`pm25`) không đi qua bảng ⇒ không bị khai vắng ⇒ `false` là THẬT.
+        assertTrue(vang.writeFailureIsReal("pm25"), "trên xe thật, cú `false` của một nút không-bị-khai-vắng là thật")
+        // Và khi bảng CÓ device chứa đúng id ấy thì `fan` cũng là nút thật.
+        val co = CarControlAdapter(
+            HalBindingTable(FakeHalGateway(featureMapPresent = true, featureDevices = mapOf(501219340 to "com.byd.Dev"))),
+        )
+        assertTrue(co.writeFailureIsReal("fan"))
+        assertTrue(co.wiredOnThisCar("fan"))
+    }
 }

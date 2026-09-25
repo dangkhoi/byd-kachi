@@ -70,4 +70,71 @@ class MacroExecTest {
         assertTrue(peak.get() in 1..2, "trần luồng là 2, đo được ${peak.get()} — một luồng mới mỗi cú chạm là bệnh cũ")
         assertTrue(threads.size <= 2, "$n lượt chỉ được dùng tối đa 2 luồng, dùng ${threads.size}")
     }
+
+    /**
+     * ═══ P1-main (2026-09-25) · LÀN TUẦN TỰ cho ô đơn — cùng pool, KHÔNG song song, KHÔNG đổi thứ tự ════════════
+     * Pool có 2 luồng: nộp thẳng `pool.execute` thì hai cú bấm liên tiếp cùng một nút có thể chạy chéo ⇒ HAL nhận
+     * `tắt` trước `bật`. Bài này nộp 40 lượt có ngủ ngẫu nhiên vào MỘT làn, một lượt giữa chừng ném: thứ tự phải y
+     * nguyên, đỉnh song song = 1, và lượt ném không nuốt lượt kế.
+     */
+    @Test
+    fun `submitSerial — cung mot lan thi dung thu tu, khong song song, luot nem khong chan luot ke`() {
+        val n = 40
+        val done = CountDownLatch(n)
+        val order = java.util.Collections.synchronizedList(mutableListOf<Int>())
+        val live = AtomicInteger(0)
+        val peak = AtomicInteger(0)
+        val rnd = java.util.Random(7)
+        repeat(n) { i ->
+            val nap = rnd.nextInt(4).toLong()
+            MacroExec.submitSerial("lan-test") {
+                val now = live.incrementAndGet()
+                peak.updateAndGet { maxOf(it, now) }
+                try {
+                    Thread.sleep(nap)
+                    order += i
+                    done.countDown()
+                    if (i == 3) throw IllegalStateException("lượt $i ném — lượt sau vẫn phải chạy")
+                } finally {
+                    live.decrementAndGet()
+                }
+            }
+        }
+        assertTrue(done.await(30, TimeUnit.SECONDS), "MỌI lượt phải chạy — lượt ném không được nuốt lượt kế")
+        assertEquals((0 until n).toList(), order.toList(), "thứ tự nộp phải = thứ tự chạy trong một làn")
+        assertEquals(1, peak.get(), "trong MỘT làn không bao giờ có hai lượt chạy song song (đo được ${peak.get()})")
+    }
+
+    /**
+     * [SOÁT Pass 1 · 2026-09-25 · P2] Lượt DỌN đuôi làn phải đăng ký **ngoài** `lanes.compute { … }`.
+     *
+     * [ĐO JDK 17] `body` xong trước khi luồng gọi kịp `whenComplete` (ghi HAL off-car trả `false` tức thì) ⇒
+     * hành động chạy **ngay trên luồng gọi**; nếu lúc đó còn ở trong `compute` thì `lanes.remove` là *sửa map đang
+     * compute* ⇒ `IllegalStateException: Recursive update` (`ConcurrentHashMap.replaceNode:1167`) — bị
+     * `CompletableFuture` nuốt vào future dẫn xuất không ai đọc, nên đuôi làn không bao giờ được dọn và lỗi chìm
+     * hẳn. Hành vi ấy phụ thuộc lịch luồng nên không khoá được bằng phép đo; khoá bằng CẤU TRÚC nguồn (CLAUDE.md §8).
+     */
+    @Test
+    fun `don duoi lan dang ky NGOAI compute (khong sua map trong compute)`() {
+        val src = com.byd.clusternav.testsupport.SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/MacroExec.kt")
+        val fn = com.byd.clusternav.testsupport.SourceRoots.body(src, "fun submitSerial(")
+        val compute = com.byd.clusternav.testsupport.SourceRoots.body(fn, "lanes.compute(lane) { _, prev ->")
+        assertTrue(fn.contains("lanes.remove(lane, next)"), "vẫn phải dọn đuôi làn khi nó chạy xong")
+        assertTrue(
+            !compute.contains("lanes.remove") && !compute.contains("whenComplete"),
+            "KHÔNG được sửa `lanes` (remove/whenComplete) bên trong lambda của `lanes.compute` — ConcurrentHashMap cấm",
+        )
+    }
+
+    /** Làn tuần tự dùng CHUNG pool với gói lệnh: luồng daemon, tên = tên làn, trần vẫn 2. */
+    @Test
+    fun `submitSerial chay tren luong daemon cua pool, mang ten lan`() {
+        val done = CountDownLatch(1)
+        val daemon = AtomicBoolean(false)
+        val name = AtomicReference("")
+        MacroExec.submitSerial("lan-x") { daemon.set(Thread.currentThread().isDaemon); name.set(Thread.currentThread().name); done.countDown() }
+        assertTrue(done.await(5, TimeUnit.SECONDS))
+        assertTrue(daemon.get(), "làn ô đơn không được giữ tiến trình sống — daemon như gói lệnh")
+        assertEquals("lan-x", name.get())
+    }
 }

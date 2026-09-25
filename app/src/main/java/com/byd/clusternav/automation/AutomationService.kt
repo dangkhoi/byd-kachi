@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Lang
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
@@ -15,7 +16,6 @@ import com.byd.clusternav.launcher.automation.NavAutomationBook
 import com.byd.clusternav.navAutomationRules
 import com.byd.clusternav.rainDefrostEnabled
 import com.byd.clusternav.cameraSignalEnabled
-import com.byd.clusternav.launcher.camera.CameraSignalController
 
 /**
  * ═══ MỘT ĐỘNG CƠ NỀN CHO CẢ HAI AUTOMATION ═══════════════════════════════════════════════════════════════════
@@ -104,11 +104,14 @@ class AutomationService : Service() {
     companion object {
         private const val TAG = "KachiAutomation"
 
-        /** Nhịp chính. Luật dẫn-theo-lịch cần độ phân giải một phút (R2.3: *"kiểm mỗi ~1 phút"*). */
+        /**
+         * Nhịp chính. Luật dẫn-theo-lịch cần độ phân giải một phút (R2.3: *"kiểm mỗi ~1 phút"*).
+         *
+         * BG-13 (2026-09-25): KHÔNG còn nhịp 250 ms khi camera bật. Sự kiện xi-nhan đến qua socket theo thời gian
+         * thật; HOLD hết hạn nay được `CameraSignalController` hẹn bằng `postDelayed` đúng mốc (`CameraHold`).
+         * Vòng này chỉ còn đồng bộ công tắc mỗi phút (và [sync] gọi thẳng khi công tắc đổi).
+         */
         const val TICK_MS = 60_000L
-
-        /** Nhịp camera khi bật: 250ms < pha ON của nháy (~340ms) ⇒ bắt kịp xi-nhan nhấp nháy ([ĐO xe]). */
-        const val CAMERA_TICK_MS = 250L
 
         /**
          * Rule mưa chạy mỗi ngần này nhịp ⇒ ≈5 phút (R1.2).
@@ -160,6 +163,9 @@ class AutomationService : Service() {
         fun sync(ctx: Context) {
             val app = ctx.applicationContext
             runCatching {
+                // BG-15: công tắc camera đổi ⇒ controller dùng chung phản ứng NGAY (bật: nối socket; tắt: đóng
+                // overlay + dừng luồng), không chờ nhịp 60 s. Tắt mà chưa từng dựng ⇒ không dựng chỉ để dừng.
+                syncCamera(app)
                 if (!anyEnabled(app)) {
                     // TẮT: vô hiệu vòng NGAY (không chờ service chết) rồi mới xin dừng. Thiếu bước này thì thread
                     // đang ngủ còn chạy thêm một nhịp và có thể ghi HAL sau khi người dùng đã tắt công tắc.
@@ -176,6 +182,14 @@ class AutomationService : Service() {
                 if (Build.VERSION.SDK_INT >= 26) app.startForegroundService(intent) else app.startService(intent)
                 Log.i(TAG, "sync: có automation bật ⇒ đảm bảo engine đang chạy")
             }.onFailure { Log.w(TAG, "sync thất bại (degrade-safe, thử lại lần sau)", it) }
+        }
+
+        /** Xem [sync]. Tách riêng để nhịp vòng và `finally` của vòng cũng đi đúng một đường. */
+        private fun syncCamera(app: Context) {
+            val container = AppContainer.get(app)
+            val enabled = runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)
+            if (!enabled && !container.cameraSignalCreated) return
+            runCatching { container.cameraSignal.tick() }.onFailure { Log.w(TAG, "sync camera lỗi", it) }
         }
 
         /**
@@ -195,17 +209,17 @@ class AutomationService : Service() {
                 var ticks = 0
                 var lastNavMs = 0L
                 var lastRainMs = 0L
-                val camera = runCatching { CameraSignalController(app) }.getOrNull()
                 try {
                     // Nhịp ĐẦU chạy ngay (không ngủ trước): bật công tắc lúc 7h05 mà phải chờ tới 7h06 mới đánh
                     // giá là một phút không giải thích được với người vừa bấm.
                     while (myGen == generation && anyEnabled(app)) {
                         val nowMs = android.os.SystemClock.elapsedRealtime()
-                        // Camera theo xi-nhan — MỖI nhịp (nhanh khi camera bật). Chạy Ở ĐÂY (FGS nền) chứ không ở
-                        // render của HOME: [ĐO xe 2026-09-24] lái xe thì app bản-đồ trên tiền cảnh ⇒ HOME stopped ⇒
-                        // render (và tick camera cũ) KHÔNG chạy ⇒ xi-nhan không lên camera. FGS chạy bất kể tiền cảnh.
-                        runCatching { camera?.tick() }.onFailure { Log.w(TAG, "tick camera lỗi", it) }
-                        // Nav/mưa theo THỜI GIAN TRÔI (không theo đếm nhịp — nhịp đổi tốc độ theo camera).
+                        // Camera theo xi-nhan — đồng bộ công tắc mỗi nhịp (controller DÙNG CHUNG qua AppContainer, BG-15).
+                        // Chạy Ở ĐÂY (FGS nền) chứ không ở render của HOME: [ĐO xe 2026-09-24] lái xe thì app bản-đồ
+                        // trên tiền cảnh ⇒ HOME stopped ⇒ render KHÔNG chạy ⇒ xi-nhan không lên camera. FGS chạy bất
+                        // kể tiền cảnh. Sự kiện ON/OFF + HOLD hết hạn KHÔNG đi qua nhịp này (socket + postDelayed, BG-13).
+                        syncCamera(app)
+                        // Nav/mưa theo THỜI GIAN TRÔI (giữ mốc elapsed — không phụ thuộc số nhịp).
                         if (nowMs - lastNavMs >= TICK_MS) {
                             lastNavMs = nowMs
                             runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
@@ -215,15 +229,13 @@ class AutomationService : Service() {
                             runCatching { RainDefrostApplier.tick(app) }.onFailure { Log.w(TAG, "tick mưa lỗi", it) }
                         }
                         ticks++
-                        // Camera bật ⇒ nhịp NHANH (bắt xi-nhan kịp); không thì giữ nhịp phút (tiết kiệm).
-                        val sleepMs = if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) CAMERA_TICK_MS else TICK_MS
-                        runCatching { Thread.sleep(sleepMs) }
+                        runCatching { Thread.sleep(TICK_MS) }
                         // Kiểm LẠI sau khi ngủ: công tắc có thể đã tắt trong lúc đó. KHÔNG đọc [running] ở đây —
                         // một thread của thế hệ khác có thể vừa bật lại cờ ấy; danh tính thế hệ mới là điều kiện đúng.
                         if (myGen != generation) break
                     }
                 } finally {
-                    runCatching { camera?.tick() }   // one last no-op tick may close overlay if pref just turned off
+                    syncCamera(app)   // nhịp cuối: công tắc vừa tắt ⇒ đóng overlay + dừng luồng socket (BG-15)
                     // CHỈ thế hệ hiện tại được nhả cờ — tránh `finally` của thread cũ xoá cờ của thread mới.
                     synchronized(GUARD) { if (myGen == generation) running = false }
                     Log.i(TAG, "vòng automation (gen $myGen) kết thúc sau $ticks nhịp")

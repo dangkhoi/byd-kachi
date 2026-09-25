@@ -50,8 +50,10 @@ android {
         // tái dùng "1.68" là dựng lại đúng cảnh ba bản nội dung khác nhau cùng tên "v0.37" của phiên 21/07,
         // và lần này còn tệ hơn vì một bản đã nằm trên xe đang chạy: mọi lượt chẩn đoán sau đó sẽ không biết
         // mình đang nói về bản nào.
-        versionCode = 166
-        versionName = "2.65"
+        // CLOSEOUT 2026-09-26 ⇒ **2.66 (167)**: vòng đóng dự án — profiling toàn bộ tiến trình nền, hardening, lint 0
+        // error, doc đồng bộ (spec `docs/specs/kachi-closeout-hardening.html`, số đo `docs/diagnostics/perf-closeout-2026-09-25.md`).
+        versionCode = 167
+        versionName = "2.66"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
