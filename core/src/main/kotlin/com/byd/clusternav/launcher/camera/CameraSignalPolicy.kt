@@ -64,9 +64,10 @@ object CameraSignalPolicy {
         val labelEn: String,
         val crop: FloatArray? = null,
     ) {
-        // Gương = fisheye id 0 + crop vùng trái/phải (kinex pano crop).
-        MIRROR_LEFT(1, 0, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f)),
-        MIRROR_RIGHT(2, 0, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f)),
+        // Gương = cameraId 1 = fisheye 4-in-1 [ĐO owner 2026-09-25: id 1 ra fisheye đúng nguồn] + CROP vùng
+        // trái/phải (kinex pano crop trái x[0.25-0.35], phải x[0.65-0.75] của ảnh 4-in-1). id 0 crop ra sai.
+        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f)),
+        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f)),
         FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
         FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
         REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),
