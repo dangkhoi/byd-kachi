@@ -40,17 +40,24 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     /** Mở camera [cameraId] + đổ preview vào [surface]. Trả true nếu startPreview OK (một mode nào đó nhận surface). */
     fun open(cameraId: Int, surface: Surface): Boolean {
         val c = loadClass() ?: run { Log.i(TAG, "AVMCamera class không có (off-car/trim khác)"); return false }
-        // Dựng: thử constructor(int) rồi static open(int).
-        val obj = runCatching { c.getDeclaredConstructor(Int::class.javaPrimitiveType).newInstance(cameraId) }
-            .getOrNull()
-            ?: runCatching { c.getDeclaredMethod("open", Int::class.javaPrimitiveType).invoke(null, cameraId) }
-                .getOrNull()
-        if (obj == null) { Log.w(TAG, "không tạo được AVMCamera cameraId=$cameraId"); return false }
+        fun m(name: String, vararg types: Class<*>) = runCatching {
+            c.getDeclaredMethod(name, *types).apply { isAccessible = true }   // ⚠ kinex setAccessible — method non-public
+        }.getOrNull()
+        // Dựng: constructor(int) rồi open() (device open) — HOẶC static open(int). setAccessible bắt buộc.
+        var obj = runCatching { c.getDeclaredConstructor(Int::class.javaPrimitiveType).apply { isAccessible = true }.newInstance(cameraId) }.getOrNull()
+        if (obj != null) {
+            // constructor(int) xong PHẢI open() device (kinex) — thiếu bước này ⇒ "camera has been not open".
+            val opened = runCatching { m("open")?.invoke(obj); true }.getOrDefault(false)
+            Log.i(TAG, "AVMCamera(cameraId=$cameraId) + open() device=$opened")
+        } else {
+            obj = runCatching { m("open", Integer.TYPE)?.invoke(null, cameraId) }.getOrNull()
+            Log.i(TAG, "AVMCamera.open($cameraId) static → ${obj != null}")
+        }
+        if (obj == null) { Log.w(TAG, "không tạo/mở được AVMCamera cameraId=$cameraId"); return false }
         cam = obj
-        runCatching { c.getDeclaredMethod("open").invoke(obj) }   // constructor(int) có thể cần open() rời
-        runCatching { c.getDeclaredMethod("setCameraFps", Int::class.javaPrimitiveType).invoke(obj, FPS) }
+        runCatching { m("setCameraFps", Integer.TYPE)?.invoke(obj, FPS) }   // fps có thể bị từ chối — non-fatal
         // addPreviewSurface(Surface, int mode) — thử mode 0..3 như kinex.
-        val add = runCatching { c.getDeclaredMethod("addPreviewSurface", Surface::class.java, Int::class.javaPrimitiveType) }.getOrNull()
+        val add = m("addPreviewSurface", Surface::class.java, Integer.TYPE)
         var surfaceOk = false
         if (add != null) {
             for (mode in 0..3) {
@@ -60,10 +67,9 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
             }
         }
         if (!surfaceOk) {
-            // Vài build chỉ có addPreviewSurface(Surface) không mode.
-            runCatching { c.getDeclaredMethod("addPreviewSurface", Surface::class.java).invoke(obj, surface); surfaceOk = true }
+            runCatching { m("addPreviewSurface", Surface::class.java)?.invoke(obj, surface); surfaceOk = true }
         }
-        val started = runCatching { c.getDeclaredMethod("startPreview").invoke(obj); true }.getOrDefault(false)
+        val started = runCatching { m("startPreview")?.invoke(obj); true }.getOrDefault(false)
         Log.i(TAG, "AVMCamera cameraId=$cameraId surfaceOk=$surfaceOk started=$started")
         return started
     }
@@ -71,8 +77,8 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     fun close() {
         val obj = cam ?: return
         val c = cls
-        runCatching { c?.getDeclaredMethod("stopPreview")?.invoke(obj) }
-        runCatching { c?.getDeclaredMethod("close")?.invoke(obj) }
+        runCatching { c?.getDeclaredMethod("stopPreview")?.apply { isAccessible = true }?.invoke(obj) }
+        runCatching { c?.getDeclaredMethod("close")?.apply { isAccessible = true }?.invoke(obj) }
         cam = null
     }
 

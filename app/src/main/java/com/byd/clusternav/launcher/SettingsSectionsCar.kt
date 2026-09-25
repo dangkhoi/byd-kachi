@@ -77,6 +77,11 @@ class SettingsCarSection(
             ),
             current = bridge.cameraLvdsOption(),
         ) { code -> bridge.setCameraLvdsOption(code) })
+        // Chọn camera cho từng bên xi-nhan (owner 2026-09-25): xi-nhan bên nào → hiện cam đã chọn. Default trái→0.
+        val camIds = listOf("0" to "0", "1" to "1", "2" to "2", "3" to "3")
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pick_sub)))
+        body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_left), camIds, bridge.cameraCamLeft().toString()) { v -> bridge.setCameraCamLeft(v.toInt()) })
+        body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_right), camIds, bridge.cameraCamRight().toString()) { v -> bridge.setCameraCamRight(v.toInt()) })
     }
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────

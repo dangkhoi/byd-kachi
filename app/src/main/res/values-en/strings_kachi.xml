@@ -652,6 +652,9 @@
     <string name="kachi_camera_cluster_title">Show camera on cluster</string>
     <string name="kachi_camera_option_sub">Camera display method (try on car)</string>
     <string name="kachi_camera_option_title">Method</string>
+    <string name="kachi_camera_pick_sub">Pick camera per turn signal (left→left cam)</string>
+    <string name="kachi_camera_pick_left">Left signal</string>
+    <string name="kachi_camera_pick_right">Right signal</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
     <string name="kachi_camera_left">Left camera · in development</string>
     <string name="kachi_camera_right">Right camera · in development</string>

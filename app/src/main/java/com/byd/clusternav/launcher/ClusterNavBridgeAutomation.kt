@@ -15,6 +15,8 @@ import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.setCameraOnCluster
 import com.byd.clusternav.cameraLvdsOption
 import com.byd.clusternav.setCameraLvdsOption
+import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
 
 /**
@@ -57,6 +59,10 @@ fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
 fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
 fun ClusterNavBridge.cameraLvdsOption(): String = Prefs.cameraLvdsOption(app)
 fun ClusterNavBridge.setCameraLvdsOption(v: String) = Prefs.setCameraLvdsOption(app, v)
+fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 0)
+fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
+fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)
+fun ClusterNavBridge.setCameraCamRight(v: Int) = Prefs.setCameraCamId(app, left = false, v)
 
 /** AUTOMATION #2 — sổ luật dẫn-đường-theo-lịch, đã giải mã (rỗng = chưa có luật nào). */
 fun ClusterNavBridge.navRules(): List<ScheduledNavRule> =
