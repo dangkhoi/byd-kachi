@@ -170,13 +170,19 @@ class SettingsProfilesSection(
             // V3 · R13 (owner 2026-09-16 · E5) — **Đổi tên**. Hiện cho MỌI hồ sơ: đổi tên không đụng tới thứ hồ
             // sơ đang mang (`WorkspacePrefs.renameProfile` DỜI khoá, không tạo/xoá), nên không có ca nào để chặn
             // — khác hẳn nút Xoá ngay dưới. Hộp hỏi tên dùng chung `SettingsDialogs.askName`, không dựng bản thứ hai.
+            // ⚠ [FIX owner 2026-09-25] rows.button mang stackLp (lề DỌC để tách hàng trên) — nhét vào hàng NGANG
+            // này thì lề trên đội nút "Đổi tên" LÊN ~12px, lệch nút "Xoá". Ghi đè layoutParams: bỏ lề dọc, canh
+            // GIỮA dọc, thêm khe ngang. Cả hai nút dùng CÙNG kiểu lp ⇒ thẳng hàng.
+            fun sideBtnLp() = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { gravity = Gravity.CENTER_VERTICAL; marginStart = dpi(context, Sp.S) }
             addView(rows.button(context.getString(R.string.kachi_profile_rename)) {
                 SettingsDialogs.askName(
                     context,
                     context.getString(R.string.kachi_profile_rename),
                     ProfileNames.display(name),
                 ) { newName -> rename(name, newName) }
-            })
+            }.apply { layoutParams = sideBtnLp() })
             if (!active && total > 1) addView(TextView(context).apply {
                 text = context.getString(R.string.kachi_delete); setTextColor(c(KachiTheme.RED)); setTextSize(TypedValue.COMPLEX_UNIT_SP, KachiType.BODY)
                 typeface = Typeface.DEFAULT_BOLD
@@ -186,6 +192,7 @@ class SettingsProfilesSection(
                 // KHÔNG hoàn lại được. Nên nghĩa "nguy hiểm" chuyển sang **NỀN** [KachiTheme.RED_SOFT] (vai mới,
                 // cùng công thức `amberSoft`) + chữ đỏ giữ nguyên — [ĐO] nền tách thẻ 1.45×/1.40×, chữ 4.57/4.65.
                 background = KachiTheme.card(context, Sp.RADIUS_PILL, KachiTheme.RED_SOFT)
+                layoutParams = sideBtnLp()   // CÙNG lp với nút Đổi tên ⇒ thẳng hàng, có khe
                 setOnClickListener { deps.onDeleteProfile(name) }
             })
             if (!active) setOnClickListener { deps.onSwitchProfile(name) }
