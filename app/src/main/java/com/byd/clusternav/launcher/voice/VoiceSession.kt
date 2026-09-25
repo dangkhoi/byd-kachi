@@ -385,7 +385,7 @@ class VoiceSession(
      * Kaldi ném `Error`), mà một cờ kẹt ở `true` sẽ làm mọi lần huỷ sau đó không đóng được tấm chữ nữa.
      */
     internal fun <T> whileCapturing(block: () -> T): T {
-        capturing.set(true)
+        ui.removeCallbacks(closeTask); capturing.set(true)   // [FIX 2026-09-25] mở mic ⇒ huỷ hẹn-đóng cũ (chống overlay biến mất giữa lượt nghe + taskbar trồi)
         return try { block() } finally { capturing.set(false) }
     }
 
