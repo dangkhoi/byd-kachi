@@ -8,7 +8,6 @@ import android.graphics.drawable.GradientDrawable
 import android.util.Log
 import android.view.Gravity
 import android.view.Surface
-import android.view.SurfaceView
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
@@ -51,18 +50,24 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
 class CameraOverlayView(private val appCtx: Context) {
 
     private var wm: WindowManager? = null
-    private var surface: SurfaceView? = null
+    private var surface: android.view.TextureView? = null
     private var container: android.view.View? = null
 
     private companion object {
         const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
         const val WRAP = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 
-        /** Bề rộng overlay = 30 % bề rộng màn (R2 "cỡ nhỏ"). */
-        const val W_RATIO = 0.30f
+        /** Cạnh overlay VUÔNG = 26% CHIỀU CAO màn (owner 2026-09-25: cam ra hình vuông, không ngang). */
+        const val SQUARE_RATIO = 0.26f
 
-        /** Bề cao overlay = 26 % bề cao màn. */
-        const val H_RATIO = 0.26f
+        /** Lề trên màn CHÍNH = 14% chiều cao ⇒ nằm hẳn DƯỚI thanh trên (trước bị đè header). */
+        const val MAIN_TOP_RATIO = 0.14f
+
+        /** Lề trên CỤM = 6% chiều cao (cụm không có thanh trên; trước để cao quá thấy 1/2). */
+        const val CLUSTER_TOP_RATIO = 0.06f
+
+        /** Lề bên = 3% bề rộng. */
+        const val SIDE_MARGIN_RATIO = 0.03f
     }
 
     /**
@@ -87,19 +92,18 @@ class CameraOverlayView(private val appCtx: Context) {
             // có cụm (off-car / chưa chiếu) ⇒ rơi về màn chính, không crash (overlay vẫn hiện để verify).
             val w = (if (onCluster) clusterWm(ctx) else null) ?: wmOf(ctx) ?: return
             val radius = KachiSpace.dp(ctx, KachiSpace.RADIUS_XL).toFloat()
-            val sv = SurfaceView(ctx).apply {
-                setZOrderMediaOverlay(true)   // xem ⚠ ở KDoc lớp: "on top" bỏ mất cơ hội được bo cùng nền
-                setBackgroundColor(Color.BLACK)
-                holder.setFormat(PixelFormat.OPAQUE)
-                roundOutline(radius)
-                // Surface sẵn sàng ⇒ controller đổ camera (AVMCamera.addPreviewSurface) vào — RE kinex.
-                holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                    override fun surfaceCreated(h: android.view.SurfaceHolder) {
-                        runCatching { onSurfaceReady(h.surface) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
+            // TextureView (KHÔNG SurfaceView): vẽ TRONG cây view ⇒ (1) outline bo góc ăn thật, (2) frame composite
+            // trong cửa sổ có nền bo — hết đen/góc vuông. AVMCamera.addPreviewSurface nhận Surface từ SurfaceTexture.
+            val tv = android.view.TextureView(ctx).apply {
+                isOpaque = true
+                surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
+                    override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {
+                        runCatching { onSurfaceReady(Surface(st)) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                     }
-                    override fun surfaceChanged(h: android.view.SurfaceHolder, f: Int, w2: Int, h2: Int) {}
-                    override fun surfaceDestroyed(h: android.view.SurfaceHolder) {}
-                })
+                    override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {}
+                    override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture) = true
+                    override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
+                }
             }
             // Nhãn nhỏ ở góc: off-car (chưa có video) vẫn NHÌN THẤY overlay hiện đúng bên/đúng lúc ⇒ verify wiring
             // E2E bằng mắt. Chữ ngắn ("Camera trái") nên nó không ăn chỗ khi video thật đã đổ vào.
@@ -111,13 +115,13 @@ class CameraOverlayView(private val appCtx: Context) {
                     setColor(Color.BLACK)
                 }
                 roundOutline(radius)
-                addView(sv, android.widget.FrameLayout.LayoutParams(MATCH, MATCH))
-                labelFor(ctx, side)?.let { tv ->
-                    addView(tv, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
+                addView(tv, android.widget.FrameLayout.LayoutParams(MATCH, MATCH))
+                labelFor(ctx, side)?.let { tvl ->
+                    addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
             }
-            w.addView(frame, layoutParams(ctx, corner))
-            wm = w; surface = sv; container = frame
+            w.addView(frame, layoutParams(ctx, corner, onCluster))
+            wm = w; surface = tv; container = frame
             Log.i(PanoramaHal.TAG, "overlay show corner=$corner side=$side cluster=$onCluster")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
     }
@@ -128,7 +132,7 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /** Surface để [PanoramaHal]/LVDS đổ video vào (nếu ROM cho). null khi chưa hiện. */
-    fun surfaceView(): SurfaceView? = surface
+    fun surfaceView(): android.view.TextureView? = surface
 
     /**
      * Nhãn ngắn *Camera trái/phải* ở góc, hoặc `null` khi chỗ gọi không nói bên nào.
@@ -184,20 +188,24 @@ class CameraOverlayView(private val appCtx: Context) {
      * Góc lạ (không phải `"TL"`/`"TR"`) ⇒ coi như trên-phải; lượt đọc pref đã chặn ở `Prefs.cameraPos`, đây chỉ
      * là lưới an toàn cho chỗ gọi thứ hai sau này.
      */
-    private fun layoutParams(ctx: Context, corner: String): WindowManager.LayoutParams {
+    private fun layoutParams(ctx: Context, corner: String, onCluster: Boolean): WindowManager.LayoutParams {
         val dm = ctx.resources.displayMetrics
-        val w = (dm.widthPixels * W_RATIO).toInt()
-        val h = (dm.heightPixels * H_RATIO).toInt()
+        // VUÔNG: cạnh = 26% CHIỀU CAO màn (owner: cam nên hình vuông, không ngang).
+        val squareSide = (dm.heightPixels * SQUARE_RATIO).toInt()
         val atLeft = corner == CameraSignalPolicy.CORNER_TOP_LEFT
+        // Lề trên theo % CHIỀU CAO màn (chắc ăn qua mọi density): màn CHÍNH 14% (dưới thanh trên, trong khung —
+        // trước bị đè header); CỤM 6% (không có thanh trên; trước cao quá chỉ thấy 1/2).
+        val topY = (dm.heightPixels * (if (onCluster) CLUSTER_TOP_RATIO else MAIN_TOP_RATIO)).toInt()
+        val sideMargin = (dm.widthPixels * SIDE_MARGIN_RATIO).toInt()
         return WindowManager.LayoutParams(
-            w, h,
+            squareSide, squareSide,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or (if (atLeft) Gravity.START else Gravity.END)
-            x = KachiSpace.dp(ctx, KachiSpace.M)
-            y = KachiSpace.dp(ctx, KachiBars.HEADER_H)
+            x = sideMargin
+            y = topY
         }
     }
 }

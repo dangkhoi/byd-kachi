@@ -64,6 +64,17 @@ class CameraSignalController(private val appCtx: Context) {
      * pha ON của nháy).
      */
     fun tick(left: Boolean?, right: Boolean?) {
+        // overlay/hal/avm là op WindowManager + View ⇒ PHẢI main thread. tick(l,r) có thể được gọi từ LUỒNG ĐỌC
+        // socket ([HalSignalClient]) ⇒ marshal về main. tick() no-arg (FGS) cũng đi qua đây, main-post là no-op-an-toàn.
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            main.post { tickMain(left, right) }; return
+        }
+        tickMain(left, right)
+    }
+
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
+    private fun tickMain(left: Boolean?, right: Boolean?) {
         if (!Prefs.cameraSignalEnabled(appCtx)) { if (current != Turn.NONE) stop(); return }
         val now = clockMs()
         if (left == true) lastLeftOnMs = now
