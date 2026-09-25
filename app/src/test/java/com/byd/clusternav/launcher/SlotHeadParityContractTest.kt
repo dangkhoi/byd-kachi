@@ -34,7 +34,10 @@ class SlotHeadParityContractTest {
 
     @Test
     fun `ca hai duong deu dung SlotSwapButton centered`() {
-        assertTrue(overlay.contains("SlotSwapButton.strip("), "OverlayHeads phải dựng nút qua SlotSwapButton.strip (dải khung ô che caption + cùng nút ⇄)")
+        // owner 2026-09-25 (ảnh xe): bỏ thanh trắng — OverlayHeads đổi từ strip (nền che caption) sang centered
+        // (trong suốt). CẢ HAI đường (freeform overlay + nhúng slotHead) nay dùng centered, không còn dải trắng.
+        assertTrue(overlay.contains("SlotSwapButton.centered("), "OverlayHeads phải dựng nút qua SlotSwapButton.centered (trong suốt, không dải trắng che caption)")
+        assertFalse(overlay.contains("SlotSwapButton.strip("), "OverlayHeads KHÔNG được dùng strip (dải trắng — owner 2026-09-25 chốt bỏ)")
         val slotHead = workspace.substring(workspace.indexOf("private fun slotHead("))
             .let { it.substring(0, it.indexOf("private fun", 10)) }
         assertTrue(slotHead.contains("SlotSwapButton.centered("), "WorkspaceView.slotHead phải dựng nút qua SlotSwapButton.centered")
@@ -66,15 +69,13 @@ class SlotHeadParityContractTest {
     }
 
     @Test
-    fun `dai phu trai het be rong o, cao SLOT_HEAD_CLEAR, nut o giua`() {
-        assertTrue(overlay.contains("hd.width, h, hd.left, hd.top"), "dải phủ trải hết bề rộng ô (che caption freeform của hệ)")
+    fun `nut noi trong suot, cao dung khung nut, khong phu caption`() {
+        // owner 2026-09-25: bỏ thanh trắng — OverlayHeads chỉ nút ⇄ trong suốt, cao đúng khung nút (overlayHeightPx),
+        // KHÔNG phủ caption (không nhân CAPTION_COVER), không đè app/GMaps.
+        assertTrue(overlay.contains("hd.width, minH, hd.left, hd.top"), "cao = minH (khung nút), không phủ caption")
         assertTrue(overlay.contains("SlotSwapButton.overlayHeightPx("), "cao lấy từ SlotSwapButton (= SLOT_HEAD_CLEAR)")
-        assertFalse(overlay.contains("Sp.HEAD_BAR"), "không còn cao thanh HEAD_BAR (hằng đã xoá khỏi KachiSpace — D2a)")
-        assertTrue(overlay.contains("(hd.appTop - hd.top) + caption") && overlay.contains("Sp.CAPTION_COVER"),
-            "dải phải phủ HẾT caption của hệ: từ mép trên ô tới mép trên cửa sổ app + CAPTION_COVER ([ĐO] máy ảo caption 42dp)")
-        val strip = button.substring(button.indexOf("fun strip("))
-        assertTrue(strip.contains("centered(context, onTap)") && strip.contains("KachiTheme.CELL"),
-            "strip = centered + nền màu KHUNG Ô (không phải vai nền thanh tiêu đề cũ)")
+        assertFalse(overlay.contains("Sp.CAPTION_COVER"), "OverlayHeads KHÔNG còn phủ caption (owner 2026-09-25 bỏ thanh trắng)")
+        assertFalse(overlay.contains("(hd.appTop - hd.top) + caption"), "không còn tính chiều cao phủ caption")
     }
 
     @Test
