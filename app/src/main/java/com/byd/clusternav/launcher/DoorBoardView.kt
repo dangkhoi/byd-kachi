@@ -44,8 +44,10 @@ internal class DoorBoardView(context: Context) : View(context) {
     private val labelFloorPx = Sp.dpf(context, Sp.BOARD_LABEL_MIN)
 
     fun set(model: GroupBoardModel) {
-        plan = GroupBoard.doorPlan(model)
-        invalidate()
+        val next = GroupBoard.doorPlan(model)
+        val unchanged = plan == next   // (owner 2026-09-25 giật): chỉ vẽ lại khi plan ĐỔI
+        plan = next
+        if (!unchanged) invalidate()
     }
 
     /** Màu theo sắc thái — cùng thang với các bảng khác (đỏ nguy · hổ phách để ý · nhấn đang-mở · mờ nghỉ). */

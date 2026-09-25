@@ -27,8 +27,11 @@ class RingView(context: Context) : View(context) {
     }
 
     fun set(pct: Float, color: String, big: String, small: String) {
-        this.pct = pct.coerceIn(0f, 100f); this.arc.color = Color.parseColor(color)
-        this.big = big; this.small = small; invalidate()
+        val p2 = pct.coerceIn(0f, 100f); val col = Color.parseColor(color)
+        // (owner 2026-09-25 giật): chỉ vẽ lại khi ĐỔI — trước invalidate mỗi nhịp dù số y hệt ⇒ nháy.
+        val unchanged = this.pct == p2 && this.arc.color == col && this.big == big && this.small == small
+        this.pct = p2; this.arc.color = col; this.big = big; this.small = small
+        if (!unchanged) invalidate()
     }
 
     private val rect = RectF()

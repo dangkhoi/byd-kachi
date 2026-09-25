@@ -69,12 +69,18 @@ class TyreBoardView(context: Context) : View(context) {
         temps: List<String?>,
         verdict: String,
     ) {
+        val newValues = List(readings.size) { values.getOrNull(it) }
+        val newTemps = List(readings.size) { temps.getOrNull(it) }
+        // (owner 2026-09-25 "hình xe giật liên tục"): CHỈ vẽ lại khi dữ liệu THỰC SỰ đổi. Trước đây invalidate mỗi
+        // nhịp (1s) dù số y hệt ⇒ onDraw re-composite CẢ hình xe mỗi giây ⇒ giật/nháy. So khớp trước khi vẽ.
+        val unchanged = this.readings == readings && this.values == newValues &&
+            this.unitLabel == unitLabel && this.temps == newTemps && this.verdict == verdict
         this.readings = readings
-        this.values = List(readings.size) { values.getOrNull(it) }
+        this.values = newValues
         this.unitLabel = unitLabel
-        this.temps = List(readings.size) { temps.getOrNull(it) }
+        this.temps = newTemps
         this.verdict = verdict
-        invalidate()
+        if (!unchanged) invalidate()
     }
 
     private fun colorFor(s: TyreStatus): Int = when (s) {
