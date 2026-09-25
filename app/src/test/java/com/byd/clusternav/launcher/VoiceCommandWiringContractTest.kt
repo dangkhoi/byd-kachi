@@ -569,7 +569,11 @@ class VoiceCommandWiringContractTest {
             "đích phím vô-lăng *Kachi nghe* vào màn chính qua extra ⇒ phải có chỗ đọc extra đó")
         val launcher = code("src/main/java/com/byd/clusternav/modules/voicekey/AssistantLauncher.kt")
         assertTrue(launcher.contains("spec == TARGET_KACHI_VOICE"), "bộ gán phím phải nhận đích *Kachi nghe*")
-        assertTrue(launcher.contains("EXTRA_START_VOICE"), "và phải đi qua extra của màn chính, không tự bật micro")
+        // Owner 2026-09-25: phím-thoại mở phiên nghe HEADLESS (overlay nổi trên app đang xem), KHÔNG kéo
+        // KachiHomeActivity lên. `VoiceWakeService.listenNow` là đường phiên-nghe thật (fireWake headless), nên
+        // vẫn "nói thật" — chỉ đổi CƠ CHẾ (service overlay) chứ không thành nút chết.
+        assertTrue(launcher.contains("VoiceWakeService.listenNow"),
+            "và phải mở phiên nghe headless (overlay), không kéo launcher lên đè app đang xem")
     }
 
     /** Nút mic chỉ hiện khi **mô hình đã có** — hứa một việc chưa làm được là tệ hơn không hứa. */

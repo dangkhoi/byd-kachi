@@ -61,6 +61,10 @@ import com.byd.clusternav.speedbadge.BadgeLayout
  * Phần Cast và phần Phím nằm ở `ClusterNavBridgeCast.kt` / `ClusterNavBridgeKeys.kt` dưới dạng hàm
  * mở rộng của CHÍNH lớp này (giữ bề mặt phẳng `bridge.castFull(...)`, mà mỗi tệp vẫn dưới trần LOC).
  */
+import android.os.Handler
+
+import android.os.Looper
+
 class ClusterNavBridge(
     app: Context,
     internal val toast: (BridgeMsg) -> Unit,
@@ -181,6 +185,23 @@ class ClusterNavBridge(
 
     /** Nút "Dừng dẫn đường" — lặp lại `MainActivity.kt:277–280`. */
     fun navStop() = NavRepository.stop(app)
+
+    /**
+     * Nút "Khởi động lại launcher" (owner 2026-09-25) — restart process Kachi cho sạch khi có lỗi (bind rớt, cụm
+     * kẹt, overlay treo). Cách: mở lại [KachiHomeActivity] (NEW_TASK + CLEAR_TASK) rồi `Process.killProcess(myPid)`
+     * — process chết, Activity vừa launch làm hệ thống dựng lại process từ đầu (state sạch). Kachi là HOME nên kể
+     * cả nếu launch bị chậm, bấm Home vẫn về Kachi. Delay nhỏ để startActivity kịp đăng ký trước khi giết.
+     */
+    fun restartLauncher() {
+        runCatching {
+            val i = Intent(app, KachiHomeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            app.startActivity(i)
+        }
+        Handler(Looper.getMainLooper()).postDelayed({
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }, 300L)
+    }
 
     /**
      * Nguồn đang dẫn — dữ liệu THÔ của dòng "Đang dẫn: …" (`MainActivity.kt:429–439`).

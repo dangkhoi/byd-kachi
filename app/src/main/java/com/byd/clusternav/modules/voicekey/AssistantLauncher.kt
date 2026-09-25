@@ -11,6 +11,7 @@ import android.widget.Toast
 import com.byd.clusternav.AdbKeys
 import com.byd.clusternav.Lang
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.voice.VoiceWakeService
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellFailure
 import com.byd.clusternav.carexec.LocalShellResult
@@ -119,14 +120,12 @@ object AssistantLauncher {
      */
     private fun launchKachiVoice(ctx: Context): Boolean {
         val app = ctx.applicationContext
-        val intent = Intent(app, com.byd.clusternav.launcher.KachiHomeActivity::class.java)
-            .putExtra(com.byd.clusternav.launcher.EXTRA_START_VOICE, true)
-            .addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP,
-            )
-        val ok = runCatching { app.startActivity(intent); true }.getOrDefault(false)
-        Log.i(TAG, "mở phiên nghe của Kachi: ok=$ok")
-        return ok
+        // Owner 2026-09-25: mở phiên nghe HEADLESS (overlay nổi trên app đang xem), KHÔNG kéo KachiHomeActivity lên
+        // đè app fullscreen. VoiceWakeService.listenNow dựng overlay TYPE_APPLICATION_OVERLAY từ service context —
+        // cùng đường "Hey Kachi" đã dùng (fireWake). Chạy được cả khi wake TẮT.
+        VoiceWakeService.listenNow(app)
+        Log.i(TAG, "mở phiên nghe Kachi (headless overlay, không kéo launcher)")
+        return true
     }
 
     /**

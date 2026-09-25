@@ -505,6 +505,7 @@
     <string name="kachi_auto_update_sub">Checks for a newer build whenever Kachi opens; if there is one it asks before downloading and installing over the top. Stays quiet when you are already up to date.</string>
     <string name="kachi_check_update">Check for updates</string>
     <string name="kachi_nav_stop">Stop all navigation</string>
+    <string name="kachi_restart_launcher">Restart launcher</string>
     <string name="kachi_sub_advanced">Advanced</string>
 
     <!-- ── T-BRIDGE — the adb test bridge (docs/specs/kachi-test-bridge.html). ── -->

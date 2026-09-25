@@ -279,6 +279,9 @@ class SettingsSections(
         update.setOnClickListener { deps.bridge.checkUpdate { text -> update.text = text } }
         body.addView(update)
         body.addView(rows.button(context.getString(R.string.kachi_nav_stop)) { deps.bridge.navStop() })
+        // Nút khởi động lại launcher (owner 2026-09-25): khi có lỗi (bind rớt / cụm kẹt / overlay treo) → restart
+        // process Kachi cho về trạng thái sạch, khỏi phải tắt máy. Giết process → hệ thống tự mở lại (Kachi là HOME).
+        body.addView(rows.button(context.getString(R.string.kachi_restart_launcher)) { deps.bridge.restartLauncher() })
 
         // ⚠ Khối GIỌNG NÓI (Hey Kachi + tải mô hình NGHE/ĐỌC) ĐÃ TÁCH sang [SettingsGroup.VOICE]
         // (owner 2026-09-21: "voice nên tách thành 1 menu setting riêng"). Xem [SettingsVoiceSection].

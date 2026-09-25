@@ -517,6 +517,7 @@
     <string name="kachi_auto_update_sub">Mở Kachi thì tự dò bản mới; có bản mới sẽ hỏi trước khi tải và cài đè. Không có bản mới thì im lặng.</string>
     <string name="kachi_check_update">Kiểm tra cập nhật</string>
     <string name="kachi_nav_stop">Dừng toàn bộ dẫn đường</string>
+    <string name="kachi_restart_launcher">Khởi động lại launcher</string>
     <string name="kachi_sub_advanced">Nâng cao</string>
 
     <!-- ── T-BRIDGE — cầu kiểm thử qua adb (docs/specs/kachi-test-bridge.html). Câu chữ phải NÓI THẲNG cái được

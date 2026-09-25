@@ -128,6 +128,15 @@ class VoiceWakeService : Service() {
      */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIF_ID, buildNotification())
+        // ACTION_LISTEN_NOW (owner 2026-09-25): phím-thoại / nút mic khi app khác đang fullscreen ⇒ mở phiên nghe
+        // HEADLESS (overlay TYPE_APPLICATION_OVERLAY nổi trên app đang xem), KHÔNG kéo KachiHomeActivity lên đè.
+        // Chạy được cả khi "Hey Kachi" TẮT (đây là phiên nghe một-lượt, không cần bộ nghe câu gọi). Không bật
+        // listener wake; sau khi phiên nghe xong service tự nhàn (START_NOT_STICKY nếu wake off ⇒ stopSelf lần sau).
+        if (intent?.action == ACTION_LISTEN_NOW) {
+            Log.i(TAG, "LISTEN_NOW — mở phiên nghe headless (overlay, không kéo launcher)")
+            runCatching { main.post { voiceSession.start() } }.onFailure { Log.w(TAG, "LISTEN_NOW lỗi", it) }
+            if (!enabled()) return START_NOT_STICKY   // wake off ⇒ chỉ chạy phiên này, không giữ service nghe câu gọi
+        }
         // START_STICKY dựng lại (intent == null) cũng đi qua đây ⇒ công tắc được đọc lại mỗi lần, không tin cờ cũ.
         if (!enabled()) { stopListening(); stopSelf(); return START_NOT_STICKY }
         // Model KWS vừa tải xong ⇒ phải DỰNG LẠI bộ nghe: luồng cũ đã chốt "không có model" cho cả vòng đời của
@@ -345,6 +354,22 @@ class VoiceWakeService : Service() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i) else ctx.startService(i)
             } else {
                 runCatching { ctx.stopService(i) }
+            }
+        }
+
+        /** Action của [listenNow]. */
+        const val ACTION_LISTEN_NOW = "com.byd.launcher.LISTEN_NOW"
+
+        /**
+         * Mở PHIÊN NGHE HEADLESS (owner 2026-09-25) — overlay voice nổi lên TRÊN app đang xem, KHÔNG kéo
+         * [KachiHomeActivity] lên. Dùng cho phím-thoại/nút mic khi app khác đang fullscreen. Chạy được cả khi
+         * "Hey Kachi" TẮT (service lên foreground, mở phiên, rồi nhàn nếu wake off). Overlay là
+         * `TYPE_APPLICATION_OVERLAY` nên không cần Activity — điều khiển/nav/nhạc chạy thẳng từ service context.
+         */
+        fun listenNow(ctx: Context) {
+            val i = Intent(ctx, VoiceWakeService::class.java).setAction(ACTION_LISTEN_NOW)
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i) else ctx.startService(i)
             }
         }
     }
