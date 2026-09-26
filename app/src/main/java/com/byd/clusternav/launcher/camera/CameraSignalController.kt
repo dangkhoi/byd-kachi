@@ -7,6 +7,7 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 
 /**
@@ -117,7 +118,11 @@ class CameraSignalController(private val appCtx: Context) {
                 val defId = view.cameraId
                 val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
                 val crop = view.crop
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner")
+                // R7 (owner 2026-09-26): vùng gương crop từ fisheye là dải DỌC ⇒ căng vào ô vuông thì NGANG; xoay
+                // theo pref `camera_rotation` (mặc định theo bên: trái ↺ −90 / phải ↻ +90). Tính ở `:core`, overlay
+                // chỉ nhận số độ.
+                val rot = CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx), turn)
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner rot=$rot")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
                 hal.open(view)
@@ -126,6 +131,7 @@ class CameraSignalController(private val appCtx: Context) {
                     side = side,
                     onCluster = Prefs.cameraOnCluster(appCtx),
                     crop = crop,
+                    rotationDeg = rot,
                 ) { surface -> runCatching { avm.open(camId, surface) } }
             }
         }

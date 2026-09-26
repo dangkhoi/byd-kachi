@@ -1,6 +1,6 @@
 # Kachi launcher (byd-launcher) — Docs Index (INDEX canonical)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (bản **2.66 (167)**, `com.byd.launcher`, OTA `apk/Kachi-2.66-release.apk`; đợt đồng bộ doc đóng dự án — CLOSE-1: +60 doc mồ côi vào index, `closing-backlog` → archive, guide `HUONG-DAN-KACHI.md`, `CLOSEOUT-2026-09-25.md`) · trước đó 2026-09-17 (gói 1.69 (70)) · **Mục đích**: Bản đồ MỌI tài liệu hiện hành theo 9-loại taxonomy (R4). Không có trong index = archive/stale, KHÔNG authoritative (R0).
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (bản **2.67 (168)**, `com.byd.launcher`, OTA `apk/Kachi-2.67-release.apk`; đợt đồng bộ doc đóng dự án — CLOSE-1: +60 doc mồ côi vào index, `closing-backlog` → archive, guide `HUONG-DAN-KACHI.md`, `CLOSEOUT-2026-09-25.md`) · trước đó 2026-09-17 (gói 1.69 (70)) · **Mục đích**: Bản đồ MỌI tài liệu hiện hành theo 9-loại taxonomy (R4). Không có trong index = archive/stale, KHÔNG authoritative (R0).
 
 **(VI)** Đây là **nguồn map tài liệu duy nhất** của repo. Đọc file này trước → rồi mở doc cụ thể. Task = `PROJECT-BACKLOG.md`. Luật bền = `../.kiro/steering/`.
 **(EN)** This is the repo's **single documentation map**. Read this first → then open the specific doc. Tasks live in `PROJECT-BACKLOG.md`; durable rules in `../.kiro/steering/`.
@@ -73,9 +73,9 @@ khi index đang giữ bytes đúng — sau một `git reset` thì index == HEAD 
 
 | Doc | Mục đích | Trạng thái | Cập nhật |
 |-----|----------|-----------|----------|
-| [`../README.md`](../README.md) | Landing dự án — Kachi launcher 2.66 (167) `com.byd.launcher`, cài/OTA, lineage ClusterNav (VI+EN) | Current | 2026-09-25 |
+| [`../README.md`](../README.md) | Landing dự án — Kachi launcher 2.67 (168) `com.byd.launcher`, cài/OTA, lineage ClusterNav (VI+EN) | Current | 2026-09-25 |
 | [`../apk/README.md`](../apk/README.md) | Kênh OTA của Kachi: `apk/Kachi-<ver>-release.apk` trên `main`, khoá ký riêng (L2), cách đăng bản mới; bản hiện hành 2.66 (167) | Current | 2026-09-25 |
-| [`CLOSEOUT-2026-09-25.md`](CLOSEOUT-2026-09-25.md) | **Đóng dự án Kachi 2.66 (167)** — sản phẩm là gì · trạng thái cuối · kiến trúc/khối · giới hạn + NEEDS-ONCAR · build/ký/OTA · việc còn mở (trỏ backlog); số đo perf do điều phối điền (VI+EN) | Current | 2026-09-25 |
+| [`CLOSEOUT-2026-09-25.md`](CLOSEOUT-2026-09-25.md) | **Đóng dự án Kachi 2.66 (167)** (2.67 = +CAM-ROT xoay camera) — sản phẩm là gì · trạng thái cuối · kiến trúc/khối · giới hạn + NEEDS-ONCAR · build/ký/OTA · việc còn mở (trỏ backlog); số đo perf do điều phối điền (VI+EN) | Current | 2026-09-25 |
 | [`CLOSEOUT-2026-08-16.md`](CLOSEOUT-2026-08-16.md) | Đánh giá đóng dự án ClusterNav 1.30 — 6 bản sửa cuối + giới hạn đã biết (thay bằng CLOSEOUT-2026-09-25) | Historical | 2026-08-16 |
 | [`HISTORICAL-ARTIFACTS.md`](HISTORICAL-ARTIFACTS.md) | Hồ sơ cách ly artifact lịch sử (APK/ảnh cũ) + cổng release | Current | 2026-08-16 |
 
@@ -272,6 +272,7 @@ khi index đang giữ bytes đúng — sau một `git reset` thì index == HEAD 
 | [`diagnostics/re-maneuver-icon-tables-2026-08-14.md`](diagnostics/re-maneuver-icon-tables-2026-08-14.md) | Bảng RE icon AMAP/HUD CAN + enrich Maneuver | Current | 2026-08-14 |
 | [`diagnostics/gemini-assistant-voicekey-oncar-2026-08-13.md`](diagnostics/gemini-assistant-voicekey-oncar-2026-08-13.md) | Thủ tục on-car Gemini trợ lý + nút mic → Gemini | Current | 2026-08-13 |
 | [`diagnostics/hud-sign-re/README.md`](diagnostics/hud-sign-re/README.md) | 🔒 **BYTE-SEALED** — Entry-doc workspace RE HUD + speed-sign (T0–T9): corpus, evidence, expansion (đại diện cho cả thư mục `diagnostics/hud-sign-re/`, gồm các artifact niêm phong: [`candidate-report.html`](diagnostics/hud-sign-re/candidate-report.html) · [`hud-cluster-field-checklist.html`](diagnostics/hud-sign-re/hud-cluster-field-checklist.html) · [`expansion/candidate-expansion-report.html`](diagnostics/hud-sign-re/expansion/candidate-expansion-report.html) · [`expansion/vehicle-session-checklist.html`](diagnostics/hud-sign-re/expansion/vehicle-session-checklist.html) — **không** nhận header/index-row riêng vì thuộc bộ byte-sealed, xem §🔒). Header trạng thái/mục đích **ở dòng này**, KHÔNG được thêm vào trong file (xem §Doc niêm phong bên dưới) | Current | 2026-08-18 |
+| [`diagnostics/camera-lag-analysis-2026-09-26.md`](diagnostics/camera-lag-analysis-2026-09-26.md) | **CAM-LAG** — đường khung hình camera xi-nhan (AVMCamera → TextureView → cửa sổ TRANSLUCENT), 5 nguồn giật xếp theo mức bằng chứng, playbook đo `SurfaceFlinger --latency`/`gfxinfo` trên xe | Current | 2026-09-26 |
 | [`diagnostics/perf-closeout-2026-09-25.md`](diagnostics/perf-closeout-2026-09-25.md) | **CLOSE-1 — Profiling & tối ưu toàn bộ tiến trình nền (2.65 → bản kế)**: số đo TRƯỚC/SAU cùng cách đo (`scripts/emulator/perf-snapshot.sh`), phát hiện + cách vá, phần chỉ đo được trên xe 🚗; spec `kachi-closeout-hardening.html` | Current (đang viết — phiên CLOSE-1) | 2026-09-25 |
 | [`diagnostics/ram-audit-2026-09-25.md`](diagnostics/ram-audit-2026-09-25.md) | **CLOSE-1 — Audit RAM tiến trình chính + `:wake`**: giải thích 146 MB native (chính) / 250 MB native (`:wake`) bằng đọc source (2 bản mô hình ASR ~74 MB), đề xuất giảm theo MB; số đo ở `perf-closeout-2026-09-25.md` | Current | 2026-09-25 |
 | [`diagnostics/hardening-audit-2026-09-25.md`](diagnostics/hardening-audit-2026-09-25.md) | **CLOSE-1 — Audit hardening** (catch nuốt im · main-thread · rò · FGS · uncaught): finding [P0]–[P3] có file:line cho R4 của spec `kachi-closeout-hardening.html`; phần vá ghi ở §9 spec | Current | 2026-09-25 |

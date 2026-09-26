@@ -8,7 +8,7 @@
 ## (VI) Tiếng Việt
 
 ### 1. Cài lần đầu + cập nhật (OTA)
-- **Cài lần đầu**: tải `apk/Kachi-2.66-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → chép vào xe → cài bằng **adb** (`adb install -r Kachi-2.66-release.apk`). ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (app là launcher) — cài bằng adb thì qua.
+- **Cài lần đầu**: tải `apk/Kachi-2.67-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → chép vào xe → cài bằng **adb** (`adb install -r Kachi-2.67-release.apk`). ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (app là launcher) — cài bằng adb thì qua.
 - **Cập nhật về sau**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, không cần laptop. Công tắc *Tự động cập nhật* (cùng mục) = mở Kachi thì tự dò, có bản mới sẽ hỏi trước khi tải.
 - Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần.
 
@@ -35,6 +35,7 @@
 
 ### 6. Camera theo xi-nhan (Seal · Sealion 6)
 - *Cài đặt › Tiện nghi xe › Camera theo xi-nhan › Bật camera khi xi-nhan*: xi-nhan trái → camera trái nổi góc màn, phải → camera phải. Chọn camera từng bên (Sealion 6 chọn cam 0), vị trí từng bên, và **Hiện camera lên màn cụm**.
+- **Xoay video** (*Cài đặt › Tiện nghi xe › Xoay video*): mặc định *Theo bên* (xi-nhan trái xoay ↺ 90°, phải xoay ↻ 90° — vì hình gương cắt từ camera 360 vốn nằm ngang). Nếu xe bạn hình vẫn ngang hay lộn đầu, chọn *Không xoay* / *↺ 90°* / *↻ 90°* / *180°*. Nếu **một bên đúng mà bên kia lộn đầu** thì chọn *Theo bên, ngược lại*.
 - Đã kiểm trên xe Seal (2.48) và Sealion 6 (2.6x). Xe khác chưa đo.
 
 ### 7. Automation
@@ -53,7 +54,7 @@
 ## (EN) English
 
 ### 1. First install + OTA
-- **First install**: download `apk/Kachi-2.66-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb** (`adb install -r …`). Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate.
+- **First install**: download `apk/Kachi-2.67-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb** (`adb install -r …`). Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate.
 - **Updates**: *Settings › System & permissions › Check for update* — the app fetches the newer `apk/` build and installs it over the dadb loopback; no laptop. *Auto update* toggle = check on launch, ask before download.
 - Builds installed before 1.41 (old signing key) must be uninstalled once.
 
@@ -74,6 +75,7 @@
 
 ### 6. Turn-signal camera (Seal · Sealion 6)
 - *Settings › Car comfort › Turn-signal camera*: left signal → left camera overlay, right → right. Per-side camera id and position; optional cluster display. Verified on Seal (2.48) and Sealion 6 (2.6x) only.
+- **Rotate video** (*Settings › Car comfort › Rotate video*): default *By side* (left signal ↺ 90°, right ↻ 90° — the mirror crop of the 360 camera is sideways). If the picture is still sideways or upside down, pick *No rotation* / *↺ 90°* / *↻ 90°* / *180°*. If one side looks right and the other is upside down, pick *By side, swapped*.
 
 ### 7. Automation
 - **Rain → defrost** (*Car comfort*): polls the rain sensor every 5 min, turns on the chosen defrosters, turns off only what Kachi turned on. 🚗 not yet confirmed in real rain.

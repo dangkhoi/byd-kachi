@@ -127,6 +127,28 @@ fun Prefs.cameraPos(ctx: Context, left: Boolean): String {
 fun Prefs.setCameraPos(ctx: Context, left: Boolean, v: String) =
     autoPrefs(ctx).edit().putString(cameraPosKey(left), v).apply()
 
+// ── XOAY video overlay (spec R7 · owner 2026-09-26) — MỘT khoá cho cả hai bên ─────────────────────
+// Một khoá (không hai như `camera_pos_*`) vì chế độ mặc định [CameraSignalPolicy.ROTATE_BY_SIDE] đã mã hoá sự khác
+// nhau giữa hai bên (trái ↺ / phải ↻); tách hai khoá là bắt owner chọn 2 lần cho một quyết định. Device-scope
+// (`autoPrefs`) như `camera_pos_*`: chiều ghép ảnh 4-in-1 là chuyện của XE, không của hồ sơ tài xế.
+private const val K_CAMERA_ROTATION = "camera_rotation"
+
+/**
+ * Chế độ xoay video camera — một trong [CameraSignalPolicy.ROTATIONS] (`"SIDE"`/`"0"`/`"L90"`/`"R90"`/`"180"`).
+ *
+ * Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultRotation], cùng khuôn [cameraPos]: tầng vẽ nhận SỐ ĐỘ đã tính
+ * ([CameraSignalPolicy.rotationDegrees]) nên một chuỗi lạ đi tới đó không có nhánh nào để rơi vào.
+ */
+fun Prefs.cameraRotation(ctx: Context): String {
+    val fallback = CameraSignalPolicy.defaultRotation()
+    val raw = autoPrefs(ctx).getString(K_CAMERA_ROTATION, fallback) ?: fallback
+    return if (CameraSignalPolicy.isRotation(raw)) raw else fallback
+}
+
+/** Xem [cameraRotation]. Nhận mã trong [CameraSignalPolicy.ROTATIONS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
+fun Prefs.setCameraRotation(ctx: Context, v: String) =
+    autoPrefs(ctx).edit().putString(K_CAMERA_ROTATION, v).apply()
+
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {
     val k = if (left) "camera_cam_left" else "camera_cam_right"

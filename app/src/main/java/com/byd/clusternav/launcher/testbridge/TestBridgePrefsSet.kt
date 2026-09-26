@@ -6,6 +6,8 @@ import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.setCameraOnCluster
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraPos
+import com.byd.clusternav.setCameraRotation
+import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
@@ -153,6 +155,9 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraPos(app, left = true, v = it); it }
             "camera_pos_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isCorner(it) }
                 ?.let { Prefs.setCameraPos(app, left = false, v = it); it }
+            // Xoay video (R7): CHỈ nhận mã trong `CameraSignalPolicy.ROTATIONS` — cùng lẽ hai khoá góc ở trên.
+            "camera_rotation" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
+                ?.let { Prefs.setCameraRotation(app, it); it }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -191,6 +196,7 @@ internal object TestBridgePrefsSet {
             "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
             "voice_tts_speed" -> Prefs.voiceTtsSpeed(app).toString()
             "voice_keep_log" -> Prefs.voiceKeepLog(app).toString()
+            "camera_rotation" -> Prefs.cameraRotation(app)
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

@@ -292,6 +292,9 @@ object TestBridgeCommands {
         "camera_cam_right",
         "camera_pos_left",
         "camera_pos_right",
+        // R7 (owner 2026-09-26): chế độ xoay video — cần đổi trên xe giữa hai lượt xi-nhan để chốt chiều đúng (mắt
+        // owner), không build lại. Đảo lại được bằng một cú chạm ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ.
+        "camera_rotation",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

@@ -10,10 +10,11 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 .mut{color:var(--mut)}.tag{display:inline-block;background:var(--acc);color:#fff;font-size:11px;padding:1px 8px;border-radius:20px}
 </style></head><body>
 <h1>Camera theo xi-nhan — HAL helper (uid shell) + socket + overlay bo góc</h1>
-<p class="mut">Trạng thái: Current · 2026-09-25 · <code>com.byd.launcher</code> · nhánh feat/voice-hotword-phrases</p>
+<p class="mut">Trạng thái: Current · 2026-09-26 · <code>com.byd.launcher</code> · nhánh feat/voice-hotword-phrases</p>
 
 <h2>Changelog</h2>
 <ul>
+<li><b>2026-09-26</b> — <b>R7 Xoay video</b> (owner: <i>"cắt video ok nhưng bị ngang, cần dọc lại: trái rotation 90° xoay qua trái, phải xoay sang phải; thêm option rotation trong setting"</i>). <code>:core</code> <code>CameraSignalPolicy.ROTATE_*</code> + <code>rotationDegrees(mode, turn)</code> (mặc định <code>SIDE</code>: trái −90 ↺ / phải +90 ↻); pref <code>camera_rotation</code>; <code>CameraOverlayView.show(rotationDeg)</code> → <code>applyTransform</code> = crop cũ rồi <code>postRotate</code> quanh tâm (+<code>postScale</code> bù khi khung không vuông); chipRow 5 chế độ ở Cài đặt › Tiện nghi xe. Off-car: <code>CameraSignalPolicyTest</code> (bảng 5×2 + mode lạ) + <code>CameraRotationWiringContractTest</code> (đã thử ĐỎ: gỡ <code>postRotate</code> ⇒ 1 fail; đảo dấu trái ⇒ 2 fail). 🚗 chiều xoay đúng chưa = mắt owner.</li>
 <li><b>2026-09-25</b> — Spec mới. Owner off-car. Chuyển từ đường "register listener dưới uid app" (bị <code>SecurityException BYDAUTO_LIGHT_GET</code>, perm <code>signature</code>) sang <b>mô hình kinex</b> đã RE: HAL helper chạy dưới uid shell + socket 19322.</li>
 </ul>
 
@@ -36,6 +37,7 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 <li><b>Cho chỉnh vị trí</b> video (offset/pick).</li>
 <li><b>BỎ HẲN</b> chipRow "Cách" 10 options (A/B/C/D...) + pref <code>camera_lvds_option</code> + mọi nhánh opt A–J (thử nghiệm LVDS, không dùng).</li>
 <li><b>Giữ:</b> toggle bật camera, picker cameraId trái/phải, toggle hiện lên cụm.</li>
+<li id="R7"><b>R7 · Xoay video (owner 2026-09-26):</b> vùng gương crop từ fisheye là dải dọc ⇒ căng vào ô vuông thì nằm NGANG. <b>Mặc định</b>: xi-nhan trái xoay <b>−90° (↺ qua trái)</b>, phải xoay <b>+90° (↻ sang phải)</b>. Cài đặt có option xoay: <i>Theo bên</i> (mặc định) · <i>Không xoay</i> · <i>↺ 90°</i> · <i>↻ 90°</i> · <i>180°</i>. Không đổi crop/góc/cameraId/đường AVMCamera (đường đã chạy hiện trường, CLAUDE.md §6). Chiều đúng trên xe thật = 🚗 mắt owner; xe khác chỉnh trong Cài đặt, không đổi hằng.</li>
 </ol>
 
 <h2>Design</h2>
@@ -56,11 +58,14 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 <h3>Phần 4 — Overlay (UI mới)</h3>
 <ul>
 <li><code>CameraOverlayView</code>: cỡ nhỏ (~30% rộng × ~26% cao), <b>bo góc tròn</b> (radius khung launcher), đặt góc TRÊN (dưới header ~header height + margin). Góc = pref <code>camera_pos_left</code>/<code>camera_pos_right</code> ∈ {TL, TR}, default trái=TL/phải=TR. Có offset chỉnh.</li>
+<li><b>R7 (2026-09-26)</b> <code>show(…, rotationDeg: Int = 0)</code> → <code>applyTransform(tv, vw, vh, crop, rotationDeg)</code>. Gọi ở CẢ <code>onSurfaceTextureAvailable</code> và <code>SizeChanged</code>. Controller truyền <code>CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx), turn)</code>, log có <code>rot=</code>.</li>
+<li><b>R7 · review Pass 1 (2026-09-26)</b> — phép toán ma trận dời sang <code>:core</code> <code>CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg)</code> trả <b>9 số row-major</b> (hoặc <code>null</code> = khỏi transform); <code>:app</code> chỉ còn <code>Matrix().apply { setValues(…) }</code> + <code>setTransform</code>. Ba bước: (1) crop y như trước R7 <code>scale(1/cw,1/ch)</code> + dịch <code>(−x0·sx·vw, −y0·sy·vh)</code>; (2) xoay quanh tâm view; (3) chỉ khi góc = 90/270 <b>và</b> khung không vuông: <code>scale(vw/vh, vh/vw)</code> quanh tâm ⇒ vùng crop phủ ĐÚNG <code>vw×vh</code>. <b>Vì sao dời</b>: <code>android.graphics.Matrix</code> là stub trên JVM ⇒ công thức trước đó không có bài test nào; nay <code>CameraOverlayTransformTest</code> chứng minh bằng số (map 4 góc crop, đòi rơi đúng 4 góc view) cho khung vuông <i>và</i> 400×300 / 300×400 / 1920×720.</li>
 </ul>
 <h3>Phần 5 — Settings + Prefs</h3>
 <ul>
 <li>Xóa <code>K_CAMERA_LVDS</code>/<code>cameraLvdsOption</code>/<code>setCameraLvdsOption</code> + chipRow "Cách" + bridge cameraLvdsOption + testbridge key <code>camera_lvds_option</code>.</li>
 <li>Thêm <code>cameraPos(left)</code>/<code>setCameraPos(left, "TL"/"TR")</code> + chipRow vị trí trái/phải.</li>
+<li><b>R7 (2026-09-26, chế độ thứ 6 thêm ở review Pass 1)</b> <code>:core</code> <code>CameraSignalPolicy</code>: <code>ROTATE_BY_SIDE="SIDE"</code> · <code>ROTATE_BY_SIDE_INV="SIDEINV"</code> (trái ↻ / phải ↺ — đường hoàn tác nếu CẶP theo bên bị ngược) · <code>ROTATE_NONE="0"</code> · <code>ROTATE_LEFT="L90"</code> · <code>ROTATE_RIGHT="R90"</code> · <code>ROTATE_180="180"</code>, <code>defaultRotation()=SIDE</code>, <code>isRotation</code>, <code>rotationDegrees(mode, turn)</code> (mode lạ ⇒ mặc định). Prefs <code>camera_rotation</code> (device-scope, <code>Prefs.cameraRotation/setCameraRotation</code>, đọc lạ ⇒ mặc định). Bridge <code>cameraRotation()/setCameraRotation(v)</code>. Cài đặt: subHeader + chipRow "Xoay video" <b>6</b> chip (mã chip = hằng <code>:core</code>, strings <code>kachi_camera_rot_*</code> VI/EN). Testbridge: <code>camera_rotation</code> vào <code>WRITABLE_PREFS_KEYS</code> (21→22) + nhánh <code>prefs_set</code> chỉ nhận mã hợp lệ + <code>read_back</code>.</li>
 </ul>
 
 <h2>Tasks</h2>
@@ -72,6 +77,8 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 <li>[x] Overlay bo góc (GradientDrawable radius + clipToOutline + ViewOutlineProvider) + góc từng bên (corner TL/TR) + đặt dưới header. <b>Lên cụm qua <code>onCluster</code>+<code>clusterWm</code></b> (toggle "hiện lên cụm").</li>
 <li>[x] Prefs: xóa LVDS, thêm <code>cameraPos</code>. Settings: xóa 10 options, thêm chipRow vị trí trái/phải.</li>
 <li>[x] Full 5-module test 0 fail (2026-09-25). APK 2.36 (versionCode 137, kachi_hal.jar đóng trong APK).</li>
+<li>[x] <b>R7 (2026-09-26)</b> xoay video: <code>:core</code> policy + test bảng · prefs · overlay <code>postRotate</code> · controller · chipRow Cài đặt · testbridge · wiring test (đã thử đỏ). 🚗 owner nhìn chiều xoay trên xe (Seal); SL6 chỉnh chip nếu ngược.</li>
+<li>[x] <b>R7 · review Pass 1 (2026-09-26)</b> ma trận về <code>:core</code> (<code>CameraOverlayTransform</code>) + 10 bài hình học thuần (2 mutation đã thử ĐỎ) · chế độ <code>SIDEINV</code> + chip + strings VI/EN · nhãn mức bằng chứng cho chiều xoay (<code>[ĐOÁN]</code>, không còn phát biểu như cơ chế) · sửa khẳng định sai trong <code>diagnostics/camera-lag-analysis-2026-09-26.md</code>.</li>
 </ol>
 <p class="mut">⚠ [CHƯA BIẾT on-car]: (1) bo góc LỚP VIDEO — SurfaceView là layer riêng SurfaceFlinger, ROM có bo theo outline cha không (vá: đổi TextureView, avm.open không đổi); (2) register HAL thật dưới uid shell (emulator ClassNotFound đúng kỳ vọng); (3) video AVMCamera lên đúng cụm display.</p>
 
@@ -79,6 +86,8 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 <ul>
 <li>Off-car: full test 5 module 0 fail; overlay dựng bo góc đúng vị trí (mắt/emulator); helper launcher + socket client compile + unit test parse JSON.</li>
 <li>On-car (sau): bật xi-nhan → helper log onLightOn → socket → cam lên đúng góc realtime.</li>
+<li>🚗 R7: bật xi-nhan trái ⇒ video gương DỌC, đúng chiều (không lộn đầu); phải tương tự. Nếu ngược ⇒ đổi chip <i>Xoay video</i> (hoặc <code>prefs_set camera_rotation</code>) rồi báo lại để đổi mặc định. <b>Cây quyết định trên xe</b>: cả hai bên lộn đầu ⇒ <i>180°</i>; cả hai bên vẫn ngang ⇒ <i>Không xoay</i> sai hướng, thử <i>↺ 90°</i>/<i>↻ 90°</i>; <b>một bên đúng một bên lộn ⇒ <i>Theo bên, ngược lại</i></b> (<code>SIDEINV</code>) — đây là ca mà năm chip đầu không diễn tả nổi, thêm ở review Pass 1.</li>
+<li>Off-car R7: <code>:core</code> 17 bài (7 <code>CameraSignalPolicyTest</code> + 10 <code>CameraOverlayTransformTest</code>) · <code>:app</code> 5 bài <code>CameraRotationWiringContractTest</code>; full <code>:core</code> 2 583 / <code>:app</code> 1 337 test, 0 fail; <code>:app:lintDebug</code> 0 error; <code>:app:compileVehicleTestKotlin</code> xanh (2026-09-26).</li>
 </ul>
 
 <h2>Open Questions</h2>
@@ -86,4 +95,52 @@ table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid v
 <li>cameraId cho gương phải (khác cam trước-phải): dùng picker cameraId owner tự chọn on-car. [CHƯA BIẾT] map — không chặn off-car.</li>
 <li>Radius/kích thước overlay chính xác: lấy từ hằng khung launcher (KachiSpace/theme).</li>
 </ul>
+
+<h2>Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-09-26</h3>
+<p class="mut">Senior review (Opus) cho CAM-ROT. Phạm vi: <code>CameraSignalPolicy</code> · <code>CameraOverlayView</code> · <code>CameraSignalController</code> · <code>PrefsAutomation</code> · <code>ClusterNavBridgeAutomation</code> · <code>SettingsSectionsCar</code> · testbridge · strings VI/EN · test · doc. Không adb, không commit.</p>
+
+<h4>Toán ma trận — KIỂM XONG, công thức ĐÚNG</h4>
+<p>Thứ tự <code>setScale(1/cw,1/ch)</code> → <code>postTranslate(−x0·sx·vw, −y0·sy·vh)</code> → <code>postRotate(deg, vw/2, vh/2)</code> → <code>postScale(vw/vh, vh/vw)</code> là <b>đúng</b>, kể cả chiều của hệ số bù. Kiểm bằng số: vùng crop sau ba bước phủ <b>đúng</b> chữ nhật view, không hở mép đen, không tràn — đã chạy cho khung vuông 360/400, và cho khung KHÔNG vuông 400×300, 300×400, 1920×720 ở cả <code>+90</code>, <code>−90</code>, <code>270</code>. Chứng minh này <b>không tồn tại</b> trước Pass 1 (<code>android.graphics.Matrix</code> là stub trên JVM, dự án không có Robolectric) ⇒ đã dời phép toán sang <code>:core</code> <code>CameraOverlayTransform</code> để test được, <code>:app</code> chỉ còn <code>setValues</code>. Hai mutation đã thử ĐỎ: đảo <code>vw/vh</code> ↔ <code>vh/vw</code> ⇒ 1 fail (<i>"góc view (0,0) KHÔNG có góc crop nào rơi vào ⇒ hở mép đen"</i>); bỏ bước xoay ⇒ 3 fail.</p>
+<p><b>Chiều quay [ĐO code + ĐO số]</b>: <code>Matrix.postRotate(+90)</code> trên hệ toạ độ màn (y xuống) đưa mép TRÊN của vùng crop sang mép PHẢI của view = cùng chiều kim đồng hồ ↻; <code>−90</code> sang mép TRÁI = ↺. Bài <code>chieu quay -90 la nguoc kim dong ho</code> ghim đúng hai điểm đó. <b>Nhưng</b> chiều nào là "đúng" <i>với mắt người lái</i> thì vẫn <b>[ĐOÁN]</b> — nó phụ thuộc hướng mà ROM ghép cam gương vào ảnh 4-in-1, thứ chưa ai đo. Cách chốt: một lượt xi-nhan mỗi bên trên xe, xem cây quyết định ở §Verification.</p>
+
+<h4>Bằng chứng RE mới (CLAUDE.md §12 — dùng nguồn có sẵn trước khi đoán)</h4>
+<p>Đọc <code>jadx-kinex</code> (app đã RE ra chính cơ chế này) cho ba sự thật <b>[ĐO RE]</b> mà phiên implement chưa lấy:</p>
+<ul>
+<li><code>KinexBottomBarOverlayService.java:645-648</code> + <code>Y0/C0094o.java:308-315</code>: kinex giữ <b>hai số xoay ĐỘC LẬP</b> theo bên (<code>blind_spot_left_rotation_deg</code> / <code>blind_spot_right_rotation_deg</code>), <b>cả hai mặc định 0</b>, kèm hai cờ <code>*_flip_h</code>. ⇒ Trong RE <b>không có</b> luật "trái ngược phải" để dựa vào. Việc R7 đưa option vào Cài đặt là <b>khớp</b> cách kinex làm; việc chọn mặc định <code>SIDE</code> (−90/+90) là <b>quyết định riêng cho xe owner</b>, không phải sự thật của dòng xe.</li>
+<li><code>Y0/C0094o.java:330-345</code>: khi xoay 90/270 kinex <b>thu hẹp dải y của crop</b> trước khi xoay — <code>min(cropW·inputW·4/3 ÷ 960, cropH)</code>, khung ra 640×480 thay vì 512×960 ⇒ xoay <b>không làm méo</b>. Kachi thay vào đó co giãn không đẳng hướng cho lấp khung vuông, tức <b>giữ nguyên</b> lượng giãn ~1,88× vốn đã có từ 2.36 (owner đã nhận <i>"cắt video ok"</i>), chỉ mang nó sang trục kia — không méo THÊM. <b>ĐỂ LẠI</b> (không tự làm: đổi crop là đổi đường đã chạy hiện trường, CLAUDE.md §6, và owner phải nhìn mới quyết được giữa "phủ kín ô vuông" vs "đúng tỉ lệ có viền"): xem CAM-ROT-2 ở backlog.</li>
+<li><code>RunnableC0171e.java:104</code>: kinex tự bỏ khung nếu chưa đủ 16 ms — liên quan CLOSE-14 (CAM-LAG), đã ghi vào <code>diagnostics/camera-lag-analysis-2026-09-26.md</code>.</li>
+</ul>
+
+<h4>Finding + vá</h4>
+<table>
+<tr><th>#</th><th>Mức</th><th>Vấn đề</th><th>Đã làm</th></tr>
+<tr><td>1</td><td><b>P1</b></td><td><b>Đường hoàn tác mà §Verification hứa KHÔNG tồn tại.</b> Spec viết <i>"nếu ngược ⇒ đổi chip"</i>, nhưng nếu cái ngược là <b>cặp theo bên</b> (khả năng lớn nhất vì chiều đúng còn ở mức [ĐOÁN]) thì năm chip đầu không diễn tả nổi <code>(trái +90, phải −90)</code>: <code>↺90</code>/<code>↻90</code> áp cho CẢ hai bên. Owner sẽ đứng ở xe và phải đợi bản build mới — đúng câu 4 của CLAUDE.md §4 ("hoàn tác kiểu gì?").</td><td>Thêm <code>ROTATE_BY_SIDE_INV="SIDEINV"</code> + chip <i>Theo bên, ngược lại</i> + strings VI/EN + test (kể cả assert "phải là số đối của SIDE ở cả hai bên"); cây quyết định trên xe ghi vào §Verification.</td></tr>
+<tr><td>2</td><td><b>P1</b></td><td><b>Toán ma trận không có bài test nào</b> — hai công thức dễ sai nhất của tính năng (dịch sau crop; chiều hệ số bù khi xoay ±90 trong khung không vuông) chỉ được kiểm bằng mắt trên xe đang chạy. Công thức hoá ra ĐÚNG, nhưng "đúng mà không có bài canh" là nợ: lượt sửa sau không có gì chặn.</td><td><code>:core</code> <code>CameraOverlayTransform</code> (hình học thuần, cùng khuôn <code>AppScale</code>) + <code>CameraOverlayTransformTest</code> 10 bài; <code>:app</code> còn <code>setValues</code>; bài <code>bo cuc 9 phan tu khop hang Matrix cua SDK</code> đọc thẳng <code>Matrix.MSCALE_X…MPERSP_2</code> để kẹp quy ước row-major giữa hai module.</td></tr>
+<tr><td>3</td><td><b>P2</b></td><td><b>Trộn cơ chế và quy kết (CLAUDE.md §2)</b> trong chú thích <code>CameraSignalPolicy</code>: <i>"bên trái và bên phải cần xoay NGƯỢC nhau vì hai cam gương ghép vào ảnh 4-in-1 theo hai hướng đối xứng"</i> — phát biểu như cơ chế đã chứng minh, trong khi không có phép đo nào, và RE kinex nói ngược lại (hai số độc lập, mặc định 0).</td><td>Viết lại: phần crop là <code>[ĐO code]</code>, phần "hai bên ngược nhau" hạ xuống <code>[ĐOÁN — CHƯA đo trên xe]</code> kèm trích RE.</td></tr>
+<tr><td>4</td><td><b>P2</b></td><td><b>Khẳng định sai/quá mạnh trong <code>diagnostics/camera-lag-analysis-2026-09-26.md</code></b>: (a) <i>"không đi HWC overlay vì lớp trong suốt bo góc"</i> — nêu như cơ chế, nhưng HWC đời này có blend lớp trong suốt hay không thì chưa ai đo; (b) <i>"SurfaceView không xoay/bo góc được (lý do đã đổi sang TextureView)"</i> — quy kết sai lịch sử: lý do ghi ở KDoc là <b>bo góc lớp video</b> (2.3x), còn "phải xoay được" là ràng buộc <b>mới</b> do R7 sinh ra; (c) ba trích dẫn <code>file:line</code> đã lệch sau khi code đổi.</td><td>Sửa cả ba: (a) hạ xuống <code>[CHƯA BIẾT]</code> + thêm phép đo chốt (<code>dumpsys SurfaceFlinger</code> dòng composition type); (b) tách đúng hai lý do theo thời điểm; (c) cập nhật line + thêm ba trích RE kinex ở §1.</td></tr>
+<tr><td>5</td><td><b>P3</b></td><td><code>L5</code> trong doc CAM-LAG ghi <code>[SUY]</code> cho chi phí xoay, nhưng đây là thứ đọc code là biết: ma trận dựng MỘT lần mỗi lượt xi-nhan (2 callback SurfaceTexture), không phải mỗi khung.</td><td>Nâng lên <code>[ĐO code]</code> kèm lý do.</td></tr>
+</table>
+
+<h4>Đã kiểm, KHÔNG có vấn đề</h4>
+<ul>
+<li><b>Prefs</b>: <code>cameraRotation</code> đọc giá trị lạ ⇒ <code>defaultRotation()</code> (KHÔNG về 0 — 0 là một lựa chọn thật của owner); device-scope <code>autoPrefs</code> giống <code>camera_pos_*</code>, đúng lẽ "chiều ghép ảnh là chuyện của XE".</li>
+<li><b>Mã chip = hằng <code>:core</code></b>: không có bảng đổi mã↔nhãn thứ hai; bài canh cấm chuỗi <code>"SIDE"</code>/<code>"SIDEINV"</code>/<code>"L90"</code>/<code>"R90"</code>/<code>"180"</code> xuất hiện trần trong tệp Cài đặt.</li>
+<li><b><code>prefs_set camera_rotation</code></b>: <code>trim().uppercase()</code> rồi <code>isRotation</code> ⇒ chỉ nhận 6 mã, có <code>read_back</code>; whitelist 22 khoá, đảo lại được bằng một cú chạm ⇒ ràng buộc (3) của KDoc giữ.</li>
+<li><b>i18n</b>: 8 khoá <code>kachi_camera_rot_*</code> đủ cả VI và EN; <code>LauncherI18nContractTest</code> xanh.</li>
+<li><b>§7 generic</b>: không có <code>if (pkg == …)</code>, không hardcode đời xe; khác biệt xe nằm ở pref owner chọn.</li>
+<li><b>§8 call site</b>: <code>CameraOverlayTransform.matrix</code> có call site thật ở <code>CameraOverlayView.applyTransform</code>; <code>ROTATE_BY_SIDE_INV</code> có ở <code>ROTATIONS</code> + <code>rotationDegrees</code> + chipRow.</li>
+<li><b>Cỡ tệp / API</b>: tệp lớn nhất bị chạm 320 dòng (≤ 500); không API &gt; 29 (<code>Matrix.setValues</code> = API 1).</li>
+<li><b>Gate vòng tròn (§3)</b>: không có — xoay không bị gate bởi dữ liệu mà chỉ chính nó làm mới được.</li>
+<li><b>Không đổi đường đã chạy (§6)</b>: crop/góc/cameraId/đường AVMCamera không đổi hành vi; công thức crop được ghim lại bằng giá trị literal <code>[10, 0, −900, 0, 1, 0]</code> cho 360×360.</li>
+</ul>
+
+<h4>Rủi ro còn lại (owner quyết, KHÔNG tự đổi)</h4>
+<ul>
+<li><b>Mặc định <code>SIDE</code> đổi hành vi hiện trường của MỌI xe</b>, kể cả Sealion 6 vốn đang hiển thị ổn ở 2.66: xe nào cũng bắt đầu xoay ±90 sau khi nâng cấp. Owner yêu cầu đúng mặc định này cho xe mình (2026-09-26) nên <b>giữ</b>; đường thoát cho SL6 là chip <i>Không xoay</i>. Nếu về sau muốn mặc định theo đời xe thì chỗ đúng là <code>ClusterProfile</code> (CLAUDE.md §7), không phải <code>if</code> trong policy — ghi ở backlog CAM-ROT.</li>
+<li><b>Không gate theo "có crop hay không"</b>: đã soi — <code>CameraSignalController</code> luôn lấy <code>defaultView(turn)</code> = <code>MIRROR_LEFT/RIGHT</code>, hai view này <b>luôn</b> có crop, nên một cổng <code>crop != null</code> hôm nay là no-op. Không thêm (scope creep); nếu sau này cho owner chọn <code>CamView</code> không-crop thì phải thêm cổng đó cùng lúc.</li>
+</ul>
+
+<p><b>Verdict: APPROVED</b> (off-car). 100% deliverable của R7 có code + dây nối + test thật; 5 finding đã vá tại chỗ, test lại xanh, không còn finding actionable. Còn <b>🚗</b>: chiều xoay đúng = mắt owner trên xe (một lượt xi-nhan mỗi bên).</p>
 </body></html>

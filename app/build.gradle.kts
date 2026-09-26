@@ -52,8 +52,10 @@ android {
         // mình đang nói về bản nào.
         // CLOSEOUT 2026-09-26 ⇒ **2.66 (167)**: vòng đóng dự án — profiling toàn bộ tiến trình nền, hardening, lint 0
         // error, doc đồng bộ (spec `docs/specs/kachi-closeout-hardening.html`, số đo `docs/diagnostics/perf-closeout-2026-09-25.md`).
-        versionCode = 167
-        versionName = "2.66"
+        // CAM-ROT 2026-09-26 ⇒ **2.67 (168)**: xoay video camera xi-nhan theo bên (trái ↺ / phải ↻) + chip Cài đặt
+        // "Xoay video" (owner: "nó bị ngang, cần dọc video lại"). 2.66 đã báo owner ⇒ số hiệu riêng (CLAUDE.md §9).
+        versionCode = 168
+        versionName = "2.67"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

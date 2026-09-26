@@ -78,12 +78,17 @@ class CameraOverlayView(private val appCtx: Context) {
      *
      * [side] chỉ quyết **nhãn** *Camera trái/phải*, KHÔNG quyết vị trí (đó là việc của [corner]) — hai vai tách
      * hẳn từ R4, vì xi-nhan trái được phép hiện ở góc trên-phải. `null` ⇒ không vẽ nhãn.
+     *
+     * [rotationDeg] (R7, owner 2026-09-26): góc xoay NỘI DUNG video quanh tâm view, độ, dương = cùng chiều kim
+     * đồng hồ (↻). Chỗ gọi đã tính từ pref + bên xi-nhan (`CameraSignalPolicy.rotationDegrees`) — lớp này chỉ nhận
+     * SỐ, không biết chế độ. `0` = giữ y hành vi trước R7.
      */
     fun show(
         corner: String,
         side: Side? = null,
         onCluster: Boolean = false,
         crop: FloatArray? = null,
+        rotationDeg: Int = 0,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -99,10 +104,10 @@ class CameraOverlayView(private val appCtx: Context) {
                 isOpaque = true
                 surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
                     override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {
-                        applyCrop(this@apply, w2, h2, crop)
+                        applyTransform(this@apply, w2, h2, crop, rotationDeg)
                         runCatching { onSurfaceReady(Surface(st)) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                     }
-                    override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) { applyCrop(this@apply, w2, h2, crop) }
+                    override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) { applyTransform(this@apply, w2, h2, crop, rotationDeg) }
                     override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture) = true
                     override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
                 }
@@ -124,7 +129,7 @@ class CameraOverlayView(private val appCtx: Context) {
             }
             w.addView(frame, layoutParams(ctx, corner, onCluster))
             wm = w; surface = tv; container = frame
-            Log.i(PanoramaHal.TAG, "overlay show corner=$corner side=$side cluster=$onCluster")
+            Log.i(PanoramaHal.TAG, "overlay show corner=$corner side=$side cluster=$onCluster rot=$rotationDeg")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
     }
 
@@ -158,25 +163,20 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /**
-     * Crop vùng ảnh camera cho TextureView. [crop] = (x0,y0,x1,y1) chuẩn hoá 0..1 của ẢNH NGUỒN cần hiện; `null`
-     * hoặc toàn khung ⇒ không transform. Cam gương = crop vùng trái/phải của fisheye 4-in-1 (RE kinex).
+     * Đặt ma trận **crop + xoay** cho TextureView. Phép toán nằm ở `:core` [CameraOverlayTransform] (thuần, có test
+     * bằng số: `CameraOverlayTransformTest`); lớp này chỉ dịch 9 số ấy sang [android.graphics.Matrix] và giao cho
+     * `setTransform`.
      *
-     * TextureView mặc định căng SurfaceTexture lấp đầy view. Để chỉ hiện vùng [x0,x1]×[y0,y1]: phóng
-     * `1/(x1-x0)` × `1/(y1-y0)` quanh gốc rồi dịch để vùng crop về (0,0). `setTransform` là ma trận trên toạ độ
-     * VIEW (px), nên nhân theo `vw`/`vh`.
+     * [crop] = `(x0,y0,x1,y1)` chuẩn hoá 0..1 của ẢNH NGUỒN cần hiện (cam gương = vùng trái/phải của fisheye 4-in-1,
+     * RE kinex); [rotationDeg] = góc xoay quanh tâm view (R7), dương = ↻ cùng chiều kim đồng hồ.
+     * `null` trả về từ [CameraOverlayTransform.matrix] ⇒ **không đụng** `setTransform` (y hành vi trước R7).
+     *
+     * `setValues` (API 1) nhận đúng bố cục row-major mà `:core` dựng — xem KDoc [CameraOverlayTransform] về quy ước,
+     * và `CameraRotationWiringContractTest` ghim bốn hằng chỉ số của SDK.
      */
-    private fun applyCrop(tv: android.view.TextureView, vw: Int, vh: Int, crop: FloatArray?) {
-        if (crop == null || crop.size < 4 || vw <= 0 || vh <= 0) return
-        val (x0, y0, x1, y1) = crop
-        val cw = (x1 - x0).coerceAtLeast(0.001f)
-        val ch = (y1 - y0).coerceAtLeast(0.001f)
-        if (cw >= 0.999f && ch >= 0.999f) return   // toàn khung ⇒ khỏi transform
-        val m = android.graphics.Matrix()
-        val sx = 1f / cw
-        val sy = 1f / ch
-        m.setScale(sx, sy)
-        m.postTranslate(-x0 * sx * vw, -y0 * sy * vh)
-        tv.setTransform(m)
+    private fun applyTransform(tv: android.view.TextureView, vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int) {
+        val values = CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg) ?: return
+        tv.setTransform(android.graphics.Matrix().apply { setValues(values) })
     }
 
     /** Bo góc cây view: outline tròn + [View.setClipToOutline]. Xem ⚠ ở KDoc lớp về giới hạn với lớp video. */

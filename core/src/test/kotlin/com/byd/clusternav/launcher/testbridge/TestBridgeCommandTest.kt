@@ -359,7 +359,9 @@ class TestBridgeCommandTest {
         // (mười option LVDS gỡ hẳn — đường có HÌNH là AVMCamera, không phải LVDS thụ động) và
         // +`camera_pos_left`/`camera_pos_right` (góc hiện overlay từng bên). Cả hai khoá mới đảo lại được bằng một
         // cú chạm trong Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc danh sách trắng vẫn giữ.
-        assertEquals(21, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        // 21 → 22 (owner 2026-09-26, spec R7): +`camera_rotation` (chế độ xoay video) — chiều xoay đúng chỉ mắt owner
+        // trên xe chốt được, nên phải đổi được giữa hai lượt xi-nhan không build lại. Có chipRow đảo lại ⇒ (3) giữ.
+        assertEquals(22, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

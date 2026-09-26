@@ -48,6 +48,98 @@ object CameraSignalPolicy {
      */
     fun isCorner(v: String): Boolean = v == CORNER_TOP_LEFT || v == CORNER_TOP_RIGHT
 
+    // ── XOAY video (spec `camera-turn-signal-hal-socket.html` R7 · owner 2026-09-26) ─────────────
+    //
+    // Owner (nguyên văn): *"cái xinhan bật cam mình cắt video ok, nhưng nó bị ngang, cần dọc video lại, nên cần
+    // phải rotation 90 độ, bên trái là rotation 90 độ xoay qua trái, bên phải thì rotation 90 độ xoay sang phải,
+    // nếu đc thì thêm option rotation trong setting"*.
+    //
+    // [ĐO code] Vùng crop gương của ảnh fisheye 4-in-1 (5120×960) là dải DỌC (x rộng 0.10 × y cao 1.0) ⇒ căng vào
+    // cửa sổ vuông thì hình nằm NGANG (`CamView.MIRROR_*`). Xoay ±90° đưa nó về chiều dọc.
+    //
+    // [ĐOÁN — CHƯA đo trên xe] rằng hai bên phải xoay NGƯỢC nhau (mặc định [ROTATE_BY_SIDE]). Đây là **suy** từ
+    // câu owner, KHÔNG phải từ một phép đo: [ĐO RE kinex `Y0/C0094o.java:308-315`] app kinex giữ hai số xoay ĐỘC
+    // LẬP cho hai bên, cả hai **mặc định 0**, cộng hai cờ lật ngang — tức không có luật "trái ngược phải" nào
+    // trong ROM/RE để dựa vào. Vì thế mới có [ROTATE_BY_SIDE_INV] và ba chip cố định: chốt bằng mắt owner trên xe
+    // (spec §Verification), rồi mới đổi hằng mặc định nếu cần.
+    //
+    // Chuỗi, KHÔNG enum — cùng lý do với `CORNER_*` ở trên: đây vừa là giá trị lưu bền của `camera_rotation`, vừa
+    // là mã chip trong Cài đặt; một bảng đổi mã ở hai đầu là hai bản sao của cùng một sự thật.
+    //
+    // Quy ước độ: **âm = ngược chiều kim đồng hồ (xoay qua trái)**, **dương = cùng chiều (xoay sang phải)** —
+    // đúng chiều dương của `Matrix.postRotate` trên hệ toạ độ màn (trục y hướng xuống), nên tầng vẽ dùng thẳng số này.
+
+    /** Theo BÊN xi-nhan: trái −90° (↺ qua trái), phải +90° (↻ sang phải). **Mặc định** (owner 2026-09-26). */
+    const val ROTATE_BY_SIDE = "SIDE"
+
+    /**
+     * Theo bên, **NGƯỢC** [ROTATE_BY_SIDE]: trái +90° (↻), phải −90° (↺).
+     *
+     * ## Vì sao phải có chế độ này (review Pass 1 · 2026-09-26)
+     * §Verification của spec hứa: *"nếu ngược ⇒ đổi chip Xoay video"*. Nhưng nếu cái ngược là **cặp theo bên** (khả
+     * năng lớn nhất, vì chiều đúng đang ở mức [SUY] — xem Reviewer Log), thì năm chip đầu KHÔNG diễn tả nổi
+     * `(trái +90, phải −90)`: `↺90`/`↻90` áp cho CẢ hai bên. Owner sẽ đứng ở xe với một đường phục hồi không tồn
+     * tại, phải đợi bản build mới — đúng cái mà CLAUDE.md §4 câu 4 ("hoàn tác kiểu gì?") đòi phải trả lời trước.
+     *
+     * [ĐO RE kinex `Y0/C0094o.java:308-315` + `KinexBottomBarOverlayService.java:645-648`]: kinex giữ **hai** số
+     * xoay ĐỘC LẬP (`blind_spot_left_rotation_deg` / `blind_spot_right_rotation_deg`, mặc định 0) kèm hai cờ lật
+     * ngang — tức bên trái và bên phải KHÔNG bị buộc vào một cặp cố định nào. Chế độ này là phần cặp còn thiếu.
+     */
+    const val ROTATE_BY_SIDE_INV = "SIDEINV"
+
+    /** Không xoay. */
+    const val ROTATE_NONE = "0"
+
+    /** Mọi bên −90° (↺). */
+    const val ROTATE_LEFT = "L90"
+
+    /** Mọi bên +90° (↻). */
+    const val ROTATE_RIGHT = "R90"
+
+    /** Mọi bên 180°. */
+    const val ROTATE_180 = "180"
+
+    /** Mọi chế độ xoay hợp lệ — thứ tự này cũng là thứ tự chip trong Cài đặt. */
+    val ROTATIONS: List<String> = listOf(
+        ROTATE_BY_SIDE, ROTATE_BY_SIDE_INV, ROTATE_NONE, ROTATE_LEFT, ROTATE_RIGHT, ROTATE_180,
+    )
+
+    /**
+     * Mặc định = [ROTATE_BY_SIDE] — owner 2026-09-26 yêu cầu ĐÚNG hành vi này làm mặc định (đo trên Seal). Xe khác
+     * (SL6…) ghép ảnh 4-in-1 khác chiều thì chỉnh lại trong *Cài đặt › Tiện nghi xe › Xoay video camera*, không đổi
+     * hằng này.
+     */
+    fun defaultRotation(): String = ROTATE_BY_SIDE
+
+    /** Chuỗi chế độ xoay đọc lên có dùng được không — cùng vai [isCorner] (prefs sửa tay được qua `prefs_set`). */
+    fun isRotation(v: String): Boolean = v in ROTATIONS
+
+    /**
+     * Góc xoay (độ) cho overlay của bên [turn] theo chế độ [mode]: −90 / 0 / 90 / 180.
+     *
+     * [mode] lạ ⇒ coi như [defaultRotation] (không ném, không im lặng ra 0 — 0 là một lựa chọn THẬT của owner, không
+     * phải giá trị "không biết"). [Turn.NONE] không có overlay; trả 0 để hàm toàn phần.
+     */
+    fun rotationDegrees(mode: String, turn: Turn): Int {
+        val m = if (isRotation(mode)) mode else defaultRotation()
+        return when (m) {
+            ROTATE_NONE -> 0
+            ROTATE_LEFT -> -90
+            ROTATE_RIGHT -> 90
+            ROTATE_180 -> 180
+            ROTATE_BY_SIDE_INV -> when (turn) {
+                Turn.LEFT -> 90
+                Turn.RIGHT -> -90
+                Turn.NONE -> 0
+            }
+            else -> when (turn) {   // ROTATE_BY_SIDE
+                Turn.LEFT -> -90
+                Turn.RIGHT -> 90
+                Turn.NONE -> 0
+            }
+        }
+    }
+
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
     /**
      * Một góc camera. `cameraId` = tham số AVMCamera.open. `crop` = vùng cắt (x0,y0,x1,y1 chuẩn hoá 0..1) của
