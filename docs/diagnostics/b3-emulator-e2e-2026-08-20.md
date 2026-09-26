@@ -1,5 +1,7 @@
 # B3 screen-capture nav — kiểm thử end-to-end trên emulator (2026-08-20)
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-08 · **Mục đích**: kiểm thử end-to-end B3 screen-capture nav trên emulator (2026-08-20) + bug tìm ra.
+
 > Diagnostics · nguồn: `docs/PROJECT-BACKLOG.md` B3/B3.5–B3.12 · spec `docs/specs/waze-vietmap-screen-capture.html`.
 > **Mục đích:** ghi lại phiên test NGHIÊM TÚC (Waze/VietMap/GMaps dẫn THẬT trên emulator) + các bug tìm ra +
 > ĐIỂM RESUME, để lần sau quay lại KHÔNG phải dò lại từ đầu.

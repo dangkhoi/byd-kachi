@@ -1,4 +1,7 @@
 # fps camera 2.70 (xi-nhan trái giữ ~20 s) 18:52:29
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: đo fps camera trên bản 2.70 (giữ xi-nhan trái ~20 s).
+
 camera lên sau ~20 s
 [com.byd.launcher#0] (không frame)
 == SurfaceFlinger layer list (byd)

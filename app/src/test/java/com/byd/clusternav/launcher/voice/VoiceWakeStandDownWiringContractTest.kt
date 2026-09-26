@@ -112,7 +112,10 @@ class VoiceWakeStandDownWiringContractTest {
         // Không có khoá này, stand-down / gỡ gói có thể `release()` dưới chân một `decode` đang chạy ⇒ SIGSEGV.
         val decode = SourceRoots.body(engine, "private fun decode(pcm: ShortArray, length: Int): String")
         assertTrue(decode.contains("VoiceEngine.withUse(recognizer)"), "decode phải chạy trong withUse (khoá đọc)")
-        val release = SourceRoots.body(engine, "fun release() = synchronized(this) {")
+        // Mốc mang kiểu trả về TƯỜNG MINH `: Unit` từ CLOSE-4 (2026-09-26): `release()` thêm một dòng
+        // `KachiMem.trim(...)` trả `Boolean` ở cuối, và thân-biểu-thức sẽ âm thầm đổi chữ ký hàm thành `Boolean`
+        // nếu không khai kiểu. `SourceRoots.body` NỔ khi mốc không còn — đó là lý do mốc phải sửa theo, không tự rữa.
+        val release = SourceRoots.body(engine, "fun release(): Unit = synchronized(this) {")
         assertTrue(release.contains("useLock.write"), "release phải giữ khoá ghi (chờ decode xong)")
         val withUse = SourceRoots.body(engine, "internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = useLock.read {")
         assertTrue(withUse.contains("recognizer !== rec"), "bản đã nhả không được chạm native")

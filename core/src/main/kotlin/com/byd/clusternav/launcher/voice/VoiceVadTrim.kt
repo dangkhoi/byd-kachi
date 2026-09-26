@@ -92,7 +92,7 @@ object VoiceVadTrim {
      *
      * ⚠ Vẫn nhỏ hơn `VoiceEndpointer.HANGOVER_MS` (800 ms), và vế *"Silero biết có phải giọng người không nên
      * dám chờ ít hơn bộ RMS"* vẫn nguyên — chỉ biên độ *"nhỏ hơn nhiều"* thì hết đúng. Núm
-     * `voice_vad_min_silence_ms` (80–800) chỉnh được trên xe, không cần build.
+     * `voice_vad_min_silence_ms` (80–1 200 từ 2026-09-26, xem [MAX_MIN_SILENCE_MS]) chỉnh được trên xe, không cần build.
      */
     const val MIN_SILENCE_MS = 600
 
@@ -114,14 +114,34 @@ object VoiceVadTrim {
 
     /**
      * Dưới 80 ms thì một quãng ngắt hơi giữa câu cũng đóng đoạn (**cắt giữa câu** — đúng lỗi [ĐO xe 2026-09-18]
-     * bắt được ở mức 150 ms); trên 800 ms thì **độ trễ chốt câu** ăn quá sâu vào trần cứng 8 s và người lái tưởng
+     * bắt được ở mức 150 ms); trên 1 200 ms thì **độ trễ chốt câu** ăn quá sâu vào trần cứng 8 s và người lái tưởng
      * máy thôi nghe.
      *
      * ⚠ Trần trên **KHÔNG** phải để chặn *"đuôi im lặng nạp vào mô hình dài bằng bản RMS cũ"* như bản đầu ghi:
      * sherpa tự cắt đuôi hangover khỏi đoạn nên đuôi ấy chưa bao giờ vào bộ giải mã — xem [MIN_SILENCE_MS].
+     *
+     * ## Trần 800 → **1 200 ms** (VAD-SILENCE-CAP, 2026-09-26) — vì sao nới TRẦN mà KHÔNG đổi mặc định
+     * [ĐO xe 2026-09-26] owner gặp câu ghép *"mở &lt;app&gt; vào ô số 2"* bị cụt và thử `prefs_set
+     * voice_vad_min_silence_ms 1100` **trên xe**: trần cũ 800 ⇒ giá trị bị từ chối (`TestBridgePrefsSet` không
+     * kẹp im lặng, nó trả `bad_prefs_value`) ⇒ núm chỉnh-trên-xe **không tới được** vùng cần đo. Đó là cái trần
+     * sai, không phải cái mặc định sai — và đây là phép đo chứng minh:
+     *
+     * | quãng ngừng đo được trên 30 bản thu thật 26/09 | ca |
+     * |---|---|
+     * | 120–260 ms — **trong cùng một vế** (*"mở youtube ⟨200 ms⟩ vào ô số hai"*) | 8 |
+     * | 720–1 060 ms — **ngừng để nghĩ giữa hai vế** | 4 |
+     *
+     * Mặc định 600 ms đã **≥ 2,3×** quãng ngừng trong-vế lớn nhất, và [ĐO] 13/13 bản thu câu-có-ô đều chốt **sau**
+     * điểm hết tiếng (điểm cắt ≥ điểm hết tiếng) ⇒ mặc định chưa từng cắt cụt một câu ghép nào trong bộ này; cái
+     * làm mất vế *"vào ô số N"* là **bộ giải mã**, xem KDoc [VoiceSlotPhrases]. Còn nhóm ngừng-để-nghĩ 720–1 060 ms
+     * thì **không** giá trị nào ≤ 800 đỡ được — đúng vùng mà trần mới mở ra để đo tiếp trên xe (🚗).
+     *
+     * ⚠ Nâng **mặc định** lên ≥ 800 sẽ phá bất biến *"VAD chốt sớm hơn bộ RMS"* ([VoiceEndpointer.HANGOVER_MS] =
+     * 800 ms, bài `VoiceVadTrimTest` canh) và cộng ≥ 200 ms vào **mọi** lượt nói, kể cả câu một vế. Nên mặc định ở
+     * lại 600; muốn hơn thì chỉnh núm, và chỉnh xong phải đo lại độ trễ chốt câu trên xe.
      */
     const val MIN_MIN_SILENCE_MS = 80
-    const val MAX_MIN_SILENCE_MS = 800
+    const val MAX_MIN_SILENCE_MS = 1200
 
     /**
      * ═══ `head` — CẮT TỚI HẾT ĐOẠN TIẾNG CUỐI CÙNG ĐÃ CHỐT ═══════════════════════════════════════════════

@@ -1,6 +1,6 @@
 # 0-PENDING — DANH SÁCH ĐẦY ĐỦ MỤC CẦN XE (Kachi 1.83 · 84)
 
-> **Loại**: Diagnostics (on-car master index) · **Trạng thái**: Current · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)**
+> **Loại**: Diagnostics (on-car master index) · **Trạng thái**: Superseded — danh sách chờ-xe chốt ở 1.83; danh sách hiện hành ở `docs/PROJECT-BACKLOG.md` + `docs/diagnostics/oncar-runbook-2.73.md` · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)**
 > **Mục đích**: gom **HẾT** mục `🚗 chờ xe` vào MỘT chỗ (đếm bằng máy, không đoán) — mỗi nhóm có **số lượng · ưu tiên · doc chứa cách-làm · outcome→off-car**. Đây là "list hết ra" owner yêu cầu 2026-09-20; **cách làm chi tiết** nằm ở 4 area doc + `RUNBOOK.md` (8 phase). **Off-car chỉ làm SAU khi có dữ liệu buổi này.**
 > **Nhãn** (CLAUDE.md §2): `[ĐO source]` đọc được ở mã có `file:line` · `[ĐO xe]` số thật lượt trước · `[SUY]` · `[CHƯA BIẾT]`.
 

@@ -1,5 +1,7 @@
 # [ĐO host 2026-09-16] STREAMING đa ngữ vs OFFLINE đang ship — và một phát hiện khác về ĐUÔI IM LẶNG
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: đo streaming đa ngữ so với đường offline đang ship + phát hiện về đuôi im lặng.
+
 > Chủ đề owner đặt ra: *"Nếu có streaming thì quá ổn, nghe đến đâu xử đến đó."*
 > Bối cảnh: [ĐO xe 2026-09-16] đường offline hiện tại chờ hết trần rồi mới giải mã ⇒ **5–6 s** trễ sau khi
 > người nói xong. Tệp này đo xem bộ **streaming** có cắt được khoảng chờ đó mà không mất độ chính xác không.

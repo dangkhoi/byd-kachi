@@ -1,6 +1,6 @@
 # 2 — APP-VÀO-Ô · CHIẾU CỤM · CỬA SỔ — bảng option + bài test QUYẾT ĐỊNH một buổi
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-19 · **Mục đích**: RE cạn mọi đường đưa app (nhất là **Waze** — app có
+> **Trạng thái**: Historical — RE ô/cast thời tiền-1.83; số đo hiện hành ở `docs/diagnostics/oncar-session-2026-09-26.md` · **Ngày**: 2026-09-19 · **Mục đích**: RE cạn mọi đường đưa app (nhất là **Waze** — app có
 > activity trung chuyển) vào **ô màn ảo** trên ROM **DiLink3.0 / Android 10**, cộng đường **chiếu cụm**; mỗi option có
 > **lệnh probe riêng** để nếu A hỏng thì B/C/D thử **ngay trong cùng buổi**, không phải hẹn buổi thứ hai.
 > **Backlog phủ**: H1 · D-emu · X1 · X2 · U8a · ARCH-🚗.

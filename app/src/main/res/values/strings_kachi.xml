@@ -684,6 +684,10 @@
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
     <string name="kachi_camera_rot_180">180°</string>
+    <string name="kachi_camera_render_sub">Cách vẽ video camera (đổi nếu thấy giật khi xe chạy)</string>
+    <string name="kachi_camera_render_row">Kết xuất camera</string>
+    <string name="kachi_camera_render_texture">TextureView (mặc định)</string>
+    <string name="kachi_camera_render_surface">SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)</string>
     <string name="kachi_camera_pick_sub">Chọn camera cho mỗi bên xi-nhan (nếu cam không lên, thử id khác 0–5)</string>
     <string name="kachi_camera_pick_left">Cam xi-nhan trái</string>
     <string name="kachi_camera_pick_right">Cam xi-nhan phải</string>

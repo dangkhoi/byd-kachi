@@ -1,6 +1,6 @@
 # On-car 2026-09-06 — 2 lỗi cần sửa OFF-CAR (v1.32, xe BYD AUTO, ADB qua wifi)
 
-> **Trạng thái**: NOTED — owner dặn "check nhanh, KHÔNG fix, note off-car làm sau". Đây là bằng chứng [ĐO] trên xe + hướng sửa. CHƯA sửa code.
+> **Trạng thái**: Historical — khớp lại với dòng index · **Ghi chú gốc**: NOTED — owner dặn "check nhanh, KHÔNG fix, note off-car làm sau". Đây là bằng chứng [ĐO] trên xe + hướng sửa. CHƯA sửa code.
 
 ## BUG A — Ghế mát/sưởi tự động KHÔNG chạy (HAL từ chối)
 

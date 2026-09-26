@@ -1,5 +1,7 @@
 # Bug (O) UI-PICKER-OVERLAP — dải đè trong lưới chọn nút/widget · [ĐÃ CHỨNG MINH] 2026-09-16
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-16 · **Mục đích**: bug (O) UI-PICKER-OVERLAP — dải đè trong lưới chọn nút/widget.
+
 - **Chủ:** dangkhoi · **Owner báo:** ảnh xe (1.66) — hàng 3 mục Khí hậu trong *Chọn nút cho thanh nút xe* bị cắt ngang + dải đè (`oncar-row3-cut.webp`).
 - **Tái hiện máy ảo** (1.67/1.68, mật độ 240): hàng 2 mục Nhóm — `before-row2-cut.png` (dòng phụ nhạt rồi hụt ở y≈834, dải sáng 835–858).
 - **Bằng chứng đo:** `uiautomator dump` — bounds mọi ô ĐÚNG (4 ô cao 165, dòng phụ 816–843 nằm trong ô 696–861) ⇒ không phải lỗi bố cục/đo (`UniformRow` vô can). Đường cắt 834 = đáy ScrollView 918 − đệm đáy (48+8) dp × 1,5 = 84 px; vùng nhạt 816–834 = dải mờ 12 dp = 18 px.

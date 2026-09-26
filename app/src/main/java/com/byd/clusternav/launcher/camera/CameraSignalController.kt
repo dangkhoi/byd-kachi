@@ -8,6 +8,7 @@ import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.cameraRotation
+import com.byd.clusternav.cameraRender
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 
 /**
@@ -124,17 +125,42 @@ class CameraSignalController(private val appCtx: Context) {
                 // theo pref TỪNG BÊN `camera_rot_left/right` (2.71; mặc định trái ↺ −90 / phải ↻ +90). Tính ở
                 // `:core`, overlay chỉ nhận số độ.
                 val rot = CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx, left = turn == Turn.LEFT), left = turn == Turn.LEFT)
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner rot=$rot")
+                // CLOSE-14 (CAM-LAG): đường kết xuất là một LỰA CHỌN có mã lưu bền (`camera_render`), mặc định =
+                // `TextureView` đang chạy hiện trường. Đọc mỗi lượt dựng overlay ⇒ đổi chip trong Cài đặt là lượt
+                // xi-nhan sau đã theo, không cần khởi động lại gì.
+                val render = Prefs.cameraRender(appCtx)
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner kết xuất=$render rot=$rot")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
                 hal.open(view)
+                // CAM-ROT-2 (owner 2026-09-26 "không muốn có viền đen … đúng tỷ lệ camera"): cửa sổ overlay lấy tỉ lệ
+                // vùng crop SAU xoay ⇒ cần cỡ ảnh nguồn. `view.hintW/hintH` chỉ là **gợi ý** cho lượt dựng đầu;
+                // số THẬT đo bằng `AVMCamera.getPreviewWidth/Height` ngay sau khi mở camera rồi báo lại tầng vẽ.
                 overlay.show(
                     corner = corner,
                     side = side,
                     onCluster = Prefs.cameraOnCluster(appCtx),
                     crop = crop,
                     rotationDeg = rot,
-                ) { surface -> runCatching { avm.open(camId, surface) } }
+                    render = render,
+                    streamW = view.hintW,
+                    streamH = view.hintH,
+                ) { surface ->
+                    runCatching {
+                        avm.open(camId, surface)
+                        // Xoay: `TextureView` làm bằng ma trận; `SurfaceView` không có `setTransform` nên chỉ còn
+                        // đường nhờ HAL — và "nhận" ≠ "có tác dụng", nên cửa sổ chỉ lấy tỉ lệ ĐÃ XOAY khi một trong
+                        // hai đường thật sự đứng ra làm (rot = 0 thì không cần ai làm).
+                        val byMatrix = CameraSignalPolicy.rotatesByMatrix(render)
+                        val byHal = !byMatrix && rot != 0 && avm.setDisplayOrientation(surface, rot)
+                        val size = avm.previewSize()
+                        overlay.onStreamMeasured(
+                            streamW = size?.getOrNull(0) ?: 0,
+                            streamH = size?.getOrNull(1) ?: 0,
+                            rotationEffective = rot == 0 || byMatrix || byHal,
+                        )
+                    }
+                }
             }
         }
     }

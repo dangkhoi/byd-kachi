@@ -1193,8 +1193,8 @@
  },
  {
   "group": "Cài đặt",
-  "name": "Nhóm «Tiện nghi xe» — lấy gió trong, ghế mát/sưởi, lọc bụi mịn",
-  "desc": "Công tắc «Nổ máy thì tự lấy gió trong» (có ghi rõ ⚠ lệnh chưa kiểm trên xe) — bật là áp ngay. Khối ghế: công tắc «Tự chỉnh ghế theo nhiệt độ» + chip «Chế độ» (Làm mát / Sưởi) + sơ đồ ghế chạm-để-đổi-mức (tắt → mức 1 → mức 2), số ghế đọc động (2 ghế Seal / 4 ghế Han). Khối lọc bụi: công tắc «Tự lọc khi không khí bẩn» + hàng «Bụi mịn hiện tại: …» + đồng hồ vòng + nút «Lọc ngay một lượt» (chạy bất kể công tắc tự động).",
+  "name": "Nhóm «Tiện nghi xe» — lấy gió trong, ghế mát/sưởi, lọc bụi mịn, camera xi-nhan, tự sấy kính khi mưa",
+  "desc": "Công tắc «Nổ máy thì tự lấy gió trong» (có ghi rõ ⚠ lệnh chưa kiểm trên xe) — bật là áp ngay. Khối ghế: công tắc «Tự chỉnh ghế theo nhiệt độ» + chip «Chế độ» (Làm mát / Sưởi) + sơ đồ ghế chạm-để-đổi-mức (tắt → mức 1 → mức 2), số ghế đọc động (2 ghế Seal / 4 ghế Han). Khối lọc bụi: công tắc «Tự lọc khi không khí bẩn» + hàng «Bụi mịn hiện tại: …» + đồng hồ vòng + nút «Lọc ngay một lượt» (chạy bất kể công tắc tự động). Từ 2.35 nhóm này còn khối «Camera theo xi-nhan» (bật/tắt · chọn cam từng bên · vị trí từng bên · xoay video từng bên · Kết xuất camera · hiện lên màn cụm) và khối «Tự sấy kính khi mưa» — xem hai nhóm riêng phía trên.",
   "voice": [
    "bật lọc bụi",
    "lọc ngay",
@@ -1464,5 +1464,230 @@
   "status": "🔲 chưa làm (spec có, chờ mã phím thật trên xe)",
   "evidence": "docs/PROJECT-BACKLOG.md W5",
   "spec": ""
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Bật camera khi xi-nhan — giữ tới khi ĐÈN TẮT",
+  "desc": "Cài đặt › Tiện nghi xe › «Camera theo xi-nhan» › «Bật camera khi xi-nhan». Xi-nhan trái ⇒ overlay camera trái nổi ở góc màn, phải ⇒ camera phải. Nguồn tín hiệu báo theo TRẠNG THÁI đèn (không phải nháy), nên overlay giữ suốt thời gian đèn bật rồi đóng khi đèn tắt — trước 2.70 nó tắt sau ~1 s (owner: «camera lên 1-2s là bị tắt»). Mặc định TẮT.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "[ĐO xe Seal DiLink3.0 2026-09-26, bản 2.70] mở 57,18 s → đóng 62,41 s, đèn tắt 62,33 s (trễ 87 ms); nguồn trạng thái trái=true 18:18:57.177 → false 18:19:02.325 (4,2 s). docs/diagnostics/oncar-session-2026-09-26.md §3 D4/D5 · §4 · app/.../camera/CameraSignalController.kt (CameraHold)",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Chọn camera từng bên (id 0–5)",
+  "desc": "Hai hàng chip «Cam xi-nhan trái» / «Cam xi-nhan phải» — mỗi bên chọn một id camera trong 0–5. Cam không lên thì thử id khác; Sealion 6 dùng cam 0. Câu phụ trong app nói thẳng cách thử: «Chọn camera cho mỗi bên xi-nhan (nếu cam không lên, thử id khác 0–5)».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "app/.../SettingsSectionsCar.kt:115-117 · strings kachi_camera_pick_left/right · Sealion 6 dùng cam 0 (docs/diagnostics/oncar-captest-sealion6-2026-09-16.md)",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Vị trí overlay từng bên (góc trên-trái / trên-phải)",
+  "desc": "Hai hàng «Xi-nhan trái hiện ở» / «Xi-nhan phải hiện ở», giá trị `TL`/`TR`. Mặc định trái TL, phải TR (`CameraSignalPolicy.defaultCorner`). Giá trị lạ trên đĩa ⇒ rơi về mặc định của đúng bên đó, tầng vẽ không có nhánh nào nhận chuỗi lạ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "core/.../camera/CameraSignalPolicy.kt:34-37 · app/.../PrefsAutomation.kt:106-128 · app/.../SettingsSectionsCar.kt:74-83",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Xoay video TRÁI / PHẢI độc lập (2.71)",
+  "desc": "Hai hàng riêng «Xi-nhan trái: xoay video» / «Xi-nhan phải: xoay video», mỗi hàng 4 chip: «Không xoay» · «↺ 90°» · «↻ 90°» · «180°». Mặc định trái ↺ 90°, phải ↻ 90° (dải gương cắt từ camera 360 vốn nằm ngang). Hai bên KHÔNG ảnh hưởng nhau — owner trên xe 2026-09-26: «xoay video cần làm 2 line setting độc lập cho camera trái và phải, có thể 2 camera cần xoay khác nhau». Bản 2.67 dùng MỘT khoá `camera_rotation` với chế độ «theo bên»; khoá đó nay migrate MỘT lần sang `camera_rot_left`/`camera_rot_right` rồi xoá, và đã gỡ khỏi whitelist `prefs_set`.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 chiều xoay mặc định đã xác nhận trên xe · 🚗 hai hàng riêng chưa đo",
+  "evidence": "[ĐO xe Seal 2026-09-26] mắt owner xác nhận chiều trái ↺ / phải ↻ ĐÚNG (docs/diagnostics/oncar-session-2026-09-26.md §3 D4) · core/.../camera/CameraSignalPolicy.kt:73-102,127-135 · app/.../PrefsAutomation.kt:131-167 · strings kachi_camera_rot_row_left/right",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Khung overlay ĐÚNG TỈ LỆ crop sau khi xoay (2.73)",
+  "desc": "Ô vuông cũ (0,50 × cao màn) nay chỉ là VÙNG CHO PHÉP; cửa sổ thật là hình lớn nhất đúng tỉ lệ hình camera SAU khi xoay, căn giữa trong vùng đó ⇒ hết viền đen, hết kéo méo, vùng chiếm chỗ tối đa không đổi. Xoay ±90° cho khung NGANG (không phải dọc). Owner: «không muốn có viền đen, nên làm overlay cho nó đúng với tỷ lệ camera, không fix bừa».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "[ĐO số off-car] dải gương 512×960 xoay −90° trong vùng 360×360 ⇒ khung 360×192, tỉ số giãn x/y 1,000 (khung vuông cũ 1,875 — đúng cái owner thấy). Cỡ ảnh nguồn thật của ROM DiLink3.0 = [CHƯA BIẾT]. docs/diagnostics/offcar-2026-09-26/camera-aspect-and-render-path.md §0 hàng A · §1.5 · §5 D-A",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "«Kết xuất camera» — TextureView / SurfaceView (2.73)",
+  "desc": "Một hàng chip «Kết xuất camera»: «TextureView (mặc định)» | «SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)». Câu phụ: «Cách vẽ video camera (đổi nếu thấy giật khi xe chạy)». Mặc định KHÔNG đổi — đây là cờ để ĐO nguồn giật, không phải một bản vá; SurfaceView xoay nhờ HAL nên có thể không xoay được, không vừa thì trả về mặc định. Owner: «hiện tại nó hơi giật lag khi xe chạy».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "core/.../camera/CameraSignalPolicy.kt:148-174 · app/.../SettingsSectionsCar.kt:104-112 · strings kachi_camera_render_* · số xe hiện MÂU THUẪN: cùng bản 2.70 có camera cho janky 26,9 % (p90 44 ms) và 4,67 % (p90 11 ms) ⇒ giả thuyết «TextureView vẽ trên luồng chính» KHÔNG được số liệu ủng hộ, vẫn [ĐOÁN]. docs/diagnostics/offcar-2026-09-26/camera-aspect-and-render-path.md §3 · docs/diagnostics/oncar-session-2026-09-26.md §4",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Hiện camera lên MÀN CỤM thay màn chính",
+  "desc": "Công tắc «Hiện camera lên màn cụm» — overlay camera hiện trên cụm đồng hồ thay vì màn chính. Mặc định tắt (= màn chính).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "app/.../PrefsAutomation.kt:92-96 · app/.../SettingsSectionsCar.kt:66-70 · strings kachi_camera_cluster_title/sub",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Lưới an toàn — helper HAL chết ⇒ báo OFF, đóng overlay (2.72)",
+  "desc": "Nếu tiến trình helper đọc tín hiệu xi-nhan chết giữa lúc đèn còn bật, Kachi coi như đèn đã TẮT và đóng overlay, thay vì để khung camera treo trên màn tới khi tắt máy. Đây là hồi quy do chính hotfix 2.70 (giữ-tới-khi-đèn-tắt) sinh ra, vá ngay trong 2.72.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "[ĐO off-car] `HalSignalClient.announceOffIfDropped`; cách chốt trên xe: `pkill -f kachi_hal` lúc đèn còn bật ⇒ overlay phải đóng ≤ 2 s. PROJECT-BACKLOG 2.72 · docs/diagnostics/oncar-session-2026-09-26.md §4",
+  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+ },
+ {
+  "group": "Automation",
+  "name": "Mưa thì tự bật sấy kính",
+  "desc": "Cài đặt › Tiện nghi xe › «Tự sấy kính khi mưa» › công tắc «Mưa thì tự bật sấy kính», cộng hai ô chọn cái gì được bật: «Sấy kính trước» (kính chắn gió) và «Sấy kính sau + gương». Đọc cảm biến mưa mỗi 5 phút; hết mưa thì tắt — và ghi chú trong app nói rõ luật sở hữu: «Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe (chưa gặp buổi mưa thật)",
+  "evidence": "[ĐO xe 1.84] cảm biến mưa THẬT id 1196425250 (rơ-le gạt CHẾT) · core RainPolicy thuần + test · app/.../SettingsSectionsCar.kt:141-165 · strings kachi_rain_defrost_*",
+  "spec": "docs/specs/kachi-automation.html"
+ },
+ {
+  "group": "Automation",
+  "name": "Tự dẫn đường theo lịch",
+  "desc": "Cài đặt › Dẫn đường & cụm đồng hồ › «Tự dẫn đường theo lịch». Mỗi luật = khung giờ × thứ trong tuần × ô «chỉ khi có GPS» × một điểm trong Sổ địa chỉ × app dẫn đường. Kiểm mỗi ~1 phút, chạy ĐÚNG MỘT LẦN mỗi khung mỗi ngày (usecase: T2–T6 07:30–09:00 → công ty, bắn khi ra khỏi hầm và có GPS).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe (chưa chạy một khung giờ thật)",
+  "evidence": "core policy thuần + FGS tick 60 s · app/.../SettingsNavAutomationDialog.kt · strings kachi_sec_nav_auto · [SUY] còn phải chốt `startActivity` từ FGS có bị ROM chặn không",
+  "spec": "docs/specs/kachi-automation.html"
+ },
+ {
+  "group": "Voice",
+  "name": "«Hey Kachi» — gọi rảnh tay, tự tắt khi nghe nhầm",
+  "desc": "Cài đặt › Giọng nói › «Hey Kachi»: công tắc «\"Hey Kachi\" — gọi bằng giọng (thử nghiệm)» + chip «Cách nghe \"Hey Kachi\": ASR (không cần train)». Nghe nền khi màn sáng, MẶC ĐỊNH TẮT (tốn pin/CPU); nghe nhầm nhiều lần thì tự tắt kèm thông báo «Đã tắt Hey Kachi vì nghe nhầm nhiều lần. Bật lại trong Cài đặt.» Wake chỉ MỞ phiên; lệnh vẫn đi qua bộ nghe/hiểu sẵn có.",
+  "voice": [
+   "Hey Kachi"
+  ],
+  "voice_reply": "Đã tắt Hey Kachi vì nghe nhầm nhiều lần. Bật lại trong Cài đặt.",
+  "status": "🟢 đã xác nhận trên xe (đường :wake)",
+  "evidence": "[ĐO xe Seal 2026-09-26 §3 D7] ack 6 ms · sẵn sàng nghe 641 ms · mic 99 ms; «bật gió tự động» ⇒ Control(ac_auto=1); native tiến trình chính KHÔNG tăng. core/.../voice/VoiceWakeController.kt · WakeAsrMatcher.kt · strings kachi_wake_*",
+  "spec": "docs/specs/kachi-wake-word.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Nút mic đi qua tiến trình :wake khi Hey Kachi bật (2.68)",
+  "desc": "Khi «Hey Kachi» đang BẬT, bấm nút mic ở màn chính không còn nạp bản mô hình ASR thứ hai trong tiến trình chính (~15 s + ~74 MB lần đầu) — phiên đi thẳng qua tiến trình `:wake` đã có mô hình nạp sẵn. Kèm «ảnh chụp ngữ pháp» cross-process nên phiên `:wake` vẫn hiểu tên hồ sơ và địa chỉ đã lưu (trước đó ngữ pháp của `:wake` rỗng ⇒ mất đúng hai loại câu này).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 đã xác nhận trên xe",
+  "evidence": "[ĐO xe Seal 2026-09-26 §3 D7] ack 6 ms, sẵn sàng 641 ms; PSS native tiến trình chính không tăng. PROJECT-BACKLOG CLOSE-3 (2.68)",
+  "spec": "docs/specs/kachi-wake-word.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Từ phiên :wake làm được việc của màn chính — ô + bố cục (2.69)",
+  "desc": "Nói từ phiên `:wake` (Hey Kachi hoặc nút mic khi wake bật): «mở YouTube vào ô 2» ⇒ app vào đúng ô; «bố cục 2 cột» ⇒ đổi bố cục thật. Relay qua tiến trình chính có ack, hạn chờ 1,5 s (tiến trình chính đang sống) / 4 s (lạnh). Kèm MỘT CHỦ SỞ HỮU phiên `:wake`: nói tiếp khi Kachi đang đọc thì tiếng cũ bị cắt, chỉ còn một tấm chữ.",
+  "voice": [
+   "mở YouTube vào ô 2",
+   "bố cục 2 cột"
+  ],
+  "voice_reply": "",
+  "status": "⚠ chạy một phần trên xe",
+  "evidence": "[ĐO xe Seal 2026-09-26 §3 D12] qua INTENT ✅ (VietMap vào ô 2, `VdAppHost slot=1`); qua GIỌNG ❌ ở 2.69 (ASR ra «mở vietmap một») — vế «vào ô số N» chỉ được vá ở 2.73, 🚗 chưa đo lại bằng giọng thật. PROJECT-BACKLOG VOICE-WAKE-SLOT-LAYOUT + VOICE-WAKE-SESSION-OWNER",
+  "spec": "docs/specs/kachi-wake-word.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Vế «VÀO Ô SỐ N» không còn rụng (2.73)",
+  "desc": "Thêm hotword cụm «VÀO Ô SỐ N» vào tầng bias của bộ nghe, nên đuôi câu chỉ-định-ô không bị cắt mất. Trước đó câu «mở vietmap vào ô số hai» ra chữ «mở vietmap một» / «mở vietmap» ⇒ app mở nhưng KHÔNG vào ô.",
+  "voice": [
+   "mở vietmap vào ô số hai",
+   "mở YouTube vào ô số 9",
+   "đưa YouTube vào ô hai"
+  ],
+  "voice_reply": "",
+  "status": "🚗 chỉ đo bằng phát lại bản thu của xe trên máy",
+  "evidence": "[ĐO replay 30 WAV của xe trên máy ảo API 29, cùng model zipformer-vi-int8-2025-04-20] 4/4 bản thu bệnh chuyển từ «mở vietmap một» ⇒ «mở vietmap vào ô số một»; 13/13 ca tái lập ĐÚNG TỪNG KÝ TỰ chuỗi xe ghi. docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md §1.5 · §0",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Khớp MỜ tên app khi nghe lệch (2.73)",
+  "desc": "Tên app nghe lệch nhẹ vẫn giải được: «mở youtubex vào ô hai» ⇒ YouTube vào ô 2; «đặt vietp vào ô số một» ⇒ VietMap vào ô 1. Trần lệch là 2 ký tự và CỐ Ý không nới: «đặt yout tiếp vào ô số hai» (lệch 3) vẫn không hiểu — chỗ đó để đường hỏi-lại lo, không phải để khớp bừa.",
+  "voice": [
+   "mở youtubex vào ô hai",
+   "đặt vietp vào ô số một"
+  ],
+  "voice_reply": "",
+  "status": "🚗 chỉ đo bằng phát lại bản thu của xe trên máy",
+  "evidence": "docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md §2 · §5 (ca «yout tiếp» vẫn đỏ, có chủ ý) · core/.../voice/VoiceNameFuzzy.kt · VoiceAppPhonetics.kt",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Tên HỒ SƠ: hotword + khớp mờ + hỏi lại khi thiếu tên (2.73)",
+  "desc": "Thêm hotword cụm «HỒ SƠ <tên>» + khớp mờ ⇒ «chuyển sang hồ sơ test» đổi được sang hồ sơ tên tiếng Anh «Test». Câu có nêu chữ «hồ sơ» mà thiếu tên thì Kachi HỎI LẠI thay vì im hoặc đoán: «Hồ sơ nào — A hay B?»",
+  "voice": [
+   "chuyển sang hồ sơ Test",
+   "đổi sang hồ sơ Chính"
+  ],
+  "voice_reply": "Hồ sơ nào — A hay B?",
+  "status": "🚗 chỉ đo bằng phát lại bản thu của xe trên máy",
+  "evidence": "[ĐO xe 2026-09-26 §3 D8] TRƯỚC vá: ASR ra «chuyển sang hồ sơ» (mất «test») và «đổi sang hồ sơ định» (mất «mặc») ⇒ không đổi được. docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md §3 · core/.../voice/VoiceProfileNames.kt · SherpaPhraseHotwords.kt",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Tấm chữ voice KHÔNG nhận tiêu điểm — taskbar không trồi, Back không huỷ (2.73)",
+  "desc": "Cửa sổ tấm chữ voice nhận `FLAG_NOT_FOCUSABLE`, nên (a) taskbar / thanh điều hướng của xe không còn trồi lên lúc Kachi đọc phản hồi, và (b) nút Back KHÔNG còn huỷ phiên nghe — Back đi tới app phía sau. Huỷ lượt nghe = CHẠM RA NGOÀI tấm chữ, hoặc chờ trần 8 s. Đây là đổi hành vi có chủ ý, không phải lỗi.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 gốc bệnh đã đo trên xe, bản vá chưa nhìn",
+  "evidence": "[ĐO log xe 2026-09-26] taskbar lên 2 ms sau khi cửa sổ `:wake` nhận tiêu điểm rồi `mCurrentFocus=null`, ở lại 39,6 s tới khi tấm chữ tắt. Bản vá = [SUY], 🚗 phải nhìn để lên [ĐO]. docs/diagnostics/offcar-2026-09-26/taskbar-focus-and-shell-budget.md §1.2 · §1.5 · §1.6 · §4",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Trần im lặng (VAD) nới 800 → 1 200 ms, mặc định GIỮ 600 ms (2.73)",
+  "desc": "Núm `voice_vad_min_silence_ms` nay nhận tới 1 200 ms (owner thử đặt 1100 trên xe bị TỪ CHỐI vì trần cũ là 800). Mặc định KHÔNG đổi — vẫn 600 ms; đây là núm của cầu kiểm thử, không phải một hàng trong Cài đặt. Hệ quả còn lại: quãng ngừng-để-nghĩ > 800 ms vẫn bị cắt câu ở mặc định.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (máy ảo/test)",
+  "evidence": "docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md §1.4 · §5 · core/.../voice/VoiceEndpointer.kt · app/.../testbridge/TestBridgePrefsSet.kt (whitelist)",
+  "spec": "docs/specs/kachi-voice-command.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Tiết chế dòng log trùng (LogLineThrottle, 2.73)",
+  "desc": "Dòng log trùng Y NGUYÊN trong 10 s được gộp lại, kèm hậu tố «[+N lặp]». Mức W/E/F/A không bao giờ bị bỏ — chỉ dòng thông tin lặp bị gộp.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe",
+  "evidence": "[ĐO mô phỏng trên chính tệp log THẬT của xe] 34,3 → 8,6 KB/phút (−75 %); cao điểm lúc camera hiện 127,6 → 48,1 KB/phút. Đích trên xe: < 20 KB/phút, 🚗 chưa chạy. docs/diagnostics/offcar-2026-09-26/taskbar-focus-and-shell-budget.md §2.2 · §4",
+  "spec": "docs/specs/kachi-closeout-hardening.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Trả RAM native cho hệ ở tiến trình :wake (mallopt, 2.73)",
+  "desc": "Tiến trình nghe gọi `mallopt(M_PURGE)` ở 4 mốc pha + `M_DECAY_TIME 0` qua JNI `libkachimem.so` (4 056 B, C thuần, chỉ phụ thuộc `libc.so`) để trả bộ nhớ native đã free về cho hệ. NDK r30 LTS (30.0.16248370) + CMake 3.31.6 vào build. APK +16 458 B (+0,038 %). Nội bộ — người dùng không thấy hàng cài đặt nào.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 hiệu quả THẬT chưa đo — [CHƯA BIẾT]",
+  "evidence": "⚠ KHÔNG trích số MB nào: đường `loaded == true` CHƯA TỪNG chạy ở đâu (máy ảo x86_64 không nạp được .so arm64); trên xe `:wake` chỉ có 9,2 MB «free chưa trả» (126 MB là số của máy ảo). docs/diagnostics/offcar-2026-09-26/wake-mallopt-ndk.md §0 mục 4 · §5.1 · §5.3 · §6",
+  "spec": "docs/specs/kachi-closeout-hardening.html"
+ },
+ {
+  "group": "Hiệu năng / log",
+  "name": "Ngân sách lệnh shell 19/phút — đã quy kết đủ, GIỮ NGUYÊN",
+  "desc": "19,0 lệnh shell mỗi phút được giải thích hết: 15,0 là watchdog giữ-cụm (`am stack list` mỗi 4 s) + ≈4,0 là nhịp đo ô. Cắt thêm = đổi độ trễ phục hồi của cụm ⇒ để owner chốt, không tự cắt.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 chờ xe chốt phần suy luận",
+  "evidence": "15,0 [ĐO xe] + ≈4,0 [SUY] (khớp số dư chính xác); cách chốt: đóng hết ô App ⇒ phải xuống ≈15,0. docs/diagnostics/offcar-2026-09-26/taskbar-focus-and-shell-budget.md §0 hàng 2 · §3.2 · §3.3 · §4 hàng 5",
+  "spec": "docs/specs/kachi-closeout-hardening.html"
  }
 ]

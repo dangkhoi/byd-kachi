@@ -1,6 +1,6 @@
 # Runbook on-car — Kachi 2.15 (vc116): Camera-theo-xi-nhan + Hey Kachi ASR
 
-> **Trạng thái**: chờ side-load & test trên xe · **Ngày**: 2026-09-22 · **APK**: `apk/Kachi-2.15-release.apk`
+> **Trạng thái**: Historical — khớp lại với dòng index · **Ngày**: 2026-09-22 · **APK**: `apk/Kachi-2.15-release.apk`
 > (sha256 `8524b2f9f9f8757526197614b8ac3b4897fca81546412e65ca797dc6c882c48d`, `com.byd.launcher`, KHÔNG debuggable).
 > **KHÔNG OTA / KHÔNG FF main** — owner side-load thử trên xe trước.
 >

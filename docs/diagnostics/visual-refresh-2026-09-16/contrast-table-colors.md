@@ -1,5 +1,7 @@
 # Bảng đo tương phản — P1b · R8 chọn màu (AC8.5)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-21 · **Mục đích**: bảng đo tương phản P1b · R8 chọn màu, AC8.5 (sinh bằng máy — đừng sửa tay).
+
 > SINH BẰNG MÁY từ `KachiPalette` + `KachiPaletteDerive` bởi `ColorChoiceContractTest`. **Không sửa tay.**
 > Mỗi dòng: mực TỆ NHẤT trong mọi cặp chữ/nền của lựa chọn đó, SAU khi `ContrastGuard` đã tự chỉnh.
 

@@ -1,5 +1,7 @@
 ### before-oncar-2.58 — cửa sổ 300s, 8 lõi, 2026-09-26 17:59
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: số đo hiệu năng baseline 2.58 trên xe (cửa sổ 300 s, 8 lõi).
+
 | Tiến trình | PID | CPU % (1 lõi) | PSS KB | RSS KB | Luồng |
 |---|---|---|---|---|---|
 | com.byd.launcher | 3885 | 1.20 | 245627 | 349920 | 58 |

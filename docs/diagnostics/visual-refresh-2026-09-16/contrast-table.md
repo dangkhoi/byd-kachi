@@ -1,5 +1,7 @@
 # Bảng đo tương phản — VISUAL-REFRESH P1 (§6.4)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-21 · **Mục đích**: bảng đo tương phản VISUAL-REFRESH P1 §6.4 (sinh bằng máy — đừng sửa tay).
+
 > SINH BẰNG MÁY từ `KachiPalette` bởi `SurfaceContrastContractTest.sinh bang do tuong phan cua tai lieu`.
 > **Không sửa tay** — sửa bảng màu rồi chạy lại `:app:testDebugUnitTest`.
 

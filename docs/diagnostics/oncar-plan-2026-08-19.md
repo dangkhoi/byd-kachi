@@ -1,6 +1,6 @@
 # On-car session plan — 2026-08-19 (xe owner)
 
-> **Loại:** Diagnostics (on-car plan) · **Trạng thái:** Current · **Xe:** owner (Seal, DiLink3, `40d`=138).
+> **Loại:** Diagnostics (on-car plan) · **Trạng thái:** Historical — kế hoạch on-car đời ClusterNav 08/2026; thay bởi `docs/diagnostics/oncar-runbook-2.73.md` · **Xe:** owner (Seal, DiLink3, `40d`=138).
 > Chuẩn bị đã **verify off-car** (APK/probe/adb/syntax). Việc chính: **C1** cài APK B-batch + **C6** probe HUD-nav + kiểm B-batch. Kết quả → cây quyết định cuối.
 
 ## Sẵn sàng (đã verify 2026-08-19)

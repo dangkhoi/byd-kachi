@@ -6,7 +6,7 @@
 | Ở đâu | Bản | Ghi chú |
 |---|---|---|
 | Xe owner (Seal) | **2.70 (171)** cài trực tiếp qua adb | = 2.69 + hotfix camera giữ tới khi đèn tắt |
-| Kênh OTA `main` · `apk/Kachi-2.72-release.apk` | **2.72 (173)** | = 2.70 + 2 dòng xoay video trái/phải + lưới an toàn helper HAL chết; **anh em cập nhật qua Cài đặt › Hệ thống › Kiểm tra cập nhật** |
+| Kênh OTA `main` · `apk/Kachi-2.73-release.apk` | **2.73 (174)** | = 2.72 + 8 việc off-car R9 (xem §4); 2.72 = 2.70 + 2 dòng xoay video trái/phải + lưới an toàn helper HAL chết; **anh em cập nhật qua Cài đặt › Hệ thống › Kiểm tra cập nhật** |
 | Nhánh `feat/voice-hotword-phrases` | = `main` | |
 
 ## 2. Hôm nay đo được gì (xe thật, 8 lõi) [ĐO]
@@ -22,7 +22,11 @@
 4. Lúc Kachi đọc phản hồi, **taskbar hệ thống có trồi lên** không (lỗi đã biết, đang sửa).
 5. Chụp Cài đặt › Hệ thống › Nâng cao › Chẩn đoán sau 10 phút lái.
 
-## 4. Kế hoạch off-car (làm SAU, thứ tự; mỗi việc có bằng chứng sẵn trong repo)
+## 4. Kế hoạch off-car — ✅ ĐÃ LÀM HẾT cùng ngày (2.73), chi tiết + số đo ở `docs/diagnostics/offcar-2026-09-26/*.md`, backlog từng mục ✅; bài tập xe ở `docs/diagnostics/oncar-runbook-2.73.md`
+
+Kết quả một dòng mỗi việc [ĐO off-car]: (1) taskbar: gốc là đổi tiêu điểm cửa sổ, vá `FLAG_NOT_FOCUSABLE`, Back không còn huỷ · (2) "vào ô số": không phải VAD, không phải biasing — vế ô thiếu hotword; thêm "VÀO Ô SỐ N", 4/4 WAV bệnh khỏi; VAD mặc định giữ 600, trần 1200 · (3) tên app mờ: 2/3 chuỗi thật khỏi · (4) hồ sơ Test: 2/2 khỏi + hỏi lại khi thiếu tên · (5) shell 19 = 15 K7 + 4 probe, giữ; log 34 → ≈9 KB/phút · (6) chip Kết xuất TV/SV, mặc định không đổi · (7a) `libkachimem.so` mallopt, +16 KB APK · (7b) khung camera đúng tỉ lệ crop sau xoay (360×192 cho dải gương), 0 méo 0 đen. Ba việc chờ owner quyết: WATCHDOG-GATE-8S · CAM-ROT-3 · VOICE-OPEN-TURN (backlog).
+
+### 4.0 Bảng kế hoạch gốc (giữ để đối chiếu)
 | # | Việc | Bằng chứng/đầu vào | Kiểm off-car |
 |---|---|---|---|
 | 1 | **SYS-TASKBAR-VOICE-FOCUS** — overlay phản hồi `:wake` `FLAG_NOT_FOCUSABLE` + immersive, giữ chạm-để-huỷ | `perf-oncar-2026-09-26/taskbar-window-dump.txt` (focus đổi sang `VoiceOverlay$build$5`) | test canh cờ cửa sổ; 🚗 nhìn |

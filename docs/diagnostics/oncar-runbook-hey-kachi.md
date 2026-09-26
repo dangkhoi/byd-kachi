@@ -1,6 +1,6 @@
 # Runbook: Hey Kachi — validate + test trên xe
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-19 · **Mục đích**: Quy trình chốt "Hey Kachi" có DÙNG ĐƯỢC trên xe không — validate rẻ TRƯỚC, rồi mới host/nối OTA. · **App**: cần **1.79 (vc80)** trở lên (lớp Android wake ship 1.77; xe đang 1.76 ⇒ OTA trước).
+> **Trạng thái**: Historical — “Hey Kachi” đã lên xe và đo ở `docs/diagnostics/oncar-session-2026-09-26.md` (D7) · **Ngày**: 2026-09-19 · **Mục đích**: Quy trình chốt "Hey Kachi" có DÙNG ĐƯỢC trên xe không — validate rẻ TRƯỚC, rồi mới host/nối OTA. · **App**: cần **1.79 (vc80)** trở lên (lớp Android wake ship 1.77; xe đang 1.76 ⇒ OTA trước).
 
 ## 0. Hiện trạng (đọc trước khi test)
 - **Đã xong + nối dây**: FGS `VoiceWakeService`, `VoiceWakeListener` (mic→RMS→controller→KWS), adapter `VoiceWakeKws`, công tắc Cài đặt › Hệ thống › **"Hey Kachi"** (mặc định TẮT), lõi an toàn `VoiceLoadGuard`/`VoiceWakeGate`/`VoiceWakeController`, tự bật lúc boot.

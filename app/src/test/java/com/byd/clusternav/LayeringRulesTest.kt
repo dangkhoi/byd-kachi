@@ -195,6 +195,12 @@ class LayeringRulesTest {
         // đây chỉ vì nó KHÔNG có hàm đổi dp nào (bản gốc `KachiSpace.kt` có `dp(ctx, …)` nên nhắc `Context`) — cùng
         // lẽ với `KachiPalette.kt`/`KachiPaletteSeeds.kt` ngay trên: thuần về kỹ thuật, thuộc `:app` về layering.
         "KachiSpaceBars.kt" to "nửa tách ra của KachiSpace (thang dp) — :core bị CẤM giữ số dp",
+        // VOICE-PROFILE-NAME-PHONETIC (2026-09-26): một hàm mở rộng của `VoiceSession` (lớp `:app`, giữ `Context` +
+        // hai lambda đọc hồ sơ/app đã cài của MÁY). "Thuần" theo phép đo ở đây chỉ vì nó không `import android.*`
+        // và không nhắc chữ `Context` — nhưng nó **là** cầu sang dữ liệu Android của phiên (`PackageManager` qua
+        // `appsByLabel`), nên chuyển sang `:core` là kéo cả phiên theo. Tệp riêng vì `VoiceSession.kt` và
+        // `VoiceSessionTurns.kt` đều đã 499/500 dòng — cùng lẽ với `VoiceTargetDispatch.kt`/`VoiceReadback.kt`.
+        "VoiceSessionTerms.kt" to "hàm mở rộng VoiceSession (Context + PackageManager qua appsByLabel)",
     )
 
     @Test

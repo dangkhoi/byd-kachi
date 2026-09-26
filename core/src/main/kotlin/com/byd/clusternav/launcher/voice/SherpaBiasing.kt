@@ -27,9 +27,13 @@ object SherpaBiasing {
      *   danh từ riêng / tiếng Anh mà mô hình VN **không phát ra được token**. Nhãn địa chỉ thì ngược lại — đó là
      *   tiếng Việt đời thường (*"Nhà"*, *"Công ty"*, *"Nhà ngoại"*), đúng thứ biasing kéo về được. Nhãn nào có
      *   chữ số/ký tự lạ vẫn bị [SherpaHotwords.normalize] loại, nên không cần lọc thêm ở đây.
+     * @param profiles tên hồ sơ — **ngoại lệ thứ hai**, và nó bác đúng một nửa của luật ở KDoc lớp bằng phép đo:
+     *   [ĐO xe 2026-09-26] hồ sơ *"Test"* 8/8 lượt nghe ra *"chuyển sang hồ sơ"* (rụng tên), và *"Mặc định"* —
+     *   **hai từ tiếng Việt thường** — ra *"hồ sơ định"* (rụng chữ đầu). Tên tiếng Việt thì biasing kéo về được;
+     *   tên tiếng Anh vào tệp qua **dạng đọc tiếng Việt** ([VoiceAppPhonetics]). Xem [VoiceProfileNames.phrases].
      */
-    fun hotwordsFile(places: List<String> = emptyList()): String =
-        SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places), SherpaPhraseHotwords.appNames())
+    fun hotwordsFile(places: List<String> = emptyList(), profiles: List<String> = emptyList()): String =
+        SherpaHotwords.phraseFile(SherpaPhraseHotwords.phrases(places, profiles), SherpaPhraseHotwords.appNames())
 
     /*
      * ## Lịch sử — vì sao không còn `accentedControlPhrases()` (nhãn + động từ + danh từ RỜI)

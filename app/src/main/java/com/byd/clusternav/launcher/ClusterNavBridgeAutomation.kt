@@ -25,6 +25,8 @@ import com.byd.clusternav.setCameraPos
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraRender
+import com.byd.clusternav.setCameraRender
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
 
@@ -169,6 +171,13 @@ fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos
 fun ClusterNavBridge.cameraRotLeft(): String = Prefs.cameraRotation(app, left = true)
 fun ClusterNavBridge.cameraRotRight(): String = Prefs.cameraRotation(app, left = false)
 fun ClusterNavBridge.setCameraRotation(left: Boolean, v: String) = Prefs.setCameraRotation(app, left, v)
+/**
+ * Đường KẾT XUẤT overlay camera (CLOSE-14 · CAM-LAG) — mã trong `CameraSignalPolicy.RENDERS`. Một hàng chip, một
+ * khoá cho cả hai bên (cách vẽ không phụ thuộc bên). KHÔNG kèm `AutomationService.sync`, cùng lẽ [cameraPosLeft]:
+ * lượt xi-nhan sau đọc lại pref khi dựng overlay.
+ */
+fun ClusterNavBridge.cameraRender(): String = Prefs.cameraRender(app)
+fun ClusterNavBridge.setCameraRender(v: String) = Prefs.setCameraRender(app, v)
 fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 1)
 fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
 fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)

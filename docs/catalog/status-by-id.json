@@ -1,969 +1,969 @@
 {
-  "win_lf": {
-    "status": "🟢",
-    "note": "Kính trước-trái: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "win_rf": {
-    "status": "🟢",
-    "note": "Kính trước-phải: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "win_lr": {
-    "status": "🟢",
-    "note": "Kính sau-trái: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "win_rr": {
-    "status": "🟢",
-    "note": "Kính sau-phải: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "pm25_clean_now": {
-    "status": "🟢",
-    "note": "Nút 'Lọc ngay' bấm ăn trên xe — dangkhoi: 'bấm lọc ngay ok'.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "defrost": {
-    "status": "🟢",
-    "note": "Sấy kính bật/tắt chạy — dangkhoi: 'sấy kính ok'.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "soc": {
-    "status": "🟢",
-    "note": "% pin hiển thị ĐÚNG trên xe.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "odometer": {
-    "status": "🟢",
-    "note": "Odo tổng hiển thị ĐÚNG trên xe.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "vin": {
-    "status": "🟢",
-    "note": "Lấy được số VIN trên xe.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "windows_all": {
-    "status": "⚠",
-    "note": "Cùng họ win_*: setAllWindowState gửi primary×4 (0/1) ⇒ chiều ĐÓNG câm. Đã đổi sang enum 2 = CLOSE cùng lượt vá 1.63. CHƯA đo lại trên xe.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §1 + docs/diagnostics/oncar-verify-remediation-2026-09-15.md §3",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "sunshade": {
-    "status": "⚠",
-    "note": "Rèm: bấm Mở chỉ nhích 'chút xíu', giữ không chạy. [ĐO xe 1.58]. Vá 1.63: gửi 100% thay vì 1 ('trước gửi 1 = 1%; nay gửi 100%'). Chờ đo lại; cơ chế hold-switch (giữ để chạy tiếp) vẫn CHƯA mô phỏng. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "readl": {
-    "status": "⚠",
-    "note": "Đèn đọc: chế độ theo-cửa đổi được, ON/OFF tay KHÔNG. [ĐO xe 1.58] TOGGLE 0/1 không trúng enum. Vá 1.63: ON=2 / OFF=1. Chờ đo lại. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "pm25_value": {
-    "status": "⚠",
-    "note": "Số bụi mịn không hiện trên xe. Gốc §B: getter trả int[] → .toString() ra '[I@hash' → coerceInt null → '—'. Vá: lấy phần tử [0]. Chờ đo lại.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §4 + docs/diagnostics/hal-binding-remediation-2026-09-15.md §B",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "pm25_level": {
-    "status": "⚠",
-    "note": "Cùng gốc §B (int[] → [0]) với pm25_value. Chờ đo lại.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §B, Khí hậu",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_low_beam": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: getLightStatus + readArg 2 (trước gọi method không tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_high_beam": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: getLightStatus + readArg 3. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "drl": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI: đang ghi hằng _STATE (no-op) → setDayTimeLightState, OPEN=1/CLOSE=2. Chờ 1 lượt `sweep` trên xe để chốt. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "gear": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getCurrentGear() (P=3/R=1/N=0/D=2/255) thay getGearboxState (chỉ ON/OFF). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "energy_mode": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getEnergyMode() (STOP0/EV1/FORCE_EV2/HEV3/FUEL4/KEEP5). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "powertrain_mode": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI → setEnergyMode (EV→1, HEV→3). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "op_mode": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getOperationMode (ECO1/SPORT2/NORMAL3/SNOW4…), map lại index UI. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "steering_deg": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: thêm readArg selector = 1. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "slope_deg": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: đổi device → BYDAutoSensorDevice (id 573571116 đúng, sai device). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ac_wind": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAcWindLevel (0–7). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ac_cycle": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAcCycleMode (trong=1 / ngoài=0). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "temp_unit": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoAcDevice.getTemperatureUnit (°C=1/°F=0); route Setting cũ luôn null. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "anion_state": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getPM2p5AnionState, device PM2P5 (không phải AC). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cabin_temp": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: device AC đúng, hỏng vì §A (đường đọc feature-id vỡ). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_p_fl": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=1) + readArg (getTyrePressureLeftFront KHÔNG tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_p_fr": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=2) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_p_rl": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=3) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_p_rr": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=4) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "sunroof": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI → setMoonRoofState (OpenBYD:1505), mở=1/đóng=2. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "door_lf": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area) (CLOSED0/OPEN1/255). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "door_rf": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "door_lr": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "door_rr": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "emergency_alarm": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAlarmState() (OFF0/ON1). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "fuel_range_km": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getFuelDrivingRangeValue(). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "fuel_pct": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getFuelPercentageValue(). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "wireless_charge": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → setWirelessChargingSwitchState (ON=1/OFF=2); trước route sai device Statistic. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "volt_12v": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoOtaDevice.getBatteryVoltage (BYDAutoPowerDevice.getBatteryVoltage KHÔNG tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cam": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoADASDevice.setAVMSwitchState (OFF1/ON2); bỏ pseudo-id '3001' bịa. Chờ 1 lượt `sweep` trên xe để chốt. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "camera_view": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoPanoramaDevice.setDisplayMode. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "headl": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: TÁCH khỏi headlight_mode — trùng feature-id 1276153912 (INSTRUMENT_HEADLIGHT_CONTROL_SET, device INSTRUMENT 1007, không phải LIGHT): họ lỗi 'hai nút một lệnh'. Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "headlight_mode": {
-    "status": "⚠",
-    "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: TÁCH khỏi headl (cùng feature-id 1276153912). Chờ 1 lượt `sweep` trên xe để chốt.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cell_v_high": {
-    "status": "❌",
-    "note": "Feature-id 1147142192 thực ra là atom TẦM XĂNG (EVENT_STAT_FUEL_RANGE, VehicleBridge.java:89-90) — KHÔNG phải áp cell. Phải xoá/đổi; không có đường đọc áp cell qua HAL app.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §Năng lượng (WRONG-ROUTE)",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cell_v_low": {
-    "status": "❌",
-    "note": "Feature-id 1147142160 cùng họ: atom tầm xăng, không phải áp cell.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §Năng lượng (WRONG-ROUTE)",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_enabled": {
-    "status": "🚗",
-    "note": "Nhóm ambient ×8: nghi device SETTING(1023) atmosphere-lamp (không phải LIGHT); scale nghi 0–100 (không phải 0–10); màu 31 (không phải 5). Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_front_color": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: fw-dl3 KHÔNG có hằng khớp (hình dạng khác: màu = 3 kênh RGB rời) — chờ owner quyết",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_rear_color": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: fw-dl3 KHÔNG có hằng khớp (hình dạng khác: màu = 3 kênh RGB rời) — chờ owner quyết",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_front_brightness": {
-    "status": "🚗",
-    "note": "Xem ambient_enabled. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_rear_brightness": {
-    "status": "🚗",
-    "note": "Xem ambient_enabled. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_power": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] HAL trả sentinel 'feature absent on trim' khi ghi · owner 2026-09-16 E6: xe CÓ tính năng này trên màn BYD ⇒ SAI feature-id, cần RE từ fw-dl3",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_color": {
-    "status": "🚗",
-    "note": "Nút ambient — màu nghi 31 mức, chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_brightness": {
-    "status": "🚗",
-    "note": "Nút ambient — scale nghi 0–100, chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ambient_music": {
-    "status": "🚗",
-    "note": "Nút ambient theo nhạc — chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "headlight_feedback": {
-    "status": "🚗",
-    "note": "NEEDS-ONCAR cùng nhóm đèn. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "motor_front_rpm": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "motor_rear_rpm": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "motor_front_torque": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "motor_power": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "coolant_temp": {
-    "status": "🚗",
-    "note": "HAL không lộ giá trị °C numeric (chỉ mức/đèn cảnh báo) — probe feature-id trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "inside_temp": {
-    "status": "🚗",
-    "note": "1.85 SỬA đường đọc: area 0 → 1 (AC_TEMPERATURE_MAIN). [ĐO nguồn] javadoc getTemprature(area) chỉ nhận MAIN(1)/DEPUTY(2)/REAR(3)/OUT(4); 0 = MAIN_DEPUTY là *type* của đường GHI ⇒ đọc area 0 trả sentinel ⇒ ô hiện \"—\" ([ĐO xe 2026-09-20 §4] \"nhiệt cài đặt = X\"). Vẫn cần chốt SCALE trên xe.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6 + docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ac_auto": {
-    "status": "✅",
-    "note": "1.85 ĐÃ WIRE: Ac.AC_CTRL_MODE_SET (số trên xe owner 501219352) trên BYDAutoAcDevice — [ĐO xe 2026-09-20] rc=0 hai chiều, owner xác nhận màn AC. ⚠ giá trị ĐẢO: ghi 0 = AUTO, 1 = chỉnh tay. Nút đổi nghĩa thành GIÓ tự động (xe không có nhiệt-auto) ⇒ nhãn \"Gió tự động\"/\"Auto fan\". Đọc = ac_wind_auto (getAcWindLevelManualSign, 0 = AUTO, readInverted).",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  },
-  "lock": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] NoSuchMethod setDoorLockState — framework thật không có setter; chỉ còn đường set() generic (chưa thử)",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "door": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] NoSuchMethod setDoorLockState — framework thật không có setter; chỉ còn đường set() generic (chưa thử)",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_t_fl": {
-    "status": "🚗",
-    "note": "HAL chỉ có getTyreTemperatureState (enum 0-arg), KHÔNG có value per-corner ⇒ feature-id vô danh, chốt trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_t_fr": {
-    "status": "🚗",
-    "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_t_rl": {
-    "status": "🚗",
-    "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tyre_t_rr": {
-    "status": "🚗",
-    "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "tailgate_position": {
-    "status": "🚗",
-    "note": "Feature-id vô danh, không có method — sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "wiper_state": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: số cũ = WIPER_AREA_REAR (gạt mưa SAU) ⇒ bind tên WIPER_AREA_FRONT_STATE, chờ xe",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "child_lock": {
-    "status": "✅",
-    "note": "1.85 ĐÃ WIRE: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET (1276141584) trên BYDAutoDoorLockDevice — [ĐO xe 2026-09-20] rc=0, owner xác nhận cửa thật. ⚠ BẪY: ghi 2 = BẬT (state đọc 1) · ghi 1 = TẮT (state 2). Nhãn nói rõ BÊN TRÁI; cụm mơ hồ \"khoá trẻ em\" trỏ về nút này.",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  },
-  "hood": {
-    "status": "➖",
-    "note": "1.85 XOÁ HẲN mã: [ĐO xe 2026-09-20 §4] owner xác nhận xe KHÔNG có ca-pô điện (chỉ cốp sau). 1.66 chỉ ẩn khỏi bộ chọn; 1.85 bỏ khỏi ControlRegistry + 3 bảng CtlSafetyPolicy + synonym + diễn giải + icon xe sinh (gen-car). Ô đã lưu tự rụng qua WorkspaceState.sanitized().",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  },
-  "cell_temp_high": {
-    "status": "🚗",
-    "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cell_temp_low": {
-    "status": "🚗",
-    "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cell_temp_avg": {
-    "status": "🚗",
-    "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "soh_oem": {
-    "status": "🚗",
-    "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "trip_km": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "trip_hours": {
-    "status": "⚠",
-    "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "regen_level": {
-    "status": "🚗",
-    "note": "[ĐO xe 09-16] getter getEnergyFeedback=2 đọc được; ghi chưa thử",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cluster_music": {
-    "status": "🚗",
-    "note": "Nghi INSTRUMENT_MUSIC_SOURCE 970981412 — sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "screen_rotation": {
-    "status": "🚗",
-    "note": "Chốt enum trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "engine_code": {
-    "status": "🚗",
-    "note": "Route ĐÚNG; [X] nghi engine PHEV đang NGỦ (Sealion 6 DM-i) ⇒ nổ máy xăng rồi hal get. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "oil_level": {
-    "status": "🚗",
-    "note": "Cùng ca engine_code: nổ máy xăng rồi đo. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "gps_lat": {
-    "status": "❌",
-    "note": "Vĩ độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "gps_lon": {
-    "status": "❌",
-    "note": "Kinh độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "gps_elevation": {
-    "status": "❌",
-    "note": "Cao độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "gps_heading": {
-    "status": "❌",
-    "note": "Hướng — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "pm25_online": {
-    "status": "🚗",
-    "note": "BINDING-OK sau sửa enum: ON=1/OFF=2/NULL=0 (doc cũ ghi OFF=0 SAI). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ext_temp": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ac_on": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "trunk": {
-    "status": "❌",
-    "note": "[ĐO xe 09-16] NoSuchMethod setHetchDoorStatus — framework thật không có",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "mirror_fold": {
-    "status": "🚗",
-    "note": "BINDING-OK (id 960495624 = REAR_VIEW_MIRROR_STATE). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "sunroof_state": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "power_level": {
-    "status": "🚗",
-    "note": "BINDING-OK (OFF0/ACC1/ON2). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "vehicle_type": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "wiper": {
-    "status": "🚗",
-    "note": "GHI: id 321912848 = WIPER_FRONT_WIPER_LEVEL ĐÚNG (caveat: device-target). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "ev_range_km": {
-    "status": "🚗",
-    "note": "BINDING-OK + thêm guard sentinel INVALID=1000 / DEFAULT=1023 (senior review Pass 1 bắt lỗi BYDAutoEventValue lọt lên UI thành -999999999). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "consumption_50km": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "engine_coolant_level": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "vol": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "brightness_gear": {
-    "status": "🚗",
-    "note": "BINDING-OK. ⚠ L-RE2: dùng CHUNG feature-id 1276174360 với hud_brightness ('độ sáng màn' và 'độ sáng HUD' không thể là một). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "hud_switch": {
-    "status": "🚗",
-    "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "hud_brightness": {
-    "status": "🚗",
-    "note": "BINDING-OK. ⚠ L-RE2: trùng feature-id 1276174360 với brightness_gear. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_front_fog": {
-    "status": "🚗",
-    "note": "BINDING-OK (cùng getter getLightStatus với low/high beam). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_rear_fog": {
-    "status": "🚗",
-    "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_left_turn": {
-    "status": "🚗",
-    "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_right_turn": {
-    "status": "🚗",
-    "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_side": {
-    "status": "🚗",
-    "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "light_drl": {
-    "status": "🚗",
-    "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "cast": {
-    "status": "🚗",
-    "note": "Nút `cast` trong dock là NO-OP by-design — cast thật đi đường SimpleCast riêng (ClusterDisplayResolver → am start --display / am stack move-task), KHÔNG phải lỗi binding. Đường cast cụm là cổng P0 phải PASS trước OTA 1.63.",
-    "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §An toàn/ADAS + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "mac_win_open_all": {
-    "status": "⚠",
-    "note": "Gói 'Mở hết kính' = 4 nút win_* (đã 🟢 trên xe) chứ không dùng nút gộp windows_all chưa kiểm. Cổng CONFIRM bắt buộc. [ĐO máy ảo] gói chạy, reply về đúng sau khi vá L4 (wait_ms 1,7–2,8 s). Chờ chạy thật trên xe.",
-    "evidence": "docs/specs/kachi-action-macros.html + emulator-voice-e2e-2026-09-15.md §6.2"
-  },
-  "mac_win_close_all": {
-    "status": "⚠",
-    "note": "Gói 'Đóng hết kính' = 4 nút win_* chiều ĐÓNG (enum 2 đã [ĐO] đúng trên xe). Chờ chạy cả gói trên xe.",
-    "evidence": "docs/specs/kachi-action-macros.html + docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG"
-  },
-  "mac_door_light": {
-    "status": "🚗",
-    "note": "Gói 'Mở cửa + đèn đọc': phụ thuộc `door` (NEEDS-ONCAR, setDoorLockState không tồn tại) + `readl` (vá ON=2/OFF=1 chờ đo lại). [ĐO máy ảo] gói chạy nhưng 'xe không nhận lệnh nào' (off-car no-op).",
-    "evidence": "docs/specs/kachi-action-macros.html + docs/diagnostics/hal-binding-remediation-2026-09-15.md"
-  },
-  "mac_leave": {
-    "status": "⚠",
-    "note": "Gói 'Rời xe': từng có P0 W2-P0 — `lock`(Khoá xe) và `door`(Mở cửa) khai CÙNG bindingKey setDoorLockState ⇒ gửi ĐÚNG CÙNG một byte cho hai nghĩa đối nghịch ⇒ gói KHÔNG khoá xe. Đã vá off-car 09-11; `lock` vẫn NEEDS-ONCAR (setter có thể không expose qua HAL app).",
-    "evidence": "PROJECT-BACKLOG.md W2-P0 + docs/diagnostics/hal-binding-remediation-2026-09-15.md §Lốp+Thân xe"
-  },
-  "window": {
-    "status": "🚗",
-    "note": "Nút KÍNH GỘP (một nút cho cả 4). Lưu ý [ĐO 09-11]: nhãn 'Kính 50%' KHÔNG làm 50% — ghi ĐÚNG cùng lệnh với kính cửa lái. T7 thêm WINDOW_OPEN_HALF=4, chờ 1 lệnh chốt enum trên xe (playbook §3: setBodyWindowCtrlState(1,4) → getWindowOpenPercent ≈ 50). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "pm25": {
-    "status": "🚗",
-    "note": "Công tắc tự lọc bụi (khác pm25_clean_now đã 🟢). Chưa nêu trong bảng CapTest ⇒ nằm trong khối ❌ blanket. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "seatc": {
-    "status": "🚗",
-    "note": "Ghế làm mát — 2/1 enum thân xe. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "temp": {
-    "status": "🚗",
-    "note": "Nhiệt độ AC: 1.55 đổi route → setAcTemperature(0,°C,0,1) theo RE, CAO tin-cậy nhưng chờ sweep xác nhận. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "fan": {
-    "status": "🚗",
-    "note": "Mức quạt gió. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "seath": {
-    "status": "🚗",
-    "note": "Ghế sưởi — 2/1 enum. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "recirc": {
-    "status": "🚗",
-    "note": "Lấy gió trong. ⚠ lệnh tier OVERDRIVE, CHƯA kiểm trên xe (spec kachi-unified-capability-tile). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "defrost_rear": {
-    "status": "🚗",
-    "note": "Sấy kính sau (defrost trước đã 🟢). Chưa nêu riêng trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "anion": {
-    "status": "🚗",
-    "note": "Ion âm — vá route device PM2P5 (getPM2p5AnionState); chờ sweep. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "steer_heat": {
-    "status": "🚗",
-    "note": "Sưởi vô-lăng. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
-    "evidence": "oncar-trace-2026-09-16.md §3/§4",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "seat_memory": {
-    "status": "🚗",
-    "note": "Ghế nhớ — 1.55 đổi route SETTING 1023 theo RE, chờ sweep. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "speed": {
-    "status": "🚗",
-    "note": "Tốc độ xe. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "accel_pct": {
-    "status": "🚗",
-    "note": "Chân ga. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "brake_pct": {
-    "status": "🚗",
-    "note": "Chân phanh. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "engine_rpm": {
-    "status": "🚗",
-    "note": "Vòng tua máy xăng — cùng ca engine PHEV ngủ. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "❌",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "wheel_speed": {
-    "status": "🚗",
-    "note": "Tốc độ bánh — getter trả int[] ⇒ dính §B (lấy [0]). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "window_lf": {
-    "status": "🟢",
-    "note": "ĐỌC vị trí kính trước-trái: [ĐO trên xe 1.61] getWindowOpenPercent(1) = 98 sau khi mở, = 0 sau khi đóng, lặp 2 chu kỳ ⇒ đường đọc CHẠY THẬT.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (bảng 4 bước)",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "window_rf": {
-    "status": "🚗",
-    "note": "ĐỌC vị trí kính TP — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "window_lr": {
-    "status": "🚗",
-    "note": "ĐỌC vị trí kính ST — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "window_rr": {
-    "status": "🚗",
-    "note": "ĐỌC vị trí kính SP — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "sunshade_pct": {
-    "status": "🚗",
-    "note": "ĐỌC % rèm — đi kèm nút sunshade (⚠). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
-    "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
-    "s6": "✅",
-    "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
-  },
-  "child_lock_r": {
-    "status": "✅",
-    "note": "1.85 nút MỚI: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_RIGHT_SET (1276141586), cùng device/cùng bẫy giá trị với child_lock. Hai bên là hai lệnh tách nhau nên là hai nút; \"cả hai bên\" cần một gói lệnh (ActionMacros) — CHƯA làm, chờ owner duyệt.",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  },
-  "pm25_outside": {
-    "status": "🚗",
-    "note": "1.85 ĐÃ WIRE getter: BYDAutoPM2p5Device.getPM2p5Value() ô [1]. [ĐO nguồn] javadoc chính thức BYD: \"first = value in auto, second = value out of auto\"; callback onPM2p5ValueChanged(value_in, value_out) + [ĐO car log] in:8 out:22. Tier GIỮ NEEDS_CAR tới khi một lượt đọc trên xe in ra cả hai ô.",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  },
-  "ac_wind_auto": {
-    "status": "🚗",
-    "note": "1.85 datum MỚI: BYDAutoAcDevice.getAcWindLevelManualSign() — 0 = Auto ctrl, 1 = Manual ctrl (javadoc BYD). Là chỉ báo ĐỌC của nút ac_auto sau khi nút ấy đổi sang gió-auto. Chờ một lượt đọc trên xe.",
-    "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
-  }
+ "win_lf": {
+  "status": "🟢",
+  "note": "Kính trước-trái: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "win_rf": {
+  "status": "🟢",
+  "note": "Kính trước-phải: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "win_lr": {
+  "status": "🟢",
+  "note": "Kính sau-trái: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "win_rr": {
+  "status": "🟢",
+  "note": "Kính sau-phải: MỞ + ĐÓNG đều chạy thật. [ĐO 1.61 qua T-BRIDGE `hal`] setBodyWindowCtrlState(w,1)→getWindowOpenPercent 97-98; (w,2)→0, lặp 2 chu kỳ. Báo 'đóng không được' của lượt CapTest là BUG CÔNG CỤ (CapabilityTestPlan.runArg luôn = defaultPrimary = 1/mở), đã vá ở 1.62 (CapTestConsole.addRunButtons render mỗi chiều một nút).",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (2026-09-15)",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "pm25_clean_now": {
+  "status": "🟢",
+  "note": "Nút 'Lọc ngay' bấm ăn trên xe — dangkhoi: 'bấm lọc ngay ok'.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "defrost": {
+  "status": "🟢",
+  "note": "Sấy kính bật/tắt chạy — dangkhoi: 'sấy kính ok'.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "soc": {
+  "status": "🟢",
+  "note": "% pin hiển thị ĐÚNG trên xe.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "odometer": {
+  "status": "🟢",
+  "note": "Odo tổng hiển thị ĐÚNG trên xe.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "vin": {
+  "status": "🟢",
+  "note": "Lấy được số VIN trên xe.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md bảng kết quả",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "windows_all": {
+  "status": "⚠",
+  "note": "Cùng họ win_*: setAllWindowState gửi primary×4 (0/1) ⇒ chiều ĐÓNG câm. Đã đổi sang enum 2 = CLOSE cùng lượt vá 1.63. CHƯA đo lại trên xe.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §1 + docs/diagnostics/oncar-verify-remediation-2026-09-15.md §3",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "sunshade": {
+  "status": "⚠",
+  "note": "Rèm: bấm Mở chỉ nhích 'chút xíu', giữ không chạy. [ĐO xe 1.58]. Vá 1.63: gửi 100% thay vì 1 ('trước gửi 1 = 1%; nay gửi 100%'). Chờ đo lại; cơ chế hold-switch (giữ để chạy tiếp) vẫn CHƯA mô phỏng. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "readl": {
+  "status": "⚠",
+  "note": "Đèn đọc: chế độ theo-cửa đổi được, ON/OFF tay KHÔNG. [ĐO xe 1.58] TOGGLE 0/1 không trúng enum. Vá 1.63: ON=2 / OFF=1. Chờ đo lại. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "pm25_value": {
+  "status": "⚠",
+  "note": "Số bụi mịn không hiện trên xe. Gốc §B: getter trả int[] → .toString() ra '[I@hash' → coerceInt null → '—'. Vá: lấy phần tử [0]. Chờ đo lại.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §4 + docs/diagnostics/hal-binding-remediation-2026-09-15.md §B",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "pm25_level": {
+  "status": "⚠",
+  "note": "Cùng gốc §B (int[] → [0]) với pm25_value. Chờ đo lại.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §B, Khí hậu",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_low_beam": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: getLightStatus + readArg 2 (trước gọi method không tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_high_beam": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: getLightStatus + readArg 3. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "drl": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI: đang ghi hằng _STATE (no-op) → setDayTimeLightState, OPEN=1/CLOSE=2. Chờ 1 lượt `sweep` trên xe để chốt. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "gear": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getCurrentGear() (P=3/R=1/N=0/D=2/255) thay getGearboxState (chỉ ON/OFF). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "energy_mode": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getEnergyMode() (STOP0/EV1/FORCE_EV2/HEV3/FUEL4/KEEP5). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "powertrain_mode": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI → setEnergyMode (EV→1, HEV→3). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "op_mode": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getOperationMode (ECO1/SPORT2/NORMAL3/SNOW4…), map lại index UI. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "steering_deg": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: thêm readArg selector = 1. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "slope_deg": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: đổi device → BYDAutoSensorDevice (id 573571116 đúng, sai device). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ac_wind": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAcWindLevel (0–7). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ac_cycle": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAcCycleMode (trong=1 / ngoài=0). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "temp_unit": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoAcDevice.getTemperatureUnit (°C=1/°F=0); route Setting cũ luôn null. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "anion_state": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getPM2p5AnionState, device PM2P5 (không phải AC). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cabin_temp": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: device AC đúng, hỏng vì §A (đường đọc feature-id vỡ). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_p_fl": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=1) + readArg (getTyrePressureLeftFront KHÔNG tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_p_fr": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=2) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_p_rl": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=3) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_p_rr": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getTyrePressureValue(area=4) + readArg. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "sunroof": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: GHI → setMoonRoofState (OpenBYD:1505), mở=1/đóng=2. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "door_lf": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area) (CLOSED0/OPEN1/255). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "door_rf": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "door_lr": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "door_rr": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getDoorState(area). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "emergency_alarm": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getAlarmState() (OFF0/ON1). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "fuel_range_km": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getFuelDrivingRangeValue(). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "fuel_pct": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → getFuelPercentageValue(). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "wireless_charge": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → setWirelessChargingSwitchState (ON=1/OFF=2); trước route sai device Statistic. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "volt_12v": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoOtaDevice.getBatteryVoltage (BYDAutoPowerDevice.getBatteryVoltage KHÔNG tồn tại). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cam": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoADASDevice.setAVMSwitchState (OFF1/ON2); bỏ pseudo-id '3001' bịa. Chờ 1 lượt `sweep` trên xe để chốt. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "camera_view": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: → BYDAutoPanoramaDevice.setDisplayMode. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "headl": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: TÁCH khỏi headlight_mode — trùng feature-id 1276153912 (INSTRUMENT_HEADLIGHT_CONTROL_SET, device INSTRUMENT 1007, không phải LIGHT): họ lỗi 'hai nút một lệnh'. Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "headlight_mode": {
+  "status": "⚠",
+  "note": "[ĐO xe 1.58] không đọc được / bấm không tác dụng (dangkhoi: mục không nêu = ❌). Vá off-car 1.63 có source: TÁCH khỏi headl (cùng feature-id 1276153912). Chờ 1 lượt `sweep` trên xe để chốt.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (theo domain) + docs/diagnostics/oncar-captest-results-2026-09-15.md §5",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cell_v_high": {
+  "status": "❌",
+  "note": "Feature-id 1147142192 thực ra là atom TẦM XĂNG (EVENT_STAT_FUEL_RANGE, VehicleBridge.java:89-90) — KHÔNG phải áp cell. Phải xoá/đổi; không có đường đọc áp cell qua HAL app.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §Năng lượng (WRONG-ROUTE)",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cell_v_low": {
+  "status": "❌",
+  "note": "Feature-id 1147142160 cùng họ: atom tầm xăng, không phải áp cell.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §Năng lượng (WRONG-ROUTE)",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_enabled": {
+  "status": "🚗",
+  "note": "Nhóm ambient ×8: nghi device SETTING(1023) atmosphere-lamp (không phải LIGHT); scale nghi 0–100 (không phải 0–10); màu 31 (không phải 5). Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_front_color": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: fw-dl3 KHÔNG có hằng khớp (hình dạng khác: màu = 3 kênh RGB rời) — chờ owner quyết",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_rear_color": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: fw-dl3 KHÔNG có hằng khớp (hình dạng khác: màu = 3 kênh RGB rời) — chờ owner quyết",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_front_brightness": {
+  "status": "🚗",
+  "note": "Xem ambient_enabled. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_rear_brightness": {
+  "status": "🚗",
+  "note": "Xem ambient_enabled. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_power": {
+  "status": "❌",
+  "note": "[ĐO xe 09-16] HAL trả sentinel 'feature absent on trim' khi ghi · owner 2026-09-16 E6: xe CÓ tính năng này trên màn BYD ⇒ SAI feature-id, cần RE từ fw-dl3",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_color": {
+  "status": "🚗",
+  "note": "Nút ambient — màu nghi 31 mức, chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_brightness": {
+  "status": "🚗",
+  "note": "Nút ambient — scale nghi 0–100, chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ambient_music": {
+  "status": "🚗",
+  "note": "Nút ambient theo nhạc — chưa chốt. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "headlight_feedback": {
+  "status": "🚗",
+  "note": "NEEDS-ONCAR cùng nhóm đèn. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "motor_front_rpm": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "motor_rear_rpm": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "motor_front_torque": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "motor_power": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "coolant_temp": {
+  "status": "🚗",
+  "note": "HAL không lộ giá trị °C numeric (chỉ mức/đèn cảnh báo) — probe feature-id trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "inside_temp": {
+  "status": "🚗",
+  "note": "1.85 SỬA đường đọc: area 0 → 1 (AC_TEMPERATURE_MAIN). [ĐO nguồn] javadoc getTemprature(area) chỉ nhận MAIN(1)/DEPUTY(2)/REAR(3)/OUT(4); 0 = MAIN_DEPUTY là *type* của đường GHI ⇒ đọc area 0 trả sentinel ⇒ ô hiện \"—\" ([ĐO xe 2026-09-20 §4] \"nhiệt cài đặt = X\"). Vẫn cần chốt SCALE trên xe.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6 + docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ac_auto": {
+  "status": "✅",
+  "note": "1.85 ĐÃ WIRE: Ac.AC_CTRL_MODE_SET (số trên xe owner 501219352) trên BYDAutoAcDevice — [ĐO xe 2026-09-20] rc=0 hai chiều, owner xác nhận màn AC. ⚠ giá trị ĐẢO: ghi 0 = AUTO, 1 = chỉnh tay. Nút đổi nghĩa thành GIÓ tự động (xe không có nhiệt-auto) ⇒ nhãn \"Gió tự động\"/\"Auto fan\". Đọc = ac_wind_auto (getAcWindLevelManualSign, 0 = AUTO, readInverted). [ĐO xe Seal 2026-09-26 §3 D7] đường GIỌNG NÓI đi hết: câu «bật gió tự động» qua nút mic (Hey Kachi bật, phiên :wake) ra đúng Control(ac_auto=1) và được bắn — bằng chứng cho lối vào bằng lời, KHÔNG phải một phép đo mới cho đường ghi HAL.",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4 · docs/diagnostics/oncar-session-2026-09-26.md §3 D7"
+ },
+ "lock": {
+  "status": "❌",
+  "note": "[ĐO xe 09-16] NoSuchMethod setDoorLockState — framework thật không có setter; chỉ còn đường set() generic (chưa thử)",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "door": {
+  "status": "❌",
+  "note": "[ĐO xe 09-16] NoSuchMethod setDoorLockState — framework thật không có setter; chỉ còn đường set() generic (chưa thử)",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_t_fl": {
+  "status": "🚗",
+  "note": "HAL chỉ có getTyreTemperatureState (enum 0-arg), KHÔNG có value per-corner ⇒ feature-id vô danh, chốt trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_t_fr": {
+  "status": "🚗",
+  "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_t_rl": {
+  "status": "🚗",
+  "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tyre_t_rr": {
+  "status": "🚗",
+  "note": "Xem tyre_t_fl. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "tailgate_position": {
+  "status": "🚗",
+  "note": "Feature-id vô danh, không có method — sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "wiper_state": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device · 1.66: số cũ = WIPER_AREA_REAR (gạt mưa SAU) ⇒ bind tên WIPER_AREA_FRONT_STATE, chờ xe",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "child_lock": {
+  "status": "✅",
+  "note": "1.85 ĐÃ WIRE: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_LEFT_SET (1276141584) trên BYDAutoDoorLockDevice — [ĐO xe 2026-09-20] rc=0, owner xác nhận cửa thật. ⚠ BẪY: ghi 2 = BẬT (state đọc 1) · ghi 1 = TẮT (state 2). Nhãn nói rõ BÊN TRÁI; cụm mơ hồ \"khoá trẻ em\" trỏ về nút này.",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+ },
+ "hood": {
+  "status": "➖",
+  "note": "1.85 XOÁ HẲN mã: [ĐO xe 2026-09-20 §4] owner xác nhận xe KHÔNG có ca-pô điện (chỉ cốp sau). 1.66 chỉ ẩn khỏi bộ chọn; 1.85 bỏ khỏi ControlRegistry + 3 bảng CtlSafetyPolicy + synonym + diễn giải + icon xe sinh (gen-car). Ô đã lưu tự rụng qua WorkspaceState.sanitized().",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+ },
+ "cell_temp_high": {
+  "status": "🚗",
+  "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cell_temp_low": {
+  "status": "🚗",
+  "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cell_temp_avg": {
+  "status": "🚗",
+  "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "soh_oem": {
+  "status": "🚗",
+  "note": "Sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "trip_km": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "trip_hours": {
+  "status": "⚠",
+  "note": "[ĐO xe 09-16] feature không thuộc device đang gọi (checkDeviceFeatures) — sửa map feature→device",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "regen_level": {
+  "status": "🚗",
+  "note": "[ĐO xe 09-16] getter getEnergyFeedback=2 đọc được; ghi chưa thử",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cluster_music": {
+  "status": "🚗",
+  "note": "Nghi INSTRUMENT_MUSIC_SOURCE 970981412 — sweep. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "screen_rotation": {
+  "status": "🚗",
+  "note": "Chốt enum trên xe. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "engine_code": {
+  "status": "🚗",
+  "note": "Route ĐÚNG; [X] nghi engine PHEV đang NGỦ (Sealion 6 DM-i) ⇒ nổ máy xăng rồi hal get. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "oil_level": {
+  "status": "🚗",
+  "note": "Cùng ca engine_code: nổ máy xăng rồi đo. Chốt bằng MỘT lượt T-BRIDGE `sweep` / `hal get` (không bấm tay 187 mục).",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (NEEDS-ONCAR) + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §2/§6",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "gps_lat": {
+  "status": "❌",
+  "note": "Vĩ độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "gps_lon": {
+  "status": "❌",
+  "note": "Kinh độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "gps_elevation": {
+  "status": "❌",
+  "note": "Cao độ — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "gps_heading": {
+  "status": "❌",
+  "note": "Hướng — BLOCKED-BY-DESIGN. KHÔNG qua HAL (BYDAutoLocationDevice chỉ có setter). Đường duy nhất = Android LocationManager + ACCESS_FINE_LOCATION, nhưng DeadReckonRetirementTest PIN manifest không xin bất kỳ quyền location nào (retirement an toàn sau sự cố Dead-Reckon suýt ghim GPS toàn xe). Đã thử wire rồi REVERT 2026-09-15. Mở lại = quyết định của dangkhoi.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §GPS + CLAUDE.md §3",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "pm25_online": {
+  "status": "🚗",
+  "note": "BINDING-OK sau sửa enum: ON=1/OFF=2/NULL=0 (doc cũ ghi OFF=0 SAI). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ext_temp": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ac_on": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "trunk": {
+  "status": "❌",
+  "note": "[ĐO xe 09-16] NoSuchMethod setHetchDoorStatus — framework thật không có",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "mirror_fold": {
+  "status": "🚗",
+  "note": "BINDING-OK (id 960495624 = REAR_VIEW_MIRROR_STATE). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "sunroof_state": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "power_level": {
+  "status": "🚗",
+  "note": "BINDING-OK (OFF0/ACC1/ON2). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "vehicle_type": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "wiper": {
+  "status": "🚗",
+  "note": "GHI: id 321912848 = WIPER_FRONT_WIPER_LEVEL ĐÚNG (caveat: device-target). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "ev_range_km": {
+  "status": "🚗",
+  "note": "BINDING-OK + thêm guard sentinel INVALID=1000 / DEFAULT=1023 (senior review Pass 1 bắt lỗi BYDAutoEventValue lọt lên UI thành -999999999). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "consumption_50km": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "engine_coolant_level": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "vol": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "brightness_gear": {
+  "status": "🚗",
+  "note": "BINDING-OK. ⚠ L-RE2: dùng CHUNG feature-id 1276174360 với hud_brightness ('độ sáng màn' và 'độ sáng HUD' không thể là một). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "hud_switch": {
+  "status": "🚗",
+  "note": "BINDING-OK. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "hud_brightness": {
+  "status": "🚗",
+  "note": "BINDING-OK. ⚠ L-RE2: trùng feature-id 1276174360 với brightness_gear. Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_front_fog": {
+  "status": "🚗",
+  "note": "BINDING-OK (cùng getter getLightStatus với low/high beam). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_rear_fog": {
+  "status": "🚗",
+  "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_left_turn": {
+  "status": "🚗",
+  "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_right_turn": {
+  "status": "🚗",
+  "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_side": {
+  "status": "🚗",
+  "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "light_drl": {
+  "status": "🚗",
+  "note": "BINDING-OK (getLightStatus). Chưa có bằng chứng ĐO trên xe sau khi vá §A/§B/§C — cần 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md (BINDING-OK) ",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "cast": {
+  "status": "🚗",
+  "note": "Nút `cast` trong dock là NO-OP by-design — cast thật đi đường SimpleCast riêng (ClusterDisplayResolver → am start --display / am stack move-task), KHÔNG phải lỗi binding. Đường cast cụm là cổng P0 phải PASS trước OTA 1.63.",
+  "evidence": "docs/diagnostics/hal-binding-remediation-2026-09-15.md §An toàn/ADAS + docs/diagnostics/oncar-verify-1.63-2026-09-15.md §1",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "mac_win_open_all": {
+  "status": "⚠",
+  "note": "Gói 'Mở hết kính' = 4 nút win_* (đã 🟢 trên xe) chứ không dùng nút gộp windows_all chưa kiểm. Cổng CONFIRM bắt buộc. [ĐO máy ảo] gói chạy, reply về đúng sau khi vá L4 (wait_ms 1,7–2,8 s). Chờ chạy thật trên xe.",
+  "evidence": "docs/specs/kachi-action-macros.html + emulator-voice-e2e-2026-09-15.md §6.2"
+ },
+ "mac_win_close_all": {
+  "status": "⚠",
+  "note": "Gói 'Đóng hết kính' = 4 nút win_* chiều ĐÓNG (enum 2 đã [ĐO] đúng trên xe). Chờ chạy cả gói trên xe.",
+  "evidence": "docs/specs/kachi-action-macros.html + docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG"
+ },
+ "mac_door_light": {
+  "status": "🚗",
+  "note": "Gói 'Mở cửa + đèn đọc': phụ thuộc `door` (NEEDS-ONCAR, setDoorLockState không tồn tại) + `readl` (vá ON=2/OFF=1 chờ đo lại). [ĐO máy ảo] gói chạy nhưng 'xe không nhận lệnh nào' (off-car no-op).",
+  "evidence": "docs/specs/kachi-action-macros.html + docs/diagnostics/hal-binding-remediation-2026-09-15.md"
+ },
+ "mac_leave": {
+  "status": "⚠",
+  "note": "Gói 'Rời xe': từng có P0 W2-P0 — `lock`(Khoá xe) và `door`(Mở cửa) khai CÙNG bindingKey setDoorLockState ⇒ gửi ĐÚNG CÙNG một byte cho hai nghĩa đối nghịch ⇒ gói KHÔNG khoá xe. Đã vá off-car 09-11; `lock` vẫn NEEDS-ONCAR (setter có thể không expose qua HAL app).",
+  "evidence": "PROJECT-BACKLOG.md W2-P0 + docs/diagnostics/hal-binding-remediation-2026-09-15.md §Lốp+Thân xe"
+ },
+ "window": {
+  "status": "🚗",
+  "note": "Nút KÍNH GỘP (một nút cho cả 4). Lưu ý [ĐO 09-11]: nhãn 'Kính 50%' KHÔNG làm 50% — ghi ĐÚNG cùng lệnh với kính cửa lái. T7 thêm WINDOW_OPEN_HALF=4, chờ 1 lệnh chốt enum trên xe (playbook §3: setBodyWindowCtrlState(1,4) → getWindowOpenPercent ≈ 50). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "pm25": {
+  "status": "🚗",
+  "note": "Công tắc tự lọc bụi (khác pm25_clean_now đã 🟢). Chưa nêu trong bảng CapTest ⇒ nằm trong khối ❌ blanket. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "seatc": {
+  "status": "🚗",
+  "note": "Ghế làm mát — 2/1 enum thân xe. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "temp": {
+  "status": "🚗",
+  "note": "Nhiệt độ AC: 1.55 đổi route → setAcTemperature(0,°C,0,1) theo RE, CAO tin-cậy nhưng chờ sweep xác nhận. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "fan": {
+  "status": "🚗",
+  "note": "Mức quạt gió. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "seath": {
+  "status": "🚗",
+  "note": "Ghế sưởi — 2/1 enum. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "recirc": {
+  "status": "🚗",
+  "note": "Lấy gió trong. ⚠ lệnh tier OVERDRIVE, CHƯA kiểm trên xe (spec kachi-unified-capability-tile). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "defrost_rear": {
+  "status": "🚗",
+  "note": "Sấy kính sau (defrost trước đã 🟢). Chưa nêu riêng trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "anion": {
+  "status": "🚗",
+  "note": "Ion âm — vá route device PM2P5 (getPM2p5AnionState); chờ sweep. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "steer_heat": {
+  "status": "🚗",
+  "note": "Sưởi vô-lăng. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`. · [ĐO xe 09-16] HAL accepted khi ghi qua bridge — chờ owner xác nhận mắt thấy",
+  "evidence": "oncar-trace-2026-09-16.md §3/§4",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "seat_memory": {
+  "status": "🚗",
+  "note": "Ghế nhớ — 1.55 đổi route SETTING 1023 theo RE, chờ sweep. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "speed": {
+  "status": "🚗",
+  "note": "Tốc độ xe. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "accel_pct": {
+  "status": "🚗",
+  "note": "Chân ga. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "brake_pct": {
+  "status": "🚗",
+  "note": "Chân phanh. Chưa nêu trong CapTest. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "engine_rpm": {
+  "status": "🚗",
+  "note": "Vòng tua máy xăng — cùng ca engine PHEV ngủ. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "❌",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "wheel_speed": {
+  "status": "🚗",
+  "note": "Tốc độ bánh — getter trả int[] ⇒ dính §B (lấy [0]). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "window_lf": {
+  "status": "🟢",
+  "note": "ĐỌC vị trí kính trước-trái: [ĐO trên xe 1.61] getWindowOpenPercent(1) = 98 sau khi mở, = 0 sau khi đóng, lặp 2 chu kỳ ⇒ đường đọc CHẠY THẬT.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §CHỐT KÍNH-ĐÓNG (bảng 4 bước)",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "window_rf": {
+  "status": "🚗",
+  "note": "ĐỌC vị trí kính TP — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "window_lr": {
+  "status": "🚗",
+  "note": "ĐỌC vị trí kính ST — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "window_rr": {
+  "status": "🚗",
+  "note": "ĐỌC vị trí kính SP — cùng getter đã [ĐO] chạy. Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "sunshade_pct": {
+  "status": "🚗",
+  "note": "ĐỌC % rèm — đi kèm nút sunshade (⚠). Sau vá hạ tầng §A (get(int[],Class) 2-arg) / §B (int[]→[0]) / §C (telemetry halDevice) ở 1.63, trạng thái thật CHƯA đo lại — chốt bằng 1 lượt `sweep`.",
+  "evidence": "docs/diagnostics/oncar-captest-results-2026-09-15.md §5 (blanket) + docs/diagnostics/hal-binding-remediation-2026-09-15.md §A/§B/§C",
+  "s6": "✅",
+  "s6_evidence": "docs/diagnostics/oncar-captest-sealion6-2026-09-16.md"
+ },
+ "child_lock_r": {
+  "status": "✅",
+  "note": "1.85 nút MỚI: Door.DOOR_LOCK_COMMAND_AREA_CHILDLOCK_RIGHT_SET (1276141586), cùng device/cùng bẫy giá trị với child_lock. Hai bên là hai lệnh tách nhau nên là hai nút; \"cả hai bên\" cần một gói lệnh (ActionMacros) — CHƯA làm, chờ owner duyệt.",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+ },
+ "pm25_outside": {
+  "status": "🚗",
+  "note": "1.85 ĐÃ WIRE getter: BYDAutoPM2p5Device.getPM2p5Value() ô [1]. [ĐO nguồn] javadoc chính thức BYD: \"first = value in auto, second = value out of auto\"; callback onPM2p5ValueChanged(value_in, value_out) + [ĐO car log] in:8 out:22. Tier GIỮ NEEDS_CAR tới khi một lượt đọc trên xe in ra cả hai ô.",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+ },
+ "ac_wind_auto": {
+  "status": "🚗",
+  "note": "1.85 datum MỚI: BYDAutoAcDevice.getAcWindLevelManualSign() — 0 = Auto ctrl, 1 = Manual ctrl (javadoc BYD). Là chỉ báo ĐỌC của nút ac_auto sau khi nút ấy đổi sang gió-auto. Chờ một lượt đọc trên xe.",
+  "evidence": "docs/diagnostics/oncar-1.84-session-2026-09-20.md §3/§4"
+ }
 }

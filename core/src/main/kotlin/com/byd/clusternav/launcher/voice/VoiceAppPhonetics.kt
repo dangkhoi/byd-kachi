@@ -75,6 +75,13 @@ object VoiceAppPhonetics {
         "viet" to listOf("việt"),
         "tube" to listOf("túp"),
         "map" to listOf("máp"),
+        // ── âm tiếng Anh hay gặp trong **tên hồ sơ** người dùng tự đặt (VOICE-PROFILE-NAME-PHONETIC 2026-09-26) ──
+        // Cùng bảng, không bảng thứ hai: [VoiceProfileNames.phrases] gọi đúng [spokenForms] mà tên app dùng. Hai âm
+        // dưới là hai ca ĐÃ ĐO/ĐÃ ĐẶT ([ĐO xe 2026-09-26] hồ sơ *"Test"* 8/8 lượt rụng tên; backlog nêu cả *"Mom"*).
+        // Thêm âm mới ở đây thì cả tên app lẫn tên hồ sơ tự nói được — nhưng chỉ thêm khi có phép đo, đúng luật
+        // *"chỉ có DỮ LIỆU, không có bộ luật phiên âm"* ở KDoc lớp.
+        "test" to listOf("tét", "thét"),
+        "mom" to listOf("mom", "mâm"),
         "car" to listOf("ca"),
         "net" to listOf("nét"),
         "tik" to listOf("tích"),

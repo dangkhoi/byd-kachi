@@ -127,6 +127,12 @@ class VoiceListenWiringContractTest {
         // hotwords vẫn phải sinh từ [SherpaBiasing], không phải một nguồn thứ hai.
         assertTrue(rec.contains("SherpaBiasing.hotwordsFile("),
             "hotwords phải sinh từ danh mục control ([SherpaBiasing]) — cùng NGUỒN với tầng chữ")
+        // [SOÁT Pass 3 · P2 · 2026-09-26] `open()` mang `@Suppress("UNUSED_PARAMETER")` (vì `apps`/`installed` chưa
+        // dùng) ⇒ trình biên dịch KHÔNG còn báo khi `profiles` rụng khỏi lời gọi. Bỏ nó thì tên hồ sơ lặng lẽ biến
+        // khỏi tệp hotword: compile xanh, `:core` xanh, xe vẫn nghe *"chuyển sang hồ sơ"* mà rụng tên
+        // (VOICE-PROFILE-NAME-PHONETIC, [ĐO xe 2026-09-26] 8/8 lượt) — đúng bẫy CLAUDE.md §8, nên khoá bằng văn bản.
+        assertTrue(rec.contains("SherpaBiasing.hotwordsFile(places, profiles)"),
+            "tên hồ sơ phải ĐI VÀO tệp hotword (VOICE-PROFILE-NAME-PHONETIC) — `profiles` không được rụng khỏi lời gọi")
         assertFalse(rec.contains("AudioRecord"),
             "bộ nhận dạng KHÔNG tự mở micro — micro chỉ ở [VoiceCapture] (trong trần 8 s + tầm bài canh mạng)")
     }

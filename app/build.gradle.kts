@@ -37,6 +37,23 @@ android {
     namespace = "com.byd.clusternav"
     compileSdk = 37
 
+    // ═══ CLOSE-4 · WAKE-MALLOPT — build native (một tệp C, xem `src/main/cpp/`) ═══════════════════════════
+    // Khai TƯỜNG MINH, không để AGP tự chọn: phiên bản NDK đổi là toolchain đổi, và một bản build khác toolchain
+    // là một bản khác nội dung (CLAUDE.md §9 — mỗi bản báo cho owner phải truy được về đúng thứ đã dựng nó).
+    // r30 = **LTS hiện hành** [ĐO developer.android.com/ndk/downloads lấy 2026-09-26, trang cập nhật 2026-09-08:
+    // *"Latest LTS Version (r30)"* ⇒ `ndkVersion "30.0.16248370"`]; không dùng r27 (LTS cũ) vì dự án phải sống 5+
+    // năm (rule global §5.2). Cài tay vào `~/Library/Android/sdk/ndk/30.0.16248370` (máy không có cmdline-tools) —
+    // cách làm ở `docs/diagnostics/offcar-2026-09-26/wake-mallopt-ndk.md`.
+    ndkVersion = "30.0.16248370"
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            // Ghim CMake của SDK (`~/Library/Android/sdk/cmake/3.31.6`, kèm luôn ninja) — cùng lý do như ndkVersion.
+            version = "3.31.6"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.byd.launcher"
         minSdk = 29
@@ -65,8 +82,10 @@ android {
         // CameraHold) — 2.71 = 2.70 + xoay từng bên, chưa cài xe.
         // Review Pass 2 (2026-09-26) vá [P1] sau khi APK 2.71 đã build: helper HAL chết lúc đèn bật ⇒ camera treo mãi
         // (hệ quả của luật "giữ tới OFF" 2.70) ⇒ HalSignalClient báo OFF khi đứt dây. Số hiệu riêng ⇒ **2.72 (173)**.
-        versionCode = 173
-        versionName = "2.72"
+        // 2.73 (174) — đợt off-car 26/09 (spec closeout R9): taskbar/voice-focus · hotword "VÀO Ô SỐ N" + hồ sơ · khớp mờ tên
+        // · VAD trần 1200 · LogLineThrottle · khung camera đúng tỉ lệ + chip kết xuất · libkachimem mallopt. Review Opus Pass 3 APPROVED.
+        versionCode = 174
+        versionName = "2.73"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
@@ -196,6 +215,12 @@ tasks.withType<Test>().configureEach {
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.dir(layout.projectDirectory.dir("src/main/java"))
         .withPropertyName("appMainSourceTextForSourceScanningTests")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `src/main/cpp` (CLOSE-4 · `libkachimem.so`) — `KachiMemTest` quét tệp C + CMakeLists theo VĂN BẢN. Nguồn
+    // native KHÔNG nằm trong classpath unit-test dưới bất kỳ hình thức nào (nó thành `.so` trong APK), nên nếu
+    // không khai thì sửa `mallopt(M_PURGE,0)` thành no-op vẫn cho dấu XANH — đúng bệnh mà KDoc khối này mô tả.
+    inputs.dir(layout.projectDirectory.dir("src/main/cpp"))
+        .withPropertyName("appNativeSourceForKachiMemTest")
         .withPathSensitivity(PathSensitivity.RELATIVE)
     // `src/vehicleTest` = bề mặt probe mà `VehicleTestSurfaceContractTest` quét theo VĂN BẢN.
     inputs.dir(layout.projectDirectory.dir("src/vehicleTest"))

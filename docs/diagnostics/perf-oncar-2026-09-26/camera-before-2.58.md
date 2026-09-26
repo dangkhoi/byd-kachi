@@ -1,4 +1,7 @@
 # Camera lag baseline 2.58 (xi-nhan trái giữ ~25 s) 18:01:06
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: baseline trễ camera xi-nhan trên bản 2.58 (giữ xi-nhan trái ~25 s).
+
 == layers
 AppWindowToken{579f8a9 token=Token{cfae430 ActivityRecord{19bbd73 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t4}}}#0
 30326ef com.byd.launcher/com.byd.clusternav.launcher.KachiHome#0

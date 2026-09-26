@@ -668,6 +668,10 @@
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
     <string name="kachi_camera_rot_180">180°</string>
+    <string name="kachi_camera_render_sub">How the camera video is drawn (change it if the picture stutters while driving)</string>
+    <string name="kachi_camera_render_row">Camera rendering</string>
+    <string name="kachi_camera_render_texture">TextureView (default)</string>
+    <string name="kachi_camera_render_surface">SurfaceView (lighter, rotation via HAL — may not rotate)</string>
     <string name="kachi_camera_pick_sub">Pick the camera for each turn signal (if none shows, try another id 0–5)</string>
     <string name="kachi_camera_pick_left">Left signal camera</string>
     <string name="kachi_camera_pick_right">Right signal camera</string>

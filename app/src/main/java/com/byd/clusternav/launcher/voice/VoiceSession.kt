@@ -191,14 +191,14 @@ class VoiceSession(
     }
 
     /**
-     * Người dùng thoát (chạm ra ngoài / Back / phiên mới đè lên).
+     * Người dùng thoát (chạm ra ngoài / phiên mới đè lên). **Back KHÔNG còn là đường thoát** từ 2.73: tấm chữ mang
+     * `FLAG_NOT_FOCUSABLE` (SYS-TASKBAR-VOICE-FOCUS — trích AOSP `file:line` ở KDoc [VoiceOverlay.show]) ⇒ không nhận phím, Back đi tới app phía sau.
      *
      * ## [SOÁT Pass 2 · P2] Vì sao huỷ phải TỰ ĐÓNG khi không có vòng nghe nào đang chạy
      * Bản đầu chỉ đặt cờ [cancelled] và để vòng nghe tự thấy. Nhưng tấm chữ còn sống ở ba trạng thái **không có
      * vòng nghe nào**: đang báo thiếu quyền / chưa tải mô hình ([FAIL_LINGER_MS] = 8 s), và đang nán lại sau câu
-     * trả lời ([LINGER_MS]). Ở ba trạng thái ấy, chạm ra ngoài **không làm gì** — trong khi tấm chữ vẫn ghi
-     * *"Chạm ra ngoài hoặc bấm Back để huỷ"*, và [running] còn khoá nên bấm mic lần nữa cũng im. Một nút mic
-     * bấm không ra gì trong 8 giây là đúng thứ người lái sẽ bấm lại lần thứ ba.
+     * trả lời ([LINGER_MS]). Ở ba trạng thái ấy, chạm ra ngoài **không làm gì** — trong khi tấm chữ (bản cũ) vẫn ghi
+     * *"Chạm ra ngoài hoặc bấm Back để huỷ"*, và [running] còn khoá nên bấm mic lần nữa cũng im. Một nút mic bấm không ra gì trong 8 giây là đúng thứ người lái sẽ bấm lại lần thứ ba.
      *
      * Chỉ đóng ngay khi [capturing] tắt: micro còn mở thì phải để chính vòng nghe đóng, nếu không [running] nhả
      * sớm và phiên tiếp theo mở `AudioRecord` **thứ hai** trong lúc cái thứ nhất chưa buông.

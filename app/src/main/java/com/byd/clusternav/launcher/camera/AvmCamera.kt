@@ -74,6 +74,51 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         return started
     }
 
+    /**
+     * Cỡ ảnh preview THẬT mà HAL đang đổ ra, `intArrayOf(w, h)` — hoặc `null` khi không hỏi được.
+     *
+     * [ĐO RE] hai hàm này CÓ THẬT trong lớp framework: firmware DiLink5.1 `com/byd/dilink51_main/hardware/camera/
+     * DiLinkAVMCamera.java` bọc thẳng `AVMCamera.getPreviewWidth()` / `getPreviewHeight()`. [CHƯA BIẾT] trim
+     * DiLink3.0 trên xe owner có trả số đúng hay trả 0 — vì vậy `null`/`≤ 0` là một câu trả lời **bình thường**, và
+     * chỗ gọi ([CameraOverlayView.onStreamMeasured]) phải sống được với nó (giữ gợi ý đang dùng).
+     *
+     * Dùng cho CAM-ROT-2: cửa sổ overlay lấy đúng tỉ lệ vùng crop sau xoay ⇒ cần cỡ ảnh nguồn, và cỡ ấy phải **đo**
+     * chứ không hardcode (xe khác ghép ảnh 4-in-1 cỡ khác — CLAUDE.md §7).
+     */
+    fun previewSize(): IntArray? {
+        val obj = cam ?: return null
+        val c = cls ?: return null
+        fun read(name: String): Int? = runCatching {
+            c.getDeclaredMethod(name).apply { isAccessible = true }.invoke(obj) as? Int
+        }.getOrNull()
+        val w = read("getPreviewWidth") ?: return null
+        val h = read("getPreviewHeight") ?: return null
+        if (w <= 0 || h <= 0) { Log.i(TAG, "previewSize HAL trả ${w}x$h ⇒ coi như chưa biết"); return null }
+        Log.i(TAG, "previewSize HAL = ${w}x$h")
+        return intArrayOf(w, h)
+    }
+
+    /**
+     * Nhờ HAL xoay hộ khung hình đổ vào [surface] — đường xoay DUY NHẤT còn lại khi kết xuất bằng `SurfaceView`
+     * (không có `setTransform`). Trả `true` khi lời gọi được NHẬN (≠ đã có tác dụng).
+     *
+     * [ĐO RE] `AVMCamera.setDisplayOrientation(Surface, int)` có trong lớp framework (cùng nguồn [previewSize]).
+     * ⚠ [CHƯA BIẾT] ROM này có thi hành hay không — và "nhận" ở đây chỉ có nghĩa *reflection không ném và không trả
+     * `false`*. Vì vậy chỗ gọi phải báo kết quả lên tầng vẽ để cửa sổ lấy tỉ lệ ĐÚNG với thứ thật sự xảy ra, thay
+     * vì giả định đã xoay (CLAUDE.md §2: cơ chế ≠ quy kết).
+     */
+    fun setDisplayOrientation(surface: Surface, deg: Int): Boolean {
+        val obj = cam ?: return false
+        val c = cls ?: return false
+        val norm = ((deg % 360) + 360) % 360
+        val ok = runCatching {
+            val m = c.getDeclaredMethod("setDisplayOrientation", Surface::class.java, Integer.TYPE).apply { isAccessible = true }
+            m.invoke(obj, surface, norm) as? Boolean ?: true
+        }.getOrDefault(false)
+        Log.i(TAG, "setDisplayOrientation($norm) nhận=$ok")
+        return ok
+    }
+
     fun close() {
         val obj = cam ?: return
         val c = cls

@@ -1,5 +1,7 @@
 # Tương phản MÀU SƠN xe — sinh bằng máy (`CarPaintContrastContractTest`, VISUAL-REFRESH P3 · §4.8 luật (a))
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: bảng đo tương phản MÀU SƠN xe, VISUAL-REFRESH P3 §4.8 (sinh bằng máy — đừng sửa tay).
+
 Đo **cả hai đầu** gradient so với nền của từng bảng; đầu tệ nhất < 3:1 ⇒ app tự bật viền `partLine`. Không chép tay.
 
 | Màu sơn | Bảng | nền | đỉnh | đáy | tệ nhất | viền bắt buộc |

@@ -1,5 +1,7 @@
 # PLAYBOOK LÊN XE — Kachi 1.55 (56) — DELTA trên 1.53
 
+> **Trạng thái**: Historical — playbook cho 1.55; runbook hiện hành là `oncar-runbook-2.73.md` · **Cập nhật**: 2026-09-14 · **Mục đích**: phần DELTA trên playbook 1.53 — cách cài/nhận bản 1.55 + bốn thứ MỚI cần đo.
+
 > Bản này **KHÔNG thay** `oncar-playbook-kachi-1.53.md` — nó là phần **thêm** cho những gì đổi từ 1.53 (54) → 1.55
 > (56). Toàn bộ quy trình kết nối, baseline, bật cầu kiểm thử, OTA, và 19 mục test rủi-ro-tăng-dần vẫn đọc ở 1.53.
 > Ở đây chỉ có: (a) cách cài/nhận bản 1.55, (b) bốn thứ MỚI cần đo, mỗi thứ trỏ về đúng mục của 1.53 để chạy.

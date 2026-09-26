@@ -59,8 +59,11 @@ object SherpaPhraseHotwords {
      *
      * @param places nhãn sổ địa chỉ của hồ sơ đang dùng — thành cụm *"về Nhà"* / *"đến Công ty"* qua
      *   [VoicePlaces.PLACE_VERBS]; nhãn trần (một từ) tự rụng ở tầng lọc.
+     * @param profiles tên hồ sơ trên máy này — thành cụm *"hồ sơ Mặc định"* / *"chuyển sang hồ sơ Mặc định"*
+     *   ([VoiceProfileNames.phrases]). Cũng là NGOẠI LỆ có lý do của luật *"chỉ tập tĩnh"*, xem KDoc ở đó:
+     *   [ĐO xe 2026-09-26] 8/8 lượt mô hình nghe *"chuyển sang hồ sơ"* mà **rụng cái tên**.
      */
-    fun phrases(places: List<String> = emptyList()): List<String> {
+    fun phrases(places: List<String> = emptyList(), profiles: List<String> = emptyList()): List<String> {
         val out = ArrayList<String>(2048)
         ControlRegistry.ALL.forEach { c ->
             val nouns = nounsOf(c.label, c.short, VoiceSynonyms.CONTROL[c.id])
@@ -113,6 +116,13 @@ object SherpaPhraseHotwords {
         // dòng *"bố cục"* trần là **tiền tố** của năm dòng kia nên [SherpaHotwords.dropPrefixes] tự bỏ nó — đúng
         // luật tiền tố mà cả tệp này dựng lên để giữ.
         out.addAll(VoiceLayouts.SPOKEN)
+        // VOICE-SLOT-TAIL-CUT (2026-09-26) — mệnh đề ô: *"VÀO Ô SỐ HAI"*. [ĐO] tệp trước bản này có **0 dòng**
+        // chứa *"VÀO Ô"* ⇒ cái đuôi của câu *"mở &lt;app&gt; vào ô N"* không có đường cộng điểm nào; chuỗi bằng
+        // chứng đầy đủ (VAD không cắt · tiếng CÓ mang đuôi · đổi `voice_hotword_score` không đổi gì) ở KDoc
+        // [VoiceSlotPhrases]. Chỉ THÊM dòng, không bỏ dòng nào.
+        out.addAll(VoiceSlotPhrases.SPOKEN)
+        // VOICE-PROFILE-NAME-PHONETIC (2026-09-26) — tên hồ sơ, xem KDoc [VoiceProfileNames.phrases].
+        out.addAll(VoiceProfileNames.phrases(profiles))
         return out
     }
 

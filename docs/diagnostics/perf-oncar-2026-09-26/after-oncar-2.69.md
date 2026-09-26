@@ -1,5 +1,7 @@
 ### after-oncar-2.69 — cửa sổ 300s, 8 lõi, 2026-09-26 18:10
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: số đo hiệu năng SAU khi cài 2.69 trên xe (cửa sổ 300 s, 8 lõi).
+
 | Tiến trình | PID | CPU % (1 lõi) | PSS KB | RSS KB | Luồng |
 |---|---|---|---|---|---|
 | com.byd.launcher | 17149 | 5.68 | 67063 | 162380 | 43 |

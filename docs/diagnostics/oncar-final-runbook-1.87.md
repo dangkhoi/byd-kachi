@@ -1,6 +1,6 @@
 # Runbook test-xe VÒNG CUỐI — Kachi 1.87 (88)
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-21 · **Mục đích**: đi HẾT một vòng trên xe, cái nào hỏng thì sửa
+> **Trạng thái**: Historical — đã chạy 2026-09-21; khớp lại với dòng index · **Ngày**: 2026-09-21 · **Mục đích**: đi HẾT một vòng trên xe, cái nào hỏng thì sửa
 > luôn — vòng test cuối trước khi baseline đóng dự án. Bản 1.87 đã đăng OTA (main `f56c508`, `apk/Kachi-1.87-release.apk`).
 >
 > **Cách đọc**: mỗi bước ghi **LÀM GÌ** · **KẾT QUẢ MONG ĐỢI** · **AI** (EM = agent chuẩn bị/sửa off-car · OWNER =

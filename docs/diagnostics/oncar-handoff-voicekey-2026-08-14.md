@@ -1,5 +1,7 @@
 # ON-CAR HANDOFF — Nút vật lý → mở app (voice-key 1.19): giữ mic vẫn ra Bluetooth · 2026-08-14
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-08 · **Mục đích**: handoff on-car voice-key 1.19 — nút vật lý → mở app, giữ mic vẫn ra Bluetooth.
+
 > Xe: BYD Seal DiLink 3.0 · Android 10 (API 29) · KHÔNG root · **parked-only**. Dọn = **power-cycle nút nguồn vật lý**.
 > **HỎI LẠI IP** mỗi phiên: `export VEH=<vehicle-ip>:5555` (thường `<vehicle-ip>`). ĐỪNG đoán.
 > Nguyên tắc: **KHÔNG assume** — mỗi claim trace về log/readback. Bản trên xe/OTA: **1.19 (versionCode 119)** đã push `main`.

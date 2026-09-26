@@ -319,9 +319,9 @@ object VoiceIntentParser {
                 if (firstMiss == null) firstMiss = built
             }
         }
-        // (e) Chưa có cách hiểu nào CÓ NGHĨA ⇒ thử *cách gọi app bằng tiếng Việt* (*"mở bản đồ"*). Đứng sau (d)
-        //     nên nhãn app thật và mọi nhãn registry vẫn thắng — xem KDoc [spokenApp].
-        return VoiceTailClause.spokenApp(verb, rest, original) ?: firstMiss ?: noObject(verb, rest, original)
+        // (e) Chưa có cách hiểu nào CÓ NGHĨA ⇒ ba đường cuối (cách gọi app tiếng Việt · tên app bị ASR bóp méo ·
+        //     tên hồ sơ bóp méo) — thứ tự + cổng ở KDoc [VoiceLastResort] (tệp riêng: đây đã sát trần 500 dòng).
+        return VoiceLastResort.pick(verb, rest, terms, original) ?: firstMiss ?: noObject(verb, rest, original)
     }
 
     /**

@@ -1,5 +1,7 @@
 # Playbook lượt xe — xác nhận bản 1.63 (không mò, mỗi mục ≤ 1-2 lệnh)
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-17 · **Mục đích**: playbook lượt xe xác nhận bản 1.63, mỗi mục ≤ 1–2 lệnh.
+
 - **Ngày viết:** 2026-09-15 · **Xe:** DiLink3 (DL3), Android 10, Sealion 6 · **Bản:** 1.63 (versionCode 64), CHƯA push (remote 1.59).
 - **Spec:** `docs/specs/kachi-hal187-cast-remediation.html` · **RE 187:** `hal-binding-remediation-2026-09-15.md`.
 - **Nguyên tắc:** mọi thứ làm được off-car đã làm + test xanh. Lên xe chỉ **xác nhận** theo thứ tự dưới. Kết nối: `adb connect <ip-xe>:5555` (nếu `offline` → `adb kill-server; adb start-server; adb connect …`). Bật **chế độ kiểm thử** trong Cài đặt (tự tắt 60 phút) để dùng T-BRIDGE.

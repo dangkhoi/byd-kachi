@@ -1,5 +1,7 @@
 # Chạy `open-code-review` (Alibaba OCR) trên Kachi — kết quả + nhận xét chất lượng tool (2026-09-16)
 
+> **Trạng thái**: Session · **Cập nhật**: 2026-09-17 · **Mục đích**: chạy `open-code-review` (Alibaba OCR) trên Kachi — kết quả + nhận xét chất lượng tool.
+
 - **Chủ:** dangkhoi · **Tool:** `@alibaba-group/open-code-review` v1.12.4 (npm, Apache-2.0, 30,9k ⭐) · **Chế độ dùng:** *delegation mode* (`ocr delegate preview` / `ocr delegate rule <files>`): OCR chọn tệp + cấp bộ luật theo ngôn ngữ, **Claude (Opus) làm reviewer** đọc code tại HEAD `9edc828`. Chế độ LLM riêng của OCR (`ocr review`/`ocr scan` gọi API Claude/OpenAI/Qwen, WebUI xem lại phiên) **chưa đánh giá** — không có API key trong phiên này.
 - **Phạm vi:** toàn bộ mã đã commit: 431 tệp Kotlin main (:core/:app/car-integration) + 74 script (py/sh), chia 5 nhóm review song song; test files bị OCR loại mặc định (`excluded: default_path`).
 - **Cách chấm:** chỉ ghi finding đã đọc-xác-minh (không nit suy đoán), trần 15 P3/nhóm; mỗi P0–P2 kèm patch `git apply --check` sạch, **chưa áp** khi có agent khác đang sửa cùng tệp (9 finding "in-flight" thuộc hotfix voice).

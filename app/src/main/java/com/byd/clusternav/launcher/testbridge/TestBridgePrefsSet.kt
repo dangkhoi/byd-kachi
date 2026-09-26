@@ -8,6 +8,8 @@ import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraPos
 import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraRotation
+import com.byd.clusternav.setCameraRender
+import com.byd.clusternav.cameraRender
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
@@ -160,6 +162,9 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraRotation(app, left = true, v = it); it }
             "camera_rot_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
                 ?.let { Prefs.setCameraRotation(app, left = false, v = it); it }
+            // Đường KẾT XUẤT (CLOSE-14): CHỈ nhận mã trong `CameraSignalPolicy.RENDERS` — cùng lẽ hai khoá xoay.
+            "camera_render" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRender(it) }
+                ?.let { Prefs.setCameraRender(app, v = it); it }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -200,6 +205,7 @@ internal object TestBridgePrefsSet {
             "voice_keep_log" -> Prefs.voiceKeepLog(app).toString()
             "camera_rot_left" -> Prefs.cameraRotation(app, left = true)
             "camera_rot_right" -> Prefs.cameraRotation(app, left = false)
+            "camera_render" -> Prefs.cameraRender(app)
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

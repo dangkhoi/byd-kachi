@@ -1,5 +1,7 @@
 # BYD HAL — mổ cơ chế quyền/route để phân loại nút hỏng (fix off-car vs cổng chữ ký)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-14 · **Mục đích**: mổ cơ chế quyền/route của HAL BYD để phân loại nút hỏng: fix off-car hay cổng chữ ký.
+
 - **Ngày:** 2026-09-14 · **Owner:** dangkhoi · **Xe:** DiLink3 (DL3), Kachi uid 10135, chữ ký 177b2fc5 (KHÔNG platform)
 - **Nguyên liệu:** `framework.jar` (29 MB, 3 dex), `libbydauto.so`, `libbydautoservice.so`, `hal-read-snapshot.txt`, `byd-services.txt` — pull từ xe, để scratchpad, **KHÔNG chép mã BYD vào repo**. Chỉ trích tên lớp/method/hằng làm bằng chứng.
 - **Công cụ:** jadx 1.5.6 (framework.jar → Java), `strings`/`nm` (so). Toàn bộ trích dẫn `file:line` dưới đây trỏ vào bản decompile trong scratchpad (không commit).

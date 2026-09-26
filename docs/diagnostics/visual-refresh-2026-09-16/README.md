@@ -1,5 +1,7 @@
 # VISUAL-REFRESH P1 — bằng chứng đo (2026-09-16 · Kachi 1.68 · 69 → **Pass 5: 1.69 · 70**)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: bằng chứng đo VISUAL-REFRESH P1 (Kachi 1.68·69 → Pass 5: 1.69·70).
+
 > ⚠⚠ **PASS 5 (2026-09-17 · 1.69 · 70) — `after/` ĐÃ CHỤP LẠI LẦN THỨ HAI.** Owner nhìn 1.68 trên xe:
 > *"làm bóng ở đầu mỗi nút nhìn kỳ lắm, không đẹp đâu, với nó có 1 cái gạch trên top đấy nhé, bug rồi"*.
 > Hai lớp ánh sáng ở đỉnh thẻ (dải mờ dần 35 % + nét đỉnh ĐẶC 1–2dp) đã **gỡ hẳn** khỏi `KachiTheme.surface()`;

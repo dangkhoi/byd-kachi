@@ -136,10 +136,53 @@ object CameraSignalPolicy {
         else -> if (isRotation(old)) old else defaultRotation(left)
     }
 
+    // ── ĐƯỜNG KẾT XUẤT khung hình (CLOSE-14 · CAM-LAG, owner 2026-09-26: camera "hơi giật lag khi xe chạy") ─────
+    //
+    // Phân tích `docs/diagnostics/camera-lag-analysis-2026-09-26.md` L2: `TextureView` vẽ **trong** cây view ⇒ mỗi
+    // khung đi qua HWUI rồi mới tới SurfaceFlinger; `SurfaceView` là **layer riêng**, rẻ hơn một lượt GPU. Nhưng
+    // `SurfaceView` mất `setTransform` ⇒ mất cả crop-bằng-ma-trận lẫn xoay (R7). [ĐO xe 2026-09-26] hai lượt
+    // `gfxinfo` CÙNG bản 2.70 có camera hiện cho 26,9 % và 4,67 % khung giật — số liệu **mâu thuẫn**, nên L2 vẫn ở
+    // mức [CHƯA BIẾT]. Vì thế đây là một LỰA CHỌN có mã lưu bền, mặc định giữ đúng đường đang chạy (CLAUDE.md §6:
+    // đường mới xuống cuối, không đảo mặc định), để buổi xe tới đo được hai đường cạnh nhau mà không build lại.
+    //
+    // Chuỗi, KHÔNG enum — cùng lý do với `CORNER_*`/`ROTATE_*`: vừa là giá trị lưu bền của `camera_render`, vừa là
+    // mã chip trong Cài đặt.
+
+    /** `TextureView` — đường ĐANG CHẠY hiện trường (crop + xoay bằng ma trận). Mặc định. */
+    const val RENDER_TEXTURE = "TV"
+
+    /** `SurfaceView` + `setZOrderMediaOverlay` — layer riêng, rẻ hơn một lượt GPU; KHÔNG xoay được bằng ma trận. */
+    const val RENDER_SURFACE = "SV"
+
+    /** Mọi đường kết xuất hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
+    val RENDERS: List<String> = listOf(RENDER_TEXTURE, RENDER_SURFACE)
+
+    /** Đường kết xuất mặc định = thứ đã chạy trên xe từ 2.3x. */
+    fun defaultRender(): String = RENDER_TEXTURE
+
+    /** Mã đường kết xuất đọc lên có dùng được không — cùng vai [isRotation] (prefs sửa tay được qua `prefs_set`). */
+    fun isRender(v: String): Boolean = v in RENDERS
+
+    /**
+     * Đường [render] có xoay được bằng MA TRẬN hay không.
+     *
+     * `false` ⇒ tầng vẽ phải (a) nhờ HAL xoay hộ nếu ROM cho (`AVMCamera.setDisplayOrientation`, [ĐO RE] có trong
+     * lớp framework) và (b) tính cỡ cửa sổ theo tỉ lệ **chưa xoay** khi HAL cũng không nhận — chứ KHÔNG im lặng bỏ
+     * góc owner đã chọn rồi để khung sai tỉ lệ. Mã lạ ⇒ coi như [defaultRender] (mã lạ chỉ tới từ prefs sửa tay).
+     */
+    fun rotatesByMatrix(render: String): Boolean =
+        (if (isRender(render)) render else defaultRender()) == RENDER_TEXTURE
+
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
     /**
      * Một góc camera. `cameraId` = tham số AVMCamera.open. `crop` = vùng cắt (x0,y0,x1,y1 chuẩn hoá 0..1) của
      * ảnh camera; `null` = hiện nguyên khung.
+     *
+     * [hintW]×[hintH] = **gợi ý** cỡ ảnh nguồn (px), chỉ dùng cho lượt dựng cửa sổ ĐẦU TIÊN, trước khi
+     * `AVMCamera.getPreviewWidth/getPreviewHeight` trả số thật (xem [CameraOverlayFrame]). `0` = không biết ⇒ cửa
+     * sổ giữ đúng ô vuông của 2.72 tới khi đo được — KHÔNG đoán tỉ lệ. Hai view GƯƠNG có gợi ý vì crop của chúng
+     * lấy từ ảnh 4-in-1 [ĐO RE kinex `Y0/C0094o.java:318,342,347`: pano `5120×960`, một cam `1280×960`], tức chính
+     * cái crop đã giả định ảnh nguồn là 4-in-1; các view khác chưa có bằng chứng cỡ nào nên để trống.
      *
      * [ĐO xe 2026-09-25] AVMCamera **CHỈ mở được id 0 (fisheye 4-in-1, 5120×960) và id 1 (cam trước)**; id 2/3/4/5
      * KHÔNG lên hình. Cam GƯƠNG trái/phải KHÔNG phải cameraId riêng — chúng là **CROP vùng trái/phải của ảnh
@@ -151,11 +194,13 @@ object CameraSignalPolicy {
         val labelVi: String,
         val labelEn: String,
         val crop: FloatArray? = null,
+        val hintW: Int = 0,
+        val hintH: Int = 0,
     ) {
         // Gương = cameraId 1 = fisheye 4-in-1 [ĐO owner 2026-09-25: id 1 ra fisheye đúng nguồn] + CROP vùng
         // trái/phải (kinex pano crop trái x[0.25-0.35], phải x[0.65-0.75] của ảnh 4-in-1). id 0 crop ra sai.
-        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f)),
-        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f)),
+        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f), hintW = 5120, hintH = 960),
+        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f), hintW = 5120, hintH = 960),
         FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
         FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
         REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),

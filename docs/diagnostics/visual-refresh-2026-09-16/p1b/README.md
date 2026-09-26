@@ -1,5 +1,7 @@
 # VISUAL-REFRESH P1b — hình nền là CỬA SỔ + chọn màu (2026-09-17, máy ảo `emulator-5554` API 29, 1920×1080)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: bằng chứng P1b — hình nền là CỬA SỔ + chọn màu (máy ảo API 29, 1920×1080).
+
 Spec: [`../../../specs/kachi-visual-refresh.html`](../../../specs/kachi-visual-refresh.html) §4.10 · §R8 · T3b · §9 "P1b".
 Owner 2026-09-16: *"cái màu đen, xám của mình, khi nhét thêm hình nền vào, nó lại không đẹp nữa"* · *"có cho người ta
 chọn màu không nhỉ?"*.

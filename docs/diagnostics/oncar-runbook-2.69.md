@@ -1,6 +1,6 @@
 # Runbook buổi xe 2.69 — theo PHÚT, mỗi bước có lệnh · kết quả mong đợi · quyết định · 2026-09-26
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: một buổi xe **~55 phút** đo được HẾT nợ off-car của CLOSE-1..3 + CAM-ROT + CAM-LAG, không mò. Thay `oncar-runbook-2.67.md`. Kết quả điền vào: `perf-closeout-2026-09-25.md` §4 (C1–C10), `camera-lag-analysis-2026-09-26.md` §3, backlog CLOSE-1 → DONE-oncar.
+> **Trạng thái**: Historical — buổi xe 2.68/2.69 đã chạy 2026-09-26 (kết quả ở `docs/diagnostics/oncar-session-2026-09-26.md`); runbook hiện hành là `oncar-runbook-2.73.md` · **Cập nhật**: 2026-09-26 · **Mục đích**: một buổi xe **~55 phút** đo được HẾT nợ off-car của CLOSE-1..3 + CAM-ROT + CAM-LAG, không mò. Thay `oncar-runbook-2.67.md`. Kết quả điền vào: `perf-closeout-2026-09-25.md` §4 (C1–C10), `camera-lag-analysis-2026-09-26.md` §3, backlog CLOSE-1 → DONE-oncar.
 
 ## 0. Ở nhà, TRƯỚC khi ra xe (10 phút — làm hết, ra xe chỉ chạy)
 
@@ -57,7 +57,7 @@ Chép: khung, median ms (15 fps = 66,7 ms), p90 ms. **p90 > 130 ms hoặc khung 
 ## 3. CÀI bản mới (2 phút)
 
 ```bash
-$A -s $S install -r apk/Kachi-2.72-release.apk && $A -s $S shell dumpsys package com.byd.launcher | grep versionName
+$A -s $S install -r apk/Kachi-2.73-release.apk && $A -s $S shell dumpsys package com.byd.launcher | grep versionName
 $A -s $S shell am force-stop com.byd.launcher; $A -s $S shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity
 ```
 Giữ dữ liệu (cùng khoá ký). **Lùi**: `$A -s $S install -r -d /tmp/Kachi-2.65-release.apk`. Nếu launcher không lên trong 30 s ⇒ lùi ngay, chụp `logcat -d -b crash`, dừng buổi đo phần mới.

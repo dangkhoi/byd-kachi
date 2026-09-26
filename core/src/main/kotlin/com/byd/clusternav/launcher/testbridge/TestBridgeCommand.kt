@@ -298,6 +298,11 @@ object TestBridgeCommands {
         // `camera_rotation` (2.67–2.70) GỠ khỏi đây: `Prefs.cameraRotation` migrate nó một lần rồi xoá.
         "camera_rot_left",
         "camera_rot_right",
+        // CLOSE-14 (CAM-LAG): đường KẾT XUẤT khung hình (`TV`/`SV`). Vào đây vì đúng câu hỏi nó sinh ra để trả lời —
+        // *"TextureView có phải nguồn giật không"* — chỉ đo được bằng cách đổi đường **giữa hai lượt xi-nhan trên xe
+        // đang chạy** rồi so `gfxinfo`, không phải bằng một lượt build lại APK cho mỗi bên. Có hàng chip đảo lại được
+        // ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc trên vẫn giữ.
+        "camera_render",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

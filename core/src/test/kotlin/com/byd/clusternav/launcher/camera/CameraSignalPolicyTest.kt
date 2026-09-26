@@ -97,6 +97,56 @@ class CameraSignalPolicyTest {
         assertEquals(P.ROTATE_RIGHT, P.migrateRotation("", left = false))
     }
 
+    // ══ CLOSE-14 · ĐƯỜNG KẾT XUẤT (`camera_render`) — mặc định KHÔNG được đổi ══════════════════════════════
+
+    /**
+     * Mặc định phải là `TextureView` = đường ĐANG CHẠY hiện trường (CLAUDE.md §6: đường mới xuống cuối, không đảo
+     * mặc định để chữa cho một thứ còn [CHƯA BIẾT] — hai lượt `gfxinfo` cùng bản 2.70 cho 26,9 % vs 4,67 % giật).
+     */
+    @Test fun `ket xuat mac dinh la TextureView`() {
+        assertEquals(P.RENDER_TEXTURE, P.defaultRender())
+        assertEquals(P.RENDER_TEXTURE, P.RENDERS.first(), "chip đầu hàng = mặc định")
+        assertEquals(listOf("TV", "SV"), P.RENDERS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
+    }
+
+    /** Mã đọc lên từ prefs (sửa tay được qua `prefs_set`): chỉ hai mã là hợp lệ, mọi thứ khác rơi về mặc định. */
+    @Test fun `isRender loai ma la, rotatesByMatrix theo duong`() {
+        assertTrue(P.isRender(P.RENDER_TEXTURE) && P.isRender(P.RENDER_SURFACE))
+        listOf("", "tv", "sv", "TEXTUREVIEW", "L90", "TL").forEach {
+            assertFalse(P.isRender(it), "mã lạ \"$it\" không được coi là hợp lệ")
+        }
+        // Xoay bằng ma trận CHỈ có ở TextureView; mã lạ ⇒ xử như mặc định (⇒ true), không ném.
+        assertTrue(P.rotatesByMatrix(P.RENDER_TEXTURE))
+        assertFalse(P.rotatesByMatrix(P.RENDER_SURFACE), "SurfaceView không có setTransform ⇒ phải nhờ HAL")
+        assertTrue(P.rotatesByMatrix("BOGUS"), "mã lạ = mặc định = TextureView")
+    }
+
+    // ══ CAM-ROT-2 · GỢI Ý cỡ ảnh nguồn — chỉ cho hai view GƯƠNG (chỗ có bằng chứng RE) ═════════════════════
+
+    /**
+     * Hai view GƯƠNG có gợi ý 5120×960 (ảnh 4-in-1, [ĐO RE kinex `Y0/C0094o.java:318,342,347`]) vì chính crop của
+     * chúng đã giả định ảnh nguồn là 4-in-1; các view khác **không** có gợi ý nào ⇒ cửa sổ giữ ô vuông 2.72 tới khi
+     * `AVMCamera.getPreviewWidth/Height` đo được. Không đoán tỉ lệ cho thứ chưa có bằng chứng (CLAUDE.md §2).
+     */
+    @Test fun `goi y co anh nguon chi co o hai view guong`() {
+        val mirrors = listOf(CameraSignalPolicy.CamView.MIRROR_LEFT, CameraSignalPolicy.CamView.MIRROR_RIGHT)
+        mirrors.forEach {
+            assertEquals(5120, it.hintW, "${it.name} gợi ý bề rộng ảnh 4-in-1")
+            assertEquals(960, it.hintH, "${it.name} gợi ý bề cao ảnh 4-in-1")
+            assertEquals(1.875f, gioiHanTiLe(it), 0.01f, "${it.name}: dải gương sau xoay ±90 là NGANG 1,875:1")
+        }
+        CameraSignalPolicy.CamView.entries.filterNot { it in mirrors }.forEach {
+            assertEquals(0, it.hintW, "${it.name} chưa có bằng chứng cỡ ⇒ phải để 0")
+            assertEquals(0, it.hintH, "${it.name} chưa có bằng chứng cỡ ⇒ phải để 0")
+        }
+    }
+
+    /** Tỉ lệ (rộng/cao) của cửa sổ đúng tỉ lệ cho view [v] khi xoay ±90, trong một vùng vuông. */
+    private fun gioiHanTiLe(v: CameraSignalPolicy.CamView): Float {
+        val f = CameraOverlayFrame.fit(v.hintW, v.hintH, v.crop, 90, 1000, 1000)
+        return f.w.toFloat() / f.h
+    }
+
     /** outputState là giá trị THẬT của HAL (RE) — ghim để không đổi bừa. */
     @Test fun `output state khop hang HAL`() {
         assertEquals(1, CameraSignalPolicy.CamView.FRONT_LEFT.outputState)

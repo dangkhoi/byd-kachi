@@ -102,7 +102,7 @@ internal fun VoiceSession.logDone(intents: List<VoiceIntent>, replies: List<Stri
  */
 internal fun VoiceSession.clarifyAsk(intents: List<VoiceIntent>): VoiceClarify.Ask? {
     val only = intents.singleOrNull() as? VoiceIntent.Unknown ?: return null
-    return VoiceClarify.ask(only, clarifyRound)
+    return VoiceClarify.ask(only, clarifyRound, sessionTerms())   // ⚠ từ vựng CỦA PHIÊN — xem KDoc [sessionTerms]
 }
 
 /**
@@ -130,7 +130,7 @@ internal fun VoiceSession.clarifyAsk(intents: List<VoiceIntent>): VoiceClarify.A
 internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>, my: Int): Boolean {
     if (clarifyRound < VoiceClarify.MAX_ROUNDS) return false
     val only = intents.singleOrNull() as? VoiceIntent.Unknown ?: return false
-    if (VoiceClarify.ask(only, 0) == null) return false
+    if (VoiceClarify.ask(only, 0, sessionTerms()) == null) return false
     clarifyRound = 0
     val line = VoiceClarify.giveUp()
     VoiceChime.error()   // R1 voice-ux: earcon "chưa hiểu"

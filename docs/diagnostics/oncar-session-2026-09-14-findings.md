@@ -1,5 +1,7 @@
 # Buổi test trên xe — 2026-09-14 (BYD DiLink3.0) · phát hiện DURABLE
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-14 · **Mục đích**: phát hiện DURABLE của buổi test trên xe DiLink3.0 ngày 2026-09-14.
+
 > Kết nối: adb qua hotspot; adb daemon Mac báo "No route to host" (nghi quyền Mạng-cục-bộ macOS) ⇒ dùng cầu TCP
 > `127.0.0.1:5556 → xe:5555`. Bằng chứng thô ở `carlog-kachi-20260914-2044/` (gitignored). Bản cài: 1.49→1.53→1.54.
 

@@ -1,5 +1,7 @@
 # Kết quả KIỂM TRA TỪNG CHỨC NĂNG trên xe **Sealion 6** — 2026-09-16 (báo cáo anh em gửi)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-16 · **Mục đích**: kết quả kiểm tra từng chức năng trên xe Sealion 6 do anh em test gửi về.
+
 - **Ngày nhận:** 2026-09-16 · **Chủ repo:** dangkhoi · **Xe:** BYD Sealion 6 (PHEV DM-i, DiLink 3) của anh em test, **không phải xe owner**.
 - **Nguồn:** tệp `captest-report.txt` do công cụ *Kiểm tra từng nút xe* (Cài đặt › Hệ thống › Nâng cao) tự ghi ra thẻ, anh em chuyển lại. Nội dung là **nhãn + chấm OK/Không OK của người ngồi trên xe** ⇒ mức **[ĐO trên xe]** cho *hiện tượng* (có số / có tác dụng nhìn thấy), **không** phải giá trị HAL thô.
 - **Bản Kachi:** báo cáo không ghi số bản. Bảng có đủ **187** mục (còn ADAS) ⇒ bản 1.64–1.66. **[CHƯA BIẾT]** chính xác bản nào — hỏi anh em / đọc `dumpsys package com.byd.launcher | grep versionName`.

@@ -4,13 +4,11 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import android.view.Gravity
-import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.R
@@ -34,14 +32,20 @@ import com.byd.clusternav.launcher.KachiType
  * (`LauncherRequirements.OVERLAY`), cùng đường mà nút nổi chiếu cụm đang dùng.
  *
  * ## Vì sao PHỦ TOÀN MÀN dù tấm chữ chỉ nằm một góc
- * Hai cử chỉ huỷ phải chạy được: **chạm ra ngoài** và **phím Back**. Cửa sổ `WRAP_CONTENT` không nhận được cú
- * chạm bên ngoài nó, còn `FLAG_NOT_FOCUSABLE` thì không nhận được phím. Nền trong suốt nên nhìn vẫn là "một tấm
- * nhỏ ở góc"; và nó chỉ sống tối đa 8 giây (trần cứng ở [VoiceSession]) nên việc nó chặn chạm trong khoảng ấy
- * là **có chủ ý**: đang nghe thì cú chạm tiếp theo nên là *"thôi, không nói nữa"*.
+ * Cử chỉ huỷ phải chạy được: **chạm ra ngoài**. Cửa sổ `WRAP_CONTENT` không nhận được cú chạm bên ngoài nó. Nền
+ * trong suốt nên nhìn vẫn là "một tấm nhỏ ở góc"; và nó chỉ sống tối đa 8 giây (trần cứng ở [VoiceSession]) nên
+ * việc nó chặn chạm trong khoảng ấy là **có chủ ý**: đang nghe thì cú chạm tiếp theo nên là *"thôi, không nói
+ * nữa"*. Phủ toàn màn cũng là lý do KHÔNG cần `FLAG_WATCH_OUTSIDE_TOUCH`: không có "ngoài" để mà canh.
+ *
+ * ## Vì sao KHÔNG LẤY TIÊU ĐIỂM (`FLAG_NOT_FOCUSABLE`) — SYS-TASKBAR-VOICE-FOCUS
+ * Xem KDoc [show]. Tóm: cửa sổ **có** tiêu điểm là cửa sổ điều khiển thanh hệ thống, nên một overlay focusable
+ * kéo taskbar của xe lên mỗi lượt nói. Không lấy tiêu điểm ⇒ app đang chạy giữ nguyên trạng thái thanh hệ thống
+ * của nó, overlay không còn là một biến trong bài toán ấy. Giá phải trả: **mất đường thoát bằng Back** (phím Back
+ * chỉ tới cửa sổ có tiêu điểm) ⇒ đường thoát là **chạm ra ngoài tấm chữ** (đã có sẵn ở [build]) + trần 8 giây.
  */
 class VoiceOverlay(
     private val ctx: Context,
-    /** Người dùng muốn thoát (chạm ra ngoài / Back). */
+    /** Người dùng muốn thoát — **chạm ra ngoài tấm chữ** (Back không còn tới cửa sổ này, xem KDoc [show]). */
     private val onCancel: () -> Unit,
 ) {
 
@@ -65,6 +69,65 @@ class VoiceOverlay(
     /** Đang hiện hay không — [VoiceSession] hỏi để khỏi gỡ hai lần. */
     val showing: Boolean get() = root != null
 
+    /**
+     * ═══ SYS-TASKBAR-VOICE-FOCUS — vì sao cửa sổ này KHÔNG được lấy tiêu điểm ════════════════════════════════
+     *
+     * Triệu chứng owner (buổi xe 2026-09-26): tấm chữ hiện lên thì **không** thấy taskbar, nhưng đúng lúc Kachi
+     * **đọc phản hồi** thì taskbar/thanh điều hướng của xe trồi lên và **ở lại** tới khi tấm chữ tắt.
+     *
+     * ## Chuỗi nhân quả [ĐO buổi xe 26/09 · `docs/diagnostics/perf-oncar-2026-09-26/logcat-stream-2.70.txt`]
+     * ```
+     * 18:29:15.709 debug_focus Changing focus from KachiHomeActivity to Window{3e5380 u0 com.byd.launcher} display 0
+     * 18:29:15.711 StatusBar setSystemUiVisibility display 0  oldVal=970e newVal=8008  diff=1706   ← mất cả bộ cờ
+     * 18:29:15.717 BarController.NavigationBar setBarShowingLw show=true                            ← thanh LÊN
+     * 18:29:15.746 StatusBar setSystemUiVisibility display 0  oldVal=8008 newVal=970e  diff=1706   ← ta áp lại
+     * …
+     * 18:29:20.755 debug_focus Changing focus from null to vietmap/MainActivity  displayId=7        ← lệnh "mở vietmap"
+     * 18:29:20.756 debug_focus Changing focus from Window{3e5380 u0 com.byd.launcher} to null  displayId=0
+     * 18:29:20.758 StatusBar setSystemUiVisibility display 0  oldVal=970e newVal=9708  diff=6      ← rụng 0x2|0x4
+     * 18:29:20.760 BarController.NavigationBar setBarShowingLw show=true                            ← thanh LÊN, Ở LẠI
+     * 18:30:00.381 …setBarShowingLw show=false                                                      ← 39,6 s sau
+     * ```
+     * `Window{3e5380 u0 com.byd.launcher}` (tên gói, KHÔNG có tên Activity) = chính cửa sổ này, ở tiến trình
+     * `:wake`. Yêu cầu tiêu điểm TTS/âm thanh **không** phải nguyên nhân: lượt xin audio-focus của giọng đọc tới
+     * lúc `18:29:20.771`, tức **15 ms SAU KHI** thanh đã lên.
+     *
+     * ## Cơ chế trong nguồn AOSP `android-10.0.0_r47`
+     *  1. `DisplayPolicy.focusChangedLw` (`services/core/java/com/android/server/wm/DisplayPolicy.java:3028-3040`)
+     *     đặt `mFocusedWindow = newFocus` rồi gọi NGAY `updateSystemUiVisibilityLw()` — đúng khoảng 2 ms trong log.
+     *  2. `updateSystemUiVisibilityLw` (`DisplayPolicy.java:3112-3119`, `:3151-3153`) lấy cờ ẩn thanh hệ thống từ
+     *     `winCandidate = mFocusedWindow != null ? mFocusedWindow : mTopFullscreenOpaqueWindowState` — tức **chỉ**
+     *     từ cửa sổ đang có tiêu điểm. Lượt cửa sổ này *nhận* tiêu điểm xảy ra TRƯỚC khi giá trị
+     *     `systemUiVisibility` của View kịp về tới WM ⇒ recompute với 0 cờ ⇒ `diff=1706`, thanh lên; 37 ms sau
+     *     `goImmersive` áp lại ⇒ thanh xuống. Đó là cái **nháy** mà owner không kịp thấy.
+     *  3. Lượt *mất* tiêu điểm là cái ở lại: display 0 không còn cửa sổ nào có tiêu điểm
+     *     (`taskbar-window-dump.txt`: `mCurrentFocus=null`), vì
+     *     `DisplayContent.findFocusedWindowIfNeeded` (`DisplayContent.java:3016-3024`) trả **null** cho mọi màn
+     *     không phải màn top-focused khi `WindowManagerService.mPerDisplayFocusEnabled == false`
+     *     (`WindowManagerService.java:648-649`, `:1023-1024`) — và pha phản hồi của lệnh *"mở vietmap"* vừa đưa
+     *     màn slot (display 7) lên top-focused. Recompute lúc ấy rụng đúng `SYSTEM_UI_CLEARABLE_FLAGS`
+     *     (`View.java:3842` = `LOW_PROFILE|HIDE_NAVIGATION|FULLSCREEN` = 0x7; log `diff=6`) qua nhánh
+     *     `clearClearableFlagsLw()` (`DisplayPolicy.java:3374-3382`, `:3494-3498`) mà `mForceShowSystemBars`
+     *     (`:3280-3290`, cụm docked/freeform đang hiện) bật lên. Không ai áp lại được nữa: cửa sổ duy nhất còn
+     *     muốn ẩn thanh là cửa sổ này, mà `onWindowFocusChanged(true)` thì không bao giờ tới lần nữa.
+     *
+     * ## Vì sao `FLAG_NOT_FOCUSABLE` chữa được, và chữa GENERIC
+     * `WindowState.canReceiveKeys` (`WindowState.java:2559-2565`) loại thẳng cửa sổ có `FLAG_NOT_FOCUSABLE` khỏi
+     * `findFocusedWindow` ⇒ cửa sổ này **không bao giờ** là `mFocusedWindow`, nên không sinh một lượt
+     * `focusChangedLw` nào trên display 0: app/màn chính đang giữ tiêu điểm giữ luôn quyền định trạng thái thanh
+     * hệ thống, y như lúc chưa có tấm chữ. Đường thứ hai cũng đóng: `mTopFullscreenOpaqueWindowState` chỉ nhận
+     * **cửa sổ app** (`DisplayPolicy.java:2413` `appWindow = attrs.type >= FIRST_APPLICATION_WINDOW`), mà đây là
+     * `TYPE_APPLICATION_OVERLAY`. Không hardcode tên gói, không đo app nào cả — chỉ là thôi tham gia.
+     *
+     * ⚠ ROM này **đúng hình AOSP-10 ở chỗ đó**: dòng log của chính ROM
+     * `DPfinishLw attrs.isFullscreen()=… inFullScreenOrSplitScreenSecondaryWindowingMode=…` là BYD chèn thêm vào
+     * đúng khối `DisplayPolicy.java:2416-2418` + `:2437-2439`.
+     *
+     * Giá phải trả + bù: `dispatchKeyEvent` chỉ tới cửa sổ có tiêu điểm ⇒ **mất Back**. Đường thoát còn lại:
+     * chạm ra ngoài tấm chữ (cửa sổ phủ toàn màn nên vùng chạm là gần cả màn hình, xem [build]) + trần 8 giây ở
+     * [VoiceSession]. Chạm vẫn tới ta bình thường: `FLAG_NOT_FOCUSABLE` chỉ chặn **phím**, và tuy nó bật kèm
+     * `FLAG_NOT_TOUCH_MODAL` (`WindowManager.java:1164-1177`) thì "ngoài cửa sổ" ở đây là tập rỗng.
+     */
     fun show() {
         if (root != null) return
         val view = build()
@@ -75,9 +138,11 @@ class VoiceOverlay(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             type,
-            // KHÔNG `FLAG_NOT_FOCUSABLE`: thiếu tiêu điểm thì không có `dispatchKeyEvent` ⇒ mất đường thoát
-            // bằng Back. `FLAG_WATCH_OUTSIDE_TOUCH` không cần vì cửa sổ này đã phủ toàn màn.
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            // `FLAG_NOT_FOCUSABLE`: xem khối ═══ ở KDoc trên — không lấy tiêu điểm là cách DUY NHẤT để không
+            // chạm vào trạng thái thanh hệ thống của app đang chạy. `FLAG_WATCH_OUTSIDE_TOUCH` không cần vì cửa
+            // sổ này đã phủ toàn màn (không có "ngoài").
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             android.graphics.PixelFormat.TRANSLUCENT,
         )
         // Không làm tối màn phía dưới: người lái vẫn phải thấy đường và thấy app đang chạy.
@@ -144,49 +209,33 @@ class VoiceOverlay(
         }
         card.addView(action, LinearLayout.LayoutParams(MATCH, WRAP))
 
-        // Lớp phủ trong suốt bắt cú chạm ra ngoài + phím Back. Xem KDoc lớp về vì sao nó phủ toàn màn.
+        // Lớp phủ trong suốt bắt cú chạm ra ngoài. Xem KDoc lớp về vì sao nó phủ toàn màn, và KDoc [show] về vì
+        // sao nó KHÔNG lấy tiêu điểm (nên cũng không có `dispatchKeyEvent`/Back — cố ý, không phải bỏ sót).
         return object : FrameLayout(ctx) {
-            override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-                    onCancel(); return true
-                }
-                return super.dispatchKeyEvent(event)
-            }
-
             /**
-             * ═══ [ĐO xe 2026-09-18] Lấy TIÊU ĐIỂM là kéo cả thanh hệ thống lên cùng ═══════════════════════
+             * Cờ bố cục áp một lần lúc cửa sổ được thêm.
              *
-             * Owner: *"overlay kéo taskbar hệ thống lên — không muốn cái này"*. Gốc: cửa sổ này **cố ý** không
-             * có `FLAG_NOT_FOCUSABLE` (thiếu tiêu điểm thì mất đường thoát bằng Back — xem KDoc [show]), nhưng
-             * cờ ẩn thanh hệ thống thì Android đọc từ **cửa sổ đang có tiêu điểm**. Màn chính giữ cờ đó
-             * (`goImmersiveWindow`); overlay không ⇒ giây nó nhận tiêu điểm là giây status/nav/taskbar hiện lại,
-             * và nó **ở lại** cả khi tấm chữ đã tắt (màn chính chỉ áp lại cờ khi tiêu điểm quay về).
+             * ⚠ Từ SYS-TASKBAR-VOICE-FOCUS (26/09) bộ cờ này **không còn là đường điều khiển thanh hệ thống** —
+             * `DisplayPolicy` chỉ đọc cờ từ cửa sổ CÓ tiêu điểm (`DisplayPolicy.java:3112-3119`), mà cửa sổ này
+             * cố ý `FLAG_NOT_FOCUSABLE`. Giữ lại vì nó vẫn còn MỘT việc thật: ba cờ `LAYOUT_*` giữ khung của
+             * chính ta bằng cả màn, nên lúc app đang chạy cho thanh hệ thống hiện thì tấm chữ **không** bị đẩy
+             * lên 90 px (nhảy chỗ giữa lúc đang nói). Giữ đúng bộ của màn chính (`goImmersiveWindow`) để hai bề
+             * mặt không lệch nhau — xem [goImmersive]. Không có `FLAG_DIM_BEHIND`, `dimAmount = 0`: người lái
+             * vẫn phải thấy đường.
              *
-             * ⇒ overlay mang **cùng bộ cờ** với màn chính. `IMMERSIVE_STICKY` để một cú quệt cạnh chỉ hiện thanh
-             * tạm rồi tự ẩn — người lái không mất đường vào thanh hệ thống, chỉ không bị nó **ghim** lên.
-             * `dimAmount` vẫn 0 và không có `FLAG_DIM_BEHIND`: đây là việc của thanh hệ thống, không phải một
-             * phép làm tối màn.
-             *
-             * Áp ở CẢ hai mốc, mỗi mốc đóng một khe khác nhau: [onAttachedToWindow] cho lượt đầu (cửa sổ mới
-             * thêm), [onWindowFocusChanged] cho mỗi lượt **lấy lại** tiêu điểm (hộp thoại xác nhận / lượt nghe
-             * nối / một cửa sổ khác chen vào rồi rút).
+             * KHÔNG có `onWindowFocusChanged`: cửa sổ không lấy tiêu điểm thì nhánh ấy không bao giờ chạy
+             * (CLAUDE.md §8 — hàm không có đường gọi thật thì không được ở lại).
              */
             override fun onAttachedToWindow() {
                 super.onAttachedToWindow()
                 goImmersive(this)
             }
-
-            override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
-                super.onWindowFocusChanged(hasWindowFocus)
-                if (hasWindowFocus) goImmersive(this)
-            }
         }.apply {
             setBackgroundColor(Color.TRANSPARENT)
-            isFocusableInTouchMode = true
             goImmersive(this)
-            // Thanh hệ thống được hệ thống cho hiện lại (quệt cạnh, một app khác xin) ⇒ áp lại. Điều kiện
-            // `FULLSCREEN` chưa bật là thứ chặn vòng lặp: lượt áp lại của chính ta bắn listener lần nữa với cờ
-            // ĐÃ bật ⇒ nhánh này không chạy tiếp.
+            // Hệ thống đặt lại cờ của View (quệt cạnh, một app khác xin) ⇒ áp lại để khung của ta không co lại.
+            // Điều kiện `FULLSCREEN` chưa bật là thứ chặn vòng lặp: lượt áp lại của chính ta bắn listener lần nữa
+            // với cờ ĐÃ bật ⇒ nhánh này không chạy tiếp.
             @Suppress("DEPRECATION")
             setOnSystemUiVisibilityChangeListener { vis ->
                 if (vis and View.SYSTEM_UI_FLAG_FULLSCREEN == 0) goImmersive(this)
@@ -201,6 +250,8 @@ class VoiceOverlay(
             setOnTouchListener { _, ev ->
                 // Chỉ huỷ khi cú chạm nằm NGOÀI tấm chữ: chạm vào nút "Mở Cài đặt" bên trong phải là bấm nút,
                 // không phải huỷ. `ACTION_DOWN` (không phải UP) vì người lái quệt tay là đủ ý "thôi".
+                // ⚠ Từ 26/09 đây là đường thoát DUY NHẤT của người dùng (Back đi cùng tiêu điểm — KDoc [show]),
+                // nên nó phải ở lại: cửa sổ phủ toàn màn ⇒ vùng chạm huỷ = cả màn trừ tấm chữ.
                 if (ev.action == MotionEvent.ACTION_DOWN && !inside(card, ev)) { onCancel(); true } else false
             }
         }
@@ -212,8 +263,12 @@ class VoiceOverlay(
     }
 
     /**
-     * Cùng **đúng** bộ cờ mà màn chính dùng (`KachiHomeWiring.goImmersiveWindow`) — hai bề mặt lệch cờ nhau thì
-     * thanh hệ thống hiện/ẩn theo cửa sổ nào đang có tiêu điểm, tức nhấp nháy theo mỗi lượt nói.
+     * Cùng **đúng** bộ cờ mà màn chính dùng (`KachiHomeWiring.goImmersiveWindow`).
+     *
+     * Từ SYS-TASKBAR-VOICE-FOCUS (26/09) bộ cờ này chỉ còn giữ **khung của chính tấm chữ** bằng cả màn (ba cờ
+     * `LAYOUT_*`); phần ẩn thanh hệ thống là việc của cửa sổ CÓ tiêu điểm, mà cửa sổ này cố ý không lấy tiêu điểm
+     * (KDoc [show]). Vẫn giữ **nguyên một bộ** với màn chính thay vì rút gọn: hai bề mặt cùng một bộ cờ thì không
+     * có ca nào bề mặt này xin một trạng thái khác bề mặt kia nếu ROM một ngày đọc cả cửa sổ không tiêu điểm.
      *
      * Xe chạy Android 10 (API 29) ⇒ `systemUiVisibility`; `WindowInsetsController` là API 30+. Deprecated trên
      * SDK biên dịch nhưng nó là API **duy nhất** có tác dụng trên nền tảng đích — cùng lý do đã ghi ở

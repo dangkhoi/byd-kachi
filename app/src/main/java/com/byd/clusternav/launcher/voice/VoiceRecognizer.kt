@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.voice
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.perf.KachiMem
 import com.byd.clusternav.voiceBeam
 import com.byd.clusternav.voiceHotwordScore
 import com.k2fsa.sherpa.onnx.FeatureConfig
@@ -156,8 +157,10 @@ class VoiceRecognizer private constructor(
          * Mở phiên nhận dạng RÀNG lệnh, hoặc `null` nếu mô hình chưa sẵn sàng. **CHẶN** ⇒ luồng nền.
          *
          * Biasing lấy từ **tập CỤM LỆNH tĩnh** ([SherpaBiasing], spec `kachi-voice-hotword-phrases.html`: cụm
-         * ≥ 2 từ sinh từ 4 bộ đăng ký, không dòng một từ) — tên hồ sơ/app KHÔNG bias (mô hình VN không phát ra
-         * token tiếng Anh; [VoiceIntentParser] khớp nhãn app lo). Chỉ bias khi engine có bpe vocab.
+         * ≥ 2 từ sinh từ 4 bộ đăng ký, không dòng một từ) + nhãn **sổ địa chỉ** + **tên hồ sơ** ở dạng cụm
+         * *"hồ sơ &lt;tên&gt;"* (VOICE-PROFILE-NAME-PHONETIC 2026-09-26 — [ĐO xe] 8/8 lượt rụng đúng cái tên; tên
+         * tiếng Anh vào bằng dạng đọc tiếng Việt). Tên **app** vẫn chỉ vào qua cách gọi đã khai, không vào bằng
+         * nhãn máy. Chỉ bias khi engine có bpe vocab.
          */
         @Suppress("UNUSED_PARAMETER")
         fun open(
@@ -173,7 +176,7 @@ class VoiceRecognizer private constructor(
             places: List<String> = emptyList(),
         ): VoiceRecognizer? {
             val rec = VoiceEngine.recognizer(ctx) ?: return null
-            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places) else ""
+            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places, profiles) else ""
             return VoiceRecognizer(rec, hot)
         }
 
@@ -268,11 +271,18 @@ object VoiceEngine {
      * `:wake` đứng xuống sau một phiên nghe headless mà "Hey Kachi" đang TẮT. **Chờ** lượt giải mã đang chạy xong
      * rồi mới nhả (xem [useLock]); gọi từ luồng main của một service không UI thì trần chờ là một lượt giải mã.
      */
-    fun release() = synchronized(this) {
+    // ⚠ Kiểu trả về khai TƯỜNG MINH `Unit`: thân-biểu-thức `= synchronized(this) { … }` lấy giá trị của câu lệnh
+    // CUỐI trong khối, nên thêm một dòng trả `Boolean` (như `KachiMem.trim`) sẽ âm thầm đổi chữ ký công khai của
+    // hàm này từ `Unit` sang `Boolean` — đúng họ lỗi "hợp đồng đổi mà không ai thấy" mà CLAUDE.md §8 nói tới.
+    fun release(): Unit = synchronized(this) {
         useLock.write {
             recognizer?.let { runCatching { it.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) } }
             recognizer = null; builtFor = null; biasing = false
         }
+        // CLOSE-4 — mốc pha "nhả xong mô hình": `OfflineRecognizer.release()` gọi `free()` cho ~85-110 MB, mà free
+        // của jemalloc KHÔNG phải trả cho hệ (xem [KachiMem]). Không có dòng này thì BG-20 (đứng xuống `:wake` khi
+        // wake TẮT) chỉ giảm số trong `mallinfo`, PSS đứng nguyên — tức tiết kiệm trên giấy.
+        KachiMem.trim("sau nhả mô hình")
     }
 
     /**
@@ -400,6 +410,10 @@ object VoiceEngine {
         }
         return runCatching { OfflineRecognizer(assetManager = null, config = config) }
             .onSuccess {
+                // CLOSE-4 — mốc pha "nạp xong mô hình": onnxruntime vừa giải phóng ModelProto (~71 MB cho encoder
+                // int8) sau khi dựng phiên, và phần đó nằm lại dirty trong arena vì decay chạy theo tick malloc.
+                // Trim ĐÚNG Ở ĐÂY, trên đúng luồng vừa cấp phát (tcache chỉ xả cho luồng gọi — xem `kachimem.c`).
+                KachiMem.trim("sau nạp mô hình ${model.id}")
                 Log.i(
                     TIMING_TAG,
                     "nạp sherpa ${model.id} trong ${System.currentTimeMillis() - t0} ms " +

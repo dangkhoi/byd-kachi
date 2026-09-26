@@ -1,5 +1,7 @@
 # [ĐO host 2026-09-16] Bảng NGHE NHẦM trên corpus tự dựng — voice 1.66
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-16 · **Mục đích**: bảng NGHE NHẦM trên corpus tự dựng, voice 1.66 (sinh bằng máy).
+
 > Sinh bằng máy: `scripts/voice/mishear-table.py`. Không sửa tay — chạy lại là ra y hệt.
 > Corpus: `scripts/voice/data/variants.tsv` (LLM soạn) → WAV bằng `scripts/voice/synth-corpus.py`.
 

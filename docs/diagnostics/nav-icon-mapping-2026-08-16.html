@@ -41,6 +41,7 @@ tr:last-child td{border-bottom:0}.mono{font-family:var(--mono);font-size:12.5px}
 <h1>Mapping icon dẫn đường: GMaps → cụm (AMAP) / HUD (CAN)</h1>
 <p class="lead">Một hướng rẽ GMaps được phân loại thành một <code>Maneuver</code> trung lập, rồi encode ra <strong>hai bảng icon khác nhau</strong>: <span class="tag a">AMAP NEW_ICON 0..28</span> cho <strong>cụm</strong> (<code>toAmapIcon</code>) và <span class="tag c">CAN 1..49</span> cho <strong>HUD</strong> (<code>toHudIcon</code>). Hai bảng nối nhau bằng bảng remap firmware <code>TurnIdMapToCAN[]</code>. Đây là tài liệu tra cứu đầy đủ mapping + cách classifier suy Maneuver từ tín hiệu GMaps.</p>
 <p class="meta">Owner: Đăng Khôi · dangkhoi · Ngày: 2026-08-16 · Đồng bộ bản 1.23 (roundabout 15→13, continue 11→12) · Companion: nav-output-architecture-2026-08-16.html</p>
+<p><b>Trạng thái</b>: Historical · <b>Cập nhật</b>: 2026-09-08 · <b>Mục đích</b>: bảng tra mapping icon dẫn đường GMaps → cụm (AMAP NEW_ICON 0..28) và → HUD (CAN 1..49).</p>
 <nav class="toc">
 <a href="#oncar" style="border-color:var(--amber);color:var(--amber)">⚠ Cần test on-car</a><a href="#why">1 · Vì sao 2 bảng</a><a href="#master">2 · Bảng master</a><a href="#amap">3 · NEW_ICON 0..28 + TurnIdMapToCAN</a><a href="#reverse">4 · fromAmapIcon (khứ hồi)</a><a href="#classify">5 · GMaps → Maneuver</a><a href="#rab">6 · Vòng xuyến + lối ra N</a><a href="#decisions">7 · Quyết định & fix</a><a href="#src">8 · Nguồn</a>
 </nav>

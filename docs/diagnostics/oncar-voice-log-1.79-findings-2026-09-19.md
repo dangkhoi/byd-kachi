@@ -1,5 +1,7 @@
 # Findings — log VOICE bản 1.79 trên xe (2026-09-19, 30 case)
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-19 · **Mục đích**: findings từ log voice bản 1.79 trên xe (2026-09-19, 30 ca).
+
 > **Nguồn**: `logs/20260919/kachi-voice-…zip` (VoiceWavProbe, 30 phiên unique). **Chỉ có `.wav` + `.json` (parse + reply), KHÔNG có logcat** ⇒ thấy được ASR nghe gì + intent parse ra gì + câu reply, NHƯNG **không thấy app nav nào được bắn** (which app / geocode) — đó là chỗ A còn cần logcat.
 > **[ĐO] CONFIRM xe đang 1.79**: `silence_ms` = **608–624ms** ở gần hết case (không còn 150–174 của 1.76) ⇒ **fix endpoint 150→600 ĐÃ chạy trên xe**.
 

@@ -1,5 +1,7 @@
 # Đợt thu giọng THẬT cho Kachi — 30 câu, ai cũng đọc được (2026-09-16)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-16 · **Mục đích**: đợt thu giọng THẬT cho Kachi — 30 câu, ai cũng đọc được, không cần cắm cáp.
+
 > **Việc của anh em đọc:** bật ghi âm trên điện thoại, đọc 30 câu ở dưới, gửi file về. Hết. Không cần cắm cáp,
 > không gõ lệnh, không cần biết adb là gì.
 >

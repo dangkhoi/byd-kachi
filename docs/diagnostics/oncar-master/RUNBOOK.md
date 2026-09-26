@@ -1,6 +1,6 @@
 # RUNBOOK — TEST XE MỘT-LẦN-ĐỦ (Kachi 1.79 · 80)
 
-> **Loại**: Diagnostics (on-car master runbook) · **Trạng thái**: Current · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)** (OTA trước; xe cũ hơn ⇒ `40-ota.sh`)
+> **Loại**: Diagnostics (on-car master runbook) · **Trạng thái**: Superseded — bản đích 1.83; runbook hiện hành là `docs/diagnostics/oncar-runbook-2.73.md` · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)** (OTA trước; xe cũ hơn ⇒ `40-ota.sh`)
 > **Mục đích**: MỘT buổi đóng hết mục `🚗 chờ xe`. Mỗi bước có **lệnh gõ sẵn** · **tiêu chí PASS/FAIL** · **outcome → option kế thử NGAY cùng buổi** (không hẹn buổi thứ hai) · **ô ghi kết quả**.
 > **▶ SCRIPT CHẠY TỪNG BƯỚC (bám khi ở xe)**: `oncar-master/RUN-STEPS.md` — 23 step, mỗi step ghi rõ 🤖 EM làm / 👤 ANH làm / PASS-FAIL; đi hết 1 vòng → tổng hợp → vòng 2 chỉ chạy lại step ❌.
 > **📋 LIST HẾT MỤC CẦN XE (đọc TRƯỚC)**: `oncar-master/0-PENDING.md` — bảng tổng 8 nhóm (100 info + 34 action + voice + Hey Kachi + cast + system), ưu tiên + trace tới cách-làm. Runbook này (8 phase) là bộ điều phối chi tiết.

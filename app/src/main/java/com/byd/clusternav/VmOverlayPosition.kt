@@ -71,7 +71,17 @@ object VmOverlayPosition {
         SimpleCastRuntime.coordinator(ctx.applicationContext).prefs.castEnabled()
     }.getOrDefault(false)
 
-    /** Bắn broadcast vị trí hiện tại tới VietMap mod. No-op nếu Cast OFF (cụm chưa live). */
+    /**
+     * Bắn broadcast vị trí hiện tại tới VietMap mod. No-op nếu Cast OFF (cụm chưa live).
+     *
+     * ## LOG-41KB (2026-09-26) — bắn thì vẫn bắn, LOG thì thôi lặp
+     * [ĐO xe 26/09] `VmOverlayPos` ghi **3,8 dòng/phút** cùng một câu `x=1339 y=100` suốt phiên (nhịp 2 s của
+     * `FloatingBubbleService` + [gate] 15 s). Lượt **bắn** phải giữ nguyên: bản mod dựng lại bong bóng giữa chuyến
+     * thì chỉ lượt bắn lặp ấy đưa nó về đúng chỗ (K8, xem [applyOnOpen]). Nhưng dòng log thứ hai trở đi cho cùng
+     * toạ độ **không mang thêm dữ kiện nào** ⇒ qua [logGate]: toạ độ ĐỔI (người dùng kéo) ghi ngay, toạ độ cũ chỉ
+     * ghi lại sau [LOG_REPEAT_MS] để log còn một mốc thời gian chứng minh nhịp vẫn chạy.
+     * Dùng lại [ResendGate] — đúng bài toán nó sinh ra để giải, chỉ khác là khoá lên dòng log thay vì lượt bắn.
+     */
     fun send(ctx: Context) {
         if (!castOn(ctx)) { Log.i(TAG, "bỏ gửi vị trí: Cluster Cast OFF (cụm chưa live)"); return }
         val app = ctx.applicationContext
@@ -80,7 +90,8 @@ object VmOverlayPosition {
                 Intent(ACTION).setPackage(VIETMAP_PKG)
                     .putExtra("x", x(app)).putExtra("y", y(app)),
             )
-            Log.i(TAG, "gửi VM_BUBBLE_POS x=${x(app)} y=${y(app)} → $VIETMAP_PKG")
+            val msg = "gửi VM_BUBBLE_POS x=${x(app)} y=${y(app)} → $VIETMAP_PKG"
+            if (synchronized(logGate) { logGate.shouldSend(System.currentTimeMillis(), msg) }) Log.i(TAG, msg)
         }.onFailure { Log.w(TAG, "gửi VM_BUBBLE_POS lỗi", it) }
     }
 
@@ -112,6 +123,10 @@ object VmOverlayPosition {
 
     private const val RESEND_MIN_MS = 15_000L
     private val gate = com.byd.clusternav.launcher.ResendGate(RESEND_MIN_MS)
+
+    /** Cùng một dòng log về cùng toạ độ chỉ ghi lại sau 5 phút — xem khối LOG-41KB ở KDoc [send]. */
+    private const val LOG_REPEAT_MS = 300_000L
+    private val logGate = com.byd.clusternav.launcher.ResendGate(LOG_REPEAT_MS)
     private const val PKG_TTL_MS = 60_000L
     private val installedGate = InstalledPackageGate(PKG_TTL_MS)
 }

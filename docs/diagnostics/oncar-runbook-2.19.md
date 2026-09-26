@@ -1,6 +1,6 @@
 # Runbook on-car — Kachi 2.19 (vc120)
 
-> **Trạng thái**: chờ test trên xe · **Ngày**: 2026-09-23 · APK `apk/Kachi-2.19-release.apk` (`com.byd.launcher`, KHÔNG debuggable) · feat branch, **CHƯA OTA**.
+> **Trạng thái**: Historical — đã qua 2.23+; khớp lại với dòng index · **Ngày**: 2026-09-23 · APK `apk/Kachi-2.19-release.apk` (`com.byd.launcher`, KHÔNG debuggable) · feat branch, **CHƯA OTA**.
 > Gộp mọi thay đổi 2.15→2.19. Chạy từng test case, ghi PASS/FAIL/số đo vào bảng cuối. Findings gốc: `oncar-findings-2026-09-23.md`.
 
 ## 0. Cài + chuẩn bị

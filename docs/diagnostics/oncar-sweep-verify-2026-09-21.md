@@ -1,5 +1,7 @@
 # Verify hàng loạt datum + control trên xe — 2026-09-21
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-22 · **Mục đích**: verify hàng loạt datum + control trên xe qua test-bridge `sweep info`/`sweep ctl` (2026-09-21).
+
 > [ĐO] xe <car-ip> (1.89), test-bridge `sweep info` + `sweep ctl`. File gốc: `sweep-20260921-181714.json`.
 
 ## ĐỌC (telemetry) — 73 datum: 59 OK · 9 rác/sentinel · 5 rỗng

@@ -1,6 +1,6 @@
 # 4 — MẢNG SYSTEM · bài test QUYẾT ĐỊNH cho phần hệ thống chưa verify trên xe
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-19 · **Bản đích**: **1.79 (80)** (xe đang 1.76 ⇒ OTA trước)
+> **Trạng thái**: Historical — ghim xe ở 1.76/đích 1.79; số đo hiện hành ở `docs/diagnostics/oncar-session-2026-09-26.md` · **Ngày**: 2026-09-19 · **Bản đích**: **1.79 (80)** (xe đang 1.76 ⇒ OTA trước)
 > **Mục đích**: biến 8 mục hệ thống đang `🚗 chờ xe` thành [ĐO] **trong MỘT buổi**. Mỗi mục có **≥2 đường đo**
 > (A → B → C) để đường A hỏng thì thử tiếp NGAY, không phải hẹn buổi thứ hai.
 > **Phạm vi**: K5 · K8 · P7/S5 · F4 · W5 · T-BRIDGE · P8 · U8a. (Voice/HAL/cast ở các doc `1-`…`3-`, `5-`.)

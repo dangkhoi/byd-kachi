@@ -1,5 +1,7 @@
 # Tương phản họ màu icon (sinh bởi scripts/design/icon-audit.py)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: bảng tương phản họ màu icon (sinh bằng máy — đừng sửa tay).
+
 | họ | vai | bg tối #0a0d13 | thẻ tối #1d232e | bg sáng #eef1f6 | lightSafe (≥3:1 cả 3 vai trên nền sáng) |
 |---|---|---|---|---|---|
 | energy | main `#34d399` | 10.12 | 8.20 | 1.70 |  |

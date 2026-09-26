@@ -1,6 +1,6 @@
 # MẢNG HAL — ma trận sweep MỘT-BUỔI-ĐỦ (RE xong off-car, chỉ còn bấm)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-19 · **Mục đích**: gom MỌI control/datum chưa verify trên xe thành **một bảng sweep** — mỗi dòng có device · method/feature-id · **DẢI giá trị ứng viên** · đọc-lại kỳ vọng · lệnh gõ sẵn · outcome→kết luận. Có **Option A/B/C** cho mọi mục rủi ro để A fail thì thử B/C **ngay trong buổi**, không cần buổi thứ hai.
+> **Trạng thái**: Superseded — thay bởi `docs/diagnostics/oncar-sweep-verify-2026-09-21.md` · **Cập nhật**: 2026-09-19 · **Mục đích**: gom MỌI control/datum chưa verify trên xe thành **một bảng sweep** — mỗi dòng có device · method/feature-id · **DẢI giá trị ứng viên** · đọc-lại kỳ vọng · lệnh gõ sẵn · outcome→kết luận. Có **Option A/B/C** cho mọi mục rủi ro để A fail thì thử B/C **ngay trong buổi**, không cần buổi thứ hai.
 > **Phạm vi**: HAL (L-RE · L-RE2 · H1-T2b · W2 · W3 · W5 · 5 datum NEEDS_CAR · thang mức ghế). Cast/voice ở `2-slot-cast.md` / `3-voice.md`.
 > **Nhãn bằng chứng**: `[ĐO source]` = đọc được ở nguồn/dữ liệu đã chụp (có `file:line`) · `[SUY]` = suy từ nguồn, chưa chạy · `[CHƯA BIẾT]` = không có dữ liệu.
 

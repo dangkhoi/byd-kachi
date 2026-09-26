@@ -9,6 +9,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.util.Log
+import com.byd.clusternav.launcher.perf.KachiMem
 
 /**
  * ═══ #0 · PIPER SỐNG Ở TIẾN TRÌNH RIÊNG `:tts` — MỘT LẦN NỔ NATIVE KHÔNG ĐƯỢC GIẾT LAUNCHER ═══════════════════
@@ -111,13 +112,23 @@ class PiperTtsService : Service() {
             }
     }
 
-    /** Báo *"đọc xong câu [id]"*. Đầu kia chết trước ⇒ `RemoteException` ⇒ bỏ qua (không có ai để báo nữa). */
+    /**
+     * Báo *"đọc xong câu [id]"*. Đầu kia chết trước ⇒ `RemoteException` ⇒ bỏ qua (không có ai để báo nữa).
+     *
+     * ## CLOSE-4 — trim SAU khi đã báo xong, không trước
+     * Đây là mốc pha duy nhất của `:tts` (một câu = một lượt `generate` cấp phát rồi nhả PCM float + buffer nội bộ
+     * của onnxruntime). Trim **sau** `to.send(msg)` có chủ ý: `madvise` mất vài ms, và đặt nó trước lời báo là cộng
+     * thẳng vài ms vào độ trễ mà phía launcher đang chờ để đóng phiên. Hàm này chạy trên luồng `KachiSpeak`
+     * ([ĐO] `SherpaTtsSpeaker.kt:105` — *"[onDone] chạy trên luồng `KachiSpeak`"*), tức **đúng luồng đã cấp phát**
+     * ⇒ `thread.tcache.flush` của `M_PURGE` xả đúng cache cần xả (xem `kachimem.c`).
+     */
     private fun sendDone(reply: Messenger?, id: Int) {
         val to = reply ?: return
         val msg = Message.obtain(null, MSG_DONE).apply {
             data = Bundle().apply { putInt(KEY_ID, id) }
         }
         runCatching { to.send(msg) }.onFailure { Log.i(TAG, "không báo được 'đọc xong' — launcher đã đi", it) }
+        KachiMem.trim("sau đọc xong câu")
     }
 
     override fun onDestroy() {

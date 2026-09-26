@@ -171,6 +171,26 @@ fun Prefs.cameraRotation(ctx: Context, left: Boolean): String {
 fun Prefs.setCameraRotation(ctx: Context, left: Boolean, v: String) =
     autoPrefs(ctx).edit().putString(cameraRotKey(left), v).apply()
 
+// ── ĐƯỜNG KẾT XUẤT khung hình camera (CLOSE-14 · CAM-LAG) ───────────────────────────────────────
+// MỘT khoá cho cả hai bên: đây là câu hỏi về **cách vẽ** (TextureView trong cây view vs SurfaceView layer riêng),
+// không phải về cam nào/chiều nào — hai bên không có lý do nào để vẽ khác nhau. Device-scope (`autoPrefs`) vì nó
+// là tính chất của ROM/màn, không của hồ sơ tài xế. Mặc định = thứ đang chạy hiện trường (CLAUDE.md §6).
+private const val K_CAMERA_RENDER = "camera_render"
+
+/**
+ * Đường kết xuất overlay camera — một mã trong [CameraSignalPolicy.RENDERS] (`"TV"` = TextureView, `"SV"` =
+ * SurfaceView). Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultRender], cùng khuôn [cameraRotation].
+ */
+fun Prefs.cameraRender(ctx: Context): String {
+    val fallback = CameraSignalPolicy.defaultRender()
+    val raw = autoPrefs(ctx).getString(K_CAMERA_RENDER, fallback) ?: fallback
+    return if (CameraSignalPolicy.isRender(raw)) raw else fallback
+}
+
+/** Xem [cameraRender]. Nhận mã trong [CameraSignalPolicy.RENDERS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
+fun Prefs.setCameraRender(ctx: Context, v: String) =
+    autoPrefs(ctx).edit().putString(K_CAMERA_RENDER, v).apply()
+
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {
     val k = if (left) "camera_cam_left" else "camera_cam_right"

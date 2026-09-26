@@ -80,6 +80,20 @@ object VoiceClarify {
         val asking = VoiceQuestion.isQuestion(raw)
         val asked = VoiceQuestion.looksAsked(raw)
 
+        // VOICE-PROFILE-NAME-PHONETIC (2026-09-26) — câu nêu *"hồ sơ"* mà **không có cái tên**.
+        //
+        // [ĐO xe 2026-09-26] 8/8 lượt: owner nói *"chuyển sang hồ sơ Test"*, mô hình in ra *"chuyển sang hồ sơ"* —
+        // rụng đúng cái tên. Trước bản này câu ấy ra `MISMATCH` ⇒ Kachi đọc *"việc đó không đi với thứ đó — thử nêu
+        // mức, hoặc đổi động từ"*: một câu **không nói được phải làm gì tiếp**, cho một câu mà máy đã hiểu 90 %.
+        // Nay hỏi thẳng tên hồ sơ, và [carryFor] không dùng ở đây: ngữ cảnh mang theo là **nguyên vế đã hiểu**
+        // (*"chuyển sang hồ sơ"*) nên trả lời *"Mặc định"* ghép lại thành một câu phân tích được.
+        //
+        // Đứng TRƯỚC [ambiguity] vì cụm đánh dấu *"hồ sơ"* hẹp hơn hẳn phép dò họ nhãn: [ĐO] chữ *"số"* (nhãn datum
+        // `gear`) khớp giữa chính câu này, nên để [ambiguity] chạy trước là hỏi lại về một cái nút số.
+        VoiceProfileNames.missingName(tokens, terms)?.let { names ->
+            return Ask(question(Strings.t("hồ sơ", "profile"), names), tokens.map { it.raw })
+        }
+
         ambiguity(tokens, terms, asking, asked)?.let { return it }
 
         // *"&lt;động từ&gt; gì?"* chỉ đúng khi đầu câu THẬT LÀ một động từ. [ĐO xe 2026-09-18] *"hev đi được bao

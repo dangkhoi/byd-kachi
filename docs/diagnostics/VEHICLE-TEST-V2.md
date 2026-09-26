@@ -1,6 +1,6 @@
 # ClusterNav V2 — Vehicle Test Checklist
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-07-26 · **Mục đích**: Checklist thao tác thử trên xe + ma trận Stage 11 (execution NOT STARTED).
+> **Trạng thái**: Historical — ma trận Stage 11 đời ClusterNav, chưa từng chạy; kiểm trên xe hiện hành theo `docs/diagnostics/oncar-runbook-2.73.md` · **Cập nhật**: 2026-07-26 · **Mục đích**: Checklist thao tác thử trên xe + ma trận Stage 11 (execution NOT STARTED).
 
 Owner: **Đăng Khôi · `dangkhoi`**  
 Current state: **OFF-CAR 0.72 FIELD-EXECUTION CORRECTION CLOSED — WAITING FOR SEPARATE BUILD AUTHORIZATION**

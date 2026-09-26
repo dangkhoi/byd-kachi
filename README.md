@@ -1,16 +1,16 @@
 # Kachi launcher (byd-launcher)
 
 > [!IMPORTANT]
-> **(VI) ĐÂY LÀ `byd-launcher` — BẢN FORK của ClusterNav 2.0 (`byd-cluster-2`) để phát triển dần thành LAUNCHER cho xe BYD DiLink.** Tên launcher: **Kachi** (repo `github.com/dangkhoi/byd-kachi`; nhãn app hiện là "Kachi"). Mục tiêu: GIỮ NGUYÊN mọi tính năng ClusterNav (gom vào mục **Cài đặt / Settings**) + màn hình chính (**HOME**) + nhiều app/tiện ích đi kèm kiểu Dudu (control cửa–kính–đèn–gạt mưa–AC, widget đồng hồ, lưới app…). `applicationId` đổi thành **`com.byd.launcher`** để cài **SONG SONG**, KHÔNG đụng bản ClusterNav 2.0 (`com.byd.clusternav2`) đang chạy ổn trên xe. Fork từ ClusterNav **v1.38 (versionCode 39)**. Lộ trình: `docs/specs/launcher-foundation.html` + `docs/PROJECT-BACKLOG.md`. Phần README bên dưới kế thừa từ ClusterNav, sẽ viết lại dần cho launcher.
+> **(VI) ĐÂY LÀ `byd-launcher` — BẢN FORK của ClusterNav 2.0 (`byd-cluster-2`) để phát triển dần thành LAUNCHER cho xe BYD DiLink.** Tên launcher: **Kachi** (repo `github.com/dangkhoi/byd-kachi`; nhãn app hiện là "Kachi"). Mục tiêu: GIỮ NGUYÊN mọi tính năng ClusterNav (gom vào mục **Cài đặt / Settings**) + màn hình chính (**HOME**) + nhiều app/tiện ích đi kèm kiểu Dudu (control cửa–kính–đèn–gạt mưa–AC, widget đồng hồ, lưới app…). `applicationId` đổi thành **`com.byd.launcher`** để cài **SONG SONG**, KHÔNG đụng bản ClusterNav 2.0 (`com.byd.clusternav2`) đang chạy ổn trên xe. Fork từ ClusterNav **v1.38 (versionCode 39)**. Lộ trình: `docs/specs/launcher-foundation.html` + `docs/PROJECT-BACKLOG.md`. Hai mục **Tính năng** và **Chi tiết tính năng** bên dưới đã viết lại cho Kachi 2.73 (174); phần changelog theo phiên bản là **lineage ClusterNav**, giữ làm lịch sử.
 >
-> **(EN) THIS IS `byd-launcher` — a FORK of ClusterNav 2.0 (`byd-cluster-2`) being grown into a BYD DiLink car LAUNCHER.** The launcher is named **Kachi** (repo `github.com/dangkhoi/byd-kachi`; the app label now reads "Kachi"). Goal: KEEP every ClusterNav feature (consolidated into a **Settings** area) + a **HOME** screen + many bundled apps/utilities (Dudu-style: window/door/light/wiper/AC controls, gauge widgets, an app grid…). `applicationId` is changed to **`com.byd.launcher`** so it installs **SIDE BY SIDE**, leaving the stable ClusterNav 2.0 (`com.byd.clusternav2`) on the car untouched. Forked from ClusterNav **v1.38 (versionCode 39)**. Roadmap: `docs/specs/launcher-foundation.html` + `docs/PROJECT-BACKLOG.md`. The README below is inherited from ClusterNav and will be rewritten for the launcher over time.
+> **(EN) THIS IS `byd-launcher` — a FORK of ClusterNav 2.0 (`byd-cluster-2`) being grown into a BYD DiLink car LAUNCHER.** The launcher is named **Kachi** (repo `github.com/dangkhoi/byd-kachi`; the app label now reads "Kachi"). Goal: KEEP every ClusterNav feature (consolidated into a **Settings** area) + a **HOME** screen + many bundled apps/utilities (Dudu-style: window/door/light/wiper/AC controls, gauge widgets, an app grid…). `applicationId` is changed to **`com.byd.launcher`** so it installs **SIDE BY SIDE**, leaving the stable ClusterNav 2.0 (`com.byd.clusternav2`) on the car untouched. Forked from ClusterNav **v1.38 (versionCode 39)**. Roadmap: `docs/specs/launcher-foundation.html` + `docs/PROJECT-BACKLOG.md`. The **Features** and **Feature details** sections below are current for Kachi 2.73 (174); the per-version changelog further down is **ClusterNav lineage**, kept as history.
 
 > Song ngữ: các mục hướng đến người dùng viết tiếng Việt trước, English sau. Changelog theo phiên bản giữ nguyên tiếng Anh, có một dòng dẫn tiếng Việt.
 > Bilingual: user-facing sections are Vietnamese first, then English. Per-version changelog entries stay in English, with a one-line Vietnamese intro.
 
 > [!CAUTION]
-> **(VI) KACHI LAUNCHER — bản hiện tại: `2.72` (versionCode 173, 2026-09-26; OTA `apk/Kachi-2.72-release.apk`)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (11 nhóm); hướng dẫn dùng: `docs/HUONG-DAN-KACHI.md`; đóng dự án: `docs/CLOSEOUT-2026-09-25.md`; màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
-> **(EN) KACHI LAUNCHER — current: `2.72` (versionCode 173, 2026-09-26; OTA `apk/Kachi-2.72-release.apk`)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (11 groups); user guide `docs/HUONG-DAN-KACHI.md`; closeout `docs/CLOSEOUT-2026-09-25.md`; the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
+> **(VI) KACHI LAUNCHER — bản hiện tại: `2.73` (versionCode 174, 2026-09-26; OTA `apk/Kachi-2.73-release.apk`)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (11 nhóm); hướng dẫn dùng: `docs/HUONG-DAN-KACHI.md`; đóng dự án: `docs/CLOSEOUT-2026-09-25.md`; màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
+> **(EN) KACHI LAUNCHER — current: `2.73` (versionCode 174, 2026-09-26; OTA `apk/Kachi-2.73-release.apk`)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (11 groups); user guide `docs/HUONG-DAN-KACHI.md`; closeout `docs/CLOSEOUT-2026-09-25.md`; the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
 >
 > **(VI) OTA của Kachi (L2, 2026-09-13):** app tự dò `apk/Kachi-<ver>-release.apk` trên `main` của repo này (`dangkhoi/byd-kachi`) và cài qua dadb loopback — xem `apk/README.md`. Khoá ký RIÊNG của Kachi (keystore ngoài repo, `keystore.properties` gitignored); bản cài trước 1.41 phải gỡ rồi cài tay một lần.
 > **(EN) Kachi OTA (L2, 2026-09-13):** the app polls `apk/Kachi-<ver>-release.apk` on this repo's `main` (`dangkhoi/byd-kachi`) and installs over the dadb loopback — see `apk/README.md`. Kachi has its own signing key; builds installed before 1.41 must be uninstalled once.
@@ -25,53 +25,139 @@
 
 ## Tính năng · Features
 
-**(VI)** Mục lục tính năng — chi tiết từng mục ở phần **Chi tiết tính năng** bên dưới.
+**(VI)** Mục lục tính năng của **Kachi 2.73 (174)** — chi tiết từng nhóm (kèm đường dẫn menu thật) ở phần **Chi tiết tính năng** bên dưới. Hướng dẫn dùng đầy đủ: [`docs/HUONG-DAN-KACHI.md`](docs/HUONG-DAN-KACHI.md). Danh mục máy-sinh của **mọi** chức năng kèm status trên xe: [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html). Ký hiệu **🚗** = code xong nhưng chưa đo trên xe thật.
 
-*Dẫn đường & chiếu cụm*
-- **Navigation + HUD** — dẫn đường trên cụm (làn zin + "Giữa + ETA") và HUD kính lái; hướng rẽ vòng xuyến + số lối ra; chọn chế độ cụm ON/OFF; chạy chữ tên đường dài
-- **Cluster Cast** — chiếu app đang mở lên cụm: full hoặc chia đôi chỉnh tỉ lệ (1:9–9:1); CarPlay & Android Auto full-screen; tự chiếu app khi khởi động; watchdog giữ cụm
-- **Biển báo tốc độ trên cụm** — hiện tốc độ/giới hạn + giới hạn sắp tới + chip cảnh báo/camera VietMap; chỉnh cỡ và vị trí
-- **Bóng VietMap trên cụm** — hiện bóng VietMap trên cụm, kéo-thả chỉnh vị trí
+*1 · Màn hình chính & ô*
+- **5 bố cục sẵn + bố cục tự vẽ** — 1 ô · 2 cột · 2 hàng · 3 ô · 4 ô, hoặc tự vẽ khung trên lưới 12×6
+- **Ô làm việc** — mỗi ô chứa widget Kachi, widget Android của app khác, hoặc **một app thật chạy trong ô** (màn ảo)
+- **Thanh trạng thái & thanh nút xe** — chọn chip, ẩn/hiện nhãn, sắp lại vị trí item, đặt thanh nút ở 4 viền
+- **Hiển thị & đơn vị** — đơn vị đo, giao diện sáng/tối, màu sắc, ngôn ngữ (Theo xe / VI / EN), kính thật (làm mờ nền)
 
-*Tiện nghi cabin (mới ở 1.32)*
-- **Ghế mát / sưởi tự động** — tự áp mức mát/sưởi từng ghế qua HAL điều hoà; sơ đồ ghế chạm để chọn mức
-- **Tự lọc bụi mịn PM2.5** — tự bật lọc khí khi bụi vượt ngưỡng; đồng hồ hiển thị mức
+*2 · Dẫn đường & chiếu cụm*
+- **Dẫn đường lên cụm + HUD** — chỉ đường trên cụm (làn zin + "Giữa + ETA") và HUD kính lái; hướng rẽ vòng xuyến + số lối ra; chạy chữ tên đường dài
+- **Biển báo tốc độ trên cụm** — tốc độ/giới hạn + giới hạn sắp tới + chip cảnh báo camera; chỉnh cỡ và vị trí
+- **Bong bóng VietMap trên cụm** — hiện bóng VietMap, kéo-thả chỉnh vị trí
+- **Chiếu màn lên cụm (Cluster Cast)** — chiếu app đang mở lên cụm: toàn màn hoặc chia đôi chỉnh tỉ lệ; tự chiếu khi nổ máy; nút nổi; cứu hộ cụm
+- **Sổ địa chỉ + app dẫn đường mặc định** — lưu điểm đến theo hồ sơ, nói tên là đi
 
-*Trợ lý & hệ thống*
-- **Nút vật lý → trợ lý giọng nói** — gán nút cứng (học phím, gán nhiều nút) mở Google/Gemini · BYD 小迪 · Kiki · speech; chỉ báo trạng thái phím-thoại + "Kiểm tra / Sửa ngay"; khôi phục OFF→ON
-- **Cấp quyền notification trong app** — tự cấp qua dadb, không cần laptop/ADB
-- **Tự khởi động nền** — tự bật mọi tính năng nền (phím-thoại, ghế, lọc bụi, dẫn đường) khi nổ máy
-- **Tự cập nhật OTA** — tự tải bản `apk/` mới hơn từ repo xuống xe
-- **Nâng cao · khắc phục sự cố** — kiểm tra cập nhật, dọn cụm, cứu hộ chiếu, chẩn đoán, xuất log ra sdcard
+*3 · Camera theo xi-nhan (Seal · Sealion 6)*
+- **Bật camera khi xi-nhan** — xi-nhan trái → camera trái nổi ở góc màn, phải → camera phải; giữ tới khi đèn xi-nhan tắt
+- **Chọn cam + vị trí từng bên** — id camera 0–5 mỗi bên, góc trên-trái / trên-phải mỗi bên
+- **Xoay video trái/phải độc lập** — Không xoay · ↺ 90° · ↻ 90° · 180°, đặt riêng từng bên
+- **Khung đúng tỉ lệ + chọn cách kết xuất** — khung co theo tỉ lệ hình sau khi xoay; TextureView (mặc định) hoặc SurfaceView
+- **Hiện camera lên màn cụm** — thay vì màn chính
 
-*Giao diện (mới ở 1.32)*
-- **Giao diện "cockpit" Level-2** — design system `Cockpit.*`: hero trạng thái + bảng tính năng 2 cột
-- **Song ngữ Việt / English** — chuyển ngôn ngữ ngay trong app (Theo xe / VI / EN)
-- **Light mode** — chọn giao diện Sáng / Tối / Theo xe
+*4 · Tiện nghi xe*
+- **Nổ máy thì tự lấy gió trong** — xe quên chế độ này mỗi lần khởi động, Kachi bật lại
+- **Ghế mát / sưởi tự động** — chế độ Làm mát hoặc Sưởi, mức từng ghế; chạm sơ đồ ghế để đổi mức
+- **Tự lọc bụi mịn PM2.5** — tự chạy lọc khi bụi lên cao, kèm nút **Lọc ngay một lượt**
+- **Mưa thì tự bật sấy kính** — đọc cảm biến mưa mỗi 5 phút, bật sấy kính trước / sau + gương, hết mưa thì tắt (🚗)
+- **Nút xe trên thanh nút + giọng nói** — kính, cốp, cửa sổ trời, đèn, điều hoà, nhiệt độ, quạt… đi qua cùng một bộ đăng ký nút
 
-**(EN)** Feature index — each item is detailed under **Feature details** below.
+*5 · Giọng nói*
+- **Nghe tại máy, không gửi ra mạng** — sherpa-onnx + mô hình tiếng Việt `zipformer-vi`, tải một lần (hoặc side-load qua thẻ)
+- **Ba lối gọi** — ô *Nói với xe* · nút mic trên thanh trạng thái · phím vô-lăng gán đích *Kachi nghe (tại máy)*
+- **"Hey Kachi" rảnh tay** *(thử nghiệm, mặc định tắt)* — nói câu gọi khi màn sáng; nghe nhầm nhiều lần thì tự tắt
+- **Lệnh theo nhóm** — nút xe · gói lệnh · đọc thông tin xe · mở/đóng app (kèm *"vào ô số N"*) · nhạc/YouTube · dẫn đường · đổi hồ sơ · đổi bố cục · câu ghép với *và* / *rồi*
+- **Giọng đọc offline + hỏi xác nhận** — gói Piper đọc phản hồi tại máy; tự chọn việc nào phải hỏi lại trước khi bắn
+- **Nghe chắc hơn ở 2.73** — tên app/hồ sơ nghe hơi lệch vẫn hiểu; *Back* không còn huỷ lượt nghe
 
-*Navigation & cluster casting*
-- **Navigation + HUD** — navigation on the cluster (stock lane + centre "Giữa + ETA") and the windshield HUD; roundabout exit direction + number; cluster display ON/OFF; long road-name marquee
-- **Cluster Cast** — cast the foreground app to the cluster: full or split with an adjustable ratio (1:9–9:1); CarPlay & Android Auto full-screen; auto-cast an app on start; a re-pin watchdog
-- **Speed badge on the cluster** — show speed/limit + the upcoming limit + a VietMap alert/camera chip; adjustable size and position
-- **VietMap bubble on the cluster** — show the VietMap bubble, drag to reposition
+*6 · Hồ sơ tài xế*
+- **Mỗi hồ sơ một bộ cấu hình** — bố cục, nội dung ô, chip, thanh nút, hình nền, giao diện, đơn vị, ngôn ngữ
+- **Thêm (bản sao) · đổi tên · xoá · hồ sơ lúc nổ máy** — đổi nhanh bằng chip trên thanh trên hoặc bằng giọng
+- **Xuất / nhập hồ sơ** — file trên thẻ, trùng tên thì tự đánh số
 
-*Cabin comfort (new in 1.32)*
-- **Auto seat cooling / heating** — applies a saved per-seat cool/heat level over the AC HAL; tap the seat diagram to cycle
-- **PM2.5 auto-filter** — auto-enables purification when cabin PM2.5 crosses the heavy threshold; a ring gauge shows the level
+*7 · Ảnh xe · hình nền · trình chiếu*
+- **Ba thư mục trên thẻ, không cần quyền** — ảnh xe top-down · hình nền · ảnh cho widget trình chiếu
+- **Nút "Sao chép đường dẫn thư mục"** — dán vào trình quản lý tệp rồi chép ảnh vào
+- **Hình xe vẽ bằng vector** — chọn model và màu sơn, dùng được khi chưa có ảnh riêng
 
-*Assistant & system*
-- **Physical button → voice assistant** — map a hardware button (learn a key, map many buttons) to Google/Gemini · BYD 小迪 · Kiki · speech; a binding-status indicator + "Check / Fix now"; OFF→ON recovery
-- **In-app notification-access grant** — self-granted over dadb, no laptop/ADB
-- **Background auto-start** — auto-starts every background feature (voice key, seats, dust filter, navigation) on engine start
-- **OTA self-update** — pulls a newer `apk/` build from the repo onto the car
-- **Advanced · troubleshooting** — check for updates, clear the cluster, cast rescue, diagnostics, export logs to sdcard
+*8 · Automation*
+- **Mưa thì tự bật sấy kính** — xem nhóm 4 (🚗)
+- **Tự dẫn đường theo lịch** — khung giờ × thứ × "chỉ khi có GPS" × điểm đến trong Sổ địa chỉ × app dẫn đường, mỗi khung 1 lần/ngày (🚗)
+- **Khởi động theo xe** — tự mở Kachi khi nổ máy · chạy dịch vụ nền khi nổ máy · giữ Kachi làm màn hình chính khi nổ máy
 
-*Interface (new in 1.32)*
-- **Level-2 "cockpit" UI** — a reusable `Cockpit.*` design system: hero status cards + a two-column feature board
-- **Bilingual Vietnamese / English** — switch language in-app (By-car / VI / EN)
-- **Light mode** — Interface selector: Light / Dark / By-car
+*9 · Hệ thống*
+- **Đặt / bỏ Kachi làm màn hình chính** — ROM BYD không hiện hộp chọn HOME nên Kachi tự đặt qua dadb loopback
+- **Cập nhật OTA trong xe** — *Kiểm tra cập nhật* tải `apk/Kachi-<ver>-release.apk` mới hơn rồi cài đè; kèm công tắc *Tự động cập nhật*
+- **Quyền còn thiếu + tự cấp** — cấp quyền notification / floating qua dadb, không cần laptop
+- **Khởi động lại launcher · Dừng toàn bộ dẫn đường · Cứu hộ cụm** — gỡ rối không phải khởi động lại đầu xe
+- **Chẩn đoán & log** — màn Chẩn đoán cụm, log ghi ra thẻ, báo cáo kiểm-từng-chức-năng; anh em chỉ cần chụp màn gửi về
+- **Chế độ kiểm thử qua adb** — chỉ bật được bằng tay trong xe, tự tắt sau 60 phút, chết theo lần nổ máy
+
+*10 · Hiệu năng & an toàn*
+- **Chỉ đọc HAL khi màn hình đang bày** — vòng poll đọc theo nhu cầu, datum đọc ra `null` thì nguội dần rồi thử lại giãn cách
+- **Nhẹ hẳn so với đời 2.5x** — [ĐO xe Seal 2026-09-26, 2.58 → 2.69] PSS launcher 245,6 → **67,1 MB**, native 220 → 29 MB, luồng 58 → 43, khung janky 56 % → 28,6 %
+- **Ngân sách shell + tiết chế log** — hạn lệnh shell mỗi phút; dòng log trùng trong 10 s gộp lại (mức W/E/F/A không bao giờ bị bỏ)
+- **Trả RAM native cho hệ (2.73, nội bộ)** — tiến trình nghe gọi `mallopt`; mức tiết kiệm thật 🚗 chưa đo trên xe
+- **Fail-safe theo thiết kế** — chỉ tắt lại cái Kachi tự bật; guard đặt ở tầng thi hành; **không** mock GPS, quyền location chỉ ĐỌC
+
+**(EN)** Feature index for **Kachi 2.73 (174)** — each group is detailed under **Feature details** below (with the real menu paths). Full user guide: [`docs/HUONG-DAN-KACHI.md`](docs/HUONG-DAN-KACHI.md). A machine-generated catalog of **every** feature with its on-car status: [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html). **🚗** = built but never measured on a real car.
+
+*1 · Home screen & slots*
+- **5 preset layouts + a custom one** — 1 slot · 2 columns · 2 rows · 3 slots · 4 slots, or draw your own frames on a 12×6 grid
+- **Work slots** — each slot holds a Kachi widget, another app's Android widget, or **a real app running inside the slot** (virtual display)
+- **Status bar & car button bar** — pick chips, show/hide labels, reorder items, dock the button bar to any of the 4 edges
+- **Display & units** — units, light/dark theme, colours, language (By-car / VI / EN), real glass (blur the backdrop)
+
+*2 · Navigation & cluster casting*
+- **Navigation on the cluster + HUD** — stock lane + centre "Giữa + ETA" and the windshield HUD; roundabout exit direction + number; long road-name marquee
+- **Speed badge on the cluster** — current speed/limit + upcoming limit + a camera-alert chip; adjustable size and position
+- **VietMap bubble on the cluster** — show the bubble, drag to reposition
+- **Cluster Cast** — cast the foreground app to the cluster: full screen or split with an adjustable ratio; autostart on engine start; floating button; cluster rescue
+- **Address book + default nav app** — per-profile saved destinations; say the name and it navigates
+
+*3 · Turn-signal camera (Seal · Sealion 6)*
+- **Camera on turn signal** — left signal → left camera overlay, right → right; held until the signal lamp goes off
+- **Per-side camera id and corner** — camera id 0–5 and top-left / top-right per side
+- **Independent left/right rotation** — none · ↺ 90° · ↻ 90° · 180°, set per side
+- **Aspect-correct frame + render path** — the frame follows the crop's aspect after rotation; TextureView (default) or SurfaceView
+- **Show the camera on the cluster display** — instead of the main screen
+
+*4 · Car comfort*
+- **Recirculation on engine start** — the car forgets it every start; Kachi turns it back on
+- **Automatic seat cooling / heating** — Cool or Heat mode, a level per seat; tap the seat diagram to cycle
+- **PM2.5 auto-filter** — purifies when dust rises, plus a **Purify now** button
+- **Auto-defrost when it rains** — polls the rain sensor every 5 min, turns on front / rear + mirror defrost, turns it off when the rain stops (🚗)
+- **Car buttons on the bar + by voice** — windows, trunk, sunroof, lights, AC, temperature, fan… all through one control registry
+
+*5 · Voice*
+- **On-device recognition, nothing leaves the car** — sherpa-onnx with the Vietnamese `zipformer-vi` model, downloaded once (or side-loaded from the SD card)
+- **Three ways in** — the *Talk to the car* tile · the mic button in the status bar · a steering-wheel key bound to *Kachi listens (on-device)*
+- **Hands-free "Hey Kachi"** *(experimental, default off)* — say the wake phrase while the screen is on; auto-disables after repeated false accepts
+- **Commands by group** — car buttons · macros · read vehicle data · open/close apps (including *"into slot N"*) · music/YouTube · navigation · switch profile · switch layout · compound sentences with *và* / *rồi*
+- **Offline reply voice + confirmation gate** — a Piper pack speaks replies on-device; you choose which actions must ask first
+- **More robust in 2.73** — slightly misheard app/profile names still resolve; *Back* no longer cancels the listening turn
+
+*6 · Driver profiles*
+- **One configuration set per profile** — layout, slot contents, chips, button bar, wallpaper, theme, units, language
+- **Add (a copy) · rename · delete · profile on engine start** — switch from the chip in the top bar or by voice
+- **Export / import** — files on the SD card; duplicate names get numbered
+
+*7 · Car image · wallpapers · slideshow*
+- **Three folders on the SD card, no permission needed** — top-down car image · wallpapers · slideshow photos
+- **A "Copy folder path" button** — paste it into a file manager and drop images in
+- **Vector-drawn car artwork** — pick the model and paint colour when you have no photo of your own
+
+*8 · Automation*
+- **Auto-defrost when it rains** — see group 4 (🚗)
+- **Scheduled navigation** — time window × weekdays × "only with GPS" × a saved place × a nav app, once per window per day (🚗)
+- **Start with the car** — auto-start Kachi on engine start · run the background service on engine start · keep Kachi as home on engine start
+
+*9 · System*
+- **Set / unset Kachi as home** — the BYD ROM shows no HOME chooser, so Kachi sets it over the dadb loopback
+- **In-car OTA update** — *Check for updates* fetches a newer `apk/Kachi-<ver>-release.apk` and installs it over the top; plus an *Auto update* toggle
+- **Missing permissions + self-grant** — notification / floating-window grants over dadb, no laptop
+- **Restart launcher · Stop all navigation · Cluster rescue** — recover without rebooting the head unit
+- **Diagnostics & logs** — a cluster diagnostics screen, logs written to the SD card, a capability-test report; testers only need to send a screenshot
+- **ADB test mode** — can only be switched on by hand in the car, self-expires after 60 min, dies with the ignition cycle
+
+*10 · Performance & safety*
+- **HAL is read only for what the screen shows** — demand-gated polling; a datum that reads `null` goes cold and is retried with backoff
+- **Much lighter than the 2.5x line** — [measured, Seal car 2026-09-26, 2.58 → 2.69] launcher PSS 245.6 → **67.1 MB**, native 220 → 29 MB, threads 58 → 43, janky frames 56 % → 28.6 %
+- **Shell budget + log throttling** — a cap on shell commands per minute; identical log lines within 10 s collapse (W/E/F/A are never dropped)
+- **Returning native memory to the OS (2.73, internal)** — the listening process calls `mallopt`; the real saving is 🚗 not yet measured on a car
+- **Fail-safe by design** — Kachi only turns off what it turned on; guards live in the execution layer; **no** mock GPS — location permission is read-only
 
 ## Target product baseline — exactly two tracks · Mục tiêu sản phẩm — đúng hai nhánh
 
@@ -95,13 +181,13 @@ The tracks may share one APK as packaging, but they must not share runtime contr
 
 ## Downloads and installation · Tải về và cài đặt
 
-**(VI)** **Cài lần đầu (Kachi):** app ĐỘC LẬP `com.byd.launcher`, cài SONG SONG với ClusterNav cũ — **không cần gỡ**; tải `apk/Kachi-2.72-release.apk` (nút **Raw**/Download trên GitHub, nhánh `main`) rồi cài bằng `adb install -r` (tap trên đầu xe có thể bị ROM chặn vì đây là launcher — xem `docs/HUONG-DAN-KACHI.md` §1). Sau đó cập nhật qua **OTA**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự dò `apk/Kachi-<ver>-release.apk` mới hơn trên `main` và cài qua dadb loopback (`-r`, khoá ký riêng của Kachi) — không cần ADB/laptop. Để build cùng bản release từ nguồn: `./gradlew :app:assembleRelease`.
+**(VI)** **Cài lần đầu (Kachi):** app ĐỘC LẬP `com.byd.launcher`, cài SONG SONG với ClusterNav cũ — **không cần gỡ**; tải `apk/Kachi-2.73-release.apk` (nút **Raw**/Download trên GitHub, nhánh `main`) rồi cài bằng `adb install -r` (tap trên đầu xe có thể bị ROM chặn vì đây là launcher — xem `docs/HUONG-DAN-KACHI.md` §1). Sau đó cập nhật qua **OTA**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự dò `apk/Kachi-<ver>-release.apk` mới hơn trên `main` và cài qua dadb loopback (`-r`, khoá ký riêng của Kachi) — không cần ADB/laptop. Để build cùng bản release từ nguồn: `./gradlew :app:assembleRelease`.
 
-**(EN)** **First install (Kachi):** a STANDALONE app `com.byd.launcher` that installs side by side with the old ClusterNav — **no uninstall needed**; download `apk/Kachi-2.72-release.apk` (GitHub **Raw**/Download, branch `main`) and install with `adb install -r` (tapping it on the head unit may be blocked by the ROM because it is a launcher — see `docs/HUONG-DAN-KACHI.md` §1). Afterwards it updates via **OTA**: *Settings › System & permissions › Check for update* — the app polls this repo's `apk/` on `main` for a newer `Kachi-<ver>-release.apk` and installs it over the dadb loopback (`-r`, Kachi's own signing key) — no ADB/laptop. To build the same release from source: `./gradlew :app:assembleRelease`.
+**(EN)** **First install (Kachi):** a STANDALONE app `com.byd.launcher` that installs side by side with the old ClusterNav — **no uninstall needed**; download `apk/Kachi-2.73-release.apk` (GitHub **Raw**/Download, branch `main`) and install with `adb install -r` (tapping it on the head unit may be blocked by the ROM because it is a launcher — see `docs/HUONG-DAN-KACHI.md` §1). Afterwards it updates via **OTA**: *Settings › System & permissions › Check for update* — the app polls this repo's `apk/` on `main` for a newer `Kachi-<ver>-release.apk` and installs it over the dadb loopback (`-r`, Kachi's own signing key) — no ADB/laptop. To build the same release from source: `./gradlew :app:assembleRelease`.
 
 **(VI)** Changelog theo phiên bản dưới đây giữ nguyên tiếng Anh (mô tả kỹ thuật từng bản sửa).
 
-**Lineage (pre-fork ClusterNav 2.0, kept as history — current Kachi version is 2.72 (173) above): 1.38 (versionCode 39) — "Cluster Nav 2.0" (`com.byd.clusternav2`), a standalone app independent of the legacy `com.byd.clusternav` (its own package + its own signing key, installs side by side).** `byd-cluster-2` re-baselines the 1.30 ClusterNav codebase (Waze/VietMap signals revived — see `docs/specs/waze-vietmap-signal-revival.html`) as a fresh **1.0** for a new iteration; the app OTA self-updates from **this** repo's `apk/ClusterNav-<ver>-release.apk` on `main`. The per-version notes below are kept as lineage history.
+**Lineage (pre-fork ClusterNav 2.0, kept as history — current Kachi version is 2.73 (174) above): 1.38 (versionCode 39) — "Cluster Nav 2.0" (`com.byd.clusternav2`), a standalone app independent of the legacy `com.byd.clusternav` (its own package + its own signing key, installs side by side).** `byd-cluster-2` re-baselines the 1.30 ClusterNav codebase (Waze/VietMap signals revived — see `docs/specs/waze-vietmap-signal-revival.html`) as a fresh **1.0** for a new iteration; the app OTA self-updates from **this** repo's `apk/ClusterNav-<ver>-release.apk` on `main`. The per-version notes below are kept as lineage history.
 
 `1.38` adds a manual **"Lọc ngay" (Clean now)** button to the PM2.5 card and fixes the on-car v1.37 finding that the auto-filter did nothing when the cabin got dusty. **(VI)** `1.38`: thêm nút "Lọc ngay" cho lọc bụi PM2.5 + sửa lỗi trên xe "popup báo bụi hiện mà không tự lọc".
 
@@ -199,53 +285,133 @@ See the [project closeout (1.30)](docs/CLOSEOUT-2026-08-16.md) for the final eva
 
 ## Chi tiết tính năng · Feature details
 
-**(VI)**
+**(VI)** Tên nhóm và tên hàng dưới đây lấy **đúng nguyên văn** từ màn Cài đặt (`SettingsCatalogGroups.kt` · `strings_kachi.xml`). Cài đặt có **11 nhóm** trên rail bên trái: Màn hình chính · Thanh trạng thái & thanh nút · Hiển thị & đơn vị · Hồ sơ tài xế · Dẫn đường & cụm đồng hồ · Chiếu màn lên cụm · Phím vô-lăng · Tiện nghi xe · Giọng nói · Hệ thống & quyền · Giới thiệu.
 
-*Dẫn đường & chiếu cụm*
-- **Navigation + HUD** — một nguồn dẫn đường với đầu ra cluster-lane (làn zin) và cluster-centre ("Giữa + ETA") độc lập, cùng HUD kính lái; hướng rẽ **vòng xuyến + số lối ra**; chọn **chế độ cụm** ON/OFF; **chạy chữ** tên đường dài. Master switch **mặc định TẮT**; bật lên sẽ cấp quyền notification access trong app (qua dadb) và kết nối.
-- **Cluster Cast** — projection-first: mở app → cụm sẵn sàng ngay; chạm nút nổi để chiếu app đang mở lên cụm, chạm lại để trả về. Full hoặc **chia đôi chỉnh tỉ lệ (1:9–9:1)**; **CarPlay / Android Auto** luôn full-screen; **tự chiếu** một app khi khởi động; watchdog giữ cụm khi app bị kéo ra.
-- **Biển báo tốc độ trên cụm** — hiện tốc độ/giới hạn hiện tại + **giới hạn sắp tới** + **chip cảnh báo/camera VietMap**; chỉnh cỡ và kéo-thả vị trí.
-- **Bóng VietMap trên cụm** — hiện bóng VietMap trên cụm, kéo-thả chỉnh vị trí; auto-start VietMap khi bật (1.32 sửa: luôn mở activity rồi đưa về nền để bóng hiện được).
+*1 · Màn hình chính & ô*
+- **Bố cục** — *Cài đặt › Màn hình chính › Bố cục sẵn*: 1 ô · 2 cột · 2 hàng · 3 ô · 4 ô. *Bố cục tự vẽ* + *Vẽ bố cục riêng…* mở bảng vẽ lưới **12 cột × 6 dòng**: kéo để dời, kéo góc để đổi cỡ, khung đè nhau tô đỏ, nút **Lưu** bị chặn khi bố cục còn lỗi.
+- **Nội dung ô** — mỗi ô nhận: widget Kachi dựng tay (Tổng hợp · Xe · pin · đồng hồ · trình chiếu ảnh…), widget Android của app khác, hoặc **một app thật** chạy trong ô qua màn ảo (chạm ô trống → *Mở ứng dụng*). App đóng thì ô hiện *"App đã đóng — chạm để mở lại"*.
+- **Thanh trạng thái & thanh nút** — *Cài đặt › Thanh trạng thái & thanh nút*: **Chip thanh trạng thái** · **Hiện nhãn trên thanh trên** (tắt = chỉ icon + số) · **Vị trí trên thanh trên** · **Hiện thanh nút xe** · **Viền đặt thanh nút** (4 viền) · **Nút trên thanh nút xe** · **Vị trí trên thanh nút xe**.
+- **Hiển thị & đơn vị** — *Cài đặt › Hiển thị & đơn vị*: **Đơn vị hiển thị** · **Giao diện sáng/tối** · **Màu sắc** · **Ngôn ngữ** (Theo xe / VI / EN) · **Kính thật (làm mờ nền)**.
 
-*Tiện nghi cabin (mới ở 1.32)*
-- **Ghế mát / sưởi tự động** — tự áp mức mát/sưởi đã lưu cho từng ghế (Seal 2 ghế / Han 4 ghế) qua HAL điều hoà BYDAuto, ~5 giây sau khi mở app / nổ máy; sơ đồ ghế top-down chạm để đổi mức. Mát và sưởi loại trừ nhau (theo HAL).
-- **Tự lọc bụi mịn PM2.5** — khi mức PM2.5 trong cabin vượt ngưỡng nặng, tự bật lọc khí (reflection vào service điều hoà); đồng hồ vòng hiển thị mức hiện tại.
+*2 · Dẫn đường & chiếu cụm*
+- **Dẫn đường lên cụm** — *Cài đặt › Dẫn đường & cụm đồng hồ*: **Dẫn đường lên cụm** (công tắc chính) · **Chế độ hiện trên cụm** · **Chạy chữ tên đường** · **App dẫn đường mặc định** · **Kết nối lại nguồn dẫn đường**. Có hai đường ra độc lập: làn zin trên cụm và cụm-giữa "Giữa + ETA", cộng HUD kính lái; hướng rẽ vòng xuyến kèm **số lối ra**.
+- **Biển báo tốc độ** — cùng nhóm: **Biển báo tốc độ** · **Giới hạn sắp tới** · **Chip cảnh báo camera** · **Cỡ biển báo** · **Vị trí biển báo** (kéo-thả).
+- **Bong bóng VietMap** — **Bong bóng VietMap** · **Vị trí bong bóng**.
+- **Sổ địa chỉ** — cùng nhóm: **Sổ địa chỉ** · **Thêm địa chỉ…** — mỗi mục là *tên + văn bản địa chỉ + lat/lng tuỳ chọn*, lưu **theo hồ sơ**; toạ độ dán tay từ app bản đồ (Kachi **không** xin quyền GPS để ghi). Nói *"về nhà"* / *"đi công ty"* là đi.
+- **Chiếu màn lên cụm** — *Cài đặt › Chiếu màn lên cụm*: **Bật chiếu màn** · **Hiện nút nổi chiếu cụm** · **Tỉ lệ chia đôi** · **Tự chiếu khi nổ máy** (+ **App tự chiếu toàn màn** / **Tự chiếu chia đôi** / **App bên trái** / **App bên phải**) · **Chiếu ngay: toàn màn, trái, phải, dừng** · **Cứu hộ cụm**. CarPlay / Android Auto luôn chiếu toàn màn.
+- **Tự dẫn đường theo lịch** *(🚗)* — **Tự dẫn đường theo lịch**: khung giờ × thứ trong tuần × *chỉ khi có GPS* × một điểm trong **Sổ địa chỉ** × app dẫn đường; mỗi khung chạy **1 lần/ngày**.
 
-*Trợ lý & hệ thống*
-- **Nút vật lý → trợ lý giọng nói** *(tuỳ chọn, mặc định TẮT)* — gán một nút cứng + cử chỉ (nhấn / nhấn-giữ) để mở Google/Gemini, BYD 小迪, Kiki hoặc speech recognizer, mà không đổi chức năng gốc của nút; **học phím mới** trên xe, **gán nhiều nút cho nhiều app**; **chỉ báo trạng thái phím-thoại** kèm nút "Kiểm tra / Sửa ngay"; khôi phục OFF→ON khi mất kết nối sau reboot.
-- **Cấp quyền notification access trong app** — không cần laptop/ADB, không cần màn hình system-settings: app tự cấp listener qua dadb uid-shell, màn hình cài đặt chỉ là phương án dự phòng.
-- **Tự khởi động nền** — tự bật mọi tính năng nền (phím-thoại, ghế, lọc bụi, dẫn đường) khi nổ máy, không cần mở app thủ công.
-- **Tự cập nhật OTA** — khi Nav+HUD bật, app tự dò thư mục `apk/` trên nhánh `main`, thấy `ClusterNav-<ver>-release.apk` mới hơn thì tự cài qua dadb loopback (cùng khoá ký).
-- **Nâng cao · khắc phục sự cố** — kiểm tra cập nhật thủ công, dọn sạch cụm, cứu hộ chiếu (deep rescue), chẩn đoán, và xuất log ra `/sdcard` để gỡ lỗi.
+*3 · Camera theo xi-nhan (đã đo trên Seal và Sealion 6)*
+- Tất cả ở *Cài đặt › Tiện nghi xe › **Camera theo xi-nhan***: **Bật camera khi xi-nhan** · **Hiện camera lên màn cụm** · **Xi-nhan trái hiện ở** / **Xi-nhan phải hiện ở** (góc trên-trái / trên-phải, mặc định trái TL, phải TR) · **Cam xi-nhan trái** / **Cam xi-nhan phải** (id 0–5; Sealion 6 dùng cam 0).
+- **Xoay video từng bên** (2.71) — hai hàng **Xi-nhan trái: xoay video** / **Xi-nhan phải: xoay video**, mỗi hàng chọn *Không xoay · ↺ 90° · ↻ 90° · 180°*; mặc định **trái ↺ 90°, phải ↻ 90°** (dải gương cắt từ camera 360 vốn nằm ngang). Hai bên độc lập hoàn toàn. Chiều xoay mặc định **đã xác nhận bằng mắt trên xe Seal** (2026-09-26).
+- **Giữ tới khi đèn xi-nhan tắt** (2.70) — trước đó overlay tắt sau ~1 s. [ĐO xe Seal 2026-09-26] mở 57,18 s → đóng 62,41 s, đèn tắt 62,33 s (trễ 87 ms). Kèm lưới an toàn: helper HAL chết giữa lúc đèn còn bật thì Kachi coi như OFF và đóng overlay (2.72, 🚗 chưa chốt trên xe).
+- **Khung đúng tỉ lệ** (2.73, 🚗) — ô vuông cũ chỉ còn là *vùng cho phép*; cửa sổ thật là hình lớn nhất **đúng tỉ lệ crop sau khi xoay**, căn giữa ⇒ hết viền đen, hết kéo méo. Xoay ±90° cho khung **ngang**.
+- **Kết xuất camera** (2.73, 🚗) — **Kết xuất camera**: *TextureView (mặc định)* | *SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)*. Mặc định **không đổi**; đây là cờ để đo nguồn giật khi xe chạy.
 
-*Giao diện (mới ở 1.32)*
-- **Giao diện "cockpit" Level-2** — design system `Cockpit.*` dùng lại được: hero 3 thẻ trạng thái (ô rẽ + đồng hồ km/h **thật** + xem trước chia đôi cụm) + bảng tính năng 2 cột grouped-row, kèm custom view sơ đồ ghế / đồng hồ PM2.5 / segmented.
-- **Song ngữ Việt / English** — chuyển ngôn ngữ ngay trong app (**Ngôn ngữ**: Theo xe / VI / EN); dịch lúc chạy nên không đụng `strings.xml`.
-- **Light mode** — bảng màu ngày/đêm đầy đủ, chọn qua **Giao diện** (Theo xe / Sáng / Tối); mọi custom view đổi màu theo.
+*4 · Tiện nghi xe*
+- *Cài đặt › Tiện nghi xe* gồm bốn khối: **Lấy gió trong** (*Nổ máy thì tự lấy gió trong* — xe quên chế độ này mỗi lần khởi động) · **Ghế mát / sưởi** (*Tự chỉnh ghế theo nhiệt độ* + *Chế độ*: Làm mát / Sưởi + **mức từng ghế**, chạm sơ đồ ghế: tắt → mức 1 → mức 2; mát và sưởi loại trừ nhau theo HAL) · **Lọc bụi mịn** (*Tự lọc khi không khí bẩn* + **Lọc ngay một lượt** + dòng *Bụi mịn hiện tại*) · **Tự sấy kính khi mưa**.
+- **Mưa thì tự bật sấy kính** *(🚗 chưa gặp buổi mưa thật)* — đọc cảm biến mưa mỗi 5 phút; chọn **Sấy kính trước** và/hoặc **Sấy kính sau + gương**; hết mưa thì tắt, và **chỉ tắt cái Kachi bật** — bạn tự bật thì Kachi không đụng.
+- **Nút xe khác** — kính từng cửa, mở/đóng hết kính, cốp, cửa sổ trời, đèn, điều hoà (AUTO / nhiệt độ / gió), lọc khí… đều là nút của **một bộ đăng ký duy nhất** (`ControlRegistry`), nên hiện được trên **thanh nút xe**, đọc được trạng thái, và gọi được **bằng giọng** — không có bảng thứ hai. Status thật từng nút (🟢 / ⚠ / ❌ / 🚗) ở [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html).
 
-**(EN)**
+*5 · Giọng nói*
+- **Nghe tại máy** — *Cài đặt › Giọng nói › Nhận dạng giọng nói (tại máy)*: **Tải mô hình tiếng Việt** (sherpa-onnx + `zipformer-vi`, ~266 MB, sha256 ghim) · **Cập nhật mô hình** · **Gỡ mô hình**. Xe không có mạng: chép cả cây thư mục gói vào `Android/data/com.byd.launcher/files/sherpa/import/<gói>/` rồi bấm Tải — máy vẫn kiểm sha256. Không gửi tiếng nói ra mạng.
+- **Ba lối gọi** — ô *Nói với xe* trên màn chính · **nút mic trên thanh trạng thái** · phím vô-lăng gán đích *Kachi nghe (tại máy)* (*Cài đặt › Phím vô-lăng*). Tấm chữ voice là **cửa sổ độc lập**: đang mở app khác toàn màn thì chỉ overlay lên, không kéo launcher ra trước.
+- **"Hey Kachi"** *(thử nghiệm, mặc định tắt)* — *Cài đặt › Giọng nói › Hey Kachi*: **"Hey Kachi" — gọi bằng giọng** + **Cách nghe "Hey Kachi": ASR (không cần train)**. Nghe nền khi màn sáng; nghe nhầm nhiều lần thì tự tắt kèm thông báo. Khi bật, nút mic cũng đi qua tiến trình nghe nên **không phải chờ nạp mô hình** lần đầu.
+- **Giọng đọc + xác nhận** — **Đọc phản hồi bằng giọng** · **Ưu tiên giọng offline** · **Giọng đọc offline (tại máy)** (gói Piper, tải/cập nhật/gỡ, side-load được) · **App nhạc mặc định** · **Hỏi xác nhận trước khi chạy** (mặc định **rỗng** = Kachi chạy luôn; tự tích việc nào thì việc đó hỏi lại) · **Đọc to câu hỏi xác nhận** · **Nguồn micro** (*Tự chọn* thử MIC trước rồi tới nguồn có khử ồn).
+- **Nhóm lệnh** — nút xe (*"bật đèn đọc"*, *"mở kính lái"*, *"đặt nhiệt độ hai mươi bốn độ"*, *"tăng gió"*) · gói lệnh (*"đóng hết kính"*) · đọc thông tin (*"xem pin"*, *"nhiệt độ ngoài trời bao nhiêu"*, *"đọc tầm hoạt động"*) · app (*"mở YouTube"*, *"đóng YouTube"*, *"mở YouTube vào ô số 9"*) · nhạc (*"phát bài Diễm Xưa"*, *"bài tiếp theo"*) · dẫn đường (*"dẫn đường tới chợ Bến Thành bằng Waze"*) · hồ sơ (*"chuyển sang hồ sơ Test"*) · bố cục (*"đổi bố cục 4 ô"*) · câu ghép với *và* / *rồi*.
+- **Nghe chắc hơn ở 2.73** *(🚗 chưa chốt bằng giọng thật trên xe)* — vế *"vào ô số N"* không còn rụng; tên app nghe lệch nhẹ (*"youtubex"*, *"vietp"*) vẫn khớp; tên hồ sơ tiếng Anh vẫn khớp, thiếu tên thì Kachi **hỏi lại**. Bảng đầy đủ câu ↔ phản hồi thật ở [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html).
+- **Huỷ lượt nghe** — **chạm ra ngoài tấm chữ**, hoặc chờ trần 8 s. Từ **2.73 nút Back không còn huỷ** (nó đi tới app phía sau) — đổi có chủ ý để thanh điều hướng của xe không trồi lên lúc Kachi đọc phản hồi.
 
-*Navigation & cluster casting*
-- **Navigation + HUD** — one navigation source with independent cluster-lane (stock lane) and cluster-centre ("Giữa + ETA") outputs, plus the windshield HUD; roundabout **exit direction + exit number**; a **cluster display** ON/OFF selector; a long road-name **marquee**. Master switch **defaults OFF**; turning it on grants notification access in-app (over dadb) and connects.
-- **Cluster Cast** — projection-first: open app → cluster ready instantly; tap the floating button to cast the foreground app, tap again to return. Full or **split with an adjustable ratio (1:9–9:1)**; **CarPlay / Android Auto** always full-screen; **auto-cast** an app on start; a re-pin watchdog when an app is pulled off the cluster.
-- **Speed badge on the cluster** — show the current speed/limit + the **upcoming limit** + a **VietMap alert/camera chip**; adjustable size and drag-to-position.
-- **VietMap bubble on the cluster** — show the VietMap bubble on the cluster, drag to reposition; VietMap auto-starts when enabled (1.32 fix: always open the activity then return to background so the bubble appears).
+*6 · Hồ sơ tài xế*
+- *Cài đặt › Hồ sơ tài xế*: **Danh sách hồ sơ** · **Hồ sơ đang dùng** · **Hồ sơ lúc nổ máy** (*Gần nhất* hoặc một hồ sơ cố định) · **Thêm hồ sơ (bản sao)**; đổi tên và xoá ở nút cạnh từng hồ sơ.
+- Mọi thiết lập ở Cài đặt lưu **theo hồ sơ**, **trừ** nhóm *Hệ thống & quyền*, khung hình khi chiếu lên cụm, và *Giới thiệu*.
+- **Xuất hồ sơ (backup)** / **Nhập hồ sơ từ file** qua `Android/data/com.byd.launcher/files/profiles/`; trùng tên tự thành `<tên> 2`, `<tên> 3`… Đổi nhanh bằng chip hồ sơ trên thanh trên hoặc bằng giọng.
 
-*Cabin comfort (new in 1.32)*
-- **Auto seat cooling / heating** — applies a saved per-seat cool/heat level (Seal 2 seats / Han 4 seats) over the BYDAuto AC HAL ~5 s after the app opens / engine start; a top-down seat diagram lets you tap a seat to cycle. Cool and heat are mutually exclusive (matches the HAL).
-- **PM2.5 auto-filter** — when cabin PM2.5 crosses the heavy threshold, purification is auto-enabled (reflection into the AC service); a ring gauge shows the current level.
+*7 · Ảnh xe · hình nền · trình chiếu*
+- Ba thư mục trên thẻ, **không cần quyền**: `files/car/` (ảnh xe top-down) · `files/wallpapers/` (hình nền) · `files/photos/` (widget trình chiếu). Mỗi hàng trong *Cài đặt › Màn hình chính* có nút **Sao chép đường dẫn thư mục**.
+- Chưa có ảnh riêng thì Kachi vẽ **hình xe bằng vector** (chọn model và màu sơn); ảnh xe mặc định là `seal-3`.
 
-*Assistant & system*
-- **Physical button → voice assistant** *(optional, default OFF)* — map a hardware button + gesture (press / long-press) to launch Google/Gemini, BYD 小迪, Kiki or a speech recognizer, without changing the button's native function; **learn a new key** on the car, **map many buttons to many apps**; a **voice-key binding-status indicator** with a "Check / Fix now" action; OFF→ON recovery when the binding drops after a reboot.
-- **In-app notification-access grant** — no laptop/ADB, no system-settings screen: the app self-grants the listener over the dadb uid-shell, with the settings screen only as a fallback.
-- **Background auto-start** — auto-starts every background feature (voice key, seats, dust filter, navigation) on engine start, no need to open the app manually.
-- **OTA self-update** — with Nav+HUD on, the app polls the repo's `apk/` on `main` and installs a newer `ClusterNav-<ver>-release.apk` over the dadb loopback (same signing key).
-- **Advanced · troubleshooting** — manual update check, clear the cluster, cast deep-rescue, diagnostics, and export logs to `/sdcard` for debugging.
+*8 · Automation*
+- **Mưa thì tự bật sấy kính** (🚗) và **Tự dẫn đường theo lịch** (🚗) — xem nhóm 4 và 2. Cả hai chạy trên một nhịp nền nhẹ và **chỉ hoàn tác cái mình bật**.
+- **Khởi động theo xe** — *Cài đặt › Hệ thống & quyền*: **Tự mở Kachi khi nổ máy** · **Chạy dịch vụ nền khi nổ máy** · **Giữ Kachi làm màn hình chính khi nổ máy** (mặc định tắt).
 
-*Interface (new in 1.32)*
-- **Level-2 "cockpit" UI** — a reusable `Cockpit.*` design system: three hero status cards (turn tile + a real km/h speed dial + a cast split-preview) + a two-column feature board of grouped rows, with custom seat-diagram / PM2.5-gauge / segmented views.
-- **Bilingual Vietnamese / English** — switch language in-app (**Language**: By-car / VI / EN); translated at runtime so `strings.xml` is untouched.
-- **Light mode** — a full day/night palette selected via **Interface** (By-car / Light / Dark); every custom view adapts.
+*9 · Hệ thống & quyền · Giới thiệu*
+- **Quyền còn thiếu** — app tự cấp qua dadb uid-shell (notification listener, cửa sổ nổi…), không cần laptop; màn cài đặt hệ thống chỉ là phương án dự phòng vì ROM DiLink chặn nhiều màn đó.
+- **Màn hình chính** — **Đặt Kachi làm màn hình chính** / **Bỏ chọn Kachi làm màn hình chính**. ROM BYD không hiện hộp chọn HOME nên Kachi tự đặt qua dadb loopback; bỏ chọn thì về launcher gốc và giữ qua lần nổ máy sau.
+- **Cập nhật** — **Kiểm tra cập nhật** + **Tự động cập nhật** (mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải và cài đè; không có bản mới thì im lặng).
+- **Bảo trì** — **Khởi động lại launcher** · **Dừng toàn bộ dẫn đường** · **Cứu hộ cụm**.
+- **Nâng cao** — màn ClusterNav cũ (chỉ còn là "màn nâng cao"), **Chẩn đoán cụm** (`DiagActivity` tự chụp dữ liệu, anh em chỉ cần gửi ảnh màn), **Kiểm tra từng chức năng xe** (chạy → OK/Không OK → ghi báo cáo), **Gõ lệnh chữ** (thử bộ hiểu ý không cần nói), **Nhận dạng tệp WAV thử**.
+- **Chế độ kiểm thử qua adb** — cho máy tính gửi lệnh thử vào Kachi (nói một câu, đổi hồ sơ, gắn app vào ô, đọc trạng thái). Chỉ bật được **bằng tay trong xe**, **tự tắt sau 60 phút**, và **chết theo lần nổ máy**; mọi lệnh đều được ghi nhật ký.
+- **Giới thiệu** — **Phiên bản và giấy phép** · **Miễn trừ trách nhiệm**. Số hiệu bản hiện cả ở đây, trong log phiên và trong tên tệp log.
+
+*10 · Hiệu năng & ranh giới an toàn*
+- **Đọc HAL theo nhu cầu** — vòng poll chỉ đọc datum mà màn hình đang bày; datum đọc ra `null` ba lần thì nguội và thử lại giãn dần (60 s → ×2 → trần 10 phút) — cố ý **không** cấm vĩnh viễn vì `null` không chứng minh *"xe không có"*.
+- **Tiết chế log + ngân sách shell** — dòng log trùng y nguyên trong 10 s gộp lại kèm hậu tố *[+N lặp]* (mức W/E/F/A **không bao giờ** bị bỏ); số lệnh shell mỗi phút có trần.
+- **Ranh giới cứng** — **không** mock location / dead-reckon (đã gỡ hẳn 2026-07-27, quyền location chỉ **ĐỌC**); guard đặt ở **tầng thi hành** chứ không ở UI; mọi thứ đổi ra ngoài tiến trình đều có đường trả lại chạy được cả khi tiến trình đã chết.
+
+**(EN)** The group and row names below are quoted **verbatim** from the Settings screen (`SettingsCatalogGroups.kt` · `strings_kachi.xml`). Settings has **11 groups** in the left rail: Home screen · Status bar & button bar · Display & units · Driver profiles · Navigation & cluster · Cluster cast · Steering-wheel keys · Car comfort · Voice · System & permissions · About.
+
+*1 · Home screen & slots*
+- **Layout** — *Settings › Home screen › Preset layout*: 1 slot · 2 columns · 2 rows · 3 slots · 4 slots. *Custom layout* + *Draw your own layout…* opens a **12 × 6 grid** editor: drag to move, drag the corner to resize, overlapping frames turn red, **Save** is blocked while the layout is invalid.
+- **Slot contents** — each slot takes a hand-built Kachi widget (Board · Car · battery · clock · photo slideshow…), another app's Android widget, or **a real app** running in the slot on a virtual display (tap an empty slot → *Open app*). When the app closes the slot reads *"App closed — tap to reopen"*.
+- **Status bar & button bar** — *Settings › Status bar & button bar*: **Status-bar chips** · **Show chip labels** (off = icon + value only) · **Status-bar item order** · **Show the car bar** · **Button bar edge** (any of 4) · **Buttons on the car bar** · **Car-bar item order**.
+- **Display & units** — *Settings › Display & units*: **Display units** · **Light / dark theme** · **Colours** · **Language** (By-car / VI / EN) · **Real glass (blur the backdrop)**.
+
+*2 · Navigation & cluster casting*
+- **Navigation on the cluster** — *Settings › Navigation & cluster*: **Navigation on the cluster** (master switch) · **Cluster display mode** · **Scroll long street names** · **Default navigation app** · **Reconnect the navigation source**. Two independent outputs — the stock cluster lane and the cluster centre "Giữa + ETA" — plus the windshield HUD; roundabouts carry the **exit number**.
+- **Speed badge** — same group: **Speed limit badge** · **Upcoming limit** · **Camera alert chip** · **Badge size** · **Badge position** (drag).
+- **VietMap bubble** — **VietMap bubble** · **Bubble position**.
+- **Address book** — **Address book** · **Add an address…** — each entry is *name + address text + optional lat/lng*, stored **per profile**; coordinates are pasted by hand from a map app (Kachi asks for **no** GPS write permission). Say *"về nhà"* / *"đi công ty"* and it navigates.
+- **Cluster cast** — *Settings › Cluster cast*: **Enable casting** · **Show the floating cast button** · **Split ratio** · **Autostart on engine start** (+ **Full-screen autostart app** / **Autostart split view** / **Left-hand app** / **Right-hand app**) · **Cast now: full, left, right, stop** · **Cluster rescue**. CarPlay / Android Auto always cast full-screen.
+- **Scheduled navigation** *(🚗)* — time window × weekdays × *only with GPS* × one **Address book** entry × a nav app; fires **once per window per day**.
+
+*3 · Turn-signal camera (measured on Seal and Sealion 6)*
+- All under *Settings › Car comfort › **Turn-signal camera***: **Camera on turn signal** · **Show the camera on the cluster** · **Left signal shows at** / **Right signal shows at** (top-left / top-right; default left TL, right TR) · **Left signal camera** / **Right signal camera** (id 0–5; Sealion 6 uses cam 0).
+- **Per-side rotation** (2.71) — two rows **Left signal: rotate video** / **Right signal: rotate video**, each *No rotation · ↺ 90° · ↻ 90° · 180°*; defaults **left ↺ 90°, right ↻ 90°** (the mirror crop of the 360 camera is sideways). The sides are fully independent. The default directions were **confirmed by eye on a Seal** (2026-09-26).
+- **Held until the signal lamp goes off** (2.70) — the overlay used to close after ~1 s. [measured, Seal 2026-09-26] shown at 57.18 s → closed at 62.41 s, lamp off at 62.33 s (87 ms lag). Plus a safety net: if the HAL helper dies while the lamp is still on, Kachi treats it as OFF and closes the overlay (2.72, 🚗 not yet confirmed on a car).
+- **Aspect-correct frame** (2.73, 🚗) — the old square is now only the *allowed area*; the real window is the largest rectangle **matching the crop's aspect after rotation**, centred ⇒ no black bars, no stretching. A ±90° rotation gives a **landscape** frame.
+- **Camera rendering** (2.73, 🚗) — **Camera rendering**: *TextureView (default)* | *SurfaceView (lighter, rotates via the HAL — may not rotate)*. The default is **unchanged**; this is a flag for measuring the source of the stutter while driving.
+
+*4 · Car comfort*
+- *Settings › Car comfort* has four blocks: **Recirculation** (*Recirculation on engine start* — the car forgets it every start) · **Seat cool / heat** (*Adjust seats by temperature* + *Mode*: Cool / Heat + **a level per seat**; tap the seat diagram: off → level 1 → level 2; cool and heat are mutually exclusive per the HAL) · **PM2.5 filter** (*Purify when the air is dirty* + **Purify now** + a *current dust level* line) · **Auto-defrost when it rains**.
+- **Rain → defrost** *(🚗 no real rain session yet)* — polls the rain sensor every 5 min; pick **Front windscreen defrost** and/or **Rear + mirrors**; turns off when the rain stops, and **only turns off what Kachi turned on** — if you switched it on, Kachi leaves it alone.
+- **Other car buttons** — individual windows, all windows, trunk, sunroof, lights, AC (AUTO / temperature / fan), air purification… all come from **one registry** (`ControlRegistry`), so they can appear on the **car button bar**, be read back, and be driven **by voice** — there is no second table. Per-button on-car status (🟢 / ⚠ / ❌ / 🚗) lives in [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html).
+
+*5 · Voice*
+- **On-device recognition** — *Settings › Voice › Speech recognition (on-device)*: **Download the Vietnamese model** (sherpa-onnx + `zipformer-vi`, ~266 MB, sha256-pinned) · **Update** · **Remove**. With no network in the car, copy the whole pack tree into `Android/data/com.byd.launcher/files/sherpa/import/<pack>/` and press Download — the sha256 check still runs. No audio leaves the car.
+- **Three ways in** — the *Talk to the car* tile on the home screen · the **mic button in the status bar** · a steering-wheel key bound to *Kachi listens (on-device)* (*Settings › Steering-wheel keys*). The voice card is an **independent window**: over a full-screen app it only overlays, it does not pull the launcher forward.
+- **"Hey Kachi"** *(experimental, default off)* — *Settings › Voice › Hey Kachi*: the wake-word switch plus **Wake engine: ASR (no training needed)**. Listens in the background while the screen is on; auto-disables with a notice after repeated false accepts. With it on, the mic button also goes through the listening process, so the **first press no longer waits for a model load**.
+- **Reply voice + confirmation** — **Speak replies out loud** · **Prefer the offline voice** · **Offline voice pack (on-device)** (Piper; download / update / remove, side-loadable) · **Default music app** · **Ask before running** (default **empty** = Kachi just runs; tick an action and that action asks first) · **Read confirmation questions aloud** · **Microphone source** (*Auto* tries MIC first, then a noise-cancelling source).
+- **Command groups** — car buttons (*"bật đèn đọc"*, *"mở kính lái"*, *"đặt nhiệt độ hai mươi bốn độ"*, *"tăng gió"*) · macros (*"đóng hết kính"*) · read vehicle data (*"xem pin"*, *"nhiệt độ ngoài trời bao nhiêu"*, *"đọc tầm hoạt động"*) · apps (*"mở YouTube"*, *"đóng YouTube"*, *"mở YouTube vào ô số 9"*) · music (*"phát bài Diễm Xưa"*, *"bài tiếp theo"*) · navigation (*"dẫn đường tới chợ Bến Thành bằng Waze"*) · profiles (*"chuyển sang hồ sơ Test"*) · layouts (*"đổi bố cục 4 ô"*) · compound sentences with *và* / *rồi*.
+- **More robust in 2.73** *(🚗 not yet confirmed by live speech on a car)* — the *"into slot N"* clause no longer drops; slightly misheard app names (*"youtubex"*, *"vietp"*) still resolve; English profile names resolve, and a missing name makes Kachi **ask back**. The full sentence ↔ real-reply table is in [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html).
+- **Cancelling a turn** — **tap outside the card**, or wait out the 8 s ceiling. Since **2.73 Back no longer cancels** (it goes to the app behind) — a deliberate change so the car's navigation bar stops popping up while Kachi speaks.
+
+*6 · Driver profiles*
+- *Settings › Driver profiles*: **Profile list** · **Active profile** · **Profile on engine start** (last used, or a fixed one) · **Add profile (a copy)**; rename and delete sit next to each profile.
+- Every Settings value is stored **per profile**, **except** *System & permissions*, the cluster-cast geometry, and *About*.
+- **Export (backup)** / **Import from file** via `Android/data/com.byd.launcher/files/profiles/`; duplicate names become `<name> 2`, `<name> 3`… Switch quickly from the profile chip in the top bar or by voice.
+
+*7 · Car image · wallpapers · slideshow*
+- Three folders on the SD card, **no permission needed**: `files/car/` (top-down car image) · `files/wallpapers/` · `files/photos/` (slideshow widget). Every row in *Settings › Home screen* carries a **Copy folder path** button.
+- With no image of your own, Kachi draws **vector car artwork** (pick the model and paint colour); the default car image is `seal-3`.
+
+*8 · Automation*
+- **Rain → defrost** (🚗) and **Scheduled navigation** (🚗) — see groups 4 and 2. Both run on one light background tick and **only undo what they turned on**.
+- **Start with the car** — *Settings › System & permissions*: **Auto-start Kachi on engine start** · **Run background service on engine start** · **Keep Kachi as home screen on engine start** (default off).
+
+*9 · System & permissions · About*
+- **Missing permissions** — the app self-grants over the dadb uid-shell (notification listener, floating window…), no laptop needed; the system settings screen is only a fallback because the DiLink ROM blocks many of those screens.
+- **Home screen** — **Set Kachi as home** / **Unset Kachi as home**. The BYD ROM shows no HOME chooser, so Kachi sets it over the dadb loopback; unsetting returns to the stock launcher and survives the next start.
+- **Update** — **Check for updates** + **Auto update** (checks when you open Kachi; **asks first** before downloading and installing over the top; stays silent when there is nothing new).
+- **Maintenance** — **Restart launcher** · **Stop all navigation** · **Cluster rescue**.
+- **Advanced** — the old ClusterNav screen (now just an "advanced screen"), **Cluster diagnostics** (`DiagActivity` captures the data itself — testers only send a screenshot), **Per-feature car capability test** (run → OK / not OK → write a report), **Type a command** (test the intent parser without speaking), **Recognise a test WAV**.
+- **ADB test mode** — lets a computer send test commands into Kachi (say a sentence, switch profile, pin an app into a slot, read state). It can only be switched on **by hand in the car**, **self-expires after 60 min**, and **dies with the ignition cycle**; every command is journalled.
+- **About** — **Version and licence** · **Disclaimer**. The version appears here, in the session log, and in the log file name.
+
+*10 · Performance & safety boundaries*
+- **Demand-gated HAL reads** — the poll loop only reads the data the screen is showing; a datum that reads `null` three times goes cold and is retried with backoff (60 s → ×2 → 10 min ceiling) — deliberately **not** banned for good, because `null` does not prove *"this car does not have it"*.
+- **Log throttling + shell budget** — identical log lines within 10 s collapse with a *[+N repeats]* suffix (W/E/F/A are **never** dropped); the number of shell commands per minute is capped.
+- **Hard boundaries** — **no** mock location / dead-reckoning (removed for good on 2026-07-27; location permission is **read-only**); guards live in the **execution layer**, not the UI; anything changed outside the process has a restore path that works even after the process has died.
 
 > ⚠️ **(VI)** Đây là một thử nghiệm sở thích. Không cam kết an toàn lái xe, tương thích, khả năng hoàn tác hay sẵn sàng sản xuất. Cài đặt tự chịu rủi ro. Không liên kết với BYD.
 >
@@ -257,16 +423,22 @@ See the [project closeout (1.30)](docs/CLOSEOUT-2026-08-16.md) for the final eva
 
 **(EN)** The canonical documentation set (bilingual where user-facing):
 
-- [Kachi user guide (Hướng dẫn dùng Kachi)](docs/HUONG-DAN-KACHI.md) — install/OTA, home, profiles, images, voice, turn-signal camera, automation, restart, logs (VI + EN).
+**Kachi (hiện hành · current):**
+
+- [Docs index (INDEX canonical)](docs/README.md) — bản đồ MỌI tài liệu hiện hành theo 9-loại taxonomy. Đọc file này trước, rồi mở doc cụ thể. · The canonical map of every current document — read it first.
+- [Hướng dẫn dùng Kachi · Kachi user guide](docs/HUONG-DAN-KACHI.md) — cài/OTA · đặt HOME · màn hình chính · hồ sơ · cấu hình từng nhóm Cài đặt · **bảng lệnh giọng nói theo nhóm** · camera xi-nhan · automation · lấy log · FAQ (VI + EN).
+- [Danh mục chức năng (máy sinh) · Feature catalog](docs/kachi-feature-catalog.html) — bảng **mọi** chức năng: diễn giải · voice command · phản hồi thật · **status trên xe** (🟢 / ⚠ / ❌ / 🚗). Sinh bằng `scripts/docs/feature-catalog.py` từ bộ đăng ký + `docs/catalog/*.json`.
+- [Project backlog](docs/PROJECT-BACKLOG.md) — nguồn task **DUY NHẤT** + nhật ký theo ngày. · The single source of tasks.
 - [Kachi project closeout (2.66)](docs/CLOSEOUT-2026-09-25.md) — final state, architecture, known limitations, build/OTA, open items (VI + EN).
-- [Docs index](docs/README.md) — canonical map of every current document.
-- [Project closeout (1.30, ClusterNav — historical)](docs/CLOSEOUT-2026-08-16.md) — final evaluation, the six 1.30 fixes, and honest known limitations (VI + EN).
+
+**ClusterNav (lineage · historical, giữ làm ngữ cảnh):**
+
+- [Project closeout (1.30, ClusterNav)](docs/CLOSEOUT-2026-08-16.md) — final evaluation, the six 1.30 fixes, and honest known limitations (VI + EN).
+- [User guide (1.30 ClusterNav)](docs/HUONG-DAN.md) — ClusterNav 1.30 usage; superseded for Kachi by `docs/HUONG-DAN-KACHI.md`.
 - [Two-track final plan](docs/specs/clusternav-two-track-final-plan.html) — derived orchestration and evidence gates.
 - [Cluster Cast re-baseline](docs/specs/cluster-cast-rebaseline.html) — canonical Cast contracts.
 - [Navigation/UX re-baseline](docs/specs/clusternav-uxui-rebaseline.html) — two-card target UX and Navigation contracts.
-- [Dead Reckon revalidation](docs/specs/dead-reckon-revalidation.html) — REMOVE decision and deferred review debt.
-- [User guide (Hướng dẫn sử dụng)](docs/HUONG-DAN.md) — current 1.30 usage: enable Nav+HUD, in-app notification grant, cluster display mode (ON/OFF), roundabout exit direction, physical-button voice trigger (OFF→ON recovery). VI + EN.
-- [1.13 spec — notification-grant · docs refresh · voice-key](docs/specs/notif-grant-docs-voicekey-1.13.html) — this cycle's consolidated spec (requirements → design → tasks → verification).
+- [Dead Reckon revalidation](docs/specs/dead-reckon-revalidation.html) — the REMOVE decision and deferred review debt.
 - [Vehicle Test V2 checklist](docs/diagnostics/VEHICLE-TEST-V2.md) — prepared operator scripts and Stage 11 matrix; execution remains NOT STARTED.
 
 **(VI)** Các handoff phiên làm việc và review lịch sử nay nằm trong `docs/archive/` (lịch sử git được giữ nguyên). Các file cũ hơn trong `docs/diagnostics/`, `docs/reference/`, và các spec trước đây mô tả các bản build hoặc điều tra lịch sử — chỉ là ngữ cảnh, trừ khi một spec hiện hành promote một mục thành cổng exact-source/exact-build mới.

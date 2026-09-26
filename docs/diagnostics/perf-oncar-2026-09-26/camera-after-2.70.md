@@ -1,4 +1,7 @@
 # D4 camera 2.70 18:18:06
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: đo camera xi-nhan trên bản 2.70 (log + layer SurfaceFlinger).
+
 t=5s cam_log=7 layers=[645b18d com.byd.launcher#0;694d934 com.byd.launcher#0;]
 t=10s cam_log=7 layers=[645b18d com.byd.launcher#0;694d934 com.byd.launcher#0;]
 t=15s cam_log=7 layers=[645b18d com.byd.launcher#0;694d934 com.byd.launcher#0;]

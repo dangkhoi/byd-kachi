@@ -1,6 +1,6 @@
 # Runbook lên xe — Kachi 2.07 (versionCode 108)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-22 · **Mục đích**: danh sách việc LÀM TRÊN XE cho bản 2.07, từng việc một — làm gì · kết quả mong đợi (PASS/FAIL) · ghi lại gì.
+> **Trạng thái**: Superseded — thay bởi `docs/diagnostics/oncar-runbook-2.73.md` · **Cập nhật**: 2026-09-22 · **Mục đích**: danh sách việc LÀM TRÊN XE cho bản 2.07, từng việc một — làm gì · kết quả mong đợi (PASS/FAIL) · ghi lại gì.
 >
 > Đọc cùng: `docs/diagnostics/oncar-master/RUNBOOK.md` (chi tiết RE 4 mảng) + `scripts/vehicle/kachi/` (script tự chụp bằng chứng). Runbook này là **bản gọn ưu tiên** cho những gì còn lại sau 2.07.
 >

@@ -1,4 +1,7 @@
 # D7 nút mic khi wake ON — 2.70 18:21:35
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: D7 — nút mic khi Hey Kachi bật, đo trên bản 2.70.
+
 18:21:02.897 I/KachiVoiceTiming(22962): mic mở sau 95 ms
 18:21:05.200 I/KachiVoiceTiming(22962): ngắt câu: duong=vad vad doan=1 tieng_bat_dau=412ms tieng_dut=1576ms cua_so=2200ms cat_con=1576ms (nguong=0.45 · toi_thieu_tieng=100ms · nguong_i
 18:21:05.200 I/KachiVoiceTiming(22962): nghe 2303 ms

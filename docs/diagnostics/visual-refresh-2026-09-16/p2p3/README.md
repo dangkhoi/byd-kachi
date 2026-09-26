@@ -1,5 +1,7 @@
 # VISUAL-REFRESH P2 + P3 — bằng chứng đo (2026-09-17 · Kachi **1.70 · 71** · máy ảo `emulator-5554` API 29, 1920×1080)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-17 · **Mục đích**: bằng chứng đo VISUAL-REFRESH P2 + P3 (Kachi 1.70·71, máy ảo API 29, 1920×1080).
+
 Spec: [`../../../specs/kachi-visual-refresh.html`](../../../specs/kachi-visual-refresh.html) — T4 (đường ống) · T5 · T6 · T7 · T8 · T8b ·
 T9 · T10 · T11 · T12 · R1 · R2 · R8 AC8.3. Owner: *"xây lại toàn bộ icon … thật đẹp"* · *"nó visual thật sự không? … 3D gì
 không?"* · *"riêng cái lốp … gôm lại thành 1 widget có hình xe đẹp"* · *"cho gradient hay làm sao cho đẹp được thì làm"*.

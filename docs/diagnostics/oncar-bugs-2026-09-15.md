@@ -1,5 +1,7 @@
 # Hai lỗi trên xe 2026-09-15 — YouTube co vào giữa · Voice không chạy
 
+> **Trạng thái**: Historical · **Cập nhật**: 2026-09-15 · **Mục đích**: hai lỗi trên xe 2026-09-15 — YouTube co vào giữa · voice không chạy.
+
 - **Ngày:** 2026-09-15 · **Chủ:** dangkhoi · **Xe:** DiLink3 (DL3), Android 10 (API 29), Kachi uid 10135 (KHÔNG platform-sign), bản 1.55 đang cài.
 - **Cách lấy:** adb vào xe qua cầu TCP loopback (`No route to host` trực tiếp → bridge `127.0.0.1:5556 → <ip-xe>:5555`). Dump `dumpsys display/window`, logcat, và kéo APK YouTube/GMaps của xe về máy.
 - **Mức bằng chứng** (CLAUDE.md §2): **[ĐO]** = đọc dump/log thật; **[SUY]** = suy luận khớp; **[CHƯA BIẾT]** = cần đo thêm.

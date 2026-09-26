@@ -19,6 +19,7 @@ import android.util.Log
 import android.widget.Toast
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.perf.KachiMem
 
 /**
  * ═══ "Hey Kachi" — FOREGROUND-SERVICE micro nền (owner: nghe cả khi launcher KHÔNG hiện) ══════════════════════
@@ -166,6 +167,11 @@ class VoiceWakeService : Service() {
      */
     private val resumeTask = Runnable {
         handoffUntil = 0L
+        // CLOSE-4 — mốc pha "phiên lệnh đã xong" (lượt nhường micro hết hạn ⇒ phiên nghe/đọc của lượt wake vừa rồi
+        // đã đóng): trả lại rác giải mã của lượt đó TRƯỚC khi mở mic lại. Đây là mốc pha thưa nhất mà vẫn phủ được
+        // mỗi lượt wake (một lần / [WAKE_HANDOFF_MS] = 18 s), và nó ở NGOÀI đường audio — không có khung nào bị
+        // `madvise` chen vào (CLAUDE.md §6: không đảo hỏng đường đang chạy tốt).
+        KachiMem.trim("phiên lệnh xong")
         if (enabled() && screenOn()) {
             ensureListener()
             listener?.setListening(true)
@@ -190,6 +196,14 @@ class VoiceWakeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // ═══ CLOSE-4 · WAKE-MALLOPT — tiến trình NÀY tự trả page free ngay, không chờ tick decay ══════════════
+        // Zygote đặt `M_DECAY_TIME 1` (1000 ms) cho mọi app, mà decay chỉ chạy theo tick sự kiện malloc — và `:wake`
+        // là tiến trình im lặng nhất của Kachi (nạp 74 MB mô hình rồi gần như không cấp phát gì nữa) ⇒ nó là tiến
+        // trình **ít có khả năng tới tick nhất**, tức chính nơi rác nạp ở lại resident. Đặt decay = 0 ngay khi tiến
+        // trình sinh ra là cách rẻ nhất: từ đó MỌI đường free (kể cả đường không ai nhớ gọi trim) tự madvise.
+        // Thiếu `libkachimem.so` ⇒ `false` và không có gì đổi (xem [KachiMem]). Xem doc
+        // `docs/diagnostics/offcar-2026-09-26/wake-mallopt-ndk.md`.
+        Log.i(TAG, "mallopt(M_DECAY_TIME,0) = ${KachiMem.decayNow()} · lib=${KachiMem.available()}")
         registerReceiver(screenRx, IntentFilter().apply { addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_SCREEN_OFF) })
     }
 

@@ -1,6 +1,6 @@
 # On-car master · MẢNG 3 — VOICE: RE + bài test QUYẾT ĐỊNH (một-lần-đủ)
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-19 · **Mục đích**: mọi việc voice CHƯA verify on-car sau 1.79, mỗi việc kèm **MỌI option** + **probe sẵn** để nếu option A chết trên xe thì B/C thử NGAY cùng buổi. · **Điều kiện tiên quyết**: xe phải ở **1.79 (vc80)** (xe đang 1.76 ⇒ OTA trước, không có 1.79 thì 3/4 việc dưới đây vô nghĩa). · **Client**: `/tmp/adb_raw.py <car-ip> 5555 '<shell>'` ([ĐO] có mặt; chưa lưu repo).
+> **Trạng thái**: Superseded — thay bởi `docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md` · **Ngày**: 2026-09-19 · **Mục đích**: mọi việc voice CHƯA verify on-car sau 1.79, mỗi việc kèm **MỌI option** + **probe sẵn** để nếu option A chết trên xe thì B/C thử NGAY cùng buổi. · **Điều kiện tiên quyết**: xe phải ở **1.79 (vc80)** (xe đang 1.76 ⇒ OTA trước, không có 1.79 thì 3/4 việc dưới đây vô nghĩa). · **Client**: `/tmp/adb_raw.py <car-ip> 5555 '<shell>'` ([ĐO] có mặt; chưa lưu repo).
 > **Xây trên**: `oncar-piper-crash-binding-2026-09-18.md` · `oncar-voice-music-vietmap-2026-09-18.md` · `oncar-voice-cases-findings-2026-09-18.md` · `oncar-voice-number-and-voicekey-bind-2026-09-18.md` · `oncar-runbook-hey-kachi.md`. **KHÔNG RE lại** những gì 4 doc đó đã chốt.
 
 ---

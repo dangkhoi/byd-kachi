@@ -98,7 +98,12 @@ class LauncherI18nContractTest {
      */
     // `log[IDWE](` = bọc `Log.*` trong `runCatching` (HalSignalClient 2026-09-25: luồng socket chạy được trong JVM test
     // thuần, android.jar stub ném ở mọi Log.*) — vẫn là nhật ký, không hiện trên màn.
-    private val DIAGNOSTIC_CALL = Regex("""(\bLog\.[a-z]+\(|\blog[IDWE]\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\()""")
+    // `KachiMem.trim(` (CLOSE-4 2026-09-26) = tham số DUY NHẤT của nó là **nhãn mốc pha đi thẳng vào `Log.d`**
+    // (xem KDoc `KachiMem.trim`: *"vào log, để đọc `logcat -s KachiMem:D` biết đường nào ăn"*). Nó ở đây chứ không
+    // ở [allowed] vì đây là một LUẬT về cấu trúc: mọi call site mới của `trim` đều là nhãn nhật ký, và bốn mục
+    // [allowed] mang cùng một lý do thì lý do ấy phải thành mã (đúng doctrine ghi ở KDoc dưới).
+    private val DIAGNOSTIC_CALL =
+        Regex("""(\bLog\.[a-z]+\(|\blog[IDWE]\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\(|\bKachiMem\.trim\()""")
 
     /** Chỉ số dòng nằm TRONG một lời gọi chẩn đoán (kể cả phần xuống dòng của nó). */
     private fun diagnosticLines(src: String): Set<Int> {

@@ -22,7 +22,8 @@ package com.byd.clusternav.launcher.voice
  * Hai đầu của phép chọn **không đối xứng** (cùng lập luận đã ghi ở `VoiceSession.ASK_ALOUD_CAP_MS`):
  *  • **hụt** ⇒ cắt tấm chữ giữa câu ở MỌI câu dài — đúng lỗi đang sửa, và nó xảy ra thường xuyên.
  *  • **thừa** ⇒ tấm chữ nán thêm vài giây **chỉ trong ca engine chết** (hiếm), và nó vẫn tắt được bằng một cú
- *    chạm ra ngoài / phím Back. Trong ca THƯỜNG, `onReplyDone` rút hẹn đóng về `LINGER_MS` ngay khi đọc xong ⇒
+ *    chạm ra ngoài tấm chữ (Back thôi là đường thoát từ 2.73 — `VoiceOverlay` không lấy tiêu điểm). Trong ca
+ *    THƯỜNG, `onReplyDone` rút hẹn đóng về `LINGER_MS` ngay khi đọc xong ⇒
  *    con số ở đây không làm người lái phải chờ một giây nào.
  *
  * ⇒ [MS_PER_CHAR] = 200 ms/ký tự ≈ **3× thời lượng đọc thật** ([ĐO host] Piper 11 từ ≈ 2,11 s ⇒ ~65 ms/ký tự),

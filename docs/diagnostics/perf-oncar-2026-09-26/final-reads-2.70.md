@@ -1,4 +1,7 @@
 # Đọc cuối buổi xe 2.70 18:49:00
+
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: đọc cuối buổi xe trên bản 2.70 (KachiPerf + meminfo).
+
 == KachiPerf
 == meminfo main: native 25668 KB, PSS  KB
 == meminfo wake: native 188650 KB

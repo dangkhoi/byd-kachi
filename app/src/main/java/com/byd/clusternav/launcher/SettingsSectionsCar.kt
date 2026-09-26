@@ -98,6 +98,18 @@ class SettingsCarSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_rot_row_right), rotations, bridge.cameraRotRight(),
         ) { v -> bridge.setCameraRotation(left = false, v = v) })
+        // ĐƯỜNG KẾT XUẤT (CLOSE-14 · CAM-LAG, owner 2026-09-26 "hơi giật lag khi xe chạy"). MỘT hàng 2 chip, mặc
+        // định = đường đang chạy hiện trường (`TextureView`) — CLAUDE.md §6: không đảo mặc định để chữa cho một thứ
+        // còn [CHƯA BIẾT]. Nhãn của chip `SurfaceView` nói THẲNG cái mất (không xoay bằng ma trận, nhờ HAL) thay vì
+        // im lặng bỏ góc xoay owner đã chọn.
+        val renders = listOf(
+            CameraSignalPolicy.RENDER_TEXTURE to context.getString(R.string.kachi_camera_render_texture),
+            CameraSignalPolicy.RENDER_SURFACE to context.getString(R.string.kachi_camera_render_surface),
+        )
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_render_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_render_row), renders, bridge.cameraRender(),
+        ) { v -> bridge.setCameraRender(v) })
         // Chọn cameraId từng bên (owner 2026-09-25: cho SL6/xe khác tự dò cam nào lên — cam gương xe khác id khác).
         val camIds = listOf("0" to "0", "1" to "1", "2" to "2", "3" to "3", "4" to "4", "5" to "5")
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pick_sub)))

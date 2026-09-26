@@ -1,6 +1,6 @@
 # RE — Camera theo xi-nhan + overlay (BYDAutoPanoramaDevice)
 
-> **Trạng thái**: Current · **Ngày**: 2026-09-22 · **Nguồn**: RE `../apk-ref/kinex.apk` (libapp.so strings + jadx) + HAL `../byd/jadx-tmap/sources/android/hardware/bydauto/panorama/BYDAutoPanoramaDevice.java`.
+> **Trạng thái**: Historical — đường cuối là `docs/specs/camera-turn-signal-hal-socket.html`; khớp lại với dòng index · **Ngày**: 2026-09-22 · **Nguồn**: RE `../apk-ref/kinex.apk` (libapp.so strings + jadx) + HAL `../byd/jadx-tmap/sources/android/hardware/bydauto/panorama/BYDAutoPanoramaDevice.java`.
 > **Mục đích**: cách kinex lấy camera + điều khiển, để Kachi làm: xi-nhan trái → camera trái → overlay bên trái màn (và phải), + voice, + option overlay lên cụm.
 
 ## 1. Kinex làm gì (RE libapp.so)

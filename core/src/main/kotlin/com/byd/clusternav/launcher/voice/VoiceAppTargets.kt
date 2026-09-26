@@ -455,41 +455,18 @@ object VoiceAppTargets {
         }
     }
 
-    /** Luật của [bySpokenFuzzy]; [full] = cách nói đã khai, [said] = cụm người ta thật sự nói. */
-    private fun nearly(full: String, said: String): Boolean {
-        if (full.length < MIN_LOOSE_LEN) return false
-        if (full.take(PREFIX_ANCHOR) != said.take(PREFIX_ANCHOR)) return false
-        // Chặn theo ĐỘ DÀI trước để khỏi chạy bảng cho hai chuỗi lệch hẳn nhau (*"youtub"* vs *"youtubemusic"*).
-        if (kotlin.math.abs(full.length - said.length) > MAX_EDITS) return false
-        return edits(full, said) <= MAX_EDITS
-    }
-
     /**
-     * Khoảng cách Levenshtein. Bảng **hai hàng** (các chuỗi ở đây dài ≤ ~15 ký tự nên không cần tối ưu gì thêm);
-     * thuần Kotlin, không `android.*`, kiểm cạn off-car.
+     * Luật của [bySpokenFuzzy]; [full] = cách nói đã khai, [said] = cụm người ta thật sự nói.
+     *
+     * ⚠ 2026-09-26 (VOICE-APP-NAME-FUZZY): phép so + khoảng cách sửa chữa **dời** sang [VoiceNameFuzzy] — cùng
+     * ba cổng, cùng ba con số, chỉ khác chỗ đứng. Vì sao dời: từ bản này tên **hồ sơ** và **nhãn app đã cài** cũng
+     * cần đúng phép so ấy ([VoiceLastResort] · [VoiceProfileNames]), và ba bản sao của một phép so là ba chỗ để
+     * lệch nhau ở lần ai đó nới một con số (CLAUDE.md §4.1 DRY).
      */
-    private fun edits(a: String, b: String): Int {
-        var prev = IntArray(b.length + 1) { it }
-        var cur = IntArray(b.length + 1)
-        for (i in 1..a.length) {
-            cur[0] = i
-            for (j in 1..b.length) {
-                val sub = prev[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1
-                cur[j] = minOf(sub, prev[j] + 1, cur[j - 1] + 1)
-            }
-            val t = prev; prev = cur; cur = t
-        }
-        return prev[b.length]
-    }
+    private fun nearly(full: String, said: String): Boolean = VoiceNameFuzzy.nearly(full, said)
 
     /** Cụm ngắn hơn ngần này ký tự thì rụng một âm cũng thành một từ khác hẳn ⇒ không khớp mờ. */
-    private const val MIN_LOOSE_LEN = 5
-
-    /** Số ký tự đầu phải khớp Y NGUYÊN ở [bySpokenFuzzy] — cái neo giữ nó không bắt sang tên địa điểm. */
-    private const val PREFIX_ANCHOR = 4
-
-    /** Lệch tối đa (thêm/bớt/đổi) sau khi đã neo tiền tố. 2 = đủ cho *"vietna"* ↔ *"vietmap"*. */
-    private const val MAX_EDITS = 2
+    private const val MIN_LOOSE_LEN = VoiceNameFuzzy.MIN_LEN
 
     /** Số từ dài nhất mà một cách nói chiếm — chỗ gọi quét từ dài xuống ngắn (luật *"dãy dài nhất thắng"*). */
     val LONGEST_SPOKEN: Int = ALL.flatMap { it.spoken }.maxOfOrNull { spokenWords(it).size } ?: 1

@@ -1,5 +1,7 @@
 # R1 — Register HAL LATCH sống qua lần đổi danh tính nguồn dẫn (chưa chữa)
 
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-08 · **Mục đích**: R1 — register HAL LATCH sống qua lần đổi danh tính nguồn dẫn (đã đọc source, chưa đo trên xe).
+
 **Ngày:** 2026-08-22 · **Bối cảnh:** hạng mục B-I (bất biến MỘT-PACKAGE-MỘT-KHUNG) · **Mức bằng chứng:** đã
 chứng minh phần ĐỌC SOURCE, **chưa đo trên xe** phần hành vi cụm.
 

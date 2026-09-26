@@ -1,6 +1,6 @@
 # RUN-STEPS — RUNBOOK THỰC THI TỪNG BƯỚC (Kachi 1.83 · 84)
 
-> **Loại**: Diagnostics (on-car step-by-step) · **Trạng thái**: Current · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)**
+> **Loại**: Diagnostics (on-car step-by-step) · **Trạng thái**: Superseded — bản đích 1.83; xem `docs/diagnostics/oncar-runbook-2.73.md` · **Ngày**: 2026-09-20 · **Bản đích**: **1.83 (84)**
 > **Mục đích**: đi HẾT một vòng từ đầu đến cuối, **mỗi step ghi rõ 🤖 EM làm gì · 👤 ANH làm gì · PASS/FAIL**. Xong vòng 1 → **§CUỐI tổng hợp** → vòng 2 chỉ chạy lại step ❌. Khoa học, không wasting time.
 > **Danh sách đầy đủ + vì sao**: `0-PENDING.md`. **Chi tiết method/bẫy**: `1-hal.md · 2-slot-cast.md · 3-voice.md · 4-system.md`. **Doc này là SCRIPT chạy** — bám theo số step.
 >
