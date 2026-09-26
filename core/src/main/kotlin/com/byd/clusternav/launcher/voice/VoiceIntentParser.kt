@@ -369,8 +369,8 @@ object VoiceIntentParser {
         // D3 (log xe 2026-09-18) — câu HỎI về một tính năng đã bỏ thì trả lời đúng tên nó, TRƯỚC khi tra datum.
         // *"xe đang sạc pin hay không"* trước đây ra `Read(soc)`: máy đọc phần trăm pin cho một câu hỏi về SẠC —
         // đúng datum gần nhất, sai câu hỏi. Đây là chỗ an toàn để hỏi bảng: một câu HỎI không bao giờ là một
-        // điểm đến ([VoiceIntent.Nav] không đi qua đây), nên cụm *"sạc pin"* không thể cướp *"trạm sạc pin"*.
-        VoiceFeatureGone.match(body0)?.let { return VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, original) }
+        // điểm đến ([Nav] không đi qua đây). `forRead` = bỏ dòng [VoiceFeatureGone.Gone.readAlive] — vì sao: KDoc đó.
+        VoiceFeatureGone.match(body0, forRead = true)?.let { return VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, original) }
         // [ĐO xe 2026-09-17 · log] *"chỉ số bụi mịn là bao nhiêu"* ra `Read(gear)` vì *"số"* (nhãn datum `gear`)
         // khớp Ở TRƯỚC *"bụi mịn"*. *"chỉ số X"* = *"giá trị của X"* ⇒ bỏ cụm dẫn để *"số"* thôi nuốt câu.
         val body = stripReadLead(body0)

@@ -43,6 +43,15 @@ internal object VoiceFeatureGone {
         val label: String,
         val labelEn: String,
         val removed: Boolean,
+        /**
+         * `true` = cụm này CHỈ chặn câu **LỆNH**, không chặn câu **HỎI**: nút đã gỡ nhưng datum ĐỌC còn sống.
+         *
+         * [SOÁT 2.68 · ĐO] `media_vol` (*"Âm lượng giải trí"*, `AudioManager.getStreamVolume`, mức PROVEN) vẫn là
+         * datum đọc được, mà [match] còn được hỏi ở đường câu-hỏi ([VoiceIntentParser.objectOnlyRead]) **trước** lượt
+         * tra datum ⇒ thêm dòng `["am","luong"]` là biến *"âm lượng bao nhiêu"* từ `Read(media_vol)` thành *"đã bỏ
+         * khỏi Kachi"* — nói sai sự thật, đúng cái luật khai §2 của bảng này cấm. Cờ này giữ luật đó bằng MÁY.
+         */
+        val readAlive: Boolean = false,
     )
 
     /**
@@ -80,6 +89,15 @@ internal object VoiceFeatureGone {
         // datum ấy đã gỡ nên câu đó không còn đường đọc ⇒ trả lời đúng tên thay vì "không hiểu".
         Gone(listOf("che", "do", "lai"), "chế độ lái", "the drive mode", removed = true),
         Gone(listOf("che", "do", "phanh"), "chế độ phanh", "the brake mode", removed = true),
+        // CLOSE-2 2026-09-26 [ĐO E2E máy ảo: 5 ca `gone` đỏ cả 3 lượt] — 5 cụm nút đã gỡ (lock/door 1.94-1.95,
+        // vol/brightness_gear 1.90, mac_leave 1.95) nhưng người lái vẫn nói được ⇒ trả lời đúng tên thay vì
+        // "Chưa rõ cần làm gì" / "thử nêu mức" cho thứ không còn đặt được. Không đụng `child_lock` ("khoa tre em").
+        Gone(listOf("khoa", "xe"), "khoá xe", "locking the car", removed = true),
+        Gone(listOf("mo", "khoa", "cua"), "mở khoá cửa", "unlocking the doors", removed = true),
+        Gone(listOf("roi", "xe"), "gói rời xe", "the leave-car routine", removed = true),
+        // `readAlive` — nút `vol` đã gỡ (1.90) NHƯNG datum ĐỌC `media_vol` còn sống ⇒ chỉ chặn câu LỆNH (xem [Gone.readAlive]).
+        Gone(listOf("am", "luong"), "âm lượng", "the volume", removed = true, readAlive = true),
+        Gone(listOf("do", "sang", "man"), "độ sáng màn", "the screen brightness", removed = true),
     ).sortedByDescending { it.words.size }
 
     /**
@@ -98,9 +116,14 @@ internal object VoiceFeatureGone {
     /** Câu [t] có chứa một từ chặn cứng không — hỏi TRƯỚC mọi phép khớp (xem [HARD_BLOCK]). */
     fun blocked(t: List<Token>): Boolean = t.any { it.norm in HARD_BLOCK }
 
-    /** Tính năng mà câu [t] đang nói tới, hoặc `null`. Khớp ở BẤT KỲ vị trí — cụm dài xét trước. */
-    fun match(t: List<Token>): Gone? =
-        ALL.firstOrNull { g -> t.indices.any { VoiceLexicon.phraseAt(t, it, g.words) } }
+    /**
+     * Tính năng mà câu [t] đang nói tới, hoặc `null`. Khớp ở BẤT KỲ vị trí — cụm dài xét trước.
+     *
+     * @param forRead `true` khi chỗ gọi đang xét một câu **HỎI** (đường [VoiceIntentParser] `objectOnlyRead`): các
+     *   dòng [Gone.readAlive] bị BỎ QUA để đường ĐỌC còn sống vẫn thắng (luật khai §2).
+     */
+    fun match(t: List<Token>, forRead: Boolean = false): Gone? =
+        ALL.firstOrNull { g -> !(forRead && g.readAlive) && t.indices.any { VoiceLexicon.phraseAt(t, it, g.words) } }
 
     /**
      * Câu trả lời cho [g] — hai câu cho hai việc khác nhau (xem luật khai §3).

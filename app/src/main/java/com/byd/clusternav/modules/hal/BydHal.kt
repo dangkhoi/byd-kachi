@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import com.byd.clusternav.navigation.LaneInfo
-import com.byd.clusternav.navigation.NavOutputDecision
-import java.lang.reflect.Array as RArray
 
 /**
  * Hạ tầng HAL DÙNG CHUNG cho các module chạm xe IN-PROCESS (không shell-out dadb).
@@ -84,7 +82,7 @@ object BydHal {
     }
 
     // D2 (closeout 1.28): cache name→id so writeNavFrame's ~20 featureId() lookups/frame stop hitting reflection
-    // on the ~4/sec hot path. Mirrors the getterCache pattern below. Behaviour IDENTICAL: same Int, or null when
+    // on the ~4/sec hot path. Mirrors the getterCache pattern (nay ở BydHalRead). Behaviour IDENTICAL: same Int, or null when
     // the field is absent (ConcurrentHashMap can't hold null → a separate absent-set records the misses so the
     // reflect+catch runs once per name, not once per frame). Field values are static-final ints → stable.
     private val featureIdCache = java.util.concurrent.ConcurrentHashMap<String, Int>()
@@ -172,130 +170,22 @@ object BydHal {
         "rc=${m.invoke(dev, *boxed)}"
     }.getOrElse { root(it) }
 
-    /** Gọi getter tên [name] (0 hoặc 1 tham số int) qua reflection → chuỗi giá trị. null nếu không có/ném.
-     *  ĐÂY là cách đọc THẬT trên ROM này (getCurrentSpeed(), getTyrePressureValue(area)...) — KHÔNG cần listener.
-     *  Method cache theo (class#name#arity) → hot-path (steering mỗi tick) khỏi scan getMethods() lại.
-     *
-     *  Kết quả là MẢNG (`int[]`/`float[]`/`byte[]`/`Object[]`) → [arrayToStr], KHÔNG `toString()` (§B remediation
-     *  2026-09-15: `int[].toString()` = `"[I@hash"` → `coerceInt` null → UI "—" cho `getPM2p5Level/Value` [ĐO
-     *  `BYDAutoPM2p5Device.java:84,92` trả `int[]`], `getAllRadarProbeStates` [`BYDAutoRadarDevice.java:64`]). */
-    private val getterCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Method>()
-    /**
-     * @param onError hardening 2026-09-25 (audit F5): NGUYÊN NHÂN của `null` (ROM thiếu method ⇒
-     *   `NoSuchMethodException`; HAL ném ⇒ ngoại lệ gốc) được đưa ra seam này để gateway log-once. Giá trị trả về
-     *   KHÔNG đổi — `null` vẫn là `null`; mặc định `null` = mọi call site cũ y nguyên.
-     */
-    fun callGetter(dev: Any, name: String, arg: Int? = null, onError: ((Throwable) -> Unit)? = null): String? {
-        val arity = if (arg == null) 0 else 1
-        val key = "${dev.javaClass.name}#$name#$arity"
-        val m = getterCache[key] ?: dev.javaClass.methods.firstOrNull {
-            it.name == name && it.parameterTypes.size == arity &&
-                (arg == null || it.parameterTypes[0] == Int::class.javaPrimitiveType)
-        }?.also { getterCache[key] = it } ?: run {
-            onError?.invoke(NoSuchMethodException("${dev.javaClass.simpleName}.$name/$arity"))
-            return null
-        }
-        return runCatching {
-            val r = if (arg == null) m.invoke(dev) else m.invoke(dev, arg)
-            when {
-                r == null -> "null"
-                r.javaClass.isArray -> arrayToStr(r)
-                else -> r.toString()
-            }
-        }.getOrElse { onError?.invoke(it); null }
-    }
-
-    /**
-     * Mảng (bất kỳ kiểu phần tử, qua `java.lang.reflect.Array`) → chuỗi ĐỌC ĐƯỢC cho tầng parse ở :core:
-     *  • **1 phần tử** → chỉ chuỗi phần tử đó (`"3"`), để `HalBindingTable.coerceInt` đọc thẳng — đây là dạng
-     *    ưu tiên cho các getter "mảng bọc 1 số" như `getPM2p5Level()[0]` (docs/diagnostics/byd-pm25-airclean-RE-2026-09-04.md).
-     *  • **≥2 phần tử** → `"[a, b, c]"` (khớp `Arrays.toString`) — KHÔNG cắt còn `[0]` vì sẽ mất dữ liệu của
-     *    consumer danh sách; `HalBindingTable.coerceInt` tự lấy phần tử đầu khi ô chỉ cần một số.
-     *  • **rỗng** → `"[]"`.
-     * ✔ `HalBindingTable.coerceInt`/`coerceDouble` (:core) ĐÃ lấy phần tử đầu của `"[a, b]"` (hàm `firstOfArray`),
-     * nên getter mảng ≥2 phần tử vẫn ra scalar đúng cho ô cần số.
-     *
-     * Phần tử `null` (mảng `Object[]`) → chuỗi `"null"`, KHÔNG ném: một ô rỗng không được làm mất cả lượt đọc.
-     */
-    fun arrayToStr(arr: Any): String {
-        val n = RArray.getLength(arr)
-        return when (n) {
-            0 -> "[]"
-            1 -> RArray.get(arr, 0)?.toString() ?: "null"
-            else -> (0 until n).joinToString(", ", "[", "]") { RArray.get(arr, it)?.toString() ?: "null" }
-        }
-    }
-
-    /** Đọc nhiều getter (tên, arg?) → list "name(arg)=value". Bỏ getter không có. */
-    fun readGetters(dev: Any, specs: List<Pair<String, Int?>>): List<String> =
-        specs.mapNotNull { (name, arg) -> callGetter(dev, name, arg)?.let { "$name${arg?.let { a -> "($a)" } ?: ""}=$it" } }
-
-    // ── ĐỌC feature-id đồng bộ (§A remediation 2026-09-15) ────────────────────────────────────────────
-    // [ĐO từ source] API đọc feature THẬT của mọi device BYDAuto là **`get(int[] ids, Class<?> type)` 2-arg**
-    // (`../jadx-tmap/sources/android/hardware/bydauto/AbsBYDAutoDevice.java:84`) trả `BYDAutoEventValue`; app chạy
-    // được (OpenBYD) gọi `dev.get(new int[]{id}, Integer.TYPE).intValue`
-    // (`../jadx-openbyd/sources/com/sr/openbyd/proxy/CarControlImpl.java:239-240`). Bản cũ dò `get(int[])` 1-arg —
-    // KHÔNG TỒN TẠI → hasSyncGet=false cho MỌI device → mọi telemetry route Feature = "—".
-    private val getMethodCache = java.util.concurrent.ConcurrentHashMap<String, java.lang.reflect.Method>()
-    private fun getMethodOrNull(dev: Any): java.lang.reflect.Method? {
-        getMethodCache[dev.javaClass.name]?.let { return it }
-        return dev.javaClass.methods.firstOrNull {
-            it.name == "get" && it.parameterTypes.size == 2 &&
-                it.parameterTypes[0] == IntArray::class.java && it.parameterTypes[1] == Class::class.java
-        }?.also { getMethodCache[dev.javaClass.name] = it }
-    }
-
-    /** Device có `get(int[], Class)` đồng bộ không (`AbsBYDAutoDevice.java:84` — mọi device kế thừa đều có). */
-    fun hasSyncGet(dev: Any): Boolean = getMethodOrNull(dev) != null
-
-    /**
-     * Thử ĐỌC đồng bộ 1 feature-id: `dev.get(intArrayOf(id), [type])` → trả object `BYDAutoEventValue` (đọc field
-     * qua [readValue]/[readFeature]). [type] = `Integer.TYPE` (mặc định — cách OpenBYD đọc) hoặc `Float.TYPE`.
-     * **Degrade-safe:** null nếu device không có method 2-arg / HAL ném / HAL trả null.
-     */
-    fun tryGet(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): Any? {
-        val get = getMethodOrNull(dev) ?: run {
-            onError?.invoke(NoSuchMethodException("${dev.javaClass.simpleName}.get(int[], Class)"))
-            return null
-        }
-        return runCatching { get.invoke(dev, intArrayOf(id), type) }.getOrElse { onError?.invoke(it); null }
-    }
-
+    // ── ĐỌC qua reflection (getter theo tên · feature-id đồng bộ) — thân ở [BydHalRead], tách theo VAI (DEBT-500) ──
+    // Mặt tiền giữ nguyên chữ ký cho mọi call site cũ; mỗi dòng chỉ uỷ quyền.
+    fun callGetter(dev: Any, name: String, arg: Int? = null, onError: ((Throwable) -> Unit)? = null): String? =
+        BydHalRead.callGetter(dev, name, arg, onError)
+    fun arrayToStr(arr: Any): String = BydHalRead.arrayToStr(arr)
+    fun readGetters(dev: Any, specs: List<Pair<String, Int?>>): List<String> = BydHalRead.readGetters(dev, specs)
+    fun hasSyncGet(dev: Any): Boolean = BydHalRead.hasSyncGet(dev)
+    fun tryGet(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): Any? =
+        BydHalRead.tryGet(dev, id, type, onError)
     /** Sentinel "không có giá trị" của `BYDAutoEventValue` [ĐO `BYDAutoEventValue.java:5,7,12-13`]: HAL trả object
      *  với field mặc định khi feature không provision — KHÔNG phải số đo ⇒ phải coi là unavailable, không đưa lên UI. */
     const val EV_INVALID_INT = -999999999
     const val EV_INVALID_FLOAT = -1.0E9f
 
-    /**
-     * ĐỌC 1 feature-id ra chuỗi `"int=<n> float=<f> buf=<len|->"` ([readValue]) cho tầng parse :core
-     * (`HalBindingTable.coerceInt` đọc `int=`, `coerceDouble` đọc `float=`). Đây là đường thuần (không Context)
-     * mà [com.byd.clusternav.launcher.BydHalGateway.featureGet] bọc — test off-car được bằng fake device.
-     * null khi: không có `get` 2-arg · HAL ném/trả null · object trả về không có field EventValue nào ·
-     * cả `intValue`/`floatValue` đều là sentinel [EV_INVALID_INT]/[EV_INVALID_FLOAT] và không có buffer.
-     *
-     * ⚠ [SOÁT 2026-09-15 · P1] Ô sentinel bị **rút khỏi chuỗi** (`int=-` / `float=-`), KHÔNG in số thô như
-     * [readValue]. Lý do: `BYDAutoEventValue` khởi tạo CẢ HAI field bằng sentinel, nên một feature kiểu float hợp lệ
-     * vẫn mang `intValue = -999999999`. In nguyên thì `HalBindingTable.coerceInt` (ưu tiên `int=`) đọc ra
-     * **-999999999** và ô hiện một con số BỊA — đúng cái bệnh "số vô nghĩa" mà §A sinh ra để chữa (bộ lọc sentinel
-     * của :core chỉ biết rc `-2147482648/-2147482645`, KHÔNG biết sentinel EventValue). Ô bị rút không khớp regex
-     * `int=(-?\d+)` / `float=(-?[0-9.]+)` ⇒ :core tự lùi sang ô còn lại.
-     */
-    fun readFeature(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): String? {
-        val ev = tryGet(dev, id, type, onError) ?: return null
-        val item = if (ev.javaClass.isArray) (if (RArray.getLength(ev) > 0) RArray.get(ev, 0) else null) else ev
-        if (item == null) return null
-        val i = runCatching { item.javaClass.getField("intValue").getInt(item) }.getOrNull()
-        val f = runCatching { item.javaClass.getField("floatValue").getFloat(item) }.getOrNull()
-        val buf = runCatching { item.javaClass.getField("bufferDataValue").get(item) as? ByteArray }.getOrNull()
-        if (i == null && f == null && buf == null) return null
-        val intOk = i != null && i != EV_INVALID_INT
-        val floatOk = f != null && f != EV_INVALID_FLOAT
-        if (!intOk && !floatOk && buf == null) return null
-        return "int=${if (intOk) i.toString() else "-"}" +
-            " float=${if (floatOk) f.toString() else "-"}" +
-            " buf=${buf?.size ?: "-"}"
-    }
-
+    fun readFeature(dev: Any, id: Int, type: Class<*> = Integer.TYPE, onError: ((Throwable) -> Unit)? = null): String? =
+        BydHalRead.readFeature(dev, id, type, onError)
     /** KIỂM CHỨNG GHI (cho self-test): set 1 feature int → (ok, chi tiết). ok=true nếu set() KHÔNG ném
      *  (bắt được SecurityException/HAL chặn). LƯU Ý: "không ném" mạnh hơn getInstance-non-null nhưng vẫn
      *  chưa chắc cụm render (set có thể trả rc lỗi / no-op âm thầm) → module vẫn bảo "nhìn cụm để chắc". */
@@ -352,14 +242,14 @@ object BydHal {
     internal fun resetRejectionCacheForTest() { rejectedFeatures.clear(); rejectedSdk.clear() }
 
     /** setInt qua cache rejection: skip nếu id đã bị từ chối; nếu không → setInt rồi cache khi rc == sentinel. */
-    private fun cachedSetInt(dev: Any, id: Int, value: Int): String {
+    internal fun cachedSetInt(dev: Any, id: Int, value: Int): String {
         if (isFeatureRejected(id)) return "skip"
         val r = runCatching { setInt(dev, id, value) }.getOrElse { return root(it) }
         recordFeatureRc(id, r)
         return "$r"
     }
     /** setBytes qua cache rejection (chung set rejectedFeatures theo id — kill spam tên-đường oversea trên owner). */
-    private fun cachedSetBytes(dev: Any, id: Int, bytes: ByteArray): String {
+    internal fun cachedSetBytes(dev: Any, id: Int, bytes: ByteArray): String {
         if (isFeatureRejected(id)) return "skip"
         val r = runCatching { setBytes(dev, id, bytes) }.getOrElse { return root(it) }
         recordFeatureRc(id, r)
@@ -504,130 +394,24 @@ object BydHal {
     const val CAMERA_DISPLAY_STATE_ID = 0x43F03018
     const val NAVI_CAM_REMAINING_MILEAGE_ID = 0x43F0301C
 
-    /** THÊM (B3 T4): đẩy CONTENT mũi tên + cự-ly + tên-đường vào cụm-centre + HUD (domestic 0x43F + oversea 0x1F7),
-     *  KHÔNG chạm session latch/SDK (đó là NavigationHudOwner). [segMeters] < 0 → bỏ ghi cự-ly (không xoá trắng số
-     *  đang hiện); [road] null/blank → bỏ ghi tên. Degrade-safe qua cachedSetInt/cachedSetBytes. */
-    fun pushNavigation(instr: Any, icon: Int, segMeters: Int = -1, road: String? = null): String {
-        val rc = StringBuilder()
-        fun w(name: String, v: Int) { featureId(name)?.let { id -> rc.append(" $name=").append(cachedSetInt(instr, id, v)) } }
-        w("INSTRUMENT_GUIDE_INFO_SIMPLE_SET", icon)
-        w("INSTRUMENT_GUIDE_INFO_AND_ROAD_AHEAD_DISTANCE_SET", icon)   // OpenBYD dualIcon (0x43F01030)
-        (featureId("INSTRUMENT_EASY_NAVI_GUIDE_INFOR_SET") ?: EASY_NAVI_GUIDE_OVERSEA_ID).let { id ->
-            rc.append(" GUIDE_OVERSEA=").append(cachedSetInt(instr, id, icon))
-        }
-        if (segMeters >= 0) {
-            w("INSTRUMENT_FRONT_CROSSING_DISTANCE_SET", segMeters)
-            (featureId("INSTRUMENT_DISTANCE_TARGET_HEAD_SET") ?: CROSSING_DIST_OVERSEA_ID).let { id ->
-                rc.append(" DIST_OVERSEA=").append(cachedSetInt(instr, id, segMeters))
-            }
-        }
-        if (!road.isNullOrBlank()) {
-            val bytes = road.toByteArray(Charsets.UTF_16LE)
-            featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_SET")?.let { id -> rc.append(" PATHNAME=").append(cachedSetBytes(instr, id, bytes)) }
-            (featureId("INSTRUMENT_TARGET_NEXT_PATHNAME_INFO_OVERASEA_SET") ?: PATHNAME_OVERSEA_ID).let { id ->
-                rc.append(" PATHNAME_OVERSEA=").append(cachedSetBytes(instr, id, bytes))
-            }
-        }
-        return rc.toString().trim()
-    }
-
-    /**
-     * THÊM (B-III, 2026-08-22): **XOÁ TRẮNG ô cự-ly** trên cụm/HUD, giữ nguyên mọi thứ khác.
-     *
-     * VÌ SAO cần một hàm riêng thay vì "cứ ghi -1 qua [pushNavigation]": [pushNavigation] coi `segMeters < 0` là
-     * "BỎ GHI, giữ số cũ" (nhánh `if (segMeters >= 0)` ngay trên). Nên khi [com.byd.clusternav.NavOutputOwner]
-     * mất tin vào cự-ly (guard [com.byd.clusternav.navigation.TurnDistancePlausibility] chưa warmup xong / vừa
-     * đổi nguồn), nếu chỉ truyền -1 thì **số của nguồn CŨ nằm lại trên cụm** — tệ hơn hiện trạng.
-     *
-     * ⚠ MỨC BẰNG CHỨNG (CLAUDE.md §2) — ĐỌC KỸ, ĐỪNG THĂNG HẠNG:
-     *  • **ĐÃ CHỨNG MINH**: `clearNavFrame` (ở trên, cùng file) ghi -1 vào ĐÚNG feature id này và chạy tốt
-     *    trên xe hôm nay.
-     *  • **CHƯA BIẾT**: `clearNavFrame` ghi -1 **kèm `INSTRUMENT_SEND_NAVI_STATUS_SET = 4` trong cùng lời
-     *    gọi**, tức cụm ẨN HẲN widget nav nên chưa bao giờ phải *render* số -1. Hàm này cố ý KHÔNG chạm latch,
-     *    nên đây là lần đầu -1 được ghi vào ô cự-ly **trong khi widget đang hiện**. Firmware coi <0 là "ẩn ô"
-     *    hay render raw (`-1` / `0xFFFFFFFF`) thì **chưa probe on-car** — OQ13 trong spec.
-     *  • Vì vậy KHÔNG được nói "xấu nhất là no-op ⇒ không bao giờ tệ hơn hiện trạng" (câu đó đã bị gỡ khỏi
-     *    KDoc này 08-22 vòng 1): nếu cụm render raw thì tài xế thấy một con số BỊA, tệ hơn hẳn "giữ số cũ".
-     *    Phải chạy probe OQ13 TRƯỚC khi ship đường này ra xe thật.
-     *
-     * CONTENT-only: KHÔNG chạm session latch (SEND_NAVI_STATUS / SET_NAVI_SCREEN_STATUS / SDK — độc quyền của
-     * [com.byd.clusternav.NavigationHudOwner]) và KHÔNG chạm icon (mũi tên vẫn phải hiện: hướng còn đáng tin,
-     * chỉ cự-ly là không).
-     */
-    fun blankNavDistance(instr: Any): String {
-        val rc = StringBuilder()
-        featureId("INSTRUMENT_FRONT_CROSSING_DISTANCE_SET")?.let { id ->
-            rc.append(" FRONT_CROSSING=").append(cachedSetInt(instr, id, NAV_DISTANCE_BLANK))
-        }
-        (featureId("INSTRUMENT_DISTANCE_TARGET_HEAD_SET") ?: CROSSING_DIST_OVERSEA_ID).let { id ->
-            rc.append(" DIST_OVERSEA=").append(cachedSetInt(instr, id, NAV_DISTANCE_BLANK))
-        }
-        return rc.toString().trim()
-    }
+    // pushNavigation / blankNavDistance — thân ở [BydHalContentPush] (tách theo VAI, DEBT-500); KDoc mức bằng chứng
+    // (OQ13: -1 vào ô cự-ly khi widget đang hiện CHƯA probe on-car) nằm trên [NAV_DISTANCE_BLANK] + ở tệp đó.
+    fun pushNavigation(instr: Any, icon: Int, segMeters: Int = -1, road: String? = null): String =
+        BydHalContentPush.pushNavigation(instr, icon, segMeters, road)
+    fun blankNavDistance(instr: Any): String = BydHalContentPush.blankNavDistance(instr)
 
     /** Giá trị "không có cự-ly" mà cụm/HUD hiểu là xoá trắng ô — cùng giá trị `clearNavFrame` đang dùng. */
     const val NAV_DISTANCE_BLANK = -1
 
-    /** THÊM (B3 T4): đẩy dải làn vào register cụm — mỗi làn: LANE_n_GUIDANCE_ARROW_SET (mã hướng qua
-     *  [NavOutputDecision.laneArrowCode]) + IS_LANE_n_RECOMMENDED_SET (1 sáng / 0 mờ, R4). Tối đa
-     *  [MAX_CLUSTER_LANES]. Degrade-safe; làn rỗng → no-op. */
-    fun pushLane(instr: Any, info: LaneInfo): String {
-        if (info.isEmpty()) return ""
-        val rc = StringBuilder()
-        val n = minOf(info.count, MAX_CLUSTER_LANES)
-        for (i in 0 until n) {
-            val lane = info.lanes[i]
-            val laneNo = i + 1
-            val arrowId = featureId("INSTRUMENT_LANE_${laneNo}_GUIDANCE_ARROW_SET") ?: (LANE_1_GUIDANCE_ARROW_ID + i * LANE_ID_STRIDE)
-            val recId = featureId("IS_LANE_${laneNo}_RECOMMENDED_SET") ?: (LANE_1_RECOMMENDED_ID + i * LANE_ID_STRIDE)
-            rc.append(" L$laneNo=").append(cachedSetInt(instr, arrowId, NavOutputDecision.laneArrowCode(lane.arrows)))
-            rc.append(" L${laneNo}R=").append(cachedSetInt(instr, recId, if (lane.recommended) 1 else 0))
-        }
-        return rc.toString().trim()
-    }
+    // pushLane / pushCamera — thân ở [BydHalContentPush] (tách theo VAI, DEBT-500).
+    fun pushLane(instr: Any, info: LaneInfo): String = BydHalContentPush.pushLane(instr, info)
+    fun pushCamera(instr: Any, iconCode: Int, distanceMeters: Int = -1): String =
+        BydHalContentPush.pushCamera(instr, iconCode, distanceMeters)
 
-    /** THÊM (B3 T4): đẩy icon camera + cự-ly (R5a) — INSTRUMENT_GUIDE_INFO_CAMERA_SET (0x43F03010) + display-state
-     *  + remaining-mileage. [iconCode] 0 = tắt icon; [distanceMeters] < 0 → bỏ ghi cự-ly. Degrade-safe. */
-    fun pushCamera(instr: Any, iconCode: Int, distanceMeters: Int = -1): String {
-        val rc = StringBuilder()
-        (featureId("INSTRUMENT_GUIDE_INFO_CAMERA_SET") ?: GUIDE_INFO_CAMERA_ID).let { id ->
-            rc.append(" CAM=").append(cachedSetInt(instr, id, iconCode))
-        }
-        (featureId("INSTRUMENT_CAMERA_DISPLAY_STATE_SET") ?: CAMERA_DISPLAY_STATE_ID).let { id ->
-            rc.append(" CAM_STATE=").append(cachedSetInt(instr, id, if (iconCode != 0) 1 else 0))
-        }
-        if (distanceMeters >= 0) (featureId("INSTRUMENT_NAVI_CAM_REMAINING_MILEAGE_SET") ?: NAVI_CAM_REMAINING_MILEAGE_ID).let { id ->
-            rc.append(" CAM_DIST=").append(cachedSetInt(instr, id, distanceMeters))
-        }
-        return rc.toString().trim()
-    }
-
-    /** Đọc đồng bộ feature đầu tiên ra giá trị (cho self-test read). null nếu không đọc được cái nào. */
-    fun firstReadable(dev: Any, ids: List<Pair<String, Int>>): Pair<String, String>? {
-        for ((n, id) in ids) {
-            val r = tryGet(dev, id) ?: continue
-            return n to readValue(r)
-        }
-        return null
-    }
-
-    /** Rút giá trị đọc được từ kết quả get() (EventValue hoặc mảng) → chuỗi int/float/buffer. */
-    fun readValue(result: Any?): String {
-        if (result == null) return "null"
-        val item = if (result.javaClass.isArray && RArray.getLength(result) > 0) RArray.get(result, 0) else result
-        if (item == null) return "null(empty)"
-        val i = runCatching { item.javaClass.getField("intValue").getInt(item) }.getOrNull()
-        val f = runCatching { item.javaClass.getField("floatValue").getFloat(item) }.getOrNull()
-        val buf = runCatching { (item.javaClass.getField("bufferDataValue").get(item) as? ByteArray)?.size }.getOrNull()
-        return "int=$i float=$f buf=${buf ?: "-"}"
-    }
-
-    /** Liệt kê method (lọc theo tiền tố) để PROBE API thật trên ROM (vd "get","set","register","on"). */
-    fun methods(dev: Any, vararg prefixes: String): List<String> =
-        dev.javaClass.methods
-            .filter { m -> prefixes.isEmpty() || prefixes.any { m.name.startsWith(it) } }
-            .map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
-            .distinct().sorted()
+    // firstReadable / readValue / methods — thân ở [BydHalRead] (tách theo VAI, DEBT-500).
+    fun firstReadable(dev: Any, ids: List<Pair<String, Int>>): Pair<String, String>? = BydHalRead.firstReadable(dev, ids)
+    fun readValue(result: Any?): String = BydHalRead.readValue(result)
+    fun methods(dev: Any, vararg prefixes: String): List<String> = BydHalRead.methods(dev, *prefixes)
 
     fun exemptHiddenApis() {
         runCatching {

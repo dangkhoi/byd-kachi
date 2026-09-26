@@ -53,6 +53,23 @@ class PhysicalHudOwnershipTest {
         }
         assertTrue(callers.isEmpty(), "only NavigationHudOwner may call BydHal.writeNavFrame: $callers")
 
+        // SOÁT 2.68 (CLOSE-7) — `cachedSetInt`/`cachedSetBytes` là hai nguyên thuỷ **GHI** HAL; tách `BydHal` theo vai
+        // đã mở chúng `private` → `internal`, tức cả `:app` gọi được. Giữ đúng bề mặt đã mở: chỉ `BydHalContentPush.kt`
+        // (vai được tách ra) được gọi. Một tệp mới gọi thẳng nguyên thuỷ ghi = một đường ghi HAL thứ hai không ai canh.
+        val writePrimitiveCallers = Files.walk(SourceRoots.path("src/main/java/com/byd/clusternav")).use { paths ->
+            paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
+                .filter { it.fileName.toString() !in setOf("BydHal.kt", "BydHalContentPush.kt") }
+                .filter { f ->
+                    val t = f.toFile().readText()
+                    t.contains("cachedSetInt(") || t.contains("cachedSetBytes(")
+                }
+                .toList()
+        }
+        assertTrue(
+            writePrimitiveCallers.isEmpty(),
+            "chỉ BydHal/BydHalContentPush được gọi nguyên thuỷ GHI HAL (cachedSetInt/cachedSetBytes): $writePrimitiveCallers",
+        )
+
         // 2026-08-13: the center-nav path IS now wired (was orphaned/fail-closed). NavRepository instantiates
         // the owner and gates it two-track (Cast master OFF) so the app drives "Giữa + ETA" via the proven HAL
         // path instead of the no-op ch1000 op39.

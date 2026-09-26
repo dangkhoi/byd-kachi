@@ -259,7 +259,7 @@ class SherpaTtsSpeaker(
      * Tách [text] thành các mảnh để tổng hợp+phát tuần tự — mảnh đầu ngắn ⇒ tiếng ra gần tức thì (#1).
      *
      * Cắt ở dấu kết câu (`. ! ? … ; —` + xuống dòng); mảnh còn dài hơn [SPLIT_SOFT_CHARS] thì cắt tiếp ở dấu
-     * phẩy để "Đang dẫn đường đến số 69 Hoàng Văn Thái, quận 7" ra tiếng ngay ở vế đầu. Mảnh rỗng bị bỏ. Không
+     * phẩy để "Đang dẫn đường đến số 42 Lý Thường Kiệt, quận 1" ra tiếng ngay ở vế đầu. Mảnh rỗng bị bỏ. Không
      * có dấu nào ⇒ trả nguyên câu (một mảnh) — không bao giờ trả danh sách rỗng cho [text] không trắng.
      */
     private fun splitSentences(text: String): List<String> {

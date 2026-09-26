@@ -39,17 +39,6 @@
 -->
 <resources>
 
-    <!-- ═════════════════════════════ SURFACES ═════════════════════════════ -->
-
-    <!-- Cockpit.Card — the standard feature container. Gradient dark surface (@drawable/card_bg:
-         surface_2→surface, hairline_strong stroke, ~20dp corners, top sheen) + card_pad padding.
-         Apply to the vertical LinearLayout that wraps a feature's header + body. -->
-    <style name="Cockpit.Card" parent="">
-        <item name="android:background">@drawable/card_bg</item>
-        <item name="android:padding">@dimen/card_pad</item>
-        <item name="android:orientation">vertical</item>
-    </style>
-
     <!-- ═════════════════════════════ TYPOGRAPHY ════════════════════════════ -->
 
     <!-- Cockpit.Text — base ink for all cockpit text (primary ink, body size). Not used directly;
@@ -62,12 +51,6 @@
     <!-- Cockpit.Text.Title — the page / screen title (e.g. "ClusterNav"). 24sp medium, primary ink. -->
     <style name="Cockpit.Text.Title">
         <item name="android:textSize">@dimen/text_title</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-    </style>
-
-    <!-- Cockpit.Text.Subtitle — a card / section title inside a header row. 16sp medium, primary ink. -->
-    <style name="Cockpit.Text.Subtitle">
-        <item name="android:textSize">@dimen/text_status</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
@@ -212,19 +195,6 @@
         <item name="android:layout_marginEnd">12dp</item>
     </style>
 
-    <!-- ═════════════════════════════ SWITCH ════════════════════════════════ -->
-
-    <!-- Cockpit.Switch — the master/feature on-off toggle. Framework Material switch; the "on" track/thumb
-         glow is GREEN via theme android:colorControlActivated (@color/ok_green). Label ink is muted so the
-         green state is the eye-catch. Opt-in style (raw <Switch> already inherits the same green from the
-         theme); apply where you want the explicit cockpit label treatment. -->
-    <style name="Cockpit.Switch" parent="@android:style/Widget.Material.CompoundButton.Switch">
-        <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">@dimen/text_body</item>
-        <item name="android:minHeight">@dimen/touch_min</item>
-        <item name="android:switchPadding">10dp</item>
-    </style>
-
     <!-- ═════════════════════════════ SPINNER ═══════════════════════════════ -->
 
     <!-- Cockpit.Spinner — the dropdown control face. Rounded surface_2 field + hairline_strong stroke +
@@ -311,49 +281,6 @@
         <item name="android:paddingEnd">12dp</item>
         <item name="android:paddingTop">4dp</item>
         <item name="android:paddingBottom">4dp</item>
-    </style>
-
-    <!-- ═════════════════════════════ SEGMENT BUTTON ════════════════════════ -->
-
-    <!-- Cockpit.SegmentButton — a RadioButton rendered as a segmented pill (button glyph hidden,
-         @drawable/segment_bg fills BRAND when checked, @color/segment_text flips to white when checked). Use
-         inside a horizontal RadioGroup for mutually-exclusive choices. OPT-IN: it is NOT wired as the global
-         android:radioButtonStyle, so plain framework radios (e.g. seat cool/heat) keep the default circle +
-         green tick, which is acceptable on dark. Apply style="@style/Cockpit.SegmentButton" to opt a radio in. -->
-    <style name="Cockpit.SegmentButton" parent="@android:style/Widget.Material.CompoundButton.RadioButton">
-        <item name="android:button">@null</item>
-        <item name="android:background">@drawable/segment_bg</item>
-        <item name="android:textColor">@color/segment_text</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:textSize">@dimen/text_body</item>
-        <item name="android:gravity">center</item>
-        <item name="android:minHeight">38dp</item>
-        <item name="android:minWidth">64dp</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">16dp</item>
-    </style>
-
-    <!-- ═════════════════════════════ LIST ROW ══════════════════════════════ -->
-
-    <!-- Cockpit.ListRow — a horizontal row container (label + trailing control/value), touch_min tall, used
-         for dynamically-added list items (e.g. a voice-key binding row). -->
-    <style name="Cockpit.ListRow" parent="">
-        <item name="android:orientation">horizontal</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:minHeight">@dimen/touch_min</item>
-        <item name="android:paddingTop">8dp</item>
-        <item name="android:paddingBottom">8dp</item>
-    </style>
-
-    <!-- Cockpit.ListRowLabel — the primary label inside a Cockpit.ListRow. Primary ink, body size, centred
-         vertically. The consumer sets layout_width=0dp + layout_weight=1 so the label fills and the trailing
-         control keeps its intrinsic width. -->
-    <style name="Cockpit.ListRowLabel" parent="">
-        <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">@dimen/text_body</item>
-        <item name="android:layout_gravity">center_vertical</item>
-        <item name="android:maxLines">1</item>
-        <item name="android:ellipsize">end</item>
     </style>
 
     <!-- ═════════════════════════════ L2 GROUP / ROW ════════════════════════
@@ -458,53 +385,6 @@
     <style name="Cockpit.HeroStreet" parent="">
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:textSize">14sp</item>
-    </style>
-
-    <!-- ═════════════════════════════ L2 STATUS PILLS ═══════════════════════
-         Coloured capsules (mockup `.pill.gr/.rd/.am`): a ~15% accent wash capsule with solid accent text.
-         Cockpit.StatusPill (above) stays the neutral dark capsule; these are the semantic coloured variants. -->
-
-    <!-- Cockpit.Pill — shared capsule base (11sp bold, 10dp/3dp padding, fully rounded). Not used directly;
-         the coloured variants below set the @drawable/pill_bg_* face + accent text colour. v1.34: textSize +
-         horizontal padding restored (11sp / 10dp), vertical padding kept at 3dp. -->
-    <style name="Cockpit.Pill" parent="">
-        <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:gravity">center</item>
-        <item name="android:paddingStart">10dp</item>
-        <item name="android:paddingEnd">10dp</item>
-        <item name="android:paddingTop">4dp</item>
-        <item name="android:paddingBottom">4dp</item>
-    </style>
-
-    <!-- Cockpit.Pill.Green — "on/active/good" capsule (mockup `.pill.gr`). -->
-    <style name="Cockpit.Pill.Green">
-        <item name="android:background">@drawable/pill_bg_green</item>
-        <item name="android:textColor">@color/accent_green</item>
-    </style>
-
-    <!-- Cockpit.Pill.Red — "lost/error" capsule (mockup `.pill.rd`). -->
-    <style name="Cockpit.Pill.Red">
-        <item name="android:background">@drawable/pill_bg_red</item>
-        <item name="android:textColor">@color/accent_red</item>
-    </style>
-
-    <!-- Cockpit.Pill.Amber — "caution" capsule (mockup `.pill.am`). -->
-    <style name="Cockpit.Pill.Amber">
-        <item name="android:background">@drawable/pill_bg_amber</item>
-        <item name="android:textColor">@color/accent_amber</item>
-    </style>
-
-    <!-- ═════════════════════════════ L2 SECONDARY (CYAN) BUTTON ════════════ -->
-
-    <!-- Cockpit.Button.Secondary.Cyan — a compact "surface" button with a line2 stroke and CYAN label
-         (mockup `.btn.sec`), for low-emphasis inline actions like "Kiểm tra / Sửa". Inherits the flat,
-         no-elevation behaviour + tap target from Cockpit.Button.Secondary; only the face, ink and size change.
-         (The filled brand button remains @style/Cockpit.Button.Primary — unchanged, reused as-is.) -->
-    <style name="Cockpit.Button.Secondary.Cyan">
-        <item name="android:background">@drawable/btn_secondary</item>
-        <item name="android:textColor">@color/accent_cyan</item>
-        <item name="android:textSize">@dimen/text_label</item>
     </style>
 
 </resources>

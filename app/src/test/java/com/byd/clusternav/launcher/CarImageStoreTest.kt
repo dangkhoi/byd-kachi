@@ -153,3 +153,62 @@ class CarImageStoreTest {
         assertEquals(3, CarImageStore.MAX_SHARED)
     }
 }
+
+/**
+ * ═══ CLOSE-5 · THỬ-LẠI THEO ĐỒNG HỒ KHI NẠP HỎNG (backlog 2026-09-26, review P3) ═════════════════════════════════
+ *
+ * Trước: `CarImageLayer.ensure()` ghi `loadedKey` cả khi nạp HỎNG ⇒ chặn được vòng nạp vô hạn nhưng placeholder MÃI
+ * tới khi khung/tệp đổi. Khoá bài học ở phần THUẦN [CarImageStore.LoadRetry] (lớp vẽ không dựng được off-car — stub
+ * android.jar ném ở `Handler`): giãn 1 s → ×2 → trần 60 s, nạp được ⇒ quên sạch. Cùng khuôn `HalAbsentCache`.
+ */
+class CarImageLoadRetryTest {
+
+    @Test
+    fun `chua hong lan nao thi thu ngay`() {
+        val r = CarImageStore.LoadRetry()
+        assertTrue(r.shouldTry(0))
+        assertTrue(r.shouldTry(Long.MAX_VALUE))
+        assertEquals(0, r.failures)
+        assertEquals(0L, r.nextRetryAt)
+    }
+
+    /** Ca chính của backlog: hỏng 3 lần ⇒ lần 4 CHỈ sau mốc (1 s + 2 s + 4 s), không phải mỗi khung vẽ. */
+    @Test
+    fun `nap hong 3 lan - lan thu 4 chi sau moc 7 s, khong phai moi khung ve`() {
+        val r = CarImageStore.LoadRetry(firstRetryMs = 1_000, maxRetryMs = 60_000)
+        assertEquals(1_000L, r.recordFailure(nowMs = 0))          // mốc 1 000
+        assertTrue(!r.shouldTry(999) && r.shouldTry(1_000), "lần 2 đúng sau 1 s")
+        assertEquals(2_000L, r.recordFailure(nowMs = 1_000))      // mốc 3 000
+        assertTrue(!r.shouldTry(2_999) && r.shouldTry(3_000), "lần 3 đúng sau thêm 2 s")
+        assertEquals(4_000L, r.recordFailure(nowMs = 3_000))      // mốc 7 000
+        assertEquals(3, r.failures)
+        assertEquals(7_000L, r.nextRetryAt)
+        for (t in listOf(3_000L, 3_001L, 5_000L, 6_999L)) assertTrue(!r.shouldTry(t), "t=$t chưa tới mốc ⇒ giữ placeholder")
+        assertTrue(r.shouldTry(7_000), "đúng mốc ⇒ được nạp lại")
+    }
+
+    @Test
+    fun `nap duoc thi quen sach - thu ngay, dem lai tu dau`() {
+        val r = CarImageStore.LoadRetry(firstRetryMs = 1_000, maxRetryMs = 60_000)
+        repeat(4) { r.recordFailure(nowMs = it * 1_000L) }
+        assertTrue(!r.shouldTry(3_001), "đang nguội")
+        r.reset()
+        assertTrue(r.shouldTry(3_001), "sau reset thử ngay, không đợi mốc cũ")
+        assertEquals(0, r.failures)
+        assertEquals(1_000L, r.recordFailure(nowMs = 3_001), "hỏng lại sau reset ⇒ đếm lại từ 1 s, không giữ nhịp giãn cũ")
+    }
+
+    @Test
+    fun `gian gap doi nhung co tran 60 s va khong tran so`() {
+        val r = CarImageStore.LoadRetry()
+        assertEquals(0L, r.delayMs(0))
+        assertEquals(1_000L, r.delayMs(1))
+        assertEquals(2_000L, r.delayMs(2))
+        assertEquals(4_000L, r.delayMs(3))
+        assertEquals(32_000L, r.delayMs(6))
+        assertEquals(60_000L, r.delayMs(7), "64 s bị kẹp về trần 60 s")
+        assertEquals(60_000L, r.delayMs(40), "số mũ lớn không tràn Long, vẫn đúng trần")
+        assertEquals(60_000L, r.delayMs(Int.MAX_VALUE))
+        assertEquals(CarImageStore.RETRY_FIRST_MS to CarImageStore.RETRY_MAX_MS, 1_000L to 60_000L, "mặc định = khuôn HalAbsentCache")
+    }
+}

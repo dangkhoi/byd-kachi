@@ -56,9 +56,6 @@ class IconGeometryContractTest {
 
     /** Tệp được phép PHÁ hai luật trên — mỗi dòng phải có lý do TẠI CHỖ. */
     private val exceptions: Map<String, String> = mapOf(
-        "ic_corner_cut.xml" to
-            "MẶT NẠ che góc vuông, không phải icon: nó PHẢI phủ trọn 24×24, chừa lề là hở góc vuông ra. " +
-                "Cùng lý do đã ghi ở IconStyleContractTest.fullBleedExceptions",
         "ic_kind_view.xml" to "huy hiệu 14dp của picker (mắt) — không phải icon lưới, vẽ full trong huy hiệu tròn nên phủ rộng hơn ô 20×20 là đúng",
         "ic_kind_act.xml" to "huy hiệu 14dp của picker (nút bấm) — như trên, vòng nút phủ gần trọn huy hiệu",
     )

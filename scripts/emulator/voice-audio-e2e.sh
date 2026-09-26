@@ -18,7 +18,7 @@ BRIDGE="am broadcast -a com.byd.launcher.TEST -n com.byd.launcher/com.byd.cluste
 # id \t câu \t kind_mong_đợi(Nav/Control/Read/Media/Launcher/Profile/EndSession/OpenApp; '-'=không kiểm)
 # Đa dạng như ĐỜI THẬT: biến thể cách nói · thêm lịch sự · câu dài · đọc tắt · số nhà đủ dạng.
 CASES=$(cat <<'EOF'
-n01	dẫn đường đến sáu chín hoàng văn thái	Nav
+n01	dẫn đường đến bốn hai lý thường kiệt	Nav
 n02	dẫn tới chợ bến thành	Nav
 n03	dẫn đến sân bay tân sơn nhất	Nav
 n04	dẫn đường đến một trăm ba mươi tư a điện biên phủ	Nav

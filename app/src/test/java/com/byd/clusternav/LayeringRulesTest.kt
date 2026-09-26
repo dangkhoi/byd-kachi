@@ -133,6 +133,14 @@ class LayeringRulesTest {
         // (owner 2026-09-24 "action phải chuyển ngay"). Nối HAI adapter cụ thể của :app ⇒ thuộc :app, dù "thuần"
         // theo phép đo (không import android.*). :core không có hai adapter đó để nối.
         "WakeOnWriteControl.kt" to "glue DI nối control-write ↔ read-cache của AppContainer — thuộc :app",
+        // CLOSE-7 2026-09-26: tách theo VAI từ `BydHal` (666 dòng) — đẩy khung dẫn đường/làn/camera qua HAL bằng
+        // reflection của `BydHal` (:app). Không import android.* nên "thuần" theo phép đo, nhưng mọi lời gọi là
+        // `BydHal.cachedSetInt/cachedSetBytes` (:app) ⇒ :core không có gì để nối. Cùng lẽ WakeOnWriteControl.
+        "BydHalContentPush.kt" to "tách theo vai từ BydHal — uỷ quyền reflection HAL của :app",
+        // SOÁT 2.68 — cùng lượt tách, cùng lý do: `BydHalRead.kt` là vai ĐỌC qua reflection của `BydHal` (:app).
+        // Khai TƯỜNG MINH ở đây vì hiện nó chỉ thoát bộ đếm nhờ chữ *Context* trong MỘT dòng KDoc — sửa câu chú
+        // thích đó là bài canh đỏ oan, mà lý do ở lại `:app` thì không hề đổi.
+        "BydHalRead.kt" to "tách theo vai từ BydHal — vai ĐỌC qua reflection HAL của :app",
         // Bridge extension W-WAKE: gọi VoiceWakeService (FGS Android) + Prefs(Context) qua lời gọi; "thuần" chỉ
         // vì phép đo soi `import android.*` + vài tên lớp, không soi phụ thuộc bắc cầu. Thực thuộc :app.
         "ClusterNavBridgeWake.kt" to "cầu Settings gọi VoiceWakeService/Prefs — không chuyển được sang :core",

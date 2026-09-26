@@ -28,7 +28,6 @@
     <!-- ── Semantic accents (tuned for AA on white) ────────────────── -->
     <color name="ok_green">#047857</color>        <!-- emerald-700 (AA as status ink) -->
     <color name="warn_amber">#b45309</color>      <!-- amber-700 (AA as warning ink) -->
-    <color name="err_red">#dc2626</color>         <!-- red-600 -->
     <color name="off_gray">#9aa0ae</color>        <!-- muted/tertiary, disabled + idle dot on light -->
     <color name="white">#FFFFFF</color>           <!-- on-brand text stays white -->
 
@@ -36,7 +35,6 @@
     <color name="surface_2">#f5f6f9</color>       <!-- faint card-gradient stop -->
     <color name="hairline">#dfe1e8</color>        <!-- default hairline -->
     <color name="hairline_strong">#cdd0da</color> <!-- stronger card stroke -->
-    <color name="cockpit_bg">#eef0f4</color>      <!-- alias of screen_bg -->
     <color name="cockpit_bg_tint">#173b82f6</color> <!-- ~9% blue radial tint (very subtle) top-left -->
     <color name="cockpit_bg_tint_purple">#14a78bfa</color> <!-- ~8% purple radial tint (very subtle) top-right -->
     <color name="text_tertiary">#878b99</color>   <!-- tertiary ink -->
@@ -48,15 +46,11 @@
     <color name="accent_green">#047857</color>
     <color name="accent_amber">#b45309</color>
     <color name="accent_red">#dc2626</color>
-    <color name="accent_purple">#7c3aed</color>
-    <color name="accent_pink">#db2777</color>
-    <color name="accent_teal">#0f766e</color>
 
     <!-- ── Pressed/ripple overlays for light ───────────────────────── -->
     <color name="ripple_light">#1f000000</color>  <!-- subtle dark ripple on light -->
     <color name="press_blue">#242563eb</color>    <!-- translucent blue press overlay -->
     <color name="press_amber">#24b45309</color>   <!-- translucent amber press overlay -->
-    <color name="card_highlight">#14ffffff</color> <!-- faint top sheen (near-invisible on white — fine) -->
 
     <!-- ── Drawable-literal tokens (light) ─────────────────────────────────────────────
          LIGHT counterparts of the dark drawable-literal tokens in values-night/colors.xml.
@@ -74,15 +68,10 @@
     <color name="tile_adv_start">#dc2626</color>    <color name="tile_adv_end">#be123c</color>
 
     <!-- Segmented-control recessed well: a light recessed field (slightly darker than screen_bg). -->
-    <color name="seg_track_well">#e4e6ec</color>
     <!-- Primary-button pressed gradient END: deeper indigo. -->
     <color name="btn_primary_end">#4338ca</color>
     <!-- Status-pill translucent fills: light-tuned accents at low alpha over white. -->
-    <color name="pill_fill_green">#24047857</color>
-    <color name="pill_fill_red">#26DC2626</color>
-    <color name="pill_fill_amber">#26B45309</color>
     <!-- Speed-dial face fill: red at ~8% over white. -->
-    <color name="speed_dial_fill">#14DC2626</color>
 
     <!-- ── Custom-view semantic tokens (Stage 2 — theme-adaptive custom Views) ──────────────────────
          Added for the Canvas Views that used to hardcode dark hex (SeatDiagramView / ClusterPreviewView).

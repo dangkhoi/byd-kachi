@@ -8,7 +8,7 @@
 ## (VI) Tiếng Việt
 
 ### 1. Cài lần đầu + cập nhật (OTA)
-- **Cài lần đầu**: tải `apk/Kachi-2.67-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → chép vào xe → cài bằng **adb** (`adb install -r Kachi-2.67-release.apk`). ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (app là launcher) — cài bằng adb thì qua.
+- **Cài lần đầu**: tải `apk/Kachi-2.68-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → chép vào xe → cài bằng **adb** (`adb install -r Kachi-2.68-release.apk`). ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (app là launcher) — cài bằng adb thì qua.
 - **Cập nhật về sau**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, không cần laptop. Công tắc *Tự động cập nhật* (cùng mục) = mở Kachi thì tự dò, có bản mới sẽ hỏi trước khi tải.
 - Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần.
 
@@ -54,7 +54,7 @@
 ## (EN) English
 
 ### 1. First install + OTA
-- **First install**: download `apk/Kachi-2.67-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb** (`adb install -r …`). Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate.
+- **First install**: download `apk/Kachi-2.68-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb** (`adb install -r …`). Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate.
 - **Updates**: *Settings › System & permissions › Check for update* — the app fetches the newer `apk/` build and installs it over the dadb loopback; no laptop. *Auto update* toggle = check on launch, ask before download.
 - Builds installed before 1.41 (old signing key) must be uninstalled once.
 

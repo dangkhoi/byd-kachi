@@ -19,7 +19,7 @@ def num_vn(n):  # số → đọc tiếng Việt (0..9999) rút gọn kiểu ng�
     if r: s+=" "+(num_vn(r) if r>=100 else "không trăm "+num_vn(r) if r>=10 else "không trăm lẻ "+ones[r])
     return s
 
-STREETS=["hoàng văn thái","điện biên phủ","nguyễn trãi","lý thường kiệt","cách mạng tháng tám",
+STREETS=["điện biên phủ","nguyễn trãi","lý thường kiệt","cách mạng tháng tám",
     "nguyễn văn cừ","huỳnh tấn phát","trần hưng đạo","lê lợi","nguyễn huệ","phạm văn đồng",
     "võ văn kiệt","xa lộ hà nội","ba tháng hai","cộng hòa","hoàng diệu","tô hiến thành"]
 PLACES=["chợ bến thành","sân bay tân sơn nhất","bệnh viện chợ rẫy","công viên tao đàn","ga sài gòn",

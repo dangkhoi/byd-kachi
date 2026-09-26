@@ -11,12 +11,10 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.os.SystemClock
 import android.util.Log
 import com.byd.clusternav.navigation.NavigationPermission
 import com.byd.clusternav.contracts.SpeedLimitSource
 import com.byd.clusternav.vietmapwidget.VietMapWidgetBridge
-import com.byd.clusternav.vietmapwidget.VietMapWidgetFreshness
 import com.byd.clusternav.vietmapwidget.VietMapWidgetOwner
 import com.byd.clusternav.modules.clustercast.ClusterNavLaneWidget
 import android.content.Context
@@ -199,67 +197,13 @@ class NavNotificationListener : NotificationListenerService() {
     }
 
     // ─── Nguồn tín hiệu speed-limit: CHỈ widget VietMap ────────────────────────────────────────────────
-    // 2026-08-22: gỡ hẳn nhánh Waze HLP (WazeHudSource). Nó poll `logcat -s WazeHudLink` qua dadb mỗi 900ms
-    // (~4000 lệnh shell/giờ) và chạy VÔ ĐIỀU KIỆN — không theo lựa chọn nguồn, thậm chí TRƯỚC cổng
-    // Prefs.enabled — để rồi nhận về 0 dòng: WazeMod chỉ phát tag đó khi có peer HUD BT/BLE (đo 08-22 trên
-    // máy không HUD: Waze đang dẫn, logcat rỗng). Bỏ đi là bớt hao pin mà không mất tín hiệu nào.
-    // Comment cũ "speed ports = Noop" LỖI THỜI: đường VietMap dưới đây chạy thật, chính nó vẽ badge trên cụm.
-    private val speedLimitPusher: (com.byd.clusternav.vietmapwidget.VietMapWidgetSnapshot) -> Unit = { snapshot ->
-        // TỰ LÀNH THEO NHỊP — khôi phục đúng hành vi vòng poll `WazeHudSource` đã gỡ (B3.30, hồi quy F1):
-        // bộ điều phối có thể bị đưa về TẮT SẠCH bất cứ lúc nào (owner được dựng lại sau khi process bị giết).
-        // Rẻ: `onMasterEnabled`/`onOutputEnabled`/`onSourceSelected` đều return sớm khi giá trị không đổi.
-        speedSignOwner.syncFromPrefs()
-        if (snapshot.speedFreshness == VietMapWidgetFreshness.FRESH) {
-            speedSignOwner.onSpeedLimit(
-                source = SpeedLimitSource.VIETMAP,
-                valueKph = snapshot.speedLimitKph ?: 0,
-                observedAtMonotonicMs = snapshot.speedUpdatedAtElapsedMs ?: SystemClock.elapsedRealtime(),
-            )
-        } else {
-            speedSignOwner.onProviderDisconnected(SpeedLimitSource.VIETMAP)
-        }
-        // ── Upcoming speed-limit badge (spec upcoming-speed-limit-badge, ADDITIVE) ──────────────────────
-        // Mirror VietMap's "speed-limit ahead" (ALERT_FULL slot) onto a smaller badge + countdown BELOW the
-        // main badge on the cluster. Pure decision in :core (UpcomingBadgeDecision) — OQ2: no own distance
-        // threshold, show exactly when VietMap shows a FRESH upcoming limit; hide when null/stale/reached.
-        // Gated by the user toggle Prefs.showUpcomingBadge (default ON). Degrade-safe (never throws into the feed).
-        runCatching {
-            if (Prefs.showUpcomingBadge(applicationContext)) {
-                val d = com.byd.clusternav.navigation.UpcomingBadgeDecision.decide(
-                    limitKph = snapshot.upcomingLimitKph,
-                    distanceMeters = snapshot.upcomingDistanceMeters,
-                    fresh = snapshot.alertFullFreshness == VietMapWidgetFreshness.FRESH,
-                )
-                if (d.show) {
-                    speedSignOwner.setUpcomingBadge(d.limitKph, d.distanceMeters, snapshot.upcomingDistanceText)
-                } else {
-                    speedSignOwner.setUpcomingBadge(null, null, null)
-                }
-            } else {
-                speedSignOwner.setUpcomingBadge(null, null, null)
-            }
-        }.onFailure { Log.w(TAG, "upcoming badge push failed", it) }
-        // ── Road-alert / speed-camera chip (B3.20, ADDITIVE) ────────────────────────────────────────────
-        // Mirror VietMap's sticky ALERTS-slot road alert (speed camera / hazard ahead + enforced limit +
-        // distance) onto a chip to the RIGHT of the main badge. Pure decision in :core (RoadAlertChipDecision).
-        // Gated by Prefs.showAlertChip (default OFF — opt-in, không phá bố trí badge hiện có). Degrade-safe.
-        runCatching {
-            if (Prefs.showAlertChip(applicationContext)) {
-                val d = com.byd.clusternav.navigation.RoadAlertChipDecision.decide(
-                    alerts = snapshot.alerts,
-                    fresh = snapshot.alertsFreshness == VietMapWidgetFreshness.FRESH,
-                )
-                val text = d.distanceText?.trim()?.takeIf { it.isNotEmpty() }
-                    ?: d.distanceMeters.takeIf { it > 0 }?.let { NavParse.formatMeters(it) }
-                speedSignOwner.setRoadAlertChip(d.show, d.limitKph, text, d.hasIcon)
-            } else {
-                speedSignOwner.setRoadAlertChip(false, 0, null, false)
-            }
-        }.onFailure { Log.w(TAG, "alert chip push failed", it) }
+    // Thân pusher (sync mỗi nhịp · onSpeedLimit/onProviderDisconnected · badge sắp tới · chip cảnh báo) nay ở
+    // [NavSpeedLimitPusher] (tách theo VAI — DEBT-500, CLAUDE.md §4.1), chép nguyên văn. `by lazy` để MỘT thể hiện
+    // duy nhất được add/remove ở bridge (so theo `===`), và `applicationContext` chỉ đọc sau khi service attach —
+    // cùng cách `speedSignOwner` ở trên.
+    private val speedLimitPusher: (com.byd.clusternav.vietmapwidget.VietMapWidgetSnapshot) -> Unit by lazy {
+        NavSpeedLimitPusher(applicationContext, speedSignOwner)
     }
-
-
-
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         sbn ?: return

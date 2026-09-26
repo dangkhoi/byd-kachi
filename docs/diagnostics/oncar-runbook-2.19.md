@@ -24,7 +24,7 @@ python3 scripts/vehicle/kachi/adb_raw.py <car-ip> 5555 shell 'dumpsys package co
 | # | Test | Cách | PASS |
 |---|------|------|------|
 | B1 | Sổ "công ty 1" | Nói "dẫn đến công ty một" (ô lưu tên "Công ty 1") | VÀO SỔ (không ra GMaps geocode "công ty một") — log `NavigateSaved` |
-| B2 | Số nhà | Nói "dẫn đến 67 hoàng văn thái" | GMaps nhận `q=67 ...` (KHÔNG "sáu bảy") — log `google.navigation:q=` |
+| B2 | Số nhà | Nói "dẫn đến <địa chỉ test>" (số nhà 2 chữ số + tên đường) | GMaps nhận `q=<số nhà dạng SỐ> …` (KHÔNG dạng chữ đọc "sáu bảy") — log `google.navigation:q=` |
 
 ## C. GIỮ STATE (2.19, #10) — quan trọng
 | # | Test | Cách | PASS |

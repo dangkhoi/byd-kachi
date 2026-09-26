@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test
 
 class SpeedSignSourceLifecycleTest {
     private val listener = SourceRoots.text("src/main/java/com/byd/clusternav/NavNotificationListener.kt")
+    /** Thân `speedLimitPusher` nay ở tệp riêng (tách theo VAI — DEBT-500, CLAUDE.md §4.1), chép nguyên văn. */
+    private val pusher = SourceRoots.text("src/main/java/com/byd/clusternav/NavSpeedLimitPusher.kt")
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
     /** Công tắc/đầu ra nay đi qua cầu Kachi + boot-setup — màn ClusterNav cũ đã gỡ 2026-09-13 (S3 · R1). */
     private val navBridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
@@ -45,7 +47,7 @@ class SpeedSignSourceLifecycleTest {
     fun `nhanh Waze HLP da go — khong con poll logcat vo dieu kien`() {
         listOf("WazeHudSource", "startWazeHudSource", "stopWazeHudSource", "WazeHudLink")
             .forEach { token ->
-                val live = listener.lineSequence()
+                val live = (listener + "\n" + pusher).lineSequence()
                     .filterNot { it.trimStart().startsWith("//") || it.trimStart().startsWith("*") }
                     .any { it.contains(token) }
                 assertFalse(live, "\"$token\" phải chỉ còn trong comment giải thích, không còn code sống")
@@ -54,7 +56,7 @@ class SpeedSignSourceLifecycleTest {
 
     @Test
     fun `VietMap fresh null is zero while unavailable is provider disconnect`() {
-        val pusher = functionBody(listener, "private val speedLimitPusher")
+        val pusher = functionBody(pusher, "override fun invoke(snapshot: VietMapWidgetSnapshot)")
         assertTrue(pusher.contains("snapshot.speedLimitKph ?: 0"))
         assertTrue(pusher.contains("snapshot.speedUpdatedAtElapsedMs"))
         assertTrue(pusher.contains("onProviderDisconnected(SpeedLimitSource.VIETMAP)"))

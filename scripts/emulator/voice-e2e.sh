@@ -70,7 +70,7 @@ shq() {
 # ═══ CHỐT: KHÔNG chạy bộ ca này trên XE THẬT ═════════════════════════════════════════════════════
 #
 # [SOÁT 2026-09-15 · P0] Bộ ca `voice-cases.tsv` có những ca **thi hành thật, không hỏi lại**
-# (`auto_confirm=1`): t27 *"mở khoá cửa"*, t29 gói *"mở cửa + đèn đọc"*, các ca mở app / dẫn đường / đổi hồ sơ.
+# (`auto_confirm=1`): t109 *"mở cốp"*, t111 gói *"mở cốp + đèn đọc"*, các ca mở app / dẫn đường / đổi hồ sơ.
 # Trên máy ảo chúng vô hại (không có HAL nên `Control` chỉ trả *"xe không nhận lệnh"* — xem đầu tệp). Trên xe
 # thì đúng những ca ấy **mở khoá cửa một chiếc xe đang đỗ**, không một cú xác nhận nào — đúng thứ CLAUDE.md §4
 # cấm: một lệnh đổi state hệ thống mà không nêu tường minh nó nhắm cái gì.
@@ -81,7 +81,7 @@ require_emulator() {
     emulator-*) ;;
     *)
       [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die \
-        "«$SERIAL» không phải máy ảo — từ chối chạy bộ ca có lệnh thi hành thật (t27 mở khoá cửa…) trên đầu xe.
+        "«$SERIAL» không phải máy ảo — từ chối chạy bộ ca có lệnh thi hành thật (t109 mở cốp…) trên đầu xe.
    Đặt ALLOW_NON_EMULATOR=YES nếu thật sự có chủ ý, và đọc lại voice-cases.tsv cột auto trước đã."
       echo "⚠ ALLOW_NON_EMULATOR=YES — đang chạy trên thiết bị THẬT «$SERIAL»"
       ;;

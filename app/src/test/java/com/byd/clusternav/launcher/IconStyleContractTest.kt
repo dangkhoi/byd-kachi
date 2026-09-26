@@ -53,18 +53,13 @@ class IconStyleContractTest {
         "ic_menu_config.xml" to "bảng con nút nổi Cast (bề mặt đã chạy trên xe), không có bước tint",
         "ic_menu_left.xml" to "cùng bảng con nút nổi Cast — không tint",
         "ic_menu_right.xml" to "cùng bảng con nút nổi Cast — không tint",
-        "ic_check_selected.xml" to "dấu tích XANH LÁ = trạng thái \"đang chọn\"; đổi sang trắng là mất nghĩa",
         "ic_chevron_down.xml" to "nằm TRONG layer-list @drawable/spinner_bg ⇒ không có View nào để tint; màu phải ở trong tệp",
-        "ic_corner_cut.xml" to "#0A0D13 = màu tường; đây là MẶT NẠ che góc vuông, không phải icon",
     )
 
     /** Icon CHƯA có chỗ dùng, giữ lại có lý do — nợ nhìn thấy được, không phải chỗ cất rác. */
-    private val orphanPending: Map<String, String> = mapOf(
-        "ic_check_selected.xml" to
-            "bảng chọn app để chiếu đã bị gỡ khi Cast rút về 4 trạng thái; giữ vì nếu bày lại danh sách app thì cần đúng dấu tích này",
-        "ic_corner_cut.xml" to
-            "kỹ thuật che góc vuông để lộ mép bo tròn, có ghi cách dùng trong tệp; chưa nối vào ô nào của launcher",
-    )
+    // RES-CLEAN 2026-09-26: hai icon mồ côi (`ic_check_selected`, `ic_corner_cut`) đã XOÁ cùng 39 resource không dùng
+    // (lint UnusedResources) — danh sách nay rỗng, nhưng giữ để nợ mới (nếu có) vẫn phải ghi lý do tại chỗ.
+    private val orphanPending: Map<String, String> = emptyMap()
 
     // ── hạ tầng đọc tệp ─────────────────────────────────────────────────────────────────────────────
 

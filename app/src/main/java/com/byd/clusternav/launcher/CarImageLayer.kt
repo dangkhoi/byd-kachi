@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import java.util.concurrent.Executors
 
 /**
@@ -22,7 +23,8 @@ import java.util.concurrent.Executors
  *  • [ensure] gọi từ `onDraw` (rẻ khi đã cache): cỡ/ảnh đổi ⇒ hỏi kho chung [CarImageStore.peek] trước — có sẵn thì
  *    gán NGAY (không lượt nền, không khung placeholder, không `invalidate` thêm); chưa có ⇒ xếp một lượt lên [io]
  *    (daemon) gọi [CarImageStore.shared], xong post về luồng chính, gọi [onReady] (= `invalidate`). Thẻ thế hệ [gen]
- *    bỏ lượt cũ về muộn (đổi cỡ liên tục / ô bị nhả) — cùng bất biến [WallpaperController].
+ *    bỏ lượt cũ về muộn (đổi cỡ liên tục / ô bị nhả) — cùng bất biến [WallpaperController]. Nạp HỎNG ⇒ placeholder +
+ *    thử lại theo ĐỒNG HỒ ([CarImageStore.LoadRetry]: 1 s → ×2 → trần 60 s; CLOSE-5), không vòng vô hạn, không kẹt mãi.
  *  • [draw] blit ảnh feather **giữ tỉ lệ, canh giữa** vào khung; chưa có ảnh ⇒ [drawPlaceholder] (silhouette mờ,
  *    KHÔNG vector cũ, KHÔNG viền).
  *  • [release] gọi lúc ô bị tháo: huỷ lượt đang bay + bỏ tham chiếu.
@@ -43,6 +45,10 @@ internal class CarImageLayer(
     private var requestedKey: CarImageStore.CacheKey? = null
     private var gen = 0
 
+    /** CLOSE-5 · lịch thử-lại khi nạp HỎNG (thuần, xem [CarImageStore.LoadRetry]); [retryKey] = khoá lịch đang đếm. */
+    private val retry = CarImageStore.LoadRetry()
+    private var retryKey: CarImageStore.CacheKey? = null
+
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val placeholder = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val src = Rect()
@@ -54,16 +60,22 @@ internal class CarImageLayer(
         if (w <= 0 || h <= 0) return hasImage()
         // Khoá = dấu-vết-tệp + khung gom bậc 32px (đổi cỡ nhỏ không nạp lại; đổi ảnh thì nạp lại).
         val key = CarImageStore.cacheKey(CarImageStore.signature(ctx), w, h)
-        // Khoá đã nạp (kể cả nạp HỎNG ⇒ placeholder) ⇒ không hỏi lại tới khi khoá đổi. Trước: nạp hỏng ⇒ lượt sau lại
-        // xếp nạp ⇒ onReady ⇒ invalidate ⇒ onDraw ⇒ nạp… vòng vô hạn ở tốc độ giải mã (chỉ không lộ vì asset mặc định
-        // luôn có).
-        if (key == loadedKey) return hasImage()
+        // Khoá đã nạp ⇒ không hỏi lại tới khi khoá đổi. Trước (closeout): nạp hỏng ⇒ lượt sau lại xếp nạp ⇒ onReady ⇒
+        // invalidate ⇒ onDraw ⇒ nạp… vòng vô hạn ở tốc độ giải mã (chỉ không lộ vì asset mặc định luôn có).
+        if (key == loadedKey) {
+            if (hasImage()) return true
+            // CLOSE-5 (review P3): khoá này đã nạp HỎNG. Trước: `return false` vô điều kiện ⇒ chặn được vòng vô hạn
+            // nhưng placeholder MÃI tới khi khung/tệp đổi. Nay: chỉ thử lại khi tới mốc đồng hồ của [retry]
+            // (1 s → ×2 → trần 60 s); chưa tới ⇒ giữ placeholder; tới ⇒ rơi xuống peek/nạp như khoá mới.
+            if (!retry.shouldTry(now())) return false
+        }
         // Kho chung đã có bản này (lớp khác nạp rồi / ô gắn lại) ⇒ dùng ngay, không lượt nền, không khung trống.
         CarImageStore.peek(key)?.let { hit ->
             gen++                       // huỷ lượt đang bay (nếu có) — về muộn cũng bị bỏ
             bmp = hit
             loadedKey = key
             requestedKey = null
+            retry.reset()
             return true
         }
         if (key == requestedKey) return hasImage()   // đang nạp đúng khung này rồi
@@ -76,11 +88,28 @@ internal class CarImageLayer(
                 bmp = next
                 loadedKey = key
                 requestedKey = null
-                if (next != null) onReady()   // hỏng ⇒ placeholder đã vẽ sẵn, không invalidate thêm
+                if (next != null) {
+                    retry.reset()
+                    onReady()
+                } else {
+                    // Hỏng ⇒ placeholder đã vẽ sẵn, KHÔNG invalidate ngay (invalidate ngay = vòng vô hạn). Thay vào đó
+                    // hẹn MỘT lượt đánh thức đúng mốc thử lại: onReady ⇒ invalidate ⇒ onDraw ⇒ ensure ⇒ shouldTry
+                    // = true ⇒ nạp lại. Khoá đổi giữa chừng ⇒ lịch giãn đếm lại; thẻ gen bỏ lượt đánh thức cũ
+                    // (đổi cỡ / ô bị nhả trước mốc).
+                    if (retryKey != key) {
+                        retry.reset()
+                        retryKey = key
+                    }
+                    val delay = retry.recordFailure(now())
+                    main.postDelayed({ if (my == gen) onReady() }, delay)
+                }
             }
         }
         return hasImage()
     }
+
+    /** Đồng hồ cho [retry] — cùng gốc với `Handler.postDelayed` (uptime) nên mốc hẹn và mốc kiểm khớp nhau. */
+    private fun now(): Long = SystemClock.uptimeMillis()
 
     private fun hasImage(): Boolean = bmp?.isRecycled == false
 
@@ -133,10 +162,12 @@ internal class CarImageLayer(
 
     /** Ô bị tháo ⇒ huỷ lượt đang bay + bỏ tham chiếu (bitmap thuộc kho chung — KHÔNG recycle, xem KDoc lớp). */
     fun release() {
-        gen++
+        gen++                       // cũng huỷ lượt đánh thức thử-lại đang hẹn (guard `my == gen`)
         requestedKey = null
         bmp = null
         loadedKey = null
+        retry.reset()
+        retryKey = null
     }
 
     private companion object {

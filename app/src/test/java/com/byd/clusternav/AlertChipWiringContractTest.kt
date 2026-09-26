@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test
  */
 class AlertChipWiringContractTest {
 
-    private val listener = SourceRoots.text("src/main/java/com/byd/clusternav/NavNotificationListener.kt")
+    /** Pusher của listener (`speedLimitPusher`) nay ở tệp riêng — tách theo VAI (DEBT-500), chép nguyên văn. */
+    private val listener = SourceRoots.text("src/main/java/com/byd/clusternav/NavSpeedLimitPusher.kt")
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
     private val overlay = SourceRoots.text("src/main/java/com/byd/clusternav/speedbadge/SpeedBadgeOverlay.kt")
     /** Công tắc chip nay ở cầu Kachi — `BadgePlacementController` + màn cũ đã gỡ 2026-09-13 (S3 · R3). */

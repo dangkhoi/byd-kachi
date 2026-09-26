@@ -24,7 +24,7 @@ class VoiceNumberNormTest {
 
     @Test fun `normalize address giu chu giu dau`() {
         // "sáu bảy" → "67", phần chữ giữ nguyên dấu.
-        assertEquals("67 hoàng văn thái", VoiceNumberNorm.normalizeSpokenNumbers("sáu bảy hoàng văn thái"))
+        assertEquals("67 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("sáu bảy lý thường kiệt"))
     }
 
     @Test fun `khop so voi nhan luu co chu so`() {
@@ -40,7 +40,7 @@ class VoiceNumberNormTest {
     }
 
     @Test fun `so hang tram — bay tram hai muoi thanh 720`() {
-        assertEquals("720 hoàng văn thái", VoiceNumberNorm.normalizeSpokenNumbers("bảy trăm hai mươi hoàng văn thái"))
+        assertEquals("720 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("bảy trăm hai mươi lý thường kiệt"))
     }
 
     @Test fun `tram le — bay tram le nam thanh 705`() {
@@ -66,7 +66,7 @@ class VoiceNumberNormTest {
 
     @Test fun `doc tat chu so + xuyet`() {
         assertEquals("1329 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("1 ngàn 3 trăm 2 mươi chín lý thường kiệt"))
-        assertEquals("32/9 hoàng văn thái", VoiceNumberNorm.normalizeSpokenNumbers("ba hai xuyệt chín hoàng văn thái"))
+        assertEquals("32/9 lý thường kiệt", VoiceNumberNorm.normalizeSpokenNumbers("ba hai xuyệt chín lý thường kiệt"))
     }
 
 }

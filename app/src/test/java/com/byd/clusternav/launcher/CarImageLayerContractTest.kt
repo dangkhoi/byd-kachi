@@ -79,6 +79,29 @@ class CarImageLayerContractTest {
         assertFalse(layer.contains("loadFeathered("), "lớp không được giải mã riêng (bản riêng = tốn RAM ×3)")
     }
 
+    // ── CLOSE-5 · nạp hỏng ⇒ thử lại theo đồng hồ, không kẹt placeholder, không vòng vô hạn ────────────────────────
+
+    /**
+     * Lớp không dựng được off-car (stub `Handler`), nên khoá WIRING ở mức source: `ensure()` phải hỏi
+     * [CarImageStore.LoadRetry] trước khi nạp lại khoá đã hỏng; callback hỏng phải ghi lần hỏng + hẹn đánh thức đúng
+     * mốc (có guard `gen`); nạp được / tháo ô ⇒ reset. Phần SỐ HỌC của lịch giãn khoá ở `CarImageLoadRetryTest`.
+     */
+    @Test
+    fun `ensure() hoi LoadRetry truoc khi nap lai khoa da hong - hong thi ghi + hen danh thuc dung moc`() {
+        val ensure = SourceRoots.body(layer, "fun ensure(")
+        assertTrue(layer.contains("CarImageStore.LoadRetry()"), "lịch thử-lại là lớp THUẦN của kho, không tự viết lại")
+        assertTrue(ensure.contains("retry.shouldTry(now())"), "khoá đã nạp mà không có ảnh ⇒ chỉ nạp lại khi tới mốc")
+        assertTrue(ensure.contains("retry.recordFailure(now())"), "nạp hỏng phải ghi lần hỏng (giãn 1 s → ×2 → 60 s)")
+        assertTrue(ensure.contains("main.postDelayed({ if (my == gen) onReady() }, delay)"),
+            "hẹn MỘT lượt đánh thức đúng mốc, guard gen để đổi cỡ/nhả ô huỷ được")
+        assertEquals(3, Regex("""retry\.reset\(\)""").findAll(ensure).count(),
+            "reset ở 2 đường thành công (peek hit + nạp xong) + 1 khi đổi khoá giữa chừng")
+        assertTrue(SourceRoots.body(layer, "fun release(").contains("retry.reset()"), "tháo ô ⇒ quên lịch giãn")
+        // Không được quay lại vòng vô hạn: đường hỏng KHÔNG gọi onReady() trực tiếp, chỉ qua postDelayed đúng mốc.
+        val failBranch = ensure.substringAfter("} else {").substringBefore("main.postDelayed")
+        assertFalse(failBranch.contains("onReady()"), "đường hỏng không invalidate ngay")
+    }
+
     @Test
     fun `CarImageLayer KHONG recycle - bitmap thuoc kho, lop khac co the con ve`() {
         assertEquals(0, Regex("""\.recycle\(\)""").findAll(layer).count(),

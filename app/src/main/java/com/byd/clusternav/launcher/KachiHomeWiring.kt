@@ -13,6 +13,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.voice.VoiceEntry
+import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
+import com.byd.clusternav.launcher.voice.VoiceHomeAction
+import com.byd.clusternav.launcher.voice.VoiceHomeActions
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceSession
 import kotlinx.coroutines.launch
@@ -264,6 +268,13 @@ internal fun Activity.openSettingsGroup(intent: Intent?, panels: HomePanels) {
 const val EXTRA_START_VOICE = "start_voice"
 
 /**
+ * CLOSE-3 — `:wake` trả một việc CẦN Activity (ngăn kéo · Cài đặt · quyền · đổi hồ sơ): giá trị = `VoiceHomeAction.id`,
+ * [EXTRA_VOICE_HOME_ARG] = tham số (tên hồ sơ). Thay chỗ `:wake` từng gửi [EXTRA_START_VOICE] cho cả ba việc.
+ */
+const val EXTRA_VOICE_HOME_ACTION = "voice_home_action"
+const val EXTRA_VOICE_HOME_ARG = "voice_home_arg"
+
+/**
  * Dựng [VoiceSession] cho màn chính — **một** phiên cho cả ba lối vào (ô *Nói với xe* · nút mic trên thanh trên ·
  * phím vô-lăng), vì ba lối ấy là ba cách gọi cùng một việc.
  *
@@ -285,8 +296,13 @@ internal fun Activity.voiceSession(
     onLayout: (LayoutPreset) -> Boolean,
 ): VoiceSession {
     lateinit var session: VoiceSession
+    // §8.2 (A) — ảnh chụp ngữ pháp cho phiên `:wake` có NGAY từ lần mở màn đầu (máy vừa nâng cấp chưa đổi hồ sơ lần nào).
+    VoiceGrammarSnapshotStore.write(WorkspacePrefs(this))
+    // CLOSE-3 — cùng BỐN lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent.
+    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile))
     session = VoiceSession(
         ctx = this,
+        entry = entry,
         profiles = { state().profiles },
         appsByLabel = { VoiceWiring.appsByLabel(this) },
         // Sổ địa chỉ của hồ sơ ĐANG dùng — đọc từ state (đường đọc bền duy nhất), như `profiles` ngay trên.
@@ -315,14 +331,23 @@ internal fun Activity.voiceSession(
 }
 
 /**
- * Intent mang [EXTRA_START_VOICE] ⇒ mở ngay một phiên nghe.
+ * Intent mang [EXTRA_START_VOICE] ⇒ mở ngay một phiên nghe (đi qua `VoiceSession.start` ⇒ route CLOSE-3: wake BẬT
+ * thì giao `:wake`). Intent mang [EXTRA_VOICE_HOME_ACTION] ⇒ thi hành việc `:wake` trả về bằng đúng lambda của
+ * dispatcher ([VoiceEntry.home]).
  *
  * **Xoá extra sau khi dùng**, cùng lý do đã ghi ở [openSettingsGroup]: màn chính là `singleTask`, intent này ở
  * lại làm `getIntent()` của màn — không xoá thì mỗi lần hệ thống dựng lại màn (đổi chủ đề, đổi ngôn ngữ,
  * low-memory) là micro tự bật lên một lần nữa. Trên một chiếc xe đang chạy, đó là thứ không ai giải thích được.
  */
 internal fun Activity.startVoiceIfRequested(intent: Intent?, session: VoiceSession) {
-    if (intent?.getBooleanExtra(EXTRA_START_VOICE, false) != true) return
+    if (intent == null) return
+    VoiceHomeAction.of(intent.getStringExtra(EXTRA_VOICE_HOME_ACTION))?.let { action ->
+        val arg = intent.getStringExtra(EXTRA_VOICE_HOME_ARG)
+        intent.removeExtra(EXTRA_VOICE_HOME_ACTION); intent.removeExtra(EXTRA_VOICE_HOME_ARG)
+        val done = session.entry?.home?.perform(action, arg) ?: false
+        if (!done) android.util.Log.w("KachiVoiceEntry", "việc `:wake` trả về không thi hành được: ${action.id} arg=$arg")
+    }
+    if (!intent.getBooleanExtra(EXTRA_START_VOICE, false)) return
     intent.removeExtra(EXTRA_START_VOICE)
     session.start()
 }

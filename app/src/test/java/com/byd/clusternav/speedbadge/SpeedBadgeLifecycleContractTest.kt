@@ -38,7 +38,8 @@ class SpeedBadgeLifecycleContractTest {
         // Retry: doShow re-runs initOverlay when the WM is still null (display 1 was not ready at construct).
         assertTrue(overlay.contains("if (clusterWm == null) initOverlay()"), "doShow retries init when uninitialized")
         // Display-absent path stays uninitialized (returns) instead of a permanent kill.
-        val init = functionBody(overlay, "private fun initOverlay()")
+        // `initOverlay` mở `internal` từ khi tách `SpeedBadgeOverlayUpcoming.kt` (DEBT-500) — extension cần gọi thử lại.
+        val init = functionBody(overlay, "internal fun initOverlay()")
         assertTrue(init.contains("if (display == null)") && init.contains("return"), "display-absent stays uninitialized")
         assertFalse(init.contains("= true"), "initOverlay sets no permanent state flag")
     }

@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
 
 /**
  * ═══ S4 · R2/R5/R8 — phần **theo hồ sơ** của [WorkspacePrefs]: chụp–áp · nhân bản · chuyển đổi một-lần ═════════
@@ -125,6 +126,7 @@ internal fun WorkspacePrefs.duplicateActiveProfile(name: String) {
         copyValue(e, to, value)
     }
     e.apply()
+    VoiceGrammarSnapshotStore.write(this)
 }
 
 /**
@@ -196,6 +198,7 @@ internal fun WorkspacePrefs.migrateScenesOnce() {
     if (names.size > existing.size) e.putString(WorkspacePrefs.K_PROFILES, names.joinToString("\n"))
     boot?.let { e.putString(WorkspacePrefs.K_BOOT_PROFILE, it) }
     e.apply()
+    VoiceGrammarSnapshotStore.write(this)
 }
 
 /** Ghi một hồ sơ do lượt chuyển đổi dựng ra: ba thứ của cảnh + **chép phần còn lại** từ [source] (R2). */
@@ -282,6 +285,7 @@ fun WorkspacePrefs.renameProfile(old: String, new: String): Boolean {
     if (activeProfile() == plan.from) e.putString(WorkspacePrefs.K_ACTIVE, plan.to)
     if (sp.getString(WorkspacePrefs.K_BOOT_PROFILE, null) == plan.from) e.putString(WorkspacePrefs.K_BOOT_PROFILE, plan.to)
     e.apply()
+    VoiceGrammarSnapshotStore.write(this)
     return true
 }
 
@@ -331,5 +335,6 @@ internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): B
     // Chỉ ghi các hậu tố HỢP LỆ (PROFILE_SUFFIXES) — chống chuỗi lạ nhét khoá ngoài phạm vi hồ sơ.
     values.filterKeys { it in WorkspacePrefs.PROFILE_SUFFIXES }.forEach { (suffix, v) -> copyValue(e, keyOf(target, suffix), v) }
     e.apply()
+    VoiceGrammarSnapshotStore.write(this)
     return true
 }

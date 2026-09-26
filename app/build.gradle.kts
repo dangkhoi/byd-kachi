@@ -54,8 +54,11 @@ android {
         // error, doc đồng bộ (spec `docs/specs/kachi-closeout-hardening.html`, số đo `docs/diagnostics/perf-closeout-2026-09-25.md`).
         // CAM-ROT 2026-09-26 ⇒ **2.67 (168)**: xoay video camera xi-nhan theo bên (trái ↺ / phải ↻) + chip Cài đặt
         // "Xoay video" (owner: "nó bị ngang, cần dọc video lại"). 2.66 đã báo owner ⇒ số hiệu riêng (CLAUDE.md §9).
-        versionCode = 168
-        versionName = "2.67"
+        // CLOSE-2..10 2026-09-26 ⇒ **2.68 (169)**: nút mic đi qua `:wake` khi Hey Kachi bật (hết bản mô hình ASR thứ hai),
+        // tách 4 tệp >500 dòng theo vai, ảnh xe thử-lại theo đồng hồ, coroutines 1.11.0, gỡ 41 resource không dùng,
+        // bộ ca voice E2E khớp sản phẩm + 5 dòng VoiceFeatureGone. 2.67 đã báo owner ⇒ số hiệu riêng.
+        versionCode = 169
+        versionName = "2.68"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:
@@ -233,11 +236,12 @@ dependencies {
     implementation("dev.mobile:dadb:2.0.0")
 
     // — B5a launcher UI-state: coroutines + AndroidX Lifecycle ViewModel/runtime (StateFlow single-source-of-truth) —
-    // Versions verified via Context7 + Maven Central (2026-09-10): kotlinx-coroutines 1.10.2 (latest stable band,
-    // README master = 1.11), androidx.lifecycle 2.9.0 (ktx artifacts transitively provide viewModelScope /
+    // Versions verified via Context7 + Maven Central: kotlinx-coroutines 1.11.0 (CLOSE-8 2026-09-26 — Context7 CHANGES.md:
+    // 1.11.0 = latest stable; đổi phá vỡ chỉ ở JS/Wasm Promise + khoá `CoroutineDispatcher` làm context key; runTest/
+    // StateFlow/delay/setMain không đổi; grep repo 0 chỗ dùng API bị hạ cấp), androidx.lifecycle 2.9.0 (ktx artifacts transitively provide viewModelScope /
     // repeatOnLifecycle / lifecycleScope / LifecycleRegistry), Turbine 1.2.1 (latest stable). Modern API only
     // (MutableStateFlow.update, asStateFlow, runTest, Dispatchers.setMain) — no deprecated patterns.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
 
@@ -268,7 +272,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // B5a: test StateFlow của HomeViewModel — coroutines-test (runTest/Dispatchers.setMain) + Turbine (awaitItem).
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("app.cash.turbine:turbine:1.2.1")
     // Real org.json on the unit-test classpath: android.jar ships a stub that throws "Stub!",
     // so WazeMod HLP/1 parse tests need the reference implementation. Pinned. Test-only

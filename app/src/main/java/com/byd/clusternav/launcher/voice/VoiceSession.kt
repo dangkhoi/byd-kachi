@@ -53,6 +53,8 @@ class VoiceSession(
     internal val openPermissions: () -> Unit,
     /** Chạy một việc dài trên luồng NỀN — tách ra để đo/kiểm được, mặc định là một Thread. */
     internal val background: (() -> Unit) -> Unit = { block -> Thread(block, "KachiListen").start() },
+    /** CLOSE-3 — lối vào có thể GIAO cho `:wake` (một mô hình cho cả máy); `null` = luôn in-process (phiên của chính `:wake`). */
+    internal val entry: VoiceEntry? = null,
 ) {
 
     internal val ui = Handler(Looper.getMainLooper())
@@ -72,12 +74,7 @@ class VoiceSession(
      * tiếp theo đã đi đường mới — không phải khởi động lại launcher. Cùng lẽ với `profiles`/`appsByLabel`.
      */
     internal val speaker: VoiceSpeaker =
-        runCatching {
-            VoiceSpeakerRouter(
-                ctx,
-                preferOffline = { Prefs.voicePreferOffline(ctx) },
-            )
-        }
+        runCatching { VoiceSpeakerRouter(ctx, preferOffline = { Prefs.voicePreferOffline(ctx) }) }
             .onFailure { Log.w(TAG, "không dựng được đường ra tiếng — chỉ còn chữ", it) }
             .getOrDefault(SilentSpeaker)
 
@@ -99,6 +96,7 @@ class VoiceSession(
 
     /** Micro có đang mở không — [cancel] đọc để biết ai chịu trách nhiệm đóng phiên (xem KDoc [cancel]). */
     private val capturing = AtomicBoolean(false)
+    private val stopped = AtomicBoolean(false)   // [SOÁT 2.68 · P1] màn huỷ ⇒ chết VĨNH VIỄN — vì sao: KDoc [VoiceEntry]
 
     /**
      * Micro của phiên này có đang mở không — **chỉ đọc**, cho các lượt nghe NỐI ở `VoiceSessionTurns.kt`.
@@ -159,8 +157,16 @@ class VoiceSession(
     internal val phase = java.util.concurrent.atomic.AtomicReference(VoiceTurnPhase.IDLE)
     // `go(to)` — cổng chuyển pha, là hàm mở rộng ở `VoiceSessionTurns.kt` (tách theo VAI, trần 500 dòng).
 
-    /** Bắt đầu nghe. Gọi từ luồng vẽ. Đang có phiên ⇒ **không làm gì** (xem KDoc lớp). */
-    fun start() {
+    /**
+     * Bắt đầu nghe. Gọi từ luồng vẽ. Đang có phiên ⇒ **không làm gì** (xem KDoc lớp).
+     *
+     * CLOSE-3: "Hey Kachi" BẬT ⇒ giao lối vào cho `:wake` ([VoiceEntry.tryWake] — KHÔNG dựng recognizer ở đây);
+     * `:wake` không ack trong hạn ⇒ [VoiceEntry] gọi lại với `local = true` để mở in-process như cũ (V3 R4).
+     */
+    fun start(local: Boolean = false) {
+        if (stopped.get()) { Log.i(TAG, "màn chính đã huỷ — bỏ lượt mở phiên (kể cả đường lùi đã hẹn của `:wake`)"); return }
+        if (running.get()) { Log.i(TAG, "đã có một phiên nghe đang chạy — không giao `:wake`"); return }
+        if (!local && entry?.tryWake { start(local = true) } == true) return
         if (!running.compareAndSet(false, true)) {
             Log.i(TAG, "đã có một phiên nghe đang chạy — bỏ qua")
             return
@@ -218,6 +224,7 @@ class VoiceSession(
      * `AudioRecord` đang mở, và một [VoiceDispatcher] trỏ vào activity đã huỷ.
      */
     fun stop() {
+        stopped.set(true)           // [SOÁT 2.68 · P1] khoá mọi `start()` về sau — xem KDoc [stopped]
         cancelled.set(true)
         // Bỏ luôn số thế hệ: mọi việc nền còn treo của phiên này thành [stale] ⇒ không vẽ, không đóng, không thi
         // hành gì nữa. Đóng ngay ở đây được (khác [cancel]) vì không còn phiên nào để bàn giao — màn đang chết.
@@ -368,15 +375,8 @@ class VoiceSession(
         speakLines(batch) { post { onReplyDone(my, pending, endSession) } }
     }
 
-    /**
-     * `speakLines(...)` — gom N dòng → đọc MỘT câu, hàm mở rộng ở `VoiceSessionTurns.kt` (tách theo VAI, trần
-     * 500 dòng). Ba cổng (công tắc Đọc phản hồi · mic đang mở · hộp xác nhận) + hợp đồng luôn gọi `onDone`.
-     */
-
-    /**
-     * Hỏi lại trước khi bắn — hàm mở rộng ở `VoiceSessionTurns.kt` (`VoiceSession.confirm` + `answerConfirm`),
-     * tách theo VAI để giữ tệp này dưới trần 500 dòng (CLAUDE.md §4.1). Cùng nhóm `askAloudThenListen`.
-     */
+    // `speakLines(...)` (gom N dòng → đọc MỘT câu; ba cổng + luôn gọi `onDone`) và `confirm`/`answerConfirm`/
+    // `askAloudThenListen` (hỏi lại trước khi bắn) là hàm mở rộng ở `VoiceSessionTurns.kt` (tách theo VAI, trần 500).
 
     /**
      * Chạy [block] với cờ [capturing] BẬT — micro đang mở thì [cancel] biết là có vòng nghe sẽ tự đóng phiên.

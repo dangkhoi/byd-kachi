@@ -3,7 +3,7 @@ package com.byd.clusternav.launcher.voice
 /**
  * ═══ CHUẨN HOÁ SỐ ĐỌC ↔ CHỮ SỐ — cho khớp sổ địa chỉ + địa chỉ tự do (findings 2026-09-23) ══════════════════
  *
- * On-car 2026-09-23: "dẫn đến **công ty 1**" (ô lưu "Công ty 1") → GMaps thay vì sổ; "**67** hoàng văn thái" →
+ * On-car 2026-09-23: "dẫn đến **công ty 1**" (ô lưu "Công ty 1") → GMaps thay vì sổ; "**<số nhà>** <tên đường>" →
  * ASR "sáu bảy hồ văn thái", gửi nguyên chữ "sáu bảy" ra GMaps. Gốc: khớp sổ so token CHÍNH XÁC ("1"≠"một"),
  * địa chỉ tự do không gộp "sáu bảy"→"67".
  *

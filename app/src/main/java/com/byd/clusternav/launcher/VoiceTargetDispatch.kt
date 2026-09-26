@@ -88,7 +88,7 @@ class VoiceTargetDispatch(
         if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i)); return }
         val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
 
-        // "67 hoàng văn thái" → ASR "sáu bảy hồ văn thái" ⇒ đổi chuỗi số đọc → chữ số trước khi gửi bản đồ
+        // "42 lý thường kiệt" → ASR "bốn hai lý thương kiệt" ⇒ đổi chuỗi số đọc → chữ số trước khi gửi bản đồ
         // (findings 2026-09-23 mục 3b). Không đụng phần chữ (giữ dấu).
         val q = com.byd.clusternav.launcher.voice.VoiceNumberNorm.normalizeSpokenNumbers(i.query)
 

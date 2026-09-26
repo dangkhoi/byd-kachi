@@ -280,11 +280,17 @@ class VoiceFastNaturalWiringContractTest {
         assertTrue(exec.contains("readBack("), "lời đáp phải nói giá trị THẬT sau lượt ghi, không phải giá trị vừa nhận")
         // Bộ ca E2E phải THẬT SỰ dùng cột mới — không thì lệnh có mà lớp canh vẫn trống.
         val cases = repoText("scripts/emulator/voice-cases.tsv")
-        assertTrue(cases.contains("voice_confirm_ids=control:door"), "ca `mở khoá cửa` phải tự bật mã của nó")
+        // CLOSE-2 2026-09-26: `control:door` đã gỡ (1.94) nên không còn là mã hỏi-được; bộ ca canh cổng CONFIRM nay
+        // dùng mã còn sống (`control:trunk`, `control:sunroof`, `control:windows_all`, `macro:mac_win_open_all`,
+        // `media_query`, `profile`). Không ghim SỐ cứng: đếm hàng `confirm=1` thật của TSV phải bằng số hàng có
+        // cột prefs `voice_confirm_ids=` — tức MỌI ca hỏi xác nhận đều tự bật mã của nó.
+        assertTrue(cases.contains("voice_confirm_ids=control:trunk"), "ca `mở cốp` phải tự bật mã của nó")
+        val confirmRows = cases.lines().filter { it.startsWith("t") && it.split("\t").getOrNull(5) == "1" }
+        assertTrue(confirmRows.size >= 5, "bộ ca phải còn ≥ 5 ca confirm=1 để lớp canh cổng không trống (có ${confirmRows.size})")
         assertEquals(
-            8,
+            confirmRows.size,
             cases.lines().count { it.startsWith("t") && it.contains("\tvoice_confirm_ids=") },
-            "đủ 8 ca confirm đã được trả lại (t08 t09 t13 t26 t51 t55 t57 t62)",
+            "mỗi ca confirm=1 phải mang cột prefs `voice_confirm_ids=` (và ngược lại)",
         )
     }
 }

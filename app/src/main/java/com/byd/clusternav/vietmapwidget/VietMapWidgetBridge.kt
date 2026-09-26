@@ -34,36 +34,36 @@ private const val VIETMAP_PACKAGE = NavApps.VIETMAP_LIVE
  */
 class VietMapWidgetBridge private constructor(context: Context) {
     private val appContext = context.applicationContext
-    private val manager = AppWidgetManager.getInstance(appContext)
-    private val prefs = VietMapWidgetPrefs(appContext)
+    internal val manager = AppWidgetManager.getInstance(appContext)
+    internal val prefs = VietMapWidgetPrefs(appContext)
     private val main = Handler(Looper.getMainLooper())
-    private val extraction = VietMapWidgetExtraction(appContext)
+    internal val extraction = VietMapWidgetExtraction(appContext)
     private val host = VietMapAppWidgetHost(appContext, HOST_ID, { listenerGeneration }, ::onHostViewUpdated)
     private val owners = linkedSetOf<VietMapWidgetOwner>()
-    private val listeners = CopyOnWriteArraySet<ListenerEntry>()
-    private val views = mutableMapOf<VietMapWidgetSlot, AppWidgetHostView>()
-    private val slotsById = mutableMapOf<Int, VietMapWidgetSlot>()
-    private val unsupportedSlots = mutableSetOf<VietMapWidgetSlot>()
+    internal val listeners = CopyOnWriteArraySet<ListenerEntry>()
+    internal val views = mutableMapOf<VietMapWidgetSlot, AppWidgetHostView>()
+    internal val slotsById = mutableMapOf<Int, VietMapWidgetSlot>()
+    internal val unsupportedSlots = mutableSetOf<VietMapWidgetSlot>()
     /** Generation counters for listener callback binding — incremented on stop/restart. */
-    @Volatile private var listenerGeneration = 0L
+    @Volatile internal var listenerGeneration = 0L
     /** Per-provider snapshots — fully independent. */
-    private var speedSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
+    internal var speedSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
         slot = VietMapWidgetSlot.SPEED_LIMIT, values = null,
         updatedAtElapsedMs = null, freshness = VietMapWidgetFreshness.UNAVAILABLE,
         reason = VietMapWidgetUnavailableReason.NOT_BOUND, generation = 0L,
     )
-    private var alertsSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
+    internal var alertsSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
         slot = VietMapWidgetSlot.ALERTS, values = null,
         updatedAtElapsedMs = null, freshness = VietMapWidgetFreshness.UNAVAILABLE,
         reason = VietMapWidgetUnavailableReason.NOT_BOUND, generation = 0L,
     )
-    private var alertFullSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
+    internal var alertFullSnapshot = VietMapProviderSnapshot<VietMapWidgetRawValues>(
         slot = VietMapWidgetSlot.ALERT_FULL, values = null,
         updatedAtElapsedMs = null, freshness = VietMapWidgetFreshness.UNAVAILABLE,
         reason = VietMapWidgetUnavailableReason.NOT_BOUND, generation = 0L,
     )
     private var listening = false
-    @Volatile private var published = unavailable(VietMapWidgetUnavailableReason.NOT_BOUND)
+    @Volatile internal var published = unavailable(VietMapWidgetUnavailableReason.NOT_BOUND)
     private val publishDebounced = Runnable { publishSnapshot() }
     // BG-31 (2026-09-25): nhịp do [VietMapWidgetTickPolicy] quyết — 1 Hz chỉ khi (gói cài ∧ có người dùng ∧ có widget
     // bind); thiếu một điều kiện ⇒ 10 s. Trước đây 1 Hz vô điều kiện suốt đời tiến trình (~7 binder/s trên main).
@@ -303,73 +303,7 @@ class VietMapWidgetBridge private constructor(context: Context) {
         main.removeCallbacks(publishDebounced)
         main.postDelayed(publishDebounced, UPDATE_DEBOUNCE_MS)
     }
-    // --- Snapshot publishing (per-provider independent) ---
-    private fun publishSnapshot() {
-        val now = SystemClock.elapsedRealtime()
-        // Compute per-provider freshness INDEPENDENTLY — no combined gate
-        val (speedFresh, speedFreshReason) = VietMapWidgetTextParser.freshness(
-            speedSnapshot.updatedAtElapsedMs, now, unavailableReasonForSlot(VietMapWidgetSlot.SPEED_LIMIT)
-        )
-        val (alertsFresh, alertsFreshReason) = VietMapWidgetTextParser.freshness(
-            alertsSnapshot.updatedAtElapsedMs, now, unavailableReasonForSlot(VietMapWidgetSlot.ALERTS)
-        )
-        val (alertFullFresh, alertFullFreshReason) = VietMapWidgetTextParser.freshness(
-            alertFullSnapshot.updatedAtElapsedMs, now, unavailableReasonForSlot(VietMapWidgetSlot.ALERT_FULL)
-        )
-        // Persist computed freshness back onto each provider snapshot
-        speedSnapshot = speedSnapshot.copy(freshness = speedFresh, reason = speedFreshReason)
-        alertsSnapshot = alertsSnapshot.copy(freshness = alertsFresh, reason = alertsFreshReason)
-        alertFullSnapshot = alertFullSnapshot.copy(freshness = alertFullFresh, reason = alertFullFreshReason)
-        // Delegate the (pure, tested) composition to :core — combined freshness stays speed+alerts only;
-        // ALERT_FULL projects purely into the additive upcoming* fields under its own freshness.
-        val composed = VietMapWidgetTextParser.composeSnapshot(
-            speed = providerState(speedSnapshot),
-            alerts = providerState(alertsSnapshot),
-            alertFull = providerState(alertFullSnapshot),
-            providerVersion = providerVersion(),
-            nowElapsedMs = now,
-        )
-        val next = composed.snapshot
-        if (next == published) return
-        published = next
-        dispatchToListeners(next)
-    }
-
-    private fun providerState(snap: VietMapProviderSnapshot<VietMapWidgetRawValues>): VietMapProviderState =
-        VietMapProviderState(snap.values, snap.freshness, snap.reason, snap.updatedAtElapsedMs)
-    /**
-     * Dispatch snapshot to listeners, filtering out stale-generation entries.
-     * Stale listeners are automatically pruned.
-     */
-    private fun dispatchToListeners(snapshot: VietMapWidgetSnapshot) {
-        val stale = mutableListOf<ListenerEntry>()
-        listeners.forEach { entry ->
-            if (entry.generation != listenerGeneration) {
-                stale += entry
-                return@forEach
-            }
-            try {
-                entry.callback(snapshot)
-            } catch (error: RuntimeException) {
-                Log.e(TAG, "widget snapshot listener failed", error)
-            }
-        }
-        if (stale.isNotEmpty()) {
-            listeners.removeAll(stale.toSet())
-            Log.d(TAG, "pruned ${stale.size} stale listener(s)")
-        }
-    }
-    // --- Per-slot unavailable reason (independent of other slot) ---
-    private fun unavailableReasonForSlot(slot: VietMapWidgetSlot): VietMapWidgetUnavailableReason? = when {
-        providerInfo(slot) == null -> VietMapWidgetUnavailableReason.PROVIDER_MISSING
-        slot in unsupportedSlots -> VietMapWidgetUnavailableReason.UNSUPPORTED_SHAPE
-        !isSlotBound(slot) -> VietMapWidgetUnavailableReason.NOT_BOUND
-        else -> null
-    }
-    private fun isSlotBound(slot: VietMapWidgetSlot): Boolean {
-        val id = prefs.widgetId(slot) ?: return false
-        return manager.getAppWidgetInfo(id)?.provider == slot.component
-    }
+    // --- Snapshot publishing / clear: xem VietMapWidgetBridgePublish.kt (hàm mở rộng, tách theo VAI — DEBT-500) ---
     // --- Restore / Clear ---
     private fun restoreBoundViews() {
         clearRuntimeValues()
@@ -443,36 +377,11 @@ class VietMapWidgetBridge private constructor(context: Context) {
             }
         }
     }
-    private fun clearRuntimeValues() {
-        views.clear()
-        slotsById.clear()
-        unsupportedSlots.clear()
-        speedSnapshot = speedSnapshot.copy(
-            values = null, updatedAtElapsedMs = null,
-            freshness = VietMapWidgetFreshness.UNAVAILABLE,
-            reason = VietMapWidgetUnavailableReason.NOT_BOUND,
-        )
-        alertsSnapshot = alertsSnapshot.copy(
-            values = null, updatedAtElapsedMs = null,
-            freshness = VietMapWidgetFreshness.UNAVAILABLE,
-            reason = VietMapWidgetUnavailableReason.NOT_BOUND,
-        )
-        alertFullSnapshot = alertFullSnapshot.copy(
-            values = null, updatedAtElapsedMs = null,
-            freshness = VietMapWidgetFreshness.UNAVAILABLE,
-            reason = VietMapWidgetUnavailableReason.NOT_BOUND,
-        )
-        extraction.releaseResources()
-    }
-    private fun setUnavailable(reason: VietMapWidgetUnavailableReason) {
-        published = unavailable(reason)
-        dispatchToListeners(published)
-    }
     // --- Utility ---
-    private fun providerInfo(slot: VietMapWidgetSlot): AppWidgetProviderInfo? = catalog.info(slot.component)
+    internal fun providerInfo(slot: VietMapWidgetSlot): AppWidgetProviderInfo? = catalog.info(slot.component)
     // D3(a): rẽ nhánh API 33 + bắt NameNotFound nay nằm ở một cửa PackageQueries (trước đây tệp này tự rẽ — bản gốc
     // của khuôn đó). Gói không cài ⇒ null. BG-31: đọc qua cache (TTL / receiver gói).
-    private fun providerVersion(): String? = catalog.version()
+    internal fun providerVersion(): String? = catalog.version()
     private fun deleteAllocatedId(appWidgetId: Int) {
         try {
             host.deleteAppWidgetId(appWidgetId)
@@ -488,19 +397,19 @@ class VietMapWidgetBridge private constructor(context: Context) {
         if (Looper.myLooper() == Looper.getMainLooper()) block() else main.post(block)
     }
     // --- Generation-bound listener entry ---
-    private data class ListenerEntry(
+    internal data class ListenerEntry(
         val callback: (VietMapWidgetSnapshot) -> Unit,
         val generation: Long,
     )
     companion object {
-        private const val TAG = "VietMapWidget"
+        internal const val TAG = "VietMapWidget"
         private const val HOST_ID = 0x564D
         private const val UPDATE_DEBOUNCE_MS = 120L
         @Volatile private var instance: VietMapWidgetBridge? = null
         fun get(context: Context): VietMapWidgetBridge = instance ?: synchronized(this) {
             instance ?: VietMapWidgetBridge(context).also { instance = it }
         }
-        private fun unavailable(reason: VietMapWidgetUnavailableReason) = VietMapWidgetSnapshot(
+        internal fun unavailable(reason: VietMapWidgetUnavailableReason) = VietMapWidgetSnapshot(
             currentSpeedKph = null,
             speedLimitKph = null,
             alerts = emptyList(),

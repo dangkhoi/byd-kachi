@@ -76,6 +76,9 @@ table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}th,td{bor
 <h3>4.5 Conversation (R5)</h3>
 <div class="card">Golden multi-turn <code>scripts/voice/data/conversation.tsv</code>: mỗi dòng = chuỗi lượt (câu người → phản hồi máy mong đợi). Test off-car chạy <code>VoiceSession</code>/parser thật qua nhiều lượt, kiểm KHÔNG loop + đóng sạch khi hết trần. Sửa gốc loop (clarifyRound/followUps + đóng phiên).</div>
 
+<h3>4.6 Lối vào khi "Hey Kachi" bật — mở rộng R7 (CLOSE-3, 2026-09-26)</h3>
+<p>Overlay độc lập của R7 (phiên trong <code>:wake</code>) nay là bề mặt cho <b>mọi</b> lối vào khi wake BẬT — kể cả nút mic màn chính và <code>EXTRA_START_VOICE</code> — để cả máy chỉ giữ MỘT bản mô hình ASR. Route ở <code>VoiceSession.start</code> → <code>VoiceEntry.tryWake</code> (ack + lùi in-process). Việc cần Activity trả về qua <code>EXTRA_VOICE_HOME_ACTION</code>. Chi tiết + bảng trước/sau: <code>kachi-voice-rearchitecture-and-remaining.html</code> §8.2.</p>
+
 <h2>5. Tasks</h2>
 <ol>
 <li>T1 — <code>VoiceWaveView</code> + đấu mức RMS từ VoiceCapture (R2).</li>

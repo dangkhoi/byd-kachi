@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
 import com.byd.clusternav.Lang as ClusterNavLang
 
 /**
@@ -46,7 +47,8 @@ class WorkspacePrefs(context: Context) {
 
     fun activeProfile(): String = sp.getString(K_ACTIVE, DEFAULT_PROFILE) ?: DEFAULT_PROFILE
 
-    fun setActiveProfile(name: String) { sp.edit().putString(K_ACTIVE, name).apply() }
+    // Mọi đường ghi hồ sơ/sổ địa chỉ kết bằng `VoiceGrammarSnapshotStore.write(this)` — `:wake` đọc TỆP đó (§8.2 A).
+    fun setActiveProfile(name: String) { sp.edit().putString(K_ACTIVE, name).apply(); VoiceGrammarSnapshotStore.write(this) }
 
     /**
      * S4 · R6 — **hồ sơ lúc nổ máy**; `null` = *"hồ sơ dùng gần nhất"*.
@@ -108,6 +110,7 @@ class WorkspacePrefs(context: Context) {
         // CHỈ khi thật sự mới: tên đã có trong danh sách thì đây là lượt "chuyển sang", xoá khoá là **mất cấu hình**.
         if (isNew) profileKeys(clean).forEach { e.remove(it) }
         e.apply()
+        VoiceGrammarSnapshotStore.write(this)
     }
 
     /**
@@ -135,6 +138,7 @@ class WorkspacePrefs(context: Context) {
         if (activeProfile() == name) e.putString(K_ACTIVE, list.first())
         profileKeys(name).forEach { e.remove(it) }
         e.apply()
+        VoiceGrammarSnapshotStore.write(this)
     }
 
     internal fun key(suffix: String) = keyOf(activeProfile(), suffix)
@@ -355,6 +359,7 @@ class WorkspacePrefs(context: Context) {
 
     fun setSavedPlaces(places: List<SavedPlace>) {
         sp.edit().putString(key(K_PLACES), SavedPlaces.encode(places)).apply()
+        VoiceGrammarSnapshotStore.write(this)
     }
 
     // ── S4 · R3(a) — LÙI về khoá chung cũ, đúng MỘT lần, rồi ghi sang hồ sơ ──────────────────────

@@ -5,6 +5,8 @@ import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.Strings
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -169,6 +171,43 @@ class VoiceIntentParserTest {
         // `brightness_gear` (độ sáng màn chính) là cái ĐÚNG và nó ở lại; ca *"độ sáng HUD"* nay phải KHÔNG hiểu
         // được, và bài `khong nhan nham` vẫn còn hai cặp lồng nhau để canh.
     )
+
+    /**
+     * CLOSE-2 2026-09-26 — [ĐO E2E máy ảo 3 lượt] năm cụm nút đã gỡ (khoá xe · mở khoá cửa · rời xe · âm lượng ·
+     * độ sáng màn) trả "Chưa rõ cần làm gì"/"thử nêu mức" thay vì tên tính năng đã bỏ ⇒ thêm vào [VoiceFeatureGone.ALL].
+     * Bài này khoá: câu ra Unknown (không rơi sang nút khác) VÀ bảng gone có dòng khớp cho cụm ấy.
+     */
+    @Test fun `nam cum nut da go sau WP8 phai ra Unknown va co dong trong bang gone`() {
+        mapOf(
+            "khoá xe" to "khoá xe", "mở khoá cửa" to "mở khoá cửa", "rời xe" to "gói rời xe",
+            "giảm âm lượng" to "âm lượng", "đặt độ sáng màn 8" to "độ sáng màn",
+        ).forEach { (line, label) ->
+            val got = one(line)
+            assertTrue(got !is VoiceIntent.Control && got !is VoiceIntent.Read, "\"$line\" đã gỡ ⇒ không được thành lệnh xe, ra: $got")
+            assertTrue(VoiceFeatureGone.ALL.any { it.label == label }, "bảng gone phải có dòng \"$label\"")
+        }
+    }
+
+    /**
+     * SOÁT 2.68 (senior review CLOSE-2) — **đường ĐỌC còn sống phải THẮNG bảng gone** (luật khai §2 của
+     * [VoiceFeatureGone]). [ĐO] dòng mới `["am","luong"]` từng biến *"âm lượng bao nhiêu"* `Read(media_vol)` →
+     * `Unknown(FEATURE_GONE)`: [VoiceFeatureGone.match] còn được hỏi ở đường câu-HỎI (`objectOnlyRead`) TRƯỚC lượt
+     * tra datum, mà `media_vol` (`AudioManager.getStreamVolume`, mức PROVEN) chưa hề bị gỡ — chỉ NÚT `vol` bị gỡ.
+     * Cờ [VoiceFeatureGone.Gone.readAlive] + `match(forRead = true)` giữ cả hai vế; bài này khoá cả hai.
+     */
+    @Test fun `SOAT 2 68 - cum da go chan cau LENH nhung KHONG chan cau HOI khi datum doc con song`() {
+        assertEquals(VoiceIntent.Read("media_vol"), one("âm lượng bao nhiêu"), "câu HỎI về datum còn sống")
+        assertEquals(VoiceIntent.Read("media_vol"), one("âm lượng đang bao nhiêu"), "cùng câu, thêm từ đệm")
+        val cmd = one("giảm âm lượng")
+        assertTrue(cmd is VoiceIntent.Unknown && cmd.reason == VoiceUnknownReason.FEATURE_GONE, "câu LỆNH vẫn phải là 'đã bỏ', ra: $cmd")
+        // Mọi dòng `readAlive` phải THẬT SỰ có datum đọc mang đúng cụm đó — không được dùng cờ này để né bài canh.
+        VoiceFeatureGone.ALL.filter { it.readAlive }.forEach { g ->
+            assertNull(VoiceFeatureGone.match(VoiceLexicon.tokenize(g.words.joinToString(" ")), forRead = true),
+                "dòng readAlive \"${g.label}\" phải được bỏ qua ở đường câu HỎI")
+            assertNotNull(VoiceFeatureGone.match(VoiceLexicon.tokenize(g.words.joinToString(" "))),
+                "…nhưng vẫn phải chặn ở đường câu LỆNH")
+        }
+    }
 
     /** Nhãn của một nút đã purge thì phải trở về KHÔNG HIỂU — không được rơi sang nút gần giống nào khác. */
     @Test fun `nhan cua nut da purge o WP8 khong duoc roi sang nut khac`() {

@@ -83,6 +83,7 @@ Dịch vụ sống [ĐO `dumpsys activity services`]: VoiceKeyKeepAlive · NavNo
 
 - T1 (chữ → ý định → thi hành, 105 ca): bản vá **80/105 PASS**, HEAD 93dc1b4 sạch (worktree, cùng máy ảo, cùng thứ tự) **80/105** — **giống nhau từng ca** [ĐO `diff` báo cáo 2 lượt, 2026-09-26 00:1x–00:2x]. Lượt chạy đầu của bản vá ra 78/105: 2 ca lệch (t43 "bố cục chỉ có 1 ô", t52 "app không lên màn") là trạng thái máy ảo phụ thuộc thứ tự ca — lượt chạy lại trên cùng bản vá trở về 80/105 = HEAD.
 - 25 ca FAIL có sẵn ở HEAD: tính năng đã bỏ (khoá xe/đèn viền/chiếu cụm), nhãn đổi ("Ghế sưởi" → "Sưởi ghế lái", "Kính trước-trái" → "Kính lái"), 2 ca CONFIRM. ⇒ bộ ca `voice-cases.tsv` lệch sản phẩm — mục backlog `VOICE-CASES-DRIFT` (không phải hồi quy của vòng này).
+- **Sau CLOSE-2 (2026-09-26, bộ ca soát lại theo 2.67 — 106 ca, chỉ sửa TSV):** [ĐO máy ảo, 3 lượt liên tiếp] **96/102 → 100/106 → 101/106**; 5 FAIL còn lại là cố ý (BUG-CANDIDATE `VoiceFeatureGone.ALL` thiếu dòng cho khoá xe · mở khoá cửa · rời xe · âm lượng · độ sáng màn); 1 ca FLAKY t52 (đọc `mResumedActivity` 3 s cố định). Chi tiết ở backlog CLOSE-2.
 - T2 (WAV → sherpa → ý định): xem §3.5.
 
 ### 3.5 T2 (WAV → sherpa-onnx → ý định) trên bản vá
@@ -115,6 +116,16 @@ Dịch vụ sống [ĐO `dumpsys activity services`]: VoiceKeyKeepAlive · NavNo
 - `top -H` 15 s: chỉ main 0,6 % — `widget-hash` không còn. `avc loadavg` = 0. Logcat app 35 dòng/300 s.
 - Full 5 module `--rerun-tasks` [ĐO 2026-09-26 01:1x]: **4087 / 0 fail** (app 1332 · core 2570 · car-integration 64 · vehicle-contracts 22 · offcar-planner 99). `lintRelease` 0 error. APK release 43 342 022 B = `apk/Kachi-2.66-release.apk`.
 - **Đây là bảng số CUỐI của vòng** (thay §3.6 — §3.6 thiếu 2 FGS nên CPU/PSS không so được với §1).
+
+### 3.8 CLOSE-3 trên máy ảo (2.68, wake BẬT) — nút mic/EXTRA_START_VOICE đi `:wake`
+
+[ĐO 2026-09-26 11:20, `am start … --ez start_voice true` + bridge `listen`]: `KachiVoiceEntry: lối vào → :wake đã ack (hạn 1500 ms) — không dựng recognizer ở tiến trình chính` sau **52 ms**; `WakeSvc: LISTEN_NOW — mở phiên nghe headless`; `KachiVoiceTiming(:wake): sẵn sàng nghe sau 921 ms` (lượt 2: 382 ms). Native heap tiến trình chính **25,6 → 22,4 MB** (trước 2.68: +74 MB + ~15 s lần đầu). E2E T1 sau CLOSE-2: **105/106** (t52 flaky đã ghi). 🚗 kiểm nút mic dock thật + hạn ack 1,5/4 s trên xe (`logcat -s KachiVoiceEntry`).
+
+### 3.9 Đợt 2.68 (CLOSE-2/3/3b/5/7/8/10 + RES-CLEAN) — số gộp [ĐO 2026-09-26]
+
+- Full 5 module `--rerun-tasks`: **4143 / 0 fail** (2.67: 4105). `lintRelease` 0 error; UnusedResources 138 → 97 (77 còn lại bị 2 tệp niêm phong T11 giữ). APK release 43 467 609 B.
+- Voice E2E T1 sau CLOSE-2: **106/106 PASS** (bộ ca 105 → 106, 25 ca lệch sản phẩm đã sửa kỳ vọng, 5 dòng `VoiceFeatureGone` mới, t52 không lệch lượt này).
+- CLOSE-3b ảnh chụp ngữ pháp: `files/voice/grammar-snapshot.tsv` có ngay sau mở màn chính (2 hồ sơ + 1 địa chỉ), **tự cập nhật `active` khi harness đổi hồ sơ** (mốc 1790399213125 → 1790399341450) ⇒ `:wake` đọc được hồ sơ/sổ địa chỉ mới nhất mà không qua SharedPreferences cache. 🚗 kiểm câu "đổi sang hồ sơ X" bằng nút mic khi wake ON.
 
 ## 4. 🚗 NEEDS-ONCAR (một buổi, theo thứ tự; playbook cũ §6 `perf-profile-2026-09-16.md` vẫn áp)
 

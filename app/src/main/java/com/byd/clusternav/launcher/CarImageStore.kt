@@ -73,6 +73,59 @@ object CarImageStore {
     /** Số bản ảnh xe giữ đồng thời trong kho chung (3 bảng dùng ảnh xe ⇒ tối đa 3 cỡ khác nhau). */
     const val MAX_SHARED = 3
 
+    /** CLOSE-5 · thử-lại khi nạp HỎNG: mốc đầu 1 s → ×2 mỗi lần hỏng liên tiếp → trần 60 s (khuôn `HalAbsentCache`). */
+    const val RETRY_FIRST_MS = 1_000L
+    const val RETRY_MAX_MS = 60_000L
+
+    /**
+     * Lịch thử-lại theo ĐỒNG HỒ cho một [CarImageLayer] khi nạp HỎNG (CLOSE-5, backlog 2026-09-26) — THUẦN, nhận
+     * `nowMs` làm tham số ⇒ test off-car bằng đồng hồ giả, không `Thread.sleep`.
+     *
+     * Vì sao "giãn dần" chứ không "cấm tới khi khoá đổi": một lần `null` từ [shared] KHÔNG chứng minh *"ảnh này
+     * hỏng vĩnh viễn"* — có thể là tệp đang được chép dở vào thư mục `car/`, bộ nhớ ngoài vừa mount, hay OOM tạm
+     * lúc giải mã. Cấm tới khi khung/tệp đổi ⇒ placeholder mãi cho tới lần đổi cỡ (review P3). Thử lại mỗi khung vẽ
+     * ⇒ vòng nạp vô hạn ở tốc độ giải mã (lỗi đã vá ở `ensure()` trước đó). Ở giữa: [firstRetryMs] → ×2 → … →
+     * trần [maxRetryMs]; nạp được ⇒ [reset] (đếm lại từ đầu, cùng bất biến `HalAbsentCache.record(got = true)`).
+     *
+     * Không đồng bộ: dùng trên MỘT luồng (luồng chính — `ensure()` từ `onDraw` và callback `main.post`).
+     */
+    class LoadRetry(
+        private val firstRetryMs: Long = RETRY_FIRST_MS,
+        private val maxRetryMs: Long = RETRY_MAX_MS,
+    ) {
+        /** Số lần hỏng LIÊN TIẾP kể từ lần nạp được cuối. */
+        var failures: Int = 0
+            private set
+
+        /** Mốc (cùng đơn vị `nowMs`) từ đó được thử lại; `0` = chưa có lần hỏng nào ⇒ thử ngay. */
+        var nextRetryAt: Long = 0L
+            private set
+
+        /** Có được xếp một lượt nạp ở thời điểm [nowMs] không. Chưa hỏng lần nào ⇒ luôn `true`. */
+        fun shouldTry(nowMs: Long): Boolean = failures == 0 || nowMs >= nextRetryAt
+
+        /** Ghi một lần hỏng tại [nowMs]; trả khoảng chờ (ms) tới mốc thử lại kế — chỗ gọi dùng để hẹn đánh thức. */
+        fun recordFailure(nowMs: Long): Long {
+            failures++
+            val delay = delayMs(failures)
+            nextRetryAt = nowMs + delay
+            return delay
+        }
+
+        /** Nạp được (hoặc đổi khoá/tháo ô) ⇒ quên sạch lịch giãn. */
+        fun reset() {
+            failures = 0
+            nextRetryAt = 0L
+        }
+
+        /** Khoảng chờ sau lần hỏng thứ [failures] (1-based): `first × 2^(n−1)`, trần [maxRetryMs]; `n ≤ 0` ⇒ 0. */
+        fun delayMs(failures: Int): Long {
+            if (failures <= 0) return 0L
+            // Dịch bit có trần số mũ (30) để không tràn Long trước khi kẹp; trần thật là maxRetryMs.
+            return (firstRetryMs shl (failures - 1).coerceAtMost(30)).coerceAtMost(maxRetryMs)
+        }
+    }
+
     /**
      * Khoá cache dùng chung: dấu-vết-tệp ([signature]) + khung đích ĐÃ gom bậc [BUCKET_PX]. [w]/[h] cũng chính là
      * cỡ yêu cầu khi giải mã ⇒ khoá xác định hoàn toàn bitmap, mọi lớp cùng khoá nhận đúng cùng một bản.

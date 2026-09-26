@@ -10,13 +10,38 @@
 #    đó hỏi lại"*. Ca KHÔNG có cột `prefs` mà vẫn bị hỏi lại ⇒ FAIL (mặc định bị rò).
 #    [SOÁT Pass 1 · 2026-09-16] Bản 1.66 đầu hạ cả 8 ca này về 0 vì cầu kiểm thử chưa ghi được prefs; lệnh
 #    `prefs_set` (danh sách trắng 5 khoá) đã trả lại lớp canh ấy.
-#    ⚠ NGOẠI LỆ **t53**: nó giữ `confirm=1` **không cần** `prefs` vì câu hỏi ở đó KHÔNG đến từ `VoiceRiskTable`
-#    mà từ đường **giao điểm đến cho app chỉ-nhận-toạ-độ** (`VoiceTargetDispatch`: đọc lại tên vừa tra được rồi
-#    mới bắn). Hai cổng khác nhau, hai lý do khác nhau — gộp chúng lại là mất một trong hai.
+#    ⚠ (đã hết hiệu lực 2026-09-26) t53 từng giữ `confirm=1` không cần `prefs` (đường hỏi lại của
+#    `VoiceTargetDispatch` cho app chỉ-nhận-toạ-độ). Owner 2026-09-24: **Nav KHÔNG hỏi xác nhận** — dẫn thẳng
+#    ([ĐO] `VoiceRisk.confirmId`: `is VoiceIntent.Nav -> null`; `nav_query` không còn trong `askableIds()`).
+#    ⇒ t53/t55 nay `confirm=0`, t55 bỏ `prefs=voice_confirm_ids=nav_query` (mã đó bật lên cũng không hỏi).
 #  • side: "-" | resumed:<pkg> | slot:<n>:<pkg> | profile:<ten> | preset:<TEN_LAYOUT> | chip_labels:<True|False> | media
 #  • prefs: "-" | <khoá>=<giá trị>[;<khoá>=<giá trị>…] — đặt TRƯỚC ca, harness tự trả về mặc định SAU ca
 #    (`prefs_set`, danh sách trắng ở `TestBridgeCommands.WRITABLE_PREFS_KEYS`). Giá trị rỗng = xoá/mặc định.
 #  • @PROFILE@ được harness thay bằng một hồ sơ có thật (đọc từ bridge `state`).
+# ── CLOSE-2 · VOICE-CASES-DRIFT 2026-09-26 — soát lại 25 ca đỏ so với sản phẩm 2.67 (168) ───────
+# Nguyên tắc: ca canh SẢN PHẨM HIỆN HÀNH, không canh trí nhớ. Mỗi ca đỏ được tra về source trước khi đổi:
+#  (a) nhãn/kind ĐỔI có chủ ý ⇒ đổi kỳ vọng: `ac_auto` "Điều hòa AUTO"→"Gió tự động" (1.85, ControlRegistry
+#      `ac_auto`, "điều hoà" vẫn trỏ nút này qua VoiceSynonyms) · `seath`/`seatc` là SELECT ⇒ preview
+#      "Sưởi ghế lái: Mức 1"/"Mát ghế lái: Mức 1" · `win_lf` TOGGLE "Kính lái" (không còn COVER "Kính trước-trái")
+#      · Nav không hỏi lại (t53/t55, xem ghi chú trên).
+#  (b) tính năng ĐÃ BỎ ⇒ lớp `gone`, kind `Unknown`: `lock`/`door` + gói `mac_leave`/`mac_door_light` gỡ 1.94/1.95
+#      ([ĐO] DockSelection.kt KDoc "Bug đặt 10 hiện 6") · `vol`/`cast` gỡ 1.90 · `brightness_gear` gỡ 1.90
+#      (VoiceSynonyms 1.90) · `đèn viền` purge WP8 (đã có dòng VoiceFeatureGone). Xoá 3 ca hết nghĩa: t08 "tắt
+#      khoá xe" (mặt TẮT của nút đã gỡ), t19 "tăng âm lượng tối đa" (trùng t18), t27 (trùng t26), và t29 "chạy gói
+#      mở cửa + đèn đọc" (gói đã gỡ; ngoài ra *"chạy"* chưa bao giờ là động từ của `VoiceGrammar` — L9 ở
+#      `emulator-voice-e2e-2026-09-15.md` đã ghi là lỗi bộ ca, [ĐO 2026-09-26] "chạy gói đóng hết kính" vẫn NO_VERB).
+#      t62 giữ làm ca câu ghép có MỘT vế đã bỏ (Control,Unknown — vế lạ bị bỏ qua, vế kia vẫn chạy).
+#  Bù lớp canh cổng CONFIRM: 4 ca `confirm=1` bị gỡ (t08 t09 t26 t62 đều trỏ mã đã chết `control:lock/cast/door`)
+#      ⇒ thêm khối t109–t113 ở cuối trên các mã CÒN hỏi-được (`VoiceRiskTable.CONTROL_RULES`: trunk · sunroof ·
+#      windows_all). [ĐO thăm dò 2026-09-26] 6/6 xanh trước khi đưa vào bộ.
+#  ⚠ 5 ca `gone` đòi câu **VoiceFeatureGone** ("… đã bỏ khỏi Kachi — dùng màn hình của xe"): t07 khoá xe · t18
+#      âm lượng · t20 độ sáng màn · t26 mở khoá cửa · t28 rời xe. Chúng CỐ Ý ĐỎ ở 2.67: bảng `VoiceFeatureGone.ALL`
+#      chưa có dòng cho 5 cụm này nên máy trả "Chưa rõ cần làm gì"/"Không tìm thấy"/"Việc đó không đi với thứ đó"
+#      — trái luật khai WP8 của chính bảng đó ("cụm người lái VẪN có thể nói thì phải trả lời đúng tên").
+#      Đây là BUG-CANDIDATE (dữ liệu, không phải parser: `VoiceIntentParser.fuzzy` hỏi bảng cho MỌI Unknown).
+#      Xanh lại khi thêm 5 dòng `Gone(..., removed = true)`. KHÔNG hạ kỳ vọng để cho xanh.
+#  t09 "dừng chiếu cụm": nút `cast` là nút CHẾT từ đầu (đường ghi chưa từng nối); chiếu cụm THẬT vẫn sống ở Cài đặt
+#      ⇒ câu "đã bỏ khỏi Kachi" cũng sai ⇒ chỉ canh `Unknown` (không thành lệnh nào), câu trả lời để owner chốt.
 # ── TOGGLE ──────────────────────────────────────────────────────────────────────────────────────
 # ⚠ (V) FEATURE-FILTER 2026-09-17 — ĐÃ BỎ 4 ca vì chính mã chúng nhắm tới đã bị owner chấm NO và xoá khỏi
 #   registry (không phải vì chúng đỏ): t21 `chế độ lái thể thao` · t22 `đặt chế độ lái eco` · t107
@@ -25,15 +50,14 @@
 t01	toggle	bật đèn đọc	Control	Bật Đèn đọc	0	0	-	-
 t02	toggle	tắt đèn đọc	Control	Tắt Đèn đọc	0	0	-	-
 t03	toggle	bật lọc bụi	Control	Bật Lọc bụi	0	0	-	-
-t04	toggle	tắt điều hoà	Control	Tắt Điều hòa	0	0	-	-
-t05	toggle	bật sưởi ghế	Control	Bật Ghế sưởi	0	0	-	-
+t04	toggle	tắt điều hoà	Control	Tắt Gió tự động	0	0	-	-
+t05	toggle	bật sưởi ghế	Control	Sưởi ghế lái: Mức 1	0	0	-	-
 t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-	-
-t07	toggle	khoá xe	Control	Khóa	0	0	-	-
-t08	toggle-confirm	tắt khoá xe	Control	Khóa	1	0	-	voice_confirm_ids=control:lock
-t09	toggle-confirm	dừng chiếu cụm	Control	Chiếu cụm	1	0	-	voice_confirm_ids=control:cast
+t07	gone	khoá xe	Unknown	đã bỏ khỏi Kachi	0	0	-	-
+t09	gone	dừng chiếu cụm	Unknown	-	0	0	-	-
 # ── COVER (kính) ────────────────────────────────────────────────────────────────────────────────
-t10	cover	mở kính trước trái	Control	Mở Kính trước-trái	0	0	-	-
-t11	cover	đóng kính trước trái	Control	Đóng Kính trước-trái	0	0	-	-
+t10	cover	mở kính trước trái	Control	Bật Kính lái	0	0	-	-
+t11	cover	đóng kính trước trái	Control	Tắt Kính lái	0	0	-	-
 t12	cover	mở kính bên lái	Control	Kính	0	0	-	-
 t13	cover-confirm	mở hết kính	Macro	Mở hết kính	1	0	-	voice_confirm_ids=macro:mac_win_open_all
 t14	macro	đóng hết kính	Macro	Đóng hết kính	0	0	-	-
@@ -41,18 +65,15 @@ t14	macro	đóng hết kính	Macro	Đóng hết kính	0	0	-	-
 t15	step	nhiệt độ hai mươi bốn độ	Control	Nhiệt độ = 24	0	0	-	-
 t16	step	đặt nhiệt độ 24 độ	Control	Nhiệt độ = 24	0	0	-	-
 t17	step	tăng gió	Control	Tăng Gió	0	0	-	-
-t18	step	giảm âm lượng	Control	Giảm Âm lượng	0	0	-	-
-t19	step	tăng âm lượng tối đa	Control	Âm lượng = 30	0	0	-	-
-t20	step	đặt độ sáng màn 8	Control	Độ sáng màn = 8	0	0	-	-
+t18	gone	giảm âm lượng	Unknown	đã bỏ khỏi Kachi	0	0	-	-
+t20	gone	đặt độ sáng màn 8	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 # ── SELECT ──────────────────────────────────────────────────────────────────────────────────────
-t23	select	màu đèn viền xanh lá	Control	Màu đèn viền	0	0	-	-
+t23	gone	màu đèn viền xanh lá	Unknown	đèn viền đã bỏ khỏi Kachi	0	0	-	-
 # ── BUTTON ──────────────────────────────────────────────────────────────────────────────────────
 t24	button	lọc ngay	Control	Bấm Lọc ngay	0	0	-	-
-t26	button-confirm	mở khoá cửa	Control	Mở khóa cửa	1	0	-	voice_confirm_ids=control:door
-t27	button-confirm	mở khoá cửa	Control	Mở khóa cửa	0	1	-	-
+t26	gone	mở khoá cửa	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 # ── MACRO ───────────────────────────────────────────────────────────────────────────────────────
-t28	macro	rời xe	Macro	Rời xe	0	0	-	-
-t29	macro	chạy gói mở cửa + đèn đọc	Macro	Mở cửa	0	1	-	-
+t28	gone	rời xe	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 # ── LAUNCHER ────────────────────────────────────────────────────────────────────────────────────
 t30	launcher	mở cài đặt	Launcher	Cài đặt	0	0	-	-
 t31	launcher	mở ứng dụng	Launcher	Ứng dụng	0	0	-	-
@@ -81,9 +102,9 @@ t50	media	mở nhạc trên YouTube Music	Media	Phát nhạc	0	0	-	-
 t51	media-open-vocab	phát bài Diễm Xưa	Media	Diễm Xưa	1	0	-	voice_confirm_ids=media_query
 t52	media-open-vocab	mở bài Diễm Xưa trên YouTube Music	Media	YouTube Music	0	1	resumed:com.google.android.apps.youtube.music	-
 # ── DẪN ĐƯỜNG ───────────────────────────────────────────────────────────────────────────────────
-t53	nav	dẫn đường đến Bitexco	Nav	Bitexco	1	0	-	-
+t53	nav	dẫn đường đến Bitexco	Nav	Bitexco	0	0	-	-
 t54	nav	dẫn đường tới chợ Bến Thành bằng Waze	Nav	Waze	0	1	resumed:com.waze	-
-t55	nav	chỉ đường đến sân bay bằng google map	Nav	Google Maps	1	0	-	voice_confirm_ids=nav_query
+t55	nav	chỉ đường đến sân bay bằng google map	Nav	Google Maps	0	0	-	-
 t56	nav	dẫn đường	Unknown	-	0	0	-	-
 # ── HỒ SƠ · BỐ CỤC ──────────────────────────────────────────────────────────────────────────────
 t57	profile	đổi sang hồ sơ @PROFILE@	Profile	@PROFILE@	1	0	-	voice_confirm_ids=profile
@@ -93,7 +114,7 @@ t60	layout	bố cục hai ô	Layout	2 cột	0	0	preset:TWO_COL	-
 t60b	layout	về bố cục 2 hàng	Layout	2 hàng	0	0	preset:TWO_ROW	-
 # ── CÂU GHÉP ────────────────────────────────────────────────────────────────────────────────────
 t61	compound	bật đèn đọc và tắt lọc bụi	Control,Control	Bật Đèn đọc	0	0	-	-
-t62	compound-confirm	mở khoá cửa rồi bật đèn đọc	Control,Control	Mở khóa cửa	1	0	-	voice_confirm_ids=control:door
+t62	compound-gone	mở khoá cửa rồi bật đèn đọc	Control,Unknown	Bật Đèn đọc	0	0	-	-
 # ── CÂU ĐỜI THƯỜNG · CÂU SAI (phải ra Unknown đúng lý do) ───────────────────────────────────────
 t63	unknown	hôm nay trời đẹp quá	Unknown	-	0	0	-	-
 t64	unknown	kể cho tôi nghe một câu chuyện	Unknown	-	0	0	-	-
@@ -130,7 +151,7 @@ t78	app-vi	mở bản đồ google	OpenApp	Google Maps	0	0	resumed:com.google.an
 t79	app-phonetic	mở chát gi pi ti	-	-	0	0	-	-
 t80	app-phonetic	mở za lô	-	-	0	0	-	-
 # ── Ba câu tester báo sai (H4) ─────────────────────────────────────────────────────────────────
-t81	tester	bật điều hoà	Control	Điều hòa	0	0	-	-
+t81	tester	bật điều hoà	Control	Gió tự động	0	0	-	-
 t82	tester	bật lọc bụi	Control	Lọc bụi	0	0	-	-
 # t83: *"lọc"* trần — ĐÚNG hành vi là HỎI LẠI (*"Lọc bụi hay Lọc ngay?"*). Lượt hỏi lại sống trong phiên MIC
 # (`VoiceSession`), cầu `say` không có micro ⇒ ở tầng này nó chỉ đo được rằng câu KHÔNG bị hiểu bừa thành một
@@ -143,11 +164,11 @@ t84	tester-mishear	các bụi	Control	Lọc bụi	0	0	-	-
 # thường. Đây là ca canh cho chính bản vá: nới điều kiện ngữ cảnh ra là ca này đỏ.
 t85	tester-mishear	đọc ngày	Unknown	-	0	0	-	-
 # ── Giọng Nam (H3 phần từ vựng vùng miền) ──────────────────────────────────────────────────────
-t86	nam	bật kiếng lái lên	Control	Kính cửa lái	0	0	-	-
+t86	nam	bật kiếng lái lên	Control	Kính lái	0	0	-	-
 t87	nam	mở cửa hậu	Control	Cốp sau	0	0	-	-
 t88	nam	tắt đèn nóc	Control	Đèn đọc	0	0	-	-
 t89	nam	mở máy lọc không khí	Control	Lọc bụi	0	0	-	-
-t90	nam	mở quạt ghế	Control	Ghế mát	0	0	-	-
+t90	nam	mở quạt ghế	Control	Mát ghế lái	0	0	-	-
 t91	nam	tăng nhiệt độ máy lạnh lên	Control	Nhiệt độ	0	0	-	-
 # ── Bước nhảy tương đối (H1) ───────────────────────────────────────────────────────────────────
 # ⚠ Máy ảo KHÔNG có HAL ⇒ `readState` trả null ⇒ mốc rơi về mức RAM, y như 1.68. Phép đo *"đọc số THẬT của xe
@@ -169,10 +190,18 @@ t97	misspell	xem bên	Read	-	0	0	-	-
 t98	misspell	biên còn bao nhiêu	Read	-	0	0	-	-
 t99	misspell	bin còn bao nhiêu	Read	-	0	0	-	-
 t100	misspell	xem tin	Read	-	0	0	-	-
-t101	misspell	bằng ghế sưởi	Control	Ghế sưởi	0	0	-	-
-t102	misspell	bật ghế sửi	Control	Ghế sưởi	0	0	-	-
+t101	misspell	bằng ghế sưởi	Control	Sưởi ghế lái	0	0	-	-
+t102	misspell	bật ghế sửi	Control	Sưởi ghế lái	0	0	-	-
 t103	misspell	dần nhạc	Media	Dừng nhạc	0	0	-	-
 t104	misspell	mật độ hai mươi hai độ	Control	Nhiệt độ = 22	0	0	-	-
-t105	misspell	mở kim trước trái	Control	Kính trước-trái	0	0	-	-
-t106	misspell	mở kín trước trái	Control	Kính trước-trái	0	0	-	-
+t105	misspell	mở kim trước trái	Control	Kính lái	0	0	-	-
+t106	misspell	mở kín trước trái	Control	Kính lái	0	0	-	-
 t108	misspell	bật lọt bụi	Control	Lọc bụi	0	0	-	-
+# ── CLOSE-2 · CỔNG CONFIRM trên mã còn sống (2026-09-26) ─────────────────────────────────────────
+# Cùng cách đo với t13/t51/t57: bật đúng MỘT mã qua `prefs` ⇒ đúng ca đó hỏi lại; t06/t87 (cùng nút, không prefs)
+# là đối chứng "mặc định không hỏi". t111 thay vai t62 cũ: câu ghép có vế CONFIRM ⇒ hỏi, vế sau chờ.
+t109	confirm	mở cốp	Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
+t110	confirm	mở cửa sổ trời	Control	Bật Cửa sổ trời	1	0	-	voice_confirm_ids=control:sunroof
+t111	compound-confirm	mở cốp rồi bật đèn đọc	Control,Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
+t112	confirm	mở 4 kính	Control	Bật 4 kính	1	0	-	voice_confirm_ids=control:windows_all
+t113	toggle	hạ bốn kính	Control	Bật 4 kính	0	0	-	-

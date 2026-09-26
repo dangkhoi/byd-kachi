@@ -25,9 +25,9 @@
 - **Nhãn lưu**: owner xác nhận là **"Công ty 1"** (số) → `norm` = `["cong","ty","1"]`. ASR nghe "công ty **một**" → `["cong","ty","mot"]`.
 - **[SUY từ `VoicePlaces.match`]** GỐC: match khớp token CHÍNH XÁC (`norm(nhãn)==các_từ`), **không chuẩn hoá chữ số↔chữ đọc** ("1"↔"một"), **không fuzzy**. → miss → rơi ra điểm-đến-mở → GMaps.
 
-### 3b. "67 hoàng văn thái" → GMaps `q=sáu bảy hồ văn thái`
-- **[ĐO]** log: `google.navigation:q=sáu bảy hồ văn thái`.
-- **Hai lỗi cộng dồn**: (1) "67" ASR ra "**sáu bảy**" và **gửi nguyên chữ** ra GMaps (không gộp/chuyển về "67") — cùng họ 3a, chiều **chữ→số**; (2) "hoàng" nghe hụt thành "**hồ**" (mất âm cuối) — giới hạn model zipformer-vi, backlog **ASR-VI-TONE**.
+### 3b. "<địa chỉ test>" (số nhà + tên đường) → GMaps nhận nguyên CHỮ ĐỌC
+- **[ĐO]** log: `google.navigation:q=<chữ đọc của số nhà> <tên đường nghe hụt một âm>` (nguyên văn ở log phiên; số nhà + tên đường đã scrub — CLOSE-10 2026-09-26, cùng lý do như tiêu đề).
+- **Hai lỗi cộng dồn**: (1) số nhà HAI chữ số ASR ra **chữ đọc** ("<số đọc>" cho <số nhà>) và **gửi nguyên chữ** ra GMaps (không gộp/chuyển về dạng số) — cùng họ 3a, chiều **chữ→số**; (2) một âm tiết của tên đường **nghe hụt âm cuối** (vd nghe hụt âm cuối của tên đường) — giới hạn model zipformer-vi, backlog **ASR-VI-TONE**.
 
 ### 3c. Phản hồi CHẬM hơn version trước
 - **[ĐO]** mọi phiên: `duong=vad ... cua_so=5000ms cat_con=5000ms` — VAD nghe **hết trần 5 giây**, không chốt endpoint sớm khi người dừng nói. `mic mở` nhanh (53–77ms) nhưng chờ đủ 5s window mới giải mã.
@@ -104,7 +104,7 @@ Owner mô tả:
 
 ## ✅ ĐÃ SỬA OFF-CAR (build Kachi-2.17 vc118, feat branch, CHƯA OTA) — 2026-09-23
 - Voice UX (2.16): waveform vòng tròn (VoiceWaveView) + earcon 3-tông (VoiceChime) + overlay GIỮA-DƯỚI bám phase + VAD threshold 0.5→0.35 + golden conversation test.
-- **Mục 3a/3b số↔chữ**: VoiceNumberNorm (:core) — "công ty một"↔"Công ty 1" (VoicePlaces.match chuẩn 2 vế), "sáu bảy hồ văn thái"→"67 hồ văn thái" (runNav normalizeSpokenNumbers). Test 6 ca.
+- **Mục 3a/3b số↔chữ**: VoiceNumberNorm (:core) — "công ty một"↔"Công ty 1" (VoicePlaces.match chuẩn 2 vế), "sáu bảy <tên đường>"→"67 <tên đường>" (runNav normalizeSpokenNumbers). Test 6 ca.
 - **Mục 6 camera**: CameraSignalController.tick() TỰ đọc xi-nhan qua getLightStatus(4/5) — hết phụ thuộc carStatus.lights null.
 - **Mục 8 PM2.5**: cooldown 10 phút sau mỗi lần lọc tự động; nút Lọc ngay giữ chủ động.
 - **R7**: wake mở overlay ĐỘC LẬP (voiceSession riêng ở VoiceWakeService), KHÔNG kéo KachiHomeActivity lên đè app.

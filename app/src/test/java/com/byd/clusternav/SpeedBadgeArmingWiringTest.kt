@@ -45,6 +45,10 @@ class SpeedBadgeArmingWiringTest {
     private val listener: String by lazy {
         KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/NavNotificationListener.kt"))
     }
+    /** Thân `speedLimitPusher` nay ở `NavSpeedLimitPusher.kt` (tách theo VAI — DEBT-500), chép nguyên văn. */
+    private val pusher: String by lazy {
+        KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/NavSpeedLimitPusher.kt"))
+    }
 
     /** Cổng giả — chỉ đếm, không chạm Android. */
     private class FakePort(override val output: SpeedSignOutput) : SpeedSignPort {
@@ -107,8 +111,7 @@ class SpeedBadgeArmingWiringTest {
      */
     @Test
     fun `speedLimitPusher PHAI sync moi nhip`() {
-        val body = listener.substringAfter("private val speedLimitPusher")
-            .substringBefore("override fun onNotificationRemoved")
+        val body = pusher.substringAfter("override fun invoke(snapshot: VietMapWidgetSnapshot)")
         assertTrue(
             body.contains("speedSignOwner.syncFromPrefs()"),
             "pusher không sync mỗi nhịp ⇒ mất khả năng tự hồi phục mà vòng poll Waze cũ vẫn gánh hộ",
