@@ -1,0 +1,1 @@
+{"label":"after-oncar-2.69","window_s":300,"nproc":8,"procs":[{"name":"com.byd.launcher","pid":17149,"cpu_pct":5.68,"pss_kb":67063,"rss_kb":162380,"threads":43},{"name":"com.byd.launcher:wake","pid":17215,"cpu_pct":3.09,"pss_kb":180114,"rss_kb":269764,"threads":23}],"gfx":"510 146 (28.63%)","wakelock_lines":0,"alarms":4,"jobs":0,"log_total":4725,"log_app":593}

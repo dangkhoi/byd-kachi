@@ -1,0 +1,6 @@
+09-26 18:30:55.365 E/AndroidRuntime(30183): FATAL EXCEPTION: GoogleApiHandler
+09-26 18:30:55.365 E/AndroidRuntime(30183): Process: com.google.android.youtube, PID: 30183
+09-26 18:30:55.365 E/AndroidRuntime(30183): java.util.ConcurrentModificationException
+09-26 18:42:47.828 F/libc    ( 9407): Fatal signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x1 in tid 9476 (KachiSpeak), pid 9407 (yd.launcher:tts)
+09-26 18:42:48.126 F/DEBUG   ( 9776): pid: 9407, tid: 9476, name: KachiSpeak  >>> com.byd.launcher:tts <<<
+09-26 18:42:48.126 F/DEBUG   ( 9776): signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x1

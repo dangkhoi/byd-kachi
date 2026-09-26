@@ -130,3 +130,9 @@ docs/diagnostics/ux-overhaul-2026-09-20/
 # ─── Giọng bé: chỉ commit archive .zip + bảng ghim sha256 (đủ cho OTA). Thư mục CLIP ĐÃ BUNG (1 546 .aac ~13 MB)
 # là bản sao của .zip ⇒ không đưa vào history (git không delta được AAC nén sẵn).
 voice/tts/kachi-giong-be-v1/
+
+# ─── Dữ liệu thô buổi xe (2026-09-26+): log thẻ 100+ MB, logcat stream, ZIP GIỌNG NÓI THẬT của owner (dữ liệu cá nhân —
+# repo public). Chỉ commit md/json tóm tắt trong docs/diagnostics/perf-oncar-*/.
+docs/diagnostics/perf-oncar-*/kachi-logs/
+docs/diagnostics/perf-oncar-*/logcat-stream-*.txt
+docs/diagnostics/perf-oncar-*/kachi-voice-*.zip

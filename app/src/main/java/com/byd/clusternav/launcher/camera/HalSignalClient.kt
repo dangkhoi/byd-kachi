@@ -23,8 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * [onTurn] được gọi trên **luồng đọc**, không phải main thread — bên nhận tự chuyển luồng nếu cần chạm View.
  * Gọi ngay khi có dòng mới (đó là lý do dùng socket thay vì poll: bật xi-nhan là camera lên).
  *
- * Mất kết nối ⇒ nối lại với backoff [BACKOFF_START_MS] → [BACKOFF_CAP_MS] (helper có thể chưa lên, hoặc vừa bị
- * ROM giết). Backoff có trần để một helper chết hẳn không thành vòng quay 100% CPU.
+ * Mất kết nối ⇒ **báo `(false,false)`** nếu lúc đó còn bên đang bật ([announceOffIfDropped] — không có nó thì
+ * overlay camera treo tới khi tắt máy), rồi nối lại với backoff [BACKOFF_START_MS] → [BACKOFF_CAP_MS] (helper có
+ * thể chưa lên, hoặc vừa bị ROM giết). Backoff có trần để một helper chết hẳn không thành vòng quay 100% CPU.
  *
  * BG-15 (2026-09-25): thất bại liên tiếp ≥ [IDLE_AFTER_FAILURES] lần (máy ảo / xe không helper) ⇒ trần lùi lên
  * [BACKOFF_CAP_IDLE_MS] — KHÔNG dừng hẳn (helper lên muộn vẫn nối được), chỉ thưa đi. Nối được ⇒ đặt lại từ đầu.
@@ -92,6 +93,7 @@ class HalSignalClient(
                 if (running) logD("mất kết nối ($t), thử lại sau ${backoff}ms")
             } finally {
                 socket = null
+                announceOffIfDropped(onTurn)
             }
             if (!running) break
             failures++
@@ -103,6 +105,29 @@ class HalSignalClient(
             backoff = nextBackoffMs(backoff, failures)
         }
         logI("dừng nghe")
+    }
+
+    /**
+     * ĐỨT DÂY giữa lúc một bên đang bật ⇒ báo TẮT cả hai bên.
+     *
+     * [SOÁT Pass 2 · 2026-09-26] Từ 2.70 `CameraHold` giữ camera theo **trạng thái** (`leftOn`/`rightOn`) tới khi
+     * thấy một sự kiện OFF — đúng cho helper báo trạng thái ([ĐO xe 2026-09-26]: một `trái=true`, 4,2 s sau một
+     * `trái=false`). Nhưng nếu helper **chết giữa lúc ON** (ROM giết, `app_process` bị kill) thì sự kiện OFF
+     * KHÔNG BAO GIỜ tới: `CameraHold` không hẹn hết hạn cho bên đang ON ⇒ overlay camera **treo trên màn tới khi
+     * tắt máy**. Đây đúng loại lỗi CLAUDE.md §5 cấm: state đổi ra ngoài phải có đường trả lại chạy được cả khi
+     * nguồn tin đã chết.
+     *
+     * ⇒ Mỗi lần vòng nối mất kết nối (readLine trả null / ném), coi như không còn biết gì: đặt hai cờ về false và
+     * báo `(false,false)`. Nối lại được thì helper gửi **ảnh chụp** hai bên (hợp đồng dây ở KDoc lớp) ⇒ bên nào
+     * còn bật sẽ ON lại sau ≤ backoff (1 s cho lần đứt đầu). `stop()` chủ động (công tắc TẮT) thì KHÔNG báo —
+     * `running` đã false và `CameraSignalController.tick()` tự đóng overlay theo pref.
+     */
+    private fun announceOffIfDropped(onTurn: (Boolean, Boolean) -> Unit) {
+        if (!running || (!left && !right)) return
+        left = false
+        right = false
+        logI("đứt dây giữa lúc xi-nhan đang bật ⇒ báo TẮT cả hai bên (tránh treo overlay)")
+        runCatching { onTurn(false, false) }.onFailure { logW("onTurn ném: $it") }
     }
 
     private fun read(s: Socket, onTurn: (Boolean, Boolean) -> Unit) {

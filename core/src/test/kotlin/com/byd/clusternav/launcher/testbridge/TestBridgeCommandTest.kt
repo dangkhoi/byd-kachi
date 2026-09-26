@@ -361,7 +361,11 @@ class TestBridgeCommandTest {
         // cú chạm trong Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc danh sách trắng vẫn giữ.
         // 21 → 22 (owner 2026-09-26, spec R7): +`camera_rotation` (chế độ xoay video) — chiều xoay đúng chỉ mắt owner
         // trên xe chốt được, nên phải đổi được giữa hai lượt xi-nhan không build lại. Có chipRow đảo lại ⇒ (3) giữ.
-        assertEquals(22, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        // 22 → 23 (owner TRÊN XE 2026-09-26, 2.71): −`camera_rotation` +`camera_rot_left`/`camera_rot_right` — "2 line
+        // setting độc lập cho camera trái và phải". Khoá cũ được `Prefs.cameraRotation` migrate rồi xoá, nên giữ nó
+        // trong danh sách trắng là cho `prefs_set` ghi vào một khoá không ai đọc nữa.
+        assertEquals(23, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        assertTrue("camera_rotation" !in TestBridgeCommands.WRITABLE_PREFS_KEYS, "khoá đơn cũ đã migrate — không nhận ghi nữa")
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

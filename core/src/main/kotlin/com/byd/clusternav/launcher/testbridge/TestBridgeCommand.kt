@@ -292,9 +292,12 @@ object TestBridgeCommands {
         "camera_cam_right",
         "camera_pos_left",
         "camera_pos_right",
-        // R7 (owner 2026-09-26): chế độ xoay video — cần đổi trên xe giữa hai lượt xi-nhan để chốt chiều đúng (mắt
-        // owner), không build lại. Đảo lại được bằng một cú chạm ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ.
-        "camera_rotation",
+        // R7 (owner 2026-09-26): góc xoay video TỪNG BÊN (2.71 — owner trên xe: "2 line setting độc lập cho camera
+        // trái và phải") — cần đổi trên xe giữa hai lượt xi-nhan để chốt chiều đúng (mắt owner), không build lại.
+        // Mỗi khoá có một hàng chip đảo lại được ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ. Khoá đơn cũ
+        // `camera_rotation` (2.67–2.70) GỠ khỏi đây: `Prefs.cameraRotation` migrate nó một lần rồi xoá.
+        "camera_rot_left",
+        "camera_rot_right",
     )
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────

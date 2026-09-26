@@ -30,56 +30,71 @@ class CameraSignalPolicyTest {
         assertNull(CameraSignalPolicy.defaultSide(t))
     }
 
-    // ══ R7 · XOAY video (owner 2026-09-26: "bên trái rotation 90 xoay qua trái, bên phải xoay sang phải") ═══════
+    // ══ R7 · XOAY video — 2.71 GÓC THEO BÊN (owner trên xe 2026-09-26: "2 line setting độc lập cho camera trái và
+    // phải, có thể 2 camera cần xoay khác nhau") ═══════════════════════════════════════════════════════════════
 
-    /** Bảng đủ 5 chế độ × 2 bên. Âm = ↺ (qua trái), dương = ↻ (sang phải) — đúng chiều `Matrix.postRotate`. */
-    @Test fun `bang xoay 5 che do x 2 ben`() {
-        val P = CameraSignalPolicy
-        val L = CameraSignalPolicy.Turn.LEFT
-        val R = CameraSignalPolicy.Turn.RIGHT
-        // Theo bên: trái −90 (↺), phải +90 (↻) — đúng nguyên văn owner.
-        assertEquals(-90, P.rotationDegrees(P.ROTATE_BY_SIDE, L))
-        assertEquals(90, P.rotationDegrees(P.ROTATE_BY_SIDE, R))
-        assertEquals(0, P.rotationDegrees(P.ROTATE_NONE, L))
-        assertEquals(0, P.rotationDegrees(P.ROTATE_NONE, R))
-        assertEquals(-90, P.rotationDegrees(P.ROTATE_LEFT, L))
-        assertEquals(-90, P.rotationDegrees(P.ROTATE_LEFT, R))
-        assertEquals(90, P.rotationDegrees(P.ROTATE_RIGHT, L))
-        assertEquals(90, P.rotationDegrees(P.ROTATE_RIGHT, R))
-        assertEquals(180, P.rotationDegrees(P.ROTATE_180, L))
-        assertEquals(180, P.rotationDegrees(P.ROTATE_180, R))
-        // Theo bên NGƯỢC LẠI (review Pass 1): đường HOÀN TÁC mà §Verification của spec hứa — nếu cặp theo bên bị
-        // ngược trên xe thì `↺90`/`↻90` (áp cả hai bên) KHÔNG diễn tả nổi, phải có cặp đảo.
-        assertEquals(90, P.rotationDegrees(P.ROTATE_BY_SIDE_INV, L))
-        assertEquals(-90, P.rotationDegrees(P.ROTATE_BY_SIDE_INV, R))
-        // Và nó đúng là NGƯỢC của mặc định ở cả hai bên (không phải "khác một chút").
-        listOf(L, R).forEach { t ->
-            assertEquals(
-                -P.rotationDegrees(P.ROTATE_BY_SIDE, t), P.rotationDegrees(P.ROTATE_BY_SIDE_INV, t),
-                "SIDEINV phải là số đối của SIDE ở bên $t",
-            )
+    private val P = CameraSignalPolicy
+
+    /** Bảng đủ 4 mã × 2 bên: mã là góc TUYỆT ĐỐI, không còn phụ thuộc bên. Âm = ↺, dương = ↻ (chiều `Matrix.postRotate`). */
+    @Test fun `bang xoay 4 ma x 2 ben`() {
+        listOf(true, false).forEach { left ->
+            assertEquals(0, P.rotationDegrees(P.ROTATE_NONE, left), "0 · left=$left")
+            assertEquals(-90, P.rotationDegrees(P.ROTATE_LEFT, left), "L90 · left=$left")
+            assertEquals(90, P.rotationDegrees(P.ROTATE_RIGHT, left), "R90 · left=$left")
+            assertEquals(180, P.rotationDegrees(P.ROTATE_180, left), "180 · left=$left")
         }
     }
 
-    /** Mặc định = theo bên (owner 2026-09-26), và mode lạ trên đĩa rơi về mặc định — KHÔNG về 0 (0 là lựa chọn thật). */
-    @Test fun `mac dinh theo ben, mode la roi ve mac dinh`() {
-        val P = CameraSignalPolicy
-        assertEquals(P.ROTATE_BY_SIDE, P.defaultRotation())
-        assertEquals(-90, P.rotationDegrees("TOPLEFT", CameraSignalPolicy.Turn.LEFT))
-        assertEquals(90, P.rotationDegrees("", CameraSignalPolicy.Turn.RIGHT))
-        assertEquals(0, P.rotationDegrees(P.ROTATE_BY_SIDE, CameraSignalPolicy.Turn.NONE))
+    /**
+     * Mặc định theo bên = nguyên văn owner 2.67 (trái ↺ −90, phải ↻ +90). Mã lạ — kể cả mã CŨ `SIDE`/`SIDEINV` chưa
+     * qua migrate — rơi về mặc định của BÊN, KHÔNG về 0 (0 là lựa chọn thật).
+     */
+    @Test fun `mac dinh theo ben, ma la roi ve mac dinh cua ben`() {
+        assertEquals(P.ROTATE_LEFT, P.defaultRotation(left = true))
+        assertEquals(P.ROTATE_RIGHT, P.defaultRotation(left = false))
+        assertEquals(-90, P.rotationDegrees("TOPLEFT", left = true))
+        assertEquals(90, P.rotationDegrees("", left = false))
+        assertEquals(-90, P.rotationDegrees(P.ROTATE_BY_SIDE, left = true))
+        assertEquals(90, P.rotationDegrees(P.ROTATE_BY_SIDE_INV, left = false))
     }
 
-    /** `isRotation` nhận đúng 6 mã, mã chip = giá trị lưu bền (không có bảng đổi thứ hai). */
-    @Test fun `isRotation nhan dung 6 ma`() {
-        val P = CameraSignalPolicy
-        assertEquals(6, P.ROTATIONS.size)
-        assertEquals(6, P.ROTATIONS.toSet().size)
+    /** `isRotation` nhận đúng 4 mã; hai mã cũ `SIDE`/`SIDEINV` KHÔNG còn là lựa chọn (chỉ migrate đọc). */
+    @Test fun `isRotation nhan dung 4 ma, ma cu bi loai`() {
+        assertEquals(listOf("0", "L90", "R90", "180"), P.ROTATIONS)
         assertTrue(P.ROTATIONS.all(P::isRotation))
+        assertFalse(P.isRotation(P.ROTATE_BY_SIDE))
+        assertFalse(P.isRotation(P.ROTATE_BY_SIDE_INV))
         assertFalse(P.isRotation("90"))
-        assertFalse(P.isRotation("SIDE_INV"))   // mã thật là "SIDEINV" — prefs_set chỉ nhận đúng mã
-        assertFalse(P.isRotation("side"))   // phân biệt hoa/thường: prefs_set chuẩn hoá trước khi ghi
+        assertFalse(P.isRotation("l90"))   // phân biệt hoa/thường: prefs_set chuẩn hoá trước khi ghi
         assertFalse(P.isRotation(""))
+    }
+
+    /**
+     * Migrate khoá đơn cũ `camera_rotation` → góc từng bên, đủ 6 mã cũ × 2 bên. Bất biến: **số độ trước và sau
+     * nâng cấp bằng nhau** cho mọi mã cũ hợp lệ — xe đang nhìn thấy gì thì sau khi lên 2.71 vẫn thấy đúng thế.
+     */
+    @Test fun `migrate 6 ma cu x 2 ben giu nguyen so do`() {
+        // Bảng độ của mô hình CŨ (2.67–2.70), chép nguyên từ `rotationDegrees(mode, turn)` trước khi gỡ.
+        val oldDeg: Map<String, Pair<Int, Int>> = mapOf(   // mã cũ → (trái, phải)
+            "SIDE" to (-90 to 90), "SIDEINV" to (90 to -90), "0" to (0 to 0),
+            "L90" to (-90 to -90), "R90" to (90 to 90), "180" to (180 to 180),
+        )
+        oldDeg.forEach { (old, lr) ->
+            val l = P.migrateRotation(old, left = true)
+            val r = P.migrateRotation(old, left = false)
+            assertTrue(P.isRotation(l) && P.isRotation(r), "$old phải migrate ra mã hợp lệ ($l/$r)")
+            assertEquals(lr.first, P.rotationDegrees(l, left = true), "$old · trái")
+            assertEquals(lr.second, P.rotationDegrees(r, left = false), "$old · phải")
+        }
+        // Đúng mã, không chỉ đúng độ: SIDE → L90/R90 ; SIDEINV → R90/L90 (đây là lý do 2.69 trên xe ra rot=90 cả
+        // hai bên nếu pref cũ là R90 — migrate giữ nguyên, không "sửa hộ").
+        assertEquals(P.ROTATE_LEFT, P.migrateRotation(P.ROTATE_BY_SIDE, left = true))
+        assertEquals(P.ROTATE_RIGHT, P.migrateRotation(P.ROTATE_BY_SIDE, left = false))
+        assertEquals(P.ROTATE_RIGHT, P.migrateRotation(P.ROTATE_BY_SIDE_INV, left = true))
+        assertEquals(P.ROTATE_LEFT, P.migrateRotation(P.ROTATE_BY_SIDE_INV, left = false))
+        // Mã lạ trên đĩa (prefs sửa tay) → mặc định của bên, không ném.
+        assertEquals(P.ROTATE_LEFT, P.migrateRotation("BOGUS", left = true))
+        assertEquals(P.ROTATE_RIGHT, P.migrateRotation("", left = false))
     }
 
     /** outputState là giá trị THẬT của HAL (RE) — ghim để không đổi bừa. */

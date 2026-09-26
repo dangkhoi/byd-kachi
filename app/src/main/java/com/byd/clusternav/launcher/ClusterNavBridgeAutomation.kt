@@ -161,12 +161,14 @@ fun ClusterNavBridge.cameraPosLeft(): String = Prefs.cameraPos(app, left = true)
 fun ClusterNavBridge.cameraPosRight(): String = Prefs.cameraPos(app, left = false)
 fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos(app, left, v)
 /**
- * Chế độ XOAY video camera (spec R7 · owner 2026-09-26) — mã trong `CameraSignalPolicy.ROTATIONS`. Một khoá cho cả
- * hai bên (mặc định `SIDE` đã mã hoá trái ↺ / phải ↻). KHÔNG kèm `AutomationService.sync`, cùng lẽ [cameraPosLeft]:
- * lượt rẽ sau đọc lại pref khi dựng overlay.
+ * Góc XOAY video camera TỪNG BÊN (spec R7 · 2.71, owner trên xe 2026-09-26: *"2 line setting độc lập cho camera
+ * trái và phải"*) — mã trong `CameraSignalPolicy.ROTATIONS`. Hai hàm đọc riêng cho hai hàng chip, một hàm ghi có
+ * tham số — y khuôn [cameraPosLeft]/[setCameraPos]. KHÔNG kèm `AutomationService.sync`, cùng lẽ ở đó: lượt rẽ sau
+ * đọc lại pref khi dựng overlay.
  */
-fun ClusterNavBridge.cameraRotation(): String = Prefs.cameraRotation(app)
-fun ClusterNavBridge.setCameraRotation(v: String) = Prefs.setCameraRotation(app, v)
+fun ClusterNavBridge.cameraRotLeft(): String = Prefs.cameraRotation(app, left = true)
+fun ClusterNavBridge.cameraRotRight(): String = Prefs.cameraRotation(app, left = false)
+fun ClusterNavBridge.setCameraRotation(left: Boolean, v: String) = Prefs.setCameraRotation(app, left, v)
 fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 1)
 fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
 fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)

@@ -677,10 +677,9 @@
     <string name="kachi_camera_pos_right">Xi-nhan phải hiện ở</string>
     <string name="kachi_pos_tl">Trái</string>
     <string name="kachi_pos_tr">Phải</string>
-    <string name="kachi_camera_rot_sub">Xoay video camera (nếu hình bị nằm ngang)</string>
-    <string name="kachi_camera_rot_title">Xoay video</string>
-    <string name="kachi_camera_rot_side">Theo bên (trái ↺, phải ↻)</string>
-    <string name="kachi_camera_rot_side_inv">Theo bên, ngược lại (trái ↻, phải ↺)</string>
+    <string name="kachi_camera_rot_sub">Xoay video camera từng bên (nếu hình bị nằm ngang hay lộn đầu)</string>
+    <string name="kachi_camera_rot_row_left">Xi-nhan trái: xoay video</string>
+    <string name="kachi_camera_rot_row_right">Xi-nhan phải: xoay video</string>
     <string name="kachi_camera_rot_none">Không xoay</string>
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>

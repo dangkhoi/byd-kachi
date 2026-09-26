@@ -1,0 +1,95 @@
+# dumpsys window lúc feedback 18:45:58
+  Window #1 Window{7eb4064 u0 ScreenDecorOverlayBottom}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxwrap) gr=BOTTOM RIGHT CENTER sim={adjust=pan} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL LAYOUT_IN_SCREEN SPLIT_TOUCH FLAG_SLIPPERY
+      pfl=SHOW_FOR_ALL_USERS NO_MOVE_ANIMATION IS_ROUNDED_CORNERS_OVERLAY COLOR_SPACE_AGNOSTIC
+    mViewVisibility=0x8 mHaveFrame=true mObscured=false
+--
+  Window #2 Window{48a1e91 u0 ScreenDecorOverlay}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxwrap) gr=TOP LEFT CENTER sim={adjust=pan} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL LAYOUT_IN_SCREEN SPLIT_TOUCH FLAG_SLIPPERY
+      pfl=SHOW_FOR_ALL_USERS NO_MOVE_ANIMATION IS_ROUNDED_CORNERS_OVERLAY COLOR_SPACE_AGNOSTIC
+    mViewVisibility=0x8 mHaveFrame=true mObscured=false
+--
+    isOnScreen=false
+  Window #3 Window{a55dc5a u0 NavigationBar0}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=resize} ty=NAVIGATION_BAR fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL TOUCHABLE_WHEN_WAKING WATCH_OUTSIDE_TOUCH SPLIT_TOUCH HARDWARE_ACCELERATED
+      pfl=COLOR_SPACE_AGNOSTIC}
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+--
+  Window #4 Window{8bbf183 u0 BydQSBar}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillx1080) gr=TOP START CENTER sim={adjust=pan} ty=STATUS_BAR_SUB_PANEL fmt=TRANSPARENT
+      fl=NOT_FOCUSABLE LAYOUT_NO_LIMITS TRANSLUCENT_NAVIGATION
+    mViewVisibility=0x8 mHaveFrame=true mObscured=false
+    mSeq=0 mSystemUiVisibility=0x300
+--
+    isOnScreen=false
+  Window #5 Window{a4a8a0d u0 StatusBar}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillx84) gr=TOP CENTER_VERTICAL sim={adjust=resize} layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE TOUCHABLE_WHEN_WAKING WATCH_OUTSIDE_TOUCH SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=COLOR_SPACE_AGNOSTIC}
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+--
+    isOnScreen=false
+  Window #6 Window{8bbfe0 u0 com.byd.launcher}:
+    mOwnerUid=10138 mShowToOwnerOnly=true package=com.byd.launcher appop=SYSTEM_ALERT_WINDOW
+    mAttrs={(280,19)(wrapxwrap) gr=TOP START CENTER sim={adjust=pan} ty=APPLICATION_OVERLAY fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE LAYOUT_NO_LIMITS HARDWARE_ACCELERATED}
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+    mSeq=0 mSystemUiVisibility=0x0
+--
+  Window #8 Window{28e7b67 u0 AssistPreviewPanel}:
+    mOwnerUid=10056 mShowToOwnerOnly=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillx375) gr=BOTTOM START CENTER sim={state=unchanged adjust=nothing} ty=VOICE_INTERACTION_STARTING fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN HARDWARE_ACCELERATED
+    mViewVisibility=0x8 mHaveFrame=true mObscured=false
+    mSeq=0 mSystemUiVisibility=0x700
+--
+  Window #10 Window{6cb30fe u0 DockedStackDivider}:
+    mOwnerUid=10056 mShowToOwnerOnly=false package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(72xfill) sim={adjust=pan} layoutInDisplayCutoutMode=always ty=DOCK_DIVIDER fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL WATCH_OUTSIDE_TOUCH SPLIT_TOUCH HARDWARE_ACCELERATED FLAG_SLIPPERY
+      pfl=NO_MOVE_ANIMATION
+    mViewVisibility=0x4 mHaveFrame=true mObscured=false
+--
+    isOnScreen=false
+  Window #11 Window{a62f814 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome}:
+    mOwnerUid=10138 mShowToOwnerOnly=true package=com.byd.launcher appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=pan} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x10302ff
+      fl=LAYOUT_IN_SCREEN FULLSCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=FORCE_DRAW_STATUS_BAR_BACKGROUND
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+--
+    isOnScreen=true
+  Window #14 Window{bc165a0 u0 com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity}:
+    mOwnerUid=10138 mShowToOwnerOnly=true package=com.byd.launcher appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=pan} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x1030001 surfaceInsets=Rect(60, 60 - 60, 60) (manual) (!preservePreviousSurfaceInsets)
+      fl=KEEP_SCREEN_ON LAYOUT_IN_SCREEN FULLSCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED
+      pfl=FORCE_DRAW_STATUS_BAR_BACKGROUND}
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+== focus
+  mCurrentFocus=null
+  mFocusedApp=AppWindowToken{8db82ec token=Token{ccf19f ActivityRecord{d06ef3e u0 com.google.android.youtube/.app.honeycomb.Shell$HomeActivity t48}}}
+    mFocusedApp=Token{ccf19f ActivityRecord{d06ef3e u0 com.google.android.youtube/.app.honeycomb.Shell$HomeActivity t48}}
+    mTopFullscreenOpaqueWindowState=Window{775e668 u0 com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity}
+    mTopFullscreenOpaqueOrDimmingWindowState=Window{775e668 u0 com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity}
+== policy
+== log quanh feedback
+18:43:53.085 V/WindowManager(  635): DPfinishLw attrs.isFullscreen()=true inFullScreenOrSplitScreenSecondaryWindowingMode=false
+18:43:53.086 V/WindowManager(  635): DPfinishLw attrs.isFullscreen()=true inFullScreenOrSplitScreenSecondaryWindowingMode=false
+18:43:53.086 V/WindowManager(  635): DPfinishLw attrs.isFullscreen()=true inFullScreenOrSplitScreenSecondaryWindowingMode=true
+18:43:53.086 V/WindowManager(  635): DPfinishLw Fullscreen window: Window{a62f814 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+18:43:53.088 V/WindowManager(  635): DPfinishLw attrs.isFullscreen()=true inFullScreenOrSplitScreenSecondaryWindowingMode=true
+18:43:53.088 V/WindowManager(  635): DPfinishLw Fullscreen window: Window{3f023cd u0 vn.vietmap.live/vn.vietmap.live.MainActivity}
+18:43:54.942 I/SystemUIDataCollect( 1446): sendBuffer id:1644 data:1
+18:43:54.944 I/BYDAcquisitionClient( 1446): sendAcquisitionData(1_SystemUI_1644):oversea,mFlag is 0, count is 1
+18:43:54.944 D/BYDAcquisitionClient( 1446): getAcquisitionService_l(1_SystemUI),enter.
+18:43:54.944 I/BYDAcquisitionClient( 1446): getEventIdUploadTime(1_SystemUI_1644):time is 600000,mUploadStrategy size is 0
+18:43:54.944 D/BYDAcquisitionClient( 1446): getProxy(1_SystemUI_600000) exit,final proxy addr is 0x7202492f80.evnetId is 1644.
+18:43:54.944 E/BYDAcquisitionClient( 1446): sendMergedData(1_SystemUI_1644):checkSaveProvicy failed,status(7)!

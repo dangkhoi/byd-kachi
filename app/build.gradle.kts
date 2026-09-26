@@ -59,8 +59,14 @@ android {
         // bộ ca voice E2E khớp sản phẩm + 5 dòng VoiceFeatureGone. 2.67 đã báo owner ⇒ số hiệu riêng.
         // 2026-09-26 ⇒ **2.69 (170)**: từ `:wake` làm được "mở app vào ô N"/"đổi bố cục" (relay + ack có hạn), một chủ sở hữu
         // phiên `:wake` (LISTEN_NOW cắt phiên đang nói), harness voice ổn định 3 lượt, tách test 761 dòng. 2.68 đã báo owner.
-        versionCode = 170
-        versionName = "2.69"
+        // HOTFIX xe 2026-09-26 ⇒ **2.70 (171)**: camera xi-nhan tắt sau ~1 s vì helper báo trạng thái đèn (một ON, một OFF)
+        // chứ không nháy ⇒ CameraHold giữ ON tới khi có OFF; HOLD 1,2 s chỉ nối khoảng tắt của nháy. 2.69 đã cài trên xe.
+        // 2026-09-26 ⇒ **2.71 (172)**: 2 dòng xoay video trái/phải độc lập (owner trên xe). Xe đang chạy 2.70 (hotfix
+        // CameraHold) — 2.71 = 2.70 + xoay từng bên, chưa cài xe.
+        // Review Pass 2 (2026-09-26) vá [P1] sau khi APK 2.71 đã build: helper HAL chết lúc đèn bật ⇒ camera treo mãi
+        // (hệ quả của luật "giữ tới OFF" 2.70) ⇒ HalSignalClient báo OFF khi đứt dây. Số hiệu riêng ⇒ **2.72 (173)**.
+        versionCode = 173
+        versionName = "2.72"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

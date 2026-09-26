@@ -57,7 +57,7 @@ Chép: khung, median ms (15 fps = 66,7 ms), p90 ms. **p90 > 130 ms hoặc khung 
 ## 3. CÀI bản mới (2 phút)
 
 ```bash
-$A -s $S install -r apk/Kachi-2.69-release.apk && $A -s $S shell dumpsys package com.byd.launcher | grep versionName
+$A -s $S install -r apk/Kachi-2.72-release.apk && $A -s $S shell dumpsys package com.byd.launcher | grep versionName
 $A -s $S shell am force-stop com.byd.launcher; $A -s $S shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity
 ```
 Giữ dữ liệu (cùng khoá ký). **Lùi**: `$A -s $S install -r -d /tmp/Kachi-2.65-release.apk`. Nếu launcher không lên trong 30 s ⇒ lùi ngay, chụp `logcat -d -b crash`, dừng buổi đo phần mới.

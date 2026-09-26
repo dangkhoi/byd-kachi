@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (**`Kachi-2.69-release.apk` vc170**, 43 483 993 B, sha256 `3b4fcd09…a34b` [ĐO `shasum -a 256`]) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (**`Kachi-2.72-release.apk` vc173**, 43 483 553 B, sha256 `3762a2b7…e73d` [ĐO `shasum -a 256`]) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
@@ -12,6 +12,8 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **2.72 (173) — 2026-09-26** (`Kachi-2.72-release.apk`, 43 483 553 B, sha256 `3762a2b708ee3a86aef3a8179fa76d163c7d07f294a0d4e8d91f80e00089e73d`, + lưới an toàn: helper HAL chết lúc đèn bật ⇒ báo OFF, camera không treo (review Pass 2); = 2.70 hotfix camera giữ tới khi đèn tắt (xe: helper báo trạng thái, không nháy) + 2 dòng Cài đặt xoay video trái/phải độc lập; đã test trên xe Seal ở bản 2.70 (buổi 26/09); cert `92:57:…:99:17` không đổi, không debuggable)
+- **2.70 (171) — 2026-09-26** (hotfix `CameraHold`, chỉ cài trực tiếp trên xe owner, không đăng kênh)
 - **2.69 (170) — 2026-09-26** (`Kachi-2.69-release.apk`, 43 483 993 B, sha256 `3b4fcd092558cda0a796d7d083c97d67ebf4fe3056b2d473c99614d054dba34b`, từ `:wake` làm được ô/bố cục (relay + ack 1,5/4 s), một chủ sở hữu phiên `:wake`, harness voice 106/106 ×3, tách test 761 dòng; review Opus Pass 4; cert `92:57:…:99:17` không đổi, không debuggable)
 - **2.68 (169) — 2026-09-26** (`Kachi-2.68-release.apk`, 43 467 609 B, sha256 `efe739c0fd70c3543c2f5c8d7f1635d4a786295fa8c84e87630729940580e006`, CLOSE-2/3/3b/5/7/8/10 + RES-CLEAN: nút mic đi `:wake` khi Hey Kachi bật (ảnh chụp ngữ pháp cross-process), tách 4 tệp >500, coroutines 1.11.0, 41 resource gỡ, bộ ca voice 106/106; review Opus 3 pass; cert `92:57:…:99:17` không đổi, không debuggable)
 - **2.67 (168) — 2026-09-26** (`Kachi-2.67-release.apk`, 43 345 718 B, sha256 `942cbf3a18272334b9482513afe59b85e3a6935011a7e763e4cbfd0da9577bb8`, CAM-ROT: xoay video camera xi-nhan theo bên + chip Cài đặt "Xoay video" (6 chế độ, có "Theo bên, ngược lại" làm đường hoàn tác trên xe); cert `92:57:…:99:17` không đổi, không debuggable; 2.66 đã bị thay trên kênh nhưng giữ dòng nhật ký dưới)

@@ -661,10 +661,9 @@
     <string name="kachi_camera_pos_right">Right signal shows at</string>
     <string name="kachi_pos_tl">Left</string>
     <string name="kachi_pos_tr">Right</string>
-    <string name="kachi_camera_rot_sub">Rotate camera video (if the picture is sideways)</string>
-    <string name="kachi_camera_rot_title">Rotate video</string>
-    <string name="kachi_camera_rot_side">By side (left ↺, right ↻)</string>
-    <string name="kachi_camera_rot_side_inv">By side, swapped (left ↻, right ↺)</string>
+    <string name="kachi_camera_rot_sub">Rotate camera video per side (if the picture is sideways or upside down)</string>
+    <string name="kachi_camera_rot_row_left">Left signal: rotate video</string>
+    <string name="kachi_camera_rot_row_right">Right signal: rotate video</string>
     <string name="kachi_camera_rot_none">No rotation</string>
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>

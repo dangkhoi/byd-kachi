@@ -158,9 +158,9 @@ class CameraOverlayTransformTest {
      */
     @Test fun `policy chi sinh boi cua 90`() {
         CameraSignalPolicy.ROTATIONS.forEach { mode ->
-            CameraSignalPolicy.Turn.entries.forEach { turn ->
-                val deg = CameraSignalPolicy.rotationDegrees(mode, turn)
-                assertEquals(0, ((deg % 90) + 90) % 90, "mode=$mode turn=$turn cho $deg° — không phải bội 90")
+            listOf(true, false).forEach { left ->
+                val deg = CameraSignalPolicy.rotationDegrees(mode, left)
+                assertEquals(0, ((deg % 90) + 90) % 90, "mode=$mode left=$left cho $deg° — không phải bội 90")
             }
         }
     }
@@ -168,9 +168,9 @@ class CameraOverlayTransformTest {
     /** Mỗi (chế độ × bên) đều dựng được ma trận phủ đủ khung vuông — vòng khép từ luật tới hình học. */
     @Test fun `moi che do x ben deu phu du khung`() {
         CameraSignalPolicy.ROTATIONS.forEach { mode ->
-            listOf(CameraSignalPolicy.Turn.LEFT, CameraSignalPolicy.Turn.RIGHT).forEach { turn ->
-                val deg = CameraSignalPolicy.rotationDegrees(mode, turn)
-                assertFillsView(360, 360, cropCorners(360, 360, MIRROR_LEFT, deg), "$mode/$turn ($deg°)")
+            listOf(true, false).forEach { left ->
+                val deg = CameraSignalPolicy.rotationDegrees(mode, left)
+                assertFillsView(360, 360, cropCorners(360, 360, MIRROR_LEFT, deg), "$mode/left=$left ($deg°)")
             }
         }
     }

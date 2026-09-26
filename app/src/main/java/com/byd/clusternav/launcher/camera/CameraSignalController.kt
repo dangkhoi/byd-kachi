@@ -13,11 +13,12 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 /**
  * ═══ CAMERA THEO XI-NHAN · điều phối (`:app`) ═══════════════════════════════════════════════════════════════
  *
- * Mỗi nhịp nhận trạng thái xi-nhan (từ `CarStatus.lights`) → nếu bật tính năng (pref, mặc định TẮT) và bên xi-nhan
- * ĐỔI thì: mở camera view tương ứng ([PanoramaHal]) + hiện overlay bên đó ([CameraOverlayView]); hết xi-nhan ⇒
- * đóng. Chỉ ĐỔI khi khác nhịp trước (không dựng lại overlay mỗi nhịp — cùng lẽ RainDefrostOwner).
+ * Mỗi nhịp nhận trạng thái xi-nhan (từ [HalSignalClient] — KHÔNG phải `CarStatus.lights`, xem KDoc [tick]) → nếu
+ * bật tính năng (pref, mặc định TẮT) và bên xi-nhan ĐỔI thì: mở camera view tương ứng ([PanoramaHal]) + hiện overlay
+ * bên đó ([CameraOverlayView]); hết xi-nhan ⇒ đóng. Chỉ ĐỔI khi khác nhịp trước (không dựng lại overlay mỗi nhịp —
+ * cùng lẽ RainDefrostOwner).
  *
- * ⚠ Off-car: PanoramaHal no-op (device null) nhưng overlay vẫn dựng (SurfaceView đen) — đo được wiring. Tín hiệu
+ * ⚠ Off-car: PanoramaHal no-op (device null) nhưng overlay vẫn dựng (TextureView đen) — đo được wiring. Tín hiệu
  *   video thật = on-car (runbook camera-panorama).
  */
 class CameraSignalController(private val appCtx: Context) {
@@ -43,10 +44,11 @@ class CameraSignalController(private val appCtx: Context) {
      * Đồng bộ với công tắc — gọi từ `AutomationService` (mỗi nhịp 60 s + ngay khi `sync`) và từ HOME khi state đổi.
      * Bật ⇒ đảm bảo helper + socket đang nghe; tắt ⇒ dừng luồng socket (BG-15) và đóng overlay (trên main).
      *
-     * Sự kiện xi-nhan ON đến từ socket ([HalSignalClient] onTurn → tick(l,r) refresh mốc ON). Ở đây KHÔNG đọc
-     * evtLeft/evtRight sticky: [ĐO xe 2026-09-25] xi-nhan nhấp nháy → nếu tài xế tắt đúng pha ON, evt kẹt true ⇒
-     * refresh HOLD mãi ⇒ camera KHÔNG tắt (bug lúc-bị-lúc-không). Để HOLD tự hết theo mốc ON gần nhất là đường tin
-     * cậy — và mốc hết hạn được HẸN đúng lúc bằng [expiry] (BG-13), không cần vòng 250 ms nào gọi vào đây nữa.
+     * Trạng thái xi-nhan đến từ socket ([HalSignalClient] onTurn → tick(l,r)). Ở đây KHÔNG đọc evtLeft/evtRight
+     * sticky của `CarStatus`: [ĐO xe 2026-09-25] cờ evt kẹt `true` nếu tài xế tắt đúng pha ON ⇒ đọc lại mỗi nhịp là
+     * tự nói "đang bật" mãi. Nguồn duy nhất được tin là **dòng sự kiện** của socket — nó báo cả ON lẫn OFF
+     * ([ĐO xe 2026-09-26]), và khi đứt dây thì `HalSignalClient` tự báo `(false,false)` nên không có đường kẹt ON.
+     * Mốc HOLD (chỉ dùng cho nguồn nháy) được HẸN đúng lúc bằng [expiry] (BG-13), không cần vòng 250 ms nào nữa.
      */
     fun tick() {
         if (Prefs.cameraSignalEnabled(appCtx)) ensureSignal() else release()
@@ -76,10 +78,10 @@ class CameraSignalController(private val appCtx: Context) {
     /**
      * Một nhịp với trạng thái xi-nhan cho sẵn (từ socket, test bridge, hoặc null = không có tin mới).
      *
-     * ⚠ [ĐO xe 2026-09-24] Xi-nhan NHẤP NHÁY (~1.5Hz, sáng/tắt ~340ms). Nhìn pha TẮT mà đóng thì camera nháy theo
-     * đèn. Luật giữ nằm ở [CameraHold] (thuần, test với đồng hồ giả): bên nào ON trong [HOLD_MS] coi như ĐANG bật;
-     * chỉ đóng khi không thấy ON quá [HOLD_MS]. Mốc hết hạn được hẹn bằng [expiry] sau MỖI nhịp (BG-13) — trước
-     * 2026-09-25 cần vòng automation 250 ms gọi `tick(false,false)` chỉ để HOLD hết hạn.
+     * ⚠ Luật giữ nằm ở [CameraHold] (thuần, test với đồng hồ giả) và chịu được CẢ HAI kiểu nguồn — xem KDoc ở đó:
+     * bên đang ở trạng thái ON thì giữ tới khi có sự kiện OFF ([ĐO xe 2026-09-26, helper báo trạng thái]); sau một
+     * OFF còn giữ thêm [HOLD_MS] để không nháy theo bóng ([ĐO xe 2026-09-24, nguồn nháy ~1.5Hz]). Mốc hết hạn được
+     * hẹn bằng [expiry] sau MỖI nhịp (BG-13) — trước 2026-09-25 cần vòng automation 250 ms gọi `tick(false,false)`.
      */
     fun tick(left: Boolean?, right: Boolean?) {
         // overlay/hal/avm là op WindowManager + View ⇒ PHẢI main thread. tick(l,r) có thể được gọi từ LUỒNG ĐỌC
@@ -119,9 +121,9 @@ class CameraSignalController(private val appCtx: Context) {
                 val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
                 val crop = view.crop
                 // R7 (owner 2026-09-26): vùng gương crop từ fisheye là dải DỌC ⇒ căng vào ô vuông thì NGANG; xoay
-                // theo pref `camera_rotation` (mặc định theo bên: trái ↺ −90 / phải ↻ +90). Tính ở `:core`, overlay
-                // chỉ nhận số độ.
-                val rot = CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx), turn)
+                // theo pref TỪNG BÊN `camera_rot_left/right` (2.71; mặc định trái ↺ −90 / phải ↻ +90). Tính ở
+                // `:core`, overlay chỉ nhận số độ.
+                val rot = CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx, left = turn == Turn.LEFT), left = turn == Turn.LEFT)
                 Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner rot=$rot")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).

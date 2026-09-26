@@ -1,0 +1,23 @@
+09-26 18:08:17.624 I/KachiCamera(17149): AVMCamera(cameraId=1) + open() device=true
+09-26 18:08:17.625 I/KachiCamera(17149): addPreviewSurface ok cameraId=1 mode=0
+09-26 18:08:17.785 I/KachiCamera(17149): AVMCamera cameraId=1 surfaceOk=true started=true
+09-26 18:08:18.667 I/KachiCamera(17149): close op=-2147482645
+09-26 18:08:20.446 I/KachiHalSignal(17149): xi-nhan trái=false phải=false
+09-26 18:08:22.596 I/KachiHalSignal(17149): xi-nhan trái=false phải=true
+09-26 18:08:22.598 I/KachiCamera(17149): xi-nhan RIGHT → camera MIRROR_RIGHT camId=1 (def=1) crop=true overlay RIGHT góc=TR rot=90
+09-26 18:08:22.601 I/KachiCamera(17149): open(MIRROR_RIGHT) opt=A op=0 mode=3 out=0
+09-26 18:08:22.626 I/KachiCamera(17149): overlay show corner=TR side=RIGHT cluster=false rot=90
+09-26 18:08:22.872 I/KachiCamera(17149): AVMCamera(cameraId=1) + open() device=true
+09-26 18:08:22.874 I/KachiCamera(17149): addPreviewSurface ok cameraId=1 mode=0
+09-26 18:08:23.061 I/KachiCamera(17149): AVMCamera cameraId=1 surfaceOk=true started=true
+09-26 18:08:23.903 I/KachiCamera(17149): close op=-2147482645
+09-26 18:08:24.797 I/KachiHalSignal(17149): xi-nhan trái=false phải=false
+09-26 18:08:49.496 I/KachiHalSignal(17149): xi-nhan trái=true phải=false
+09-26 18:08:49.497 I/KachiCamera(17149): xi-nhan LEFT → camera MIRROR_LEFT camId=1 (def=1) crop=true overlay LEFT góc=TL rot=90
+09-26 18:08:49.499 I/KachiCamera(17149): open(MIRROR_LEFT) opt=A op=0 mode=3 out=0
+09-26 18:08:49.513 I/KachiCamera(17149): overlay show corner=TL side=LEFT cluster=false rot=90
+09-26 18:08:49.745 I/KachiCamera(17149): AVMCamera(cameraId=1) + open() device=true
+09-26 18:08:49.747 I/KachiCamera(17149): addPreviewSurface ok cameraId=1 mode=0
+09-26 18:08:49.919 I/KachiCamera(17149): AVMCamera cameraId=1 surfaceOk=true started=true
+09-26 18:08:50.793 I/KachiCamera(17149): close op=-2147482645
+09-26 18:08:53.742 I/KachiHalSignal(17149): xi-nhan trái=false phải=false

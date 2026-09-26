@@ -127,27 +127,49 @@ fun Prefs.cameraPos(ctx: Context, left: Boolean): String {
 fun Prefs.setCameraPos(ctx: Context, left: Boolean, v: String) =
     autoPrefs(ctx).edit().putString(cameraPosKey(left), v).apply()
 
-// ── XOAY video overlay (spec R7 · owner 2026-09-26) — MỘT khoá cho cả hai bên ─────────────────────
-// Một khoá (không hai như `camera_pos_*`) vì chế độ mặc định [CameraSignalPolicy.ROTATE_BY_SIDE] đã mã hoá sự khác
-// nhau giữa hai bên (trái ↺ / phải ↻); tách hai khoá là bắt owner chọn 2 lần cho một quyết định. Device-scope
-// (`autoPrefs`) như `camera_pos_*`: chiều ghép ảnh 4-in-1 là chuyện của XE, không của hồ sơ tài xế.
-private const val K_CAMERA_ROTATION = "camera_rotation"
+// ── XOAY video overlay, RIÊNG từng bên xi-nhan (spec R7 · 2.71) ──────────────────────────────────
+// Hai khoá như `camera_pos_*`. 2.67 dùng MỘT khoá `camera_rotation` với chế độ "theo bên" (SIDE/SIDEINV) mã hoá
+// sự khác nhau trái/phải; owner trên xe 2026-09-26 bác: *"xoay video cần làm 2 line setting độc lập cho camera
+// trái và phải, có thể 2 camera cần xoay khác nhau"* — hai cam gương là hai thiết bị, chiều ghép vào ảnh 4-in-1
+// không có luật chung nào để một chế độ diễn tả (RE kinex cũng giữ hai số độc lập). Device-scope (`autoPrefs`):
+// chiều ghép ảnh là chuyện của XE, không của hồ sơ tài xế.
+private fun cameraRotKey(left: Boolean) = if (left) "camera_rot_left" else "camera_rot_right"
+
+/** Khoá đơn CŨ (2.67–2.70). Chỉ còn để [migrateLegacyCameraRotation] đọc một lần rồi xoá — không ai ghi nữa. */
+private const val K_CAMERA_ROTATION_LEGACY = "camera_rotation"
 
 /**
- * Chế độ xoay video camera — một trong [CameraSignalPolicy.ROTATIONS] (`"SIDE"`/`"0"`/`"L90"`/`"R90"`/`"180"`).
- *
- * Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultRotation], cùng khuôn [cameraPos]: tầng vẽ nhận SỐ ĐỘ đã tính
- * ([CameraSignalPolicy.rotationDegrees]) nên một chuỗi lạ đi tới đó không có nhánh nào để rơi vào.
+ * Nâng cấp từ 2.67–2.70: khoá cũ còn trên đĩa ⇒ điền khoá mới của BÊN nào chưa có (qua
+ * [CameraSignalPolicy.migrateRotation], thuần, đã test 6×2) rồi xoá khoá cũ. Chạy đúng một lần vì lượt sau
+ * `getString(legacy)` đã là null. Bên nào đã có khoá mới (owner vừa chọn chip trước khi bên kia được đọc) thì giữ,
+ * không ghi đè — thứ owner vừa chọn luôn thắng dữ liệu di cư.
  */
-fun Prefs.cameraRotation(ctx: Context): String {
-    val fallback = CameraSignalPolicy.defaultRotation()
-    val raw = autoPrefs(ctx).getString(K_CAMERA_ROTATION, fallback) ?: fallback
+private fun migrateLegacyCameraRotation(p: android.content.SharedPreferences) {
+    val old = p.getString(K_CAMERA_ROTATION_LEGACY, null) ?: return
+    val e = p.edit()
+    listOf(true, false).forEach { side ->
+        if (!p.contains(cameraRotKey(side))) e.putString(cameraRotKey(side), CameraSignalPolicy.migrateRotation(old, side))
+    }
+    e.remove(K_CAMERA_ROTATION_LEGACY).apply()
+}
+
+/**
+ * Góc xoay video camera cho bên xi-nhan [left] — một trong [CameraSignalPolicy.ROTATIONS] (`"0"`/`"L90"`/`"R90"`/`"180"`).
+ *
+ * Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultRotation] của bên đó, cùng khuôn [cameraPos]: tầng vẽ nhận SỐ
+ * ĐỘ đã tính ([CameraSignalPolicy.rotationDegrees]) nên một chuỗi lạ đi tới đó không có nhánh nào để rơi vào.
+ */
+fun Prefs.cameraRotation(ctx: Context, left: Boolean): String {
+    val p = autoPrefs(ctx)
+    migrateLegacyCameraRotation(p)
+    val fallback = CameraSignalPolicy.defaultRotation(left)
+    val raw = p.getString(cameraRotKey(left), fallback) ?: fallback
     return if (CameraSignalPolicy.isRotation(raw)) raw else fallback
 }
 
 /** Xem [cameraRotation]. Nhận mã trong [CameraSignalPolicy.ROTATIONS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
-fun Prefs.setCameraRotation(ctx: Context, v: String) =
-    autoPrefs(ctx).edit().putString(K_CAMERA_ROTATION, v).apply()
+fun Prefs.setCameraRotation(ctx: Context, left: Boolean, v: String) =
+    autoPrefs(ctx).edit().putString(cameraRotKey(left), v).apply()
 
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {

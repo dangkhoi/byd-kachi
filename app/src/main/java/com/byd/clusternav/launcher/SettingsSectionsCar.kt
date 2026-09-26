@@ -81,14 +81,11 @@ class SettingsCarSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_pos_right), corners, bridge.cameraPosRight(),
         ) { v -> bridge.setCameraPos(left = false, v = v) })
-        // XOAY video (spec R7 · owner 2026-09-26: "bị ngang, cần dọc lại; trái xoay qua trái, phải xoay sang phải,
-        // thêm option rotation trong setting"). MỘT hàng cho cả hai bên vì mặc định "Theo bên" đã mã hoá trái ↺ /
-        // phải ↻; năm chip còn lại cho xe ghép ảnh 4-in-1 khác chiều (SL6…). Mã chip = giá trị lưu bền (hằng `:core`).
-        // Chip "Theo bên, ngược lại" là đường HOÀN TÁC mà §Verification của spec hứa: chiều đúng còn ở mức [SUY],
-        // và nếu sai thì cái sai là CẶP theo bên — `↺90`/`↻90` (áp cả hai bên) không diễn tả nổi cặp đảo đó.
+        // XOAY video TỪNG BÊN (spec R7 · 2.71). 2.67 là MỘT hàng 6 chip với chế độ "Theo bên"; owner trên xe
+        // 2026-09-26: "xoay video cần làm 2 line setting độc lập cho camera trái và phải, có thể 2 camera cần xoay
+        // khác nhau" ⇒ hai hàng, mỗi hàng 4 góc tuyệt đối, y khuôn hai hàng vị trí ở trên. Mã chip = giá trị lưu
+        // bền (hằng `:core`), mặc định trái ↺ / phải ↻ nằm ở `CameraSignalPolicy.defaultRotation(left)`.
         val rotations = listOf(
-            CameraSignalPolicy.ROTATE_BY_SIDE to context.getString(R.string.kachi_camera_rot_side),
-            CameraSignalPolicy.ROTATE_BY_SIDE_INV to context.getString(R.string.kachi_camera_rot_side_inv),
             CameraSignalPolicy.ROTATE_NONE to context.getString(R.string.kachi_camera_rot_none),
             CameraSignalPolicy.ROTATE_LEFT to context.getString(R.string.kachi_camera_rot_left),
             CameraSignalPolicy.ROTATE_RIGHT to context.getString(R.string.kachi_camera_rot_right),
@@ -96,8 +93,11 @@ class SettingsCarSection(
         )
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_rot_sub)))
         body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_rot_title), rotations, bridge.cameraRotation(),
-        ) { v -> bridge.setCameraRotation(v) })
+            context.getString(R.string.kachi_camera_rot_row_left), rotations, bridge.cameraRotLeft(),
+        ) { v -> bridge.setCameraRotation(left = true, v = v) })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_rot_row_right), rotations, bridge.cameraRotRight(),
+        ) { v -> bridge.setCameraRotation(left = false, v = v) })
         // Chọn cameraId từng bên (owner 2026-09-25: cho SL6/xe khác tự dò cam nào lên — cam gương xe khác id khác).
         val camIds = listOf("0" to "0", "1" to "1", "2" to "2", "3" to "3", "4" to "4", "5" to "5")
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pick_sub)))

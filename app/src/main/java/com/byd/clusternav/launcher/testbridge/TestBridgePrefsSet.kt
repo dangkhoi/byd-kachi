@@ -155,9 +155,11 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraPos(app, left = true, v = it); it }
             "camera_pos_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isCorner(it) }
                 ?.let { Prefs.setCameraPos(app, left = false, v = it); it }
-            // Xoay video (R7): CHỈ nhận mã trong `CameraSignalPolicy.ROTATIONS` — cùng lẽ hai khoá góc ở trên.
-            "camera_rotation" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
-                ?.let { Prefs.setCameraRotation(app, it); it }
+            // Xoay video TỪNG BÊN (R7 · 2.71): CHỈ nhận mã trong `CameraSignalPolicy.ROTATIONS` — cùng lẽ hai khoá góc.
+            "camera_rot_left" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
+                ?.let { Prefs.setCameraRotation(app, left = true, v = it); it }
+            "camera_rot_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
+                ?.let { Prefs.setCameraRotation(app, left = false, v = it); it }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -196,7 +198,8 @@ internal object TestBridgePrefsSet {
             "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
             "voice_tts_speed" -> Prefs.voiceTtsSpeed(app).toString()
             "voice_keep_log" -> Prefs.voiceKeepLog(app).toString()
-            "camera_rotation" -> Prefs.cameraRotation(app)
+            "camera_rot_left" -> Prefs.cameraRotation(app, left = true)
+            "camera_rot_right" -> Prefs.cameraRotation(app, left = false)
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""
