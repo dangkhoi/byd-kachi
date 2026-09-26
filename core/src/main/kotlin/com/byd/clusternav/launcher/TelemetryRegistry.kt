@@ -249,7 +249,11 @@ object TelemetryRegistry {
         t("ext_temp", "Nhiệt ngoài xe", "Outside temp", "°C", CLIMATE, VALUE, OVERDRIVE, "BYDAutoInstrumentDevice.getOutCarTemperature"),
         t("ac_on", "Điều hòa", "Air conditioning", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getAcStartState", shortEn = "A/C"),
         // BYDAutoAcDevice.java:298 (0–7). Cũ `getWindLevel` không tồn tại.
-        t("ac_wind", "Mức quạt gió", "Fan level", "", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getAcWindLevel"),
+        // UX4 — `short` thêm 2026-09-26: chip thanh trên nay có thể in `"AUTO 1"` ([ClimateAuto.fanText]), và với nhãn
+        // ĐẦY thì chuỗi thành `"Mức quạt gió · AUTO 1"` trên bề mặt hẹp nhất của launcher. `"Gió"` = đúng nhãn của nút
+        // cùng việc (`fan`), nên hai ô cạnh nhau đọc ra cùng một khái niệm.
+        t("ac_wind", "Mức quạt gió", "Fan level", "", CLIMATE, VALUE, OVERDRIVE, "BYDAutoAcDevice.getAcWindLevel",
+            short = "Gió", shortEn = "Fan"),
         // BYDAutoAcDevice.java:218 — INLOOP=1 (trong) / OUTLOOP=0 (ngoài) (:24-25). Cũ `getCycleMode` không tồn tại.
         t("ac_cycle", "Chế độ lấy gió", "Recirculation mode", "", CLIMATE, BADGE, OVERDRIVE, "BYDAutoAcDevice.getAcCycleMode", shortEn = "Air intake"),
         // BYDAutoAcDevice.java:400 — °C=1 / °F=0 (:76-77). Cũ route car-setting `unit_temperature` luôn null (settingGet chưa wire).
@@ -269,6 +273,18 @@ object TelemetryRegistry {
             "BYDAutoSettingDevice.getSeatVentilatingState", short = "Ghế mát", shortEn = "Seat vent"),
         t("seat_heat_state", "Mức ghế sưởi", "Seat heating level", "", CLIMATE, VALUE, PROVEN,
             "BYDAutoSettingDevice.getSeatHeatingState", short = "Ghế sưởi", shortEn = "Seat heat"),
+        // ═══ UX5b (owner 2026-09-27) — **GHẾ PHỤ**: *"ghế sao không có ghế lái hay ghế phụ? 2 ghế nó khác nhau mà"* ══
+        //
+        // Hai dòng này KHÔNG mang một cơ chế mới nào: cùng getter, cùng device, **chỉ khác `seatID`** — và tham số
+        // ấy đã có đúng MỘT chỗ khai từ T2 (`HalReadTables.readArg`, nơi cặp sấy kính trước/sau cũng chia nhau một
+        // getter với `area` 1/2). [ĐO xe 2026-09-16] `hal-reads.txt` gọi `get…State` với **cả** seatID 1 và 2, cả
+        // hai trả về giá trị hợp lệ (bằng nhau vì lúc đo cả hai ghế đang tắt) ⇒ đường ĐỌC là [ĐO], còn *"mức nào
+        // ứng với mã nào ở ghế phụ"* vẫn [SUY] (mượn thang ghế lái ở `ControlLevels`, owner B10 2026-09-22).
+        // 🚗 còn thiếu: đọc `getSeatHeatingState(2)` ở **hai mức khác nhau** — ghi ở doc UX5b §7.
+        t("seat_vent_state_r", "Mức ghế mát phụ", "Passenger seat ventilation level", "", CLIMATE, VALUE, PROVEN,
+            "BYDAutoSettingDevice.getSeatVentilatingState", short = "Ghế mát phụ", shortEn = "Pass. vent"),
+        t("seat_heat_state_r", "Mức ghế sưởi phụ", "Passenger seat heating level", "", CLIMATE, VALUE, PROVEN,
+            "BYDAutoSettingDevice.getSeatHeatingState", short = "Ghế sưởi phụ", shortEn = "Pass. heat"),
         // `getAcDefrostState(area)` — area 1 = kính trước · 2 = kính sau ([ĐO] cả hai trả 0 lúc đo, `hal-reads.txt:2-3`);
         // tham số khai MỘT chỗ ở `HalBindingTable.readArg`.
         t("defrost_front_state", "Trạng thái sấy trước", "Front defrost state", "", CLIMATE, BADGE, PROVEN,

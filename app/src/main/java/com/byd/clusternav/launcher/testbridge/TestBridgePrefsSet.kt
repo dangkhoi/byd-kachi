@@ -3,6 +3,10 @@ package com.byd.clusternav.launcher.testbridge
 import android.content.Context
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.cameraSignalEnabled
+import com.byd.clusternav.cameraOnCluster
+import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraPos
 import com.byd.clusternav.setCameraOnCluster
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraPos
@@ -10,6 +14,32 @@ import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRender
 import com.byd.clusternav.cameraRender
+import com.byd.clusternav.setCameraSpan
+import com.byd.clusternav.cameraSpan
+import com.byd.clusternav.setCameraShape
+import com.byd.clusternav.cameraShape
+import com.byd.clusternav.setCameraStrip
+import com.byd.clusternav.cameraStrip
+import com.byd.clusternav.setCameraCirclePct
+import com.byd.clusternav.cameraCirclePct
+import com.byd.clusternav.setCameraHalMode
+import com.byd.clusternav.cameraHalMode
+import com.byd.clusternav.cameraDewarpAmount
+import com.byd.clusternav.cameraDewarpCx
+import com.byd.clusternav.cameraDewarpCy
+import com.byd.clusternav.cameraDewarpFocal
+import com.byd.clusternav.cameraDewarpK
+import com.byd.clusternav.cameraDewarpScale
+import com.byd.clusternav.cameraGlTexMatrix
+import com.byd.clusternav.setCameraDewarpAmount
+import com.byd.clusternav.setCameraDewarpCx
+import com.byd.clusternav.setCameraDewarpCy
+import com.byd.clusternav.setCameraDewarpFocal
+import com.byd.clusternav.setCameraDewarpK
+import com.byd.clusternav.setCameraDewarpScale
+import com.byd.clusternav.setCameraGlTexMatrix
+import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
+import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
@@ -165,6 +195,40 @@ internal object TestBridgePrefsSet {
             // Đường KẾT XUẤT (CLOSE-14): CHỈ nhận mã trong `CameraSignalPolicy.RENDERS` — cùng lẽ hai khoá xoay.
             "camera_render" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRender(it) }
                 ?.let { Prefs.setCameraRender(app, v = it); it }
+            // R8-A (2.74): VÙNG GƯƠNG + HÌNH KHUNG + KÊNH HAL. Dải hợp lệ lấy từ `:core` ([CameraSignalPolicy] /
+            // [CameraPanoCrop]), KHÔNG viết số ở đây — bản sao thứ hai của một con số sẽ lệch đúng vào lần ai đó nới
+            // dải. Ngoài dải ⇒ `bad_prefs_value:`, không kẹp im lặng: một lượt dò gõ `camera_strip_left 7` rồi được
+            // kẹp về 1 sẽ báo "đã ghi" trong khi owner đang nhìn đúng dải cũ và kết luận sai về hướng của dải.
+            "camera_span" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isSpan(it) }
+                ?.let { Prefs.setCameraSpan(app, v = it); it }
+            "camera_shape" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isShape(it) }
+                ?.let { Prefs.setCameraShape(app, v = it); it }
+            "camera_strip_left" -> int(raw)?.takeIf { CameraPanoCrop.isStrip(it) }
+                ?.let { Prefs.setCameraStrip(app, left = true, v = it); it.toString() }
+            "camera_strip_right" -> int(raw)?.takeIf { CameraPanoCrop.isStrip(it) }
+                ?.let { Prefs.setCameraStrip(app, left = false, v = it); it.toString() }
+            "camera_circle_scale" -> int(raw)?.takeIf { CameraSignalPolicy.isCirclePct(it) }
+                ?.let { Prefs.setCameraCirclePct(app, v = it); it.toString() }
+            "camera_hal_mode" -> int(raw)?.takeIf { CameraSignalPolicy.isHalMode(it) }
+                ?.let { Prefs.setCameraHalMode(app, v = it); it.toString() }
+            // ── R8-B (2.74): SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` của đường kết xuất `GL` ────────────────
+            // Miền hợp lệ lấy từ `:core` ([CameraDewarpPrefs]) — KHÔNG viết số ở đây, cùng lẽ bộ `camera_span/strip`
+            // ngay trên. Ngoài miền ⇒ `bad_prefs_value:`, **không kẹp im lặng**: owner gõ `camera_dewarp_k 800` rồi
+            // được kẹp về 400 sẽ nhìn khung mà kết luận sai về `K` — và đó là núm *"đúng/sai"*, không phải thẩm mỹ.
+            "camera_dewarp_amount" -> int(raw)?.takeIf { CameraDewarpPrefs.isAmountPct(it) }
+                ?.let { Prefs.setCameraDewarpAmount(app, v = it); it.toString() }
+            "camera_dewarp_focal" -> int(raw)?.takeIf { CameraDewarpPrefs.isPct(it) }
+                ?.let { Prefs.setCameraDewarpFocal(app, v = it); it.toString() }
+            "camera_dewarp_k" -> int(raw)?.takeIf { CameraDewarpPrefs.isPct(it) }
+                ?.let { Prefs.setCameraDewarpK(app, v = it); it.toString() }
+            "camera_dewarp_scale" -> int(raw)?.takeIf { CameraDewarpPrefs.isPct(it) }
+                ?.let { Prefs.setCameraDewarpScale(app, v = it); it.toString() }
+            "camera_dewarp_cx" -> int(raw)?.takeIf { CameraDewarpPrefs.isCenterPct(it) }
+                ?.let { Prefs.setCameraDewarpCx(app, v = it); it.toString() }
+            "camera_dewarp_cy" -> int(raw)?.takeIf { CameraDewarpPrefs.isCenterPct(it) }
+                ?.let { Prefs.setCameraDewarpCy(app, v = it); it.toString() }
+            // Công tắc, không phải núm — nó là một PHÉP ĐO cho RE §7 Q17 (xem KDoc `Prefs.cameraGlTexMatrix`).
+            "camera_gl_texmatrix" -> bool(raw)?.let { Prefs.setCameraGlTexMatrix(app, it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -203,9 +267,30 @@ internal object TestBridgePrefsSet {
             "voice_hotword_score" -> Prefs.voiceHotwordScore(app).toString()
             "voice_tts_speed" -> Prefs.voiceTtsSpeed(app).toString()
             "voice_keep_log" -> Prefs.voiceKeepLog(app).toString()
+            // [ĐO harness 2026-09-27] sáu khoá này ghi được nhưng `read_back` trả RỖNG — một lời đáp nói "đã ghi"
+            // mà không nói ghi được gì, đúng thứ KDoc [readBack] sinh ra để chặn. Vá luôn trong lượt R8-B.
+            "camera_signal_enabled" -> Prefs.cameraSignalEnabled(app).toString()
+            "camera_on_cluster" -> Prefs.cameraOnCluster(app).toString()
+            "camera_cam_left" -> Prefs.cameraCamId(app, left = true, default = -1).toString()
+            "camera_cam_right" -> Prefs.cameraCamId(app, left = false, default = -1).toString()
+            "camera_pos_left" -> Prefs.cameraPos(app, left = true)
+            "camera_pos_right" -> Prefs.cameraPos(app, left = false)
             "camera_rot_left" -> Prefs.cameraRotation(app, left = true)
             "camera_rot_right" -> Prefs.cameraRotation(app, left = false)
             "camera_render" -> Prefs.cameraRender(app)
+            "camera_span" -> Prefs.cameraSpan(app)
+            "camera_shape" -> Prefs.cameraShape(app)
+            "camera_strip_left" -> Prefs.cameraStrip(app, left = true).toString()
+            "camera_strip_right" -> Prefs.cameraStrip(app, left = false).toString()
+            "camera_circle_scale" -> Prefs.cameraCirclePct(app).toString()
+            "camera_hal_mode" -> Prefs.cameraHalMode(app).toString()
+            "camera_dewarp_amount" -> Prefs.cameraDewarpAmount(app).toString()
+            "camera_dewarp_focal" -> Prefs.cameraDewarpFocal(app).toString()
+            "camera_dewarp_k" -> Prefs.cameraDewarpK(app).toString()
+            "camera_dewarp_scale" -> Prefs.cameraDewarpScale(app).toString()
+            "camera_dewarp_cx" -> Prefs.cameraDewarpCx(app).toString()
+            "camera_dewarp_cy" -> Prefs.cameraDewarpCy(app).toString()
+            "camera_gl_texmatrix" -> Prefs.cameraGlTexMatrix(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

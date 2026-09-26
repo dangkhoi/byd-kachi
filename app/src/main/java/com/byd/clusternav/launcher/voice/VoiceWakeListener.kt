@@ -297,7 +297,7 @@ class VoiceWakeListener(
         // MissingPermission). Thiếu ⇒ null ⇒ vòng ngoài coi như mic hỏng: nghỉ theo bậc rồi thử lại, không ném.
         if (!VoiceCapture.micGranted(ctx)) { Log.w(TAG, "chưa có quyền RECORD_AUDIO — không mở mic wake"); return null }
         val min = AudioRecord.getMinBufferSize(VoiceWakeKws.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        // Sàn đệm **một giây tiếng** (cùng lẽ với `VoiceCapture.MIN_BUFFER_MS`): một lượt suy diễn KWS hoặc một
+        // Sàn đệm **một giây tiếng** (cùng lẽ với `VoiceCaptureDevice.MIN_BUFFER_MS`): một lượt suy diễn KWS hoặc một
         // lượt GC dài hơn thời lượng đệm là mất mẫu, và mất kiểu đó không có lỗi nào báo — chỉ là "sao gọi mãi
         // không nghe". 32 KB.
         val floor = VoiceWakeKws.SAMPLE_RATE * 2

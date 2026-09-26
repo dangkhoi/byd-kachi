@@ -276,16 +276,17 @@ object WidgetViews {
             val temps = readings.map { rd -> rd.tempC?.let { formatTemp(it.toDouble(), d.units) + tUnit } }
             // R8 — DẤU CHƯA KIỂM cho phần nhiệt: kênh nhiệt lốp ở mức [EvidenceTier.NEEDS_CAR] (feature-id số, chưa
             // xác nhận trên xe owner) nên có thể không bao giờ có số. `EvidenceTier.needsBadge` chỉ đúng cho
-            // OVERDRIVE/DASHCAST ⇒ chấm amber KHÔNG áp được ở đây; nói bằng chữ ở dòng chân bảng là đường duy nhất
-            // không phải bịa. Ô vẽ vẫn KHÔNG biết gì về mức bằng chứng — chuỗi do chỗ gọi dựng.
+            // OVERDRIVE/DASHCAST ⇒ chấm amber KHÔNG áp được ở đây; nói bằng chữ là đường duy nhất không phải bịa.
+            // Ô vẽ vẫn KHÔNG biết gì về mức bằng chứng — chuỗi do chỗ gọi dựng.
             //
-            // Chân bảng nay là **KẾT LUẬN** ([TyreBoard.verdict], quyết định ở `:core`) chứ không phải nhãn đơn vị:
-            // đơn vị đã đứng ngay cạnh từng số (kiểm toán UX mục 1), nên để nó một mình ở chân bảng là vừa lặp vừa
-            // chiếm đúng chỗ đáng giá nhất — dòng cuối là chỗ mắt dừng lại.
+            // ⚠ 2.74 · R2 — chuỗi này đi vào **nhãn trợ năng** của bảng ([TyreBoardView.set] đặt `contentDescription`),
+            // KHÔNG phải một dòng chữ dưới bảng: dòng kết luận đã bị gỡ khỏi widget tổng hợp ở `84f91e6` (owner
+            // 2026-09-23), nên từ đó tới 2.73 chuỗi này được dựng đủ rồi **không ai vẽ** — đường chết mà test vẫn
+            // xanh vì nó chỉ ghim chỗ DỰNG chuỗi (CLAUDE.md §8). Nay nó có bề mặt thật: TalkBack + `uiautomator`.
             val verdict = TyreBoard.verdict(readings)
-            val footer = if (TyreBoard.tempTier.wired) verdict
+            val summary = if (TyreBoard.tempTier.wired) verdict
             else ctx.getString(R.string.kachi_tyre_temp_unverified, verdict)
-            boardView.set(readings, values, unit, temps, footer)
+            boardView.set(readings, values, unit, temps, summary)
         }
         fillTyreBoard(data)
         return WidgetRefreshers.live(boardView, ::fillTyreBoard)
@@ -399,7 +400,10 @@ object WidgetViews {
     private fun speed(ctx: Context, data: WidgetData): View {
         val number = tv(ctx, "—", 44f, KachiTheme.INK, true)
         val root = col(ctx).apply {
-            val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+            // UX7 — [AxisRow]: con SỐ ở trục ô (dòng chú thích dưới cũng ở trục đó). Bản cũ canh giữa cả cụm
+            // `số + " km/h"` ⇒ số lệch trái **29 px** (đơn vị 58,3 px ở 15sp/density 1.5), thấy rõ vì chú thích
+            // thì đúng trục — đây là mức lệch LỚN NHẤT trong các ô đọc.
+            val row = AxisRow(ctx)
             row.addView(number)
             row.addView(tv(ctx, " km/h", 15f, KachiTheme.MUT))
             addView(row)

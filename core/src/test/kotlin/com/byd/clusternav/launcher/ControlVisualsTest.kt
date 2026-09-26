@@ -204,6 +204,65 @@ class ControlVisualsTest {
         }
     }
 
+    // ── UX4 · nấc AUTO của một nút có [ControlDef.autoId] ────────────────────────────────────────
+
+    /**
+     * Ô hiện **"AUTO"** (không phải "AUTO 1") — con số sống trên chip thanh trên, lý do là phép đo bề rộng ghi ở
+     * KDoc [ControlVisuals.stepText]. Và ô đang AUTO thì **sáng màu nhấn**: quạt vẫn thổi.
+     */
+    @Test
+    fun `nut co mat tu dong - dang AUTO thi hien chu AUTO va van sang mau nhan`() {
+        val fan = def("fan")
+        assertEquals("AUTO", ControlVisuals.stepText(fan, 3, autoOn = true))
+        assertEquals("AUTO", ControlVisuals.of(fan, 3, autoOn = true).valueText)
+        assertTrue(ControlVisuals.of(fan, 3, autoOn = true).active, "đang AUTO = quạt vẫn thổi ⇒ ô có tác dụng")
+        // Kể cả khi mức đọc được là 0 (mức KHÔNG tồn tại thật trên xe) — [ĐO xe 2026-09-20].
+        assertTrue(ControlVisuals.of(fan, 0, autoOn = true).active)
+    }
+
+    @Test
+    fun `chua biet dang auto hay tay thi ve dung nhu truoc UX4`() {
+        val fan = def("fan")
+        listOf<Boolean?>(null, false).forEach { a ->
+            assertEquals(ControlVisuals.stepText(fan, 3), ControlVisuals.stepText(fan, 3, a))
+            assertEquals(ControlVisuals.of(fan, 3), ControlVisuals.of(fan, 3, a))
+        }
+    }
+
+    /** Nút KHÔNG khai `autoId` phải làm ngơ cờ auto — generic bằng dữ liệu, không nhánh rẽ theo mã (§7). */
+    @Test
+    fun `nut khong khai autoId thi co auto khong doi mot ky tu nao`() {
+        ControlRegistry.ALL.filter { it.autoId.isBlank() }.forEach { d ->
+            listOf<Boolean?>(null, false, true).forEach { a ->
+                assertEquals(ControlVisuals.of(d, 1), ControlVisuals.of(d, 1, a), "nút ${d.id}")
+            }
+        }
+    }
+
+    /**
+     * ⚠ SÀN CHUNG **không được** lớn lên vì chữ AUTO.
+     *
+     * Đây là bài khoá đúng lỗi mà lượt soát UX4 bắt được: nâng [ControlVisuals.STEP_VALUE_CHARS] lên 4 là đặt sàn
+     * `"0000"` cho **mọi** ô stepper ⇒ [ĐO số học] vượt ~26dp dùng được của ô giá trị ⇒ `minWidth` thắng tỉ lệ ⇒
+     * hai nút −/+ bị bóp và trôi ở TẤT CẢ các ô, tức lật đúng thứ R2.4 vừa chữa — cho một chữ mà MỘT nút cần.
+     */
+    @Test
+    fun `chu AUTO KHONG duoc lam lon san chung - no la so ky tu cua RIENG nut do`() {
+        val fan = def("fan")
+        assertEquals(4, ControlVisuals.stepValueChars(fan), "\"AUTO\" = 4 ký tự, và nó là của riêng nút gió")
+        assertEquals(3, ControlVisuals.STEP_VALUE_CHARS, "sàn CHUNG vẫn đếm SỐ (\"33°\"), không đếm chữ AUTO")
+        assertTrue(
+            ControlVisuals.stepValueChars(fan) > ControlVisuals.STEP_VALUE_CHARS,
+            "đây là điều kiện `:app` dùng để CO chữ thay vì cắt cứng (ControlTileFactory.tileStep)",
+        )
+        ControlRegistry.ALL.filter { it.kind == ControlKind.STEP && it.autoId.isBlank() }.forEach { d ->
+            assertTrue(
+                ControlVisuals.stepValueChars(d) <= ControlVisuals.STEP_VALUE_CHARS,
+                "nút ${d.id} không có AUTO thì không bao giờ cần co chữ — nó phải vừa sàn chung",
+            )
+        }
+    }
+
     // ── BUTTON ───────────────────────────────────────────────────────────────────────────────────
 
     @Test

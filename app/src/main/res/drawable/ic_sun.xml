@@ -1,5 +1,5 @@
 <!--
-  NẮNG / SƯỞI (`seat_heat_state`; widget Đồng hồ + thời tiết) — đĩa tô chuyển sắc + tám tia nét: nguồn sáng ấm, họ màu Đèn vì đó là ánh sáng.
+  NẮNG (widget Đồng hồ + thời tiết, `w_clock`) — đĩa tô chuyển sắc + tám tia nét: nguồn sáng ấm, họ màu Đèn vì đó là ánh sáng. ⚠ UX5 (2026-09-26): KHÔNG còn là hình của datum `seat_heat_state` — ô sưởi ghế nay mang glyph ghép `seat_heat_left` (cùng hình với chính nút của nó).
   ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/sun.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
   chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
   bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.

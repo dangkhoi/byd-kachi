@@ -110,7 +110,7 @@ class VoiceWakeStandDownWiringContractTest {
     @Test
     fun `nha recognizer chi an toan duoi khoa dung-nha - decode giu read, release giu write`() {
         // Không có khoá này, stand-down / gỡ gói có thể `release()` dưới chân một `decode` đang chạy ⇒ SIGSEGV.
-        val decode = SourceRoots.body(engine, "private fun decode(pcm: ShortArray, length: Int): String")
+        val decode = SourceRoots.body(engine, "private fun decode(pcm: ShortArray, length: Int, offset: Int = 0): String")
         assertTrue(decode.contains("VoiceEngine.withUse(recognizer)"), "decode phải chạy trong withUse (khoá đọc)")
         // Mốc mang kiểu trả về TƯỜNG MINH `: Unit` từ CLOSE-4 (2026-09-26): `release()` thêm một dòng
         // `KachiMem.trim(...)` trả `Boolean` ở cuối, và thân-biểu-thức sẽ âm thầm đổi chữ ký hàm thành `Boolean`

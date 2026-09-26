@@ -317,6 +317,13 @@ object KachiTheme {
         "ic-leaf" -> R.drawable.ic_leaf
         "ic-seat-left" -> R.drawable.ic_seat_left
         "ic-seat" -> R.drawable.ic_seat
+        // UX5 — bốn glyph GHÉP "ghế + dấu phương thức" (sưởi = ba làn nhiệt · mát = bông tuyết), sinh từ
+        // design/glyph qua gen-icons.py. Xem KDoc [CapabilityIcons] về vì sao ghép ở tầng glyph chứ không
+        // chồng hai drawable lúc chạy. `-left` = ghế LÁI (giữ đúng quy ước cạnh của `ic-seat-left`).
+        "ic-seat-heat-left" -> R.drawable.ic_seat_heat_left
+        "ic-seat-heat-right" -> R.drawable.ic_seat_heat_right
+        "ic-seat-vent-left" -> R.drawable.ic_seat_vent_left
+        "ic-seat-vent-right" -> R.drawable.ic_seat_vent_right
         "ic-temp" -> R.drawable.ic_temp
         "ic-fan" -> R.drawable.ic_fan
         "ic-defrost" -> R.drawable.ic_defrost

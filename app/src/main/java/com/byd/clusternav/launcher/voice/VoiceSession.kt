@@ -187,7 +187,8 @@ class VoiceSession(
         // Warm máy đọc NGAY khi mở voice (nền): câu trả lời đầu bỏ được ~500ms spin-up :tts (owner 2026-09-24).
         background { runCatching { speaker.warm() } }
         val my = generation.incrementAndGet()
-        background { runSession(my) }
+        // Thân lượt nghe chính ở `VoiceSessionListen.kt` (tách theo VAI ở VOICE-OPEN-TURN — trần 500 dòng).
+        background { runListen(my) }
     }
 
     /**
@@ -234,61 +235,6 @@ class VoiceSession(
         // tiêu điểm âm thanh ⇒ nhạc của cả xe kẹt ở mức nhỏ mà không ai biết tại sao.
         runCatching { speaker.shutdown() }
         ui.post { answerConfirm(false); close() }
-    }
-
-    // ── một phiên, chạy trên luồng nền ───────────────────────────────────────────────────────────
-
-    @Suppress("ReturnCount")
-    private fun runSession(my: Int) {
-        val tStart = System.currentTimeMillis()
-        try {
-            if (!capture.hasPermission()) { fail(my, R.string.kachi_voice_no_mic, openSettingsAction = true); return }
-            if (!VoiceModelStore.isReady(ctx)) { fail(my, R.string.kachi_voice_no_model, openSettingsAction = true); return }
-
-            val labels = appsByLabel()
-            val rec = VoiceRecognizer.open(ctx, profiles(), labels.keys.toList(), labels.values.toSet(), places())
-            if (rec == null) { fail(my, R.string.kachi_voice_engine_failed, openSettingsAction = true); return }
-
-            rec.use {
-                // Huỷ trong lúc đang dựng bộ nhận dạng (vài trăm ms đầu) ⇒ **không mở micro nữa**. Thiếu dòng
-                // này thì một cú chạm huỷ vẫn cho ra một tiếng bíp + một lượt mở micro rồi tắt ngay.
-                if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-                post { if (!stale(my)) overlay?.render(R.string.kachi_voice_listening, "") }
-                // `whileCapturing` KHÔNG nhận tham số ⇒ `it` bên trong vẫn là recognizer của `rec.use` (một
-                // lambda không tham số không dựng `it` riêng, nên không che `it` của lambda ngoài).
-                // 1.70 [ĐO xe 2026-09-17] mốc "bấm phím → micro mở" từng mất **1,5 s** ở lượt đầu; in ra để lượt
-                // xe sau biết phần nào (nhãn app · dựng recognizer · tấm chữ) ăn thời gian đó.
-                Log.i(VoiceEngine.TIMING_TAG, "sẵn sàng nghe sau ${System.currentTimeMillis() - tStart} ms kể từ lúc bấm")
-                val heard = whileCapturing {
-                    capture.listen(it, MAX_LISTEN_MS, cancelled::get, keepPcm = true,
-                        onLevel = { rms -> post { if (!stale(my)) overlay?.level(rms) } }) { partial ->
-                        post { if (!stale(my)) overlay?.render(R.string.kachi_voice_listening, partial) }
-                    }
-                }
-                if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-                post { if (!stale(my)) overlay?.setPhase(false) }   // R3: hết nghe → waveform đứng yên (đang hiểu)
-                Log.i(TAG, "lượt 1 (ngữ pháp) nghe được: \"${heard.text}\"")
-                // LƯỢT 2 — chỉ chạy khi lượt 1 có cụm MỞ TỪ VỰNG; xem KDoc [VoiceFreeTail] và [VoiceOpenVocab].
-                val sentence = VoiceFreeTail.decode(ctx, heard)
-                // H2 — ghi tiếng + số đo NGAY, trước mọi đường thoát dưới đây: ca *"nghe ra rỗng"* chính là ca
-                // đáng nghe lại nhất, và nó thoát ở dòng sau. Ghi chạy trên luồng nền (xem [VoiceUtteranceLog]).
-                logHeard(it, heard, sentence)
-                if (cancelled.get() || stale(my)) { closeIfMine(my); return }
-                if (sentence.isBlank()) {
-                    // 1.70 — im lặng ở lượt chính được NÓI RA (chữ + giọng), không chỉ hiện chữ: [ĐO xe
-                    // 2026-09-17] owner không nhìn màn khi lái, và một phiên kết thúc câm là *"không làm được gì"*.
-                    Log.i(TAG, "quyết định: \"\" ⇒ không nghe thấy tiếng nào (không giải mã)")
-                    fail(my, R.string.kachi_voice_nothing_heard, openSettingsAction = false)
-                    post { if (!stale(my)) speakLines(listOf(ctx.getString(R.string.kachi_voice_nothing_heard))) }
-                    return
-                }
-                post { if (!stale(my)) execute(sentence) }
-            }
-        } catch (t: Throwable) {
-            // Một launcher KHÔNG được chết vì tính năng phụ: mã native của Kaldi có thể ném `Error`.
-            Log.e(TAG, "phiên nghe hỏng", t)
-            fail(my, R.string.kachi_voice_engine_failed, openSettingsAction = false)
-        }
     }
 
     /** Việc nền này có còn thuộc phiên đang chạy không — xem KDoc [generation]. */

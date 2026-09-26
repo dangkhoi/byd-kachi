@@ -160,6 +160,9 @@ class SettingsCatalogControlContractTest {
             // "Hey Kachi" — công tắc bridge, dựng ở SettingsVoiceSection (đầu nhóm Voice).
             "voice_wake" to ("SettingsVoiceSection" to "deps.bridge.setWakeEnabled("),
             "voice_music_default_app" to ("SettingsVoiceSection" to "deps.bridge.setMusicDefaultApp("),
+            // 2.74 · R3 — danh sách câu nói được. Dấu vết là **lời gọi bộ sinh** (hành vi), không phải nhãn: đổi
+            // chữ tiêu đề thì bài này vẫn xanh, còn gỡ danh sách đi thì đỏ ngay.
+            "voice_commands" to ("SettingsVoiceSection" to "VoiceCommandCatalog.groups("),
             // V1 pha NÓI · R4/T8 — hai công tắc đọc phản hồi + nút tải gói giọng offline (tệp `voice/`, xem KDoc).
             "voice_speak_replies" to ("VoiceModelSettings" to "deps.bridge.setVoiceSpeakReplies("),
             "voice_prefer_offline" to ("VoiceModelSettings" to "deps.bridge.setVoicePreferOffline("),

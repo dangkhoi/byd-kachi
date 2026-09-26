@@ -85,8 +85,49 @@ object KachiBars {
      *
      * Thuộc nhóm *"nút … profile 70 %"* của R5.2: chip hồ sơ là một nút, và đĩa là phần vẽ to nhất trong nó. Giữ
      * 32dp trong một chip cao 34dp sẽ làm đĩa ăn gần trọn bề cao ⇒ chip trông như một cái nút tròn dính hai mép.
+     *
+     * ⚠ Con số này đi kèm một **ràng buộc hình học** không nằm ở đây: đĩa phải ĐỒNG TÂM với nút [HEADER_BTN], nên
+     * `HEADER_AVATAR + 2 × KachiSpace.XS ≤ HEADER_BTN` (UX1 · R1). Luật được thi hành ở `KachiTopStrip.profileChip`
+     * và canh bằng số học ở `BarOrderWiringContractTest.dia ho so va le doi xung nam trong dich cham` — đổi con số
+     * này thì phải đọc cả hai chỗ đó.
      */
     const val HEADER_AVATAR = 22
+
+    /**
+     * **Khe ICON ↔ CHỮ bên trong MỘT chip dữ liệu** của thanh trên (UX6).
+     *
+     * ## [ĐO máy ảo 2026-09-27] khe này đang là **0**, và đó là một lỗi chứ không phải một lựa chọn
+     * `uiautomator dump` ở 1920×1080 · density 240 (1.5 px/dp): chip *"Bụi mịn trong xe"* rộng **52px**, chip
+     * chỉ-icon (sấy trước) rộng **36px**. Phép cộng của `TextView`: `lề trái + hộp icon + khe + chữ + lề phải`
+     * ⇒ chip chỉ-icon `6 + 24 + 0 + 0 + 6 = 36` ✓, còn chip có chữ `6 + 24 + khe + chữ + 6 = 52`. Chip không-icon
+     * *"—°C"* rộng 48px ⇒ chữ `"—°C"` = 36px ⇒ chữ `"—"` = 16px ⇒ **khe = 0**. Owner: *"khi có label, label nó
+     * sát icon quá"*.
+     *
+     * Nguyên nhân nằm ở **thứ tự**, không ở con số: `KachiTopStrip.applyChipFace` đọc `v.text` để quyết có đệm
+     * hay không, mà lượt làm mới đặt CHỮ **sau** đó ⇒ lượt đầu chữ còn rỗng ⇒ đệm 0, rồi khoá `tag` giữ nguyên
+     * mãi. Vì thế khe phải được truyền VÀO theo chữ sắp hiện (xem KDoc `applyChipFace`), không đọc lại từ view.
+     *
+     * Bằng [KachiSpace.S] là **trùng hợp có kiểm** (lệ [HEADER_BTN_PAD]): đây là vai *"khe trong một nhóm"*,
+     * đổi vai thì sửa ở đây chứ đừng sửa bậc thang.
+     */
+    const val CHIP_ICON_GAP = KachiSpace.S
+
+    /**
+     * **Khe giữa HAI chip** của thanh trên (UX6) — và là chủ DUY NHẤT của khe đó.
+     *
+     * ## Vì sao một hằng, trong khi trước đây là ba
+     * Chip dữ liệu **không có nền riêng** (không pill, không viền — xem `KachiTopStrip.chip`), nên lề TRONG của nó
+     * cộng thẳng vào khe mắt người nhìn thấy. [ĐO máy ảo 2026-09-27] khe thật = `lề ngoài 8dp + lề trong phải 4dp
+     * + lề trong trái 4dp` = **16dp** (18px đo được giữa hai hộp chip là phần lề ngoài; 24px là khe VẼ giữa hai
+     * mép mực). Ba hằng cho một khoảng cách ⇒ không ai đọc ra con số thật, và owner thấy *"vị trí các icon với
+     * nhau có vẻ hơi rộng"*. Nay lề trong = 0 và khe đi qua đúng hằng này.
+     *
+     * ## Ràng buộc KHÔNG được phá: khe NGOÀI phải rộng hơn khe TRONG
+     * Chip chỉ đọc ra là *một vật* khi `CHIP_GAP ≥ 1.5 × CHIP_ICON_GAP` (12 ≥ 12 ✓). Hạ hằng này xuống
+     * [KachiSpace.S] hoặc nâng [CHIP_ICON_GAP] lên [KachiSpace.M] là icon của chip sau dính vào chữ của chip
+     * trước — `TopStripWiringContractTest.khe ngoai chip phai rong hon khe icon-chu` canh đúng phép chia này.
+     */
+    const val CHIP_GAP = KachiSpace.M
 
     // ══ THANH NÚT XE (taskbar) ══════════════════════════════════════════════════════════════════════════
     //

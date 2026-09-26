@@ -213,12 +213,15 @@ class CarDataDemandRendererContractTest {
     }
 
     /**
-     * Ba chip TỔNG HỢP cũng là bảng chép tay ([CarDataDemand.CHIPS]) — cùng hiểm hoạ, nguồn thì ở `:core`
+     * Chip TỔNG HỢP cũng là bảng chép tay ([CarDataDemand.CHIPS]) — bốn cái từ UX5 (2026-09-26, thêm chip ghế) — cùng hiểm hoạ, nguồn thì ở `:core`
      * (`TopStripChips.chip`), nên soi bằng cùng một cách.
      */
     @Test
     fun `CHIPS chua du moi datum ma chip tong hop doc`() {
-        val src = source("core/src/main/kotlin/com/byd/clusternav/launcher/TopStrip.kt")
+        // ⚠ UX5b (2026-09-27): bộ dựng chip đã TÁCH khỏi `TopStrip.kt` sang `TopStripChips.kt` (tách theo VAI —
+        // tệp kia giữ cấu hình bền + phép di trú). Đường dẫn là một phần của bài canh nên nó phải đổi ở đây, và
+        // `source()` `fail` nếu tệp không tồn tại ⇒ không có đường xanh giả.
+        val src = source("core/src/main/kotlin/com/byd/clusternav/launcher/TopStripChips.kt")
         val access = Regex("""\bstatus\.(\w+)\.(\w+)""")
         val lines = src.lines().map { code(it) }
         CarDataDemand.CHIPS.forEach { (chipConst, declared) ->
@@ -227,6 +230,8 @@ class CarDataDemandRendererContractTest {
                 TopStripConfig.PM25 -> "PM25"
                 TopStripConfig.TEMP -> "TEMP"
                 TopStripConfig.ENERGY -> "ENERGY"
+                TopStripConfig.SEAT -> "SEAT"       // UX5 · chip GỘP ghế LÁI (sưởi + mát)
+                TopStripConfig.SEAT_R -> "SEAT_R"   // UX5b · chip GỘP ghế PHỤ
                 else -> error("chip lạ $chipConst")
             }
             val start = lines.indexOfFirst { it.contains("TopStripConfig.$name ->") }
@@ -238,7 +243,22 @@ class CarDataDemandRendererContractTest {
                 depth += lines[i].count { it == '{' } - lines[i].count { it == '}' }
                 if (i > start && depth <= 0) break
             }
-            val rendered = access.findAll(block).mapNotNull { fieldToId["${it.groupValues[1]}.${it.groupValues[2]}"] }.toSet()
+            // Hai cách một chip đọc được một datum: (a) chạm thẳng field của [CarStatus]; (b) đi qua
+            // [TelemetryReadout] (đường ĐÚNG khi cần cả phép quy đổi — thang mức, đảo AUTO). Bỏ sót (b) thì mọi
+            // chip dùng lại bộ định dạng dùng chung sẽ bị bài này coi là "không đọc gì" và assert cuối đỏ oan.
+            val viaReadout = Regex("""TelemetryReadout\.\w+\(\s*"([a-z0-9_]+)"""")
+                .findAll(block).map { it.groupValues[1] }.toSet()
+            // ⚠ UX5b — CÁCH THỨ BA một chip đọc datum: nhánh chỉ **gọi một bộ dựng chung** (`seatChip(`) và cặp mã
+            // được tra từ bảng `TopStripConfig.SEAT_PAIRS` (một nguồn duy nhất cho hai chip ghế). Không đọc được cách này thì
+            // `rendered` rỗng và `assert` cuối đỏ oan — nên bảng được đọc từ CHÍNH đối tượng đó, và bài
+            // `CarDataDemandTest.cap datum cua chip ghe khop SEAT_PAIRS` (ở `:core`) là chỗ đo bảng ấy khớp `CHIPS`.
+            val viaPairs = if ("seatChip(" in block) {
+                TopStripConfig.SEAT_PAIRS[chipConst]?.let { setOf(it.first, it.second) }.orEmpty()
+            } else {
+                emptySet()
+            }
+            val rendered = access.findAll(block).mapNotNull { fieldToId["${it.groupValues[1]}.${it.groupValues[2]}"] }
+                .toSet() + viaReadout + viaPairs
             assertTrue(
                 declared.containsAll(rendered),
                 "chip $name đọc ${rendered - declared} mà bảng CHIPS không khai ⇒ chip hiện \"—\" một nửa",

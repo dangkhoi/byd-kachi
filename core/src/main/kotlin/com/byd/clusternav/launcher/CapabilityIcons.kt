@@ -75,10 +75,30 @@ object CapabilityIcons {
         // U6: LÀM LẠNH (bông tuyết) ≠ QUẠT GIÓ — quạt vẫn chạy khi lạnh đã tắt. Nút `ac_auto` cùng hình với `ac_on`.
         "ac_on" to "ic-ac", "ac_wind" to "ic-fan", "ac_cycle" to "ic-recirc",
         "anion_state" to "ic-leaf",
-        // H1 · T2 — sáu ô ĐỌC mới. `ic-seat` đã mang ĐỦ ba ô bấm trong nhóm Khí hậu (`seatc` `seath` `steer_heat`)
-        // ⇒ chạm trần [MAX_PER_DOMAIN]; hai ô mức ghế vì thế lấy hình GHẾ THEO VỊ TRÍ (ghế lái — đúng `seatID` 1 mà
-        // getter đang đọc) và hình SƯỞI, chứ không nhồi thêm cái thứ tư vào hình cũ.
-        "seat_vent_state" to "ic-car-top-seat-fl", "seat_heat_state" to "ic-sun",
+        // ═══ UX5 (2026-09-26) — GLYPH GHÉP *"ghế + dấu phương thức"* cho cả ô ĐỌC lẫn ô BẤM ══════════════════════
+        //
+        // [ĐO đọc mã] Trước UX5: bốn nút ghế chia nhau **hai** hình (`ic-seat-left` cho ghế lái, `ic-seat` cho ghế
+        // phụ) ⇒ **sưởi và mát trông y hệt nhau**; hai datum mức thì lại mang hình thứ ba/thứ tư (`ic-car-top-seat-fl`
+        // = ghế nhìn từ trên · `ic-sun` = mặt trời) ⇒ cùng một khái niệm mà chip và nút vẽ hai thứ khác nhau. Trên
+        // chip thanh trên — bề mặt chỉ có **một glyph + một chuỗi** — không còn gì để phân biệt sưởi với mát.
+        //
+        // Nay bốn tên mới, mỗi tên là một glyph GHÉP sẵn: thân ghế (chép từ `seat.svg`, thu nhỏ) + **một** dấu ở góc
+        // trống — làn nhiệt của `defrost.svg` cho SƯỞI, bông tuyết của `ac.svg` cho MÁT. Hai mô-típ ấy đã là "chữ"
+        // mà launcher dùng cho nóng/lạnh nên người dùng không phải học hình mới.
+        //
+        // ## Vì sao ghép ở tầng GLYPH, KHÔNG ghép hai drawable lúc chạy
+        // `ChipView` mang đúng một tên icon và `setCompoundDrawablesRelative` chỉ có khe start/top/end/bottom ⇒ dấu
+        // phương thức sẽ rơi **sau** con số (sai thứ tự owner xin); muốn đúng thứ tự thì phải dựng `LayerDrawable`
+        // mỗi lượt vẽ — tức trả lại đúng khoản cấp-phát-trong-tick mà bản vá P2-9 vừa dọn. Glyph ghép thì được đo
+        // (`gen-icons.py` canh trần path + ô quang học), được sinh lại, được so byte.
+        //
+        // Phép đếm hình của nhóm Khí hậu **không đổi**: 4 tên trước → 4 tên sau (`ic-seat-vent-left` ×2 vì datum mức
+        // dùng chung hình với chính nút của nó — đó là điều [CapabilityDots.iconOverride] sinh ra để bảo đảm).
+        "seat_vent_state" to "ic-seat-vent-left", "seat_heat_state" to "ic-seat-heat-left",
+        // UX5b (owner 2026-09-27) — hai datum ghế PHỤ mang **bản `-right`** của cùng cặp glyph ghép, đúng quy ước
+        // cạnh đã có. Vẫn là *"datum mức dùng chung hình với chính nút của nó"* nên phép đếm hình của nhóm Khí hậu
+        // chỉ có thêm hai lần dùng LẠI, không thêm tên mới.
+        "seat_vent_state_r" to "ic-seat-vent-right", "seat_heat_state_r" to "ic-seat-heat-right",
         "defrost_front_state" to "ic-defrost", "defrost_rear_state" to "ic-car-rear-defrost",
         // *"Chế độ"* — cùng hình với ô CHẾ ĐỘ khác của xe (`op_mode`), khác hẳn hình `ic-ac`
         // của ô *"Điều hòa"* bật/tắt: hai câu hỏi khác nhau (đang AUTO hay tay ≠ lạnh đang chạy hay không).

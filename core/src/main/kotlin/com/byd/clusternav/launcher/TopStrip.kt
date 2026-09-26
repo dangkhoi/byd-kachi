@@ -138,20 +138,78 @@ data class TopStripConfig(
          */
         const val CAP = 16
 
-        /** Ba chip TỔNG HỢP dựng sẵn — xem [TopStripChips]. */
+        /** Chip TỔNG HỢP dựng sẵn — xem [TopStripChips]. */
         const val PM25 = "chip_pm25"
         const val TEMP = "chip_outside_temp"
         const val ENERGY = "chip_energy"
+
+        /**
+         * UX5 — chip GỘP **ghế sưởi / ghế mát** (owner 2026-09-26: *"gộp icon ghế + sưởi/mát + mức"*).
+         *
+         * Gộp được vì hai chế độ **loại trừ nhau** trên thực tế (một ghế không vừa sưởi vừa thổi mát), nên hai chip
+         * cạnh nhau thì luôn có một cái chỉ để nói *"đang tắt"* — tốn đúng chỗ mà thanh trên không có. Hai datum LẺ
+         * **ở lại nguyên** trong bộ chọn (câu hỏi bằng giọng đọc chúng, và ai muốn hai chip vẫn đặt được).
+         */
+        const val SEAT = "chip_seat"
+
+        /**
+         * UX5b — chip GỘP ghế **PHỤ** (owner 2026-09-27: *"ghế sao không có ghế lái hay ghế phụ? 2 ghế nó khác nhau mà"*).
+         *
+         * Cùng bộ dựng với [SEAT], khác đúng **ba dữ liệu** (mã sưởi · mã mát · nhãn) — xem [TopStripChips.seatChip].
+         * Hai chip vì hai ghế là hai câu hỏi khác nhau (*"ghế TÔI có đang sưởi không"* ≠ *"ghế bên kia"*); gộp cả bốn
+         * datum vào một chip thì con số hiện ra không nói được nó của ai.
+         */
+        const val SEAT_R = "chip_seat_r"
+
+        /**
+         * MỖI chip ghế GỘP đọc HAI datum, và cặp ấy khai **đúng một chỗ** — đây.
+         *
+         * Vì sao là một bảng chứ không hai nhánh `when` chép tay: bộ dựng chip, bảng nhu cầu đọc
+         * ([CarDataDemand.CHIPS]) và bài canh đọc-ngược đều cần cùng cặp mã; ba bản sao của một cặp là đúng bẫy
+         * hai-bản-sao mà dự án đang dọn. Thứ tự trong `Pair` là **(sưởi, mát)** — không phải bảng chữ cái — vì quy
+         * tắc *"ưu tiên SƯỞI"* đọc theo thứ tự ấy.
+         */
+        val SEAT_PAIRS: Map<String, Pair<String, String>> = mapOf(
+            SEAT to ("seat_heat_state" to "seat_vent_state"),
+            SEAT_R to ("seat_heat_state_r" to "seat_vent_state_r"),
+        )
 
         /**
          * ⚠ **THỨ TỰ KHAI QUAN TRỌNG**: [BUILT_IN] phải nằm TRƯỚC [DEFAULT], vì `init` của lớp gọi [isChippable] mà
          * hàm đó đọc [BUILT_IN] — [ĐO] khai sau thì việc dựng [DEFAULT] lúc nạp lớp đọc `BUILT_IN` còn null và cả
          * gói test nổ `ExceptionInInitializerError` (27 bài đỏ). Ba hằng `PM25`/`TEMP`/`ENERGY` là `const` nên an toàn.
          */
-        val BUILT_IN: Set<String> = setOf(PM25, TEMP, ENERGY)
+        val BUILT_IN: Set<String> = setOf(PM25, TEMP, ENERGY, SEAT, SEAT_R)
 
-        /** Mặc định = **đúng 3 chip đang có**, để ai không sửa gì thì không thấy gì khác (có test khoá). */
-        val DEFAULT_IDS: List<String> = BUILT_IN.toList()
+        /**
+         * MẶC ĐỊNH — *"ai không sửa gì thì thấy cái gì"*, **khác** câu hỏi của [BUILT_IN] (*"đặt được cái gì"*).
+         *
+         * ⚠ UX5 (2026-09-26) — **TÁCH khỏi [BUILT_IN]**. Trước đó đây là `BUILT_IN.toList()`, nên thêm một chip dựng
+         * sẵn là **lặng lẽ** mọc thêm một chip trên thanh trên của mọi người đang dùng máy. Hai danh sách vì thế phải
+         * là hai danh sách.
+         *
+         * ⚠⚠ UX5b (owner 2026-09-27) — **HAI chip ghế GỘP nay VÀO mặc định**, và đó là *quyết định của owner*, không
+         * phải một mặc định lặng lẽ: owner ngồi trước máy ảo nhìn thanh trên và nói *"sao còn ghế mát và ghế sưởi
+         * riêng, với ghế sao không có ghế lái hay ghế phụ? 2 ghế nó khác nhau mà"*. Cơ chế §UX5 vẫn còn nguyên (hai
+         * danh sách rời) — chỉ nội dung danh sách này đổi, một lần, có người xin.
+         *
+         * Thứ tự: giữ nguyên **PM25 · TEMP · ENERGY** rồi **nối** hai chip ghế vào cuối (ghế lái trước ghế phụ). Nối
+         * vào cuối vì đó là đường mới (CLAUDE.md §6 — đường mới xuống cuối, không đảo thứ tự đang chạy tốt), và vì
+         * `KachiTopStrip.fitChips` cắt từ **phải** sang nên chip vào sau là chip nhường chỗ trước.
+         *
+         * [ĐO số học, 1920×720 @1.0×] một chip = đệm `XS`×2 + icon `ICON_XS` + khe `S` + chữ, cộng `marginStart = S`
+         * ⇒ **32dp + chữ + 8dp**. Ở 13.5sp (`KachiType.BODY`) một ký tự trung bình ≈ 7dp. Năm chip mặc định ở ca xấu
+         * nhất (mọi chip đang có giá trị): `"PM2.5 · Tốt"` 11 kt ≈ 117dp · `"24 °C ngoài"` 11 kt ≈ 117dp (không
+         * icon ⇒ −24) = 93dp · `"82 % · 418 km"` 13 kt ≈ 131dp · `"Ghế lái · 2"` 11 kt ≈ 117dp · `"Ghế phụ · 2"`
+         * ≈ 117dp ⇒ tổng ≈ **575dp**, trong khi hàng chip có ≈ 1240dp ([SUY] của R11, chưa [ĐO] ảnh) ⇒ thừa hơn
+         * **hai lần**. Vậy năm chip vừa, và không cần dựa vào phép cắt `…`. (Phép đo bằng MẮT vẫn phải làm — ghi
+         * ở doc UX5b §7 mục kiểm.)
+         */
+        val DEFAULT_IDS: List<String> = listOf(PM25, TEMP, ENERGY, SEAT, SEAT_R)
+
+        /** Mặc định **CŨ** (trước UX5b) — chỉ dùng cho phép di trú [migrate]; xem KDoc ở đó. */
+        private val LEGACY_DEFAULT_IDS: List<String> = listOf(PM25, TEMP, ENERGY)
+
         val DEFAULT = TopStripConfig(DEFAULT_IDS)
 
         /**
@@ -191,6 +249,15 @@ data class TopStripConfig(
                 labelEn = "Outside temperature"))
             add(CapabilityPick(ENERGY, "Pin và tầm chạy", "ic-bolt", EvidenceTier.PROVEN, CapabilityKind.READ, Domain.ENERGY,
                 labelEn = "Battery and range"))
+            // UX5 · chip gộp ghế. Hình ở đây là ghế TRỐNG (chưa biết đang chế độ nào lúc bày bộ chọn); trên thanh
+            // thì chip tự đổi sang glyph ghép sưởi/mát theo chế độ đang chạy — xem [TopStripChips.chip] ca [SEAT].
+            // ⚠ UX5b — nhãn nói **GHẾ NÀO**, không nói *"sưởi / mát"*: hai chế độ đã nằm ở HÌNH trên thanh, còn thứ
+            // owner không đọc được là ghế nào (*"ghế sao không có ghế lái hay ghế phụ"*). Giữ thêm chữ *"(sưởi/mát)"*
+            // ở màn chọn — ở đó ô chỉ có nhãn, không có dòng phụ, nên một mình chữ *"Ghế lái"* không nói nó bày cái gì.
+            add(CapabilityPick(SEAT, "Ghế lái (sưởi/mát)", "ic-seat-left", EvidenceTier.PROVEN, CapabilityKind.READ,
+                Domain.CLIMATE, labelEn = "Driver seat (heat/vent)"))
+            add(CapabilityPick(SEAT_R, "Ghế phụ (sưởi/mát)", "ic-seat", EvidenceTier.PROVEN, CapabilityKind.READ,
+                Domain.CLIMATE, labelEn = "Passenger seat (heat/vent)"))
             // Lọc bằng CHÍNH [isChippable] thay vì viết lại điều kiện `kind == READ`: bản cũ lặp lại luật, nên khi
             // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
             // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.
@@ -250,133 +317,71 @@ data class TopStripConfig(
          *
          * [showLabels] là **khoá riêng** (`top_strip_labels`), không nằm trong chuỗi này — xem KDoc
          * [TopStripConfig.showLabels]. Nó đi vào qua tham số để nơi lưu bền chỉ đọc một lần rồi dựng một vật.
+         *
+         * ═══ [applyMigration] · [P1 · SOÁT Opus 2026-09-27] vì sao phép di trú phải có MỘT CÁI MỐC ═══════════════
+         *
+         * [migrate] là hàm thuần, và luật 2 của nó nhận ra *"mặc định CŨ"* bằng **đúng chuỗi** `chip_pm25,temp,
+         * chip_energy`. Nhưng đó cũng đúng là chuỗi mà một người **vừa gỡ cả hai chip ghế** khỏi mặc định MỚI để lại
+         * trên đĩa. Hai ý định, một chuỗi ⇒ **không một hàm thuần nào phân biệt được**, và vì `decode` chạy ở MỖI
+         * lượt đọc thì luật 2 nổ lại mỗi lần: gỡ bao nhiêu lần chip cũng mọc lại đúng bấy nhiêu lần. KDoc [migrate]
+         * đang hứa ngược lại (*"gỡ đi thì lần sau không mọc lại"*) — lời hứa ấy chỉ đúng khi gỡ **một** trong hai
+         * (còn lại một mã ghế ⇒ luật 3), và `TopStripMigrationTest` không phủ ca gỡ cả hai.
+         *
+         * ⚠ Ghi **danh sách đã di trú** trở lại đĩa KHÔNG chữa được: sau lượt ghi, đĩa có 5 mã, người ta gỡ hai chip
+         * ⇒ đĩa lại đúng 3 mã của mặc định cũ ⇒ vòng lặp y như trước. Thứ phân biệt được không nằm trong DỮ LIỆU mà
+         * nằm ở **thời gian**: *"lượt di trú đã chạy cho hồ sơ này chưa"*. Nên chỗ lưu bền giữ một mốc riêng
+         * (`WorkspacePrefs.K_STRIP_MIGRATED`) và truyền `applyMigration = false` từ lượt thứ hai trở đi — đúng khuôn
+         * CLAUDE.md §5 (*"ghi marker vào prefs"*) và cùng khuôn `K_MIGRATED_SCENES` của P7.
+         *
+         * `false` ⇒ chỉ LỌC (mã đã xoá · trùng · quá [CAP]), không gộp, không nâng mặc định.
          */
-        fun decode(s: String?, showLabels: Boolean = true): TopStripConfig {
+        fun decode(s: String?, showLabels: Boolean = true, applyMigration: Boolean = true): TopStripConfig {
             val ids = s?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
                 ?: return DEFAULT.copy(showLabels = showLabels)
             if (ids.isEmpty()) return DEFAULT.copy(showLabels = showLabels)
             // Lọc mã không còn đặt được (bản sau xoá một datum / người dùng sửa tay) — im lặng bỏ MỤC, không bỏ cả dòng.
             val kept = ids.filter { isChippable(it) }.distinct().take(CAP)
-            return if (kept.isEmpty()) DEFAULT.copy(showLabels = showLabels) else TopStripConfig(kept, showLabels)
+            if (kept.isEmpty()) return DEFAULT.copy(showLabels = showLabels)
+            return TopStripConfig(if (applyMigration) migrate(kept).take(CAP) else kept, showLabels)
+        }
+
+        /**
+         * ═══ UX5b · DI TRÚ danh sách chip ĐÃ LƯU (mọi hồ sơ) — thuần, gọi từ [decode] ═══════════════════════════
+         *
+         * Vì sao phải có: ai đã đặt **hai** chip ghế lẻ (`seat_heat_state` + `seat_vent_state`) từ trước UX5b thì
+         * trên thanh có hai hình ghế đứng cạnh nhau, mà một trong hai gần như luôn chỉ để nói *"đang tắt"* — đúng
+         * cái owner nhìn thấy trên máy ảo (*"sao còn ghế mát và ghế sưởi riêng"*). Chip gộp đã tồn tại từ UX5 nhưng
+         * **không ai tự đổi** cho người đang dùng máy; đó là việc của phép di trú này.
+         *
+         * Ba luật, theo đúng thứ tự — và luật thứ ba là luật quan trọng nhất:
+         *  1. **Có chip ghế LẺ (ghế lái)** ⇒ thay bằng **MỘT** [SEAT] tại **vị trí của cái đầu tiên** (thứ tự các
+         *     chip khác không đổi). Đã có [SEAT] sẵn ở đâu đó ⇒ không nhân đôi.
+         *  2. **Không có mã ghế nào** *và* danh sách **bằng đúng mặc định CŨ** ⇒ nâng lên [DEFAULT_IDS]. Chỉ dám làm
+         *     khi khớp **tuyệt đối** vì đó là dấu duy nhất phân biệt *"chưa từng sửa gì"* với *"đã sửa và đang muốn
+         *     đúng ba chip này"* — hai trạng thái ấy không phân biệt được trên đĩa (chuỗi lưu y hệt nhau), nên đây là
+         *     một đánh đổi **có chủ ý**: ai cố tình giữ đúng ba chip cũ sẽ thấy hai chip ghế mọc thêm một lần, và gỡ
+         *     đi thì lần sau không mọc lại nữa (danh sách lúc đó đã khác mặc định cũ ⇒ rơi vào luật 3).
+         *  3. **Còn lại ⇒ KHÔNG ĐỤNG.** Danh sách chip là thứ người ta tự đặt; một phép "nâng cấp" tự ý xếp lại nó là
+         *     đúng loại thay-đổi-không-ai-xin mà KDoc [DEFAULT_IDS] vừa nói tới.
+         *
+         * Tính chất: **luỹ đẳng** (chạy lại không đổi gì nữa — sau luật 1 danh sách đã có [SEAT] nên luật 2 không
+         * bao giờ với tới), **giữ thứ tự**, **không trùng lặp**. Có bài kiểm cho cả ba.
+         */
+        fun migrate(ids: List<String>): List<String> {
+            val singles = SEAT_PAIRS.getValue(SEAT).toList().toSet()   // hai chip LẺ của ghế lái
+            if (ids.any { it in singles }) {
+                val out = mutableListOf<String>()
+                ids.forEach { id ->
+                    val replacement = if (id in singles) SEAT else id
+                    if (replacement !in out) out += replacement        // gộp hai lẻ (và một SEAT có sẵn) thành MỘT
+                }
+                return out
+            }
+            val seatIds = SEAT_PAIRS.keys + SEAT_PAIRS.values.flatMap { listOf(it.first, it.second) }
+            if (ids.none { it in seatIds } && ids == LEGACY_DEFAULT_IDS) return DEFAULT_IDS
+            return ids
         }
 
         fun encode(c: TopStripConfig): String = c.ids.joinToString(",")
-    }
-}
-
-/**
- * DỰNG CHIP cho thanh trên — **thuần**, kiểm được off-car (đây là chỗ từng có lỗi "chip bỏ qua lựa chọn đơn vị").
- *
- * Ba mã dựng sẵn là chip **TỔNG HỢP**, không phải một datum: `PM2.5 · Tốt` (đổi mức 1–6 thành chữ), `24°C ngoài`,
- * `82% · 418 km` (**hai** datum trong một chip). Vì thế chúng không biểu diễn được bằng bảng datum thường ⇒ giữ nguyên
- * dạng dựng sẵn, và [ĐO] có test khoá chuỗi ra **đúng như bản viết cứng cũ** — nới chỗ này KHÔNG được đổi thứ owner
- * đang thấy.
- */
-object TopStripChips {
-
-    fun render(cfg: TopStripConfig, status: CarStatus, units: UnitPrefs = UnitPrefs.DEFAULT): List<ChipView> =
-        cfg.ids.mapNotNull { chip(it, status, units, cfg.showLabels) }
-
-    /**
-     * ⚠ [ChipView.desc] (câu cho trình đọc màn hình) **luôn đầy đủ**, kể cả khi [labels] tắt.
-     *
-     * Tắt nhãn là một quyết định về **chỗ trên thanh**, không phải về nội dung: một chip chỉ còn `24°C` thì mắt
-     * người vẫn đọc được nhờ icon và vị trí, còn trình đọc màn hình thì phát ra đúng hai chữ *"24 độ C"* và người
-     * không nhìn được màn hình mất hẳn thông tin *"của cái gì"*.
-     */
-    private fun chip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? = when (id) {
-        TopStripConfig.PM25 -> {
-            val pm = status.climate.pm25Level?.let {
-                if (it <= 2) Strings.t("Tốt", "Good") else if (it <= 4) Strings.t("TB", "Fair") else Strings.t("Kém", "Poor")
-            } ?: TelemetryView.PLACEHOLDER
-            ChipView(
-                if (labels) "PM2.5 · $pm" else pm, "ic-leaf", ChipTone.NEUTRAL,
-                Strings.t("Bụi mịn trong xe: $pm", "Fine dust in the car: $pm"),
-            )
-        }
-        TopStripConfig.TEMP -> {
-            val u = units.unitFor(Quantity.TEMPERATURE)
-            val t = status.climate.outsideTempC?.let { conv(it.toDouble(), Quantity.TEMPERATURE, units) }
-                ?: TelemetryView.PLACEHOLDER
-            ChipView(
-                if (labels) "$t$u " + Strings.t("ngoài", "outside") else "$t$u", null, ChipTone.NEUTRAL,
-                Strings.t("Nhiệt độ ngoài xe $t$u", "Outside temperature $t$u"),
-            )
-        }
-        TopStripConfig.ENERGY -> {
-            val u = units.unitFor(Quantity.DISTANCE)
-            val r = status.energy.evRangeKm?.let { conv(it.toDouble(), Quantity.DISTANCE, units) }
-                ?: TelemetryView.PLACEHOLDER
-            val soc = status.energy.soc
-            ChipView(
-                "${soc ?: TelemetryView.PLACEHOLDER}% · $r $u", "ic-bolt", ChipTone.ENERGY,
-                Strings.t(
-                    "Pin ${soc ?: "chưa đọc được"} phần trăm, đi thêm $r $u",
-                    "Battery ${soc ?: "not read yet"} per cent, $r $u to go",
-                ),
-            )
-        }
-        else -> datumChip(id, status, units, labels)
-    }
-
-    /**
-     * Chip cho một datum thường: `"<nhãn ngắn> · <giá trị><đơn vị>"`, đi qua ĐÚNG lớp đơn vị như mọi bề mặt khác.
-     *
-     * ## Datum BẬT/TẮT thì KHÔNG có phần chữ giá trị
-     * [ĐO xe 2026-09-21] chip `defrost_front_state` hiện `"Sấy kính · Tắt"`. Owner: trạng thái phải là **icon
-     * mờ/sáng**, không phải chữ. Nên khi [TelemetryView.onOff] có giá trị, chip còn **nhãn ngắn + icon** và trạng
-     * thái nằm trong [ChipTone.ACTIVE]/[ChipTone.INACTIVE] ⇒ `:app` tô màu icon + chữ theo đó.
-     *
-     * Ba điều cố ý giữ nguyên:
-     *  1. **[ChipView.desc] vẫn đầy đủ** (`"Sấy kính: Tắt"`). Bỏ chữ là quyết định về **chỗ trên thanh**, không phải
-     *     về nội dung — người dùng trình đọc màn hình không thấy được màu icon, nên với họ chữ là đường DUY NHẤT.
-     *     Cùng lập luận đã ghi ở [chip] cho ca tắt nhãn.
-     *  2. **Chưa đọc được ⇒ về đường thường** ([TelemetryView.onOff] null) ⇒ `"Sấy kính · —"` + [ChipTone.NEUTRAL].
-     *     Icon mờ ở đây sẽ là lời khẳng định *"đang tắt"* mà không ai đo được.
-     *  3. **Datum SỐ không đụng tới** (nhiệt/gió/pin/lốp): chúng không có [TelemetryView.onOff] nên đi nhánh cũ,
-     *     vẫn [ChipTone.NEUTRAL] + hiện giá trị. Một con số không có trạng thái bật/tắt để mà tô.
-     */
-    private fun datumChip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? {
-        val spec = TelemetryRegistry.byId(id) ?: return null
-        val view = TelemetryReadout.of(id, status)?.let { UnitFormat.apply(it, units) } ?: return null
-        val value = view.displayWithUnit()
-        val on = view.onOff
-        // B10 (owner 2026-09-23): datum BẬT/TẮT (sấy kính…) mà CHƯA đọc được (on==null) — trên xe owner nhiều datum
-        // này không bao giờ có tín hiệu ⇒ "· —" là dấu gạch VÔ NGHĨA + chiếm chỗ đẩy icon xa nhau. Coi như một
-        // datum bật/tắt: chỉ icon (mờ = INACTIVE), KHÔNG hiện giá trị "—". Chỉ áp cho datum bật/tắt (isOnOff),
-        // datum SỐ chưa đọc vẫn hiện "· —" (số thật sẽ về).
-        val isBool = TelemetryReadout.isOnOff(id)
-        // B9 (owner 2026-09-22): chip là bề mặt hẹp nhất — với datum mức (ghế mát/sưởi) rút "Mức 2"/"Level 2" → "2"
-        // cho đỡ chật (hình ghế nói rõ là ghế rồi). Chỉ áp cho CHIP, ô lớn giữ "Mức 2".
-        val chipValue = value.removePrefix(Strings.t("Mức ", "Level ")).trim()
-        return ChipView(
-            // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
-            // phải nhãn đầy — lý do `shortEn` tồn tại.
-            //
-            // Bật/tắt: chỉ nhãn (trạng thái đã ở màu icon). Tắt nhãn NỮA ⇒ chuỗi rỗng = chip chỉ-icon, và đó đúng là
-            // thứ người dùng xin khi gạt cả hai công tắc — icon vẫn nói được trạng thái nhờ màu.
-            text = when {
-                on != null || isBool -> if (labels) spec.displayShortLabel else ""   // bật/tắt: chỉ nhãn (chưa đọc = icon mờ, không "· —")
-                labels -> "${spec.displayShortLabel} · $chipValue"
-                else -> chipValue
-            },
-            icon = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain),
-            tone = when (on) {
-                true -> ChipTone.ACTIVE
-                false -> ChipTone.INACTIVE
-                // Chưa đọc: giữ NEUTRAL — "không biết" ≠ "đang tắt" (lập luận cũ). Chỉ BỎ dấu "· —" (B10 owner
-                // 2026-09-23): dấu vô nghĩa + chiếm chỗ đẩy icon xa nhau. Icon trung tính, không mờ hẳn.
-                null -> ChipTone.NEUTRAL
-            },
-            desc = "${spec.displayLabel}: $value",
-        )
-    }
-
-    /** Đổi một số về đơn vị người dùng chọn, dùng CHUNG bộ chuyển của [Units] (không tự nhân chia tại chỗ). */
-    private fun conv(v: Double, q: Quantity, units: UnitPrefs): String {
-        val base = Units.BASE[q] ?: return v.toInt().toString()
-        val raw = TelemetryView("chip", "", base, WidgetShape.VALUE, EvidenceTier.PROVEN,
-            if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString())
-        return UnitFormat.apply(raw, units).display
     }
 }

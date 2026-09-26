@@ -202,6 +202,33 @@ class CarDataAdapterTest {
         assertEquals(1, gw.reads - before, "bấm rồi mà nhịp kế không đọc lại")
     }
 
+    /**
+     * ═══ UX4 (2026-09-26) — ghi `ac_auto` phải ĐÁNH THỨC luôn `fan`/`ac_wind` ══════════════════════════════════
+     *
+     * Ô gió gộp: cú `−` ở nấc 1 KHÔNG ghi `fan` (mức 0 bị xe bỏ qua — [ĐO xe 2026-09-20]) mà ghi `ac_auto`. Nếu
+     * hàm quên-nguội chỉ quên đúng mã vừa ghi thì `fan` còn nguội ⇒ nhịp kế **không** đọc lại ⇒ ô vẫn hiện mức cũ
+     * dù xe đã sang AUTO. Cặp mức↔AUTO suy từ [ControlDef.autoId] + [CarDataDemand.COMPANION], không hardcode mã.
+     *
+     * Bài dựng từ registry THẬT (`fan.autoId == "ac_auto"`), nên ai gỡ khai báo ấy là ĐỎ ở dòng `assertEquals` đầu.
+     */
+    @Test fun `K1b e - ghi cong tac AUTO thi nut muc di kem cung het nguoi`() {
+        assertEquals("ac_auto", ControlRegistry.byId("fan")!!.autoId, "cặp mức↔AUTO khai ở registry, bài này dựa vào nó")
+        assertEquals("ac_wind", ControlRegistry.byId("fan")!!.readKey)
+        assertTrue("ac_wind_auto" in CarDataDemand.COMPANION["ac_wind"].orEmpty(), "bạn đồng hành của mức gió")
+
+        val gw = CountingGateway(); val clock = Clock()
+        val a = k1bAdapter(gw, clock, HalAbsentCache(missesBeforeCold = 3, firstRetryMs = 60_000), controls = setOf("fan"))
+        var s = CarStatus()
+        repeat(3) { s = a.readFast(s); clock.now += 1_000 }
+        val before = gw.reads
+        s = a.readFast(s); clock.now += 1_000
+        assertEquals(0, gw.reads - before, "phải đang nguội trước khi ghi")
+
+        a.forgetAbsentControl("ac_auto")     // = ô gió gộp bật AUTO (ClimateAuto.StepIntent.EnableAuto)
+        s = a.readFast(s)
+        assertEquals(1, gw.reads - before, "ghi `ac_auto` mà `fan` còn nguội ⇒ ô hiện mức cũ dù xe đã sang AUTO")
+    }
+
     /** (d) fastNeeded: false khi MỌI nút nguội và không datum nhanh; true lại khi tới hạn thử lại (theo đồng hồ). */
     @Test fun `K1b d - fastNeeded ngu khi moi nut nguoi, day lai theo dong ho`() {
         val gw = CountingGateway(); val clock = Clock()

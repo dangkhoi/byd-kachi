@@ -35,6 +35,25 @@ data class TelemetryView(
      * **im lặng** với đúng một nửa người dùng — cùng cái bẫy mà [GroupBoard] đã bị cấm rơi vào.
      */
     val onOff: Boolean? = null,
+    /**
+     * ═══ UX5 · MỨC của một datum chạy theo **thang mức** — `0` = tắt · `1..n` = mức · `null` = chưa đọc ═══════════
+     *
+     * Sinh ra vì bề mặt hẹp nhất của launcher (chip thanh trên) chỉ vẽ được **một glyph + một chuỗi**, nên trước
+     * UX5 chip ghế in đúng chữ `"Ghế sưởi · Tắt"` — lại là chữ trạng thái mà owner đã gạch bỏ cho ô bật/tắt
+     * (2026-09-21: *"bỏ chữ Bật/Tắt đi"*), chỉ khác là lần này nó lọt qua vì ghế **không** phải datum bật/tắt.
+     *
+     * Con số ở đây làm ba việc mà [valueText] không làm được: (a) chip biết **tắt** để mờ icon thay vì in chữ,
+     * (b) chip in `"2"` thay vì `"Mức 2"` mà không phải cắt chuỗi, (c) `ReadTile` vẽ hàng chấm **không cần regex
+     * bóc chữ số trong chuỗi đã dịch** — cùng cái bẫy so-chuỗi mà ⚠ của [onOff] đã cấm.
+     *
+     * ## ⚠ `null` ≠ `0`
+     * `null` = *"id này không chạy theo thang mức"* **hoặc** *"chưa đọc được"*; `0` là một lời khẳng định *"xe đang
+     * TẮT"*. Hai ca ấy phải khác nhau ở tầng vẽ (mờ vs trung tính), đúng luật *"không biết ≠ đang tắt"* của
+     * [ChipTone]. Gộp `null` với hai nghĩa đầu là đủ, vì mọi bề mặt xử chúng y như nhau.
+     *
+     * ⚠⚠ Mã thô NGOÀI thang ⇒ `null` (không làm tròn) — cùng quyết định đã ghi ở [ControlLevels.levelOf].
+     */
+    val level: Int? = null,
 ) {
     /** Có đọc được giá trị không (off-car/null ⇒ false ⇒ view mờ). */
     val available: Boolean get() = valueText != null
@@ -78,8 +97,34 @@ object TelemetryReadout {
         val value = if (bool != null) bool.on?.let { onOff(it) } else format(id, status)
         // U5 · T2: nhãn theo ngôn ngữ ngay tại đây — `TelemetryView` là thứ tầng vẽ đọc, nên nếu để nhãn gốc thì
         // `:app` phải tự dịch lại (bản-sao-thứ-hai của phép chọn ngôn ngữ).
-        return TelemetryView(spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, value, bool?.on)
+        return TelemetryView(
+            spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, value, bool?.on,
+            level = levelOf(id, status),
+        )
     }
+
+    /**
+     * UX5 — MỘT bảng nói cả hai điều mà mức cần: *"datum này là trạng thái của NÚT nào"* và *"mã thô nằm ở field
+     * nào của [CarStatus]"*. Id khác ⇒ `null` = không chạy theo thang mức.
+     *
+     * Vì sao một bảng chứ không hai: thang mức là tính chất của cái người ta **bấm** ([ControlLevels] tra bằng mã
+     * NÚT), còn con số thì nằm trong cụm trạng thái xe — tách thành hai bảng là đúng bẫy hai-bản-sao mà KDoc [boolOf]
+     * đã cảnh báo (chúng lệch ở đúng lần ai đó thêm mã thứ ba mà chỉ sửa một bên, và lỗi ấy im lặng).
+     */
+    private class Level(val controlId: String, val raw: Int?)
+
+    private fun levelTable(id: String, s: CarStatus): Level? = when (id) {
+        "seat_vent_state" -> Level("seatc", s.climate.seatVentRaw)
+        "seat_heat_state" -> Level("seath", s.climate.seatHeatRaw)
+        // UX5b (owner 2026-09-27) — ghế PHỤ: cùng khuôn, chỉ trỏ sang nút `*_r` (thang mức của nó ở [ControlLevels]).
+        "seat_vent_state_r" -> Level("seatc_r", s.climate.seatVentRRaw)
+        "seat_heat_state_r" -> Level("seath_r", s.climate.seatHeatRRaw)
+        else -> null
+    }
+
+    /** Mức người dùng của [id] (xem [TelemetryView.level]); `null` = không phải thang mức / chưa đọc / mã ngoài thang. */
+    private fun levelOf(id: String, s: CarStatus): Int? =
+        levelTable(id, s)?.let { l -> l.raw?.let { ControlLevels.levelOf(l.controlId, it) } }
 
     /**
      * Một datum BẬT/TẮT đã đọc. `Bool(null)` = là datum bật/tắt nhưng **chưa đọc được**; bản thân [boolOf] trả
@@ -158,21 +203,40 @@ object TelemetryReadout {
         "pm25_online" -> s.climate.pm25Online?.let { yesNo(it) }
         "cabin_temp" -> s.climate.cabinTempC?.toString()
         "ext_temp" -> s.climate.outsideTempC?.toString()
-        "ac_wind" -> s.climate.fanLevel?.toString()
+        // UX4 — đang AUTO thì chip/ô nói `"AUTO 1"`: mức là số THẬT ([ĐO xe 2026-09-16] xe báo `getAcWindLevel` ngay
+        // khi `getAcControlMode` = AUTO). Phép quy đổi nằm ở [ClimateAuto] — một bản cho cả ô nút lẫn chip.
+        // ⚠ `s.climate.fanLevel.let { … }` (KHÔNG `?.`): giữ nguyên dạng `"id" -> s.<cụm>.<field>` mà bài đọc-ngược
+        // `CarDataDemandRendererContractTest` dựa vào, và `fanText` **cần** được gọi cả khi mức chưa đọc được —
+        // đang AUTO mà mức còn null thì chip vẫn phải nói `"AUTO"`.
+        "ac_wind" -> s.climate.fanLevel.let { ClimateAuto.fanText(it, s.climate.acWindAutoRaw) }
         "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc") else Strings.t("Ngoài", "Fresh") }
         "inside_temp" -> s.climate.setTempC?.toString()
         "temp_unit" -> s.climate.tempUnit
         // H1 · T2 — ghế đọc ra MÃ mức của khung, phải đổi qua [ControlLevels] mới thành chữ người ta hiểu. Mã NGOÀI
         // thang ⇒ null ⇒ ô hiện "—": thà nói *"chưa đọc được"* còn hơn làm tròn thành "Mức 1" (thang mới đứng trên
         // MỘT điểm đo — TODO điểm thứ hai ghi ở [ControlLevels]).
+        // ⚠ UX5 — HAI dòng này và [levelTable] nói cùng một việc bằng hai chỗ, **có chủ ý**: dạng
+        // `"id" -> s.<cụm>.<field>` là một **hợp đồng đọc-ngược bằng máy** (`CarDataDemandRendererContractTest`
+        // suy ra bảng datum↔field từ chính chỗ này để canh nhu cầu đọc của mọi ô). Đổi dạng là làm bài canh ấy mù.
+        // Nguy cơ hai-bản-sao được **đo** thay vì hy vọng: `TelemetryReadoutTest.chu muc va so muc khong bao gio lech`
+        // đỏ ngay nếu một bên có mã mà bên kia không.
         "seat_vent_state" -> s.climate.seatVentRaw?.let { levelText("seatc", it) }
         "seat_heat_state" -> s.climate.seatHeatRaw?.let { levelText("seath", it) }
+        // UX5b — ghế PHỤ. Giữ ĐÚNG dạng `"id" -> s.<cụm>.<field>` như mọi dòng khác: đó là hợp đồng đọc-ngược bằng
+        // máy mà `CarDataDemandRendererContractTest` dựa vào (xem ⚠ ngay trên).
+        "seat_vent_state_r" -> s.climate.seatVentRRaw?.let { levelText("seatc_r", it) }
+        "seat_heat_state_r" -> s.climate.seatHeatRRaw?.let { levelText("seath_r", it) }
         // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
         // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
         "ac_mode_auto" -> s.climate.acModeRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
         // 1.85 — cùng quy ước và cùng lý do với dòng trên: `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` ⇒ gió đang AUTO.
         // Đảo Ở ĐÂY cho bề mặt ĐỌC; nút `ac_auto` đảo bằng [ControlDef.readInverted] nên không ai đảo hai lần.
-        "ac_wind_auto" -> s.climate.acWindAutoRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
+        // UX4 — phép đảo `0 = AUTO` của CHỈ BÁO GIÓ nay chỉ còn một bản, ở [ClimateAuto.autoOnFromRaw]. (Dòng
+        // `ac_mode_auto` ngay trên giữ phép so riêng: nó đọc `AC_CTRLMODE_AUTO`, một hằng KHÁC chỉ tình cờ cũng = 0 —
+        // gộp hai hằng khác họ vào một hàm là mời một lượt sửa sau làm sai cả hai, xem CLAUDE.md §2.)
+        "ac_wind_auto" -> s.climate.acWindAutoRaw?.let {
+            if (ClimateAuto.autoOnFromRaw(it) == true) ClimateAuto.AUTO else Strings.t("Chỉnh tay", "Manual")
+        }
 
         // ── A9. Giải trí ────────────────────────────────────────────────────────────────
         "media_vol" -> s.infotainment.mediaVolume?.toString()

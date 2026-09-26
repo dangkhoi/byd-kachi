@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.View
@@ -36,6 +37,8 @@ class GridEditorView(context: Context) : View(context) {
     }
     private val handle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor(KachiTheme.INK) }
     private val box = RectF()
+    /** Hộp MỰC của số thứ tự khung — cấp phát MỘT LẦN (onDraw không được cấp phát). */
+    private val ink = Rect()
     /** Dùng lại giữa các khung hình (lint DrawAllocation): chỉ số khung đè nhau + bảng màu khung. */
     private val overlapping = HashSet<Int>()
     private val palette = listOf(KachiTheme.ACCENT, KachiTheme.GREEN, KachiTheme.CYAN, KachiTheme.ACCENT2)
@@ -50,6 +53,9 @@ class GridEditorView(context: Context) : View(context) {
     private companion object {
         const val IDLE_ALPHA = 96
         const val SELECTED_ALPHA = 150
+
+        /** Cỡ số thứ tự khung theo cạnh NGẮN của khung — giữ đúng số của bản trước. */
+        const val LABEL_RATIO = 0.32f
     }
 
     /** Bố cục đang vẽ. Đặt vào là vẽ lại. */
@@ -180,8 +186,13 @@ class GridEditorView(context: Context) : View(context) {
             frameFill.color = Color.parseColor(base); frameFill.alpha = if (i == selected) SELECTED_ALPHA else IDLE_ALPHA
             canvas.drawRoundRect(box, 10f, 10f, frameFill)
 
-            label.textSize = minOf(box.width(), box.height()) * 0.32f
-            canvas.drawText("${i + 1}", box.centerX(), box.centerY() + label.textSize * 0.35f, label)
+            // 2.74 · UX7 — baseline từ SỐ ĐO PHÔNG, không từ hằng `textSize * 0.35f`: hằng đó xấp xỉ
+            // `capHeight/2` của Roboto (0.3555) nên nó chỉ đúng với **một** phông, mà phông là thứ ROM quyết.
+            // Cùng luật với bốn ô vẽ Canvas còn lại ([CellTextLayout]).
+            val n = "${i + 1}"
+            label.textSize = minOf(box.width(), box.height()) * LABEL_RATIO
+            label.getTextBounds(n, 0, n.length, ink)
+            canvas.drawText(n, box.centerX(), CellTextLayout.centeredBaseline(box.centerY(), -ink.top.toFloat()), label)
 
             // Tay cầm đổi cỡ ở góc dưới-phải, chỉ hiện ở khung đang chọn (đỡ rối).
             if (i == selected) {

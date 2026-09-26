@@ -22,6 +22,9 @@ class CameraRotationWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
+
+    /** Ba hàm dựng lớp video + `applyTransform` sang tệp riêng ở 2.74 (R8-B) — xem KDoc `CameraVideoLayer`. */
+    private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
     private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
@@ -37,7 +40,7 @@ class CameraRotationWiringContractTest {
      */
     @Test
     fun `overlay lay ma tran tu core va ap o ca hai callback`() {
-        val body = SourceRoots.body(overlay, "private fun applyTransform(")
+        val body = SourceRoots.body(layer, "private fun applyTransform(")
         assertTrue(
             "CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg)" in body,
             "ma trận phải do `:core` dựng (một nguồn sự thật, có test bằng số) — không nhân tay trong `:app`",
@@ -48,7 +51,7 @@ class CameraRotationWiringContractTest {
         assertEquals(
             2,
             Regex("""override fun onSurfaceTexture(?:Available|SizeChanged)\([^)]*\)\s*\{?\s*applyTransform\(this@apply, w2, h2, crop, rotationDeg\)""")
-                .findAll(overlay).count(),
+                .findAll(layer).count(),
             "applyTransform(…, rotationDeg) phải gọi ở CẢ onSurfaceTextureAvailable và onSurfaceTextureSizeChanged",
         )
         assertTrue("rotationDeg: Int = 0" in overlay, "show() nhận rotationDeg, mặc định 0 = hành vi trước R7")

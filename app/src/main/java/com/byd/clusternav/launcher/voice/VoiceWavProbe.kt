@@ -49,6 +49,16 @@ object VoiceWavProbe {
         val error: String?,
         val grammarText: String = "",
         val freeText: String = "",
+        /**
+         * VOICE-OPEN-TURN — hai vế của lượt, khi tệp có một quãng ngừng đủ dài để VAD chốt câu giữa tệp.
+         *
+         * [headText] = chữ của vế TRƯỚC (đúng khúc mà phiên thật giải mã tại điểm ngắt đầu tiên) · [tailText] =
+         * chữ của vế SAU, rỗng khi không có vế sau hoặc vế trước đã đủ nghĩa · [openHead] = vế trước có dở không.
+         * Phơi cả ba vì một phép đo phải trả lời được *"nó ghép từ hai vế nào"*, không chỉ *"kết quả cuối là gì"*.
+         */
+        val headText: String = "",
+        val tailText: String = "",
+        val openHead: Boolean = false,
     )
 
     /** Trần cho khối `fmt ` — WAVE_FORMAT_EXTENSIBLE dài 40 byte; dài hơn nữa là tệp lạ, bỏ qua phần dư. */
@@ -63,16 +73,42 @@ object VoiceWavProbe {
      * Không dựng được VAD ⇒ trả **nguyên** độ dài: đường đo thà nói về một cửa sổ chưa cắt còn hơn im lặng đổi
      * kết quả bằng một phép cắt không ai đo được (cùng luật [VoiceTurnEndpoint.trimSamples] ở đường lùi).
      */
-    private fun trimSamples(ctx: Context, pcm: ShortArray, n: Int): Int {
+    private fun trimSamples(
+        ctx: Context,
+        pcm: ShortArray,
+        n: Int,
+        /**
+         * VOICE-OPEN-TURN — báo lại **điểm ngắt câu ĐẦU TIÊN** và dải mẫu của vế sau, đúng hai con số mà phiên
+         * thật cầm: `headTrim` = phép cắt tại điểm ngắt đầu (không phải cuối tệp), `tail` = dải vế sau / `null`.
+         *
+         * Tính trong **cùng một lượt** đẩy VAD: một lượt thứ hai là hai lần trả giá cho cùng phép đo, và tệ hơn,
+         * là hai trạng thái VAD có thể lệch nhau. Tệp chỉ có MỘT đoạn (mọi WAV `w01`–`w25` và 30 bản thu xe) thì
+         * `headTrim` ra **đúng bằng** giá trị trả về ⇒ đường đo cũ không đổi một mẫu nào.
+         */
+        onSplit: (headTrim: Int, tail: IntRange?) -> Unit = { _, _ -> },
+    ): Int {
         val vad = VoiceVad.open(ctx) ?: return n
         return vad.use {
             var at = 0
+            var firstEndpointAt = 0        // số mẫu đã đẩy tới điểm ngắt ĐẦU TIÊN (0 = chưa có điểm ngắt nào)
+            var segmentsThen = 0
+            var headTrim = 0
             while (at < n) {
                 val len = minOf(VoiceCapture.CHUNK_SAMPLES, n - at)
-                it.accept(pcm.copyOfRange(at, at + len), len)
+                val closed = it.accept(pcm.copyOfRange(at, at + len), len)
                 at += len
+                // Đúng khoảnh khắc `VoiceCapture` gọi `ep.trimSamples(fed)` rồi giữ micro (xem [VoiceOpenTurnArm]).
+                if (closed && firstEndpointAt == 0) {
+                    firstEndpointAt = at
+                    headTrim = it.headTrimSamples(at)
+                    segmentsThen = it.segmentCount()
+                }
             }
             it.flush()
+            onSplit(
+                if (firstEndpointAt == 0) 0 else headTrim,
+                if (firstEndpointAt == 0) null else it.tailRange(segmentsThen, n),
+            )
             it.headTrimSamples(n).also { t ->
                 if (t < n) Log.i(TAG, "cắt đuôi WAV: $n → $t mẫu (bỏ ${(n - t) * 1000 / 16000} ms)")
             }
@@ -121,8 +157,14 @@ object VoiceWavProbe {
             // sát cuối tệp nên `trim ≈ n`. Nó chỉ thật sự cắt ở những tệp CÓ đuôi — đúng ba ca `w26`/`w27`/`w28`
             // mà [ĐO máy ảo 1.69] cho ra *"bật đèn đọc **sách**"* và *"xem pin **và**"*: cùng dạng token mọc thêm
             // với *"đang đọc sách"* / *"mở cửa sổ **bật**"* trong log xe thật.
-            val trimmed = trimSamples(ctx, pcm.first, pcm.second)
-            val grammarText = rec.use { it.decodeAll(pcm.first, trimmed) }
+            var headTrim = 0
+            var tail: IntRange? = null
+            val trimmed = trimSamples(ctx, pcm.first, pcm.second) { h, t -> headTrim = h; tail = t }
+            // ═══ VOICE-OPEN-TURN — đường đo đi qua **đúng hai pha** mà phiên thật đi ═══════════════════
+            // Phiên thật giải mã vế TRƯỚC tại điểm ngắt đầu tiên rồi hỏi [VoiceOpenTurn.isOpen]; dở thì giữ micro,
+            // giải mã vế sau RIÊNG và ghép. Tệp một đoạn ⇒ `headTrim == trimmed` ⇒ y hệt đường cũ (KDoc [trimSamples]).
+            val split = openTurn(rec, pcm.first, if (headTrim > 0) headTrim else trimmed, tail)
+            val grammarText = split.first
             // ĐÚNG hai lượt như phiên nghe thật (R16) — phép đo phải đi qua cùng con đường, không phải một
             // đường rút gọn; nếu không thì nó không nói gì về phiên thật (xem KDoc lớp).
             val free = if (VoiceOpenVocab.triggerOf(grammarText) == null) {
@@ -131,9 +173,34 @@ object VoiceWavProbe {
                 VoiceRecognizer.openFree(ctx)?.use { it.decodeAll(pcm.first, trimmed) }.orEmpty()
             }
             val merged = VoiceOpenVocab.merge(grammarText, free)
-            Result(file.absolutePath, merged.text, null, grammarText, free)
+            Result(
+                file.absolutePath, merged.text, null, grammarText, free,
+                headText = split.second, tailText = split.third, openHead = VoiceOpenTurn.isOpen(split.second),
+            )
         }.onFailure { t -> Log.w(TAG, "đọc WAV hỏng", t) }
             .getOrElse { t -> Result(file.absolutePath, "", t.message ?: t.javaClass.simpleName) }
+    }
+
+    /**
+     * Hai pha của VOICE-OPEN-TURN trên một tệp: `(câu cuối, vế trước, vế sau)`.
+     *
+     * `rec` bị đóng ở đây (`use`) vì cả hai lượt giải mã của pha NGHE dùng chung một bộ nhận dạng — cùng hotword,
+     * cùng mô hình, đúng như một lượt nói thật. Vế trước đủ nghĩa / không có vế sau ⇒ vế sau rỗng và câu cuối
+     * **bằng** vế trước, tức không có đường nào đổi kết quả của một tệp không có quãng ngừng.
+     */
+    private fun openTurn(
+        rec: VoiceRecognizer,
+        pcm: ShortArray,
+        headTrim: Int,
+        tail: IntRange?,
+    ): Triple<String, String, String> = rec.use { r ->
+        val head = r.decodeAll(pcm, headTrim)
+        if (tail == null || !VoiceOpenTurn.isOpen(head)) return@use Triple(head, head, "")
+        val part = pcm.copyOfRange(tail.first, minOf(tail.last + 1, pcm.size))
+        val tailText = r.decodeAll(part, part.size)
+        val joined = VoiceOpenTurn.join(head, tailText)
+        Log.i(TAG, "noi-tiep (WAV): \"$head\" + \"$tailText\" ⇒ \"$joined\"")
+        Triple(joined, head, tailText)
     }
 
     /**

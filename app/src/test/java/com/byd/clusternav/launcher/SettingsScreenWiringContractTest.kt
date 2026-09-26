@@ -191,9 +191,16 @@ class SettingsScreenWiringContractTest {
             "§4.5: tạo hồ sơ chuyển vào Cài đặt; giữ cả hai đường tạo là hai chỗ phải sửa và sẽ lệch nhau",
         )
         assertFalse(strip.contains("onProfileLongPress"), "cổng giữ-để-tạo phải bị gỡ hẳn, không để treo")
-        // S4 · R7 — chip phải nói CẢ TÊN, không chỉ chữ cái: hai hồ sơ "Đi làm"/"Đường trường" cùng chữ `Đ`, mà từ
-        // R3 một cú đổi hồ sơ kéo theo cả màn hình.
-        assertTrue(fn.contains("profileNameView"), "chip phải hiện TÊN hồ sơ, không chỉ chữ cái đầu")
+        // ⚠ ĐẢO CHIỀU LẦN HAI (V5, owner 2026-09-25: *"chỉ icon hồ sơ"*) — chiều CŨ (S4 · R7) đòi chip **VẼ** cả
+        // TÊN vì hai hồ sơ "Đi làm"/"Đường trường" cùng chữ `Đ`. Chữ tên nay `GONE`, nên đòi `profileNameView` còn
+        // nằm trong `profileChip()` là một lời hứa XANH nhờ chuỗi còn sót chứ không nhờ hành vi. Lý lẽ cũ không mất:
+        // cái TÊN chuyển sang nhãn TalkBack của chính NÚT (UX1 · R1) — đó là thứ đáng khoá, và bài hình học nằm ở
+        // `TopStripSurfaceContractTest.dia ho so dong tam voi nut va ten van doc duoc`.
+        assertTrue(
+            SourceRoots.body(strip, "fun setProfile(").contains("profileChipView.contentDescription"),
+            "chip chỉ còn ĐĨA chữ-cái-đầu ⇒ tên hồ sơ phải còn dưới dạng nhãn TalkBack trên chính NÚT (view `GONE` " +
+                "thì TalkBack không duyệt ⇒ đặt nhãn ở đó là nút không có tên nào)",
+        )
         assertTrue(strip.contains("fun setProfile("), "và phải có đường đổ tên đó vào chip khi state đổi")
         assertTrue(profilesSection.contains("deps.onDuplicateProfile("), "đường tạo hồ sơ nay ở nhóm Hồ sơ tài xế")
         assertTrue(

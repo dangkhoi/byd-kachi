@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.ActionMacros
 import com.byd.clusternav.launcher.CarCapabilities
+import com.byd.clusternav.launcher.ClimateAuto
 import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
@@ -171,6 +172,16 @@ object VoiceReply {
             "Sent $name ${i.value} — the car reports $actual",
         ) + unverified(i)
     }
+
+    /**
+     * ═══ UX4 — NẤC ĐÁY của thang gió tên là **AUTO**, không phải **0** ════════════════════════════════════════
+     *
+     * Dùng cho CẢ HAI ca mà [ClimateAuto.stepIntent] cho ra ở nấc đáy: vừa BẬT gió tự động (`EnableAuto`) và đã ở
+     * auto rồi nên không bắn gì (`NoOp`). Câu chỉ **thuật lại trạng thái** — đúng với cả hai ca — chứ không khẳng
+     * định *"đã đặt mức 0"*: [ĐO xe 2026-09-20] lệnh mức 0 bị xe **bỏ qua**, nên câu ấy sẽ là một lời nói dối.
+     * Không chữ tự nhiên nào để dịch (nhãn đã theo ngôn ngữ qua [labelOf]; `AUTO` là bốn chữ của màn AC gốc).
+     */
+    fun autoLevel(id: String): String = "✓ " + labelOf(id) + ": " + ClimateAuto.AUTO
 
     /**
      * Đuôi *"chưa kiểm trên xe"* cho việc mà mức bằng chứng chưa phải [com.byd.clusternav.launcher.EvidenceTier.PROVEN].

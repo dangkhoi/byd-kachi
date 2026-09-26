@@ -113,6 +113,25 @@ internal class VoiceVad private constructor(
     /** Lượt này đã chốt được đoạn tiếng nào chưa — thay cho `VoiceEndpointer.sawSpeech()` ở đường VAD. */
     fun sawSpeech(): Boolean = segments.isNotEmpty()
 
+    /** Số đoạn đã chốt — mốc để [VoiceVadTrim.tailRange] biết đoạn nào thuộc **vế sau** (VOICE-OPEN-TURN). */
+    fun segmentCount(): Int = segments.size
+
+    /**
+     * Ngay LÚC NÀY Silero có đang thấy tiếng không — dùng cho VOICE-OPEN-TURN để biết *"người ta đã nói tiếp"*.
+     *
+     * Khác [sawSpeech] ở chỗ nó trả lời về đoạn **đang mở**: một vế sau dài 1,5 s chỉ chốt sau 1,5 s + 600 ms im
+     * lặng, tức **sau** cửa sổ ghép 1 200 ms. Nếu đợi đoạn chốt mới biết thì mọi vế sau dài hơn 600 ms đều bị coi
+     * là *"không ai nói tiếp"* và bị bỏ — đúng loại lỗi *"gate một đường phục hồi bằng dữ liệu mà chỉ chính đường
+     * đó mới làm mới được"* mà CLAUDE.md §3 cấm. `isSpeechDetected` là API sẵn của AAR
+     * ([ĐO javap sherpa-onnx v1.13.8]: `public final boolean isSpeechDetected()`), không phải một phép đo RMS
+     * thứ hai tự dựng. Hỏng ⇒ `false` (thà thôi chờ, không giữ micro mở vì một ngoại lệ).
+     */
+    fun speaking(): Boolean = runCatching { vad.isSpeechDetected() }.getOrDefault(false)
+
+    /** Dải mẫu của **vế sau** — số học ở `:core`, xem KDoc [VoiceVadTrim.tailRange]. */
+    fun tailRange(fromIndex: Int, windowSamples: Int): IntRange? =
+        VoiceVadTrim.tailRange(segments, fromIndex, windowSamples, VoiceVadTrim.msToSamples(VoiceVadTrim.MARGIN_MS, RATE))
+
     /** Số mẫu đưa vào bộ giải mã theo chế độ `head` — xem [VoiceVadTrim.headTrimSamples]. */
     fun headTrimSamples(windowSamples: Int): Int =
         VoiceVadTrim.headTrimSamples(segments, windowSamples, VoiceVadTrim.msToSamples(VoiceVadTrim.MARGIN_MS, RATE))

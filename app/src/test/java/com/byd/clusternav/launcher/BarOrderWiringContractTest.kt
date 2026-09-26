@@ -148,6 +148,75 @@ class BarOrderWiringContractTest {
     }
 
     /**
+     * ⚠⚠ **Đĩa hồ sơ + lề ĐỐI XỨNG phải nằm trong đích chạm** — cùng lối số học với ô thanh nút ở trên.
+     *
+     * UX1 · R1 chữa lỗi *"đĩa lệch trái 4dp"* bằng cách cho chip khai `minimumWidth = minimumHeight =`
+     * [KachiBars.HEADER_BTN] rồi để `Gravity.CENTER` chia đều chỗ DƯ. Phép đó chỉ đúng khi đĩa + hai lề
+     * [KachiSpace.XS] còn **lọt** trong đích chạm ([ĐO số học] `22 + 4 + 4 = 30 ≤ 34`). Nâng đĩa lên 26dp hoặc nới
+     * lề thành [KachiSpace.S] là chip nở quá 34dp, chỗ dư về 0, và lệch quay lại **im lặng** — không bài nào khác
+     * bắt được, vì hình học chỉ hiện trên ảnh chụp.
+     */
+    @Test
+    fun `dia ho so va le doi xung nam trong dich cham`() {
+        val need = KachiBars.HEADER_AVATAR + 2 * KachiSpace.XS
+        assertTrue(
+            need <= KachiBars.HEADER_BTN,
+            "đĩa ${KachiBars.HEADER_AVATAR} + 2×${KachiSpace.XS} = ${need}dp phải ≤ đích chạm " +
+                "${KachiBars.HEADER_BTN}dp, nếu không thì `Gravity.CENTER` không còn chỗ dư để chia",
+        )
+    }
+
+    /**
+     * Phép cộng của `LinearLayout` cho chip hồ sơ — trả `(bề rộng, khe trái, khe phải)` theo dp.
+     *
+     * [ĐO AOSP `android-10.0.0_r47` `core/java/android/widget/LinearLayout.java`] `:1325` `mTotalLength` **cộng cả
+     * hai lề trong** · `:1330` `widthSize = max(mTotalLength, getSuggestedMinimumWidth())` · `:1736`
+     * `childLeft = mPaddingLeft + (right − left − mTotalLength) / 2` (chú thích của chính AOSP ở dòng trên:
+     * *"mTotalLength contains the padding already"*). Nền pill là `GradientDrawable` không `setSize` ⇒
+     * `getMinimumWidth() = 0` ⇒ `mMinWidth` thắng.
+     */
+    private fun discBox(padStart: Int, padEnd: Int): Triple<Int, Int, Int> {
+        val total = padStart + KachiBars.HEADER_AVATAR + padEnd
+        val width = maxOf(total, KachiBars.HEADER_BTN)
+        val left = padStart + (width - total) / 2
+        return Triple(width, left, width - (left + KachiBars.HEADER_AVATAR))
+    }
+
+    /**
+     * ⚠⚠ **UX1 · R1 — số đo của ẢNH, chạy bằng phép cộng thay vì bằng con mắt.**
+     *
+     * Bài `dia ho so dong tam voi nut va ten van doc duoc` (TopStripSurfaceContractTest) khoá **hình dạng mã** (hai
+     * lề cùng là `Sp.XS`); bài này khoá **hệ quả đo được** của hình dạng đó, ở đúng mật độ ảnh owner (240dpi = 1,5×).
+     * Hai ca, và ca thứ hai là **cổng phủ định** mà lượt kiểm thị giác phải dùng: nếu ảnh TRƯỚC-khi-vá KHÔNG đo ra
+     * `57×51px` với khe `6px`/`18px` thì chẩn đoán sai và bản vá phải mở lại (skeptic C9).
+     *
+     * Đổi `HEADER_AVATAR`/`HEADER_BTN`/`XS` là bộ số này đổi ⇒ bài đỏ và nói ra bộ số MỚI phải chụp lại, thay vì để
+     * ảnh cũ trong `docs/diagnostics/` âm thầm trở thành mốc sai.
+     */
+    @Test
+    fun `khe hai ben dia khop so do anh owner`() {
+        val px = { dp: Int -> (dp * 1.5f).toInt() }
+        val (wAfter, leftAfter, rightAfter) = discBox(KachiSpace.XS, KachiSpace.XS)
+        assertEquals(
+            leftAfter, rightAfter,
+            "hai lề BẰNG NHAU ⇒ khe trái = khe phải ⇒ tâm đĩa = tâm nút (thấy ${leftAfter}dp vs ${rightAfter}dp)",
+        )
+        assertEquals(KachiBars.HEADER_BTN, wAfter, "…và nút vẫn đúng đích chạm 34dp, không phình ra")
+        assertEquals(
+            listOf(51, 9, 9), listOf(px(wAfter), px(leftAfter), px(rightAfter)),
+            "ảnh SAU khi vá phải đo ra: nút 51px, khe trái 9px, khe phải 9px (±1px do làm tròn khi vẽ)",
+        )
+        // Ca THỜI CHỮ TÊN: lề cuối `Sp.M` là khe dẫn sang chữ tên đã `GONE` từ 2.55 ⇒ chip phình 4dp và đĩa dán
+        // mép trái. Đây là trạng thái owner đã chụp, giữ lại làm cổng phủ định cho lượt kiểm thị giác.
+        val (wBefore, leftBefore, rightBefore) = discBox(KachiSpace.XS, KachiSpace.M)
+        assertEquals(
+            listOf(57, 6, 18), listOf(px(wBefore), px(leftBefore), px(rightBefore)),
+            "ảnh TRƯỚC khi vá phải đo ra: nút 57px, khe trái 6px, khe phải 18px — không khớp thì chẩn đoán sai",
+        )
+        assertTrue(leftBefore < rightBefore, "và lệch về phía TRÁI, đúng hướng owner báo")
+    }
+
+    /**
      * Nội dung ô STEP phải nằm trong ô **DỌC** — chiều chật nhất của cả launcher sau WP5.
      *
      * Ô STEP không vẽ nhãn (xem `ControlTileFactory.tileStep`), nên nội dung = lề trong + (icon + khe) + hàng nút.

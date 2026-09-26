@@ -159,6 +159,8 @@ class ProfileKeysWiringContractTest {
             "K_PLACES" to "saved_places",
             // VISUAL-REFRESH P1b · R8 — màu nhấn/tông thẻ theo hồ sơ.
             "K_COLOR" to "color_choice",
+            // [SOÁT Opus 2026-09-27] Mốc *"di trú chip UX5b đã chạy"* — theo hồ sơ như chính `top_strip`.
+            "K_STRIP_MIGRATED" to "top_strip_migrated_ux5b",
         )
         val suffixes = ProfileScope.LAUNCHER_SUFFIXES
         val missing = used.mapNotNull { raw ->

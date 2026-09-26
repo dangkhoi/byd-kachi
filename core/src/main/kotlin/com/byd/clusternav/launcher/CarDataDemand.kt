@@ -91,6 +91,34 @@ object CarDataDemand {
         TopStripConfig.PM25 to setOf("pm25_level"),
         TopStripConfig.TEMP to setOf("ext_temp"),
         TopStripConfig.ENERGY to setOf("soc", "ev_range_km"),
+        // UX5 — chip GỘP ghế mang HAI datum (sưởi + mát) để chọn được chế độ đang chạy.
+        // ⚠ UX5b (2026-09-27) — thêm chip ghế PHỤ. Cặp mã của mỗi chip ghế được khai **một chỗ** ở
+        // `TopStripConfig.SEAT_PAIRS`; hai dòng dưới là bản CHÉP TAY của nó, và bản chép ấy **được đo** chứ không
+        // được tin: `CarDataDemandTest.cap datum cua chip ghe khop SEAT_PAIRS` đỏ ngay nếu hai bên lệch. Cố ý không
+        // suy ra bằng mã (`+ TopStripConfig.SEAT_PAIRS.mapValues …`): đọc một `val` của `TopStripConfig` lúc nạp
+        // `object` này tạo thêm một cạnh thứ tự khởi tạo giữa hai bộ đăng ký — đúng họ lỗi `BUILT_IN`/`DEFAULT`
+        // ([ĐO] 27 bài đỏ, xem KDoc `TopStripConfig.BUILT_IN`). Hằng `const` thì được: nó được nội tuyến lúc biên dịch.
+        TopStripConfig.SEAT to setOf("seat_heat_state", "seat_vent_state"),
+        TopStripConfig.SEAT_R to setOf("seat_heat_state_r", "seat_vent_state_r"),
+    )
+
+    /**
+     * ═══ UX4 · DATUM **BẠN ĐỒNG HÀNH** — *"bày mã này thì phải đọc kèm mã kia mới nói đủ nghĩa"* ══════════════
+     *
+     * [ĐO đọc mã 2026-09-26] Chip `ac_wind` một mình **không bao giờ** hiện được chữ AUTO: chữ đó cần
+     * `acWindAutoRaw`, mà cổng nhu cầu H1 chỉ nạp đúng mã đang hiện ⇒ `ac_wind_auto` không được đọc lượt nào ⇒ tính
+     * năng câm **im lặng** (đúng họ lỗi CLAUDE.md §8: compile xanh, chưa từng chạy).
+     *
+     * ## ⚠ Áp lên tập ĐÃ GOM XONG, không áp trong [expand]
+     * [expand] tra bốn nhánh và `return true` **ngay** ở nhánh đầu khớp. Đặt bảng này ở nhánh datum thì đường **ô
+     * nhóm** (`CapabilityGroups.reads`, khớp ở nhánh 2) không bao giờ tới ⇒ ô nhóm hiện `"1"` trong khi chip hiện
+     * `"AUTO 1"`: hai bề mặt của cùng một launcher nói hai điều. Quét trên tập cuối thì mọi đường vào đều được phủ.
+     *
+     * Giá: mỗi bề mặt bày mức gió tốn **2** lượt đọc/nhịp chậm thay vì 1 — trong ngân sách K1 (< 150 lượt/phút), và
+     * vẫn đi qua đúng `Gate.read` nên `HalAbsentCache` xử nguội được nếu trim này không có chỉ báo auto.
+     */
+    val COMPANION: Map<String, Set<String>> = mapOf(
+        "ac_wind" to setOf("ac_wind_auto"),
     )
 
     /**
@@ -105,6 +133,8 @@ object CarDataDemand {
         state.workspace.slots.forEach { slot ->
             if (slot is SlotContent.Widget) slot.ids.forEach { if (!expand(it, out)) return null }
         }
+        val companions = out.flatMap { COMPANION[it].orEmpty() }   // sau khi gom XONG — xem ⚠ ở KDoc [COMPANION]
+        out += companions
         return out
     }
 
@@ -128,6 +158,11 @@ object CarDataDemand {
         fun scan(id: String) {
             val def = ControlRegistry.byId(id) ?: return
             if (def.readKey.isNotBlank()) out += id
+            // UX4 — ô có mặt TỰ ĐỘNG ([ControlDef.autoId]) phải đọc CẢ nút phụ ấy, nếu không `ClimateAuto` chỉ nhận
+            // được `null` và ô **không bao giờ** dám nói AUTO (đúng, nhưng tính năng câm). Chỉ nạp khi nút phụ có
+            // đường đọc thật — khai một mã chưa nối datum thì đọc cũng chỉ ra `null`, mà lại tốn một lượt HAL.
+            val auto = def.autoId.takeIf { it.isNotBlank() }?.let { ControlRegistry.byId(it) }
+            if (auto != null && auto.readKey.isNotBlank()) out += auto.id
         }
         state.dock.enabled.forEach(::scan)
         state.workspace.slots.forEach { slot ->

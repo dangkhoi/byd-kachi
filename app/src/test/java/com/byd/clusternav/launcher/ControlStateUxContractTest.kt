@@ -210,6 +210,139 @@ class ControlStateUxContractTest {
         )
     }
 
+    /**
+     * ═══ UX4 — nấc đáy của một nút có [ControlDef.autoId] là **AUTO**, và ô KHÔNG tự quyết lấy ════════════════
+     *
+     * Ba dây, mỗi dây chặn một cách hỏng đã thấy trước:
+     *  1. luật nằm ở `:core` ([ClimateAuto]) — ô chỉ THI HÀNH; viết lại bảng quyết định ở tầng vẽ là bản sao thứ hai
+     *     mà không bài chạy-thật nào với tới được;
+     *  2. sàn bề ngang CHUNG **không** được nới cho chữ AUTO (xem `ControlVisualsTest`) — thay vào đó ô CO chữ;
+     *  3. đường đọc-lại phải lấy cả cờ auto, nếu không ô mãi mãi không biết xe đang ở chế độ nào ⇒ tính năng câm
+     *     (CLAUDE.md §8: compile xanh ≠ chạy đúng).
+     */
+    @Test
+    fun `nac AUTO cua stepper do core quyet, khong noi san chung, va co doc lai co auto`() {
+        val fn = SourceRoots.body(factory, "private fun tileStep(")
+        assertTrue(fn.contains("ClimateAuto.stepPlan(def,"), "cú bấm phải hỏi `:core` (bảng quyết định ở ClimateAuto)")
+        assertTrue(
+            fn.contains("ClimateAuto.autoOnFromControl(car.controls[def.autoId])"),
+            "đường đọc-lại phải lấy cờ auto qua cửa của NÚT (đã applyInverted) — dùng cửa của datum là đảo hai lần",
+        )
+        assertFalse(
+            fn.contains("ClimateAuto.autoOnFromRaw("),
+            "`autoOnFromRaw` là cửa của DATUM (số thô 0 = AUTO); dùng nó ở đây thì ô hiện AUTO đúng lúc xe chỉnh tay",
+        )
+        assertTrue(
+            fn.contains("minWidth = ceil(paint.measureText(DIGIT.repeat(ControlVisuals.STEP_VALUE_CHARS))"),
+            "sàn bề ngang vẫn là sàn CHUNG suy từ registry — không được nới vì một chữ AUTO của một nút",
+        )
+        assertTrue(
+            fn.contains("StepValueFit.apply(vtext, def, size.valueSp)"),
+            "chữ dài hơn sàn thì CO lại; `maxLines = 1` không ellipsize nên không co là cắt CỨNG",
+        )
+    }
+
+    /**
+     * ═══ [P2 · SOÁT Opus 2026-09-27] Chữ ô giá trị co rồi phải **NỞ LẠI** — chiều cao phải được GHIM ═══════════
+     *
+     * [ĐO máy ảo · QA lượt 2, `docs/diagnostics/offcar-2026-09-26/visual-pass-2026-09-27.md` §1b]: ô gió mức 1 có mực
+     * cao **15 px** (ô 47×29); đi qua "AUTO" rồi bấm `+` ⇒ "2" chỉ còn **10 px** (ô 47×**19**) và **không bao giờ to
+     * lại**. Con số người lái đọc trong lúc lái nhỏ đi một phần ba, vĩnh viễn, sau đúng một lượt AUTO.
+     *
+     * Vì `autoSizeText` chọn cỡ theo **khoảng trống đo được**, mà ô có `WRAP_CONTENT` bề dọc ⇒ khoảng trống đi theo
+     * cỡ chữ đang vẽ ⇒ khoá cứng ở sàn. Và không sửa lại được bằng `setTextSize` ([ĐO] AOSP `TextView.setTextSize`
+     * mở đầu bằng `if (!isAutoSizeEnabled())` ⇒ no-op). Nên bất biến phải ghim ở **chiều cao**.
+     *
+     * Bài này đọc mã (`SharedPreferences`/`TextView` không chạy trên JVM; phép đo hành vi là ảnh máy ảo ở doc trên).
+     * Ba vế: chiều cao lấy từ `fontMetricsInt` của **chính** `paint` (⇒ tự đúng ở cả ba vùng `TileSize`, không hằng
+     * dp), autosize vẫn bật, và phép ghim **chỉ** chạy cho nút vượt sàn chung ⇒ ô nhiệt độ/âm lượng không đổi một
+     * pixel nào (bảo đảm R2.4 *"hai nút −/+ đứng đúng một chỗ"*).
+     *
+     * ## ⚠ Vế thứ tư, thêm sau QA lượt 3 — ghim ở ĐÂU, không chỉ "có ghim hay không"
+     * Bản vá đầu ghim bằng `v.height = …` (`TextView.setHeight`) và **bài này vẫn xanh** trong khi màn hình đã sai:
+     * [ĐO máy ảo · QA lượt 3, cùng tài liệu §2c.3] chữ `AUTO` hiện thành **`AUT` / `O` hai dòng**, mép dưới chạm hàng
+     * pixel cuối. Nguyên nhân — [ĐO] AOSP `android-10.0.0_r47` `core/java/android/widget/TextView.java`: `setMaxLines`
+     * (`:5336-5339`) và `setHeight` (`:5438-5441`) ghi **CÙNG** cặp trường `mMaximum`/`mMaxMode`, nên phép ghim **xoá**
+     * `maxLines = 1` ⇒ `getMaxLines()` = −1 (`:5357-5359`) ⇒ chốt "quá số dòng" của autosize bị bỏ qua (`:9530`) ⇒
+     * autosize nhận cỡ to hơn kèm **xuống dòng**. `setMaxHeight` (`:5376-5378`) và `setMinHeight` (`:5297-5299`) cũng
+     * ghi vào cặp trường ấy ⇒ **cả ba đều bị cấm ở đây**. Đường đúng: ghim px qua `LayoutParams` ở chỗ `addView` —
+     * `getChildMeasureSpec` gặp `lp.height >= 0` ⇒ đo con EXACTLY ([ĐO] `LinearLayout.java:1380-1383`), khoảng trống
+     * bị ghim y như vậy mà `mMaxMode` giữ nguyên `LINES`.
+     *
+     * Ba dây dưới đây **chặn đúng mutation đã xảy ra thật**: (a) không đường `setHeight`/`setMinHeight`/`setMaxHeight`
+     * nào quay lại `StepValueFit`/`tileStep`; (b) phép ghim phải đi qua `LayoutParams` của ô giá trị; (c) con số px
+     * vẫn đo bằng `paint` và vẫn đo **trước** khi bật autosize. Bài trên là hợp đồng — nó **không** thay được phép đo
+     * ảnh (§2c/§2d của tài liệu QA), nhưng nay nó ít nhất đỏ khi ai đó ghim sai chỗ.
+     *
+     * ## ⚠ Vế thứ năm — lề trong phải NHƯỜNG một nửa, nếu không chữ `AUTO` bị cắt còn `AUT`
+     * [ĐO máy ảo · QA lượt 4 §2d.3] với lề trong đầy đủ ([KachiSpace.XS] mỗi bên = 6px ở 240dpi) ô 47px chỉ còn **35px**
+     * cho chữ, mà `"AUTO"` ở **sàn** [StepValueFit.MIN_SP] vẫn cần ~37px ⇒ autosize hết cỡ vẫn không vừa một dòng ⇒
+     * `StaticLayout` ngắt dòng, `TextView` cao đúng một dòng nên dòng hai **bị cắt khỏi vùng vẽ** ⇒ người lái đọc ra
+     * `AUT`. Đây là lỗi **có từ UX4** (ảnh lượt 2 `43-fan-auto.png` cũng `AUT`), không phải do phép ghim chiều cao.
+     * Nhường một nửa lề (3px mỗi bên) ⇒ 41px cho chữ ⇒ đủ cho `AUTO` nguyên chữ, và ô vẫn **47×31** y như cũ vì bề
+     * ngang ô do `weight` quyết, không do lề trong ([ĐO] cả 5 trạng thái ở §2d.1).
+     */
+    @Test
+    fun `o gia tri co chu roi phai no lai duoc - chieu cao ghim`() {
+        val fit = code("src/main/java/com/byd/clusternav/launcher/StepValueFit.kt")
+        val fn = SourceRoots.body(fit, "fun apply(")
+        assertTrue(
+            fn.contains("if (!needsFit(def)) return ViewGroup.LayoutParams.WRAP_CONTENT"),
+            "nút KHÔNG vượt sàn chung phải nhận `WRAP` y như trước 2.74 (0 pixel đổi ở ô nhiệt độ/âm lượng)",
+        )
+        assertTrue(
+            SourceRoots.body(fit, "fun needsFit(")
+                .contains("ControlVisuals.stepValueChars(def) > ControlVisuals.STEP_VALUE_CHARS"),
+            "điều kiện co là dữ liệu của chính nút đó (registry), không phải danh sách mã nút viết tay",
+        )
+        assertTrue(
+            SourceRoots.body(fit, "fun cellHeightPx(").contains("paint.fontMetricsInt"),
+            "chiều cao phải ĐO bằng paint của view, không gõ hằng dp",
+        )
+        assertTrue(fn.contains("cellHeightPx(v.paint)"), "`apply` phải lấy số px từ chính phép tính thuần ấy")
+        assertTrue(
+            fn.contains("val sidePad = v.paddingLeft / 2") &&
+                fn.contains("v.setPadding(sidePad, v.paddingTop, sidePad, v.paddingBottom)"),
+            "nút phải co được nhường MỘT NỬA lề trong hai bên — đủ lề đầy thì `AUTO` ở sàn 9sp vẫn quá 35px ⇒ " +
+                "ngắt dòng ⇒ dòng hai bị cắt khỏi vùng vẽ ⇒ màn hình đọc ra `AUT` (ĐO máy ảo lượt 4 §2d.3)",
+        )
+        assertTrue(
+            fn.indexOf("setPadding(") < fn.indexOf("cellHeightPx(v.paint)"),
+            "đổi lề TRƯỚC khi đo `paint`/bật autosize — đổi sau là autosize đã chọn cỡ theo khoảng trống cũ",
+        )
+        assertTrue(
+            fn.contains("setAutoSizeTextTypeUniformWithConfiguration(MIN_SP, maxSp.toInt(), 1"),
+            "autosize vẫn phải bật (không co thì `maxLines = 1` cắt CỨNG chữ AUTO)",
+        )
+        assertTrue(
+            fn.indexOf("cellHeightPx(v.paint)") < fn.indexOf("setAutoSizeTextTypeUniform"),
+            "đo `paint` TRƯỚC khi bật autosize — đo sau là đo cỡ chữ autosize đã chọn, không phải cỡ gốc",
+        )
+        // (a) Ba cửa `TextView` ghi vào `mMaximum`/`mMaxMode` đều bị CẤM ở cả hai vùng — chúng xoá `maxLines = 1`.
+        val step = SourceRoots.body(factory, "private fun tileStep(")
+        listOf(
+            Regex("""\.height\s*=""") to "gán `.height` của TextView",
+            Regex("""setHeight\(""") to "setHeight(",
+            Regex("""(?i)minHeight""") to "minHeight",
+            Regex("""(?i)maxHeight""") to "maxHeight",
+        ).forEach { (re, what) ->
+            assertFalse(
+                re.containsMatchIn(fit) || re.containsMatchIn(step),
+                "CẤM $what trong StepValueFit/tileStep — nó ghi vào mMaximum/mMaxMode và XOÁ `maxLines = 1` " +
+                    "(AOSP TextView:5438/5376/5297) ⇒ chữ AUTO xuống 2 dòng (ĐO máy ảo lượt 3 §2c.3)",
+            )
+        }
+        // (b) …và phép ghim phải là chiều cao của `LayoutParams` ở chỗ `addView` ô giá trị.
+        assertTrue(
+            step.contains("val valueH = StepValueFit.apply(vtext, def, size.valueSp)"),
+            "số px phải về tay chỗ gọi (không ghi thẳng vào view) để đem vào LayoutParams",
+        )
+        assertTrue(
+            step.contains("addView(vtext, LinearLayout.LayoutParams(0, valueH, VALUE_WEIGHT))"),
+            "ghim chiều cao NGOÀI view: `lp.height >= 0` ⇒ LinearLayout đo con EXACTLY mà `mMaxMode` giữ LINES",
+        )
+    }
+
     /** Ô stepper vẫn phải giữ nguyên hai bảo đảm đã ĐO trước đó (R7 · đích chạm · không phóng to glyph). */
     @Test
     fun `noi vung cham va co glyph cua stepper khong bi luot WP2 lam mat`() {
@@ -226,11 +359,20 @@ class ControlStateUxContractTest {
     fun `moi tep cua luot WP2 duoi tran 500 dong`() {
         listOf(
             "src/main/java/com/byd/clusternav/launcher/ControlTileFactory.kt",
+            // UX4 (2026-09-26): vai "ô hành động của CHÍNH launcher" tách ra đây để tệp trên còn chỗ cho nấc AUTO.
+            "src/main/java/com/byd/clusternav/launcher/LauncherTile.kt",
+            // [SOÁT Opus 2026-09-27]: vai *"ô một dòng tự chọn cỡ chữ mà vẫn giữ đúng một hộp"* tách ra đây — tệp
+            // trên đã 495/500 và lời giải thích của phép ghim chiều cao dài hơn chính phép ghim.
+            "src/main/java/com/byd/clusternav/launcher/StepValueFit.kt",
             "src/main/java/com/byd/clusternav/launcher/ControlLevelBar.kt",
             "src/main/java/com/byd/clusternav/launcher/TileSize.kt",
             "src/main/java/com/byd/clusternav/launcher/ReadTile.kt",
             "src/main/java/com/byd/clusternav/launcher/KachiSpace.kt",
             "src/main/kotlin/com/byd/clusternav/launcher/ControlVisuals.kt",
+            // UX5b (2026-09-27): chip ghế thứ hai đẩy `TopStrip.kt` tới trần ⇒ vai *"dựng chữ + hình của một chip"*
+            // tách sang `TopStripChips.kt`. Ghim CẢ HAI ở đây để lượt sau không lặng lẽ nhồi lại vào một tệp.
+            "src/main/kotlin/com/byd/clusternav/launcher/TopStrip.kt",
+            "src/main/kotlin/com/byd/clusternav/launcher/TopStripChips.kt",
         ).forEach { rel ->
             val n = SourceRoots.text(rel).lines().size
             assertTrue(n <= 500, "$rel dài $n dòng — trần là 500 (CLAUDE.md §4.1)")

@@ -380,4 +380,97 @@ class TestBridgeSafetyContractTest {
         }
         assertTrue(offenders.isEmpty(), "lệnh gọi cầu thiếu -n (sẽ im lặng rơi trên xe): $offenders")
     }
+
+    // ── (8) `camera_frame` — chụp khung camera GỐC ra PNG ───────────────────────────────────────
+
+    /**
+     * ⚠ CLAUDE.md §8: hàm mới phải CÓ chỗ gọi. Bài này đi hết **bốn** mắt của chuỗi dây, vì đúng ba trong bốn mắt
+     * đó là loại "compile xanh mà chưa từng chạy" (`CastShell.evictVd`): bảng lệnh → nhánh điều phối → móc →
+     * controller thật. Rơi một mắt thì `camera_frame` trả `overlay_not_showing` **mãi mãi**, và trên xe nó trông y
+     * như *"chưa bật xi-nhan"* — một câu trả lời sai nhìn giống một câu trả lời đúng.
+     *
+     * Mắt thứ tư nằm ở `TestBridgeHooks` (không ở `KachiHomeActivity` như `cameraTick`): tệp màn chính đã vượt trần
+     * 500 dòng nên không được bồi thêm, và `AppContainer.cameraSignal` là ĐÚNG một controller của cả tiến trình
+     * (BG-15/BG-16) nên lấy ở đâu cũng là cùng cái đang vẽ.
+     */
+    @Test
+    fun `camera_frame noi du bon mat day tu bang lenh xuong controller`() {
+        assertTrue(
+            TestBridgeCommands.CAMERA_FRAME in TestBridgeCommands.NAMES,
+            "`camera_frame` phải có trong bảng lệnh ở :core",
+        )
+        assertTrue(
+            code("KachiTestBridge.kt").contains("TestBridgeCommands.CAMERA_FRAME -> TestBridgeCameraFrame.run("),
+            "cửa điều phối phải có nhánh `camera_frame` — không có thì lệnh trả `unknown_cmd`",
+        )
+        assertTrue(
+            code("TestBridgeCameraFrame.kt").contains("hooks.cameraFrame("),
+            "thân lệnh phải đi qua móc `cameraFrame` — không dựng overlay/TextureView thứ hai",
+        )
+        val hooks = code("TestBridgeHooks.kt")
+        assertTrue(hooks.contains("cameraFrame = { w, h ->"), "`attachTestBridge` phải nối móc `cameraFrame`")
+        assertTrue(
+            hooks.contains("c.cameraSignal.grabFrame(w, h)"),
+            "móc phải trỏ vào ĐÚNG controller đang vẽ (`AppContainer.cameraSignal.grabFrame`)",
+        )
+        assertTrue(
+            hooks.contains("if (c.cameraSignalCreated)"),
+            "một lệnh ĐO không được tự dựng controller nó đang đo — phải qua cổng `cameraSignalCreated`",
+        )
+    }
+
+    /**
+     * Ba tính chất của lượt ghi tệp — cả ba đều là thứ chỉ hỏng trên xe nếu rữa:
+     *  • `getBitmap` gọi trên **main** (op cây view; sai luồng ⇒ ảnh rỗng hoặc ném);
+     *  • nén **PNG** (JPEG thêm nhiễu vào đúng phép đo *"vòng fisheye tròn hay bẹt"*);
+     *  • `recycle` bitmap (hàng chục MB mỗi khung cỡ luồng gốc — bỏ sót là hết bộ nhớ sau vài lượt gọi).
+     */
+    @Test
+    fun `camera_frame chup tren main, ghi PNG vao kachi-logs, va nha bitmap`() {
+        val src = code("TestBridgeCameraFrame.kt")
+        assertTrue(src.contains("Looper.getMainLooper()"), "lượt chụp phải `post` về main thread")
+        assertTrue(src.contains("CompressFormat.PNG"), "phải nén PNG (không mất mát), không JPEG")
+        assertTrue(src.contains("KachiLog.dir(app)"), "phải ghi vào `kachi-logs/` — chỗ `adb pull` lấy được")
+        assertTrue(src.contains("recycle()"), "phải nhả bitmap sau khi ghi (kể cả nhánh hỏng — `finally`)")
+    }
+
+    /**
+     * Đường kết xuất `SurfaceView` **không bao giờ** chụp được (`TextureView.getBitmap` không tồn tại ở layer đó).
+     *
+     * Lời đáp phải nói ra điều đó, nếu không lượt đo trên xe sẽ đi đúng vòng mò mà CLAUDE.md §15 cấm: chờ thêm, bật
+     * lại xi-nhan, xin cỡ khác — cả ba đều vô ích. Bài canh chính **lý do có mặt trong lời đáp**, không chỉ canh
+     * `null` được trả về.
+     */
+    @Test
+    fun `camera_frame noi ro khi duong ket xuat SurfaceView khong chup duoc`() {
+        val src = code("TestBridgeCameraFrame.kt")
+        assertTrue(src.contains("\"capturable\" to shot.capturable"), "lời đáp phải mang cờ `capturable` đã ĐO")
+        assertTrue(src.contains("\"render\" to shot.render"), "lời đáp phải nói đường kết xuất đang treo")
+        assertTrue(src.contains("if (!shot.capturable)"), "phải rẽ theo phép ĐO, không theo pref")
+        assertTrue(src.contains("SurfaceView"), "`reason` phải nói THẲNG layer nào không chụp được")
+        assertTrue(
+            src.contains("CameraSignalPolicy.RENDER_TEXTURE"),
+            "cách thoát phải lấy mã kết xuất từ hằng `:core`, không chép chuỗi \"TV\"",
+        )
+        val overlay = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraOverlayView.kt")
+        assertTrue(
+            overlay.contains("fun capturable(): Boolean = video is android.view.TextureView"),
+            "`capturable` phải ĐO lớp video đang treo (CLAUDE.md §7), không tra pref",
+        )
+    }
+
+    /**
+     * Bằng chứng AOSP phải NẰM TRONG mã, không nằm trong đầu ai (CLAUDE.md §3).
+     *
+     * Quét `text` (không `codeOf`) **có chủ ý**: thứ cần canh ở đây chính là câu trích dẫn trong KDoc. Cả kết luận
+     * *"ảnh ra là khung gốc"* của lệnh này dựa vào `useLayerTransform = false`; mất trích dẫn thì lần sau không ai
+     * kiểm lại được, và §2 lại bị vi phạm đúng kiểu cũ (suy luận được thăng lên "đã chứng minh").
+     */
+    @Test
+    fun `KDoc captureFrame con giu trich dan AOSP cho getBitmap khong mang transform`() {
+        val doc = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/camera/CameraOverlayView.kt")
+        listOf("TextureView.java", "Readback.cpp", "LayerDrawable.cpp", "useLayerTransform").forEach { token ->
+            assertTrue(doc.contains(token), "KDoc `captureFrame` phải còn trích dẫn `$token`")
+        }
+    }
 }

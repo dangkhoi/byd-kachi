@@ -73,14 +73,16 @@ class CarDataDemandTest {
     @Test
     fun `controlsOf lay nut co readKey dang hien tren thanh nut`() {
         // `fan`/`temp`/`recirc` có readKey (đường đọc) ⇒ vào tập để poll đọc giá trị THẬT của xe.
+        // ⚠ UX4 — `fan` kéo thêm `ac_auto` (mặt TỰ ĐỘNG của chính nó): thiếu nó thì ô không biết xe đang AUTO hay
+        // chỉnh tay, và nấc đáy của thang câm. Xem `o co mat tu dong keo theo nut phu vao tap NUT phai doc`.
         val out = CarDataDemand.controlsOf(state(dock = listOf("fan", "temp", "recirc")))
-        assertEquals(setOf("fan", "temp", "recirc"), out)
+        assertEquals(setOf("fan", "ac_auto", "temp", "recirc"), out)
     }
 
     @Test
     fun `controlsOf lay ca nut o giua man`() {
         val out = CarDataDemand.controlsOf(state(slots = slotsWith("fan")))
-        assertEquals(setOf("fan"), out)
+        assertEquals(setOf("fan", "ac_auto"), out, "UX4 — ô giữa màn cũng kéo theo mặt tự động của nút")
     }
 
     @Test
@@ -135,7 +137,30 @@ class CarDataDemandTest {
         assertNotNull(d)
         assertFalse(
             CarDataDemand.needsFast(d),
-            "chip mặc định (pin·bụi·nhiệt ngoài) không có datum nhịp nhanh nào ⇒ vòng 1 Hz là thuần lãng phí",
+            // UX5b (2026-09-27): mặc định nay có thêm hai chip GỘP ghế ⇒ 4 datum ghế. Chúng cũng là datum nhịp
+            // CHẬM (mức ghế không đổi theo giây), nên kết luận của bài không đổi — nhưng con số datum thì đổi, và
+            // đó là thứ phải nói ra: mặc định nay kéo 3 + 4 = 7 datum mỗi nhịp chậm thay vì 4.
+            "chip mặc định (pin·bụi·nhiệt ngoài + hai chip ghế) không có datum nhịp nhanh nào ⇒ vòng 1 Hz là thuần lãng phí",
+        )
+    }
+
+    /**
+     * ⚠ Cặp datum của mỗi chip ghế GỘP khai ở [TopStripConfig.SEAT_PAIRS]; [CarDataDemand.CHIPS] là bản **CHÉP TAY**
+     * của nó (cố ý — đọc một `val` của `TopStripConfig` lúc nạp `object CarDataDemand` sẽ thêm một cạnh thứ tự khởi
+     * tạo giữa hai bộ đăng ký, đúng họ lỗi `BUILT_IN`/`DEFAULT` đã làm 27 bài đỏ). Bản chép thì phải được **ĐO**:
+     * lệch một mã ⇒ chip hiện "—" một nửa trên xe mà không có gì đỏ.
+     */
+    @Test
+    fun `cap datum cua chip ghe khop SEAT_PAIRS`() {
+        TopStripConfig.SEAT_PAIRS.forEach { (chip, pair) ->
+            assertEquals(
+                setOf(pair.first, pair.second), CarDataDemand.CHIPS[chip],
+                "bảng nhu cầu của chip '$chip' lệch khỏi SEAT_PAIRS ⇒ một nửa chip sẽ không bao giờ được đọc",
+            )
+        }
+        assertEquals(
+            5, CarDataDemand.CHIPS.size,
+            "năm chip TỔNG HỢP (bụi · nhiệt ngoài · năng lượng · ghế lái · ghế phụ) — thêm chip thì khai nhu cầu",
         )
     }
 
@@ -209,5 +234,45 @@ class CarDataDemandTest {
             before2, KachiPerf.value(KachiPerf.Counter.HAL_SKIP_OFFSCREEN),
             "readFast đọc một id KHÔNG có trong FAST_IDS",
         )
+    }
+
+    // ── UX4 · datum BẠN ĐỒNG HÀNH + nút phụ của ô có mặt tự động ─────────────────────────────────
+
+    /**
+     * ⚠ Bài khoá đúng khâu **chết người** của UX4: không có nó thì mọi thứ khác chỉ là chữ chết — chip `ac_wind`
+     * một mình không bao giờ đọc `ac_wind_auto` ⇒ chữ AUTO **không bao giờ** hiện ra, im lặng (CLAUDE.md §8).
+     */
+    @Test
+    fun `chip gio keo theo chi bao AUTO, du dat bang duong nao`() {
+        assertEquals(
+            setOf("ac_wind", "ac_wind_auto"), CarDataDemand.of(state(chips = listOf("ac_wind"))),
+            "datum gió trên thanh trên phải kéo theo chỉ báo auto",
+        )
+        // ⚠ Và phải nổ cho CẢ đường Ô NHÓM: `expand` return ngay ở nhánh đầu khớp, nên nếu bảng bạn-đồng-hành áp
+        // trong `expand` thì ô nhóm hiện "1" trong khi chip hiện "AUTO 1" — hai bề mặt nói hai điều.
+        val group = CapabilityGroups.ALL.firstOrNull { "ac_wind" in it.reads }
+        assertNotNull(group) { "tiền đề: có một nhóm khả năng bày mức gió" }
+        assertTrue(
+            CarDataDemand.of(state(slots = slotsWith(group!!.id)))!!.contains("ac_wind_auto"),
+            "ô nhóm cũng phải kéo theo chỉ báo auto",
+        )
+    }
+
+    @Test
+    fun `bang ban dong hanh chi chua datum CO THAT`() {
+        CarDataDemand.COMPANION.forEach { (k, v) ->
+            assertNotNull(TelemetryRegistry.byId(k)) { "$k không phải datum" }
+            v.forEach { assertNotNull(TelemetryRegistry.byId(it)) { "$it (bạn của $k) không phải datum" } }
+        }
+    }
+
+    /** Ô stepper có mặt tự động phải đọc CẢ nút phụ, nếu không `ClimateAuto` chỉ nhận `null` và ô câm. */
+    @Test
+    fun `o co mat tu dong keo theo nut phu vao tap NUT phai doc`() {
+        val fan = ControlRegistry.byId("fan")!!
+        assertEquals("ac_auto", fan.autoId, "tiền đề: gió khai mặt tự động")
+        assertEquals(setOf("fan", "ac_auto"), CarDataDemand.controlsOf(state(dock = listOf("fan"))))
+        // Nút KHÔNG khai autoId thì không kéo theo gì — generic bằng dữ liệu, không nhánh rẽ theo mã.
+        assertEquals(setOf("temp"), CarDataDemand.controlsOf(state(dock = listOf("temp"))))
     }
 }

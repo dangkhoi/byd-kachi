@@ -1,0 +1,169 @@
+package com.byd.clusternav
+
+import android.content.Context
+import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
+import com.byd.clusternav.launcher.camera.CameraGlUniforms
+import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
+
+/**
+ * ═══ SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` của đường kết xuất `GL` (R8-B · 2.74) ═════════════════════════════
+ *
+ * `docs/diagnostics/offcar-2026-09-26/camera-dewarp-gl.md`. Hàm mở rộng của [Prefs], **cùng tệp `clusternav_prefs`**
+ * với [PrefsAutomation] (dùng lại `autoPrefs` của nó — xem KDoc ở đó về vì sao không mở accessor thứ hai).
+ *
+ * Tệp riêng vì [PrefsAutomation] đã 323 dòng và bộ này là **một vai khác**: nó không cấu hình một automation nào, nó
+ * là bảng tham số quang học của một ống kính. Cùng lẽ `PrefsVoiceV3` tách khỏi `Prefs`.
+ *
+ * ## Cả bảy khoá theo XE (`ProfileScope.DEVICE_KEYS`)
+ * Ống kính, cách HAL ghép ảnh 4-in-1, GPU đầu xe — đều là chuyện của **chiếc xe**, không của sở thích người lái. Cùng
+ * họ `camera_span`/`camera_shape`/`camera_render`. Đổi hồ sơ thì bộ số nắn **không** đổi, và đó là hành vi đúng: hai
+ * người lái cùng một chiếc xe nhìn cùng một ống kính.
+ *
+ * ## Mặc định = KHÔNG ảnh hưởng gì tới xe hôm nay
+ * Cả bảy khoá chỉ được đọc khi `camera_render == GL` — và mặc định của `camera_render` vẫn là `TV`
+ * (`CameraSignalPolicy.defaultRender`). Xe không chạm Cài đặt ⇒ không một uniform nào được gán, không một ngữ cảnh
+ * EGL nào được dựng (CLAUDE.md §6).
+ *
+ * Miền hợp lệ + phép suy bộ mặc định nằm ở `:core` [CameraDewarpPrefs] — **không một con số nào** viết ở tệp này.
+ */
+
+private const val K_DEWARP_AMOUNT = "camera_dewarp_amount"
+private const val K_DEWARP_FOCAL = "camera_dewarp_focal"
+private const val K_DEWARP_K = "camera_dewarp_k"
+private const val K_DEWARP_SCALE = "camera_dewarp_scale"
+private const val K_DEWARP_CX = "camera_dewarp_cx"
+private const val K_DEWARP_CY = "camera_dewarp_cy"
+private const val K_GL_TEX_MATRIX = "camera_gl_texmatrix"
+
+/**
+ * **Độ nắn** `%` — `0` = y ảnh thô 2.73, `100` = nắn đủ (mặc định).
+ *
+ * Ngoài miền ⇒ [CameraDewarpPrefs.AMOUNT_DEFAULT], cùng khuôn [Prefs.cameraCirclePct]: prefs sửa tay được qua
+ * `prefs_set`, và một giá trị lạ phải cho ra **mặc định biết trước** chứ không phải một biên mà owner tưởng mình chọn.
+ */
+fun Prefs.cameraDewarpAmount(ctx: Context): Int = pct(ctx, K_DEWARP_AMOUNT, CameraDewarpPrefs.AMOUNT_DEFAULT) {
+    CameraDewarpPrefs.isAmountPct(it)
+}
+
+/** Xem [cameraDewarpAmount]. */
+fun Prefs.setCameraDewarpAmount(ctx: Context, v: Int) = put(ctx, K_DEWARP_AMOUNT, v)
+
+/**
+ * **Tiêu cự** `F`, tính bằng **`%` của giá trị SUY RA** cho ô đang hiện (`100` = đúng phép suy).
+ *
+ * Phần trăm, không phải trị tuyệt đối — lý do đầy đủ ở KDoc [CameraDewarpPrefs] (`F` đo bằng *nửa bề ngang ô* nên nó
+ * tỉ lệ nghịch với bề ngang ô; một trị tuyệt đối vừa chỉnh đúng sẽ sai ngay khi owner chạm chip *Vùng gương*).
+ */
+fun Prefs.cameraDewarpFocal(ctx: Context): Int = pctOf(ctx, K_DEWARP_FOCAL)
+
+/** Xem [cameraDewarpFocal]. */
+fun Prefs.setCameraDewarpFocal(ctx: Context, v: Int) = put(ctx, K_DEWARP_FOCAL, v)
+
+/**
+ * **K** — hệ số f-theta của ống kính, `%` của giá trị suy ra.
+ *
+ * Đây là núm *"đúng/sai"*, ba núm kia là *"thẩm mỹ"*: sai `K` thì **đường thẳng vẫn cong** dù đã nắn hết tay
+ * (`camera-dewarp-math.md` §4). Thứ tự chỉnh trên xe: tâm → K → tiêu cự → phóng → độ nắn.
+ */
+fun Prefs.cameraDewarpK(ctx: Context): Int = pctOf(ctx, K_DEWARP_K)
+
+/** Xem [cameraDewarpK]. */
+fun Prefs.setCameraDewarpK(ctx: Context, v: Int) = put(ctx, K_DEWARP_K, v)
+
+/**
+ * **Phóng** `SCALE`, `%` (mặc định `100` = không phóng thêm).
+ *
+ * ⚠ Ngược trực giác, và nhãn trên UI phải nói ra: `> 100` = với **sâu hơn** vào ảnh fisheye ⇒ thấy **RỘNG hơn** (vật
+ * nhỏ đi). Viền đen ở góc = đã với ra ngoài vòng ảnh ⇒ hạ xuống.
+ */
+fun Prefs.cameraDewarpScale(ctx: Context): Int = pctOf(ctx, K_DEWARP_SCALE)
+
+/** Xem [cameraDewarpScale]. */
+fun Prefs.setCameraDewarpScale(ctx: Context, v: Int) = put(ctx, K_DEWARP_SCALE, v)
+
+/**
+ * **Lệch tâm quang theo x**, `%` bề ô (`0` = đúng tâm đã suy — xem [CameraGlUniforms.sourceCentre]).
+ *
+ * Là **độ lệch**, không phải vị trí tuyệt đối: tâm suy ra của crop gương nằm *ngoài* ô (`1,25` cho dải 1), nên một
+ * *"phần trăm của ô"* tuyệt đối sẽ có mặc định khác nhau cho từng dải ⇒ không có con số nào viết được vào Cài đặt mà
+ * đúng cho cả bốn dải. Lý do đầy đủ ở KDoc [CameraDewarpPrefs].
+ */
+fun Prefs.cameraDewarpCx(ctx: Context): Int = centre(ctx, K_DEWARP_CX)
+
+/** Xem [cameraDewarpCx]. */
+fun Prefs.setCameraDewarpCx(ctx: Context, v: Int) = put(ctx, K_DEWARP_CX, v)
+
+/** **Lệch tâm quang theo y**, `%` bề ô. Xem [cameraDewarpCx]. */
+fun Prefs.cameraDewarpCy(ctx: Context): Int = centre(ctx, K_DEWARP_CY)
+
+/** Xem [cameraDewarpCy]. */
+fun Prefs.setCameraDewarpCy(ctx: Context, v: Int) = put(ctx, K_DEWARP_CY, v)
+
+/**
+ * Áp `SurfaceTexture.getTransformMatrix` vào `uTexMatrix` hay **truyền ma trận đơn vị** — mặc định **BẬT**.
+ *
+ * Công tắc này là một **phép đo**, không phải một tuỳ chọn thẩm mỹ: RE §7 **Q17 [CHƯA BIẾT]** ma trận thật của camera
+ * id 1 trên ROM này. Mặc định BẬT vì đó là thứ AOSP dặn phải làm ([ĐO] `android-10.0.0_r47`
+ * `graphics/java/android/graphics/SurfaceTexture.java:44-47`). Tắt ⇒ nếu ảnh **lật dọc** thì chính điều đó là câu
+ * trả lời cho Q17 (ma trận thật có chứa phép lật), và dòng `GL uTexMatrix khung đầu` trong `logcat` nói con số.
+ */
+fun Prefs.cameraGlTexMatrix(ctx: Context): Boolean =
+    autoPrefs(ctx).getBoolean(K_GL_TEX_MATRIX, CameraDewarpPrefs.TEX_MATRIX_DEFAULT)
+
+/** Xem [cameraGlTexMatrix]. */
+fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(K_GL_TEX_MATRIX, v).apply()
+
+/**
+ * Đọc **cả bảy khoá một lượt** và dựng bộ uniform cho đường GL — cửa DUY NHẤT mà tầng vẽ đi qua.
+ *
+ * Một hàm thay vì bảy lượt đọc rải trong `CameraSignalController`: bộ uniform phải **nhất quán** (sáu con số cùng
+ * thuộc một lượt chỉnh), và bảy dòng `Prefs.…` ở chỗ gọi là bảy chỗ quên được khi thêm núm thứ tám. Phép hợp thì nằm
+ * ở `:core` ([CameraGlUniforms.of]) và test được off-car; hàm này chỉ **đọc đĩa**.
+ *
+ * @param crop vùng cắt đã suy ([com.byd.clusternav.launcher.camera.CameraPanoCrop.cropFor]) — cùng giá trị truyền cho
+ *   overlay, KHÔNG tính lại (hai lượt tính là hai kết quả lệch được).
+ * @param strip chỉ số dải đang xem — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
+ */
+fun Prefs.cameraGlUniforms(
+    ctx: Context,
+    view: CamView,
+    crop: FloatArray?,
+    strip: Int,
+    rotationDeg: Int,
+    streamW: Int,
+    streamH: Int,
+): CameraGlUniforms {
+    val centre = CameraGlUniforms.sourceCentre(view, strip)
+    return CameraGlUniforms.of(
+        crop = crop,
+        srcCentreX = centre[0],
+        srcCentreY = centre[1],
+        streamW = streamW,
+        streamH = streamH,
+        rotationDeg = rotationDeg,
+        amountPct = cameraDewarpAmount(ctx),
+        focalPct = cameraDewarpFocal(ctx),
+        kPct = cameraDewarpK(ctx),
+        scalePct = cameraDewarpScale(ctx),
+        centerXPct = cameraDewarpCx(ctx),
+        centerYPct = cameraDewarpCy(ctx),
+        texMatrix = cameraGlTexMatrix(ctx),
+    )
+}
+
+/** Một khoá `%` của bốn núm tỉ lệ ([CameraDewarpPrefs.isPct]). */
+private fun Prefs.pctOf(ctx: Context, key: String): Int =
+    pct(ctx, key, CameraDewarpPrefs.PCT_DEFAULT) { CameraDewarpPrefs.isPct(it) }
+
+/** Một khoá lệch tâm ([CameraDewarpPrefs.isCenterPct]). */
+private fun Prefs.centre(ctx: Context, key: String): Int =
+    pct(ctx, key, CameraDewarpPrefs.CENTER_DEFAULT) { CameraDewarpPrefs.isCenterPct(it) }
+
+/** Đọc một `Int`, ngoài miền ⇒ [fallback]. Một thân hàm cho cả sáu núm — không sáu bản sao của cùng ba dòng. */
+private inline fun Prefs.pct(ctx: Context, key: String, fallback: Int, ok: (Int) -> Boolean): Int {
+    val raw = autoPrefs(ctx).getInt(key, fallback)
+    return if (ok(raw)) raw else fallback
+}
+
+private fun Prefs.put(ctx: Context, key: String, v: Int) = autoPrefs(ctx).edit().putInt(key, v).apply()

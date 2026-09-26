@@ -47,13 +47,33 @@ class VoiceRelativeStepTest {
         override fun readStep(id: String): Int? = null
     }
 
-    private class Rig(reads: Map<String, Int?> = emptyMap(), absent: Set<String> = emptySet()) {
+    /**
+     * @param controls ảnh chụp [CarStatus.controls] mà vòng poll đã có — UX4 đọc cờ AUTO từ ĐÂY (không tốn thêm một
+     *   lượt HAL nào). Rỗng = *"chưa biết"*, đúng ca off-car và ca ô gió chưa lên màn.
+     */
+    private class Rig(
+        reads: Map<String, Int?> = emptyMap(),
+        absent: Set<String> = emptySet(),
+        private val controls: Map<String, Int> = emptyMap(),
+        /**
+         * [SOÁT 2.74 · P2] `true` ⇒ việc bị đẩy xuống nền được **giữ lại** trong [lane] thay vì chạy ngay.
+         *
+         * Mặc định `false` (chạy thẳng) vì mọi bài khác cần thứ tự tất định. Nhưng chính cái mặc định ấy làm luồng
+         * vẽ và luồng nền thành **cùng một luồng** trong JVM, nên nó không thể phân biệt *"đã xuống nền"* với *"vẫn
+         * chờ trên luồng gọi"* — mà đó đúng là bất biến cần khoá. Giữ lambda lại là cách duy nhất phân biệt được:
+         * chưa ai chạy nó thì **chưa một lệnh nào** được bắn.
+         */
+        private val holdBackground: Boolean = false,
+    ) {
         val port = Port(reads, absent)
         val said = ArrayList<String>()
 
+        /** Những việc đã được đẩy xuống luồng nền và **chưa** chạy (chỉ khi `holdBackground`). */
+        val lane = ArrayList<() -> Unit>()
+
         fun dispatcher() = VoiceDispatcher(
             control = { port },
-            state = { HomeUiState(profiles = listOf("Mặc định")) },
+            state = { HomeUiState(profiles = listOf("Mặc định"), carStatus = CarStatus(controls = controls)) },
             media = { error("bài này không chạm tới nhạc") },
             appsByLabel = { emptyMap() },
             openApp = { false },
@@ -67,7 +87,7 @@ class VoiceRelativeStepTest {
             sendToApp = { error("bài này không giao việc cho app đích") },
             geocode = { error("bài này không tra toạ độ") },
             mediaPackage = { null },
-            background = { it() },
+            background = { if (holdBackground) lane += it else it() },
         )
     }
 
@@ -188,6 +208,113 @@ class VoiceRelativeStepTest {
     @Test
     fun `mac dinh cua cong la KHONG BIET, va khong biet nghia la cu thu`() {
         assertTrue(NoCar.wiredOnThisCar("ac_auto"), "mặc định phải là 'cứ thử đi', không phải 'xe không có'")
+    }
+
+    // ══ 3b · UX4 (2026-09-26) — NẤC ĐÁY của thang gió tên là AUTO, không phải 0 ═══════════════════════════
+    //
+    // [ĐO xe 2026-09-20] (`docs/diagnostics/oncar-1.84-session-2026-09-20.md:41`) `AC_WIND_LEVEL_SET = 0` **bị xe
+    // BỎ QUA**. Tới 2.73 câu *"giảm gió"* ở mức 1 tính `clamp(1 − 1) = 0` rồi bắn mức 0 ⇒ Kachi báo ✓, quạt vẫn
+    // thổi, và ngón tay (`ControlTileFactory.nudge`, đã đi qua [ClimateAuto] từ UX4) làm **việc khác** với câu nói
+    // cho cùng một cái ô. Bốn bài dưới khoá cả bốn ô của bảng quyết định trên bề mặt GIỌNG NÓI thật.
+
+    @Test
+    fun `giam gio o muc 1 thi BAT auto, tuyet doi khong ghi muc 0`() {
+        val r = Rig(mapOf("fan" to 1))        // xe đang gió 1; chưa đọc được cờ auto ⇒ "chưa biết"
+        ControlTileState.shared.setValue("fan", 4)
+        r.dispatcher().execute(up("fan", steps = -1))
+        assertEquals(
+            listOf("toggle:ac_auto:true"), r.port.fired,
+            "nấc đáy phải là BẬT gió tự động; thấy `step:fan:0` nghĩa là vẫn bắn cái lệnh xe bỏ qua",
+        )
+        assertTrue(r.said.single().contains("AUTO"), "phải nói ra trạng thái mới, không nói 'đã đặt Gió = 0': ${r.said}")
+    }
+
+    @Test
+    fun `dang AUTO ma noi giam nua thi KHONG ban gi va van noi ra`() {
+        // `ac_auto` đã qua `applyInverted` ⇒ ước chung 1 = đang bật (⚠ hai cửa `autoOn*` — KDoc ClimateAuto).
+        val r = Rig(mapOf("fan" to 1), controls = mapOf("ac_auto" to 1))
+        r.dispatcher().execute(up("fan", steps = -1))
+        assertTrue(r.port.fired.isEmpty(), "mã này không có nấc TẮT ⇒ không được bắn lệnh nào: ${r.port.fired}")
+        assertTrue(r.said.single().contains("AUTO"), "im lặng thì người lái nói lại lần hai: ${r.said}")
+    }
+
+    @Test
+    fun `dang AUTO ma noi tang thi ROI auto roi moi dat muc, dung thu tu`() {
+        val r = Rig(mapOf("fan" to 1), controls = mapOf("ac_auto" to 1))
+        r.dispatcher().execute(up("fan"))
+        assertEquals(
+            listOf("toggle:ac_auto:false", "step:fan:2"), r.port.fired,
+            "rời AUTO là HAI lệnh, và lệnh tắt auto phải đi TRƯỚC (ngược lại thì mức vừa đặt bị auto ghi đè)",
+        )
+    }
+
+    // ══ 3c · [SOÁT 2.74 · P2] — HAI lệnh thì có nhịp chờ 400 ms, và chỗ chờ KHÔNG được là luồng vẽ ═════════
+    //
+    // `VoiceSession` gọi `VoiceDispatcher` trên luồng VẼ, nên bản đầu của nhánh rời-AUTO đóng băng giao diện ~400 ms
+    // ([ActionMacros.DEFAULT_GAP_MS]) giữa hai lệnh — trên một cái xe đang lăn bánh. Cú **chạm** ô −/+ chờ đúng cùng
+    // nhịp ấy mà không đơ, vì nó chờ trên làn nền tuần tự của `ControlTileWrite` (`ControlTileFactory.nudge`).
+
+    /**
+     * Rời AUTO: **không một lệnh nào** được bắn trên luồng gọi; cả chuỗi nằm trong lambda nền, và câu trả lời chỉ
+     * đến sau khi chuỗi ấy chạy xong.
+     *
+     * Bài này đỏ nếu bản vá bị gỡ: chạy thẳng trên luồng gọi thì `fired` đã có hai lệnh **trước** khi ai chạm [lane].
+     */
+    @Test
+    fun `roi AUTO thi ca chuoi ghi nam tren luong NEN, khong chan luong goi`() {
+        val r = Rig(mapOf("fan" to 1), controls = mapOf("ac_auto" to 1), holdBackground = true)
+        r.dispatcher().execute(up("fan"))
+        assertTrue(
+            r.port.fired.isEmpty(),
+            "chuỗi ghi CÓ nhịp chờ 400 ms phải nằm trọn trên luồng nền; thấy lệnh ở đây = vẫn chờ trên luồng vẽ: ${r.port.fired}",
+        )
+        assertTrue(r.said.isEmpty(), "chưa ghi xong thì chưa được nói")
+        assertEquals(1, r.lane.size, "đúng MỘT việc được đẩy xuống nền cho một câu lệnh: ${r.lane.size}")
+
+        r.lane.single().invoke()
+        assertEquals(
+            listOf("toggle:ac_auto:false", "step:fan:2"), r.port.fired,
+            "xuống nền rồi thì thứ tự vẫn y nguyên: tắt auto TRƯỚC, đặt mức SAU",
+        )
+        assertEquals(listOf("fan"), r.port.readIds, "vẫn đúng MỘT lượt đọc HAL cho MỘT câu (ngân sách 33 đọc/phút)")
+        assertEquals(1, r.said.size, "ghi xong thì phải nói lại đúng một câu (qua `onUi`): ${r.said}")
+    }
+
+    /**
+     * …và ba nhánh **một lệnh** tuyệt đối KHÔNG được xuống nền.
+     *
+     * Không phải vì tiết kiệm một thread: `VoiceDispatcher.runFrom` chạy các vế của một câu ghép **tuần tự trên
+     * luồng gọi**, nên vế nào hoá bất đồng bộ thì vế sau có thể ghi xuống xe **trước** nó — *"tăng gió rồi tắt điều
+     * hoà"* đổi nghĩa. Nhánh rời-AUTO buộc phải nhận cái giá ấy (400 ms đứng hình còn tệ hơn), ba nhánh này không.
+     */
+    @Test
+    fun `ba nhanh MOT lenh khong bi day xuong nen`() {
+        // `EnableAuto` — giảm gió ở mức 1 (một lệnh `toggle`, không ghi mức).
+        val enable = Rig(mapOf("fan" to 1), holdBackground = true)
+        enable.dispatcher().execute(up("fan", steps = -1))
+        assertEquals(listOf("toggle:ac_auto:true"), enable.port.fired, "một lệnh ⇒ không có gì để chờ ⇒ chạy thẳng")
+        assertTrue(enable.lane.isEmpty(), "đẩy nhánh KHÔNG chờ xuống nền là mở một chỗ đảo thứ tự trong câu ghép")
+
+        // `SetLevel` tương đối trên nút không khai `autoId` (một lệnh mức).
+        val setLevel = Rig(mapOf("temp" to 18), holdBackground = true)
+        setLevel.dispatcher().execute(up("temp", steps = -1))
+        assertEquals(listOf("step:temp:17"), setLevel.port.fired, "18 − 1 = 17, ngay trên luồng gọi")
+        assertTrue(setLevel.lane.isEmpty(), "nút không khai `autoId` không được đổi một dòng nào")
+
+        // Lệnh TUYỆT ĐỐI (`plan == null`) — đường trước UX4, không đi qua bảng quyết định nào.
+        val abs = Rig(holdBackground = true)
+        abs.dispatcher().execute(listOf(VoiceIntent.Control("fan", 3)))
+        assertEquals(listOf("step:fan:3"), abs.port.fired, "câu đã nêu đích thì vẫn là một lệnh, ngay trên luồng gọi")
+        assertTrue(abs.lane.isEmpty(), "lệnh tuyệt đối không có nhịp chờ nào để tránh")
+    }
+
+    /** Nút KHÔNG khai `autoId` (nhiệt độ) phải giữ hành vi **y nguyên** — một lệnh, không cửa auto nào bị chạm. */
+    @Test
+    fun `nut khong co autoId thi khong doi mot dong nao`() {
+        val r = Rig(mapOf("temp" to 18), controls = mapOf("ac_auto" to 1))
+        assertTrue(ControlRegistry.byId("temp")!!.autoId.isBlank(), "bài này dựa vào việc `temp` không khai autoId")
+        r.dispatcher().execute(up("temp", steps = -1))
+        assertEquals(listOf("step:temp:17"), r.port.fired, "18 − 1 = 17, và KHÔNG có `toggle:` nào")
     }
 
     // ══ 4 · T2 (2026-09-16) — SÁU nút còn lại của H1, owner: *"làm hết toàn bộ scope"* ═══════════════════

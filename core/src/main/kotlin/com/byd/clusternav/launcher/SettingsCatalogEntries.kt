@@ -283,6 +283,11 @@ internal object SettingsCatalogEntries {
         // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
         // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
         SettingsEntry("voice_tts_pack", SettingsGroup.VOICE, "Giọng đọc offline", labelEn = "Offline voice pack"),
+        // 2.74 · R3 — danh sách câu nói được ở CUỐI nhóm. Mục THÔNG TIN: `prefKey = null` vì không có gì để lưu
+        // (trạng thái gập/mở cố ý không bền — xem KDoc `SettingsRowsDisclosure`), nhưng nó vẫn phải có mặt ở danh
+        // mục IA v2: rail đếm số mục của nhóm, và `SettingsCatalogControlContractTest` canh hai chiều *"mục ⇔ có
+        // control thật trên màn"*. Một bề mặt đã vẽ mà không có mục là một hàng lậu.
+        SettingsEntry("voice_commands", SettingsGroup.VOICE, "Câu lệnh nói được", labelEn = "Spoken commands"),
         // ── V3 · "nhanh + tự nhiên" (spec `kachi-voice-fast-natural.html`) ──
         // R7 — mục liệt kê MỌI việc có thể hỏi lại, mỗi việc một ô tích; mặc định KHÔNG tích cái nào (owner
         // 2026-09-16: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*).

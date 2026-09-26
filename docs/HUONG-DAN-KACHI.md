@@ -1,6 +1,6 @@
 # Kachi launcher — Hướng dẫn sử dụng & cấu hình · User & configuration guide
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (bản **2.73 (174)**, package `com.byd.launcher`) · **Mục đích**: hướng dẫn **dùng + cấu hình** Kachi cho anh em — cài/OTA · HOME · màn hình chính · hồ sơ · **từng nhóm Cài đặt theo đúng đường dẫn menu** · **bảng lệnh giọng nói theo nhóm** · ảnh/hình nền · automation · lấy log · FAQ. VI trước, EN sau.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (bản **2.74 (175)**, package `com.byd.launcher`) · **Mục đích**: hướng dẫn **dùng + cấu hình** Kachi cho anh em — cài/OTA · HOME · màn hình chính · hồ sơ · **từng nhóm Cài đặt theo đúng đường dẫn menu** · **bảng lệnh giọng nói theo nhóm** · ảnh/hình nền · automation · lấy log · FAQ. VI trước, EN sau.
 > Tên nhóm và tên hàng lấy **đúng nguyên văn** từ app (`SettingsCatalogGroups.kt` · `strings_kachi.xml`). Đời ClusterNav 1.x xem `HUONG-DAN.md` (Historical). Danh mục **mọi** chức năng + status trên xe: `kachi-feature-catalog.html`. Kỹ thuật/việc còn mở: `PROJECT-BACKLOG.md`, `CLOSEOUT-2026-09-25.md`.
 > Ký hiệu: **🚗** = code xong, **chưa đo trên xe thật** — đừng coi là đã chạy được.
 
@@ -12,7 +12,7 @@
 
 | Việc | Cách làm |
 |---|---|
-| **Cài lần đầu** | Tải `apk/Kachi-2.73-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-2.73-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
+| **Cài lần đầu** | Tải `apk/Kachi-2.74-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-2.74-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
 | **Cập nhật về sau** | *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, **không cần laptop**. |
 | **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. |
 | **Bản rất cũ** | Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần. |
@@ -53,10 +53,17 @@
 | | **Hiện camera lên màn cụm** | Overlay hiện trên cụm đồng hồ thay vì màn chính. |
 | | **Xi-nhan trái hiện ở** / **Xi-nhan phải hiện ở** | Góc trên-trái / trên-phải, đặt riêng từng bên (mặc định trái TL, phải TR). |
 | | **Xi-nhan trái: xoay video** / **Xi-nhan phải: xoay video** | *Không xoay* · *↺ 90°* · *↻ 90°* · *180°*. Mặc định **trái ↺ 90°, phải ↻ 90°** (dải gương cắt từ camera 360 vốn nằm ngang). **Hai bên độc lập** — bên nào còn ngang/lộn đầu thì chỉ chỉnh hàng bên đó. |
-| | **Kết xuất camera** | *TextureView (mặc định)* / *SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)*. Chỉ đổi khi thấy **giật lúc xe chạy**; không vừa thì trả về mặc định. 🚗 |
+| | **Kết xuất camera** | *TextureView (mặc định)* / *SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)* / **Nắn méo (GL) — đang thử** (2.74: nắn ảnh mắt cá thành thẳng bằng GPU; đã chứng minh trên máy ảo, **chưa đo trên xe**). Chỉ đổi khi thấy **giật lúc xe chạy** hoặc muốn thử nắn; không vừa thì trả về mặc định. 🚗 |
+| | **Nắn méo (khi chọn GL)** (2.74) | Chỉnh theo thứ tự **Tâm → K → Tiêu cự → Phóng → Độ nắn**; bộ số mặc định suy từ hình học, chưa đo xe. *K*: chỉnh tới khi vạch kẻ đường thẳng; *Tiêu cự* lớn hơn = hẹp hơn/phóng to; *Phóng* lớn hơn = thấy rộng hơn; *Độ nắn* 0 % = ảnh thô. 🚗 |
+| | **Bề rộng vùng gương** (2.74) | *Vệt hẹp (mặc định)* = như 2.73 · *Trọn dải camera* = cả 1/4 ảnh ghép (thấy nhiều hơn, méo hơn). 🚗 |
+| | **Dải cho xi-nhan trái** / **Dải cho xi-nhan phải** (2.74) | Ảnh camera 360 ghép 4 dải (0–3). Mặc định trái 1, phải 2. Thấy sai hướng thì đổi dải. 🚗 |
+| | **Hình khung camera** (2.74) | *Chữ nhật (mặc định)* / *Tròn* = thấy trọn vòng ảnh mắt cá trong cửa sổ tròn (chưa nắn méo). 🚗 |
+| | **Kênh xem camera** (2.74) | *Tự dò (mặc định)* / 0–4. Thử 1–4 nếu muốn một camera thay vì ảnh ghép — có thể mất hình, trả về *Tự dò*. 🚗 |
 | | **Cam xi-nhan trái** / **Cam xi-nhan phải** | id camera **0–5** mỗi bên. Cam không lên thì thử id khác (Sealion 6 dùng **cam 0**). |
 | **Lấy gió trong** | **Nổ máy thì tự lấy gió trong** | Xe quên chế độ này mỗi lần khởi động — Kachi tự bật lại. |
 | **Ghế mát / sưởi** | **Tự chỉnh ghế theo nhiệt độ** + **Chế độ** (*Làm mát* / *Sưởi*) + **mức từng ghế** | Chạm một ghế trên sơ đồ để đổi mức: **tắt → mức 1 → mức 2**. Mát và sưởi **loại trừ nhau** (theo HAL của xe). |
+| **Gió (ô điều khiển)** | ô **Gió** −/+ (2.74) | Bấm **−** khi đang mức 1 ⇒ chuyển sang **AUTO** (ô ghi *AUTO*, xe tự chọn mức — mức 0 không tồn tại trên xe). Bấm **+** khi đang AUTO ⇒ về chỉnh tay ở *mức đang thổi + 1*. Chip gió trên thanh trên ghi **AUTO n** khi tự động (n = mức đang thổi), chỉ **n** khi chỉnh tay. 🚗 chữ AUTO cần xác nhận trên xe. |
+| **Ghế (thanh trên)** | hai chip **Ghế lái** · **Ghế phụ** gộp (2.74, **có sẵn trong 5 chip mặc định**) | Hình ghế + dấu **sưởi** (nhiệt) hoặc **mát** (gió) + mức 1/2, **riêng từng ghế**; cả hai tắt ⇒ chỉ hình ghế mờ, không in chữ "Tắt". Thanh trên mặc định nay có 5 chip (Bụi mịn · Nhiệt độ · Năng lượng · Ghế lái · Ghế phụ); danh sách chip bạn đã tự đặt thì Kachi giữ nguyên. Hai chip lẻ *Ghế sưởi* / *Ghế mát* vẫn còn cho ai muốn. |
 | **Lọc bụi mịn** | **Tự lọc khi không khí bẩn** · **Lọc ngay một lượt** | Dòng *Bụi mịn hiện tại* hiện mức đọc được; tắt công tắc = chỉ lọc khi bạn bấm. |
 | **Tự sấy kính khi mưa** 🚗 | **Mưa thì tự bật sấy kính** + **Sấy kính trước** + **Sấy kính sau + gương** | Đọc cảm biến mưa **mỗi 5 phút**; hết mưa thì tắt — và **chỉ tắt cái Kachi bật**, bạn tự bật thì Kachi không đụng. Chưa gặp buổi mưa thật để xác nhận. |
 
@@ -110,6 +117,20 @@
 - **Huỷ lượt nghe**: **chạm ra ngoài tấm chữ**, hoặc chờ trần **8 s**. Từ **2.73 nút Back KHÔNG huỷ nữa** (nó đi tới app phía sau) — đổi có chủ ý để thanh điều hướng của xe không trồi lên lúc Kachi đọc phản hồi. Đây **không phải lỗi**.
 - Ghép được hai việc bằng ***và*** hoặc ***rồi***.
 - Số nói bằng chữ hay bằng số đều được (*"hai mươi bốn"* = *"24"*).
+
+> **Danh sách ĐẦY ĐỦ nằm trong app** (2.74): *Cài đặt › Giọng nói › **Câu lệnh nói được*** — các nhóm gập/mở, hiện
+> **số câu** ở tiêu đề. Danh sách đó **sinh bằng máy** từ `VoiceCommandCatalog` (`:core`) nên nó luôn khớp với thứ xe
+> hiểu, kể cả tên **hồ sơ / app đã cài / địa chỉ đã lưu THẬT** của máy bạn — thứ mà một tài liệu không thể biết.
+>
+> Bảng dưới là bản **tóm tắt do người viết**, gom theo **loại việc** (bật/tắt · kính · nhạc…), còn danh sách trong app
+> gom theo **miền xe** (Khí hậu · Thân xe · Đèn…) — **hai trục khác nhau**, cố ý giữ cả hai: bảng này để đọc nhanh,
+> danh sách kia để tra chính xác. Vì nó gõ tay, **phải soát lại mỗi lần registry đổi**. Bản máy-sinh đầy đủ (mỗi nút ·
+> mỗi datum · câu mẫu · câu phản hồi · status) ở `docs/kachi-feature-catalog.html`; sinh lại bằng:
+>
+> ```bash
+> ./gradlew :core:test --tests '*FeatureCatalogDumpTest*'   # → core/build/catalog/registry.json
+> python3 scripts/docs/feature-catalog.py                   # → docs/kachi-feature-catalog.html
+> ```
 
 | Nhóm | Ví dụ nói được | Kachi làm gì |
 |---|---|---|
@@ -205,7 +226,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Task | How |
 |---|---|
-| **First install** | Download `apk/Kachi-2.73-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-2.73-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
+| **First install** | Download `apk/Kachi-2.74-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-2.74-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
 | **Updates** | *Settings › System & permissions › **Check for updates*** — the app fetches the newer `apk/` build and installs it over the dadb loopback; **no laptop**. |
 | **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. |
 | **Very old builds** | Builds installed before 1.41 (old signing key) must be uninstalled once (`pm uninstall com.byd.launcher`). |
@@ -244,10 +265,17 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 | | **Show the camera on the cluster** | Overlay goes to the cluster instead of the main screen. |
 | | **Left signal shows at** / **Right signal shows at** | Top-left / top-right, per side (default left TL, right TR). |
 | | **Left signal: rotate video** / **Right signal: rotate video** | *No rotation* · *↺ 90°* · *↻ 90°* · *180°*. Defaults **left ↺ 90°, right ↻ 90°** (the mirror crop of the 360 camera is sideways). **The sides are independent** — fix only the row for the side that looks wrong. |
-| | **Camera rendering** | *TextureView (default)* / *SurfaceView (lighter, rotates via the HAL — may not rotate)*. Only switch if the video **stutters while driving**; switch back if it looks wrong. 🚗 |
+| | **Camera rendering** | *TextureView (default)* / *SurfaceView (lighter, rotates via the HAL — may not rotate)* / **Dewarp (GL) — experimental** (2.74: straightens the fisheye on the GPU; proven on the emulator, **not yet measured on a car**). Only switch if the video **stutters while driving**; switch back if it looks wrong. 🚗 |
+| | **Dewarp (when GL is selected)** (2.74) | Tune in this order: **Centre → K → Focal → Zoom → Amount**; defaults are derived from geometry, not measured on a car. *K*: adjust until lane lines are straight; higher *Focal* = narrower/zoomed; higher *Zoom* = wider view; *Amount* 0 % = raw image. 🚗 |
+| | **Mirror crop width** (2.74) | *Narrow strip (default)* = as 2.73 · *Whole camera strip* = the full quarter of the stitched frame (more context, more distortion). 🚗 |
+| | **Strip for left/right signal** (2.74) | The 360 frame is 4 strips (0–3); defaults left 1, right 2. Change if the direction is wrong. 🚗 |
+| | **Camera window shape** (2.74) | *Rectangle (default)* / *Round* = the whole fisheye circle in a round window (no dewarp). 🚗 |
+| | **Camera view channel** (2.74) | *Auto (default)* / 0–4. Try 1–4 for a single camera instead of the stitched frame — may lose the picture; go back to *Auto*. 🚗 |
 | | **Left signal camera** / **Right signal camera** | Camera id **0–5** per side. If nothing appears, try another id (Sealion 6 uses **cam 0**). |
 | **Recirculation** | **Recirculation on engine start** | The car forgets it every start — Kachi turns it back on. |
 | **Seat cool / heat** | **Adjust seats by temperature** + **Mode** (*Cool* / *Heat*) + **level per seat** | Tap a seat on the diagram to cycle: **off → level 1 → level 2**. Cool and heat are **mutually exclusive** (per the car's HAL). |
+| **Fan (control tile)** | **Fan** −/+ tile (2.74) | Press **−** at level 1 ⇒ switches to **AUTO** (tile shows *AUTO*; level 0 does not exist on the car). Press **+** while AUTO ⇒ back to manual at *current level + 1*. The header fan chip shows **AUTO n** when automatic (n = current level), plain **n** when manual. 🚗 the AUTO label still needs a car check. |
+| **Seat (header)** | merged **Driver seat** · **Passenger seat** chips (2.74, **in the 5 default chips**) | Seat glyph + **heat** or **cool** mark + level 1/2, **per seat**; both off ⇒ dimmed seat only, no "Off" text. The header now defaults to 5 chips (PM2.5 · Temperature · Energy · Driver seat · Passenger seat); a chip list you customised yourself is left untouched. The single *Seat heat* / *Seat cool* chips remain available. |
 | **PM2.5 filter** | **Purify when the air is dirty** · **Purify now** | A *current dust level* line shows the reading; switch off = purify only when you press. |
 | **Auto-defrost when it rains** 🚗 | **Auto-defrost when it rains** + **Front windscreen** + **Rear + mirrors** | Polls the rain sensor **every 5 min**; turns off when the rain stops — and **only what Kachi turned on**. Never confirmed in real rain. |
 
@@ -301,6 +329,22 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 - **Cancel a turn**: **tap outside the card**, or wait out the **8 s** ceiling. Since **2.73 Back no longer cancels** (it goes to the app behind) — deliberate, so the car's navigation bar stops popping up while Kachi speaks. This is **not a bug**.
 - Chain two actions with ***và*** or ***rồi***.
 - Numbers work spoken or as digits (*"hai mươi bốn"* = *"24"*).
+
+> **The COMPLETE list lives in the app** (2.74): *Settings › Voice › **Spoken commands*** — collapsible groups with a
+> phrase count in each header. That list is **machine-generated** from `VoiceCommandCatalog` (`:core`), so it always
+> matches what the car understands, including the **real profile / installed-app / saved-place names** on your unit —
+> which a document cannot know.
+>
+> The table below is a **hand-written summary** grouped by **kind of action** (toggles · windows · music…), while the
+> in-app list groups by **car domain** (Climate · Body · Lights…) — **two different axes**, both kept on purpose: this
+> table to skim, that list to look things up. Being hand-written, it **must be re-checked whenever the registry
+> changes**. The full machine-generated reference (every button · every data point · sample phrases · replies ·
+> status) is `docs/kachi-feature-catalog.html`; regenerate with:
+>
+> ```bash
+> ./gradlew :core:test --tests '*FeatureCatalogDumpTest*'   # -> core/build/catalog/registry.json
+> python3 scripts/docs/feature-catalog.py                   # -> docs/kachi-feature-catalog.html
+> ```
 
 | Group | Example (Vietnamese, as spoken) | What Kachi does |
 |---|---|---|

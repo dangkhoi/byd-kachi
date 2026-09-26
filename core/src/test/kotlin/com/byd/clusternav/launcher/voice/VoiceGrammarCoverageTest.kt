@@ -25,23 +25,25 @@ import org.junit.jupiter.api.Test
  * `ControlRegistry` mà từ vựng không phủ ⇒ bài này **đỏ ngay**, không phải chờ ai đó nhớ ra để thêm ca test. Đây
  * là cùng cơ chế `LangCoverageTest` dùng cho bản dịch, và cùng lý do.
  *
- * Số ca sinh ra hôm nay: 65 nút + 123 datum + 4 gói lệnh + 2 hành động launcher = **194**, cộng phần tiếng Anh.
+ * Số ca sinh ra hôm nay: **33 nút + 64 datum + 2 gói lệnh + 3 hành động launcher = 102**, cộng phần tiếng Anh.
+ * (Bản trước ghi *"65 nút + 123 datum + 4 gói + 2 launcher = 194"* — con số của trước lượt owner gỡ ADAS
+ * 2026-09-16 và các lượt purge sau đó. Một KDoc nói sai con số nó đang canh là chỗ người sau đọc rồi tin nhầm.)
+ *
+ * ## 2.74 · R3 — câu mẫu nay lấy từ [VoiceCommandCatalog], không còn bảng riêng trong tệp này
+ * Hai bảng `when (def.kind)` (VI + EN) từng sống ở đây là **bản sao thứ 2 và 3** của cùng một bộ sinh câu (xem
+ * KDoc [VoiceCommandCatalog] về cả năm bản). Nay chúng gọi [VoiceCommandCatalog.coverageSentence] — cùng hàm mà
+ * màn *Cài đặt › Giọng nói* và dump danh mục đọc, nên một câu hỏng thì cả ba bề mặt đỏ cùng lúc.
  */
 class VoiceGrammarCoverageTest {
 
     /**
-     * Câu mẫu cho một nút, dựng từ **nhãn của chính nó** + động từ hợp với [ControlKind].
+     * Câu mẫu cho một nút — **một** hàm, dùng chung với màn Cài đặt và dump danh mục.
      *
      * Nút BẤM không có động từ nào tự nhiên trong tiếng Việt (*"bấm Lọc ngay"* không ai nói) ⇒ dùng chính cái tên
-     * làm câu lệnh, đúng luật *"cả câu là TÊN của việc"* mà `VoiceIntentParser.headMatch` cài.
+     * làm câu lệnh, đúng luật *"cả câu là TÊN của việc"* mà `VoiceIntentParser.headMatch` cài — luật ấy nay khai ở
+     * [VoiceCommandCatalog.coverageSentence].
      */
-    private fun sentenceFor(def: ControlDef): String = when (def.kind) {
-        ControlKind.TOGGLE -> "bật ${def.label}"
-        ControlKind.COVER -> "mở ${def.label}"
-        ControlKind.BUTTON -> def.label
-        ControlKind.SELECT -> "đặt ${def.label} ${def.args.firstOrNull().orEmpty()}"
-        ControlKind.STEP -> "đặt ${def.label} ${def.value}"
-    }
+    private fun sentenceFor(def: ControlDef): String = VoiceCommandCatalog.coverageSentence(def, Lang.VI)
 
     // ══ 1 · MỌI NÚT gọi được bằng lời ══════════════════════════════════════════════════════════════════
 
@@ -83,7 +85,7 @@ class VoiceGrammarCoverageTest {
     fun `moi datum trong TelemetryRegistry deu doc duoc bang mot cau xem`() {
         val misses = ArrayList<String>()
         TelemetryRegistry.ALL.forEach { spec ->
-            val s = "xem ${spec.label}"
+            val s = VoiceCommandCatalog.coverageSentence(spec, Lang.VI)
             val got = VoiceIntentParser.parseOne(s)
             val gotLabel = (got as? VoiceIntent.Read)?.datumId?.let { TelemetryRegistry.byId(it)?.label }
             if (gotLabel != spec.label) misses.add("${spec.id} · \"$s\" → $got")
@@ -114,13 +116,7 @@ class VoiceGrammarCoverageTest {
     fun `nut co nhan tieng Anh deu goi duoc bang cau tieng Anh`() {
         val misses = ArrayList<String>()
         ControlRegistry.ALL.filter { !it.labelEn.isNullOrBlank() }.forEach { def ->
-            val s = when (def.kind) {
-                ControlKind.TOGGLE -> "turn on ${def.labelEn}"
-                ControlKind.COVER -> "open ${def.labelEn}"
-                ControlKind.BUTTON -> def.labelEn!!
-                ControlKind.SELECT -> "set ${def.labelEn} ${def.argsEn.firstOrNull() ?: def.args.firstOrNull().orEmpty()}"
-                ControlKind.STEP -> "set ${def.labelEn} ${def.value}"
-            }
+            val s = VoiceCommandCatalog.coverageSentence(def, Lang.EN)
             val got = VoiceIntentParser.parseOne(s)
             if (!hitsControl(got, def.labelEn) && !hitsMacroNamed(got, s)) misses.add("${def.id} · \"$s\" → $got")
         }

@@ -88,6 +88,15 @@ object SettingsCatalog {
      * người thêm khoá phải trả lời câu *"đây là cấu hình hay là trạng thái máy"* bằng chữ.
      */
     val NOT_SETTINGS: Map<String, String> = buildMap {
+        // [SOÁT Opus 2026-09-27 · UX5b] Mốc *"phép di trú chip thanh trên đã chạy cho hồ sơ này"*
+        // (`WorkspacePrefs.K_STRIP_MIGRATED`). Cùng họ `migrated_scenes_v1`: một dấu vết của LƯỢT CHUYỂN ĐỔI, không
+        // phải một lựa chọn. Lên UI thì nó là một công tắc mà bật/tắt đều làm danh sách chip của người dùng bị xếp
+        // lại sau lưng họ — đúng thứ phép di trú sinh ra để chỉ làm ĐÚNG MỘT LẦN (KDoc `TopStripConfig.decode`).
+        put(
+            "top_strip_migrated_ux5b",
+            "dấu vết lượt chuyển đổi (di trú chip ghế UX5b đã chạy cho hồ sơ này), không phải cấu hình — cùng họ " +
+                "`migrated_scenes_v1`; lên UI là một công tắc xếp lại danh sách chip sau lưng người dùng",
+        )
         // 2026-09-15 (HOME-alias): marker "người dùng ĐÃ bấm Đặt-làm-màn-hình-chính thành công" — lối vào HOME là
         // activity-alias tắt sẵn (để BYD GUI-install không chặn), KachiAutostart đọc marker để bật alias + set-home
         // lại sau nâng cấp. Là lựa chọn ĐÃ BÀY TỎ được ghi lại, không phải một công tắc để bật/tắt trong Cài đặt

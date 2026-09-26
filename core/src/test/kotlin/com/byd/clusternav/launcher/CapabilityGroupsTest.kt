@@ -269,7 +269,10 @@ class CapabilityGroupsTest {
         assertTrue(TopStripConfig.isChippable("soh_oem"), "mục ĐỌC rời vẫn phải chip được")
         assertTrue(TopStripConfig.choices().any { it.id == "soh_oem" }, "và màn chọn vẫn phải bày nó")
         assertTrue(TopStripConfig.isChippable("tyre_p_fl"), "ẩn khỏi bộ chọn KHÔNG phải cấm chip (mã vẫn sống)")
-        assertEquals(3, TopStripConfig.DEFAULT.ids.size, "mặc định vẫn đúng 3 chip như owner đang thấy")
+        // ⚠ UX5b (owner 2026-09-27): mặc định là **5** chip — ba chip cũ + hai chip ghế GỘP (ghế lái · ghế phụ).
+        // Con số ghim ở đây chỉ để *"mặc định không tự phình vì một chip dựng sẵn mới"*; nó đổi khi OWNER xin, và
+        // lần này owner xin (xem KDoc `TopStripConfig.DEFAULT_IDS`).
+        assertEquals(5, TopStripConfig.DEFAULT.ids.size, "mặc định 3 chip cũ + 2 chip ghế (UX5b, owner 2026-09-27)")
     }
 
     @Test
@@ -316,7 +319,10 @@ class CapabilityGroupsTest {
         // `ev_mileage_km` · `trip_kwh` · `volt_12v_level` · `tailgate_status` · `sunroof_pos`) sau lượt sweep
         // NEEDS_CAR trên xe: cả bảy đều đọc ra rỗng/sentinel trên ROM+trim này ⇒ một ô vĩnh viễn "—". Số NÚT
         // **không đổi** (33): `trunk` chỉ mất `readKey`, không mất nút. Nhật ký ở `TelemetryRegistry`.
-        assertEquals(64, TelemetryRegistry.ALL.size, "mục đọc rời phải còn nguyên 64 (2026-09-25 gỡ 7 datum chết)")
+        // ⚠ UX5b (2026-09-27): 64 → **66** = +2 datum ghế PHỤ (`seat_vent_state_r` · `seat_heat_state_r`) — cùng
+        // getter đã ĐO, chỉ khác `seatID` 2; owner xin tách ghế lái/ghế phụ. Số NÚT **không đổi** (33): hai nút ghế
+        // phụ đã có từ B10, lượt này chúng chỉ được nối thêm `readKey`.
+        assertEquals(66, TelemetryRegistry.ALL.size, "mục đọc rời: 64 + 2 datum ghế phụ (UX5b 2026-09-27)")
         assertEquals(33, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
         assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
         assertEquals(2, ActionMacros.ALL.size, "1.94: 2 gói (mở/đóng hết kính)")
@@ -326,7 +332,7 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            64 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            66 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

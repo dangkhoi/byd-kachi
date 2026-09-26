@@ -38,6 +38,12 @@ object HalReadTables {
         // H1 · T2 [ĐO xe 2026-09-16]: ghế `get…State(seatID)` — 1 = ghế LÁI (2 = phụ, cùng giá trị lúc đo);
         // sấy kính `getAcDefrostState(area)` — 1 = kính trước · 2 = kính sau (`hal-reads.txt:2-3,22-25`).
         "seat_vent_state" -> 1; "seat_heat_state" -> 1
+        // UX5b (owner 2026-09-27) — ghế PHỤ = **cùng getter, seatID 2**. Đây là chỗ DUY NHẤT con số ấy được khai,
+        // đúng cơ chế mà cặp sấy kính trước/sau (`area` 1/2) ngay dưới đã dùng từ T2 ⇒ KHÔNG thêm một trường
+        // `readArg` vào `TelemetrySpec` (sẽ là **đường thứ hai** cho cùng một việc, CLAUDE.md §4.1), và cũng không
+        // thêm nhánh rẽ theo mã ở tầng gọi. Nút ghế phụ (`seatc_r`/`seath_r`) mượn lại đúng số này qua
+        // `HalRoutes.readPathOf` (`def.readArg ?: HalBindingTable.readArg(datum.id)`) nên một con số, một chỗ.
+        "seat_vent_state_r" -> 2; "seat_heat_state_r" -> 2
         "defrost_front_state" -> 1; "defrost_rear_state" -> 2
         "tyre_p_fl" -> 1; "tyre_p_fr" -> 2; "tyre_p_rl" -> 3; "tyre_p_rr" -> 4
         "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4

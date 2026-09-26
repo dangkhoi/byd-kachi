@@ -84,8 +84,10 @@ android {
         // (hệ quả của luật "giữ tới OFF" 2.70) ⇒ HalSignalClient báo OFF khi đứt dây. Số hiệu riêng ⇒ **2.72 (173)**.
         // 2.73 (174) — đợt off-car 26/09 (spec closeout R9): taskbar/voice-focus · hotword "VÀO Ô SỐ N" + hồ sơ · khớp mờ tên
         // · VAD trần 1200 · LogLineThrottle · khung camera đúng tỉ lệ + chip kết xuất · libkachimem mallopt. Review Opus Pass 3 APPROVED.
-        versionCode = 174
-        versionName = "2.73"
+        // 2.74 (175) — đêm 26→27/09: UX1–UX7 · VOICE-OPEN-TURN · camera_frame · camera A (dải/tròn/kênh HAL) · nắn fisheye GL
+        // (RE Electro, đo máy ảo) · README/hướng dẫn/danh mục/audit. Review Opus Pass 1 APPROVED (1 P0 + 7 P1 vá).
+        versionCode = 175
+        versionName = "2.74"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

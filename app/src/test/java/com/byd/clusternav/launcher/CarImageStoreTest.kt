@@ -65,14 +65,33 @@ class CarImageStoreTest {
         assertTrue(oldMb > 3.5 && newMb < 1.0, "cũ ${"%.2f".format(oldMb)} MiB → mới ${"%.2f".format(newMb)} MiB")
     }
 
+    /**
+     * ⚠ 2026-09-26 — bài này ĐỔI ngữ nghĩa từ **cover** sang **fit**, vì ảnh xe được vẽ letterbox
+     * (`CarImageLayer.fitRect`) nên pixel cover cấp thêm ở chiều rộng hơn **không bao giờ được vẽ**.
+     * Khung 320×640: cover cho `320×659` = 210 880 px (0,80 MiB) → fit cho `311×640` = 199 040 px (0,76 MiB).
+     */
     @Test
-    fun `khung nho hon nua anh - sample 2 roi ha tiep ve khung`() {
+    fun `khung nho hon nua anh - sample 2 roi ha tiep VUA LOT khung`() {
         val plan = CarImageStore.decodePlan(SRC_W, SRC_H, 320, 640)
         assertEquals(2, plan.sample)
         val (w, h) = CarImageStore.plannedSize(SRC_W, SRC_H, plan)
-        // phủ khung (≥ cả hai chiều, = khung ở chiều siết) — cùng ngữ nghĩa WallpaperStore.loadScaled
-        assertTrue(w >= 320 && h >= 640 && (w == 320 || h == 640), "cỡ $w×$h phải phủ 320×640 và chạm một cạnh")
-        assertTrue(mb(w, h) < 0.9, "≤ 0,9 MiB cho khung 320×640 (cũ: 339×698 = 0,90 MiB; nguyên cỡ 3,61 MiB)")
+        // lọt khung (≤ cả hai chiều, = khung ở chiều siết) — KHÁC WallpaperStore.loadScaled, xem KDoc CarImageStore.fitWidth
+        assertTrue(w <= 320 && h <= 640 && (w == 320 || h == 640), "cỡ $w×$h phải LỌT 320×640 và chạm một cạnh")
+        assertEquals(311 to 640, w to h, "fit: 311×640 = 199 040 px; cover cũ là 320×659 = 210 880 px")
+        assertTrue(mb(w, h) < 0.8, "≤ 0,8 MiB cho khung 320×640 (cover: 0,80 MiB; nguyên cỡ 3,61 MiB)")
+    }
+
+    /**
+     * Ca [ĐO] mà nợ RAM được viết ra từ đó (KDoc `CarImageStore.DecodePlan`): khung **210×554** của bảng lốp.
+     * cover `269×554` = 149 026 px → fit `210×432` = 90 720 px ⇒ **1,64×** pixel đã trả cho không.
+     */
+    @Test
+    fun `khung 210x554 cua bang lop - cover 149026 px, fit 90720 px`() {
+        val plan = CarImageStore.decodePlan(SRC_W, SRC_H, 210, 554)
+        val (w, h) = CarImageStore.plannedSize(SRC_W, SRC_H, plan)
+        assertEquals(210 to 432, w to h, "fit phải chạm cạnh RỘNG (210) chứ không phải cạnh CAO")
+        assertEquals(149_026, 269 * 554, "số cover ghi trong KDoc — để ai đổi doc thì đổi cả đây")
+        assertTrue(w * h * 1.6 < 269 * 554, "fit phải tiết kiệm ≥ 1,6× pixel so với cover (${w * h} vs ${269 * 554})")
     }
 
     @Test
@@ -89,20 +108,38 @@ class CarImageStoreTest {
     }
 
     /**
-     * Tính chất chung trên lưới khung: bitmap dự kiến PHỦ khung (dung sai 3 px: `inTargetDensity` là số NGUYÊN nên
-     * chiều còn lại làm tròn hụt tối đa ≈ tỉ lệ ảnh 2,06 px) và không thừa pixel ngoài tỉ lệ.
+     * Tính chất chung trên lưới khung: bitmap dự kiến **LỌT** khung và **chạm** đúng một cạnh (dung sai 1 px —
+     * `inTargetDensity` là số nguyên nên chiều còn lại lệch ≤ 1 px sau khi làm tròn nửa lên).
+     *
+     * ⚠ Dung sai siết từ 3 px xuống 1 px cùng lượt đổi cover→fit: với `+ 0.5f` thì chiều siết chạm ĐÚNG khung, nên
+     * 3 px là chỗ trống để một lượt sửa sau lặng lẽ cấp thừa/hụt pixel mà bài này vẫn xanh.
      */
     @Test
-    fun `moi khung - bitmap du kien phu khung va khong lon hon can thiet`() {
+    fun `moi khung - bitmap du kien LOT khung va cham dung mot canh`() {
         for (rw in listOf(64, 128, 200, 300, 340, 512, 700)) for (rh in listOf(96, 256, 400, 640, 700, 1000, 1400)) {
             val plan = CarImageStore.decodePlan(SRC_W, SRC_H, rw, rh)
             val (w, h) = CarImageStore.plannedSize(SRC_W, SRC_H, plan)
-            val coverW = minOf(rw, SRC_W); val coverH = minOf(rh, SRC_H)
-            assertTrue(w + 3 >= coverW && h + 3 >= coverH, "khung $rw×$rh: $w×$h không phủ")
-            // chiều siết chạm khung (±3, cùng dung sai làm tròn) ⇒ không thừa pixel ngoài tỉ lệ
-            assertTrue(kotlin.math.abs(w - rw) <= 3 || kotlin.math.abs(h - rh) <= 3 || !plan.scaled,
-                "khung $rw×$rh: $w×$h thừa (plan=$plan)")
+            if (!plan.scaled) {
+                // ảnh nhỏ hơn khung ở CẢ HAI chiều ⇒ không phóng to, giữ nguyên cỡ đã sample
+                assertTrue(w <= SRC_W && h <= SRC_H, "khung $rw×$rh: $w×$h lớn hơn ảnh gốc mà không hề hạ cỡ")
+                continue
+            }
+            assertTrue(w <= rw + 1 && h <= rh + 1, "khung $rw×$rh: $w×$h TRÀN khung ⇒ pixel không bao giờ được vẽ")
+            assertTrue(kotlin.math.abs(w - rw) <= 1 || kotlin.math.abs(h - rh) <= 1,
+                "khung $rw×$rh: $w×$h không chạm cạnh nào ⇒ lớp vẽ phải phóng ảnh lên (plan=$plan)")
         }
+    }
+
+    @Test
+    fun `fitWidth lay minOf va khong phong to, khong nem khi tham so xau`() {
+        assertEquals(0, CarImageStore.fitWidth(200, 400, 320, 640), "ảnh nhỏ hơn khung ⇒ không hạ, cũng không phóng")
+        assertEquals(0, CarImageStore.fitWidth(320, 640, 320, 640), "vừa khít thì không hạ")
+        assertEquals(0, CarImageStore.fitWidth(0, 0, 320, 640))
+        assertEquals(0, CarImageStore.fitWidth(339, 698, 0, 640))
+        assertEquals(0, CarImageStore.fitWidth(-5, -5, 320, 640))
+        // 339×698 vào 210×554: minOf(210/339, 554/698) = 0,619 ⇒ 210 (cover lấy maxOf ⇒ 269)
+        assertEquals(210, CarImageStore.fitWidth(339, 698, 210, 554))
+        assertEquals(269, WallpaperStore.scaledWidth(339, 698, 210, 554), "hình NỀN vẫn cover — hai hàm, hai câu hỏi")
     }
 
     // ── LRU dùng chung ─────────────────────────────────────────────────────────────────────────────────────────────

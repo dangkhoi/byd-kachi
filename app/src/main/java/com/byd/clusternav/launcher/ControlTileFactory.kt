@@ -127,6 +127,8 @@ class ControlTileFactory(
     private fun on(def: ControlDef): Int = if (state.isOn(def.id)) 1 else 0
 
     private fun tileStep(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView): (CarStatus) -> Unit {
+        // UX4 — *"đang TỰ ĐỘNG không"* ([ControlDef.autoId]); `null` = CHƯA BIẾT ⇒ y như trước UX4. Luật: [ClimateAuto].
+        var auto: Boolean? = null
         val vtext = TextView(ctx).apply {
             text = ControlVisuals.stepText(def, state.value(def))
             setTextColor(c(KachiTheme.INK)); setTextSize(TypedValue.COMPLEX_UNIT_SP, size.valueSp)
@@ -138,6 +140,10 @@ class ControlTileFactory(
             // gõ một con số dp: cỡ chữ khác nhau theo vùng ([TileSize.valueSp]) nên một hằng dp sẽ sai ở BIG.
             minWidth = ceil(paint.measureText(DIGIT.repeat(ControlVisuals.STEP_VALUE_CHARS)).toDouble()).toInt()
         }
+        // UX4 — chữ dài hơn sàn CHUNG (chữ "AUTO") thì CO chữ, và chỗ cho MỘT dòng được ghim bằng **chiều cao của
+        // `LayoutParams`** ở chỗ `addView` dưới đây — KHÔNG bằng `TextView.setHeight` (nó xoá `maxLines = 1` ⇒ chữ
+        // "AUTO" xuống hai dòng; bảng file:line AOSP ở KDoc [StepValueFit]). Nút không phải co ⇒ trả `WRAP` = y cũ.
+        val valueH = StepValueFit.apply(vtext, def, size.valueSp)
         look(def, tile, icon, label, state.value(def))
         val minus = stepBtn("−"); val plus = stepBtn("+")
         // ⚠ H1 — mốc để cộng/trừ là mức THẬT của xe, không phải mức lạc quan trong [ControlTileState]: người lái chỉnh
@@ -148,15 +154,21 @@ class ControlTileFactory(
         // ngay sau khi đọc xong (trước khi ghi); ghi hỏng ⇒ về con số cũ nếu cú bấm sau chưa đè.
         fun nudge(delta: Int) {
             state.touch(def.id)
-            val old = state.value(def); var nv = old
-            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v); look(def, tile, icon, label, v) }
+            val old = state.value(def); val oldAuto = auto; var nv = old
+            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v, auto); look(def, tile, icon, label, v, auto) }
+            fun show(v: Int, a: Boolean?) { nv = v; auto = a; state.setValue(def.id, v); tile.post { draw(v) } }
             writer.submit(def.id, act = {
                 val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
-                val v = def.clamp(base + delta); nv = v; state.setValue(def.id, v)
-                tile.post { draw(v) }
-                control().step(def.id, v)
+                // UX4 — [ClimateAuto] quyết cú bấm nghĩa là gì (bảng ở `stepIntent`), ở đây chỉ THI HÀNH: nấc đáy
+                // của nút có `autoId` là BẬT AUTO, tuyệt đối không ghi mức 0 ([ĐO] xe bỏ qua lệnh ấy).
+                val plan = ClimateAuto.stepPlan(def, base, delta, auto)
+                if (plan.act) show(plan.shown, plan.auto ?: auto)
+                val okAuto = plan.auto?.let { control().toggle(def.autoId, it) } ?: true
+                // Rời AUTO = HAI lệnh, phải CHỜ giữa chúng (bắn liên tiếp thì lệnh sau rơi — đúng lý do
+                // [ActionMacros.DEFAULT_GAP_MS] tồn tại). Làn [writer] là nền + tuần tự nên `sleep` không chạm luồng vẽ.
+                plan.level?.let { if (plan.auto != null) Thread.sleep(ActionMacros.DEFAULT_GAP_MS); control().step(def.id, it) && okAuto } ?: okAuto
             }, stillMine = { state.value(def) == nv }, failureIsReal = { control().writeFailureIsReal(def.id) }) {
-                state.setValue(def.id, old); tile.post { draw(old) }
+                state.setValue(def.id, old); auto = oldAuto; tile.post { draw(old) }
             }
         }
         minus.setOnClickListener { nudge(-def.step) }
@@ -167,7 +179,7 @@ class ControlTileFactory(
         tile.addView(LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
             addView(minus, LinearLayout.LayoutParams(0, WRAP, SIDE_WEIGHT))
-            addView(vtext, LinearLayout.LayoutParams(0, WRAP, VALUE_WEIGHT))
+            addView(vtext, LinearLayout.LayoutParams(0, valueH, VALUE_WEIGHT))
             addView(plus, LinearLayout.LayoutParams(0, WRAP, SIDE_WEIGHT))
         }, LinearLayout.LayoutParams(MATCH, WRAP))
         // [R7] Đích chạm: nới VÙNG NHẬN CHẠM ra nửa ô (≥ Sp.TOUCH bề dọc), KHÔNG nới cái nút — nới nút thì
@@ -176,10 +188,12 @@ class ControlTileFactory(
         // Đọc lại con số THẬT của xe (nhiệt/gió/âm lượng) — bỏ qua trong ân hạn, chỉ đổi chữ khi khác.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val v = car.controls[def.id] ?: return@refresh
-            if (v != state.value(def)) {
-                state.setValue(def.id, v)
-                vtext.text = ControlVisuals.stepText(def, v); look(def, tile, icon, label, v)
+            // ⚠ UX4 — `autoId` rỗng ⇒ tra map chuỗi rỗng ⇒ `null` ⇒ y hệt cũ; và KHÔNG thoát sớm khi mức đọc không ra (auto đổi mà mức còn nguội thì ô vẫn phải vẽ lại).
+            val a = ClimateAuto.autoOnFromControl(car.controls[def.autoId])
+            val v = car.controls[def.id] ?: state.value(def)
+            if (v != state.value(def) || a != auto) {
+                state.setValue(def.id, v); auto = a
+                vtext.text = ControlVisuals.stepText(def, v, a); look(def, tile, icon, label, v, a)
             }
         }
     }
@@ -361,25 +375,10 @@ class ControlTileFactory(
      *    nền về. Dùng lại đúng con số của [tileButton] để hai ô cạnh nhau không nháy hai nhịp khác nhau.
      */
     fun launcherTile(pick: CapabilityPick, onTap: () -> Unit): View {
-        val tile = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
-        }
-        val r = KachiIcons.res(pick.icon, size.iconDp)
-        val icon = ImageView(ctx).apply { if (r != 0) setImageResource(r) }
-        if (icons) tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
-        val label = TextView(ctx).apply {
-            text = pick.displayLabel; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp)
-            gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
-        }
-        tile.addView(reserveTwoLines(label))
-        applyBg(tile, false); tint(icon, label, true)
-        tile.setOnClickListener {
-            applyBg(tile, true); tint(icon, label, true)
-            onTap()
-            tile.postDelayed({ applyBg(tile, false); tint(icon, label, true) }, 220)   // nháy sáng momentary
-        }
-        return tile
+        // Thân ô ở `LauncherTile.kt` từ 2026-09-26 (trần 500 dòng — KDoc [launcherTileOf] nói đường cắt); `dress`
+        // dùng lại đúng hai hàm tô của bộ dựng này nên không có bản sao thứ hai.
+        val dress: (LinearLayout, ImageView, TextView, Boolean) -> Unit = { t, i, l, on -> applyBg(t, on); tint(i, l, true) }
+        return launcherTileOf(ctx, size, pick, icons, dress) { onTap() }
     }
 
     // ── ĐỌC ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -404,8 +403,8 @@ class ControlTileFactory(
      * bốn trong năm hàm truyền `active = true` cứng, tức nền nói *"tắt"* mà mực nói *"bật"*. Xem KDoc
      * [ControlVisual] về lý do luật nằm ở `:core`.
      */
-    private fun look(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, value: Int?): ControlVisual {
-        val v = ControlVisuals.of(def, value)
+    private fun look(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, value: Int?, autoOn: Boolean? = null): ControlVisual {
+        val v = ControlVisuals.of(def, value, autoOn)
         applyBg(tile, v.active); tint(icon, label, v.active)
         return v
     }
@@ -493,5 +492,6 @@ class ControlTileFactory(
 
         /** Chữ số dùng để ĐO sàn bề ngang ô giá trị — `'0'` là chữ số rộng nhất ở hầu hết phông chữ hệ thống. */
         const val DIGIT = "0"
+
     }
 }

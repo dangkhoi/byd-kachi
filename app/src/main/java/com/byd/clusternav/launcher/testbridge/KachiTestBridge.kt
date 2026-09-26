@@ -153,6 +153,8 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.TTS -> TestBridgeTts.run(app, cmd, reply)
             TestBridgeCommands.KWS -> TestBridgeKws.run(app, cmd, reply)
             TestBridgeCommands.CAMERA -> TestBridgeCamera.run(cmd, hooks, reply)
+            TestBridgeCommands.CAMERA_FRAME -> TestBridgeCameraFrame.run(app, cmd, hooks, reply)
+            TestBridgeCommands.CAMERA_SYNTH -> TestBridgeSynth.run(cmd, hooks, reply)
             TestBridgeCommands.LISTEN -> runListen(hooks, reply)
             TestBridgeCommands.PROFILES -> reply.ok(
                 "active" to hooks.state().activeProfile,

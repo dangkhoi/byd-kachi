@@ -8,6 +8,8 @@ import com.byd.clusternav.comfort.Pm25Filter
 import com.byd.clusternav.comfort.Pm25GaugeView
 import com.byd.clusternav.comfort.SeatComfort
 import com.byd.clusternav.comfort.SeatDiagramView
+import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
+import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
@@ -105,17 +107,146 @@ class SettingsCarSection(
         val renders = listOf(
             CameraSignalPolicy.RENDER_TEXTURE to context.getString(R.string.kachi_camera_render_texture),
             CameraSignalPolicy.RENDER_SURFACE to context.getString(R.string.kachi_camera_render_surface),
+            // R8-B: chip THỨ BA, đứng CUỐI — đường mới không bao giờ leo lên trước đường đang chạy hiện trường
+            // (CLAUDE.md §6). Nhãn nói thẳng nó là thứ đang thử, vì `GL_MAX_TEXTURE_SIZE` của GPU đầu xe với texture
+            // rộng 5120 vẫn [CHƯA BIẾT] (RE §7 Q13).
+            CameraSignalPolicy.RENDER_GL to context.getString(R.string.kachi_camera_render_gl),
         )
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_render_sub)))
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_render_row), renders, bridge.cameraRender(),
         ) { v -> bridge.setCameraRender(v) })
+        cameraDewarp(body)
+        // ── R8-A (2.74) · VÙNG GƯƠNG trong ảnh pano + HÌNH KHUNG + KÊNH HAL ───────────────────────
+        // RE `docs/diagnostics/electro-camera-RE-2026-09-26.md` §5 K10 [ĐO]: crop của 2.73 rộng 0.10 = **40 % một
+        // dải** ở rìa vòng fisheye ⇒ ảnh gương méo như ống. §6.1 (phương án A) nới crop — nhưng **dải nào là hướng
+        // nào vẫn [CHƯA BIẾT]** (§7 Q1/Q2: Electro không gán nhãn dải, kinex chỉ dùng dải 1 & 2) nên bốn hàng dưới
+        // đây là **bộ dò trên xe** của owner, không phải bốn lựa chọn thẩm mỹ. Mặc định của cả bốn = hành vi 2.73
+        // từng pixel (CLAUDE.md §6); hình học suy ra ở `:core` [CameraPanoCrop], không có số nào chép vào đây.
+        val spans = listOf(
+            CameraSignalPolicy.SPAN_NARROW to context.getString(R.string.kachi_camera_span_narrow),
+            CameraSignalPolicy.SPAN_STRIP to context.getString(R.string.kachi_camera_span_strip),
+        )
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_span_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_span_row), spans, bridge.cameraSpan(),
+        ) { v -> bridge.setCameraSpan(v) })
+        // Chỉ số DẢI từng bên: chip sinh từ `:core` (0..3) ⇒ thêm/bớt dải là một chỗ sửa, không phải hai.
+        val strips = CameraPanoCrop.STRIPS_ALL.map { it.toString() to it.toString() }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_strip_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_strip_left), strips, bridge.cameraStripLeft().toString(),
+        ) { v -> v.toIntOrNull()?.let { bridge.setCameraStrip(left = true, v = it) } })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_strip_right), strips, bridge.cameraStripRight().toString(),
+        ) { v -> v.toIntOrNull()?.let { bridge.setCameraStrip(left = false, v = it) } })
+        // HÌNH KHUNG (owner 2026-09-26): tròn = hiện TRỌN vòng ảnh fisheye như app Electro, KHÔNG nắn méo (nắn là
+        // phương án B, cần khung PNG thật + `GL_MAX_TEXTURE_SIZE` ⇒ spec riêng). Nhãn chip nói thẳng cái chưa chắc.
+        val shapes = listOf(
+            CameraSignalPolicy.SHAPE_RECT to context.getString(R.string.kachi_camera_shape_rect),
+            CameraSignalPolicy.SHAPE_ROUND to context.getString(R.string.kachi_camera_shape_round),
+        )
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_shape_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_shape_row), shapes, bridge.cameraShape(),
+        ) { v -> bridge.setCameraShape(v) })
+        // KÊNH HAL — móc đo §6.3-C1: `addPreviewSurface(Surface, VIEW_CHANNEL_n)` có thể trả MỘT kênh camera thay vì
+        // khung ghép 4-in-1 (⇒ khỏi cần crop). 2.73 dò 0..3 và chưa bao giờ thử 4. Chip đầu = "tự dò" = đường 2.73.
+        val halModes = CameraSignalPolicy.HAL_MODES.map { mode ->
+            mode.toString() to if (mode == CameraSignalPolicy.HAL_MODE_AUTO) {
+                context.getString(R.string.kachi_camera_hal_auto)
+            } else {
+                mode.toString()
+            }
+        }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_hal_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_hal_row), halModes, bridge.cameraHalMode().toString(),
+        ) { v -> v.toIntOrNull()?.let { bridge.setCameraHalMode(it) } })
         // Chọn cameraId từng bên (owner 2026-09-25: cho SL6/xe khác tự dò cam nào lên — cam gương xe khác id khác).
         val camIds = listOf("0" to "0", "1" to "1", "2" to "2", "3" to "3", "4" to "4", "5" to "5")
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pick_sub)))
         body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_left), camIds, bridge.cameraCamLeft().toString()) { v -> bridge.setCameraCamLeft(v.toInt()) })
         body.addView(rows.chipRow(context.getString(R.string.kachi_camera_pick_right), camIds, bridge.cameraCamRight().toString()) { v -> bridge.setCameraCamRight(v.toInt()) })
     }
+
+    /**
+     * **Nắn méo (khi chọn GL)** — sáu hàng −/+ và một ô tích (R8-B · 2.74).
+     *
+     * ## Vì sao −/+ chứ không phải chip giá trị sẵn
+     * Owner chỉnh cái này **bằng mắt, trên xe đang đỗ**, và thứ cần là *"nhích thêm một chút xem thẳng hơn không"*.
+     * Một hàng chip buộc phải chọn trước 5–6 con số, tức đoán trước đáp án của một phép đo chưa ai làm — mà bộ mặc
+     * định hiện tại còn là **[ĐOÁN]** (`camera-dewarp-math.md` §3). `stepperRow` cho miền liên tục, đích chạm 48dp, và
+     * đọc được giá trị hiện tại ngay giữa hai nút. Bước nhảy lấy từ `:core` [CameraDewarpPrefs], không gõ số ở đây.
+     *
+     * ## Thứ tự hàng = thứ tự CHỈNH khuyên dùng trên xe, không phải thứ tự chữ cái
+     * **tâm → K → tiêu cự → phóng → độ nắn** (`camera-dewarp-math.md` §4): `K` quyết *"thẳng hay không"*, `F` chỉ
+     * quyết *"rộng hay hẹp"*, và tâm sai thì mọi thứ sau đó vô nghĩa (một bên thẳng, bên kia còng). Đặt *Độ nắn* lên
+     * đầu — chỗ trực giác muốn — sẽ dẫn owner đi kéo đúng cái núm KHÔNG chữa được bệnh cong.
+     *
+     * ## Không khoá hàng khi chip Kết xuất ≠ GL
+     * Cố ý: cả bảy khoá đều **vô hại** ở hai đường kia (không ai đọc chúng), và khoá hàng theo một chip ở trên sẽ
+     * biến một lượt thử *"đặt số trước, đổi chip sau"* thành một hàng mờ không giải thích được. Nhãn mục nói rõ
+     * *"(khi chọn GL)"* — cùng cách `kachi_camera_shape_sub` nói ra cái chưa chắc thay vì ẩn đi (bài học U12).
+     */
+    private fun cameraDewarp(body: LinearLayout) {
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_dewarp_sub)))
+        body.addView(rows.checkRow(
+            on = bridge.cameraGlTexMatrix(),
+            title = context.getString(R.string.kachi_camera_gl_texmatrix_title),
+            sub = context.getString(R.string.kachi_camera_gl_texmatrix_sub),
+        ) { on -> bridge.setCameraGlTexMatrix(on) })
+        knob(body, R.string.kachi_camera_dewarp_cx, CameraDewarpPrefs.CENTER_STEP,
+            CameraDewarpPrefs.CENTER_MIN, CameraDewarpPrefs.CENTER_MAX,
+            { bridge.cameraDewarpCx() }, { bridge.setCameraDewarpCx(it) })
+        knob(body, R.string.kachi_camera_dewarp_cy, CameraDewarpPrefs.CENTER_STEP,
+            CameraDewarpPrefs.CENTER_MIN, CameraDewarpPrefs.CENTER_MAX,
+            { bridge.cameraDewarpCy() }, { bridge.setCameraDewarpCy(it) })
+        knob(body, R.string.kachi_camera_dewarp_k, CameraDewarpPrefs.PCT_STEP,
+            CameraDewarpPrefs.PCT_MIN, CameraDewarpPrefs.PCT_MAX,
+            { bridge.cameraDewarpK() }, { bridge.setCameraDewarpK(it) })
+        knob(body, R.string.kachi_camera_dewarp_focal, CameraDewarpPrefs.PCT_STEP,
+            CameraDewarpPrefs.PCT_MIN, CameraDewarpPrefs.PCT_MAX,
+            { bridge.cameraDewarpFocal() }, { bridge.setCameraDewarpFocal(it) })
+        knob(body, R.string.kachi_camera_dewarp_scale, CameraDewarpPrefs.PCT_STEP,
+            CameraDewarpPrefs.PCT_MIN, CameraDewarpPrefs.PCT_MAX,
+            { bridge.cameraDewarpScale() }, { bridge.setCameraDewarpScale(it) })
+        knob(body, R.string.kachi_camera_dewarp_amount, CameraDewarpPrefs.AMOUNT_STEP,
+            CameraDewarpPrefs.AMOUNT_MIN, CameraDewarpPrefs.AMOUNT_MAX,
+            { bridge.cameraDewarpAmount() }, { bridge.setCameraDewarpAmount(it) })
+        body.addView(rows.note(context.getString(R.string.kachi_camera_dewarp_note)))
+    }
+
+    /**
+     * Một hàng −/+ cho một núm `%`: ghi qua cầu rồi **đọc lại** để hiện.
+     *
+     * Đọc lại (không cộng vào con số vừa hiện) vì miền hợp lệ do `:core` giữ và lượt đọc tự kẹp: cộng ở đây thì hàng
+     * sẽ hiện `405 %` trong khi trên đĩa là `400` — một màn hình nói khác nơi lưu, đúng thứ KDoc `TestBridgeHooks` cấm.
+     * Kẹp ở tầng UI nữa cũng không: [max]/[min] chỉ để **chặn lượt ghi vô nghĩa**, không để định nghĩa miền.
+     */
+    private fun knob(
+        body: LinearLayout,
+        labelRes: Int,
+        step: Int,
+        min: Int,
+        max: Int,
+        get: () -> Int,
+        set: (Int) -> Unit,
+    ) {
+        lateinit var row: SettingsRows.Stepper
+        fun nudge(by: Int) {
+            set((get() + by).coerceIn(min, max))
+            row.setValue(pct(get()))
+        }
+        row = rows.stepperRow(
+            context.getString(labelRes), pct(get()),
+            onMinus = { nudge(-step) }, onPlus = { nudge(step) },
+        )
+        body.addView(row.view)
+    }
+
+    /** `"100 %"` — dấu cách trước `%` theo lối viết tiếng Việt, và cùng một chỗ khai cho cả sáu hàng. */
+    private fun pct(v: Int): String = "$v %"
 
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────
 

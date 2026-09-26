@@ -129,7 +129,13 @@ object ControlRegistry {
         ControlDef("pm25", "Lọc bụi", "ic-filter", ControlKind.TOGGLE, enabledByDefault = true, onByDefault = true,
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoAcDevice.setAutoCleanAirState",
             labelEn = "Air purifier"),
-        ControlDef("seatc", "Mát ghế lái", "ic-seat-left", ControlKind.SELECT, enabledByDefault = true,
+        // ⚠ UX5 (2026-09-26) — **bốn ô ghế nay bốn HÌNH KHÁC NHAU**. Trước đó `seatc`/`seath` dùng chung
+        // `ic-seat-left` và `seatc_r`/`seath_r` dùng chung `ic-seat` ⇒ sưởi và mát trông **y hệt** nhau, mà chip
+        // thanh trên chỉ vẽ được MỘT glyph + MỘT chuỗi nên ở đó không còn gì phân biệt. Cách chữa là ghép ở tầng
+        // GLYPH (ghế + dấu phương thức: làn nhiệt / bông tuyết — hai mô-típ launcher đã dùng cho sưởi/lạnh), sinh
+        // từ `design/glyph/seat_{heat,vent}_{left,right}.svg` qua `scripts/design/gen-icons.py`; xem KDoc
+        // [CapabilityIcons] về vì sao KHÔNG ghép hai drawable lúc chạy. Quy ước cạnh giữ nguyên: `-left` = ghế LÁI.
+        ControlDef("seatc", "Mát ghế lái", "ic-seat-vent-left", ControlKind.SELECT, enabledByDefault = true,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
             readKey = "seat_vent_state",   // T2 [ĐO xe 2026-09-16] getter ở device Setting; thang mức ở ControlLevels
@@ -141,9 +147,15 @@ object ControlRegistry {
             // tới xe. Setter thật là `setAcTemperature(type, value, tempSource, unit)` — args ở HalBindingTable.writeArgs.
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoAcDevice.setAcTemperature", readKey = "inside_temp", readArg = 1,   // area 1 = AC_TEMP_MAIN (ghế lái)
             labelEn = "Temperature"),
+        // ⚠ UX4 (2026-09-26) — **nấc 0 của thang này KHÔNG tồn tại trên xe**: [ĐO xe 2026-09-20]
+        // (`docs/diagnostics/oncar-1.84-session-2026-09-20.md:41`) `AC_WIND_LEVEL_SET = 0` **bị xe bỏ qua**, nên
+        // trước UX4 bấm `−` về 0 thì ô hiện "0" mà quạt vẫn thổi. Thứ xe thật sự có ở đáy là **gió tự động** ⇒ khai
+        // `autoId` trỏ sang nút `ac_auto` (đường ghi `AC_CTRL_MODE_SET` đã [ĐO] rc=0 hai chiều). Luật ở [ClimateAuto].
+        // KHÔNG đổi `min`/`max`/`bindingKey`: dải 1..7 là đường đã chạy hiện trường (CLAUDE.md §6 — đường mới xuống
+        // cuối, không đảo đường đang tốt), và mã 0 còn nằm trong prefs của xe đang chạy.
         ControlDef("fan", "Gió", "ic-fan", ControlKind.STEP, enabledByDefault = true, value = 4, min = 0, max = 7, step = 1,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219340", readKey = "ac_wind",
-            labelEn = "Fan"),
+            labelEn = "Fan", autoId = "ac_auto"),
         // Có sẵn trong kho, mặc định TẮT (bật qua Tuỳ biến):
         ControlDef("defrost", "Sấy kính trước", "ic-defrost", ControlKind.TOGGLE,
             domain = Domain.CLIMATE, tier = EvidenceTier.OVERDRIVE, bindingKey = "501219362",
@@ -178,7 +190,7 @@ object ControlRegistry {
         ControlDef("headl", "Đèn pha", "ic-car-front-highbeam", ControlKind.TOGGLE,
             domain = Domain.LIGHTS, tier = EvidenceTier.NEEDS_CAR, bindingKey = "INSTRUMENT_HEADLIGHT_ON_OFF",
             labelEn = "Headlights"),
-        ControlDef("seath", "Sưởi ghế lái", "ic-seat-left", ControlKind.SELECT,
+        ControlDef("seath", "Sưởi ghế lái", "ic-seat-heat-left", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
             readKey = "seat_heat_state",   // T2 — cùng device Setting; thang mức ControlLevels (seath [SUY] 1/2/3/4, đo lại)
@@ -356,14 +368,21 @@ object ControlRegistry {
         // nay **tự hết** (`hud_brightness` đã purge ở WP8, `brightness_gear` xoá hôm nay).
         // B10 (owner 2026-09-22): ghế mát/sưởi PHỤ — cùng setter ghế lái, chỉ khác seatID 2 (writeArgs). Control đã
         // test xe OK, chỉ wire UI. Đặt CUỐI danh sách để KHÔNG phá thứ tự khối nút gốc (ControlRegistryExtendedTest).
-        // Không readKey (đường đọc ghế phụ chưa có datum — write-only; không bịa getter).
-        ControlDef("seatc_r", "Mát ghế phụ", "ic-seat", ControlKind.SELECT,
+        // ⚠ UX5b (2026-09-27) — **nay CÓ readKey**. Chú thích cũ ở đây ghi *"đường đọc ghế phụ chưa có datum —
+        // write-only; không bịa getter"*: đúng lúc đó, nhưng owner xin tách ghế lái/ghế phụ nên hai datum
+        // `seat_*_state_r` được thêm ở [TelemetryRegistry] — **cùng getter đã ĐO, chỉ khác `seatID`** (2, khai một
+        // chỗ ở `HalReadTables.readArg`), nên không có getter nào bị bịa ra. Nối readKey ở đây là điều làm cho ô
+        // ghế phụ có mức THẬT, và cho `CapabilityDots.maxLevel`/`iconOverride` nhìn thấy hai datum mới (bảng tra
+        // đảo chính là `readKey`) — thiếu nó thì chip ghế phụ sẽ không có hàng chấm và không có hình của nút.
+        ControlDef("seatc_r", "Mát ghế phụ", "ic-seat-vent-right", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatVentilatingState",
+            readKey = "seat_vent_state_r",   // UX5b — getSeatVentilatingState(2); thang mức ControlLevels["seatc_r"]
             labelEn = "Passenger seat ventilation"),
-        ControlDef("seath_r", "Sưởi ghế phụ", "ic-seat", ControlKind.SELECT,
+        ControlDef("seath_r", "Sưởi ghế phụ", "ic-seat-heat-right", ControlKind.SELECT,
             args = listOf("Tắt", "Mức 1", "Mức 2"), argsEn = listOf("Off", "Level 1", "Level 2"),
             domain = Domain.CLIMATE, tier = EvidenceTier.PROVEN, bindingKey = "BYDAutoSettingDevice.setSeatHeatingState",
+            readKey = "seat_heat_state_r",   // UX5b — getSeatHeatingState(2); thang [SUY] 1/2/3/4 như `seath`
             labelEn = "Passenger seat heating"),
     )
 

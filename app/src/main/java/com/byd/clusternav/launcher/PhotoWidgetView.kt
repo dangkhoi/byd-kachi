@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.view.View
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * WIDGET TRÌNH CHIẾU ẢNH (U4 phần b) — một khung ảnh đặt vào ô, tự đổi ảnh theo chu kỳ.
@@ -153,10 +154,7 @@ class PhotoWidgetView(context: Context) : View(context) {
         val b = bitmap
         if (b == null || b.isRecycled) {
             // Chưa có ảnh: NÓI chỗ bỏ ảnh vào chứ không để ô trống — người dùng không có cách nào tự đoán.
-            hint.textSize = minOf(w, h) * 0.075f
-            canvas.drawText(context.getString(R.string.kachi_photos_none), w / 2f, h / 2f - hint.textSize * 0.4f, hint)
-            hint.textSize = minOf(w, h) * 0.058f
-            canvas.drawText(context.getString(R.string.kachi_photos_hint), w / 2f, h / 2f + hint.textSize * 1.4f, hint)
+            drawHint(canvas, w, h)
             return
         }
 
@@ -171,7 +169,52 @@ class PhotoWidgetView(context: Context) : View(context) {
         canvas.drawBitmap(b, src, dst, paint)
     }
 
+    /**
+     * Lời nhắc "chưa có ảnh" — khối 2 dòng **cân giữa ô** theo SỐ ĐO PHÔNG, chữ co cho vừa bề ngang ô.
+     *
+     * ## 2.74 · UX7 — hai lỗi đã sửa (cùng luật với bảng lốp, hình học thuần ở [CellTextLayout])
+     *  • bản cũ đặt baseline bằng hằng (`h/2 − textSize*0.4f` và `h/2 + textSize*1.4f`) ⇒ tâm khối 2 dòng nằm
+     *    **thấp hơn** tâm ô đúng `0.267 × cỡ chữ dòng trên` [ĐO] — ô càng nhỏ chữ càng sát mép dưới;
+     *  • `drawText` canh CENTER **không kẹp bề rộng**: hai câu này là chuỗi tài nguyên (bản EN dài hơn bản VI) nên
+     *    ở ô hẹp chúng tràn ra ngoài ô, vẽ đè lên ô bên cạnh. Nay co theo [CellTextLayout.fitScale], sàn cỡ chữ
+     *    theo thang bảng ([KachiSpace.BOARD_LABEL_MIN]).
+     */
+    private fun drawHint(canvas: Canvas, w: Float, h: Float) {
+        val m = minOf(w, h)
+        val room = w - m * HINT_INSET_RATIO * 2f
+        val title = context.getString(R.string.kachi_photos_none)
+        val sub = context.getString(R.string.kachi_photos_hint)
+        val floor = Sp.dpf(context, Sp.BOARD_LABEL_MIN)
+        val titleSize = fitSize(title, m * HINT_TITLE_RATIO, room, floor)
+        val subSize = fitSize(sub, m * HINT_SUB_RATIO, room, floor)
+
+        // Mực dòng trên lấy `ascent` của PHÔNG (không của chuỗi): đây là câu chữ có dấu tiếng Việt, mà dấu là phần
+        // cao nhất — đo theo chuỗi thì bản EN ("No photos yet") và bản VI nhảy baseline khác nhau.
+        hint.textSize = titleSize
+        val topInk = -hint.ascent()
+        hint.textSize = subSize
+        val lineGap = subSize * CellTextLayout.SUB_LINE_GAP
+        val base = CellTextLayout.twoLineTopBaseline(h / 2f, topInk, lineGap, hint.descent())
+
+        hint.textSize = titleSize
+        canvas.drawText(title, w / 2f, base, hint)
+        hint.textSize = subSize
+        canvas.drawText(sub, w / 2f, base + lineGap, hint)
+    }
+
+    /** Cỡ chữ đã co cho [text] vừa [room]; sàn [floor] chỉ chặn phần CO (xem cùng lẽ ở [RingView]). */
+    private fun fitSize(text: String, nominal: Float, room: Float, floor: Float): Float {
+        hint.textSize = nominal
+        val scale = CellTextLayout.fitScale(hint.measureText(text), room)
+        return if (scale >= 1f) nominal else maxOf(nominal * scale, minOf(nominal, floor))
+    }
+
     companion object {
+        /** Cỡ chữ hai dòng nhắc + lề trong, theo cạnh NGẮN của ô — giữ đúng số của bản 2.73. */
+        private const val HINT_TITLE_RATIO = 0.075f
+        private const val HINT_SUB_RATIO = 0.058f
+        private const val HINT_INSET_RATIO = 0.04f
+
         /** MỘT thread nền dùng chung cho MỌI widget trình chiếu — xem KDoc ở step(). */
         private val DECODER: java.util.concurrent.ExecutorService =
             java.util.concurrent.Executors.newSingleThreadExecutor { r ->

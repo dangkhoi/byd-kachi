@@ -119,10 +119,30 @@ class CarDataAdapter(
      * do thang mức chưa khớp ([ControlLevels]) chứ không chỉ do xe không có — trộn chung là để một lỗi thang mức
      * làm câm cả ô cụm. Chỗ gọi: `WakeOnWriteControl` (`:app`) sau mỗi lệnh ghi. Nút không có `readKey` ⇒ chỉ
      * quên khoá nút.
+     *
+     * ## UX4 (2026-09-26) — cặp **mức ↔ AUTO** là MỘT cặp, quên nửa này phải quên cả nửa kia
+     * Ô gió gộp ghi `ac_auto` (bật/rời gió tự động — [ClimateAuto.StepIntent]) chứ không ghi `fan` khi vào nấc đáy.
+     * Tới lượt này hàm chỉ quên đúng mã vừa ghi ⇒ `fan`/`ac_wind` còn **nguội** nên nhịp kế không đọc lại, và ô hiện
+     * lại con số cũ dù xe đã sang AUTO — đúng họ lỗi *"hai nửa của một ô nói hai điều"*.
+     *
+     * Suy từ **DỮ LIỆU**, không một `if (id == "fan")` nào (CLAUDE.md §7): họ hàng của mã vừa ghi là (a) nút khai
+     * [ControlDef.autoId] **trỏ tới** nó (chiều ngược: ghi `ac_auto` ⇒ `fan`), (b) nút mà chính nó trỏ tới (chiều
+     * xuôi: ghi `fan` ⇒ `ac_auto`), và với mỗi nút họ hàng là `readKey` của nút ấy + các datum **bạn đồng hành**
+     * ([CarDataDemand.COMPANION], vd `ac_wind` ⇒ `ac_wind_auto`). Nút thứ hai khai `autoId` là tự có, không sửa mã.
+     *
+     * Quên thừa một mã chỉ tốn **một** lượt đọc ở nhịp kế (rồi nguội lại như cũ), còn quên thiếu thì ô nói sai tới
+     * 10 phút — nên ở đây chọn phủ cả hai chiều.
      */
     fun forgetAbsentControl(controlId: String) {
-        absent.forget(controlId)
-        ControlRegistry.byId(controlId)?.readKey?.takeIf { it.isNotBlank() }?.let(absent::forget)
+        val self = ControlRegistry.byId(controlId)
+        val kin = ControlRegistry.ALL.filter { it.autoId == controlId } +
+            listOfNotNull(self, self?.autoId?.takeIf { it.isNotBlank() }?.let(ControlRegistry::byId))
+        val keys = LinkedHashSet<String>().apply { add(controlId) }
+        kin.forEach { d ->
+            keys += d.id
+            if (d.readKey.isNotBlank()) { keys += d.readKey; keys += CarDataDemand.COMPANION[d.readKey].orEmpty() }
+        }
+        keys.forEach(absent::forget)
     }
 
     // ── 6 method CŨ (tương thích WorkspaceView/WidgetViews) ────────────────────────────────────────────
@@ -202,6 +222,11 @@ class CarDataAdapter(
                 // ấy — datum nguội sẽ đóng băng con số cuối thay vì hiện "—".
                 seatVentRaw = g.int("seat_vent_state", c.seatVentRaw),
                 seatHeatRaw = g.int("seat_heat_state", c.seatHeatRaw),
+                // UX5b (owner 2026-09-27) — ghế PHỤ: cùng getter, `seatID` 2 (một chỗ khai: `HalReadTables.readArg`).
+                // Hai dòng này là điều làm cho chip/ô ghế phụ có số THẬT; thiếu chúng thì datum mới compile xanh mà
+                // vĩnh viễn "—" (CLAUDE.md §8) và `TelemetryReadoutTest` ca FULL WIRE đỏ.
+                seatVentRRaw = g.int("seat_vent_state_r", c.seatVentRRaw),
+                seatHeatRRaw = g.int("seat_heat_state_r", c.seatHeatRRaw),
                 defrostFrontOn = g.bool("defrost_front_state", c.defrostFrontOn),
                 defrostRearOn = g.bool("defrost_rear_state", c.defrostRearOn),
                 acModeRaw = g.int("ac_mode_auto", c.acModeRaw),

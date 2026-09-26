@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
 /**
@@ -18,7 +19,13 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
  * đã-dẫn nên đổi lại hồ sơ trong khung giờ thì lượt đi vẫn còn.
  */
 
-private fun autoPrefs(ctx: Context) =
+/**
+ * `internal` (không `private`) từ 2.74: [PrefsCameraDewarp] dùng lại đúng hàm này.
+ *
+ * Mở một accessor thứ hai ở tệp kia sẽ chép **tên tệp prefs** lần thứ hai — đúng "cửa thứ hai vào cùng chỗ lưu" mà
+ * KDoc trên cảnh báo, và bản chép ấy sẽ lệch vào đúng lần ai đó đổi tên tệp. Một hàm, một literal.
+ */
+internal fun autoPrefs(ctx: Context) =
     ctx.applicationContext.getSharedPreferences("clusternav_prefs", Context.MODE_PRIVATE)
 
 // ── AUTOMATION #1 · Tự sấy kính khi mưa (R1) ──────────────────────────────────────────────────────
@@ -190,6 +197,94 @@ fun Prefs.cameraRender(ctx: Context): String {
 /** Xem [cameraRender]. Nhận mã trong [CameraSignalPolicy.RENDERS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
 fun Prefs.setCameraRender(ctx: Context, v: String) =
     autoPrefs(ctx).edit().putString(K_CAMERA_RENDER, v).apply()
+
+// ── VÙNG GƯƠNG trong ảnh pano: bề rộng · dải · hình khung · kênh HAL (R8-A · 2.74) ───────────────
+// RE `docs/diagnostics/electro-camera-RE-2026-09-26.md` §5 K10: crop của 2.73 chỉ rộng 0.10 = **40 % một dải** ở rìa
+// vòng fisheye ⇒ méo như ống. §6.1 (phương án A) nới crop, và vì **dải nào là hướng nào vẫn [CHƯA BIẾT]** (§7 Q1/Q2)
+// thì chỉ số dải phải là pref owner dò được trên xe, không phải hằng. Cả năm khoá device-scope (`autoPrefs`): cách
+// HAL ghép ảnh 4-in-1 là chuyện của XE, không của hồ sơ tài xế — cùng lẽ `camera_rot_*`/`camera_render`.
+// Mặc định của CẢ NĂM = hành vi 2.73 từng pixel (CLAUDE.md §6); hình học ở `:core` [CameraPanoCrop].
+private const val K_CAMERA_SPAN = "camera_span"
+private const val K_CAMERA_SHAPE = "camera_shape"
+private const val K_CAMERA_CIRCLE_PCT = "camera_circle_scale"
+private const val K_CAMERA_HAL_MODE = "camera_hal_mode"
+private fun cameraStripKey(left: Boolean) = if (left) "camera_strip_left" else "camera_strip_right"
+
+/**
+ * Bề rộng vùng gương — mã trong [CameraSignalPolicy.SPANS] (`"NARROW"` = vệt 0.10 của 2.73, `"STRIP"` = trọn dải 0.25).
+ *
+ * Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultSpan], cùng khuôn [cameraRender].
+ */
+fun Prefs.cameraSpan(ctx: Context): String {
+    val fallback = CameraSignalPolicy.defaultSpan()
+    val raw = autoPrefs(ctx).getString(K_CAMERA_SPAN, fallback) ?: fallback
+    return if (CameraSignalPolicy.isSpan(raw)) raw else fallback
+}
+
+/** Xem [cameraSpan]. Nhận mã trong [CameraSignalPolicy.SPANS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
+fun Prefs.setCameraSpan(ctx: Context, v: String) =
+    autoPrefs(ctx).edit().putString(K_CAMERA_SPAN, v).apply()
+
+/**
+ * Hình cửa sổ camera — mã trong [CameraSignalPolicy.SHAPES] (`"RECT"` = chữ nhật bo góc của 2.73, `"ROUND"` = vòng
+ * tròn hiện trọn vòng ảnh fisheye như app Electro, **không** nắn méo).
+ */
+fun Prefs.cameraShape(ctx: Context): String {
+    val fallback = CameraSignalPolicy.defaultShape()
+    val raw = autoPrefs(ctx).getString(K_CAMERA_SHAPE, fallback) ?: fallback
+    return if (CameraSignalPolicy.isShape(raw)) raw else fallback
+}
+
+/** Xem [cameraShape]. */
+fun Prefs.setCameraShape(ctx: Context, v: String) =
+    autoPrefs(ctx).edit().putString(K_CAMERA_SHAPE, v).apply()
+
+/**
+ * Chỉ số DẢI pano (0..3) cho bên xi-nhan [left] — mặc định [CameraPanoCrop.defaultStrip] (trái 1 / phải 2 = hai dải
+ * mà vệt của 2.73 đang nằm trong).
+ *
+ * Ngoài dải ⇒ mặc định: dải thứ năm không tồn tại, và một chỉ số lạ đi tới tầng hình học sẽ cho một rect ngoài ảnh.
+ */
+fun Prefs.cameraStrip(ctx: Context, left: Boolean): Int {
+    val fallback = CameraPanoCrop.defaultStrip(left)
+    val raw = autoPrefs(ctx).getInt(cameraStripKey(left), fallback)
+    return if (CameraPanoCrop.isStrip(raw)) raw else fallback
+}
+
+/** Xem [cameraStrip]. */
+fun Prefs.setCameraStrip(ctx: Context, left: Boolean, v: Int) =
+    autoPrefs(ctx).edit().putInt(cameraStripKey(left), v).apply()
+
+/**
+ * Phần trăm cạnh ô vuông của hình TRÒN so với chiều cao dải — núm chữa cái [ĐOÁN] *"đường kính vòng ảnh = chiều cao
+ * dải"* ngay trên xe. Ngoài `[CIRCLE_PCT_MIN, CIRCLE_PCT_MAX]` ⇒ [CameraSignalPolicy.CIRCLE_PCT_DEFAULT].
+ */
+fun Prefs.cameraCirclePct(ctx: Context): Int {
+    val fallback = CameraSignalPolicy.CIRCLE_PCT_DEFAULT
+    val raw = autoPrefs(ctx).getInt(K_CAMERA_CIRCLE_PCT, fallback)
+    return if (CameraSignalPolicy.isCirclePct(raw)) raw else fallback
+}
+
+/** Xem [cameraCirclePct]. */
+fun Prefs.setCameraCirclePct(ctx: Context, v: Int) =
+    autoPrefs(ctx).edit().putInt(K_CAMERA_CIRCLE_PCT, v).apply()
+
+/**
+ * Kênh xem truyền cho `AVMCamera.addPreviewSurface(Surface, int)` — [CameraSignalPolicy.HAL_MODE_AUTO] (`-1`, **mặc
+ * định**) = dò `0..3` y 2.73; `0..4` = gọi ĐÚNG một lần với `VIEW_DEFAULT`/`VIEW_CHANNEL_1..4`.
+ *
+ * Móc ĐO (RE §6.3-C1): nếu `VIEW_CHANNEL_n` bắt HAL trả một kênh camera thay vì khung ghép thì cả tầng crop thành
+ * không cần. Chưa ai gọi thử trên xe ⇒ mặc định phải là đường cũ, và lượt đọc lạ cũng về đường cũ.
+ */
+fun Prefs.cameraHalMode(ctx: Context): Int {
+    val fallback = CameraSignalPolicy.HAL_MODE_AUTO
+    val raw = autoPrefs(ctx).getInt(K_CAMERA_HAL_MODE, fallback)
+    return if (CameraSignalPolicy.isHalMode(raw)) raw else fallback
+}
+
+/** Xem [cameraHalMode]. */
+fun Prefs.setCameraHalMode(ctx: Context, v: Int) =
+    autoPrefs(ctx).edit().putInt(K_CAMERA_HAL_MODE, v).apply()
 
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {

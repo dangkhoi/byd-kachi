@@ -177,6 +177,13 @@ class LayeringRulesTest {
         // SỬA** `ControlTileState` — bảng trạng thái ô dùng chung của màn chính, sống ở `:app`. Chuyển sang `:core`
         // là kéo bảng ấy theo, mà bảng ấy là state của tầng vẽ. Cùng lẽ với `VoiceTargetDispatch.kt` ngay trên.
         "VoiceReadback.kt" to "vai đọc-lại tách khỏi VoiceDispatcher — đọc/sửa ControlTileState (state tầng vẽ :app)",
+        // [SOÁT 2.74 · P2] (2026-09-27): vai *"một `StepPlan` gồm mấy lệnh, và luồng nào được phép chờ giữa chúng"*
+        // tách khỏi `VoiceDispatcher` vì trần 500 dòng. "Thuần" theo phép đo ở đây (không `import android.*`, không
+        // nhắc chữ Context) nhưng nó **quyết chỗ đứng của một nhịp chờ 400 ms so với luồng VẼ** — `Thread.sleep` +
+        // cặp lambda `onUi`/`background` của tầng giao diện. `:core` là tầng quyết định phải kiểm được off-car với
+        // đồng hồ giả, không phải chỗ giữ một lượt ngủ thật (đối chiếu: `MacroExec`/`ShellAppLauncher` ở `:core`
+        // **nhận** `sleep` làm tham số chứ không tự gọi). Cùng lẽ với `VoiceReadback.kt` ngay trên.
+        "VoiceClimateStep.kt" to "vai thi hành StepPlan tách khỏi VoiceDispatcher — giữ nhịp chờ 400 ms ngoài luồng vẽ",
         // [SOÁT Pass 1 · 2026-09-16] Ba hàm ngôn ngữ tách khỏi `WorkspacePrefs.kt` vì trần 500 dòng. "Thuần" theo
         // phép đo ở đây chỉ vì nó không `import android.*` và không nhắc chữ `Context` — nhưng nó là **hàm mở rộng
         // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).

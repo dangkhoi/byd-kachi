@@ -1,6 +1,6 @@
 # apk/ — kênh OTA của Kachi
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 (**`Kachi-2.73-release.apk` vc174**, 43 534 851 B, sha256 `c08d5b17…f8c7` [ĐO `shasum -a 256`]) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (**`Kachi-2.74-release.apk` vc175**, 43 768 607 B, sha256 `67105b12…8d04` [ĐO `shasum -a 256`]) · **Mục đích**: Thư mục APK phát hành để app **tự cập nhật qua mạng (OTA)** xuống xe — cùng cơ chế ClusterNav 2.0 đã dùng.
 
 **(VI)** App trên xe (`UpdateChecker`) hỏi GitHub Contents API thư mục này trên nhánh `main` của repo `dangkhoi/byd-kachi`,
 tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang cài, tải về rồi cài qua dadb loopback (`pm install -r`)
@@ -12,6 +12,7 @@ tìm tệp **`Kachi-<ver>-release.apk`** có phiên bản lớn hơn bản đang
 - Ký bằng **khoá riêng của Kachi** (từ 1.41, L2 — `~/.kachi/kachi-release.keystore` + `keystore.properties` gitignored;
   fingerprint SHA-256 `92:57:49:9B:61:69:D7:AC:A2:F0:27:D7:0F:1F:D8:E1:B8:13:7A:B4:F2:F3:44:2F:00:B0:08:4A:26:BB:99:17`).
   Bản Kachi cài trước 1.41 (ký khoá cũ / debug) **không** cập nhật đè được — gỡ rồi cài tay một lần, sau đó OTA bình thường.
+- **2.74 (175) — 2026-09-27** (`Kachi-2.74-release.apk`, 43 768 607 B, sha256 `67105b12e80eee72010bb86aa1803dd51aacd3e05bd383a0a058406c409a8d04`, đêm 26→27/09: UX1–UX7 (avatar · widget lốp + 14 bề mặt tổng hợp · danh sách lệnh nói trong Cài đặt · gió AUTO · chip Ghế lái/Ghế phụ · khe chip) · VOICE-OPEN-TURN (câu dở ⇒ giữ mic ≤ 1,2 s) · camera: `camera_frame` PNG thô, chip Bề rộng vùng gương/Dải/Hình tròn/Kênh HAL, **Nắn méo (GL)** thử nghiệm (đo máy ảo, chưa đo xe, mặc định vẫn TextureView) · README/hướng dẫn/danh mục/audit doc; review Opus Pass 1 APPROVED (1 P0 + 7 P1 vá), 4472 test/0 đỏ, lint 0; runbook xe `docs/diagnostics/oncar-runbook-2.74.md`)
 - **2.73 (174) — 2026-09-26** (`Kachi-2.73-release.apk`, 43 534 851 B, sha256 `c08d5b1701d421ab8de944a11db96a12a93838ec957de4496a7a104cbeaff8c7`, đợt off-car 8 việc sau buổi xe: overlay giọng nói không lấy tiêu điểm (taskbar không trồi; Back không huỷ) · hotword "vào ô số N" + hồ sơ tên tiếng Anh + khớp mờ tên app · VAD trần 1200 · log 34→≈9 KB/phút · khung camera đúng tỉ lệ crop sau xoay + chip Kết xuất camera · `libkachimem.so` mallopt cho `:wake` (NDK r30); review Opus Pass 3 APPROVED, 4235 test/0 đỏ, lint 0; runbook xe `docs/diagnostics/oncar-runbook-2.73.md`)
 - **2.72 (173) — 2026-09-26** (`Kachi-2.72-release.apk`, 43 483 553 B, sha256 `3762a2b708ee3a86aef3a8179fa76d163c7d07f294a0d4e8d91f80e00089e73d`, + lưới an toàn: helper HAL chết lúc đèn bật ⇒ báo OFF, camera không treo (review Pass 2); = 2.70 hotfix camera giữ tới khi đèn tắt (xe: helper báo trạng thái, không nháy) + 2 dòng Cài đặt xoay video trái/phải độc lập; đã test trên xe Seal ở bản 2.70 (buổi 26/09); cert `92:57:…:99:17` không đổi, không debuggable)
 - **2.70 (171) — 2026-09-26** (hotfix `CameraHold`, chỉ cài trực tiếp trên xe owner, không đăng kênh)

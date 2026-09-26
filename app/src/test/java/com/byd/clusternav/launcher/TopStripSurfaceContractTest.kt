@@ -255,6 +255,71 @@ class TopStripSurfaceContractTest {
     }
 
     /**
+     * ═══ UX1 · R1 — **ĐĨA HỒ SƠ ĐỒNG TÂM VỚI NÚT**, và tên hồ sơ vẫn phải đọc được ═════════════════════════════
+     *
+     * ## Bệnh nó chữa (owner trên xe, bản 2.70: *"chữ không nằm trọn trong vòng"*)
+     * [ĐO ảnh owner + mã] chữ nằm **đúng tâm đĩa**; cái lệch là **ĐĨA trong nền pill**, vì lề trong của chip là
+     * `(XS, 0, M, 0)` — 12dp bên phải là khe dẫn sang **chữ TÊN**, mà chữ tên `GONE` từ 2.55 (V5) và lề của nó
+     * không ai trả lại. Đây là họ lỗi *"ẩn một vật, để lại khe của nó"*, nên bài này đòi hai thứ **không thể đúng
+     * nhờ may mắn**: (a) nút khai cả hai chiều như ba pill; (b) lề trong **được ĐO** theo vật cuối còn hiện, không
+     * viết cứng — bật lại chữ tên là lề tự về, không phải sửa lần nữa.
+     *
+     * Phần a11y là lỗi **nặng hơn** phần lệch 4dp: `contentDescription` từng đặt trên chính chữ tên đang `GONE`,
+     * mà view `GONE` thì TalkBack không duyệt ⇒ nút hồ sơ **không có nhãn nào** — vỡ đúng bất biến mà bài
+     * `ba pill thanh tren chi con icon…` ở trên dựng ra cho nút chỉ-icon.
+     */
+    @Test
+    fun `dia ho so dong tam voi nut va ten van doc duoc`() {
+        val fn = SourceRoots.body(strip, "private fun profileChip()")
+        assertTrue(
+            fn.contains("minimumWidth = dp(Bars.HEADER_BTN)") && fn.contains("minimumHeight = dp(Bars.HEADER_BTN)"),
+            "chip hồ sơ là nút CHỈ-ICON như ba pill ⇒ phải khai TƯỜNG MINH cả hai chiều bằng hằng của thang; để bề " +
+                "ngang cho lề trong quyết thì hình dạng nút là hệ quả của một con số còn sót",
+        )
+        assertTrue(
+            fn.contains("HORIZONTAL; gravity = Gravity.CENTER"),
+            "chính CHIP phải căn `Gravity.CENTER`: chỗ DƯ ngang chia đều hai bên ⇒ tâm đĩa = tâm nút",
+        )
+        assertFalse(
+            fn.contains("Gravity.CENTER_VERTICAL"),
+            "`CENTER_VERTICAL` chỉ căn dọc ⇒ chỗ dư NGANG dồn hết về mép trái = đúng cái lệch owner thấy",
+        )
+        assertFalse(
+            fn.contains("setPadding(dp(Sp.XS), 0, dp(Sp.M), 0)"),
+            "lề trong KHÔNG được viết cứng lệch trái–phải: 12dp bên phải là khe của chữ tên, thứ đã `GONE` từ 2.55",
+        )
+        val pad = SourceRoots.body(strip, "private fun syncProfilePad()")
+        assertTrue(
+            pad.contains("profileNameView.visibility") && pad.contains("dp(Sp.M)") && pad.contains("dp(Sp.XS)"),
+            "lề cuối phải tự ĐO theo vật cuối còn hiện (CLAUDE.md §7): có chữ tên ⇒ Sp.M (khe chữ–mép), chỉ đĩa ⇒ " +
+                "Sp.XS đối xứng",
+        )
+        // ⚠⚠ ĐỐI XỨNG là chính bất biến bị vỡ, và ba chuỗi ở trên KHÔNG suy ra được nó. [ĐO mutation 2026-09-26]
+        // đổi riêng lề ĐẦU thành `dp(Sp.S)` (⇒ 8/22/4, tâm đĩa lệch 2dp — đúng họ lỗi owner báo) mà CẢ BỘ test vẫn
+        // XANH. Cơ chế: [ĐO AOSP `android-10.0.0_r47` `LinearLayout.java:1736`] `childLeft = mPaddingLeft +
+        // (right − left − mTotalLength) / 2`, với `mTotalLength` đã cộng CẢ HAI lề (`:1325`) ⇒ hai lề lệch nhau `d`
+        // thì tâm đĩa lệch `d/2`, bất kể chip có nở tới đích chạm hay không.
+        assertTrue(
+            pad.contains("setPadding(dp(Sp.XS), 0,"),
+            "lề ĐẦU phải là Sp.XS — đúng hằng mà bài số học `dia ho so va le doi xung nam trong dich cham` cộng",
+        )
+        assertEquals(
+            2, pad.split("dp(Sp.XS)").size - 1,
+            "Sp.XS phải xuất hiện ĐÚNG HAI lần trong thân: lề đầu VÀ lề cuối của ca chỉ-đĩa ⇒ hai lề BẰNG NHAU ⇒ " +
+                "đĩa đồng tâm. Thấy một lần = hai lề lệch nhau = lỗi UX1 · R1 quay lại mà không bài nào đỏ",
+        )
+        val set = SourceRoots.body(strip, "fun setProfile(")
+        assertTrue(
+            set.contains("profileChipView.contentDescription = activity.getString("),
+            "nhãn TalkBack phải nằm trên chính NÚT (chip) — đặt lên view `GONE` là nút hồ sơ không có nhãn nào",
+        )
+        assertFalse(
+            set.contains("profileNameView.contentDescription"),
+            "…và không còn đặt trên chữ tên đang ẩn (khoá chuỗi giữ nguyên `kachi_profile_chip_desc`, VI+EN)",
+        )
+    }
+
+    /**
      * Pill "Thanh" và đường xoay vòng của nó phải **hết hẳn**, không để mã chết.
      *
      * Dự án đã xoá mã chết nhiều lần (`LauncherRequirements.notice`, `photoPaths`): một intent còn nằm đó là một lời

@@ -42,12 +42,27 @@ class ControlTileOffMainWiringContractTest {
         }
     }
 
+    /**
+     * Mỗi kiểu ghi xuất hiện đúng **một** lần trong cả tệp (bài trên đã ghim lần đó nằm trong `writer.submit(`).
+     *
+     * ⚠ UX4 (2026-09-26) — `control().toggle(` nay có **HAI** chỗ, và con số đó được ghim chứ không nới:
+     *  1. `tileToggle` — ô bật/tắt;
+     *  2. `tileStep` — nấc AUTO của một nút khai [ControlDef.autoId] (`fan` → `ac_auto`). Nó **phải** đi qua đúng
+     *     cổng nút ấy để dùng lại `HalBindingTable.writeArgs` (phép đảo *bật auto ⇒ gửi 0* đã [ĐO] trên xe) và
+     *     lượt đánh thức của `WakeOnWriteControl`; tự bắn feature-id là dựng đường ghi thứ hai, mất cả hai.
+     * Chỗ thứ ba thì phải có lý do viết ra đây — nếu không, đó đúng là đường ghi đi vòng qua làn tuần tự.
+     */
     @Test
     fun `cu ghi dung mot cua — khong con control() ghi nao ngoai writer`() {
-        // Mỗi kiểu ghi xuất hiện đúng MỘT lần trong cả tệp (và bài trên đã ghim lần đó nằm trong `writer.submit(`).
+        val allowed = mapOf("control().toggle(" to 2)
         builders.values.forEach { write ->
-            assertEquals(1, Regex(Regex.escape(write)).findAll(factory).count(), "`$write` phải có đúng một chỗ gọi")
+            val want = allowed[write] ?: 1
+            assertEquals(want, Regex(Regex.escape(write)).findAll(factory).count(), "`$write` phải có đúng $want chỗ gọi")
         }
+        // Và chỗ thứ hai phải đúng là nấc AUTO của ô stepper, nằm TRONG lượt `writer.submit(`.
+        val step = SourceRoots.body(factory, "private fun tileStep(")
+        assertTrue(step.contains("control().toggle(def.autoId"), "nấc AUTO phải ghi qua cổng nút phụ, không tự bắn id")
+        assertTrue(step.indexOf("control().toggle(") > step.indexOf("writer.submit("), "và nằm trong làn nền")
     }
 
     @Test

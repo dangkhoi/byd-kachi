@@ -25,7 +25,9 @@ data class VoiceTerm(val words: List<String>, val kind: VoiceTermKind, val id: S
  * Spec `docs/specs/kachi-voice-command.html` R2. Thuần Kotlin (`:core`).
  *
  * ## Ràng buộc số một: KHÔNG chép tay nhãn
- * 65 nút + 123 datum + 4 gói lệnh + 2 hành động launcher, mỗi cái đã có nhãn VI, nhãn EN và (một số) nhãn ngắn hai
+ * 33 nút + 64 datum + 2 gói lệnh + 3 hành động launcher ([ĐO 2026-09-26] `ControlRegistry.ALL.size` ·
+ * `TelemetryRegistry.ALL.size` · `ActionMacros.ALL.size` · `LauncherActions.ALL.size`, bốn con số này có bài ghim ở
+ * `CapabilityGroupsTest`), mỗi cái đã có nhãn VI, nhãn EN và (một số) nhãn ngắn hai
  * thứ tiếng. Chép chúng sang một bảng "câu lệnh" là dựng **bản sao thứ hai của nhãn** — đúng họ lỗi mà dự án đã
  * trả giá bốn lần (`unitPrefs` ×4, `customLayout` ×2): ai đó đổi nhãn nút, màn hình đổi, còn câu lệnh thì không, và
  * **không gì báo lỗi**. Ở đây từ vựng được **sinh** mỗi lần gọi từ chính bộ đăng ký ⇒ thêm một dòng registry là

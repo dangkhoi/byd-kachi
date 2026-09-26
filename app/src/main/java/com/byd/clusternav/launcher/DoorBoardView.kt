@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.view.View
-import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * BẢNG *CỬA & KHOANG* — **WP3-v5**: hình xe nay là **ẢNH bitmap** ([CarImageLayer]) + **chấm màu** tại vị trí từng
@@ -16,10 +15,18 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * Ô vẽ **không phán xét**: bộ phận nào đang mở / sắc thái / câu kết luận đều do [GroupBoard.doorPlan] (`:core`,
  * kiểm off-car) quyết; ở đây không có một mã datum (`door_*`) hay ngưỡng nào. Chỗ nối là enum [CarPart].
  *
- * ## Vì sao số (%) nằm ở CHÂN BẢNG, không vẽ trên ảnh
- * Chữ trên ẢNH (màu bất kỳ do người dùng thay) khó đọc. Dòng kết luận [DoorBoardPlan.footer] (do `:core` dựng) đã
- * kể tên + giá trị các khoang đang mở (*"2 cửa mở · Cốp · 40 %"*), nên overlay trên ảnh chỉ cần **chấm vị trí**
- * (câu hỏi *"khoang NÀO đang mở"* là câu về không gian) — số để cho footer. Hết cửa xoè động (ảnh tĩnh).
+ * ## Vì sao bảng này KHÔNG vẽ chữ nào
+ * Chữ trên ẢNH (màu bất kỳ do người dùng thay) khó đọc, nên overlay chỉ có **chấm vị trí** (câu hỏi *"khoang NÀO
+ * đang mở"* là câu về không gian). Dòng kết luận [DoorBoardPlan.footer] từng nằm ở chân bảng nhưng owner đã gỡ
+ * dòng kết luận khỏi widget tổng hợp (2026-09-23, `84f91e6`).
+ *
+ * ## 2.74 · UX7 — hai thứ đã dọn (cùng lượt soát bốn ô vẽ Canvas)
+ *  • **đường chết**: `footerP`/`clip()`/`FOOTER_BASELINE`/`FOOTER_RATIO`/sàn cỡ chữ vẫn được dựng và tính mỗi lượt
+ *    vẽ, còn `drawText` thì 0 chỗ — đúng bệnh CLAUDE.md §8 mà bảng lốp vừa gặp ở `TyreBoard.verdict`. Đã xoá; muốn
+ *    trả dòng kết luận về thì nó phải quay lại bằng một quyết định của owner, không phải bằng mã còn sót.
+ *  • **dải trống đáy**: khung ảnh dừng ở `0.86 × cao` để chừa chỗ cho đúng dòng chữ đã gỡ ⇒ 14 % chiều cao ô bỏ
+ *    không và hình xe nhỏ hơn cần thiết. Nay dùng tới [CAR_BOTTOM] — **cùng số 0.98 của bảng lốp** (task 3 owner
+ *    2026-09-25: *"dùng gần hết chiều cao, bớt dải trống đáy"*), để hai bảng dùng chung ảnh xe trông cùng cỡ.
  *
  * WP1/WP3-v5: 0 viền · 0 blur · 0 shadow. Mọi `Paint` cấp phát MỘT LẦN; màu phân giải một lần.
  */
@@ -29,9 +36,6 @@ internal class DoorBoardView(context: Context) : View(context) {
     private val car = CarImageLayer(context) { invalidate() }
 
     private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val footerP = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; color = Color.parseColor(KachiTheme.MUT)
-    }
 
     private val carDst = RectF()
     private val content = RectF()
@@ -40,8 +44,6 @@ internal class DoorBoardView(context: Context) : View(context) {
     private val colAccent = Color.parseColor(KachiTheme.ACCENT)
     private val colAmber = Color.parseColor(KachiTheme.AMBER)
     private val colRed = Color.parseColor(KachiTheme.RED)
-
-    private val labelFloorPx = Sp.dpf(context, Sp.BOARD_LABEL_MIN)
 
     fun set(model: GroupBoardModel) {
         val next = GroupBoard.doorPlan(model)
@@ -63,12 +65,11 @@ internal class DoorBoardView(context: Context) : View(context) {
         val h = height.toFloat()
         val p = plan ?: return
         if (w <= 0f || h <= 0f || p.parts.isEmpty()) return
-        val min = minOf(w, h)
 
-        // Ảnh xe chiếm phần trên; chân bảng chừa cho dòng kết luận.
+        // Ảnh xe dùng gần hết chiều cao ô (UX7 — xem KDoc lớp: dải trống đáy là di sản dòng kết luận đã gỡ).
         val pad = w * PAD_RATIO
-        carDst.set(pad, h * TOP_INSET, w - pad, h * FOOTER_TOP)
-        car.ensure(width, (h * FOOTER_TOP).toInt())
+        carDst.set(pad, h * TOP_INSET, w - pad, h * CAR_BOTTOM)
+        car.ensure(width, (h * CAR_BOTTOM).toInt())
         car.draw(canvas, carDst)
 
         // Chấm màu tại từng bộ phận ĐANG MỞ, theo neo chuẩn hoá trên đúng khung ảnh đã vẽ.
@@ -81,20 +82,6 @@ internal class DoorBoardView(context: Context) : View(context) {
             dot.color = tint(s.tone)
             canvas.drawCircle(content.left + a.x * content.width(), content.top + a.y * content.height(), r, dot)
         }
-
-        // Dòng kết luận (do :core dựng) — thu cho vừa, canh giữa chân bảng.
-        footerP.textSize = maxOf(min * FOOTER_RATIO, labelFloorPx)
-        footerP.color = colMut
-        val room = w - pad * 2f
-        // Owner 2026-09-23: bỏ dòng footer kết luận ("N bộ phận đã đóng/chưa đọc…") dưới bảng cửa.
-    }
-
-    private fun clip(s: String, room: Float): String {
-        if (room <= 0f) return ""
-        if (footerP.measureText(s) <= room) return s
-        var n = s.length
-        while (n > 0 && footerP.measureText(s.take(n) + ELLIPSIS) > room) n--
-        return if (n <= 0) "" else s.take(n) + ELLIPSIS
     }
 
     fun release() = car.release()
@@ -105,12 +92,10 @@ internal class DoorBoardView(context: Context) : View(context) {
     }
 
     private companion object {
-        const val ELLIPSIS = "…"
         const val PAD_RATIO = 0.04f
         const val TOP_INSET = 0.03f
-        const val FOOTER_TOP = 0.86f
-        const val FOOTER_BASELINE = 0.97f
-        const val FOOTER_RATIO = 0.056f
+        /** Mép DƯỚI khung ảnh — **cùng số với [TyreBoardView] `CAR_BOTTOM`** (xem KDoc lớp, UX7). */
+        const val CAR_BOTTOM = 0.98f
         /** Bán kính chấm theo cạnh nhỏ của khung xe. */
         const val DOT_RATIO = 0.065f
     }

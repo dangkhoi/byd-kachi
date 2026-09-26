@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- GHẾ MÁT — ghế LÁI (`seatc` · datum `seat_vent_state`): bản gương của ghế phụ, đúng quy ước cạnh đã có (`-left` = ghế lái). Bông tuyết = làm lạnh, khác hẳn làn nhiệt của bản sưởi. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M 19.42,8.61 C 20.71,8.61,21,9.62,20.71,10.92 L 19.42,16.39 L 12.36,16.39" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 18.7,16.39 L 12.5,16.39 A 1.44,1.44,0 0 0 11.06,17.83 L 11.06,17.97 A 1.44,1.44,0 0 0 12.5,19.41 L 18.7,19.41 A 1.44,1.44,0 0 0 20.14,17.97 L 20.14,17.83 A 1.44,1.44,0 0 0 18.7,16.39 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 18.55,19.41 L 18.55,21 M 12.65,19.41 L 12.65,21" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M 7,3.2 L 7,10 M 9.95,4.9 L 4.05,8.3 M 9.95,8.3 L 4.05,4.9" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

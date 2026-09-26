@@ -109,15 +109,37 @@ class VoiceRecognizer private constructor(
     fun decodeAll(pcm: ShortArray, length: Int): String = decode(pcm, length)
 
     /**
+     * ═══ VOICE-OPEN-TURN — giải mã **một DẢI giữa** khúc đã gom: `[from, to)` ════════════════════════════════
+     *
+     * Đường duy nhất để đọc **vế SAU** của một lượt nghe bị giữ mở qua quãng ngừng-để-nghĩ ([VoiceOpenTurn]):
+     * vế trước đi qua [finalResult] (từ mẫu 0), vế sau bắt đầu ở giữa cửa sổ nên không hàm nào cũ hơn tới được.
+     *
+     * ## Vì sao KHÔNG nối hai khúc rồi gọi [finalResult] một lần
+     * [ĐO 2026-09-26] `docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md` §1.2: cùng bản thu, giải
+     * mã **nguyên cửa sổ** ra *"mở vietmap **một**"* (mất ba chữ giữa), giải mã **từng khúc** ra đủ chữ. Một khoảng
+     * lặng 720–1 060 ms ở giữa chỉ làm nó nặng thêm (bảng đuôi-im-lặng ở KDoc [VoiceVadTrim]). Hai khúc, hai lượt
+     * giải mã, ghép ở tầng CHỮ.
+     *
+     * Kẹp hai đầu theo phần **đã gom** (`filled`) như [finalResult]: dải âm / vượt vùng ⇒ chuỗi rỗng, không đọc
+     * rác ngoài vùng. **CHẶN** ⇒ luồng nền.
+     */
+    fun rangeResult(fromSample: Int, toSample: Int): String {
+        val from = fromSample.coerceIn(0, filled)
+        val to = toSample.coerceIn(0, filled)
+        return if (to <= from) "" else decode(buffer, to, from)
+    }
+
+    /**
      * Một lượt giải mã: PCM16 → float [-1,1) → stream (+hotwords nếu có) → text.
      *
      * Mô hình VN xuất **CHỮ HOA CÓ DẤU**; [VoiceIntentParser] làm việc trên chữ **thường đã bỏ dấu** — nên hạ
      * chữ ở đây, giữ đúng hợp đồng chuỗi mà tầng chữ (Vosk trước đây) vẫn nhận.
      */
-    private fun decode(pcm: ShortArray, length: Int): String {
-        if (length <= 0) return ""
-        val n = minOf(length, pcm.size)
-        val samples = FloatArray(n) { pcm[it] / 32768f }
+    private fun decode(pcm: ShortArray, length: Int, offset: Int = 0): String {
+        if (length <= offset) return ""
+        val n = minOf(length, pcm.size) - offset
+        if (n <= 0) return ""
+        val samples = FloatArray(n) { pcm[offset + it] / 32768f }
         // 2026-09-25 · wake: giữ khoá DÙNG suốt lượt giải mã để `VoiceEngine.release()` (BG-20 stand-down / gỡ gói)
         // không thể giải phóng recognizer native dưới chân một `decode` đang chạy — đó là SIGSEGV, không phải ngoại
         // lệ. Recognizer đã bị nhả (bản này không còn là bản hiện hành) ⇒ trả rỗng, có log, không chạm native.

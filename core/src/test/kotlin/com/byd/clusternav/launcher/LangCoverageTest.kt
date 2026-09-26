@@ -52,7 +52,9 @@ class LangCoverageTest {
         // 1.85: +1 `ac_wind_auto` (đã có nhãn + nhãn ngắn ở CẢ hai thứ tiếng — chính bài này ép điều đó).
         // WP8 2026-09-20: 102 → 73 (purge 29 datum BỎ) → 1.90: 71 (gỡ `op_mode` + `energy_mode`, xe thuần điện).
         // 2026-09-25: 71 → 64 (owner gỡ 7 datum CHẾT — nhật ký ở TelemetryRegistry).
-        assertEquals(64, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // UX5b (2026-09-27): 64 → 66 (+2 datum ghế PHỤ — `seat_vent_state_r` · `seat_heat_state_r`; cả hai có nhãn
+        // + nhãn ngắn ở CẢ hai thứ tiếng, chính bài này ép điều đó).
+        assertEquals(66, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -91,7 +93,7 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi muc cai dat co nhan EN — 11 nhom va 79 muc`() {
+    fun `moi muc cai dat co nhan EN — 11 nhom va 76 muc`() {
         assertEquals(11, SettingsCatalog.GROUPS.size)   // +VOICE (owner 2026-09-21 tách menu Giọng nói riêng)
         // 54 = 20 (IA v1) + 36 mục dựng lại từ màn ClusterNav (IA v2 §4.3: nav 11 · cast 9 · keys 5 · car 5 thêm ·
         // system 6 thêm · about 1 thêm), trừ `clusternav_open` (IA v2), trừ `system_advanced_screen` (S3 2026-09-13:
@@ -126,8 +128,8 @@ class LangCoverageTest {
         // sang mô hình nhẹ* / *gỡ bản nặng*). Danh mục mô hình nghe thu về ĐÚNG MỘT gói (`SherpaModelCatalog.ALL`,
         // owner: *"chỉ giữ model đang OK trên xe, không thử nghiệm gì nữa"*) ⇒ bề mặt chọn-mô-hình không còn gì để
         // chọn giữa, `VoiceModelSettings.lightModelRows` gỡ. Hàng *trạng thái + Tải/Gỡ* của gói duy nhất Ở LẠI
-        // (nó chưa bao giờ là một mục danh mục — nó thuộc khối dựng tay cùng `voice_tts_pack`).
-        assertEquals(75, SettingsCatalog.ENTRIES.size)
+        // (nó chưa bao giờ là một mục danh mục — nó thuộc khối dựng tay cùng `voice_tts_pack`). 2.74 · R3: **75 → 76 (+1)** = `voice_commands`, mục THÔNG TIN *"Câu lệnh nói được"* / *"Spoken commands"*.
+        assertEquals(76, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -165,7 +167,7 @@ class LangCoverageTest {
      * `Localized` khỏi một lớp sẽ làm lớp đó không còn ở đây mà **không bài nào đỏ** nếu không ghim tổng.
      */
     @Test
-    fun `tong so nhan co ban EN dung 255`() {
+    fun `tong so nhan co ban EN dung 239`() {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
@@ -212,8 +214,12 @@ class LangCoverageTest {
         // Một-mô-hình-nghe (owner 2026-09-21, cùng bản): **256 → 255 (−1)** = mục `voice_model_light`. Danh mục mô
         // hình nghe thu về đúng một gói ⇒ bề mặt chọn-mô-hình gỡ khỏi Cài đặt. Lượt GIẢM thứ ba.
         // 1.90: **255 → 244 (−11)** = −9 nút −2 datum (xe thuần điện). Lượt GIẢM thứ tư.
-        // 2026-09-25: **245 → 238 (−7)** = 7 datum CHẾT bị gỡ. Lượt GIẢM thứ năm.
-        assertEquals(238, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2026-09-25: **245 → 238 (−7)** = 7 datum CHẾT bị gỡ. Lượt GIẢM thứ năm. 2.74 · R3: **238 → 239 (+1)** = mục `voice_commands`, đã có nhãn CẢ hai thứ tiếng tại chỗ khai (chính bài này ép điều đó).
+        // UX5b (owner 2026-09-27): **239 → 241 (+2)** = hai datum ghế PHỤ (`seat_vent_state_r` ·
+        // `seat_heat_state_r`), đều có nhãn ĐẦY + nhãn NGẮN ở cả hai thứ tiếng tại chỗ khai. Hai chip GỘP mới không
+        // cộng vào đây: nhãn của chúng là `Strings.t(...)` inline ở `TopStripChips`/`TopStripConfig.choices` (không
+        // phải dòng registry), đúng như ba chip dựng sẵn cũ.
+        assertEquals(241, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

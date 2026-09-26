@@ -38,8 +38,22 @@ object ProfileNames {
     fun display(name: String): String =
         if (name == HomeUiState.DEFAULT_PROFILE) Strings.t(HomeUiState.DEFAULT_PROFILE, "Default") else name
 
-    /** Chữ đầu cho avatar thanh trên — theo **nhãn** (nên máy tiếng Anh hiện `D`, không phải `M`). */
-    fun initial(name: String): String = display(name).take(1).uppercase()
+    /**
+     * Chữ đầu cho ĐĨA avatar thanh trên — theo **nhãn** (nên máy tiếng Anh hiện `D`, không phải `M`).
+     *
+     * Ba chi tiết, mỗi cái khoá một ca biên ở `ProfileNamesTest` — đĩa chỉ rộng `KachiBars.HEADER_AVATAR` (22dp) nên
+     * *"hai chữ"* hay *"nửa ký tự"* đều tràn ra thành ô tofu:
+     *  1. **hoa TRƯỚC rồi mới cắt**: `"ßeta".take(1).uppercase()` = `"SS"` (HAI chữ), còn `uppercase().take(1)` = `"S"`;
+     *  2. **cắt theo CODE POINT, không theo `Char`**: tên mở đầu bằng emoji (`"🚗 Xe nhà"`) là một **cặp surrogate**
+     *     UTF-16 ⇒ `take(1)` trả nửa cặp, và nửa cặp không vẽ được;
+     *  3. `uppercase()` **không** truyền Locale là CỐ Ý: Kotlin dùng root locale, nên locale Thổ không biến `i` → `İ`
+     *     (khác hẳn [Strings.current] — cái đó là ngôn ngữ của NHÃN, không phải luật đổi hoa).
+     */
+    fun initial(name: String): String {
+        val s = display(name).trim().uppercase()
+        if (s.isEmpty()) return ""
+        return s.take(if (s.length > 1 && s[0].isHighSurrogate() && s[1].isLowSurrogate()) 2 else 1)
+    }
 
     /**
      * Tóm tắt bố cục của MỘT hồ sơ — owner 2026-09-14: *"chưa thấy hồ sơ nó gắn với bố cục chỗ nào?"*.

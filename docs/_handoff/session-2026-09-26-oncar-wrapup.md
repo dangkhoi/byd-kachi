@@ -6,7 +6,7 @@
 | Ở đâu | Bản | Ghi chú |
 |---|---|---|
 | Xe owner (Seal) | **2.70 (171)** cài trực tiếp qua adb | = 2.69 + hotfix camera giữ tới khi đèn tắt |
-| Kênh OTA `main` · `apk/Kachi-2.73-release.apk` | **2.73 (174)** | = 2.72 + 8 việc off-car R9 (xem §4); 2.72 = 2.70 + 2 dòng xoay video trái/phải + lưới an toàn helper HAL chết; **anh em cập nhật qua Cài đặt › Hệ thống › Kiểm tra cập nhật** |
+| Kênh OTA `main` · `apk/Kachi-2.74-release.apk` | **2.73 (174)** | = 2.72 + 8 việc off-car R9 (xem §4); 2.72 = 2.70 + 2 dòng xoay video trái/phải + lưới an toàn helper HAL chết; **anh em cập nhật qua Cài đặt › Hệ thống › Kiểm tra cập nhật** |
 | Nhánh `feat/voice-hotword-phrases` | = `main` | |
 
 ## 2. Hôm nay đo được gì (xe thật, 8 lõi) [ĐO]

@@ -1,12 +1,12 @@
 # Runbook buổi xe 2.73 — kiểm 8 việc off-car 26/09 (~40 phút, theo phút)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Bản kiểm**: **2.73 (174)** (`apk/Kachi-2.73-release.apk`, kênh OTA `main`) · **Xe**: Seal DiLink 3.0 (Android 10), bản đang chạy 2.70 (171) cài tay hôm 26/09.
+> **Trạng thái**: Superseded — thay bởi `oncar-runbook-2.74.md` (gộp E1–E12 còn lại + 2.74) · **Cập nhật**: 2026-09-26 · **Bản kiểm**: **2.73 (174)** (nay kênh OTA `main` đã là `apk/Kachi-2.74-release.apk`) · **Xe**: Seal DiLink 3.0 (Android 10), bản đang chạy 2.70 (171) cài tay hôm 26/09.
 > Mỗi dòng E1–E12 khoá một việc off-car đã làm; **cột "đạt khi" viết trước khi đo** để không đọc số theo ý mình. Chi tiết cơ chế + tiêu chí ở 4 doc `offcar-2026-09-26/*.md`. Không cần adb cũng làm được §8 (chỉ chụp màn).
 > Biến: `$A` = đường dẫn adb · `$S` = serial (`127.0.0.1:15555` qua cầu nc, xem memory `kachi-adb-car-tunnel`) · `<pkg>` = `com.byd.launcher`.
 
 ## 0. Ở nhà, TRƯỚC khi ra xe (5 phút)
 
-1. Điện thoại/laptop có sẵn link OTA hoặc file `Kachi-2.73-release.apk` (43,5 MB) — mạng ở bãi xe không tin được.
+1. Điện thoại/laptop có sẵn link OTA hoặc file `Kachi-2.74-release.apk` (43,5 MB) — mạng ở bãi xe không tin được.
 2. Đọc lại 3 quyết định còn chờ owner để **nhìn** trên xe rồi trả lời một lần: WATCHDOG-GATE-8S · CAM-ROT-3 (khung camera ngang 360×192) · VOICE-OPEN-TURN (backlog *QUYẾT ĐỊNH CẦN OWNER*).
 3. Mở sẵn 2 terminal: một chạy `logcat` **stream ra file** (buffer xe tràn sau ~30 s, `-d` không tin được), một để gõ lệnh.
 
@@ -21,7 +21,7 @@ $A connect 127.0.0.1:15555 && $A -s $S shell dumpsys package <pkg> | grep versio
 
 ## 2. CÀI 2.73 (3 phút) — cài đè, giữ data
 
-Cài đặt › Hệ thống › Kiểm tra cập nhật (OTA) **hoặc** `$A -s $S install -r Kachi-2.73-release.apk`. Chốt:
+Cài đặt › Hệ thống › Kiểm tra cập nhật (OTA) **hoặc** `$A -s $S install -r Kachi-2.74-release.apk`. Chốt:
 ```bash
 $A -s $S shell dumpsys package <pkg> | grep -E "versionName|versionCode"      # 2.73 / 174
 $A -s $S shell run-as <pkg> ls lib/ 2>/dev/null; $A -s $S shell "pm path <pkg>"  # release không có run-as ⇒ chỉ cần pm path OK

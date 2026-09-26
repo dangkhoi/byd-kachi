@@ -4,15 +4,9 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFocusRequest
-import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.ToneGenerator
 import android.util.Log
-import com.byd.clusternav.Prefs
-import com.byd.clusternav.voiceEndpointFloorCap
-import com.byd.clusternav.voiceEndpointMinSpeechMs
-import com.byd.clusternav.voiceEndpointSilenceMs
-import com.byd.clusternav.voiceMicSource
 
 /**
  * ═══ V1 pha NGHE · MICRO → PCM → BỘ NHẬN DẠNG ════════════════════════════════════════════════════════════════
@@ -106,11 +100,11 @@ internal class VoiceCapture(private val ctx: Context) {
         cancelled: () -> Boolean,
         keepPcm: Boolean = false,
         /**
-         * H5 — mặc định KHÔNG còn là `VoiceEndpointer()` trần mà là [endpointerFromPrefs]: hai ngưỡng của nó
+         * H5 — mặc định KHÔNG còn là `VoiceEndpointer()` trần mà là [VoiceCaptureDevice.endpointer]: hai ngưỡng của nó
          * (`voice_endpoint_silence_ms` · `voice_endpoint_min_speech_ms`) chỉnh được trên xe. Mặc định của hai
          * khoá ấy **bằng đúng** hai hằng cũ ⇒ máy chưa ai chỉnh chạy y hệt 1.68.
          */
-        endpointer: VoiceEndpointer? = endpointerFromPrefs(),
+        endpointer: VoiceEndpointer? = VoiceCaptureDevice.endpointer(ctx),
         /**
          * V3 · R9 — có kêu tiếng bíp **đầu** lượt không.
          *
@@ -134,6 +128,15 @@ internal class VoiceCapture(private val ctx: Context) {
         label: String = LABEL_MAIN,
         /** R2 (voice-ux) — mức âm RMS mỗi khối (0..32767) cho waveform overlay. Mặc định no-op (không đụng call cũ). */
         onLevel: (Int) -> Unit = {},
+        /**
+         * VOICE-OPEN-TURN (OQ9, 2026-09-26) — lượt này được **giữ mở** qua một quãng ngừng-để-nghĩ nếu câu còn dở.
+         *
+         * Mặc định `false` ⇒ **mọi chỗ gọi cũ chạy y hệt 2.72**, không có luồng nền nào, không có phép chờ nào.
+         * `true` ở đúng lượt CHÍNH (`VoiceSession.runListen`, dùng cho cả nút mic lẫn đường `:wake` vì hai lối vào
+         * dùng cùng một `VoiceSession`); lượt nối/hỏi-lại/xác-nhận giữ nguyên vì chúng đã có vòng hội thoại riêng
+         * và không giữ PCM (`keepPcm = false`). Cơ chế + bảng số: KDoc [VoiceOpenTurnArm] và [VoiceOpenTurn].
+         */
+        openTurn: Boolean = false,
         onPartial: (String) -> Unit,
     ): Heard {
         val kept = if (keepPcm) ShortArray(MAX_KEPT_SAMPLES) else EMPTY
@@ -168,7 +171,9 @@ internal class VoiceCapture(private val ctx: Context) {
             VoiceSingleFlight.Grant.Ok -> Unit
         }
         try {
-            return listenGranted(rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onLevel, onPartial)
+            return listenGranted(
+                rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onLevel, openTurn, onPartial,
+            )
         } finally {
             VoiceSingleFlight.release()
         }
@@ -186,12 +191,13 @@ internal class VoiceCapture(private val ctx: Context) {
         decodeOnlyIfSpeech: Boolean,
         kept: ShortArray,
         onLevel: (Int) -> Unit,
+        openTurn: Boolean,
         onPartial: (String) -> Unit,
     ): Heard {
         var keptN = 0
         val tOpen = System.currentTimeMillis()
         if (beep) VoiceChime.start()   // #1 (owner 2026-09-24) — earcon READY TRƯỚC khi mở mic: kêu ngay + không nhiễm nền.
-        val opened = openRecord() ?: return Heard("", kept, keptN)
+        val opened = VoiceCaptureDevice.open(ctx) ?: return Heard("", kept, keptN)
         val record = opened.record
         val focus = VoiceAudioFocus.request(ctx)
         // Bộ ngắt câu của lượt này: Silero VAD nếu dựng được, lùi về bộ RMS (xem [VoiceTurnEndpoint]). Dựng SAU
@@ -220,6 +226,8 @@ internal class VoiceCapture(private val ctx: Context) {
             // Số mẫu đã đọc được trong cửa sổ — mốc để đổi mẫu ↔ ms và là trần trên của phép cắt đuôi (Int: chỉ số mảng).
             var fed = 0
             var ended = false
+            // VOICE-OPEN-TURN: `null` ⇒ lượt này chạy y hệt 2.72 (xem KDoc tham số `openTurn` + [VoiceOpenTurnArm]).
+            val arm = if (openTurn) VoiceOpenTurnArm(rec, ep) { head -> onPartial(head) } else null
             while (!cancelled() && System.currentTimeMillis() < deadline) {
                 val n = record.read(buf, 0, buf.size)
                 if (n <= 0) {
@@ -254,16 +262,26 @@ internal class VoiceCapture(private val ctx: Context) {
                     tone(ToneGenerator.TONE_PROP_BEEP, TONE_START_MS)
                     beepPending = false
                 }
+                if (arm != null && arm.armed) {
+                    // Pha CHỜ: điểm ngắt của vế trước đã nổ, micro còn mở. Ai thoát và vì sao: KDoc [VoiceOpenTurnArm].
+                    if (arm.stopReading(stop)) break
+                    continue
+                }
                 if (stop) {
                     Log.i(VoiceEngine.TIMING_TAG, "ngắt câu: ${ep.summary(fed)}")
                     ended = true
+                    // Câu còn dở ⇒ giữ micro thêm (vòng đọc chạy tiếp), không đóng lượt ở đây.
+                    if (arm != null && arm.arm(fed)) continue
                     break
                 }
                 val p = rec.partial()
                 if (p.isNotEmpty() && p != lastPartial) { lastPartial = p; onPartial(p) }
             }
-            // Chạm trần mà đoạn tiếng còn đang mở ⇒ chốt nốt, nếu không "nói dài" bị coi là "không ai nói".
-            if (!ended) { ep.flush(); Log.i(VoiceEngine.TIMING_TAG, "hết trần: ${ep.summary(fed)}") }
+            // Đoạn tiếng còn đang mở lúc thoát vòng đọc ⇒ chốt nốt. Hai ca: **chạm trần** (nói dài, nếu không nó
+            // bị coi là "không ai nói") và lượt **CÓ GIỮ** thoát trong khi vế sau chưa chốt (nếu không vế sau mất
+            // trắng và `trim` dưới kia cũng không thấy nó).
+            if (!ended || arm?.armed == true) ep.flush()
+            if (!ended) Log.i(VoiceEngine.TIMING_TAG, "hết trần: ${ep.summary(fed)}")
             val listenMs = System.currentTimeMillis() - tListen
             Log.i(VoiceEngine.TIMING_TAG, "nghe $listenMs ms")
             Log.i(TAG, meter.line())
@@ -295,7 +313,10 @@ internal class VoiceCapture(private val ctx: Context) {
                     "(bo=${VoiceVadTrim.samplesToMs(fed - trim, SAMPLE_RATE)}ms · duong=${ep.route})",
             )
             val tDecode = System.currentTimeMillis()
-            val text = rec.finalResult(trim)
+            // Lượt CÓ GIỮ đã chạy phép giải mã vế trước ở luồng nền từ lúc ngắt câu; `result` chờ nốt rồi ghép vế
+            // sau (nếu có). Lượt không giữ ⇒ `null` ⇒ đúng một lời gọi `rec.finalResult(trim)` như 2.72.
+            val joined = arm?.result(fed)
+            val text = joined?.text ?: rec.finalResult(trim)
             val decodeMs = System.currentTimeMillis() - tDecode
             Log.i(VoiceEngine.TIMING_TAG, "giải mã $decodeMs ms")
             return Heard(
@@ -364,72 +385,6 @@ internal class VoiceCapture(private val ctx: Context) {
     }
 
     /**
-     * Dựng [AudioRecord]: thử `VOICE_RECOGNITION` rồi mới `MIC` — xem KDoc lớp, quyết định (1).
-     *
-     * Bộ đệm lấy **gấp đôi** mức tối thiểu của ROM: mức tối thiểu là ngưỡng *"không tràn nếu đọc đúng nhịp"*,
-     * mà luồng nghe của ta còn phải chạy giải mã Kaldi giữa hai lượt đọc. Thiếu chỗ đệm ⇒ mất mẫu ⇒ mất chữ,
-     * và mất kiểu đó không có lỗi nào báo.
-     */
-    private fun openRecord(): Opened? {
-        // Quyền RUNTIME có thể bị thu hồi sau khi phiên đã dựng ⇒ hỏi lại ngay trước khi dựng AudioRecord; thiếu ⇒ null.
-        if (!hasPermission()) { Log.w(TAG, "chưa có quyền RECORD_AUDIO — không mở micro"); return null }
-        val min = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-        // 1.70 — đệm ≥ [MIN_BUFFER_MS] tiếng: [ĐO xe 2026-09-17] `min*2` = **2 560 byte = 80 ms** trên DL3, và
-        // một lượt chặn 3 s (âm báo) trên luồng đọc làm rơi **toàn bộ** tiếng của khoảng đó, không lỗi nào báo.
-        // Âm báo đã dời khỏi luồng đọc; đệm rộng là lớp thứ hai cho mọi lượt chặn chưa ai đo (GC, giải mã
-        // partial, một app khác giành CPU).
-        val floor = SAMPLE_RATE * MIN_BUFFER_MS / 1000 * 2
-        val size = maxOf(if (min > 0) min * 2 else CHUNK_SAMPLES * 2 * 8, floor)
-        // V3 · R1 — thứ tự nguồn từ `:core` ([VoiceMicSource]) + lựa chọn người dùng; MIC trước ([ĐO xe 2026-09-16]), ép nguồn vẫn có đường lùi.
-        val pref = runCatching { Prefs.voiceMicSource(ctx) }.getOrDefault(VoiceMicSource.PREF_AUTO)
-        for (source in VoiceMicSource.order(pref)) {
-            // `SecurityException` tường minh: quyền có thể bị thu hồi giữa lượt hỏi ở trên và dòng này.
-            val r = try {
-                AudioRecord(source, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, size)
-            } catch (e: SecurityException) {
-                Log.w(TAG, "quyền RECORD_AUDIO bị thu hồi giữa chừng — không mở micro", e); return null
-            } catch (e: RuntimeException) {
-                // Giữ nguyên hành vi hiện trường trước 2026-09-25 (`runCatching … ?: continue`): ROM từ chối nguồn
-                // (IllegalArgumentException theo tài liệu, nhưng ROM lệch có thể ném loại khác) ⇒ thử nguồn sau.
-                Log.w(TAG, "nguồn $source bị ROM từ chối (${e.javaClass.simpleName}: ${e.message}) — thử nguồn sau"); continue
-            }
-            if (r.state == AudioRecord.STATE_INITIALIZED) {
-                Log.i(TAG, "micro mở bằng nguồn ${VoiceMicSource.sourceName(source)} (đệm $size byte · pref=$pref)")
-                return Opened(r, source)
-            }
-            Log.w(TAG, "nguồn $source dựng ra AudioRecord chưa khởi tạo — thử nguồn sau")
-            runCatching { r.release() }
-        }
-        Log.w(TAG, "không mở được micro bằng nguồn nào")
-        return null
-    }
-
-    /**
-     * Micro đã mở + **nguồn thật sự thắng**.
-     *
-     * H2 cần con số ấy trong tệp JSON, và nó không suy lại được từ prefs: `pref` chỉ nói *"thử cái này trước"*,
-     * còn vòng lùi ở trên có thể đã rơi sang nguồn thứ hai/thứ ba mà không có gì khác ghi lại. Đúng câu hỏi mà
-     * một buổi so *"vì sao lượt này nghe rõ, lượt kia câm"* phải trả lời được.
-     */
-    private data class Opened(val record: AudioRecord, val source: Int)
-
-    /**
-     * H5 — bộ ngắt câu dựng theo **prefs của chiếc xe này**.
-     *
-     * `:core` phải thuần nên nó KHÔNG đọc prefs; hai con số đi vào bằng tham số dựng, đúng chỗ này. `runCatching`
-     * + mặc định = hằng cũ: một lượt đọc prefs hỏng không được phép làm phiên nghe chạy **không** có bộ ngắt câu
-     * (tức lùi về cái giá cố định 8 giây cho mọi câu — xem KDoc [VoiceEndpointer]).
-     */
-    private fun endpointerFromPrefs(): VoiceEndpointer = VoiceEndpointer(
-        minSpeechMs = runCatching { Prefs.voiceEndpointMinSpeechMs(ctx) }
-            .getOrDefault(VoiceEndpointer.MIN_SPEECH_MS),
-        hangoverMs = runCatching { Prefs.voiceEndpointSilenceMs(ctx) }
-            .getOrDefault(VoiceEndpointer.HANGOVER_MS),
-        floorCap = runCatching { Prefs.voiceEndpointFloorCap(ctx) }
-            .getOrDefault(VoiceEndpointer.FLOOR_CAP),
-    )
-
-    /**
      * Một tiếng báo ngắn.
      *
      * 1.70 — KHÔNG còn [ToneGenerator]: [ĐO xe 2026-09-17] `startTone` chặn **3,0 s** trên ROM DL3 (`status
@@ -486,7 +441,5 @@ internal class VoiceCapture(private val ctx: Context) {
         private const val TONE_START_MS = VoiceChime.START_MS
         private const val TONE_END_MS = VoiceChime.END_MS
 
-        /** Sàn đệm `AudioRecord` — một giây tiếng (xem [openRecord]). */
-        const val MIN_BUFFER_MS = 1_000
     }
 }

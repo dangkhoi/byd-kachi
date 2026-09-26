@@ -48,6 +48,10 @@ object CapabilityDescriptions {
         // H1 · T2 — sáu ô đọc mới; chữ nói đúng thứ getter trả về, kể cả chỗ thang mức còn đang chờ điểm đo thứ hai.
         "seat_vent_state" to Desc("Ghế lái đang thổi mát ở mức mấy", "Driver seat ventilation level in use"),
         "seat_heat_state" to Desc("Ghế lái đang sưởi ở mức mấy", "Driver seat heating level in use"),
+        // UX5b (owner 2026-09-27) — ghế PHỤ: cùng getter, seatID 2. Chữ nói rõ BÊN NÀO, vì đó chính là thứ owner
+        // thấy thiếu (*"ghế sao không có ghế lái hay ghế phụ"*).
+        "seat_vent_state_r" to Desc("Ghế phụ đang thổi mát ở mức mấy", "Passenger seat ventilation level in use"),
+        "seat_heat_state_r" to Desc("Ghế phụ đang sưởi ở mức mấy", "Passenger seat heating level in use"),
         "defrost_front_state" to Desc("Sấy kính trước có đang bật không", "Whether front windscreen defrost is on"),
         "defrost_rear_state" to Desc("Sấy kính sau có đang bật không", "Whether rear windscreen defrost is on"),
         "ac_mode_auto" to Desc("Điều hòa đang ở chế độ AUTO hay chỉnh tay", "Whether the A/C is in AUTO or manual mode"),

@@ -1,5 +1,5 @@
 <!--
-  GHẾ (`seatc` mát · `seath` sưởi · `steer_heat`) — ghế nhìn ngang: tựa nét + đệm tô chuyển sắc; chân ghế mờ.
+  GHẾ TRƠN, không kèm dấu phương thức — ghế nhìn ngang: tựa nét + đệm tô chuyển sắc; chân ghế mờ. ⚠ UX5 (2026-09-26): bốn ô ghế và hai datum ghế đã sang glyph GHÉP (`seat_{heat,vent}_{left,right}`) vì sưởi và mát trước đó trông y hệt nhau trên chip thanh trên; `steer_heat` thì đã gỡ khỏi registry từ trước. Bản trơn này vì thế KHÔNG còn chỗ dùng trong mã — giữ lại có chủ ý, lý do ghi ở `IconStyleContractTest.unusedMapping`.
   ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/seat.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
   chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
   bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.

@@ -570,6 +570,17 @@
 
     <!-- ══ V1 · đường thử lệnh bằng CHỮ (docs/specs/kachi-voice-command.html R6) ═════════════════════ -->
     <string name="kachi_voice_note">Gõ câu đúng như khi nói, để đo xem máy hiểu gì — ví dụ: “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”. Muốn NÓI thì dùng ô “Nói với xe” trên thanh nút hoặc nút mic ở thanh trên.</string>
+
+    <!-- ══ 2.74 · R3 — danh sách CÂU LỆNH NÓI ĐƯỢC ở cuối nhóm Giọng nói ═══════════════════════════════ -->
+    <string name="kachi_voice_cmds_section">Câu lệnh nói được</string>
+    <string name="kachi_voice_cmds_sub">Danh sách này sinh từ chính ngữ pháp của Kachi, nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu, rồi nói đúng như chữ hiện ra.</string>
+    <!-- ⚠ `<plurals>` chứ không `<string>`: bản một-chuỗi in "1 phrases" ở tiếng Anh (cùng finding #18 của
+         `kachi_layout_frames_n`). Tiếng Việt không chia số nên chỉ có `other`, nhưng khoá vẫn phải là plurals —
+         nếu để `<string>` ở bản Việt thì bản Anh không có chỗ khai `one`. -->
+    <plurals name="kachi_voice_cmds_count">
+        <item quantity="other">%1$d câu</item>
+    </plurals>
+    <string name="kachi_voice_cmds_asks">%1$s · sẽ hỏi lại trước khi chạy</string>
     <string name="kachi_voice_hint">Nói gì với xe…</string>
     <string name="kachi_voice_run">Chạy câu lệnh</string>
     <string name="kachi_voice_idle">Chưa chạy câu nào.</string>
@@ -688,6 +699,31 @@
     <string name="kachi_camera_render_row">Kết xuất camera</string>
     <string name="kachi_camera_render_texture">TextureView (mặc định)</string>
     <string name="kachi_camera_render_surface">SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)</string>
+    <string name="kachi_camera_render_gl">Nắn méo (GL) — đang thử</string>
+    <string name="kachi_camera_dewarp_sub">Nắn méo (khi chọn GL) — chỉnh theo thứ tự: tâm → K → tiêu cự → phóng → độ nắn</string>
+    <string name="kachi_camera_gl_texmatrix_title">Áp ma trận của luồng camera</string>
+    <string name="kachi_camera_gl_texmatrix_sub">Bật (mặc định) là cách Android dặn. Tắt thử nếu ảnh bị lật hoặc lệch — chưa đo trên xe</string>
+    <string name="kachi_camera_dewarp_cx">Tâm ngang (lệch)</string>
+    <string name="kachi_camera_dewarp_cy">Tâm dọc (lệch)</string>
+    <string name="kachi_camera_dewarp_k">K — chỉnh tới khi vạch kẻ đường THẲNG</string>
+    <string name="kachi_camera_dewarp_focal">Tiêu cự — lớn hơn = hẹp hơn, phóng to</string>
+    <string name="kachi_camera_dewarp_scale">Phóng — lớn hơn = thấy RỘNG hơn (vật nhỏ đi)</string>
+    <string name="kachi_camera_dewarp_amount">Độ nắn — 0 % là y ảnh thô</string>
+    <string name="kachi_camera_dewarp_note">Bộ số mặc định là SUY RA từ hình học, chưa đo trên xe: 100 % = đúng phép suy cho vùng gương đang chọn. Viền đen ở góc nghĩa là đã với ra ngoài vòng ảnh — hạ Phóng xuống.</string>
+    <string name="kachi_camera_span_sub">Bề rộng vùng gương cắt từ ảnh camera ghép (rộng hơn = thấy nhiều hơn, méo hơn)</string>
+    <string name="kachi_camera_span_row">Bề rộng vùng gương</string>
+    <string name="kachi_camera_span_narrow">Vệt hẹp (mặc định)</string>
+    <string name="kachi_camera_span_strip">Trọn dải camera</string>
+    <string name="kachi_camera_strip_sub">Dải camera trong ảnh ghép 4 khung (0–3; đổi nếu thấy sai hướng)</string>
+    <string name="kachi_camera_strip_left">Dải cho xi-nhan trái</string>
+    <string name="kachi_camera_strip_right">Dải cho xi-nhan phải</string>
+    <string name="kachi_camera_shape_sub">Hình khung camera (tròn = thấy trọn vòng ảnh, chưa nắn méo)</string>
+    <string name="kachi_camera_shape_row">Hình khung camera</string>
+    <string name="kachi_camera_shape_rect">Chữ nhật (mặc định)</string>
+    <string name="kachi_camera_shape_round">Tròn</string>
+    <string name="kachi_camera_hal_sub">Kênh xem của camera (1–4 là phép THỬ: đầu máy có thể không nhận, có thể mất hình — chọn lại “Tự dò” để hoàn tác)</string>
+    <string name="kachi_camera_hal_row">Kênh xem camera</string>
+    <string name="kachi_camera_hal_auto">Tự dò</string>
     <string name="kachi_camera_pick_sub">Chọn camera cho mỗi bên xi-nhan (nếu cam không lên, thử id khác 0–5)</string>
     <string name="kachi_camera_pick_left">Cam xi-nhan trái</string>
     <string name="kachi_camera_pick_right">Cam xi-nhan phải</string>

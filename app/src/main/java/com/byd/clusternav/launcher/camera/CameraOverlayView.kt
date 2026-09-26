@@ -41,30 +41,35 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
  * Tỉ lệ đó cần **cỡ ảnh nguồn**: đo bằng `AVMCamera.getPreviewWidth/Height` sau khi mở camera rồi gọi
  * [onStreamMeasured]; trước đó dùng gợi ý `CamView.hintW/hintH`, không có gợi ý ⇒ **giữ nguyên ô vuông 2.72**.
  *
- * ## Hai đường KẾT XUẤT (CLOSE-14 · CAM-LAG) — mặc định KHÔNG đổi
- * [CameraSignalPolicy.RENDER_TEXTURE] (mặc định, đang chạy hiện trường): `TextureView` vẽ TRONG cây view ⇒ (1)
- * outline bo góc ăn thật, (2) crop + xoay bằng `setTransform`.
- * [CameraSignalPolicy.RENDER_SURFACE] (chip Cài đặt, để ĐO L2): `SurfaceView` + `setZOrderMediaOverlay`
- * — layer riêng do SurfaceFlinger ghép, rẻ hơn một lượt GPU mỗi khung, nhưng **không có
- * `setTransform`** ⇒ crop phải làm bằng cách phóng-và-kéo-lệch lớp video ([CameraOverlayFrame.stretch]) và xoay
- * thì chỉ còn đường nhờ HAL (`AVMCamera.setDisplayOrientation`, chỗ gọi báo lại qua [onStreamMeasured]).
- * ⚠ [CHƯA BIẾT] ROM này có bo góc / có cắt layer con theo biên cửa sổ hay không — chính lý do `TextureView` được
- * chọn ở 2.3x. Vì vậy `SurfaceView` là lựa chọn phụ, `setZOrderMediaOverlay` chứ KHÔNG `setZOrderOnTop` ("on top"
- * đặt layer lên trên **toàn bộ** cửa sổ, tức bỏ luôn cơ hội được ghép cùng nền đã bo).
+ * ## BA đường KẾT XUẤT (CLOSE-14 · CAM-LAG · R8-B) — mặc định KHÔNG đổi
+ * Lớp này chỉ **chọn** đường rồi giao cho [CameraVideoLayer] dựng (tệp riêng từ 2.74: *"cửa sổ"* và *"cái gì vẽ
+ * khung"* là hai vai, và trần 500 dòng của CLAUDE.md §4.1 buộc tách đúng đường khớp ấy). Bảng ba đường + cái mất của
+ * từng đường nằm ở KDoc [CameraVideoLayer]; ở đây chỉ hai điều cửa sổ phải biết:
+ *  • **`SV` không có `setTransform`** ⇒ cắt vùng bằng cỡ + lề âm của lớp video ([CameraOverlayFrame.stretch], gọi từ
+ *    [videoLp]) và xoay thì chỉ còn đường nhờ HAL ⇒ tỉ lệ cửa sổ phải chờ [onStreamMeasured] trả lời *"có xoay thật
+ *    không"*. ⚠ [CHƯA BIẾT] ROM này có bo góc / có cắt layer con theo biên cửa sổ hay không — chính lý do
+ *    `TextureView` được chọn ở 2.3x.
+ *  • **`GL` xoay trong shader** ⇒ tỉ lệ cửa sổ lấy *đã xoay* ngay (không chờ ai), và `setTransform` **không** được
+ *    gọi (⚠ KDoc [CameraVideoLayer]). Cửa sổ, bo góc, hình TRÒN, nhãn: **không đổi một dòng nào** so với 2.73 —
+ *    outline oval nằm trên view CHA nên nó cắt cả `TextureView` của đường GL y như của đường `TV`.
  *
  * ## Đường KHUNG HÌNH không được có việc nặng (CLOSE-14)
- * `onSurfaceTextureUpdated` để TRỐNG: không log, không cấp phát, không shell — mỗi khung 15 fps đi qua đó. Ma trận
- * chỉ dựng ở hai callback *đổi cỡ*, không phải mỗi khung ([applyTransform]); `isOpaque = true` để `TextureView`
- * khỏi phải blend alpha của chính nó (nền bo góc nằm ở view CHA, nên cạnh bo vẫn do `clipToOutline` cắt).
+ * Lời hứa ấy nay do [CameraVideoLayer] giữ (`onSurfaceTextureUpdated`/`surfaceChanged` để TRỐNG, `isOpaque = true`,
+ * ma trận chỉ dựng ở hai callback *đổi cỡ*). Lớp này **không có** một hàm nào chạy mỗi khung.
  *
  * Mọi op WindowManager trên main thread + `runCatching` (không ném).
  */
 class CameraOverlayView(private val appCtx: Context) {
 
     private var wm: WindowManager? = null
-    private var video: View? = null
+
+    /** Lớp video đang treo (vai *"cái gì vẽ khung"*) — xem [CameraVideoLayer]. */
+    private var layer: CameraVideoLayer? = null
     private var container: View? = null
     private var live: Live? = null
+
+    /** View của lớp video — `null` khi không hiện gì. Ba phép hỏi chỉ-đọc dưới đây đo trên chính nó. */
+    private val video: View? get() = layer?.view
 
     /**
      * Thứ đang hiện — đủ để **dựng lại cỡ cửa sổ** khi cỡ ảnh nguồn được đo xong ([onStreamMeasured]).
@@ -78,6 +83,7 @@ class CameraOverlayView(private val appCtx: Context) {
         val crop: FloatArray?,
         val rotationDeg: Int,
         val render: String,
+        val shape: String,
         var streamW: Int,
         var streamH: Int,
         var rotationEffective: Boolean,
@@ -126,8 +132,11 @@ class CameraOverlayView(private val appCtx: Context) {
         crop: FloatArray? = null,
         rotationDeg: Int = 0,
         render: String = CameraSignalPolicy.RENDER_TEXTURE,
+        shape: String = CameraSignalPolicy.SHAPE_RECT,
         streamW: Int = 0,
         streamH: Int = 0,
+        gl: CameraGlUniforms? = null,
+        synthOn: Boolean = false,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -137,39 +146,146 @@ class CameraOverlayView(private val appCtx: Context) {
             // có cụm (off-car / chưa chiếu) ⇒ rơi về màn chính, không crash (overlay vẫn hiện để verify).
             val w = (if (onCluster) clusterWm(ctx) else null) ?: wmOf(ctx) ?: return
             val radius = KachiSpace.dp(ctx, KachiSpace.RADIUS_XL).toFloat()
-            val byMatrix = CameraSignalPolicy.rotatesByMatrix(render)
-            val st = Live(corner, onCluster, crop, rotationDeg, render, streamW, streamH, rotationEffective = byMatrix)
+            // Xoay: ma trận (`TV`) hay shader (`GL`)? Cả hai đều "có người làm" ⇒ cửa sổ lấy tỉ lệ ĐÃ xoay.
+            // `SV` thì chưa biết (chờ HAL trả lời) — controller báo lại qua [onStreamMeasured].
+            val rotDone = CameraSignalPolicy.rotatesByMatrix(render) || CameraSignalPolicy.rotatesInShader(render)
+            // HÌNH KHUNG (R8-A, owner 2026-09-26): tròn = `setOval` trên ĐÚNG cái [ViewOutlineProvider] mà 2.73 đang
+            // dùng để bo góc — không thêm một cơ chế cắt thứ hai. Mã lạ ⇒ chủ nhật (mặc định 2.73).
+            val round = shape == CameraSignalPolicy.SHAPE_ROUND
+            val st = Live(corner, onCluster, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
             val box = box(ctx, st)
             val f = frameOf(st, box)
-            val child = if (byMatrix) textureVideo(ctx, crop, rotationDeg, onSurfaceReady) else surfaceVideo(ctx, onSurfaceReady)
+            val vl = CameraVideoLayer.create(
+                ctx = ctx, render = render, crop = crop, rotationDeg = rotationDeg,
+                gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn,
+                onSurfaceReady = onSurfaceReady,
+            )
+            val child = vl.view
             // Nhãn nhỏ ở góc: off-car (chưa có video) vẫn NHÌN THẤY overlay hiện đúng bên/đúng lúc ⇒ verify wiring
             // E2E bằng mắt. Chữ ngắn ("Camera trái") nên nó không ăn chỗ khi video thật đã đổ vào.
             val frame = android.widget.FrameLayout(ctx).apply {
                 // Nền BO GÓC = thứ cho bốn góc một màu đục để mép video không lởm chởm nếu layer bị cắt vuông.
                 background = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
+                    this.shape = if (round) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
                     cornerRadius = radius
                     setColor(Color.BLACK)
                 }
-                roundOutline(radius)
+                roundOutline(radius, round)
                 addView(child, videoLp(st, f))
                 labelFor(ctx, side)?.let { tvl ->
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
             }
             w.addView(frame, layoutParams(box, f, corner))
-            wm = w; video = child; container = frame; live = st
+            wm = w; layer = vl; container = frame; live = st
+            // RE §7 Q13/Q17: hai con số GPU đi thẳng vào dòng này — buổi xe chỉ cần một ảnh `logcat`, không phải một
+            // lệnh riêng (CLAUDE.md §11). Lượt GL ĐẦU TIÊN của phiên in `chưa đo` (ngữ cảnh dựng sau dòng này); lượt
+            // sau có số thật. Nói "chưa đo" thay vì in `0` là đúng luật §2 — chưa biết ≠ GPU trả 0.
             Log.i(
                 PanoramaHal.TAG,
-                "overlay show corner=$corner side=$side cluster=$onCluster rot=$rotationDeg" +
-                    " kết xuất=$render khung=${f.w}x${f.h} vùng=${box.areaW}x${box.areaH} nguồn-biết=${f.streamKnown}",
+                "overlay show corner=$corner side=$side cluster=$onCluster rot=$rotationDeg hình=$shape" +
+                    " kết xuất=$render khung=${f.w}x${f.h} vùng=${box.areaW}x${box.areaH} nguồn-biết=${f.streamKnown}" +
+                    " gl=${CameraGlInfo.summary()}" + (if (gl != null) " nắn=${gl.describe()}" else ""),
             )
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
     }
 
+    /**
+     * Dỡ overlay. **Lớp video trước, cửa sổ sau** — và thứ tự đó không đổi được ở đường GL: [CameraVideoLayer.release]
+     * chờ luồng vẽ dọn xong `EGLSurface` đang trỏ vào `SurfaceTexture` của `TextureView`, còn `removeView` là thứ làm
+     * nền tảng **huỷ** chính `SurfaceTexture` ấy. Gỡ view trước là mở đúng cửa sổ đua đó.
+     *
+     * (Đường `TV`/`SV` không có gì để dỡ ⇒ thứ tự này là no-op với chúng, tức đường đang chạy hiện trường không đổi
+     * một hành vi nào — CLAUDE.md §6.)
+     */
     fun hide() {
+        runCatching { layer?.release() }
         runCatching { container?.let { wm?.removeView(it) } }
-        video = null; container = null; wm = null; live = null
+        layer = null; container = null; wm = null; live = null
+    }
+
+    /** `frames=N busySkip=M` của luồng vẽ GL, rỗng ở hai đường kia. Chỉ ĐỌC — cho lời đáp `camera_frame`. */
+    fun glStats(): String = layer?.glStats().orEmpty()
+
+    /** Cỡ ảnh tổng hợp đang bơm (`camera_synth`), rỗng khi không bật. Chỉ ĐỌC. */
+    fun synthSize(): String = layer?.synthSize().orEmpty()
+
+    /**
+     * Chụp một khung **THÔ** (chưa nắn, nguyên khung) qua FBO — chỉ đường GL làm được.
+     *
+     * Vì sao cần, khi đã có [captureFrame]: trên đường GL thứ `getBitmap` trả về là khung **ĐÃ NẮN** (cửa ra là chính
+     * `SurfaceTexture` của `TextureView`, và shader đã ghi vào đó) ⇒ không dùng được để **đo** bán kính/tâm vòng ảnh,
+     * tức không dùng được để chốt tham số nắn. Xem KDoc [CameraGlRenderer.grabRaw].
+     */
+    fun grabRawFrame(w: Int, h: Int): IntArray? = layer?.grabRaw(w, h)
+
+    /** Cửa sổ overlay đang treo trên [WindowManager] hay không — chỉ ĐỌC, cho cầu kiểm thử. */
+    fun showing(): Boolean = container != null
+
+    /**
+     * Lớp video đang hiện có **chụp lại được** hay không — tức có phải `TextureView` không.
+     *
+     * ĐO chứ không tra pref (CLAUDE.md §7): pref `camera_render` nói *sẽ* dựng đường nào, còn cái đang treo trên
+     * màn là thứ đã dựng ở lượt xi-nhan trước. Hai thứ đó khác nhau đúng trong khoảng giữa hai lượt (owner đổi chip
+     * trong Cài đặt), và đúng khoảng đó là lúc lệnh chẩn đoán bị gọi.
+     *
+     * `false` (đường [CameraSignalPolicy.RENDER_SURFACE]) ⇒ [captureFrame] chắc chắn trả `null`: `SurfaceView` là
+     * một layer riêng do SurfaceFlinger ghép, **không có** `getBitmap` nào tương đương — xem KDoc [captureFrame].
+     */
+    fun capturable(): Boolean = video is android.view.TextureView
+
+    /** Mã đường kết xuất ĐANG treo ([CameraSignalPolicy.RENDERS]), rỗng khi không hiện gì. Chỉ ĐỌC. */
+    fun renderPath(): String = live?.render ?: ""
+
+    /**
+     * [android.view.TextureView.isAvailable] của lớp video: `mSurface != null`, tức ĐÃ có `SurfaceTexture`
+     * ([ĐO] AOSP `android-10.0.0_r47` `frameworks/base/core/java/android/view/TextureView.java:624-626`).
+     * `false` ⇒ [captureFrame] chắc chắn trả `null`, và đó là câu trả lời đúng cho *"chưa có khung nào cả"*.
+     *
+     * Đường `SurfaceView` không có cờ này ⇒ luôn `false` (xem [capturable] để phân biệt hai lý do).
+     */
+    fun available(): Boolean = (video as? android.view.TextureView)?.isAvailable == true
+
+    /**
+     * Chụp MỘT khung của luồng video ra [android.graphics.Bitmap] cỡ [w] × [h] — **KHÔNG mang theo ma trận
+     * crop+xoay** mà `CameraVideoLayer.applyTransform` đã đặt lên view (đường `TV`). Trên đường `GL` thì ngược lại:
+     * shader ghi thẳng vào cửa ra nên ảnh chụp về là khung **ĐÃ NẮN** — xem [grabRawFrame] cho khung thô.
+     *
+     * ## Chỉ đường `TextureView` chụp được
+     * Đường phụ [CameraSignalPolicy.RENDER_SURFACE] dựng một `SurfaceView`: layer của nó do SurfaceFlinger ghép
+     * **ngoài** cây view, nên `TextureView.getBitmap` KHÔNG tồn tại ở đó và không có hàm nào thay thế trong tiến
+     * trình app. ⇒ trả `null`, và chỗ gọi nói THẲNG lý do đó ra lời đáp ([capturable]) chứ không để người đang
+     * ngồi trong xe đọc `capture_failed` rồi đi mò xi-nhan.
+     *
+     * ## Vì sao ảnh ra là khung GỐC, không phải ô vuông đang thấy trên màn — [ĐO] AOSP `android-10.0.0_r47`
+     *  1. `TextureView.getBitmap(int,int)` (`core/java/android/view/TextureView.java:574-581`) dựng một bitmap
+     *     `ARGB_8888` đúng `w × h` rồi gọi `getBitmap(Bitmap)`; `w`/`h` ≤ 0 hoặc `!isAvailable()` ⇒ trả `null`.
+     *  2. `getBitmap(Bitmap)` (`TextureView.java:605-627`) gọi `mLayer.copyInto(bitmap)`.
+     *  3. `Readback::copyLayerInto(DeferredLayerUpdater*, SkBitmap*)` (`libs/hwui/Readback.cpp:86-105`) đặt
+     *     `dstRect` = **toàn bộ** bitmap (`Readback.cpp:95`) và `srcRect = nullptr` (`Readback.cpp:99`).
+     *  4. `Readback::copyLayerInto(Layer*, …)` (`Readback.cpp:159`) gọi
+     *     `LayerDrawable::DrawLayer(…, srcRect, dstRect, false)` — **`useLayerTransform = false`**
+     *     (`Readback.cpp:184-186`).
+     *  5. `LayerDrawable::DrawLayer` (`libs/hwui/pipeline/skia/LayerDrawable.cpp:53-85`): `useLayerTransform`
+     *     `false` ⇒ `matrix = textureMatrix` **thay vì** `Concat(layerTransform, textureMatrix)`. `layerTransform`
+     *     chính là thứ `TextureView.setTransform` ghi vào layer (`TextureView.java:493` + `:522`) ⇒ crop+xoay của
+     *     [CameraOverlayTransform] **không** đi vào ảnh. `srcRect` rỗng ⇒ `MakeIWH(layerWidth, layerHeight)` rồi
+     *     `matrixInv.mapRect` ⇒ vùng nguồn = **trọn ảnh gốc** (`LayerDrawable.cpp:104-117`), căng vào `dstRect`.
+     *
+     * ⇒ `w × h` = cỡ luồng thật (fisheye 4-in-1) thì ảnh ra là khung gốc 1:1; khác cỡ thì vẫn là khung gốc, chỉ bị
+     * co/giãn đều. [SUY] bước JNI `TextureLayer.copyInto` → `RenderProxy::copyLayerInto` không mở source ra đọc
+     * (chỉ có một chỗ nhận `DeferredLayerUpdater*` ở Readback nên đường đi là duy nhất).
+     *
+     * ⚠ PHẢI gọi trên main thread (`getBitmap` đồng bộ hoá với render thread; KDoc AOSP cấm gọi trong `onDraw`).
+     * Hỏng (`OutOfMemoryError`, `IllegalStateException` khi không lấy được ngữ cảnh render) ⇒ `null`, không ném:
+     * một lượt chụp hụt không được phép giết launcher đang lăn bánh.
+     */
+    fun captureFrame(w: Int, h: Int): android.graphics.Bitmap? {
+        val tv = video as? android.view.TextureView ?: return null
+        if (!tv.isAvailable || w < 1 || h < 1) return null
+        return runCatching { tv.getBitmap(w, h) }
+            .onFailure { Log.w(PanoramaHal.TAG, "captureFrame ${w}x$h failed: ${it.javaClass.simpleName}") }
+            .getOrNull()
     }
 
     /**
@@ -203,49 +319,6 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /**
-     * Lớp video của đường MẶC ĐỊNH: `TextureView` (crop + xoay bằng ma trận, bo góc ăn thật).
-     *
-     * `AVMCamera.addPreviewSurface` nhận `Surface` dựng từ `SurfaceTexture` của nó. `onSurfaceTextureUpdated` để
-     * TRỐNG — xem ⚠ ở KDoc lớp về đường khung hình.
-     */
-    private fun textureVideo(
-        ctx: Context,
-        crop: FloatArray?,
-        rotationDeg: Int,
-        onSurfaceReady: (Surface) -> Unit,
-    ): View = android.view.TextureView(ctx).apply {
-        isOpaque = true
-        surfaceTextureListener = object : android.view.TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) {
-                applyTransform(this@apply, w2, h2, crop, rotationDeg)
-                runCatching { onSurfaceReady(Surface(st)) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
-            }
-            override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w2: Int, h2: Int) { applyTransform(this@apply, w2, h2, crop, rotationDeg) }
-            override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture) = true
-            override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) {}
-        }
-    }
-
-    /**
-     * Lớp video của đường PHỤ (đo L2): `SurfaceView` layer riêng.
-     *
-     * Không `setTransform` ⇒ crop làm bằng cỡ + lề âm của chính view này ([videoLp] → [CameraOverlayFrame.stretch]),
-     * xoay thì chỗ gọi thử nhờ HAL. `setZOrderMediaOverlay(true)`: nằm trên nền bo góc của cửa sổ mà KHÔNG nhảy lên
-     * trên toàn bộ cửa sổ (khác `setZOrderOnTop`) ⇒ nhãn *Camera trái/phải* vẫn đọc được.
-     */
-    private fun surfaceVideo(ctx: Context, onSurfaceReady: (Surface) -> Unit): View =
-        android.view.SurfaceView(ctx).apply {
-            setZOrderMediaOverlay(true)
-            holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                override fun surfaceCreated(h: android.view.SurfaceHolder) {
-                    runCatching { onSurfaceReady(h.surface) }.onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
-                }
-                override fun surfaceChanged(h: android.view.SurfaceHolder, format: Int, w2: Int, h2: Int) {}
-                override fun surfaceDestroyed(h: android.view.SurfaceHolder) {}
-            })
-        }
-
-    /**
      * Nhãn ngắn *Camera trái/phải* ở góc, hoặc `null` khi chỗ gọi không nói bên nào.
      *
      * Chữ đi qua tài nguyên (`R.string.kachi_camera_left/right`) như mọi chữ của tầng `launcher/` —
@@ -267,30 +340,17 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /**
-     * Đặt ma trận **crop + xoay** cho TextureView. Phép toán nằm ở `:core` [CameraOverlayTransform] (thuần, có test
-     * bằng số: `CameraOverlayTransformTest`); lớp này chỉ dịch 9 số ấy sang [android.graphics.Matrix] và giao cho
-     * `setTransform`.
+     * Bo cây view: [oval] = hình TRÒN/ELIP (`Outline.setOval`), ngược lại = chữ nhật bo góc bán kính [radius] — **cùng
+     * một** [ViewOutlineProvider] + [View.setClipToOutline] của 2.73, không thêm cơ chế cắt nào khác.
      *
-     * [crop] = `(x0,y0,x1,y1)` chuẩn hoá 0..1 của ẢNH NGUỒN cần hiện (cam gương = vùng trái/phải của fisheye 4-in-1,
-     * RE kinex); [rotationDeg] = góc xoay quanh tâm view (R7), dương = ↻ cùng chiều kim đồng hồ.
-     * `null` trả về từ [CameraOverlayTransform.matrix] ⇒ **không đụng** `setTransform` (y hành vi trước R7).
-     *
-     * `setValues` (API 1) nhận đúng bố cục row-major mà `:core` dựng — xem KDoc [CameraOverlayTransform] về quy ước,
-     * và `CameraRotationWiringContractTest` ghim bốn hằng chỉ số của SDK.
-     *
-     * ⚠ Chỉ chạy ở hai callback ĐỔI CỠ (available / size-changed), **không** mỗi khung ⇒ `Matrix` cấp phát ở đây là
-     * vài lần một lượt xi-nhan, không phải 15 lần/giây (CLOSE-14).
+     * ⚠ Giới hạn đã biết (nguyên văn cảnh báo bo góc ở KDoc lớp): outline cắt được **cây view HWUI**, nên đường
+     * `TextureView` ăn; lớp `SurfaceView` là layer riêng do SurfaceFlinger ghép nên [ĐOÁN] không ăn — nhãn chip nói
+     * thẳng điều đó thay vì im lặng vẽ một hình vuông khi owner chọn "Tròn".
      */
-    private fun applyTransform(tv: android.view.TextureView, vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int) {
-        val values = CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg) ?: return
-        tv.setTransform(android.graphics.Matrix().apply { setValues(values) })
-    }
-
-    /** Bo góc cây view: outline tròn + [View.setClipToOutline]. Xem ⚠ ở KDoc lớp về giới hạn với lớp video. */
-    private fun View.roundOutline(radius: Float) {
+    private fun View.roundOutline(radius: Float, oval: Boolean = false) {
         outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(v: View, outline: Outline) {
-                outline.setRoundRect(0, 0, v.width, v.height, radius)
+                if (oval) outline.setOval(0, 0, v.width, v.height) else outline.setRoundRect(0, 0, v.width, v.height, radius)
             }
         }
         clipToOutline = true
@@ -344,7 +404,10 @@ class CameraOverlayView(private val appCtx: Context) {
      * `1/crop` lần rồi kéo lệch bằng **lề âm** ([CameraOverlayFrame.stretch]) để đúng dải gương lọt vào cửa sổ.
      */
     private fun videoLp(st: Live, f: CameraOverlayFrame.Frame): android.widget.FrameLayout.LayoutParams {
-        if (CameraSignalPolicy.rotatesByMatrix(st.render)) {
+        // `usesTextureView`, KHÔNG `rotatesByMatrix`: đường `GL` cũng là `TextureView` lấp kín cửa sổ (shader cắt
+        // vùng), nhưng nó KHÔNG xoay bằng ma trận. Dùng lẫn hai phép hỏi ở đây là đẩy đường GL vào nhánh phóng-kéo-lệch
+        // của `SurfaceView` ⇒ cắt HAI lần (một lần shader, một lần lề âm) và khung ra là một mảnh vụn của dải.
+        if (CameraSignalPolicy.usesTextureView(st.render)) {
             return android.widget.FrameLayout.LayoutParams(MATCH, MATCH)
         }
         val s = CameraOverlayFrame.stretch(f.w, f.h, st.crop)

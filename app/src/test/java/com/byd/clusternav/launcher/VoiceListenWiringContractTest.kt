@@ -192,12 +192,12 @@ class VoiceListenWiringContractTest {
     @Test
     fun `chi mot tep duy nhat mo micro`() {
         val users = voiceSources().filter { (_, src) -> src.contains("AudioRecord(") }.map { it.first }
-        assertEquals(listOf("VoiceCapture.kt", "VoiceWakeListener.kt"), users.sorted(), "chỉ VoiceCapture (lệnh) + VoiceWakeListener (wake) được mở micro; một-mic do VoiceSingleFlight đảm bảo; thấy: $users")
+        assertEquals(listOf("VoiceCaptureDevice.kt", "VoiceWakeListener.kt"), users.sorted(), "chỉ VoiceCaptureDevice (lệnh — cánh tay dựng thiết bị của VoiceCapture) + VoiceWakeListener (wake) được mở micro; một-mic do VoiceSingleFlight đảm bảo; thấy: $users")
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             root.toFile().walkTopDown().filter { it.isFile && it.name.endsWith(".kt") }
                 .filter { it.readText().contains("AudioRecord(") }.map { it.name }.toList()
         }
-        assertEquals(listOf("VoiceCapture.kt", "VoiceWakeListener.kt"), all.sorted(), "chỉ hai tệp Voice* mở micro (lệnh + wake); thấy: $all")
+        assertEquals(listOf("VoiceCaptureDevice.kt", "VoiceWakeListener.kt"), all.sorted(), "chỉ hai tệp Voice* mở micro (lệnh + wake); thấy: $all")
     }
 
     /** Manifest phải xin `RECORD_AUDIO` — đảo đúng bài canh cũ của R8, cùng một chỗ, cùng một tệp. */
@@ -309,7 +309,12 @@ class VoiceListenWiringContractTest {
     fun `phien nghe co tran thoi gian va cong xac nhan mac dinh la KHONG`() {
         val session = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt")
         assertTrue(session.contains("MAX_LISTEN_MS = 8_000L"), "phải có trần cứng cho một phiên nghe")
-        assertTrue(session.contains("capture.listen(it, MAX_LISTEN_MS"), "và trần đó phải được TRUYỀN vào vòng nghe")
+        // Thân lượt nghe chính tách sang `VoiceSessionListen.kt` ở VOICE-OPEN-TURN (trần 500 dòng).
+        val listen = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionListen.kt")
+        assertTrue(
+            listen.contains("capture.listen(\n                    it, VoiceSession.MAX_LISTEN_MS"),
+            "và trần đó phải được TRUYỀN vào vòng nghe",
+        )
         // ⚠ 1.66 — lượt nghe "đồng ý/huỷ" nằm ở `VoiceSessionTurns.kt` (xem chú thích ở bài OQ4 phía trên).
         val turns = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
         assertTrue(turns.contains("answerConfirm(answer == true)"),

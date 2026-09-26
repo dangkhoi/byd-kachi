@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -159,6 +160,47 @@ class CapabilityIconsDiversityTest {
             emptyList<String>(), mismatched,
             "cùng một việc mà hai ô hai hình ⇒ người dùng đọc ra hai việc; khác biệt xem/bấm đã ở dòng phụ rồi",
         )
+    }
+
+    /**
+     * ═══ UX5 — Ô ĐỌC của một nút phải mang **đúng hình của nút ấy** ═════════════════════════════════════════
+     *
+     * Bài trên bắt cặp bằng NHÃN TRÙNG; bài này bắt bằng quan hệ **chắc chắn hơn**: [ControlDef.readKey] — *"datum
+     * này chính là trạng thái của nút kia"*. [ĐO đọc mã 2026-09-26] trước UX5 hai mã ghế lệch nhau ở đây (nút vẽ
+     * ghế trơn, datum vẽ ghế-nhìn-từ-trên và mặt trời) ⇒ chip thanh trên và ô nút nói hai hình cho một khái niệm.
+     *
+     * Đây cũng là bài khoá chính của lớp glyph ghép: bốn hình mới phải được dùng ở **cả hai** bộ đăng ký.
+     */
+    @Test
+    fun `o DOC cua mot nut mang dung hinh cua nut ay`() {
+        /** Lệch CÓ LÝ DO (lệ `SettingsCatalog.NOT_SETTINGS`) — mỗi dòng phải nói được vì sao. */
+        val allowed = mapOf(
+            "ac_wind_auto" to
+                "nút `ac_auto` mang hình QUẠT, mà nhóm Khí hậu đã có đủ MAX_PER_DOMAIN=3 ô mang hình ấy " +
+                    "(`fan` · `ac_auto` · datum `ac_wind`) ⇒ datum này lấy hình CHẾ ĐỘ, xem CapabilityIcons",
+        )
+        val mismatch = ControlRegistry.ALL
+            .filter { it.readKey.isNotBlank() && TelemetryRegistry.byId(it.readKey) != null }
+            .mapNotNull { def ->
+                val spec = TelemetryRegistry.byId(def.readKey)!!
+                val datumIcon = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain)
+                if (datumIcon == def.icon || spec.id in allowed) null else "${spec.id}=$datumIcon ≠ ${def.id}=${def.icon}"
+            }
+        assertEquals(emptyList<String>(), mismatch, "ô xem và nút của cùng một việc phải mang cùng một hình")
+        allowed.forEach { (id, why) ->
+            assertNotNull(TelemetryRegistry.byId(id), "miễn trừ trỏ vào một datum không còn tồn tại: $id")
+            assertTrue(why.length >= 20, "$id: lý do miễn trừ quá mỏng")
+        }
+    }
+
+    /** Bốn ô ghế phải là BỐN hình khác nhau — trước UX5 chúng chia nhau đúng hai hình (sưởi ≡ mát). */
+    @Test
+    fun `bon o ghe bon hinh khac nhau`() {
+        val seats = listOf("seatc", "seath", "seatc_r", "seath_r").map { ControlRegistry.byId(it)!! }
+        assertEquals(4, seats.map { it.icon }.toSet().size, "sưởi và mát không được trông y hệt nhau: ${seats.map { it.icon }}")
+        // Quy ước CẠNH giữ nguyên (`-left` = ghế lái) — nó là thứ người dùng đã học từ `ic-seat-left`.
+        assertTrue(seats.take(2).all { it.icon.endsWith("-left") }, "hai ô ghế LÁI phải mang bản '-left'")
+        assertTrue(seats.drop(2).none { it.icon.endsWith("-left") }, "hai ô ghế phụ không được mang bản '-left'")
     }
 
     // ── 2 · Ba lỗi ĐO ĐƯỢC trên ảnh, khoá từng cái một ──────────────────────────────────────────────

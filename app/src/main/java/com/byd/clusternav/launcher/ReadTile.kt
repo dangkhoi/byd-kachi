@@ -6,7 +6,6 @@ import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -55,17 +54,19 @@ class ReadTile internal constructor(
         // maxLevel=0 ⇒ active theo onOff. Chưa đọc được ⇒ inactive/level 0 (không bịa).
         iconView?.let { iv ->
             if (maxLevel >= 1) {
-                val lvl = v?.takeIf { it.available }?.let { levelFrom(it) } ?: 0
+                // ⚠ UX5 — mức đọc THẲNG từ [TelemetryView.level] (:core). Trước đó chỗ này bóc chữ số đầu trong
+                // chuỗi **đã dịch** (`"Mức 2"` → 2) — đúng cái bẫy so-chuỗi mà KDoc [TelemetryView.onOff] đã cấm:
+                // một bản dịch có số trong nhãn, hay một giá trị thập phân, là ô vẽ nhầm số vạch mà không ai thấy.
+                // Kẹp về số chấm vẽ được: thang mức ở `:core` có thể RỘNG HƠN số lựa chọn của nút ([SUY] `seath`
+                // khai 4 mã khung nhưng chỉ bày 3 lựa chọn) — sáng 3 chấm trên một ô 2 chấm là hứa một mức không
+                // bấm tới được. Bất biến ấy có bài canh riêng ở `:core` (`ControlLevels` ↔ `CapabilityDots`).
+                val lvl = (v?.takeIf { it.available }?.level ?: 0).coerceIn(0, maxLevel)
                 iv.set(iconName, maxLevel, lvl, active = lvl > 0)
             } else {
                 iv.set(iconName, 0, 0, active = v?.onOff == true)
             }
         }
     }
-
-    /** Mức hiện tại từ một [TelemetryView] có mức: lấy CHỮ SỐ đầu trong `display` ("Mức 2"→2, "2"→2), kẹp 0..maxLevel. */
-    private fun levelFrom(v: TelemetryView): Int =
-        Regex("\\d+").find(v.display)?.value?.toIntOrNull()?.coerceIn(0, maxLevel) ?: (if (v.onOff == true) 1 else 0)
 
     private companion object {
         /** Độ mờ của số chưa đọc được — cùng giá trị bản cũ dùng cho cả ô, nên dấu gạch trông y như trước. */
@@ -136,11 +137,13 @@ internal fun readTileOf(
     // Ở ô THẤP của thanh nút (vd "Mức xăng"), ba dòng dọc (nhãn tối đa 2 dòng + giá trị + đơn vị) tràn khỏi ô ⇒
     // đơn vị "%" bị CẮT ở đáy và trông lạc lõng, trong khi ô kế bên KHÔNG có nút −/+ nên ô này nhìn như hỏng.
     // Gộp một hàng vừa hết cắt vừa đọc "— %" thành một cụm. Giữ 2 TextView riêng để [ReadTile.bind] không đổi.
-    content.addView(LinearLayout(ctx).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+    // ⚠ UX7 — [AxisRow], KHÔNG phải `LinearLayout` + `gravity = CENTER`: nhãn ô (2 dòng) canh giữa trục ô, nên
+    // canh giữa CẢ CỤM `giá trị + đơn vị` đẩy con SỐ lệch trái đúng `(khe + rộng đơn vị)/2` (~10 px với `"%"` ở
+    // density 1.5) ⇒ số và nhãn không cùng trục. Khe giữ nguyên [Sp.XS] (trước là `marginStart`).
+    content.addView(AxisRow(ctx).apply {
+        gapPx = dpi(ctx, Sp.XS)
         addView(value)
-        addView(unit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            .also { it.marginStart = dpi(ctx, Sp.XS) })
+        addView(unit)
     })
     val outer = if (pick.needsBadge) badge(content) else content
     return ReadTile(outer, content, value, unit, iconView, iconName, maxLevel)

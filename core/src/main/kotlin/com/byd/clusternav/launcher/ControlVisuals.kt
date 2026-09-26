@@ -21,8 +21,12 @@ package com.byd.clusternav.launcher
  *  • **TOGGLE · BUTTON · COVER** — `> 0` là bật/mở. Với COVER, bốn kính đọc **phần trăm** mở và cốp đọc cờ mở/đóng,
  *    nên *"mở hé 10 %"* cũng là mở: một cái cửa hé vẫn là cửa chưa đóng, và đó chính là điều người lái cần thấy.
  *  • **STEP** — chỉ coi là *"đang có tác dụng"* khi thang có **điểm 0 thật** ([hasOffPoint]). `fan` 0..7 và `vol`
- *    0..30 có mức 0 = im; `temp` 17..33 thì **không có mức tắt nào** ⇒ ô nhiệt độ giữ nền trung tính mãi, thay vì
- *    sáng màu nhấn suốt chuyến chỉ vì *"nhiệt độ luôn khác min"*.
+ *    0..30 khai mức 0 ở đáy thang; `temp` 17..33 thì **không có mức tắt nào** ⇒ ô nhiệt độ giữ nền trung tính mãi,
+ *    thay vì sáng màu nhấn suốt chuyến chỉ vì *"nhiệt độ luôn khác min"*.
+ *    ⚠ **SỬA 2026-09-26 (UX4)**: câu cũ ở đây ghi *"`fan` 0..7 có mức 0 = im"* — **sai**, và [ĐO xe 2026-09-20] đã
+ *    bác: `AC_WIND_LEVEL_SET = 0` **bị xe bỏ qua**, nên mức 0 của gió không phải *"im"* mà là *"không tồn tại"*.
+ *    Nấc ấy nay là AUTO (nút khai [ControlDef.autoId] — luật ở [ClimateAuto]), và ô có `autoId` đang AUTO thì
+ *    **vẫn là đang có tác dụng** (quạt vẫn thổi, chỉ là xe tự chọn mức).
  *  • **SELECT** — chia HAI ca, xem [isLevelScale].
  *
  * ## ⚠ SELECT: *thang mức* khác *tập lựa chọn*, và chỉ ca đầu được thay chữ bằng vạch
@@ -102,6 +106,36 @@ object ControlVisuals {
     fun stepText(def: ControlDef, value: Int): String = "${def.clamp(value)}${stepUnit(def)}"
 
     /**
+     * ═══ UX4 — chữ ô giá trị khi nút có mặt **TỰ ĐỘNG** ([ControlDef.autoId]) ═══════════════════════════════════
+     *
+     * [autoOn] `true` ⇒ chỉ `"AUTO"`, **không** `"AUTO 1"`. Đây là một phép ĐO bề rộng, không phải thẩm mỹ: ô giá
+     * trị của thanh nút dùng được ≈34dp (`ControlTileFactory` KDoc `VALUE_WEIGHT`) trừ đệm hai bên còn ≈26dp, mà
+     * `"AUTO 1"` ở 15sp bold cần hơn gấp đôi ⇒ cắt cứng. Con số thì đã có trên **chip thanh trên** (`"Gió · AUTO 1"`,
+     * xem [TelemetryReadout] · [ClimateAuto.fanText]) — bề mặt rộng nói đủ, bề mặt hẹp nói đúng.
+     *
+     * `null`/`false` ⇒ y hệt [stepText] hai tham số ⇒ mọi nút không khai `autoId` **không đổi một ký tự**.
+     */
+    fun stepText(def: ControlDef, value: Int, autoOn: Boolean?): String =
+        if (def.autoId.isNotBlank() && autoOn == true) ClimateAuto.AUTO else stepText(def, value)
+
+    /**
+     * Số ký tự mà ô giá trị của **CHÍNH nút này** có thể phải chứa — gồm cả chữ AUTO nếu nút có [ControlDef.autoId].
+     *
+     * ## ⚠ Vì sao đây là một hàm THEO NÚT, và [STEP_VALUE_CHARS] **KHÔNG** được nâng theo
+     * Sàn chung là thứ làm hai nút −/+ đứng đúng một chỗ ở **mọi** ô (R2.4). Nâng nó lên 4 vì một chữ AUTO là bắt
+     * `"0000"` làm sàn cho **cả** nhiệt độ và âm lượng ⇒ [ĐO số học] sàn vượt 26dp dùng được ⇒ `minWidth` thắng tỉ
+     * lệ ⇒ hai nút bị bóp và trôi ở TẤT CẢ các ô, tức lật đúng thứ R2.4 vừa chữa, cho một chữ mà **một** nút cần.
+     *
+     * Nên tầng vẽ dùng [STEP_VALUE_CHARS] làm `minWidth` (không đổi) và **co chữ** khi [stepValueChars] của nút lớn
+     * hơn sàn — quyết định đó ghi ở `ControlTileFactory.tileStep`. Hàm này là con số để tầng vẽ biết *khi nào cần co*.
+     */
+    fun stepValueChars(def: ControlDef): Int {
+        if (def.kind != ControlKind.STEP) return 0
+        val digits = maxOf(stepText(def, def.min).length, stepText(def, def.max).length)
+        return if (def.autoId.isBlank()) digits else maxOf(digits, ClimateAuto.AUTO.length)
+    }
+
+    /**
      * ═══ R2.4 — SỐ KÝ TỰ mà ô giá trị của **mọi** stepper phải chứa được ══════════════════════════════════════
      *
      * Owner: *"ô giá trị rộng CỐ ĐỊNH + nút −/+ thẳng hàng bất kể '22°' (2 chữ + đơn vị) hay '4' (1 chữ); nhiệt và
@@ -111,6 +145,9 @@ object ControlVisuals {
      * **Suy từ registry, không gõ tay**: lấy chuỗi dài nhất trong `{min, max}` × mọi nút STEP. [ĐO] hôm nay =
      * **3** (`"33°"` của `temp`; `vol` chỉ 2 với `"30"`, `fan` 1 với `"7"`). Thêm một nút có dải rộng hơn thì con
      * số tự lớn theo và mọi ô stepper rộng ra cùng lúc — đúng nghĩa *"consistent"*.
+     *
+     * ⚠ **UX4 — con số này đếm SỐ, không đếm chữ AUTO.** Chữ AUTO là của đúng một nút; đưa nó vào sàn CHUNG là bóp
+     * hai nút −/+ ở mọi ô stepper (lập luận đầy đủ + phép đo ở [stepValueChars]). Đừng "dọn cho phủ hết".
      *
      * `by lazy` chứ không `const`: nó đọc [ControlRegistry.ALL], nên tính lúc nạp lớp sẽ dựng một bẫy thứ-tự-khởi-tạo
      * (dự án đã trả giá đúng kiểu đó một lần — xem KDoc `CapabilityCatalog`/`DockConfig.DEFAULT` ở RW0).
@@ -129,12 +166,21 @@ object ControlVisuals {
      * `null` = *"chưa đọc được"* ⇒ trạng thái mặc định (tắt / mức 0 / giá trị mặc định của registry) — KHÔNG đoán
      * một trạng thái bật, vì một ô sáng màu nhấn là lời khẳng định *"xe đang làm việc này"*.
      */
-    fun of(def: ControlDef, value: Int?): ControlVisual = when (def.kind) {
+    fun of(def: ControlDef, value: Int?): ControlVisual = of(def, value, null)
+
+    /**
+     * Như [of] nhưng biết thêm *"nút này đang ở chế độ TỰ ĐỘNG không"* ([ControlDef.autoId]; `null` = chưa biết).
+     *
+     * Chỉ STEP dùng tới: đang AUTO ⇒ ô **sáng màu nhấn** (quạt vẫn thổi) và chữ là `"AUTO"`. `null` ⇒ y hệt hành vi
+     * trước UX4 — *"chưa đọc được"* không bao giờ được vẽ thành một lời khẳng định (xem ⚠ ở KDoc [ClimateAuto]).
+     */
+    fun of(def: ControlDef, value: Int?, autoOn: Boolean?): ControlVisual = when (def.kind) {
         ControlKind.TOGGLE, ControlKind.BUTTON, ControlKind.COVER ->
             ControlVisual(active = (value ?: 0) > 0)
         ControlKind.STEP -> {
             val v = value ?: def.value
-            ControlVisual(active = hasOffPoint(def) && v > def.min, valueText = stepText(def, v))
+            val auto = def.autoId.isNotBlank() && autoOn == true
+            ControlVisual(active = auto || (hasOffPoint(def) && v > def.min), valueText = stepText(def, v, autoOn))
         }
         ControlKind.SELECT ->
             if (isLevelScale(def)) {

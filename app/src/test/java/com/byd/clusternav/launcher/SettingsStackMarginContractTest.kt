@@ -33,7 +33,31 @@ class SettingsStackMarginContractTest {
         // khoảng cách" nhất; để ngoài phạm vi thì luật lề STACK chỉ còn đúng ở ba tệp cũ.
         "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",
         "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
+        // 2.74 · R3 — nhóm Giọng nói cũng dựng bằng `rows.*` (và nay có cả khối gập/mở).
+        "SettingsVoiceSection.kt",
     )
+
+    /**
+     * Tệp mang bộ dựng của [SettingsRows] → regex bắt TÊN hàm dựng trong tệp ấy.
+     *
+     * ## ⚠⚠ [SOÁT 2.74] Bản trước chỉ quét `SettingsRows.kt` ⇒ tệp MỞ RỘNG có một lỗ
+     * Bản đầu hardcode `code("SettingsRows.kt")` + regex `\n    fun (\w+)\(` (thụt 4 khoảng = hàm thành viên).
+     * Nhưng trần 500 dòng buộc component mới phải sang **tệp riêng** dưới dạng hàm mở rộng khai TOP-LEVEL
+     * (`internal fun SettingsRows.swatchRow(...)`) — và dạng đó **không khớp regex nào**, nên
+     * `SettingsRowsColor.kt` chưa từng bị quét kể từ ngày nó ra đời. Tức luật *"component tự mang lề"* đang đúng
+     * ở đó nhờ **may mắn**, không nhờ bài canh. Nay phạm vi khai bằng dữ liệu: thêm một tệp mở rộng thì thêm một
+     * dòng ở đây, và bài `bo component co du cac ham dung ma IA v2 doi` canh luôn cả phạm vi ấy.
+     */
+    private val builderFiles = mapOf(
+        "SettingsRows.kt" to Regex("""\n    fun (\w+)\("""),
+        "SettingsRowsColor.kt" to Regex("""\ninternal fun SettingsRows\.(\w+)\("""),
+        "SettingsRowsDisclosure.kt" to Regex("""\ninternal fun SettingsRows\.(\w+)\("""),
+    )
+
+    /** Mọi hàm dựng đang có, theo tệp: `(tệp, chữ ký để cắt thân, tên hàm)`. */
+    private fun builders(): List<Triple<String, String, String>> = builderFiles.flatMap { (file, rx) ->
+        rx.findAll(code(file)).map { Triple(file, it.value.trim(), it.groupValues[1]) }
+    }
 
     private fun code(name: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$name")
 
@@ -45,12 +69,14 @@ class SettingsStackMarginContractTest {
      */
     @Test
     fun `moi component cua SettingsRows tu dat layoutParams`() {
-        val src = code("SettingsRows.kt")
-        val builders = Regex("""\n    fun (\w+)\(""").findAll(src).map { it.groupValues[1] }.toList()
-        assertTrue(builders.size >= 7, "phải thấy đủ bộ dựng công khai, thấy ${builders.size}: $builders")
-        val missing = builders.filter { name ->
-            !SourceRoots.body(src, "fun $name(").contains("layoutParams")
+        val all = builders()
+        assertTrue(all.size >= 9, "phải thấy đủ bộ dựng công khai, thấy ${all.size}: ${all.map { it.third }}")
+        builderFiles.keys.forEach { f ->
+            assertTrue(all.any { it.first == f }, "tệp $f không thấy hàm dựng nào ⇒ regex phạm vi đã rữa")
         }
+        val missing = all.filterNot { (file, sig, _) ->
+            SourceRoots.body(code(file), sig).contains("layoutParams")
+        }.map { "${it.first}: ${it.third}" }
         assertTrue(
             missing.isEmpty(),
             "Component của Settings phải tự mang lề ngoài (đặt `layoutParams`, thường qua `stackLp()`); " +
@@ -72,13 +98,14 @@ class SettingsStackMarginContractTest {
      */
     @Test
     fun `bo component co du cac ham dung ma IA v2 doi`() {
-        val src = code("SettingsRows.kt")
-        val builders = Regex("""\n    fun (\w+)\(""").findAll(src).map { it.groupValues[1] }.toSet()
+        val builders = builders().map { it.third }.toSet()
         val required = setOf(
             // pha 1 (design system)
             "sectionLabel", "checkRow", "chipRow", "unitRow", "permissionRow", "note", "button",
             // pha 2 (IA v2 §4.4 — T3)
             "subHeader", "statusRow", "stepperRow", "listRow", "embed",
+            // tệp MỞ RỘNG (trần 500 dòng): ô màu (P1b · R8) + khối gập/mở (2.74 · R3)
+            "swatchRow", "disclosureRow", "disclosureLine",
         )
         assertTrue(
             builders.containsAll(required),

@@ -329,6 +329,16 @@ class IconStyleContractTest {
         "ic-car-top-sunroof-pos" to
             "datum 'Vị trí cửa sổ trời' (sunroof_pos) đã gỡ 2026-09-25 — getSunroofPosition = 65535, xe owner không " +
                 "có cửa sổ trời; hình xe là tài sản SINH (design/car/manifest.json), xoá tệp làm gen-car --check lệch",
+        // ⚠ UX5 (2026-09-26) — bốn ô ghế + hai datum ghế chuyển sang glyph GHÉP (`ic-seat-{heat,vent}-{left,right}`)
+        // vì sưởi và mát trước đó trông y hệt nhau trên chip thanh trên. Dòng dưới mất chỗ dùng cuối cùng trong
+        // `.kt` NHƯNG phải ở lại: xoá dòng tra ⇒ tệp vector thành mồ côi, mà nó là tài sản SINH/legacy nên xoá tệp
+        // lại làm `gen-icons --check` lệch byte.
+        // ⚠⚠ UX5b (2026-09-27) — **`ic-seat` đã RA khỏi danh sách này**: chip ghế PHỤ dùng nó cho trạng thái *"cả
+        // hai tắt / chưa biết"* (một cái ghế không kèm phương thức), đúng ca mà dòng miễn-trừ cũ đã nói trước là
+        // *"giữ hình cho ca cần"*. `ic-seat-left` chưa bao giờ ở đây vì chip ghế LÁI đã dùng nó từ UX5.
+        "ic-car-top-seat-fl" to
+            "ghế-lái-nhìn-từ-trên, từng là hình của datum `seat_vent_state` trước UX5 — nay datum dùng CHUNG hình " +
+                "với nút của nó (ic-seat-vent-left); giữ dòng để tệp xe SINH không thành mồ côi",
     )
 
     @Test

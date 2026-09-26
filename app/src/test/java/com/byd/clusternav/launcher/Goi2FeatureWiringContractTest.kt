@@ -149,6 +149,48 @@ class Goi2FeatureWiringContractTest {
             "phải nói rõ nhiệt lốp chưa kiểm trên xe (R8/R10)",
         )
         assertFalse(board.contains("chưa kiểm"), "ô vẽ KHÔNG tự dựng chữ — chuỗi do chỗ gọi đưa")
+        // ⚠⚠ 2.74 · R2 — ghim CẢ BỀ MẶT, không chỉ chỗ dựng chuỗi. Lỗ cũ: `84f91e6` gỡ dòng kết luận dưới bảng
+        // (owner 2026-09-23) nhưng chuỗi vẫn được dựng + truyền vào ô vẽ ⇒ [ĐO] `grep drawText` trong TyreBoardView
+        // = 0 chỗ vẽ nó ⇒ đường CHẾT sống 3 tháng với test xanh (đúng bệnh CLAUDE.md §8: compile xanh ≠ có ai gọi).
+        // Nay chuỗi đi vào NHÃN TRỢ NĂNG của cả ô (TalkBack/uiautomator đọc được) — và bài này canh đúng chỗ đó.
+        val set = SourceRoots.body(board, "fun set(")
+        assertTrue(
+            set.contains("contentDescription = summary"),
+            "câu kết luận + dấu 'nhiệt chưa kiểm' phải hạ cánh xuống MỘT bề mặt thật (nhãn trợ năng của ô)",
+        )
+        // …và bề mặt đó phải THẬT đến được người dùng TalkBack: [ĐO AOSP android-10.0.0_r47 `View.java:12691-12713`]
+        // `isImportantForAccessibility()` ở chế độ AUTO KHÔNG xét `contentDescription` (chỉ xét bấm/focus/listener/
+        // pane) — bảng lốp không bấm được, nên thiếu dòng dưới thì nhãn chỉ có `uiautomator` đọc được ⇒ lại gần-chết.
+        assertTrue(
+            board.contains("importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES"),
+            "phải đánh dấu ô là QUAN TRỌNG với trợ năng, không thì nhãn kia TalkBack không đọc",
+        )
+        assertTrue(
+            widgets.contains("boardView.set(readings, values, unit, temps, summary)"),
+            "chỗ gọi phải truyền chuỗi đó vào bảng",
+        )
+    }
+
+    // ── 2.74 · R2 · hình học ô giá trị: hằng ma thuật → hàm THUẦN ở :core ─────────────────────────
+
+    @Test
+    fun `o gia tri lay hinh hoc tu CellTextLayout, khong con hang ma thuat trong ve`() {
+        // [ĐO ảnh owner 2026-09-25] (A) chữ dán mép trên chừa ~66 px dưới ⇐ `numBase = centerY + big*0.10 −
+        // sub*0.60`; (C)/(D) xe bị thẻ cắt ⇐ thẻ chạy tới `wheelX ∓ gap` (neo bánh nằm TRONG thân xe). Cả ba phép
+        // tính nay ở `:core` (`CellTextLayoutTest` kiểm bằng số) ⇒ bài này chỉ canh DÂY NỐI: ô vẽ phải GỌI chúng.
+        val draw = SourceRoots.body(board, "override fun onDraw")
+        assertTrue(draw.contains("CellTextLayout.cardSpanX("), "mép thẻ phải kẹp theo khung ảnh thật, không theo neo bánh")
+        val cell = SourceRoots.body(board, "private fun drawCell(")
+        assertTrue(cell.contains("CellTextLayout.twoLineTopBaseline("), "baseline khối 2 dòng phải tính từ số đo phông")
+        assertTrue(cell.contains("CellTextLayout.lineStartX("), "con số phải nằm đúng trục ô (đơn vị treo bên phải)")
+        assertTrue(cell.contains("CellTextLayout.fitScale("), "thẻ hẹp đi sau khi kẹp ⇒ chữ phải co cho vừa")
+        for (magic in listOf("* 0.10f", "* 0.60f")) {
+            assertFalse(cell.contains(magic), "hằng ma thuật '$magic' đã quay lại — đó chính là lỗi (A) của owner")
+        }
+        // Thẻ vẽ SAU ảnh xe (FrameLayout xếp lớp) nên nó KHÔNG được lấn vào khung ảnh; chấm thì vẫn ở neo thật.
+        assertTrue(draw.contains("canvas.drawCircle(wheelX, wheelY"), "chấm trạng thái vẫn ở neo bánh thật")
+        // Nhãn ngắn của bánh phải đi qua lớp ngôn ngữ (cùng luật đã áp cho ô nhóm: 'Lốp TT' không được lọt sang EN).
+        assertTrue(cell.contains("corner.displayShortLabel"), "viết tắt bánh phải theo ngôn ngữ đang dùng")
     }
 
     @Test

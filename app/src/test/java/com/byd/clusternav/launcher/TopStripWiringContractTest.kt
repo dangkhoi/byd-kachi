@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -143,6 +144,85 @@ class TopStripWiringContractTest {
         )
     }
 
+    // ══ UX5b (owner 2026-09-27) — DI TRÚ danh sách chip đã lưu ════════════════════════════════════════════
+
+    /**
+     * Phép di trú phải nằm **trên đường nạp thật**, không phải một hàm chờ ai gọi.
+     *
+     * `WorkspacePrefs.topStrip()` là chỗ duy nhất đọc chuỗi chip từ đĩa, và nó đi qua `TopStripConfig.decode` (ca
+     * `cau hinh chip lay tu state…` ở trên đã ghim). Bài này ghim mảnh còn lại: `decode` **gọi** `migrate`. Thiếu
+     * mảnh đó thì `migrate` là mã chết đúng hình dạng `CastShell.evictVd` (CLAUDE.md §8) — hai chip ghế lẻ của
+     * người đang dùng máy sẽ **không bao giờ** được gộp, mà không có gì đỏ.
+     */
+    @Test
+    fun `phep di tru chip nam tren duong NAP that`() {
+        val core = code("src/main/kotlin/com/byd/clusternav/launcher/TopStrip.kt")
+        assertTrue(
+            SourceRoots.body(core, "fun decode(").contains("migrate("),
+            "`decode` phải gọi `migrate` — nó là cửa duy nhất mà chuỗi chip trên đĩa đi qua khi nạp",
+        )
+        // Và hành vi end-to-end (đo ở `:core`: TopStripMigrationTest) phải thật sự đi qua cửa ấy.
+        assertEquals(
+            listOf(TopStripConfig.PM25, TopStripConfig.SEAT),
+            TopStripConfig.decode("chip_pm25,seat_heat_state,seat_vent_state").ids,
+        )
+    }
+
+    /**
+     * ═══ [P1 · SOÁT Opus 2026-09-27] Phép di trú chip phải chạy **ĐÚNG MỘT LẦN** mỗi hồ sơ ═════════════════════
+     *
+     * `decode` chạy ở MỖI lượt đọc, và luật 2 của `migrate` nhận ra *"mặc định cũ"* bằng đúng chuỗi ba mã — **đúng**
+     * chuỗi mà một người vừa **gỡ cả hai chip ghế** khỏi mặc định MỚI để lại trên đĩa. Không có mốc thì gỡ bao nhiêu
+     * lần chip cũng mọc lại đúng bấy nhiêu lần, còn KDoc `migrate` thì đang hứa ngược (*"gỡ đi thì lần sau không mọc
+     * lại"*). ⚠ Ghi **danh sách đã di trú** trở lại đĩa KHÔNG chữa được (sau lượt ghi đĩa có 5 mã, gỡ hai chip là lại
+     * về đúng 3 mã cũ ⇒ vòng lặp y như trước) — thứ phân biệt được nằm ở **thời gian**, nên phải là một MỐC riêng.
+     *
+     * Bài này đọc **mã nguồn** (`SharedPreferences` không chạy trên JVM), cùng lẽ mọi bài `*WiringContractTest` khác
+     * của tệp này. Hành vi thuần của `applyMigration` thì có bài số ở `:core` (`TopStripMigrationTest`).
+     */
+    @Test
+    fun `phep di tru chip chi chay dung mot lan moi ho so`() {
+        val fn = SourceRoots.body(prefs, "fun topStrip(")
+        assertTrue("key(K_STRIP_MIGRATED)" in fn, "phải có MỐC riêng, không suy từ chính danh sách chip")
+        assertTrue(
+            "if (saved == null || done) return TopStripConfig.decode(saved, labels, applyMigration = false)" in fn,
+            "đã đóng mốc (hoặc chưa từng lưu) ⇒ lượt đọc sau KHÔNG được di trú lần nữa",
+        )
+        assertTrue(
+            "putBoolean(key(K_STRIP_MIGRATED), true)" in fn,
+            "lượt di trú DUY NHẤT phải đóng mốc lại, nếu không nó nổ mãi",
+        )
+        assertTrue("TopStripConfig.encode(cfg)" in fn, "…và ghi danh sách đã di trú để người dùng thấy kết quả")
+        // Và `:core` phải THẬT có cổng ấy — không thì tham số trên chỉ là một cái tên.
+        val core = code("src/main/kotlin/com/byd/clusternav/launcher/TopStrip.kt")
+        assertTrue(
+            "if (applyMigration) migrate(kept).take(CAP) else kept" in SourceRoots.body(core, "fun decode("),
+            "`decode` phải TÔN TRỌNG cổng — tắt cổng mà vẫn gọi `migrate` là mốc vô nghĩa",
+        )
+    }
+
+    /**
+     * ⚠ HAI danh sách chip dựng sẵn phải là **HAI khai báo rời**.
+     *
+     * Từ UX5b chúng **trùng nội dung** (cả năm chip dựng sẵn đều là mặc định), nên không phép so giá trị nào ở
+     * `:core` phân biệt được *"hai khai báo"* với `DEFAULT_IDS = BUILT_IN.toList()` — xem KDoc bài
+     * `TopStripTest.hai chip ghe GOP vao mac dinh…`. Chốt còn lại vì thế là **đọc mã nguồn**: nếu ai viết lại cho
+     * "gọn" thì chip dựng sẵn thứ SÁU sẽ lặng lẽ mọc lên thanh trên của mọi người đang dùng máy — đúng thay-đổi-
+     * không-ai-xin mà UX5 đã tách hai danh sách để chặn.
+     */
+    @Test
+    fun `hai danh sach chip dung san la HAI khai bao roi`() {
+        val core = code("src/main/kotlin/com/byd/clusternav/launcher/TopStrip.kt")
+        assertTrue(
+            Regex("""val\s+DEFAULT_IDS\s*:\s*List<String>\s*=\s*listOf\(""").containsMatchIn(core),
+            "DEFAULT_IDS phải là một `listOf(...)` viết tường minh, không suy ra từ BUILT_IN",
+        )
+        assertFalse(
+            Regex("""DEFAULT_IDS[^\n]*=\s*BUILT_IN""").containsMatchIn(core),
+            "DEFAULT_IDS KHÔNG được dựng từ BUILT_IN — thế thì chip dựng sẵn mới tự vào mặc định",
+        )
+    }
+
     @Test
     fun `bo chon chip khong tu ghi ben`() {
         // Nguồn sự thật là `HomeUiState.topStrip`. Bộ chọn chỉ báo ra — nếu nó tự ghi thì có hai đường ghi và chúng
@@ -195,9 +275,119 @@ class TopStripWiringContractTest {
         // Và lượt làm mới phải đặt lại mặt chip khi MÀU đổi, không chỉ khi icon đổi: tone đổi mà icon giữ nguyên
         // (đúng ca bật→tắt) thì chip sẽ không bao giờ đổi màu.
         val refresh = SourceRoots.body(strip, "fun refreshChips(")
+        val key = refresh.lines().first { it.contains("c.icon.toString()") }
+        assertTrue(key.contains("+ color"), "chốt 'chỉ đặt lại khi đổi' phải tính CẢ màu vào khoá, không thì bật→tắt không đổi được màu")
         assertTrue(
-            Regex("""tag\s*!=\s*c\.icon\.toString\(\)\s*\+\s*color""").containsMatchIn(refresh),
-            "chốt 'chỉ đặt lại khi đổi' phải tính CẢ màu vào khoá, không thì bật→tắt không đổi được màu",
+            Regex("""if \(v\.tag != \w+\)""").containsMatchIn(refresh),
+            "…và khoá đó phải là thứ được so với `v.tag`",
         )
+    }
+
+    // ══ UX6 (owner 2026-09-27) — HAI KHE của chip thanh trên ═══════════════════════════════════════════════
+    //
+    // Owner nhìn header máy ảo: *"khi có label, label nó sát icon quá, còn vị trí các icon với nhau có vẻ hơi
+    // rộng phải không?"*. [ĐO `uiautomator dump` + ảnh chụp 2026-09-27, 1920×1080 · density 240] đúng cả hai:
+    // khe icon↔chữ = **0dp** (lỗi thứ tự, xem dưới) còn khe giữa hai chip = **16dp** (ba hằng cộng lại).
+
+    /**
+     * Khe **icon↔chữ** phải đi qua [KachiBars.CHIP_ICON_GAP], và **không được đọc lại `v.text`**.
+     *
+     * ## Vì sao bài này canh cả CÁCH quyết định, không chỉ con số
+     * Con số cũ không sai — mã cũ viết `dp(Sp.S)`, tức 8dp. Cái sai là **nguồn của điều kiện**: nó hỏi `v.text`
+     * trong khi lượt làm mới đặt chữ ở dòng SAU ⇒ lượt đầu chữ rỗng ⇒ đệm 0, rồi khoá `tag` đóng băng kết quả đó
+     * suốt phiên. Chỉ khoá con số thì bản vá lùi *"đọc lại v.text"* vẫn xanh mà màn hình vẫn dính như cũ — nên
+     * bài canh đòi chữ được **truyền vào** (`label`).
+     */
+    @Test
+    fun `khe icon-chu lay tu thang va khong doc lai v_text`() {
+        val face = SourceRoots.body(strip, "private fun applyChipFace(")
+        assertTrue(
+            Regex("""compoundDrawablePadding\s*=\s*if \(label\.isEmpty\(\)\) 0 else dp\(Bars\.CHIP_ICON_GAP\)""")
+                .containsMatchIn(face),
+            "khe icon↔chữ phải là `dp(Bars.CHIP_ICON_GAP)` khi có chữ, 0 khi chip chỉ-icon (B6)",
+        )
+        assertFalse(
+            face.contains("v.text"),
+            "KHÔNG được quyết khe bằng `v.text`: refreshChips đặt chữ SAU lượt này ⇒ lượt đầu luôn ra 0dp (lỗi UX6)",
+        )
+        assertTrue(
+            SourceRoots.body(strip, "private fun chip(").contains("applyChipFace(this, iconName,"),
+            "lượt DỰNG cũng phải truyền chữ vào, không để hàm tự đoán",
+        )
+    }
+
+    /**
+     * Khe **giữa hai chip** có đúng MỘT chủ: [KachiBars.CHIP_GAP]. Lề trong của chip = 0.
+     *
+     * Chip không có nền riêng ⇒ lề trong cộng thẳng vào khe mắt người thấy. Để lề trong `Sp.XS` hai bên như trước
+     * là chia một khoảng cách cho ba hằng: đọc mã ra 8dp mà màn hình hiện 16dp.
+     */
+    @Test
+    fun `khe giua hai chip di qua mot hang duy nhat`() {
+        assertTrue(
+            Regex("""fun chipLp\(\)[^\n]*marginStart = dp\(Bars\.CHIP_GAP\)""").containsMatchIn(strip),
+            "khe giữa hai chip phải đọc từ Bars.CHIP_GAP",
+        )
+        val chip = SourceRoots.body(strip, "private fun chip(")
+        assertTrue(chip.contains("setPadding(0, 0, 0, 0)"), "lề trong chip = 0 — khe do lề NGOÀI quyết")
+        assertFalse(
+            Regex("""setPadding\(dp\(""").containsMatchIn(chip),
+            "lề trong chip quay lại lấy hằng của thang ⇒ khe thật lại = lề ngoài + 2 × lề trong (lỗi UX6)",
+        )
+    }
+
+    /**
+     * ⚠ Quan hệ giữa HAI khe là thứ quyết *"chip có đọc ra là một vật không"* — canh bằng SỐ HỌC, không bằng mắt.
+     *
+     * Khe trong một nhóm phải nhỏ hơn hẳn khe giữa các nhóm (luật gần-xa). `CHIP_GAP ≥ 1.5 × CHIP_ICON_GAP`:
+     * hạ [KachiBars.CHIP_GAP] xuống [KachiSpace.S] (8) hoặc nâng [KachiBars.CHIP_ICON_GAP] lên [KachiSpace.M]
+     * (12) đều làm icon của chip sau dính vào chữ của chip trước — và cả hai đều là *"chỉ bớt một bậc thôi mà"*.
+     */
+    @Test
+    fun `khe ngoai chip phai rong hon khe icon-chu`() {
+        assertTrue(
+            KachiBars.CHIP_ICON_GAP >= KachiSpace.S,
+            "khe icon↔chữ phải ≥ ${KachiSpace.S}dp — dưới mức đó là cái owner gọi là 'label sát icon quá' " +
+                "(hiện ${KachiBars.CHIP_ICON_GAP}dp)",
+        )
+        assertTrue(
+            2 * KachiBars.CHIP_GAP >= 3 * KachiBars.CHIP_ICON_GAP,
+            "khe giữa hai chip (${KachiBars.CHIP_GAP}dp) phải ≥ 1.5 × khe icon↔chữ " +
+                "(${KachiBars.CHIP_ICON_GAP}dp) — không thì hai chip đọc thành một",
+        )
+        assertTrue(
+            KachiBars.CHIP_GAP < KachiSpace.S + 2 * KachiSpace.XS,
+            "…và phải HẸP hơn khe cũ (${KachiSpace.S} + 2×${KachiSpace.XS} = ${KachiSpace.S + 2 * KachiSpace.XS}dp) " +
+                "— owner 2026-09-27: 'vị trí các icon với nhau có vẻ hơi rộng'",
+        )
+    }
+
+    /**
+     * Khe rộng thêm thì hàng chip dài thêm — phép cộng phải còn vừa chỗ cho **bộ chip MẶC ĐỊNH với nhãn THẬT**.
+     *
+     * ⚠ [SOÁT Opus 2026-09-27] Bài này trước đây tên là *"khi thanh ĐẦY"* và dùng `widestChipDp = 35`, tức bề rộng
+     * của một chip mà giá trị còn là `—`. Nó **không chứng minh** điều cái tên nói: [ĐO `uiautomator dump` máy ảo
+     * 2026-09-27, `visual-pass-2026-09-27.md` §3.1] năm chip mặc định với nhãn THẬT đo được 124/90/131/129/141 px,
+     * tức tới **94dp** — và ở [TopStripConfig.CAP] = 16 chip nhãn thật thì hàng cần ≈ 16 × (94 + 12) = **1696dp** so
+     * với **889dp** có thật ⇒ các chip ĐẦU bị cắt im lặng (`chipRow.gravity = END`). Đó là hiện trạng **từ trước
+     * 2.74**, không phải điều lượt này làm ra, nên bài được đổi để nói đúng thứ nó đo: **bộ mặc định**. Vế "đầy 16
+     * chip" nằm ở backlog (`UI-CHIP-CAP`), kèm con số trên.
+     *
+     * [ĐO] hàng chip (`0dp + weight 1`) rộng **1334px = 889dp** ở 1920×720 · 240dpi (1,5 px/dp — cùng mật độ với
+     * display 0 của xe).
+     */
+    @Test
+    fun `hang chip van vua cho voi bo mac dinh nhan THAT`() {
+        val roomDp = 889
+        // Nhãn THẬT dài nhất đã đo cho mỗi chip mặc định (px ở 1,5 px/dp → dp), làm tròn LÊN.
+        val widestDefaultChipDp = 94
+        val n = TopStripConfig.DEFAULT_IDS.size
+        val need = n * (widestDefaultChipDp + KachiBars.CHIP_GAP)
+        assertTrue(
+            need <= roomDp,
+            "$n chip mặc định (nhãn thật) cần ${need}dp > ${roomDp}dp chỗ còn lại ⇒ chip đầu bị cắt",
+        )
+        // Và một chip lẻ không bao giờ được vượt trần bề rộng mà `fitChips` áp (nửa hàng) — nếu vượt thì nó bị `…`.
+        assertTrue(widestDefaultChipDp <= roomDp / 2, "một chip rộng hơn nửa hàng ⇒ `maxWidth` cắt `…`")
     }
 }

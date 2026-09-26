@@ -554,6 +554,15 @@
 
     <!-- ══ V1 · text command trial (docs/specs/kachi-voice-command.html R6) ══════════════════════════ -->
     <string name="kachi_voice_note">Type a sentence exactly as you would say it, to see what the parser understands — e.g. “turn on reading light”, “set temperature 22”, “close all”, “show battery”, “open Settings”. To actually speak, use the “Talk to car” tile on the control bar or the mic button on the top bar.</string>
+
+    <!-- ══ 2.74 · R3 — list of SPOKEN COMMANDS at the end of the Voice group ════════════════════════════ -->
+    <string name="kachi_voice_cmds_section">Spoken commands</string>
+    <string name="kachi_voice_cmds_sub">This list is generated from the grammar Kachi itself uses, so it always matches what the car understands. Tap a group to see the phrases, then say them exactly as shown. A few groups (layout, saved places, profiles) are only spoken in Vietnamese.</string>
+    <plurals name="kachi_voice_cmds_count">
+        <item quantity="one">%1$d phrase</item>
+        <item quantity="other">%1$d phrases</item>
+    </plurals>
+    <string name="kachi_voice_cmds_asks">%1$s · asks before running</string>
     <string name="kachi_voice_hint">Say something to the car…</string>
     <string name="kachi_voice_run">Run command</string>
     <string name="kachi_voice_idle">Nothing run yet.</string>
@@ -672,6 +681,31 @@
     <string name="kachi_camera_render_row">Camera rendering</string>
     <string name="kachi_camera_render_texture">TextureView (default)</string>
     <string name="kachi_camera_render_surface">SurfaceView (lighter, rotation via HAL — may not rotate)</string>
+    <string name="kachi_camera_render_gl">Dewarp (GL) — experimental</string>
+    <string name="kachi_camera_dewarp_sub">Dewarp (when GL is selected) — tune in this order: centre → K → focal → zoom → amount</string>
+    <string name="kachi_camera_gl_texmatrix_title">Apply the camera stream matrix</string>
+    <string name="kachi_camera_gl_texmatrix_sub">On (default) is what Android prescribes. Turn it off if the picture is flipped or offset — not measured on the car yet</string>
+    <string name="kachi_camera_dewarp_cx">Centre X (offset)</string>
+    <string name="kachi_camera_dewarp_cy">Centre Y (offset)</string>
+    <string name="kachi_camera_dewarp_k">K — tune until road lines are STRAIGHT</string>
+    <string name="kachi_camera_dewarp_focal">Focal — larger = narrower, zoomed in</string>
+    <string name="kachi_camera_dewarp_scale">Zoom — larger = WIDER view (things look smaller)</string>
+    <string name="kachi_camera_dewarp_amount">Amount — 0 % is the raw image</string>
+    <string name="kachi_camera_dewarp_note">The defaults are DERIVED from geometry, not measured on the car: 100 % = exactly the derived value for the mirror area in use. Black corners mean the mapping reached outside the image circle — lower Zoom.</string>
+    <string name="kachi_camera_span_sub">Width of the mirror area cut from the stitched camera frame (wider = more view, more distortion)</string>
+    <string name="kachi_camera_span_row">Mirror area width</string>
+    <string name="kachi_camera_span_narrow">Narrow slice (default)</string>
+    <string name="kachi_camera_span_strip">Whole camera strip</string>
+    <string name="kachi_camera_strip_sub">Camera strip inside the 4-in-1 frame (0–3; change it if the direction is wrong)</string>
+    <string name="kachi_camera_strip_left">Strip for left signal</string>
+    <string name="kachi_camera_strip_right">Strip for right signal</string>
+    <string name="kachi_camera_shape_sub">Camera window shape (round = whole image circle, not dewarped yet)</string>
+    <string name="kachi_camera_shape_row">Camera window shape</string>
+    <string name="kachi_camera_shape_rect">Rectangle (default)</string>
+    <string name="kachi_camera_shape_round">Round</string>
+    <string name="kachi_camera_hal_sub">Camera view channel (1–4 is a PROBE: the head unit may refuse it or show nothing — pick “Auto” to undo)</string>
+    <string name="kachi_camera_hal_row">Camera view channel</string>
+    <string name="kachi_camera_hal_auto">Auto-probe</string>
     <string name="kachi_camera_pick_sub">Pick the camera for each turn signal (if none shows, try another id 0–5)</string>
     <string name="kachi_camera_pick_left">Left signal camera</string>
     <string name="kachi_camera_pick_right">Right signal camera</string>

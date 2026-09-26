@@ -114,6 +114,24 @@ data class ControlDef(
      * có trong `BYDAutoFeatureIds` của xe này ⇒ *"cấm bắn lệnh khí hậu theo phỏng đoán"* còn nguyên).
      */
     val readInverted: Boolean = false,
+    /**
+     * ═══ UX4 · Mã nút **TOGGLE** nói trạng thái **TỰ ĐỘNG** của cùng thiết bị này ═══════════════════════════
+     *
+     * Rỗng = *"nút này không có mặt tự động"* ⇒ mọi thứ y như trước UX4. Khai một chữ (`fan → "ac_auto"`) là nấc
+     * dưới cùng của thang đổi tên thành AUTO: `−` ở mức `min + 1` **bật auto** thay vì ghi `min`, và ô hiện chữ
+     * AUTO. Luật + bằng chứng: [ClimateAuto].
+     *
+     * ## Vì sao là DỮ LIỆU của dòng, không phải `if (id == "fan")` trong bộ dựng ô (CLAUDE.md §7)
+     * Y hệt tiền lệ [readInverted]/[halDevice]: cặp *"thang mức + công tắc tự động của cùng thiết bị"* là một
+     * **quan hệ tra được** (`AC_WIND_LEVEL_SET` ↔ `AC_CTRL_MODE_SET` cùng `BYDAutoAcDevice`), và nó sẽ còn xuất
+     * hiện ở nơi khác (gió hàng sau, quạt ghế). Khai bằng trường thì nút thứ hai chỉ tốn một chữ và **không dòng
+     * mã nào** phải sửa; khai bằng nhánh rẽ theo tên thì nút thứ hai lặng lẽ không có tính năng.
+     *
+     * ⚠ [ĐO xe 2026-09-20] Mã trỏ tới phải là một nút có đường GHI đã chứng minh (`ac_auto` ⇒ `AC_CTRL_MODE_SET`,
+     * rc=0 hai chiều) **và** một [readKey] để ô biết xe đang ở chế độ nào — không có đường đọc thì [ClimateAuto]
+     * trả `null` và ô **không bao giờ** dám nói AUTO (đúng, nhưng tính năng câm).
+     */
+    val autoId: String = "",
 ) : Localized {
     fun clamp(v: Int): Int = if (kind == ControlKind.STEP) v.coerceIn(min, max) else v
 

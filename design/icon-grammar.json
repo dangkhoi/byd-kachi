@@ -329,7 +329,23 @@
   },
   "seat": {
    "domain": "CLIMATE",
-   "note": "GHẾ (`seatc` mát · `seath` sưởi · `steer_heat`)"
+   "note": "GHẾ TRƠN — không còn chỗ dùng trong mã từ UX5 (ô/datum ghế sang glyph ghép seat_{heat,vent}_{left,right})"
+  },
+  "seat_heat_left": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI ghế LÁI (`seath` · datum `seat_heat_state`) — ghế + ba làn nhiệt, UX5 glyph ghép"
+  },
+  "seat_heat_right": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI ghế phụ (`seath_r`) — bản gương của seat_heat_left"
+  },
+  "seat_vent_left": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT ghế LÁI (`seatc` · datum `seat_vent_state`) — ghế + bông tuyết, UX5 glyph ghép"
+  },
+  "seat_vent_right": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT ghế phụ (`seatc_r`) — bản gương của seat_vent_left"
   },
   "seat_g": {
    "domain": "COCKPIT",
@@ -346,7 +362,7 @@
   },
   "sun": {
    "domain": "CLIMATE",
-   "note": "NẮNG / SƯỞI (`seat_heat_state`; widget Đồng hồ + thời tiết)",
+   "note": "NẮNG (widget Đồng hồ + thời tiết `w_clock`) — từ UX5 KHÔNG còn là hình của datum `seat_heat_state`",
    "family": "lights",
    "large": true
   },

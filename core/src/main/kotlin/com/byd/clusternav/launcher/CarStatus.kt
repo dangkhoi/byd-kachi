@@ -96,6 +96,22 @@ data class CarStatus(
          */
         val seatVentRaw: Int? = null,
         val seatHeatRaw: Int? = null,
+        /**
+         * UX5b (owner 2026-09-27: *"ghế sao không có ghế lái hay ghế phụ? 2 ghế nó khác nhau mà"*) — **ghế PHỤ**.
+         *
+         * Cùng getter, cùng device, **chỉ khác `seatID`** ([ĐO xe 2026-09-16] `HalReadTables.readArg`: 1 = ghế lái ·
+         * 2 = ghế phụ, cùng lời gọi `getSeat{Ventilating,Heating}State(seatID)` — lúc đo hai bên trả cùng giá trị vì
+         * cả hai đang tắt). Vì thế đây là hai *field* mới, KHÔNG phải một cơ chế mới: lối đi y hệt cặp sấy kính
+         * trước/sau (`area` 1/2) đã chạy từ T2.
+         *
+         * Giữ **thô** đúng một lẽ với [seatVentRaw].
+         *
+         * ⚠ [CHƯA BIẾT] còn lại (🚗): chưa có lượt đọc nào với **hai mức khác nhau** ở ghế phụ ⇒ thang mức của nó
+         * mượn thang ghế lái ở [ControlLevels] (`seatc_r`/`seath_r`, owner B10 2026-09-22). Mã ngoài thang ⇒ `null`
+         * ⇒ `"—"`, không làm tròn.
+         */
+        val seatVentRRaw: Int? = null,
+        val seatHeatRRaw: Int? = null,
         val defrostFrontOn: Boolean? = null,
         val defrostRearOn: Boolean? = null,
         /**

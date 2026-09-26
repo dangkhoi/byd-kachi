@@ -19,6 +19,13 @@ class CameraFrameAndRenderWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
+
+    /**
+     * Ba hàm dựng lớp video (`textureVideo`/`surfaceVideo`/`glVideo`) + `applyTransform` **đã sang tệp riêng** ở 2.74
+     * (R8-B): `CameraOverlayView` lo *cửa sổ*, `CameraVideoLayer` lo *cái gì vẽ khung*. Các assert của bài này đi theo
+     * đúng vai — không gộp hai tệp thành một chuỗi, vì thế thì một hàm nằm sai tệp cũng vẫn xanh.
+     */
+    private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
     private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
@@ -55,7 +62,7 @@ class CameraFrameAndRenderWiringContractTest {
 
     /** Cỡ ảnh nguồn phải ĐO, không hardcode trong `:app` (xe khác ghép 4-in-1 cỡ khác — CLAUDE.md §7). */
     @Test fun `co anh nguon khong hardcode trong app`() {
-        listOf(overlay, controller, avm).forEach { src ->
+        listOf(overlay, layer, controller, avm).forEach { src ->
             listOf("5120", "1280", "960", "720").forEach {
                 assertTrue(it !in src, "cỡ ảnh $it bị gõ cứng trong `:app` — gợi ý nằm ở `CamView.hintW/hintH`, số thật do HAL đo")
             }
@@ -70,10 +77,12 @@ class CameraFrameAndRenderWiringContractTest {
     @Test fun `hai duong ket xuat, TextureView van mac dinh`() {
         assertTrue("render: String = CameraSignalPolicy.RENDER_TEXTURE" in overlay, "mặc định của tầng vẽ = đường đang chạy")
         assertTrue("CameraSignalPolicy.rotatesByMatrix(render)" in overlay, "chọn nhánh theo `:core`, không so chuỗi tay")
-        assertTrue("setZOrderMediaOverlay(true)" in overlay, "SurfaceView phải ghép CÙNG cửa sổ (không setZOrderOnTop)")
-        assertTrue("setZOrderOnTop" !in overlay, "setZOrderOnTop bỏ luôn cơ hội được bo góc — xem KDoc lớp")
+        assertTrue("setZOrderMediaOverlay(true)" in layer, "SurfaceView phải ghép CÙNG cửa sổ (không setZOrderOnTop)")
+        listOf(overlay, layer).forEach {
+            assertTrue("setZOrderOnTop" !in it, "setZOrderOnTop bỏ luôn cơ hội được bo góc — xem KDoc lớp")
+            assertTrue("\"TV\"" !in it && "\"SV\"" !in it && "\"GL\"" !in it, "mã kết xuất phải lấy từ hằng `:core`")
+        }
         assertTrue("CameraOverlayFrame.stretch(" in overlay, "SurfaceView cắt vùng gương bằng cỡ + lề âm (`:core` tính)")
-        assertTrue("\"TV\"" !in overlay && "\"SV\"" !in overlay, "mã kết xuất phải lấy từ hằng `:core`")
     }
 
     /** Controller đọc pref kết xuất và báo lên tầng vẽ xoay có THẬT SỰ được áp hay không (CLAUDE.md §2). */
@@ -82,8 +91,8 @@ class CameraFrameAndRenderWiringContractTest {
         assertTrue("render = render," in controller, "mã phải đi vào overlay.show(render = …)")
         assertTrue("avm.setDisplayOrientation(surface, rot)" in controller,
             "SurfaceView không có setTransform ⇒ phải THỬ đường HAL, không im lặng bỏ góc owner đã chọn")
-        assertTrue("rotationEffective = rot == 0 || byMatrix || byHal" in controller,
-            "cửa sổ chỉ lấy tỉ lệ ĐÃ XOAY khi có ai thật sự xoay — nhận ≠ có tác dụng")
+        assertTrue("rotationEffective = CameraSignalPolicy.rotationEffective(render, rot, byHal)" in controller,
+            "cửa sổ chỉ lấy tỉ lệ ĐÃ XOAY khi có ai thật sự xoay — nhận ≠ có tác dụng; phép hợp ba nhánh ở `:core`")
         assertTrue("kết xuất=\$render rot=\$rot\")" in controller, "log một dòng phải nói cả đường kết xuất và góc")
     }
 
@@ -101,10 +110,10 @@ class CameraFrameAndRenderWiringContractTest {
     /** Một hàng chip, ĐÚNG hai mã = hằng `:core`, và nhãn của `SurfaceView` nói rõ giới hạn xoay. */
     @Test fun `cai dat co hang chip ket xuat lay ma tu core`() {
         val body = SourceRoots.body(settings, "private fun cameraSignal(")
-        listOf("RENDER_TEXTURE", "RENDER_SURFACE").forEach {
+        listOf("RENDER_TEXTURE", "RENDER_SURFACE", "RENDER_GL").forEach {
             assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`")
         }
-        assertEquals(2, CameraSignalPolicy.RENDERS.size, "mỗi đường `:core` phải có ĐÚNG một chip")
+        assertEquals(3, CameraSignalPolicy.RENDERS.size, "mỗi đường `:core` phải có ĐÚNG một chip")
         assertTrue("bridge.cameraRender()" in body && "bridge.setCameraRender(v)" in body, "hàng chip nối qua cầu, không ghi Prefs thẳng")
         assertTrue("R.string.kachi_camera_render_sub" in body && "R.string.kachi_camera_render_row" in body)
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
@@ -135,23 +144,29 @@ class CameraFrameAndRenderWiringContractTest {
      * ma trận chỉ dựng ở hai callback đổi cỡ.
      */
     @Test fun `duong khung hinh khong log khong cap phat khong shell`() {
-        assertTrue(
-            Regex("""override fun onSurfaceTextureUpdated\([^)]*\)\s*\{\s*\}""").containsMatchIn(overlay),
-            "onSurfaceTextureUpdated phải TRỐNG — mỗi khung đi qua đó",
+        // BA callback `onSurfaceTextureUpdated` (TV · GL) và `surfaceChanged` (SV) — tất cả phải TRỐNG.
+        assertEquals(
+            2,
+            Regex("""override fun onSurfaceTextureUpdated\([^)]*\)\s*\{\s*\}""").findAll(layer).count(),
+            "cả hai đường TextureView (TV và GL) phải có onSurfaceTextureUpdated TRỐNG — mỗi khung đi qua đó",
         )
         assertTrue(
-            Regex("""override fun surfaceChanged\([^)]*\)\s*\{\s*\}""").containsMatchIn(overlay),
+            Regex("""override fun surfaceChanged\([^)]*\)\s*\{\s*\}""").containsMatchIn(layer),
             "surfaceChanged của SurfaceView cũng không được làm gì mỗi lượt",
         )
-        assertTrue("isOpaque = true" in overlay, "TextureView đục ⇒ khỏi blend alpha của chính nó (nền bo góc ở view CHA)")
+        assertTrue("isOpaque = true" in layer, "TextureView đục ⇒ khỏi blend alpha của chính nó (nền bo góc ở view CHA)")
         // Không shell / không dumpsys trong tầng vẽ overlay: đường khung hình tuyệt đối không được chạm shell.
         listOf("Runtime.getRuntime", "dumpsys", "ProcessBuilder", "KachiShell").forEach {
-            assertTrue(it !in overlay, "$it không được có mặt trong tầng vẽ overlay camera")
+            listOf(overlay, layer).forEach { src -> assertTrue(it !in src, "$it không được có mặt trong tầng vẽ overlay camera") }
         }
         assertEquals(
             1,
-            Regex("""android\.graphics\.Matrix\(\)""").findAll(overlay).count(),
+            Regex("""android\.graphics\.Matrix\(\)""").findAll(layer).count(),
             "chỉ MỘT chỗ dựng Matrix (trong applyTransform, chạy ở callback đổi cỡ) — không phải mỗi khung",
+        )
+        assertTrue(
+            "android.graphics.Matrix" !in overlay,
+            "tầng cửa sổ không còn dựng ma trận nào (đã sang CameraVideoLayer) — `rotatesByMatrix` thì vẫn được gọi",
         )
     }
 }

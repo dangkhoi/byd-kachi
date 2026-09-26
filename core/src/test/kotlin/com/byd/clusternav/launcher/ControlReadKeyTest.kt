@@ -144,9 +144,13 @@ class ControlReadKeyTest {
         // ⚠⚠ 2026-09-25: 14 → **13** — nút `trunk` mất `readKey` cùng datum `tailgate_status` ([ĐO xe]
         // `getHatchDoorStatus` rỗng với mọi arg ⇒ cốp không có cảm biến trạng thái). Nút vẫn GHI được; chỉ đường
         // ĐỌC mất, nên lượt đọc-lại của `VoiceReadback` nay nói *"đã gửi lệnh"* kèm hedge thay vì bịa xác nhận.
+        // ⚠⚠ UX5b 2026-09-27: 13 → **15** — hai nút ghế PHỤ (`seatc_r`/`seath_r`) nay có `readKey`. KHÔNG phải một
+        // getter mới đoán ra: cùng getter đã ĐO của ghế lái, chỉ khác `seatID` 2 (khai ở `HalReadTables.readArg`),
+        // và hai datum `seat_*_state_r` đi kèm. Owner xin tách ghế lái/ghế phụ (*"2 ghế nó khác nhau mà"*).
+        // Dòng T2 trong `docs/specs/kachi-live-state-ux.html` đã sửa cùng lượt (R2.1).
         assertEquals(33, ControlRegistry.ALL.size, "số nút đổi ⇒ đếm lại cả hai vế rồi sửa §Tasks T2 của spec")
         assertEquals(
-            13, wired.size,
+            15, wired.size,
             "độ phủ đường đọc đổi (thấy ${wired.size}/29; chưa có đường đọc: ${blind.sorted()}). " +
                 "Sửa dòng T2 trong docs/specs/kachi-live-state-ux.html NGAY trong lượt này (R2.1), đừng chỉ sửa số ở đây.",
         )
@@ -272,6 +276,35 @@ class ControlReadKeyTest {
             assertEquals(expect.second, path.arg, "$id gọi sai tham số (area/seatID)")
             assertTrue(path.key != ControlRegistry.byId(id)!!.bindingKey, "$id vẫn đang đọc qua khoá GHI")
         }
+    }
+
+    /**
+     * UX5b — **hai ô ghế PHỤ đọc cùng getter của ghế lái, khác `seatID`**.
+     *
+     * Cùng hình dạng bài với hai ô sấy kính ngay dưới, và cùng lý do: nếu ai đó bỏ tham số thì bốn ô ghế đọc ra cùng
+     * một con số và **không bài nào khác thấy được**. Gateway giả trả hai giá trị KHÁC nhau theo `seatID` để chỗ lẫn
+     * lộ ra ngay. (Đường đọc của NÚT lấy tham số từ chính datum của nó — `HalRoutes.readPathOf` —, nên bài này cũng
+     * là chốt cho việc *không* mọc một trường `readArg` thứ hai ở `TelemetrySpec`.)
+     */
+    @Test
+    fun `hai o ghe PHU doc cung getter cua ghe lai nhung KHAC seatID`() {
+        mapOf(
+            "seatc" to ("getSeatVentilatingState" to 1),
+            "seath" to ("getSeatHeatingState" to 1),
+            "seatc_r" to ("getSeatVentilatingState" to 2),
+            "seath_r" to ("getSeatHeatingState" to 2),
+        ).forEach { (id, expect) ->
+            val path = readPathOf(id)!!
+            assertEquals(expect.first, path.key.substringAfter('.'), "$id đọc sai getter")
+            assertEquals(expect.second, path.arg, "$id gọi sai seatID")
+        }
+        // [ĐO xe 2026-09-17 ControlLevels] raw 3 = mức 2 ⇒ SELECT trả về mức người dùng, không trả mã khung.
+        val gw = FakeHalGateway(
+            gettersByArg = mapOf("getSeatHeatingState" to mapOf(1 to "1", 2 to "3")),
+        )
+        val table = HalBindingTable(gw)
+        assertEquals(0, table.readState("seath"), "ghế LÁI đọc seatID 1 (raw 1 = tắt ⇒ mức 0)")
+        assertEquals(2, table.readState("seath_r"), "ghế PHỤ đọc seatID 2 (raw 3 = mức 2)")
     }
 
     @Test

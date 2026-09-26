@@ -106,19 +106,63 @@ class CameraSignalPolicyTest {
     @Test fun `ket xuat mac dinh la TextureView`() {
         assertEquals(P.RENDER_TEXTURE, P.defaultRender())
         assertEquals(P.RENDER_TEXTURE, P.RENDERS.first(), "chip đầu hàng = mặc định")
-        assertEquals(listOf("TV", "SV"), P.RENDERS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
+        // R8-B: đường `GL` thêm vào **CUỐI**. Ghim cả thứ tự, không chỉ tập: chip đầu hàng là mặc định, và một
+        // lượt sắp lại thứ tự sẽ âm thầm đổi thứ owner thấy trước tiên trên màn.
+        assertEquals(listOf("TV", "SV", "GL"), P.RENDERS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
+        assertEquals(P.RENDER_GL, P.RENDERS.last(), "đường MỚI luôn xuống cuối (CLAUDE.md §6)")
+        assertTrue(P.defaultRender() != P.RENDER_GL, "2.74 KHÔNG được bật nắn mặc định — RE §7 Q13 còn CHƯA BIẾT")
     }
 
-    /** Mã đọc lên từ prefs (sửa tay được qua `prefs_set`): chỉ hai mã là hợp lệ, mọi thứ khác rơi về mặc định. */
+    /** Mã đọc lên từ prefs (sửa tay được qua `prefs_set`): chỉ ba mã là hợp lệ, mọi thứ khác rơi về mặc định. */
     @Test fun `isRender loai ma la, rotatesByMatrix theo duong`() {
-        assertTrue(P.isRender(P.RENDER_TEXTURE) && P.isRender(P.RENDER_SURFACE))
-        listOf("", "tv", "sv", "TEXTUREVIEW", "L90", "TL").forEach {
+        assertTrue(P.isRender(P.RENDER_TEXTURE) && P.isRender(P.RENDER_SURFACE) && P.isRender(P.RENDER_GL))
+        listOf("", "tv", "sv", "gl", "TEXTUREVIEW", "L90", "TL").forEach {
             assertFalse(P.isRender(it), "mã lạ \"$it\" không được coi là hợp lệ")
         }
         // Xoay bằng ma trận CHỈ có ở TextureView; mã lạ ⇒ xử như mặc định (⇒ true), không ném.
         assertTrue(P.rotatesByMatrix(P.RENDER_TEXTURE))
         assertFalse(P.rotatesByMatrix(P.RENDER_SURFACE), "SurfaceView không có setTransform ⇒ phải nhờ HAL")
         assertTrue(P.rotatesByMatrix("BOGUS"), "mã lạ = mặc định = TextureView")
+    }
+
+    /**
+     * ⚠ Bài quan trọng nhất của R8-B ở tầng luật: **`rotatesByMatrix` và `usesTextureView` KHÔNG còn trùng nhau**.
+     *
+     * Tới 2.73 một hàm trả lời cả hai câu (*"có `setTransform` không"* ≡ *"có phải `TextureView` không"*). Đường `GL`
+     * phá điều đó: nó **là** `TextureView` (nên bo góc, hình TRÒN và `getBitmap` vẫn ăn) nhưng **không** xoay bằng ma
+     * trận (shader xoay). Dùng lẫn hai phép hỏi ⇒ đường GL rơi vào nhánh `SurfaceView` của tầng vẽ và **không một
+     * khung nào hiện ra** trong khi compile vẫn xanh — đúng CLAUDE.md §8.
+     */
+    @Test fun `GL la TextureView nhung KHONG xoay bang ma tran`() {
+        assertTrue(P.usesTextureView(P.RENDER_GL), "GL dựng TextureView ⇒ bo góc + hình TRÒN + getBitmap vẫn ăn")
+        assertFalse(P.rotatesByMatrix(P.RENDER_GL), "GL xoay trong shader ⇒ setTransform phải là ma trận đơn vị")
+        assertTrue(P.rotatesInShader(P.RENDER_GL))
+
+        assertTrue(P.usesTextureView(P.RENDER_TEXTURE))
+        assertFalse(P.rotatesInShader(P.RENDER_TEXTURE), "đường 2.73 không có shader nào")
+        assertFalse(P.usesTextureView(P.RENDER_SURFACE))
+        assertFalse(P.rotatesInShader(P.RENDER_SURFACE))
+        // Mã lạ ⇒ mặc định (TextureView), không ném và không rơi vào nhánh GL.
+        assertTrue(P.usesTextureView("BOGUS"))
+        assertFalse(P.rotatesInShader("BOGUS"))
+    }
+
+    /**
+     * `rotationEffective` — cửa DUY NHẤT quyết cửa sổ lấy tỉ lệ ĐÃ xoay hay CHƯA xoay.
+     *
+     * Nói sai một nhánh ⇒ ảnh nằm trong một khung sai tỉ lệ và bị giãn, **không có lỗi nào được báo** (CLAUDE.md §2).
+     * Bốn nhánh: góc 0 (không cần ai làm) · ma trận · shader · HAL nhận.
+     */
+    @Test fun `rotationEffective dung cho ca bon nhanh`() {
+        // Góc 0 ⇒ luôn "đã xoay", kể cả đường không xoay được.
+        assertTrue(P.rotationEffective(P.RENDER_SURFACE, rotationDeg = 0, halAccepted = false))
+        // TextureView: ma trận luôn làm được.
+        assertTrue(P.rotationEffective(P.RENDER_TEXTURE, -90, halAccepted = false))
+        // GL: shader làm — KHÔNG phụ thuộc HAL.
+        assertTrue(P.rotationEffective(P.RENDER_GL, -90, halAccepted = false))
+        // SurfaceView: chỉ khi HAL NHẬN. Không nhận ⇒ cửa sổ phải lấy tỉ lệ chưa xoay.
+        assertFalse(P.rotationEffective(P.RENDER_SURFACE, -90, halAccepted = false))
+        assertTrue(P.rotationEffective(P.RENDER_SURFACE, -90, halAccepted = true))
     }
 
     // ══ CAM-ROT-2 · GỢI Ý cỡ ảnh nguồn — chỉ cho hai view GƯƠNG (chỗ có bằng chứng RE) ═════════════════════
@@ -145,6 +189,57 @@ class CameraSignalPolicyTest {
     private fun gioiHanTiLe(v: CameraSignalPolicy.CamView): Float {
         val f = CameraOverlayFrame.fit(v.hintW, v.hintH, v.crop, 90, 1000, 1000)
         return f.w.toFloat() / f.h
+    }
+
+    // ══ R8-A · BỀ RỘNG · HÌNH KHUNG · KÊNH HAL — mọi mặc định phải = hành vi 2.73 ══════════════════════════
+
+    /**
+     * Bốn mặc định mới, một bài: chúng là toàn bộ lời hứa *"xe sáng mai thấy đúng khung của 2.73 nếu không ai chạm
+     * Cài đặt"* (CLAUDE.md §6). Hình học đã ghim ở [CameraPanoCropTest]; đây ghim **mã** + thứ tự chip.
+     */
+    @Test fun `mac dinh be rong, hinh khung, dai, kenh HAL = hanh vi 2 73`() {
+        assertEquals(P.SPAN_NARROW, P.defaultSpan())
+        assertEquals(P.SPAN_NARROW, P.SPANS.first(), "chip đầu hàng = mặc định")
+        assertEquals(listOf("NARROW", "STRIP"), P.SPANS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
+        assertEquals(P.SHAPE_RECT, P.defaultShape())
+        assertEquals(listOf("RECT", "ROUND"), P.SHAPES)
+        assertEquals(1, CameraPanoCrop.defaultStrip(left = true), "dải chứa vệt TRÁI của 2.73")
+        assertEquals(2, CameraPanoCrop.defaultStrip(left = false), "dải chứa vệt PHẢI của 2.73")
+        assertEquals(P.HAL_MODE_AUTO, P.HAL_MODES.first(), "chip đầu hàng = dò 0..3 y 2.73")
+        assertEquals(listOf(-1, 0, 1, 2, 3, 4), P.HAL_MODES, "miền của DiLinkCameraConstants: VIEW_DEFAULT 0 + CHANNEL 1..4")
+        assertEquals(100, P.CIRCLE_PCT_DEFAULT)
+    }
+
+    /** Mã/chỉ số lạ (prefs sửa tay qua `prefs_set`) bị loại — chỗ đọc rơi về mặc định, không ném, không hình thứ ba. */
+    @Test fun `loai ma la cho be rong, hinh khung, dai, kenh HAL`() {
+        listOf("", "narrow", "FULL", "TL", "L90").forEach { assertFalse(P.isSpan(it), "bề rộng lạ \"$it\"") }
+        listOf("", "rect", "CIRCLE", "OVAL").forEach { assertFalse(P.isShape(it), "hình khung lạ \"$it\"") }
+        assertTrue(P.SPANS.all { P.isSpan(it) } && P.SHAPES.all { P.isShape(it) })
+        listOf(-1, 4, 99).forEach { assertFalse(CameraPanoCrop.isStrip(it), "dải $it không tồn tại") }
+        assertTrue(CameraPanoCrop.STRIPS_ALL.all { CameraPanoCrop.isStrip(it) })
+        assertEquals(listOf(0, 1, 2, 3), CameraPanoCrop.STRIPS_ALL)
+        listOf(-2, 5, 3124).forEach { assertFalse(P.isHalMode(it), "kênh HAL $it ngoài miền hằng BYD") }
+        assertTrue(P.HAL_MODES.all { P.isHalMode(it) })
+    }
+
+    /**
+     * `vehicle.config.cam_sort` — phân tích **chuỗi thật của xe** (carlog 2026-09-14 `10-logcat-baseline.txt:1776`).
+     *
+     * Đây là chỗ khoá lại sự thật đã sửa trong KDoc: `rear` = id 0, `pano_h` = id 1 — tức id 1 mới là khung ghép
+     * 4-in-1. Chuỗi rác không được ném (nó là dữ liệu của ROM, đời xe khác có thể khác dấu phân cách).
+     */
+    @Test fun `cam sort cua xe nay ra rear 0 va pano_h 1`() {
+        val raw = "rear:0;pano_h:1;"
+        assertEquals(mapOf("rear" to 0, "pano_h" to 1), P.camSortIds(raw))
+        assertEquals(0, P.camSortId(raw, P.CAM_TAG_REAR))
+        assertEquals(1, P.camSortId(raw, P.CAM_TAG_PANO), "pano_h = LUỒNG ghép 4 camera fisheye = cameraId của hai view GƯƠNG")
+        assertEquals(1, CameraSignalPolicy.CamView.MIRROR_LEFT.cameraId, "enum phải khớp cam_sort")
+        assertEquals(1, CameraSignalPolicy.CamView.MIRROR_RIGHT.cameraId)
+        // Rác / rỗng / thiếu tag ⇒ map rỗng hoặc bỏ mảnh xấu, KHÔNG ném.
+        assertEquals(emptyMap<String, Int>(), P.camSortIds(""))
+        assertEquals(emptyMap<String, Int>(), P.camSortIds("khong-co-dau-hai-cham"))
+        assertEquals(mapOf("rear" to 0), P.camSortIds("rear:0;pano_h:x;"))
+        assertNull(P.camSortId("rear:0;", P.CAM_TAG_PANO), "trim không có pano ⇒ null, không phải 0")
     }
 
     /** outputState là giá trị THẬT của HAL (RE) — ghim để không đổi bừa. */

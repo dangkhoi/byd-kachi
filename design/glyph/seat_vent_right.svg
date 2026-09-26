@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- GHẾ MÁT — ghế phụ (`seatc_r`): thân ghế nhìn ngang + BÔNG TUYẾT ở góc trống. Cùng mô-típ lạnh với ic_ac nên không phải học hình mới; trước UX5 ghế mát và ghế sưởi dùng CHUNG một hình. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M 4.58,8.61 C 3.29,8.61,3,9.62,3.29,10.92 L 4.58,16.39 L 11.64,16.39" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 5.3,16.39 L 11.5,16.39 A 1.44,1.44,0 0 1 12.94,17.83 L 12.94,17.97 A 1.44,1.44,0 0 1 11.5,19.41 L 5.3,19.41 A 1.44,1.44,0 0 1 3.86,17.97 L 3.86,17.83 A 1.44,1.44,0 0 1 5.3,16.39 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 5.45,19.41 L 5.45,21 M 11.35,19.41 L 11.35,21" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M17,3.2 L17,10 M14.05,4.9 L19.95,8.3 M14.05,8.3 L19.95,4.9" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

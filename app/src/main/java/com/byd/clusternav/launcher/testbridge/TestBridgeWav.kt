@@ -44,6 +44,10 @@ internal object TestBridgeWav {
                     "wake" to WakeAsrMatcher.isWake(probe.heard),
                     "grammar" to probe.grammarText,
                     "free" to probe.freeText,
+                    // VOICE-OPEN-TURN — hai vế của lượt, để bảng replay đọc được "ghép từ đâu", không chỉ kết quả.
+                    "head" to probe.headText,
+                    "tail" to probe.tailText,
+                    "open_head" to probe.openHead,
                     "probe_error" to probe.error,
                     "where" to VoiceWavProbe.whereToPut(app),
                     "intents" to TestBridgeJson.Raw(TestBridgeJson.arr(intents.map { KachiTestBridge.previewOf(it) })),

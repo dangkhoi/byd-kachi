@@ -21,6 +21,16 @@ import java.io.File
  *
  * Câu lệnh mẫu sinh theo đúng luật của [SherpaPhraseHotwords.CONTROL_VERBS] (động từ theo loại nút); câu phản hồi
  * là **chuỗi thật** [VoiceReply] trả về cho ý định đó — tức đúng thứ Kachi hiện/đọc trên xe, không phải diễn giải.
+ *
+ * ## 2.74 · R3 — câu mẫu nay ĐỌC [VoiceCommandCatalog], không còn bộ sinh riêng ở đây
+ * Tệp này từng mang **bản sao thứ tư** của bộ sinh câu (một `when (c.kind)` riêng) cộng một bảng `generic` **gõ
+ * tay** 16 dòng. Nay câu đến từ [VoiceCommandCatalog.samples]/[VoiceCommandCatalog.samplesFor] — cùng nguồn mà màn
+ * *Cài đặt › Giọng nói* dựng danh sách, nên bảng tài liệu và màn hình không thể quảng cáo hai bộ câu khác nhau.
+ *
+ * Lược đồ JSON **không đổi**: `scripts/docs/feature-catalog.py` đọc năm mảng với đầy đủ `bindingKey` · `halDevice`
+ * · `tier` · `args` · `min/max/step` · `reply*` · `confirmQuestion`, mà một `VoiceCommandGroup` không mang nổi.
+ * Chỉ trường `voice` đổi nguồn; bốn dòng `unknown_*` giữ câu gõ tay vì chúng là ví dụ **KHÔNG hiểu được**, tức cố
+ * ý không phải câu lệnh và không có chỗ nào trong danh mục để sinh ra.
  */
 class FeatureCatalogDumpTest {
 
@@ -30,16 +40,9 @@ class FeatureCatalogDumpTest {
         sb.append("{\n\"controls\": [\n")
         ControlRegistry.ALL.forEachIndexed { idx, c ->
             val verbs = SherpaPhraseHotwords.CONTROL_VERBS[c.kind].orEmpty()
-            val samples = ArrayList<String>()
-            // Cách gọi tự nhiên: nhãn đã qua `phrasesOf` (bỏ dấu câu/ngoặc: *"Pin (SOC)"* → *"pin"*, *"Khoá / mở khoá"* → *"khoá"*).
-            val lower = (SherpaHotwords.phrasesOf(c.label).firstOrNull() ?: c.label).lowercase()
-            when (c.kind) {
-                ControlKind.TOGGLE -> { samples += "bật $lower"; samples += "tắt $lower" }
-                ControlKind.COVER -> { samples += "mở $lower"; samples += "đóng $lower"; if (c.args.size >= 3) samples += "mở nửa $lower" }
-                ControlKind.STEP -> { samples += "tăng $lower"; samples += "giảm $lower"; samples += "đặt $lower ${c.value}" }
-                ControlKind.BUTTON -> samples += "bật $lower"
-                ControlKind.SELECT -> c.args.take(2).forEach { samples += "$lower ${it.lowercase()}" }
-            }
+            // Cách gọi tự nhiên: nhãn đã qua `phrasesOf` (bỏ dấu câu/ngoặc: *"Pin (SOC)"* → *"pin"*, *"Khoá / mở
+            // khoá"* → *"khoá"*) — luật nay khai MỘT chỗ ở [VoiceCommandCatalog].
+            val samples = VoiceCommandCatalog.samples(c)
             val intent = when (c.kind) {
                 ControlKind.STEP -> VoiceIntent.Control(c.id, c.value)
                 ControlKind.SELECT -> VoiceIntent.Control(c.id, 0)
@@ -71,10 +74,8 @@ class FeatureCatalogDumpTest {
                 "unit" to t.unit, "domain" to t.domain.name, "tier" to t.tier.name,
                 "bindingKey" to t.bindingKey, "halDevice" to t.halDevice,
                 "synonyms" to VoiceSynonyms.TELEMETRY[t.id].orEmpty(),
-                "voice" to listOf(
-                    "xem " + (SherpaHotwords.phrasesOf(t.label).firstOrNull() ?: t.label).lowercase(),
-                    "đọc " + (SherpaHotwords.phrasesOf(t.shortLabel).firstOrNull() ?: t.shortLabel).lowercase(),
-                ) + VoiceSynonyms.TELEMETRY[t.id].orEmpty().take(1).mapNotNull { SherpaSpokenWords.ACCENTED[it] }.map { "xem $it" },
+                // Một câu canonical; các cách nói khác của cùng datum đã ở trường `synonyms` ngay trên.
+                "voice" to VoiceCommandCatalog.samples(t),
                 "replyPreview" to VoiceReply.preview(intent),
                 "replyNoReading" to VoiceReply.noReading(t.label),
             ))
@@ -87,7 +88,7 @@ class FeatureCatalogDumpTest {
             obj(sb, listOf(
                 "id" to m.id, "label" to m.label, "labelEn" to m.labelEn, "domain" to m.domain.name,
                 "tier" to m.tier().name, "steps" to m.steps.map { "${it.controlId}=${it.arg}" },
-                "voice" to listOf(m.label.lowercase(), "chạy ${m.label.lowercase()}"),
+                "voice" to VoiceCommandCatalog.samplesFor(intent),
                 "risk" to risk.name,
                 "replyDone" to VoiceReply.done(intent), "replyFailed" to VoiceReply.failed(intent),
                 "confirmQuestion" to if (risk == VoiceRisk.CONFIRM) VoiceReply.confirmQuestion(intent) else null,
@@ -99,12 +100,18 @@ class FeatureCatalogDumpTest {
             val intent = VoiceIntent.Launcher(a.id)
             obj(sb, listOf(
                 "id" to a.id, "label" to a.label, "labelEn" to a.labelEn,
-                "voice" to listOf("mở ${a.label.lowercase()}"),
+                "voice" to VoiceCommandCatalog.samplesFor(intent),
                 "replyDone" to VoiceReply.done(intent),
             ))
             if (idx < LauncherActions.ALL.size - 1) sb.append(",\n")
         }
         sb.append("\n],\n\"generic\": [\n")
+        // Dữ liệu mẫu cho các họ ĐỘNG (hồ sơ · app · sổ địa chỉ): danh mục sinh câu từ chính ba danh sách này, nên
+        // chúng phải khớp với ý định đại diện ở bảng dưới — nếu lệch thì `samplesFor` trả rỗng và dòng đó lùi về
+        // câu gõ tay, một lối hụt IM LẶNG. Bài canh `khong dong nao con cau go tay tru unknown` bắt đúng ca đó.
+        val demoProfiles = listOf("Chính")
+        val demoApps = listOf("YouTube")
+        val demoPlaces = listOf("Nhà")
         val generic = listOf(
             Triple("media_play", listOf("phát nhạc", "nghe nhạc", "phát nhạc trên YouTube Music"), VoiceIntent.Media(VoiceMediaOp.PLAY)),
             Triple("media_pause", listOf("dừng nhạc", "tạm dừng"), VoiceIntent.Media(VoiceMediaOp.PAUSE)),
@@ -131,7 +138,7 @@ class FeatureCatalogDumpTest {
         generic.forEachIndexed { idx, (id, voice, intent) ->
             val risk = VoiceRiskTable.of(intent)
             obj(sb, listOf(
-                "id" to id, "voice" to voice, "risk" to risk.name,
+                "id" to id, "voice" to voiceOf(intent, voice, demoProfiles, demoApps, demoPlaces), "risk" to risk.name,
                 "replyPreview" to VoiceReply.preview(intent),
                 "replyDone" to if (intent is VoiceIntent.Unknown) VoiceReply.unknown(intent) else VoiceReply.done(intent),
                 // Câu HỎNG phải là câu **thật** của nhánh ấy, không phải câu chung: bố cục không hỏng vì *"xe không
@@ -154,6 +161,46 @@ class FeatureCatalogDumpTest {
         // → 26/65 sau 1.90 2026-09-21 (38 → 29 nút · 73 → 71 datum, owner gỡ 9 nút + 2 datum cho xe thuần điện).
         // → 26/58 sau lượt gỡ 7 datum CHẾT 2026-09-25 (nút giữ 33 · 71 → 64 datum). Cùng công thức: số thật trừ ~8 %.
         assertTrue(ControlRegistry.ALL.size >= 26 && TelemetryRegistry.ALL.size >= 58, "registry teo lại bất thường")
+    }
+
+    /**
+     * Câu của một họ: **danh mục trước**, câu gõ tay chỉ là đường lùi cho họ mà danh mục cố ý không có.
+     *
+     * Đường lùi tồn tại cho đúng hai loại dòng: bốn dòng `unknown_*` (ví dụ *KHÔNG hiểu được* — chúng minh hoạ lỗi,
+     * không phải câu lệnh) và `media_query` (tra tên bài = **từ vựng mở**, Kachi cố ý không làm offline nên nó
+     * không phải một câu "nói được" để bày ra màn Cài đặt). Mọi dòng khác phải lấy câu từ danh mục.
+     */
+    private fun voiceOf(
+        intent: VoiceIntent,
+        fallback: List<String>,
+        profiles: List<String>,
+        apps: List<String>,
+        places: List<String>,
+    ): List<String> = VoiceCommandCatalog.samplesFor(intent, profiles, apps, places).ifEmpty { fallback }
+
+    /**
+     * Chốt chống **bản sao thứ năm mọc lại**: mọi dòng `generic` không phải `unknown_*`/`media_query` phải nhận câu
+     * từ [VoiceCommandCatalog]. Không có bài này thì ai đó thêm một họ mới kèm câu gõ tay và không gì đỏ — đúng
+     * cách bốn bản sao trước đã sinh ra.
+     */
+    @Test
+    fun `moi ho cau lenh trong generic deu lay cau tu danh muc`() {
+        val handWritten = setOf(
+            VoiceIntent.Media(VoiceMediaOp.QUERY),
+            VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, ""),
+        ).map { it::class to (it as? VoiceIntent.Media)?.op }
+        val intents = listOf(
+            VoiceIntent.Media(VoiceMediaOp.PLAY), VoiceIntent.Media(VoiceMediaOp.PAUSE),
+            VoiceIntent.Media(VoiceMediaOp.NEXT), VoiceIntent.Media(VoiceMediaOp.PREV),
+            VoiceIntent.Nav("Bitexco"), VoiceIntent.NavigateSaved("Nhà"),
+            VoiceIntent.OpenApp("YouTube"), VoiceIntent.OpenApp("YouTube", slot = 2),
+            VoiceIntent.Profile("Chính"), VoiceIntent.Layout(LayoutPreset.TWO_COL),
+        )
+        val misses = intents.filter {
+            VoiceCommandCatalog.samplesFor(it, listOf("Chính"), listOf("YouTube"), listOf("Nhà")).isEmpty()
+        }
+        assertTrue(misses.isEmpty(), "họ câu lệnh không có câu trong danh mục ⇒ dòng JSON lùi về câu gõ tay: $misses")
+        assertTrue(handWritten.isNotEmpty(), "tiền đề: hai loại dòng cố ý giữ câu gõ tay (unknown + tra tên bài)")
     }
 
     private fun obj(sb: StringBuilder, fields: List<Pair<String, Any?>>) {

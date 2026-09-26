@@ -80,6 +80,9 @@ class KachiTopStrip(
     private lateinit var profileInitialView: TextView
     private lateinit var profileNameView: TextView
 
+    /** Chính CHIP hồ sơ (cái NÚT) — giữ tham chiếu vì nhãn TalkBack và lề trong của nó đổi theo [setProfile]. */
+    private lateinit var profileChipView: View
+
     /** Hàng ngang của thanh — giữ tham chiếu vì [place] gắn/tháo con của nó khi thứ tự đổi (WP4). */
     private lateinit var stripRow: LinearLayout
 
@@ -184,9 +187,9 @@ class KachiTopStrip(
     private fun lpFor(item: HeaderItem): LinearLayout.LayoutParams = when (item) {
         HeaderItem.CHIPS -> LinearLayout.LayoutParams(0, WRAP, 1f)
         HeaderItem.CLOCK -> LinearLayout.LayoutParams(WRAP, WRAP)
-        // Chip hồ sơ mang khe rộng hơn ba pill: nó là vật duy nhất có CHỮ nên cần tách khỏi hàng icon để đọc ra
-        // là một vật khác loại.
-        HeaderItem.PROFILE -> LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.SLOT_GAP) }
+        // UX1 · R1 — chip hồ sơ ĐI CHUNG khe với ba pill ([pillLp]). Khe rộng hơn ([Sp.SLOT_GAP]) là của thời chip
+        // còn VẼ chữ tên nên cần tách khỏi hàng icon; từ 2.55 chữ tên `GONE` ⇒ nó là nút chỉ-icon thứ tư, và giữ
+        // một khe riêng chỉ làm hàng nút lệch nhịp mà không nói lên điều gì.
         else -> pillLp()
     }
 
@@ -252,26 +255,33 @@ class KachiTopStrip(
         setOnClickListener { onClick() }
     }
 
-    private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }
+    private fun chipLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Bars.CHIP_GAP) }
 
     private fun chip(text: String, iconName: String?, color: String): TextView = TextView(activity).apply {
         this.text = text; KachiType.apply(this, KachiType.BODY); gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(Sp.XS), 0, dp(Sp.XS), 0)   // KHÔNG viền pill — chip prototype chỉ icon + chữ
+        // UX6 — lề trong = 0 (trước là [Sp.XS] hai bên). Chip KHÔNG có nền riêng (không viền pill) nên lề trong
+        // cộng thẳng vào khe mắt người thấy giữa hai chip; khe ấy nay có đúng MỘT chủ là [Bars.CHIP_GAP].
+        setPadding(0, 0, 0, 0)
         maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
-        applyChipFace(this, iconName, color.ifEmpty { CHIP_INK })
+        applyChipFace(this, iconName, color.ifEmpty { CHIP_INK }, text)
     }
 
-    /** Đặt màu chữ + icon dẫn đầu cho một chip. Tách riêng để đổi được mà không dựng lại view. */
-    private fun applyChipFace(v: TextView, iconName: String?, color: String) {
+    /**
+     * Đặt màu chữ + icon dẫn đầu cho một chip. Tách riêng để đổi được mà không dựng lại view.
+     *
+     * ⚠ [label] là chữ **sắp** hiện và được truyền VÀO — KHÔNG đọc lại `v.text`. [ĐO máy ảo 2026-09-27] đọc
+     * `v.text` làm khe icon↔chữ ra **0 ở mọi chip**: hàng chip dựng với chữ rỗng, [refreshChips] gọi hàm này
+     * TRƯỚC khi đặt chữ, và khoá `tag` giữ nguyên kết quả sai đó mãi. Phép cộng ở KDoc [Bars.CHIP_ICON_GAP].
+     */
+    private fun applyChipFace(v: TextView, iconName: String?, color: String, label: String) {
         v.setTextColor(c(color))
         val r = iconName?.let { KachiTheme.iconRes(it) } ?: 0
         if (r != 0) {
             val d = activity.resources.getDrawable(r, activity.theme)
                 .apply { setBounds(0, 0, dp(Sp.ICON_XS), dp(Sp.ICON_XS)); setTint(c(color)) }
             v.setCompoundDrawablesRelative(d, null, null, null)
-            // B6 (owner 2026-09-22): chip CHỈ-ICON (không chữ, vd trạng thái sấy) không cần khoảng đệm icon↔chữ —
-            // để nguyên thì icon thừa lề phải. Chỉ đệm khi có chữ.
-            v.compoundDrawablePadding = if (v.text.isNullOrEmpty()) 0 else dp(Sp.S)
+            // B6 (owner 2026-09-22): chip CHỈ-ICON (vd trạng thái sấy) không đệm — để nguyên thì icon thừa lề phải.
+            v.compoundDrawablePadding = if (label.isEmpty()) 0 else dp(Bars.CHIP_ICON_GAP)
         } else {
             v.setCompoundDrawablesRelative(null, null, null, null)
         }
@@ -320,11 +330,10 @@ class KachiTopStrip(
                 ChipTone.INACTIVE -> KachiTheme.MUT2
                 ChipTone.NEUTRAL -> CHIP_INK
             }
-            // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn.
-            if (v.tag != c.icon.toString() + color) {
-                applyChipFace(v, c.icon, color)
-                v.tag = c.icon.toString() + color
-            }
+            // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn. UX6: khoá
+            // gồm CẢ *"có chữ hay không"* vì khe icon↔chữ bật/tắt theo đó, mà chữ đổi được khi icon/màu thì không.
+            val face = c.icon.toString() + color + c.text.isNotEmpty()
+            if (v.tag != face) { applyChipFace(v, c.icon, color, c.text); v.tag = face }
             // H5 (PERF 2026-09-16) — cùng luật với dòng icon/màu ngay trên: `setText` với CHÍNH chuỗi đang hiện
             // vẫn dựng lại `Layout` của TextView và gọi `requestLayout()`. Trên xe, trạng thái đổi kéo theo cả
             // dải chip vẽ lại dù phần lớn chip (bụi mịn · nhiệt độ ngoài) đứng yên hàng phút. So chuỗi rẻ hơn
@@ -379,31 +388,43 @@ class KachiTopStrip(
     /** Trần bề rộng đang áp cho mỗi chip (px). `-1` = chưa tính / vừa dựng lại hàng chip. */
     private var chipCap = -1
 
-    // ── Hồ sơ tài xế: chip CHỮ CÁI + TÊN, chạm = mở bộ chọn hồ sơ ──
+    // ── Hồ sơ tài xế: ĐĨA chữ-cái-đầu, chạm = mở bộ chọn hồ sơ ──
     /**
-     * Chip hồ sơ — **chữ cái đầu + TÊN hồ sơ** (S4 · R7), thay cho avatar chỉ-một-chữ-cái của S1.
+     * Chip hồ sơ — **đĩa chữ-cái-đầu**; từ V5 (owner 2026-09-25: *"chỉ icon hồ sơ"*) thì **chỉ còn đĩa**: chữ TÊN vẫn
+     * dựng nhưng `GONE` để header đỡ chật.
      *
-     * ## Vì sao phải có cả cái TÊN, không chỉ chữ cái
-     * Từ S4 hồ sơ giữ **tất cả** lựa chọn, nên "đang ở hồ sơ nào" là câu hỏi có hệ quả lên cả màn hình (bố cục · ô ·
-     * chủ đề · đơn vị · cấu hình ClusterNav). Một chữ cái trả lời được câu đó chỉ khi người dùng đã thuộc lòng chữ
-     * đầu của từng hồ sơ — mà hai hồ sơ *"Đi làm"* / *"Đường trường"* thì cùng chữ `Đ`. [ĐO] không cần xe để thấy:
-     * `ProfileNames.initial` = `display(name).take(1)`, nên trùng chữ đầu là ca thường, không phải ca hiếm.
+     * ## ⚠⚠ ĐẢO CHIỀU — S4 · R7 gài *"phải có cả cái TÊN"*, V5 gỡ phần VẼ
+     * Lý lẽ cũ vẫn đúng và giữ lại: hai hồ sơ *"Đi làm"* / *"Đường trường"* cùng chữ `Đ` nên một chữ cái không trả
+     * lời nổi *"đang ở hồ sơ nào"*. V5 không bác nó — V5 **đổi chỗ trả lời**: tên đi vào nhãn TalkBack của chính nút
+     * ([setProfile]) và vào bộ chọn mà một cú chạm mở ra ([ProfileChip], có tên từng hồ sơ + dấu hồ sơ đang dùng +
+     * lối *"Quản lý hồ sơ…"*). Cử chỉ: **chạm = MỞ BỘ CHỌN**, không xoay vòng (`ProfileBar.cycle` đã xoá) — xoay
+     * vòng trên một bộ giữ TOÀN BỘ cấu hình là cú chạm nguy hiểm nhất của launcher.
      *
-     * Cử chỉ: **chạm = MỞ BỘ CHỌN**, không xoay vòng (`ProfileBar.cycle` đã xoá). Xoay vòng trên một bộ giữ toàn bộ
-     * cấu hình là cú chạm nguy hiểm nhất của launcher: bấm nhầm một cái thì cả màn hình đổi và người lái không biết
-     * mình vừa đi tới hồ sơ nào trong danh sách. Bộ chọn bày tên, đánh dấu hồ sơ đang dùng, và có cả lối *"Quản lý
-     * hồ sơ…"* — xem [ProfileChip].
+     * ## ⚠ UX1 · R1 — ĐĨA PHẢI ĐỒNG TÂM VỚI NÚT, và chốt bằng phép CỘNG chứ không bằng con mắt
+     * [ĐO ảnh owner 2.70 + mã] chữ nằm đúng tâm ĐĨA (khe trái = khe phải), nhưng **đĩa lệch trái 4dp trong nền
+     * pill**: lề trong từng là `(XS, 0, M, 0)` — 12dp bên phải là **khe dẫn sang chữ tên**, mà chữ tên `GONE` từ
+     * 2.55 và không ai trả lại lề của nó. Chữ không hỏng; hình học của chip hỏng.
      *
-     * Đích chạm: cả chip cao ≥ [Sp.TOUCH] (`minimumHeight`, không phải bằng lề trong — lề trong đẩy chữ ra xa viền).
-     * Tên hồ sơ kẹp ở [Sp.LABEL_COL] + một dòng + `…`: tên người dùng tự đặt có thể dài tuỳ ý, mà thanh trên thì
-     * không được đẩy pill "Cài đặt" ra khỏi mép.
+     * Chữa: khai TƯỜNG MINH cả hai chiều bằng [Bars.HEADER_BTN] như ba pill (xem [pill]), `Gravity.CENTER` để chỗ
+     * DƯ chia đều, lề trong do [syncProfilePad] tự ĐO theo vật cuối còn hiện. [ĐO AOSP `android-10.0.0_r47`
+     * `core/java/android/widget/LinearLayout.java`] `:1325` `mTotalLength` cộng cả lề trong · `:1330`
+     * `widthSize = max(mTotalLength, getSuggestedMinimumWidth())` · `:1736` `childLeft = mPaddingLeft +
+     * (right - left - mTotalLength) / 2` ⇒ `4 + (34 − 30) / 2 = 6dp`, đĩa chiếm 6..28dp trong nút 34dp ⇒ tâm đĩa
+     * 17 = tâm nút 17; trục dọc cùng phép cộng ở `:1785` (CENTER_VERTICAL) ⇒ 6..28dp.
+     *
+     * Đích chạm: [Bars.HEADER_BTN] (34dp = 70 % của [Sp.TOUCH]), **không phải** [Sp.TOUCH] — đánh đổi ghi ở KDoc
+     * [Bars.HEADER_BTN] (WP5 · R5.2). Chữ tên (nếu owner bật vẽ lại) kẹp ở [Sp.LABEL_COL] + một dòng + `…`: tên tự
+     * đặt dài tuỳ ý, mà thanh trên không được đẩy pill "Cài đặt" ra khỏi mép.
      */
     private fun profileChip(): View = LinearLayout(activity).apply {
-        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        profileChipView = this
+        // `CENTER` (không phải `CENTER_VERTICAL`): chỗ DƯ ngang phải chia ĐỀU hai bên — đĩa là vật duy nhất còn vẽ
+        // nên tâm của nó PHẢI là tâm của nút (UX1 · R1).
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
         background = KachiTheme.pill(context)
-        // WP5 · R5.2 — chip hồ sơ là một NÚT ⇒ cùng đích chạm với ba pill ([Bars.HEADER_BTN], 70 % của [Sp.TOUCH]).
-        minimumHeight = dp(Bars.HEADER_BTN)
-        setPadding(dp(Sp.XS), 0, dp(Sp.M), 0)
+        // WP5 · R5.2 — chip hồ sơ là một NÚT ⇒ cùng đích chạm với ba pill ([Bars.HEADER_BTN], 70 % của [Sp.TOUCH]),
+        // và khai CẢ HAI chiều đúng như [pill]: chỉ-icon thì bề NGANG không được để lề trong quyết.
+        minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         profileInitialView = TextView(activity).apply {
             setTextColor(c(KachiTheme.ON_ACCENT))
             KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
@@ -420,18 +441,39 @@ class KachiTopStrip(
         }
         addView(profileInitialView); addView(profileNameView)
         setOnClickListener { onProfileTap() }
+        syncProfilePad()
     }
 
     /**
-     * Chữ cái đầu **và tên** của hồ sơ [profileName] lên chip (do render / init gọi).
+     * Lề trong của chip = lề của **vật CUỐI CÒN CHIẾM CHỖ** — chip tự ĐO cái nó đang chứa, không giả định có chữ tên.
+     *
+     * Chữ tên còn chiếm chỗ ⇒ [Sp.M] là khe *chữ–mép*; chỉ còn đĩa ⇒ [Sp.XS] **đối xứng** ⇒ đĩa đồng tâm với nút.
+     * Đó chính là lỗi UX1 · R1: chữ tên ẩn từ 2.55 mà khe 12dp của nó còn lại ⇒ đĩa lệch trái 4dp. Bật/tắt chữ tên
+     * lần sau không phải sửa lại chỗ này lần nữa.
+     *
+     * Chốt bằng `!= GONE`, KHÔNG bằng `== VISIBLE`: [ĐO AOSP `android-10.0.0_r47` `LinearLayout.java:1148`] phép đo
+     * bỏ qua ĐÚNG con `GONE`, nên `INVISIBLE` **vẫn chiếm chỗ** (đúng hợp đồng `View.INVISIBLE`) và vẫn cần khe của
+     * nó. Lấy `== VISIBLE` là ẩn tạm chữ tên kiểu `INVISIBLE` thì lề co lại trong khi chữ vẫn được đo ⇒ lệch lần nữa.
+     */
+    private fun syncProfilePad() {
+        val end = if (profileNameView.visibility != View.GONE) dp(Sp.M) else dp(Sp.XS)
+        profileChipView.setPadding(dp(Sp.XS), 0, end, 0)
+    }
+
+    /**
+     * Chữ cái đầu lên ĐĨA, còn **tên** thì lên nhãn TalkBack của nút (do render / init gọi).
      *
      * [SOÁT P3-4] Cả hai lấy theo **NHÃN** (đã dịch), không theo khoá lưu: máy tiếng Anh hiện `D` / *Default*, không
      * phải `M` / *Mặc định*. Tên GỐC vẫn là thứ duy nhất đi vào prefs — xem KDoc [ProfileNames].
      */
     fun setProfile(profileName: String) {
+        val label = ProfileNames.display(profileName)
         profileInitialView.text = ProfileNames.initial(profileName)
-        profileNameView.text = ProfileNames.display(profileName)
-        profileNameView.contentDescription = activity.getString(R.string.kachi_profile_chip_desc, ProfileNames.display(profileName))
+        profileNameView.text = label
+        // Nhãn TalkBack đặt lên chính NÚT, không lên chữ tên: view `GONE` không vào cây a11y ⇒ nhãn để ở đó không
+        // bao giờ đọc được; nút chỉ còn MỘT chữ cái của đĩa để đọc thay [SUY] (lệ ba pill chỉ-icon, xem [pill]).
+        profileChipView.contentDescription = activity.getString(R.string.kachi_profile_chip_desc, label)
+        syncProfilePad()
     }
 
     /** Cập nhật đồng hồ + ngày (do vòng tick / onResume gọi). */

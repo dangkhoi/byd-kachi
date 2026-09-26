@@ -54,13 +54,18 @@ class VoiceFastNaturalWiringContractTest {
 
     @Test
     fun `nguon micro doc tu core va tu pref, khong con hang viet cung`() {
-        assertTrue(capture.contains("VoiceMicSource.order(pref)"), "thứ tự nguồn phải lấy từ `:core`, có bài canh")
-        assertTrue(capture.contains("Prefs.voiceMicSource(ctx)"), "phải đọc lựa chọn của người dùng")
-        // Hằng cũ viết cứng phải biến mất — không thì bản vá này chỉ thêm một đường thứ hai.
-        assertTrue(
-            !capture.contains("MediaRecorder.AudioSource.VOICE_RECOGNITION"),
-            "bảng nguồn viết cứng cũ phải rời khỏi tầng micro",
-        )
+        // Vai dựng thiết bị micro tách sang `VoiceCaptureDevice` ở VOICE-OPEN-TURN (trần 500 dòng) — cùng câu hỏi.
+        val device = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCaptureDevice.kt")
+        assertTrue(device.contains("VoiceMicSource.order(pref)"), "thứ tự nguồn phải lấy từ `:core`, có bài canh")
+        assertTrue(device.contains("Prefs.voiceMicSource(ctx)"), "phải đọc lựa chọn của người dùng")
+        // Hằng cũ viết cứng phải biến mất — không thì bản vá này chỉ thêm một đường thứ hai. Soi CẢ HAI tệp của
+        // tầng micro: vai bị tách ra không được thành một cửa sau cho bảng nguồn viết cứng.
+        listOf(capture, device).forEach {
+            assertTrue(
+                !it.contains("MediaRecorder.AudioSource.VOICE_RECOGNITION"),
+                "bảng nguồn viết cứng cũ phải rời khỏi tầng micro",
+            )
+        }
     }
 
     @Test

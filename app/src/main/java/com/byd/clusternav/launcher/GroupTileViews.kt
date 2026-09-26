@@ -320,8 +320,8 @@ class GroupTileView(context: Context) : LinearLayout(context) {
         val big = text(context, cell.number, 34f, tintOf(cell.tone), bold = true).apply { maxLines = 1 }
         val root = LinearLayout(context).apply {
             orientation = VERTICAL; gravity = Gravity.CENTER
-            addView(LinearLayout(context).apply {
-                orientation = HORIZONTAL; gravity = Gravity.CENTER
+            // UX7 — [AxisRow]: số chính ở TRỤC ô như nhãn dưới nó (cũ: canh cả cụm ⇒ lệch trái nửa bề rộng đơn vị).
+            addView(AxisRow(context).apply {
                 addView(big)
                 if (cell.unit.isNotEmpty()) addView(
                     text(context, " ${cell.unit}", 14f, KachiTheme.MUT).apply {

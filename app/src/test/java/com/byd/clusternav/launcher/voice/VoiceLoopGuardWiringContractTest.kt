@@ -27,6 +27,12 @@ class VoiceLoopGuardWiringContractTest {
     private fun code(rel: String) = SourceRoots.codeOf(rel)
 
     private val capture by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCapture.kt") }
+
+    /**
+     * Vai *"dựng thiết bị micro"* tách khỏi [capture] ở VOICE-OPEN-TURN (2026-09-26, trần 500 dòng) — `openRecord`
+     * nay là `VoiceCaptureDevice.open`. Bài canh **không** nới: cùng những câu hỏi ấy, chỉ hỏi ở đúng tệp mới.
+     */
+    private val device by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCaptureDevice.kt") }
     private val turns by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt") }
     private val endpointer by lazy { code("src/main/kotlin/com/byd/clusternav/launcher/voice/VoiceEndpointer.kt") }
     private val vad by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceVad.kt") }
@@ -136,10 +142,10 @@ class VoiceLoopGuardWiringContractTest {
         val acquire = listen.indexOf("VoiceSingleFlight.acquire(label)")
         assertTrue(acquire >= 0, "phải xin chốt trong `listen`")
         assertTrue(listen.contains("finally {") && listen.contains("VoiceSingleFlight.release()"), "phải nhả trong finally")
-        // Chốt phải đứng trước cả `openRecord` — nó nằm trong `listenGranted`, tức sau lời gọi có chốt.
+        // Chốt phải đứng trước cả lượt mở thiết bị — nó nằm trong `listenGranted`, tức sau lời gọi có chốt.
         assertTrue(
             listen.indexOf("listenGranted(") > acquire,
-            "phải cầm chốt RỒI mới vào thân lượt nghe (nơi `openRecord` mở AudioRecord)",
+            "phải cầm chốt RỒI mới vào thân lượt nghe (nơi `VoiceCaptureDevice.open` mở AudioRecord)",
         )
         assertFalse(
             SourceRoots.body(capture, "private fun listenGranted(").contains("VoiceSingleFlight.acquire("),
@@ -158,14 +164,20 @@ class VoiceLoopGuardWiringContractTest {
     @Test
     fun `khong duong nao mo AudioRecord ma khong qua chot`() {
         assertEquals(
-            1, Regex("""AudioRecord\(""").findAll(capture).count(),
-            "chỉ ĐÚNG một chỗ dựng AudioRecord trong cả tệp (trong `openRecord`)",
+            0, Regex("""AudioRecord\(""").findAll(capture).count(),
+            "chỗ dựng AudioRecord nằm ở `VoiceCaptureDevice.open`, không được mọc lại trong vòng nghe",
         )
-        val open = SourceRoots.body(capture, "private fun openRecord()")
-        assertTrue(open.contains("AudioRecord("), "và nó nằm trong `openRecord`, thứ chỉ `listenGranted` gọi")
         assertEquals(
-            1, Regex("""openRecord\(\)""").findAll(SourceRoots.body(capture, "private fun listenGranted(")).count(),
-            "chỉ thân-đã-có-chốt được gọi `openRecord`",
+            1, Regex("""AudioRecord\(""").findAll(device).count(),
+            "chỉ ĐÚNG một chỗ dựng AudioRecord trong cả tệp thiết bị (trong `open`)",
+        )
+        val open = SourceRoots.body(device, "fun open(ctx: Context): Opened?")
+        assertTrue(open.contains("AudioRecord("), "và nó nằm trong `open`, thứ chỉ `listenGranted` gọi")
+        assertEquals(
+            1,
+            Regex("""VoiceCaptureDevice\.open\(ctx\)""")
+                .findAll(SourceRoots.body(capture, "private fun listenGranted(")).count(),
+            "chỉ thân-đã-có-chốt được mở thiết bị micro",
         )
     }
 
@@ -174,11 +186,14 @@ class VoiceLoopGuardWiringContractTest {
     @Test
     fun `bip ready phat truoc khi mo mic`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
-        // Bíp READY (VoiceChime.start) phải đứng TRƯỚC openRecord() — mic chưa mở nên bíp KHÔNG nhiễm nền RMS,
+        // Bíp READY (VoiceChime.start) phải đứng TRƯỚC lượt mở thiết bị — mic chưa mở nên bíp KHÔNG nhiễm nền RMS,
         // và người dùng biết máy đang nghe NGAY (đường hoãn-bíp-sau-cửa-sổ-nền cũ khiến owner "không nghe gì").
         val startIdx = body.indexOf("VoiceChime.start()")
-        val openIdx = body.indexOf("openRecord()")
-        assertTrue(startIdx in 0 until openIdx, "VoiceChime.start() phải đứng trước openRecord() (bíp trước khi mở mic)")
+        val openIdx = body.indexOf("VoiceCaptureDevice.open(ctx)")
+        assertTrue(
+            startIdx in 0 until openIdx,
+            "VoiceChime.start() phải đứng trước VoiceCaptureDevice.open(ctx) (bíp trước khi mở mic)",
+        )
         // Không còn phát bíp trong vòng đọc theo cửa sổ nền (đã bíp trước mic) — beepPending khởi false.
         assertTrue(body.contains("var beepPending = false"), "không bíp lại trong vòng đọc (đã bíp trước mic)")
     }

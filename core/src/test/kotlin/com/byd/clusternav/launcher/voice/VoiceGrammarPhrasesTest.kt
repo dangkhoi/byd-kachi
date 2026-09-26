@@ -315,7 +315,18 @@ class VoiceGrammarPhrasesTest {
         // `ev_mileage_km` *"Km chạy điện"* · `trip_kwh` *"Điện tiêu thụ chuyến"*+*"Điện chuyến"* · `volt_12v_level`
         // *"Mức ắc-quy 12V"*+`VoiceSynonyms "muc ac quy"` · `tailgate_status` *"Cốp sau"* · `sunroof_pos`
         // *"Vị trí cửa sổ trời"*). Số đọc từ **actual** của chính bài này, không chép tay.
-        const val EXPECTED_PHRASES_KEPT = 395
+        // [ĐO off-car 2026-09-27 · 2.74 UX5b] **395 → 400 (+5)** — đo bằng máy (in `set.entries.filter { " " in it }`
+        // rồi so hai vế), NĂM cụm, tất cả sinh từ **hai datum ghế PHỤ** vừa thêm ở `TelemetryRegistry`
+        // (`seat_vent_state_r` · `seat_heat_state_r` — cùng getter ghế lái, chỉ khác `seatID` 2):
+        //  1. `ghế mát phụ` (`short` VI của `seat_vent_state_r`) · 2. `ghế sưởi phụ` (`short` VI của `seat_heat_state_r`)
+        //  3. `mức ghế mát phụ` (`label` VI) · 4. `mức ghế sưởi phụ` (`label` VI)
+        //  5. `pass heat` — và cụm thứ năm này là cái **phản trực giác**: nó là `shortEn = "Pass. heat"`, tức một
+        //     nhãn tiếng ANH, mà nhãn Anh thì theo lệ rơi hết sang vế BỊ LOẠI. Nó KHÔNG rơi vì cả hai từ tình cờ có
+        //     thật trong 19.529 mục của mô hình VN: [ĐO] `grep -ixc` trên chính tệp từ điển của bài này trả `pass` = 1
+        //     và `heat` = 1 (còn `vent` = 0 — đúng lý do người em song sinh `"Pass. vent"` của nó nằm ở vế LOẠI).
+        //     Đây là lời nhắc rằng ranh giới giữa hai vế là **tệp từ điển**, không phải ngôn ngữ của nhãn.
+        // Đọc từ **actual** của chính bài này, không chép tay.
+        const val EXPECTED_PHRASES_KEPT = 400
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -366,7 +377,23 @@ class VoiceGrammarPhrasesTest {
         // [ĐO off-car 2026-09-25] **200 → 190 (−10)** = nhãn tiếng ANH của 7 datum bị gỡ (*"Battery temp"* ·
         // *"Charge target"* · *"EV distance driven"*+*"EV distance"* · *"Trip energy used"*+*"Trip energy"* ·
         // *"12V battery level"* · *"Tailgate"* · *"Sunroof position"*+*"Sunroof pos"*). Đọc từ **actual**.
-        const val EXPECTED_PHRASES_DROPPED = 190
+        // [ĐO off-car 2026-09-26 · UX4] **190 → 191 (+1)** = nhãn ngắn tiếng Anh mới của datum `ac_wind`
+        // (`shortEn = "Fan"`, thêm cùng `short = "Gió"` để chip thanh trên nói được `"AUTO 1"` —
+        // `TelemetryRegistry.kt`). Chữ `Fan` KHÔNG có trong 19.529 mục của mô hình VN nên nó rơi sang vế BỊ LOẠI, và
+        // danh sách này **giữ cả bản trùng** ⇒ `"Fan"` nay xuất hiện HAI lần (lần đầu là `labelEn` của nút `fan`).
+        // [EXPECTED_PHRASES_KEPT] và [EXPECTED_ENTRIES] **không đổi**: `"Gió"` là MỘT từ (không phải cụm nhiều từ nên
+        // không vào vế giữ) và mục `gio` đã có sẵn từ nhãn của nút `fan` nên không nở thêm mục nào.
+        // Đọc từ **actual** của chính bài này — đo bằng cách in `set.phrasesDropped` rồi so hai vế.
+        // ⚠ [SOÁT Opus 2026-09-27] Con số `191` của lượt ngay trên **chưa bao giờ được đo**: `assertEquals` đầu tiên
+        // của bài (`EXPECTED_PHRASES_KEPT`) đã đỏ trước đó nên hai vế dưới chưa từng chạy tới. Lượt soát này đo lại
+        // CẢ BA con số bằng máy.
+        // [ĐO off-car 2026-09-27 · 2.74 UX4 + UX5b] **190 → 194 (+4)** = đúng bốn nhãn tiếng ANH mới mà mô hình VN
+        // không đọc nổi: `Fan` (bản thứ HAI — `shortEn` của datum `ac_wind`, xem đoạn ngay trên) · `Pass. vent`
+        // ([ĐO] `vent` KHÔNG có trong 19.529 mục) · `Passenger seat ventilation level` ·
+        // `Passenger seat heating level` (hai `labelEn` của hai datum ghế phụ UX5b).
+        // `Pass. heat` **không** nằm ở đây: cả `pass` lẫn `heat` đều CÓ trong từ điển nên nó sang vế GIỮ — xem
+        // [EXPECTED_PHRASES_KEPT].
+        const val EXPECTED_PHRASES_DROPPED = 194
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -445,7 +472,12 @@ class VoiceGrammarPhrasesTest {
         // **actual** của chính bài này — phần nở theo thanh điệu KHÔNG tính tay được, đúng như KDoc trên đã dặn.
         // [ĐO off-car 2026-09-25] **2034 → 2023 (−11)** = mọi mục ngữ pháp (cụm + từ đơn nở ra) của 7 datum bị
         // gỡ. Đọc từ **actual** của chính bài này, không chép tay.
-        const val EXPECTED_ENTRIES = 2023
+        // [ĐO off-car 2026-09-27 · 2.74 UX5b] **2023 → 2028 (+5)** = **đúng** năm cụm nhiều từ mới của
+        // [EXPECTED_PHRASES_KEPT] và **không một mục TỪ ĐƠN nào** — lần đầu phần chênh bằng 0 ở vế từ đơn, và đó là
+        // điều kiểm được: mọi từ của năm cụm ấy (`mức` · `ghế` · `mát` · `sưởi` · `phụ` · `pass` · `heat`) đã có mặt
+        // từ trước qua các nhãn sẵn có (*"Mức ghế mát"* · *"Mát ghế phụ"* · *"Seat heat"* · *"Passenger…"*), nên họ
+        // thanh điệu của chúng đã nở xong từ lượt trước. Đọc từ **actual** của chính bài này.
+        const val EXPECTED_ENTRIES = 2028
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

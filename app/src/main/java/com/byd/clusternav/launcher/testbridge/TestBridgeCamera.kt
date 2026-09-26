@@ -4,7 +4,7 @@ import android.os.Handler
 import android.os.Looper
 
 /**
- * Lệnh `camera --es arg left|right|none` — ép MỘT nhịp camera-theo-xi-nhan với xi-nhan GIẢ.
+ * Lệnh `camera --es name left|right|none` (extra là `name` = `TestBridgeCommand.EXTRA_ARG`, KHÔNG phải `arg`) — ép MỘT nhịp camera-theo-xi-nhan với xi-nhan GIẢ.
  *
  * Verify overlay E2E off-car: HAL panorama null trên emulator (không có video), nhưng cửa sổ overlay + nhãn
  * trái/phải dựng được ⇒ nhìn thấy đúng bên/đúng lúc = wiring xong. Trên xe chỉnh được bằng `prefs_set`

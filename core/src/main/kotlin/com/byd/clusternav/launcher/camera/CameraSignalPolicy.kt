@@ -60,8 +60,9 @@ object CameraSignalPolicy {
     // là một "chế độ" nữa mà là hai lựa chọn — đúng khuôn `camera_pos_left/right` (R4), và khớp RE kinex
     // [ĐO `Y0/C0094o.java:308-315`]: hai số xoay ĐỘC LẬP theo bên, không có luật "trái ngược phải".
     //
-    // [ĐO code] Vùng crop gương của ảnh fisheye 4-in-1 (5120×960) là dải DỌC (x rộng 0.10 × y cao 1.0) ⇒ căng vào
-    // cửa sổ vuông thì hình nằm NGANG (`CamView.MIRROR_*`). Xoay ±90° đưa nó về chiều dọc.
+    // [ĐO code] Vùng crop gương của ảnh fisheye 4-in-1 (5120×960) là dải DỌC (x rộng 0.10 × y cao 1.0 ở mặc định
+    // 2.73; `camera_span`/`camera_shape` đổi được — xem [CameraPanoCrop]) ⇒ căng vào cửa sổ vuông thì hình nằm NGANG
+    // (`CamView.MIRROR_*`). Xoay ±90° đưa nó về chiều dọc. Góc xoay áp **SAU** crop, ở cả ba bề rộng/hình khung.
     //
     // Chuỗi, KHÔNG enum — cùng lý do với `CORNER_*` ở trên: đây vừa là giá trị lưu bền của `camera_rot_left/right`,
     // vừa là mã chip trong Cài đặt; một bảng đổi mã ở hai đầu là hai bản sao của cùng một sự thật.
@@ -154,8 +155,26 @@ object CameraSignalPolicy {
     /** `SurfaceView` + `setZOrderMediaOverlay` — layer riêng, rẻ hơn một lượt GPU; KHÔNG xoay được bằng ma trận. */
     const val RENDER_SURFACE = "SV"
 
-    /** Mọi đường kết xuất hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
-    val RENDERS: List<String> = listOf(RENDER_TEXTURE, RENDER_SURFACE)
+    /**
+     * **Nắn méo (GL)** — R8-B (2.74): `TextureView` vẫn là cửa ra, nhưng khung đi qua **một lượt shader** trên một
+     * luồng vẽ riêng có ngữ cảnh `EGL14` (ES 2.0): `AVMCamera → SurfaceTexture(OES) → `[CameraDewarpShader]` →
+     * EGL window surface của chính `SurfaceTexture` mà `TextureView` cấp`.
+     *
+     * ## Vì sao là mã THỨ BA, không phải một công tắc trên [RENDER_TEXTURE]
+     * Cả ba đường dùng **cùng** cửa sổ, cùng bo góc, cùng hình TRÒN — chúng chỉ khác nhau ở *ai vẽ khung và bằng gì*,
+     * đúng chiều mà `camera_render` đã cắt từ CLOSE-14. Một công tắc riêng (`camera_dewarp_on`) sẽ tạo ra **bốn** tổ
+     * hợp trong đó hai cái vô nghĩa (`SV` + nắn = không có ngữ cảnh GL nào để nắn), và owner sẽ gặp một cú chạm không
+     * làm gì cả mà không có lời giải thích nào trên màn.
+     *
+     * ## Mặc định KHÔNG đổi (CLAUDE.md §6) — đứng CUỐI danh sách
+     * Cả tầng này là đường **mới**, chưa một khung nào của nó chạy trên xe: `GL_MAX_TEXTURE_SIZE` của GPU đầu xe với
+     * texture rộng 5120 vẫn **[CHƯA BIẾT]** (RE §7 Q13) và ma trận `getTransformMatrix` thật của camera id 1 cũng
+     * vậy (Q17). Hai điều đó chỉ chốt được **trên xe**, nên đường mới xuống cuối và mặc định vẫn là [RENDER_TEXTURE].
+     */
+    const val RENDER_GL = "GL"
+
+    /** Mọi đường kết xuất hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu, đường MỚI đứng cuối). */
+    val RENDERS: List<String> = listOf(RENDER_TEXTURE, RENDER_SURFACE, RENDER_GL)
 
     /** Đường kết xuất mặc định = thứ đã chạy trên xe từ 2.3x. */
     fun defaultRender(): String = RENDER_TEXTURE
@@ -163,15 +182,175 @@ object CameraSignalPolicy {
     /** Mã đường kết xuất đọc lên có dùng được không — cùng vai [isRotation] (prefs sửa tay được qua `prefs_set`). */
     fun isRender(v: String): Boolean = v in RENDERS
 
+    /** Mã đã kiểm, hoặc [defaultRender] nếu lạ — một cửa duy nhất cho ba phép hỏi dưới đây. */
+    private fun sane(render: String): String = if (isRender(render)) render else defaultRender()
+
     /**
      * Đường [render] có xoay được bằng MA TRẬN hay không.
      *
      * `false` ⇒ tầng vẽ phải (a) nhờ HAL xoay hộ nếu ROM cho (`AVMCamera.setDisplayOrientation`, [ĐO RE] có trong
      * lớp framework) và (b) tính cỡ cửa sổ theo tỉ lệ **chưa xoay** khi HAL cũng không nhận — chứ KHÔNG im lặng bỏ
      * góc owner đã chọn rồi để khung sai tỉ lệ. Mã lạ ⇒ coi như [defaultRender] (mã lạ chỉ tới từ prefs sửa tay).
+     *
+     * ⚠ [RENDER_GL] trả **`false`**: nó xoay trong **shader** ([rotatesInShader]), và `setTransform` trên đường đó
+     * PHẢI là ma trận đơn vị — áp cả hai là xoay hai lần.
      */
-    fun rotatesByMatrix(render: String): Boolean =
-        (if (isRender(render)) render else defaultRender()) == RENDER_TEXTURE
+    fun rotatesByMatrix(render: String): Boolean = sane(render) == RENDER_TEXTURE
+
+    /** Đường [render] xoay + cắt vùng bằng **shader** (uniform `uRotation`/`uSrcRect`) — chỉ [RENDER_GL]. */
+    fun rotatesInShader(render: String): Boolean = sane(render) == RENDER_GL
+
+    /**
+     * Đường [render] dựng lớp video bằng `TextureView` hay không — **[RENDER_TEXTURE] và [RENDER_GL]**.
+     *
+     * Tách khỏi [rotatesByMatrix] vì hai câu hỏi đó **không còn trùng nhau** từ R8-B: đường GL vẫn là `TextureView`
+     * (nên bo góc vẫn ăn, hình TRÒN vẫn ăn, `getBitmap` vẫn chụp được) nhưng **không** xoay bằng ma trận. Trước đây
+     * một hàm trả lời cả hai — dùng lại nó cho GL sẽ đẩy đường GL vào nhánh `SurfaceView` và không có một khung nào
+     * hiện ra, đúng loại lỗi *"compile xanh, chưa từng chạy"* của CLAUDE.md §8.
+     */
+    fun usesTextureView(render: String): Boolean = sane(render) != RENDER_SURFACE
+
+    /**
+     * Góc xoay owner chọn có **thật sự** được ai đó thi hành hay không — [rotationDeg] `0` thì không cần ai làm.
+     *
+     * Gộp ở đây (thay vì một biểu thức ba nhánh rải trong `:app`) vì nó quyết **tỉ lệ cửa sổ**
+     * ([CameraOverlayFrame.fit]): nói sai một nhánh thì ảnh nằm trong một khung sai tỉ lệ và bị giãn, mà không có
+     * lỗi nào được báo — CLAUDE.md §2, cơ chế ≠ quy kết.
+     *
+     * @param halAccepted `AVMCamera.setDisplayOrientation` có **nhận** lời gọi không (đường `SurfaceView`). "Nhận"
+     *   ≠ "có tác dụng" — đó là giới hạn của chính phép đo, xem KDoc `AvmCamera.setDisplayOrientation`.
+     */
+    fun rotationEffective(render: String, rotationDeg: Int, halAccepted: Boolean): Boolean =
+        rotationDeg == 0 || rotatesByMatrix(render) || rotatesInShader(render) || halAccepted
+
+    // ── VÙNG GƯƠNG: bề rộng · dải pano · hình khung (R8-A · 2.74) ────────────────────────────────
+    //
+    // RE `docs/diagnostics/electro-camera-RE-2026-09-26.md` §5 K10 [ĐO]: crop của 2.73 rộng `0.10` bề ngang = **40 %
+    // của MỘT dải** (một dải = 0.25 — hằng `0.25` nằm thẳng trong shader của Electro @0x493b5) ⇒ Kachi đang nhìn một
+    // vệt hẹp ở rìa vòng fisheye, đúng chỗ méo nặng nhất. §6.4 xếp **A** (nới/đổi crop chữ nhật) trước **B** (shader
+    // nắn) vì A rẻ, không đụng đường vẽ, và có thể làm B thành không cần thiết.
+    //
+    // Cả bốn pref dưới đây **mặc định = hành vi 2.73 từng pixel** (CLAUDE.md §6: đường mới xuống cuối, không đảo mặc
+    // định để chữa cho một thứ còn [CHƯA BIẾT]). Hình học ở [CameraPanoCrop] (thuần, có test bằng số); ở đây chỉ có
+    // **mã lưu bền + phép kiểm** — cùng khuôn `CORNER_*`/`ROTATE_*`/`RENDER_*`: chuỗi, không enum, vì mã chip trong
+    // Cài đặt và giá trị trên đĩa là MỘT.
+
+    /** Bề rộng crop của 2.73: `0.10` bề ngang ảnh = 40 % một dải, neo vào mép NGOÀI của dải. Mặc định. */
+    const val SPAN_NARROW = "NARROW"
+
+    /** **Trọn** một dải pano (0.25 bề ngang) — thứ Electro coi là "một camera" của khung 4-in-1. */
+    const val SPAN_STRIP = "STRIP"
+
+    /** Mọi bề rộng hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
+    val SPANS: List<String> = listOf(SPAN_NARROW, SPAN_STRIP)
+
+    /** Bề rộng mặc định = đúng vệt đã chạy trên xe từ 2.36. */
+    fun defaultSpan(): String = SPAN_NARROW
+
+    /** Mã bề rộng đọc lên có dùng được không — cùng vai [isRender] (prefs sửa tay được qua `prefs_set`). */
+    fun isSpan(v: String): Boolean = v in SPANS
+
+    /** Khung CHỮ NHẬT bo góc — đúng cửa sổ 2.73. Mặc định. */
+    const val SHAPE_RECT = "RECT"
+
+    /**
+     * Khung TRÒN: lấy **ô vuông giữa dải** (cạnh = chiều cao dải) rồi bo thành hình tròn — tức hiện **trọn vòng ảnh
+     * fisheye** như app Electro vẽ, KHÔNG nắn méo (nắn là phương án B, spec riêng sau buổi xe).
+     *
+     * ⚠ "đường kính vòng ảnh ≈ chiều cao dải, đặt giữa dải" là **[ĐOÁN]** tới khi có khung PNG thật từ xe ⇒ có núm
+     * `camera_circle_scale` ([isCirclePct]) để owner co/giãn ô vuông ngay trên xe.
+     */
+    const val SHAPE_ROUND = "ROUND"
+
+    /** Mọi hình khung hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
+    val SHAPES: List<String> = listOf(SHAPE_RECT, SHAPE_ROUND)
+
+    /** Hình khung mặc định = chữ nhật bo góc của 2.73. */
+    fun defaultShape(): String = SHAPE_RECT
+
+    /** Mã hình khung đọc lên có dùng được không — cùng vai [isSpan]. */
+    fun isShape(v: String): Boolean = v in SHAPES
+
+    /**
+     * Phần trăm cạnh ô vuông của [SHAPE_ROUND] so với **chiều cao dải** — `100` = trọn chiều cao (mặc định).
+     *
+     * Trần là **100**, không phải một số lớn hơn: cạnh ô vuông ở 100 % đã bằng đúng chiều cao ảnh nguồn, nên không có
+     * pixel nào để giãn thêm. Vòng ảnh thật rộng hơn cao (bị cắt trên/dưới) là một **phát hiện phải báo**, không phải
+     * một núm — ghi vào runbook 🚗 thay vì kẹp im lặng.
+     */
+    const val CIRCLE_PCT_MIN = 50
+
+    /** Xem [CIRCLE_PCT_MIN]. */
+    const val CIRCLE_PCT_MAX = 100
+
+    /** Mặc định = trọn chiều cao dải. */
+    const val CIRCLE_PCT_DEFAULT = 100
+
+    /** Phần trăm đọc lên có dùng được không (ngoài dải ⇒ chỗ đọc rơi về [CIRCLE_PCT_DEFAULT]). */
+    fun isCirclePct(v: Int): Boolean = v in CIRCLE_PCT_MIN..CIRCLE_PCT_MAX
+
+    // ── MÓC ĐO kênh xem của HAL (`addPreviewSurface(Surface, int)` — RE §5 K4 · §6.3 C1) ─────────
+    //
+    // [ĐO firmware] `IDiLinkAVMCamera.java:12` `boolean addPreviewSurface(Surface, int)`; miền của `int` là
+    // `DiLinkCameraConstants.java:47-55`: `VIEW_DEFAULT = 0`, `VIEW_CHANNEL_1..4 = 1..4`. 2.73 dò `0..3` rồi lấy cái
+    // đầu tiên không ném ⇒ **gần như luôn trúng 0 = VIEW_DEFAULT** (khung 4-in-1), và **chưa bao giờ thử 4**.
+    // [SUY mạnh, RE §6.3-C1] `VIEW_CHANNEL_n` có thể bắt HAL trả **một kênh camera** thay vì khung ghép — nếu đúng
+    // thì không cần crop, không cần chia dải, và có khi HAL đã nắn méo sẵn. Chỉ đo được **trên xe**.
+
+    /** Không chọn kênh ⇒ **dò `0..3` y 2.73**. Mặc định; giá trị này là thứ giữ đường cũ nguyên vẹn. */
+    const val HAL_MODE_AUTO = -1
+
+    /** `VIEW_DEFAULT` — khung 4-in-1. Khác [HAL_MODE_AUTO] ở chỗ nó gọi ĐÚNG một lần và ĐỌC giá trị trả về. */
+    const val HAL_MODE_MIN = 0
+
+    /**
+     * `VIEW_CHANNEL_4` — trần của **dải `VIEW_CHANNEL`**, KHÔNG phải trần của cả miền.
+     *
+     * ⚠ [SOÁT Opus 2026-09-27] Chú thích cũ nói *"trần miền của `DiLinkCameraConstants`"* và điều đó **sai**: cùng
+     * tệp firmware ([ĐO] `DiLinkCameraConstants.java:51-54`) còn khai `VIEW_DECUSSATION_HFLIP = 6`,
+     * `VIEW_DECUSSATION_VFLIP = 7`, `VIEW_DECUSSATION_3124 = 3124`, `4123`. Con số **6** đáng chú ý nhất: nó là một
+     * phép **lật ngang ở tầng HAL** — đúng thứ một khung camera GƯƠNG cần, và miễn phí (không shader, không lượt GPU).
+     * Nới miền ra tới đó là một tính năng MỚI (ngoài phạm vi 2.74) ⇒ ghi vào backlog, không tự thêm ở lượt soát.
+     */
+    const val HAL_MODE_MAX = 4
+
+    /** Mọi kênh hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định [HAL_MODE_AUTO] đứng đầu). */
+    val HAL_MODES: List<Int> = listOf(HAL_MODE_AUTO) + (HAL_MODE_MIN..HAL_MODE_MAX)
+
+    /** Kênh đọc lên có dùng được không (lạ ⇒ chỗ đọc rơi về [HAL_MODE_AUTO], tức đường 2.73). */
+    fun isHalMode(v: Int): Boolean = v in HAL_MODES
+
+    // ── `vehicle.config.cam_sort` — phép thử NĂNG LỰC pano (RE §5 K2) ───────────────────────────
+    //
+    // [ĐO firmware] launcher gốc dò camera bằng đúng khoá này: `VehicleUtils.java:187-192`
+    // `getAvailableCameraType()` → `SystemProperties.get("vehicle.config.cam_sort","")`, rồi `hasAVMRecorder() =
+    // contains(CAMERA_CAR_PANO_H)` (`:176`). Rẻ hơn mở camera để xem có ra hình. Phân tích thì THUẦN nên nằm ở đây;
+    // đọc getprop là việc của `:app`. 2.74 **chỉ ghi nhật ký**, KHÔNG gate gì (CLAUDE.md §3: chưa đo trên xe thì chưa
+    // được làm cổng).
+
+    /** Tag khung pano ghép 4-in-1 [ĐO `DiLinkCameraConstants.java:19`]. */
+    const val CAM_TAG_PANO = "pano_h"
+
+    /** Tag camera lùi [ĐO `DiLinkCameraConstants.java:21`]. */
+    const val CAM_TAG_REAR = "rear"
+
+    /**
+     * Phân tích `vehicle.config.cam_sort` — `"rear:0;pano_h:1;"` ⇒ `{rear=0, pano_h=1}`.
+     *
+     * Mảnh không đúng dạng `<tag>:<số>` bị **bỏ qua** (không ném): đây là chuỗi của ROM, đời xe khác có thể thêm tag
+     * lạ hoặc dấu phân cách khác, và một ngoại lệ ở đây sẽ giết một dòng nhật ký chẩn đoán.
+     */
+    fun camSortIds(raw: String): Map<String, Int> = raw
+        .split(';', ',')
+        .mapNotNull { part ->
+            val tag = part.substringBefore(':', "").trim()
+            val id = part.substringAfter(':', "").trim().toIntOrNull()
+            if (tag.isEmpty() || id == null) null else tag to id
+        }
+        .toMap()
+
+    /** Id của [tag] trong chuỗi `cam_sort`, `null` = không có tag đó (⇒ xe/trim này không có luồng ấy). */
+    fun camSortId(raw: String, tag: String): Int? = camSortIds(raw)[tag]
 
     /** Một view camera [ĐO BYDAutoPanoramaDevice.APA_OUTPUT_STATE_*]. */
     /**
@@ -184,9 +363,23 @@ object CameraSignalPolicy {
      * lấy từ ảnh 4-in-1 [ĐO RE kinex `Y0/C0094o.java:318,342,347`: pano `5120×960`, một cam `1280×960`], tức chính
      * cái crop đã giả định ảnh nguồn là 4-in-1; các view khác chưa có bằng chứng cỡ nào nên để trống.
      *
-     * [ĐO xe 2026-09-25] AVMCamera **CHỈ mở được id 0 (fisheye 4-in-1, 5120×960) và id 1 (cam trước)**; id 2/3/4/5
-     * KHÔNG lên hình. Cam GƯƠNG trái/phải KHÔNG phải cameraId riêng — chúng là **CROP vùng trái/phải của ảnh
-     * fisheye id 0** (RE kinex `C0094o`: pano crop trái x[0.25..0.35], phải x[0.65..0.75] của ảnh 5120×960).
+     * ## Camera nào là id mấy — [ĐO carlog xe của chính Kachi]
+     * `docs/diagnostics/carlog-kachi-20260914-2044/10-logcat-baseline.txt:1776` →
+     * `vehicle.config.cam_sort:rear:0;pano_h:1;` (dạng `<tag>:<id>;`, tag là hằng của BYD —
+     * `DiLinkCameraConstants.java:19,21` `CAMERA_CAR_PANO_H = "pano_h"` / `CAMERA_CAR_REAR = "rear"`). Tức
+     * **AVMCamera phơi ra 2 LUỒNG (id)**, KHÔNG phải "xe chỉ có 2 camera":
+     *  • **id 0 = `rear`** — luồng camera lùi, đứng riêng;
+     *  • **id 1 = `pano_h`** — 4 camera fisheye (trước · sau · hai gương) đã được HAL **ghép sẵn thành MỘT khung**
+     *    `5120×960` = 4 dải DỌC bằng nhau, mỗi dải 25 % bề ngang ([CameraPanoCrop]).
+     * Xe Seal Performance VN có **4 camera vật lý** (owner xác nhận 2026-09-26) — chúng đi chung một luồng id 1.
+     * Khớp Electro: chuỗi log `selectedCameraId=1 renders-full-frame` (RE `electro-camera-RE-2026-09-26.md` §0-4).
+     * ⚠ Tới 2.73 KDoc chỗ này ghi **ngược** ("id 0 fisheye 4-in-1… id 1 cam trước") trong khi enum dưới đây vẫn dùng
+     * `cameraId = 1` cho hai view GƯƠNG (tức **code đúng, doc sai**) — sửa 2.74, KHÔNG đổi một hằng nào.
+     *
+     * Cam GƯƠNG trái/phải KHÔNG phải cameraId riêng — chúng là **CROP một dải của ảnh pano id 1**
+     * (RE kinex `Y0/C0094o.java:70,73`: crop trái x[0.25..0.35], phải x[0.65..0.75] của ảnh 5120×960).
+     * **Dải nào là hướng nào vẫn [CHƯA BIẾT]** tới khi có khung PNG thật từ xe (RE §7 Q1/Q2) — vì thế chỉ số dải là
+     * một **pref** (`camera_strip_left/right`, xem [CameraPanoCrop]), không phải một hằng.
      */
     enum class CamView(
         val outputState: Int,

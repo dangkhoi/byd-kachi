@@ -51,6 +51,22 @@ class CarImageLayerContractTest {
         assertTrue(cells.contains("carView.contentRect("), "lớp số lấy khung letterbox từ lớp nền để bám bánh")
     }
 
+    /**
+     * 2.74 · R2 — ẢNH nạp xong ⇒ lớp THẺ phải kẹp lại theo khung letterbox MỚI.
+     *
+     * Từ khi mép thẻ kẹp theo khung ảnh thật ([CellTextLayout.cardSpanX]), hình học của thẻ PHỤ THUỘC vào tỉ lệ
+     * ảnh. Trước khi ảnh về, khung là placeholder (tỉ lệ 0.46 ≠ 0.485 của ảnh mặc định) ⇒ nếu lớp thẻ không vẽ lại
+     * lúc ảnh về, nó giữ hình học cũ và lấn vào xe cho tới nhịp số kế tiếp. Lớp nền `invalidate` khi ảnh về, và
+     * [ĐO AOSP android-10.0.0_r47 `ViewGroup.java:5909-5915`] lượt đó đi qua `onDescendantInvalidated` của cha.
+     */
+    @Test
+    fun `anh xe nap xong thi lop the kep lai theo khung MOI`() {
+        val hook = SourceRoots.body(tyre, "override fun onDescendantInvalidated(")
+        assertTrue(hook.contains("child === carView"), "chỉ phản ứng với lớp NỀN — không phải mọi con")
+        assertTrue(hook.contains("cells.postInvalidateOnAnimation()"), "lớp thẻ phải được hẹn vẽ lại đúng một lượt")
+        assertFalse(hook.contains("carView.invalidate"), "KHÔNG được gọi ngược lại lớp nền (vòng lặp vẽ)")
+    }
+
     @Test
     fun `CarImageView chi invalidate khi anh nap xong, khong co set() du lieu`() {
         assertFalse(Regex("""fun set\(""").containsMatchIn(carView), "CarImageView không nhận dữ liệu số")
@@ -115,6 +131,35 @@ class CarImageLayerContractTest {
         assertEquals(1, recycles, "chỉ một recycle trong kho")
         assertTrue(feather.contains("src.recycle()"), "và nó là ảnh thô trung gian trong feather()")
         assertFalse(SourceRoots.body(store, "class SharedLru").contains("recycle"), "LRU không huỷ bản bị đẩy")
+    }
+
+    /**
+     * 2.74 · R2 — feather ĐO ảnh rồi mới quyết định dải, và ca "không có mép cứng" phải trả về CHÍNH `src`.
+     *
+     * [ĐO 2026-09-26] dải cũ `0.08 × cạnh NGẮN` áp mù cho cả 4 mép: với ảnh xe top-down cao-hẹp (asset mặc định
+     * 678×1397, KHÔNG có mực nào chạm 4 mép) dải 54 px ăn 25 px vào THÂN xe mỗi bên ⇒ gương chiếu hậu mất tới
+     * ~50 % alpha. Luật mới nằm ở `:core` ([CarLayout.featherBand], số học kiểm ở `CellTextLayoutTest`) và nó đọc
+     * **tỉ lệ mực của TỪNG mép** — không phải lề trong suốt: ảnh cắt nền cắt SÁT có lề 0 px y như ảnh chụp chữ nhật
+     * mà hai ca đó cần xử lý ngược nhau.
+     *
+     * ⚠ Nhánh "không feather" phải `return src` **không** `recycle` — `src` chính là bitmap mà KHO sẽ giữ và ba lớp
+     * sẽ vẽ; nhả nó ở đây = "trying to use a recycled bitmap" trên luồng vẽ của lớp thứ hai (xem KDoc lớp này).
+     */
+    @Test
+    fun `feather do ti le muc tung mep roi moi quyet dai - anh cat nen thi tra chinh src, khong recycle`() {
+        val feather = SourceRoots.body(store, "fun feather(")
+        assertTrue(feather.contains("edgeInkRatio(src)"), "phải ĐO tỉ lệ mực thật của từng mép")
+        assertTrue(feather.contains("CarLayout.featherBand("), "luật dải feather là hàm THUẦN ở :core, không viết lại")
+        // Ghim đúng nhánh MỚI: đoạn giữa "đã đo xong" và "tạo bitmap thứ hai" phải có `return src`. Nếu chỉ ghim
+        // `early.contains("return src")` thì bài xanh nhờ `if (w <= 0 …) return src` có từ 2.73 ⇒ xoá nhánh mới vẫn
+        // xanh (đúng cái lỗ đã cho đường chết `verdict` sống 3 tháng).
+        val afterMeasure = feather.substringAfter("CarLayout.featherBand(").substringBefore("Bitmap.createBitmap(")
+        assertTrue(afterMeasure.contains("return src"), "không có mép cứng nào ⇒ trả CHÍNH src, khỏi tạo bitmap thứ hai")
+        assertFalse(afterMeasure.contains("recycle()"), "đường trả src KHÔNG được nhả src (kho sẽ giữ đúng bitmap đó)")
+        val scan = SourceRoots.body(store, "fun edgeInkRatio(")
+        assertTrue(scan.contains("!b.hasAlpha()"), "ảnh chụp không có kênh alpha ⇒ 4 mép đều CỨNG, khỏi quét pixel")
+        assertTrue(scan.contains("runCatching"), "đọc pixel hỏng ⇒ rơi về hành vi cũ, không ném lên luồng nạp")
+        assertTrue(scan.contains("solid"), "cả hai đường lùi phải trả mép ĐẶC MỰC = hành vi trước 2.74")
     }
 
     @Test

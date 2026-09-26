@@ -37,8 +37,47 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
             ?: ClassLoader.getSystemClassLoader().loadClass(FQN)
     }.getOrNull()?.also { cls = it }
 
-    /** Mở camera [cameraId] + đổ preview vào [surface]. Trả true nếu startPreview OK (một mode nào đó nhận surface). */
-    fun open(cameraId: Int, surface: Surface): Boolean {
+    /**
+     * Surface + kênh xem đã đi qua `addPreviewSurface` ở lượt [open] — chỉ để [close] gọi `rmPreviewSurface` cho
+     * đúng cặp.
+     *
+     * ⚠ [SOÁT Opus 2026-09-27] Ở nhánh AUTO, vòng dò **bỏ qua** giá trị trả về (đường 2.73, không được đổi) ⇒ đây là
+     * *"đã gọi, không ném"*, **không** phải *"HAL đã nhận"*. Chú thích cũ nói sai vế ấy.
+     */
+    private var added: Pair<Surface, Int>? = null
+
+    /**
+     * ═══ [P1 · SOÁT Opus 2026-09-27] Bước 3 khi dỡ (`rmPreviewSurface`) là một **móc ĐO**, phải có cổng ═════════
+     *
+     * `false` (mặc định) ⇒ chuỗi dỡ **y 2.73 từng lời gọi**: `stopPreview` → `close`, hết.
+     *
+     * Vì sao một cổng, khi bước này đã ở CUỐI chuỗi: spec 2.74 R-nf1 nói *"mọi cái mới đứng sau chip, mặc định =
+     * hành vi 2.73"*, mà đây là lời gọi HAL **thứ ba** thêm vào một chuỗi đang chạy ngoài hiện trường. Và
+     * `android.hardware.AVMCamera` **không có** trong workspace ([ĐO] 0 hit `AVMCamera*` — chỉ có các lớp bọc
+     * `DiLink*`) ⇒ hành vi của nó SAU `close()` là **[CHƯA BIẾT]**, đúng thứ CLAUDE.md §3 cấm ship. Một lỗi native ở
+     * đó không phải `Throwable` nên `runCatching` dưới kia không bắt được, và [close] chạy trên **luồng main** ⇒ hậu
+     * quả xấu nhất là launcher chết giữa lúc xe đang lăn bánh.
+     *
+     * Cổng là **chế độ kiểm thử đang mở** chứ không phải một khoá prefs mới: đây là móc ĐO, và mọi bề mặt đo của
+     * Kachi đã nằm sau đúng cái cổng 60 phút ấy (bật bằng tay trong Cài đặt, không có đường bật từ xa). Nhờ thế
+     * buổi xe vẫn đọc được dòng `rmPreviewSurface(mode=…) rc=…` mà runbook CAM-A5 hứa, còn xe của owner lúc chạy
+     * bình thường thì **không bao giờ** gọi tới nó — và không phải thêm một khoá nào vào danh sách trắng.
+     */
+    var rmOnClose: Boolean = false
+
+    /**
+     * Mở camera [cameraId] + đổ preview vào [surface]. Trả true nếu startPreview OK (một mode nào đó nhận surface).
+     *
+     * [halMode] = **kênh xem** truyền cho `addPreviewSurface(Surface, int)`:
+     *  • [CameraSignalPolicy.HAL_MODE_AUTO] (mặc định) ⇒ **dò `0..3` y 2.73**, không đổi một byte nào của đường đang
+     *    chạy hiện trường (CLAUDE.md §6). Vòng dò ấy **bỏ qua** giá trị trả về nên gần như luôn dừng ở `0`
+     *    (`VIEW_DEFAULT` = khung ghép 4-in-1) — RE `electro-camera-RE-2026-09-26.md` §5 K4.
+     *  • `0..4` ⇒ gọi **đúng một lần** với kênh đó **và ĐỌC giá trị trả về** — đó mới là một phép đo (§6.3-C1: nếu
+     *    `VIEW_CHANNEL_n` bắt HAL trả một kênh camera thay vì khung ghép thì cả tầng crop thành không cần). HAL từ
+     *    chối ⇒ rơi về đường `addPreviewSurface(Surface)` một tham số như 2.73, và **dòng log nói rõ rc** để lượt đo
+     *    không bị đọc thành "kênh n chạy" khi thật ra ảnh tới từ đường dự phòng.
+     */
+    fun open(cameraId: Int, surface: Surface, halMode: Int = CameraSignalPolicy.HAL_MODE_AUTO): Boolean {
         val c = loadClass() ?: run { Log.i(TAG, "AVMCamera class không có (off-car/trim khác)"); return false }
         fun m(name: String, vararg types: Class<*>) = runCatching {
             c.getDeclaredMethod(name, *types).apply { isAccessible = true }   // ⚠ kinex setAccessible — method non-public
@@ -59,10 +98,17 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         // addPreviewSurface(Surface, int mode) — thử mode 0..3 như kinex.
         val add = m("addPreviewSurface", Surface::class.java, Integer.TYPE)
         var surfaceOk = false
-        if (add != null) {
+        // MÓC ĐO (pref `camera_hal_mode`, mặc định AUTO ⇒ nhánh này KHÔNG chạy): một lời gọi, đọc rc thật.
+        if (add != null && CameraSignalPolicy.isHalMode(halMode) && halMode >= CameraSignalPolicy.HAL_MODE_MIN) {
+            val rc = runCatching { add.invoke(obj, surface, halMode) as? Boolean ?: true }.getOrNull()
+            Log.i(TAG, "addPreviewSurface cameraId=$cameraId halMode=$halMode rc=$rc (pref camera_hal_mode)")
+            surfaceOk = rc == true
+            if (surfaceOk) added = surface to halMode
+        }
+        if (add != null && !surfaceOk && halMode < CameraSignalPolicy.HAL_MODE_MIN) {
             for (mode in 0..3) {
                 if (runCatching { add.invoke(obj, surface, mode); true }.getOrDefault(false)) {
-                    Log.i(TAG, "addPreviewSurface ok cameraId=$cameraId mode=$mode"); surfaceOk = true; break
+                    Log.i(TAG, "addPreviewSurface ok cameraId=$cameraId mode=$mode"); surfaceOk = true; added = surface to mode; break
                 }
             }
         }
@@ -119,15 +165,61 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         return ok
     }
 
+    /**
+     * Dỡ camera. Hai bước của 2.73 (`stopPreview` → `close`) **giữ nguyên thứ tự**, rồi mới tới bước mới.
+     *
+     * ## Bước 3 (2.74, RE §5 K6): `rmPreviewSurface(Surface, int)`
+     * [ĐO firmware] hàm này có thật trên **chính lớp framework**: `com/byd/dilink51_main/hardware/camera/
+     * DiLinkAVMCamera.java:143-144` gọi `f321DDC.rmPreviewSurface(surface, i)` với `f321DDC` khai `android.hardware.
+     * AVMCamera` (`:22`, import `:3`); chữ ký trong SDK là `IDiLinkAVMCamera.java:38`. Tên `removePreviewSurface`
+     * **không tồn tại** ở đâu cả (grep firmware + jadx-kinex + jadx-electro + jadx-openbyd = 0 hit) ⇒ chỉ thử một
+     * tên duy nhất. Kachi tới 2.73 **không gọi** ⇒ ứng viên rò rỉ khi bật/tắt overlay nhiều lần.
+     *
+     * ## ⚠ Vì sao ĐẶT SAU `close()` dù Electro làm `stop → rm → release`
+     * Electro có ba tag lỗi riêng cho ba bước (@0x644e7, @0x644c4, @0x64509) ⇒ thứ tự của **nó** là `rm` trước
+     * `release` [SUY]. Nhưng đường `stopPreview → close` của Kachi **đang chạy tốt ngoài hiện trường**, và CLAUDE.md
+     * §6 cấm đảo thứ tự một đường như thế để chữa cho một thứ chưa đo. Vì vậy: bước mới **xuống cuối**, `runCatching`
+     * riêng, log ở mức DEBUG (camera đã đóng thì HAL có quyền từ chối — đó là ca BÌNH THƯỜNG, không phải lỗi). Nếu
+     * buổi xe tới chứng minh rò rỉ thật thì mới bàn tới việc chèn nó vào giữa, kèm phép đo.
+     */
     fun close() {
         val obj = cam ?: return
         val c = cls
         runCatching { c?.getDeclaredMethod("stopPreview")?.apply { isAccessible = true }?.invoke(obj) }
         runCatching { c?.getDeclaredMethod("close")?.apply { isAccessible = true }?.invoke(obj) }
+        // Cổng của bước 3 — xem KDoc [rmOnClose]. Tắt (mặc định) ⇒ hai dòng trên là TRỌN chuỗi dỡ, y 2.73.
+        if (rmOnClose) added?.let { (surface, mode) ->
+            val rc = runCatching {
+                c?.getDeclaredMethod("rmPreviewSurface", Surface::class.java, Integer.TYPE)
+                    ?.apply { isAccessible = true }?.invoke(obj, surface, mode)
+            }.getOrNull()
+            Log.d(TAG, "rmPreviewSurface(mode=$mode) rc=$rc")
+        }
+        added = null
         cam = null
     }
 
     companion object {
+
+        /**
+         * `getprop <key>` trong tiến trình qua `android.os.SystemProperties` — `""` khi lỗi/off-car.
+         *
+         * Dùng cho phép thử năng lực pano `vehicle.config.cam_sort` (RE §5 K2): [ĐO firmware] launcher gốc dò camera
+         * bằng đúng khoá này (`VehicleUtils.java:187-192` → `SystemProperties.get("vehicle.config.cam_sort","")`,
+         * rồi `hasAVMRecorder() = contains("pano_h")` ở `:176`) — rẻ hơn mở camera để xem có ra hình.
+         *
+         * ⚠ Nợ kỹ thuật ĐÃ BIẾT (CLAUDE.md §4.1 DRY): hai bản sao `private` của đúng phép reflection này đã tồn tại ở
+         * `ClusterProfile.kt:193` và `SeatComfortApplier.kt:154`. Gộp cả ba vào một cửa dùng chung là việc phải làm,
+         * nhưng nó **đụng hai tệp của làn khác** trong cùng phiên ⇒ ghi lại cho điều phối, không tự sửa ở đây.
+         */
+        fun systemProp(key: String): String = runCatching {
+            val c = Class.forName("android.os.SystemProperties")
+            (c.getMethod("get", String::class.java).invoke(null, key) as? String).orEmpty()
+        }.getOrDefault("")
+
+        /** Khoá getprop liệt kê `<tag>:<id>;` của mọi luồng camera trên xe [ĐO `VehicleUtils.java:192`]. */
+        const val PROP_CAM_SORT = "vehicle.config.cam_sort"
+
         private const val TAG = "KachiCamera"
         private const val FQN = "android.hardware.AVMCamera"
         private const val DEX = "/system/framework/bmmcamera.jar"

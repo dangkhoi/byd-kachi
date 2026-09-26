@@ -9,7 +9,64 @@ import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.cameraRender
+import com.byd.clusternav.cameraSpan
+import com.byd.clusternav.cameraShape
+import com.byd.clusternav.cameraStrip
+import com.byd.clusternav.cameraCirclePct
+import com.byd.clusternav.cameraHalMode
+import com.byd.clusternav.cameraGlUniforms
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
+import com.byd.clusternav.launcher.testbridge.TestBridgeStore
+
+/**
+ * Một lượt chụp khung camera cho cầu kiểm thử (`camera_frame`) — xem [CameraSignalController.grabFrame].
+ *
+ * Gói **cả ảnh lẫn ngữ cảnh** vào một giá trị vì hai thứ đó chỉ đúng khi đọc CÙNG một nhịp main thread: hỏi ảnh
+ * rồi hỏi tiếp *"đang hiện cam nào"* qua một lời gọi thứ hai là mở đường cho một nhịp xi-nhan chen vào giữa, và
+ * lượt đo sẽ ghi một cái tên cam không thuộc về cái ảnh vừa chụp.
+ *
+ * @property bitmap khung đã chụp, `null` khi chưa có `SurfaceTexture` / đường kết xuất không chụp được / lượt chụp
+ *   hỏng. Chỗ gọi PHẢI `recycle`.
+ * @property available [CameraOverlayView.available] tại đúng nhịp chụp.
+ * @property capturable [CameraOverlayView.capturable] — `false` = lớp video là `SurfaceView` (không có `getBitmap`).
+ * @property overlayShowing cửa sổ overlay có đang treo hay không.
+ * @property render mã đường kết xuất ĐANG treo ([CameraSignalPolicy.RENDERS]), rỗng = không hiện.
+ * @property view tên [CameraSignalPolicy.CamView] đang hiện (rỗng = không có).
+ * @property camId `cameraId` đã truyền cho `AvmCamera.open`, `-1` = chưa mở lần nào.
+ * @property crop vùng crop đang áp, dạng `x0,y0,x1,y1` (rỗng = hiện nguyên khung).
+ * @property rotationDeg góc xoay đang áp cho view (độ, dương = ↻).
+ * @property content [CONTENT_RAW] hay [CONTENT_DEWARPED] — **ảnh này là khung gì**, và đây KHÔNG phải trang trí:
+ *   trên đường `TV` thì `getBitmap` bỏ ma trận `setTransform` nên ảnh là khung **GỐC** (bằng chứng AOSP ở KDoc
+ *   `CameraOverlayView.captureFrame`), còn trên đường `GL` thì shader ghi thẳng vào cửa ra nên ảnh là khung **ĐÃ
+ *   NẮN**. Hai thứ trông không khác nhau nếu chỉ nhìn PNG, mà mọi phép đo bán kính/tâm vòng ảnh chỉ đúng trên khung
+ *   thô ⇒ không nói ra là mời một vòng chẩn đoán sai địa chỉ (CLAUDE.md §2).
+ * @property glStats `frames=N busySkip=M` của luồng vẽ GL, rỗng ở hai đường kia.
+ * @property synthSize cỡ ảnh tổng hợp đang bơm (`camera_synth`), rỗng khi không bật.
+ * @property glInfo `GL_MAX_TEXTURE_SIZE` + `GL_RENDERER` đã đo (RE §7 Q13), `"chưa đo"` khi chưa dựng ngữ cảnh nào.
+ */
+data class CameraFrameShot(
+    val bitmap: android.graphics.Bitmap?,
+    val available: Boolean,
+    val capturable: Boolean,
+    val overlayShowing: Boolean,
+    val render: String,
+    val view: String,
+    val camId: Int,
+    val crop: String,
+    val rotationDeg: Int,
+    val content: String = CONTENT_RAW,
+    val glStats: String = "",
+    val synthSize: String = "",
+    val glInfo: String = "",
+) {
+    companion object {
+        /** Ảnh là khung HAL đổ ra, **chưa** qua phép nắn nào. */
+        const val CONTENT_RAW = "raw"
+
+        /** Ảnh là khung **sau** shader nắn (đường [CameraSignalPolicy.RENDER_GL]). */
+        const val CONTENT_DEWARPED = "dewarped"
+    }
+}
 
 /**
  * ═══ CAMERA THEO XI-NHAN · điều phối (`:app`) ═══════════════════════════════════════════════════════════════
@@ -28,6 +85,17 @@ class CameraSignalController(private val appCtx: Context) {
     private val avm by lazy { AvmCamera() }
     private val overlay by lazy { CameraOverlayView(appCtx) }
     private var current: Turn = Turn.NONE
+
+    /**
+     * `camera_synth` đang bật hay không — bơm ảnh fisheye TỔNG HỢP thay HAL ([CameraSynthFeeder]).
+     *
+     * **KHÔNG** là một pref: nó chỉ sống trong RAM của tiến trình và chỉ đặt được qua cầu kiểm thử (tức chỉ khi chế
+     * độ kiểm thử đang mở, ~58 phút). Lý do: một cờ lưu bền có thể sống sót qua một lần nổ máy và khi ấy owner sẽ
+     * thấy *một ảnh vẽ sẵn* ở chỗ đáng lẽ là camera gương — trên xe đang lăn bánh. Chết theo tiến trình là hướng
+     * sai AN TOÀN, cùng lẽ `RainDefrostState` (KDoc ở đó).
+     */
+    @Volatile
+    private var synth = false
 
     // Nguồn xi-nhan THẬT = HAL helper (app_process uid shell) publish socket 19322 → [HalSignalClient] subscribe.
     // [ĐO xe 2026-09-25] register listener dưới uid APP bị SecurityException BYDAUTO_LIGHT_GET (perm signature);
@@ -60,9 +128,28 @@ class CameraSignalController(private val appCtx: Context) {
     private fun ensureSignal() {
         if (!started.compareAndSet(false, true)) return
         bg.execute {
+            logCamSort()
             runCatching { HalHelperLauncher.ensure(appCtx) }.onFailure { Log.w(PanoramaHal.TAG, "HAL helper ensure lỗi: ${it.message}") }
             runCatching { signal.start { l, r -> tick(l, r) } }.onFailure { Log.w(PanoramaHal.TAG, "HAL signal start lỗi: ${it.message}") }
         }
+    }
+
+    /**
+     * Ghi **MỘT dòng** `vehicle.config.cam_sort` lúc bật tính năng — phép thử năng lực pano rẻ nhất (RE
+     * `electro-camera-RE-2026-09-26.md` §5 K2). [ĐO firmware] launcher gốc dò camera bằng đúng khoá này
+     * (`VehicleUtils.java:176,187-192`); trên xe owner nó đã trả `rear:0;pano_h:1;` [ĐO carlog 2026-09-14].
+     *
+     * ⚠ **KHÔNG gate gì** theo dòng này (CLAUDE.md §3): chưa ai đo trên một đời xe thứ hai, nên biến nó thành điều kiện
+     * mở camera là tự tắt tính năng trên mọi trim mà ROM viết khác dấu phân cách. Nó ở đây để buổi xe tự đọc được
+     * `logcat` mà không phải gõ thêm một lệnh nào (CLAUDE.md §11: app tự chụp).
+     */
+    private fun logCamSort() {
+        val raw = AvmCamera.systemProp(AvmCamera.PROP_CAM_SORT)
+        Log.i(
+            PanoramaHal.TAG,
+            "${AvmCamera.PROP_CAM_SORT}='$raw' ids=${CameraSignalPolicy.camSortIds(raw)}" +
+                " panoId=${CameraSignalPolicy.camSortId(raw, CameraSignalPolicy.CAM_TAG_PANO)}",
+        )
     }
 
     /**
@@ -120,7 +207,21 @@ class CameraSignalController(private val appCtx: Context) {
                 // theo camId: gate camId==defId từng chặn SL6-chọn-id-0 khỏi crop = REGRESSION 2.42→2.44 khi đổi id 0→1).
                 val defId = view.cameraId
                 val camId = Prefs.cameraCamId(appCtx, left = turn == Turn.LEFT, defId)
-                val crop = view.crop
+                // R8-A (2.74 · RE `electro-camera-RE-2026-09-26.md` §5 K10 · §6.1): vùng cắt được **SUY RA** từ (dải,
+                // bề rộng, hình khung) ở `:core` thay vì lấy hằng `view.crop` — vì **dải nào là hướng nào vẫn
+                // [CHƯA BIẾT]** (§7 Q1/Q2) nên owner phải dò được trên xe mà không build lại. Bốn pref mặc định cho
+                // ĐÚNG hai rect của 2.73 (bài `mac dinh trung 2 rect cua 2 73` ghim literal) ⇒ xe không chạm Cài đặt
+                // thì không thấy khác một pixel nào (CLAUDE.md §6).
+                val span = Prefs.cameraSpan(appCtx)
+                val shape = Prefs.cameraShape(appCtx)
+                val crop = CameraPanoCrop.cropFor(
+                    view = view,
+                    left = turn == Turn.LEFT,
+                    strip = Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT),
+                    span = span,
+                    shape = shape,
+                    circlePct = Prefs.cameraCirclePct(appCtx),
+                )
                 // R7 (owner 2026-09-26): vùng gương crop từ fisheye là dải DỌC ⇒ căng vào ô vuông thì NGANG; xoay
                 // theo pref TỪNG BÊN `camera_rot_left/right` (2.71; mặc định trái ↺ −90 / phải ↻ +90). Tính ở
                 // `:core`, overlay chỉ nhận số độ.
@@ -129,9 +230,27 @@ class CameraSignalController(private val appCtx: Context) {
                 // `TextureView` đang chạy hiện trường. Đọc mỗi lượt dựng overlay ⇒ đổi chip trong Cài đặt là lượt
                 // xi-nhan sau đã theo, không cần khởi động lại gì.
                 val render = Prefs.cameraRender(appCtx)
-                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop != null} overlay $side góc=$corner kết xuất=$render rot=$rot")
+                // R8-B: đường `GL` cần TRỌN bộ uniform. Dựng ở đây — cùng nhịp đã quyết crop/xoay/dải — chứ không để
+                // tầng vẽ tự tra prefs: bộ số phải thuộc về ĐÚNG cái crop vừa suy (hai lượt tra là hai kết quả lệch
+                // được, và lệch thì không ai thấy vì ảnh vẫn ra hình). `null` ở hai đường kia ⇒ không đọc một khoá nào.
+                val gl = if (CameraSignalPolicy.rotatesInShader(render)) {
+                    Prefs.cameraGlUniforms(
+                        appCtx, view = view, crop = crop,
+                        strip = Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT),
+                        rotationDeg = rot, streamW = view.hintW, streamH = view.hintH,
+                    )
+                } else {
+                    null
+                }
+                // Móc ĐO kênh xem của HAL (§6.3-C1) — mặc định AUTO (−1) ⇒ `AvmCamera.open` dò 0..3 y 2.73.
+                val halMode = Prefs.cameraHalMode(appCtx)
+                Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop?.joinToString() ?: "-"} vùng=$span hình=$shape halMode=$halMode ảnh-tổng-hợp=$synth overlay $side góc=$corner kết xuất=$render rot=$rot")
                 // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
                 // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
+                // Ghi lại NGỮ CẢNH của khung đang hiện cho lệnh chẩn đoán `camera_frame` (chỉ ĐỌC). Ghi ở đây —
+                // đúng chỗ đã quyết — chứ không để cầu kiểm thử tự tra lại prefs: bản tra thứ hai sẽ nói theo
+                // prefs HIỆN TẠI, không theo cái khung đang treo trên màn (owner đổi chip giữa hai lượt xi-nhan).
+                shown = Shown(view.name, camId, crop?.joinToString(",") ?: "", rot)
                 hal.open(view)
                 // CAM-ROT-2 (owner 2026-09-26 "không muốn có viền đen … đúng tỷ lệ camera"): cửa sổ overlay lấy tỉ lệ
                 // vùng crop SAU xoay ⇒ cần cỡ ảnh nguồn. `view.hintW/hintH` chỉ là **gợi ý** cho lượt dựng đầu;
@@ -143,26 +262,50 @@ class CameraSignalController(private val appCtx: Context) {
                     crop = crop,
                     rotationDeg = rot,
                     render = render,
+                    shape = shape,
                     streamW = view.hintW,
                     streamH = view.hintH,
+                    gl = gl,
+                    synthOn = synth,
                 ) { surface ->
                     runCatching {
-                        avm.open(camId, surface)
+                        // `camera_synth`: producer đã là ảnh tổng hợp ([CameraSynthFeeder]) ⇒ KHÔNG mở HAL. Mở cả hai
+                        // là hai producer trên cùng một `BufferQueue`, tức một lượt đo trên một ảnh chắp vá.
+                        if (!synth) avm.open(camId, surface, halMode)
                         // Xoay: `TextureView` làm bằng ma trận; `SurfaceView` không có `setTransform` nên chỉ còn
                         // đường nhờ HAL — và "nhận" ≠ "có tác dụng", nên cửa sổ chỉ lấy tỉ lệ ĐÃ XOAY khi một trong
                         // hai đường thật sự đứng ra làm (rot = 0 thì không cần ai làm).
-                        val byMatrix = CameraSignalPolicy.rotatesByMatrix(render)
-                        val byHal = !byMatrix && rot != 0 && avm.setDisplayOrientation(surface, rot)
-                        val size = avm.previewSize()
+                        val byShell = CameraSignalPolicy.rotatesByMatrix(render) || CameraSignalPolicy.rotatesInShader(render)
+                        val byHal = !byShell && rot != 0 && !synth && avm.setDisplayOrientation(surface, rot)
+                        val size = if (synth) null else avm.previewSize()
                         overlay.onStreamMeasured(
                             streamW = size?.getOrNull(0) ?: 0,
                             streamH = size?.getOrNull(1) ?: 0,
-                            rotationEffective = rot == 0 || byMatrix || byHal,
+                            // Phép hợp ba nhánh nằm ở `:core` ([CameraSignalPolicy.rotationEffective]) — nói sai một
+                            // nhánh là cửa sổ lấy tỉ lệ sai và ảnh bị giãn mà không ai báo lỗi (CLAUDE.md §2).
+                            rotationEffective = CameraSignalPolicy.rotationEffective(render, rot, byHal),
                         )
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Bật/tắt bơm ảnh tổng hợp (`camera_synth`) — **chỉ** cầu kiểm thử gọi.
+     *
+     * Đổi cờ rồi **đóng overlay đang treo** (nếu có): producer gắn vào `Surface` lúc dựng lớp video, nên đổi cờ giữa
+     * hai khung không có tác dụng gì cả — và một lệnh đo báo `ok:true` mà không đổi gì là điều tệ hơn một lệnh lỗi.
+     * Lượt xi-nhan/`camera --es name left` kế tiếp dựng lại theo cờ mới.
+     *
+     * @return cờ sau lượt đặt (đọc lại, không phải giá trị vừa nhận — cùng luật `read_back` của `prefs_set`).
+     */
+    fun setSynth(on: Boolean): Boolean {
+        if (synth == on) return synth
+        synth = on
+        if (current != Turn.NONE) stop()
+        Log.i(PanoramaHal.TAG, "camera_synth = $on (overlay đã đóng, lượt xi-nhan sau dựng lại)")
+        return synth
     }
 
     /** Đồng hồ ĐƠN ĐIỆU cho HOLD (test override được). */
@@ -171,10 +314,72 @@ class CameraSignalController(private val appCtx: Context) {
     /** Hẹn hết hạn HOLD (BG-13): `observe(null,null)` đúng lúc mốc ON cuối + HOLD_MS trôi qua ⇒ đóng camera. */
     private val expiry = Runnable { tickMain(null, null) }
 
+    /** Ngữ cảnh của khung ĐANG hiện — đặt ở [tickMain] lúc dựng overlay, xoá ở [stop]. `null` = không hiện gì. */
+    private class Shown(val view: String, val camId: Int, val crop: String, val rot: Int)
+
+    @Volatile
+    private var shown: Shown? = null
+
+    /**
+     * Chụp khung camera đang hiện ở cỡ [w] × [h] — đường của lệnh chẩn đoán `camera_frame`
+     * (`TestBridgeCameraFrame`), spec `docs/specs/camera-turn-signal-hal-socket.html` R7.
+     *
+     * KHÔNG đổi một chữ nào trong đường frame: không mở/đóng camera, không dựng lại overlay, không chạm prefs. Nó
+     * chỉ ĐỌC — đúng vai của một bề mặt đo (CLAUDE.md §15 bước 2/3), nên gọi giữa lúc đang lái không đổi hành vi.
+     *
+     * Đường kết xuất và cờ `available` được **ĐO** lại từ tầng vẽ (`overlay.renderPath()/capturable()`), không lấy
+     * từ [Shown]: pref có thể đã đổi sau lượt dựng, mà câu hỏi ở đây là *"cái đang treo là thứ gì"* (CLAUDE.md §5).
+     *
+     * ⚠ PHẢI gọi trên main thread: [CameraOverlayView.captureFrame] đi qua `TextureView.getBitmap`, và cả cây view
+     * lẫn `WindowManager` ở đây đều là main-thread-only (xem KDoc [tick]). Chỗ gọi duy nhất (cầu kiểm thử) `post`
+     * về main trước khi gọi.
+     */
+    fun grabFrame(w: Int, h: Int): CameraFrameShot {
+        val s = shown
+        return CameraFrameShot(
+            // Chụp TRƯỚC khi đọc cờ: hai thứ cùng một nhịp main thread (không có lượt vẽ nào chen vào giữa).
+            bitmap = overlay.captureFrame(w, h),
+            available = overlay.available(),
+            capturable = overlay.capturable(),
+            overlayShowing = overlay.showing(),
+            render = overlay.renderPath(),
+            view = s?.view ?: "",
+            camId = s?.camId ?: -1,
+            crop = s?.crop ?: "",
+            rotationDeg = s?.rot ?: 0,
+            // ĐO từ tầng vẽ, không suy từ pref: câu hỏi là *"cái đang treo vẽ bằng gì"*, và pref có thể đã đổi sau
+            // lượt dựng (cùng lẽ `render`/`capturable` ngay trên).
+            content = if (CameraSignalPolicy.rotatesInShader(overlay.renderPath())) {
+                CameraFrameShot.CONTENT_DEWARPED
+            } else {
+                CameraFrameShot.CONTENT_RAW
+            },
+            glStats = overlay.glStats(),
+            synthSize = overlay.synthSize(),
+            glInfo = CameraGlInfo.summary(),
+        )
+    }
+
+    /**
+     * Chụp một khung **THÔ** cỡ [w] × [h] qua FBO của đường GL — `camera_frame --es name raw`.
+     *
+     * `null` = đường đang treo không phải GL, hoặc chưa có khung nào, hoặc FBO không dựng được. Chỗ gọi nói THẲNG lý
+     * do nào (xem `TestBridgeCameraFrame`) thay vì để người đang ngồi trong xe đọc một mã lỗi trống.
+     *
+     * ⚠ Cùng ràng buộc luồng với [grabFrame]: main thread (đi qua cây view). Lượt đọc pixel thật thì chạy trên luồng
+     * vẽ và hàm này **chặn** chờ nó — xem KDoc [CameraGlRenderer.grabRaw].
+     */
+    fun grabRawFrame(w: Int, h: Int): IntArray? = overlay.grabRawFrame(w, h)
+
     private fun stop() {
         current = Turn.NONE   // [P1 fix] reset để bật lại KHỚP lượt rẽ sau (không kẹt current cũ → return sớm)
+        shown = null
         hold.reset()
         main.removeCallbacks(expiry)
+        // [SOÁT Opus 2026-09-27] Móc ĐO `rmPreviewSurface` chỉ chạy khi chế độ kiểm thử đang mở — lý do đầy đủ ở
+        // KDoc [AvmCamera.rmOnClose]. Đọc ở ĐÂY (đúng nhịp dỡ) chứ không lúc mở: câu hỏi là *"lúc đóng, buổi đo có
+        // đang chạy không"*.
+        avm.rmOnClose = runCatching { TestBridgeStore.isOn(appCtx) }.getOrDefault(false)
         runCatching { avm.close() }
         hal.close()
         overlay.hide()

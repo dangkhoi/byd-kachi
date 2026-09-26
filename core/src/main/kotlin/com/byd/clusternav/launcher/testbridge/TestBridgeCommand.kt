@@ -125,6 +125,37 @@ object TestBridgeCommands {
     const val WAV = "wav"
     const val KWS = "kws"
     const val CAMERA = "camera"
+
+    /**
+     * `camera_frame [--es name <W>x<H>]` — chụp khung camera ĐANG hiện ra PNG ở cỡ **luồng gốc**, không phải cỡ
+     * ô vuông đã crop/xoay của overlay.
+     *
+     * Vì sao cần một lệnh riêng thay vì đọc ảnh chụp màn: câu hỏi cần trả lời là *"vòng ảnh fisheye tròn hay đã
+     * kín khung"* — ảnh chụp màn chỉ cho thấy **kết quả sau** ma trận crop+xoay của [CameraOverlayTransform], tức
+     * đúng thứ đang bị nghi là sai. Cỡ mặc định = 5120×960 ([TestBridgeFrameSize.DEFAULT_W] × `DEFAULT_H`) = cỡ
+     * ảnh fisheye 4-in-1 [ĐO xe 2026-09-25], xem KDoc `CameraSignalPolicy.CamView`.
+     */
+    const val CAMERA_FRAME = "camera_frame"
+
+    /**
+     * `camera_synth --es name on|off` — bơm **ảnh fisheye TỔNG HỢP** vào đường camera thay cho HAL (R8-B, 2.74).
+     *
+     * ## Vì sao một lệnh, và vì sao nó KHÔNG phải một "chế độ demo"
+     * Đường kết xuất `GL` ([CameraSignalPolicy.RENDER_GL]) là hơn 600 dòng GL mới — và trên **máy ảo không có
+     * `android.hardware.AVMCamera`** nên không một khung nào chạy qua nó được, tức toàn bộ tầng ấy sẽ lên xe mà
+     * chưa từng vẽ một pixel. Đó đúng là điều CLAUDE.md §14 cấm (*"tầng sau chỉ được bắt đầu khi tầng trước đã xanh
+     * với bằng chứng THẬT"*) và §8 cảnh báo (*"compile xanh không có nghĩa là code chạy"*).
+     *
+     * Lệnh này cấp một **producer giả**: `CameraDewarpTestPattern.pano()` đẩy vào đúng `Surface` mà HAL lẽ ra đẩy
+     * vào, qua `Surface.lockCanvas` ([ĐO] AOSP `android-10.0.0_r47`
+     * `graphics/java/android/graphics/SurfaceTexture.java:232-237`: `setDefaultBufferSize` có mặt **chính vì** ca
+     * `lockCanvas`). Mọi thứ sau đó — texture OES, shader, uniform, `eglSwapBuffers`, `getBitmap` — là **đường thật**.
+     *
+     * ⚠ Ảnh tổng hợp chứng minh **cài đặt** đúng, **không** nói gì về ống kính thật: nó được sinh bằng chính mô hình
+     * đang kiểm (`camera-dewarp-math.md` §6 mục 5). Tham số chốt bằng một khung `5120×960` chụp từ xe. Vì vậy đây là
+     * một **lệnh của cầu kiểm thử** (chỉ chạy khi chế độ kiểm thử mở), không phải một chip trong Cài đặt.
+     */
+    const val CAMERA_SYNTH = "camera_synth"
     const val TTS = "tts"
     const val LISTEN = "listen"
     const val PROFILE = "profile"
@@ -247,63 +278,12 @@ object TestBridgeCommands {
     /**
      * Khoá prefs mà [PREFS_SET] được phép ghi — **danh sách trắng**, xem KDoc [PREFS_SET] ràng buộc (1).
      *
-     * Bốn khoá đầu là khoá THEO XE của đường giọng nói (`PrefsVoiceV3.kt` + `Prefs.voiceAskAloud`); khoá
-     * `top_strip_labels` là công tắc nhãn chip **theo hồ sơ** (`WorkspacePrefs.setTopStrip`) — đường duy nhất đo
-     * được R14 bằng máy thay vì bằng một ảnh chụp màn hình.
-     *
-     * ## H5 (2026-09-16) — **bốn núm chỉnh bộ nghe**, tất cả đều mặc định = hằng đang chạy
-     * `voice_endpoint_silence_ms` · `voice_endpoint_min_speech_ms` ([VoiceEndpointer]) và `voice_beam` ·
-     * `voice_hotword_score` ([SherpaModelCatalog]). Chúng vào đây vì đúng câu hỏi chúng sinh ra để trả lời —
-     * *"cabin 80 km/h thì 800 ms im là sớm hay muộn"*, *"beam 8 có nghe ra hơn không"* — chỉ đo được bằng cách
-     * đổi giá trị **giữa hai lượt `wav`/`listen` trên xe**, tức bằng máy, không phải bằng một lượt build lại APK
-     * cho mỗi con số. Mặc định của cả bốn **bằng đúng hằng hôm nay** ⇒ danh sách này dài ra mà hành vi không đổi
-     * một ly; và cả bốn vẫn nằm trong đường GIỌNG NÓI, không chạm cast/cụm/phím (ràng buộc (2) của KDoc trên).
+     * Danh sách nằm ở [TestBridgeWritableKeys] (tách 2.74: tệp này đã sát trần 500 dòng của CLAUDE.md §4.1, và
+     * *"khoá nào ghi được"* là một vai khác *"cú pháp một lệnh"*). Tên cũ giữ nguyên ở đây vì nó là **hợp đồng**
+     * mà [parse] và mọi bài canh đang gọi — đổi tên ở 20 chỗ gọi để dời một danh sách là thay một việc cơ học
+     * bằng 20 chỗ sai được.
      */
-    val WRITABLE_PREFS_KEYS: Set<String> = setOf(
-        "voice_confirm_ids",
-        "voice_ask_aloud",
-        "voice_follow_up_ms",
-        "voice_mic_source",
-        "top_strip_labels",
-        "voice_endpoint_silence_ms",
-        "voice_endpoint_min_speech_ms",
-        "voice_endpoint_floor_cap",
-        // Ba núm của Silero VAD — đường ngắt câu CHÍNH từ 1.69 (docs/diagnostics/voice-stream-eval-2026-09-16.md
-        // §8). Cùng lý do với ba khoá trên: bộ tham số chốt bằng lưới trên host, còn cabin thật thì chỉ đo được
-        // bằng cách đổi số **giữa hai lượt nói** trên xe.
-        "voice_vad_threshold",
-        "voice_vad_min_speech_ms",
-        "voice_vad_min_silence_ms",
-        "voice_beam",
-        "voice_hotword_score",
-        // Tốc độ đọc Piper (owner 2026-09-17 "nói nhanh quá") — chỉnh mức chậm đúng ý trên xe không cần build.
-        "voice_tts_speed",
-        // owner 2026-09-21 (bản release production) — công tắc GIỮ NHẬT KÝ lượt nói. Vào đây vì ô tích của nó vừa
-        // bị gỡ khỏi Cài đặt cùng mọi bề mặt dev/log: không có dòng này thì khoá thành **bất khả chỉnh**, tức dọn
-        // bề mặt hoá ra dọn luôn khả năng. Đây cũng là khoá DUY NHẤT của danh sách này không còn đường đảo lại
-        // bằng một cú chạm trong Cài đặt (xem ràng buộc (3) ở KDoc trên) — nó vẫn nằm trong đường GIỌNG NÓI và vẫn
-        // chỉ ghi được khi chế độ kiểm thử đang mở, nên hai ràng buộc còn lại không đổi.
-        "voice_keep_log",
-        // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + chọn cam + chọn GÓC hiện từng bên, test nhanh
-        // trên xe. `camera_lvds_option` đã GỠ cùng mười option LVDS (spec camera-turn-signal-hal-socket R6).
-        "camera_signal_enabled",
-        "camera_on_cluster",
-        "camera_cam_left",
-        "camera_cam_right",
-        "camera_pos_left",
-        "camera_pos_right",
-        // R7 (owner 2026-09-26): góc xoay video TỪNG BÊN (2.71 — owner trên xe: "2 line setting độc lập cho camera
-        // trái và phải") — cần đổi trên xe giữa hai lượt xi-nhan để chốt chiều đúng (mắt owner), không build lại.
-        // Mỗi khoá có một hàng chip đảo lại được ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ. Khoá đơn cũ
-        // `camera_rotation` (2.67–2.70) GỠ khỏi đây: `Prefs.cameraRotation` migrate nó một lần rồi xoá.
-        "camera_rot_left",
-        "camera_rot_right",
-        // CLOSE-14 (CAM-LAG): đường KẾT XUẤT khung hình (`TV`/`SV`). Vào đây vì đúng câu hỏi nó sinh ra để trả lời —
-        // *"TextureView có phải nguồn giật không"* — chỉ đo được bằng cách đổi đường **giữa hai lượt xi-nhan trên xe
-        // đang chạy** rồi so `gfxinfo`, không phải bằng một lượt build lại APK cho mỗi bên. Có hàng chip đảo lại được
-        // ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc trên vẫn giữ.
-        "camera_render",
-    )
+    val WRITABLE_PREFS_KEYS: Set<String> get() = TestBridgeWritableKeys.ALL
 
     // ── Mã lỗi (ASCII, không dịch) ──────────────────────────────────────────────────────────────
 
@@ -336,6 +316,12 @@ object TestBridgeCommands {
         Spec(WAV, emptyList(), listOf(EXTRA_PATH)),
         Spec(KWS, emptyList(), listOf(EXTRA_PATH)),
         Spec(CAMERA, emptyList(), listOf(EXTRA_ARG)),
+        // `name` tuỳ chọn: vắng ⇒ cỡ mặc định 5120×960. Cú pháp `<W>x<H>` phân tích ở [TestBridgeFrameSize] (thuần,
+        // có bài canh) — KHÔNG ở tầng thi hành: một chuỗi lạ phải cho ra cỡ MẶC ĐỊNH, không cho ra 0×0.
+        Spec(CAMERA_FRAME, emptyList(), listOf(EXTRA_ARG)),
+        // `name` tuỳ chọn: vắng ⇒ `on` (một lệnh đo không nên cần đối số để bật thứ nó sinh ra để bật). Giá trị lạ
+        // ⇒ cũng `on`, cùng luật `camera --es name`: tầng thi hành chỉ hỏi *"có phải off không"*.
+        Spec(CAMERA_SYNTH, emptyList(), listOf(EXTRA_ARG)),
         Spec(TTS, listOf(EXTRA_TEXT)),
         Spec(LISTEN, emptyList()),
         Spec(STATE, emptyList()),

@@ -33,8 +33,9 @@ import java.io.File
  * ## Feather (mờ cạnh) — cho ảnh chữ-nhật tiệp vào nền thẻ, KHÔNG dán cứng
  * [feather] carve alpha ở 4 mép bằng 4 [LinearGradient] chế độ `DST_OUT` (đục ở mép → trong suốt vào trong). Tính
  * **MỘT LẦN** lúc nạp (như ảnh mờ của hình nền) ⇒ **0 blur runtime** — bắt buộc vì xe API 29 GPU yếu (spec R1.3).
- * DST_OUT: `dst.alpha × (1 − src.alpha)` ⇒ mép (src đục) bị xoá, giữa (src trong suốt) giữ nguyên. Nếu ảnh vốn có
- * nền trong suốt thì feather chỉ làm mượt thêm mép chữ-nhật; nếu ảnh đục thì mép tan vào màu thẻ.
+ * DST_OUT: `dst.alpha × (1 − src.alpha)` ⇒ mép (src đục) bị xoá, giữa (src trong suốt) giữ nguyên. **Chỉ mép nào ĐẶC
+ * MỰC mới được feather** (2.74 · R2, [edgeInkRatio] + [CarLayout.featherBand]): ảnh chụp chữ nhật ⇒ mép tan vào màu
+ * thẻ như cũ; ảnh CẮT NỀN ⇒ 0 dải, vì ở đó "mép" chính là gương/mũi xe và làm mềm = xoá mất thân xe.
  *
  * ## Cache DÙNG CHUNG theo (nguồn, cỡ đích) — closeout 2026-09-25 (spec `kachi-closeout-hardening` R3, audit RAM §8)
  * Trước: mỗi [CarImageLayer] (bảng lốp · bảng cửa · xe mini) tự giải mã + feather một bản riêng, và ảnh MẶC ĐỊNH
@@ -140,12 +141,40 @@ object CarImageStore {
     /**
      * Kế hoạch giải mã một ảnh [srcW]×[srcH] cho khung [reqW]×[reqH] — thuần, test off-car.
      *
-     * Hai bậc như [WallpaperStore.loadScaled]: [sample] = luỹ thừa 2 lớn nhất mà ảnh còn PHỦ khung (giảm thô ngay
-     * trong bộ giải mã, không sinh ảnh to); rồi [inDensity]→[inTargetDensity] hạ tiếp về ĐÚNG khung (fit, giữ tỉ
-     * lệ) cũng ngay trong lúc giải mã. `inTargetDensity == 0` ⇒ không cần bậc hai.
+     * Hai bậc như [WallpaperStore.loadScaled]: [sample] = luỹ thừa 2 lớn nhất mà ảnh còn phủ khung (giảm thô ngay
+     * trong bộ giải mã, không sinh ảnh to); rồi [inDensity]→[inTargetDensity] hạ tiếp cho ảnh **VỪA LỌT khung**
+     * (fit, giữ tỉ lệ — xem [fitWidth]) cũng ngay trong lúc giải mã. `inTargetDensity == 0` ⇒ không cần bậc hai.
+     *
+     * ## Vì sao FIT ở đây, trong khi hình NỀN dùng COVER (2026-09-26 · nợ RAM đã trả)
+     * Ảnh xe được vẽ **letterbox** (`CarImageLayer.fitRect` lấy `minOf`), nên mọi pixel mà cover cấp thêm ở chiều
+     * rộng hơn là pixel **không bao giờ được vẽ**: [ĐO số học] khung 210×554 với ảnh mặc định 678×1397 ⇒ cover cho
+     * bitmap 269×554 = 149 026 px, fit cho 210×432 = 90 720 px ⇒ **1,64× pixel** trả cho không. Hình nền thì khác
+     * (phủ-kín-rồi-cắt) nên [WallpaperStore.scaledWidth] giữ nguyên `maxOf` — hai câu hỏi khác nhau, hai hàm.
+     *
+     * Trên cả lưới khung của `CarImageStoreTest` [ĐO] tổng pixel của ba lớp xuống còn **1/3,6** so với cover.
+     *
+     * ⚠ Còn một đường CHƯA đi qua đây: ảnh do người dùng bỏ vào thư mục được [loadFeathered] giải mã bằng
+     * [WallpaperStore.loadScaled] (cover) vì đó là cửa dùng chung với hình nền. Ảnh MẶC ĐỊNH (đóng theo APK — ca của
+     * mọi xe chưa thay ảnh) đi qua [loadDefaultScaled] nên đã được fit. Nợ còn lại ghi ở backlog, không nói dối ở đây.
      */
     data class DecodePlan(val sample: Int, val inDensity: Int, val inTargetDensity: Int) {
         val scaled: Boolean get() = inTargetDensity > 0 && inDensity > 0 && inTargetDensity != inDensity
+    }
+
+    /**
+     * Bề rộng đích để ảnh [sampledW]×[sampledH] **vừa LỌT** khung [reqW]×[reqH] (fit, giữ tỉ lệ); `0` = không cần hạ
+     * thêm (ảnh đã nhỏ hơn khung). Song sinh của [WallpaperStore.scaledWidth] và khác nó đúng một chữ: `minOf` thay
+     * cho `maxOf` — xem KDoc [DecodePlan] về việc hai bề mặt hỏi hai câu khác nhau.
+     *
+     * Làm tròn **nửa lên** (`+ 0.5f`) chứ không cắt: cắt thì chiều siết hụt khung 1–2 px (`339×699` cho khung
+     * `340×700`) ⇒ lớp vẽ phải PHÓNG ảnh lên một chút, tức đánh đổi độ nét để tiết kiệm 0,3% RAM. Làm tròn thì chiều
+     * siết chạm đúng khung, chiều kia lệch ≤ 1 px (có bài canh trên cả lưới khung).
+     */
+    fun fitWidth(sampledW: Int, sampledH: Int, reqW: Int, reqH: Int): Int {
+        if (sampledW <= 0 || sampledH <= 0 || reqW <= 0 || reqH <= 0) return 0
+        val scale = minOf(reqW.toFloat() / sampledW, reqH.toFloat() / sampledH)
+        if (scale >= 1f) return 0
+        return (sampledW * scale + 0.5f).toInt().coerceAtLeast(1)
     }
 
     fun decodePlan(srcW: Int, srcH: Int, reqW: Int, reqH: Int): DecodePlan {
@@ -153,7 +182,7 @@ object CarImageStore {
         val sample = WallpaperStore.sampleSize(srcW, srcH, reqW, reqH)
         val sampledW = srcW / sample
         val sampledH = srcH / sample
-        val targetW = WallpaperStore.scaledWidth(sampledW, sampledH, reqW, reqH)
+        val targetW = fitWidth(sampledW, sampledH, reqW, reqH)
         return if (targetW > 0) DecodePlan(sample, sampledW, targetW) else DecodePlan(sample, 0, 0)
     }
 
@@ -288,18 +317,75 @@ object CarImageStore {
         null
     }
 
+    /** Alpha từ mức này trở lên được coi là CÓ MỰC khi đo mép ảnh (dưới mức này là viền khử răng cưa/nhiễu). */
+    const val INK_ALPHA = 8
+
     /**
-     * Trả bản feather MỚI của [src] rồi **nhả [src]** (chỗ gọi chỉ giữ ảnh trả về). Mép mờ dần về trong suốt trên
-     * dải [FEATHER_FRACTION] × cạnh nhỏ nhất, bằng 4 gradient `DST_OUT` — tính một lần, 0 blur.
+     * Tỉ lệ MỰC trên từng mép của [b] — `[trái, trên, phải, dưới]`, mỗi số trong `0f..1f`. Quét alpha **MỘT LẦN**
+     * lúc nạp, ở luồng nền (cùng chỗ đã tính feather ⇒ 0 chi phí lúc vẽ).
+     *
+     * Vì sao đo TỈ LỆ MỰC chứ không đo LỀ TRONG SUỐT: hai ca dưới đây có lề **giống nhau** (= 0) mà cần hai xử lý
+     * NGƯỢC nhau, nên lề không phân biệt được:
+     *  • ảnh chụp chữ nhật đặc ⇒ cả mép đặc mực (tỉ lệ ≈ 1) ⇒ ĐÁNG feather (mép cứng tan vào nền thẻ);
+     *  • ảnh cắt nền cắt sát (gương/mũi xe đúng biên ảnh) ⇒ chỉ vài dòng chạm mép (tỉ lệ nhỏ) ⇒ feather ở đó là
+     *    **xoá alpha của thân xe** — đúng lỗi "mất gương" mà 2.74 đang vá.
+     * Ngưỡng quyết định nằm ở `:core` ([CarLayout.SOLID_EDGE_INK]), test off-car.
+     *
+     * Ảnh **không có kênh alpha** (ảnh chụp JPEG/RGB_565) ⇒ trả `1` cho cả 4 mép ngay, không quét: mọi mép đều đặc
+     * mực. Đọc pixel hỏng (bitmap cấu hình lạ, vd HARDWARE) ⇒ cũng trả `1` = **hành vi trước 2.74**, không ném.
+     *
+     * "Chạm mép" có dung sai [CarLayout.HARD_EDGE_PX] px để 1 px viền khử răng cưa của ảnh chụp vẫn tính là chạm.
+     */
+    fun edgeInkRatio(b: Bitmap): FloatArray {
+        val w = b.width
+        val h = b.height
+        val solid = floatArrayOf(1f, 1f, 1f, 1f)
+        if (w <= 0 || h <= 0 || !b.hasAlpha()) return solid
+        return runCatching {
+            val hard = CarLayout.HARD_EDGE_PX.toInt()
+            val row = IntArray(w)
+            var leftRows = 0; var rightRows = 0; var topInk = 0; var bottomInk = 0
+            for (y in 0 until h) {
+                b.getPixels(row, 0, w, 0, y, w, 1)
+                var x0 = -1; var x1 = -1; var ink = 0
+                for (x in 0 until w) {
+                    if ((row[x] ushr 24) >= INK_ALPHA) { if (x0 < 0) x0 = x; x1 = x; ink++ }
+                }
+                if (x0 in 0..hard) leftRows++                       // dòng này có mực chạm mép TRÁI
+                if (x1 >= 0 && x1 >= w - 1 - hard) rightRows++      // …mép PHẢI
+                if (y <= hard) topInk = maxOf(topInk, ink)          // mép TRÊN: dòng ngoài cùng đặc mực tới đâu
+                if (y >= h - 1 - hard) bottomInk = maxOf(bottomInk, ink)
+            }
+            floatArrayOf(leftRows / h.toFloat(), topInk / w.toFloat(), rightRows / h.toFloat(), bottomInk / w.toFloat())
+        }.getOrElse {
+            Log.w(TAG, "car image alpha scan failed: ${it.javaClass.simpleName}")
+            solid
+        }
+    }
+
+    /**
+     * Trả bản feather MỚI của [src] rồi **nhả [src]** (chỗ gọi chỉ giữ ảnh trả về); ảnh KHÔNG có mép cứng nào thì
+     * trả về CHÍNH [src] (không tạo bản thứ hai, **không** nhả — bitmap đó là thứ chỗ gọi sẽ giữ).
+     *
+     * Mỗi mép mờ dần về trong suốt trên dải riêng của nó = [CarLayout.featherBand] của `FEATHER_FRACTION × cạnh
+     * nhỏ nhất` và **tỉ lệ mực ĐO ĐƯỢC của chính mép đó** ([edgeInkRatio]) — bằng gradient `DST_OUT`, tính một lần,
+     * 0 blur.
+     *
+     * [ĐO 2026-09-26] vì sao phải đo thay vì áp mù 8 % cả 4 mép: ảnh xe top-down cao-hẹp (asset mặc định 678×1397,
+     * KHÔNG có mực nào chạm 4 mép) nhận dải 54 px ⇒ dải ăn 25 px vào THÂN xe mỗi bên ⇒ gương chiếu hậu bị xoá tới
+     * ~50 % alpha. Ảnh chụp chữ nhật đặc vẫn được feather đúng như trước (mép đặc mực ⇒ dải = 8 %).
      */
     fun feather(src: Bitmap): Bitmap {
         val w = src.width
         val h = src.height
         if (w <= 0 || h <= 0) return src
+        val full = (minOf(w, h) * FEATHER_FRACTION).coerceAtLeast(1f)
+        val edges = edgeInkRatio(src)
+        val bands = FloatArray(4) { CarLayout.featherBand(full, edges[it]) }
+        if (bands.all { it <= 0f }) return src   // ảnh cắt nền ⇒ không có mép CỨNG nào để làm mềm
         val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
         c.drawBitmap(src, 0f, 0f, null)
-        val m = (minOf(w, h) * FEATHER_FRACTION).coerceAtLeast(1f)
         val fade = Paint(Paint.ANTI_ALIAS_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_OUT) }
         // MẶT NẠ alpha, KHÔNG phải màu hiển thị: DST_OUT chỉ đọc kênh ALPHA của src (`dst.a × (1 − src.a)`), RGB
         // không vẽ ra đâu cả — nên đây KHÔNG phải một vai màu của [KachiTheme] (ThemePaletteContractTest đúng khi
@@ -308,18 +394,32 @@ object CarImageStore {
         val clear = Color.TRANSPARENT
         val wf = w.toFloat(); val hf = h.toFloat()
         // trái
-        fade.shader = LinearGradient(0f, 0f, m, 0f, opaque, clear, Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, m, hf, fade)
-        // phải
-        fade.shader = LinearGradient(wf - m, 0f, wf, 0f, clear, opaque, Shader.TileMode.CLAMP)
-        c.drawRect(wf - m, 0f, wf, hf, fade)
+        bands[EDGE_LEFT].takeIf { it > 0f }?.let { m ->
+            fade.shader = LinearGradient(0f, 0f, m, 0f, opaque, clear, Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, m, hf, fade)
+        }
         // trên
-        fade.shader = LinearGradient(0f, 0f, 0f, m, opaque, clear, Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, wf, m, fade)
+        bands[EDGE_TOP].takeIf { it > 0f }?.let { m ->
+            fade.shader = LinearGradient(0f, 0f, 0f, m, opaque, clear, Shader.TileMode.CLAMP)
+            c.drawRect(0f, 0f, wf, m, fade)
+        }
+        // phải
+        bands[EDGE_RIGHT].takeIf { it > 0f }?.let { m ->
+            fade.shader = LinearGradient(wf - m, 0f, wf, 0f, clear, opaque, Shader.TileMode.CLAMP)
+            c.drawRect(wf - m, 0f, wf, hf, fade)
+        }
         // dưới
-        fade.shader = LinearGradient(0f, hf - m, 0f, hf, clear, opaque, Shader.TileMode.CLAMP)
-        c.drawRect(0f, hf - m, wf, hf, fade)
+        bands[EDGE_BOTTOM].takeIf { it > 0f }?.let { m ->
+            fade.shader = LinearGradient(0f, hf - m, 0f, hf, clear, opaque, Shader.TileMode.CLAMP)
+            c.drawRect(0f, hf - m, wf, hf, fade)
+        }
         src.recycle()
         return out
     }
+
+    /** Thứ tự 4 mép trong [edgeInkRatio] / dải feather — một quy ước, khai một chỗ. */
+    const val EDGE_LEFT = 0
+    const val EDGE_TOP = 1
+    const val EDGE_RIGHT = 2
+    const val EDGE_BOTTOM = 3
 }

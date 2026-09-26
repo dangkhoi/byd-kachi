@@ -276,6 +276,10 @@ class TelemetryReadoutTest {
         val levelScale = mapOf(
             "seat_vent_state" to "thang 3 mức (ControlLevels) — một icon sáng/mờ không nói được 'Mức 1' vs 'Mức 2'",
             "seat_heat_state" to "thang 3 mức (ControlLevels) — cùng lý do seat_vent_state",
+            // UX5b (2026-09-27) — ghế PHỤ, cùng thang, cùng lý do. Hai dòng này phải có mặt vì `wiredStatus` nay
+            // nạp cả hai datum `_r` (CarDataAdapter đã nối), nên chúng cũng in ra chữ "Tắt"/"Mức n".
+            "seat_vent_state_r" to "thang 3 mức (ControlLevels seatc_r) — cùng lý do seat_vent_state",
+            "seat_heat_state_r" to "thang 3 mức (ControlLevels seath_r) — cùng lý do seat_heat_state",
         )
         val onOffWords = setOf("Bật", "Tắt", "On", "Off")
         listOf("1", "0").forEach { seed ->
@@ -289,6 +293,126 @@ class TelemetryReadoutTest {
                         "khai ở TelemetryReadout.boolOf (không phải ở format), nếu không chip mất icon trạng thái",
                 )
             }
+        }
+    }
+
+    // ── UX4 · chip gió nói "AUTO n" ───────────────────────────────────────────────────────────────
+
+    /**
+     * [ĐO xe 2026-09-16] `getAcControlMode() = 0` (AUTO) **cùng lượt** với `getAcWindLevel() = 1`
+     * (`oncar-trace-2026-09-16b/hal-reads.txt:1,6`) ⇒ `"AUTO 1"` là số THẬT. Phép quy đổi sống ở [ClimateAuto];
+     * bài này khoá rằng chip/ô đọc được nó **qua đúng datum `ac_wind`**, không phải qua một đường thứ hai.
+     */
+    @Test fun `datum gio noi AUTO n khi co auto doc duoc, va chi khi do`() {
+        fun wind(level: Int?, autoRaw: Int?) = TelemetryReadout.of(
+            "ac_wind", CarStatus(climate = CarStatus.Climate(fanLevel = level, acWindAutoRaw = autoRaw)),
+        )!!.valueText
+        assertEquals("AUTO 1", wind(1, 0), "AC_WINDLEVEL_MANUAL_SIGN_OFF = 0 ⇒ đang AUTO")
+        assertEquals("AUTO", wind(null, 0), "AUTO mà mức chưa về")
+        assertEquals("3", wind(3, 1), "chỉnh tay ⇒ chỉ con số")
+        assertEquals("2", wind(2, null), "CHƯA ĐỌC ĐƯỢC cờ auto ⇒ tuyệt đối không nói AUTO (im lặng, không nói sai)")
+        assertNull(wind(null, null))
+    }
+
+    // ── UX5 · mức là một CON SỐ, không phải một chuỗi để bóc ──────────────────────────────────────
+
+    /**
+     * ⚠ Bài CHỐNG-RỮA của UX5: chữ (`format`) và số ([TelemetryView.level]) nằm ở **hai chỗ** trong
+     * `TelemetryReadout` — có chủ ý, vì dạng `"id" -> s.<cụm>.<field>` là hợp đồng đọc-ngược bằng máy. Nguy cơ
+     * hai-bản-sao vì thế phải được **đo**: mã nào có chữ *"Mức n"/"Tắt"* mà không có số (hoặc ngược lại) là đỏ.
+     */
+    @Test fun `chu muc va so muc khong bao gio lech`() {
+        val levelIds = TelemetryRegistry.ALL.map { it.id }.filter { CapabilityDots.maxLevel(it) >= 1 }
+        assertEquals(
+            // UX5b (2026-09-27): hai → **bốn** datum thang mức (thêm ghế PHỤ). Chúng vào được danh sách này vì hai
+            // nút `seatc_r`/`seath_r` nay khai `readKey` — bảng tra đảo của `CapabilityDots` chính là `readKey`.
+            listOf("seat_vent_state", "seat_heat_state", "seat_vent_state_r", "seat_heat_state_r").sorted(),
+            levelIds.sorted(),
+            "hôm nay đúng bốn datum chạy theo thang mức; thêm cái thứ năm thì phải khai cả ở `levelTable`",
+        )
+        listOf("1", "0").forEach { seed ->
+            val status = wiredStatus(seed)
+            TelemetryRegistry.ALL.forEach { spec ->
+                val v = TelemetryReadout.of(spec.id, status)!!
+                // Datum BẬT/TẮT cũng in chữ "Tắt" (qua `onOff`) — nó KHÔNG phải thang mức, nên loại ra bằng
+                // chính cờ ấy thay vì bằng một danh sách mã (danh sách sẽ rữa, cờ thì không).
+                val saysLevel = v.onOff == null &&
+                    (v.valueText == "Tắt" || v.valueText?.startsWith("Mức ") == true)
+                assertEquals(
+                    saysLevel, v.level != null,
+                    "mồi=$seed · ${spec.id}: chữ='${v.valueText}' mà mức=${v.level} — hai chỗ đã lệch nhau",
+                )
+            }
+        }
+    }
+
+    @Test fun `muc doc ra dung thang do tren xe, ma ngoai thang thi im lang`() {
+        fun heat(raw: Int?) = TelemetryReadout.of("seat_heat_state", CarStatus(climate = CarStatus.Climate(seatHeatRaw = raw)))!!
+        // [ĐO xe 2026-09-17] thang ghế: OFF = 1 · mức 1 = 2 · mức 2 = 3 (ControlLevels.RAW_BY_LEVEL).
+        assertEquals(0, heat(1).level, "raw 1 = TẮT ⇒ mức 0 (KHÔNG phải null: 'đang tắt' là một lời khẳng định)")
+        assertEquals("Tắt", heat(1).valueText)
+        assertEquals(2, heat(3).level); assertEquals("Mức 2", heat(3).valueText)
+        assertNull(heat(99).level, "mã ngoài thang ⇒ 'chưa biết', không làm tròn thành mức 1")
+        assertNull(heat(99).valueText)
+        assertNull(heat(null).level, "chưa đọc được ⇒ null, và null ≠ 0")
+    }
+
+    /**
+     * UX5b — hai datum ghế **PHỤ** đi qua ĐÚNG cùng thang, và đọc đúng field của mình.
+     *
+     * Ca quan trọng nhất là ca CHÉO: mồi ghế lái, hỏi ghế phụ ⇒ phải ra *"chưa biết"*. Một dòng `levelTable` chép
+     * sai field (dán từ dòng ghế lái) sẽ làm chip ghế phụ hiện **số của ghế lái** — nói sai, im lặng.
+     */
+    @Test fun `ghe PHU doc dung field cua minh, cung thang muc`() {
+        fun vent(raw: Int?) = TelemetryReadout.of(
+            "seat_vent_state_r", CarStatus(climate = CarStatus.Climate(seatVentRRaw = raw)),
+        )!!
+        fun heat(raw: Int?) = TelemetryReadout.of(
+            "seat_heat_state_r", CarStatus(climate = CarStatus.Climate(seatHeatRRaw = raw)),
+        )!!
+        // [ĐO xe 2026-09-17] thang ghế mát (cả hai ghế, `ControlLevels`): OFF = 1 · mức 1 = 2 · mức 2 = 3.
+        assertEquals(0, vent(1).level); assertEquals("Tắt", vent(1).valueText)
+        assertEquals(1, vent(2).level); assertEquals("Mức 1", vent(2).valueText)
+        assertEquals(2, vent(3).level); assertEquals("Mức 2", vent(3).valueText)
+        assertNull(vent(99).level, "mã ngoài thang ⇒ 'chưa biết', không làm tròn")
+        assertNull(vent(null).level)
+        assertEquals(0, heat(1).level); assertEquals(2, heat(3).level)
+
+        // ⚠ CHÉO: mồi ghế LÁI, hỏi ghế PHỤ (và ngược lại) ⇒ tuyệt đối không được mượn số của nhau.
+        val driverOnly = CarStatus(climate = CarStatus.Climate(seatHeatRaw = 3, seatVentRaw = 3))
+        assertNull(TelemetryReadout.of("seat_heat_state_r", driverOnly)!!.level)
+        assertNull(TelemetryReadout.of("seat_vent_state_r", driverOnly)!!.level)
+        val passengerOnly = CarStatus(climate = CarStatus.Climate(seatHeatRRaw = 3, seatVentRRaw = 3))
+        assertNull(TelemetryReadout.of("seat_heat_state", passengerOnly)!!.level)
+        assertNull(TelemetryReadout.of("seat_vent_state", passengerOnly)!!.level)
+
+        // Nhãn nói rõ BÊN NÀO — đó là thứ owner thấy thiếu (2026-09-27).
+        assertEquals("Mức ghế sưởi phụ", heat(1).label)
+        assertEquals("Ghế sưởi phụ", TelemetryRegistry.byId("seat_heat_state_r")!!.displayShortLabel)
+    }
+
+    /**
+     * ⚠ Thang mức ở [ControlLevels] có thể RỘNG HƠN số lựa chọn mà nút bày ra ([CapabilityDots.maxLevel]).
+     * Hôm nay đúng `seath`/`seath_r` lệch, và đó là một [SUY] đã ghi (chờ đo trên xe), không phải một lỗi ngầm.
+     * Bài này giữ nó **nhìn thấy được**: đo xong thang ghế sưởi thì hai bên phải khớp lại, và bài đỏ nhắc điều đó.
+     */
+    @Test fun `thang muc rong hon so lua chon thi phai la mot lech DA BIET`() {
+        val known = mapOf(
+            "seath" to "[SUY] khai 4 mã khung (1,2,3,4) nhưng chỉ bày 3 lựa chọn — chờ điểm đo trên xe",
+            "seath_r" to "[SUY] cùng thang với seath (chỉ khác seatID) — chờ cùng một phép đo",
+        )
+        // ⚠ UX5b: `seatc_r`/`seath_r` nay có `readKey` nên `CapabilityDots.maxLevel` của chúng đi qua chính
+        // `ControlRegistry` (nút SELECT 3 lựa chọn) như trước — lệch của `seath_r` vì thế KHÔNG đổi, vẫn đúng một
+        // lệch [SUY] đã khai. Nếu bảng trên bỗng dài ra thì có ai vừa thêm mức mà chưa đo.
+        val mismatch = ControlLevels.RAW_BY_LEVEL.keys.filter {
+            ControlLevels.levelCount(it) - 1 != CapabilityDots.maxLevel(it)
+        }
+        assertEquals(known.keys.sorted(), mismatch.sorted(), "lệch MỚI ⇒ hoặc sửa bảng, hoặc khai kèm lý do")
+        ControlLevels.RAW_BY_LEVEL.keys.forEach {
+            assertTrue(
+                ControlLevels.levelCount(it) - 1 >= CapabilityDots.maxLevel(it),
+                "$it: nút bày nhiều mức hơn thang đọc được ⇒ có mức bấm tới mà không đọc lại được",
+            )
         }
     }
 

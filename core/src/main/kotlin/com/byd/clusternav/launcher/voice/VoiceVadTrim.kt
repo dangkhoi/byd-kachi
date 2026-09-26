@@ -178,6 +178,40 @@ object VoiceVadTrim {
         return maxOf(1, minOf(windowSamples, lastEnd + marginSamples))
     }
 
+    /**
+     * ═══ VOICE-OPEN-TURN — khúc mẫu của **vế SAU**, khi lượt nghe được giữ mở qua một quãng ngừng ═══════════
+     *
+     * @param segments **toàn bộ** đoạn đã chốt của lượt (kể cả các đoạn của vế trước).
+     * @param fromIndex số đoạn đã có **tại điểm ngắt câu** của vế trước ⇒ đoạn thứ `fromIndex` là đoạn đầu của
+     *   vế sau. Bằng `segments.size` ⇒ chưa có vế sau nào ⇒ `null`.
+     * @param windowSamples tổng số mẫu đã thu.
+     * @param marginSamples chừa thêm sau đuôi (mặc định 0 — cùng lẽ [MARGIN_MS]).
+     * @return dải `[đầu .. cuối)` để giải mã RIÊNG vế sau, hoặc `null` khi không có vế sau.
+     *
+     * ## Vì sao giải mã RIÊNG vế sau chứ không nối hai khúc rồi giải mã một lần
+     * [ĐO 2026-09-26, bản thu thật `…-184201`] cắt tay rồi giải mã từng khúc: `[0..1300]` ⇒ *"mở vietmap"*,
+     * `[900..2600]` ⇒ *"áp vào ô số một"*; **nguyên cửa sổ** ⇒ *"mở vietmap **một**"* — bộ giải mã bỏ ba chữ ở
+     * giữa. Đó là chính cái bệnh VOICE-SLOT-TAIL-CUT (KDoc [VoiceSlotPhrases] §2), và một khoảng lặng
+     * 720–1 060 ms ở giữa chỉ làm nó nặng thêm. ⇒ Hai khúc, hai lượt giải mã, ghép ở tầng CHỮ
+     * ([VoiceOpenTurn.join]).
+     *
+     * **Đầu dải lấy đúng mốc bắt đầu của đoạn**, không lấy điểm ngắt của vế trước: kẹp từ điểm ngắt là kéo theo
+     * trọn quãng ngừng 720–1 060 ms vào bộ giải mã — rơi lại đúng bảng §6 ở KDoc lớp (đuôi im lặng 0,75 s hạ
+     * 22/25 xuống 15/25), chỉ là im lặng ở **đầu** thay vì ở đuôi.
+     */
+    fun tailRange(
+        segments: List<Segment>,
+        fromIndex: Int,
+        windowSamples: Int,
+        marginSamples: Int = 0,
+    ): IntRange? {
+        if (windowSamples <= 0 || fromIndex < 0 || fromIndex >= segments.size) return null
+        val tail = segments.subList(fromIndex, segments.size)
+        val start = tail.minOf { it.startSample }.coerceIn(0, windowSamples)
+        val end = minOf(windowSamples, tail.maxOf { it.endSample } + marginSamples)
+        return if (end <= start) null else start until end
+    }
+
     /** Đổi mili-giây → giây cho `SileroVadModelConfig` (nó nhận `Float` GIÂY). Một chỗ đổi, không rải rác. */
     fun msToSeconds(ms: Int): Float = ms / 1000f
 

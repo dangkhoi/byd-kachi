@@ -51,6 +51,10 @@ object ProfileScope {
             // V3 · R14 (owner 2026-09-16) — *"cho cái toggle hiện text label"*. Theo hồ sơ như `top_strip` ngay
             // cạnh: nó là một lựa chọn về **bố cục thanh trên**, và S4 đã chốt bố cục đi theo hồ sơ.
             "top_strip_labels",
+            // [SOÁT Opus 2026-09-27] Mốc *"di trú chip UX5b đã chạy"* (`WorkspacePrefs.K_STRIP_MIGRATED`). Theo HỒ SƠ
+            // như chính `top_strip`: mỗi hồ sơ có danh sách chip riêng nên mỗi hồ sơ phải được di trú riêng một lần.
+            // Thiếu dòng này thì xoá hồ sơ **không** dọn mốc ⇒ tên hồ sơ đặt lại sẽ bỏ qua lượt di trú của mình.
+            "top_strip_migrated_ux5b",
             // UX-OVERHAUL · WP4 (2026-09-20) — THỨ TỰ các vật trên thanh trên ([HeaderLayout]). Cùng họ với
             // `top_strip`/`dock_enabled` ngay cạnh: cả ba trả lời *"thanh này bày gì, ở đâu"*. Thứ tự các nút của
             // thanh nút KHÔNG cần khoá mới — nó LÀ thứ tự của `dock_enabled` ([DockConfig.moveEnabled]).

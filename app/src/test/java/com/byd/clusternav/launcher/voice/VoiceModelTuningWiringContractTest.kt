@@ -99,12 +99,14 @@ class VoiceModelTuningWiringContractTest {
      */
     @Test
     fun `hai num ngat cau di vao ham dung VoiceEndpointer o VoiceCapture`() {
-        assertTrue(capture.contains("endpointerFromPrefs()"), "phải có hàm dựng theo prefs")
+        // Vai dựng-theo-prefs tách sang `VoiceCaptureDevice` ở VOICE-OPEN-TURN (trần 500 dòng) — cùng câu hỏi, tệp mới.
+        val device = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceCaptureDevice.kt")
+        assertTrue(device.contains("fun endpointer(ctx: Context)"), "phải có hàm dựng theo prefs")
         assertTrue(
-            capture.contains("endpointer: VoiceEndpointer? = endpointerFromPrefs()"),
+            capture.contains("endpointer: VoiceEndpointer? = VoiceCaptureDevice.endpointer(ctx)"),
             "mặc định của tham số `endpointer` phải là bản dựng theo prefs — không thì núm không ai đọc",
         )
-        val body = SourceRoots.body(capture, "private fun endpointerFromPrefs()")
+        val body = SourceRoots.body(device, "fun endpointer(ctx: Context)")
         assertTrue(body.contains("minSpeechMs =") && body.contains("hangoverMs ="), "phải truyền CẢ HAI ngưỡng")
         assertTrue(
             body.contains("Prefs.voiceEndpointMinSpeechMs(ctx)") && body.contains("Prefs.voiceEndpointSilenceMs(ctx)"),
@@ -201,10 +203,12 @@ class VoiceModelTuningWiringContractTest {
     fun `nhat ky duoc goi that tu phien nghe, hai nua dung cho`() {
         assertTrue(turns.contains("VoiceUtteranceLog.record("), "nửa ĐẦU (tiếng + số đo) phải được gọi")
         assertTrue(turns.contains("VoiceUtteranceLog.update("), "nửa SAU (ý định + câu trả lời) phải được gọi")
-        assertTrue(session.contains("logHeard(it, heard, sentence)"), "phiên nghe phải gọi `logHeard`")
+        // Thân lượt nghe chính tách sang `VoiceSessionListen.kt` ở VOICE-OPEN-TURN (trần 500 dòng); `execute` ở lại.
+        val listen = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionListen.kt")
+        assertTrue(listen.contains("logHeard(it, heard, sentence)"), "phiên nghe phải gọi `logHeard`")
         assertTrue(session.contains("logDone(intents, batch)"), "phiên nghe phải gọi `logDone`")
         // Ghi TRƯỚC đường thoát "nghe ra rỗng" — đó là ca đáng nghe lại nhất.
-        val run = SourceRoots.body(session, "private fun runSession(")
+        val run = SourceRoots.body(listen, "internal fun VoiceSession.runListen(")
         assertTrue(
             run.indexOf("logHeard(") in 0 until run.indexOf("kachi_voice_nothing_heard"),
             "phải ghi tiếng TRƯỚC khi thoát vì câu rỗng",

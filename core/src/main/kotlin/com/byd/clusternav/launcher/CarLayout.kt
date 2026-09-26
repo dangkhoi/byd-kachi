@@ -45,4 +45,34 @@ object CarLayout {
         TyreCorner.REAR_LEFT -> CarAnchor(0.17f, 0.80f)
         TyreCorner.REAR_RIGHT -> CarAnchor(0.83f, 0.80f)
     }
+
+    /** Mực nằm trong khoảng này (px) tính từ biên ảnh thì coi là **chạm mép** — 1 px viền khử răng cưa vẫn chạm. */
+    const val HARD_EDGE_PX = 1f
+
+    /**
+     * Tỉ lệ MỰC trên một mép từ mức này trở lên ⇒ mép đó là **mép CỨNG của ảnh chữ nhật đặc** (ảnh chụp) — thứ duy
+     * nhất mà feather sinh ra để làm mềm. Thấp hơn ⇒ ảnh **cắt nền** (chỉ gương/mũi xe chạm biên): làm mềm ở đó là
+     * xoá alpha của chính THÂN XE.
+     *
+     * 0,95 chứ không phải 1,0 để chừa viền khử răng cưa / góc bo nhẹ của ảnh chụp; ngưỡng cố ý nghiêng về **KHÔNG
+     * xoá mực** vì lỗi "mất gương" nặng hơn nhiều lỗi "mép ảnh hơi cứng".
+     */
+    const val SOLID_EDGE_INK = 0.95f
+
+    /**
+     * Dải feather (px) cho MỘT mép của ảnh xe — quyết định bằng SỐ ĐO của chính ảnh, không bằng loại tệp.
+     *
+     * Feather chỉ có một việc: làm **mép CỨNG của ảnh chữ nhật đặc** tan vào nền thẻ (xem KDoc `CarImageStore`).
+     * [edgeInkRatio] = phần của mép đó có mực (`1` = cả mép đặc mực như ảnh chụp; `0` = không gì chạm mép).
+     *
+     * [ĐO 2026-09-26] vì sao phải đo thay vì áp mù `0.08 × cạnh NGẮN` cho cả 4 mép: ảnh xe top-down cao-hẹp (asset
+     * mặc định 678×1397, không có mực nào chạm 4 mép — lề trong suốt 29 px trái/phải = 4,3 % bề rộng) nhận dải 54 px
+     * ⇒ dải ăn 25 px vào THÂN xe mỗi bên, gradient `DST_OUT` xoá tới ~50 % alpha ngay tại mép thân ⇒ **gương chiếu
+     * hậu mờ nửa**; ảnh cắt nền sát mép (gương đúng biên ảnh) còn bị xoá nặng hơn — mà lề trong suốt của nó = 0 nên
+     * đo theo LỀ sẽ kết luận sai là "mép cứng". Đo theo TỈ LỆ MỰC phân biệt được hai ca đó.
+     *
+     * Trả `0` = KHÔNG feather mép đó (và nếu cả 4 mép đều 0 thì chỗ gọi khỏi tạo bitmap thứ hai).
+     */
+    fun featherBand(fullBand: Float, edgeInkRatio: Float): Float =
+        if (edgeInkRatio >= SOLID_EDGE_INK) maxOf(fullBand, 0f) else 0f
 }

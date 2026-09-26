@@ -83,6 +83,25 @@ internal class VoiceTurnEndpoint private constructor(
     fun sawSpeech(): Boolean = vad?.sawSpeech() ?: rms?.sawSpeech() ?: true
 
     /**
+     * ═══ VOICE-OPEN-TURN — ba câu hỏi mà việc giữ lượt nghe mở qua một quãng ngừng cần ════════════════════════
+     *
+     * Cả ba **chỉ** trả lời được trên đường VAD, và đó là một quyết định, không phải một chỗ hụt: đường LÙI (RMS)
+     * [ĐO xe] *"gần như không bao giờ nổ"* (`chot=4200ms` ở 165/299 lượt) nên ở đó không có điểm ngắt nào để mà
+     * nối thêm vào, và mức năng lượng thì không phân biệt được giọng người với tiếng lốp (cùng lý do đã ghi ở
+     * [trimSamples]). ⇒ [openTurnReady] trả `false` ở đường lùi, và lượt nghe ở đó cư xử **y hệt** hôm nay.
+     */
+    fun openTurnReady(): Boolean = vad != null
+
+    /** Số đoạn đã chốt — mốc chia vế trước / vế sau. `0` ở đường lùi (nó không có đoạn nào). */
+    fun segmentCount(): Int = vad?.segmentCount() ?: 0
+
+    /** Ngay lúc này có đang nghe thấy tiếng không — xem KDoc [VoiceVad.speaking]. */
+    fun speaking(): Boolean = vad?.speaking() ?: false
+
+    /** Dải mẫu của vế sau, `null` khi chưa có vế sau (hoặc đang ở đường lùi). */
+    fun tailRange(fromIndex: Int, windowSamples: Int): IntRange? = vad?.tailRange(fromIndex, windowSamples)
+
+    /**
      * Số mẫu **đầu cửa sổ** được đưa vào bộ giải mã (chế độ `head`, xem [VoiceVadTrim.headTrimSamples]).
      *
      * ⚠ Đường LÙI trả **nguyên cửa sổ**, cố ý: bộ RMS cho biết *"lúc nào hết tiếng"* theo mức năng lượng, và [ĐO

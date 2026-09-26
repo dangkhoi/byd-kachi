@@ -262,6 +262,9 @@ class SettingsCatalogTest {
                 // gói 61 MB: trạng thái đọc **từ đĩa** (`VoiceModelStore.isReady`), không có pref nào để nhớ.
                 // Hai công tắc đi kèm (`voice_speak_replies` · `voice_prefer_offline`) thì CÓ khoá nên không ở đây.
                 "voice_tts_pack",
+                // 2.74 · R3 — "Câu lệnh nói được" là mục THÔNG TIN (danh sách câu nói được, sinh từ registry): không
+                // có gì để lưu, và trạng thái gập/mở cố ý KHÔNG bền (xem KDoc `SettingsRowsDisclosure`) ⇒ prefKey null.
+                "voice_commands",
                 // ⚠ VOICE-HOTFIX 1.69 từng có thêm hai VIỆC LÀM ở đây; cả hai đã rời DANH MỤC 2026-09-21 (bản
                 // release production):
                 //  • `voice_log_export` (nén `voice-log/` ra `Download/`) — gỡ cùng ô tích `voice_keep_log` khi mọi
@@ -279,7 +282,7 @@ class SettingsCatalogTest {
                 "about_version", "about_disclaimer",
             ),
             noKey,
-            "mười bảy mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
+            "mười tám mục là việc-làm hoặc thông tin, không phải giá trị lưu bền",
         )
         // Rỗng KHÁC null: chuỗi rỗng sẽ lọt vào groupOf("") và biến một khoá không tồn tại thành có chủ.
         assertTrue(SettingsCatalog.ENTRIES.none { it.prefKey == "" }, "dùng null, không dùng chuỗi rỗng")

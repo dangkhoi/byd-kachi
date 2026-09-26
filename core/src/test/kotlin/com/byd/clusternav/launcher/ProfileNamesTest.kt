@@ -57,6 +57,25 @@ class ProfileNamesTest {
         Strings.current = Lang.EN
         assertEquals("D", ProfileNames.initial(HomeUiState.DEFAULT_PROFILE))
         assertEquals("V", ProfileNames.initial("Vợ"))
+        assertEquals("Đ", ProfileNames.initial("Đi làm"), "chữ có dấu/có gạch vẫn là MỘT ký tự")
+    }
+
+    /**
+     * ⚠ **ĐÚNG MỘT ký tự ĐỦ, và hoa TRƯỚC khi cắt** — UX1 · R1: đĩa avatar rộng `KachiBars.HEADER_AVATAR` (22dp),
+     * không chứa nổi hai chữ, mà nửa ký tự thì không vẽ được.
+     *
+     * Cả hai ca là lỗi THẬT của bản cũ (`display(name).take(1).uppercase()`):
+     *  - `"ßeta"`: `take(1)` = `"ß"`, rồi `uppercase()` = **`"SS"`** ⇒ HAI chữ trong đĩa 22dp;
+     *  - tên mở đầu bằng emoji: `take(1)` cắt giữa **cặp surrogate** UTF-16 ⇒ nửa ký tự ⇒ ô tofu.
+     */
+    @Test
+    fun `chu dau chi MOT ky tu du va hoa truoc khi cat`() {
+        assertEquals("S", ProfileNames.initial("ßeta"), "hoa TRƯỚC rồi mới cắt — ngược lại ra 'SS' (hai chữ)")
+        assertEquals("T", ProfileNames.initial("  test"), "khoảng trắng đầu tên không được thành chữ đại diện")
+        assertEquals("", ProfileNames.initial(""), "tên rỗng ⇒ đĩa rỗng, KHÔNG được ném")
+        val emoji = ProfileNames.initial("🚗 Xe nhà")
+        assertEquals("🚗", emoji, "cắt theo CODE POINT: cắt theo Char trả nửa cặp surrogate")
+        assertEquals(2, emoji.length, "một code point ngoài BMP = HAI Char UTF-16 — cắt 1 Char là nửa ký tự")
     }
 
     /**

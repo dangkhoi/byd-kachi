@@ -1,0 +1,27 @@
+<!--
+  GHẾ SƯỞI — ghế phụ (`seath_r`): thân ghế nhìn ngang + BA LÀN NHIỆT ở góc trống, vẽ bằng MỘT path (ở 16dp ba nét rời thành một vệt nhoè). Cùng mô-típ nhiệt với ic_defrost.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/seat_heat_right.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực CLIMATE · họ màu climate · cỡ 24dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 4.58 8.61 C 3.29 8.61 3 9.62 3.29 10.92 L 4.58 16.39 L 11.64 16.39"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 5.3 16.39 L 11.5 16.39 A 1.44 1.44 0 0 1 12.94 17.83 L 12.94 17.97 A 1.44 1.44 0 0 1 11.5 19.41 L 5.3 19.41 A 1.44 1.44 0 0 1 3.86 17.97 L 3.86 17.83 A 1.44 1.44 0 0 1 5.3 16.39 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3.86" android:startY="16.39" android:endX="12.94" android:endY="19.41">
+                <item android:offset="0" android:color="#8AE8F7" />
+                <item android:offset="1" android:color="#0D8AA3" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 5.45 19.41 L 5.45 21 M 11.35 19.41 L 11.35 21"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 13.6 9.8 C 12.7 8.1 14.5 7.3 13.8 5.4 M 17 9.8 C 16.1 8.1 17.9 7.3 17.2 5.4 M 20.4 9.8 C 19.5 8.1 21.3 7.3 20.6 5.4"
+        android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

@@ -291,9 +291,22 @@ class WorkspacePrefs(context: Context) {
     /**
      * Cấu hình chip thanh trên (RW0 vùng thứ ba). Theo **hồ sơ** như thanh nút — hai tài xế thích hai bộ chip khác
      * nhau là chuyện thường. Chuỗi lưu là danh sách mã trần, đọc được bằng mắt để cứu tay khi cần.
+     *
+     * ⚠ [P1 · SOÁT Opus 2026-09-27] Di trú UX5b chạy **ĐÚNG MỘT LẦN** mỗi hồ sơ, canh bằng [K_STRIP_MIGRATED]; vì sao
+     * một cái MỐC chứ không phải *"ghi lại danh sách"* (thứ KHÔNG chữa được): KDoc `applyMigration` của
+     * [TopStripConfig.decode]. Hồ sơ **chưa từng lưu** danh sách thì đang ăn mặc định MỚI ⇒ đóng mốc luôn.
      */
-    fun topStrip(): TopStripConfig =
-        TopStripConfig.decode(sp.getString(key("top_strip"), null), sp.getBoolean(key("top_strip_labels"), true))
+    fun topStrip(): TopStripConfig {
+        val labels = sp.getBoolean(key("top_strip_labels"), true)
+        val saved = sp.getString(key("top_strip"), null)
+        val done = sp.getBoolean(key(K_STRIP_MIGRATED), false)
+        if (saved == null && !done) sp.edit().putBoolean(key(K_STRIP_MIGRATED), true).apply()
+        if (saved == null || done) return TopStripConfig.decode(saved, labels, applyMigration = false)
+        val cfg = TopStripConfig.decode(saved, labels)   // lượt DUY NHẤT được di trú
+        sp.edit().putString(key("top_strip"), TopStripConfig.encode(cfg))
+            .putBoolean(key(K_STRIP_MIGRATED), true).apply()
+        return cfg
+    }
 
     /** Ghi cấu hình chip — **hai khoá, một lượt ghi**: không đường nào ghi được một nửa cấu hình. */
     fun setTopStrip(config: TopStripConfig) {
@@ -431,6 +444,7 @@ class WorkspacePrefs(context: Context) {
         private const val K_RECENT = "recent_apps"
 
         // ── Hậu tố theo HỒ SƠ (R3) — luôn đi qua [key]/[keyOf] ──────────────────────────────────
+        internal const val K_STRIP_MIGRATED = "top_strip_migrated_ux5b"   // mốc di trú chip UX5b — xem [topStrip]
         private const val K_THEME = "theme_mode"
         /** P1b · R8 — `ColorChoice.encode()`; nằm trong [ProfileScope.LAUNCHER_PERSONAL_SUFFIXES]. */
         private const val K_COLOR = "color_choice"

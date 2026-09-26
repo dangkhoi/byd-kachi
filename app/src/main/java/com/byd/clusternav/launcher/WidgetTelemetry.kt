@@ -276,10 +276,13 @@ internal object WidgetTelemetry {
         val unit = WidgetViews.tv(ctx, "", 14f, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.M), 0, 0) }
         val root = WidgetViews.col(ctx).apply {
             addView(eyebrow(ctx, v.label))
-            val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+            // UX7 — [AxisRow] (không phải `LinearLayout` + `gravity = CENTER`): CON SỐ phải nằm đúng trục ô, cùng
+            // trục với nhãn eyebrow ở trên. Khe giữa số và đơn vị đã nằm trong chính chuỗi đơn vị (`" %"`) nên
+            // `gapPx` giữ 0 ⇒ nhịp chữ không đổi một pixel, chỉ TRỤC đổi.
+            val row = AxisRow(ctx).apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) }
             row.addView(number)
             row.addView(unit)
-            addView(row.apply { setPadding(0, dpi(ctx, Sp.XS), 0, 0) })
+            addView(row)
         }
         return TelemetryBody(root) { n ->
             number.text = n.display

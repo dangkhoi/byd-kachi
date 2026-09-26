@@ -274,14 +274,22 @@ class VoiceDispatcher(
         val def = ControlRegistry.byId(i.id)
         if (def == null) { say(VoiceReply.failed(i)); return }
         val st = ControlTileState.shared
-        val arg = when {
-            i.relative != 0 -> {
-                val actual = runCatching { control().readState(def.id) }.getOrNull() ?: st.value(def)
-                def.clamp(actual + i.relative * def.step)
-            }
-            else -> i.value ?: 1
+        // ═══ UX4 — nấc ĐÁY của nút có `autoId` tên là **AUTO**, không phải mức 0 ══════════════════════════════
+        // Cùng bảng quyết định THUẦN mà cú chạm −/+ dùng ([ClimateAuto.stepPlan] ← `ControlTileFactory.nudge`): nói
+        // *"giảm gió"* ở mức 1 phải **bật gió tự động**, chứ không ghi mức 0 ([ĐO xe 2026-09-20] xe **bỏ qua** lệnh
+        // ấy ⇒ ngón tay và câu nói làm hai việc khác nhau cho cùng một ô). Nút không khai `autoId` đi nhánh `SetLevel`
+        // y như trước — không một `if (def.id == "fan")` nào (CLAUDE.md §7). `autoOn` lấy từ ẢNH CHỤP đang có
+        // (`ac_auto` nạp cùng `fan` — `CarDataDemand.controlsOf`), KHÔNG đọc thêm một lượt HAL: ngân sách là MỘT lượt
+        // đọc cho MỘT câu ([ĐO xe 1.68] 33 lượt/phút), và `null` = *"chưa biết"* đã cho đúng nhánh bật-auto ở nấc đáy.
+        val plan = if (i.relative == 0) null else {
+            val actual = runCatching { control().readState(def.id) }.getOrNull() ?: st.value(def)
+            val autoOn = ClimateAuto.autoOnFromControl(state().carStatus.controls[def.autoId])
+            ClimateAuto.stepPlan(def, actual, i.relative * def.step, autoOn)
         }
+        val arg = plan?.shown ?: (i.value ?: 1)
         val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
+        // Đang AUTO mà còn nói *"giảm"* (`act = false`): mã này không có nấc TẮT ⇒ **không bắn gì**, nhưng vẫn NÓI RA.
+        if (plan != null && !plan.act) { say(VoiceReply.autoLevel(def.id)); return }
         // ═══ C (owner test xe 2026-09-19) · CỐP/CA-PÔ chỉ MỞ được khi xe đang DỪNG ════════════════════════
         //
         // Đặt **trước** [CarControlPort.actByKind], sau khi đã biết `arg`: chỉ chặn lượt MỞ (`arg > 0`) — đóng
@@ -301,46 +309,58 @@ class VoiceDispatcher(
                 ?: state().carStatus.drivetrain.speedKmh
             if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown)); return }
         }
-        val ok = runCatching { control().actByKind(def.id, arg) }.getOrDefault(false)
-        // Ghi lại trạng thái lạc quan y như cú chạm: hai bề mặt phải nói cùng một điều về MỘT cái xe.
-        if (ok) when (def.kind) {
-            ControlKind.TOGGLE -> st.setOn(def.id, arg > 0)
-            ControlKind.STEP -> st.setValue(def.id, arg)
-            ControlKind.SELECT -> st.setSel(def.id, arg)
-            else -> Unit
-        }
-        if (!ok) {
-            // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
-            //
-            // [ĐO xe 2026-09-16] `ac_auto` khai feature `1324355606`, id đó **không nằm trong bảng của xe
-            // owner**, mà owner xác nhận xe **CÓ** điều hoà auto. Tới 1.68 cả hai ca đều ra đúng một câu
-            // (*"xe không nhận lệnh"*), nên người lái nói *"điều hoà"*, nghe báo hỏng, rồi **thử lại** — mãi.
-            // Tester nêu đúng chỗ này: *"điều hoà với lọc bụi nó không hiểu là cái gì"*.
-            //
-            // Phép phân biệt nằm ở tầng BIẾT XE (cổng điều khiển hỏi bảng feature-id thật); `:core` chỉ giữ
-            // **hình dạng** của ca và câu chữ ([VoiceReply.uncontrollable]). Không đọc được bảng ⇒
-            // `wiredOnThisCar` trả `true` ⇒ y nguyên câu cũ, không bao giờ đoán bừa là *"xe không có"*.
-            val absent = VoiceReply.uncontrollable(shown) { id ->
-                !runCatching { control().wiredOnThisCar(id) }.getOrDefault(true)
+        // ═══ [SOÁT 2.74 · P2] Cú ghi RỜI AUTO chờ 400 ms ⇒ đuôi *"nói gì"* phải là một LỜI GỌI LẠI ═════════════
+        //
+        // `VoiceSession` gọi lớp này trên luồng VẼ, nên nhánh hai-lệnh của [VoiceClimateStep] trả lời từ luồng nền
+        // (qua `onUi`), ba nhánh còn lại trả lời ngay trên luồng gọi. Viết thành `fun` CỤC BỘ — không phải một
+        // `private fun` sáu tham số — để `def`/`arg`/`shown`/`st`/`plan` giữ đúng nghĩa tại chỗ: mã dưới đây y
+        // nguyên bản trước, chỉ khác ở chỗ nó được gọi từ đâu.
+        fun finish(ok: Boolean) {
+            // Ghi lại trạng thái lạc quan y như cú chạm: hai bề mặt phải nói cùng một điều về MỘT cái xe.
+            if (ok) when (def.kind) {
+                ControlKind.TOGGLE -> st.setOn(def.id, arg > 0)
+                ControlKind.STEP -> st.setValue(def.id, arg)
+                ControlKind.SELECT -> st.setSel(def.id, arg)
+                else -> Unit
             }
-            say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
-            return
+            if (!ok) {
+                // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
+                //
+                // [ĐO xe 2026-09-16] `ac_auto` khai feature `1324355606`, id đó **không nằm trong bảng của xe
+                // owner**, mà owner xác nhận xe **CÓ** điều hoà auto. Tới 1.68 cả hai ca đều ra đúng một câu
+                // (*"xe không nhận lệnh"*), nên người lái nói *"điều hoà"*, nghe báo hỏng, rồi **thử lại** — mãi.
+                // Tester nêu đúng chỗ này: *"điều hoà với lọc bụi nó không hiểu là cái gì"*.
+                //
+                // Phép phân biệt nằm ở tầng BIẾT XE (cổng điều khiển hỏi bảng feature-id thật); `:core` chỉ giữ
+                // **hình dạng** của ca và câu chữ ([VoiceReply.uncontrollable]). Không đọc được bảng ⇒
+                // `wiredOnThisCar` trả `true` ⇒ y nguyên câu cũ, không bao giờ đoán bừa là *"xe không có"*.
+                val absent = VoiceReply.uncontrollable(shown) { id ->
+                    !runCatching { control().wiredOnThisCar(id) }.getOrDefault(true)
+                }
+                say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
+                return
+            }
+            // ═══ E (owner test xe 2026-09-19) · nút nào ĐỌC ĐƯỢC thì đọc lại xác nhận, không trả lời mù ═════════
+            //
+            // Ba lối, và cái thứ ba là chỗ thành thật: nút **không có** [ControlDef.readKey] thì giữ nguyên câu 1.79
+            // (còn cả đuôi *"chưa kiểm trên xe"*) — ở đó thật sự không có gì để kiểm, nên hedge là đúng.
+            //
+            // Cổng kind CỐ Ý hẹp hơn *"có readKey"*: [ControlKind.BUTTON] là nút bấm-một-phát (`pm25_clean_now`), mức
+            // sau khi bấm **không nói gì** về việc cú bấm có tới hay không ⇒ so mức ở đó sẽ báo *"xe không nhận lệnh"*
+            // cho một cú bấm hoàn toàn bình thường. [ControlKind.SELECT] cũng vậy: mức của nó là **chỉ số lựa chọn**,
+            // `> 0` không mang nghĩa *bật* (chỉ số 0 là một lựa chọn hợp lệ, không phải "tắt").
+            when {
+                // UX4 · `EnableAuto` (auto BẬT, không ghi mức): mức xe đang thổi KHÔNG đổi, nên đọc-lại-so-mức sẽ nói
+                // *"đã đặt Gió = 1"* — đúng số, sai việc. Câu thuật trạng thái mới là câu thật.
+                plan?.auto == true -> say(VoiceReply.autoLevel(def.id))
+                def.kind == ControlKind.STEP -> readback.step(shown, st)
+                (def.kind == ControlKind.TOGGLE || def.kind == ControlKind.COVER) && def.readKey.isNotBlank() ->
+                    readback.act(shown, def, arg, st)
+                else -> say(VoiceReply.done(shown))
+            }
         }
-        // ═══ E (owner test xe 2026-09-19) · nút nào ĐỌC ĐƯỢC thì đọc lại xác nhận, không trả lời mù ═════════
-        //
-        // Ba lối, và cái thứ ba là chỗ thành thật: nút **không có** [ControlDef.readKey] thì giữ nguyên câu 1.79
-        // (còn cả đuôi *"chưa kiểm trên xe"*) — ở đó thật sự không có gì để kiểm, nên hedge là đúng.
-        //
-        // Cổng kind CỐ Ý hẹp hơn *"có readKey"*: [ControlKind.BUTTON] là nút bấm-một-phát (`pm25_clean_now`), mức
-        // sau khi bấm **không nói gì** về việc cú bấm có tới hay không ⇒ so mức ở đó sẽ báo *"xe không nhận lệnh"*
-        // cho một cú bấm hoàn toàn bình thường. [ControlKind.SELECT] cũng vậy: mức của nó là **chỉ số lựa chọn**,
-        // `> 0` không mang nghĩa *bật* (chỉ số 0 là một lựa chọn hợp lệ, không phải "tắt").
-        when {
-            def.kind == ControlKind.STEP -> readback.step(shown, st)
-            (def.kind == ControlKind.TOGGLE || def.kind == ControlKind.COVER) && def.readKey.isNotBlank() ->
-                readback.act(shown, def, arg, st)
-            else -> say(VoiceReply.done(shown))
-        }
+        if (plan == null) finish(runCatching { control().actByKind(def.id, arg) }.getOrDefault(false))
+        else climate.apply(def, plan) { ok -> finish(ok) }
     }
 
     /**
@@ -349,6 +369,9 @@ class VoiceDispatcher(
      * Dựng **một lần** cho cả đời cầu, cùng lẽ với [targets]: nó chỉ cầm chính những lambda mà cầu này đã cầm.
      */
     private val readback = VoiceReadback(control = control, say = say, onUi = onUi, background = background)
+
+    /** UX4 · thi hành [ClimateAuto.StepPlan]; nhánh rời-AUTO chờ 400 ms nên phải xuống luồng nền — xem [VoiceClimateStep]. */
+    private val climate = VoiceClimateStep(control = control, onUi = onUi, background = background)
 
     private fun runMacro(i: VoiceIntent.Macro) {
         val macro = ActionMacros.byId(i.id)

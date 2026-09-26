@@ -195,10 +195,19 @@ class VoiceVadWiringContractTest {
         assertTrue(probe.contains("it.headTrimSamples(n)"), "và phải là CÙNG chế độ `head`")
         assertTrue(probe.contains("VoiceCapture.CHUNK_SAMPLES"), "nạp theo đúng nhịp khối của micro")
         assertTrue(probe.contains("it.flush()"), "tệp hết ⇒ phải chốt nốt đoạn cuối")
-        // Cả HAI lượt giải mã (ngữ pháp + tự do) phải dùng cùng độ dài đã cắt.
-        assertEquals(
-            2, Regex("""decodeAll\(pcm\.first, trimmed\)""").findAll(probe).count(),
-            "cả lượt 1 lẫn lượt 2 phải giải mã đúng khúc đã cắt — lệch nhau là hai phép đo nói về hai khúc khác nhau",
+        // ═══ VOICE-OPEN-TURN (2026-09-26) — đường đo nay đi **hai pha** như phiên thật ═════════════════
+        // Trước bản này cả hai lượt (ngữ pháp + tự do) đều là `decodeAll(pcm.first, trimmed)`. Phiên thật nay giải
+        // mã vế TRƯỚC tại **điểm ngắt đầu tiên** (`headTrim`) rồi mới ghép vế sau, nên đường đo phải làm đúng thế —
+        // giữ nguyên chuỗi cũ ở đây là để đường đo nói về một phiên KHÔNG còn tồn tại. Cam kết thì không mất: **mọi**
+        // lượt giải mã vẫn nạp một khúc ĐÃ CẮT, và tệp một đoạn (mọi WAV của bộ đo) có `headTrim == trimmed`.
+        assertTrue(probe.contains("r.decodeAll(pcm, headTrim)"), "vế TRƯỚC phải giải mã đúng khúc cắt tại điểm ngắt đầu")
+        assertTrue(
+            probe.contains("it.decodeAll(pcm.first, trimmed)"),
+            "lượt TỰ DO (R16) vẫn phải giải mã đúng khúc đã cắt",
+        )
+        assertTrue(
+            probe.contains("onSplit(") && probe.contains("it.tailRange(segmentsThen, n)"),
+            "điểm ngắt đầu + dải vế sau phải tính trong CÙNG một lượt đẩy VAD (hai lượt là hai trạng thái lệch nhau)",
         )
         assertFalse(
             Regex("""decodeAll\(pcm\.first, pcm\.second\)""").containsMatchIn(probe),

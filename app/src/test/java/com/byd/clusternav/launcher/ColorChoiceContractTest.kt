@@ -192,6 +192,14 @@ class ColorChoiceContractTest {
     fun `sinh bang do tuong phan cho moi lua chon mau`() {
         val out = StringBuilder()
         out.append("# Bảng đo tương phản — P1b · R8 chọn màu (AC8.5)\n\n")
+        // [SOÁT Opus 2026-09-27] Header R2.2 (`.kiro/steering/documentation-and-backlog.md`) phải do CHÍNH bộ
+        // sinh phát ra. Thêm tay vào tệp `.md` thì lượt sinh SAU xoá mất — và điều đó đã xảy ra thật ở lượt
+        // 2.74 (cả hai bảng mất đúng 2 dòng header), tức `DOC-DEBT (4)` không còn là dự báo. Vá bộ sinh, không
+        // vá tệp sinh ra.
+        out.append(
+            "> **Trạng thái**: Current · **Cập nhật**: sinh lại mỗi lượt `:app:testDebugUnitTest` · **Mục đích**: " +
+                "bảng đo tương phản P1b · R8 chọn màu, AC8.5 (sinh bằng máy — đừng sửa tay).\n\n",
+        )
         out.append("> SINH BẰNG MÁY từ `KachiPalette` + `KachiPaletteDerive` bởi `ColorChoiceContractTest`. **Không sửa tay.**\n")
         out.append("> Mỗi dòng: mực TỆ NHẤT trong mọi cặp chữ/nền của lựa chọn đó, SAU khi `ContrastGuard` đã tự chỉnh.\n\n")
         out.append("| Bảng · màu nhấn · tông | accent | gradFrom→To | ON_ACCENT | Cặp tệ nhất | Đo được | Kết |\n|---|---|---|---|---|---|---|\n")

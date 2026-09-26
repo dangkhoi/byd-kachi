@@ -95,7 +95,12 @@ class ControlLevelsTest {
      */
     @Test
     fun `thang muc nam tren duong doc that, khong con la bang chi bai test dung`() {
-        listOf("seatc" to "seat_vent_state", "seath" to "seat_heat_state").forEach { (id, datum) ->
+        // ⚠ UX5b (2026-09-27): **bốn** nút, không còn hai — hai ô ghế PHỤ nay cũng có `readKey` (cùng getter, khác
+        // `seatID`). Bảng ở đây phải phủ CẢ BỐN, nếu không thì hai nút mới có thang mức mà không bài nào đo đường đọc.
+        listOf(
+            "seatc" to "seat_vent_state", "seath" to "seat_heat_state",
+            "seatc_r" to "seat_vent_state_r", "seath_r" to "seat_heat_state_r",
+        ).forEach { (id, datum) ->
             assertEquals(datum, ControlRegistry.byId(id)!!.readKey, "$id phải đọc qua datum $datum")
             // [2026-09-20] seatc/seath nay là SELECT (3 mức) ⇒ readState trả THẲNG mức (không quy 0/1 như TOGGLE):
             // raw 3 = mức 2, raw 1 = mức 0 (Tắt). [ĐO xe 2026-09-16] raw 3 ⇐ màn xe "mức 2".
