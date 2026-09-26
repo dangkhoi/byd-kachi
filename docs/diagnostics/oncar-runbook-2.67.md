@@ -1,6 +1,6 @@
 # Runbook buổi xe 2.67 — baseline bản cũ → cài mới → so cùng lệnh · 2026-09-26
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-26 · **Mục đích**: một buổi xe ~40 phút, thứ tự cố định, mỗi bước có lệnh + kết quả cần chép lại. Kết quả điền vào `perf-closeout-2026-09-25.md` §4 (C1–C10) và `camera-lag-analysis-2026-09-26.md` §3. Cần adb vào xe (cầu `nc` — memory `kachi-adb-car-tunnel`) HOẶC chỉ chụp màn `DiagActivity`.
+> **Trạng thái**: Historical (thay bởi `oncar-runbook-2.69.md`) · **Cập nhật**: 2026-09-26 · **Mục đích**: một buổi xe ~40 phút, thứ tự cố định, mỗi bước có lệnh + kết quả cần chép lại. Kết quả điền vào `perf-closeout-2026-09-25.md` §4 (C1–C10) và `camera-lag-analysis-2026-09-26.md` §3. Cần adb vào xe (cầu `nc` — memory `kachi-adb-car-tunnel`) HOẶC chỉ chụp màn `DiagActivity`.
 
 ## 0. Chuẩn bị (ở nhà)
 ```bash

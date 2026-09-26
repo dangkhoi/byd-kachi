@@ -85,6 +85,7 @@ Dịch vụ sống [ĐO `dumpsys activity services`]: VoiceKeyKeepAlive · NavNo
 - 25 ca FAIL có sẵn ở HEAD: tính năng đã bỏ (khoá xe/đèn viền/chiếu cụm), nhãn đổi ("Ghế sưởi" → "Sưởi ghế lái", "Kính trước-trái" → "Kính lái"), 2 ca CONFIRM. ⇒ bộ ca `voice-cases.tsv` lệch sản phẩm — mục backlog `VOICE-CASES-DRIFT` (không phải hồi quy của vòng này).
 - **Sau CLOSE-2 (2026-09-26, bộ ca soát lại theo 2.67 — 106 ca, chỉ sửa TSV):** [ĐO máy ảo, 3 lượt liên tiếp] **96/102 → 100/106 → 101/106**; 5 FAIL còn lại là cố ý (BUG-CANDIDATE `VoiceFeatureGone.ALL` thiếu dòng cho khoá xe · mở khoá cửa · rời xe · âm lượng · độ sáng màn); 1 ca FLAKY t52 (đọc `mResumedActivity` 3 s cố định). Chi tiết ở backlog CLOSE-2.
 - T2 (WAV → sherpa → ý định): xem §3.5.
+- **Harness ổn định 3 lượt (CLOSE-2 · 2026-09-26 13:33–13:45, cùng máy ảo, 2.68 vehicleTest, `scripts/emulator/voice-e2e.sh --only say`, 3 lượt liên tiếp không cài lại):** [ĐO] **106/106 · 106/106 · 106/106 — 0 ca lệch giữa lượt** (so cột PASS/FAIL của 3 `report.md`, `diff` rỗng). Trước vá, 3 lượt cùng điều kiện: 105/106 · 106/106 · 105/106 — ca lệch duy nhất là t52. **Gốc t52** [ĐO `am stack list` + `dumpsys activity activities`]: task YT Music `visible=true` trên `displayId=65`/`81` = màn ảo ô 0 của Kachi (`kachi-slot-0-…`, Kachi gieo lại app trong ô mỗi lần mở màn chính); `dumpsys` in `mResumedActivity` riêng cho từng `Display #N`, harness cũ `grep -m1` chỉ lấy display 0 ⇒ ca PASS/FAIL tuỳ lượt đó task YT Music nằm ở display 0 hay trong ô — không phải "chưa kịp 3 s" (poll 8 s một mình vẫn `⏱>8s`, Kachi resumed ở #0). Vá harness: `poll_resumed` (0,5 s, trần 8 s, khớp gói ở mọi display, in `#N … ⏱Ns`) + `settle_before_side` (`start_home` trước mọi ca `resumed:`/`slot:`). Số phụ: 33 lần đọc `resumed:` — 31 khớp ⏱0s, 2 khớp ⏱1s; 32 ở #0, 1 ở #81 (t52 lượt 2). Sau mỗi lượt: bridge `state` → `test_mode_off`, `kachi_test_bridge.xml` không còn [ĐO].
 
 ### 3.5 T2 (WAV → sherpa-onnx → ý định) trên bản vá
 
@@ -126,6 +127,13 @@ Dịch vụ sống [ĐO `dumpsys activity services`]: VoiceKeyKeepAlive · NavNo
 - Full 5 module `--rerun-tasks`: **4143 / 0 fail** (2.67: 4105). `lintRelease` 0 error; UnusedResources 138 → 97 (77 còn lại bị 2 tệp niêm phong T11 giữ). APK release 43 467 609 B.
 - Voice E2E T1 sau CLOSE-2: **106/106 PASS** (bộ ca 105 → 106, 25 ca lệch sản phẩm đã sửa kỳ vọng, 5 dòng `VoiceFeatureGone` mới, t52 không lệch lượt này).
 - CLOSE-3b ảnh chụp ngữ pháp: `files/voice/grammar-snapshot.tsv` có ngay sau mở màn chính (2 hồ sơ + 1 địa chỉ), **tự cập nhật `active` khi harness đổi hồ sơ** (mốc 1790399213125 → 1790399341450) ⇒ `:wake` đọc được hồ sơ/sổ địa chỉ mới nhất mà không qua SharedPreferences cache. 🚗 kiểm câu "đổi sang hồ sơ X" bằng nút mic khi wake ON.
+
+### 3.10 Đợt 2.69 (relay ô/bố cục từ `:wake` · chủ sở hữu phiên · harness ổn định) [ĐO 2026-09-26 13:5x]
+
+- Full 5 module `--rerun-tasks`: **4169 / 0 fail**; `lintRelease` 0 error; APK release 43 483 993 B.
+- Relay nửa Activity (máy ảo, không cần audio): `am start … voice_home_action=assign_app_to_slot arg=1:com.google.android.youtube deadline=now+5 s` ⇒ prefs `slot_1 = app:com.google.android.youtube` (thi hành thật); `set_layout` với `deadline=1` ⇒ `KachiVoiceEntry: việc set_layout tới sau hạn — :wake đã từ chối, không thi hành` (không làm việc đã bị nói "không"). 0 crash.
+- Voice E2E T1 **106/106** (harness sau vá poll mọi display: 3 lượt liên tiếp 106/106, 0 lệch — gốc t52 = app phát trong ô ở display ảo `kachi-slot-0`, không phải "3 s chưa kịp").
+- 🚗 D12/D13 (`oncar-runbook-2.69.md`): đường `:wake` đầy đủ cần audio thật.
 
 ## 4. 🚗 NEEDS-ONCAR (một buổi, theo thứ tự; playbook cũ §6 `perf-profile-2026-09-16.md` vẫn áp)
 

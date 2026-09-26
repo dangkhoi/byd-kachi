@@ -57,8 +57,10 @@ android {
         // CLOSE-2..10 2026-09-26 ⇒ **2.68 (169)**: nút mic đi qua `:wake` khi Hey Kachi bật (hết bản mô hình ASR thứ hai),
         // tách 4 tệp >500 dòng theo vai, ảnh xe thử-lại theo đồng hồ, coroutines 1.11.0, gỡ 41 resource không dùng,
         // bộ ca voice E2E khớp sản phẩm + 5 dòng VoiceFeatureGone. 2.67 đã báo owner ⇒ số hiệu riêng.
-        versionCode = 169
-        versionName = "2.68"
+        // 2026-09-26 ⇒ **2.69 (170)**: từ `:wake` làm được "mở app vào ô N"/"đổi bố cục" (relay + ack có hạn), một chủ sở hữu
+        // phiên `:wake` (LISTEN_NOW cắt phiên đang nói), harness voice ổn định 3 lượt, tách test 761 dòng. 2.68 đã báo owner.
+        versionCode = 170
+        versionName = "2.69"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

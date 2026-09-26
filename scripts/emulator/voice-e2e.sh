@@ -252,6 +252,60 @@ XML
 
 start_home() { adbs shell am start -n "$HOME_ACT" >/dev/null; sleep 3; }
 
+# ═══ Tác dụng phụ `resumed:<pkg>` — đọc `mResumedActivity` bằng POLL, không đọc một lần ═══════════
+#
+# [CLOSE-2 · 2026-09-26] Bản cũ đọc `dumpsys activity activities` ĐÚNG MỘT LẦN sau 3 s cố định (`sleep 1` +
+# `sleep 2`). t52 *"mở bài Diễm Xưa trên YouTube Music"* lệch giữa các lượt (lượt 2 FAIL / lượt 3 PASS, backlog
+# CLOSE-2) dù app trả `✓ … đang phát` đúng. Nghi ban đầu [ĐOÁN]: 3 s chưa đủ cho YT Music lên — gốc THẬT đo được
+# nằm ở khối ⚠ dưới (display). Poll vẫn đúng về nguyên tắc: ca đo *"app CÓ lên màn không"*, không đo *"lên trong
+# bao lâu"* ⇒ poll mỗi 0,5 s, trần 8 s (`RESUMED_WAIT_S`), khớp là dừng ngay. Hết trần thì in dòng đọc được CUỐI
+# (để báo cáo nói rõ app nào đang chiếm màn) kèm ⏱ để phân biệt "chưa kịp" với "không bao giờ lên".
+# `SECONDS` (bash 3.2 của macOS không có EPOCHREALTIME) ⇒ độ phân giải 1 s cho phần đo giờ; nhịp poll vẫn 0,5 s.
+#
+# ⚠ Đọc MỌI display, không chỉ display 0. [ĐO 2026-09-26, lượt stable-run1] poll 8 s vẫn FAIL t52: `am stack list`
+# cho thấy task YT Music `visible=true` trên `displayId=65` = màn ảo ô 0 của Kachi (`kachi-slot-0-…`, Kachi gieo lại
+# app trong ô mỗi lần mở màn chính), và `dumpsys activity activities` in `mResumedActivity` RIÊNG cho từng
+# `Display #N`. `grep -m1` cũ chỉ lấy dòng đầu = display 0 (Kachi) ⇒ app đã lên màn trong ô mà harness bảo "không
+# lên". Với người lái, app hiện trong ô CŨNG là "lên màn" ⇒ khớp gói ở BẤT KỲ display nào; in kèm `#N` (display) để báo
+# cáo nói rõ nó lên ở đâu. Không khớp ⇒ in dòng của display 0 (app nào đang chiếm màn chính).
+RESUMED_WAIT_S=8
+read_resumed_all() {
+  adbs shell dumpsys activity activities | tr -d '\r' | awk '
+    /^ *Display #[0-9]+/ { d=$2 }
+    /mResumedActivity|topResumedActivity/ { sub(/^ +/, ""); print d " " $0 }'
+}
+# ⚠ Khớp `"$pkg/"` (dấu gạch của tên component trong `ActivityRecord{… pkg/.Activity}`), KHÔNG khớp `"$pkg"` trần:
+# `com.google.android.youtube` là TIỀN TỐ của nhiều gói thật (`…youtube.music`, `…youtube.tv`), nên một lượt t38/t40
+# *"mở YouTube"* sẽ PASS oan nếu YT Music đang chiếm màn. `com.google.android.apps.youtube.music` của t52 tình cờ
+# không bị (có `apps.` ở giữa) — tức bài kiểm đang đúng vì may, không vì luật. Thêm một ký tự là hết ca may rủi.
+poll_resumed() {
+  local pkg=$1 all hit t0=$SECONDS
+  while :; do
+    all="$(read_resumed_all)"
+    hit="$(printf '%s\n' "$all" | grep -m1 -F "$pkg/")"
+    if [ -n "$hit" ]; then printf '%s ⏱%ss' "$hit" "$((SECONDS - t0))"; return 0; fi
+    [ $((SECONDS - t0)) -lt "$RESUMED_WAIT_S" ] || break
+    sleep 0.5
+  done
+  printf '%s ⏱>%ss' "$(printf '%s\n' "$all" | head -1)" "$RESUMED_WAIT_S"
+  return 1
+}
+
+# ═══ Trạng thái ĐẦU VÀO xác định cho ca có kiểm `resumed:*` / `slot:*` ═══════════════════════════
+#
+# [CLOSE-2 · 2026-09-26] Ca kiểm "app lên màn" chỉ có nghĩa khi TRƯỚC câu nói app đó CHƯA ở trên đỉnh và Kachi
+# đang là activity resumed (móc của cầu sống theo Activity — xem ghi chú sau mỗi ca `resumed:`). Nền cũ phụ thuộc
+# ca đứng trước: t45 *"mở bản đồ"* (side "-") để Maps trên đỉnh suốt t46–t52. Ở đây đưa về MỘT trạng thái:
+# `start_home` (Kachi resumed). KHÔNG `force-stop` app đích: khởi động lạnh trên máy ảo 2 lõi thêm phương sai
+# vài giây — đúng thứ làm ca lệch giữa các lượt — trong khi ca đo "app lên màn", không đo "khởi động lạnh".
+# `LAST_ENDED_HOME` tránh gọi `start_home` hai lần liên tiếp (ca `resumed:` trước đã kết thúc bằng `start_home`).
+LAST_ENDED_HOME=0
+settle_before_side() {
+  case "$1" in
+    resumed:*|slot:*) [ "$LAST_ENDED_HOME" = "1" ] || start_home;;
+  esac
+}
+
 note "bật chế độ kiểm thử"
 TEST_MODE_ON=1
 enable_test_mode
@@ -303,6 +357,8 @@ run_t1() {
   while IFS=$'\t' read -r id lop text kinds want conf auto side prefs <&3; do
     case "${id:-}" in ''|'#'*) continue;; esac
     text="${text//@PROFILE@/$PROFILE}"; want="${want//@PROFILE@/$PROFILE}"; side="${side//@PROFILE@/$PROFILE}"
+    # Nền xác định TRƯỚC ca có kiểm `resumed:`/`slot:` (CLOSE-2, xem `settle_before_side`).
+    settle_before_side "$side"
     # Cột `prefs` đặt TRƯỚC lượt `say`: từ 1.66 một ca `confirm=1` chỉ hỏi lại khi mã của nó đang được bật.
     apply_case_prefs "${prefs:--}"
     local args="--es cmd say --es text $(shq "$text")"
@@ -314,7 +370,8 @@ run_t1() {
     sleep 1
     local sidereal="-"
     case "$side" in
-      resumed:*) sleep 2; sidereal="$(adbs shell dumpsys activity activities | grep -m1 -E 'mResumedActivity|topResumedActivity' | tr -d '\r')";;
+      # CLOSE-2: poll ≤ RESUMED_WAIT_S thay cho `sleep 2` + đọc một lần (xem `poll_resumed`).
+      resumed:*) sidereal="$(poll_resumed "${side#resumed:}")";;
       slot:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" slot "${side#slot:}")";;
       profile:*) sidereal="$(state_json | python3 "$HERE/voice_e2e_json.py" get profile.active)";;
       # L7 — bố cục bằng giọng nói: đọc PRESET ĐANG DÙNG từ chính bridge `state` (cùng nguồn mà màn hình vẽ),
@@ -326,7 +383,7 @@ run_t1() {
       media) sidereal="$(adbs shell dumpsys media_session | grep -m1 -i 'package=' | tr -d '\r')";;
     esac
     # Sau mỗi ca mở app: đưa Kachi lên lại để ca sau còn móc (hooks sống theo Activity, không theo tiêu điểm).
-    case "$side" in resumed:*) start_home;; esac
+    case "$side" in resumed:*) start_home; LAST_ENDED_HOME=1;; *) LAST_ENDED_HOME=0;; esac
     # Dọn NGAY sau ca: một mã còn bật sẽ làm ca kế tiếp (không khai `prefs`) bị hỏi lại ⇒ FAIL sai địa chỉ.
     reset_case_prefs "${prefs:--}"
     # ⚠ Cột `prefs` đi SAU `json` (cột thứ 10): `voice_e2e_json.py report` zip đúng 9 tên đầu, nên thêm ở

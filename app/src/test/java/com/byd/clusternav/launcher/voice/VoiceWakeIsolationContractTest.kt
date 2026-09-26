@@ -27,6 +27,10 @@ class VoiceWakeIsolationContractTest {
     private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val service by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt") }
+    // 2.69 — ba tệp `:wake` tách ra khỏi service (bộ dây phiên · relay Activity · chủ sở hữu phiên) canh cùng luật.
+    private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt") }
+    private val relay by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHomeRelay.kt") }
+    private val sessions by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessions.kt") }
     private val listener by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt") }
     private val application by lazy { code("src/main/java/com/byd/clusternav/KachiApplication.kt") }
     private val bridge by lazy { code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeWake.kt") }
@@ -112,7 +116,8 @@ class VoiceWakeIsolationContractTest {
     @Test
     fun `ba tep wake khong cham do thi DI cua launcher`() {
         val kws = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeKws.kt")
-        mapOf("VoiceWakeService.kt" to service, "VoiceWakeListener.kt" to listener, "VoiceWakeKws.kt" to kws)
+        mapOf("VoiceWakeService.kt" to service, "VoiceWakeListener.kt" to listener, "VoiceWakeKws.kt" to kws,
+            "VoiceWakeSessionFactory.kt" to factory, "VoiceWakeHomeRelay.kt" to relay, "VoiceWakeSessions.kt" to sessions)
             .forEach { (name, src) ->
                 listOf("AppContainer", "ShellTransport", "WindowCommandDispatcher", "NavRepository", "SimpleCastRuntime")
                     .forEach { banned ->
@@ -152,7 +157,8 @@ class VoiceWakeIsolationContractTest {
         val readersThatWrite = listOf(
             "Prefs.badgeCenterX", "Prefs.badgeCenterY", "Prefs.voiceKeyBindings", "Prefs.voiceKeyTargetSpec",
         )
-        mapOf("VoiceWakeService.kt" to service, "VoiceWakeListener.kt" to listener, "VoiceWakeKws.kt" to kwsSrc)
+        mapOf("VoiceWakeService.kt" to service, "VoiceWakeListener.kt" to listener, "VoiceWakeKws.kt" to kwsSrc,
+            "VoiceWakeSessionFactory.kt" to factory, "VoiceWakeHomeRelay.kt" to relay, "VoiceWakeSessions.kt" to sessions)
             .forEach { (name, src) ->
                 Regex("""Prefs\.set[A-Za-z0-9_]*""").findAll(src).map { it.value }.toSet().forEach { call ->
                     assertTrue(
@@ -414,6 +420,9 @@ class VoiceWakeIsolationContractTest {
     fun `cac tep cua luot nay khong vuot tran 500 dong`() {
         mapOf(
             "VoiceWakeService.kt" to service,
+            "VoiceWakeSessionFactory.kt" to factory,
+            "VoiceWakeHomeRelay.kt" to relay,
+            "VoiceWakeSessions.kt" to sessions,
             "VoiceWakeListener.kt" to listener,
             "ClusterNavBridgeWake.kt" to bridge,
             "KachiApplication.kt" to application,

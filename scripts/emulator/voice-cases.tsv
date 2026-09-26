@@ -15,6 +15,8 @@
 #    ([ĐO] `VoiceRisk.confirmId`: `is VoiceIntent.Nav -> null`; `nav_query` không còn trong `askableIds()`).
 #    ⇒ t53/t55 nay `confirm=0`, t55 bỏ `prefs=voice_confirm_ids=nav_query` (mã đó bật lên cũng không hỏi).
 #  • side: "-" | resumed:<pkg> | slot:<n>:<pkg> | profile:<ten> | preset:<TEN_LAYOUT> | chip_labels:<True|False> | media
+#    resumed:<pkg> = gói đó là `mResumedActivity` ở BẤT KỲ display (display 0 HOẶC màn ảo ô của Kachi — [ĐO 2026-09-26]
+#    YT Music lên trong ô 0 ⇒ `displayId=65/81`), harness poll 0,5 s trần 8 s và `start_home` TRƯỚC ca (CLOSE-2).
 #  • prefs: "-" | <khoá>=<giá trị>[;<khoá>=<giá trị>…] — đặt TRƯỚC ca, harness tự trả về mặc định SAU ca
 #    (`prefs_set`, danh sách trắng ở `TestBridgeCommands.WRITABLE_PREFS_KEYS`). Giá trị rỗng = xoá/mặc định.
 #  • @PROFILE@ được harness thay bằng một hồ sơ có thật (đọc từ bridge `state`).

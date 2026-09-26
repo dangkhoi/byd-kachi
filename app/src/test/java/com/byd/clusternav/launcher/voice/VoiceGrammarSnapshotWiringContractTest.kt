@@ -26,6 +26,16 @@ class VoiceGrammarSnapshotWiringContractTest {
     private val prefsProfile by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsProfile.kt") }
     private val store by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceGrammarSnapshotStore.kt") }
     private val service by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt") }
+    // 2.69 — `buildSession` ở tệp riêng; ba tệp `:wake` chạm phiên đều bị canh "không chạm prefs / không ghi ảnh chụp".
+    private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt") }
+    private val wakeFiles by lazy {
+        listOf(
+            "VoiceWakeService.kt" to service,
+            "VoiceWakeSessionFactory.kt" to factory,
+            "VoiceWakeHomeRelay.kt" to code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHomeRelay.kt"),
+            "VoiceWakeSessions.kt" to code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessions.kt"),
+        )
+    }
     private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
 
     private val hook = "VoiceGrammarSnapshotStore.write(this)"
@@ -82,7 +92,7 @@ class VoiceGrammarSnapshotWiringContractTest {
 
     @Test
     fun `buildSession doc anh chup cho hotword, parser va dispatcher - khong con emptyList hay HomeUiState tran`() {
-        val build = SourceRoots.body(service, "private fun buildSession(): VoiceSession {")
+        val build = SourceRoots.body(factory, "internal fun VoiceWakeService.buildSession(): VoiceSession {")
         assertTrue(build.contains("VoiceGrammarSnapshotStore.read(app)"), "buildSession phải đọc tệp ảnh chụp")
         assertTrue(build.contains("profiles = { grammar().profiles }"), "hồ sơ vào hotword + parser (VoiceSession.profiles)")
         assertTrue(build.contains("places = { grammar().placeLabels() }"), "nhãn sổ địa chỉ vào hotword + parser (VoiceSession.places)")
@@ -104,8 +114,10 @@ class VoiceGrammarSnapshotWiringContractTest {
         }
         assertTrue(read.contains("readText()"), "read() phải đọc tệp")
         assertTrue(read.contains("VoiceGrammarSnapshot.decode("), "giải mã ở :core (đã test thuần), không tự đọc dòng ở đây")
-        assertFalse(service.contains("WorkspacePrefs"), "VoiceWakeService.kt không được mở WorkspacePrefs (SharedPreferences cache theo tiến trình)")
-        assertFalse(service.contains("SharedPreferences"), "VoiceWakeService.kt không được chạm SharedPreferences")
+        wakeFiles.forEach { (n, src) ->
+            assertFalse(src.contains("WorkspacePrefs"), "$n không được mở WorkspacePrefs (SharedPreferences cache theo tiến trình)")
+            assertFalse(src.contains("SharedPreferences"), "$n không được chạm SharedPreferences")
+        }
     }
 
     @Test
@@ -115,7 +127,7 @@ class VoiceGrammarSnapshotWiringContractTest {
         val atomic = SourceRoots.body(store, "private fun writeAtomic(ctx: Context, text: String): Boolean")
         assertTrue(atomic.contains("renameTo("), "ghi nguyên tử: tệp tạm + renameTo (khuôn VoiceModelStore/AdbKeys)")
         assertTrue(atomic.indexOf("writeText(") < atomic.indexOf("renameTo("), "ghi tạm TRƯỚC rồi mới đổi tên")
-        assertFalse(service.contains("VoiceGrammarSnapshotStore.write"), "`:wake` KHÔNG được ghi ảnh chụp (cache prefs cũ đè dữ liệu mới)")
+        wakeFiles.forEach { (n, src) -> assertFalse(src.contains("VoiceGrammarSnapshotStore.write"), "$n: `:wake` KHÔNG được ghi ảnh chụp (cache prefs cũ đè dữ liệu mới)") }
         assertTrue(store.contains("Application.getProcessName() == ctx.packageName"), "tiến trình chính = tên tiến trình bằng tên gói (phụ mang hậu tố :wake/:tts)")
         // SOÁT 2.68 · Pass 2 · P3 — một tên tệp tạm dùng chung ⇒ cặp "so lastBody – ghi" phải tuần tự (hai luồng của
         // cùng tiến trình chính, vd cầu kiểm thử gọi từ luồng binder, sẽ writeText xen nhau rồi renameTo bản lẫn).
@@ -131,6 +143,9 @@ class VoiceGrammarSnapshotWiringContractTest {
             "WorkspacePrefsProfile.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsProfile.kt"),
             "KachiHomeWiring.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt"),
             "VoiceWakeService.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt"),
+            "VoiceWakeSessionFactory.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt"),
+            "VoiceWakeHomeRelay.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHomeRelay.kt"),
+            "VoiceWakeSessions.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessions.kt"),
             "VoiceGrammarSnapshotStore.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceGrammarSnapshotStore.kt"),
         ).forEach { (name, src) -> assertTrue(src.lines().size <= 500, "$name dài ${src.lines().size} dòng — trần là 500") }
     }

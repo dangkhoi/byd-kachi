@@ -21,6 +21,8 @@ class VoiceWakeStandDownWiringContractTest {
     // ── Dây trong VoiceWakeService (contract đọc source) ────────────────────────────────────────────────────
 
     private val service by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt") }
+    private val sessions by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessions.kt") }
+    private val owner by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionOwner.kt") }
     private val listener by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt") }
     private val engine by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt") }
 
@@ -49,12 +51,15 @@ class VoiceWakeStandDownWiringContractTest {
     @Test
     fun `dung xuong bo tham chieu phien va duong lay phien dung lai duoc - khong lazy mot lan`() {
         val task = SourceRoots.body(service, "private val standDownTask = object : Runnable {")
-        val stop = task.indexOf(".stop() }")
-        val clear = task.indexOf("session = null")
-        assertTrue(stop >= 0, "nhánh đứng xuống vẫn phải stop() phiên kẹt (overlay/loa)")
-        assertTrue(clear > stop, "phải BỎ tham chiếu SAU khi stop — `stop()` một chiều, lượt gọi sau phải dựng phiên mới")
+        // 2.69 (VOICE-WAKE-SESSION-OWNER): stop + bỏ tham chiếu gói trong `VoiceWakeSessions.release()` — chủ sở hữu mức tiến trình.
+        assertTrue(task.contains("VoiceWakeSessions.release()"), "nhánh đứng xuống vẫn phải stop() phiên kẹt (overlay/loa) VÀ bỏ tham chiếu — qua owner")
+        val release = SourceRoots.body(sessions, "fun release(): Boolean")
+        assertTrue(release.contains("owner.release()"), "release của tiến trình phải đi qua máy trạng thái thuần")
+        val coreRelease = SourceRoots.body(owner, "@Synchronized fun release(): Boolean {")
+        assertTrue(coreRelease.indexOf("current = null") in 0 until coreRelease.indexOf("stop(cur)"), "phải BỎ tham chiếu rồi mới stop — `stop()` một chiều (và ném được), lượt gọi sau phải dựng phiên mới")
         assertFalse(service.contains("lazy { buildSession() }"), "phiên `:wake` không được là lazy một-lần (xác đã stop sống mãi trong instance service)")
-        assertTrue(service.contains("session ?: buildSession().also { session = it }"), "đường lấy phiên phải tự dựng lại khi rỗng")
+        assertFalse(Regex("""private (?:@Volatile )?var session\b""").containsMatchIn(service), "phiên KHÔNG còn là trường của instance service (hai instance = hai phiên chồng)")
+        assertTrue(service.contains("VoiceWakeSessions.acquire { buildSession() }"), "đường lấy phiên phải tự dựng lại khi rỗng — qua owner")
     }
 
     /**
@@ -70,10 +75,11 @@ class VoiceWakeStandDownWiringContractTest {
         val d = SourceRoots.body(service, "override fun onDestroy() {")
         val idle = d.indexOf("if (!sessionActive) {")
         val other = d.indexOf("} else {")
-        val stop = d.indexOf("session?.let { s -> runCatching { s.stop() }; session = null }")
+        val stop = d.indexOf("VoiceWakeSessions.release()")
         assertTrue(idle >= 0 && other > idle, "onDestroy phải rẽ theo phiên còn chạy hay không")
+        assertTrue(d.contains("val sessionActive = VoiceWakeSessions.isRunning()"), "còn chạy hay không đo qua owner (mức tiến trình), không qua trường của instance")
         assertTrue(stop in (idle + 1) until other, "nhánh phiên IDLE phải stop() + bỏ tham chiếu — TTS chỉ nhả trong stop()")
-        assertFalse(d.contains("voiceSession"), "onDestroy không được đi qua getter dựng lại: service đang chết")
+        assertFalse(d.contains("voiceSession") || d.contains("buildSession"), "onDestroy không được đi qua getter dựng lại: service đang chết")
         assertTrue(d.substring(other).contains("scheduleStandDown()"), "phiên đang chạy: không cắt, để lượt chờ đứng xuống stop() khi nó xong")
     }
 
@@ -83,9 +89,10 @@ class VoiceWakeStandDownWiringContractTest {
      */
     @Test
     fun `moi cho dung voiceSession phai nam trong main post - getter dung lai khong co khoa`() {
-        val uses = service.lines().filter { it.contains("voiceSession.") }
+        // 2.69: hai đường mở phiên — `voiceSession.start()` (fireWake, không cắt) · `VoiceWakeSessions.preempt { buildSession() }.start()` (LISTEN_NOW).
+        val uses = service.lines().filter { it.contains(".start()") && (it.contains("voiceSession") || it.contains("buildSession()")) }
         assertTrue(uses.size >= 2, "phải còn ít nhất 2 chỗ mở phiên (LISTEN_NOW + fireWake), thấy ${uses.size}")
-        uses.forEach { assertTrue(it.contains("main.post {"), "dùng voiceSession ngoài luồng chính: ${it.trim()}") }
+        uses.forEach { assertTrue(it.contains("main.post {"), "mở phiên ngoài luồng chính: ${it.trim()}") }
     }
 
     @Test

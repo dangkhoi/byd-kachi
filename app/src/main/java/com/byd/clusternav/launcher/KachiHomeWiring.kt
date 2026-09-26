@@ -273,6 +273,9 @@ const val EXTRA_START_VOICE = "start_voice"
  */
 const val EXTRA_VOICE_HOME_ACTION = "voice_home_action"
 const val EXTRA_VOICE_HOME_ARG = "voice_home_arg"
+/** 2.69 — việc có KẾT QUẢ (gắn ô · bố cục): nonce để ack đúng lượt + hạn `elapsedRealtime` (quá hạn ⇒ Activity KHÔNG làm). */
+const val EXTRA_VOICE_HOME_NONCE = "voice_home_nonce"
+const val EXTRA_VOICE_HOME_DEADLINE = "voice_home_deadline"
 
 /**
  * Dựng [VoiceSession] cho màn chính — **một** phiên cho cả ba lối vào (ô *Nói với xe* · nút mic trên thanh trên ·
@@ -298,8 +301,8 @@ internal fun Activity.voiceSession(
     lateinit var session: VoiceSession
     // §8.2 (A) — ảnh chụp ngữ pháp cho phiên `:wake` có NGAY từ lần mở màn đầu (máy vừa nâng cấp chưa đổi hồ sơ lần nào).
     VoiceGrammarSnapshotStore.write(WorkspacePrefs(this))
-    // CLOSE-3 — cùng BỐN lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent.
-    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile))
+    // CLOSE-3 / 2.69 — cùng SÁU lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent.
+    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout))
     session = VoiceSession(
         ctx = this,
         entry = entry,
@@ -344,7 +347,8 @@ internal fun Activity.startVoiceIfRequested(intent: Intent?, session: VoiceSessi
     VoiceHomeAction.of(intent.getStringExtra(EXTRA_VOICE_HOME_ACTION))?.let { action ->
         val arg = intent.getStringExtra(EXTRA_VOICE_HOME_ARG)
         intent.removeExtra(EXTRA_VOICE_HOME_ACTION); intent.removeExtra(EXTRA_VOICE_HOME_ARG)
-        val done = session.entry?.home?.perform(action, arg) ?: false
+        // 2.69 — có nonce/hạn (gắn ô · bố cục) thì kiểm hạn rồi ack kết quả thật cho `:wake` (VoiceWakeHomeRelay đang chờ).
+        val done = session.entry?.home?.performFromIntent(this, intent, action, arg) ?: false
         if (!done) android.util.Log.w("KachiVoiceEntry", "việc `:wake` trả về không thi hành được: ${action.id} arg=$arg")
     }
     if (!intent.getBooleanExtra(EXTRA_START_VOICE, false)) return

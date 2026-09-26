@@ -86,7 +86,10 @@ def _verdict(row, d):
     real = row["sidereal"]
     if side.startswith("resumed:"):
         pkg = side.split(":", 1)[1]
-        if pkg not in (real or ""):
+        # [SOÁT 2.69] Khớp `pkg + "/"` (gạch của tên component trong `ActivityRecord{… pkg/.Activity}`): tên gói là
+        # TIỀN TỐ của nhau ngoài đời (`com.google.android.youtube` ⊂ `…youtube.music`/`…youtube.tv`), nên khớp tiền
+        # tố trần cho PASS oan khi một gói họ hàng đang chiếm màn. Cùng luật với `poll_resumed` trong voice-e2e.sh.
+        if (pkg + "/") not in (real or ""):
             why.append("app KHÔNG lên màn (%s)" % (real or "-"))
     elif side.startswith("slot:"):
         # DEBT-E2E-SH (2026-09-23): ô thiếu `pkg` (`slot:N` không kèm gói) trước đây làm split(":",1) ném

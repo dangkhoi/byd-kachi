@@ -25,6 +25,9 @@ class VoiceEntryRouteWiringContractTest {
     private val session by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSession.kt") }
     private val entry by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceEntry.kt") }
     private val service by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt") }
+    // 2.69 — `buildSession` tách sang tệp riêng (trần 500 dòng); intent về Activity dựng ở relay.
+    private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt") }
+    private val relay by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHomeRelay.kt") }
     private val wiring by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val hooks by lazy { code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeHooks.kt") }
@@ -77,10 +80,11 @@ class VoiceEntryRouteWiringContractTest {
     }
 
     @Test
-    fun `voiceSession trong KachiHomeWiring truyen VoiceEntry voi dung 4 lambda cua dispatcher`() {
+    fun `voiceSession trong KachiHomeWiring truyen VoiceEntry voi dung 6 lambda cua dispatcher`() {
         val fn = SourceRoots.body(wiring, "internal fun Activity.voiceSession(")
-        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile))"),
-            "VoiceHomeActions phải là CÙNG bốn lambda mà VoiceWiring.dispatcher dùng — không mở đường thứ hai")
+        // 2.69 (VOICE-WAKE-SLOT-LAYOUT): 4 → 6 — thêm đúng hai lambda Boolean mà dispatcher in-process đã nhận.
+        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout))"),
+            "VoiceHomeActions phải là CÙNG sáu lambda mà VoiceWiring.dispatcher dùng — không mở đường thứ hai")
         assertTrue(fn.contains("entry = entry"), "VoiceSession của màn chính phải nhận entry")
     }
 
@@ -115,12 +119,14 @@ class VoiceEntryRouteWiringContractTest {
         val listenNow = cmd.indexOf("ACTION_LISTEN_NOW")
         val ack = cmd.indexOf("VoiceEntry.ack(this)")
         assertTrue(listenNow >= 0 && ack > listenNow, "nhánh LISTEN_NOW phải ack — tiến trình chính đang chờ để KHÔNG mở phiên thứ hai")
-        val build = SourceRoots.body(service, "private fun buildSession(): VoiceSession {")
+        val build = SourceRoots.body(factory, "internal fun VoiceWakeService.buildSession(): VoiceSession {")
         assertFalse(build.contains("EXTRA_START_VOICE"), "gửi EXTRA_START_VOICE từ `:wake` = mở phiên nghe MỚI thay việc vừa nói + vòng lặp qua route")
-        assertFalse(service.contains("EXTRA_START_VOICE"), "VoiceWakeService không được import/dùng EXTRA_START_VOICE ở mã (chú thích không tính)")
+        listOf("VoiceWakeService.kt" to service, "VoiceWakeSessionFactory.kt" to factory, "VoiceWakeHomeRelay.kt" to relay).forEach { (n, src) ->
+            assertFalse(src.contains("EXTRA_START_VOICE"), "$n không được import/dùng EXTRA_START_VOICE ở mã (chú thích không tính)")
+        }
         listOf("VoiceHomeAction.APP_LIST", "VoiceHomeAction.SETTINGS", "VoiceHomeAction.PERMISSIONS", "VoiceHomeAction.SWITCH_PROFILE")
             .forEach { assertTrue(build.contains(it), "buildSession phải trả `$it` về Activity qua extra") }
-        assertTrue(build.contains("putExtra(EXTRA_VOICE_HOME_ACTION, action.id)"))
+        assertTrue(relay.contains("putExtra(EXTRA_VOICE_HOME_ACTION, action.id)"), "intent về Activity dựng ở relay, mang id của VoiceHomeAction")
         assertTrue(service.contains("fun listenNow(ctx: Context): Boolean"), "listenNow phải trả Boolean để VoiceEntry biết gửi hỏng")
     }
 
@@ -128,7 +134,8 @@ class VoiceEntryRouteWiringContractTest {
     fun `startVoiceIfRequested thi hanh EXTRA_VOICE_HOME_ACTION bang lambda cua entry va xoa extra`() {
         val fn = SourceRoots.body(wiring, "internal fun Activity.startVoiceIfRequested(")
         assertTrue(fn.contains("VoiceHomeAction.of(intent.getStringExtra(EXTRA_VOICE_HOME_ACTION))"))
-        assertTrue(fn.contains("session.entry?.home?.perform(action, arg)"), "phải thi hành bằng CÙNG lambda của dispatcher, không dựng đường mới")
+        // 2.69: `performFromIntent` = `perform` (cùng lambda) + kiểm hạn + ack — xem `VoiceWakeHomeRelayWiringContractTest`.
+        assertTrue(fn.contains("session.entry?.home?.performFromIntent(this, intent, action, arg)"), "phải thi hành bằng CÙNG lambda của dispatcher, không dựng đường mới")
         assertTrue(fn.contains("intent.removeExtra(EXTRA_VOICE_HOME_ACTION)"), "singleTask: extra ở lại getIntent() ⇒ phải xoá (cùng lẽ EXTRA_START_VOICE)")
         assertTrue(fn.contains("intent.removeExtra(EXTRA_START_VOICE)"))
         // Activity vẫn gọi ở CẢ onCreate và onNewIntent (singleTask ⇒ lời gọi thứ hai về onNewIntent).

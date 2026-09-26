@@ -9,6 +9,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.LayoutPreset
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -124,25 +125,73 @@ class VoiceEntry(
             runCatching { ctx.sendBroadcast(Intent(ACTION_LISTEN_ACK).setPackage(ctx.packageName)) }
                 .onFailure { Log.w(TAG, "gửi ack hỏng", it) }
         }
+
+        /**
+         * VOICE-WAKE-SLOT-LAYOUT (2.69) — Activity → `:wake`: "việc `nonce` đã thi hành, kết quả `done`". Cùng khuôn
+         * [ACTION_LISTEN_ACK] (trong gói, một chiều); `VoiceWakeHomeRelay.perform` đang chờ đúng nonce này.
+         */
+        const val ACTION_HOME_ACTION_ACK = "com.byd.launcher.HOME_ACTION_ACK"
+        const val EXTRA_HOME_ACTION_DONE = "done"
+
+        fun ackHome(ctx: Context, nonce: String, done: Boolean) {
+            runCatching {
+                ctx.sendBroadcast(
+                    Intent(ACTION_HOME_ACTION_ACK).setPackage(ctx.packageName)
+                        .putExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE, nonce)
+                        .putExtra(EXTRA_HOME_ACTION_DONE, done),
+                )
+            }.onFailure { Log.w(TAG, "gửi ack việc Activity hỏng", it) }
+        }
     }
 }
 
 /**
- * Bốn đường Activity mà phiên trong `:wake` không tự làm được — **CÙNG** lambda mà `VoiceWiring.dispatcher` của
- * phiên in-process dùng (`KachiHomeWiring.voiceSession` truyền đúng bốn cái đó vào đây). `:wake` gửi
- * [VoiceHomeAction.id] qua extra; `KachiHomeWiring.startVoiceIfRequested` gọi [perform].
+ * Sáu đường Activity mà phiên trong `:wake` không tự làm được — **CÙNG** lambda mà `VoiceWiring.dispatcher` của
+ * phiên in-process dùng (`KachiHomeWiring.voiceSession` truyền đúng sáu cái đó vào đây). `:wake` gửi
+ * [VoiceHomeAction.id] qua extra; `KachiHomeWiring.startVoiceIfRequested` gọi [performFromIntent].
+ *
+ * Hai đường 2.69 (gắn app vào ô · đổi bố cục) trả `Boolean` — đúng lambda mà `KachiHomeActivity` truyền cho phiên
+ * in-process (`slots.assignApp` · `selectPreset`), nên *"mở YouTube vào ô 2"* qua `:wake` và qua nút mic in-process là
+ * **một** đường (KDoc `VoiceDispatcher`: không mở đường thứ hai).
  */
 class VoiceHomeActions(
     val openAppList: () -> Unit,
     val openSettings: () -> Unit,
     val openPermissions: () -> Unit,
     val switchProfile: (String) -> Unit,
+    val assignAppToSlot: (Int, String) -> Boolean,
+    val onLayout: (LayoutPreset) -> Boolean,
 ) {
-    /** `false` ⇒ thiếu tham số (đổi hồ sơ không tên) — không đoán, có log ở chỗ gọi. */
+    /** `false` ⇒ thiếu/hỏng tham số (đổi hồ sơ không tên · ô/gói/bố cục sai dạng) — không đoán, có log ở chỗ gọi. */
     fun perform(action: VoiceHomeAction, arg: String?): Boolean = when (action) {
         VoiceHomeAction.APP_LIST -> { openAppList(); true }
         VoiceHomeAction.SETTINGS -> { openSettings(); true }
         VoiceHomeAction.PERMISSIONS -> { openPermissions(); true }
         VoiceHomeAction.SWITCH_PROFILE -> arg?.takeIf { it.isNotBlank() }?.let { switchProfile(it); true } ?: false
+        VoiceHomeAction.ASSIGN_APP_TO_SLOT -> VoiceHomeRelay.decodeSlot(arg)?.let { assignAppToSlot(it.slot, it.pkg) } ?: false
+        VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { onLayout(it) } ?: false
+    }
+
+    /**
+     * Thi hành việc `:wake` gửi qua intent, theo giao thức `VoiceHomeRelay`: đọc + xoá nonce/hạn; **quá hạn ⇒ không
+     * làm** (`:wake` đã trả lời "không" cho người lái, làm nữa là màn đổi khác lời nói); làm rồi **mới** ack kèm kết
+     * quả thật. Không nonce (bốn việc cũ, fire-and-forget) ⇒ không ack.
+     */
+    fun performFromIntent(ctx: Context, intent: Intent, action: VoiceHomeAction, arg: String?): Boolean {
+        val nonce = intent.getStringExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE)
+        val deadline = intent.getLongExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_DEADLINE, 0L)
+        intent.removeExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE)
+        intent.removeExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_DEADLINE)
+        if (VoiceHomeRelay.expired(deadline, android.os.SystemClock.elapsedRealtime())) {
+            Log.w(TAG_HOME, "việc ${action.id} tới sau hạn ${deadline} ms — `:wake` đã từ chối, không thi hành")
+            return false
+        }
+        val done = perform(action, arg)
+        if (nonce != null) VoiceEntry.ackHome(ctx, nonce, done)
+        return done
+    }
+
+    private companion object {
+        const val TAG_HOME = "KachiVoiceEntry"
     }
 }
