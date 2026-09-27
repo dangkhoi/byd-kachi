@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi — Hướng dẫn sử dụng có hình</title>
+<style>
+:root{
+  --bg:#f5f6f7; --panel:#ffffff; --card:#fbfbfc; --fg:#111214; --muted:#64676c;
+  --line:#d8dade; --line-soft:#e8e9ec;
+  --accent:#0a6cff; --accent-soft:#e9f1ff; --accent-fg:#0a57cc;
+  --green:#12855a; --green-soft:#e6f6ee;
+  --amber:#a56600; --amber-soft:#fff3de;
+  --red:#c02a2a; --red-soft:#fceaea;
+  --shadow:0 1px 2px rgba(0,0,0,.05), 0 10px 26px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d0e10; --panel:#15171a; --card:#1a1d21; --fg:#ebedf0; --muted:#9aa0a8;
+    --line:#2b2f35; --line-soft:#22252a;
+    --accent:#5ba3ff; --accent-soft:#122238; --accent-fg:#8fc2ff;
+    --green:#49cf90; --green-soft:#10271e;
+    --amber:#e2a54c; --amber-soft:#2c2313;
+    --red:#ff7d7d; --red-soft:#321a1a;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px rgba(0,0,0,.4);
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro","Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16.5px; line-height:1.65; letter-spacing:.002em;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px; margin:0 auto; padding:0 20px 120px}
+a{color:var(--accent-fg); text-decoration:none; border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+
+/* ── đầu trang ── */
+header.top{padding:56px 0 8px}
+.eyebrow{font-size:12.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:640}
+h1{font-size:clamp(30px,5.4vw,46px); line-height:1.12; margin:14px 0 10px; letter-spacing:-.022em; font-weight:700}
+.sub{font-size:19px; color:var(--muted); margin:0 0 26px; max-width:62ch}
+.badges{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 26px}
+.badge{font-size:13px; padding:5px 11px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--muted); white-space:nowrap}
+.badge b{color:var(--fg); font-weight:640}
+.warn{
+  border:1px solid var(--amber); background:var(--amber-soft); color:var(--fg);
+  border-radius:14px; padding:14px 18px; font-size:15px; margin:0 0 34px;
+}
+.warn b{color:var(--amber)}
+
+/* ── mục lục ── */
+nav.toc{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:22px 24px; box-shadow:var(--shadow); margin:0 0 20px}
+nav.toc h2{font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 14px; border:0; padding:0}
+nav.toc ol{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:2px 26px; counter-reset:c}
+nav.toc li{counter-increment:c; border-bottom:1px solid var(--line-soft)}
+nav.toc li:last-child{border-bottom:0}
+nav.toc a{display:flex; gap:12px; padding:9px 2px; font-size:15.5px; color:var(--fg); border:0}
+nav.toc a:hover{color:var(--accent-fg)}
+nav.toc a::before{content:counter(c); color:var(--muted); font-variant-numeric:tabular-nums; min-width:1.4em; font-size:14px}
+
+/* ── chương ── */
+section{margin:0; padding:48px 0 8px; scroll-margin-top:18px}
+section + section{border-top:1px solid var(--line)}
+h2{font-size:clamp(23px,3.6vw,31px); line-height:1.2; letter-spacing:-.016em; margin:0 0 22px; font-weight:700}
+h3{font-size:19.5px; margin:38px 0 12px; letter-spacing:-.008em; font-weight:660}
+h4{font-size:17px; margin:28px 0 10px; color:var(--fg); font-weight:660}
+p{margin:0 0 14px; max-width:74ch}
+ul,ol{margin:0 0 16px; padding-left:24px; max-width:74ch}
+li{margin:0 0 7px}
+strong{font-weight:660}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em; background:var(--card); border:1px solid var(--line-soft); border-radius:6px; padding:1px 5px}
+
+/* ── ảnh ── */
+figure{margin:26px 0 30px}
+figure img{display:block; width:100%; max-width:100%; height:auto; border-radius:14px; border:1px solid var(--line); background:var(--card); box-shadow:var(--shadow)}
+figcaption{margin-top:11px; font-size:14px; color:var(--muted); line-height:1.55; max-width:76ch}
+
+/* ── bảng ── */
+table{width:100%; border-collapse:collapse; margin:20px 0 26px; font-size:15px; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+caption{caption-side:top; text-align:left; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:0 0 9px; font-weight:640}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+thead th{background:var(--card); font-size:13.5px; font-weight:660; color:var(--muted); white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--card) 55%, transparent)}
+
+/* ── khối hình vẽ ── */
+.dg{margin:26px 0 30px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px 20px 16px; box-shadow:var(--shadow)}
+.dg > .dgt{font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:640; margin:0 0 16px}
+.dg > .dgn{font-size:13.5px; color:var(--muted); margin:14px 0 0; line-height:1.5; max-width:none}
+.dg svg{display:block; width:100%; height:auto; overflow:visible}
+.dg svg text{font-family:inherit; fill:var(--fg); font-size:13px}
+.dg svg .ts{font-size:11.5px; fill:var(--muted)}
+.dg svg .tb{font-weight:660}
+.dg svg .tw{font-size:11px; letter-spacing:.07em; text-transform:uppercase; font-weight:660}
+.bx{fill:var(--card); stroke:var(--line); stroke-width:1.5}
+.bx-a{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5}
+.bx-g{fill:var(--green-soft); stroke:var(--green); stroke-width:1.5}
+.bx-w{fill:var(--amber-soft); stroke:var(--amber); stroke-width:1.5}
+.bx-r{fill:var(--red-soft); stroke:var(--red); stroke-width:1.5}
+.bx-d{fill:none; stroke:var(--line); stroke-width:1.5; stroke-dasharray:6 4}
+.ar{stroke:var(--fg); stroke-width:1.6; fill:none}
+.ar-a{stroke:var(--accent); stroke-width:2; fill:none}
+.ar-w{stroke:var(--amber); stroke-width:1.7; fill:none; stroke-dasharray:6 4}
+.ar-r{stroke:var(--red); stroke-width:2.6; fill:none}
+.ar-m{stroke:var(--muted); stroke-width:1.4; fill:none; stroke-dasharray:4 4}
+.sep{stroke:var(--line); stroke-width:1}
+
+/* ── hộp CSS diagram ── */
+.lay{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px}
+.lay figure{margin:0}
+.lay .scr{aspect-ratio:16/9; border:1.5px solid var(--line); border-radius:9px; background:var(--card); padding:5px; display:grid; gap:4px}
+.lay .cell{background:var(--accent-soft); border:1px solid var(--accent); border-radius:5px}
+.lay .lbl{margin-top:8px; font-size:13.5px; font-weight:640; text-align:center}
+.lay .lbl span{display:block; font-weight:400; color:var(--muted); font-size:12px}
+.grid126{position:relative; background-image:
+  repeating-linear-gradient(to right, var(--line-soft) 0 1px, transparent 1px calc(100%/12)),
+  repeating-linear-gradient(to bottom, var(--line-soft) 0 1px, transparent 1px calc(100%/6));
+  grid-template-columns:repeat(12,1fr); grid-template-rows:repeat(6,1fr); gap:2px !important}
+
+.two{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+.col{border:1px solid var(--line); border-radius:14px; padding:14px 16px; background:var(--card)}
+.col.a{border-color:var(--accent); background:var(--accent-soft)}
+.col h5{margin:0 0 12px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:660}
+.col.a h5{color:var(--accent-fg)}
+.pills{display:flex; flex-wrap:wrap; gap:7px; margin:0; padding:0; list-style:none}
+.pills li{margin:0; font-size:13.5px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 11px; line-height:1.4}
+.col.a .pills li{border-color:color-mix(in srgb,var(--accent) 45%, transparent)}
+
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:16px}
+.tile{border:1px solid var(--line); border-radius:14px; background:var(--card); padding:14px; text-align:center}
+.tile .tv{font-size:34px; font-weight:700; line-height:1.15; letter-spacing:-.02em}
+.tile .tv.dim{color:var(--muted); opacity:.75}
+.tile .tn{font-size:13.5px; font-weight:640; margin-top:2px}
+.tile .tc{font-size:12.5px; color:var(--muted); margin-top:9px; border-top:1px solid var(--line-soft); padding-top:9px}
+
+.tiers{display:grid; grid-template-columns:minmax(170px,300px) 1fr; gap:18px; align-items:stretch}
+@media (max-width:640px){.tiers{grid-template-columns:1fr}}
+.slotmock{border:1.5px solid var(--line); border-radius:14px; background:var(--card); padding:8px; display:grid; grid-template-rows:auto 1fr auto; gap:8px}
+.slotmock .sh{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:640}
+.slotmock .sh i{width:14px; height:14px; border-radius:4px; background:var(--accent); display:inline-block}
+.slotmock .sg{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.slotmock .sg div{background:var(--panel); border:1px solid var(--line-soft); border-radius:7px; padding:8px 6px; text-align:center; font-size:15px; color:var(--muted)}
+.slotmock .sb{display:flex; gap:5px; flex-wrap:wrap}
+.slotmock .sb b{flex:1; min-width:38px; font-weight:600; font-size:11px; text-align:center; background:var(--accent-soft); border:1px solid var(--accent); color:var(--accent-fg); border-radius:999px; padding:4px 2px}
+.tierlbl{display:grid; grid-template-rows:auto 1fr auto; gap:18px}
+.tierlbl div{border-left:3px solid var(--line); padding:2px 0 2px 13px; font-size:14px}
+.tierlbl div b{display:block; font-size:13px}
+.tierlbl div.k1{border-color:var(--muted)}
+.tierlbl div.k2{border-color:var(--amber)}
+.tierlbl div.k3{border-color:var(--accent)}
+
+/* ── kết thúc ── */
+footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font-size:14px; color:var(--muted)}
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding:0 16px 90px}
+  table{font-size:13.5px}
+  th,td{padding:8px 10px}
+  thead th{white-space:normal}
+  h3{font-size:18px}
+  .dg{padding:14px 13px 12px; border-radius:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- mũi tên dùng chung cho mọi hình vẽ inline SVG bên dưới -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--fg)"/></marker>
+  <marker id="ah-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+  <marker id="ah-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--amber)"/></marker>
+  <marker id="ah-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--red)"/></marker>
+  <marker id="ah-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--green)"/></marker>
+  <marker id="ah-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+</defs></svg>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Kachi · màn hình chính cho đầu xe BYD DiLink</div>
+  <h1>Hướng dẫn sử dụng có hình</h1>
+  <p class="sub">Tài liệu dành cho người lái. Chín chương, đi từ “Kachi là cái gì” tới “khi có sự cố thì làm gì”. Không cần biết gì về Android.</p>
+  <div class="badges">
+    <span class="badge">Áp dụng cho bản <b>2.79 (mã 180)</b></span>
+    <span class="badge">Cập nhật <b>28/09/2026</b></span>
+    <span class="badge">Xe <b>BYD Seal / Sealion 6 · DiLink</b></span>
+    <span class="badge">Biên soạn <b>dangkhoi</b></span>
+  </div>
+  <p class="warn"><b>Về ảnh trong tài liệu:</b> mọi ảnh đều chụp trên <strong>máy ảo</strong>, không nối vào xe nào. Vì vậy hầu hết con số của xe trong ảnh đều hiện dấu <strong>—</strong> (nghĩa là <em>chưa đọc được</em>). Trên xe đang nổ máy, những chỗ đó có số thật. Dấu <strong>—</strong> không bao giờ có nghĩa “đang tắt” hay “app hỏng” — xem <a href="#ch9">chương 9</a>.</p>
+</header>
+
+<nav class="toc" aria-label="Mục lục">
+  <h2>Mục lục</h2>
+  <ol>
+    <li><a href="#ch1">Kachi là gì và nó thay cái gì</a></li>
+    <li><a href="#ch2">Màn hình chính</a></li>
+    <li><a href="#ch3">Bố cục và ô</a></li>
+    <li><a href="#ch4">Ô thông tin — đọc gì, bấm gì</a></li>
+    <li><a href="#ch5">Tiện nghi xe</a></li>
+    <li><a href="#ch6">Nói chuyện với Kachi</a></li>
+    <li><a href="#ch7">Hồ sơ tài xế</a></li>
+    <li><a href="#ch8">Cập nhật và cài đặt hệ thống</a></li>
+    <li><a href="#ch9">Khi có sự cố</a></li>
+    <li><a href="#gioi-han">Giới hạn đã biết (tra nhanh)</a></li>
+  </ol>
+</nav>
+
+<section id="ch1">
+  <h2>1. Kachi là gì và nó thay cái gì</h2>
+
+  <p>Kachi là <strong>màn hình chính</strong> cho đầu máy BYD DiLink. Nó thay cái màn hình đầu tiên hiện ra khi nổ máy — không thay hệ thống của xe.</p>
+
+  <p>Một màn Kachi gom ba thứ vào cùng một chỗ: các <strong>ô</strong> (mỗi ô đặt được một app hoặc một thẻ thông tin), một <strong>thanh trạng thái trên</strong> (giờ, ngày, vài con số của xe), và một <strong>thanh nút xe</strong> (cốp, đèn đọc, gió, nhiệt độ…). Trước đây mỗi thứ nằm một app khác nhau.</p>
+
+  <p>Khi Kachi đang là màn hình chính, bấm phím <strong>HOME</strong> là về Kachi.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 1 · Kachi đứng ở đâu</p>
+    <svg viewBox="0 0 880 320" role="img" aria-label="Sơ đồ: màn hình chính cũ của xe được thay bằng Kachi; phím HOME luôn về Kachi; nút Ứng dụng mở mọi app cũ; Kachi gồm ô, thanh trên và thanh nút xe">
+      <text class="ts" x="425" y="22" text-anchor="middle">phím HOME</text>
+      <path class="ar" d="M395 60 C 395 30 455 30 455 60" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="10" y="60" width="215" height="86" rx="12"/>
+      <text class="tb" x="117" y="96" text-anchor="middle">Màn hình chính cũ</text>
+      <text x="117" y="116" text-anchor="middle">của xe (DiLink)</text>
+
+      <text class="ts" x="272" y="84" text-anchor="middle">Đặt Kachi làm</text>
+      <text class="ts" x="272" y="98" text-anchor="middle">màn hình chính</text>
+      <path class="ar-a" d="M225 118 H 316" marker-end="url(#ah-a)"/>
+
+      <rect class="bx-a" x="320" y="60" width="210" height="86" rx="12"/>
+      <text class="tb" x="425" y="112" text-anchor="middle" style="font-size:21px">Kachi</text>
+
+      <text class="ts" x="585" y="90" text-anchor="middle">nút “Ứng dụng”</text>
+      <text class="ts" x="585" y="104" text-anchor="middle">(toàn màn)</text>
+      <path class="ar" d="M534 122 H 636" marker-start="url(#ah)" marker-end="url(#ah)"/>
+
+      <rect class="bx-d" x="640" y="60" width="230" height="86" rx="12"/>
+      <text class="tb" x="755" y="96" text-anchor="middle">Mọi app cũ của xe</text>
+      <text class="ts" x="755" y="116" text-anchor="middle">bản đồ · nhạc · radio · camera</text>
+
+      <path class="ar" d="M425 146 V 186"/>
+      <path class="ar" d="M125 186 H 735"/>
+      <path class="ar" d="M125 186 V 214" marker-end="url(#ah)"/>
+      <path class="ar" d="M405 186 V 214" marker-end="url(#ah)"/>
+      <path class="ar" d="M735 186 V 214" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="10" y="216" width="230" height="86" rx="12"/>
+      <text class="tb" x="125" y="250" text-anchor="middle">Ô</text>
+      <text class="ts" x="125" y="272" text-anchor="middle">app và thông tin</text>
+
+      <rect class="bx" x="270" y="216" width="270" height="86" rx="12"/>
+      <text class="tb" x="405" y="250" text-anchor="middle">Thanh trên</text>
+      <text class="ts" x="405" y="272" text-anchor="middle">giờ, ngày, chip xe — chỉ để xem</text>
+
+      <rect class="bx" x="600" y="216" width="270" height="86" rx="12"/>
+      <text class="tb" x="735" y="250" text-anchor="middle">Thanh nút xe</text>
+      <text class="ts" x="735" y="272" text-anchor="middle">bấm là làm ngay</text>
+    </svg>
+  </div>
+
+  <figure>
+    <img src="img/man-hinh-chinh-tong-quan.png" alt="Toàn bộ màn hình chính Kachi: thanh trên, ba ô, thanh nút xe ở viền dưới">
+    <figcaption>Một màn Kachi đầy đủ: thanh trạng thái trên (trên cùng), ba ô ở giữa, thanh nút xe ở viền dưới. Ảnh chụp trên máy ảo nên các con số của xe đều hiện dấu <strong>—</strong>.</figcaption>
+  </figure>
+
+  <h3>Mọi app cũ vẫn còn</h3>
+
+  <p>Kachi không gỡ, không chặn, không thay app nào của xe. Bản đồ, nhạc, radio, camera của xe vẫn nguyên chỗ cũ.</p>
+
+  <p>Có hai đường mở chúng:</p>
+  <ul>
+    <li>Nút <strong>Ứng dụng</strong> trên thanh trên — mở app ra <strong>toàn màn hình</strong>, đúng như trước. Bấm HOME để về Kachi.</li>
+    <li>Đặt app vào một <strong>ô</strong> — app chạy ngay trong ô đó, cạnh các ô khác. Cách làm ở chương 3.</li>
+  </ul>
+
+  <h3>Kachi không làm gì</h3>
+
+  <ul>
+    <li>Không phải sản phẩm của BYD. Dòng chữ trong app nói thẳng: <em>“Giấy phép MIT. Thử nghiệm cá nhân, KHÔNG liên kết với BYD.”</em></li>
+    <li>Không phải hệ thống an toàn. Kachi không cảnh báo, không can thiệp khi lái. Nút của nhóm An toàn / Động lực / Giải trí còn kèm câu nhắc trong app: <em>“⚠ Nhóm An toàn/Động lực/Giải trí đổi hành vi lái — tự dùng tự chịu.”</em></li>
+    <li>Không đổi cách xe hoạt động. Nút của Kachi gửi đúng những lệnh mà chính xe đã có sẵn.</li>
+  </ul>
+
+  <h3>Cần biết trước một dấu: <strong>—</strong></h3>
+
+  <p>Rất nhiều chỗ trong Kachi sẽ hiện một dấu gạch ngang <strong>—</strong> thay cho con số.</p>
+
+  <p>Nhiều người tưởng đó là lỗi hoặc là “chức năng đang tắt”. Thực ra <strong>— nghĩa là chưa đọc được giá trị đó</strong>: xe chưa cấp, hoặc đầu máy này không có cảm biến ấy, hoặc app chưa nối được kênh đọc. Kachi cố ý không đoán và không bày số giả.</p>
+
+  <p>Dấu <strong>—</strong> ở một hàng không ngăn hàng khác chạy. Ví dụ ô nhiệt độ hiện <strong>—</strong> thì nút tăng/giảm nhiệt độ vẫn bấm được.</p>
+
+  <h3>Biết mình đang dùng bản nào</h3>
+
+  <p>Vào <strong>Cài đặt › Giới thiệu</strong>. Dòng đầu ghi rõ số bản.</p>
+
+  <figure>
+    <img src="img/cai-dat-gioi-thieu.png" alt="Màn Giới thiệu: phiên bản 2.79 mã 180, tên gói, giấy phép MIT và câu miễn trừ trách nhiệm">
+    <figcaption>Cài đặt › Giới thiệu — nơi đọc số bản. Đừng đoán số bản: khi báo lỗi, chụp đúng màn này gửi về.</figcaption>
+  </figure>
+
+  <table>
+    <caption>Bản được mô tả trong tài liệu này</caption>
+    <thead><tr><th>Mục</th><th>Giá trị</th></tr></thead>
+    <tbody>
+      <tr><td>Phiên bản</td><td>2.79</td></tr>
+      <tr><td>Mã bản</td><td>180</td></tr>
+      <tr><td>Giấy phép</td><td>MIT — thử nghiệm cá nhân, không liên kết với BYD</td></tr>
+    </tbody>
+  </table>
+
+  <p>Kachi có sẵn đường tự cập nhật, nhưng nó <strong>chỉ chạy một lần mỗi lần nổ máy</strong>. Nếu muốn tìm bản mới ngay giữa chuyến thì phải bấm tay: <strong>Cài đặt › Hệ thống &amp; quyền › Kiểm tra cập nhật</strong>.</p>
+</section>
+
+<section id="ch2">
+  <h2>2. Màn hình chính</h2>
+
+  <p>Màn chính chia làm <strong>ba dải</strong>, xếp từ trên xuống. Nhận ra ba dải này là hiểu được gần hết cách dùng Kachi, vì mỗi dải sửa ở một chỗ khác nhau.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 2 · Ba dải của màn chính, và chỗ cấu hình từng dải</p>
+    <svg viewBox="0 0 880 360" role="img" aria-label="Sơ đồ khung màn hình chia ba dải: thanh trạng thái trên, vùng ô, thanh nút xe, kèm nơi cấu hình mỗi dải">
+      <rect class="bx" x="10" y="20" width="470" height="264" rx="10"/>
+
+      <rect x="10" y="20" width="470" height="26" rx="10" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+      <text class="tw" x="24" y="38" fill="var(--muted)">1 · thanh trạng thái trên</text>
+      <text class="ts" x="330" y="38">chỉ để XEM + 3 nút</text>
+
+      <rect class="bx-a" x="20" y="56" width="450" height="176" rx="8"/>
+      <text class="tw" x="34" y="78" fill="var(--accent-fg)">2 · vùng ô</text>
+      <text x="245" y="152" text-anchor="middle" class="tb" style="font-size:16px">app và thẻ thông tin</text>
+      <text class="ts" x="245" y="174" text-anchor="middle">phần to nhất của màn</text>
+
+      <rect x="10" y="242" width="470" height="42" rx="10" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+      <text class="tw" x="24" y="260" fill="var(--muted)">3 · thanh nút xe</text>
+      <text class="ts" x="24" y="276">bấm là làm ngay</text>
+
+      <path class="ar-m" d="M482 33 H 520" marker-end="url(#ah-m)"/>
+      <text class="ts" x="528" y="28">Cài đặt › Thanh trạng thái</text>
+      <text class="ts" x="528" y="43">&amp; thanh nút</text>
+
+      <path class="ar-m" d="M482 144 H 520" marker-end="url(#ah-m)"/>
+      <text class="ts" x="528" y="132">Cài đặt › Màn hình chính (bố cục)</text>
+      <text class="ts" x="528" y="147">chạm thẳng vào ô (nội dung)</text>
+
+      <path class="ar-m" d="M482 263 H 520" marker-end="url(#ah-m)"/>
+      <text class="ts" x="528" y="251">Cài đặt › Thanh trạng thái &amp; thanh nút</text>
+      <text class="ts" x="528" y="266">(chọn nút + viền + ẩn/hiện)</text>
+
+      <line class="sep" x1="10" y1="312" x2="870" y2="312"/>
+      <text class="ts" x="10" y="334">Thanh nút xe đặt được ở cả 4 viền, hoặc ẩn hẳn — lúc đó vùng ô lấp trọn màn.</text>
+    </svg>
+  </div>
+
+  <h3>2.1 Dải trên — thanh trạng thái</h3>
+
+  <figure>
+    <img src="img/thanh-trang-thai-tren.png" alt="Cắt cận thanh trạng thái trên: giờ, ngày, năm chip xe, nút mic, nút Ứng dụng, nút Cài đặt, chip hồ sơ">
+    <figcaption>Thanh trên, cắt cận. Từ trái: giờ · ngày · các chip xe · nút mic · nút Ứng dụng · nút Cài đặt · chip hồ sơ (chữ “M”). Năm chip đều hiện <strong>—</strong> vì đây là máy ảo.</figcaption>
+  </figure>
+
+  <p>Thanh trên có sáu vật. Bốn vật là nút bấm được, hai vật chỉ để xem.</p>
+
+  <table>
+    <caption>Sáu vật trên thanh trên</caption>
+    <thead><tr><th>Vật</th><th>Bấm được?</th><th>Bấm vào thì gì</th></tr></thead>
+    <tbody>
+      <tr><td>Đồng hồ và ngày</td><td>Không</td><td>—</td></tr>
+      <tr><td>Chip trạng thái xe</td><td><strong>Không</strong></td><td>—</td></tr>
+      <tr><td>Nút nói (hình mic)</td><td>Có</td><td>Mở một lượt nói với xe</td></tr>
+      <tr><td>Nút ứng dụng</td><td>Có</td><td>Mở bảng <em>Mở ứng dụng</em></td></tr>
+      <tr><td>Nút cài đặt</td><td>Có</td><td>Mở màn Cài đặt</td></tr>
+      <tr><td>Chip hồ sơ (một chữ cái)</td><td>Có</td><td>Mở hộp <em>Đổi hồ sơ tài xế</em></td></tr>
+    </tbody>
+  </table>
+
+  <p>Thứ tự sáu vật này đổi được, ở <strong>Cài đặt › Thanh trạng thái &amp; thanh nút › Vị trí trên thanh trên</strong>. Cả dải thì <strong>không ẩn được</strong>.</p>
+
+  <h4>Chip KHÔNG bấm được — và đó là cố ý</h4>
+
+  <p>Nhiều người thấy chip <em>Mát ghế lái · 2</em> rồi chạm vào, tưởng chạm là đổi mức. Thực ra chip <strong>chỉ để xem</strong>, chạm không có tác dụng gì.</p>
+
+  <p>Lý do là an toàn. Một chip trên thanh trên chỉ cao chừng bằng một dòng chữ; biến nó thành nút là tạo ra một đích chạm rất nhỏ có thể <strong>bắn một lệnh xuống xe mà không hoàn lại được</strong> — mở cốp, hạ kính — trong lúc đang lái. Vì vậy thanh trên chỉ nhận những mục <strong>đọc</strong>; nút và nhóm có nút thì bị từ chối, không cách nào đặt lên đó.</p>
+
+  <p>Muốn bấm thì dùng <strong>thanh nút xe</strong> (dải dưới) hoặc một ô có nút ở giữa màn.</p>
+
+  <h4>Chọn xem chip nào</h4>
+
+  <p>Vào <strong>Cài đặt › Thanh trạng thái &amp; thanh nút</strong>. Dòng đầu khối chọn chip ghi đang bật bao nhiêu trên trần, ví dụ <em>Đang bật · 5/16</em>. Trần là <strong>16 chip</strong>. Chip nhiều quá thì cái cuối bị cắt đuôi thành dấu <em>…</em>, nên thực tế nên để ít.</p>
+
+  <table>
+    <caption>Năm chip bật sẵn lúc mới cài</caption>
+    <thead><tr><th>Chip</th><th>Cho biết</th></tr></thead>
+    <tbody>
+      <tr><td>Không khí trong xe</td><td>Bụi mịn PM2.5 trong khoang</td></tr>
+      <tr><td>Nhiệt độ ngoài</td><td>Nhiệt độ ngoài xe</td></tr>
+      <tr><td>Pin và tầm chạy</td><td>Phần trăm pin và số km còn đi được</td></tr>
+      <tr><td>Ghế lái (sưởi/mát)</td><td>Mức đang đặt cho ghế lái</td></tr>
+      <tr><td>Ghế phụ (sưởi/mát)</td><td>Mức đang đặt cho ghế phụ</td></tr>
+    </tbody>
+  </table>
+
+  <p>Nếu chật chỗ, tắt hàng <strong>Hiện nhãn trên thanh trên</strong>: chip chỉ còn hình và con số.</p>
+
+  <h4>Nút mic có thể không có</h4>
+
+  <figure>
+    <img src="img/cai-dat-nut-mic-thanh-tren.png" alt="Hàng cài đặt Nút mic trên thanh trạng thái">
+    <figcaption>Công tắc bật nút mic, ở Cài đặt › Thanh trạng thái &amp; thanh nút.</figcaption>
+  </figure>
+
+  <p>Nút mic cần <strong>hai điều kiện cùng lúc</strong>: công tắc trên phải bật, <strong>và</strong> mô hình nghe phải đã tải xong (<strong>Cài đặt › Giọng nói</strong>).</p>
+
+  <p>Nhiều người bật công tắc rồi không thấy nút và tưởng là lỗi. Thực ra Kachi cố ý <strong>không vẽ</strong> nút mic khi chưa có mô hình nghe — vẽ ra thì bấm vào cũng chỉ nhận được một câu từ chối.</p>
+
+  <h3>2.2 Dải giữa — vùng ô</h3>
+
+  <figure>
+    <img src="img/vung-o-lam-viec.png" alt="Vùng ô: một ô trống có dấu cộng, một ô đang chạy app, một ô thẻ thông tin, nút đổi ở mép trên hai ô có nội dung">
+    <figcaption>Ba loại ô trong cùng một màn: ô <strong>trống</strong> (có dấu ＋ và chữ <em>Mở ứng dụng</em>), ô đang chạy một app, ô đang là thẻ thông tin. Hai ô có nội dung mang một nút <strong>⇄</strong> nhỏ giữa mép trên.</figcaption>
+  </figure>
+
+  <p>Đây là phần to nhất của màn, và là phần đáng sắp lại nhất. Một ô đặt được: một app · một thẻ thông tin dựng sẵn · một nhóm thông tin của xe · một widget Android của app khác · hoặc tới 8 mục lẻ gộp vào cùng ô.</p>
+
+  <p>Số ô và hình dáng ô do <strong>bố cục</strong> quyết định — xem chương 3. Nội dung từng ô thì chạm thẳng vào ô đó — cũng chương 3.</p>
+
+  <p>Ba điều dễ hiểu nhầm, nói trước ở đây:</p>
+  <ul>
+    <li>Ô <strong>không có nút ✕</strong>. Muốn làm trống một ô thì đi qua nút ⇄.</li>
+    <li>Chạm vào thân một ô <strong>đang có app</strong> là <strong>mở lại app đó</strong>, không mở bảng chọn.</li>
+    <li>Chạm vào giữa một <strong>ô thông tin</strong> không gửi lệnh nào xuống xe — nó mở bảng chọn để đổi nội dung ô. Lệnh chỉ đi từ các nút thật: hàng nút ở đáy ô nhóm, hoặc thanh nút xe.</li>
+  </ul>
+
+  <h3>2.3 Dải dưới — thanh nút xe</h3>
+
+  <figure>
+    <img src="img/thanh-nut-xe.png" alt="Thanh nút xe: Cốp sau, Đèn đọc, Lọc bụi đang sáng, Mát ghế lái, Gió trừ bốn cộng, nhiệt độ 22 độ trừ cộng, Sấy kính trước">
+    <figcaption>Một thanh nút xe bảy nút, đặt ở viền Dưới. Nút <em>Lọc bụi</em> đang sáng vì đang bật. Hai nút <em>Gió</em> và nhiệt độ có dạng <strong>− số +</strong>.</figcaption>
+  </figure>
+
+  <p>Nút trên dải này <strong>bấm là làm ngay</strong>, một lần, không cần xác nhận. Đây là chỗ bấm; thanh trên là chỗ xem.</p>
+
+  <p>Nút mới cài sẵn bảy cái: <strong>Cốp sau · Đèn đọc · Lọc bụi · Mát ghế lái · Nhiệt độ · Gió · Kính lái</strong>. Đổi được cả bộ ở <strong>Cài đặt › Thanh trạng thái &amp; thanh nút › Chọn nút trên thanh…</strong>, rồi bấm <strong>Áp dụng</strong>. Bỏ tích một nút rồi Áp dụng là nút đó rời khỏi thanh.</p>
+
+  <table>
+    <caption>Thanh nút xe — những điều cần biết</caption>
+    <thead><tr><th>Câu hỏi</th><th>Trả lời</th></tr></thead>
+    <tbody>
+      <tr><td>Đặt được ở đâu?</td><td>Bốn viền: <strong>Dưới · Trái · Phải · Trên</strong></td></tr>
+      <tr><td>Ẩn được không?</td><td>Được — tắt <em>Hiện thanh nút xe</em>. Vùng ô lấp trọn màn. Bật lại thì thanh về đúng viền cũ.</td></tr>
+      <tr><td>Tối đa bao nhiêu nút?</td><td><strong>Không có trần.</strong> Chọn bao nhiêu cũng được.</td></tr>
+      <tr><td>Sắp lại chỗ đứng?</td><td>Được — mục <em>Vị trí trên thanh nút xe</em></td></tr>
+      <tr><td>Đặt được thông tin chỉ-xem lên thanh này?</td><td>Được. Khác thanh trên, dải này nhận cả mục đọc lẫn nút.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Khác biệt quan trọng giữa hai chỗ, hay bị lẫn: một nút ở đây <strong>làm ngay một lần</strong>. Còn các trang trong <strong>Cài đặt › Tiện nghi xe</strong> thì đặt <strong>luật tự động</strong> — ví dụ “mưa thì tự bật sấy kính”. Hai thứ khác nhau.</p>
+
+  <h3>2.4 Hình nền</h3>
+
+  <p>Nền màn hình đổi ở <strong>Cài đặt › Màn hình chính › Hình nền</strong>.</p>
+
+  <p>Nhiều người quen giữ lâu vào nền để đổi ảnh. Ở Kachi <strong>giữ lâu vào nền không làm gì</strong> — mọi cấu hình đi qua nút <strong>Cài đặt</strong>. Giữ lâu chỉ có nghĩa <strong>trong một ô</strong>, và ở đó nó là để <strong>kéo</strong>.</p>
+
+  <p>Xe không có màn chọn tệp, nên ảnh phải <strong>chép vào một thư mục</strong>. Trang Cài đặt in sẵn đường dẫn, kèm nút sao chép đường dẫn. Cách làm: cắm USB vào xe hoặc mở app Quản lý tệp, chép ảnh vào thư mục đó, rồi bật công tắc <em>Dùng ảnh làm hình nền</em>.</p>
+
+  <p><strong>Có hai thư mục ảnh khác nhau</strong> — đây là chỗ bí nhiều nhất. Thư mục ảnh nền và thư mục của thẻ <em>Trình chiếu ảnh</em> là hai chỗ riêng. Bỏ ảnh vào sai thư mục thì “không thấy ảnh” dù đã làm đúng mọi bước còn lại.</p>
+
+  <table>
+    <caption>Ba lựa chọn của hình nền (chỉ hiện khi công tắc đang bật)</caption>
+    <thead><tr><th>Hàng</th><th>Chọn được</th></tr></thead>
+    <tbody>
+      <tr><td>Đổi ảnh mỗi</td><td>15 giây · 30 giây · 1 phút · 5 phút · 15 phút · 30 phút</td></tr>
+      <tr><td>Cách phủ</td><td><strong>Phủ kín</strong> (cắt phần thừa) · <strong>Vừa khung</strong> (thấy trọn ảnh, có thể còn viền)</td></tr>
+      <tr><td>Làm tối ảnh</td><td>0% · 25% · 45% · 65%</td></tr>
+    </tbody>
+  </table>
+
+  <p>Chỉ có một ảnh thì ảnh không đổi vòng — không phải lỗi.</p>
+
+  <figure>
+    <img src="img/cai-dat-man-hinh-chinh.png" alt="Cài đặt Màn hình chính: hàng chip sáu bố cục, nút Vẽ bố cục riêng, khối Hình nền đang bật, mục Widget Trình chiếu ảnh">
+    <figcaption>Cài đặt › Màn hình chính. Nửa trên là bố cục (chương 3), nửa dưới là hình nền. Khối <em>Widget Trình chiếu ảnh</em> ở cuối trang có <strong>đường dẫn riêng</strong>, khác thư mục ảnh nền.</figcaption>
+  </figure>
+</section>
+
+<section id="ch3">
+  <h2>3. Bố cục và ô</h2>
+
+  <p>Chương này trả lời bốn câu hay hỏi nhất: chia màn thành mấy ô · tự vẽ ô theo ý mình · đưa cái gì vào một ô · và làm trống một ô.</p>
+
+  <h3>3.1 Bố cục — chia màn thành mấy ô</h3>
+
+  <p>Đổi bố cục <strong>chỉ có một chỗ</strong>: <strong>Cài đặt › Màn hình chính › Bố cục màn hình</strong>.</p>
+
+  <p>Nhiều người tìm nút đổi bố cục trên thanh trên. Bản cũ từng có, <strong>bản này đã bỏ</strong>: mọi lựa chọn nay lưu theo hồ sơ tài xế, nên việc hằng ngày là đổi cả bộ bằng chip hồ sơ, còn riêng bố cục thì lùi về mức chỉnh một lần.</p>
+
+  <p>Hàng chip có sáu lựa chọn, và <strong>luôn có đúng một chip đang sáng</strong>.</p>
+
+  <table>
+    <caption>Sáu chip bố cục</caption>
+    <thead><tr><th>Chip</th><th>Số ô</th><th>Chia thế nào</th></tr></thead>
+    <tbody>
+      <tr><td>1 ô</td><td>1</td><td>Một ô phủ trọn vùng</td></tr>
+      <tr><td>2 cột</td><td>2</td><td>Chia dọc, hai nửa bằng nhau</td></tr>
+      <tr><td>2 hàng</td><td>2</td><td>Chia ngang, hai nửa bằng nhau</td></tr>
+      <tr><td>3 ô</td><td>3</td><td>Cột trái to cao trọn màn; cột phải chia trên/dưới</td></tr>
+      <tr><td>4 ô</td><td>4</td><td>Hai hàng hai cột, bốn ô bằng nhau</td></tr>
+      <tr><td>Tự vẽ</td><td>tới 6</td><td>Bố cục do người dùng vẽ — xem 3.2</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dg">
+    <p class="dgt">Hình 3 · Sáu bố cục, vẽ đúng tỉ lệ</p>
+    <div class="lay">
+      <figure>
+        <div class="scr" style="grid-template-columns:1fr"><div class="cell"></div></div>
+        <div class="lbl">1 ô<span>một ô phủ trọn</span></div>
+      </figure>
+      <figure>
+        <div class="scr" style="grid-template-columns:1fr 1fr"><div class="cell"></div><div class="cell"></div></div>
+        <div class="lbl">2 cột<span>chia dọc 50 / 50</span></div>
+      </figure>
+      <figure>
+        <div class="scr" style="grid-template-rows:1fr 1fr"><div class="cell"></div><div class="cell"></div></div>
+        <div class="lbl">2 hàng<span>chia ngang 50 / 50</span></div>
+      </figure>
+      <figure>
+        <div class="scr" style="grid-template-columns:1.55fr 1fr; grid-template-rows:1fr 1fr">
+          <div class="cell" style="grid-row:span 2"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+        <div class="lbl">3 ô<span>cột trái ≈ 61 % · phải ≈ 39 %</span></div>
+      </figure>
+      <figure>
+        <div class="scr" style="grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr">
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+        <div class="lbl">4 ô<span>2 × 2 bằng nhau</span></div>
+      </figure>
+      <figure>
+        <div class="scr grid126">
+          <div class="cell" style="grid-column:1/8; grid-row:1/4"></div>
+          <div class="cell" style="grid-column:8/13; grid-row:1/3"></div>
+          <div class="cell" style="grid-column:8/13; grid-row:3/7"></div>
+          <div class="cell" style="grid-column:1/8; grid-row:4/7"></div>
+        </div>
+        <div class="lbl">Tự vẽ<span>lưới 12 cột × 6 dòng</span></div>
+      </figure>
+    </div>
+    <p class="dgn">Chỉ chip <strong>“Tự vẽ”</strong> dùng lưới 12 × 6. Bốn bố cục <em>1 ô · 2 cột · 2 hàng · 4 ô</em> vẽ lại được bằng lưới; bố cục <strong>“3 ô” thì KHÔNG</strong> — cột trái của nó rộng 7,29 cột, không phải số nguyên.</p>
+  </div>
+
+  <p>Đổi bố cục không mất nội dung ô: các ô được sắp lại theo thứ tự. Nếu bố cục mới ít ô hơn, nội dung ở những ô dư nằm chờ và hiện lại khi quay về bố cục nhiều ô.</p>
+
+  <h3>3.2 Tự vẽ bố cục</h3>
+
+  <p>Bấm <strong>Vẽ bố cục riêng…</strong> ngay dưới hàng chip.</p>
+
+  <figure>
+    <img src="img/ve-bo-cuc.png" alt="Bảng vẽ bố cục: lưới 12 cột 6 dòng, bốn khung, dòng trạng thái bốn khung còn ba mươi sáu ô trống, các nút Thêm khung, Xoá khung đang chọn, Về bố cục sẵn, Lưu, Đóng">
+    <figcaption>Bảng <em>Vẽ bố cục</em>. Lưới 12 cột × 6 dòng. Dòng trạng thái đếm số khung và số ô lưới còn trống.</figcaption>
+  </figure>
+
+  <p>Cách vẽ: <strong>kéo giữa khung để di chuyển, kéo góc dưới-phải để đổi cỡ</strong>. Khung luôn bám ô lưới, không đặt lệch được.</p>
+
+  <table>
+    <caption>Luật của bảng vẽ bố cục</caption>
+    <thead><tr><th>Mục</th><th>Số</th></tr></thead>
+    <tbody>
+      <tr><td>Lưới</td><td>12 cột × 6 dòng = 72 ô lưới</td></tr>
+      <tr><td>Tối đa</td><td><strong>6 khung</strong></td></tr>
+      <tr><td>Khung nhỏ nhất</td><td>2 cột × 1 dòng</td></tr>
+      <tr><td>Để chỗ trống</td><td>Được — hình nền hiện ra ở đó, không phải lỗi</td></tr>
+      <tr><td>Khung chồng nhau</td><td>Không lưu được; lý do in ngay trên nút Lưu</td></tr>
+    </tbody>
+  </table>
+
+  <p>Năm nút ở bảng này: <strong>Thêm khung · Xoá khung đang chọn · Về bố cục sẵn · Lưu · Đóng</strong>.</p>
+
+  <p><strong>Đóng</strong> và <strong>Lưu</strong> khác nhau. Đóng là bỏ đi, bố cục đang dùng không đổi. Chỉ <strong>Lưu</strong> mới đổi màn thật.</p>
+
+  <p>Trần 6 khung không phải giới hạn của lưới mà là giới hạn của <strong>cỡ ô dùng được</strong>: trên màn 1920×1080, 6 ô là mỗi ô còn khoảng 640×360 — đủ để một app ngồi trong đó. 8 ô thì mỗi ô nhỏ tới mức app trong ô vô dụng.</p>
+
+  <p>Một điểm bất ngờ: bố cục <strong>3 ô</strong> <em>không</em> vẽ lại được bằng lưới. Cột trái của nó rộng đúng 7,29 cột trong 12 — không phải số nguyên, nên không có cách nào đặt khung khớp. Ép về 7 hay 8 cột đều lệch. Ai muốn đúng bố cục 3 ô thì dùng chip <em>3 ô</em>, đừng cố vẽ lại.</p>
+
+  <p>Nếu bố cục tự vẽ có vấn đề, Kachi <strong>lùi về bố cục sẵn</strong> thay vì bày một màn hỏng, và in lý do ngay dưới tiêu đề <em>Bố cục màn hình</em>. Dòng đó là chỗ đọc khi thấy “mình vẽ rồi mà màn không đổi”.</p>
+
+  <h3>3.3 Đưa app hoặc thông tin vào một ô</h3>
+
+  <p>Chạm vào một <strong>ô trống</strong> — chạm đâu trong ô cũng được. Bảng <strong>Đặt widget hoặc mở app vào ô này</strong> mở ra.</p>
+
+  <figure>
+    <img src="img/ngan-keo-dat-vao-o.png" alt="Bảng Đặt widget hoặc mở app vào ô này: câu hướng dẫn, lưới Ứng dụng, đầu khối Widget của app khác, nút Bỏ widget ở đáy">
+    <figcaption>Bảng chọn nội dung ô. Câu hướng dẫn ngay dưới tiêu đề: <em>“Widget: chọn nhiều rồi bấm Đặt · App: chạm để mở ngay · chạm nền để đóng”</em>.</figcaption>
+  </figure>
+
+  <p>Bảng này cuộn dọc, gồm <strong>năm khối</strong> theo thứ tự:</p>
+
+  <table>
+    <caption>Năm khối trong bảng chọn nội dung ô</caption>
+    <thead><tr><th>#</th><th>Khối</th><th>Chọn một cái thì gì</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Ứng dụng</strong></td><td>Chạm là <strong>đặt vào ô và mở ngay</strong> — không cần bấm nút đáy</td></tr>
+      <tr><td>2</td><td><strong>Widget của app khác</strong></td><td>Widget Android do app khác vẽ. Chạm một cái để đặt vào ô.</td></tr>
+      <tr><td>3</td><td><strong>Nhóm — xem cả cụm cùng lúc</strong></td><td>Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn</td></tr>
+      <tr><td>4</td><td><strong>Thẻ dựng tay</strong></td><td>Chín thẻ do Kachi tự vẽ (pin, lốp, đồng hồ, nhạc…)</td></tr>
+      <tr><td>5</td><td><strong>Từng mục riêng</strong></td><td>Từng con số hoặc từng nút lẻ, gom theo lĩnh vực</td></tr>
+    </tbody>
+  </table>
+
+  <p>Máy chưa có app nào cung cấp widget thì khối 2 vẫn hiện tiêu đề, kèm câu nói rõ — Kachi không im lặng bỏ mục nào.</p>
+
+  <figure>
+    <img src="img/nhom-kha-nang.png" alt="Khối Nhóm: tám ô nhóm gồm Lốp, Kính, Cửa và khoang, Đèn, Khí hậu và không khí, Năng lượng, Sức khỏe pin, Chuyến đi">
+    <figcaption>Khối <em>Nhóm — xem cả cụm cùng lúc</em>. Một nhóm gói cả bộ vào một ô, đỡ phải đặt bốn ô cho bốn bánh.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/the-dung-tay.png" alt="Khối Thẻ dựng tay với chín thẻ">
+    <figcaption>Khối <em>Thẻ dựng tay</em> — chín thẻ: Năng lượng · Áp suất lốp · Không khí · Đồng hồ + thời tiết · Đang phát · Trạng thái xe · Tốc độ · Bảng tổng hợp · Trình chiếu ảnh.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-tung-muc-rieng.png" alt="Khối Từng mục riêng, có huy hiệu con mắt và huy hiệu bàn tay, kèm dòng đã có trong nhóm Đèn">
+    <figcaption>Khối <em>Từng mục riêng</em>. Huy hiệu <strong>con mắt</strong> = mục chỉ xem. Huy hiệu <strong>bàn tay</strong> = mục bấm được. Dòng <em>“Đã có trong nhóm: Đèn”</em> nhắc rằng mục này đã nằm trong một nhóm, đặt nhóm là có luôn.</figcaption>
+  </figure>
+
+  <h4>Hai kiểu chọn khác nhau</h4>
+
+  <ul>
+    <li><strong>App</strong>: chạm một cái là xong ngay. Bảng đóng, app vào ô.</li>
+    <li><strong>Thông tin</strong> (nhóm · thẻ dựng tay · mục lẻ): chọn <strong>nhiều</strong> cái — mỗi cái chạm vào là tô sáng — rồi bấm nút ở <strong>đáy bảng</strong>. Nút đó ghi số đang chọn, ví dụ <strong>Đặt 8 widget</strong>.</li>
+  </ul>
+
+  <p>Một ô chứa tối đa <strong>8 mục</strong>. Chọn tới cái thứ chín thì Kachi từ chối và in dòng nhắc: <em>“Ô chứa tối đa 8 mục — bỏ một mục để thêm”</em>. Những ô ngoài phần đã chọn bị làm mờ để thấy rõ đã đầy.</p>
+
+  <figure>
+    <img src="img/ngan-keo-tran-8-muc.png" alt="Bảng chọn đã đầy tám mục: nút đáy ghi Đặt 8 widget, dòng nhắc ô chứa tối đa tám mục, các ô còn lại bị làm mờ">
+    <figcaption>Đã chọn đủ tám mục. Nút đáy ghi <strong>Đặt 8 widget</strong>; các ô khác mờ đi.</figcaption>
+  </figure>
+
+  <p>Đặt nhiều mục vào cùng một ô thì ô chia thành lưới thẻ nén — mỗi mục còn hình, con số và tên.</p>
+
+  <figure>
+    <img src="img/o-nhieu-widget.png" alt="Một ô chứa sáu mục đèn, xếp lưới ba cộng ba, mỗi mục là bản nén">
+    <figcaption>Một ô chứa sáu mục lẻ. Mỗi mục hiện bản nén. Các số đều là <strong>—</strong> vì ảnh chụp trên máy ảo.</figcaption>
+  </figure>
+
+  <h3>3.4 Đổi nội dung một ô đã có: nút ⇄</h3>
+
+  <p>Mỗi ô có nội dung mang một nút <strong>⇄</strong> nhỏ, ở <strong>giữa mép trên</strong> của ô. Nút này cố ý vẽ mờ và nhỏ để không che nội dung, nhưng vùng chạm rộng hơn hình — chạm quanh đó là được.</p>
+
+  <p>Chạm <strong>⇄</strong> mở lại đúng bảng chọn ở 3.3.</p>
+
+  <p>Đây là chỗ bí phổ biến nhất: chạm vào <strong>thân</strong> một ô đang chạy app thì <strong>app mở lại</strong>, chứ không mở bảng chọn. Muốn đổi nội dung ô đó thì phải qua ⇄.</p>
+
+  <h3>3.5 Làm trống một ô</h3>
+
+  <p>Ô <strong>không có nút ✕</strong>. Đường làm trống gồm ba bước:</p>
+
+  <ol>
+    <li>Chạm nút <strong>⇄</strong> ở mép trên ô.</li>
+    <li>Trong bảng chọn, <strong>bỏ chọn hết</strong> (chạm lại những ô đang sáng cho tắt hết).</li>
+    <li>Nút ở đáy bảng lúc này đổi chữ thành <strong>Bỏ widget</strong>. Bấm nó.</li>
+  </ol>
+
+  <p>Ô trở về trống, hiện lại dấu ＋ và chữ <em>Mở ứng dụng</em>.</p>
+
+  <p>Nút đáy chỉ có một cái, và nó đổi chữ theo số mục đang chọn: chọn 0 mục thì là <strong>Bỏ widget</strong>, chọn N mục thì là <strong>Đặt N widget</strong>. Không có hai nút riêng.</p>
+
+  <h3>3.6 Đổi chỗ hai ô: giữ lâu rồi kéo</h3>
+
+  <p><strong>Giữ lâu</strong> vào một ô rồi <strong>kéo</strong> thả lên một ô khác — hai ô đổi chỗ nội dung cho nhau.</p>
+
+  <p>Nhiều người giữ lâu vì tưởng sẽ hiện một menu có mục xoá. Không có menu nào: <strong>giữ lâu là để KÉO</strong>, không phải để mở menu. Việc xoá đi đường ⇄ ở 3.5.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 4 · Một ô — chạm vào đâu thì được gì</p>
+    <svg viewBox="0 0 880 600" role="img" aria-label="Sơ đồ quyết định: ô trống, ô có app, ô có thông tin — mỗi trạng thái dẫn tới bảng chọn, tới việc mở lại app, tới gửi lệnh xuống xe, hoặc tới đổi chỗ hai ô; đường duy nhất làm trống ô là bỏ chọn hết rồi bấm Bỏ widget">
+      <rect class="bx" x="330" y="8" width="220" height="44" rx="22"/>
+      <text class="tb" x="440" y="36" text-anchor="middle">Ô này đang có gì?</text>
+      <path class="ar" d="M340 40 C 200 44 150 52 145 76" marker-end="url(#ah)"/>
+      <path class="ar" d="M440 52 V 76" marker-end="url(#ah)"/>
+      <path class="ar" d="M540 40 C 680 44 730 52 735 76" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="10" y="80" width="270" height="176" rx="12"/>
+      <rect x="10" y="80" width="270" height="30" rx="12" fill="var(--card)" stroke="none"/>
+      <text class="tw" x="145" y="100" text-anchor="middle" fill="var(--muted)">trống</text>
+      <line class="sep" x1="10" y1="110" x2="280" y2="110"/>
+      <rect class="bx-d" x="22" y="122" width="246" height="46" rx="9"/>
+      <text class="ts" x="145" y="141" text-anchor="middle">không có nút ⇄,</text>
+      <text class="ts" x="145" y="158" text-anchor="middle">không có menu khi giữ lâu</text>
+      <rect class="bx-a" x="22" y="186" width="246" height="58" rx="9"/>
+      <text x="145" y="210" text-anchor="middle">Chạm đâu trong ô</text>
+      <text x="145" y="230" text-anchor="middle">cũng được</text>
+
+      <rect class="bx" x="305" y="80" width="270" height="176" rx="12"/>
+      <rect x="305" y="80" width="270" height="30" rx="12" fill="var(--card)" stroke="none"/>
+      <text class="tw" x="440" y="100" text-anchor="middle" fill="var(--muted)">có app</text>
+      <line class="sep" x1="305" y1="110" x2="575" y2="110"/>
+      <rect class="bx" x="317" y="120" width="246" height="42" rx="9"/>
+      <text class="ts" x="440" y="137" text-anchor="middle">Chạm THÂN ô ⟶ mở lại app đó</text>
+      <text class="ts" x="440" y="153" text-anchor="middle" fill="var(--muted)">(không mở bảng chọn)</text>
+      <rect class="bx" x="317" y="168" width="246" height="34" rx="9"/>
+      <text class="ts" x="440" y="190" text-anchor="middle">Giữ lâu rồi kéo ⟶ hai ô đổi chỗ</text>
+      <rect class="bx-a" x="317" y="208" width="246" height="36" rx="9"/>
+      <text x="440" y="232" text-anchor="middle">Chạm nút ⇄ (giữa mép trên)</text>
+
+      <rect class="bx" x="600" y="80" width="270" height="176" rx="12"/>
+      <rect x="600" y="80" width="270" height="30" rx="12" fill="var(--card)" stroke="none"/>
+      <text class="tw" x="735" y="100" text-anchor="middle" fill="var(--muted)">có thông tin</text>
+      <line class="sep" x1="600" y1="110" x2="870" y2="110"/>
+      <rect class="bx-w" x="612" y="120" width="246" height="42" rx="9"/>
+      <text class="ts" x="735" y="137" text-anchor="middle">Chạm nút trong ô (hàng nút ở đáy</text>
+      <text class="ts" x="735" y="153" text-anchor="middle">ô nhóm) ⟶ gửi lệnh xuống xe</text>
+      <rect class="bx" x="612" y="168" width="246" height="34" rx="9"/>
+      <text class="ts" x="735" y="190" text-anchor="middle">Giữ lâu rồi kéo ⟶ hai ô đổi chỗ</text>
+      <rect class="bx-a" x="612" y="208" width="246" height="36" rx="9"/>
+      <text x="735" y="232" text-anchor="middle">Chạm chỗ khác, hoặc ⇄</text>
+
+      <path class="ar-a" d="M145 256 V 300 H 735 V 256"/>
+      <path class="ar-a" d="M440 256 V 300"/>
+      <path class="ar-a" d="M440 300 V 330" marker-end="url(#ah-a)"/>
+
+      <rect class="bx-a" x="140" y="332" width="600" height="48" rx="12"/>
+      <text class="tb" x="440" y="362" text-anchor="middle">Bảng «Đặt widget hoặc mở app vào ô này»</text>
+
+      <path class="ar" d="M280 380 C 280 400 230 400 230 418" marker-end="url(#ah)"/>
+      <path class="ar" d="M600 380 C 600 400 650 400 650 418" marker-end="url(#ah)"/>
+
+      <rect class="bx-g" x="60" y="420" width="340" height="60" rx="12"/>
+      <text x="230" y="444" text-anchor="middle">Chạm một <tspan class="tb">APP</tspan></text>
+      <text class="ts" x="230" y="464" text-anchor="middle">⟶ vào ô, mở ngay</text>
+
+      <rect class="bx-g" x="480" y="420" width="340" height="60" rx="12"/>
+      <text x="650" y="444" text-anchor="middle">Chọn nhiều <tspan class="tb">THÔNG TIN</tspan></text>
+      <text class="ts" x="650" y="464" text-anchor="middle">⟶ bấm «Đặt N widget»</text>
+
+      <path class="ar-r" d="M140 356 H 100 V 508 H 136" marker-end="url(#ah-r)"/>
+      <rect class="bx-r" x="140" y="484" width="600" height="48" rx="12"/>
+      <text x="440" y="504" text-anchor="middle">Bỏ chọn <tspan class="tb">HẾT</tspan> ⟶ nút đáy thành «Bỏ widget»</text>
+      <text class="ts" x="440" y="522" text-anchor="middle">⟶ ô trở về TRỐNG — đây là đường DUY NHẤT làm trống ô</text>
+
+      <line class="sep" x1="10" y1="562" x2="870" y2="562"/>
+      <text class="ts" x="10" y="584">Không có nút ✕ trên ô. Không có menu khi giữ lâu.</text>
+    </svg>
+  </div>
+
+  <h3>3.7 Một app chỉ nằm ở một ô</h3>
+
+  <p>Đặt một app đang có ở ô 1 vào ô 3 thì <strong>ô 1 tự trống</strong>. Đó là thiết kế, không phải lỗi: cùng một app không chạy ở hai ô một lúc.</p>
+
+  <h3>3.8 Có app không chịu ngồi trong ô</h3>
+
+  <p>Phần lớn app chạy được trong ô. Nhưng có hai kiểu app không được, và <strong>không phải lỗi của Kachi</strong> — đã truy tới gốc trên xe thật:</p>
+
+  <ul>
+    <li><strong>App tự mở màn thứ hai</strong> (ví dụ Waze). App vào ô được, rồi tự mở một màn tiếp theo; tới đó một <strong>cổng chặn của Android</strong> kéo cả app về toàn màn. Kachi không có quyền hệ thống để đi qua cổng đó.</li>
+    <li><strong>App có bản quyền nội dung</strong> (ví dụ Netflix). Các app này <strong>không bao giờ</strong> hiện hình trong ô, vì cơ chế bảo vệ bản quyền (DRM) cấm vẽ nội dung ra ngoài màn chính. Đây là giới hạn cứng, không có cách chữa.</li>
+  </ul>
+
+  <p>Khi một app trong ô đã đóng, ô hiện chữ <em>“App đã đóng — chạm để mở lại”</em>. Chạm vào là mở lại.</p>
+
+  <h3>3.9 “Mở ứng dụng” trên thanh trên là việc khác</h3>
+
+  <figure>
+    <img src="img/ngan-keo-mo-ung-dung.png" alt="Bảng Mở ứng dụng: câu hướng dẫn chạm một app để mở toàn màn, lưới Tất cả ứng dụng">
+    <figcaption>Bảng <em>Mở ứng dụng</em>, mở từ nút <strong>Ứng dụng</strong> trên thanh trên. Câu hướng dẫn nói thẳng: <em>“Chạm một app để mở TOÀN MÀN · bấm HOME để về Kachi · chạm nền để đóng”</em>. Máy ảo chưa mở app nào nên chưa có hàng <em>Gần đây</em>; trên xe hàng đó nằm trên lưới <em>Tất cả ứng dụng</em>.</figcaption>
+  </figure>
+
+  <p>Hai bảng trông giống nhau nhưng làm hai việc khác nhau. Phân biệt bằng <strong>tiêu đề</strong>:</p>
+
+  <table>
+    <caption>Hai bảng chọn app</caption>
+    <thead><tr><th></th><th>Đặt widget hoặc mở app vào ô này</th><th>Mở ứng dụng</th></tr></thead>
+    <tbody>
+      <tr><td>Mở từ</td><td>Chạm ô trống, hoặc nút ⇄</td><td>Nút <strong>Ứng dụng</strong> trên thanh trên</td></tr>
+      <tr><td>Chạm một app thì</td><td>App vào <strong>ô</strong> đó</td><td>App mở <strong>toàn màn</strong></td></tr>
+      <tr><td>Có ghi vào ô không?</td><td>Có — nhớ qua lần nổ máy sau</td><td><strong>Không</strong> — không đổi ô, không đổi bố cục</td></tr>
+      <tr><td>Về Kachi bằng</td><td>Đang ở Kachi rồi</td><td>Phím <strong>HOME</strong></td></tr>
+      <tr><td>Có khối thông tin/nhóm?</td><td>Có</td><td>Không — chỉ có app</td></tr>
+      <tr><td>Có hàng <em>Gần đây</em>?</td><td>Không</td><td>Có, khi đã mở app nào đó</td></tr>
+    </tbody>
+  </table>
+
+  <p>Cả hai bảng đóng bằng cách <strong>chạm ra nền</strong> ngoài bảng.</p>
+
+  <h3>3.10 Tóm lại: mấy chỗ hay bí</h3>
+
+  <table>
+    <caption>Nhiều người tưởng X — thực ra Y</caption>
+    <thead><tr><th>Nhiều người tưởng</th><th>Thực ra</th><th>Làm gì</th></tr></thead>
+    <tbody>
+      <tr><td>Ô phải có nút ✕ để xoá</td><td>Không có nút ✕</td><td>⇄ → bỏ chọn hết → <strong>Bỏ widget</strong></td></tr>
+      <tr><td>Giữ lâu vào ô sẽ hiện menu</td><td>Giữ lâu là để <strong>kéo</strong></td><td>Kéo thả lên ô khác để đổi chỗ</td></tr>
+      <tr><td>Chạm ô có app sẽ mở bảng chọn</td><td>Nó <strong>mở lại app</strong></td><td>Dùng nút ⇄ ở mép trên ô</td></tr>
+      <tr><td>Nút đổi bố cục ở trên thanh trên</td><td>Đã bỏ khỏi thanh trên</td><td>Cài đặt › Màn hình chính</td></tr>
+      <tr><td>Đặt app vào ô mới mà ô cũ trống là lỗi</td><td>Đúng thiết kế: một app một ô</td><td>Không cần làm gì</td></tr>
+      <tr><td>Vẽ lại được bố cục “3 ô” bằng lưới</td><td>Không — cột trái rộng 7,29 cột</td><td>Dùng chip <em>3 ô</em></td></tr>
+      <tr><td>Chip trên thanh trên bấm được</td><td>Chỉ để xem, cố ý</td><td>Bấm ở thanh nút xe hoặc trong ô nhóm</td></tr>
+      <tr><td>Vẽ bố cục rồi bấm <em>Đóng</em> là đã lưu</td><td>Đóng là bỏ đi</td><td>Bấm <strong>Lưu</strong></td></tr>
+      <tr><td>Bỏ ảnh vào thư mục mà ô Trình chiếu ảnh vẫn trống</td><td>Hai thư mục khác nhau</td><td>Dùng đường dẫn ở khối <em>Widget Trình chiếu ảnh</em></td></tr>
+      <tr><td>Waze/Netflix nhảy khỏi ô là lỗi Kachi</td><td>Cổng của Android, và DRM</td><td>Mở toàn màn bằng nút <em>Ứng dụng</em></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="ch4">
+  <h2>4. Ô thông tin — đọc gì, bấm gì</h2>
+
+  <p>Ô trên màn chính không chỉ để mở app. Mỗi ô còn có thể bày thông tin của xe: pin, lốp, không khí, cửa, đèn, nhạc, giờ. Chương này là danh mục có hình của tất cả những thứ đặt được vào ô, kèm câu trả lời cho hai câu hỏi hay gặp nhất: <em>ô này nói gì</em> và <em>ô này bấm được không</em>.</p>
+
+  <h3>4.1 Trước tiên: dấu “—” nghĩa là gì</h3>
+
+  <p>Dấu <strong>—</strong> nghĩa là <strong>chưa đọc được số</strong>. Không phải lỗi. Không phải “đang tắt”. Không phải số 0.</p>
+  <p>Kachi không bao giờ bịa số. Chỗ nào chưa có dữ liệu thật thì chỗ đó hiện “—” và con số mờ đi, còn tên của ô vẫn rõ để biết ô đó là ô gì.</p>
+  <p>Có ba lý do thường gặp:</p>
+  <ul>
+    <li>Xe chưa gửi số đó ra (mới mở máy, hoặc bộ phận đó đang ngủ).</li>
+    <li>Bản xe này không có cảm biến đó. Ví dụ cốp sau: bấm mở được, nhưng xe không có cảm biến báo cốp đang mở hay đóng.</li>
+    <li>Đường đọc chưa có trên đời xe này. Hiện còn 27 mục thuộc loại này.</li>
+  </ul>
+  <p><strong>Nhiều người tưởng</strong> thấy “—” là app hỏng nên cài lại. <strong>Thực ra</strong> cài lại không đổi gì: số đến từ xe, không đến từ app.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 5 · “—” khác “đang tắt”</p>
+    <div class="tiles">
+      <div class="tile">
+        <div class="tv">78<span style="font-size:20px">%</span></div>
+        <div class="tn">pin</div>
+        <div class="tc">Có số — xe đã gửi giá trị ra</div>
+      </div>
+      <div class="tile" style="border-color:var(--amber)">
+        <div class="tv dim">—</div>
+        <div class="tn">pin</div>
+        <div class="tc"><strong>Chưa đọc được.</strong> Con số mờ, nhưng tên ô vẫn rõ. Không phải lỗi.</div>
+      </div>
+      <div class="tile">
+        <div class="tv" style="font-size:22px; padding:6px 0 4px; color:var(--muted)">Đang đóng</div>
+        <div class="tn">kính lái</div>
+        <div class="tc"><strong>Đang tắt / đang đóng</strong> — nói ra bằng chữ trạng thái, KHÔNG bằng “—”</div>
+      </div>
+    </div>
+    <p class="dgn">Ba ô cùng một thẻ, ba tình huống khác nhau. Chỉ ô giữa là “chưa biết”; ô phải là “biết, và nó đang tắt”.</p>
+  </div>
+
+  <h3>4.2 Ba họ thứ đặt được vào ô</h3>
+
+  <table>
+    <thead>
+      <tr><th>Họ</th><th>Là gì</th><th>Số lượng</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Thẻ dựng tay</strong></td><td>Chín thẻ vẽ riêng, mỗi thẻ một dáng đẹp sẵn</td><td>9</td></tr>
+      <tr><td><strong>Nhóm</strong></td><td>Một ô gom cả bộ, trả lời một câu hỏi trọn vẹn</td><td>8</td></tr>
+      <tr><td><strong>Từng mục riêng</strong></td><td>Một con số hoặc một nút, đứng một mình</td><td>rất nhiều, xếp theo lĩnh vực</td></tr>
+    </tbody>
+  </table>
+
+  <p>Ngoài ba họ trên, ô còn nhận được một app hoặc một widget của app khác. Hai giới hạn cần biết trước: app nào tự mở thêm màn thứ hai (Waze) thì không nằm được trong ô — đó là cổng của Android, không phải Kachi; app có bản quyền nội dung (Netflix) thì không bao giờ vào ô được vì lớp bảo vệ bản quyền của chính app đó.</p>
+
+  <h3>4.3 Chín thẻ dựng tay</h3>
+
+  <figure>
+    <img src="img/the-dung-tay.png" alt="Khối Thẻ dựng tay trong bảng chọn nội dung ô, đủ chín thẻ">
+    <figcaption>Khối “Thẻ dựng tay” trong bảng chọn nội dung ô — đủ chín thẻ.</figcaption>
+  </figure>
+
+  <table>
+    <thead>
+      <tr><th>Thẻ</th><th>Ô bày ra cái gì</th><th>Bấm được?</th><th>Cần xe?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Năng lượng</td><td>Vòng pin, phần trăm ở giữa, chữ “pin”, dòng “≈ N km” là tầm chạy còn lại</td><td>Không</td><td>Có</td></tr>
+      <tr><td>Áp suất lốp</td><td>Hình xe nhìn từ trên, bốn bánh mỗi bánh một số</td><td>Không</td><td>Có</td></tr>
+      <tr><td>Không khí</td><td>Vòng bụi mịn, số µg/m³, dòng “PM2.5 · Tốt / TB / Kém”</td><td>Không</td><td>Có</td></tr>
+      <tr><td>Đồng hồ + thời tiết</td><td>Giờ cỡ lớn, thứ và ngày, dòng “N°C · ngoài xe”</td><td>Không</td><td>Chỉ dòng nhiệt độ</td></tr>
+      <tr><td>Đang phát</td><td>Ảnh bìa, tên bài, tên ca sĩ, thanh tiến trình, ba nút</td><td><strong>Có</strong> — ba nút</td><td>Không</td></tr>
+      <tr><td>Trạng thái xe</td><td>Hình xe, cửa nào mở thì tô lên hình, một dòng kết luận</td><td>Không</td><td>Có</td></tr>
+      <tr><td>Tốc độ</td><td>Số cỡ lớn + “km/h”, dòng “Tốc độ hiện tại”</td><td>Không</td><td>Có</td></tr>
+      <tr><td>Bảng tổng hợp</td><td>Bốn ô con trong một ô: pin · PM2.5 · áp suất lốp · nhạc</td><td>Không</td><td>Có (trừ ô nhạc)</td></tr>
+      <tr><td>Trình chiếu ảnh</td><td>Ảnh trong thư mục ảnh riêng, tự đổi vòng</td><td>Không</td><td>Không</td></tr>
+    </tbody>
+  </table>
+
+  <p>Thẻ <strong>Trạng thái xe</strong> nói đúng một trong ba câu: <em>4 cửa đóng</em> (xanh) · <em>Có cửa đang mở</em> (hổ phách) · <em>Trạng thái cửa —</em> khi chưa đọc được cửa nào. Thẻ này không nói về cốp: xe không có cảm biến cốp nên dòng cốp đã bỏ hẳn, thà không có dòng nào hơn là có một dòng vĩnh viễn ghi “—”.</p>
+
+  <figure>
+    <img src="img/o-nang-luong.png" alt="Ô thẻ Năng lượng: vòng pin rỗng, giữa là dấu gạch">
+    <figcaption>Thẻ <strong>Năng lượng</strong>. Ảnh chụp trên máy ảo nên chưa có số: vòng rỗng, giữa là “—”, và không có dòng “≈ N km”. Trên xe thật, giữa vòng là phần trăm pin và dưới là số ki-lô-mét còn đi được.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-ap-suat-lop.png" alt="Ô thẻ Áp suất lốp: hình xe và bốn thẻ số">
+    <figcaption>Thẻ <strong>Áp suất lốp</strong>: hình xe và bốn thẻ, mỗi bánh một thẻ. Trên máy ảo cả bốn đều “—”.</figcaption>
+  </figure>
+
+  <p>Thẻ áp suất lốp tự xét từng bánh và tô màu theo kết quả. Ngưỡng nằm trong bảng dưới, và chúng là ngưỡng dùng chung cho cả ô lốp lẫn nhóm Lốp — không có hai bộ số khác nhau.</p>
+
+  <table>
+    <thead><tr><th>Kết luận trên bánh</th><th>Khi nào</th></tr></thead>
+    <tbody>
+      <tr><td>non</td><td>Dưới 2,0 bar</td></tr>
+      <tr><td>căng</td><td>Trên 3,2 bar</td></tr>
+      <tr><td>lệch</td><td>Chênh giữa bánh cao nhất và bánh thấp nhất từ 0,3 bar trở lên — bánh thấp nhất bị đánh dấu</td></tr>
+      <tr><td>bình thường</td><td>Không thuộc ba trường hợp trên</td></tr>
+    </tbody>
+  </table>
+
+  <p>Đơn vị áp suất trong thẻ đổi được, nhưng không đổi ở đây: nó nằm ở <em>Cài đặt › Hiển thị &amp; đơn vị</em> và đổi một lần thì mọi ô đổi theo.</p>
+
+  <figure>
+    <img src="img/o-khong-khi.png" alt="Ô thẻ Không khí: vòng bụi mịn và dòng PM2.5">
+    <figcaption>Thẻ <strong>Không khí</strong>: vòng bụi mịn, số µg/m³ ở giữa, dòng “PM2.5 · …” bên dưới. Máy ảo chưa đọc được nên cả hai đều “—”.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-toc-do.png" alt="Ô thẻ Tốc độ: số lớn và chữ km/h">
+    <figcaption>Thẻ <strong>Tốc độ</strong>: số lớn, “km/h” nhỏ bên cạnh, dòng “Tốc độ hiện tại” bên dưới. Thẻ này chỉ nói tốc độ đang chạy — nó không cảnh báo quá tốc độ. Cảnh báo an toàn là việc của xe.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-trang-thai-xe.png" alt="Ô thẻ Trạng thái xe: hình xe nhìn từ trên">
+    <figcaption>Thẻ <strong>Trạng thái xe</strong> lúc chưa đọc được cửa nào: dòng dưới ghi “Trạng thái cửa —”.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-dong-ho-thoi-tiet.png" alt="Ô thẻ Đồng hồ và thời tiết">
+    <figcaption>Thẻ <strong>Đồng hồ + thời tiết</strong>. Giờ và ngày luôn đúng vì chúng lấy từ máy, không lấy từ xe; chỉ dòng nhiệt độ ngoài xe là “—” khi chưa đọc được.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-dang-phat.png" alt="Ô thẻ Đang phát với ảnh bìa giữ chỗ và ba nút">
+    <figcaption>Thẻ <strong>Đang phát</strong>. Ảnh chụp lúc không có bài nào đang phát: ảnh bìa là ảnh giữ chỗ và tên bài là “—”. Ba nút vẫn ở đó: lùi bài · nút giữa · sang bài.</figcaption>
+  </figure>
+
+  <p><strong>Nhiều người tưởng</strong> nút giữa của ô nhạc bị kẹt vì nó luôn mang hình ▶, kể cả khi nhạc đang chạy. <strong>Thực ra</strong> hình của nút không đổi nhưng việc nó làm thì đổi: đang phát mà bấm là <strong>tạm dừng</strong>, đang dừng mà bấm là phát tiếp.</p>
+
+  <figure>
+    <img src="img/o-bang-tong-hop.png" alt="Ô thẻ Bảng tổng hợp với bốn ô con">
+    <figcaption>Thẻ <strong>Bảng tổng hợp</strong>: bốn ô con trong một ô — pin, PM2.5, áp suất lốp, nhạc. Ảnh chụp trên máy ảo và không có bài nhạc nào đang phát nên cả bốn ô con đều “—”.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/o-trinh-chieu-anh.png" alt="Ô thẻ Trình chiếu ảnh với một ảnh phủ kín ô">
+    <figcaption>Thẻ <strong>Trình chiếu ảnh</strong>: ảnh phủ kín ô và tự đổi vòng. Ảnh trong hình là ảnh dựng bằng máy.</figcaption>
+  </figure>
+
+  <p>Thư mục ảnh của thẻ Trình chiếu ảnh <strong>khác</strong> thư mục ảnh nền. Đây là chỗ lẫn thường xuyên: bỏ ảnh vào thư mục ảnh nền rồi trông thẻ hiện ra thì sẽ không thấy gì. Đường dẫn đúng có nút sao chép riêng trong <em>Cài đặt › Màn hình chính</em>.</p>
+
+  <h3>4.4 Tám nhóm — một ô cho cả một câu hỏi</h3>
+
+  <p>Một con số áp suất đứng một mình gần như không trả lời được câu gì: “2,4 bar” chỉ có nghĩa khi đặt cạnh ba bánh kia. Vì vậy có thêm nhóm: một ô bày cả bộ, và bộ đó được gom theo <strong>câu người lái hỏi</strong>, không theo cách xe cất dữ liệu.</p>
+
+  <figure>
+    <img src="img/nhom-kha-nang.png" alt="Khối Nhóm trong bảng chọn nội dung ô, tám ô nhóm">
+    <figcaption>Khối “Nhóm — xem cả cụm cùng lúc”: tám nhóm. Dòng phụ dưới mỗi nhóm nói nó gồm bao nhiêu mục xem và bao nhiêu nút.</figcaption>
+  </figure>
+
+  <table>
+    <thead>
+      <tr><th>Nhóm</th><th>Trả lời câu</th><th>Mục xem</th><th>Nút</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Lốp</td><td>Lốp có ổn không?</td><td>8 — áp suất và nhiệt độ từng bánh</td><td>—</td></tr>
+      <tr><td>Kính</td><td>Kính đóng hết chưa?</td><td>4 — phần trăm mở từng kính</td><td><strong>11</strong></td></tr>
+      <tr><td>Cửa &amp; khoang</td><td>Xe kín chưa?</td><td>6 — bốn cửa, cửa sổ trời, rèm</td><td><strong>3</strong></td></tr>
+      <tr><td>Đèn</td><td>Đang bật đèn gì?</td><td>9 — đèn ngoài và chế độ pha</td><td><strong>3</strong></td></tr>
+      <tr><td>Khí hậu &amp; không khí</td><td>Trong xe có dễ thở không?</td><td>13 — nhiệt trong/ngoài, điều hoà, bụi mịn</td><td>—</td></tr>
+      <tr><td>Năng lượng</td><td>Còn đi được bao xa?</td><td>6 — pin, tầm chạy, mức tiêu thụ</td><td>—</td></tr>
+      <tr><td>Sức khỏe pin</td><td>Pin có đang già đi không?</td><td>2 — sức khoẻ pin, điện áp ắc-quy</td><td>—</td></tr>
+      <tr><td>Chuyến đi</td><td>Chuyến này đi bao nhiêu?</td><td>4 — quãng đường, thời gian, tiêu thụ, odo</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Ba tầng của một ô nhóm</h4>
+
+  <figure>
+    <img src="img/ben-trong-o-nhom.png" alt="Ô nhóm Kính với đầu ô, bốn ô con và hàng nút ở đáy">
+    <figcaption>Ô nhóm <strong>Kính</strong>, thấy đủ ba tầng: đầu ô (hình + tên nhóm) · bốn ô con chỉ để xem · hàng nút ở đáy ô. Bốn ô con đang “—” vì máy ảo không đọc được phần trăm mở của kính.</figcaption>
+  </figure>
+
+  <div class="dg">
+    <p class="dgt">Hình 6 · Ba tầng của một ô nhóm</p>
+    <div class="tiers">
+      <div class="slotmock">
+        <div class="sh"><i></i>Kính</div>
+        <div class="sg"><div>—</div><div>—</div><div>—</div><div>—</div></div>
+        <div class="sb"><b>Kính lái</b><b>4 kính</b><b>50 %</b><b>Đóng cả cụm</b></div>
+      </div>
+      <div class="tierlbl">
+        <div class="k1"><b>1 · Đầu ô</b>hình + tên nhóm</div>
+        <div class="k2"><b>2 · Ô con — CHỈ ĐỂ XEM</b>chạm không gửi lệnh; nó mở lại bảng chọn nội dung ô</div>
+        <div class="k3"><b>3 · Hàng nút — chỗ DUY NHẤT gửi lệnh cho xe</b>chỉ ba nhóm có dải này: Kính · Cửa &amp; khoang · Đèn</div>
+      </div>
+    </div>
+  </div>
+
+  <p>Đây là chỗ hay hiểu sai nhất trong cả app.</p>
+  <ul>
+    <li><strong>Ô con ở giữa chỉ để xem.</strong> Chạm vào con số trong ô nhóm <strong>không gửi lệnh nào cho xe</strong>. Nó chỉ mở lại bảng chọn nội dung của ô đó.</li>
+    <li><strong>Lệnh chỉ đi từ hàng nút ở đáy ô.</strong> Không có đường nào khác.</li>
+    <li><strong>Chỉ ba nhóm có hàng nút đó:</strong> Kính · Cửa &amp; khoang · Đèn. Năm nhóm còn lại không có nút nào, và dòng phụ của chúng cũng không hứa có nút.</li>
+  </ul>
+
+  <p>Nhóm <strong>Kính</strong> có mười một nút: bốn kính riêng (Kính lái · Kính phụ · Kính sau trái · Kính sau phải), “4 kính”, bốn nút mở nửa, “50% 4 kính”, và “Đóng cả cụm” ở cuối.</p>
+
+  <figure>
+    <img src="img/o-cua-va-khoang.png" alt="Ô nhóm Cửa và khoang: hình xe và hàng nút ba nút">
+    <figcaption>Ô nhóm <strong>Cửa &amp; khoang</strong>: hình xe ở giữa, hàng nút ở đáy có đúng ba nút — <strong>Cốp sau</strong> · <strong>Cửa sổ trời</strong> · <strong>Rèm che nắng</strong>.</figcaption>
+  </figure>
+
+  <p>Hai điều cần biết về ô này. Thứ nhất, nút <strong>Cốp sau</strong> bấm được nhưng hình xe không bao giờ có chấm cốp: xe ghi được lệnh mở/đóng cốp, nhưng không có đường đọc lại xem cốp đang thế nào. Thứ hai, nút <strong>Cửa sổ trời</strong> vẫn còn dù xe của dự án không có cửa sổ trời — bấm thì không có gì xảy ra.</p>
+
+  <h4>Màu nền của ô con nghĩa là gì</h4>
+
+  <table>
+    <thead><tr><th>Nền ô con</th><th>Nghĩa</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td>Xám trung tính</td><td>Bình thường, hoặc đang tắt, hoặc chưa đọc được</td><td>Kính đang đóng</td></tr>
+      <tr><td>Xanh nhấn</td><td>Đang bật, đang mở, đang hoạt động — <em>không</em> phải cảnh báo</td><td>Đèn đang sáng</td></tr>
+      <tr><td>Hổ phách</td><td>Đáng để ý nhưng chưa nguy</td><td>Lốp lệch, bụi mịn mức trung bình</td></tr>
+      <tr><td>Đỏ</td><td>Đang cảnh báo</td><td>Cửa mở, lốp non hoặc quá căng</td></tr>
+    </tbody>
+  </table>
+
+  <p>Màu của cả ô nhóm lấy theo ô con <em>nặng nhất</em> bên trong. Ô nhóm viền đỏ nghĩa là có ít nhất một thứ trong nhóm đang cảnh báo.</p>
+
+  <h3>4.5 Từng mục riêng — con mắt và bàn tay</h3>
+
+  <figure>
+    <img src="img/o-tung-muc-rieng.png" alt="Khối Từng mục riêng với huy hiệu con mắt và bàn tay">
+    <figcaption>Khối “Từng mục riêng”, mở một lĩnh vực. Mỗi ô có một huy hiệu nhỏ ngay dưới hình.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>Huy hiệu</th><th>Nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td>Con mắt, viên xanh</td><td><strong>Chỉ để xem.</strong> Đặt vào ô thì được một con số hoặc một trạng thái, chạm không làm gì.</td></tr>
+      <tr><td>Bàn tay, viên hổ phách</td><td><strong>Bấm được.</strong> Đặt vào ô thì được một nút thật, bấm là ra lệnh cho xe.</td></tr>
+      <tr><td>Viên chữ xám</td><td>Đây là một nhóm hoặc một thẻ dựng tay, không phải mục lẻ.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Một số ô có thêm một <strong>chấm mờ nhỏ</strong> ở góc hình, và đầu mỗi lĩnh vực có dòng “<em>N mục chưa kiểm trên xe</em>”. Nghĩa là: đường đọc hoặc đường ghi của mục đó lấy từ nguồn khác, chưa xác nhận được trên chính xe này. Đặt vào ô vẫn được, chỉ là có thể không ra số hoặc bấm không ăn.</p>
+
+  <p>Mục nào đã có mặt trong một nhóm thì dòng phụ của nó nói ra: “<strong>Đã có trong nhóm: Đèn</strong>”. Đây là gợi ý, không phải lệnh cấm — vẫn đặt riêng được nếu chỉ muốn đúng một con số to giữa màn.</p>
+
+  <h3>4.6 Nhiều mục trong một ô</h3>
+
+  <p>Một ô chứa được tối đa <strong>tám</strong> mục. Số mục quyết định cách xếp bên trong:</p>
+
+  <table>
+    <thead><tr><th>Số mục trong ô</th><th>Cách xếp</th><th>Hình dáng mỗi mục</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Chiếm trọn ô</td><td>Bản đầy đủ — vòng đo, hình xe, bảng, đúng như ảnh ở §4.3</td></tr>
+      <tr><td>2 · 3</td><td>Một hàng</td><td>Bản nén</td></tr>
+      <tr><td>4</td><td>2 + 2</td><td>Bản nén</td></tr>
+      <tr><td>5</td><td>2 + 3</td><td>Bản nén</td></tr>
+      <tr><td>6</td><td>3 + 3</td><td>Bản nén</td></tr>
+      <tr><td>7</td><td>3 + 4</td><td>Bản nén</td></tr>
+      <tr><td>8</td><td>4 + 4</td><td>Bản nén</td></tr>
+    </tbody>
+  </table>
+
+  <p>Bản nén giữ đúng ba thứ: hình, một con số, một dòng phụ ngắn. Những dáng vẽ to thì mất: nhóm trong ô nén chỉ còn hình và tên nhóm, thẻ “Bảng tổng hợp” nén chỉ còn chữ <strong>Tổng hợp</strong>.</p>
+
+  <figure>
+    <img src="img/o-nhieu-widget.png" alt="Một ô chứa sáu mục đèn, xếp lưới ba cộng ba">
+    <figcaption>Một ô chứa sáu mục đèn: lưới 3 + 3, mỗi mục ở bản nén. Cả sáu đang “—” vì máy ảo không đọc được trạng thái đèn.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/ngan-keo-tran-8-muc.png" alt="Bảng chọn nội dung ô khi đã chọn đủ tám mục">
+    <figcaption>Khi đã chọn đủ tám mục: nút đáy ghi “Đặt 8 widget”, có thêm dòng “<strong>Ô chứa tối đa 8 mục — bỏ một mục để thêm</strong>”, và những ô ngoài tám mục đã chọn bị làm mờ.</figcaption>
+  </figure>
+
+  <h3>4.7 Tóm lại: ô nào bấm được</h3>
+
+  <table>
+    <thead><tr><th>Loại ô</th><th>Chạm vào thân ô / con số</th><th>Chỗ ra lệnh cho xe</th></tr></thead>
+    <tbody>
+      <tr><td>Tám ô nhóm</td><td>Mở bảng chọn nội dung ô</td><td>Hàng nút ở đáy ô — chỉ Kính · Cửa &amp; khoang · Đèn có</td></tr>
+      <tr><td>Thẻ Đang phát</td><td>Mở bảng chọn nội dung ô</td><td>Ba nút trong thẻ (lùi bài · phát/tạm dừng · sang bài)</td></tr>
+      <tr><td>Tám thẻ dựng tay còn lại</td><td>Mở bảng chọn nội dung ô</td><td>Không có — chỉ để xem</td></tr>
+      <tr><td>Mục lẻ huy hiệu con mắt</td><td>Mở bảng chọn nội dung ô</td><td>Không có — chỉ để xem</td></tr>
+      <tr><td>Mục lẻ huy hiệu bàn tay</td><td>Chính nó là nút — bấm là ra lệnh</td><td>Chính nó</td></tr>
+    </tbody>
+  </table>
+
+  <p>Nút <strong>⇄</strong> ở giữa mép trên ô cũng mở đúng bảng đó. Hai đường, một đích: nút ⇄ có để bấm chắc tay khi trong ô đã có widget của app khác với nút bấm riêng của nó.</p>
+
+  <h3>4.8 Đổi đơn vị</h3>
+
+  <p>Mọi con số trong mọi ô đều theo một bộ đơn vị chung, đặt ở <em>Cài đặt › Hiển thị &amp; đơn vị</em>: áp suất <strong>bar / kPa / psi</strong>, nhiệt độ <strong>°C / °F</strong>, quãng đường <strong>km / mile</strong>, tốc độ <strong>km/h / mph</strong>. Không có ô nào đặt đơn vị riêng.</p>
+
+  <h3>4.9 Những chỗ dễ hiểu nhầm trong chương này</h3>
+
+  <table>
+    <thead><tr><th>Nhiều người tưởng</th><th>Thực ra</th></tr></thead>
+    <tbody>
+      <tr><td>“—” là lỗi của app</td><td>Là “chưa đọc được số”. Số đến từ xe; cài lại app không đổi gì.</td></tr>
+      <tr><td>“—” nghĩa là thứ đó đang tắt</td><td>Đang tắt thì ô nói ra bằng chữ trạng thái. “—” là không biết.</td></tr>
+      <tr><td>Chạm con số trong ô nhóm để điều khiển</td><td>Con số chỉ để xem. Lệnh chỉ đi từ hàng nút ở đáy ô.</td></tr>
+      <tr><td>Nhóm nào cũng bấm được</td><td>Chỉ ba nhóm có hàng nút: Kính · Cửa &amp; khoang · Đèn.</td></tr>
+      <tr><td>Nút ▶ của ô nhạc bị kẹt vì nhạc đang chạy mà nút vẫn là ▶</td><td>Hình không đổi, việc thì đổi: bấm lúc đang phát là tạm dừng.</td></tr>
+      <tr><td>Bảng “Cửa &amp; khoang” hỏng vì không bao giờ có chấm cốp</td><td>Xe không có cảm biến cốp. Nút mở cốp vẫn chạy, chỉ không đọc lại được.</td></tr>
+      <tr><td>Thời gian chuyến đi chạy sai vì nó đứng yên nhiều phút</td><td>Xe cấp con số này theo bậc <strong>6 phút</strong>. Kachi làm mượt từng phút, nhưng ngay sau khi nổ máy vẫn có thể lệch tới 6 phút cho tới bậc đầu tiên. Phần mềm không sửa được thêm.</td></tr>
+      <tr><td>Bỏ ảnh vào rồi mà thẻ Trình chiếu ảnh vẫn trống</td><td>Thẻ này đọc thư mục riêng, khác thư mục ảnh nền.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="ch5">
+  <h2>5. Tiện nghi xe</h2>
+
+  <p>Nhóm <em>Cài đặt › Tiện nghi xe</em> gom những việc xe làm hộ mà không cần ai bấm: lấy gió trong lúc nổ máy, bật sấy kính khi mưa, bật camera khi xi-nhan, giữ ghế ở mức đã đặt, chạy lọc bụi khi không khí bẩn.</p>
+
+  <p>Phân biệt cho rõ ngay từ đầu:</p>
+  <ul>
+    <li>Nút trên <strong>thanh nút xe</strong> = làm <strong>ngay một lần</strong>.</li>
+    <li>Trang này = đặt <strong>luật</strong>, để xe tự làm về sau.</li>
+  </ul>
+
+  <p>Trang có năm mục, theo đúng thứ tự này: <strong>Lấy gió trong</strong> · <strong>Tự sấy kính khi mưa</strong> · <strong>Camera theo xi-nhan</strong> · <strong>Ghế mát / sưởi</strong> · <strong>Lọc bụi mịn</strong>.</p>
+
+  <figure>
+    <img src="img/cai-dat-tien-nghi-xe.png" alt="Toàn bộ trang Cài đặt Tiện nghi xe, ảnh ghép nhiều lần cuộn">
+    <figcaption>Cả trang <em>Tiện nghi xe</em> (ảnh ghép nhiều lần cuộn). Trong ảnh này công tắc “Mưa thì tự bật sấy kính” đang <strong>bật</strong> nên hai ô con bên dưới nó sáng bình thường; khi công tắc tắt thì hai ô con đó bị làm mờ. Dòng “Bụi mịn hiện tại: chưa đọc được” và đồng hồ bụi trống là vì ảnh chụp trên máy ảo. Nút “Lọc ngay một lượt” ở cuối mục bụi mịn bị cắt mất một phần ở mép dưới ảnh ghép.</figcaption>
+  </figure>
+
+  <h3>5.1 Lấy gió trong</h3>
+
+  <p>Một công tắc: <strong>Nổ máy thì tự lấy gió trong</strong> — “<em>Xe quên chế độ này mỗi lần khởi động — Kachi tự bật lại.</em>”</p>
+  <ul>
+    <li>Bật là <strong>áp ngay</strong>, không phải chờ tới lần nổ máy sau.</li>
+    <li>Tắt thì chỉ ngừng tự bật. Chế độ đang chạy trên xe <strong>không</strong> bị tắt theo — có thể đang cần nó, chỉ là không muốn nó tự bật nữa.</li>
+  </ul>
+
+  <h3>5.2 Mưa thì tự bật sấy kính</h3>
+
+  <p>Mục này có một công tắc chính và hai ô con:</p>
+
+  <table>
+    <thead><tr><th>Hàng</th><th>Nói gì</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mưa thì tự bật sấy kính</strong></td><td>Đọc cảm biến mưa mỗi 5 phút; có mưa thì tự bật sấy kính (chọn bên dưới), hết mưa thì tắt.</td></tr>
+      <tr><td><strong>Sấy kính trước</strong></td><td>Kính chắn gió phía trước.</td></tr>
+      <tr><td><strong>Sấy kính sau + gương</strong></td><td>Kính sau và gương chiếu hậu.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Dưới cùng là một dòng ghi chú quan trọng: “<em>Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng.</em>”</p>
+
+  <p>Cách nó chạy, nói thẳng:</p>
+  <ul>
+    <li>Mặc định <strong>tắt</strong>. Máy mới cài không đọc cảm biến và không đụng nút sấy nào cho tới khi có người tự bật.</li>
+    <li>Kachi biết trời mưa bằng cách đọc <strong>tốc độ cần gạt mưa</strong> của xe, 5 phút một lần. Cần gạt đang chạy = có mưa. Mưa mà cần gạt không chạy thì Kachi không biết.</li>
+    <li>Hai ô con mặc định <strong>cùng bật</strong>. Bỏ tích <strong>cả hai</strong> là tắt thật: không đọc cảm biến, không bật cái sấy nào.</li>
+    <li>Công tắc chính tắt thì hai ô con <strong>mờ đi và không bấm được</strong> — mờ chứ không ẩn, để người bật công tắc lên vẫn biết là có hai lựa chọn.</li>
+    <li>Tự tắt cái sấy <strong>giữa cơn mưa</strong> thì Kachi nhả quyền: nó không bật lại cho tới khi trời khô hẳn.</li>
+    <li>Nổ máy lại thì Kachi quên cái sấy trước đó là do nó bật, nên nó sẽ không tự tắt hộ lần đó. Đây là hướng an toàn: thà quên tắt hơn là tắt mất cái sấy mà người lái vừa tự bật.</li>
+  </ul>
+
+  <h3>5.3 Camera theo xi-nhan</h3>
+
+  <p>Xi-nhan trái thì hiện hình camera bên trái, xi-nhan phải thì hiện hình bên phải — một ô ảnh nhỏ nổi lên ở góc trên màn, để thấy điểm mù trước khi chuyển làn.</p>
+
+  <figure>
+    <img src="img/cai-dat-camera-xi-nhan.png" alt="Mục Camera theo xi-nhan với mười hàng">
+    <figcaption>Mục <strong>Camera theo xi-nhan</strong> của bản 2.79: đúng <strong>mười hàng</strong> dành cho người lái. Không còn khối “Nâng cao (kỹ thuật)”, không còn hàng “Nguồn” — những núm tinh chỉnh đó đã chốt sẵn theo đời xe.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>#</th><th>Hàng</th><th>Chọn gì</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Bật camera khi xi-nhan</strong></td><td>Bật / tắt. <strong>Mặc định tắt.</strong></td></tr>
+      <tr><td>2</td><td><strong>Hiện camera lên màn cụm</strong></td><td>Bật / tắt. Bật là hình camera hiện trên cụm đồng hồ thay vì trên màn chính. Mặc định tắt.</td></tr>
+      <tr><td>3</td><td><strong>Xi-nhan trái hiện ở</strong></td><td>Trái / Phải</td></tr>
+      <tr><td>4</td><td><strong>Xi-nhan phải hiện ở</strong></td><td>Trái / Phải</td></tr>
+      <tr><td>5</td><td><strong>Xi-nhan trái: xoay video</strong></td><td>Không xoay / ↺ 90° / ↻ 90° / 180°</td></tr>
+      <tr><td>6</td><td><strong>Xi-nhan phải: xoay video</strong></td><td>Không xoay / ↺ 90° / ↻ 90° / 180°</td></tr>
+      <tr><td>7</td><td><strong>Xi-nhan trái: lật gương</strong></td><td>Bật / tắt</td></tr>
+      <tr><td>8</td><td><strong>Xi-nhan phải: lật gương</strong></td><td>Bật / tắt</td></tr>
+      <tr><td>9</td><td><strong>Hình khung camera</strong></td><td>Chữ nhật / Tròn / Theo cụm</td></tr>
+      <tr><td>10</td><td><strong>Nắn hình (bớt cong ống kính)</strong></td><td>Bật / tắt</td></tr>
+    </tbody>
+  </table>
+
+  <p>Bốn điều cần biết trước khi chỉnh:</p>
+  <ul>
+    <li>Hàng 1 <strong>mặc định tắt</strong>. Không bật thì xi-nhan sẽ không thấy gì cả. Đây là lý do số một của câu “xi-nhan mà không có camera”.</li>
+    <li><strong>Mỗi bên đặt riêng.</strong> Bốn hàng 3–8 đều có bản trái và bản phải, và chúng độc lập. Xi-nhan trái vẫn có thể hiện hình ở góc phải nếu thấy tiện hơn.</li>
+    <li>Vị trí luôn ở <strong>góc trên</strong> — chỉ chọn trái hay phải, không chọn được góc dưới.</li>
+    <li>Đổi chip xong thì <strong>lượt xi-nhan tiếp theo</strong> mới theo cài đặt mới. Lượt đang chạy không đổi giữa đường.</li>
+  </ul>
+
+  <h4>Hình bị ngược, bị nằm ngang — chỉnh ở đâu</h4>
+
+  <p>Camera gắn trên thân xe đưa ra ảnh thô, và hướng của ảnh thô không giống hướng người lái mong đợi. Vì thế có hai cặp hàng chỉnh hướng, và thứ tự Kachi làm là cố định:</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 7 · Khung ảnh đi qua bốn bước, theo đúng thứ tự này</p>
+    <svg viewBox="0 0 880 190" role="img" aria-label="Chuỗi xử lý khung camera: khung thô, lật gương (hàng 7-8), xoay (hàng 5-6), nắn hình (hàng 10), cắt theo hình khung (hàng 9)">
+      <g>
+        <rect class="bx" x="6" y="20" width="140" height="80" rx="10"/>
+        <text class="tb" x="76" y="60" text-anchor="middle" style="font-size:30px" fill="var(--muted)">F</text>
+        <text class="ts" x="76" y="120" text-anchor="middle">Khung thô</text>
+        <text class="ts" x="76" y="135" text-anchor="middle">từ camera</text>
+      </g>
+      <path class="ar" d="M150 60 H 174" marker-end="url(#ah)"/>
+      <g>
+        <rect class="bx-a" x="178" y="20" width="140" height="80" rx="10"/>
+        <text class="tb" x="248" y="60" text-anchor="middle" style="font-size:30px" fill="var(--accent-fg)" transform="translate(496,0) scale(-1,1)">F</text>
+        <text class="tb" x="248" y="120" text-anchor="middle">Lật gương</text>
+        <text class="ts" x="248" y="135" text-anchor="middle">hàng 7 · 8</text>
+      </g>
+      <path class="ar" d="M322 60 H 346" marker-end="url(#ah)"/>
+      <g>
+        <rect class="bx-a" x="350" y="20" width="140" height="80" rx="10"/>
+        <text class="tb" x="420" y="60" text-anchor="middle" style="font-size:30px" fill="var(--accent-fg)" transform="rotate(90 420 52)">F</text>
+        <text class="tb" x="420" y="120" text-anchor="middle">Xoay</text>
+        <text class="ts" x="420" y="135" text-anchor="middle">hàng 5 · 6</text>
+      </g>
+      <path class="ar" d="M494 60 H 518" marker-end="url(#ah)"/>
+      <g>
+        <rect class="bx" x="522" y="20" width="140" height="80" rx="10"/>
+        <path d="M542 34 C 592 26 622 26 642 34 M542 86 C 592 94 622 94 642 86" fill="none" stroke="var(--muted)" stroke-width="1.6"/>
+        <text class="ts" x="592" y="66" text-anchor="middle">bớt cong</text>
+        <text class="tb" x="592" y="120" text-anchor="middle">Nắn hình</text>
+        <text class="ts" x="592" y="135" text-anchor="middle">hàng 10</text>
+      </g>
+      <path class="ar" d="M666 60 H 690" marker-end="url(#ah)"/>
+      <g>
+        <rect class="bx" x="694" y="20" width="140" height="80" rx="10"/>
+        <circle cx="764" cy="60" r="34" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="5 4"/>
+        <text class="tb" x="764" y="120" text-anchor="middle">Cắt theo hình khung</text>
+        <text class="ts" x="764" y="135" text-anchor="middle">hàng 9</text>
+      </g>
+      <line class="sep" x1="6" y1="158" x2="874" y2="158"/>
+      <text class="ts" x="6" y="180" fill="var(--amber)">LẬT làm TRƯỚC XOAY — đổi thứ tự thì kết quả khác.</text>
+    </svg>
+  </div>
+
+  <ul>
+    <li>Hình <strong>nằm ngang hoặc lộn đầu</strong> → dùng <em>xoay video</em> của đúng bên đó.</li>
+    <li>Hình <strong>ngược tay</strong> so với gương kính (nhìn vào thấy trái phải đảo nhau) → bật <em>lật gương</em> của bên đó. Ngắm đúng: thân xe phải nằm ở mép <strong>trong</strong>, phía giữa màn, y như nhìn gương thật.</li>
+    <li><em>Lật gương</em> mặc định <strong>tắt</strong> cả hai bên, vì tay của ảnh do xe đưa ra chưa đo được chắc chắn. Đây là hàng để người lái tự bật khi thấy ngược, không phải hàng để mặc định đúng.</li>
+    <li><em>Nắn hình</em> bật là bớt độ cong của ống kính góc rộng. Tắt là ảnh thô như camera đưa ra. Bộ tham số nắn đã chốt sẵn theo đời xe, không có núm nào để mò thêm.</li>
+  </ul>
+
+  <h4>Ba hình trên cụm — được cái này thì mất cái kia</h4>
+
+  <p>Cụm đồng hồ chỉ cho vẽ vào <strong>khúc giữa</strong>: thanh trên và thanh dưới là của hệ thống xe. Ba lựa chọn ở hàng 9 là ba cách đặt ô camera vào khúc giữa đó, và mỗi cách có một cái giá.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 8 · Ba hình khung, trên cùng một dải cụm</p>
+    <svg viewBox="0 0 880 250" role="img" aria-label="Ba hình khung camera trên dải giữa của cụm đồng hồ: Chữ nhật mất 0 phần trăm tầm nhìn, Theo cụm bám đường cong kính và mất khoảng 11 phần trăm, Tròn mất 0 phần trăm">
+      <g>
+        <text class="tb" x="140" y="18" text-anchor="middle">Chữ nhật <tspan class="ts">(mặc định)</tspan></text>
+        <rect x="14" y="30" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="140" y="47" text-anchor="middle">thanh trên — của hệ thống xe</text>
+        <rect x="14" y="60" width="252" height="92" rx="4" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <rect x="16" y="62" width="124" height="88" rx="3" class="bx-a"/>
+        <text class="ts" x="78" y="112" text-anchor="middle" fill="var(--accent-fg)">ảnh</text>
+        <text class="ts" x="205" y="112" text-anchor="middle">dải giữa</text>
+        <rect x="14" y="156" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="140" y="173" text-anchor="middle">thanh dưới — của hệ thống xe</text>
+        <text x="140" y="206" text-anchor="middle" fill="var(--green)" class="tb">Mất 0 % tầm nhìn</text>
+        <text class="ts" x="140" y="226" text-anchor="middle">Nửa dải · cao trọn dải · viền thẳng</text>
+      </g>
+      <g>
+        <text class="tb" x="440" y="18" text-anchor="middle">Theo cụm</text>
+        <rect x="314" y="30" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="440" y="47" text-anchor="middle">thanh trên — của hệ thống xe</text>
+        <rect x="314" y="60" width="252" height="92" rx="4" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <path d="M316 62 H 452 C 476 62 490 78 490 106 C 490 134 476 150 452 150 H 316 Z" class="bx-w"/>
+        <text class="ts" x="390" y="112" text-anchor="middle" fill="var(--amber)">ảnh</text>
+        <path d="M490 62 C 508 66 516 84 516 106 C 516 128 508 146 490 150" fill="none" stroke="var(--amber)" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text class="ts" x="534" y="100">mép</text>
+        <text class="ts" x="534" y="115">kính</text>
+        <rect x="314" y="156" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="440" y="173" text-anchor="middle">thanh dưới — của hệ thống xe</text>
+        <text x="440" y="206" text-anchor="middle" fill="var(--amber)" class="tb">Mất ~11 % (~18 % khi xoay 90°)</text>
+        <text class="ts" x="440" y="226" text-anchor="middle">Viền bám đường cong THẬT của kính cụm</text>
+      </g>
+      <g>
+        <text class="tb" x="740" y="18" text-anchor="middle">Tròn</text>
+        <rect x="614" y="30" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="740" y="47" text-anchor="middle">thanh trên — của hệ thống xe</text>
+        <rect x="614" y="60" width="252" height="92" rx="4" fill="none" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 4"/>
+        <circle cx="662" cy="106" r="46" class="bx-a"/>
+        <text class="ts" x="662" y="112" text-anchor="middle" fill="var(--accent-fg)">ảnh</text>
+        <path class="ar-m" d="M662 60 V 152" marker-start="url(#ah-m)" marker-end="url(#ah-m)"/>
+        <text class="ts" x="760" y="102">đường kính =</text>
+        <text class="ts" x="760" y="117">chiều cao dải</text>
+        <rect x="614" y="156" width="252" height="26" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+        <text class="ts" x="740" y="173" text-anchor="middle">thanh dưới — của hệ thống xe</text>
+        <text x="740" y="206" text-anchor="middle" fill="var(--green)" class="tb">Mất 0 % tầm nhìn</text>
+        <text class="ts" x="740" y="226" text-anchor="middle">Ô vuông cắt thành hình tròn</text>
+      </g>
+    </svg>
+    <p class="dgn">Cả ba hình <strong>luôn dùng trọn chiều cao dải giữa</strong>, kể cả khi có xoay. Chỉ hình <em>Theo cụm</em> nới thêm ra tới mép kính, và phần nới đó phải lấp bằng cách phóng ảnh — nên nó cắt mất rìa.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Hình</th><th>Ô ảnh đặt thế nào</th><th>Viền</th><th>Mất tầm nhìn</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Chữ nhật</strong> (mặc định)</td><td>Nửa dải, cao trọn dải, dính mép dải và cân đối hai bên</td><td>Thẳng</td><td><strong>0 %</strong> — không cắt mất pixel nào</td></tr>
+      <tr><td><strong>Theo cụm</strong></td><td>Như chữ nhật, rồi nới thêm ra tới mép kính</td><td><strong>Bám đường cong thật của kính cụm</strong></td><td><strong>~11 %</strong> (ảnh gương) · ~18 % khi có xoay 90°</td></tr>
+      <tr><td><strong>Tròn</strong></td><td>Ô vuông, cạnh bằng chiều cao dải, cắt thành hình tròn</td><td>Tròn</td><td>0 %</td></tr>
+    </tbody>
+  </table>
+
+  <p>Vì sao “Theo cụm” lại mất tầm nhìn: muốn viền là <em>đường cong</em> thì ô ảnh phải phủ tới điểm ngoài cùng của đường cong đó, và phần dư chỉ có thể lấp bằng cách phóng ảnh to hơn. Phóng thì chính ô cắt bớt phần rìa. Không có cách nào vừa bám cong vừa không mất pixel — đây là một lựa chọn về thẩm mỹ, đã cân nhắc và chốt như vậy.</p>
+
+  <p>Chiều cao thì cả ba hình <strong>luôn dùng trọn dải</strong> của cụm, kể cả khi có xoay.</p>
+
+  <p>Lưu ý: hình <strong>Theo cụm</strong> chỉ khác hình <strong>Chữ nhật</strong> khi đang hiện trên cụm (hàng 2 bật). Trên màn chính thì hai hình ấy như nhau, vì màn chính không có đường cong nào để bám.</p>
+
+  <h4>Giới hạn của phần camera, nói thật</h4>
+  <ul>
+    <li>Bộ số hình học của cụm và của camera chỉ <strong>đo trên một đời xe</strong> (Seal, DiLink 3.0). Đời khác nhận giá trị trung tính và có thể cần tự chỉnh xoay/lật.</li>
+    <li>Số đo dải cụm ở mức <strong>± 8 px</strong>. Có thể thấy hở một vạch rất mảnh ở mép, đó là sai số của phép đo, không phải lỗi hiển thị.</li>
+    <li>Vẽ camera là việc nặng với máy. Khung hình đã bị chặn ở 15 khung/giây để đỡ giật. Nếu vẫn thấy giật thì gốc là kích cỡ khung ảnh, chưa hạ được.</li>
+    <li>Hàng nào hệ thống xe có vẽ biển báo lên đúng chỗ đó thì nó <strong>đè lên</strong> ô camera, không phải ngược lại.</li>
+  </ul>
+
+  <h3>5.4 Ghế mát / sưởi</h3>
+
+  <p>Mục này có một công tắc, một hàng chip chế độ, một sơ đồ ghế và một dòng chỉ dẫn:</p>
+  <ul>
+    <li><strong>Tự chỉnh ghế theo nhiệt độ</strong> — “<em>Xe tự bật mức đã đặt cho từng ghế khi đủ điều kiện nhiệt độ.</em>”</li>
+    <li><strong>Chế độ</strong>: <strong>Làm mát</strong> hoặc <strong>Sưởi</strong>. Hai chế độ <strong>loại trừ nhau</strong> — chọn một thì xe tự bỏ cái kia.</li>
+    <li><strong>Sơ đồ ghế</strong>: mức nằm ngay trong hình ghế, không có thanh trượt riêng.</li>
+    <li>Dòng chỉ dẫn dưới sơ đồ: “<em>Chạm một ghế để đổi mức: tắt → mức 1 → mức 2.</em>”</li>
+  </ul>
+
+  <p>Chạm tiếp lần nữa ở mức 2 thì về tắt. Ba trạng thái, chạm vòng tròn.</p>
+
+  <p>Số ghế trong sơ đồ do <strong>xe</strong> cho biết, nên nó có thể hiện ra <strong>hai ghế trước rồi tự sửa lại</strong> sau một nhịp — không phải lỗi vẽ. Ảnh chụp trên máy ảo luôn là hai ghế vì máy ảo không có xe để hỏi.</p>
+
+  <p>Một giới hạn nhỏ: hình ghế chỉ vẽ được mức 1 và mức 2. Xe nào có mức 3 trở lên thì mức đó hiện ra bằng con số thay vì bằng hình.</p>
+
+  <h3>5.5 Lọc bụi mịn</h3>
+
+  <table>
+    <thead><tr><th>Hàng</th><th>Nói gì</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Tự lọc khi không khí bẩn</strong></td><td>Xe tự chạy lọc khi mức bụi lên cao; tắt là chỉ lọc khi có người bấm.</td></tr>
+      <tr><td><strong>Bụi mịn hiện tại: …</strong></td><td>Mức đang đọc được, kèm một đồng hồ vẽ ngay dưới.</td></tr>
+      <tr><td><strong>Lọc ngay một lượt</strong></td><td>Chạy một lượt lọc ngay bây giờ.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Sáu mức bụi, từ nhẹ tới nặng: <strong>Rất tốt · Tốt · Khá · Trung bình · Nặng · Nghiêm trọng</strong>. Chưa đọc được thì dòng đó ghi “<strong>chưa đọc được</strong>” và đồng hồ để trống. Chế độ tự lọc bắt đầu chạy từ mức <strong>Nặng</strong> trở lên.</p>
+
+  <p>Nút <strong>Lọc ngay một lượt</strong> chạy <strong>bất kể</strong> công tắc tự lọc đang bật hay tắt. Nó là một việc làm ngay, không phải một cấu hình, nên nó không phụ thuộc cấu hình.</p>
+
+  <h3>5.6 Tự dẫn đường theo lịch</h3>
+
+  <p>Đây cũng là một luật tự động, nhưng nó nằm ở nhóm <em>Cài đặt › Dẫn đường &amp; cụm đồng hồ</em>, ngay dưới mục <strong>Sổ địa chỉ</strong>. Ý tưởng: đúng giờ, đúng thứ thì xe tự mở app dẫn đường tới một địa chỉ đã lưu.</p>
+
+  <p><strong>Phải có địa chỉ trước.</strong> Chưa lưu địa chỉ nào thì mục lịch nói thẳng: “<em>Chưa có địa chỉ nào để dẫn tới. Thêm ở “Sổ địa chỉ” phía trên trước đã.</em>”</p>
+
+  <figure>
+    <img src="img/cai-dat-so-dia-chi.png" alt="Mục Sổ địa chỉ với hai địa chỉ mẫu">
+    <figcaption>Mục <strong>Sổ địa chỉ</strong> — nơi lưu những chỗ hay đi. Hai địa chỉ trong ảnh là địa chỉ mẫu. Sổ chứa tối đa 20 địa chỉ.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/cai-dat-tu-dan-duong-theo-lich.png" alt="Mục Tự dẫn đường theo lịch với một hàng lịch">
+    <figcaption>Mục <strong>Tự dẫn đường theo lịch</strong> với một lịch. Dòng chính là khung giờ và nơi đến; dòng phụ nói những thứ còn lại: những thứ trong tuần, app sẽ dùng, và “chờ có GPS”. Nút bên phải bật/tắt riêng lịch đó; nút <strong>Sửa</strong> mở lại hộp cài đặt.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/hop-them-lich-dan-duong.png" alt="Hộp Thêm lịch dẫn đường">
+    <figcaption>Hộp <strong>Thêm lịch…</strong> — sáu thứ cần điền, không hơn.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>Ô trong hộp</th><th>Điền gì</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Bật lịch này</strong></td><td>Tạo xong mà chưa muốn dùng thì để tắt.</td></tr>
+      <tr><td><strong>Khung giờ (HH:mm)</strong></td><td>Giờ bắt đầu và giờ kết thúc. Giờ kết thúc không được sớm hơn giờ bắt đầu, và <strong>không bắc qua nửa đêm</strong>.</td></tr>
+      <tr><td><strong>Thứ trong tuần</strong></td><td>Bảy ô: T2 T3 T4 T5 T6 T7 CN. Phải tick ít nhất một thứ.</td></tr>
+      <tr><td><strong>Chỉ dẫn khi đã có GPS (chờ ra khỏi hầm)</strong></td><td>Bật là chờ có định vị mới dẫn. Dùng cho xe đậu hầm.</td></tr>
+      <tr><td><strong>Dẫn tới</strong></td><td>Một địa chỉ trong Sổ địa chỉ.</td></tr>
+      <tr><td><strong>Bằng app</strong></td><td>Google Maps · VietMap · Waze.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Cách nó chạy:</p>
+  <ul>
+    <li>Kachi xét lại các lịch <strong>mỗi phút</strong>, từ lúc nổ máy — không cần mở app Kachi lên trước.</li>
+    <li><strong>Mỗi khung giờ chỉ dẫn một lần trong ngày.</strong> Đã dẫn rồi thì hôm đó không mở lại nữa, dù vẫn còn trong khung giờ. Sang ngày mới thì tự tính lại.</li>
+    <li>Tối đa <strong>8 lịch</strong>. Đủ 8 thì phải xoá bớt mới thêm được.</li>
+    <li>Chọn <strong>VietMap</strong> thì địa chỉ cần có <strong>toạ độ</strong> — VietMap không nhận địa chỉ chữ. Cách lấy toạ độ có ghi ngay trong ô thêm địa chỉ.</li>
+    <li><strong>Sổ địa chỉ đi theo hồ sơ tài xế; lịch đi theo xe.</strong> Đổi hồ sơ thì sổ địa chỉ đổi theo, còn lịch vẫn nguyên.</li>
+  </ul>
+
+  <p>Lịch không dẫn thì chỉ có năm lý do, đúng theo thứ tự đáng kiểm:</p>
+
+  <table>
+    <thead><tr><th>Lý do</th><th>Kiểm ở đâu</th></tr></thead>
+    <tbody>
+      <tr><td>Lịch đang tắt</td><td>Nút Bật/Tắt trên chính hàng lịch đó</td></tr>
+      <tr><td>Hôm nay không nằm trong những thứ đã tick</td><td>Dòng phụ của hàng lịch</td></tr>
+      <tr><td>Chưa tới giờ, hoặc đã qua khung giờ</td><td>Dòng chính của hàng lịch</td></tr>
+      <tr><td>Hôm nay đã dẫn trong khung này rồi</td><td>Theo thiết kế — chờ ngày mai</td></tr>
+      <tr><td>Đang chờ có GPS</td><td>Lịch có bật “Chỉ dẫn khi đã có GPS” mà xe còn trong hầm. Đây là <em>chờ</em>, không phải bỏ: ra khỏi hầm là nó dẫn.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.7 Những chỗ dễ hiểu nhầm trong chương này</h3>
+
+  <table>
+    <thead><tr><th>Nhiều người tưởng</th><th>Thực ra</th></tr></thead>
+    <tbody>
+      <tr><td>Xi-nhan là có camera, vì app đã cài</td><td>Hàng “Bật camera khi xi-nhan” mặc định <strong>tắt</strong>. Bật nó trước.</td></tr>
+      <tr><td>Đổi cài đặt camera xong thì lượt xi-nhan đang chạy sẽ đổi theo</td><td>Phải chờ <strong>lượt xi-nhan tiếp theo</strong>.</td></tr>
+      <tr><td>Hình camera bị ngược là lỗi</td><td>Bật <strong>Lật gương</strong> của đúng bên. Hàng này mặc định tắt vì tay của ảnh chưa đo được chắc.</td></tr>
+      <tr><td>“Theo cụm” là hình tốt nhất vì nó bám viền đẹp</td><td>Nó mất khoảng 11 % tầm nhìn. Cần thấy nhiều nhất thì chọn <strong>Chữ nhật</strong>.</td></tr>
+      <tr><td>Chọn “Theo cụm” mà nhìn vẫn như chữ nhật là lỗi</td><td>Nó chỉ khác khi đang hiện <strong>trên cụm</strong>. Bật hàng “Hiện camera lên màn cụm”.</td></tr>
+      <tr><td>Tắt công tắc “Lấy gió trong” là tắt luôn chế độ đang chạy</td><td>Chỉ ngừng tự bật. Chế độ đang chạy trên xe không bị đụng.</td></tr>
+      <tr><td>Hai ô con sấy kính bị mờ là bị lỗi</td><td>Công tắc chính đang tắt. Bật nó lên thì hai ô con sáng lại.</td></tr>
+      <tr><td>Bỏ tích cả hai ô con mà vẫn để công tắc chính bật thì xe vẫn sấy</td><td>Bỏ tích cả hai = tắt thật, không đọc cảm biến, không bật cái sấy nào.</td></tr>
+      <tr><td>Sơ đồ chỉ có hai ghế nghĩa là app không đọc được ghế sau</td><td>Số ghế do xe cho biết và về sau một nhịp. Máy ảo thì luôn hai ghế.</td></tr>
+      <tr><td>“Lọc ngay một lượt” cần bật công tắc tự lọc mới bấm được</td><td>Nó chạy bất kể công tắc.</td></tr>
+      <tr><td>Lịch dẫn đường không chạy vì app Kachi không mở</td><td>Nó chạy từ lúc nổ máy, không cần mở app. Kiểm năm lý do ở bảng trên.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="ch6">
+  <h2>6. Nói chuyện với Kachi</h2>
+
+  <p>Kachi nghe tiếng Việt ngay trên xe. Không gửi tiếng ra mạng, không cần tài khoản.</p>
+  <p>Nhưng phải tải “cái tai” một lần trước đã. Chưa tải thì nút mic không hiện ra — và đó là lý do phổ biến nhất khiến người dùng tưởng máy hỏng.</p>
+
+  <h3>6.1 Việc đầu tiên: tải mô hình nghe</h3>
+
+  <p>Vào <strong>Cài đặt › Giọng nói</strong>.</p>
+  <ul>
+    <li>Mục <strong>Nhận dạng giọng nói (tại máy)</strong> → bấm <strong>Tải mô hình tiếng Việt</strong>. Gói khoảng 74 MB. Tải xong dòng trạng thái đổi thành <em>Đã cài … · … từ · … trên đĩa</em>, và nút đổi thành <strong>Cập nhật mô hình tiếng Việt</strong> / <strong>Gỡ mô hình</strong>.</li>
+    <li>Mục <strong>Giọng đọc offline (tại máy)</strong> → bấm <strong>Tải gói giọng đọc</strong> nếu muốn Kachi <em>đọc</em> câu trả lời. Gói khoảng 61 MB. Không tải cũng vẫn nói được, chỉ là Kachi trả lời bằng chữ hoặc bằng máy đọc của hệ thống.</li>
+    <li>Muốn nghe câu trả lời thì bật <strong>Đọc phản hồi bằng giọng</strong>. Công tắc <strong>Ưu tiên giọng offline</strong> chỉ có tác dụng khi gói giọng đọc đã cài.</li>
+  </ul>
+
+  <p>Xe không có mạng (cắm CarPlay/Android Auto là đầu xe tắt WiFi) thì chép cả cây thư mục gói vào thẻ/USB theo đúng đường dẫn mà app in ngay dưới nút, rồi bấm Tải — máy vẫn kiểm từng tệp bằng mã băm.</p>
+
+  <figure>
+    <img src="img/cai-dat-giong-noi.png" alt="Màn Cài đặt › Giọng nói: Hey Kachi, mô hình nghe, giọng đọc, hỏi xác nhận, nguồn micro, danh sách câu lệnh">
+    <figcaption>Cả chương này nằm trong một trang: <strong>Cài đặt › Giọng nói</strong>. Ảnh chụp máy ảo đã tải cả hai gói — mô hình nghe <em>Zipformer VN int8</em> và giọng đọc <em>Piper VN</em>.</figcaption>
+  </figure>
+
+  <div class="dg">
+    <p class="dgt">Hình 9 · Hai gói tải, và điều kiện để có nút mic</p>
+    <svg viewBox="0 0 820 316" role="img" aria-label="Sơ đồ: mô hình nghe 74 MB VÀ công tắc nút mic bật thì nút mic mới hiện ra; gói giọng đọc 61 MB là tuỳ chọn, chỉ để Kachi đọc câu trả lời">
+      <text class="tw" x="10" y="16" fill="var(--muted)">① cái tai — bắt buộc</text>
+      <rect class="bx-a" x="10" y="26" width="280" height="62" rx="11"/>
+      <text class="tb" x="150" y="53" text-anchor="middle">Mô hình nghe đã tải</text>
+      <text class="ts" x="150" y="73" text-anchor="middle">~74 MB · Cài đặt › Giọng nói</text>
+
+      <rect class="bx-a" x="10" y="100" width="280" height="62" rx="11"/>
+      <text class="tb" x="150" y="127" text-anchor="middle">Công tắc «Nút mic trên</text>
+      <text class="tb" x="150" y="147" text-anchor="middle">thanh trạng thái» = BẬT</text>
+
+      <path class="ar-a" d="M292 57 C 320 57 320 88 334 92" marker-end="url(#ah-a)"/>
+      <path class="ar-a" d="M292 131 C 320 131 320 100 334 96" marker-end="url(#ah-a)"/>
+
+      <rect class="bx-a" x="340" y="64" width="86" height="60" rx="30"/>
+      <text class="tb" x="383" y="100" text-anchor="middle" style="font-size:17px">VÀ</text>
+
+      <path class="ar-a" d="M428 94 H 464" marker-end="url(#ah-a)"/>
+      <rect class="bx-g" x="470" y="64" width="340" height="60" rx="11"/>
+      <text class="tb" x="640" y="91" text-anchor="middle">Nút mic hiện ra</text>
+      <text class="ts" x="640" y="111" text-anchor="middle">bấm là nói được</text>
+
+      <text class="ts" x="10" y="192" fill="var(--amber)">Thiếu MỘT trong hai điều kiện trên ⇒ KHÔNG có nút mic. Không phải lỗi — Kachi cố ý không vẽ nút chưa dùng được.</text>
+
+      <text class="tw" x="10" y="228" fill="var(--muted)">② cái miệng — tuỳ chọn</text>
+      <rect class="bx-d" x="10" y="238" width="280" height="62" rx="11"/>
+      <text class="tb" x="150" y="265" text-anchor="middle">Giọng đọc offline</text>
+      <text class="ts" x="150" y="285" text-anchor="middle">~61 MB</text>
+      <text class="ts" x="379" y="258" text-anchor="middle">tuỳ chọn</text>
+      <path class="ar-m" d="M292 268 H 464" marker-end="url(#ah-m)"/>
+      <rect class="bx" x="470" y="238" width="340" height="62" rx="11"/>
+      <text class="tb" x="640" y="265" text-anchor="middle">Kachi ĐỌC câu trả lời</text>
+      <text class="ts" x="640" y="285" text-anchor="middle">cần bật «Đọc phản hồi bằng giọng»</text>
+    </svg>
+  </div>
+
+  <h3>6.2 Bốn lối mở một lượt nói</h3>
+
+  <table>
+    <thead><tr><th>Lối vào</th><th>Ở đâu</th><th>Cần gì</th></tr></thead>
+    <tbody>
+      <tr><td>Ô <strong>Nói với xe</strong></td><td>Trên thanh nút xe</td><td>Bật nút đó trong <em>Cài đặt › Thanh trên &amp; thanh nút › Chọn nút trên thanh nút xe</em> (khối <em>Launcher</em>)</td></tr>
+      <tr><td>Nút mic</td><td>Trên thanh trạng thái, cạnh <em>Ứng dụng</em> và <em>Cài đặt</em></td><td>Công tắc <strong>Nút mic trên thanh trạng thái</strong> <em>và</em> mô hình nghe đã tải</td></tr>
+      <tr><td>Phím vô-lăng</td><td>Nút mic trên vô-lăng</td><td>Gán đích <strong>Kachi nghe (tại máy)</strong> trong <em>Cài đặt › Phím vô-lăng</em></td></tr>
+      <tr><td>Câu gọi <strong>Hey Kachi</strong></td><td>Không cần chạm</td><td>Bật ở đầu trang Giọng nói (mặc định tắt) — xem §6.7</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Nhiều người tưởng</strong> bật công tắc mic là nút mic phải hiện. <strong>Thực ra</strong> nút mic cần cả hai: công tắc bật <em>và</em> mô hình nghe đã tải. Tải mô hình xong nút tự hiện, không phải khởi động lại.</p>
+
+  <figure>
+    <img src="img/cai-dat-phim-vo-lang-kachi-nghe.png" alt="Hộp Bước 2 — chọn đích, có mục Kachi nghe (tại máy)">
+    <figcaption>Gán phím vô-lăng: <em>Thêm gán…</em> → <em>Bước 1 — chọn nút</em> → <em>Bước 2 — chọn đích</em> → chọn <strong>Kachi nghe (tại máy)</strong>. Ba đích còn lại đẩy phím sang trợ lý của hệ thống, không phải sang Kachi.</figcaption>
+  </figure>
+
+  <p>Ngay dưới công tắc <em>Nhận nút vật lý</em> có một hàng trạng thái cho biết kênh phím còn sống hay đã mất kết nối. Mất thì bấm <strong>Kiểm tra / Sửa ngay</strong>.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 10 · Bốn lối vào, một lượt nói</p>
+    <svg viewBox="0 0 820 272" role="img" aria-label="Bốn lối mở một lượt nói: ô Nói với xe, nút mic, phím vô-lăng, câu gọi Hey Kachi — cả bốn đều dẫn tới cùng một phiên nghe">
+      <rect class="bx" x="10" y="14" width="330" height="50" rx="10"/>
+      <text x="26" y="44">Ô «Nói với xe» trên thanh nút xe</text>
+      <rect class="bx" x="10" y="76" width="330" height="50" rx="10"/>
+      <text x="26" y="106">Nút mic trên thanh trạng thái</text>
+      <rect class="bx" x="10" y="138" width="330" height="50" rx="10"/>
+      <text x="26" y="168">Phím vô-lăng (gán «Kachi nghe»)</text>
+      <rect class="bx-d" x="10" y="200" width="330" height="50" rx="10"/>
+      <text x="26" y="221">Câu gọi «Hey Kachi»</text>
+      <text class="ts" x="26" y="239" fill="var(--amber)">mặc định TẮT · tính năng thử nghiệm</text>
+
+      <path class="ar" d="M342 39 C 430 39 430 140 510 140" marker-end="url(#ah)"/>
+      <path class="ar" d="M342 101 C 430 101 430 140 510 140" marker-end="url(#ah)"/>
+      <path class="ar" d="M342 163 C 430 163 430 140 510 140" marker-end="url(#ah)"/>
+      <path class="ar-m" d="M342 225 C 440 225 440 140 510 140" marker-end="url(#ah-m)"/>
+
+      <rect class="bx-a" x="516" y="100" width="294" height="80" rx="12"/>
+      <text class="tb" x="663" y="132" text-anchor="middle" style="font-size:16px">MỘT phiên nghe</text>
+      <text class="ts" x="663" y="156" text-anchor="middle">tấm chữ ở giữa-dưới màn</text>
+      <text class="ts" x="663" y="206" text-anchor="middle">Vào bằng lối nào thì lượt nói</text>
+      <text class="ts" x="663" y="222" text-anchor="middle">cũng diễn ra y như nhau.</text>
+    </svg>
+  </div>
+
+  <h3>6.3 Một lượt nói diễn ra thế nào</h3>
+
+  <p>Một tấm chữ hiện ra giữa-dưới màn, nền màn tối nhẹ. Trên tấm chữ có vòng sóng âm và <em>một</em> dòng chữ đổi theo từng bước:</p>
+
+  <ul>
+    <li><strong>Đang chuẩn bị…</strong> — máy đang mở micro.</li>
+    <li><strong>Đang nghe…</strong> — nói ngay bây giờ. Nói gọn một việc.</li>
+    <li>Chữ nghe được hiện nguyên văn — đây là chỗ để biết máy nghe đúng hay lệch.</li>
+    <li><strong>Đã nghe</strong> + câu trả lời của Kachi.</li>
+    <li><strong>Nói tiếp…</strong> — micro còn mở, nói câu thứ hai mà không phải bấm lại.</li>
+  </ul>
+
+  <figure>
+    <img src="img/noi-voi-xe-dang-nghe.png" alt="Tấm chữ đang nghe: vòng sóng âm và dòng Đang nghe…">
+    <figcaption>Tấm chữ lúc <strong>Đang nghe…</strong>. Nó phủ gần cả màn nhưng trong suốt — chạm ra ngoài tấm chữ là thôi không nói nữa.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>Mốc</th><th>Số</th><th>Nghĩa cho người lái</th></tr></thead>
+    <tbody>
+      <tr><td>Nghe một câu</td><td>tối đa 8 giây</td><td>Nói xong là máy tự chốt, thường sớm hơn nhiều. 8 giây chỉ là trần an toàn.</td></tr>
+      <tr><td>Nán lại sau khi trả lời</td><td>1,2 giây</td><td>Đủ đọc một dòng, rồi tấm chữ tự đi.</td></tr>
+      <tr><td>Cửa sổ <em>Nói tiếp…</em></td><td>5 giây</td><td>Im quá 5 giây là phiên đóng.</td></tr>
+      <tr><td>Số câu nối trong một phiên</td><td>tối đa 5</td><td>Trần cứng, để cabin ồn không giữ micro mãi.</td></tr>
+      <tr><td>Nghe câu trả lời “đồng ý / huỷ”</td><td>5 giây</td><td>Trả lời một hai từ là đủ.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="dg">
+    <p class="dgt">Hình 11 · Một lượt nói, theo thời gian</p>
+    <svg viewBox="0 0 880 300" role="img" aria-label="Dải thời gian một lượt nói: bíp, đang nghe tối đa 8 giây, hiểu và chạy, câu trả lời, nán 1,2 giây, cửa sổ nói tiếp 5 giây, vòng lại tối đa 5 lượt; hai nhánh hỏi lại và xác nhận">
+      <text class="ts" x="440" y="30" text-anchor="middle">vòng lại — tối đa 5 lượt trong một phiên</text>
+      <path class="ar-a" d="M840 70 V 44 H 46 V 70" marker-end="url(#ah-a)"/>
+
+      <rect x="30" y="70" width="16" height="34" fill="var(--amber-soft)" stroke="var(--amber)" stroke-width="1.2"/>
+      <rect x="46" y="70" width="254" height="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+      <rect x="300" y="70" width="140" height="34" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+      <rect x="440" y="70" width="170" height="34" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.2"/>
+      <rect x="610" y="70" width="58" height="34" fill="var(--card)" stroke="var(--line)" stroke-width="1.2"/>
+      <rect x="668" y="70" width="172" height="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+      <text class="tb" x="173" y="92" text-anchor="middle">Đang nghe… ≤ 8 s</text>
+      <text class="ts" x="754" y="92" text-anchor="middle">Nói tiếp… 5 s</text>
+
+      <text class="ts" x="38" y="122" text-anchor="middle">bíp</text>
+      <text class="ts" x="370" y="122" text-anchor="middle">hiểu + chạy</text>
+      <text class="ts" x="639" y="122" text-anchor="middle">nán 1,2 s</text>
+      <line class="sep" x1="525" y1="104" x2="525" y2="134"/>
+      <text class="ts" x="525" y="148" text-anchor="middle">câu trả lời (đọc to nếu đã bật)</text>
+
+      <path class="ar" d="M370 104 V 160 H 265 V 178" marker-end="url(#ah)"/>
+      <path class="ar" d="M370 160 H 615 V 178" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="110" y="180" width="310" height="58" rx="11"/>
+      <text x="265" y="204" text-anchor="middle">Kachi hỏi lại — nghe tiếp ≤ 8 s</text>
+      <text class="ts" x="265" y="224" text-anchor="middle">tối đa 2 lượt hỏi, rồi thôi, không đoán</text>
+
+      <rect class="bx-w" x="460" y="180" width="310" height="58" rx="11"/>
+      <text x="615" y="204" text-anchor="middle">Xác nhận — nghe ≤ 5 s</text>
+      <text class="ts" x="615" y="224" text-anchor="middle">chờ một tiếng «Đồng ý»; im lặng = huỷ</text>
+
+      <line class="sep" x1="10" y1="260" x2="870" y2="260"/>
+      <path class="ar-m" d="M12 282 H 40" marker-end="url(#ah-m)"/>
+      <text class="ts" x="50" y="286">Chạm ra ngoài tấm chữ ⇒ thôi, ở bất kỳ điểm nào trên dải. Phím Back không tới được tấm chữ.</text>
+    </svg>
+  </div>
+
+  <p><strong>Nhiều người tưởng</strong> bấm phím Back là tắt được tấm chữ. <strong>Thực ra</strong> phím Back không tới được nó: đường thoát là <em>chạm ra ngoài tấm chữ</em>, hoặc chờ nó tự tắt.</p>
+
+  <p>Lần bấm mic đầu tiên sau khi nổ máy có thể chờ lâu hơn vì máy phải nạp mô hình. Nếu lần khởi động vừa rồi Kachi bỏ bước nạp sẵn, trang Giọng nói nói thẳng điều đó bằng một dòng ghi chú.</p>
+
+  <h3>6.4 Nói được những gì</h3>
+
+  <p>Đừng học thuộc danh sách trong sách. Danh sách thật nằm trong app, ở cuối trang <strong>Cài đặt › Giọng nói</strong>, mục <strong>Câu lệnh nói được</strong> — nó sinh ra từ chính ngữ pháp của Kachi nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu, rồi nói đúng như chữ hiện ra.</p>
+
+  <figure>
+    <img src="img/cau-lenh-noi-duoc.png" alt="Danh sách Câu lệnh nói được, nhóm Thân xe · cửa · kính đang mở">
+    <figcaption>Mỗi nhóm ghi số câu bên cạnh tên. Nhóm <em>Thân xe · cửa · kính</em> đang mở: bên trái là câu để nói, bên phải là việc Kachi sẽ làm. Câu nào có đuôi <em>“· sẽ hỏi lại trước khi chạy”</em> là câu đang bị cổng xác nhận gác (§6.5).</figcaption>
+  </figure>
+
+  <p>Có 12 nhóm: 8 nhóm theo bộ phận của xe và 4 nhóm ngoài xe.</p>
+
+  <table>
+    <thead><tr><th>Nhóm</th><th>Nói được kiểu gì</th></tr></thead>
+    <tbody>
+      <tr><td>Năng lượng &amp; sạc</td><td>“xem pin”, “sạc ngay”</td></tr>
+      <tr><td>Động lực &amp; tốc độ</td><td>“xem tốc độ”, “chế độ lái thể thao”</td></tr>
+      <tr><td>Khí hậu &amp; không khí</td><td>“đặt nhiệt độ 24”, “tăng gió”, “bật lọc bụi”</td></tr>
+      <tr><td>Lốp</td><td>“xem áp suất lốp”</td></tr>
+      <tr><td>Thân xe · cửa · kính</td><td>“mở kính trước trái”, “đóng hết kính”, “mở cốp sau”</td></tr>
+      <tr><td>Đèn</td><td>“bật đèn đọc”, “màu đèn viền xanh lá”</td></tr>
+      <tr><td>Danh tính · khoá</td><td>“mở khoá cửa”</td></tr>
+      <tr><td>Giải trí · cụm · HUD</td><td>“đặt độ sáng màn 8”</td></tr>
+      <tr><td>Nhạc</td><td>“phát nhạc”, “dừng nhạc”, “bài tiếp theo”, “bài trước”</td></tr>
+      <tr><td>Dẫn đường</td><td>“dẫn đường đến Bitexco”, “về nhà”, “đến công ty”</td></tr>
+      <tr><td>Ứng dụng · ô · bố cục</td><td>“mở YouTube”, “mở YouTube vào ô số hai”, “mở cài đặt”, “bố cục 2 cột”</td></tr>
+      <tr><td>Hồ sơ tài xế</td><td>“đổi sang hồ sơ Mặc định”</td></tr>
+    </tbody>
+  </table>
+
+  <p>Ba nhóm cuối phụ thuộc máy: chỉ những app đã cài, những địa chỉ đã lưu trong Sổ địa chỉ và những hồ sơ đang có mới xuất hiện trong danh sách — và cũng chỉ những cái đó mới nói được.</p>
+
+  <p>Ba chỗ hay vấp:</p>
+  <ul>
+    <li><strong>Chưa đóng được app bằng giọng.</strong> Nói “đóng YouTube” thì Kachi trả lời thẳng là chưa làm được, và nhắc cách làm: bấm phím Home, hoặc mở app khác đè lên.</li>
+    <li><strong>Câu về bố cục phải nói ở màn chính.</strong> Nói từ chỗ khác, Kachi đáp <em>“chưa đổi được bố cục từ đây — nói ở màn chính, hoặc đổi trong Cài đặt › Màn hình chính”</em>.</li>
+    <li><strong>Tên bài và điểm đến là phần máy nghe kém nhất.</strong> Phần đó không nằm trong một danh sách đóng nào, nên nó được đọc tự do — “Diễm Xưa” có thể thành “điểm xưa”. Xem §6.5.</li>
+  </ul>
+
+  <h3>6.5 Khi Kachi hỏi lại, khi Kachi xin xác nhận</h3>
+
+  <p>Hai việc khác nhau, dễ lẫn.</p>
+
+  <p><strong>Hỏi lại</strong> = Kachi nghe nhưng còn thiếu một chi tiết, ví dụ nói “mở kính” mà không nói kính nào, hoặc “đổi hồ sơ” mà không nói hồ sơ nào. Nó hỏi một câu ngắn rồi mở micro nghe tiếp; câu trả lời được ghép với câu trước. Hỏi tới lượt thứ ba mà vẫn không rõ thì nó thôi, không đoán.</p>
+
+  <p><strong>Xác nhận</strong> = việc đó đã hiểu rõ, nhưng nó thuộc nhóm không tự đảo lại được trong vài giây nên Kachi xin một tiếng “đồng ý”. Tấm chữ đổi thành hộp có tiêu đề <strong>Xác nhận</strong>, dòng câu hỏi (kèm lý do vì sao phải hỏi) và một nút <strong>Đồng ý</strong>; micro cũng mở 5 giây để trả lời bằng miệng. Không trả lời thì <em>không có gì chạy</em> — im lặng ở đây nghĩa là huỷ.</p>
+
+  <p><em>Ảnh hộp Xác nhận không có trong bản này: nó chỉ dựng được từ một lượt nói thật, không dựng được trên máy ảo.</em></p>
+
+  <p>Nói gì để đồng ý, nói gì để huỷ:</p>
+  <table>
+    <thead><tr><th>Đồng ý</th><th>Từ chối</th></tr></thead>
+    <tbody>
+      <tr><td>ừ · vâng · có · được · ok · đúng rồi · làm đi · đồng ý · xác nhận</td><td>huỷ · hủy bỏ · không · thôi</td></tr>
+    </tbody>
+  </table>
+  <p>Phải nói <em>đúng bằng</em> một trong những cụm đó. Một câu dài có chữ “có” ở giữa (“có mở cửa không”) cố ý <strong>không</strong> tính là đồng ý — đó là thứ giữ cho xe không mở khoá vì một câu nói bình thường. Riêng “đúng” nói một mình cũng không tính, vì nó lẫn với “dừng”; nói “đúng rồi”.</p>
+
+  <p>Mặc định Kachi <strong>chạy luôn, không hỏi gì cả</strong>. Muốn nó hỏi thì tự tích trong mục <strong>Hỏi xác nhận trước khi chạy</strong>:</p>
+
+  <table>
+    <thead><tr><th>Việc có thể bắt hỏi lại</th><th>Vì sao đáng hỏi</th></tr></thead>
+    <tbody>
+      <tr><td>4 kính</td><td>hạ hết 4 kính — mưa, bụi, hoặc đồ để trên ghế; đóng lại mất nhiều giây</td></tr>
+      <tr><td>Cốp sau</td><td>mở cốp nơi công cộng — đồ trong cốp phơi ra cho tới khi có người đóng</td></tr>
+      <tr><td>Cửa sổ trời</td><td>mưa và bụi vào thẳng khoang</td></tr>
+      <tr><td>Mở hết kính</td><td>gói lệnh hạ hết kính</td></tr>
+      <tr><td>Đổi hồ sơ</td><td>đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng</td></tr>
+      <tr><td>Mở bài vừa đọc</td><td>tên bài do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu</td></tr>
+    </tbody>
+  </table>
+
+  <p>Công tắc <strong>Đọc to câu hỏi xác nhận</strong> nằm ngay dưới: nó đọc xong câu hỏi mới mở micro, để Kachi không nghe chính mình. Nó chỉ có nghĩa khi đã tích ít nhất một việc ở trên.</p>
+
+  <h3>6.6 Câu ghép hai việc — giới hạn phải biết</h3>
+
+  <p>Nói hai việc trong một câu thì <strong>phải có từ nối</strong>: “rồi”, hoặc “và”.</p>
+
+  <ul>
+    <li><em>“mở khoá cửa <strong>rồi</strong> bật đèn đọc”</em> — chạy cả hai, trả lời hai dòng theo đúng thứ tự.</li>
+    <li><em>“bật đèn đọc lọc bụi”</em> (không từ nối, vế sau không có động từ) — chỉ một việc chạy, và <strong>Kachi không nói gì về vế bị bỏ</strong>. Đây là chỗ dễ tưởng cả câu đã chạy nhất.</li>
+    <li>Có từ nối mà một vế không hiểu được thì Kachi nói ra: <em>“Đã bỏ qua vế không hiểu: …”</em>. Thấy dòng đó là biết phải nói lại vế kia.</li>
+  </ul>
+
+  <p>Độ tin cậy đã đo (3 000 câu tổng hợp):</p>
+  <table>
+    <thead><tr><th>Số việc trong một câu</th><th>Chạy đủ</th></tr></thead>
+    <tbody>
+      <tr><td>2 việc</td><td>89 %</td></tr>
+      <tr><td>3 việc</td><td>55 %</td></tr>
+      <tr><td>4 việc</td><td>33 %</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Cách dùng an toàn:</strong> mỗi lượt một việc. Cần hai việc thì dùng cửa sổ <em>Nói tiếp…</em> — nói việc thứ nhất, chờ trả lời, nói việc thứ hai. Không phải bấm mic lại, và không có vế nào bị rụng.</p>
+
+  <h3>6.7 “Hey Kachi” — gọi rảnh tay</h3>
+
+  <ul>
+    <li><strong>Mặc định tắt</strong>, và còn là tính năng <em>thử nghiệm</em>. Nghe nền tốn pin và CPU.</li>
+    <li>Chỉ nghe <strong>khi màn hình đang sáng</strong>. Màn tối là nó nhả micro.</li>
+    <li>Nghe nhầm nhiều lần thì nó <strong>tự tắt</strong> và báo: <em>“Đã tắt Hey Kachi vì nghe nhầm nhiều lần. Bật lại trong Cài đặt.”</em></li>
+    <li>Câu gọi cố định là <strong>Hey Kachi</strong>. Bản này không có chỗ để đổi sang câu khác.</li>
+    <li>Dòng ngay dưới công tắc cho biết mô hình câu gọi đã sẵn sàng chưa (chấm xanh = sẵn sàng).</li>
+    <li>Công tắc <em>Cách nghe “Hey Kachi”: ASR</em> để bật thì không phải thu mẫu giọng; tắt thì dùng cách nghe còn lại. Không cần đụng tới nếu nó đang nhận tốt.</li>
+  </ul>
+
+  <h3>6.8 Nghe kém thì đổi gì</h3>
+
+  <ul>
+    <li>Nói <strong>gọn và đủ</strong>: “bật đèn đọc”, không phải “à cho tôi bật cái đèn đọc nhé”. Đọc chữ hiện trên tấm chữ để biết máy nghe lệch ở đâu.</li>
+    <li>Thấy <strong>Không nghe rõ</strong> nghĩa là lượt đó không có tiếng nào đủ rõ — nói lại, gần mic hơn, nhỏ tiếng nhạc.</li>
+    <li>Vẫn kém thì đổi <strong>Nguồn micro</strong> (cuối mục Hỏi xác nhận). Bốn lựa chọn: <em>Tự chọn</em> · <em>MIC (1)</em> · <em>VOICE_RECOGNITION (6)</em> · <em>VOICE_COMMUNICATION (7)</em>. <em>Tự chọn</em> thử MIC trước, rồi tới nguồn có khử ồn. Đổi xong nói thử vài câu; nguồn nào nghe rõ hơn thì giữ.</li>
+    <li>Thấy <strong>Chưa có quyền micro</strong> hoặc <strong>Chưa tải mô hình nhận dạng</strong> thì tấm chữ có kèm nút <em>Mở Cài đặt</em> — bấm thẳng vào đó.</li>
+  </ul>
+
+  <h3>6.9 Đọc câu trả lời của Kachi</h3>
+
+  <ul>
+    <li><strong>✓ &lt;việc&gt;</strong> — đã gửi lệnh xuống xe. Có thêm “— chưa kiểm trên xe” nghĩa là nút đó chưa ai đo trên xe thật.</li>
+    <li><strong>✗ &lt;việc&gt; — xe không nhận lệnh</strong> — Kachi gửi rồi, xe từ chối. Không phải lỗi nghe.</li>
+    <li><strong>“…: chưa đọc được”</strong> hoặc dấu <strong>—</strong> — nghĩa là <em>chưa đọc được số từ xe</em>, <strong>không</strong> phải “đang tắt”.</li>
+    <li>Với nút có mức (nhiệt độ, gió, âm lượng), Kachi đọc lại <em>giá trị thật xe báo</em>. Thấy “Đã gửi Nhiệt độ 24 — xe báo 23” thì con số 23 mới là sự thật.</li>
+  </ul>
+</section>
+
+<section id="ch7">
+  <h2>7. Hồ sơ tài xế</h2>
+
+  <p>Một hồ sơ là <em>một bộ cấu hình trọn gói</em> của màn hình chính. Đổi hồ sơ là đổi cả bộ trong một cú chạm.</p>
+  <p>Đây là chỗ hay làm người dùng hoảng: đổi hồ sơ xong thấy màn khác hẳn và tưởng vừa mất hết cấu hình. Không mất gì — cấu hình cũ còn nguyên trong hồ sơ cũ, chạm lại hồ sơ cũ là về y như trước.</p>
+
+  <h3>7.1 Đổi hồ sơ</h3>
+
+  <p>Hai đường, cùng kết quả:</p>
+  <ul>
+    <li><strong>Chip hồ sơ</strong> ở góc thanh trên (chữ đầu của tên hồ sơ) → mở hộp <strong>Đổi hồ sơ tài xế</strong> → chạm một tên.</li>
+    <li><strong>Cài đặt › Hồ sơ tài xế</strong> → chạm thẻ của hồ sơ muốn dùng.</li>
+  </ul>
+
+  <figure>
+    <img src="img/hop-doi-ho-so.png" alt="Hộp Đổi hồ sơ tài xế với ba hồ sơ, hồ sơ đầu ghi đang dùng">
+    <figcaption>Hộp mở từ chip hồ sơ. Hồ sơ đang dùng ghi rõ <em>· đang dùng</em>. Dòng cuối <strong>Quản lý hồ sơ…</strong> mở thẳng trang Cài đặt — vì <em>tạo</em> và <em>xoá</em> chỉ làm được ở trang đó.</figcaption>
+  </figure>
+
+  <h3>7.2 Cái gì theo hồ sơ, cái gì theo cả xe</h3>
+
+  <p>Đây là bảng quan trọng nhất của chương.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 12 · Hai cột — chạm chip hồ sơ chỉ đổi cột bên trái</p>
+    <div class="two">
+      <div class="col a">
+        <h5>Theo hồ sơ — đi theo người lái</h5>
+        <ul class="pills">
+          <li>Bố cục màn chính</li>
+          <li>Nội dung từng ô</li>
+          <li>Thanh nút xe (nút · viền · ẩn/hiện)</li>
+          <li>Thanh trên (chip · thứ tự · nhãn)</li>
+          <li>Giao diện sáng/tối · màu nhấn</li>
+          <li>Đơn vị đo</li>
+          <li>Ngôn ngữ</li>
+          <li>Hình nền &amp; ảnh Trình chiếu</li>
+          <li>Sổ địa chỉ</li>
+          <li>Dẫn đường trên cụm · biển báo</li>
+          <li>Gán phím vô-lăng · app nhạc</li>
+          <li>Ghế mát/sưởi · lọc bụi · lấy gió trong</li>
+          <li>Tự mở khi nổ máy</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h5>Theo xe — mọi hồ sơ dùng chung 🔒</h5>
+        <ul class="pills">
+          <li>Toàn bộ nhóm Giọng nói</li>
+          <li>Tự sấy kính khi mưa</li>
+          <li>Tự dẫn đường theo lịch</li>
+          <li>Chiếu màn lên cụm</li>
+          <li>Tự động cập nhật</li>
+          <li>Giữ Kachi làm màn hình chính</li>
+          <li>Hồ sơ lúc nổ máy · danh sách hồ sơ</li>
+          <li>Lịch sử app mở gần đây</li>
+          <li>Kết quả Kiểm tra từng nút xe</li>
+        </ul>
+      </div>
+    </div>
+    <p class="dgn">Câu nhắc đầu trang Cài đặt nói “gần như mọi thứ theo hồ sơ” — hai cột này là bản chi tiết. Cột phải không đổi khi đổi hồ sơ.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Theo HỒ SƠ — đổi hồ sơ là đổi theo</th><th>Theo XE — mọi hồ sơ dùng chung</th></tr></thead>
+    <tbody>
+      <tr><td>Bố cục màn chính (số ô, bố cục tự vẽ)</td><td>Toàn bộ nhóm <strong>Giọng nói</strong>: Hey Kachi, mô hình nghe đã tải, giọng đọc, hỏi xác nhận, nguồn micro, app dẫn đường mặc định</td></tr>
+      <tr><td>Nội dung từng ô</td><td><strong>Tự sấy kính khi mưa</strong> (cả hai ô con)</td></tr>
+      <tr><td>Thanh nút xe: nút nào, đặt ở viền nào, ẩn hay hiện</td><td><strong>Tự dẫn đường theo lịch</strong> (sổ luật và dấu đã-dẫn)</td></tr>
+      <tr><td>Thanh trên: chip nào, thứ tự, hiện nhãn hay không</td><td><strong>Chiếu màn lên cụm</strong>: công tắc chính, nút nổi, khung hình đã đo cho cụm</td></tr>
+      <tr><td>Giao diện sáng/tối, màu nhấn, tông thẻ</td><td><strong>Tự động cập nhật</strong></td></tr>
+      <tr><td>Đơn vị đo (bar/kPa/psi · °C/°F · km/mile)</td><td><strong>Giữ Kachi làm màn hình chính</strong> và trạng thái đã-đặt-làm-màn-chính</td></tr>
+      <tr><td>Ngôn ngữ</td><td><strong>Hồ sơ lúc nổ máy</strong> và danh sách hồ sơ (§7.4)</td></tr>
+      <tr><td>Hình nền và ảnh Trình chiếu ảnh</td><td>Lịch sử app mở gần đây</td></tr>
+      <tr><td><strong>Sổ địa chỉ</strong> (nhà, công ty…)</td><td>Kết quả <em>Kiểm tra từng nút xe</em></td></tr>
+      <tr><td>Dẫn đường trên cụm, biển báo tốc độ, bong bóng</td><td></td></tr>
+      <tr><td>Gán <strong>phím vô-lăng</strong>, app nhạc mặc định</td><td></td></tr>
+      <tr><td>Ghế mát/sưởi, lọc bụi mịn, lấy gió trong khi nổ máy</td><td></td></tr>
+      <tr><td><strong>Tự mở khi nổ máy</strong></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Nhiều người tưởng</strong> mọi thứ trong Cài đặt đều đi theo hồ sơ (câu nhắc đầu trang cũng nói gần như vậy). <strong>Thực ra</strong> những thứ thuộc <em>phần cứng và cả chiếc xe</em> thì nằm ngoài: giọng nói, mưa → sấy kính, lịch dẫn đường, chiếu cụm, tự cập nhật. Lý do đơn giản: đổi hồ sơ giữa cơn mưa không nên làm sấy kính tự tắt, và mô hình giọng 74 MB thì nằm trên đĩa của xe, không nằm trong hồ sơ.</p>
+
+  <p>Một hệ quả đáng biết: <em>Sổ địa chỉ</em> theo hồ sơ nhưng <em>lịch dẫn đường</em> theo xe. Một lịch trỏ tới địa chỉ không có trong hồ sơ đang dùng sẽ <strong>bỏ lượt đó</strong>, im lặng và an toàn. Đổi lại về hồ sơ có địa chỉ ấy trong cùng khung giờ thì lượt dẫn vẫn còn.</p>
+
+  <h3>7.3 Thêm, đổi tên, xoá</h3>
+
+  <figure>
+    <img src="img/cai-dat-ho-so-tai-xe.png" alt="Trang Cài đặt Hồ sơ tài xế: ba thẻ hồ sơ, hồ sơ lúc nổ máy, các nút thêm/xuất/nhập">
+    <figcaption>Trang <strong>Cài đặt › Hồ sơ tài xế</strong>. Mỗi thẻ có tên, một dòng tóm tắt bố cục nó đang giữ, nút <strong>Đổi tên hồ sơ</strong> và — chỉ ở hồ sơ xoá được — nút <strong>Xoá</strong> nền đỏ.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Thêm</strong>: nút ở đáy trang ghi rõ nó tạo <em>bản sao của hồ sơ đang dùng</em>. Hộp <strong>Hồ sơ mới</strong> điền sẵn tên <em>“Bản sao của …”</em> — sửa thành tên mình rồi Lưu. Hồ sơ mới giữ nguyên mọi thứ của hồ sơ đang dùng, chỉ việc sửa chỗ cần khác.</li>
+    <li><strong>Đổi tên</strong>: có ở mọi hồ sơ. Tên rỗng hoặc trùng hồ sơ khác thì bị từ chối kèm một dòng giải thích.</li>
+    <li><strong>Xoá</strong>: nút chỉ hiện khi hồ sơ đó <em>không phải</em> hồ sơ đang dùng <em>và</em> còn hồ sơ khác. <strong>Xoá không hỏi lại</strong> — bấm là mất. Muốn xoá hồ sơ đang dùng thì đổi sang hồ sơ khác trước.</li>
+  </ul>
+
+  <figure>
+    <img src="img/hop-hoi-ten-ho-so.png" alt="Hộp Hồ sơ mới với ô nhập điền sẵn Bản sao của Mặc định">
+    <figcaption>Hộp <strong>Hồ sơ mới</strong>: tên đề sẵn nói ra nó vừa chép từ đâu.</figcaption>
+  </figure>
+
+  <h3>7.4 Hồ sơ lúc nổ máy</h3>
+
+  <p>Ở giữa trang, mục <strong>Hồ sơ lúc nổ máy</strong> → hàng <strong>Lên bằng hồ sơ</strong>:</p>
+  <ul>
+    <li><strong>Gần nhất</strong> (mặc định) — lên đúng hồ sơ đang dùng lúc tắt máy.</li>
+    <li>Chọn một tên cụ thể — mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, <em>kể cả khi chuyến trước đã đổi sang hồ sơ khác</em>.</li>
+  </ul>
+  <p>Lựa chọn này thuộc về cả xe, nên nó không đổi theo hồ sơ.</p>
+
+  <h3>7.5 Sao lưu: xuất và nhập</h3>
+
+  <ul>
+    <li><strong>Xuất hồ sơ (backup)</strong> ghi ra một tệp đuôi <code>.kachi</code> trong thư mục riêng của app ở bộ nhớ ngoài. Đường dẫn hiện trong thông báo chớp ngay sau khi bấm — đọc nó lúc đó, vì <strong>không có hộp chọn tệp</strong>.</li>
+    <li><strong>Nhập hồ sơ từ file</strong> đọc <em>tất cả</em> tệp <code>.kachi</code> có trong đúng thư mục ấy, rồi báo đã nhập mấy hồ sơ. Không thấy tệp nào thì nó in đường dẫn thư mục cần chép vào.</li>
+    <li>Nhập một hồ sơ trùng tên hồ sơ đang có thì máy <strong>tạo thêm</strong> “&lt;tên&gt; 2”, không đè lên cái đang dùng.</li>
+    <li>Chép tệp qua USB hoặc trình quản lý file là chia sẻ được cấu hình giữa hai xe. Lưu ý: những thứ <em>theo xe</em> ở bảng §7.2 không nằm trong tệp đó.</li>
+  </ul>
+
+  <h3>7.6 Đổi hồ sơ bằng giọng</h3>
+
+  <p>Nói <em>“đổi sang hồ sơ &lt;tên&gt;”</em> hoặc <em>“chuyển sang hồ sơ &lt;tên&gt;”</em>. Chỉ những hồ sơ có thật trên máy mới nói được. Nói thiếu tên thì Kachi hỏi lại đúng câu “Hồ sơ nào…”. Nếu đã tích <em>Đổi hồ sơ</em> trong <em>Hỏi xác nhận trước khi chạy</em> (§6.5), nó sẽ xin một tiếng “đồng ý” trước, kèm lý do: <em>đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng</em>.</p>
+
+  <h3>7.7 Bốn chỗ dễ hiểu nhầm</h3>
+  <ul>
+    <li><strong>Tưởng mất cấu hình sau khi đổi hồ sơ.</strong> Không mất. Chạm lại hồ sơ cũ là về nguyên trạng.</li>
+    <li><strong>Tưởng “Thêm hồ sơ” cho một màn trắng.</strong> Không — nó cho một <em>bản sao</em> của hồ sơ đang dùng.</li>
+    <li><strong>Tưởng nút Xoá biến mất là lỗi.</strong> Nút cố ý ẩn ở hồ sơ đang dùng và ở hồ sơ cuối cùng.</li>
+    <li><strong>Tưởng đổi hồ sơ sẽ tắt được Hey Kachi, mưa → sấy hay chiếu cụm.</strong> Không: những thứ đó theo xe, phải tắt ở đúng trang Cài đặt của chúng.</li>
+  </ul>
+</section>
+
+<section id="ch8">
+  <h2>8. Cập nhật và cài đặt hệ thống</h2>
+
+  <p>Chương này nói về một trang duy nhất: <strong>Cài đặt › Hệ thống &amp; quyền</strong>. Đây là chỗ đặt Kachi làm màn hình chính, xem Kachi còn thiếu quyền gì, và cập nhật app. Mọi thứ trong trang này thuộc về <em>chiếc xe</em>, không thuộc về hồ sơ tài xế: đổi hồ sơ thì các mục ở đây không đổi theo.</p>
+
+  <p>Trang xếp từ trên xuống theo năm khối: <strong>Quyền</strong> · <strong>Màn hình chính</strong> · <strong>Khởi động</strong> · <strong>Bảo trì</strong> · <strong>Nâng cao</strong>.</p>
+
+  <figure>
+    <img src="img/cai-dat-he-thong-va-quyen.png" alt="Trang Cài đặt Hệ thống và quyền, ảnh ghép cả trang">
+    <figcaption>Cả trang <strong>Hệ thống &amp; quyền</strong> (ảnh ghép nhiều lần cuộn, còn vệt nối ngang). Ảnh chụp trên máy ảo nên khối <strong>Quyền</strong> còn hai hàng thiếu — <em>Kênh điều khiển cửa sổ</em> (dấu vàng) và <em>Trợ năng</em>. Trên xe thật, thường khối này không có hàng nào.</figcaption>
+  </figure>
+
+  <h3>8.1 Cập nhật app — phải bấm bằng tay</h3>
+
+  <p>Kachi không đi qua cửa hàng ứng dụng nào. Bản mới được đặt sẵn trong thư mục phát hành công khai của Kachi. App hỏi thư mục đó xem có bản nào cao hơn bản đang cài, rồi tải về và cài đè.</p>
+
+  <p>Cài đè giữ nguyên dữ liệu: hồ sơ, bố cục, nội dung ô, mô hình giọng nói đã tải đều còn. Tệp nặng khoảng 44 MB. Cài xong app tự khởi động lại.</p>
+
+  <p><strong>Đây là chỗ nhiều người hiểu nhầm nhất.</strong> Nhiều người tưởng bật công tắc <em>Tự động cập nhật</em> là hôm nào có bản mới cũng được báo. Thực ra lượt tự dò chỉ chạy <strong>một lần cho mỗi lần nổ máy</strong>. Kachi là màn hình chính nên nó sống suốt ngày; lượt dò duy nhất rơi vào lúc vừa nổ máy, khi kênh còn bản cũ. Sau đó dù có bản mới đến đâu, xe cũng không tự thấy.</p>
+
+  <p>Vì vậy: muốn biết chắc có bản mới hay không thì <strong>bấm nút “Kiểm tra cập nhật”</strong>. Nút bấm tay không bị giới hạn một lần, bấm bao nhiêu lần cũng được.</p>
+
+  <p>Thêm hai điều về công tắc <em>Tự động cập nhật</em>:</p>
+  <ul>
+    <li>Mặc định <strong>tắt</strong>.</li>
+    <li>Khi bật và lượt tự dò thấy bản mới, hộp hỏi vẫn bung ra — tải 44 MB rồi cài đè không bao giờ làm sau lưng chủ xe. Còn khi đã ở bản mới nhất, hoặc khi lỗi mạng, đường tự động <strong>im lặng hoàn toàn</strong>, không báo gì.</li>
+  </ul>
+
+  <div class="dg">
+    <p class="dgt">Hình 13 · Một lượt cập nhật, từ lúc bấm tới lúc app mở lại</p>
+    <svg viewBox="0 0 880 430" role="img" aria-label="Dòng chảy một lượt cập nhật: bấm Kiểm tra cập nhật, hỏi kênh phát hành, so số bản, hộp có bản mới, tải 44 MB, cài đè, app tự mở lại; ba nhánh rẽ là đang ở bản mới nhất, lỗi mạng, và hộp cho phép gỡ lỗi USB">
+      <rect class="bx-d" x="10" y="8" width="420" height="40" rx="10"/>
+      <text class="ts" x="220" y="33" text-anchor="middle">Đường TỰ ĐỘNG — chỉ chạy 1 lần mỗi lần nổ máy</text>
+      <path class="ar-m" d="M350 48 V 80" marker-end="url(#ah-m)"/>
+
+      <rect class="bx-a" x="10" y="84" width="210" height="64" rx="11"/>
+      <text class="tb" x="115" y="112" text-anchor="middle">Bấm «Kiểm tra</text>
+      <text class="tb" x="115" y="132" text-anchor="middle">cập nhật»</text>
+      <path class="ar" d="M220 116 H 246" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="250" y="84" width="200" height="64" rx="11"/>
+      <text x="350" y="112" text-anchor="middle">Hỏi kênh phát hành</text>
+      <text x="350" y="132" text-anchor="middle">qua mạng</text>
+      <path class="ar" d="M450 116 H 476" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="480" y="84" width="210" height="64" rx="11"/>
+      <text x="585" y="106" text-anchor="middle">So số bản: đang dùng</text>
+      <text x="585" y="126" text-anchor="middle">vs cao nhất trên kênh</text>
+      <path class="ar-w" d="M690 116 H 716" marker-end="url(#ah-w)"/>
+
+      <rect class="bx-w" x="720" y="84" width="150" height="64" rx="11"/>
+      <text class="ts" x="795" y="108" text-anchor="middle">đang ở bản mới</text>
+      <text class="ts" x="795" y="124" text-anchor="middle">nhất (v2.79) —</text>
+      <text class="ts" x="795" y="140" text-anchor="middle">không hộp nào</text>
+
+      <path class="ar-w" d="M350 148 V 176" marker-end="url(#ah-w)"/>
+      <rect class="bx-w" x="250" y="178" width="200" height="70" rx="11"/>
+      <text class="tb" x="350" y="200" text-anchor="middle">lỗi: …</text>
+      <text class="ts" x="350" y="220" text-anchor="middle">cắm CarPlay / Android Auto</text>
+      <text class="ts" x="350" y="236" text-anchor="middle">⇒ đầu xe tắt WiFi ⇒ luôn vào đây</text>
+
+      <path class="ar" d="M585 148 V 258 H 105 V 276" marker-end="url(#ah)"/>
+
+      <rect class="bx-a" x="10" y="278" width="190" height="64" rx="11"/>
+      <text class="tb" x="105" y="306" text-anchor="middle">Hộp «Có bản mới»</text>
+      <text class="ts" x="105" y="326" text-anchor="middle">Để sau · Tải &amp; cài</text>
+      <path class="ar" d="M200 310 H 226" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="230" y="278" width="190" height="64" rx="11"/>
+      <text x="325" y="306" text-anchor="middle">Tải ≈ 44 MB</text>
+      <text class="ts" x="325" y="326" text-anchor="middle">% hiện trên chữ của nút</text>
+      <path class="ar" d="M420 310 H 446" marker-end="url(#ah)"/>
+
+      <rect class="bx" x="450" y="278" width="180" height="64" rx="11"/>
+      <text x="540" y="306" text-anchor="middle">Cài đè qua kênh</text>
+      <text x="540" y="326" text-anchor="middle">nội bộ của xe</text>
+      <path class="ar" d="M630 310 H 656" marker-end="url(#ah)"/>
+
+      <rect class="bx-g" x="660" y="278" width="190" height="64" rx="11"/>
+      <text class="tb" x="755" y="306" text-anchor="middle">App tự mở lại</text>
+      <text class="ts" x="755" y="326" text-anchor="middle">dữ liệu giữ nguyên</text>
+
+      <path class="ar-w" d="M540 342 V 370" marker-end="url(#ah-w)"/>
+      <rect class="bx-w" x="390" y="372" width="330" height="48" rx="11"/>
+      <text class="ts" x="555" y="393" text-anchor="middle">«Cho phép gỡ lỗi USB?» — tích «Luôn cho phép»,</text>
+      <text class="ts" x="555" y="409" text-anchor="middle">bấm Cho phép, rồi bấm cài lại</text>
+    </svg>
+  </div>
+
+  <p>Nút “Kiểm tra cập nhật” <strong>tự báo kết quả lên chính chữ trên nút</strong>. Không có thông báo nào khác, không có dấu chấm đỏ ở đâu cả. Đọc chữ trên nút là biết đang ở đâu:</p>
+
+  <table>
+    <caption>Chữ hiện trên nút “Kiểm tra cập nhật” và nghĩa của nó</caption>
+    <thead>
+      <tr><th>Chữ trên nút</th><th>Nghĩa</th><th>Làm gì</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>đang kiểm tra…</td><td>Đang hỏi kênh phát hành. Mất vài giây trên mạng xe.</td><td>Chờ. Đừng bấm lại.</td></tr>
+      <tr><td>đang ở bản mới nhất (v2.79)</td><td>Không có gì mới.</td><td>Xong.</td></tr>
+      <tr><td>lỗi: …</td><td>Không ra được mạng, hoặc kênh không trả lời.</td><td>Kiểm tra WiFi của đầu xe rồi bấm lại.</td></tr>
+      <tr><td>có bản mới nhưng kênh không có link tải — thử lại sau</td><td>Kênh có số bản mới nhưng tệp chưa tải về được.</td><td>Thử lại sau, không phải lỗi của xe.</td></tr>
+      <tr><td>đang tải… 37%</td><td>Đang tải tệp cài.</td><td>Giữ màn Cài đặt, đừng tắt máy.</td></tr>
+      <tr><td>đang cài…</td><td>Đang cài đè.</td><td>Chờ. App sẽ tự mở lại.</td></tr>
+      <tr><td>đã cài — đang mở lại…</td><td>Xong.</td><td>Vào Giới thiệu xem số bản mới.</td></tr>
+      <tr><td>tải thất bại</td><td>Đường truyền đứt giữa lúc tải.</td><td>Bấm lại từ đầu.</td></tr>
+      <tr><td>không có kênh shell tới xe (…) — …</td><td>Tệp đã tải xong nhưng không cài được vì kênh nội bộ của xe chưa nối.</td><td>Làm đúng việc câu đó nói. Hay gặp nhất: bấm “Cho phép” trên hộp gỡ lỗi USB rồi cài lại.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Khi có bản mới, một hộp bung ra trước khi tải:</p>
+
+  <figure>
+    <img src="img/hop-co-ban-moi.png" alt="Hộp thoại Có bản mới với hai nút Để sau và Tải và cài">
+    <figcaption>Hộp hỏi trước khi tải. Tiêu đề là <strong>bản trên kênh</strong>, câu dưới là <strong>bản đang dùng</strong>. Chọn <em>Để sau</em> là không có gì xảy ra; chọn <em>Tải &amp; cài</em> thì tiến độ chạy trên chữ của nút phía sau hộp.</figcaption>
+  </figure>
+
+  <p>Một điều dễ mất thời gian: <strong>cắm CarPlay hoặc Android Auto thì đầu xe tắt WiFi</strong>. Cập nhật lúc đó luôn báo lỗi mạng. Rút ra, cập nhật, rồi cắm lại.</p>
+
+  <h3>8.2 Đặt Kachi làm màn hình chính</h3>
+
+  <p>Khối <strong>Màn hình chính</strong> có một dòng trạng thái và một nút. Dòng trạng thái nói sự thật đọc từ hệ thống, không phải một cờ trong app:</p>
+  <ul>
+    <li><strong>“Kachi đang là màn hình chính.”</strong> — xanh. Bấm phím HOME là về Kachi.</li>
+    <li><strong>“Chưa — hệ thống đang dùng &lt;tên gói&gt;.”</strong> — vàng, kèm tên launcher đang giữ chỗ.</li>
+  </ul>
+
+  <p>Nút bên dưới đổi theo trạng thái. Chưa phải màn hình chính thì hiện <strong>“Đặt Kachi làm màn hình chính”</strong>; đã là màn hình chính thì nút đó biến mất và hiện <strong>“Bỏ chọn Kachi làm màn hình chính”</strong>. Không bao giờ thấy cả hai cùng lúc.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 14 · Hai trạng thái của “màn hình chính”, và một chỗ không có đường nào</p>
+    <svg viewBox="0 0 880 380" role="img" aria-label="Hai trạng thái: Kachi là màn hình chính thì phím HOME về Kachi và có nút Bỏ chọn; chưa phải thì HOME về launcher khác và có nút Đặt Kachi làm màn hình chính. Màn cài đặt của xe bị khoá, không có đường đặt màn hình chính ở đó">
+      <rect class="bx" x="14" y="44" width="62" height="42" rx="9"/>
+      <text class="ts" x="45" y="70" text-anchor="middle">HOME</text>
+      <path class="ar-g" d="M82 65 H 128" marker-end="url(#ah-g)"/>
+      <rect class="bx-g" x="134" y="26" width="150" height="84" rx="9"/>
+      <text class="tb" x="209" y="74" text-anchor="middle" style="font-size:17px">Kachi</text>
+      <text class="tb" x="306" y="50" fill="var(--green)">Kachi đang là màn hình chính.</text>
+      <rect class="bx" x="306" y="64" width="290" height="34" rx="17"/>
+      <text class="ts" x="451" y="86" text-anchor="middle">Bỏ chọn Kachi làm màn hình chính</text>
+
+      <line class="sep" x1="14" y1="134" x2="866" y2="134"/>
+
+      <rect class="bx" x="14" y="180" width="62" height="42" rx="9"/>
+      <text class="ts" x="45" y="206" text-anchor="middle">HOME</text>
+      <path class="ar-w" d="M82 201 H 128" marker-end="url(#ah-w)"/>
+      <rect class="bx-w" x="134" y="162" width="150" height="84" rx="9"/>
+      <text class="ts" x="209" y="200" text-anchor="middle">launcher khác</text>
+      <text class="ts" x="209" y="220" text-anchor="middle">của xe</text>
+      <text class="tb" x="306" y="186" fill="var(--amber)">Chưa — hệ thống đang dùng &lt;tên gói&gt;.</text>
+      <rect class="bx-a" x="306" y="200" width="290" height="34" rx="17"/>
+      <text class="ts" x="451" y="222" text-anchor="middle" fill="var(--accent-fg)">Đặt Kachi làm màn hình chính</text>
+      <path class="ar-a" d="M598 217 C 680 217 680 81 602 81" marker-end="url(#ah-a)"/>
+      <text class="ts" x="694" y="152">bấm nút này</text>
+
+      <line class="sep" x1="14" y1="272" x2="866" y2="272"/>
+
+      <rect class="bx-r" x="14" y="296" width="560" height="62" rx="11"/>
+      <text class="tb" x="34" y="322" fill="var(--red)">✕ «Cài đặt của xe»</text>
+      <text class="ts" x="34" y="342">Màn cài đặt hệ thống trên đầu xe bị khoá — không có đường đặt màn hình chính ở đây.</text>
+      <text class="ts" x="590" y="322">KHÔNG phải một trạng thái —</text>
+      <text class="ts" x="590" y="340">chỉ là chỗ nhiều người đi tìm.</text>
+    </svg>
+  </div>
+
+  <p>Nhiều người đi tìm mục này trong <em>Cài đặt của xe</em>. Không có đường đó: màn cài đặt hệ thống trên đầu xe bị khoá, mở ra chỉ nhận câu “Hệ thống IVI không hỗ trợ hoạt động này”. Cũng nhiều người bấm phím HOME rồi chờ một hộp “chọn màn hình chính” — ROM của xe không hiện hộp đó. Kachi tự làm việc này qua kênh nội bộ, nên chỗ duy nhất bấm được là nút ở trang này.</p>
+
+  <p>Hai điều cần biết:</p>
+  <ul>
+    <li>Công tắc <strong>“Giữ Kachi làm màn hình chính khi nổ máy”</strong> đặt lại một lần mỗi lần nổ máy, nếu trong lúc đó hệ thống đã đổi sang launcher khác. Mặc định tắt.</li>
+    <li>Bấm <strong>“Bỏ chọn”</strong> thì công tắc trên cũng tắt theo. Đó là chủ ý: bỏ chọn phải là bỏ thật, không phải bỏ rồi sáng sau nó tự quay lại.</li>
+  </ul>
+
+  <h3>8.3 Khởi động — hai công tắc, hai việc khác nhau</h3>
+
+  <p>Hai công tắc này trông giống nhau nhưng làm hai việc rời nhau:</p>
+  <ul>
+    <li><strong>Tự mở khi nổ máy</strong> — nổ máy là Kachi dựng lại màn và các ô. Tắt thì phải mở bằng tay.</li>
+    <li><strong>Chạy dịch vụ dẫn đường/cụm ở nền khi nổ máy</strong> — chỉ chạy phần dịch vụ, <em>không</em> mở màn nào. Dùng khi muốn chỉ đường lên cụm đồng hồ mà không cần màn Kachi hiện ra.</li>
+  </ul>
+
+  <h3>8.4 Quyền — chỉ hiện những gì đang thiếu</h3>
+
+  <p>Đủ quyền thì khối này chỉ có một câu: “Đủ quyền — không thiếu gì.” Thiếu thì mỗi thứ thiếu thành một hàng, kèm câu <em>“Thiếu thì: …”</em> nói rõ mất gì. Đây là điểm khác với hầu hết app: Kachi không liệt kê quyền để bạn đọc cho biết, nó chỉ nói khi có thứ đang hỏng.</p>
+
+  <p>Phần lớn các thứ này Kachi <strong>tự xin lại</strong> mỗi lần mở, không hỏi ai. Bảng dưới để khi gặp một hàng thì biết nó ảnh hưởng gì.</p>
+
+  <table>
+    <caption>Tám thứ Kachi cần, và mất gì nếu thiếu</caption>
+    <thead>
+      <tr><th>Hàng</th><th>Thiếu thì mất gì</th><th>Ai sửa</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Kênh điều khiển cửa sổ</td><td>App không vào được ô — đây là tính năng lõi của launcher</td><td>Môi trường (trên xe có sẵn)</td></tr>
+      <tr><td>Cho phép cửa sổ tự do</td><td>App không vào được ô theo đường cửa sổ tự do</td><td>Kachi, lúc khởi động</td></tr>
+      <tr><td>Là màn hình chính</td><td>Bấm HOME không về Kachi</td><td>Bạn — nút ở khối Màn hình chính</td></tr>
+      <tr><td>Vẽ trên màn khác</td><td>Dải tiêu đề ô và ngăn kéo app không nổi lên được</td><td>Kachi tự xin</td></tr>
+      <tr><td>Đọc thông báo</td><td>Dẫn đường trên cụm mất nguồn dữ liệu</td><td>Kachi tự xin</td></tr>
+      <tr><td>Trợ năng</td><td>Gán phím vô-lăng và đọc màn hình dẫn đường không chạy</td><td>Kachi tự xin</td></tr>
+      <tr><td>Micro</td><td>Không nói được với xe (ô “Nói với xe” và nút mic)</td><td>Kachi tự xin</td></tr>
+      <tr><td>Định vị</td><td>Tự dẫn đường theo lịch không biết đã ra khỏi hầm chưa nên sẽ không dẫn</td><td>Kachi tự xin</td></tr>
+    </tbody>
+  </table>
+
+  <p>Hai điều đáng biết về bảng này:</p>
+  <ul>
+    <li>Hàng <strong>“Là màn hình chính”</strong> chỉ là lời báo. Nút thật nằm ở khối <em>Màn hình chính</em> ngay dưới.</li>
+    <li>Nếu đầu xe đang bung hộp <strong>“Cho phép gỡ lỗi USB?”</strong>, hàng <em>Kênh điều khiển cửa sổ</em> sẽ nói đúng việc cần làm: tích <em>“Luôn cho phép”</em> rồi OK. Không tích ô “luôn” thì lần sau lại phải làm lại.</li>
+    <li>Quyền định vị chỉ dùng để <strong>đọc</strong> xem lần bắt vị trí gần nhất cách đây bao lâu. Kachi không ghi vị trí giả và không bám định vị liên tục.</li>
+  </ul>
+
+  <h3>8.5 Bảo trì — hai nút còn lại</h3>
+
+  <ul>
+    <li><strong>Dừng toàn bộ dẫn đường</strong> — tắt hết phần chỉ đường đang chạy, kể cả phần trên cụm. Dùng khi cụm còn hiện mũi chỉ đường của một chuyến đã xong.</li>
+    <li><strong>Khởi động lại launcher</strong> — dựng lại Kachi từ đầu, không phải tắt máy. Màn sẽ <strong>nhá một cái rồi đen vài giây</strong>, sau đó Kachi hiện lại. Đó là đúng, không phải app sập.</li>
+  </ul>
+
+  <h3>8.6 Chế độ kiểm thử qua adb</h3>
+
+  <p>Khối <strong>Nâng cao</strong> nay chỉ còn <strong>một hàng</strong> duy nhất: <em>Chế độ kiểm thử qua adb</em>. Bản 2.79 đã dọn hết các màn dành cho người làm app.</p>
+
+  <p>Công tắc này cho một máy tính nối bằng cáp gửi lệnh thử vào Kachi: nói một câu, đổi hồ sơ, gắn app vào ô, đọc trạng thái. Nó dùng khi có người cần dựng lại đúng một lỗi bạn gặp.</p>
+
+  <p>Ba điều app tự làm để không ai quên tắt:</p>
+  <ul>
+    <li>Bật xong, dòng phụ đếm ngược: “Đang mở — còn … phút.”</li>
+    <li><strong>Tự tắt sau 60 phút</strong>, và tự tắt sau khi tắt máy.</li>
+    <li>Mọi lệnh gửi vào đều được ghi lại trong nhật ký.</li>
+  </ul>
+
+  <p>Nếu không ai yêu cầu, để tắt. Chỉ bật khi đang ngồi trong xe và đang cần thử.</p>
+
+  <h3>8.7 Giới thiệu — chỗ đọc số bản</h3>
+
+  <figure>
+    <img src="img/cai-dat-gioi-thieu.png" alt="Mục Giới thiệu, hiện phiên bản 2.79 mã 180, tên gói và giấy phép">
+    <figcaption>Mục <strong>Giới thiệu</strong>. Dòng đầu là số bản đang chạy — <em>Phiên bản 2.79 (mã 180)</em>. Số trong ngoặc là số hiệu build; hai bản không bao giờ dùng chung một số.</figcaption>
+  </figure>
+
+  <p>Đừng đoán xe đang chạy bản nào. Mở trang này và đọc. Mọi câu hỏi về một hành vi lạ đều bắt đầu bằng con số ở dòng này.</p>
+</section>
+
+<section id="ch9">
+  <h2>9. Khi có sự cố</h2>
+
+  <p>Phần lớn những thứ trông như lỗi không phải lỗi. Chương này chia làm ba phần, theo đúng thứ tự nên đọc: <strong>không phải lỗi</strong> → <strong>tự xử lý được</strong> → <strong>không sửa được, và vì sao</strong>.</p>
+
+  <h3>9.1 Trước hết: dấu “—” nghĩa là chưa đọc được</h3>
+
+  <p>Đây là điều hiểu nhầm hay gặp nhất. Dấu <strong>—</strong> không có nghĩa là thiết bị đang tắt, không có nghĩa là giá trị bằng không, và không có nghĩa là app hỏng. Nó có đúng một nghĩa: <strong>Kachi chưa đọc được con số đó từ xe</strong>.</p>
+
+  <figure>
+    <img src="img/o-bang-tong-hop.png" alt="Ô Bảng tổng hợp với bốn ô con, cả bốn đều hiện dấu gạch">
+    <figcaption>Ô <em>Bảng tổng hợp</em> với cả bốn ô con đều “—”. Ảnh này chụp trên máy ảo, không nối vào xe nào, nên không một số nào đọc được. Trên xe đang nổ máy, các ô này có số thật.</figcaption>
+  </figure>
+
+  <p>Ba lý do thường gặp, theo thứ tự hay xảy ra:</p>
+  <ul>
+    <li><strong>Vừa nổ máy.</strong> Vài giây đầu chưa có số nào. Chờ.</li>
+    <li><strong>Xe này không có đường đọc mục đó.</strong> Ví dụ: xe điện thuần không có mức xăng và mức dầu máy, nên hai mục đó luôn “—”. Đó là sự thật của chiếc xe, không phải thiếu tính năng.</li>
+    <li><strong>Mục bấm được nhưng không đọc lại được.</strong> Cốp sau là ví dụ rõ nhất: nút mở cốp chạy, nhưng xe không trả lời cốp đang mở hay đóng, nên chấm trạng thái không bao giờ sáng.</li>
+  </ul>
+
+  <h3>9.2 Bảng tra: thấy vậy → vì sao → làm gì</h3>
+
+  <table>
+    <caption>Những thứ trông như lỗi và cách xử lý</caption>
+    <thead>
+      <tr><th>Bạn thấy</th><th>Vì sao</th><th>Làm gì</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Không xoá được nội dung một ô</td><td>Ô không có nút ✕. Nhiều người tìm nút đó rồi kết luận là không bỏ được.</td><td>Chạm nút <strong>⇄</strong> ở mép trên ô → bỏ chọn hết → nút ở đáy đổi thành <strong>“Bỏ widget”</strong>.</td></tr>
+      <tr><td>Chạm ô đang có app thì app mở lại, không ra bảng chọn</td><td>Chạm thân ô = mở lại app đó. Đúng thiết kế.</td><td>Muốn đổi nội dung ô thì chạm nút <strong>⇄</strong> ở mép trên ô.</td></tr>
+      <tr><td>Đặt một app vào ô mới thì ô cũ trống</td><td>Một app chỉ nằm ở một ô.</td><td>Không phải lỗi. Muốn app ở ô cũ thì đặt lại.</td></tr>
+      <tr><td>Không tìm thấy nút đổi bố cục trên thanh trên</td><td>Bản này bỏ nút bố cục khỏi thanh trên; mọi cấu hình đi qua nút Cài đặt.</td><td><strong>Cài đặt › Màn hình chính</strong>.</td></tr>
+      <tr><td>Bật công tắc mic mà thanh trên không có nút mic</td><td>Nút mic cần cả công tắc <em>và</em> mô hình nghe đã tải. Thiếu một trong hai thì nút không hiện.</td><td><strong>Cài đặt › Giọng nói</strong> → tải mô hình nghe.</td></tr>
+      <tr><td>Xi-nhan mà không thấy camera</td><td>Camera theo xi-nhan mặc định <strong>tắt</strong>.</td><td><strong>Cài đặt › Tiện nghi xe › Camera theo xi-nhan</strong> → bật hàng đầu.</td></tr>
+      <tr><td>Đổi chỗ hiện camera mà xi-nhan vẫn hiện ở góc cũ</td><td>Lựa chọn mới có tác dụng từ <strong>lượt xi-nhan tiếp theo</strong>.</td><td>Tắt xi-nhan, bật lại.</td></tr>
+      <tr><td>Hình camera ngược tay so với gương</td><td>Chiều ảnh của từng bên chưa đo được trên mọi đời xe, nên để người lái tự chọn.</td><td>Bật <strong>“Xi-nhan trái/phải: lật gương”</strong> đúng bên đang ngược.</td></tr>
+      <tr><td>Lịch dẫn đường đúng giờ mà không dẫn</td><td>Ba lý do: sai thứ trong tuần · đang chờ có GPS (xe còn trong hầm) · thiếu quyền Định vị nên không biết đã ra khỏi hầm chưa.</td><td>Mở lại hộp lịch xem ô thứ; xem hàng <em>Định vị</em> ở Hệ thống &amp; quyền.</td></tr>
+      <tr><td>Đổi hồ sơ thì màn khác hẳn, tưởng mất cấu hình</td><td>Bố cục, nội dung ô, chip, thanh nút, giao diện, đơn vị đều theo hồ sơ.</td><td>Đổi về hồ sơ cũ là mọi thứ về nguyên. Không có gì bị xoá.</td></tr>
+      <tr><td>Bỏ ảnh vào mà không thấy hiện</td><td>Hình nền và widget Trình chiếu ảnh đọc <strong>hai thư mục khác nhau</strong>.</td><td>Lấy đúng đường dẫn bằng nút sao chép đường dẫn của từng mục ở <strong>Cài đặt › Màn hình chính</strong>.</td></tr>
+      <tr><td>Nút ▶ của ô nhạc vẫn là ▶ khi đang phát</td><td>Hình nút không đổi theo trạng thái.</td><td>Đang phát thì bấm nút đó là <strong>tạm dừng</strong>.</td></tr>
+      <tr><td>Bấm “Kiểm tra cập nhật” mà không thấy gì xảy ra</td><td>Kết quả in ngay trên <strong>chữ của nút</strong>, không có thông báo riêng.</td><td>Đọc lại chữ trên nút. Bảng ở §8.1 giải nghĩa từng câu.</td></tr>
+      <tr><td>Bật “Tự động cập nhật” mà xe không bao giờ báo bản mới</td><td>Lượt tự dò chỉ chạy <strong>một lần mỗi lần nổ máy</strong>, thường lúc kênh còn bản cũ.</td><td>Bấm <strong>Kiểm tra cập nhật</strong> bằng tay.</td></tr>
+      <tr><td>Cập nhật báo “lỗi: …” trong khi đang cắm CarPlay / Android Auto</td><td>Cắm là đầu xe tắt WiFi.</td><td>Rút ra, cập nhật, cắm lại.</td></tr>
+      <tr><td>Đang cài thì hiện hộp “Cho phép gỡ lỗi USB?”</td><td>Kênh nội bộ đang nối lại bằng khoá mới.</td><td>Tích <strong>“Luôn cho phép”</strong> → <strong>Cho phép</strong> → bấm cài lại.</td></tr>
+      <tr><td>Bấm HOME không về Kachi</td><td>Kachi chưa là màn hình chính.</td><td><strong>Cài đặt › Hệ thống &amp; quyền › Màn hình chính</strong> → <em>Đặt Kachi làm màn hình chính</em>.</td></tr>
+      <tr><td>Màn nhá một cái rồi đen vài giây sau khi bấm “Khởi động lại launcher”</td><td>Kachi bị dựng lại từ đầu, hệ thống mở nó lên ngay.</td><td>Chờ vài giây. Không phải app sập.</td></tr>
+      <tr><td>Nói một câu có hai việc, chỉ việc đầu chạy</td><td>Câu ghép không có từ nối thì vế sau bị bỏ, và bị bỏ <strong>im lặng</strong>.</td><td>Chêm từ <strong>“rồi”</strong>: “tăng gió <em>rồi</em> bật sấy kính”. Hoặc nói hai câu.</td></tr>
+      <tr><td>Thời gian chuyến nhảy một cục mấy phút lúc mới đi</td><td>Xe chỉ cấp thời gian theo <strong>bậc 6 phút</strong>. Kachi nội suy từng phút nhưng không thể đi trước bậc.</td><td>Không sửa được. Sau bậc đầu tiên thì số chạy đều.</td></tr>
+      <tr><td>Cụm đồng hồ kẹt ở hình cũ, không trả về đồng hồ</td><td>Phiên chiếu còn treo.</td><td><strong>Cài đặt › Chiếu màn lên cụm › Cứu hộ</strong> → <em>Trả cụm về đồng hồ</em>; vẫn kẹt thì <em>Dọn sạch cụm</em>.</td></tr>
+      <tr><td>Chỉ đường còn hiện trên cụm khi chuyến đã xong</td><td>Dịch vụ dẫn đường còn chạy.</td><td><strong>Cài đặt › Hệ thống &amp; quyền › Bảo trì</strong> → <em>Dừng toàn bộ dẫn đường</em>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 Bốn thứ không sửa được — và vì sao</h3>
+
+  <p>Những thứ dưới đây đã truy tới tận gốc. Không có bản cập nhật nào chữa được, vì gốc không nằm trong Kachi. Nói ra để không ai mất thời gian chờ một bản vá không bao giờ tới.</p>
+
+  <h4>App đang trong ô rồi nhảy ra toàn màn</h4>
+
+  <p>Một số app khi mở lên sẽ <strong>tự mở tiếp một màn thứ hai của chính nó</strong>. Android không cho màn thứ hai đó nằm trong ô của một app thường, nên nó kéo cả app về màn hình chính, toàn màn. Waze là ví dụ đã đo trên xe.</p>
+
+  <p>Đây là cổng chặn của chính hệ điều hành, không phải thiết lập nào của Kachi. Cửa thoát duy nhất là cài Kachi như một app hệ thống của ROM — việc đó không khuyến nghị và không làm.</p>
+
+  <p><strong>App nào vào ô được?</strong> App chỉ mở một màn duy nhất thì nằm yên trong ô: YouTube, VietMap, Đồng hồ và phần lớn app thường. Cách biết chắc là thử; không có cách đoán trước từ tên app.</p>
+
+  <div class="dg">
+    <p class="dgt">Hình 15 · Vì sao có app nằm yên trong ô, có app bị kéo ra toàn màn</p>
+    <svg viewBox="0 0 880 340" role="img" aria-label="So sánh hai hàng: app một màn thì nằm yên trong ô số 1; app tự mở màn thứ hai thì bị cổng của Android kéo ra toàn màn và ô số 1 trở lại trống">
+      <text class="tw" x="10" y="16" fill="var(--green)">app một màn — nằm yên trong ô</text>
+      <rect class="bx" x="10" y="30" width="165" height="52" rx="10"/>
+      <text class="ts" x="92" y="51" text-anchor="middle">Chạm app trong</text>
+      <text class="ts" x="92" y="67" text-anchor="middle">ngăn kéo</text>
+      <path class="ar-g" d="M177 56 H 201" marker-end="url(#ah-g)"/>
+      <rect class="bx" x="205" y="30" width="165" height="52" rx="10"/>
+      <text class="ts" x="287" y="51" text-anchor="middle">App mở trong</text>
+      <text class="ts" x="287" y="67" text-anchor="middle">ô số 1</text>
+      <path class="ar-g" d="M372 56 H 396" marker-end="url(#ah-g)"/>
+      <rect class="bx" x="400" y="22" width="200" height="112" rx="9"/>
+      <rect class="bx-g" x="406" y="28" width="110" height="100" rx="6"/>
+      <text class="ts" x="461" y="82" text-anchor="middle" fill="var(--green)">app</text>
+      <rect class="bx" x="520" y="28" width="74" height="48" rx="6"/>
+      <rect class="bx" x="520" y="80" width="74" height="48" rx="6"/>
+      <text class="tb" x="620" y="66" fill="var(--green)">Nằm yên trong ô.</text>
+      <text class="ts" x="620" y="86">Ô vẫn có nội dung.</text>
+
+      <line class="sep" x1="10" y1="156" x2="870" y2="156"/>
+
+      <text class="tw" x="10" y="178" fill="var(--amber)">app tự mở màn thứ hai — bị kéo ra</text>
+      <rect class="bx" x="10" y="190" width="130" height="52" rx="10"/>
+      <text class="ts" x="75" y="221" text-anchor="middle">Chạm app</text>
+      <path class="ar" d="M142 216 H 156" marker-end="url(#ah)"/>
+      <rect class="bx" x="160" y="190" width="140" height="52" rx="10"/>
+      <text class="ts" x="230" y="211" text-anchor="middle">App mở trong</text>
+      <text class="ts" x="230" y="227" text-anchor="middle">ô số 1</text>
+      <path class="ar" d="M302 216 H 316" marker-end="url(#ah)"/>
+      <rect class="bx-w" x="320" y="190" width="150" height="52" rx="10"/>
+      <text class="ts" x="395" y="211" text-anchor="middle">App tự mở màn</text>
+      <text class="ts" x="395" y="227" text-anchor="middle">thứ 2 của chính nó</text>
+      <text class="ts" x="538" y="198" text-anchor="middle" fill="var(--red)">cổng của Android</text>
+      <path class="ar-r" d="M474 216 H 600" marker-end="url(#ah-r)"/>
+      <text class="ts" x="538" y="238" text-anchor="middle" fill="var(--red)">chặn màn ảo</text>
+      <rect class="bx-r" x="606" y="184" width="140" height="66" rx="10"/>
+      <text class="tb" x="676" y="212" text-anchor="middle" fill="var(--red)">App chiếm</text>
+      <text class="tb" x="676" y="230" text-anchor="middle" fill="var(--red)">TOÀN MÀN</text>
+      <rect class="bx" x="758" y="188" width="112" height="62" rx="7"/>
+      <rect class="bx-d" x="762" y="192" width="58" height="54" rx="5"/>
+      <rect class="bx" x="824" y="192" width="42" height="25" rx="4"/>
+      <rect class="bx" x="824" y="221" width="42" height="25" rx="4"/>
+      <text class="ts" x="814" y="268" text-anchor="middle">ô 1 trống</text>
+
+      <line class="sep" x1="10" y1="296" x2="870" y2="296"/>
+      <text class="ts" x="10" y="318">Bấm HOME để về Kachi — ô số 1 vẫn trống. Muốn dùng app đó thì mở toàn màn bằng nút «Ứng dụng».</text>
+    </svg>
+  </div>
+
+  <h4>App có bản quyền (Netflix và tương tự) không bao giờ vào ô được</h4>
+
+  <p>Nội dung có bản quyền đòi một bề mặt hiển thị được đánh dấu an toàn. Ô của Kachi không phải loại đó, và một app thường không được phép đánh dấu như vậy. Nên kể cả khi qua được cổng ở mục trên, hình vẫn không lên.</p>
+
+  <p>Đây là <strong>hai nguyên nhân độc lập</strong>: bản quyền chặn, và cổng Android chặn. Sửa được một cái cũng không đủ.</p>
+
+  <p>Còn Netflix tự thoát ra ngay khi mở toàn màn thì là lỗi của <strong>bản Netflix đang cài</strong>, không liên quan Kachi — bản khác chạy toàn màn bình thường.</p>
+
+  <h4>Không tắt được điều hoà bằng lệnh</h4>
+
+  <p>Nói “tắt điều hoà” thì Kachi trả lời như đã làm, nhưng quạt vẫn chạy. Lý do: xe <strong>không có đường ghi để tắt điều hoà</strong>. Thứ duy nhất tắt được là chế độ AUTO. Kachi gửi đúng thứ duy nhất nó gửi được, rồi báo đã xong — đó là chỗ gây hiểu nhầm, và nó nằm trong danh sách phải sửa câu trả lời.</p>
+
+  <p>Trong lúc chờ: tắt điều hoà bằng nút trên bảng điều khiển của xe. Các mục khác của khí hậu (mức gió, nhiệt độ, lấy gió trong, sấy kính) thì Kachi điều khiển được bình thường.</p>
+
+  <h4>Câu nói ghép nhiều việc</h4>
+
+  <p>Câu hai vế đúng khoảng <strong>9 trên 10 lần</strong>; ba vế còn khoảng một nửa; bốn vế còn khoảng một phần ba. Vế bị rụng thì <strong>không có lời nào báo</strong> — đó là điều khiến người nói tưởng cả câu đã chạy.</p>
+
+  <table>
+    <caption>Câu ghép: bao nhiêu vế thì còn tin được</caption>
+    <thead>
+      <tr><th>Số việc trong một câu</th><th>Tỉ lệ chạy đủ</th><th>Nên làm</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1 việc</td><td>Tốt nhất</td><td>Cách dùng nên chọn.</td></tr>
+      <tr><td>2 việc</td><td>≈ 89 %</td><td>Được, nhưng chêm “rồi” giữa hai vế.</td></tr>
+      <tr><td>3 việc</td><td>≈ 55 %</td><td>Tách thành hai câu.</td></tr>
+      <tr><td>4 việc</td><td>≈ 33 %</td><td>Đừng.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Sau mỗi câu, nghe lại câu trả lời của xe: nó chỉ đọc những việc <em>đã thật sự làm</em>. Thiếu việc nào trong câu trả lời thì việc đó chưa chạy.</p>
+
+  <h3>9.4 Ba nút cấp cứu, theo thứ tự nên thử</h3>
+
+  <p>Khi có gì đó treo, đi theo thứ tự này. Không cần tắt máy.</p>
+  <ul>
+    <li><strong>Cụm đồng hồ kẹt</strong> → Cài đặt › Chiếu màn lên cụm › Cứu hộ → <em>Trả cụm về đồng hồ</em>, sau đó mới tới <em>Dọn sạch cụm</em>.</li>
+    <li><strong>Chỉ đường không tắt</strong> → Cài đặt › Hệ thống &amp; quyền › Bảo trì → <em>Dừng toàn bộ dẫn đường</em>.</li>
+    <li><strong>Kachi chậm, ô không cập nhật, nút không ăn</strong> → cùng khối Bảo trì → <em>Khởi động lại launcher</em>. Màn nhá rồi đen vài giây là bình thường. Bố cục và mọi thiết lập không mất gì.</li>
+  </ul>
+
+  <p>Vẫn không được thì tắt máy, mở cửa, khoá xe, chờ đầu xe ngủ, rồi nổ lại.</p>
+
+  <h3>9.5 Cần gửi thông tin về thì gửi gì</h3>
+
+  <p>Không phải gõ lệnh gì cả. Ba thứ dưới đây đủ để người sửa app bắt đầu:</p>
+  <ul>
+    <li><strong>Số bản</strong>. Mở <strong>Cài đặt › Giới thiệu</strong>, đọc dòng “Phiên bản … (mã …)”. Đừng nhớ theo trí nhớ — một con số sai làm cả buổi chẩn đoán đi lệch hướng.</li>
+    <li><strong>Ảnh chụp màn hình</strong> đúng lúc đang hỏng. Ảnh màn Cài đặt liên quan cũng hữu ích. Trước khi gửi, che biển số, tên đường, số nhà và ảnh đại diện tài khoản nếu có trong ảnh.</li>
+    <li><strong>Giờ và việc vừa làm</strong>: “18:24, vừa xi-nhan trái thì…”. Kachi tự ghi nhật ký của chính nó ra thẻ nhớ trong lúc dùng, nên một cái mốc giờ là đủ để tìm đúng đoạn.</li>
+  </ul>
+
+  <p>Nhật ký nằm trong thư mục của chính app trên thẻ nhớ, tự xoá khi gỡ app, và có trần dung lượng nên không phình ra mãi. Người sửa app sẽ tự lấy về; người lái không phải làm gì với nó.</p>
+
+  <p>Nếu cần dựng lại đúng lỗi bạn gặp, người sửa app sẽ nhờ bật <strong>Chế độ kiểm thử qua adb</strong> trong lúc xe đang đỗ (xem §8.6). Nó tự tắt sau 60 phút.</p>
+</section>
+
+<section id="gioi-han">
+  <h2>Giới hạn đã biết (tra nhanh)</h2>
+
+  <p>Gom một chỗ những thứ <strong>không sửa được bằng cách chỉnh cài đặt</strong>, hoặc chỉ đi vòng được. Nói ra để không ai chờ một bản vá không bao giờ tới, và để khỏi mất buổi tìm nguyên nhân ở chỗ không có nguyên nhân.</p>
+
+  <table>
+    <caption>Giới hạn · vì sao · đi vòng thế nào</caption>
+    <thead><tr><th>Giới hạn</th><th>Vì sao</th><th>Đi vòng</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Câu nói ghép <strong>không có từ nối</strong> thì vế sau bị bỏ, và bỏ <strong>im lặng</strong></td>
+        <td>Bộ phân câu cần một từ nối để tách hai việc</td>
+        <td>Chêm <strong>“rồi”</strong> giữa hai vế; hoặc mỗi lượt một việc qua cửa sổ <em>Nói tiếp…</em></td>
+      </tr>
+      <tr>
+        <td>Câu ba vế chỉ đúng ≈ 55 %, bốn vế ≈ 33 %</td>
+        <td>Nhận dạng và phân câu tích luỹ sai số theo số vế</td>
+        <td>Tách thành hai câu ngắn</td>
+      </tr>
+      <tr>
+        <td><strong>Thời gian chuyến</strong> nhảy từng cục tới 6 phút lúc mới đi</td>
+        <td>Xe chỉ cấp con số này theo <strong>bậc 6 phút</strong></td>
+        <td>Không có. Kachi đã nội suy từng phút; sau bậc đầu tiên thì số chạy đều</td>
+      </tr>
+      <tr>
+        <td><strong>App tự mở màn thứ hai</strong> (Waze) không nằm được trong ô</td>
+        <td>Cổng chặn của chính Android, không phải cài đặt của Kachi</td>
+        <td>Mở toàn màn bằng nút <em>Ứng dụng</em>, bấm HOME để về Kachi</td>
+      </tr>
+      <tr>
+        <td><strong>App có bản quyền</strong> (Netflix) <strong>không bao giờ</strong> vào ô được</td>
+        <td>DRM đòi bề mặt hiển thị an toàn; ô của một app thường không phải loại đó</td>
+        <td>Không có. Chỉ mở toàn màn được</td>
+      </tr>
+      <tr>
+        <td><strong>Không tắt được điều hoà</strong> bằng lệnh nói</td>
+        <td>Xe không có đường ghi để tắt điều hoà; chỉ tắt được chế độ AUTO</td>
+        <td>Tắt bằng nút trên bảng điều khiển của xe</td>
+      </tr>
+      <tr>
+        <td>Dấu <strong>—</strong> ở rất nhiều chỗ</td>
+        <td>Nghĩa là <strong>chưa đọc được</strong> — xe chưa cấp, hoặc đầu máy này không có cảm biến/đường đọc. <em>Không</em> phải “đang tắt”</td>
+        <td>Không có. Cài lại app không đổi gì: số đến từ xe</td>
+      </tr>
+      <tr>
+        <td><strong>Không đọc lại được trạng thái cốp sau</strong></td>
+        <td>Xe ghi được lệnh mở/đóng cốp nhưng không có đường đọc</td>
+        <td>Không có. Nút mở cốp vẫn chạy bình thường</td>
+      </tr>
+      <tr>
+        <td>Nút <strong>Cửa sổ trời</strong> vẫn còn dù xe không có cửa sổ trời</td>
+        <td>Nút dựng từ bảng năng lực chung, không cắt theo từng xe</td>
+        <td>Bỏ nút đó khỏi thanh nút xe nếu thấy thừa</td>
+      </tr>
+      <tr>
+        <td><strong>Tự động cập nhật</strong> chỉ dò <strong>một lần mỗi lần nổ máy</strong></td>
+        <td>Kachi sống suốt ngày nên lượt dò duy nhất rơi vào lúc kênh còn bản cũ</td>
+        <td>Bấm tay <strong>Cài đặt › Hệ thống &amp; quyền › Kiểm tra cập nhật</strong></td>
+      </tr>
+      <tr>
+        <td>Cập nhật luôn báo lỗi mạng khi đang cắm <strong>CarPlay / Android Auto</strong></td>
+        <td>Cắm là đầu xe tắt WiFi</td>
+        <td>Rút ra, cập nhật, cắm lại</td>
+      </tr>
+      <tr>
+        <td>Bố cục <strong>“3 ô” không vẽ lại được</strong> bằng lưới tự vẽ</td>
+        <td>Cột trái của nó rộng 7,29 cột trong 12 — không phải số nguyên</td>
+        <td>Dùng chip <em>3 ô</em>, đừng cố vẽ lại</td>
+      </tr>
+      <tr>
+        <td>Camera hình <strong>“Theo cụm” mất ~11 %</strong> tầm nhìn (~18 % khi xoay 90°)</td>
+        <td>Muốn viền bám đường cong thì phải phóng ảnh để lấp, phóng thì cắt rìa</td>
+        <td>Cần thấy nhiều nhất thì chọn <strong>Chữ nhật</strong> (mất 0 %)</td>
+      </tr>
+      <tr>
+        <td>Bộ số hình học cụm và camera chỉ <strong>đo trên một đời xe</strong> (Seal, DiLink 3.0); sai số dải cụm <strong>± 8 px</strong></td>
+        <td>Chưa đo được trên các đời khác</td>
+        <td>Đời khác: tự chỉnh <em>xoay video</em> / <em>lật gương</em> cho từng bên. Hở một vạch mảnh ở mép là sai số đo, không phải lỗi vẽ</td>
+      </tr>
+      <tr>
+        <td>Camera bị chặn ở <strong>15 khung/giây</strong></td>
+        <td>Vẽ camera là việc nặng; chặn để đỡ giật</td>
+        <td>Không có. Gốc là kích cỡ khung ảnh, chưa hạ được</td>
+      </tr>
+      <tr>
+        <td>Sơ đồ ghế chỉ vẽ được <strong>mức 1 và mức 2</strong></td>
+        <td>Hình ghế chỉ có hai bậc</td>
+        <td>Xe có mức 3 trở lên thì mức đó hiện bằng con số</td>
+      </tr>
+      <tr>
+        <td><strong>Hey Kachi</strong> là tính năng thử nghiệm: tốn pin/CPU, chỉ nghe khi màn sáng, nghe nhầm nhiều thì tự tắt</td>
+        <td>Nghe nền liên tục là việc nặng và dễ nhận nhầm trong cabin ồn</td>
+        <td>Dùng nút mic, ô <em>Nói với xe</em>, hoặc phím vô-lăng</td>
+      </tr>
+      <tr>
+        <td><strong>Chưa đóng được app bằng giọng</strong></td>
+        <td>Chưa có đường làm việc đó</td>
+        <td>Bấm HOME, hoặc mở app khác đè lên</td>
+      </tr>
+      <tr>
+        <td>Câu <strong>đổi bố cục</strong> chỉ nói được ở màn chính</td>
+        <td>Lệnh cần chính màn chính đang ở trước mặt</td>
+        <td>Về màn chính rồi nói, hoặc đổi trong <em>Cài đặt › Màn hình chính</em></td>
+      </tr>
+      <tr>
+        <td><strong>Xoá hồ sơ không hỏi lại</strong></td>
+        <td>Nút chỉ hiện ở hồ sơ không phải hồ sơ đang dùng, nên đã coi là đủ hàng rào</td>
+        <td>Xuất hồ sơ ra tệp <code>.kachi</code> trước khi xoá</td>
+      </tr>
+      <tr>
+        <td><strong>Không có hộp chọn tệp</strong> khi xuất/nhập hồ sơ và khi thêm ảnh</td>
+        <td>Đầu xe không có màn chọn tệp</td>
+        <td>Đọc đường dẫn app in ra (có nút sao chép), chép tệp vào đúng thư mục bằng USB hoặc app Quản lý tệp</td>
+      </tr>
+      <tr>
+        <td>Hai thư mục ảnh <strong>khác nhau</strong>: hình nền và widget <em>Trình chiếu ảnh</em></td>
+        <td>Hai chức năng, hai thư mục riêng</td>
+        <td>Lấy đường dẫn ở đúng khối trong <em>Cài đặt › Màn hình chính</em></td>
+      </tr>
+      <tr>
+        <td>Ảnh trong tài liệu này <strong>chụp từ máy ảo</strong> nên số xe hiện <strong>—</strong></td>
+        <td>Không dùng ảnh xe thật trong tài liệu</td>
+        <td>Xem trên xe đang nổ máy để thấy số thật</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <p>Kachi <strong>2.79 (mã 180)</strong> · tài liệu cập nhật 28/09/2026 · biên soạn <strong>dangkhoi</strong>.</p>
+  <p>Giấy phép MIT. Thử nghiệm cá nhân, <strong>KHÔNG liên kết với BYD</strong>. Kachi không phải hệ thống an toàn: nó không cảnh báo và không can thiệp khi lái.</p>
+  <p>Mọi nhãn trong tài liệu trích từ chính mã nguồn của bản 2.79. Thấy chữ trong app khác tài liệu thì tin app, và báo lại kèm số bản đọc ở <em>Cài đặt › Giới thiệu</em>.</p>
+</footer>
+
+</div>
+</body>
+</html>
