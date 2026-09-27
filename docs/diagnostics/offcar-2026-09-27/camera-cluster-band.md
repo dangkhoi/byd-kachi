@@ -1,6 +1,6 @@
 # R4 · HÌNH "THEO CỤM" — camera chỉ vẽ trong dải giữa của cụm (2.76), rồi ôm ĐƯỜNG CONG của kính (2.77)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 chiều (§11 = 2.77, mép ngoài cong) · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 tối (§12 = 2.78, mép PHẢI cong + không ép hình + mép trong mờ) · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
 > *"header top và bottom là của hệ thống, không vẽ vào được, chỉ vẽ được khúc giữa như gmaps đang hiện"* ⇒ đo **dải giữa**
 > bằng số từ framebuffer + ảnh chụp, đưa vào một hồ sơ (`ClusterBandSpec`), thêm hình khung `CLUSTER` ("theo cụm") để
 > overlay camera trên cụm nằm **trọn** trong dải ấy. Spec `docs/specs/kachi-276-closing.html` R4 · OQ2.
@@ -208,7 +208,10 @@ cum-2 so với cum-0 lệch −43 ở đỉnh, +17 ở đáy) ⇒ [SUY] méo xuy
 (`min(cum-0, cum-1)`), vì lệch RA chỉ làm mất vài px ảnh **sau viền** (không ai thấy), còn lệch VÀO để lại **đúng khe
 đen** mà owner đang chê. Lề thêm = **0**.
 
-### 11.4 Mép PHẢI vẫn thẳng — cũng là một phép đo
+### 11.4 Mép PHẢI vẫn thẳng — cũng là một phép đo  ⚠ **ĐÃ BỊ §12 BÁC (2.78)**
+
+> Kết luận dưới đây SAI ở đúng một chỗ: cột icon ADAS **không chặn** cửa sổ, hệ thống chỉ **vẽ đè** lên nó (D6).
+> [ĐO xe 27/09 tối] owner: *"bên phải không bám, còn thừa 1 khoảng"*. Số đo mép phải + mô hình: **§12**.
 
 Kính phải trong dải: `x ≈ 1876` (y 136) → `1906` (y 216) → `1802` (y 556). Nhưng **cột icon hệ thống (biển 30 / ADAS)
 bắt đầu từ `x ≈ 1798`** (F7) và nằm **trái hơn kính ở MỌI hàng của dải** ⇒ thứ chặn mép phải là cột icon, và cột icon
@@ -323,3 +326,124 @@ tên lệnh là đúng thứ làm owner gõ nhầm trong xe ⇒ sửa tại ch�
   Việc đúng cho lượt sau: hoặc gộp còn 2 chip (*Chữ nhật* · *Tròn*) vì CHỮ NHẬT trên cụm nay đã là hình đẹp, hoặc đổi
   nhãn để nói rõ *theo cụm* chỉ có nghĩa trên cụm. Cần owner chốt.
 
+
+---
+
+## 12. 2026-09-27 (tối, sau buổi xe) — MÉP PHẢI cũng ôm kính · không ép hình · mép trong mờ dần (2.78, làn L3)
+
+> Owner nhìn 2.77 đang chiếu trên cụm và nói ba việc: (a) *"xi nhan trái bám nhưng **cắt rát quá, bị mất nhiều**"*;
+> (b) *"**bên phải không bám, còn thừa 1 khoảng**"*; (c) *"khi chiếu camera lên cụm, user vẫn có thể chọn chữ
+> nhật/tròn/theo cụm nhé, **không ép**"*, *"phần cạnh bên phải thêm tý blur ra ngoài cho nó smooth, **ko là 1 vạch
+> thẳng nhìn nó như sẹo**"*, *"tròn và chữ nhật thì **canh đều, cân đối 2 bên** trái phải cả trên cụm"*.
+> (a) đã xử trước (đặt ở điểm TRONG CÙNG thay vì điểm xa nhất). Mục này là (b) + (c).
+
+### 12.1 Vì sao 2.77 kết luận sai về mép phải
+
+§11.4 viết *"mép PHẢI vẫn thẳng — cũng là một phép đo"*, lý lẽ: cột icon hệ thống (biển 30 / ADAS) bắt đầu ở
+`x ≈ 1798`, **trái hơn kính ở mọi hàng**, nên thứ chặn là cột icon chứ không phải kính. Bằng chứng xác nhận owner
+đúng nằm ngay trong log của lượt xe: `overlay show corner=TR side=RIGHT cluster=true … tại=1462,136
+cong=1462/1462/1462` — ba mẫu `cong=` **bằng nhau và bằng `p.x`**, tức bên phải không có mô hình cong nào, chỉ là
+tường thẳng `band.x1 − w`. Cái §11.4 bỏ qua: cột icon **không chặn cửa sổ**, nó chỉ được hệ thống **vẽ đè lên**
+(quyết định D6 đã chấp nhận điều đó với mũi tên xi-nhan) — nên không có lý do gì để mép phải dừng ở `1780`.
+
+### 12.2 Phương pháp — **đúng** phép của §11.2, đổi mỗi hướng gộp
+
+Chạy lại `scratchpad/mask-277/edge2.py` (homography DLT thuần python + Pillow, quét từng hàng fb từ ngoài vào,
+ngưỡng `110`, đòi 12 điểm liên tiếp) nhưng lấy cột `R` thay cột `L`, rồi lấy 9 mẫu ở **cùng** các hàng của bảng
+trái (`y = 136, 189, …, 560`) — script `scratchpad/mask-277/rightedge.py`.
+
+| Ảnh | Neo · sai số lớn nhất | Dùng cho mép phải? |
+|---|---|---|
+| `cum-2` | 7 · **3,8 fb px** | **Có** — neo nằm ở nửa PHẢI (fb x 1195…1801), đúng vùng cần |
+| `cum-0` | 10 · 11,0 fb px | **Có** — neo trải cả bề ngang |
+| `cum-1` | 8 · 20,7 fb px | **Không** — neo dồn về nửa trái ⇒ ngoại suy sang phải lệch tới **185 px** (có hàng trả 2035, ngoài cả display). Đối xứng với việc §11.3 loại `cum-2` khỏi mép TRÁI |
+
+### 12.3 Số đo — mép phải là đường **")"**
+
+| fb `y` | 136 | 189 | 242 | 295 | 348 | 401 | 454 | 507 | 560 |
+|---|---|---|---|---|---|---|---|---|---|
+| `cum-0` | 1876 | 1904 | 1904 | 1895 | 1879 | 1863 | 1843 | 1823 | 1800 |
+| `cum-2` | 1833 | 1871 | 1876 | 1872 | 1866 | 1856 | 1845 | 1833 | 1817 |
+| **mô hình (trong cùng)** | **1833** | **1871** | **1876** | **1872** | **1866** | **1856** | **1843** | **1823** | **1800** |
+
+- **Sai số nội suy tuyến tính 9 mẫu vs phép dò từng hàng: 7,7 px** (bảng trái: 5,5 px).
+- **Lệch giữa hai ảnh: tới 44 px**, và lại là xu hướng tuyến tính theo `y` (`cum-0` lệch **+43** ở đỉnh, **−17** ở
+  đáy) — cùng dấu hiệu méo xuyên tâm ống kính điện thoại như §11.3, không phải kính cụm khác nhau.
+- Kiểm bằng mắt: `scratchpad/mask-277/checkright-cum-{0,2}.png` (vẽ bảng lên chính ảnh chụp) — bám sát mép sáng ở
+  `cum-2`, và nằm **hơi vào trong** ở `cum-0` (đúng hướng an toàn đã chọn).
+
+### 12.4 ⚠ Hướng làm tròn NGƯỢC với mép trái — cùng một lý do
+
+| | An toàn (không mất video) là | Gộp nhiều ảnh | Nghĩa của phép gộp |
+|---|---|---|---|
+| Mép TRÁI | `x` **lớn** hơn (vào trong) | `min` | ước lượng **NGOÀI** cùng |
+| Mép PHẢI | `x` **nhỏ** hơn (vào trong) | `min` | ước lượng **TRONG** cùng |
+
+Cùng công thức `min`, ngược ý nghĩa — vì "ra ngoài" ở hai mép là hai chiều ngược nhau. Lý do vẫn là luật owner
+27/09: *"không để mất video là OK, mỹ thuật nhưng thực dụng"*. Lệch VÀO chỉ để hở vài px kính (không ai đo được),
+lệch RA thì đẩy điểm ảnh video ra **sau viền đục** — mất thật.
+
+### 12.5 Kết quả thực tế — nới được **20 px**, và đó là sự thật của miếng kính
+
+Cửa sổ *theo cụm* cao **trọn dải** nên [innermostRight] lấy `min` trên cả 9 mẫu = **1800** (hàng đáy), ⇒ mép phải
+cửa sổ đi từ `1780` → `1800`. Bên trái nới được nhiều hơn (`140` → `89`, 51 px) chỉ vì kính trái ở hàng đáy vào ít
+hơn. **Không phải thiếu sót**: kéo mép phải ra tới chỗ kính rộng nhất (`1876`) sẽ khiến mặt nạ cắt tới **76 px**
+video ở hàng đáy — đúng lỗi *"cắt rát"* mà bản tối nay vừa sửa ở mép trái.
+
+⚠ Hệ quả cần nói thẳng: **sau 2.78 hai mép của cửa sổ vẫn là hai đường THẲNG đứng** (`maskLeftAt`/`maskRightAt`
+bằng đúng mép cửa sổ ở mọi hàng, bài `:core` khoá điều đó), chỉ là **sát kính hơn**. Muốn viền video **cong theo
+kính ở từng hàng** mà không để hở thì buộc phải **phóng ảnh để lấp** (zoom-to-fill) rồi cắt phần thừa — tức cố ý
+mất rìa ảnh, đúng thứ owner vừa bác. Đây là một **lựa chọn của owner**, không phải giới hạn kỹ thuật: OQ mới.
+
+Cột icon `1798` (F7): điểm trong cùng `1800` trùng nó **trong sai số ±8 px** của chính phép đo, nên cửa sổ dừng
+gần như đúng chỗ biển-30 bắt đầu; hàng nào hệ thống vẽ biển báo thì nó **đè lên** camera (D6), không ngược lại.
+
+### 12.6 Ba quyết định của owner 27/09 tối (cùng làn)
+
+| # | Quyết định | Vì sao / làm ở đâu |
+|---|---|---|
+| D10 | **Không ép hình trên cụm** — gỡ nhánh thăng `RECT → CLUSTER` của 2.77 | Owner: *"user vẫn có thể chọn chữ nhật/tròn/theo cụm nhé, không ép"*. `effectiveShape` nay chỉ còn MỘT phép quy (hạ *theo cụm* → chữ nhật trên màn chính). Lời chê *"bé tý"* của 2.77 được chữa bằng `boxIn` (kẹp vào dải), không phải bằng đổi hình sau lưng user |
+| D11 | Mép **TRONG** của hình *theo cụm* **mờ dần**, bề rộng = `radiusPx` (24 px ở cỡ tham chiếu ⇒ 4–8 % bề rộng cửa sổ), kẹp ≤ `w/4` | Owner: *"ko là 1 vạch thẳng nhìn nó như sẹo"*. Không thêm hằng mới: bo góc và dải mờ cùng một cỡ "mềm mép" nên khớp nhau ở hai góc trong; co theo display như mọi số khác. Mép NGOÀI vẫn cắt cứng (ngoài nó là viền đục, không ai thấy đường cắt). Thi hành: `CameraGlassFrame` vẽ vào một `saveLayer` rồi tô `LinearGradient` với `PorterDuff.DST_IN` ⇒ chỉ nhân alpha, không đổi một điểm màu nào |
+| D12 | CHỮ NHẬT/TRÒN trên cụm **cân đối hai bên** | Owner: *"canh đều, cân đối 2 bên trái phải cả trên cụm"*. `boxIn` vốn soi gương; bài `chu nhat va tron tren cum can doi hai ben` khoá lại bằng số **đúng công thức của `:app`** (`box` + `layoutParams`, nhớ rằng góc phải dùng `gravity = END` nên `x` là độ lệch kể từ mép phải display) |
+
+### 12.7 Cơ chế (2.78)
+
+1. **`:core`** `ClusterBandSpec.rightEdge` (song song `leftEdge`, mỗi mẫu trong `right..refW`); `CameraClusterBand`
+   thêm `rightEdge()` (co giãn + kẹp `band.x1..displayW`), `rightEdgeAt()`, `maskRightAt()`, `innermostRight()`
+   (lấy `min` trên đúng dải hàng cửa sổ chiếm), `outerInkAt()` (mép có mực của bên cửa sổ đứng — cho dòng log),
+   `fadePx()`; `Placement` mang thêm `rightEdge` + `atLeft`; `insideBand()` nay cho phép `x + w` tới `max(rightEdge)`.
+   Phép nội suy gộp về **một** hàm `edgeAt(…, fallback)` dùng chung hai mép (DRY).
+2. **`place()`**: `x = innermostRight(...) − w` ở nhánh `!atLeft`. Guard cứng `insideBand` giữ nguyên — hồ sơ/cỡ
+   display lạ ⇒ rơi về tường thẳng **hai bên** (xoá cả hai bảng), mất đường cong chứ không mất camera.
+3. **`:app`** `CameraOverlayMask.glassMask` cắt cả hai mép qua `halfPlane(p, edge, atLeft)`; `glassFade(p)` +
+   `CameraGlassFrame(mask, fade)`; `CameraOverlayView.geometry` truyền `rightEdge = edgeRight` và in `cong=` bằng
+   `outerInkAt` (trước là `maskLeftAt` — trên cửa sổ bên PHẢI nó in ra ba số vô nghĩa, chính là `1462/1462/1462`).
+4. `scripts/emulator/camera-cluster-e2e.sh`: thêm `BAND_ER`, chấm điểm bên phải theo `max(rightEdge)` (trước chấm
+   `x1 <= 1780` ⇒ 2.78 sẽ FAIL oan), vẽ cả hai đường cong lên ảnh chứng cứ.
+
+### 12.8 Test — đếm từ `build/test-results/**/TEST-*.xml`: `:core` **2952 bài / 0 lỗi**, `:app` **1501 / 0**
+
+Trong đó `CameraClusterBandTest` **20/0** (2.77: 14), `CameraClusterBandWiringContractTest` **9/0** (2.77: 8),
+`ClusterProfileCameraDefaultsTest` **6/0**.
+
+- `cua so cong om kinh hai ben, mat na khong cat pixel nao` — **64 tổ hợp** (bên × 4 crop × 4 góc × biết/chưa biết
+  cỡ) × **mọi hàng** của cửa sổ: `maskLeftAt == p.x` và `maskRightAt == p.x + p.w`; bề rộng/cao và `y` **không đổi**
+  so với bản tường thẳng; `insideBand`; cộng ca cửa sổ **thấp hơn dải** (chỉ hàng bị chiếm mới tính).
+- `bang mep phai Seal nam trong khoang cho phep` · `mep phai co gian va thoai ve tuong thang khi chua do` ·
+  `noi suy mep phai dung o hang mau va kep ngoai dai` · `doi cum chua do van ra tuong thang hai ben` ·
+  `dai mo nam o mep trong va bang ban kinh bo` · `chu nhat va tron tren cum can doi hai ben` ·
+  `theo cum thoai ve chu nhat tren man chinh, nhung KHONG ep hinh tren cum`.
+- **Đỏ trước – xanh sau** (bài chính): đảo `place()` về `band.x1 − w` ⇒ `cua so cong om kinh hai ben…` ĐỎ với
+  *"đầu phải đặt ở điểm TRONG CÙNG ==> expected: <1030> but was: <960>"*; trả lại ⇒ 20/20 xanh.
+
+### 12.9 🚗 Kiểm trên xe (2.78)
+
+- **CAM-CL5**: Cài đặt › Camera › hình **theo cụm** + *Hiện lên cụm* → xi-nhan **phải** ⇒ ảnh sát kính phải hơn
+  2.77 (mép phải cửa sổ `1800` thay vì `1780`), **không hàng nào bị cắt**, mép TRÁI của cửa sổ (mép quay vào giữa)
+  **mờ dần** chứ không phải một vạch thẳng; xi-nhan **trái** đối xứng (mép ngoài `89`, mép phải mờ). Logcat:
+  `overlay show … hình=CLUSTER … tại=1235,136 cong=1800/1800/1800` (phải) / `tại=89,136 cong=89/89/89` (trái) —
+  **ba số bằng nhau là ĐÚNG** (mặt nạ không cắt hàng nào). FAIL nếu còn khe đen rộng hơn ngón tay ở mép ngoài, hoặc
+  thấy mất ảnh ở mép ngoài ⇒ chụp `cong=` gửi về.
+- **CAM-CL6**: đổi hình sang **Chữ nhật** rồi **Tròn**, vẫn *Hiện lên cụm* ⇒ phải RA ĐÚNG hình đã chọn (2.77 tự
+  đổi sang *theo cụm*), và khoảng hở tới mép trái dải = khoảng hở tới mép phải dải (đặt cân đối). Logcat phải in
+  `hình=RECT` / `hình=ROUND` kèm `cluster=true`.

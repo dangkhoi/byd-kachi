@@ -52,6 +52,11 @@ class CameraClusterBandWiringContractTest {
         assertTrue("CameraClusterBand.place(" in geo, "chỗ đặt do `:core` tính (có test bằng số)")
         assertTrue("CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)" in geo && "leftEdge = edge," in geo,
             "2.77: mép ngoài CONG cũng co theo display thật rồi đi vào `place` — không có bảng thứ hai ở `:app`")
+        assertTrue("CameraClusterBand.rightEdge(bandRect, st.band, dm.widthPixels)" in geo && "rightEdge = edgeRight," in geo,
+            "2.78: mép PHẢI đi cùng đường ấy — thiếu dòng này thì bên phải lại là tường thẳng mà không bài nào đỏ")
+        assertTrue("CameraClusterBand.outerInkAt(p, p.y)" in geo,
+            "dòng log `cong=` phải đọc mép có mực của ĐÚNG bên cửa sổ đứng — [ĐO xe 27/09 tối] `cong=1462/1462/1462` " +
+            "là maskLeftAt trên một cửa sổ bên PHẢI, tức ba số vô nghĩa")
         assertTrue("atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT" in geo, "đầu trái/phải theo pref góc từng bên")
         assertTrue("rotationDeg = if (st.rotationEffective) st.rotationDeg else 0" in geo, "tỉ lệ chỉ lấy xoay khi xoay THẬT")
         assertTrue("return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)" in geo,
@@ -125,17 +130,38 @@ class CameraClusterBandWiringContractTest {
      */
     @Test fun `mat na cong duoc dung tu Placement va cat bang clipPath`() {
         val body = SourceRoots.body(overlay, "fun show(")
-        assertTrue("CameraGlassFrame(ctx, glassMask(g.place, radius))" in body,
-            "cửa sổ phải là khung có mặt nạ, và mặt nạ lấy từ `Placement` của `geometry` (không dựng lại hình học)")
+        assertTrue("CameraGlassFrame(ctx, glassMask(g.place, radius), glassFade(g.place))" in body,
+            "cửa sổ phải là khung có mặt nạ + dải mờ, cả hai lấy từ `Placement` của `geometry` (không dựng lại hình học)")
         assertTrue("android.widget.FrameLayout(ctx).apply" !in overlay, "không còn khung trần nào bỏ qua mặt nạ")
         val g = SourceRoots.body(mask, "internal fun glassMask(")
-        assertTrue("p.leftEdge.size < 2" in g && "return null" in g, "bảng rỗng/1 mẫu ⇒ không mặt nạ ⇒ cửa sổ 2.76")
-        assertTrue("addRoundRect(0f, 0f, w, h, radius, radius" in g && "Path.Op.INTERSECT" in g,
+        assertTrue("p.leftEdge.size >= 2" in g && "p.rightEdge.size >= 2" in g && "return null" in g,
+            "2.78: cắt được CẢ HAI mép; bảng rỗng/1 mẫu ⇒ không mặt nạ ⇒ cửa sổ 2.76")
+        assertTrue("addRoundRect(0f, 0f, p.w.toFloat(), p.h.toFloat(), radius, radius" in g && "Path.Op.INTERSECT" in g,
             "GIAO với chữ nhật bo góc ⇒ bán kính vẫn là của hồ sơ, không có bản sao thứ hai của hình cửa sổ")
-        assertTrue("band.y0 + band.h * i / (n - 1)" in g, "lấy mẫu ĐÚNG các hàng mà `:core` định nghĩa")
+        assertTrue("band.y0 + band.h * i / (n - 1)" in SourceRoots.body(mask, "private fun halfPlane("),
+            "lấy mẫu ĐÚNG các hàng mà `:core` định nghĩa")
         val d = SourceRoots.body(mask, "override fun draw(")
         assertTrue("canvas.clipPath(m)" in d && "canvas.restoreToCount(save)" in d, "cắt bằng clipPath, có save/restore")
         assertFalse("setConvexPath" in mask, "outline không cắt được đường bất kỳ — đừng thử lại")
+    }
+
+    /**
+     * ═══ 2.78 · Dải MỜ ở mép TRONG được dựng và được DÙNG ════════════════════════════════════════════════════════
+     *
+     * [ĐO owner 27/09 tối]: *"phần cạnh bên phải thêm tý blur ra ngoài cho nó smooth, ko là 1 vạch thẳng nhìn nó như
+     * sẹo, ngược lại cho bên phải cũng thế"*. Ba mắt xích gỡ đi thì build vẫn xanh: (1) bề rộng dải mờ đến từ `:core`
+     * (có test bằng số), (2) mép mờ là mép TRONG (`atRight = p.atLeft`), (3) phép mờ là `DST_IN` trên một lớp riêng —
+     * thiếu `saveLayer` thì gradient ăn vào nền cụm chứ không vào alpha của cửa sổ.
+     */
+    @Test fun `dai mo mep trong dung tu core va to bang DST_IN`() {
+        val f = SourceRoots.body(mask, "internal fun glassFade(")
+        assertTrue("CameraClusterBand.fadePx(p)" in f, "bề rộng do `:core` quyết (co theo display, kẹp ≤ w/4)")
+        assertTrue("atRight = p.atLeft" in f, "cửa sổ đứng đầu TRÁI ⇒ mờ ở mép PHẢI (mép quay vào giữa cụm)")
+        val d = SourceRoots.body(mask, "override fun draw(")
+        assertTrue("canvas.saveLayer(0f, 0f, width.toFloat(), height.toFloat(), null)" in d,
+            "phải có LỚP riêng, nếu không `DST_IN` ăn vào nền cụm phía sau")
+        assertTrue("PorterDuff.Mode.DST_IN" in mask && "LinearGradient(" in mask, "mờ bằng alpha, không đổi màu")
+        assertTrue("canvas.drawRect(x0, 0f, x0 + px, height.toFloat(), fadePaint)" in d, "dải mờ phủ trọn chiều cao")
     }
 
     /** (d) HAL trả cỡ ⇒ dựng lại bằng CÙNG [geometry]: hai công thức là cửa sổ nhảy khỏi dải đúng lúc có ảnh. */
@@ -176,5 +202,7 @@ class CameraClusterBandWiringContractTest {
             "cỡ overlay display phải là cỡ THAM CHIẾU của hồ sơ, nếu không `band()` co giãn và số chấm điểm lệch")
         assertTrue("BAND_EL=\"${seal.leftEdge.joinToString(",")}\"" in script,
             "bảng mép cong trong script phải khớp ClusterBandSpec.SEAL_DL3.leftEdge — chỉnh số ở xe thì script đỏ ngay")
+        assertTrue("BAND_ER=\"${seal.rightEdge.joinToString(",")}\"" in script,
+            "bảng mép PHẢI (2.78) cũng vậy — nếu không, vòng máy ảo chấm bên phải theo tường thẳng 1780 và luôn ĐẠT")
     }
 }

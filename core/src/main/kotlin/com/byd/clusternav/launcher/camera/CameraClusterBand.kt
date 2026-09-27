@@ -34,9 +34,17 @@ import kotlin.math.roundToInt
  * parabol sai 73 px). Mô hình rẻ nhất mà số liệu đỡ được: **bảng 9 mẫu chia đều** + nội suy tuyến tính
  * ([ClusterBandSpec.leftEdge], sai số nội suy **5,5 px** so với phép dò từng hàng).
  *
- * Mép PHẢI vẫn là **tường thẳng** — và đó cũng là một phép đo, không phải lười: kính phải ở `x ≈ 1802…1906` trong
- * cả dải, nhưng **cột icon hệ thống (biển 30 / ADAS) bắt đầu từ `x ≈ 1798`** (F7) ⇒ thứ chặn mép phải là cột icon
- * chứ không phải kính, mà cột icon thì thẳng. Nới mép phải ra kính là **đè lên biển báo tốc độ** — không đổi.
+ * Mép PHẢI: 2.77 để tường thẳng vì *"cột icon hệ thống (biển 30 / ADAS) từ `x ≈ 1798`"* (F7) chặn trước kính. [ĐO
+ * xe 27/09 tối] owner bác: *"bên phải không bám, còn thừa 1 khoảng"* — và log cùng lượt cho thấy vì sao, `cong=1462/
+ * 1462/1462`: ba mẫu BẰNG NHAU, tức bên phải không có mô hình cong nào. 2.78 đo mép phải bằng **đúng** phép của mép
+ * trái (doc §12): kính phải `x ≈ 1833` (đỉnh dải) → xa nhất `≈ 1876` (`y ≈ 240`) → **`1800`** (đáy dải) ⇒
+ * [ClusterBandSpec.rightEdge]. Điểm TRONG CÙNG của bảng là `1800`, tức trùng cột icon `1798` **trong sai số ±8 px**
+ * của chính phép đo ⇒ cửa sổ cao trọn dải nới ra được `20 px` mà vẫn không thật sự leo vào cột icon; hàng nào hệ
+ * thống có vẽ biển 30 lên đó thì nó **đè lên** camera y như mũi tên xi-nhan (D6), không phải ngược lại.
+ *
+ * ⚠ **Hướng làm tròn của hai mép NGƯỢC nhau**, và cả hai cùng một lý do (*"không để mất video"*): bên trái an toàn là
+ * `x` LỚN hơn (vào trong), bên phải an toàn là `x` NHỎ hơn. Vì thế bảng trái gộp nhiều ảnh bằng `min`, bảng phải cũng
+ * bằng `min` — **cùng phép, khác nghĩa**: bên trái `min` là ước lượng NGOÀI cùng, bên phải `min` là TRONG cùng.
  *
  * Bo góc nhẹ ([ClusterBandSpec.radiusPx], [SUY]) vẫn giữ: nó lo hai góc bên TRONG, còn mép ngoài do bảng lo.
  */
@@ -61,8 +69,13 @@ object CameraClusterBand {
         val radiusPx: Int,
         val band: Rect,
         val streamKnown: Boolean,
+        /** Cửa sổ đứng ở đầu TRÁI dải? Quyết mép nào là mép **TRONG** (mép quay vào giữa cụm) — xem [fadePx]. */
+        val atLeft: Boolean = true,
         /** Mép ngoài cong ĐÃ co giãn về display (xem [leftEdge]); rỗng ⇒ tường thẳng `band.x0` (hành vi 2.76). */
         val leftEdge: List<Int> = emptyList(),
+        /** Mép ngoài cong bên PHẢI đã co giãn (xem [rightEdge]); rỗng ⇒ tường thẳng `band.x1`. Cửa sổ chỉ mang MỘT
+         *  trong hai bảng — bảng của bên nó đứng — nên `:app` dựng mặt nạ không cần biết nó ở bên nào. */
+        val rightEdge: List<Int> = emptyList(),
     ) {
         val rect: Rect get() = Rect(x, y, x + w, y + h)
     }
@@ -70,24 +83,19 @@ object CameraClusterBand {
     fun isCluster(shape: String): Boolean = shape == SHAPE_CLUSTER
 
     /**
-     * Hình khung THẬT SỰ dùng để vẽ. Hai phép quy, **cả hai đều theo display THẬT**, không theo pref:
-     *  1. *"Theo cụm"* trên màn chính ⇒ **chữ nhật** ([CameraSignalPolicy.SHAPE_RECT] = cửa sổ 2.73), không phải
-     *     tròn — tròn đổi cả crop (ô vuông) và sẽ làm owner tưởng pref hình bị đổi.
-     *  2. **Chữ nhật trên CỤM ⇒ *theo cụm*** (2.77). Owner 27/09 chiều, nhìn đúng nhánh chữ nhật trên cụm:
-     *     *"bé tý, bo các góc tròn, không hề theo hình cụm gì cả"*; cùng buổi, nhánh *theo cụm*: *"này nhìn OK"*.
-     *     Hai hình này **cùng một crop** ([CameraPanoCrop.cropFor] quy `CLUSTER → RECT`) nên phép quy đổi **cửa sổ**
-     *     chứ không đổi một điểm ảnh nào của nội dung — đúng thứ owner chê, không kèm bất ngờ nào khác. Và nó khép
-     *     nợ 2.76 [P1]: đường chữ nhật trên cụm là đường mặc định ([CameraSignalPolicy.defaultShape]) nên nó phải là
-     *     đường TỐT, không phải đường được vá cho khỏi tràn.
+     * Hình khung THẬT SỰ dùng để vẽ. Đúng **MỘT** phép quy, và nó theo display THẬT chứ không theo pref: *"theo cụm"*
+     * trên màn chính ⇒ **chữ nhật** ([CameraSignalPolicy.SHAPE_RECT] = cửa sổ 2.73), vì màn chính không có dải nào để
+     * ôm; không quy sang tròn (tròn đổi cả crop ⇒ owner sẽ tưởng pref hình bị đổi).
      *
-     * TRÒN giữ nguyên trên cụm (đi [boxIn]): *"tròn"* là một lựa chọn cố ý về NỘI DUNG (crop ô vuông), quy nó sang
-     * hình dải là đổi cả ảnh — đúng cái bẫy mà phép quy (1) tránh.
+     * ⚠ **KHÔNG ép hình trên cụm** — [ĐO owner 27/09 tối]: *"khi chiếu camera lên cụm, user vẫn có thể chọn chữ
+     * nhật/tròn/theo cụm nhé, không ép"*. 2.77 có nhánh **thăng** `RECT → CLUSTER` khi ở trên cụm (lý lẽ: owner chê
+     * nhánh chữ nhật *"bé tý… không hề theo hình cụm"*). Nhánh ấy **đã gỡ**: chữ nhật trên cụm ra chữ nhật, tròn ra
+     * tròn, theo cụm ra theo cụm — ba lựa chọn của user còn nguyên ba. Thứ chữa lời chê *"bé tý"* nay là phép kẹp
+     * [boxIn] (vùng vuông bám dải, cân đối hai bên) chứ không phải đổi hình sau lưng user. Đây là quyết định của
+     * owner, không phải quên.
      */
-    fun effectiveShape(shape: String, onCluster: Boolean): String = when {
-        isCluster(shape) && !onCluster -> CameraSignalPolicy.SHAPE_RECT
-        onCluster && shape == CameraSignalPolicy.SHAPE_RECT -> SHAPE_CLUSTER
-        else -> shape
-    }
+    fun effectiveShape(shape: String, onCluster: Boolean): String =
+        if (isCluster(shape) && !onCluster) CameraSignalPolicy.SHAPE_RECT else shape
 
     /**
      * Dải vẽ được trên display [displayW]×[displayH]. Cỡ display ≤ 0 (chưa đo) ⇒ đúng số tham chiếu của [spec].
@@ -119,9 +127,21 @@ object CameraClusterBand {
         return spec.leftEdge.map { (it * sx).roundToInt().coerceIn(0, band.x0) }
     }
 
-    /** `x` ngoài cùng vẽ được ở hàng [y] — nội suy tuyến tính trên [edge]; bảng rỗng ⇒ tường thẳng `band.x0`. */
-    fun leftEdgeAt(band: Rect, edge: List<Int>, y: Int): Int {
-        if (edge.isEmpty()) return band.x0
+    /**
+     * Mép NGOÀI cong bên PHẢI, đã co giãn về display — **đối xứng** với [leftEdge], đảo đúng một thứ: hướng kẹp.
+     * Mẫu nằm trong `band.x1..displayW` ⇒ mép phải chỉ được nới RA (sang phải), không bao giờ ăn vào trong dải.
+     * Bảng rỗng (đời cụm chưa đo mép phải) ⇒ rỗng ⇒ mọi chỗ gọi rơi về tường thẳng `band.x1` (hành vi 2.77).
+     */
+    fun rightEdge(band: Rect, spec: ClusterBandSpec, displayW: Int): List<Int> {
+        if (spec.rightEdge.isEmpty()) return emptyList()
+        val sx = if (displayW > 0) displayW.toDouble() / spec.refW else 1.0
+        val cap = (if (displayW > 0) displayW else spec.refW).coerceAtLeast(band.x1)
+        return spec.rightEdge.map { (it * sx).roundToInt().coerceIn(band.x1, cap) }
+    }
+
+    /** MỘT phép nội suy cho cả hai mép (bảng rỗng ⇒ [fallback] = tường thẳng của bên ấy). */
+    private fun edgeAt(band: Rect, edge: List<Int>, y: Int, fallback: Int): Int {
+        if (edge.isEmpty()) return fallback
         if (edge.size == 1) return edge[0]
         val last = (edge.size - 1).toDouble()
         val t = ((y - band.y0).toDouble() / band.h.coerceAtLeast(1) * last).coerceIn(0.0, last)
@@ -129,21 +149,96 @@ object CameraClusterBand {
         return (edge[i] + (t - i) * (edge[i + 1] - edge[i])).roundToInt()
     }
 
+    /** `x` ngoài cùng vẽ được ở hàng [y] — nội suy tuyến tính trên [edge]; bảng rỗng ⇒ tường thẳng `band.x0`. */
+    fun leftEdgeAt(band: Rect, edge: List<Int>, y: Int): Int = edgeAt(band, edge, y, band.x0)
+
+    /** Như [leftEdgeAt] nhưng cho mép PHẢI: bảng rỗng ⇒ tường thẳng `band.x1`. */
+    fun rightEdgeAt(band: Rect, edge: List<Int>, y: Int): Int = edgeAt(band, edge, y, band.x1)
+
     /**
      * Mép trái THẬT SỰ có mực ở hàng [y] sau mặt nạ (`:app` cắt mọi thứ bên trái đường cong). Đây là con số mà bài
      * test đo — không phải `p.x`, vì cửa sổ cố tình rộng hơn phần nhìn thấy để mặt nạ có chỗ cắt.
      */
     fun maskLeftAt(p: Placement, y: Int): Int = maxOf(p.x, leftEdgeAt(p.band, p.leftEdge, y))
 
+    /** Mép PHẢI thật sự có mực ở hàng [y] sau mặt nạ — đối xứng với [maskLeftAt] (ở đây mặt nạ cắt về phía `x` nhỏ). */
+    fun maskRightAt(p: Placement, y: Int): Int = minOf(p.x + p.w, rightEdgeAt(p.band, p.rightEdge, y))
+
+    /**
+     * Mép có mực ở phía NGOÀI của cửa sổ (trái nếu nó đứng đầu trái, phải nếu đứng đầu phải) — một cửa duy nhất cho
+     * dòng log `overlay show … cong=` để `:app` không phải tự đoán bên. Cửa sổ mang bảng nào thì đọc bảng ấy.
+     */
+    fun outerInkAt(p: Placement, y: Int): Int =
+        if (p.rightEdge.isNotEmpty()) maskRightAt(p, y) else maskLeftAt(p, y)
+
+    /**
+     * Điểm **TRONG CÙNG** của mép kính cong trên dải hàng `[y, y + h)` — tức `x` nhỏ nhất mà cửa sổ đặt vào đó thì
+     * [maskLeftAt] **không cắt** một pixel nào của video ở bất kỳ hàng nào nó chiếm.
+     *
+     * Chỉ xét đúng những hàng cửa sổ thật sự phủ: cửa sổ thấp hơn dải (nguồn có tỉ lệ dọc) thì nó nằm giữa dải, nơi
+     * kính rộng nhất — bắt nó lùi theo hàng đáy mà nó không hề chiếm là mất chỗ vô cớ.
+     *
+     * Rỗng (đời cụm chưa đo) ⇒ tường thẳng [Rect.x0], đúng hành vi 2.76.
+     */
+    fun innermostLeft(band: Rect, edge: List<Int>, y: Int, h: Int): Int {
+        if (edge.isEmpty()) return band.x0
+        var x = leftEdgeAt(band, edge, y)
+        val bottom = y + h - 1
+        x = maxOf(x, leftEdgeAt(band, edge, bottom))
+        // Mẫu nào rơi vào trong dải hàng thì cũng phải xét: đỉnh của đường cong có thể nằm giữa hai đầu.
+        val last = (edge.size - 1).coerceAtLeast(1)
+        for (i in edge.indices) {
+            val sy = band.y0 + band.h * i / last
+            if (sy in y..bottom) x = maxOf(x, edge[i])
+        }
+        return x
+    }
+
+    /**
+     * Điểm **TRONG CÙNG** của mép kính PHẢI trên dải hàng `[y, y + h)` — tức `x` LỚN NHẤT mà cửa sổ có mép phải đặt
+     * vào đó thì [maskRightAt] **không cắt** một pixel nào ở bất kỳ hàng nào nó chiếm. Đối xứng [innermostLeft]:
+     * bên trái trong cùng là `max` của đường cong, bên phải là `min`.
+     *
+     * Rỗng (chưa đo mép phải) ⇒ tường thẳng [Rect.x1], đúng hành vi 2.77.
+     */
+    fun innermostRight(band: Rect, edge: List<Int>, y: Int, h: Int): Int {
+        if (edge.isEmpty()) return band.x1
+        var x = rightEdgeAt(band, edge, y)
+        val bottom = y + h - 1
+        x = minOf(x, rightEdgeAt(band, edge, bottom))
+        val last = (edge.size - 1).coerceAtLeast(1)
+        for (i in edge.indices) {
+            val sy = band.y0 + band.h * i / last
+            if (sy in y..bottom) x = minOf(x, edge[i])
+        }
+        return x
+    }
+
+    /**
+     * ═══ Dải MỜ ở mép TRONG của cửa sổ *theo cụm* (2.78) ══════════════════════════════════════════════════════════
+     *
+     * [ĐO owner 27/09 tối]: *"phần cạnh bên phải thêm tý blur ra ngoài cho nó smooth, ko là 1 vạch thẳng nhìn nó như
+     * sẹo, ngược lại cho bên phải cũng thế"*. Mép NGOÀI ôm kính (mặt nạ cắt cứng — ở đó bên ngoài là viền đục, cắt
+     * cứng không ai thấy); mép **TRONG** (mép quay vào giữa cụm, `x + w` với cửa sổ bên trái) thì nằm giữa vùng sáng
+     * nên một đường cắt thẳng đứng đọc ra như vết sẹo ⇒ chuyển alpha dần về 0 trên một dải hẹp.
+     *
+     * Bề rộng = **đúng [radiusPx] của hồ sơ** (đã co theo display, đã kẹp ≤ nửa cạnh ngắn) — không thêm một hằng
+     * mới: bo góc và dải mờ là cùng một cỡ "mềm mép" nên chúng khớp nhau ở hai góc trong, và 24 px ở cỡ tham chiếu
+     * = 4–8 % bề rộng cửa sổ (565 / 318 px), đúng khoảng owner mô tả (*"tý"*). Kẹp thêm `≤ w/4` để cửa sổ hẹp bất
+     * thường không bị mờ mất một phần tư ảnh; `w` quá nhỏ ⇒ 0 (không mờ, thà cứng còn hơn mất ảnh).
+     */
+    fun fadePx(p: Placement): Int = if (p.w < 8) 0 else p.radiusPx.coerceIn(0, p.w / 4)
+
     /**
      * Bất biến an toàn của cửa sổ trên cụm — thứ mà [P1] của 2.76 mua được, 2.77 **không được** làm rữa:
      * cửa sổ không bao giờ chạm thanh trên/dưới của hệ thống, không bao giờ vượt mép TRONG của dải, và mép ngoài
-     * không bao giờ ra xa hơn đường kính đã đo (bảng rỗng ⇒ đúng tường thẳng `band.x0` của 2.76).
+     * không bao giờ ra xa hơn đường kính đã đo (bảng rỗng ⇒ đúng tường thẳng `band.x0`/`band.x1` của 2.76).
      */
     fun insideBand(p: Placement): Boolean {
         val b = p.band
-        val outer = p.leftEdge.minOrNull() ?: b.x0
-        return p.x >= outer && p.x >= 0 && p.y >= b.y0 && p.x + p.w <= b.x1 && p.y + p.h <= b.y1
+        val outerLeft = p.leftEdge.minOrNull() ?: b.x0
+        val outerRight = p.rightEdge.maxOrNull() ?: b.x1
+        return p.x >= outerLeft && p.x >= 0 && p.y >= b.y0 && p.x + p.w <= outerRight && p.y + p.h <= b.y1
     }
 
     /**
@@ -198,6 +293,7 @@ object CameraClusterBand {
         spec: ClusterBandSpec,
         displayH: Int,
         leftEdge: List<Int> = emptyList(),
+        rightEdge: List<Int> = emptyList(),
     ): Placement {
         val areaW = (band.w / 2).coerceAtLeast(1)
         val areaH = band.h.coerceAtLeast(1)
@@ -205,16 +301,32 @@ object CameraClusterBand {
         // Chưa biết cỡ nguồn ⇒ ô VUÔNG cạnh = chiều cao dải (đúng nghĩa "ô vuông 2.72"), không phải cả nửa dải.
         val w = (if (f.streamKnown) f.w else minOf(areaW, areaH)).coerceIn(1, areaW)
         val h = f.h.coerceIn(1, areaH)
-        // Đầu TRÁI: cửa sổ trượt ra tới điểm xa nhất của mép cong (`:app` cắt phần thừa bằng mặt nạ) ⇒ ảnh chạm
-        // đúng viền kính thay vì dừng ở một đường dọc thẳng cách viền tới 122 px (owner 27/09). Bề RỘNG không đổi
-        // một px nào — nới bề rộng là kéo giãn ảnh, đúng thứ `CameraOverlayFrame.fit` sinh ra để tránh.
-        val x = if (atLeft) (leftEdge.minOrNull() ?: band.x0) else band.x1 - w
         val y = band.y0 + (band.h - h) / 2
-        val p = Placement(x, y, w, h, radius(spec, displayH, w, h), band, f.streamKnown, if (atLeft) leftEdge else emptyList())
+        // Đầu TRÁI: đặt ở điểm **TRONG CÙNG** của mép cong TRÊN ĐÚNG DẢI HÀNG cửa sổ chiếm ([innermostLeft]).
+        //
+        // ⚠ Bản đầu (2.77) đặt ở điểm **xa nhất** (`leftEdge.min()`) với lý lẽ *"cho ảnh chạm viền kính"*. Lý lẽ ấy
+        // SAI, và [ĐO xe 27/09 tối] chứng minh: bề rộng `w` do [CameraOverlayFrame.fit] quyết theo tỉ lệ nguồn, nên
+        // trượt ra ngoài **không lấy thêm một pixel ảnh nào** — nó chỉ đẩy phần bên trái của cửa sổ ra chỗ kính
+        // KHÔNG sáng, rồi mặt nạ cắt đúng phần ấy khỏi VIDEO. Owner: *"xi nhan trái bám nhưng cắt rát quá, bị mất
+        // nhiều"* — đo trên bộ số Seal: mất 24 px ở hàng trên và **71 px** ở hàng dưới của một cửa sổ rộng 318 px.
+        // Đặt ở điểm trong cùng thì mặt nạ **không cắt một pixel nào** mà ảnh vẫn sát viền hết mức có thể: cùng một
+        // bề rộng ảnh, chỉ khác chỗ đứng. Luật owner 27/09: *"không để mất video là OK, mỹ thuật nhưng thực dụng"*.
+        //
+        // ⚠ 2.78 — đầu PHẢI đối xứng hoá: tới 2.77 nó là tường thẳng `band.x1` vì phép đo 27/09 chiều kết luận *"cột
+        // icon ADAS 1798 chặn trước kính"*. [ĐO xe 27/09 tối] owner: *"bên phải không bám, còn thừa 1 khoảng"* ⇒ đo
+        // lại mép phải (doc §12) và đặt ở điểm TRONG CÙNG của nó, y như bên trái. Hướng an toàn ĐẢO: bên phải "vào
+        // trong" là `x` NHỎ hơn ⇒ [innermostRight] lấy `min`, và mép phải cửa sổ (`x + w`) mới là thứ chạm kính.
+        val x = if (atLeft) innermostLeft(band, leftEdge, y, h) else innermostRight(band, rightEdge, y, h) - w
+        val p = Placement(
+            x, y, w, h, radius(spec, displayH, w, h), band, f.streamKnown, atLeft = atLeft,
+            leftEdge = if (atLeft) leftEdge else emptyList(), rightEdge = if (atLeft) emptyList() else rightEdge,
+        )
         // GUARD CỨNG ở tầng THI HÀNH (CLAUDE.md §5): một hồ sơ/cỡ display lạ mà đẩy cửa sổ ra khỏi dải thì **rơi về
         // tường thẳng 2.76** ngay tại đây, chứ không để tầng vẽ tin lời tầng cấu hình. Rơi về = mất đường cong, KHÔNG
         // mất camera.
-        return if (insideBand(p)) p else p.copy(x = if (atLeft) band.x0 else band.x1 - w, leftEdge = emptyList())
+        return if (insideBand(p)) p else {
+            p.copy(x = if (atLeft) band.x0 else band.x1 - w, leftEdge = emptyList(), rightEdge = emptyList())
+        }
     }
 }
 
@@ -237,6 +349,11 @@ data class ClusterBandSpec(
      * mỗi mẫu trong `0..left`. Rỗng = **chưa đo đời cụm này** ⇒ tường thẳng [left] (hành vi 2.76, không thoái hoá).
      */
     val leftEdge: List<Int> = emptyList(),
+    /**
+     * Mép NGOÀI cong bên PHẢI: cùng khuôn [leftEdge] (`n ≥ 2` mẫu chia đều từ [top] tới [bottom]) nhưng mỗi mẫu nằm
+     * trong `right..refW` — bên phải "ra ngoài" là `x` LỚN hơn. Rỗng = **chưa đo** ⇒ tường thẳng [right] (2.77).
+     */
+    val rightEdge: List<Int> = emptyList(),
 ) {
     init {
         require(refW > 0 && refH > 0) { "cỡ tham chiếu phải dương" }
@@ -245,6 +362,8 @@ data class ClusterBandSpec(
         require(radiusPx >= 0)
         require(leftEdge.isEmpty() || leftEdge.size >= 2) { "bảng mép cong phải có ≥ 2 mẫu (hoặc rỗng = chưa đo)" }
         require(leftEdge.all { it in 0..left }) { "mép cong chỉ được nới RA ngoài tường thẳng $left: $leftEdge" }
+        require(rightEdge.isEmpty() || rightEdge.size >= 2) { "bảng mép cong phải có ≥ 2 mẫu (hoặc rỗng = chưa đo)" }
+        require(rightEdge.all { it in right..refW }) { "mép cong phải chỉ được nới RA ngoài $right (≤ $refW): $rightEdge" }
     }
 
     companion object {
@@ -256,6 +375,11 @@ data class ClusterBandSpec(
             // lệch theo hướng "ra ngoài" chỉ làm mất vài px ảnh SAU viền — còn lệch vào trong thì để lại đúng khe
             // đen mà owner đang chê). 9 mẫu, `y = 136, 189, …, 560`; sai số nội suy 5,5 px. Doc §11.
             leftEdge = listOf(42, 18, 19, 31, 41, 50, 61, 74, 89),
+            // [ĐO 2026-09-27 tối, doc §12] mép phải, CÙNG phép dò biên trong không gian framebuffer. Gộp `cum-0` +
+            // `cum-2` bằng `min` — bên phải `min` là ước lượng TRONG CÙNG (ngược nghĩa với bên trái, cùng lý do
+            // *"không để mất video"*): lệch VÀO chỉ để hở vài px kính, lệch RA thì đẩy video ra sau viền đục.
+            // `cum-1` bị loại (neo dồn về nửa trái ⇒ ngoại suy sang phải lệch tới 185 px). Sai số nội suy 7,7 px.
+            rightEdge = listOf(1833, 1871, 1876, 1872, 1866, 1856, 1843, 1823, 1800),
         )
 
         /**
@@ -268,6 +392,6 @@ data class ClusterBandSpec(
          * đúng loại lỗi CLAUDE.md §7 cấm (khác biệt đời xe phải nằm trong hồ sơ, không nằm trong một mặc định dùng
          * chung). Đo được đời nào thì khai [ClusterBandSpec] riêng cho đời ấy, y như [ClusterProfile.cameraFor].
          */
-        val SEAL_DL3_NO_CURVE = SEAL_DL3.copy(leftEdge = emptyList())
+        val SEAL_DL3_NO_CURVE = SEAL_DL3.copy(leftEdge = emptyList(), rightEdge = emptyList())
     }
 }

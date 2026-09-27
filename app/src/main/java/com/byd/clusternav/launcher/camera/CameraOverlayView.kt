@@ -189,7 +189,7 @@ class CameraOverlayView(private val appCtx: Context) {
             val child = vl.view
             // Nhãn nhỏ ở góc: off-car (chưa có video) vẫn NHÌN THẤY overlay hiện đúng bên/đúng lúc ⇒ verify wiring
             // E2E bằng mắt. Chữ ngắn ("Camera trái") nên nó không ăn chỗ khi video thật đã đổ vào.
-            val frame = CameraGlassFrame(ctx, glassMask(g.place, radius)).apply {
+            val frame = CameraGlassFrame(ctx, glassMask(g.place, radius), glassFade(g.place)).apply {
                 // Nền BO GÓC = thứ cho bốn góc một màu đục để mép video không lởm chởm nếu layer bị cắt vuông.
                 background = GradientDrawable().apply {
                     this.shape = if (round) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
@@ -389,15 +389,19 @@ class CameraOverlayView(private val appCtx: Context) {
             val dm = st.ctx.resources.displayMetrics
             val bandRect = CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)
             val edge = CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)
+            val edgeRight = CameraClusterBand.rightEdge(bandRect, st.band, dm.widthPixels)
             val p = CameraClusterBand.place(
                 band = bandRect, atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT,
                 streamW = st.streamW, streamH = st.streamH, crop = st.crop,
                 rotationDeg = if (st.rotationEffective) st.rotationDeg else 0, spec = st.band, displayH = dm.heightPixels,
-                leftEdge = edge,
+                leftEdge = edge, rightEdge = edgeRight,
             )
+            // `cong=` = mép có mực ở phía NGOÀI (trái hay phải, theo bên cửa sổ đứng — [outerInkAt]). Ba số BẰNG NHAU
+            // là ĐÚNG từ 2.78: cửa sổ đứng ở điểm trong cùng nên mặt nạ không cắt hàng nào. Số ấy so với `dải=` cho
+            // biết nó nới ra được bao nhiêu px so với tường thẳng.
             val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} tại=${p.x},${p.y}" +
-                " cong=${CameraClusterBand.maskLeftAt(p, p.y)}/${CameraClusterBand.maskLeftAt(p, p.y + p.h / 2)}" +
-                "/${CameraClusterBand.maskLeftAt(p, p.y + p.h - 1)}" +
+                " cong=${CameraClusterBand.outerInkAt(p, p.y)}/${CameraClusterBand.outerInkAt(p, p.y + p.h / 2)}" +
+                "/${CameraClusterBand.outerInkAt(p, p.y + p.h - 1)}" +
                 " display=${dm.widthPixels}x${dm.heightPixels}"
             return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)
         }

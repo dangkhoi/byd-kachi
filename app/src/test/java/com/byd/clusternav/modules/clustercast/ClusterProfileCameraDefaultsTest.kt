@@ -95,8 +95,10 @@ class ClusterProfileCameraDefaultsTest {
     @Test fun `duong cong kinh chi cho doi DA DO, doi khac tuong thang 2 76`() {
         assertEquals(ClusterBandSpec.SEAL_DL3, ClusterProfile.SEAL_DL3.band, "đời đã đo mang bảng mép cong")
         assertTrue(ClusterProfile.SEAL_DL3.band.leftEdge.isNotEmpty())
+        assertTrue(ClusterProfile.SEAL_DL3.band.rightEdge.isNotEmpty(), "2.78: đời đã đo mang CẢ mép phải")
         listOf(ClusterProfile.DL5, ClusterProfile.GENERIC_FALLBACK).forEach {
             assertEquals(emptyList<Int>(), it.band.leftEdge, "${it.id} chưa đo kính ⇒ KHÔNG được xén theo kính Seal")
+            assertEquals(emptyList<Int>(), it.band.rightEdge, "${it.id}: mép phải cũng vậy (2.78)")
             assertEquals(ClusterBandSpec.SEAL_DL3_NO_CURVE, it.band)
         }
         // Bốn số ĐẶT cửa sổ thì vẫn dùng chung (quyết định 2.76, không đổi): chỉ đường CẮT là theo đời.
@@ -115,19 +117,31 @@ class ClusterProfileCameraDefaultsTest {
         assertEquals(ClusterBandSpec.SEAL_DL3_NO_CURVE, ClusterProfile.bandFor("dilink5"))
     }
 
-    /** Tường thẳng 2.76 nghĩa là: cửa sổ ở đúng `band.x0` và KHÔNG có gì để cắt ⇒ `glassMask` trả `null`. */
+    /** Tường thẳng 2.76 nghĩa là: cửa sổ ở đúng `band.x0`/`band.x1` và KHÔNG có gì để cắt ⇒ `glassMask` trả `null`. */
     @Test fun `tuong thang thi cua so o x0 va khong co mat na`() {
         val spec = ClusterProfile.DL5.band
         val band = CameraClusterBand.band(1920, 720, spec)
         val edge = CameraClusterBand.leftEdge(band, spec, 1920)
+        val edgeRight = CameraClusterBand.rightEdge(band, spec, 1920)
         assertEquals(emptyList<Int>(), edge, "bảng rỗng ⇒ không nội suy gì")
+        assertEquals(emptyList<Int>(), edgeRight, "bảng phải cũng rỗng (2.78)")
         val p = CameraClusterBand.place(
             band = band, atLeft = true, streamW = 5120, streamH = 960,
-            crop = CameraPanoCrop.stripCrop(1), rotationDeg = 0, spec = spec, displayH = 720, leftEdge = edge,
+            crop = CameraPanoCrop.stripCrop(1), rotationDeg = 0, spec = spec, displayH = 720,
+            leftEdge = edge, rightEdge = edgeRight,
         )
         assertEquals(band.x0, p.x, "đúng tường thẳng 140 của 2.76")
         assertEquals(emptyList<Int>(), p.leftEdge)
         assertEquals(band.x0, CameraClusterBand.maskLeftAt(p, p.y + p.h / 2), "mép có mực = tường thẳng")
         assertTrue(CameraClusterBand.insideBand(p), "bất biến [P1] 2.76 còn nguyên")
+        val pr = CameraClusterBand.place(
+            band = band, atLeft = false, streamW = 5120, streamH = 960,
+            crop = CameraPanoCrop.stripCrop(2), rotationDeg = 0, spec = spec, displayH = 720,
+            leftEdge = edge, rightEdge = edgeRight,
+        )
+        assertEquals(band.x1, pr.x + pr.w, "bên PHẢI cũng đúng tường thẳng 1780 của 2.77")
+        assertEquals(emptyList<Int>(), pr.rightEdge)
+        assertEquals(band.x1, CameraClusterBand.maskRightAt(pr, pr.y + pr.h / 2), "mép có mực = tường thẳng")
+        assertTrue(CameraClusterBand.insideBand(pr))
     }
 }

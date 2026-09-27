@@ -36,6 +36,9 @@ BAND_L=140; BAND_T=136; BAND_R=1780; BAND_B=560
 # Mép NGOÀI cong bên trái (2.77) = `ClusterBandSpec.SEAL_DL3.leftEdge`: 9 mẫu chia đều từ BAND_T tới BAND_B.
 # Cửa sổ ĐẦU TRÁI được phép trượt ra tới mẫu nhỏ nhất (mặt nạ cắt phần thừa) ⇒ chấm điểm theo mẫu đó, không theo BAND_L.
 BAND_EL="42,18,19,31,41,50,61,74,89"
+# Mép NGOÀI cong bên PHẢI (2.78) = `ClusterBandSpec.SEAL_DL3.rightEdge`, cùng 9 hàng. Cửa sổ ĐẦU PHẢI có mép phải ở
+# mẫu LỚN NHẤT được phép (hướng "ra ngoài" bên phải là x lớn hơn) ⇒ chấm điểm theo mẫu đó, không theo BAND_R.
+BAND_ER="1833,1871,1876,1872,1866,1856,1843,1823,1800"
 MIRROR_W=960; MIRROR_H=360   # cửa sổ soi của overlay display trên màn chính (Android 10: nửa cỡ)
 
 while [ $# -gt 0 ]; do
@@ -174,13 +177,15 @@ one_side() {
   adbs exec-out screencap -p > "$OUT/screen-$tag.png"
   adbs logcat -d -s KachiCamera | grep "overlay show" | tail -1 > "$OUT/overlay-show-$tag.txt" || true
   cat "$OUT/overlay-show-$tag.txt" | sed 's/^/   /'
-  "$PY" - "$OUT" "$tag" "$CLUSTER_ID" "$BAND_L" "$BAND_T" "$BAND_R" "$BAND_B" "$MIRROR_W" "$MIRROR_H" "$BAND_EL" <<'PYEOF' || RC=1
+  "$PY" - "$OUT" "$tag" "$CLUSTER_ID" "$BAND_L" "$BAND_T" "$BAND_R" "$BAND_B" "$MIRROR_W" "$MIRROR_H" "$BAND_EL" "$BAND_ER" <<'PYEOF' || RC=1
 import re, sys
 from PIL import Image, ImageDraw
 out, tag, did, L, T, R, B, MW, MH = sys.argv[1], sys.argv[2], int(sys.argv[3]), *map(int, sys.argv[4:10])
-edge = [int(v) for v in sys.argv[10].split(",")] if tag == "left" else []
-def edge_at(y):
-    if not edge: return L
+# Cửa sổ chỉ mang bảng của BÊN nó đứng — y như `CameraClusterBand.place` (Placement.leftEdge/rightEdge).
+edgeL = [int(v) for v in sys.argv[10].split(",")] if tag == "left" else []
+edgeR = [int(v) for v in sys.argv[11].split(",")] if tag == "right" else []
+def edge_at(edge, y, flat):
+    if not edge: return flat
     t = max(0.0, min(1.0, (y - T) / float(B - T))) * (len(edge) - 1)
     i = min(int(t), len(edge) - 2)
     return round(edge[i] + (t - i) * (edge[i + 1] - edge[i]))
@@ -195,10 +200,11 @@ for b in blocks:
 if frame is None:
     print(f"   ✗ {tag}: không thấy cửa sổ APPLICATION_OVERLAY của {'Kachi'} trên display {did}"); sys.exit(1)
 x0, y0, x1, y1 = frame
-outer = min(edge) if edge else L
-inside = outer <= x0 and T <= y0 and x1 <= R and y1 <= B
+outerL = min(edgeL) if edgeL else L
+outerR = max(edgeR) if edgeR else R
+inside = outerL <= x0 and T <= y0 and x1 <= outerR and y1 <= B
 print(f"   khung cửa sổ trên display {did}: [{x0},{y0}]-[{x1},{y1}] ({x1-x0}x{y1-y0}) · dải [{L},{T}]-[{R},{B}]"
-      f" · mép ngoài cho phép {outer} ⇒ {'TRONG DẢI' if inside else 'RA NGOÀI'}")
+      f" · mép ngoài cho phép {outerL}…{outerR} ⇒ {'TRONG DẢI' if inside else 'RA NGOÀI'}")
 # Ảnh: cắt cửa sổ soi (góc trên-trái màn chính), phóng về 1920×720, kẻ dải xanh + vùng hệ thống đo được (đỏ) + khung (vàng).
 im = Image.open(f"{out}/screen-{tag}.png").convert("RGB").crop((0, 0, MW, MH)).resize((1920, 720), Image.NEAREST)
 d = ImageDraw.Draw(im)
@@ -206,8 +212,8 @@ d.rectangle([0, 0, 1919, 130], outline=(220, 40, 40), width=3)      # thanh trê
 d.rectangle([0, 567, 1919, 719], outline=(220, 40, 40), width=3)    # thanh dưới hệ thống [ĐO chữ từ ≈ 567–578]
 d.rectangle([1798, 165, 1919, 330], outline=(220, 40, 40), width=2) # cột icon phải (biển 30/ADAS) [ĐO]
 d.rectangle([L, T, R - 1, B - 1], outline=(40, 200, 80), width=3)   # dải vẽ được (tường thẳng 2.76)
-if edge:                                                           # mép ngoài cong đo từ ảnh cụm (2.77)
-    d.line([(edge_at(y), y) for y in range(T, B + 1, 4)], fill=(60, 220, 255), width=3)
+for e, flat in ((edgeL, L), (edgeR, R)):                            # mép ngoài cong đo từ ảnh cụm (2.77 + 2.78)
+    if e: d.line([(edge_at(e, y, flat), y) for y in range(T, B + 1, 4)], fill=(60, 220, 255), width=3)
 d.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(250, 210, 40), width=3)  # cửa sổ camera (từ dumpsys)
 d.text((L + 8, T + 6), f"dai {L},{T}-{R},{B}  cua so {x0},{y0}-{x1},{y1}  {'OK' if inside else 'FAIL'}", fill=(0, 0, 0))
 im.save(f"{out}/cluster-{tag}.png")
