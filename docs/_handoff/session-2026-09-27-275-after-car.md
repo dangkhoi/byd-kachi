@@ -1,6 +1,6 @@
 # Handoff — 27/09/2026 trưa: buổi xe 2.74 xong, 2.75 (176) đóng off-car
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (trưa) · **Mục đích**: người mở phiên sau biết xe đã đo gì, 2.75 sửa gì theo số đo đó, còn gì phải đo. Spec: `docs/specs/kachi-274-ux-voice-camera.html` (§9 nhật ký, §10 Pass 2). Runbook xe kế: `docs/diagnostics/oncar-runbook-2.75.md`. Số đo buổi xe: `docs/PROJECT-BACKLOG.md` dòng `ONCAR-2026-09-27`.
+> **Trạng thái**: Superseded bởi `session-2026-09-27-closing.md` · **Cập nhật**: 2026-09-27 (trưa) · **Mục đích**: người mở phiên sau biết xe đã đo gì, 2.75 sửa gì theo số đo đó, còn gì phải đo. Spec: `docs/specs/kachi-274-ux-voice-camera.html` (§9 nhật ký, §10 Pass 2). Runbook xe kế: `docs/diagnostics/oncar-runbook-2.75.md`. Số đo buổi xe: `docs/PROJECT-BACKLOG.md` dòng `ONCAR-2026-09-27`.
 
 ## 1. Bản
 | Ở đâu | Bản | Ghi chú |
