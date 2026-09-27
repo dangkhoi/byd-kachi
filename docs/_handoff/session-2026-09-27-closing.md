@@ -1,4 +1,4 @@
-# Handoff — 27/09/2026: chốt 2.77 (178) sau buổi xe closing
+# Handoff — 27/09/2026: chốt 2.79 (180), dự án đã nghiệm thu trên xe
 
 > **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (chiều) · **Mục đích**: mở file này ra là biết ngay **đang ở đâu · lát lên xe làm gì · tháng sau làm gì**. Thay `session-2026-09-27-275-after-car.md` (đã Superseded). Đánh giá đóng dự án: `docs/CLOSEOUT-2026-09-27.md`.
 
@@ -6,21 +6,19 @@
 
 | | |
 |---|---|
-| Kênh OTA `main` | **2.77 (178)** · `apk/Kachi-2.77-release.apk` · sha256 `2f41abeb…b699f` · commit `e720009` |
-| Xe owner (Seal) | **2.76 (177)** — buổi xe closing chiều 27/09 chạy trên bản này; 🚗 **chưa cài 2.77** |
+| Kênh OTA `main` | **2.79 (180)** · `apk/Kachi-2.79-release.apk` · sha256 `8277ebef…0f460` · commit `0846ca5` |
+| Xe owner (Seal) | **2.79 (180)** — cài và **nghiệm thu bằng mắt ngay trên xe** tối 27/09 |
 | Off-car | **sạch** — test 4 646/0 · lint 0 · 0 tệp > 500 dòng · review Opus Pass 1 APPROVED (15 phát hiện, 14 vá) · quét bảo mật 0 BLOCK |
 | Buổi xe closing | **ĐÃ CHẠY** — [P0] BufferQueue 0 dòng/917k · giật 11,15 → 0,81 % · PSS 75 → 57 MB · 64/66 datum đọc thật · 0 crash. Kết quả đầy đủ: backlog dòng `ONCAR-2026-09-27 CHIỀU` |
-| Còn lại | **5 phút trên xe cho 2.77** (xem §2) + phase 2 tháng sau + nợ không ai hứa (CLOSEOUT §4) |
+| Còn lại | **Không còn việc trên xe.** Off-car: hướng dẫn có hình (ảnh máy ảo). Tháng sau: phase 2 §2b |
 
-## 2. LẦN LÊN XE CUỐI — 5 phút, chỉ để nghiệm thu 2.77
+## 2. Buổi xe tối 27/09 — ĐÃ XONG, không còn việc trên xe
 
-Buổi closing đã xong trên 2.76. Bản 2.77 chỉ đổi **hai thứ nhìn bằng mắt**, chưa ai thấy trên xe:
+Owner cài từng bản ngay tại chỗ và nghiệm thu bằng mắt: 2.77 → *"cắt rát quá"* · 2.78 → *"chỉ là 1 đường thẳng thôi mà, khác gì chữ nhật đâu"* · **2.79 → *"tôi thấy OK hết rồi, ko có gì phải nghĩ nữa"*** rồi *"ok hết rồi, ko còn cần làm gì"*.
 
-1. Cài đặt → nhận **2.77**, chốt `versionCode` 178.
-2. *Cài đặt › Tiện nghi xe › Camera* — đếm đúng **10 hàng**, **không còn** khối *Nâng cao (kỹ thuật)* và **không còn** hàng *Nguồn*. (15 núm kỹ thuật vẫn đọc/ghi được qua cầu kiểm thử: `prefs --es file clusternav_prefs` để đọc, `prefs_set` để ghi — **không có `prefs_get`**.)
-3. Bật *Hiện lên cụm* + hình *Theo cụm* → xi-nhan trái ⇒ **mép trái ảnh bám đường cong kính cụm**, không còn cạnh thẳng đứng. Hỏng ⇒ chụp màn + đọc `dải=` trong `logcat -s KachiCamera`.
+Hồi quy tự động chạy lại trên chính 2.79 qua cầu adb: lỗi [P0] `BufferQueue abandoned` **0 dòng** sau 6 lượt đổi bên · **0 crash** · launcher **72 MB** · hình học khớp thiết kế (`cửa=641x428 tại=19,132 phóng=112% mất=11%`).
 
-⚠ **Nếu chụp ảnh cho hướng dẫn**: tắt app dẫn đường, **không đăng nhập tài khoản nào**, không để xe khác trong khung. Lý do ở §7.
+⚠ Nếu lần sau cần nối adb: IP của xe **đổi theo mạng**, hỏi owner rồi dựng cầu `nc` (xem memory `kachi-adb-car-tunnel`); đừng chép IP vào tệp theo dõi.
 
 ## 2b. Bốn việc phase 2 (KHÔNG cần làm lần này)
 **Tự cập nhật không bao giờ tự chạy lại** — [ĐO 27/09 tối] cổng `AutoUpdateOnce.claim()` cho đúng MỘT lượt dò mỗi tiến trình, mà launcher sống hàng ngày ⇒ đẩy bản mới giữa chừng thì xe không tự thấy; đường tự động lại im lặng. **Cách lấy bản mới hôm nay: bấm tay** *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật*. Việc tháng sau: dò theo chu kỳ / mỗi lần nổ máy + một dấu hiệu nhìn thấy được.

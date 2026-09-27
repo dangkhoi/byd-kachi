@@ -23,6 +23,35 @@
 
 **(EN)** ClusterNav is a personal hobby experiment by **Đăng Khôi · `dangkhoi`** for exploring navigation and cluster projection on BYD DiLink hardware. It is not affiliated with BYD and makes no driving-safety, compatibility, reversibility, or production-readiness claim.
 
+## Trạng thái cuối · Last status
+
+> **Cập nhật: 2026-09-27 (khuya).** Bản trên kênh OTA `main`: **2.79 (180)** · `apk/Kachi-2.79-release.apk` · sha256 `8277ebef…0f460`. Bản trên xe owner (BYD Seal, DiLink 3.0): **2.79**, đã nghiệm thu bằng mắt ngay trên xe.
+> **Last updated: 2026-09-27 (late evening).** On the OTA channel `main`: **2.79 (180)**, sha256 `8277ebef…0f460`. On the owner's car (BYD Seal, DiLink 3.0): **2.79**, accepted by eye in the vehicle.
+
+| | |
+|---|---|
+| Test (5 module) | **4 642 / 0 fail** |
+| Lint release | **0 lỗi** |
+| Tệp > 500 dòng | **0** |
+| Crash trên xe | **0** |
+| Chức năng đã đo trên xe | **141 / 165** |
+| Bộ nhớ trên xe | launcher 72 MB · `:wake` 165 MB |
+
+**Ngày 2026-09-27 — một buổi xe sáng, một buổi xe tối, năm bản OTA (2.75 → 2.79).** Kết quả đo trên xe, không phải ước lượng:
+
+- **Lỗi [P0] camera chết hẳn**: đổi bên xi-nhan từng sinh `BufferQueue abandoned` 16 dòng/giây cho tới khi khởi động lại launcher; nay **0 dòng** trên 917 000 dòng log, xác nhận lại trên cả 2.77 và 2.79.
+- **Độ giật camera 11,15 % → 0,81 %**, đỉnh 99 % **61 ms → 14 ms** (trần nhịp vẽ 15 khung/giây; gốc là nhịp vẽ chứ không phải kích cỡ vẽ).
+- **Bộ nhớ launcher 75 → 72 MB**, `:wake` 237 → 165 MB.
+- **64/66 thông tin xe đọc ra số thật**; hai cái rỗng là mức xăng và mức dầu — đúng, vì Seal là xe điện thuần (owner xác nhận chúng chạy trên SL6 xăng-điện).
+- **Camera chiếu lên cụm**: ba hình, ba đánh đổi, user tự chọn — *Chữ nhật* `571×428` (mất 0 % tầm nhìn) · *Theo cụm* `641×428` bám đúng đường cong kính (mất 11 %) · *Tròn* đường kính `428`.
+- **Màn Cài đặt camera** gọn còn **10 hàng** người lái; các núm kỹ thuật vẫn đọc/ghi được qua cầu kiểm thử khi cần gỡ rối.
+- **Mức ghế nằm trong hình** (một/hai làn sưởi, một/hai bông tuyết) thay cho con số.
+
+**Giới hạn đã biết, không phải lỗi** (chi tiết: `docs/CLOSEOUT-2026-09-27.md` §4): câu ghép giọng nói không có từ nối thì vế sau bị bỏ im lặng (chêm *"rồi"* là chạy) · thời gian chuyến do xe cấp theo bậc 6 phút · app tự mở màn thứ hai (Waze) không nằm được trong ô vì cổng của Android, và app có bản quyền (Netflix) thì không bao giờ vào ô được vì DRM · tự cập nhật chỉ chạy một lần mỗi lần nổ máy, phải bấm **Kiểm tra cập nhật** bằng tay.
+
+**Việc tiếp theo** (phase 2, tháng sau): `docs/_handoff/session-2026-09-27-closing.md`.
+
+
 ## Tính năng · Features
 
 **(VI)** Mục lục tính năng của **Kachi 2.73 (174)** — chi tiết từng nhóm (kèm đường dẫn menu thật) ở phần **Chi tiết tính năng** bên dưới. Hướng dẫn dùng đầy đủ: [`docs/HUONG-DAN-KACHI.md`](docs/HUONG-DAN-KACHI.md). Danh mục máy-sinh của **mọi** chức năng kèm status trên xe: [`docs/kachi-feature-catalog.html`](docs/kachi-feature-catalog.html). Ký hiệu **🚗** = code xong nhưng chưa đo trên xe thật.
