@@ -1,4 +1,4 @@
-# Handoff — 27/09/2026: chốt 2.76 (177), owner đi công tác một tháng
+# Handoff — 27/09/2026: chốt 2.77 (178) sau buổi xe closing
 
 > **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (chiều) · **Mục đích**: mở file này ra là biết ngay **đang ở đâu · lát lên xe làm gì · tháng sau làm gì**. Thay `session-2026-09-27-275-after-car.md` (đã Superseded). Đánh giá đóng dự án: `docs/CLOSEOUT-2026-09-27.md`.
 
@@ -6,22 +6,24 @@
 
 | | |
 |---|---|
-| Kênh OTA `main` | **2.76 (177)** · `apk/Kachi-2.76-release.apk` · sha256 `7a4b182b…9794` · commit `1823c67` |
-| Xe owner (Seal) | **2.74 (175)** — 🚗 **chưa cài 2.76** |
+| Kênh OTA `main` | **2.77 (178)** · `apk/Kachi-2.77-release.apk` · sha256 `2f41abeb…b699f` · commit `e720009` |
+| Xe owner (Seal) | **2.76 (177)** — buổi xe closing chiều 27/09 chạy trên bản này; 🚗 **chưa cài 2.77** |
 | Off-car | **sạch** — test 4 646/0 · lint 0 · 0 tệp > 500 dòng · review Opus Pass 1 APPROVED (15 phát hiện, 14 vá) · quét bảo mật 0 BLOCK |
-| Còn lại | 22 phép đo trên xe + 13 câu owner chốt + nợ không ai hứa (CLOSEOUT §4) |
+| Buổi xe closing | **ĐÃ CHẠY** — [P0] BufferQueue 0 dòng/917k · giật 11,15 → 0,81 % · PSS 75 → 57 MB · 64/66 datum đọc thật · 0 crash. Kết quả đầy đủ: backlog dòng `ONCAR-2026-09-27 CHIỀU` |
+| Còn lại | **5 phút trên xe cho 2.77** (xem §2) + phase 2 tháng sau + nợ không ai hứa (CLOSEOUT §4) |
 
-## 2. LÁT LÊN XE — làm đúng ba bước
+## 2. LẦN LÊN XE CUỐI — 5 phút, chỉ để nghiệm thu 2.77
 
-**Bước 1 — cài.** Trên xe: *Cài đặt › Hệ thống › Kiểm tra cập nhật* ⇒ nhận 2.76. Không có mạng thì `adb -s <serial> install -r Kachi-2.76-release.apk`. Chốt: `dumpsys package com.byd.launcher | grep versionCode` ⇒ **177**.
+Buổi closing đã xong trên 2.76. Bản 2.77 chỉ đổi **hai thứ nhìn bằng mắt**, chưa ai thấy trên xe:
 
-**Bước 2 — bật lại *Chế độ kiểm thử qua adb***: *Cài đặt › Hệ thống & quyền › Quyền*. Nó **tắt mỗi lần launcher khởi động lại**, và nó là cửa duy nhất mở cầu lệnh + khối *Nâng cao (kỹ thuật)* của màn Camera.
+1. Cài đặt → nhận **2.77**, chốt `versionCode` 178.
+2. *Cài đặt › Tiện nghi xe › Camera* — đếm đúng **10 hàng**, **không còn** khối *Nâng cao (kỹ thuật)* và **không còn** hàng *Nguồn*. (15 núm kỹ thuật vẫn đọc/ghi được qua cầu kiểm thử: `prefs --es file clusternav_prefs` để đọc, `prefs_set` để ghi — **không có `prefs_get`**.)
+3. Bật *Hiện lên cụm* + hình *Theo cụm* → xi-nhan trái ⇒ **mép trái ảnh bám đường cong kính cụm**, không còn cạnh thẳng đứng. Hỏng ⇒ chụp màn + đọc `dải=` trong `logcat -s KachiCamera`.
 
-**Bước 3 — chạy `docs/diagnostics/oncar-runbook-2.76.md`.** 18 mục · **54 phút** · xếp theo giá trị trên mỗi phút, hết giờ thì dừng giữa chừng cũng được. 9 mục có dấu 👁 làm được **không cần adb** (chỉ mắt + màn Cài đặt).
+⚠ **Nếu chụp ảnh cho hướng dẫn**: tắt app dẫn đường, **không đăng nhập tài khoản nào**, không để xe khác trong khung. Lý do ở §7.
 
-**Mục quan trọng nhất là CAM-B5** (mục thứ hai): xi-nhan trái → phải **trực tiếp** ba lần rồi tắt, sau 30 giây log phải **im**. Đây là bằng chứng **duy nhất** cho bản vá [P0]; máy ảo không có phần cứng camera nên không thể thay thế. Bỏ mục này = bản vá đó chưa ai xác nhận.
-
-**Mang về**: chép vào `docs/diagnostics/oncar-<ngày>/` — **đúng thư mục ngày**, vì `.gitignore` chặn theo mẫu `oncar-*/`. Commit **chỉ** bản .md tóm tắt + một dòng `ONCAR-<ngày>` trong backlog.
+## 2b. Ba câu hỏi phase 2 (KHÔNG cần làm lần này)
+Nếu tiện thì liếc, không thì bỏ: Netflix mở từ launcher ZIN có tự thoát y hệt không (30 giây, chốt việc Kachi không dính) · tên app ngoại trong giọng nói (*"mở netflix"* ra *"nep leag"*) · app tự mở màn thứ hai không nằm được trong ô (đã chứng minh là cổng Android, không sửa được bằng app thường).
 
 ## 3. Sau buổi xe — 13 câu chỉ owner trả lời được
 Ghi thẳng vào backlog, đừng để trong đầu: 1) hướng ảnh camera gương: đứng hay xoay, mỗi bên · 2) lật gương bật hay tắt mặc định · 3) giá trị *Dịch khung* trái/phải · 4) có đổi mặc định sang *Một camera* không · 5) hai getter AUTO có lệch nhau không (chốt gộp chip) · 6) khối thẻ lốp nhìn đã cân chưa · 7) `camera_hal_mode` 6 (lật ngang toàn hệ) · 8) `setPreviewSize` · 9) fixture `offcar-planner` có nhận revision 3 không · 10) 27 datum chưa có đường đọc: làm hay bỏ · 11) chính sách hoàn nguyên nút khi ghi hỏng · 12) ba màn dev đã chết (`CapTestConsole`…): xoá hay nối lại sau cổng kiểm thử · 13) **luật §11**: bản ship không còn bề mặt chẩn đoán không-adb — chấp nhận hay nối lại.
@@ -43,3 +45,13 @@ Ghi thẳng vào backlog, đừng để trong đầu: 1) hướng ảnh camera g
 - Chế độ kiểm thử **tắt** sau mỗi lần launcher khởi động lại.
 - Log: dòng `quyết định … không hiểu: MISMATCH` in **trước** nhánh hỏi lại — không có nghĩa Kachi bỏ cuộc (2.75 thêm dòng `hỏi lại:` cho rõ).
 - Nhiều agent chạy gradle song song ⇒ luôn qua `scratchpad/gradle-locked.sh`, và **đếm test từ XML**, đừng tin grep console.
+
+## 7. Sự cố 27/09 tối — 7 ảnh xe lọt repo public ~10 phút (ĐÃ GỠ)
+
+Tôi chép ảnh xe vào `docs/guide/img/` cho hướng dẫn; `git check-ignore` báo *"không bị chặn"* và tôi coi đó là **giấy phép** thay vì **cờ đỏ**. Lọt lên `main` công khai trong commit `491e169`: **biển số một xe của người khác**, 3 ảnh cụm hiện **bản đồ sống chỉ đúng vị trí + giờ**, một ảnh đọc được **số nhà** + **avatar tài khoản Google**, 2 ảnh màn hình có **YouTube đang đăng nhập** + telemetry xe.
+
+Đã xử lý: gỡ → `--amend` → `push --force-with-lease` cả hai nhánh → xác minh remote sạch (3 ref đều `4297555`, rồi `e720009`) → `.gitignore` chặn **theo mẫu tên tệp, độc lập đường dẫn** (`car-*.png` · `cum-*.png` · `camera-frame-*.png` · `cluster-fb-*.png` · `**/img/car-*.png`).
+
+**Việc của owner nếu muốn chắc chắn**: commit `491e169` có thể vẫn truy cập theo SHA tới khi GitHub dọn rác ⇒ mở ticket GitHub Support xin purge. Phần đáng gỡ triệt để nhất là **biển số của người thứ ba**.
+
+**Ba luật rút ra, đã ghi backlog + memory**: (a) `check-ignore` trả *"không chặn"* cho một tệp dữ liệu xe là **cờ đỏ**; (b) lưới chặn ghim theo thư mục không bảo vệ được thư mục **chưa tồn tại**; (c) 6 scanner song song bỏ sót vì không ai được giao đọc **thư mục mới** — chỉ vòng **critic** bắt được, nên vòng ấy là bắt buộc.
