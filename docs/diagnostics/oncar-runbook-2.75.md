@@ -1,12 +1,18 @@
 # Runbook buổi xe kế — 2.75 (must-have ~30 phút, theo giá trị/phút)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (trưa, sau buổi xe 2.74) · **Bản kiểm**: **2.75 (176)** qua OTA `main` · **Xe**: Seal DiLink 3.0, đang chạy 2.74 (175) (cài tay 09:57 27/09) · **Mục đích**: mỗi thứ 2.75 sửa theo số đo buổi 27/09 đều có một phép đo chốt trên xe, viết trước tiêu chí. Kết quả buổi 2.74 + số đo gốc: `docs/PROJECT-BACKLOG.md` dòng `ONCAR-2026-09-27`.
+> **Trạng thái**: Superseded (phần camera — xem ⚠ dưới) · **Cập nhật**: 2026-09-27 (trưa, sau buổi xe 2.74) · **Bản kiểm**: **2.75 (176)** qua OTA `main` · **Xe**: Seal DiLink 3.0, đang chạy 2.74 (175) (cài tay 09:57 27/09) · **Mục đích**: mỗi thứ 2.75 sửa theo số đo buổi 27/09 đều có một phép đo chốt trên xe, viết trước tiêu chí. Kết quả buổi 2.74 + số đo gốc: `docs/PROJECT-BACKLOG.md` dòng `ONCAR-2026-09-27`.
 > Biến: `$A` adb · `$S` = `127.0.0.1:15555` (cầu nc, memory `kachi-adb-car-tunnel`) · `<pkg>` = `com.byd.launcher` · `BR` = `$A -s $S shell am broadcast -n <pkg>/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a <pkg>.TEST`. **Chế độ kiểm thử** tắt sau mỗi lần launcher khởi động lại ⇒ bật lại ở *Cài đặt › Hệ thống & quyền › Quyền › Chế độ kiểm thử qua adb* trước khi gõ lệnh.
 > ⚠ Bẫy đã dính 27/09: `hal get` cho getter **không tham số** thì **KHÔNG** truyền `--es args` (truyền `args 0` ⇒ gateway tìm chữ ký `(int)` ⇒ `unavailable`). Đổi pref camera chỉ áp sau `camera none` → `camera left`.
+> ⚠ **SUPERSEDED cho phần CAMERA (2026-09-27 chiều · bản 2.77)** — buổi xe closing đã chốt **bỏ hẳn** nguồn *Một
+> camera* và **gỡ cả khối *Nâng cao (kỹ thuật)*** (owner: *"bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ
+> luôn ở phần kỹ thuật"*). Từ 2.77 trên màn *Cài đặt › Tiện nghi xe › Camera* **không còn** chip *Nguồn*, **không còn**
+> hàng *Dịch khung*/*Bề rộng*/*Dải*/*Kênh xem*/*Kết xuất*, và `camera_source`/`camera_hal_mode` **không ghi được nữa**.
+> ⇒ Các dòng **CAM-C1** và **G7** dưới đây **không làm được qua Cài đặt**; phép kiểm hiện hành là **CAM-G1…G5** ở
+> `offcar-2026-09-27/camera-ia-profile.md` §8.7. Giữ nguyên bảng dưới làm **lịch sử của buổi 2.75**.
 
 ## 0. Ở nhà (3 phút)
 1. Tải sẵn `apk/Kachi-2.75-release.apk` (mạng bãi xe kém).
-2. Đọc §2 một lượt; mọi việc camera đều làm được **không cần adb** qua Cài đặt (chip *Nguồn*, hàng *Dịch khung* −/+, xoay trái/phải) — adb chỉ để lấy số.
+2. Đọc §2 một lượt. *(Lịch sử 2.75: mọi việc camera làm được không cần adb qua Cài đặt — chip *Nguồn*, hàng *Dịch khung* −/+, xoay trái/phải. **Từ 2.77 ba thứ ấy không còn trên màn**; chỉ *xoay trái/phải* còn lại.)*
 3. Hai terminal: `logcat -v time > logcat-2.75-<giờ>.txt` (buffer xe tràn sau ~30 s) + một gõ lệnh.
 
 ## 1. Nối adb + cài (5 phút)
@@ -35,8 +41,8 @@ Bật *Chế độ kiểm thử*. Kiểm prefs camera còn nguyên bộ owner du
 | **E11** | crash | — | 0 tệp crash | `ls /sdcard/Android/data/<pkg>/files/kachi-logs/ \| grep crash` | pull |
 
 ## 3. Câu chờ owner (trả lời khi nhìn xe)
-1. **G7** — giá trị *Dịch khung* cuối cùng cho trái/phải (làm mặc định `ClusterProfile` Seal).
-2. **CAM-C1** — có chuyển mặc định sang *Một kênh* không (ảnh đầy đủ hơn dải 25 % nhưng HAL đổi chế độ mỗi lần bật)?
+1. **G7** — giá trị *Dịch khung* cuối cùng cho trái/phải. **[CHƯA ĐO — núm đã gỡ ở 2.77]**: hết thời gian buổi closing; nay chỉ đo được qua `prefs_set camera_dewarp_pan_x`, mặc định hồ sơ Seal giữ `0/0`.
+2. **CAM-C1** — có chuyển mặc định sang *Một kênh* không? ⇒ **ĐÃ TRẢ LỜI 27/09 chiều: KHÔNG — bỏ hẳn tuỳ chọn** (một kênh không nét hơn; xem ⚠ đầu tệp).
 3. **G8** — mã HAL `1003` khi `setPanoOperation(WORK_OFF)` (bit 31 = lỗi?) — chỉ đọc log, không cần anh làm gì.
 4. Còn nguyên từ 2.74: VOICE-WRITE-LANE [P2] · ghép vế khi vế trước đủ nghĩa · OQ7 thẻ lốp · dedupe `ac_mode_auto`/`ac_wind_auto` · dấu thứ hai cho ghế · chip hồ sơ.
 

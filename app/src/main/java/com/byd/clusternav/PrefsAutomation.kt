@@ -225,8 +225,6 @@ fun Prefs.setCameraRender(ctx: Context, v: String) =
 private const val K_CAMERA_SPAN = "camera_span"
 private const val K_CAMERA_SHAPE = "camera_shape"
 private const val K_CAMERA_CIRCLE_PCT = "camera_circle_scale"
-private const val K_CAMERA_HAL_MODE = "camera_hal_mode"
-private const val K_CAMERA_SOURCE = "camera_source"
 private fun cameraStripKey(left: Boolean) = if (left) "camera_strip_left" else "camera_strip_right"
 
 /**
@@ -244,23 +242,6 @@ fun Prefs.cameraSpan(ctx: Context): String {
 /** Xem [cameraSpan]. Nhận mã trong [CameraSignalPolicy.SPANS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
 fun Prefs.setCameraSpan(ctx: Context, v: String) =
     autoPrefs(ctx).edit().putString(K_CAMERA_SPAN, v).apply()
-
-/**
- * **Nguồn ảnh** — `"PANO"` (khung ghép 4-in-1, mặc định = đường 2.36…2.74) hay `"CHANNEL"` (MỘT kênh camera, khung
- * đầy, bị kéo ngang ×4). Lý do + bản đồ kênh ở KDoc [CameraSignalPolicy.SOURCE_CHANNEL].
- *
- * Ở `"CHANNEL"`, kênh dùng cho từng bên lấy từ HỒ SƠ XE (`CameraDefaults.of(ctx).channel(left)`; Seal: trái 2, phải 3)
- * và owner vẫn đè được bằng [cameraHalMode] — xem `CameraSignalPolicy.channelFor` (`CameraChannel.kt`).
- */
-fun Prefs.cameraSource(ctx: Context): String {
-    val fallback = CameraSignalPolicy.defaultSource()
-    val raw = autoPrefs(ctx).getString(K_CAMERA_SOURCE, fallback) ?: fallback
-    return if (CameraSignalPolicy.isSource(raw)) raw else fallback
-}
-
-/** Xem [cameraSource]. */
-fun Prefs.setCameraSource(ctx: Context, v: String) =
-    autoPrefs(ctx).edit().putString(K_CAMERA_SOURCE, v).apply()
 
 /**
  * Hình cửa sổ camera — mã trong [CameraSignalPolicy.SHAPES] (`"RECT"` = chữ nhật bo góc của 2.73, `"ROUND"` = vòng
@@ -305,23 +286,6 @@ fun Prefs.cameraCirclePct(ctx: Context): Int {
 /** Xem [cameraCirclePct]. */
 fun Prefs.setCameraCirclePct(ctx: Context, v: Int) =
     autoPrefs(ctx).edit().putInt(K_CAMERA_CIRCLE_PCT, v).apply()
-
-/**
- * Kênh xem truyền cho `AVMCamera.addPreviewSurface(Surface, int)` — [CameraSignalPolicy.HAL_MODE_AUTO] (`-1`, **mặc
- * định**) = dò `0..3` y 2.73; `0..4` = gọi ĐÚNG một lần với `VIEW_DEFAULT`/`VIEW_CHANNEL_1..4`.
- *
- * Móc ĐO (RE §6.3-C1): nếu `VIEW_CHANNEL_n` bắt HAL trả một kênh camera thay vì khung ghép thì cả tầng crop thành
- * không cần. Chưa ai gọi thử trên xe ⇒ mặc định phải là đường cũ, và lượt đọc lạ cũng về đường cũ.
- */
-fun Prefs.cameraHalMode(ctx: Context): Int {
-    val fallback = CameraSignalPolicy.HAL_MODE_AUTO
-    val raw = autoPrefs(ctx).getInt(K_CAMERA_HAL_MODE, fallback)
-    return if (CameraSignalPolicy.isHalMode(raw)) raw else fallback
-}
-
-/** Xem [cameraHalMode]. */
-fun Prefs.setCameraHalMode(ctx: Context, v: Int) =
-    autoPrefs(ctx).edit().putInt(K_CAMERA_HAL_MODE, v).apply()
 
 // cameraId AVMCamera trái/phải — đổi trên xe để tìm đúng cam (chưa chắc map). Mặc định = [default] (CamView.cameraId).
 fun Prefs.cameraCamId(ctx: Context, left: Boolean, default: Int): Int {

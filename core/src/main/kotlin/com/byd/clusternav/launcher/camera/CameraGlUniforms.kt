@@ -147,10 +147,8 @@ data class CameraGlUniforms(
          * ⚠ **[SUY]**, không phải [ĐO]: *"tâm vòng ảnh nằm giữa dải"* mới là giả định. Khung `5120×960` chụp từ xe
          * chốt lại (`camera-dewarp-math.md` §3.2 D1) — tới lúc đó núm `camera_dewarp_cx/cy` là đường sửa của owner.
          */
-        fun sourceCentre(view: CamView, strip: Int, channel: Boolean = false): FloatArray {
-            // MỘT KÊNH ([CameraSignalPolicy.SOURCE_CHANNEL]): buffer CHÍNH LÀ một khung camera ⇒ quang tâm là tâm
-            // buffer, không phải tâm dải nào. Đây cũng là ca KHÔNG có giả định [SUY] nào — xem ⚠ dưới.
-            if (channel || view.crop == null) return floatArrayOf(0.5f, 0.5f)
+        fun sourceCentre(view: CamView, strip: Int): FloatArray {
+            if (view.crop == null) return floatArrayOf(0.5f, 0.5f)
             val s = if (CameraPanoCrop.isStrip(strip)) strip else CameraPanoCrop.defaultStrip(left = true)
             return floatArrayOf(CameraPanoCrop.stripCentre(s).toFloat(), 0.5f)
         }

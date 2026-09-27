@@ -33,9 +33,10 @@ import android.view.Surface
  *
  * Ảnh tệp đi qua đúng phép `drawBitmap(src, dst)` của ảnh sinh — nhưng ⚠ ở đây `dst` là **trọn buffer**, nên nếu tỉ
  * lệ tệp khác tỉ lệ buffer thì đây là một lượt **căng đầy (anamorphic)**, không phải phóng đều. Đó là cái ĐÚNG cho
- * hai ca đang dùng: khung `5120×960` chụp từ xe ⇒ trùng khít (hệ số 1); khung một camera `1280×960` ⇒ kéo ngang
- * ×[CameraPanoCrop.STRIPS], **đúng** thứ HAL làm ở [CameraSignalPolicy.SOURCE_CHANNEL]. Lập luận *"co giãn đẳng
- * hướng giao hoán với phép nắn"* dưới đây chỉ áp cho ảnh SINH (nơi [capped] giữ tỉ lệ), không cho ảnh tệp.
+ * hai ca đang dùng: khung `5120×960` chụp từ xe ⇒ trùng khít (hệ số 1); một khung camera lẻ `1280×960` ⇒ kéo ngang
+ * ×[CameraPanoCrop.STRIPS] (đúng thứ HAL làm khi bị ép một kênh — nguồn ấy đã gỡ ở 2.77, nhưng các PNG cũ trong
+ * `docs/diagnostics/` vẫn ở dạng đó). Lập luận *"co giãn đẳng hướng giao hoán với phép nắn"* dưới đây chỉ áp cho ảnh
+ * SINH (nơi [capped] giữ tỉ lệ), không cho ảnh tệp.
  *
  * ## ⚠ Ảnh này KHÔNG nói gì về ống kính thật
  * Nó được sinh bằng **chính mô hình đang kiểm** ([CameraDewarpTestPattern] dùng [CameraDewarp.idealEquidistantSource]),

@@ -14,9 +14,7 @@ import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRender
 import com.byd.clusternav.cameraRender
-import com.byd.clusternav.setCameraSource
 import com.byd.clusternav.setCameraSpan
-import com.byd.clusternav.cameraSource
 import com.byd.clusternav.cameraSpan
 import com.byd.clusternav.setCameraShape
 import com.byd.clusternav.cameraShape
@@ -24,8 +22,6 @@ import com.byd.clusternav.setCameraStrip
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraCirclePct
 import com.byd.clusternav.cameraCirclePct
-import com.byd.clusternav.setCameraHalMode
-import com.byd.clusternav.cameraHalMode
 import com.byd.clusternav.cameraDewarpAmount
 import com.byd.clusternav.cameraDewarpCx
 import com.byd.clusternav.cameraDewarpPanX
@@ -210,8 +206,6 @@ internal object TestBridgePrefsSet {
             // [CameraPanoCrop]), KHÔNG viết số ở đây — bản sao thứ hai của một con số sẽ lệch đúng vào lần ai đó nới
             // dải. Ngoài dải ⇒ `bad_prefs_value:`, không kẹp im lặng: một lượt dò gõ `camera_strip_left 7` rồi được
             // kẹp về 1 sẽ báo "đã ghi" trong khi owner đang nhìn đúng dải cũ và kết luận sai về hướng của dải.
-            "camera_source" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isSource(it) }
-                ?.let { Prefs.setCameraSource(app, v = it); it }
             "camera_span" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isSpan(it) }
                 ?.let { Prefs.setCameraSpan(app, v = it); it }
             "camera_shape" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isShape(it) }
@@ -222,8 +216,6 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraStrip(app, left = false, v = it); it.toString() }
             "camera_circle_scale" -> int(raw)?.takeIf { CameraSignalPolicy.isCirclePct(it) }
                 ?.let { Prefs.setCameraCirclePct(app, v = it); it.toString() }
-            "camera_hal_mode" -> int(raw)?.takeIf { CameraSignalPolicy.isHalMode(it) }
-                ?.let { Prefs.setCameraHalMode(app, v = it); it.toString() }
             // ── R8-B (2.74): SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` của đường kết xuất `GL` ────────────────
             // Miền hợp lệ lấy từ `:core` ([CameraDewarpPrefs]) — KHÔNG viết số ở đây, cùng lẽ bộ `camera_span/strip`
             // ngay trên. Ngoài miền ⇒ `bad_prefs_value:`, **không kẹp im lặng**: owner gõ `camera_dewarp_k 800` rồi
@@ -297,13 +289,11 @@ internal object TestBridgePrefsSet {
             "camera_mirror_left" -> Prefs.cameraMirror(app, left = true).toString()
             "camera_mirror_right" -> Prefs.cameraMirror(app, left = false).toString()
             "camera_render" -> Prefs.cameraRender(app)
-            "camera_source" -> Prefs.cameraSource(app)
             "camera_span" -> Prefs.cameraSpan(app)
             "camera_shape" -> Prefs.cameraShape(app)
             "camera_strip_left" -> Prefs.cameraStrip(app, left = true).toString()
             "camera_strip_right" -> Prefs.cameraStrip(app, left = false).toString()
             "camera_circle_scale" -> Prefs.cameraCirclePct(app).toString()
-            "camera_hal_mode" -> Prefs.cameraHalMode(app).toString()
             "camera_dewarp_amount" -> Prefs.cameraDewarpAmount(app).toString()
             "camera_dewarp_focal" -> Prefs.cameraDewarpFocal(app).toString()
             "camera_dewarp_k" -> Prefs.cameraDewarpK(app).toString()

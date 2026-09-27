@@ -1692,42 +1692,32 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Màn Camera hai tầng — 11 khoá người lái luôn hiện, 16 khoá kỹ thuật gập sau cổng kiểm thử (2.76 R1)",
-  "desc": "Owner 27/09: *«quá nhiều setting test ở màn camera… chỉ để lại setting user cần»*. `CameraSettingsIa` (:core) chia 27 khoá `camera_*` thành **11** khoá NGƯỜI LÁI (bật · lên cụm · góc ×2 · xoay ×2 · **lật gương ×2** (L7) · hình · nắn bật/tắt · nguồn) và 16 khoá KỸ THUẬT (kết xuất · bề rộng · dải · kênh HAL · cameraId · ma trận texture · 8 núm nắn) chỉ dựng khi `TestBridgeStore.isOn` (khối *Nâng cao (kỹ thuật) · 16 mục*). Khoá không xoá — `prefs_set` vẫn ghi/đọc được khi khối ẩn. Hàng Nguồn (toàn cảnh / một camera) chỉ hiện khi hồ sơ xe có bản đồ kênh.",
+  "name": "Màn Camera MỘT tầng — đúng 10 hàng người lái; khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ (2.77)",
+  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. `CameraSettingsIa` còn **10** `USER_KEYS` (bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt) = TOÀN BỘ màn, và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
   "voice": [],
   "voice_reply": "",
-  "status": "✅ off-car (test wiring `CameraSettingsIaWiringContractTest` + core) · 🚗 CAM-F1 chờ xe (đếm **11** hàng + khối 16 mục, tắt cổng ⇒ khối biến mất)",
-  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §2.1 · §5 CAM-F1 · core/.../camera/CameraSettingsIa.kt · app/.../SettingsSectionsCamera.kt",
+  "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá đúng 10 khoá + thứ tự; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 CAM-G1 chờ xe (đếm đúng 10 hàng, không còn khối gập kể cả khi BẬT chế độ kiểm thử)",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §8 (§8.2 phép đo 686 vs 351 · §8.5 15 khoá ẩn-UI · §8.7 CAM-G1…G5) · core/.../camera/CameraSettingsIa.kt · app/.../SettingsSectionsCamera.kt",
   "spec": "docs/specs/kachi-276-closing.html"
  },
  {
   "group": "Camera xi-nhan",
   "name": "Mặc định camera đi theo HỒ SƠ XE — Seal DL3 = bộ owner duyệt bằng mắt 27/09 (2.76 R2)",
-  "desc": "`ClusterProfile.camera` → `CameraProfileDefaults`: Seal DL3 = `STRIP · GL · amount 100 · focal 55 · k 100 · scale 130 · cx=cy=0 · pan 0/0 · rot 0/0 · kênh 2 (trái)/3 (phải)`; đời khác (DL5, generic, id lạ) = NEUTRAL = đúng literal 2.75. Mọi `Prefs.camera*` lấy fallback từ `CameraDefaults.of(ctx)`; pref owner đã đặt luôn THẮNG (xoay ↺90 owner đã chọn không bị ghi đè). Hằng kênh ghim trên `CamView` (2.75) bỏ.",
+  "desc": "`ClusterProfile.camera` → `CameraProfileDefaults`: Seal DL3 = `STRIP · GL · amount 100 · focal 55 · k 100 · scale 130 · cx=cy=0 · pan 0/0 · rot 0/0`; đời khác (DL5, generic, id lạ) = NEUTRAL = đúng literal 2.75. Mọi `Prefs.camera*` lấy fallback từ `CameraDefaults.of(ctx)`; pref owner đã đặt luôn THẮNG (xoay ↺90 owner đã chọn không bị ghi đè). Hằng kênh ghim trên `CamView` (2.75) bỏ. ⚠ 2.77: hai trường `channelLeft`/`channelRight` đã GỠ cùng nguồn *Một camera*; bản đồ kênh [ĐO, owner xác nhận từng kênh] **1 = sau · 2 = trái · 3 = phải · 4 = trước** giữ làm KIẾN THỨC ở `camera-ia-profile.md` §8.3, không còn mã nào đọc. Dải cụm cũng theo hồ sơ: chỉ đời ĐÃ ĐO đường cong kính mới mang bảng `leftEdge` (`bandFor`), đời khác = tường thẳng 2.76.",
   "voice": [],
   "voice_reply": "",
-  "status": "🟢 bộ tham số đã duyệt bằng mắt trên xe 27/09 (B3 · B4) · 🚗 CAM-F5 (read_back `camera_span`/`camera_render` = STRIP/GL) + CAM-C2 (rot 0/0 cạnh cột đèn) chờ xe",
+  "status": "🟢 bộ tham số đã duyệt bằng mắt trên xe 27/09 (B3 · B4) · 🚗 CAM-G4 (read_back `camera_span`/`camera_render` = STRIP/GL) + CAM-C2 (rot 0/0 cạnh cột đèn) chờ xe",
   "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §1 B3–B5 · §2.2 · §5 · core/.../camera/CameraProfileDefaults.kt · app/.../modules/clustercast/ClusterProfile.kt (`SEAL_DL3_CAMERA`) · app/.../PrefsCameraDewarp.kt · docs/diagnostics/research-side-camera-orientation-2026-09-27.md §6.1",
   "spec": "docs/specs/kachi-276-closing.html"
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Nguồn «một camera» không lên ⇒ LÙI VỀ TOÀN CẢNH đúng một lần, có log + ghi chú trong Cài đặt (2.76 R3)",
-  "desc": "`CameraChannelFallback` (:core, thuần): HAL từ chối kênh (`addPreviewSurface` rc=false) hoặc 0 khung GL sau `FIRST_FRAME_BUDGET_MS` = 3 000 ms ⇒ đúng MỘT lần dựng lại phiên ở PANO qua đường `closeSession(keepPano) → openSession(forcedPano=true)`, một dòng `Log.w` *«LÙI VỀ TOÀN CẢNH (rc=false|no-frame)»*, dấu `camera_channel_fallback` hiện dưới hàng Nguồn (xoá ở lượt xi-nhan kế). `camera_frame` thêm `note=anamorphic x4` khi CHANNEL. Đường ngân sách khung đầu chỉ chạy trên GL (TextureView/SurfaceView không đếm khung ⇒ không lùi).",
+  "name": "Hình khung «theo cụm» + MÉP TRÁI BÁM ĐƯỜNG CONG của kính cụm; CHỮ NHẬT trên cụm ⇒ theo cụm (2.76 R4 · 2.77)",
+  "desc": "Owner (3 ảnh cụm + framebuffer display 1): *«header top và bottom là của hệ thống, chỉ vẽ được khúc giữa»*. Đo homography ±8 px ⇒ `ClusterBandSpec.SEAL_DL3 = [140,136)-(1780,560)` (1640×424, radius 24). Hình `CLUSTER` («theo cụm»): cửa sổ ở đầu trái/phải dải theo pref góc, cao trọn dải, tỉ lệ qua `CameraOverlayFrame.fit`, rộng ≤ nửa dải; crop như RECT; trên màn chính thoái về RECT. Sửa kèm: overlay trên cụm nay đo `displayMetrics` của ĐÚNG display đang treo (2.75 đo nhầm màn chính ⇒ 65 px nằm dưới header). **2.77 — mép cong**: owner nhìn bản 2.76 trên cụm: *«này nhìn OK, nhưng shape nó không theo cạnh trái cong của cụm»* (và với hình chữ nhật: *«bé tý, bo các góc tròn, không hề theo hình cụm gì cả»*). [ĐO] bộ đệm cụm là chữ nhật phẳng 1920×720 ⇒ đường cong là KÍNH VẬT LÝ, `screencap` không thấy ⇒ đo từ 3 ảnh chụp cụm bằng homography ngược + quét từng hàng trong không gian framebuffer: mép trái là đường `«<»` (`x≈42` ở y 136 → xa nhất `x≈16–18` ở y≈210 → `x≈89` ở y 560), **không đơn điệu** ⇒ parabol sai 72,8 px (loại), cung tròn không có bán kính khớp cả hai nhánh (loại), **bảng 9 mẫu + nội suy tuyến tính sai 5,5 px** (chọn) = `ClusterBandSpec.SEAL_DL3.leftEdge`. Cửa sổ trái trượt `x 140 → 18` (**bề rộng/cao KHÔNG đổi một px** — nới bề rộng là kéo giãn ảnh), phần thừa cắt bằng `Canvas.clipPath` (`CameraOverlayMask`: chữ nhật bo góc GIAO đa giác cong). Không dùng outline: [ĐO source] `android-10.0.0_r47` `Outline.canClip()` = `return mMode != MODE_CONVEX_PATH;`. Mép PHẢI giữ thẳng 1780 — cũng là phép đo: kính phải ở 1802…1906 nhưng cột icon biển-30/ADAS bắt đầu từ 1798 và nằm trái hơn kính ở MỌI hàng ⇒ nới ra kính là đè biển báo tốc độ. `effectiveShape`: **CHỮ NHẬT trên CỤM ⇒ *theo cụm*** (hai hình cùng crop nên chỉ đổi CỬA SỔ, và chữ nhật là hình MẶC ĐỊNH nên đường mặc định phải là đường tốt); TRÒN giữ nguyên. An toàn: ba mép trên/dưới/phải không đổi một px so với 2.76; `place()` tự kiểm `insideBand()` và rơi về tường thẳng 2.76 nếu hồ sơ/display lạ; đời cụm CHƯA ĐO kính (DL5 · generic · id lạ) chỉ nhận tường thẳng, không bị xén theo kính Seal.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe — CAM-F2 (khung đầu thật, siết 3 000 ms), CAM-F3 (`camera_hal_mode 4` ⇒ đúng 1 dòng lùi), CAM-F4 (`camera_frame` note). Ngân sách 3 000 ms [SUY] từ 34 fps + đứt–nối 1,7 s",
-  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §2.3 · §3 Q8 · §5 · core/.../camera/CameraChannel.kt · app/.../camera/CameraSignalController.kt (`fallbackToPano`) · app/.../camera/AvmCamera.kt (`channelRefused`)",
-  "spec": "docs/specs/kachi-276-closing.html"
- },
- {
-  "group": "Camera xi-nhan",
-  "name": "Hình khung «theo cụm» — camera vẽ trọn dải giữa của cụm 1920×720, không đè header/footer hệ thống (2.76 R4)",
-  "desc": "Owner (3 ảnh cụm + framebuffer display 1): *«header top và bottom là của hệ thống, chỉ vẽ được khúc giữa»*. Đo homography ±8 px ⇒ `ClusterBandSpec.SEAL_DL3 = [140,136)-(1780,560)` (1640×424, radius 24). Hình `CLUSTER` («theo cụm»): cửa sổ ở đầu trái/phải dải theo pref góc, cao trọn dải, tỉ lệ qua `CameraOverlayFrame.fit`, rộng ≤ nửa dải; crop như RECT; trên màn chính thoái về RECT. Sửa kèm: overlay trên cụm nay đo `displayMetrics` của ĐÚNG display đang treo (2.75 đo nhầm màn chính ⇒ 65 px nằm dưới header).",
-  "voice": [],
-  "voice_reply": "",
-  "status": "✅ off-car — E2E máy ảo overlay display 1920×720: trái [140,136]-[705,560], phải [1215,136]-[1780,560] trong dải, thoái RECT trên màn chính (`scripts/emulator/camera-cluster-e2e.sh`) · 🚗 CAM-CL1 chờ xe (ảnh trọn dải, đọc `dải=` trong log để chỉnh ±8 px)",
-  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-cluster-band.md §1 F1–F10 · §2 · §7 · §8 · core/.../camera/CameraClusterBand.kt · app/.../camera/CameraOverlayView.kt (`clusterCtx`, `geometry`)",
+  "status": "✅ off-car — e2e máy ảo ĐẠT (trái `[18,136]-[583,560]`, phải `[1215,136]-[1780,560]`, thoái RECT trên màn chính) **và phép cắt chứng minh bằng ĐIỂM ẢNH**: mặt nạ xén chữ *L* của nhãn «Left camera», điểm sáng trái nhất lệch ≤ **1,9 px** so với mô hình · 🚗 CAM-CL3 (mép trái bám cong trên xe — một ảnh cụm + dòng logcat `cong=42/41/89` là đủ để chỉnh) · 🚗 CAM-CL4 (có muốn mép phải ôm kính, đổi lấy việc đè biển 30 không?)",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-cluster-band.md §1 F1–F10 · §2 · §7 · §8 · **§11 (mép cong 2.77)** · core/.../camera/CameraClusterBand.kt (`leftEdge`/`leftEdgeAt`/`maskLeftAt`/`insideBand`/`effectiveShape`) · app/.../camera/CameraOverlayMask.kt · app/.../camera/CameraOverlayView.kt",
   "spec": "docs/specs/kachi-276-closing.html"
  },
  {

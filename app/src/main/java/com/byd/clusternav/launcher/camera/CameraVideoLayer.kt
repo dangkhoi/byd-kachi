@@ -47,19 +47,18 @@ internal class CameraVideoLayer private constructor(
 ) {
 
     /**
-     * `frames=N busySkip=M` của luồng vẽ, rỗng khi không phải đường GL. Chỉ ĐỌC — cho lời đáp `camera_frame` **và**
-     * cho ngân sách khung đầu của R3 ([CameraChannelFallback.framesOf]).
+     * `frames=N busySkip=M` của luồng vẽ, rỗng khi không phải đường GL. Chỉ ĐỌC — cho lời đáp `camera_frame`.
      *
      * ## [P1 · SOÁT Opus 2026-09-27] Đã RƠI ⇒ **không được** trả một bộ đếm
      * [CameraGlRenderer.stats] là một bản in trường thuần: `start()` trả `null` (EGL từ chối / shader không biên dịch /
-     * lượt dựng thứ hai) thì luồng vẽ **chưa từng chạy**, nhưng chuỗi vẫn là `frames=0 …` ⇒ `framesOf` đọc ra `0`,
-     * `CameraChannelFallback.onFirstFrameBudget` thấy *"không có khung"* và dựng lại phiên ở PANO — **giữa lúc ô gương
-     * ĐANG CÓ HÌNH** (đường rơi là đúng đường `TV` 2.73), rồi in dấu `no-frame` trong khi bệnh thật là EGL. Đó đúng là
-     * *"lùi theo một số liệu không có"* mà KDoc [CameraChannelFallback.onFirstFrameBudget] cấm.
+     * lượt dựng thứ hai) thì luồng vẽ **chưa từng chạy**, nhưng chuỗi vẫn là `frames=0 …` ⇒ ai đọc số ấy sẽ kết luận
+     * *"không có khung"* trong khi ô gương **ĐANG CÓ HÌNH** (đường rơi là đúng đường `TV` 2.73).
      *
-     * Trả `"glFellBack=1"`: **không** có chữ `frames=` ⇒ `framesOf` trả `null` = *"không đếm được"* (đúng như đường
-     * `TV`/`SV`, cùng một sự thật: đường đang vẽ không có bộ đếm), nên `:core` không lùi. KHÔNG trả rỗng, vì chuỗi này
-     * cũng là `gl_stats` của `camera_frame`: rỗng thì buổi chẩn đoán không phân biệt được *"EGL rơi"* với *"đường TV"*.
+     * Trả `"glFellBack=1"`: **không** có chữ `frames=` ⇒ không ai đọc ra một bộ đếm không tồn tại. KHÔNG trả rỗng, vì
+     * chuỗi này cũng là `gl_stats` của `camera_frame`: rỗng thì buổi chẩn đoán không phân biệt được *"EGL rơi"* với
+     * *"đường TV"*.
+     *
+     * (2.77: ngân sách khung đầu của 2.76 R3 — thứ từng ĐỌC chuỗi này — đã gỡ cùng nguồn *Một camera*.)
      */
     fun glStats(): String = if (fellBack?.get(0) == true) "glFellBack=1" else renderer?.stats().orEmpty()
 

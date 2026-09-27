@@ -84,9 +84,10 @@ object TestBridgeWritableKeys {
         // ảnh fisheye là [ĐOÁN], và `VIEW_CHANNEL_1..4` chưa ai gọi thử — cả ba chỉ chốt được bằng cách đổi giá trị
         // **giữa hai lượt xi-nhan** rồi chụp `camera_frame`, không phải bằng một lượt build lại APK cho mỗi con số.
         // Bốn khoá đầu có hàng chip đảo lại được ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc trên giữ.
-        // 2.75 — NGUỒN ảnh: khung GHÉP (mặc định, y 2.74) hay MỘT KÊNH camera. [ĐO xe 27/09] kênh 1..4 trả
-        // `rc=true` và cho trọn khung fisheye của một camera (kéo ngang ×4) — nguồn tốt hơn hẳn cho gương.
-        "camera_source",
+        // ⚠ 2.77 — `camera_source` (PANO/CHANNEL) và `camera_hal_mode` đã **RA KHỎI** danh sách này cùng cả nguồn
+        // *Một camera*: [ĐO xe 27/09, hai khung thô cùng cảnh] dải ghép có năng lượng cạnh 686 vs 351 và tỉ lệ chi
+        // tiết ngang/dọc 0,30 vs 0,19 ⇒ một kênh chỉ bị kéo ngang, không nét hơn; owner chốt bỏ. Một khoá không còn
+        // ai đọc mà vẫn ghi được là một lệnh `prefs_set` báo `ok` rồi không làm gì.
         "camera_span",
         "camera_strip_left",
         "camera_strip_right",
@@ -94,7 +95,6 @@ object TestBridgeWritableKeys {
         // Núm tinh chỉnh cạnh ô vuông của hình TRÒN (%). Không có chip riêng — nhưng **tác dụng** của nó đảo được
         // bằng một cú chạm: về chip "Chữ nhật" là hết ảnh hưởng, và `prefs_set camera_circle_scale 100` trả mặc định.
         "camera_circle_scale",
-        "camera_hal_mode",
         // ── R8-B (2.74) · SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` của đường kết xuất `GL` ──────────────────
         // `docs/diagnostics/offcar-2026-09-26/camera-dewarp-gl.md`. Cùng một lý do với cả bộ `camera_*` ở trên, chỉ
         // sắc hơn: bốn con số `F`/`K`/`SCALE`/`AMOUNT` của Electro nằm trong bytecode VMP ⇒ **[CHƯA BIẾT]** (RE §7

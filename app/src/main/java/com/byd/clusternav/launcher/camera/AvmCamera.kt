@@ -42,8 +42,8 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
      * Surface + kênh xem đã đi qua `addPreviewSurface` ở lượt [open] — chỉ để [close] gọi `rmPreviewSurface` cho
      * đúng cặp.
      *
-     * ⚠ [SOÁT Opus 2026-09-27] Ở nhánh AUTO, vòng dò **bỏ qua** giá trị trả về (đường 2.73, không được đổi) ⇒ đây là
-     * *"đã gọi, không ném"*, **không** phải *"HAL đã nhận"*. Chú thích cũ nói sai vế ấy.
+     * ⚠ [SOÁT Opus 2026-09-27] Vòng dò **bỏ qua** giá trị trả về (đường 2.73, không được đổi) ⇒ đây là *"đã gọi,
+     * không ném"*, **không** phải *"HAL đã nhận"*.
      */
     private var added: Pair<Surface, Int>? = null
 
@@ -67,28 +67,18 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     var rmOnClose: Boolean = false
 
     /**
-     * Lượt [open] gần nhất **xin một kênh đơn** (`VIEW_CHANNEL_1..4`) mà HAL **không nhận** (`rc != true`, hoặc ném) —
-     * phiên đang chạy trên đường dự phòng một-tham-số, tức khung **GHÉP** dù tầng vẽ tưởng là một kênh (R3 · 2.76).
-     *
-     * Đọc ngay sau [open], cùng nhịp. Là một *phép đo* trả về cho `CameraChannelFallback` (`:core`) quyết; ở đây
-     * không rẽ nhánh gì — `AvmCamera` chỉ nói sự thật về lời gọi HAL.
-     */
-    var channelRefused: Boolean = false
-        private set
-
-    /**
      * Mở camera [cameraId] + đổ preview vào [surface]. Trả true nếu startPreview OK (một mode nào đó nhận surface).
      *
-     * [halMode] = **kênh xem** truyền cho `addPreviewSurface(Surface, int)`:
-     *  • [CameraSignalPolicy.HAL_MODE_AUTO] (mặc định) ⇒ **dò `0..3` y 2.73**, không đổi một byte nào của đường đang
-     *    chạy hiện trường (CLAUDE.md §6). Vòng dò ấy **bỏ qua** giá trị trả về nên gần như luôn dừng ở `0`
-     *    (`VIEW_DEFAULT` = khung ghép 4-in-1) — RE `electro-camera-RE-2026-09-26.md` §5 K4.
-     *  • `0..4` ⇒ gọi **đúng một lần** với kênh đó **và ĐỌC giá trị trả về** — đó mới là một phép đo (§6.3-C1: nếu
-     *    `VIEW_CHANNEL_n` bắt HAL trả một kênh camera thay vì khung ghép thì cả tầng crop thành không cần). HAL từ
-     *    chối ⇒ rơi về đường `addPreviewSurface(Surface)` một tham số như 2.73, và **dòng log nói rõ rc** để lượt đo
-     *    không bị đọc thành "kênh n chạy" khi thật ra ảnh tới từ đường dự phòng.
+     * Kênh xem của `addPreviewSurface(Surface, int)` là **vòng dò `0..3` y 2.73**, không đổi một byte nào của đường
+     * đang chạy hiện trường (CLAUDE.md §6). Vòng dò ấy **bỏ qua** giá trị trả về nên gần như luôn dừng ở `0`
+     * (`VIEW_DEFAULT` = khung ghép 4-in-1) — RE `electro-camera-RE-2026-09-26.md` §5 K4.
+     *
+     * ⚠ 2.77 gỡ tham số `halMode` (pref `camera_hal_mode`) và cờ `channelRefused`: nguồn *Một camera*
+     * (`VIEW_CHANNEL_1..4`) đã bỏ hẳn sau phép ĐO trên xe 27/09 — dải ghép có năng lượng cạnh **686 vs 351** và tỉ
+     * lệ chi tiết ngang/dọc **0,30 vs 0,19** ⇒ một kênh chỉ bị kéo ngang, không nét hơn. Bản đồ kênh đo được
+     * (1 = sau · 2 = trái · 3 = phải · 4 = trước) giữ ở `camera-ia-profile.md` §7 làm kiến thức.
      */
-    fun open(cameraId: Int, surface: Surface, halMode: Int = CameraSignalPolicy.HAL_MODE_AUTO): Boolean {
+    fun open(cameraId: Int, surface: Surface): Boolean {
         val c = loadClass() ?: run { Log.i(TAG, "AVMCamera class không có (off-car/trim khác)"); return false }
         fun m(name: String, vararg types: Class<*>) = runCatching {
             c.getDeclaredMethod(name, *types).apply { isAccessible = true }   // ⚠ kinex setAccessible — method non-public
@@ -109,17 +99,7 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         // addPreviewSurface(Surface, int mode) — thử mode 0..3 như kinex.
         val add = m("addPreviewSurface", Surface::class.java, Integer.TYPE)
         var surfaceOk = false
-        channelRefused = false
-        // MÓC ĐO (pref `camera_hal_mode`, mặc định AUTO ⇒ nhánh này KHÔNG chạy): một lời gọi, đọc rc thật.
-        if (add != null && CameraSignalPolicy.isHalMode(halMode) && halMode >= CameraSignalPolicy.HAL_MODE_MIN) {
-            val rc = runCatching { add.invoke(obj, surface, halMode) as? Boolean ?: true }.getOrNull()
-            Log.i(TAG, "addPreviewSurface cameraId=$cameraId halMode=$halMode rc=$rc (pref camera_hal_mode)")
-            surfaceOk = rc == true
-            if (surfaceOk) added = surface to halMode
-            // Kênh ĐƠN bị từ chối ⇒ phần còn lại của hàm rơi về đường một-tham-số (khung ghép). Ghi lại sự thật ấy.
-            channelRefused = !surfaceOk && CameraProfileDefaults.isChannel(halMode)
-        }
-        if (add != null && !surfaceOk && halMode < CameraSignalPolicy.HAL_MODE_MIN) {
+        if (add != null) {
             for (mode in 0..3) {
                 if (runCatching { add.invoke(obj, surface, mode); true }.getOrDefault(false)) {
                     Log.i(TAG, "addPreviewSurface ok cameraId=$cameraId mode=$mode"); surfaceOk = true; added = surface to mode; break
@@ -128,17 +108,6 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         }
         if (!surfaceOk) {
             runCatching { m("addPreviewSurface", Surface::class.java)?.invoke(obj, surface); surfaceOk = true }
-        }
-        // [P1 · SOÁT Opus 2026-09-27 · R3] Kênh đơn được XIN mà lớp này **không có hàm để xin** (`add == null`) cũng là
-        // một lần "không nhận được kênh đơn": dòng trên vừa gắn surface qua `addPreviewSurface(Surface)` MỘT tham số,
-        // tức HAL đổ khung GHÉP, trong khi tầng vẽ tin là một kênh. Không ghi lại sự thật ấy thì `CameraChannelFallback`
-        // nhận `channelRefused = false` ⇒ R3 im lặng đúng ca sai im lặng mà nó sinh ra để đóng (ngân sách khung đầu
-        // cũng không cứu: khung ghép CÓ khung). [ĐO] trên xe owner nhánh này không chạy — `addPreviewSurface ok …`
-        // của 2.73 in ra từ nhánh hai tham số (`camera-after-2.69.md:22`) — nên đây là lưới cho trim/ROM khác
-        // ([ĐOÁN] hình dạng ấy, chưa có dump nào), không phải đường đang chạy.
-        if (add == null && CameraProfileDefaults.isChannel(halMode)) {
-            channelRefused = true
-            Log.w(TAG, "addPreviewSurface(Surface,int) KHÔNG có trên lớp này ⇒ xin kênh $halMode không được, khung là GHÉP")
         }
         val started = runCatching { m("startPreview")?.invoke(obj); true }.getOrDefault(false)
         Log.i(TAG, "AVMCamera cameraId=$cameraId surfaceOk=$surfaceOk started=$started")

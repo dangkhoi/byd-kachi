@@ -376,7 +376,7 @@ class TestBridgeCommandTest {
         // Cả ba đợt là **móc ĐO** và đều đảo lại được bằng một cú chạm trong Cài đặt ⇒ ràng buộc (3) giữ.
         // ⚠ Danh sách nay ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 — CLAUDE.md §4.1);
         // `WRITABLE_PREFS_KEYS` là bí danh, bài này hỏi qua tên cũ **có chủ ý** vì đó là hợp đồng của `parse`.
-        assertEquals(42, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        assertEquals(40, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)   // 42 → 40 (2.77): lần đầu danh sách CO LẠI
         assertEquals(
             TestBridgeWritableKeys.ALL, TestBridgeCommands.WRITABLE_PREFS_KEYS,
             "bí danh phải trỏ ĐÚNG tập đã tách — một bản sao thứ hai ở đây là hai danh sách sẽ lệch",
@@ -387,10 +387,10 @@ class TestBridgeCommandTest {
             "camera_gl_texmatrix",
         ).forEach { assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS, "núm nắn $it chưa vào danh sách trắng") }
         assertTrue("camera_render" in TestBridgeCommands.WRITABLE_PREFS_KEYS)
-        listOf("camera_span", "camera_strip_left", "camera_strip_right", "camera_shape", "camera_circle_scale",
-            "camera_hal_mode", "camera_source")
+        listOf("camera_span", "camera_strip_left", "camera_strip_right", "camera_shape", "camera_circle_scale")
             .forEach { assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS, "khoá đo $it chưa vào danh sách trắng") }
-        assertTrue("camera_rotation" !in TestBridgeCommands.WRITABLE_PREFS_KEYS, "khoá đơn cũ đã migrate — không nhận ghi nữa")
+        // `camera_rotation` migrate (2.71) · `camera_source`/`camera_hal_mode` gỡ cùng nguồn một-kênh (2.77: [ĐO] 27/09 hai khung thô cùng cảnh, cạnh 686 vs 351 ⇒ một kênh chỉ bị kéo ngang, không nét hơn — `CameraSettingsIaTest`).
+        listOf("camera_rotation", "camera_source", "camera_hal_mode").forEach { assertTrue(it !in TestBridgeCommands.WRITABLE_PREFS_KEYS, "$it không được nhận ghi nữa") }
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })
         // Mọi khoá mới đều phải thuộc đường GIỌNG NÓI (hoặc khoá nhãn chip đã có từ V3) — ràng buộc (2).
         assertTrue(

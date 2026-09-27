@@ -1,9 +1,11 @@
 package com.byd.clusternav.modules.clustercast
 
+import com.byd.clusternav.launcher.camera.CameraClusterBand
 import com.byd.clusternav.launcher.camera.CameraGlUniforms
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraProfileDefaults
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
+import com.byd.clusternav.launcher.camera.ClusterBandSpec
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -29,9 +31,6 @@ class ClusterProfileCameraDefaultsTest {
         assertEquals(0, c.panXPct); assertEquals(0, c.panYPct)
         assertEquals(P.ROTATE_NONE, c.rotation(left = true), "research §6.1: 18/20 hệ hiện ĐỨNG, khung HAL vốn đứng")
         assertEquals(P.ROTATE_NONE, c.rotation(left = false))
-        assertEquals(2, c.channel(left = true), "[ĐO 11:16] kênh 2 = gương TRÁI (cột E4)")
-        assertEquals(3, c.channel(left = false), "[ĐO 11:16] kênh 3 = gương PHẢI (cột E3)")
-        assertTrue(c.hasChannelMap)
         assertEquals(c, c.sane(), "bộ đo phải nằm trọn trong miền — không trường nào bị sane() sửa")
     }
 
@@ -58,11 +57,10 @@ class ClusterProfileCameraDefaultsTest {
         assertEquals(0f, seal.dewarp.panX, 1e-6f); assertEquals(0f, seal.dewarp.panY, 1e-6f)
     }
 
-    /** Đời khác (DL5 · generic · hồ sơ tự nhập) = TRUNG TÍNH = 2.75, và không có bản đồ kênh ⇒ hàng Nguồn ẩn. */
-    @Test fun `doi khac trung tinh, khong ban do kenh`() {
+    /** Đời khác (DL5 · generic · hồ sơ tự nhập) = TRUNG TÍNH = 2.75. */
+    @Test fun `doi khac trung tinh`() {
         listOf(ClusterProfile.DL5, ClusterProfile.GENERIC_FALLBACK).forEach {
             assertEquals(CameraProfileDefaults.NEUTRAL, it.camera, "${it.id} phải trung tính — bộ Seal không được chép sang xe chưa đo")
-            assertFalse(it.camera.hasChannelMap)
         }
         val custom = requireNotNull(ClusterProfile.parse("sl6_dl3;3;1600;600;16-35;;fission"))
         assertEquals(CameraProfileDefaults.NEUTRAL, custom.camera, "id lạ ⇒ trung tính")
@@ -80,5 +78,56 @@ class ClusterProfileCameraDefaultsTest {
         assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.parse(export))
         assertEquals(ClusterProfile.SEAL_DL3_CAMERA, ClusterProfile.cameraFor("seal_dl3"))
         assertEquals(CameraProfileDefaults.NEUTRAL, ClusterProfile.cameraFor("dilink5"))
+    }
+
+    /**
+     * ═══ 2.77 — ĐƯỜNG CONG KÍNH chỉ đi theo đời ĐÃ ĐO, không phải mặc định dùng chung ═════════════════════════════
+     *
+     * Khoá lại đúng lỗi điều phối bắt được lúc gộp hai làn: làn L2 nhét bảng `leftEdge` [ĐO trên kính Seal DL3] vào
+     * chính `ClusterBandSpec.SEAL_DL3`, mà `ClusterProfile.band` lại lấy bộ ấy làm **mặc định cho mọi đời** (từ
+     * 2.76, khi bộ ấy chỉ còn là 4 số ĐẶT cửa sổ). Từ 2.77 bảng ấy **CẮT** điểm ảnh (`CameraOverlayMask.glassMask`)
+     * tới 122 px bên trái ⇒ một cụm DiLink5 (đường tới được thật: `detectSeed` trả [ClusterProfile.DL5] cho xe BYD
+     * DL5) sẽ bị xén ảnh theo miếng kính của xe khác, âm thầm. CLAUDE.md §7: khác biệt đời xe nằm trong hồ sơ.
+     *
+     * Rơi về = mất đường cong (tường thẳng 2.76), KHÔNG mất camera — đó là điều kiện `leftEdge.isEmpty()` mà
+     * `CameraClusterBand.leftEdge`/`glassMask` đã có sẵn.
+     */
+    @Test fun `duong cong kinh chi cho doi DA DO, doi khac tuong thang 2 76`() {
+        assertEquals(ClusterBandSpec.SEAL_DL3, ClusterProfile.SEAL_DL3.band, "đời đã đo mang bảng mép cong")
+        assertTrue(ClusterProfile.SEAL_DL3.band.leftEdge.isNotEmpty())
+        listOf(ClusterProfile.DL5, ClusterProfile.GENERIC_FALLBACK).forEach {
+            assertEquals(emptyList<Int>(), it.band.leftEdge, "${it.id} chưa đo kính ⇒ KHÔNG được xén theo kính Seal")
+            assertEquals(ClusterBandSpec.SEAL_DL3_NO_CURVE, it.band)
+        }
+        // Bốn số ĐẶT cửa sổ thì vẫn dùng chung (quyết định 2.76, không đổi): chỉ đường CẮT là theo đời.
+        assertEquals(ClusterBandSpec.SEAL_DL3.left, ClusterBandSpec.SEAL_DL3_NO_CURVE.left)
+        assertEquals(ClusterBandSpec.SEAL_DL3.right, ClusterBandSpec.SEAL_DL3_NO_CURVE.right)
+        assertEquals(ClusterBandSpec.SEAL_DL3.top, ClusterBandSpec.SEAL_DL3_NO_CURVE.top)
+        assertEquals(ClusterBandSpec.SEAL_DL3.bottom, ClusterBandSpec.SEAL_DL3_NO_CURVE.bottom)
+        assertEquals(ClusterBandSpec.SEAL_DL3.radiusPx, ClusterBandSpec.SEAL_DL3_NO_CURVE.radiusPx)
+        // id lạ dán từ chat + đời BYD DL5 thật: cả hai đều phải là tường thẳng.
+        val custom = requireNotNull(ClusterProfile.parse("sl6_dl3;3;1600;600;16-35;;fission"))
+        assertEquals(emptyList<Int>(), custom.band.leftEdge, "chuỗi owner dán không mang kính của Seal")
+        assertEquals(emptyList<Int>(), ClusterProfile.detectSeed("BYD AUTO", "byd", "byd", "dilink5").band.leftEdge)
+        assertEquals(ClusterBandSpec.SEAL_DL3.leftEdge, ClusterProfile.detectSeed("BYD AUTO", "byd", "byd", "dilink3").band.leftEdge)
+        // Cửa duy nhất, cùng khuôn với `cameraFor`.
+        assertEquals(ClusterBandSpec.SEAL_DL3, ClusterProfile.bandFor("seal_dl3"))
+        assertEquals(ClusterBandSpec.SEAL_DL3_NO_CURVE, ClusterProfile.bandFor("dilink5"))
+    }
+
+    /** Tường thẳng 2.76 nghĩa là: cửa sổ ở đúng `band.x0` và KHÔNG có gì để cắt ⇒ `glassMask` trả `null`. */
+    @Test fun `tuong thang thi cua so o x0 va khong co mat na`() {
+        val spec = ClusterProfile.DL5.band
+        val band = CameraClusterBand.band(1920, 720, spec)
+        val edge = CameraClusterBand.leftEdge(band, spec, 1920)
+        assertEquals(emptyList<Int>(), edge, "bảng rỗng ⇒ không nội suy gì")
+        val p = CameraClusterBand.place(
+            band = band, atLeft = true, streamW = 5120, streamH = 960,
+            crop = CameraPanoCrop.stripCrop(1), rotationDeg = 0, spec = spec, displayH = 720, leftEdge = edge,
+        )
+        assertEquals(band.x0, p.x, "đúng tường thẳng 140 của 2.76")
+        assertEquals(emptyList<Int>(), p.leftEdge)
+        assertEquals(band.x0, CameraClusterBand.maskLeftAt(p, p.y + p.h / 2), "mép có mực = tường thẳng")
+        assertTrue(CameraClusterBand.insideBand(p), "bất biến [P1] 2.76 còn nguyên")
     }
 }

@@ -250,35 +250,16 @@ object CameraSignalPolicy {
     /** Mã bề rộng đọc lên có dùng được không — cùng vai [isRender] (prefs sửa tay được qua `prefs_set`). */
     fun isSpan(v: String): Boolean = v in SPANS
 
-    // ── NGUỒN ảnh: khung GHÉP 4-in-1 hay MỘT KÊNH camera (`camera_source`, 2.75) ───────────────────────────
-
-    /** Khung **GHÉP** 4-in-1 rồi cắt một dải ([CameraPanoCrop]) — đường của 2.36…2.74, mặc định. */
-    const val SOURCE_PANO = "PANO"
-
-    /**
-     * ═══ **MỘT KÊNH** camera, khung đầy — [ĐO xe 27/09 11:16, trả lời RE §7 Q3/D7] ═══════════════════════
-     *
-     * `addPreviewSurface(surface, halMode)` với `halMode ∈ 1..4` trả **`rc = true`** và buffer (vẫn `5120×960`)
-     * chứa **trọn khung fisheye của MỘT camera**, **kéo ngang** cho đầy — anamorphic đúng [CameraPanoCrop.STRIPS]
-     * lần (ảnh thật `1280×960`). Seal: `2` = gương TRÁI · `3` = gương PHẢI ([ĐO], cột E4/E3); `1`/`4` = trước/sau
-     * [SUY]. Nguồn TỐT HƠN cho gương: trọn vòng ảnh, và ô vẫn `1280×960` nên `K`/`F` owner đã duyệt giữ nguyên.
-     *
-     * ⚠ Mọi tầng hình học phải dùng **cỡ NỘI DUNG** ([CameraPanoCrop.contentWidth]), không phải cỡ buffer — lấy
-     * `5120` ⇒ `aspect = 5,33`, đồng-θ thành ellipse dẹt. Chi tiết: `camera-dewarp-gl.md` §F.
-     */
-    const val SOURCE_CHANNEL = "CHANNEL"
-
-    /** Mọi mã nguồn hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
-    val SOURCES: List<String> = listOf(SOURCE_PANO, SOURCE_CHANNEL)
-
-    /** Nguồn mặc định = đường đang chạy hiện trường (CLAUDE.md §6: cái mới không được đổi mặc định). */
-    fun defaultSource(): String = SOURCE_PANO
-
-    /** Mã nguồn đọc lên có dùng được không. */
-    fun isSource(v: String): Boolean = v in SOURCES
-
-    // `usesChannel` · `channelFor` · `channelActive` · `frameNote` là **phần mở rộng** ở `CameraChannel.kt` (2.76):
-    // kênh nay đến từ HỒ SƠ xe ([CameraProfileDefaults.channel]), không từ `CamView` — xem KDoc tệp ấy.
+    // ── NGUỒN ảnh: **chỉ** khung GHÉP 4-in-1 (2.77 — tuỳ chọn *Một camera* đã gỡ) ──────────────────────────
+    //
+    // 2.75/2.76 có một mã nguồn thứ hai (`camera_source = CHANNEL`, MỘT kênh camera đổ đầy buffer). Owner gỡ trên xe
+    // 27/09 sau một phép ĐO: cùng cỡ cảnh, dải ghép có **năng lượng cạnh 686 vs 351** và tỉ lệ chi tiết ngang/dọc
+    // **0,30 (ghép) vs 0,19 (một kênh)** ⇒ một kênh chỉ bị KÉO NGANG nhiều hơn, **không** mang thêm điểm ảnh thật.
+    // Bản đồ kênh đo được (1 = sau · 2 = trái · 3 = phải · 4 = trước) giữ lại làm **kiến thức** ở
+    // `docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md` §7, không còn đường code nào đọc nó.
+    //
+    // ⇒ Ở đây KHÔNG còn hằng nguồn nào: một enum một-phần-tử là một chỗ để ai đó thêm phần tử thứ hai mà không đo.
+    // `addPreviewSurface` chỉ còn đường dò `0..3` của 2.73 (`AvmCamera.open`), tức luôn là khung ghép.
 
     /** Khung CHỮ NHẬT bo góc — đúng cửa sổ 2.73. Mặc định. */
     const val SHAPE_RECT = "RECT"
@@ -326,37 +307,6 @@ object CameraSignalPolicy {
 
     /** Phần trăm đọc lên có dùng được không (ngoài dải ⇒ chỗ đọc rơi về [CIRCLE_PCT_DEFAULT]). */
     fun isCirclePct(v: Int): Boolean = v in CIRCLE_PCT_MIN..CIRCLE_PCT_MAX
-
-    // ── MÓC ĐO kênh xem của HAL (`addPreviewSurface(Surface, int)` — RE §5 K4 · §6.3 C1) ─────────
-    //
-    // [ĐO firmware] `IDiLinkAVMCamera.java:12` `boolean addPreviewSurface(Surface, int)`; miền của `int` là
-    // `DiLinkCameraConstants.java:47-55`: `VIEW_DEFAULT = 0`, `VIEW_CHANNEL_1..4 = 1..4`. 2.73 dò `0..3` rồi lấy cái
-    // đầu tiên không ném ⇒ **gần như luôn trúng 0 = VIEW_DEFAULT** (khung 4-in-1), và **chưa bao giờ thử 4**.
-    // [SUY mạnh, RE §6.3-C1] `VIEW_CHANNEL_n` có thể bắt HAL trả **một kênh camera** thay vì khung ghép — nếu đúng
-    // thì không cần crop, không cần chia dải, và có khi HAL đã nắn méo sẵn. Chỉ đo được **trên xe**.
-
-    /** Không chọn kênh ⇒ **dò `0..3` y 2.73**. Mặc định; giá trị này là thứ giữ đường cũ nguyên vẹn. */
-    const val HAL_MODE_AUTO = -1
-
-    /** `VIEW_DEFAULT` — khung 4-in-1. Khác [HAL_MODE_AUTO] ở chỗ nó gọi ĐÚNG một lần và ĐỌC giá trị trả về. */
-    const val HAL_MODE_MIN = 0
-
-    /**
-     * `VIEW_CHANNEL_4` — trần của **dải `VIEW_CHANNEL`**, KHÔNG phải trần của cả miền.
-     *
-     * ⚠ [SOÁT Opus 2026-09-27] Chú thích cũ nói *"trần miền của `DiLinkCameraConstants`"* và điều đó **sai**: cùng
-     * tệp firmware ([ĐO] `DiLinkCameraConstants.java:51-54`) còn khai `VIEW_DECUSSATION_HFLIP = 6`,
-     * `VIEW_DECUSSATION_VFLIP = 7`, `VIEW_DECUSSATION_3124 = 3124`, `4123`. Con số **6** đáng chú ý nhất: nó là một
-     * phép **lật ngang ở tầng HAL** — đúng thứ một khung camera GƯƠNG cần, và miễn phí (không shader, không lượt GPU).
-     * Nới miền ra tới đó là một tính năng MỚI (ngoài phạm vi 2.74) ⇒ ghi vào backlog, không tự thêm ở lượt soát.
-     */
-    const val HAL_MODE_MAX = 4
-
-    /** Mọi kênh hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định [HAL_MODE_AUTO] đứng đầu). */
-    val HAL_MODES: List<Int> = listOf(HAL_MODE_AUTO) + (HAL_MODE_MIN..HAL_MODE_MAX)
-
-    /** Kênh đọc lên có dùng được không (lạ ⇒ chỗ đọc rơi về [HAL_MODE_AUTO], tức đường 2.73). */
-    fun isHalMode(v: Int): Boolean = v in HAL_MODES
 
     // ── TRẦN NHỊP VẼ của đường GL (2.75) ──────────────────────────────────────────────────────────────────
 

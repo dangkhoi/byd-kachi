@@ -1,7 +1,14 @@
 # Runbook CLOSING — một buổi xe 30–60 phút cho 2.75 + 2.76 (177)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (chiều, trước khi owner đi công tác một tháng) · **Bản kiểm**: **2.76 (177)** qua OTA `main` (gộp mọi kiểm 2.75 chưa làm) · **Xe**: Seal DiLink 3.0, đang chạy 2.74 (175) cài tay 27/09 · **Mục đích**: owner lệnh *"làm hết off-car nợ, sau đó lên xe 30p–1 tiếng closing hết luôn"* — đây là buổi xe duy nhất còn lại. Mỗi dòng có tiêu chí viết trước; hết 60 phút thì dừng ở dòng đang làm, phần dưới ghi "chưa đo" vào backlog.
+> **Trạng thái**: Superseded (phần camera — xem ⚠ dưới) · **Cập nhật**: 2026-09-27 (chiều, trước khi owner đi công tác một tháng) · **Bản kiểm**: **2.76 (177)** qua OTA `main` (gộp mọi kiểm 2.75 chưa làm) · **Xe**: Seal DiLink 3.0, đang chạy 2.74 (175) cài tay 27/09 · **Mục đích**: owner lệnh *"làm hết off-car nợ, sau đó lên xe 30p–1 tiếng closing hết luôn"* — đây là buổi xe duy nhất còn lại. Mỗi dòng có tiêu chí viết trước; hết 60 phút thì dừng ở dòng đang làm, phần dưới ghi "chưa đo" vào backlog.
 > Biến: `$A` adb · `$S` = `127.0.0.1:15555` (cầu nc, memory `kachi-adb-car-tunnel`) · `<pkg>` = `com.byd.launcher` · `BR` = `$A -s $S shell am broadcast -n <pkg>/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a <pkg>.TEST`. **Chế độ kiểm thử** tắt khi launcher khởi động lại ⇒ bật lại ở *Cài đặt › Hệ thống & quyền › Quyền › Chế độ kiểm thử qua adb*. Getter không tham số: **không** truyền `--es args`. Pref camera chỉ áp sau `camera none` → `camera left`. **Không adb vẫn làm được mọi dòng có dấu 👁** (chỉ mắt + Cài đặt).
+> ⚠ **SUPERSEDED cho phần CAMERA (2026-09-27 chiều · bản 2.77)** — buổi xe closing (chính buổi mà runbook này phục vụ)
+> đã chốt **bỏ hẳn** nguồn *Một camera* và **gỡ khối *Nâng cao (kỹ thuật)***: [ĐO hai khung thô cùng cảnh] dải ghép có
+> năng lượng cạnh **686 vs 351**, tỉ lệ chi tiết ngang/dọc **0,30 vs 0,19** ⇒ một kênh chỉ bị kéo ngang, **không nét
+> hơn**; owner *"không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn"*.
+> ⇒ Từ 2.77 các dòng **CAM-F1…F5** và **G7** dưới đây **không thi hành được** (không còn hàng, không còn khoá). Phép
+> kiểm hiện hành: **CAM-G1…G5** ở `offcar-2026-09-27/camera-ia-profile.md` §8.7. Bảng dưới giữ làm **lịch sử buổi
+> 2.76 (177)**; câu chờ owner số 4 (*"có đổi mặc định sang Một camera?"*) đã **có câu trả lời: KHÔNG, bỏ hẳn**.
 
 ## 0. Ở nhà (3 phút)
 1. `apk/Kachi-2.76-release.apk` tải sẵn (mạng bãi xe kém). Trên xe: *Cài đặt › Hệ thống › Kiểm tra cập nhật* ⇒ 2.76, hoặc `install -r`.
@@ -31,7 +38,7 @@
 | **E12' · E11** | Perf + crash | `perf-snapshot.sh oncar-276-idle 300 $S` sau 5 phút nghỉ; `ls …/kachi-logs \| grep crash` | PSS launcher ≤ 70 MB (2.74: 75); 0 crash | JSON | 5 |
 
 ## 2. Câu chờ owner (trả lời khi nhìn xe, ghi vào backlog)
-1. **CAM-C2**: giữ đứng hay xoay (mỗi bên)? 2. **CAM-M1**: lật gương mặc định? 3. **G7**: giá trị dịch khung trái/phải. 4. **CAM-F2**: có đổi mặc định sang *Một camera*? 5. **OQ3**: hai getter AUTO có lệch nhau không (chốt gộp chip). 6. Còn nguyên: OQ7 thẻ lốp (đã chỉnh 0,50 — nhìn có ổn?), CAM-HAL-MODE-6 (HFLIP toàn hệ), `setPreviewSize`.
+1. **CAM-C2**: giữ đứng hay xoay (mỗi bên)? 2. **CAM-M1**: lật gương mặc định? 3. **G7**: giá trị dịch khung trái/phải. 4. **CAM-F2**: có đổi mặc định sang *Một camera*? ⇒ **ĐÃ TRẢ LỜI: KHÔNG, bỏ hẳn cả tuỳ chọn** (xem ⚠ đầu tệp). 5. **OQ3**: hai getter AUTO có lệch nhau không (chốt gộp chip). 6. Còn nguyên: OQ7 thẻ lốp (đã chỉnh 0,50 — nhìn có ổn?), CAM-HAL-MODE-6 (HFLIP toàn hệ), `setPreviewSize`.
 
 ## 3. Mang về (2 phút)
-`logcat-2.76-*.txt`, dòng gfxinfo, JSON perf, `read_back` pan/rot/mirror, ảnh cụm nếu CAM-CL1 lệch, zip voice nếu E2' < 8/10 ⇒ **`docs/diagnostics/oncar-<ngày>/`** — đúng thư mục ngày, vì `.gitignore` chặn theo mẫu `oncar-*/` ([ĐO `git check-ignore`] thả thẳng vào `docs/diagnostics/` thì **KHÔNG** được chặn). Từ 2.76 có thêm lưới an toàn độc lập đường dẫn (`logcat*.txt`, `**/kachi-voice-*.zip`, `**/*.zip`, `**/*.png` dưới `docs/diagnostics/`), nhưng vẫn chép đúng thư mục ngày. Commit **chỉ** bản .md tóm tắt + dòng backlog `ONCAR-<ngày>` cùng phiên (R2.1). Sau buổi này: cập nhật mặc định `ClusterProfile` theo câu 1–3, bump 2.77, OTA — là việc off-car cuối của dự án.
+`logcat-2.76-*.txt`, dòng gfxinfo, JSON perf, `read_back` pan/rot/mirror, ảnh cụm nếu CAM-CL1 lệch, zip voice nếu E2' < 8/10 ⇒ **`docs/diagnostics/oncar-<ngày>/`** — đúng thư mục ngày, vì `.gitignore` chặn theo mẫu `oncar-*/` ([ĐO `git check-ignore`] thả thẳng vào `docs/diagnostics/` thì **KHÔNG** được chặn). Từ 2.76 có thêm lưới an toàn độc lập đường dẫn (`logcat*.txt`, `**/kachi-voice-*.zip`, `**/*.zip`, `**/*.png` dưới `docs/diagnostics/`), nhưng vẫn chép đúng thư mục ngày. Commit **chỉ** bản .md tóm tắt + dòng backlog `ONCAR-<ngày>` cùng phiên (R2.1). Sau buổi này: cập nhật mặc định `ClusterProfile` theo câu 1–3, bump 2.77, OTA — là việc off-car cuối của dự án. **Đã làm ở 2.77**: gỡ tầng *Nâng cao* + nguồn *Một camera* (`offcar-2026-09-27/camera-ia-profile.md` §8).

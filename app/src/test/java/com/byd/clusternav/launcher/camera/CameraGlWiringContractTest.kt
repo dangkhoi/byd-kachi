@@ -345,35 +345,44 @@ class CameraGlWiringContractTest {
         assertFalse("getSharedPreferences" in prefs, "phải dùng lại `autoPrefs` của PrefsAutomation")
     }
 
-    /** Tám hàng −/+ và một ô tích, **đúng thứ tự chỉnh**: tâm → K → tiêu cự → phóng → độ nắn → **dịch** (cuối). */
-    @Test fun `Cai dat co sau hang num va mot o tich, dung thu tu chinh`() {
-        val body = SourceRoots.body(settings, "private fun cameraDewarp(")
-        assertTrue("rows.checkRow(" in body && "bridge.cameraGlTexMatrix()" in body, "công tắc uTexMatrix")
-        val order = listOf(
+    /**
+     * ═══ 2.77 — tám núm nắn + công tắc `uTexMatrix` KHÔNG còn hàng nào trong Cài đặt ═══════════════════════════
+     *
+     * Owner trên xe 27/09: *"bỏ hết phần nâng cao đi"*. Bộ `F 55 · K 100 · S 130 · tâm 0,0 · dịch 0,0` owner đã duyệt
+     * bằng mắt nay là mặc định hồ sơ Seal, và người lái chỉ còn **một ô tích** *Nắn hình* (`camera_dewarp_amount`).
+     * Bài này canh **sự vắng mặt**: chín khoá còn ghi/đọc qua `prefs_set` (đường chẩn đoán CLAUDE.md §15 bước 2),
+     * nhưng không một hàng nào trên màn — và chữ của chúng đã xoá khỏi CẢ hai tệp chữ (i18n mồ côi).
+     */
+    @Test fun `tam num nan khong con hang nao trong Cai dat`() {
+        val gone = listOf(
             "kachi_camera_dewarp_cx", "kachi_camera_dewarp_cy", "kachi_camera_dewarp_k",
             "kachi_camera_dewarp_focal", "kachi_camera_dewarp_scale", "kachi_camera_dewarp_amount",
-            // Dịch xuống CUỐI (CLAUDE.md §6): nó trượt khung chứ không chữa bệnh cong — đặt trên sẽ dẫn kéo nhầm núm.
             "kachi_camera_dewarp_pan_x", "kachi_camera_dewarp_pan_y",
+            "kachi_camera_dewarp_sub", "kachi_camera_dewarp_note",
+            "kachi_camera_gl_texmatrix_title", "kachi_camera_gl_texmatrix_sub", "kachi_camera_render_gl",
         )
-        var at = -1
-        order.forEach {
-            val i = body.indexOf(it)
-            assertTrue(i > at, "hàng `$it` thiếu hoặc sai thứ tự — K phải đứng TRƯỚC tiêu cự (§4 tài liệu toán)")
-            at = i
-        }
-        assertTrue("rows.stepperRow(" in SourceRoots.body(settings, "private fun knob("), "hàng −/+ dùng lại kiểu có sẵn")
-        assertTrue("CameraDewarpPrefs.PAN_STEP" in body, "bước nhảy hàng Dịch cũng lấy từ `:core`")
-        assertTrue("CameraDewarpPrefs.PCT_STEP" in body && "CameraDewarpPrefs.CENTER_STEP" in body,
-            "bước nhảy lấy từ `:core`, không gõ số trong UI")
-        assertTrue("cameraDewarp(body)" in SourceRoots.body(settings, "private fun cameraTech("),
-            "khối nắn phải có call site trong tầng KỸ THUẬT — nếu không thì tám hàng chưa từng hiện ra (CLAUDE.md §8)")
-        // Chữ ở CẢ hai ngôn ngữ.
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
-        (order + listOf("kachi_camera_render_gl", "kachi_camera_dewarp_sub", "kachi_camera_gl_texmatrix_title",
-            "kachi_camera_gl_texmatrix_sub", "kachi_camera_dewarp_note")).forEach {
-            assertTrue(it in vi, "thiếu chữ VI cho $it")
-            assertTrue(it in en, "thiếu chữ EN cho $it")
+        gone.forEach {
+            assertFalse(it in settings, "hàng `$it` đã gỡ ở 2.77 — thấy lại là khối nắn đã sống lại")
+            assertFalse("\"$it\"" in vi, "chữ VI $it mồ côi")
+            assertFalse("\"$it\"" in en, "chữ EN $it mồ côi")
+        }
+        listOf("private fun cameraDewarp(", "private fun knob(", "rows.stepperRow(", "CameraDewarpPrefs.PAN_STEP",
+            "CameraDewarpPrefs.PCT_STEP", "CameraDewarpPrefs.CENTER_STEP", "bridge.cameraGlTexMatrix()")
+            .forEach { assertFalse(it in settings, "`$it` đã gỡ ở 2.77") }
+        // Ô tích DUY NHẤT còn lại — và nó vẫn ghi đúng hai đầu miền của `:core`.
+        val user = SourceRoots.body(settings, "private fun cameraUser(")
+        assertTrue("if (on) CameraDewarpPrefs.AMOUNT_MAX else CameraDewarpPrefs.AMOUNT_MIN" in user,
+            "người lái còn đúng một quyết định: có nắn hay không")
+        listOf("kachi_camera_dewarp_on_sub_header", "kachi_camera_dewarp_on_title", "kachi_camera_dewarp_on_sub").forEach {
+            assertTrue("R.string.$it" in settings, "ô tích Nắn hình phải còn chữ $it")
+            assertTrue("\"$it\"" in vi && "\"$it\"" in en, "chữ $it phải có ở CẢ hai ngôn ngữ")
+        }
+        // Chín khoá vẫn ghi được qua cầu kiểm thử — gỡ UI KHÔNG được biến thành gỡ đường chẩn đoán.
+        listOf("camera_dewarp_cx", "camera_dewarp_cy", "camera_dewarp_k", "camera_dewarp_focal", "camera_dewarp_scale",
+            "camera_dewarp_pan_x", "camera_dewarp_pan_y", "camera_gl_texmatrix").forEach {
+            assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS && "\"$it\" ->" in prefsSet, "$it phải còn ghi được để dò trên xe")
         }
     }
 

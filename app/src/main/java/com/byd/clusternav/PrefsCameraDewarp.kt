@@ -157,9 +157,9 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  * @param crop vùng cắt đã suy ([com.byd.clusternav.launcher.camera.CameraPanoCrop.cropFor]) — cùng giá trị truyền cho
  *   overlay, KHÔNG tính lại (hai lượt tính là hai kết quả lệch được).
  * @param strip chỉ số dải đang xem — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
- * @param streamW bề ngang **NỘI DUNG** (đã qua [com.byd.clusternav.launcher.camera.CameraPanoCrop.contentWidth]),
- *   KHÔNG phải bề ngang buffer — ở nguồn `CHANNEL` hai số ấy lệch nhau đúng `STRIPS` lần.
- * @param channel đang lấy MỘT kênh camera ([CameraSignalPolicy.SOURCE_CHANNEL]) ⇒ quang tâm là tâm buffer.
+ * @param streamW bề ngang ảnh nguồn (px), ĐO bằng `AVMCamera.getPreviewWidth` ở chỗ gọi. Từ 2.77 chỉ còn **một**
+ *   nguồn — khung GHÉP 4-in-1 — nên bề ngang buffer **chính là** bề ngang nội dung; phép chia `/STRIPS` của nguồn
+ *   một-kênh (2.75/2.76) đã gỡ cùng nguồn ấy.
  * @param left đang hiện gương TRÁI hay không — **KHÔNG** có mặc định: hai camera gương soi gương nhau nên dấu của
  *   `camera_dewarp_pan_x` phải theo bên ([CameraDewarpPrefs.panXSign]), và một mặc định ở đây là đúng chỗ để quên.
  * @param mirror LẬT GƯƠNG bên này (2.76 L7, [Prefs.cameraMirror]) — đi vào `flipH` = `uSrcRect.z < 0`, tức lật ở
@@ -175,9 +175,8 @@ fun Prefs.cameraGlUniforms(
     streamH: Int,
     left: Boolean,
     mirror: Boolean,
-    channel: Boolean = false,
 ): CameraGlUniforms {
-    val centre = CameraGlUniforms.sourceCentre(view, strip, channel)
+    val centre = CameraGlUniforms.sourceCentre(view, strip)
     return CameraGlUniforms.of(
         crop = crop,
         srcCentreX = centre[0],

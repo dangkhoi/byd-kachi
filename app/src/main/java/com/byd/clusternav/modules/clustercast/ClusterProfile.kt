@@ -52,12 +52,17 @@ data class ClusterProfile(
      */
     val camera: CameraProfileDefaults = CameraProfileDefaults.NEUTRAL,
     /**
-     * Số đo DẢI GIỮA của cụm cho hình camera *theo cụm* (2.76 R4; nợ chéo L2 → L7): [ClusterBandSpec.SEAL_DL3] là bộ
-     * [ĐO] trên Seal DL3, và là mặc định cho mọi đời chưa đo. **Không** vào [export]/[parse] — chuỗi override do
-     * owner chia sẻ chỉ mang thứ đã đo được bằng tay trên xe (cụm, chuỗi lệnh, tên VD); dải cụm là số của bộ vẽ,
-     * đổi theo seed đời xe, không phải thứ ai gõ vào. `CameraSignalController` đọc qua `CameraDefaults.band`.
+     * Số đo DẢI GIỮA của cụm cho hình camera *theo cụm* (2.76 R4; nợ chéo L2 → L7). **Không** vào [export]/[parse] —
+     * chuỗi override do owner chia sẻ chỉ mang thứ đã đo được bằng tay trên xe (cụm, chuỗi lệnh, tên VD); dải cụm là
+     * số của bộ vẽ, đổi theo seed đời xe, không phải thứ ai gõ vào. `CameraSignalController` đọc qua
+     * `CameraDefaults.band`; đời xe chọn bộ nào thì [bandFor] nói.
+     *
+     * ⚠ 2.77 — mặc định là [ClusterBandSpec.SEAL_DL3_NO_CURVE] (**không** đường cong), không phải
+     * [ClusterBandSpec.SEAL_DL3]: từ 2.77 bảng `leftEdge` không chỉ đặt cửa sổ mà còn **CẮT** điểm ảnh theo miếng
+     * kính của Seal, nên đời cụm chưa đo phải rơi về tường thẳng của 2.76 chứ không được xén theo kính xe khác
+     * (CLAUDE.md §7). Xem KDoc [ClusterBandSpec.SEAL_DL3_NO_CURVE].
      */
-    val band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
+    val band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3_NO_CURVE,
 ) {
     /** Đời xe này có đổi được kiểu cong/thẳng không — UI dựa vào đây để hiện hay ẩn nút. */
     val supportsStyle: Boolean get() = styleOps != null
@@ -93,7 +98,11 @@ data class ClusterProfile(
          *  • `rot 0/0` — khung HAL vốn ĐỨNG (F1: 4 dải fisheye đứng, mặt đất dưới) và research
          *    `research-side-camera-orientation-2026-09-27.md` §6.1: 18/20 hệ [ĐO] hiện ĐỨNG ⇒ mặc định đứng.
          *    ⚠ Pref `↺90` owner đã đặt trên xe **không** bị ghi đè (pref thắng) — chốt bằng 🚗 CAM-C2;
-         *  • kênh HAL `trái = 2 · phải = 3` — [ĐO 11:16] `addPreviewSurface(surface, n)` cột E4/E3.
+         *  • ⚠ 2.77: **không còn** bản đồ kênh HAL. [ĐO 11:16] `addPreviewSurface(surface, n)` cho `trái = 2 ·
+         *    phải = 3` (bản đồ đầy đủ: 1 = sau · 2 = trái · 3 = phải · 4 = trước, owner xác nhận từng kênh) — số đo
+         *    ấy giữ ở `camera-ia-profile.md` §7 làm **kiến thức**, nhưng nguồn *Một camera* đã bỏ hẳn: cùng cỡ cảnh,
+         *    dải ghép có năng lượng cạnh **686 vs 351** và tỉ lệ chi tiết ngang/dọc **0,30 vs 0,19** ⇒ một kênh chỉ
+         *    bị kéo ngang, không nét hơn.
          *
          * Mọi số ở đây là **số đo**, không phải phép suy. Đời xe khác KHÔNG chép bộ này (KDoc [CameraProfileDefaults]).
          */
@@ -105,7 +114,6 @@ data class ClusterProfile(
             centerXPct = 0, centerYPct = 0, panXPct = 0, panYPct = 0,
             rotLeft = com.byd.clusternav.launcher.camera.CameraSignalPolicy.ROTATE_NONE,
             rotRight = com.byd.clusternav.launcher.camera.CameraSignalPolicy.ROTATE_NONE,
-            channelLeft = 2, channelRight = 3,
         )
 
         // ★ SEED đã VERIFY trên xe (2026-07-19): Seal DL3, VD XDJA/fission, chiếu 30→16→35, tắt 18→0.
@@ -114,11 +122,20 @@ data class ClusterProfile(
             id = "seal_dl3", diLink = 3, clusterW = 1920, clusterH = 720,
             castSeq = listOf(30, 16, 35), teardownSeq = listOf(18, 0), vdNameHint = "xdja",
             camera = SEAL_DL3_CAMERA,
+            // ĐỜI DUY NHẤT đã đo đường cong kính (2.77) ⇒ đời duy nhất được mang bảng `leftEdge`.
+            band = ClusterBandSpec.SEAL_DL3,
         )
 
         /** Mặc định camera theo `id` seed: chỉ seed ĐÃ ĐO mới có bộ riêng; id lạ/đời khác ⇒ trung tính. */
         fun cameraFor(id: String): CameraProfileDefaults =
             if (id == SEAL_DL3.id) SEAL_DL3_CAMERA else CameraProfileDefaults.NEUTRAL
+
+        /**
+         * Dải cụm theo `id` seed — cùng luật với [cameraFor]: chỉ đời **ĐÃ ĐO đường cong kính** mới mang bảng
+         * `leftEdge`; id lạ/đời khác ⇒ [ClusterBandSpec.SEAL_DL3_NO_CURVE] = tường thẳng, đúng hành vi 2.76.
+         */
+        fun bandFor(id: String): ClusterBandSpec =
+            if (id == SEAL_DL3.id) ClusterBandSpec.SEAL_DL3 else ClusterBandSpec.SEAL_DL3_NO_CURVE
 
         /**
          * DiLink 5 (Android 12) — RE từ DashCast: service đổi thành `auto_container`, VD tên
@@ -184,7 +201,10 @@ data class ClusterProfile(
                 "" -> null
                 else -> parseSeq(raw9)?.takeIf { it.size == 2 }?.let { it[0] to it[1] }
             }
-            return ClusterProfile(id, diLink, w, h, cast, tear, hint, svc, style, camera = cameraFor(id))
+            return ClusterProfile(
+                id, diLink, w, h, cast, tear, hint, svc, style,
+                camera = cameraFor(id), band = bandFor(id),
+            )
         }
 
         /** "30-16-35" → [30,16,35]. Rỗng → []. null nếu có phần không phải số / ngoài dải [0,255] / quá dài (>16). */

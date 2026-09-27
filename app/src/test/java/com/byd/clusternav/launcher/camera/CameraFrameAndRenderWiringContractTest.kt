@@ -107,23 +107,27 @@ class CameraFrameAndRenderWiringContractTest {
 
     // ══ (C) Cài đặt · prefs · cầu kiểm thử ═════════════════════════════════════════════════════════════════
 
-    /** Một hàng chip, ĐÚNG hai mã = hằng `:core`, và nhãn của `SurfaceView` nói rõ giới hạn xoay. */
-    @Test fun `cai dat co hang chip ket xuat lay ma tu core`() {
-        // 2.76 · R1: đường kết xuất là móc đo ⇒ tầng KỸ THUẬT (khối gập, chỉ khi chế độ kiểm thử mở).
-        val body = SourceRoots.body(settings, "private fun cameraTech(")
-        listOf("RENDER_TEXTURE", "RENDER_SURFACE", "RENDER_GL").forEach {
-            assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`")
+    /**
+     * 2.77 — hàng chip *Kết xuất camera* **không còn**; ba đường vẽ vẫn còn ở `:core` và pref vẫn ghi được.
+     *
+     * Owner trên xe 27/09 bỏ cả khối *Nâng cao (kỹ thuật)*; mặc định đường vẽ nay theo hồ sơ xe (Seal = `GL`,
+     * [ĐO CAM-B6 27/09]: khung giật 11,15 % → 0,81 % với trần 15 fps ⇒ GL là lựa chọn đã chốt, không còn gì để dò
+     * bằng một chip). Bài này canh **sự vắng mặt của hàng** + **sự CÒN LẠI của đường prefs_set**.
+     */
+    @Test fun `hang chip ket xuat da go, ba duong van con o core va van ghi duoc`() {
+        assertEquals(3, CameraSignalPolicy.RENDERS.size, "ba đường vẽ vẫn ở `:core` — chỉ hàng chip bị gỡ")
+        listOf("bridge.cameraRender()", "bridge.setCameraRender(v)", "R.string.kachi_camera_render_row",
+            "R.string.kachi_camera_render_sub", "RENDER_TEXTURE", "RENDER_SURFACE", "RENDER_GL").forEach {
+            assertTrue(it !in settings, "`$it` đã gỡ khỏi Cài đặt ở 2.77")
         }
-        assertEquals(3, CameraSignalPolicy.RENDERS.size, "mỗi đường `:core` phải có ĐÚNG một chip")
-        assertTrue("bridge.cameraRender()" in body && "bridge.setCameraRender(v)" in body, "hàng chip nối qua cầu, không ghi Prefs thẳng")
-        assertTrue("R.string.kachi_camera_render_sub" in body && "R.string.kachi_camera_render_row" in body)
-        val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
-        listOf(vi, en).forEach {
-            assertTrue("kachi_camera_render_surface" in it, "chip SurfaceView phải có chữ ở CẢ hai ngôn ngữ")
+        val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
+        listOf("kachi_camera_render_sub", "kachi_camera_render_row", "kachi_camera_render_texture",
+            "kachi_camera_render_surface", "kachi_camera_render_gl").forEach {
+            assertTrue("\"$it\"" !in vi && "\"$it\"" !in en, "chữ $it mồ côi — hàng của nó đã gỡ")
         }
-        assertTrue("HAL" in vi.substringAfter("kachi_camera_render_surface").take(120),
-            "nhãn SurfaceView phải nói THẲNG là xoay đi qua HAL (có thể không xoay) — không im lặng bỏ góc")
+        // Đường chẩn đoán KHÔNG được mất cùng UI (CLAUDE.md §15 bước 2/3).
+        assertTrue("camera_render" in TestBridgeCommands.WRITABLE_PREFS_KEYS, "`camera_render` phải còn ghi được qua prefs_set")
     }
 
     /** Pref `camera_render`: đọc lạ ⇒ mặc định `:core`; đảo được qua `prefs_set` (đo hai đường trên xe đang chạy). */

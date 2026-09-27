@@ -3,8 +3,9 @@ package com.byd.clusternav.launcher.camera
 /**
  * Một lượt chụp khung camera cho cầu kiểm thử (`camera_frame`) — xem [CameraSignalController.grabFrame].
  *
- * Tách khỏi `CameraSignalController.kt` ở 2.76 (**pure move**, tệp kia chạm trần 500 dòng — CLAUDE.md §4.1) và
- * thêm đúng một trường [channel] cho R3.
+ * Tách khỏi `CameraSignalController.kt` ở 2.76 (**pure move**, tệp kia chạm trần 500 dòng — CLAUDE.md §4.1).
+ * Trường `channel` (*"phiên đang treo là một kênh hay khung ghép"*) đã gỡ ở 2.77 cùng cả nguồn *Một camera* —
+ * nay chỉ còn MỘT nguồn nên một trường luôn `false` là một câu trả lời không mang tin.
  *
  * Gói **cả ảnh lẫn ngữ cảnh** vào một giá trị vì hai thứ đó chỉ đúng khi đọc CÙNG một nhịp main thread: hỏi ảnh
  * rồi hỏi tiếp *"đang hiện cam nào"* qua một lời gọi thứ hai là mở đường cho một nhịp xi-nhan chen vào giữa, và
@@ -28,8 +29,6 @@ package com.byd.clusternav.launcher.camera
  * @property glStats `frames=N busySkip=M` của luồng vẽ GL, rỗng ở hai đường kia.
  * @property synthSize cỡ ảnh tổng hợp đang bơm (`camera_synth`), rỗng khi không bật.
  * @property glInfo `GL_MAX_TEXTURE_SIZE` + `GL_RENDERER` đã đo (RE §7 Q13), `"chưa đo"` khi chưa dựng ngữ cảnh nào.
- * @property channel phiên đang treo lấy **một kênh** camera (khung bị HAL kéo ngang ×STRIPS — R3 · 2.76) hay khung
- *   ghép. Lấy từ quyết định lúc dựng phiên (`Shown`), vì pref có thể đã đổi sau đó.
  */
 data class CameraFrameShot(
     val bitmap: android.graphics.Bitmap?,
@@ -45,7 +44,6 @@ data class CameraFrameShot(
     val glStats: String = "",
     val synthSize: String = "",
     val glInfo: String = "",
-    val channel: Boolean = false,
 ) {
     companion object {
         /** Ảnh là khung HAL đổ ra, **chưa** qua phép nắn nào. */

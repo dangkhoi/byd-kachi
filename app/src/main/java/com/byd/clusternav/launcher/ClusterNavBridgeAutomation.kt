@@ -27,15 +27,12 @@ import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.cameraRender
 import com.byd.clusternav.setCameraRender
-import com.byd.clusternav.cameraSource
 import com.byd.clusternav.cameraSpan
-import com.byd.clusternav.setCameraSource
 import com.byd.clusternav.setCameraSpan
 import com.byd.clusternav.cameraShape
 import com.byd.clusternav.setCameraShape
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraStrip
-import com.byd.clusternav.cameraHalMode
 import com.byd.clusternav.cameraDewarpAmount
 import com.byd.clusternav.cameraDewarpCx
 import com.byd.clusternav.cameraDewarpPanX
@@ -54,7 +51,6 @@ import com.byd.clusternav.setCameraDewarpFocal
 import com.byd.clusternav.setCameraDewarpK
 import com.byd.clusternav.setCameraDewarpScale
 import com.byd.clusternav.setCameraGlTexMatrix
-import com.byd.clusternav.setCameraHalMode
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.cameraMirror
@@ -226,8 +222,6 @@ fun ClusterNavBridge.setCameraCamRight(v: Int) = Prefs.setCameraCamId(app, left 
  * không tham số), một hàm ghi có tham số bên. Không `AutomationService.sync`, cùng lẽ [cameraRender]: lượt xi-nhan
  * sau đọc lại prefs khi dựng overlay nên chip vừa chạm ăn ngay.
  */
-fun ClusterNavBridge.cameraSource(): String = Prefs.cameraSource(app)
-fun ClusterNavBridge.setCameraSource(v: String) = Prefs.setCameraSource(app, v)
 fun ClusterNavBridge.cameraSpan(): String = Prefs.cameraSpan(app)
 fun ClusterNavBridge.setCameraSpan(v: String) = Prefs.setCameraSpan(app, v)
 fun ClusterNavBridge.cameraShape(): String = Prefs.cameraShape(app)
@@ -235,8 +229,6 @@ fun ClusterNavBridge.setCameraShape(v: String) = Prefs.setCameraShape(app, v)
 fun ClusterNavBridge.cameraStripLeft(): Int = Prefs.cameraStrip(app, left = true)
 fun ClusterNavBridge.cameraStripRight(): Int = Prefs.cameraStrip(app, left = false)
 fun ClusterNavBridge.setCameraStrip(left: Boolean, v: Int) = Prefs.setCameraStrip(app, left, v)
-fun ClusterNavBridge.cameraHalMode(): Int = Prefs.cameraHalMode(app)
-fun ClusterNavBridge.setCameraHalMode(v: Int) = Prefs.setCameraHalMode(app, v)
 
 /**
  * SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` (R8-B · 2.74) — sáu hàng −/+ và một ô tích, **chỉ có tác dụng khi chip

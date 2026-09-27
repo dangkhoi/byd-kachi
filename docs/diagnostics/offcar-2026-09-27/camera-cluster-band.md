@@ -1,6 +1,6 @@
-# R4 · HÌNH "THEO CỤM" — camera chỉ vẽ trong dải giữa của cụm (2.76, làn L2)
+# R4 · HÌNH "THEO CỤM" — camera chỉ vẽ trong dải giữa của cụm (2.76), rồi ôm ĐƯỜNG CONG của kính (2.77)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 chiều (§11 = 2.77, mép ngoài cong) · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
 > *"header top và bottom là của hệ thống, không vẽ vào được, chỉ vẽ được khúc giữa như gmaps đang hiện"* ⇒ đo **dải giữa**
 > bằng số từ framebuffer + ảnh chụp, đưa vào một hồ sơ (`ClusterBandSpec`), thêm hình khung `CLUSTER` ("theo cụm") để
 > overlay camera trên cụm nằm **trọn** trong dải ấy. Spec `docs/specs/kachi-276-closing.html` R4 · OQ2.
@@ -149,3 +149,177 @@ bốn mép — chỉ đúng ở hai mép NGANG (trái +19 · phải +18). Dọc:
 `BAND_L=…; BAND_T=…; BAND_R=…; BAND_B=…` **từ `ClusterBandSpec.SEAL_DL3`** và đòi nó có trong script, cộng một assert cho cỡ
 overlay display = cỡ tham chiếu của hồ sơ ⇒ nới `bottom` lên 566 như §9 dự tính sẽ đỏ ngay ở `:app`, không phải đợi một lượt
 chạy máy ảo bằng tay.
+
+---
+
+## 11. 2026-09-27 (chiều, sau buổi xe) — MÉP NGOÀI CONG của kính: đo, mô hình, mặt nạ (2.77, làn L2)
+
+> Owner nhìn camera đang chiếu trên cụm: *"này nhìn OK, **nhưng shape nó không theo cạnh trái cong của cụm**"*; và
+> trước đó, với hình CHỮ NHẬT: *"bé tý, bo các góc tròn, không hề theo hình cụm gì cả"*. Phần này trả lời cả hai.
+
+### 11.1 Đường cong ở ĐÂU — không phải trong framebuffer
+
+| # | Sự thật | Mức | Nguồn |
+|---|---|---|---|
+| G1 | Bộ đệm cụm là **chữ nhật phẳng 1920×720**, không có mặt nạ cong nào trong đó (ảnh chụp màn display 1 lúc camera đang hiện) | [ĐO] | `scratchpad/car-0927pm/cum-d1.png` |
+| G2 | ⇒ đường cong owner thấy là **vùng sáng vật lý** của kính/viền cụm ⇒ `screencap` **không** đo được nó; chỉ ẢNH CHỤP cụm mới đo được | [SUY từ G1, chắc] | — |
+| G3 | Biên vùng sáng là hình **thấu kính**: cạnh trên/dưới cong, hai đầu trái/phải xiên + bo | [ĐO] | `car-0927/cum/cum-{0,1,2}.png` |
+
+### 11.2 Phương pháp — dò biên NGAY TRONG không gian framebuffer
+
+Dùng lại **đúng** phép của §2 (homography DLT bình phương tối thiểu, pure python + Pillow; máy này **không có numpy**
+nên mọi phép là python thuần — cùng lý do §2 phải làm thế), nhưng đảo chiều dùng: sau khi khớp `ảnh → fb` từ các
+điểm neo gmaps của §2, khớp luôn chiều ngược `fb → ảnh` trên **cùng** bộ neo, rồi **quét từng hàng `y` của
+framebuffer**: đi từ ngoài vào, hàng nào có 12 điểm ảnh liên tiếp sáng hơn ngưỡng thì đó là mép. Quét trong không
+gian fb (thay vì quét trong ảnh rồi chiếu điểm biên) cho thẳng bảng `x` theo `y` — đúng thứ mã cần.
+
+Hai cái bẫy đã gặp và cách vượt:
+- **Ngưỡng 60 là quá thấp**: quanh mép sáng có **quầng loé** trên viền đen, độ sáng bò từ 38 → 61 rồi mới nhảy vọt
+  lên ~210. Ngưỡng 60 bắt vào quầng ⇒ mép lệch ra ngoài 10–20 px. Dùng **110** (giữa quầng và nội dung).
+- **Quét từ giữa ra thì vấp nội dung tối** (ảnh camera, chữ đen trong bản đồ) ⇒ quét **từ ngoài vào** + đòi 12 điểm
+  liên tiếp.
+
+Kiểm bằng mắt: vẽ lại các điểm biên dò được lên chính ảnh chụp (`scratchpad/mask-277/check-cum0*.png`) — bám sát.
+
+### 11.3 Kết quả — mép trái là một đường **"<"**, không phải cung tròn
+
+`cum-0` (10 neo, sai số lớn nhất **11,0 fb px**) là ảnh chuẩn: neo trải cả bề ngang (x 75…1750), và nó là ảnh **không
+có** cửa sổ camera che mép. `cum-1` (8 neo, 20,7 px) và `cum-2` (7 neo, 3,8 px nhưng neo chỉ ở **nửa phải**) làm kiểm
+chéo — `cum-2` không dùng được cho mép TRÁI (ngoại suy).
+
+| fb `y` | 136 | 189 | 242 | 295 | 348 | 401 | 454 | 507 | 560 |
+|---|---|---|---|---|---|---|---|---|---|
+| mép trái `cum-0` | 42 | 18 | 19 | 31 | 46 | 62 | 82 | 101 | 123 |
+| mép trái `cum-1` | 88 | 44 | 32 | 35 | 41 | 50 | 61 | 74 | 89 |
+| **mô hình (ngoài cùng)** | **42** | **18** | **19** | **31** | **41** | **50** | **61** | **74** | **89** |
+
+Hình dạng: `x ≈ 42` ở đỉnh dải → **xa nhất `x ≈ 16–18` quanh `y ≈ 210`** → vào lại `x ≈ 89–123` ở đáy dải. Tức **không
+đơn điệu** (ra rồi vào), nên:
+
+- **khớp parabol**: sai **72,8 px** ⇒ loại;
+- **cung tròn**: không có bán kính nào đỡ được cả hai nhánh (nhánh trên dốc ≈ −0,30 px/px, nhánh dưới ≈ +0,31 nhưng
+  `cum-1` cho +0,19) ⇒ loại;
+- **bảng 9 mẫu chia đều + nội suy tuyến tính**: sai số so với phép dò **từng hàng** là **5,5 px** ⇒ **chọn**. Đây là
+  `ClusterBandSpec.leftEdge`.
+
+**Sai số giữa các ảnh: tới 46 px**, và nó là một **xu hướng tuyến tính theo `y`** (cum-1 lệch +46 ở đỉnh, −36 ở đáy;
+cum-2 so với cum-0 lệch −43 ở đỉnh, +17 ở đáy) ⇒ [SUY] méo xuyên tâm của ống kính điện thoại (homography không mô tả
+được) chứ không phải kính cụm khác nhau. **Chốt hướng lệch, có lý do**: lấy ước lượng **NGOÀI CÙNG** ở mỗi hàng
+(`min(cum-0, cum-1)`), vì lệch RA chỉ làm mất vài px ảnh **sau viền** (không ai thấy), còn lệch VÀO để lại **đúng khe
+đen** mà owner đang chê. Lề thêm = **0**.
+
+### 11.4 Mép PHẢI vẫn thẳng — cũng là một phép đo
+
+Kính phải trong dải: `x ≈ 1876` (y 136) → `1906` (y 216) → `1802` (y 556). Nhưng **cột icon hệ thống (biển 30 / ADAS)
+bắt đầu từ `x ≈ 1798`** (F7) và nằm **trái hơn kính ở MỌI hàng của dải** ⇒ thứ chặn mép phải là cột icon, và cột icon
+thì **thẳng**. Nới mép phải ra tới kính = **đè lên biển báo tốc độ / ADAS** trên một chiếc xe đang chạy ⇒ **không
+đổi**; `rightEdge` không tồn tại, `right = 1780` giữ nguyên. (Nếu owner muốn bên phải cũng ôm kính: xem 🚗 CAM-CL4.)
+
+### 11.5 Cơ chế
+
+1. **`:core`** `ClusterBandSpec.leftEdge: List<Int>` (rỗng = **đời cụm chưa đo** ⇒ tường thẳng `left`, hành vi 2.76
+   y nguyên); `CameraClusterBand.leftEdge()` co giãn theo trục ngang + kẹp `0..band.x0`; `leftEdgeAt()` nội suy;
+   `maskLeftAt()` = mép **có mực** sau mặt nạ; `insideBand()` = bất biến an toàn thay cho `band.contains(rect)`.
+2. **`place()`**: đầu TRÁI trượt ra tới `min(leftEdge)` — **bề rộng và chiều cao không đổi một px** (nới bề rộng là
+   kéo giãn ảnh, đúng thứ `CameraOverlayFrame.fit` sinh ra để tránh); phần thừa do mặt nạ cắt. Đầu PHẢI không đổi.
+3. **`:app`** `CameraOverlayMask.kt` (mới, 105 dòng): `CameraGlassFrame` cắt bằng `Canvas.clipPath` trong `draw()`,
+   `glassMask()` = chữ nhật bo góc **giao** đa giác cong. **Không** dùng `ViewOutlineProvider`: [ĐO source] AOSP
+   `android-10.0.0_r47` `Outline.canClip()` là đúng một dòng `return mMode != MODE_CONVEX_PATH;` còn `setConvexPath()`
+   đặt `mMode = MODE_CONVEX_PATH` ⇒ outline mang đường bất kỳ **không cắt được**. `labelFor` dời sang tệp này để
+   `CameraOverlayView.kt` ở dưới trần 500 dòng (492).
+4. Dòng log `overlay show` thêm `cong=<đỉnh>/<giữa>/<đáy>` — đây là mép **có mực** (`maskLeftAt`) ở ba hàng của
+   cửa sổ, không phải số thô trong bảng ⇒ đọc một dòng logcat là biết ảnh bắt đầu ở đâu.
+5. **Guard cứng ở tầng thi hành** (CLAUDE.md §5): `place()` tự kiểm `insideBand()` và **rơi về tường thẳng 2.76**
+   nếu một hồ sơ/cỡ display lạ đẩy cửa sổ ra khỏi dải — mất đường cong, không mất camera.
+
+### 11.6 Quyết định
+
+| # | Quyết định | Lý do / bằng chứng |
+|---|---|---|
+| D8 | Mô hình = **bảng 9 mẫu**, không phải cung tròn/parabol | 11.3: parabol sai 72,8 px; bảng sai 5,5 px |
+| D9 | Lấy ước lượng **ngoài cùng** giữa các ảnh, lề 0 | lệch RA = mất vài px sau viền; lệch VÀO = đúng khe đen owner chê |
+| D10 | Mép phải **giữ thẳng 1780** | 11.4 — cột icon ADAS chặn trước kính ở mọi hàng; đè biển 30 là regression an toàn |
+| D11 | **CHỮ NHẬT trên CỤM ⇒ *theo cụm*** (`effectiveShape`) | owner: *"bé tý… không hề theo hình cụm"* vs *"này nhìn OK"*; hai hình **cùng crop** (`cropFor` quy `CLUSTER→RECT`) ⇒ chỉ đổi CỬA SỔ, không đổi một điểm ảnh nội dung. Chữ nhật là hình **mặc định** ⇒ đường mặc định phải là đường tốt |
+| D12 | **TRÒN trên cụm giữ nguyên** (vẫn đi `boxIn`) | "tròn" là lựa chọn cố ý về NỘI DUNG (crop ô vuông); quy nó sang hình dải là đổi cả ảnh — đúng cái bẫy D2 tránh |
+
+### 11.6b Vì sao đủ an toàn để ship cho một chiếc xe đang chạy
+
+Cái thật sự đổi là **vị trí** cửa sổ (`x` 140 → 18), không phải một cơ chế vẽ mới. Và ở **mọi** hàng của dải, đường
+cong đo được nằm ở `x ≥ 18` ⇒ mép trái của cửa sổ luôn ở NGOÀI hoặc ĐÚNG viền kính ⇒ **chính tấm viền vật lý đã cắt**
+phần thừa. Nếu `clipPath` vì lý do nào đó không ăn trên ROM xe (`SurfaceView`, một bản HWUI khác…), thứ owner thấy
+vẫn là ảnh chạy sát viền — **không** phải một cửa sổ tràn ra ngoài. Mặt nạ là lớp thứ hai (giữ nền đen + bo góc không
+liếm vào phần kính còn nhìn thấy), không phải thứ duy nhất giữ đúng hình.
+
+Ba mép còn lại (trên, dưới, phải) **không đổi một px** so với bản 2.76 mà owner đã duyệt trên xe ⇒ bất biến [P1] của
+2.76 (không đè thanh trên/dưới, không đè cột ADAS) còn nguyên, có bài test đo từng hàng.
+
+**Owner sẽ thấy gì**: hình *Chữ nhật* (mặc định) và *Theo cụm* trên cụm nay **giống hệt nhau** — một khung cao trọn
+dải giữa, mép trái **ôm đúng đường cong của kính** thay vì dừng ở một đường dọc cách viền 51…122 px. Chip trong *Cài
+đặt › Camera* vẫn ghi "Chữ nhật" (tên chip thuộc làn khác) — **ghi nợ**, không phải lỗi.
+
+### 11.7 Test
+
+- `:core` `CameraClusterBandTest` +5 bài: bảng Seal trong khoảng cho phép + hình "<" + bước không gắt · co giãn/kẹp/
+  **thoái về tường thẳng khi hồ sơ chưa đo** · nội suy đúng ở hàng mẫu + kẹp ngoài dải + luôn trong `0..band.x0` ·
+  **64 tổ hợp** (bên × 4 crop × 4 góc xoay × biết/chưa biết cỡ): cỡ và `y` **bằng đúng** bản không cong, `insideBand`,
+  và **mọi hàng** của cửa sổ có `maskLeftAt ≥ leftEdgeAt` (không bao giờ vẽ ra ngoài kính) · spec cong vô lý ném.
+  Bài `theo cum thoai…` đổi tên + thêm phép quy D11.
+- `:app` `CameraClusterBandWiringContractTest` +1 bài (mặt nạ dựng từ `Placement`, `clipPath`, không `FrameLayout`
+  trần, không `setConvexPath`) + 2 assert mới trong bài (b)/(c) + 1 assert ghim `BAND_EL` của script.
+- Máy ảo: `scripts/emulator/camera-cluster-e2e.sh` chấm mép trái theo `min(leftEdge)` và **vẽ đường cong** (xanh lơ)
+  lên ảnh bằng chứng. Chạy 27/09 19:25 (emulator-5554, overlay display 1920×720) — **ĐẠT**: trái
+  `[18,136]-[583,560]`, phải `[1215,136]-[1780,560]`, thoái màn chính `hình=RECT`.
+- **Phép cắt được chứng minh bằng điểm ảnh** (không chỉ bằng số cửa sổ): nhãn *"Left camera"* nằm ở góc trên-trái
+  cửa sổ nên chữ **L** bị chính mặt nạ xén. Đo điểm sáng trái nhất từng hàng trên ảnh máy ảo: `y=156 ⇒ x=32`
+  (mô hình 32,9) · `y=160 ⇒ 30` (31,1) · `y=164 ⇒ 30` (29,2) ⇒ lệch ≤ **1,9 px**. Ảnh:
+  `scratchpad/car-0927pm/mask-277/mask-clip-proof.png` (xanh = mô hình, đỏ = đo được). Đây là bằng chứng THẬT rằng
+  `Canvas.clipPath` ăn vào nội dung của cây view trên display cụm — không phải suy luận.
+
+### 11.8 🚗 Kiểm trên xe (runbook 2.77)
+
+- **CAM-CL3**: Cài đặt › Camera › hình **Chữ nhật** (mặc định) *hoặc* **Theo cụm** + *Hiện lên cụm* → bật xi-nhan
+  **trái** ⇒ mép trái của ảnh **bám đường cong của kính**, không còn khe đen dọc; logcat
+  `overlay show … hình=CLUSTER … dải=140,136-1780,560 tại=18,136 cong=42/41/89`. **FAIL** nếu (a) còn khe đen ⇒ chụp
+  ảnh, giảm các số trong `ClusterBandSpec.SEAL_DL3.leftEdge` (kéo ra), hoặc (b) ảnh **bị cắt** thấy rõ ở mép trái ⇒
+  tăng các số ấy (lùi vào). Một ảnh chụp cụm + dòng logcat là đủ để chỉnh.
+- **CAM-CL4** (câu hỏi, không phải phép đo): bên **phải** vẫn là mép thẳng vì cột biển-30/ADAS chặn trước kính
+  (11.4). Owner muốn bên phải cũng ôm kính không, biết là sẽ **đè lên biển báo tốc độ**?
+
+### 11.9 Lượt GỘP hai làn (điều phối 2.77) — hai thứ sửa ở gốc
+
+**(1) [P1] Đường cong của MỘT miếng kính đang là mặc định cho MỌI đời cụm.** Làn này khai bảng `leftEdge` [ĐO trên
+kính Seal DL3] vào chính `ClusterBandSpec.SEAL_DL3`, mà `ClusterProfile.band` lại lấy bộ ấy làm **giá trị mặc định
+của tham số** — đúng theo quyết định 2.76, khi bộ ấy chỉ còn là 4 số **ĐẶT** cửa sổ (đặt lệch thì nhìn thấy ngay).
+Từ 2.77 bảng ấy **CẮT** điểm ảnh (`glassMask` → `Canvas.clipPath`, tới **122 px** bên trái. Hệ quả: `ClusterProfile.DL5`
+và `GENERIC_FALLBACK` (đường tới được **thật**: `detectSeed("BYD AUTO","byd","byd","dilink5")` trả `DL5`) cùng mọi
+chuỗi hồ sơ owner dán qua `parse()` sẽ bị **xén ảnh theo miếng kính của xe khác, âm thầm** — đúng loại lỗi
+CLAUDE.md §7 cấm (khác biệt đời xe phải nằm trong hồ sơ, không nằm trong một mặc định dùng chung).
+
+Vá: thêm `ClusterBandSpec.SEAL_DL3_NO_CURVE` (`= SEAL_DL3.copy(leftEdge = emptyList())`) và `ClusterProfile.bandFor(id)`
+**cùng khuôn với `cameraFor(id)`** đã có — chỉ `seal_dl3` mang bảng cong, mọi id khác nhận tường thẳng; mặc định của
+tham số `band` đổi sang bản không-cong (quên khai ⇒ nhận cái an toàn), `SEAL_DL3` khai tường minh bộ có cong, và
+`parse()` gán `band = bandFor(id)`. **Bốn số đặt cửa sổ vẫn dùng chung** (quyết định 2.76 không đổi) — chỉ đường
+**CẮT** là theo đời. Rơi về = mất đường cong, **không** mất camera.
+
+Khoá lại bằng 3 bài, cả 3 **đã thử-đỏ** (đổi mặc định về `ClusterBandSpec.SEAL_DL3` ⇒ 3/14 đỏ):
+`ClusterProfileCameraDefaultsTest.duong cong kinh chi cho doi DA DO, doi khac tuong thang 2 76` (theo **hành vi**:
+`leftEdge` rỗng cho DL5/generic/id-lạ/`detectSeed` DL5, có cho Seal) · `…tuong thang thi cua so o x0 va khong co mat na`
+(`place()` trả đúng `band.x0` = 140 và `maskLeftAt` = tường thẳng ⇒ `glassMask` sẽ trả `null`) ·
+`CameraClusterBandWiringContractTest` (mặc định là `SEAL_DL3_NO_CURVE`, `bandFor` tồn tại, và `parse` vẫn **không**
+đọc dải từ chuỗi owner dán).
+
+**(2) KDoc nhắc lại một lệnh KHÔNG TỒN TẠI.** `CameraSettingsIa` (làn L1) viết *"chỉ còn đường `prefs_set`/`prefs_get`"*
+— nhưng audit 27/09 đã chốt **`prefs_get` chưa bao giờ tồn tại**, lệnh đọc thật là `prefs --es file clusternav_prefs`
+(`TestBridgeNoHome.kt:26`), và đã gỡ tên ấy khỏi hai runbook. Vì 15 khoá ẩn-UI nay **chỉ** còn đường đó, một KDoc sai
+tên lệnh là đúng thứ làm owner gõ nhầm trong xe ⇒ sửa tại chỗ, kèm lý do.
+
+### 11.10 Nợ ghi nhận, KHÔNG sửa ở lượt gộp
+
+- **Chip *"Chữ nhật"* nói không hết sự thật**: trên cụm, `effectiveShape` nâng CHỮ NHẬT → *theo cụm*, nên hai chip
+  *Chữ nhật* và *Theo cụm* cho **cùng một kết quả** trên cụm (khác nhau chỉ còn trên màn chính). Owner sẽ thấy hai
+  lựa chọn làm một việc — đúng thứ *"nhiều option quá rối"* mà 2.77 sinh ra để chữa. **Không gộp chip ở lượt này**:
+  pref `camera_shape` của owner đang là một trong hai mã, và bỏ một chip khỏi `SHAPES` là đổi UI **chưa đo** (hành vi
+  của `chipRow` khi giá trị lưu bền không còn trong danh sách chưa có bài test) trong một bản owner thử sau ít phút.
+  Việc đúng cho lượt sau: hoặc gộp còn 2 chip (*Chữ nhật* · *Tròn*) vì CHỮ NHẬT trên cụm nay đã là hình đẹp, hoặc đổi
+  nhãn để nói rõ *theo cụm* chỉ có nghĩa trên cụm. Cần owner chốt.
+

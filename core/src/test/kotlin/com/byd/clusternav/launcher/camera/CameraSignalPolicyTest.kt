@@ -197,7 +197,7 @@ class CameraSignalPolicyTest {
      * Bốn mặc định mới, một bài: chúng là toàn bộ lời hứa *"xe sáng mai thấy đúng khung của 2.73 nếu không ai chạm
      * Cài đặt"* (CLAUDE.md §6). Hình học đã ghim ở [CameraPanoCropTest]; đây ghim **mã** + thứ tự chip.
      */
-    @Test fun `mac dinh be rong, hinh khung, dai, kenh HAL = hanh vi 2 73`() {
+    @Test fun `mac dinh be rong, hinh khung, dai = hanh vi 2 73`() {
         assertEquals(P.SPAN_NARROW, P.defaultSpan())
         assertEquals(P.SPAN_NARROW, P.SPANS.first(), "chip đầu hàng = mặc định")
         assertEquals(listOf("NARROW", "STRIP"), P.SPANS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
@@ -205,21 +205,17 @@ class CameraSignalPolicyTest {
         assertEquals(listOf("RECT", "ROUND", "CLUSTER"), P.SHAPES, "2.76: ô CLUSTER (theo cụm, làn L2) đứng CUỐI — mã mới không leo lên trước")
         assertEquals(1, CameraPanoCrop.defaultStrip(left = true), "dải chứa vệt TRÁI của 2.73")
         assertEquals(2, CameraPanoCrop.defaultStrip(left = false), "dải chứa vệt PHẢI của 2.73")
-        assertEquals(P.HAL_MODE_AUTO, P.HAL_MODES.first(), "chip đầu hàng = dò 0..3 y 2.73")
-        assertEquals(listOf(-1, 0, 1, 2, 3, 4), P.HAL_MODES, "miền của DiLinkCameraConstants: VIEW_DEFAULT 0 + CHANNEL 1..4")
         assertEquals(100, P.CIRCLE_PCT_DEFAULT)
     }
 
     /** Mã/chỉ số lạ (prefs sửa tay qua `prefs_set`) bị loại — chỗ đọc rơi về mặc định, không ném, không hình thứ ba. */
-    @Test fun `loai ma la cho be rong, hinh khung, dai, kenh HAL`() {
+    @Test fun `loai ma la cho be rong, hinh khung, dai`() {
         listOf("", "narrow", "FULL", "TL", "L90").forEach { assertFalse(P.isSpan(it), "bề rộng lạ \"$it\"") }
         listOf("", "rect", "CIRCLE", "OVAL").forEach { assertFalse(P.isShape(it), "hình khung lạ \"$it\"") }
         assertTrue(P.SPANS.all { P.isSpan(it) } && P.SHAPES.all { P.isShape(it) })
         listOf(-1, 4, 99).forEach { assertFalse(CameraPanoCrop.isStrip(it), "dải $it không tồn tại") }
         assertTrue(CameraPanoCrop.STRIPS_ALL.all { CameraPanoCrop.isStrip(it) })
         assertEquals(listOf(0, 1, 2, 3), CameraPanoCrop.STRIPS_ALL)
-        listOf(-2, 5, 3124).forEach { assertFalse(P.isHalMode(it), "kênh HAL $it ngoài miền hằng BYD") }
-        assertTrue(P.HAL_MODES.all { P.isHalMode(it) })
     }
 
     /**

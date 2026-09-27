@@ -7,11 +7,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * ═══ 2.76 · R1 — IA hai tầng: bài canh DÂY NỐI của `:app` (hợp đồng thuần ở `CameraSettingsIaTest`) ═══════════════
+ * ═══ 2.77 — IA MỘT tầng: bài canh DÂY NỐI của `:app` (hợp đồng thuần ở `CameraSettingsIaTest`) ══════════════════════
  *
- * `LinearLayout`/`TestBridgeStore` không chạy off-car nên ở đây canh **nguồn**: mỗi khoá của [CameraSettingsIa.USER_KEYS]
- * có hàng trong `cameraUser`, mỗi khoá kỹ thuật có hàng trong `cameraTech`, và `cameraTech` chỉ được dựng sau cổng
- * `TestBridgeStore.isOn` — gỡ cổng ấy là 16 hàng đo quay lại màn người lái mà không bài `:core` nào đỏ (CLAUDE.md §8).
+ * `LinearLayout` không chạy off-car nên ở đây canh **nguồn**: mỗi khoá của [CameraSettingsIa.USER_KEYS] có đúng một
+ * hàng trong `cameraUser`, và **không có hàng nào khác** — tức là bài này đỏ khi ai đó thêm một hàng camera vào màn
+ * người lái mà không đổi hợp đồng `:core` (đúng bẫy CLAUDE.md §8: dựng hàng mà không ai đếm).
+ *
+ * 2.76 có thêm khối gập *"Nâng cao (kỹ thuật)"* (16 hàng đo) và một hàng *Nguồn*. Owner gỡ cả hai trên xe 27/09 —
+ * *"bỏ hết phần nâng cao đi, bỏ luôn nguồn"*; bài này giờ canh **sự VẮNG MẶT** của chúng: 15 khoá kia còn ghi được
+ * qua `prefs_set` nhưng **không được có một hàng nào** (nếu không thì việc gỡ đã bị hoàn lại mà không ai thấy).
  */
 class CameraSettingsIaWiringContractTest {
 
@@ -19,9 +23,8 @@ class CameraSettingsIaWiringContractTest {
 
     private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val car by lazy { app("launcher/SettingsSectionsCar.kt") }
-    private val bridgeCam by lazy { app("launcher/ClusterNavBridgeCamera.kt") }
 
-    /** Khoá người lái → mảnh getter qua cầu phải có trong `cameraUser` (hoặc `cameraSource` cho hàng Nguồn). */
+    /** Khoá người lái → mảnh getter qua cầu phải có trong `cameraUser`. */
     private val userRows = mapOf(
         "camera_signal_enabled" to "bridge.cameraSignal()",
         "camera_on_cluster" to "bridge.cameraOnCluster()",
@@ -33,16 +36,14 @@ class CameraSettingsIaWiringContractTest {
         "camera_mirror_right" to "bridge.cameraMirrorRight()",
         "camera_shape" to "bridge.cameraShape()",
         "camera_dewarp_amount" to "bridge.cameraDewarpAmount() > CameraDewarpPrefs.AMOUNT_MIN",
-        "camera_source" to "bridge.cameraSource()",
     )
 
-    /** Khoá kỹ thuật → mảnh getter trong `cameraTech`/`cameraDewarp`. `camera_circle_scale` chỉ có `prefs_set`, không hàng. */
-    private val techRows = mapOf(
+    /** Khoá KHÔNG còn UI → mảnh getter của hàng đã gỡ. Mảnh nào xuất hiện lại trong tệp Cài đặt là hàng đã sống lại. */
+    private val noUiGetters = mapOf(
         "camera_render" to "bridge.cameraRender()",
         "camera_span" to "bridge.cameraSpan()",
         "camera_strip_left" to "bridge.cameraStripLeft()",
         "camera_strip_right" to "bridge.cameraStripRight()",
-        "camera_hal_mode" to "bridge.cameraHalMode()",
         "camera_cam_left" to "bridge.cameraCamLeft()",
         "camera_cam_right" to "bridge.cameraCamRight()",
         "camera_gl_texmatrix" to "bridge.cameraGlTexMatrix()",
@@ -55,47 +56,46 @@ class CameraSettingsIaWiringContractTest {
         "camera_dewarp_pan_y" to "bridge.cameraDewarpPanY()",
     )
 
-    @Test fun `tang nguoi lai co dung cac hang cua USER_KEYS va khong hang ky thuat nao`() {
-        val user = SourceRoots.body(settings, "private fun cameraUser(") + SourceRoots.body(settings, "private fun cameraSource(")
+    @Test fun `man nguoi lai co dung cac hang cua USER_KEYS`() {
+        val user = SourceRoots.body(settings, "private fun cameraUser(")
         assertEquals(CameraSettingsIa.USER_KEYS.toSet(), userRows.keys, "bảng canh phải khớp hợp đồng `:core`")
         userRows.forEach { (key, needle) -> assertTrue(needle in user, "khoá người lái $key không có hàng: thiếu `$needle`") }
-        techRows.values.forEach { needle -> assertFalse(needle in user, "getter kỹ thuật `$needle` lộ ở tầng người lái") }
         // Nắn = MỘT ô tích 100/0, không núm.
         assertTrue("if (on) CameraDewarpPrefs.AMOUNT_MAX else CameraDewarpPrefs.AMOUNT_MIN" in user, "ô tích nắn ghi AMOUNT_MAX/AMOUNT_MIN")
-        assertFalse("knob(" in SourceRoots.body(settings, "private fun cameraUser("), "không một núm −/+ nào ở tầng người lái")
+        assertFalse("knob(" in settings, "không một núm −/+ nào còn trong tệp Cài đặt camera")
     }
 
-    @Test fun `tang ky thuat co du cac hang cua TECH_KEYS`() {
-        val tech = SourceRoots.body(settings, "private fun cameraTech(") + SourceRoots.body(settings, "private fun cameraDewarp(")
-        assertEquals(CameraSettingsIa.TECH_KEYS.toSet() - "camera_circle_scale", techRows.keys, "bảng canh phải khớp hợp đồng `:core`")
-        techRows.forEach { (key, needle) -> assertTrue(needle in tech, "khoá kỹ thuật $key không có hàng: thiếu `$needle`") }
-        assertTrue("cameraDewarp(body)" in SourceRoots.body(settings, "private fun cameraTech("), "tám núm nắn có call site trong tầng kỹ thuật")
-        // Số mục trên tiêu đề khối gập = kích thước TECH_KEYS ở `:core`, không gõ số.
-        assertTrue("CameraSettingsIa.TECH_KEYS.size" in SourceRoots.body(settings, "private fun cameraAdvanced("))
-    }
-
-    /** Cổng: `cameraAdvanced` chỉ chạy sau `TestBridgeStore.isOn(context)`; tắt ⇒ không dựng (không mờ). */
-    @Test fun `tang ky thuat dung sau cong che do kiem thu`() {
+    /**
+     * ═══ Khối *Nâng cao (kỹ thuật)* và hàng *Nguồn* phải VẮNG — canh bằng sự vắng mặt ═══════════════════════════
+     *
+     * Owner trên xe 27/09: *"không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi"*.
+     * Mỗi mảnh dưới đây là một mảnh của khối đã gỡ; nó xuất hiện lại = 16 hàng đo quay về màn người lái.
+     */
+    @Test fun `khong con tang ky thuat, khong con hang Nguon`() {
+        listOf(
+            "cameraAdvanced(", "cameraTech(", "cameraDewarp(", "cameraSource(",
+            "TestBridgeStore.isOn(context)", "rows.disclosureRow(", "rows.stepperRow(",
+            "CameraSettingsIa.TECH_KEYS", "R.string.kachi_camera_advanced_title", "R.string.kachi_camera_source_row",
+            "R.string.kachi_camera_channel_fallback_note", "R.string.kachi_camera_hal_row",
+            "bridge.cameraSource()", "bridge.cameraHalMode()", "bridge.cameraChannelSupported()",
+        ).forEach { assertFalse(it in settings, "`$it` đã gỡ ở 2.77 — thấy lại là tầng kỹ thuật/hàng Nguồn đã sống lại") }
+        noUiGetters.forEach { (key, needle) ->
+            assertFalse(needle in settings, "khoá $key không được có hàng nào (`$needle`) — nó chỉ còn đường prefs_set")
+        }
+        // `build()` chỉ còn MỘT lượt, không cổng nào.
         val build = SourceRoots.body(settings, "    fun build(")
-        assertTrue("if (TestBridgeStore.isOn(context)) cameraAdvanced(body)" in build, "cổng = cùng cổng cầu kiểm thử, không cờ mới")
         assertTrue("cameraUser(body)" in build)
-        assertEquals(1, Regex("""cameraAdvanced\(body\)""").findAll(settings).count(), "chỉ MỘT call site, và nó nằm sau cổng")
-        // Khối gập dùng component có sẵn (2.74 R3), thân dựng trễ.
-        assertTrue("rows.disclosureRow(Disclosure(" in SourceRoots.body(settings, "private fun cameraAdvanced("))
-        assertTrue("{ inner -> cameraTech(inner) }" in SourceRoots.body(settings, "private fun cameraAdvanced("))
+        assertEquals(
+            listOf("cameraUser(body)"),
+            build.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("//") && it !in setOf("{", "}") },
+            "build() chỉ còn đúng một lượt dựng — không cổng, không khối thứ hai",
+        )
+        // Tệp `ClusterNavBridgeCamera.kt` (hai câu hỏi chỉ-đọc của hàng Nguồn) đã xoá cùng hàng ấy.
+        assertFalse(SourceRoots.exists("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeCamera.kt"),
+            "tệp cầu của hàng Nguồn phải xoá — để lại là một cửa không ai gọi (CLAUDE.md §8)")
     }
 
-    /** Hàng Nguồn chỉ khi hồ sơ có bản đồ kênh; dấu "đã lùi" chỉ khi đang chọn CHANNEL — cả hai qua cầu. */
-    @Test fun `hang Nguon theo ban do kenh cua ho so va dau da lui`() {
-        val src = SourceRoots.body(settings, "private fun cameraSource(")
-        assertTrue("if (!bridge.cameraChannelSupported()) return" in src, "xe chưa đo kênh ⇒ hàng vắng")
-        assertTrue("bridge.cameraChannelFallback()" in src && "R.string.kachi_camera_channel_fallback_note" in src)
-        assertTrue("bridge.cameraSource() == CameraSignalPolicy.SOURCE_CHANNEL" in src, "dấu chỉ có nghĩa khi đang chọn CHANNEL")
-        assertTrue("fun ClusterNavBridge.cameraChannelSupported(): Boolean = CameraDefaults.of(app).hasChannelMap" in bridgeCam)
-        assertTrue("fun ClusterNavBridge.cameraChannelFallback(): String = Prefs.cameraChannelFallback(app)" in bridgeCam)
-    }
-
-    /** `SettingsSectionsCar` không còn hàng camera nào — chỉ uỷ quyền; và tệp mới có chữ ở CẢ hai ngôn ngữ. */
+    /** `SettingsSectionsCar` không còn hàng camera nào — chỉ uỷ quyền; và chữ còn dùng có ở CẢ hai ngôn ngữ. */
     @Test fun `SettingsSectionsCar chi uy quyen, chu moi co o ca hai ngon ngu`() {
         assertTrue("SettingsCameraSection(context, rows, deps).build(body)" in car)
         listOf("bridge.cameraRender()", "bridge.cameraSpan()", "knob(", "CameraDewarpPrefs").forEach {
@@ -105,14 +105,33 @@ class CameraSettingsIaWiringContractTest {
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
         listOf(
             "kachi_camera_shape_cluster", "kachi_camera_dewarp_on_sub_header", "kachi_camera_dewarp_on_title",
-            "kachi_camera_dewarp_on_sub", "kachi_camera_advanced_title", "kachi_camera_advanced_count",
-            "kachi_camera_advanced_note", "kachi_camera_channel_fallback_note",
+            "kachi_camera_dewarp_on_sub",
         ).forEach { k ->
             assertTrue("\"$k\"" in vi, "thiếu VI $k"); assertTrue("\"$k\"" in en, "thiếu EN $k")
             assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ mồ côi")
         }
+        // Chữ của khối gập + hàng Nguồn + 16 hàng đo phải XOÁ khỏi cả hai tệp chữ (i18n mồ côi — CLAUDE.md §4.1).
+        listOf(
+            "kachi_camera_advanced_title", "kachi_camera_advanced_count", "kachi_camera_advanced_note",
+            "kachi_camera_channel_fallback_note", "kachi_camera_source_sub", "kachi_camera_source_row",
+            "kachi_camera_source_pano", "kachi_camera_source_channel",
+            "kachi_camera_render_sub", "kachi_camera_render_row", "kachi_camera_render_texture",
+            "kachi_camera_render_surface", "kachi_camera_render_gl",
+            "kachi_camera_span_sub", "kachi_camera_span_row", "kachi_camera_span_narrow", "kachi_camera_span_strip",
+            "kachi_camera_strip_sub", "kachi_camera_strip_left", "kachi_camera_strip_right",
+            "kachi_camera_hal_sub", "kachi_camera_hal_row", "kachi_camera_hal_auto",
+            "kachi_camera_pick_sub", "kachi_camera_pick_left", "kachi_camera_pick_right",
+            "kachi_camera_gl_texmatrix_title", "kachi_camera_gl_texmatrix_sub",
+            "kachi_camera_dewarp_sub", "kachi_camera_dewarp_note",
+            "kachi_camera_dewarp_cx", "kachi_camera_dewarp_cy", "kachi_camera_dewarp_k", "kachi_camera_dewarp_focal",
+            "kachi_camera_dewarp_scale", "kachi_camera_dewarp_amount", "kachi_camera_dewarp_pan_x",
+            "kachi_camera_dewarp_pan_y",
+        ).forEach { k ->
+            assertFalse("\"$k\"" in vi, "chữ VI $k mồ côi — hàng của nó đã gỡ ở 2.77")
+            assertFalse("\"$k\"" in en, "chữ EN $k mồ côi — hàng của nó đã gỡ ở 2.77")
+        }
         // Nhãn "(mặc định)" đã bỏ khỏi chip: mặc định nay theo hồ sơ xe, một nhãn cố định sẽ sai cho xe khác.
-        listOf("kachi_camera_render_texture", "kachi_camera_span_narrow", "kachi_camera_shape_rect").forEach { k ->
+        listOf("kachi_camera_shape_rect").forEach { k ->
             val line = vi.lines().first { "\"$k\"" in it }
             assertFalse("mặc định" in line, "$k còn nhãn '(mặc định)' — mặc định nay theo hồ sơ xe")
         }

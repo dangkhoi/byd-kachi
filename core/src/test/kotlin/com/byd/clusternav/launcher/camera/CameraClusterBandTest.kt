@@ -126,14 +126,110 @@ class CameraClusterBandTest {
         assertEquals(24, B.radius(seal, 0, 565, 424), "chưa đo display ⇒ số gốc")
     }
 
+    // ══ (2b) MÉP NGOÀI CONG (2.77) — bảng đo được, cửa sổ trượt ra tới kính, mặt nạ không bao giờ vượt kính ═══════
+
+    /** Bảng Seal: 9 mẫu, mọi mẫu nằm trong `0..left`, điểm xa nhất 18 (hôm nay tường thẳng 140 ⇒ nới 122 px). */
+    @Test fun `bang mep cong Seal nam trong khoang cho phep`() {
+        val e = seal.leftEdge
+        assertEquals(9, e.size, "9 mẫu, bước 53 px: y = 136, 189, …, 560")
+        assertTrue(e.all { it in 0..seal.left }, "mép cong chỉ nới RA, không bao giờ ăn vào trong: $e")
+        assertEquals(18, e.min(), "điểm xa nhất của kính (y ≈ 210) [ĐO 27/09]")
+        assertEquals(42, e.first()); assertEquals(89, e.last())
+        // Đường "<": đi ra ở nửa trên rồi vào lại ở nửa dưới — KHÔNG đơn điệu, đó là lý do mô hình là BẢNG.
+        assertTrue(e[0] > e[1] && e.drop(2).zipWithNext().all { (a, b) -> a <= b }, "ra rồi vào: $e")
+        // Hai mẫu cạnh nhau không bao giờ nhảy quá 1/3 bước dọc ⇒ đường cắt không có bậc thang nhìn thấy được.
+        assertTrue(e.zipWithNext().all { (a, b) -> kotlin.math.abs(b - a) <= 53 / 3 + 12 }, "bước quá gắt: $e")
+    }
+
+    /** Co giãn theo trục ngang + kẹp vào `0..band.x0`; hồ sơ chưa đo ⇒ rỗng ⇒ mọi phép rơi về tường thẳng 2.76. */
+    @Test fun `mep cong co gian va thoai ve tuong thang khi chua do`() {
+        assertEquals(seal.leftEdge, B.leftEdge(band, seal, 1920), "đúng cỡ tham chiếu ⇒ nguyên bảng")
+        val wide = ClusterBandSpec(3840, 720, 280, 136, 3560, 560, 24, listOf(84, 36, 38, 62, 82, 100, 122, 148, 178))
+        assertEquals(listOf(84, 36, 38, 62, 82, 100, 122, 148, 178), B.leftEdge(B.band(3840, 720, wide), wide, 3840))
+        assertEquals(seal.leftEdge, B.leftEdge(band, seal, 0), "chưa đo display ⇒ không co giãn, không ném")
+        val plain = ClusterBandSpec(1920, 720, 140, 136, 1780, 560, 24)
+        assertTrue(B.leftEdge(band, plain, 1920).isEmpty(), "đời cụm chưa đo đường cong ⇒ bảng rỗng")
+        assertEquals(band.x0, B.leftEdgeAt(band, emptyList(), 300), "bảng rỗng ⇒ tường thẳng — hành vi 2.76")
+        // Display hẹp hơn tham chiếu: bảng co lại và vẫn ≤ mép trái của dải đã co.
+        val small = B.band(960, 360, seal)
+        assertTrue(B.leftEdge(small, seal, 960).all { it in 0..small.x0 })
+    }
+
+    /** Nội suy: đúng bảng ở các hàng mẫu, kẹp ngoài dải, và không bao giờ ra ngoài `0..band.x0`. */
+    @Test fun `noi suy mep cong dung o hang mau va kep ngoai dai`() {
+        val e = B.leftEdge(band, seal, 1920)
+        for ((i, x) in e.withIndex()) assertEquals(x, B.leftEdgeAt(band, e, band.y0 + band.h * i / (e.size - 1)), "mẫu $i")
+        assertEquals(e.first(), B.leftEdgeAt(band, e, band.y0 - 500), "trên đỉnh dải ⇒ kẹp về mẫu đầu")
+        assertEquals(e.last(), B.leftEdgeAt(band, e, band.y1 + 500), "dưới đáy dải ⇒ kẹp về mẫu cuối")
+        assertEquals(30, B.leftEdgeAt(band, e, 162), "giữa mẫu 0 (42) và mẫu 1 (18) ⇒ 42 − 24/2")
+        for (y in band.y0..band.y1) assertTrue(B.leftEdgeAt(band, e, y) in 0..band.x0, "hàng $y")
+    }
+
+    /**
+     * ═══ Cửa sổ TRƯỢT RA tới kính và MẶT NẠ không bao giờ vượt kính — bất biến [P1] của 2.76 còn nguyên ═══════════
+     *
+     * Owner 27/09: *"shape nó không theo cạnh trái cong của cụm"*. Cửa sổ vì thế bắt đầu ở điểm xa nhất của bảng
+     * (18) chứ không phải tường thẳng (140) — nhưng **bề rộng không đổi một px** (nới bề rộng = kéo giãn ảnh) và
+     * phần thừa bị `:app` cắt bằng mặt nạ ⇒ mép có mực ở mỗi hàng chính là [CameraClusterBand.maskLeftAt].
+     */
+    @Test fun `cua so cong truot ra toi kinh, mat na khong bao gio vuot kinh`() {
+        val e = B.leftEdge(band, seal, 1920)
+        val crops = listOf(null, CameraPanoCrop.stripCrop(1), CameraPanoCrop.narrowCrop(1, true), CameraPanoCrop.squareCrop(0.375, 0.1875, 100))
+        for (atLeft in listOf(true, false)) for (crop in crops) for (rot in listOf(0, 90, -90, 180)) for (known in listOf(true, false)) {
+            val w = if (known) 5120 else 0
+            val h = if (known) 960 else 0
+            val p = B.place(band, atLeft, w, h, crop, rot, seal, 720, leftEdge = e)
+            val flat = B.place(band, atLeft, w, h, crop, rot, seal, 720)
+            val lbl = "atLeft=$atLeft crop=${crop?.toList()} rot=$rot known=$known"
+            assertEquals(flat.w to flat.h, p.w to p.h, "$lbl: bề rộng/cao KHÔNG đổi so với 2.76 (không kéo giãn ảnh)")
+            assertEquals(flat.y, p.y, "$lbl: chiều dọc không đổi ⇒ không bao giờ chạm thanh trên/dưới")
+            assertTrue(B.insideBand(p), "$lbl: $p ra ngoài dải")
+            if (atLeft) {
+                assertEquals(18, p.x, "$lbl: đầu trái trượt ra tới điểm xa nhất của kính")
+                assertEquals(e, p.leftEdge, "$lbl: Placement mang bảng để `:app` dựng mặt nạ")
+            } else {
+                assertEquals(flat.x, p.x, "$lbl: đầu PHẢI không đổi — mép phải bị cột icon ADAS chặn, không phải kính")
+                assertTrue(p.leftEdge.isEmpty(), "$lbl: bên phải không có mặt nạ cong")
+            }
+            // Mép có mực ở MỌI hàng của cửa sổ: không bao giờ ra ngoài kính, và không bao giờ vượt mép phải dải.
+            for (y in p.y until p.y + p.h) {
+                val left = B.maskLeftAt(p, y)
+                assertTrue(left >= B.leftEdgeAt(band, p.leftEdge, y), "$lbl y=$y: mực ở $left, kính ở ${B.leftEdgeAt(band, p.leftEdge, y)}")
+                assertTrue(left in 0..band.x1 && p.x + p.w <= band.x1, "$lbl y=$y")
+            }
+        }
+        // Mép có mực ở bốn hàng mẫu — con số owner sẽ thấy (2.76 là 140 ở MỌI hàng ⇒ nới 51…122 px).
+        val p = B.place(band, true, 5120, 960, CameraPanoCrop.stripCrop(1), 0, seal, 720, leftEdge = e)
+        assertEquals(42, B.maskLeftAt(p, 136), "đỉnh dải")
+        assertEquals(18, B.maskLeftAt(p, 189), "chỗ kính ra xa nhất ⇒ nới 122 px so với 2.76")
+        assertEquals(41, B.maskLeftAt(p, 348), "giữa dải")
+        assertEquals(89, B.maskLeftAt(p, 560), "đáy dải ⇒ vẫn còn nới 51 px")
+    }
+
+    /** Hồ sơ vô lý về đường cong (mẫu nằm phải tường thẳng, hoặc chỉ 1 mẫu) bị từ chối lúc dựng. */
+    @Test fun `spec mep cong vo ly bi tu choi`() {
+        assertThrows<IllegalArgumentException> { ClusterBandSpec(1920, 720, 140, 136, 1780, 560, 24, listOf(42, 141)) }
+        assertThrows<IllegalArgumentException> { ClusterBandSpec(1920, 720, 140, 136, 1780, 560, 24, listOf(-1, 40)) }
+        assertThrows<IllegalArgumentException> { ClusterBandSpec(1920, 720, 140, 136, 1780, 560, 24, listOf(42)) }
+    }
+
     // ══ (3) THOÁI trên màn chính + (4) crop không đổi ═══════════════════════════════════════════════════════════
 
-    /** "Theo cụm" trên màn chính ⇒ CHỮ NHẬT (cửa sổ 2.73), KHÔNG tròn; trên cụm giữ; hình khác không bị chạm. */
-    @Test fun `theo cum thoai ve chu nhat tren man chinh`() {
+    /**
+     * "Theo cụm" trên màn chính ⇒ CHỮ NHẬT (cửa sổ 2.73), KHÔNG tròn; và **chữ nhật TRÊN CỤM ⇒ theo cụm** (2.77).
+     *
+     * Phép quy thứ hai khoá phép đo 27/09 chiều: owner nhìn đúng nhánh chữ nhật trên cụm ⇒ *"bé tý, bo các góc
+     * tròn, không hề theo hình cụm gì cả"*, còn nhánh *theo cụm* cùng buổi ⇒ *"này nhìn OK"*. Hai hình dùng CÙNG
+     * crop (bài `crop theo cum trung crop chu nhat` ngay dưới) nên phép quy chỉ đổi CỬA SỔ. TRÒN không bị chạm.
+     */
+    @Test fun `theo cum thoai ve chu nhat tren man chinh, va chu nhat tren cum len theo cum`() {
         val P = CameraSignalPolicy
         assertEquals(P.SHAPE_RECT, B.effectiveShape(B.SHAPE_CLUSTER, onCluster = false))
         assertEquals(B.SHAPE_CLUSTER, B.effectiveShape(B.SHAPE_CLUSTER, onCluster = true))
-        for (s in listOf(P.SHAPE_RECT, P.SHAPE_ROUND, "rác")) for (c in listOf(true, false)) assertEquals(s, B.effectiveShape(s, c))
+        assertEquals(B.SHAPE_CLUSTER, B.effectiveShape(P.SHAPE_RECT, onCluster = true), "chữ nhật trên cụm ⇒ theo cụm")
+        assertEquals(P.SHAPE_RECT, B.effectiveShape(P.SHAPE_RECT, onCluster = false), "màn chính không đổi một byte")
+        assertEquals(P.SHAPE_ROUND, B.effectiveShape(P.SHAPE_ROUND, onCluster = true), "TRÒN là chọn về NỘI DUNG ⇒ giữ")
+        for (s in listOf(P.SHAPE_ROUND, "rác")) for (c in listOf(true, false)) assertEquals(s, B.effectiveShape(s, c))
         assertTrue(B.isCluster(B.SHAPE_CLUSTER)); assertFalse(B.isCluster(P.SHAPE_ROUND))
         // Một nguồn mã: giá trị lưu bền nằm trong SHAPES của `:core` ⇒ pref/chip/prefs_set đều nhận.
         assertTrue(P.isShape(B.SHAPE_CLUSTER), "CLUSTER phải là mã hợp lệ của camera_shape")

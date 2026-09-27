@@ -97,8 +97,17 @@ class CameraOverlayView(private val appCtx: Context) {
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
     private class Box(val areaW: Int, val areaH: Int, val x0: Int, val y0: Int)
 
-    /** Cỡ + chỗ cửa sổ đã quyết — MỘT cửa cho [show] lẫn [onStreamMeasured]; `radiusPx` chỉ có ở đường dải cụm. */
-    private class Geo(val f: CameraOverlayFrame.Frame, val lp: WindowManager.LayoutParams, val radiusPx: Int?, val note: String)
+    /**
+     * Cỡ + chỗ cửa sổ đã quyết — MỘT cửa cho [show] lẫn [onStreamMeasured]; `radiusPx` và [place] chỉ có ở đường
+     * dải cụm ([place] mang bảng mép cong ⇒ [glassMask] dựng mặt nạ; `null` ⇒ cửa sổ chữ nhật 2.73, không mặt nạ).
+     */
+    private class Geo(
+        val f: CameraOverlayFrame.Frame,
+        val lp: WindowManager.LayoutParams,
+        val radiusPx: Int?,
+        val note: String,
+        val place: CameraClusterBand.Placement? = null,
+    )
 
     private companion object {
         const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -180,7 +189,7 @@ class CameraOverlayView(private val appCtx: Context) {
             val child = vl.view
             // Nhãn nhỏ ở góc: off-car (chưa có video) vẫn NHÌN THẤY overlay hiện đúng bên/đúng lúc ⇒ verify wiring
             // E2E bằng mắt. Chữ ngắn ("Camera trái") nên nó không ăn chỗ khi video thật đã đổ vào.
-            val frame = android.widget.FrameLayout(ctx).apply {
+            val frame = CameraGlassFrame(ctx, glassMask(g.place, radius)).apply {
                 // Nền BO GÓC = thứ cho bốn góc một màu đục để mép video không lởm chởm nếu layer bị cắt vuông.
                 background = GradientDrawable().apply {
                     this.shape = if (round) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
@@ -335,27 +344,6 @@ class CameraOverlayView(private val appCtx: Context) {
     }
 
     /**
-     * Nhãn ngắn *Camera trái/phải* ở góc, hoặc `null` khi chỗ gọi không nói bên nào.
-     *
-     * Chữ đi qua tài nguyên (`R.string.kachi_camera_left/right`) như mọi chữ của tầng `launcher/` —
-     * `LauncherI18nContractTest` quét chính điều đó.
-     */
-    private fun labelFor(ctx: Context, side: Side?): android.widget.TextView? {
-        val res = when (side) {
-            Side.LEFT -> com.byd.clusternav.R.string.kachi_camera_left
-            Side.RIGHT -> com.byd.clusternav.R.string.kachi_camera_right
-            null -> return null
-        }
-        val pad = KachiSpace.dp(ctx, KachiSpace.S)
-        return android.widget.TextView(ctx).apply {
-            text = ctx.getString(res)
-            setTextColor(Color.WHITE)
-            textSize = 12f
-            setPadding(pad, pad, pad, pad)
-        }
-    }
-
-    /**
      * Bo cây view: [oval] = hình TRÒN/ELIP (`Outline.setOval`), ngược lại = chữ nhật bo góc bán kính [radius] — **cùng
      * một** [ViewOutlineProvider] + [View.setClipToOutline] của 2.73, không thêm cơ chế cắt nào khác.
      *
@@ -400,13 +388,18 @@ class CameraOverlayView(private val appCtx: Context) {
         if (CameraClusterBand.isCluster(st.shape)) {
             val dm = st.ctx.resources.displayMetrics
             val bandRect = CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)
+            val edge = CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)
             val p = CameraClusterBand.place(
                 band = bandRect, atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT,
                 streamW = st.streamW, streamH = st.streamH, crop = st.crop,
                 rotationDeg = if (st.rotationEffective) st.rotationDeg else 0, spec = st.band, displayH = dm.heightPixels,
+                leftEdge = edge,
             )
-            val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} tại=${p.x},${p.y} display=${dm.widthPixels}x${dm.heightPixels}"
-            return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note)
+            val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} tại=${p.x},${p.y}" +
+                " cong=${CameraClusterBand.maskLeftAt(p, p.y)}/${CameraClusterBand.maskLeftAt(p, p.y + p.h / 2)}" +
+                "/${CameraClusterBand.maskLeftAt(p, p.y + p.h - 1)}" +
+                " display=${dm.widthPixels}x${dm.heightPixels}"
+            return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)
         }
         val box = box(st.ctx, st)
         val f = frameOf(st, box)

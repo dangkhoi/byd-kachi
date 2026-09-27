@@ -33,6 +33,9 @@ ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 GRADLE="${GRADLE_LOCKED:-}"
 # Dải Seal DL3 — cùng số với `ClusterBandSpec.SEAL_DL3` (:core). Đổi ở đó thì đổi ở đây (bài canh `:core` ghim số).
 BAND_L=140; BAND_T=136; BAND_R=1780; BAND_B=560
+# Mép NGOÀI cong bên trái (2.77) = `ClusterBandSpec.SEAL_DL3.leftEdge`: 9 mẫu chia đều từ BAND_T tới BAND_B.
+# Cửa sổ ĐẦU TRÁI được phép trượt ra tới mẫu nhỏ nhất (mặt nạ cắt phần thừa) ⇒ chấm điểm theo mẫu đó, không theo BAND_L.
+BAND_EL="42,18,19,31,41,50,61,74,89"
 MIRROR_W=960; MIRROR_H=360   # cửa sổ soi của overlay display trên màn chính (Android 10: nửa cỡ)
 
 while [ $# -gt 0 ]; do
@@ -171,10 +174,16 @@ one_side() {
   adbs exec-out screencap -p > "$OUT/screen-$tag.png"
   adbs logcat -d -s KachiCamera | grep "overlay show" | tail -1 > "$OUT/overlay-show-$tag.txt" || true
   cat "$OUT/overlay-show-$tag.txt" | sed 's/^/   /'
-  "$PY" - "$OUT" "$tag" "$CLUSTER_ID" "$BAND_L" "$BAND_T" "$BAND_R" "$BAND_B" "$MIRROR_W" "$MIRROR_H" <<'PYEOF' || RC=1
+  "$PY" - "$OUT" "$tag" "$CLUSTER_ID" "$BAND_L" "$BAND_T" "$BAND_R" "$BAND_B" "$MIRROR_W" "$MIRROR_H" "$BAND_EL" <<'PYEOF' || RC=1
 import re, sys
 from PIL import Image, ImageDraw
 out, tag, did, L, T, R, B, MW, MH = sys.argv[1], sys.argv[2], int(sys.argv[3]), *map(int, sys.argv[4:10])
+edge = [int(v) for v in sys.argv[10].split(",")] if tag == "left" else []
+def edge_at(y):
+    if not edge: return L
+    t = max(0.0, min(1.0, (y - T) / float(B - T))) * (len(edge) - 1)
+    i = min(int(t), len(edge) - 2)
+    return round(edge[i] + (t - i) * (edge[i + 1] - edge[i]))
 t = open(f"{out}/windows-{tag}.txt", encoding="utf-8", errors="replace").read()
 # Cửa sổ overlay camera của Kachi trên display cụm: block "Window #n Window{... com.byd.launcher}" có mDisplayId=<did> + ty=APPLICATION_OVERLAY.
 blocks = re.split(r"\n(?=  Window #\d+ )", t)
@@ -186,15 +195,19 @@ for b in blocks:
 if frame is None:
     print(f"   ✗ {tag}: không thấy cửa sổ APPLICATION_OVERLAY của {'Kachi'} trên display {did}"); sys.exit(1)
 x0, y0, x1, y1 = frame
-inside = L <= x0 and T <= y0 and x1 <= R and y1 <= B
-print(f"   khung cửa sổ trên display {did}: [{x0},{y0}]-[{x1},{y1}] ({x1-x0}x{y1-y0}) · dải [{L},{T}]-[{R},{B}] ⇒ {'TRONG DẢI' if inside else 'RA NGOÀI'}")
+outer = min(edge) if edge else L
+inside = outer <= x0 and T <= y0 and x1 <= R and y1 <= B
+print(f"   khung cửa sổ trên display {did}: [{x0},{y0}]-[{x1},{y1}] ({x1-x0}x{y1-y0}) · dải [{L},{T}]-[{R},{B}]"
+      f" · mép ngoài cho phép {outer} ⇒ {'TRONG DẢI' if inside else 'RA NGOÀI'}")
 # Ảnh: cắt cửa sổ soi (góc trên-trái màn chính), phóng về 1920×720, kẻ dải xanh + vùng hệ thống đo được (đỏ) + khung (vàng).
 im = Image.open(f"{out}/screen-{tag}.png").convert("RGB").crop((0, 0, MW, MH)).resize((1920, 720), Image.NEAREST)
 d = ImageDraw.Draw(im)
 d.rectangle([0, 0, 1919, 130], outline=(220, 40, 40), width=3)      # thanh trên hệ thống [ĐO ≈ 0..130–140]
 d.rectangle([0, 567, 1919, 719], outline=(220, 40, 40), width=3)    # thanh dưới hệ thống [ĐO chữ từ ≈ 567–578]
 d.rectangle([1798, 165, 1919, 330], outline=(220, 40, 40), width=2) # cột icon phải (biển 30/ADAS) [ĐO]
-d.rectangle([L, T, R - 1, B - 1], outline=(40, 200, 80), width=3)   # dải vẽ được
+d.rectangle([L, T, R - 1, B - 1], outline=(40, 200, 80), width=3)   # dải vẽ được (tường thẳng 2.76)
+if edge:                                                           # mép ngoài cong đo từ ảnh cụm (2.77)
+    d.line([(edge_at(y), y) for y in range(T, B + 1, 4)], fill=(60, 220, 255), width=3)
 d.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(250, 210, 40), width=3)  # cửa sổ camera (từ dumpsys)
 d.text((L + 8, T + 6), f"dai {L},{T}-{R},{B}  cua so {x0},{y0}-{x1},{y1}  {'OK' if inside else 'FAIL'}", fill=(0, 0, 0))
 im.save(f"{out}/cluster-{tag}.png")

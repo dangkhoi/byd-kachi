@@ -7,6 +7,11 @@
 > không lên thì **lùi về toàn cảnh đúng một lần**, có log, có dấu trong Cài đặt; `camera_frame` mang ghi chú
 > `anamorphic x4`. Liên quan: `../research-side-camera-orientation-2026-09-27.md` §6 · `../offcar-2026-09-26/camera-dewarp-gl.md`
 > · backlog dòng `ONCAR-2026-09-27` + `2.75 (176)`.
+>
+> ⚠ **ĐỌC §8 TRƯỚC §2/§5.** Buổi xe **chiều 27/09** (bản 2.76 (177) trên xe) đã **gỡ hẳn** hai thứ mà §2.1/§2.3 mô tả:
+> khối *Nâng cao (kỹ thuật)* và **toàn bộ** nguồn *Một camera* (`camera_source` · `camera_hal_mode` · máy lùi
+> CHANNEL → PANO). §1–§7 giữ nguyên làm **lịch sử của 2.76** (append-only, cùng lối §Reviewer Log); §8 là trạng thái
+> **hiện tại** của 2.77 và là chỗ giữ **bản đồ kênh camera** như một số đo.
 
 Nhãn: **[ĐO]** số đo trên xe/log thật · **[SUY]** suy từ số đo, chưa đo trực tiếp · **[ĐOÁN]** · **[CHƯA BIẾT]**.
 
@@ -179,3 +184,109 @@ R3 sinh ra để đóng *ca sai im lặng* của 2.75; soát chéo tìm ra đún
 `SettingsCameraSection` và KDoc `CameraSettingsIaTest` đều đã sửa; tổng khoá `camera_*` 25 → **27**. CAM-F1 là một phép **ĐẾM
 HÀNG** owner làm trên xe trong 2 phút: số sai ở đó không chỉ là doc lệch, nó làm phép kiểm mất hiệu lực (đếm ra 11 mà runbook
 nói 9 ⇒ không biết là lỗi hay là đúng).
+
+---
+
+## 8. 2.77 (2026-09-27, chiều — sau buổi xe closing): GỠ tầng *Nâng cao* + GỠ hẳn nguồn *Một camera*
+
+> Đây là **trạng thái hiện tại**. §2.1 (hai tầng) và §2.3 (lùi CHANNEL → PANO) là lịch sử của 2.76 — không còn mã nào
+> thi hành chúng.
+
+### 8.1 Owner nói gì (nguyên văn, trên xe 2026-09-27 chiều)
+
+- *"bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật"*
+- *"không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn
+  cảnh khung ghép rồi"*
+
+### 8.2 Phép ĐO khép lại câu hỏi *"một camera có nét hơn không"* — KHÔNG
+
+| # | Số đo | Mức | Nguồn |
+|---|---|---|---|
+| M1 | Cùng cỡ cảnh, **hai khung thô** chụp cùng hiện trường: **năng lượng cạnh 686 (dải ghép) vs 351 (một kênh)** | [ĐO] | buổi xe 27/09 chiều, backlog `ONCAR-2026-09-27 CHIỀU` |
+| M2 | Tỉ lệ chi tiết **ngang/dọc 0,30 (ghép) vs 0,19 (một kênh)** ⇒ khung một kênh bị **KÉO NGANG** nhiều hơn từ **cùng** dữ liệu cảm biến | [ĐO] | cùng nguồn |
+| M3 | Cảm giác *"rõ hơn"* của owner đến từ **khung rộng hơn + ảnh mượt do phóng to**, không từ điểm ảnh thật | [SUY từ M1+M2] | — |
+| M4 | Vào số **R** khi Kachi đang giữ một kênh ⇒ camera lùi zin **chạy bình thường**, không xung đột | [ĐO] | cùng nguồn (giữ lại làm kiến thức, không còn đường code) |
+
+⇒ Nguồn một-kênh **không mang thêm thông tin**, chỉ thêm một lựa chọn cho người lái phải hiểu. Bỏ.
+
+### 8.3 BẢN ĐỒ KÊNH CAMERA — số đo được GIỮ LẠI làm kiến thức (không còn mã nào đọc)
+
+**[ĐO 27/09, owner xác nhận từng kênh]** `AVMCamera.addPreviewSurface(surface, n)`:
+
+| `n` | Hướng |
+|---|---|
+| 1 | **sau** |
+| 2 | **trái** |
+| 3 | **phải** |
+| 4 | **trước** |
+
+Tức hồ sơ Seal của 2.76 gán *trái = 2 · phải = 3* là **ĐÚNG** (§1 B4 chỉ [ĐO] được hai kênh giữa; hai kênh còn lại từng
+là [SUY], nay là [ĐO]). Đây là chỗ **duy nhất** còn giữ bảng này: `CameraProfileDefaults.channelLeft/channelRight`,
+`CameraSignalPolicy.HAL_MODE_*` và tham số `halMode` của `AvmCamera.open` đều đã xoá. Muốn dựng lại nguồn một-kênh thì
+phải quay lại đây đọc bảng — và đọc luôn §8.2 để biết vì sao nó bị bỏ.
+
+### 8.4 Gỡ những gì (mã)
+
+| Thứ | Trước (2.76) | Sau (2.77) |
+|---|---|---|
+| Hàng trên màn *Tiện nghi xe › Camera* | 11 (10 + *Nguồn* có điều kiện) + khối gập **16 mục** sau cổng chế độ kiểm thử | **10**, một tầng, không cổng |
+| `camera_source` · `camera_hal_mode` | pref + hàng chip + `prefs_set` | **XOÁ hẳn** (cả danh sách trắng) |
+| Danh sách trắng `prefs_set` | 42 khoá | **40** — lần đầu danh sách này **co lại** |
+| Khoá `camera_*` | 27 (11 user + 16 tech) | **25** (10 `USER_KEYS` + 15 `NO_UI_KEYS`) |
+| Tệp xoá | — | `core/…/camera/CameraChannel.kt` · `app/…/PrefsCameraChannel.kt` · `app/…/launcher/ClusterNavBridgeCamera.kt` |
+| Bài test xoá | — | `CameraChannelSourceTest` · `CameraChannelFallbackTest` · `CameraChannelFallbackWiringContractTest` |
+| `CameraPanoCrop.contentWidth` · tham số `channel` của `cropFor`/`sourceCentre`/`cameraGlUniforms` · `CameraFrameShot.channel` · `"note":"anamorphic x4"` | có | **gỡ** (một tham số luôn `false` là mã chết) |
+| `AvmCamera.open` | `(cameraId, surface, halMode)` + nhánh đo đọc `rc` + `channelRefused` | `(cameraId, surface)` — **chỉ** vòng dò `0..3` của 2.73 |
+| 38 chuỗi VI + 38 chuỗi EN của khối gập / hàng *Nguồn* / 16 hàng đo | có | **xoá** (i18n mồ côi) |
+
+### 8.5 15 khoá KHÔNG có UI — ẩn hàng, **không** xoá khoá
+
+`camera_render` · `camera_span` · `camera_strip_left/right` · `camera_circle_scale` · `camera_cam_left/right` ·
+`camera_gl_texmatrix` · tám núm `camera_dewarp_{cx,cy,k,focal,scale,pan_x,pan_y}` — vẫn ghi/đọc qua `prefs_set` của cầu
+kiểm thử, giá trị đã đặt trên xe **vẫn có hiệu lực**, mặc định là bộ hồ sơ xe (Seal: `STRIP · GL · F 55 · K 100 ·
+S 130 · tâm 0,0 · dịch 0,0`, dải trái 1 / phải 2, cameraId 1).
+
+Vì sao giữ: đó là **đường chẩn đoán** CLAUDE.md §15 bước 2/3 (đọc/ghi state bền rẻ hơn mò UI hàng chục lần), và là bộ
+số owner đã dò **ba buổi xe**. Vì sao vẫn gỡ UI: owner *"không biết chỉnh đâu"* ⇒ một hàng người lái không dùng được
+là một hàng gây rối, kể cả khi nó nằm sau một cổng. Xoá khoá thì mất cả hai thứ trên.
+
+**[ĐO B0 27/09 chiều]** prefs camera của owner (F55/K100/S130/GL/STRIP, xoay ↺90) **giữ nguyên qua nâng cấp** ⇒ luật
+*pref thắng mặc định hồ sơ* đã chứng minh trên xe ⇒ gỡ UI không đổi một pixel nào trên xe của owner.
+
+### 8.6 Hợp đồng test sau 2.77
+
+- `CameraSettingsIaTest` (`:core`, 4 bài) — `USER_KEYS` = **đúng 10 khoá đúng thứ tự** · `NO_UI_KEYS` = 15 · hai danh
+  sách rời nhau và hợp lại = **đúng 25** khoá `camera_*` của danh sách trắng · `camera_source`/`camera_hal_mode`
+  **không** ở danh sách nào **và không** ghi được nữa.
+- `CameraSettingsIaWiringContractTest` (`:app`, 3 bài) — canh **sự VẮNG MẶT**: mọi mảnh của khối gập / hàng *Nguồn* /
+  15 getter không-UI phải không có trong `SettingsSectionsCamera.kt`; `build()` chỉ còn **một** lượt dựng; tệp
+  `ClusterNavBridgeCamera.kt` không tồn tại; 38 chuỗi đã xoá khỏi **cả hai** tệp chữ.
+- `CameraSpanShapeWiringContractTest` · `CameraGlWiringContractTest` · `CameraFrameAndRenderWiringContractTest` — đổi
+  từ *"hàng này phải có"* sang *"hàng này phải VẮNG, mà `prefs_set` phải CÒN"*.
+- `TestBridgeCommandTest` — `WRITABLE_PREFS_KEYS.size` **42 → 40**, kèm hai `assertTrue(… !in …)` cho hai khoá đã xoá.
+
+### 8.7 🚗 Kiểm trên xe (thay CAM-F1…F4 của §5)
+
+- **CAM-G1** — *Cài đặt › Tiện nghi xe › Camera*: **đếm đúng 10 hàng**, **không** có khối *Nâng cao (kỹ thuật)*, **không**
+  có hàng *Nguồn*. Bật chế độ kiểm thử rồi mở lại: vẫn **đúng 10 hàng** (không còn cổng nào để mở thêm).
+- **CAM-G2** — `prefs_set --es key camera_dewarp_k --es text 105` ⇒ `ok` + `read_back 105`; `prefs_set camera_render TV`
+  ⇒ `ok`, lượt xi-nhan sau vẽ bằng TextureView ⇒ **đường chẩn đoán còn sống dù không còn hàng**.
+- **CAM-G3** — `prefs_set --es key camera_source --es text CHANNEL` ⇒ phải **lỗi** `bad_prefs_key` (không còn ghi được);
+  cùng vậy với `camera_hal_mode`.
+- **CAM-G4** — xi-nhan trái/phải: log `KachiCamera` **không còn** `halMode=`/`nguồn=`; ảnh vẫn lên đúng như 2.76
+  (khung ghép, cắt dải, GL) ⇒ gỡ nguồn không đổi hình.
+- **CAM-G5** — `read_back camera_span`/`camera_render`/`camera_dewarp_focal` trả đúng giá trị owner đã đặt trên xe
+  (STRIP / GL / 55) ⇒ nâng cấp không reset bộ số.
+
+### 8.8 Nợ mở ra từ lượt gỡ này
+
+- ~~`docs/catalog/features.json` + `docs/kachi-feature-catalog.html` còn mục *"Nguồn «một camera» … LÙI VỀ TOÀN CẢNH
+  (2.76 R3)"* và các mục của tầng kỹ thuật~~ ⇒ **ĐÃ ĐÓNG ở lượt gộp 2.77 (điều phối)**: mục R3 **xoá** (tính năng
+  không còn), mục IA viết lại thành *"MỘT tầng — đúng 10 hàng"*, mục hồ sơ bỏ `kênh 2/3` khỏi bộ số và mục *theo cụm*
+  nhận thêm phần mép cong ⇒ `features.json` **165 → 164** mục, `kachi-feature-catalog.html` dựng lại
+  (`SOURCE_DATE_EPOCH` ghim 2026-09-27 để không sinh diff giả). Grep `LÙI VỀ TOÀN CẢNH` trong HTML = **0**.
+- Việc 2.77 còn lại của camera (ngoài phạm vi làn này): **mặt nạ bám đường cong của cụm** (§ONCAR-2026-09-27 CHIỀU
+  CAM-CL2 — hình *CHỮ NHẬT* trên cụm co thành ô vuông nhỏ, owner *"bé tý… không hề theo hình cụm"*), và `setPreviewSize`
+  vì **ĐỘ NÉT** (không vì jank — CAM-B6 đã đóng nhánh jank: 11,15 % → 0,81 % nhờ trần 15 fps).
+- 🚗 **G7** (dấu núm dịch khung) **không còn đo được qua UI** — núm đã gỡ; đo qua `prefs_set camera_dewarp_pan_x` nếu
+  owner còn muốn chốt dấu.

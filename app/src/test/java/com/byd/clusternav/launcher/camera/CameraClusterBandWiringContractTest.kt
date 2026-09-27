@@ -20,6 +20,7 @@ class CameraClusterBandWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
+    private val mask by lazy { app("launcher/camera/CameraOverlayMask.kt") }
     private val panoCrop by lazy { SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraPanoCrop.kt") }
     private val script by lazy { SourceRoots.text("../scripts/emulator/camera-cluster-e2e.sh") }
 
@@ -49,9 +50,12 @@ class CameraClusterBandWiringContractTest {
             "displayMetrics phải của display đang treo — [ĐO] 27/09: vùng=495 = 0,5 × 990 của màn CHÍNH")
         assertTrue("CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)" in geo, "dải co theo display thật")
         assertTrue("CameraClusterBand.place(" in geo, "chỗ đặt do `:core` tính (có test bằng số)")
+        assertTrue("CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)" in geo && "leftEdge = edge," in geo,
+            "2.77: mép ngoài CONG cũng co theo display thật rồi đi vào `place` — không có bảng thứ hai ở `:app`")
         assertTrue("atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT" in geo, "đầu trái/phải theo pref góc từng bên")
         assertTrue("rotationDeg = if (st.rotationEffective) st.rotationDeg else 0" in geo, "tỉ lệ chỉ lấy xoay khi xoay THẬT")
-        assertTrue("return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note)" in geo)
+        assertTrue("return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)" in geo,
+            "Placement đi tiếp tới `show` — nếu rơi ở đây thì mặt nạ cong thành code chết (CLAUDE.md §8)")
         // Đường 2.73 còn nguyên và đứng sau nhánh cụm (CLAUDE.md §6: đường mới xuống cuối… ở đây là rẽ trước, rơi về cũ).
         assertTrue("val box = box(st.ctx, st)" in geo && "return Geo(f, layoutParams(box, f, st.corner), null" in geo)
         val lp = SourceRoots.body(overlay, "private fun bandLayoutParams(")
@@ -72,9 +76,19 @@ class CameraClusterBandWiringContractTest {
         val profile = app("modules/clustercast/ClusterProfile.kt")
         val defaults = app("launcher/camera/CameraDefaults.kt")
         val controller = app("launcher/camera/CameraSignalController.kt")
-        assertTrue("val band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3," in profile, "hồ sơ khai dải cụm, mặc định Seal")
+        // 2.77 — mặc định phải là bản KHÔNG đường cong: bảng `leftEdge` CẮT điểm ảnh theo kính của MỘT đời cụm, nên
+        // đời chưa đo phải rơi về tường thẳng 2.76 thay vì bị xén theo kính xe khác (CLAUDE.md §7).
+        assertTrue("val band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3_NO_CURVE," in profile,
+            "mặc định hồ sơ = dải KHÔNG đường cong; chỉ đời ĐÃ ĐO mới mang bảng leftEdge")
+        assertTrue("band = ClusterBandSpec.SEAL_DL3," in profile, "Seal DL3 khai tường minh bộ CÓ đường cong")
+        assertTrue("if (id == SEAL_DL3.id) ClusterBandSpec.SEAL_DL3 else ClusterBandSpec.SEAL_DL3_NO_CURVE" in profile,
+            "bandFor chọn theo id seed, cùng khuôn với cameraFor")
         assertFalse("band" in SourceRoots.body(profile, "fun export("), "band KHÔNG vào chuỗi export")
-        assertFalse("band" in SourceRoots.body(profile, "fun parse("), "band KHÔNG đọc từ chuỗi parse")
+        // `parse` KHÔNG đọc dải từ chuỗi (nó chỉ tra theo `id` seed) — khẳng định vẫn là khẳng định cũ, chỉ đổi cách
+        // đo: không được có trường nào của chuỗi `f[…]` chảy vào dải, và dải phải đến từ `bandFor(id)`.
+        val parseBody = SourceRoots.body(profile, "fun parse(")
+        assertTrue("band = bandFor(id)," in parseBody, "dải theo id seed, không theo chuỗi owner dán")
+        assertFalse(Regex("""band\s*=\s*[^b\n]*f\[""").containsMatchIn(parseBody), "không trường nào của chuỗi vào dải")
         assertTrue("fun band(ctx: Context): ClusterBandSpec = ClusterProfile.resolveCached(ctx).band" in defaults, "một cửa, có đệm")
         val session = SourceRoots.body(controller, "private fun openSession(")
         assertTrue("band = CameraDefaults.band(appCtx)," in session, "controller đưa dải của HỒ SƠ vào overlay.show")
@@ -99,6 +113,29 @@ class CameraClusterBandWiringContractTest {
         assertFalse("CLUSTER_TOP_RATIO" in overlay,
             "lề 6 % của cụm đã hết chủ; KDoc của nó còn nói sai *\"cụm không có thanh trên\"* (F6 đo tới y ≈ 136)")
         assertTrue("MAIN_TOP_RATIO" in box, "đường màn CHÍNH không đổi một byte")
+    }
+
+    /**
+     * ═══ 2.77 · MẶT NẠ CONG được DỰNG và được DÙNG ═══════════════════════════════════════════════════════════════
+     *
+     * Owner 27/09 chiều: *"này nhìn OK, nhưng shape nó không theo cạnh trái cong của cụm"*. Ba mắt xích mà gỡ đi
+     * thì build vẫn xanh và không bài `:core` nào đỏ (CLAUDE.md §8): (1) cửa sổ phải là [CameraGlassFrame] chứ
+     * không phải `FrameLayout` trần, (2) mặt nạ phải dựng từ chính `Placement` mà `geometry` trả, (3) phép cắt
+     * phải là `clipPath` — outline KHÔNG cắt được đường bất kỳ ([ĐO] `Outline.canClip`, KDoc `CameraOverlayMask`).
+     */
+    @Test fun `mat na cong duoc dung tu Placement va cat bang clipPath`() {
+        val body = SourceRoots.body(overlay, "fun show(")
+        assertTrue("CameraGlassFrame(ctx, glassMask(g.place, radius))" in body,
+            "cửa sổ phải là khung có mặt nạ, và mặt nạ lấy từ `Placement` của `geometry` (không dựng lại hình học)")
+        assertTrue("android.widget.FrameLayout(ctx).apply" !in overlay, "không còn khung trần nào bỏ qua mặt nạ")
+        val g = SourceRoots.body(mask, "internal fun glassMask(")
+        assertTrue("p.leftEdge.size < 2" in g && "return null" in g, "bảng rỗng/1 mẫu ⇒ không mặt nạ ⇒ cửa sổ 2.76")
+        assertTrue("addRoundRect(0f, 0f, w, h, radius, radius" in g && "Path.Op.INTERSECT" in g,
+            "GIAO với chữ nhật bo góc ⇒ bán kính vẫn là của hồ sơ, không có bản sao thứ hai của hình cửa sổ")
+        assertTrue("band.y0 + band.h * i / (n - 1)" in g, "lấy mẫu ĐÚNG các hàng mà `:core` định nghĩa")
+        val d = SourceRoots.body(mask, "override fun draw(")
+        assertTrue("canvas.clipPath(m)" in d && "canvas.restoreToCount(save)" in d, "cắt bằng clipPath, có save/restore")
+        assertFalse("setConvexPath" in mask, "outline không cắt được đường bất kỳ — đừng thử lại")
     }
 
     /** (d) HAL trả cỡ ⇒ dựng lại bằng CÙNG [geometry]: hai công thức là cửa sổ nhảy khỏi dải đúng lúc có ảnh. */
@@ -137,5 +174,7 @@ class CameraClusterBandWiringContractTest {
             "số dải trong script phải khớp ClusterBandSpec.SEAL_DL3 — đổi hồ sơ thì đổi cả script")
         assertTrue("overlay_display_devices ${seal.refW}x${seal.refH}/320" in script,
             "cỡ overlay display phải là cỡ THAM CHIẾU của hồ sơ, nếu không `band()` co giãn và số chấm điểm lệch")
+        assertTrue("BAND_EL=\"${seal.leftEdge.joinToString(",")}\"" in script,
+            "bảng mép cong trong script phải khớp ClusterBandSpec.SEAL_DL3.leftEdge — chỉnh số ở xe thì script đỏ ngay")
     }
 }

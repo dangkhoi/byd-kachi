@@ -12,7 +12,7 @@
 
 | Việc | Cách làm |
 |---|---|
-| **Cài lần đầu** | Tải `apk/Kachi-2.76-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-2.74-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
+| **Cài lần đầu** | Tải `apk/Kachi-2.77-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-<bản>-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
 | **Cập nhật về sau** | *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, **không cần laptop**. |
 | **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. |
 | **Bản rất cũ** | Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần. |
@@ -49,21 +49,26 @@
 
 | Khối | Hàng / chip | Ghi chú |
 |---|---|---|
-| **Camera theo xi-nhan** (2.76: chỉ còn 11 hàng người lái) | **Bật camera khi xi-nhan** | Xi-nhan trái → camera trái nổi góc màn; phải → camera phải. Giữ tới khi **đèn xi-nhan tắt** (2.70; [ĐO xe Seal 26/09] trễ 87 ms). |
+| **Camera theo xi-nhan** (2.77: **đúng 10 hàng**, không còn khối *Nâng cao*) | **Bật camera khi xi-nhan** | Xi-nhan trái → camera trái nổi góc màn; phải → camera phải. Giữ tới khi **đèn xi-nhan tắt** (2.70; [ĐO xe Seal 26/09] trễ 87 ms). |
 | | **Hiện camera lên màn cụm** | Overlay hiện trên cụm đồng hồ thay vì màn chính; chọn hình *Theo cụm* để ảnh nằm trọn dải giữa (2.76, đo từ ảnh cụm Seal). |
 | | **Xi-nhan trái hiện ở** / **Xi-nhan phải hiện ở** | Góc trên-trái / trên-phải, đặt riêng từng bên. |
 | | **Xi-nhan trái: xoay video** / **Xi-nhan phải: xoay video** | *Không xoay* (mặc định 2.76 — nghiên cứu 27/09: 18/20 hệ trong ngành để ảnh đứng, chân trời ngang) · *↺ 90°* · *↻ 90°* · *180°*. Giá trị anh đã tự chọn được giữ nguyên khi nâng cấp. 🚗 CAM-C2 |
 | | **Lật gương trái** / **Lật gương phải** (2.76) | Mặc định tắt. Bật nếu ảnh ngược tay so với gương kính (người đứng sau-trái xe phải hiện đúng bên). 🚗 CAM-M1 |
 | | **Hình khung camera** | *Chữ nhật* / *Tròn* (trọn vòng ảnh mắt cá) / *Theo cụm* (2.76, chỉ có tác dụng khi hiện lên cụm; trên màn chính = chữ nhật). |
 | | **Nắn hình** (2.76) | Bật/tắt nắn ảnh mắt cá bằng GPU. Bộ số nắn lấy theo **hồ sơ xe** (Seal: bộ đã duyệt trên xe 27/09), không cần chỉnh. |
-| | **Nguồn** (2.76) | *Toàn cảnh (khung ghép)* mặc định / *Một camera* — chỉ hiện trên xe đã đo kênh (Seal). Nếu *Một camera* không lên, Kachi tự lùi về toàn cảnh cho lượt đó và ghi chú ngay dưới hàng này. 🚗 |
-| | **Nâng cao (kỹ thuật)** (2.76) | 16 mục, chỉ hiện khi bật *Chế độ kiểm thử qua adb*: kết xuất (TextureView/SurfaceView/GL), bề rộng vùng gương, dải trái/phải, kênh HAL, id camera 0–5 mỗi bên (Sealion 6 dùng **cam 0**), 8 núm nắn (tâm · K · tiêu cự · phóng · độ nắn · dịch khung ngang/dọc), ma trận texture. Không xoá gì — `prefs_set` qua cầu kiểm thử vẫn đặt được mọi khoá. |
 | **Lấy gió trong** | **Nổ máy thì tự lấy gió trong** | Xe quên chế độ này mỗi lần khởi động — Kachi tự bật lại. |
 | **Ghế mát / sưởi** | **Tự chỉnh ghế theo nhiệt độ** + **Chế độ** (*Làm mát* / *Sưởi*) + **mức từng ghế** | Chạm một ghế trên sơ đồ để đổi mức: **tắt → mức 1 → mức 2**. Mát và sưởi **loại trừ nhau** (theo HAL của xe). |
 | **Gió (ô điều khiển)** | ô **Gió** −/+ (2.74) | Bấm **−** khi đang mức 1 ⇒ chuyển sang **AUTO** (ô ghi *AUTO*, xe tự chọn mức — mức 0 không tồn tại trên xe). Bấm **+** khi đang AUTO ⇒ về chỉnh tay ở *mức đang thổi + 1*. Chip gió trên thanh trên ghi **AUTO n** khi tự động (n = mức đang thổi), chỉ **n** khi chỉnh tay. 🚗 chữ AUTO cần xác nhận trên xe. |
 | **Ghế (thanh trên)** | hai chip **Ghế lái** · **Ghế phụ** gộp (2.74, **có sẵn trong 5 chip mặc định**) | Hình ghế + dấu **sưởi** (nhiệt) hoặc **mát** (gió) + mức 1/2, **riêng từng ghế**; cả hai tắt ⇒ chỉ hình ghế mờ, không in chữ "Tắt". Thanh trên mặc định nay có 5 chip (Bụi mịn · Nhiệt độ · Năng lượng · Ghế lái · Ghế phụ); danh sách chip bạn đã tự đặt thì Kachi giữ nguyên. Hai chip lẻ *Ghế sưởi* / *Ghế mát* vẫn còn cho ai muốn. |
 | **Lọc bụi mịn** | **Tự lọc khi không khí bẩn** · **Lọc ngay một lượt** | Dòng *Bụi mịn hiện tại* hiện mức đọc được; tắt công tắc = chỉ lọc khi bạn bấm. |
 | **Tự sấy kính khi mưa** 🚗 | **Mưa thì tự bật sấy kính** + **Sấy kính trước** + **Sấy kính sau + gương** | Đọc cảm biến mưa **mỗi 5 phút**; hết mưa thì tắt — và **chỉ tắt cái Kachi bật**, bạn tự bật thì Kachi không đụng. Chưa gặp buổi mưa thật để xác nhận. |
+
+**Đã gỡ ở 2.77** (owner chốt trên xe 27/09: *"nhiều option quá rối cho người dùng"*): hàng **Nguồn** (*Toàn cảnh* / *Một
+camera*) và cả khối **Nâng cao (kỹ thuật)** 16 mục. Lý do bỏ *Một camera*: [ĐO hai khung thô cùng cảnh] dải ghép sắc nét
+**hơn** khung một camera (năng lượng cạnh 686 vs 351) — một camera chỉ bị **kéo ngang** từ cùng dữ liệu cảm biến, không
+thêm điểm ảnh thật. Mọi con số kỹ thuật (cách vẽ, bề rộng vùng gương, dải, id camera, 8 núm nắn) nay **chốt theo hồ sơ
+xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trước đây **vẫn giữ nguyên qua nâng cấp**. Cần dò lại thì đi qua
+`prefs_set` của *Chế độ kiểm thử qua adb* (xem `docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md` §8.5).
 
 #### 5.2 Giọng nói
 
@@ -191,10 +196,10 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 | **Nói đúng mà Kachi hiểu thiếu** (vd rụng *"vào ô số 2"*, rụng tên hồ sơ) | Nói **liền một hơi**, không ngừng giữa câu. 2.73 đã làm chắc hơn cho *"vào ô số N"* và tên app/hồ sơ nghe lệch — 🚗 chưa chốt bằng giọng thật trên xe. |
 | **Bấm Back mà lượt nghe không tắt** | Đúng như thiết kế từ 2.73. Huỷ bằng cách **chạm ra ngoài tấm chữ**, hoặc chờ 8 s. |
 | **Thanh điều hướng của xe trồi lên lúc Kachi đọc** | Lỗi có ở mọi bản **≤ 2.72**; vá ở 2.73 (🚗 chưa nhìn trên xe). Tạm thời: tắt *Đọc phản hồi bằng giọng*. |
-| **Camera xi-nhan không lên** | 1) **Bật camera khi xi-nhan** đã bật chưa. 2) Thử **Cam xi-nhan trái/phải** id khác trong 0–5 (nằm trong *Nâng cao (kỹ thuật)*, cần bật chế độ kiểm thử) (Sealion 6 dùng **cam 0**). 3) Chỉ đo được trên **Seal** và **Sealion 6** — xe khác 🚗 chưa biết. |
+| **Camera xi-nhan không lên** | 1) **Bật camera khi xi-nhan** đã bật chưa. 2) Thử id camera khác trong 0–5: từ 2.77 không còn hàng trên màn ⇒ bật *Chế độ kiểm thử qua adb* rồi `prefs_set camera_cam_left 0` (Sealion 6 dùng **cam 0**). 3) Chỉ đo được trên **Seal** và **Sealion 6** — xe khác 🚗 chưa biết. |
 | **Camera lên rồi tắt ngay ~1 s** | Lỗi của bản **2.69**. Cập nhật lên **2.70+**. |
 | **Video camera bị ngang / lộn đầu** | Chỉnh đúng hàng của bên đó: **Xi-nhan trái: xoay video** hoặc **Xi-nhan phải: xoay video**. Hai bên độc lập. |
-| **Video camera giật khi xe chạy** | Thử **Kết xuất camera → SurfaceView**. ⚠ SurfaceView xoay nhờ HAL nên **có thể không xoay được** — không vừa thì trả về *TextureView (mặc định)*. Nguồn giật vẫn đang tìm, chưa kết luận. |
+| **Video camera giật khi xe chạy** | **Đã chữa ở 2.75/2.76** — [ĐO gfxinfo xe 27/09] trần 15 fps hạ khung giật **11,15 % → 0,81 %**, đỉnh 99 % **61 ms → 14 ms** ⇒ nguyên nhân là **nhịp vẽ**, không phải kích cỡ vẽ. Hàng *Kết xuất camera* đã gỡ ở 2.77 (đường GL là lựa chọn đã chốt theo hồ sơ xe); cần thử đường khác thì `prefs_set camera_render TV` với chế độ kiểm thử. |
 | **Thanh nút xe mất** | *Cài đặt › Thanh trạng thái & thanh nút › **Hiện thanh nút xe***; kiểm luôn **Viền đặt thanh nút** và **Nút trên thanh nút xe** (có thể đang rỗng). |
 | **Một nút xe bấm không tác dụng** | Không phải nút nào ROM cũng cho ghi. Tra đúng nút đó trong `kachi-feature-catalog.html` (🟢 chạy thật · ⚠ một phần · ❌ không tác dụng · 🚗 chưa đo), hoặc chạy *Nâng cao › **Kiểm tra từng chức năng xe***. |
 | **Chiếu cụm không lên** | 1) **Bật chiếu màn** đã bật chưa. 2) Bấm **Cứu hộ cụm**. 3) **Khởi động lại launcher**. Sau khi nổ máy lại, cụm cần vài giây mới sẵn sàng. |
@@ -209,7 +214,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 |---|---|
 | Camera theo xi-nhan (mở/đóng theo đèn, chiều xoay mặc định) | **🟢 đã đo trên Seal** (2026-09-26) và **Sealion 6** (2.6x). Xe khác 🚗 |
 | Nút xe (kính, cốp, đèn, điều hoà, ghế, lọc khí) | Từng nút một status riêng — tra `kachi-feature-catalog.html`. Bằng chứng gồm cả một lượt kiểm trên **Sealion 6** của anh em |
-| Khung camera đúng tỉ lệ · **Kết xuất camera** (2.73) | 🚗 chưa đo trên xe |
+| Khung camera đúng tỉ lệ · đường vẽ **GL** (2.73–2.76) | **🟢 đã đo trên Seal** (27/09): trần 15 fps ⇒ khung giật 11,15 % → 0,81 %. Hàng chọn *Kết xuất camera* đã gỡ ở 2.77 (GL chốt theo hồ sơ xe). |
 | Voice: *"vào ô số N"* · tên app mờ · tên hồ sơ (2.73) | 🚗 chỉ đo bằng **phát lại bản thu của xe trên máy** — chưa nói thật trên xe |
 | Taskbar không trồi khi Kachi đọc (2.73) | 🚗 gốc bệnh đã đo trên xe, **bản vá chưa nhìn** |
 | Mưa → tự sấy kính · Tự dẫn đường theo lịch | 🚗 chưa gặp buổi mưa thật / chưa chạy một khung giờ thật |
@@ -224,7 +229,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Task | How |
 |---|---|
-| **First install** | Download `apk/Kachi-2.76-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-2.74-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
+| **First install** | Download `apk/Kachi-2.77-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-<bản>-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
 | **Updates** | *Settings › System & permissions › **Check for updates*** — the app fetches the newer `apk/` build and installs it over the dadb loopback; **no laptop**. |
 | **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. |
 | **Very old builds** | Builds installed before 1.41 (old signing key) must be uninstalled once (`pm uninstall com.byd.launcher`). |
@@ -259,21 +264,27 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Block | Row / chip | Notes |
 |---|---|---|
-| **Turn-signal camera** (2.76: 11 driver rows only) | **Camera on turn signal** | Left signal → left camera overlay; right → right. Held until the **signal lamp goes off** (2.70; measured on a Seal 26/09, 87 ms lag). |
+| **Turn-signal camera** (2.77: **exactly 10 rows**, no *Advanced* block) | **Camera on turn signal** | Left signal → left camera overlay; right → right. Held until the **signal lamp goes off** (2.70; measured on a Seal 26/09, 87 ms lag). |
 | | **Show the camera on the cluster** | Overlay goes to the cluster instead of the main screen; pick the *Cluster* shape so the picture fits the middle band (2.76, measured from Seal cluster photos). |
 | | **Left signal shows at** / **Right signal shows at** | Top-left / top-right, per side. |
 | | **Left signal: rotate video** / **Right signal: rotate video** | *No rotation* (2.76 default — 27/09 research: 18/20 industry systems keep the image upright, horizon level) · *↺ 90°* · *↻ 90°* · *180°*. A value you set yourself survives the upgrade. 🚗 CAM-C2 |
 | | **Mirror left** / **Mirror right** (2.76) | Off by default. Turn on if the picture is the wrong hand compared with the glass mirror (a person behind-left must appear on the correct side). 🚗 CAM-M1 |
 | | **Camera window shape** | *Rectangle* / *Round* (whole fisheye circle) / *Cluster* (2.76, only matters on the cluster; on the main screen = rectangle). |
 | | **Dewarp** (2.76) | On/off GPU straightening of the fisheye. The numbers come from the **car profile** (Seal: the set approved on the car 27/09); nothing to tune. |
-| | **Source** (2.76) | *Panorama (stitched frame)* default / *Single camera* — only shown on cars whose channels were measured (Seal). If *Single camera* does not come up, Kachi falls back to panorama for that turn and notes it under this row. 🚗 |
-| | **Advanced (technical)** (2.76) | 16 rows, only visible with *Test mode over adb* on: rendering (TextureView/SurfaceView/GL), mirror crop width, left/right strip, HAL channel, camera id 0–5 per side (Sealion 6 uses **cam 0**), the 8 dewarp knobs (centre · K · focal · zoom · amount · pan x/y), texture matrix. Nothing is removed — `prefs_set` over the test bridge still sets every key. |
 | **Recirculation** | **Recirculation on engine start** | The car forgets it every start — Kachi turns it back on. |
 | **Seat cool / heat** | **Adjust seats by temperature** + **Mode** (*Cool* / *Heat*) + **level per seat** | Tap a seat on the diagram to cycle: **off → level 1 → level 2**. Cool and heat are **mutually exclusive** (per the car's HAL). |
 | **Fan (control tile)** | **Fan** −/+ tile (2.74) | Press **−** at level 1 ⇒ switches to **AUTO** (tile shows *AUTO*; level 0 does not exist on the car). Press **+** while AUTO ⇒ back to manual at *current level + 1*. The header fan chip shows **AUTO n** when automatic (n = current level), plain **n** when manual. 🚗 the AUTO label still needs a car check. |
 | **Seat (header)** | merged **Driver seat** · **Passenger seat** chips (2.74, **in the 5 default chips**) | Seat glyph + **heat** or **cool** mark + level 1/2, **per seat**; both off ⇒ dimmed seat only, no "Off" text. The header now defaults to 5 chips (PM2.5 · Temperature · Energy · Driver seat · Passenger seat); a chip list you customised yourself is left untouched. The single *Seat heat* / *Seat cool* chips remain available. |
 | **PM2.5 filter** | **Purify when the air is dirty** · **Purify now** | A *current dust level* line shows the reading; switch off = purify only when you press. |
 | **Auto-defrost when it rains** 🚗 | **Auto-defrost when it rains** + **Front windscreen** + **Rear + mirrors** | Polls the rain sensor **every 5 min**; turns off when the rain stops — and **only what Kachi turned on**. Never confirmed in real rain. |
+
+**Removed in 2.77** (owner's call on the car, 27/09: *"too many options, it confuses the user"*): the **Source** row
+(*Panorama* / *Single camera*) and the whole **Advanced (technical)** block of 16 rows. Why single-camera went: with two
+raw frames of the same scene, the stitched strip carries **more** edge energy than the single channel (686 vs 351) — the
+channel image is merely stretched wider from the same sensor data, it adds no real pixels. Every technical number
+(rendering, mirror crop width, strip, camera id, the 8 dewarp knobs) is now **fixed per car profile** with no row to
+tune; values you set earlier **survive the upgrade**. To probe them again, use `prefs_set` under *Test mode over adb*
+(see `docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md` §8.5).
 
 #### 5.2 Voice
 
@@ -403,10 +414,10 @@ All four follow one rule: **only undo what you turned on**. If you flipped it by
 | **Heard, but a clause was dropped** (e.g. *"vào ô số 2"*, a profile name) | Say it **in one breath**. 2.73 hardens both cases — 🚗 not yet confirmed by live speech on a car. |
 | **Back does not cancel listening** | By design since 2.73. Cancel by **tapping outside the card**, or wait 8 s. |
 | **The car's navigation bar pops up while Kachi speaks** | Present in every build **≤ 2.72**; fixed in 2.73 (🚗 not yet seen on a car). Workaround: turn off *Speak replies out loud*. |
-| **Turn-signal camera does not appear** | 1) Is **Camera on turn signal** on? 2) Try another **Left/Right signal camera** id in 0–5 (under *Advanced (technical)*, needs test mode) (Sealion 6 uses **cam 0**). 3) Only measured on **Seal** and **Sealion 6** — other cars 🚗 unknown. |
+| **Turn-signal camera does not appear** | 1) Is **Camera on turn signal** on? 2) Try another camera id in 0–5: since 2.77 there is no row for it — turn on *Test mode over adb* and run `prefs_set camera_cam_left 0` (Sealion 6 uses **cam 0**). 3) Only measured on **Seal** and **Sealion 6** — other cars 🚗 unknown. |
 | **Camera appears then closes after ~1 s** | A **2.69** bug. Update to **2.70+**. |
 | **Camera video is sideways / upside down** | Fix that side's row only: **Left signal: rotate video** or **Right signal: rotate video**. |
-| **Camera video stutters while driving** | Try **Camera rendering → SurfaceView**. ⚠ SurfaceView rotates via the HAL so it **may not rotate** — switch back to *TextureView (default)* if it looks wrong. The cause is still open. |
+| **Camera video stutters while driving** | **Fixed in 2.75/2.76** — measured with gfxinfo on the car 27/09, the 15 fps cap took janky frames **11.15 % → 0.81 %** and the 99th percentile **61 ms → 14 ms**, so the cause was the draw **rate**, not the draw size. The *Camera rendering* row is gone in 2.77 (GL is the settled choice per car profile); to try another path use `prefs_set camera_render TV` with test mode on. |
 | **The car button bar is gone** | *Settings › Status bar & button bar › **Show the car bar***; also check **Button bar edge** and **Buttons on the car bar** (it may be empty). |
 | **A car button does nothing** | Not every button is writable on every ROM. Look that button up in `kachi-feature-catalog.html` (🟢 works · ⚠ partial · ❌ no effect · 🚗 unmeasured), or run *Advanced › **Per-feature car capability test***. |
 | **Casting to the cluster fails** | 1) Is **Enable casting** on? 2) Press **Cluster rescue**. 3) **Restart launcher**. After an engine start the cluster needs a few seconds to be ready. |
@@ -421,7 +432,7 @@ All four follow one rule: **only undo what you turned on**. If you flipped it by
 |---|---|
 | Turn-signal camera (open/close with the lamp, default rotation) | **🟢 measured on a Seal** (2026-09-26) and **Sealion 6** (2.6x). Other cars 🚗 |
 | Car buttons (windows, trunk, lights, AC, seats, purification) | Per-button status — see `kachi-feature-catalog.html`. Evidence includes a tester's full pass on a **Sealion 6** |
-| Aspect-correct camera frame · **Camera rendering** (2.73) | 🚗 not measured on a car |
+| Aspect-correct camera frame · the **GL** draw path (2.73–2.76) | **🟢 measured on a Seal** (27/09): the 15 fps cap took janky frames 11.15 % → 0.81 %. The *Camera rendering* chooser is gone in 2.77 (GL is settled per car profile). |
 | Voice: *"into slot N"* · fuzzy app names · profile names (2.73) | 🚗 measured only by **replaying the car's own recordings on a host** — never spoken live on a car |
 | Navigation bar staying down while Kachi speaks (2.73) | 🚗 the cause was measured on the car, **the fix was not seen** |
 | Rain → defrost · Scheduled navigation | 🚗 no real rain session / no real time window yet |

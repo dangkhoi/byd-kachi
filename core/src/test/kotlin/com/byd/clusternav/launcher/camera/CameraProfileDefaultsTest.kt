@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher.camera
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -28,9 +27,6 @@ class CameraProfileDefaultsTest {
         assertEquals(D.PAN_DEFAULT, n.panXPct); assertEquals(D.PAN_DEFAULT, n.panYPct)
         assertEquals(P.ROTATE_LEFT, n.rotation(left = true), "2.75: trái ↺ — [ĐOÁN] cũ, giữ cho xe chưa đo")
         assertEquals(P.ROTATE_RIGHT, n.rotation(left = false))
-        assertEquals(CameraProfileDefaults.CHANNEL_UNKNOWN, n.channel(left = true))
-        assertEquals(CameraProfileDefaults.CHANNEL_UNKNOWN, n.channel(left = false))
-        assertFalse(n.hasChannelMap)
         assertEquals(n, n.sane(), "trung tính đã sạch — sane() không đổi gì")
     }
 
@@ -55,7 +51,6 @@ class CameraProfileDefaultsTest {
         val bad = CameraProfileDefaults(
             span = "rác", render = "gl", amountPct = 150, focalPct = 10, kPct = 401, scalePct = 130,
             centerXPct = -999, centerYPct = 5, panXPct = 60, panYPct = -50, rotLeft = "SIDE", rotRight = "0",
-            channelLeft = 9, channelRight = 3,
         ).sane()
         val n = CameraProfileDefaults.NEUTRAL
         assertEquals(n.span, bad.span); assertEquals(n.render, bad.render)
@@ -66,17 +61,5 @@ class CameraProfileDefaultsTest {
         assertEquals(n.panXPct, bad.panXPct); assertEquals(-50, bad.panYPct)
         assertEquals(n.rotLeft, bad.rotLeft, "mã cũ SIDE không phải một góc ⇒ trung tính")
         assertEquals(P.ROTATE_NONE, bad.rotRight)
-        assertEquals(CameraProfileDefaults.CHANNEL_UNKNOWN, bad.channelLeft, "kênh 9 ngoài VIEW_CHANNEL_1..4 ⇒ chưa đo")
-        assertEquals(3, bad.channelRight)
-        assertFalse(bad.hasChannelMap, "một bên chưa đo ⇒ cả cặp coi là chưa đo")
-    }
-
-    /** `isChannel`: chỉ `1..HAL_MODE_MAX`; `0` (VIEW_DEFAULT) và AUTO (−1) không phải kênh đơn. */
-    @Test fun `isChannel dong dung mien VIEW_CHANNEL`() {
-        assertFalse(CameraProfileDefaults.isChannel(CameraProfileDefaults.CHANNEL_UNKNOWN))
-        assertFalse(CameraProfileDefaults.isChannel(P.HAL_MODE_AUTO))
-        assertFalse(CameraProfileDefaults.isChannel(P.HAL_MODE_MIN), "0 = VIEW_DEFAULT = khung ghép")
-        (1..P.HAL_MODE_MAX).forEach { assertTrue(CameraProfileDefaults.isChannel(it), "kênh $it") }
-        assertFalse(CameraProfileDefaults.isChannel(P.HAL_MODE_MAX + 1))
     }
 }

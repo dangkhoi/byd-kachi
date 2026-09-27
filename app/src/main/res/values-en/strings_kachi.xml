@@ -681,53 +681,15 @@
     <string name="kachi_camera_mirror_row_left">Left signal: mirror video</string>
     <string name="kachi_camera_mirror_row_right">Right signal: mirror video</string>
     <string name="kachi_camera_mirror_row_sub">Flips the camera picture horizontally before rotation — the car body should sit on the inner edge, as in a real mirror</string>
-    <string name="kachi_camera_render_sub">How the camera video is drawn (change it if the picture stutters while driving)</string>
-    <string name="kachi_camera_render_row">Camera rendering</string>
-    <string name="kachi_camera_render_texture">TextureView</string>
-    <string name="kachi_camera_render_surface">SurfaceView (lighter, rotation via HAL — may not rotate)</string>
-    <string name="kachi_camera_render_gl">Dewarp (GL)</string>
-    <string name="kachi_camera_dewarp_sub">Dewarp (when GL is selected) — tune in this order: centre → K → focal → zoom → amount</string>
-    <string name="kachi_camera_gl_texmatrix_title">Apply the camera stream matrix</string>
-    <string name="kachi_camera_gl_texmatrix_sub">On (default) is what Android prescribes. Turn it off if the picture is flipped or offset — not measured on the car yet</string>
-    <string name="kachi_camera_dewarp_cx">Centre X (offset)</string>
-    <string name="kachi_camera_dewarp_cy">Centre Y (offset)</string>
-    <string name="kachi_camera_dewarp_k">K — tune until road lines are STRAIGHT</string>
-    <string name="kachi_camera_dewarp_focal">Focal — larger = narrower, zoomed in</string>
-    <string name="kachi_camera_dewarp_scale">Zoom — larger = WIDER view (things look smaller)</string>
-    <string name="kachi_camera_dewarp_amount">Amount — 0 % is the raw image</string>
-    <string name="kachi_camera_dewarp_pan_x">Pan X — negative moves toward the car\'s rear, on BOTH mirrors (picture stays straight)</string>
-    <string name="kachi_camera_dewarp_pan_y">Pan Y — negative moves up (picture stays straight)</string>
-    <string name="kachi_camera_dewarp_note">Defaults follow the car profile (Seal: the set approved on the car on 27/09); 100 % = exactly the geometric value for the mirror area in use. Black corners mean the mapping reached outside the image circle — lower Zoom. The two Pan rows only SLIDE the window, they never bend it — use them to reframe, not Centre.</string>
-    <string name="kachi_camera_source_sub">Mirror camera source — the stitched 4-camera frame (old) or ONE camera on its own (sharper, full lens circle)</string>
-    <string name="kachi_camera_source_row">Source</string>
-    <string name="kachi_camera_source_pano">Panorama (stitched)</string>
-    <string name="kachi_camera_source_channel">Single camera</string>
-    <string name="kachi_camera_span_sub">Width of the mirror area cut from the stitched camera frame (wider = more view, more distortion)</string>
-    <string name="kachi_camera_span_row">Mirror area width</string>
-    <string name="kachi_camera_span_narrow">Narrow slice</string>
-    <string name="kachi_camera_span_strip">Whole camera strip</string>
-    <string name="kachi_camera_strip_sub">Camera strip inside the 4-in-1 frame (0–3; change it if the direction is wrong)</string>
-    <string name="kachi_camera_strip_left">Strip for left signal</string>
-    <string name="kachi_camera_strip_right">Strip for right signal</string>
     <string name="kachi_camera_shape_sub">Camera window shape (round = whole image circle, not dewarped yet)</string>
     <string name="kachi_camera_shape_row">Camera window shape</string>
     <string name="kachi_camera_shape_rect">Rectangle</string>
     <string name="kachi_camera_shape_round">Round</string>
-    <string name="kachi_camera_hal_sub">Camera view channel (1–4 is a PROBE: the head unit may refuse it or show nothing — pick “Auto” to undo)</string>
-    <string name="kachi_camera_hal_row">Camera view channel</string>
-    <string name="kachi_camera_hal_auto">Auto-probe</string>
-    <string name="kachi_camera_pick_sub">Pick the camera for each turn signal (if none shows, try another id 0–5)</string>
-    <string name="kachi_camera_pick_left">Left signal camera</string>
-    <string name="kachi_camera_pick_right">Right signal camera</string>
     <string name="kachi_camera_cluster_sub">Camera overlay appears on the cluster instead of the main screen</string>
     <string name="kachi_camera_left">Left camera</string>
     <string name="kachi_camera_right">Right camera</string>
     <string name="kachi_camera_shape_cluster">Cluster band</string>
     <string name="kachi_camera_dewarp_on_sub_header">Dewarp</string>
     <string name="kachi_camera_dewarp_on_title">Dewarp (straighten the lens)</string>
-    <string name="kachi_camera_dewarp_on_sub">Off = the raw picture as the camera delivers it. Applies with the GL renderer (see Advanced).</string>
-    <string name="kachi_camera_advanced_title">Advanced (technical)</string>
-    <string name="kachi_camera_advanced_count">%1$d items</string>
-    <string name="kachi_camera_advanced_note">Shown only while test mode is on. The keys stay in effect while hidden — these are measurement tools, not driver settings.</string>
-    <string name="kachi_camera_channel_fallback_note">The last turn signal fell back to the panorama (%1$s) — the head unit could not deliver a single-camera picture.</string>
+    <string name="kachi_camera_dewarp_on_sub">Off = the raw picture as the camera delivers it. The dewarp numbers are preset per car.</string>
 </resources>

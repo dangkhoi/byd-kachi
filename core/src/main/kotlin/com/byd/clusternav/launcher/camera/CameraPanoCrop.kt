@@ -58,22 +58,6 @@ object CameraPanoCrop {
     /** Mọi chỉ số dải — cũng là thứ tự chip trong Cài đặt. */
     val STRIPS_ALL: List<Int> = (STRIP_MIN..STRIP_MAX).toList()
 
-    /**
-     * ═══ Bề ngang **NỘI DUNG** thật trong buffer — chỗ DUY NHẤT biết về phép kéo ngang ═══════════════════════
-     *
-     * [ĐO xe 27/09] Ở [CameraSignalPolicy.SOURCE_CHANNEL], HAL đổ **một** khung camera `1280×960` **căng ra đầy**
-     * buffer `5120×960` (anamorphic ×[STRIPS]). Mọi tầng hình học (`uAspect`, bộ suy `K`/`F`, tỉ lệ cửa sổ) phải
-     * đo trên `1280`, không phải `5120` — lấy cỡ buffer là `aspect = 5,33`, đồng-θ thành ellipse dẹt, ảnh nắn sai
-     * hẳn (bẫy (1) của [CameraGlUniforms]).
-     *
-     * Hệ số là **[STRIPS]**, không phải một hằng `4` rời: buffer ghép chứa đúng `STRIPS` khung cạnh nhau, nên một
-     * khung căng ra đầy buffer thì rộng gấp đúng `STRIPS` lần. Đời xe ghép 6 dải sẽ tự đúng.
-     *
-     * @return [streamW] khi không phải kênh đơn, hoặc [streamW] ≤ 0 (chưa đo được cỡ luồng).
-     */
-    fun contentWidth(streamW: Int, channel: Boolean): Int =
-        if (channel && streamW > 0) (streamW / STRIPS).coerceAtLeast(1) else streamW
-
     /** Tâm dải [strip] theo trục x chuẩn hoá — dải 1 ⇒ `0.375`, dải 2 ⇒ `0.625` (khớp tâm fisheye của kinex `:76,79`). */
     fun stripCentre(strip: Int): Double = (strip + 0.5) * STRIP_SPAN
 
@@ -99,7 +83,6 @@ object CameraPanoCrop {
         span: String,
         shape: String,
         circlePct: Int,
-        channel: Boolean = false,
     ): FloatArray? {
         val base = view.crop
         // "Theo cụm" = cửa sổ khác, crop như chữ nhật (KDoc trên) — quy về RECT trước mọi phép so.
@@ -111,13 +94,6 @@ object CameraPanoCrop {
         val wide = if (CameraSignalPolicy.isSpan(span)) span else CameraSignalPolicy.defaultSpan()
         // Tỉ lệ cao/rộng của ẢNH NGUỒN — chỉ hai view GƯƠNG có gợi ý (5120×960 ⇒ 0.1875). `0` = chưa biết.
         val ratio = if (view.hintW > 0 && view.hintH > 0) view.hintH.toDouble() / view.hintW else 0.0
-        // MỘT KÊNH ⇒ buffer CHÍNH LÀ một khung camera (đã kéo ngang) ⇒ không cắt dải nào: nguyên buffer. Hình TRÒN
-        // vẫn cắt vuông, nhưng vuông **theo pixel NỘI DUNG** — tỉ lệ tính trên [contentWidth], không trên buffer.
-        if (channel) {
-            val cw = contentWidth(view.hintW, true)
-            val ratioC = if (cw > 0 && view.hintH > 0) view.hintH.toDouble() / cw else 0.0
-            return if (round && ratioC > 0.0) squareCrop(0.5, ratioC, pct) else null
-        }
         return when {
             // Không phải view dải pano và không cần cắt vuông ⇒ y 2.73: nguyên khung.
             base == null && !round -> null

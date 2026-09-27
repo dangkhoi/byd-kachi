@@ -213,10 +213,6 @@ class LayeringRulesTest {
         // `appsByLabel`), nên chuyển sang `:core` là kéo cả phiên theo. Tệp riêng vì `VoiceSession.kt` và
         // `VoiceSessionTurns.kt` đều đã 499/500 dòng — cùng lẽ với `VoiceTargetDispatch.kt`/`VoiceReadback.kt`.
         "VoiceSessionTerms.kt" to "hàm mở rộng VoiceSession (Context + PackageManager qua appsByLabel)",
-        // 2.76 · R1/R3: hai câu hỏi chỉ-đọc của cầu cho hàng *Nguồn* camera — hàm mở rộng của `ClusterNavBridge`
-        // (giữ `app: Context`), đọc hồ sơ xe (`ClusterProfile.resolve` = prefs + getprop) và một khoá prefs. "Thuần"
-        // theo phép đo chỉ vì gọi qua `app` mà không nhắc chữ Context — cùng lẽ `ClusterNavBridgeHome.kt`.
-        "ClusterNavBridgeCamera.kt" to "hàm mở rộng ClusterNavBridge (app: Context) — đọc hồ sơ xe + prefs",
         // L6-debt 2026-09-27: cửa DUY NHẤT của reflection vào `SystemProperties` (gộp 3 bản sao DRY). "Thuần" theo phép
         // đo chỉ vì reflection không `import android.*` — nhưng `:core` bị CẤM nhắc chữ `android` kể cả trong chuỗi
         // (`core khong duoc biet Android`), nên nó không có chỗ nào khác ngoài `:app`.
