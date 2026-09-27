@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.byd.clusternav.launcher.KachiLog
+import com.byd.clusternav.launcher.camera.frameNote
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -265,6 +266,9 @@ internal object TestBridgeCameraFrame {
                 "rotation_deg" to shot.rotationDeg,
                 // `content` là trường QUAN TRỌNG NHẤT của lời đáp này khi đường GL đang chạy — xem KDoc lớp.
                 "content" to content,
+                // R3 (2.76): nguồn MỘT KÊNH ⇒ HAL kéo ngang khung đầy buffer (`anamorphic x4`) — đo vòng ảnh trên PNG
+                // này mà không chia bề ngang cho 4 là ra ellipse. Rỗng ở khung ghép. Chuỗi do `:core` dựng.
+                "note" to com.byd.clusternav.launcher.camera.CameraSignalPolicy.frameNote(shot.channel),
                 "capturable" to shot.capturable,
                 "gl_stats" to shot.glStats,
                 "synth" to shot.synthSize,

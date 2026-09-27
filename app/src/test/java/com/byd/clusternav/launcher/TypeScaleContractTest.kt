@@ -47,10 +47,15 @@ class TypeScaleContractTest {
         // T6 tách phần danh sách app ra khỏi `AppDrawer` (trần 500 dòng). Tệp mới vẽ chữ ⇒ phải ở trong bài canh
         // NGAY, không thì một bề mặt đã áp design system tự rơi ra khỏi phạm vi chỉ vì đổi tên tệp.
         "AppDrawerApps.kt",
+        // L6-debt 2026-09-27: ô lưới (widget · khả năng · huy hiệu loại) tách khỏi `AppDrawer` (trần 500 dòng) — hai
+        // `setTextSize` mang marker `[type scale]` nay ở đây; bề mặt đã áp design system không được rơi khỏi phạm vi.
+        "AppDrawerTiles.kt",
         // T4 · IA v2 — năm section mới của Cài đặt. Cùng lý do `AppDrawerApps.kt`: chúng là bề mặt Settings, tức
         // phạm vi GỐC của bài này; để ngoài thì một section mới có thể `setTextSize` số tay mà không ai thấy.
         "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",
         "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
+        // 2.76 · R1 — camera tách khỏi `SettingsSectionsCar` (hai tầng người lái / kỹ thuật). Cùng lý do trên.
+        "SettingsSectionsCamera.kt",
     )
 
     /**

@@ -46,6 +46,26 @@ object CarLayout {
         TyreCorner.REAR_RIGHT -> CarAnchor(0.83f, 0.80f)
     }
 
+    /**
+     * OQ7 (2.76 · R11) — độ DỊCH DỌC của **khối 4 thẻ lốp**, tính theo phần của chiều cao ảnh xe, sao cho tâm khối
+     * thẻ trùng **tâm ảnh** (0,50).
+     *
+     * [ĐO số học] neo bánh [wheel] y = 0,26 / 0,80 không đối xứng quanh 0,50 (tâm dải = 0,53) ⇒ khối thẻ đặt theo
+     * neo thì thấp hơn tâm ảnh `0,03 × Hc` (≈ 16 px ở ô lốp thật 1836×410, Hc ≈ 386 — owner 2026-09-25 (C): *"xe
+     * nhô lên so với khối thẻ"*). Dịch KHỐI THẺ chứ không dịch NEO: neo là bánh xe thật (chấm cảnh báo vẫn nằm trên
+     * bánh, và bảng cửa / xe mini dùng chung ảnh) — thẻ chỉ cần *nằm cạnh* bánh. Suy từ neo, không gõ `-0.03`:
+     * đổi neo bánh là số này tự theo.
+     */
+    val tyreCardShift: Float
+        get() = 0.5f - (wheel(TyreCorner.FRONT_LEFT).y + wheel(TyreCorner.REAR_LEFT).y) / 2f
+
+    /**
+     * Tâm dọc (px) của thẻ lốp cho bánh [c] trong ảnh chiếm `[imageTop, imageTop + imageHeight)` — đã cộng
+     * [tyreCardShift]. Chấm cảnh báo KHÔNG dùng hàm này (nó ở đúng neo bánh).
+     */
+    fun tyreCardCenterY(c: TyreCorner, imageTop: Float, imageHeight: Float): Float =
+        imageTop + (wheel(c).y + tyreCardShift) * imageHeight
+
     /** Mực nằm trong khoảng này (px) tính từ biên ảnh thì coi là **chạm mép** — 1 px viền khử răng cưa vẫn chạm. */
     const val HARD_EDGE_PX = 1f
 

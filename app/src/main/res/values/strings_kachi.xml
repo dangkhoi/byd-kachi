@@ -695,11 +695,15 @@
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
     <string name="kachi_camera_rot_180">180°</string>
+    <string name="kachi_camera_mirror_sub">Lật gương video từng bên (nếu hình ngược tay so với gương kính)</string>
+    <string name="kachi_camera_mirror_row_left">Xi-nhan trái: lật gương</string>
+    <string name="kachi_camera_mirror_row_right">Xi-nhan phải: lật gương</string>
+    <string name="kachi_camera_mirror_row_sub">Lật ngang ảnh camera trước khi xoay — thân xe phải ở mép trong như gương thật</string>
     <string name="kachi_camera_render_sub">Cách vẽ video camera (đổi nếu thấy giật khi xe chạy)</string>
     <string name="kachi_camera_render_row">Kết xuất camera</string>
-    <string name="kachi_camera_render_texture">TextureView (mặc định)</string>
+    <string name="kachi_camera_render_texture">TextureView</string>
     <string name="kachi_camera_render_surface">SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)</string>
-    <string name="kachi_camera_render_gl">Nắn méo (GL) — đang thử</string>
+    <string name="kachi_camera_render_gl">Nắn méo (GL)</string>
     <string name="kachi_camera_dewarp_sub">Nắn méo (khi chọn GL) — chỉnh theo thứ tự: tâm → K → tiêu cự → phóng → độ nắn</string>
     <string name="kachi_camera_gl_texmatrix_title">Áp ma trận của luồng camera</string>
     <string name="kachi_camera_gl_texmatrix_sub">Bật (mặc định) là cách Android dặn. Tắt thử nếu ảnh bị lật hoặc lệch — chưa đo trên xe</string>
@@ -711,21 +715,21 @@
     <string name="kachi_camera_dewarp_amount">Độ nắn — 0 % là y ảnh thô</string>
     <string name="kachi_camera_dewarp_pan_x">Dịch ngang — âm là về phía đuôi xe, ở CẢ HAI gương (ảnh vẫn thẳng)</string>
     <string name="kachi_camera_dewarp_pan_y">Dịch dọc — âm là lên trên (ảnh vẫn thẳng)</string>
-    <string name="kachi_camera_dewarp_note">Bộ số mặc định là SUY RA từ hình học, chưa đo trên xe: 100 % = đúng phép suy cho vùng gương đang chọn. Viền đen ở góc nghĩa là đã với ra ngoài vòng ảnh — hạ Phóng xuống. Hai hàng Dịch chỉ TRƯỢT khung, không làm cong — muốn dời khung thì dùng chúng, đừng dùng Tâm.</string>
+    <string name="kachi_camera_dewarp_note">Mặc định lấy theo hồ sơ xe (Seal: bộ đã duyệt trên xe 27/09); 100 % = đúng phép suy hình học cho vùng gương đang chọn. Viền đen ở góc nghĩa là đã với ra ngoài vòng ảnh — hạ Phóng xuống. Hai hàng Dịch chỉ TRƯỢT khung, không làm cong — muốn dời khung thì dùng chúng, đừng dùng Tâm.</string>
     <string name="kachi_camera_source_sub">Nguồn ảnh camera gương — khung ghép 4 camera (cũ) hay lấy riêng MỘT camera (rõ hơn, thấy trọn ống kính)</string>
     <string name="kachi_camera_source_row">Nguồn</string>
-    <string name="kachi_camera_source_pano">Khung ghép</string>
+    <string name="kachi_camera_source_pano">Toàn cảnh (khung ghép)</string>
     <string name="kachi_camera_source_channel">Một camera</string>
     <string name="kachi_camera_span_sub">Bề rộng vùng gương cắt từ ảnh camera ghép (rộng hơn = thấy nhiều hơn, méo hơn)</string>
     <string name="kachi_camera_span_row">Bề rộng vùng gương</string>
-    <string name="kachi_camera_span_narrow">Vệt hẹp (mặc định)</string>
+    <string name="kachi_camera_span_narrow">Vệt hẹp</string>
     <string name="kachi_camera_span_strip">Trọn dải camera</string>
     <string name="kachi_camera_strip_sub">Dải camera trong ảnh ghép 4 khung (0–3; đổi nếu thấy sai hướng)</string>
     <string name="kachi_camera_strip_left">Dải cho xi-nhan trái</string>
     <string name="kachi_camera_strip_right">Dải cho xi-nhan phải</string>
     <string name="kachi_camera_shape_sub">Hình khung camera (tròn = thấy trọn vòng ảnh, chưa nắn méo)</string>
     <string name="kachi_camera_shape_row">Hình khung camera</string>
-    <string name="kachi_camera_shape_rect">Chữ nhật (mặc định)</string>
+    <string name="kachi_camera_shape_rect">Chữ nhật</string>
     <string name="kachi_camera_shape_round">Tròn</string>
     <string name="kachi_camera_hal_sub">Kênh xem của camera (1–4 là phép THỬ: đầu máy có thể không nhận, có thể mất hình — chọn lại “Tự dò” để hoàn tác)</string>
     <string name="kachi_camera_hal_row">Kênh xem camera</string>
@@ -736,4 +740,12 @@
     <string name="kachi_camera_cluster_sub">Overlay camera hiện trên cụm đồng hồ thay màn chính</string>
     <string name="kachi_camera_left">Camera trái</string>
     <string name="kachi_camera_right">Camera phải</string>
+    <string name="kachi_camera_shape_cluster">Theo cụm</string>
+    <string name="kachi_camera_dewarp_on_sub_header">Nắn hình</string>
+    <string name="kachi_camera_dewarp_on_title">Nắn hình (bớt cong ống kính)</string>
+    <string name="kachi_camera_dewarp_on_sub">Tắt = ảnh thô như camera đưa ra. Có tác dụng với cách vẽ GL (xem Nâng cao).</string>
+    <string name="kachi_camera_advanced_title">Nâng cao (kỹ thuật)</string>
+    <string name="kachi_camera_advanced_count">%1$d mục</string>
+    <string name="kachi_camera_advanced_note">Chỉ hiện khi chế độ kiểm thử đang mở. Các khoá vẫn có hiệu lực khi ẩn — đây là dụng cụ đo, không phải cấu hình người lái.</string>
+    <string name="kachi_camera_channel_fallback_note">Lần xi-nhan gần nhất đã lùi về toàn cảnh (%1$s) — đầu máy không đưa được hình một camera.</string>
 </resources>

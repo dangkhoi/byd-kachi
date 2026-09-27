@@ -370,10 +370,13 @@ class TestBridgeCommandTest {
         // Lịch sử nới danh sách (lý do đầy đủ: `docs/PROJECT-BACKLOG.md`, mục CAM-*):
         //   24 → 30 (R8-A): 6 khoá dò vùng/dải/hình/kênh · 30 → 37 (R8-B): 6 núm nắn + `camera_gl_texmatrix`
         //   37 → 40 (2.75): `camera_dewarp_pan_x/pan_y` (dịch CỬA SỔ) + `camera_source` (PANO/CHANNEL).
+        //   40 → 42 (2.76 L7): `camera_mirror_left/right` — LẬT GƯƠNG từng bên. Khác ba đợt trên: đây KHÔNG phải
+        //   móc đo mà là một lựa chọn của người lái (`CameraSettingsIa.USER_KEYS`), có ô tích trong Cài đặt ⇒
+        //   ràng buộc (3) "đảo lại được bằng một cú chạm" vẫn giữ, và cầu kiểm thử ghi được để đo CAM-M1 bằng adb.
         // Cả ba đợt là **móc ĐO** và đều đảo lại được bằng một cú chạm trong Cài đặt ⇒ ràng buộc (3) giữ.
         // ⚠ Danh sách nay ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 — CLAUDE.md §4.1);
         // `WRITABLE_PREFS_KEYS` là bí danh, bài này hỏi qua tên cũ **có chủ ý** vì đó là hợp đồng của `parse`.
-        assertEquals(40, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        assertEquals(42, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertEquals(
             TestBridgeWritableKeys.ALL, TestBridgeCommands.WRITABLE_PREFS_KEYS,
             "bí danh phải trỏ ĐÚNG tập đã tách — một bản sao thứ hai ở đây là hai danh sách sẽ lệch",

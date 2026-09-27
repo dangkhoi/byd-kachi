@@ -46,8 +46,8 @@ object KachiBars {
      *     khoá cửa"*.
      *  2. **34dp vẫn lớn hơn cỡ hình** (box icon 18dp): đích chạm không co theo icon, vẫn khai TƯỜNG MINH cả hai
      *     chiều — đó là tính chất mà `TopStripSurfaceContractTest` canh, và nó không đổi.
-     *  3. **Bề ngang thực tế lớn hơn 34**: pill là `WRAP_CONTENT` + lề trong [HEADER_BTN_PAD] hai bên, nên 34 là
-     *     **sàn**, không phải trần.
+     *  3. **Bốn nút cùng hộp 34 × 34** (2.76 · R11): trước đó pill là `WRAP_CONTENT` nên bề ngang bị hình gốc 24dp
+     *     đẩy lên 40 [ĐO máy ảo 27/09: 60×51 px vs chip hồ sơ 51×51] — nay `KachiTopStrip.pillLp` khai cả hai chiều.
      * Muốn trả về 48dp thì đổi đúng hằng này (thanh sẽ cao lại 56dp) — không có chỗ thứ hai nào phải sửa.
      */
     const val HEADER_BTN = 34

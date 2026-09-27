@@ -13,6 +13,11 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.badgeEnabled
+import com.byd.clusternav.showUpcomingBadge
+import com.byd.clusternav.badgeSizeDp
+import com.byd.clusternav.badgeCenterX
+import com.byd.clusternav.badgeCenterY
 import com.byd.clusternav.contracts.SpeedSignType
 import com.byd.clusternav.navigation.NavParse
 import com.byd.clusternav.speedbadge.SpeedBadgeOverlay.Companion.TAG

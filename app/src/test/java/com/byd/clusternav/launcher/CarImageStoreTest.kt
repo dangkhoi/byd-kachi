@@ -130,6 +130,51 @@ class CarImageStoreTest {
         }
     }
 
+    /**
+     * Cỡ bitmap mà đường COVER (`WallpaperStore.loadScaled`, trước 2.76 dùng cho ảnh NGƯỜI DÙNG) cho ra — dựng lại
+     * đúng hai bậc của nó: `sampleSize` rồi `scaledWidth` (maxOf), làm tròn như `BitmapFactory` (nửa lên).
+     */
+    private fun coverSize(srcW: Int, srcH: Int, reqW: Int, reqH: Int): Pair<Int, Int> {
+        val s = WallpaperStore.sampleSize(srcW, srcH, reqW, reqH)
+        val sw = srcW / s; val sh = srcH / s
+        val tw = WallpaperStore.scaledWidth(sw, sh, reqW, reqH)
+        if (tw <= 0) return sw to sh
+        val f = tw.toFloat() / sw
+        return (sw * f + 0.5f).toInt() to (sh * f + 0.5f).toInt()
+    }
+
+    /**
+     * 2.76 · R11 (3) — ẢNH NGƯỜI DÙNG: trước/sau khi đổi từ cover sang fit, đo bằng số.
+     *
+     * Ca xấu nhất là ca có thật: ảnh chụp điện thoại (12 MP dọc 3000×4000, hoặc ảnh xe cắt nền 1080×1920) bỏ vào
+     * `car/`. Với khung lốp 210×554 (ô thật) và khung xe mini, cover cấp chiều rộng THỪA mà `CarImageLayer.fitRect`
+     * (letterbox) không bao giờ vẽ. Ảnh mặc định (678×1397) đã fit từ closeout; đây là phần còn nợ.
+     */
+    @Test
+    fun `anh NGUOI DUNG - cover (truoc 2,76) vs fit (nay) tren khung lop that`() {
+        // 3000×4000 vào 210×554: sample 4 ⇒ 750×1000; cover maxOf(0,28; 0,554) ⇒ 415×553; fit minOf ⇒ 210×280.
+        val cover = coverSize(3000, 4000, 210, 554)
+        val fitPlan = CarImageStore.decodePlan(3000, 4000, 210, 554)
+        val fit = CarImageStore.plannedSize(3000, 4000, fitPlan)
+        assertEquals(415 to 553, cover, "đường cũ (cover) cho ảnh điện thoại 3000×4000")
+        assertEquals(210 to 280, fit, "đường mới (fit) — chạm cạnh RỘNG của khung, không tràn")
+        val ratio = cover.first.toLong() * cover.second / (fit.first.toLong() * fit.second).toDouble()
+        assertTrue(ratio > 3.8 && ratio < 4.0, "cover tốn ${"%.2f".format(ratio)}× pixel so với fit (KDoc nói 3,9×)")
+        assertTrue(fit.first <= 210 && fit.second <= 554, "fit phải LỌT khung")
+        assertTrue(cover.first > 210, "cover TRÀN khung theo chiều rộng — đó là pixel không bao giờ được vẽ")
+        // Ảnh xe cắt nền tỉ lệ 9:16 (1080×1920) vào cùng khung: cover 311×553 vs fit 210×373 ⇒ 2,2×.
+        val cover2 = coverSize(1080, 1920, 210, 554)
+        val fit2 = CarImageStore.plannedSize(1080, 1920, CarImageStore.decodePlan(1080, 1920, 210, 554))
+        assertEquals(311 to 553, cover2)
+        assertEquals(210 to 373, fit2)
+        // Ảnh NGANG (4000×3000) vào khung DỌC: cover siết theo chiều cao (738×554) — fit theo chiều rộng (210×158) ⇒ 12,3×.
+        val cover3 = coverSize(4000, 3000, 210, 554)
+        val fit3 = CarImageStore.plannedSize(4000, 3000, CarImageStore.decodePlan(4000, 3000, 210, 554))
+        assertEquals(738 to 554, cover3)
+        assertEquals(210 to 158, fit3)
+        assertTrue(fit3.first <= 210 && fit3.second <= 554)
+    }
+
     @Test
     fun `fitWidth lay minOf va khong phong to, khong nem khi tham so xau`() {
         assertEquals(0, CarImageStore.fitWidth(200, 400, 320, 640), "ảnh nhỏ hơn khung ⇒ không hạ, cũng không phóng")

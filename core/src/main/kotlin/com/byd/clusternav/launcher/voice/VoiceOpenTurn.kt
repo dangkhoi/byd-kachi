@@ -125,6 +125,79 @@ object VoiceOpenTurn {
         return raw(a.dropLast(overlap) + b)
     }
 
+    /**
+     * ═══ R6 (2.76) · CÓ vế sau thì **luôn thử ghép** — kể cả khi vế trước đã đủ nghĩa ════════════════════════
+     *
+     * Một luật cho **cả hai** lối vào (phiên mic `VoiceOpenTurnArm.result` + cầu đo `VoiceWavProbe`): `null` =
+     * giữ nguyên [head] (đúng hành vi 2.75). Chỗ gọi chỉ được gọi tới đây khi bộ ngắt câu **đã có** một đoạn tiếng
+     * sau điểm ngắt (`tailRange ≠ null`) — tệp này không mở micro và không kéo dài một mili-giây nghe nào.
+     *
+     * ## Bệnh nó chữa — [ĐO xe 2026-09-27 10:42:46, log `KachiVoiceTiming`]
+     * Owner nói *"mở vietmap"* ⟨ngừng để nghĩ⟩ *"vào ô số hai"*. Vế trước *"mở vietmap"* **đủ nghĩa** ([isOpen] =
+     * `false`) nên `result()` của 2.75 trả về ngay — trong khi bộ ngắt câu đã thu được vế sau (`tieng_dut` 2 400 →
+     * 4 384 ms sau `flush`) vì vế sau bắt đầu **trong lúc** lượt giải mã vế trước còn chạy (1,3–2 s). Khúc tiếng ấy
+     * bị bỏ đi; VietMap mở vào ô CŨ, người lái không biết vì sao.
+     *
+     * ## Hai nhánh, và cổng của nhánh mới
+     *  • vế trước **dở** ⇒ [join] như 2.74 (không đổi một byte);
+     *  • vế trước **đủ** ⇒ [refine]: chỉ nhận câu ghép khi bộ phân tích đọc nó ra **cùng ý định, đầy đủ hơn** — hôm
+     *    nay là *mở app* có thêm **ô** (`OpenApp.slot`: `null` → có số, mọi trường khác y nguyên). Vế sau là một lệnh
+     *    khác (*"mở vietmap"* + *"bật đèn đọc"*), là tiếng ồn, hay là một vế ô **cụt** (*"vào ô"*) ⇒ `null` ⇒ giữ vế
+     *    trước — không có đường nào làm một câu đang đúng thành sai.
+     *
+     * Không nới sang họ khác (lệnh xe · nhạc · dẫn đường) vì chưa có một lượt đo nào cho chúng ([CHƯA BIẾT]); luật
+     * *"cùng ý định, đầy đủ hơn"* viết theo **hình dạng** dữ liệu để khi có số đo thì thêm một nhánh `when`, không
+     * thêm một bảng câu.
+     */
+    fun attach(head: String, tail: String): String? =
+        if (isOpen(head)) join(head, tail) else refine(head, tail)
+
+    /**
+     * ═══ Vế trước còn CHỖ để ghép không — cổng đọc **trước** khi bỏ công giải mã vế sau ([P2] soát 2026-09-27) ══════
+     *
+     * [attach] chỉ có hai đường nhận: vế trước **dở** ([isOpen] ⇒ [join]), hoặc vế trước là *mở app CHƯA có ô*
+     * ([refines] — điều kiện `before.slot == null`). Mọi vế trước khác ⇒ `attach` trả `null` **100 %**, tức lượt giải
+     * mã vế sau (`rec.rangeResult`, [ĐO xe] 1,3–2 s cho một lượt) là công bỏ đi — mà nó nằm trên **đường tới hành
+     * động**: *"bật đèn đọc"* + một tiếng nói của khách trong cabin ⇒ đèn lên muộn hơn 2.75 đúng một lượt giải mã,
+     * trong lúc xe đang chạy.
+     *
+     * Hàm này là **phép hỏi thuần** (cùng bộ phân tích, cùng từ vựng tĩnh với [refine]) nên nó KHÔNG đổi kết quả một
+     * lượt nào: mọi vế trước bị nó chặn đều là vế mà [attach] sẽ trả `null`. Ở `:core` chứ không phải `:app` để không
+     * mở một ngữ pháp thứ hai ngoài bộ phân tích (CLAUDE.md §7), và để test được off-car.
+     *
+     * ⚠ KHÔNG gộp thêm cổng *"vế sau bắt đầu trong `OPEN_JOIN_WINDOW_MS`"* hay *"vế sau đủ dài"*: ca [ĐO] 27/09
+     * 10:42:46 chính là một vế sau bắt đầu **trong lúc** lượt giải mã vế trước còn chạy (`speaking()` còn `true`,
+     * chưa qua cửa sổ 1 200 ms) ⇒ hai cổng ấy sẽ bỏ đúng ca mà R6 sinh ra để cứu, và không có phép đo nào cho chúng.
+     */
+    fun mayAttach(head: String): Boolean {
+        if (isOpen(head)) return true
+        val before = VoiceIntentParser.parseOne(head)
+        return before is VoiceIntent.OpenApp && before.slot == null
+    }
+
+    /**
+     * Câu ghép nếu nó là bản **đầy đủ hơn** của [head] (cùng ý định), ngược lại `null`. Xem KDoc [attach].
+     *
+     * Đi qua đúng `VoiceIntentParser.parseOne` với từ vựng **tĩnh** (không nhãn app đã cài): *"vietmap"* giải qua
+     * bảng đích, còn nhãn máy (*"YouTube"*) thì đường khớp mờ/tiền tố cũng tới được vì cả hai đường đều đọc bảng
+     * đích. Nhãn app **chỉ có trên máy** (không trong bảng đích) ⇒ cả hai vế cùng ra `Unknown` ⇒ `null` — thành thật
+     * hơn là đoán: chỗ gọi không có danh sách app ở tầng nghe, và vế trước vẫn được xử lý y như 2.75.
+     */
+    fun refine(head: String, tail: String): String? {
+        val joined = join(head, tail)
+        if (joined == head.trim()) return null
+        val before = VoiceIntentParser.parseOne(head)
+        val after = VoiceIntentParser.parseOne(joined)
+        return if (refines(before, after)) joined else null
+    }
+
+    /** [after] là [before] **có thêm** phần còn thiếu — hôm nay: ô của một lệnh mở app. */
+    private fun refines(before: VoiceIntent, after: VoiceIntent): Boolean = when {
+        before is VoiceIntent.OpenApp && after is VoiceIntent.OpenApp ->
+            before.slot == null && after.slot != null && before.copy(slot = after.slot) == after
+        else -> false
+    }
+
     // ── Bảng vế dở: SINH từ ngữ pháp, không khai tay ────────────────────────────────────────────
 
     /**

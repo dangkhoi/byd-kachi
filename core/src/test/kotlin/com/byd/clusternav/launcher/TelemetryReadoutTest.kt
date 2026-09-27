@@ -220,7 +220,7 @@ class TelemetryReadoutTest {
      * Dùng `hashCode` chứ không phải một bộ đếm: bài test bơm bảng ở một chỗ và đọc ở chỗ khác, nên hai lượt
      * phải ra cùng số. Dải âm (`or Int.MIN_VALUE`) thì không bao giờ đụng id thật nào đang khai trong registry.
      */
-    private fun fakeId(constName: String): Int = constName.hashCode() or Int.MIN_VALUE
+    // `fakeId` + `wiredStatus` nay là hàm top-level ở `TelemetryReadoutFixtures.kt` (dùng chung với `TelemetryReadout276Test`).
 
     // ══ ICON-STATE (2026-09-21) — cờ [TelemetryView.onOff] cho chip thanh trên ═════════════════════════════
 
@@ -287,6 +287,10 @@ class TelemetryReadoutTest {
             TelemetryRegistry.ALL.forEach { spec ->
                 val v = TelemetryReadout.of(spec.id, status)!!
                 if (spec.id in levelScale) return@forEach
+                // 2.76 (R8) — họ 4, NHIỀU CHẾ ĐỘ (≥ 3): "Tắt" là MỘT trong 4–6 trạng thái của bảng OEM (nguồn xe
+                // tắt/ACC/bật/sẵn sàng…; đèn pha tắt/auto/hông/cốt) — một icon sáng/mờ không nói được. Điều kiện là
+                // TÍNH CHẤT bảng (`size ≥ 3`), không phải danh sách mã, nên datum enum thứ ba tự được miễn.
+                if (TelemetryEnums.size(spec.id) >= 3) return@forEach
                 assertEquals(
                     v.valueText in onOffWords, v.onOff != null,
                     "mồi=$seed · ${spec.id}: chữ='${v.valueText}' nhưng cờ onOff=${v.onOff} — datum bật/tắt phải " +
@@ -336,7 +340,10 @@ class TelemetryReadoutTest {
                 val v = TelemetryReadout.of(spec.id, status)!!
                 // Datum BẬT/TẮT cũng in chữ "Tắt" (qua `onOff`) — nó KHÔNG phải thang mức, nên loại ra bằng
                 // chính cờ ấy thay vì bằng một danh sách mã (danh sách sẽ rữa, cờ thì không).
-                val saysLevel = v.onOff == null &&
+                // 2.76 (R8) — họ 4 (bảng OEM ≥ 3 trạng thái, `TelemetryEnums`) cũng in "Tắt" như MỘT trong nhiều
+                // trạng thái (nguồn xe tắt/ACC/bật/…; đèn pha tắt/auto/…) mà không phải thang mức — loại bằng
+                // TÍNH CHẤT bảng (`size ≥ 3`), cùng lẽ với cờ `onOff` ở trên, không bằng danh sách mã.
+                val saysLevel = v.onOff == null && TelemetryEnums.size(spec.id) < 3 &&
                     (v.valueText == "Tắt" || v.valueText?.startsWith("Mức ") == true)
                 assertEquals(
                     saysLevel, v.level != null,
@@ -360,9 +367,11 @@ class TelemetryReadoutTest {
      */
     @Test fun `hinh trang thai va chu trang thai khong bao gio lech`() {
         val declared = CapabilityIcons.stateIconTable().keys.sorted()
+        // 2.76 (R8/R9): 2 → 9 datum hai chế độ — cửa ×4 + cửa sổ trời (mở/đóng) + hai chỉ báo tự động/tay.
         assertEquals(
-            listOf("ac_cycle", "pm25_online"), declared,
-            "hôm nay đúng hai datum hai chế độ; thêm cái thứ ba thì phải khai cả ở `stateTable`",
+            listOf("ac_cycle", "ac_mode_auto", "ac_wind_auto", "door_lf", "door_lr", "door_rf", "door_rr",
+                "pm25_online", "sunroof_state"), declared,
+            "thêm datum hai chế độ thì phải khai cả ở `stateTable` — và ghi vào đây",
         )
         val seen = mutableMapOf<String, MutableSet<String?>>()
         listOf("1" to 1, "0" to 0).forEach { (seed, want) ->
@@ -463,35 +472,4 @@ class TelemetryReadoutTest {
         }
     }
 
-    /**
-     * [CarStatus] đã nạp **mọi** datum nối được, bằng gateway giả trả [seed] cho mọi binding — cùng cách hai bài
-     * FULL WIRE / wired-tier ở trên dựng, gom lại để bài mới không chép lần thứ ba.
-     */
-    private fun wiredStatus(seed: String): CarStatus {
-        val getters = mutableMapOf<String, String?>()
-        val features = mutableMapOf<Int, String?>()
-        val settings = mutableMapOf<String, String?>()
-        val names = mutableMapOf<String, Int>()
-        val locals = mutableMapOf<String, String?>()
-        TelemetryRegistry.ALL.forEach { spec ->
-            when (val r = HalBindingTable.routeOf(spec.bindingKey)) {
-                is BindingRoute.NamedMethod -> getters[r.method] = seed
-                is BindingRoute.Feature -> features[r.id] = seed
-                is BindingRoute.Setting -> settings[r.key] = seed
-                is BindingRoute.Local -> locals[r.method] = seed
-                is BindingRoute.FeatureName -> fakeId(r.constName).let { names[r.constName] = it; features[it] = seed }
-                BindingRoute.None -> {}
-            }
-        }
-        getters["getPM2p5Value"] = "[$seed, $seed]"   // getter trả MẢNG — xem chú thích ở bài FULL WIRE
-        val adapter = CarDataAdapter(
-            HalBindingTable(
-                FakeHalGateway(
-                    getters = getters, features = features, settings = settings,
-                    featureNames = names, locals = locals,
-                ),
-            ),
-        )
-        return adapter.readSlow(adapter.readFast(CarStatus()))
-    }
 }

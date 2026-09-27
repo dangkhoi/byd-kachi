@@ -36,7 +36,7 @@ class ControlHeightContractTest {
      * (*Áp dụng (N)* / *Đặt N widget*) cao **34.7dp** — thấp hơn cả nút PHỤ của Settings. Bài canh cũ chỉ nhìn ba
      * tệp trong `SettingsRows`-land nên bề mặt thứ tư trôi mà không ai đỏ, đúng điều KDoc lớp này cảnh báo.
      */
-    private val surfaces = listOf("SettingsRows.kt", "SettingsPanel.kt", "LayoutEditorPanel.kt", "AppDrawer.kt")
+    private val surfaces = listOf("SettingsRows.kt", "SettingsPanel.kt", "LayoutEditorPanel.kt", "AppDrawer.kt", "AppDrawerTiles.kt")
 
     private fun code(name: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$name")
 

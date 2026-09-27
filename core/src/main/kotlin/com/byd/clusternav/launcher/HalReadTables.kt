@@ -72,9 +72,36 @@ object HalReadTables {
     // đã gỡ `CarDataAdapter.Gate.ints()` đúng vì lẽ này). Cần lại: thêm bảng + nhánh ở `HalBindingTable.readBool`.
     // ⚠ Bảng `ARRAY_INDEX` thì đã **quay lại** ở 1.85 (bụi mịn ngoài xe) — xem KDoc của nó ngay trên.
 
+    /** `BODYWORK_STATE_UNDEFINED = 255` [ĐO source `BYDAutoBodyworkDevice.java:205`] — xem KDoc [INVALID_VALUES].
+     *  Khai TRƯỚC [INVALID_VALUES]: thân `object` khởi tạo theo thứ tự khai, dùng trước là đọc một `null`. */
+    private val BODYWORK_UNDEFINED: Set<Int> = setOf(255)
+
     /**
      * Giá trị "không hợp lệ" riêng từng getter ⇒ unavailable: tầm điện `getElecDrivingRangeValue` trả
      * STATISTIC_ELEC_DRIVING_RANGE_INVALID=1000 / DEFAULT=1023 (BYDAutoStatisticDevice.java:56-57).
+     *
+     * ## [P1 · SOÁT Opus 2026-09-27] Thân xe: `255` = **CHƯA XÁC ĐỊNH**, không phải "đang mở"
+     * [ĐO source] `jadx-tmap/.../bodywork/BYDAutoBodyworkDevice.java:203-205`: `BODYWORK_STATE_CLOSED = 0` ·
+     * `BODYWORK_STATE_OPEN = 1` · **`BODYWORK_STATE_UNDEFINED = 255`**. Năm datum dưới đây đọc bằng `readBool`, mà
+     * `coerceBool` là `coerceInt(s) > 0` ⇒ `255` thành **`true` = ĐANG MỞ**: cờ Boolean của `CarStatus.Body` xoá mất
+     * sentinel **trước khi** `:core` nhìn thấy, nên tầng trên không có cách nào trả *"chưa biết"* (đường AC làm đúng
+     * được vì nó giữ mã thô — `TelemetryReadout.stateTable` `ac_mode_auto`). Hậu quả trên xe: một hình cửa MỞ sáng +
+     * nhóm *Cửa* đỏ (`GroupBoard.alertIf`) cho một cánh cửa đang đóng, người lái đang chạy phải dừng lại xem.
+     *
+     * Đóng bằng **dữ liệu**, không bằng một cửa đọc thứ hai: `readRaw` bỏ giá trị ⇒ `readBool` trả `null` ⇒ ô hiện
+     * "—" và [HalAbsentCache] cho datum nguội (không hỏi lại 420 lần/phút — K1b).
+     *
+     * ⚠ Mức bằng chứng: hằng `255` là **[ĐO source]**; việc getter NÀY trả `255` trên xe owner thì **[CHƯA BIẾT]** —
+     * cả 4 lượt quét (`carlog-0916/sweep-1.64.json` + ba tệp `sweep-…` trong `perf-oncar-2026-09-26/kachi-logs`) đều
+     * đọc `getDoorState = 0` và `getSunroofState = 0`. Vì vậy đây là **lưới an toàn**, không phải một phép vá cho một
+     * triệu chứng đã thấy: không một lượt đo nào đổi hành vi vì dòng này.
      */
-    val INVALID_VALUES: Map<String, Set<Int>> = mapOf("ev_range_km" to setOf(1000, 1023))
+    val INVALID_VALUES: Map<String, Set<Int>> = mapOf(
+        "ev_range_km" to setOf(1000, 1023),
+        "door_lf" to BODYWORK_UNDEFINED,
+        "door_rf" to BODYWORK_UNDEFINED,
+        "door_lr" to BODYWORK_UNDEFINED,
+        "door_rr" to BODYWORK_UNDEFINED,
+        "sunroof_state" to BODYWORK_UNDEFINED,
+    )
 }

@@ -82,12 +82,26 @@ data class CameraGlUniforms(
     val enabled: Boolean get() = dewarp.enabled
 
     /**
+     * 2.76 L7 — đang **LẬT GƯƠNG** (pref `camera_mirror_*`, research §6.2) hay không, đọc từ dấu của `uSrcRect.z`.
+     *
+     * Khác với `h` (⚠ KDoc lớp: [textureT] đảo dấu `h` nên dấu ấy không còn nói được *"có flipV không"*), trục **x**
+     * không đi qua phép đổi trục nào — `w < 0` ⇔ `flipH` của [CameraDewarp.srcRect], tức đúng một nghĩa. Lật ở
+     * KHÔNG GIAN NGUỒN (bước 4 của shader), tức *"ảnh HAL bị lật tay"* được sửa **trước** khi xoay/dịch/nắn nhìn vào
+     * nó ⇒ hợp với xoay ±90 đúng như một camera thật lắp ngược: `rot(mirror(src))`, không phải `mirror(rot(src))`.
+     * ⚠ Lời hứa ấy chỉ đúng vì **tâm quang cũng lật** ([CameraDewarp.centerInCrop] nhận `flipH` — [P1] soát 27/09:
+     * bản đầu của 2.76 lật `uSrcRect` mà giữ `uCenter`, tức nắn quanh một trục lệch tới 1,5 bề ngang ô ở crop hẹp).
+     * Đường `TV` làm cùng phép ấy ở [CameraOverlayTransform.matrix] (lật SAU crop, TRƯỚC xoay) — bài
+     * `CameraMirrorTest` ghim hai đường cho cùng một điểm.
+     */
+    val mirror: Boolean get() = srcRect[2] < 0f
+
+    /**
      * Một dòng nhật ký đọc được bằng mắt trên xe (`logcat -s KachiCamera`). Không gọi trong đường khung hình —
      * nó cấp phát chuỗi; chỗ gọi duy nhất là lượt dựng overlay.
      */
-    fun describe(): String = ("srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f aspect=%.4f amount=%.3f F=%.4f K=%.4f S=%.3f" +
+    fun describe(): String = ("srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f lật=%b aspect=%.4f amount=%.3f F=%.4f K=%.4f S=%.3f" +
         " tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) texMatrix=%b")
-        .format(srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, aspect,
+        .format(srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, mirror, aspect,
             dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, centerX, centerY, panX, panY, texMatrix)
 
     /** `data class` với một `FloatArray` ⇒ phải tự so nội dung, nếu không hai bộ giống nhau vẫn báo khác. */
@@ -188,7 +202,8 @@ data class CameraGlUniforms(
                 // đã bị cắt trên/dưới ở hình TRÒN). Chưa biết cỡ luồng ⇒ bề cao ô, tức thu về ca `aspect = 1`.
                 imageCircleDiameterPx = if (known) streamH.toFloat() else cellH,
             )
-            val (cx, cy) = CameraDewarp.centerInCrop(srcCentreX, srcCentreY, crop)
+            // Lật ⇒ tâm quang cũng lật: trục quang nằm ở local `1 − c` khi `uSrcRect.z < 0` (⚠ KDoc [CameraDewarp.centerInCrop]).
+            val (cx, cy) = CameraDewarp.centerInCrop(srcCentreX, srcCentreY, crop, flipH, flipV)
             return CameraGlUniforms(
                 srcRect = rect,
                 rotationDeg = rotationDeg.toFloat(),

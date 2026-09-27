@@ -53,6 +53,8 @@ class SettingsScreenWiringContractTest {
     private val panels by lazy { code("src/main/java/com/byd/clusternav/launcher/HomePanels.kt") }
     private val strip by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiTopStrip.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
+    /** `render` · `selectPreset` · `applyCustomLayout` là hàm mở rộng ở đây từ L6-debt 2026-09-27 (tách thuần, trần 500 dòng). */
+    private val renderKt by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt") }
     private val vm by lazy { code("src/main/java/com/byd/clusternav/launcher/HomeViewModel.kt") }
     private val repo by lazy { code("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt") }
     private val prefs by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt") }
@@ -223,17 +225,17 @@ class SettingsScreenWiringContractTest {
 
     @Test
     fun `chon bo cuc san chi co MOT duong`() {
-        assertTrue(activity.contains("private fun selectPreset("), "phải có đúng một hàm chọn bố cục sẵn")
+        assertTrue(renderKt.contains("fun KachiHomeActivity.selectPreset("), "phải có đúng một hàm chọn bố cục sẵn")
         // S4 · R7 — bề mặt thứ hai (5 nút ở thanh trên) đã gỡ, nên cổng `onSelectPreset` cũng phải hết: để lại một
         // cổng không ai nối là lời mời dựng lại hàng nút đó.
         assertFalse(activity.contains("onSelectPreset"), "cổng chọn bố cục của thanh trên phải bị gỡ hẳn")
         assertTrue(activity.contains("onPreset = { p -> selectPreset(p) }"), "màn Cài đặt là đường DUY NHẤT tới nó")
         assertEquals(
-            1, Regex("""viewModel\.setPreset\(""").findAll(activity).count(),
+            1, Regex("""viewModel\.setPreset\(""").findAll(activity + renderKt).count(),
             "đúng MỘT chỗ gọi intent đặt bố cục — hai chỗ là hai bản sao của hành vi 'chọn bố cục sẵn thì bỏ bố " +
                 "cục tự vẽ', và bản thứ hai sẽ quên nó",
         )
-        val fn = SourceRoots.body(activity, "private fun selectPreset(")
+        val fn = SourceRoots.body(renderKt, "fun KachiHomeActivity.selectPreset(")
         assertTrue(fn.contains("applyCustomLayout(null)"), "chọn bố cục sẵn phải BỎ bố cục tự vẽ (P9)")
     }
 
@@ -478,7 +480,7 @@ class SettingsScreenWiringContractTest {
     @Test
     fun `doi ho so thi trang da nho phai duoc dung lai`() {
         // Đổi hồ sơ nạp lại TOÀN BỘ (bố cục · thanh nút · chip · hình nền · đơn vị) ⇒ mọi trang đã nhớ đều cũ.
-        val fn = SourceRoots.body(activity, "private fun render(")
+        val fn = SourceRoots.body(renderKt, "fun KachiHomeActivity.render(")
         assertTrue(fn.contains("panels.invalidateSettings()"), "phải bỏ trang đã nhớ khi hồ sơ đổi")
         assertTrue(
             fn.contains("prev.profiles != state.profiles"),

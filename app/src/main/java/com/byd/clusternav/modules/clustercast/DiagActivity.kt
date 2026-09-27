@@ -12,6 +12,12 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.byd.clusternav.Lang
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.badgeSizeDp
+import com.byd.clusternav.setBadgeSizeDp
+import com.byd.clusternav.badgeCenterX
+import com.byd.clusternav.badgeCenterY
+import com.byd.clusternav.setBadgeCenterX
+import com.byd.clusternav.setBadgeCenterY
 import com.byd.clusternav.ThemeMode
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState

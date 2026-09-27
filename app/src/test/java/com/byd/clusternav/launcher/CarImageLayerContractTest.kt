@@ -162,11 +162,26 @@ class CarImageLayerContractTest {
         assertTrue(scan.contains("solid"), "cả hai đường lùi phải trả mép ĐẶC MỰC = hành vi trước 2.74")
     }
 
+    /**
+     * 2.76 · R11 (3) — **cả hai nguồn** ảnh xe (mặc định + người dùng) giải mã theo MỘT kế hoạch fit ([decodePlan]),
+     * qua MỘT chỗ dịch kế hoạch sang cờ (`decodeOptions`). Trước 2.76 ảnh người dùng còn đi
+     * `WallpaperStore.loadScaled` (cover) ⇒ [ĐO số học, `CarImageStoreTest`] ảnh điện thoại 3000×4000 vào khung lốp
+     * 210×554 tốn 3,9× pixel không bao giờ được vẽ. Số đo khoá ở `CarImageStoreTest`; bài này khoá WIRING.
+     */
     @Test
-    fun `anh mac dinh giai ma theo ke hoach decodePlan (co inScaled), khong chi inSampleSize`() {
-        val def = SourceRoots.body(store, "private fun loadDefaultScaled(")
-        assertTrue(def.contains("decodePlan("), "phải qua decodePlan")
-        assertTrue(def.contains("inScaled = true") && def.contains("inTargetDensity"), "phải hạ đúng khung trong lúc giải mã")
+    fun `anh mac dinh VA anh nguoi dung deu giai ma theo decodePlan (fit) qua cung decodeOptions`() {
+        val opts = SourceRoots.body(store, "private fun decodeOptions(")
+        assertTrue(opts.contains("inSampleSize = plan.sample"), "bậc 1: giảm thô luỹ thừa 2 trong bộ giải mã")
+        assertTrue(opts.contains("inScaled = true") && opts.contains("inTargetDensity"), "bậc 2: hạ đúng khung trong lúc giải mã")
+        for (fn in listOf("private fun loadDefaultScaled(", "private fun loadUserScaled(")) {
+            val body = SourceRoots.body(store, fn)
+            assertTrue(body.contains("decodeOptions(decodePlan("), "$fn phải qua decodePlan (fit) → decodeOptions")
+            assertFalse(body.contains("WallpaperStore"), "$fn không được mượn đường COVER của hình nền")
+        }
+        val load = SourceRoots.body(store, "fun loadFeathered(")
+        assertTrue(load.contains("loadUserScaled(it, reqW, reqH)"), "ảnh người dùng đi loadUserScaled")
+        assertFalse(store.contains("WallpaperStore.loadScaled"), "kho ảnh xe không còn gọi đường cover ở đâu cả")
+        assertTrue(store.contains("WallpaperStore.sampleSize("), "…nhưng vẫn dùng chung bậc 1 (luỹ thừa 2) — không chép")
     }
 
     @Test

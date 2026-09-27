@@ -37,7 +37,9 @@ class VoiceCommandWiringContractTest {
         code("src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt") + "\n" +
             code("src/main/java/com/byd/clusternav/launcher/VoiceTargetDispatch.kt") + "\n" +
             code("src/main/java/com/byd/clusternav/launcher/VoiceReadback.kt") + "\n" +
-            code("src/main/java/com/byd/clusternav/launcher/VoiceClimateStep.kt")
+            code("src/main/java/com/byd/clusternav/launcher/VoiceClimateStep.kt") + "\n" +
+            // VOICE-WRITE-LANE (2.76): vai *"một nút xe — ghi gì, chờ ở đâu, và lúc nào thì XONG"* tách sang tệp riêng.
+            code("src/main/java/com/byd/clusternav/launcher/VoiceControlDispatch.kt")
     }
     private val console by lazy { code("src/main/java/com/byd/clusternav/launcher/VoiceTextConsole.kt") }
     private val sections by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSections.kt") }
@@ -56,8 +58,9 @@ class VoiceCommandWiringContractTest {
     fun `moi nhanh VoiceIntent deu co dich that`() {
         val run = SourceRoots.body(dispatcher, "private fun run(")
         mapOf(
-            "is VoiceIntent.Control ->" to "runControl(intent)",
-            "is VoiceIntent.Macro ->" to "runMacro(intent)",
+            // VOICE-WRITE-LANE (2.76): hai nhánh ghi HAL nhận `next` — vế sau chỉ chạy khi chúng báo xong.
+            "is VoiceIntent.Control ->" to "runControl(intent, next)",
+            "is VoiceIntent.Macro ->" to "runMacro(intent, next)",
             "is VoiceIntent.Launcher ->" to "runLauncher(intent)",
             "is VoiceIntent.Profile ->" to "onSwitchProfile(intent.name)",
             "is VoiceIntent.Read ->" to "runRead(intent)",
@@ -140,7 +143,9 @@ class VoiceCommandWiringContractTest {
      */
     @Test
     fun `lenh tuong doi cong vao so THAT cua xe, chi lui ve bang cua Kachi khi doc khong duoc`() {
-        val fn = SourceRoots.body(dispatcher, "private fun runControl(")
+        // 2.76 (VOICE-WRITE-LANE): thân nút xe chuyển NGUYÊN sang `VoiceControlDispatch.run` (tệp đã nằm trong `dispatcher`).
+        val fn = SourceRoots.body(dispatcher, "fun run(i: VoiceIntent.Control, done: () -> Unit)")
+        assertTrue(fn.contains("ControlRegistry.byId(i.id)"), "vùng quét phải là thân thật của nút xe — rỗng là bài canh giả")
         assertTrue(
             fn.contains("control().readState(def.id)"),
             "phải HỎI XE trước khi cộng — đọc qua `ControlDef.readKey` (khoá ĐỌC), không phải `bindingKey` (khoá GHI)",
@@ -211,10 +216,12 @@ class VoiceCommandWiringContractTest {
      */
     @Test
     fun `nhip cho 400ms cua duong giong noi nam tron trong lambda nen`() {
-        val runControl = SourceRoots.body(dispatcher, "private fun runControl(")
+        // 2.76: `runControl` của cầu là một dòng uỷ quyền; thân thật là `VoiceControlDispatch.run` (chuyển nguyên).
+        val runControl = SourceRoots.body(dispatcher, "fun run(i: VoiceIntent.Control, done: () -> Unit)")
+        assertTrue(runControl.contains("actByKind("), "thân nút xe phải còn ở `VoiceControlDispatch.run` — vùng quét rỗng là bài canh giả")
         assertFalse(
             runControl.contains("Thread.sleep("),
-            "`runControl` chạy trên luồng VẼ ⇒ một `Thread.sleep` ở đây là giao diện đứng hình giữa lúc đang lái",
+            "`VoiceControlDispatch.run` chạy trên luồng VẼ ⇒ một `Thread.sleep` ở đây là giao diện đứng hình giữa lúc đang lái",
         )
         val applyStep = SourceRoots.body(dispatcher, "private fun applyStep(")
         assertFalse(

@@ -283,7 +283,11 @@
   },
   "mode": {
    "domain": "DRIVETRAIN",
-   "note": "NÚM CHỌN CHẾ ĐỘ (`op_mode` · `ac_mode_auto`)"
+   "note": "NÚM CHỌN CHẾ ĐỘ có KIM (`ac_mode_auto` · `ac_wind_auto` mã 1 = chỉnh tay; hình khái niệm của cả hai datum)"
+  },
+  "mode_auto": {
+   "domain": "DRIVETRAIN",
+   "note": "CHẾ ĐỘ TỰ ĐỘNG (`ac_mode_auto` · `ac_wind_auto` mã 0) — núm chọn mang chữ A, cặp trạng thái với mode (kim = chỉnh tay). Cùng họ màu với mode để cặp đọc là một."
   },
   "motor": {
    "domain": "DRIVETRAIN",
@@ -337,27 +341,47 @@
   },
   "seat": {
    "domain": "CLIMATE",
-   "note": "GHẾ TRƠN — không còn chỗ dùng trong mã từ UX5 (ô/datum ghế sang glyph ghép seat_{heat,vent}_{left,right})"
-  },
-  "seat_heat_left": {
-   "domain": "CLIMATE",
-   "note": "GHẾ SƯỞI ghế LÁI (`seath` · datum `seat_heat_state`) — ghế + ba làn nhiệt, UX5 glyph ghép"
-  },
-  "seat_heat_right": {
-   "domain": "CLIMATE",
-   "note": "GHẾ SƯỞI ghế phụ (`seath_r`) — bản gương của seat_heat_left"
-  },
-  "seat_vent_left": {
-   "domain": "CLIMATE",
-   "note": "GHẾ MÁT ghế LÁI (`seatc` · datum `seat_vent_state`) — ghế + bông tuyết, UX5 glyph ghép"
-  },
-  "seat_vent_right": {
-   "domain": "CLIMATE",
-   "note": "GHẾ MÁT ghế phụ (`seatc_r`) — bản gương của seat_vent_left"
+   "note": "GHẾ TRƠN, ghế PHỤ (chip gộp ghế phụ lúc tắt/chưa biết · ô chọn) — ghế lái là seat_left (lật + chấm vô-lăng)"
   },
   "seat_g": {
    "domain": "COCKPIT",
    "note": "GHẾ (cockpit, ô tile_seat)"
+  },
+  "seat_heat_left": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI mức 2 = hình khái niệm, ghế LÁI (`seath` · datum `seat_heat_state`) — ghế + HAI làn nhiệt + chấm vô-lăng; L7 2.76: mức nằm trong hình (cặp với seat_heat_left_1)"
+  },
+  "seat_heat_left_1": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI mức 1, ghế LÁI — MỘT làn nhiệt (L7 2.76: `CapabilityIcons.LEVEL`, chip/ô nút đổi hình theo mức thay cho con số)"
+  },
+  "seat_heat_right": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI mức 2 = hình khái niệm, ghế phụ (`seath_r`) — bản gương của seat_heat_left"
+  },
+  "seat_heat_right_1": {
+   "domain": "CLIMATE",
+   "note": "GHẾ SƯỞI mức 1, ghế phụ — bản gương của seat_heat_left_1"
+  },
+  "seat_left": {
+   "domain": "CLIMATE",
+   "note": "GHẾ LÁI TRƠN (chip gộp ghế lái lúc tắt/chưa biết · ô chọn) — bản lật của seat + chấm vô-lăng (2.76 R9)"
+  },
+  "seat_vent_left": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT mức 2 = hình khái niệm, ghế LÁI (`seatc` · datum `seat_vent_state`) — ghế + HAI bông tuyết + chấm vô-lăng; L7 2.76 (cặp với seat_vent_left_1)"
+  },
+  "seat_vent_left_1": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT mức 1, ghế LÁI — MỘT bông tuyết (L7 2.76: `CapabilityIcons.LEVEL`)"
+  },
+  "seat_vent_right": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT mức 2 = hình khái niệm, ghế phụ (`seatc_r`) — bản gương của seat_vent_left"
+  },
+  "seat_vent_right_1": {
+   "domain": "CLIMATE",
+   "note": "GHẾ MÁT mức 1, ghế phụ — bản gương của seat_vent_left_1"
   },
   "sensor": {
    "domain": "CLIMATE",

@@ -159,15 +159,22 @@ class TopStripStateIconTest {
 
     /**
      * Datum đặt được lên thanh trên mà chữ giá trị của nó là một **từ trạng thái** (không phải số/đơn vị) thì
-     * PHẢI thuộc một trong ba họ đã có luật, hoặc được **khai hoãn kèm lý do** ở [DEFERRED].
+     * PHẢI thuộc một trong **BỐN** họ đã có luật. Từ 2.76 bảng hoãn [DEFERRED] **RỖNG** — không còn datum nào
+     * "biết là thiếu nhưng để sau".
      *
      * ## Vì sao quét NGUỒN chứ không đọc mắt
      * Câu hỏi của owner (*"còn chip nào vẫn còn missing"*) sẽ quay lại mỗi lần ai đó thêm một datum enum. Một bảng
      * kê viết tay trả lời được đúng một lần rồi rữa; máy quét thì đỏ ngay ở lần thêm thứ hai (CLAUDE.md §10).
      *
      * Nhận diện: nhánh của [TelemetryReadout] `format` gọi một hàm **đổi cờ/mã thành CHỮ** (`yesNo` · `openShut` ·
-     * `levelText`) hoặc dựng chữ tại chỗ bằng [Strings.t]. Ba hàm ấy là toàn bộ đường sinh chữ trạng thái trong
-     * tệp — datum SỐ không đi qua chúng (nó `toString()`/làm tròn).
+     * `levelText` · `TelemetryEnums.text`) hoặc dựng chữ tại chỗ bằng [Strings.t]. Bốn hàm ấy là toàn bộ đường sinh
+     * chữ trạng thái trong tệp — datum SỐ không đi qua chúng (nó `toString()`/làm tròn).
+     *
+     * ## Bốn họ
+     *  1. BẬT/TẮT → sáng/mờ ([TelemetryReadout.isOnOff]) · 2. THANG MỨC → số ([CapabilityDots.maxLevel]) ·
+     *  3. HAI CHẾ ĐỘ → cặp hình ([CapabilityIcons.hasStateIcons]) · 4. **NHIỀU CHẾ ĐỘ (≥ 3)** → CHỮ đã dịch từ bảng
+     *  OEM ([TelemetryEnums], 2.76 R8): 4–6 hình cho một khái niệm là hoa văn nền, chữ là câu trả lời đúng —
+     *  nhưng phải là chữ có nghĩa (*"Sẵn sàng"*), không phải mã thô (*"2"*), và mã lạ phải nói *"mã N"*.
      */
     @Test
     fun `KHONG chip nao con in chu trang thai ma chua duoc khai (soat bang may)`() {
@@ -182,21 +189,30 @@ class TopStripStateIconTest {
         val wordy = marks.mapIndexedNotNull { i, m ->
             val end = marks.getOrNull(i + 1)?.range?.first ?: body.length
             val branch = body.substring(m.range.first, end)
-            m.groupValues[1].takeIf { listOf("yesNo(", "openShut(", "levelText(", "Strings.t(").any(branch::contains) }
+            m.groupValues[1].takeIf {
+                listOf("yesNo(", "openShut(", "levelText(", "Strings.t(", "TelemetryEnums.text(").any(branch::contains)
+            }
         }
         assertTrue(wordy.size >= 10, "chỉ thấy ${wordy.size} datum in chữ trạng thái — phép nhận diện đã hỏng")
+        // 2.76: hai datum mã thô [P3 UX8] phải LỘ RA ở đây (chúng đi qua bảng enum) — nếu không thì bài đang mù
+        // đúng họ thứ tư mà lượt này thêm.
+        assertTrue("power_level" in wordy && "headlight_feedback" in wordy, "họ 4 không được nhận diện: $wordy")
 
         val missing = wordy.filterNot { id ->
             TopStripConfig.isChippable(id).not() ||                 // không lên được thanh trên ⇒ không phải việc ở đây
                 TelemetryReadout.isOnOff(id) ||                     // họ 1 — sáng/mờ (spec icon-consistency R3)
-                CapabilityDots.maxLevel(id) >= 1 ||                 // họ 2 — số mức + chấm (R4)
-                CapabilityIcons.hasStateIcons(id) ||                // họ 3 — hình theo chế độ (UX8, lượt này)
+                // họ 2 — MỨC-TRONG-HÌNH (2.76 L7): datum thang mức PHẢI có họ hình theo mức khai ở
+                // `CapabilityIcons.LEVEL` (khoá = hình của nút nó trỏ tới); còn "một hình + con số" (R4 cũ) từ nay
+                // là thiếu — owner 27/09 đã gạch con số.
+                (CapabilityDots.maxLevel(id) >= 1 && CapabilityDots.iconOverride(id) in CapabilityIcons.levelIconTable()) ||
+                CapabilityIcons.hasStateIcons(id) ||                // họ 3 — hình theo chế độ (UX8)
+                TelemetryEnums.size(id) >= 3 ||                     // họ 4 — chữ từ bảng OEM ≥ 3 trạng thái (2.76 R8)
                 id in DEFERRED
         }
         assertEquals(
             emptyList<String>(), missing,
             "datum in CHỮ trạng thái trên chip mà chưa có luật nào phủ — thêm hình theo chế độ " +
-                "(CapabilityIcons.STATE) hoặc khai hoãn kèm lý do ở DEFERRED",
+                "(CapabilityIcons.STATE), bảng enum ≥ 3 mục (TelemetryEnums), hoặc khai hoãn kèm lý do ở DEFERRED",
         )
         // Khai hoãn phải là một QUYẾT ĐỊNH đọc được, không phải một cái tên bỏ vào cho test xanh.
         DEFERRED.forEach { (id, why) ->
@@ -207,30 +223,24 @@ class TopStripStateIconTest {
     }
 
     /**
-     * Đã SOÁT, chưa làm — mỗi dòng là một quyết định, kèm điều kiện mở khoá (`.kiro/steering/trace-den-tan-cung`:
-     * *"không thể" phải kèm bằng chứng + điều kiện mở khoá*). Bảng đầy đủ:
-     * `docs/diagnostics/offcar-2026-09-26/ux-ux8-header-state-icons.md`.
+     * ═══ 2.76 — RỖNG, có chủ ý ═══════════════════════════════════════════════════════════════════════════════
+     *
+     * Bảng này từng có 7 mục (2.75: cửa ×4 · cửa sổ trời · `ac_mode_auto` · `ac_wind_auto`), mỗi mục kèm điều kiện
+     * mở khoá. Owner 2026-09-27: *"làm hết tất cả off-car nợ … không kéo dài ra nữa"* ⇒ cả bảy đóng trong 2.76
+     * (spec `kachi-276-closing.html` R8/R9): cửa + cửa sổ trời sang họ 3 với cặp hình MỞ/ĐÓNG sinh từ `gen-car.py`;
+     * hai chỉ báo AUTO sang họ 3 với cặp `ic-mode-auto`/`ic-mode`. Giữ bảng (thay vì xoá) để nợ MỚI, nếu có, vẫn
+     * phải ghi lý do tại chỗ — và bài [bang hoan RONG] đỏ nếu ai bỏ mục vào mà không mở lại cuộc bàn với owner.
+     * Bảng đầy đủ + bằng chứng: `docs/diagnostics/offcar-2026-09-27/chips-icons-close.md`.
      */
-    private val DEFERRED: Map<String, String> = mapOf(
-        "door_lf" to "cửa MỞ là việc đáng BÁO (GroupBoard xếp ALERT) chứ không phải một chế độ; hình cửa " +
-            "đóng/mở thuộc bộ sinh KHÁC (gen-car.py từ design/car/top.svg) ⇒ cần 5 biến thể mới + một lượt " +
-            "nhìn trên xe trước khi bỏ chữ 'Mở'. Mở khoá: owner duyệt cặp hình cửa ở lượt xe kế",
-        "door_rf" to "cùng lý do với door_lf — bốn cửa là một họ, làm thì làm cả họ trong một lượt (cùng bộ " +
-            "sinh gen-car.py, cùng lượt nhìn trên xe). Mở khoá: cùng door_lf",
-        "door_lr" to "cùng lý do với door_lf — bốn cửa là một họ, làm thì làm cả họ trong một lượt (cùng bộ " +
-            "sinh gen-car.py, cùng lượt nhìn trên xe). Mở khoá: cùng door_lf",
-        "door_rr" to "cùng lý do với door_lf — bốn cửa là một họ, làm thì làm cả họ trong một lượt (cùng bộ " +
-            "sinh gen-car.py, cùng lượt nhìn trên xe). Mở khoá: cùng door_lf",
-        "sunroof_state" to "cùng họ MỞ/ĐÓNG với bốn cửa và cùng bộ sinh hình xe (gen-car.py); ngoài ra xe owner " +
-            "KHÔNG có cửa sổ trời ([ĐO] 2026-09-25 getSunroofPosition = 65535) nên không đo được trên xe. " +
-            "Mở khoá: một xe có cửa sổ trời, hoặc owner chấp nhận hình chưa đo",
-        "ac_mode_auto" to "chữ giá trị là 'AUTO' — một dấu BỐN KÝ TỰ mà chính màn AC gốc của xe dùng, và owner " +
-            "2026-09-27 xin GIỮ nó (chỉ viết thường). Bộ icon chưa có cặp hình tự-động/chỉnh-tay. " +
-            "Mở khoá: owner chốt một cặp hình thay được chữ AUTO",
-        "ac_wind_auto" to "cùng câu hỏi với ac_mode_auto ('đang tự động hay chỉnh tay') và cùng chữ AUTO; hơn " +
-            "nữa chip gió (ac_wind) đã trả lời đúng việc ấy bằng 'auto n' nên một cặp hình mới sẽ là bề mặt " +
-            "THỨ BA cho một sự thật. Mở khoá: cùng ac_mode_auto",
-    )
+    private val DEFERRED: Map<String, String> = emptyMap()
+
+    @Test
+    fun `bang hoan RONG tu 2_76 - moi datum in chu trang thai deu co luat that`() {
+        assertTrue(DEFERRED.isEmpty(), "2.76 đóng hết nợ UX8; mục mới ở đây cần owner duyệt: ${DEFERRED.keys}")
+    }
+
+    // ── 4b–4d (2.76 R8/R9: cửa · cửa sổ trời · tự động/tay · họ 4 mã→chữ) tách theo VAI sang
+    //    `TopStripStateIcon276Test` — tệp này giữ luật chung + máy soát; tệp kia giữ các ca của lượt đóng 2.76.
 
     // ── 5. Hai họ CŨ vẫn đúng — đo lại, không giả định ──────────────────────────────────────────────────────
 
@@ -278,6 +288,59 @@ class TopStripStateIconTest {
         }
     }
 
+    // ── 5b. 2.76 L7 — họ THANG MỨC nay là MỨC-TRONG-HÌNH (owner 27/09: "không cần số 1-2") ─────────────────────
+
+    /**
+     * Cả **bốn** datum ghế × **ba** mức: mức 1 = hình `-1` (một dấu), mức 2 = hình khái niệm (hai dấu), mức 0 = hình
+     * khái niệm + MỜ; **không một chữ số nào** trên chip ở mức 1/2. Chưa đọc ⇒ `"· —"` + trung tính như cũ. Đo cả ghế
+     * phụ và cả mát lẫn sưởi để không một nhánh nào ăn may nhờ một cặp mã trùng.
+     */
+    @Test
+    fun `ca 4 chip thang muc noi MUC bang HINH - moi muc 0-1-2 x suoi-mat x lai-phu`() {
+        // [ĐO xe 09-17] thang ghế: raw 1 = TẮT · 2 = mức 1 · 3 = mức 2 (ControlLevels; `seath` [SUY] cùng thang).
+        fun status(raw: Int?) = CarStatus(climate = CarStatus.Climate(
+            seatHeatRaw = raw, seatVentRaw = raw, seatHeatRRaw = raw, seatVentRRaw = raw,
+        ))
+        val families = mapOf(
+            "seat_heat_state" to "ic-seat-heat-left", "seat_vent_state" to "ic-seat-vent-left",
+            "seat_heat_state_r" to "ic-seat-heat-right", "seat_vent_state_r" to "ic-seat-vent-right",
+        )
+        assertEquals(families.keys, TelemetryRegistry.ALL.map { it.id }.filter { CapabilityDots.maxLevel(it) >= 1 }.toSet())
+        families.forEach { (id, concept) ->
+            val short = TelemetryRegistry.byId(id)!!.shortLabel
+            val off = one(id, status(1)); val lv1 = one(id, status(2)); val lv2 = one(id, status(3)); val unread = one(id, status(null))
+            assertEquals(concept, off.icon, "$id mức 0: hình khái niệm"); assertEquals(ChipTone.INACTIVE, off.tone)
+            assertEquals("$concept-1", lv1.icon, "$id mức 1: hình MỘT dấu"); assertEquals(ChipTone.ACTIVE, lv1.tone)
+            assertEquals(concept, lv2.icon, "$id mức 2: hình khái niệm = HAI dấu"); assertEquals(ChipTone.ACTIVE, lv2.tone)
+            assertNotEquals(lv1.icon, lv2.icon, "$id: hai mức phải là hai hình")
+            listOf(off, lv1, lv2).forEach { c -> assertEquals(short, c.text, "$id: chỉ nhãn, thấy '${c.text}'") }
+            assertEquals("$short · ${TelemetryView.PLACEHOLDER}", unread.text); assertEquals(ChipTone.NEUTRAL, unread.tone)
+            // Cùng bảng cho chip, ô nút, widget: hình mức 1 của datum = forLevel(hình NÚT của nó, 1).
+            assertEquals(CapabilityIcons.forLevel(CapabilityDots.iconOverride(id), 1), lv1.icon)
+        }
+    }
+
+    /**
+     * Bảng `CapabilityIcons.LEVEL` phải LÀNH: khoá là hình của một nút THANG MỨC có `readKey`; số hình = số mức của nút
+     * ấy; hình cao nhất = chính khoá (không tệp thứ ba y hệt); mọi tên khác nhau; mức 0/`null`/vượt bảng ⇒ `null`.
+     */
+    @Test
+    fun `bang hinh theo muc lanh - khoa la hinh nut thang muc, so hinh bang so muc`() {
+        val table = CapabilityIcons.levelIconTable()
+        assertEquals(4, table.size, "bốn họ ghế (sưởi/mát × lái/phụ)")
+        table.forEach { (concept, icons) ->
+            val def = ControlRegistry.ALL.single { it.icon == concept }
+            assertTrue(ControlVisuals.isLevelScale(def) && def.readKey.isNotEmpty(), "$concept: phải là nút thang mức có datum")
+            assertEquals(ControlVisuals.tickCount(def), icons.byLevel.size, "$concept: một hình cho mỗi mức của nút")
+            assertEquals(concept, icons.byLevel.last(), "$concept: hình khái niệm = mức cao nhất")
+            assertEquals(icons.byLevel.size, icons.byLevel.toSet().size, "$concept: mỗi mức một hình khác nhau")
+            icons.byLevel.forEach { assertTrue(it.startsWith("ic-"), "$it không phải tên hình") }
+            assertEquals(null, CapabilityIcons.forLevel(concept, 0)); assertEquals(null, CapabilityIcons.forLevel(concept, null))
+            assertEquals(null, CapabilityIcons.forLevel(concept, icons.byLevel.size + 1), "mức vượt bảng ⇒ null (chip in số)")
+        }
+        assertEquals(null, CapabilityIcons.forLevel("ic-defrost", 1), "hình không khai họ mức ⇒ null")
+    }
+
     // ── 6. Bảng khai phải LÀNH — không datum nào rơi vào hai họ ─────────────────────────────────────────────
 
     @Test
@@ -306,5 +369,21 @@ class TopStripStateIconTest {
         // Chiều ngược (*"bảng ĐỌC có sinh ra mã cho mọi datum đã khai hình không"*) đo ở
         // `TelemetryReadoutTest.hinh trang thai va chu trang thai khong bao gio lech` — ở đó có nguồn mồi
         // wiredStatus nên phép đo là THẬT, không phải đọc lại chính bảng khai.
+    }
+
+    /** Họ 4 cũng phải LÀNH: ≥ 3 mục (2 mục = họ 3, phải khai hình), có trong registry, không chồng ba họ kia. */
+    @Test
+    fun `bang enum nhieu che do khong chong len ba ho kia va co it nhat 3 muc`() {
+        val ids = listOf(TelemetryEnums.POWER_LEVEL, TelemetryEnums.HEADLIGHT_MODE).map { it.id }
+        assertEquals(listOf("power_level", "headlight_feedback"), ids)
+        ids.forEach { id ->
+            val n = TelemetryEnums.size(id)
+            assertTrue(n >= 3, "$id: $n mục — 2 mục là họ HAI CHẾ ĐỘ, phải khai hình")
+            assertNotNull(TelemetryRegistry.byId(id))
+            assertFalse(TelemetryReadout.isOnOff(id)); assertEquals(0, CapabilityDots.maxLevel(id))
+            assertFalse(CapabilityIcons.hasStateIcons(id), "$id: hình theo chế độ VÀ bảng chữ = hai luật một ô")
+            assertEquals(TopStripConfig.isChippable(id), true)
+        }
+        assertEquals(0, TelemetryEnums.size("ac_cycle"), "datum hai chế độ không có bảng enum")
     }
 }

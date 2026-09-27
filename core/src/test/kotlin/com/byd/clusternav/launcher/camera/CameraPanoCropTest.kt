@@ -186,7 +186,8 @@ class CameraPanoCropTest {
                 }
             }
         }
-        assertEquals(2 * 4 * 2 * 2 * 2, all.size)
+        // 2 bên × 4 dải × bề rộng × hình (2.76: +CLUSTER "theo cụm", crop y chữ nhật) × 2 cỡ tròn.
+        assertEquals(2 * 4 * P.SPANS.size * P.SHAPES.size * 2, all.size)
         all.forEach { r ->
             r.forEach { assertTrue(it in 0f..1f, "toạ độ ${r.joinToString()} ra ngoài ảnh") }
             assertTrue(r[2] - r[0] >= CameraOverlayTransform.MIN_SPAN, "bề rộng suy biến: ${r.joinToString()}")

@@ -162,6 +162,24 @@ class VoiceFastNaturalWiringContractTest {
             "hẹn đóng phải ước lượng theo độ dài batch, không phải một hằng số cho mọi câu")
         assertFalse(fn.contains("scheduleClose(SPEAK_SAFETY_MS)"),
             "hằng trần trơn đã quay lại — câu dài sẽ bị cắt giữa chừng như 1.78")
+        // ═══ [P1 · SOÁT Opus 2026-09-27] Lượt nói chốt khi LÀN GHI báo xong, KHÔNG khi `d.execute` trả về ═══════
+        // Từ R5, `d.execute` trả về trước khi câu ghép có vế bất đồng bộ ghi xong ⇒ gom mảng lời đáp ở đó là gom một
+        // mảng RỖNG: không đọc gì, mở micro nối ngay, rồi hai câu trả lời thật bị cổng `micOpen` bỏ im (kể cả câu
+        // báo hỏng). Mốc `onSettled` + lưới an toàn `TURN_SETTLE_MS` là thứ chữa; cả ba mắt xích phải còn.
+        assertTrue(fn.contains("d.execute(intents) { post { settle() } }"),
+            "mảng lời đáp chỉ được gom khi cả câu đã ghi xong (hoặc đứng ở hộp hỏi lại)")
+        assertTrue(
+            fn.indexOf("ui.postDelayed(settleTask, VoiceSession.TURN_SETTLE_MS)")
+                .let { if (it < 0) fn.indexOf("ui.postDelayed(settleTask, TURN_SETTLE_MS)") else it } in
+                0..<fn.indexOf("d.execute(intents)"),
+            "lưới an toàn phải hẹn TRƯỚC khi thi hành: một vế quên gọi `done` không được treo phiên",
+        )
+        assertTrue(fn.indexOf("fun settle()") in 0..<fn.indexOf("flushed = true"),
+            "cổng cho dòng về muộn (`flushed`) mở BÊN TRONG mốc chốt, không ở ngay sau `d.execute`")
+        val dispatcherSrc = code("src/main/java/com/byd/clusternav/launcher/VoiceDispatcher.kt")
+        assertTrue("if (from >= intents.size) { settled(); done(); return }" in dispatcherSrc, "hết câu ⇒ chốt")
+        assertTrue("fun execute(intents: List<VoiceIntent>, onSettled: () -> Unit = {})" in dispatcherSrc,
+            "mốc là tham số có mặc định ⇒ cầu kiểm thử/màn thử không phải đổi")
         val done = SourceRoots.body(turns, "internal fun VoiceSession.onReplyDone(")
         assertTrue(done.contains("followUp(my, pending)"), "onReplyDone (sau đọc xong) mới mở hội thoại")
         assertTrue(fn.contains("VoiceFeedbackPhrase.isInterim("), "lệnh còn đang tra mạng ⇒ KHÔNG mở hội thoại")

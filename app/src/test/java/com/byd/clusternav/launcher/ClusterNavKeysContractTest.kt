@@ -52,6 +52,10 @@ class ClusterNavKeysContractTest {
             // `nav_automation_rules` · `nav_automation_fired`) tách sang `PrefsAutomation.kt` (hàm mở rộng của
             // [Prefs]) vì `Prefs.kt` đã 536 dòng — cùng tệp prefs, cùng lẽ V3/inputd, không phải cửa thứ hai.
             "src/main/java/com/byd/clusternav/PrefsAutomation.kt",
+            // L6-debt 2026-09-27 — tệp THỨ SÁU cùng `clusternav_prefs`: khoá biển báo tốc độ + bong bóng VietMap
+            // (`badge_*` · `show_*` · `vm_bubble_enabled` · `vm_float_whitelist_applied`) tách sang `PrefsBadge.kt` (hàm mở
+            // rộng của [Prefs], `Prefs.kt` 558 dòng) — cùng tệp prefs qua `Prefs.sp`, cùng lẽ V3/inputd/automation.
+            "src/main/java/com/byd/clusternav/PrefsBadge.kt",
         ),
         "simple_cast_prefs" to listOf(
             "src/main/java/com/byd/clusternav/modules/clustercast/simplified/SimpleCastRuntime.kt",

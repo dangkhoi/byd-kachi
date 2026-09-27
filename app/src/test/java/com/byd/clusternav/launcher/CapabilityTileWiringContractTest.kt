@@ -26,6 +26,8 @@ class CapabilityTileWiringContractTest {
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
     private val workspace by lazy { code("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
+    /** Ô lưới của ngăn kéo (`pickTile` · `kindPill` · `widgetTile`) tách sang tệp riêng (L6-debt 2026-09-27, trần 500 dòng). */
+    private val drawerTiles by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawerTiles.kt") }
     /** Nơi duy nhất quyết định hình dạng dấu "chưa kiểm trên xe" (U7·R6 → U10 gom nốt thanh nút vào đây). */
     private val picker by lazy { code("src/main/java/com/byd/clusternav/launcher/PickerBadge.kt") }
     /** Ô NHÓM (widget board) — bề mặt thứ ba từng tự vẽ chấm "chưa kiểm" của riêng nó. */
@@ -60,7 +62,7 @@ class CapabilityTileWiringContractTest {
 
     @Test
     fun `Activity bom trang thai xe vao thanh nut CUNG LUC voi thanh tren`() {
-        val fn = SourceRoots.body(activity, "private fun render(state: HomeUiState)")
+        val fn = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt"), "fun KachiHomeActivity.render(state: HomeUiState)")   // render → KachiHomeRender.kt (L6-debt)
         // Prefix: chip thanh trên nay nhận thêm lựa chọn đơn vị (R11) nên chữ ký dài hơn — khoá sự TỒN TẠI
         // của lời gọi, không khoá số tham số.
         assertTrue(fn.contains("topStrip.refreshChips(state.carStatus"), "thanh trên vẫn được làm mới như cũ")
@@ -251,7 +253,7 @@ class CapabilityTileWiringContractTest {
             "không được quay lại nguồn CHỈ-ĐỌC — đó chính là chỗ chặn cũ",
         )
         assertTrue(
-            drawer.contains("pick.displayLabel"),
+            drawerTiles.contains("pick.displayLabel"),
             "hai loại nằm cùng một lưới ⇒ phải dùng nhãn có gợi ý loại ở chỗ nhãn trùng",
         )
         // T4 · IA v2 R-UI (m): lưới 123 ô đã RỜI khỏi màn Cài đặt — nhóm "Thanh trạng thái & thanh nút" nay

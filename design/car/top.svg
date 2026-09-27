@@ -132,6 +132,12 @@
     <path id="therm_stem" data-stroke="1" d="M12,9.6 L12,12.9" fill="none" stroke="#ffffff"/>
     <circle id="therm_bulb" cx="12" cy="14.3" r="1.35"/>
     <rect id="sunroof_gap" x="10.8" y="11.3" width="2.4" height="1.0" rx="0.4"/>
+    <!-- 2.76 R8 · CỬA ĐÓNG: vạch cửa nằm SÁT thân (đúng mép bản lề của vạt door_* ở layer-doors) — cặp trạng thái
+         với vạt mở. Chỉ dùng cho icon 24dp `ic_car_top_door_*_shut`; bảng Canvas vẫn dùng vạt (FLAP ẩn khi đóng). -->
+    <path id="door_lf_shut" data-stroke="1" d="M7.55,9.0 L7.35,12.6" fill="none" stroke="#ffffff"/>
+    <path id="door_rf_shut" data-stroke="1" d="M16.45,9.0 L16.65,12.6" fill="none" stroke="#ffffff"/>
+    <path id="door_lr_shut" data-stroke="1" d="M7.35,13.8 L7.6,17.4" fill="none" stroke="#ffffff"/>
+    <path id="door_rr_shut" data-stroke="1" d="M16.65,13.8 L16.4,17.4" fill="none" stroke="#ffffff"/>
     <path id="arrow_v_stem" data-stroke="1" d="M12,16.6 L12,17.8" fill="none" stroke="#ffffff"/>
     <g id="arrow_v_heads" data-merge="1">
       <path d="M12,15.1 L13.34,16.59 L10.66,16.59 Z"/>

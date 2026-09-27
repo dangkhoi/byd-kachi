@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.modules.hal.BydHal
+import com.byd.clusternav.SysProps
 
 /**
  * Áp mức làm-mát/sưởi ghế lên HAL qua **`BYDAutoSettingDevice`** ([BydHal.SETTING]) bằng method-TÊN
@@ -123,7 +124,7 @@ object SeatComfortApplier {
     /**
      * Best-effort: xe có phải Han (4 ghế tiện-nghi) không? Thử theo thứ tự, gộp mọi manh mối rồi so [SeatComfort.isHanModel]:
      *  1) BYD HAL statistic device — vài getter mẫu-xe (nếu ROM có);
-     *  2) `android.os.SystemProperties.get` vài khoá mẫu/sản-phẩm;
+     *  2) [SysProps.get] (`getprop` trong tiến trình) vài khoá mẫu/sản-phẩm;
      *  3) `android.os.Build.MODEL`.
      * KHÔNG chặn, KHÔNG ném (mọi bước bọc runCatching). Không manh mối nào chứa "han" ⇒ false ⇒ mặc định
      * Seal (2 ghế) — off-car luôn trả 2.
@@ -151,8 +152,6 @@ object SeatComfortApplier {
         return clues.any { SeatComfort.isHanModel(it) }
     }
 
-    private fun systemProp(key: String): String? = runCatching {
-        val c = Class.forName("android.os.SystemProperties")
-        (c.getMethod("get", String::class.java).invoke(null, key) as? String)?.takeIf { it.isNotBlank() }
-    }.getOrNull()
+    /** Rỗng/lỗi ⇒ `null` = không có manh mối (uỷ quyền [SysProps.get] — một cửa reflection, L6-debt 2026-09-27). */
+    private fun systemProp(key: String): String? = SysProps.get(key).takeIf { it.isNotBlank() }
 }

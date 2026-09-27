@@ -1689,5 +1689,122 @@
   "status": "🚗 chờ xe chốt phần suy luận",
   "evidence": "15,0 [ĐO xe] + ≈4,0 [SUY] (khớp số dư chính xác); cách chốt: đóng hết ô App ⇒ phải xuống ≈15,0. docs/diagnostics/offcar-2026-09-26/taskbar-focus-and-shell-budget.md §0 hàng 2 · §3.2 · §3.3 · §4 hàng 5",
   "spec": "docs/specs/kachi-closeout-hardening.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Màn Camera hai tầng — 11 khoá người lái luôn hiện, 16 khoá kỹ thuật gập sau cổng kiểm thử (2.76 R1)",
+  "desc": "Owner 27/09: *«quá nhiều setting test ở màn camera… chỉ để lại setting user cần»*. `CameraSettingsIa` (:core) chia 27 khoá `camera_*` thành **11** khoá NGƯỜI LÁI (bật · lên cụm · góc ×2 · xoay ×2 · **lật gương ×2** (L7) · hình · nắn bật/tắt · nguồn) và 16 khoá KỸ THUẬT (kết xuất · bề rộng · dải · kênh HAL · cameraId · ma trận texture · 8 núm nắn) chỉ dựng khi `TestBridgeStore.isOn` (khối *Nâng cao (kỹ thuật) · 16 mục*). Khoá không xoá — `prefs_set` vẫn ghi/đọc được khi khối ẩn. Hàng Nguồn (toàn cảnh / một camera) chỉ hiện khi hồ sơ xe có bản đồ kênh.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (test wiring `CameraSettingsIaWiringContractTest` + core) · 🚗 CAM-F1 chờ xe (đếm **11** hàng + khối 16 mục, tắt cổng ⇒ khối biến mất)",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §2.1 · §5 CAM-F1 · core/.../camera/CameraSettingsIa.kt · app/.../SettingsSectionsCamera.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Mặc định camera đi theo HỒ SƠ XE — Seal DL3 = bộ owner duyệt bằng mắt 27/09 (2.76 R2)",
+  "desc": "`ClusterProfile.camera` → `CameraProfileDefaults`: Seal DL3 = `STRIP · GL · amount 100 · focal 55 · k 100 · scale 130 · cx=cy=0 · pan 0/0 · rot 0/0 · kênh 2 (trái)/3 (phải)`; đời khác (DL5, generic, id lạ) = NEUTRAL = đúng literal 2.75. Mọi `Prefs.camera*` lấy fallback từ `CameraDefaults.of(ctx)`; pref owner đã đặt luôn THẮNG (xoay ↺90 owner đã chọn không bị ghi đè). Hằng kênh ghim trên `CamView` (2.75) bỏ.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🟢 bộ tham số đã duyệt bằng mắt trên xe 27/09 (B3 · B4) · 🚗 CAM-F5 (read_back `camera_span`/`camera_render` = STRIP/GL) + CAM-C2 (rot 0/0 cạnh cột đèn) chờ xe",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §1 B3–B5 · §2.2 · §5 · core/.../camera/CameraProfileDefaults.kt · app/.../modules/clustercast/ClusterProfile.kt (`SEAL_DL3_CAMERA`) · app/.../PrefsCameraDewarp.kt · docs/diagnostics/research-side-camera-orientation-2026-09-27.md §6.1",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Nguồn «một camera» không lên ⇒ LÙI VỀ TOÀN CẢNH đúng một lần, có log + ghi chú trong Cài đặt (2.76 R3)",
+  "desc": "`CameraChannelFallback` (:core, thuần): HAL từ chối kênh (`addPreviewSurface` rc=false) hoặc 0 khung GL sau `FIRST_FRAME_BUDGET_MS` = 3 000 ms ⇒ đúng MỘT lần dựng lại phiên ở PANO qua đường `closeSession(keepPano) → openSession(forcedPano=true)`, một dòng `Log.w` *«LÙI VỀ TOÀN CẢNH (rc=false|no-frame)»*, dấu `camera_channel_fallback` hiện dưới hàng Nguồn (xoá ở lượt xi-nhan kế). `camera_frame` thêm `note=anamorphic x4` khi CHANNEL. Đường ngân sách khung đầu chỉ chạy trên GL (TextureView/SurfaceView không đếm khung ⇒ không lùi).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 code xong chờ xe — CAM-F2 (khung đầu thật, siết 3 000 ms), CAM-F3 (`camera_hal_mode 4` ⇒ đúng 1 dòng lùi), CAM-F4 (`camera_frame` note). Ngân sách 3 000 ms [SUY] từ 34 fps + đứt–nối 1,7 s",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §2.3 · §3 Q8 · §5 · core/.../camera/CameraChannel.kt · app/.../camera/CameraSignalController.kt (`fallbackToPano`) · app/.../camera/AvmCamera.kt (`channelRefused`)",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Hình khung «theo cụm» — camera vẽ trọn dải giữa của cụm 1920×720, không đè header/footer hệ thống (2.76 R4)",
+  "desc": "Owner (3 ảnh cụm + framebuffer display 1): *«header top và bottom là của hệ thống, chỉ vẽ được khúc giữa»*. Đo homography ±8 px ⇒ `ClusterBandSpec.SEAL_DL3 = [140,136)-(1780,560)` (1640×424, radius 24). Hình `CLUSTER` («theo cụm»): cửa sổ ở đầu trái/phải dải theo pref góc, cao trọn dải, tỉ lệ qua `CameraOverlayFrame.fit`, rộng ≤ nửa dải; crop như RECT; trên màn chính thoái về RECT. Sửa kèm: overlay trên cụm nay đo `displayMetrics` của ĐÚNG display đang treo (2.75 đo nhầm màn chính ⇒ 65 px nằm dưới header).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car — E2E máy ảo overlay display 1920×720: trái [140,136]-[705,560], phải [1215,136]-[1780,560] trong dải, thoái RECT trên màn chính (`scripts/emulator/camera-cluster-e2e.sh`) · 🚗 CAM-CL1 chờ xe (ảnh trọn dải, đọc `dải=` trong log để chỉnh ±8 px)",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/camera-cluster-band.md §1 F1–F10 · §2 · §7 · §8 · core/.../camera/CameraClusterBand.kt · app/.../camera/CameraOverlayView.kt (`clusterCtx`, `geometry`)",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Làn ghi TUẦN TỰ cho câu ghép — «tăng gió rồi tắt điều hoà» không chen vào giữa nhịp 400 ms của vế trước (2.76 R5)",
+  "desc": "`VoiceWriteLane` (:core, thuần): FIFO theo lời gọi lại, `done` đúng một lần, việc ném tự thả làn. `VoiceDispatcher.execute` nộp cả câu vào làn; `runFrom` nối vế bằng callback; `VoiceControlDispatch` (tách 155 dòng) gọi `done()` ở 5 lối ra (nút lạ · NoOp AUTO · chặn xe chạy · finish !ok · finish ok sau nhịp 400 ms rời AUTO). Đường một mệnh đề y nguyên byte.",
+  "voice": [
+   "tăng gió rồi tắt điều hoà"
+  ],
+  "voice_reply": "hai câu trả lời theo đúng thứ tự vế",
+  "status": "✅ off-car (`VoiceWriteLaneTest` · `VoiceWriteLaneDispatchTest`) · 🚗 §1.5: xe đang AUTO nói câu ghép ⇒ màn AC thấy mức gió +1 rồi AC tắt",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/voice-write-lane-tail-prefix.md §1 · core/.../voice/VoiceWriteLane.kt · app/.../VoiceDispatcher.kt · app/.../VoiceControlDispatch.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Ghép vế SAU khi vế trước đã đủ nghĩa — «mở vietmap» ⟨ngừng ~1 s⟩ «vào ô số hai» (2.76 R6)",
+  "desc": "[ĐO xe 10:42:46] vế sau đã thu rồi bị vứt vì vế trước đủ. `VoiceOpenTurn.attach(head, tail)` = `isOpen ? join : refine`; `refine` chỉ nhận câu ghép khi `parseOne(joined)` là CÙNG ý định đầy đủ hơn (app + ô). `VoiceOpenTurnArm.result` + `VoiceWavProbe` hỏi `tailRange` TRƯỚC khi giữ/ghép. *«mở vietmap»* rồi im ⇒ mở ngay như 2.75.",
+  "voice": [
+   "mở vietmap … vào ô số hai"
+  ],
+  "voice_reply": "log `noi-tiep: ghép \"mở vietmap\" + \"vào ô số hai\"` · VietMap vào ô 2",
+  "status": "✅ off-car (`VoiceOpenTurnTest` + phép đo máy ảo) · 🚗 §2.5",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/voice-write-lane-tail-prefix.md §2 · core/.../voice/VoiceOpenTurn.kt · app/.../voice/VoiceOpenTurnArm.kt · app/.../voice/VoiceWavProbe.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Voice",
+  "name": "Tên app rụng đuôi («viet», «yout») ⇒ tiền tố ≥ 4 ký tự + mệnh đề ô có số vẫn hiểu (2.76 R7)",
+  "desc": "[ĐO xe 10:35:46 · 10:36:36] mô hình in *«viet …»*/*«yout …»*; 2.75 cố ý giữ Unknown. `VoiceAppPrefix.pick` ba cổng (tiền tố ≥ 4 · duy nhất trong danh sách app đã cài · câu có mệnh đề ô số) ở nhánh áp chót của `VoiceLastResort`; lượt in *«mát/áp»* vẫn hỏi lại.",
+  "voice": [
+   "mở vietmap vào ô số hai",
+   "mở youtube vào ô số một"
+  ],
+  "voice_reply": "mở đúng app vào đúng ô, không hỏi lại",
+  "status": "✅ off-car (`VoiceAppPrefixTest`) · 🚗 §3.5 nói nhanh ×5, lượt in tiền tố phải ra đúng app đúng ô",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/voice-write-lane-tail-prefix.md §3 · core/.../voice/VoiceAppPrefix.kt · core/.../voice/VoiceLastResort.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Chip nói TRẠNG THÁI bằng hình/chữ đúng loại — chữ OEM cho ≥ 3 chế độ · cặp icon mở/đóng cửa ×4 + cửa sổ trời · Tự động/chỉnh tay · chấm vô-lăng ghế lái · MỨC ghế nằm trong hình (1/2 làn sưởi · 1/2 bông tuyết, bỏ số) (2.76 R8/R9 + R13.1)",
+  "desc": "Đóng bảng `DEFERRED` của UX8. Họ thứ TƯ: datum ≥ 3 chế độ (`power_level` · `headlight_feedback`) in CHỮ từ bảng OEM `TelemetryEnums` (:core, nguồn `BYDAutoBodyworkDevice.java:197-202`), mã lạ ⇒ *«mã N»*. Cửa ×4 + cửa sổ trời: cặp hình mở/đóng sinh từ `gen-car.py` (`ic_car_top_door_*_shut` · `ic_car_top_sunroof_open`), chữ Mở/Đóng rời chip. `ac_mode_auto`: cặp `ic-mode-auto`/`ic-mode`; `ac_wind_auto` ẩn khỏi bộ chọn chip (`CHIP_HIDDEN`), KHÔNG gộp (OQ3 chốt tách). Ghế lái thêm chấm vô-lăng trước ghế (3 glyph) để khác ghế phụ. L7 (R13.1): mức ghế vào chính hình — `CapabilityIcons.LEVEL` là bảng khai `hình khái niệm → [mức 1, mức 2]`, tra bằng `forLevel(icon, level)` ở CẢ ba bề mặt (chip `TopStripChips` · ô nút `KachiIcons.byLevel` ← `ControlTileFactory` · ô đọc `DatumIconView`) nên chúng không bao giờ nói ba mức khác nhau; bốn họ `ic-seat-{heat,vent}-{left,right}` + tệp `_1` mới, mức NGOÀI bảng ⇒ số quay lại (không vẽ bừa mức chưa đo).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (test `TopStripStateIcon276Test` · `TelemetryReadout276Test`; `gen-icons.py --check` 119/119 · `gen-car.py --check` 41/41) · 🚗 4 phép §5: Nguồn xe/đèn pha đúng chữ · cửa trước-trái xoè/sát thân · Chế độ ĐH (kèm `hal get` chốt OQ3) · ghế lái ↔ ghế phụ phân biệt ở 20dp · cửa sổ trời **đo được**: `hal get getSunroofState` = 0 ⇒ chip hình đóng + SÁNG ([ĐO] 4 lượt quét; 65535 là của `getSunroofPosition` đã gỡ) · mức ghế: sưởi lái 1→2 và mát phụ 1→2 đổi số dấu trong hình, phân biệt ở 20 dp",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/chips-icons-close.md §2 · §4 · §5 · core/.../TelemetryEnums.kt · core/.../CapabilityIcons.kt · core/.../TopStrip.kt (`CHIP_HIDDEN`) · design/glyph/mode_auto.svg · design/glyph/seat_left.svg · docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §1 · core/.../CapabilityIcons.kt (`LEVEL`/`forLevel`) · app/.../KachiIcons.kt (`byLevel`) · scratchpad/icons-276-seat/sheet2.png",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Thanh trên",
+  "name": "Bốn nút phải thanh trên (mic · ứng dụng · cài đặt · hồ sơ) cùng MỘT hộp tròn (2.76 R11-1)",
+  "desc": "[ĐO máy ảo 13:04] ba pill icon 60×51 px, chip hồ sơ 51×51 — pill `WRAP_CONTENT` = hình 24 dp + 2×8 pad = 40 dp, còn hồ sơ 34 dp. `KachiTopStrip.pillLp` khai cỡ tường minh chung cho cả bốn (34 dp — quyết định trái con số 40 dp trong spec, có số đo + một hằng đổi ngược).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (số đo SAU trên máy ảo 13:15: bốn nút cùng cỡ) · 🚗 §6: nhìn không thấy nút nào rộng hơn nút nào, chữ cái hồ sơ đúng giữa",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/layout-nits-close.md §1 · §2 (1) · §4 · §6 · app/.../KachiTopStrip.kt (`pillLp`) · app/.../KachiSpaceBars.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Bảng lốp: khối 4 thẻ cân đúng tâm ảnh xe; ảnh xe người dùng giải mã theo FIT như ảnh mặc định (2.76 R11-2/3)",
+  "desc": "[ĐO máy ảo] tâm khối thẻ 363,0 vs tâm ảnh xe 351,5 ⇒ lệch +11,5 px vì neo bánh 0,26/0,80 (tâm dải 0,53). `CarLayout.tyreCardShift`/`tyreCardCenterY` (:core) dời thẻ về tâm ảnh; `TyreBoardView.onDraw` dùng. Ảnh xe user (`Android/data/<gói>/files/car/`) trước đi `loadScaled` (cover, `maxOf`) ⇒ ảnh điện thoại 3000×4000 giải mã to; nay `CarImageStore.loadUserScaled` + `decodeOptions` đi đường fit như ảnh mặc định (khoá bằng test số học).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (khối lốp đo máy ảo SAU: tâm khớp; ảnh user chỉ khoá bằng test số học — máy ảo không có ảnh user) · 🚗 §6: bảng lốp 2 hàng cân giữa thân xe · thả ảnh ≥ 3000 px vào `files/car/` ⇒ hiện đúng, `dumpsys meminfo` Graphics không tăng theo cỡ ảnh gốc",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/layout-nits-close.md §2 (2)(3) · §4 · §5 · core/.../CarLayout.kt · app/.../TyreBoardView.kt · app/.../CarImageStore.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Lật gương ảnh camera từng bên (`camera_mirror_left/right`) — mặc định TẮT (2.76 R13.2)",
+  "desc": "Nghiên cứu 27/09 §6.2: ngành đi theo **tay gương kính** (thân xe ở mép trong), nhưng tay của ảnh HAL trên xe này **[CHƯA BIẾT]** ⇒ không đoán, thêm công tắc ở tầng người lái (hai hàng *Lật gương trái/phải* trong `CameraSettingsIa.USER_KEYS`), mặc định TẮT. Lật ở KHÔNG GIAN NGUỒN — sau crop, trước xoay (`rot(mirror(src))`): đường TV nhân `scale(−1,1)` quanh tâm khung ở bước 1b (KHÔNG `View.scaleX`, vì lật-sau-xoay khác lật-trước-xoay ở ±90 và không test được off-car); đường GL đảo dấu bề ngang `uSrcRect` **và lật cả tâm nắn** `uCenter` → local `1 − c` ([P1] soát Opus 27/09: bản đầu giữ tâm chưa lật ⇒ nắn quanh trục lệch tới 1,5 bề ngang ô ở dải hẹp, *\"một bên thẳng bên kia còng\"*). `describe()` in `lật=` nên log tự đủ nghĩa.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (test `CameraMirrorTest` :core — lật là ảnh SOI của bản không lật ở cả `amount 0` lẫn `amount 100`, hợp với xoay/pan, GL ↔ TV nghịch đảo; `CameraMirrorWiringContractTest` :app — pref → controller → uniforms/TV) · 🚗 CAM-M1: người đứng sau-trái ~3 m, ảnh trái (xoay 0) cùng tay gương kính ⇒ giữ TẮT, ngược ⇒ bật cả hai bên và ghi lại làm mặc định hồ sơ",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §2 · docs/diagnostics/research-side-camera-orientation-2026-09-27.md §6.2 · core/.../CameraGlUniforms.kt · core/.../CameraDewarp.kt (`centerInCrop` nhận `flipH`) · core/.../CameraOverlayTransform.kt · app/.../PrefsCameraDewarp.kt · app/.../camera/CameraSignalController.kt",
+  "spec": "docs/specs/kachi-276-closing.html"
  }
 ]

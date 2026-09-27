@@ -161,7 +161,10 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
                 val span = CellTextLayout.cardSpanX(a.x < 0.5f, w, pad, content.left, content.right, wheelX, gap)
                 val rd = readings.getOrNull(i)
                 if (span.usable) {
-                    cell.set(span.start, wheelY - cellH / 2f, span.end, wheelY + cellH / 2f)
+                    // OQ7 (2.76): thẻ dịch theo [CarLayout.tyreCardShift] để KHỐI 4 thẻ có tâm = tâm ảnh xe; chấm
+                    // cảnh báo (bên dưới) vẫn ở `wheelY` = bánh thật. Hình học thuần ở `:core`, `TyreCardBlockTest`.
+                    val cardY = CarLayout.tyreCardCenterY(corner, content.top, content.height())
+                    cell.set(span.start, cardY - cellH / 2f, span.end, cardY + cellH / 2f)
                     drawCell(canvas, m, corner, rd, values.getOrNull(i), temps.getOrNull(i))
                 }
                 val st = rd?.status ?: TyreStatus.UNKNOWN

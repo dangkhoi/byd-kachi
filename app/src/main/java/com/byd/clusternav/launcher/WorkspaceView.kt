@@ -390,20 +390,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         return fl
     }
 
-    /**
-     * Lĩnh vực của nội dung trong ô — để khay mang sắc của chính thứ nó chứa.
-     *
-     * Tra qua [CapabilityCatalog.pick] (chỗ tra DUY NHẤT, đã phủ cả nhóm lẫn datum lẫn nút — xem
-     * `LauncherCatalog.kt`), KHÔNG đoán theo tiền tố mã. Ô App / ô widget bên thứ ba / ô trống ⇒ `null` = khay
-     * trung tính: launcher không biết app của người khác thuộc lĩnh vực nào, và mượn đại một sắc là nói sai.
-     */
-    private fun slotDomain(content: SlotContent): Domain? = (content as? SlotContent.Widget)
-        ?.ids?.firstOrNull()
-        ?.let { CapabilityCatalog.pick(it)?.domain }
-
-    private fun startSlotDrag(index: Int, v: View) {
-        v.startDragAndDrop(null, View.DragShadowBuilder(v), index, 0)
-    }
+    // `slotDomain` · `startSlotDrag` → `WorkspaceViewSlotDomain.kt` (tách THUẦN theo trần 500 dòng, L6-debt 2026-09-27).
 
     /**
      * Khung trong suốt bọc nút ⇄ **nổi** ở đầu ô.

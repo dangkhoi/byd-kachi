@@ -54,8 +54,16 @@ object CameraOverlayTransform {
      * ⚠ Bước 1 + 3 đều là phép co giãn **KHÔNG đẳng hướng**: dải gương 512×960 căng vào ô vuông vốn đã bị giãn
      * ngang ~1,88× từ 2.36 (owner đã nhận "cắt video ok"), xoay chỉ mang đúng lượng giãn ấy sang trục kia — KHÔNG
      * làm méo thêm. Cách xoay không méo của kinex (thu hẹp dải y theo tỉ lệ ra) ghi ở §Reviewer Log của spec.
+     *
+     * ## 2.76 L7 · bước **1b — LẬT GƯƠNG** ([mirror], pref `camera_mirror_*`), đứng SAU crop và TRƯỚC xoay
+     * Sau bước 1 vùng crop lấp đúng khung ⇒ lật quanh trục dọc của **khung** = lật vùng crop theo trục x của **ẢNH
+     * NGUỒN** — tức sửa *"ảnh HAL ngược tay"* ở đúng nơi nó sai, rồi mới xoay: `rot(mirror(src))`. Đây cũng chính là
+     * thứ đường GL làm bằng `uSrcRect.z < 0` (bước 4 shader, không gian nguồn) — hai đường **một phép**, bài
+     * `CameraMirrorTest` ghim. Không dùng `scaleX = −1` trên lớp video: lật SAU xoay là `mirror(rot(src))`, mà với
+     * ±90 thì `rot∘mirror = mirror∘rot⁻¹` ⇒ hai đường cho hai ảnh khác nhau, và `View.scaleX` không test được off-car.
+     * Mặc định `false` ⇒ ma trận **y hệt** trước L7 (CLAUDE.md §6: đường mới nằm sau một cờ tắt).
      */
-    fun matrix(vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int): FloatArray? {
+    fun matrix(vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int, mirror: Boolean = false): FloatArray? {
         if (vw <= 0 || vh <= 0) return null
         var m = IDENTITY.copyOf()
         if (crop != null && crop.size >= 4) {
@@ -69,6 +77,7 @@ object CameraOverlayTransform {
                 m = floatArrayOf(sx, 0f, -x0 * sx * vw, 0f, sy, -y0 * sy * vh, 0f, 0f, 1f)
             }
         }
+        if (mirror) m = mul(scaleAbout(-1f, 1f, vw / 2f, vh / 2f), m)   // 1b — lật x quanh tâm khung, TRƯỚC xoay
         val deg = ((rotationDeg % 360) + 360) % 360
         if (deg != 0) {
             val cx = vw / 2f

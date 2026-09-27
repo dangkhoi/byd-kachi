@@ -109,8 +109,8 @@ class GridSeamGuardTest {
     fun `doi bo cuc tu ve phai SAP LAI cua so app`() {
         // Thiếu bước này thì ô vẽ đúng chỗ mới nhưng cửa sổ app vẫn ở khung cũ. Sau khi bố cục về `HomeUiState`,
         // việc áp-xuống-view + sắp-lại-cửa-sổ nằm ở `render()` theo diff state (một chiều).
-        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
-        val render = body(act, "private fun render(state: HomeUiState)")
+        val act = code("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt")   // `render` là hàm mở rộng ở KachiHomeRender.kt (L6-debt 2026-09-27)
+        val render = body(act, "fun KachiHomeActivity.render(state: HomeUiState)")
         assertTrue(
             render.contains("prev?.customLayout != state.customLayout"),
             "render phải nhận ra bố cục tự vẽ đổi (đây cũng là đường đúng cho ca đổi hồ sơ)",

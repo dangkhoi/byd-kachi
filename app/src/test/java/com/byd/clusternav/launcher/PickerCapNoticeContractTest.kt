@@ -38,7 +38,7 @@ class PickerCapNoticeContractTest {
             Regex("""else if \(selected\.size < (MAX|cap)\)""").containsMatchIn(drawer),
             "nhánh 'quá trần thì thôi' không có else = bỏ qua IM LẶNG. Đi qua toggleSelection() để có câu nói.",
         )
-        val fn = SourceRoots.body(drawer, "private fun toggleSelection(")
+        val fn = SourceRoots.body(drawer, "internal fun toggleSelection(")   // `internal` vì ô lưới (AppDrawerTiles.kt) gọi nó
         assertTrue(fn.contains("notice("), "quá trần phải NÓI ra cho người vừa bấm")
         assertTrue(fn.contains("capNote()"), "và nói bằng đúng một câu dùng chung (không viết hai bản chữ)")
         assertTrue(fn.contains("return"), "và KHÔNG âm thầm đi tiếp như thể đã thêm")
@@ -137,9 +137,10 @@ class PickerCapNoticeContractTest {
     @Test
     fun `hai loai o dung chung mot duong chon`() {
         assertEquals(
+            // Hai lời gọi nằm ở ô lưới (`AppDrawerTiles.kt`, tách L6-debt 2026-09-27); chỗ KHAI vẫn ở `AppDrawer.kt`.
             2, Regex("""toggleSelection\(""").findAll(SourceRoots.codeOf(
-                "src/main/java/com/byd/clusternav/launcher/AppDrawer.kt",
-            )).count() - 1,
+                "src/main/java/com/byd/clusternav/launcher/AppDrawerTiles.kt",
+            )).count(),
             "đúng hai chỗ GỌI toggleSelection (ô widget + ô khả năng), ngoài chính chỗ khai",
         )
     }
@@ -152,7 +153,7 @@ class PickerCapNoticeContractTest {
      */
     @Test
     fun `o het cho phai mo di truoc khi bam`() {
-        val fn = SourceRoots.body(drawer, "private fun applyTileState(")
+        val fn = SourceRoots.body(drawer, "internal fun applyTileState(")
         assertTrue(fn.contains("alpha"), "ô không còn chọn được phải mờ đi")
         // `cap` = trần của CHẾ ĐỘ đang mở (xem bài `tran la cua che do...`), không phải hằng MAX.
         assertTrue(fn.contains("selected.size < cap"), "và điều kiện mờ phải là chính cái trần")

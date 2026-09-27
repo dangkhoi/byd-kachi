@@ -423,12 +423,34 @@ object CameraDewarp {
      *
      * Ví dụ dải 1 của ảnh 4-in-1: tâm nguồn `x = 0.375` (RE §2.1, kinex `Y0/C0094o.java:76`), crop gương trái
      * `x[0.25, 0.35]` ⇒ `centerX = (0.375 − 0.25) / 0.10 = 1.25` — **ngoài `[0,1]`**, và đó là bình thường.
+     *
+     * ## ⚠ [P1 · SOÁT Opus 2026-09-27] LẬT ([flipH]/[flipV]) phải lật cả TÂM
+     * Shader nắn quanh `uCenter` ở **không gian local** (bước 2) rồi mới áp `uSrcRect` (bước 4 — [srcRect] đảo dấu
+     * `w` khi lật). Với `flipH`, local `u` lấy mẫu ở `x1 + u·(x0 − x1)`, nên toạ độ local của trục quang là
+     * `(Xc − x1)/(x0 − x1) = 1 − c`, **không** phải `c`. Truyền `c` như bản đầu của 2.76 ⇒ phép nắn xoay quanh một
+     * điểm cách trục thật `|1 − 2c|` ô: với crop hẹp gương trái (`c = 1,25`) là **1,5 lần bề ngang ô** ⇒ *"một bên
+     * thẳng, bên kia còng"* — đúng triệu chứng owner đã [ĐO]-bác cho `cx = −10 %` ngày 27/09 (bẫy (3) ở KDoc
+     * [CameraGlUniforms]). Vô hình ở hồ sơ Seal hôm nay vì `span = STRIP` cho `c = 0,5` (`1 − c = c`).
+     *
+     * Chỉ **tâm hình học** lật ở đây. Núm tay `centerXPct` cộng SAU phép này ([CameraDewarpPrefs.apply]) và được
+     * owner dò **trên ảnh đã lật**, nên nó KHÔNG lật — cùng lẽ với `panX` (KDoc [CameraDewarpPrefs.panXSign]: dấu
+     * theo BÊN, không theo phép lật).
      */
-    fun centerInCrop(srcCenterX: Float, srcCenterY: Float, crop: FloatArray?): Pair<Float, Float> {
+    fun centerInCrop(
+        srcCenterX: Float,
+        srcCenterY: Float,
+        crop: FloatArray?,
+        flipH: Boolean = false,
+        flipV: Boolean = false,
+    ): Pair<Float, Float> {
         if (crop == null || crop.size < 4) return srcCenterX to srcCenterY
         val w = span(crop[2] - crop[0])
         val h = span(crop[3] - crop[1])
-        return ((srcCenterX - crop[0]) / w) to ((srcCenterY - crop[1]) / h)
+        val cx = (srcCenterX - crop[0]) / w
+        val cy = (srcCenterY - crop[1]) / h
+        // `1 − c` chứ không phải chia cho dải đã đảo dấu: `span()` ép dải suy biến về +MIN_SPAN nên một rect đảo
+        // ngược sẽ mất dấu ở đúng ca ấy.
+        return (if (flipH) 1f - cx else cx) to (if (flipV) 1f - cy else cy)
     }
 
     /** Dải crop, chặn dưới bằng **cùng** ngưỡng [CameraOverlayTransform.MIN_SPAN] — hai tầng phải coi cùng một dải

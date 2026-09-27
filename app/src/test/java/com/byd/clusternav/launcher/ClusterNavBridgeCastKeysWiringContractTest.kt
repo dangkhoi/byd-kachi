@@ -26,6 +26,8 @@ class ClusterNavBridgeCastKeysWiringContractTest {
 
     /** MÃ đã bỏ chú thích — mọi phép "phải/không được chứa chuỗi X" đều chạy trên bản này. */
     private fun bridge() = SourceRoots.codeOf(BRIDGE)
+    /** Quyền hệ thống + nhóm *Hệ thống* của cầu tách sang tệp mở rộng (L6-debt 2026-09-27). */
+    private fun system() = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeSystem.kt")
     private fun cast() = SourceRoots.codeOf(CAST)
     private fun keys() = SourceRoots.codeOf(KEYS)
 
@@ -172,7 +174,7 @@ class ClusterNavBridgeCastKeysWiringContractTest {
             "trạng thái phím phải đọc bound thật, không suy từ setting",
         )
         assertTrue(
-            "NavConnect.isAccessibilityBound" in body(bridge(), "fun accessibilityBound(): Boolean"),
+            "NavConnect.isAccessibilityBound" in body(system(), "fun ClusterNavBridge.accessibilityBound(): Boolean"),
             "ground-truth = NavConnect.isAccessibilityBound (AccessibilityManager) — KHÔNG dùng cờ connected kẹt " +
                 "(gốc bug 'báo OK mà chả OK / reset mới hết' 2026-09-23)",
         )

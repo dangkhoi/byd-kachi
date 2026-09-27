@@ -1,5 +1,5 @@
 <!--
-  GHẾ SƯỞI — ghế phụ (`seath_r`): thân ghế nhìn ngang + BA LÀN NHIỆT ở góc trống, vẽ bằng MỘT path (ở 16dp ba nét rời thành một vệt nhoè). Cùng mô-típ nhiệt với ic_defrost.
+  GHẾ SƯỞI mức 2 — ghế PHỤ (`seath_r` · `seat_heat_state_r`): bản gương của seat_heat_left, HAI làn nhiệt. 2.76 L7 (owner 27/09: *"1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà không cần số 1-2"*): MỨC nằm trong HÌNH — số dấu = mức, con số rời chip. Hình khái niệm = mức CAO NHẤT (2 dấu); bản `_1` = một dấu.
   ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/seat_heat_right.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
   chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
   bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
@@ -22,6 +22,6 @@
     </path>
     <path android:pathData="M 5.45 19.41 L 5.45 21 M 11.35 19.41 L 11.35 21"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M 13.6 9.8 C 12.7 8.1 14.5 7.3 13.8 5.4 M 17 9.8 C 16.1 8.1 17.9 7.3 17.2 5.4 M 20.4 9.8 C 19.5 8.1 21.3 7.3 20.6 5.4"
+    <path android:pathData="M 19 11.2 C 21 9.2 17 6.8 19 4.6 M 15.2 11.2 C 17.2 9.2 13.2 6.8 15.2 4.6"
         android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

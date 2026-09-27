@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
-  <!-- GHẾ SƯỞI — ghế phụ (`seath_r`): thân ghế nhìn ngang + BA LÀN NHIỆT ở góc trống, vẽ bằng MỘT path (ở 16dp ba nét rời thành một vệt nhoè). Cùng mô-típ nhiệt với ic_defrost. -->
+  <!-- GHẾ SƯỞI mức 2 — ghế PHỤ (`seath_r` · `seat_heat_state_r`): bản gương của seat_heat_left, HAI làn nhiệt. 2.76 L7 (owner 27/09: *"1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà không cần số 1-2"*): MỨC nằm trong HÌNH — số dấu = mức, con số rời chip. Hình khái niệm = mức CAO NHẤT (2 dấu); bản `_1` = một dấu. -->
   <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
   <path d="M 4.58,8.61 C 3.29,8.61,3,9.62,3.29,10.92 L 4.58,16.39 L 11.64,16.39" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M 5.3,16.39 L 11.5,16.39 A 1.44,1.44,0 0 1 12.94,17.83 L 12.94,17.97 A 1.44,1.44,0 0 1 11.5,19.41 L 5.3,19.41 A 1.44,1.44,0 0 1 3.86,17.97 L 3.86,17.83 A 1.44,1.44,0 0 1 5.3,16.39 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
   <path d="M 5.45,19.41 L 5.45,21 M 11.35,19.41 L 11.35,21" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
-  <path d="M13.6,9.8 C12.7,8.1 14.5,7.3 13.8,5.4 M17,9.8 C16.1,8.1 17.9,7.3 17.2,5.4 M20.4,9.8 C19.5,8.1 21.3,7.3 20.6,5.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 19.0,11.2 C 21,9.2 17,6.8 19.0,4.6 M 15.2,11.2 C 17.2,9.2 13.2,6.8 15.2,4.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -57,6 +57,8 @@ import com.byd.clusternav.setCameraGlTexMatrix
 import com.byd.clusternav.setCameraHalMode
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
+import com.byd.clusternav.cameraMirror
+import com.byd.clusternav.setCameraMirror
 
 /**
  * ═══ AUTOMATION trên cầu Settings (hàm mở rộng của [ClusterNavBridge]) ═══════════════════════════════════════
@@ -199,6 +201,13 @@ fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos
 fun ClusterNavBridge.cameraRotLeft(): String = Prefs.cameraRotation(app, left = true)
 fun ClusterNavBridge.cameraRotRight(): String = Prefs.cameraRotation(app, left = false)
 fun ClusterNavBridge.setCameraRotation(left: Boolean, v: String) = Prefs.setCameraRotation(app, left, v)
+/**
+ * LẬT GƯƠNG video TỪNG BÊN (2.76 L7, research §6.2 — tay gương của ảnh HAL [CHƯA BIẾT] tới CAM-M1) — hai ô tích, một
+ * hàm ghi có tham số bên, y khuôn [cameraRotLeft]/[setCameraRotation]. Không `AutomationService.sync`, cùng lẽ.
+ */
+fun ClusterNavBridge.cameraMirrorLeft(): Boolean = Prefs.cameraMirror(app, left = true)
+fun ClusterNavBridge.cameraMirrorRight(): Boolean = Prefs.cameraMirror(app, left = false)
+fun ClusterNavBridge.setCameraMirror(left: Boolean, v: Boolean) = Prefs.setCameraMirror(app, left, v)
 /**
  * Đường KẾT XUẤT overlay camera (CLOSE-14 · CAM-LAG) — mã trong `CameraSignalPolicy.RENDERS`. Một hàng chip, một
  * khoá cho cả hai bên (cách vẽ không phụ thuộc bên). KHÔNG kèm `AutomationService.sync`, cùng lẽ [cameraPosLeft]:

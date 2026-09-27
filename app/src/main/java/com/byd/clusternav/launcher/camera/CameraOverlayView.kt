@@ -79,7 +79,12 @@ class CameraOverlayView(private val appCtx: Context) {
      */
     private class Live(
         val corner: String,
+        /** Đang treo trên display CỤM thật (không phải "pref bảo cụm") — CLAUDE.md §5: quyết bằng sự thật. */
         val onCluster: Boolean,
+        /** Ngữ cảnh của display ĐANG treo — mọi `displayMetrics` đo trên nó ([ĐO] 27/09: đo nhầm màn chính ⇒ vùng 495). */
+        val ctx: Context,
+        /** Số đo dải giữa của cụm (hồ sơ xe) — chỉ dùng khi hình khung là *theo cụm*. */
+        val band: ClusterBandSpec,
         val crop: FloatArray?,
         val rotationDeg: Int,
         val render: String,
@@ -92,6 +97,9 @@ class CameraOverlayView(private val appCtx: Context) {
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
     private class Box(val areaW: Int, val areaH: Int, val x0: Int, val y0: Int)
 
+    /** Cỡ + chỗ cửa sổ đã quyết — MỘT cửa cho [show] lẫn [onStreamMeasured]; `radiusPx` chỉ có ở đường dải cụm. */
+    private class Geo(val f: CameraOverlayFrame.Frame, val lp: WindowManager.LayoutParams, val radiusPx: Int?, val note: String)
+
     private companion object {
         const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
         const val WRAP = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
@@ -101,9 +109,6 @@ class CameraOverlayView(private val appCtx: Context) {
 
         /** Lề trên màn CHÍNH = 14% chiều cao ⇒ nằm hẳn DƯỚI thanh trên (trước bị đè header). */
         const val MAIN_TOP_RATIO = 0.14f
-
-        /** Lề trên CỤM = 6% chiều cao (cụm không có thanh trên; trước để cao quá thấy 1/2). */
-        const val CLUSTER_TOP_RATIO = 0.06f
 
         /** Lề bên = 3% bề rộng. */
         const val SIDE_MARGIN_RATIO = 0.03f
@@ -124,6 +129,10 @@ class CameraOverlayView(private val appCtx: Context) {
      *
      * [render] = mã đường kết xuất ([CameraSignalPolicy.RENDERS]); [streamW]×[streamH] = **gợi ý** cỡ ảnh nguồn
      * (`0` = chưa biết ⇒ cửa sổ giữ nguyên vùng vuông tới khi [onStreamMeasured] có số thật).
+     *
+     * [shape] = *theo cụm* ([CameraClusterBand.SHAPE_CLUSTER], 2.76 R4) ⇒ trên display cụm, cửa sổ = đầu trái/phải
+     * (theo [corner]) của **dải giữa** đo được ([band], hồ sơ xe), cao trọn dải, không đè thanh trên/dưới của hệ
+     * thống; rơi về màn chính ⇒ **chữ nhật** 2.73 ([CameraClusterBand.effectiveShape]).
      */
     fun show(
         corner: String,
@@ -131,6 +140,7 @@ class CameraOverlayView(private val appCtx: Context) {
         onCluster: Boolean = false,
         crop: FloatArray? = null,
         rotationDeg: Int = 0,
+        mirror: Boolean = false,   // 2.76 L7 — lật gương ở không gian NGUỒN, trước xoay (đường TV: ma trận bước 1b)
         render: String = CameraSignalPolicy.RENDER_TEXTURE,
         shape: String = CameraSignalPolicy.SHAPE_RECT,
         streamW: Int = 0,
@@ -138,6 +148,7 @@ class CameraOverlayView(private val appCtx: Context) {
         gl: CameraGlUniforms? = null,
         synthOn: Boolean = false,
         synthFile: String = "",
+        band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -145,19 +156,24 @@ class CameraOverlayView(private val appCtx: Context) {
             val ctx = appCtx
             // onCluster: dựng cửa sổ trên DISPLAY CỤM (createDisplayContext) — cùng cách SpeedBadgeOverlay. Không
             // có cụm (off-car / chưa chiếu) ⇒ rơi về màn chính, không crash (overlay vẫn hiện để verify).
-            val w = (if (onCluster) clusterWm(ctx) else null) ?: wmOf(ctx) ?: return
-            val radius = KachiSpace.dp(ctx, KachiSpace.RADIUS_XL).toFloat()
+            val dctx = if (onCluster) clusterCtx(ctx) else null
+            val w = wmOf(dctx ?: ctx) ?: return
+            val cluster = dctx != null
             // Xoay: ma trận (`TV`) hay shader (`GL`)? Cả hai đều "có người làm" ⇒ cửa sổ lấy tỉ lệ ĐÃ xoay.
             // `SV` thì chưa biết (chờ HAL trả lời) — controller báo lại qua [onStreamMeasured].
             val rotDone = CameraSignalPolicy.rotatesByMatrix(render) || CameraSignalPolicy.rotatesInShader(render)
             // HÌNH KHUNG (R8-A, owner 2026-09-26): tròn = `setOval` trên ĐÚNG cái [ViewOutlineProvider] mà 2.73 đang
             // dùng để bo góc — không thêm một cơ chế cắt thứ hai. Mã lạ ⇒ chủ nhật (mặc định 2.73).
+            // "Theo cụm" chỉ có nghĩa trên display cụm THẬT (không phải theo pref) — quy về hình thật sự vẽ TRƯỚC.
+            val shape = CameraClusterBand.effectiveShape(shape, cluster)
             val round = shape == CameraSignalPolicy.SHAPE_ROUND
-            val st = Live(corner, onCluster, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
-            val box = box(ctx, st)
-            val f = frameOf(st, box)
+            val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
+            val g = geometry(st)
+            val f = g.f
+            // Bo góc: dải cụm mang bán kính của hồ sơ; còn lại = bán kính khung launcher (2.73).
+            val radius = (g.radiusPx ?: KachiSpace.dp(ctx, KachiSpace.RADIUS_XL)).toFloat()
             val vl = CameraVideoLayer.create(
-                ctx = ctx, render = render, crop = crop, rotationDeg = rotationDeg,
+                ctx = ctx, render = render, crop = crop, rotationDeg = rotationDeg, mirror = mirror,
                 gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn, synthFile = synthFile,
                 onSurfaceReady = onSurfaceReady,
             )
@@ -177,15 +193,15 @@ class CameraOverlayView(private val appCtx: Context) {
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
             }
-            w.addView(frame, layoutParams(box, f, corner))
+            w.addView(frame, g.lp)
             wm = w; layer = vl; container = frame; live = st
             // RE §7 Q13/Q17: hai con số GPU đi thẳng vào dòng này — buổi xe chỉ cần một ảnh `logcat`, không phải một
             // lệnh riêng (CLAUDE.md §11). Lượt GL ĐẦU TIÊN của phiên in `chưa đo` (ngữ cảnh dựng sau dòng này); lượt
             // sau có số thật. Nói "chưa đo" thay vì in `0` là đúng luật §2 — chưa biết ≠ GPU trả 0.
             Log.i(
                 PanoramaHal.TAG,
-                "overlay show corner=$corner side=$side cluster=$onCluster rot=$rotationDeg hình=$shape" +
-                    " kết xuất=$render khung=${f.w}x${f.h} vùng=${box.areaW}x${box.areaH} nguồn-biết=${f.streamKnown}" +
+                "overlay show corner=$corner side=$side cluster=$cluster rot=$rotationDeg hình=$shape" +
+                    " kết xuất=$render khung=${f.w}x${f.h} ${g.note} nguồn-biết=${f.streamKnown}" +
                     " gl=${CameraGlInfo.summary()}" + (if (gl != null) " nắn=${gl.describe()}" else ""),
             )
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay show failed: ${it.message}") }
@@ -311,11 +327,10 @@ class CameraOverlayView(private val appCtx: Context) {
         if (sw == st.streamW && sh == st.streamH && rotationEffective == st.rotationEffective) return
         st.streamW = sw; st.streamH = sh; st.rotationEffective = rotationEffective
         runCatching {
-            val box = box(appCtx, st)
-            val f = frameOf(st, box)
-            video?.let { v -> v.layoutParams = videoLp(st, f); v.requestLayout() }
-            wm?.updateViewLayout(c, layoutParams(box, f, st.corner))
-            Log.i(PanoramaHal.TAG, "overlay cỡ nguồn ${sw}x$sh xoay-thật=$rotationEffective ⇒ khung ${f.w}x${f.h}")
+            val g = geometry(st)
+            video?.let { v -> v.layoutParams = videoLp(st, g.f); v.requestLayout() }
+            wm?.updateViewLayout(c, g.lp)
+            Log.i(PanoramaHal.TAG, "overlay cỡ nguồn ${sw}x$sh xoay-thật=$rotationEffective ⇒ khung ${g.f.w}x${g.f.h} ${g.note}")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay resize failed: ${it.message}") }
     }
 
@@ -360,32 +375,74 @@ class CameraOverlayView(private val appCtx: Context) {
     private fun wmOf(ctx: Context): WindowManager? =
         ctx.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
 
-    /** WindowManager của DISPLAY CỤM. Ưu tiên display PRESENTATION ≠ 0 (cụm DiLink3.0 = display 2, KHÔNG hardcode 1
-     *  — regression X2). null nếu chưa có cụm (off-car ⇒ rơi màn chính). */
-    private fun clusterWm(ctx: Context): WindowManager? = runCatching {
+    /**
+     * Ngữ cảnh của DISPLAY CỤM (`createDisplayContext`) — cả `WindowManager` lẫn `displayMetrics` đều lấy từ nó, để
+     * vùng cho phép đo trên **đúng** display ([ĐO logcat 27/09 10:50: `vùng=495x495` = 0,5 × 990 của màn CHÍNH, dù
+     * cửa sổ treo trên VD 1920×720]). Ưu tiên display PRESENTATION ≠ 0 (cụm DiLink3.0 = display 2, KHÔNG hardcode 1
+     * — regression X2); máy ảo: overlay display cũng là PRESENTATION ([ĐO] AOSP 10 `OverlayDisplayAdapter.java:352`,
+     * `DisplayManager.java:290-295`). null nếu chưa có cụm (off-car ⇒ rơi màn chính).
+     */
+    private fun clusterCtx(ctx: Context): Context? = runCatching {
         val dm = ctx.getSystemService(Context.DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
             ?: return null
         val display = dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
             .firstOrNull { it.displayId != 0 }
             ?: dm.displays.firstOrNull { it.displayId != 0 }
             ?: return null
-        ctx.createDisplayContext(display).getSystemService(Context.WINDOW_SERVICE) as? WindowManager
+        ctx.createDisplayContext(display)
     }.getOrNull()
+
+    /**
+     * Cỡ + chỗ cửa sổ — đường DẢI CỤM (hình *theo cụm* trên display cụm) hay đường 2.73 (vùng vuông + căn giữa).
+     * Toán của cả hai ở `:core`; đây chỉ chọn đường và dịch sang [WindowManager.LayoutParams].
+     */
+    private fun geometry(st: Live): Geo {
+        if (CameraClusterBand.isCluster(st.shape)) {
+            val dm = st.ctx.resources.displayMetrics
+            val bandRect = CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)
+            val p = CameraClusterBand.place(
+                band = bandRect, atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT,
+                streamW = st.streamW, streamH = st.streamH, crop = st.crop,
+                rotationDeg = if (st.rotationEffective) st.rotationDeg else 0, spec = st.band, displayH = dm.heightPixels,
+            )
+            val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} tại=${p.x},${p.y} display=${dm.widthPixels}x${dm.heightPixels}"
+            return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note)
+        }
+        val box = box(st.ctx, st)
+        val f = frameOf(st, box)
+        return Geo(f, layoutParams(box, f, st.corner), null, "vùng=${box.areaW}x${box.areaH}")
+    }
+
+    /** Cửa sổ ở toạ độ TUYỆT ĐỐI của display cụm (đầu trái/phải dải giữa) — không lề, không căn giữa vùng. */
+    private fun bandLayoutParams(p: CameraClusterBand.Placement): WindowManager.LayoutParams =
+        WindowManager.LayoutParams(
+            p.w, p.h,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = p.x
+            y = p.y
+        }
 
     /**
      * VÙNG CHO PHÉP: ô vuông cạnh [SQUARE_RATIO] × chiều cao màn, ở góc trên, lùi xuống hết bề cao thanh trên.
      *
      * Đây đúng là cửa sổ của 2.35–2.72; từ CAM-ROT-2 nó chỉ còn là **trần**: cửa sổ thật ([frameOf]) không bao giờ
-     * to hơn vùng này, nên bản đổi tỉ lệ KHÔNG thể lấn thêm chỗ làm việc hay đè thanh trên.
+     * to hơn vùng này, nên bản đổi tỉ lệ KHÔNG thể lấn thêm chỗ làm việc hay đè thanh trên. TRÊN CỤM nó còn bị kẹp
+     * vào **dải vẽ được** ([CameraClusterBand.boxIn]) — [P1] soát 27/09: hình mặc định là CHỮ NHẬT, mà % chiều cao
+     * không biết gì về thanh trên của cụm ⇒ 93/360 px bị che.
      */
     private fun box(ctx: Context, st: Live): Box {
         val dm = ctx.resources.displayMetrics
         val side = (dm.heightPixels * SQUARE_RATIO).toInt()
-        // Lề trên theo % CHIỀU CAO màn (chắc ăn qua mọi density): màn CHÍNH 14% (dưới thanh trên, trong khung —
-        // trước bị đè header); CỤM 6% (không có thanh trên; trước cao quá chỉ thấy 1/2).
-        val topY = (dm.heightPixels * (if (st.onCluster) CLUSTER_TOP_RATIO else MAIN_TOP_RATIO)).toInt()
-        val sideMargin = (dm.widthPixels * SIDE_MARGIN_RATIO).toInt()
-        return Box(side, side, sideMargin, topY)
+        val atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT
+        if (st.onCluster) {
+            val area = CameraClusterBand.boxIn(CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band), side, atLeft)
+            return Box(area.w, area.h, if (atLeft) area.x0 else (dm.widthPixels - area.x1).coerceAtLeast(0), area.y0)
+        }
+        return Box(side, side, (dm.widthPixels * SIDE_MARGIN_RATIO).toInt(), (dm.heightPixels * MAIN_TOP_RATIO).toInt())
     }
 
     /** Cửa sổ đúng tỉ lệ ảnh sau xoay trong vùng [box] — toán ở `:core` [CameraOverlayFrame]. */

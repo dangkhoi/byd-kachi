@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -64,6 +65,62 @@ class IconSetInventoryTest {
                 .mapNotNull { (where, ic) -> resolves(ic)?.let { "$where: $it" } }
         }
         assertEquals(emptyList<String>(), bad, "tên hình trạng thái không tra ra drawable ⇒ chip mất icon, im lặng")
+    }
+
+    /**
+     * 2.76 (R8/R9) — mỗi cặp hình theo trạng thái phải là **hai tệp khác nhau về NỘI DUNG**, không chỉ khác tên: hai
+     * dòng bảng tra trỏ vào hai tệp y hệt (chép nhầm khi sinh) là chip "đổi hình" mà mắt không thấy gì đổi.
+     */
+    @Test
+    fun `hai trang thai cua mot datum la hai hinh khac nhau ve noi dung`() {
+        val dir = SourceRoots.path("src/main/res/drawable")
+        fun body(icon: String) = Files.readString(dir.resolve(mapped.getValue(icon) + ".xml")).substringAfter("-->")
+        CapabilityIcons.stateIconTable().forEach { (id, s) ->
+            val bodies = s.icons.values.map(::body)
+            assertEquals(bodies.size, bodies.toSet().size, "$id: hai trạng thái vẽ CÙNG một hình (${s.icons.values})")
+        }
+    }
+
+    /**
+     * 2.76 (R9, owner: *"ghế lái/phụ chỉ khác nhau bởi lật gương"*) — ghế LÁI mang **một dấu thêm** (chấm vô-lăng)
+     * so với ghế PHỤ ⇒ tệp sinh của ghế lái có đúng **+1 path** so với bản ghế phụ cùng chế độ, và `ic_seat_left` nay
+     * là icon SINH (không còn `<group scaleX=-1>` vá tay).
+     */
+    @Test
+    fun `ghe lai mang dau vo-lang - hon ghe phu dung mot path, va ic_seat_left la icon sinh`() {
+        val dir = SourceRoots.path("src/main/res/drawable")
+        fun paths(name: String) = Regex("<path\\b").findAll(Files.readString(dir.resolve("$name.xml"))).count()
+        listOf("ic_seat_heat" to "ic_seat_heat", "ic_seat_vent" to "ic_seat_vent").forEach { (l, r) ->
+            assertEquals(paths("${r}_right") + 1, paths("${l}_left"), "$l: ghế lái phải có đúng một dấu thêm")
+            // 2.76 L7: bản MỨC 1 (`_1`) của cùng họ giữ đúng quy ước — ghế lái vẫn hơn ghế phụ một chấm.
+            assertEquals(paths("${r}_right_1") + 1, paths("${l}_left_1"), "${l}_1: ghế lái mức 1 cũng mang chấm vô-lăng")
+        }
+        assertEquals(paths("ic_seat") + 1, paths("ic_seat_left"), "ghế lái trơn cũng mang chấm vô-lăng")
+        val left = Files.readString(dir.resolve("ic_seat_left.xml"))
+        assertTrue(left.contains("SINH BỞI scripts/design/gen-icons.py"), "ic_seat_left phải đi qua đường ống, không vá tay")
+        assertFalse(left.contains("<group"), "không còn lật bằng <group scaleX=-1>")
+    }
+
+    /**
+     * 2.76 L7 — **hình theo MỨC** ([CapabilityIcons.levelIconTable]) là đường gán icon THỨ BA (sau khái niệm và trạng
+     * thái), cùng lẽ với bài trên: một mức gõ sai tên ⇒ chip/ô nút mất icon đúng lúc ghế đang chạy, im lặng. Mọi mức
+     * 1..n × 4 họ (sưởi/mát × lái/phụ) phải tra ra tệp thật, và hai mức là **hai tệp khác nội dung** (không chép nhầm).
+     */
+    @Test
+    fun `moi hinh theo muc cua bon ho ghe tra ra tep that va hai muc la hai hinh khac nhau`() {
+        val table = CapabilityIcons.levelIconTable()
+        assertEquals(4, table.size) { "bốn họ ghế — bảng mức đã bị gỡ hoặc mọc thêm mà bài này chưa biết" }
+        val bad = table.flatMap { (concept, icons) ->
+            (icons.byLevel.mapIndexed { i, ic -> "$concept[mức ${i + 1}]" to ic } + ("$concept[khái niệm]" to concept))
+                .mapNotNull { (where, ic) -> resolves(ic)?.let { "$where: $it" } }
+        }
+        assertEquals(emptyList<String>(), bad, "tên hình mức không tra ra drawable ⇒ chip/ô mất icon, im lặng")
+        val dir = SourceRoots.path("src/main/res/drawable")
+        fun body(icon: String) = Files.readString(dir.resolve(mapped.getValue(icon) + ".xml")).substringAfter("-->")
+        table.forEach { (concept, icons) ->
+            val bodies = icons.byLevel.map(::body)
+            assertEquals(bodies.size, bodies.toSet().size, "$concept: hai mức vẽ CÙNG một hình (${icons.byLevel})")
+        }
     }
 
     /** Đường lùi theo lĩnh vực ([WidgetCatalog.iconFor]) cũng phải có hình — đó là lưới cuối của mọi id chưa gán icon. */

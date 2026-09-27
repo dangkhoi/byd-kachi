@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 class GroupPickerWiringContractTest {
 
     private val drawer by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
+    private val drawerTiles by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawerTiles.kt") }   // ô lưới tách ra (L6-debt 2026-09-27)
     private val dock by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlDockView.kt") }
 
     /** Đọc source rồi **bỏ chú thích**: bài này canh CODE, không canh văn xuôi (KDoc nhắc chính token đang soi). */
@@ -148,7 +149,7 @@ class GroupPickerWiringContractTest {
         // U6: đọc `displaySub` chứ không đọc `sub` GỐC — cùng một dòng chữ nay chở thêm gợi ý loại ("xem"/"bấm")
         // vừa được chuyển ra khỏi NHÃN CHÍNH, và `displaySub` là chỗ duy nhất ghép hai mảnh đó (ở `:core`).
         assertTrue(
-            drawer.contains("pick.displaySub"),
+            drawerTiles.contains("pick.displaySub"),
             "ngăn kéo phải hiện dòng phụ của nhóm — không thì người dùng thấy ô 'Lốp' mà vẫn phải đoán bên trong có gì",
         )
         // ⚠ T4 · R-UI (m): nhánh "lưới của màn Cài đặt" đã bỏ — `CapabilityGridSection` bị XOÁ cùng lúc với lưới

@@ -71,7 +71,7 @@ class ControlTileFactory(
             val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
         }
         val icon = ImageView(ctx).apply {
-            val r = iconRes(def); if (r != 0) setImageResource(r)
+            val r = iconRes(def); if (r != 0) { setImageResource(r); tag = r }   // tag = id đang vẽ (KachiIcons.byLevel)
             layoutParams = LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp))
                 .also { it.bottomMargin = dpi(ctx, Sp.XS) }
         }
@@ -406,6 +406,7 @@ class ControlTileFactory(
     private fun look(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, value: Int?, autoOn: Boolean? = null): ControlVisual {
         val v = ControlVisuals.of(def, value, autoOn)
         applyBg(tile, v.active); tint(icon, label, v.active)
+        KachiIcons.byLevel(icon, def.icon, v.lit, size.iconDp)   // L7: mức nằm trong hình (một/hai dấu), cùng nguồn với chip
         return v
     }
 
@@ -492,6 +493,5 @@ class ControlTileFactory(
 
         /** Chữ số dùng để ĐO sàn bề ngang ô giá trị — `'0'` là chữ số rộng nhất ở hầu hết phông chữ hệ thống. */
         const val DIGIT = "0"
-
     }
 }

@@ -255,6 +255,43 @@ class TopStripSurfaceContractTest {
     }
 
     /**
+     * ═══ 2.76 · R11 (1) — **BỐN NÚT THANH TRÊN CÙNG MỘT HỘP** (owner 26/09: *"có cần cùng bề ngang?"*) ═══════════
+     *
+     * [ĐO máy ảo 2026-09-27, `uiautomator dump`, 1,5 px/dp] TRƯỚC: ba pill `60 × 51 px` (40 × 34 dp), chip hồ sơ
+     * `51 × 51` (34 × 34). Bề ngang 40 không phải một hằng nào của thang: `WRAP_CONTENT` để `ImageView` đo = hình gốc
+     * `24dp` (`ic_grid.xml`/`ic_mic.xml` khai `android:width="24dp"`) + 2 × [KachiBars.HEADER_BTN_PAD]; bề cao thì bị
+     * thanh (cao [KachiBars.HEADER_H], lề dọc XS) kẹp về 34. Nay `pillLp` khai cả hai chiều bằng [KachiBars.HEADER_BTN].
+     *
+     * Bài này khoá (a) hình dạng mã: `LayoutParams(dp(HEADER_BTN), dp(HEADER_BTN))`, không `WRAP`; (b) phép cộng
+     * của ẢNH: cổng phủ định `24 + 2×8 = 40 > 34` (đúng con số 60 px đã đo — nếu bộ số này không cho 40 thì chẩn
+     * đoán sai) và cổng khẳng định `34 = 34` cho cả bốn nút; (c) đĩa hồ sơ vẫn lọt hộp (UX1 không hồi quy).
+     */
+    @Test
+    fun `bon nut thanh tren cung mot hop HEADER_BTN x HEADER_BTN - khong con WRAP de hinh goc quyet be ngang`() {
+        val lp = SourceRoots.body(strip, "private fun pillLp()")
+        assertTrue(
+            lp.contains("LinearLayout.LayoutParams(dp(Bars.HEADER_BTN), dp(Bars.HEADER_BTN))"),
+            "bốn nút (mic · ứng dụng · cài đặt · hồ sơ) phải khai CẢ HAI chiều bằng hằng của thang: $lp",
+        )
+        assertFalse(lp.contains("WRAP"), "WRAP để hình gốc 24dp + lề trong quyết bề ngang = 40dp (đã đo 60 px)")
+        assertTrue(lp.contains("marginStart = dp(Sp.S)"), "khe giữa bốn nút vẫn là MỘT nhịp [Sp.S] (đã đo 12/12/12 px)")
+        // Cùng LayoutParams cho cả chip hồ sơ — không một nhánh riêng nào cho PROFILE.
+        val lpFor = SourceRoots.body(strip, "private fun lpFor(")
+        assertTrue(lpFor.contains("else -> pillLp()"), "chip hồ sơ đi CHUNG pillLp với ba pill")
+        assertFalse(lpFor.contains("HeaderItem.PROFILE"), "không nhánh riêng cho PROFILE")
+        // Phép cộng của ảnh TRƯỚC (cổng phủ định) và SAU.
+        val iconIntrinsicDp = 24
+        val wrapWidth = iconIntrinsicDp + 2 * KachiBars.HEADER_BTN_PAD
+        assertEquals(40, wrapWidth, "WRAP cho 24 + 2×${KachiBars.HEADER_BTN_PAD} = 40dp = 60 px — đúng số đã đo")
+        assertTrue(wrapWidth > KachiBars.HEADER_BTN, "…tức lớn hơn sàn 34 ⇒ minimumWidth không kìm được")
+        assertEquals(51, (KachiBars.HEADER_BTN * 1.5f).toInt(), "SAU: cả bốn nút 51 × 51 px ở 1,5 px/dp")
+        // Đĩa hồ sơ + hai lề đối xứng vẫn lọt hộp (UX1 · R1 không hồi quy vì hộp KHÔNG đổi, chỉ pill co về hộp).
+        assertTrue(KachiBars.HEADER_AVATAR + 2 * KachiSpace.XS <= KachiBars.HEADER_BTN)
+        // Hộp hình của pill đúng như KDoc HEADER_BTN_PAD hứa: 34 − 16 = 18dp (không phụ thuộc hình gốc nữa).
+        assertEquals(18, KachiBars.HEADER_BTN - 2 * KachiBars.HEADER_BTN_PAD)
+    }
+
+    /**
      * ═══ UX1 · R1 — **ĐĨA HỒ SƠ ĐỒNG TÂM VỚI NÚT**, và tên hồ sơ vẫn phải đọc được ═════════════════════════════
      *
      * ## Bệnh nó chữa (owner trên xe, bản 2.70: *"chữ không nằm trọn trong vòng"*)

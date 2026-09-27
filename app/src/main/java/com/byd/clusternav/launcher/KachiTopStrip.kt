@@ -218,7 +218,14 @@ class KachiTopStrip(
         voicePill?.visibility = if (voicePillEnabled()) View.VISIBLE else View.GONE
     }
 
-    private fun pillLp() = LinearLayout.LayoutParams(WRAP, WRAP).also { it.marginStart = dp(Sp.S) }
+    /**
+     * R11 (2.76) — **BỐN nút cùng MỘT hộp** [Bars.HEADER_BTN]², khai `LayoutParams` chứ không `WRAP_CONTENT`.
+     * [ĐO máy ảo 27/09, 1,5 px/dp] ba pill 60×51 px (40×34 dp) vs chip hồ sơ 51×51 (owner 26/09: *"cùng bề ngang?"*):
+     * 40 không phải số của thang — `WRAP` để `ImageView` đo = hình gốc 24dp + 2×[Bars.HEADER_BTN_PAD], bề cao bị thanh
+     * kẹp về 34. Giữ 34 (owner 20/09 *"nút 70 %"*): lên 40 là kéo [Bars.HEADER_H] 42→48 (86 %, không 75 %).
+     */
+    private fun pillLp() = LinearLayout.LayoutParams(dp(Bars.HEADER_BTN), dp(Bars.HEADER_BTN))
+        .also { it.marginStart = dp(Sp.S) }
 
     /**
      * Pill bấm được của thanh trên ("Ứng dụng" · "Cài đặt") — **CHỈ ICON** từ S4 · R12.

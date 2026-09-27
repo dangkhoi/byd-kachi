@@ -10,6 +10,7 @@ import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceRisk
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
+import com.byd.clusternav.launcher.voice.VoiceWriteLane
 
 /**
  * ═══ V1 · TỪ Ý ĐỊNH TỚI **ĐƯỜNG ĐÃ CÓ** ═══════════════════════════════════════════════════════════════════════
@@ -182,27 +183,64 @@ class VoiceDispatcher(
      * Tách khỏi [submit] để màn thử hiện *"đã hiểu là…"* rồi chạy **CHÍNH** danh sách vừa hiện — chứ không phân
      * tích lần thứ hai. Hai lần phân tích là hai kết quả có thể lệch (danh sách app/hồ sơ đổi giữa hai lần), tức
      * màn hình nói một đằng và xe làm một nẻo; và nó cũng nhân đôi công vô ích trên thread giao diện.
+     *
+     * ## [P1 · SOÁT Opus 2026-09-27] [onSettled] — *"cả câu đã ghi xong, hoặc đang chờ NGƯỜI LÁI"*
+     * Từ R5, hàm này **trả về trước** khi câu chạy xong: vế bất đồng bộ (rời-AUTO của [VoiceClimateStep], gói lệnh)
+     * đi xuống luồng nền, nên lúc nó trả về chưa có một lời `say` nào. Chỗ gọi ([VoiceSession.execute]) mà chốt lượt
+     * nói ở đó thì gom được một mảng **RỖNG**: không đọc gì cả, mở micro nối ngay, rồi hai câu trả lời về muộn bị
+     * cổng `micOpen` bỏ — kể cả câu *"xe không nhận lệnh"*. Vì vậy: [onSettled] gọi **đúng một lần**, khi
+     * [runFrom] đã đi hết câu (`done`) HOẶC đã dừng ở một hộp hỏi lại (phần còn lại chờ người lái, y 2.75 — nếu đợi
+     * tiếp thì tấm chữ treo suốt lượt hỏi/đáp).
      */
-    fun execute(intents: List<VoiceIntent>) = runFrom(intents, 0, appsByLabel())
+    fun execute(intents: List<VoiceIntent>, onSettled: () -> Unit = {}) {
+        val labels = appsByLabel()
+        val fired = java.util.concurrent.atomic.AtomicBoolean(false)
+        val settled = { if (fired.compareAndSet(false, true)) onSettled() }
+        lane.submit { done -> runFrom(intents, 0, labels, done, settled) }
+    }
 
-    /** Chạy từ vế [from] tới hết, DỪNG tại vế đầu tiên phải hỏi lại. */
-    private fun runFrom(intents: List<VoiceIntent>, from: Int, labels: Map<String, String>) {
-        var i = from
-        while (i < intents.size) {
-            val intent = intents[i]
-            if (VoiceRiskTable.of(intent, confirmIds()) == VoiceRisk.CONFIRM) {
-                val next = i + 1
-                val remaining = intents.size - next
-                confirm(
-                    VoiceReply.confirmQuestion(intent),
-                    { run(intent, labels); runFrom(intents, next, labels) },
-                    { say(VoiceReply.cancelled(intent, remaining)) },
-                )
-                return
-            }
-            run(intent, labels)
-            i++
+    /**
+     * ═══ VOICE-WRITE-LANE (2.76 · spec kachi-276-closing R5) · MỘT LÀN GHI, vế sau chờ vế trước **ghi xong** ═══
+     *
+     * Mọi lệnh ghi HAL từ giọng nói của một câu đi qua đúng một [VoiceWriteLane]; các vế **nối tiếp bằng lời gọi
+     * lại** (`next`), không bằng vòng `while` trên luồng gọi. Vì sao — review Pass 1 của 2.74 ([P2]): vế rời-AUTO
+     * của [VoiceControlDispatch] là hai lệnh + nhịp 400 ms trên luồng nền, hàm trả về **trước** lệnh thứ hai; vòng
+     * `while` cũ chạy vế kế tiếp ngay ⇒ *"tăng gió rồi tắt điều hoà"* ghi `ac_auto=OFF` của vế 2 **vào giữa nhịp
+     * chờ** của vế 1, và theo tiền đề [ĐO] của `DEFAULT_GAP_MS` thì lệnh mức gió có thể bị xe bỏ mà Kachi vẫn đọc ✓.
+     *
+     * Với vế đồng bộ, `next` được gọi ngay trong lượt gọi ⇒ thứ tự lệnh và lời đáp **y nguyên** 2.75 (bài canh cũ
+     * giữ xanh). Làn là của **riêng cầu này** (dựng lại mỗi lượt nói) — lý do ở KDoc [VoiceWriteLane].
+     */
+    private val lane = VoiceWriteLane()
+
+    /**
+     * Chạy từ vế [from] tới hết, DỪNG tại vế đầu tiên phải hỏi lại; [done] khi cả câu đã xong (hoặc bị huỷ).
+     *
+     * [settled] = *"chỗ gọi được chốt lượt nói"* (xem KDoc [execute]): hết câu, hoặc đứng ở hộp hỏi lại. Gọi **sau**
+     * [confirm] ở nhánh hỏi lại: nếu hộp ấy tự trả lời KHÔNG ngay trong lượt gọi (phiên đã qua) thì `done` đã bắn
+     * trước và câu *"đã huỷ"* nằm sẵn trong mảng lời đáp.
+     */
+    private fun runFrom(
+        intents: List<VoiceIntent>,
+        from: Int,
+        labels: Map<String, String>,
+        done: () -> Unit,
+        settled: () -> Unit,
+    ) {
+        if (from >= intents.size) { settled(); done(); return }
+        val intent = intents[from]
+        val next = { runFrom(intents, from + 1, labels, done, settled) }
+        if (VoiceRiskTable.of(intent, confirmIds()) == VoiceRisk.CONFIRM) {
+            val remaining = intents.size - (from + 1)
+            confirm(
+                VoiceReply.confirmQuestion(intent),
+                { run(intent, labels, next) },
+                { say(VoiceReply.cancelled(intent, remaining)); done() },
+            )
+            settled()
+            return
         }
+        run(intent, labels, next)
     }
 
     /** Phân tích **không thi hành** — để màn thử hiện "đã hiểu là…" trước khi người dùng bấm chạy. */
@@ -227,10 +265,19 @@ class VoiceDispatcher(
 
     // ── Thi hành ─────────────────────────────────────────────────────────────────────────────────
 
-    private fun run(intent: VoiceIntent, labels: Map<String, String>) {
+    /**
+     * Thi hành MỘT vế rồi gọi [next] **đúng một lần** khi vế ấy đã ghi xong (VOICE-WRITE-LANE).
+     *
+     * Chỉ hai nhánh ghi HAL **có thể** bất đồng bộ giữ [next] lại: nút xe ([VoiceControlDispatch] — nhánh rời-AUTO)
+     * và gói lệnh ([runMacro] — cả gói chạy nền). Mọi nhánh còn lại không ghi HAL (mở app · nhạc · hồ sơ · đọc số
+     * · bố cục…) nên gọi [next] ngay sau khi làm — y nguyên thứ tự 2.75. Đường dẫn đường có tra toạ độ + hộp hỏi
+     * ([VoiceTargetDispatch.runNav]) cũng vậy: nó không ghi gì xuống xe, và bắt vế sau chờ một lượt mạng là đổi
+     * hành vi đã chạy hiện trường ngoài phạm vi phép đo (CLAUDE.md §6).
+     */
+    private fun run(intent: VoiceIntent, labels: Map<String, String>, next: () -> Unit) {
         when (intent) {
-            is VoiceIntent.Control -> runControl(intent)
-            is VoiceIntent.Macro -> runMacro(intent)
+            is VoiceIntent.Control -> { runControl(intent, next); return }
+            is VoiceIntent.Macro -> { runMacro(intent, next); return }
             is VoiceIntent.Launcher -> runLauncher(intent)
             is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent)) }
             is VoiceIntent.Read -> runRead(intent)
@@ -250,134 +297,30 @@ class VoiceDispatcher(
             // Req2 (owner 2026-09-24) — câu kết thúc: nói ngắn rồi để phiên tự đóng (không mở hội thoại nối).
             VoiceIntent.EndSession -> say(VoiceReply.bye())
         }
+        next()
     }
 
     /**
-     * Một nút.
-     *
-     * Lệnh **tương đối** (*"tăng gió"*) được quy về tuyệt đối **ở đây**. `:core` cố ý không làm việc này (xem KDoc
-     * [VoiceIntent.Control.relative]): nó không biết xe đang ở mức nào.
-     *
-     * ## ═══ H1 · MỐC để cộng phải là mức THẬT CỦA XE, không phải mức trong RAM ═════════════════════════════
-     * [ĐO] tester 1.66: *"điều hoà chỉnh lung tung, quất một phát như lò heo quay"*. Gốc: mốc lấy từ
-     * [ControlTileState.shared] — một bảng **lạc quan**, khởi tạo bằng `ControlDef.value` (gió **4** · nhiệt **22**) và
-     * chỉ đổi khi chính Kachi bấm. Người lái chỉnh gió ở màn BYD gốc thì bảng này không hề biết ⇒ [ĐO xe 2026-09-16]
-     * xe đang **gió 1**, nói *"tăng gió"*, Kachi tính 4 + 1 và bắn **5** — nhảy bốn nấc trong một câu.
-     *
-     * Nay hỏi xe trước ([CarControlPort.readState] — đi qua `ControlDef.readKey`, khoá ĐỌC, **không** phải `bindingKey`
-     * là khoá GHI). Đọc không được (`null`: off-car · máy ảo · nút chưa có đường đọc) ⇒ **lùi về đúng hành vi 1.68**,
-     * vì ở đó thật sự không có con số nào tốt hơn — và một con số bịa thì tệ hơn hẳn một con số cũ.
-     *
-     * Một lượt đọc cho MỘT câu lệnh, theo yêu cầu — không phải vòng poll (ngân sách [ĐO xe 1.68] 33 lượt đọc HAL/phút).
+     * Một nút xe — vai *"ghi gì, chờ ở đâu, nói gì, và lúc nào thì XONG"* nằm trọn ở [VoiceControlDispatch] (tách
+     * 2.76 vì trần 500 dòng). Dựng **một lần** cho cả đời cầu, cùng lẽ với [targets].
      */
-    private fun runControl(i: VoiceIntent.Control) {
-        val def = ControlRegistry.byId(i.id)
-        if (def == null) { say(VoiceReply.failed(i)); return }
-        val st = ControlTileState.shared
-        // ═══ UX4 — nấc ĐÁY của nút có `autoId` tên là **AUTO**, không phải mức 0 ══════════════════════════════
-        // Cùng bảng quyết định THUẦN mà cú chạm −/+ dùng ([ClimateAuto.stepPlan] ← `ControlTileFactory.nudge`): nói
-        // *"giảm gió"* ở mức 1 phải **bật gió tự động**, chứ không ghi mức 0 ([ĐO xe 2026-09-20] xe **bỏ qua** lệnh
-        // ấy ⇒ ngón tay và câu nói làm hai việc khác nhau cho cùng một ô). Nút không khai `autoId` đi nhánh `SetLevel`
-        // y như trước — không một `if (def.id == "fan")` nào (CLAUDE.md §7). `autoOn` lấy từ ẢNH CHỤP đang có
-        // (`ac_auto` nạp cùng `fan` — `CarDataDemand.controlsOf`), KHÔNG đọc thêm một lượt HAL: ngân sách là MỘT lượt
-        // đọc cho MỘT câu ([ĐO xe 1.68] 33 lượt/phút), và `null` = *"chưa biết"* đã cho đúng nhánh bật-auto ở nấc đáy.
-        val plan = if (i.relative == 0) null else {
-            val actual = runCatching { control().readState(def.id) }.getOrNull() ?: st.value(def)
-            val autoOn = ClimateAuto.autoOnFromControl(state().carStatus.controls[def.autoId])
-            ClimateAuto.stepPlan(def, actual, i.relative * def.step, autoOn)
-        }
-        val arg = plan?.shown ?: (i.value ?: 1)
-        val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
-        // Đang AUTO mà còn nói *"giảm"* (`act = false`): mã này không có nấc TẮT ⇒ **không bắn gì**, nhưng vẫn NÓI RA.
-        if (plan != null && !plan.act) { say(VoiceReply.autoLevel(def.id)); return }
-        // ═══ C (owner test xe 2026-09-19) · CỐP/CA-PÔ chỉ MỞ được khi xe đang DỪNG ════════════════════════
-        //
-        // Đặt **trước** [CarControlPort.actByKind], sau khi đã biết `arg`: chỉ chặn lượt MỞ (`arg > 0`) — đóng
-        // cốp lúc đang chạy là việc nên làm, chặn nó lại là chặn đúng đường chữa. Tập mã ở
-        // [CtlSafetyPolicy.REQUIRES_STATIONARY] (KDoc ở đó giải thích vì sao kính/cửa sổ trời KHÔNG vào).
-        //
-        // ## Đọc TƯƠI, và `null` ⇒ CHO PHÉP (fail-open) — một lựa chọn có chủ ý
-        // Hỏi [freshCar] trước vì vòng poll chỉ đọc datum **đang hiện trên màn** (`CarDataDemand`), nên ảnh chụp
-        // có thể mang tốc độ của lần cuối cái ô ấy còn trên màn — dùng nó để gate là gate bằng một con số cũ.
-        //
-        // Không đọc được (`null`) thì **cho mở**: [ĐO] `speed` ở mức PROVEN (`TelemetryRegistry`), tức trên xe
-        // thật gate này có số để chạy; `null` gần như chỉ xảy ra off-car/máy ảo, và ở đó chẳng có cốp nào để bung.
-        // Chọn fail-CLOSED thì mọi lần đọc hụt trên xe đỗ sẽ thành một lời từ chối cho một việc hoàn toàn an toàn
-        // (mở cốp lúc đỗ là ca dùng **thường nhất** của nút này) — tức một gate an toàn tự biến thành lỗi.
-        if (CtlSafetyPolicy.requiresStationary(def.id) && arg > 0) {
-            val kmh = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
-                ?: state().carStatus.drivetrain.speedKmh
-            if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown)); return }
-        }
-        // ═══ [SOÁT 2.74 · P2] Cú ghi RỜI AUTO chờ 400 ms ⇒ đuôi *"nói gì"* phải là một LỜI GỌI LẠI ═════════════
-        //
-        // `VoiceSession` gọi lớp này trên luồng VẼ, nên nhánh hai-lệnh của [VoiceClimateStep] trả lời từ luồng nền
-        // (qua `onUi`), ba nhánh còn lại trả lời ngay trên luồng gọi. Viết thành `fun` CỤC BỘ — không phải một
-        // `private fun` sáu tham số — để `def`/`arg`/`shown`/`st`/`plan` giữ đúng nghĩa tại chỗ: mã dưới đây y
-        // nguyên bản trước, chỉ khác ở chỗ nó được gọi từ đâu.
-        fun finish(ok: Boolean) {
-            // Ghi lại trạng thái lạc quan y như cú chạm: hai bề mặt phải nói cùng một điều về MỘT cái xe.
-            if (ok) when (def.kind) {
-                ControlKind.TOGGLE -> st.setOn(def.id, arg > 0)
-                ControlKind.STEP -> st.setValue(def.id, arg)
-                ControlKind.SELECT -> st.setSel(def.id, arg)
-                else -> Unit
-            }
-            if (!ok) {
-                // ═══ R5 (live-state) — *"hỏng lần này"* và *"xe này không có"* là HAI câu khác nhau ═════════
-                //
-                // [ĐO xe 2026-09-16] `ac_auto` khai feature `1324355606`, id đó **không nằm trong bảng của xe
-                // owner**, mà owner xác nhận xe **CÓ** điều hoà auto. Tới 1.68 cả hai ca đều ra đúng một câu
-                // (*"xe không nhận lệnh"*), nên người lái nói *"điều hoà"*, nghe báo hỏng, rồi **thử lại** — mãi.
-                // Tester nêu đúng chỗ này: *"điều hoà với lọc bụi nó không hiểu là cái gì"*.
-                //
-                // Phép phân biệt nằm ở tầng BIẾT XE (cổng điều khiển hỏi bảng feature-id thật); `:core` chỉ giữ
-                // **hình dạng** của ca và câu chữ ([VoiceReply.uncontrollable]). Không đọc được bảng ⇒
-                // `wiredOnThisCar` trả `true` ⇒ y nguyên câu cũ, không bao giờ đoán bừa là *"xe không có"*.
-                val absent = VoiceReply.uncontrollable(shown) { id ->
-                    !runCatching { control().wiredOnThisCar(id) }.getOrDefault(true)
-                }
-                say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
-                return
-            }
-            // ═══ E (owner test xe 2026-09-19) · nút nào ĐỌC ĐƯỢC thì đọc lại xác nhận, không trả lời mù ═════════
-            //
-            // Ba lối, và cái thứ ba là chỗ thành thật: nút **không có** [ControlDef.readKey] thì giữ nguyên câu 1.79
-            // (còn cả đuôi *"chưa kiểm trên xe"*) — ở đó thật sự không có gì để kiểm, nên hedge là đúng.
-            //
-            // Cổng kind CỐ Ý hẹp hơn *"có readKey"*: [ControlKind.BUTTON] là nút bấm-một-phát (`pm25_clean_now`), mức
-            // sau khi bấm **không nói gì** về việc cú bấm có tới hay không ⇒ so mức ở đó sẽ báo *"xe không nhận lệnh"*
-            // cho một cú bấm hoàn toàn bình thường. [ControlKind.SELECT] cũng vậy: mức của nó là **chỉ số lựa chọn**,
-            // `> 0` không mang nghĩa *bật* (chỉ số 0 là một lựa chọn hợp lệ, không phải "tắt").
-            when {
-                // UX4 · `EnableAuto` (auto BẬT, không ghi mức): mức xe đang thổi KHÔNG đổi, nên đọc-lại-so-mức sẽ nói
-                // *"đã đặt Gió = 1"* — đúng số, sai việc. Câu thuật trạng thái mới là câu thật.
-                plan?.auto == true -> say(VoiceReply.autoLevel(def.id))
-                def.kind == ControlKind.STEP -> readback.step(shown, st)
-                (def.kind == ControlKind.TOGGLE || def.kind == ControlKind.COVER) && def.readKey.isNotBlank() ->
-                    readback.act(shown, def, arg, st)
-                else -> say(VoiceReply.done(shown))
-            }
-        }
-        if (plan == null) finish(runCatching { control().actByKind(def.id, arg) }.getOrDefault(false))
-        else climate.apply(def, plan) { ok -> finish(ok) }
-    }
+    private val controls = VoiceControlDispatch(
+        control = control, state = state, say = say, freshCar = freshCar, onUi = onUi, background = background,
+    )
+
+    private fun runControl(i: VoiceIntent.Control, next: () -> Unit) = controls.run(i, next)
 
     /**
-     * ═══ R5 + E · đọc lại xe rồi mới nói — đã tách sang [VoiceReadback] (trần 500 dòng) ═══════════════════════
-     *
-     * Dựng **một lần** cho cả đời cầu, cùng lẽ với [targets]: nó chỉ cầm chính những lambda mà cầu này đã cầm.
+     * Gói lệnh chạy **cả gói** trên luồng nền (nhiều lệnh HAL, có ngủ giữa các bước) ⇒ [next] chỉ được gọi khi gói
+     * đã xong — về luồng VẼ qua `onUi`, cùng lẽ [VoiceClimateStep] — kể cả khi gói ném (`finally`). Hai lối ra sớm
+     * (mã lạ · gói đang chạy) gọi [next] ngay: không có gì để chờ.
      */
-    private val readback = VoiceReadback(control = control, say = say, onUi = onUi, background = background)
-
-    /** UX4 · thi hành [ClimateAuto.StepPlan]; nhánh rời-AUTO chờ 400 ms nên phải xuống luồng nền — xem [VoiceClimateStep]. */
-    private val climate = VoiceClimateStep(control = control, onUi = onUi, background = background)
-
-    private fun runMacro(i: VoiceIntent.Macro) {
+    private fun runMacro(i: VoiceIntent.Macro, next: () -> Unit) {
         val macro = ActionMacros.byId(i.id)
-        if (macro == null) { say(VoiceReply.failed(i)); return }
+        if (macro == null) { say(VoiceReply.failed(i)); next(); return }
         if (!ControlTileState.shared.beginRun(macro.id)) {
             say(VoiceReply.busy(i))
+            next()
             return
         }
         val port = control()
@@ -399,6 +342,7 @@ class VoiceDispatcher(
                 say(VoiceReply.failed(i))
             } finally {
                 ControlTileState.shared.endRun(macro.id)
+                onUi(next)
             }
         }
     }

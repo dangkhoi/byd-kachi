@@ -40,7 +40,8 @@ class IconStyleContractTest {
      */
     private val legacy: Map<String, String> = mapOf(
         "ic_launcher.xml" to "icon app hoa anh đào (R7) — smallIcon thông báo, hợp đồng riêng (một tông, hệ tô lại)",
-        "ic_seat_left.xml" to "biến thể LẬT NGANG của ic_seat cho ghế LÁI (owner 2026-09-22) — wrap <group> scaleX=-1, path chép từ ic_seat.xml, không phải icon sinh riêng",
+        // ⚠ 2.76 (R9): `ic_seat_left.xml` RỜI danh sách này — nay là icon SINH từ design/glyph/seat_left.svg (bản lật
+        // của seat + CHẤM VÔ-LĂNG, owner: lái/phụ chỉ khác lật gương là chưa đủ), đi qua gen-icons.py như mọi glyph.
         "ic_kind_view.xml" to "huy hiệu THÔNG TIN (mắt) của picker — vẽ nét trắng trên nền pill màu, không thuộc đường ống icon lĩnh vực (owner 2026-09-22)",
         "ic_kind_act.xml" to "huy hiệu HÀNH ĐỘNG (nút bấm) của picker — vẽ nét trắng trên nền pill màu, không thuộc đường ống icon lĩnh vực (owner 2026-09-22)",
         "ic_turn_left.xml" to "mũi tên rẽ của màn dẫn đường (bảng NEW_ICON/CAN 2026-08-14), không thuộc launcher",
@@ -229,7 +230,8 @@ class IconStyleContractTest {
         }
         // Mọi tệp trong đường ống phải có nguồn: glyph (design/glyph/<id>.svg) hoặc xe (bảng ICONS của gen-car.py).
         val glyphs = Files.list(SourceRoots.path("../design/glyph")).use { s -> s.map { it.fileName.toString().removeSuffix(".svg") }.toList().toSet() }
-        val genCar = File("scripts/design/gen-car.py").readText()
+        // Bảng ICONS sống trong gói `scripts/design/gencar/` từ L6-debt 2026-09-27 (gen-car.py chỉ còn là điểm vào CLI).
+        val genCar = File("scripts/design/gencar/icons.py").readText()
         val noSource = piped().map { it.first }.filter { n ->
             if (isCar(n)) !genCar.contains("\"${n.removeSuffix(".xml")}\"") else idOf(n) !in glyphs
         }

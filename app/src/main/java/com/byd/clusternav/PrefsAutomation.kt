@@ -169,7 +169,9 @@ private fun migrateLegacyCameraRotation(p: android.content.SharedPreferences) {
 fun Prefs.cameraRotation(ctx: Context, left: Boolean): String {
     val p = autoPrefs(ctx)
     migrateLegacyCameraRotation(p)
-    val fallback = CameraSignalPolicy.defaultRotation(left)
+    // 2.76 · R2: mặc định theo HỒ SƠ XE (Seal DL3 = `0` cả hai bên, xe chưa đo = `CameraSignalPolicy.defaultRotation`);
+    // khoá ĐÃ đặt trên xe (owner chọn ↺90 27/09) thắng — `getString(key, fallback)` chỉ dùng fallback khi khoá vắng.
+    val fallback = com.byd.clusternav.launcher.camera.CameraDefaults.of(ctx).rotation(left)
     val raw = p.getString(cameraRotKey(left), fallback) ?: fallback
     return if (CameraSignalPolicy.isRotation(raw)) raw else fallback
 }
@@ -177,6 +179,21 @@ fun Prefs.cameraRotation(ctx: Context, left: Boolean): String {
 /** Xem [cameraRotation]. Nhận mã trong [CameraSignalPolicy.ROTATIONS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
 fun Prefs.setCameraRotation(ctx: Context, left: Boolean, v: String) =
     autoPrefs(ctx).edit().putString(cameraRotKey(left), v).apply()
+
+// ── LẬT GƯƠNG video TỪNG BÊN (2.76 L7 · research `research-side-camera-orientation-2026-09-27.md` §6.2) ──────────
+// Tay gương của ảnh HAL **[CHƯA BIẾT]** (CAM-M1 chưa đo trên xe) ⇒ mặc định TẮT — không đoán. Hai khoá theo bên, cùng
+// lẽ `camera_rot_*` (hai cam gương là hai thiết bị, chiều ghép vào ảnh 4-in-1 có thể khác nhau). Device-scope (`autoPrefs`).
+private fun cameraMirrorKey(left: Boolean) = if (left) "camera_mirror_left" else "camera_mirror_right"
+
+/**
+ * Lật ngang video của bên xi-nhan [left] hay không. Áp ở KHÔNG GIAN NGUỒN, trước xoay — đường GL qua `flipH` của
+ * `CameraGlUniforms.of`, đường TV qua `CameraOverlayTransform.matrix(mirror)`; cùng một phép cho cả hai đường.
+ */
+fun Prefs.cameraMirror(ctx: Context, left: Boolean): Boolean = autoPrefs(ctx).getBoolean(cameraMirrorKey(left), false)
+
+/** Xem [cameraMirror]. */
+fun Prefs.setCameraMirror(ctx: Context, left: Boolean, v: Boolean) =
+    autoPrefs(ctx).edit().putBoolean(cameraMirrorKey(left), v).apply()
 
 // ── ĐƯỜNG KẾT XUẤT khung hình camera (CLOSE-14 · CAM-LAG) ───────────────────────────────────────
 // MỘT khoá cho cả hai bên: đây là câu hỏi về **cách vẽ** (TextureView trong cây view vs SurfaceView layer riêng),
@@ -189,7 +206,8 @@ private const val K_CAMERA_RENDER = "camera_render"
  * SurfaceView). Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultRender], cùng khuôn [cameraRotation].
  */
 fun Prefs.cameraRender(ctx: Context): String {
-    val fallback = CameraSignalPolicy.defaultRender()
+    // 2.76 · R2: mặc định theo HỒ SƠ XE (Seal DL3 = GL; xe chưa đo = `CameraSignalPolicy.defaultRender()` = TV).
+    val fallback = com.byd.clusternav.launcher.camera.CameraDefaults.of(ctx).render
     val raw = autoPrefs(ctx).getString(K_CAMERA_RENDER, fallback) ?: fallback
     return if (CameraSignalPolicy.isRender(raw)) raw else fallback
 }
@@ -217,7 +235,8 @@ private fun cameraStripKey(left: Boolean) = if (left) "camera_strip_left" else "
  * Giá trị lạ trên đĩa ⇒ [CameraSignalPolicy.defaultSpan], cùng khuôn [cameraRender].
  */
 fun Prefs.cameraSpan(ctx: Context): String {
-    val fallback = CameraSignalPolicy.defaultSpan()
+    // 2.76 · R2: mặc định theo HỒ SƠ XE (Seal DL3 = STRIP; xe chưa đo = `CameraSignalPolicy.defaultSpan()` = NARROW).
+    val fallback = com.byd.clusternav.launcher.camera.CameraDefaults.of(ctx).span
     val raw = autoPrefs(ctx).getString(K_CAMERA_SPAN, fallback) ?: fallback
     return if (CameraSignalPolicy.isSpan(raw)) raw else fallback
 }
@@ -230,8 +249,8 @@ fun Prefs.setCameraSpan(ctx: Context, v: String) =
  * **Nguồn ảnh** — `"PANO"` (khung ghép 4-in-1, mặc định = đường 2.36…2.74) hay `"CHANNEL"` (MỘT kênh camera, khung
  * đầy, bị kéo ngang ×4). Lý do + bản đồ kênh ở KDoc [CameraSignalPolicy.SOURCE_CHANNEL].
  *
- * Ở `"CHANNEL"`, kênh dùng cho từng bên lấy từ [CameraSignalPolicy.CamView.channel] (Seal: trái 2, phải 3) và
- * owner vẫn đè được bằng [cameraHalMode] — xem [CameraSignalPolicy.channelFor].
+ * Ở `"CHANNEL"`, kênh dùng cho từng bên lấy từ HỒ SƠ XE (`CameraDefaults.of(ctx).channel(left)`; Seal: trái 2, phải 3)
+ * và owner vẫn đè được bằng [cameraHalMode] — xem `CameraSignalPolicy.channelFor` (`CameraChannel.kt`).
  */
 fun Prefs.cameraSource(ctx: Context): String {
     val fallback = CameraSignalPolicy.defaultSource()

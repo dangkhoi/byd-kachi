@@ -21,7 +21,9 @@ import org.junit.jupiter.api.Test
  * | rụng **động từ** đầu câu | *"vietmap vào ô số một"* | `NO_VERB` | `OpenApp(VietMap → ô 1)` ✅ |
  * | động từ nghe **nhầm** | *"bỏ youtube vào ô số một"* | `NO_VERB` | `OpenApp(YouTube → ô 1)` ✅ |
  * | rụng chữ **"vào ô"**, còn con số | *"mở vietmap hai"* | `OpenApp(VietMap)` — mất ô | `OpenApp(VietMap → ô 2)` ✅ |
- * | rụng **tên app** | *"mát vào ô số hai"* · *"áp vào ô số một"* · *"viet vào ô số hai"* | `NO_VERB` | `NO_VERB` (giữ — xem `ten app rung thi KHONG duoc doan`) |
+ * | rụng **tên app** ≤ 3 ký tự | *"mát vào ô số hai"* · *"áp vào ô số một"* | `NO_VERB` | `NO_VERB` (giữ — xem `ten app rung thi KHONG duoc doan`) |
+ * | rụng **tên app** còn tiền tố 4 ký tự | *"viet vào ô số hai"* · *"có yout vào ô số một"* | `NO_VERB` | 2.75 giữ `NO_VERB`; **2.76 (R7)** ⇒ `OpenApp` qua `VoiceAppPrefix` (3 cổng) |
+ * | vế sau **đã thu** sau vế đủ | *"mở vietmap"* + *"vào ô số hai"* (10:42:46) | vứt vế sau | **2.76 (R6)** `VoiceOpenTurn.attach` ghép |
  */
 class VoiceCarWav0927Test {
 
@@ -131,12 +133,39 @@ class VoiceCarWav0927Test {
 
     @Test
     fun `ten app rung thi KHONG duoc doan`() {
-        // [ĐO xe 10:30:24 · 10:35:23 · 10:35:35 · 10:35:46 · 10:36:36] năm lượt: *"áp"* · *"mát"* ×2 · *"viet"* ·
-        // *"có yout"*. Không còn đủ chữ để biết app nào ⇒ phải giữ *"không hiểu"* để [VoiceClarify] hỏi lại. Mở
-        // *"app gần nhất"* cho một câu như thế là mở NHẦM app — tệ hơn hẳn không hiểu (KDoc [VoiceLastResort] cổng 3).
-        listOf(
-            "áp vào ô số một", "mát vào ô số hai", "viet vào ô số hai", "có yout vào ô số một",
-        ).forEach { assertTrue(one(it) is VoiceIntent.Unknown, "\"$it\" không được đoán ra app: ${one(it)}") }
+        // [ĐO xe 10:30:24 · 10:35:23 · 10:35:35] ba lượt: *"áp"* · *"mát"* ×2. Không còn đủ chữ để biết app nào ⇒ phải
+        // giữ *"không hiểu"* để [VoiceClarify] hỏi lại. Mở *"app gần nhất"* cho một câu như thế là mở NHẦM app — tệ
+        // hơn hẳn không hiểu (KDoc [VoiceLastResort] cổng 3 · [VoiceAppPrefix] cổng 2: tiền tố < 4 ký tự).
+        listOf("áp vào ô số một", "mát vào ô số hai").forEach {
+            assertTrue(one(it) is VoiceIntent.Unknown, "\"$it\" không được đoán ra app: ${one(it)}")
+        }
+    }
+
+    /**
+     * ⚠ 2.76 — kỳ vọng ĐỔI so với 2.75, có lý do: spec `kachi-276-closing` R7 (owner duyệt) mở đúng một khe cho
+     * tiền tố **≥ 4 ký tự** khi câu **có mệnh đề ô có số** và tiền tố **duy nhất theo nhãn**. Hai lượt xe
+     * [ĐO 10:35:46 · 10:36:36] rơi đúng khe ấy; ba cổng + ca âm ở `VoiceAppPrefixTest`.
+     */
+    @Test
+    fun `ten app rung con tien to 4 ky tu va co menh de o thi mo dung app`() {
+        val vm = openApp("viet vào ô số hai")
+        assertEquals("VietMap", vm.appName)
+        assertEquals(2, vm.slot)
+        val yt = openApp("có yout vào ô số một")
+        assertEquals("YouTube", yt.appName)
+        assertEquals(1, yt.slot)
+    }
+
+    // ── Vế sau ĐÃ THU sau một vế đủ nghĩa ([VoiceOpenTurn.attach], R6) ─────────────────────────
+
+    @Test
+    fun `mo vietmap ngung vao o so hai duoc ghep thanh mot cau`() {
+        // [ĐO xe 10:42:46] vế sau đã thu (`tieng_dut` 2 400 → 4 384 ms sau `flush`) rồi bị 2.75 bỏ vì vế trước đủ.
+        val joined = VoiceOpenTurn.attach("mở vietmap", "vào ô số hai")
+        assertEquals("mở vietmap vào ô số hai", joined)
+        assertEquals(2, openApp(joined!!).slot)
+        // Không có vế sau nào hợp lý ⇒ y nguyên 2.75.
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap", "bật đèn đọc"))
     }
 
     // ── Vẫn đúng: mọi lượt 27/09 đã chạy ĐÚNG không được đổi ────────────────────────────────────

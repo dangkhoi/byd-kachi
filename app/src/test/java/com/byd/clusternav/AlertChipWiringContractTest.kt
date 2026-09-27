@@ -18,7 +18,7 @@ class AlertChipWiringContractTest {
     /** Công tắc chip nay ở cầu Kachi — `BadgePlacementController` + màn cũ đã gỡ 2026-09-13 (S3 · R3). */
     private val bridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
     private val section = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt")
-    private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/Prefs.kt")
+    private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/PrefsBadge.kt")   // khoá badge/chip tách khỏi Prefs.kt (L6-debt 2026-09-27)
 
     @Test
     fun `listener nuoi chip qua RoadAlertChipDecision, gate showAlertChip`() {

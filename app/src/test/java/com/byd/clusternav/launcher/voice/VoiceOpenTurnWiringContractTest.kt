@@ -110,7 +110,30 @@ class VoiceOpenTurnWiringContractTest {
     @Test
     fun `quyet dinh va phep ghep o core, khong lam lai o app`() {
         assertTrue(arm.contains("VoiceOpenTurn.isOpen("), "câu hỏi \"còn dở không\" phải hỏi bề mặt thuần `:core`")
-        assertTrue(arm.contains("VoiceOpenTurn.join("), "phép ghép phải ở `:core` (có bài kiểm dựng từ chuỗi thật)")
+        // R6 (2.76): phép ghép + luật *"vế đủ mà có vế sau thì có nhận không"* là MỘT hàm `:core` (`attach`), không
+        // phải `join` gọi thẳng — nếu không thì nhánh vế-đủ có thể mọc lại một lần `return` sớm trước `tailRange`.
+        assertTrue(arm.contains("VoiceOpenTurn.attach("), "ghép/giữ phải hỏi `VoiceOpenTurn.attach` ở `:core`")
+        assertFalse(arm.contains("VoiceOpenTurn.join("), "`:app` không được gọi `join` thẳng — bỏ qua cổng `refine` của vế đủ")
+        val result = SourceRoots.body(arm, "fun result(fedSamples: Int): Outcome?")
+        assertTrue(
+            result.indexOf("ep.tailRange(") in 0 until result.indexOf("VoiceOpenTurn.attach("),
+            "[ĐO xe 27/09 10:42:46] vế sau đã thu phải được hỏi TRƯỚC khi quyết định giữ/ghép — không `return` sớm vì vế trước đủ",
+        )
+        assertFalse(
+            result.contains("if (!VoiceOpenTurn.isOpen(head)) return"),
+            "2.75 vứt vế sau đã thu bằng đúng dòng này; R6 cấm nó quay lại",
+        )
+        // [P2 · SOÁT Opus 2026-09-27] Lượt giải mã vế sau nằm trên ĐƯỜNG TỚI HÀNH ĐỘNG (1,3–2 s [ĐO xe] cho một
+        // lượt) ⇒ chỉ chạy khi `attach` còn có thể nhận vế trước. Phép hỏi ở `:core` (`mayAttach`), đặt SAU `tailRange`
+        // và TRƯỚC `rangeResult`: đặt trước `tailRange` là mọc lại đúng cái `return` sớm mà R6 cấm.
+        assertTrue(
+            result.indexOf("ep.tailRange(") in 0 until result.indexOf("VoiceOpenTurn.mayAttach("),
+            "cổng rẻ phải đứng SAU khi đã hỏi vế sau có thật hay không",
+        )
+        assertTrue(
+            result.indexOf("VoiceOpenTurn.mayAttach(") in 0 until result.indexOf("rec.rangeResult("),
+            "và TRƯỚC lượt giải mã — nếu không thì cổng chẳng tiết kiệm được gì",
+        )
         // Không có bảng vế dở thứ hai ở `:app` — đó là cách một bản vá tự tách khỏi ngữ pháp (CLAUDE.md §7).
         listOf("vao o", "vào ô", "ho so", "hồ sơ").forEach {
             assertFalse(arm.contains("\"$it"), "`$it` viết cứng ở `:app` ⇒ bảng vế dở đã có hai bản")
@@ -153,7 +176,8 @@ class VoiceOpenTurnWiringContractTest {
     @Test
     fun `duong do WAV di cung hai pha`() {
         assertTrue(probe.contains("VoiceOpenTurn.isOpen("), "đường đo phải hỏi đúng câu hỏi mà phiên thật hỏi")
-        assertTrue(probe.contains("VoiceOpenTurn.join("), "và ghép bằng đúng phép ghép ấy")
+        assertTrue(probe.contains("VoiceOpenTurn.attach("), "và ghép/giữ bằng đúng luật ấy (R6: kể cả vế đủ)")
+        assertFalse(probe.contains("VoiceOpenTurn.join("), "đường đo không được gọi `join` thẳng — nó sẽ lệch phiên thật")
         assertTrue(probe.contains("headText ="), "kết quả đo phải phơi vế TRƯỚC")
         assertTrue(probe.contains("tailText ="), "và vế SAU — một phép đo trộn hai vế vào một dòng là mất thứ cần đo")
         val bridge = code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeWav.kt")

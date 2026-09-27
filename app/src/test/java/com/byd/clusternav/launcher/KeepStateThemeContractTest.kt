@@ -13,11 +13,12 @@ import org.junit.jupiter.api.Test
 class KeepStateThemeContractTest {
 
     private val activity by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
+    private val renderKt by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt") }   // `render`/`applyThemeInPlace` tách ra (L6-debt 2026-09-27)
     private val workspace by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt") }
 
     @Test
     fun `theme doi thi restyle tai cho, KHONG recreate`() {
-        val render = SourceRoots.body(activity, "private fun render(")
+        val render = SourceRoots.body(renderKt, "fun KachiHomeActivity.render(")
         assertTrue(render.contains("applyThemeInPlace()"), "theme đổi phải restyle tại chỗ (applyThemeInPlace)")
         // recreate() chỉ được ở nhánh NGÔN NGỮ (LangHost.changed), KHÔNG ở nhánh themeChanged.
         val recreateIdx = render.indexOf("recreate()")

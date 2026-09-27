@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.camera
 import android.util.Log
 import android.view.Surface
 import java.io.File
+import com.byd.clusternav.SysProps
 
 /**
  * ═══ AVM CAMERA — lấy hình camera THẬT đổ vào một [Surface] (RE kinex `b1/RunnableC0170d`) ═══════════════════
@@ -66,6 +67,16 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     var rmOnClose: Boolean = false
 
     /**
+     * Lượt [open] gần nhất **xin một kênh đơn** (`VIEW_CHANNEL_1..4`) mà HAL **không nhận** (`rc != true`, hoặc ném) —
+     * phiên đang chạy trên đường dự phòng một-tham-số, tức khung **GHÉP** dù tầng vẽ tưởng là một kênh (R3 · 2.76).
+     *
+     * Đọc ngay sau [open], cùng nhịp. Là một *phép đo* trả về cho `CameraChannelFallback` (`:core`) quyết; ở đây
+     * không rẽ nhánh gì — `AvmCamera` chỉ nói sự thật về lời gọi HAL.
+     */
+    var channelRefused: Boolean = false
+        private set
+
+    /**
      * Mở camera [cameraId] + đổ preview vào [surface]. Trả true nếu startPreview OK (một mode nào đó nhận surface).
      *
      * [halMode] = **kênh xem** truyền cho `addPreviewSurface(Surface, int)`:
@@ -98,12 +109,15 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         // addPreviewSurface(Surface, int mode) — thử mode 0..3 như kinex.
         val add = m("addPreviewSurface", Surface::class.java, Integer.TYPE)
         var surfaceOk = false
+        channelRefused = false
         // MÓC ĐO (pref `camera_hal_mode`, mặc định AUTO ⇒ nhánh này KHÔNG chạy): một lời gọi, đọc rc thật.
         if (add != null && CameraSignalPolicy.isHalMode(halMode) && halMode >= CameraSignalPolicy.HAL_MODE_MIN) {
             val rc = runCatching { add.invoke(obj, surface, halMode) as? Boolean ?: true }.getOrNull()
             Log.i(TAG, "addPreviewSurface cameraId=$cameraId halMode=$halMode rc=$rc (pref camera_hal_mode)")
             surfaceOk = rc == true
             if (surfaceOk) added = surface to halMode
+            // Kênh ĐƠN bị từ chối ⇒ phần còn lại của hàm rơi về đường một-tham-số (khung ghép). Ghi lại sự thật ấy.
+            channelRefused = !surfaceOk && CameraProfileDefaults.isChannel(halMode)
         }
         if (add != null && !surfaceOk && halMode < CameraSignalPolicy.HAL_MODE_MIN) {
             for (mode in 0..3) {
@@ -114,6 +128,17 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         }
         if (!surfaceOk) {
             runCatching { m("addPreviewSurface", Surface::class.java)?.invoke(obj, surface); surfaceOk = true }
+        }
+        // [P1 · SOÁT Opus 2026-09-27 · R3] Kênh đơn được XIN mà lớp này **không có hàm để xin** (`add == null`) cũng là
+        // một lần "không nhận được kênh đơn": dòng trên vừa gắn surface qua `addPreviewSurface(Surface)` MỘT tham số,
+        // tức HAL đổ khung GHÉP, trong khi tầng vẽ tin là một kênh. Không ghi lại sự thật ấy thì `CameraChannelFallback`
+        // nhận `channelRefused = false` ⇒ R3 im lặng đúng ca sai im lặng mà nó sinh ra để đóng (ngân sách khung đầu
+        // cũng không cứu: khung ghép CÓ khung). [ĐO] trên xe owner nhánh này không chạy — `addPreviewSurface ok …`
+        // của 2.73 in ra từ nhánh hai tham số (`camera-after-2.69.md:22`) — nên đây là lưới cho trim/ROM khác
+        // ([ĐOÁN] hình dạng ấy, chưa có dump nào), không phải đường đang chạy.
+        if (add == null && CameraProfileDefaults.isChannel(halMode)) {
+            channelRefused = true
+            Log.w(TAG, "addPreviewSurface(Surface,int) KHÔNG có trên lớp này ⇒ xin kênh $halMode không được, khung là GHÉP")
         }
         val started = runCatching { m("startPreview")?.invoke(obj); true }.getOrDefault(false)
         Log.i(TAG, "AVMCamera cameraId=$cameraId surfaceOk=$surfaceOk started=$started")
@@ -209,20 +234,16 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     companion object {
 
         /**
-         * `getprop <key>` trong tiến trình qua `android.os.SystemProperties` — `""` khi lỗi/off-car.
+         * `getprop <key>` trong tiến trình qua [SysProps] (một cửa reflection cho cả app) — `""` khi lỗi/off-car.
          *
          * Dùng cho phép thử năng lực pano `vehicle.config.cam_sort` (RE §5 K2): [ĐO firmware] launcher gốc dò camera
          * bằng đúng khoá này (`VehicleUtils.java:187-192` → `SystemProperties.get("vehicle.config.cam_sort","")`,
          * rồi `hasAVMRecorder() = contains("pano_h")` ở `:176`) — rẻ hơn mở camera để xem có ra hình.
          *
-         * ⚠ Nợ kỹ thuật ĐÃ BIẾT (CLAUDE.md §4.1 DRY): hai bản sao `private` của đúng phép reflection này đã tồn tại ở
-         * `ClusterProfile.kt:193` và `SeatComfortApplier.kt:154`. Gộp cả ba vào một cửa dùng chung là việc phải làm,
-         * nhưng nó **đụng hai tệp của làn khác** trong cùng phiên ⇒ ghi lại cho điều phối, không tự sửa ở đây.
+         * Nợ DRY 2.75 (ba bản sao reflection) đã đóng ở L6-debt 2026-09-27: cả `ClusterProfile.getProp` lẫn
+         * `SeatComfortApplier.systemProp` cùng uỷ quyền xuống [SysProps.get]; tên hàm ở đây giữ nguyên cho chỗ gọi.
          */
-        fun systemProp(key: String): String = runCatching {
-            val c = Class.forName("android.os.SystemProperties")
-            (c.getMethod("get", String::class.java).invoke(null, key) as? String).orEmpty()
-        }.getOrDefault("")
+        fun systemProp(key: String): String = SysProps.get(key)
 
         /** Khoá getprop liệt kê `<tag>:<id>;` của mọi luồng camera trên xe [ĐO `VehicleUtils.java:192`]. */
         const val PROP_CAM_SORT = "vehicle.config.cam_sort"

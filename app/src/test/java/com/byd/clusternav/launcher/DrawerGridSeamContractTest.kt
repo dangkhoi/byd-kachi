@@ -34,14 +34,17 @@ class DrawerGridSeamContractTest {
      * đi qua [CapabilityTileGrid] nên phải nằm trong bài canh này, không thì một bề mặt đã vá tự rơi ra khỏi phạm vi.
      */
     private val gridUsers = listOf(
-        "AppDrawer.kt", "AppDrawerApps.kt", "TopStripPicker.kt",
+        "AppDrawer.kt", "AppDrawerTiles.kt", "AppDrawerApps.kt", "TopStripPicker.kt",
     )
+
+    /** Tệp THẬT SỰ dựng hàng lưới — `AppDrawer.kt` chỉ còn thanh đáy + mục; lưới ô ở `AppDrawerTiles.kt` (L6-debt 2026-09-27). */
+    private val gridBuilders = gridUsers - "AppDrawer.kt"
 
     // ══ (1) R5 — MỘT nguồn cho khe + đồng cao ═════════════════════════════════════════════════════════════
 
     @Test
     fun `moi luoi o chon di qua mot nguon duy nhat`() {
-        gridUsers.forEach { f ->
+        gridBuilders.forEach { f ->
             assertTrue(
                 code(f).contains("CapabilityTileGrid.rows("),
                 "$f phải xếp hàng qua CapabilityTileGrid — tự dựng hàng là bản sao thứ hai của kỷ luật khoảng cách, " +
@@ -151,14 +154,14 @@ class DrawerGridSeamContractTest {
     /** Ô trong lưới căn DỌC-TRÊN — căn giữa dọc làm icon ô nhãn ngắn tụt xuống lệch với ô cùng hàng. */
     @Test
     fun `o trong luoi can tren, khong can giua doc`() {
-        listOf("AppDrawer.kt", "AppDrawerApps.kt", "TopStripPicker.kt").forEach { f ->
+        listOf("AppDrawerTiles.kt", "AppDrawerApps.kt", "TopStripPicker.kt").forEach { f ->
             val src = code(f)
             val topAligned = Regex("""Gravity\.CENTER_HORIZONTAL or Gravity\.TOP""").findAll(src).count()
             assertTrue(topAligned >= 1, "$f: ô lưới phải căn NGANG-giữa + DỌC-TRÊN")
         }
         // Và không còn ô lưới nào căn giữa cả hai chiều trong ngăn kéo.
         assertEquals(
-            0, Regex("""orientation = LinearLayout\.VERTICAL; gravity = Gravity\.CENTER\b""").findAll(drawer).count(),
+            0, Regex("""orientation = LinearLayout\.VERTICAL; gravity = Gravity\.CENTER\b""").findAll(drawer + code("AppDrawerTiles.kt")).count(),
             "ô lưới căn giữa DỌC ⇒ lệch với ô hai dòng cùng hàng; đó đúng lỗi 'không đồng cao' vừa vá",
         )
     }
@@ -178,7 +181,7 @@ class DrawerGridSeamContractTest {
      */
     @Test
     fun `o chua chon co nen mo de lo ranh gioi`() {
-        val fn = SourceRoots.body(drawer, "private fun applyTileState(")
+        val fn = SourceRoots.body(drawer, "internal fun applyTileState(")   // `internal` vì ô lưới (AppDrawerTiles.kt) gọi nó
         assertFalse(
             Regex("""\}\s*else null""").containsMatchIn(fn),
             "ô chưa chọn để nền `null` ⇒ hai ô cạnh nhau đọc thành một khối liền mạch (soát ảnh Pass 2)",

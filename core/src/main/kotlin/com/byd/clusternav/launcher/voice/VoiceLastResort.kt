@@ -16,8 +16,10 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
  *  1. **Cách gọi app bằng tiếng Việt** ([VoiceTailClause.spokenApp]) — đường có từ V1.1, khớp **chính xác** một
  *     cách nói đã khai. Nó đứng đầu vì nó không đoán gì.
  *  2. **Tên app bị ASR bóp méo** ([appFuzzy]) — mới 2026-09-26, có đoán, nên đứng **sau** mọi phép khớp chính xác.
- *  3. **Tên hồ sơ bị ASR bóp méo** ([VoiceProfileNames.pick]) — cũng có đoán, nhưng phải có cụm đánh dấu
- *     *"hồ sơ"* mới chạy, nên nó không tranh chấp với (2).
+ *  3. **Tên app rụng còn một TIỀN TỐ ≥ 4 ký tự** ([VoiceAppPrefix.pick], 2.76 · R7) — đoán nhiều hơn (2) nên đứng
+ *     sau nó, và chỉ chạy khi câu **có mệnh đề ô có số** + tiền tố duy nhất theo nhãn (ba cổng ở KDoc bên đó).
+ *  4. **Tên hồ sơ bị ASR bóp méo** ([VoiceProfileNames.pick]) — cũng có đoán, nhưng phải có cụm đánh dấu
+ *     *"hồ sơ"* mới chạy, nên nó không tranh chấp với (2)/(3).
  *
  * `null` ⇒ chỗ gọi giữ nguyên hành vi cũ (`firstMiss` rồi `noObject`), **không đổi một câu nào đang chạy**.
  */
@@ -31,6 +33,7 @@ internal object VoiceLastResort {
     fun pick(verb: VoiceVerb, rest: List<Token>, terms: List<VoiceTerm>, original: String): VoiceIntent? =
         VoiceTailClause.spokenApp(verb, rest, original)
             ?: appFuzzy(verb, rest, terms)
+            ?: VoiceAppPrefix.pick(verb, rest, terms)
             ?: VoiceProfileNames.pick(rest, terms)
 
     /**
@@ -96,12 +99,13 @@ internal object VoiceLastResort {
 
     /**
      * Ứng viên: **nhãn app đã cài** (cụm [VoiceTermKind.APP] của từ vựng) + mọi **cách gọi** của bảng đích.
+     * `internal` vì [VoiceAppPrefix] (R7) đọc **cùng** danh sách này — hai bảng ứng viên là hai bảng sẽ lệch.
      *
      * Danh tính là [Named] mang nhãn + mã đích: `pickUnique` so theo `equals` của nó, nên hai dòng cùng nhãn (nhãn
      * thật và một cách gọi của cùng app) chỉ được tính là một — xem cổng 3 ở KDoc [appFuzzy]. Nhãn so **không phân
      * biệt hoa thường** để *"YouTube"* (nhãn máy) và `youtube` (bảng đích) không thành hai app.
      */
-    private fun candidates(terms: List<VoiceTerm>): List<Pair<Named, List<String>>> {
+    internal fun candidates(terms: List<VoiceTerm>): List<Pair<Named, List<String>>> {
         val out = ArrayList<Pair<Named, List<String>>>(64)
         terms.forEach { t -> if (t.kind == VoiceTermKind.APP) out.add(Named(t.id, null) to t.words) }
         VoiceAppTargets.ALL.forEach { target ->
@@ -122,7 +126,7 @@ internal object VoiceLastResort {
      * cùng mở một app, nên chúng không được tính là nhập nhằng. Ưu tiên giữ [key] của bản có mã (chỗ gọi lấy ứng
      * viên đầu tiên khớp, và bảng đích nằm sau nhãn máy ⇒ [key] chỉ được dùng khi nhãn máy không khớp).
      */
-    private data class Named(val label: String, val key: String?) {
+    internal data class Named(val label: String, val key: String?) {
         override fun equals(other: Any?): Boolean =
             other is Named && other.label.lowercase() == label.lowercase()
 

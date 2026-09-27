@@ -79,6 +79,31 @@ object CapabilityIcons {
         // trạng thái **đáng báo** chỉ có một (chết) nên nó là cái mang hình riêng (gạch chéo); *"còn sống"* và
         // *"chưa đọc"* dùng chung hình cảm biến và phân biệt bằng sắc thái — đúng cách datum bật/tắt đang làm.
         "pm25_online" to StateIcons(mapOf(0 to "ic-sensor-off", 1 to "ic-sensor"), unknown = "ic-sensor"),
+        // ═══ 2.76 (R8) · CỬA ×4 — cặp hình MỞ / ĐÓNG trên cùng khung xe nhìn từ trên, ĐÚNG GÓC xe ══════════════
+        // MỞ (mã 1) dùng lại chính hình khái niệm của datum (`ic-car-top-door-*`: vạt cửa xoè ra ngoài thân — nó
+        // vốn đã vẽ một cửa ĐANG MỞ) ⇒ vẫn một hình cho một khái niệm (R1). ĐÓNG (mã 0) là biến thể MỚI của cùng
+        // bộ sinh `gen-car.py`: vạch cửa nằm SÁT thân, không có vạt. Chưa đọc ⇒ dùng hình ĐÓNG (trạng thái LÀNH,
+        // khác nhau ở sắc thái) — không được dùng hình MỞ vì mở là trạng thái ĐÁNG BÁO (GroupBoard xếp ALERT).
+        "door_lf" to StateIcons(mapOf(0 to "ic-car-top-door-lf-shut", 1 to "ic-car-top-door-lf"), unknown = "ic-car-top-door-lf-shut"),
+        "door_rf" to StateIcons(mapOf(0 to "ic-car-top-door-rf-shut", 1 to "ic-car-top-door-rf"), unknown = "ic-car-top-door-rf-shut"),
+        "door_lr" to StateIcons(mapOf(0 to "ic-car-top-door-lr-shut", 1 to "ic-car-top-door-lr"), unknown = "ic-car-top-door-lr-shut"),
+        "door_rr" to StateIcons(mapOf(0 to "ic-car-top-door-rr-shut", 1 to "ic-car-top-door-rr"), unknown = "ic-car-top-door-rr-shut"),
+        // CỬA SỔ TRỜI — ĐÓNG (mã 0) = hình khái niệm sẵn có (ô nóc tô đặc, kính kín ô); MỞ (mã 1) = ô nóc NÉT + khe
+        // hở TÔ ở mép trước (kính đã trượt), KHÔNG mũi tên (mũi tên là "vị trí/hành động" của `sunroof_pos` đã gỡ).
+        // [ĐO 4 lượt quét xe owner] `getSunroofState = 0` ⇒ trên xe ấy chip ra hình ĐÓNG **và SÁNG** (đã đọc được,
+        // `TopStripChips` cho ACTIVE) — KHÔNG phải "trung tính" như chú thích cũ nói; con số 65535 của [ĐO 09-25] là
+        // của `getSunroofPosition` (datum `sunroof_pos` đã gỡ), không phải của getter này. Hình MỞ là generic,
+        // [CHƯA BIẾT] trên xe owner (🚗 `chips-icons-close.md` §5 có phép đo thật cho chip này).
+        "sunroof_state" to StateIcons(mapOf(0 to "ic-car-top-sunroof", 1 to "ic-car-top-sunroof-open"), unknown = "ic-car-top-sunroof"),
+        // ═══ 2.76 (R9) · TỰ ĐỘNG / CHỈNH TAY — chip icon hai trạng thái, KHÔNG chữ đuôi ═════════════════════════
+        // Mã 0 = AUTO (`AC_CTRLMODE_AUTO` · `AC_WINDLEVEL_MANUAL_SIGN_OFF`, xem `TelemetryReadout.stateTable`).
+        // AUTO = núm chọn mang chữ **A** (`ic-mode-auto`, glyph MỚI); TAY = chính núm chọn có kim (`ic-mode`, hình
+        // khái niệm sẵn có của `ac_mode_auto` — người ta xoay kim tới nấc = đang tự chọn). Chưa đọc ⇒ núm có kim,
+        // sắc thái trung tính (tay không phải trạng thái đáng báo). Hai datum dùng CHUNG cặp vì chúng hỏi cùng một
+        // câu (*"tự động hay tay"*) — một khái niệm, một cặp hình (R1); `ac_wind_auto` còn bị ẨN khỏi bộ chọn chip
+        // ([TopStripConfig.CHIP_HIDDEN]) vì chip Gió đã nói "auto n", nên cặp này thực tế chỉ hiện ở `ac_mode_auto`.
+        "ac_mode_auto" to StateIcons(mapOf(0 to "ic-mode-auto", 1 to "ic-mode"), unknown = "ic-mode"),
+        "ac_wind_auto" to StateIcons(mapOf(0 to "ic-mode-auto", 1 to "ic-mode"), unknown = "ic-mode"),
     )
 
     /** Datum này có khai hình theo trạng thái không ⇒ bề mặt hẹp bỏ CHỮ trạng thái, chỉ còn nhãn + hình. */
@@ -95,6 +120,53 @@ object CapabilityIcons {
 
     /** Bảng hình-theo-trạng-thái, cho bài canh đọc (không có chỗ dùng nào khác ở mã chạy). */
     fun stateIconTable(): Map<String, StateIcons> = STATE
+
+    // ═══ 2.76 L7 · HÌNH THEO MỨC — datum THANG MỨC nói MỨC bằng SỐ DẤU trong hình, không bằng con số ═══════════════
+
+    /**
+     * Các hình của MỘT họ glyph theo mức: [byLevel]`[0]` = mức 1, `[1]` = mức 2 … Hình **khái niệm** của họ (tên
+     * khoá của bảng) chính là hình mức CAO NHẤT — nên ô chọn / ô nút đang tắt (mờ) vẫn mang đủ dấu để nhận ra *sưởi*
+     * hay *mát*, và mức tối đa không cần một tệp thứ ba y hệt.
+     */
+    class LevelIcons internal constructor(val byLevel: List<String>)
+
+    /**
+     * ═══ Bệnh nó chữa (owner 2026-09-27, câu cuối trước khi đi một tháng) ═══════════════════════════════════════
+     *
+     * *"cái icon sưởi / mát ghế, có thể làm icon kiểu 1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà
+     * không cần số 1-2 cho đẹp được thì làm luôn nhé"*
+     *
+     * Họ THANG MỨC (spec kachi-datum-icon-consistency R4) tới 2.75 nói mức bằng **một hình + con số** (`"Ghế lái · 2"`)
+     * hoặc hàng chấm. Nay mức nằm **trong hình**: một làn nhiệt / một bông tuyết = mức 1, hai = mức 2 (glyph
+     * `design/glyph/seat_{heat,vent}_{left,right}[_1].svg`, sinh qua `gen-icons.py`, [ĐO] nhìn ở 24 px: `'`↔`"`,
+     * `*`↔`**` không lẫn được — `docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md`).
+     *
+     * ## Vì sao khoá theo TÊN HÌNH khái niệm, không theo mã datum/nút
+     * Chip (datum `seat_heat_state`) và ô nút (`seath`) đã cùng cầm **một** tên hình khái niệm (`ControlDef.icon`,
+     * qua [CapabilityDots.iconOverride] cho datum). Bảng theo tên hình thì cả hai bề mặt tra cùng một dòng, không phải
+     * dựng thêm một phép đảo mã datum → mã nút — đúng luật *một hình cho một khái niệm* (R1). Thêm một họ mức mới =
+     * vẽ glyph + một dòng ở đây.
+     *
+     * Mức **0** (tắt) và **chưa đọc** không có hình riêng: chỗ gọi giữ hình khái niệm + sắc thái (mờ / trung tính),
+     * y như datum bật/tắt. Mức **ngoài bảng** (vd `seath` [SUY] còn nấc 3) ⇒ `null` ⇒ chip **in lại con số** như
+     * trước — thà nói *"3"* còn hơn vẽ hai dấu cho một mức chưa đo (CLAUDE.md §2).
+     */
+    private val LEVEL: Map<String, LevelIcons> = mapOf(
+        "ic-seat-heat-left" to LevelIcons(listOf("ic-seat-heat-left-1", "ic-seat-heat-left")),
+        "ic-seat-heat-right" to LevelIcons(listOf("ic-seat-heat-right-1", "ic-seat-heat-right")),
+        "ic-seat-vent-left" to LevelIcons(listOf("ic-seat-vent-left-1", "ic-seat-vent-left")),
+        "ic-seat-vent-right" to LevelIcons(listOf("ic-seat-vent-right-1", "ic-seat-vent-right")),
+    )
+
+    /**
+     * Hình của họ [icon] ở mức [level] (1..n) — `null` khi: hình không khai họ mức · [level] `null`/`0` (chưa đọc / tắt
+     * ⇒ chỗ gọi giữ hình khái niệm + sắc thái) · mức vượt bảng (chỗ gọi in số như cũ). Xem KDoc [LEVEL].
+     */
+    fun forLevel(icon: String?, level: Int?): String? =
+        if (icon == null || level == null || level < 1) null else LEVEL[icon]?.byLevel?.getOrNull(level - 1)
+
+    /** Bảng hình-theo-mức, cho bài canh đọc (không có chỗ dùng nào khác ở mã chạy). */
+    fun levelIconTable(): Map<String, LevelIcons> = LEVEL
 
     /** Khớp chính xác — cho mục đơn lẻ có khái niệm riêng. */
     private val EXACT: Map<String, String> = mapOf(

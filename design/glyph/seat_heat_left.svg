@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
-  <!-- GHẾ SƯỞI — ghế LÁI (`seath` · datum `seat_heat_state`): bản gương của ghế phụ. Ba làn nhiệt là MỘT path để ở 16dp còn đọc ra được; trước UX5 ô này trùng hình với ghế mát. -->
+  <!-- GHẾ SƯỞI mức 2 — ghế LÁI (`seath` · datum `seat_heat_state`): ghế + HAI làn nhiệt (một path; S cao 6,6 — bản UX5 cao 4,4 ở 24 px đọc thành dấu nháy). 2.76 L7 (owner 27/09: *"1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà không cần số 1-2"*): MỨC nằm trong HÌNH — số dấu = mức, con số rời chip. Hình khái niệm = mức CAO NHẤT (2 dấu); bản `_1` = một dấu. Là hình khái niệm của nút/datum (ô chọn, ô tắt mờ) và là hình lúc mức 2. + CHẤM VÔ-LĂNG trước ghế (2.76 R9). -->
   <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
   <path d="M 19.42,8.61 C 20.71,8.61,21,9.62,20.71,10.92 L 19.42,16.39 L 12.36,16.39" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M 18.7,16.39 L 12.5,16.39 A 1.44,1.44,0 0 0 11.06,17.83 L 11.06,17.97 A 1.44,1.44,0 0 0 12.5,19.41 L 18.7,19.41 A 1.44,1.44,0 0 0 20.14,17.97 L 20.14,17.83 A 1.44,1.44,0 0 0 18.7,16.39 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
   <path d="M 18.55,19.41 L 18.55,21 M 12.65,19.41 L 12.65,21" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
-  <path d="M 10.4,9.8 C 11.3,8.1,9.5,7.3,10.2,5.4 M 7,9.8 C 7.9,8.1,6.1,7.3,6.8,5.4 M 3.6,9.8 C 4.5,8.1,2.7,7.3,3.4,5.4" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 5.0,11.2 C 7,9.2 3,6.8 5.0,4.6 M 8.8,11.2 C 10.8,9.2 6.8,6.8 8.8,4.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 8.6,16.65 A 1.25,1.25 0 1 1 8.6,19.15 A 1.25,1.25 0 1 1 8.6,16.65 Z" data-layer="main" fill="var(--main)" stroke="none"/>
 </svg>

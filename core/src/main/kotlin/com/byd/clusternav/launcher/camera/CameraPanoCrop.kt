@@ -88,6 +88,8 @@ object CameraPanoCrop {
      * @param span mã bề rộng ([CameraSignalPolicy.SPANS]); mã lạ ⇒ [CameraSignalPolicy.defaultSpan].
      * @param shape mã hình khung ([CameraSignalPolicy.SHAPES]); mã lạ ⇒ [CameraSignalPolicy.defaultShape]. Hình TRÒN
      *   **bỏ qua** [span] (ô vuông giữa dải rộng `H/W`, nằm giữa `0.10` và `0.25` — nó là một bề rộng thứ ba).
+     *   *"Theo cụm"* ([CameraClusterBand.SHAPE_CLUSTER], 2.76 R4) chỉ đổi **cửa sổ** (dải giữa của cụm), KHÔNG đổi
+     *   vùng cắt ⇒ crop y hệt chữ nhật — ghi tường minh ở đây để không ai đọc nhầm thành "chưa xử lý".
      * @param circlePct phần trăm cạnh ô vuông của hình tròn; ngoài dải ⇒ [CameraSignalPolicy.CIRCLE_PCT_DEFAULT].
      */
     fun cropFor(
@@ -100,7 +102,9 @@ object CameraPanoCrop {
         channel: Boolean = false,
     ): FloatArray? {
         val base = view.crop
-        val round = (if (CameraSignalPolicy.isShape(shape)) shape else CameraSignalPolicy.defaultShape()) ==
+        // "Theo cụm" = cửa sổ khác, crop như chữ nhật (KDoc trên) — quy về RECT trước mọi phép so.
+        val effective = CameraClusterBand.effectiveShape(shape, onCluster = false)
+        val round = (if (CameraSignalPolicy.isShape(effective)) effective else CameraSignalPolicy.defaultShape()) ==
             CameraSignalPolicy.SHAPE_ROUND
         val s = if (isStrip(strip)) strip else defaultStrip(left)
         val pct = if (CameraSignalPolicy.isCirclePct(circlePct)) circlePct else CameraSignalPolicy.CIRCLE_PCT_DEFAULT

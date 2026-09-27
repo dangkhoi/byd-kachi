@@ -136,3 +136,17 @@ voice/tts/kachi-giong-be-v1/
 docs/diagnostics/perf-oncar-*/kachi-logs/
 docs/diagnostics/perf-oncar-*/logcat-stream-*.txt
 docs/diagnostics/perf-oncar-*/kachi-voice-*.zip
+
+# ─── LƯỚI AN TOÀN TOÀN CỤC cho dữ liệu thô buổi xe (thêm 2026-09-27, quét trước 2.76) ────────────────
+# Vì sao: runbook bảo *"chép log về `docs/diagnostics/`"* và khẳng định raw đã gitignored — [ĐO
+# `git check-ignore`] điều đó CHỈ đúng cho thư mục ngày `oncar-*/`. Một `logcat-….txt` / `kachi-voice-….zip`
+# / ảnh chụp cụm thả THẲNG vào `docs/diagnostics/` (hoặc vào `offcar-*/`) thì **không** bị chặn — mà đây là
+# repo PUBLIC và logcat mang IP nội bộ, SSID/BSSID, kê khai app, còn zip giọng nói là dữ liệu cá nhân thật.
+# Ba luật dưới đây độc lập với đường dẫn, nên một cú chép nhầm thư mục cũng không lọt. Ảnh/PNG phân tích
+# muốn commit thì whitelist từng tệp bằng `!` ngay dưới (cố ý bắt phải nói rõ ý định).
+logcat*.txt
+docs/diagnostics/**/kachi-logs/
+docs/diagnostics/**/kachi-voice-*.zip
+docs/diagnostics/**/*.zip
+docs/diagnostics/**/*.png
+!docs/diagnostics/**/figure-*.png

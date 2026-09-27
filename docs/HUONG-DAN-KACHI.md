@@ -12,7 +12,7 @@
 
 | Việc | Cách làm |
 |---|---|
-| **Cài lần đầu** | Tải `apk/Kachi-2.75-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-2.74-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
+| **Cài lần đầu** | Tải `apk/Kachi-2.76-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-2.74-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
 | **Cập nhật về sau** | *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, **không cần laptop**. |
 | **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. |
 | **Bản rất cũ** | Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần. |
@@ -49,17 +49,15 @@
 
 | Khối | Hàng / chip | Ghi chú |
 |---|---|---|
-| **Camera theo xi-nhan** | **Bật camera khi xi-nhan** | Xi-nhan trái → camera trái nổi góc màn; phải → camera phải. Giữ tới khi **đèn xi-nhan tắt** (2.70; [ĐO xe Seal 26/09] trễ 87 ms). |
-| | **Hiện camera lên màn cụm** | Overlay hiện trên cụm đồng hồ thay vì màn chính. |
-| | **Xi-nhan trái hiện ở** / **Xi-nhan phải hiện ở** | Góc trên-trái / trên-phải, đặt riêng từng bên (mặc định trái TL, phải TR). |
-| | **Xi-nhan trái: xoay video** / **Xi-nhan phải: xoay video** | *Không xoay* · *↺ 90°* · *↻ 90°* · *180°*. Mặc định **trái ↺ 90°, phải ↻ 90°** (dải gương cắt từ camera 360 vốn nằm ngang). **Hai bên độc lập** — bên nào còn ngang/lộn đầu thì chỉ chỉnh hàng bên đó. |
-| | **Kết xuất camera** | *TextureView (mặc định)* / *SurfaceView (nhẹ hơn, xoay nhờ HAL — có thể không xoay)* / **Nắn méo (GL) — đang thử** (2.74: nắn ảnh mắt cá thành thẳng bằng GPU; đã chứng minh trên máy ảo, **chưa đo trên xe**). Chỉ đổi khi thấy **giật lúc xe chạy** hoặc muốn thử nắn; không vừa thì trả về mặc định. 🚗 |
-| | **Nắn méo (khi chọn GL)** (2.74) | Chỉnh theo thứ tự **Tâm → K → Tiêu cự → Phóng → Độ nắn**; bộ số mặc định suy từ hình học, chưa đo xe. *K*: chỉnh tới khi vạch kẻ đường thẳng; *Tiêu cự* lớn hơn = hẹp hơn/phóng to; *Phóng* lớn hơn = thấy rộng hơn; *Độ nắn* 0 % = ảnh thô. 🚗 |
-| | **Bề rộng vùng gương** (2.74) | *Vệt hẹp (mặc định)* = như 2.73 · *Trọn dải camera* = cả 1/4 ảnh ghép (thấy nhiều hơn, méo hơn). 🚗 |
-| | **Dải cho xi-nhan trái** / **Dải cho xi-nhan phải** (2.74) | Ảnh camera 360 ghép 4 dải (0–3). Mặc định trái 1, phải 2. Thấy sai hướng thì đổi dải. 🚗 |
-| | **Hình khung camera** (2.74) | *Chữ nhật (mặc định)* / *Tròn* = thấy trọn vòng ảnh mắt cá trong cửa sổ tròn (chưa nắn méo). 🚗 |
-| | **Kênh xem camera** (2.74) | *Tự dò (mặc định)* / 0–4. Thử 1–4 nếu muốn một camera thay vì ảnh ghép — có thể mất hình, trả về *Tự dò*. 🚗 |
-| | **Cam xi-nhan trái** / **Cam xi-nhan phải** | id camera **0–5** mỗi bên. Cam không lên thì thử id khác (Sealion 6 dùng **cam 0**). |
+| **Camera theo xi-nhan** (2.76: chỉ còn 11 hàng người lái) | **Bật camera khi xi-nhan** | Xi-nhan trái → camera trái nổi góc màn; phải → camera phải. Giữ tới khi **đèn xi-nhan tắt** (2.70; [ĐO xe Seal 26/09] trễ 87 ms). |
+| | **Hiện camera lên màn cụm** | Overlay hiện trên cụm đồng hồ thay vì màn chính; chọn hình *Theo cụm* để ảnh nằm trọn dải giữa (2.76, đo từ ảnh cụm Seal). |
+| | **Xi-nhan trái hiện ở** / **Xi-nhan phải hiện ở** | Góc trên-trái / trên-phải, đặt riêng từng bên. |
+| | **Xi-nhan trái: xoay video** / **Xi-nhan phải: xoay video** | *Không xoay* (mặc định 2.76 — nghiên cứu 27/09: 18/20 hệ trong ngành để ảnh đứng, chân trời ngang) · *↺ 90°* · *↻ 90°* · *180°*. Giá trị anh đã tự chọn được giữ nguyên khi nâng cấp. 🚗 CAM-C2 |
+| | **Lật gương trái** / **Lật gương phải** (2.76) | Mặc định tắt. Bật nếu ảnh ngược tay so với gương kính (người đứng sau-trái xe phải hiện đúng bên). 🚗 CAM-M1 |
+| | **Hình khung camera** | *Chữ nhật* / *Tròn* (trọn vòng ảnh mắt cá) / *Theo cụm* (2.76, chỉ có tác dụng khi hiện lên cụm; trên màn chính = chữ nhật). |
+| | **Nắn hình** (2.76) | Bật/tắt nắn ảnh mắt cá bằng GPU. Bộ số nắn lấy theo **hồ sơ xe** (Seal: bộ đã duyệt trên xe 27/09), không cần chỉnh. |
+| | **Nguồn** (2.76) | *Toàn cảnh (khung ghép)* mặc định / *Một camera* — chỉ hiện trên xe đã đo kênh (Seal). Nếu *Một camera* không lên, Kachi tự lùi về toàn cảnh cho lượt đó và ghi chú ngay dưới hàng này. 🚗 |
+| | **Nâng cao (kỹ thuật)** (2.76) | 16 mục, chỉ hiện khi bật *Chế độ kiểm thử qua adb*: kết xuất (TextureView/SurfaceView/GL), bề rộng vùng gương, dải trái/phải, kênh HAL, id camera 0–5 mỗi bên (Sealion 6 dùng **cam 0**), 8 núm nắn (tâm · K · tiêu cự · phóng · độ nắn · dịch khung ngang/dọc), ma trận texture. Không xoá gì — `prefs_set` qua cầu kiểm thử vẫn đặt được mọi khoá. |
 | **Lấy gió trong** | **Nổ máy thì tự lấy gió trong** | Xe quên chế độ này mỗi lần khởi động — Kachi tự bật lại. |
 | **Ghế mát / sưởi** | **Tự chỉnh ghế theo nhiệt độ** + **Chế độ** (*Làm mát* / *Sưởi*) + **mức từng ghế** | Chạm một ghế trên sơ đồ để đổi mức: **tắt → mức 1 → mức 2**. Mát và sưởi **loại trừ nhau** (theo HAL của xe). |
 | **Gió (ô điều khiển)** | ô **Gió** −/+ (2.74) | Bấm **−** khi đang mức 1 ⇒ chuyển sang **AUTO** (ô ghi *AUTO*, xe tự chọn mức — mức 0 không tồn tại trên xe). Bấm **+** khi đang AUTO ⇒ về chỉnh tay ở *mức đang thổi + 1*. Chip gió trên thanh trên ghi **AUTO n** khi tự động (n = mức đang thổi), chỉ **n** khi chỉnh tay. 🚗 chữ AUTO cần xác nhận trên xe. |
@@ -105,7 +103,7 @@
 #### 5.6 Hệ thống & quyền
 
 **Quyền còn thiếu** (Kachi tự cấp qua dadb, không cần laptop) · **Tự mở Kachi khi nổ máy** · **Chạy dịch vụ nền khi nổ máy** · **Màn hình chính** (đặt/bỏ) · **Giữ Kachi làm màn hình chính khi nổ máy** · **Kiểm tra cập nhật** + **Tự động cập nhật** · **Dừng toàn bộ dẫn đường** · **Khởi động lại launcher** · **Chế độ kiểm thử qua adb**.
-**Nâng cao** còn: màn ClusterNav cũ · **Chẩn đoán cụm** · **Kiểm tra từng chức năng xe** · **Gõ lệnh chữ** (thử bộ hiểu ý không cần nói) · **Nhận dạng tệp WAV thử**.
+**Nâng cao** nay chỉ còn **một** hàng: công tắc *Chế độ kiểm thử qua adb*. Owner 2026-09-21 đã gỡ HẾT bề mặt dev khỏi bản chạy thật — năm màn cũ (ClusterNav cũ · Chẩn đoán cụm · Kiểm tra từng chức năng xe · Gõ lệnh chữ · Nhận dạng tệp WAV thử) **không còn trong Cài đặt**. Khả năng thì không mất: bật *Chế độ kiểm thử*, hai màn chẩn đoán vẫn mở được bằng `am start -n com.byd.launcher/<lớp>` và cầu kiểm thử vẫn nhận `say` · `captest` · `prefs_set` · `voice_dump`.
 *Giới thiệu*: **Phiên bản và giấy phép** · **Miễn trừ trách nhiệm**.
 
 > **Chế độ kiểm thử qua adb** chỉ bật được **bằng tay trong xe**, **tự tắt sau 60 phút**, và **chết theo lần nổ máy**. Mọi lệnh gửi vào đều ghi nhật ký.
@@ -179,8 +177,8 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 ### 10. Lấy log / chẩn đoán gửi về khi gặp lỗi
 
-- **Cách dễ nhất**: *Cài đặt › Hệ thống & quyền › Nâng cao › **Chẩn đoán cụm*** — app **tự chụp** mọi thứ cần thiết ra màn. Anh em chỉ cần **chụp ảnh màn hình gửi về**, không phải gõ lệnh nào.
-- Log ghi ra thẻ: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` (suốt phiên) · `snapshot-*.log` (khi bấm *Chụp log ngay*) · `captest-report.txt`.
+- **Cách dễ nhất (không cần adb)**: log phiên **tự ghi** ra thẻ, chép cả thư mục `kachi-logs/` bằng trình quản lý tệp rồi gửi về. Màn *Chẩn đoán cụm* **đã gỡ khỏi Cài đặt** (owner 2026-09-21, bản chạy thật) — mở lại được bằng `am start` khi *Chế độ kiểm thử* đang bật.
+- Log ghi ra thẻ: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` ghi **tự động suốt phiên** (đây là thứ luôn có); `snapshot-*.log` chỉ sinh khi bấm *Chụp log ngay* trên màn chẩn đoán, mà màn ấy nay phải mở bằng `am start`; `captest-report.txt` khi chạy `captest`.
 - Lấy về: `adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/`, hoặc chép cả thư mục bằng trình quản lý tệp.
 - **Gửi kèm**: **phiên bản** (*Cài đặt › Giới thiệu*) + mô tả lỗi + ảnh chụp màn. Đừng đoán bản đang chạy — đọc từ màn Giới thiệu.
 
@@ -193,7 +191,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 | **Nói đúng mà Kachi hiểu thiếu** (vd rụng *"vào ô số 2"*, rụng tên hồ sơ) | Nói **liền một hơi**, không ngừng giữa câu. 2.73 đã làm chắc hơn cho *"vào ô số N"* và tên app/hồ sơ nghe lệch — 🚗 chưa chốt bằng giọng thật trên xe. |
 | **Bấm Back mà lượt nghe không tắt** | Đúng như thiết kế từ 2.73. Huỷ bằng cách **chạm ra ngoài tấm chữ**, hoặc chờ 8 s. |
 | **Thanh điều hướng của xe trồi lên lúc Kachi đọc** | Lỗi có ở mọi bản **≤ 2.72**; vá ở 2.73 (🚗 chưa nhìn trên xe). Tạm thời: tắt *Đọc phản hồi bằng giọng*. |
-| **Camera xi-nhan không lên** | 1) **Bật camera khi xi-nhan** đã bật chưa. 2) Thử **Cam xi-nhan trái/phải** id khác trong 0–5 (Sealion 6 dùng **cam 0**). 3) Chỉ đo được trên **Seal** và **Sealion 6** — xe khác 🚗 chưa biết. |
+| **Camera xi-nhan không lên** | 1) **Bật camera khi xi-nhan** đã bật chưa. 2) Thử **Cam xi-nhan trái/phải** id khác trong 0–5 (nằm trong *Nâng cao (kỹ thuật)*, cần bật chế độ kiểm thử) (Sealion 6 dùng **cam 0**). 3) Chỉ đo được trên **Seal** và **Sealion 6** — xe khác 🚗 chưa biết. |
 | **Camera lên rồi tắt ngay ~1 s** | Lỗi của bản **2.69**. Cập nhật lên **2.70+**. |
 | **Video camera bị ngang / lộn đầu** | Chỉnh đúng hàng của bên đó: **Xi-nhan trái: xoay video** hoặc **Xi-nhan phải: xoay video**. Hai bên độc lập. |
 | **Video camera giật khi xe chạy** | Thử **Kết xuất camera → SurfaceView**. ⚠ SurfaceView xoay nhờ HAL nên **có thể không xoay được** — không vừa thì trả về *TextureView (mặc định)*. Nguồn giật vẫn đang tìm, chưa kết luận. |
@@ -226,7 +224,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Task | How |
 |---|---|
-| **First install** | Download `apk/Kachi-2.75-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-2.74-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
+| **First install** | Download `apk/Kachi-2.76-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-2.74-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
 | **Updates** | *Settings › System & permissions › **Check for updates*** — the app fetches the newer `apk/` build and installs it over the dadb loopback; **no laptop**. |
 | **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. |
 | **Very old builds** | Builds installed before 1.41 (old signing key) must be uninstalled once (`pm uninstall com.byd.launcher`). |
@@ -261,17 +259,15 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Block | Row / chip | Notes |
 |---|---|---|
-| **Turn-signal camera** | **Camera on turn signal** | Left signal → left camera overlay; right → right. Held until the **signal lamp goes off** (2.70; measured on a Seal 26/09, 87 ms lag). |
-| | **Show the camera on the cluster** | Overlay goes to the cluster instead of the main screen. |
-| | **Left signal shows at** / **Right signal shows at** | Top-left / top-right, per side (default left TL, right TR). |
-| | **Left signal: rotate video** / **Right signal: rotate video** | *No rotation* · *↺ 90°* · *↻ 90°* · *180°*. Defaults **left ↺ 90°, right ↻ 90°** (the mirror crop of the 360 camera is sideways). **The sides are independent** — fix only the row for the side that looks wrong. |
-| | **Camera rendering** | *TextureView (default)* / *SurfaceView (lighter, rotates via the HAL — may not rotate)* / **Dewarp (GL) — experimental** (2.74: straightens the fisheye on the GPU; proven on the emulator, **not yet measured on a car**). Only switch if the video **stutters while driving**; switch back if it looks wrong. 🚗 |
-| | **Dewarp (when GL is selected)** (2.74) | Tune in this order: **Centre → K → Focal → Zoom → Amount**; defaults are derived from geometry, not measured on a car. *K*: adjust until lane lines are straight; higher *Focal* = narrower/zoomed; higher *Zoom* = wider view; *Amount* 0 % = raw image. 🚗 |
-| | **Mirror crop width** (2.74) | *Narrow strip (default)* = as 2.73 · *Whole camera strip* = the full quarter of the stitched frame (more context, more distortion). 🚗 |
-| | **Strip for left/right signal** (2.74) | The 360 frame is 4 strips (0–3); defaults left 1, right 2. Change if the direction is wrong. 🚗 |
-| | **Camera window shape** (2.74) | *Rectangle (default)* / *Round* = the whole fisheye circle in a round window (no dewarp). 🚗 |
-| | **Camera view channel** (2.74) | *Auto (default)* / 0–4. Try 1–4 for a single camera instead of the stitched frame — may lose the picture; go back to *Auto*. 🚗 |
-| | **Left signal camera** / **Right signal camera** | Camera id **0–5** per side. If nothing appears, try another id (Sealion 6 uses **cam 0**). |
+| **Turn-signal camera** (2.76: 11 driver rows only) | **Camera on turn signal** | Left signal → left camera overlay; right → right. Held until the **signal lamp goes off** (2.70; measured on a Seal 26/09, 87 ms lag). |
+| | **Show the camera on the cluster** | Overlay goes to the cluster instead of the main screen; pick the *Cluster* shape so the picture fits the middle band (2.76, measured from Seal cluster photos). |
+| | **Left signal shows at** / **Right signal shows at** | Top-left / top-right, per side. |
+| | **Left signal: rotate video** / **Right signal: rotate video** | *No rotation* (2.76 default — 27/09 research: 18/20 industry systems keep the image upright, horizon level) · *↺ 90°* · *↻ 90°* · *180°*. A value you set yourself survives the upgrade. 🚗 CAM-C2 |
+| | **Mirror left** / **Mirror right** (2.76) | Off by default. Turn on if the picture is the wrong hand compared with the glass mirror (a person behind-left must appear on the correct side). 🚗 CAM-M1 |
+| | **Camera window shape** | *Rectangle* / *Round* (whole fisheye circle) / *Cluster* (2.76, only matters on the cluster; on the main screen = rectangle). |
+| | **Dewarp** (2.76) | On/off GPU straightening of the fisheye. The numbers come from the **car profile** (Seal: the set approved on the car 27/09); nothing to tune. |
+| | **Source** (2.76) | *Panorama (stitched frame)* default / *Single camera* — only shown on cars whose channels were measured (Seal). If *Single camera* does not come up, Kachi falls back to panorama for that turn and notes it under this row. 🚗 |
+| | **Advanced (technical)** (2.76) | 16 rows, only visible with *Test mode over adb* on: rendering (TextureView/SurfaceView/GL), mirror crop width, left/right strip, HAL channel, camera id 0–5 per side (Sealion 6 uses **cam 0**), the 8 dewarp knobs (centre · K · focal · zoom · amount · pan x/y), texture matrix. Nothing is removed — `prefs_set` over the test bridge still sets every key. |
 | **Recirculation** | **Recirculation on engine start** | The car forgets it every start — Kachi turns it back on. |
 | **Seat cool / heat** | **Adjust seats by temperature** + **Mode** (*Cool* / *Heat*) + **level per seat** | Tap a seat on the diagram to cycle: **off → level 1 → level 2**. Cool and heat are **mutually exclusive** (per the car's HAL). |
 | **Fan (control tile)** | **Fan** −/+ tile (2.74) | Press **−** at level 1 ⇒ switches to **AUTO** (tile shows *AUTO*; level 0 does not exist on the car). Press **+** while AUTO ⇒ back to manual at *current level + 1*. The header fan chip shows **AUTO n** when automatic (n = current level), plain **n** when manual. 🚗 the AUTO label still needs a car check. |
@@ -317,7 +313,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 #### 5.6 System & permissions
 
 **Missing permissions** (self-granted over dadb, no laptop) · **Auto-start Kachi on engine start** · **Run background service on engine start** · **Home screen** (set/unset) · **Keep Kachi as home screen on engine start** · **Check for updates** + **Auto update** · **Stop all navigation** · **Restart launcher** · **ADB test mode**.
-**Advanced** also holds: the old ClusterNav screen · **Cluster diagnostics** · **Per-feature car capability test** · **Type a command** (test the parser without speaking) · **Recognise a test WAV**.
+**Advanced** now holds exactly **one** row: the *Test mode over adb* switch. The owner stripped every dev surface from the shipping build on 2026-09-21 — the five old screens (old ClusterNav · Cluster diagnostics · Per-feature car capability test · Type a command · Test a WAV file) are **gone from Settings**. The capability remains: with test mode on, both diagnostic screens still open via `am start -n com.byd.launcher/<class>`, and the test bridge still accepts `say` · `captest` · `prefs_set` · `voice_dump`. (was: the old ClusterNav screen · Cluster diagnostics · Per-feature car capability test · Type a command (test the parser without speaking) · **Recognise a test WAV**.
 *About*: **Version and licence** · **Disclaimer**.
 
 > **ADB test mode** can only be switched on **by hand in the car**, **self-expires after 60 min**, and **dies with the ignition cycle**. Every command is journalled.
@@ -393,7 +389,7 @@ All four follow one rule: **only undo what you turned on**. If you flipped it by
 
 ### 10. Logs / diagnostics to send in
 
-- **Easiest**: *Settings › System & permissions › Advanced › **Cluster diagnostics*** — the app **captures everything itself**. Just **send a screenshot**; you never type a command.
+- **Easiest (no adb)**: session logs are written automatically to the card — copy the whole `kachi-logs/` folder with a file manager and send it. The *Cluster diagnostics* screen was **removed from Settings** (owner, 2026-09-21); with test mode on it still opens via `am start`. (was: send a screenshot; you never type a command.
 - Logs on the SD card: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` · `snapshot-*.log` (from *Capture log now*) · `captest-report.txt`.
 - Pull with `adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/`, or copy the folder with a file manager.
 - **Send along**: the **version** (*Settings › About*) + what went wrong + a screenshot. Never guess the running version — read it from the About screen.
@@ -407,7 +403,7 @@ All four follow one rule: **only undo what you turned on**. If you flipped it by
 | **Heard, but a clause was dropped** (e.g. *"vào ô số 2"*, a profile name) | Say it **in one breath**. 2.73 hardens both cases — 🚗 not yet confirmed by live speech on a car. |
 | **Back does not cancel listening** | By design since 2.73. Cancel by **tapping outside the card**, or wait 8 s. |
 | **The car's navigation bar pops up while Kachi speaks** | Present in every build **≤ 2.72**; fixed in 2.73 (🚗 not yet seen on a car). Workaround: turn off *Speak replies out loud*. |
-| **Turn-signal camera does not appear** | 1) Is **Camera on turn signal** on? 2) Try another **Left/Right signal camera** id in 0–5 (Sealion 6 uses **cam 0**). 3) Only measured on **Seal** and **Sealion 6** — other cars 🚗 unknown. |
+| **Turn-signal camera does not appear** | 1) Is **Camera on turn signal** on? 2) Try another **Left/Right signal camera** id in 0–5 (under *Advanced (technical)*, needs test mode) (Sealion 6 uses **cam 0**). 3) Only measured on **Seal** and **Sealion 6** — other cars 🚗 unknown. |
 | **Camera appears then closes after ~1 s** | A **2.69** bug. Update to **2.70+**. |
 | **Camera video is sideways / upside down** | Fix that side's row only: **Left signal: rotate video** or **Right signal: rotate video**. |
 | **Camera video stutters while driving** | Try **Camera rendering → SurfaceView**. ⚠ SurfaceView rotates via the HAL so it **may not rotate** — switch back to *TextureView (default)* if it looks wrong. The cause is still open. |

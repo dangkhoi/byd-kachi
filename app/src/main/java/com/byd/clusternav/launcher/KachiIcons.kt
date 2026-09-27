@@ -75,6 +75,20 @@ internal object KachiIcons {
     }
 
     /**
+     * 2.76 L7 — ô NÚT đổi hình theo MỨC: họ có hình theo mức ([CapabilityIcons.forLevel]) thì mức ≥ 1 vẽ đúng hình
+     * của mức ấy (một/hai làn nhiệt · một/hai bông tuyết); mức 0 / họ không khai ⇒ hình khái niệm [concept] như cũ.
+     * Cùng nguồn hình với chip ([TopStripChips]) và [DatumIconView] ⇒ ba bề mặt không bao giờ nói ba mức khác nhau.
+     *
+     * `setImageResource` **chỉ khi đổi thật** (ghi id vào `tag`): [ControlTileFactory] gọi `look` theo nhịp trạng
+     * thái xe (1 Hz), mà `setImageResource` luôn giải mã lại drawable — không có cửa này là một lượt cấp phát/giây cho
+     * mỗi ô (cùng lẽ `ControlLevelBar.light` chỉ đổi alpha). Không tra ra hình (`0`) ⇒ giữ nguyên, không xoá icon.
+     */
+    fun byLevel(img: ImageView, concept: String, level: Int, sizeDp: Int) {
+        val r = res(CapabilityIcons.forLevel(concept, level) ?: concept, sizeDp)
+        if (r != 0 && img.tag != r) { img.setImageResource(r); img.tag = r }
+    }
+
+    /**
      * Ô chưa chọn ở chủ đề tối: bão hoà 35 % + độ mờ 72 % — [ĐO] Δ độ sáng so với ô đang chọn ≥ 20 % (AC2.6) mà hình
      * vẫn đọc được vì lớp `main` luôn mang đủ hình (§4.2 luật 2).
      */

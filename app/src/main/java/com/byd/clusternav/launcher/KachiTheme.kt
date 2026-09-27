@@ -324,6 +324,11 @@ object KachiTheme {
         "ic-seat-heat-right" -> R.drawable.ic_seat_heat_right
         "ic-seat-vent-left" -> R.drawable.ic_seat_vent_left
         "ic-seat-vent-right" -> R.drawable.ic_seat_vent_right
+        // 2.76 L7 — MỨC 1 của bốn họ ghế (một làn nhiệt / một bông tuyết); hình khái niệm ở trên = mức 2. Bảng `CapabilityIcons.LEVEL`.
+        "ic-seat-heat-left-1" -> R.drawable.ic_seat_heat_left_1
+        "ic-seat-heat-right-1" -> R.drawable.ic_seat_heat_right_1
+        "ic-seat-vent-left-1" -> R.drawable.ic_seat_vent_left_1
+        "ic-seat-vent-right-1" -> R.drawable.ic_seat_vent_right_1
         "ic-temp" -> R.drawable.ic_temp
         "ic-fan" -> R.drawable.ic_fan
         "ic-defrost" -> R.drawable.ic_defrost
@@ -380,6 +385,9 @@ object KachiTheme {
         "ic-range" -> R.drawable.ic_range
         "ic-cell-volt" -> R.drawable.ic_cell_volt
         "ic-mode" -> R.drawable.ic_mode
+        // 2.76 (R9) — cặp trạng thái TỰ ĐỘNG/CHỈNH TAY cho chip `ac_mode_auto` (và `ac_wind_auto`): `ic-mode-auto` =
+        // núm mang chữ A (mã 0 = AUTO) · `ic-mode` (đã có) = núm có kim (mã 1 = tay / chưa đọc). Bảng ở `CapabilityIcons.STATE`.
+        "ic-mode-auto" -> R.drawable.ic_mode_auto
         "ic-dust" -> R.drawable.ic_dust
         "ic-sensor" -> R.drawable.ic_sensor
         "ic-alert" -> R.drawable.ic_alert
@@ -421,6 +429,11 @@ object KachiTheme {
         "ic-car-top-door-lr" -> R.drawable.ic_car_top_door_lr
         "ic-car-top-door-rr" -> R.drawable.ic_car_top_door_rr
         "ic-car-top-door-all" -> R.drawable.ic_car_top_door_all
+        // 2.76 (R8) — cặp trạng thái cho chip cửa: MỞ = bốn vạt xoè ở trên (hình khái niệm), ĐÓNG = vạch cửa sát thân.
+        "ic-car-top-door-lf-shut" -> R.drawable.ic_car_top_door_lf_shut
+        "ic-car-top-door-rf-shut" -> R.drawable.ic_car_top_door_rf_shut
+        "ic-car-top-door-lr-shut" -> R.drawable.ic_car_top_door_lr_shut
+        "ic-car-top-door-rr-shut" -> R.drawable.ic_car_top_door_rr_shut
         "ic-car-top-window-lf" -> R.drawable.ic_car_top_window_lf
         "ic-car-top-window-rf" -> R.drawable.ic_car_top_window_rf
         "ic-car-top-window-lr" -> R.drawable.ic_car_top_window_lr
@@ -438,6 +451,8 @@ object KachiTheme {
         "ic-car-top-trunk" -> R.drawable.ic_car_top_trunk
         "ic-car-top-sunroof" -> R.drawable.ic_car_top_sunroof
         "ic-car-top-sunroof-pos" -> R.drawable.ic_car_top_sunroof_pos
+        // 2.76 (R8) — cửa sổ trời MỞ (mã 1) cho chip `sunroof_state`; ĐÓNG dùng `ic-car-top-sunroof`. Xe owner N/A.
+        "ic-car-top-sunroof-open" -> R.drawable.ic_car_top_sunroof_open
         "ic-car-top-sunshade" -> R.drawable.ic_car_top_sunshade
         "ic-car-top-lock" -> R.drawable.ic_car_top_lock
         "ic-car-front-lowbeam" -> R.drawable.ic_car_front_lowbeam

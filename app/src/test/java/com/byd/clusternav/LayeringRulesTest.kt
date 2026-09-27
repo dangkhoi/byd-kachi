@@ -184,6 +184,11 @@ class LayeringRulesTest {
         // đồng hồ giả, không phải chỗ giữ một lượt ngủ thật (đối chiếu: `MacroExec`/`ShellAppLauncher` ở `:core`
         // **nhận** `sleep` làm tham số chứ không tự gọi). Cùng lẽ với `VoiceReadback.kt` ngay trên.
         "VoiceClimateStep.kt" to "vai thi hành StepPlan tách khỏi VoiceDispatcher — giữ nhịp chờ 400 ms ngoài luồng vẽ",
+        // VOICE-WRITE-LANE (2.76): `runControl` của `VoiceDispatcher` chuyển nguyên sang tệp riêng vì trần 500 dòng.
+        // "Thuần" theo phép đo ở đây (không `import android.*`, không nhắc chữ Context) nhưng nó **đọc và SỬA**
+        // `ControlTileState` và cầm `VoiceReadback`/`VoiceClimateStep` (cả hai ở danh sách này) — cùng lẽ với
+        // `VoiceReadback.kt`: chuyển sang `:core` là kéo bảng trạng thái ô của tầng vẽ theo.
+        "VoiceControlDispatch.kt" to "vai một-nút-xe tách khỏi VoiceDispatcher — đọc/sửa ControlTileState, cầm VoiceReadback/VoiceClimateStep",
         // [SOÁT Pass 1 · 2026-09-16] Ba hàm ngôn ngữ tách khỏi `WorkspacePrefs.kt` vì trần 500 dòng. "Thuần" theo
         // phép đo ở đây chỉ vì nó không `import android.*` và không nhắc chữ `Context` — nhưng nó là **hàm mở rộng
         // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).
@@ -208,6 +213,14 @@ class LayeringRulesTest {
         // `appsByLabel`), nên chuyển sang `:core` là kéo cả phiên theo. Tệp riêng vì `VoiceSession.kt` và
         // `VoiceSessionTurns.kt` đều đã 499/500 dòng — cùng lẽ với `VoiceTargetDispatch.kt`/`VoiceReadback.kt`.
         "VoiceSessionTerms.kt" to "hàm mở rộng VoiceSession (Context + PackageManager qua appsByLabel)",
+        // 2.76 · R1/R3: hai câu hỏi chỉ-đọc của cầu cho hàng *Nguồn* camera — hàm mở rộng của `ClusterNavBridge`
+        // (giữ `app: Context`), đọc hồ sơ xe (`ClusterProfile.resolve` = prefs + getprop) và một khoá prefs. "Thuần"
+        // theo phép đo chỉ vì gọi qua `app` mà không nhắc chữ Context — cùng lẽ `ClusterNavBridgeHome.kt`.
+        "ClusterNavBridgeCamera.kt" to "hàm mở rộng ClusterNavBridge (app: Context) — đọc hồ sơ xe + prefs",
+        // L6-debt 2026-09-27: cửa DUY NHẤT của reflection vào `SystemProperties` (gộp 3 bản sao DRY). "Thuần" theo phép
+        // đo chỉ vì reflection không `import android.*` — nhưng `:core` bị CẤM nhắc chữ `android` kể cả trong chuỗi
+        // (`core khong duoc biet Android`), nên nó không có chỗ nào khác ngoài `:app`.
+        "SysProps.kt" to "reflection SystemProperties của hệ — :core bị cấm nhắc Android",
     )
 
     @Test

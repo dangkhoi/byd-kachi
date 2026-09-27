@@ -21,10 +21,11 @@ package com.byd.clusternav.launcher
  *  • `EnableAuto` (`level == null`) và `SetLevel` (`auto == null`) ⇒ **một** lệnh ⇒ không chờ một ms nào, nên chúng
  *    chạy **thẳng** trên luồng gọi, giữ y nguyên hành vi lẫn thứ tự của bản trước.
  *
- * Đẩy cả ba xuống nền là mở một chỗ đảo thứ tự mới: [VoiceDispatcher] chạy các vế của một câu ghép **tuần tự trên
- * chính luồng gọi** (`runFrom`), nên vế nào hoá bất đồng bộ thì vế sau có thể ghi xuống xe **trước** nó — *"tăng gió
- * rồi tắt điều hoà"* đổi nghĩa. Nhánh rời-AUTO buộc phải nhận cái giá đó (400 ms đứng hình còn tệ hơn), ba nhánh còn
- * lại thì không có lý do gì phải nhận.
+ * Ba nhánh một lệnh không có gì để chờ, nên đẩy chúng xuống nền chỉ là đổi luồng của một đường đã chạy hiện trường
+ * mà không được gì (CLAUDE.md §6). Từ 2.76 (VOICE-WRITE-LANE) thứ tự các vế của một câu ghép **không còn** phụ thuộc
+ * vào việc nhánh nào đồng bộ: `VoiceDispatcher.runFrom` chỉ chạy vế kế tiếp khi [done] của vế này đã được gọi — với
+ * nhánh rời-AUTO là **sau** nhịp 400 ms — nên *"tăng gió rồi tắt điều hoà"* ghi đúng `[auto OFF, mức +1, (nhịp), AC
+ * OFF]` (bài `VoiceWriteLaneDispatchTest`). Trước đó (2.74–2.75) vế 2 có thể ghi vào giữa nhịp chờ — review Pass 1 [P2].
  *
  * Câu trả lời cho người lái quay về luồng vẽ qua [onUi] **trước khi** nói — cùng lẽ [VoiceReadback]: bảng
  * [ControlTileState] và câu nói đều thuộc luồng ấy.

@@ -28,7 +28,7 @@ class CameraFrameAndRenderWiringContractTest {
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
-    private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
+    private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
 
@@ -93,7 +93,7 @@ class CameraFrameAndRenderWiringContractTest {
             "SurfaceView không có setTransform ⇒ phải THỬ đường HAL, không im lặng bỏ góc owner đã chọn")
         assertTrue("rotationEffective = CameraSignalPolicy.rotationEffective(render, rot, byHal)" in controller,
             "cửa sổ chỉ lấy tỉ lệ ĐÃ XOAY khi có ai thật sự xoay — nhận ≠ có tác dụng; phép hợp ba nhánh ở `:core`")
-        assertTrue("kết xuất=\$render rot=\$rot\")" in controller, "log một dòng phải nói cả đường kết xuất và góc")
+        assertTrue("kết xuất=\$render rot=\$rot lật=\$mirror\")" in controller, "log một dòng phải nói cả đường kết xuất và góc")
     }
 
     /** Hai hàm reflection mới dùng đúng TÊN đã RE được trong lớp framework — gõ sai là no-op im lặng trên xe. */
@@ -109,7 +109,8 @@ class CameraFrameAndRenderWiringContractTest {
 
     /** Một hàng chip, ĐÚNG hai mã = hằng `:core`, và nhãn của `SurfaceView` nói rõ giới hạn xoay. */
     @Test fun `cai dat co hang chip ket xuat lay ma tu core`() {
-        val body = SourceRoots.body(settings, "private fun cameraSignal(")
+        // 2.76 · R1: đường kết xuất là móc đo ⇒ tầng KỸ THUẬT (khối gập, chỉ khi chế độ kiểm thử mở).
+        val body = SourceRoots.body(settings, "private fun cameraTech(")
         listOf("RENDER_TEXTURE", "RENDER_SURFACE", "RENDER_GL").forEach {
             assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`")
         }
@@ -128,7 +129,8 @@ class CameraFrameAndRenderWiringContractTest {
     /** Pref `camera_render`: đọc lạ ⇒ mặc định `:core`; đảo được qua `prefs_set` (đo hai đường trên xe đang chạy). */
     @Test fun `pref camera_render mac dinh core va vao danh sach trang`() {
         val body = SourceRoots.body(prefs, "fun Prefs.cameraRender(")
-        assertTrue("CameraSignalPolicy.defaultRender()" in body, "mặc định lấy từ `:core`, không chép chuỗi")
+        // 2.76 · R2: mặc định theo HỒ SƠ XE (Seal GL / chưa đo TV = `CameraSignalPolicy.defaultRender()` ở NEUTRAL).
+        assertTrue("CameraDefaults.of(ctx).render" in body, "mặc định lấy từ hồ sơ xe, không chép chuỗi")
         assertTrue("CameraSignalPolicy.isRender(raw)" in body, "giá trị lạ trên đĩa ⇒ rơi về mặc định")
         assertTrue("\"camera_render\"" in prefs)
         assertTrue("camera_render" in TestBridgeCommands.WRITABLE_PREFS_KEYS, "đo hai đường trên xe cần prefs_set camera_render")

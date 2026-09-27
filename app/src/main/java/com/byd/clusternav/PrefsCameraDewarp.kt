@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.camera.CameraDefaults
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
 import com.byd.clusternav.launcher.camera.CameraGlUniforms
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
@@ -19,12 +20,11 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
  * họ `camera_span`/`camera_shape`/`camera_render`. Đổi hồ sơ thì bộ số nắn **không** đổi, và đó là hành vi đúng: hai
  * người lái cùng một chiếc xe nhìn cùng một ống kính.
  *
- * ## Mặc định = KHÔNG ảnh hưởng gì tới xe hôm nay
- * Cả bảy khoá chỉ được đọc khi `camera_render == GL` — và mặc định của `camera_render` vẫn là `TV`
- * (`CameraSignalPolicy.defaultRender`). Xe không chạm Cài đặt ⇒ không một uniform nào được gán, không một ngữ cảnh
- * EGL nào được dựng (CLAUDE.md §6).
- *
- * Miền hợp lệ + phép suy bộ mặc định nằm ở `:core` [CameraDewarpPrefs] — **không một con số nào** viết ở tệp này.
+ * ## Mặc định = của HỒ SƠ XE (2.76 · R2), pref đã đặt luôn thắng
+ * Khoá VẮNG ⇒ [CameraDefaults.of] (Seal DL3 = bộ owner duyệt trên xe 27/09 `F 55 · K 100 · S 130 · amount 100`; đời xe
+ * chưa đo = `CameraProfileDefaults.NEUTRAL` = đúng literal 2.75). Khoá đã ghi trên xe (owner đã dò ba buổi) **không
+ * bị đụng**: `getInt(key, fallback)` chỉ dùng fallback khi khoá vắng. Miền hợp lệ + phép suy nằm ở `:core`
+ * [CameraDewarpPrefs] — **không một con số nào** viết ở tệp này.
  */
 
 private const val K_DEWARP_AMOUNT = "camera_dewarp_amount"
@@ -40,10 +40,10 @@ private const val K_GL_TEX_MATRIX = "camera_gl_texmatrix"
 /**
  * **Độ nắn** `%` — `0` = y ảnh thô 2.73, `100` = nắn đủ (mặc định).
  *
- * Ngoài miền ⇒ [CameraDewarpPrefs.AMOUNT_DEFAULT], cùng khuôn [Prefs.cameraCirclePct]: prefs sửa tay được qua
+ * Khoá vắng/ngoài miền ⇒ mặc định của hồ sơ xe ([CameraDefaults.of], Seal = 100 = [CameraDewarpPrefs.AMOUNT_DEFAULT]), cùng khuôn [Prefs.cameraCirclePct]: prefs sửa tay được qua
  * `prefs_set`, và một giá trị lạ phải cho ra **mặc định biết trước** chứ không phải một biên mà owner tưởng mình chọn.
  */
-fun Prefs.cameraDewarpAmount(ctx: Context): Int = pct(ctx, K_DEWARP_AMOUNT, CameraDewarpPrefs.AMOUNT_DEFAULT) {
+fun Prefs.cameraDewarpAmount(ctx: Context): Int = pct(ctx, K_DEWARP_AMOUNT, CameraDefaults.of(ctx).amountPct) {
     CameraDewarpPrefs.isAmountPct(it)
 }
 
@@ -56,7 +56,7 @@ fun Prefs.setCameraDewarpAmount(ctx: Context, v: Int) = put(ctx, K_DEWARP_AMOUNT
  * Phần trăm, không phải trị tuyệt đối — lý do đầy đủ ở KDoc [CameraDewarpPrefs] (`F` đo bằng *nửa bề ngang ô* nên nó
  * tỉ lệ nghịch với bề ngang ô; một trị tuyệt đối vừa chỉnh đúng sẽ sai ngay khi owner chạm chip *Vùng gương*).
  */
-fun Prefs.cameraDewarpFocal(ctx: Context): Int = pctOf(ctx, K_DEWARP_FOCAL)
+fun Prefs.cameraDewarpFocal(ctx: Context): Int = pctOf(ctx, K_DEWARP_FOCAL, CameraDefaults.of(ctx).focalPct)
 
 /** Xem [cameraDewarpFocal]. */
 fun Prefs.setCameraDewarpFocal(ctx: Context, v: Int) = put(ctx, K_DEWARP_FOCAL, v)
@@ -67,7 +67,7 @@ fun Prefs.setCameraDewarpFocal(ctx: Context, v: Int) = put(ctx, K_DEWARP_FOCAL, 
  * Đây là núm *"đúng/sai"*, ba núm kia là *"thẩm mỹ"*: sai `K` thì **đường thẳng vẫn cong** dù đã nắn hết tay
  * (`camera-dewarp-math.md` §4). Thứ tự chỉnh trên xe: tâm → K → tiêu cự → phóng → độ nắn.
  */
-fun Prefs.cameraDewarpK(ctx: Context): Int = pctOf(ctx, K_DEWARP_K)
+fun Prefs.cameraDewarpK(ctx: Context): Int = pctOf(ctx, K_DEWARP_K, CameraDefaults.of(ctx).kPct)
 
 /** Xem [cameraDewarpK]. */
 fun Prefs.setCameraDewarpK(ctx: Context, v: Int) = put(ctx, K_DEWARP_K, v)
@@ -78,7 +78,7 @@ fun Prefs.setCameraDewarpK(ctx: Context, v: Int) = put(ctx, K_DEWARP_K, v)
  * ⚠ Ngược trực giác, và nhãn trên UI phải nói ra: `> 100` = với **sâu hơn** vào ảnh fisheye ⇒ thấy **RỘNG hơn** (vật
  * nhỏ đi). Viền đen ở góc = đã với ra ngoài vòng ảnh ⇒ hạ xuống.
  */
-fun Prefs.cameraDewarpScale(ctx: Context): Int = pctOf(ctx, K_DEWARP_SCALE)
+fun Prefs.cameraDewarpScale(ctx: Context): Int = pctOf(ctx, K_DEWARP_SCALE, CameraDefaults.of(ctx).scalePct)
 
 /** Xem [cameraDewarpScale]. */
 fun Prefs.setCameraDewarpScale(ctx: Context, v: Int) = put(ctx, K_DEWARP_SCALE, v)
@@ -90,13 +90,13 @@ fun Prefs.setCameraDewarpScale(ctx: Context, v: Int) = put(ctx, K_DEWARP_SCALE, 
  * *"phần trăm của ô"* tuyệt đối sẽ có mặc định khác nhau cho từng dải ⇒ không có con số nào viết được vào Cài đặt mà
  * đúng cho cả bốn dải. Lý do đầy đủ ở KDoc [CameraDewarpPrefs].
  */
-fun Prefs.cameraDewarpCx(ctx: Context): Int = centre(ctx, K_DEWARP_CX)
+fun Prefs.cameraDewarpCx(ctx: Context): Int = centre(ctx, K_DEWARP_CX, CameraDefaults.of(ctx).centerXPct)
 
 /** Xem [cameraDewarpCx]. */
 fun Prefs.setCameraDewarpCx(ctx: Context, v: Int) = put(ctx, K_DEWARP_CX, v)
 
 /** **Lệch tâm quang theo y**, `%` bề ô. Xem [cameraDewarpCx]. */
-fun Prefs.cameraDewarpCy(ctx: Context): Int = centre(ctx, K_DEWARP_CY)
+fun Prefs.cameraDewarpCy(ctx: Context): Int = centre(ctx, K_DEWARP_CY, CameraDefaults.of(ctx).centerYPct)
 
 /** Xem [cameraDewarpCy]. */
 fun Prefs.setCameraDewarpCy(ctx: Context, v: Int) = put(ctx, K_DEWARP_CY, v)
@@ -121,13 +121,13 @@ fun Prefs.setCameraDewarpCy(ctx: Context, v: Int) = put(ctx, K_DEWARP_CY, v)
  * ấy cho thấy **thân xe nằm ở mép PHẢI** ô gương trái — ngược với ghi chép ban đầu của làn camera. Chốt bằng G7
  * (`camera-dewarp-gl.md` §E): kéo `−5` một bước trên xe rồi nhìn. Nếu ngược, đổi đúng một dấu ở [panXSign].
  */
-fun Prefs.cameraDewarpPanX(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_X)
+fun Prefs.cameraDewarpPanX(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_X, CameraDefaults.of(ctx).panXPct)
 
 /** Xem [cameraDewarpPanX]. */
 fun Prefs.setCameraDewarpPanX(ctx: Context, v: Int) = put(ctx, K_DEWARP_PAN_X, v)
 
 /** **Dịch cửa sổ theo y**, `%` bề ô, trong ô CHƯA XOAY. Xem [cameraDewarpPanX]. */
-fun Prefs.cameraDewarpPanY(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_Y)
+fun Prefs.cameraDewarpPanY(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_Y, CameraDefaults.of(ctx).panYPct)
 
 /** Xem [cameraDewarpPanY]. */
 fun Prefs.setCameraDewarpPanY(ctx: Context, v: Int) = put(ctx, K_DEWARP_PAN_Y, v)
@@ -162,6 +162,8 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  * @param channel đang lấy MỘT kênh camera ([CameraSignalPolicy.SOURCE_CHANNEL]) ⇒ quang tâm là tâm buffer.
  * @param left đang hiện gương TRÁI hay không — **KHÔNG** có mặc định: hai camera gương soi gương nhau nên dấu của
  *   `camera_dewarp_pan_x` phải theo bên ([CameraDewarpPrefs.panXSign]), và một mặc định ở đây là đúng chỗ để quên.
+ * @param mirror LẬT GƯƠNG bên này (2.76 L7, [Prefs.cameraMirror]) — đi vào `flipH` = `uSrcRect.z < 0`, tức lật ở
+ *   không gian NGUỒN trước xoay/dịch/nắn. Cũng **không** có mặc định, cùng lẽ với [left]: đây là pref theo bên.
  */
 fun Prefs.cameraGlUniforms(
     ctx: Context,
@@ -172,6 +174,7 @@ fun Prefs.cameraGlUniforms(
     streamW: Int,
     streamH: Int,
     left: Boolean,
+    mirror: Boolean,
     channel: Boolean = false,
 ): CameraGlUniforms {
     val centre = CameraGlUniforms.sourceCentre(view, strip, channel)
@@ -182,6 +185,7 @@ fun Prefs.cameraGlUniforms(
         streamW = streamW,
         streamH = streamH,
         rotationDeg = rotationDeg,
+        flipH = mirror,
         amountPct = cameraDewarpAmount(ctx),
         focalPct = cameraDewarpFocal(ctx),
         kPct = cameraDewarpK(ctx),
@@ -195,17 +199,20 @@ fun Prefs.cameraGlUniforms(
     )
 }
 
+// Ba hàm dưới nhận `fallback` = trường tương ứng của hồ sơ xe (đã `sane()`, tức đã nằm trong đúng miền của
+// [CameraDewarpPrefs.PCT_DEFAULT]/[CameraDewarpPrefs.PAN_DEFAULT]/[CameraDewarpPrefs.CENTER_DEFAULT] và các `is*`).
+
 /** Một khoá `%` của bốn núm tỉ lệ ([CameraDewarpPrefs.isPct]). */
-private fun Prefs.pctOf(ctx: Context, key: String): Int =
-    pct(ctx, key, CameraDewarpPrefs.PCT_DEFAULT) { CameraDewarpPrefs.isPct(it) }
+private fun Prefs.pctOf(ctx: Context, key: String, fallback: Int): Int =
+    pct(ctx, key, fallback) { CameraDewarpPrefs.isPct(it) }
 
 /** Một khoá dịch cửa sổ ([CameraDewarpPrefs.isPanPct]). */
-private fun Prefs.pan(ctx: Context, key: String): Int =
-    pct(ctx, key, CameraDewarpPrefs.PAN_DEFAULT) { CameraDewarpPrefs.isPanPct(it) }
+private fun Prefs.pan(ctx: Context, key: String, fallback: Int): Int =
+    pct(ctx, key, fallback) { CameraDewarpPrefs.isPanPct(it) }
 
 /** Một khoá lệch tâm ([CameraDewarpPrefs.isCenterPct]). */
-private fun Prefs.centre(ctx: Context, key: String): Int =
-    pct(ctx, key, CameraDewarpPrefs.CENTER_DEFAULT) { CameraDewarpPrefs.isCenterPct(it) }
+private fun Prefs.centre(ctx: Context, key: String, fallback: Int): Int =
+    pct(ctx, key, fallback) { CameraDewarpPrefs.isCenterPct(it) }
 
 /** Đọc một `Int`, ngoài miền ⇒ [fallback]. Một thân hàm cho cả sáu núm — không sáu bản sao của cùng ba dòng. */
 private inline fun Prefs.pct(ctx: Context, key: String, fallback: Int, ok: (Int) -> Boolean): Int {

@@ -549,6 +549,70 @@
           "ref": null
         },
         {
+          "id": "door_lf_shut",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.35,
+            9.0,
+            7.55,
+            12.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_rf_shut",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.45,
+            9.0,
+            16.65,
+            12.6
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_lr_shut",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            7.35,
+            13.8,
+            7.6,
+            17.4
+          ],
+          "ref": null
+        },
+        {
+          "id": "door_rr_shut",
+          "layer": "glyph",
+          "role": "glyph",
+          "glyph": true,
+          "strokeOnly": true,
+          "evenOdd": false,
+          "subpaths": 1,
+          "bounds": [
+            16.4,
+            13.8,
+            16.65,
+            17.4
+          ],
+          "ref": null
+        },
+        {
           "id": "arrow_v_stem",
           "layer": "glyph",
           "role": "glyph",
@@ -1598,6 +1662,17 @@
       ],
       "paths": 3
     },
+    "ic_car_top_door_lf_shut": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_lf_shut"
+      ],
+      "paths": 3
+    },
     "ic_car_top_door_lr": {
       "face": "top",
       "sub": [
@@ -1606,6 +1681,17 @@
       ],
       "main": [
         "door_lr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_door_lr_shut": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_lr_shut"
       ],
       "paths": 3
     },
@@ -1620,6 +1706,17 @@
       ],
       "paths": 3
     },
+    "ic_car_top_door_rf_shut": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_rf_shut"
+      ],
+      "paths": 3
+    },
     "ic_car_top_door_rr": {
       "face": "top",
       "sub": [
@@ -1628,6 +1725,17 @@
       ],
       "main": [
         "door_rr"
+      ],
+      "paths": 3
+    },
+    "ic_car_top_door_rr_shut": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "door_rr_shut"
       ],
       "paths": 3
     },
@@ -1664,6 +1772,18 @@
         "sunroof"
       ],
       "paths": 3
+    },
+    "ic_car_top_sunroof_open": {
+      "face": "top",
+      "sub": [
+        "windscreen",
+        "glass_rear"
+      ],
+      "main": [
+        "sunroof:stroke",
+        "sunroof_gap"
+      ],
+      "paths": 4
     },
     "ic_car_top_sunroof_pos": {
       "face": "top",

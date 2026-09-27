@@ -47,24 +47,40 @@ class CameraChannelSourceTest {
     @Test fun `kenh that theo view, owner de duoc bang pref`() {
         val auto = CameraSignalPolicy.HAL_MODE_AUTO
         // PANO ⇒ đúng pref cũ, không đụng gì (đường 2.73).
-        assertEquals(auto, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_PANO, auto, viewChannel = 2))
-        assertEquals(0, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_PANO, 0, viewChannel = 2))
-        // CHANNEL ⇒ kênh của view (per-side, hồ sơ xe).
-        assertEquals(2, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, viewChannel = 2))
-        assertEquals(3, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, viewChannel = 3))
+        assertEquals(auto, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_PANO, auto, profileChannel = 2))
+        assertEquals(0, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_PANO, 0, profileChannel = 2))
+        // CHANNEL ⇒ kênh của HỒ SƠ XE (per-side; 2.76: không còn ghim trên CamView).
+        assertEquals(2, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, profileChannel = 2))
+        assertEquals(3, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, profileChannel = 3))
         // …trừ khi owner đè bằng `camera_hal_mode` = một kênh thật.
-        assertEquals(4, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, 4, viewChannel = 2))
+        assertEquals(4, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, 4, profileChannel = 2))
         // Kênh 0 = VIEW_DEFAULT (khung ghép) ⇒ KHÔNG phải một kênh đơn ⇒ vẫn lấy kênh của view.
-        assertEquals(2, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, 0, viewChannel = 2))
-        // View chưa biết kênh ⇒ AUTO, không bịa một kênh nào.
-        assertEquals(auto, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, viewChannel = 0))
+        assertEquals(2, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, 0, profileChannel = 2))
+        // Hồ sơ chưa đo kênh ⇒ AUTO, không bịa một kênh nào — và phiên KHÔNG được coi là "một kênh".
+        assertEquals(auto, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, auto, profileChannel = 0))
+        assertFalse(CameraSignalPolicy.channelActive(CameraSignalPolicy.SOURCE_CHANNEL, auto),
+            "CHANNEL mà kênh hợp ra AUTO ⇒ HAL trả khung ghép ⇒ tầng vẽ KHÔNG được chia bề ngang cho 4")
+        assertTrue(CameraSignalPolicy.channelActive(CameraSignalPolicy.SOURCE_CHANNEL, 2))
+        assertFalse(CameraSignalPolicy.channelActive(CameraSignalPolicy.SOURCE_PANO, 2), "PANO thì kênh nào cũng không là 'một kênh'")
     }
 
-    /** Bản đồ kênh [ĐO] của Seal nằm trên chính `CamView` ⇒ per-side theo hồ sơ xe, không `if (bên trái)`. */
-    @Test fun `hai view guong mang dung kenh da do tren xe`() {
-        assertEquals(2, CamView.MIRROR_LEFT.channel, "[ĐO] kênh 2 = phía cột E4 = gương TRÁI")
-        assertEquals(3, CamView.MIRROR_RIGHT.channel, "[ĐO] kênh 3 = phía E3 = gương PHẢI")
-        assertEquals(0, CamView.REAR_LEFT.channel, "view chưa đo ⇒ 0 = chưa biết, không đoán")
+    /**
+     * 2.76 (R2, [P3] review Pass 2): bản đồ kênh Seal **không còn** trên `CamView` — số đo của một xe không được ghim
+     * vào enum dùng chung. Nó nằm ở hồ sơ xe (`ClusterProfile.SEAL_DL3_CAMERA`, bài `ClusterProfileCameraDefaultsTest`);
+     * `:core` chỉ biết cách HỎI hồ sơ, và hồ sơ trung tính trả "chưa đo".
+     */
+    @Test fun `kenh khong con ghim tren CamView, ho so trung tinh chua do`() {
+        val d = CameraProfileDefaults.NEUTRAL
+        assertEquals(CameraProfileDefaults.CHANNEL_UNKNOWN, d.channel(left = true))
+        assertEquals(CameraProfileDefaults.CHANNEL_UNKNOWN, d.channel(left = false))
+        assertFalse(d.hasChannelMap, "chưa đo ⇒ Cài đặt ẨN hàng Nguồn, không bày một chip nói dối")
+        val seal = CameraProfileDefaults(channelLeft = 2, channelRight = 3)
+        assertTrue(seal.hasChannelMap)
+        assertEquals(2, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, CameraSignalPolicy.HAL_MODE_AUTO, seal.channel(left = true)))
+        assertEquals(3, CameraSignalPolicy.channelFor(CameraSignalPolicy.SOURCE_CHANNEL, CameraSignalPolicy.HAL_MODE_AUTO, seal.channel(left = false)))
+        // Ghi chú `camera_frame`: kênh đơn ⇒ anamorphic ×STRIPS; khung ghép ⇒ rỗng.
+        assertEquals("anamorphic x4", CameraSignalPolicy.frameNote(true))
+        assertEquals("", CameraSignalPolicy.frameNote(false))
     }
 
     /** MỘT KÊNH ⇒ **không cắt dải nào**: crop là nguyên buffer (hình chữ nhật). */
@@ -215,6 +231,6 @@ class CameraChannelSourceTest {
                     }
             }
         }
-        assertEquals(2 * 2 * 4 * 5, checked, "phải đi hết 2 hình × 2 cỡ tròn × 4 góc × 5 điểm")
+        assertEquals(CameraSignalPolicy.SHAPES.size * 2 * 4 * 5, checked, "phải đi hết mọi hình (kể cả CLUSTER 2.76) × 2 cỡ tròn × 4 góc × 5 điểm")
     }
 }

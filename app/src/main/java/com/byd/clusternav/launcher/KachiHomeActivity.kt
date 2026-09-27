@@ -44,17 +44,17 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override val viewModelStore: ViewModelStore get() = vmStore
 
     private lateinit var container: AppContainer
-    private lateinit var workspace: WorkspaceView
-    private lateinit var dock: ControlDockView
-    private lateinit var viewModel: HomeViewModel
-    private lateinit var windows: LauncherWindows
-    private lateinit var topStrip: KachiTopStrip
+    internal lateinit var workspace: WorkspaceView
+    internal lateinit var dock: ControlDockView
+    internal lateinit var viewModel: HomeViewModel
+    internal lateinit var windows: LauncherWindows
+    internal lateinit var topStrip: KachiTopStrip
 
     /** Cầu sang cấu hình/hành động của ClusterNav (IA v2 · §4.2) — dựng MỘT lần, xem [clusterNavBridge]. */
     private val bridge: ClusterNavBridge by lazy { clusterNavBridge() }
 
     /** Hai bảng phủ toàn màn (màn Cài đặt + bảng vẽ bố cục) — khối nối dây ở [homePanels] (trần 500 dòng). */
-    private val panels: HomePanels by lazy {
+    internal val panels: HomePanels by lazy {
         homePanels(
             activity = this, rootFrame = rootFrame, viewModel = viewModel, bridge = bridge,
             openDockPicker = { sel, apply -> drawerController.openDockPicker(sel, apply) },
@@ -108,13 +108,13 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private lateinit var drawerController: DrawerController
     /** S4 · R7 — bộ chọn hồ sơ sau cú chạm chip hồ sơ (thay `ProfileBar`: hết xoay vòng, hết hộp thoại tạo thứ hai). */
     private lateinit var profileChip: ProfileChip
-    private lateinit var mainArea: LinearLayout
-    private lateinit var rootFrame: FrameLayout
+    internal lateinit var mainArea: LinearLayout
+    internal lateinit var rootFrame: FrameLayout
     private val media by lazy { MediaBridge(this) }        // đọc nhạc live cho w_media + transport
     /** T4 — chủ DUY NHẤT của widget Android bên thứ ba (host + id + bind-grant). Xem `AppWidgetSlotHost`. */
-    private val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
+    internal val appWidgets by lazy { AppWidgetSlotHost(this, { shell }, { submitBg(it) }, { drawerController.say(it) }) }
     private val appOpener by lazy { AppOpener(this) }      // U3: mở app toàn màn (đường "mở app kiểu thường")
-    private val cameraSignal by lazy { container.cameraSignal }   // BG-15: MỘT controller cả tiến trình (AppContainer)
+    internal val cameraSignal by lazy { container.cameraSignal }   // BG-15: MỘT controller cả tiến trình (AppContainer)
 
     /**
      * Glue intent theo-ô (gắn app/widget · mở · xoá · đổi chỗ) — thân ở [KachiHomeSlots] (trần 500 dòng). Nhận
@@ -162,8 +162,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      * field không đổi nên phép so đó gần như miễn phí, còn giá của việc giữ nhiều bản sao thì đã trả bằng một lỗi
      * thật (xoá bố cục mà màn hình vẫn hiện 6 khung).
      */
-    private val unitPrefs: UnitPrefs get() = viewModel.uiState.value.unitPrefs
-    private val customLayout: GridLayout? get() = viewModel.uiState.value.customLayout
+    internal val unitPrefs: UnitPrefs get() = viewModel.uiState.value.unitPrefs
+    internal val customLayout: GridLayout? get() = viewModel.uiState.value.customLayout
     // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
     @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
     // @Volatile (cùng lý do `appLauncher` ngay trên): GHI ở thread nền `winExec` (dò dadb), ĐỌC ở thread CHÍNH
@@ -176,9 +176,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private val winExec = java.util.concurrent.Executors.newSingleThreadExecutor()
     /** Thread nền RIÊNG cho I/O ảnh (xem submitIo) — không để I/O ảnh chặn lệnh cửa sổ và ngược lại. */
     private val ioExec = java.util.concurrent.Executors.newSingleThreadExecutor()
-    private var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
+    internal var shownState: HomeUiState? = null   // view-side diff cache của collector (KHÔNG phải nguồn sự thật)
 
-    private lateinit var wall: WallView
+    internal lateinit var wall: WallView
     private val handler = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
@@ -344,82 +344,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         startVoiceIfRequested(intent, voice)
     }
 
-    /**
-     * Áp [state] lên VIEW (duy nhất một chỗ, do collector gọi) — chỉ đọc-vẽ, KHÔNG đổi state. Diff so với [shownState]
-     * để chỉ làm việc khi phần liên quan đổi. Side-effect cửa sổ theo-ô ở handler; ở đây chỉ reflow khi preset/viền đổi.
-     */
-    /**
-     * #10 (owner 2026-09-23) — ĐỔI MÀU theme mà GIỮ STATE, KHÔNG recreate Activity: re-áp bảng màu mới lên các
-     * view chrome (nền · thanh trên · thanh nút · chrome ô), GIỮ ô App đang chiếu (VdAppHost sống ⇒ app KHÔNG
-     * restart). Nguyên tắc launcher: dù đổi gì màn cũng chạy tiếp.
-     */
-    private fun applyThemeInPlace() {
-        runCatching { KachiGlass.refresh(rootFrame) }; wall.restyle()   // nền kính + màu nền tổng theo palette (#4)
-        topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
-    }
-
-    private fun render(state: HomeUiState) {
-        val prev = shownState
-        // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.
-        val themeChanged = ThemeHost.sync(state)
-        if (LangHost.changed(prev, state) && prev != null) { recreate(); return }
-        if (themeChanged && prev != null) applyThemeInPlace()
-        // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
-        prev?.let { appWidgets.reclaim(it, state) }
-        workspace.render(state.workspace, state.carStatus)
-        // R1/R2 (quality-review 2026-09-15): registry vị-trí-app là PROJECTION của state — reconcile MỖI render ở
-        // ĐÚNG MỘT chỗ, thay các lệnh d.place/d.remove sửa tay ở handler (nguồn drift "3 nguồn sự-thật"). Đọc-vẽ,
-        // không đổi state. `WorkspaceView.render` phía trên đã lo VdAppHost theo-ô; đây lo registry + evict app rời ô.
-        windows.reconcileLocations(state.workspace.slots)
-        // WP4 — thứ tự vật trên thanh trên đổi ⇒ ĐẶT LẠI CHỖ (không dựng lại view — `KachiTopStrip.setLayout`).
-        if (prev?.header != state.header) topStrip.setLayout(state.header)
-        // ⚠ xét CẢ `topStrip`: thiếu nó thì đổi danh sách chip mà màn hình không đổi gì (off-car trạng thái xe gần như không đổi).
-        if (prev == null || prev.carStatus != state.carStatus || prev.topStrip != state.topStrip) {
-            topStrip.refreshChips(state.carStatus, unitPrefs, state.topStrip)
-            // RW0/Đ4: thanh nút cũng cần trạng thái xe để ô ĐỌC sống được ở đó. CHỈ đổ lại số của ô đọc — KHÔNG
-            // dựng lại thanh (C5: dựng lại mỗi nhịp 1/giây sẽ nháy + mất trạng thái ô vừa bấm).
-            dock.setCarStatus(state.carStatus, unitPrefs)
-            workspace.setUnitPrefs(unitPrefs)   // R11: ô giữa màn cũng theo lựa chọn đơn vị (tự bỏ qua nếu không đổi)
-            cameraSignal.tick()   // camera theo xi-nhan (tự đọc xi-nhan qua HAL — findings 2026-09-23; pref mặc định TẮT)
-        }
-        // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
-        // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.
-        if (prev?.dock != state.dock) {
-            // Dựng lại cây bố cục khi ĐỔI VIỀN hoặc ĐỔI cờ ẩn/hiện (S1b): cả hai đều đổi vị trí/việc gắn của
-            // thanh nút trong `mainArea`, mà `dock.setConfig` chỉ đổi nút BÊN TRONG thanh, không gắn/tháo thanh.
-            // Thiếu nhánh `visible` thì bật/tắt "Hiện thanh nút" không có tác dụng tới khi đổi viền/dựng lại màn.
-            val layoutChanged = prev != null &&
-                (prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
-            dock.setConfig(state.dock)
-            if (layoutChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
-        }
-        // Đổi/thêm/xoá hồ sơ nạp lại TOÀN BỘ state ⇒ trang đã dựng của màn Cài đặt (nếu đang mở) trở nên cũ. Đi theo
-        // đường một chiều: state đổi → render → bảng dựng lại. ⚠ phải xét CẢ `profiles`: xoá một hồ sơ KHÔNG phải hồ
-        // sơ đang dùng thì `activeProfile` không đổi, và nếu chỉ xét nó thì danh sách trên màn vẫn còn hồ sơ vừa xoá.
-        if (prev == null || prev.activeProfile != state.activeProfile || prev.profiles != state.profiles) {
-            topStrip.setProfile(state.activeProfile)
-            panels.invalidateSettings()
-        }
-        // [SOÁT P1-1 kiến trúc] Bố cục tự vẽ đẩy xuống view ở ĐÚNG MỘT CHỖ: theo state, khi state đổi. Trước đây chỗ
-        // này tự đọc lại repository khi đổi hồ sơ (đường đọc bền nằm trong tầng UI) còn việc đẩy xuống view thì ở hàm
-        // khác ⇒ hai đường song song. Nay `load()`/`switchProfile()` đã nạp bố cục vào state nên ca đó tự đúng.
-        // S4 · R6: hồ sơ lúc nổ máy đổi ⇒ chip "Gần nhất/<tên>" phải vẽ lại (trang Cài đặt được nhớ nên không tự
-        // dựng lại; thiếu dòng này thì chọn hồ sơ nổ máy là "màn hình không đổi gì" — họ lỗi nút bố cục sẵn ở P9).
-        if (prev != null && prev.bootProfile != state.bootProfile) panels.invalidateSettings()
-        if (prev?.customLayout != state.customLayout) {
-            workspace.setCustomLayout(state.customLayout)
-            windows.reflow()
-        }
-        // Ẩn/hiện thanh (S1b) cũng đổi KÍCH THƯỚC vùng ô (ẩn ⇒ ô lấp trọn màn), nên cửa sổ app đặt trong ô phải đặt
-        // lại theo khung mới — cùng lý do đổi viền/bố cục.
-        if (prev != null &&
-            (prev.preset != state.preset || prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
-        ) {
-            windows.reflow()
-        }
-        shownState = state
-        windows.updateOverlayHeads()
-    }
+    // `applyThemeInPlace` · `render` · `selectPreset` · `applyCustomLayout` → `KachiHomeRender.kt` (tách THUẦN theo trần 500
+    // dòng, L6-debt 2026-09-27): hàm mở rộng `internal` cùng package, thân giữ nguyên byte; các field chúng chạm là `internal`.
 
     /**
      * Back — API 29–32 (xe) vào đây từ nền tảng; API 33+ vào từ [PredictiveBack] (đăng ký ở [onCreate]). Kế thừa
@@ -437,29 +363,6 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             drawerController.isOpen() -> drawerController.close()
         }
     }
-
-    /**
-     * Chọn một bố cục sẵn — **đường DUY NHẤT**, dùng cho cả 5 nút ở thanh trên lẫn dãy chip trong màn Cài đặt (§4.5).
-     *
-     * [ĐO] P9: bấm bố cục sẵn trong khi đang dùng bố cục tự vẽ thì trước đây **màn hình không đổi gì** (bố cục tự vẽ
-     * vẫn thắng) nhưng vẫn **dựng lại TOÀN BỘ ô** — người dùng tưởng nút hỏng, còn app trong ô thì bị nhả/gắn vô ích.
-     * Hành động tường minh của người dùng phải có tác dụng ⇒ chọn bố cục sẵn = BỎ bố cục tự vẽ. Đây cũng là đường quay
-     * về bố cục sẵn mà không phải mở bảng vẽ.
-     *
-     * Phải đi qua [applyCustomLayout]: [ĐO] xoá riêng biến ở đây thì khung vẽ vẫn giữ BẢN SAO của nó ⇒ cấu hình đã xoá
-     * mà màn hình vẫn hiện bố cục tự vẽ. Một đường duy nhất, có test canh.
-     */
-    private fun selectPreset(preset: LayoutPreset) {
-        if (customLayout != null) applyCustomLayout(null)
-        viewModel.setPreset(preset)
-    }
-
-    /**
-     * Áp bố cục tự vẽ = **ghi vào nguồn sự thật, hết**. Việc đẩy xuống màn hình + sắp lại cửa sổ app do `render()`
-     * làm khi state đổi (một chiều). Trước đây hàm này tự gán field riêng + tự ghi bền + tự đẩy xuống view, tức
-     * ba việc ở một chỗ và không ai bảo đảm ba việc đó thấy cùng một giá trị.
-     */
-    private fun applyCustomLayout(layout: GridLayout?) = viewModel.setCustomLayout(layout)
 
     override fun onStart() {
         super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening()

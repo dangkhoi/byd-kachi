@@ -233,6 +233,26 @@ data class TopStripConfig(
             id in BUILT_IN ||
                 (CapabilityCatalog.kindOf(id) == CapabilityKind.READ && CapabilityGroups.byId(id) == null)
 
+        /**
+         * ═══ 2.76 (R9) · ẨN KHỎI BỘ CHỌN **CHIP** — không ẩn khỏi các bộ chọn khác, không xoá datum ═══════════════
+         *
+         * Khác [CapabilityCatalog.HIDDEN_FROM_PICKER] (ẩn ở MỌI màn chọn) đúng một điều: lý do ở đây là lý do **của
+         * thanh trên**. `ac_wind_auto` trả lời câu *"gió đang tự động không"*, mà chip Gió (`ac_wind`) đã trả lời
+         * đúng câu ấy bằng `"auto n"` (UX4/UX8) — hai chip cạnh nhau nói một điều là thứ owner hỏi từ 26/09
+         * (*"gộp ac_mode_auto/ac_wind_auto?"*). Ở ô lớn / nhóm / giọng nói / test-bridge datum vẫn có ích nguyên
+         * (nó là `readKey` của nút `ac_auto`, xem `ControlRegistry`), nên KHÔNG đụng registry và không ẩn toàn cục.
+         *
+         * Cơ chế y hệt bảng ẩn toàn cục: [choices] lọc, [isChippable] **không** lọc ⇒ [decode] GIỮ mã ai đã đặt
+         * (khoá lưu bền không được mất) và khối *"đang bật"* của [picks] vẫn bày nó để còn GỠ được. Mỗi mục kèm
+         * lý do ≥ 40 ký tự — bài canh đọc.
+         */
+        val CHIP_HIDDEN: Map<String, String> = mapOf(
+            "ac_wind_auto" to
+                "chip Gió (`ac_wind`) đã nói \"auto n\" ngay trên thanh ⇒ chip này là bề mặt thứ hai cho cùng câu " +
+                    "\"gió tự động không\"; owner hỏi gộp 26/09, chốt 27/09: ẩn khỏi bộ chọn CHIP, giữ datum cho " +
+                    "ô lớn · nhóm · giọng nói · test-bridge · readKey của nút ac_auto",
+        )
+
         /** Mọi thứ đặt được lên thanh trên, cho màn chọn bày ra. */
         fun choices(): List<CapabilityPick> = buildList {
             // U5 · T2: ba chip TỔNG HỢP không có dòng registry nào để treo `labelEn` vào ⇒ dựng [CapabilityPick] với
@@ -261,7 +281,8 @@ data class TopStripConfig(
             // Lọc bằng CHÍNH [isChippable] thay vì viết lại điều kiện `kind == READ`: bản cũ lặp lại luật, nên khi
             // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
             // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.
-            addAll(CapabilityCatalog.all().filter { !it.curated && isChippable(it.id) })
+            // 2.76: lọc thêm [CHIP_HIDDEN] — ẩn CHỈ ở bộ chọn chip, xem KDoc ở đó.
+            addAll(CapabilityCatalog.all().filter { !it.curated && isChippable(it.id) && it.id !in CHIP_HIDDEN })
         }
 
         /**

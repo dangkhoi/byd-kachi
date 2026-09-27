@@ -192,8 +192,9 @@ object VoiceWavProbe {
      * Hai pha của VOICE-OPEN-TURN trên một tệp: `(câu cuối, vế trước, vế sau)`.
      *
      * `rec` bị đóng ở đây (`use`) vì cả hai lượt giải mã của pha NGHE dùng chung một bộ nhận dạng — cùng hotword,
-     * cùng mô hình, đúng như một lượt nói thật. Vế trước đủ nghĩa / không có vế sau ⇒ vế sau rỗng và câu cuối
-     * **bằng** vế trước, tức không có đường nào đổi kết quả của một tệp không có quãng ngừng.
+     * cùng mô hình, đúng như một lượt nói thật. Không có vế sau ⇒ vế sau rỗng và câu cuối **bằng** vế trước, tức
+     * không có đường nào đổi kết quả của một tệp không có quãng ngừng; có vế sau mà không nối được ⇒ câu cuối vẫn
+     * bằng vế trước, chỉ cột `tail` mang chữ đã bỏ (để phép đo còn thấy nó).
      */
     private fun openTurn(
         rec: VoiceRecognizer,
@@ -205,10 +206,11 @@ object VoiceWavProbe {
         // `headStart == 0` ở gần như mọi tệp ⇒ **đúng** lời gọi cũ, không một mảng nào bị chép thêm.
         val head = if (headStart <= 0) r.decodeAll(pcm, headTrim)
         else pcm.copyOfRange(headStart, minOf(headTrim, pcm.size)).let { r.decodeAll(it, it.size) }
-        if (tail == null || !VoiceOpenTurn.isOpen(head)) return@use Triple(head, head, "")
+        if (tail == null) return@use Triple(head, head, "")
+        // R6 (2.76): có vế sau ⇒ giải mã + hỏi `attach` như phiên thật (`VoiceOpenTurnArm.result`), kể cả vế đủ.
         val part = pcm.copyOfRange(tail.first, minOf(tail.last + 1, pcm.size))
         val tailText = r.decodeAll(part, part.size)
-        val joined = VoiceOpenTurn.join(head, tailText)
+        val joined = VoiceOpenTurn.attach(head, tailText) ?: return@use Triple(head, head, tailText)
         Log.i(TAG, "noi-tiep (WAV): \"$head\" + \"$tailText\" ⇒ \"$joined\"")
         Triple(joined, head, tailText)
     }

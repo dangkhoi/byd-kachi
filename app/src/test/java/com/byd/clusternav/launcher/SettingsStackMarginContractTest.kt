@@ -33,6 +33,8 @@ class SettingsStackMarginContractTest {
         // khoảng cách" nhất; để ngoài phạm vi thì luật lề STACK chỉ còn đúng ở ba tệp cũ.
         "SettingsSectionsBars.kt", "SettingsSectionsNav.kt", "SettingsSectionsCast.kt",
         "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
+        // 2.76 · R1 — camera tách khỏi `SettingsSectionsCar`, dựng bằng `rows.*` + khối gập.
+        "SettingsSectionsCamera.kt",
         // 2.74 · R3 — nhóm Giọng nói cũng dựng bằng `rows.*` (và nay có cả khối gập/mở).
         "SettingsVoiceSection.kt",
     )

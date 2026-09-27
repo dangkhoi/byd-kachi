@@ -1,5 +1,5 @@
 <!--
-  GHẾ MÁT — ghế LÁI (`seatc` · datum `seat_vent_state`): bản gương của ghế phụ, đúng quy ước cạnh đã có (`-left` = ghế lái). Bông tuyết = làm lạnh, khác hẳn làn nhiệt của bản sưởi.
+  GHẾ MÁT mức 2 — ghế LÁI (`seatc` · datum `seat_vent_state`): ghế + HAI bông tuyết thành hàng ở dải trên (r 3,3 — gần bằng bông đơn r 3,4 để hai mức đọc cùng cỡ). 2.76 L7 (owner 27/09: *"1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà không cần số 1-2"*): MỨC nằm trong HÌNH — số dấu = mức, con số rời chip. Hình khái niệm = mức CAO NHẤT (2 dấu); bản `_1` = một dấu. Là hình khái niệm của nút/datum và hình lúc mức 2. + CHẤM VÔ-LĂNG (2.76 R9).
   ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/seat_vent_left.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
   chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
   bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
@@ -22,6 +22,8 @@
     </path>
     <path android:pathData="M 18.55 19.41 L 18.55 21 M 12.65 19.41 L 12.65 21"
         android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M 7 3.2 L 7 10 M 9.95 4.9 L 4.05 8.3 M 9.95 8.3 L 4.05 4.9"
+    <path android:pathData="M 5.8 3 L 5.8 9.6 M 8.66 4.65 L 2.94 7.95 M 8.66 7.95 L 2.94 4.65 M 14.4 3 L 14.4 9.6 M 17.26 4.65 L 11.54 7.95 M 17.26 7.95 L 11.54 4.65"
         android:fillColor="#00000000" android:strokeColor="#29D3EE" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 8.6 16.65 A 1.25 1.25 0 1 1 8.6 19.15 A 1.25 1.25 0 1 1 8.6 16.65 Z"
+        android:fillColor="#29D3EE" />
 </vector>

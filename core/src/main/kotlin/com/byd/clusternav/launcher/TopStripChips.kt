@@ -109,14 +109,18 @@ object TopStripChips {
         // nguội mà mã kia báo 0 thì đúng câu phải nói là *"chưa biết"* — luật *"không biết ≠ đang tắt"*. (Có
         // mã nào đang CHẠY thì đã rơi vào nhánh ACTIVE ở trên rồi, nên luật này không giấu mất trạng thái thật.)
         val unread = heat?.level == null || vent?.level == null
-        val shown = if (lvl != null) "$lvl" else if (unread) TelemetryView.PLACEHOLDER else ""
+        // 2.76 L7 (owner 27/09): MỨC nằm trong HÌNH — một/hai làn nhiệt, một/hai bông tuyết ([CapabilityIcons.forLevel]).
+        // Có hình cho mức ⇒ chữ chỉ còn nhãn ghế; mức ngoài bảng ⇒ con số quay lại (không vẽ bừa một mức chưa đo).
+        val concept = onId?.let { CapabilityDots.iconOverride(it) }
+        val levelIcon = CapabilityIcons.forLevel(concept, lvl)
+        val shown = if (lvl != null) (if (levelIcon != null) "" else "$lvl") else if (unread) TelemetryView.PLACEHOLDER else ""
         return ChipView(
             text = when {
                 shown.isEmpty() -> if (labels) label else ""
                 labels -> "$label · $shown"
                 else -> shown
             },
-            icon = onId?.let { CapabilityDots.iconOverride(it) } ?: emptyIcon,
+            icon = levelIcon ?: concept ?: emptyIcon,
             tone = when {
                 lvl != null -> ChipTone.ACTIVE
                 unread -> ChipTone.NEUTRAL   // "không biết" ≠ "đang tắt" (luật chung của thanh trên)
@@ -178,6 +182,10 @@ object TopStripChips {
         // Điều kiện là **bảng khai** ([CapabilityIcons.hasStateIcons]), không phải một nhánh theo mã (CLAUDE.md
         // §7): khai thêm một datum ở bảng ấy là chip này tự đúng, không phải sửa một dòng nào ở đây.
         val stateIcon = CapabilityIcons.forState(id, view.state)
+        // 2.76 L7 — họ THANG MỨC nói MỨC bằng số dấu trong hình ([CapabilityIcons.forLevel], khoá theo hình khái
+        // niệm — chính hình mà nút của datum này mang). Có hình cho mức ⇒ con số rời chip; mức ngoài bảng ⇒ số ở lại.
+        val concept = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain)
+        val levelIcon = if (hasLevel) CapabilityIcons.forLevel(concept, view.level) else null
         // B9 (owner 2026-09-22): chip là bề mặt hẹp nhất — với datum mức rút "Mức 2"/"Level 2" → "2" cho đỡ chật
         // (hình ghế nói rõ là ghế rồi). Nay lấy thẳng [TelemetryView.level] chứ không bóc chuỗi đã dịch.
         // UX8 (owner 2026-09-27): chữ `AUTO` trên chip viết **thường** — phép hạ chữ sống đúng một bản ở
@@ -185,6 +193,7 @@ object TopStripChips {
         val chipValue = ClimateAuto.narrowAuto(when {
             !hasLevel -> value.removePrefix(Strings.t("Mức ", "Level ")).trim()
             view.level == null -> TelemetryView.PLACEHOLDER   // chưa đọc / mã ngoài thang ⇒ "—" + NEUTRAL
+            levelIcon != null -> ""                           // L7: mức đã nằm trong hình, không in số
             view.level > 0 -> view.level.toString()
             else -> ""                                        // mức 0 = TẮT: icon mờ nói hết, không in chữ "Tắt"
         })
@@ -201,7 +210,7 @@ object TopStripChips {
                 labels -> "${spec.displayShortLabel} · $chipValue"
                 else -> chipValue
             },
-            icon = stateIcon ?: CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain),
+            icon = stateIcon ?: levelIcon ?: concept,
             tone = when {
                 // UX8 — hai chế độ: HÌNH đã nói chế độ nào, nên sắc thái chỉ còn nói *"đã đọc được hay chưa"*.
                 // Đọc được ⇒ sáng (một chế độ đang chạy thật, cả hai đều là trạng thái sống, không cái nào là

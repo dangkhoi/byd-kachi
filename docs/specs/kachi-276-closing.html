@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.76 (177) — Đóng nợ off-car + closing — spec</title>
+<!--
+  TEMPLATE spec Kiro-style (consolidated). COPY file này → docs/specs/<slug>.html rồi điền.
+  Thứ tự section CHUẨN (workflow.md): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  1 spec = 1 file HTML cho 1 feature/task. 1 approval gate duy nhất (out-of-band, KHÔNG lưu state trong HTML).
+  Diagram = HTML visual (inline SVG hoặc .layers/.flow) — CẤM mermaid/ascii (workflow.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<!-- Spec kachi-276-closing — đóng toàn bộ nợ off-car sau buổi xe 27/09, rồi 1 buổi xe 30–60 phút đóng dự án. Approval state KHÔNG lưu trong file này. -->
+
+<h1>Kachi 2.76 (177) — Đóng nợ off-car + buổi xe closing</h1>
+<p class="muted">Slug: <code>kachi-276-closing</code> · Branch <code>feat/voice-hotword-phrases</code> · Owner <code>dangkhoi</code> · <span class="pill wait">Trạng thái: Draft / chờ duyệt (3 cổng Requirements · Design · Tasks duyệt out-of-band)</span></p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + <code>CLAUDE.md</code>. Chỉ dùng Android SDK + khối đã có trong repo ⇒ không có thư viện mới cần Context7 (xem §4.2). Mức bằng chứng: <b>[ĐO]</b> đo thật · <b>[SUY]</b> suy luận · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b> · 🚗 chỉ chốt được trên xe.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-27</b>: Khởi tạo spec từ lệnh owner <i>"làm hết tất cả off-car nợ, sau đó lên xe 30p 1 tiếng closing hết luôn, get things done, không kéo dài ra nữa"</i>. Gom 5 làn code (L1–L5) + làn nợ kỹ thuật L6 + consolidation thành 1 bản 2.76 (177) và 1 runbook xe closing.</li>
+<li><b>2026-09-27 (chiều)</b> — T1–T6 xong (workflow 5 làn ∥ + làn nợ, 87 phút): full 5 module <b>4 623 / 0</b>, lint 0, 0 tệp > 500 dòng. Owner thêm yêu cầu cuối phiên ⇒ R13 (icon ghế theo mức, lật gương) làn L7. Runbook closing <code>oncar-runbook-2.76.md</code> viết xong.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Bản <b>2.75 (176)</b> đã OTA trưa 27/09 (BACKLOG dòng <code>2.75 (176)</code>). Buổi xe sáng 27/09 (BACKLOG dòng <code>ONCAR-2026-09-27</code>, Seal DiLink3, 2.74 (175) cài 09:57 → owner off-car 11:56) để lại đúng những khoản nợ off-car dưới đây, tất cả đã có số đo hoặc quyết định của owner, <b>không còn vòng thiết kế mở</b>:</p>
+<ul>
+<li><b>Camera</b> [ĐO 27/09]: bộ tham số owner duyệt (trái, xoay 0) <code>span=STRIP · render=GL · focal=55 · k=100 · scale=130 · amount=100 · cx=cy=0</code>; dải 1 = gương TRÁI, dải 2 = gương PHẢI (kênh trái=2/phải=3 hiện hardcode <code>CameraSignalPolicy.CamView.channel</code> — [P3] review Pass 2). Owner: <i>"có quá nhiều setting dùng cho việc test ở màn setting camera, cần bỏ ra… chỉ để lại setting mà user cần"</i>; hỏi <i>"có chuyển mặc định sang một kênh không"</i>.</li>
+<li><b>Cụm</b> [ĐO 27/09, 3 ảnh + framebuffer display 1 1920×720]: <i>"header top và bottom là của hệ thống, không vẽ vào được, chỉ vẽ được khúc giữa như gmaps đang hiện"</i>.</li>
+<li><b>Voice</b>: (a) VOICE-WRITE-LANE [P2] spec kachi-274 §4.2 R4 — câu ghép có nhánh LeaveAuto async (2 ghi HAL + nhịp 400 ms) làm rơi lệnh ghi mức gió; (b) F2 [ĐO 10:42:46] <i>"mở vietmap" ⟨ngừng⟩ "vào ô số hai"</i>: đuôi đã thu (<code>tieng_dut</code> 2 400→4 384 ms) rồi bị bỏ vì đầu đủ nghĩa; (c) họ D: ASR rụng tên app còn <i>viet/yout</i> — 2.75 cố ý giữ Unknown, nay nới có cổng.</li>
+<li><b>Chip/icon</b> (UX8 deferred): <code>power_level</code>/<code>headlight_feedback</code> in mã thô; cửa ×4 + cửa sổ trời chưa có icon trạng thái; owner hỏi gộp <code>ac_mode_auto</code>/<code>ac_wind_auto</code> (26/09) và ghế lái/phụ chỉ khác nhau bởi lật gương.</li>
+<li><b>Bố cục</b>: chip hồ sơ 34 dp vs 3 pill 40 dp (owner 26/09); OQ7 khối 4 thẻ lốp lệch tâm ~0,53 vs ảnh xe 0,50; ảnh xe user còn giải mã theo đường cover (<code>WallpaperStore.loadScaled</code>).</li>
+<li><b>Nợ kỹ thuật</b>: file ≥ 500 dòng (production, test, <code>scripts/design/gen-car.py</code> 873); 3 chỗ reflection <code>SystemProperties</code> lặp (<code>AvmCamera.kt</code>, <code>comfort/SeatComfortApplier.kt</code>, <code>modules/clustercast/ClusterProfile.kt</code>); danh mục chức năng cần sinh lại.</li>
+</ul>
+<div class="card"><b>Cổng / phụ thuộc:</b> Không cần xe để bắt đầu — mọi làn đều có số đo/quyết định sẵn. Xe chỉ dùng cho <b>buổi closing 30–60 phút</b> ở cuối (R12); mục nào chưa đo được trên xe thì để 🚗 trong runbook, <b>không</b> kéo thêm vòng off-car. Emulator dùng chung: L3 (voice-e2e) và L5/L2 (screenshot) phải tránh nhau (kiểm <code>adb shell ps | grep -c launcher</code> ổn định).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1. SETTINGS-CAMERA-IA</b> (L1) — Màn <i>Tiện nghi xe › Camera</i> chỉ còn: bật camera khi xi-nhan · chiếu lên cụm · góc/vị trí overlay trái/phải · xoay trái/phải · hình (chữ nhật / tròn / <b>theo cụm</b> — slot enum do L2 sinh giá trị) · nắn hình bật/tắt (amount 100/0) · nguồn (toàn cảnh / một kênh). Mọi khoá kỹ thuật (span, width, render TV/GL/SV, focal/k/scale/cx/cy/pan, hal mode, texmatrix, synth…) dời vào disclosure <i>"Nâng cao (kỹ thuật)"</i> chỉ render khi <code>TestBridgeStore.isOn</code>; <code>prefs_set</code> vẫn hoạt động, không xoá khoá nào. <b>AC</b>: test hợp đồng liệt kê đúng danh sách khoá camera thấy được khi tắt test-mode; khoá kỹ thuật vắng khi tắt / có khi bật.</li>
+<li><b>R2. PROFILE-DEFAULTS</b> (L1) — Mặc định camera theo đời DiLink trong <code>ClusterProfile</code>: Seal/DL3 [ĐO 27/09] <code>STRIP · GL · amount 100 · focal 55 · k 100 · scale 130 · cx 0 · cy 0 · pan 0/0 · rot 0/0</code> (<code>docs/diagnostics/research-side-camera-orientation-2026-09-27.md</code> §6.1 khuyến nghị đứng ⇒ rot 0 cả hai bên; pref ↺90 owner đã đặt trên xe giữ nguyên, chốt tại CAM-C2 🚗) · kênh trái=2/phải=3. Đời khác giữ mặc định trung tính, kênh = unknown ⇒ tuỳ chọn CHANNEL ẩn/khoá. <code>CameraDewarpPrefs</code>/<code>CameraSignalPolicy</code> đọc mặc định từ profile, bỏ literal <code>CamView.channel = 2/3</code>. Pref đã đặt tường minh trên xe owner vẫn thắng. <b>AC</b>: test profile → mặc định → uniform cho DL3; trung tính cho một đời giả.</li>
+<li><b>R3. CHANNEL-FALLBACK + camera_frame</b> (L1) — Khi <code>camera_source=CHANNEL</code> mà HAL từ chối (<code>addPreviewSurface rc=false</code> hoặc không có khung trong ngân sách first-frame đã đo trong <code>CameraSignalController</code>/<code>CameraVideoLayer</code>) ⇒ dựng lại phiên <b>đúng một lần</b> ở PANO (theo cùng đường "camera none → camera left"), 1 dòng log rõ, phụ đề chip Cài đặt <i>"đã lùi về toàn cảnh"</i>. Trả lời <code>camera_frame</code> thêm ghi chú <i>"anamorphic x4"</i> khi source=CHANNEL. <b>AC</b>: HAL giả rc=false ⇒ đúng 1 rebuild, PANO, không lặp.</li>
+<li><b>R4. HÌNH THEO CỤM</b> (L2) — Khi overlay chiếu lên cụm (cluster=true, display 1, 1920×720) chỉ vẽ trong <b>dải giữa</b>; đo [ĐO] từ <code>cluster-fb-d1.png</code> + 3 ảnh cụm (PIL): y trên/dưới, x trái/phải, bán kính góc/dạng đầu. <code>:core CameraClusterBand</code> thuần: kích cụm + dải ⇒ rect cửa sổ + mask (rounded-rect/pill) + crop/aspect ảnh bên (đứng, đặt ở đầu trái/phải theo bên xi-nhan, mép phía xe hướng vào trong); số Seal đứng sau field profile (yêu cầu chéo làn tới L1; tạm <code>ClusterBandSpec</code> mặc định Seal trong :core). Giá trị enum hình <code>CLUSTER</code> ("theo cụm"); trên màn chính "theo cụm" degrade thành ROUND hoặc RECT (chốt + ghi doc). Bằng chứng emulator 1920×720 (overlay display) PNG trái/phải có viền dải đo, video không đè thanh hệ thống — lưu scratchpad, không vào repo. <b>AC</b>: test hình học (dải trong 1920×720, mask ≤ dải, trái/phải, degrade) + hợp đồng nối dây (CLUSTER tới overlay).</li>
+<li><b>R5. VOICE-WRITE-LANE</b> (L3) — Một làn ghi HAL tuần tự duy nhất cho mọi lệnh ghi từ giọng nói (executor 1 thread hoặc Channel-consumer coroutine); mệnh đề N+1 chỉ chạy sau khi mệnh đề N ghi xong (kể cả nhịp 400 ms); câu trả lời không đổi; tách <code>VoiceDispatcher</code> nếu chạm 500 dòng. <b>AC</b>: HAL giả ghi thứ tự + timestamp: <i>"tăng gió rồi tắt điều hoà"</i> ⇒ <code>[ac_auto OFF, level+1, (beat), ac OFF]</code>, không rơi; đường đơn mệnh đề giữ nguyên byte, test cũ xanh.</li>
+<li><b>R6. GHÉP ĐUÔI SAU ĐẦU ĐỦ NGHĨA</b> (L3) — Khi <code>tailRange ≠ null</code> và đuôi parse được như phần nối của đầu (mệnh đề ô cho OpenApp; tên cho <i>"chuyển sang hồ sơ"</i> trần…) ⇒ GHÉP; <b>không</b> thêm thời gian nghe cho đầu đủ nghĩa (giữ F2b <i>"nhanh đúng như 2.73"</i>). <b>AC</b>: test hồi quy ca 27/09 10:42:46; <code>VoiceOpenTurnCasesTest</code> (2.74) không đổi kỳ vọng trừ khi có phép đo.</li>
+<li><b>R7. TIỀN TỐ ≥ 4 KÝ TỰ + MỆNH ĐỀ Ô</b> (L3) — Giải app từ tiền tố ≥ 4 ký tự CHỈ khi câu có mệnh đề ô có số VÀ tiền tố duy nhất trong nhãn đã cài; &lt; 4 (<i>mát/áp</i>) hoặc nhập nhằng ⇒ Unknown ⇒ hỏi lại. <b>AC</b>: <i>"viet vào ô số hai"</i> ⇒ OpenApp(VietMap→2); <i>"yout vào ô hai"</i> ⇒ YouTube; <i>"mát vào ô số một"</i> ⇒ Unknown; 2 nhãn chung tiền tố ⇒ Unknown. Không đổi gì khác trong <code>voice/</code>; chạy lại <code>scripts/emulator/voice-e2e.sh</code> = 106/106 hoặc giải thích từng ca bằng phép đo.</li>
+<li><b>R8. MÃ THÔ → CHỮ + ICON CỬA/CỬA SỔ TRỜI</b> (L4) — Bảng enum→VI/EN cho <code>power_level</code>, <code>headlight_feedback</code> từ hằng OEM trong <code>../jadx-tmap/sources/android/hardware/bydauto/*Device.java</code> (<code>POWER_*</code>/<code>HEADLIGHT_*</code>/<code>LIGHT_MODE_*</code>, dẫn file:line, [ĐO source]); mã lạ ⇒ <i>"mã N"</i>; datum 2 trạng thái thật ⇒ icon trạng thái. Cửa ×4 + cửa sổ trời: cặp glyph mở/đóng (qua <code>gen-car.py</code>/<code>design/car/top.svg</code> hoặc glyph cánh cửa trong <code>design/glyph</code>), 1 glyph/khái niệm; cửa sổ trời generic, xe owner N/A [ĐO 09-25 65535] ⇒ 🚗 N/A. <b>AC</b>: bản đồ DEFERRED trong <code>TopStripStateIconTest</code> rỗng (hoặc có lý do đầy đủ), soát máy xanh; <code>TelemetryReadoutTest</code> mọi hằng ánh xạ + mã lạ fallback.</li>
+<li><b>R9. GỘP AUTO + GHẾ LÁI</b> (L4) — <code>ac_wind_auto</code> ẩn khỏi picker chip + mặc định (giữ datum registry cho voice/automation/test-bridge) vì chip Gió đã <i>"auto n"</i>; <code>ac_mode_auto</code> thành chip icon 2 trạng thái (auto/manual) không chữ đuôi. Nếu bằng chứng (<code>HalRoutes</code>/registry, <code>getAcWindLevelManualSign</code> vs getter mode) cho thấy cùng một sự thật HAL ⇒ gộp và ghi rõ. Ghế lái thêm dấu thứ hai (chấm vô-lăng phía trước) qua <code>design/glyph</code> + <code>gen-icons.py --only</code>; <code>--check</code> byte-identical với icon không đụng. <b>AC</b>: <code>TopStripStateIconTest</code> phủ mọi datum 2 trạng thái cả VI+EN; <code>IconSetInventoryTest</code> glyph mới resolve.</li>
+<li><b>R10. (dự phòng gộp vào R8/R9)</b> — Không có yêu cầu riêng; giữ số để bảng tasks/lanes tham chiếu ổn định. Nội dung L4 nằm trọn trong R8 + R9.</li>
+<li><b>R11. BỐ CỤC</b> (L5) — (1) 4 nút thanh trên cùng cao 40 dp, avatar tròn 40 dp, chữ đại diện vẫn đúng tâm (UX1 offset = 0, đo lại); (2) khối 4 thẻ lốp tâm = tâm ảnh xe 0,50 ± 1 px, không thẻ nào đè mask xe (UX2) ở mọi kích widget; (3) ảnh xe user đi qua cùng đường giải mã fit như ảnh mặc định (<code>CarImageStore</code>), đo kích bitmap trước/sau bằng test. <b>AC</b>: test UX1=0, tâm lốp ± 1 px, không đè, kích giải mã; screenshot emulator trước/sau cho (1)(2).</li>
+<li><b>R12. NỢ KỸ THUẬT + CONSOLIDATION</b> (L6 + điều phối) — Tách mọi file ≥ 500 dòng bằng pure move (production, test, <code>gen-car.py</code> 873); 1 helper <code>SysProps</code> cho 3 chỗ reflection; sinh lại danh mục chức năng; full suite 5 module + lint 0. Sau đó: review Pass 1 Opus (§10) → security scan → build <b>2.76 (177)</b> → OTA → runbook <code>oncar-runbook-2.76.md</code> closing 30–60 phút → <code>CLOSEOUT-2026-09-27</code> (INDEX + BACKLOG + project-context cùng phiên). <b>AC</b>: <code>wc -l</code> không file nào ≥ 500; grep <code>SystemProperties</code> chỉ còn trong helper; test 5 module 0 fail; lint 0; APK strings 0 <code>TEST_</code>/danh tính.</li>
+</ul>
+<li><b>R13 — ICON GHẾ THEO MỨC + LẬT GƯƠNG (L7, yêu cầu cuối của owner 27/09)</b>: chip và ô ghế sưởi/mát mã hoá mức trong hình (1/2 làn sưởi · 1/2 bông tuyết), <b>không</b> số; ghế lái giữ chấm vô-lăng (R9); OFF = hình ghế trung tính. Tuỳ chọn <code>camera_mirror_left/right</code> (mặc định tắt, hàng user "Lật gương") áp ở cả GL (đảo u trước xoay) và TextureView (scaleX −1); nghiên cứu <code>research-side-camera-orientation-2026-09-27.md</code> §6.2: tay gương của HAL [CHƯA BIẾT] ⇒ 🚗 CAM-M1. Kèm nối <code>ClusterProfile.band</code> → <code>overlay.show(band=)</code> (yêu cầu chéo L2→L1 chưa được L1 làm). Đạt khi: mọi mức × sưởi/mát × lái/phụ ra drawable thật (IconSetInventory), audit máy PASS, PNG 24 px phân biệt 1 vs 2; uniform mirror+rot+pan hợp thành đúng; contract khoá user.</li>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Mỗi làn chỉ chạm file mình sở hữu (§4.1); yêu cầu chéo làn (vd L2 → field profile của L1) gửi bằng tên field + giá trị, không tự sửa file làn khác.</li>
+<li>R-nf2. Không hardcode tên gói/đời xe trong code làn; khác biệt đời xe vào <code>ClusterProfile</code> (CLAUDE.md §7). Không đổi API công khai ngoài scope.</li>
+<li>R-nf3. Mọi thay đổi có test off-car khoá đúng hành vi; fixture từ dump/WAV thật; gắn mức bằng chứng trong doc <code>docs/diagnostics/offcar-2026-09-27/*.md</code>.</li>
+<li>R-nf4. Chuỗi mới có đủ VI + EN (<code>I18n</code> test xanh). PNG bằng chứng ở scratchpad, không vào repo.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Kiến trúc 5 làn + làn nợ và file sở hữu</h3>
+<div class="diagram">
+<svg viewBox="0 0 900 520" width="900" height="520" role="img" aria-label="5 làn code L1–L5 song song, làn nợ L6 và consolidation nối tiếp; mỗi làn liệt kê file sở hữu">
+<style>.l{fill:var(--bg);stroke:var(--line);stroke-width:1.2}.t{fill:var(--fg);font:600 13px -apple-system,sans-serif}.s{fill:var(--muted);font:11px "SF Mono",monospace}.a{stroke:var(--accent);stroke-width:2;fill:none}.n{fill:rgba(0,113,227,.12);stroke:var(--accent);stroke-width:1.2}</style>
+<rect x="10" y="10" width="880" height="22" rx="6" class="n"/><text x="450" y="26" text-anchor="middle" class="t">Nguồn: BACKLOG ONCAR-2026-09-27 · 2.75 (176) · ảnh cụm + cluster-fb-d1.png · WAV xe · quyết định owner</text>
+<rect x="10" y="50" width="168" height="300" rx="12" class="l"/><text x="94" y="72" text-anchor="middle" class="t">L1 camera IA/profile</text>
+<text x="18" y="94" class="s">SettingsSectionsCar.kt</text><text x="18" y="110" class="s">clustercast/ClusterProfile.kt</text><text x="18" y="126" class="s">core camera/</text><text x="18" y="142" class="s"> CameraSignalPolicy.kt</text><text x="18" y="158" class="s"> CameraDewarpPrefs.kt</text><text x="18" y="174" class="s">PrefsCameraDewarp.kt</text><text x="18" y="190" class="s">CameraSignalController.kt</text><text x="18" y="206" class="s">AvmCamera.kt</text><text x="18" y="222" class="s">TestBridgeCameraFrame.kt</text><text x="18" y="238" class="s">SettingsCatalog* (camera)</text><text x="18" y="254" class="s">strings_kachi.xml (camera)</text><text x="18" y="270" class="s">+ tests</text><text x="18" y="300" class="s">R1 R2 R3</text>
+<rect x="188" y="50" width="168" height="300" rx="12" class="l"/><text x="272" y="72" text-anchor="middle" class="t">L2 dải cụm</text>
+<text x="196" y="94" class="s">CameraOverlayView.kt</text><text x="196" y="110" class="s">CameraOverlayFrame.kt</text><text x="196" y="126" class="s">CameraVideoLayer.kt (cụm)</text><text x="196" y="142" class="s">core camera/</text><text x="196" y="158" class="s"> CameraClusterBand.kt (mới)</text><text x="196" y="174" class="s"> CameraPanoCrop.kt (CLUSTER)</text><text x="196" y="190" class="s">scripts/emulator/</text><text x="196" y="206" class="s"> camera-cluster-e2e.sh (mới)</text><text x="196" y="222" class="s">+ tests</text><text x="196" y="300" class="s">R4</text>
+<rect x="366" y="50" width="168" height="300" rx="12" class="l"/><text x="450" y="72" text-anchor="middle" class="t">L3 voice</text>
+<text x="374" y="94" class="s">core .../voice/**</text><text x="374" y="110" class="s">app .../voice/**</text><text x="374" y="126" class="s">scripts/emulator/</text><text x="374" y="142" class="s"> voice-e2e.sh</text><text x="374" y="158" class="s">+ tests</text><text x="374" y="300" class="s">R5 R6 R7</text>
+<rect x="544" y="50" width="168" height="300" rx="12" class="l"/><text x="628" y="72" text-anchor="middle" class="t">L4 chip + icon</text>
+<text x="552" y="94" class="s">TelemetryReadout.kt</text><text x="552" y="110" class="s">CapabilityIcons.kt</text><text x="552" y="126" class="s">TopStripChips.kt</text><text x="552" y="142" class="s">TopStripConfig.kt</text><text x="552" y="158" class="s">ClimateAuto.kt</text><text x="552" y="174" class="s">design/glyph/*.svg</text><text x="552" y="190" class="s">design/icon-grammar.json</text><text x="552" y="206" class="s">gen-icons.py → ic_*.xml</text><text x="552" y="222" class="s">KachiTheme.kt (icon map)</text><text x="552" y="238" class="s">strings (nhãn datum)</text><text x="552" y="254" class="s">+ tests</text><text x="552" y="300" class="s">R8 R9</text>
+<rect x="722" y="50" width="168" height="300" rx="12" class="l"/><text x="806" y="72" text-anchor="middle" class="t">L5 bố cục</text>
+<text x="730" y="94" class="s">core TopStrip.kt</text><text x="730" y="110" class="s">TopStripView*.kt</text><text x="730" y="126" class="s">Tyre*/CarImageLayer</text><text x="730" y="142" class="s">CarImageStore.kt</text><text x="730" y="158" class="s">WallpaperStore.kt</text><text x="730" y="174" class="s">+ tests</text><text x="730" y="300" class="s">R11</text>
+<path d="M94 32 V50 M272 32 V50 M450 32 V50 M628 32 V50 M806 32 V50" class="a"/>
+<path d="M94 350 V378 M272 350 V378 M450 350 V378 M628 350 V378 M806 350 V378" class="a"/>
+<rect x="10" y="378" width="880" height="44" rx="10" class="n"/><text x="450" y="397" text-anchor="middle" class="t">L6 nợ kỹ thuật (sau khi L1–L5 xanh): tách file ≥ 500 dòng · SysProps helper (3 chỗ) · sinh lại danh mục · suite 5 module + lint</text><text x="450" y="414" text-anchor="middle" class="s">R12 phần 1</text>
+<path d="M450 422 V446" class="a"/>
+<rect x="10" y="446" width="880" height="64" rx="10" class="l"/><text x="450" y="468" text-anchor="middle" class="t">Consolidation: review Pass 1 Opus → security scan → build 2.76 (177) → OTA → runbook closing 30–60 phút 🚗 → CLOSEOUT-2026-09-27</text><text x="450" y="490" text-anchor="middle" class="s">R12 phần 2 · INDEX + BACKLOG + project-context cập nhật cùng phiên</text>
+</svg>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--bg)"></span> làn code / file sở hữu</span><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span> nguồn dữ liệu / bước nối tiếp</span><span class="sw">▶ thứ tự thi hành</span></div>
+
+<h3>4.2 Quyết định thiết kế theo làn (đã chốt bởi owner/điều phối)</h3>
+<ul>
+<li><b>L1 — R1 R2 R3.</b> IA camera: tách 2 tầng — khoá <i>user</i> (7 mục ở R1) render luôn; khoá <i>kỹ thuật</i> vào disclosure có cổng <code>TestBridgeStore.isOn</code> (cùng cổng test-bridge, không tạo cờ mới) ⇒ prefs không mất, chỉ ẩn. Nguồn PANO/CHANNEL giữ là lựa chọn user (owner hỏi trực tiếp). Mặc định theo đời xe đặt trong <code>ClusterProfile</code> [ĐO 27/09 Seal DL3]; đời khác trung tính + kênh unknown ⇒ CHANNEL ẩn (CLAUDE.md §7: đo/profile, không hardcode). Thứ tự ưu tiên: pref tường minh &gt; profile &gt; literal cũ (bỏ). Fallback CHANNEL→PANO tái dùng đúng đường rebuild "none → left" của <code>CameraSignalController</code> vì uniform set bất biến theo phiên; chỉ 1 lần/phiên để không lặp. rot mặc định 0/0 theo research §6.1 (18/20 hệ [ĐO] đứng, khớp HAL native); pref ↺90 owner đã chọn không bị ghi đè — chốt bằng CAM-C2 trong runbook 🚗. <code>camera_mirror</code> (§6.2) NGOÀI scope 2.76 (mặc định [CHƯA BIẾT] tới CAM-M1) — ghi backlog.</li>
+<li><b>L2 — R4.</b> Dải giữa đo bằng PIL từ framebuffer thật [ĐO], không ước lượng từ ảnh chụp điện thoại. Hình học thuần ở <code>:core</code> (<code>CameraClusterBand</code>) để test off-device; số Seal tạm ở <code>ClusterBandSpec</code> rồi chuyển sang field profile khi L1 tiếp nhận (yêu cầu chéo làn, R-nf1). Trên màn chính "theo cụm" degrade — L2 chốt ROUND hay RECT và ghi vào doc. Bằng chứng emulator qua overlay display 1920×720 (<code>settings put global overlay_display_devices 1920x720/160</code>) nếu tạo được; không thì ghi [CHƯA BIẾT] + 🚗.</li>
+<li><b>L3 — R5 R6 R7.</b> Ghi HAL từ voice đi qua <b>một</b> làn tuần tự (Channel-consumer coroutine ưu tiên vì đã có coroutine trong VoiceSession; executor 1 thread là phương án B) với continuation kiểu <code>runFrom</code>; reply không đổi để test cũ giữ byte. Ghép đuôi chỉ khi đuôi parse ra phần nối hợp lệ của đầu — không thêm thời gian nghe (giữ F2b [ĐO 2.75]). Tiền tố có 3 cổng: ≥ 4 ký tự · có mệnh đề ô CÓ SỐ · duy nhất trong nhãn — cùng tinh thần 3 cổng của <code>VoiceSlotNoVerb</code> 2.75. Harness voice-e2e bắt buộc chạy lại (memory rule).</li>
+<li><b>L4 — R8 R9.</b> Bảng enum từ hằng OEM decompiled [ĐO source, dẫn file:line], mã lạ ⇒ "mã N" (không im lặng). Cửa/cửa sổ trời: 1 glyph/khái niệm, sinh máy qua <code>gen-icons.py</code>, <code>--check</code> byte-identical. Quyết định gộp AUTO: mặc định ẩn <code>ac_wind_auto</code> khỏi picker (chip Gió đã "auto n"), <code>ac_mode_auto</code> = chip icon 2 trạng thái; nếu <code>HalRoutes</code> chứng minh cùng sự thật HAL ⇒ gộp hẳn (L4 ghi bằng chứng). Ghế lái thêm chấm vô-lăng — dấu thứ hai thay lật gương đơn thuần.</li>
+<li><b>L5 — R11.</b> Đồng cao 40 dp cho 4 nút, avatar tròn 40 dp (cùng cao pill, không kéo ngang) — đo lại UX1 offset = 0. Khối lốp căn tâm ảnh xe 0,50 với ràng buộc UX2 (không đè mask xe) cho mọi kích widget. Ảnh xe user qua đường fit của <code>CarImageStore</code> (KDoc: tiết kiệm 1/3,6 pixel) — đo kích bitmap trong test.</li>
+<li><b>L6 — R12.</b> Tách file pure move (không đổi hành vi, không đổi API), grep call site sau tách (CLAUDE.md §8). <code>SysProps</code> helper một chỗ cho reflection <code>SystemProperties</code>, catch cụ thể (ReflectiveOperationException), không <code>except-all</code>.</li>
+<li><b>Context7</b>: chỉ dùng Android SDK, Kotlin coroutines đã có trong repo, Pillow/python3 sẵn trên máy ⇒ không có thư viện/version mới cần verify.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Owner</th><th>Task</th><th>R</th><th>Kết quả bắt buộc</th></tr>
+<tr><td>T1</td><td>agent lane L1</td><td>IA camera 2 tầng + mặc định profile DL3 + fallback CHANNEL→PANO + ghi chú camera_frame; test hợp đồng khoá/profile/fallback</td><td>R1 R2 R3</td><td><code>:core:test</code> + <code>:app --tests '*Camera*' '*Settings*' '*ClusterProfile*'</code> xanh; doc <code>offcar-2026-09-27/camera-ia-profile.md</code>; trả dòng HƯỚNG-DẪN cho điều phối</td></tr>
+<tr><td>T2</td><td>agent lane L2</td><td>Đo dải cụm (PIL) · <code>CameraClusterBand</code> · enum CLUSTER + mask/degrade · e2e emulator 1920×720 PNG trái/phải</td><td>R4</td><td>test hình học + nối dây xanh; doc <code>camera-cluster-band.md</code> (số + phương pháp + tên PNG + 🚗 1 dòng); yêu cầu field profile gửi L1</td></tr>
+<tr><td>T3</td><td>agent lane L3</td><td>Làn ghi HAL tuần tự · ghép đuôi sau đầu đủ nghĩa · tiền tố ≥ 4 có cổng; tách VoiceDispatcher nếu ≥ 500</td><td>R5 R6 R7</td><td><code>--tests '*Voice*'</code> :core/:app xanh; <code>voice-e2e.sh</code> 106/106 hoặc giải thích có đo; doc <code>voice-write-lane-tail-prefix.md</code> + 🚗</td></tr>
+<tr><td>T4</td><td>agent lane L4</td><td>Bảng enum power/headlight VI+EN · glyph cửa/cửa sổ trời · gộp AUTO · chấm vô-lăng ghế lái; DEFERRED rỗng</td><td>R8 R9</td><td><code>'*TopStrip*' '*TelemetryReadout*' '*Icon*' '*I18n*'</code> xanh; <code>gen-icons.py --check</code> pass; doc <code>chips-icons-close.md</code> + PNG glyph scratchpad</td></tr>
+<tr><td>T5</td><td>agent lane L5</td><td>4 nút 40 dp · khối lốp tâm 0,50 · ảnh xe user giải mã fit; screenshot trước/sau</td><td>R11</td><td><code>'*TopStrip*' '*Tyre*' '*CarImage*'</code> xanh; doc <code>layout-nits-close.md</code></td></tr>
+<tr><td>T6</td><td>agent lane L6</td><td>Nợ kỹ thuật: tách mọi file ≥ 500 dòng (production · tests · <code>scripts/design/gen-car.py</code> 873) pure move; <code>SysProps</code> helper thay 3 chỗ reflection (<code>AvmCamera.kt</code>, <code>comfort/SeatComfortApplier.kt</code>, <code>modules/clustercast/ClusterProfile.kt</code>); sinh lại danh mục chức năng; full suite 5 module + lint</td><td>R12</td><td><code>wc -l</code> 0 file ≥ 500; grep <code>SystemProperties</code> chỉ helper; test 5 module 0 fail; lint 0; chạy SAU T1–T5 merge</td></tr>
+<tr><td>T7</td><td>điều phối</td><td>Senior review Pass 1 (Opus) toàn diff + scope check theo R1–R12; vá; rerun test</td><td>R12</td><td>§10 Pass 1 với verdict + [P0]–[P3]</td></tr>
+<tr><td>T8</td><td>điều phối</td><td>Security scan diff (rule global §6) — report-only</td><td>R12</td><td>Verdict CLEAN; dòng SCAN-2.76 trong BACKLOG</td></tr>
+<tr><td>T9</td><td>điều phối</td><td>Build <b>2.76 (177)</b> (<code>versionCode 177</code>, <code>versionName 2.76</code>) · OTA <code>apk/Kachi-2.76-release.apk</code> lên byd-kachi main · sha256</td><td>R12</td><td>APK strings 0 <code>TEST_</code>/danh tính; dòng 2.76 (177) trong BACKLOG</td></tr>
+<tr><td>T10</td><td>điều phối</td><td>Runbook <code>docs/diagnostics/oncar-runbook-2.76.md</code> closing 30–60 phút: gom 🚗 của T1–T5 (camera dải cụm · CHANNEL/PANO · câu ghép AC · "mở vietmap" ngừng "vào ô số hai" · chip cửa/đèn · thanh trên) theo phút</td><td>R12</td><td>Runbook có thứ tự, thời lượng, tiêu chí PASS/FAIL từng mục</td></tr>
+<tr><td>T11</td><td>điều phối</td><td><code>CLOSEOUT-2026-09-27</code>: cập nhật <code>docs/README.md</code> INDEX · <code>PROJECT-BACKLOG.md</code> · <code>.kiro/steering/project-context.md</code> · handoff cùng phiên</td><td>R12</td><td>Không doc mồ côi; BACKLOG mục CLOSE cập nhật</td></tr>
+<tr><td>T12</td><td>agent lane L7</td><td>R13: glyph ghế theo mức (gen-icons) + <code>CapabilityIcons</code>/<code>TopStripChips</code>/ô điều khiển dùng chung · <code>camera_mirror_*</code> GL+TV + hàng Cài đặt + prefs_set · nối <code>ClusterProfile.band</code>; PNG 24/48 px; test inventory/audit/uniform/contract</td><td>R13</td><td><code>:core:test :app:testDebugUnitTest :app:lintRelease</code> 0 fail; doc <code>offcar-2026-09-27/seat-level-glyphs-mirror.md</code></td></tr>
+</table>
+<p class="muted">DAG: T1 ∥ T2 ∥ T3 ∥ T4 ∥ T5 → T6 → <b>T12</b> → T7 → T8 → T9 → T10 → T11 (🚗 chạy T10 trên xe). T2 gửi yêu cầu field profile cho T1 trong lúc chạy song song.</p>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: 5 module (<code>app · core · car-integration · vehicle-contracts · offcar-planner</code>) 0 fail sau T6; baseline 2.75 = 4 541. Test khoá: hợp đồng khoá camera (R1), profile→uniform (R2), fallback 1 lần (R3), hình học dải (R4), thứ tự ghi HAL (R5), ghép đuôi ca 27/09 (R6), 4 ca tiền tố (R7), DEFERRED rỗng (R8), I18n (R9), UX1=0 + tâm lốp ± 1 px + kích bitmap (R11).</li>
+<li>V-emulator: <code>voice-e2e.sh</code> 106/106 (R7); PNG cụm 1920×720 trái/phải với viền dải (R4); screenshot thanh trên/lốp trước-sau (R11). Lịch dùng emulator không chồng làn.</li>
+<li>V-oncar 🚗 (30–60 phút, runbook 2.76): (1) bật chiếu lên cụm + xi-nhan ⇒ ảnh nằm trọn dải giữa, không đè header/footer; (2) nguồn một kênh lên hình hoặc lùi toàn cảnh có phụ đề; (3) <i>"tăng gió rồi tắt điều hoà"</i> ⇒ màn AC gốc thấy gió +1 rồi AC tắt; (4) <i>"mở vietmap"</i> ngừng <i>"vào ô số hai"</i> ⇒ VietMap vào ô 2; (5) chip Nguồn xe/đèn pha ra chữ; cửa mở/đóng đổi icon; (6) thanh trên 4 nút đồng cao, lốp căn tâm. Mục không đo được ghi 🚗 N/A, <b>không</b> mở vòng off-car mới.</li>
+<li>V-lifecycle: pref camera đặt trước 2.76 giữ nguyên sau nâng cấp (pref thắng profile); tắt test-mode ⇒ khoá kỹ thuật ẩn nhưng <code>prefs_set</code> vẫn ghi/đọc.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Hướng xoay dọc mặc định cho ảnh gương (owner từng muốn ↺90 đuôi dưới sau khi sửa lỗi xoay 2.75) — <span class="muted">chốt rot 0/0 mặc định theo research §6.1; pref owner giữ; CAM-C2 (a–d) trong runbook 2.76 để owner chọn bằng mắt. 🚗</span></li>
+<li>OQ2. "Theo cụm" trên màn chính degrade ROUND hay RECT — <span class="muted">ĐÃ CHỐT (L2/L1): RECT, qua các nhánh <code>== SHAPE_ROUND</code> sẵn có; ghi ở <code>camera-cluster-band.md</code>.</span></li>
+<li>OQ3. <code>ac_mode_auto</code> và <code>ac_wind_auto</code> có phải cùng sự thật HAL — <span class="muted">L4: KHÔNG gộp (2 getter <code>:214</code>/<code>:302</code>, 2 feature id 1077936146/1077936140, chưa từng đo lệch nhau ⇒ [CHƯA BIẾT]); <code>ac_wind_auto</code> ẩn khỏi bộ chọn chip, <code>ac_mode_auto</code> chip icon A/kim; 🚗 đo 2 getter ở 2 trạng thái. L4 chốt bằng HalRoutes/registry; mặc định tách chip như R9.</span></li>
+<li>OQ4. (L6) 3 tệp test mới tách của <code>offcar-planner</code> (<code>ExpansionTransportFenceFixtures</code> · <code>LegacyBaselineJsonSupport</code> · <code>ExpansionDeterminismSupport</code>) chưa nằm trong <code>SOURCE_SEAL_INPUT</code> (155 đường dẫn) của <code>hud-sign-re/offcar-boundary-revisions.json</code> — thêm = revision 3 của authority; mọi <code>@Test</code> vẫn ở lớp có cổng nên GATE-X coverage không đổi. <span class="muted">Chờ owner: chấp nhận revision 3 hay giữ nguyên.</span></li>
+<li>OQ5. Mặc định <code>camera_mirror</code> (tay gương của ảnh HAL) — <span class="muted">🚗 CAM-M1 trong runbook 2.76; tắt cho tới khi đo.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/PROJECT-BACKLOG.md</code> dòng <b>ONCAR-2026-09-27</b>, <b>2.75 (176)</b>, <b>2.74 (175)</b>; <code>docs/specs/kachi-274-ux-voice-camera.html</code> §4.2 R4 (VOICE-WRITE-LANE) + §10 Pass 2.</li>
+<li><code>docs/diagnostics/offcar-2026-09-26/voice-car-0927.md</code>, <code>trip-time-smoother.md</code>; <code>docs/diagnostics/oncar-runbook-2.75.md</code>; <code>docs/_handoff/session-2026-09-27-275-after-car.md</code>.</li>
+<li>Bằng chứng cục bộ (gitignored): <code>scratchpad/car-0927/cum/cum-{0,1,2}.png</code>, <code>scratchpad/car-0927/cluster-fb-d1.png</code> (1920×720), 30 WAV xe 27/09.</li>
+<li><code>docs/diagnostics/research-side-camera-orientation-2026-09-27.md</code> §6 (khuyến nghị rot 0, CAM-C2/CAM-M1).</li>
+<li>OEM constants: <code>../jadx-tmap/sources/android/hardware/bydauto/*Device.java</code>; RE Electro <code>docs/diagnostics/electro-camera-RE-2026-09-26.md</code>.</li>
+<li>Memory: <code>kachi-emulator-voice-e2e</code>, <code>clusternav-build-on-mac</code>, <code>kachi-signing-ota</code>, <code>kachi-owner-working-style</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi code (R2.6). Mỗi làn append mục riêng có tiền tố <code>[Lx]</code>: ngày · loại · nội dung · file:line.</p>
+<ul>
+<li><i>(trống — điền trong lúc thi hành T1–T11.)</i></li>
+<li><b>2026-09-27 12:5x–14:2x · T1–T6 (workflow 7 agent)</b> — L1: <code>CameraProfileDefaults</code>/<code>CameraChannel</code>/<code>CameraSettingsIa</code> (:core), <code>ClusterProfile.camera</code> (Seal DL3: STRIP·GL·100/55/100/130·0/0·pan 0/0·rot 0/0·kênh 2/3), <code>SettingsSectionsCamera</code> 9 khoá user + 16 kỹ thuật sau kiểm thử, <code>CameraChannelFallback</code> (rc=false / không khung 3 000 ms [SUY]) lùi PANO đúng 1 lần, <code>camera_frame</code> note; core 2 946/0. L2: [ĐO] dải cụm Seal (140,136)–(1780,560) r24 từ fb + 3 ảnh (homography ±8 px), <code>CameraClusterBand</code>, overlay 2.75 trên cụm đo nhầm metrics màn chính (lệch 65 px) đã sửa, e2e overlay display 1920×720 PASS. L3: <code>VoiceWriteLane</code> + <code>VoiceControlDispatch</code> (bug 2.75 tái hiện bằng test: 2× auto OFF trước mức gió), <code>VoiceOpenTurn.attach/refine</code> ghép vế sau vế đủ nghĩa ([ĐO máy ảo] bản thu 26/09 cắt-ghép, gap 1 500 ms), <code>VoiceAppPrefix</code> ≥ 4 ký tự + mệnh đề ô; voice core 598/0; harness máy ảo chạy lại. L4: <code>TelemetryEnums</code> (nguồn xe từ <code>BODYWORK_POWER_LEVEL_*</code>, đèn pha từ CarSettings OEM <code>LightControl.java</code>), cửa ×4 + cửa sổ trời cặp hình (gen-car), OQ3 không gộp, chấm vô-lăng ghế lái, DEFERRED rỗng. L5: [ĐO máy ảo] "pill 40 dp" là bề ngang ⇒ 4 nút 34×34; khối lốp +11,5 → 0,0 px; ảnh xe user fit (3,9× pixel). L6: 17 tệp > 500 tách thuần (0 còn lại), <code>SysProps</code> 1 cửa + contract test, danh mục 154 → 164, full <b>4 623/0</b>, lint 0. Yêu cầu chéo còn lại: <code>ClusterProfile.band</code> → L7.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. <code>Pass N — YYYY-MM-DD</code>, tag <code>[P0]–[P3]</code>, patch đã áp, test cuối, verdict APPROVED / INCOMPLETE, scope checklist R1–R12.</p>
+<ul>
+<li><b>Pass 1 — 2026-09-27 (Opus, T7: 7 làn + 1 lượt soát chéo, mỗi phát hiện qua 2 người phản biện)</b> — 15 phát hiện được xác nhận, <b>14 đã vá</b>, 1 bác. Vá theo mức:
+<ul>
+<li><b>[P1] camera/R3</b> — <code>AvmCamera.open</code>: trim không có <code>addPreviewSurface(Surface,int)</code> ⇒ <code>channelRefused</code> im lặng, R3 không bao giờ bắn đúng ca sai-im-lặng nó sinh ra để đóng. Nay gán thêm SAU nhánh một-tham-số + <code>Log.w</code> (<code>AvmCamera.kt:129-141</code>).</li>
+<li><b>[P1] camera/R3</b> — <code>CameraVideoLayer.glStats</code>: đường GL tự rơi về <code>TextureView</code> để lại <code>frames=0</code> của một luồng vẽ CHƯA CHẠY ⇒ ngân sách khung đầu lùi một phiên <i>đang có hình</i> và in dấu <code>no-frame</code> sai bệnh. Nay trả <code>glFellBack=1</code> (không có chữ <code>frames=</code> ⇒ <code>framesOf</code> = <i>không đếm được</i>, vẫn đọc được lý do ở <code>camera_frame</code>).</li>
+<li><b>[P2] camera/R3</b> — phiên do phép lùi mở vẫn truyền <code>camera_hal_mode</code> đã ghim ⇒ nhánh <code>no-frame</code> xin lại đúng kênh vừa chết, không còn đường phục hồi. Nay <code>forcedPano</code> ⇒ <code>HAL_MODE_AUTO</code> (đường 2.73). 🚗 CAM-F3 nay mới đúng như runbook hứa.</li>
+<li><b>[P1] camera/R4</b> — chỉ hình <i>theo cụm</i> được kẹp vào dải; hình CHỮ NHẬT (mặc định) trên cụm vẫn dùng 6 % chiều cao ⇒ <b>93/360 px</b> bị thanh trên cụm cắt (2.75: 77/495 — bản 2.76 làm nặng hơn). Nay <code>CameraClusterBand.boxIn</code> (:core, test bằng số) kẹp vùng vuông 2.73 vào dải; thêm dòng runbook <b>CAM-CL2</b>.</li>
+<li><b>[P1] voice/R5</b> — lượt nói chốt ngay sau <code>d.execute</code>, mà từ R5 hàm ấy trả về TRƯỚC khi vế bất đồng bộ ghi xong ⇒ mảng lời đáp rỗng, micro nối mở, rồi CẢ HAI câu trả lời (kể cả câu báo hỏng) bị cổng <code>micOpen</code> bỏ im. Nay <code>VoiceDispatcher.execute(intents, onSettled)</code> + lưới an toàn <code>TURN_SETTLE_MS</code> = 4 s.</li>
+<li><b>[P1] camera/R13.2</b> — lật gương đảo <code>uSrcRect</code> nhưng KHÔNG đảo <code>uCenter</code> ⇒ nắn quanh trục lệch tới 1,5 bề ngang ô ở dải hẹp (<i>một bên thẳng, bên kia còng</i>). Nay <code>CameraDewarp.centerInCrop(..., flipH, flipV)</code>; bài mới ở <code>CameraMirrorTest</code> chạy với <code>amount 100</code> (đã kiểm: ĐỎ trên bản chưa vá).</li>
+<li><b>[P1] L4</b> — <code>BODYWORK_STATE_UNDEFINED = 255</code> thành <i>"đang mở"</i> (cờ Boolean xoá sentinel trước khi :core thấy). Đóng bằng dữ liệu: <code>HalReadTables.INVALID_VALUES</code> lọc 255 cho 4 cửa + <code>sunroof_state</code>. Mức bằng chứng: hằng [ĐO source]; getter trả 255 trên xe owner [CHƯA BIẾT] (4 lượt quét = 0).</li>
+<li><b>[P2] R6</b> — lượt giải mã vế sau chạy cho MỌI vế trước, kể cả vế mà <code>attach</code> chắc chắn trả <code>null</code>. Nay <code>VoiceOpenTurn.mayAttach</code> (:core) gác trước <code>rangeResult</code>; KHÔNG thêm cổng theo cửa sổ/độ dài (chúng sẽ bỏ đúng ca [ĐO] 10:42:46).</li>
+<li><b>[P2]–[P3] doc/bằng chứng</b> — số hàng người lái <b>9 → 11</b> ở 4 chỗ (doc §IA, CAM-F1, KDoc <code>SettingsCameraSection</code>, KDoc <code>CameraSettingsIaTest</code>) + tổng khoá 25 → 27; <code>camera_mirror</code> không còn <i>"ngoài phạm vi 2.76"</i>; KDoc <code>CameraClusterBand</code> ghi lề TỪNG mép (trên ≈ +5/0, dưới +7) thay cho câu <i>"≥ 15 px mỗi phía"</i>; bỏ [ĐO] thổi về cửa sổ trời (<code>getSunroofState</code> = 0 <b>đo được</b> trên xe owner; 65535 là của <code>getSunroofPosition</code> đã gỡ; <i>"xe không có nóc"</i> = [ĐOÁN]); danh sách tệp đúng trần 500 <b>7 → 8</b> (thêm <code>CameraOverlayView</code>, <code>TestBridgeCommandTest</code>); danh mục + README: 164 → <b>165</b> dòng ngoài registry (thêm hàng <i>Lật gương</i>, bổ sung họ hình MỨC ghế), 271 → <b>284</b> dòng.</li>
+<li><b>Bác (không vá)</b> — <i>"số dải trong <code>camera-cluster-e2e.sh</code> là bản sao thứ hai"</i> hạ xuống [P3] nhưng vẫn khoá được rẻ: thêm assert dựng chuỗi TỪ <code>ClusterBandSpec.SEAL_DL3</code> trong bài canh (không thêm bản sao thứ ba).</li>
+</ul>
+Test cuối: xem §6. <b>Verdict: APPROVED</b> cho R1–R11 + R13 sau khi vá; ba nợ mở còn nguyên (khung đầu CHANNEL [SUY], bộ đếm khung cho đường TV, mặc định lật gương chờ 🚗 CAM-M1).</li>
+</ul>
+
+</div></body>
+</html>

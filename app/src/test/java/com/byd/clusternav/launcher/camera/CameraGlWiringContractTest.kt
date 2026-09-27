@@ -34,7 +34,7 @@ class CameraGlWiringContractTest {
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
     private val prefs by lazy { app("PrefsCameraDewarp.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
-    private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
+    private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val frameCmd by lazy { app("launcher/testbridge/TestBridgeCameraFrame.kt") }
     private val bridge by lazy { app("launcher/testbridge/KachiTestBridge.kt") }
 
@@ -57,7 +57,8 @@ class CameraGlWiringContractTest {
         assertTrue("gl == null" in create, "thiếu bộ uniform ⇒ rơi về đường 2.73, không vẽ một khung đen câm")
 
         // Controller chỉ đọc bảy khoá nắn khi đường là GL — xe không chạm Cài đặt thì không một lượt đọc đĩa nào.
-        val tick = SourceRoots.body(controller, "private fun tickMain(")
+        // 2.76 · R3: lượt dựng phiên nằm ở `openSession` (dùng chung cho xi-nhan và cho phép lùi CHANNEL → PANO).
+        val tick = SourceRoots.body(controller, "private fun openSession(")
         assertTrue("CameraSignalPolicy.rotatesInShader(render)" in tick, "bộ uniform chỉ dựng ở đường GL")
         assertTrue("Prefs.cameraGlUniforms(" in tick, "đọc bảy khoá qua MỘT cửa (`PrefsCameraDewarp`)")
         assertTrue("gl = gl," in tick, "bộ uniform phải đi vào overlay.show(gl = …)")
@@ -328,9 +329,17 @@ class CameraGlWiringContractTest {
             "CameraDewarpPrefs.isPanPct(").forEach {
             assertTrue(it in prefsSet, "prefs_set phải kiểm miền qua `:core` ($it)")
         }
+        // 2.76 · R2: tám núm lấy mặc định từ HỒ SƠ XE (khoá vắng ⇒ `CameraDefaults.of(ctx).x`); các hằng `*_DEFAULT`
+        // của `:core` là giá trị của hồ sơ TRUNG TÍNH (`CameraProfileDefaults.NEUTRAL`) — một chỗ, không hai.
+        listOf("CameraDefaults.of(ctx).amountPct", "CameraDefaults.of(ctx).focalPct", "CameraDefaults.of(ctx).kPct",
+            "CameraDefaults.of(ctx).scalePct", "CameraDefaults.of(ctx).centerXPct", "CameraDefaults.of(ctx).centerYPct",
+            "CameraDefaults.of(ctx).panXPct", "CameraDefaults.of(ctx).panYPct", "CameraDewarpPrefs.TEX_MATRIX_DEFAULT").forEach {
+            assertTrue(it in prefs, "mặc định phải lấy từ hồ sơ xe / `:core` ($it)")
+        }
+        val neutral = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraProfileDefaults.kt")
         listOf("CameraDewarpPrefs.AMOUNT_DEFAULT", "CameraDewarpPrefs.PCT_DEFAULT", "CameraDewarpPrefs.CENTER_DEFAULT",
-            "CameraDewarpPrefs.PAN_DEFAULT", "CameraDewarpPrefs.TEX_MATRIX_DEFAULT").forEach {
-            assertTrue(it in prefs, "mặc định phải lấy từ `:core` ($it)")
+            "CameraDewarpPrefs.PAN_DEFAULT").forEach {
+            assertTrue(it in neutral, "hồ sơ trung tính phải lấy $it — không chép số")
         }
         // Đúng MỘT accessor cho tệp prefs (không mở cửa thứ hai vào cùng chỗ lưu).
         assertFalse("getSharedPreferences" in prefs, "phải dùng lại `autoPrefs` của PrefsAutomation")
@@ -356,8 +365,8 @@ class CameraGlWiringContractTest {
         assertTrue("CameraDewarpPrefs.PAN_STEP" in body, "bước nhảy hàng Dịch cũng lấy từ `:core`")
         assertTrue("CameraDewarpPrefs.PCT_STEP" in body && "CameraDewarpPrefs.CENTER_STEP" in body,
             "bước nhảy lấy từ `:core`, không gõ số trong UI")
-        assertTrue("cameraDewarp(body)" in SourceRoots.body(settings, "private fun cameraSignal("),
-            "khối nắn phải có call site — nếu không thì sáu hàng chưa từng hiện ra (CLAUDE.md §8)")
+        assertTrue("cameraDewarp(body)" in SourceRoots.body(settings, "private fun cameraTech("),
+            "khối nắn phải có call site trong tầng KỸ THUẬT — nếu không thì tám hàng chưa từng hiện ra (CLAUDE.md §8)")
         // Chữ ở CẢ hai ngôn ngữ.
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
@@ -400,7 +409,7 @@ class CameraGlWiringContractTest {
         assertTrue("cameraFrameRaw = { w, h ->" in hooks)
         assertTrue("hooks.cameraSynth(" in app("launcher/testbridge/TestBridgeSynth.kt"))
         // Bơm ảnh tổng hợp ⇒ KHÔNG mở HAL (hai producer trên một BufferQueue = ảnh chắp vá).
-        val tick = SourceRoots.body(controller, "private fun tickMain(")
+        val tick = SourceRoots.body(controller, "private fun openSession(")
         assertTrue("if (!synth) avm.open(" in tick, "đang bơm ảnh tổng hợp thì không được mở HAL")
         assertTrue("synthOn = synth," in tick)
         assertTrue("startSynth(input, synthFile)" in layer, "producer gắn vào ĐÚNG Surface mà HAL lẽ ra dùng")

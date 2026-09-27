@@ -80,6 +80,8 @@ import com.byd.clusternav.voiceMicSource
 import com.byd.clusternav.voiceVadMinSilenceMs
 import com.byd.clusternav.voiceVadMinSpeechMs
 import com.byd.clusternav.voiceVadThreshold
+import com.byd.clusternav.cameraMirror
+import com.byd.clusternav.setCameraMirror
 
 /**
  * ═══ T-BRIDGE · LỆNH `prefs_set` — GHI một khoá trong danh sách trắng ════════════════════════════════════════
@@ -198,6 +200,9 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraRotation(app, left = true, v = it); it }
             "camera_rot_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRotation(it) }
                 ?.let { Prefs.setCameraRotation(app, left = false, v = it); it }
+            // Lật gương TỪNG BÊN (2.76 L7): bool, cùng khuôn `camera_on_cluster`.
+            "camera_mirror_left" -> bool(raw)?.let { Prefs.setCameraMirror(app, left = true, v = it); it.toString() }
+            "camera_mirror_right" -> bool(raw)?.let { Prefs.setCameraMirror(app, left = false, v = it); it.toString() }
             // Đường KẾT XUẤT (CLOSE-14): CHỈ nhận mã trong `CameraSignalPolicy.RENDERS` — cùng lẽ hai khoá xoay.
             "camera_render" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isRender(it) }
                 ?.let { Prefs.setCameraRender(app, v = it); it }
@@ -289,6 +294,8 @@ internal object TestBridgePrefsSet {
             "camera_pos_right" -> Prefs.cameraPos(app, left = false)
             "camera_rot_left" -> Prefs.cameraRotation(app, left = true)
             "camera_rot_right" -> Prefs.cameraRotation(app, left = false)
+            "camera_mirror_left" -> Prefs.cameraMirror(app, left = true).toString()
+            "camera_mirror_right" -> Prefs.cameraMirror(app, left = false).toString()
             "camera_render" -> Prefs.cameraRender(app)
             "camera_source" -> Prefs.cameraSource(app)
             "camera_span" -> Prefs.cameraSpan(app)

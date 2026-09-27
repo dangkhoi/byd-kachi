@@ -153,9 +153,11 @@ object CarImageStore {
      *
      * Trên cả lưới khung của `CarImageStoreTest` [ĐO] tổng pixel của ba lớp xuống còn **1/3,6** so với cover.
      *
-     * ⚠ Còn một đường CHƯA đi qua đây: ảnh do người dùng bỏ vào thư mục được [loadFeathered] giải mã bằng
-     * [WallpaperStore.loadScaled] (cover) vì đó là cửa dùng chung với hình nền. Ảnh MẶC ĐỊNH (đóng theo APK — ca của
-     * mọi xe chưa thay ảnh) đi qua [loadDefaultScaled] nên đã được fit. Nợ còn lại ghi ở backlog, không nói dối ở đây.
+     * 2.76 · R11 (3): **cả hai nguồn** đi qua kế hoạch này — ảnh MẶC ĐỊNH ([loadDefaultScaled], từ closeout) và ảnh
+     * NGƯỜI DÙNG bỏ vào thư mục ([loadUserScaled]). Trước 2.76 ảnh người dùng còn đi [WallpaperStore.loadScaled]
+     * (cover — cửa dùng chung với hình nền): [ĐO số học, `CarImageStoreTest`] ảnh chụp điện thoại 3000×4000 vào khung
+     * lốp 210×554 ⇒ cover giải mã 415×553 (229 495 px) trong khi fit chỉ cần 210×280 (58 800 px) — **3,9×** pixel
+     * không bao giờ được vẽ, ở đúng ca ảnh to nhất (ảnh xe mặc định chỉ 678×1397). Một [decodeOptions] cho cả hai.
      */
     data class DecodePlan(val sample: Int, val inDensity: Int, val inTargetDensity: Int) {
         val scaled: Boolean get() = inTargetDensity > 0 && inDensity > 0 && inTargetDensity != inDensity
@@ -280,17 +282,46 @@ object CarImageStore {
 
     /**
      * Nạp ảnh xe **đã giảm cỡ + feather** cho khung [reqW]×[reqH]. `null` nếu chưa có ảnh / giải mã hỏng — chỗ gọi
-     * vẽ placeholder. Dùng lại [WallpaperStore.loadScaled] cho phần giảm cỡ (một nơi làm việc giải mã an toàn RAM).
+     * vẽ placeholder. Cả ảnh người dùng lẫn ảnh mặc định giải mã theo **fit** ([decodePlan]) — xem KDoc [DecodePlan].
      */
     fun loadFeathered(ctx: Context, reqW: Int, reqH: Int): Bitmap? {
         if (reqW <= 0 || reqH <= 0) return null
-        val scaled = imagePath(ctx)?.let { WallpaperStore.loadScaled(it, reqW, reqH) }
+        val scaled = imagePath(ctx)?.let { loadUserScaled(it, reqW, reqH) }
             ?: loadDefaultScaled(ctx, reqW, reqH)   // thư mục trống ⇒ ảnh MẶC ĐỊNH đóng theo APK
             ?: return null
         return runCatching { feather(scaled) }.getOrElse {
             Log.w(TAG, "feather hỏng, dùng ảnh thô: ${it.javaClass.simpleName}")
             scaled
         }
+    }
+
+    /**
+     * `BitmapFactory.Options` cho một [DecodePlan] — chỗ DUY NHẤT dịch kế hoạch sang cờ giải mã, để ảnh mặc định và
+     * ảnh người dùng không thể lệch nhau một cờ. `inSampleSize` giảm thô ngay trong bộ giải mã; `inScaled` +
+     * `inDensity`→`inTargetDensity` hạ tiếp về đúng khung cũng ngay lúc giải mã (không sinh bitmap to rồi thu nhỏ).
+     */
+    private fun decodeOptions(plan: DecodePlan): BitmapFactory.Options = BitmapFactory.Options().apply {
+        inSampleSize = plan.sample
+        if (plan.scaled) {
+            inScaled = true
+            inDensity = plan.inDensity
+            inTargetDensity = plan.inTargetDensity
+        }
+    }
+
+    /**
+     * Giải mã ảnh xe NGƯỜI DÙNG (tệp ở [FOLDER]) **vừa lọt khung** — 2.76 · R11 (3). Cùng hai lượt đọc như
+     * [WallpaperStore.loadScaled] (lượt đầu chỉ kích thước), khác đúng ở kế hoạch: [decodePlan] (fit) thay cho
+     * cover. `null` nếu tệp hỏng / không phải ảnh.
+     */
+    private fun loadUserScaled(path: String, reqW: Int, reqH: Int): Bitmap? = runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        BitmapFactory.decodeFile(path, decodeOptions(decodePlan(bounds.outWidth, bounds.outHeight, reqW, reqH)))
+    }.getOrElse {
+        Log.w(TAG, "không giải mã được ảnh xe người dùng: ${it.javaClass.simpleName}")
+        null
     }
 
     /**
@@ -302,15 +333,7 @@ object CarImageStore {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         am.open(DEFAULT_ASSET).use { BitmapFactory.decodeStream(it, null, bounds) }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-        val plan = decodePlan(bounds.outWidth, bounds.outHeight, reqW, reqH)
-        val opts = BitmapFactory.Options().apply {
-            inSampleSize = plan.sample
-            if (plan.scaled) {
-                inScaled = true
-                inDensity = plan.inDensity
-                inTargetDensity = plan.inTargetDensity
-            }
-        }
+        val opts = decodeOptions(decodePlan(bounds.outWidth, bounds.outHeight, reqW, reqH))
         am.open(DEFAULT_ASSET).use { BitmapFactory.decodeStream(it, null, opts) }
     }.getOrElse {
         Log.w(TAG, "không đọc được ảnh xe mặc định: ${it.javaClass.simpleName}")

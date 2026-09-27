@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test
 class AppWidgetWiringContractTest {
 
     private fun activity() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
+    /** `render` là hàm mở rộng ở `KachiHomeRender.kt` từ L6-debt 2026-09-27 (tách thuần theo trần 500 dòng). */
+    private fun renderKt() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt")
     private fun host() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/AppWidgetSlotHost.kt")
     private fun view() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
     private fun drawer() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt")
@@ -63,9 +65,9 @@ class AppWidgetWiringContractTest {
     /** Thu hồi id phải nằm ở ĐÚNG MỘT chỗ — chỗ diff của `render` — để mọi đường đổi ô đều đi qua. */
     @Test
     fun `thu hoi id nam trong render va chi mot cho`() {
-        val src = activity()
+        val src = renderKt()
         assertTrue(
-            "appWidgets.reclaim(" in SourceRoots.body(src, "private fun render(state: HomeUiState)"),
+            "appWidgets.reclaim(" in SourceRoots.body(src, "fun KachiHomeActivity.render(state: HomeUiState)"),
             "render phải thu hồi id: đó là chỗ DUY NHẤT thấy được mọi thay đổi ô (chọn, kéo-thả, xoá, gọi cảnh)",
         )
         assertEquals(
@@ -117,7 +119,7 @@ class AppWidgetWiringContractTest {
         )
         assertTrue("fun sweep(loaded: HomeUiState)" in src, "sweep cũng phải thấy sổ cảnh")
         assertTrue(
-            "appWidgets.reclaim(it, state)" in code(activity()),
+            "appWidgets.reclaim(it, state)" in code(renderKt()),   // `render` → KachiHomeRender.kt (L6-debt)
             "màn chính phải truyền cả state, không phải `it.workspace`/`state.workspace`",
         )
         assertTrue(

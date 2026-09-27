@@ -246,7 +246,7 @@ class CameraGlUniformsTest {
                 }
             }
         }
-        assertEquals(2 * 2 * 4 * 5, checked, "phải đi hết 2 bề rộng × 2 hình × 4 góc × 5 điểm")
+        assertEquals(CameraSignalPolicy.SPANS.size * CameraSignalPolicy.SHAPES.size * 4 * 5, checked, "phải đi hết mọi bề rộng × mọi hình (kể cả CLUSTER 2.76) × 4 góc × 5 điểm")
     }
 
     /**
@@ -318,7 +318,7 @@ class CameraGlUniformsTest {
                     }
             }
         }
-        assertEquals(2 * 2 * 4 * 5, checked, "phải đi hết 2 bề rộng × 2 hình × 4 góc × 5 điểm")
+        assertEquals(CameraSignalPolicy.SPANS.size * CameraSignalPolicy.SHAPES.size * 4 * 5, checked, "phải đi hết mọi bề rộng × mọi hình (kể cả CLUSTER 2.76) × 4 góc × 5 điểm")
     }
 
     // ══ (5) DỊCH CỬA SỔ (`uPan`) — 2.75 ═══════════════════════════════════════════════════════════════════

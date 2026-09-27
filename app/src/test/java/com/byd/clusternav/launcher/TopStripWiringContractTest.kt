@@ -22,6 +22,7 @@ class TopStripWiringContractTest {
 
     private val strip by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiTopStrip.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }
+    private val renderKt by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt") }   // `render` tách ra (L6-debt 2026-09-27)
     private val picker by lazy { code("src/main/java/com/byd/clusternav/launcher/TopStripPicker.kt") }
     /** T4 · R-UI (a): mục chọn chip nay ở nhóm "Thanh trạng thái & thanh nút", không còn ở "Màn hình chính". */
     private val panel by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
@@ -49,7 +50,7 @@ class TopStripWiringContractTest {
 
     @Test
     fun `cau hinh chip lay tu state va co duong ghi ben`() {
-        assertTrue(activity.contains("state.topStrip"), "bộ vẽ phải lấy cấu hình từ state, không giữ bản sao riêng")
+        assertTrue(renderKt.contains("state.topStrip"), "bộ vẽ phải lấy cấu hình từ state, không giữ bản sao riêng")
         assertTrue(vm.contains("fun setTopStrip("), "phải có intent ghi qua ViewModel")
         assertTrue(vm.contains("repository.setTopStrip("), "state và lưu bền phải đi trong MỘT lượt")
         assertTrue(prefs.contains("TopStripConfig.decode("), "phải nạp lại được sau khi tắt app")
@@ -63,7 +64,7 @@ class TopStripWiringContractTest {
     fun `doi cau hinh chip thi man hinh phai doi ngay`() {
         // [ĐO] bản đầu chỉ làm mới khi `carStatus` đổi ⇒ off-car (trạng thái xe không đổi) bấm chọn chip mà màn hình
         // không đổi gì. Cùng họ lỗi với nút bố cục sẵn ở P9: hành động tường minh phải có tác dụng.
-        val fn = SourceRoots.body(activity, "private fun render(")
+        val fn = SourceRoots.body(renderKt, "fun KachiHomeActivity.render(")
         assertTrue(fn.contains("prev.topStrip != state.topStrip"), "điều kiện làm mới phải xét cả cấu hình chip")
     }
 

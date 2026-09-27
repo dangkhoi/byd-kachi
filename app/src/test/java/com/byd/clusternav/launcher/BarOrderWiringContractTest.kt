@@ -29,6 +29,7 @@ class BarOrderWiringContractTest {
     private val repo = src("PrefsWorkspaceRepository")
     private val strip = src("KachiTopStrip")
     private val activity = src("KachiHomeActivity")
+    private val render = src("KachiHomeRender")   // `render` tách ra khỏi Activity (L6-debt 2026-09-27)
     private val dock = src("ControlDockView")
 
     // ── WP4 · chuỗi dây nối của THANH TRÊN ───────────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ class BarOrderWiringContractTest {
         )
         assertTrue(strip.contains("fun setLayout("), "tầng vẽ phải có đường đặt lại chỗ")
         assertTrue(
-            activity.contains("prev?.header != state.header") && activity.contains("topStrip.setLayout("),
+            render.contains("prev?.header != state.header") && render.contains("topStrip.setLayout("),
             "state đổi ⇒ màn hình phải đổi NGAY — thiếu điều kiện diff thì bấm ◀/▶ là 'màn hình không đổi gì' " +
                 "(đúng lỗi nút bố cục sẵn ở P9)",
         )

@@ -163,6 +163,31 @@ object TelemetryReadout {
         "ac_cycle" -> s.climate.recircOn
         // `getPM2p5OnlineState` — 1 = cảm biến còn trả lời · 0 = chết. Không phải công tắc ⇒ không vào [boolOf].
         "pm25_online" -> s.climate.pm25Online
+        // ═══ 2.76 (R8) — CỬA ×4 + CỬA SỔ TRỜI: mở/đóng là HAI CHẾ ĐỘ, không phải công tắc (KDoc [boolOf] đã cấm
+        // gom vào đó). Mã 1 = MỞ (trạng thái ĐÁNG BÁO — GroupBoard xếp ALERT) · 0 = ĐÓNG. [ĐO source]
+        // `BYDAutoBodyworkDevice.java:203-205`: `CLOSED = 0` · `OPEN = 1` · **`UNDEFINED = 255`** — hằng thứ ba ấy
+        // không tới được đây vì `HalReadTables.INVALID_VALUES` đã bỏ nó ở tầng đọc ([P1] soát 27/09: cờ Boolean của
+        // `CarStatus.Body` xoá mất sentinel, nên phải lọc TRƯỚC khi quy về Boolean — xem KDoc bảng ấy).
+        // Cửa sổ trời: [ĐO 4 lượt quét xe owner — carlog-0916/sweep-1.64.json + perf-oncar-2026-09-26/kachi-logs]
+        // `getSunroofState = 0` ⇒ trên xe ấy datum này ĐỌC ĐƯỢC và ra mã 0 (ĐÓNG), **không** phải `null`. Con số
+        // 65535 của [ĐO 09-25] là của một getter KHÁC (`getSunroofPosition`) — datum `sunroof_pos` đã gỡ vì thế.
+        // *"Xe owner không có nóc mở"* chỉ là **[ĐOÁN]** (nóc kính liền cũng cho pos = sentinel mà state = 0); hình
+        // MỞ vẫn [CHƯA BIẾT] trên xe này — 🚗 xem `chips-icons-close.md` §5.
+        "door_lf" -> s.body.doorLfOpen
+        "door_rf" -> s.body.doorRfOpen
+        "door_lr" -> s.body.doorLrOpen
+        "door_rr" -> s.body.doorRrOpen
+        "sunroof_state" -> s.body.sunroofOpen
+        // ═══ 2.76 (R9) — hai chỉ báo TỰ ĐỘNG / CHỈNH TAY, mỗi cái đọc MỘT hằng OEM riêng (cố ý KHÔNG gộp qua một
+        // hàm chung — xem cảnh báo ở [format] `ac_wind_auto`). Mã 0 = AUTO · 1 = TAY; mã khác (sentinel 65535,
+        // −2147482648) ⇒ `null` = *"chưa biết"*, KHÔNG làm tròn thành "tay" (luật "không biết ≠ đang tắt").
+        //   • `ac_mode_auto`: `AC_CTRLMODE_AUTO = 0` · `AC_CTRLMODE_MANUAL = 1` — `ac/BYDAutoAcDevice.java:20-21`.
+        //   • `ac_wind_auto`: `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` · `_ON = 1` — cùng tệp `:107-108`.
+        // [ĐO xe 09-16] getAcControlMode = 0 khi màn AC đang AUTO · [ĐO xe 09-27 G4] getAcWindLevelManualSign = 0
+        // khi đang AUTO — hai getter, hai feature id (AC_CTRL_MODE 1077936146 · AC_WINDLEVEL_MANUAL_SIGN 1077936140)
+        // ⇒ hai sự thật HAL, KHÔNG gộp datum (chi tiết: docs/diagnostics/offcar-2026-09-27/chips-icons-close.md §3).
+        "ac_mode_auto" -> s.climate.acModeRaw?.let { when (it) { 0 -> false; 1 -> true; else -> null } }
+        "ac_wind_auto" -> s.climate.acWindAutoRaw?.let { when (it) { 0 -> false; 1 -> true; else -> null } }
         else -> null
     }
 
@@ -271,14 +296,22 @@ object TelemetryReadout {
         "seat_heat_state_r" -> s.climate.seatHeatRRaw?.let { levelText("seath_r", it) }
         // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
         // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
-        "ac_mode_auto" -> s.climate.acModeRaw?.let { if (it == 0) "AUTO" else Strings.t("Chỉnh tay", "Manual") }
+        // 2.76: mã ngoài {0, 1} (sentinel) ⇒ *"mã N"* ([TelemetryEnums.unknown]) thay vì bịa "Chỉnh tay" — cùng lúc
+        // [stateTable] trả `null` cho mã ấy, nên chữ và hình không bao giờ nói hai điều.
+        "ac_mode_auto" -> s.climate.acModeRaw?.let {
+            when (it) { 0 -> ClimateAuto.AUTO; 1 -> Strings.t("Chỉnh tay", "Manual"); else -> TelemetryEnums.unknown(it) }
+        }
         // 1.85 — cùng quy ước và cùng lý do với dòng trên: `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` ⇒ gió đang AUTO.
         // Đảo Ở ĐÂY cho bề mặt ĐỌC; nút `ac_auto` đảo bằng [ControlDef.readInverted] nên không ai đảo hai lần.
         // UX4 — phép đảo `0 = AUTO` của CHỈ BÁO GIÓ nay chỉ còn một bản, ở [ClimateAuto.autoOnFromRaw]. (Dòng
         // `ac_mode_auto` ngay trên giữ phép so riêng: nó đọc `AC_CTRLMODE_AUTO`, một hằng KHÁC chỉ tình cờ cũng = 0 —
         // gộp hai hằng khác họ vào một hàm là mời một lượt sửa sau làm sai cả hai, xem CLAUDE.md §2.)
         "ac_wind_auto" -> s.climate.acWindAutoRaw?.let {
-            if (ClimateAuto.autoOnFromRaw(it) == true) ClimateAuto.AUTO else Strings.t("Chỉnh tay", "Manual")
+            when {
+                ClimateAuto.autoOnFromRaw(it) == true -> ClimateAuto.AUTO
+                it == 1 -> Strings.t("Chỉnh tay", "Manual")
+                else -> TelemetryEnums.unknown(it)   // 2.76: sentinel ⇒ "mã N", khớp [stateTable] trả null
+            }
         }
 
         // ── A9. Giải trí ────────────────────────────────────────────────────────────────
@@ -304,14 +337,16 @@ object TelemetryReadout {
         "door_lr" -> s.body.doorLrOpen?.let { openShut(it) }
         "door_rr" -> s.body.doorRrOpen?.let { openShut(it) }
         "sunshade_pct" -> s.body.sunshadePct?.toString()
-        "power_level" -> s.body.powerLevel?.toString()
+        // 2.76 (R8) — MÃ → CHỮ qua bảng OEM ([TelemetryEnums.POWER_LEVEL]); trước đó chip in "Nguồn xe · 2" [P3 UX8].
+        "power_level" -> s.body.powerLevel?.let { TelemetryEnums.text("power_level", it) }
         "vehicle_type" -> s.body.vehicleType
         "sunroof_state" -> s.body.sunroofOpen?.let { openShut(it) }
 
         // ── A6. Đèn ─────────────────────────────────────────────────────────────────────
         // 8 datum đèn bật/tắt (cốt/pha/sương trước-sau/xi-nhan/đèn hông/DRL) nằm ở [boolOf] — chỉ `headlight_feedback`
         // là CHẾ ĐỘ (một con số, không phải công tắc) nên nó ở lại đây.
-        "headlight_feedback" -> s.lights.headlightMode?.toString()
+        // 2.76 (R8) — bảng từ CarSettings OEM ([TelemetryEnums.HEADLIGHT_MODE]); trước đó chip in "Chế độ đèn pha · 2".
+        "headlight_feedback" -> s.lights.headlightMode?.let { TelemetryEnums.text("headlight_feedback", it) }
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }

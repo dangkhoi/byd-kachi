@@ -68,6 +68,12 @@ object TestBridgeWritableKeys {
         // `camera_rotation` (2.67–2.70) GỠ khỏi đây: `Prefs.cameraRotation` migrate nó một lần rồi xoá.
         "camera_rot_left",
         "camera_rot_right",
+        // 2.76 L7 — LẬT GƯƠNG video TỪNG BÊN (research `research-side-camera-orientation-2026-09-27.md` §6.2): tay
+        // gương của ảnh HAL **[CHƯA BIẾT]** (CAM-M1 chưa đo) ⇒ đúng loại khoá phải đổi được **giữa hai lượt xi-nhan
+        // trên xe** rồi nhìn ảnh so với gương kính, không build lại. Mỗi khoá có một ô tích đảo lại được ở Cài đặt ›
+        // Tiện nghi xe ⇒ ràng buộc (3) giữ. Mặc định TẮT (không đoán tay gương).
+        "camera_mirror_left",
+        "camera_mirror_right",
         // CLOSE-14 (CAM-LAG): đường KẾT XUẤT khung hình (`TV`/`SV`). Vào đây vì đúng câu hỏi nó sinh ra để trả lời —
         // *"TextureView có phải nguồn giật không"* — chỉ đo được bằng cách đổi đường **giữa hai lượt xi-nhan trên xe
         // đang chạy** rồi so `gfxinfo`, không phải bằng một lượt build lại APK cho mỗi bên. Có hàng chip đảo lại được

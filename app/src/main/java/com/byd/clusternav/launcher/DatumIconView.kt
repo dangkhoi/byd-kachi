@@ -35,11 +35,13 @@ class DatumIconView(context: Context) : View(context) {
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
     /**
-     * @param iconName tên `ic-*` (một nguồn — [CapabilityDots.iconOverride] đã áp trước khi truyền vào).
+     * @param iconName tên `ic-*` KHÁI NIỆM (một nguồn — [CapabilityDots.iconOverride] đã áp trước khi truyền vào).
+     *   2.76 L7: họ có hình theo mức ([CapabilityIcons.forLevel]) thì ở [level] ≥ 1 vẽ đúng hình của mức ấy (một/hai
+     *   dấu) — widget · nhóm · bộ chọn đổi hình cùng chip và ô nút; mức 0 / không khai ⇒ hình khái niệm như cũ.
      * @param maxLevel số chấm (0 = không mức). @param level mức hiện tại (0..maxLevel). @param active on/off khi maxLevel=0.
      */
     fun set(iconName: String, maxLevel: Int, level: Int, active: Boolean) {
-        val res = KachiTheme.iconRes(iconName)
+        val res = KachiTheme.iconRes(CapabilityIcons.forLevel(iconName, level) ?: iconName)
         icon = if (res != 0) ContextCompat.getDrawable(context, res)?.mutate() else null
         this.maxLevel = maxLevel.coerceAtLeast(0)
         this.level = level.coerceIn(0, this.maxLevel)

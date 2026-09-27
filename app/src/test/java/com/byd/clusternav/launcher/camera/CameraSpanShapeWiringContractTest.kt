@@ -28,7 +28,8 @@ class CameraSpanShapeWiringContractTest {
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
-    private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
+    // 2.76 · R1: camera tách khỏi `SettingsSectionsCar` sang tệp riêng, hai tầng (người lái / kỹ thuật).
+    private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
     private val prefsDewarp by lazy { app("PrefsCameraDewarp.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
@@ -59,16 +60,22 @@ class CameraSpanShapeWiringContractTest {
         // Từ 2.75 kênh HAL là một phép HỢP ở `:core` (nguồn × pref × kênh của view) — xem `CameraSignalPolicy.channelFor`.
         assertTrue("CameraSignalPolicy.channelFor(" in controller, "kênh HAL phải hợp ở `:core`, không `if` ở `:app`")
         assertTrue("halModePref = Prefs.cameraHalMode(appCtx)," in controller, "pref cũ vẫn là đường owner ĐÈ")
-        assertTrue("viewChannel = view.channel," in controller, "kênh mặc định per-side đến từ CamView (hồ sơ xe)")
+        // 2.76 (R2): kênh per-side đến từ HỒ SƠ XE, không còn hằng trên CamView ([P3] review Pass 2).
+        assertTrue("profileChannel = CameraDefaults.of(appCtx).channel(left = turn == Turn.LEFT)," in controller,
+            "kênh mặc định per-side phải đến từ hồ sơ xe (CameraDefaults), không từ enum")
+        assertTrue("view.channel" !in controller, "hằng kênh trên CamView đã gỡ — không được đọc lại")
         // NGUỒN ảnh: mọi tầng hình học phải nhận cỡ NỘI DUNG, không phải cỡ buffer (kênh đơn bị kéo ngang ×STRIPS).
-        assertTrue("CameraSignalPolicy.usesChannel(Prefs.cameraSource(appCtx))" in controller)
+        // 2.76 (R3): nguồn đi qua máy lùi (đã lùi ⇒ PANO) và `channel` chỉ true khi kênh THẬT SỰ hợp ra được.
+        assertTrue("val source = fallback.sourceFor(Prefs.cameraSource(appCtx))" in controller)
+        assertTrue("val channel = CameraSignalPolicy.channelActive(source, halMode)" in controller,
+            "channel phải là phép hợp ở `:core` (CHANNEL trên xe chưa có bản đồ kênh ⇒ false)")
         assertTrue("val hintW = CameraPanoCrop.contentWidth(view.hintW, channel)" in controller,
             "cỡ nội dung tính MỘT chỗ rồi truyền xuống — hai lượt tính là hai kết quả lệch được")
         assertTrue("channel = channel," in controller, "crop + uniform đều phải biết đang ở nguồn nào")
         // Một dòng log đủ để đọc lại quyết định trên xe (CLAUDE.md §11: app tự chụp, owner không gõ adb).
         assertTrue("vùng=\$span" in controller && "hình=\$shape" in controller && "halMode=\$halMode" in controller,
             "dòng log của controller phải nói vùng/hình/kênh — đó là thứ owner đọc lại khi chốt dải")
-        assertTrue("rot=\$rot\")" in controller, "dòng log vẫn kết bằng rot= (hợp đồng của bài R7)")
+        assertTrue("rot=\$rot lật=\$mirror\")" in controller, "dòng log vẫn kết bằng rot= (hợp đồng của bài R7)")
     }
 
     /**
@@ -186,15 +193,22 @@ class CameraSpanShapeWiringContractTest {
 
     /** Bốn hàng chip, mọi mã lấy từ hằng `:core`, không một chuỗi/số nào chép vào tệp Cài đặt. */
     @Test fun `cai dat co bon hang chip lay ma tu core`() {
-        val body = SourceRoots.body(settings, "private fun cameraSignal(")
-        listOf("SPAN_NARROW", "SPAN_STRIP", "SHAPE_RECT", "SHAPE_ROUND").forEach {
+        // 2.76 · R1: ba hàng dò (bề rộng · dải · kênh HAL) ở tầng KỸ THUẬT; hình khung ở tầng NGƯỜI LÁI.
+        val body = SourceRoots.body(settings, "private fun cameraTech(")
+        listOf("SPAN_NARROW", "SPAN_STRIP").forEach {
             assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`")
+        }
+        val user = SourceRoots.body(settings, "private fun cameraUser(")
+        assertTrue("CameraSignalPolicy.SHAPES.map { it to shapeLabel(it) }" in user,
+            "chip hình khung SINH từ `:core` SHAPES ⇒ ô CLUSTER của làn L2 tự có chip")
+        listOf("SHAPE_RECT", "SHAPE_ROUND", "SHAPE_CLUSTER").forEach {
+            assertTrue("CameraSignalPolicy.$it ->" in settings, "nhãn chip $it phải tra theo hằng `:core`")
         }
         assertTrue("CameraPanoCrop.STRIPS_ALL.map" in body, "chip dải phải SINH từ `:core` (0..3), không viết tay bốn chip")
         assertTrue("CameraSignalPolicy.HAL_MODES.map" in body, "chip kênh HAL phải sinh từ miền hằng BYD ở `:core`")
         assertTrue("CameraSignalPolicy.HAL_MODE_AUTO" in body, "chip đầu = tự dò = đường 2.73")
         // Mã lưu bền không được chép trần vào Cài đặt (bẫy hai-bản-sao mà `ProfileNames` đã trả giá).
-        listOf("\"NARROW\"", "\"STRIP\"", "\"RECT\"", "\"ROUND\"").forEach {
+        listOf("\"NARROW\"", "\"STRIP\"", "\"RECT\"", "\"ROUND\"", "\"CLUSTER\"").forEach {
             assertTrue(it !in settings, "mã $it bị chép trần — dùng hằng CameraSignalPolicy")
         }
         // Bốn hàng, bốn cặp getter/setter qua cầu (Cài đặt không ghi Prefs thẳng).
@@ -205,8 +219,9 @@ class CameraSpanShapeWiringContractTest {
             "bridge.cameraStripRight()" to "bridge.setCameraStrip(left = false, v = it)",
             "bridge.cameraHalMode()" to "bridge.setCameraHalMode(it)",
         ).forEach { (get, set) ->
-            assertTrue(get in body, "hàng chip thiếu getter $get")
-            assertTrue(set in body, "hàng chip thiếu setter $set")
+            val where = if (get == "bridge.cameraShape()") user else body
+            assertTrue(get in where, "hàng chip thiếu getter $get")
+            assertTrue(set in where, "hàng chip thiếu setter $set")
         }
         listOf("cameraSpan", "cameraShape", "cameraStripLeft", "cameraStripRight", "cameraHalMode").forEach {
             assertTrue("fun ClusterNavBridge.$it(" in bridge, "cầu thiếu $it")
@@ -233,7 +248,8 @@ class CameraSpanShapeWiringContractTest {
     /** Năm pref: mặc định + phép kiểm lấy từ `:core`, device-scope, và cả sáu khoá `prefs_set` có `read_back`. */
     @Test fun `nam pref mac dinh core, device scope, sau khoa vao danh sach trang`() {
         mapOf(
-            "fun Prefs.cameraSpan(" to listOf("CameraSignalPolicy.defaultSpan()", "CameraSignalPolicy.isSpan(raw)"),
+            // 2.76 · R2: mặc định bề rộng theo HỒ SƠ XE (Seal STRIP / chưa đo NARROW), khoá đã đặt thắng.
+            "fun Prefs.cameraSpan(" to listOf("CameraDefaults.of(ctx).span", "CameraSignalPolicy.isSpan(raw)"),
             "fun Prefs.cameraShape(" to listOf("CameraSignalPolicy.defaultShape()", "CameraSignalPolicy.isShape(raw)"),
             "fun Prefs.cameraStrip(" to listOf("CameraPanoCrop.defaultStrip(left)", "CameraPanoCrop.isStrip(raw)"),
             "fun Prefs.cameraCirclePct(" to listOf("CameraSignalPolicy.CIRCLE_PCT_DEFAULT", "CameraSignalPolicy.isCirclePct(raw)"),

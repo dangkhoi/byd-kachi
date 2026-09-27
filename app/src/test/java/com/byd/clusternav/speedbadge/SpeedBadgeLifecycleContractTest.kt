@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 class SpeedBadgeLifecycleContractTest {
 
     private val overlay = SourceRoots.text("src/main/java/com/byd/clusternav/speedbadge/SpeedBadgeOverlay.kt")
-    private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/Prefs.kt")
+    private val prefs = SourceRoots.text("src/main/java/com/byd/clusternav/PrefsBadge.kt")   // khoá badge tách khỏi Prefs.kt (L6-debt 2026-09-27)
     private val owner = SourceRoots.text("src/main/java/com/byd/clusternav/NavigationSpeedSignOwner.kt")
     /** Công tắc badge nay ở nhóm *Dẫn đường* của Kachi Settings — màn cũ gỡ 2026-09-13 (S3 · R1/R3). */
     private val bridge = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
@@ -96,7 +96,7 @@ class SpeedBadgeLifecycleContractTest {
             prefs.contains("getBoolean(K_BADGE_ENABLED, false)"),
             "badgeEnabled default is false (OFF) — owner 2026-08-28: VietMap speed badge off by default",
         )
-        assertTrue(prefs.contains("fun setBadgeEnabled(ctx: Context, v: Boolean)"), "setter persists the flag")
+        assertTrue(prefs.contains("fun Prefs.setBadgeEnabled(ctx: Context, v: Boolean)"), "setter persists the flag")
     }
 
     @Test

@@ -32,7 +32,8 @@ import org.junit.jupiter.api.Test
  */
 class LegacyScreenAbsenceContractTest {
 
-    private val fence = "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionTransportFenceTest.kt"
+    /** Hằng `T11_HASHES` ở tệp fixtures từ L6-debt 2026-09-27 (tách thuần khỏi bài niêm phong, trần 500 dòng). */
+    private val fence = "offcar-planner/src/test/kotlin/com/byd/clusternav/offcar/ExpansionTransportFenceFixtures.kt"
 
     /** Gốc repo = thư mục tổ tiên gần nhất có `.git` (working dir của test tuỳ module). */
     private fun repoRoot(): Path? =

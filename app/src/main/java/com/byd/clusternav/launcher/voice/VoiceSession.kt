@@ -304,21 +304,46 @@ class VoiceSession(
         // bản này cả hai rơi vào cùng một chỗ ⇒ [VoiceClarify.giveUp] — câu nêu một ví dụ có thật, đúng thứ spec
         // R8 hứa — **chưa từng chạy** ở đường hết-trần. Xem `clarifyExhausted`.
         if (clarifyGaveUp(intents, my)) return
-        d.execute(intents)
-        // `say` chạy ĐỒNG BỘ bên trong `d.execute` cho mọi vế không phải tra mạng (cả hai đều trên luồng vẽ, và
-        // `post` chạy thẳng khi đã ở luồng vẽ) ⇒ tới đây [batch] đã đủ. Mở cổng cho các dòng về muộn.
-        flushed = true
-        // Có vế nào còn **đang tra mạng** không (dòng tạm `…`) — câu trả lời thật về sau tới 20 s nữa. Không mở
-        // hội thoại ở ca đó: micro sẽ đóng trước khi người lái biết việc xong hay hỏng (owner D1 nói về lệnh đã
-        // xong, không phải lệnh đang chạy).
-        val pending = batch.any { VoiceFeedbackPhrase.isInterim(it) }
-        val endSession = intents.any { it is VoiceIntent.EndSession }   // Req2: câu kết thúc ⇒ không mở hội thoại nối.
-        // Lưới an toàn = ước theo ĐỘ DÀI CÂU (không hằng cố định); mốc ĐỌC XONG (onReplyDone) mới nán. Xem VoiceSpeakBudget.
-        scheduleClose(VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS))
-        logDone(intents, batch)
-        clarifyRound = 0
-        VoiceChime.success()   // R1 voice-ux: earcon "đã hiểu/xong"
-        speakLines(batch) { post { onReplyDone(my, pending, endSession) } }
+        // ═══ [P1 · SOÁT Opus 2026-09-27] CHỐT lượt nói khi LÀN GHI đã cạn, không khi `d.execute` trả về ══════════
+        // Tới 2.76 chỗ này gom mảng lời đáp ngay sau `d.execute`. Từ R5 (làn ghi tuần tự) hàm ấy **trả về sớm** với
+        // câu ghép có vế đầu bất đồng bộ (*"tăng gió rồi tắt điều hoà"* lúc đang AUTO ⇒ hai lệnh + nhịp 400 ms trên
+        // luồng nền): lúc trả về chưa có một lời `say` nào ⇒ [batch] RỖNG ⇒ `speakLines` thoát ngay ⇒ `onReplyDone`
+        // mở micro nối trong vài ms ⇒ ~400 ms sau hai câu trả lời thật về với `flushed = true` **và mic đang mở** nên
+        // cổng `micOpen` của [speakLines] bỏ CẢ HAI — kể cả câu *"xe không nhận lệnh"* / *"xe này không có"*. Người
+        // lái chỉ nghe tiếng chuông, xe đổi hai thứ, không ai nói gì. 2.75 còn đọc được vế 2.
+        //
+        // Nay [VoiceDispatcher.execute] gọi lại đúng một lần khi cả câu đã ghi xong HOẶC đã dừng ở hộp hỏi lại (phần
+        // còn lại chờ người lái — giữ y 2.75, không treo tấm chữ suốt lượt hỏi/đáp). Đường MỘT vế đồng bộ không đổi
+        // một byte: mốc ấy bắn **trong** lượt gọi, trước cả dòng hẹn lưới an toàn dưới đây.
+        var settled = false
+        lateinit var settleTask: Runnable
+        fun settle() {
+            if (settled) return
+            settled = true
+            ui.removeCallbacks(settleTask)
+            // `say` của mọi vế đã chạy xong (đồng bộ hoặc qua `onUi` của luồng nền) ⇒ tới đây [batch] đã đủ. Mở cổng
+            // cho các dòng về muộn (đường tra mạng, hoặc vế sau một hộp hỏi lại).
+            flushed = true
+            // Có vế nào còn **đang tra mạng** không (dòng tạm `…`) — câu trả lời thật về sau tới 20 s nữa. Không mở
+            // hội thoại ở ca đó: micro sẽ đóng trước khi người lái biết việc xong hay hỏng (owner D1 nói về lệnh đã
+            // xong, không phải lệnh đang chạy).
+            val pending = batch.any { VoiceFeedbackPhrase.isInterim(it) }
+            val endSession = intents.any { it is VoiceIntent.EndSession }   // Req2: câu kết thúc ⇒ không mở hội thoại nối.
+            // Lưới an toàn = ước theo ĐỘ DÀI CÂU (không hằng cố định); mốc ĐỌC XONG (onReplyDone) mới nán. Xem VoiceSpeakBudget.
+            scheduleClose(VoiceSpeakBudget.estimateMs(batch, SPEAK_SAFETY_MS))
+            logDone(intents, batch)
+            clarifyRound = 0
+            VoiceChime.success()   // R1 voice-ux: earcon "đã hiểu/xong"
+            speakLines(batch) { post { onReplyDone(my, pending, endSession) } }
+        }
+        settleTask = Runnable {
+            Log.w(TAG, "làn ghi chưa báo xong sau $TURN_SETTLE_MS ms ⇒ chốt lượt nói bằng lưới an toàn")
+            settle()
+        }
+        // Lưới an toàn BẮT BUỘC: một vế quên gọi `done` sẽ ghim làn (KDoc [VoiceWriteLane]) — không có mốc này thì
+        // tấm chữ treo và `running` không bao giờ nhả, tức giọng nói chết tới khi khởi động lại launcher.
+        ui.postDelayed(settleTask, TURN_SETTLE_MS)
+        d.execute(intents) { post { settle() } }
     }
 
     // `speakLines(...)` (gom N dòng → đọc MỘT câu; ba cổng + luôn gọi `onDone`) và `confirm`/`answerConfirm`/
@@ -439,6 +464,21 @@ class VoiceSession(
          * cách cả spec lẫn nhật ký gọi lưới ấy.
          */
         const val SPEAK_SAFETY_MS = VoiceSpeakBudget.FLOOR_MS
+
+        /**
+         * ═══ Trần chờ *"làn ghi đã cạn"* trước khi chốt lượt nói bằng lưới an toàn ([P1] soát 2026-09-27) ═══════
+         *
+         * Lượt nói chờ [VoiceDispatcher.execute] báo xong (KDoc `onSettled`). Mốc ấy tới muộn nhất bao nhiêu:
+         *  • vế rời-AUTO của một nút = 2 lệnh + **một** nhịp `ActionMacros.DEFAULT_GAP_MS` = 400 ms;
+         *  • gói lệnh dài nhất đang khai (`mac_win_open_all`, 4 bước) = **3 × 400 ms** = 1,2 s (`MacroRunner` không
+         *    chờ sau bước cuối);
+         *  • câu ghép hai gói = ~2,4 s. Đường tra mạng (~20 s) **không** giữ làn — `VoiceTargetDispatch.runNav` gọi
+         *    `next` ngay (KDoc `VoiceDispatcher.run`), nên nó không tính vào đây.
+         * ⇒ 4 s = gấp ~1,7 lần ca chậm nhất đã khai, và vẫn NGẮN hơn cửa sổ hội thoại nối (5 s mặc định) nên một vế
+         * quên gọi `done` cũng không giữ phiên quá một lượt. Đây là trần AN TOÀN, không phải một phép đo: hết hạn
+         * thì chốt bằng những gì đã gom được và ghi một dòng `Log.w`.
+         */
+        const val TURN_SETTLE_MS = 4_000L
         /** 1.70 — vế tra mạng: câu trả lời thật tới ~20 s (15 s nối + 5 s đọc), tấm chữ chờ tới đó. */
         const val NETWORK_WAIT_MS = 22_000L
     }

@@ -27,6 +27,7 @@ class Goi2FeatureWiringContractTest {
     /** Nhóm "Màn hình chính" — lưới khả năng nằm ở đây (tách vì trần 500 dòng). */
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
     private val bridgeKt by lazy { code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt") }
+    private val bridgeSystemKt by lazy { code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeSystem.kt") }   // `applyRecircNow` tách sang tệp mở rộng (L6-debt 2026-09-27)
     private val drawerKt by lazy { code("src/main/java/com/byd/clusternav/launcher/AppDrawer.kt") }
 
     /** Dòng chọn đơn vị — chuyển sang bộ dựng dòng dùng chung (S1·T2). */
@@ -227,7 +228,7 @@ class Goi2FeatureWiringContractTest {
         assertTrue(bridgeKt.contains("fun setRecircOnStart("), "và đường lưu bền phải nằm ở CẦU, không ở section")
         assertTrue(block.contains("if (on)") && block.contains("applyRecircNow"),
             "bật thì áp NGAY, không chờ lần nổ máy sau")
-        assertTrue(bridgeKt.contains("fun applyRecircNow()") && bridgeKt.contains("RecircApplier.applyNowAsync(app)"),
+        assertTrue(bridgeSystemKt.contains("fun ClusterNavBridge.applyRecircNow()") && bridgeSystemKt.contains("RecircApplier.applyNowAsync(app)"),
             "đường áp ngay nằm ở CẦU và gọi đúng RecircApplier.applyNowAsync")
         assertFalse(block.contains("toggle(\"recirc\", false)"),
             "tắt ô tick KHÔNG được tắt chế độ đang bật trên xe")

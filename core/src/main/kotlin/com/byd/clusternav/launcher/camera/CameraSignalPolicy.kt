@@ -277,22 +277,8 @@ object CameraSignalPolicy {
     /** Mã nguồn đọc lên có dùng được không. */
     fun isSource(v: String): Boolean = v in SOURCES
 
-    /** Đang lấy MỘT kênh camera (khung bị kéo ngang) hay khung ghép? Mã lạ ⇒ [defaultSource]. */
-    fun usesChannel(source: String): Boolean =
-        (if (isSource(source)) source else defaultSource()) == SOURCE_CHANNEL
-
-    /**
-     * Kênh HAL thật sự truyền cho `addPreviewSurface(surface, int)` ở lượt mở.
-     *
-     * @param source [SOURCE_PANO] ⇒ giữ nguyên [halModePref] (mặc định [HAL_MODE_AUTO] = đường 2.73).
-     * @param halModePref pref `camera_hal_mode`. Là một kênh thật (`1..`[HAL_MODE_MAX]) ⇒ **owner đè**, dùng nó.
-     * @param viewChannel kênh mặc định của view đang hiện ([CamView.channel]) — per-side theo hồ sơ xe.
-     */
-    fun channelFor(source: String, halModePref: Int, viewChannel: Int): Int {
-        if (!usesChannel(source)) return halModePref
-        if (halModePref in 1..HAL_MODE_MAX) return halModePref
-        return if (viewChannel in 1..HAL_MODE_MAX) viewChannel else HAL_MODE_AUTO
-    }
+    // `usesChannel` · `channelFor` · `channelActive` · `frameNote` là **phần mở rộng** ở `CameraChannel.kt` (2.76):
+    // kênh nay đến từ HỒ SƠ xe ([CameraProfileDefaults.channel]), không từ `CamView` — xem KDoc tệp ấy.
 
     /** Khung CHỮ NHẬT bo góc — đúng cửa sổ 2.73. Mặc định. */
     const val SHAPE_RECT = "RECT"
@@ -306,8 +292,16 @@ object CameraSignalPolicy {
      */
     const val SHAPE_ROUND = "ROUND"
 
-    /** Mọi hình khung hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
-    val SHAPES: List<String> = listOf(SHAPE_RECT, SHAPE_ROUND)
+    /**
+     * Khung **THEO CỤM** (2.76 · R4, làn L2): khi chiếu lên cụm `1920×720` chỉ vẽ trong **dải giữa** của cụm — hình
+     * học ở `CameraClusterBand` (`:core`, làn L2). Trên màn chính mã này **thoái về** [SHAPE_RECT]: mọi phép so
+     * `shape == SHAPE_ROUND` trả `false` nên tầng vẽ/crop đi nhánh chữ nhật, không có nhánh nào ném. Ô chip sinh từ
+     * [SHAPES] ⇒ Cài đặt không phải sửa khi L2 nối dây.
+     */
+    const val SHAPE_CLUSTER = "CLUSTER"
+
+    /** Mọi hình khung hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu, mã MỚI đứng cuối — §6). */
+    val SHAPES: List<String> = listOf(SHAPE_RECT, SHAPE_ROUND, SHAPE_CLUSTER)
 
     /** Hình khung mặc định = chữ nhật bo góc của 2.73. */
     fun defaultShape(): String = SHAPE_RECT
@@ -453,19 +447,14 @@ object CameraSignalPolicy {
         val crop: FloatArray? = null,
         val hintW: Int = 0,
         val hintH: Int = 0,
-        /**
-         * Kênh HAL của **riêng** view này ở chế độ [SOURCE_CHANNEL] — `0` = chưa biết (⇒ rơi về [HAL_MODE_AUTO]).
-         *
-         * Per-side **theo hồ sơ xe**, đúng CLAUDE.md §7: [ĐO xe 27/09] Seal cho `2` = gương trái · `3` = gương phải.
-         * Đời xe khác có thể khác ⇒ owner đè bằng pref `camera_hal_mode` mà không cần build lại
-         * ([channelFor]); khi có đời thứ hai đo được, hằng này chuyển sang `ClusterProfile`.
-         */
-        val channel: Int = 0,
     ) {
+        // ⚠ 2.76: `channel` (kênh HAL per-side) KHÔNG còn ở đây — đó là số đo của MỘT xe (Seal: trái 2 / phải 3
+        // [ĐO 27/09]) và nay nằm trong hồ sơ xe (`ClusterProfile.camera` → [CameraProfileDefaults.channel]),
+        // đúng CLAUDE.md §7. [P3] review Pass 2 đóng.
         // Gương = cameraId 1 = fisheye 4-in-1 [ĐO owner 2026-09-25: id 1 ra fisheye đúng nguồn] + CROP vùng
         // trái/phải (kinex pano crop trái x[0.25-0.35], phải x[0.65-0.75] của ảnh 4-in-1). id 0 crop ra sai.
-        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f), hintW = 5120, hintH = 960, channel = 2),
-        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f), hintW = 5120, hintH = 960, channel = 3),
+        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f), hintW = 5120, hintH = 960),
+        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f), hintW = 5120, hintH = 960),
         FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
         FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
         REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),

@@ -202,7 +202,7 @@ class CameraSignalPolicyTest {
         assertEquals(P.SPAN_NARROW, P.SPANS.first(), "chip đầu hàng = mặc định")
         assertEquals(listOf("NARROW", "STRIP"), P.SPANS, "mã lưu bền: đổi là mất lựa chọn đã ghi trên xe")
         assertEquals(P.SHAPE_RECT, P.defaultShape())
-        assertEquals(listOf("RECT", "ROUND"), P.SHAPES)
+        assertEquals(listOf("RECT", "ROUND", "CLUSTER"), P.SHAPES, "2.76: ô CLUSTER (theo cụm, làn L2) đứng CUỐI — mã mới không leo lên trước")
         assertEquals(1, CameraPanoCrop.defaultStrip(left = true), "dải chứa vệt TRÁI của 2.73")
         assertEquals(2, CameraPanoCrop.defaultStrip(left = false), "dải chứa vệt PHẢI của 2.73")
         assertEquals(P.HAL_MODE_AUTO, P.HAL_MODES.first(), "chip đầu hàng = dò 0..3 y 2.73")

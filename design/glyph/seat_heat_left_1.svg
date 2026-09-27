@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- GHẾ SƯỞI mức 1 — ghế LÁI: cùng ghế, MỘT làn nhiệt (chính làn giữa của bộ ba UX5, không đổi hình). 2.76 L7 (owner 27/09: *"1 bông tuyết, 2 bông tuyết, 1 sưởi, 2 sưởi trên icon luôn mà không cần số 1-2"*): MỨC nằm trong HÌNH — số dấu = mức, con số rời chip. Hình khái niệm = mức CAO NHẤT (2 dấu); bản `_1` = một dấu. + chấm vô-lăng. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M 19.42,8.61 C 20.71,8.61,21,9.62,20.71,10.92 L 19.42,16.39 L 12.36,16.39" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 18.7,16.39 L 12.5,16.39 A 1.44,1.44,0 0 0 11.06,17.83 L 11.06,17.97 A 1.44,1.44,0 0 0 12.5,19.41 L 18.7,19.41 A 1.44,1.44,0 0 0 20.14,17.97 L 20.14,17.83 A 1.44,1.44,0 0 0 18.7,16.39 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M 18.55,19.41 L 18.55,21 M 12.65,19.41 L 12.65,21" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M 6.9,11.2 C 8.9,9.2 4.9,6.8 6.9,4.6" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 8.6,16.65 A 1.25,1.25 0 1 1 8.6,19.15 A 1.25,1.25 0 1 1 8.6,16.65 Z" data-layer="main" fill="var(--main)" stroke="none"/>
+</svg>

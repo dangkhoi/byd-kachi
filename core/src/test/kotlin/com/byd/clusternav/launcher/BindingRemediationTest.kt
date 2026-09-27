@@ -100,6 +100,30 @@ class BindingRemediationTest {
     }
 
     /**
+     * ═══ [P1 · SOÁT Opus 2026-09-27] `BODYWORK_STATE_UNDEFINED = 255` KHÔNG được thành *"đang mở"* ═══════════════
+     *
+     * [ĐO source] `jadx-tmap/.../bodywork/BYDAutoBodyworkDevice.java:203-205` — `CLOSED = 0` · `OPEN = 1` ·
+     * `UNDEFINED = 255`. `coerceBool` là `coerceInt(s) > 0` ⇒ không lọc thì `255` ra `true`, và cờ Boolean của
+     * `CarStatus.Body` xoá mất sentinel trước khi `:core` nhìn thấy ⇒ chip hiện **hình cửa MỞ sáng** + nhóm *Cửa* đỏ
+     * (`GroupBoard.alertIf`) cho một cánh cửa đang đóng, trên xe đang chạy.
+     *
+     * ⚠ Mức bằng chứng của **ca xảy ra**: [CHƯA BIẾT] — cả 4 lượt quét trên xe owner (`carlog-0916/sweep-1.64.json`,
+     * `perf-oncar-2026-09-26/kachi-logs/sweep-20260916-091838`, `sweep-20260921-181714`, `-182919`) đều đọc
+     * `getDoorState = 0` và `getSunroofState = 0`. Đây là lưới an toàn cho trim khác, không phải vá một triệu chứng.
+     */
+    @Test fun `than xe 255 la CHUA XAC DINH, khong phai dang mo`() {
+        fun door(v: String) = HalBindingTable(FakeHalGateway(getters = mapOf("getDoorState" to v))).readBool("door_lf")
+        assertEquals(false, door("0"), "BODYWORK_STATE_CLOSED")
+        assertEquals(true, door("1"), "BODYWORK_STATE_OPEN")
+        assertNull(door("255"), "BODYWORK_STATE_UNDEFINED ⇒ *chưa đọc được*, không phải MỞ")
+        val roof = HalBindingTable(FakeHalGateway(getters = mapOf("getSunroofState" to "255"))).readBool("sunroof_state")
+        assertNull(roof, "cửa sổ trời cũng cùng device, cùng hằng")
+        listOf("door_lf", "door_rf", "door_lr", "door_rr", "sunroof_state").forEach {
+            assertEquals(setOf(255), HalReadTables.INVALID_VALUES[it], "$it phải lọc 255 — cả 4 cửa, không chỉ một")
+        }
+    }
+
+    /**
      * ⚠⚠ UX-OVERHAUL · WP8 2026-09-20 — bài này **đảo chiều**. Cả ba thành viên của nó đã rời registry:
      * `batt_range_bodywork` ở (V) 2026-09-17, rồi `cell_v_high`/`cell_v_low` ở WP8 (#5-18). Ba mã ấy sinh ra bài
      * này vì chúng bind vào một feature-id **của việc khác** (atom TẦM XĂNG), nên đường đọc phải là `None` để

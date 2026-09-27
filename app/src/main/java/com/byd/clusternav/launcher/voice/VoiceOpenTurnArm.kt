@@ -128,6 +128,19 @@ internal class VoiceOpenTurnArm(
     /**
      * Chữ cuối cùng của lượt: vế trước, hoặc vế trước **đã ghép** vế sau.
      *
+     * ## R6 (2.76) — có vế sau thì **luôn giải mã và thử ghép**, kể cả khi vế trước đủ nghĩa
+     * 2.75 trả về ngay khi `!isOpen(head)`, **trước** khi hỏi [VoiceTurnEndpoint.tailRange]. [ĐO xe 2026-09-27
+     * 10:42:46] *"mở vietmap"* ⟨ngừng⟩ *"vào ô số hai"*: vế sau bắt đầu trong lúc lượt giải mã vế trước còn chạy nên
+     * bộ ngắt câu **đã thu** nó (`tieng_dut` 2 400 → 4 384 ms sau `flush`) — rồi dòng ấy vứt đi. Nay quyết định
+     * *"ghép hay giữ"* nằm ở [VoiceOpenTurn.attach] (`:core`, kiểm off-car): vế dở ⇒ ghép như cũ; vế đủ ⇒ chỉ nhận khi
+     * câu ghép là bản đầy đủ hơn của cùng ý định. **Không** thêm một mili-giây NGHE: [stopReading] vẫn thoát ngay khi
+     * vế trước đủ nghĩa — chỉ khúc tiếng đã nằm sẵn trong cửa sổ mới được dùng.
+     *
+     * ⚠ Thời gian **GIẢI MÃ** thì có thêm, và đó là hai chuyện khác nhau (CLAUDE.md §2): khi có đoạn tiếng sau điểm
+     * ngắt, hàm này chạy thêm một lượt `rangeResult` cho vế sau **trên đường tới hành động**. Số ms ấy **[CHƯA BIẾT]**
+     * trên xe (🚗 đọc dòng `giải mã … ms` của `VoiceCapture` ở buổi tới); để nó không rơi vào những lượt chắc chắn
+     * không dùng được, lượt giải mã chỉ chạy khi [VoiceOpenTurn.mayAttach] còn nhận vế trước.
+     *
      * **CHẶN** cho tới khi lượt giải mã vế trước xong — đúng lượt chờ mà bản cũ cũng phải chờ, chỉ là nó đã chạy
      * được một đoạn. Phải gọi **trước** `VoiceTurnEndpoint.close()` (nó cần [VoiceTurnEndpoint.tailRange]) và
      * **sau** `VoiceTurnEndpoint.flush()` — một vế sau còn đang mở lúc thoát vòng đọc chỉ vào hàng đợi đoạn nhờ
@@ -141,13 +154,24 @@ internal class VoiceOpenTurnArm(
         val head = runCatching { task.get() }
             .onFailure { Log.w(VoiceEngine.TIMING_TAG, "noi-tiep: lượt giải mã vế trước hỏng", it) }
             .getOrNull().orEmpty()
-        if (!VoiceOpenTurn.isOpen(head)) return Outcome(head, head, "")
         val range = ep.tailRange(segmentsAtEndpoint, fedSamples)
             ?: return Outcome(head, head, "").also {
-                Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: không có vế sau ⇒ giữ nguyên \"$head\"")
+                if (VoiceOpenTurn.isOpen(head)) Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: không có vế sau ⇒ giữ nguyên \"$head\"")
             }
+        // [P2 · SOÁT Opus 2026-09-27] Có đoạn tiếng sau điểm ngắt **chưa đủ** để bỏ một lượt giải mã (1,3–2 s [ĐO
+        // xe]) vào nó: `attach` chỉ nhận vế trước DỞ hoặc *mở app chưa có ô*, nên với mọi vế trước khác lượt giải mã
+        // ấy chắc chắn bị vứt — mà nó nằm trên đường tới hành động (*"bật đèn đọc"* + một tiếng trong cabin ⇒ đèn lên
+        // muộn hơn 2.75 đúng một lượt). Phép hỏi ở `:core` ([VoiceOpenTurn.mayAttach]) nên không đổi kết quả một lượt
+        // nào, chỉ bỏ công vô ích — và không mở một ngữ pháp thứ hai ở `:app` (CLAUDE.md §7).
+        if (!VoiceOpenTurn.mayAttach(head)) {
+            Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: có vế sau nhưng \"$head\" không còn chỗ ghép ⇒ bỏ lượt giải mã vế sau")
+            return Outcome(head, head, "")
+        }
         val tail = rec.rangeResult(range.first, range.last + 1)
-        val joined = VoiceOpenTurn.join(head, tail)
+        val joined = VoiceOpenTurn.attach(head, tail)
+            ?: return Outcome(head, head, tail).also {
+                Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: vế sau \"$tail\" không nối được vào \"$head\" ⇒ giữ vế trước")
+            }
         Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: ghép \"$head\" + \"$tail\" ⇒ \"$joined\"")
         return Outcome(joined, head, tail)
     }

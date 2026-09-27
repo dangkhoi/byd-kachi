@@ -156,4 +156,67 @@ class VoiceOpenTurnTest {
         // Kẹp theo cửa sổ: đoạn dài hơn phần đã thu (chốt bằng `flush` lúc chạm trần) không đọc ra ngoài vùng.
         assertEquals(44_160 until 50_000, VoiceVadTrim.tailRange(listOf(a, b), 1, 50_000))
     }
+
+    // ── (d) R6 (2.76) — vế TRƯỚC ĐỦ NGHĨA mà vẫn có vế sau đã thu ──────────────────────────────
+
+    /**
+     * [ĐO xe 2026-09-27 10:42:46] *"mở vietmap"* ⟨ngừng⟩ *"vào ô số hai"*: vế sau **đã thu** (`tieng_dut` 2 400 →
+     * 4 384 ms sau `flush`) rồi bị 2.75 vứt vì vế trước đủ nghĩa. Nay [VoiceOpenTurn.attach] ghép khi câu ghép là bản
+     * đầy đủ hơn của cùng ý định.
+     */
+    @Test
+    fun `ve truoc du nghia nhung ve sau la menh de o thi GHEP`() {
+        val joined = VoiceOpenTurn.attach("mở vietmap", "vào ô số hai")
+        assertEquals("mở vietmap vào ô số hai", joined)
+        val i = VoiceIntentParser.parseOne(joined!!) as VoiceIntent.OpenApp
+        assertEquals("VietMap", i.appName)
+        assertEquals(2, i.slot)
+        // Dạng rụng chữ *"ô"* của vế sau ([VoiceTailClause.bareSlot]) cũng nối được.
+        assertEquals("mở vietmap số hai", VoiceOpenTurn.attach("mở vietmap", "số hai"))
+    }
+
+    @Test
+    fun `ve sau la lenh khac, tieng on, hay menh de cut thi GIU ve truoc`() {
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap", "bật đèn đọc"), "vế sau là một lệnh khác ⇒ không nối")
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap", "ừ"), "tiếng đệm ⇒ không nối")
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap", ""), "rỗng ⇒ không nối")
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap", "vào ô"), "mệnh đề ô CỤT ⇒ không đầy đủ hơn ⇒ giữ vế trước")
+        assertEquals(null, VoiceOpenTurn.attach("bật đèn đọc", "vào ô số hai"), "lệnh xe không có ô ⇒ không nối")
+        assertEquals(null, VoiceOpenTurn.attach("mở vietmap vào ô số một", "vào ô số hai"), "đã có ô ⇒ không đổi ô")
+    }
+
+    /** Vế DỞ đi đúng đường [VoiceOpenTurn.join] cũ — không một byte nào đổi. */
+    @Test
+    fun `ve do van ghep nhu 2_74`() {
+        assertEquals(VoiceOpenTurn.join("mở vietmap vào ô", "số hai"), VoiceOpenTurn.attach("mở vietmap vào ô", "số hai"))
+        assertEquals("mở vietmap vào ô số hai", VoiceOpenTurn.attach("mở vietmap vào ô số", "hai"))
+        assertEquals("chuyển sang hồ sơ Vợ", VoiceOpenTurn.attach("chuyển sang hồ sơ", "Vợ"))
+    }
+
+    /**
+     * ═══ [P2 · SOÁT Opus 2026-09-27] [VoiceOpenTurn.mayAttach] — cổng RẺ đứng trước một lượt GIẢI MÃ ════════════
+     *
+     * Bệnh nó khoá: từ R6, `VoiceOpenTurnArm.result` giải mã vế sau **mỗi khi** bộ ngắt câu có một đoạn tiếng sau
+     * điểm ngắt — kể cả khi vế trước là *"bật đèn đọc"*, tức khi [attach] chắc chắn trả `null`. Một lượt giải mã là
+     * 1,3–2 s [ĐO xe] **trên đường tới hành động**, và một tiếng nói của khách trong cabin là đủ để sinh đoạn ấy.
+     *
+     * Bất biến: cổng chỉ được nói `false` ở những vế trước mà [attach] trả `null` với MỌI vế sau — nếu nó chặn rộng
+     * hơn thì nó đổi hành vi, không chỉ tiết kiệm công.
+     */
+    @Test
+    fun `mayAttach chi cho qua ve truoc ma attach con co the nhan`() {
+        // Vế trước DỞ ⇒ luôn qua (đường `join` của 2.74).
+        listOf("mở vietmap vào ô", "mở vietmap vào ô số", "chuyển sang hồ sơ").forEach {
+            assertTrue(VoiceOpenTurn.mayAttach(it), "vế dở \"$it\" phải được ghép như 2.74")
+        }
+        // Vế trước ĐỦ mà là *mở app chưa có ô* ⇒ qua (đúng ca [ĐO] 27/09 10:42:46).
+        assertTrue(VoiceOpenTurn.mayAttach("mở vietmap"))
+        // Vế trước ĐỦ và KHÔNG còn chỗ ghép ⇒ chặn, và `attach` của chính nó cũng `null` với mọi vế sau đã biết.
+        listOf("bật đèn đọc", "tăng gió", "mở vietmap vào ô số một").forEach { head ->
+            assertFalse(VoiceOpenTurn.mayAttach(head), "\"$head\" không có đường nhận nào ⇒ không đáng một lượt giải mã")
+            listOf("vào ô số hai", "số hai", "bật đèn đọc", "ừ", "vào ô").forEach { tail ->
+                assertEquals(null, VoiceOpenTurn.attach(head, tail), "cổng chỉ được chặn thứ attach đã trả null: \"$head\" + \"$tail\"")
+            }
+        }
+    }
 }

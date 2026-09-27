@@ -26,7 +26,7 @@ class CameraRotationWiringContractTest {
     /** Ba hàm dựng lớp video + `applyTransform` sang tệp riêng ở 2.74 (R8-B) — xem KDoc `CameraVideoLayer`. */
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
-    private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
+    private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
 
@@ -42,7 +42,8 @@ class CameraRotationWiringContractTest {
     fun `overlay lay ma tran tu core va ap o ca hai callback`() {
         val body = SourceRoots.body(layer, "private fun applyTransform(")
         assertTrue(
-            "CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg)" in body,
+            // 2.76 L7: thêm `mirror` (lật gương ở `:core`, bước 1b) — vẫn MỘT nguồn sự thật cho ma trận.
+            "CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror)" in body,
             "ma trận phải do `:core` dựng (một nguồn sự thật, có test bằng số) — không nhân tay trong `:app`",
         )
         assertTrue("?: return" in body, "`null` từ `:core` ⇒ KHÔNG đụng setTransform (y hành vi trước R7)")
@@ -50,7 +51,7 @@ class CameraRotationWiringContractTest {
         // Cả hai callback: lượt đầu (Available) và lượt đổi cỡ (SizeChanged) — thiếu một là xoay mất khi view đổi cỡ.
         assertEquals(
             2,
-            Regex("""override fun onSurfaceTexture(?:Available|SizeChanged)\([^)]*\)\s*\{?\s*applyTransform\(this@apply, w2, h2, crop, rotationDeg\)""")
+            Regex("""override fun onSurfaceTexture(?:Available|SizeChanged)\([^)]*\)\s*\{?\s*applyTransform\(this@apply, w2, h2, crop, rotationDeg, mirror\)""")
                 .findAll(layer).count(),
             "applyTransform(…, rotationDeg) phải gọi ở CẢ onSurfaceTextureAvailable và onSurfaceTextureSizeChanged",
         )
@@ -88,7 +89,7 @@ class CameraRotationWiringContractTest {
         )
         assertTrue("Prefs.cameraRotation(appCtx)" !in controller, "khoá đơn cũ (một chế độ cho cả hai bên) không còn được đọc")
         assertTrue("rotationDeg = rot," in controller, "số độ phải đi vào overlay.show(rotationDeg = …)")
-        assertTrue("rot=\$rot\")" in controller, "log 1 dòng của controller phải có rot=")
+        assertTrue("rot=\$rot lật=\$mirror\")" in controller, "log 1 dòng của controller phải kết bằng rot= rồi lật= (L7)")
     }
 
     /**
@@ -97,7 +98,7 @@ class CameraRotationWiringContractTest {
      */
     @Test
     fun `cai dat co HAI hang chip, moi hang 4 ma dung hang core`() {
-        val body = SourceRoots.body(settings, "private fun cameraSignal(")
+        val body = SourceRoots.body(settings, "private fun cameraUser(")   // 2.76 · R1: xoay là tầng NGƯỜI LÁI
         val codes = listOf("ROTATE_NONE", "ROTATE_LEFT", "ROTATE_RIGHT", "ROTATE_180")
         codes.forEach { assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`") }
         assertEquals(codes.size, CameraSignalPolicy.ROTATIONS.size, "mỗi góc `:core` phải có ĐÚNG một chip trong danh sách dùng chung")
@@ -123,7 +124,9 @@ class CameraRotationWiringContractTest {
     @Test
     fun `pref camera_rot theo ben, migrate khoa don cu, vao danh sach trang`() {
         val body = SourceRoots.body(prefs, "fun Prefs.cameraRotation(")
-        assertTrue("CameraSignalPolicy.defaultRotation(left)" in body, "mặc định phải lấy từ `:core` THEO BÊN, không chép chuỗi")
+        // 2.76 · R2: mặc định THEO BÊN từ HỒ SƠ XE (Seal `0`/`0` — research §6.1; chưa đo = `defaultRotation`).
+        assertTrue("CameraDefaults.of(ctx).rotation(left)" in body, "mặc định phải lấy từ hồ sơ xe THEO BÊN, không chép chuỗi")
+        assertTrue("CameraSignalPolicy.defaultRotation(" !in body, "hằng trung tính không còn được đọc thẳng ở đây (nó là NEUTRAL của hồ sơ)")
         assertTrue("CameraSignalPolicy.isRotation(raw)" in body, "giá trị lạ trên đĩa phải rơi về mặc định")
         assertTrue("migrateLegacyCameraRotation(p)" in body, "lượt đọc phải chạy migrate trước — nếu không, xe nâng cấp mất lựa chọn đã chốt")
         val mig = SourceRoots.body(prefs, "private fun migrateLegacyCameraRotation(")
