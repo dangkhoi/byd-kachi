@@ -46,8 +46,21 @@ import kotlin.math.tan
  *  • **p-space** — local dời về tâm quang rồi quy đổi đẳng hướng, đơn vị = **nửa bề ngang ô**: `1.0` = nửa bề ngang,
  *    `aspect` nghịch đảo lo phần trục y. Mọi bán kính (`F`, `K·SCALE`, `r_dst`, `r_src`) đều trong đơn vị này.
  *
+ * ## Dịch CỬA SỔ ≠ dời TÂM QUANG (2.75 — `camera_dewarp_pan_x/y`)
+ * Owner muốn khung gương *"dịch một tí ra sau"*. Hai đường làm được việc ấy, và chỉ **một** đường giữ được ảnh thẳng:
+ *  • **Dời tâm quang** (`centerX`): đổi luôn điểm mà phép nắn coi là trục quang ⇒ đồng-θ không còn đồng tâm với vòng
+ *    ảnh thật ⇒ *một bên thẳng, bên kia còng*. [ĐO] trên xe 27/09: `cx −10 %` bị owner bác (*"nặng"*, không thẳng).
+ *  • **Dịch cửa sổ** ([panX]/[panY]): tâm quang **đứng yên**, chỉ cái khung chữ nhật của phối cảnh thẳng trượt đi.
+ *    Vì `dst → p` vẫn là một phép **affine** (chỉ thêm một số hạng hằng), **đường thẳng vẫn thẳng** — đúng thứ
+ *    `scale` 140–145 % (phóng ra, cũng bị bác) không làm được.
+ *
+ * Dịch nằm trong **ô CHƯA XOAY**, tức cộng vào `local` **ngay sau** [rotateDstToLocal] và **trước** [mapDstToSrc]:
+ * nhờ vậy `pan_x = −10 %` là *"ra sau"* cho gương trái dải 1 ở **mọi** góc xoay (rot 0 ⇒ mép trái khung; ↺90 ⇒ mép
+ * dưới khung), owner không phải đổi núm khi đổi chip *Xoay*.
+ *
  * ## Công thức (bản gốc — [FORMULA])
  * ```
+ * a,b    = rot(dst) + (panX, panY)                  // dịch cửa sổ, trong ô CHƯA XOAY
  * p      = ((a − cx)·2, (b − cy)·2/aspect)          // p-space, đẳng hướng
  * r_dst  = |p| ;  dir = p/r_dst
  * theta  = atan(r_dst / F)                          // đích là phối cảnh thẳng ⇒ r_dst = F·tan θ
@@ -80,6 +93,15 @@ data class DewarpParams(
     val centerX: Float = DEFAULT_CENTER,
     /** Tâm quang theo trục y, trong local. */
     val centerY: Float = DEFAULT_CENTER,
+    /**
+     * **Dịch CỬA SỔ ra** theo trục x của ô CHƯA XOAY, đơn vị = bề ngang ô (`0,10` = 10 %). Chip **Dịch ngang**.
+     *
+     * KHÔNG phải [centerX]: xem §"Dịch cửa sổ ≠ dời tâm quang" ở KDoc lớp. Dấu: `> 0` ⇒ cửa sổ trượt về phía **+x**
+     * của ô ⇒ nội dung trên màn dịch sang **trái**. Gương trái dải 1: đuôi xe ở mép **TRÁI** ô ⇒ ra sau = **âm**.
+     */
+    val panX: Float = DEFAULT_PAN,
+    /** Dịch cửa sổ theo trục y của ô CHƯA XOAY, đơn vị = bề cao ô. Xem [panX]. */
+    val panY: Float = DEFAULT_PAN,
 ) {
     /** `K·SCALE` — hệ số f-theta hiệu dụng, đúng một tham số tỉ lệ như RE §3.3 đã gộp. */
     val gain: Float get() = k * scale
@@ -109,6 +131,8 @@ data class DewarpParams(
         scale = scale.sane(DEFAULT_SCALE).coerceIn(MIN_GAIN, MAX_GAIN),
         centerX = centerX.sane(DEFAULT_CENTER).coerceIn(MIN_CENTER, MAX_CENTER),
         centerY = centerY.sane(DEFAULT_CENTER).coerceIn(MIN_CENTER, MAX_CENTER),
+        panX = panX.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
+        panY = panY.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
     )
 
     private fun Float.sane(fallback: Float): Float = if (isNaN() || isInfinite()) fallback else this
@@ -154,6 +178,16 @@ data class DewarpParams(
         /** Tâm quang được phép ra ngoài ô tới 4 lần bề ô: crop `0,10` của dải `0,25` ⇒ `centerX = 1,25` là thường. */
         const val MIN_CENTER = -4f
         const val MAX_CENTER = 5f
+
+        /** Không dịch cửa sổ — đúng khung của [DEFAULT_CENTER], tức hành vi của 2.74. */
+        const val DEFAULT_PAN = 0f
+
+        /**
+         * Dịch tối đa **nửa ô** mỗi chiều. Quá nửa thì tâm quang rơi hẳn ra ngoài cửa sổ ⇒ cả khung nằm ở một phía
+         * của trục quang, nơi phối cảnh thẳng giãn mạnh nhất — không còn là một khung để nhìn gương.
+         */
+        const val MIN_PAN = -0.5f
+        const val MAX_PAN = 0.5f
 
         /**
          * Bộ tham số suy từ **hình học**, không phải từ số của Electro — dùng cho mặc định và cho test.
@@ -207,7 +241,7 @@ object CameraDewarp {
 
     /** Bản gốc của công thức — [CameraDewarpShader.FORMULA] trả **cùng** chuỗi này (bài test ghim). */
     const val FORMULA =
-        "p=((a-cx)*2,(b-cy)*2/aspect); theta=atan(|p|,F); r_src=(K*SCALE)*theta; " +
+        "local=rot(dst)+pan; p=((a-cx)*2,(b-cy)*2/aspect); theta=atan(|p|,F); r_src=(K*SCALE)*theta; " +
             "proj=(cx+dir.x*r_src*0.5, cy+dir.y*r_src*0.5*aspect); out=mix(local,proj,clamp(amount,0,1))"
 
     /** Dưới ngưỡng này coi như đang đứng đúng tâm quang ⇒ trả về chính nó (giới hạn đúng của công thức). */
@@ -243,6 +277,18 @@ object CameraDewarp {
         }
         return (0.5f + c * qx + s * qy) to (0.5f + c * qy - s * qx)
     }
+
+    /**
+     * **Dịch cửa sổ** trong ô CHƯA XOAY — một phép **tịnh tiến hằng**, đặt giữa [rotateDstToLocal] và [mapDstToSrc].
+     *
+     * Vì sao là một hàm riêng chứ không nhét vào [mapDstToSrc]: nó phải chạy **cả khi phép nắn tắt** (`amount = 0`)
+     * — owner vẫn được dịch khung ở đường thô — và shader cũng đặt nó ngoài khối `if (amount > …)` đúng như vậy
+     * (`local = local + uPan;`). Nhét vào trong thì hai bản lệch nhau ở đúng ca `amount = 0`, ca mà không ai soi.
+     *
+     * Vì sao **tịnh tiến** giữ được ảnh thẳng: `p` là ảnh affine của `local`, nên cộng một hằng vào `local` chỉ dời
+     * gốc của p-space — phần cong (`atan`) vẫn đo quanh **đúng** tâm quang [DewarpParams.centerX]/[DewarpParams.centerY].
+     */
+    fun panLocal(u: Float, v: Float, p: DewarpParams): Pair<Float, Float> = (u + p.panX) to (v + p.panY)
 
     /**
      * **local(đích) → local(nguồn)**: phép nắn, đúng công thức [FORMULA] — bản gốc của shader.
@@ -394,7 +440,12 @@ object CameraDewarp {
     }
 
     /**
-     * Cả chuỗi của một pixel, **đúng thứ tự shader**: xoay → nắn → `uSrcRect` → toạ độ texture chuẩn hoá.
+     * Cả chuỗi của một pixel, **đúng thứ tự shader**: xoay → dịch cửa sổ → nắn → `uSrcRect` → toạ độ texture chuẩn hoá.
+     *
+     * ⚠ Thứ tự **xoay TRƯỚC nắn** là thứ làm cho một góc ±90 đúng bằng *"ảnh rot 0 đã xoay"*: [rotateDstToLocal] là
+     * một phép **affine** trong toạ độ chuẩn hoá, nên nó giao hoán với tính thẳng của khung ra, và [aspect] vẫn là
+     * tỉ lệ ô **NGUỒN** (không đảo theo góc xoay — xem bẫy (2) ở KDoc [CameraGlUniforms]). Bài
+     * `xoay 90 chi la anh rot 0 da xoay` và `duong thang van thang o MOI goc xoay` ghim cả hai.
      *
      * @return `null` khi điểm rơi **ngoài** ô sau khi nắn ⇒ shader trả đen đặc. Chỗ gọi off-car (ảnh kiểm tra,
      *   test) dùng `null` làm "pixel đen", không phải làm lỗi.
@@ -407,7 +458,8 @@ object CameraDewarp {
         aspect: Float,
         srcRect: FloatArray,
     ): Pair<Float, Float>? {
-        val (a, b) = rotateDstToLocal(u, v, rotationDeg)
+        val (ra, rb) = rotateDstToLocal(u, v, rotationDeg)
+        val (a, b) = panLocal(ra, rb, p)
         val (ca, cb) = mapDstToSrc(a, b, p, aspect)
         if (ca < 0f || ca > 1f || cb < 0f || cb > 1f) return null
         return applySrcRect(ca, cb, srcRect)

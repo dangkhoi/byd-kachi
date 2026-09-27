@@ -201,12 +201,21 @@ class VoiceModelTuningWiringContractTest {
     /** Cả hai hàm của nhật ký phải có call site THẬT trong phiên nghe (CLAUDE.md §8). */
     @Test
     fun `nhat ky duoc goi that tu phien nghe, hai nua dung cho`() {
-        assertTrue(turns.contains("VoiceUtteranceLog.record("), "nửa ĐẦU (tiếng + số đo) phải được gọi")
-        assertTrue(turns.contains("VoiceUtteranceLog.update("), "nửa SAU (ý định + câu trả lời) phải được gọi")
+        // 2.75 — hai nửa nhật ký tách sang `VoiceSessionLog.kt` (trần 500 dòng, tách theo VAI). Bài canh đi theo
+        // VAI nên nó quét đúng nơi vai ấy đang ở; tính chất được canh không đổi một chữ.
+        val log2 = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionLog.kt")
+        assertTrue(log2.contains("VoiceUtteranceLog.record("), "nửa ĐẦU (tiếng + số đo) phải được gọi")
+        assertTrue(log2.contains("VoiceUtteranceLog.update("), "nửa SAU (ý định + câu trả lời) phải được gọi")
         // Thân lượt nghe chính tách sang `VoiceSessionListen.kt` ở VOICE-OPEN-TURN (trần 500 dòng); `execute` ở lại.
         val listen = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionListen.kt")
         assertTrue(listen.contains("logHeard(it, heard, sentence)"), "phiên nghe phải gọi `logHeard`")
         assertTrue(session.contains("logDone(intents, batch)"), "phiên nghe phải gọi `logDone`")
+        // 2.75 — lượt NỐI cũng ghi. [ĐO xe 2026-09-27] 10/22 lượt hiểu sai của buổi đo là lượt nối, và **không
+        // một bản thu nào** của chúng tồn tại ⇒ buổi off-car không nghe lại được đúng những lượt cần chẩn đoán.
+        val turns2 = code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTurns.kt")
+        val once = SourceRoots.body(turns2, "): String = runCatching {")
+        assertTrue(once.contains("keepPcm = true"), "lượt NỐI phải GIỮ tiếng, nếu không lượt hiểu sai không có bản thu")
+        assertTrue(once.contains("if (heard.text.isNotBlank()) logHeard("), "…và chỉ ghi khi có chữ (im lặng sau mỗi lệnh là THƯỜNG)")
         // Ghi TRƯỚC đường thoát "nghe ra rỗng" — đó là ca đáng nghe lại nhất.
         val run = SourceRoots.body(listen, "internal fun VoiceSession.runListen(")
         assertTrue(

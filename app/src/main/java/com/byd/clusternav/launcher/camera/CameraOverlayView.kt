@@ -137,6 +137,7 @@ class CameraOverlayView(private val appCtx: Context) {
         streamH: Int = 0,
         gl: CameraGlUniforms? = null,
         synthOn: Boolean = false,
+        synthFile: String = "",
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -157,7 +158,7 @@ class CameraOverlayView(private val appCtx: Context) {
             val f = frameOf(st, box)
             val vl = CameraVideoLayer.create(
                 ctx = ctx, render = render, crop = crop, rotationDeg = rotationDeg,
-                gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn,
+                gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn, synthFile = synthFile,
                 onSurfaceReady = onSurfaceReady,
             )
             val child = vl.view

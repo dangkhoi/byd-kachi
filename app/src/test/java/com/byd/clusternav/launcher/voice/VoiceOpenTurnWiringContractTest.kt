@@ -33,22 +33,41 @@ class VoiceOpenTurnWiringContractTest {
     private val endpoint by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceTurnEndpoint.kt") }
     private val probe by lazy { code("src/main/java/com/byd/clusternav/launcher/voice/VoiceWavProbe.kt") }
 
-    // ══ (a) Bật ở ĐÚNG MỘT chỗ, và chỗ ấy là lượt CHÍNH ══════════════════════════════════════════════════
+    // ══ (a) Bật ở ĐÚNG những lượt nhận một CÂU CỦA NGƯỜI LÁI, và chỉ ở đó ════════════════════════════════
 
+    /**
+     * ## ⚠ 2.75 — bài canh này ĐỔI kỳ vọng, và đây là phép đo bác bỏ kỳ vọng cũ
+     * Bản 2.74 chốt *"chỉ lượt nghe CHÍNH bật open-turn"* với lý do *"ba lượt nối chỉ nhận một vế ngắn đã biết
+     * hình dạng"*. [ĐO xe 2026-09-27 10:30–10:37] bác đúng vế ấy: trong 22 lượt owner nói *"mở &lt;app&gt; vào ô
+     * số N"*, **15 lượt đi qua `listenOnce`** — vì R9 giữ micro 5 giây sau mỗi câu trả lời, nên câu thứ hai trở đi
+     * của một phiên **luôn** là một lượt nối, và ở đó người lái nói một câu lệnh đầy đủ. Hậu quả đo được:
+     * 10:43:11 nghe ra *"mở vietmap vào ô số"* — một vế DỞ mà `VoiceOpenTurn.isOpen` nhận ra ngay ở tầng chữ — mà
+     * lượt ấy **không có** dòng `noi-tiep:` nào, tức không ai chờ vế sau.
+     *
+     * Kỳ vọng mới: bật ở **hai** thân lượt nhận một câu của người lái (chính + nối), **không** bật ở cổng XÁC NHẬN
+     * (`listenForConfirm` chỉ bắt *"đồng ý"/"huỷ"* — ở đó một vế dở là vô nghĩa, và im lặng đã có sẵn nghĩa KHÔNG).
+     */
     @Test
-    fun `chi luot nghe CHINH bat open-turn`() {
-        val on = voiceSources().filter { (_, src) -> src.contains("openTurn = true") }.map { it.first }
+    fun `chi cac luot nhan MOT CAU cua nguoi lai bat open-turn`() {
+        val on = voiceSources().filter { (_, src) -> src.contains("openTurn = true") }.map { it.first }.sorted()
         assertEquals(
-            listOf("VoiceSessionListen.kt"), on,
-            "`openTurn = true` chỉ được ở lượt nghe CHÍNH; thấy: $on",
+            listOf("VoiceSessionListen.kt", "VoiceSessionTurns.kt"), on,
+            "`openTurn = true` chỉ được ở lượt nghe CHÍNH và lượt NỐI; thấy: $on",
         )
         assertTrue(
             capture.contains("openTurn: Boolean = false"),
-            "mặc định phải là TẮT — mọi chỗ gọi cũ (hội thoại · hỏi lại · xác nhận) chạy y hệt bản trước",
+            "mặc định phải là TẮT — mọi chỗ gọi không tự tuyên bố thì chạy y hệt bản trước",
+        )
+        // ⚠ Mốc là thân biểu thức của `listenOnce` (`): String = runCatching {`, duy nhất trong tệp): đưa chữ ký
+        // `private fun VoiceSession.listenOnce(` vào [SourceRoots.body] thì nó dừng ngay ở dòng `val` đầu tiên
+        // (luật "thân biểu thức tới khai báo kế tiếp") ⇒ vùng quét rỗng, tức một bài canh GIẢ.
+        assertTrue(
+            SourceRoots.body(turns, "): String = runCatching {").contains("openTurn = true"),
+            "lượt NỐI (hỏi lại + hội thoại) phải bật — 15/22 lượt câu-có-ô của buổi xe 27/09 đi qua đây",
         )
         assertFalse(
-            turns.contains("openTurn"),
-            "ba lượt NỐI không bật: chúng đã có vòng hỏi-đáp riêng (R8/R9) và không giữ PCM",
+            SourceRoots.body(turns, "private fun VoiceSession.listenForConfirm(").contains("openTurn"),
+            "cổng XÁC NHẬN không bật: nó chỉ bắt *đồng ý/huỷ*, một vế dở ở đó không có nghĩa gì",
         )
     }
 

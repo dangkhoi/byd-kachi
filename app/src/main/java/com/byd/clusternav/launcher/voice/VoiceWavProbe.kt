@@ -85,7 +85,7 @@ object VoiceWavProbe {
          * là hai trạng thái VAD có thể lệch nhau. Tệp chỉ có MỘT đoạn (mọi WAV `w01`–`w25` và 30 bản thu xe) thì
          * `headTrim` ra **đúng bằng** giá trị trả về ⇒ đường đo cũ không đổi một mẫu nào.
          */
-        onSplit: (headTrim: Int, tail: IntRange?) -> Unit = { _, _ -> },
+        onSplit: (headTrim: Int, tail: IntRange?, headStart: Int) -> Unit = { _, _, _ -> },
     ): Int {
         val vad = VoiceVad.open(ctx) ?: return n
         return vad.use {
@@ -105,9 +105,15 @@ object VoiceWavProbe {
                 }
             }
             it.flush()
+            // VOICE-HEAD-SILENCE (2.75): mẫu ĐẦU cũng phải đi qua đường đo, không chỉ mẫu cuối — nếu không thì
+            // đường này thôi nói về phiên thật ở đúng lượt bệnh (im lặng dẫn đầu > 1,2 s). Chỉ phụ thuộc mốc bắt
+            // đầu tiếng nên một giá trị dùng cho cả hai pha.
+            val headStart = it.headStartSamples(n)
+            if (headStart > 0) Log.i(TAG, "cắt đầu WAV: bỏ ${headStart * 1000 / 16000} ms im lặng dẫn đầu")
             onSplit(
                 if (firstEndpointAt == 0) 0 else headTrim,
                 if (firstEndpointAt == 0) null else it.tailRange(segmentsThen, n),
+                headStart,
             )
             it.headTrimSamples(n).also { t ->
                 if (t < n) Log.i(TAG, "cắt đuôi WAV: $n → $t mẫu (bỏ ${(n - t) * 1000 / 16000} ms)")
@@ -159,11 +165,12 @@ object VoiceWavProbe {
             // với *"đang đọc sách"* / *"mở cửa sổ **bật**"* trong log xe thật.
             var headTrim = 0
             var tail: IntRange? = null
-            val trimmed = trimSamples(ctx, pcm.first, pcm.second) { h, t -> headTrim = h; tail = t }
+            var headStart = 0
+            val trimmed = trimSamples(ctx, pcm.first, pcm.second) { h, t, s0 -> headTrim = h; tail = t; headStart = s0 }
             // ═══ VOICE-OPEN-TURN — đường đo đi qua **đúng hai pha** mà phiên thật đi ═══════════════════
             // Phiên thật giải mã vế TRƯỚC tại điểm ngắt đầu tiên rồi hỏi [VoiceOpenTurn.isOpen]; dở thì giữ micro,
             // giải mã vế sau RIÊNG và ghép. Tệp một đoạn ⇒ `headTrim == trimmed` ⇒ y hệt đường cũ (KDoc [trimSamples]).
-            val split = openTurn(rec, pcm.first, if (headTrim > 0) headTrim else trimmed, tail)
+            val split = openTurn(rec, pcm.first, headStart, if (headTrim > 0) headTrim else trimmed, tail)
             val grammarText = split.first
             // ĐÚNG hai lượt như phiên nghe thật (R16) — phép đo phải đi qua cùng con đường, không phải một
             // đường rút gọn; nếu không thì nó không nói gì về phiên thật (xem KDoc lớp).
@@ -191,10 +198,13 @@ object VoiceWavProbe {
     private fun openTurn(
         rec: VoiceRecognizer,
         pcm: ShortArray,
+        headStart: Int,
         headTrim: Int,
         tail: IntRange?,
     ): Triple<String, String, String> = rec.use { r ->
-        val head = r.decodeAll(pcm, headTrim)
+        // `headStart == 0` ở gần như mọi tệp ⇒ **đúng** lời gọi cũ, không một mảng nào bị chép thêm.
+        val head = if (headStart <= 0) r.decodeAll(pcm, headTrim)
+        else pcm.copyOfRange(headStart, minOf(headTrim, pcm.size)).let { r.decodeAll(it, it.size) }
         if (tail == null || !VoiceOpenTurn.isOpen(head)) return@use Triple(head, head, "")
         val part = pcm.copyOfRange(tail.first, minOf(tail.last + 1, pcm.size))
         val tailText = r.decodeAll(part, part.size)

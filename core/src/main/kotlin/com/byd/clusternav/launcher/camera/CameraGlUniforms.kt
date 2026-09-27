@@ -16,7 +16,7 @@ import kotlin.math.abs
  * (không GPU, `android.graphics.Matrix` là stub). Dồn cả bộ vào một `data class` thuần thì bài `:core` so được từng
  * con số với [CameraOverlayTransform]/[CameraDewarp], và `:app` không còn chỗ nào để lệch.
  *
- * ## Ba cái bẫy mà bảng dưới đây đóng lại
+ * ## Bốn cái bẫy mà bảng dưới đây đóng lại
  *  1. **`uAspect` là tỉ lệ ô theo pixel NGUỒN**, không phải tỉ lệ cửa sổ. Shader nắn trong **không gian ô đã chuẩn
  *     hoá** (bước 1 xoay → bước 2 nắn → bước 4 mới vào texture), nên đơn vị của mọi bán kính là *nửa bề ngang ô
  *     nguồn*. Lấy tỉ lệ cửa sổ ở đây là đúng cái lỗi ellipse của Electro (RE §3.3 ràng buộc 3).
@@ -26,6 +26,9 @@ import kotlin.math.abs
  *  3. **`uCenter` được phép NGOÀI `[0,1]`.** Tâm quang của dải 1 (`x = 0,375`) không nằm trong crop `x[0,25..0,35]`
  *     ⇒ `centerX = 1,25`. Kẹp nó về `[0,1]` là nắn quanh một điểm không phải quang tâm ⇒ *một bên thẳng, bên kia
  *     còng* — và trông đủ giống "gần đúng" để không ai nghi ma trận.
+ *  4. **`uPan` KHÔNG phải `uCenter`.** Dịch cửa sổ giữ nguyên trục quang ⇒ ảnh vẫn thẳng; dời `uCenter` là đổi
+ *     chính trục ấy ⇒ *một bên thẳng, bên kia còng* ([ĐO] xe 27/09 bác `cx −10 %`). Hai núm trông giống nhau trên
+ *     màn Cài đặt nên chỗ này phải nói rõ — xem KDoc [CameraDewarp.panLocal].
  *
  * ## ⚠ Trục y của ẢNH đi XUỐNG, trục t của TEXTURE đi LÊN — [textureT] là chỗ đổi, và nó KHÔNG phải soi gương
  * Mọi `crop` của dự án (`CameraPanoCrop`, `CameraOverlayTransform`, `setTransform`) đo y **từ trên xuống** — quy ước
@@ -57,7 +60,7 @@ data class CameraGlUniforms(
     val rotationDeg: Float,
     /** `uAspect` = bề ngang/bề cao ô theo **pixel NGUỒN**. Xem bẫy (1)/(2) ở KDoc lớp. */
     val aspect: Float,
-    /** `uAmount` · `uFocal` · `uK` · `uScale` · `uCenter` — đã [DewarpParams.clamped]. */
+    /** `uAmount` · `uFocal` · `uK` · `uScale` · `uCenter` · `uPan` — đã [DewarpParams.clamped]. */
     val dewarp: DewarpParams,
     /** `false` ⇒ `:app` truyền **ma trận đơn vị** cho `uTexMatrix` (RE §7 Q17 — xem [CameraDewarpPrefs]). */
     val texMatrix: Boolean,
@@ -69,6 +72,12 @@ data class CameraGlUniforms(
     /** `uCenter.y`. */
     val centerY: Float get() = dewarp.centerY
 
+    /** `uPan.x` — dịch cửa sổ theo x của ô CHƯA XOAY ([CameraDewarp.panLocal]). */
+    val panX: Float get() = dewarp.panX
+
+    /** `uPan.y`. */
+    val panY: Float get() = dewarp.panY
+
     /** Phép nắn có thật sự chạy hay không — **cùng ba cổng với shader** ([DewarpParams.enabled]). */
     val enabled: Boolean get() = dewarp.enabled
 
@@ -76,9 +85,10 @@ data class CameraGlUniforms(
      * Một dòng nhật ký đọc được bằng mắt trên xe (`logcat -s KachiCamera`). Không gọi trong đường khung hình —
      * nó cấp phát chuỗi; chỗ gọi duy nhất là lượt dựng overlay.
      */
-    fun describe(): String = "srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f aspect=%.4f amount=%.3f F=%.4f K=%.4f S=%.3f tâm=(%.4f,%.4f) texMatrix=%b"
+    fun describe(): String = ("srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f aspect=%.4f amount=%.3f F=%.4f K=%.4f S=%.3f" +
+        " tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) texMatrix=%b")
         .format(srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, aspect,
-            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, centerX, centerY, texMatrix)
+            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, centerX, centerY, panX, panY, texMatrix)
 
     /** `data class` với một `FloatArray` ⇒ phải tự so nội dung, nếu không hai bộ giống nhau vẫn báo khác. */
     override fun equals(other: Any?): Boolean = this === other || (other is CameraGlUniforms &&
@@ -98,6 +108,7 @@ data class CameraGlUniforms(
          */
         val VALUE_UNIFORMS: List<String> = listOf(
             "uTexMatrix", "uSrcRect", "uRotation", "uAmount", "uFocal", "uK", "uScale", "uAspect", "uCenter",
+            "uPan",
         )
 
         /** Sampler của texture OES — gán bằng texture unit, không bằng một giá trị hình học (xem [VALUE_UNIFORMS]). */
@@ -122,8 +133,10 @@ data class CameraGlUniforms(
          * ⚠ **[SUY]**, không phải [ĐO]: *"tâm vòng ảnh nằm giữa dải"* mới là giả định. Khung `5120×960` chụp từ xe
          * chốt lại (`camera-dewarp-math.md` §3.2 D1) — tới lúc đó núm `camera_dewarp_cx/cy` là đường sửa của owner.
          */
-        fun sourceCentre(view: CamView, strip: Int): FloatArray {
-            if (view.crop == null) return floatArrayOf(0.5f, 0.5f)
+        fun sourceCentre(view: CamView, strip: Int, channel: Boolean = false): FloatArray {
+            // MỘT KÊNH ([CameraSignalPolicy.SOURCE_CHANNEL]): buffer CHÍNH LÀ một khung camera ⇒ quang tâm là tâm
+            // buffer, không phải tâm dải nào. Đây cũng là ca KHÔNG có giả định [SUY] nào — xem ⚠ dưới.
+            if (channel || view.crop == null) return floatArrayOf(0.5f, 0.5f)
             val s = if (CameraPanoCrop.isStrip(strip)) strip else CameraPanoCrop.defaultStrip(left = true)
             return floatArrayOf(CameraPanoCrop.stripCentre(s).toFloat(), 0.5f)
         }
@@ -138,6 +151,8 @@ data class CameraGlUniforms(
          *   thu về **đúng** Electro (`camera-dewarp-math.md` §2), tức một hành vi biết trước.
          * @param rotationDeg góc xoay nội dung ([CameraSignalPolicy.rotationDegrees]); shader xoay, **không** ma trận.
          * @param flipH,flipV soi gương — đi bằng bề rộng/cao **ÂM** của `uSrcRect`, không bằng uniform mới (RE §6.2).
+         * @param panXSign dấu của [panXPct] theo BÊN đang xem ([CameraDewarpPrefs.panXSign]) — `−1` lật trục x để
+         *   một giá trị pref mang **cùng một nghĩa vật lý** ở cả hai gương. Trị đã nhân dấu là thứ [describe] in ra.
          */
         fun of(
             crop: FloatArray?,
@@ -154,6 +169,9 @@ data class CameraGlUniforms(
             scalePct: Int = CameraDewarpPrefs.PCT_DEFAULT,
             centerXPct: Int = CameraDewarpPrefs.CENTER_DEFAULT,
             centerYPct: Int = CameraDewarpPrefs.CENTER_DEFAULT,
+            panXPct: Int = CameraDewarpPrefs.PAN_DEFAULT,
+            panYPct: Int = CameraDewarpPrefs.PAN_DEFAULT,
+            panXSign: Int = 1,
             texMatrix: Boolean = CameraDewarpPrefs.TEX_MATRIX_DEFAULT,
         ): CameraGlUniforms {
             // Trục t của texture đi LÊN ⇒ đổi trục SAU khi dựng rect theo trục y của ảnh. Xem ⚠ ở KDoc lớp.
@@ -179,6 +197,10 @@ data class CameraGlUniforms(
                     base = base, centerX = cx, centerY = cy,
                     amountPct = amountPct, focalPct = focalPct, kPct = kPct, scalePct = scalePct,
                     centerXPct = centerXPct, centerYPct = centerYPct,
+                    // MỘT núm, MỘT nghĩa vật lý ở cả hai gương: hai camera gương là ảnh soi gương của nhau nên
+                    // trục `+x` của ô trỏ ngược chiều ở hai bên — xem KDoc [CameraDewarpPrefs.panXSign].
+                    panXPct = if (panXSign < 0) -panXPct else panXPct,
+                    panYPct = panYPct,
                 ),
                 texMatrix = texMatrix,
             )

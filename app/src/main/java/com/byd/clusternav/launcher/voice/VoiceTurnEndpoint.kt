@@ -111,6 +111,16 @@ internal class VoiceTurnEndpoint private constructor(
      */
     fun trimSamples(windowSamples: Int): Int = vad?.headTrimSamples(windowSamples) ?: windowSamples
 
+    /**
+     * Mẫu **ĐẦU TIÊN** đưa vào bộ giải mã — `0` ở gần như mọi lượt; > 0 chỉ khi im lặng dẫn đầu vượt
+     * [VoiceVadTrim.HEAD_SILENCE_CUT_MS] (xem KDoc [VoiceVadTrim.headStartSamples]).
+     *
+     * ⚠ Đường LÙI trả **0**, cùng lẽ đã ghi ở [trimSamples]: bộ RMS không biết tiếng bắt đầu ở đâu trên cabin thật
+     * ([ĐO xe] 189/300 lượt báo `tieng_bat_dau=-1`), và cắt đầu theo một con số không tin được là tự cắt mất câu
+     * nói. Nhánh ấy giữ đúng hành vi 1.68: nạp từ mẫu 0.
+     */
+    fun headStart(windowSamples: Int): Int = vad?.headStartSamples(windowSamples) ?: 0
+
     /** Ba con số của hợp đồng nhật ký: bắt đầu tiếng · hết tiếng · còn lại sau khi cắt. `-1` = chưa có. */
     fun speechStartMs(): Int = vad?.speechStartMs() ?: rms?.speechStartMs ?: -1
     fun speechEndMs(): Int = vad?.speechEndMs() ?: rms?.speechEndMs ?: -1

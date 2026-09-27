@@ -402,7 +402,7 @@ Mỗi câu kèm **đúng một** phép đo để chốt. 🚗 = cần xe.
 |---|---|---|---|
 | Q1 | Dải 0 và dải 3 là **trước** hay **sau** (cái nào là cái nào)? | [CHƯA BIẾT] — Electro không gán nhãn ở đâu cả; kinex chỉ dùng dải 1 & 2 | 🚗 chụp **một** khung 5120×960 của id 1 rồi cắt 4 dải, **xem mắt**. Đây cũng chốt luôn Q2 |
 | Q2 | "Dải 1 = trái, dải 2 = phải" — đúng không? | [SUY] từ hằng kinex đối xứng gương (`Y0/C0094o.java:70,73`); theo §14 dữ liệu app khác **tối đa** là "nghi là" | 🚗 cùng phép đo Q1 |
-| Q3 | `VIEW_CHANNEL_1..4` có thật sự cho **một kênh** camera? | [SUY] từ hằng SDK (`DiLinkCameraConstants.java:47-50`); không có chỗ gọi nào trong firmware đã giải nén | 🚗 §6-C bước 1: dò `addPreviewSurface(surface, 1..4)` trong `ClusterDiag`, xem có ra hình khác không |
+| Q3 | `VIEW_CHANNEL_1..4` có thật sự cho **một kênh** camera? **[ĐO xe 27/09]: CÓ** — mỗi mode 1..4 trả một camera trọn khung fisheye, kéo giãn ngang ×4 vào buffer 5120×960 (mode 2 = trái/E4, mode 3 = phải/E3, 1/4 = đầu/đuôi [SUY]). | [SUY] từ hằng SDK (`DiLinkCameraConstants.java:47-50`); không có chỗ gọi nào trong firmware đã giải nén | 🚗 §6-C bước 1: dò `addPreviewSurface(surface, 1..4)` trong `ClusterDiag`, xem có ra hình khác không |
 | Q4 | 5 int của `setPreviewSurface(Surface,int,int,int,int,int)` là gì? | [CHƯA BIẾT] | 🚗 §6-C bước 2 |
 | Q5 | `setAlgMode(int)` làm gì? | [CHƯA BIẾT] | 🚗 §6-C bước 3, quét vài giá trị nhỏ và ghi lại ảnh |
 | Q6 | `F`, `K`, `SCALE`, `AMOUNT` của Electro bằng bao nhiêu? | [CHƯA BIẾT] — 7 chỗ chèn nằm trong bytecode VM, không đọc tĩnh được | dump nguyên văn shader: hook `glShaderSource` (Frida) hoặc `glGetShaderSource` khi Electro đang chạy 🚗. **Hoặc bỏ qua**: Kachi tự chỉnh bằng mắt thì rẻ hơn (§6-B) |

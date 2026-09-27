@@ -32,6 +32,7 @@ class CameraDewarpTest {
         const val ASPECT_34 = 960f / 1280f
 
         val P = DewarpParams()
+
     }
 
     /** Nguyên văn ba dòng của Electro (RE §3.2) — KHÔNG aspect, tâm ghim `(0.5, 0.5)`. Dùng làm mốc so. */

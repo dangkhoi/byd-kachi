@@ -59,7 +59,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <body><div class="wrap">
 
 <h1>2.74 — UX cabin · voice mở lượt · camera fisheye</h1>
-<p class="muted">Slug: <code>kachi-274-ux-voice-camera</code> · Branch <code>feat/voice-hotword-phrases</code> · <span class="pill wait">Trạng thái: Đã làm off-car 2.74 (175) · review Pass 1 APPROVED · chờ 🚗 sáng 27/09</span> · Chủ: <code>dangkhoi</code></p>
+<p class="muted">Slug: <code>kachi-274-ux-voice-camera</code> · Branch <code>feat/voice-hotword-phrases</code> · <span class="pill ok">Trạng thái: 2.74 (175) đo xe 27/09 · 2.75 (176) đóng off-car, review Pass 2 APPROVED, OTA main · chờ 🚗 runbook 2.75</span> · Chủ: <code>dangkhoi</code></p>
 <p class="muted">Tuân thủ <code>.kiro/steering/{workflow,product-team-workflow,trace-den-tan-cung,documentation-and-backlog}.md</code>. Không thư viện mới ngoài Android SDK + OpenGL ES 2 (đã có trong SDK) ⇒ Context7 chỉ cần cho AGP/Kotlin nếu đụng build.</p>
 
 <h2>1. Changelog</h2>
@@ -141,9 +141,12 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li>OQ1. Gió: khi AUTO, HAL có còn báo mức đang thổi không (để hiện "AUTO n")? — <span class="muted"><b>ĐÃ CHỐT [ĐO code + log xe 26/09]</b>: mức gió và cờ auto là <b>hai getter độc lập</b>: <code>ac_wind</code> = <code>getAcWindLevel</code> (0–7, đọc 1 Hz, 45 449 dòng trong log xe, giá trị 1/2 thấy liên tục) và <code>ac_wind_auto</code> = <code>getAcWindLevelManualSign</code> (0 = AUTO, 1 = tay; <code>TelemetryRegistry.kt:283-295</code>, [ĐO xe 2026-09-20]). Nút <code>fan</code> STEP 0–7 (<code>ControlRegistry.kt:144</code>) nhưng <code>AC_WIND_LEVEL_SET=0</code> bị xe bỏ qua (<code>:223</code>) ⇒ mức 0 không tồn tại thật — đúng lý do owner muốn "−" về 0 = AUTO. Nút <code>ac_auto</code> TOGGLE ghi <code>AC_CTRL_MODE_SET</code>, <code>readInverted</code> (<code>:239</code>). ⇒ "AUTO n" khả thi: n = <code>ac_wind</code> khi <code>ac_wind_auto</code>=0.</span></li>
 <li>OQ2. Tham số nắn fisheye (FOV, tâm, bán kính) cho Seal — <span class="muted">🚗 từ khung PNG sáng 27/09</span></li>
 <li>OQ3 (từ OPEN-TURN, cần owner). Có ghép khi vế trước <b>đã đủ nghĩa</b> không — *"mở vietmap"* ⟨ngừng⟩ *"vào ô số hai"*? Chờ ở đó = cộng trễ vào <b>mọi</b> lệnh "mở &lt;app&gt;" (trái R6 "0 ms"). Hiện tại: vế sau rơi vào cửa sổ hội thoại 5 s và được phân tích như câu riêng. Cách nói đúng ghi runbook: ngừng <b>sau</b> "vào ô", không ngừng sau tên app. — <span class="muted">chưa chốt; giữ hiện trạng</span></li>
-<li>OQ5 (UX4, 🚗). <code>ac_wind_auto</code> = <code>getAcWindLevelManualSign</code> CHƯA có lượt HAL get nào trong <code>docs/diagnostics/</code> ⇒ chữ "AUTO" là [SUY]; nấc đáy không phụ thuộc nó. Đo sáng 27/09. — <span class="muted">mở</span></li>
+<li>OQ5 (UX4) — <b>ĐÃ CHỐT [ĐO xe 27/09]</b>: <code>getAcWindLevelManualSign sign is: 0</code> khi màn AC gốc AUTO; chip "AUTO 1", ô ghi AUTO. — <span class="muted">đóng</span></li>
+<li>OQ5 (cũ, giữ để đối chiếu). <code>ac_wind_auto</code> = <code>getAcWindLevelManualSign</code> CHƯA có lượt HAL get nào trong <code>docs/diagnostics/</code> ⇒ chữ "AUTO" là [SUY]; nấc đáy không phụ thuộc nó. Đo sáng 27/09. — <span class="muted">mở</span></li>
 <li>OQ6 (UX5, 🚗). <code>seath</code> khai 4 mã khung mà nút bày 3 — đo <code>getSeatHeatingState(1)</code> ở hai mức. — <span class="muted">mở</span></li>
 <li>OQ7 (UX2, owner). Khối 4 thẻ lốp tâm 0,53·Hc vs tâm ảnh xe 0,50 (~16 px): giữ hay dịch khung ảnh? — <span class="muted">mở</span></li>
+<li>OQ11 (xe 27/09, owner) — <b>UX8 chip trạng thái</b>: icon trong/ngoài cho lấy gió thay chữ; rà chip trạng thái khác; "auto n" viết thường trên header. — <span class="muted">2.75, agent đang làm</span></li>
+<li>OQ10 (xe 27/09, owner quyết) — <b>SETTINGS-CAMERA-IA</b>: bỏ các setting kỹ thuật khỏi màn camera, chỉ giữ cái user cần/đi theo xe/hiển thị; tham số đã chỉnh trên Seal thành mặc định theo đời xe. Thêm hình khung <b>theo cụm</b> (ảnh cụm owner gửi 27/09: chỉ vẽ được dải giữa, header/footer là của hệ thống). — <span class="muted">2.75/2.76</span></li>
 <li>OQ8 (UX4/5, owner). Dedupe <code>ac_mode_auto</code> vs <code>ac_wind_auto</code>; gộp ô ghế 2 cực sau OQ6? — <span class="muted">mở</span></li>
 <li>OQ4 (đo máy ảo, cần xe xác nhận). Ngưỡng im lặng thật để cắt câu ≈ <b>1,0 s</b> (900 ms không cắt) vì đoạn sherpa v1.13.8 giữ ~600–700 ms hangover ⇒ KDoc <code>VoiceVadTrim.MIN_SILENCE_MS</code> nói ngược (sửa KDoc ở vòng review). — <span class="muted">🚗 cabin ồn có thể lệch</span></li>
 </ul>
@@ -156,7 +159,10 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <h2>9. Nhật ký triển khai (Implementation Log)</h2>
 <ul>
 <li><b>2026-09-26 tối · khảo sát (T0, workflow 5 scout + 5 skeptic, chỉ đọc)</b> — UX1 [ĐO đo pixel ảnh + code]: chữ nằm đúng tâm ĐĨA, cái lệch là đĩa lệch trong chip vì <code>KachiTopStrip.kt:406</code> còn lề trái 4dp/phải 12dp từ thời có chữ tên (tên đã GONE ở :419, 763a590) ⇒ sửa hình học chip, không đụng chữ. UX2 [ĐO tái lập onDraw bằng số, ảnh mô phỏng trùng ảnh owner]: 3 lỗi độc lập trong <code>TyreBoardView</code> (baseline hằng 0.10/0.60 ⇒ lệch lên ≈0,11·cellH; canh cụm số+đơn vị ⇒ số lệch trái; thẻ đục đè lên thân xe vì chạy tới neo bánh) + <code>CarImageStore.feather</code> xoá 8 % cạnh ngắn ⇒ mất gương; <b>giả thuyết centerCrop từ closeout 2.66 BỊ BÁC</b> (CarImageLayer src = trọn bitmap, dst = letterbox). UX3 [ĐO]: không có nguồn sự thật nào cho "câu nói được" (5 bản sao) ⇒ <code>VoiceCommandCatalog</code> :core sinh từ registry + động từ có dấu; skeptic bắt 3 lỗi compile trong đề xuất scout. UX4 [ĐO code + xe 09-20]: <code>AC_WIND_LEVEL_SET=0</code> bị xe bỏ qua ⇒ mức 0 phải là AUTO; nối bằng dữ liệu <code>ControlDef.autoId</code> + luật thuần <code>ClimateAuto</code> + <code>CarDataDemand.COMPANION</code>; skeptic bắt 1 lỗi đảo cực và ô 31dp không chứa "AUTO 1" ⇒ ô chỉ "AUTO", số ở chip. UX5 [ĐO]: chip = 1 glyph + 1 chuỗi, sưởi/mát cùng icon ⇒ lớp A (mức số, tone theo mức) + lớp B glyph ghép sinh từ SVG qua <code>gen-icons.py</code>. Bảng "nên gộp gì nữa" ghi §4.2 khi gộp kết quả.</li>
+<li><b>2026-09-27 09:57–11:20 · BUỔI XE (2.74 cài 09:57)</b> — F1 [ĐO]: 4 dải fisheye ĐỨNG (mặt đất dưới), dải 1 = trái (E4), dải 2 = phải (E3); xoay ±90 của 2.67–2.73 là sai hướng (ảnh vốn đứng). CAM-B1 [ĐO]: Adreno 610, `GL_MAX_TEXTURE_SIZE` 16384, `uTexMatrix` lật dọc, GL 193 khung busySkip 0. Owner duyệt (trái, xoay 0): STRIP · GL · F55/K100/S130/amount 100/tâm 0,5 — "thẳng, tự nhiên, thấy 2 bánh"; phải đối xứng OK; muốn dịch nhẹ về đuôi (pan, 2.75); xoay ±90 trong GL bị cong (lỗi tỉ lệ ô — 2.75); TRÒN giữ. **CAM-A4 [ĐO]**: `VIEW_CHANNEL_1..4` = một camera trọn khung, giãn ×4 (2 = trái, 3 = phải) ⇒ chế độ nguồn CHANNEL 2.75. **[P1]** HAL bơm vào SurfaceTexture đã giải phóng sau lần tắt overlay đầu (16 dòng/s, CPU 3,5–5 %) — 2.75. Voice E2 9/22 (mất đầu câu · thiếu động từ · mất đuôi), F2: đầu vế "vào ô" bị bộ giải mã bỏ ⇒ 2.75. E1 PASS. G4: `getAcWindLevelManualSign=0` khi AUTO ⇒ OQ5 đóng; chip "AUTO 1", ô AUTO. G5/G1–G3 OK. E6: purge không giảm RSS ⇒ dừng CLOSE-4. Quyết định owner: bỏ setting kỹ thuật khỏi màn camera; hình theo cụm (ảnh cụm, bề mặt 1920×720); UX8 icon trong/ngoài + "auto" thường.</li>
 <li><b>2026-09-27 02:xx–03:xx · Review Pass 1 · QA lượt 3/4 · quét · ship</b> — Review Opus (§10): 1 [P0] (GL không bắt <code>updateTexImage</code> ném) + 7 [P1] + 9 [P2] vá, 4468/1 → 4472/0, lint 0, VOICE-WRITE-LANE để lại [P2] chờ owner. QA lượt 3 (2.74 (175)): số ô Gió lớn lại (15 px, ô 47×31), di trú chip có đối chứng, UX7 đối chứng PASS — nhưng vá review làm "AUTO" 2 dòng ([ĐO AOSP] <code>setHeight</code> ghi đè <code>maxLines</code>) ⇒ lượt 4: ghim cao qua <code>LayoutParams</code> + nhường nửa lề (bắt luôn lỗi gốc UX4: "AUT" bị cắt vì 35 px < 37 px cần) ⇒ AUTO 1 dòng 39×11, ô 47×31, nút Nhiệt 0 px; test cấm <code>.height=/setHeight/minHeight/maxHeight</code>, 3 thử-đỏ. Quét bảo mật: CLEAN (8 scanner + refuter + critic bóc APK); rút toàn văn 2 shader Electro khỏi doc (bản quyền), giữ cục bộ. Bump 2.74 (175), APK dựng lại sau lượt 4, full suite lần cuối.</li>
+<li><b>2026-09-27 09:57–11:56 · 🚗 buổi xe 2.74 (175)</b> — [ĐO] F1: khung thô 5120×960 = 4 dải fisheye ĐỨNG (dải 1 trái, 2 phải); bộ nắn owner duyệt STRIP/GL/<b>F55/K100/S130</b>/cx=cy=0 (dịch tâm ⇒ cong; scale ≥ 140 "heavy"); phát hiện chế độ HAL một kênh (halMode 2/3); CAM-B4 GL 11,15 % janky/p99 61 ms vs TV 1 %/16 ms; P1→<b>P0</b> <code>BufferQueue abandoned</code> 16/s sau đổi bên. Voice E2 9/22 (3 lớp: mất đầu câu, thiếu động từ, mất đuôi), F2 vế trần bị bộ giải mã bỏ, E4 hồ sơ PASS 3/3 + hỏi lại 3/3, E1 PASS; G1–G5 OK, OQ5 chốt 0 = AUTO; E6 purge không giảm RSS; E9 PASS; E12 PSS 75/237/176 MB; TRIP: <code>getCurrentJourneyDriveTime</code> = giờ bậc 0,1 (1.8→1.9→2.0 cách ~6 phút). Quyết định owner: giữ hình tròn · hình theo cụm khi chiếu (2.76) · bỏ setting kỹ thuật khỏi màn camera (2.76) · chip lấy gió đổi icon không chữ · <code>auto</code> thường · trip cách 1. Bẫy: <code>hal get</code> không truyền <code>args</code> cho getter không tham số.</li>
+<li><b>2026-09-27 11:45–13:xx · 2.75 (176) đóng off-car</b> — 4 làn (voice · UX8 · camera · trip, chi tiết backlog dòng 2.75) + reviewer Opus Pass 2 (§10): APPROVED, 1 [P1] dấu pan theo bên (hai camera đối xứng gương [ĐO khung thô]) + 2 [P2] + 6 [P3] vá; sau review vá thêm P3 #10 (HAL null một nhịp không làm số trip lùi). Xoay ±90 <b>không phải lỗi</b> (affine trước radial; L90 = rot0 xoay, 3,1/255) — nghi vấn sáng 27/09 bị bác bằng số. Test <b>4 541/0</b> (5 module), lint 0/522, APK 43 791 047 B sha256 <code>c11274be…1ceb</code>, chuỗi APK 0 <code>TEST_</code>/danh tính. Runbook kế <code>oncar-runbook-2.75.md</code>; handoff <code>session-2026-09-27-275-after-car.md</code>. Câu owner mới: xoay dọc làm cột nhà nằm ngang có kỳ không ⇒ vòng nghiên cứu ngành (doc <code>research-side-camera-orientation-2026-09-27.md</code>).</li>
 <li><b>2026-09-27 01:xx · B2 xong, ĐÃ ĐO máy ảo</b> — EGL14 ES2 luồng riêng, OUTPUT Surface(TextureView), INPUT SurfaceTexture OES qua đúng <code>AvmCamera.open</code>; <code>CameraGlUniforms</code>/<code>CameraDewarpPrefs</code> (:core), <code>CameraGlSurface/Renderer/Program</code>, <code>CameraVideoLayer</code> tách vai, <code>CameraSynthFeeder</code> (tự kẹp cỡ theo heap 48 MB máy ảo). [ĐO] lưới tổng hợp: max 48,62 → 3,34 px, TB 0,74 px (ngưỡng ≤ 1/3 và ≤ 2 %% cao), 2/2 lượt; busySkip 0; ROUND ăn. Bài đắt: 16 tổ hợp × 5 điểm so GL vs ma trận TV (dung sai 2e-3). Hai bẫy: <code>t = 1 − y</code> (không phải flipV — chỉ trùng khi crop đối xứng), <code>rotatesByMatrix ≠ usesTextureView</code>. Mặc định TV (thử-đỏ 3/3). Còn 1 đỏ ngoài làn: <code>VoiceGrammarPhrasesTest</code> KEPT 395 → 400 (datum ghế phụ UX5b thêm cụm) — review chốt.</li>
 <li><b>2026-09-27 01:xx · UX5b · UX6 · UX7 · sửa sleep · QA lượt 1</b> — UX5b: 2 datum ghế phụ (seatID 2 qua bảng read-arg sẵn có), 5 chip mặc định, di trú (9 test); UX6 [ĐO]: icon→nhãn 0dp là lỗi THỨ TỰ (đọc <code>v.text</code> trước khi gán, cache theo tag) ⇒ 8dp; khe chip 16 → 12dp một hằng; UX7: 14 bề mặt, RingView +14,6 %·d, AxisRow, PhotoWidget/GridEditor, DoorBoard 0,86 → 0,98, <code>CellTextLayout</code>; sleep: <code>VoiceClimateStep</code> background+onUi. QA lượt 1 (máy ảo, đo bằng máy): UX1/UX6/UX5b/UX2/UX3 PASS với số; UX4 AUTO + bảng Cửa chưa chạy (bố cục owner). Máy ảo: bản gộp (có UX7) cài 01:xx cho owner xem.</li>
 <li><b>2026-09-27 00:xx · B1 xong, B2 khởi động</b> — B1: 3 tệp :core mới (415/159/261 dòng) + 23 test; công thức ba không gian (dst → local → p-space đơn vị nửa bề ngang ô), `aspect==1` trùng bit với shader E của Electro (test ghim); mặc định [ĐOÁN] K=F=0,452335 (equidistant 190°, vòng ≈ cao khung), <code>DewarpParams.derive</code> cho crop hẹp (tâm ngoài [0,1] — Electro ghim 0,5 nên không làm được ca này). Hợp đồng cho B2: 10 uniform theo tên, <code>uTexMatrix</code> áp vô điều kiện (identity nếu đo ra không nên), lật bằng <code>uSrcRect.zw</code> âm, xoay trong không gian ô (bội 90 đẳng hình), ngoài ô đen đặc. B2 (agent riêng): EGL14 render thread, OUTPUT = Surface(TextureView.surfaceTexture), INPUT = SurfaceTexture OES đưa HAL qua đúng <code>AvmCamera.open</code>; busySkip; log <code>GL_MAX_TEXTURE_SIZE</code>/<code>getTransformMatrix</code>; 6 pref + chip; <code>camera_frame raw</code> qua FBO; <code>camera_synth</code> + harness máy ảo (ảnh tổng hợp → đường thẳng phải thẳng).</li>
@@ -282,6 +288,280 @@ owner nhìn thấy (Ring ×2 widget · <i>Tốc độ</i> · thẻ nhóm · ô �
 Một [WARN] <b>có từ trước</b>: tên thật của owner nằm ở <code>.kiro/steering/project-context.md</code> (7 dòng, không
 do lượt này thêm, và ngoài phạm vi sửa của người soát) ⇒ owner chốt.</p>
 
+
+
+<h3>Pass 2 — 2026-09-27 (Opus senior review · 2.75)</h3>
+<p class="muted">Phạm vi: toàn bộ cây chưa commit so với <code>c160f60</code> = 2.74 (175) — 64 tệp của danh sách làn
+cộng làn TRIP gộp sau (<code>TripTimeSmoother</code> · <code>CarDataAdapter</code> · <code>TelemetryReadout</code>
+§hoursToHm). Đọc trước: 3 doc làn (<code>voice-car-0927</code> · <code>ux-ux8-header-state-icons</code> ·
+<code>camera-dewarp-gl</code> §<i>Xe 27/09</i> ×3) + <code>oncar-runbook-2.74.md</code> + hai dòng backlog + CLAUDE.md.
+Mọi con số dưới đây là <b>[ĐO]</b> trừ khi ghi khác. Không bump version (đã là 2.75 (176)); không chạm doc nào ngoài
+mục này.</p>
+
+<h4>Kiểm kê phạm vi — bốn làn 2.75</h4>
+<table>
+<tr><th>#</th><th>Cam kết của làn</th><th>Verdict</th><th>Bằng chứng / còn nợ</th></tr>
+<tr><td>V1</td><td>VOICE · <code>VoiceSlotNoVerb</code> (3 cổng) · <code>VoiceTailClause.bareSlot</code> ·
+<code>VoiceVadTrim.headStartSamples</code> (cổng 1 200 ms, pre-roll 300 ms) · lượt NỐI <code>openTurn</code> +
+<code>keepPcm</code> + <code>logHeard</code> khi có chữ · <code>chửi→sưởi</code> · tách <code>VoiceSessionLog.kt</code></td>
+<td><span class="pill ok">✅</span></td>
+<td>Mọi hàm mới có <b>≥ 1 chỗ gọi ở mã chạy</b> (CLAUDE.md §8, grep <code>app/src/main core/src/main</code>):
+<code>headStartSamples</code> → <code>VoiceVad:145</code> → <code>VoiceTurnEndpoint:122</code> →
+<code>VoiceCapture:252/315/322</code> + <code>VoiceOpenTurnArm:79</code>; <code>VoiceSlotNoVerb.pick</code> →
+<code>VoiceIntentParser.kt:282</code>; <code>bareSlot</code> ← <code>slotAt:37</code>. Số học kiểm lại từng nhánh:
+<code>headStartSamples</code> không có đoạn ⇒ <code>0</code>, <code>onset ≤ cổng</code> ⇒ <code>0</code>, kẹp
+<code>[0, windowSamples]</code> ⇒ <b>không có dải âm, không off-by-one</b>; <code>rangeResult</code> kẹp hai đầu theo
+<code>filled</code> và trả <code>""</code> khi <code>to ≤ from</code> ⇒ đệm ngắn không ném. <b>Tranh chấp dữ liệu vẫn
+đóng</b>: luồng nền đọc <code>[headStart, trimA)</code> — một <b>tập con</b> của <code>[0, trimA)</code> mà Pass 1 đã
+chứng minh không chồng với vùng ghi <code>filled ≥ trimA</code>. <code>bareSlot</code> kẹp <code>1..MAX_SLOT</code> và
+đòi đuôi RỖNG ngoài con số ⇒ <i>"mở youtube hai mươi"</i> trượt ở phép đếm token, không phải ở phép kẹp.
+<code>VoiceSlotNoVerb</code> <b>không mở nhầm app</b>: cổng 2 uỷ thác trọn cho <code>VoiceLastResort.pick</code>
+(neo 4 ký tự + lệch ≤ 2 + hai chuỗi ≥ 5 ký tự), và <code>as? VoiceIntent.OpenApp</code> nuốt mọi kết quả khác;
+mệnh đề ô TRẦN ⇒ <code>head == 0</code> ⇒ <code>null</code> (không cướp đường hỏi lại). Dòng <code>Log.i("hỏi lại …")</code>
+in đúng chuỗi đang hiện trên overlay (<code>VoiceClarify.Ask.question</code>) ⇒ không thêm bề mặt PII nào, và
+<code>ask</code> không thể <code>null</code> (kiểu không-null). <code>VoiceSessionLog.kt</code> là <b>pure move</b>
+(74 dòng gỡ khỏi <code>VoiceSessionTurns</code> 500 → 458).</td></tr>
+<tr><td>V2</td><td>UX8 · chip hai chế độ nói bằng HÌNH (<code>TelemetryView.state</code> · <code>stateTable</code> ·
+<code>CapabilityIcons.STATE</code>/<code>forState</code>) · <code>auto</code> thường trên chip · 3 glyph sinh bằng máy ·
+bài soát bằng máy</td>
+<td><span class="pill ok">✅</span></td>
+<td>Dây nối đủ: <code>forState</code> → <code>TopStripChips.kt:180</code>; <code>view.state</code> đọc ở
+<code>:180</code> và <code>:209</code>; <code>narrowAuto</code> → <code>TopStripChips.kt:185</code>; ba tên hình mới
+tra ra <b>tệp thật</b> (<code>KachiTheme.kt:338–341</code> → <code>R.drawable.ic_air_fresh</code>/<code>_intake</code>/
+<code>ic_sensor_off</code>). <b>Null-safety đúng cả bốn ca</b>: id không khai ⇒ <code>forState</code> trả
+<code>null</code> ⇒ datum đi đường cũ; <code>state == null</code> ⇒ hình trung tính + <code>NEUTRAL</code>; mã lạ ⇒
+cũng trung tính; <code>stateOf</code> chỉ sinh <code>0/1</code>. <b>TalkBack không mất chữ</b>: <code>desc =
+"${spec.displayLabel}: $value"</code> lấy <code>value</code> <i>thô</i> ⇒ vẫn đọc <i>"Chế độ lấy gió: Trong"</i>
+và vẫn <code>AUTO</code> viết hoa. Chuỗi VI/EN: làn cố ý <b>không</b> thêm chuỗi nào (chữ biến mất, nhãn ngắn đi qua
+<code>shortEn</code>) ⇒ không có tài nguyên mồ côi. <code>gen-icons.py --check app/src/main/res/drawable</code> ⇒
+<b>117/117 tệp khớp byte</b> [ĐO, chạy lại ở lượt soát này].
+<b>🚗 còn nợ</b> (làn tự ghi, người soát xác nhận): chưa có ảnh máy ảo/xe nào cho hai hình chế độ — máy ảo không có HAL
+nên <code>recircOn</code>/<code>pm25Online</code> luôn <code>null</code>.</td></tr>
+<tr><td>V3</td><td>CAMERA · [P0] <code>BufferQueue abandoned</code> (đổi bên không dỡ phiên) · <code>pan_x/_pan_y</code> ·
+<code>camera_source = PANO|CHANNEL</code> + <code>contentWidth</code> · trần nhịp vẽ 15 fps ·
+<code>camera_synth … file:</code> · tách <code>CameraGlReadback.kt</code></td>
+<td><span class="pill wait">⚠ ✅ sau vá (1×[P1])</span></td>
+<td>Xem findings #1. Phần còn lại <b>đạt</b>: <code>closeSession</code> chạy <b>trọn trên luồng main</b>
+(<code>tickMain</code> · <code>stop</code>) nên không có lời gọi EGL nào rời luồng vẽ — <code>overlay.hide()</code> mới là
+chỗ <b>chặn</b> chờ luồng <code>kachi-camgl</code>, và nó đứng <b>cuối</b> ⇒ thứ tự <code>avm → hal → hide</code> đúng như
+bài canh ghim. <code>keepPano</code> đúng nghĩa: <code>if (!keepPano) hal.close()</code>, và lượt đổi bên
+<b>không chạm</b> <code>hold</code>/<code>current</code>/hẹn giờ ([ĐO] <code>assertFalse("hold.reset()" in close)</code>).
+<b>Không nháy thêm</b> so với 2.74: <code>show()</code> vốn đã mở đầu bằng <code>hide()</code>, và <code>hide()</code>
+là <b>idempotent</b> (<code>CameraOverlayView.kt:202-206</code> — <code>runCatching</code> + gán <code>null</code>), nên
+lượt <code>hide</code> thứ hai là no-op; cửa sổ chỉ biến mất SAU khi HAL đã dỡ.
+<b>Trần nhịp không gây đói khung</b>: <code>updateTexImage()</code> chạy ở <b>mọi</b> lượt, chỉ <code>paint</code> +
+<code>eglSwapBuffers</code> bị bỏ ⇒ <code>BufferQueue</code> không đầy; <code>lastPaintMs = 0</code> ⇒ khung ĐẦU không
+bao giờ bị chặn; khung cũ đọng tối đa <code>renderMinGapMs() = 50 ms</code> (3/4 chu kỳ 15 fps, [ĐO]
+<code>3000/(15×4)</code>), và renderer là <b>mới cho mỗi phiên</b> nên không có mốc giờ nào sống qua lượt ẩn.
+<b>Lọc đường tệp đạt</b>: <code>TestBridgeSynth.safeName</code> = <code>File(raw).name</code> + từ chối rỗng /
+<code>".."</code> / tên bắt đầu bằng dấu chấm ⇒ <code>../../x</code>→<code>x</code>, <code>/etc/passwd</code>→
+<code>passwd</code>, <code>"."</code> và <code>"..\\..\\x"</code> bị từ chối; thư mục gốc do
+<code>CameraSignalController.setSynth</code> ghép (<code>getExternalFilesDir</code>) và tệp phải <code>isFile</code>;
+cả lệnh <b>gác sau chế độ kiểm thử</b> (<code>KachiTestBridge.kt:58</code> <code>!TestBridgeStore.isOn ⇒
+ERR_TEST_MODE_OFF</code>). <b>Miền pref</b>: <code>camera_dewarp_pan_x/_y</code> và <code>camera_source</code> đều qua
+<code>takeIf { … }</code> ⇒ giá trị lạ ra <code>bad_prefs_value:</code>, không kẹp im lặng; cả ba có
+<code>read_back</code> và có hàng trong Cài đặt. <b><code>contentWidth</code> đi hết mọi tầng</b>: crop
+(<code>cropFor(channel)</code> — ô vuông hình TRÒN tính trên <code>ratioC</code>, kiểm lại bằng tay:
+<code>halfX = ratioC·k/2</code> đúng cho buffer kéo ngang), uniform (<code>streamW = hintW</code>), cửa sổ
+(<code>onStreamMeasured(contentWidth(size[0]))</code>), quang tâm (<code>sourceCentre(channel) = 0,5</code>).</td></tr>
+<tr><td>V4</td><td>TRIP · <code>TripTimeSmoother</code> · <code>Gate.fresh</code>/<code>Gate.dblVia</code> ·
+<code>hoursToHm</code> floor + 1e-6</td>
+<td><span class="pill ok">✅</span></td>
+<td>Sáu cam kết <b>đều đúng khi đọc mã</b>: lượng tử theo phút tròn (<code>elapsed / MIN_MS</code>, chia Long =
+làm tròn xuống); trần <code>MAX_EXTRA_MIN = 5</code> ⇒ <code>5/60 = 0,0833 &lt; HAL_STEP_H = 0,1</code> nên
+<b>không bao giờ chạm bậc kế</b>; neo lại khi HAL tăng (<code>eps 1e-6</code> &gt; sai số float
+<code>1.8000001 − 1.8 ≈ 1e-7</code>); reset khi giảm/<code>null</code>; không lùi giữa hai lần reset
+(<code>maxOf(candidate, lastOut)</code>); đồng hồ lùi ⇒ neo lại giữ đúng số phút đang hiện.
+<b>Cổng H1 đúng như khai</b>: <code>dblVia</code> trả <code>prev</code> ở nhánh <i>"không hiện"</i> mà
+<b>không</b> gọi bộ làm mượt ⇒ giá trị đã làm mượt không quay lại làm mốc (bài <code>E2E - ô không hiển thị GIU prev
+va KHONG dua prev da lam muot vao lai</code>). <b>Nhịp</b>: <code>CarStatusRepository.start()</code> →
+<code>publish { reader.readSlow(it) }</code> mỗi <code>slowMs</code> → <code>_status.value</code> (StateFlow chỉ phát
+khi <b>khác</b>, mà <code>CarStatus</code> là <code>data class</code>) ⇒ giữa hai mốc phút <b>không</b> có lượt phát
+thừa nào. <b>An toàn luồng</b>: cả ba đường vào (<code>fastJob</code>, <code>slowJob</code>,
+<code>refreshNow()</code>) đi qua <code>publish</code> = <code>synchronized(readLock)</code> ⇒ loại trừ lẫn nhau +
+happens-before cho bốn trường <code>var</code> trần của bộ làm mượt — đã ghi thành <b>bất biến trong KDoc</b>
+(finding #4). 12 bài <code>TripTimeSmootherTest</code> xanh, trong đó 3 bài E2E qua <code>CarDataAdapter</code>.</td></tr>
+</table>
+
+<h4>Findings — 1×[P1] · 2×[P2] · 6×[P3]</h4>
+<table>
+<tr><th>#</th><th>Mức</th><th>Chỗ</th><th>Việc · bản vá</th></tr>
+<tr><td>1</td><td><span class="tag p1">P1</span></td><td><code>CameraDewarp.panLocal</code> ←
+<code>CameraGlUniforms</code> ← <code>PrefsCameraDewarp.cameraGlUniforms</code></td>
+<td><b>Một núm <code>camera_dewarp_pan_x</code>, hai bên đi NGƯỢC nhau.</b> [ĐO, lượt soát này, khung thô
+<code>camera_frame</code> <code>5120×960</code> chụp trên xe 27/09 09:58]: hai camera gương là <b>ảnh soi gương của
+nhau</b> — thân xe của chính mình nằm ở mép <b>PHẢI</b> ô gương trái (dải 1) và mép <b>TRÁI</b> ô gương phải (dải 2).
+Tương quan chuẩn hoá trên đúng vùng thân xe: <b>lật ngang 0,715</b> · không lật <b>0,152</b> (nền so sánh giữa hai nửa
+cùng một ô: 0,550). ⇒ trục <code>+x</code> của ô trỏ về hai phía ngược nhau, mà 2.75 cộng thẳng cùng một pref vào cả hai
+(<code>CameraGlUniforms</code> không có số hạng theo bên) ⇒ owner xin <i>"kéo ra sau chút"</i> thì chỉ một bên ra sau,
+bên kia ra trước — <b>không có lời báo nào</b>, vì cả hai khung vẫn thẳng và vẫn ra hình.
+<b>Vá</b>: dấu theo <b>bên</b> ở <code>:core</code> — <code>CameraDewarpPrefs.panXSign(left)</code>
+(<code>+1</code>/<code>−1</code>), tham số <code>panXSign</code> của <code>CameraGlUniforms.of</code>, và
+<code>Prefs.cameraGlUniforms(… left: Boolean …)</code> <b>bắt buộc</b> (không mặc định) do
+<code>CameraSignalController.kt:264</code> truyền <code>left = turn == Turn.LEFT</code>. Gương TRÁI <b>giữ nguyên</b>
+(CLAUDE.md §6 — đó là bên owner đã nhìn). <code>describe()</code> in trị <b>đã nhân dấu</b> (<code>dịch=(x,y)</code>).
+Chuỗi VI/EN nói rõ hướng: <i>"âm là về phía đuôi xe, ở CẢ HAI gương"</i>. Bài canh: <code>:core</code>
+<code>CameraDewarpRotatePanTest.mot pref pan_x cho hai dau nguoc nhau o hai guong</code> (cùng pref ⇒ hai dấu; pan_y
+<b>không</b> lật; <code>0</code> vẫn là <code>0</code>) + <code>:app</code>
+<code>CameraSpanShapeWiringContractTest.pan_x mang dau theo ben, tu controller xuong core</code> (gỡ dòng
+<code>left =</code> ⇒ đỏ).</td></tr>
+<tr><td>2</td><td><span class="tag p2">P2</span></td><td><code>scripts/emulator/camera_dewarp_check.py</code> (main)</td>
+<td><code>--axis auto</code> được giải <b>riêng</b> cho ảnh <i>trước</i> và ảnh <i>sau</i>. Nếu phép nắn đổi đủ hình
+dạng nét để hai lượt chọn lệch trục, ngưỡng <b>tỉ số</b> (<code>sau×3 ≤ trước</code>) so hai con số đo trên hai trục
+khác nhau ⇒ một lượt ĐẠT/KHÔNG ĐẠT vô nghĩa mà báo cáo vẫn in ra bình thường. <b>Vá</b>: chốt theo trục của ảnh
+<i>trước</i> (<code>horizon_deviation(args.after, b_axis)</code>) — ảnh còn giữ hình dạng nguồn.</td></tr>
+<tr><td>3</td><td><span class="tag p2">P2</span></td><td><code>VoiceRecognizer.kt:103</code>
+<code>finalResult(limitSamples)</code></td>
+<td>Sau VOICE-HEAD-SILENCE, hàm này <b>không còn một chỗ gọi nào ở mã chạy</b> ([ĐO] grep <code>app/src/main
+core/src/main</code> — chỉ còn trong KDoc). Chính KDoc của tệp đã ghi luật <i>"một đường nạp nguyên cửa sổ còn nằm đó
+là mời người sau gọi nhầm"</i>. <b>Không gỡ</b> (nó là bản tham chiếu mà
+<code>VoiceVadWiringContractTest</code> ghim, và <code>rangeResult(0, trim)</code> ra đúng chuỗi này ⇒ nó <b>là</b>
+định nghĩa <i>"hành vi 2.74"</i> của mọi phép so A/B) — <b>vá bằng KDoc</b>: ghi rõ không còn chỗ gọi, mã mới phải dùng
+<code>rangeResult</code>, kèm lý do (bỏ điểm cắt ĐẦU = quay lại họ D của buổi xe 27/09).</td></tr>
+<tr><td>4</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>TripTimeSmoother.kt</code> (KDoc lớp)</td>
+<td>Bốn trường <code>var</code> trần, <b>không</b> đồng bộ hoá bên trong. An toàn <i>hôm nay</i> chỉ vì mọi đường vào đi
+qua <code>CarStatusRepository.publish</code> = <code>synchronized(readLock)</code> — một bất biến <b>ở tệp khác</b> và
+không được ghi ở đâu cả. <b>Vá</b>: ghi bất biến ấy thành ⚠ trong KDoc (ai gọi ngoài khoá phải tự khoá).</td></tr>
+<tr><td>5</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>PrefsCameraDewarp.kt</code> KDoc <code>cameraDewarpPanX</code></td>
+<td>KDoc khẳng định như <b>[ĐO]</b> rằng <i>"gương trái dải 1 có đuôi xe ở mép TRÁI ô ⇒ ra sau = âm"</i>. Phép đo khung
+thô ở finding #1 cho thấy <b>thân xe nằm ở mép PHẢI</b> ô gương trái ⇒ chiều tuyệt đối chưa chắc như đã ghi, và
+<code>camera-dewarp-gl.md</code> §E <b>G7</b> vẫn để ngỏ <i>"trị pan owner thật sự muốn"</i> ⇒ chưa ai nhìn núm này chạy
+trên xe. <b>Vá</b>: hạ xuống <b>[SUY, chưa kiểm trên xe]</b>, nêu đúng phép đo mâu thuẫn và trỏ G7; nếu ngược thì đổi
+đúng <b>một dấu</b> ở <code>panXSign</code>. (Không tự đảo: đổi một điều chưa kiểm lấy một điều chưa kiểm khác.)</td></tr>
+<tr><td>6</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>CameraSynthFeeder.kt</code> KDoc lớp</td>
+<td>KDoc nói ảnh tệp được <i>"phóng đều về cỡ buffer"</i>, nhưng <code>src → dst</code> là <b>căng đầy</b>
+(<code>dst = trọn buffer</code>) ⇒ tỉ lệ khác nhau là anamorphic. Đó đúng là cái CẦN cho hai ca đang dùng (khung
+<code>5120×960</code> trùng khít; khung một camera <code>1280×960</code> kéo ngang ×<code>STRIPS</code> = đúng thứ HAL
+làm ở <code>SOURCE_CHANNEL</code>), nhưng lập luận <i>"co giãn đẳng hướng giao hoán với phép nắn"</i> thì chỉ áp cho
+ảnh SINH. <b>Vá</b>: nói đúng cả hai vế (CLAUDE.md §2 — không phát biểu một suy luận như một sự thật).</td></tr>
+<tr><td>7</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>CameraSpanShapeWiringContractTest</code> KDoc lớp</td>
+<td>Mục (3) của danh sách vẫn viết <i>"<code>rmPreviewSurface</code> gọi SAU <code>stopPreview</code> + <code>close</code>"</i>
+trong khi 2.75 đã chuyển nó vào <b>GIỮA</b> (và assertion bên dưới đã đổi đúng). <b>Vá</b>: sửa mục (3), thêm mục (6)
+cho dấu <code>pan_x</code>.</td></tr>
+<tr><td>8</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>VoiceCapture.kt:249-252</code></td>
+<td>Hai dòng chú thích + dòng <code>rec.rangeResult(…)</code> thụt lề lệch hẳn khỏi các đối số cùng cấp trong
+<code>return Heard(</code>. Không đổi hành vi, nhưng đây là đường NGHE — chỗ đọc lại nhiều nhất lúc chẩn đoán.
+<b>Vá</b>: căn lại đúng cột.</td></tr>
+<tr><td>9</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>CameraSignalPolicy.CamView</code> (<code>channel = 2/3</code>) · <b>báo, không vá</b></td>
+<td>Bản đồ kênh HAL của <b>Seal</b> nằm ngay trong enum của <code>:core</code>, không ở <code>ClusterProfile</code>
+(CLAUDE.md §7). Làn đã tự ghi điều kiện mở khoá (<i>"khi có đời thứ hai đo được"</i>) và owner vẫn đè được bằng
+<code>camera_hal_mode</code> mà không phải build lại ⇒ <b>chấp nhận cho 2.75</b>, nhưng là một món nợ có thật: một đời
+xe khác ở <code>camera_source = CHANNEL</code> sẽ mở <b>nhầm kênh</b> mà không báo gì. Điều kiện đóng: một phép đo trên
+đời xe thứ hai.</td></tr>
+<tr><td>10</td><td><span class="tag p2" style="background:#8e8e93">P3</span></td>
+<td><code>TripTimeSmoother.smooth</code> nhánh <code>null</code> · <b>báo, không vá</b></td>
+<td>Một lượt đọc HAL hỏng <b>lẻ</b> (<code>null</code>) làm <code>reset()</code> xoá cả <code>lastOut</code> ⇒ lượt đọc
+kế tiếp trả đúng mốc thô ⇒ ô có thể <b>lùi tới 5 phút</b> ("1:59" → "1:54"). Đơn điệu chỉ được hứa <i>giữa hai lần
+reset</i> nên đây không phải lỗi hợp đồng, nhưng owner sẽ thấy số lùi. Không vá ở lượt soát này: phân biệt
+<i>"đọc hỏng lẻ"</i> với <i>"chuyến mới"</i> cần thêm trạng thái + đổi 12 bài canh đang khoá đúng hành vi hiện tại ⇒
+ngoài phạm vi. Đường vá một dòng nếu owner muốn: ở nhánh <code>null</code> giữ <code>lastOut</code>/mốc và chỉ reset khi
+một giá trị <b>thấp hơn</b> tới.</td></tr>
+</table>
+
+<h4>Tệp người soát đã sửa</h4>
+<table>
+<tr><th>Tệp</th><th>Dòng (sau)</th><th>Việc</th></tr>
+<tr><td><code>core/…/camera/CameraDewarpPrefs.kt</code></td><td>195</td><td>+ <code>panXSign(left)</code> (#1)</td></tr>
+<tr><td><code>core/…/camera/CameraGlUniforms.kt</code></td><td>226</td><td>+ tham số <code>panXSign</code> + áp dấu (#1)</td></tr>
+<tr><td><code>app/…/PrefsCameraDewarp.kt</code></td><td>216</td><td>+ tham số <code>left</code> bắt buộc, truyền dấu (#1); KDoc <code>panX</code> hạ xuống [SUY] (#5)</td></tr>
+<tr><td><code>app/…/camera/CameraSignalController.kt</code></td><td>469</td><td><code>left = turn == Turn.LEFT</code> (#1)</td></tr>
+<tr><td><code>app/src/main/res/values{,-en}/strings_kachi.xml</code></td><td>739 / 721</td><td><code>kachi_camera_dewarp_pan_x</code> nói rõ <i>"cả hai gương"</i> (#1)</td></tr>
+<tr><td><code>core/src/test/…/camera/CameraDewarpRotatePanTest.kt</code></td><td>233</td><td>+ 1 bài (2 dấu ngược, pan_y không lật) (#1)</td></tr>
+<tr><td><code>app/src/test/…/camera/CameraSpanShapeWiringContractTest.kt</code></td><td>265</td><td>+ 1 bài canh dây nối (#1); KDoc mục (3)+(6) (#7)</td></tr>
+<tr><td><code>scripts/emulator/camera_dewarp_check.py</code></td><td>140</td><td>một trục cho cả hai ảnh (#2)</td></tr>
+<tr><td><code>app/…/voice/VoiceRecognizer.kt</code></td><td>—</td><td>KDoc <code>finalResult</code>: không còn chỗ gọi (#3)</td></tr>
+<tr><td><code>core/…/TripTimeSmoother.kt</code></td><td>82</td><td>KDoc: bất biến khoá <code>publish</code> (#4)</td></tr>
+<tr><td><code>app/…/camera/CameraSynthFeeder.kt</code></td><td>267</td><td>KDoc: căng đầy ≠ phóng đều (#6)</td></tr>
+<tr><td><code>app/…/voice/VoiceCapture.kt</code></td><td>448</td><td>căn lề (#8)</td></tr>
+</table>
+<p class="muted">Mọi tệp <b>≤ 500 dòng</b> ([ĐO] <code>wc -l</code> trên cả 64 + 12 tệp: lớn nhất là
+<code>VoiceIntentParser.kt</code> 499 và <code>CameraSignalPolicy.kt</code>/<code>TestBridgeCommandTest.kt</code>/
+<code>TelemetryReadoutTest.kt</code> 497). Không có <code>os.environ</code>/<code>os.getenv</code> trong hai script
+(<code>camera-dewarp-e2e.sh</code> · <code>camera_dewarp_check.py</code>); không đường <code>/Users/&lt;tên&gt;</code>
+thật nào trong tệp theo dõi (4 hit đều là regex của chính bộ dò hoặc fixture <code>/Users/example/…</code>); không
+handle/email cá nhân nào — danh tính trong repo vẫn chỉ là <code>dangkhoi</code>.</p>
+
+<h4>Cross-platform (macOS, CLAUDE.md §13)</h4>
+<p><code>camera-dewarp-e2e.sh</code>: <code>#!/usr/bin/env bash</code> (cần cho <code>PIPESTATUS</code>), chỉ dùng cờ có
+trên BSD (<code>date -u +…</code>, <code>head -c</code>, <code>ls -1</code>, <code>sed 's|…|…|'</code>) — [ĐO] quét
+<code>sed -i</code> · <code>readlink -f</code> · <code>grep -P</code> · <code>date -d</code> · <code>stat -c</code> ·
+<code>sort -V</code> · <code>find -printf</code> ⇒ <b>0 hit</b>. Mã thoát của mục 7 (<code>RC_ROT</code>) có được kiểm ở
+cuối (dòng 304) — không phải một phép đo âm thầm rơi mất. <code>camera_dewarp_check.py</code> có
+<code>from __future__ import annotations</code> nên cú pháp <code>tuple[…]</code> chạy được cả trên Python cũ.</p>
+
+<h4>Bài canh — trước / sau lượt soát</h4>
+<table>
+<tr><th>Gói</th><th>2.74 (Pass 1)</th><th>2.75 làn giao</th><th>Sau lượt soát</th><th>Ghi chú</th></tr>
+<tr><td><code>:core</code></td><td>—</td><td>2 890</td><td><b>2 891</b> · 0 đỏ</td><td>+1 bài dấu <code>pan_x</code>.
+Bài mới của 2.75 xanh hết: <code>VoiceCarWav0927Test</code> 13 · <code>VoiceVadTrimTest</code> 17 ·
+<code>TopStripStateIconTest</code> 10 · <code>TripTimeSmootherTest</code> 12 · <code>CameraChannelSourceTest</code> 11 ·
+<code>CameraDewarpRotatePanTest</code> 7 → <b>8</b></td></tr>
+<tr><td><code>:app</code></td><td>—</td><td>1 463</td><td><b>1 464</b> · 0 đỏ</td><td>+1 bài canh dây nối
+<code>pan_x</code></td></tr>
+<tr><td><code>:app:lintRelease</code></td><td>0 lỗi</td><td>0 lỗi</td><td><b>0 lỗi</b></td><td>[ĐO] đọc SARIF:
+522 kết quả, <code>level=error</code> = <b>0</b></td></tr>
+</table>
+<p class="muted">Đếm từ <code>*/build/test-results/*/*.xml</code>, không từ dòng console (memory
+<code>kachi-gradle-parallel-agents</code>). Chạy qua wrapper tuần tự vì có agent khác cùng cây.</p>
+
+<h4>TECH FRESHNESS</h4>
+<table>
+<tr><th>Thư viện / API</th><th>Đang dùng</th><th>Mới nhất</th><th>Kết</th><th>Việc đã làm</th></tr>
+<tr><td>sherpa-onnx (AAR JitPack)</td><td><code>v1.13.8</code></td><td><code>v1.13.8</code> (Context7
+<code>/k2-fsa/sherpa-onnx</code>, ví dụ gradle-kts của chính repo)</td><td><span class="ok">OK</span></td>
+<td>Không có. Làn voice 2.75 <b>không</b> chạm API sherpa — <code>rangeResult</code> là hàm của Kachi, vẫn đi qua
+<code>createStream</code>/<code>acceptWaveform</code>/<code>decode</code>/<code>getResult</code> như 2.74.</td></tr>
+<tr><td>kotlinx-coroutines(-android/-test)</td><td><code>1.11.0</code></td><td><code>1.11.0</code> (Context7
+<code>/kotlin/kotlinx.coroutines</code> CHANGES.md — bản mới nhất)</td><td><span class="ok">OK</span></td>
+<td>Không có. Cảnh báo của 1.11.0 (<code>CoroutineDispatcher</code> làm khoá ngữ cảnh đã deprecated) <b>không</b> chạm
+mã 2.75 — các làn không thêm một lời gọi coroutine nào.</td></tr>
+<tr><td>Kotlin JVM plugin</td><td><code>2.4.10</code></td><td>—</td><td><span class="ok">OK</span></td>
+<td>Không đổi so với 2.74 (Pass 1 / closeout Pass 3 đã verify). 2.75 chỉ sửa <code>versionCode/Name</code> trong
+<code>app/build.gradle.kts</code>.</td></tr>
+<tr><td>AGP</td><td><code>9.3.1</code> · <code>compileSdk/targetSdk 37</code> · <code>minSdk 29</code> · NDK
+<code>30.0.16248370</code></td><td>—</td><td><span class="ok">OK</span></td><td>Không đổi.</td></tr>
+<tr><td><code>android.opengl.EGL14</code> · <code>GLES20</code> · <code>GLES11Ext</code></td><td>đường vẽ GL + FBO
+<code>glReadPixels</code></td><td>—</td><td><span class="ok">OK</span></td><td><b>Không</b> deprecated ở API 29/37.
+<code>GLSurfaceView</code> bị loại <b>có lý do đã đo</b> (RE §4.1) chứ không phải vì cũ.</td></tr>
+<tr><td><code>SurfaceTexture</code> · <code>TextureView</code> · <code>Surface.lockCanvas</code></td><td>VÀO/RA của
+đường GL · <code>camera_synth</code></td><td>—</td><td><span class="ok">OK</span></td><td>Không deprecated.
+<code>setOnFrameAvailableListener(l, Handler)</code> (bản 2 tham số, API 21+) là bản <b>đúng</b> — bản 1 tham số gọi
+callback trên <i>"an arbitrary thread"</i> (AOSP <code>SurfaceTexture.java:186-189</code>).</td></tr>
+<tr><td><code>BitmapFactory.decodeFile</code> + <code>inSampleSize</code> (<code>CameraSynthFeeder.fromFile</code>)</td>
+<td>API 1+</td><td><code>ImageDecoder</code> (API 28+)</td><td><span class="ok">OK</span></td>
+<td>Không vá. <code>BitmapFactory</code> <b>không</b> deprecated; chỉ <code>inDither</code>/<code>inPurgeable</code>
+là. Đường này cần đúng thứ <code>inSampleSize</code> cho (ngân sách heap đo được), và nó <b>chỉ chạy ở chế độ kiểm
+thử</b> ⇒ đổi sang <code>ImageDecoder</code> là thêm một đường mới cho một lợi ích bằng không.</td></tr>
+</table>
+
+<h4>🚗 Việc trên xe mà lượt soát này KHÔNG thay được</h4>
+<ul>
+<li><b>CAM-B5</b> (bắt buộc cho 2.75): đổi bên TRÁI→PHẢI rồi tắt, <code>logcat -d -s BufferQueueProducer:E | grep -c
+abandoned</code> phải = <b>0</b> sau 30 s. Máy ảo <b>không tái lập được</b> con bọ (không có
+<code>android.hardware.AVMCamera</code>) ⇒ bản vá [P0] của làn camera mới chỉ có <b>mốc thời gian + bài canh thứ tự</b>
+làm bằng chứng, chưa có phép đo sau-vá.</li>
+<li><b>Dấu <code>pan_x</code> (finding #1)</b>: kéo <code>camera_dewarp_pan_x</code> <code>−20</code> rồi nhìn
+<b>cả hai</b> gương — hai khung phải đi về <b>cùng một phía của XE</b>. Đây là phép đo chốt luôn cả #5 (chiều tuyệt
+đối) và G7.</li>
+<li><b>UX8</b>: bấm <i>Lấy gió trong</i> trên màn AC gốc, chip <i>Chế độ lấy gió</i> phải đổi <b>hình</b> và không còn
+chữ; liếc chip <i>Gió</i> phải là <code>auto n</code> chữ thường. Hai hình <code>ic-recirc</code> /
+<code>ic-air-fresh</code> có phân biệt được ở 24dp trên màn xe hay không vẫn <b>[CHƯA BIẾT]</b>.</li>
+<li><b>Họ D của voice</b>: buổi sau phải xuất được WAV <b>của lượt NỐI</b> (bản vá <code>keepPcm</code> mới bật) —
+điều kiện để chẩn đoán 7 lượt còn hỏng. <code>cắt: … bo_dau=</code> &gt; 0 là dòng chốt cổng 1 200 ms có nổ.</li>
+<li><b>TRIP</b>: nhìn ô <i>Thời gian chuyến</i> chạy tròn phút và <b>không</b> chạm bậc kế trước khi HAL đổi.</li>
+</ul>
+
+<p><b>Verdict: <span class="pill ok">APPROVED</span></b> — 100 % cam kết của bốn làn đã hiện thực, có dây nối thật và
+có bài canh; một [P1] (dấu <code>pan_x</code> theo bên) và hai [P2] đã <b>vá trong lượt này</b>, sáu [P3] còn lại là
+tài liệu/nợ đã ghi kèm điều kiện đóng. <code>:core</code> 2 891 · <code>:app</code> 1 464 · <b>0 đỏ</b> ·
+<code>lintRelease</code> <b>0 lỗi</b>. Vòng soát lặp lại sau bản vá <b>không còn finding [P0]–[P3] nào để hành động</b>.
+⚠ Điều kiện ship vẫn là <b>CAM-B5 trên xe</b> — con bọ [P0] của buổi 27/09 chưa có phép đo sau-vá nào.</p>
 
 </div></body>
 </html>

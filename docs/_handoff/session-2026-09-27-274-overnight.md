@@ -1,6 +1,6 @@
 # Handoff — đêm 26→27/09/2026: 2.74 (175) làm qua đêm, sáng 27/09 lên xe chỉ test
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (rạng sáng) · **Mục đích**: người mở phiên sáng (hoặc chính owner) biết ngay bản nào ở đâu, đã chứng minh gì off-car, còn gì phải đo trên xe, câu nào chờ owner. Spec: `docs/specs/kachi-274-ux-voice-camera.html` (R1–R10, §9 nhật ký, §10 review). Runbook xe: `docs/diagnostics/oncar-runbook-2.74.md`.
+> **Trạng thái**: Superseded bởi `session-2026-09-27-275-after-car.md` · **Cập nhật**: 2026-09-27 (rạng sáng) · **Mục đích**: người mở phiên sáng (hoặc chính owner) biết ngay bản nào ở đâu, đã chứng minh gì off-car, còn gì phải đo trên xe, câu nào chờ owner. Spec: `docs/specs/kachi-274-ux-voice-camera.html` (R1–R10, §9 nhật ký, §10 review). Runbook xe: `docs/diagnostics/oncar-runbook-2.74.md`.
 
 ## 1. Bản
 

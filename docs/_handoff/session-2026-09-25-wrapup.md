@@ -37,5 +37,5 @@
 Lần trước owner báo, thử relayout → giật → revert. Cần dumpsys window bounds lúc start vs sau Home để trace đúng.
 
 ## LƯU Ý HẠ TẦNG
-- On-car: `python3 scripts/vehicle/kachi/adb_raw.py 172.20.10.8 5555 shell/push` (mạng chập chờn, wrap retry). Test mode bridge bật ~55-60 phút.
+- On-car: `python3 scripts/vehicle/kachi/adb_raw.py <ip-xe> 5555 shell/push` (mạng chập chờn, wrap retry). Test mode bridge bật ~55-60 phút.
 - HAL probe: `hal --es op get/getid` — nhưng đường generic get(id) KHÁC đường nhịp app (Feature route/EventValue): probe getid trả sentinel không có nghĩa app không đọc được (bài học tyre temp).

@@ -287,6 +287,85 @@ class CameraGlUniformsTest {
         assertEquals(0.375f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 9)[0], 1e-6f)
     }
 
+    /**
+     * Cùng **16 tổ hợp** ấy nhưng ở độ nắn **100 %**: không còn đường `TextureView` để so, nên mốc là **bản CPU**
+     * [CameraDewarp] — góc ±90/180 phải cho ĐÚNG kết quả của góc 0 lấy tại điểm khung đã xoay.
+     *
+     * Vì sao cần thêm ca này khi bài `amount = 0` đã đi hết 16 tổ hợp: ở `amount = 0` khối nắn **không chạy**, nên
+     * một lỗi *"xoay sau khi nắn"* hay *"`uAspect` đảo theo góc xoay"* sẽ đi qua bài kia mà không ai thấy — đúng thứ
+     * đã bị nghi oan trên xe 27/09.
+     */
+    @Test fun `do nan 100 thi xoay chi la anh rot 0 da xoay, ca 16 to hop`() {
+        var checked = 0
+        for (span in CameraSignalPolicy.SPANS) for (shape in CameraSignalPolicy.SHAPES) {
+            for (rot in listOf(0, -90, 90, 180)) {
+                val u = uniformsFor(span, shape, rot, amountPct = 100)
+                val moc = uniformsFor(span, shape, 0, amountPct = 100)
+                assertEquals(moc.aspect, u.aspect, 1e-6f, "$span/$shape/$rot°: xoay không được đổi uAspect")
+                assertEquals(moc.dewarp, u.dewarp, "$span/$shape/$rot°: xoay không được đổi tham số nắn")
+                listOf(0.02f to 0.02f, 0.98f to 0.02f, 0.02f to 0.98f, 0.98f to 0.98f, 0.5f to 0.5f)
+                    .forEach { (uo, vo) ->
+                        val got = CameraDewarp.sample(uo, vo, rot, u.dewarp, u.aspect, u.srcRect)
+                        val (ru, rv) = CameraDewarp.rotateDstToLocal(uo, vo, rot)
+                        val want = CameraDewarp.sample(ru, rv, 0, moc.dewarp, moc.aspect, moc.srcRect)
+                        val tag = "$span/$shape/$rot° ($uo,$vo)"
+                        assertEquals(want == null, got == null, "$tag: một bên đen một bên không")
+                        if (want != null) {
+                            assertEquals(want.first.toDouble(), got!!.first.toDouble(), 1e-4, "$tag trục x")
+                            assertEquals(want.second.toDouble(), got.second.toDouble(), 1e-4, "$tag trục y")
+                        }
+                        checked++
+                    }
+            }
+        }
+        assertEquals(2 * 2 * 4 * 5, checked, "phải đi hết 2 bề rộng × 2 hình × 4 góc × 5 điểm")
+    }
+
+    // ══ (5) DỊCH CỬA SỔ (`uPan`) — 2.75 ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * `camera_dewarp_pan_x/y` đi thẳng vào `uPan`, đơn vị **bề ô**, và **không** đụng tới `uCenter`.
+     *
+     * Đây là chỗ hai núm dễ bị nối nhầm nhất: cả hai đều là *"% bề ô"* và cả hai đều trông như *"dịch ảnh"* trên màn
+     * Cài đặt — nhưng một cái dời **cửa sổ** (ảnh vẫn thẳng) còn cái kia dời **trục quang** (ảnh cong). Nối chéo thì
+     * owner chỉnh núm *Dịch* mà thấy ảnh cong, đúng cái bệnh đã mất cả buổi 27/09 để loại trừ.
+     */
+    @Test fun `hai num dich vao uPan, khong dung toi uCenter`() {
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, strip = 1)
+        val moc = uniformsFor(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT, rotationDeg = -90)
+        val u = CameraGlUniforms.of(
+            crop = cropOf(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT),
+            srcCentreX = centre[0], srcCentreY = centre[1],
+            streamW = streamW, streamH = streamH, rotationDeg = -90,
+            panXPct = -10, panYPct = 25,
+        )
+        assertEquals(-0.10f, u.panX, 1e-6f, "−10 % bề ô ⇒ −0,10")
+        assertEquals(0.25f, u.panY, 1e-6f)
+        assertEquals(moc.centerX, u.centerX, 1e-6f, "dịch KHÔNG được dời tâm quang")
+        assertEquals(moc.centerY, u.centerY, 1e-6f)
+        assertEquals(moc.aspect, u.aspect, 1e-6f, "dịch KHÔNG được đổi tỉ lệ ô")
+        assertEquals(0f, moc.panX, 1e-6f, "mặc định = 0 ⇒ xe không chạm núm thì y hệt 2.74")
+        assertEquals(0f, moc.panY, 1e-6f)
+    }
+
+    /** Giá trị ngoài miền (prefs sửa tay) ⇒ **mặc định biết trước**, không kẹp im lặng về biên. */
+    @Test fun `dich ngoai mien ve mac dinh`() {
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, strip = 1)
+        listOf(CameraDewarpPrefs.PAN_MIN - 1, CameraDewarpPrefs.PAN_MAX + 1, 9999).forEach { bad ->
+            val u = CameraGlUniforms.of(
+                crop = cropOf(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT),
+                srcCentreX = centre[0], srcCentreY = centre[1],
+                streamW = streamW, streamH = streamH, rotationDeg = 0, panXPct = bad, panYPct = bad,
+            )
+            assertEquals(0f, u.panX, 1e-6f, "pan_x = $bad ⇒ mặc định")
+            assertEquals(0f, u.panY, 1e-6f, "pan_y = $bad ⇒ mặc định")
+        }
+        assertFalse(CameraDewarpPrefs.isPanPct(CameraDewarpPrefs.PAN_MIN - 1))
+        assertTrue(CameraDewarpPrefs.isPanPct(CameraDewarpPrefs.PAN_MIN))
+        assertTrue(CameraDewarpPrefs.isPanPct(CameraDewarpPrefs.PAN_MAX))
+        assertFalse(CameraDewarpPrefs.isPanPct(CameraDewarpPrefs.PAN_MAX + 1))
+    }
+
     /** `equals`/`hashCode` phải so **nội dung** `FloatArray` — nếu không, hai bộ giống nhau vẫn báo khác. */
     @Test fun `equals so noi dung srcRect`() {
         val a = uniformsFor(CameraSignalPolicy.SPAN_NARROW, CameraSignalPolicy.SHAPE_RECT, -90)
@@ -296,10 +375,10 @@ class CameraGlUniformsTest {
         assertFalse(a == uniformsFor(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT, -90))
     }
 
-    /** `describe()` có đủ mười con số để đọc bằng mắt trên `logcat` — nó là bề mặt chẩn đoán duy nhất trên xe. */
+    /** `describe()` có đủ **mười hai** con số để đọc bằng mắt trên `logcat` — bề mặt chẩn đoán duy nhất trên xe. */
     @Test fun `describe noi du muoi con so`() {
         val d = uniformsFor(CameraSignalPolicy.SPAN_NARROW, CameraSignalPolicy.SHAPE_RECT, -90).describe()
-        listOf("srcRect=", "rot=", "aspect=", "amount=", "F=", "K=", "S=", "tâm=", "texMatrix=").forEach {
+        listOf("srcRect=", "rot=", "aspect=", "amount=", "F=", "K=", "S=", "tâm=", "dịch=", "texMatrix=").forEach {
             assertTrue(it in d, "thiếu `$it` trong: $d")
         }
     }

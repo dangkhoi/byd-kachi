@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.camera
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Handler
@@ -24,6 +25,18 @@ import android.view.Surface
  * `graphics/java/android/graphics/SurfaceTexture.java:232-237` — `setDefaultBufferSize` có mặt *"to set the image size
  * when producing images with Canvas (via Surface.lockCanvas), or OpenGL ES"*.
  *
+ * ## 2.75 — bơm được một PNG **THẬT** (`camera_synth --es name file:<tên>`)
+ * Chính vì đoạn ⚠ dưới đây, từ 2.75 lớp này nhận thêm một đường tệp: đẩy một khung `5120×960` **chụp từ xe** vào
+ * `getExternalFilesDir(null)` rồi bơm nó qua **đúng** đường GL ấy ⇒ lượt kiểm chạy trên ống kính THẬT, không chỉ
+ * trên ảnh do chính mô hình vẽ ra. Tệp hỏng/thiếu ⇒ **rơi về ảnh sinh** và ghi một dòng `logcat`: một lượt đo
+ * không được biến mất im lặng chỉ vì gõ sai tên tệp.
+ *
+ * Ảnh tệp đi qua đúng phép `drawBitmap(src, dst)` của ảnh sinh — nhưng ⚠ ở đây `dst` là **trọn buffer**, nên nếu tỉ
+ * lệ tệp khác tỉ lệ buffer thì đây là một lượt **căng đầy (anamorphic)**, không phải phóng đều. Đó là cái ĐÚNG cho
+ * hai ca đang dùng: khung `5120×960` chụp từ xe ⇒ trùng khít (hệ số 1); khung một camera `1280×960` ⇒ kéo ngang
+ * ×[CameraPanoCrop.STRIPS], **đúng** thứ HAL làm ở [CameraSignalPolicy.SOURCE_CHANNEL]. Lập luận *"co giãn đẳng
+ * hướng giao hoán với phép nắn"* dưới đây chỉ áp cho ảnh SINH (nơi [capped] giữ tỉ lệ), không cho ảnh tệp.
+ *
  * ## ⚠ Ảnh này KHÔNG nói gì về ống kính thật
  * Nó được sinh bằng **chính mô hình đang kiểm** ([CameraDewarpTestPattern] dùng [CameraDewarp.idealEquidistantSource]),
  * nên nó chứng minh *cài đặt* đúng (GLSL khớp Kotlin, uniform vào đúng chỗ, đường thẳng thành thẳng) và **không** nói
@@ -42,7 +55,7 @@ import android.view.Surface
  * vẫn tròn, tỉ lệ `16:3` giữ nguyên (cỡ chọn luôn là bội của [CameraPanoCrop.STRIPS] để bốn dải chia đúng). Cái mất
  * duy nhất là **độ nét** của nét vẽ, tức một lượt lọc thêm — nói ra trong `logcat` bằng cả hai con số.
  */
-internal class CameraSynthFeeder(private val surface: Surface) {
+internal class CameraSynthFeeder(private val surface: Surface, private val file: String = "") {
 
     private val thread = HandlerThread(THREAD)
     private var handler: Handler? = null
@@ -132,6 +145,7 @@ internal class CameraSynthFeeder(private val surface: Surface) {
         runCatching { cached?.recycle() }
         bitmap = null
         val began = SystemClock.elapsedRealtime()
+        fromFile(bufW, bufH)?.let { return it }
         val (w, h) = capped(bufW, bufH)
         val built = runCatching {
             val spec = CameraDewarpTestPattern.Spec(width = w, height = h, strips = CameraPanoCrop.STRIPS)
@@ -152,6 +166,49 @@ internal class CameraSynthFeeder(private val surface: Surface) {
                 " ${SystemClock.elapsedRealtime() - began} ms, ngân sách ${budgetPixels()} px",
         )
         return built
+    }
+
+    /**
+     * Nạp PNG của [file] (nếu có) làm ảnh nguồn — đường *"khung THẬT từ xe"* của 2.75.
+     *
+     * `inSampleSize` chọn theo **cùng [budgetPixels]** với ảnh sinh: một khung `5120×960` giải mã nguyên cỡ là
+     * `Bitmap` 19,6 MB trên một heap [ĐO] 48 MB. Giải mã hai lượt (`inJustDecodeBounds` rồi thật) vì cỡ tệp là
+     * thứ duy nhất chưa biết trước.
+     *
+     * `null` ⇒ không có tệp / không giải mã được ⇒ chỗ gọi dùng ảnh sinh (đã ghi `logcat`).
+     */
+    private fun fromFile(bufW: Int, bufH: Int): Bitmap? {
+        if (file.isEmpty()) return null
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        runCatching { BitmapFactory.decodeFile(file, bounds) }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            Log.w(PanoramaHal.TAG, "GL ảnh tệp «$file» không đọc được cỡ ⇒ dùng ảnh sinh")
+            return null
+        }
+        var sample = 1
+        val budget = budgetPixels()
+        while (bounds.outWidth.toLong() * bounds.outHeight / (sample.toLong() * sample) > budget) sample *= 2
+        val opts = BitmapFactory.Options().apply {
+            inSampleSize = sample
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bmp = runCatching { BitmapFactory.decodeFile(file, opts) }
+            .onFailure { Log.w(PanoramaHal.TAG, "GL giải mã «$file» hỏng: ${it.javaClass.simpleName}") }
+            .getOrNull()
+        if (bmp == null) {
+            Log.w(PanoramaHal.TAG, "GL ảnh tệp «$file» giải mã ra null ⇒ dùng ảnh sinh")
+            return null
+        }
+        builtW = bufW
+        builtH = bufH
+        bitmap = bmp
+        // ASCII: trường này đi thẳng vào lời đáp JSON của cầu kiểm thử và vào `logcat`, không phải chữ trên màn —
+        // `LauncherI18nContractTest` bắt mọi chuỗi có dấu trong tầng vẽ, và ở đây quy tắc ấy đúng.
+        size = "png ${bmp.width}x${bmp.height}→${bufW}x$bufH (1/$sample)"
+        src.set(0, 0, bmp.width, bmp.height)
+        dst.set(0, 0, bufW, bufH)
+        Log.i(PanoramaHal.TAG, "GL ảnh TỆP $size từ $file")
+        return bmp
     }
 
     /**

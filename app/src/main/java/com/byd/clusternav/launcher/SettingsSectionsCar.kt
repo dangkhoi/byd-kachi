@@ -123,6 +123,15 @@ class SettingsCarSection(
         // nào vẫn [CHƯA BIẾT]** (§7 Q1/Q2: Electro không gán nhãn dải, kinex chỉ dùng dải 1 & 2) nên bốn hàng dưới
         // đây là **bộ dò trên xe** của owner, không phải bốn lựa chọn thẩm mỹ. Mặc định của cả bốn = hành vi 2.73
         // từng pixel (CLAUDE.md §6); hình học suy ra ở `:core` [CameraPanoCrop], không có số nào chép vào đây.
+        // NGUỒN đứng TRƯỚC vùng/dải: chọn `MỘT KÊNH` thì hai hàng kia hết tác dụng (không còn dải nào để cắt).
+        val sources = listOf(
+            CameraSignalPolicy.SOURCE_PANO to context.getString(R.string.kachi_camera_source_pano),
+            CameraSignalPolicy.SOURCE_CHANNEL to context.getString(R.string.kachi_camera_source_channel),
+        )
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_source_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_source_row), sources, bridge.cameraSource(),
+        ) { v -> bridge.setCameraSource(v) })
         val spans = listOf(
             CameraSignalPolicy.SPAN_NARROW to context.getString(R.string.kachi_camera_span_narrow),
             CameraSignalPolicy.SPAN_STRIP to context.getString(R.string.kachi_camera_span_strip),
@@ -180,12 +189,12 @@ class SettingsCarSection(
      * đọc được giá trị hiện tại ngay giữa hai nút. Bước nhảy lấy từ `:core` [CameraDewarpPrefs], không gõ số ở đây.
      *
      * ## Thứ tự hàng = thứ tự CHỈNH khuyên dùng trên xe, không phải thứ tự chữ cái
-     * **tâm → K → tiêu cự → phóng → độ nắn** (`camera-dewarp-math.md` §4): `K` quyết *"thẳng hay không"*, `F` chỉ
+     * **tâm → K → tiêu cự → phóng → độ nắn → dịch** (`camera-dewarp-math.md` §4): `K` quyết *"thẳng hay không"*, `F` chỉ
      * quyết *"rộng hay hẹp"*, và tâm sai thì mọi thứ sau đó vô nghĩa (một bên thẳng, bên kia còng). Đặt *Độ nắn* lên
      * đầu — chỗ trực giác muốn — sẽ dẫn owner đi kéo đúng cái núm KHÔNG chữa được bệnh cong.
      *
      * ## Không khoá hàng khi chip Kết xuất ≠ GL
-     * Cố ý: cả bảy khoá đều **vô hại** ở hai đường kia (không ai đọc chúng), và khoá hàng theo một chip ở trên sẽ
+     * Cố ý: cả chín khoá đều **vô hại** ở hai đường kia (không ai đọc chúng), và khoá hàng theo một chip ở trên sẽ
      * biến một lượt thử *"đặt số trước, đổi chip sau"* thành một hàng mờ không giải thích được. Nhãn mục nói rõ
      * *"(khi chọn GL)"* — cùng cách `kachi_camera_shape_sub` nói ra cái chưa chắc thay vì ẩn đi (bài học U12).
      */
@@ -214,6 +223,14 @@ class SettingsCarSection(
         knob(body, R.string.kachi_camera_dewarp_amount, CameraDewarpPrefs.AMOUNT_STEP,
             CameraDewarpPrefs.AMOUNT_MIN, CameraDewarpPrefs.AMOUNT_MAX,
             { bridge.cameraDewarpAmount() }, { bridge.setCameraDewarpAmount(it) })
+        // Hai hàng DỊCH đứng **cuối**, sau khi hình học đã đúng (CLAUDE.md §6: đường mới luôn xuống cuối). Chúng
+        // không chữa được bệnh cong — chúng chỉ trượt khung — nên đặt lên trên sẽ dẫn owner kéo nhầm núm.
+        knob(body, R.string.kachi_camera_dewarp_pan_x, CameraDewarpPrefs.PAN_STEP,
+            CameraDewarpPrefs.PAN_MIN, CameraDewarpPrefs.PAN_MAX,
+            { bridge.cameraDewarpPanX() }, { bridge.setCameraDewarpPanX(it) })
+        knob(body, R.string.kachi_camera_dewarp_pan_y, CameraDewarpPrefs.PAN_STEP,
+            CameraDewarpPrefs.PAN_MIN, CameraDewarpPrefs.PAN_MAX,
+            { bridge.cameraDewarpPanY() }, { bridge.setCameraDewarpPanY(it) })
         body.addView(rows.note(context.getString(R.string.kachi_camera_dewarp_note)))
     }
 

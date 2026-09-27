@@ -39,11 +39,28 @@ class PanoramaHal(private val ctx: Context) {
         return out != null
     }
 
-    /** Tắt panorama (setPanoOperation OFF). */
+    /**
+     * Tắt panorama (`setPanoOperation OFF`).
+     *
+     * Mã trả về được ghi **cả dạng thập phân lẫn hex** ([decodeOp]) vì xe 27/09 ghi `close op=-2147482645` — một
+     * số đọc bằng mắt thì vô nghĩa, còn ở hex là `0x800003EB`, tức **bit 31 bật** (khuôn lỗi quen thuộc của HAL
+     * BYD) cộng mã `1003`. So với `open` cùng buổi trả `op=0` ⇒ [SUY] lượt tắt bị HAL từ chối/báo lỗi.
+     * **[CHƯA BIẾT]** bảng mã `1003` nghĩa gì — không có lớp `BYDAutoPanoramaDevice` nào trong workspace để tra;
+     * chốt bằng `dumpsys`/một lượt so mã ở buổi xe sau (G8).
+     */
     fun close(): Boolean {
         val op = gw.namedInt(FQN, "setPanoOperation", intArrayOf(WORK_OFF))
-        Log.i(TAG, "close op=$op")
+        Log.i(TAG, "close op=${decodeOp(op)}")
         return op != null
+    }
+
+    /** `-2147482645` → `-2147482645 (0x800003EB · LỖI? bit31 + mã 1003)`; `0`/`null` giữ nguyên chữ. */
+    internal fun decodeOp(op: Long?): String {
+        if (op == null) return "null"
+        if (op >= 0) return op.toString()
+        val u = op.toInt().toLong() and 0xFFFFFFFFL
+        // ASCII: dòng `logcat`/runbook, không phải chữ trên màn (LauncherI18nContractTest bắt mọi chuỗi có dấu).
+        return "$op (0x%08X err-bit31 code=%d)".format(u, u and 0x7FFFFFFFL)
     }
 
     /** Đọc trạng thái hiện (cho chẩn đoán/runbook). null = off-car. */

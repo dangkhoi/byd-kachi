@@ -5,6 +5,7 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.util.Log
 import android.view.Surface
 import java.nio.ByteBuffer
@@ -73,6 +74,7 @@ internal class CameraGlRenderer(
     private var uK = -1
     private var uScale = -1
     private var uAspect = -1
+    private var uPan = -1
     private var uCenter = -1
 
     private var input: SurfaceTexture? = null
@@ -224,8 +226,15 @@ internal class CameraGlRenderer(
      * **ASCII**, cùng luật mã lỗi của cầu kiểm thử: chuỗi này đi vào JSON mà script đọc, và `busySkip` còn là đúng
      * token Electro dùng (RE §4.3 @0x4878a) nên một lượt `grep busySkip` bắt được cả hai bên.
      */
-    fun stats(): String =
-        if (broken) "frames=$frames busySkip=$busySkip broken=true" else "frames=$frames busySkip=$busySkip"
+    fun stats(): String = "frames=$frames busySkip=$busySkip fpsSkip=$fpsSkip fpsCap=${CameraSignalPolicy.RENDER_FPS_CAP}" +
+        if (broken) " broken=true" else ""
+
+    /** Số lượt bị **trần nhịp** bỏ (đã `updateTexImage`, không vẽ) — đọc trên xe để chốt nhịp thật. */
+    private var fpsSkip = 0L
+
+    /** Mốc lượt VẼ gần nhất (ms đơn điệu); `0` = chưa vẽ lượt nào ⇒ lượt đầu không bị chặn. */
+    private var lastPaintMs = 0L
+    private val MIN_PAINT_GAP_MS = CameraSignalPolicy.renderMinGapMs()
 
     // ── Trên luồng vẽ ────────────────────────────────────────────────────────────────────────────
 
@@ -286,7 +295,14 @@ internal class CameraGlRenderer(
             if (broken) return
             val st = input ?: return
             if (!egl.ready) return
+            // `updateTexImage` LUÔN chạy, kể cả lượt bị trần nhịp bỏ: không nhận khung thì `BufferQueue` đầy và
+            // producer của HAL có thể nghẽn — đổi một vấn đề giật lấy một vấn đề đứng hình.
             st.updateTexImage()
+            // TRẦN NHỊP VẼ (2.75 · CAM-B4): [ĐO] HAL đẩy ~34 fps dù xin 15 ⇒ giật 11,15 %, CPU 10,7 %. Bỏ phần
+            // ĐẮT (shader + `eglSwapBuffers` chờ vsync); con số + lý do 3/4 chu kỳ ở [CameraSignalPolicy].
+            val now = SystemClock.elapsedRealtime()
+            if (lastPaintMs != 0L && now - lastPaintMs < MIN_PAINT_GAP_MS) { fpsSkip++; return }
+            lastPaintMs = now
             if (uniforms.texMatrix) st.getTransformMatrix(texMatrix) else IDENTITY.copyInto(texMatrix)
             if (frames == 0L && uniforms.texMatrix) CameraGlInfo.recordTexMatrix(texMatrix)
             paint(viewW, viewH)
@@ -353,6 +369,7 @@ internal class CameraGlRenderer(
         GLES20.glUniform1f(uScale, d.scale)
         GLES20.glUniform1f(uAspect, u.aspect)
         GLES20.glUniform2f(uCenter, d.centerX, d.centerY)
+        GLES20.glUniform2f(uPan, d.panX, d.panY)
         GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_FLOAT, false, 0, posBuf)
         GLES20.glEnableVertexAttribArray(aPosition)
         GLES20.glVertexAttribPointer(aTexCoord, 2, GLES20.GL_FLOAT, false, 0, texBuf)
@@ -379,45 +396,23 @@ internal class CameraGlRenderer(
         uK = GLES20.glGetUniformLocation(program, "uK")
         uScale = GLES20.glGetUniformLocation(program, "uScale")
         uAspect = GLES20.glGetUniformLocation(program, "uAspect")
+        uPan = GLES20.glGetUniformLocation(program, "uPan")
         uCenter = GLES20.glGetUniformLocation(program, "uCenter")
         val missing = CameraDewarpShader.UNIFORMS.filter { GLES20.glGetUniformLocation(program, it) < 0 }
         if (missing.isNotEmpty()) Log.w(PanoramaHal.TAG, "GL uniform KHÔNG tìm thấy: $missing (khung sẽ sai)")
     }
 
-    /** Vẽ một lượt **thô** vào FBO cỡ [w]×[h] rồi đọc pixel về. Trên luồng vẽ. */
-    private fun readback(w: Int, h: Int): IntArray? {
-        val fbo = IntArray(1)
-        val tex = IntArray(1)
-        GLES20.glGenTextures(1, tex, 0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex[0])
-        GLES20.glTexImage2D(
-            GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, w, h, 0,
-            GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null,
-        )
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-        GLES20.glGenFramebuffers(1, fbo, 0)
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo[0])
-        GLES20.glFramebufferTexture2D(
-            GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, tex[0], 0,
-        )
-        val status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)
-        var out: IntArray? = null
-        if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
-            Log.w(PanoramaHal.TAG, "GL FBO ${w}x$h không hoàn chỉnh: 0x${Integer.toHexString(status)}")
-        } else {
-            val saved = raw
-            raw = true
-            runCatching { paint(w, h) }
-            raw = saved
-            val buf = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
-            GLES20.glReadPixels(0, 0, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf)
-            out = CameraGlProgram.argbFlipped(buf, w, h)
-        }
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-        GLES20.glDeleteFramebuffers(1, fbo, 0)
-        GLES20.glDeleteTextures(1, tex, 0)
-        return out
+    /**
+     * Một lượt chụp **THÔ** cỡ [w]×[h] qua FBO ([CameraGlReadback]) — trên luồng vẽ, đọc bộ uniform `passthrough`.
+     *
+     * Cờ [raw] bật/tắt **quanh** phép vẽ chứ không truyền qua tham số: [paint] nằm trong đường khung hình và
+     * không được nhận thêm đối số chỉ vì một lượt chụp lẻ (xem KDoc [raw]).
+     */
+    private fun readback(w: Int, h: Int): IntArray? = CameraGlReadback.into(w, h) { pw, ph ->
+        val saved = raw
+        raw = true
+        runCatching { paint(pw, ph) }
+        raw = saved
     }
 
     /**

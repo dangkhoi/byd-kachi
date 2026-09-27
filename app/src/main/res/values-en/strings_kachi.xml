@@ -691,7 +691,13 @@
     <string name="kachi_camera_dewarp_focal">Focal — larger = narrower, zoomed in</string>
     <string name="kachi_camera_dewarp_scale">Zoom — larger = WIDER view (things look smaller)</string>
     <string name="kachi_camera_dewarp_amount">Amount — 0 % is the raw image</string>
-    <string name="kachi_camera_dewarp_note">The defaults are DERIVED from geometry, not measured on the car: 100 % = exactly the derived value for the mirror area in use. Black corners mean the mapping reached outside the image circle — lower Zoom.</string>
+    <string name="kachi_camera_dewarp_pan_x">Pan X — negative moves toward the car\'s rear, on BOTH mirrors (picture stays straight)</string>
+    <string name="kachi_camera_dewarp_pan_y">Pan Y — negative moves up (picture stays straight)</string>
+    <string name="kachi_camera_dewarp_note">The defaults are DERIVED from geometry, not measured on the car: 100 % = exactly the derived value for the mirror area in use. Black corners mean the mapping reached outside the image circle — lower Zoom. The two Pan rows only SLIDE the window, they never bend it — use them to reframe, not Centre.</string>
+    <string name="kachi_camera_source_sub">Mirror camera source — the stitched 4-camera frame (old) or ONE camera on its own (sharper, full lens circle)</string>
+    <string name="kachi_camera_source_row">Source</string>
+    <string name="kachi_camera_source_pano">Stitched</string>
+    <string name="kachi_camera_source_channel">Single camera</string>
     <string name="kachi_camera_span_sub">Width of the mirror area cut from the stitched camera frame (wider = more view, more distortion)</string>
     <string name="kachi_camera_span_row">Mirror area width</string>
     <string name="kachi_camera_span_narrow">Narrow slice (default)</string>

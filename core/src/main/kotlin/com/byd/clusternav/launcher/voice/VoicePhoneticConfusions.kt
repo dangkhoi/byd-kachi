@@ -133,6 +133,13 @@ internal object VoicePhoneticConfusions {
 
         /** Corpus tổng hợp trên host (`docs/diagnostics/voice-mishear-2026-09-16.md` §5 · `aliases-proposed.tsv`). */
         HOST,
+
+        /**
+         * **Nhật ký của XE đang lăn bánh** — `KachiVoiceSession` in ra cả chuỗi nghe được lẫn ý định, nên một cặp
+         * ở mức này có thêm một thứ mà [REC] không có: **bằng chứng người lái nói lại cùng một câu và lần sau
+         * chạy đúng**, tức cái sai nằm ở tầng nghe chứ không ở câu nói.
+         */
+        CAR,
     }
 
     /**
@@ -171,6 +178,11 @@ internal object VoicePhoneticConfusions {
         Observed("kính", "kín", Seen.HOST, "emulator-voice-e2e-2026-09-15 §3 L3 — «mở kính trước trái»"),
         Observed("sưởi", "sửi", Seen.HOST, "mishear §5 · ghế sưởi"),
         Observed("sưởi", "sữa", Seen.HOST, "mishear §5"),
+        // [ĐO xe 2026-09-27 10:44] «sưởi ghế lái» ra *"chửi ghế lái"* ⇒ NO_VERB **hai lượt liền** (10:44:02 ·
+        // 10:44:11); lượt thứ ba mô hình in ra *"sưởi ghế lái"* và câu chạy đúng (`Control(seath=1)`) ⇒ cái sai ở
+        // tầng NGHE, không ở câu nói. Quy luật không phủ được cặp này: bỏ dấu ra `suoi`/`chui` — `s`↔`ch` không
+        // nằm trong [INITIALS] (ở đó chỉ có `s`↔`x` và `tr`↔`ch`) và `uoi`↔`ui` không phải một cặp vần đã khai.
+        Observed("sưởi", "chửi", Seen.CAR, "log xe 10:44:02 · 10:44:11 — «sưởi ghế lái» → CHỬI GHẾ LÁI"),
         Observed("nhiệt", "mật", Seen.REC, "owner #51 — «nhiệt độ …» → TÁM MẬT ĐỘ"),
         Observed("mở", "ở", Seen.REC, "miennam-c #31 — «mở cốp sau» → Ở CẤP SAU"),
         Observed("mở", "mã", Seen.REC, "owner #50 — «mở máy lạnh» → BẢY MÃ MÁY LẠNH"),

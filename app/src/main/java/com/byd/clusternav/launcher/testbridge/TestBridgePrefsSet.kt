@@ -14,7 +14,9 @@ import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRender
 import com.byd.clusternav.cameraRender
+import com.byd.clusternav.setCameraSource
 import com.byd.clusternav.setCameraSpan
+import com.byd.clusternav.cameraSource
 import com.byd.clusternav.cameraSpan
 import com.byd.clusternav.setCameraShape
 import com.byd.clusternav.cameraShape
@@ -26,6 +28,8 @@ import com.byd.clusternav.setCameraHalMode
 import com.byd.clusternav.cameraHalMode
 import com.byd.clusternav.cameraDewarpAmount
 import com.byd.clusternav.cameraDewarpCx
+import com.byd.clusternav.cameraDewarpPanX
+import com.byd.clusternav.cameraDewarpPanY
 import com.byd.clusternav.cameraDewarpCy
 import com.byd.clusternav.cameraDewarpFocal
 import com.byd.clusternav.cameraDewarpK
@@ -33,6 +37,8 @@ import com.byd.clusternav.cameraDewarpScale
 import com.byd.clusternav.cameraGlTexMatrix
 import com.byd.clusternav.setCameraDewarpAmount
 import com.byd.clusternav.setCameraDewarpCx
+import com.byd.clusternav.setCameraDewarpPanX
+import com.byd.clusternav.setCameraDewarpPanY
 import com.byd.clusternav.setCameraDewarpCy
 import com.byd.clusternav.setCameraDewarpFocal
 import com.byd.clusternav.setCameraDewarpK
@@ -199,6 +205,8 @@ internal object TestBridgePrefsSet {
             // [CameraPanoCrop]), KHÔNG viết số ở đây — bản sao thứ hai của một con số sẽ lệch đúng vào lần ai đó nới
             // dải. Ngoài dải ⇒ `bad_prefs_value:`, không kẹp im lặng: một lượt dò gõ `camera_strip_left 7` rồi được
             // kẹp về 1 sẽ báo "đã ghi" trong khi owner đang nhìn đúng dải cũ và kết luận sai về hướng của dải.
+            "camera_source" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isSource(it) }
+                ?.let { Prefs.setCameraSource(app, v = it); it }
             "camera_span" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isSpan(it) }
                 ?.let { Prefs.setCameraSpan(app, v = it); it }
             "camera_shape" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isShape(it) }
@@ -227,6 +235,10 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraDewarpCx(app, v = it); it.toString() }
             "camera_dewarp_cy" -> int(raw)?.takeIf { CameraDewarpPrefs.isCenterPct(it) }
                 ?.let { Prefs.setCameraDewarpCy(app, v = it); it.toString() }
+            "camera_dewarp_pan_x" -> int(raw)?.takeIf { CameraDewarpPrefs.isPanPct(it) }
+                ?.let { Prefs.setCameraDewarpPanX(app, v = it); it.toString() }
+            "camera_dewarp_pan_y" -> int(raw)?.takeIf { CameraDewarpPrefs.isPanPct(it) }
+                ?.let { Prefs.setCameraDewarpPanY(app, v = it); it.toString() }
             // Công tắc, không phải núm — nó là một PHÉP ĐO cho RE §7 Q17 (xem KDoc `Prefs.cameraGlTexMatrix`).
             "camera_gl_texmatrix" -> bool(raw)?.let { Prefs.setCameraGlTexMatrix(app, it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
@@ -278,6 +290,7 @@ internal object TestBridgePrefsSet {
             "camera_rot_left" -> Prefs.cameraRotation(app, left = true)
             "camera_rot_right" -> Prefs.cameraRotation(app, left = false)
             "camera_render" -> Prefs.cameraRender(app)
+            "camera_source" -> Prefs.cameraSource(app)
             "camera_span" -> Prefs.cameraSpan(app)
             "camera_shape" -> Prefs.cameraShape(app)
             "camera_strip_left" -> Prefs.cameraStrip(app, left = true).toString()
@@ -290,6 +303,8 @@ internal object TestBridgePrefsSet {
             "camera_dewarp_scale" -> Prefs.cameraDewarpScale(app).toString()
             "camera_dewarp_cx" -> Prefs.cameraDewarpCx(app).toString()
             "camera_dewarp_cy" -> Prefs.cameraDewarpCy(app).toString()
+            "camera_dewarp_pan_x" -> Prefs.cameraDewarpPanX(app).toString()
+            "camera_dewarp_pan_y" -> Prefs.cameraDewarpPanY(app).toString()
             "camera_gl_texmatrix" -> Prefs.cameraGlTexMatrix(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()

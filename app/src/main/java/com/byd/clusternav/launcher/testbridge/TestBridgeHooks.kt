@@ -91,13 +91,18 @@ internal class TestBridgeHooks(
      */
     val cameraFrame: (Int, Int) -> com.byd.clusternav.launcher.camera.CameraFrameShot? = { _, _ -> null },
     /**
-     * `camera_synth` — bật/tắt bơm ảnh fisheye TỔNG HỢP thay HAL (R8-B). Trả cờ **đọc lại** sau lượt đặt.
+     * `camera_synth` — bật/tắt bơm ảnh TỔNG HỢP **hoặc một PNG THẬT** thay HAL (R8-B; tệp từ 2.75). Trả cờ **đọc
+     * lại** sau lượt đặt.
+     *
+     * Tham số thứ hai = **tên tệp đã lọc** trong `getExternalFilesDir(null)` (rỗng = ảnh sinh bằng mô hình). Nó có
+     * mặt để một lượt kiểm chạy được trên **khung fisheye thật chụp từ xe** chứ không chỉ trên ảnh do chính mô hình
+     * đang kiểm vẽ ra — CLAUDE.md §14 (ảnh sinh chỉ nói *"cài đặt đúng"*, không nói gì về ống kính thật).
      *
      * Đi qua controller (`CameraSignalController.setSynth`) chứ không tự dựng producer: producer phải gắn vào ĐÚNG
      * `Surface` mà tầng vẽ đang giao cho HAL, và chỉ controller biết `Surface` ấy. Mặc định trả `false` để mọi bài
      * test dựng móc bằng tay không phải khai thêm lambda — cùng khuôn [cameraTick].
      */
-    val cameraSynth: (Boolean) -> Boolean = { false },
+    val cameraSynth: (Boolean, String) -> Boolean = { _, _ -> false },
     /**
      * `camera_frame --es name raw` — chụp một khung **THÔ** (chưa nắn) qua FBO của đường GL, ARGB hàng-trên-trước.
      *
@@ -229,7 +234,9 @@ internal fun Activity.attachTestBridge(
             },
             // `camera_synth` PHẢI dựng controller nếu chưa có (khác hai móc chỉ-ĐỌC trên): nó là một lệnh **đổi**
             // trạng thái, và câu trả lời đúng cho *"bật ảnh tổng hợp"* khi chưa ai bật camera không phải là im lặng.
-            cameraSynth = { on -> com.byd.clusternav.AppContainer.get(this).cameraSignal.setSynth(on) },
+            cameraSynth = { on, file ->
+                com.byd.clusternav.AppContainer.get(this).cameraSignal.setSynth(on, file)
+            },
             cameraFrameRaw = { w, h ->
                 val c = com.byd.clusternav.AppContainer.get(this)
                 if (c.cameraSignalCreated) c.cameraSignal.grabRawFrame(w, h) else null

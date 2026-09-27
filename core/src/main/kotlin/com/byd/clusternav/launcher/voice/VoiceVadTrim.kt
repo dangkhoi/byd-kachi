@@ -102,6 +102,50 @@ object VoiceVadTrim {
     /** `margin 0` — điểm lưới đã chọn. Chừa thêm đuôi là đi ngược đúng phát hiện §6. */
     const val MARGIN_MS = 0
 
+    // ── CẮT ĐẦU (im lặng DẪN ĐẦU) — VOICE-HEAD-SILENCE, [ĐO xe 2026-09-27] ──────────────────────
+
+    /**
+     * Giữ lại ngần này **trước** mốc bắt đầu tiếng khi phải cắt đầu. **0,30 s.**
+     *
+     * ## ⚠ Con số này là cái chặn đúng phát hiện §8 đã đo, không phải một biên "cho chắc"
+     * Bảng §8 đo **ba** cách cắt, và cách tệ nhất là `segment` — *"chỉ giữ đoạn VAD"*, tức cắt **đúng tại** mốc
+     * bắt đầu tiếng: **8/25**, vì *"VAD mở đoạn muộn ⇒ nuốt mất từ đầu câu"* (*"bật đèn đọc"* → *"ĐÈN ĐỌC SÁCH"*).
+     * Nghĩa là mốc `segment.start` của Silero **đã** trễ so với âm đầu tiên của từ đầu — phụ âm bật hơi (`m` của
+     * *"mở"*, `v` của *"vietmap"*) có năng lượng thấp nên nó chỉ vượt ngưỡng 0,45 sau khi nguyên âm đã vào.
+     *
+     * 0,30 s = **3×** [MIN_SPEECH_MS] (100 ms — lượng tiếng tối thiểu để Silero **mở** một đoạn), nên nó phủ trọn
+     * phần trễ do chính luật mở đoạn gây ra, cộng biên. Và nó rất xa vùng độc của §6 (đuôi/đầu im lặng 0,75 s đã
+     * kéo 22/25 xuống 15/25).
+     */
+    const val PRE_ROLL_MS = 300
+
+    /**
+     * Chỉ cắt đầu khi im lặng dẫn đầu **dài hơn** ngần này. **1,20 s.**
+     *
+     * ## Vì sao có một cổng, thay vì cắt đầu ở mọi lượt
+     * Chế độ `head` (giữ **nguyên** phần đầu cửa sổ) là thứ §8 đo được **21/25** — cao nhất trong ba cách. Cắt đầu
+     * ở mọi lượt là **đổi** đường đã đo tốt lấy một đường chưa đo, đúng điều CLAUDE.md §6 cấm (*"đường mới luôn
+     * xuống cuối, và phải tự đo xem đường cũ có thật sự hụt không rồi mới leo"*). Cổng này là phép *"tự đo"* ấy:
+     * lượt nào im lặng dẫn đầu còn ngắn thì **không có gì đổi** — cùng một mảng mẫu, cùng một chuỗi chữ.
+     *
+     * ## Con số 1,20 s đến từ đâu — [ĐO xe 2026-09-27, 22 lượt + 30 bản thu 26–27/09]
+     * | im lặng dẫn đầu (`tieng_bat_dau`) | lượt | kết quả |
+     * |---|---|---|
+     * | 220 · 412 · 636 ms | phần lớn | nghe đúng |
+     * | 1 020 ms | 10:31:03 | nghe đúng |
+     * | **1 212 · 1 436 · 1 820 ms** | 10:36:15 · 10:42:44 ×2 · 10:36:56 | vế *"vào ô"* rụng |
+     * | **6 012 ms** (chạm trần 8 s) | 10:36:52 | *"mở vietmap **hai**"* — mất cả *"vào ô số"* |
+     *
+     * Trần đặt **trên** mọi giá trị đã nghe đúng (1 020 ms) và **dưới** mọi giá trị đã nghe sai (1 212 ms) ⇒ trên
+     * bộ 30 bản thu thật 26–27/09, **0 bản** đổi điểm cắt (mốc bắt đầu tiếng của chúng: 220…1 020 ms) và mọi lượt
+     * bệnh đều được cắt. Đây là thứ làm bản vá này **không thể** làm hụt một ca đang chạy.
+     *
+     * ⚠ 6 giây im lặng nạp vào bộ giải mã không phải một khoản CPU thừa — nó là **độ chính xác**: bảng §6 đo đúng
+     * quan hệ *"im lặng nối thêm ⇒ sai nhiều hơn"* (22/25 → 6/25 với 4 s). Bản này chỉ cắt ở **đầu** thứ mà
+     * [headTrimSamples] đã cắt ở **đuôi** từ 2026-09-16, bằng cùng một lẽ.
+     */
+    const val HEAD_SILENCE_CUT_MS = 1_200
+
     // ── Dải cho phép của ba núm ẩn (`prefs_set`) ────────────────────────────────────────────────
 
     /** Dưới 0,20 thì tiếng ồn cabin thành "giọng"; trên 0,90 thì giọng nhỏ bị bỏ. */
@@ -179,6 +223,31 @@ object VoiceVadTrim {
     }
 
     /**
+     * ═══ VOICE-HEAD-SILENCE — mẫu ĐẦU TIÊN được đưa vào bộ giải mã ═══════════════════════════════════════════
+     *
+     * @param segments các đoạn VAD đã chốt (thứ tự bất kỳ).
+     * @param windowSamples tổng số mẫu đã thu.
+     * @param preRollSamples giữ lại ngần này trước mốc bắt đầu tiếng ([PRE_ROLL_MS]).
+     * @param cutAboveSamples chỉ cắt khi im lặng dẫn đầu **vượt** ngần này ([HEAD_SILENCE_CUT_MS]).
+     * @return chỉ số mẫu đầu: bộ giải mã đọc `pcm[kếtQuả until headTrimSamples(...)]`.
+     *
+     * Ba lẽ của ba dòng thân hàm đều nằm ở KDoc [PRE_ROLL_MS] và [HEAD_SILENCE_CUT_MS]. Riêng ca **không có đoạn
+     * nào** ⇒ trả `0`, cùng nhánh *"VAD không nổ ⇒ giải mã nguyên cửa sổ"* của [headTrimSamples]: không biết tiếng
+     * bắt đầu ở đâu thì không được cắt ở đâu cả.
+     */
+    fun headStartSamples(
+        segments: List<Segment>,
+        windowSamples: Int,
+        preRollSamples: Int,
+        cutAboveSamples: Int,
+    ): Int {
+        if (windowSamples <= 0) return 0
+        val onset = segments.minOfOrNull { it.startSample } ?: return 0
+        if (onset <= cutAboveSamples) return 0
+        return (onset - preRollSamples).coerceIn(0, windowSamples)
+    }
+
+    /**
      * ═══ VOICE-OPEN-TURN — khúc mẫu của **vế SAU**, khi lượt nghe được giữ mở qua một quãng ngừng ═══════════
      *
      * @param segments **toàn bộ** đoạn đã chốt của lượt (kể cả các đoạn của vế trước).
@@ -204,10 +273,21 @@ object VoiceVadTrim {
         fromIndex: Int,
         windowSamples: Int,
         marginSamples: Int = 0,
+        /**
+         * Giữ lại ngần này **trước** mốc bắt đầu của vế sau ([PRE_ROLL_MS]) — cùng lẽ [headStartSamples]: mốc
+         * `segment.start` của Silero trễ so với phụ âm đầu, và §8 đo được cắt đúng tại mốc ấy chỉ cho **8/25**.
+         *
+         * ⚠ Chặn dưới là **điểm hết tiếng của vế TRƯỚC**: lùi quá mốc đó là kéo lại tiếng của vế trước vào lượt
+         * giải mã vế sau, tức [VoiceOpenTurn.join] phải gỡ một phần trùng dài hơn — đúng thứ nó đã phải làm, nhưng
+         * không cần thiết. Không có vế trước (fromIndex = 0) ⇒ chặn dưới là 0.
+         */
+        preRollSamples: Int = 0,
     ): IntRange? {
         if (windowSamples <= 0 || fromIndex < 0 || fromIndex >= segments.size) return null
         val tail = segments.subList(fromIndex, segments.size)
-        val start = tail.minOf { it.startSample }.coerceIn(0, windowSamples)
+        val floor = segments.take(fromIndex).maxOfOrNull { it.endSample } ?: 0
+        val onset = tail.minOf { it.startSample }
+        val start = maxOf(floor, onset - preRollSamples).coerceIn(0, windowSamples)
         val end = minOf(windowSamples, tail.maxOf { it.endSample } + marginSamples)
         return if (end <= start) null else start until end
     }

@@ -109,7 +109,7 @@ canh đúng điều đó (đã **mutation-check**: chèn một `FloatArray(16)` 
 
 ---
 
-## 2. Bảy pref — owner chỉnh gì trên xe
+## 2. Chín pref — owner chỉnh gì trên xe
 
 Tất cả **theo XE** (`clusternav_prefs`, cùng họ `camera_render`/`camera_span`), tất cả nằm trong danh sách trắng
 `prefs_set`, tất cả có hàng trong *Cài đặt › Tiện nghi xe › Nắn méo (khi chọn GL)*.
@@ -122,6 +122,8 @@ Tất cả **theo XE** (`clusternav_prefs`, cùng họ `camera_render`/`camera_s
 | `camera_dewarp_focal` | `25..400` % | `100` | `F` — tiêu cự khung RA, % của giá trị suy ra. Lớn = **hẹp hơn**, phóng to | vật ở giữa to/nhỏ bất thường |
 | `camera_dewarp_scale` | `25..400` % | `100` | `SCALE`. ⚠ Lớn = với **sâu hơn** vào fisheye ⇒ thấy **RỘNG hơn** | **viền đen ở góc** = đã với ra ngoài vòng ảnh ⇒ hạ xuống |
 | `camera_dewarp_amount` | `0..100` % | `100` | cường độ **TRỘN**. `0` = y ảnh thô 2.73 | nắn quá tay (mép bị kéo dãn) ⇒ hạ về `60–80` |
+| `camera_dewarp_pan_x` | `-50..50` % | `0` | **dịch CỬA SỔ** theo x của ô **chưa xoay** (2.75 — xem §"Xe 27/09" B) | khung lệch chỗ muốn nhìn ⇒ đây mới là núm, KHÔNG phải `cx` |
+| `camera_dewarp_pan_y` | `-50..50` % | `0` | dịch cửa sổ theo y của ô chưa xoay | như trên, theo trục dọc |
 | `camera_gl_texmatrix` | `on`/`off` | `on` | áp `getTransformMatrix` hay truyền ma trận đơn vị | ảnh **lật dọc** hoặc lệch ⇒ thử tắt; chính điều đó là câu trả lời cho RE §7 **Q17** |
 
 ### 2.1 Vì sao là PHẦN TRĂM của bộ suy ra, không phải trị tuyệt đối của `F`/`K`
@@ -334,3 +336,276 @@ adb logcat -d -s KachiCamera | grep "GL frames="
 | G4 | Bán kính + tâm vòng ảnh thật, ống kính equidistant hay equisolid | 🚗 CAM-B2 (kế thừa D1/D2 của `camera-dewarp-math.md`) |
 | G5 | `lockCanvas` trên `Surface` của `SurfaceTexture` có chạy trên **ROM đầu xe** không | 🚗 chỉ ảnh hưởng `camera_synth` (lệnh đo), không ảnh hưởng đường camera thật |
 | G6 | Sáu tham số nắn đúng cho xe này | 🚗 CAM-B3 — mắt owner; không có đường off-car nào |
+
+---
+
+## Xe 27/09 — lỗi xoay + pan
+
+Buổi xe sáng 27/09 (Seal, Adreno 610, bản 2.74 (175), gương trái, `camera_render = GL`, `camera_span = STRIP`
+dải 1). Mục này ghi **hai** kết quả: một nghi vấn bị **bác bằng số**, và một núm mới sinh ra từ yêu cầu của owner.
+
+### A. *"Khung ↺90 cong hơn khung rot 0"* — **KHÔNG phải lỗi xoay** [ĐO]
+
+Hiện tượng báo về: cùng bộ tham số (`F` 65 % ⇒ `0,2940` · `K` 100 % ⇒ `0,4523` · `S` 134 % · độ nắn 100 % · tâm
+`(0,5, 0,5)`), khung ở `camera_rot_left = 0` trông thẳng, khung ở `L90` trông **cong** ở đoạn giữa. Giả thuyết ban
+đầu: nhánh xoay hợp tỉ lệ khung/góc xoay **sai thứ tự**, hoặc lấy tỉ lệ **cửa sổ** thay vì tỉ lệ ô **nguồn**.
+
+Phép đo chốt lại giả thuyết ấy — hai ảnh do chính `camera_frame` chụp trên xe, cách nhau ~1 phút, xe đứng yên
+trong hầm:
+
+| Ảnh | Cỡ | Phép so |
+|---|---|---|
+| `gl-left-rot0-f65.png` | `1280×960` | xoay **CCW 90°** rồi trừ ảnh kia |
+| `gl-left-f65.png` (`L90`) | `960×1280` | — |
+
+⇒ lệch **trung bình 3,11/255**, **p95 = 9/255** (nhiễu cảm biến + nén của hai lượt chụp khác nhau). So chiều
+**CW** cho `37,9` ⇒ phép so không phải trùng khớp ngẫu nhiên.
+
+**Kết luận [ĐO]: `L90` đã đúng bằng ảnh `rot 0` xoay lại.** Không có lỗi thứ tự nào để sửa. Cái cong owner thấy có
+ở **cả hai** góc — nó thuộc về bộ tham số ống kính (G4: equidistant hay equisolid vẫn **[CHƯA BIẾT]**), không thuộc
+về góc xoay. Ở `rot 0` mắt bám cây cột (đường **qua** trục quang ⇒ luôn thẳng dù méo), ở `L90` mắt bám vạch kẻ
+đường (đường **lệch** trục quang ⇒ chỗ méo lộ ra) — cùng một ảnh, hai thứ được nhìn.
+
+**Lý do cơ chế** (`CameraDewarp.kt:453-466` — `sample`, và `CameraDewarpShader.kt:101-113`): `rotateDstToLocal`
+là một phép **affine** trong toạ độ ô đã chuẩn hoá (`90° ⇒ (a,b) = (v, 1−u)`), và nó chạy **trước** phép nắn, còn
+`uAspect` là tỉ lệ ô **NGUỒN** nên **không** đổi theo góc xoay (`CameraGlUniforms.kt:23-25` bẫy 2). Hợp một phép
+affine với một phép xuyên tâm thì **tính thẳng được bảo toàn**: một góc ±90 chỉ có thể cho ra đúng ảnh `rot 0` đã
+xoay, không thể thêm một chút cong nào.
+
+Khoá lại bằng hai bài `:core` (**đã mutation-check**: đảo thành *nắn rồi mới xoay* ⇒ **cả hai đỏ**):
+`CameraDewarpRotatePanTest.xoay 90 chi la anh rot 0 da xoay` (2 ô không vuông × 3 góc × 81 điểm) và
+`CameraGlUniformsTest.do nan 100 thi xoay chi la anh rot 0 da xoay, ca 16 to hop`.
+
+### A2. *"Hình TRÒN ở rot 0 bị xoay"* (11:12) — **cũng KHÔNG phải lỗi hình TRÒN** [ĐO]
+
+Báo về: `camera_shape = ROUND` + `GL` + `STRIP` + `F55/K100/S130`, cửa sổ tròn `495×495` hiện cây cột E4 **nằm
+ngang**, trong khi cửa sổ chữ nhật cùng bộ số ở `rot 0` thì đứng.
+
+Đo lại off-car trên **chính khung xe chụp sáng nay** (`camera_synth --es name file:…`, máy ảo, cùng `F/K/S`):
+
+| Ca | Kết quả |
+|---|---|
+| `ROUND` + `rot 0` | **ĐỨNG** — cột E4 thẳng đứng, chữ đọc được (`round/v-ROUND-0.png`) |
+| `ROUND` + `L90` | cột nằm ngang, chữ xoay — **giống hệt ảnh owner gửi** (`round/v-ROUND-L90.png`) |
+| `ROUND L90` so với `ROUND rot 0` xoay CCW | lệch **trung bình 0,83/255** (chiều CW: 38,95) |
+
+⇒ hình TRÒN ở `rot 0` **đúng**, và ở `±90` nó cũng chỉ là ảnh `rot 0` đã xoay — y như hình chữ nhật.
+[SUY, độ tin cao] khung tròn trên xe lúc 11:12 đang chạy `camera_rot_left = L90` chứ không phải `0`. Chốt bằng một
+dòng: `adb logcat -d -s KachiCamera | grep "hình=ROUND"` và đọc trường `rot=` của **chính** dòng ấy (nó có sẵn
+trong `overlay show …`), hoặc `prefs_set --es key camera_rot_left` không kèm `--es text` để đọc lại.
+
+Hình TRÒN **đã** nằm trong ma trận kiểm từ 2.74: bài `duong GL va duong TextureView cung mot hinh hoc khi khong nan`
+đi hết `SPANS × SHAPES × 4 góc × 5 điểm` = 16 tổ hợp, và 2.75 thêm bài cùng ma trận ở **độ nắn 100 %**
+(`do nan 100 thi xoay chi la anh rot 0 da xoay, ca 16 to hop`). Ô vuông của hình TRÒN có `aspect = 1` nên nó là ca
+**dễ nhất**, không phải ca đặc biệt.
+
+### B. Núm mới `camera_dewarp_pan_x` / `_pan_y` — **dịch cửa sổ**, không dời tâm quang
+
+Cùng buổi, owner **duyệt** bộ `F 55 % (0,2488) · K 100 % (0,4523) · S 130 % · độ nắn 100 %` ở `rot 0`
+(*"thẳng và tự nhiên"*) rồi xin đúng một việc: *"chỉ cần dịch 1 tý ra sau nữa thôi"*. Hai đường có sẵn đều **bị
+bác tại chỗ**:
+
+| Đường thử | Kết quả | Vì sao |
+|---|---|---|
+| `scale` 140–145 % | **bác** — *"nặng"* | phóng ra là đổi FOV, không phải dời khung; vật nhỏ đi, mép kéo dãn |
+| `cx −10 %` | **bác** — hết thẳng | dời tâm quang = đổi **trục** của phép nắn ⇒ đồng-θ lệch khỏi vòng ảnh ⇒ một bên thẳng, bên kia còng |
+| **dịch cửa sổ** (mới) | **nhận** | tâm quang đứng yên; `dst → p` chỉ thêm một **số hạng hằng** ⇒ vẫn affine ⇒ đường thẳng **vẫn thẳng** |
+
+Cơ chế: `local = rot(dst) + pan` — một phép tịnh tiến đặt **giữa** xoay và nắn
+(`CameraDewarp.kt:281-291` `panLocal`, GLSL `CameraDewarpShader.kt:113-116` `local = local + uPan;`), tức trong ô
+**CHƯA XOAY**. Nhờ vậy `pan_x` mang **cùng một nghĩa vật lý ở mọi góc xoay**: gương trái dải 1 có đuôi xe ở mép
+**trái** ô ⇒ `pan_x` **âm** là *"ra sau"*, dù đang ở `rot 0` (lùi sang trái khung) hay `L90` (lùi xuống đáy khung).
+Owner không phải đổi núm khi đổi chip *Xoay*.
+
+| Khoá | Miền | Mặc định | Bước | Ý nghĩa |
+|---|---|---|---|---|
+| `camera_dewarp_pan_x` | `-50..50` % | `0` | `5` | dịch cửa sổ theo **x của ô chưa xoay**, % bề ngang ô. Âm = về phía đuôi xe (gương trái dải 1) |
+| `camera_dewarp_pan_y` | `-50..50` % | `0` | `5` | dịch theo **y của ô chưa xoay**, % bề cao ô |
+
+Bước `5 %` (không phải `1 %` của tâm): cửa sổ gương trên xe [ĐO] `371×495` px ⇒ `1 %` ≈ 4 px, dưới ngưỡng phân
+biệt khi ngồi trên xe; `5 %` ≈ 19–25 px. Trần `±50 %`: quá nửa ô thì tâm quang rơi hẳn ra ngoài cửa sổ.
+
+Hai hàng −/+ nằm **cuối** mục *Nắn méo* trong Cài đặt (CLAUDE.md §6 — đường mới xuống cuối): chúng **trượt** khung
+chứ không chữa bệnh cong, đặt lên trên sẽ dẫn owner kéo nhầm núm.
+
+### C. Số của vòng máy ảo (`scripts/emulator/camera-dewarp-e2e.sh`, 2.75)
+
+Vòng 2.74 chỉ đo ở `rot 0` — tức **không** đo ca mặc định của cả hai bên gương (trái ↺ −90 / phải ↻ +90). 2.75 đo
+cả ba góc; `camera_dewarp_check.py --axis auto` tự chọn trục khớp (chân trời nằm ngang ở `rot 0`, gần **dọc** sau
+khi xoay ±90) và lấy ngưỡng tuyệt đối theo bề **vuông góc** với nét, không luôn lấy bề cao.
+
+| Ca | trục | lệch tối đa trước (px) | sau | trung bình sau | Kết luận |
+|---|---|---|---|---|---|
+| `rot 0` | x | 48,62 | **3,34** | 0,74 | ĐẠT |
+| `L90` | y | 261,83 | **14,93** | 4,32 | ĐẠT |
+| `R90` | y | 261,76 | **14,93** | 4,32 | ĐẠT |
+| `L90` + `pan_x −20 %` | y | 249,78 | **14,89** | 4,37 | ĐẠT — **dịch không làm cong** |
+
+(`L90`/`R90` có số tuyệt đối lớn hơn `rot 0` vì khung chụp ra FBO cỡ luồng `5120×960`: sau khi xoay, trục đo là
+trục **ngang** dài 5120 px, nên cùng một độ cong tương đối cho nhiều px hơn. Ngưỡng là **tỉ số** nên phép so vẫn
+đúng; cột "trung bình sau" mới là con số so được giữa các hàng.)
+
+### D. Khung THẬT từ xe chạy qua đúng đường GL trên máy ảo
+
+`camera_synth --es name file:<tên>` (2.75) bơm một PNG trong `getExternalFilesDir(null)` thay ảnh sinh
+(`CameraSynthFeeder.fromFile`; tên tệp lọc bằng `TestBridgeSynth.safeName` — bỏ mọi thành phần thư mục, từ chối
+`..`/tên rỗng/tên bắt đầu bằng dấu chấm). Nhờ đó **khung `5120×960` chụp từ xe sáng nay** chạy được qua đúng chuỗi
+`Surface → SurfaceTexture(OES) → shader → TextureView` trên máy ảo, với đúng bộ số owner duyệt.
+
+Đo trên ba khung ấy:
+* `L90` so với `rot 0` xoay lại: bằng nhau (mục A).
+* `L90` so với `L90 + pan_x −20 %`: tương quan chéo cực đại **0,99999994** tại đúng **192 px = 20,0 %** bề cao
+  khung, không lệch một pixel — tức phép dịch là một **tịnh tiến thuần**, không kéo dãn, không cong. Đây là bằng
+  chứng bằng số cho điều owner cần: dịch được khung mà **không** đánh đổi độ thẳng.
+
+### E. Còn chưa biết sau buổi này
+
+| # | Chưa biết | Chốt bằng |
+|---|---|---|
+| G4 (nhắc lại) | ống kính AVM là equidistant hay equisolid — phần cong **còn lại** ở cả hai góc xoay thuộc về đây, không thuộc về phép xoay | 🚗 CAM-B2; hoặc dò `K`/`F` bằng mắt tới khi vạch kẻ thẳng ở **cả** vùng biên |
+| G7 | Trị `pan` owner thật sự muốn | 🚗 một buổi: `prefs_set camera_dewarp_pan_x` từng bước `−5` tới khi vừa mắt, rồi ghi `read_back` |
+
+---
+
+## Xe 27/09 — [P0] `BufferQueue has been abandoned` chạy mãi sau lượt đổi bên
+
+Bản 2.74 (175). Triệu chứng owner đo được: launcher ăn **3,5 % CPU lúc rảnh**, nhật ký phình **130 KB/phút** (trần
+2.73 là 20), `logcat` đầy một dòng lặp ở ~**16 dòng/giây** và **không bao giờ dứt** — **55 004 dòng** từ 09:58 tới
+10:58, dù trên màn **không có** overlay camera nào:
+
+```
+E/BufferQueueProducer( 4893): [SurfaceTexture-0-4893-0] dequeueBuffer: BufferQueue has been abandoned
+```
+
+### Nguyên nhân gốc [ĐO] — đổi BÊN không dỡ phiên cũ
+
+Mốc thời gian trong `kachi-logs/usage-1790477853304.log`:
+
+| Giờ | Dòng | Việc |
+|---|---|---|
+| 09:58:15,418 | `xi-nhan LEFT → … kết xuất=TV` | mở phiên LEFT |
+| 09:58:15,819 | `addPreviewSurface ok cameraId=1 mode=0` | HAL **nhận** `Surface` của `SurfaceTexture-0-4893-0` |
+| 09:58:26,017 | `xi-nhan RIGHT → …` | rẽ sang phải — **không** một lời `stopPreview`/`close` nào cho LEFT |
+| 09:58:26,**104** | dòng `abandoned` **đầu tiên** | 87 ms sau; từ đây lặp mãi |
+| 09:58:36,549 | `rmPreviewSurface(mode=0) rc=false` · `close op=…` | lượt dỡ này thuộc phiên **RIGHT**, không cứu được LEFT |
+
+Cả bản log chỉ có **một** hàng đệm kêu (`…-4893-0`, 55 004/55 004 dòng) — đúng hàng đệm của phiên duy nhất **không**
+đi qua đường dỡ. Bốn phiên có dỡ (09:58:36 · 09:59:25 · 10:02:21 · 10:04:28) đều im.
+
+Cơ chế: `CameraSignalController.tickMain` chỉ gọi `stop()` ở nhánh `Turn.NONE`. Khi `turn` đổi **từ một bên sang
+bên kia**, nó đi thẳng xuống `overlay.show(...)` — mà `CameraOverlayView.show()` mở đầu bằng `hide()` ⇒ lớp video cũ
+bị `release()` và `TextureView` bị gỡ ⇒ nền tảng **huỷ `SurfaceTexture`** (hàng đệm bị bỏ). Nhưng `avm.open(...)`
+thì **ghi đè** tham chiếu `AVMCamera` cũ mà không đóng nó, nên HAL vẫn giữ đúng `Surface` ấy và tiếp tục
+`dequeueBuffer` — vào một hàng đệm không còn ai tiêu thụ. Không có gì dừng nó cho tới khi tiến trình chết.
+
+### Bản vá 2.75
+
+1. `tickMain`: đổi bên ⇒ `closeSession(keepPano = true)` **trước** khi dựng phiên mới.
+   * **Không** dùng `stop()`: nó `hold.reset()` + huỷ hẹn giờ, mà `turn` vừa tính ra **từ** `hold` ⇒ xoá nền HOLD
+     ngay sau đó sẽ làm lượt sau đọc pha TẮT của đèn nháy thành NONE ⇒ overlay chớp giữa chuyến.
+   * `keepPano = true` ⇒ **không** tắt thiết bị panorama giữa hai lượt rẽ: một vòng `WORK_OFF → WORK_ON` là hành vi
+     chưa ai đo trên xe (CLAUDE.md §6), và con bọ nằm ở `AVMCamera` chứ không ở thiết bị panorama.
+2. Chuỗi dỡ tách thành `closeSession()` — **một** bản duy nhất, dùng chung cho `stop()` và lượt đổi bên. Thứ tự
+   **HAL trước, cửa sổ sau** (`avm.close()` → `hal.close()` → `overlay.hide()`): đảo lại là dựng lại đúng con bọ.
+3. `AvmCamera.close()`: `rmPreviewSurface` chuyển lên **giữa** `stopPreview` và `close`. [ĐO] cả bốn lượt trên xe
+   ghi `rc=false` vì nó đang bị gọi **sau** `close()` — HAL từ chối, tức móc đo ấy không đo được gì. Vị trí mới cũng
+   là thứ tự Electro dùng (`stop → rm → release`, RE §3.1). Cổng `rmOnClose` giữ nguyên ⇒ xe lúc chạy bình thường
+   vẫn đúng hai lời gọi của 2.73.
+4. `PanoramaHal.close()` ghi mã đã **giải**: `close op=-2147482645 (0x800003EB err-bit31 code=1003)`. So với
+   `open` trả `op=0` ⇒ [SUY] lượt tắt bị HAL báo lỗi; **[CHƯA BIẾT]** bảng mã `1003` (**G8**).
+
+Khoá bằng `CameraGlWiringContractTest.do phien cu TRUOC khi mo phien moi` (ghim cả bốn: có gọi `closeSession` khi
+đổi bên · `keepPano` · thứ tự `avm → hal → overlay.hide` · `rmPreviewSurface` nằm trước `close`).
+
+### ⚠ Máy ảo KHÔNG tái lập được con bọ này — cần một lượt kiểm trên XE
+
+[ĐO] chạy LEFT → RIGHT → LEFT → NONE trên máy ảo, cả `TV` lẫn `GL`, **trước và sau** bản vá: **0 dòng** `abandoned`
+ở cả hai. Lý do: máy ảo không có `android.hardware.AVMCamera`; producer là `CameraSynthFeeder` **trong cùng tiến
+trình**, và nó bị `CameraVideoLayer.release()` dừng ngay ở lượt `hide()`. Thứ rò trên xe là producer **native của
+HAL**, không có bản thế nào trên máy ảo. Vì vậy bản vá được chứng minh bằng (a) mốc thời gian ở trên, (b) bài canh
+thứ tự, và (c) **phải** có một lượt kiểm trên xe:
+
+### CAM-B5 · Đổi bên không để lại hàng đệm mồ côi (🚗 bắt buộc cho 2.75)
+
+```
+adb logcat -c
+# bật xi-nhan TRÁI ~5 s → chuyển thẳng sang xi-nhan PHẢI ~5 s → tắt hẳn, chờ 30 s
+adb logcat -d -s BufferQueueProducer:E | grep -c abandoned     # PHẢI = 0
+adb logcat -d -s KachiCamera | grep -E "xi-nhan|close op|rmPreviewSurface"
+```
+**Đạt** khi: `0` dòng `abandoned` sau 30 s, và giữa hai lượt `xi-nhan` có một dòng `rmPreviewSurface(mode=…)` với
+`rc=true` (chế độ kiểm thử mở) hoặc ít nhất một lượt dỡ `AVMCamera`. **Không đạt** ⇒ chưa được coi 2.75 là xong.
+
+Kèm theo, đo lại hai con số mà con bọ này làm hỏng: `top -n 1 | grep launcher` lúc rảnh (**< 1 %**, 2.74 đo 3,5 %)
+và tốc độ phình nhật ký KachiPerf (**< 20 KB/phút**, 2.74 đo 130).
+
+### G8 (mới) — còn chưa biết
+
+| # | Chưa biết | Chốt bằng |
+|---|---|---|
+| G8 | `setPanoOperation(WORK_OFF)` trả `0x800003EB` (mã 1003) nghĩa gì; lượt tắt có thật sự thất bại không | 🚗 so mã của `open`/`close` nhiều lượt + `getPanoWorkState` ngay sau `close` |
+
+---
+
+## Xe 27/09 — nguồn **MỘT KÊNH** camera (R9) + trần nhịp vẽ
+
+### F. `addPreviewSurface(surface, 1..4)` cho TRỌN khung một camera — RE §7 **Q3/D7 đã trả lời** [ĐO 11:16]
+
+Kênh HAL `1..4` trả **`rc = true`**, và buffer (vẫn `5120×960`) chứa **trọn khung fisheye của MỘT camera**, bị
+**kéo ngang** cho đầy — tức *anamorphic* đúng `STRIPS = 4` lần (ảnh thật `1280×960`). Bản đồ kênh trên Seal này:
+
+| Kênh | Hướng | Mức |
+|---|---|---|
+| `1` | trước | [SUY] (xe đỗ đầu-đuôi phía trước) |
+| `2` | **gương TRÁI** (phía cột E4) | [ĐO] owner xác nhận |
+| `3` | **gương PHẢI** (phía E3) | [ĐO] owner xác nhận |
+| `4` | sau | [SUY] (đầu làn trống) |
+
+Vì sao đây là nguồn **tốt hơn** cho gương: không phải cắt dải, được **trọn vòng ảnh** của ống kính, và ô vẫn là
+`1280×960` ⇒ `K`/`F` suy ra **trùng** ca `SPAN = STRIP`, tức bộ `F 55 % · K 100 % · S 130 %` owner đã duyệt **không
+phải chỉnh lại** khi đổi chip.
+
+**Pref mới `camera_source`** = `PANO` (mặc định, đường 2.36…2.74) | `CHANNEL`. Kênh dùng cho từng bên lấy từ
+`CamView.channel` (per-side theo hồ sơ xe — Seal trái `2`, phải `3`), owner đè được bằng `camera_hal_mode`
+(`CameraSignalPolicy.channelFor`). Chip *Nguồn* đứng **trước** *Vùng gương*/*Dải* trong Cài đặt (chọn một kênh thì
+hai hàng kia hết nghĩa).
+
+**Cái bẫy duy nhất, và là toàn bộ nội dung của bản vá**: mọi tầng hình học phải đo trên bề ngang **NỘI DUNG**
+(`CameraPanoCrop.contentWidth` = `streamW / STRIPS`), không phải bề ngang buffer. Lấy nhầm `5120` ⇒ `aspect = 5,33`
+(đồng-θ thành ellipse dẹt), `K` suy ra nhỏ đi **đúng 4 lần**, cửa sổ sai tỉ lệ — **ba** thứ sai cùng lúc mà ảnh vẫn
+"ra hình". Bài `lay nham be ngang buffer thi aspect va K deu sai` ghim đúng con số ấy.
+
+Không cần **một dòng GLSL nào**: shader làm việc trong toạ độ ô **chuẩn hoá**, nên phép kéo ngang tan hết vào
+`uSrcRect` (trọn buffer) + `uAspect` (tỉ lệ nội dung). Đường `TextureView` cũng tự đúng: cửa sổ lấy tỉ lệ nội dung
+`4:3` ⇒ `TextureView` căng buffer `5120×960` vào khung `4:3` chính là phép **nén ngang ×4** cần có.
+
+[ĐO máy ảo, khung THẬT từ xe kéo ngang ×4, `F55/K100/S130`, `camera_source = CHANNEL`]:
+`crop=-` (trọn buffer) · `halMode=2` (kênh của view) · `nguồn=CHANNEL`; ảnh `rot 0` **đứng, tỉ lệ 4:3**, ảnh `L90`
+lệch **0,88/255** so với ảnh `rot 0` xoay CCW ⇒ hình học đúng ở cả hai góc. PNG: `chan/v-chan-0.png`,
+`chan/v-chan-L90.png`.
+
+### G. Trần nhịp vẽ của đường GL — CAM-B4 [ĐO 11:25]
+
+Hai phút xi-nhan **thật**, cửa sổ TRÒN `495×495`:
+
+| Đường | Khung | fps | Giật | p50/p90/p95/p99 (ms) | CPU |
+|---|---|---|---|---|---|
+| `GL` (2.74) | 4052 | ≈34 | **11,15 %** | 5 / 18 / 31 / 61 | **10,7 %** |
+| `TV` | 982 | ≈8 | 1,0 % | 5 / 8 / 11 / 16 | ≈0 % |
+
+Nguyên nhân: đường GL vẽ **mỗi khi có khung** (`onFrameAvailable`), mà HAL đẩy ~34 fps **dù** Kachi xin
+`setCameraFps(15)`. 34 fps là công vô ích trả bằng đúng thứ owner cảm thấy.
+
+Vá: trần nhịp **ở tầng vẽ** (`CameraSignalPolicy.RENDER_FPS_CAP = 15`, `renderMinGapMs()` = **50 ms**).
+`updateTexImage()` **vẫn luôn chạy** ở lượt bị bỏ — không nhận khung thì `BufferQueue` đầy và producer của HAL có
+thể nghẽn, tức đổi một vấn đề giật lấy một vấn đề đứng hình. Chỉ bỏ phần **đắt**: `paint` (fragment shader có
+`atan` từng pixel) + `eglSwapBuffers` (chờ vsync).
+
+Vì sao **3/4** chu kỳ chứ không trọn: khung HAL tới mỗi ~29,4 ms; ngưỡng 66 ms rơi **giữa** hai khung ⇒ lượt vẽ
+trượt sang khung thứ ba ⇒ chỉ còn ~11 fps. Ngưỡng 50 ms rơi trước khung thứ hai ⇒ **nhịp dự kiến ≈ 17 fps**
+(vẽ một khung, bỏ một khung), tức **giảm ~½ tải GPU** so với 34 fps. `stats()` nay in `fpsSkip=` và `fpsCap=` để
+chốt nhịp thật trên xe.
+
+> 🚗 **CAM-B6**: chạy lại CAM-B4 sau bản vá và so bốn con số. Kỳ vọng: `frames` ≈ nửa, `janky` xuống rõ,
+> `fpsSkip` ≈ `frames`. Nếu `janky` **không** giảm thì thủ phạm không phải nhịp vẽ mà là cỡ vẽ ⇒ bước tiếp là
+> `setPreviewSize` (RE §5 K5), không phải hạ trần thêm.

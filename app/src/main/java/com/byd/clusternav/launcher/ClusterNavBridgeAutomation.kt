@@ -27,7 +27,9 @@ import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.cameraRender
 import com.byd.clusternav.setCameraRender
+import com.byd.clusternav.cameraSource
 import com.byd.clusternav.cameraSpan
+import com.byd.clusternav.setCameraSource
 import com.byd.clusternav.setCameraSpan
 import com.byd.clusternav.cameraShape
 import com.byd.clusternav.setCameraShape
@@ -36,6 +38,8 @@ import com.byd.clusternav.setCameraStrip
 import com.byd.clusternav.cameraHalMode
 import com.byd.clusternav.cameraDewarpAmount
 import com.byd.clusternav.cameraDewarpCx
+import com.byd.clusternav.cameraDewarpPanX
+import com.byd.clusternav.cameraDewarpPanY
 import com.byd.clusternav.cameraDewarpCy
 import com.byd.clusternav.cameraDewarpFocal
 import com.byd.clusternav.cameraDewarpK
@@ -43,6 +47,8 @@ import com.byd.clusternav.cameraDewarpScale
 import com.byd.clusternav.cameraGlTexMatrix
 import com.byd.clusternav.setCameraDewarpAmount
 import com.byd.clusternav.setCameraDewarpCx
+import com.byd.clusternav.setCameraDewarpPanX
+import com.byd.clusternav.setCameraDewarpPanY
 import com.byd.clusternav.setCameraDewarpCy
 import com.byd.clusternav.setCameraDewarpFocal
 import com.byd.clusternav.setCameraDewarpK
@@ -211,6 +217,8 @@ fun ClusterNavBridge.setCameraCamRight(v: Int) = Prefs.setCameraCamId(app, left 
  * không tham số), một hàm ghi có tham số bên. Không `AutomationService.sync`, cùng lẽ [cameraRender]: lượt xi-nhan
  * sau đọc lại prefs khi dựng overlay nên chip vừa chạm ăn ngay.
  */
+fun ClusterNavBridge.cameraSource(): String = Prefs.cameraSource(app)
+fun ClusterNavBridge.setCameraSource(v: String) = Prefs.setCameraSource(app, v)
 fun ClusterNavBridge.cameraSpan(): String = Prefs.cameraSpan(app)
 fun ClusterNavBridge.setCameraSpan(v: String) = Prefs.setCameraSpan(app, v)
 fun ClusterNavBridge.cameraShape(): String = Prefs.cameraShape(app)
@@ -243,6 +251,10 @@ fun ClusterNavBridge.cameraDewarpCx(): Int = Prefs.cameraDewarpCx(app)
 fun ClusterNavBridge.setCameraDewarpCx(v: Int) = Prefs.setCameraDewarpCx(app, v)
 fun ClusterNavBridge.cameraDewarpCy(): Int = Prefs.cameraDewarpCy(app)
 fun ClusterNavBridge.setCameraDewarpCy(v: Int) = Prefs.setCameraDewarpCy(app, v)
+fun ClusterNavBridge.cameraDewarpPanX(): Int = Prefs.cameraDewarpPanX(app)
+fun ClusterNavBridge.setCameraDewarpPanX(v: Int) = Prefs.setCameraDewarpPanX(app, v)
+fun ClusterNavBridge.cameraDewarpPanY(): Int = Prefs.cameraDewarpPanY(app)
+fun ClusterNavBridge.setCameraDewarpPanY(v: Int) = Prefs.setCameraDewarpPanY(app, v)
 fun ClusterNavBridge.cameraGlTexMatrix(): Boolean = Prefs.cameraGlTexMatrix(app)
 fun ClusterNavBridge.setCameraGlTexMatrix(v: Boolean) = Prefs.setCameraGlTexMatrix(app, v)
 

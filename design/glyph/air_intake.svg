@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CHẾ ĐỘ LẤY GIÓ, CHƯA ĐỌC ĐƯỢC CHIỀU (`ac_cycle` = null) — khoang xe nét CHÍNH + hai vạch gió KHÔNG đầu mũi: có gió, nhưng hình không dám nói trong hay ngoài (luật "không biết ≠ đang tắt"). Cùng khoang xe với ic_recirc / ic_air_fresh nên ba hình là một cặp ba. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M3.4,15.8 L5,10.2 C5.6,8.4 7,7.4 9,7.4 L15,7.4 C17,7.4 18.4,8.4 19,10.2 L20.6,15.8 L20.6,19 L3.4,19 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.6,13.6 L12.2,13.6 M14.4,13.6 L16.6,13.6" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

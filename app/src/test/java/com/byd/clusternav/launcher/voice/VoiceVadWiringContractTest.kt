@@ -68,7 +68,13 @@ class VoiceVadWiringContractTest {
     fun `cua so bi CAT truoc khi giai ma, khong con duong nap nguyen cua so`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
         assertTrue(body.contains("val trim = ep.trimSamples(fed)"), "phải tính điểm cắt")
-        assertTrue(body.contains("rec.finalResult(trim)"), "và phải giải mã ĐÚNG phần đã cắt")
+        // 2.75 VOICE-HEAD-SILENCE — phép cắt nay có HAI đầu: `[headStart, trim)`. Đầu trước cắt im lặng DẪN ĐẦU
+        // ([ĐO xe 2026-09-27] một lượt nạp 6 012 ms im lặng vào mô hình rồi mất vế *"vào ô số"*), đầu sau cắt đuôi
+        // như từ 2026-09-16. Canh cả hai: bỏ một đầu là quay lại nạp nửa cửa sổ im lặng mà không có gì báo.
+        assertTrue(
+            body.contains("rec.rangeResult(ep.headStart(fed), trim)"),
+            "và phải giải mã ĐÚNG phần đã cắt — cả hai đầu",
+        )
         assertFalse(
             Regex("""rec\.finalResult\(\s*\)""").containsMatchIn(body),
             "còn một lời gọi `finalResult()` không tham số ⇒ cửa sổ vẫn nạp NGUYÊN vào mô hình; độ trễ giảm " +
@@ -76,7 +82,7 @@ class VoiceVadWiringContractTest {
         )
         // Điểm cắt phải được tính TRƯỚC khi giải mã, không phải sau (một thứ tự sai ở đây là no-op im lặng).
         assertTrue(
-            body.indexOf("val trim = ep.trimSamples(fed)") < body.indexOf("rec.finalResult(trim)"),
+            body.indexOf("val trim = ep.trimSamples(fed)") < body.indexOf("rec.rangeResult(ep.headStart(fed), trim)"),
             "phải cắt rồi mới giải mã",
         )
         // ⚠ [SOÁT 1.69 · P2] Cánh cửa THỨ HAI, thứ bài cũ không canh: nhánh `if (rec.accept(...))` trong vòng

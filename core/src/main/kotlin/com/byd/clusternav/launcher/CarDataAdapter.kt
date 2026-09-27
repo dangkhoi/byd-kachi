@@ -28,6 +28,12 @@ class CarDataAdapter(
      * [CarStatus.controls] mỗi nhịp CHẬM. Mặc định rỗng ⇒ mọi test/reader cũ không đổi hành vi.
      */
     private val controlDemand: () -> Set<String> = { emptySet() },
+    /**
+     * TRIP-TIME-6MIN (owner duyệt 2026-09-27) — làm mượt `trip_hours` (HAL trả bậc 0,1 h = 6 phút, [ĐO xe Seal 11:48]).
+     * **MỘT** instance cho một adapter vì nó có trạng thái (mốc + đồng hồ trôi); dùng chung [clock] để test bằng đồng
+     * hồ giả. Chỉ nhận giá trị ĐỌC THẬT — xem [Gate.dblVia].
+     */
+    private val tripTime: TripTimeSmoother = TripTimeSmoother(clock),
 ) : CarDataPort, CarStatusReader {
 
     /**
@@ -60,8 +66,11 @@ class CarDataAdapter(
          *    băng con số cuối cùng đọc được, tức ô hiện một giá trị CŨ mà trông như đang sống (đúng bệnh
          *    "SurfaceView giữ khung hình cuối" mà `SlotLiveProbe` sinh ra để chữa, lần này bằng số).
          */
-        private inline fun <T> read(id: String, prev: T?, body: () -> T?): T? {
-            if (!wanted(id)) return prev
+        private inline fun <T> read(id: String, prev: T?, body: () -> T?): T? =
+            if (!wanted(id)) prev else fresh(id, body)
+
+        /** Lượt đọc THẬT (đã qua cổng vắng) — `null` ở đây = *"đọc không ra"* (⚠), KHÔNG phải *"không hiện"*. */
+        private inline fun <T> fresh(id: String, body: () -> T?): T? {
             if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
             val v = body()
             absent.record(id, v != null, now)
@@ -70,6 +79,15 @@ class CarDataAdapter(
 
         fun int(id: String, prev: Int?): Int? = read(id, prev) { table.readInt(id) }
         fun dbl(id: String, prev: Double?): Double? = read(id, prev) { table.readDouble(id) }
+
+        /**
+         * Như [dbl] nhưng giá trị ĐỌC THẬT đi qua [via] (bộ làm mượt CÓ TRẠNG THÁI — [TripTimeSmoother]); lối *"không
+         * hiện ⇒ trả prev"* thì **KHÔNG** đi qua: `prev` là số đã làm mượt, đưa nó vào lại như một mốc HAL là tự nâng mốc
+         * (1.8 → 1.85 bị coi là bậc tăng) rồi vượt bậc kế tiếp — đúng cái bộ làm mượt sinh ra để tránh. `null` (nguội /
+         * off-car) vẫn qua [via] để nó reset và trả `null` = "—".
+         */
+        fun dblVia(id: String, prev: Double?, via: (Double?) -> Double?): Double? =
+            if (!wanted(id)) prev else via(fresh(id) { table.readDouble(id) })
         fun bool(id: String, prev: Boolean?): Boolean? = read(id, prev) { table.readBool(id) }
         fun str(id: String, prev: String?): String? = read(id, prev) { table.readString(id) }
     }
@@ -193,7 +211,8 @@ class CarDataAdapter(
                 sohPct = g.int("soh_oem", e.sohPct),
                 fuelPct = g.int("fuel_pct", e.fuelPct),
                 tripKm = g.dbl("trip_km", e.tripKm),
-                tripHours = g.dbl("trip_hours", e.tripHours),
+                // TRIP-TIME-6MIN: HAL bậc 0,1 h ⇒ làm mượt theo phút (một nguồn cho widget · chip · câu hỏi bằng giọng).
+                tripHours = g.dblVia("trip_hours", e.tripHours, tripTime::smooth),
                 consumption50 = g.dbl("consumption_50km", e.consumption50),
                 // Điện 12V — trước 2026-09-16 nằm ở cụm `Safety`, chuyển sang đây cùng lượt gỡ ADAS. (`volt_12v_level`
                 // gỡ 2026-09-25 cùng bốn datum năng lượng chết khác — nhật ký ở `TelemetryRegistry`.)

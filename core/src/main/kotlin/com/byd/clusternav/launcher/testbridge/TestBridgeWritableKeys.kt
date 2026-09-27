@@ -78,6 +78,9 @@ object TestBridgeWritableKeys {
         // ảnh fisheye là [ĐOÁN], và `VIEW_CHANNEL_1..4` chưa ai gọi thử — cả ba chỉ chốt được bằng cách đổi giá trị
         // **giữa hai lượt xi-nhan** rồi chụp `camera_frame`, không phải bằng một lượt build lại APK cho mỗi con số.
         // Bốn khoá đầu có hàng chip đảo lại được ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) của KDoc trên giữ.
+        // 2.75 — NGUỒN ảnh: khung GHÉP (mặc định, y 2.74) hay MỘT KÊNH camera. [ĐO xe 27/09] kênh 1..4 trả
+        // `rc=true` và cho trọn khung fisheye của một camera (kéo ngang ×4) — nguồn tốt hơn hẳn cho gương.
+        "camera_source",
         "camera_span",
         "camera_strip_left",
         "camera_strip_right",
@@ -91,7 +94,7 @@ object TestBridgeWritableKeys {
         // sắc hơn: bốn con số `F`/`K`/`SCALE`/`AMOUNT` của Electro nằm trong bytecode VMP ⇒ **[CHƯA BIẾT]** (RE §7
         // Q6), nên Kachi không copy số mà suy một bộ mặc định từ hình học rồi để owner **chỉnh bằng mắt trên xe**.
         // Không có đường nào khác: một khung fisheye thật chỉ có trên xe, và mỗi con số thử một lượt bằng build lại
-        // APK là một buổi xe cho bốn giá trị. Cả bảy đều có hàng −/+ (hoặc ô tích) đảo lại được trong Cài đặt ›
+        // APK là một buổi xe cho bốn giá trị. Cả chín đều có hàng −/+ (hoặc ô tích) đảo lại được trong Cài đặt ›
         // Tiện nghi xe ⇒ ràng buộc (3) của KDoc trên giữ nguyên; miền hợp lệ ở `:core` [CameraDewarpPrefs].
         "camera_dewarp_amount",
         "camera_dewarp_focal",
@@ -99,6 +102,10 @@ object TestBridgeWritableKeys {
         "camera_dewarp_scale",
         "camera_dewarp_cx",
         "camera_dewarp_cy",
+        // 2.75 — DỊCH CỬA SỔ, KHÔNG phải dời tâm quang: đường duy nhất *"dịch khung ra sau"* mà ảnh vẫn thẳng
+        // ([ĐO] xe 27/09 bác cả `scale` 140–145 % lẫn `cx −10 %`). Xem KDoc `CameraDewarp.panLocal`.
+        "camera_dewarp_pan_x",
+        "camera_dewarp_pan_y",
         "camera_gl_texmatrix",
     )
 }

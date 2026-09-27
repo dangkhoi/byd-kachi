@@ -37,6 +37,65 @@ object CapabilityIcons {
     fun forTelemetry(id: String, domain: Domain): String =
         EXACT[id] ?: PREFIX.firstOrNull { id.startsWith(it.first) }?.second ?: WidgetCatalog.iconFor(domain)
 
+    // ═══ UX8 · HÌNH THEO TRẠNG THÁI — datum HAI CHẾ ĐỘ nói trạng thái bằng HÌNH, không bằng CHỮ ═══════════════
+
+    /**
+     * Bộ hình của MỘT datum hai chế độ: một hình cho mỗi mã trạng thái, cộng một hình cho lúc **chưa đọc được**.
+     *
+     * @property icons mã trạng thái ([TelemetryView.state]) → tên hình. Mã đánh từ 0, đúng thứ tự *"số nhỏ của
+     *   khung là chế độ nào"* đã [ĐO] và ghi ở bảng đọc (`TelemetryReadout.stateTable`).
+     * @property unknown hình lúc chưa đọc được. **Không được** trùng hình của một trạng thái *đáng báo*: một hình
+     *   vẽ sẵn lúc chưa biết là một lời khẳng định mà không ai đo được (luật *"không biết ≠ đang tắt"* của
+     *   [ChipTone]). Trùng với trạng thái **lành** thì được — đó đúng là cách datum bật/tắt đang làm (cùng hình,
+     *   khác sắc thái), và chỗ nào dùng [forState] cũng phải trả sắc thái trung tính cho ca này.
+     */
+    class StateIcons internal constructor(val icons: Map<Int, String>, val unknown: String)
+
+    /**
+     * ═══ Bệnh nó chữa (owner 2026-09-27, nhìn thanh trên xe thật) ═══════════════════════════════════════════
+     *
+     * *"chip header → chế độ lấy gió đổi icon trong / ngoài, bỏ chữ trong / ngoài đi chứ; check xem còn chip nào
+     * vẫn còn missing như thế này, mình có làm cái này 1 lần rồi mà?"*
+     *
+     * Lượt *"làm 1 lần rồi"* là `docs/specs/kachi-datum-icon-consistency.html` (2026-09-21/22), và nó phủ ĐÚNG hai
+     * họ: datum **BẬT/TẮT** (R3 — một hình, sáng/mờ theo [TelemetryView.onOff]) và datum **THANG MỨC** (R4 — một
+     * hình + số/chấm mức). Khe lọt là họ thứ ba: datum **HAI CHẾ ĐỘ**, nơi **không chế độ nào là "tắt"** — *lấy
+     * gió trong* ↔ *lấy gió ngoài* đều là trạng thái đang chạy, nên sáng/mờ không nói được cái nào, và chip đành
+     * quay về in CHỮ (`"Chế độ lấy gió · Trong"`) — đúng thứ owner đã gạch bỏ từ 09-21.
+     *
+     * Chữa bằng DỮ LIỆU, không bằng nhánh theo mã (CLAUDE.md §7): datum nào khai bảng này thì mọi bề mặt tự bỏ
+     * chữ trạng thái và đổi hình; không khai thì đi đúng đường cũ. Thêm datum thứ ba chỉ là thêm một dòng.
+     *
+     * ⚠ **Không dùng cho datum BẬT/TẮT hay THANG MỨC** — hai họ ấy đã có luật riêng và tốt hơn (một hình quen
+     * thuộc + sắc thái/mức). Khai chồng là để hai luật cùng nói về một ô. Có bài canh: `TopStripStateIconTest`.
+     */
+    private val STATE: Map<String, StateIcons> = mapOf(
+        // LẤY GIÓ: [ĐO] `BYDAutoAcDevice.java:33-34` INLOOP=1 (trong) · OUTLOOP=0 (ngoài) — xem `ControlRegistry.recirc`.
+        // Chế độ *trong* dùng lại đúng hình sẵn có của nút "Lấy gió trong" (`ic-recirc`) ⇒ chip · ô nút · bộ chọn
+        // vẫn một hình cho một khái niệm (spec kachi-datum-icon-consistency R1). Chế độ *ngoài* là hình MỚI vẽ
+        // thành CẶP với nó (cùng khoang xe, khác đường gió). Chưa đọc ⇒ khoang xe trống, không có đầu mũi tên.
+        "ac_cycle" to StateIcons(mapOf(0 to "ic-air-fresh", 1 to "ic-recirc"), unknown = "ic-air-intake"),
+        // CẢM BIẾN BỤI MỊN còn sống không (`getPM2p5OnlineState`). Đây là datum LIVENESS, không phải công tắc:
+        // trạng thái **đáng báo** chỉ có một (chết) nên nó là cái mang hình riêng (gạch chéo); *"còn sống"* và
+        // *"chưa đọc"* dùng chung hình cảm biến và phân biệt bằng sắc thái — đúng cách datum bật/tắt đang làm.
+        "pm25_online" to StateIcons(mapOf(0 to "ic-sensor-off", 1 to "ic-sensor"), unknown = "ic-sensor"),
+    )
+
+    /** Datum này có khai hình theo trạng thái không ⇒ bề mặt hẹp bỏ CHỮ trạng thái, chỉ còn nhãn + hình. */
+    fun hasStateIcons(id: String): Boolean = id in STATE
+
+    /**
+     * Hình của [id] ở trạng thái [state] ([TelemetryView.state]); `state == null` (chưa đọc) ⇒ hình trung tính.
+     * `null` = datum không khai hình theo trạng thái ⇒ chỗ gọi dùng đường hình thường.
+     *
+     * Mã lạ (ngoài bảng) cũng về hình trung tính — thà nói *"chưa biết"* còn hơn vẽ bừa một chế độ.
+     */
+    fun forState(id: String, state: Int?): String? =
+        STATE[id]?.let { s -> state?.let { s.icons[it] } ?: s.unknown }
+
+    /** Bảng hình-theo-trạng-thái, cho bài canh đọc (không có chỗ dùng nào khác ở mã chạy). */
+    fun stateIconTable(): Map<String, StateIcons> = STATE
+
     /** Khớp chính xác — cho mục đơn lẻ có khái niệm riêng. */
     private val EXACT: Map<String, String> = mapOf(
         // ── Năng lượng: tách PIN / QUÃNG ĐƯỜNG / NHIỆT / THỜI GIAN thay vì tất cả là tia sét ──

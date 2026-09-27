@@ -54,6 +54,23 @@ data class TelemetryView(
      * ⚠⚠ Mã thô NGOÀI thang ⇒ `null` (không làm tròn) — cùng quyết định đã ghi ở [ControlLevels.levelOf].
      */
     val level: Int? = null,
+    /**
+     * ═══ UX8 · MÃ TRẠNG THÁI của một datum **HAI CHẾ ĐỘ** — `0`/`1` · `null` = chưa đọc / không phải ═══════════
+     *
+     * Sinh ra cho họ datum thứ ba mà lượt icon-consistency (09-21/22) không phủ: chế độ *lấy gió trong* ↔ *ngoài*,
+     * cảm biến *còn sống* ↔ *chết*. Chúng **không** phải công tắc ([onOff] cố ý không nhận — xem ⚠ ở [boolOf]) và
+     * cũng không chạy theo [level], nên trước UX8 chip đành in CHỮ trạng thái (`"Chế độ lấy gió · Trong"`) — đúng
+     * thứ owner đã gạch bỏ cho ô bật/tắt từ 2026-09-21, chỉ khác là nó lọt qua vì không luật nào với tới.
+     *
+     * Con số ở đây là **mã của khung đã chuẩn hoá về 0/1**, để [CapabilityIcons.forState] tra ra HÌNH của đúng chế
+     * độ ấy. [valueText] **không đổi** — ô lớn vẫn in chữ; đây là trường CỘNG THÊM, đúng lối [onOff]/[level].
+     *
+     * ## ⚠ `null` gộp HAI ca, có chủ ý
+     * *"id này không phải datum hai chế độ"* **hoặc** *"là, nhưng chưa đọc được"*. Mọi bề mặt xử hai ca ấy y như
+     * nhau (hình trung tính, không tô). Cần biết ca nào thì hỏi [CapabilityIcons.hasStateIcons] — một câu hỏi về
+     * **bảng khai**, không phải về dữ liệu xe.
+     */
+    val state: Int? = null,
 ) {
     /** Có đọc được giá trị không (off-car/null ⇒ false ⇒ view mờ). */
     val available: Boolean get() = valueText != null
@@ -100,6 +117,7 @@ object TelemetryReadout {
         return TelemetryView(
             spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, value, bool?.on,
             level = levelOf(id, status),
+            state = stateOf(id, status),
         )
     }
 
@@ -125,6 +143,31 @@ object TelemetryReadout {
     /** Mức người dùng của [id] (xem [TelemetryView.level]); `null` = không phải thang mức / chưa đọc / mã ngoài thang. */
     private fun levelOf(id: String, s: CarStatus): Int? =
         levelTable(id, s)?.let { l -> l.raw?.let { ControlLevels.levelOf(l.controlId, it) } }
+
+    /**
+     * ═══ UX8 — datum **HAI CHẾ ĐỘ**: mã của khung → `0`/`1` (xem [TelemetryView.state]) ════════════════════════
+     *
+     * Giữ ĐÚNG dạng `"id" -> s.<cụm>.<field>` như [format]/[boolOf]: đó là **hợp đồng đọc-ngược bằng máy** mà
+     * `CarDataDemandRendererContractTest` dựa vào để suy bảng datum↔field. Vì bảng này đọc **cùng field** với
+     * dòng tương ứng trong [format] nên nó không thêm nhu cầu đọc nào — chỉ thêm một cách **nhìn** con số ấy.
+     *
+     * ⚠ Nguy cơ hai-bản-sao (bảng này trỏ một field, [format] trỏ field khác cho cùng mã) được **ĐO** chứ không
+     * hy vọng: `TelemetryReadoutTest.hinh trang thai va chu trang thai khong bao gio lech` đỏ ngay nếu chữ đổi mà
+     * mã trạng thái đứng yên (hoặc ngược lại).
+     *
+     * ⚠⚠ Ai khai ở đây thì **phải** khai hình ở [CapabilityIcons] — bằng không con số này không ai đọc và chip
+     * lặng lẽ giữ nguyên chữ cũ (CLAUDE.md §8: hàm mới phải có chỗ gọi). Cùng bài canh khoá cả hai chiều.
+     */
+    private fun stateTable(id: String, s: CarStatus): Boolean? = when (id) {
+        // [ĐO] `BYDAutoAcDevice.java:33-34` — INLOOP = 1 (lấy gió TRONG) · OUTLOOP = 0 (lấy gió NGOÀI).
+        "ac_cycle" -> s.climate.recircOn
+        // `getPM2p5OnlineState` — 1 = cảm biến còn trả lời · 0 = chết. Không phải công tắc ⇒ không vào [boolOf].
+        "pm25_online" -> s.climate.pm25Online
+        else -> null
+    }
+
+    /** Mã trạng thái của [id] (xem [TelemetryView.state]); `null` = không phải datum hai chế độ / chưa đọc. */
+    private fun stateOf(id: String, s: CarStatus): Int? = stateTable(id, s)?.let { if (it) 1 else 0 }
 
     /**
      * Một datum BẬT/TẮT đã đọc. `Bool(null)` = là datum bật/tắt nhưng **chưa đọc được**; bản thân [boolOf] trả
@@ -314,9 +357,16 @@ object TelemetryReadout {
     private fun dec0(d: Double) = Math.round(d).toString()
     private fun dec1(d: Double) = String.format(Locale.US, "%.1f", d)
 
-    /** V4 (owner 2026-09-25): giờ thập phân → "h:mm" (1.6h → "1:36") — dễ đọc hơn "1.6h". Phút làm tròn, kẹp 0..59. */
+    /**
+     * V4 (owner 2026-09-25): giờ thập phân → "h:mm" (1.6h → "1:36") — dễ đọc hơn "1.6h". Phút cắt xuống, kẹp 0..59.
+     *
+     * TRIP-TIME-6MIN (2026-09-27): `(h * 60).toInt()` cắt SAI ở biên phút vì sai số nhị phân — `4.1 * 60 =
+     * 245.99999999999997` ⇒ "4:05" thay "4:06" (17/1000 mốc thô 0,1 h), và với giá trị đã làm mượt `mốc + k/60`
+     * ([TripTimeSmoother]) là **620/6000** ca sai (vd `1.9 + 1/60` ⇒ "1:54" thay "1:55"). Cộng 1e-6 phút (60 µs) rồi
+     * floor: dưới mọi độ phân giải thật, trên mọi sai số nhị phân (quét 0..99,9 h × 0..5 phút: 0 ca sai).
+     */
     private fun hoursToHm(h: Double): String {
-        val totalMin = (h * 60.0).toInt().coerceAtLeast(0)
+        val totalMin = Math.floor(h * 60.0 + 1e-6).toInt().coerceAtLeast(0)
         return "${totalMin / 60}:${String.format(Locale.US, "%02d", totalMin % 60)}"
     }
     private fun dec2(d: Double) = String.format(Locale.US, "%.2f", d)

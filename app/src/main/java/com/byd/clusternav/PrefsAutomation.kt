@@ -208,6 +208,7 @@ private const val K_CAMERA_SPAN = "camera_span"
 private const val K_CAMERA_SHAPE = "camera_shape"
 private const val K_CAMERA_CIRCLE_PCT = "camera_circle_scale"
 private const val K_CAMERA_HAL_MODE = "camera_hal_mode"
+private const val K_CAMERA_SOURCE = "camera_source"
 private fun cameraStripKey(left: Boolean) = if (left) "camera_strip_left" else "camera_strip_right"
 
 /**
@@ -224,6 +225,23 @@ fun Prefs.cameraSpan(ctx: Context): String {
 /** Xem [cameraSpan]. Nhận mã trong [CameraSignalPolicy.SPANS]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
 fun Prefs.setCameraSpan(ctx: Context, v: String) =
     autoPrefs(ctx).edit().putString(K_CAMERA_SPAN, v).apply()
+
+/**
+ * **Nguồn ảnh** — `"PANO"` (khung ghép 4-in-1, mặc định = đường 2.36…2.74) hay `"CHANNEL"` (MỘT kênh camera, khung
+ * đầy, bị kéo ngang ×4). Lý do + bản đồ kênh ở KDoc [CameraSignalPolicy.SOURCE_CHANNEL].
+ *
+ * Ở `"CHANNEL"`, kênh dùng cho từng bên lấy từ [CameraSignalPolicy.CamView.channel] (Seal: trái 2, phải 3) và
+ * owner vẫn đè được bằng [cameraHalMode] — xem [CameraSignalPolicy.channelFor].
+ */
+fun Prefs.cameraSource(ctx: Context): String {
+    val fallback = CameraSignalPolicy.defaultSource()
+    val raw = autoPrefs(ctx).getString(K_CAMERA_SOURCE, fallback) ?: fallback
+    return if (CameraSignalPolicy.isSource(raw)) raw else fallback
+}
+
+/** Xem [cameraSource]. */
+fun Prefs.setCameraSource(ctx: Context, v: String) =
+    autoPrefs(ctx).edit().putString(K_CAMERA_SOURCE, v).apply()
 
 /**
  * Hình cửa sổ camera — mã trong [CameraSignalPolicy.SHAPES] (`"RECT"` = chữ nhật bo góc của 2.73, `"ROUND"` = vòng

@@ -709,7 +709,13 @@
     <string name="kachi_camera_dewarp_focal">Tiêu cự — lớn hơn = hẹp hơn, phóng to</string>
     <string name="kachi_camera_dewarp_scale">Phóng — lớn hơn = thấy RỘNG hơn (vật nhỏ đi)</string>
     <string name="kachi_camera_dewarp_amount">Độ nắn — 0 % là y ảnh thô</string>
-    <string name="kachi_camera_dewarp_note">Bộ số mặc định là SUY RA từ hình học, chưa đo trên xe: 100 % = đúng phép suy cho vùng gương đang chọn. Viền đen ở góc nghĩa là đã với ra ngoài vòng ảnh — hạ Phóng xuống.</string>
+    <string name="kachi_camera_dewarp_pan_x">Dịch ngang — âm là về phía đuôi xe, ở CẢ HAI gương (ảnh vẫn thẳng)</string>
+    <string name="kachi_camera_dewarp_pan_y">Dịch dọc — âm là lên trên (ảnh vẫn thẳng)</string>
+    <string name="kachi_camera_dewarp_note">Bộ số mặc định là SUY RA từ hình học, chưa đo trên xe: 100 % = đúng phép suy cho vùng gương đang chọn. Viền đen ở góc nghĩa là đã với ra ngoài vòng ảnh — hạ Phóng xuống. Hai hàng Dịch chỉ TRƯỢT khung, không làm cong — muốn dời khung thì dùng chúng, đừng dùng Tâm.</string>
+    <string name="kachi_camera_source_sub">Nguồn ảnh camera gương — khung ghép 4 camera (cũ) hay lấy riêng MỘT camera (rõ hơn, thấy trọn ống kính)</string>
+    <string name="kachi_camera_source_row">Nguồn</string>
+    <string name="kachi_camera_source_pano">Khung ghép</string>
+    <string name="kachi_camera_source_channel">Một camera</string>
     <string name="kachi_camera_span_sub">Bề rộng vùng gương cắt từ ảnh camera ghép (rộng hơn = thấy nhiều hơn, méo hơn)</string>
     <string name="kachi_camera_span_row">Bề rộng vùng gương</string>
     <string name="kachi_camera_span_narrow">Vệt hẹp (mặc định)</string>

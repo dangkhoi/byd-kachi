@@ -33,6 +33,8 @@ private const val K_DEWARP_K = "camera_dewarp_k"
 private const val K_DEWARP_SCALE = "camera_dewarp_scale"
 private const val K_DEWARP_CX = "camera_dewarp_cx"
 private const val K_DEWARP_CY = "camera_dewarp_cy"
+private const val K_DEWARP_PAN_X = "camera_dewarp_pan_x"
+private const val K_DEWARP_PAN_Y = "camera_dewarp_pan_y"
 private const val K_GL_TEX_MATRIX = "camera_gl_texmatrix"
 
 /**
@@ -100,6 +102,37 @@ fun Prefs.cameraDewarpCy(ctx: Context): Int = centre(ctx, K_DEWARP_CY)
 fun Prefs.setCameraDewarpCy(ctx: Context, v: Int) = put(ctx, K_DEWARP_CY, v)
 
 /**
+ * **Dịch CỬA SỔ theo x**, `%` bề ô, trong ô **CHƯA XOAY** (`0` = khung của 2.74).
+ *
+ * KHÔNG phải [cameraDewarpCx]: dời tâm quang là đổi chính trục của phép nắn ⇒ *một bên thẳng, bên kia còng*
+ * ([ĐO] xe 27/09 — owner bác `cx −10 %`); dịch cửa sổ giữ trục quang đứng yên nên **ảnh vẫn thẳng**. Toán ở
+ * KDoc [com.byd.clusternav.launcher.camera.CameraDewarp.panLocal].
+ *
+ * Dấu: `> 0` ⇒ cửa sổ trượt về phía **+x** của ô ⇒ nội dung trên màn dịch sang **trái**, ở **mọi** góc xoay (ô
+ * chưa xoay là hệ quy chiếu).
+ *
+ * ## Một giá trị = một nghĩa vật lý ở CẢ HAI gương (vá 2.75, soát Opus)
+ * [ĐO khung thô xe 27/09 09:58] hai camera gương là **ảnh soi gương của nhau** (thân xe ở mép PHẢI ô gương trái,
+ * mép TRÁI ô gương phải; tương quan lật ngang 0,715 vs không lật 0,152). Cộng thẳng pref vào cả hai bên thì một
+ * núm kéo hai khung về **hai phía ngược nhau** ⇒ dấu theo bên do [com.byd.clusternav.launcher.camera
+ * .CameraDewarpPrefs.panXSign] cấp, gương trái giữ nguyên `+1` (CLAUDE.md §6).
+ *
+ * ⚠ **[SUY, chưa kiểm trên xe]** chiều tuyệt đối *"âm = về phía đuôi xe"*: nó đọc ra từ một khung tĩnh, và khung
+ * ấy cho thấy **thân xe nằm ở mép PHẢI** ô gương trái — ngược với ghi chép ban đầu của làn camera. Chốt bằng G7
+ * (`camera-dewarp-gl.md` §E): kéo `−5` một bước trên xe rồi nhìn. Nếu ngược, đổi đúng một dấu ở [panXSign].
+ */
+fun Prefs.cameraDewarpPanX(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_X)
+
+/** Xem [cameraDewarpPanX]. */
+fun Prefs.setCameraDewarpPanX(ctx: Context, v: Int) = put(ctx, K_DEWARP_PAN_X, v)
+
+/** **Dịch cửa sổ theo y**, `%` bề ô, trong ô CHƯA XOAY. Xem [cameraDewarpPanX]. */
+fun Prefs.cameraDewarpPanY(ctx: Context): Int = pan(ctx, K_DEWARP_PAN_Y)
+
+/** Xem [cameraDewarpPanY]. */
+fun Prefs.setCameraDewarpPanY(ctx: Context, v: Int) = put(ctx, K_DEWARP_PAN_Y, v)
+
+/**
  * Áp `SurfaceTexture.getTransformMatrix` vào `uTexMatrix` hay **truyền ma trận đơn vị** — mặc định **BẬT**.
  *
  * Công tắc này là một **phép đo**, không phải một tuỳ chọn thẩm mỹ: RE §7 **Q17 [CHƯA BIẾT]** ma trận thật của camera
@@ -115,7 +148,7 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
     autoPrefs(ctx).edit().putBoolean(K_GL_TEX_MATRIX, v).apply()
 
 /**
- * Đọc **cả bảy khoá một lượt** và dựng bộ uniform cho đường GL — cửa DUY NHẤT mà tầng vẽ đi qua.
+ * Đọc **cả chín khoá một lượt** và dựng bộ uniform cho đường GL — cửa DUY NHẤT mà tầng vẽ đi qua.
  *
  * Một hàm thay vì bảy lượt đọc rải trong `CameraSignalController`: bộ uniform phải **nhất quán** (sáu con số cùng
  * thuộc một lượt chỉnh), và bảy dòng `Prefs.…` ở chỗ gọi là bảy chỗ quên được khi thêm núm thứ tám. Phép hợp thì nằm
@@ -124,6 +157,11 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  * @param crop vùng cắt đã suy ([com.byd.clusternav.launcher.camera.CameraPanoCrop.cropFor]) — cùng giá trị truyền cho
  *   overlay, KHÔNG tính lại (hai lượt tính là hai kết quả lệch được).
  * @param strip chỉ số dải đang xem — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
+ * @param streamW bề ngang **NỘI DUNG** (đã qua [com.byd.clusternav.launcher.camera.CameraPanoCrop.contentWidth]),
+ *   KHÔNG phải bề ngang buffer — ở nguồn `CHANNEL` hai số ấy lệch nhau đúng `STRIPS` lần.
+ * @param channel đang lấy MỘT kênh camera ([CameraSignalPolicy.SOURCE_CHANNEL]) ⇒ quang tâm là tâm buffer.
+ * @param left đang hiện gương TRÁI hay không — **KHÔNG** có mặc định: hai camera gương soi gương nhau nên dấu của
+ *   `camera_dewarp_pan_x` phải theo bên ([CameraDewarpPrefs.panXSign]), và một mặc định ở đây là đúng chỗ để quên.
  */
 fun Prefs.cameraGlUniforms(
     ctx: Context,
@@ -133,8 +171,10 @@ fun Prefs.cameraGlUniforms(
     rotationDeg: Int,
     streamW: Int,
     streamH: Int,
+    left: Boolean,
+    channel: Boolean = false,
 ): CameraGlUniforms {
-    val centre = CameraGlUniforms.sourceCentre(view, strip)
+    val centre = CameraGlUniforms.sourceCentre(view, strip, channel)
     return CameraGlUniforms.of(
         crop = crop,
         srcCentreX = centre[0],
@@ -148,6 +188,9 @@ fun Prefs.cameraGlUniforms(
         scalePct = cameraDewarpScale(ctx),
         centerXPct = cameraDewarpCx(ctx),
         centerYPct = cameraDewarpCy(ctx),
+        panXPct = cameraDewarpPanX(ctx),
+        panYPct = cameraDewarpPanY(ctx),
+        panXSign = CameraDewarpPrefs.panXSign(left),
         texMatrix = cameraGlTexMatrix(ctx),
     )
 }
@@ -155,6 +198,10 @@ fun Prefs.cameraGlUniforms(
 /** Một khoá `%` của bốn núm tỉ lệ ([CameraDewarpPrefs.isPct]). */
 private fun Prefs.pctOf(ctx: Context, key: String): Int =
     pct(ctx, key, CameraDewarpPrefs.PCT_DEFAULT) { CameraDewarpPrefs.isPct(it) }
+
+/** Một khoá dịch cửa sổ ([CameraDewarpPrefs.isPanPct]). */
+private fun Prefs.pan(ctx: Context, key: String): Int =
+    pct(ctx, key, CameraDewarpPrefs.PAN_DEFAULT) { CameraDewarpPrefs.isPanPct(it) }
 
 /** Một khoá lệch tâm ([CameraDewarpPrefs.isCenterPct]). */
 private fun Prefs.centre(ctx: Context, key: String): Int =

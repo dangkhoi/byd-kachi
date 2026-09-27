@@ -86,8 +86,8 @@ android {
         // · VAD trần 1200 · LogLineThrottle · khung camera đúng tỉ lệ + chip kết xuất · libkachimem mallopt. Review Opus Pass 3 APPROVED.
         // 2.74 (175) — đêm 26→27/09: UX1–UX7 · VOICE-OPEN-TURN · camera_frame · camera A (dải/tròn/kênh HAL) · nắn fisheye GL
         // (RE Electro, đo máy ảo) · README/hướng dẫn/danh mục/audit. Review Opus Pass 1 APPROVED (1 P0 + 7 P1 vá).
-        versionCode = 175
-        versionName = "2.74"
+        versionCode = 176
+        versionName = "2.75"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

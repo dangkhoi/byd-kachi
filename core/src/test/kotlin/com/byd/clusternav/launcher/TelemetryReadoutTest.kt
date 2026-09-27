@@ -346,6 +346,53 @@ class TelemetryReadoutTest {
         }
     }
 
+    // ── UX8 · datum HAI CHẾ ĐỘ — mã trạng thái ([TelemetryView.state]) ────────────────────────────────────────
+
+    /**
+     * Hai bảng phải nói **cùng một sự thật**: bảng ĐỌC (`TelemetryReadout.stateTable` — mã trạng thái nằm ở field
+     * nào) và bảng HÌNH ([CapabilityIcons.stateIconTable] — mỗi mã một hình).
+     *
+     * Cùng cách đo với bài mức ngay trên: mồi CẢ HAI chiều qua [wiredStatus] rồi đòi **chữ** và **mã** đổi CÙNG
+     * NHỊP. Bảng đọc trỏ nhầm field thì mã đứng yên trong khi chữ đổi ⇒ đỏ ngay, không phải hy vọng.
+     *
+     * Vì sao cần: nếu một datum khai hình mà bảng đọc quên khai, chip **không nổ** — nó lặng lẽ đứng mãi ở hình
+     * trung tính và không ai thấy gì (đúng bệnh "hàm mới chưa từng được gọi" của CLAUDE.md §8).
+     */
+    @Test fun `hinh trang thai va chu trang thai khong bao gio lech`() {
+        val declared = CapabilityIcons.stateIconTable().keys.sorted()
+        assertEquals(
+            listOf("ac_cycle", "pm25_online"), declared,
+            "hôm nay đúng hai datum hai chế độ; thêm cái thứ ba thì phải khai cả ở `stateTable`",
+        )
+        val seen = mutableMapOf<String, MutableSet<String?>>()
+        listOf("1" to 1, "0" to 0).forEach { (seed, want) ->
+            val status = wiredStatus(seed)
+            TelemetryRegistry.ALL.forEach { spec ->
+                val v = TelemetryReadout.of(spec.id, status)!!
+                if (spec.id in declared) {
+                    assertEquals(want, v.state, "mồi=$seed · ${spec.id}: mã trạng thái sai (bảng đọc trỏ nhầm field?)")
+                    seen.getOrPut(spec.id) { mutableSetOf() } += v.valueText
+                } else {
+                    assertNull(v.state, "${spec.id} không khai hình theo trạng thái mà vẫn sinh mã ${v.state}")
+                }
+            }
+        }
+        seen.forEach { (id, texts) ->
+            assertEquals(
+                2, texts.size,
+                "$id: mã trạng thái đổi 1↔0 mà CHỮ đứng yên ($texts) — hai bảng đang đọc hai field khác nhau",
+            )
+        }
+    }
+
+    /** Chưa đọc được ⇒ `null`, **không** phải `0`: `0` là lời khẳng định *"xe đang ở chế độ thứ nhất"*. */
+    @Test fun `chua doc duoc thi ma trang thai la null, khong phai 0`() {
+        assertNull(TelemetryReadout.of("ac_cycle", CarStatus())!!.state)
+        assertEquals(TelemetryView.PLACEHOLDER, TelemetryReadout.of("ac_cycle", CarStatus())!!.display)
+        assertEquals(0, TelemetryReadout.of("ac_cycle", CarStatus(climate = CarStatus.Climate(recircOn = false)))!!.state)
+        assertEquals(1, TelemetryReadout.of("ac_cycle", CarStatus(climate = CarStatus.Climate(recircOn = true)))!!.state)
+    }
+
     @Test fun `muc doc ra dung thang do tren xe, ma ngoai thang thi im lang`() {
         fun heat(raw: Int?) = TelemetryReadout.of("seat_heat_state", CarStatus(climate = CarStatus.Climate(seatHeatRaw = raw)))!!
         // [ĐO xe 2026-09-17] thang ghế: OFF = 1 · mức 1 = 2 · mức 2 = 3 (ControlLevels.RAW_BY_LEVEL).

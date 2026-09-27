@@ -130,11 +130,23 @@ internal class VoiceVad private constructor(
 
     /** Dải mẫu của **vế sau** — số học ở `:core`, xem KDoc [VoiceVadTrim.tailRange]. */
     fun tailRange(fromIndex: Int, windowSamples: Int): IntRange? =
-        VoiceVadTrim.tailRange(segments, fromIndex, windowSamples, VoiceVadTrim.msToSamples(VoiceVadTrim.MARGIN_MS, RATE))
+        VoiceVadTrim.tailRange(
+            segments, fromIndex, windowSamples,
+            VoiceVadTrim.msToSamples(VoiceVadTrim.MARGIN_MS, RATE),
+            VoiceVadTrim.msToSamples(VoiceVadTrim.PRE_ROLL_MS, RATE),
+        )
 
     /** Số mẫu đưa vào bộ giải mã theo chế độ `head` — xem [VoiceVadTrim.headTrimSamples]. */
     fun headTrimSamples(windowSamples: Int): Int =
         VoiceVadTrim.headTrimSamples(segments, windowSamples, VoiceVadTrim.msToSamples(VoiceVadTrim.MARGIN_MS, RATE))
+
+    /** Mẫu ĐẦU TIÊN đưa vào bộ giải mã — xem [VoiceVadTrim.headStartSamples] (im lặng dẫn đầu). */
+    fun headStartSamples(windowSamples: Int): Int =
+        VoiceVadTrim.headStartSamples(
+            segments, windowSamples,
+            VoiceVadTrim.msToSamples(VoiceVadTrim.PRE_ROLL_MS, RATE),
+            VoiceVadTrim.msToSamples(VoiceVadTrim.HEAD_SILENCE_CUT_MS, RATE),
+        )
 
     /** Mốc bắt đầu / kết thúc tiếng (ms) — hai trong ba con số mà `KachiVoiceTiming` phải in. */
     fun speechStartMs(): Int =
@@ -146,8 +158,10 @@ internal class VoiceVad private constructor(
     /** Một dòng nhật ký cho `KachiVoiceTiming` — mốc giờ của chính lượt này, không phải một lời kể. */
     fun summary(windowSamples: Int): String {
         val trim = headTrimSamples(windowSamples)
+        val start = headStartSamples(windowSamples)
         return "vad doan=${segments.size} tieng_bat_dau=${speechStartMs()}ms tieng_dut=${speechEndMs()}ms " +
             "cua_so=${VoiceVadTrim.samplesToMs(windowSamples, RATE)}ms cat_con=${VoiceVadTrim.samplesToMs(trim, RATE)}ms " +
+            "bo_dau=${VoiceVadTrim.samplesToMs(start, RATE)}ms " +
             "(nguong=$threshold · toi_thieu_tieng=${minSpeechMs}ms · nguong_im=${minSilenceMs}ms)"
     }
 

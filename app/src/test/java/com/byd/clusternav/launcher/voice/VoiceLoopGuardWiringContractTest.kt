@@ -46,7 +46,7 @@ class VoiceLoopGuardWiringContractTest {
         // `decodeOnlyIfSpeech` (lượt nối tự tuyên bố) LẪN `ep.route` (đường VAD ở lượt CHÍNH cũng bỏ khi
         // `!sawSpeech`). Soi lời gọi bề mặt chung thay biểu thức inline — abstraction đúng, có test `:core` riêng.
         val guard = body.indexOf("VoiceSilenceGate.skipDecode(")
-        val decode = body.indexOf("rec.finalResult(trim)")
+        val decode = body.indexOf("rec.rangeResult(ep.headStart(fed), trim)")   // 2.75: cắt hai đầu, xem VoiceVadWiringContractTest
         assertTrue(guard >= 0, "thiếu cổng bỏ-giải-mã — đây là chỗ cắt ~200 lượt giải mã/12 phút")
         assertTrue(guard < decode, "cổng phải đứng TRƯỚC lượt giải mã, không phải sau")
         assertTrue(

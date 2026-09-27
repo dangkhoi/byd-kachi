@@ -74,6 +74,60 @@ object CameraDewarpPrefs {
 
     const val CENTER_STEP = 1
 
+    // ── Dịch cửa sổ (`camera_dewarp_pan_x` · `_pan_y`) — % bề ô, trong ô CHƯA XOAY ─────────────────────────
+
+    /**
+     * Dịch tối đa **nửa ô** mỗi chiều ([DewarpParams.MIN_PAN]) — quá nửa thì tâm quang rơi hẳn ra ngoài cửa sổ.
+     *
+     * Đây là núm sinh ra từ một yêu cầu **[ĐO] trên xe 27/09**: owner duyệt bộ `F 55 % · K 100 % · S 130 %` ở rot 0
+     * (*"thẳng và tự nhiên"*) rồi xin *"chỉ cần dịch 1 tý ra sau nữa thôi"*. Hai đường khác đã bị **bác tại chỗ**:
+     * `scale` 140–145 % (*"nặng"*) và `cx −10 %` (hết thẳng — dời tâm quang là đổi chính trục của phép nắn).
+     * Dịch cửa sổ là đường còn lại, và là đường duy nhất giữ nguyên độ thẳng — xem KDoc [CameraDewarp.panLocal].
+     */
+    const val PAN_MIN = -50
+
+    /** Xem [PAN_MIN]. */
+    const val PAN_MAX = 50
+
+    /** `0` = đúng khung của 2.74 ⇒ xe không chạm núm thì không thấy khác một pixel nào. */
+    const val PAN_DEFAULT = 0
+
+    /**
+     * `±5 %` — cùng bước với bốn núm tỉ lệ, KHÔNG phải `1 %` của tâm.
+     *
+     * Vì sao không `1 %`: cửa sổ gương trên xe [ĐO] rộng `371×495` px ⇒ `1 %` ≈ 4 px, dưới ngưỡng owner phân biệt
+     * được khi đang ngồi trên xe (cùng lý lẽ đã chọn `PCT_STEP`). `5 %` ≈ 19–25 px — thấy ngay mà vẫn đủ mịn để
+     * *"dịch 1 tý"*, và trọn dải `−50..50` đi hết trong 20 cú chạm.
+     */
+    const val PAN_STEP = 5
+
+    /** `camera_dewarp_pan_x` · `_pan_y` đọc lên có dùng được không. */
+    fun isPanPct(v: Int): Boolean = v in PAN_MIN..PAN_MAX
+
+    /**
+     * ═══ Dấu của `camera_dewarp_pan_x` theo **BÊN** đang xem — một núm, một nghĩa vật lý ở cả hai gương ═══════
+     *
+     * ## Vì sao phải có dấu — [ĐO khung THÔ xe 2026-09-27 09:58, `camera_frame` 5120×960]
+     * Hai camera gương là **ảnh soi gương của nhau**: thân xe của chính mình nằm ở mép **PHẢI** của ô gương trái
+     * (dải 1) và ở mép **TRÁI** của ô gương phải (dải 2). Đo bằng tương quan chuẩn hoá trên đúng vùng thân xe của
+     * khung ấy: lật ngang rồi so ⇒ **0,715**; không lật ⇒ **0,152** (nền so sánh của hai nửa cùng một ô: 0,550).
+     *
+     * ⇒ Trục `+x` của ô trỏ về **hai phía ngược nhau** trên hai bên. Một pref dùng chung, cộng thẳng vào `local`
+     * như [CameraDewarp.panLocal] làm, sẽ kéo khung gương trái *ra sau* và khung gương phải *ra trước* — owner xin
+     * *"kéo ra sau chút"* cho **cả hai** bên thì chỉ được một bên đúng, và bên kia sai mà không có lời báo nào.
+     *
+     * ## Vì sao bên TRÁI giữ `+1`
+     * Nghĩa của núm (*"âm = về phía đuôi xe"*) đã được owner **duyệt bằng mắt trên xe** ở gương trái 27/09
+     * (`camera-dewarp-gl.md` §B: `pan_x −20 %`). CLAUDE.md §6 — không đảo đường đã chạy tốt ⇒ bên trái không đổi
+     * một ly, chỉ bên phải được nhân `−1` để nói **cùng một câu**.
+     *
+     * ⚠ Chỉ trục **x** lật: hai camera soi gương quanh trục dọc của xe, nên *"lên/xuống"* (`pan_y`) giống nhau.
+     *
+     * @param left đang hiện gương TRÁI hay không — một sự thật **lúc chạy** (`turn == Turn.LEFT`), không phải một
+     *   nhánh theo tên gói/đời xe (CLAUDE.md §7).
+     */
+    fun panXSign(left: Boolean): Int = if (left) 1 else -1
+
     /** `uTexMatrix` mặc định BẬT — xem KDoc lớp về AOSP `SurfaceTexture.java:44-47`. */
     const val TEX_MATRIX_DEFAULT = true
 
@@ -123,6 +177,8 @@ object CameraDewarpPrefs {
         scalePct: Int = PCT_DEFAULT,
         centerXPct: Int = CENTER_DEFAULT,
         centerYPct: Int = CENTER_DEFAULT,
+        panXPct: Int = PAN_DEFAULT,
+        panYPct: Int = PAN_DEFAULT,
     ): DewarpParams = DewarpParams(
         amount = pct(amountPct, isAmountPct(amountPct), AMOUNT_DEFAULT),
         focal = base.focal * pct(focalPct, isPct(focalPct), PCT_DEFAULT),
@@ -130,6 +186,8 @@ object CameraDewarpPrefs {
         scale = base.scale * pct(scalePct, isPct(scalePct), PCT_DEFAULT),
         centerX = centerX + pct(centerXPct, isCenterPct(centerXPct), CENTER_DEFAULT),
         centerY = centerY + pct(centerYPct, isCenterPct(centerYPct), CENTER_DEFAULT),
+        panX = pct(panXPct, isPanPct(panXPct), PAN_DEFAULT),
+        panY = pct(panYPct, isPanPct(panYPct), PAN_DEFAULT),
     ).clamped()
 
     /** `%` → tỉ lệ; giá trị ngoài miền ⇒ [fallback] (xem KDoc [apply] về *"mặc định biết trước"*). */

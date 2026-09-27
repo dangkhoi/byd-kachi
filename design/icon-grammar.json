@@ -97,6 +97,14 @@
    "domain": "COCKPIT",
    "note": "NÂNG CAO (cockpit, ô tile_adv)"
   },
+  "air_fresh": {
+   "domain": "CLIMATE",
+   "note": "LẤY GIÓ NGOÀI (`ac_cycle` mã 0 — cặp đôi của recirc)"
+  },
+  "air_intake": {
+   "domain": "CLIMATE",
+   "note": "CHẾ ĐỘ LẤY GIÓ chưa đọc được chiều (`ac_cycle` null)"
+  },
   "alert": {
    "domain": "BODY",
    "note": "CẢNH BÁO KHẨN (`emergency_alarm`)",
@@ -354,6 +362,10 @@
   "sensor": {
    "domain": "CLIMATE",
    "note": "CẢM BIẾN (`pm25_online`"
+  },
+  "sensor_off": {
+   "domain": "CLIMATE",
+   "note": "CẢM BIẾN CHẾT (`pm25_online` mã 0 — gạch chéo)"
   },
   "speed": {
    "domain": "DRIVETRAIN",

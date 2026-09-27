@@ -16,14 +16,20 @@ import com.byd.clusternav.R
  * cờ huỷ · tấm chữ · micro đang mở) hoặc nhận chúng qua một nắm lambda — hai đường tới cùng một trạng thái, đúng
  * thứ đã phải vá ba lần. Hàm mở rộng dùng lại **đúng** các trường ấy.
  *
- * ## `openTurn = true` chỉ ở ĐÂY — và vì sao thế là đủ cho **cả hai** lối vào
+ * ## `openTurn = true` — một chỗ bật là **cả hai lối vào** có
  * Nút mic của màn chính và đường *"Hey Kachi"* (`:wake`) **không** có hai đường nghe: cả hai dựng một
  * [VoiceSession] (`KachiHomeWiring.voiceSession` · `VoiceWakeSessionFactory.buildSession`) và cùng chạy đúng hàm
  * này. Nên một chỗ bật là hai lối vào có — và `VoiceOpenTurnWiringContractTest` khoá đúng vế đó, thay vì tin vào
  * một câu trong tài liệu.
  *
- * Ba lượt NỐI (hội thoại · hỏi lại · xác nhận, ở `VoiceSessionTurns.kt`) **không** bật: chúng đã có vòng hỏi-đáp
- * riêng (R8/R9), không giữ PCM, và câu trả lời ở đó là một vế ngắn đã biết trước hình dạng.
+ * ## ⚠ 2.75 — KDoc cũ nói *"ba lượt NỐI không bật"*, và số liệu xe đã bác nó
+ * Lý lẽ cũ: *"lượt nối đã có vòng hỏi-đáp riêng (R8/R9) và câu trả lời ở đó là một vế ngắn đã biết trước hình
+ * dạng"*. [ĐO xe 2026-09-27 10:30–10:45] **sai với đường hội thoại**: R9 giữ micro 5 giây sau **mọi** câu trả lời
+ * nên câu thứ hai trở đi của một phiên **luôn** là lượt nối, và ở đó người lái nói một câu lệnh ĐẦY ĐỦ — 15/22
+ * lượt *"mở &lt;app&gt; vào ô số N"* của buổi đo đi qua `VoiceSessionTurns.listenOnce`, trong đó lượt 10:43:12
+ * nghe ra *"mở vietmap vào ô số"* (vế DỞ mà [VoiceOpenTurn.isOpen] nhận ra) mà **không ai chờ vế sau**.
+ * ⇒ `listenOnce` nay cũng bật; cổng XÁC NHẬN (`listenForConfirm`) thì không. Chi tiết:
+ * `docs/diagnostics/offcar-2026-09-26/voice-car-0927.md` §2.4.
  */
 @Suppress("ReturnCount", "LongMethod")
 internal fun VoiceSession.runListen(my: Int) {

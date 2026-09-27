@@ -42,11 +42,19 @@ MAX_AFTER_FRAC = 0.02
 MIN_PIXELS = 200
 
 
-def horizon_deviation(path: str) -> tuple[float, float, int, tuple[int, int]]:
+def horizon_deviation(path: str, axis: str = "auto") -> tuple[float, float, int, tuple[int, int], str, int]:
     """Do lech toi da + trung binh (px) cua chan troi so voi duong thang khop tot nhat.
 
-    Tra `(max_dev, mean_dev, so_pixel, (w, h))`. Khop `y = a*x + b` bang binh phuong toi thieu tren TAM cua moi
-    cot (chu khong tren moi pixel): net day 3 px, lay tam cot thi mot net day khong tu bien thanh do lech.
+    Tra `(max_dev, mean_dev, so_pixel, (w, h), truc, be_ngang_vuong_goc)`.
+
+    ## Vi sao phai biet TRUC (2.75)
+    Chan troi cua `CameraDewarpTestPattern` nam NGANG trong o nguon. Khung ra co the da bi `uRotation` xoay ±90
+    (mac dinh cua CA HAI ben guong: trai ↺−90 / phai ↻+90), luc do chan troi thanh gan DOC — khop `y = a*x + b`
+    theo tung cot se lay trung binh ca mot cot day va cho ra mot con so vo nghia. `axis="y"` khop `x = a*y + b`
+    theo tung HANG, tuc cung phep do nhung doc theo truc dai cua net.
+
+    `axis="auto"` chon truc co NHIEU vach hon (nhieu cot co pixel hon ⇒ net nam ngang, va nguoc lai). Nguong
+    tuyet doi thi lay be rong VUONG GOC voi net (`h` cho net ngang, `w` cho net doc), khong phai luon lay `h`.
     """
     img = Image.open(path).convert("RGB")
     w, h = img.size
@@ -55,15 +63,27 @@ def horizon_deviation(path: str) -> tuple[float, float, int, tuple[int, int]]:
     mask = dist <= COLOR_TOL
     n = int(mask.sum())
     if n < MIN_PIXELS:
-        return (float("nan"), float("nan"), n, (w, h))
+        return (float("nan"), float("nan"), n, (w, h), axis, h)
 
     cols = np.where(mask.any(axis=0))[0]
-    ys = np.array([np.flatnonzero(mask[:, c]).mean() for c in cols], dtype=np.float64)
-    xs = cols.astype(np.float64)
-    # `polyfit` bac 1 = binh phuong toi thieu; do lech doc theo y (chan troi gan nam ngang nen y-lech ≈ vuong goc).
-    a, b = np.polyfit(xs, ys, 1)
-    dev = np.abs(ys - (a * xs + b))
-    return (float(dev.max()), float(dev.mean()), n, (w, h))
+    rows = np.where(mask.any(axis=1))[0]
+    if axis == "auto":
+        axis = "x" if len(cols) >= len(rows) else "y"
+
+    if axis == "x":
+        # Net gan NGANG: mot diem cho moi cot, khop y theo x, lech doc theo y ⇒ nguong theo be CAO.
+        along, perp = cols, h
+        ts = np.array([np.flatnonzero(mask[:, c]).mean() for c in cols], dtype=np.float64)
+    else:
+        # Net gan DOC (khung da xoay ±90): mot diem cho moi hang, khop x theo y, lech doc theo x ⇒ nguong be NGANG.
+        along, perp = rows, w
+        ts = np.array([np.flatnonzero(mask[r, :]).mean() for r in rows], dtype=np.float64)
+
+    us = along.astype(np.float64)
+    # `polyfit` bac 1 = binh phuong toi thieu; net gan song song truc `us` nen lech theo `ts` ≈ vuong goc.
+    a, b = np.polyfit(us, ts, 1)
+    dev = np.abs(ts - (a * us + b))
+    return (float(dev.max()), float(dev.mean()), n, (w, h), axis, perp)
 
 
 def main() -> int:
@@ -71,6 +91,9 @@ def main() -> int:
     ap.add_argument("--before", required=True, help="PNG chup voi camera_dewarp_amount = 0")
     ap.add_argument("--after", required=True, help="PNG chup voi camera_dewarp_amount = 100")
     ap.add_argument("--out", help="ghi bao cao chi tiet ra tep")
+    ap.add_argument("--axis", default="auto", choices=("auto", "x", "y"),
+                    help="truc khop net chan troi: auto (mac dinh), x = net ngang, y = net doc (khung xoay ±90)")
+    ap.add_argument("--label", default="", help="nhan in kem (vd `rot=L90`) de doc bao cao nhieu luot")
     args = ap.parse_args()
 
     lines: list[str] = []
@@ -79,24 +102,27 @@ def main() -> int:
         lines.append(s)
         print(s)
 
-    b_max, b_mean, b_n, b_size = horizon_deviation(args.before)
-    a_max, a_mean, a_n, a_size = horizon_deviation(args.after)
+    b_max, b_mean, b_n, b_size, b_axis, _ = horizon_deviation(args.before, args.axis)
+    # MOT truc cho ca hai anh: `auto` chon theo tung anh se so hai con so do tren HAI truc khac nhau (nguong ti so
+    # thanh vo nghia) neu phep nan doi du hinh dang net de hai lan chon lech nhau. Chot theo anh TRUOC — do la anh
+    # con giu nguyen hinh dang nguon.
+    a_max, a_mean, a_n, a_size, a_axis, a_perp = horizon_deviation(args.after, b_axis)
 
-    say("=== DO THANG CUA CHAN TROI (px lech so voi duong khop) ===")
-    say(f"  truoc (amount=0)   {b_size[0]}x{b_size[1]}  pixel={b_n:6d}  max={b_max:7.2f}  mean={b_mean:7.2f}")
-    say(f"  sau   (amount=100) {a_size[0]}x{a_size[1]}  pixel={a_n:6d}  max={a_max:7.2f}  mean={a_mean:7.2f}")
+    say(f"=== DO THANG CUA CHAN TROI (px lech so voi duong khop) {args.label} ===")
+    say(f"  truoc (amount=0)   {b_size[0]}x{b_size[1]}  truc={b_axis}  pixel={b_n:6d}  max={b_max:7.2f}  mean={b_mean:7.2f}")
+    say(f"  sau   (amount=100) {a_size[0]}x{a_size[1]}  truc={a_axis}  pixel={a_n:6d}  max={a_max:7.2f}  mean={a_mean:7.2f}")
 
     if np.isnan(b_max) or np.isnan(a_max):
         say(f"  KHONG DO DUOC: can >= {MIN_PIXELS} pixel mau chan troi trong CA HAI anh.")
         say("  Nghia la: khung den / chua co khung / crop khong chua chan troi. Xem logcat -s KachiCamera.")
         verdict = False
     else:
-        limit_px = MAX_AFTER_FRAC * a_size[1]
+        limit_px = MAX_AFTER_FRAC * a_perp
         ok_ratio = a_max * RATIO <= b_max
         ok_abs = a_max <= limit_px
         say("")
         say(f"  nguong 1 (ti so):     sau*{RATIO:g} <= truoc   ⇒ {a_max * RATIO:7.2f} <= {b_max:7.2f}  {'DAT' if ok_ratio else 'KHONG DAT'}")
-        say(f"  nguong 2 (tuyet doi): sau <= {MAX_AFTER_FRAC:g} * be cao ⇒ {a_max:7.2f} <= {limit_px:7.2f}  {'DAT' if ok_abs else 'KHONG DAT'}")
+        say(f"  nguong 2 (tuyet doi): sau <= {MAX_AFTER_FRAC:g} * be vuong goc ⇒ {a_max:7.2f} <= {limit_px:7.2f}  {'DAT' if ok_abs else 'KHONG DAT'}")
         verdict = ok_ratio and ok_abs
 
     say("")

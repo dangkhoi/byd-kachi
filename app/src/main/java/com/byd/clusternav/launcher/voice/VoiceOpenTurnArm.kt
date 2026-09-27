@@ -24,11 +24,12 @@ import java.util.concurrent.FutureTask
  * | **giữ vòng đọc chạy, giải mã ở luồng nền** | vòng đọc giữ nhịp 200 ms như cũ; phần chờ **trùng** với lượt giải mã mà hôm nay vẫn phải chạy ⇒ câu đủ nghĩa về đúng cùng thời điểm như trước bản này |
  *
  * ⇒ Cái luồng nền này không phải để *"cho nhanh"*: nó là cách duy nhất vừa có chữ vừa còn nghe. Và nó không đảo
- * thứ tự đường cũ (CLAUDE.md §6): lượt giải mã vẫn đúng một lượt, trên đúng khúc `[0, trimA)` mà bản 2.72 giải
- * mã — chỉ **thời điểm** nó bắt đầu là sớm hơn, còn kết quả từng-ký-tự thì bằng nhau.
+ * thứ tự đường cũ (CLAUDE.md §6): lượt giải mã vẫn đúng một lượt, trên đúng khúc `[headStart, trimA)` mà lượt
+ * KHÔNG giữ của [VoiceCapture] cũng giải mã — chỉ **thời điểm** nó bắt đầu là sớm hơn, còn kết quả từng-ký-tự thì
+ * bằng nhau. (`headStart` = 0 ở gần như mọi lượt — xem [VoiceTurnEndpoint.headStart].)
  *
  * ## Tranh chấp dữ liệu — vì sao an toàn, không phải vì sao chắc là an toàn
- * Luồng nền đọc `buffer[0, trimA)` của [VoiceRecognizer]; vòng đọc tiếp tục `accept()` **ghi vào sau** chỉ số
+ * Luồng nền đọc `buffer[headStart, trimA)` của [VoiceRecognizer]; vòng đọc tiếp tục `accept()` **ghi vào sau** chỉ số
  * `filled ≥ trimA`. Hai vùng **không chồng nhau**. `Thread.start()` là một mốc happens-before nên luồng nền thấy
  * trọn phần đã gom tại lúc [arm]; các lượt ghi sau đó có thấy hay không cũng không đổi kết quả (`minOf(filled,
  * trimA)` luôn ra `trimA`). Không có lượt giải mã nào chạy song song với lượt khác: [result] `get()` xong vế
@@ -73,10 +74,13 @@ internal class VoiceOpenTurnArm(
         if (trim <= 0) return false
         segmentsAtEndpoint = ep.segmentCount()
         armedAt = System.currentTimeMillis()
-        val task = FutureTask { rec.finalResult(trim) }
+        // VOICE-HEAD-SILENCE: vế TRƯỚC cũng bỏ im lặng dẫn đầu (0 ở gần như mọi lượt) — cùng khúc mà [VoiceCapture]
+        // đưa vào bộ giải mã ở lượt không giữ, nên hai đường vẫn nghe đúng một thứ.
+        val start = ep.headStart(fedSamples)
+        val task = FutureTask { rec.rangeResult(start, trim) }
         worker = task
         Thread(task, "KachiOpenTurnDecode").apply { isDaemon = true }.start()
-        Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: giữ micro trong lúc giải mã vế trước ($trim mẫu)")
+        Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: giữ micro trong lúc giải mã vế trước (mẫu $start..$trim)")
         return true
     }
 

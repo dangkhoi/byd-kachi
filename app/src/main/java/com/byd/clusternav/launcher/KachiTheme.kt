@@ -332,6 +332,13 @@ object KachiTheme {
         "ic-hood" -> R.drawable.ic_hood
         "ic-light" -> R.drawable.ic_light
         "ic-recirc" -> R.drawable.ic_recirc
+        // UX8 (owner 2026-09-27) — chip *Chế độ lấy gió* đổi HÌNH theo chế độ thay vì in chữ "Trong"/"Ngoài":
+        // `ic-recirc` (đã có) = lấy gió TRONG · `ic-air-fresh` = lấy gió NGOÀI · `ic-air-intake` = chưa đọc được
+        // chiều. Ba hình cùng một khoang xe nên đọc ra là một cặp ba. Bảng khai ở `CapabilityIcons.STATE`.
+        "ic-air-fresh" -> R.drawable.ic_air_fresh
+        "ic-air-intake" -> R.drawable.ic_air_intake
+        // Cùng lượt: cảm biến bụi mịn CHẾT (`pm25_online` = 0) — cảm biến còn sống dùng lại `ic-sensor`.
+        "ic-sensor-off" -> R.drawable.ic_sensor_off
         "ic-volume" -> R.drawable.ic_volume
         "ic-cast" -> R.drawable.ic_cast
         "ic-bolt" -> R.drawable.ic_bolt

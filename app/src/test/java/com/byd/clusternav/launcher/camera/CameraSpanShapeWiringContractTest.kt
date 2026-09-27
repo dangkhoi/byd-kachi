@@ -15,9 +15,11 @@ import org.junit.jupiter.api.Test
  *
  *  1. controller **suy ra** crop từ `:core` thay vì lấy hằng `view.crop`, và truyền hình khung + kênh HAL xuống;
  *  2. `AvmCamera`: vòng dò `0..3` của 2.73 **còn nguyên từng byte** khi pref vắng; nhánh đo đọc `rc` thật;
- *  3. `rmPreviewSurface` gọi **SAU** `stopPreview` + `close`, đúng tên đã xác minh trong firmware;
+ *  3. `rmPreviewSurface` gọi **GIỮA** `stopPreview` và `close` (2.75 — [ĐO] xe 27/09 `rc=false` khi gọi sau
+ *     `close`), đúng tên đã xác minh trong firmware;
  *  4. overlay bo TRÒN bằng **đúng** `ViewOutlineProvider` của 2.73 (không thêm cơ chế cắt thứ hai);
- *  5. bốn hàng chip + sáu khoá `prefs_set` (có `read_back`) — thiếu chúng thì owner không dò được gì trên xe.
+ *  5. bốn hàng chip + sáu khoá `prefs_set` (có `read_back`) — thiếu chúng thì owner không dò được gì trên xe;
+ *  6. (2.75) `camera_dewarp_pan_x` mang **dấu theo bên** — hai camera gương soi gương nhau.
  */
 class CameraSpanShapeWiringContractTest {
 
@@ -28,6 +30,7 @@ class CameraSpanShapeWiringContractTest {
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
     private val settings by lazy { app("launcher/SettingsSectionsCar.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
+    private val prefsDewarp by lazy { app("PrefsCameraDewarp.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
     private val bridge by lazy { app("launcher/ClusterNavBridgeAutomation.kt") }
     private val vi by lazy { SourceRoots.text("src/main/res/values/strings_kachi.xml") }
@@ -53,11 +56,40 @@ class CameraSpanShapeWiringContractTest {
         // Hình khung đi tiếp xuống tầng vẽ; kênh HAL đi tiếp xuống tầng mở camera.
         assertTrue("shape = shape," in controller, "hình khung phải vào overlay.show(shape = …)")
         assertTrue("avm.open(camId, surface, halMode)" in controller, "kênh HAL phải vào AvmCamera.open")
-        assertTrue("val halMode = Prefs.cameraHalMode(appCtx)" in controller)
+        // Từ 2.75 kênh HAL là một phép HỢP ở `:core` (nguồn × pref × kênh của view) — xem `CameraSignalPolicy.channelFor`.
+        assertTrue("CameraSignalPolicy.channelFor(" in controller, "kênh HAL phải hợp ở `:core`, không `if` ở `:app`")
+        assertTrue("halModePref = Prefs.cameraHalMode(appCtx)," in controller, "pref cũ vẫn là đường owner ĐÈ")
+        assertTrue("viewChannel = view.channel," in controller, "kênh mặc định per-side đến từ CamView (hồ sơ xe)")
+        // NGUỒN ảnh: mọi tầng hình học phải nhận cỡ NỘI DUNG, không phải cỡ buffer (kênh đơn bị kéo ngang ×STRIPS).
+        assertTrue("CameraSignalPolicy.usesChannel(Prefs.cameraSource(appCtx))" in controller)
+        assertTrue("val hintW = CameraPanoCrop.contentWidth(view.hintW, channel)" in controller,
+            "cỡ nội dung tính MỘT chỗ rồi truyền xuống — hai lượt tính là hai kết quả lệch được")
+        assertTrue("channel = channel," in controller, "crop + uniform đều phải biết đang ở nguồn nào")
         // Một dòng log đủ để đọc lại quyết định trên xe (CLAUDE.md §11: app tự chụp, owner không gõ adb).
         assertTrue("vùng=\$span" in controller && "hình=\$shape" in controller && "halMode=\$halMode" in controller,
             "dòng log của controller phải nói vùng/hình/kênh — đó là thứ owner đọc lại khi chốt dải")
         assertTrue("rot=\$rot\")" in controller, "dòng log vẫn kết bằng rot= (hợp đồng của bài R7)")
+    }
+
+    /**
+     * ═══ `camera_dewarp_pan_x` phải mang dấu theo **BÊN** — [ĐO khung thô xe 27/09 09:58] ═════════════════════
+     *
+     * Khung `camera_frame` `5120×960` của buổi xe: hai camera gương là **ảnh soi gương của nhau** (thân xe ở mép
+     * PHẢI ô gương trái, mép TRÁI ô gương phải; tương quan lật ngang 0,715 · không lật 0,152). Gỡ dòng `left =` ⇒
+     * một núm kéo hai khung về hai phía **ngược nhau** mà không một bài `:core` nào đỏ (số học ở
+     * [CameraDewarpPrefs.panXSign] vẫn đúng, chỉ là không ai gọi) — đúng khuôn bẫy CLAUDE.md §8.
+     */
+    @Test fun `pan_x mang dau theo ben, tu controller xuong core`() {
+        assertTrue("left = turn == Turn.LEFT," in controller,
+            "controller phải nói BÊN cho bộ uniform — hai camera gương soi gương nhau")
+        val body = SourceRoots.body(prefsDewarp, "fun Prefs.cameraGlUniforms(")
+        assertTrue("panXSign = CameraDewarpPrefs.panXSign(left)" in body,
+            "dấu phải suy ở `:core` (có test bằng số), không phải một `if` ở `:app`")
+        // Tham số nằm ở CHỮ KÝ (ngoài thân hàm) ⇒ đọc trên nguyên tệp. `left` KHÔNG có `=` ⇒ không quên được.
+        assertTrue("    left: Boolean,\n" in prefsDewarp, "`left` phải là tham số BẮT BUỘC của cameraGlUniforms")
+        assertTrue("left: Boolean =" !in prefsDewarp, "`left` KHÔNG được có mặc định — mặc định là chỗ để quên")
+        // `pan_y` KHÔNG lật: hai camera soi gương quanh trục DỌC, nên lên/xuống giống nhau ở hai bên.
+        assertTrue("panYSign" !in body && "panYSign" !in controller, "pan_y không có dấu theo bên")
     }
 
     /** `cam_sort` được ghi MỘT dòng lúc bật tính năng, trên thread nền, và **không gate** gì (CLAUDE.md §3). */
@@ -103,16 +135,22 @@ class CameraSpanShapeWiringContractTest {
     }
 
     /**
-     * `close()`: hai bước 2.73 trước, `rmPreviewSurface` **sau** — kiểm bằng **vị trí** trong thân hàm, không chỉ
-     * bằng `contains` (một `contains` không thấy được thứ tự, mà thứ tự đúng là điều CLAUDE.md §6 bắt giữ).
+     * `close()`: `stopPreview` → `rmPreviewSurface` (móc ĐO, có cổng) → `close` — kiểm bằng **vị trí** trong thân
+     * hàm, không chỉ bằng `contains` (một `contains` không thấy được thứ tự, mà thứ tự đúng là điều phải giữ).
+     *
+     * ⚠ **Đổi so với 2.74** (bài này trước đây ghim `rm` đứng SAU `close`): [ĐO xe 27/09] bốn lượt dỡ đều ghi
+     * `rmPreviewSurface(mode=0) rc=false` — HAL từ chối vì camera đã đóng ⇒ vị trí cũ làm móc đo **không đo được
+     * gì**. Vị trí mới cũng là thứ tự Electro dùng (`stop → rm → release`, RE §3.1). CLAUDE.md §6 (*"không đảo
+     * đường đã chạy tốt"*) không bị vi phạm: nhánh này **chỉ** chạy khi chế độ kiểm thử đang mở, nên đường của xe
+     * lúc chạy bình thường vẫn đúng hai lời gọi `stopPreview` → `close` của 2.73.
      */
     @Test fun `close giu thu tu 2 73 roi moi rmPreviewSurface`() {
         val body = SourceRoots.body(avm, "fun close(")
         val stop = body.indexOf("\"stopPreview\"")
-        val close = body.indexOf("\"close\"")
+        val close = body.indexOf("getDeclaredMethod(\"close\")")
         val rm = body.indexOf("\"rmPreviewSurface\"")
-        assertTrue(stop >= 0 && stop < close, "stopPreview phải đứng trước close (thứ tự 2.73)")
-        assertTrue(close >= 0 && close < rm, "rmPreviewSurface phải đứng SAU close — đường mới xuống cuối, không đảo đường đã chạy")
+        assertTrue(stop >= 0 && stop < rm, "stopPreview phải đứng trước rmPreviewSurface (thứ tự 2.73 giữ nguyên)")
+        assertTrue(rm >= 0 && rm < close, "rmPreviewSurface phải đứng TRƯỚC close — gọi sau thì HAL từ chối (rc=false)")
         // Tên đã xác minh trong firmware: `removePreviewSurface` KHÔNG tồn tại ở đâu cả ⇒ không được thử tên thứ hai.
         assertTrue("removePreviewSurface" !in avm, "tên này không có trong SDK/framework BYD — đừng đoán thêm tên")
         assertTrue("Surface::class.java, Integer.TYPE" in body, "chữ ký (Surface, int) — IDiLinkAVMCamera.java:38")

@@ -144,6 +144,11 @@ object TopStripChips {
      *     Icon mờ ở đây sẽ là lời khẳng định *"đang tắt"* mà không ai đo được.
      *  3. **Datum SỐ không đụng tới** (nhiệt/gió/pin/lốp): chúng không có [TelemetryView.onOff] nên đi nhánh cũ,
      *     vẫn [ChipTone.NEUTRAL] + hiện giá trị. Một con số không có trạng thái bật/tắt để mà tô.
+     *
+     * ## UX8 — datum HAI CHẾ ĐỘ thì đổi HÌNH, không đổi sáng/mờ
+     * Họ thứ ba (lấy gió trong/ngoài, cảm biến sống/chết): **không chế độ nào là "tắt"** nên sáng/mờ không nói
+     * được cái nào ⇒ mỗi chế độ MỘT hình ([CapabilityIcons.forState]), chữ giá trị bỏ hẳn. Ba họ, ba luật, một
+     * bảng `when` — thứ tự trong `when` chính là thứ tự ưu tiên, và bài canh khoá không datum nào rơi vào hai họ.
      */
     private fun datumChip(id: String, status: CarStatus, units: UnitPrefs, labels: Boolean): ChipView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
@@ -164,14 +169,25 @@ object TopStripChips {
         // Điều kiện là một **tính chất dữ liệu** (`maxLevel >= 1` — nút của datum này chạy theo thang mức), KHÔNG
         // phải một nhánh theo mã ghế (CLAUDE.md §7): thêm một nút thang mức là nó tự đúng.
         val hasLevel = CapabilityDots.maxLevel(id) >= 1
+        // ═══ UX8 — datum HAI CHẾ ĐỘ nói trạng thái bằng HÌNH ═══════════════════════════════════════════════════
+        //
+        // [ĐO xe 2026-09-27, owner nhìn thanh trên] chip `ac_cycle` in `"Chế độ lấy gió · Trong"` — lại là chữ
+        // trạng thái mà owner đã gạch bỏ từ 09-21, lọt qua vì *lấy gió trong/ngoài* không phải bật/tắt (không có
+        // [TelemetryView.onOff]) mà cũng không chạy theo thang mức. Nay hình đổi theo chế độ, chữ bỏ hẳn.
+        //
+        // Điều kiện là **bảng khai** ([CapabilityIcons.hasStateIcons]), không phải một nhánh theo mã (CLAUDE.md
+        // §7): khai thêm một datum ở bảng ấy là chip này tự đúng, không phải sửa một dòng nào ở đây.
+        val stateIcon = CapabilityIcons.forState(id, view.state)
         // B9 (owner 2026-09-22): chip là bề mặt hẹp nhất — với datum mức rút "Mức 2"/"Level 2" → "2" cho đỡ chật
         // (hình ghế nói rõ là ghế rồi). Nay lấy thẳng [TelemetryView.level] chứ không bóc chuỗi đã dịch.
-        val chipValue = when {
+        // UX8 (owner 2026-09-27): chữ `AUTO` trên chip viết **thường** — phép hạ chữ sống đúng một bản ở
+        // [ClimateAuto.narrowAuto] (cạnh chính hằng `AUTO`), và áp cho MỌI chip mang dấu ấy, không theo mã.
+        val chipValue = ClimateAuto.narrowAuto(when {
             !hasLevel -> value.removePrefix(Strings.t("Mức ", "Level ")).trim()
             view.level == null -> TelemetryView.PLACEHOLDER   // chưa đọc / mã ngoài thang ⇒ "—" + NEUTRAL
             view.level > 0 -> view.level.toString()
             else -> ""                                        // mức 0 = TẮT: icon mờ nói hết, không in chữ "Tắt"
-        }
+        })
         return ChipView(
             // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
             // phải nhãn đầy — lý do `shortEn` tồn tại.
@@ -179,13 +195,18 @@ object TopStripChips {
             // Bật/tắt: chỉ nhãn (trạng thái đã ở màu icon). Tắt nhãn NỮA ⇒ chuỗi rỗng = chip chỉ-icon, và đó đúng là
             // thứ người dùng xin khi gạt cả hai công tắc — icon vẫn nói được trạng thái nhờ màu.
             text = when {
+                stateIcon != null -> if (labels) spec.displayShortLabel else ""      // UX8: hình nói chế độ, chữ chỉ nói VIỆC GÌ
                 on != null || isBool -> if (labels) spec.displayShortLabel else ""   // bật/tắt: chỉ nhãn (chưa đọc = icon mờ, không "· —")
                 chipValue.isEmpty() -> if (labels) spec.displayShortLabel else ""    // UX5 · mức 0: cùng cách với bật/tắt
                 labels -> "${spec.displayShortLabel} · $chipValue"
                 else -> chipValue
             },
-            icon = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain),
+            icon = stateIcon ?: CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain),
             tone = when {
+                // UX8 — hai chế độ: HÌNH đã nói chế độ nào, nên sắc thái chỉ còn nói *"đã đọc được hay chưa"*.
+                // Đọc được ⇒ sáng (một chế độ đang chạy thật, cả hai đều là trạng thái sống, không cái nào là
+                // "tắt" để mà mờ); chưa đọc ⇒ trung tính — luật chung *"không biết ≠ đang tắt"* của thanh trên.
+                stateIcon != null -> if (view.state != null) ChipTone.ACTIVE else ChipTone.NEUTRAL
                 on == true -> ChipTone.ACTIVE
                 on == false -> ChipTone.INACTIVE
                 // UX5 — datum MỨC: mức ≥ 1 sáng, mức 0 mờ, **chưa đọc thì KHÔNG mờ** (xem dưới). Luật này trùng khít

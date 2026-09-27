@@ -250,6 +250,50 @@ object CameraSignalPolicy {
     /** Mã bề rộng đọc lên có dùng được không — cùng vai [isRender] (prefs sửa tay được qua `prefs_set`). */
     fun isSpan(v: String): Boolean = v in SPANS
 
+    // ── NGUỒN ảnh: khung GHÉP 4-in-1 hay MỘT KÊNH camera (`camera_source`, 2.75) ───────────────────────────
+
+    /** Khung **GHÉP** 4-in-1 rồi cắt một dải ([CameraPanoCrop]) — đường của 2.36…2.74, mặc định. */
+    const val SOURCE_PANO = "PANO"
+
+    /**
+     * ═══ **MỘT KÊNH** camera, khung đầy — [ĐO xe 27/09 11:16, trả lời RE §7 Q3/D7] ═══════════════════════
+     *
+     * `addPreviewSurface(surface, halMode)` với `halMode ∈ 1..4` trả **`rc = true`** và buffer (vẫn `5120×960`)
+     * chứa **trọn khung fisheye của MỘT camera**, **kéo ngang** cho đầy — anamorphic đúng [CameraPanoCrop.STRIPS]
+     * lần (ảnh thật `1280×960`). Seal: `2` = gương TRÁI · `3` = gương PHẢI ([ĐO], cột E4/E3); `1`/`4` = trước/sau
+     * [SUY]. Nguồn TỐT HƠN cho gương: trọn vòng ảnh, và ô vẫn `1280×960` nên `K`/`F` owner đã duyệt giữ nguyên.
+     *
+     * ⚠ Mọi tầng hình học phải dùng **cỡ NỘI DUNG** ([CameraPanoCrop.contentWidth]), không phải cỡ buffer — lấy
+     * `5120` ⇒ `aspect = 5,33`, đồng-θ thành ellipse dẹt. Chi tiết: `camera-dewarp-gl.md` §F.
+     */
+    const val SOURCE_CHANNEL = "CHANNEL"
+
+    /** Mọi mã nguồn hợp lệ — cũng là thứ tự chip trong Cài đặt (mặc định đứng đầu). */
+    val SOURCES: List<String> = listOf(SOURCE_PANO, SOURCE_CHANNEL)
+
+    /** Nguồn mặc định = đường đang chạy hiện trường (CLAUDE.md §6: cái mới không được đổi mặc định). */
+    fun defaultSource(): String = SOURCE_PANO
+
+    /** Mã nguồn đọc lên có dùng được không. */
+    fun isSource(v: String): Boolean = v in SOURCES
+
+    /** Đang lấy MỘT kênh camera (khung bị kéo ngang) hay khung ghép? Mã lạ ⇒ [defaultSource]. */
+    fun usesChannel(source: String): Boolean =
+        (if (isSource(source)) source else defaultSource()) == SOURCE_CHANNEL
+
+    /**
+     * Kênh HAL thật sự truyền cho `addPreviewSurface(surface, int)` ở lượt mở.
+     *
+     * @param source [SOURCE_PANO] ⇒ giữ nguyên [halModePref] (mặc định [HAL_MODE_AUTO] = đường 2.73).
+     * @param halModePref pref `camera_hal_mode`. Là một kênh thật (`1..`[HAL_MODE_MAX]) ⇒ **owner đè**, dùng nó.
+     * @param viewChannel kênh mặc định của view đang hiện ([CamView.channel]) — per-side theo hồ sơ xe.
+     */
+    fun channelFor(source: String, halModePref: Int, viewChannel: Int): Int {
+        if (!usesChannel(source)) return halModePref
+        if (halModePref in 1..HAL_MODE_MAX) return halModePref
+        return if (viewChannel in 1..HAL_MODE_MAX) viewChannel else HAL_MODE_AUTO
+    }
+
     /** Khung CHỮ NHẬT bo góc — đúng cửa sổ 2.73. Mặc định. */
     const val SHAPE_RECT = "RECT"
 
@@ -320,6 +364,26 @@ object CameraSignalPolicy {
     /** Kênh đọc lên có dùng được không (lạ ⇒ chỗ đọc rơi về [HAL_MODE_AUTO], tức đường 2.73). */
     fun isHalMode(v: Int): Boolean = v in HAL_MODES
 
+    // ── TRẦN NHỊP VẼ của đường GL (2.75) ──────────────────────────────────────────────────────────────────
+
+    /**
+     * ═══ Trần khung/giây của đường GL — [ĐO CAM-B4 xe 27/09 11:25] ════════════════════════════════════════
+     *
+     * Đường GL vẽ **mỗi khi có khung** (`onFrameAvailable`) và HAL đẩy nhanh hơn `setCameraFps(15)` Kachi xin:
+     * 2 phút xi-nhan thật, cửa sổ TRÒN `495×495` ⇒ **4052 khung ≈ 34 fps**, giật **11,15 %**, p99 **61 ms**,
+     * CPU **10,7 %** (đường `TV` cùng cảnh: 982 khung, giật 1,0 %, p99 16 ms, CPU ≈0 %). 34 fps là công vô ích
+     * trả bằng đúng thứ owner cảm thấy. Chi tiết + runbook CAM-B6: `camera-dewarp-gl.md` §G.
+     */
+    const val RENDER_FPS_CAP = 15
+
+    /**
+     * Khoảng cách tối thiểu giữa hai lượt **vẽ** (ms) cho trần [fps]. `fps <= 0` ⇒ `0` = không chặn (đường 2.74).
+     *
+     * Lấy **3/4** chu kỳ chứ không trọn: khung HAL tới mỗi ~29,4 ms, ngưỡng trọn chu kỳ (66 ms) rơi **giữa** hai
+     * khung ⇒ lượt vẽ trượt sang khung thứ ba ⇒ chỉ còn ~11 fps. Với 3/4 (50 ms) nhịp thật ≈ 17 fps, sát dưới trần.
+     */
+    fun renderMinGapMs(fps: Int = RENDER_FPS_CAP): Long = if (fps > 0) (1000L * 3) / (fps * 4) else 0L
+
     // ── `vehicle.config.cam_sort` — phép thử NĂNG LỰC pano (RE §5 K2) ───────────────────────────
     //
     // [ĐO firmware] launcher gốc dò camera bằng đúng khoá này: `VehicleUtils.java:187-192`
@@ -389,11 +453,19 @@ object CameraSignalPolicy {
         val crop: FloatArray? = null,
         val hintW: Int = 0,
         val hintH: Int = 0,
+        /**
+         * Kênh HAL của **riêng** view này ở chế độ [SOURCE_CHANNEL] — `0` = chưa biết (⇒ rơi về [HAL_MODE_AUTO]).
+         *
+         * Per-side **theo hồ sơ xe**, đúng CLAUDE.md §7: [ĐO xe 27/09] Seal cho `2` = gương trái · `3` = gương phải.
+         * Đời xe khác có thể khác ⇒ owner đè bằng pref `camera_hal_mode` mà không cần build lại
+         * ([channelFor]); khi có đời thứ hai đo được, hằng này chuyển sang `ClusterProfile`.
+         */
+        val channel: Int = 0,
     ) {
         // Gương = cameraId 1 = fisheye 4-in-1 [ĐO owner 2026-09-25: id 1 ra fisheye đúng nguồn] + CROP vùng
         // trái/phải (kinex pano crop trái x[0.25-0.35], phải x[0.65-0.75] của ảnh 4-in-1). id 0 crop ra sai.
-        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f), hintW = 5120, hintH = 960),
-        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f), hintW = 5120, hintH = 960),
+        MIRROR_LEFT(1, 1, "Gương trái", "Left mirror", floatArrayOf(0.25f, 0f, 0.35f, 1f), hintW = 5120, hintH = 960, channel = 2),
+        MIRROR_RIGHT(2, 1, "Gương phải", "Right mirror", floatArrayOf(0.65f, 0f, 0.75f, 1f), hintW = 5120, hintH = 960, channel = 3),
         FRONT_LEFT(1, 0, "Trước-trái", "Front-left"),
         FRONT_RIGHT(2, 1, "Trước-phải", "Front-right"),
         REAR_LEFT(3, 2, "Sau-trái", "Rear-left"),

@@ -279,7 +279,7 @@ object VoiceIntentParser {
                 val set = VoiceControlParse.control("ac_auto", VoiceVerb.SET, t, original)
                 if (set is VoiceIntent.Control && set.id == "temp") return set
             }
-            return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
+            return VoiceSlotNoVerb.pick(t, terms, original) ?: VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
         }
         val verb = verbHit.second
         val aloud = verbHit.first.any { it == "doc" || it == "read" || it == "nghe" }

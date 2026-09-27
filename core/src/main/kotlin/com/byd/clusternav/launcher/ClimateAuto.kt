@@ -44,6 +44,29 @@ object ClimateAuto {
     const val AUTO = "AUTO"
 
     /**
+     * Cùng chữ ấy trên bề mặt **HẸP** (chip thanh trên) — **viết thường**.
+     *
+     * Owner 2026-09-27, nhìn thanh trên của xe thật: *"gió auto chạy ngon, nhưng cần đổi chữ AUTO thành viết
+     * thường, không cần viết hoa — trên header chip thôi"*. Ô NÚT giữ nguyên `"AUTO"` viết hoa (đó là chữ màn AC
+     * gốc của xe dùng, và ô nút là chỗ người ta BẤM nên chữ ấy phải to rõ như trên xe); chip thanh trên là dòng
+     * trạng thái liếc-là-biết, viết hoa ở đó kêu to hơn thông tin nó mang.
+     *
+     * Hai chính tả nằm **cạnh nhau, cùng một chỗ** là có chủ ý: đặt bản thường trong bộ dựng chip thì lần sửa sau
+     * đổi một bên là hai bề mặt nói hai chữ mà không ai biết.
+     */
+    const val AUTO_NARROW = "auto"
+
+    /**
+     * Hạ [AUTO] xuống [AUTO_NARROW] cho bề mặt hẹp; phần còn lại của chuỗi **không đụng tới** (`"AUTO 1"` →
+     * `"auto 1"`, `"2"` → `"2"`, `"—"` → `"—"`).
+     *
+     * Generic bằng DỮ LIỆU (CLAUDE.md §7): áp cho **mọi** chip có mang dấu AUTO (`ac_wind` hôm nay, `ac_mode_auto`
+     * / `ac_wind_auto` nếu ai đặt lên thanh) — không một `if (id == "ac_wind")` nào. Và vì [AUTO] là hằng **không
+     * dịch**, phép thay không lệch theo ngôn ngữ (thay chuỗi đã dịch mới là cái bẫy mà [TelemetryReadout] cấm).
+     */
+    fun narrowAuto(text: String): String = text.replace(AUTO, AUTO_NARROW)
+
+    /**
      * Số **THÔ của khung** → *"đang AUTO không"*. `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` ⇒ `0 = AUTO`.
      *
      * `null` đi thẳng qua thành `null` = *"chưa biết"*, **không** phải *"đang chỉnh tay"* — xem ⚠ ở KDoc lớp.

@@ -21,7 +21,7 @@ internal object VoiceTailClause {
      * Số ô mà câu nêu ra trong phần đuôi [after] (*"vào ô số 2"* · *"ô thứ hai"* · *"in slot 2"*), hoặc `null`.
      *
      * Trả về **đúng con số người ta nói** (1-based, chưa kẹp) — xem KDoc [VoiceIntent.OpenApp.slot] về vì sao
-     * không quy đổi và không kẹp ở tầng này.
+     * không quy đổi và không kẹp ở tầng này. Chữ *"ô"* rụng ⇒ [bareSlot] (đường lùi, kẹp chặt hơn).
      */
     @Suppress("ReturnCount")
     internal fun slotAt(after: List<Token>): Int? {
@@ -34,7 +34,47 @@ internal object VoiceTailClause {
             if (n.value == VoiceLexicon.MAX || n.value == VoiceLexicon.MIN || n.value <= 0) return@forEach
             return n.value
         }
-        return null
+        return bareSlot(after)
+    }
+
+    /**
+     * ═══ CHỮ *"Ô"* RỤNG — *"mở vietmap hai"* · *"mở vietmap số hai"* ⇒ ô 2 ═══════════════════════════════════
+     *
+     * ## Bệnh nó chữa — [ĐO xe 2026-09-27, log `KachiVoiceSession`]
+     * | mô hình in ra | ý định TRƯỚC | ý định SAU |
+     * |---|---|---|
+     * | *"mở vietmap hai"* (lượt 10:36:52, cửa sổ chạm trần 8 s) | `OpenApp(VietMap)` — **mất ô**, app mở vào ô cũ | `OpenApp(VietMap → ô 2)` |
+     *
+     * Đây là biến thể **nặng nhất** của VOICE-SLOT-TAIL-CUT: §1.2 của
+     * `docs/diagnostics/offcar-2026-09-26/voice-tail-fuzzy-phonetic.md` đã đo *"mở vietmap **một**"* — bộ giải mã
+     * bỏ ba chữ giữa và để lại **đúng con số**. Tệp hotword (2.73) chữa phần lớn ca ấy, nhưng khi cửa sổ có 6 giây
+     * im lặng dẫn đầu ([ĐO] `tieng_bat_dau=6012ms`) thì nó vẫn rơi lại. Con số còn sót là **thông tin thật người
+     * lái đã nói**; bỏ nó đi là mở app vào ô sai một cách im lặng.
+     *
+     * ## Ba cổng — vì sao đường lùi này kẹp CHẶT hơn mệnh đề đầy đủ
+     *  1. **Phải là phần đuôi RỖNG ngoài con số**: sau khi bỏ tiếng đệm, [after] chỉ còn `&lt;số&gt;` hoặc
+     *     `&lt;số/thứ&gt; &lt;số&gt;`. *"mở youtube tập hai"* · *"mở nhạc hai giờ"* ⇒ không khớp. Một con số **lơ
+     *     lửng giữa câu** không bao giờ là một số ô.
+     *  2. **Kẹp vào 1..[VoiceSlotPhrases.MAX_SLOT]** — khác [slotAt] (cố ý **không** kẹp, xem KDoc
+     *     [VoiceIntent.OpenApp.slot]). Lý do: ở đây con số là **chứng cứ yếu** (không có chữ *"ô"* đi kèm), nên nó
+     *     chỉ được nhận khi nó trỏ tới một ô **có thật** ở một bố cục nào đó. *"mở youtube hai mươi"* ⇒ `null`.
+     *  3. **Chỉ chạy sau khi [slotAt] đã trượt** ⇒ không đổi một câu nào có chữ *"ô"* (CLAUDE.md §6).
+     *
+     * ⚠ Chỗ gọi là **các đường app** ([appByTargetName] · [appInTail] · [VoiceLastResort] · hai nhánh `OpenApp` của
+     * [VoiceIntentParser]): mệnh đề ô chỉ tồn tại cho [VoiceIntent.OpenApp], nên đường lùi này không tới được lệnh
+     * xe / datum / nhạc / dẫn đường.
+     */
+    private fun bareSlot(after: List<Token>): Int? {
+        val w = after.filter { it.norm !in VoiceLexicon.FILLERS }
+        val at = when {
+            w.size == 1 -> 0
+            w.size == 2 && w[0].norm in VoiceLexicon.SLOT_ORDINALS -> 1
+            else -> return null
+        }
+        val n = VoiceLexicon.readNumber(w, at) ?: return null
+        // Con số phải là TOÀN BỘ phần còn lại (*"hai mươi"* đọc hết 2 token ⇒ vẫn là một số, nhưng > MAX_SLOT).
+        if (at + n.consumed != w.size) return null
+        return if (n.value in 1..VoiceSlotPhrases.MAX_SLOT) n.value else null
     }
 
     /**

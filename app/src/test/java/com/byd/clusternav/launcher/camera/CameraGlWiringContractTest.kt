@@ -205,8 +205,9 @@ class CameraGlWiringContractTest {
      * `SurfaceTexture` vào, rồi texture+program, rồi ngữ cảnh EGL. Và lượt dỡ phải **CHẶN**.
      */
     @Test fun `thu tu do dung va chan cho luong ve don xong`() {
-        // Đường HAL của 2.73 KHÔNG đổi: `avm.close()` vẫn đứng trước `overlay.hide()`.
-        val stop = SourceRoots.body(controller, "private fun stop(")
+        // Đường HAL của 2.73 KHÔNG đổi: `avm.close()` vẫn đứng trước `overlay.hide()`. Từ 2.75 chuỗi ấy nằm ở
+        // `closeSession()` (lượt đổi bên dùng chung — xem `do phien cu TRUOC khi mo phien moi`), `stop()` gọi lại nó.
+        val stop = SourceRoots.body(controller, "private fun closeSession(")
         val iAvm = stop.indexOf("avm.close()")
         val iHal = stop.indexOf("hal.close()")
         val iHide = stop.indexOf("overlay.hide()")
@@ -307,11 +308,14 @@ class CameraGlWiringContractTest {
 
     // ══ (D) BỀ MẶT owner + bề mặt ĐO ═══════════════════════════════════════════════════════════════════════
 
-    /** Bảy khoá nắn: mặc định từ `:core`, đọc lạ ⇒ mặc định, và **cả bảy** vào danh sách trắng + có `read_back`. */
+    /** Chín khoá nắn: mặc định từ `:core`, đọc lạ ⇒ mặc định, và **cả chín** vào danh sách trắng + có `read_back`. */
     @Test fun `bay khoa nan lay mien tu core va vao danh sach trang`() {
         val keys = listOf(
             "camera_dewarp_amount", "camera_dewarp_focal", "camera_dewarp_k",
-            "camera_dewarp_scale", "camera_dewarp_cx", "camera_dewarp_cy", "camera_gl_texmatrix",
+            "camera_dewarp_scale", "camera_dewarp_cx", "camera_dewarp_cy",
+            // 2.75 — dịch CỬA SỔ (xe 27/09). Cùng khuôn sáu khoá trên: miền ở `:core`, ghi qua cầu, đọc lại từ đĩa.
+            "camera_dewarp_pan_x", "camera_dewarp_pan_y",
+            "camera_gl_texmatrix",
         )
         keys.forEach {
             assertTrue("\"$it\"" in prefs, "khoá $it chưa khai ở PrefsCameraDewarp")
@@ -320,24 +324,27 @@ class CameraGlWiringContractTest {
             assertTrue("\"$it\" -> Prefs." in prefsSet, "read_back phải đọc LẠI $it từ nơi lưu bền")
         }
         // Miền hợp lệ lấy từ `:core`, không gõ số ở `:app` (hai bản sao sẽ lệch khi ai đó nới dải).
-        listOf("CameraDewarpPrefs.isAmountPct(", "CameraDewarpPrefs.isPct(", "CameraDewarpPrefs.isCenterPct(").forEach {
+        listOf("CameraDewarpPrefs.isAmountPct(", "CameraDewarpPrefs.isPct(", "CameraDewarpPrefs.isCenterPct(",
+            "CameraDewarpPrefs.isPanPct(").forEach {
             assertTrue(it in prefsSet, "prefs_set phải kiểm miền qua `:core` ($it)")
         }
         listOf("CameraDewarpPrefs.AMOUNT_DEFAULT", "CameraDewarpPrefs.PCT_DEFAULT", "CameraDewarpPrefs.CENTER_DEFAULT",
-            "CameraDewarpPrefs.TEX_MATRIX_DEFAULT").forEach {
+            "CameraDewarpPrefs.PAN_DEFAULT", "CameraDewarpPrefs.TEX_MATRIX_DEFAULT").forEach {
             assertTrue(it in prefs, "mặc định phải lấy từ `:core` ($it)")
         }
         // Đúng MỘT accessor cho tệp prefs (không mở cửa thứ hai vào cùng chỗ lưu).
         assertFalse("getSharedPreferences" in prefs, "phải dùng lại `autoPrefs` của PrefsAutomation")
     }
 
-    /** Sáu hàng −/+ và một ô tích, **đúng thứ tự chỉnh** của tài liệu toán: tâm → K → tiêu cự → phóng → độ nắn. */
+    /** Tám hàng −/+ và một ô tích, **đúng thứ tự chỉnh**: tâm → K → tiêu cự → phóng → độ nắn → **dịch** (cuối). */
     @Test fun `Cai dat co sau hang num va mot o tich, dung thu tu chinh`() {
         val body = SourceRoots.body(settings, "private fun cameraDewarp(")
         assertTrue("rows.checkRow(" in body && "bridge.cameraGlTexMatrix()" in body, "công tắc uTexMatrix")
         val order = listOf(
             "kachi_camera_dewarp_cx", "kachi_camera_dewarp_cy", "kachi_camera_dewarp_k",
             "kachi_camera_dewarp_focal", "kachi_camera_dewarp_scale", "kachi_camera_dewarp_amount",
+            // Dịch xuống CUỐI (CLAUDE.md §6): nó trượt khung chứ không chữa bệnh cong — đặt trên sẽ dẫn kéo nhầm núm.
+            "kachi_camera_dewarp_pan_x", "kachi_camera_dewarp_pan_y",
         )
         var at = -1
         order.forEach {
@@ -346,6 +353,7 @@ class CameraGlWiringContractTest {
             at = i
         }
         assertTrue("rows.stepperRow(" in SourceRoots.body(settings, "private fun knob("), "hàng −/+ dùng lại kiểu có sẵn")
+        assertTrue("CameraDewarpPrefs.PAN_STEP" in body, "bước nhảy hàng Dịch cũng lấy từ `:core`")
         assertTrue("CameraDewarpPrefs.PCT_STEP" in body && "CameraDewarpPrefs.CENTER_STEP" in body,
             "bước nhảy lấy từ `:core`, không gõ số trong UI")
         assertTrue("cameraDewarp(body)" in SourceRoots.body(settings, "private fun cameraSignal("),
@@ -388,16 +396,84 @@ class CameraGlWiringContractTest {
         assertTrue(TestBridgeCommands.CAMERA_SYNTH in TestBridgeCommands.NAMES, "chưa khai trong SPECS ⇒ unknown_cmd")
         assertTrue("TestBridgeCommands.CAMERA_SYNTH -> TestBridgeSynth.run(" in bridge, "thiếu nhánh dispatch")
         val hooks = app("launcher/testbridge/TestBridgeHooks.kt")
-        assertTrue("cameraSynth = { on ->" in hooks, "móc phải nối tới controller thật")
+        assertTrue("cameraSynth = { on, file ->" in hooks, "móc phải nối tới controller thật, KÈM tên tệp (2.75)")
         assertTrue("cameraFrameRaw = { w, h ->" in hooks)
         assertTrue("hooks.cameraSynth(" in app("launcher/testbridge/TestBridgeSynth.kt"))
         // Bơm ảnh tổng hợp ⇒ KHÔNG mở HAL (hai producer trên một BufferQueue = ảnh chắp vá).
         val tick = SourceRoots.body(controller, "private fun tickMain(")
         assertTrue("if (!synth) avm.open(" in tick, "đang bơm ảnh tổng hợp thì không được mở HAL")
         assertTrue("synthOn = synth," in tick)
-        assertTrue("startSynth(input)" in layer, "producer gắn vào ĐÚNG Surface mà HAL lẽ ra dùng")
+        assertTrue("startSynth(input, synthFile)" in layer, "producer gắn vào ĐÚNG Surface mà HAL lẽ ra dùng")
+        // 2.75 — đường "khung THẬT từ xe": tên tệp phải được LỌC ở biên (CLAUDE.md §4.1 đầu vào → đường tệp) và
+        // thư mục gốc phải do tầng có Context ghép, không để tầng dưới tự nối chuỗi.
+        val synthCmd = app("launcher/testbridge/TestBridgeSynth.kt")
+        assertTrue("fun safeName(" in synthCmd && "java.io.File(raw.trim()).name" in synthCmd,
+            "tên tệp phải bỏ mọi thành phần thư mục")
+        assertTrue("name == \"..\"" in synthCmd && "name.startsWith(\".\")" in synthCmd,
+            "phải từ chối `..` và tên bắt đầu bằng dấu chấm")
+        assertTrue("getExternalFilesDir(null)" in SourceRoots.body(controller, "    fun setSynth("),
+            "thư mục gốc ghép ở controller (nơi có Context), không ở tầng vẽ")
         // Cờ chỉ trong RAM — một cờ lưu bền sống qua nổ máy sẽ cho owner một ảnh vẽ sẵn thay camera gương.
         assertFalse("camera_synth" in prefs, "cờ synth KHÔNG được là pref lưu bền")
         assertTrue("private var synth = false" in controller && "@Volatile" in controller)
+    }
+
+    /**
+     * ═══ [P0 · xe 27/09] Đổi BÊN phải DỠ phiên cũ, và dỡ **HAL trước, cửa sổ sau** ══════════════════════════════
+     *
+     * Bệnh đã có thật: 2.74 rẽ LEFT → RIGHT mà không gọi một lời dỡ nào cho phiên LEFT ⇒ `overlay.show` huỷ
+     * `SurfaceTexture` của LEFT trong khi HAL vẫn giữ `Surface` ấy ⇒ `E/BufferQueueProducer … BufferQueue has been
+     * abandoned` **16 dòng/giây, không bao giờ dứt** ([ĐO] 55 004 dòng trong một buổi, bắt đầu đúng 87 ms sau lượt
+     * rẽ). Bài này ghim cả ba điều kiện để nó không quay lại:
+     *
+     *  1. [tickMain] gọi `closeSession()` khi đổi từ một bên **khác NONE** sang một bên khác NONE;
+     *  2. lượt đổi bên **không** đi qua `stop()` (nó `hold.reset()` ⇒ overlay sẽ chớp giữa chuyến);
+     *  3. trong `closeSession()`, `avm.close()` đứng **TRƯỚC** `overlay.hide()` — đảo lại là dựng lại đúng con bọ.
+     */
+    @Test fun `do phien cu TRUOC khi mo phien moi`() {
+        val tick = SourceRoots.body(controller, "private fun tickMain(")
+        assertTrue(
+            "if (current != Turn.NONE && turn != Turn.NONE) closeSession(keepPano = true)" in tick,
+            "đổi bên LEFT ⇄ RIGHT phải dỡ phiên cũ — nếu không, HAL giữ một BufferQueue đã bị bỏ và dequeue mãi",
+        )
+        val close = SourceRoots.body(controller, "private fun closeSession(")
+        val iAvm = close.indexOf("avm.close()")
+        val iHal = close.indexOf("hal.close()")
+        val iHide = close.indexOf("overlay.hide()")
+        assertTrue(iAvm in 1..<iHide, "avm.close() phải đứng TRƯỚC overlay.hide() (HAL trước, cửa sổ sau)")
+        assertTrue(iHal in 1..<iHide, "hal.close() phải đứng TRƯỚC overlay.hide()")
+        // Đổi bên KHÔNG được tắt thiết bị panorama: một vòng WORK_OFF → WORK_ON giữa hai lượt rẽ là hành vi chưa
+        // ai đo trên xe, mà con bọ nằm ở AVMCamera chứ không ở thiết bị panorama.
+        assertTrue("if (!keepPano) hal.close()" in close, "đổi bên chỉ dỡ AVMCamera, giữ panorama đang bật")
+        // `stop()` dùng lại đúng đường ấy — hai bản sao của chuỗi dỡ là hai chỗ để lệch.
+        val stopBody = SourceRoots.body(controller, "private fun stop(")
+        assertTrue("closeSession()" in stopBody, "stop() phải dùng lại closeSession(), không chép lại chuỗi dỡ")
+        assertFalse("avm.close()" in stopBody, "chuỗi dỡ chỉ được có MỘT bản")
+        // Và lượt đổi bên KHÔNG được chạm máy trạng thái của HOLD.
+        assertFalse("hold.reset()" in close, "closeSession() không được đụng HOLD — đó là việc của stop()")
+
+        // `rmPreviewSurface` (móc đo) phải nằm GIỮA stopPreview và close: gọi sau close thì HAL từ chối
+        // ([ĐO] `rc=false` bốn lượt trên xe 27/09) ⇒ lời gọi ấy không đo được gì.
+        val avmClose = SourceRoots.body(app("launcher/camera/AvmCamera.kt"), "    fun close(")
+        val iStop = avmClose.indexOf("stopPreview")
+        val iRm = avmClose.indexOf("rmPreviewSurface")
+        val iHalClose = avmClose.indexOf("getDeclaredMethod(\"close\")")
+        assertTrue(iStop in 0..<iRm, "rmPreviewSurface phải sau stopPreview")
+        assertTrue(iRm in 0..<iHalClose, "rmPreviewSurface phải TRƯỚC close (2.74 gọi sau ⇒ rc=false)")
+
+        // [CAM-B4] Trần nhịp vẽ: `updateTexImage` LUÔN chạy (không nhận khung ⇒ producer nghẽn), chỉ bỏ phần ĐẮT.
+        val draw = SourceRoots.body(renderer, "private fun drawFrame(")
+        val iUpd = draw.indexOf("st.updateTexImage()")
+        val iCap = draw.indexOf("MIN_PAINT_GAP_MS")
+        val iPaint = draw.indexOf("paint(viewW, viewH)")
+        assertTrue(iUpd in 0..<iCap, "trần nhịp phải đứng SAU updateTexImage — bỏ khung là mời producer nghẽn")
+        assertTrue(iCap in 0..<iPaint, "và TRƯỚC paint/swap — đó mới là phần đắt")
+        assertTrue("CameraSignalPolicy.renderMinGapMs()" in renderer, "con số trần lấy từ `:core`, không gõ ở `:app`")
+        assertTrue("fpsSkip" in renderer && "fpsCap=" in renderer, "phải đếm + in ra để chốt nhịp thật trên xe")
+
+        // Mã trả về của `setPanoOperation(OFF)` phải được giải mã trong nhật ký — `-2147482645` đọc bằng mắt là vô
+        // nghĩa, `0x800003EB` thì nói ngay là bit lỗi + mã 1003.
+        val pano = app("launcher/camera/PanoramaHal.kt")
+        assertTrue("decodeOp(op)" in pano && "0x%08X" in pano, "mã HAL phải ghi kèm hex + cờ lỗi")
     }
 }

@@ -49,6 +49,23 @@ class IconSetInventoryTest {
         assertEquals(emptyList<String>(), bad, "id có trong registry mà tra ra 0 = ô trống icon, KHÔNG lỗi gì")
     }
 
+    /**
+     * UX8 — **hình theo TRẠNG THÁI** ([CapabilityIcons.stateIconTable]) là một đường gán icon THỨ HAI, và bài trên
+     * không với tới nó: nó chỉ hỏi [CapabilityIcons.forTelemetry] (hình *khái niệm*). Một chế độ gõ sai tên hình
+     * ⇒ `iconRes` trả 0 ⇒ chip **mất icon** đúng lúc chế độ ấy đang chạy trên xe, và **không lỗi gì** — đúng loại
+     * im lặng mà cả hai chiều của bài này sinh ra để chặn.
+     */
+    @Test
+    fun `moi hinh theo trang thai cua datum hai che do tra ra tep that`() {
+        val table = CapabilityIcons.stateIconTable()
+        assertTrue(table.isNotEmpty()) { "bảng hình theo trạng thái rỗng — lượt UX8 đã bị gỡ mất?" }
+        val bad = table.flatMap { (id, s) ->
+            (s.icons.entries.map { (k, ic) -> "$id[mã $k]" to ic } + ("$id[chưa đọc]" to s.unknown))
+                .mapNotNull { (where, ic) -> resolves(ic)?.let { "$where: $it" } }
+        }
+        assertEquals(emptyList<String>(), bad, "tên hình trạng thái không tra ra drawable ⇒ chip mất icon, im lặng")
+    }
+
     /** Đường lùi theo lĩnh vực ([WidgetCatalog.iconFor]) cũng phải có hình — đó là lưới cuối của mọi id chưa gán icon. */
     @Test
     fun `icon dai dien cua moi linh vuc tra ra tep that`() {

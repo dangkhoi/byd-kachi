@@ -367,31 +367,25 @@ class TestBridgeCommandTest {
         // 23 → 24 (CLOSE-14 · CAM-LAG 2026-09-26): +`camera_render` (TextureView/SurfaceView) — câu hỏi "đường vẽ nào
         // giật" chỉ trả lời được bằng cách đổi đường GIỮA hai lượt xi-nhan trên xe đang chạy rồi so `gfxinfo`, không
         // phải bằng hai lượt build. Có hàng chip đảo lại được trong Cài đặt ⇒ ràng buộc (3) giữ.
-        // 24 → 30 (R8-A 2026-09-26, RE Electro §5 K10 / §6.1): +`camera_span`, `camera_strip_left`,
-        // `camera_strip_right`, `camera_shape`, `camera_circle_scale`, `camera_hal_mode`. Cả sáu là **móc đo**: dải
-        // nào là hướng nào [CHƯA BIẾT], đường kính vòng fisheye [ĐOÁN], `VIEW_CHANNEL_1..4` chưa ai gọi ⇒ owner dò
-        // trên xe rồi chụp `camera_frame`. Năm khoá có chip; `camera_circle_scale` hết tác dụng khi về chip "Chữ
-        // nhật" ⇒ ràng buộc (3) vẫn giữ theo nghĩa *tác dụng đảo được bằng một cú chạm*.
-        // 30 → 37 (R8-B 2026-09-27, `camera-dewarp-gl.md`): +`camera_dewarp_amount/focal/k/scale/cx/cy` và
-        // +`camera_gl_texmatrix`. Cùng loại **móc đo** với bộ R8-A, chỉ sắc hơn: bốn con số `F`/`K`/`SCALE`/`AMOUNT`
-        // của Electro nằm trong bytecode VMP ⇒ [CHƯA BIẾT] (RE §7 Q6), nên Kachi suy một bộ mặc định từ hình học rồi
-        // để owner chỉnh **bằng mắt trên xe**; và `camera_gl_texmatrix` là phép đo của RE §7 Q17. Cả bảy có hàng −/+
-        // (hoặc ô tích) đảo lại được trong Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ.
-        //
-        // ⚠ Danh sách nay nằm ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 vì tệp đó đã 464 dòng
-        // — CLAUDE.md §4.1). `WRITABLE_PREFS_KEYS` là bí danh trỏ sang đó; bài này vẫn hỏi qua tên cũ **có chủ ý**, vì
-        // tên cũ mới là hợp đồng mà `parse` và mọi script đang dùng.
-        assertEquals(37, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
+        // Lịch sử nới danh sách (lý do đầy đủ: `docs/PROJECT-BACKLOG.md`, mục CAM-*):
+        //   24 → 30 (R8-A): 6 khoá dò vùng/dải/hình/kênh · 30 → 37 (R8-B): 6 núm nắn + `camera_gl_texmatrix`
+        //   37 → 40 (2.75): `camera_dewarp_pan_x/pan_y` (dịch CỬA SỔ) + `camera_source` (PANO/CHANNEL).
+        // Cả ba đợt là **móc ĐO** và đều đảo lại được bằng một cú chạm trong Cài đặt ⇒ ràng buộc (3) giữ.
+        // ⚠ Danh sách nay ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 — CLAUDE.md §4.1);
+        // `WRITABLE_PREFS_KEYS` là bí danh, bài này hỏi qua tên cũ **có chủ ý** vì đó là hợp đồng của `parse`.
+        assertEquals(40, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)
         assertEquals(
             TestBridgeWritableKeys.ALL, TestBridgeCommands.WRITABLE_PREFS_KEYS,
             "bí danh phải trỏ ĐÚNG tập đã tách — một bản sao thứ hai ở đây là hai danh sách sẽ lệch",
         )
         listOf(
             "camera_dewarp_amount", "camera_dewarp_focal", "camera_dewarp_k", "camera_dewarp_scale",
-            "camera_dewarp_cx", "camera_dewarp_cy", "camera_gl_texmatrix",
+            "camera_dewarp_cx", "camera_dewarp_cy", "camera_dewarp_pan_x", "camera_dewarp_pan_y",
+            "camera_gl_texmatrix",
         ).forEach { assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS, "núm nắn $it chưa vào danh sách trắng") }
         assertTrue("camera_render" in TestBridgeCommands.WRITABLE_PREFS_KEYS)
-        listOf("camera_span", "camera_strip_left", "camera_strip_right", "camera_shape", "camera_circle_scale", "camera_hal_mode")
+        listOf("camera_span", "camera_strip_left", "camera_strip_right", "camera_shape", "camera_circle_scale",
+            "camera_hal_mode", "camera_source")
             .forEach { assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS, "khoá đo $it chưa vào danh sách trắng") }
         assertTrue("camera_rotation" !in TestBridgeCommands.WRITABLE_PREFS_KEYS, "khoá đơn cũ đã migrate — không nhận ghi nữa")
         assertTrue(TestBridgeCommands.WRITABLE_PREFS_KEYS.none { it.startsWith("cast") || it.startsWith("vk_") })

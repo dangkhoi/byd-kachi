@@ -166,7 +166,7 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
     }
 
     /**
-     * Dỡ camera. Hai bước của 2.73 (`stopPreview` → `close`) **giữ nguyên thứ tự**, rồi mới tới bước mới.
+     * Dỡ camera. Hai bước của 2.73 (`stopPreview` → `close`) **giữ nguyên thứ tự**; bước đo mới nằm giữa chúng.
      *
      * ## Bước 3 (2.74, RE §5 K6): `rmPreviewSurface(Surface, int)`
      * [ĐO firmware] hàm này có thật trên **chính lớp framework**: `com/byd/dilink51_main/hardware/camera/
@@ -186,15 +186,22 @@ internal class AvmCamera(private val classLoaderDex: Boolean = true) {
         val obj = cam ?: return
         val c = cls
         runCatching { c?.getDeclaredMethod("stopPreview")?.apply { isAccessible = true }?.invoke(obj) }
-        runCatching { c?.getDeclaredMethod("close")?.apply { isAccessible = true }?.invoke(obj) }
-        // Cổng của bước 3 — xem KDoc [rmOnClose]. Tắt (mặc định) ⇒ hai dòng trên là TRỌN chuỗi dỡ, y 2.73.
+        // Cổng của bước 3 — xem KDoc [rmOnClose]. Tắt (mặc định) ⇒ `stopPreview` → `close` là TRỌN chuỗi, y 2.73.
+        //
+        // ⚠ [ĐO xe 27/09] Bước này nay đứng **GIỮA** `stopPreview` và `close`, không còn sau `close`. Lý do là một
+        // phép đo chứ không phải một ý thích: bản 2.74 gọi nó SAU `close()` và bốn lượt trên xe đều ghi
+        // `rmPreviewSurface(mode=0) rc=false` — HAL từ chối vì camera đã đóng ⇒ lời gọi ấy **không đo được gì**.
+        // Thứ tự mới cũng đúng thứ tự Electro dùng (`stop → rm → release`, ba tag lỗi riêng @0x644e7/@0x644c4/
+        // @0x64509 — RE §3.1). Rủi ro của việc đảo được giới hạn bằng chính cái cổng: nhánh này **chỉ** chạy khi
+        // chế độ kiểm thử đang mở, tức xe của owner lúc chạy bình thường vẫn đi đúng hai lời gọi của 2.73.
         if (rmOnClose) added?.let { (surface, mode) ->
             val rc = runCatching {
                 c?.getDeclaredMethod("rmPreviewSurface", Surface::class.java, Integer.TYPE)
                     ?.apply { isAccessible = true }?.invoke(obj, surface, mode)
             }.getOrNull()
-            Log.d(TAG, "rmPreviewSurface(mode=$mode) rc=$rc")
+            Log.d(TAG, "rmPreviewSurface(mode=$mode) rc=$rc (trước close; rc=false ở 2.74 là do gọi SAU close)")
         }
+        runCatching { c?.getDeclaredMethod("close")?.apply { isAccessible = true }?.invoke(obj) }
         added = null
         cam = null
     }

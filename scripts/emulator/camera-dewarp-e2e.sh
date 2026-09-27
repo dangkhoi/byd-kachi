@@ -18,6 +18,16 @@
 #
 # ## Dùng
 #   scripts/emulator/camera-dewarp-e2e.sh [--serial emulator-5554] [--skip-build] [--out <dir>] [--keep]
+#                                         [--strip-png <tep.png>]
+#
+# ## 2.75 — thêm XOAY và DỊCH CỬA SỔ vào vòng kiểm
+# Vòng 2.74 chỉ đo ở `camera_rot_left = 0`, trong khi **mặc định của cả hai bên gương là ±90** (trái ↺ −90 / phải
+# ↻ +90) — tức ca owner thật sự nhìn chưa bao giờ được đo. 2.75 đo cả `L90` và `R90` (phép đo tự chọn trục qua
+# `camera_dewarp_check.py --axis auto`), và đo thêm một lượt **có dịch cửa sổ** để chứng minh dịch **không làm cong**.
+#
+# `--strip-png <tep>` đẩy một khung fisheye **THẬT chụp từ xe** vào `getExternalFilesDir` rồi bơm nó qua đúng đường
+# GL ấy (`camera_synth --es name file:<tên>`) — ảnh thật không có chân trời màu nên lượt này **chỉ chụp ảnh** để xem
+# bằng mắt, không chấm ĐẠT/KHÔNG ĐẠT.
 #
 # `--keep` giữ chế độ kiểm thử + prefs sau khi chạy (để soi tay); mặc định DỌN sạch, kể cả khi script chết giữa chừng.
 set -euo pipefail
@@ -30,6 +40,7 @@ SERIAL="emulator-5554"
 OUT="${TMPDIR:-/tmp}/kachi-camera-dewarp-$(date -u +%Y%m%d-%H%M%S)"
 SKIP_BUILD=0
 KEEP=0
+STRIP_PNG=""
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 GRADLE="${GRADLE_LOCKED:-}"
 
@@ -39,6 +50,7 @@ while [ $# -gt 0 ]; do
     --out) OUT="$2"; shift 2;;
     --skip-build) SKIP_BUILD=1; shift;;
     --keep) KEEP=1; shift;;
+    --strip-png) STRIP_PNG="$2"; shift 2;;
     *) echo "tham số lạ: $1" >&2; exit 2;;
   esac
 done
@@ -79,7 +91,8 @@ cleanup() {
     bridge "--es cmd camera_synth --es name off" >/dev/null 2>&1 || true
     for k in camera_render camera_span camera_shape camera_dewarp_amount camera_dewarp_focal \
              camera_dewarp_k camera_dewarp_scale camera_dewarp_cx camera_dewarp_cy \
-             camera_gl_texmatrix camera_rot_left camera_signal_enabled; do
+             camera_gl_texmatrix camera_rot_left camera_signal_enabled \
+             camera_dewarp_pan_x camera_dewarp_pan_y; do
       bridge "--es cmd prefs_set --es key $k" >/dev/null 2>&1 || true
     done
     adbs shell am force-stop "$PKG" >/dev/null 2>&1 || true
@@ -220,8 +233,73 @@ note "đo độ thẳng của chân trời (numpy)"
   ${KEEP:+} | tee -a "$OUT/summary.txt"
 RC=${PIPESTATUS[0]}
 
+# ── 7. XOAY ±90 + DỊCH CỬA SỔ (2.75) ────────────────────────────────────────────────────────────────────────────
+# Đây là ca MẶC ĐỊNH trên xe (trái ↺ −90 / phải ↻ +90) mà vòng 2.74 chưa bao giờ đo. Chân trời của ảnh tổng hợp nằm
+# NGANG trong ô nguồn ⇒ sau khi xoay ±90 nó thành gần DỌC; `--axis auto` chọn trục theo chính ảnh, nên cùng một phép
+# đo dùng được cho cả ba góc mà không phải gõ tay trục nào là trục nào.
+RC_ROT=0
+measure_rot() {
+  local mode="$1" panx="${2:-0}" tag="rot$1"
+  [ "$panx" = "0" ] || tag="${tag}-pan${panx}"
+  note "── xoay $mode, dịch ngang $panx %"
+  pset camera_rot_left "$mode"
+  pset camera_dewarp_pan_x "$panx"
+  pset camera_dewarp_amount 0
+  retrigger 7
+  grab "${tag}-a000" || { echo "   ✗ $tag: không chụp được khung amount=0"; RC_ROT=1; return 0; }
+  pset camera_dewarp_amount 100
+  retrigger 7
+  grab "${tag}-a100" || { echo "   ✗ $tag: không chụp được khung amount=100"; RC_ROT=1; return 0; }
+  if "$PY" "$HERE/camera_dewarp_check.py" --before "$OUT/${tag}-a000.png" --after "$OUT/${tag}-a100.png" \
+       --label "$tag" --out "$OUT/report-$tag.txt" | tee -a "$OUT/summary.txt"; then :; else RC_ROT=1; fi
+}
+
+pset camera_dewarp_pan_y 0
+measure_rot L90
+measure_rot R90
+# Dịch cửa sổ PHẢI giữ ảnh thẳng: cùng ngưỡng, cùng phép đo, chỉ thêm `camera_dewarp_pan_x`. Nếu ca này KHÔNG ĐẠT
+# trong khi ca trên ĐẠT thì phép dịch đang làm cong — tức nó đã bị nối nhầm vào `uCenter` (xem `CameraGlUniforms`).
+measure_rot L90 -20
+pset camera_dewarp_pan_x 0
+pset camera_rot_left 0
+
+# ── 8. KHUNG THẬT từ xe (tuỳ chọn, chỉ để XEM — ảnh thật không có chân trời màu để chấm điểm) ────────────────────
+if [ -n "$STRIP_PNG" ]; then
+  if [ ! -f "$STRIP_PNG" ]; then
+    echo "   ✗ --strip-png «$STRIP_PNG» không có thật — bỏ qua mục 8"
+  else
+    note "đẩy khung THẬT $(basename "$STRIP_PNG") vào getExternalFilesDir rồi bơm qua đúng đường GL"
+    REMOTE_DIR="/sdcard/Android/data/$PKG/files"
+    REMOTE_NAME="e2e-car-frame.png"
+    adbs shell mkdir -p "$REMOTE_DIR" >/dev/null 2>&1 || true
+    if adbs push "$STRIP_PNG" "$REMOTE_DIR/$REMOTE_NAME" >/dev/null 2>&1; then
+      SYNTH_F="$(bridge "--es cmd camera_synth --es name $(shq "file:$REMOTE_NAME")")"
+      echo "   camera_synth file ⇒ $(printf '%s' "$SYNTH_F" | jget file) applied=$(printf '%s' "$SYNTH_F" | jget applied)"
+      # Bộ số owner DUYỆT trên xe 27/09: F 55 % · K 100 % · S 130 % · độ nắn 100 %.
+      pset camera_dewarp_focal 55
+      pset camera_dewarp_k 100
+      pset camera_dewarp_scale 130
+      pset camera_dewarp_amount 100
+      for rot_mode in 0 L90; do
+        pset camera_rot_left "$rot_mode"
+        retrigger 7
+        grab "car-rot$rot_mode" || echo "   ✗ khung thật rot$rot_mode: không chụp được"
+      done
+      # Cùng bộ số + dịch ra sau 20 % — đúng thứ owner xin (*"dịch 1 tý ra sau"*).
+      pset camera_dewarp_pan_x -20
+      pset camera_rot_left L90
+      retrigger 7
+      grab "car-rotL90-pan-20" || echo "   ✗ khung thật rotL90 + dịch: không chụp được"
+      pset camera_dewarp_pan_x 0
+    else
+      echo "   ✗ push hỏng — bỏ qua mục 8"
+    fi
+  fi
+fi
+
 echo
 note "bằng chứng: $OUT"
 ls -1 "$OUT"/*.png 2>/dev/null | sed 's|^|   |'
-[ "$RC" = "0" ] || die "phép đo độ thẳng KHÔNG đạt — xem $OUT/report.txt"
+[ "$RC" = "0" ] || die "phép đo độ thẳng (rot 0) KHÔNG đạt — xem $OUT/report.txt"
+[ "$RC_ROT" = "0" ] || die "phép đo độ thẳng khi XOAY/DỊCH KHÔNG đạt — xem $OUT/report-rot*.txt"
 note "ĐẠT"

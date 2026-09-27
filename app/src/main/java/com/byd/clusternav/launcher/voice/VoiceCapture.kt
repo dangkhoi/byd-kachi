@@ -247,7 +247,9 @@ internal class VoiceCapture(private val ctx: Context) {
                 if (rec.accept(buf, n)) {
                     Log.i(TAG, meter.line())
                     return Heard(
-                        rec.finalResult(ep.trimSamples(fed)), kept, keptN,   // [SOÁT 1.69 · P2] xem KDoc `finalResult`
+                        // VOICE-HEAD-SILENCE: `[headStart, trim)` — xem KDoc [VoiceTurnEndpoint.headStart];
+                        // `headStart` là 0 ở gần như mọi lượt ⇒ cùng mảng mẫu như `finalResult(trim)` của 2.74.
+                        rec.rangeResult(ep.headStart(fed), ep.trimSamples(fed)), kept, keptN,
                         speechMs = ep.speechEndMs() - maxOf(0, ep.speechStartMs()),
                         listenMs = System.currentTimeMillis() - tListen,
                         micSource = opened.source,
@@ -310,13 +312,14 @@ internal class VoiceCapture(private val ctx: Context) {
                 VoiceEngine.TIMING_TAG,
                 "cắt: tieng_bat_dau=${speechStart}ms tieng_dut=${speechEnd}ms " +
                     "con_lai=${VoiceVadTrim.samplesToMs(trim, SAMPLE_RATE)}ms " +
+                    "bo_dau=${VoiceVadTrim.samplesToMs(ep.headStart(fed), SAMPLE_RATE)}ms " +
                     "(bo=${VoiceVadTrim.samplesToMs(fed - trim, SAMPLE_RATE)}ms · duong=${ep.route})",
             )
             val tDecode = System.currentTimeMillis()
             // Lượt CÓ GIỮ đã chạy phép giải mã vế trước ở luồng nền từ lúc ngắt câu; `result` chờ nốt rồi ghép vế
             // sau (nếu có). Lượt không giữ ⇒ `null` ⇒ đúng một lời gọi `rec.finalResult(trim)` như 2.72.
             val joined = arm?.result(fed)
-            val text = joined?.text ?: rec.finalResult(trim)
+            val text = joined?.text ?: rec.rangeResult(ep.headStart(fed), trim)
             val decodeMs = System.currentTimeMillis() - tDecode
             Log.i(VoiceEngine.TIMING_TAG, "giải mã $decodeMs ms")
             return Heard(

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- LẤY GIÓ NGOÀI (`ac_cycle` = mã 0 / OUTLOOP) — mũi tên đi TỪ NGOÀI xuyên vào khoang xe mờ. Cặp đôi của ic_recirc (cùng khoang xe, mũi tên xoay vòng BÊN TRONG): hai hình chỉ khác nhau ở đường gió nên đọc được là một cặp. -->
+  <style>:root{--ink:#ffffff;--main:#29d3ee;--light:#8ae8f7;--deep:#0d8aa3}</style>
+  <path d="M3.6,4.4 L12.4,11.6 M11.53,8.52 L12.4,11.6 L9.21,11.36" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3.4,15.8 L5,10.2 C5.6,8.4 7,7.4 9,7.4 L15,7.4 C17,7.4 18.4,8.4 19,10.2 L20.6,15.8 L20.6,19 L3.4,19 Z" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+  <path d="M3.4,15.8 L5,10.2 C5.6,8.4 7,7.4 9,7.4 L15,7.4 C17,7.4 18.4,8.4 19,10.2 L20.6,15.8 L20.6,19 L3.4,19 Z" data-layer="bg" fill="var(--main)" stroke="none" data-min="32" opacity="0.16"/>
+</svg>

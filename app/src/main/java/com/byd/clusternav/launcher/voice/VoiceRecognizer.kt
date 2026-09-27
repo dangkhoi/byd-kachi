@@ -99,6 +99,13 @@ class VoiceRecognizer private constructor(
      * thẳng vào mô hình: độ trễ vẫn tốt (nên trông như không có gì hỏng) mà độ chính xác rơi đúng theo bảng §6
      * ở trên. Nay nhánh ấy gọi chính hàm này với `ep.trimSamples(fed)`, và `result()` **không còn tồn tại** để
      * ai đó gọi lại — `VoiceVadWiringContractTest` khoá cả hai vế.
+     *
+     * ## ⚠ [SOÁT 2.75] Từ VOICE-HEAD-SILENCE, hàm này **không còn chỗ gọi nào ở mã chạy**
+     * Mọi đường đã chuyển sang [rangeResult] (cắt **cả hai** đầu). Giữ lại vì nó là bản tham chiếu mà
+     * `VoiceVadWiringContractTest` ghim (*"phải có một đường giải mã CÓ GIỚI HẠN"*) và vì `rangeResult(0, trim)`
+     * ra đúng chuỗi này — tức nó cũng là định nghĩa của *"hành vi 2.74"* trong mọi phép so A/B.
+     * **Mã mới đừng gọi nó**: bỏ qua điểm cắt ĐẦU là quay lại đúng họ D của buổi xe 27/09
+     * (`docs/diagnostics/offcar-2026-09-26/voice-car-0927.md` §3).
      */
     fun finalResult(limitSamples: Int): String = decode(buffer, minOf(filled, maxOf(0, limitSamples)))
 

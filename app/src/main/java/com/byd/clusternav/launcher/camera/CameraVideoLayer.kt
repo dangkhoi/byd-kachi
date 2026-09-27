@@ -71,6 +71,7 @@ internal class CameraVideoLayer private constructor(
          *
          * @param gl bộ uniform của đường GL (`null` ⇒ đường GL rơi về `TextureView` thường, có ghi nhật ký).
          * @param synthOn bơm ảnh tổng hợp thay HAL (`camera_synth`) — **chỉ** đường GL, và chỉ khi luồng vẽ lên được.
+         * @param synthFile đường TUYỆT ĐỐI của một PNG đã có thật để bơm thay ảnh sinh (2.75), rỗng = ảnh sinh.
          * @param onSurfaceReady nhận `Surface` để giao cho `AVMCamera.open`. Gọi trên **main thread** ở cả ba đường
          *   (đường GL chờ luồng vẽ dựng xong rồi mới gọi) ⇒ trình tự mở camera y hệt 2.73.
          */
@@ -83,6 +84,7 @@ internal class CameraVideoLayer private constructor(
             streamW: Int,
             streamH: Int,
             synthOn: Boolean,
+            synthFile: String = "",
             onSurfaceReady: (Surface) -> Unit,
         ): CameraVideoLayer {
             if (!CameraSignalPolicy.usesTextureView(render)) {
@@ -94,7 +96,7 @@ internal class CameraVideoLayer private constructor(
                 }
                 return CameraVideoLayer(textureVideo(ctx, crop, rotationDeg, onSurfaceReady), null, null)
             }
-            return glVideo(ctx, gl, crop, rotationDeg, streamW, streamH, synthOn, onSurfaceReady)
+            return glVideo(ctx, gl, crop, rotationDeg, streamW, streamH, synthOn, synthFile, onSurfaceReady)
         }
 
         /**
@@ -183,6 +185,7 @@ internal class CameraVideoLayer private constructor(
             streamW: Int,
             streamH: Int,
             synthOn: Boolean,
+            synthFile: String,
             onSurfaceReady: (Surface) -> Unit,
         ): CameraVideoLayer {
             val renderer = CameraGlRenderer(gl, streamW, streamH)
@@ -203,7 +206,7 @@ internal class CameraVideoLayer private constructor(
                                 .onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                             return
                         }
-                        if (synthOn) holder[0]?.startSynth(input)
+                        if (synthOn) holder[0]?.startSynth(input, synthFile)
                         runCatching { onSurfaceReady(input) }
                             .onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                     }
@@ -240,9 +243,13 @@ internal class CameraVideoLayer private constructor(
         }
     }
 
-    /** Bơm ảnh tổng hợp vào [input] — gọi một lần, ngay sau khi luồng vẽ lên (xem [glVideo]). */
-    private fun startSynth(input: Surface) {
+    /**
+     * Bơm ảnh vào [input] — gọi một lần, ngay sau khi luồng vẽ lên (xem [glVideo]).
+     *
+     * @param file đường TUYỆT ĐỐI của một PNG đã có thật (tầng trên đã lọc + kiểm tồn tại), rỗng = ảnh sinh.
+     */
+    private fun startSynth(input: Surface, file: String) {
         if (synth != null) return
-        synth = CameraSynthFeeder(input).also { it.start() }
+        synth = CameraSynthFeeder(input, file).also { it.start() }
     }
 }
