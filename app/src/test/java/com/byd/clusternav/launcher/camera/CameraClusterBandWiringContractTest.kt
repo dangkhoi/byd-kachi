@@ -45,11 +45,17 @@ class CameraClusterBandWiringContractTest {
     /** (b)+(c) Đường dải cụm: metrics của display ĐANG treo, dải + chỗ đặt do `:core` tính, toạ độ tuyệt đối. */
     @Test fun `duong dai cum do tren display dang treo va dat bang core`() {
         val geo = SourceRoots.body(overlay, "private fun geometry(")
-        assertTrue("if (CameraClusterBand.isCluster(st.shape))" in geo, "rẽ nhánh theo hình THẬT đã quy")
+        assertTrue("if (st.onCluster) {" in geo,
+            "2.79: rẽ theo DISPLAY thật — cả ba hình trên cụm đi đường dải. Rẽ theo `isCluster(st.shape)` như 2.78 " +
+            "thì chữ nhật/tròn lại rơi về ô vuông % chiều cao (thấp hơn dải 68 px), đúng bệnh owner chê *\"đang bé\"*")
         assertTrue("val dm = st.ctx.resources.displayMetrics" in geo,
             "displayMetrics phải của display đang treo — [ĐO] 27/09: vùng=495 = 0,5 × 990 của màn CHÍNH")
         assertTrue("CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)" in geo, "dải co theo display thật")
         assertTrue("CameraClusterBand.place(" in geo, "chỗ đặt do `:core` tính (có test bằng số)")
+        assertTrue("shape = st.shape," in geo,
+            "hình phải đi vào `place` — thiếu nó thì mọi hình trên cụm thành *theo cụm* (ép hình, owner đã cấm)")
+        assertTrue("\${p.describe()}" in geo,
+            "dòng log phải mang cỡ lớp video + hệ số phóng: đó là con số duy nhất nói *\"mất bao nhiêu tầm nhìn\"*")
         assertTrue("CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)" in geo && "leftEdge = edge," in geo,
             "2.77: mép ngoài CONG cũng co theo display thật rồi đi vào `place` — không có bảng thứ hai ở `:app`")
         assertTrue("CameraClusterBand.rightEdge(bandRect, st.band, dm.widthPixels)" in geo && "rightEdge = edgeRight," in geo,
@@ -62,7 +68,7 @@ class CameraClusterBandWiringContractTest {
         assertTrue("return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)" in geo,
             "Placement đi tiếp tới `show` — nếu rơi ở đây thì mặt nạ cong thành code chết (CLAUDE.md §8)")
         // Đường 2.73 còn nguyên và đứng sau nhánh cụm (CLAUDE.md §6: đường mới xuống cuối… ở đây là rẽ trước, rơi về cũ).
-        assertTrue("val box = box(st.ctx, st)" in geo && "return Geo(f, layoutParams(box, f, st.corner), null" in geo)
+        assertTrue("val box = box(st.ctx)" in geo && "return Geo(f, layoutParams(box, f, st.corner), null" in geo)
         val lp = SourceRoots.body(overlay, "private fun bandLayoutParams(")
         assertTrue("gravity = Gravity.TOP or Gravity.START" in lp && "x = p.x" in lp && "y = p.y" in lp,
             "toạ độ TUYỆT ĐỐI trên display cụm, không lề, không căn giữa vùng")
@@ -102,22 +108,49 @@ class CameraClusterBandWiringContractTest {
     }
 
     /**
-     * (f) [P1 · SOÁT Opus 2026-09-27] Hình **CHỮ NHẬT/TRÒN** trên CỤM cũng phải kẹp vào dải.
+     * (f) 2.79 · Đường **MÀN CHÍNH** không đổi một byte, và trên cụm **không còn** phép đặt thứ hai nào.
      *
-     * `camera_shape` mặc định là chữ nhật ([CameraSignalPolicy.defaultShape]) và owner đang bật *Hiện lên cụm*
-     * ([ĐO logcat 27/09 10:50:42] `hình=RECT … cluster=true`) ⇒ đường vùng-vuông 2.73 là đường THẬT của xe; lề 6 %
-     * chiều cao che 93/360 px dưới thanh trên. Phép kẹp ở `:core` ([CameraClusterBand.boxIn], có test bằng số).
+     * [ĐO owner 27/09 tối]: *"chỉ xử lý cho phần cụm nhé, phần để overlay trên màn chính OK rồi, ko cần chỉnh gì
+     * thêm cả"*. 2.76–2.78 kẹp hình chữ nhật/tròn trên cụm bằng `CameraClusterBand.boxIn` (ô vuông % chiều cao,
+     * cắt theo dải) — thấp hơn dải 68 px, đúng thứ owner chê *"đang bé"*. 2.79 cho cả ba hình đi
+     * [CameraClusterBand.place]; `boxIn` đã gỡ, và bài này canh để nó không mọc lại thành nhánh thứ hai.
      */
-    @Test fun `vung vuong 2 73 tren cum di qua phep kep cua core`() {
+    @Test fun `duong man chinh khong con nhanh cum nao va khong doi mot byte`() {
         val box = SourceRoots.body(overlay, "private fun box(")
-        assertTrue("if (st.onCluster) {" in box, "trên cụm rẽ nhánh riêng — % chiều cao không biết gì về dải")
-        assertTrue("CameraClusterBand.boxIn(CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band), side, atLeft)" in box,
-            "vùng cho phép lấy từ dải của HỒ SƠ, không phải hằng %")
-        assertTrue("if (atLeft) area.x0 else (dm.widthPixels - area.x1).coerceAtLeast(0)" in box,
-            "`x` của LayoutParams là độ lệch kể từ góc `gravity` ⇒ góc PHẢI lấy khoảng cách tới mép phải display")
-        assertFalse("CLUSTER_TOP_RATIO" in overlay,
-            "lề 6 % của cụm đã hết chủ; KDoc của nó còn nói sai *\"cụm không có thanh trên\"* (F6 đo tới y ≈ 136)")
-        assertTrue("MAIN_TOP_RATIO" in box, "đường màn CHÍNH không đổi một byte")
+        assertFalse("onCluster" in box,
+            "2.79: `box` chỉ còn của MÀN CHÍNH. Còn nhánh cụm ở đây = có HAI phép đặt cho cùng một display, và " +
+            "phép nào thắng thì phụ thuộc thứ tự `if` — đúng loại lỗi CLAUDE.md §8")
+        assertFalse("boxIn" in overlay, "ô vuông % chiều cao trên cụm đã hết chủ, không được để lại code chết")
+        assertTrue("MAIN_TOP_RATIO" in box && "SQUARE_RATIO" in box && "SIDE_MARGIN_RATIO" in box,
+            "ba hằng của đường màn chính còn nguyên — owner 27/09 tối: *\"overlay trên màn chính OK rồi\"*")
+        assertFalse("CLUSTER_TOP_RATIO" in overlay, "lề 6 % của cụm đã hết chủ từ 2.76")
+        // Cửa sổ màn chính: vẫn `fit` trong vùng vuông rồi CĂN GIỮA — không một phép nào của 2.79 chạm vào.
+        val lp = SourceRoots.body(overlay, "private fun layoutParams(")
+        assertTrue("x = box.x0 + ((box.areaW - f.w) / 2).coerceAtLeast(0)" in lp, "công thức căn giữa của 2.73 y nguyên")
+        assertTrue("y = box.y0 + ((box.areaH - f.h) / 2).coerceAtLeast(0)" in lp)
+        assertTrue("CameraOverlayFrame.fit(" in SourceRoots.body(overlay, "private fun frameOf("),
+            "màn chính vẫn dùng `fit` (vừa khít, không cắt), KHÔNG phải `tall`/`cover` của đường cụm")
+        // …và lớp video màn chính vẫn lấp kín cửa sổ, không có lề âm nào (`place == null` ⇒ MATCH_PARENT).
+        val vl = SourceRoots.body(overlay, "private fun videoLp(")
+        assertTrue("if (p == null || (p.layerW <= f.w && p.layerH <= f.h)) return android.widget.FrameLayout.LayoutParams(MATCH, MATCH)" in vl,
+            "không có Placement (màn chính) hoặc không phóng ⇒ đúng `MATCH_PARENT` của 2.78, byte-identical")
+    }
+
+    /**
+     * ═══ 2.79 · PHÓNG ĐỂ LẤP được nối dây thật ═══════════════════════════════════════════════════════════════════
+     *
+     * Mắt xích dễ rơi nhất của bản này: `:core` tính đúng `layerW×layerH` nhưng `:app` vẫn `MATCH_PARENT` ⇒ ảnh bị
+     * **kéo giãn** vào cửa sổ rộng hơn, và không bài `:core` nào đỏ (CLAUDE.md §8). Bài này canh đúng chỗ ấy.
+     */
+    @Test fun `lop video phong de lap duoc noi day, khong keo gian`() {
+        val vl = SourceRoots.body(overlay, "private fun videoLp(")
+        assertTrue("android.widget.FrameLayout.LayoutParams(p.layerW, p.layerH, Gravity.TOP or Gravity.START)" in vl,
+            "lớp video lấy CỠ của `:core` (đúng tỉ lệ ảnh), không phải MATCH_PARENT — MATCH là kéo giãn")
+        assertTrue("leftMargin = (f.w - p.layerW) / 2" in vl && "topMargin = (f.h - p.layerH) / 2" in vl,
+            "căn giữa bằng lề ÂM ⇒ phần dư rơi đều hai phía và do chính cửa sổ cắt")
+        // Hai chỗ gọi đều phải đưa CẢ Geo vào (không phải mỗi `g.f`), nếu không `videoLp` không thấy Placement.
+        assertEquals(2, Regex("""videoLp\(st, g\)""").findAll(overlay).count(), "show + onStreamMeasured")
+        assertFalse("videoLp(st, g.f)" in overlay, "đưa mỗi khung vào là mất đường phóng mà build vẫn xanh")
     }
 
     /**
@@ -168,7 +201,7 @@ class CameraClusterBandWiringContractTest {
     @Test fun `onStreamMeasured dung lai bang cung geometry`() {
         val body = SourceRoots.body(overlay, "fun onStreamMeasured(")
         assertTrue("val g = geometry(st)" in body && "wm?.updateViewLayout(c, g.lp)" in body)
-        assertTrue("videoLp(st, g.f)" in body)
+        assertTrue("videoLp(st, g)" in body, "dựng lại CẢ lớp phóng khi HAL trả cỡ — cỡ nguồn đổi thì hệ số phóng đổi")
         assertEquals(2, Regex("""geometry\(st\)""").findAll(overlay).count(), "đúng hai chỗ gọi: show + onStreamMeasured")
         assertTrue("box(appCtx" !in overlay, "không còn chỗ nào đo vùng trên appCtx bừa — mọi chỗ đi qua st.ctx")
     }

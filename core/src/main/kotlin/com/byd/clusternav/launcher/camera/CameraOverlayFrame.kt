@@ -70,11 +70,7 @@ object CameraOverlayFrame {
     ): Frame {
         if (areaW <= 0 || areaH <= 0) return Frame(areaW, areaH, false)
         if (streamW <= 0 || streamH <= 0) return Frame(areaW, areaH, false)
-        val srcW = cropSpan(crop, 0) * streamW
-        val srcH = cropSpan(crop, 1) * streamH
-        val swapAxes = quarterTurn(rotationDeg)
-        val rotW = if (swapAxes) srcH else srcW
-        val rotH = if (swapAxes) srcW else srcH
+        val (rotW, rotH) = rotated(streamW, streamH, crop, rotationDeg)
         // "Vừa khít": so hai tỉ lệ bằng phép nhân chéo (không chia ⇒ không có ca chia cho 0 nào lọt).
         return if (rotW * areaH >= rotH * areaW) {
             // Ảnh rộng hơn vùng ⇒ bề rộng quyết định.
@@ -82,6 +78,73 @@ object CameraOverlayFrame {
         } else {
             Frame(((areaH * rotW) / rotH).roundToInt().coerceIn(1, areaW), areaH, true)
         }
+    }
+
+    /**
+     * ═══ Cửa sổ **CAO TRỌN VÙNG** — dùng cho cụm, nơi chiều cao là thứ owner đòi tối đa (2.79) ═══════════════════
+     *
+     * [ĐO owner 27/09 tối]: *"cả xoay và không xoay, thì chiều cao cần tối đa nhé"* (và trước đó: *"chữ nhật chỉnh
+     * lại cho cao bằng khoảng của cụm, đang bé"*). [fit] **không** hứa điều đó: nó vừa khít theo cạnh chật hơn, nên
+     * một nguồn rộng hơn vùng (tỉ lệ > `areaW/areaH`) bị hạ chiều cao xuống để khỏi cắt bề ngang.
+     *
+     * Ở đây đảo ưu tiên: **`h` LUÔN bằng [areaH]**, `w` theo đúng tỉ lệ ảnh sau xoay, kẹp ≤ [areaW]. Khi tỉ lệ ảnh
+     * ≤ `areaW/areaH` thì kết quả **trùng [fit] từng pixel** (không cắt gì, không phóng gì) — tức mọi tổ hợp gương
+     * thật (4:3 và 3:4 sau xoay ±90 trên dải nửa-cụm 1,91:1) đi qua đây không mất một px ảnh nào. Chỉ nguồn RỘNG hơn
+     * vùng (ví dụ nguyên khung pano 5120×960 = 5,33:1) mới bị kẹp `w`, và phần bề ngang dư khi ấy do [cover] cắt —
+     * **cắt rìa, không kéo giãn**. Đó là cái giá của lời *"chiều cao tối đa"*, ghi ra đây để không ai đọc nhầm.
+     *
+     * Chưa biết cỡ nguồn ⇒ trả nguyên vùng + `streamKnown=false`, y hệt [fit] (chỗ gọi tự quyết ô vuông).
+     */
+    fun tall(
+        streamW: Int,
+        streamH: Int,
+        crop: FloatArray?,
+        rotationDeg: Int,
+        areaW: Int,
+        areaH: Int,
+    ): Frame {
+        if (areaW <= 0 || areaH <= 0) return Frame(areaW, areaH, false)
+        if (streamW <= 0 || streamH <= 0) return Frame(areaW, areaH, false)
+        val (rotW, rotH) = rotated(streamW, streamH, crop, rotationDeg)
+        return Frame(((areaH * rotW) / rotH).roundToInt().coerceIn(1, areaW), areaH, true)
+    }
+
+    /**
+     * Khung NHỎ NHẤT mang **đúng tỉ lệ ảnh** mà **PHỦ KÍN** vùng [areaW]×[areaH] — đối ngẫu của [fit].
+     *
+     * Vì sao cần, khi [fit] đã có: *theo cụm* (2.79) nới cửa sổ ra tới điểm NGOÀI CÙNG của kính để mép bám đường
+     * cong, nên cửa sổ **rộng hơn** khung đúng tỉ lệ ⇒ nếu cứ căng vùng crop vào cửa sổ ấy (bước 1 của
+     * [CameraOverlayTransform.matrix]) thì phép co giãn thành **không đẳng hướng** = ảnh bị kéo giãn — đúng thứ
+     * owner đã bác. Cách duy nhất còn lại mà không kéo giãn: cho **lớp video** cỡ [cover] (≥ cửa sổ ở cả hai trục,
+     * đúng tỉ lệ) rồi để chính cửa sổ **cắt** phần dư. Tỉ lệ `cover/cửa sổ` là *hệ số phóng*
+     * ([CameraClusterBand.zoom]) và `1 − 1/hệ số` là phần tầm nhìn mất.
+     *
+     * Chưa biết cỡ nguồn ⇒ trả đúng vùng (không đoán tỉ lệ ⇒ không phóng), y hệt [fit].
+     */
+    fun cover(
+        streamW: Int,
+        streamH: Int,
+        crop: FloatArray?,
+        rotationDeg: Int,
+        areaW: Int,
+        areaH: Int,
+    ): Frame {
+        if (areaW <= 0 || areaH <= 0) return Frame(areaW, areaH, false)
+        if (streamW <= 0 || streamH <= 0) return Frame(areaW, areaH, false)
+        val (rotW, rotH) = rotated(streamW, streamH, crop, rotationDeg)
+        // So bằng phép nhân chéo như [fit]; nhánh ĐẢO: ảnh rộng hơn vùng ⇒ **chiều cao** mới là cạnh quyết định.
+        return if (rotW * areaH >= rotH * areaW) {
+            Frame(((areaH * rotW) / rotH).roundToInt().coerceAtLeast(areaW), areaH, true)
+        } else {
+            Frame(areaW, ((areaW * rotH) / rotW).roundToInt().coerceAtLeast(areaH), true)
+        }
+    }
+
+    /** Cỡ vùng crop **sau xoay**, theo px nguồn — một phép duy nhất cho [fit]/[tall]/[cover]. */
+    private fun rotated(streamW: Int, streamH: Int, crop: FloatArray?, rotationDeg: Int): Pair<Float, Float> {
+        val srcW = cropSpan(crop, 0) * streamW
+        val srcH = cropSpan(crop, 1) * streamH
+        return if (quarterTurn(rotationDeg)) srcH to srcW else srcW to srcH
     }
 
     /**

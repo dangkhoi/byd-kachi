@@ -97,10 +97,8 @@ class CameraOverlayView(private val appCtx: Context) {
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
     private class Box(val areaW: Int, val areaH: Int, val x0: Int, val y0: Int)
 
-    /**
-     * Cỡ + chỗ cửa sổ đã quyết — MỘT cửa cho [show] lẫn [onStreamMeasured]; `radiusPx` và [place] chỉ có ở đường
-     * dải cụm ([place] mang bảng mép cong ⇒ [glassMask] dựng mặt nạ; `null` ⇒ cửa sổ chữ nhật 2.73, không mặt nạ).
-     */
+    /** Cỡ + chỗ cửa sổ — MỘT cửa cho [show] lẫn [onStreamMeasured]. [place] chỉ có ở đường dải cụm: nó mang bảng mép
+     *  cong ([glassMask]) và cỡ lớp phủ kín ([videoLp]); `null` = màn chính, cửa sổ chữ nhật 2.73, không mặt nạ. */
     private class Geo(
         val f: CameraOverlayFrame.Frame,
         val lp: WindowManager.LayoutParams,
@@ -119,8 +117,7 @@ class CameraOverlayView(private val appCtx: Context) {
         /** Lề trên màn CHÍNH = 14% chiều cao ⇒ nằm hẳn DƯỚI thanh trên (trước bị đè header). */
         const val MAIN_TOP_RATIO = 0.14f
 
-        /** Lề bên = 3% bề rộng. */
-        const val SIDE_MARGIN_RATIO = 0.03f
+        /** Lề bên màn CHÍNH = 3% bề rộng. */ const val SIDE_MARGIN_RATIO = 0.03f
     }
 
     /**
@@ -197,7 +194,7 @@ class CameraOverlayView(private val appCtx: Context) {
                     setColor(Color.BLACK)
                 }
                 roundOutline(radius, round)
-                addView(child, videoLp(st, f))
+                addView(child, videoLp(st, g))
                 labelFor(ctx, side)?.let { tvl ->
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
@@ -337,7 +334,7 @@ class CameraOverlayView(private val appCtx: Context) {
         st.streamW = sw; st.streamH = sh; st.rotationEffective = rotationEffective
         runCatching {
             val g = geometry(st)
-            video?.let { v -> v.layoutParams = videoLp(st, g.f); v.requestLayout() }
+            video?.let { v -> v.layoutParams = videoLp(st, g); v.requestLayout() }
             wm?.updateViewLayout(c, g.lp)
             Log.i(PanoramaHal.TAG, "overlay cỡ nguồn ${sw}x$sh xoay-thật=$rotationEffective ⇒ khung ${g.f.w}x${g.f.h} ${g.note}")
         }.onFailure { Log.w(PanoramaHal.TAG, "overlay resize failed: ${it.message}") }
@@ -385,7 +382,8 @@ class CameraOverlayView(private val appCtx: Context) {
      * Toán của cả hai ở `:core`; đây chỉ chọn đường và dịch sang [WindowManager.LayoutParams].
      */
     private fun geometry(st: Live): Geo {
-        if (CameraClusterBand.isCluster(st.shape)) {
+        // 2.79 — rẽ theo **display THẬT**, không theo hình: cả ba hình trên cụm đều cao trọn dải, cân đối hai bên.
+        if (st.onCluster) {
             val dm = st.ctx.resources.displayMetrics
             val bandRect = CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band)
             val edge = CameraClusterBand.leftEdge(bandRect, st.band, dm.widthPixels)
@@ -394,18 +392,18 @@ class CameraOverlayView(private val appCtx: Context) {
                 band = bandRect, atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT,
                 streamW = st.streamW, streamH = st.streamH, crop = st.crop,
                 rotationDeg = if (st.rotationEffective) st.rotationDeg else 0, spec = st.band, displayH = dm.heightPixels,
-                leftEdge = edge, rightEdge = edgeRight,
+                shape = st.shape, leftEdge = edge, rightEdge = edgeRight,
             )
-            // `cong=` = mép có mực ở phía NGOÀI (trái hay phải, theo bên cửa sổ đứng — [outerInkAt]). Ba số BẰNG NHAU
-            // là ĐÚNG từ 2.78: cửa sổ đứng ở điểm trong cùng nên mặt nạ không cắt hàng nào. Số ấy so với `dải=` cho
-            // biết nó nới ra được bao nhiêu px so với tường thẳng.
-            val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} tại=${p.x},${p.y}" +
+            // `cong=` = mép có mực ở phía NGOÀI (trái/phải theo bên cửa sổ đứng — [outerInkAt]) ở ba hàng đỉnh/giữa/
+            // đáy. ⚠ 2.78 ba số BẰNG NHAU (cửa sổ đứng ở điểm trong cùng ⇒ mép thẳng); 2.79 *theo cụm* phải ra ba số
+            // KHÁC nhau — đó chính là bằng chứng mép đã bám đường cong. Chữ nhật/tròn thì bằng nhau là đúng.
+            val note = "dải=${bandRect.x0},${bandRect.y0}-${bandRect.x1},${bandRect.y1} ${p.describe()}" +
                 " cong=${CameraClusterBand.outerInkAt(p, p.y)}/${CameraClusterBand.outerInkAt(p, p.y + p.h / 2)}" +
                 "/${CameraClusterBand.outerInkAt(p, p.y + p.h - 1)}" +
                 " display=${dm.widthPixels}x${dm.heightPixels}"
             return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)
         }
-        val box = box(st.ctx, st)
+        val box = box(st.ctx)
         val f = frameOf(st, box)
         return Geo(f, layoutParams(box, f, st.corner), null, "vùng=${box.areaW}x${box.areaH}")
     }
@@ -427,18 +425,14 @@ class CameraOverlayView(private val appCtx: Context) {
      * VÙNG CHO PHÉP: ô vuông cạnh [SQUARE_RATIO] × chiều cao màn, ở góc trên, lùi xuống hết bề cao thanh trên.
      *
      * Đây đúng là cửa sổ của 2.35–2.72; từ CAM-ROT-2 nó chỉ còn là **trần**: cửa sổ thật ([frameOf]) không bao giờ
-     * to hơn vùng này, nên bản đổi tỉ lệ KHÔNG thể lấn thêm chỗ làm việc hay đè thanh trên. TRÊN CỤM nó còn bị kẹp
-     * vào **dải vẽ được** ([CameraClusterBand.boxIn]) — [P1] soát 27/09: hình mặc định là CHỮ NHẬT, mà % chiều cao
-     * không biết gì về thanh trên của cụm ⇒ 93/360 px bị che.
+     * to hơn vùng này, nên bản đổi tỉ lệ KHÔNG thể lấn thêm chỗ làm việc hay đè thanh trên.
+     *
+     * ⚠ Từ 2.79 đây là đường của **MÀN CHÍNH và chỉ màn chính** (owner 27/09 tối: *"phần để overlay trên màn chính
+     * OK rồi, ko cần chỉnh gì thêm cả"*): trên cụm cả ba hình đi qua [CameraClusterBand.place].
      */
-    private fun box(ctx: Context, st: Live): Box {
+    private fun box(ctx: Context): Box {
         val dm = ctx.resources.displayMetrics
         val side = (dm.heightPixels * SQUARE_RATIO).toInt()
-        val atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT
-        if (st.onCluster) {
-            val area = CameraClusterBand.boxIn(CameraClusterBand.band(dm.widthPixels, dm.heightPixels, st.band), side, atLeft)
-            return Box(area.w, area.h, if (atLeft) area.x0 else (dm.widthPixels - area.x1).coerceAtLeast(0), area.y0)
-        }
         return Box(side, side, (dm.widthPixels * SIDE_MARGIN_RATIO).toInt(), (dm.heightPixels * MAIN_TOP_RATIO).toInt())
     }
 
@@ -458,12 +452,21 @@ class CameraOverlayView(private val appCtx: Context) {
      * `TextureView` lấp kín cửa sổ (crop/xoay do ma trận lo). `SurfaceView` không có ma trận ⇒ phóng lớp video lên
      * `1/crop` lần rồi kéo lệch bằng **lề âm** ([CameraOverlayFrame.stretch]) để đúng dải gương lọt vào cửa sổ.
      */
-    private fun videoLp(st: Live, f: CameraOverlayFrame.Frame): android.widget.FrameLayout.LayoutParams {
+    private fun videoLp(st: Live, g: Geo): android.widget.FrameLayout.LayoutParams {
+        val f = g.f
         // `usesTextureView`, KHÔNG `rotatesByMatrix`: đường `GL` cũng là `TextureView` lấp kín cửa sổ (shader cắt
         // vùng), nhưng nó KHÔNG xoay bằng ma trận. Dùng lẫn hai phép hỏi ở đây là đẩy đường GL vào nhánh phóng-kéo-lệch
         // của `SurfaceView` ⇒ cắt HAI lần (một lần shader, một lần lề âm) và khung ra là một mảnh vụn của dải.
         if (CameraSignalPolicy.usesTextureView(st.render)) {
-            return android.widget.FrameLayout.LayoutParams(MATCH, MATCH)
+            // 2.79 · PHÓNG ĐỂ LẤP (cover): cửa sổ *theo cụm* rộng hơn khung đúng tỉ lệ (nó trải tới điểm ngoài
+            // cùng của kính) ⇒ lớp video lấy cỡ `layerW×layerH` **đúng tỉ lệ ảnh**, căn giữa bằng lề ÂM, cửa sổ cắt
+            // phần dư ⇒ lấp kín mà KHÔNG kéo giãn. Màn chính (`place == null`) và mọi ca không phóng ⇒ `MATCH`.
+            val p = g.place
+            if (p == null || (p.layerW <= f.w && p.layerH <= f.h)) return android.widget.FrameLayout.LayoutParams(MATCH, MATCH)
+            return android.widget.FrameLayout.LayoutParams(p.layerW, p.layerH, Gravity.TOP or Gravity.START).apply {
+                leftMargin = (f.w - p.layerW) / 2
+                topMargin = (f.h - p.layerH) / 2
+            }
         }
         val s = CameraOverlayFrame.stretch(f.w, f.h, st.crop)
         return android.widget.FrameLayout.LayoutParams(s.w, s.h, Gravity.TOP or Gravity.START).apply {

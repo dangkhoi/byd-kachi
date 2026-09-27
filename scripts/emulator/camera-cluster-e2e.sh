@@ -32,13 +32,13 @@ KEEP=0
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 GRADLE="${GRADLE_LOCKED:-}"
 # Dải Seal DL3 — cùng số với `ClusterBandSpec.SEAL_DL3` (:core). Đổi ở đó thì đổi ở đây (bài canh `:core` ghim số).
-BAND_L=140; BAND_T=136; BAND_R=1780; BAND_B=560
+BAND_L=140; BAND_T=132; BAND_R=1780; BAND_B=560
 # Mép NGOÀI cong bên trái (2.77) = `ClusterBandSpec.SEAL_DL3.leftEdge`: 9 mẫu chia đều từ BAND_T tới BAND_B.
-# Cửa sổ ĐẦU TRÁI được phép trượt ra tới mẫu nhỏ nhất (mặt nạ cắt phần thừa) ⇒ chấm điểm theo mẫu đó, không theo BAND_L.
-BAND_EL="42,18,19,31,41,50,61,74,89"
+# 2.79: cửa sổ ĐẦU TRÁI **đứng hẳn** ở mẫu nhỏ nhất (ảnh phóng để lấp, mặt nạ cắt theo đường cong) ⇒ chấm theo mẫu đó.
+BAND_EL="46,19,19,29,41,50,62,74,89"
 # Mép NGOÀI cong bên PHẢI (2.78) = `ClusterBandSpec.SEAL_DL3.rightEdge`, cùng 9 hàng. Cửa sổ ĐẦU PHẢI có mép phải ở
 # mẫu LỚN NHẤT được phép (hướng "ra ngoài" bên phải là x lớn hơn) ⇒ chấm điểm theo mẫu đó, không theo BAND_R.
-BAND_ER="1833,1871,1876,1872,1866,1856,1843,1823,1800"
+BAND_ER="1829,1869,1876,1873,1866,1856,1844,1824,1800"
 MIRROR_W=960; MIRROR_H=360   # cửa sổ soi của overlay display trên màn chính (Android 10: nửa cỡ)
 
 while [ $# -gt 0 ]; do
@@ -208,7 +208,7 @@ print(f"   khung cửa sổ trên display {did}: [{x0},{y0}]-[{x1},{y1}] ({x1-x0
 # Ảnh: cắt cửa sổ soi (góc trên-trái màn chính), phóng về 1920×720, kẻ dải xanh + vùng hệ thống đo được (đỏ) + khung (vàng).
 im = Image.open(f"{out}/screen-{tag}.png").convert("RGB").crop((0, 0, MW, MH)).resize((1920, 720), Image.NEAREST)
 d = ImageDraw.Draw(im)
-d.rectangle([0, 0, 1919, 130], outline=(220, 40, 40), width=3)      # thanh trên hệ thống [ĐO ≈ 0..130–140]
+d.rectangle([0, 0, 1919, 131], outline=(220, 40, 40), width=3)      # thanh trên hệ thống [ĐO 2.79: đáy đường kẻ 131]
 d.rectangle([0, 567, 1919, 719], outline=(220, 40, 40), width=3)    # thanh dưới hệ thống [ĐO chữ từ ≈ 567–578]
 d.rectangle([1798, 165, 1919, 330], outline=(220, 40, 40), width=2) # cột icon phải (biển 30/ADAS) [ĐO]
 d.rectangle([L, T, R - 1, B - 1], outline=(40, 200, 80), width=3)   # dải vẽ được (tường thẳng 2.76)

@@ -1,6 +1,6 @@
 # Kachi launcher (byd-launcher) — Docs Index (INDEX canonical)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 tối muộn (bản **2.78 (179)**, `com.byd.launcher`, OTA `apk/Kachi-2.78-release.apk`; đợt **rà soát doc 26/09** — README + `HUONG-DAN-KACHI.md` viết lại theo 2.73, danh mục chức năng dựng lại, 21 doc đổi trạng thái + header, audit `diagnostics/doc-audit-2026-09-26.md`) · trước đó 2026-09-26 (2.72 (173)) và 2026-09-17 (gói 1.69 (70)) · **Mục đích**: Bản đồ MỌI tài liệu hiện hành theo 9-loại taxonomy (R4). Không có trong index = archive/stale, KHÔNG authoritative (R0).
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 khuya (bản **2.79 (180)**, `com.byd.launcher`, OTA `apk/Kachi-2.79-release.apk`; đợt **rà soát doc 26/09** — README + `HUONG-DAN-KACHI.md` viết lại theo 2.73, danh mục chức năng dựng lại, 21 doc đổi trạng thái + header, audit `diagnostics/doc-audit-2026-09-26.md`) · trước đó 2026-09-26 (2.72 (173)) và 2026-09-17 (gói 1.69 (70)) · **Mục đích**: Bản đồ MỌI tài liệu hiện hành theo 9-loại taxonomy (R4). Không có trong index = archive/stale, KHÔNG authoritative (R0).
 
 **(VI)** Đây là **nguồn map tài liệu duy nhất** của repo. Đọc file này trước → rồi mở doc cụ thể. Task = `PROJECT-BACKLOG.md`. Luật bền = `../.kiro/steering/`.
 **(EN)** This is the repo's **single documentation map**. Read this first → then open the specific doc. Tasks live in `PROJECT-BACKLOG.md`; durable rules in `../.kiro/steering/`.

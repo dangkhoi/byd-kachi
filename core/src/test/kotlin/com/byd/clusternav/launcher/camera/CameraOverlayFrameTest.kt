@@ -174,4 +174,70 @@ class CameraOverlayFrameTest {
         listOf(90, 270, -90, -270, 450).forEach { assertTrue(CameraOverlayFrame.quarterTurn(it), "deg=$it") }
         listOf(0, 180, -180, 360, 540).forEach { assertFalse(CameraOverlayFrame.quarterTurn(it), "deg=$it") }
     }
+
+    // ══ 2.79 · `tall` (cao trọn vùng) + `cover` (phủ kín, không kéo giãn) ═══════════════════════════════════════
+
+    /**
+     * [tall] = [fit] **từng pixel** khi ảnh không rộng hơn vùng — tức mọi tổ hợp gương thật trên dải nửa-cụm.
+     * Bài này là lưới an toàn cho lời hứa *"chỉ đụng đường cụm"*: nếu ai đó sửa `tall` thành một phép khác thì
+     * chênh lệch lộ ra ngay ở đây, không đợi tới lúc nhìn màn cụm.
+     */
+    @Test fun `tall trung fit khi anh khong rong hon vung`() {
+        val strip = floatArrayOf(0.25f, 0f, 0.50f, 1f)     // 1280×960 = 4:3
+        val narrow = floatArrayOf(0.25f, 0f, 0.35f, 1f)    // 512×960
+        for (crop in listOf(strip, narrow, null)) for (rot in listOf(0, 90, -90, 180)) {
+            val f = CameraOverlayFrame.fit(5120, 960, crop, rot, 820, 428)
+            val t = CameraOverlayFrame.tall(5120, 960, crop, rot, 820, 428)
+            if (f.h == 428) assertEquals(f, t, "crop=${crop?.toList()} rot=$rot: ảnh vừa vùng ⇒ hai phép PHẢI trùng")
+            assertEquals(428, t.h, "crop=${crop?.toList()} rot=$rot: `tall` luôn cao trọn vùng")
+        }
+        // Nguồn rộng hơn vùng: `fit` hạ chiều cao (154), `tall` giữ 428 và kẹp bề rộng — đó là chỗ hai phép khác nhau.
+        assertEquals(CameraOverlayFrame.Frame(820, 154, true), CameraOverlayFrame.fit(5120, 960, null, 0, 820, 428))
+        assertEquals(CameraOverlayFrame.Frame(820, 428, true), CameraOverlayFrame.tall(5120, 960, null, 0, 820, 428))
+        // Chưa đo cỡ nguồn ⇒ cả hai trả nguyên vùng (không đoán tỉ lệ).
+        assertEquals(CameraOverlayFrame.Frame(820, 428, false), CameraOverlayFrame.tall(0, 0, strip, 0, 820, 428))
+        assertEquals(CameraOverlayFrame.Frame(-1, 5, false), CameraOverlayFrame.tall(5120, 960, strip, 0, -1, 5))
+    }
+
+    /** [cover] phủ kín vùng ở CẢ HAI trục, giữ đúng tỉ lệ ảnh, và không bao giờ nhỏ hơn vùng vì làm tròn. */
+    @Test fun `cover phu kin vung va giu ti le`() {
+        val strip = floatArrayOf(0.25f, 0f, 0.50f, 1f)     // 4:3
+        assertEquals(CameraOverlayFrame.Frame(641, 481, true), CameraOverlayFrame.cover(5120, 960, strip, 0, 641, 428))
+        assertEquals(CameraOverlayFrame.Frame(571, 428, true), CameraOverlayFrame.cover(5120, 960, strip, 0, 571, 428),
+            "vùng đã đúng tỉ lệ ⇒ trùng khít, không phóng")
+        assertEquals(CameraOverlayFrame.Frame(2283, 428, true), CameraOverlayFrame.cover(5120, 960, null, 0, 820, 428),
+            "ảnh rộng hơn vùng ⇒ CHIỀU CAO quyết định (ngược với fit)")
+        for (crop in listOf(strip, null, floatArrayOf(0.25f, 0f, 0.35f, 1f))) for (rot in listOf(0, 90, -90, 180)) {
+            for (area in listOf(641 to 428, 428 to 428, 150 to 428, 820 to 428)) {
+                val c = CameraOverlayFrame.cover(5120, 960, crop, rot, area.first, area.second)
+                assertTrue(c.w >= area.first && c.h >= area.second, "crop=${crop?.toList()} rot=$rot vùng=$area ⇒ $c hở mép")
+                // Đúng tỉ lệ: một trục khít vùng, trục kia dư — so bằng nhân chéo với khung `fit` của cùng tỉ lệ.
+                val f = CameraOverlayFrame.fit(5120, 960, crop, rot, c.w, c.h)
+                assertTrue(kotlin.math.abs(f.w - c.w) <= 1 && kotlin.math.abs(f.h - c.h) <= 1,
+                    "crop=${crop?.toList()} rot=$rot: $c không mang tỉ lệ ảnh (fit của chính nó ra $f)")
+            }
+        }
+        assertEquals(CameraOverlayFrame.Frame(360, 360, false), CameraOverlayFrame.cover(0, 0, strip, 0, 360, 360))
+    }
+
+    /**
+     * ═══ MÀN CHÍNH không đổi một px — owner 27/09 tối: *"phần để overlay trên màn chính OK rồi"* ═════════════════
+     *
+     * Đường màn chính đi qua **[CameraOverlayFrame.fit]** trong một vùng VUÔNG `0,50 × chiều cao` rồi căn giữa
+     * (`CameraOverlayView.box`/`layoutParams`). 2.79 không chạm phép nào trong số đó; bài này chụp lại kết quả của
+     * 2.78 bằng số để một lần đổi `fit`/`cropSpan` sau này không âm thầm đổi cả màn chính.
+     */
+    @Test fun `khung man chinh giu nguyen so cua 2 78`() {
+        val side = (990 * 0.50f).toInt()                   // màn chính 1920×990 (Seal DL3) ⇒ vùng 495×495
+        assertEquals(495, side)
+        val strip = floatArrayOf(0.25f, 0f, 0.50f, 1f)
+        val narrow = floatArrayOf(0.25f, 0f, 0.35f, 1f)
+        assertEquals(CameraOverlayFrame.Frame(495, 371, true), CameraOverlayFrame.fit(5120, 960, strip, 0, side, side))
+        assertEquals(CameraOverlayFrame.Frame(371, 495, true), CameraOverlayFrame.fit(5120, 960, strip, -90, side, side))
+        assertEquals(CameraOverlayFrame.Frame(264, 495, true), CameraOverlayFrame.fit(5120, 960, narrow, 0, side, side))
+        assertEquals(CameraOverlayFrame.Frame(495, 264, true), CameraOverlayFrame.fit(5120, 960, narrow, 90, side, side))
+        assertEquals(CameraOverlayFrame.Frame(495, 93, true), CameraOverlayFrame.fit(5120, 960, null, 0, side, side))
+        assertEquals(CameraOverlayFrame.Frame(495, 495, false), CameraOverlayFrame.fit(0, 0, strip, 0, side, side))
+    }
+
 }

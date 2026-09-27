@@ -1,6 +1,6 @@
 # R4 · HÌNH "THEO CỤM" — camera chỉ vẽ trong dải giữa của cụm (2.76), rồi ôm ĐƯỜNG CONG của kính (2.77)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 tối (§12 = 2.78, mép PHẢI cong + không ép hình + mép trong mờ) · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 tối lượt 2 (§13 = 2.79, ba hình ba đánh đổi + mốc trên `136`→`132`) · **Mục đích**: owner (3 ảnh cụm + framebuffer display 1, 10:50–11:01):
 > *"header top và bottom là của hệ thống, không vẽ vào được, chỉ vẽ được khúc giữa như gmaps đang hiện"* ⇒ đo **dải giữa**
 > bằng số từ framebuffer + ảnh chụp, đưa vào một hồ sơ (`ClusterBandSpec`), thêm hình khung `CLUSTER` ("theo cụm") để
 > overlay camera trên cụm nằm **trọn** trong dải ấy. Spec `docs/specs/kachi-276-closing.html` R4 · OQ2.
@@ -447,3 +447,134 @@ Trong đó `CameraClusterBandTest` **20/0** (2.77: 14), `CameraClusterBandWiring
 - **CAM-CL6**: đổi hình sang **Chữ nhật** rồi **Tròn**, vẫn *Hiện lên cụm* ⇒ phải RA ĐÚNG hình đã chọn (2.77 tự
   đổi sang *theo cụm*), và khoảng hở tới mép trái dải = khoảng hở tới mép phải dải (đặt cân đối). Logcat phải in
   `hình=RECT` / `hình=ROUND` kèm `cluster=true`.
+
+---
+
+## 13. 2026-09-27 (tối, lượt 2) — BA HÌNH BA ĐÁNH ĐỔI + mốc trên đo lại (2.79, làn L4)
+
+> Owner, nguyên văn: *"1, chữ nhật chỉnh lại cho cao bằng khoảng của cụm, đang bé. 2, theo cụm chấp nhận mất 20%,
+> làm bo theo cụm cho đẹp. 3. tròn: đường kính bằng chìu cao tối đa chiếu lên cụm, đang thu ngắn quá --> 3 options,
+> có cái được cái mất, làm tối đa, user thích chọn gì thì chọn"*; và: *"viền trái đâu có bám theo cụm hả, chỉ là 1
+> đường thẳng thôi mà, khác gì chữ nhật đâu"*, *"vẫn còn dư phía trên top, nên kéo lên thêm 1 tý"*, *"cả xoay và
+> không xoay, thì chiều cao cần tối đa nhé, chỉ xử lý cho phần cụm nhé, phần để overlay trên màn chính OK rồi"*.
+
+### 13.1 Vì sao 2.78 vẫn ra một đường thẳng — hai lời hứa loại trừ nhau
+
+2.78 đặt cửa sổ ở điểm **TRONG CÙNG** của kính để *"không để mất video"*: mặt nạ khi ấy không cắt một pixel nào ở
+bất kỳ hàng nào. Nhưng *"mặt nạ không bao giờ cắt"* **chính là định nghĩa của một mép thẳng đứng** —
+`maskLeftAt(p, y) = max(p.x, đường-cong(y)) = p.x` ở mọi `y`. Log của chính 2.78 đã nói ra: `cong=89/89/89`. Không
+có cách nào vừa bám cong vừa không mất pixel; owner chọn: *"chấp nhận mất 20%"*.
+
+**Cách duy nhất để mép cong**: cửa sổ phải phủ tới điểm **NGOÀI CÙNG** của đường cong, và khoảng giữa hai điểm chỉ
+có thể lấp bằng **ảnh phóng thêm**. Phần lấn đo được: **70 px** bên trái (ngoài cùng `19` → trong cùng `89`),
+**76 px** bên phải (ngoài cùng `1876` → trong cùng `1800`).
+
+**Phóng = COVER, không phải kéo giãn.** Lớp video lấy cỡ `CameraOverlayFrame.cover` — khung nhỏ nhất **đúng tỉ lệ
+ảnh** mà phủ kín cửa sổ — rồi chính cửa sổ cắt phần dư (lề ÂM trên `FrameLayout`, cùng cơ chế mà đường `SurfaceView`
+đã dùng từ 2.36). Nếu thay vào đó cứ căng vùng crop vào cửa sổ rộng hơn thì bước 1 của `CameraOverlayTransform.matrix`
+thành phép co giãn **không đẳng hướng** ⇒ ảnh méo. Hệ số phóng = `bề rộng cửa sổ / bề rộng đúng tỉ lệ`, và phần tầm
+nhìn mất = `phần lấn / bề rộng cửa sổ` (một trục phóng khít, trục kia dư ⇒ diện tích thấy được = `1/hệ số`).
+
+### 13.2 Mốc TRÊN đo lại: `136` → `132` [ĐO ±4 px]
+
+`136` của §2 là một **mốc nội dung** (*"hàng đầu tiên chắc chắn nhìn thấy trọn"* — mép trên thanh tìm kiếm gmaps),
+**không phải** mép của thanh hệ thống. Owner thấy đúng chỗ đó còn dư. Phép đo mới, cùng homography của §11.2 nhưng
+**nắn cả vùng ảnh về không gian framebuffer** (`scratchpad/toprect.py`, `topedge2.py`) rồi đọc **đường kẻ phân cách**
+chạy hết bề ngang:
+
+| Ảnh | Neo · sai số | Đáy đường kẻ (fb `y`) | Ghi chú |
+|---|---|---|---|
+| `cum-2` | 7 · **3,8 px** | **131** | neo nằm CÙNG nửa với chỗ đọc ⇒ chuẩn của phép này; đường kẻ xanh, `y` 125→131 |
+| `cum-0` | 10 · 11,0 px | 122–126 | đường kẻ nghiêng nhẹ (homography còn méo xuyên tâm) |
+| `cum-1` | 8 · 20,7 px | ~128 | cực tiểu độ sáng ở 124–125 |
+
+Chữ của thanh trên (`10:50AM · Standard · P · NORMAL`) kết thúc ở `y ≈ 119`; dưới đường kẻ là nội dung gmaps.
+**Chọn `132`** = ước lượng SÂU NHẤT (131, của ảnh sai số nhỏ nhất) + đúng một hàng. Lề còn 1 px và nó **nằm trong**
+sai số ±4 của chính phép đo ⇒ nếu lệch thì hệ thống **vẽ đè** ≤ 4 px mép trên cửa sổ, y như mũi tên xi-nhan và (P)
+đã đè từ 2.76 (F7/D6) — không phải cửa sổ leo lên thanh. Đổi lại: dải cao **424 → 428 px**.
+
+Hai bảng mép cong được **dựng lại ở mốc mới** bằng đúng script cũ (`mask-277/edge_fit.py`), vì 9 mẫu chia đều từ
+`top` tới `bottom` nên đổi `top` là đổi hàng lấy mẫu:
+
+| | `y` mẫu | bảng | sai số nội suy |
+|---|---|---|---|
+| trái (2.78) | 136, 189, … 560 | `42,18,19,31,41,50,61,74,89` | 5,5 px |
+| **trái (2.79)** | **132, 185, … 560** | **`46,19,19,29,41,50,62,74,89`** | 6,3 px |
+| phải (2.78) | 136, 189, … 560 | `1833,1871,1876,1872,1866,1856,1843,1823,1800` | 7,7 px |
+| **phải (2.79)** | **132, 185, … 560** | **`1829,1869,1876,1873,1866,1856,1844,1824,1800`** | 7,9 px |
+
+Điểm trong/ngoài cùng **không đổi** (trái `19`/`89`, phải `1876`/`1800`) ⇒ phần lấn 70/76 px giữ nguyên.
+
+### 13.3 Ba hình, ba đánh đổi — số thật trên dải Seal `1640×428`, gương `1280×960 (4:3)`
+
+| Hình | Cửa sổ (xoay 0) | Diện tích | Xoay ±90 | Bám cong? | Hệ số phóng | Mất tầm nhìn | 2.78 là |
+|---|---|---|---|---|---|---|---|
+| **Chữ nhật** | `571×428` | 244 388 px² | `321×428` | không | **100 %** | **0 %** | `360×270` (97 200) — **nhỏ hơn 2,5 lần** |
+| **Theo cụm** (trái) | `641×428` | 274 348 px² | `391×428` | **có** | 112 % · (±90: 122 %) | **11 %** · (±90: **18 %**) | `565×424` (239 560), mép THẲNG |
+| **Theo cụm** (phải) | `647×428` | 276 916 px² | `397×428` | **có** | 113 % · (±90: 124 %) | **12 %** · (±90: **19 %**) | `565×424`, mép thẳng |
+| **Tròn** | `428×428` (đĩa 143 872 px²) | 183 184 px² | `428×428` | không | **100 %** | **0 %** | `360×360` (129 600) — đường kính nhỏ hơn 19 % |
+
+Hình tròn không phóng vì `CameraPanoCrop.cropFor` đã cắt **ô vuông** cho nó từ 2.73 (`squareCrop`) ⇒ ảnh vuông lấp
+vừa khít cửa sổ vuông. Nếu một crop KHÔNG vuông lọt vào hình tròn (view lạ, hoặc chưa biết tỉ lệ nguồn) thì cover
+**cắt rìa** thay vì để viền đen trong vòng tròn: crop trọn dải 4:3 ⇒ phóng 133 % mất 25 %; vệt hẹp 0,53:1 ⇒ 188 %
+mất 47 %. Cửa sổ **luôn vuông** ở mọi ca — `Outline.setOval` trên một cửa sổ chữ nhật vẽ ra hình ELIP (bài
+`ba hinh tren cum deu cao tron dai o moi goc xoay` bắt đúng ca này: nguồn 0,19:1 từng cho `80×428`).
+
+Với bề rộng crop **HẸP** (`SPAN_NARROW`, mặc định — `512×960`) thì phần lấn chiếm tỉ lệ lớn hơn vì cửa sổ hẹp hơn:
+*theo cụm* trái `298×428` ⇒ phóng 131 % mất **23 %**, phải `304×428` ⇒ 133 % mất **25 %**; xoay ±90 (`960×512`) thì
+ngược lại, cửa sổ rộng `873`/`879` ⇒ chỉ mất **8 %**/**9 %** (chữ nhật khi ấy là `228×428` / `803×428`, vẫn mất 0 %).
+Công thức: `mất = phần lấn / bề rộng cửa sổ`. Con số 20 % owner duyệt là đúng cỡ, nhưng **không phải trần cứng** —
+ghi ra đây để owner biết chỗ nào vượt, thay vì im lặng kẹp lại rồi mép hết cong.
+
+**Ngoại lệ hình học duy nhất, báo rõ chứ không im lặng**: nguồn rộng hơn **nửa dải** (`1,91:1`) — tức nguyên khung
+pano `5120×960 = 5,33:1`, KHÔNG phải view gương — thì lời *"chiều cao tối đa"* buộc cắt bề ngang: cửa sổ `820×428`,
+phóng 257 %, mất 61 % bề ngang. Mọi tổ hợp gương thật (4:3 · 3:4 · 0,53:1 · 1,875:1) đều nằm dưới `1,91:1` nên
+**không bị** ca này.
+
+### 13.4 Cơ chế (2.79)
+
+1. **`:core` `CameraOverlayFrame.tall`** — cửa sổ **cao trọn vùng** ở mọi tỉ lệ/góc xoay (`h == areaH` luôn), `w`
+   theo tỉ lệ ảnh, kẹp ≤ `areaW`. Trùng `fit` từng pixel khi ảnh không rộng hơn vùng.
+2. **`:core` `CameraOverlayFrame.cover`** — khung nhỏ nhất đúng tỉ lệ mà **phủ kín** vùng (đối ngẫu của `fit`).
+3. **`:core` `CameraClusterBand.place(…, shape = …)`** — MỘT phép cho cả ba hình; khác nhau đúng hai chỗ: bề rộng
+   vùng (tròn = vuông cạnh `band.h`; hai hình kia = nửa dải) và **có nới ra kính hay không** (chỉ `CLUSTER`). Trả
+   `Placement.layerW/layerH` (cỡ lớp video) + `describe()` (`hình · cửa · lớp · phóng % · mất %`).
+   Nới ra kính cần **ba** điều kiện: hình *theo cụm* · đời cụm đã đo đường cong · **đã biết cỡ nguồn** (không biết
+   tỉ lệ thì cover vô nghĩa ⇒ tường thẳng, không phóng).
+4. **`:app` `CameraOverlayView.geometry`** rẽ theo **`st.onCluster`** (display thật) thay vì theo hình ⇒ cả ba hình
+   trên cụm đi đường dải. `box()` chỉ còn của **màn chính** (`CameraClusterBand.boxIn` đã gỡ — hết chủ).
+5. **`:app` `videoLp`** — lớp video cỡ `layerW×layerH` với **lề ÂM** căn giữa khi có phóng; `MATCH_PARENT` khi không
+   (màn chính và mọi ca phóng = 1) ⇒ đường màn chính **byte-identical** 2.78.
+6. Mặt nạ cong + dải mờ mép trong: **không đổi** (2.77/2.78). `fadePx` nay trả `0` cho chữ nhật/tròn — hai hình ấy
+   có mép thẳng nằm sát mép dải, mờ ở đó là mờ vô cớ.
+
+### 13.5 Test — `:core` **2955 bài / 0 lỗi**, `:app` **1502 / 0**, ba module còn lại **185 / 0** (đếm từ XML)
+
+- `theo cum bam duong cong va khong con khe den o hang nao` (**bài chính**): mọi tổ hợp (bên × 4 crop × 4 góc) ×
+  **mọi hàng** cửa sổ ⇒ `maskLeftAt` bằng **đúng đường cong** (không bằng `p.x`), cửa sổ phủ tới đường cong ở mọi
+  hàng (không khe đen), lớp video phủ kín + đúng tỉ lệ, và **mất = phần lấn / bề rộng** (công thức, không phải hằng).
+- `ba hinh tren cum deu cao tron dai o moi goc xoay`: ba hình × mọi tổ hợp ⇒ `h == band.h`, `y == band.y0`,
+  `y + h == band.y1`, trong dải, tròn thì cửa sổ VUÔNG, chữ nhật/tròn không mặt nạ + không dải mờ.
+- `chu nhat va tron tren cum can doi hai ben` · `doi cum chua do van ra tuong thang hai ben` (không phóng) ·
+  `khung man chinh giu nguyen so cua 2 78` (chụp số của `fit` ở vùng `495×495`) · `tall trung fit khi anh khong rong
+  hon vung` · `cover phu kin vung va giu ti le`.
+- `:app`: `duong man chinh khong con nhanh cum nao va khong doi mot byte` · `lop video phong de lap duoc noi day,
+  khong keo gian` (canh đúng mắt xích *"`:core` tính đúng mà `:app` vẫn MATCH_PARENT ⇒ kéo giãn"*).
+- **Đỏ trước – xanh sau** (bài chính): đảo `place()` về phép 2.78 (`x = innermostLeft`, `w = fitW`) ⇒
+  `theo cum bam duong cong…` **ĐỎ** với *"atLeft=true crop=null rot=0: phải RỘNG hơn hình chữ nhật đúng bằng phần
+  lấn ra của kính ==> expected: <true> but was: <false>"*, và `ba hinh tren cum deu cao tron dai…` **ĐỎ** với
+  *"hình=ROUND … đường kính = chiều cao dải ==> expected: <428> but was: <80>"* (bài này bắt thật một lỗi: nguồn
+  cao 0,19:1 cho cửa sổ tròn `80×428` = hình ELIP ⇒ đã vá: tròn luôn vuông). Trả lại ⇒ xanh.
+
+### 13.6 🚗 Kiểm trên xe (2.79)
+
+- **CAM-CL7**: Cài đặt › Camera › hình **theo cụm** + *Hiện lên cụm* → xi-nhan trái, rồi phải ⇒ mép ngoài phải là
+  một **đường CONG bám viền kính** (2.78 là vạch thẳng), **không còn khe đen** giữa video và viền ở bất kỳ chỗ nào;
+  mép trong vẫn mờ dần. Logcat phải in **ba số KHÁC nhau**: `cong=46/41/89` (trái) / `cong=1829/1866/1800` (phải) —
+  ba số bằng nhau = mép lại thẳng. Dòng log đầy đủ: `hình=CLUSTER cửa=641x428 tại=19,132 lớp=641x481
+  phóng=112% mất=11%`. FAIL nếu ảnh trông **méo**
+  (kéo giãn) chứ không phải bị cắt rìa.
+- **CAM-CL8**: đổi sang **Chữ nhật** rồi **Tròn**, vẫn *Hiện lên cụm* ⇒ cả hai phải **cao bằng trọn khoảng giữa của
+  cụm** (2.78 thấp hơn 68 px), cân đối hai bên, không mặt nạ cong; tròn phải **tròn** (không elip) và đường kính
+  bằng chiều cao dải. Và kiểm mốc trên mới: mép trên cửa sổ **không** bị thanh hệ thống che (nếu thấy che ≥ 4 px ⇒
+  trả `ClusterBandSpec.SEAL_DL3.top` về `136` và dựng lại hai bảng mép cong ở mốc ấy — §13.2).

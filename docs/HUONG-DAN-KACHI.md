@@ -12,7 +12,7 @@
 
 | Việc | Cách làm |
 |---|---|
-| **Cài lần đầu** | Tải `apk/Kachi-2.78-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-<bản>-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
+| **Cài lần đầu** | Tải `apk/Kachi-2.79-release.apk` (nút Raw/Download trên GitHub `dangkhoi/byd-kachi`, nhánh `main`) → cài bằng **adb**: `adb install -r Kachi-<bản>-release.apk`. ⚠ Chép vào xe rồi **tap** để cài có thể bị ROM DiLink báo *"Fail in installation of desktop apps"* (Kachi là launcher) — cài bằng adb thì qua. |
 | **Cập nhật về sau** | *Cài đặt › Hệ thống & quyền › **Kiểm tra cập nhật*** — app tự tải bản mới từ `apk/` trên `main` rồi cài đè qua dadb loopback, **không cần laptop**. |
 | **Tự dò bản mới** | Công tắc *Tự động cập nhật* (cùng mục): mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải; không có thì im lặng. |
 | **Bản rất cũ** | Bản cài trước 1.41 (khoá ký cũ) phải gỡ (`pm uninstall com.byd.launcher`) rồi cài tay một lần. |
@@ -229,7 +229,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 | Task | How |
 |---|---|
-| **First install** | Download `apk/Kachi-2.78-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-<bản>-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
+| **First install** | Download `apk/Kachi-2.79-release.apk` from GitHub `dangkhoi/byd-kachi` (`main`), copy to the car and install with **adb**: `adb install -r Kachi-<bản>-release.apk`. Tapping the APK on the head unit may fail with *"Fail in installation of desktop apps"* (it is a launcher); adb bypasses that gate. |
 | **Updates** | *Settings › System & permissions › **Check for updates*** — the app fetches the newer `apk/` build and installs it over the dadb loopback; **no laptop**. |
 | **Auto check** | The *Auto update* toggle (same place): checks when you open Kachi, **asks first** before downloading, stays silent when there is nothing new. |
 | **Very old builds** | Builds installed before 1.41 (old signing key) must be uninstalled once (`pm uninstall com.byd.launcher`). |

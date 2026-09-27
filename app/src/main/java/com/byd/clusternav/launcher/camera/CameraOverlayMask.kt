@@ -80,8 +80,12 @@ internal class CameraGlassFrame(
 internal data class GlassFade(val px: Int, val atRight: Boolean)
 
 /**
- * Dải mờ của cửa sổ [p], hoặc `null` khi không có gì để mờ (hình khác *theo cụm* ⇒ `p == null`; hồ sơ/cửa sổ cho
- * 0 px). Mép mờ là mép TRONG: cửa sổ đứng đầu TRÁI ⇒ mờ ở bên PHẢI, và ngược lại.
+ * Dải mờ của cửa sổ [p], hoặc `null` khi không có gì để mờ. Mép mờ là mép TRONG: cửa sổ đứng đầu TRÁI ⇒ mờ ở bên
+ * PHẢI, và ngược lại.
+ *
+ * ⚠ Từ 2.79 [p] khác `null` cho **cả ba** hình trên cụm (chữ nhật/tròn cũng đi qua `CameraClusterBand.place`), nên
+ * phép lọc *"chỉ hình theo cụm mới mờ"* nằm ở [CameraClusterBand.fadePx] — nó trả `0` cho hai hình kia. `null` ở
+ * đây giờ chỉ còn nghĩa: màn chính, hoặc cửa sổ hẹp tới mức mờ sẽ ăn mất ảnh.
  */
 internal fun glassFade(p: CameraClusterBand.Placement?): GlassFade? {
     val px = if (p == null) 0 else CameraClusterBand.fadePx(p)
