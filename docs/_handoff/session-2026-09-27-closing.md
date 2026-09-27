@@ -22,8 +22,10 @@ Buổi closing đã xong trên 2.76. Bản 2.77 chỉ đổi **hai thứ nhìn b
 
 ⚠ **Nếu chụp ảnh cho hướng dẫn**: tắt app dẫn đường, **không đăng nhập tài khoản nào**, không để xe khác trong khung. Lý do ở §7.
 
-## 2b. Ba câu hỏi phase 2 (KHÔNG cần làm lần này)
-Nếu tiện thì liếc, không thì bỏ: Netflix mở từ launcher ZIN có tự thoát y hệt không (30 giây, chốt việc Kachi không dính) · tên app ngoại trong giọng nói (*"mở netflix"* ra *"nep leag"*) · app tự mở màn thứ hai không nằm được trong ô (đã chứng minh là cổng Android, không sửa được bằng app thường).
+## 2b. Bốn việc phase 2 (KHÔNG cần làm lần này)
+**Tự cập nhật không bao giờ tự chạy lại** — [ĐO 27/09 tối] cổng `AutoUpdateOnce.claim()` cho đúng MỘT lượt dò mỗi tiến trình, mà launcher sống hàng ngày ⇒ đẩy bản mới giữa chừng thì xe không tự thấy; đường tự động lại im lặng. **Cách lấy bản mới hôm nay: bấm tay** *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật*. Việc tháng sau: dò theo chu kỳ / mỗi lần nổ máy + một dấu hiệu nhìn thấy được.
+
+Còn lại, nếu tiện thì liếc, không thì bỏ: Netflix mở từ launcher ZIN có tự thoát y hệt không (30 giây, chốt việc Kachi không dính) · tên app ngoại trong giọng nói (*"mở netflix"* ra *"nep leag"*) · app tự mở màn thứ hai không nằm được trong ô (đã chứng minh là cổng Android, không sửa được bằng app thường).
 
 ## 3. Sau buổi xe — 13 câu chỉ owner trả lời được
 Ghi thẳng vào backlog, đừng để trong đầu: 1) hướng ảnh camera gương: đứng hay xoay, mỗi bên · 2) lật gương bật hay tắt mặc định · 3) giá trị *Dịch khung* trái/phải · 4) có đổi mặc định sang *Một camera* không · 5) hai getter AUTO có lệch nhau không (chốt gộp chip) · 6) khối thẻ lốp nhìn đã cân chưa · 7) `camera_hal_mode` 6 (lật ngang toàn hệ) · 8) `setPreviewSize` · 9) fixture `offcar-planner` có nhận revision 3 không · 10) 27 datum chưa có đường đọc: làm hay bỏ · 11) chính sách hoàn nguyên nút khi ghi hỏng · 12) ba màn dev đã chết (`CapTestConsole`…): xoá hay nối lại sau cổng kiểm thử · 13) **luật §11**: bản ship không còn bề mặt chẩn đoán không-adb — chấp nhận hay nối lại.
