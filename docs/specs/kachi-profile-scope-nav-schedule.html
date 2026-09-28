@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lịch dẫn đường + sổ địa chỉ theo hồ sơ — Kachi 2.82</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file HTML cho 1 feature. Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. KHÔNG lưu trạng thái approval trong HTML (approve out-of-band).
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md §3.1). <pre> chỉ cho lệnh shell.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (CLAUDE.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+
+/* ---- Bút cho hai bản vẽ SVG bên dưới (màu đi qua CSS var ⇒ sáng/tối tự theo) ---- */
+.dg text{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+.dg .t{font-size:12.5px;font-weight:650}
+.dg .s{font-size:10.5px;fill:var(--muted)}
+.dg .m{font-size:10.5px;font-family:"SF Mono",ui-monospace,monospace}
+.dg .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.dg .dec{fill:var(--accent);fill-opacity:.10;stroke:var(--accent);stroke-width:1.4}
+.dg .hi{fill:var(--accent);fill-opacity:.20;stroke:var(--accent);stroke-width:1.2}
+.dg .fr{fill:var(--bg);stroke:var(--line);stroke-width:1.4}
+.dg .sep{stroke:var(--muted);stroke-opacity:.5;stroke-width:1}
+.dg .fish{fill:none;stroke:var(--muted);stroke-opacity:.4;stroke-dasharray:3 3}
+.dg .ln{stroke:var(--accent);stroke-width:1.4;fill:none}
+.dg .tick{stroke:var(--muted);stroke-opacity:.6;stroke-width:1}
+.dg .ar{fill:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Lịch dẫn đường + sổ địa chỉ theo hồ sơ</h1>
+<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill wait">chờ đo trên xe</span></p>
+
+<div class="card">
+<b>Một câu:</b> owner phát hiện đổi hồ sơ mà <b>lịch dẫn đường vẫn y nguyên</b>; quyết định:
+<i>"lịch theo profile luôn nhé, ví dụ tôi chuyển sang profile: Trip Đà Lạt, thì chắc chắn sẽ cần địa chỉ khác, lịch
+trình khác với việc đi làm hàng ngày chứ?"</i> ⇒ chuyển <code>nav_automation_rules</code> từ <b>theo máy</b> sang
+<b>theo hồ sơ</b>, và đổ lịch đang có sang <b>mọi</b> hồ sơ một lần để không ai mất lịch.
+</div>
+
+<h2>Changelog</h2>
+<table>
+<tr><th>Ngày</th><th>Bản</th><th>Việc</th></tr>
+<tr><td>2026-09-28</td><td>2.82</td><td>Mở spec (viết SAU code — xem §Nhật ký, đây là một thiếu sót đã ghi nhận). Đổi
+phạm vi 2 khoá, thêm đường chuyển dữ liệu một-lần.</td></tr>
+</table>
+
+<h2>Context</h2>
+
+<h3>Owner tìm ra bằng chính chức năng xuất/nhập</h3>
+<p><b>[ĐO — owner, 2026-09-28]</b> <i>"check cái profile có lưu lịch dẫn đường không? có lưu sổ địa chỉ không?
+export import thì thấy có vẻ thiếu rồi?"</i> — đúng: <code>nav_automation_rules</code> nằm trong
+<code>ProfileScope.DEVICE_KEYS</code>, tức <b>theo máy</b>, nên nó không vào ảnh hồ sơ và không đi theo xuất/nhập.</p>
+
+<h3>Ba mức phạm vi đang có</h3>
+<div class="layers">
+<div class="layer">
+  <div class="node"><b>TRANSIENT</b><span>state chạy, không lưu<br>vd cờ đang-chiếu</span></div>
+  <div class="node"><b>DEVICE</b><span>thuộc <i>cái xe</i><br>vd tên dịch vụ cụm, hiệu chuẩn</span></div>
+  <div class="node"><b>PROFILE</b><span>thuộc <i>cách dùng</i><br>vd bố cục, camera, <b>lịch</b></span></div>
+</div>
+</div>
+<p>Phân biệt đúng: <b>DEVICE</b> = đổi hồ sơ mà thứ này đổi thì <i>sai</i> (nó là sự thật của cái xe).
+<b>PROFILE</b> = đổi hồ sơ mà thứ này <i>không</i> đổi thì sai. Lịch dẫn đường rơi vào nhóm sau — đúng như owner nói:
+"Trip Đà Lạt" và "đi làm hàng ngày" là hai lịch khác nhau trên <b>cùng một xe</b>.</p>
+
+<h3>Sổ địa chỉ: đã theo hồ sơ từ trước</h3>
+<p><b>[ĐO]</b> grep <code>ProfileScope</code>: các khoá điểm đến đã nằm trong <code>CLUSTERNAV_KEYS</code> ⇒ vào ảnh hồ
+sơ, đi theo xuất/nhập. Chỉ <b>lịch</b> là thiếu. Nên phần "sổ địa chỉ" của câu hỏi owner là <b>không cần sửa</b> —
+ghi lại ở đây để lần sau không ai đi sửa lại lần nữa.</p>
+
+<h2>Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Tiêu chí nghiệm thu</th></tr>
+<tr><td>R1</td><td>Lịch dẫn đường <b>theo hồ sơ</b></td><td>Đổi hồ sơ ⇒ danh sách lịch đổi theo; xuất hồ sơ có chứa lịch</td></tr>
+<tr><td>R2</td><td><b>Không ai mất lịch</b> khi nâng cấp</td><td>Lịch đang có xuất hiện ở <b>mọi</b> hồ sơ sau lần chạy đầu</td></tr>
+<tr><td>R3</td><td>Chuyển dữ liệu chạy <b>đúng một lần</b></td><td>Có mốc <code>migrated_nav_schedule_v1</code>; chạy lần hai không ghi gì</td></tr>
+<tr><td>R4</td><td>Chuyển dữ liệu <b>không ghi đè</b> lịch hồ sơ đã có</td><td>Chỉ điền khoá <b>vắng</b> trong ảnh hồ sơ</td></tr>
+<tr><td>R5</td><td>Cờ "đã bắn" của lịch (<code>nav_automation_fired</code>) cũng theo hồ sơ</td>
+<td>Đổi hồ sơ không làm lịch của hồ sơ mới bắn lại/bị coi là đã bắn</td></tr>
+<tr><td>R6</td><td>Mọi khoá lưu bền phải được <b>xếp phạm vi</b></td><td>Bài canh của dự án xanh (không khoá nào "chưa xếp")</td></tr>
+</table>
+
+<h2>Design</h2>
+
+<h3>Ba thay đổi</h3>
+<table>
+<tr><th>Ở đâu</th><th>Làm gì</th><th>Vì sao</th></tr>
+<tr><td><code>ProfileScope.DEVICE_KEYS</code></td><td><b>Bỏ</b> <code>nav_automation_rules</code>,
+<code>nav_automation_fired</code></td><td>Chúng thuộc cách dùng, không thuộc cái xe</td></tr>
+<tr><td><code>ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS</code> (mới)</td><td>Thêm <code>nav_automation_fired</code></td>
+<td><code>CLUSTERNAV_KEYS</code> dựng bằng <b>phép trừ tập</b> từ <code>SettingsCatalog</code>; cờ "đã bắn" không phải
+một <i>cài đặt</i> nên nó không có trong catalog ⇒ phải thêm tay, nếu không nó rơi ra ngoài cả ba nhóm.</td></tr>
+<tr><td><code>WorkspacePrefsProfile.migrateNavScheduleOnce()</code></td><td>Đổ lịch <b>đang có</b> vào ảnh của mọi hồ sơ,
+chỉ khoá vắng; ghi mốc <b>trong cùng một lượt</b> <code>editor</code></td>
+<td>Cùng một lượt ⇒ máy tắt nửa đường không để lại trạng thái "đã chuyển một nửa"</td></tr>
+</table>
+
+<div class="flow">
+<div class="fnode"><b>khởi động</b><span>lần đầu sau nâng cấp</span></div><div class="arrow">→</div>
+<div class="fnode"><b>đọc lịch sống</b><span><code>nav_automation_rules</code></span></div><div class="arrow">→</div>
+<div class="fnode"><b>mọi hồ sơ</b><span>điền khoá <b>vắng</b></span></div><div class="arrow">→</div>
+<div class="fnode"><b>mốc</b><span><code>migrated_nav_schedule_v1</code></span></div>
+</div>
+
+<h3>Chi tiết bị bài canh của dự án bắt</h3>
+<ul>
+<li>Hằng <code>K_MIGRATED_NAV_SCHEDULE</code> lúc đầu đặt trong <code>WorkspacePrefs.kt</code> — tệp đó <b>đang đúng 500
+dòng</b> ⇒ bài canh kích thước đỏ. Dời sang <code>WorkspacePrefsProfile.kt</code>.</li>
+<li>Khoá mốc chưa xếp phạm vi ⇒ bài canh "mọi khoá phải có nhóm" đỏ. Thêm vào <code>DEVICE_KEYS</code> (mốc thuộc
+<i>cái máy này đã chuyển chưa</i>, không thuộc hồ sơ) <b>và</b> <code>SettingsCatalog.NOT_SETTINGS</code> (nó không
+phải một cài đặt người lái thấy).</li>
+</ul>
+<p>Cả hai đều là <b>lỗi thật</b> bị bắt trước khi commit. Sửa code, <b>không</b> nới bài canh.</p>
+
+<h2>Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Đổi phạm vi 2 khoá + <code>CLUSTERNAV_PROFILE_STATE_KEYS</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T2</td><td><code>migrateNavScheduleOnce()</code> + mốc</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T3</td><td>Xếp mốc vào <code>DEVICE_KEYS</code> + <code>NOT_SETTINGS</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T4</td><td><code>NavScheduleProfileScopeWiringTest</code> (6 bài) + <code>ProfileScopeTest</code> cập nhật</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T5</td><td>Nghiệm thu trên xe: hai hồ sơ, hai lịch khác nhau</td><td><span class="pill wait">cần xe</span></td></tr>
+</table>
+
+<h2>Verification</h2>
+<h3>Off-car — đã xanh</h3>
+<ul>
+<li><code>NavScheduleProfileScopeWiringTest</code> 6/6 · <code>ProfileScopeTest</code> xanh sau cập nhật.</li>
+<li>Bài canh toàn cục "mọi khoá lưu bền đều có phạm vi" xanh (R6).</li>
+</ul>
+<h3>Trên xe — chưa làm</h3>
+<table>
+<tr><th>#</th><th>Đo gì</th><th>Đạt khi</th></tr>
+<tr><td>SCHED-1</td><td>Nâng cấp từ 2.81 lên bản này, mở lịch</td><td>Lịch cũ <b>còn nguyên</b> (R2)</td></tr>
+<tr><td>SCHED-2</td><td>Tạo hồ sơ "Trip", đổi sang, sửa lịch, đổi về</td><td>Hai hồ sơ giữ hai lịch khác nhau (R1)</td></tr>
+<tr><td>SCHED-3</td><td>Xuất hồ sơ ra tệp, xem nội dung</td><td>Có khoá lịch trong tệp xuất</td></tr>
+<tr><td>SCHED-4</td><td>Khởi động lại hai lần</td><td>Lần hai không ghi lại gì (R3) — đọc mốc qua cầu kiểm thử</td></tr>
+</table>
+
+<h2>Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mức</th><th>Cách chốt</th></tr>
+<tr><td>Q1</td><td>Đổi hồ sơ giữa lúc một lịch <b>đang chờ bắn</b> thì nên bắn theo hồ sơ nào?</td>
+<td><span class="pill">[CHƯA BIẾT]</span></td><td>Hiện: cờ "đã bắn" theo hồ sơ ⇒ lịch của hồ sơ <b>mới</b> tính từ đầu.
+Chưa đo trên xe xem có gây bắn lặp trong cùng một ngày không.</td></tr>
+<tr><td>Q2</td><td>Có nên có một hồ sơ "mặc định" mà lịch <b>dùng chung</b> cho mọi hồ sơ?</td>
+<td><span class="pill">[ĐOÁN]</span></td><td>Không làm trước khi owner gặp nhu cầu thật — thêm một tầng chia sẻ là
+thêm một chỗ để lệch.</td></tr>
+</table>
+
+<h2>References</h2>
+<ul>
+<li><code>core/…/launcher/ProfileScope.kt</code> — ba mức phạm vi, phép trừ tập dựng <code>CLUSTERNAV_KEYS</code>.</li>
+<li><code>app/…/launcher/WorkspacePrefsProfile.kt</code> — ảnh hồ sơ, <code>migrateNavScheduleOnce</code>.</li>
+<li>CLAUDE.md §4.1 (trần 500 dòng), §10 (test khoá lại bài học), §16 (luật <code>.kiro/steering</code>).</li>
+</ul>
+
+<h2>Nhật ký triển khai</h2>
+<h3>2026-09-28 — code trước, spec sau (thiếu sót)</h3>
+<p>Phần này <b>làm code trước khi có spec</b>, trái luật §1. Ghi lại thay vì bỏ qua: việc sửa nhỏ (đổi phạm vi 2 khoá)
+nhưng có <b>đường chuyển dữ liệu</b> — tức có thể làm người dùng <i>mất lịch</i> — nên nó không thuộc diện "vá nóng
+&lt;20 dòng được bỏ spec". Spec này viết bù ngay trong cùng phiên, trước khi commit.</p>
+
+<h2>Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi lượt review thêm một <code>h3</code>, không ghi đè.</p>
+
+<h3>Pass 1 — 2026-09-28 · senior review (Opus) — <span class="pill ok">APPROVED sau 1 vá [P1]</span></h3>
+<ul>
+<li><b>Phủ scope</b>: R1–R6 ✅, T1–T4 ✅ (T5 <span class="pill wait">cần xe</span>).
+<code>migrateNavScheduleOnce</code> có đúng 1 chỗ gọi production (<code>PrefsWorkspaceRepository.init</code>) và
+chạy <b>sau</b> <code>migrateScenesOnce</code> — thứ tự này <b>bắt buộc</b>: lượt chuyển cảnh→hồ sơ có thể
+<i>sinh thêm hồ sơ</i>, chạy trước nó thì những hồ sơ mới ra đời sẽ không được rót lịch.
+<span class="pill ok">[ĐO]</span> đúng thứ tự trong mã.</li>
+<li><b>R1 xuất/nhập</b> <span class="pill ok">[ĐO]</span>: <code>exportProfile</code> gọi
+<code>snapshotClusterNav(profile)</code> ngay trước khi serialize, và
+<code>ProfileScope.SNAPSHOT_SUFFIXES ⊂ LAUNCHER_SUFFIXES</code> ⇒ tệp xuất chứa cả hai khoá lịch (SCHED-3).</li>
+<li><span class="tag p1">P1</span> <b>ĐÃ VÁ — phép rót bỏ mất khoá đang VẮNG ⇒ sổ đã-dẫn tràn giữa hồ sơ (vi phạm
+R5)</b>. Bản đầu lọc <code>.filterValues { it != null }</code>, nên khoá không có mặt ở tệp sống sẽ <b>vắng luôn</b>
+trong ảnh của mọi hồ sơ — mà <code>applyClusterNav</code> khi thiếu khoá thì <b>giữ nguyên giá trị của hồ sơ vừa
+rời</b> (đúng cái bẫy mà KDoc <code>snapshotClusterNav</code> đã cảnh báo và thẻ <code>n</code> của
+<code>PrefSnapshot</code> sinh ra để chặn). Ca thật: lúc di trú <code>nav_automation_fired</code> thường
+<b>chưa tồn tại</b> (chưa lịch nào bắn) ⇒ vắng ở mọi ảnh; hồ sơ A bắn xong hôm nay, đổi sang B thì sổ đã-dẫn của A
+vẫn sống, mà luật của B là <b>bản sao cùng <code>id</code></b> (chính lượt rót này chép xuống) ⇒ B bị coi là
+<b>đã bắn</b> và <b>bỏ đúng một lượt dẫn</b>, im lặng. Vá: rót cả khoá vắng dưới dạng <code>null</code> tường minh
+⇒ lượt áp dịch thành <code>remove(key)</code>, tức <i>"chưa ai đặt"</i>, đúng trạng thái lúc di trú.</li>
+<li><span class="tag p2">P2</span> <b>ĐÃ VÁ — KDoc mồ côi</b>: khối tài liệu của <code>migrateScenesOnce</code> và của
+<code>ProfileScope.CLUSTERNAV_KEYS</code> bị đẩy thành hai KDoc liền nhau khi chèn khối mới ⇒ Kotlin gắn khối sau,
+khối trước treo lơ lửng và hàm/thuộc tính cũ <b>mất tài liệu</b>. Đã dời khối mới xuống sau
+<code>migrateScenesOnce</code> (và lên trước KDoc <code>S4 · R3(b)</code> ở <code>ProfileScope</code>) — thứ tự khai
+<code>CLUSTERNAV_PROFILE_STATE_KEYS</code> <b>trước</b> <code>CLUSTERNAV_KEYS</code> vẫn giữ, vì thân
+<code>object</code> chạy theo thứ tự khai.</li>
+<li><b>Bốn câu hỏi của phép rót, trả lời bằng mã</b>: chạy <b>một lần</b> (cổng
+<code>if (sp.getBoolean(K_MIGRATED_NAV_SCHEDULE,false)) return</code>) · dấu ghi <b>cùng một</b>
+<code>Editor</code> với dữ liệu (<code>e.putBoolean(...).apply()</code>) · chỉ <b>điền khoá vắng</b>
+(<code>if (k !in shot)</code>) · chạy ở <code>init</code> của repository, tức <b>trước</b> lượt
+<code>load()</code> đầu tiên (và <code>SharedPreferences</code> an toàn đa luồng nên không phụ thuộc thread nào
+dựng repository).</li>
+<li><b>Hồ sơ chưa có ảnh</b>: <code>decode("")</code> → map rỗng ⇒ phép rót <b>tạo</b> ảnh cho tệp đó, chỉ chứa hai
+khoá lịch. <code>applyClusterNav</code> lọc theo <code>keys</code> nên mọi khoá ClusterNav khác <b>không</b> bị
+chạm — vẫn đúng R5 (<i>"hồ sơ mới = bản sao của hiện tại"</i>) cho phần còn lại.</li>
+<li><b>encode/decode khớp</b> <span class="pill ok">[ĐO]</span>: <code>decode</code> trả
+<code>Map&lt;String, Any?&gt;</code> và <b>giữ</b> mục <code>null</code> (thẻ <code>n</code>);
+<code>encode</code> sinh lại đúng thẻ ấy; kiểu lạ bị bỏ chứ không ném ⇒ vòng đọc–ghi không mất mục nào của ảnh cũ.</li>
+<li><b>Kết quả</b>: <code>:app</code> 1 534 + <code>:core</code> 3 010 + <code>car-integration</code> 64 +
+<code>offcar-planner</code> 99 + <code>vehicle-contracts</code> 22 (+ biến thể <code>vehicleTest</code> 1 546) =
+<b>0 lỗi</b>, đếm từ <code>*/build/test-results/**/TEST-*.xml</code>.</li>
+</ul>
+
+</div></body></html>

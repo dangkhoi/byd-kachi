@@ -63,6 +63,8 @@ object CameraSettingsIa {
         "camera_view_right",
         "camera_pano_left",
         "camera_pano_right",
+        "camera_guide_left",
+        "camera_guide_right",
     )
 
     /**

@@ -92,6 +92,8 @@ class CameraOverlayView(private val appCtx: Context) {
         var streamW: Int,
         var streamH: Int,
         var rotationEffective: Boolean,
+        /** Vị trí vạch chuẩn khoảng cách theo chiều cao khung (`0f..1f`); `null` = người lái chưa bật. */
+        val guide: Float? = null,
     )
 
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
@@ -155,6 +157,8 @@ class CameraOverlayView(private val appCtx: Context) {
         synthOn: Boolean = false,
         synthFile: String = "",
         band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
+        /** Vạch chuẩn khoảng cách (`0f..1f` theo chiều cao khung); `null` = tắt. Xem `CameraGuide` ở `:core`. */
+        guide: Float? = null,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -173,7 +177,10 @@ class CameraOverlayView(private val appCtx: Context) {
             // "Theo cụm" chỉ có nghĩa trên display cụm THẬT (không phải theo pref) — quy về hình thật sự vẽ TRƯỚC.
             val shape = CameraClusterBand.effectiveShape(shape, cluster)
             val round = shape == CameraSignalPolicy.SHAPE_ROUND
-            val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
+            val st = Live(
+                corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH,
+                rotationEffective = rotDone, guide = guide,
+            )
             val g = geometry(st)
             val f = g.f
             // Bo góc: dải cụm mang bán kính của hồ sơ; còn lại = bán kính khung launcher (2.73).
@@ -195,6 +202,14 @@ class CameraOverlayView(private val appCtx: Context) {
                 }
                 roundOutline(radius, round)
                 addView(child, videoLp(st, g))
+                // Vạch chuẩn nằm TRÊN video và DƯỚI nhãn: nó phải đè lên hình để làm mốc đo, nhưng không được
+                // che chữ "Camera trái/phải" — thứ duy nhất cho biết overlay đang hiện đúng bên.
+                st.guide?.let { pos ->
+                    addView(
+                        CameraGuideLineView(ctx).apply { position = pos },
+                        android.widget.FrameLayout.LayoutParams(MATCH, MATCH),
+                    )
+                }
                 labelFor(ctx, side)?.let { tvl ->
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
@@ -405,7 +420,12 @@ class CameraOverlayView(private val appCtx: Context) {
         }
         val box = box(st.ctx)
         val f = frameOf(st, box)
-        return Geo(f, layoutParams(box, f, st.corner), null, "vùng=${box.areaW}x${box.areaH}")
+        return Geo(
+            f,
+            overlayLayoutParams(box.areaW, box.areaH, box.x0, box.y0, f, st.corner),
+            null,
+            "vùng=${box.areaW}x${box.areaH}",
+        )
     }
 
     /** Cửa sổ ở toạ độ TUYỆT ĐỐI của display cụm (đầu trái/phải dải giữa) — không lề, không căn giữa vùng. */
@@ -475,26 +495,4 @@ class CameraOverlayView(private val appCtx: Context) {
         }
     }
 
-    /**
-     * Cửa sổ cỡ [f] ở góc TRÊN [corner], **căn giữa** vùng cho phép [box].
-     *
-     * Cửa sổ của [WindowManager] không có lề (`margin`) — [WindowManager.LayoutParams.x]/`y` là **độ lệch kể từ
-     * góc mà `gravity` chọn**, nên `y = lề trên + (vùng − khung)/2` chính là "nằm giữa vùng đã dành" mà R2 đòi; và
-     * vì `x` cũng tính từ góc `gravity` nên công thức dùng chung cho cả `START` lẫn `END`.
-     * Góc lạ (không phải `"TL"`/`"TR"`) ⇒ coi như trên-phải; lượt đọc pref đã chặn ở `Prefs.cameraPos`, đây chỉ
-     * là lưới an toàn cho chỗ gọi thứ hai sau này.
-     */
-    private fun layoutParams(box: Box, f: CameraOverlayFrame.Frame, corner: String): WindowManager.LayoutParams {
-        val atLeft = corner == CameraSignalPolicy.CORNER_TOP_LEFT
-        return WindowManager.LayoutParams(
-            f.w, f.h,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or (if (atLeft) Gravity.START else Gravity.END)
-            x = box.x0 + ((box.areaW - f.w) / 2).coerceAtLeast(0)
-            y = box.y0 + ((box.areaH - f.h) / 2).coerceAtLeast(0)
-        }
-    }
 }

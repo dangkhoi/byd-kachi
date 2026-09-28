@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vạch chuẩn khoảng cách trên hình camera — Kachi 2.82</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file HTML cho 1 feature. Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. KHÔNG lưu trạng thái approval trong HTML (approve out-of-band).
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md §3.1). <pre> chỉ cho lệnh shell.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (CLAUDE.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+
+/* ---- Bút cho hai bản vẽ SVG bên dưới (màu đi qua CSS var ⇒ sáng/tối tự theo) ---- */
+.dg text{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+.dg .t{font-size:12.5px;font-weight:650}
+.dg .s{font-size:10.5px;fill:var(--muted)}
+.dg .m{font-size:10.5px;font-family:"SF Mono",ui-monospace,monospace}
+.dg .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.dg .dec{fill:var(--accent);fill-opacity:.10;stroke:var(--accent);stroke-width:1.4}
+.dg .hi{fill:var(--accent);fill-opacity:.20;stroke:var(--accent);stroke-width:1.2}
+.dg .fr{fill:var(--bg);stroke:var(--line);stroke-width:1.4}
+.dg .sep{stroke:var(--muted);stroke-opacity:.5;stroke-width:1}
+.dg .fish{fill:none;stroke:var(--muted);stroke-opacity:.4;stroke-dasharray:3 3}
+.dg .ln{stroke:var(--accent);stroke-width:1.4;fill:none}
+.dg .tick{stroke:var(--muted);stroke-opacity:.6;stroke-width:1}
+.dg .ar{fill:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Vạch chuẩn khoảng cách trên hình camera</h1>
+<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill wait">chờ đo trên xe</span></p>
+
+<div class="card">
+<b>Một câu:</b> hình camera hông làm người lái <i>tưởng</i> xe bên cạnh còn xa, nên cho người lái tự canh <b>một vạch ngang</b>
+mỗi bên — nấc 1…9 — rồi từ đó đọc khoảng cách bằng <b>con số đã canh</b>, thay vì bằng cảm giác.
+</div>
+
+<h2>Changelog</h2>
+<table>
+<tr><th>Ngày</th><th>Bản</th><th>Việc</th></tr>
+<tr><td>2026-09-28</td><td>2.82</td><td>Mở spec. Ba đường "làm hình thật hơn" đều đóng (§Context) ⇒ chốt đường vạch chuẩn. Code + test viết song song spec.</td></tr>
+</table>
+
+<h2>Context</h2>
+
+<h3>Triệu chứng owner báo trên xe</h3>
+<p><b>[ĐO — owner trên xe SL6 + Seal, 2026-09-28]</b> nguyên văn: <i>"có cái UX là camera nó tạo cảm giác xe mình rất xa
+xe bên cạnh, trong khi cách tầm 30cm thôi, nên khó phán đoán"</i>.</p>
+<p>Nguyên nhân là <b>hình học</b>, không phải lỗi code: camera hông của BYD là ống <b>mắt cá</b> gắn dưới gương, ngắm
+chéo xuống. Vật ở gần mép dưới khung, vật xa dồn về giữa — và phần <b>nén mạnh nhất</b> của ống mắt cá lại nằm đúng ở
+vùng 0–1&nbsp;m. Nên 30&nbsp;cm và 1,5&nbsp;m chiếm gần như cùng một số điểm ảnh theo chiều dọc.</p>
+
+<div class="diagram">
+<svg class="dg" viewBox="0 0 700 210" role="img" aria-label="Ống mắt cá nén vùng gần: 30cm và 1,5m gần như cùng một chiều cao trên khung">
+  <text class="t" x="16" y="18">Vì sao 30 cm trông như 1,5 m</text>
+  <rect class="fr" x="16" y="34" width="300" height="160" rx="8"/>
+  <text class="s" x="26" y="52">khung camera hông (mắt cá)</text>
+  <path class="fish" d="M26 120 q140 -40 280 0"/>
+  <path class="fish" d="M26 150 q140 -30 280 0"/>
+  <line class="ln" x1="26" y1="163" x2="306" y2="163"/>
+  <text class="m" x="230" y="178">30 cm</text>
+  <line class="ln" x1="26" y1="150" x2="306" y2="150"/>
+  <text class="m" x="230" y="145">1,5 m</text>
+  <text class="s" x="26" y="196">13 px cho cả 1,2 m — mắt không phân biệt được</text>
+  <path class="ar" d="M330 115 l24 0 l-6 -6 l0 12 z"/>
+  <rect class="dec" x="366" y="34" width="318" height="160" rx="8"/>
+  <text class="t" x="376" y="54">cách chữa: đừng sửa hình, cho CON SỐ</text>
+  <text class="s" x="376" y="76">người lái đỗ cạnh một vật mốc (vạch kẻ, bánh xe</text>
+  <text class="s" x="376" y="92">xe bên cạnh) → chọn nấc cho vạch TRÙNG vật đó</text>
+  <line class="ln" x1="376" y1="120" x2="674" y2="120"/>
+  <text class="m" x="376" y="114">nấc 5</text>
+  <text class="s" x="376" y="146">từ đó: vật TRÊN vạch = xa hơn mốc,</text>
+  <text class="s" x="376" y="162">vật DƯỚI vạch = gần hơn mốc. Đọc bằng số.</text>
+</svg>
+</div>
+
+<h3>Ba đường "làm hình thật hơn" — đều ĐÓNG, có bằng chứng</h3>
+<table>
+<tr><th>Đường</th><th>Kết quả</th><th>Bằng chứng</th></tr>
+<tr><td><b>1. Lấy hình chim-bay (AVM) có sẵn của xe</b> — xe đã dựng sẵn hình 360 ghép, mượn là xong</td>
+<td><span class="pill block">ĐÓNG</span> app thứ ba không lấy được</td>
+<td><b>[ĐO]</b> owner mò hết 8 chế độ trên xe: <i>"mò từ 1 đến 8 ko có cái nào là xe ghép sẵn cả"</i>. HAL
+<code>android.hardware.AVMCamera</code> chỉ trả <b>4 dải mắt cá thô</b> (5120×960); phần ghép chim-bay nằm trong app
+AVM của hãng, không qua HAL.</td></tr>
+<tr><td><b>2. Ghép cam trước + cam sau thành góc rộng hơn</b> — ý owner đề xuất</td>
+<td><span class="pill block">ĐÓNG</span> không phải thiếu code</td>
+<td><b>[ĐO]</b> HAL cấp <b>một</b> surface một lúc cho tiến trình này; và bốn dải là bốn <i>tâm quang khác nhau</i> —
+ghép đúng cần ma trận homography theo từng xe + bù cao độ, tức là dựng lại chính cái AVM của hãng. Không làm được
+off-car, và làm được cũng chỉ ra hình chim-bay đã bị đường 1 chặn.</td></tr>
+<tr><td><b>3. Cắt hẹp vùng gần (zoom vào 1/3 dưới)</b> — thử thật ngày 28/09</td>
+<td><span class="pill block">ĐÓNG</span> owner gỡ ngay</td>
+<td><b>[ĐO]</b> owner sau khi xem: <i>"nhìn kỳ lắm, trả lại đi"</i>. Cắt hẹp làm mất ngữ cảnh hai đầu (không còn thấy
+thân xe mình làm mốc) nên <i>khó</i> đọc hơn, dù tỉ lệ nén có đỡ hơn.</td></tr>
+</table>
+
+<div class="card">
+<b>Rút ra:</b> cả ba đường đều nhằm <i>sửa cái hình</i>. Cái hình thì bị hình học của ống mắt cá ràng, không sửa được
+từ phía app. Đường còn lại là <b>đổi thứ người lái đọc</b>: không đọc cảm giác xa-gần, đọc một mốc đã tự canh.
+</div>
+
+<h2>Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Tiêu chí nghiệm thu</th></tr>
+<tr><td>R1</td><td>Người lái tự canh được <b>một vạch ngang</b> trên hình, <b>từng bên riêng</b> (trái/phải)</td>
+<td>Cài đặt có 2 hàng; đổi nấc bên trái không ảnh hưởng bên phải</td></tr>
+<tr><td>R2</td><td><b>Mặc định TẮT</b></td><td>Máy chưa ai canh ⇒ không vẽ vạch nào</td></tr>
+<tr><td>R3</td><td>Đổi nấc thì <b>thấy hình ngay</b></td><td>Chọn một chip ⇒ overlay bên đó hiện lên với vạch mới</td></tr>
+<tr><td>R4</td><td>Vạch <b>không che nhãn</b> "Camera trái/phải" và <b>không ăn chạm</b></td>
+<td>Nhãn vẫn đọc được; chạm xuyên qua vạch xuống lớp dưới</td></tr>
+<tr><td>R5</td><td>Vạch <b>thấy được trên mọi nền</b> (bê tông sáng, nhựa tối, thân xe trắng)</td>
+<td>Vạch trắng có viền đen — tương phản ở cả hai chiều</td></tr>
+<tr><td>R6</td><td>Giá trị lạ (rác, ngoài dải) <b>không vẽ bừa</b></td>
+<td><code>positionFor</code> trả <code>null</code>; <code>prefs_set</code> từ chối giá trị lạ</td></tr>
+<tr><td>R7</td><td>Nói thật về <b>giới hạn</b>: vạch chỉ đúng quanh chỗ đã canh</td>
+<td>Câu phụ đề trong Cài đặt ghi rõ, cả VI và EN</td></tr>
+<tr><td>R8</td><td>Đặt được qua <b>cầu kiểm thử</b> (adb) để đo trên xe không cần chạm màn</td>
+<td><code>prefs_set camera_guide_left 5</code> báo <code>ok</code> và pref đổi thật</td></tr>
+</table>
+
+<h3>Cố ý KHÔNG làm</h3>
+<ul>
+<li><b>Không</b> ghi "30 cm" / "1 m" cạnh vạch. Quy đổi nấc→mét phụ thuộc chiều cao gắn camera, góc chúc, đời xe —
+Kachi <b>chưa đo</b> cái nào. In một con số chưa đo lên màn là nói dối đúng lúc người ta tin nhất (CLAUDE.md §2).</li>
+<li><b>Không</b> vẽ nhiều vạch/thang chia. Một mốc tự canh thì người lái biết nó nghĩa gì; ba vạch chưa canh thì không.</li>
+<li><b>Không</b> tự canh hộ bằng máy. Không có dữ liệu hiệu chuẩn nào ⇒ mọi giá trị đặt sẵn là đoán.</li>
+</ul>
+
+<h2>Design</h2>
+
+<h3>Bốn mắt xích</h3>
+<div class="flow">
+<div class="fnode"><b>pref</b><span><code>camera_guide_left/right</code></span></div><div class="arrow">→</div>
+<div class="fnode"><b>CameraGuide</b><span>:core, thuần<br>nấc → 0f..1f</span></div><div class="arrow">→</div>
+<div class="fnode"><b>CameraSignalController</b><span>đọc theo ĐÚNG bên<br>đang hiện</span></div><div class="arrow">→</div>
+<div class="fnode"><b>CameraOverlayView</b><span><code>show(guide=)</code></span></div><div class="arrow">→</div>
+<div class="fnode"><b>CameraGuideLineView</b><span>vẽ, không ăn chạm</span></div>
+</div>
+<p>Đứt một mắt là người lái chọn nấc, Cài đặt báo xong, và trên hình <b>không có gì</b> — đúng bẫy CLAUDE.md §8
+(<code>CastShell.evictVd</code> từng viết xong, compile sạch, chưa từng được gọi). Nên mỗi mắt xích có một
+<code>assert</code> riêng trong <code>CameraGuideWiringContractTest</code>, và cả ba đã <b>kiểm bằng cách phá thử</b>.</p>
+
+<h3>Vì sao nấc 1…9 chứ không phải thanh trượt hay số mét</h3>
+<table>
+<tr><th>Chọn</th><th>Lý do</th></tr>
+<tr><td>9 nấc, <code>nấc/10</code> ⇒ 0,1…0,9</td><td>Không nấc nào dính mép khung (0 hoặc 1) — dính mép thì không phân
+biệt được với viền overlay. 9 nấc đủ mịn: khung cao 450 px ⇒ mỗi nấc 45 px, mắt thấy rõ.</td></tr>
+<tr><td>Chip bấm, không thanh trượt</td><td>Canh trên xe đang đỗ, một tay. Thanh trượt cần kéo chính xác; chip chỉ cần
+bấm — và bấm xong <b>thấy ngay</b> (R3).</td></tr>
+<tr><td>Chip "Tắt" đứng <b>đầu</b></td><td>Đường thoát phải ở chỗ dễ thấy nhất.</td></tr>
+<tr><td>Nấc ngoài dải bị <b>kẹp</b>, không ném lỗi</td><td>Giá trị đến từ pref có thể là rác của bản cũ; kẹp về mép là
+hành vi duy nhất không làm overlay chết giữa lúc đang xi-nhan.</td></tr>
+</table>
+
+<h3>Vẽ: trắng có viền đen</h3>
+<p>Hình camera hông là bê tông xám, vạch kẻ vàng, thân xe sáng. Một vạch trắng trơn sẽ <b>biến mất</b> trên nền sáng
+đúng lúc cần nhất (đỗ sát tường sáng). Vẽ nét đen dày hơn trước rồi nét trắng đè lên ⇒ tương phản ở cả hai chiều —
+mẹo cũ của phụ đề, rẻ hơn hẳn việc đo độ sáng nền rồi đổi màu.</p>
+<p>Vạch chừa hai đầu <code>6dp</code>: chạm sát mép trông như <i>viền của khung</i> chứ không như một mốc đo.</p>
+
+<h3>Thứ tự lớp</h3>
+<p><code>video → VẠCH → nhãn</code>. Trên video vì phải đè lên hình mới làm mốc được; dưới nhãn vì nhãn
+"Camera trái/phải" là thứ duy nhất cho biết overlay đang hiện <b>đúng bên</b>.</p>
+
+<h3>Tệp mới, và vì sao phải tách</h3>
+<table>
+<tr><th>Tệp</th><th>Vai</th><th>Ghi chú</th></tr>
+<tr><td><code>core/…/camera/CameraGuide.kt</code></td><td>Quyết định vạch ở đâu</td><td>Thuần, test off-device</td></tr>
+<tr><td><code>app/…/camera/CameraGuideLineView.kt</code></td><td>Vẽ</td><td>Không ăn chạm</td></tr>
+<tr><td><code>app/…/camera/CameraOverlayLayout.kt</code></td><td><code>overlayLayoutParams</code> <b>dời ra</b></td>
+<td><code>CameraOverlayView.kt</code> đang <b>đúng 500 dòng</b> = kịch trần CLAUDE.md §4.1 ⇒ không thêm được một dòng.
+Chọn hàm này vì nó ít dính nhất: một chỗ gọi, chỉ cần bốn số. 500 → 483 dòng.</td></tr>
+</table>
+
+<h2>Tasks</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td><code>CameraGuide</code> + 7 bài <code>CameraGuideTest</code></td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T2</td><td><code>CameraGuideLineView</code> (trắng + viền đen, không ăn chạm)</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T3</td><td>Tách <code>CameraOverlayLayout</code> để có chỗ dưới trần 500 dòng</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T4</td><td><code>Live.guide</code> + <code>show(guide=)</code> + <code>addView</code> giữa video và nhãn</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T5</td><td>Pref <code>camera_guide_left/right</code> + <code>setCameraGuide</code> (kèm xem thử)</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T6</td><td>2 hàng Cài đặt + 4 chuỗi VI/EN + <code>USER_KEYS</code> 14→16</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T7</td><td>Danh sách trắng cầu kiểm thử 44→46, có chặn giá trị lạ</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T8</td><td><code>CameraGuideWiringContractTest</code> (6 bài) + kiểm bằng phá thử 3 mắt xích</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T8b</td><td>Chạy thật trên máy ảo: hai hàng dựng ra, bấm nấc → overlay bật, vạch đúng chỗ, không crash khi thiếu HAL</td><td><span class="pill ok">xong</span></td></tr>
+<tr><td>T9</td><td>Canh một lần mỗi bên trên xe thật, ghi nấc owner chọn vào <code>ClusterProfile</code> nếu nó ổn định theo đời xe</td><td><span class="pill wait">cần xe</span></td></tr>
+</table>
+
+<h2>Verification</h2>
+
+<h3>Off-car — đã xanh</h3>
+<ul>
+<li><code>CameraGuideTest</code> 7/7 · <code>CameraGuideWiringContractTest</code> 6/6 · <code>CameraSettingsIaTest</code>,
+<code>CameraSettingsIaWiringContractTest</code>, <code>TestBridgeCommandTest</code> xanh sau khi cập nhật số đếm.</li>
+<li><b>Kiểm bằng phá thử</b> (3 mắt xích, mỗi cái phá riêng → test phải đỏ → trả code về):
+gỡ <code>addView</code> vạch · gỡ <code>previewSide</code> · đổi <code>left = isLeft</code> thành <code>left = true</code>.
+Cả ba đều đỏ đúng bài tương ứng.</li>
+</ul>
+
+<h3>Máy ảo — E2E đã chạy thật (2026-09-28, AVD Android 10, bản phát hành 2.82/183)</h3>
+<p>Bài canh dây nối chỉ chứng minh <i>mã có nối</i>; phần dưới đây là <b>chạy thật</b> trên máy ảo, đúng luật
+CLAUDE.md §5.1 (*"user-facing behavior hoạt động"*, không chỉ test xanh).</p>
+<table>
+<tr><th>Đo gì</th><th>Kết quả</th></tr>
+<tr><td>Hai hàng mới có dựng ra màn không</td><td><span class="pill ok">ĐO</span> có, đủ <b>10 chip</b> (Tắt + 1…9)
+vừa <b>một dòng</b> ở 1920 px, cả hai bên mặc định <b>Tắt</b> — đúng R2</td></tr>
+<tr><td>Bấm nấc 5 bên phải</td><td><span class="pill ok">ĐO</span> chip ăn, overlay <b>bật lên ngay</b> ở góc trên-phải
+với nhãn <i>"Camera phải"</i> — đúng R3</td></tr>
+<tr><td>Vạch vẽ ở đâu</td><td><span class="pill ok">ĐO</span> log <code>khung=540x405</code>; vạch trắng nằm ở
+<b>≈0,49 chiều cao</b> khung ⇒ khớp <code>positionOf(5) = 0,5</code></td></tr>
+<tr><td>Vạch có che nhãn không</td><td><span class="pill ok">ĐO</span> không — nhãn ở mép trên, vạch ở giữa (R4)</td></tr>
+<tr><td>Máy <b>không có</b> HAL camera thì sao</td><td><span class="pill ok">ĐO</span> log
+<code>AVMCamera class không có (off-car/trim khác)</code>, overlay vẫn dựng, <b>không crash</b>, không
+<code>FATAL</code> trong logcat ⇒ đường hỏng của <code>previewSide</code> chịu được</td></tr>
+</table>
+<p class="muted">Máy ảo <b>không</b> thay được phép đo trên xe: nó không có ảnh camera thật nên không nói được gì về
+R5 (thấy trên mọi nền) hay về việc vạch có <i>giúp đoán khoảng cách</i> hay không — đó là GUIDE-2/3 bên dưới.</p>
+
+<h3>Trên xe — chưa làm</h3>
+<pre>adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge \
+  -a com.byd.launcher.TEST --es cmd prefs_set --es key camera_guide_right --es text 5
+# rồi bật xi-nhan phải, xem vạch có ở khoảng giữa-dưới khung không</pre>
+<table>
+<tr><th>#</th><th>Đo gì</th><th>Đạt khi</th></tr>
+<tr><td>GUIDE-1</td><td>Bật xi-nhan mỗi bên, chọn nấc 1→9</td><td>Vạch đi <b>xuống</b> đều, không nhảy, không dính mép</td></tr>
+<tr><td>GUIDE-2</td><td>Đỗ cạnh một vật mốc thật (vạch kẻ ô đỗ), canh nấc cho trùng</td><td>Owner đọc được khoảng cách từ vạch, không phải từ cảm giác</td></tr>
+<tr><td>GUIDE-3</td><td>Nền sáng (tường trắng) và nền tối (nhựa đêm)</td><td>Vạch thấy rõ ở cả hai</td></tr>
+<tr><td>GUIDE-4</td><td>Chạm lên overlay khi có vạch</td><td>Thao tác vẫn ăn — vạch không chặn chạm</td></tr>
+<tr><td>GUIDE-5</td><td>Vạch trên <b>cụm</b> (không chỉ màn giữa)</td><td>Có vạch, không bị dải cụm cắt mất</td></tr>
+</table>
+
+<h2>Open Questions</h2>
+<table>
+<tr><th>#</th><th>Câu hỏi</th><th>Mức</th><th>Cách chốt</th></tr>
+<tr><td>Q1</td><td>Nấc owner canh có <b>giống nhau giữa các đời xe</b> (Seal vs SL6) không? Nếu giống thì đặt sẵn vào
+<code>ClusterProfile</code> để người sau không phải canh.</td><td><span class="pill">[CHƯA BIẾT]</span></td>
+<td>Canh trên cả hai xe, so nấc. Khác nhau ⇒ giữ mặc định TẮT.</td></tr>
+<tr><td>Q2</td><td>Một vạch có đủ, hay người lái muốn thêm vạch thứ hai làm "vùng nguy hiểm"?</td>
+<td><span class="pill">[CHƯA BIẾT]</span></td><td>Dùng thật một tuần rồi hỏi owner. Không thêm trước khi có yêu cầu.</td></tr>
+<tr><td>Q3</td><td>Có nên ghi nấc đã canh vào hồ sơ (profile) không?</td><td><span class="pill ok">[ĐO]</span></td>
+<td><b>SỬA Ở PASS 1 (lượt soát 2026-09-28) — câu trả lời cũ SAI.</b> Bản đầu của spec này viết <i>"ProfileScope xếp
+khoá camera vào PROFILE ⇒ đổi hồ sơ là đổi luôn nấc"</i>, gắn nhãn [ĐO] mà chưa đo. Sự thật
+<span class="pill ok">[ĐO 2026-09-28, grep toàn <code>:core</code>]</span>: <b>không một khoá <code>camera_*</code>
+nào có mặt trong <code>SettingsCatalog*</code> hay <code>ProfileScope</code></b> ⇒
+<code>ProfileScope.scopeOf("camera_guide_left")</code> trả <code>UNKNOWN</code>, y hệt
+<code>camera_view_*</code> · <code>camera_pano_*</code> · <code>camera_rot_*</code> · <code>camera_mirror_*</code>.
+Tức nấc vạch hiện <b>theo MÁY</b>, không theo hồ sơ, và <b>không</b> đi theo xuất/nhập hồ sơ. Hai khoá mới
+<b>nhất quán với cả họ camera</b> nên đây không phải lỗi của bản 2.82; nhưng nó là một lỗ hổng thật của luật
+<i>"hồ sơ là tất cả"</i> (S4) — đã ghi thành mục <code>CAM-SCOPE-PROFILE</code> trong
+<code>docs/PROJECT-BACKLOG.md</code> để owner chốt xếp cả họ camera một lượt, thay vì xếp lẻ hai khoá của bản
+này.</td></tr>
+</table>
+
+<h2>References</h2>
+<ul>
+<li>Spec chị em: <code>docs/specs/kachi-camera-source-picker.html</code> (chọn camera + dải hình, 2.81) — cùng khối
+<i>"Nếu camera không hiện"</i> trong Cài đặt.</li>
+<li><code>docs/specs/camera-turn-signal-hal-socket.html</code> — HAL <code>AVMCamera</code>, 4 dải 5120×960, chế độ 0–31.</li>
+<li>CLAUDE.md §2 (cơ chế vs quy kết — vì sao không in số mét), §3.1 (bản vẽ visual), §4.1 (trần 500 dòng), §8 (hàm mới
+phải có chỗ gọi).</li>
+</ul>
+
+<h2>Nhật ký triển khai</h2>
+<h3>2026-09-28 — off-car, một lượt</h3>
+<ul>
+<li>Owner duyệt bằng <i>"làm đi nhé"</i> sau khi đường cắt-hẹp bị gỡ.</li>
+<li>Thứ tự làm: <code>:core</code> thuần trước (T1) → lớp vẽ (T2) → chỗ trống dưới trần 500 dòng (T3) → nối dây (T4–T7)
+→ bài canh dây nối + phá thử (T8). Đúng thứ tự tầng của CLAUDE.md §14 cho phần off-car.</li>
+<li>Hai bài canh của dự án <b>bắt đúng lỗi thật</b> trong lượt này: trần 500 dòng (phải tách T3) và số đếm khoá
+(<code>USER_KEYS</code>, danh sách trắng). Sửa code, <b>không</b> nới bài canh.</li>
+</ul>
+
+<h2>Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi lượt review thêm một <code>h3</code>, không ghi đè.</p>
+
+<h3>Pass 1 — 2026-09-28 · senior review (Opus) — <span class="pill ok">APPROVED</span></h3>
+<ul>
+<li><b>Phủ scope</b>: R1–R8 ✅, T1–T8 ✅ (T9 <span class="pill wait">cần xe</span>). Bốn mắt xích đều có chỗ gọi
+production (<code>grep</code>): <code>CameraGuide.positionFor</code> ← <code>CameraSignalController:271</code> ·
+<code>CameraGuideLineView</code> ← <code>CameraOverlayView:207</code> · <code>cameraGuide/setCameraGuide</code> ←
+Cài đặt + cầu kiểm thử · <code>overlayLayoutParams</code> ← <code>CameraOverlayView:425</code> (CLAUDE.md §8).</li>
+<li><b>Dời hàm <code>overlayLayoutParams</code> là dời SẠCH</b> <span class="pill ok">[ĐO]</span> —
+so với <code>git show HEAD:…/CameraOverlayView.kt</code>: cùng <code>gravity</code>, cùng hai công thức
+<code>x</code>/<code>y</code> (kể cả <code>coerceAtLeast(0)</code>), cùng <code>TYPE_APPLICATION_OVERLAY</code> +
+<code>FLAG_NOT_FOCUSABLE or FLAG_NOT_TOUCHABLE</code> + <code>PixelFormat.TRANSLUCENT</code>. Đổi duy nhất là
+<b>tên tham số</b> (<code>box.areaW</code> → <code>areaW</code>). Không import nào mồ côi ở tệp cũ
+(<code>PixelFormat</code>/<code>Gravity</code>/<code>WindowManager</code> vẫn còn chỗ dùng ở
+<code>bandLayoutParams</code>).</li>
+<li><b>Lớp vẽ</b>: <code>onDraw</code> không cấp phát (hai <code>Paint</code> là field, <code>displayMetrics</code>
+là đối tượng có sẵn), chặn sớm khi <code>width/height ≤ 0</code> và khi <code>x1 ≤ x0</code>, kẹp
+<code>p.coerceIn(0f,1f)</code>. Không ăn chạm ở <b>hai</b> tầng: cửa sổ mang
+<code>FLAG_NOT_TOUCHABLE</code> <i>và</i> view tự tắt <code>isClickable/isFocusable</code>.
+<span class="pill ok">[ĐO Android ref qua Context7]</span> <code>View</code> mặc định <b>không</b> mang cờ
+<code>WILL_NOT_DRAW</code> (chỉ <code>ViewGroup</code> mang) ⇒ <code>onDraw</code> được gọi thật, không cần
+<code>setWillNotDraw(false)</code>.</li>
+<li><b>Thứ tự lớp đúng cả trên đường <code>SV</code></b>: lớp video dùng
+<code>setZOrderMediaOverlay(true)</code> — mặt vẽ nằm trên nền bo góc nhưng <b>vẫn dưới cửa sổ</b> ⇒ vạch (và nhãn)
+vẽ trong cửa sổ nằm trên hình. Không phải <code>setZOrderOnTop</code>, nên không có ca vạch bị hình che.</li>
+<li><span class="tag">P1</span> <b>Q3 nói SAI và gắn nhãn [ĐO]</b> — đã sửa tại §Open Questions.
+<span class="pill ok">[ĐO grep toàn <code>:core</code>]</span> <b>không khoá <code>camera_*</code> nào</b> có mặt
+trong <code>SettingsCatalog*</code>/<code>ProfileScope</code> ⇒ <code>scopeOf("camera_guide_left")</code> =
+<code>UNKNOWN</code>, tức nấc vạch theo <b>MÁY</b> chứ không theo hồ sơ và <b>không</b> đi theo xuất/nhập. Hai khoá
+mới <i>nhất quán với cả họ camera</i> nên không phải lỗi của 2.82; mở mục <code>CAM-SCOPE-PROFILE</code> trong
+backlog để owner chốt cả họ một lượt (xếp lẻ hai khoá là để cả họ lệch nhau).</li>
+<li><span class="tag p2">P3</span> <b>Thứ tự hàng trên màn ≠ thứ tự <code>USER_KEYS</code></b>: trên màn vạch chuẩn
+nằm <i>giữa</i> góc-nhìn và dải-hình, còn <code>USER_KEYS</code> xếp nó cuối. Không có bài canh nào đòi khớp thứ tự
+(<code>userRows.keys</code> so bằng <b>tập</b>), nên chỉ là chuyện đếm của người đọc danh sách — <b>không</b> vá để
+khỏi chạm hợp đồng <code>:core</code> ngoài phạm vi.</li>
+<li><span class="tag p2">P3</span> <b>Màu viết cứng thoát bài canh bảng màu</b>: <code>ThemePaletteContractTest</code>
+quét <code>Files.list</code> (KHÔNG đệ quy) nên cây <code>launcher/camera/</code> không bị quét —
+<code>Color.WHITE</code>/<code>Color.argb</code> ở đây không ai bắt. Ở ca này <b>đúng là cố ý</b> (vạch trên video
+trực tiếp, không theo chủ đề; <code>ZeroBorderContractTest</code> đã khai lý do) và
+<code>CameraOverlayView</code> vốn đã dùng <code>Color.BLACK</code> ⇒ không phải lỗ mới. Ghi lại vì lỗ quét là
+<i>thật</i>.</li>
+<li><b>Bài canh không phải test giả</b>: 6 bài của <code>CameraGuideWiringContractTest</code> cắt vùng bằng
+<code>SourceRoots.body</code> hoặc so <b>vị trí</b> (<code>indexOf</code>), không <code>substringAfter</code>.</li>
+<li><b>Kết quả</b>: <code>:app</code> 1 534 + <code>:core</code> 3 010 + <code>car-integration</code> 64 +
+<code>offcar-planner</code> 99 + <code>vehicle-contracts</code> 22 (+ biến thể <code>vehicleTest</code> 1 546) =
+<b>0 lỗi</b>, đếm từ <code>*/build/test-results/**/TEST-*.xml</code>.</li>
+</ul>
+
+</div></body></html>

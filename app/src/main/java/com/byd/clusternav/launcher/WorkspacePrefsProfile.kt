@@ -201,6 +201,70 @@ internal fun WorkspacePrefs.migrateScenesOnce() {
     VoiceGrammarSnapshotStore.write(this)
 }
 
+/**
+ * DI TRÚ MỘT LẦN: *tự dẫn đường theo lịch* từ phạm vi **theo XE** sang **theo HỒ SƠ** (owner 2026-09-28).
+ *
+ * ## Vì sao cần, và vì sao làm sai là mất dữ liệu của người dùng
+ * Trước bản này, luật lịch và sổ đã-dẫn nằm chung cả máy. Đổi phạm vi mà không làm gì thì [applyClusterNav] gặp
+ * ảnh chụp CŨ (chụp hồi hai khoá còn theo xe nên KHÔNG chứa chúng), `filterKeys` loại chúng ra, và giá trị đang
+ * sống được giữ nguyên. Nghe thì có vẻ lành, nhưng hệ quả là **hồ sơ nào được chụp trước thì chiếm luật**, các hồ
+ * sơ còn lại ăn theo cái đang sống rồi lệch dần — kiểu hỏng không ai thấy cho tới lúc một buổi sáng lịch không nổ.
+ *
+ * ## Cách làm: rót xuống, không bốc lên
+ * Chép giá trị ĐANG SỐNG vào ảnh chụp của **mọi** hồ sơ hiện có. Sau lượt này ai cũng bắt đầu bằng đúng cái lịch
+ * người dùng đang có, rồi mới tách ra khi họ sửa. Không ai mất gì, và không hồ sơ nào bỗng dưng trống.
+ *
+ * ⚠ Chỉ ĐIỀN VÀO CHỖ TRỐNG (`putIfAbsent`): một hồ sơ đã có sẵn khoá trong ảnh chụp — vì người dùng đã đổi hồ sơ
+ * sau khi nâng cấp — thì giữ nguyên của nó. Ghi đè ở đây là xoá lựa chọn vừa mới đặt.
+ *
+ * ⚠ Dấu đã-di-trú ghi **CÙNG một lượt** với dữ liệu, đúng bài học của [migrateScenesOnce]: tách hai lượt thì một
+ * lần chết máy giữa chừng cho lượt sau chạy lại trên dữ liệu đã chuyển.
+ *
+ * ⚠ Khoá đang VẮNG ở tệp sống vẫn được rót — dưới dạng `null` tường minh (thẻ `n` của [PrefSnapshot]), cùng hợp
+ * đồng với [snapshotClusterNav]. Bỏ nó đi là để sổ ĐÃ-DẪN của hồ sơ vừa rời **tràn sang** hồ sơ mới; xem chú
+ * thích tại chỗ.
+ *
+ * Chạy xong là **đặt dấu** rồi thôi, kể cả khi không có gì để rót — khỏi quét lại mỗi lần mở.
+ */
+internal fun WorkspacePrefs.migrateNavScheduleOnce() {
+    if (sp.getBoolean(K_MIGRATED_NAV_SCHEDULE, false)) return
+    val e = sp.edit()
+    ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.entries
+        .groupBy({ it.value }, { it.key })
+        .forEach { (file, stateKeys) ->
+            // Hai khoá của cùng một tính năng phải đi cùng nhau: luật (đã có trong danh mục) + sổ đã-dẫn (không).
+            val keys = (ProfileScope.CLUSTERNAV_KEYS[file].orEmpty().toSet() + stateKeys)
+                .filter { it.startsWith("nav_automation") }
+            if (keys.isEmpty()) return@forEach
+            val live = clusterNavPrefs(file).all
+            // ⚠⚠ Khoá VẮNG ở tệp sống cũng phải vào ảnh, dưới dạng `null` TƯỜNG MINH — đúng hợp đồng đã ghi ở
+            // KDoc [snapshotClusterNav] và thẻ `n` của [PrefSnapshot]. Lọc `null` ra (bản đầu của hàm này) là bỏ
+            // khoá ấy khỏi ảnh của mọi hồ sơ, và lượt [applyClusterNav] khi đó **giữ nguyên giá trị của hồ sơ vừa
+            // rời**. Ca thật: lúc di trú, `nav_automation_fired` thường CHƯA có (chưa lịch nào bắn) ⇒ vắng ở mọi
+            // ảnh ⇒ hồ sơ A bắn xong, đổi sang B thì sổ đã-dẫn của A vẫn còn sống, mà luật của B là BẢN SAO cùng
+            // id (chính lượt di trú này rót xuống) ⇒ B bị coi là **đã bắn** và bỏ đúng một lượt, im lặng. Đó là
+            // R5 của spec `kachi-profile-scope-nav-schedule`.
+            val carry: Map<String, Any?> = keys.associateWith { live[it] }
+            val suffix = ProfileScope.snapshotSuffix(file)
+            profiles().forEach { p ->
+                val shot = PrefSnapshot.decode(sp.getString(keyOf(p, suffix), null).orEmpty()).toMutableMap()
+                var touched = false
+                carry.forEach { (k, v) -> if (k !in shot) { shot[k] = v; touched = true } }
+                if (touched) e.putString(keyOf(p, suffix), PrefSnapshot.encode(shot))
+            }
+        }
+    e.putBoolean(K_MIGRATED_NAV_SCHEDULE, true).apply()
+}
+
+/**
+ * Dấu đã chuyển *tự dẫn đường theo lịch* từ theo-XE sang theo-HỒ-SƠ — xem [migrateNavScheduleOnce].
+ *
+ * Đặt ở ĐÂY chứ không trong `WorkspacePrefs` vì đó là nơi DUY NHẤT đọc nó, và vì tệp kia đã sát trần 500 dòng
+ * (CLAUDE.md §4.1) — thêm vào đấy là đẩy nó qua trần, bài canh kích thước đỏ ngay. Hằng ở cạnh chỗ dùng cũng
+ * đúng hơn: dấu di trú thuộc về phép di trú.
+ */
+private const val K_MIGRATED_NAV_SCHEDULE = "migrated_nav_schedule_v1"
+
 /** Ghi một hồ sơ do lượt chuyển đổi dựng ra: ba thứ của cảnh + **chép phần còn lại** từ [source] (R2). */
 private fun WorkspacePrefs.writeRecord(e: SharedPreferences.Editor, source: String, record: ProfileRecord) {
     val name = record.name

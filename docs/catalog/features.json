@@ -1477,13 +1477,13 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Chọn camera từng bên (id 0–5)",
-  "desc": "Hai hàng chip «Cam xi-nhan trái» / «Cam xi-nhan phải» — mỗi bên chọn một id camera trong 0–5. Cam không lên thì thử id khác; Sealion 6 dùng cam 0. Câu phụ trong app nói thẳng cách thử: «Chọn camera cho mỗi bên xi-nhan (nếu cam không lên, thử id khác 0–5)».",
+  "name": "Thử camera số cho từng bên (1–8) + dải hình trong khung ghép (2.81)",
+  "desc": "Owner trên **Sealion 6**: *\"không mở được cam phải (cam trái ok - khi xinhan ấy)\"*. Mỗi góc nhìn mang HAI số — `CamView.outputState` (bảo HAL xuất hình nào) và `CamView.cameraId` (mở camera nào) — và cặp đúng KHÁC NHAU theo đời xe ([ĐO ảnh owner] khung ghép fisheye là id 1 trên Seal nhưng id 0 trên SL6). CLAUDE.md §7 cấm rải `if` theo đời xe, mà chưa đo đủ để đặt vào `ClusterProfile` ⇒ mở cho người lái tự dò: hai hàng «Xi-nhan trái/phải: thử camera số» (1–8) + hai hàng «dải hình» (Tự động · Nguyên khung · 1–4). Tám số **cố ý không có tên** — owner: *\"mình cũng đâu có biết là nó cam nào đâu mà phán cho người ta\"*. Bấm chip là đóng-mở lại phiên camera ⇒ hình bật lên ngay để xem thử. Cùng lượt sửa lỗi thật: `CameraPanoCrop.cropFor` nay trả **cỡ nguồn + tâm quang + vùng cắt cùng một lần** (sửa lẻ phần cắt thì hình vừa bẹp vì thiếu tỉ lệ nguồn, vừa cong lệch vì tâm quang ra mép dải).",
   "voice": [],
   "voice_reply": "",
   "status": "🟢 đã xác nhận trên xe",
-  "evidence": "app/.../SettingsSectionsCar.kt:115-117 · strings kachi_camera_pick_left/right · Sealion 6 dùng cam 0 (docs/diagnostics/oncar-captest-sealion6-2026-09-16.md)",
-  "spec": "docs/specs/camera-turn-signal-hal-socket.html"
+  "evidence": "core/.../camera/CameraSignalPolicy.kt (VIEWS_ALL) · core/.../camera/CameraPanoCrop.kt · app/.../launcher/SettingsSectionsCamera.kt · [ĐO owner 2026-09-28] \"đã test trên xe SL6 vụ camera, OK ngon lành\" — giá trị đúng cho SL6: camera 3 cả hai bên, dải Tự động (chưa vào ClusterProfile: backlog CAM-SL6-PROFILE, cần một lệnh getprop trên SL6)",
+  "spec": "docs/specs/kachi-camera-source-picker.html"
  },
  {
   "group": "Camera xi-nhan",
@@ -1692,8 +1692,8 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Màn Camera MỘT tầng — đúng 10 hàng người lái; khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ (2.77)",
-  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. `CameraSettingsIa` còn **10** `USER_KEYS` (bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt) = TOÀN BỘ màn, và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
+  "name": "Màn Camera MỘT tầng — 16 hàng người lái (10 ở 2.77 + 4 ở 2.81 + 2 ở 2.82); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
+  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. `CameraSettingsIa` có **16** `USER_KEYS` (2.77 chốt **10**, rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2 — và 2.82 thêm 2 — vạch chuẩn ×2) (bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt) = TOÀN BỘ màn, và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá đúng 10 khoá + thứ tự; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 CAM-G1 chờ xe (đếm đúng 10 hàng, không còn khối gập kể cả khi BẬT chế độ kiểm thử)",
@@ -1796,5 +1796,25 @@
   "status": "✅ off-car (test `CameraMirrorTest` :core — lật là ảnh SOI của bản không lật ở cả `amount 0` lẫn `amount 100`, hợp với xoay/pan, GL ↔ TV nghịch đảo; `CameraMirrorWiringContractTest` :app — pref → controller → uniforms/TV) · 🚗 CAM-M1: người đứng sau-trái ~3 m, ảnh trái (xoay 0) cùng tay gương kính ⇒ giữ TẮT, ngược ⇒ bật cả hai bên và ghi lại làm mặc định hồ sơ",
   "evidence": "docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §2 · docs/diagnostics/research-side-camera-orientation-2026-09-27.md §6.2 · core/.../CameraGlUniforms.kt · core/.../CameraDewarp.kt (`centerInCrop` nhận `flipH`) · core/.../CameraOverlayTransform.kt · app/.../PrefsCameraDewarp.kt · app/.../camera/CameraSignalController.kt",
   "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Vạch chuẩn khoảng cách — người lái tự canh một mốc mỗi bên (2.82)",
+  "desc": "Owner trên xe: *\"camera nó tạo cảm giác xe mình rất xa xe bên cạnh, trong khi cách tầm 30cm thôi, nên khó phán đoán\"*. Nguyên nhân là HÌNH HỌC chứ không phải lỗi mã: ống mắt cá nén mạnh nhất đúng vùng 0–1 m ⇒ 30 cm và 1,5 m chiếm gần như cùng số điểm ảnh. Ba đường làm-hình-thật-hơn đều ĐÓNG có bằng chứng: (1) hình chim-bay AVM KHÔNG qua HAL (owner mò hết 8 chế độ: *\"ko có cái nào là xe ghép sẵn cả\"*); (2) ghép cam trước+sau cần dựng lại chính AVM của hãng (4 tâm quang khác nhau, cần homography theo xe + bù cao độ); (3) cắt hẹp vùng gần bị owner gỡ ngay: *\"nhìn kỳ lắm, trả lại đi\"*. ⇒ chốt đường CHO CON SỐ: hai hàng «Xi-nhan trái/phải: vạch chuẩn» (Tắt · 1–9, MẶC ĐỊNH TẮT). Người lái đỗ cạnh một vật mốc, chọn nấc cho vạch trùng vật đó, từ đó đọc khoảng cách bằng mốc đã canh thay vì bằng cảm giác. Nấc n ⇒ vạch ở n/10 chiều cao khung (không nấc nào dính mép). Vạch trắng CÓ VIỀN ĐEN (mẹo phụ đề) vì vạch trơn biến mất trên nền sáng đúng lúc cần nhất; nằm TRÊN video, DƯỚI nhãn «Camera trái/phải», và KHÔNG ăn chạm. CỐ Ý không in số mét: quy đổi nấc→mét phụ thuộc chiều cao gắn camera, góc chúc, đời xe — chưa đo cái nào, in số chưa đo là đánh lừa người lái đúng lúc họ tin nó nhất (CLAUDE.md §2).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 chưa canh trên xe (off-car đã xanh: 13 bài + kiểm bằng phá thử 3 mắt xích)",
+  "evidence": "core/.../camera/CameraGuide.kt (thuần, 7 bài) · app/.../camera/CameraGuideLineView.kt · app/.../camera/CameraOverlayView.kt (addView giữa video và nhãn) · CameraGuideWiringContractTest (6 bài) · backlog CAM-GUIDE-ONCAR",
+  "spec": "docs/specs/kachi-camera-distance-guide.html"
+ },
+ {
+  "group": "Hồ sơ",
+  "name": "Lịch dẫn đường đi theo HỒ SƠ (2.82)",
+  "desc": "Owner: *\"lịch theo profile luôn nhé, ví dụ tôi chuyển sang profile: Trip Đà Lạt, thì chắc chắn sẽ cần địa chỉ khác, lịch trình khác với việc đi làm hàng ngày chứ?\"*. `nav_automation_rules` + cờ `nav_automation_fired` chuyển từ phạm vi DEVICE (theo máy) sang PROFILE (theo hồ sơ) ⇒ đổi hồ sơ là đổi luôn lịch, và lịch đi theo xuất/nhập hồ sơ. Có đường CHUYỂN DỮ LIỆU MỘT LẦN: lần chạy đầu sau nâng cấp, lịch đang có được đổ sang ảnh của MỌI hồ sơ (chỉ điền khoá VẮNG, không ghi đè), mốc `migrated_nav_schedule_v1` ghi trong cùng một lượt editor để máy tắt nửa đường không để lại trạng thái chuyển một nửa ⇒ không ai mất lịch. **Sổ địa chỉ đã theo hồ sơ từ trước** — ghi lại để lần sau không ai đi sửa lại lần nữa.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "🚗 chưa nghiệm thu trên xe (off-car đã xanh)",
+  "evidence": "core/.../launcher/ProfileScope.kt (CLUSTERNAV_PROFILE_STATE_KEYS) · app/.../launcher/WorkspacePrefsProfile.kt (migrateNavScheduleOnce) · NavScheduleProfileScopeWiringTest (6 bài) · backlog SCHED-PROFILE-ONCAR",
+  "spec": "docs/specs/kachi-profile-scope-nav-schedule.html"
  }
 ]

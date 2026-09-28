@@ -25,6 +25,8 @@ import com.byd.clusternav.setCameraPos
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraGuide
+import com.byd.clusternav.setCameraGuide
 import com.byd.clusternav.cameraPano
 import com.byd.clusternav.setCameraPano
 import com.byd.clusternav.cameraView
@@ -215,6 +217,19 @@ fun ClusterNavBridge.setCameraMirror(left: Boolean, v: Boolean) = Prefs.setCamer
  */
 fun ClusterNavBridge.cameraRender(): String = Prefs.cameraRender(app)
 fun ClusterNavBridge.setCameraRender(v: String) = Prefs.setCameraRender(app, v)
+/** Vạch chuẩn khoảng cách, từng bên (2026-09-28). */
+fun ClusterNavBridge.cameraGuideLeft(): String = Prefs.cameraGuide(app, left = true)
+
+/** Xem [cameraGuideLeft]. */
+fun ClusterNavBridge.cameraGuideRight(): String = Prefs.cameraGuide(app, left = false)
+
+/** Đổi vạch rồi XEM THỬ ngay bên đó — canh vạch mà không thấy hình thì canh kiểu gì. */
+fun ClusterNavBridge.setCameraGuide(left: Boolean, v: String) {
+    Prefs.setCameraGuide(app, left = left, v = v)
+    runCatching { com.byd.clusternav.AppContainer.get(app).cameraSignal.previewSide(left) }
+        .onFailure { android.util.Log.w("KachiBridge", "xem thử camera lỗi: ${it.message}") }
+}
+
 /** Dải hình trong khung ghép, từng bên (2026-09-28). */
 fun ClusterNavBridge.cameraPanoLeft(): String = Prefs.cameraPano(app, left = true)
 

@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.camera.CameraGuide
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
@@ -115,6 +116,23 @@ fun Prefs.setCameraOnCluster(ctx: Context, v: Boolean) =
 // bên trái nên góc trên-trái có thể bị vành lái/cột A che ở một số cách ngồi. Một khoá dùng chung sẽ buộc hai
 // bên đối xứng, tức làm mất đúng thứ yêu cầu xin.
 // Mặc định = [CameraSignalPolicy.defaultCorner] (trái→TL, phải→TR) — hằng ở `:core`, KHÔNG chép số vào đây.
+private fun cameraGuideKey(left: Boolean) = if (left) "camera_guide_left" else "camera_guide_right"
+
+/**
+ * VẠCH CHUẨN khoảng cách cho bên [left] — `OFF` hoặc nấc `1`–`9`. Xem [CameraGuide] (`:core`) cho lý lẽ đầy đủ.
+ *
+ * Giá trị lạ trên đĩa ⇒ `OFF`, tức **không vẽ gì**. Cố ý không đoán: một vạch nằm sai chỗ còn tệ hơn không có
+ * vạch, vì người lái sẽ tin nó khi lùi sát xe bên cạnh.
+ */
+fun Prefs.cameraGuide(ctx: Context, left: Boolean): String {
+    val raw = autoPrefs(ctx).getString(cameraGuideKey(left), null)
+    return if (CameraGuide.isValue(raw)) raw!!.trim().uppercase() else CameraGuide.defaultValue()
+}
+
+/** Xem [cameraGuide]. */
+fun Prefs.setCameraGuide(ctx: Context, left: Boolean, v: String) =
+    autoPrefs(ctx).edit().putString(cameraGuideKey(left), v).apply()
+
 private fun cameraPanoKey(left: Boolean) = if (left) "camera_pano_left" else "camera_pano_right"
 
 /**

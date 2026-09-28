@@ -41,10 +41,16 @@ class CameraFrameAndRenderWiringContractTest {
      */
     @Test fun `cua so lay co tu core va can giua vung`() {
         assertTrue("CameraOverlayFrame.fit(" in overlay, "cỡ cửa sổ phải do `:core` tính (có test bằng số)")
-        val lp = SourceRoots.body(overlay, "private fun layoutParams(")
+        // 2.82: hàm này đã DỜI sang `CameraOverlayLayout.kt` (CameraOverlayView.kt kịch trần 500 dòng
+        // CLAUDE.md §4.1 nên không thêm được dòng nào cho vạch chuẩn). Công thức KHÔNG đổi một phép nào — bài canh
+        // đi theo hàm sang tệp mới, giữ nguyên độ chặt: cùng phép căn giữa, cùng cỡ khung, cùng loại cửa sổ.
+        val lp = SourceRoots.body(
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraOverlayLayout.kt"),
+            "internal fun overlayLayoutParams(",
+        )
         assertTrue("f.w, f.h," in lp, "WindowManager.LayoutParams phải nhận ĐÚNG cỡ khung đã tính")
-        assertTrue("box.x0 + ((box.areaW - f.w) / 2)" in lp, "x = lề + (vùng − khung)/2 ⇒ căn giữa vùng")
-        assertTrue("box.y0 + ((box.areaH - f.h) / 2)" in lp, "y = lề trên + (vùng − khung)/2")
+        assertTrue("x = x0 + ((areaW - f.w) / 2).coerceAtLeast(0)" in lp, "x = lề + (vùng − khung)/2 ⇒ căn giữa vùng")
+        assertTrue("y = y0 + ((areaH - f.h) / 2).coerceAtLeast(0)" in lp, "y = lề trên + (vùng − khung)/2")
         // Vùng cho phép vẫn là ô vuông cũ (trần) — không được nới thêm chỗ khi đổi tỉ lệ.
         assertTrue("SQUARE_RATIO = 0.50f" in overlay, "trần vùng giữ nguyên 50% chiều cao màn (2.72)")
     }

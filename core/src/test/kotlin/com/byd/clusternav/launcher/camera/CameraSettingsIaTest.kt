@@ -42,11 +42,14 @@ class CameraSettingsIaTest {
                 // +2 (2026-09-28, cùng ngày) — dải hình từng bên. Không có nó thì chọn được số camera mà hình
                 // vẫn ra nguyên khung ghép: đúng lỗi owner báo trên SL6.
                 "camera_pano_left", "camera_pano_right",
+                // +2 (2026-09-28, cùng ngày) — VẠCH CHUẨN khoảng cách từng bên. Owner trên xe: hình camera làm
+                // xe bên cạnh trông xa hơn 30cm thật; ba đường sửa-hình đều đóng nên đây là đường cho CON SỐ.
+                "camera_guide_left", "camera_guide_right",
             ),
             CameraSettingsIa.USER_KEYS,
             "đổi danh sách ⇒ đổi doc camera-ia-profile.md §IA + dòng CAM-F1 của runbook (owner đếm hàng trên xe)",
         )
-        assertEquals(14, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
+        assertEquals(16, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
         CameraSettingsIa.NO_UI_KEYS.forEach {
             assertFalse(it in CameraSettingsIa.USER_KEYS, "khoá không-UI $it lại lộ ra ở màn người lái")
         }
@@ -86,6 +89,6 @@ class CameraSettingsIaTest {
         assertEquals(emptySet<String>(), (user + noUi) - writable, "danh sách nhắc một khoá không còn ghi được qua prefs_set (bài canh rữa)")
         assertEquals(CameraSettingsIa.USER_KEYS.size, user.size, "không trùng trong USER_KEYS")
         assertEquals(CameraSettingsIa.NO_UI_KEYS.size, noUi.size, "không trùng trong NO_UI_KEYS")
-        assertEquals(29, writable.size, "14 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình, 2026-09-28)")
+        assertEquals(31, writable.size, "16 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình +2 vạch chuẩn, 2026-09-28)")
     }
 }

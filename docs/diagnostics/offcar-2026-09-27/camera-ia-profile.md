@@ -290,3 +290,78 @@ là một hàng gây rối, kể cả khi nó nằm sau một cổng. Xoá khoá
   vì **ĐỘ NÉT** (không vì jank — CAM-B6 đã đóng nhánh jank: 11,15 % → 0,81 % nhờ trần 15 fps).
 - 🚗 **G7** (dấu núm dịch khung) **không còn đo được qua UI** — núm đã gỡ; đo qua `prefs_set camera_dewarp_pan_x` nếu
   owner còn muốn chốt dấu.
+
+---
+
+## 9. 2.81 (2026-09-28): người lái tự CHỌN camera + dải hình — 10 → 14 hàng
+
+### 9.1 Vì sao mở ra cho người lái chọn
+
+Owner trên **Sealion 6** (khác đời với Seal đã đo): *"trên sealion 6 không mở được cam phải (cam trái ok - khi xinhan
+ấy)"*. Mỗi góc nhìn mang **hai** số — `CamView.outputState` (bảo HAL xuất hình nào) và `CamView.cameraId` (mở camera
+nào) — và cặp đúng **khác nhau theo đời xe**: [ĐO từ ảnh owner] khung ghép fisheye là `id 1` trên Seal nhưng `id 0`
+trên SL6. Theo CLAUDE.md §7, khác biệt đời xe **không được** rải `if` trong mã; hoặc vào `ClusterProfile`, hoặc để
+người lái tự dò. Chưa đo đủ để đặt vào hồ sơ xe ⇒ **mở cho người lái dò**.
+
+### 9.2 Bốn hàng mới
+
+| Khoá | Chip | Ghi chú |
+|---|---|---|
+| `camera_view_left` / `camera_view_right` | **1 … 8** | Số là **vị trí trong `CameraSignalPolicy.VIEWS_ALL`** (1-based), **cố ý KHÔNG đặt tên**. Owner: *"các label mình để nó cũng ko chuẩn đâu… vì mình cũng đâu có biết là nó cam nào đâu mà phán cho người ta"*. |
+| `camera_pano_left` / `camera_pano_right` | Tự động · Nguyên khung · **1 … 4** | Sáu góc **không phải** Gương trước đây không được cắt dải ⇒ chọn được camera mà hình vẫn ra nguyên khung ghép. |
+
+Bấm chip là **đóng-mở lại phiên camera** ⇒ hình bật lên ngay để xem thử (dò mà không thấy hình thì dò kiểu gì).
+
+### 9.3 Lỗi thật đã sửa cùng lượt
+
+`CameraPanoCrop.cropFor` trước đây chỉ trả **vùng cắt**. Sửa lẻ phần cắt thì hình vừa **bẹp** (thiếu tỉ lệ nguồn) vừa
+**cong lệch** (tâm quang rơi ra mép dải) ⇒ nay trả **cỡ nguồn + tâm quang + vùng cắt cùng một lần**. Hai bẫy nữa một
+lượt soát đối kháng bắt được trước khi ship: (a) góc **Gương** đã mang `crop` dựng sẵn ⇒ phải **bỏ qua** dải truyền
+vào ở **mọi** chỗ dùng, không chỉ chỗ chọn rect; (b) `CameraGlUniforms.sourceCentre` phải khoá theo **crop đang thật
+sự dùng**, không theo `view.crop`.
+
+### 9.4 🚗 Kiểm trên xe
+
+- **CAM-SL6-1** — trên SL6, hàng *thử camera số* bên phải: bấm lần lượt 1→8, ít nhất một số ra hình. ✅ **[ĐO 28/09]**
+  owner xác nhận *"đã test trên xe SL6 vụ camera, OK ngon lành"*; giá trị đúng = **camera 3 cả hai bên, dải Tự động**.
+- **CAM-SL6-2** — giá trị ấy **chưa** vào `ClusterProfile` vì chưa có chuỗi `getprop` nhận dạng SL6 ⇒ backlog
+  `CAM-SL6-PROFILE`. Đoán chuỗi model là trái CLAUDE.md §14.
+
+---
+
+## 10. 2.82 (2026-09-28, cùng ngày): vạch chuẩn khoảng cách — 14 → **16 hàng**
+
+### 10.1 Triệu chứng và nguyên nhân
+
+Owner trên xe: *"camera nó tạo cảm giác xe mình rất xa xe bên cạnh, trong khi cách tầm 30cm thôi, nên khó phán đoán"*.
+Nguyên nhân là **hình học**, không phải lỗi mã: ống mắt cá nén mạnh nhất đúng vùng 0–1 m ⇒ 30 cm và 1,5 m chiếm gần
+như cùng số điểm ảnh theo chiều dọc.
+
+### 10.2 Ba đường "làm hình thật hơn" — đều ĐÓNG, có bằng chứng
+
+| Đường | Kết quả | Bằng chứng |
+|---|---|---|
+| Mượn hình chim-bay (AVM) của xe | **ĐÓNG** | [ĐO] owner mò hết 8 chế độ: *"mò từ 1 đến 8 ko có cái nào là xe ghép sẵn cả"*. HAL `android.hardware.AVMCamera` chỉ trả **4 dải mắt cá thô** 5120×960; phần ghép nằm trong app AVM của hãng. |
+| Ghép cam trước + cam sau | **ĐÓNG** | [ĐO] HAL cấp **một** surface một lúc cho tiến trình này; bốn dải là bốn **tâm quang khác nhau** ⇒ ghép đúng cần homography theo từng xe + bù cao độ = dựng lại chính AVM của hãng. |
+| Cắt hẹp vùng gần (zoom 1/3 dưới) | **ĐÓNG** — thử thật rồi gỡ | [ĐO] owner: *"nhìn kỳ lắm, trả lại đi"*. Mất ngữ cảnh hai đầu (không còn thấy thân xe làm mốc) ⇒ **khó** đọc hơn dù tỉ lệ nén đỡ hơn. |
+
+⇒ Cả ba đều nhằm **sửa cái hình**, mà cái hình bị hình học ống kính ràng. Đường còn lại: **đổi thứ người lái đọc**.
+
+### 10.3 Hai hàng mới
+
+| Khoá | Chip | Mặc định |
+|---|---|---|
+| `camera_guide_left` / `camera_guide_right` | **Tắt** · 1 … 9 | **Tắt** — máy chưa ai canh thì vẽ sẵn một vạch chưa canh còn tệ hơn không vẽ, vì người lái sẽ tin nó |
+
+Nấc `n` ⇒ vạch ở `n/10` chiều cao khung (0,1…0,9 — không nấc nào dính mép). Vạch **trắng có viền đen** (mẹo phụ đề):
+vạch trơn biến mất trên nền sáng đúng lúc cần nhất. Nằm **trên** video, **dưới** nhãn *"Camera trái/phải"*, và
+**không ăn chạm**.
+
+**Cố ý KHÔNG** in số mét cạnh vạch: quy đổi nấc→mét phụ thuộc chiều cao gắn camera, góc chúc, đời xe — **chưa đo cái
+nào** (CLAUDE.md §2). Spec đầy đủ: `docs/specs/kachi-camera-distance-guide.html`.
+
+### 10.4 Số hàng người lái: 10 → 14 → **16**
+
+`CameraSettingsIa.USER_KEYS.size == 16`, tổng khoá camera ghi được qua `prefs_set` = **31** (16 hàng + 15 khoá không-UI).
+Ba bài canh số đếm: `CameraSettingsIaTest` (`:core`), `CameraSettingsIaWiringContractTest` (`:app`),
+`TestBridgeCommandTest` (danh sách trắng **46**). Đổi danh sách ⇒ phải đổi **cả ba** + mục này + dòng CAM-F1 của runbook.

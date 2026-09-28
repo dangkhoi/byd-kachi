@@ -699,6 +699,10 @@
     <string name="kachi_camera_view_sub">Nếu camera không hiện — thử từng số, hình bật lên ngay. Chưa biết số nào là camera nào.</string>
     <string name="kachi_camera_view_row_left">Xi-nhan trái: thử camera số</string>
     <string name="kachi_camera_view_row_right">Xi-nhan phải: thử camera số</string>
+    <string name="kachi_camera_guide_sub">Vạch chuẩn khoảng cách — đỗ cạnh vật mốc rồi chọn nấc cho vạch trùng nó. Chỉ đúng quanh chỗ đã canh</string>
+    <string name="kachi_camera_guide_row_left">Xi-nhan trái: vạch chuẩn</string>
+    <string name="kachi_camera_guide_row_right">Xi-nhan phải: vạch chuẩn</string>
+    <string name="kachi_camera_guide_off">Tắt</string>
     <string name="kachi_camera_pano_sub">Dải hình trong khung ghép — 1 sau · 2 trái · 3 phải · 4 trước (đo trên xe)</string>
     <string name="kachi_camera_pano_row_left">Xi-nhan trái: dải hình</string>
     <string name="kachi_camera_pano_row_right">Xi-nhan phải: dải hình</string>

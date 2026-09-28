@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -147,5 +148,30 @@ class A11yBindStuckWiringContractTest {
                 "Màn Chẩn đoán (Cài đặt › Chiếu cụm › Chẩn đoán) phải in nó ra để anh em chụp màn hình gửi về",
         )
         assertTrue(diag.contains("Prefs.a11yEscalatedAt("), "và cho biết lần nổ máy này đã tự chữa chưa")
+    }
+
+    @Test
+    fun `sau khi tu chua PHAI cham diem ket qua vao nhat ky`() {
+        assertTrue(
+            keepAlive.contains("firstTick && Prefs.a11yEscalatedAt(app) >= 0L"),
+            "nhịp đầu của tiến trình mà mốc leo thang còn nguyên = tiến trình vừa bị CHÍNH MÌNH giết để chữa; " +
+                "không chấm điểm ở đây thì nhật ký chỉ nói 'đã leo' chứ không nói 'leo xong có ăn không'",
+        )
+        assertTrue(keepAlive.contains("\"sau-chua-ON\""), "ghi rõ ca chữa ĂN")
+        assertTrue(keepAlive.contains("\"sau-chua-VAN-TAT\""), "và ca chữa KHÔNG ăn — nói dối một nửa là vô dụng")
+    }
+
+    @Test
+    fun `cham diem KHONG duoc xoa moc han muc`() {
+        // ⚠ Cắt bằng ĐẾM NGOẶC ([SourceRoots.body]), KHÔNG `substringAfter`/`substringBefore`: mốc kết `"\n    }"`
+        // là chuỗi xuất hiện ở khắp tệp, và nếu mốc đầu đổi một ký tự thì `substringAfter` trả NGUYÊN tệp ⇒ vùng
+        // quét sai chỗ, số đếm dưới đây thành vô nghĩa (đúng bẫy "quét tràn = test giả" ở KDoc [SourceRoots.body]).
+        val tick = SourceRoots.body(keepAlive, "private val watchdog = object : Runnable {")
+        val clears = Regex("setA11yEscalatedAt\\(app, -1L\\)").findAll(tick).count()
+        assertEquals(
+            1, clears,
+            "chỉ ĐÚNG MỘT chỗ được nhả hạn mức, và đó là nhánh `woke`. Thêm một chỗ xoá nữa là mở đường giết " +
+                "launcher lặp: chữa xong → xoá mốc → lần sau lại leo, vòng vô hạn",
+        )
     }
 }

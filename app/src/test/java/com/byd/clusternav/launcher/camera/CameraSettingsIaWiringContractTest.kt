@@ -42,6 +42,10 @@ class CameraSettingsIaWiringContractTest {
         "camera_view_right" to "bridge.cameraViewRight()",
         "camera_pano_left" to "bridge.cameraPanoLeft()",
         "camera_pano_right" to "bridge.cameraPanoRight()",
+        // +2 (2026-09-28) — vạch chuẩn khoảng cách. Hàng phải ĐỔI HÌNH NGAY khi chọn (`setCameraGuide` gọi
+        // `previewSide`): canh một vạch mà không thấy hình thì không canh được.
+        "camera_guide_left" to "bridge.cameraGuideLeft()",
+        "camera_guide_right" to "bridge.cameraGuideRight()",
     )
 
     /** Khoá KHÔNG còn UI → mảnh getter của hàng đã gỡ. Mảnh nào xuất hiện lại trong tệp Cài đặt là hàng đã sống lại. */

@@ -7,6 +7,7 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraGuide
 import com.byd.clusternav.cameraPano
 import com.byd.clusternav.cameraView
 import com.byd.clusternav.cameraRotation
@@ -266,6 +267,8 @@ class CameraSignalController(private val appCtx: Context) {
             shape = shape,
             streamW = streamW,
             streamH = streamH,
+            // Vạch chuẩn khoảng cách: người lái canh một lần mỗi bên, xem `CameraGuide` (`:core`).
+            guide = CameraGuide.positionFor(Prefs.cameraGuide(appCtx, left = isLeft)),
             gl = gl,
             synthOn = synth,
             synthFile = synthFile,

@@ -121,6 +121,13 @@ object ProfileScope {
                 "chạy lại một lượt chuyển đổi trên dữ liệu đã chuyển rồi",
         )
         put(
+            "migrated_nav_schedule_v1",
+            "2026-09-28 — dấu 'đã chuyển lịch tự dẫn đường sang hồ sơ', chạy MỘT lần cho cả máy. Cùng lẽ với " +
+                "`migrated_scenes_v1`: chính phép di trú RÓT giá trị đang sống xuống MỌI hồ sơ, nên nếu cái dấu " +
+                "cũng đi theo hồ sơ thì hồ sơ nào chưa mang dấu sẽ rót lại một lượt nữa — lần này đè lên lịch mà " +
+                "người dùng đã kịp sửa. Dấu của một phép chạy-một-lần phải ở phạm vi rộng hơn thứ nó bảo vệ",
+        )
+        put(
             "keep_home_on_boot",
             "S5 — 'giữ Kachi làm màn hình chính khi nổ máy'. Màn hình chính là thuộc tính của **cả xe** (một " +
                 "`cmd package set-home-activity` cho user 0), không phải lựa chọn của một tài xế: chép nó theo hồ " +
@@ -267,22 +274,13 @@ object ProfileScope {
                 "đổi hồ sơ giữa cơn mưa là sấy tự tắt/bật mà không ai hiểu vì sao — cùng họ cast_enabled/" +
                 "voice_wake_enabled: quyết định mức máy, không mức người",
         )
-        put(
-            "nav_automation_rules",
-            "AUTOMATION #2 (1.85, spec kachi-automation R2/R5) — sổ luật 'tự dẫn đường theo lịch'. Theo XE vì đây " +
-                "là việc CHIẾC XE làm theo lịch (nổ máy lúc 7h30 thứ Hai thì dẫn tới công ty), không phải một " +
-                "lựa chọn hiển thị của một tài xế. ⚠ Hệ quả phải biết: `saved_places` thì theo HỒ SƠ, nên một " +
-                "luật trỏ tới mục không có trong hồ sơ đang dùng sẽ BỎ LƯỢT (ScheduledNavApplier ghi log rồi thôi) " +
-                "— degrade an toàn, và cố ý không đóng dấu đã-dẫn nên đổi lại hồ sơ trong khung giờ thì lượt đi " +
-                "vẫn còn",
-        )
-        put(
-            "nav_automation_fired",
-            "AUTOMATION #2 (1.85) — sổ ĐÃ-DẪN (`id luật` → ngày). Theo XE cùng `nav_automation_rules`: nó là dấu " +
-                "vết thi hành CỦA những luật ấy, nên tách phạm vi hai khoá là mời chúng lệch nhau (luật theo xe mà " +
-                "dấu theo hồ sơ ⇒ đổi hồ sơ là dẫn lại lần thứ hai trong cùng khung giờ). Là NOT_SETTINGS nhưng " +
-                "vẫn phải có phạm vi — cùng ca `home_chosen`/`recent_apps`",
-        )
+        // ⚠ 2026-09-28 — `nav_automation_rules` và `nav_automation_fired` ĐÃ RỜI danh sách này, chuyển sang theo
+        // HỒ SƠ. Owner quyết: *"lịch theo profile luôn nhé, ví dụ tôi chuyển sang profile Trip Đà Lạt, thì chắc
+        // chắn sẽ cần địa chỉ khác, lịch trình khác với việc đi làm hàng ngày chứ?"* — lý lẽ ấy mạnh hơn lý lẽ cũ
+        // ("việc của CHIẾC XE"), và nó xoá luôn cái nghịch lý mà chính mục cũ đã tự ghi: luật theo xe mà
+        // `saved_places` theo hồ sơ ⇒ một luật trỏ tới địa chỉ không có trong hồ sơ đang dùng thì BỎ LƯỢT lặng lẽ.
+        // Nay cả ba thứ (luật · dấu đã-dẫn · sổ địa chỉ) cùng một phạm vi nên không còn lệch nhau được.
+        // Xem [CLUSTERNAV_PROFILE_STATE_KEYS] cho khoá dấu-đã-dẫn (không phải cài đặt nên không nằm ở danh mục).
         put(
             "rain_defrost_front",
             "V7 (owner 2026-09-25) — ô con *'Sấy kính trước'* của automation #1. Theo XE **cùng phạm vi với** " +
@@ -350,6 +348,22 @@ object ProfileScope {
     )
 
     /**
+     * Khoá ClusterNav đi theo HỒ SƠ nhưng **không phải cài đặt** (trạng thái chạy) → tệp prefs chứa nó.
+     *
+     * Vì sao cần danh sách RIÊNG thay vì nhét vào danh mục Cài đặt: bảng `SettingsCatalogClusterNav.KEYS` chỉ nhận
+     * khoá **có mặt trên UI** (chú thích tại chỗ), mà `nav_automation_fired` là sổ ĐÃ-DẪN, không có hàng nào. Nhưng
+     * nó vẫn phải đi theo hồ sơ, và phải đi **CÙNG** `nav_automation_rules`: tách phạm vi hai khoá là mời chúng
+     * lệch nhau — luật theo hồ sơ mà dấu đã-dẫn theo xe thì đổi hồ sơ là **dẫn lại lần hai trong cùng khung giờ**.
+     *
+     * ⚠ Đường SAI mà lượt đọc 2026-09-28 chỉ ra: nhét khoá này vào [LAUNCHER_PERSONAL_SUFFIXES] thì [scopeOf] trả
+     * PROFILE và bài canh vẫn XANH, nhưng hậu tố đó được ghép tiền tố vào tệp prefs **của launcher**, trong khi sổ
+     * đã-dẫn được đọc từ tệp **ClusterNav** ⇒ đọc RỖNG, im lặng, và dẫn hai lần. Phải đi đường ảnh-chụp này.
+     */
+    val CLUSTERNAV_PROFILE_STATE_KEYS: Map<String, String> = mapOf(
+        "nav_automation_fired" to "clusternav_prefs",
+    )
+
+    /**
      * S4 · R3(b) — khoá ClusterNav **theo hồ sơ**, gom theo **tệp prefs**: `tệp → khoá`.
      *
      * Sinh bằng mã từ [SettingsCatalog.CLUSTERNAV_KEYS] (nguồn duy nhất, đã có bài canh nguyên-văn ở `:app`) trừ đi
@@ -360,10 +374,12 @@ object ProfileScope {
      * lượt áp phải ghi đúng tệp mà dịch vụ đang đọc.
      */
     val CLUSTERNAV_KEYS: Map<String, List<String>> =
-        SettingsCatalog.CLUSTERNAV_KEYS
-            .filterKeys { key ->
-                key !in DEVICE_KEYS && key !in TRANSIENT_KEYS && key !in LAUNCHER_OWNED_CLUSTERNAV_KEYS
-            }
+        (
+            SettingsCatalog.CLUSTERNAV_KEYS
+                .filterKeys { key ->
+                    key !in DEVICE_KEYS && key !in TRANSIENT_KEYS && key !in LAUNCHER_OWNED_CLUSTERNAV_KEYS
+                } + CLUSTERNAV_PROFILE_STATE_KEYS
+            )
             .entries
             .groupBy({ it.value }, { it.key })
             .mapValues { (_, keys) -> keys.sorted() }

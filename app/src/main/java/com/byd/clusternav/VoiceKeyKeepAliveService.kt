@@ -50,6 +50,9 @@ class VoiceKeyKeepAliveService : Service() {
         return A11yBindJournal.wokeFromLongSleep(prev, now, WAKE_THRESHOLD_MS)
     }
 
+    /** Nhịp đầu tiên của TIẾN TRÌNH này — dùng để chấm điểm lượt tự chữa vừa giết chính nó (T9). */
+    private var firstTick = true
+
     private val watchdog = object : Runnable {
         override fun run() {
             if (!Prefs.voiceKeyEnabled(applicationContext)) return
@@ -63,10 +66,20 @@ class VoiceKeyKeepAliveService : Service() {
                 val bound = NavConnect.isAccessibilityBound(app)
                 // R7 — nhật ký bền: chỉ ghi khi ĐỔI trạng thái (+ nhịp tim 1 giờ), kèm hai đồng hồ ⇒ sáng hôm
                 // sau biết mối nối đứt lúc nào và lúc đó xe vừa ngủ bao lâu. logcat không giữ nổi qua một đêm.
+                // T9 — CHẤM ĐIỂM lượt tự chữa. Nhịp ĐẦU TIÊN của tiến trình này mà mốc leo thang còn nguyên
+                // nghĩa là tiến trình vừa bị chính mình giết để chữa; ghi ngay kết quả THẬT vào nhật ký. Không có
+                // dòng này thì nhật ký chỉ nói "đã leo", không nói "leo xong có ăn không" — mà đó mới là câu hỏi.
+                // KHÔNG xoá mốc ở đây: mốc là hạn mức mỗi đợt thức, chỉ `woke` mới được nhả (xem trên).
+                val note = when {
+                    firstTick && Prefs.a11yEscalatedAt(app) >= 0L -> if (bound) "sau-chua-ON" else "sau-chua-VAN-TAT"
+                    woke -> "wake"
+                    else -> "watchdog"
+                }
+                firstTick = false
                 A11yBindJournalStore.record(
                     app,
                     if (bound) A11yBindJournal.State.BOUND else A11yBindJournal.State.NOT_BOUND,
-                    note = if (woke) "wake" else "watchdog",
+                    note = note,
                 )
                 if (!bound) {
                     Log.w(TAG, "a11y KHÔNG bound (vừa thức=$woke) → re-grant (in-process watchdog)")

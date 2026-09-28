@@ -171,9 +171,37 @@ class ProfileScopeTest {
     fun `bang anh chup la bang khoa ClusterNav tru theo-xe, tam, va khoa launcher da so huu`() {
         val expected = SettingsCatalog.CLUSTERNAV_KEYS.keys -
             ProfileScope.DEVICE_KEYS.keys - ProfileScope.TRANSIENT_KEYS.keys -
-            ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS.keys
+            ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS.keys +
+            // +1 (2026-09-28): khoá TRẠNG THÁI theo hồ sơ, cố ý không có trong danh mục Cài đặt vì không có hàng
+            // trên UI. Vẫn phải cộng vào đây, nếu không nó rơi khỏi ảnh chụp và đổi hồ sơ là mất sổ đã-dẫn.
+            ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.keys
         assertEquals(expected, ProfileScope.CLUSTERNAV_PROFILE_KEYS)
         assertTrue("voicekey_learn" !in ProfileScope.CLUSTERNAV_PROFILE_KEYS)
+    }
+
+    /**
+     * Hai khoá của *tự dẫn đường theo lịch* phải ở **CÙNG** phạm vi, và phạm vi đó là HỒ SƠ (owner 2026-09-28).
+     *
+     * Tách chúng ra là mời hỏng theo cả hai chiều: luật theo hồ sơ mà dấu đã-dẫn theo xe ⇒ đổi hồ sơ là dẫn lại
+     * lần hai trong cùng khung giờ; ngược lại thì sổ đã-dẫn đọc rỗng ở hồ sơ mới, cũng dẫn hai lần.
+     */
+    @Test
+    fun `luat lich va so da-dan CUNG mot pham vi HO SO`() {
+        listOf("nav_automation_rules", "nav_automation_fired").forEach {
+            assertEquals(
+                ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it),
+                "$it phải theo HỒ SƠ — hồ sơ 'Trip Đà Lạt' cần lịch khác hồ sơ đi làm hằng ngày",
+            )
+            assertTrue(
+                it in ProfileScope.CLUSTERNAV_PROFILE_KEYS,
+                "$it phải nằm trong bảng ảnh chụp, nếu không đổi hồ sơ sẽ không mang nó theo",
+            )
+        }
+        assertEquals(
+            listOf("clusternav_prefs"),
+            ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.values.distinct(),
+            "sổ đã-dẫn phải được chụp từ ĐÚNG tệp mà dịch vụ đọc nó; sai tệp thì đọc rỗng, im lặng, dẫn hai lần",
+        )
     }
 
     @Test

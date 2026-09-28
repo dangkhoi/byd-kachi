@@ -44,6 +44,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
      */
     init {
         prefs.migrateScenesOnce()
+        // Phải chạy TRƯỚC lượt `load()` đầu tiên: `load` kéo theo `applyClusterNav`, mà lượt áp ấy chính là chỗ
+        // ảnh chụp cũ (chưa có hai khoá lịch) làm các hồ sơ lệch nhau. Rót giá trị đang sống xuống mọi hồ sơ
+        // trước thì lượt áp đầu tiên đã có đủ dữ liệu để áp đúng.
+        prefs.migrateNavScheduleOnce()
     }
 
     /**

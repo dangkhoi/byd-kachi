@@ -97,6 +97,12 @@ object SettingsCatalog {
             "dấu vết lượt chuyển đổi (di trú chip ghế UX5b đã chạy cho hồ sơ này), không phải cấu hình — cùng họ " +
                 "`migrated_scenes_v1`; lên UI là một công tắc xếp lại danh sách chip sau lưng người dùng",
         )
+        put(
+            "migrated_nav_schedule_v1",
+            "dấu vết lượt chuyển đổi (lịch tự dẫn đường đã chuyển từ theo-XE sang theo-HỒ-SƠ, 2026-09-28), không " +
+                "phải cấu hình — cùng họ `migrated_scenes_v1`/`top_strip_migrated_ux5b`. Lên UI thì tắt nó đi là " +
+                "chạy lại phép rót, đè lên lịch người dùng vừa sửa",
+        )
         // 2026-09-15 (HOME-alias): marker "người dùng ĐÃ bấm Đặt-làm-màn-hình-chính thành công" — lối vào HOME là
         // activity-alias tắt sẵn (để BYD GUI-install không chặn), KachiAutostart đọc marker để bật alias + set-home
         // lại sau nâng cấp. Là lựa chọn ĐÃ BÀY TỎ được ghi lại, không phải một công tắc để bật/tắt trong Cài đặt

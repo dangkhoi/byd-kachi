@@ -681,6 +681,10 @@
     <string name="kachi_camera_view_sub">If the camera does not show — try each number, the image appears right away. Which number is which camera is unknown.</string>
     <string name="kachi_camera_view_row_left">Left signal: try camera no.</string>
     <string name="kachi_camera_view_row_right">Right signal: try camera no.</string>
+    <string name="kachi_camera_guide_sub">Distance guide line — park beside a marker, then pick the step where the line meets it. Accurate only near where you set it</string>
+    <string name="kachi_camera_guide_row_left">Left signal: guide line</string>
+    <string name="kachi_camera_guide_row_right">Right signal: guide line</string>
+    <string name="kachi_camera_guide_off">Off</string>
     <string name="kachi_camera_pano_sub">Strip inside the stitched frame — 1 rear · 2 left · 3 right · 4 front (measured on the car)</string>
     <string name="kachi_camera_pano_row_left">Left signal: strip</string>
     <string name="kachi_camera_pano_row_right">Right signal: strip</string>

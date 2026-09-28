@@ -68,7 +68,9 @@ class CameraClusterBandWiringContractTest {
         assertTrue("return Geo(CameraOverlayFrame.Frame(p.w, p.h, p.streamKnown), bandLayoutParams(p), p.radiusPx, note, p)" in geo,
             "Placement đi tiếp tới `show` — nếu rơi ở đây thì mặt nạ cong thành code chết (CLAUDE.md §8)")
         // Đường 2.73 còn nguyên và đứng sau nhánh cụm (CLAUDE.md §6: đường mới xuống cuối… ở đây là rẽ trước, rơi về cũ).
-        assertTrue("val box = box(st.ctx)" in geo && "return Geo(f, layoutParams(box, f, st.corner), null" in geo)
+        assertTrue("val box = box(st.ctx)" in geo &&
+            "overlayLayoutParams(box.areaW, box.areaH, box.x0, box.y0, f, st.corner)" in geo,
+            "đường màn chính 2.73 còn nguyên — 2.82 chỉ DỜI hàm sang `CameraOverlayLayout.kt`, không đổi phép nào")
         val lp = SourceRoots.body(overlay, "private fun bandLayoutParams(")
         assertTrue("gravity = Gravity.TOP or Gravity.START" in lp && "x = p.x" in lp && "y = p.y" in lp,
             "toạ độ TUYỆT ĐỐI trên display cụm, không lề, không căn giữa vùng")
@@ -125,9 +127,15 @@ class CameraClusterBandWiringContractTest {
             "ba hằng của đường màn chính còn nguyên — owner 27/09 tối: *\"overlay trên màn chính OK rồi\"*")
         assertFalse("CLUSTER_TOP_RATIO" in overlay, "lề 6 % của cụm đã hết chủ từ 2.76")
         // Cửa sổ màn chính: vẫn `fit` trong vùng vuông rồi CĂN GIỮA — không một phép nào của 2.79 chạm vào.
-        val lp = SourceRoots.body(overlay, "private fun layoutParams(")
-        assertTrue("x = box.x0 + ((box.areaW - f.w) / 2).coerceAtLeast(0)" in lp, "công thức căn giữa của 2.73 y nguyên")
-        assertTrue("y = box.y0 + ((box.areaH - f.h) / 2).coerceAtLeast(0)" in lp)
+        // 2.82: hàm này đã DỜI sang `CameraOverlayLayout.kt` (CameraOverlayView.kt kịch trần 500 dòng
+        // CLAUDE.md §4.1 nên không thêm được dòng nào cho vạch chuẩn). Công thức KHÔNG đổi một phép nào — bài canh
+        // đi theo hàm sang tệp mới, giữ nguyên độ chặt: cùng phép căn giữa, cùng cỡ khung, cùng loại cửa sổ.
+        val lp = SourceRoots.body(
+            SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraOverlayLayout.kt"),
+            "internal fun overlayLayoutParams(",
+        )
+        assertTrue("x = x0 + ((areaW - f.w) / 2).coerceAtLeast(0)" in lp, "công thức căn giữa của 2.73 y nguyên")
+        assertTrue("y = y0 + ((areaH - f.h) / 2).coerceAtLeast(0)" in lp)
         assertTrue("CameraOverlayFrame.fit(" in SourceRoots.body(overlay, "private fun frameOf("),
             "màn chính vẫn dùng `fit` (vừa khít, không cắt), KHÔNG phải `tall`/`cover` của đường cụm")
         // …và lớp video màn chính vẫn lấp kín cửa sổ, không có lề âm nào (`place == null` ⇒ MATCH_PARENT).
