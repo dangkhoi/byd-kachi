@@ -1,7 +1,7 @@
 # ON-CAR HANDOFF — verify 1.13 (notif self-grant · default-OFF · voice-key) · 2026-08-13 (pm)
 
 > **Supersedes** `oncar-handoff-2026-08-13.md` (1.12 HAL nav-screen). Các mục 1.12 **CHƯA verify** được mang xuống §2C.
-> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: Đăng Khôi (dangkhoi).
+> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: dangkhoi.
 > **1 CHỖ DUY NHẤT** cho lần lên xe tới. Tất cả **parked-only** (số P, phanh tay). Dọn = **power-cycle nút nguồn vật lý** (không tính `adb reboot`).
 > **1.13 đã build off-car XANH nhưng CHƯA lên `main`/OTA** — trên `main` vẫn là 1.12 (commit `3884d55`). Muốn test 1.13 phải **cài tay APK** (§1) hoặc push 1.13 lên main trước (chưa uỷ quyền merge).
 

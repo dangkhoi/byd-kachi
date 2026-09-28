@@ -23,7 +23,7 @@ Thay lớp dữ liệu/điều khiển xe GIẢ (`DemoCarData`/`NoCar`) bằng l
 - **MIT clean-room**: document + reimplement trên hạ tầng `BydHal` của repo; KHÔNG copy verbatim mã Overdrive/dashcast; feature-id số + CAN opcode là FACTS (dùng được); ghi attribution vào `CREDITS.md`.
 - Evidence tier hiện rõ, KHÔNG bịa: PROVEN dùng bình thường; OVERDRIVE/DASHCAST NỐI + hiện + badge "chưa kiểm trên xe"; off-car/null/`-2147482648` (NOT_PROVISIONED) ⇒ "—" + mờ.
 - Test: JVM `:core` + `:app` unit; emulator cho render. Phần chạm HAL thật = 🚗 on-car (grab-list ở spec §9).
-- Commit author = `Đăng Khôi <dangkhoi@users.noreply.github.com>` (repo cá nhân — KHÔNG override). **KHÔNG push** (owner quyết).
+- Commit author = `dangkhoi` (repo cá nhân — KHÔNG override). **KHÔNG push** (owner quyết).
 
 ---
 
@@ -134,7 +134,7 @@ DO NOT: thêm feature ngoài scope; đụng seal/MainActivity/appId/cast.
 - [ ] Security scan CLEAN (0 [BLOCK]).
 - [ ] Full 5-module `./gradlew test` XANH + `:app:assembleDebug` sạch.
 - [ ] Docs synced (index + backlog + context + CREDITS).
-- [ ] Commit LOCAL (author Đăng Khôi, KHÔNG push) — HOẶC để owner commit nếu muốn xem trước.
+- [ ] Commit LOCAL (author dangkhoi, KHÔNG push) — HOẶC để owner commit nếu muốn xem trước.
 
 ---
 

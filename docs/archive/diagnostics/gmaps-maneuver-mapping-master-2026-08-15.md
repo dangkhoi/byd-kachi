@@ -1,6 +1,6 @@
 # Master Maneuver Mapping — GMaps → Cụm (AMAP NEW_ICON) → HUD (CAN)
 
-> Owner: Đăng Khôi · `dangkhoi` — 2026-08-15. Off-car deliverable. **No code changed** by this doc.
+> Owner: dangkhoi · `dangkhoi` — 2026-08-15. Off-car deliverable. **No code changed** by this doc.
 > Mục tiêu owner (2026-08-15): map TỐI ĐA off-car từ nguồn chuẩn; lái xe chỉ để bắt case sót.
 > Mapping BẮT BUỘC 3 cột `GMaps → cụm → HUD` vì cụm (AMAP NEW_ICON) và HUD (CAN) là 2 không gian id KHÁC NHAU.
 

@@ -15,7 +15,7 @@
 >
 > Everything beneath this header is kept **as-is as the historical record** (2026-07-24 inventory) — read it in that light. · Phần bên dưới được giữ **nguyên trạng làm hồ sơ lịch sử**.
 
-> Owner: Đăng Khôi · `dangkhoi`  
+> Owner: dangkhoi · `dangkhoi`  
 > Inventory date: 2026-07-24  
 > Status: **HISTORICAL / UNSUPPORTED / NOT RELEASE EVIDENCE**
 

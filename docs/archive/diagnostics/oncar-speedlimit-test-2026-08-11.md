@@ -5,7 +5,7 @@
 
 
 > Xe: BYD Seal DiLink 3.0 (fw-2602), Android 10, dual-OS (`fission_single_os=0`), **không root**.
-> Chủ: Đăng Khôi (dangkhoi). Để đó — khi nào lên xe thì mở file này làm theo.
+> Chủ: dangkhoi. Để đó — khi nào lên xe thì mở file này làm theo.
 > Nền tảng: `apks/navopen-v4.jar` + `scripts/vehicle/hud3-speedlimit-v4.sh` (đã build & verify off-car 2026-08-11).
 > Chi tiết/bằng chứng: `docs/_handoff/hud-cluster-injection-findings-2026-08-10.md` §22–26.
 

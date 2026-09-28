@@ -1,7 +1,7 @@
 # ON-CAR HANDOFF — verify 1.12 (Giữa+ETA qua HAL) · 2026-08-13
 
 > **Supersedes** `oncar-handoff-2026-08-12-evening.md`.
-> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: Đăng Khôi (dangkhoi).
+> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: dangkhoi.
 > **1 CHỖ DUY NHẤT** cho lần lên xe tới. Tất cả **parked-only** (số P, phanh tay). Dọn = **power-cycle nút nguồn vật lý** (không tính `adb reboot`).
 > Bản trên `main`/OTA cuối phiên: **1.12 (versionCode 112)** — commit `3884d55`.
 

@@ -30,7 +30,7 @@ Refactor `byd-launcher` (Kachi car launcher) sang kiến trúc sạch theo revie
 - Mỗi stage: build XANH (`:app:assembleDebug`) + test liên quan XANH + máy chạy được → mới sang stage sau.
 - Byte-stable các lệnh shell đã proven (chốt bằng `FakeShell` contract test ở B0; mọi refactor sau phải giữ y chuỗi lệnh).
 - KHÔNG đụng `MainActivity`/layout seal. KHÔNG đổi appId/namespace. `:core` cấm `android.*`.
-- File > 500 LOC → tách. Commit identity GIỮ repo config = **`Đăng Khôi <dangkhoi@users.noreply.github.com>`** (repo cá nhân; KHÔNG override dangkhoi; KHÔNG `-c`/`--author`).
+- File > 500 LOC → tách. Commit identity GIỮ repo config = **`dangkhoi`** (repo cá nhân; KHÔNG override dangkhoi; KHÔNG `-c`/`--author`).
 - **Commit per-stage (local)** sau khi security scan CLEAN; **KHÔNG push** (owner tự push). KHÔNG `--no-verify`.
 - Context7 verify dep TRƯỚC khi thêm (androidx.lifecycle, kotlinx-coroutines, turbine): version mới nhất, API không deprecated.
 
@@ -128,5 +128,5 @@ Tạo/cập nhật `docs/specs/kachi-architecture.html` (Apple 2026, inline CSS,
 - [ ] Senior review APPROVED (0×P0/P1, scope 100%, boundary shapes khớp).
 - [ ] Security scan CLEAN (0 `[BLOCK]`) mỗi commit.
 - [ ] `docs/README.md` + `PROJECT-BACKLOG.md` + `project-context.md` cập nhật khớp code.
-- [ ] Commit per-stage local (identity Đăng Khôi), CHƯA push (chờ owner).
+- [ ] Commit per-stage local (identity dangkhoi), CHƯA push (chờ owner).
 - [ ] Danh sách 🚗 pending on-car liệt kê rõ ở `arch-stage-7-done.md` (freeform fps/z-order, BydHal thật, state-bền sau reboot vật lý, cold-boot auto-start, coexistence cast trên xe).

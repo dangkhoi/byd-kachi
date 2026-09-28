@@ -48,7 +48,7 @@ pre{background:var(--paper2);border:1px solid var(--line);border-radius:14px;pad
 <div class="eyebrow">Consolidated spec · requirements · design · tasks · off-car</div>
 <h1>Nav-on-cluster op39 "Giữa + ETA" — tự chẩn đoán off-car.</h1>
 <p class="lead">Trên xe, chọn <strong>"Giữa + ETA"</strong> chỉ lên nav <strong>nhỏ/ở trên</strong> (do broadcast vẽ), KHÔNG lên overlay op39 ở giữa như lần bắn test bằng adb laptop sáng cùng ngày. Trace cho thấy: lệnh op39 trong app <strong>đúng byte-for-byte</strong> với lệnh proven trong <code>nav-mode-probe.sh</code>; khác biệt là <strong>đường giao</strong> (in-app bắn qua dadb loopback <code>localhost:5555</code>, và chỉ bắn khi Cast TẮT) — cộng thêm một <strong>bug retry</strong> làm một lần bắn hụt chặn luôn lần thử lại 30s, và một UX <strong>fail im lặng</strong> khiến người dùng không biết gì. Spec này làm op39 tự chẩn đoán off-car: sửa bug retry (D1), log quyết định rõ ràng (D2), hiện trạng thái thật trên card Nav (D3), và thêm nút <strong>"Test cụm ngay"</strong> một chạm (D4) — để lần lên xe tới là <strong>một lần kiểm tra xác định</strong>, không cần laptop.</p>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Target: 1.08 candidate (bundled với install-result + relaunch fixes đang ở working tree) · Baseline: main@b9b4dea (1.07) + uncommitted WIP · Date: 2026-08-12</p>
+<p class="meta">Owner: dangkhoi · dangkhoi · Target: 1.08 candidate (bundled với install-result + relaunch fixes đang ở working tree) · Baseline: main@b9b4dea (1.07) + uncommitted WIP · Date: 2026-08-12</p>
 <div class="stats">
 <div class="stat"><b>4</b><span>deliverables (D1–D4)</span></div>
 <div class="stat"><b>2</b><span>files sửa · 1 mới</span></div>

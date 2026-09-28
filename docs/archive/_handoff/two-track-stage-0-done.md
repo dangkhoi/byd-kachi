@@ -3,7 +3,7 @@
 > State: **WAITING_FOR_SPEC_APPROVAL**  
 > Stage result: **DOCUMENT CLOSURE PASS**  
 > Runtime/build/install/commit/push/merge: **NOT AUTHORIZED**  
-> Owner identity: **Đăng Khôi · `dangkhoi`**
+> Owner identity: **dangkhoi · `dangkhoi`**
 
 ## Scope completed
 Stage 0 executed as documentation/review only. Two independent senior lenses and synthesis identified document findings; accepted findings were patched; focused review loops continued until an independent reviewer returned **PASS · 0 actionable P0–P3**. No runtime, test, build, APK, vehicle, branch, commit, push or merge mutation was performed.
@@ -44,7 +44,7 @@ Stage 0 executed as documentation/review only. Two independent senior lenses and
 - D8 displayed CastAction set: 12/12 exact artifact match.
 - HTML parser: 4/4 documents PASS.
 - Required section order/theme persistence/inline SVG/no Mermaid: PASS.
-- Identity scan of reviewed artifacts: personal `Đăng Khôi · dangkhoi`; no company identity/email: PASS.
+- Identity scan of reviewed artifacts: personal `dangkhoi · dangkhoi`; no company identity/email: PASS.
 - Evidence honesty: Cast direct V2, UX U1–U24, DR direct/removal and exact-build on-car remain **NOT STARTED**.
 - Technology validation: `NO_TECH_CHANGE`; no framework/dependency/API/persistence choice was introduced or changed in Stage 0.
 - Build/tests: not run and not authorized; historical 218/218 and 6/6 remain context only.

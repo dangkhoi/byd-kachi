@@ -1,6 +1,6 @@
 # Kế hoạch sửa 3 lỗi hiện trường — 22/07/2026 (v0.50)
 
-Owner: Đăng Khôi (dangkhoi) · Xe: Seal DiLink3 · Bản dính lỗi: **0.47** (đọc từ máy, 8/8 file diag)
+Owner: dangkhoi · Xe: Seal DiLink3 · Bản dính lỗi: **0.47** (đọc từ máy, 8/8 file diag)
 
 ## Lỗi người dùng báo
 

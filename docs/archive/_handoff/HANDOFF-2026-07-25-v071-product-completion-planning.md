@@ -1,7 +1,7 @@
 # HANDOFF — Cluster Cast `0.71` product completion: scope ready, approval pending
 
 > **Checkpoint:** 2026-07-25 21:14 +07:00
-> **Owner:** Đăng Khôi · `dangkhoi`
+> **Owner:** dangkhoi · `dangkhoi`
 > **Status:** planning/review complete; implementation **NOT STARTED**; approval token **NOT RECEIVED**.
 > **Resume rule:** do not modify runtime/tests until the user explicitly approves `docs/specs/cluster-cast-v071-product-completion.html`.
 

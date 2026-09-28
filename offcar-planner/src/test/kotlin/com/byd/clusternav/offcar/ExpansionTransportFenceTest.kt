@@ -393,7 +393,7 @@ class ExpansionTransportFenceTest {
         Files.writeString(
             file,
             "https://clusternav.invalid/schema/result-ledger.schema.json " +
-                "https://json-schema.org/draft/2020-12/schema ${"a".repeat(64)} FACT-SAFE-EVIDENCE TOKEN-C01-QUERY Đăng Khôi · dangkhoi",
+                "https://json-schema.org/draft/2020-12/schema ${"a".repeat(64)} FACT-SAFE-EVIDENCE TOKEN-C01-QUERY dangkhoi · dangkhoi",
         )
         assertEquals(0, runPrivacyScanner(scanner, fixture).exitCode)
         Files.delete(file)

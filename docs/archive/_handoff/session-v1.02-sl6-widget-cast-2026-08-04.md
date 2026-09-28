@@ -1,6 +1,6 @@
 # ClusterNav v1.02 — SL6 widget/cast handoff
 
-**Date:** 2026-08-04 · **Owner:** Đăng Khôi · `dangkhoi`
+**Date:** 2026-08-04 · **Owner:** dangkhoi · `dangkhoi`
 
 ## Status at handoff
 

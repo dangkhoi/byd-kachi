@@ -20,7 +20,7 @@ html.dark{color-scheme:dark;--bg:#09090b;--paper:#171719;--paper2:#1d1d20;--ink:
 <h1>Kế hoạch từng bước thử HUD dẫn đường và biển tốc độ trên xe — đọc trước, duyệt offline, rồi mới được ghi.</h1>
 <p class="lead">Phiên đầu tiên luôn chỉ đọc. Mọi phát hiện trên xe là <code>DISCOVERY_ONLY</code>; không phát hiện nào được dùng để ghi trong cùng phiên. Chỉ pack N+1 được tái tạo, review độc lập và chứa candidate <code>READY_FOR_FIELD</code> mới có thể đi vào một phiên mutation được ủy quyền riêng, với prior value, read-back, clear, inverse và restore đã arm trước.</p>
 <div class="callout red"><strong>Trạng thái hiện tại: ARTIFACT_READY_OPERATIONALLY_BLOCKED.</strong> Pack vẫn <code>INERT_IDENTITY_BLOCKED</code>, thiếu authorized T10 handoff, có <code>allowedMutationCandidateRevisionIds=[]</code> và không có candidate <code>READY_FOR_FIELD</code>. Vì vậy tài liệu này không cho phép truy cập xe, ADB/DADB, cài APK hay thay đổi trạng thái xe.</div>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-08-08 · Parents: seal-nav-hud-speed-sign-offcar.html + seal-hud-sign-candidate-expansion.html</p>
+<p class="meta">Owner: dangkhoi · dangkhoi · Date: 2026-08-08 · Parents: seal-nav-hud-speed-sign-offcar.html + seal-hud-sign-candidate-expansion.html</p>
 <div class="stats">
 <div class="stat"><b>11</b><span>rows trong template hiện tại</span></div>
 <div class="stat"><b>7</b><span>READ_ONLY rows</span></div>

@@ -1,6 +1,6 @@
 # HANDOFF — Cluster Cast `0.71` closed as OFF-CAR EXACT-SOURCE ONLY
 
-> **Checkpoint:** 2026-07-25 · Owner: Đăng Khôi · `dangkhoi`
+> **Checkpoint:** 2026-07-25 · Owner: dangkhoi · `dangkhoi`
 > **Status:** owner-approved scope implemented, reviewed clean, source identity created, security scan clean.
 > **Hard stop:** no APK build, install, ADB/DADB, vehicle, commit, push, merge, reset or clean was performed, and none is authorized by this handoff.
 

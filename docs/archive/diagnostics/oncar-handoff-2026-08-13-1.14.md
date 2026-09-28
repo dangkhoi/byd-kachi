@@ -1,7 +1,7 @@
 # ON-CAR HANDOFF — verify 1.14 (HUD arrow · marquee · 10m · cluster-mode · autostart) · 2026-08-13 (pm2)
 
 > **Supersedes** `oncar-handoff-2026-08-13-1.13.md`. Bản 1.14 **gộp cả** thay đổi 1.13 (chưa test on-car) + 5 fix mới từ lần chạy 1.12 → verify chung trên MỘT build.
-> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: Đăng Khôi (dangkhoi).
+> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: dangkhoi.
 > **1 CHỖ DUY NHẤT** cho lần lên xe tới. Tất cả **parked-only** (số P, phanh tay). Dọn = **power-cycle nút nguồn vật lý** (không tính `adb reboot`).
 > **1.14 đã build off-car XANH nhưng CHƯA lên `main`/OTA** — trên `main` vẫn 1.12. Test 1.14 phải **cài tay APK** (§1). Chưa uỷ quyền merge/push.
 

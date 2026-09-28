@@ -102,7 +102,7 @@ class ExpansionTraceabilityTest {
         assertFalse(semanticPrivacyViolation(mapOf("entries" to listOf(mapOf("artifactSha256" to null))), "corpus-coverage.json"))
         assertFalse(semanticPrivacyViolation(mapOf(
             "selfSha256" to "a".repeat(64), "factId" to "FACT-SAFE-EVIDENCE", "tokenId" to "TOKEN-C01-QUERY",
-            "schema" to "https://json-schema.org/draft/2020-12/schema", "owner" to "Đăng Khôi · dangkhoi",
+            "schema" to "https://json-schema.org/draft/2020-12/schema", "owner" to "dangkhoi · dangkhoi",
         )))
     }
     @Test
@@ -346,7 +346,7 @@ class ExpansionTraceabilityTest {
         private val ID_TOKEN = Regex("^(?:(?:ALIAS|ARTIFACT|BLOCKER|COMPONENT|CONFIG|CONSUMER|DIMENSION|FACT|HYP|PARAM|PERMISSION|PROFILE|PROVIDER|PRUNE|REASON|RENDERER|RULE|SEL|SENDER|TOKEN|TOOL|TRANSPORT|VALUE)-[A-Z0-9][A-Z0-9-]{0,63}|EVENT-[0-9]{6}|GATE-X-O(?:[1-9]|1[0-2])|OBS-(?:D-H0|M[1-4])-[A-Z0-9][A-Z0-9-]{0,63}|OP-(?:READ|MUTATE|CLEAR|INVERSE|RESTORE)-[A-Z0-9][A-Z0-9-]{0,63}|PROBE-(?:READ|LIST)-[A-Z0-9][A-Z0-9-]{0,63}|QRY-C(?:0[1-9]|1[0-2])-[A-Z0-9][A-Z0-9-]{0,63}|REQ-X(?:[1-9]|1[0-8])|RESULT-(?:D-H0|D-M[1-4]|P-M[1-4])-[0-9]{4}|ROW-[0-9]{4}-[A-Z0-9][A-Z0-9-]{0,63}|SESSION-[0-9A-F]{16}|TASK-X[0-5]|VERSION-[A-Z0-9][A-Z0-9.-]{0,63}|CAND-(?:H|S|NATIVE|PROVIDER)-[0-9]{3}-[A-Z0-9][A-Z0-9-]{0,63}@(?:$REVISION_DIGITS)|HIT-C(?:0[1-9]|1[0-2])-QRY-C(?:0[1-9]|1[0-2])-[A-Z0-9][A-Z0-9-]{0,63}-A[0-9a-f]{12}-S[0-9a-f]{12}-Q[0-9a-f]{12}-L[0-9a-f]{12}-T[0-9a-f]{12}|H[0-9]{1,3}|S[0-9]{1,3})$")
         private val FIXED_PUBLIC_VALUES = setOf(
             "https://clusternav.invalid/schema/result-ledger.schema.json",
-            "https://json-schema.org/draft/2020-12/schema", "Đăng Khôi · dangkhoi",
+            "https://json-schema.org/draft/2020-12/schema", "dangkhoi · dangkhoi",
         )
         private val PRIVACY_MARKER_KEYS = setOf(
             "vin", "vehicleidentificationnumber", "serial", "serialnumber", "gps", "latitude", "longitude",

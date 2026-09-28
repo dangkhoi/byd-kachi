@@ -37,11 +37,11 @@
 **No real secrets found anywhere in the tree.**
 - Comprehensive regex sweep for AWS/GitHub/Google/OpenAI/Anthropic/Slack/Stripe/Telegram keys, OAuth/JWT secrets, `-----BEGIN … PRIVATE KEY-----`, DB-URLs-with-password → **0 matches**. The only secret-shape hits are the project's **own secret-detector regex definitions** (`scripts/verify-hud-sign-candidate-expansion.sh:241`, `scripts/re/expand-candidate-coverage.py:111`, `.git/hooks/pre-commit:52`) — detector patterns, not credentials.
 - **Signing secrets protected:** `keystore.properties`, `local.properties`, `app/release.keystore` exist locally but are **gitignored** (`.gitignore` L11/L16/L17) and absent from the commit set. `app/build.gradle.kts` reads signing values from the properties file — no hardcoded password/alias.
-- **Next-commit git identity is CLEAN:** `git config user.email = dangkhoi@users.noreply.github.com`, `user.name = Đăng Khôi` → the v1.05 commit will be authored correctly per `identity.md`.
+- **Next-commit git identity is CLEAN:** `git config user.email = dangkhoi`, `user.name = dangkhoi` → the v1.05 commit will be authored correctly per `identity.md`.
 - **Firmware constants (allowed):** ZMQ `192.168.195.2:8889` / `192.168.195.3:6666` in `cluster-hud-injection-STATE.md` and `scripts/vehicle/hud3-recon.sh` — firmware-internal, explicitly permitted.
 - **Synthetic PII test fixtures:** `person@example.com`, `alice@example.test`, `+84912345678`, `password=correct-horse-battery-staple`, `name=Jane Citizen`, `GPS 21.0285,105.8542`, `/Users/{person,alice,example}/…` in `offcar-planner/src/test/**` and `scripts/re/tests/**` — inputs for the report-sanitizer tests; synthetic.
 - **SHA-256 hashes** throughout `docs/diagnostics/hud-sign-re/**`, `tools/re/manifest.json`, exact-source JSONs, and the blocklisted-APK hash in `scripts/vehicle/common.sh` — content-integrity hashes of public tools/artifacts, **not secrets** (as flagged in the task).
-- **Owner public attribution** "Đăng Khôi / dangkhoi" (`oncar-speedlimit-test-2026-08-11.md` et al.) — the **intended** public identity per `identity.md`; not a leak.
+- **Owner public attribution** "dangkhoi / dangkhoi" (`oncar-speedlimit-test-2026-08-11.md` et al.) — the **intended** public identity per `identity.md`; not a leak.
 - **Non-sensitive identifiers:** BYD cluster physical display ID `19261206365013889`; standard Android debug-key cert SHA `dc521dad…` (`CN=Android Debug`); public repo URL `dangkhoi/byd-cluster`. `tools/re/manifest.json` uses `<user-cache>`/`<project-root>` placeholders + standard `/opt/homebrew/…` paths — clean.
 
 **Pre-existing / out-of-scope (already committed & public — NOT introduced by this commit; noted for owner awareness):**

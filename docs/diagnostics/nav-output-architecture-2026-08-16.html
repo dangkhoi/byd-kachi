@@ -44,7 +44,7 @@ tr:last-child td{border-bottom:0}td.mono,.mono{font-family:var(--mono);font-size
 <div class="eyebrow">Reference · RE-derived · BYD DiLink 3.0 (Seal)</div>
 <h1>Một nguồn GMaps → hai đường ra Navigation độc lập</h1>
 <p class="lead">Tài liệu tham chiếu chi tiết: 1 nguồn dẫn đường (Google Maps) được đọc một lần thành một <code>Maneuver</code> trung lập, rồi encode ra <strong>hai đường vật lý độc lập</strong> — (1) <strong>Broadcast AUTONAVI</strong> (bảng AMAP) ra <strong>cụm</strong>, và (2) <strong>Ghi thẳng INSTRUMENT HAL</strong> (bảng CAN) ra <strong>HUD kính lái + cụm-centre "Giữa+ETA"</strong>. Kèm đầy đủ từng field của mỗi đường, và <strong>bảng domestic (0x43F) + oversea (0x1F7)</strong> của đường 2.</p>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Ngày: 2026-08-16 · Trạng thái: cập nhật theo bản 1.24 (probe oversea) · Nguồn: source đã đọc + RE firmware</p>
+<p class="meta">Owner: dangkhoi · dangkhoi · Ngày: 2026-08-16 · Trạng thái: cập nhật theo bản 1.24 (probe oversea) · Nguồn: source đã đọc + RE firmware</p>
 <nav class="toc">
 <a href="#overview">1 · Tổng quan</a><a href="#source">2 · Nguồn & encoder</a><a href="#path1">3 · Đường 1 (broadcast/cụm)</a><a href="#path2">4 · Đường 2 (INSTRUMENT/HUD)</a><a href="#dom">4a · Bảng domestic 0x43F</a><a href="#ovr">4b · Bảng oversea 0x1F7</a><a href="#writes">5 · ClusterNav ghi gì (1.24)</a><a href="#delivery">6 · Truyền/dedup/keep-alive</a><a href="#status">7 · Trạng thái & CHƯA BIẾT</a><a href="#src">8 · Nguồn tra cứu</a>
 </nav>

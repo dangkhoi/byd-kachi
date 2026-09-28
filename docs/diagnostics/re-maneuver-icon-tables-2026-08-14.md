@@ -2,7 +2,7 @@
 
 > **Trạng thái**: Current · **Cập nhật**: 2026-08-14 · **Mục đích**: Bảng RE icon AMAP/HUD CAN + kế hoạch enrich Maneuver (mọi claim trace [RE:file:line]).
 
-> Owner: Đăng Khôi · `dangkhoi` — 2026-08-14. Deep-RE deliverable. **No code changed** by this document.
+> Owner: dangkhoi · `dangkhoi` — 2026-08-14. Deep-RE deliverable. **No code changed** by this document.
 > Every claim is traced to `[RE:file:line]` (decompiled firmware) or `[src:file:line]` (repo). No assumptions
 > except where explicitly tagged **GUESS** with an on-car verification step (per `no-assumptions.md`).
 

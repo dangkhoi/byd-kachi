@@ -1,6 +1,6 @@
 # Two-Track Autonomous Off-Car Progress
 
-Owner: Đăng Khôi · `dangkhoi`  
+Owner: dangkhoi · `dangkhoi`  
 Authorization: `AUTONOMOUS_OFFCAR_APPROVED stages=2-10`
 
 ## Completed

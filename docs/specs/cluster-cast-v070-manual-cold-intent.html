@@ -18,7 +18,7 @@ html.dark{--bg:#0d0d0c;--surface:#181817;--surface2:#252522;--text:#f3f3ef;--mut
 <div class="eyebrow">Plan only · off-car · no APK authorization</div>
 <h1>Cluster Cast 0.70<br>Manual Cold Intent</h1>
 <p class="lead">Candidate tiếp theo phải hoàn thành đúng intent người dùng: <strong>chọn app → tạo cluster display an toàn → xác minh <code>IDLE_VERIFIED</code> → chiếu app</strong>. Không quay lại xe chỉ để kiểm tra một regex hoặc một nút Retry riêng lẻ.</p>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Candidate target: 0.70 (70) · Baseline: installed 0.69 blocked pre-journal · Date: 2026-07-25</p>
+<p class="meta">Owner: dangkhoi · dangkhoi · Candidate target: 0.70 (70) · Baseline: installed 0.69 blocked pre-journal · Date: 2026-07-25</p>
 </header>
 <div class="verdict"><strong>Proposed plan:</strong> sửa toàn bộ real-shape parser boundary cần cho cold-to-active path, đưa <code>COLD_PRISTINE</code> thành state UI actionable, và điều phối hai durable transaction dưới một mutation owner. Icons, floating control và boot autostart được tách khỏi candidate này. Tài liệu này không cấp quyền implement, build, install, thao tác xe, commit, push hay merge.</div>
 <div class="stats"><div class="stat"><b>1 intent</b><span>user-visible flow</span></div><div class="stat"><b>2 tx</b><span>bootstrap + cast</span></div><div class="stat"><b>1 lease</b><span>mutation owner</span></div><div class="stat"><b>3 AM users</b><span>one strict parser</span></div><div class="stat"><b>0 builds</b><span>in planning phase</span></div></div>

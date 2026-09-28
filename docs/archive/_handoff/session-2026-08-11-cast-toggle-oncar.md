@@ -1,7 +1,7 @@
 # Session handoff — 2026-08-11 (b) · Cast enable toggle + on-car UX fixes + item-3 probes
 
 > **Trạng thái:** RELEASE CANDIDATE **1.05 = `fd63d1a346cc`** đã build + off-car verify + đã cài-test 1 vòng trên xe. **CHƯA commit/push.** HEAD vẫn `d85b9f2` trên `main`, **130 file uncommitted**.
-> Owner: Đăng Khôi · dangkhoi. Tiếp nối `docs/_handoff/session-2026-08-11-v1.05-release-candidate.md`.
+> Owner: dangkhoi · dangkhoi. Tiếp nối `docs/_handoff/session-2026-08-11-v1.05-release-candidate.md`.
 > Env build: `export JAVA_HOME=/opt/homebrew/opt/openjdk@17 ANDROID_HOME=$HOME/Library/Android/sdk ANDROID_SDK_ROOT=$HOME/Library/Android/sdk`.
 > Spec: `docs/specs/cast-enable-toggle.html` (Changelog + Reviewer Log Pass 0/1/2).
 
@@ -111,7 +111,7 @@ Trên đĩa có 4 APK `1.05-v105-*` (versionCode 105). **Bản authoritative = c
    Kỳ vọng: mở app → **Cast mặc định TẮT** → cụm native + nav OEM hiện ngay (không cong/đen); thẻ Cluster Cast bên phải thu gọn; bật Cast → mới chiếu + nút nổi. Switch "Bật" (Navigation+HUD) bật/tắt lane cụm; không còn checkbox lane thừa.
 2. **(Tùy) Probe on-car** theo `docs/diagnostics/oncar-probes-2026-08-11.md`: Probe B (nav đè cast) + Probe A (speed-limit). Báo bước thắng của Probe B → agent wire opcode vào luồng cast.
 3. **Test OK → báo agent:** chạy **security scan** (bắt buộc trước push) → **commit scope A** (gom toàn bộ uncommitted thành baseline `release: v1.05 — cast toggle + notif-access + default-off/lane`) → **push**.
-   - ⚠ Merge vào `main` vẫn cần on-car PASS + owner authorization (README). Commit identity: `dangkhoi@users.noreply.github.com`.
+   - ⚠ Merge vào `main` vẫn cần on-car PASS + owner authorization (README). Commit identity: `dangkhoi`.
 4. **Nếu cần candidate gồm cả probe files** (reproducibility sạch) → rebuild §2 (regen manifest sẽ attest luôn probe).
 5. Nếu test FAIL → mô tả triệu chứng, fix theo root-cause, rebuild candidate, test lại. KHÔNG commit khi chưa PASS.
 

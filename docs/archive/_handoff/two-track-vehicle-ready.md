@@ -1,6 +1,6 @@
 # ClusterNav Two-Track Vehicle-Ready Handoff
 
-Owner: **Đăng Khôi · `dangkhoi`**  
+Owner: **dangkhoi · `dangkhoi`**  
 State: **INVALIDATED_BY_SENIOR_REVIEW — DO NOT INSTALL OR TEST**  
 Vehicle install/test/sign-off: **BLOCKED PENDING PATCH VALIDATION + NEW BUILD AUTHORIZATION**  
 Stage 12 legacy cleanup: **DEFERRED POST-SOAK**

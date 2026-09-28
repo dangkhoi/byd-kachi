@@ -1,7 +1,7 @@
 # Cluster/HUD injection — SESSION STATE (handoff for a fresh session)
 
 > Read this first. It's the 2-minute "state of play". Deep detail + evidence: `hud-cluster-injection-findings-2026-08-10.md` (§1–25; §25 = 2026-08-11 off-car verdicts on the open questions).
-> Owner: Đăng Khôi (dangkhoi). Car: BYD Seal DiLink3.0 (fw-2602), Android 10, dual-OS (`fission_single_os=0`). Test only when parked; power-cycle to clean.
+> Owner: dangkhoi. Car: BYD Seal DiLink3.0 (fw-2602), Android 10, dual-OS (`fission_single_os=0`). Test only when parked; power-cycle to clean.
 
 ## The two goals
 1. **Nav → windshield HUD** (turn-by-turn: arrow + distance + road name; NOT a full map).

@@ -96,7 +96,7 @@
   <h1>Notification-grant fix · Full docs refresh · Physical-button voice trigger</h1>
   <div class="meta">
     <span><b>Target:</b> 1.13 (versionCode 113)</span>
-    <span><b>Owner:</b> Đăng Khôi · dangkhoi</span>
+    <span><b>Owner:</b> dangkhoi · dangkhoi</span>
     <span><b>Date:</b> 2026-08-13</span>
     <span><b>Slug:</b> notif-grant-docs-voicekey-1.13</span>
   </div>
@@ -150,7 +150,7 @@
 <h3>Platform facts (confirmed this session)</h3>
 <table>
   <tbody>
-    <tr><td><b>Head unit</b></td><td>BYD Seal, DiLink 3.0, Android 10 (API 29), <b>no root</b>. Owner: Đăng Khôi.</td></tr>
+    <tr><td><b>Head unit</b></td><td>BYD Seal, DiLink 3.0, Android 10 (API 29), <b>no root</b>. Owner: dangkhoi.</td></tr>
     <tr><td><b>Current build</b></td><td>versionName <code>1.12</code> / versionCode <code>112</code> (<code>app/build.gradle.kts</code>). This spec targets <code>1.13</code> / <code>113</code>.</td></tr>
     <tr><td><b>Proven grant path</b></td><td>App bundles <code>dev.mobile:dadb:2.0.0</code> and already runs uid-shell <code>cmd notification allow_listener &lt;comp&gt;</code> over the dadb loopback (127.0.0.1:5555) in <code>NavConnect.doReconnect</code>.</td></tr>
     <tr><td><b>Existing services</b></td><td><code>NavNotificationListener</code> (BIND_NOTIFICATION_LISTENER_SERVICE) and <code>NavAccessibilityService</code> (<code>.modules.navaccess</code>, config <code>@xml/nav_accessibility_config</code>) both already declared.</td></tr>

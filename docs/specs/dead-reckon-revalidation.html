@@ -13,7 +13,7 @@ html.dark{--bg:#0d0f0e;--surface:#181b19;--surface2:#232824;--text:#f2f5f2;--mut
 </head>
 <body><div class="page">
 <div class="top"><div class="brand">ClusterNav · Evidence-led feature decision</div><button onclick="document.documentElement.classList.toggle('dark');localStorage.setItem('dr-revalidation-theme',document.documentElement.classList.contains('dark')?'dark':'light')">◐ Theme</button></div>
-<header><div class="eyebrow">Plan-only · experimental hobby feature</div><h1>GPS Dead Reckon Revalidation</h1><p class="lead">Đánh giá lại tính năng bù GPS trong hầm từ source, test, tài liệu Android và bằng chứng hiện trường; không mặc định giữ chỉ vì tính năng đã tồn tại lâu.</p><p class="meta">Owner: Đăng Khôi · dangkhoi · Source v0.67 · minSdk 29 · targetSdk 34 · 2026-07-24</p></header>
+<header><div class="eyebrow">Plan-only · experimental hobby feature</div><h1>GPS Dead Reckon Revalidation</h1><p class="lead">Đánh giá lại tính năng bù GPS trong hầm từ source, test, tài liệu Android và bằng chứng hiện trường; không mặc định giữ chỉ vì tính năng đã tồn tại lâu.</p><p class="meta">Owner: dangkhoi · dangkhoi · Source v0.67 · minSdk 29 · targetSdk 34 · 2026-07-24</p></header>
 <div class="verdict"><strong>Decision: REMOVE khỏi product baseline.</strong> Bản hiện tại không đạt cổng KEEP; đường REWORK không còn nhỏ vì cần thay state/evidence model, mock-provider gateway, speed freshness, tests và on-car protocol. Target UX không quảng bá GPS aid. Runtime chỉ được gỡ/disable sau một plan triển khai riêng được duyệt.</div>
 <div class="callout">
   <strong>Kết thúc · 2026-07-27:</strong> chủ dự án quyết <strong>bỏ hẳn</strong> — "đang fail quá, sau này

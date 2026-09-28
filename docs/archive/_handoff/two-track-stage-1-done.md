@@ -4,7 +4,7 @@
 > Stage result: **MANIFEST + PUBLIC QUARANTINE READY FOR OWNER DECISION**  
 > Spec approvals: 6/6 recorded in `two-track-spec-approvals.md`  
 > Runtime/build/install/commit/push/merge/car: **NOT AUTHORIZED**  
-> Owner: **Đăng Khôi · `dangkhoi`**
+> Owner: **dangkhoi · `dangkhoi`**
 
 ## 1. Proposed exact-source identity
 

@@ -1,6 +1,6 @@
 # Two-Track Rebaseline — Stage 2 Done
 
-Owner: Đăng Khôi · `dangkhoi`  
+Owner: dangkhoi · `dangkhoi`  
 Date: 2026-07-24  
 Authorization: `IMPLEMENTATION_AUTH stage=2 allowlist=docs/_handoff/two-track-stage-1-done.md#stage-2` plus `AUTONOMOUS_OFFCAR_APPROVED stages=2-10`  
 Approved Stage 1 baseline: `b26006ecb689974d616deb5222778639e22f283f20664abe2e80023a7f2c068e`

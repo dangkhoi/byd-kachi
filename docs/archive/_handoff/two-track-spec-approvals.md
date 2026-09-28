@@ -1,7 +1,7 @@
 # ClusterNav Two-Track — Out-of-Band Spec Approvals
 
 > Recorded: 2026-07-24T19:58:01.536+07:00  
-> Approver: Đăng Khôi · `dangkhoi`  
+> Approver: dangkhoi · `dangkhoi`  
 > Scope: the two canonical product specs only  
 > Does not authorize: runtime implementation, build, install, vehicle mutation, commit, push, merge, or release
 
@@ -20,7 +20,7 @@ Next permitted stage: Stage 1 baseline/public-document inventory. Stage 2 remain
 
 ## Owner execution amendment — 2026-07-24T23:24:11.813+07:00
 
-Approver: **Đăng Khôi · `dangkhoi`**
+Approver: **dangkhoi · `dangkhoi`**
 
 The owner explicitly replaces the per-slice implementation/build/car-stop sequence with one continuous autonomous off-car implementation tranche:
 

@@ -15,7 +15,7 @@
 
 ## 1. Dự án (1 đoạn)
 ClusterNav: app Android **no-root** trên đầu xe BYD DiLink (DL3=Android10, DL5=Android12). Hai việc chính:
-(a) **Nav-lane lên cụm** — đọc dẫn đường Google Maps (NotificationListener + accessibility) → bắn lên cụm đồng hồ, GIỮ đồng hồ gốc. (b) **Chiếu app lên cụm** — bê app (Vietmap/Waze/CP/AA…) sang virtual display (VD) của cụm qua **dadb** (ADB client thuần JVM, nối `localhost:5555`=uid shell 2000, không cần mạng). Chạy trên xe đang lăn bánh → regression = tài xế phải reboot đầu máy. Ưu tiên: **đúng > an toàn > nhanh**. Chủ dự án: **Đăng Khôi** (lái Seal DL3).
+(a) **Nav-lane lên cụm** — đọc dẫn đường Google Maps (NotificationListener + accessibility) → bắn lên cụm đồng hồ, GIỮ đồng hồ gốc. (b) **Chiếu app lên cụm** — bê app (Vietmap/Waze/CP/AA…) sang virtual display (VD) của cụm qua **dadb** (ADB client thuần JVM, nối `localhost:5555`=uid shell 2000, không cần mạng). Chạy trên xe đang lăn bánh → regression = tài xế phải reboot đầu máy. Ưu tiên: **đúng > an toàn > nhanh**. Chủ dự án: **dangkhoi** (lái Seal DL3).
 
 ---
 
@@ -27,7 +27,7 @@ ClusterNav: app Android **no-root** trên đầu xe BYD DiLink (DL3=Android10, D
 | **`debug/navprobe-clean`** | `da1acf0` (v0.60-debug) | **Track 2** — máy dò nav sạch, applicationId `.debug` | ✅ done · KHÔNG merge main (nhánh nghiên cứu độc lập) |
 | `fix/diag-flags-sizecompat` | `2484450` (v0.59) | cũ — đã thay bằng release branch | **BỎ** (không dùng nữa) |
 
-- Git author repo-local: **Đăng Khôi `<dangkhoi@users.noreply.github.com>`** (KHÔNG email công ty — repo PUBLIC). Giữ nguyên.
+- Git author repo-local: **dangkhoi** (KHÔNG email công ty — repo PUBLIC). Giữ nguyên.
 - Quy trình: mỗi việc → nhánh riêng → PR → merge. **KHÔNG commit thẳng main.**
 - `gh` CLI KHÔNG có → PR mở qua web hoặc merge tay sau khi verify.
 

@@ -1,7 +1,7 @@
 # HUD / navigation / speed-sign — T10 preparation handoff
 
 **Snapshot date:** 2026-08-10
-**Owner:** Đăng Khôi · `dangkhoi`
+**Owner:** dangkhoi · `dangkhoi`
 **Vehicle access:** **NO-GO**
 **T10 implementation:** **NOT STARTED / NOT APPROVED**
 **First Session N:** **NOT AUTHORIZED / NOT RUN**

@@ -1,6 +1,6 @@
 # ClusterNav v1.03 — Session Handoff 2026-08-05
 
-**Date:** 2026-08-05 10:55 +07 · **Owner:** Đăng Khôi · `dangkhoi`
+**Date:** 2026-08-05 10:55 +07 · **Owner:** dangkhoi · `dangkhoi`
 
 ## Session summary
 

@@ -7,7 +7,7 @@
 > features entirely (they don't work; the speed ports are `Noop` = do‑nothing; `WazeHudSource` polls
 > logcat via the dadb shell every 900 ms ≈ 4000×/hr, draining the head unit). **Keep only what works.**
 >
-> **Author:** Đăng Khôi · `dangkhoi` — 2026‑08‑15
+> **Author:** dangkhoi · `dangkhoi` — 2026‑08‑15
 
 ---
 

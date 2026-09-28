@@ -1,6 +1,6 @@
 # ON-CAR HANDOFF — verify 1.07/1.08 + probe còn lại (2026-08-12)
 
-> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: Đăng Khôi (dangkhoi).
+> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), **không root**. Chủ: dangkhoi.
 > **Đây là 1 CHỖ DUY NHẤT** cho lần lên xe tới — mở file này khi lên xe.
 > Tất cả bên dưới **parked-only** (số P, phanh tay). Dọn = **power-cycle nút nguồn vật lý** (không tính `adb reboot`).
 

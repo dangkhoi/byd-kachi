@@ -1,6 +1,6 @@
 # ClusterNav Autonomous Resume Checkpoint
 
-Owner: **Đăng Khôi · `dangkhoi`**  
+Owner: **dangkhoi · `dangkhoi`**  
 Current orchestrator state: `CONTINUE`  
 Authorized terminal state: `WAITING_FOR_VEHICLE_TEST`
 

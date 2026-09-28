@@ -41,7 +41,7 @@ html.dark{--bg:#08080a;--paper:#171719;--ink:#f5f5f7;--muted:#a1a1a6;--line:#383
 <div class="eyebrow">Consolidated requirements · design · tasks — CHỜ DUYỆT</div>
 <h1>Bỏ hết mọi nhánh đoán trạng thái cụm. Một đường duy nhất, chạy đủ mọi bước, mọi lần. Nút nổi trở thành bản đồ của cụm.</h1>
 <p class="lead">Đêm 31/7–1/8 test trên xe thật: cast lên WM đúng nhưng cụm vật lý không đổi, phải <code>pm clear</code> 5 lần mới thoát kẹt. Gốc rễ không phải một bug — là <b>một lớp bug</b>: app có nhiều đường vào (migrate / bootstrap / cold / hot), mỗi đường tin vào một giả định khác nhau, và đường bị dùng nhiều nhất lại là đường bỏ qua bước mở cụm. Spec này xoá cả lớp đó, thay bằng một chuỗi duy nhất, cộng 8 yêu cầu chủ dự án chốt ngày 01/8.</p>
-<p class="meta">Owner: Đăng Khôi · dangkhoi · Date: 2026-08-01 · Bằng chứng: đo trực tiếp trên DiLink3 (<vehicle-ip>) đêm 31/7–1/8 + 4 luồng điều tra source song song</p>
+<p class="meta">Owner: dangkhoi · dangkhoi · Date: 2026-08-01 · Bằng chứng: đo trực tiếp trên DiLink3 (<vehicle-ip>) đêm 31/7–1/8 + 4 luồng điều tra source song song</p>
 <div class="stats">
 <div class="stat"><b>8</b><span>yêu cầu chủ dự án chốt</span></div>
 <div class="stat"><b>4</b><span>bug tìm ra khi điều tra, gộp vào cùng đợt</span></div>

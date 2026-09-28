@@ -1,6 +1,6 @@
 # HANDOFF — Cluster Cast `0.72` field-execution correction (OFF-CAR EXACT-SOURCE ONLY)
 
-> **Checkpoint:** 2026-07-26 · Owner: Đăng Khôi · `dangkhoi`
+> **Checkpoint:** 2026-07-26 · Owner: dangkhoi · `dangkhoi`
 > **Why:** the 2026-07-25 vehicle run of the 0.70/0.71 source failed on every case. The architecture was sound; the executed recipe was not. `0.72` keeps the V2 architecture and restores what V1 proved on the car.
 > **Hard stop:** no APK build, install, ADB/DADB, vehicle command, commit, push or merge was performed.
 

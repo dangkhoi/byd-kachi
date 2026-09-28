@@ -1,6 +1,6 @@
 # ON-CAR HANDOFF — screenRead ground-truth fix + chuyến lái về (tinh chỉnh nội suy) · 2026-08-14 PM
 
-> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), KHÔNG root. Chủ: Đăng Khôi (`dangkhoi`).
+> Xe: BYD Seal DiLink 3.0, Android 10 (API 29), KHÔNG root. Chủ: dangkhoi.
 > **HỎI LẠI IP** mỗi phiên (hotspot đổi): `export VEH=<vehicle-ip>:5555`. ĐỪNG đoán IP.
 > Nguyên tắc: KHÔNG assume — mọi claim trace về nguồn (log/readback). Xem `.kiro/steering/no-assumptions.md`.
 > Thread này = **tinh chỉnh nội suy cự-ly-tới-rẽ (FACTOR)**, TÁCH khỏi regression "Giữa+ETA" ở `oncar-handoff-2026-08-14.md`.

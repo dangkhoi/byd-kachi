@@ -1,6 +1,6 @@
 # Two-Track Final Off-Car Closure Review
 
-Owner: **Đăng Khôi · `dangkhoi`**  
+Owner: **dangkhoi · `dangkhoi`**  
 Review date: **2026-07-25**  
 Review mode: direct source/boundary review; blocking sub-agents remained disabled per owner workflow.  
 Verdict: **OFF-CAR P1 APPROVED · WAITING FOR SEPARATE REPLACEMENT BUILD AUTHORIZATION**

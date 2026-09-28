@@ -2,7 +2,7 @@
 
 > **Trạng thái**: Historical — ma trận Stage 11 đời ClusterNav, chưa từng chạy; kiểm trên xe hiện hành theo `docs/diagnostics/oncar-runbook-2.73.md` · **Cập nhật**: 2026-07-26 · **Mục đích**: Checklist thao tác thử trên xe + ma trận Stage 11 (execution NOT STARTED).
 
-Owner: **Đăng Khôi · `dangkhoi`**  
+Owner: **dangkhoi · `dangkhoi`**  
 Current state: **OFF-CAR 0.72 FIELD-EXECUTION CORRECTION CLOSED — WAITING FOR SEPARATE BUILD AUTHORIZATION**
 Candidate source: `0.72 (72)`, exact-source ID `12b532429f9523f521145dc594d02c1793342d0f49a0c0ac6f1f5c0c98bb94e9`  
 Vehicle execution state: **NOT STARTED — PROHIBITED FOR INVALIDATED SHA `1b9c016273296454c9fd0ac88bb51dd8c7447b8b7d60b113d689eb7eb9d6b184`**

@@ -1,6 +1,6 @@
 # ClusterNav v1.03 — Implementation Handoff
 
-**Date:** 2026-08-04 17:34 +07 · **Owner:** Đăng Khôi · `dangkhoi`
+**Date:** 2026-08-04 17:34 +07 · **Owner:** dangkhoi · `dangkhoi`
 
 ## Approved spec
 

@@ -1,6 +1,6 @@
 # ClusterNav Two-Track Senior Review Verdict
 
-Owner: **Đăng Khôi · `dangkhoi`**  
+Owner: **dangkhoi · `dangkhoi`**  
 Verdict: **BLOCKED / INCOMPLETE — DO NOT INSTALL OR VEHICLE-TEST**  
 Orchestrator: **PAUSED**
 

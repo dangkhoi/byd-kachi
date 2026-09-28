@@ -1,7 +1,7 @@
 # KỊCH BẢN LÊN XE — Gộp các probe "làm mò" chưa test (2026-08-11)
 
 > Xe: BYD Seal DiLink 3.0 (fw-2602), Android 10, dual-OS (`fission_single_os=0`), **không root**.
-> Chủ: Đăng Khôi (dangkhoi). **Đây là 1 CHỖ DUY NHẤT** cho các thí nghiệm on-car chưa chạy — mở file này khi lên xe.
+> Chủ: dangkhoi. **Đây là 1 CHỖ DUY NHẤT** cho các thí nghiệm on-car chưa chạy — mở file này khi lên xe.
 > Cả hai probe đều **parked-only, chưa từng test trên xe**, dọn bằng **power-cycle nút nguồn vật lý**.
 
 Hai probe độc lập, làm cái nào trước cũng được:

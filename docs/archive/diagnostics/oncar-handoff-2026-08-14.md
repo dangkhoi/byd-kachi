@@ -1,6 +1,6 @@
 # ON-CAR HANDOFF — Khôi phục cụm "Đơn giản (Giữa + ETA)" (regression sau reboot) · 2026-08-14
 
-> Xe: BYD Seal DiLink 3.0, Android **10** (API 29), **KHÔNG root**. Chủ: Đăng Khôi (`dangkhoi`).
+> Xe: BYD Seal DiLink 3.0, Android **10** (API 29), **KHÔNG root**. Chủ: dangkhoi.
 > **1 CHỖ DUY NHẤT** cho phiên tới. **Parked-only** (số P + phanh tay). Dọn = **power-cycle nút nguồn vật lý** (KHÔNG tính `adb reboot`).
 > **HỎI LẠI IP** mỗi phiên (hotspot đổi): `export VEH=<vehicle-ip>:5555`. **ĐỪNG đoán IP.**
 > **Nguyên tắc (bắt buộc):** KHÔNG assume — mọi map value↔menu phải **readback trên xe**; mỗi claim trace về nguồn. Xem `.kiro/steering/no-assumptions.md`.
