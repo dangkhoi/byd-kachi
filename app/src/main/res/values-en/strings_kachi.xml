@@ -265,7 +265,8 @@
     <string name="kachi_bridge_deep_rescue_running">Deep-cleaning cluster…</string>
     <string name="kachi_bridge_enabling_accessibility">Enabling accessibility service…</string>
     <string name="kachi_bridge_accessibility_enabled">Enabled. Press the mapped button to open the app.</string>
-    <string name="kachi_bridge_accessibility_not_bound">Accessibility granted but the service isn\'t bound yet (car under load) — retry in a few seconds, or toggle it in system Settings > Accessibility.</string>
+    <string name="kachi_bridge_accessibility_not_bound">Accessibility granted but the service isn\'t bound yet — retry in a few seconds, or toggle it in system Settings > Accessibility.</string>
+    <string name="kachi_bridge_accessibility_restarting">The key binding is stuck at the system level. Repairing now: the interface restarts once and the keys come back — an app open in a slot has to redraw (tap the slot to bring it back).</string>
     <string name="kachi_bridge_accessibility_failed">Couldn\'t enable accessibility — tap Allow USB debugging on the car and retry, or enable it in Settings > Accessibility.</string>
     <string name="kachi_bridge_checking">Checking…</string>
     <string name="kachi_bridge_voice_key_ready">Voice key ready.</string>
@@ -677,6 +678,14 @@
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
     <string name="kachi_camera_rot_180">180°</string>
+    <string name="kachi_camera_view_sub">If the camera does not show — try each number, the image appears right away. Which number is which camera is unknown.</string>
+    <string name="kachi_camera_view_row_left">Left signal: try camera no.</string>
+    <string name="kachi_camera_view_row_right">Right signal: try camera no.</string>
+    <string name="kachi_camera_pano_sub">Strip inside the stitched frame — 1 rear · 2 left · 3 right · 4 front (measured on the car)</string>
+    <string name="kachi_camera_pano_row_left">Left signal: strip</string>
+    <string name="kachi_camera_pano_row_right">Right signal: strip</string>
+    <string name="kachi_camera_pano_auto">Auto</string>
+    <string name="kachi_camera_pano_none">Whole frame</string>
     <string name="kachi_camera_mirror_sub">Mirror camera video per side (if the picture is the wrong way round compared with the glass mirror)</string>
     <string name="kachi_camera_mirror_row_left">Left signal: mirror video</string>
     <string name="kachi_camera_mirror_row_right">Right signal: mirror video</string>

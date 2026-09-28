@@ -49,6 +49,59 @@ object CameraPanoCrop {
     /** Bề rộng vệt HẸP của 2.73: `0.10` bề ngang ảnh = 40 % một dải [ĐO kinex `Y0/C0094o.java:70,73`]. */
     const val NARROW_SPAN = 0.10
 
+    /**
+     * Cỡ khung ẢNH GHÉP 4-trong-1 [ĐO xe 2026-09-27, hai PNG khung thô 5120×960] — cũng là hai số mà hai góc
+     * Gương đang khai sẵn. Dùng làm **gợi ý cỡ nguồn** khi người lái bảo "nguồn này là ảnh ghép": thiếu nó thì
+     * cửa sổ không biết tỉ lệ khung nên trên màn chính vùng cấp là một ô VUÔNG ⇒ khung bẹt bị kéo bẹp.
+     */
+    const val PANO_W = 5120
+
+    /** Xem [PANO_W]. */
+    const val PANO_H = 960
+
+    /** Lựa chọn "để máy tự theo bên" — dải 1 cho trái, dải 2 cho phải. */
+    const val PANO_AUTO = "AUTO"
+
+    /** Lựa chọn "nguyên khung" — đường thoát khi một số camera hoá ra là camera ĐƠN, cắt vào là hỏng. */
+    const val PANO_NONE = "NONE"
+
+    /** Mọi lựa chọn dải cho một bên — cũng là thứ tự chip trong Cài đặt. */
+    val PANO_MODES: List<String> = listOf(PANO_AUTO, PANO_NONE) + (STRIP_MIN..STRIP_MAX).map { it.toString() }
+
+    /** Giá trị đọc lên có dùng được không (prefs sửa tay được qua `prefs_set`). */
+    fun isPanoMode(v: String?): Boolean = v != null && PANO_MODES.any { it.equals(v.trim(), ignoreCase = true) }
+
+    /**
+     * Dải sẽ cắt cho lượt hiện này, hay `null` = **không coi nguồn là ảnh ghép** (giữ y hệt hành vi cũ).
+     *
+     * Vì sao cần — [ĐO xe 2026-09-28, ảnh khung thô owner chụp trên Sealion 6] chọn một số camera khác hai góc
+     * Gương thì CÓ hình, nhưng ra nguyên khung ghép 4 dải. Gốc: [cropFor] mở đầu bằng `view.crop`, mà chỉ hai
+     * góc Gương mang sẵn rect ⇒ sáu góc kia rơi vào nhánh "nguyên khung" với MỌI tổ hợp dải/bề rộng/hình khung.
+     *
+     * Hai góc Gương **không đi qua đây** (`view.crop != null` ⇒ `null`): đường của chúng đang chạy tốt ngoài
+     * hiện trường, không được đụng (CLAUDE.md §6).
+     *
+     * Mặc định [PANO_AUTO] an toàn vì sáu góc kia **chưa từng mở được** trước 2.80 (controller luôn dùng
+     * `defaultView`), nên không có hành vi hiện trường nào để làm hỏng; và vì bố cục dải đã đo là NHƯ NHAU trên
+     * hai đời xe: [ĐO Seal 27/09 + ĐO SL6 28/09] dải 0 = sau · **1 = TRÁI** · **2 = PHẢI** · 3 = trước ⇒
+     * [defaultStrip] đúng cho cả hai, không cần rẽ nhánh theo dòng xe (CLAUDE.md §7).
+     */
+    fun panoStripFor(view: CamView, mode: String?, left: Boolean): Int? {
+        if (view.crop != null) return null
+        val m = mode?.trim().orEmpty()
+        return when {
+            m.equals(PANO_NONE, ignoreCase = true) -> null
+            m.equals(PANO_AUTO, ignoreCase = true) || m.isEmpty() -> defaultStrip(left)
+            else -> m.toIntOrNull()?.takeIf { isStrip(it) } ?: defaultStrip(left)
+        }
+    }
+
+    /** Cỡ ảnh nguồn báo cho tầng vẽ: ảnh ghép ⇒ [PANO_W]×[PANO_H]; còn lại ⇒ gợi ý của chính góc (có thể là 0). */
+    fun streamW(view: CamView, panoStrip: Int?): Int = if (panoStrip != null) PANO_W else view.hintW
+
+    /** Xem [streamW]. */
+    fun streamH(view: CamView, panoStrip: Int?): Int = if (panoStrip != null) PANO_H else view.hintH
+
     /** Dải chứa vệt của 2.73: bên TRÁI dùng dải 1 (`[0.25, 0.50)`), bên PHẢI dải 2 (`[0.50, 0.75)`). */
     fun defaultStrip(left: Boolean): Int = if (left) 1 else 2
 
@@ -83,17 +136,25 @@ object CameraPanoCrop {
         span: String,
         shape: String,
         circlePct: Int,
+        panoStrip: Int? = null,
     ): FloatArray? {
-        val base = view.crop
+        // Góc đã mang rect dựng sẵn (hai góc Gương) thì BỎ QUA dải truyền vào — không chỉ ở chỗ chọn rect mà ở
+        // MỌI chỗ dùng `s`. Bỏ sót vế sau thì một lượt gọi lỡ truyền dải khác sẽ lặng lẽ đổi vùng cắt của Seal.
+        val pano = if (view.crop != null) null else panoStrip?.takeIf { isStrip(it) }
+        val base = view.crop ?: pano?.let { stripCrop(it) }
         // "Theo cụm" = cửa sổ khác, crop như chữ nhật (KDoc trên) — quy về RECT trước mọi phép so.
         val effective = CameraClusterBand.effectiveShape(shape, onCluster = false)
         val round = (if (CameraSignalPolicy.isShape(effective)) effective else CameraSignalPolicy.defaultShape()) ==
             CameraSignalPolicy.SHAPE_ROUND
-        val s = if (isStrip(strip)) strip else defaultStrip(left)
+        val s = pano ?: if (isStrip(strip)) strip else defaultStrip(left)
         val pct = if (CameraSignalPolicy.isCirclePct(circlePct)) circlePct else CameraSignalPolicy.CIRCLE_PCT_DEFAULT
         val wide = if (CameraSignalPolicy.isSpan(span)) span else CameraSignalPolicy.defaultSpan()
         // Tỉ lệ cao/rộng của ẢNH NGUỒN — chỉ hai view GƯƠNG có gợi ý (5120×960 ⇒ 0.1875). `0` = chưa biết.
-        val ratio = if (view.hintW > 0 && view.hintH > 0) view.hintH.toDouble() / view.hintW else 0.0
+        val ratio = when {
+            pano != null -> PANO_H.toDouble() / PANO_W
+            view.hintW > 0 && view.hintH > 0 -> view.hintH.toDouble() / view.hintW
+            else -> 0.0
+        }
         return when {
             // Không phải view dải pano và không cần cắt vuông ⇒ y 2.73: nguyên khung.
             base == null && !round -> null

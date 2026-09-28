@@ -173,4 +173,41 @@ object StackParse {
     fun floatingOnMain(entries: List<StackEntry>): List<StackEntry> =
         entries.filter { it.displayId == 0 && it.isStandard && !it.isPinned && it.isFreeform }
             .distinctBy { it.stackId }
+
+    /**
+     * KHÔNG có app khách nào đang hiện ở chỗ mà việc GIẾT TIẾN TRÌNH NÀY sẽ làm hỏng — cổng của nấc chữa đắt
+     * nhất ([com.byd.clusternav.modules.navaccess.AccessibilityHealGates.healStep] → `FORCE_STOP`).
+     *
+     * ## Hai chỗ phải xét, và vì sao đúng hai chỗ đó
+     * [ĐO xe 2026-09-28] giết launcher lúc một Ô đang chứa YouTube ⇒ **màn ảo của ô chết theo tiến trình**, cửa
+     * sổ app khách sống sót rơi lại màn chính, nằm trên cùng z-order và vẽ **đen kịt phủ hết nhà** tới khi mở
+     * lại app đó. Nguồn hại là vòng đời màn ảo, nên phạm vi cổng phải bám đúng chủ sở hữu màn ảo:
+     *  1. **Display 0** — app khách đang hiện trước mặt người lái (dù không sinh cửa sổ mồ côi, nhà vẫn dựng
+     *     lại phía sau lưng họ). Cổng đóng.
+     *  2. **Màn ảo DO CHÍNH MÌNH tạo** ([ownVirtualDisplays] — các ô `kachi-slot-N`, đọc bằng
+     *     [DisplayParse.ownedVirtualDisplayIds] từ `dumpsys display`): chết theo tiến trình ⇒ đúng ca sinh mảng
+     *     đen. Cổng đóng.
+     *
+     * ## ⚠ ĐÍNH CHÍNH (soát senior 2026-09-28) — "display ≥ 1 là cụm nên không tính" là QUY KẾT SAI
+     * Bản đầu bỏ qua MỌI display ≥ 1 với lý lẽ "cụm tự dựng lại". [ĐO xe 2026-09-15, KDoc
+     * [DisplayParse.ownedVirtualDisplayIds] + `ClusterDisplayResolver`]: sau reboot **display 1 = `kachi-slot-0`
+     * (màn ảo của CHÍNH launcher)**, còn cụm là **display 2** (`fission_bg_xdjaVirtualSurface`, chủ
+     * `com.xdja.containerservice`); [ĐO xe 2026-09-18] GMaps trong một Ô nằm ở **display 5**. Tức là dải
+     * display ≥ 1 chứa ĐÚNG những màn ảo sẽ chết cùng ta — lọc bỏ cả dải là lọc bỏ chính ca đã đo được. Cụm thì
+     * KHÔNG do ta tạo nên không nằm trong [ownVirtualDisplays] ⇒ tự động được miễn, đúng [ĐO] "màn cụm không
+     * hề hấn" — miễn theo SỰ THẬT về chủ sở hữu, không theo một id đoán trước (CLAUDE.md §7).
+     *
+     * Đo bằng SỰ THẬT của hệ (`am stack list` + `dumpsys display`) chứ không bằng cờ RAM về ô/cast
+     * (CLAUDE.md §5). FAIL-CLOSED hai lần: [entries] rỗng (không đọc được `am stack list`) hoặc
+     * [ownVirtualDisplays] `null` (không đọc được `dumpsys display`) ⇒ `false` = "không khẳng định được là
+     * sạch" ⇒ cổng ĐÓNG. Không bao giờ giết tiến trình dựa trên một bản đọc hỏng.
+     */
+    fun noGuestAppVisible(entries: List<StackEntry>, selfPkg: String, ownVirtualDisplays: Set<Int>?): Boolean {
+        if (entries.isEmpty() || ownVirtualDisplays == null || selfPkg.isBlank()) return false
+        return entries.none { e ->
+            e.visible && e.pkg != selfPkg && (e.displayId == MAIN_DISPLAY || e.displayId in ownVirtualDisplays)
+        }
+    }
+
+    private const val MAIN_DISPLAY = 0
 }

@@ -4,10 +4,11 @@ import android.content.Context
 import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
+import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
 /**
- * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng, đúng 10 hàng người lái (2.77) ══════════════════════════════
+ * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng, đúng 14 hàng người lái (2.81) ══════════════════════════════
  *
  * Tách khỏi [SettingsCarSection] ở 2.76. Danh sách hàng là hợp đồng THUẦN ở `:core` `CameraSettingsIa` — tệp này chỉ
  * **dựng hàng theo đúng danh sách ấy**, và bài canh so hai bên.
@@ -17,7 +18,8 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
  * cảnh khung ghép rồi"* · *"bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật"*.
  *
  * ⇒ 2.76 có hai tầng (người lái + khối gập *"Nâng cao (kỹ thuật)"* sau cổng chế độ kiểm thử) và một hàng *Nguồn*.
- * 2.77 **gỡ cả khối gập lẫn hàng Nguồn**. Còn lại **đúng 10 hàng**: bật khi xi-nhan · hiện lên cụm · góc hiện
+ * 2.81 thêm khối *Nếu camera không hiện*: **thử camera số** và **dải hình**, mỗi thứ hai bên (+4 hàng ⇒ **14**).
+ * 2.77 **gỡ cả khối gập lẫn hàng Nguồn**. Còn lại 10 hàng: bật khi xi-nhan · hiện lên cụm · góc hiện
  * trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn hình bật-tắt. Đổi số ⇒ đổi
  * `CameraSettingsIa.USER_KEYS` + doc `camera-ia-profile.md` §IA + dòng CAM-F1 của runbook (owner **ĐẾM** hàng ấy).
  *
@@ -91,6 +93,44 @@ class SettingsCameraSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_rot_row_right), rotations, bridge.cameraRotRight(),
         ) { v -> bridge.setCameraRotation(left = false, v = v) })
+        // GÓC NHÌN từng bên — khối *Nếu camera không hiện* (owner 2026-09-28, trên SL6: *"không mở được cam
+        // phải (cam trái ok)… cho chọn lại cam trong setting để user chọn cam nếu cam không hiện"*). Mỗi góc
+        // mang cả lệnh xuất hình lẫn camera id, mà cặp đúng khác nhau theo đời xe và chưa đo hết ⇒ để người lái
+        // dò (CLAUDE.md §7: không rải `if` theo tên dòng xe). Chọn chip là hình bật lên ngay, không phải ra
+        // đường bật xi-nhan mới biết.
+        // NHÃN = SỐ THỨ TỰ, CỐ Ý KHÔNG ĐẶT TÊN CAMERA. Owner 2026-09-28: *"các label mình để nó cũng ko
+        // chuẩn đâu, nên để ID 0-1-2-3-4-5 gì đi, vì mình cũng đâu có biết là nó cam nào đâu mà phán cho
+        // người ta"*. Đúng CLAUDE.md §2: chưa đo thì KHÔNG được nói như đã chứng minh. Tên cũ (Trước-trái,
+        // Sau-phải…) là suy từ tên hằng trong enum, chưa một lần nào được đối chiếu với camera thật trên xe
+        // ⇒ đặt tên như thế là chỉ đường SAI cho người đang dò.
+        //
+        // Số hiển thị lấy theo VỊ TRÍ trong [CameraSignalPolicy.VIEWS_ALL] (1-based cho dễ đọc), còn giá trị
+        // LƯU vẫn là tên hằng ⇒ prefs/log vẫn tra được. `CameraViewRowContractTest` khoá THỨ TỰ enum để con số
+        // người lái báo về không bao giờ trỏ sang góc khác sau một lần sửa mã.
+        val views = CameraSignalPolicy.VIEWS_ALL.mapIndexed { i, v -> v.name to (i + 1).toString() }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_view_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_view_row_left), views, bridge.cameraViewLeft(),
+        ) { v -> bridge.setCameraView(left = true, v = v) })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_view_row_right), views, bridge.cameraViewRight(),
+        ) { v -> bridge.setCameraView(left = false, v = v) })
+        // DẢI HÌNH từng bên. Khung ghép 4 dải; nhãn 1–4 là THỨ TỰ ĐỌC, ánh xạ sang chỉ số dải 0–3.
+        // [ĐO owner 2026-09-28, ảnh khung thô SL6] thứ tự là `sau · trái · phải · trước`; [ĐO Seal 27/09] dải
+        // trái/phải nằm đúng vị trí 2 và 3 ⇒ hai đời xe cùng bố cục, nhãn này nói được sự thật chứ không phán.
+        // *Tự động* = theo bên (trái lấy dải 2, phải lấy dải 3). *Nguyên khung* = đường thoát nếu một số camera
+        // hoá ra là camera ĐƠN — cắt vào là hỏng hình đang đúng.
+        val panos = listOf(
+            CameraPanoCrop.PANO_AUTO to context.getString(R.string.kachi_camera_pano_auto),
+            CameraPanoCrop.PANO_NONE to context.getString(R.string.kachi_camera_pano_none),
+        ) + (CameraPanoCrop.STRIP_MIN..CameraPanoCrop.STRIP_MAX).map { it.toString() to (it + 1).toString() }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pano_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_pano_row_left), panos, bridge.cameraPanoLeft(),
+        ) { v -> bridge.setCameraPano(left = true, v = v) })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_pano_row_right), panos, bridge.cameraPanoRight(),
+        ) { v -> bridge.setCameraPano(left = false, v = v) })
         // LẬT GƯƠNG từng bên (2.76 L7, research §6.2): tay gương của ảnh HAL [CHƯA BIẾT] tới CAM-M1 ⇒ mặc định TẮT,
         // người lái bật khi ảnh ngược tay so với gương kính. Hai ô tích, cùng khuôn hai hàng xoay ở trên.
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_mirror_sub)))

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tự chữa trạng thái KẸT binding dịch vụ Hỗ trợ (phím vô-lăng chết) — Kachi</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file / 1 tính năng.
+  Thứ tự section CỐ ĐỊNH: Changelog · Context · Requirements · Design · Tasks · Verification ·
+  Open Questions · References · Reviewer Log.
+  Ba cổng duyệt (Requirements/Design/Tasks) duyệt NGOÀI tài liệu — KHÔNG lưu trạng thái duyệt ở đây.
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md §3.1).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:5px;border:1px solid var(--line);background:var(--card);color:var(--muted);white-space:nowrap}
+.ev.m{color:var(--ok);border-color:transparent;background:rgba(26,127,55,.12)}
+.ev.s{color:var(--accent);border-color:transparent;background:rgba(0,113,227,.12)}
+.ev.g{color:var(--warn);border-color:transparent;background:rgba(191,95,0,.12)}
+.ev.u{color:var(--muted)}
+
+/* ---- Diagram helpers (CLAUDE.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{border-color:var(--accent);background:rgba(0,113,227,.10)}
+.layer .node.bad{border-color:var(--warn);background:rgba(191,95,0,.10)}
+.lname{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* SVG primitives — mọi fill/stroke đi qua CSS var để sáng/tối đều đọc được */
+svg .bx{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .bx-new{fill:rgba(0,113,227,.12);stroke:var(--accent);stroke-width:1.5}
+svg .bx-bad{fill:rgba(191,95,0,.14);stroke:var(--warn);stroke-width:1.5}
+svg .bx-ok{fill:rgba(26,127,55,.14);stroke:var(--ok);stroke-width:1.5}
+svg .t{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:13px;font-weight:650}
+svg .ts{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px}
+svg .tm{fill:var(--fg);font-family:"SF Mono",ui-monospace,monospace;font-size:10.5px}
+svg .lbl{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px}
+svg .ln{stroke:var(--accent);stroke-width:1.6;fill:none}
+svg .ln-bad{stroke:var(--warn);stroke-width:1.6;fill:none}
+svg .ln-ok{stroke:var(--ok);stroke-width:1.6;fill:none}
+svg .mk-acc{fill:var(--accent)}svg .mk-bad{fill:var(--warn)}svg .mk-ok{fill:var(--ok)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Tự chữa trạng thái KẸT binding dịch vụ Hỗ trợ</h1>
+<p class="muted">Slug <code>kachi-a11y-bind-stuck-autofix</code> · Chủ sở hữu <b>dangkhoi</b> · Ngày <b>2026-09-28</b> · Nhánh <code>feat/voice-hotword-phrases</code></p>
+<p class="muted">Phạm vi phiên bản: triệu chứng đo trên <b>2.79 (180)</b>; bản vá <b>đã ship trong 2.81 (182)</b> (2.80 (181) dựng trước lượt soát nên đã bị <b>rút và xoá</b> khỏi <code>apk/</code>) — <b>chưa đăng OTA</b>. Ba cổng duyệt (Requirements · Design · Tasks) duyệt <b>ngoài tài liệu</b> — trạng thái duyệt KHÔNG lưu trong file này.</p>
+<p class="muted">Nhãn mức bằng chứng dùng xuyên tài liệu theo <code>.kiro/steering/conversation-protocol.md</code> P1:
+<span class="ev m">[ĐO]</span> có output thật ·
+<span class="ev s">[SUY]</span> suy từ source đã đọc ·
+<span class="ev g">[ĐOÁN]</span> mới chỉ hợp lý ·
+<span class="ev u">[CHƯA BIẾT]</span> không có dữ liệu.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2 — 2026-09-28</b>: <b>ĐỐI CHIẾU SPEC VỚI MÃ ĐÃ SHIP (2.81).</b> Lượt soát kiến trúc sư tìm ra spec nói khác mã ở <b>ba</b> chỗ, và <b>mã đúng hơn</b> (nó mang thêm hai phép đo mà Pass 1 chưa có). Sửa theo mã: §4.6 (một <b>đợt ngủ dài ≥ 2 giờ nhả lại quota</b> leo thang — không phải “xoá mốc không trả quota”) · R4 + §4.7 + §4.8 (bấm tay = <b>cảnh báo rồi vẫn chạy</b>, không phải “để chủ xe chọn”; đường TỰ ĐỘNG mới là đường từ chối khi ô đang có app khách) · §4.8 (câu thứ ba “cổng đã đóng” <b>không được làm</b> và <b>không thể tới được</b>) · §4.4 (sơ đồ cổng vẽ lại cho đúng) · §5.2 (trạng thái + <b>tên tệp thật</b>: không có <code>AccessibilityEscalationGate.kt</code> / <code>AccessibilityEscalationWiringContractTest.kt</code> nào được tạo) · §6.1. Chi tiết ở §9 Pass 2.</li>
+<li><b>Pass 1 — 2026-09-28</b>: <b>ĐÍNH CHÍNH GỐC BỆNH.</b> Pass 0 quy ngòi nổ cho <i>“lượt bind sau OTA thua cuộc đua”</i> — <b>sai</b>. Chủ xe (dangkhoi) đính chính bằng quan sát <b>lặp lại nhiều lần</b>: cài bản mới thì chạy tốt, <b>để xe qua đêm, sáng bật lên mới kẹt</b>. Gốc thật là <code>serviceDisconnectedLocked</code> <b>park ngược</b> component vào <code>mBindingServices</code> khi một bind đang tốt bị đứt, và AOSP chỉ tính đường dọn cho ca thay gói. Đổi theo: §2.1, §2.2, §4.1 (sơ đồ trạng thái), §4.2 (thêm 3 trích dẫn), §4.3 (viết lại hoàn toàn), R2 (đổi <b>thời điểm</b> chữa sang lúc xe thức), R4 (nhẹ hẳn + chốt phát hiện muộn), R6 (rút lại, hạ xuống [ĐOÁN]), <b>R7 mới</b> (nhật ký bền), §5 Tasks, §6, §7, §8, §9.</li>
+<li><b>Pass 0 — 2026-09-28</b>: Khởi tạo spec sau phiên đo trên xe 09:45–10:05. Phím vô-lăng chết từ lúc cài 2.79 (23:04 hôm trước); nút <i>“Kiểm tra / Sửa ngay”</i> báo “xe đang tải cao” mỗi lần và không bao giờ chữa được. Đo ra nguyên nhân là mục của app <b>kẹt trong <code>Binding services</code></b> của framework, và đường toggle hiện có <b>không thể</b> gỡ trạng thái đó.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Triệu chứng người dùng thấy</h3>
+<p><span class="ev m">[ĐO]</span> Trên xe (BYD Seal, DiLink 3.0, Android 10, Kachi 2.79 versionCode 180): <b>mọi</b> gán phím vô-lăng chết — phím giữ-mic (keycode 328 → Kachi) lẫn phím núm xoay (keycode 305 → trợ lý bên thứ ba) đều không phản ứng. Nút <i>“Kiểm tra / Sửa ngay”</i> trong app trả đúng một câu mỗi lần: <i>“Đã bật quyền Hỗ trợ nhưng dịch vụ chưa gắn được (xe đang tải cao)”</i>, và không lần nào chữa được.</p>
+<p><span class="ev m">[ĐO]</span> <code>pm dump</code> cho <code>lastUpdateTime=2026-09-27 23:04:25</code> — đúng lúc cài OTA 2.79. Phím chết tới khi chữa tay sáng hôm sau.</p>
+
+<div class="card">
+<p><b>Quan sát của chủ xe — lặp lại nhiều lần, là ngòi nổ THẬT</b> <span class="ev m">[ĐO]</span></p>
+<p>Nguyên văn: <i>“khi cài mới, như 2.79 vào, nó OK, chỉ là để xe qua đêm, sáng lên chạy, thì nó mới hang, kẹt, và hầu hết các lần trước kẹt đều do cái này”.</i></p>
+<p>⇒ Hình dạng ngòi nổ là: <b>cài mới → chạy tốt</b>; <b>để xe qua đêm → sáng bật lên → kẹt</b>. Đây là quan sát trực tiếp, lặp lại qua nhiều lần, nên nó <b>ưu tiên cao hơn</b> mọi suy luận rút từ một mốc thời gian đơn lẻ (<code>lastUpdateTime</code>). Pass 0 của spec này đã quy sai cho lần OTA — xem §4.3 để biết cơ chế đúng.</p>
+</div>
+
+<h3>2.2 Đo được gì trên xe (2026-09-28, ~09:45–10:05)</h3>
+<table>
+<tr><th>Quan sát</th><th>Kết quả</th></tr>
+<tr><td><code>settings get secure enabled_accessibility_services</code></td><td><span class="ev m">[ĐO]</span> CÓ chứa <code>com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService</code>; <code>accessibility_enabled</code> = <code>1</code>.</td></tr>
+<tr><td><code>dumpsys accessibility</code></td><td><span class="ev m">[ĐO]</span> mục của app có trong <code>Enabled services:</code> <b>VÀ</b> trong <code>Binding services:</code>, <b>KHÔNG</b> có trong <code>Bound services:</code>. <code>installedServiceCount=3</code>.</td></tr>
+<tr><td><code>dumpsys activity services com.byd.launcher</code></td><td><span class="ev m">[ĐO]</span> KHÔNG còn <code>ServiceRecord</code> nào cho <code>NavAccessibilityService</code>, nhưng có <b>NĂM</b> <code>ConnectionRecord{… CR FGSA DEAD …NavAccessibilityService…}</code> mồ côi, tất cả do tiến trình khách <code>system</code> (pid 597) giữ.</td></tr>
+<tr><td>Đối chứng: NotificationListenerService của chính app</td><td><span class="ev m">[ĐO]</span> bound bình thường từ <code>system</code> cùng thời điểm (<code>received=true hasBound=true</code>) ⇒ đường bind system→app nói chung <b>vẫn khoẻ</b>; hỏng riêng mục accessibility.</td></tr>
+<tr><td>Gỡ mục khỏi <code>enabled_accessibility_services</code></td><td><span class="ev m">[ĐO]</span> mục trong <code>Binding services:</code> <b>VẪN CÒN NGUYÊN</b>. Đo trực tiếp, không suy luận.</td></tr>
+<tr><td>Tuổi tiến trình launcher</td><td><span class="ev m">[ĐO]</span> sống liên tục ~10 giờ 13 phút — <b>không</b> đang bị giết đi giết lại lúc đó.</td></tr>
+<tr><td><code>cmd -l</code> / <code>cmd accessibility</code></td><td><span class="ev m">[ĐO]</span> có dịch vụ shell <code>accessibility</code>, nhưng chỉ phơi <code>get-bind-instant-service-allowed</code> và <code>set-bind-instant-service-allowed</code>. <b>Không có</b> lệnh reset/rebind.</td></tr>
+</table>
+
+<div class="card">
+<p><b>Tổ hợp quyết định — dấu vân tay của “bị hạ trong khi vẫn sống”</b></p>
+<ul>
+<li><span class="ev m">[ĐO]</span> Tiến trình <code>com.byd.launcher</code> sống <b>LIÊN TỤC 10 g 13 ph qua đêm</b>: không chết, <b>không có PID mới</b>. Đầu máy <b>không</b> reboot buổi sáng.</li>
+<li><span class="ev m">[ĐO]</span> <b>Nhưng</b> <code>dumpsys activity services com.byd.launcher</code> <b>không còn</b> <code>ServiceRecord</code> nào cho <code>NavAccessibilityService</code>.</li>
+<li>⇒ <span class="ev m">[ĐO]</span> (tổ hợp trạng thái) <code>ServiceRecord</code> đã <b>bị hạ xuống TRONG KHI tiến trình vẫn sống</b>. Đó đúng là dấu vân tay của <code>ActiveServices.bringDownServiceLocked</code> chạy trên một tiến trình <b>còn sống</b> — <b>không</b> phải crash, <b>không</b> phải tiến trình bị giết.</li>
+<li><span class="ev s">[SUY]</span> Việc nó xảy ra <b>lúc máy ngủ sâu</b> qua đêm: khớp hoàn hảo với quan sát của chủ xe, nhưng <b>chưa bắt được khoảnh khắc</b> ⇒ ở mức suy luận, chưa phải đo. R7 (§3) là cách chốt.</li>
+<li><span class="ev m">[ĐO]</span> Chú thích sẵn có trong <code>NavConnect.kt:158</code> từ trước đã nghi ROM BYD <b>thả bind</b> (<code>ssc_skip</code>) — nay khớp với tổ hợp trên.</li>
+<li><span class="ev m">[ĐO]</span> Đối chứng ngược: đúng thời điểm đó NotificationListenerService của chính app vẫn bound bình thường ⇒ không phải cả tiến trình bị hệ cắt hết mối nối, mà <b>riêng</b> mối nối accessibility bị hạ.</li>
+</ul>
+<p><b>Năm <code>ConnectionRecord … DEAD</code> mồ côi — diễn giải lại:</b> khớp với <b>năm vòng đứt-rồi-park</b>, <b>KHÔNG</b> phải năm vòng cài đè như Pass 0 đã đoán.</p>
+</div>
+
+<h3>2.3 Cách chữa được — đo tách làm hai bước</h3>
+<table>
+<tr><th>Bước</th><th>Kết quả đo</th></tr>
+<tr><td>1 · <code>am force-stop com.byd.launcher</code> (chỉ bước này)</td><td><span class="ev m">[ĐO]</span> <code>Binding services:{}</code> ngay lập tức, <b>và</b> hệ thống tự xoá mục khỏi <code>enabled_accessibility_services</code> (ghi bền xuống settings).</td></tr>
+<tr><td>2 · ghi lại setting với mục được thêm vào cuối</td><td><span class="ev m">[ĐO]</span> trong vài giây logcat hiện <code>NavAccess: accessibility booster connected</code>, xuất hiện <code>ServiceRecord</code> thật với <code>received=true hasBound=true</code>, và <code>ConnectionRecord</code> mới <b>không</b> còn cờ <code>DEAD</code>.</td></tr>
+</table>
+<div class="card"><b>Tác dụng phụ đo được của cách chữa</b> — <span class="ev m">[ĐO]</span> giết launcher làm <b>huỷ các màn hình ảo</b> đang chứa cửa sổ của các ô; một cửa sổ YouTube đang được nó host <b>sống sót thành cửa sổ mồ côi</b> trên màn chính, nằm trên cùng z-order, phủ <b>đen kịt</b> toàn màn hình nhà. Mở lại activity của chính app đó thì nó vẽ lại bình thường. Màn cụm <b>không</b> bị ảnh hưởng.</div>
+
+<h3>2.4 Đã có sẵn gì trong repo</h3>
+<ul>
+<li><span class="ev m">[ĐO]</span> <code>docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md</code> đã ghi <b>đúng</b> trạng thái kẹt này sau khi tiến trình launcher chết vì Piper TTS crash native; đã ghi <i>“toggle a11y <b>KHÔNG</b> đủ”</i>; đã ghi cách chữa chạy được là <i>force-stop → re-enable</i>; và dòng cuối đã kê đơn <i>“watchdog binding … → force-stop+re-enable (đường đã proven recover), không chỉ grant”</i>.</li>
+<li><span class="ev m">[ĐO]</span> Đơn đó <b>chưa từng được làm</b>: <code>grep -rn "force-stop"</code> trên mã nguồn chỉ thấy nó ở đường cứu cast và đường mở app, <b>không</b> có ở đường chữa accessibility.</li>
+<li><span class="ev m">[ĐO]</span> <code>app/src/main/java/com/byd/clusternav/NavConnect.kt:240-295</code> (<code>forceRebindIfNeeded</code>) chỉ làm <b>đúng một việc</b>: toggle settings (gỡ → chờ → thêm lại). <code>grantViaShell</code> (<code>:203</code>) gọi nó.</li>
+<li><span class="ev m">[ĐO]</span> <code>app/src/main/java/com/byd/clusternav/RebindReceiver.kt:55-64</code> gọi cùng đường toggle đó ở <code>MY_PACKAGE_REPLACED</code>, <code>BOOT_COMPLETED</code> và báo thức watchdog 60 s.</li>
+<li>⇒ <span class="ev s">[SUY]</span> <b>Trước bản vá này</b>: khi mối nối bị park vào <code>Binding</code>, <b>không có gì trong app</b> có thể phục hồi được — đó đúng là chỗ nút <i>“Sửa ngay”</i> chạy mãi một đường vô hiệu suốt nhiều tháng.</li>
+</ul>
+
+<div class="card"><b>Cổng / phụ thuộc</b> — không có cổng chặn implement: toàn bộ phần lõi là mã thuần <code>:core</code> (parser + dựng lệnh + cổng leo thang) test được off-car, và đường thi hành dùng lại phiên dadb loopback đã có. Cổng duy nhất nằm ở <b>nghiệm thu</b>: mục V-oncar §6.2 cần chủ xe cho phép chủ động tái tạo trạng thái B trên xe (xem OQ1).</div>
+
+<h2>3. Requirements</h2>
+
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Phân biệt được hai trạng thái “chưa gắn”.</b> Hôm nay <code>AccessibilityRebind.isClusterNavBound</code> chỉ trả lời “gắn hay chưa”. Bổ sung bộ đọc mục <code>Binding services:{…}</code> để app phân biệt:
+  <ul>
+  <li><b>A</b> — đã bật, chưa gắn, <b>KHÔNG</b> nằm trong <code>Binding</code>: trạng thái thường sau khi nổ máy, đường toggle hiện có chữa được thật.</li>
+  <li><b>B</b> — đã bật, chưa gắn, <b>CÓ</b> nằm trong <code>Binding</code>: trạng thái kẹt, toggle <b>chứng minh được là vô hiệu</b> ⇒ phải bỏ hẳn, không chạy.</li>
+  </ul>
+  <b>Chấp nhận</b>: với dump thật của trạng thái kẹt, hàm phân loại trả B; với dump thật của trạng thái khoẻ, trả “đã gắn”. Cả hai khoá bằng test dựng từ fixture nguyên văn.</li>
+
+<li><b>R2 — Cách chữa, và <span class="warn">THỜI ĐIỂM</span> chữa.</b>
+  <p><b>Thời điểm (đổi ở Pass 1, là phần quan trọng nhất của requirement này).</b> Theo §2.1 + §4.3, trạng thái kẹt <b>đã nằm sẵn ngay khi xe vừa thức</b> — nó sinh ra lúc máy ngủ, không phải lúc người dùng đang lái. Đó cũng đúng là lúc <b>khởi động lại giao diện gần như miễn phí</b>: chưa có app nào trong ô, chưa có nhạc, người vừa ngồi vào xe. ⇒ Kachi phải <b>tự kiểm + tự chữa trong vài giây đầu sau khi xe thức</b> (màn sáng / có người ngồi vào / <code>BOOT_COMPLETED</code>), cộng thêm watchdog sẵn có. <b>KHÔNG chờ người dùng bấm nút</b> — nút “Kiểm tra / Sửa ngay” tụt xuống thành đường dự phòng, không còn là đường chính.</p>
+  <p><b>Cách chữa.</b> Ở trạng thái B, phát <b>một</b> lệnh shell <b>tách rời</b> qua phiên dadb loopback đã có: <code>am force-stop &lt;gói của chính mình&gt;</code> → ngủ → <b>ghi lại</b> <code>enabled_accessibility_services</code> với mục được thêm vào cuối.</p>
+  <ul>
+  <li>Bắt buộc <b>tách rời</b> (<code>nohup … &amp;</code>, đóng cả ba luồng chuẩn) vì tiến trình phát lệnh <b>chính là</b> tiến trình sắp bị giết; còn dính phiên thì nửa sau chết theo client, setting ở lại trạng thái đã-gỡ ⇒ phím chết <b>hẳn</b>.</li>
+  <li>Ghi lại là <b>bắt buộc</b>, không phải tuỳ chọn: <span class="ev m">[ĐO]</span> force-stop khiến hệ <b>ghi bền</b> việc xoá mục khỏi danh sách enabled.</li>
+  <li><b>Chốt cứng ở tầng thi hành</b>: gói bị force-stop <b>phải trùng</b> phần gói của component accessibility; lệch ⇒ <b>không dựng lệnh nào cả</b> (trả chuỗi rỗng).</li>
+  </ul>
+  <b>Chấp nhận</b>: có test khoá hình dạng lệnh tách rời, khoá việc danh sách ghi lại giữ nguyên dịch vụ của hãng và không sinh dấu <code>:</code> thừa, khoá chốt-cứng từ chối gói lạ, <b>và</b> khoá việc đường tự-chữa được gọi từ ngòi nổ “xe thức” (không chỉ từ nút bấm).</li>
+
+<li><b>R3 — Không bao giờ lặp.</b> Ghi <b>mốc</b> vào prefs <b>TRƯỚC</b> khi phát lệnh (tiến trình sắp chết ⇒ mốc phải bền trước đó). Tối đa <b>một</b> lần leo thang cho mỗi lần nổ máy. Nhận biết nổ máy lại <b>không cần shell</b>: lưu <code>SystemClock.elapsedRealtime()</code>; nếu giá trị đã lưu <b>lớn hơn</b> giá trị hiện tại ⇒ máy đã khởi động lại ⇒ cho phép leo thang lần mới. Lúc khởi động: đọc mốc, kiểm xem dịch vụ đã gắn chưa, ghi log <b>nấc nào đã ăn</b>, rồi xoá mốc.</li>
+
+<li><b>R4 — Không làm xấu màn hình <span class="muted">(nhẹ hẳn đi ở Pass 1)</span>.</b>
+  <p>Vì R2 chuyển thời điểm chữa sang <b>lúc xe vừa thức</b>, khi đó <b>chưa có app nào trong ô</b> ⇒ <b>không có cửa sổ mồ côi</b>, không có màn đen. Màn đen hôm 2026-09-28 <span class="ev m">[ĐO]</span> chỉ xảy ra vì chữa <b>giữa lúc</b> một ô đang chứa YouTube — tức là hệ quả của việc chữa MUỘN, không phải của cách chữa.</p>
+  <p><b>Chốt phát hiện muộn (thay cho việc phải nhận lại cửa sổ) — <span class="warn">đã sửa theo mã ở Pass 2</span>:</b> đường <b>TỰ ĐỘNG</b> phát hiện trạng thái B khi <b>đang có app khách trong ô</b> thì <b>KHÔNG tự giết</b> — nó <b>đứng im</b> (<code>AccessibilityHealGates.healStep</code> trả <code>NONE</code>, không có câu nào hiện ra vì đường tự động không có UI). Chỉ khi ô rỗng thì mới tự chữa im lặng.</p><p>Còn khi <b>người dùng tự bấm</b> <i>“Kiểm tra / Sửa ngay”</i> (hoặc tự gạt BẬT phím-thoại) thì mã <b>KHÔNG hỏi lại và KHÔNG từ chối</b>: <code>userAsked</code> bỏ qua cả cổng “ô đang có app khách” lẫn cổng quota, chữa luôn, rồi <b>báo bằng toast</b> rằng giao diện khởi động lại một nhịp và app đang mở trong ô sẽ phải vẽ lại (chuỗi <code>kachi_bridge_accessibility_restarting</code>). <b>Đây là sai khác đã chốt lại theo mã</b> (Pass 1 viết “để chủ xe chọn”): họ đang ngồi đó và chủ động yêu cầu, nên cái giá đã được nói ra trong câu thông báo thay vì đổi thành một hộp thoại xin phép. Nói thẳng: câu thông báo đến <b>SAU</b> khi lệnh đã bắn, nên nó là <b>lời báo</b>, không phải lời xin phép.</p>
+  <p>Đường nhận lại / vẽ lại cửa sổ (Pass 0 yêu cầu) <b>rút xuống best-effort</b>: vẫn làm nếu rẻ, nhưng <b>không</b> còn là điều kiện để ship, vì chốt trên đã loại bỏ ca sinh ra màn đen.</p></li>
+
+<li><b>R5 — Thôi nói dối người dùng.</b> “xe đang tải cao” là <b>quy kết sai</b>: <span class="ev m">[ĐO]</span> xe đang rỗi, tiến trình launcher sống liên tục 10 g 13 ph, và nguyên nhân là lỗ hổng của framework. Thay bằng câu nói thật: binding đang kẹt, và việc chữa sẽ <b>khởi động lại giao diện</b>.</li>
+
+<li><b>R6 — <span class="warn">RÚT LẠI</span> hướng tách tiến trình.</b>
+  <p>Pass 0 đề xuất tách <code>NavAccessibilityService</code> sang tiến trình riêng làm hướng <b>phòng bệnh</b>, dựa trên tiền đề “ngòi nổ là tiến trình launcher chết”. Tiền đề đó <b>đã bị bác bỏ</b>: <span class="ev m">[ĐO]</span> tiến trình sống liên tục 10 g 13 ph và mối nối vẫn bị cắt (§2.2).</p>
+  <p>⇒ Tách tiến trình nay chỉ còn là <span class="ev g">[ĐOÁN]</span>: nếu mối nối bị hạ <b>trong khi</b> tiến trình vẫn sống thì <b>đổi tiến trình chưa chắc đổi được gì</b>. <b>KHÔNG theo hướng này</b> cho tới khi đo được cái gì thật sự hạ <code>ServiceRecord</code> (OQ2, chốt bằng R7). Ghi lại hai chỗ ghép nối chỉ để khỏi phải tìm lại nếu sau này đo ra là đáng làm: <code>NavAccessibilitySource</code> (singleton in-process — <code>NavAccessibilityService.kt:120-155</code> ghi; <code>NavConnect.kt:66</code>, <code>ClusterNavBridgeSystem.kt:33</code> đọc) và <code>VoiceKeyLearnBus</code> (bus in-process của hộp thoại học phím).</p></li>
+
+<li><b>R7 — NHẬT KÝ BỀN (mới ở Pass 1).</b>
+  <p>Kachi <b>tự ghi</b> mỗi lần trạng thái gắn đổi — <b>ĐÃ GẮN ↔ chưa gắn ↔ KẸT</b> — kèm mốc giờ (cả giờ đồng hồ lẫn <code>elapsedRealtime</code>) vào <b>file bền</b>. Mục đích: sáng hôm sau xe thức dậy là <b>có ngay câu trả lời</b> nó đứt lúc nào và đứt cùng với cái gì, <b>không cần adb</b>, <b>không cần chủ xe làm gì</b>. Đúng tinh thần CLAUDE.md §11 (cần dữ liệu gì thì để app tự chụp, không bắt người dùng gõ lệnh).</p>
+  <p><b>Chấp nhận</b>: mỗi bản ghi có {mốc giờ · <code>elapsedRealtime</code> · trạng thái trước → sau · nguồn phát hiện (watchdog / lúc xe thức / nút bấm) · nấc đã chạy nếu có}; file quay vòng có giới hạn kích thước; đọc được từ màn chẩn đoán trong app để chỉ cần <b>chụp màn hình gửi về</b>. Đây là việc chốt nốt phần <span class="ev s">[SUY]</span> còn lại ở §2.2 và OQ2.</p></li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Toàn bộ phần quyết định (phân loại dump · dựng lệnh · cổng leo thang) là <b>mã thuần</b> ở <code>:core</code>, test off-car. Tầng <code>:app</code> chỉ giữ I/O dadb + prefs + UI.</li>
+<li><b>R-nf2</b> — Đường mới <b>xuống cuối</b> thang, không đảo thứ tự đường đang chạy tốt (CLAUDE.md §6): nấc 0 (đã gắn → không làm gì) và nấc 1 (toggle) giữ nguyên hành vi hiện tại.</li>
+<li><b>R-nf3</b> — Generic, không rẽ nhánh theo tên gói người khác (CLAUDE.md §7): phân loại theo <b>đo dump</b>, và gói bị giết luôn là gói của chính mình.</li>
+<li><b>R-nf4</b> — Không gate đường phục hồi bằng dữ liệu mà chỉ chính đường đó mới làm mới được (CLAUDE.md §3): cổng leo thang chỉ dùng mốc prefs + <code>elapsedRealtime</code>, <b>không</b> dùng cờ RAM của service đang chết.</li>
+<li><b>R-nf5</b> — Không đụng feed cụm: đường cụm không đi qua nhánh này; leo thang chỉ được phép khi người dùng đã bật phím-thoại (cùng cổng với watchdog hiện có).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Ba trạng thái và các chuyển dịch</h3>
+<div class="diagram">
+<svg viewBox="0 0 900 430" role="img" aria-label="Sơ đồ trạng thái: A chưa gắn, ĐÃ GẮN ở giữa, B kẹt trong Binding, với sáu chuyển dịch — trong đó đường chính mới là ĐÃ GẮN bị đứt rồi bị park ngược vào Binding">
+  <defs>
+    <marker id="s-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="s-bad" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-bad" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="s-ok" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-ok" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+
+  <!-- ① A -> ĐÃ GẮN: toggle chữa được -->
+  <path class="ln-ok" d="M 215 195 L 344 195" marker-end="url(#s-ok)"/>
+  <text class="lbl" x="282" y="140" text-anchor="middle">① [ĐO] toggle gỡ→thêm ⇒ hệ bind lại</text>
+  <text class="lbl" x="282" y="154" text-anchor="middle">(accessibilityRebindWrites — đường đang có)</text>
+
+  <!-- ② ĐÃ GẮN -> A: unbind sạch / vừa nổ máy -->
+  <path class="ln" d="M 350 225 L 222 225" marker-end="url(#s-acc)"/>
+  <text class="lbl" x="282" y="276" text-anchor="middle">② [SUY] unbind SẠCH qua unbindLocked,</text>
+  <text class="lbl" x="282" y="290" text-anchor="middle">hoặc vừa nổ máy, chưa từng gắn</text>
+
+  <!-- ③ ĐÃ GẮN -> B: ĐƯỜNG CHÍNH mới -->
+  <path class="ln-bad" d="M 548 195 L 676 195" marker-end="url(#s-bad)"/>
+  <text class="lbl" x="615" y="118" text-anchor="middle">③ [ĐO :265 / :4114-4117] bind ĐỨT —</text>
+  <text class="lbl" x="615" y="132" text-anchor="middle">tiến trình chết HOẶC onServiceDisconnected</text>
+  <text class="lbl" x="615" y="146" text-anchor="middle">⇒ PARK NGƯỢC vào mBindingServices</text>
+
+  <!-- ④ tự lặp ở B: mọi đường ghi settings đều vô hiệu -->
+  <path class="ln-bad" d="M 730 170 C 706 104, 864 104, 840 166" marker-end="url(#s-bad)"/>
+  <text class="lbl" x="785" y="74" text-anchor="middle">④ [ĐO] toggle · gỡ enabled · OTA</text>
+  <text class="lbl" x="785" y="88" text-anchor="middle">KHÔNG gỡ được B (sinh thêm DEAD)</text>
+
+  <!-- ⑤ A -> B: lượt bind đầu chết trước khi connect -->
+  <path class="ln-bad" d="M 115 246 C 115 406, 775 406, 775 250" marker-end="url(#s-bad)"/>
+  <text class="lbl" x="445" y="392" text-anchor="middle">⑤ [SUY] lượt bind vào mBindingServices rồi CHẾT trước onServiceConnected</text>
+  <text class="lbl" x="445" y="406" text-anchor="middle">(onBindingDied rỗng ⇒ không ai báo AMS ⇒ mục ở lại vĩnh viễn)</text>
+
+  <!-- ⑥ B -> ĐÃ GẮN: đường phục hồi DUY NHẤT chứng minh được -->
+  <path class="ln-ok" d="M 775 246 C 775 330, 520 330, 480 254" marker-end="url(#s-ok)"/>
+  <text class="lbl" x="642" y="336" text-anchor="middle">⑥ [ĐO] am force-stop &lt;gói của chính mình&gt; ⇒ Binding services:{} NGAY,</text>
+  <text class="lbl" x="642" y="350" text-anchor="middle">rồi GHI LẠI enabled_accessibility_services (bắt buộc — hệ đã xoá bền)</text>
+
+  <!-- các trạng thái -->
+  <rect class="bx" x="20" y="170" width="190" height="76" rx="13"/>
+  <text class="t" x="115" y="196" text-anchor="middle">A · CHƯA GẮN</text>
+  <text class="ts" x="115" y="213" text-anchor="middle">enabled, vắng Bound,</text>
+  <text class="ts" x="115" y="229" text-anchor="middle">KHÔNG ở Binding</text>
+
+  <rect class="bx-ok" x="355" y="170" width="190" height="76" rx="13"/>
+  <text class="t" x="450" y="196" text-anchor="middle">ĐÃ GẮN (Bound)</text>
+  <text class="ts" x="450" y="213" text-anchor="middle">có trong Bound services</text>
+  <text class="ts" x="450" y="229" text-anchor="middle">phím vô-lăng sống</text>
+
+  <rect class="bx-bad" x="690" y="170" width="190" height="76" rx="13"/>
+  <text class="t" x="785" y="196" text-anchor="middle">B · KẸT</text>
+  <text class="ts" x="785" y="213" text-anchor="middle">enabled, vắng Bound,</text>
+  <text class="ts" x="785" y="229" text-anchor="middle">CÒN ở Binding</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:rgba(26,127,55,.14);border-color:var(--ok)"></span> trạng thái khoẻ / chuyển dịch chữa được</span>
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> trạng thái chưa gắn thường gặp</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.14);border-color:var(--warn)"></span> trạng thái kẹt / chuyển dịch vô hiệu</span>
+</div>
+<p><b>Chuyển dịch ③ là đường chính đã đính chính ở Pass 1</b> — nó giải thích đúng hình dạng triệu chứng của chủ xe (cài mới chạy tốt, qua đêm mới kẹt): xe chạy tốt nghĩa là đang ở <b>ĐÃ GẮN</b>; qua đêm mối nối bị đứt và bị <b>park ngược</b> sang <b>B</b>; sáng bật lên đã ở B sẵn, nên mọi đường ghi settings (④) đều vô hiệu. Pass 0 chỉ vẽ ⑤ (đường qua A), nên đã quy sai ngòi nổ cho lần OTA.</p>
+
+<h3>4.2 Vì sao toggle vô hiệu ở trạng thái B — đọc source, không dựa trí nhớ</h3>
+<p class="muted">Mọi trích dẫn dưới đây lấy từ AOSP tag <code>android-10.0.0_r47</code> (CLAUDE.md §3).</p>
+<table>
+<tr><th>file:line</th><th>Nội dung</th><th>Hệ quả</th></tr>
+<tr><td><code>AccessibilityManagerService.java:3963</code>, <code>:3986</code></td><td><span class="ev m">[ĐO]</span> <code>UserState</code> là lớp trong; <code>private final Set&lt;ComponentName&gt; mBindingServices</code>.</td><td>Đây chính là tập mà <code>dumpsys</code> in ra dưới nhãn <code>Binding services:</code>.</td></tr>
+<tr><td><code>AccessibilityServiceConnection.java:89-106</code></td><td><span class="ev m">[ĐO]</span> <code>bindLocked()</code> chỉ thêm component vào tập binding khi <code>mService == null</code> <b>và</b> <code>bindServiceAsUser</code> trả true. Nơi gọi <b>duy nhất</b>: <code>AccessibilityManagerService.java:1642</code>.</td><td>Vào tập binding là chuyện bình thường của mọi lượt bind — vấn đề là <b>đường ra</b>.</td></tr>
+<tr style="background:rgba(191,95,0,.07)"><td><code>AccessibilityManagerService.java:4114-4117</code></td><td><span class="ev m">[ĐO]</span> <code>serviceDisconnectedLocked()</code> = <code>removeServiceLocked(serviceConnection)</code> rồi <b><code>mBindingServices.add(serviceConnection.getComponentName())</code></b>.</td><td><b>GỐC BỆNH (Pass 1).</b> Khi một dịch vụ Hỗ trợ <b>đang gắn tốt</b> mà bị đứt, hệ <b>CỐ Ý đẩy component NGƯỢC trở lại</b> danh sách “đang gắn”. Không phải lỗi ở app — là thiết kế của framework.</td></tr>
+<tr style="background:rgba(191,95,0,.07)"><td><code>AccessibilityServiceConnection.java:265</code> và <code>:209</code></td><td><span class="ev m">[ĐO]</span> Chỉ tới được <code>serviceDisconnectedLocked</code> từ <code>binderDied()</code> (<code>:265</code>), mà <code>binderDied()</code> được gọi <b>cả</b> từ death-recipient (tiến trình chết) <b>lẫn</b> từ <code>onServiceDisconnected()</code> (<code>:209</code>).</td><td>Đây là lý do tổ hợp đo được ở §2.2 (<b>tiến trình còn sống</b> mà mối nối vẫn bị hạ) <b>vẫn</b> đi đúng vào đường park: không cần tiến trình chết.</td></tr>
+<tr style="background:rgba(191,95,0,.07)"><td><code>AccessibilityManagerService.java:398</code></td><td><span class="ev m">[ĐO]</span> Chú thích AOSP ngay tại chỗ nói rõ ý đồ: component được park vào <code>mBindingServices</code> trong <code>binderDied()</code> <i>“during updating”</i>, và <code>onPackageUpdateFinished</code> là chỗ dọn nó.</td><td>Thiết kế này <b>CHỈ</b> tính cho <b>đúng một</b> tình huống: <b>thay gói</b>. Đứt vì lý do khác (ngủ sâu, ROM thả bind) thì <b>KHÔNG AI DỌN</b>.</td></tr>
+<tr><td><code>AccessibilityManagerService.java:1610-1665</code></td><td><span class="ev m">[ĐO]</span> trong <code>updateServicesLocked()</code>, tại <code>:1630-1631</code> có <code>if (userState.mBindingServices.contains(componentName)) { continue; }</code>, và lệnh <code>continue</code> đó nằm <b>PHÍA TRÊN</b> cả <code>bindLocked()</code> (<code>:1642</code>) lẫn <code>unbindLocked()</code> (<code>:1645</code>).</td><td><b>Khoá thứ nhất</b>: component đã ở trong tập binding thì <b>không</b> đường nào do settings kích hoạt có thể bind lại <b>hay</b> gỡ nó ra.</td></tr>
+<tr><td><code>AccessibilityManagerService.java:4072-4079</code> + <code>AccessibilityServiceConnection.java:159</code></td><td><span class="ev m">[ĐO]</span> <code>addServiceLocked()</code> đổ dữ liệu vào <code>mComponentNameToServiceMap</code>, và nơi gọi duy nhất của nó nằm trong <code>onServiceConnected</code>.</td><td><b>Khoá thứ hai, độc lập</b>: component chưa bao giờ connect thì chưa bao giờ có trong map ⇒ tra cứu ở <code>:1621</code> trả null ⇒ dù không có <code>continue</code> thì <code>:1644 if (service != null)</code> cũng bỏ qua <code>unbindLocked()</code>.</td></tr>
+<tr><td><code>ActiveServices.java:2889-2905</code> + <code>ConnectionRecord.java:225-227</code></td><td><span class="ev m">[ĐO]</span> <code>bringDownServiceLocked()</code> đặt <code>cr.serviceDead = true</code> (<code>:2902</code> — phép gán <b>duy nhất</b> trong cây, chính là cờ <code>DEAD</code> mà <code>ConnectionRecord</code> in ra) rồi gọi <code>cr.conn.connected(r.name, null, true)</code> (<code>:2905</code>).</td><td>Giải thích đúng năm <code>ConnectionRecord … DEAD</code> mồ côi đã đo được.</td></tr>
+<tr><td><code>LoadedApk.java:1898-1953</code></td><td><span class="ev m">[ĐO]</span> <code>doConnected()</code> — với <code>old == null</code> thì <b>BỎ QUA</b> <code>onServiceDisconnected</code> (<code>:1941</code>), rồi gọi <code>onBindingDied</code> (<code>:1944</code>) và <code>onNullBinding</code> (<code>:1951</code>).</td><td>Bind chết <b>trước khi</b> từng connect đi vào đúng nhánh này.</td></tr>
+<tr><td><code>ServiceConnection.java:69</code>, <code>:86</code></td><td><span class="ev m">[ĐO]</span> <code>onBindingDied</code> và <code>onNullBinding</code> là default method <b>rỗng</b>, và r47 <b>không</b> có chỗ nào ghi đè chúng trong <code>AccessibilityServiceConnection</code> hay <code>AbstractAccessibilityServiceConnection</code> (0 kết quả).</td><td><b>Lỗ hổng</b>: AMS <b>không được báo gì cả</b> khi một lượt bind chết trước lúc connect ⇒ mục ở lại trong <code>mBindingServices</code> vĩnh viễn.</td></tr>
+<tr><td><code>AccessibilityManagerService.java:1978-1990</code> + <code>:4040-4042</code> + <code>:4279-4316</code>, <code>:4322-4350</code></td><td><span class="ev m">[ĐO]</span> <code>updateAccessibilityEnabledSetting()</code> <b>GHI</b> <code>ACCESSIBILITY_ENABLED</code>, lấy từ <code>isHandlingAccessibilityEvents()</code> = <code>!mBoundServices.isEmpty() || !mBindingServices.isEmpty()</code>. Bộ quan sát settings đăng ký 13 URI, và <code>ACCESSIBILITY_ENABLED</code> <b>không</b> nằm trong đó.</td><td>⇒ ghi <code>accessibility_enabled 1</code> từ shell chỉ là <b>trang trí</b>; và chính AMS ghi <code>1</code> trong khi <b>chẳng có gì bound</b>, vì riêng một mục binding cũ kỹ đã đủ làm biểu thức đó đúng. Đây là lý do mọi chỉ báo “đã bật” đều xanh trong khi phím chết.</td></tr>
+</table>
+
+<h4>Sáu nơi — và chỉ sáu — gỡ được mục khỏi <code>mBindingServices</code></h4>
+<table>
+<tr><th>file:line</th><th>Nơi gỡ</th><th>Dùng được cho ta không?</th></tr>
+<tr><td><code>AccessibilityServiceConnection.java:182</code></td><td>sau khi connect thành công</td><td>Không — chính cái đang không xảy ra.</td></tr>
+<tr><td><code>AccessibilityManagerService.java:410</code></td><td><code>onPackageUpdateFinished</code> (REPLACE gói)</td><td>Có về lý thuyết — nhưng xem §4.3.</td></tr>
+<tr><td><code>:435</code></td><td><code>onPackageRemoved</code> (gỡ cài đặt)</td><td>Không — không thể gỡ cài chính mình để chữa phím.</td></tr>
+<tr><td><code>:474</code></td><td><code>onHandleForceStop</code></td><td><b>CÓ — đây là đường dùng được.</b></td></tr>
+<tr><td><code>:885</code></td><td><code>temporaryEnableAccessibilityStateUntilKeyguardRemoved</code></td><td>Không — cần quyền đặc quyền + keyguard đang khoá.</td></tr>
+<tr><td><code>:4050</code></td><td><code>onSwitchToAnotherUserLocked</code></td><td>Không — cần chuyển user thật.</td></tr>
+</table>
+
+<h4>Vì sao đúng <code>am force-stop</code>, không phải thứ khác</h4>
+<ul>
+<li><span class="ev m">[ĐO]</span> <code>AccessibilityManagerService.java:453-484</code> — <code>onHandleForceStop</code> gỡ khỏi tập enabled (<code>:473</code>), gỡ khỏi tập binding (<code>:474</code>), <b>GHI BỀN</b> danh sách enabled xuống settings (<code>:475-477</code>), rồi <code>onUserStateChangedLocked</code> (<code>:478</code>). Chính <code>:475-477</code> là lý do <b>bắt buộc phải ghi lại</b> danh sách ở R2.</li>
+<li><span class="ev m">[ĐO]</span> Nó được kích bởi <code>ACTION_PACKAGE_RESTARTED</code> (<code>PackageMonitor.java:412-416</code>), do <code>ActivityManagerService.java:4515-4517 finishForceStopPackageLocked</code> gửi, mà hàm này chỉ có <b>hai</b> nơi gọi: <code>am force-stop</code> (<code>:4280</code>) và <code>pm clear</code> (<code>:4075</code>). REPLACE gói <b>KHÔNG</b> gửi broadcast này.</li>
+<li><span class="ev m">[ĐO]</span> <code>ActivityManagerService.java:4254-4259</code> lặng lẽ bỏ qua force-stop với gói mà ROM đánh dấu là protected. <span class="ev s">[SUY]</span> không áp dụng ở đây — force-stop đã chứng minh là chạy được trên ROM này.</li>
+<li><span class="ev m">[ĐO]</span> <code>AccessibilityManagerService.java:378-396 onSomePackagesChanged</code> <b>không</b> đụng tập binding. <code>PackageMonitor.java:175-184</code> — bật/tắt riêng một component thậm chí <b>không đến được</b> nó, trong khi <code>ActivityManagerService.java:4594</code> → <code>ActiveServices.java:3403-3406</code> → <code>:2902-2905</code> lại <b>đúc thêm một mục DEAD mồ côi nữa</b>. ⇒ <b>Cấm</b> dùng <code>pm disable-user</code>/<code>pm enable</code> trên component: nó gây hại chủ động.</li>
+</ul>
+
+<h3>4.3 Cơ chế thật: đứt bind ⇒ bị PARK ngược vào Binding ⇒ không ai dọn</h3>
+<div class="card">
+<p><b>Đính chính.</b> Pass 0 của spec này quy ngòi nổ cho <i>“lượt bind sau OTA thua cuộc đua”</i>, chỉ dựa trên <code>lastUpdateTime</code>. <b>Sai.</b> Chủ xe đính chính bằng quan sát lặp lại nhiều lần (§2.1): <b>cài mới thì chạy tốt; để xe qua đêm, sáng bật lên mới kẹt</b>. Một lần cài đè <b>không</b> giải thích được hình dạng đó; đứt-lúc-ngủ thì giải thích trọn.</p>
+<h4>Chuỗi nhân quả (mỗi khâu có <code>file:line</code>)</h4>
+<div class="flow">
+  <div class="fnode"><b>ĐANG GẮN TỐT</b><span>xe chạy bình thường</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>bind bị ĐỨT</b><span>ASC:209 hoặc death-recipient<br>→ binderDied() ASC:265</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>PARK ngược</b><span>AMS:4114-4117<br>mBindingServices.add()</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>không ai dọn</b><span>AMS:398 — chỉ tính cho ca thay gói</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>KẸT VĨNH VIỄN</b><span>AMS:1630-1631 continue<br>trên cả bind lẫn unbind</span></div>
+</div>
+<ol>
+<li><span class="ev m">[ĐO AOSP <code>android-10.0.0_r47</code>]</span> <code>AccessibilityManagerService.java:4114-4117</code> — <code>serviceDisconnectedLocked()</code> làm <code>removeServiceLocked(serviceConnection)</code> rồi <b><code>mBindingServices.add(serviceConnection.getComponentName())</code></b>. Một dịch vụ <b>đang gắn tốt</b> mà bị đứt thì bị đẩy <b>ngược</b> vào danh sách “đang gắn”.</li>
+<li><span class="ev m">[ĐO]</span> Chỉ tới đó được từ <code>AccessibilityServiceConnection.binderDied()</code> (<code>:265</code>), và <code>binderDied()</code> được gọi <b>cả</b> từ death-recipient (tiến trình chết) <b>lẫn</b> từ <code>onServiceDisconnected()</code> (<code>:209</code>) — nên <b>không cần</b> tiến trình chết.</li>
+<li><span class="ev m">[ĐO]</span> Chú thích AOSP tại <code>AccessibilityManagerService.java:398</code> nói rõ ý đồ: park trong <code>binderDied()</code> là <i>“during updating”</i>, và <code>onPackageUpdateFinished</code> là chỗ dọn. ⇒ thiết kế <b>chỉ</b> tính cho ca <b>thay gói</b>.</li>
+<li><span class="ev m">[ĐO]</span> <code>updateServicesLocked</code> <code>:1630-1631</code> bỏ qua (<code>continue</code>) mọi component trong <code>mBindingServices</code>, và dòng đó nằm <b>TRÊN</b> cả <code>bindLocked()</code> (<code>:1642</code>) lẫn <code>unbindLocked()</code> (<code>:1645</code>). ⇒ <b>một lần đứt ngoài ca thay gói = park VĨNH VIỄN.</b></li>
+</ol>
+<h4>Bằng chứng đo trên xe khớp chính xác</h4>
+<table>
+<tr><th>Đo được</th><th>Khớp với cơ chế ở trên như thế nào</th></tr>
+<tr><td><span class="ev m">[ĐO]</span> tiến trình <code>com.byd.launcher</code> sống <b>liên tục 10 g 13 ph</b> qua đêm, <b>không</b> PID mới, đầu máy <b>không</b> reboot buổi sáng</td><td>Loại bỏ giả thuyết crash/bị giết. Khâu 2 cho phép đúng điều này: <code>onServiceDisconnected</code> cũng dẫn tới <code>binderDied()</code>.</td></tr>
+<tr><td><span class="ev m">[ĐO]</span> <b>không còn</b> <code>ServiceRecord</code> nào cho <code>NavAccessibilityService</code></td><td>Mối nối bị hạ <b>trong khi tiến trình vẫn sống</b> — dấu vân tay của <code>ActiveServices.bringDownServiceLocked</code> chạy trên tiến trình còn sống.</td></tr>
+<tr><td><span class="ev m">[ĐO]</span> mục có trong <code>Binding services</code>, vắng khỏi <code>Bound services</code></td><td>Đúng kết quả của khâu 1 + khâu 4.</td></tr>
+<tr><td><span class="ev m">[ĐO]</span> gỡ khỏi <code>enabled_accessibility_services</code> mà mục trong <code>Binding</code> <b>vẫn còn</b></td><td>Đúng khâu 4 — <code>continue</code> chặn cả đường gỡ.</td></tr>
+<tr><td><span class="ev m">[ĐO]</span> <b>năm</b> <code>ConnectionRecord … DEAD</code> mồ côi, mỗi cái một mã băm binder riêng</td><td><b>Diễn giải lại (Pass 1)</b>: khớp với <b>năm vòng đứt-rồi-park</b>. <b>KHÔNG</b> phải năm vòng cài đè như Pass 0 đã đoán.</td></tr>
+<tr><td><span class="ev m">[ĐO]</span> chú thích sẵn có trong <code>NavConnect.kt:158</code> đã nghi ROM BYD thả bind (<code>ssc_skip</code>) từ trước</td><td>Nay khớp: ROM thả bind ⇒ <code>onServiceDisconnected</code> ⇒ khâu 2.</td></tr>
+</table>
+<p><span class="ev s">[SUY]</span> <b>Phần còn ở mức suy luận</b>: việc cú đứt xảy ra <b>lúc máy ngủ sâu</b> qua đêm. Tổ hợp trạng thái là <span class="ev m">[ĐO]</span>, nhưng <b>khoảnh khắc đứt chưa bắt được</b> — nên chưa thể gọi là đo. <span class="ev u">[CHƯA BIẾT]</span> <b>cái gì</b> hạ <code>ServiceRecord</code> xuống trong lúc ngủ sâu (OQ2). <b>R7 (nhật ký bền) là cách chốt</b>, và cách chữa ở R2 <b>không phụ thuộc</b> vào câu trả lời đó — chữa được là chữa trạng thái, không cần biết ai gây ra.</p>
+</div>
+
+<h3>4.4 Thang chữa</h3>
+<h4>Ngòi nổ — ai gọi thang, theo thứ tự ưu tiên (đổi ở Pass 1)</h4>
+<div class="flow">
+  <div class="fnode" style="border-color:var(--accent);background:rgba(0,113,227,.10)"><b>XE THỨC</b><span>màn sáng / người ngồi vào /<br>BOOT_COMPLETED — <b>đường chính</b></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>watchdog 60 s</b><span>lưới phụ đã có<br>(RebindReceiver + FGS)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>nút “Sửa ngay”</b><span>dự phòng —<br>không còn là đường chính</span></div>
+</div>
+<p><b>Vì sao “xe thức” là đường chính</b>: <span class="ev m">[ĐO]</span> trạng thái kẹt <b>đã nằm sẵn</b> khi xe vừa thức (§2.1 · §4.3), và đó là lúc <b>ô còn rỗng, chưa có nhạc, người vừa ngồi vào</b> ⇒ khởi động lại giao diện gần như miễn phí. Chữa muộn hơn là lúc phải trả giá (màn đen hôm 09-28). Cả ba ngòi nổ chạy <b>cùng một thang</b> dưới đây — không nhân bản logic.</p><p><b>Đã ship gì (Pass 2, [ĐO] mã 2.81)</b>: ngòi nổ “xe thức” <b>không</b> là một receiver mới — nó nằm <b>trong chính watchdog 30 s</b> của <code>VoiceKeyKeepAliveService</code>: mỗi nhịp đo lượng <b>ngủ sâu tích luỹ</b> (<code>elapsedRealtime − uptimeMillis</code>), bước nhảy ≥ 2 giờ ⇒ coi là “xe vừa ra khỏi một đợt đứng dài” ⇒ ghi nhật ký với <code>note=wake</code> và <b>nhả lại quota</b> leo thang. Nghĩa là: không có <code>BOOT_COMPLETED</code>/“màn sáng” riêng cho việc này, và lượt chữa đầu sau khi thức đến <b>chậm nhất 30 s</b> sau khi tiến trình có watchdog chạy. Cổng vẫn là phím-thoại BẬT (R-nf5).</p>
+<div class="diagram">
+<svg viewBox="0 0 900 760" role="img" aria-label="Sơ đồ luồng thang chữa: đọc dump, phân loại ba trạng thái, nấc 0 không làm gì, nấc 1 toggle, nấc 2 leo thang force-stop sau hai cổng chỉ áp cho đường tự động (bấm tay bỏ qua cả hai), rồi khởi động lại và xác minh">
+  <defs>
+    <marker id="f-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="f-bad" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-bad" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="f-ok" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-ok" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+
+  <!-- các mũi tên vẽ trước để nằm dưới hộp -->
+  <path class="ln" d="M 450 70 L 450 92" marker-end="url(#f-acc)"/>
+  <path class="ln-ok" d="M 450 154 C 450 180, 150 180, 150 196" marker-end="url(#f-ok)"/>
+  <path class="ln" d="M 450 154 L 450 196" marker-end="url(#f-acc)"/>
+  <path class="ln-bad" d="M 450 154 C 450 180, 750 180, 750 196" marker-end="url(#f-bad)"/>
+  <path class="ln" d="M 450 264 L 450 296" marker-end="url(#f-acc)"/>
+  <path class="ln-bad" d="M 580 328 C 668 328, 750 332, 750 364" marker-end="url(#f-bad)"/>
+  <path class="ln-bad" d="M 750 264 L 750 364" marker-end="url(#f-bad)"/>
+  <path class="ln" d="M 616 414 L 588 414" marker-end="url(#f-acc)"/>
+  <path class="ln-bad" d="M 750 450 L 750 476" marker-end="url(#f-bad)"/>
+  <path class="ln-bad" d="M 750 544 L 750 566" marker-end="url(#f-bad)"/>
+  <path class="ln-ok" d="M 750 632 L 750 666" marker-end="url(#f-ok)"/>
+
+  <!-- P1 đọc -->
+  <rect class="bx" x="250" y="16" width="400" height="54" rx="12"/>
+  <text class="t" x="450" y="40" text-anchor="middle">Đọc một lượt qua dadb loopback</text>
+  <text class="tm" x="450" y="58" text-anchor="middle">dumpsys accessibility + settings get … services</text>
+
+  <!-- P2 phân loại -->
+  <rect class="bx-new" x="250" y="100" width="400" height="54" rx="12"/>
+  <text class="t" x="450" y="124" text-anchor="middle">Phân loại 3 trạng thái — mã thuần :core</text>
+  <text class="tm" x="450" y="142" text-anchor="middle">isClusterNavBound + isClusterNavBinding (MỚI)</text>
+
+  <!-- ba nấc -->
+  <rect class="bx-ok" x="20" y="196" width="260" height="68" rx="12"/>
+  <text class="t" x="150" y="222" text-anchor="middle">Nấc 0 — ĐÃ GẮN</text>
+  <text class="ts" x="150" y="240" text-anchor="middle">không làm gì, không nháy</text>
+  <text class="ts" x="150" y="256" text-anchor="middle">(hành vi hiện tại, giữ nguyên)</text>
+
+  <rect class="bx" x="320" y="196" width="260" height="68" rx="12"/>
+  <text class="t" x="450" y="222" text-anchor="middle">Nấc 1 — trạng thái A</text>
+  <text class="ts" x="450" y="240" text-anchor="middle">toggle gỡ→thêm, một lệnh gộp</text>
+  <text class="ts" x="450" y="256" text-anchor="middle">(đường hiện có, giữ nguyên)</text>
+
+  <rect class="bx-bad" x="620" y="196" width="260" height="68" rx="12"/>
+  <text class="t" x="750" y="222" text-anchor="middle">Nấc 2 — trạng thái B (KẸT)</text>
+  <text class="ts" x="750" y="240" text-anchor="middle">BỎ HẲN toggle — đã đo là vô hiệu</text>
+  <text class="ts" x="750" y="256" text-anchor="middle">phải leo thang</text>
+
+  <!-- đo lại sau nấc 1 -->
+  <rect class="bx" x="320" y="296" width="260" height="62" rx="12"/>
+  <text class="t" x="450" y="320" text-anchor="middle">Đo LẠI sau toggle</text>
+  <text class="ts" x="450" y="338" text-anchor="middle">vẫn chưa gắn + nay ĐÃ ở Binding</text>
+  <text class="ts" x="450" y="352" text-anchor="middle">⇒ leo Nấc 2 [SUY]</text>
+
+  <!-- nhánh cổng đóng -->
+  <rect class="bx" x="320" y="380" width="260" height="70" rx="12"/>
+  <text class="t" x="450" y="402" text-anchor="middle">TỪ CHỐI ⇒ đứng im</text>
+  <text class="ts" x="450" y="420" text-anchor="middle">đã leo 1 lần trong lần nổ máy này,</text>
+  <text class="ts" x="450" y="436" text-anchor="middle">HOẶC ô đang có app khách (R4)</text>
+
+  <!-- cổng -->
+  <rect class="bx-bad" x="620" y="364" width="260" height="94" rx="12"/>
+  <text class="t" x="750" y="386" text-anchor="middle">Cổng — chỉ cho đường TỰ ĐỘNG</text>
+  <text class="ts" x="750" y="404" text-anchor="middle">① chưa leo trong lần nổ máy này</text>
+  <text class="ts" x="750" y="420" text-anchor="middle">(mốc &gt; elapsed, hoặc vừa ngủ ≥ 2 h)</text>
+  <text class="ts" x="750" y="436" text-anchor="middle">② ô còn RỖNG (chưa host app khách)</text>
+  <text class="ts" x="750" y="452" text-anchor="middle">bấm tay ⇒ bỏ qua ① ②, chỉ báo bằng toast</text>
+
+  <!-- mốc -->
+  <rect class="bx-new" x="620" y="476" width="260" height="68" rx="12"/>
+  <text class="t" x="750" y="500" text-anchor="middle">Ghi MỐC vào prefs TRƯỚC</text>
+  <text class="ts" x="750" y="518" text-anchor="middle">tiến trình sắp chết ⇒ mốc</text>
+  <text class="ts" x="750" y="534" text-anchor="middle">phải bền trước khi phát lệnh</text>
+
+  <!-- lệnh -->
+  <rect class="bx-new" x="620" y="566" width="260" height="66" rx="12"/>
+  <text class="t" x="750" y="590" text-anchor="middle">Phát lệnh TÁCH RỜI</text>
+  <text class="tm" x="750" y="608" text-anchor="middle">nohup sh -c '…' &gt;/dev/null</text>
+  <text class="tm" x="750" y="622" text-anchor="middle">2&gt;&amp;1 &lt;/dev/null &amp;</text>
+
+  <!-- sau khởi động lại -->
+  <rect class="bx-ok" x="20" y="666" width="860" height="78" rx="13"/>
+  <text class="t" x="450" y="692" text-anchor="middle">Tiến trình chết → khởi động lại</text>
+  <text class="ts" x="450" y="712" text-anchor="middle">đọc mốc · kiểm đã gắn chưa · ghi NẤC NÀO đã ăn vào nhật ký bền (R7) · xoá phần chẩn đoán của mốc</text>
+  <text class="ts" x="450" y="730" text-anchor="middle">ô đã rỗng khi chữa ⇒ KHÔNG có cửa sổ mồ côi; vẽ lại ô là best-effort (R4)</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (dùng lại)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.12);border-color:var(--accent)"></span> khối mới</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.14);border-color:var(--warn)"></span> nhánh trạng thái kẹt</span>
+  <span class="sw"><span class="box" style="background:rgba(26,127,55,.14);border-color:var(--ok)"></span> đích khoẻ</span>
+</div>
+
+<h3>4.5 Lệnh tách rời và chốt cứng</h3>
+<p>Hình dạng lệnh do <code>:core</code> dựng (không có I/O, test được off-car). <code>&lt;gói&gt;</code> luôn là gói của <b>chính mình</b>; <code>&lt;danh sách&gt;</code> là giá trị <code>enabled_accessibility_services</code> <b>đọc TRƯỚC khi giết</b>, đã bỏ mọi bản trùng của mình rồi thêm đúng một lần vào cuối:</p>
+<pre>nohup sh -c 'am force-stop &lt;gói&gt; ; sleep &lt;n&gt; ; settings put secure enabled_accessibility_services "&lt;danh sách&gt;" ; settings put secure accessibility_enabled 1' &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null &amp;</pre>
+<ul>
+<li><b>Vì sao <code>nohup … &amp;</code> + đóng cả ba luồng chuẩn</b>: tiến trình phát lệnh là tiến trình bị <code>am force-stop</code> giết. Còn dính phiên shell thì nửa sau (ghi lại danh sách) chết theo client ⇒ máy ở lại đúng trạng thái mà <code>onHandleForceStop:475-477</code> vừa ghi bền (đã gỡ) ⇒ <b>phím chết hẳn</b>. Tách rời thì lệnh đã lọt vào xe là chạy trọn, bất kể client còn sống hay không.</li>
+<li><b>Chốt cứng ở tầng THI HÀNH</b> (CLAUDE.md §4/§5): so gói bị giết với phần gói tách từ component accessibility; rỗng hoặc lệch ⇒ <b>trả chuỗi rỗng</b>, caller bỏ qua, <b>không dựng lệnh nào cả</b>. Không đặt chốt này ở tầng UI.</li>
+<li><b>Bốn câu hỏi bắt buộc của CLAUDE.md §4</b>: (1) <i>display nào</i> — không đụng display, lệnh chỉ chạm gói của mình + một khoá Secure Settings; (2) <i>app nào</i> — đúng một gói, là gói của chính mình, chốt cứng ở trên; (3) <i>loại stack nào</i> — không đụng stack; (4) <i>hoàn tác kiểu gì</i> — nửa sau của chính lệnh đã là đường trả lại, và nó chạy tách rời nên không chết theo client; thêm nữa mốc prefs được ghi <b>trước</b> nên lúc khởi động lại vẫn biết mình vừa làm gì.</li>
+</ul>
+
+<h3>4.6 Cổng leo thang và nhận biết nổ máy lại</h3>
+<ul>
+<li>Trạng thái bền: một mốc trong prefs gồm <b>thời điểm leo thang</b> (<code>elapsedRealtime</code> lúc phát lệnh) + trạng thái đo được ngay trước đó + nấc đã chọn.</li>
+<li>Nhận biết nổ máy lại <b>không cần shell</b>: <code>elapsedRealtime</code> đếm từ lúc máy khởi động và <b>reset về 0</b> khi nổ lại. Nếu <b>giá trị đã lưu &gt; giá trị hiện tại</b> ⇒ máy đã khởi động lại ⇒ cho phép một lần leo thang mới. Còn lại ⇒ đã dùng hết quota, <b>dừng</b> — và <b>đứng im</b>, không có câu nào hiện ra (sửa ở Pass 2: đường tự động không có bề mặt UI, xem §4.8). Ngoài ra còn một đường nhả quota nữa, xem bullet cuối mục này.</li>
+<li><b>Điều kiện thứ hai (thêm ở Pass 1)</b>: <b>ô còn rỗng</b> — chưa host app khách nào. Đây là chốt của R4: chữa lúc ô rỗng thì không sinh cửa sổ mồ côi; đường TỰ ĐỘNG phát hiện muộn (đang có app trong ô) thì <b>từ chối tự giết</b> và đứng im. Đọc từ nguồn sự thật về ô (<code>am stack list</code> + <code>dumpsys display</code> qua <code>StackParse.noGuestAppVisible</code> + <code>DisplayParse.ownedVirtualDisplayIds</code>, không dùng cờ RAM về cast; đọc hỏng ⇒ cổng ĐÓNG). <b>Sửa ở Pass 2</b>: cổng này chỉ áp cho đường tự động — <code>userAsked</code> bỏ qua nó (xem R4).</li>
+<li>Vì sao không dùng cờ RAM / cờ của service: CLAUDE.md §3 cấm gate một đường phục hồi bằng dữ liệu mà chỉ chính đường đó mới làm mới được; ở đây tiến trình giữ cờ <b>chính là</b> tiến trình sắp chết.</li>
+<li>Lúc khởi động: đọc mốc → hỏi lại xem đã gắn chưa → ghi <b>trạng thái</b> vào nhật ký bền (R7). Dấu “đã leo trong lần nổ máy này” <b>không</b> được xoá ở đây: xoá là mở lại đúng cái vòng lặp mà R3 cấm, ngay sau lần khởi động lại đầu tiên.</li><li><b>NHƯNG có một đường nhả quota, và nó là ĐÚNG (sửa ở Pass 2 — mã đã ship thế, Pass 1 nói ngược)</b>: watchdog 30 s <b>trả lại quota sau MỘT ĐỢT NGỦ DÀI</b> — <code>if (woke) Prefs.setA11yEscalatedAt(app, -1L)</code> trong <code>VoiceKeyKeepAliveService</code>, với <code>woke</code> = lượng <b>ngủ sâu tích luỹ</b> (<code>A11yBindJournal.deepSleepMs</code> = <code>elapsedRealtime − uptimeMillis</code>) tăng thêm ≥ <b>2 giờ</b> kể từ lượt kiểm trước. <b>Vì sao bắt buộc</b>: [ĐO owner 2026-09-28] đầu máy BYD chỉ <b>tắt hẳn sau 3–4 ngày</b> — nó standby qua đêm chứ không reboot ⇒ cổng “một lần mỗi lần nổ máy” mà chỉ nhả khi <code>elapsedRealtime</code> về 0 sẽ <b>im vĩnh viễn</b> sau lần chữa đầu tiên, tức là đúng cái bệnh này chỉ được chữa một lần rồi thôi. Ngưỡng 2 giờ để “để bãi qua đêm” thì vượt xa, còn “mở cửa xem đồng hồ vài phút” thì không; <b>chạy đường dài không kích</b> (lúc máy chạy thì không ngủ). Hành vi này bị <b>khoá bằng test nối dây</b> (<code>A11yBindStuckWiringContractTest.mot dot ngu dai PHAI nha cong cho phep chua lai</code>). <span class="ev s">[SUY]</span> hiệu hai đồng hồ là chuẩn Android nhưng <b>chưa đo trên ROM DiLink</b> — nếu ROM không ngủ sâu thật thì <code>woke</code> không bao giờ bật và quota lại chỉ nhả khi reboot; chính nhật ký R7 là phép đo chốt (V-oncar-1).</li>
+</ul>
+
+<h3>4.7 Cửa sổ mồ côi — nay là ca <b>tránh được</b>, không phải ca phải vá (R4)</h3>
+<p><span class="ev m">[ĐO]</span> Giết launcher huỷ các màn hình ảo đang chứa cửa sổ của các ô; cửa sổ của app khách sống sót, nổi lên trên cùng z-order của màn chính và vẽ đen kịt. Mở lại activity của app đó thì nó vẽ lại. Màn cụm không hề hấn.</p>
+<p><b>Đổi cách xử ở Pass 1.</b> Màn đen hôm 2026-09-28 xảy ra vì chữa <b>giữa lúc</b> một ô đang chứa YouTube. Nhưng theo §4.3, trạng thái kẹt <b>đã có sẵn từ lúc xe thức</b> — khi <b>ô còn rỗng</b>. ⇒ chữa đúng lúc thì <b>ca này không phát sinh</b>. Nên thay vì vá hậu quả, <b>chốt ở cổng</b>:</p>
+<ul>
+<li><b>Ô rỗng</b> ⇒ tự chữa im lặng, không cần nhận lại cửa sổ nào.</li>
+<li><b>Ô đang chứa app khách</b> (phát hiện muộn) ⇒ đường <b>TỰ ĐỘNG KHÔNG tự giết</b>, đứng im (<code>NONE</code>). Người dùng <b>tự bấm</b> thì vẫn chữa, và câu thông báo nói trước cái giá (§4.8) — <b>sửa ở Pass 2 theo mã đã ship</b>; Pass 1 viết “để chủ xe chọn”, mã không làm thế.</li>
+<li>Nhận lại / vẽ lại ô sau khởi động lại: <b>best-effort</b>, không phải điều kiện ship. Đường khởi động lại đã có sẵn (<code>RebindReceiver</code> → <code>KachiAutostartService.startForBoot</code> → <code>KachiAutostart</code> khôi phục + mount lại workspace đã lưu); nếu làm thì làm ngay sau khi mount lại. File liên quan: <code>app/src/main/java/com/byd/clusternav/launcher/SlotVdOwner.kt</code>, <code>SlotAppHost.kt</code>, <code>app/src/main/java/com/byd/clusternav/KachiAutostart.kt</code>.</li>
+</ul>
+
+<h3>4.8 Câu thông báo (R5)</h3>
+<table>
+<tr><th>Câu cũ (2.79)</th><th>Đã đổi thành (2.81)</th></tr>
+<tr><td><code>app/src/main/res/values/strings_kachi.xml:278</code> — <i>“Đã bật quyền Hỗ trợ nhưng dịch vụ chưa gắn được <b>(xe đang tải cao)</b> — thử lại vài giây, hoặc bật/tắt tay ở Cài đặt hệ thống &gt; Hỗ trợ.”</i></td><td>Nói đúng trạng thái đo được: binding đang <b>kẹt</b> ở tầng hệ thống, toggle không gỡ được, và cách chữa sẽ <b>khởi động lại giao diện</b> (màn hình nháy một cái).</td></tr>
+</table>
+<p><b>Đã ship HAI câu, không phải ba</b> (sửa ở Pass 2 theo mã):</p>
+<table>
+<tr><th>Ca</th><th>Đã ship gì</th></tr>
+<tr><td>Đường <b>TỰ ĐỘNG</b> (watchdog / vừa qua đợt ngủ dài), ô rỗng, cổng mở</td><td><b>Không câu nào</b> — tự chữa im lặng, chỉ ghi nhật ký bền (R7). Đúng như Pass 1 định.</td></tr>
+<tr><td>Đường <b>TỰ ĐỘNG</b> bị cổng chặn (ô đang có app khách, hoặc đã leo trong lần nổ máy này)</td><td><b>Không câu nào</b> — đứng im + một dòng <code>Log.i</code>. Đường tự động không có bề mặt UI nào để nói.</td></tr>
+<tr><td>Người dùng <b>tự bấm</b> <i>“Kiểm tra / Sửa ngay”</i> hoặc gạt BẬT phím-thoại, đang ở trạng thái B</td><td><code>kachi_bridge_accessibility_restarting</code> (VI + EN): <i>“Mối nối phím đang kẹt ở mức hệ thống. Đang tự chữa: giao diện khởi động lại một nhịp rồi phím hoạt động lại — app đang mở trong ô sẽ phải vẽ lại (chạm vào ô là hiện lại).”</i> Đi qua <code>GrantResult.RESTARTING</code> → <code>BridgeMsg.ACCESSIBILITY_RESTARTING</code> → toast.</td></tr>
+<tr><td>Chưa gắn nhưng <b>KHÔNG</b> kẹt</td><td><code>kachi_bridge_accessibility_not_bound</code> — đã gỡ hẳn cụm “xe đang tải cao”.</td></tr>
+</table>
+<p><b>Câu thứ ba của Pass 1 (“cổng đã đóng — đã thử một lần trong lần nổ máy này”) KHÔNG được làm, và KHÔNG THỂ tới được.</b> <span class="ev s">[SUY] đọc <code>AccessibilityHealGates.healStep</code></span>: nhánh <code>if (userAsked) return HealStep.FORCE_STOP</code> đứng <b>TRÊN</b> cả cổng “ô đang có app khách” lẫn cổng quota ⇒ mọi lượt bấm tay đều leo thang, nên cái ca “bấm nút mà bị cổng quota từ chối” <b>không tồn tại</b>; còn đường tự động thì không có UI. ⇒ viết câu đó là viết cho một ca không bao giờ chạy tới. Quyết định ở Pass 2: <b>bỏ khỏi phạm vi</b>. Muốn có nó thì phải đổi trước cái <b>thứ tự cổng</b> trong <code>healStep</code> (và khi đó phải trả lời được: bấm tay bị từ chối thì người dùng làm gì tiếp — chưa có câu trả lời nào từ chủ xe).</p>
+<p><span class="ev m">[ĐO]</span> Cụm “xe đang tải cao” cũng lặp lại trong KDoc <code>NavConnect.kt</code> và <code>ClusterNavBridgeMsg.kt</code> — <b>đã sửa cả hai</b> ở 2.81 để không để lại quy kết sai trong tài liệu mã, và bài nối dây khoá không cho chuỗi đó quay lại tệp chuỗi.</p>
+
+<h3>4.9 R6 — <span class="warn">RÚT LẠI</span> hướng tách tiến trình + R7 thay vào chỗ đó</h3>
+<div class="card">
+<p><b>Pass 0 đề xuất</b> tách <code>NavAccessibilityService</code> sang tiến trình riêng (như đã làm cho engine TTS), dựa trên tiền đề <i>“ngòi nổ là tiến trình launcher chết”</i> — lấy từ <code>docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md</code>.</p>
+<p><b>Pass 1 rút lại.</b> <span class="ev m">[ĐO]</span> Tiến trình sống liên tục 10 g 13 ph, không PID mới, mà mối nối <b>vẫn</b> bị hạ (§2.2). ⇒ tiền đề sai cho ca này. <span class="ev g">[ĐOÁN]</span> Nếu mối nối bị cắt <b>trong khi tiến trình vẫn sống</b> thì <b>đổi tiến trình chưa chắc đổi được gì</b> — cú đứt có thể theo đúng tiến trình mới.</p>
+<p><b>Quyết định</b>: <b>KHÔNG theo hướng tách tiến trình</b> cho tới khi đo được cái gì thật sự hạ <code>ServiceRecord</code> lúc ngủ sâu (OQ2). Việc cần làm trước là <b>R7 — nhật ký bền</b>, vì nó biến câu <span class="ev u">[CHƯA BIẾT]</span> đó thành <span class="ev m">[ĐO]</span> mà không cần chủ xe làm gì.</p>
+<p><span class="ev m">[ĐO]</span> Giữ lại đúng hai chỗ ghép nối in-process đã định danh, chỉ để khỏi phải tìm lại <b>nếu</b> sau này đo ra là đáng làm: <code>NavAccessibilitySource</code> (singleton — <code>NavAccessibilityService.kt:120-155</code> ghi; <code>NavConnect.kt:66</code> và <code>ClusterNavBridgeSystem.kt:33</code> đọc) và <code>VoiceKeyLearnBus</code> (bus của hộp thoại học phím).</p>
+</div>
+<h4>R7 — nhật ký bền: đo cái chưa biết mà không cần adb</h4>
+<div class="layers">
+  <div class="lname">Nguồn phát hiện (đã có / sẽ thêm)</div>
+  <div class="layer">
+    <div class="node new"><b>lúc xe thức</b><span>màn sáng · người ngồi vào · BOOT_COMPLETED</span></div>
+    <div class="node"><b>watchdog 60 s</b><span>RebindReceiver + FGS keep-alive</span></div>
+    <div class="node"><b>onServiceConnected / onUnbind</b><span>NavAccessibilityService</span></div>
+  </div>
+  <div class="lname">Ghi mỗi lần trạng thái ĐỔI (không ghi mỗi lượt kiểm)</div>
+  <div class="layer">
+    <div class="node new"><b>bản ghi</b><span>mốc giờ · elapsedRealtime · trạng thái trước → sau · nguồn phát hiện · nấc đã chạy</span></div>
+  </div>
+  <div class="lname">Đọc lại — CLAUDE.md §11: app tự chụp, không bắt owner gõ adb</div>
+  <div class="layer">
+    <div class="node"><b>file bền, quay vòng</b><span>giới hạn kích thước</span></div>
+    <div class="node"><b>màn chẩn đoán trong app</b><span>chủ xe chỉ cần chụp màn hình gửi về</span></div>
+  </div>
+</div>
+<p>Sáng hôm sau xe thức là <b>đã có ngay</b> câu trả lời: đứt lúc mấy giờ, cách lúc tắt máy bao lâu, đứt cùng với cái gì. Đó là cách chốt phần <span class="ev s">[SUY]</span> “xảy ra lúc ngủ sâu” ở §4.3 và OQ2 — <b>không</b> cần bắt được khoảnh khắc bằng adb.</p>
+
+<h3>4.10 Context7</h3>
+<p>Thay đổi này <b>không</b> thêm thư viện/framework nào: chỉ dùng Android SDK (<code>SystemClock</code>, <code>SharedPreferences</code>), khối dadb loopback đã có (<code>LocalDeviceShell</code>) và mã thuần <code>:core</code>. ⇒ không cần Context7 verify (CLAUDE.md §1.1: chỉ bắt buộc khi đề xuất tool/library mới). Nguồn sự thật cho mọi khẳng định về hành vi framework là source AOSP tag <code>android-10.0.0_r47</code> đã trích <code>file:line</code> ở §4.2.</p>
+
+<h2>5. Tasks (DAG)</h2>
+
+<h3>5.1 Thứ tự phụ thuộc</h3>
+<div class="layers">
+  <div class="lname">Tầng 0 — gốc, không phụ thuộc gì (mã thuần :core, chạy song song được)</div>
+  <div class="layer">
+    <div class="node new"><b>T1</b><span>bộ đọc mục Binding + hàm phân loại</span></div>
+    <div class="node new"><b>T3</b><span>bộ dựng lệnh tách rời + chốt cứng</span></div>
+    <div class="node new"><b>T5</b><span>cổng leo thang (thuần)</span></div>
+  </div>
+  <div class="lname">Tầng 1 — test khoá + prefs + câu thông báo + nhật ký bền</div>
+  <div class="layer">
+    <div class="node"><b>T2</b><span>test T1 từ fixture dump thật · ← T1</span></div>
+    <div class="node"><b>T4</b><span>test T3 (hình dạng + chốt cứng) · ← T3</span></div>
+    <div class="node"><b>T6</b><span>test T5 (1 lần/nổ máy + ô rỗng) · ← T5</span></div>
+    <div class="node"><b>T7</b><span>mốc trong prefs · ← T5</span></div>
+    <div class="node"><b>T11</b><span>ba câu thông báo (R5) · ← T1</span></div>
+    <div class="node new"><b>T14</b><span>nhật ký bền (R7) + test · ← T1</span></div>
+  </div>
+  <div class="lname">Tầng 2 — nối dây đường chữa + ngòi nổ “xe thức”</div>
+  <div class="layer">
+    <div class="node new"><b>T8</b><span>nối thang vào đường chữa · ← T1, T3, T5, T7</span></div>
+    <div class="node new"><b>T15</b><span>ngòi nổ “xe thức” (R2, đường CHÍNH) · ← T8</span></div>
+  </div>
+  <div class="lname">Tầng 3 — hậu khởi động lại + khoá hợp đồng</div>
+  <div class="layer">
+    <div class="node"><b>T9</b><span>xác minh lúc khởi động + xoá mốc · ← T7, T8, T14</span></div>
+    <div class="node"><b>T10</b><span>vẽ lại ô — best-effort (R4) · ← T8</span></div>
+    <div class="node"><b>T12</b><span>test hợp đồng nối dây · ← T8, T15</span></div>
+  </div>
+  <div class="lname">Tầng 4 — đóng gói</div>
+  <div class="layer">
+    <div class="node"><b>T13</b><span>bump version · senior review · security scan · build · ← tất cả</span></div>
+  </div>
+</div>
+<p class="muted"><b>Đổi ở Pass 2 (đối chiếu với mã 2.81)</b>: T1–T8 · T11 · T12 · T14 <b>DONE</b> · T15 <b>một phần</b> (ngòi nổ nằm trong watchdog 30 s, không phải receiver riêng) · T9 <b>chưa làm</b> (R7 gánh phần “nấc nào đã ăn”) · T10 <b>chưa làm</b> (best-effort) · T13 <b>một phần</b> (còn quét bảo mật + commit + đăng OTA). Hai tệp Pass 1 đặt tên trước <b>không hề được tạo</b> — cổng leo thang vào <code>AccessibilityHealGates.kt</code> (tệp đã có) và bài nối dây là <code>A11yBindStuckWiringContractTest.kt</code>. Xem §9 Pass 2.<br>Đổi ở Pass 1: <b>T14</b> (nhật ký bền R7) và <b>T15</b> (ngòi nổ “xe thức” R2) là hai task <b>mới</b>; <b>T10</b> hạ xuống best-effort theo R4 mới; <b>T5/T6</b> thêm điều kiện “ô còn rỗng”; <b>T11</b> thành ba câu; task tách tiến trình bị <b>rút</b> khỏi kế hoạch (R6).</p>
+
+<h3>5.2 Chi tiết</h3>
+<table>
+<tr><th>#</th><th>Việc + test</th><th>File</th><th>← Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Bộ đọc mục <code>Binding services:{…}</code> (quét ngoặc cân bằng như <code>isClusterNavBound</code>, khớp theo <b>package của chính component</b> để không nhận nhầm app anh em) + hàm phân loại ĐÃ GẮN · A · B. Fail-mode: dump rỗng/không đọc được ⇒ <b>không</b> khẳng định là KẸT — không để một dump lỗi kích force-stop.</td><td><code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityRebind.kt</code> — <code>isInBindingServices()</code> <code>:245</code>, <code>braceSection()</code> <code>:206</code></td><td>—</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> file nay <b>268 dòng</b>; fail-mode trả <code>false</code> đúng yêu cầu. <b>Đã có call site production</b>: <code>NavConnect.escalateIfStuck</code> (<code>NavConnect.kt:265</code>).</td></tr>
+<tr><td>T2</td><td>Test đơn vị dựng từ <b>fixture nguyên văn</b>: dump lúc KẸT và dump sau khi chữa. Ca khoá: B nhận đúng · ĐÃ GẮN nhận đúng · A (không Bound, không Binding) nhận đúng · dump rỗng → không kẹt · mục của app anh em trong Binding <b>không</b> bị nhận là của mình.</td><td><code>core/src/test/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityBindingStuckTest.kt</code></td><td>T1</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> <b>12 test</b>, 0 lỗi (Pass 1 là 8; lượt soát thêm ca nhãn dịch vụ thật + 2 ca T4); <code>AccessibilityRebindTest</code> cũ vẫn 17 test, 0 lỗi. Fixture lấy nguyên văn dump xe cả lúc kẹt lẫn sau khi chữa.</td></tr>
+<tr><td>T3</td><td>Bộ dựng lệnh tách rời <code>forceStopRebindCommand(current, pkg, component, pauseSec)</code> theo hình dạng §4.5; chuẩn hoá danh sách ghi lại (giữ nguyên dịch vụ của hãng, bỏ trùng, thêm đúng một lần vào cuối, không sinh dấu <code>:</code> thừa); kẹp <code>pauseSec</code>; <b>chốt cứng</b> gói ≠ gói của component ⇒ trả <code>""</code>.</td><td><code>core/…/AccessibilityRebind.kt</code> — <code>forceStopRebindCommand()</code> <code>:181</code></td><td>—</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> <code>forceStopRebindCommand(current, pkg, component, pauseSec = 4)</code>, gọi từ <code>NavConnect.kt:296</code>. Lượt soát thêm <b>chốt thứ hai</b>: mọi mục trong danh sách đọc-ngoài phải khớp <code>SAFE_ENTRY</code> (chữ/số/<code>._-/</code>); gặp ký tự thoát được khỏi <code>sh -c '…'</code> ⇒ <b>từ chối dựng lệnh</b> chứ không bỏ mục đó ra (bỏ ra là vô tình TẮT dịch vụ Hỗ trợ của hãng). Chưa commit.</td></tr>
+<tr><td>T4</td><td>Test T3: có <code>nohup</code> + <code>&amp;</code> + đóng cả ba luồng · thứ tự force-stop → sleep → ghi lại → <code>accessibility_enabled 1</code> · danh sách ghi lại giữ dịch vụ hãng và bỏ trùng · dạng SHORT (<code>pkg/.Cls</code>) vẫn nhận là trùng · <b>gói lạ ⇒ chuỗi rỗng</b> · gói rỗng ⇒ chuỗi rỗng · pause bị kẹp trong biên.</td><td><code>core/src/test/kotlin/…/AccessibilityBindingStuckTest.kt</code></td><td>T3</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> đủ ca trong <code>AccessibilityBindingStuckTest</code> (12 test / 0 lỗi): hình dạng tách rời + giữ dịch vụ hãng · gói lạ/gói rỗng ⇒ rỗng · bỏ trùng không sinh <code>:</code> thừa · <b>dạng SHORT <code>pkg/.Cls</code></b> · <b>kẹp <code>pauseSec</code></b> (1..30) · mục có ký tự shell ⇒ rỗng.</td></tr>
+<tr><td>T5</td><td>Cổng leo thang <b>thuần</b>: vào là (mốc đã lưu hay không · <code>elapsedRealtime</code> lúc lưu · <code>elapsedRealtime</code> hiện tại · phím-thoại có bật không · trạng thái vừa phân loại · <b>ô có đang host app khách không</b>), ra là cho phép / từ chối + <b>lý do</b> từ chối (để UI nói đúng ba câu ở §4.8). Luật: chỉ cho khi trạng thái = B <b>và</b> (chưa có mốc <b>hoặc</b> mốc lưu &gt; hiện tại) <b>và</b> ô còn rỗng.</td><td><b>KHÔNG tạo tệp mới</b> (sửa ở Pass 2 — Pass 1 ghi <code>AccessibilityEscalationGate.kt</code>, tệp đó <b>không tồn tại</b>): mở rộng <code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityHealGates.kt</code> — <code>enum HealStep{NONE,TOGGLE,FORCE_STOP}</code> · <code>healStep(bound, stuckInBinding, wanted, userAsked, guestAppVisible, escalatedAtElapsed, nowElapsed)</code> · <code>escalatedThisBoot()</code>. Cùng chỗ với hai cổng tự-heal đã có ⇒ không đẻ thêm khái niệm.</td><td>—</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> nhưng <b>vào là BẢY tham số, không phải sáu như Pass 1 liệt kê</b>: thêm <code>userAsked</code> — và chính nó <b>bỏ qua</b> cả cổng ô-có-app-khách lẫn cổng quota (xem R4 · §4.8). Ra là <code>HealStep</code>, <b>không mang theo lý do từ chối</b> — vì đường tự động không có UI để nói (§4.8).</td></tr>
+<tr><td>T6</td><td>Test T5: chưa có mốc + B + ô rỗng ⇒ cho · đã có mốc trong cùng lần nổ máy ⇒ từ chối, đúng lý do · mốc lưu &gt; hiện tại (đã nổ lại) ⇒ cho · trạng thái A hoặc ĐÃ GẮN ⇒ từ chối dù chưa có mốc · phím-thoại tắt ⇒ từ chối · <b>ô đang chứa app khách ⇒ từ chối với lý do “cần owner chọn”, KHÔNG phải “đã leo rồi”</b> (hai lý do không được lẫn — UI nói hai câu khác nhau).</td><td><code>core/src/test/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityHealGatesTest.kt</code> (tệp đã có, thêm ca) — <b>không</b> <code>AccessibilityEscalationGateTest.kt</code> như Pass 1 ghi</td><td>T5</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> 13 test / 0 lỗi. Có ca cho cả <code>userAsked</code> bỏ qua cổng. Ca “từ chối với lý do cần-owner-chọn” <b>không còn</b> vì <code>HealStep</code> không mang lý do (§4.8).</td></tr>
+<tr><td>T7</td><td>Mốc bền trong prefs: ghi (thời điểm <code>elapsedRealtime</code> · trạng thái đo được · nấc đã chọn) <b>trước</b> khi phát lệnh; đọc; xoá. Không dùng cờ RAM.</td><td><code>app/src/main/java/com/byd/clusternav/Prefs.kt</code> — <code>a11yEscalatedAt()</code> / <code>setA11yEscalatedAt()</code> (khoá <code>a11y_forcestop_elapsed</code>) + <code>lastDeepSleepMs()</code> / <code>setLastDeepSleepMs()</code> (khoá <code>a11y_deep_sleep_ms</code>, cho §4.6 đường nhả quota)</td><td>T5</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> ghi bằng <b><code>commit()</code></b> chứ không <code>apply()</code>: mốc phải nằm trên đĩa TRƯỚC khi tiến trình tự giết; <code>apply()</code> ghi nền, chết trước khi flush ⇒ mốc mất ⇒ vòng lặp giết launcher.</td></tr>
+<tr><td>T8</td><td>Nối thang vào đường chữa: <code>forceRebindIfNeeded</code> gọi hàm phân loại T1 thay vì chỉ hỏi “bound hay chưa”; A ⇒ toggle như cũ rồi <b>đo lại</b>; B ⇒ <b>bỏ hẳn</b> toggle, hỏi cổng T5, ghi mốc T7, phát lệnh T3 qua phiên dadb rồi trả về ngay (tiến trình sắp chết).</td><td><code>app/src/main/java/com/byd/clusternav/NavConnect.kt</code> — <code>escalateIfStuck()</code> + <code>GrantResult.RESTARTING</code></td><td>T1, T3, T5, T7</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> <code>grantViaShell</code> nay là <code>if (forceRebindIfNeeded(…)) BOUND else escalateIfStuck(app, sh, userAsked)</code>. Lượt soát thêm <b>chốt hết-giờ</b>: lượt grant đã bị <code>doGrantResultWithTimeout</code> bỏ (join hết giờ → interrupt) thì <b>KHÔNG</b> được tự giết sau lưng caller.</td></tr>
+<tr><td>T9</td><td>Xác minh lúc khởi động: đọc mốc → hỏi lại đã gắn chưa → ghi <b>nấc nào ăn</b> vào nhật ký bền (T14) → xoá phần chẩn đoán của mốc (<b>giữ</b> dấu “đã leo trong lần nổ máy này”). Đặt ở đường khởi động đã có, không tạo ngòi nổ mới.</td><td><b>CHƯA chạm tệp nào</b> — Pass 1 dự tính <code>BootSetupService.kt</code> + <code>KachiAutostart.kt</code>, <b>không tệp nào được sửa</b></td><td>T7, T8, T14</td><td><span class="warn">CHƯA LÀM</span> — phần <i>“ghi nấc nào đã ăn”</i> <b>được thay bằng R7</b>: watchdog 30 s ghi trạng thái mỗi lần ĐỔI nên nhật ký đã có chuỗi <code>STUCK → BOUND</code> kèm mốc giờ, đủ để biết thang chữa có ăn không. Phần còn thiếu thật sự: <b>không có lượt kiểm ngay lúc khởi động lại</b> — lượt đầu tiên đến <b>chậm nhất 30 s</b> sau khi watchdog chạy lại (và chỉ khi phím-thoại BẬT).</td></tr>
+<tr><td>T10</td><td><b>Best-effort (hạ mức ở Pass 1)</b> — vẽ lại ô sau khi khởi động lại do leo thang. <b>Không</b> còn là điều kiện ship: chốt “chỉ tự chữa khi ô rỗng” ở T5 đã loại bỏ ca sinh cửa sổ mồ côi.</td><td><code>app/src/main/java/com/byd/clusternav/launcher/SlotVdOwner.kt</code>, <code>SlotAppHost.kt</code>, <code>app/src/main/java/com/byd/clusternav/KachiAutostart.kt</code></td><td>T8</td><td><span class="warn">CHƯA LÀM</span> — đúng như Pass 1 xếp: best-effort, không phải điều kiện ship. Hệ quả còn lại: nếu người dùng <b>tự bấm</b> chữa lúc ô đang có app khách thì cửa sổ mồ côi <b>vẫn xảy ra</b>, và cách đi vòng là câu thông báo (<i>“chạm vào ô là hiện lại”</i>), không phải mã.</td></tr>
+<tr><td>T11</td><td><b>Ba</b> câu thông báo theo §4.8 (tự chữa im lặng khi ô rỗng · xin phép khi ô đang chứa app · “đã thử một lần trong lần nổ máy này” khi cổng đóng) + sửa cụm “xe đang tải cao” trong KDoc để không để lại quy kết sai trong mã.</td><td><code>app/src/main/res/values/strings_kachi.xml:278-279</code> + <code>values-en/strings_kachi.xml:268-269</code> · <code>ClusterNavBridgeMsg.kt</code> (<code>ACCESSIBILITY_RESTARTING</code>) · <code>ClusterNavBridgeKeys.kt</code> (<code>msgFor</code>) · <code>KachiHomeWiring.kt:83</code> (<code>bridgeMsgRes</code>) · KDoc <code>NavConnect.kt</code></td><td>T1</td><td><span class="ok">DONE</span> <b>nhưng HAI câu, không ba</b> (sửa ở Pass 2): <code>kachi_bridge_accessibility_restarting</code> (ca bấm tay) + <code>kachi_bridge_accessibility_not_bound</code> (chưa gắn, không kẹt). Cụm <b>“xe đang tải cao” đã gỡ hẳn</b> khỏi cả chuỗi lẫn KDoc, và có bài canh khoá không cho quay lại. Câu thứ ba (“cổng đã đóng”) <b>bỏ khỏi phạm vi</b> vì không thể tới được — §4.8.</td></tr>
+<tr><td>T12</td><td><b>Test hợp đồng nối dây</b>: đỏ nếu đường chữa <b>thôi</b> chứa bước leo thang, <b>hoặc</b> nếu ngòi nổ “xe thức” thôi gọi thang. Theo khuôn các <code>*WiringContractTest</code> đã có trong repo (<span class="ev m">[ĐO]</span> 10+ file cùng khuôn ở <code>app/src/test/java/com/byd/clusternav/launcher/</code>). Khoá ba chiều: đường chữa gọi hàm phân loại · gọi bộ dựng lệnh leo thang · được gọi từ ngòi nổ “xe thức”.</td><td><code>app/src/test/java/com/byd/clusternav/A11yBindStuckWiringContractTest.kt</code> (mới) — <b>không</b> <code>AccessibilityEscalationWiringContractTest.kt</code> như Pass 1 ghi</td><td>T8, T15</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> <b>11 test / 0 lỗi</b>. Khoá: nấc toggle thất bại phải nối sang nấc leo · bốn cổng · ô của mình đọc từ <code>dumpsys display</code> · hết giờ thì không giết · mốc ghi TRƯỚC khi bắn lệnh · lệnh đi qua hàm có chốt gói · chuỗi không còn “xe đang tải cao” · watchdog ghi nhật ký · <b>đợt ngủ dài nhả quota</b> · ngã rẽ KẸT được ghi · nhật ký đọc được trong app. ⚠ Bản đầu của bài này cắt vùng quét bằng mốc <code>/**</code> mà <code>SourceRoots.codeOf</code> đã xoá hết chú thích ⇒ quét tràn tới hết tệp (test giả); nay dùng <code>SourceRoots.body</code>.</td></tr>
+<tr><td><b>T14</b></td><td><b>MỚI (R7) — nhật ký bền.</b> Ghi mỗi lần trạng thái gắn <b>ĐỔI</b> (ĐÃ GẮN ↔ chưa gắn ↔ KẸT) vào file bền: {mốc giờ · <code>elapsedRealtime</code> · trước → sau · nguồn phát hiện · nấc đã chạy}. Chỉ ghi khi <b>đổi</b>, không ghi mỗi lượt kiểm (tránh phình file mỗi 60 s). File quay vòng có giới hạn kích thước; đọc được từ màn chẩn đoán để chủ xe chỉ cần chụp màn hình (CLAUDE.md §11). Test: luật “chỉ ghi khi đổi” · định dạng bản ghi · quay vòng khi vượt hạn.</td><td><code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/A11yBindJournal.kt</code> (thuần) · <code>app/src/main/java/com/byd/clusternav/modules/navaccess/A11yBindJournalStore.kt</code> (tệp <code>filesDir/diag/a11y-bind.log</code>) · ghi từ <code>VoiceKeyKeepAliveService</code> + <code>NavConnect.escalateIfStuck</code> · đọc ở <code>DiagActivity</code></td><td>T1</td><td><span class="ok">DONE</span> — <span class="ev m">[ĐO]</span> <code>A11yBindJournalTest</code> 7 test / 0 lỗi. Dòng: <code>2026-09-28T10:20:00 state=STUCK up=3600s sleep=32400s pid=12738 note=watchdog</code>; giữ 200 dòng cuối; chỉ ghi khi ĐỔI trạng thái <b>+ nhịp tim 1 giờ</b> (thêm so với Pass 1, để biết nhật ký còn sống). <b>Riêng tư theo thiết kế</b>: chỉ mốc giờ · hai đồng hồ · pid · trạng thái — không tên app, không vị trí, vì tệp này sẽ đi ra ngoài dưới dạng ảnh chụp. Hai luồng cùng ghi (watchdog + thân lượt grant) ⇒ có khoá. Lượt soát bắt: <code>read()</code> lúc đầu <b>0 call site</b> ⇒ nay in ở màn Chẩn đoán (20 dòng cuối + mốc đã-leo).</td></tr>
+<tr><td><b>T15</b></td><td><b>MỚI (R2) — ngòi nổ “xe thức”, đường CHÍNH.</b> Gọi thang trong vài giây đầu sau khi xe thức (màn sáng / có người ngồi vào / <code>BOOT_COMPLETED</code>), dùng lại ngòi nổ khởi động đã có, <b>không</b> nhân bản logic thang. Watchdog 60 s giữ nguyên làm lưới phụ; nút “Sửa ngay” tụt xuống dự phòng.</td><td><b>Chỉ</b> <code>app/src/main/java/com/byd/clusternav/VoiceKeyKeepAliveService.kt</code> — <code>RebindReceiver.kt</code> và <code>BootSetupService.kt</code> <b>không bị chạm</b> (khác Pass 1)</td><td>T8</td><td><span class="warn">MỘT PHẦN</span> — <span class="ev m">[ĐO]</span> ngòi nổ “xe thức” <b>không</b> là receiver riêng: watchdog 30 s tự nhận ra <b>bước nhảy ngủ sâu ≥ 2 giờ</b> (<code>A11yBindJournal.wokeFromLongSleep</code>) ⇒ ghi nhật ký <code>note=wake</code> + <b>nhả quota</b> rồi chữa. Đủ cho ca của chủ xe (standby qua đêm), <b>chưa</b> có nhánh “màn sáng / người ngồi vào” và <b>không</b> nghe <code>BOOT_COMPLETED</code> riêng cho việc này. <span class="ev s">[SUY]</span> hiệu hai đồng hồ chưa đo trên ROM DiLink ⇒ nếu ROM không ngủ sâu thật thì nhánh này im và quota chỉ nhả khi reboot (V-oncar-1 chốt).</td></tr>
+<tr><td>T13</td><td>Bump <code>versionCode</code> + <code>versionName</code> (CLAUDE.md §9 — 2.79/180 đã báo cho chủ xe) · grep chứng minh mỗi hàm mới có ≥ 1 call site production (CLAUDE.md §8) · <code>./gradlew clean assembleRelease testDebugUnitTest</code> · senior review (rule global §5) · security scan trước commit (rule global §6) · cập nhật <code>docs/README.md</code> + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code> trong <b>cùng</b> commit (CLAUDE.md §16).</td><td>—</td><td>tất cả</td><td><span class="warn">MỘT PHẦN</span> — <span class="ev m">[ĐO]</span> đã bump <b>2.81 / 182</b> (2.80/181 đã giao cho người thử rồi <b>rút và xoá</b> khỏi <code>apk/</code> vì lượt soát tìm ra 2 × [P0]) · grep call site: hai hàm mới đều có ≥ 1 chỗ gọi production · <span class="ev m">[ĐO]</span> <code>:app</code> 1 520 + <code>:core</code> 3 002 = <b>4 707 bài / 0 lỗi</b> (đếm từ <code>*/build/test-results/**/TEST-*.xml</code>), lint <b>0 lỗi</b> · senior review <b>Pass 1 xong</b> (2 × [P0] + 3 × [P1] đã vá) · doc + INDEX + BACKLOG + <code>project-context</code> cập nhật 2026-09-28. <b>CÒN NỢ</b>: quét bảo mật + commit + đăng OTA.</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+
+<h3>6.1 Off-car (làm được ngay, không cần xe)</h3>
+<ul>
+<li><b>V-unit</b> — toàn bộ suite: <code>./gradlew test --rerun-tasks --continue</code> (đủ 5 module, số fail mới = 0). Bắt buộc <code>--rerun-tasks</code>: task cache trả xanh cho test đọc <code>docs/</code> lúc runtime.</li>
+<li><b>V-fixture</b> — T2 và T4 phải dựng từ <b>fixture nguyên văn</b> chụp trên xe 2026-09-28 (dump lúc KẸT và dump lúc KHOẺ), không viết tay (CLAUDE.md §10).</li>
+<li><b>V-đỏ-trước-xanh</b> — mỗi test hồi quy phải được <b>thử làm đỏ</b>: gỡ dòng vá → test đỏ → khôi phục → xanh. Test chưa từng đỏ là test mù (conversation-protocol P5.3).</li>
+<li><b>V-callsite</b> — <code>grep -rn "&lt;tên hàm mới&gt;" app/src core/src</code> phải thấy ≥ 1 call site production ngoài định nghĩa (CLAUDE.md §8). <span class="ev m">[ĐO] 2026-09-28 (2.81)</span>: <b>ĐẠT</b> — <code>isInBindingServices</code> ← <code>NavConnect.kt:265</code> · <code>forceStopRebindCommand</code> ← <code>NavConnect.kt:296</code> · <code>healStep</code> ← <code>NavConnect.kt:281</code> · <code>A11yBindJournalStore.record</code> ← <code>VoiceKeyKeepAliveService.kt:66</code> + <code>NavConnect.kt:268</code> · <code>A11yBindJournalStore.read</code> ← <code>DiagActivity.kt:204</code> · <code>noGuestAppVisible</code> ← <code>NavConnect.kt:279</code>.</li>
+<li><b>V-hợp-đồng</b> — T12 phải đỏ khi cố tình gỡ bước leo thang khỏi đường chữa, <b>và</b> khi gỡ lời gọi thang khỏi ngòi nổ “xe thức”.</li>
+<li><b>V-đếm</b> — đếm test từ XML kết quả, không tin grep console (memory <code>kachi-gradle-parallel-agents</code>). <span class="ev m">[ĐO] 2026-09-28, đếm từ <code>*/build/test-results/**/TEST-*.xml</code></span>: <code>AccessibilityBindingStuckTest</code> <b>12</b> · <code>AccessibilityHealGatesTest</code> <b>13</b> · <code>AccessibilityRebindTest</code> <b>17</b> · <code>A11yBindJournalTest</code> <b>7</b> · <code>A11yBindStuckWiringContractTest</code> <b>11</b> · <code>StackParseGuestVisibleTest</code> <b>5</b> — tất cả 0 lỗi. Toàn bộ: <code>:app</code> 1 520 + <code>:core</code> 3 002 = <b>4 707 / 0</b>; cả năm module chạy lại cùng lượt từ 27/09.</li>
+</ul>
+
+<h3>6.2 On-car — <span class="pill wait">CÒN NỢ</span></h3>
+<ul>
+<li><b>V-oncar-1 <span class="pill ok">RẺ NHẤT — làm trước</span></b> — <b>chờ tự nhiên qua một đêm</b>. Đây là phép đo <b>miễn phí</b> mà Pass 0 đã bỏ sót: theo §2.1 lỗi <b>tự tái hiện</b> sau một đêm để xe, nên chỉ cần cài bản có T14 (nhật ký bền) + T15 (ngòi nổ “xe thức”), để xe qua đêm, sáng bật lên và <b>đọc nhật ký</b>. Không cần lệnh phá hoại nào, không cần chủ xe làm gì. Bằng chứng cần: bản ghi ĐÃ GẮN → KẸT kèm mốc giờ, rồi bản ghi KẸT → ĐÃ GẮN kèm nấc 2, và phím vô-lăng ăn khi vừa lên xe.</li>
+<li><b>V-oncar-2</b> — thang chọn <b>đúng nấc</b>: khi đang ở B, log/nhật ký phải ghi <b>bỏ toggle, leo nấc 2</b>; sau khi khởi động lại: <code>dumpsys accessibility</code> có mục trong <code>Bound services</code>, <code>dumpsys activity services</code> có <code>ServiceRecord</code> thật <code>received=true hasBound=true</code>.</li>
+<li><b>V-oncar-3</b> — không lặp: yêu cầu chữa lần thứ hai trong cùng một lần nổ máy phải <b>không</b> giết tiến trình lần nữa, và hiện đúng câu “đã thử một lần trong lần nổ máy này”.</li>
+<li><b>V-oncar-4</b> — R4 chốt phát hiện muộn, <b>hai nhánh phải ra hai kết quả khác nhau</b> (sửa ở Pass 2): (a) mở một app khách vào ô rồi <b>để đường TỰ ĐỘNG</b> gặp trạng thái B ⇒ phải <b>KHÔNG giết</b>, log ghi <code>nấc NONE</code>, màn hình không nháy; (b) cũng ô đang có app khách nhưng <b>người dùng tự bấm</b> <i>“Sửa ngay”</i> ⇒ <b>CÓ giết</b>, hiện toast <code>kachi_bridge_accessibility_restarting</code>, và sau khi giao diện lên lại thì <b>cửa sổ mồ côi có xảy ra</b> (T10 chưa làm) — kiểm cách đi vòng mà câu thông báo hứa: <i>chạm vào ô thì app vẽ lại</i>.</li>
+<li><b>V-oncar-5</b> — trạng thái A không hồi quy: sau một lần nổ máy bình thường, đường toggle (nấc 1) vẫn chữa được như hiện nay, không leo thang thừa.</li>
+<li><b>V-oncar-6</b> — chủ động tái tạo B (<b>tuỳ chọn</b>, chỉ nếu chủ xe cho phép): cố tình làm đứt bind để không phải chờ một đêm. <span class="ev m">[ĐO]</span> lần thử 2026-09-28 <b>bị chặn</b> vì tác nhân không có quyền chạy lệnh cố tình làm sập một app.</li>
+</ul>
+<div class="card"><b>Nói thẳng chỗ còn nợ</b> — <b>chưa</b> có phép đo nào trên chính <b>đường tự động</b>; mọi bằng chứng hiện có là về <b>trạng thái</b> (§2.2) và về <b>cách chữa bằng tay</b> (§2.3) cộng với source (§4.2). ⇒ đường nấc 2 tự động vẫn ở mức <span class="ev s">[SUY]</span> “sẽ chạy”.
+<p><b>Đổi ưu tiên ở Pass 1</b>: Pass 0 coi việc tái tạo bằng lệnh phá hoại là điều kiện mở khoá và bị chặn ở đó. Nhưng theo §2.1 lỗi <b>tự tái hiện qua một đêm</b> ⇒ <b>V-oncar-1 (chờ một đêm) thay thế được</b>, và nó không cần quyền gì. V-oncar-6 tụt xuống <b>tuỳ chọn</b> (chỉ để rút ngắn vòng lặp), <b>không</b> còn là cổng chặn.</p></div>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — <span class="ev u">[CHƯA BIẾT]</span> Cái gì hạ <code>ServiceRecord</code> của <code>NavAccessibilityService</code> xuống trong lúc máy ngủ sâu?</b>
+  <p>Đây là câu hỏi <b>đúng</b>, thay cho câu sai của Pass 0 (<i>“vì sao lượt bind sau OTA thua cuộc đua”</i>). <span class="ev m">[ĐO]</span> đã biết chắc: tiến trình <b>vẫn sống</b> (10 g 13 ph, không PID mới) mà <code>ServiceRecord</code> <b>không còn</b> ⇒ có cái gì gọi <code>bringDownServiceLocked</code> trên một tiến trình còn sống. <span class="ev g">[ĐOÁN]</span> ứng viên: cơ chế tiết kiệm điện của ROM BYD khi ngủ sâu (khớp với chú thích <code>ssc_skip</code> sẵn có trong <code>NavConnect.kt:158</code>).</p>
+  <p><b>Cách chốt = R7 (T14, nhật ký bền)</b>: sáng hôm sau xe thức là có ngay mốc giờ cú đứt và nguồn phát hiện — <b>không cần adb</b>, <b>không cần chủ xe làm gì</b>, không cần bắt được khoảnh khắc bằng logcat. Nếu sau đó vẫn cần thêm: (a) lọc logcat theo chuỗi lý do của lệnh hạ dịch vụ quanh mốc giờ mà nhật ký đã chỉ ra; (b) so <b>tuổi</b> của các <code>ConnectionRecord</code> mồ côi để biết năm vòng đứt-rồi-park cách nhau bao lâu.</p>
+  <p><b>Không chặn</b> thay đổi này: cách chữa ở R2 chữa <b>trạng thái</b>, không cần biết ai gây ra. — <span class="muted">chưa đo; R7 là đường chốt.</span></p></li>
+<li><b>OQ2 — Có cần chủ động tái tạo trạng thái B bằng lệnh phá hoại không?</b> <span class="ev m">[ĐO]</span> lần thử 2026-09-28 bị chặn vì tác nhân thiếu quyền. <b>Nhưng</b> theo §2.1 lỗi <b>tự tái hiện qua một đêm</b> ⇒ V-oncar-1 (chờ một đêm + đọc nhật ký) thay thế được, nên đây <b>không còn là cổng chặn</b>, chỉ là cách rút ngắn vòng lặp. — <span class="muted">chờ chủ xe (dangkhoi) chốt; mặc định: không cần.</span></li>
+<li><b>OQ4 — <span class="warn">MỚI ở Pass 2</span> · Bấm tay lúc ô đang có app khách: cứ chữa (như hiện nay) hay hỏi trước?</b><p><span class="ev m">[ĐO]</span> mã đã ship: <code>userAsked</code> bỏ qua cổng ô-có-app-khách, chữa luôn, rồi báo bằng toast <b>sau khi lệnh đã bắn</b>. Được cái nút <i>“Sửa ngay”</i> luôn chữa được thật (đúng chữ <i>“regression quá lâu rồi”</i> của chủ xe); mất cái app đang mở trong ô bị rơi thành cửa sổ mồ côi (<span class="ev m">[ĐO]</span> màn đen phủ kín nhà hôm 28/09, đi vòng bằng cách chạm lại vào ô). Hai lựa chọn, dẫn tới hai kết quả khác hẳn nên <b>không tự quyết</b> (conversation-protocol P2): <b>(a) giữ nguyên</b> — nút luôn ăn, cái giá nằm trong câu thông báo; <b>(b) hỏi trước</b> — thêm một hộp xin phép khi ô đang có app khách, đổi lại có thêm một bước bấm đúng lúc người ta đang cần phím sống lại. Nếu chọn (b) thì phải đổi thứ tự cổng trong <code>healStep</code> và lúc đó câu thứ ba của §4.8 mới có chỗ tồn tại. Làm T10 (vẽ lại ô) sẽ làm câu hỏi này nhẹ hẳn. — <span class="muted">chờ chủ xe (dangkhoi) chốt; mặc định: giữ (a).</span></p></li>
+<li><b>OQ3 — R6 đã bị RÚT LẠI; có mở lại không?</b> <span class="ev g">[ĐOÁN]</span> Tách <code>NavAccessibilityService</code> sang tiến trình riêng <b>chưa chắc</b> giải quyết được gì, vì mối nối bị cắt <b>trong khi tiến trình vẫn sống</b> (§4.9). Đề xuất: <b>không</b> mở lại cho tới khi OQ1 có câu trả lời <span class="ev m">[ĐO]</span>. Nếu lúc đó hoá ra nguyên nhân là thứ nhắm vào tiến trình launcher cụ thể thì mới đáng làm; khối lượng công việc đã định danh sẵn (hai chỗ ghép nối in-process). — <span class="muted">chờ chủ xe chốt sau khi có dữ liệu OQ1.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<h4>Trong repo</h4>
+<ul>
+<li><code>docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md</code> — hồ sơ hiện trường đầu tiên của đúng trạng thái kẹt này; đã kết luận “toggle a11y KHÔNG đủ”, đã chỉ ra force-stop → re-enable là đường phục hồi chạy được, và dòng cuối đã kê đơn watchdog leo thang (chưa từng làm).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityRebind.kt</code> (<b>268 dòng</b>) — <code>accessibilityRebindWrites</code>, <code>isClusterNavBound</code>, <code>forceStopRebindCommand</code> (<code>:194</code>), <code>braceSection</code>, <code>isInBindingServices</code> (<code>:260</code>), <code>SAFE_ENTRY</code>. <span class="ev m">[ĐO]</span> đang trong worktree, <b>chưa commit</b>; cả hai hàm mới đã có call site production (§6.1 V-callsite).</li>
+<li><b>Tệp mới của bản vá (2.81)</b>: <code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/A11yBindJournal.kt</code> (thuần — bản ghi · ngưỡng ngủ dài · luật quay vòng) · <code>app/src/main/java/com/byd/clusternav/modules/navaccess/A11yBindJournalStore.kt</code> (tệp <code>filesDir/diag/a11y-bind.log</code>, có khoá vì hai luồng cùng ghi) · <code>core/src/test/kotlin/…/A11yBindJournalTest.kt</code> (7) · <code>core/src/test/kotlin/…/AccessibilityBindingStuckTest.kt</code> (12) · <code>core/src/test/kotlin/…/clustercast/StackParseGuestVisibleTest.kt</code> (5) · <code>app/src/test/java/com/byd/clusternav/A11yBindStuckWiringContractTest.kt</code> (11).</li>
+<li><b>Tệp bị sửa</b>: <code>core/…/AccessibilityHealGates.kt</code> (<code>HealStep</code> · <code>healStep()</code> · <code>escalatedThisBoot()</code>) · <code>core/…/clustercast/StackParse.kt</code> (<code>noGuestAppVisible(entries, selfPkg, ownVirtualDisplays)</code>) · <code>app/…/NavConnect.kt</code> (<code>escalateIfStuck</code> · <code>GrantResult.RESTARTING</code>) · <code>app/…/VoiceKeyKeepAliveService.kt</code> (ghi nhật ký · nhận đợt ngủ dài · nhả quota) · <code>app/…/Prefs.kt</code> (hai khoá mốc) · <code>app/…/modules/clustercast/DiagActivity.kt</code> (in nhật ký + mốc đã-leo) · <code>app/…/launcher/{ClusterNavBridgeMsg,ClusterNavBridgeKeys,KachiHomeWiring}.kt</code> + hai tệp chuỗi.</li>
+<li><code>core/src/test/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityBindingStuckTest.kt</code> — <span class="ev m">[ĐO]</span> 8 test / 0 lỗi, fixture nguyên văn dump xe lúc kẹt và sau khi chữa (khoá T2 + phần lớn T4).</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityHealGates.kt</code> — cổng hỏi binder trước khi đi shell; KDoc đã trích <code>AccessibilityManagerService.java:653-679</code> và <code>:2563-2573</code> chứng minh danh sách của <code>AccessibilityManager</code> == “Bound services” của <code>dumpsys</code>.</li>
+<li><code>app/src/main/java/com/byd/clusternav/NavConnect.kt</code> — <code>grantViaShell</code> (<code>:203</code>), <code>forceRebindIfNeeded</code> (<code>:240-295</code>), câu KDoc “xe tải cao” (<code>:157</code>).</li>
+<li><code>app/src/main/java/com/byd/clusternav/RebindReceiver.kt:55-64</code> — ba ngòi nổ gọi cùng đường toggle.</li>
+<li><code>app/src/main/res/values/strings_kachi.xml:278</code> — câu thông báo sai cần thay.</li>
+<li><code>app/src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeMsg.kt:92</code> — nhãn <code>ACCESSIBILITY_NOT_BOUND</code>.</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/navaccess/NavAccessibilityService.kt:50-155</code> — hai chỗ ghép nối in-process của R6.</li>
+<li><code>app/src/test/java/com/byd/clusternav/launcher/*WiringContractTest.kt</code> — khuôn test hợp đồng nối dây cho T12.</li>
+</ul>
+<h4>AOSP tag <code>android-10.0.0_r47</code></h4>
+<ul>
+<li><code>AccessibilityManagerService.java</code> — <code>:378-396</code> · <b><code>:398</code> (chú thích ý đồ “during updating” — Pass 1)</b> · <code>:410</code> · <code>:435</code> · <code>:453-484</code> · <code>:474-478</code> · <code>:885</code> · <code>:1610-1665</code> (<code>:1621</code>, <code>:1630-1631</code>, <code>:1642</code>, <code>:1644</code>, <code>:1645</code>) · <code>:1978-1990</code> · <code>:3963</code> · <code>:3986</code> · <code>:4040-4042</code> · <code>:4050</code> · <code>:4072-4079</code> · <b><code>:4114-4117</code> (<code>serviceDisconnectedLocked</code> park ngược — GỐC BỆNH, Pass 1)</b> · <code>:4279-4316</code> · <code>:4322-4350</code></li>
+<li><code>AccessibilityServiceConnection.java</code> — <code>:89-106</code> · <code>:159</code> · <code>:182</code> · <b><code>:209</code> (<code>onServiceDisconnected</code> → <code>binderDied</code>, Pass 1)</b> · <b><code>:265</code> (<code>binderDied</code>, Pass 1)</b></li>
+<li><code>ActiveServices.java</code> — <code>:2889-2905</code> (<code>:2902</code>, <code>:2905</code>) · <code>:3403-3406</code></li>
+<li><code>ActivityManagerService.java</code> — <code>:4075</code> · <code>:4254-4259</code> · <code>:4280</code> · <code>:4515-4517</code> · <code>:4594</code></li>
+<li><code>ConnectionRecord.java:225-227</code> · <code>LoadedApk.java:1898-1953</code> (<code>:1941</code>, <code>:1944</code>, <code>:1951</code>) · <code>PackageMonitor.java:175-184</code>, <code>:412-416</code> · <code>ServiceConnection.java:69</code>, <code>:86</code></li>
+</ul>
+<h4>Luật áp dụng</h4>
+<ul>
+<li><code>CLAUDE.md</code> §2 (tách cơ chế/quy kết) · §3 (đọc source AOSP trước khi ship) · §4 (lệnh đổi state phải có phạm vi tường minh) · §5 (state ngoài hệ thống sống dai hơn tiến trình) · §6 (đường mới xuống cuối) · §7 (generic) · §8 (grep call site) · §9 (bump version) · §10 (test khoá bài học) · §16 (nạp <code>.kiro/steering/</code>).</li>
+<li><code>.kiro/steering/conversation-protocol.md</code> P1 (nhãn mức bằng chứng) · P5 (điều kiện được viết chữ “xong”).</li>
+<li><code>.kiro/steering/trace-den-tan-cung.md</code> — cấm bỏ cuộc sớm; “không thể” phải kèm bằng chứng + điều kiện mở khoá (áp cho OQ1).</li>
+</ul>
+
+<h2>9. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass review thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG ghi đè lịch sử. Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 2 — 2026-09-28 · đối chiếu spec ↔ mã đã ship (2.81)</h3>
+<p class="muted">Lượt này <b>không</b> sửa mã: nó sửa <b>tài liệu</b>. Lượt soát kiến trúc sư tìm ra spec nói khác mã ở ba chỗ; ở cả ba, <b>mã đúng hơn</b> vì nó mang thêm hai phép đo mà Pass 1 chưa có (đầu máy standby 3–4 ngày · thứ tự cổng trong <code>healStep</code>). Nguyên tắc áp dụng: <b>spec phải phản ánh code THỰC TẾ, kể cả chỗ lệch</b> (<code>documentation-and-backlog.md</code> R2.6).</p>
+<ul>
+<li><span class="tag p1">[P1]</span> <b>§4.6 nói ngược về quota.</b> Pass 1 viết <i>“xoá mốc <b>không</b> trả lại quota — dấu đã-leo phải giữ tới lần nổ máy sau”</i>. Mã đã ship <b>có</b> một đường trả lại quota: <code>if (woke) Prefs.setA11yEscalatedAt(app, -1L)</code> trong <code>VoiceKeyKeepAliveService</code>, khi lượng <b>ngủ sâu tích luỹ</b> tăng thêm ≥ 2 giờ. Và đường đó <b>đúng</b>: <span class="ev m">[ĐO]</span> đầu máy BYD chỉ tắt hẳn sau <b>3–4 ngày</b>, nên cổng chỉ-nhả-khi-<code>elapsedRealtime</code>-về-0 sẽ <b>im vĩnh viễn</b> sau lần chữa đầu — tức là bệnh này chỉ được chữa đúng một lần trong đời một chuỗi standby. Hành vi đã bị <b>khoá bằng bài nối dây</b> (<code>A11yBindStuckWiringContractTest</code>: <i>“một đợt ngủ dài PHẢI nhả cổng cho phép chữa lại”</i>) ⇒ sửa spec, không sửa mã.
+  <br><b>Đã sửa</b>: §4.6 (bỏ câu sai, thêm bullet đường nhả quota + ngưỡng 2 giờ + lý do + tên bài khoá + nhãn <span class="ev s">[SUY]</span> cho phần hiệu hai đồng hồ chưa đo trên ROM DiLink) · §4.4 (hộp cổng trong sơ đồ) · §5.2 T7 (thêm khoá prefs thứ hai).</li>
+<li><span class="tag p1">[P1]</span> <b>R4 hứa một hộp thoại xin phép không tồn tại.</b> Pass 1: <i>“phát hiện muộn khi đang có app khách trong ô ⇒ báo đúng sự thật và <b>để chủ xe chọn</b>”</i>. Mã: <code>healStep</code> có <code>if (userAsked) return HealStep.FORCE_STOP</code> đứng <b>trên</b> cả cổng ô-có-app-khách lẫn cổng quota ⇒ người dùng tự bấm thì <b>chữa luôn</b>, và cái giá được nói trong <b>toast sau khi lệnh đã bắn</b> (<code>kachi_bridge_accessibility_restarting</code>: <i>“…app đang mở trong ô sẽ phải vẽ lại (chạm vào ô là hiện lại)”</i>). Đường <b>tự động</b> mới là đường từ chối — và nó <b>đứng im</b>, không nói gì, vì không có bề mặt UI nào.
+  <br><b>Đã sửa</b>: R4 (viết lại, tách rõ tự-động vs bấm-tay, nói thẳng toast là <b>lời báo</b> chứ không phải lời xin phép) · §4.7 · §4.4 (hộp TỪ CHỐI) · §5.2 T5/T6/T10.
+  <br><b>Không sửa mã</b>: đổi thành hộp thoại xin phép là đổi hành vi đang chạy được, cần chủ xe chốt — <b>để ngỏ</b>, không tự quyết (xem OQ4).</li>
+<li><span class="tag p2">[P2]</span> <b>§4.8 đặc tả một câu KHÔNG THỂ tới được.</b> Câu thứ ba (<i>“đã thử một lần trong lần nổ máy này”</i>) chỉ nổ ở ca “bấm nút mà cổng quota từ chối” — mà <span class="ev s">[SUY]</span> theo thứ tự cổng ở trên, <b>bấm tay không bao giờ bị quota từ chối</b>; còn đường tự động thì không có UI. ⇒ một requirement viết cho nhánh chết.
+  <br><b>Đã sửa</b>: §4.8 thay danh sách “ba câu” bằng <b>bảng bốn ca × cái gì thật sự ship</b> (hai chuỗi), ghi rõ câu thứ ba <b>bỏ khỏi phạm vi</b> và <b>điều kiện mở khoá</b> nếu sau này muốn có (phải đổi thứ tự cổng trong <code>healStep</code> trước, và phải trả lời được người dùng làm gì tiếp khi bị từ chối) · §5.2 T11.</li>
+<li><span class="tag p2">[P2]</span> <b>Bảng Tasks còn để TODO dưới những tên tệp chưa từng tồn tại.</b> <span class="ev m">[ĐO]</span> <code>find</code>/<code>grep</code> trong cây: <b>không có</b> <code>core/…/AccessibilityEscalationGate.kt</code> và <b>không có</b> <code>app/…/AccessibilityEscalationWiringContractTest.kt</code>. Cổng leo thang được thêm vào <b>tệp đã có</b> <code>AccessibilityHealGates.kt</code> (đúng chỗ — hai cổng tự-heal khác cũng ở đó), test cổng vào <code>AccessibilityHealGatesTest.kt</code>, bài nối dây là <code>A11yBindStuckWiringContractTest.kt</code>. T9/T10 thì <b>thật sự chưa làm</b> và T15 chỉ <b>một phần</b> — để TODO chung một rổ với những việc đã xong là làm người đọc sau không biết tin dòng nào.
+  <br><b>Đã sửa</b>: §5.2 viết lại cột <i>File</i> + cột <i>Trạng thái</i> cho T1–T15 theo mã thật, mỗi ô ghi rõ <b>đã làm gì</b> / <b>còn thiếu gì</b>; thêm dòng tổng ở §5.1.</li>
+<li><span class="tag p2">[P2]</span> <b>§6.1 còn khai “0 call site” và số test cũ.</b> Hai câu đó đúng lúc Pass 1 viết, sai từ lúc nối dây xong. <b>Đã sửa</b>: V-callsite liệt kê <b>từng</b> call site kèm <code>file:line</code>; V-đếm cập nhật theo XML kết quả (<span class="ev m">[ĐO]</span> 2026-09-28).</li>
+<li><b>Điểm KHÔNG đổi</b>: toàn bộ §4.2 (vì sao toggle vô hiệu — trích AOSP <code>android-10.0.0_r47</code>), §4.3 (cơ chế park ngược) và §4.5 (hình dạng lệnh tách rời + chốt cứng gói) vẫn đúng nguyên. Pass 2 chỉ đổi <b>ai được chữa lúc nào</b> và <b>nói gì với người dùng</b> — không đổi <b>chữa bằng gì</b>.</li>
+<li><b>Test sau lượt đối chiếu</b>: <span class="ev m">[ĐO]</span> không sửa mã ⇒ không chạy lại; số của lượt build 2.81 giữ nguyên — <code>:app</code> 1 520 + <code>:core</code> 3 002 = <b>4 707 / 0 lỗi</b>, lint 0. <b>Verdict: INCOMPLETE</b> — off-car còn T9 · T10 · T15 (phần “màn sáng / người ngồi vào”); 🚗 còn <b>V-oncar-1</b> (để xe qua đêm rồi đọc nhật ký) và các mục V-oncar-2..5 chưa ai đo; và <b>chưa quét bảo mật / chưa commit / chưa đăng OTA</b>.</li>
+</ul>
+<h3>Pass 1 — 2026-09-28 · đính chính gốc bệnh (chủ xe)</h3>
+<ul>
+<li><span class="tag">[P0]</span> <b>Quy kết sai gốc bệnh.</b> Pass 0 kết luận ngòi nổ là <i>“lượt bind sau OTA thua cuộc đua”</i>, dựng lên từ <b>một</b> mốc <code>lastUpdateTime=2026-09-27 23:04:25</code> — tức là lấy một dữ kiện gián tiếp làm bằng chứng nhân quả. Đây đúng là lỗi mà CLAUDE.md §2 cấm: trộn <b>cơ chế</b> (đã chứng minh: mục kẹt trong <code>mBindingServices</code> thì không gỡ được) với <b>quy kết</b> (chưa có bằng chứng: “do lần OTA”).
+  <br><b>Bác bỏ bởi</b>: chủ xe cung cấp quan sát trực tiếp, lặp lại nhiều lần — <i>cài mới thì chạy tốt; để xe qua đêm, sáng bật lên mới kẹt</i>.
+  <br><b>Đã sửa</b>: §2.1 (thêm quan sát của chủ xe làm ngòi nổ thật) · §4.3 viết lại hoàn toàn theo cơ chế <code>serviceDisconnectedLocked</code> park ngược (<code>AccessibilityManagerService.java:4114-4117</code>, <code>AccessibilityServiceConnection.java:265</code>/<code>:209</code>, chú thích ý đồ <code>:398</code>) · §4.1 thêm chuyển dịch ③ <b>ĐÃ GẮN → bị đứt → park vào Binding</b> vào sơ đồ trạng thái · §4.2 thêm ba trích dẫn AOSP.</li>
+<li><span class="tag">[P0]</span> <b>Bỏ sót bằng chứng đã có trong tay.</b> Pass 0 đã ghi cả hai dữ kiện <i>“tiến trình sống 10 g 13 ph”</i> và <i>“không còn <code>ServiceRecord</code>”</i> nhưng <b>không nối chúng lại</b> — trong khi tổ hợp đó chính là bằng chứng mạnh nhất, và nó <b>một mình đã đủ</b> bác bỏ mọi giả thuyết dựa trên tiến trình chết.
+  <br><b>Đã sửa</b>: thêm khối “Tổ hợp quyết định — dấu vân tay của bị-hạ-trong-khi-vẫn-sống” vào §2.2, và lập bảng đối chiếu từng dữ kiện với từng khâu của cơ chế trong §4.3. Diễn giải lại năm <code>ConnectionRecord … DEAD</code> mồ côi: năm vòng <b>đứt-rồi-park</b>, không phải năm vòng cài đè.</li>
+<li><span class="tag p1">[P1]</span> <b>Sai THỜI ĐIỂM chữa.</b> Pass 0 để đường chữa chạy khi người dùng bấm nút, nên lúc nào cũng có nguy cơ chữa giữa lúc ô đang chứa app ⇒ sinh ra cả một requirement (R4 cũ) chỉ để vá màn đen.
+  <br><b>Đã sửa</b>: R2 đổi sang <b>tự chữa trong vài giây đầu sau khi xe thức</b> (ô còn rỗng ⇒ khởi động lại gần như miễn phí); thêm §4.4 “ngòi nổ” và task <b>T15</b>. R4 nhẹ hẳn: chốt <b>không tự giết khi ô đang chứa app khách</b>, việc vẽ lại ô hạ xuống best-effort (T10).</li>
+<li><span class="tag p1">[P1]</span> <b>Hứa hẹn một hướng phòng bệnh không có bằng chứng.</b> R6 (tách tiến trình) dựa trên tiền đề “tiến trình chết” đã bị bác bỏ.
+  <br><b>Đã sửa</b>: §4.9 + R6 <b>rút lại</b>, hạ xuống <span class="ev g">[ĐOÁN]</span>, ghi rõ <b>không theo hướng này</b> cho tới khi đo được OQ1.</li>
+<li><span class="tag p1">[P1]</span> <b>Chọn cổng mở khoá đắt nhất.</b> Pass 0 coi “tái tạo B bằng lệnh phá hoại” là điều kiện để nghiệm thu, rồi dừng ở đó vì thiếu quyền — trong khi lỗi <b>tự tái hiện qua một đêm</b>, tức là có sẵn một phép đo miễn phí.
+  <br><b>Đã sửa</b>: thêm <b>R7 (nhật ký bền)</b> + task <b>T14</b>; V-oncar-1 thành “chờ một đêm + đọc nhật ký”; việc tái tạo bằng lệnh phá hoại tụt xuống tuỳ chọn (V-oncar-6 / OQ2), không còn là cổng chặn.</li>
+<li><b>Điểm KHÔNG đổi</b>: cách chữa (nấc 2 = <code>am force-stop</code> tách rời + ghi lại danh sách) và toàn bộ lý lẽ ở §4.2 về việc <b>vì sao toggle vô hiệu</b> vẫn đúng nguyên — cả hai dựa trên đo thật + source, không dựa trên giả thuyết ngòi nổ. Đính chính này đổi <b>khi nào chữa</b> và <b>vì sao kẹt</b>, không đổi <b>chữa bằng gì</b>.</li>
+<li><b>Test sau đính chính</b>: <span class="ev m">[ĐO]</span> <code>AccessibilityBindingStuckTest</code> 8 test / 0 lỗi · <code>AccessibilityRebindTest</code> 17 test / 0 lỗi. <b>Verdict: INCOMPLETE</b> — mã T1/T3 chưa có call site production, T5–T15 chưa làm, và chưa có phép đo nào trên đường tự động (§6.2).</li>
+</ul>
+<h3>Pass 0 — 2026-09-28</h3>
+<ul>
+<li>(chưa có pass review — spec lúc đó mới draft.)</li>
+</ul>
+
+</div></body>
+</html>

@@ -413,6 +413,27 @@ object CameraSignalPolicy {
         RIGHT_FRONT(14, 1, "Phải (trước)", "Right (front)");
     }
 
+    /**
+     * Mọi góc nhìn người lái chọn được — cũng là THỨ TỰ chip trong Cài đặt.
+     *
+     * Vì sao để người lái chọn (owner 2026-09-28, trên SL6): *"không mở được cam phải (cam trái ok)"*. Mỗi
+     * [CamView] mang HAI số: [CamView.outputState] (bảo HAL xuất hình nào) và [CamView.cameraId] (mở camera
+     * nào). Cặp đúng **khác nhau theo đời xe** và chưa đo hết: [ĐO ảnh owner] fisheye 4-in-1 là id 1 trên Seal
+     * nhưng id 0 trên SL6. Theo CLAUDE.md §7 thì khác biệt đời xe KHÔNG được rải `if` trong mã — hoặc vào
+     * `ClusterProfile`, hoặc để người lái tự dò. Chưa đo đủ để đặt vào hồ sơ xe, nên mở cho người lái dò, và
+     * mặc định giữ nguyên [defaultView] để xe đang chạy tốt không đổi một pixel nào (CLAUDE.md §6).
+     */
+    val VIEWS_ALL: List<CamView> = CamView.entries.toList()
+
+    /** Tên góc đọc từ prefs (sửa tay được qua `prefs_set`) có dùng được không. */
+    fun isView(name: String?): Boolean = viewOf(name) != null
+
+    /** [CamView] theo tên, chịu hoa/thường và khoảng trắng thừa; `null` nếu không có tên đó. */
+    fun viewOf(name: String?): CamView? {
+        val n = name?.trim()?.uppercase().orEmpty()
+        return if (n.isEmpty()) null else CamView.entries.firstOrNull { it.name == n }
+    }
+
     /** Mặc định: xi-nhan trái → cam GƯƠNG trái (crop fisheye); phải → gương phải — owner đổi được qua picker. */
     fun defaultView(turn: Turn): CamView? = when (turn) {
         Turn.LEFT -> CamView.MIRROR_LEFT

@@ -7,6 +7,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
+import com.byd.clusternav.modules.navaccess.A11yBindJournal
+import com.byd.clusternav.modules.navaccess.A11yBindJournalStore
 import android.util.Log
 
 /**
@@ -39,13 +42,35 @@ class VoiceKeyKeepAliveService : Service() {
      * (idempotent: verify dumpsys, toggle rebind qua dadb khi cần). Không broadcast, không AlarmManager ⇒ ROM
      * không có gì để drop. Đây là đường tự-heal CHÍNH; broadcast/alarm giữ làm lưới phụ.
      */
+    /** Xe vừa ra khỏi một đợt ngủ dài chưa; đồng thời cập nhật mốc cho lượt sau. */
+    private fun wokeFromLongSleep(app: Context): Boolean {
+        val now = A11yBindJournal.deepSleepMs(SystemClock.elapsedRealtime(), SystemClock.uptimeMillis())
+        val prev = Prefs.lastDeepSleepMs(app)
+        Prefs.setLastDeepSleepMs(app, now)
+        return A11yBindJournal.wokeFromLongSleep(prev, now, WAKE_THRESHOLD_MS)
+    }
+
     private val watchdog = object : Runnable {
         override fun run() {
             if (!Prefs.voiceKeyEnabled(applicationContext)) return
             runCatching {
-                if (!NavConnect.isAccessibilityBound(applicationContext)) {
-                    Log.w(TAG, "a11y KHÔNG bound → re-grant (in-process watchdog)")
-                    NavConnect.grantAccessibility(applicationContext)
+                val app = applicationContext
+                val woke = wokeFromLongSleep(app)
+                // Đợt ngủ dài = PHIÊN MỚI. Đầu máy chỉ tắt hẳn sau 3-4 ngày ([ĐO owner 2026-09-28]), nên cổng
+                // "mỗi lần nổ máy một lần" mà chỉ nhả khi reboot thì sau lần chữa đầu sẽ IM VĨNH VIỄN. Nhả mốc
+                // ở đây để mỗi sáng lại được chữa một lần.
+                if (woke) Prefs.setA11yEscalatedAt(app, -1L)
+                val bound = NavConnect.isAccessibilityBound(app)
+                // R7 — nhật ký bền: chỉ ghi khi ĐỔI trạng thái (+ nhịp tim 1 giờ), kèm hai đồng hồ ⇒ sáng hôm
+                // sau biết mối nối đứt lúc nào và lúc đó xe vừa ngủ bao lâu. logcat không giữ nổi qua một đêm.
+                A11yBindJournalStore.record(
+                    app,
+                    if (bound) A11yBindJournal.State.BOUND else A11yBindJournal.State.NOT_BOUND,
+                    note = if (woke) "wake" else "watchdog",
+                )
+                if (!bound) {
+                    Log.w(TAG, "a11y KHÔNG bound (vừa thức=$woke) → re-grant (in-process watchdog)")
+                    NavConnect.grantAccessibility(app)
                 }
             }.onFailure { Log.w(TAG, "watchdog re-grant lỗi: ${it.message}") }
             handler.postDelayed(this, WATCHDOG_MS)
@@ -131,6 +156,13 @@ class VoiceKeyKeepAliveService : Service() {
 
         /** Chu kỳ watchdog in-process. 30s: đủ nhanh để phím rớt tự về trong nửa phút, đủ thưa để không tốn. */
         private const val WATCHDOG_MS = 30_000L
+
+        /**
+         * Ngủ sâu tích luỹ tăng thêm bao nhiêu thì coi là "xe vừa đứng một đợt dài". 2 giờ: qua đêm / để bãi
+         * thì vượt xa, còn mở cửa xem đồng hồ vài phút thì không. Chạy đường dài KHÔNG kích (lúc chạy máy
+         * không ngủ) — đúng ranh giới owner vạch 2026-09-28.
+         */
+        private const val WAKE_THRESHOLD_MS = 2 * 3_600_000L
 
         /** Lần kiểm đầu sau khi FGS lên (cho hệ ổn định trước khi đọc bound). */
         private const val WATCHDOG_FIRST_MS = 5_000L

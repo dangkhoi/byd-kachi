@@ -36,6 +36,12 @@ class CameraSettingsIaWiringContractTest {
         "camera_mirror_right" to "bridge.cameraMirrorRight()",
         "camera_shape" to "bridge.cameraShape()",
         "camera_dewarp_amount" to "bridge.cameraDewarpAmount() > CameraDewarpPrefs.AMOUNT_MIN",
+        // +2 (2026-09-28) — khối *Nếu camera không hiện* (CAM-SL6-RIGHT). Owner trên SL6 không mở được cam
+        // phải; mỗi góc nhìn mang cả lệnh xuất hình lẫn camera id nên đây là núm dò đúng cho người lái.
+        "camera_view_left" to "bridge.cameraViewLeft()",
+        "camera_view_right" to "bridge.cameraViewRight()",
+        "camera_pano_left" to "bridge.cameraPanoLeft()",
+        "camera_pano_right" to "bridge.cameraPanoRight()",
     )
 
     /** Khoá KHÔNG còn UI → mảnh getter của hàng đã gỡ. Mảnh nào xuất hiện lại trong tệp Cài đặt là hàng đã sống lại. */

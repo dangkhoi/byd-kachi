@@ -147,8 +147,12 @@ data class CameraGlUniforms(
          * ⚠ **[SUY]**, không phải [ĐO]: *"tâm vòng ảnh nằm giữa dải"* mới là giả định. Khung `5120×960` chụp từ xe
          * chốt lại (`camera-dewarp-math.md` §3.2 D1) — tới lúc đó núm `camera_dewarp_cx/cy` là đường sửa của owner.
          */
-        fun sourceCentre(view: CamView, strip: Int): FloatArray {
-            if (view.crop == null) return floatArrayOf(0.5f, 0.5f)
+        fun sourceCentre(crop: FloatArray?, strip: Int): FloatArray {
+            // ⚠ 2026-09-28: cổng này TRƯỚC ĐÂY hỏi `view.crop` — tức rect DỰNG SẴN của góc, không phải vùng cắt
+            // ĐANG dùng. Khi [CameraPanoCrop.cropFor] bắt đầu cắt dải cho các góc không-Gương, tâm quang vẫn ở
+            // giữa KHUNG ⇒ `centerInCrop` đẩy trục quang ra đúng MÉP NGOÀI của dải (0.5−0.25)/0.25 = 1.0 ⇒ hình
+            // cong lệch hẳn. Nay bám vào chính vùng cắt đang dùng nên hai thứ không thể lệch pha nhau nữa.
+            if (crop == null) return floatArrayOf(0.5f, 0.5f)
             val s = if (CameraPanoCrop.isStrip(strip)) strip else CameraPanoCrop.defaultStrip(left = true)
             return floatArrayOf(CameraPanoCrop.stripCentre(s).toFloat(), 0.5f)
         }

@@ -19,6 +19,10 @@ import com.byd.clusternav.cameraSpan
 import com.byd.clusternav.setCameraShape
 import com.byd.clusternav.cameraShape
 import com.byd.clusternav.setCameraStrip
+import com.byd.clusternav.cameraView
+import com.byd.clusternav.setCameraView
+import com.byd.clusternav.cameraPano
+import com.byd.clusternav.setCameraPano
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraCirclePct
 import com.byd.clusternav.cameraCirclePct
@@ -182,6 +186,16 @@ internal object TestBridgePrefsSet {
             // Camera theo xi-nhan (findings 2026-09-23): bật/tắt + chọn cam + chọn GÓC hiện từng bên.
             "camera_signal_enabled" -> bool(raw)?.let { Prefs.setCameraSignalEnabled(app, it); it.toString() }
             "camera_on_cluster" -> bool(raw)?.let { Prefs.setCameraOnCluster(app, it); it.toString() }
+            // Góc nhìn TỪNG BÊN: CHỈ nhận tên có thật trong `CamView` — cùng lẽ với hai khoá góc hiện, để một
+            // ca E2E gõ tên sai không PASS trong khi máy đang mở góc khác hẳn thứ nó tưởng.
+            "camera_pano_left" -> raw.trim().uppercase().takeIf { CameraPanoCrop.isPanoMode(it) }
+                ?.let { Prefs.setCameraPano(app, left = true, v = it); it }
+            "camera_pano_right" -> raw.trim().uppercase().takeIf { CameraPanoCrop.isPanoMode(it) }
+                ?.let { Prefs.setCameraPano(app, left = false, v = it); it }
+            "camera_view_left" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isView(it) }
+                ?.let { Prefs.setCameraView(app, left = true, v = it); it }
+            "camera_view_right" -> raw.trim().uppercase().takeIf { CameraSignalPolicy.isView(it) }
+                ?.let { Prefs.setCameraView(app, left = false, v = it); it }
             "camera_cam_left" -> raw.trim().toIntOrNull()?.let { Prefs.setCameraCamId(app, left = true, it); it.toString() }
             "camera_cam_right" -> raw.trim().toIntOrNull()?.let { Prefs.setCameraCamId(app, left = false, it); it.toString() }
             // Góc hiện overlay: CHỈ nhận "TL"/"TR" ([CameraSignalPolicy.isCorner]). Từ chối chuỗi lạ thay vì ghi
@@ -280,6 +294,10 @@ internal object TestBridgePrefsSet {
             // mà không nói ghi được gì, đúng thứ KDoc [readBack] sinh ra để chặn. Vá luôn trong lượt R8-B.
             "camera_signal_enabled" -> Prefs.cameraSignalEnabled(app).toString()
             "camera_on_cluster" -> Prefs.cameraOnCluster(app).toString()
+            "camera_pano_left" -> Prefs.cameraPano(app, left = true)
+            "camera_pano_right" -> Prefs.cameraPano(app, left = false)
+            "camera_view_left" -> Prefs.cameraView(app, left = true)
+            "camera_view_right" -> Prefs.cameraView(app, left = false)
             "camera_cam_left" -> Prefs.cameraCamId(app, left = true, default = -1).toString()
             "camera_cam_right" -> Prefs.cameraCamId(app, left = false, default = -1).toString()
             "camera_pos_left" -> Prefs.cameraPos(app, left = true)

@@ -275,7 +275,8 @@
     <string name="kachi_bridge_deep_rescue_running">Đang dọn sạch cụm…</string>
     <string name="kachi_bridge_enabling_accessibility">Đang bật dịch vụ Hỗ trợ…</string>
     <string name="kachi_bridge_accessibility_enabled">Đã bật. Bấm nút đã gán để mở app.</string>
-    <string name="kachi_bridge_accessibility_not_bound">Đã bật quyền Hỗ trợ nhưng dịch vụ chưa gắn được (xe đang tải cao) — thử lại vài giây, hoặc bật/tắt tay ở Cài đặt hệ thống > Hỗ trợ.</string>
+    <string name="kachi_bridge_accessibility_not_bound">Đã bật quyền Hỗ trợ nhưng dịch vụ chưa gắn được — thử lại sau vài giây, hoặc bật/tắt tay ở Cài đặt hệ thống > Hỗ trợ.</string>
+    <string name="kachi_bridge_accessibility_restarting">Mối nối phím đang kẹt ở mức hệ thống. Đang tự chữa: giao diện khởi động lại một nhịp rồi phím hoạt động lại — app đang mở trong ô sẽ phải vẽ lại (chạm vào ô là hiện lại).</string>
     <string name="kachi_bridge_accessibility_failed">Chưa bật được Hỗ trợ — bấm Allow USB debugging trên xe rồi thử lại, hoặc bật tay ở Cài đặt > Hỗ trợ.</string>
     <string name="kachi_bridge_checking">Đang kiểm tra…</string>
     <string name="kachi_bridge_voice_key_ready">Phím-thoại đã sẵn sàng.</string>
@@ -695,6 +696,14 @@
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
     <string name="kachi_camera_rot_180">180°</string>
+    <string name="kachi_camera_view_sub">Nếu camera không hiện — thử từng số, hình bật lên ngay. Chưa biết số nào là camera nào.</string>
+    <string name="kachi_camera_view_row_left">Xi-nhan trái: thử camera số</string>
+    <string name="kachi_camera_view_row_right">Xi-nhan phải: thử camera số</string>
+    <string name="kachi_camera_pano_sub">Dải hình trong khung ghép — 1 sau · 2 trái · 3 phải · 4 trước (đo trên xe)</string>
+    <string name="kachi_camera_pano_row_left">Xi-nhan trái: dải hình</string>
+    <string name="kachi_camera_pano_row_right">Xi-nhan phải: dải hình</string>
+    <string name="kachi_camera_pano_auto">Tự động</string>
+    <string name="kachi_camera_pano_none">Nguyên khung</string>
     <string name="kachi_camera_mirror_sub">Lật gương video từng bên (nếu hình ngược tay so với gương kính)</string>
     <string name="kachi_camera_mirror_row_left">Xi-nhan trái: lật gương</string>
     <string name="kachi_camera_mirror_row_right">Xi-nhan phải: lật gương</string>

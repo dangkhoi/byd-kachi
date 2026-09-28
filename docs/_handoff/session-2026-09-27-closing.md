@@ -2,6 +2,8 @@
 
 > **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (chiều) · **Mục đích**: mở file này ra là biết ngay **đang ở đâu · lát lên xe làm gì · tháng sau làm gì**. Thay `session-2026-09-27-275-after-car.md` (đã Superseded). Đánh giá đóng dự án: `docs/CLOSEOUT-2026-09-27.md`.
 
+> ⚠ **ĐÃ QUA MỘT PHIÊN — đọc trước khi tin bảng dưới (2026-09-28).** Bảng §1 là trạng thái **chiều 27/09**. Nay: bản mới nhất là **2.81 (182)** (`apk/Kachi-2.81-release.apk`, **chưa đăng OTA** ⇒ kênh `main` và xe owner **vẫn 2.79 (180)**); **2.80 (181) đã rút và xoá** khỏi `apk/` vì lượt soát tìm ra 2 × [P0]. Dòng *"Không còn việc trên xe"* **hết đúng**: hai tính năng vào sau mốc nghiệm thu và **mỗi cái còn nợ một phép đo trên xe** — (1) tự chữa mối nối dịch vụ Hỗ trợ bị kẹt ⇒ để xe qua đêm rồi đọc nhật ký ở *Cài đặt › Chiếu cụm › Chẩn đoán* (`specs/kachi-a11y-bind-stuck-autofix.html` §6.2 V-oncar-1); (2) chọn nguồn camera hai bên ⇒ dò số camera nào lên hình trên Sealion 6 (`specs/kachi-camera-source-picker.html`). [ĐO 2026-09-28] `:app` 1 520 + `:core` 3 002 = **4 707 bài / 0 lỗi**, lint 0. Nhật ký từng bản: `apk/README.md`; task: `docs/PROJECT-BACKLOG.md`.
+
 ## 1. Đang ở đâu
 
 | | |

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chọn camera + dải hình trong khung ghép — Kachi 2.81</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file HTML cho 1 feature. Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. KHÔNG lưu trạng thái approval trong HTML (approve out-of-band).
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md §3.1). <pre> chỉ cho lệnh shell.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (CLAUDE.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+
+/* ---- Bút cho hai bản vẽ SVG bên dưới (màu đi qua CSS var ⇒ sáng/tối tự theo) ---- */
+.dg text{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+.dg .t{font-size:12.5px;font-weight:650}
+.dg .s{font-size:10.5px;fill:var(--muted)}
+.dg .m{font-size:10.5px;font-family:"SF Mono",ui-monospace,monospace}
+.dg .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.dg .dec{fill:var(--accent);fill-opacity:.10;stroke:var(--accent);stroke-width:1.4}
+.dg .hi{fill:var(--accent);fill-opacity:.20;stroke:var(--accent);stroke-width:1.2}
+.dg .fr{fill:var(--bg);stroke:var(--line);stroke-width:1.4}
+.dg .sep{stroke:var(--muted);stroke-opacity:.5;stroke-width:1}
+.dg .fish{fill:none;stroke:var(--muted);stroke-opacity:.4;stroke-dasharray:3 3}
+.dg .ln{stroke:var(--accent);stroke-width:1.4;fill:none}
+.dg .tick{stroke:var(--muted);stroke-opacity:.6;stroke-width:1}
+.dg .ar{fill:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Chọn camera + dải hình trong khung ghép</h1>
+<p class="muted">Slug: <code>kachi-camera-source-picker</code> · Branch <code>feat/voice-hotword-phrases</code> · Backlog <code>CAM-SL6-RIGHT</code> · Bản <b>2.81 (182)</b> <span class="pill wait">Trạng thái: còn nợ V-oncar</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md §2 §3 §3.1 §6 §7 §10</code> + <code>.kiro/steering/{conversation-protocol,trace-den-tan-cung,documentation-and-backlog}.md</code>. Mọi khẳng định gắn <b>[ĐO] / [SUY] / [ĐOÁN] / [CHƯA BIẾT]</b>. Không có thư viện ngoài nào mới ⇒ không cần Context7 (xem §4.6).</p>
+
+<h2>1. Changelog</h2>
+<p class="muted">Mỗi pass = 1 dòng, mới nhất trên cùng.</p>
+<ul>
+<li><b>Pass 2 — 2026-09-28</b>: 2.81 — nhãn góc nhìn đổi thành <b>SỐ 1…8</b> (owner: <i>"mình cũng đâu có biết là nó cam nào đâu mà phán cho người ta"</i>), khoá thứ tự enum bằng bài canh; vá con bọ <b>không cắt dải</b> cho sáu góc không-Gương (<code>CameraPanoCrop</code> có dải pano + cỡ nguồn, <code>sourceCentre</code> bám vùng cắt đang dùng); thêm hai hàng <i>dải hình</i> (<code>camera_pano_left/right</code>).</li>
+<li><b>Pass 1 — 2026-09-28</b>: 2.80 — thêm picker góc nhìn từng bên (8 giá trị <code>CamView</code>), pref <code>camera_view_left/right</code>, xem thử ngay (<code>previewSide</code>). <span class="muted">Đã phát nội bộ rồi <b>thu hồi</b>: owner thử trên xe ⇒ chọn số khác hai góc Gương thì CÓ hình nhưng ra nguyên khung ghép 4 dải.</span></li>
+<li><b>Pass 0 — 2026-09-28</b>: Khởi tạo spec từ backlog <code>CAM-SL6-RIGHT</code> — owner trên Sealion 6: <i>"không mở được cam phải (cam trái ok)… nên đề xuất cho chọn lại cam trong setting"</i>. Spec viết <b>song song/sau mã</b> theo CLAUDE.md §2 (§Design + §Tasks hoàn thiện cùng nhịp code); §9 ghi đúng mã THỰC TẾ.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p><b>Triệu chứng.</b> [ĐO owner 2026-09-28, trên xe Sealion 6] bật xi-nhan phải thì camera <b>không lên hình</b>, bên trái bình thường. [ĐO owner, xe Seal] cả hai bên đều lên. Launcher lúc đó <b>không có một hàng nào</b> để người lái đổi camera: bốn khoá kỹ thuật (<code>camera_cam_left/right</code>, <code>camera_strip_left/right</code>) chỉ ghi được qua cầu kiểm thử, trong khi chú thích ngay trong <code>CameraSignalController</code> lại viết như thể người dùng <i>"chọn id 0 trong Cài đặt trên SL6"</i> — [ĐO] hàng ấy <b>chưa bao giờ tồn tại</b>. Tài liệu đi trước mã, và owner ngồi trên xe thì không có gì để bấm.</p>
+<p><b>Vì sao sáu góc kia chưa ai mở được.</b> [SUY đọc <code>CameraSignalController.openSession</code> trước 2.80] controller luôn lấy <code>CameraSignalPolicy.defaultView(turn)</code> ⇒ chỉ <code>MIRROR_LEFT</code>/<code>MIRROR_RIGHT</code> từng chạy ngoài hiện trường; sáu giá trị <code>CamView</code> còn lại là mã chết. Đó cũng chính là lý do phần §4.7 nói mặc định <i>Tự động</i> không thể làm hỏng hành vi hiện trường nào.</p>
+<p><b>Con bọ vùng cắt (phát hiện sau khi owner thử 2.80).</b> [ĐO owner 2026-09-28, ảnh khung thô trên SL6] chọn một số khác hai góc Gương thì CÓ hình, nhưng là <b>nguyên khung ghép 4 dải cá vược</b>, không cắt gì. Gốc, đọc thẳng trong mã: <code>CameraPanoCrop.cropFor</code> mở đầu bằng <code>val base = view.crop</code>, mà [ĐO <code>CameraSignalPolicy.kt:406–413</code>] <b>chỉ</b> <code>MIRROR_LEFT</code>/<code>MIRROR_RIGHT</code> mang rect dựng sẵn + <code>hintW/hintH = 5120×960</code>; sáu giá trị kia để <code>crop = null, hintW = 0, hintH = 0</code> ⇒ <code>ratio = 0</code> và <b>cả hai</b> nhánh <code>base == null</code> đều trả <code>null</code>, với MỌI tổ hợp dải · bề rộng · hình khung — kể cả hình tròn. Hạ nguồn, <code>null</code> được đọc là <i>"nguyên khung"</i> ở <code>CameraOverlayFrame.cropSpan</code>, <code>CameraOverlayFrame</code> (kéo giãn), <code>CameraOverlayTransform.matrix</code>, <code>CameraDewarp.srcRect</code> và <code>CameraDewarp.centerInCrop</code>.</p>
+<div class="card">
+<b>Hai cái bẫy vòng phản biện bắt được TRƯỚC khi bản vá lên xe</b> — cả hai đều thuộc loại <i>"ảnh vẫn ra hình nên không ai báo lỗi"</i>:
+<ul>
+<li><b>(a) Thiếu cỡ nguồn là một cổng THỨ HAI, độc lập.</b> [SUY đọc <code>CameraOverlayFrame</code> + KDoc <code>CamView.hintW</code>] gợi ý <code>0</code> ⇒ cửa sổ không biết tỉ lệ khung, mà trên màn chính vùng được cấp là một ô <b>VUÔNG</b> ⇒ khung rất bẹt bị <b>kéo bẹp</b>. Vá riêng vùng cắt thì ra ảnh cắt đúng mà méo tỉ lệ.</li>
+<li><b>(b) Tâm quang lệch pha với vùng cắt.</b> [SUY đọc <code>CameraGlUniforms.kt:150–158</code>] <code>sourceCentre</code> trước đây gác trên chính <code>view.crop</code> ⇒ đã cắt dải mà tâm vẫn ở <code>0,5</code> thì trục quang rơi ra <b>mép ngoài</b> của dải: với dải 1 là <code>(0,5 − 0,25) / 0,25 = 1,0</code>. Ảnh ra <b>cong lệch</b> thấy rõ.</li>
+</ul>
+</div>
+<div class="card"><b>Cổng / phụ thuộc:</b> phần off-car đã xanh và đã ở trong bản 2.81. Phần còn lại <b>bị chặn bởi việc lên xe</b>: cần một lượt dò trên <b>Sealion 6</b> để biết <i>số nào</i> cho ra hình camera phải; cho tới lúc đó R7 (đặt mặc định vào <code>ClusterProfile</code>) là <span class="pill block">BLOCKED — cần xe</span>, mở khoá bởi owner/anh em có xe SL6 (<code>trace-den-tan-cung.md</code>: không được cắt tính năng để né, chỉ được ghi rõ điều kiện mở khoá).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Người lái chọn được camera, từng bên.</b> Hai hàng chip trong <i>Cài đặt › Tiện nghi xe › Camera</i>, phủ đủ <b>8</b> giá trị <code>CameraSignalPolicy.CamView</code>; lưu ở <code>camera_view_left</code> / <code>camera_view_right</code>; <code>CameraSignalController.openSession</code> đọc pref mỗi lượt mở phiên. <i>Nhận:</i> pref lạ hoặc rỗng ⇒ lùi về <code>defaultView</code> (xe không chạm Cài đặt thì <b>không đổi một pixel</b>, CLAUDE.md §6); chip hiện đúng giá trị đang lưu.</li>
+<li><b>R2 — Nhãn TRUNG TÍNH, thứ tự bị KHOÁ.</b> Nhãn chip là <b>số thứ tự 1…8</b> theo vị trí trong <code>VIEWS_ALL</code>, không phải tên camera. <i>Nhận:</i> không còn chuỗi nhãn kiểu <code>kachi_camera_view_front_right</code>; một bài canh khẳng định đúng danh sách tên hằng theo thứ tự, nên con số anh em báo về từ hiện trường không thể âm thầm trỏ sang góc khác sau một lần sửa mã (CLAUDE.md §2: chưa đo thì không được nói như đã chứng minh).</li>
+<li><b>R3 — Bấm là thấy ngay.</b> Đổi chip ⇒ overlay bật lên tức thì, không phải chờ lượt xi-nhan thật. <i>Nhận:</i> <code>previewSide(left)</code> <b>đóng phiên trước</b> rồi mới mở lại (vì <code>openSession</code> chỉ đọc pref lúc MỞ), sau đó để <code>CameraHold</code> tự đóng như một lượt rẽ thật — không hẹn giờ riêng, không có đường nào làm overlay kẹt trên màn.</li>
+<li><b>R4 — Vùng cắt phải làm việc với MỌI góc, không chỉ hai góc Gương.</b> Khi nguồn là khung ghép, <code>cropFor</code> trả rect thật cho bất kỳ <code>CamView</code> nào. <i>Nhận:</i> hai góc Gương <b>không đi qua</b> đường mới (<code>panoStripFor</code> trả <code>null</code> khi <code>view.crop != null</code>, và trong <code>cropFor</code> dải pano cũng bị ép <code>null</code> ở ca đó) ⇒ hai rect <code>0,25–0,35</code> / <code>0,65–0,75</code> của Seal giữ nguyên từng pixel.</li>
+<li><b>R5 — BA đầu ra phải cùng nhịp.</b> Một lượt mở phiên giải nguồn <b>một lần</b> thành <code>panoStrip · streamW · streamH · effStrip</code>, rồi ba chỗ tiêu thụ cùng bộ biến đó: <b>(1)</b> vùng cắt, <b>(2)</b> cỡ ảnh nguồn, <b>(3)</b> tâm quang. <i>Nhận:</i> bài canh khẳng định <code>view.hintW</code>/<code>view.hintH</code> <b>không còn xuất hiện</b> trong controller; <code>sourceCentre</code> nhận <b>vùng cắt đang dùng</b> thay vì <code>view</code>.</li>
+<li><b>R6 — Đường thoát.</b> Người lái ép được <i>Nguyên khung</i> (<code>NONE</code>) khi một số camera hoá ra là camera <b>ĐƠN</b> — cắt vào là hỏng hình đang đúng — và ép được một dải cụ thể (chip 1…4 ⇒ dải 0…3). <i>Nhận:</i> mặc định <code>AUTO</code>; giá trị lạ trên đĩa ⇒ <code>AUTO</code>; <code>NONE</code> cho lại đúng hành vi 2.73 (<code>crop = null</code>, cỡ nguồn = gợi ý của chính góc).</li>
+<li><b>R7 — Đo được rồi thì vào HỒ SƠ XE, không để mỗi người tự dò.</b> Khi biết số nào lên hình trên Sealion 6, số ấy thành mặc định của đời xe trong <code>ClusterProfile</code> (<code>CameraProfileDefaults</code>), không rải <code>if (dòng xe)</code> trong mã (CLAUDE.md §7). <i>Nhận:</i> xe SL6 mới cài, chưa chạm Cài đặt, xi-nhan phải ⇒ lên hình. <span class="pill block">chưa đạt — cần xe</span></li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Toàn bộ hình học ở <code>:core</code> là <b>hàm thuần</b>, test off-car (CLAUDE.md §10). Tầng <code>:app</code> chỉ đọc pref và truyền số.</li>
+<li><b>R-nf2</b> — Không hardcode tên gói / tên dòng xe để rẽ nhánh; khác biệt đời xe đi qua <code>ClusterProfile</code>, khác biệt <b>chưa đo được</b> thì để người lái chọn (CLAUDE.md §7).</li>
+<li><b>R-nf3</b> — Degrade an toàn: mọi giá trị lạ (bản cũ, <code>prefs_set</code> gõ tay) đều lùi về mặc định cũ; không nhánh nào ném exception làm chết lượt xi-nhan.</li>
+<li><b>R-nf4</b> — Hai khoá mới phải nằm đúng một trong hai danh sách của <code>CameraSettingsIa</code> (có hàng / không hàng) và trong danh sách trắng <code>prefs_set</code>, để chẩn đoán trên xe vẫn đọc/ghi được (CLAUDE.md §15 bước 2).</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện <b>song song</b> với code. Hai bản vẽ dưới đây là inline SVG dùng CSS var (sáng/tối tự theo) — đúng CLAUDE.md §3.1.</p>
+
+<h3>4.1 Bố cục khung ghép 4-trong-1 và chỗ nằm của hai vệt Gương</h3>
+<div class="diagram">
+<svg class="dg" viewBox="0 0 880 322" role="img" aria-label="Khung ghép 5120x960 chia 4 dải dọc tại 0,25 · 0,50 · 0,75; dải 0 sau, 1 trái, 2 phải, 3 trước; hai vệt Gương nằm trong dải 1 và dải 2">
+  <text class="t" x="50" y="26">ẢNH GHÉP 4-TRONG-1 · 5120 × 960 px · 4 dải DỌC bằng nhau</text>
+  <text class="s" x="50" y="44">mỗi dải rộng 0,25 bề ngang, cao trọn khung (= 1280 × 960) · vòng nét đứt: vòng ảnh cá vược của dải</text>
+  <!-- thước trục x -->
+  <line class="tick" x1="50" y1="72" x2="50" y2="86"/><line class="tick" x1="245" y1="72" x2="245" y2="86"/>
+  <line class="tick" x1="440" y1="72" x2="440" y2="86"/><line class="tick" x1="635" y1="72" x2="635" y2="86"/>
+  <line class="tick" x1="830" y1="72" x2="830" y2="86"/>
+  <text class="m" x="50" y="66" text-anchor="middle">0</text>
+  <text class="m" x="245" y="66" text-anchor="middle">0,25</text>
+  <text class="m" x="440" y="66" text-anchor="middle">0,50</text>
+  <text class="m" x="635" y="66" text-anchor="middle">0,75</text>
+  <text class="m" x="830" y="66" text-anchor="middle">1</text>
+  <!-- khung -->
+  <rect class="fr" x="50" y="86" width="780" height="146" rx="6"/>
+  <!-- hai vệt Gương (rect dựng sẵn của MIRROR_LEFT / MIRROR_RIGHT) -->
+  <rect class="hi" x="245" y="86" width="78" height="146"/>
+  <rect class="hi" x="557" y="86" width="78" height="146"/>
+  <!-- vách dải -->
+  <line class="sep" x1="245" y1="86" x2="245" y2="232"/>
+  <line class="sep" x1="440" y1="86" x2="440" y2="232"/>
+  <line class="sep" x1="635" y1="86" x2="635" y2="232"/>
+  <!-- vòng cá vược -->
+  <circle class="fish" cx="147.5" cy="159" r="70"/><circle class="fish" cx="342.5" cy="159" r="70"/>
+  <circle class="fish" cx="537.5" cy="159" r="70"/><circle class="fish" cx="732.5" cy="159" r="70"/>
+  <!-- nhãn dải -->
+  <text class="t" x="147.5" y="254" text-anchor="middle">dải 0 · SAU</text>
+  <text class="t" x="342.5" y="254" text-anchor="middle">dải 1 · TRÁI</text>
+  <text class="t" x="537.5" y="254" text-anchor="middle">dải 2 · PHẢI</text>
+  <text class="t" x="732.5" y="254" text-anchor="middle">dải 3 · TRƯỚC</text>
+  <text class="s" x="147.5" y="270" text-anchor="middle">chip «1»</text>
+  <text class="s" x="342.5" y="270" text-anchor="middle">chip «2» · AUTO bên trái</text>
+  <text class="s" x="537.5" y="270" text-anchor="middle">chip «3» · AUTO bên phải</text>
+  <text class="s" x="732.5" y="270" text-anchor="middle">chip «4»</text>
+  <!-- chú vệt Gương: dùng ô màu thay đường dẫn, để không cắt qua nhãn dải -->
+  <rect class="hi" x="196" y="294" width="11" height="11"/>
+  <text class="m" x="214" y="304">vệt Gương trái 0,25–0,35 (trong dải 1)</text>
+  <rect class="hi" x="508" y="294" width="11" height="11"/>
+  <text class="m" x="526" y="304">vệt Gương phải 0,65–0,75 (trong dải 2)</text>
+</svg>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khung nguồn (không đổi)</span>
+  <span class="sw"><span class="box" style="background:var(--accent);opacity:.35"></span> rect dựng sẵn của hai góc Gương — đường đang chạy hiện trường</span>
+</div>
+</div>
+<p><b>Bằng chứng bố cục.</b> [ĐO xe Seal 2026-09-27, hai khung thô PNG 5120×960] khung là 4 dải cá vược dựng đứng; dải 1 là gương trái (owner xác nhận), dải 2 là gương phải; dải 0 và 3 là đầu/đuôi nhưng <i>cái nào là cái nào</i> lúc đó còn để ngỏ. [ĐO Sealion 6 2026-09-28, ảnh khung thô owner chụp] thứ tự là <b>sau · trái · phải · trước</b> ⇒ đóng nốt chỗ ngỏ: dải 0 = sau, 1 = trái, 2 = phải, 3 = trước. <b>Hai đời xe cùng một bố cục</b> ⇒ <code>CameraPanoCrop.defaultStrip(left) = 1 / 2</code> đúng cho cả hai, không cần rẽ nhánh theo dòng xe.</p>
+<div class="card"><b>Một chỗ phải đính chính cho người đọc mã sau này.</b> [SUY đọc <code>CameraPanoCrop.cropFor</code>] rect ghi trong hai giá trị enum Gương <b>không bao giờ được trả về</b>; nó chỉ làm <b>cờ</b> nghĩa là <i>"góc này là góc dải-pano"</i>. Rect thật luôn được <b>tính lại</b> từ (dải, bề rộng). Vệt hẹp <code>0,10</code> bề ngang = 40 % một dải là số [ĐO RE kinex <code>Y0/C0094o.java:70,73</code>] và là hành vi 2.73; còn thứ owner đã duyệt là <b>trọn dải</b> (<code>SPAN_STRIP</code>).</div>
+
+<h3>4.2 Luồng quyết định: từ "người lái bấm một số" tới ba đầu ra phải cùng nhịp</h3>
+<div class="diagram">
+<svg class="dg" viewBox="0 0 880 606" role="img" aria-label="Luồng quyết định: chọn số camera, hỏi nguồn có phải ảnh ghép, rồi ba đầu ra vùng cắt, cỡ nguồn, tâm quang">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ar" d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+  </defs>
+
+  <!-- A: người lái chọn số -->
+  <rect class="box" x="290" y="12" width="300" height="48" rx="10"/>
+  <text class="t" x="440" y="34" text-anchor="middle">Người lái bấm SỐ camera (1…8)</text>
+  <text class="m" x="440" y="51" text-anchor="middle">camera_view_left / camera_view_right</text>
+  <line class="ln" x1="440" y1="60" x2="440" y2="84" marker-end="url(#ar)"/>
+
+  <!-- D1: nguồn có phải ảnh ghép -->
+  <rect class="dec" x="240" y="86" width="400" height="56" rx="10"/>
+  <text class="t" x="440" y="110" text-anchor="middle">Nguồn này có phải ẢNH GHÉP không?</text>
+  <text class="m" x="440" y="128" text-anchor="middle">cổng: view.crop ≠ null ⇒ KHÔNG đi đường mới</text>
+
+  <!-- nhánh trái: hai góc Gương -->
+  <line class="ln" x1="240" y1="114" x2="206" y2="114" marker-end="url(#ar)"/>
+  <text class="s" x="222" y="106" text-anchor="middle">1·2</text>
+  <rect class="box" x="14" y="86" width="190" height="94" rx="10"/>
+  <text class="t" x="109" y="108" text-anchor="middle">CÓ rect dựng sẵn</text>
+  <text class="m" x="109" y="126" text-anchor="middle">panoStrip = null</text>
+  <text class="s" x="109" y="144" text-anchor="middle">rect tính lại từ dải của</text>
+  <text class="s" x="109" y="160" text-anchor="middle">chính góc — Seal/SL6 đang</text>
+  <text class="s" x="109" y="176" text-anchor="middle">chạy tốt, KHÔNG đụng</text>
+
+  <!-- D2: đọc pref dải -->
+  <line class="ln" x1="440" y1="142" x2="440" y2="166" marker-end="url(#ar)"/>
+  <rect class="dec" x="230" y="168" width="420" height="48" rx="10"/>
+  <text class="t" x="440" y="190" text-anchor="middle">KHÔNG ⇒ đọc pref dải của bên đang xi-nhan</text>
+  <text class="m" x="440" y="207" text-anchor="middle">camera_pano_left / camera_pano_right</text>
+
+  <!-- ba nhánh -->
+  <line class="ln" x1="440" y1="216" x2="440" y2="234"/>
+  <polyline class="ln" points="149,234 731,234"/>
+  <line class="ln" x1="149" y1="234" x2="149" y2="252" marker-end="url(#ar)"/>
+  <line class="ln" x1="440" y1="234" x2="440" y2="252" marker-end="url(#ar)"/>
+  <line class="ln" x1="731" y1="234" x2="731" y2="252" marker-end="url(#ar)"/>
+
+  <rect class="box" x="14" y="254" width="270" height="86" rx="10"/>
+  <text class="t" x="149" y="276" text-anchor="middle">«Nguyên khung» (NONE)</text>
+  <text class="m" x="149" y="294" text-anchor="middle">panoStrip = null</text>
+  <text class="s" x="149" y="312" text-anchor="middle">y hệt 2.73 — đường thoát nếu</text>
+  <text class="s" x="149" y="328" text-anchor="middle">góc ấy là camera ĐƠN</text>
+
+  <rect class="box" x="305" y="254" width="270" height="86" rx="10"/>
+  <text class="t" x="440" y="276" text-anchor="middle">«Tự động» (AUTO · mặc định)</text>
+  <text class="m" x="440" y="294" text-anchor="middle">panoStrip = defaultStrip(left)</text>
+  <text class="s" x="440" y="312" text-anchor="middle">= dải 1 bên trái · dải 2 bên phải</text>
+  <text class="s" x="440" y="328" text-anchor="middle">[ĐO cùng bố cục trên 2 đời xe]</text>
+
+  <rect class="box" x="596" y="254" width="270" height="86" rx="10"/>
+  <text class="t" x="731" y="276" text-anchor="middle">«1…4» (chip ép dải)</text>
+  <text class="m" x="731" y="294" text-anchor="middle">panoStrip = 0…3</text>
+  <text class="s" x="731" y="312" text-anchor="middle">số hiển thị = thứ tự đọc,</text>
+  <text class="s" x="731" y="328" text-anchor="middle">giá trị lạ ⇒ lùi về AUTO</text>
+
+  <!-- gộp -->
+  <polyline class="ln" points="149,340 149,356 731,356 731,340"/>
+  <line class="ln" x1="440" y1="340" x2="440" y2="356"/>
+  <line class="ln" x1="440" y1="356" x2="440" y2="376" marker-end="url(#ar)"/>
+  <rect class="dec" x="120" y="378" width="640" height="56" rx="10"/>
+  <text class="t" x="440" y="402" text-anchor="middle">openSession GIẢI NGUỒN MỘT LẦN</text>
+  <text class="m" x="440" y="420" text-anchor="middle">panoStrip · streamW · streamH · effStrip — ba chỗ dưới dùng CHUNG bộ biến này</text>
+
+  <!-- ba đầu ra -->
+  <line class="ln" x1="440" y1="434" x2="440" y2="452"/>
+  <polyline class="ln" points="149,452 731,452"/>
+  <line class="ln" x1="149" y1="452" x2="149" y2="470" marker-end="url(#ar)"/>
+  <line class="ln" x1="440" y1="452" x2="440" y2="470" marker-end="url(#ar)"/>
+  <line class="ln" x1="731" y1="452" x2="731" y2="470" marker-end="url(#ar)"/>
+
+  <rect class="box" x="14" y="472" width="270" height="94" rx="10"/>
+  <text class="t" x="149" y="494" text-anchor="middle">① Vùng cắt</text>
+  <text class="m" x="149" y="512" text-anchor="middle">cropFor(…, panoStrip)</text>
+  <text class="s" x="149" y="532" text-anchor="middle">trước 2.81: null ⇒ hiện</text>
+  <text class="s" x="149" y="548" text-anchor="middle">NGUYÊN khung 4 dải</text>
+
+  <rect class="box" x="305" y="472" width="270" height="94" rx="10"/>
+  <text class="t" x="440" y="494" text-anchor="middle">② Cỡ ảnh nguồn</text>
+  <text class="m" x="440" y="512" text-anchor="middle">streamW × streamH = 5120 × 960</text>
+  <text class="s" x="440" y="532" text-anchor="middle">trước: gợi ý 0 ⇒ ô VUÔNG ⇒</text>
+  <text class="s" x="440" y="548" text-anchor="middle">khung bẹt bị KÉO BẸP</text>
+
+  <rect class="box" x="596" y="472" width="270" height="94" rx="10"/>
+  <text class="t" x="731" y="494" text-anchor="middle">③ Tâm quang</text>
+  <text class="m" x="731" y="512" text-anchor="middle">sourceCentre(crop, strip)</text>
+  <text class="s" x="731" y="532" text-anchor="middle">trước: 0,5 ⇒ (0,5−0,25)/0,25 = 1,0</text>
+  <text class="s" x="731" y="548" text-anchor="middle">⇒ ra MÉP dải, ảnh CONG lệch</text>
+
+  <line class="sep" x1="14" y1="578" x2="866" y2="578"/>
+  <text class="t" x="440" y="598" text-anchor="middle">BA THỨ PHẢI CÙNG NHỊP — lệch một cái là ảnh VẪN ra hình nhưng SAI, và không ai báo lỗi</text>
+</svg>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--accent);opacity:.18;border-color:var(--accent)"></span> cổng quyết định / chỗ giải nguồn</span>
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> kết quả một nhánh</span>
+</div>
+</div>
+
+<h3>4.3 Tầng — hình học ở <code>:core</code>, đọc pref ở <code>:app</code></h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Cài đặt › Camera</b><span>2 hàng góc nhìn (1…8) · 2 hàng dải hình<br><code>SettingsSectionsCamera.kt</code></span></div>
+    <div class="node"><b>Cầu kiểm thử</b><span><code>prefs_set</code> 44 khoá<br><code>TestBridgePrefsSet.kt</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>Pref bền</b><span><code>camera_view_*</code> · <code>camera_pano_*</code> · <code>camera_strip_*</code><br><code>PrefsAutomation.kt:118–157</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>:core — hình học THUẦN</b><span><code>CameraPanoCrop</code> (dải · cỡ nguồn · rect)<br><code>CameraSignalPolicy.CamView</code> · <code>CameraGlUniforms.sourceCentre</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>:app — điều phối một lượt xi-nhan</b><span><code>CameraSignalController.openSession:174–219</code><br>giải nguồn 1 lần · <code>previewSide</code> xem thử</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>Cửa sổ overlay</b><span>tỉ lệ theo cỡ nguồn<br><code>CameraOverlayFrame</code></span></div>
+    <div class="node"><b>Ma trận / shader</b><span>crop + xoay + nắn<br><code>CameraOverlayTransform</code> · <code>CameraDewarp</code></span></div>
+    <div class="node"><b>HAL + AVMCamera</b><span><code>outputState</code> + <code>cameraId</code><br>của chính góc đang chọn</span></div>
+  </div>
+</div>
+
+<h3>4.4 Khoá pref và hằng số</h3>
+<table>
+<tr><th>Khoá</th><th>Giá trị</th><th>Mặc định</th><th>Đọc ở</th><th>Có hàng?</th></tr>
+<tr><td><code>camera_view_left</code> / <code>camera_view_right</code></td><td>tên hằng <code>CamView</code> (8 giá trị)</td><td><code>MIRROR_LEFT</code> / <code>MIRROR_RIGHT</code> (lạ ⇒ lùi về đây)</td><td><code>openSession:178</code></td><td>có — nhãn <b>SỐ 1…8</b></td></tr>
+<tr><td><code>camera_pano_left</code> / <code>camera_pano_right</code></td><td><code>AUTO</code> · <code>NONE</code> · <code>0</code>…<code>3</code></td><td><code>AUTO</code> (lạ ⇒ <code>AUTO</code>)</td><td><code>openSession:207</code></td><td>có — <i>Tự động · Nguyên khung · 1 · 2 · 3 · 4</i></td></tr>
+<tr><td><code>camera_strip_left</code> / <code>camera_strip_right</code> <span class="muted">(có từ 2.74)</span></td><td><code>0</code>…<code>3</code></td><td>hồ sơ xe (Seal: 1 / 2)</td><td><code>openSession:210</code> — <b>chỉ khi</b> <code>panoStrip == null</code></td><td>không (chỉ <code>prefs_set</code>)</td></tr>
+</table>
+<table>
+<tr><th>Hằng mới ở <code>CameraPanoCrop</code></th><th>Trị</th><th>Vì sao</th></tr>
+<tr><td><code>PANO_W</code> · <code>PANO_H</code></td><td><code>5120</code> · <code>960</code></td><td>Gợi ý cỡ nguồn khi đã coi nguồn là ảnh ghép — thiếu nó thì cửa sổ lấy ô vuông và khung bị kéo bẹp (bẫy (a)).</td></tr>
+<tr><td><code>PANO_AUTO</code> · <code>PANO_NONE</code></td><td><code>"AUTO"</code> · <code>"NONE"</code></td><td>Hai lựa chọn không phải là số ⇒ mã chuỗi, để <code>prefs_set</code> gõ tay được và log đọc ra nghĩa.</td></tr>
+<tr><td><code>isPanoMode</code> · <code>panoStripFor</code> · <code>streamW</code> · <code>streamH</code></td><td>—</td><td>Một cửa duy nhất quyết <i>"có coi là ảnh ghép không"</i>; cả ba đầu ra cùng hỏi một hàm.</td></tr>
+<tr><td><code>cropFor(…, panoStrip)</code></td><td>tham số mới, mặc định <code>null</code></td><td>Giữ nguyên chữ ký cho mọi chỗ gọi cũ (và mọi bài canh cũ) — không đảo đường đang chạy (CLAUDE.md §6).</td></tr>
+</table>
+
+<h3>4.5 Quyết định thiết kế</h3>
+<ul>
+<li><b>Nhãn là SỐ, không phải tên camera.</b> Owner 2026-09-28: <i>"các label mình để nó cũng ko chuẩn đâu, nên để ID 0-1-2-3-4-5 gì đi, vì mình cũng đâu có biết là nó cam nào đâu mà phán cho người ta"</i>. [SUY] tên cũ (<i>Trước-trái</i>, <i>Sau-phải</i>…) là suy từ tên hằng trong enum, <b>chưa một lần</b> đối chiếu với camera thật ⇒ đặt tên như thế là chỉ đường SAI cho người đang dò (CLAUDE.md §2). Số hiển thị lấy theo <b>vị trí</b> trong <code>VIEWS_ALL</code> (1-based), giá trị <b>lưu</b> vẫn là tên hằng ⇒ prefs và log vẫn tra được.</li>
+<li><b>Thứ tự enum bị khoá bằng bài canh.</b> Con số anh em báo về từ xe (<i>"số 3 chạy trên SL6"</i>) chỉ có nghĩa nếu thứ tự không đổi; muốn thêm góc thì <b>thêm vào cuối</b>.</li>
+<li><b>Tách hai khái niệm thành hai hàng.</b> <i>"Camera nào"</i> (<code>camera_view_*</code>: mang theo <code>outputState</code> + <code>cameraId</code>) và <i>"cắt dải nào trong khung"</i> (<code>camera_pano_*</code>) là hai ẩn số độc lập ⇒ hai hàng riêng, dò được từng cái. Gộp một hàng thì một lần thử sai không biết sai ở đâu.</li>
+<li><b>Dải pano bị ép <code>null</code> ở HAI chỗ</b> khi góc mang rect dựng sẵn: trong <code>panoStripFor</code> và lại một lần trong <code>cropFor</code>. [ĐO] bài canh đã bắt đúng ca <i>"một lượt gọi lỡ truyền dải khác lặng lẽ đổi vùng cắt của Seal"</i> ⇒ vế thứ hai không phải phòng xa lý thuyết.</li>
+<li><b>Tâm quang bám vùng cắt, không bám <code>view</code>.</b> Đổi chữ ký <code>sourceCentre(crop, strip)</code> là cách rẻ nhất để hai thứ <b>không thể</b> lệch pha (bẫy (b)) — thay vì thêm một điều kiện thứ hai phải nhớ đồng bộ.</li>
+<li><b>Xem thử phải đóng phiên trước.</b> <code>openSession</code> chỉ đọc pref lúc MỞ ⇒ nếu overlay đang treo, đổi pref không có tác dụng và người ta tưởng chip không ăn. <code>previewSide</code> <code>stop()</code> rồi <code>tickMain</code> — cùng lẽ với chuỗi <code>camera none</code> → <code>camera left</code> của cầu kiểm thử.</li>
+</ul>
+
+<h3>4.6 Context7</h3>
+<p>Không có thư viện/framework ngoài nào được thêm hay nâng: toàn bộ thay đổi nằm trong Kotlin thuần (<code>:core</code>), Android SDK đã dùng sẵn (<code>SharedPreferences</code>, <code>View</code>) và các khối có sẵn trong repo (<code>CameraPanoCrop</code>, <code>CameraSignalPolicy</code>, <code>Prefs</code>, <code>SettingsRows</code>). ⇒ <b>không cần Context7</b> (CLAUDE.md §1.1 chỉ buộc khi có quyết định về thư viện/framework/pattern ngoài).</p>
+
+<h3>4.7 Vì sao mặc định <i>Tự động</i> là an toàn</h3>
+<ul>
+<li>[SUY đọc controller trước 2.80] sáu góc không-Gương <b>chưa từng mở được</b> (controller luôn dùng <code>defaultView</code>) ⇒ <b>không có hành vi hiện trường nào</b> để làm hỏng khi nay chúng bắt đầu cắt dải.</li>
+<li>[ĐO Seal 27/09 + ĐO SL6 28/09] bố cục dải <b>như nhau</b> trên hai đời xe ⇒ <code>defaultStrip</code> (1 trái / 2 phải) đúng cho cả hai, không cần rẽ nhánh theo dòng xe.</li>
+<li>Hai góc Gương đi <b>đường cũ nguyên vẹn</b> (R4) ⇒ xe đang chạy tốt không đổi một pixel.</li>
+<li>[CHƯA BIẾT] liệu cả 8 số có cho ra khung ghép hay không — chính vì thế mới có <code>NONE</code> (R6).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>Phụ thuộc</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td><code>VIEWS_ALL</code> · <code>isView</code> · <code>viewOf</code>; <code>defaultView</code> giữ nguyên</td><td>—</td><td><code>core/…/camera/CameraSignalPolicy.kt</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T2</td><td>Pref <code>camera_view_left/right</code> (lạ ⇒ <code>defaultView</code>)</td><td>T1</td><td><code>app/…/PrefsAutomation.kt:134–157</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T3</td><td><code>openSession</code> đọc pref góc nhìn thay vì hằng</td><td>T2</td><td><code>app/…/camera/CameraSignalController.kt:178</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T4</td><td><code>previewSide(left)</code>: đóng phiên rồi mở lại ⇒ pref vừa đổi có tác dụng ngay</td><td>T3</td><td><code>CameraSignalController.kt:404–411</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T5</td><td>Khối <i>Nếu camera không hiện</i>: 2 hàng × 8 chip, nhãn <b>SỐ</b>, không <code>getIdentifier</code></td><td>T2</td><td><code>app/…/launcher/SettingsSectionsCamera.kt:95–118</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T6</td><td>Khoá <b>thứ tự</b> enum + khoá đường dây hàng Cài đặt</td><td>T5</td><td><code>app/src/test/…/CameraViewRowContractTest.kt</code> (7 ca)</td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T7</td><td><code>CameraPanoCrop</code>: <code>PANO_W/H</code> · <code>PANO_AUTO/NONE</code> · <code>isPanoMode</code> · <code>panoStripFor</code> · <code>streamW/H</code> · <code>cropFor(panoStrip)</code>; góc Gương bị ép <code>null</code> ở cả hai vế</td><td>T3</td><td><code>core/…/camera/CameraPanoCrop.kt</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T8</td><td><code>sourceCentre(crop, strip)</code> — bám vùng cắt đang dùng, không bám <code>view</code></td><td>T7</td><td><code>core/…/camera/CameraGlUniforms.kt:150–158</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T9</td><td>Controller giải nguồn <b>một lần</b> (<code>panoStrip · streamW · streamH · effStrip</code>) và nuôi cả ba chỗ tiêu thụ</td><td>T7, T8</td><td><code>CameraSignalController.kt:207–219</code>, <code>:236</code>, <code>:267</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T10</td><td>Bài canh: <code>view.hintW/hintH</code> <b>không còn</b> trong <code>:app</code></td><td>T9</td><td><code>app/src/test/…/camera/CameraFrameAndRenderWiringContractTest.kt:76–80</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T11</td><td>Pref <code>camera_pano_left/right</code> + 2 hàng <i>dải hình</i> (chip <i>Tự động · Nguyên khung · 1–4</i>)</td><td>T7</td><td><code>PrefsAutomation.kt:118–132</code>, <code>SettingsSectionsCamera.kt:119–135</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T12</td><td><code>USER_KEYS</code> 10 → <b>14</b> · danh sách trắng <code>prefs_set</code> 40 → <b>44</b></td><td>T11</td><td><code>core/…/camera/CameraSettingsIa.kt</code>, <code>core/…/testbridge/TestBridgeWritableKeys.kt</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T13</td><td>Chuỗi đủ <b>2 ngôn ngữ</b> (vi + en) cho cả 4 hàng mới</td><td>T5, T11</td><td><code>app/src/main/res/values{,-en}/strings_kachi.xml</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T14</td><td>Test hồi quy: <code>CameraPanoSourceTest</code> 8 · <code>CameraViewPickerTest</code> 6 · <code>CameraViewRowContractTest</code> 7 + cập nhật 5 bài cũ</td><td>T7–T13</td><td><code>core/src/test/…</code>, <code>app/src/test/…</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T15</td><td>Bump bản: <code>versionCode 182</code> / <code>versionName "2.81"</code> (2.80 đã báo APK ⇒ không tái dùng số)</td><td>T14</td><td><code>app/build.gradle.kts:91–92</code></td><td><span class="pill ok">DONE</span></td></tr>
+<tr><td>T16</td><td>Senior review (Opus) + security scan trước commit; cập nhật INDEX + BACKLOG + <code>project-context</code> cùng phiên</td><td>T15</td><td>—</td><td><span class="pill wait">TODO</span></td></tr>
+<tr><td>T17</td><td>🚗 Dò trên Sealion 6: số nào + <code>AUTO</code> cho ra ảnh camera phải đúng</td><td>T15</td><td><code>docs/diagnostics/</code> (bằng chứng mới)</td><td><span class="pill block">BLOCKED — cần xe</span></td></tr>
+<tr><td>T18</td><td>Đưa số vừa đo vào hồ sơ xe SL6 (R7) + bài canh mặc định theo đời xe</td><td>T17</td><td><code>core/…/camera/CameraProfileDefaults.kt</code> + <code>ClusterProfile</code></td><td><span class="pill block">BLOCKED — chờ T17</span></td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<h3>6.1 Off-car — đã xanh</h3>
+<ul>
+<li><b>V-unit (mới)</b> [ĐO <code>grep -c '@Test'</code> 2026-09-28]: <code>CameraPanoSourceTest</code> <b>8</b> ca — <i>hai góc Gương không bao giờ đi qua đường mới</i> · <i>vùng cắt của hai góc Gương giữ NGUYÊN</i> · <i>trước đây sáu góc kia ra nguyên khung với MỌI tổ hợp</i> · <i>tự động cắt đúng dải theo bên</i> · <i>ép một dải và đường thoát nguyên khung</i> · <i>có nguồn PHẢI đi kèm khi đã cắt dải</i> · <i>tâm quang PHẢI nằm TRONG vùng cắt, mọi dải</i> · <i>không cắt thì tâm quang về giữa khung như cũ</i>. <code>CameraViewPickerTest</code> <b>6</b> · <code>CameraViewRowContractTest</code> <b>7</b>.</li>
+<li><b>V-unit (cập nhật)</b>: <code>CameraSettingsIaTest</code> · <code>CameraSettingsIaWiringContractTest</code> · <code>CameraSpanShapeWiringContractTest</code> · <code>CameraFrameAndRenderWiringContractTest</code> · <code>CameraGlUniformsTest</code>.</li>
+<li><b>V-suite</b> [ĐO phiên 2026-09-28]: <b>4 707</b> ca, <b>0</b> fail; lint <b>0</b> error. Lệnh tái lập (JAVA_HOME = <code>/opt/homebrew/opt/openjdk@17</code>; đếm từ XML, không tin grep console — memory <code>kachi-gradle-parallel-agents</code>):
+<pre>./gradlew test --rerun-tasks --continue
+./gradlew lint</pre></li>
+<li><b>V-count</b> [ĐO đọc mã 2026-09-28]: <code>CameraSettingsIa.USER_KEYS</code> = <b>14</b>, <code>NO_UI_KEYS</code> = <b>15</b>, danh sách trắng <code>prefs_set</code> = <b>44</b> khoá (29 khoá <code>camera_*</code>).</li>
+<li><b>V-emulator</b> [ĐO máy ảo 2026-09-28]: hai hàng mới hiện đúng nhãn và mặc định (góc nhìn: trái → số 1, phải → số 2; dải hình: <i>Tự động</i>); bấm chip <b>không</b> chết tiến trình; overlay xem thử <b>bật thật</b> (đen vì máy ảo không có <code>android.hardware.AVMCamera</code>).</li>
+<li><b>V-grep call site</b> (CLAUDE.md §8) — hàm mới phải có chỗ gọi production:
+<pre>grep -rn "panoStripFor\|streamW(\|streamH(\|previewSide" app/src/main core/src/main</pre></li>
+</ul>
+<h3>6.2 On-car — CÒN NỢ 🚗</h3>
+<p class="muted">Cần một xe <b>Sealion 6</b>. Kết quả phải lưu vào <code>docs/diagnostics/</code> làm bằng chứng (CLAUDE.md §14 bước 1). Ưu tiên đọc dữ liệu trước, chỉ mò UI khi hết đường (CLAUDE.md §15).</p>
+<pre>adb connect &lt;ip-xe&gt;:5555
+B='am broadcast -a com.byd.launcher.TEST -p com.byd.launcher'
+
+# 1. dò từng số cho bên PHẢI, để dải ở AUTO; đọc `read_back` trong lời đáp, đừng tin "không báo lỗi"
+adb shell "$B --es cmd prefs_set --es key camera_pano_right --es text AUTO"
+adb shell "$B --es cmd prefs_set --es key camera_view_right --es text FRONT_RIGHT"
+adb shell "$B --es cmd camera --es name right"
+
+# 2. chụp khung THÔ ở cỡ nguồn để biết số ấy ra ảnh GHÉP hay ảnh ĐƠN (ảnh chụp màn không trả lời được)
+adb shell "$B --es cmd camera_frame --es name 5120x960"
+
+# 3. nếu số ấy ra ảnh ĐƠN thì đường thoát là NONE
+adb shell "$B --es cmd prefs_set --es key camera_pano_right --es text NONE"</pre>
+<ul>
+<li><b>V-oncar-1</b> — Có ít nhất một số + <code>AUTO</code> cho ra <b>đúng ảnh camera phải</b> trên SL6. <i>Bằng chứng:</i> ảnh chụp overlay + khung thô của <code>camera_frame</code> + dòng log <code>xi-nhan RIGHT → camera … crop=…</code>. ⇒ mở khoá R7/T18.</li>
+<li><b>V-oncar-2</b> — Với số ấy, ảnh <b>không bị kéo bẹp</b> (đúng tỉ lệ) và <b>không cong lệch</b> (tâm quang trong dải) — tức hai bẫy (a)/(b) không tái hiện trên xe thật.</li>
+<li><b>V-oncar-3</b> — Hồi quy trên <b>Seal</b>: cài 2.81, không chạm Cài đặt, xi-nhan hai bên ⇒ hình <b>y như 2.79</b> (hai góc Gương đi đường cũ).</li>
+<li><b>V-lifecycle</b> — chọn → hiện ngay → tắt/mở app → xi-nhan thật vẫn theo lựa chọn → đổi sang <i>Nguyên khung</i> → về <i>Tự động</i>; nâng cấp APK không mất pref.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1.</b> Trên Sealion 6, số nào (1…8) + <code>AUTO</code> cho ra đúng ảnh camera phải? — <span class="muted"><b>[CHƯA BIẾT]</b> · chốt bằng V-oncar-1. Biết rồi thì số ấy <b>phải vào <code>ClusterProfile</code></b> cho đời xe đó (R7), không để mỗi người tự dò lại.</span></li>
+<li><b>OQ2.</b> Cả 8 số có cho ra khung <b>ghép</b> không, trên Seal và trên SL6? — <span class="muted"><b>[CHƯA BIẾT]</b> · đó chính là lý do <code>NONE</code> tồn tại (R6). Chốt bằng <code>camera_frame</code> từng số, xem khung thô là 4 dải hay một ảnh đơn.</span></li>
+<li><b>OQ3.</b> Có tự nhận ra <i>ghép vs đơn</i> từ tỉ lệ khung được không, thay vì bắt người lái chọn? — <span class="muted"><b>[ĐO]</b> hôm nay <b>không</b>: <code>AVMCamera.previewSize()</code> trả <code>0×0</code> và trong mã <b>không còn đường nào khác</b> lấy cỡ luồng. Mở khoá nếu tìm được một nguồn cỡ thật (HAL khác, <code>dumpsys</code>, hoặc đo từ chính khung đã chụp).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><b>Backlog</b> — <code>docs/PROJECT-BACKLOG.md</code> mục <code>CAM-SL6-RIGHT</code> (nguồn task duy nhất; có nguyên văn yêu cầu của owner + kết quả đo bố cục dải hai đời xe).</li>
+<li><b>Mã <code>:core</code></b> — <code>core/src/main/kotlin/com/byd/clusternav/launcher/camera/CameraPanoCrop.kt</code> · <code>CameraSignalPolicy.kt:392–413</code> (enum <code>CamView</code>) · <code>CameraGlUniforms.kt:150–158</code> (<code>sourceCentre</code>) · <code>CameraSettingsIa.kt</code> · <code>CameraProfileDefaults.kt</code>.</li>
+<li><b>Mã <code>:app</code></b> — <code>app/src/main/java/com/byd/clusternav/launcher/camera/CameraSignalController.kt:174–300</code>, <code>:404–411</code> · <code>launcher/SettingsSectionsCamera.kt:95–135</code> · <code>PrefsAutomation.kt:118–157</code> · <code>launcher/testbridge/TestBridgePrefsSet.kt</code>.</li>
+<li><b>Test</b> — <code>core/src/test/…/camera/{CameraPanoSourceTest,CameraViewPickerTest,CameraPanoCropTest,CameraGlUniformsTest,CameraSettingsIaTest}.kt</code> · <code>app/src/test/…/launcher/CameraViewRowContractTest.kt</code> · <code>app/src/test/…/launcher/camera/{CameraFrameAndRenderWiringContractTest,CameraSettingsIaWiringContractTest,CameraSpanShapeWiringContractTest}.kt</code>.</li>
+<li><b>RE / chẩn đoán</b> — <code>docs/diagnostics/electro-camera-RE-2026-09-26.md</code> §2.1 (hằng <code>0.25</code> trong shader Electro), §5 K10, §7 Q1/Q2 · <code>docs/diagnostics/research-side-camera-orientation-2026-09-27.md</code> · <code>docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md</code> (IA + runbook CAM-F*).</li>
+<li><b>Spec liên quan</b> — <code>docs/specs/camera-turn-signal-hal-socket.html</code> (đường HAL + overlay gốc) · <code>docs/specs/kachi-276-closing.html</code> (dải cụm, mặt nạ) · <code>docs/specs/kachi-settings-ia-v2.html</code> (khuôn hàng Cài đặt).</li>
+<li><b>Luật</b> — <code>CLAUDE.md</code> §2 (mức bằng chứng) §3.1 (diagram visual) §6 (không đảo đường đang chạy) §7 (generic, hồ sơ xe) §8 (grep call site) §10 (test khoá bài học) §14 (4 tầng) §15 (thứ tự debug) · <code>.kiro/steering/conversation-protocol.md</code> P1/P5.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-09-28 · quyết định</b> — Bản 2.80 làm <b>picker góc nhìn</b> trước, vì đó là thứ owner xin đúng chữ (<i>"cho chọn lại cam trong setting"</i>) và là đường duy nhất mở được sáu <code>CamView</code> chết. Không chạm hình học ở bước này.</li>
+<li><b>2026-09-28 · bug (owner thử 2.80 trên xe) → gỡ bản</b> — Triệu chứng: chọn số khác 1/2 thì CÓ hình nhưng ra <b>nguyên khung ghép</b>. Root-cause: <code>cropFor</code> mở bằng <code>view.crop</code>, sáu góc kia <code>crop = null, hint = 0</code> ⇒ <code>ratio = 0</code> ⇒ cả hai nhánh <code>base == null</code> trả <code>null</code>. Vá: thêm dải pano + cỡ nguồn (T7). Verify: ca <i>"trước đây sáu góc kia ra nguyên khung với MỌI tổ hợp"</i> khoá lại đúng hành vi cũ.</li>
+<li><b>2026-09-28 · quyết định (owner) → đổi nhãn</b> — <i>"mình cũng đâu có biết là nó cam nào đâu mà phán cho người ta"</i> ⇒ nhãn tên camera bị gỡ khỏi chuỗi cả 2 ngôn ngữ, thay bằng số 1…8; thêm bài canh khoá thứ tự enum. Đây là <b>sai lệch có chủ đích</b> so với 2.80 (đã ship nhãn tên) và là lý do bump 2.81.</li>
+<li><b>2026-09-28 · trade-off</b> — <code>cropFor</code> nhận thêm tham số thay vì đổi hẳn sang <i>"luôn suy ra dải"</i>: giữ được chữ ký cũ và mọi bài canh cũ (trong đó có bài ghim <b>literal</b> hai rect của 2.73), đổi lại mã có hai vế cùng ép <code>null</code> — đã ghi tường minh ngay trong mã vì sao không được bỏ vế thứ hai.</li>
+<li><b>2026-09-28 · bug bắt bởi bài canh</b> — Một lượt gọi lỡ truyền <code>panoStrip</code> khác cho góc Gương sẽ <b>lặng lẽ đổi vùng cắt của Seal</b>. Vá: ép <code>pano = null</code> ngay đầu <code>cropFor</code> khi <code>view.crop != null</code>, và dùng <code>pano</code> ở MỌI chỗ tính <code>s</code>.</li>
+<li><b>2026-09-28 · vòng phản biện</b> — Hai lỗi thuộc loại <i>"vẫn ra hình nhưng sai"</i> (§2 bẫy (a) và (b)) được bắt <b>trước khi</b> bản vá lên xe; cách chữa chọn <b>đổi chữ ký</b> (<code>sourceCentre(crop, …)</code>) thay vì thêm điều kiện phải nhớ đồng bộ — xem §4.5.</li>
+<li><b>2026-09-28 · nợ tài liệu trong mã</b> <span class="tag p2">P3</span> — KDoc <code>CameraSettingsIa.kt</code> còn viết <i>"<b>10 khoá</b> người lái quyết"</i> trong khi <code>USER_KEYS</code> nay có <b>14</b> [ĐO đọc mã]; dòng <code>NO_UI_KEYS</code> = 15 vẫn đúng. Cùng loại lỗi với chính con bọ mở ra việc này (chú thích đi trước mã) ⇒ phải sửa trong vòng T16, và runbook <code>CAM-F1</code> (<i>owner ĐẾM hàng trên xe</i>) phải đổi theo số hàng mới.</li>
+<li><b>2026-09-28 · chưa làm, cố ý</b> — Không đặt mặc định theo đời xe cho SL6 (R7): chưa có <b>một phép đo nào</b> nói số nào đúng. Đặt bừa vào hồ sơ xe là đúng cái lỗi §2 mà spec này sinh ra để tránh ⇒ để <code>AUTO</code> + người lái dò, và ghi nợ ở T17/T18.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm một mục <code>Pass N — YYYY-MM-DD</code>; tag finding <code>[P0]–[P3]</code>.</p>
+<ul>
+<li><b>Pass 1 — 2026-09-28</b> (phản biện vùng cắt, trước khi ship 2.81):
+  <ul>
+    <li><span class="tag">P0</span> <b>Thiếu cỡ nguồn là cổng thứ hai</b> — vá bằng <code>streamW/streamH</code> (= <code>5120×960</code> khi đã cắt dải) và bài canh <i>"có nguồn PHẢI đi kèm khi đã cắt dải"</i>. Không vá thì ảnh cắt đúng mà <b>bẹp</b>.</li>
+    <li><span class="tag">P0</span> <b>Tâm quang lệch pha vùng cắt</b> — <code>sourceCentre</code> đổi sang nhận vùng cắt đang dùng; bài canh <i>"tâm quang PHẢI nằm TRONG vùng cắt, mọi dải"</i>. Không vá thì ảnh <b>cong lệch</b> (dải 1 ⇒ trục quang ra <code>1,0</code>).</li>
+    <li><span class="tag p1">P1</span> <b>Dải lạc vào góc Gương</b> — ép <code>null</code> ở cả <code>panoStripFor</code> và <code>cropFor</code>; bài canh <i>"vùng cắt của hai góc Gương giữ NGUYÊN"</i>.</li>
+    <li><span class="tag p2">P2</span> <b>Ba chỗ tự tra <code>view.hint*</code></b> — gộp về một lượt giải nguồn trong controller; bài canh cấm <code>view.hintW/hintH</code> xuất hiện trong <code>:app</code>.</li>
+    <li><b>Kết quả test sau vá</b> [ĐO 2026-09-28]: <b>4 707 / 0 fail</b>, lint <b>0</b> error. <b>Verdict:</b> off-car <span class="pill ok">APPROVED</span> · scope tổng <span class="pill block">INCOMPLETE</span> — còn R7/T17/T18 (cần xe SL6) và T16 (review + security scan trước commit).</li>
+  </ul>
+</li>
+</ul>
+
+</div></body>
+</html>

@@ -67,7 +67,22 @@ class CameraFrameAndRenderWiringContractTest {
                 assertTrue(it !in src, "cỡ ảnh $it bị gõ cứng trong `:app` — gợi ý nằm ở `CamView.hintW/hintH`, số thật do HAL đo")
             }
         }
-        assertTrue("view.hintW" in controller && "view.hintH" in controller, "gợi ý phải lấy từ `:core` CamView")
+        // 2026-09-28: cỡ nguồn nay do `:core` giải một lần (ảnh ghép ⇒ 5120×960; còn lại ⇒ gợi ý của góc).
+        assertTrue(
+            "CameraPanoCrop.streamW(view, panoStrip)" in controller &&
+                "CameraPanoCrop.streamH(view, panoStrip)" in controller,
+            "cỡ nguồn phải lấy từ `:core`, không gõ số trong app",
+        )
+        // Cả BA chỗ dùng cùng một biến. Trước đây ba chỗ tự đọc `view.hintW` riêng ⇒ sửa một chỗ quên hai chỗ
+        // là hình vừa bị kéo bẹp vừa cong lệch (lượt phản biện 2026-09-28).
+        assertEquals(
+            0, Regex("view\\.hint[WH]").findAll(controller).count(),
+            "không chỗ nào được đọc thẳng `view.hintW/hintH` nữa — phải đi qua biến đã giải",
+        )
+        assertEquals(
+            2, Regex("streamW = streamW").findAll(controller).count(),
+            "đúng HAI chỗ truyền cỡ nguồn (uniform GL + overlay) và cả hai dùng biến chung",
+        )
         assertTrue("avm.previewSize()" in controller, "số THẬT phải đo qua AVMCamera")
     }
 

@@ -115,6 +115,47 @@ fun Prefs.setCameraOnCluster(ctx: Context, v: Boolean) =
 // bên trái nên góc trên-trái có thể bị vành lái/cột A che ở một số cách ngồi. Một khoá dùng chung sẽ buộc hai
 // bên đối xứng, tức làm mất đúng thứ yêu cầu xin.
 // Mặc định = [CameraSignalPolicy.defaultCorner] (trái→TL, phải→TR) — hằng ở `:core`, KHÔNG chép số vào đây.
+private fun cameraPanoKey(left: Boolean) = if (left) "camera_pano_left" else "camera_pano_right"
+
+/**
+ * NGUỒN của bên [left] có phải ẢNH GHÉP 4-trong-1 không, và cắt dải nào — xem
+ * [CameraPanoCrop.panoStripFor]. Giá trị: `AUTO` (theo bên: trái dải 1, phải dải 2) · `NONE` (nguyên khung) ·
+ * `0`–`3` (ép một dải). Giá trị lạ trên đĩa ⇒ `AUTO`.
+ */
+fun Prefs.cameraPano(ctx: Context, left: Boolean): String {
+    val raw = autoPrefs(ctx).getString(cameraPanoKey(left), null)
+    return if (CameraPanoCrop.isPanoMode(raw)) raw!!.trim().uppercase() else CameraPanoCrop.PANO_AUTO
+}
+
+/** Xem [cameraPano]. */
+fun Prefs.setCameraPano(ctx: Context, left: Boolean, v: String) =
+    autoPrefs(ctx).edit().putString(cameraPanoKey(left), v).apply()
+
+private fun cameraViewKey(left: Boolean) = if (left) "camera_view_left" else "camera_view_right"
+
+/**
+ * GÓC NHÌN camera cho bên xi-nhan [left] — tên một [CameraSignalPolicy.CamView].
+ *
+ * Mỗi góc mang hai số: bảo HAL xuất hình nào, và mở camera nào. Cặp đúng KHÁC NHAU theo đời xe ([ĐO ảnh owner]
+ * fisheye 4-in-1 là id 1 trên Seal, id 0 trên SL6) và chưa đo đủ để đặt cứng vào hồ sơ xe, nên người lái tự dò
+ * — owner 2026-09-28 trên SL6: *"không mở được cam phải (cam trái ok)… cho chọn lại cam trong setting"*.
+ *
+ * Chưa chọn, hoặc tên lạ trên đĩa (bản trước / `prefs_set` gõ tay) ⇒ [CameraSignalPolicy.defaultView] như cũ.
+ * KHÔNG trả nguyên văn tên lạ: tầng mở camera sẽ không tìm thấy góc đó và im lặng không hiện gì — đúng cái
+ * triệu chứng đang phải chữa.
+ */
+fun Prefs.cameraView(ctx: Context, left: Boolean): String {
+    val fallback = CameraSignalPolicy.defaultView(
+        if (left) CameraSignalPolicy.Turn.LEFT else CameraSignalPolicy.Turn.RIGHT,
+    )?.name.orEmpty()
+    val raw = autoPrefs(ctx).getString(cameraViewKey(left), null)
+    return if (CameraSignalPolicy.isView(raw)) raw!!.trim().uppercase() else fallback
+}
+
+/** Xem [cameraView]. Tên lạ ghi được nhưng lượt đọc bỏ qua (cùng lẽ với [setCameraPos]). */
+fun Prefs.setCameraView(ctx: Context, left: Boolean, v: String) =
+    autoPrefs(ctx).edit().putString(cameraViewKey(left), v).apply()
+
 private fun cameraPosKey(left: Boolean) = if (left) "camera_pos_left" else "camera_pos_right"
 
 /**

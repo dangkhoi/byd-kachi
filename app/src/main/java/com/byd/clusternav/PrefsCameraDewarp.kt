@@ -176,7 +176,8 @@ fun Prefs.cameraGlUniforms(
     left: Boolean,
     mirror: Boolean,
 ): CameraGlUniforms {
-    val centre = CameraGlUniforms.sourceCentre(view, strip)
+    // 2026-09-28: bám vào `crop` ĐANG dùng, không bám rect dựng sẵn của góc — xem KDoc `sourceCentre`.
+    val centre = CameraGlUniforms.sourceCentre(crop, strip)
     return CameraGlUniforms.of(
         crop = crop,
         srcCentreX = centre[0],

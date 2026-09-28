@@ -454,4 +454,35 @@ object Prefs {
         sp(ctx).getBoolean("mod_" + title.hashCode(), false)
     fun setModuleEnabled(ctx: Context, title: String, v: Boolean) =
         sp(ctx).edit().putBoolean("mod_" + title.hashCode(), v).apply()
+
+    // ─── A11Y-BIND-STUCK (2026-09-28) — mốc lần leo nấc force-stop gần nhất ───
+
+    private const val K_A11Y_ESCALATED_AT = "a11y_forcestop_elapsed"
+
+    /**
+     * Mốc `SystemClock.elapsedRealtime()` của lần TỰ force-stop gần nhất để gỡ dịch vụ Hỗ trợ bị kẹt;
+     * `-1` = chưa từng. Đồng hồ này về 0 khi khởi động lại máy, nên mốc lưu LỚN HƠN mốc hiện tại nghĩa là đã
+     * reboot — xem [com.byd.clusternav.modules.navaccess.AccessibilityHealGates.escalatedThisBoot].
+     */
+    fun a11yEscalatedAt(ctx: Context): Long = sp(ctx).getLong(K_A11Y_ESCALATED_AT, -1L)
+
+    /**
+     * ⚠ `commit()` chứ KHÔNG `apply()`: mốc này được ghi NGAY TRƯỚC khi bắn lệnh tự giết tiến trình mình
+     * (CLAUDE.md §5 — ghi marker TRƯỚC khi đổi state ngoài). `apply()` ghi nền, tiến trình chết trước khi
+     * flush xong thì mốc mất ⇒ lần sau lại leo ⇒ vòng lặp giết launcher. Chặn bằng ghi đồng bộ.
+     */
+    fun setA11yEscalatedAt(ctx: Context, v: Long) =
+        sp(ctx).edit().putLong(K_A11Y_ESCALATED_AT, v).commit()
+
+    private const val K_DEEP_SLEEP_AT = "a11y_deep_sleep_ms"
+
+    /**
+     * Tổng thời gian máy đã NGỦ SÂU đọc được ở lượt watchdog TRƯỚC; `-1` = chưa có mốc.
+     * Bước nhảy của số này giữa hai lượt = xe vừa đứng bao lâu — xem
+     * [com.byd.clusternav.modules.navaccess.A11yBindJournal.wokeFromLongSleep].
+     */
+    fun lastDeepSleepMs(ctx: Context): Long = sp(ctx).getLong(K_DEEP_SLEEP_AT, -1L)
+
+    fun setLastDeepSleepMs(ctx: Context, v: Long) =
+        sp(ctx).edit().putLong(K_DEEP_SLEEP_AT, v).apply()
 }

@@ -27,6 +27,13 @@ object AccessibilityRebind {
     private const val KEY = "enabled_accessibility_services"
 
     /**
+     * Hình dạng HỢP LỆ của một mục `pkg/cls` trong `enabled_accessibility_services`. Chỉ ký tự mà tên gói +
+     * tên lớp Java được phép mang; cố ý KHÔNG nhận `$` (lớp lồng) vì `$` nằm trong dấu nháy kép của lệnh shell
+     * sẽ bị nội suy — mà dịch vụ Hỗ trợ bắt buộc là lớp top-level nên không mất gì.
+     */
+    private val SAFE_ENTRY = Regex("[A-Za-z0-9._/-]+")
+
+    /**
      * Hai chuỗi `pkg/cls` có cùng ComponentName không, chịu dạng SHORT (`pkg/.Cls` = `pkg.Cls`) lẫn FULL
      * (`pkg/pkg.sub.Cls`). #9 (deep-pass 2026-09-23): nếu enabled list OS lưu SHORT mà lệnh remove dùng FULL thì
      * so-sánh-chuỗi-trần TRƯỢT ⇒ không remove ⇒ framework thấy 'không đổi' ⇒ KHÔNG rebind (phím chết mà toggle
@@ -148,5 +155,114 @@ object AccessibilityRebind {
             eh >= 0 && dump.substring(eh).contains("$pkg/", ignoreCase = true)
         }
         return section.contains("clusternav", ignoreCase = true) && selfEnabled
+    }
+
+    /**
+     * NẤC CUỐI của thang chữa: lệnh TỰ `force-stop` gói CỦA CHÍNH MÌNH rồi lắp lại dịch vụ Hỗ trợ, chạy TÁCH
+     * RỜI trên xe. Trả chuỗi rỗng khi không được phép dựng lệnh (caller bỏ qua).
+     *
+     * ⚠ VÌ SAO PHẢI ĐẾN MỨC NÀY — [ĐO xe 2026-09-28, 2.79 (180), gói cài lại lúc 2026-09-27 23:04]: khi mục của
+     * mình KẸT trong `Binding services` của `dumpsys accessibility` (có trong "Enabled", vắng khỏi "Bound",
+     * phía ActivityManager KHÔNG còn ServiceRecord nào, kèm nhiều `ConnectionRecord … DEAD` mồ côi do `system`
+     * giữ), thì đo được:
+     *  • GỠ mình khỏi `enabled_accessibility_services` → mục trong `Binding services` VẪN CÒN NGUYÊN ⇒ toàn bộ
+     *    đường toggle ở [accessibilityRebindWrites] KHÔNG THỂ gỡ trạng thái này. Đo trực tiếp, không suy luận.
+     *  • `cmd accessibility` trên ROM DiLink chỉ phơi `get/set-bind-instant-service-allowed`, không có lệnh
+     *    reset; mà đổi cờ đó cũng chỉ chảy vào cùng một lượt cập nhật trạng thái như ghi settings.
+     *  • `am force-stop <gói mình>` → `Binding services:{}` NGAY, hệ tự gỡ mình khỏi danh sách enabled; lắp lại
+     *    thì dịch vụ vào Bound THẬT (`received=true hasBound=true`, log `accessibility booster connected`).
+     * ⇒ Đây là đường phục hồi DUY NHẤT chứng minh được trên xe, trùng kết luận hồ sơ hiện trường
+     * `docs/diagnostics/oncar-piper-crash-binding-2026-09-18.md` ("toggle a11y KHÔNG đủ… force-stop → re-enable").
+     *
+     * PHẢI chạy TÁCH RỜI (`nohup … &`, đóng cả ba luồng chuẩn): lệnh do CHÍNH tiến trình sắp bị giết phát ra qua
+     * dadb, nên nếu còn dính phiên shell thì nửa sau (lắp lại dịch vụ) chết theo ⇒ máy ở lại trạng thái "đã gỡ"
+     * = phím chết hẳn. Tách rời thì lệnh đã lọt vào xe là chạy trọn, bất kể client còn sống hay không. Cùng lý lẽ
+     * với lệnh gộp ở `NavConnect.forceRebindIfNeeded`, chỉ siết hơn một bậc vì ở đây client CHẮC CHẮN chết.
+     *
+     * @param current giá trị thô `enabled_accessibility_services` ĐỌC TRƯỚC khi giết. Danh sách lắp lại giữ
+     *   nguyên mọi dịch vụ của hãng, bỏ mọi bản trùng của mình rồi thêm đúng một lần vào cuối — cùng quy tắc
+     *   chuẩn hoá với [accessibilityRebindWrites], nên không bao giờ sinh dấu `:` thừa.
+     * @param pkg gói sẽ bị force-stop. PHẢI TRÙNG phần gói của [component]; lệch hoặc rỗng ⇒ trả `""`. Đây là
+     *   chốt cứng ở tầng THI HÀNH (CLAUDE.md §4/§5) để không đường nào giết nhầm gói của người khác.
+     *
+     * CHỐT THỨ HAI — lệnh này là chuỗi shell ghép từ GIÁ TRỊ ĐỌC NGOÀI (`settings get`), nên mọi mục trong danh
+     * sách phải khớp [SAFE_ENTRY] (chỉ chữ/số/`.`/`_`/`-`/`/`). Một mục chứa `'`, `"`, `` ` ``, `$`, `;`, `&`,
+     * `|`, khoảng trắng… là **thoát khỏi dấu nháy** của `sh -c '…'` hoặc bị shell nội suy ⇒ lệnh khác hẳn ý định,
+     * mà đây lại đúng là lệnh tự giết tiến trình (CLAUDE.md §4.1 "user input → shell"). Gặp mục như vậy thì
+     * **từ chối dựng lệnh** (`""`) thay vì bỏ mục đó ra: bỏ ra là vô tình TẮT một dịch vụ Hỗ trợ của hãng.
+     */
+    fun forceStopRebindCommand(
+        current: String?,
+        pkg: String,
+        component: String = ACC_COMP,
+        pauseSec: Int = 4,
+    ): String {
+        val owner = component.substringBefore('/').trim()
+        if (pkg.isBlank() || owner.isBlank() || pkg.trim() != owner) return ""
+        if (!SAFE_ENTRY.matches(component)) return ""
+        val entries = (current ?: "")
+            .split(':')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it != "null" }
+        if (entries.any { !SAFE_ENTRY.matches(it) }) return ""
+        val readd = (entries.filter { !sameComponent(it, component) } + component).joinToString(":")
+        val pause = pauseSec.coerceIn(1, 30)
+        val inner = "am force-stop ${pkg.trim()} ; sleep $pause ; " +
+            "settings put secure $KEY \"$readd\" ; " +
+            "settings put secure accessibility_enabled 1"
+        return "nohup sh -c '$inner' >/dev/null 2>&1 </dev/null &"
+    }
+
+    /**
+     * Cắt đúng khối `{...}` cân bằng ngoặc đi ngay sau tiêu đề [header] trong bản dump. Trả `null` khi không
+     * thấy tiêu đề hoặc không thấy ngoặc mở. Tách riêng để [isInBindingServices] dùng CÙNG cách quét với
+     * [isClusterNavBound] mà không phải sửa hàm cũ (hàm cũ đang chạy ngoài hiện trường, CLAUDE.md §6).
+     */
+    private fun braceSection(dump: String, header: String): String? {
+        val h = dump.indexOf(header, ignoreCase = true)
+        if (h < 0) return null
+        val open = dump.indexOf('{', h)
+        if (open < 0) return null
+        var depth = 0
+        var i = open
+        while (i < dump.length) {
+            when (dump[i]) {
+                '{' -> depth++
+                '}' -> { depth--; if (depth == 0) return dump.substring(open, i + 1) }
+            }
+            i++
+        }
+        return dump.substring(open)
+    }
+
+    /**
+     * Dịch vụ của MÌNH có đang KẸT trong khối `Binding services:{…}` của `dumpsys accessibility` không.
+     *
+     * VÌ SAO PHẢI TÁCH RIÊNG khỏi [isClusterNavBound] — hai trạng thái NHÌN GIỐNG NHAU ("đã bật mà chưa gắn")
+     * nhưng cách chữa NGƯỢC NHAU:
+     *  • (A) có trong Enabled, KHÔNG trong Bound, KHÔNG trong Binding — ca thường sau khi nổ máy. Ghi lại
+     *    settings là hệ gọi `bindLocked` thật ⇒ đường toggle ở [accessibilityRebindWrites] CHỮA ĐƯỢC.
+     *  • (B) có trong Enabled, KHÔNG trong Bound, CÓ trong Binding — ca KẸT. [ĐO AOSP android-10.0.0_r47
+     *    `AccessibilityManagerService.java:1630-1631`] `updateServicesLocked` mở đầu vòng lặp bằng
+     *    `if (mBindingServices.contains(componentName)) continue;` — dòng này nằm TRÊN cả `bindLocked()`
+     *    (`:1642`) lẫn `unbindLocked()` (`:1645`) ⇒ mục kẹt vừa KHÔNG gắn lại được vừa KHÔNG gỡ được bằng bất kỳ
+     *    lệnh ghi settings nào. Đo khớp trên xe 2026-09-28: gỡ hẳn khỏi `enabled_accessibility_services` mà mục
+     *    trong `Binding services` VẪN CÒN. Ở ca này toggle là vô ích, phải leo thẳng lên
+     *    [forceStopRebindCommand].
+     *
+     * Khớp theo PACKAGE của chính mình (phần trước `/` của [component]) chứ không theo nhãn: khối Binding luôn
+     * in component đầy đủ `{pkg/cls}`, khác khối Bound (ROM DiLink chỉ in label — xem [isClusterNavBound]).
+     *
+     * FAIL-MODE: dump rỗng/không đọc được/không có khối Binding ⇒ `false` = "không khẳng định là kẹt". Cùng tinh
+     * thần với [isClusterNavBound]: không xác nhận được thì KHÔNG leo lên nấc đắt nhất (force-stop giết launcher),
+     * để đường rẻ chạy trước. Không bao giờ giết tiến trình dựa trên một bản dump không đọc nổi.
+     */
+    fun isInBindingServices(dumpsysAccessibility: String?, component: String = ACC_COMP): Boolean {
+        val dump = dumpsysAccessibility
+        if (dump.isNullOrBlank()) return false
+        val section = braceSection(dump, "Binding services") ?: return false
+        val pkg = component.substringBefore('/').trim().ifBlank { return false }
+        if (section.contains(component, ignoreCase = true)) return true
+        return section.contains("$pkg/", ignoreCase = true)
     }
 }

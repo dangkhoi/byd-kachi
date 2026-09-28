@@ -49,11 +49,20 @@ class CameraSpanShapeWiringContractTest {
         listOf(
             "Prefs.cameraSpan(appCtx)",
             "Prefs.cameraShape(appCtx)",
-            "Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT)",
+            "Prefs.cameraStrip(appCtx, left = isLeft)",
             "Prefs.cameraCirclePct(appCtx)",
         ).forEach { assertTrue(it in controller, "thiếu lượt đọc pref: $it") }
         // Chỉ số dải đọc theo ĐÚNG BÊN xi-nhan (hai khoá độc lập, y khuôn camera_rot_left/right).
-        assertTrue("strip = Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT)" in controller)
+        // 2026-09-28: dải hiệu lực nay là `effStrip` = dải ảnh ghép người lái chọn, lùi về pref dải cũ.
+        assertTrue("strip = effStrip" in controller, "cropFor phải nhận DẢI HIỆU LỰC, không phải pref thô")
+        assertTrue(
+            "val effStrip = panoStrip ?: Prefs.cameraStrip(appCtx, left = isLeft)" in controller,
+            "dải hiệu lực phải ưu tiên lựa chọn ảnh ghép rồi mới lùi về pref cũ",
+        )
+        assertTrue(
+            "CameraPanoCrop.panoStripFor(view, Prefs.cameraPano(appCtx, left = isLeft), left = isLeft)" in controller,
+            "quyết định 'nguồn có phải ảnh ghép không' phải nằm ở `:core`, không rẽ nhánh trong app",
+        )
         // Hình khung đi tiếp xuống tầng vẽ; kênh HAL đi tiếp xuống tầng mở camera.
         assertTrue("shape = shape," in controller, "hình khung phải vào overlay.show(shape = …)")
         // 2.77: **MỘT** nguồn (khung ghép) ⇒ `AvmCamera.open` không còn tham số kênh, và mọi mảnh của nguồn một-kênh

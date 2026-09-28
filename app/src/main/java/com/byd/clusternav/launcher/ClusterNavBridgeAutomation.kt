@@ -25,6 +25,10 @@ import com.byd.clusternav.setCameraPos
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraPano
+import com.byd.clusternav.setCameraPano
+import com.byd.clusternav.cameraView
+import com.byd.clusternav.setCameraView
 import com.byd.clusternav.cameraRender
 import com.byd.clusternav.setCameraRender
 import com.byd.clusternav.cameraSpan
@@ -211,6 +215,35 @@ fun ClusterNavBridge.setCameraMirror(left: Boolean, v: Boolean) = Prefs.setCamer
  */
 fun ClusterNavBridge.cameraRender(): String = Prefs.cameraRender(app)
 fun ClusterNavBridge.setCameraRender(v: String) = Prefs.setCameraRender(app, v)
+/** Dải hình trong khung ghép, từng bên (2026-09-28). */
+fun ClusterNavBridge.cameraPanoLeft(): String = Prefs.cameraPano(app, left = true)
+
+/** Xem [cameraPanoLeft]. */
+fun ClusterNavBridge.cameraPanoRight(): String = Prefs.cameraPano(app, left = false)
+
+/** Đổi dải rồi XEM THỬ ngay bên đó — cùng lẽ với [setCameraView]. */
+fun ClusterNavBridge.setCameraPano(left: Boolean, v: String) {
+    Prefs.setCameraPano(app, left = left, v = v)
+    runCatching { com.byd.clusternav.AppContainer.get(app).cameraSignal.previewSide(left) }
+        .onFailure { android.util.Log.w("KachiBridge", "xem thử camera lỗi: ${it.message}") }
+}
+
+/** Góc nhìn camera từng bên (khối *Nếu camera không hiện*, 2026-09-28). */
+fun ClusterNavBridge.cameraViewLeft(): String = Prefs.cameraView(app, left = true)
+
+/** Xem [cameraViewLeft]. */
+fun ClusterNavBridge.cameraViewRight(): String = Prefs.cameraView(app, left = false)
+
+/**
+ * Đổi góc nhìn rồi XEM THỬ ngay bên đó — không bắt người dùng ra đường bật xi-nhan mới biết đã chọn đúng chưa.
+ * Overlay tự đóng theo luật giữ như một lượt xi-nhan thật.
+ */
+fun ClusterNavBridge.setCameraView(left: Boolean, v: String) {
+    Prefs.setCameraView(app, left = left, v = v)
+    runCatching { com.byd.clusternav.AppContainer.get(app).cameraSignal.previewSide(left) }
+        .onFailure { android.util.Log.w("KachiBridge", "xem thử camera lỗi: ${it.message}") }
+}
+
 fun ClusterNavBridge.cameraCamLeft(): Int = Prefs.cameraCamId(app, left = true, 1)
 fun ClusterNavBridge.cameraCamRight(): Int = Prefs.cameraCamId(app, left = false, 1)
 fun ClusterNavBridge.setCameraCamLeft(v: Int) = Prefs.setCameraCamId(app, left = true, v)

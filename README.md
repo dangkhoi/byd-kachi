@@ -9,8 +9,8 @@
 > Bilingual: user-facing sections are Vietnamese first, then English. Per-version changelog entries stay in English, with a one-line Vietnamese intro.
 
 > [!CAUTION]
-> **(VI) KACHI LAUNCHER — bản hiện tại: `2.79` (versionCode 180, 2026-09-27; OTA `apk/Kachi-2.79-release.apk`)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (11 nhóm); hướng dẫn dùng: `docs/HUONG-DAN-KACHI.md`; đóng dự án: `docs/CLOSEOUT-2026-09-25.md`; màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
-> **(EN) KACHI LAUNCHER — current: `2.79` (versionCode 180, 2026-09-27; OTA `apk/Kachi-2.79-release.apk`)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (11 groups); user guide `docs/HUONG-DAN-KACHI.md`; closeout `docs/CLOSEOUT-2026-09-25.md`; the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
+> **(VI) KACHI LAUNCHER — bản hiện tại: `2.81` (versionCode 182, 2026-09-28; tệp `apk/Kachi-2.81-release.apk`, **chưa đăng OTA** — kênh `main` còn phục vụ `2.79` (180). Bản `2.80` (181) đã bị **rút và xoá** khỏi `apk/` vì lượt soát tìm ra 2 lỗi chí tử)** — `com.byd.launcher`, MỘT icon "Kachi" duy nhất (LAUNCHER = KachiHomeActivity), mọi cấu hình ClusterNav đã gộp vào Kachi Settings (11 nhóm); hướng dẫn dùng: `docs/HUONG-DAN-KACHI.md`; đóng dự án: `docs/CLOSEOUT-2026-09-25.md`; màn ClusterNav cũ chỉ còn là "màn nâng cao" mở từ Hệ thống › Nâng cao. Dòng dưới là trạng thái nền tảng ClusterNav 2.0 kế thừa.
+> **(EN) KACHI LAUNCHER — current: `2.81` (versionCode 182, 2026-09-28; file `apk/Kachi-2.81-release.apk`, **not published over the air yet** — the `main` channel still serves `2.79` (180). Build `2.80` (181) was **withdrawn and deleted** from `apk/` after a review found two critical defects)** — `com.byd.launcher`, a single "Kachi" icon (LAUNCHER = KachiHomeActivity); every ClusterNav setting now lives in Kachi Settings (11 groups); user guide `docs/HUONG-DAN-KACHI.md`; closeout `docs/CLOSEOUT-2026-09-25.md`; the old ClusterNav screen is an "advanced screen" opened from System › Advanced. The lines below describe the inherited ClusterNav 2.0 baseline.
 >
 > **(VI) OTA của Kachi (L2, 2026-09-13):** app tự dò `apk/Kachi-<ver>-release.apk` trên `main` của repo này (`dangkhoi/byd-kachi`) và cài qua dadb loopback — xem `apk/README.md`. Khoá ký RIÊNG của Kachi (keystore ngoài repo, `keystore.properties` gitignored); bản cài trước 1.41 phải gỡ rồi cài tay một lần.
 > **(EN) Kachi OTA (L2, 2026-09-13):** the app polls `apk/Kachi-<ver>-release.apk` on this repo's `main` (`dangkhoi/byd-kachi`) and installs over the dadb loopback — see `apk/README.md`. Kachi has its own signing key; builds installed before 1.41 must be uninstalled once.
@@ -25,17 +25,17 @@
 
 ## Trạng thái cuối · Last status
 
-> **Cập nhật: 2026-09-27 (khuya).** Bản trên kênh OTA `main`: **2.79 (180)** · `apk/Kachi-2.79-release.apk` · sha256 `8277ebef…0f460`. Bản trên xe owner (BYD Seal, DiLink 3.0): **2.79**, đã nghiệm thu bằng mắt ngay trên xe.
-> **Last updated: 2026-09-27 (late evening).** On the OTA channel `main`: **2.79 (180)**, sha256 `8277ebef…0f460`. On the owner's car (BYD Seal, DiLink 3.0): **2.79**, accepted by eye in the vehicle.
+> **Cập nhật: 2026-09-28.** Bản mới nhất: **2.81 (182)** · `apk/Kachi-2.81-release.apk` · **chưa đăng OTA**. Kênh OTA `main` còn phục vụ **2.79 (180)** (sha256 `8277ebef…0f460`) — cũng là bản đang chạy trên xe owner (BYD Seal, DiLink 3.0), đã nghiệm thu bằng mắt tối 27/09. **2.80 (181) đã bị rút và xoá** khỏi `apk/` sau khi lượt soát tìm ra 2 lỗi chí tử. Dự án **không đứng yên**: hai tính năng vào sau mốc nghiệm thu 27/09 — **tự chữa mối nối phím vô-lăng bị kẹt** (🚗 còn nợ một lần xác nhận trên xe: để xe qua đêm rồi đọc nhật ký) và **chọn camera cho hai bên xi-nhan** (🚗 còn nợ dò số camera trên Sealion 6).
+> **Last updated: 2026-09-28.** Newest build: **2.81 (182)** · `apk/Kachi-2.81-release.apk` · **not yet published over the air**. The OTA channel `main` still serves **2.79 (180)** (sha256 `8277ebef…0f460`), which is also what runs on the owner's car (BYD Seal, DiLink 3.0), accepted by eye on the evening of 27/09. **2.80 (181) was withdrawn and deleted** from `apk/` after a review found two critical defects. The project is **not idle**: two features landed after the 27/09 acceptance — **self-repair for the stuck steering-wheel-key binding** (🚗 still owes one on-car confirmation: leave the car overnight, then read the journal) and **a camera picker for the two turn-signal sides** (🚗 still owes the camera-number sweep on a Sealion 6).
 
 | | |
 |---|---|
-| Test (5 module) | **4 642 / 0 fail** |
+| Test | **4 707 / 0 fail** ở 2.81 — `:app` 1 520 + `:core` 3 002, hai module có đổi mã, chạy lại 2026-09-28; ba module còn lại 185 bài, không đổi từ 27/09 |
 | Lint release | **0 lỗi** |
 | Tệp > 500 dòng | **0** |
-| Crash trên xe | **0** |
-| Chức năng đã đo trên xe | **141 / 165** |
-| Bộ nhớ trên xe | launcher 72 MB · `:wake` 165 MB |
+| Crash trên xe | **0** (đo ở 2.79) |
+| Chức năng đã đo trên xe | **141 / 165** (đo ở 2.79; hai tính năng của 2.81 chưa tính) |
+| Bộ nhớ trên xe | launcher 72 MB · `:wake` 165 MB (đo ở 2.79) |
 
 **Ngày 2026-09-27 — một buổi xe sáng, một buổi xe tối, năm bản OTA (2.75 → 2.79).** Kết quả đo trên xe, không phải ước lượng:
 
@@ -47,9 +47,14 @@
 - **Màn Cài đặt camera** gọn còn **10 hàng** người lái; các núm kỹ thuật vẫn đọc/ghi được qua cầu kiểm thử khi cần gỡ rối.
 - **Mức ghế nằm trong hình** (một/hai làn sưởi, một/hai bông tuyết) thay cho con số.
 
+**Ngày 2026-09-28 — hai việc vào sau mốc nghiệm thu (2.80 rút, 2.81 hiện tại).** Nhật ký đầy đủ từng bản ở `apk/README.md`:
+
+- **Phím vô-lăng chết sau một đêm để xe** — gốc là lỗ hổng của Android 10, không phải lỗi Kachi: khi mối nối dịch vụ Hỗ trợ bị đứt, framework đẩy mục của app **ngược** vào danh sách "đang gắn" rồi bỏ qua nó ở **cả** đường gắn lại **lẫn** đường gỡ ⇒ kẹt vĩnh viễn. [ĐO xe 28/09] gỡ khỏi cài đặt **không** xoá được mục kẹt; **`am force-stop` là đường chữa duy nhất chứng minh được**. Nay Kachi tự phát hiện và tự chữa (3 cổng giữ), và ghi **nhật ký bền** đọc được ngay trong app ở *Cài đặt › Chiếu cụm › Chẩn đoán*. **🚗 còn nợ**: một đêm để xe rồi đọc nhật ký để xác nhận thang chữa chạy thật.
+- **Sealion 6 không mở được camera phải** — thêm hai hàng *thử camera số* (8 số, **cố ý không đặt tên** vì chưa ai đo số nào là camera nào) và hai hàng *dải hình* trong *Cài đặt › Tiện nghi xe › Camera*, bấm là hình bật lên ngay để xem thử; sửa luôn lỗi cắt dải chỉ áp cho hai góc gương. [ĐO 28/09] thứ tự dải trong khung ghép trên Sealion 6 = **sau · trái · phải · trước**, TRÙNG Seal ⇒ một bố cục cho cả hai đời xe. **🚗 còn nợ**: dò xem số nào lên hình trên Sealion 6.
+
 **Giới hạn đã biết, không phải lỗi** (chi tiết: `docs/CLOSEOUT-2026-09-27.md` §4): câu ghép giọng nói không có từ nối thì vế sau bị bỏ im lặng (chêm *"rồi"* là chạy) · thời gian chuyến do xe cấp theo bậc 6 phút · app tự mở màn thứ hai (Waze) không nằm được trong ô vì cổng của Android, và app có bản quyền (Netflix) thì không bao giờ vào ô được vì DRM · tự cập nhật chỉ chạy một lần mỗi lần nổ máy, phải bấm **Kiểm tra cập nhật** bằng tay.
 
-**Việc tiếp theo** (phase 2, tháng sau): `docs/_handoff/session-2026-09-27-closing.md`.
+**Việc tiếp theo**: đăng 2.81 lên kênh OTA, rồi hai phép đo trên xe còn nợ ở trên. Bản đồ đường đi tháng sau: `docs/_handoff/session-2026-09-27-closing.md`. Task: `docs/PROJECT-BACKLOG.md`.
 
 
 ## Tính năng · Features
@@ -210,13 +215,13 @@ The tracks may share one APK as packaging, but they must not share runtime contr
 
 ## Downloads and installation · Tải về và cài đặt
 
-**(VI)** **Cài lần đầu (Kachi):** app ĐỘC LẬP `com.byd.launcher`, cài SONG SONG với ClusterNav cũ — **không cần gỡ**; tải `apk/Kachi-2.79-release.apk` (nút **Raw**/Download trên GitHub, nhánh `main`) rồi cài bằng `adb install -r` (tap trên đầu xe có thể bị ROM chặn vì đây là launcher — xem `docs/HUONG-DAN-KACHI.md` §1). Sau đó cập nhật qua **OTA**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự dò `apk/Kachi-<ver>-release.apk` mới hơn trên `main` và cài qua dadb loopback (`-r`, khoá ký riêng của Kachi) — không cần ADB/laptop. Để build cùng bản release từ nguồn: `./gradlew :app:assembleRelease`.
+**(VI)** **Cài lần đầu (Kachi):** app ĐỘC LẬP `com.byd.launcher`, cài SONG SONG với ClusterNav cũ — **không cần gỡ**; tải tệp `apk/Kachi-<bản>-release.apk` mới nhất trên nhánh `main` (nút **Raw**/Download trên GitHub — hiện là `Kachi-2.79-release.apk`) rồi cài bằng `adb install -r` (tap trên đầu xe có thể bị ROM chặn vì đây là launcher — xem `docs/HUONG-DAN-KACHI.md` §1). Sau đó cập nhật qua **OTA**: *Cài đặt › Hệ thống & quyền › Kiểm tra cập nhật* — app tự dò `apk/Kachi-<ver>-release.apk` mới hơn trên `main` và cài qua dadb loopback (`-r`, khoá ký riêng của Kachi) — không cần ADB/laptop. Để build cùng bản release từ nguồn: `./gradlew :app:assembleRelease`.
 
-**(EN)** **First install (Kachi):** a STANDALONE app `com.byd.launcher` that installs side by side with the old ClusterNav — **no uninstall needed**; download `apk/Kachi-2.79-release.apk` (GitHub **Raw**/Download, branch `main`) and install with `adb install -r` (tapping it on the head unit may be blocked by the ROM because it is a launcher — see `docs/HUONG-DAN-KACHI.md` §1). Afterwards it updates via **OTA**: *Settings › System & permissions › Check for update* — the app polls this repo's `apk/` on `main` for a newer `Kachi-<ver>-release.apk` and installs it over the dadb loopback (`-r`, Kachi's own signing key) — no ADB/laptop. To build the same release from source: `./gradlew :app:assembleRelease`.
+**(EN)** **First install (Kachi):** a STANDALONE app `com.byd.launcher` that installs side by side with the old ClusterNav — **no uninstall needed**; download the newest `apk/Kachi-<ver>-release.apk` on branch `main` (GitHub **Raw**/Download — currently `Kachi-2.79-release.apk`) and install with `adb install -r` (tapping it on the head unit may be blocked by the ROM because it is a launcher — see `docs/HUONG-DAN-KACHI.md` §1). Afterwards it updates via **OTA**: *Settings › System & permissions › Check for update* — the app polls this repo's `apk/` on `main` for a newer `Kachi-<ver>-release.apk` and installs it over the dadb loopback (`-r`, Kachi's own signing key) — no ADB/laptop. To build the same release from source: `./gradlew :app:assembleRelease`.
 
 **(VI)** Changelog theo phiên bản dưới đây giữ nguyên tiếng Anh (mô tả kỹ thuật từng bản sửa).
 
-**Lineage (pre-fork ClusterNav 2.0, kept as history — current Kachi version is 2.74 (175) above): 1.38 (versionCode 39) — "Cluster Nav 2.0" (`com.byd.clusternav2`), a standalone app independent of the legacy `com.byd.clusternav` (its own package + its own signing key, installs side by side).** `byd-cluster-2` re-baselines the 1.30 ClusterNav codebase (Waze/VietMap signals revived — see `docs/specs/waze-vietmap-signal-revival.html`) as a fresh **1.0** for a new iteration; the app OTA self-updates from **this** repo's `apk/ClusterNav-<ver>-release.apk` on `main`. The per-version notes below are kept as lineage history.
+**Lineage (pre-fork ClusterNav 2.0, kept as history — the current Kachi version is 2.81 (182), see above): 1.38 (versionCode 39) — "Cluster Nav 2.0" (`com.byd.clusternav2`), a standalone app independent of the legacy `com.byd.clusternav` (its own package + its own signing key, installs side by side).** `byd-cluster-2` re-baselines the 1.30 ClusterNav codebase (Waze/VietMap signals revived — see `docs/specs/waze-vietmap-signal-revival.html`) as a fresh **1.0** for a new iteration; the app OTA self-updates from **this** repo's `apk/ClusterNav-<ver>-release.apk` on `main`. The per-version notes below are kept as lineage history.
 
 `1.38` adds a manual **"Lọc ngay" (Clean now)** button to the PM2.5 card and fixes the on-car v1.37 finding that the auto-filter did nothing when the cabin got dusty. **(VI)** `1.38`: thêm nút "Lọc ngay" cho lọc bụi PM2.5 + sửa lỗi trên xe "popup báo bụi hiện mà không tự lọc".
 

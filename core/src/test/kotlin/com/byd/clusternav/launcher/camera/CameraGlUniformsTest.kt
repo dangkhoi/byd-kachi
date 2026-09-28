@@ -39,7 +39,7 @@ class CameraGlUniformsTest {
         amountPct: Int = CameraDewarpPrefs.AMOUNT_DEFAULT,
     ): CameraGlUniforms {
         val crop = cropOf(span, shape)
-        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, strip = 1)
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, strip = 1)
         return CameraGlUniforms.of(
             crop = crop, srcCentreX = centre[0], srcCentreY = centre[1],
             streamW = streamW, streamH = streamH, rotationDeg = rotationDeg, amountPct = amountPct,
@@ -183,7 +183,7 @@ class CameraGlUniformsTest {
 
     /** Chưa đo được cỡ luồng ⇒ `aspect = 1` (hành vi BIẾT TRƯỚC = Electro), không đoán một tỉ lệ nào. */
     @Test fun `chua biet co luong thi aspect ve 1`() {
-        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 1)
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, 1)
         val u = CameraGlUniforms.of(
             crop = CameraPanoCrop.narrowCrop(1, left = true),
             srcCentreX = centre[0], srcCentreY = centre[1],
@@ -279,12 +279,12 @@ class CameraGlUniformsTest {
 
     /** `sourceCentre`: view có crop dải ⇒ tâm DẢI; view nguyên khung ⇒ tâm khung; dải lạ ⇒ mặc định. */
     @Test fun `sourceCentre theo dai, view nguyen khung thi giua khung`() {
-        assertEquals(0.375f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 1)[0], 1e-6f)
-        assertEquals(0.625f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 2)[0], 1e-6f)
-        assertEquals(0.5f, CameraGlUniforms.sourceCentre(CamView.REAR_LEFT, 1)[0], 1e-6f, "view không crop ⇒ tâm khung")
-        assertEquals(0.5f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 1)[1], 1e-6f, "bốn dải cao trọn khung")
+        assertEquals(0.375f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, 1)[0], 1e-6f)
+        assertEquals(0.625f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, 2)[0], 1e-6f)
+        assertEquals(0.5f, CameraGlUniforms.sourceCentre(CamView.REAR_LEFT.crop, 1)[0], 1e-6f, "không có vùng cắt ⇒ tâm khung")
+        assertEquals(0.5f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, 1)[1], 1e-6f, "bốn dải cao trọn khung")
         // Dải ngoài `0..3` (prefs sửa tay) ⇒ mặc định, không ném và không cho một tâm ngoài ảnh.
-        assertEquals(0.375f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, 9)[0], 1e-6f)
+        assertEquals(0.375f, CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, 9)[0], 1e-6f)
     }
 
     /**
@@ -331,7 +331,7 @@ class CameraGlUniformsTest {
      * owner chỉnh núm *Dịch* mà thấy ảnh cong, đúng cái bệnh đã mất cả buổi 27/09 để loại trừ.
      */
     @Test fun `hai num dich vao uPan, khong dung toi uCenter`() {
-        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, strip = 1)
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, strip = 1)
         val moc = uniformsFor(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT, rotationDeg = -90)
         val u = CameraGlUniforms.of(
             crop = cropOf(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT),
@@ -350,7 +350,7 @@ class CameraGlUniformsTest {
 
     /** Giá trị ngoài miền (prefs sửa tay) ⇒ **mặc định biết trước**, không kẹp im lặng về biên. */
     @Test fun `dich ngoai mien ve mac dinh`() {
-        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT, strip = 1)
+        val centre = CameraGlUniforms.sourceCentre(CamView.MIRROR_LEFT.crop, strip = 1)
         listOf(CameraDewarpPrefs.PAN_MIN - 1, CameraDewarpPrefs.PAN_MAX + 1, 9999).forEach { bad ->
             val u = CameraGlUniforms.of(
                 crop = cropOf(CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT),

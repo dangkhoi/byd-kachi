@@ -376,7 +376,7 @@ class TestBridgeCommandTest {
         // Cả ba đợt là **móc ĐO** và đều đảo lại được bằng một cú chạm trong Cài đặt ⇒ ràng buộc (3) giữ.
         // ⚠ Danh sách nay ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 — CLAUDE.md §4.1);
         // `WRITABLE_PREFS_KEYS` là bí danh, bài này hỏi qua tên cũ **có chủ ý** vì đó là hợp đồng của `parse`.
-        assertEquals(40, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)   // 42 → 40 (2.77): lần đầu danh sách CO LẠI
+        assertEquals(44, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)   // 42 → 40 (2.77): lần đầu danh sách CO LẠI
         assertEquals(
             TestBridgeWritableKeys.ALL, TestBridgeCommands.WRITABLE_PREFS_KEYS,
             "bí danh phải trỏ ĐÚNG tập đã tách — một bản sao thứ hai ở đây là hai danh sách sẽ lệch",

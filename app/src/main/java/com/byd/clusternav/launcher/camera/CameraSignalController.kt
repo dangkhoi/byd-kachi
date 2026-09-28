@@ -7,6 +7,8 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.cameraPos
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.cameraCamId
+import com.byd.clusternav.cameraPano
+import com.byd.clusternav.cameraView
 import com.byd.clusternav.cameraRotation
 import com.byd.clusternav.cameraMirror
 import com.byd.clusternav.cameraRender
@@ -170,7 +172,11 @@ class CameraSignalController(private val appCtx: Context) {
      * (`CameraSettingsIa` — owner chốt trên xe 27/09 sau phép ĐO *"một kênh KHÔNG nét hơn"*).
      */
     private fun openSession(turn: Turn) {
-        val view = CameraSignalPolicy.defaultView(turn) ?: return
+        // GÓC NHÌN = pref TỪNG BÊN (2026-09-28). Chưa chọn ⇒ `Prefs.cameraView` trả đúng tên mặc định cũ ⇒
+        // xe không chạm Cài đặt thì không đổi một pixel nào (CLAUDE.md §6). Tên lạ cũng đã bị pref lọc về mặc
+        // định, `viewOf` chỉ là lưới an toàn cuối.
+        val view = CameraSignalPolicy.viewOf(Prefs.cameraView(appCtx, left = turn == Turn.LEFT))
+            ?: CameraSignalPolicy.defaultView(turn) ?: return
         val side = CameraSignalPolicy.defaultSide(turn) ?: return
         // Góc hiện overlay = pref TỪNG BÊN (`camera_pos_left/right`, mặc định trái→TL / phải→TR). KHÔNG suy
         // từ `side`: owner chốt xi-nhan trái vẫn được hiện ở góc trên-phải (spec R4).
@@ -194,10 +200,19 @@ class CameraSignalController(private val appCtx: Context) {
         // **0,30 vs 0,19** ⇒ một kênh chỉ bị KÉO NGANG nhiều hơn, không mang thêm điểm ảnh thật; owner: *"bỏ cái
         // 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật"*. `AvmCamera.open` vì thế trở
         // lại đúng đường dò `0..3` của 2.73, không còn tham số kênh nào.
+        // NGUỒN giải MỘT lần rồi dùng chung cho cả ba chỗ (vùng cắt · cỡ ảnh · tâm quang). Trước 2026-09-28
+        // ba chỗ tự đọc `view.hintW/hintH` và `view.crop` riêng lẻ ⇒ sửa một chỗ quên hai chỗ là hình vừa bị
+        // kéo bẹp (thiếu tỉ lệ nguồn) vừa cong lệch (tâm quang ra mép dải). Nay một biến, không lệch được.
+        val isLeft = turn == Turn.LEFT
+        val panoStrip = CameraPanoCrop.panoStripFor(view, Prefs.cameraPano(appCtx, left = isLeft), left = isLeft)
+        val streamW = CameraPanoCrop.streamW(view, panoStrip)
+        val streamH = CameraPanoCrop.streamH(view, panoStrip)
+        val effStrip = panoStrip ?: Prefs.cameraStrip(appCtx, left = isLeft)
         val crop = CameraPanoCrop.cropFor(
             view = view,
-            left = turn == Turn.LEFT,
-            strip = Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT),
+            left = isLeft,
+            strip = effStrip,
+            panoStrip = panoStrip,
             span = span,
             shape = shape,
             circlePct = Prefs.cameraCirclePct(appCtx),
@@ -218,8 +233,8 @@ class CameraSignalController(private val appCtx: Context) {
         val gl = if (CameraSignalPolicy.rotatesInShader(render)) {
             Prefs.cameraGlUniforms(
                 appCtx, view = view, crop = crop,
-                strip = Prefs.cameraStrip(appCtx, left = turn == Turn.LEFT),
-                rotationDeg = rot, streamW = view.hintW, streamH = view.hintH,
+                strip = effStrip,
+                rotationDeg = rot, streamW = streamW, streamH = streamH,
                 // Dấu của `camera_dewarp_pan_x` theo BÊN: hai camera gương soi gương nhau ([ĐO khung thô
                 // 27/09 09:58]) nên một pref dùng chung phải đổi dấu, nếu không hai khung đi hai phía
                 // ngược nhau — xem KDoc [CameraDewarpPrefs.panXSign].
@@ -249,8 +264,8 @@ class CameraSignalController(private val appCtx: Context) {
             mirror = mirror,
             render = render,
             shape = shape,
-            streamW = view.hintW,
-            streamH = view.hintH,
+            streamW = streamW,
+            streamH = streamH,
             gl = gl,
             synthOn = synth,
             synthFile = synthFile,
@@ -375,6 +390,24 @@ class CameraSignalController(private val appCtx: Context) {
      * vẽ và hàm này **chặn** chờ nó — xem KDoc [CameraGlRenderer.grabRaw].
      */
     fun grabRawFrame(w: Int, h: Int): IntArray? = overlay.grabRawFrame(w, h)
+
+    /**
+     * XEM THỬ ngay một bên với pref VỪA đổi — dùng cho khối *Nếu camera không hiện* trong Cài đặt.
+     *
+     * Phải `stop()` TRƯỚC: [openSession] chỉ đọc pref lúc MỞ phiên, nên nếu overlay đang mở (người dùng bấm
+     * nhiều chip liên tiếp) thì đổi pref không có tác dụng gì và người ta tưởng chip không ăn. Đóng rồi mở lại
+     * là cách duy nhất chắc chắn áp pref mới — cùng lẽ với chuỗi `camera none` → `camera left` của cầu kiểm thử.
+     *
+     * Sau đó cứ để luật giữ ([CameraHold]) tự đóng như một lượt xi-nhan thật, nên không cần hẹn giờ riêng và
+     * không có đường nào làm overlay kẹt lại trên màn.
+     */
+    fun previewSide(left: Boolean) {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            main.post { previewSide(left) }; return
+        }
+        stop()
+        tickMain(left = left, right = !left)
+    }
 
     private fun stop() {
         current = Turn.NONE   // [P1 fix] reset để bật lại KHỚP lượt rẽ sau (không kẹt current cũ → return sớm)

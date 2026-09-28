@@ -55,11 +55,15 @@ fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit =
     }
 }
 
-/** GrantResult → BridgeMsg: BOUND→[ok]; NOT_BOUND→NOT_BOUND (dadb chạy nhưng chưa bind); DADB_FAILED→FAILED (USB). */
+/**
+ * GrantResult → BridgeMsg: BOUND→[ok]; NOT_BOUND→NOT_BOUND (dadb chạy nhưng chưa bind); DADB_FAILED→FAILED (USB);
+ * RESTARTING→đang tự chữa mối nối kẹt, giao diện khởi động lại một nhịp (A11Y-BIND-STUCK 2026-09-28).
+ */
 private fun msgFor(r: NavConnect.GrantResult, ok: BridgeMsg): BridgeMsg = when (r) {
     NavConnect.GrantResult.BOUND -> ok
     NavConnect.GrantResult.NOT_BOUND -> BridgeMsg.ACCESSIBILITY_NOT_BOUND
     NavConnect.GrantResult.DADB_FAILED -> BridgeMsg.ACCESSIBILITY_FAILED
+    NavConnect.GrantResult.RESTARTING -> BridgeMsg.ACCESSIBILITY_RESTARTING
 }
 
 /**

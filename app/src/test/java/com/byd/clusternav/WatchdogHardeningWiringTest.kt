@@ -18,11 +18,11 @@ class WatchdogHardeningWiringTest {
     @Test
     fun `grantAccessibility hoi AccessibilityManager TRUOC khi mo phien dadb`() {
         val src = code("NavConnect.kt")
-        val body = SourceRoots.body(src, "private fun doGrantResult(app: Context): GrantResult")
+        val body = SourceRoots.body(src, "private fun doGrantResult(app: Context, userAsked: Boolean): GrantResult")
         assertTrue(body.contains("AccessibilityHealGates.grantOrSkip("), "đường grant phải đi qua cổng thuần")
         assertTrue(body.contains("boundPerAccessibilityManager(app)"), "cổng nhận kết quả binder (Boolean?), không cờ RAM")
         assertEquals(0, Regex("LocalDeviceShell\\.session\\(").findAll(body).count(), "doGrantResult KHÔNG được tự mở phiên dadb — chỉ nhánh shell của cổng mới mở")
-        val shell = SourceRoots.body(src, "private fun grantViaShell(app: Context, myGen: Int): GrantResult")
+        val shell = SourceRoots.body(src, "private fun grantViaShell(app: Context, myGen: Int, userAsked: Boolean): GrantResult")
         assertTrue(shell.contains("LocalDeviceShell.session("), "nhánh shell giữ nguyên đường dadb đầy đủ")
         assertTrue(shell.contains("forceRebindIfNeeded(keyPair, sh)"), "nhánh shell vẫn verify dumpsys + toggle ép rebind (fix 1.78)")
     }

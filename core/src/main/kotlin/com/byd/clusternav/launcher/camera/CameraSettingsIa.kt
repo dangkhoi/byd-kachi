@@ -9,7 +9,11 @@ package com.byd.clusternav.launcher.camera
  * bỏ luôn ở phần kỹ thuật"*.
  *
  * ## Hai danh sách, một khác biệt: có hàng trên màn hay không
- *  • [USER_KEYS] — **10 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra.
+ *  • [USER_KEYS] — **14 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra. (10 khoá tới 2.79;
+ *    +2 *thử camera số* và +2 *dải hình* ở 2.80/2.81 — xem `specs/kachi-camera-source-picker.html`. Con số này
+ *    do `CameraSettingsIaTest` khoá: sửa danh sách mà quên sửa đây là test ĐỎ. Chú thích đi trước mã chính là
+ *    cái đã sinh ra CAM-SL6-RIGHT — `CameraSignalController` từng viết "SL6 chọn id 0 trong Cài đặt" trong khi
+ *    hàng đó chưa bao giờ tồn tại.)
  *  • [NO_UI_KEYS] — **15 khoá còn lại**: không còn một hàng nào trên màn, nhưng **vẫn ghi/đọc được qua `prefs_set`**
  *    của cầu kiểm thử và giá trị đã đặt trên xe **vẫn có hiệu lực**. Mặc định của chúng nay là bộ owner đã DUYỆT
  *    trên xe, khai trong hồ sơ xe ([CameraProfileDefaults] — Seal DL3: `STRIP · GL · F 55 · K 100 · S 130 · tâm 0,0
@@ -50,6 +54,15 @@ object CameraSettingsIa {
         "camera_mirror_right",
         "camera_shape",
         "camera_dewarp_amount",
+        // 2026-09-28 — owner trên SL6: *"không mở được cam phải (cam trái ok)… nên đề xuất cho chọn lại cam
+        // trong setting để user chọn cam nếu cam không hiện"*. Hai khoá này là khối *Nếu camera không hiện*:
+        // chọn GÓC NHÌN từng bên (mang theo cả outputState lẫn cameraId). Trước đó chỉ có đường cầu kiểm thử
+        // `camera_cam_left/right` — mà chú thích trong `CameraSignalController` lại viết như thể người dùng
+        // chọn được "trong Cài đặt", tức tài liệu đi trước mã. Nay có hàng thật.
+        "camera_view_left",
+        "camera_view_right",
+        "camera_pano_left",
+        "camera_pano_right",
     )
 
     /**

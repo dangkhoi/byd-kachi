@@ -3,6 +3,8 @@ package com.byd.clusternav
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.carexec.LocalShellText
+import com.byd.clusternav.modules.navaccess.A11yBindJournal
+import com.byd.clusternav.modules.navaccess.A11yBindJournalStore
 import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import dadb.AdbKeyPair
@@ -11,6 +13,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import com.byd.clusternav.modules.clustercast.DisplayParse
+import com.byd.clusternav.modules.clustercast.StackParse
+import com.byd.clusternav.modules.clustercast.simplified.ClusterDisplayResolver
 import android.service.notification.NotificationListenerService
 import android.util.Log
 
@@ -154,25 +160,30 @@ object NavConnect {
      * Kết quả cấp quyền Hỗ trợ, PHÂN BIỆT ba ca — để UI báo ĐÚNG (owner 2026-09-25: toast cũ đổ oan "bấm Allow
      * USB debugging" trong khi dadb rõ ràng chạy được, app cài xong mọi thứ đều qua dadb):
      *  • [BOUND] — service đã gắn thật (dumpsys "Bound services"), phím sống.
-     *  • [NOT_BOUND] — dadb CHẠY, đã ghi enabled_accessibility_services, nhưng service chưa BIND (xe tải cao /
-     *    ROM `ssc_skip` drop bind). KHÔNG phải lỗi USB debugging. Thử lại / bật tay ở Cài đặt > Hỗ trợ.
+     *  • [NOT_BOUND] — dadb CHẠY, đã ghi enabled_accessibility_services, nhưng service chưa BIND (ROM `ssc_skip`
+     *    drop bind, hoặc hệ chưa kịp bind). KHÔNG phải lỗi USB debugging. Thử lại / bật tay ở Cài đặt > Hỗ trợ.
+     *    ⚠ ĐÍNH CHÍNH 2026-09-28: chỗ này từng ghi "xe tải cao" — [ĐO xe 2026-09-28] lúc phím chết xe ĐỨNG YÊN,
+     *    tiến trình sống liên tục 10 g 13 ph, và gốc là lỗ hổng framework (xem [escalateIfStuck]). Quy kết cho
+     *    tải là SAI và đã làm cả buổi chẩn đoán đi chệch hướng (CLAUDE.md §2).
      *  • [DADB_FAILED] — phiên dadb NÉM (auth/kết nối) — đây MỚI là ca "bấm Allow USB debugging".
+     *  • [RESTARTING] — phát hiện KẸT ở `mBindingServices` và ĐÃ bắn lệnh tự force-stop + lắp lại: giao diện sắp
+     *    khởi động lại một nhịp (xem [escalateIfStuck]).
      */
-    enum class GrantResult { BOUND, NOT_BOUND, DADB_FAILED }
+    enum class GrantResult { BOUND, NOT_BOUND, DADB_FAILED, RESTARTING }
 
     fun grantAccessibilityDetailed(ctx: Context, reset: Boolean = false, onResult: ((GrantResult) -> Unit)? = null) {
         val app = ctx.applicationContext
         val main = Handler(Looper.getMainLooper())
         Thread {
             if (reset) grantingAcc.set(false)
-            val r = doGrantResultWithTimeout(app)
+            val r = doGrantResultWithTimeout(app, userAsked = reset)
             onResult?.let { cb -> main.post { cb(r) } }
         }.start()
     }
 
-    private fun doGrantResultWithTimeout(app: Context): GrantResult {
+    private fun doGrantResultWithTimeout(app: Context, userAsked: Boolean): GrantResult {
         val result = java.util.concurrent.atomic.AtomicReference(GrantResult.DADB_FAILED)
-        val worker = Thread { result.set(doGrantResult(app)) }
+        val worker = Thread { result.set(doGrantResult(app, userAsked)) }
         worker.start()
         worker.join(GRANT_TIMEOUT_MS)
         if (worker.isAlive) {
@@ -185,7 +196,7 @@ object NavConnect {
         return result.get()
     }
 
-    private fun doGrantResult(app: Context): GrantResult {
+    private fun doGrantResult(app: Context, userAsked: Boolean): GrantResult {
         if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return GrantResult.NOT_BOUND }
         val myGen = grantGen.incrementAndGet()   // #6: dấu thế hệ của lượt grant này
         try {
@@ -195,12 +206,12 @@ object NavConnect {
             return AccessibilityHealGates.grantOrSkip(
                 boundPerAccessibilityManager(app),
                 skipped = { Log.i(TAG, "accessibility đã BOUND (AccessibilityManager) → bỏ dadb"); GrantResult.BOUND },
-            ) { grantViaShell(app, myGen) }
+            ) { grantViaShell(app, myGen, userAsked) }
         } finally { grantingAcc.set(false) }
     }
 
     /** Đường dadb đầy đủ (đọc-sửa-ghi enabled list → verify dumpsys → toggle ép rebind). Chỉ chạy khi CHƯA bound. */
-    private fun grantViaShell(app: Context, myGen: Int): GrantResult =
+    private fun grantViaShell(app: Context, myGen: Int, userAsked: Boolean): GrantResult =
         runCatching {
             val keyPair = AdbKeys.ensure(app)
             LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
@@ -218,9 +229,80 @@ object NavConnect {
                 Log.i(TAG, "grantAccessibility xong (đã có sẵn=$has)")
                 if (myGen != grantGen.get()) { Log.i(TAG, "grant gen cũ ($myGen≠${grantGen.get()}) → bỏ toggle"); return@session GrantResult.NOT_BOUND }
                 // dadb CHẠY tới đây (ghi được settings) ⇒ KHÔNG phải lỗi USB debugging. forceRebind trả BOUND thật.
-                if (forceRebindIfNeeded(keyPair, sh)) GrantResult.BOUND else GrantResult.NOT_BOUND
+                if (forceRebindIfNeeded(keyPair, sh)) GrantResult.BOUND else escalateIfStuck(app, sh, userAsked)
             } ?: GrantResult.DADB_FAILED   // session mở không được ⇒ dadb/auth
         }.getOrElse { Log.e(TAG, "grantAccessibility qua dadb NÉM (auth/kết nối)", it); GrantResult.DADB_FAILED }
+
+    /**
+     * NẤC CUỐI của thang chữa — chỉ chạy khi [forceRebindIfNeeded] (nấc toggle) đã KHÔNG đưa được về BOUND.
+     *
+     * [ĐO xe 2026-09-28 + AOSP android-10.0.0_r47] có một trạng thái mà nấc toggle **không bao giờ** gỡ được:
+     * component nằm trong `mBindingServices`. `AccessibilityManagerService.updateServicesLocked` mở đầu vòng lặp
+     * bằng `if (mBindingServices.contains(componentName)) continue;` (`:1630-1631`) — dòng đó đứng TRÊN cả
+     * `bindLocked()` (`:1642`) lẫn `unbindLocked()` (`:1645`) ⇒ vừa không gắn lại được vừa không gỡ được bằng
+     * bất kỳ lệnh ghi settings nào. Vào trạng thái này khi một dịch vụ ĐANG GẮN bị đứt: `binderDied()` →
+     * `serviceDisconnectedLocked` (`:4114-4117`) **đẩy ngược component vào `mBindingServices`**, mà chú thích
+     * `:398` cho thấy ý đồ chỉ tính cho ca THAY GÓI — đứt vì lý do khác thì không ai dọn. Owner [ĐO nhiều lần]:
+     * cài mới thì chạy tốt, để xe qua đêm standby rồi sáng bật lên mới kẹt.
+     *
+     * Đường thoát DUY NHẤT chứng minh được: `am force-stop` gói mình → `onHandleForceStop` (`:453-484`) gỡ khỏi
+     * CẢ `mEnabledServices` LẪN `mBindingServices` rồi ghi đĩa ⇒ **lắp lại là bắt buộc**. Lệnh chạy TÁCH RỜI
+     * (xem [AccessibilityRebind.forceStopRebindCommand]) vì chính tiến trình này sắp bị giết.
+     *
+     * Bốn cổng giữ trước khi giết (xem [AccessibilityHealGates.healStep]): đúng là ca KẸT · phím-thoại BẬT (cùng
+     * cổng với watchdog 30 s — chính nó là đường lắp lại nếu nửa sau của lệnh tách rời không chạy, spec R-nf5) ·
+     * không có app khách nào đang hiện trên màn chính hay trong một Ô (đo bằng `am stack list` +
+     * `dumpsys display`, KHÔNG dùng cờ RAM — CLAUDE.md §5) · chưa leo trong lần nổ máy này. Người dùng tự bấm
+     * "Sửa ngay" thì bỏ qua ba cổng sau, vì họ đang ngồi đó và chủ động yêu cầu.
+     */
+    private fun escalateIfStuck(app: Context, sh: (String) -> LocalShellText, userAsked: Boolean): GrantResult {
+        // Lượt grant này có thể đã bị [doGrantResultWithTimeout] BỎ (join hết giờ → interrupt) trong khi thân
+        // vẫn chạy nốt. Caller đã trả kết quả cho UI rồi ⇒ tuyệt đối không được tự giết tiến trình sau lưng nó.
+        if (Thread.currentThread().isInterrupted) {
+            Log.w(TAG, "lượt grant đã hết giờ (interrupted) → KHÔNG leo nấc force-stop")
+            return GrantResult.NOT_BOUND
+        }
+        val stuck = AccessibilityRebind.isInBindingServices(sh("dumpsys accessibility").output, ACC_COMP)
+        // R7 — ghi NGAY tại chỗ phát hiện: đây là nơi DUY NHẤT phân biệt được KẸT với chỉ-là-chưa-gắn
+        // (cần bản dump, watchdog 30 s không đọc nổi mỗi nhịp). Nhật ký nhờ đó có đủ ba trạng thái.
+        A11yBindJournalStore.record(
+            app,
+            if (stuck) A11yBindJournal.State.STUCK else A11yBindJournal.State.NOT_BOUND,
+            note = if (userAsked) "grant-tay" else "grant-tu-dong",
+        )
+        // Màn ảo của các Ô do CHÍNH tiến trình này tạo ⇒ chúng chết theo ta, và app khách trong đó là thứ rơi lại
+        // thành mảng đen ([ĐO xe 2026-09-28]). Đọc chủ sở hữu thật từ `dumpsys display` (cùng lệnh dò đã proven
+        // của cast) thay vì đoán "display ≥ 1 là cụm" — [ĐO xe 2026-09-15] display 1 chính là `kachi-slot-0`.
+        // Không đọc được ⇒ `null` ⇒ cổng ĐÓNG.
+        val displayDump = sh(ClusterDisplayResolver.DETECT_CMD).output
+        val ownVds = if (displayDump.isBlank()) null else DisplayParse.ownedVirtualDisplayIds(displayDump, app.packageName)
+        val noGuest = StackParse.noGuestAppVisible(StackParse.parse(sh("am stack list").output), app.packageName, ownVds)
+        val now = SystemClock.elapsedRealtime()
+        val step = AccessibilityHealGates.healStep(
+            bound = false,
+            stuckInBinding = stuck,
+            // R-nf5: đường tự động dùng ĐÚNG cổng của watchdog 30 s (phím-thoại bật) — xem KDoc `wanted`.
+            wanted = Prefs.voiceKeyEnabled(app),
+            userAsked = userAsked,
+            guestAppVisible = !noGuest,
+            escalatedAtElapsed = Prefs.a11yEscalatedAt(app),
+            nowElapsed = now,
+        )
+        if (step != AccessibilityHealGates.HealStep.FORCE_STOP) {
+            Log.i(TAG, "a11y chưa bound (kẹt=$stuck, không app khách=$noGuest, ô của mình=$ownVds, tay=$userAsked) → nấc $step, KHÔNG leo")
+            return GrantResult.NOT_BOUND
+        }
+        val cur = sh("settings get secure enabled_accessibility_services").output.trim()
+        val cmd = AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP)
+        if (cmd.isBlank()) {
+            Log.e(TAG, "a11y KẸT nhưng không dựng được lệnh (gói lệch component?) → không leo")
+            return GrantResult.NOT_BOUND
+        }
+        Prefs.setA11yEscalatedAt(app, now)   // marker TRƯỚC khi đổi state ngoài (CLAUDE.md §5) — ghi đồng bộ
+        Log.w(TAG, "a11y KẸT trong Binding services → tự force-stop + lắp lại; giao diện khởi động lại một nhịp")
+        sh(cmd)
+        return GrantResult.RESTARTING
+    }
 
     /**
      * FORCE-REBIND accessibility service khi ENABLED-nhưng-CHƯA-BOUND (trạng thái sau reboot: có trong

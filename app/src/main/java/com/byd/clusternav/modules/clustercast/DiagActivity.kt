@@ -192,6 +192,21 @@ class DiagActivity : Activity() {
             appendLine("autoStartSplit=${prefs.autoStartSplitEnabled()}")
             appendLine("splitRatioLeft=${prefs.splitRatioLeftPercent()}%")
             appendLine("dozeWhitelist=${prefs.dozeWhitelistApplied()}")
+
+            // R7 (spec kachi-a11y-bind-stuck-autofix) — NHẬT KÝ BỀN của trạng thái gắn dịch vụ Hỗ trợ (phím
+            // vô-lăng). Đây là ĐƯỜNG ĐỌC của nhật ký: [ĐO xe 2026-09-28] vòng đệm logcat chỉ còn 32 phút nên
+            // sáng hôm sau khoảnh khắc đứt đã trôi mất. Hiện ở màn Chẩn đoán để anh em chỉ cần CHỤP MÀN HÌNH
+            // gửi về, không phải gõ adb (CLAUDE.md §11). Tệp chỉ chứa mốc giờ + hai đồng hồ + pid + trạng thái.
+            appendLine()
+            appendLine("── phím vô-lăng · nhật ký gắn dịch vụ Hỗ trợ ──")
+            val escalatedAt = Prefs.a11yEscalatedAt(applicationContext)
+            appendLine("đã tự khởi động lại để chữa (mốc elapsed): ${if (escalatedAt < 0) "chưa lần nào" else "${escalatedAt / 1000}s"}")
+            val journal = com.byd.clusternav.modules.navaccess.A11yBindJournalStore.read(applicationContext)
+            if (journal.isEmpty()) {
+                appendLine("(chưa có bản ghi — nhật ký ghi khi trạng thái ĐỔI, mỗi giờ một nhịp tim)")
+            } else {
+                journal.takeLast(JOURNAL_TAIL_LINES).forEach { appendLine(it) }
+            }
         }
         report.text = value
     }
@@ -273,6 +288,8 @@ class DiagActivity : Activity() {
     }
 
     private companion object {
+        /** Bao nhiêu dòng nhật ký gắn a11y hiện trên màn (đủ một ảnh chụp; tệp giữ tới 200 dòng). */
+        const val JOURNAL_TAIL_LINES = 20
         const val BADGE_SIZE_STEP_DP = 10
         const val BADGE_MOVE_STEP_PX = 20         // centre nudge step in cluster px
         const val BADGE_EDGE_MARGIN_PX = 24       // gap from the cluster edge for the corner presets

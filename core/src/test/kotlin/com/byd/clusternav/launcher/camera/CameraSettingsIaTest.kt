@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
  * · *"bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật"*.
  *
  * Bài này là hợp đồng, và là cái **đỏ lên** khi ai đó thêm một hàng camera vào màn người lái mà không có quyết định:
- *  1. [CameraSettingsIa.USER_KEYS] = **đúng 10 khoá**, đúng thứ tự — owner ĐẾM hàng ấy trên xe (CAM-F1);
+ *  1. [CameraSettingsIa.USER_KEYS] = **đúng 14 khoá**, đúng thứ tự — owner ĐẾM hàng ấy trên xe (CAM-F1);
  *  2. [CameraSettingsIa.NO_UI_KEYS] rời hẳn USER_KEYS (một khoá không được ở hai danh sách);
  *  3. hợp của hai = **đúng** tập `camera_*` mà `prefs_set` ghi được ⇒ một khoá mới sinh ra mà không xếp vào một trong
  *     hai là đỏ, và một khoá bị bỏ khỏi danh sách trắng mà còn nhắc ở đây cũng đỏ (bài canh rữa).
@@ -23,7 +23,11 @@ import org.junit.jupiter.api.Test
  */
 class CameraSettingsIaTest {
 
-    /** 2.77: **10 hàng** — `camera_source` (hàng *Nguồn*) đã XOÁ cùng cả nguồn *Một camera*. */
+    /**
+     * 2.77: 10 hàng — `camera_source` (hàng *Nguồn*) đã XOÁ cùng cả nguồn *Một camera*.
+     * 2.80/2.81: **14 hàng** — thêm *thử camera số* và *dải hình*, mỗi thứ hai bên (CAM-SL6-RIGHT: owner trên
+     * Sealion 6 không mở được cam phải, cần đường tự dò). Xem `specs/kachi-camera-source-picker.html`.
+     */
     @Test fun `man nguoi lai co dung 10 khoa, dung thu tu`() {
         assertEquals(
             listOf(
@@ -32,11 +36,17 @@ class CameraSettingsIaTest {
                 "camera_rot_left", "camera_rot_right",
                 "camera_mirror_left", "camera_mirror_right",
                 "camera_shape", "camera_dewarp_amount",
+                // +2 (2026-09-28): khối *Nếu camera không hiện*. Owner trên SL6 không mở được cam phải và
+                // yêu cầu tự chọn được góc nhìn — đây là một QUYẾT ĐỊNH về IA, không phải lỡ tay thêm hàng.
+                "camera_view_left", "camera_view_right",
+                // +2 (2026-09-28, cùng ngày) — dải hình từng bên. Không có nó thì chọn được số camera mà hình
+                // vẫn ra nguyên khung ghép: đúng lỗi owner báo trên SL6.
+                "camera_pano_left", "camera_pano_right",
             ),
             CameraSettingsIa.USER_KEYS,
             "đổi danh sách ⇒ đổi doc camera-ia-profile.md §IA + dòng CAM-F1 của runbook (owner đếm hàng trên xe)",
         )
-        assertEquals(10, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM đúng 10 hàng trên xe — thêm hàng phải là một quyết định")
+        assertEquals(14, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
         CameraSettingsIa.NO_UI_KEYS.forEach {
             assertFalse(it in CameraSettingsIa.USER_KEYS, "khoá không-UI $it lại lộ ra ở màn người lái")
         }
@@ -76,6 +86,6 @@ class CameraSettingsIaTest {
         assertEquals(emptySet<String>(), (user + noUi) - writable, "danh sách nhắc một khoá không còn ghi được qua prefs_set (bài canh rữa)")
         assertEquals(CameraSettingsIa.USER_KEYS.size, user.size, "không trùng trong USER_KEYS")
         assertEquals(CameraSettingsIa.NO_UI_KEYS.size, noUi.size, "không trùng trong NO_UI_KEYS")
-        assertEquals(25, writable.size, "10 hàng + 15 khoá không-UI")
+        assertEquals(29, writable.size, "14 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình, 2026-09-28)")
     }
 }

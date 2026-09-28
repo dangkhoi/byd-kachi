@@ -89,8 +89,18 @@ enum class BridgeMsg {
      */
     ACCESSIBILITY_FAILED,
 
-    /** dadb CHẠY nhưng service chưa BIND (xe tải cao/ROM) — KHÔNG phải lỗi USB debugging. */
+    /**
+     * dadb CHẠY nhưng service chưa BIND — KHÔNG phải lỗi USB debugging.
+     *
+     * ⚠ ĐÍNH CHÍNH 2026-09-28: câu này (và KDoc này) từng quy cho "xe tải cao". [ĐO xe 2026-09-28] xe đứng yên,
+     * tiến trình launcher sống liên tục 10 g 13 ph, nguyên nhân là lỗ hổng framework (`serviceDisconnectedLocked`
+     * park ngược vào `mBindingServices`). Ca KẸT đó nay đi nhánh [ACCESSIBILITY_RESTARTING]; mã này còn lại cho
+     * ca "chưa bind nhưng KHÔNG kẹt" — thử lại vài giây là ăn (CLAUDE.md §2: cấm trộn cơ chế với quy kết).
+     */
     ACCESSIBILITY_NOT_BOUND,
+
+    /** Đã phát hiện mối nối KẸT và đang tự chữa: giao diện sẽ khởi động lại một nhịp. */
+    ACCESSIBILITY_RESTARTING,
 
     /** VI "Đang kiểm tra…" · EN "Checking…" — `MainActivity.kt:873`. */
     CHECKING,
