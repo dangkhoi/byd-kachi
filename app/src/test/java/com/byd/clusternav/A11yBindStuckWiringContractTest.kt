@@ -38,8 +38,14 @@ class A11yBindStuckWiringContractTest {
         )
     }
 
+    /**
+     * 2.83 (owner chốt 2026-09-29, quyết định A) — cổng "không app khách" và hạn mức một-lần-mỗi-lần-nổ-máy của 2.79
+     * RỜI khỏi quyết định leo: [ĐO xe 29/09] cổng app khách chặn đúng ca cần chữa (ô đã có app khi lượt chữa tới nơi)
+     * và kẹt sinh ra ở MỖI lần tắt máy. Thay bằng PHA ([AccessibilityHealGatesTest] khoá bảng ca; lớp 1/2 nối dây ở
+     * [A11yLifecycleHealWiringContractTest]). Hai cổng còn lại của bản cũ (kẹt thật · R-nf5) giữ NGUYÊN chuỗi canh.
+     */
     @Test
-    fun `nac leo thang PHAI hoi bon cong truoc khi giet tien trinh`() {
+    fun `nac leo thang PHAI hoi cong truoc khi giet tien trinh`() {
         val fn = escalate
         assertTrue(fn.contains("AccessibilityRebind.isInBindingServices("), "cổng 1: đúng là ca KẸT mới leo")
         assertTrue(
@@ -52,13 +58,33 @@ class A11yBindStuckWiringContractTest {
             "KHÔNG được nới cổng đó bằng `|| Prefs.accBooster(app)`: booster mặc định BẬT, nên nới ra là mọi xe " +
                 "đều có đường TỰ GIẾT tiến trình trong khi KHÔNG có vòng nào lắp lại dịch vụ sau đó (phím chết hẳn)",
         )
-        assertTrue(fn.contains("StackParse.noGuestAppVisible("), "cổng 3: không app khách nào đang hiện (màn chính hoặc trong Ô)")
-        assertTrue(fn.contains("Prefs.a11yEscalatedAt(app)"), "cổng 4: mỗi lần nổ máy chỉ leo một lần")
-        assertTrue(fn.contains("AccessibilityHealGates.healStep("), "bốn cổng phải đi qua cổng thuần đã có test")
+        assertTrue(
+            fn.contains("phase = phase,"),
+            "cổng 3 (2.83): healStep PHẢI biết pha — thiếu nó thì hoặc lớp 3 lại tự giết launcher giữa lúc lái, hoặc " +
+                "lớp 1/2 không bao giờ leo",
+        )
+        assertTrue(fn.contains("AccessibilityHealGates.healStep("), "mọi cổng phải đi qua cổng thuần đã có test")
+        assertTrue(
+            fn.contains("StackParse.noGuestAppVisible("),
+            "app khách VẪN phải được ĐO và ghi vào log: đó là bằng chứng lượt giết có chạm app nào trong ô không",
+        )
     }
 
     @Test
-    fun `cong app khach PHAI biet O nao la cua minh`() {
+    fun `luot leo PHAI hoi lai pha ngay truoc khi ban`() {
+        val gate = escalate.indexOf("!fireGate()")
+        val marker = escalate.indexOf("Prefs.setA11yEscalatedAt(app, now)")
+        val fire = escalate.indexOf("sh(cmd)")
+        assertTrue(gate in 0 until marker, "cổng cuối (pha còn đúng không) phải đứng TRƯỚC marker và lệnh bắn")
+        assertTrue(marker in 0 until fire)
+        assertTrue(
+            Regex("Thread\\.currentThread\\(\\)\\.isInterrupted").findAll(escalate).count() >= 2,
+            "cờ interrupt phải được hỏi cả ở đầu hàm LẪN ngay trước khi bắn: lượt có thể bị bỏ GIỮA chừng",
+        )
+    }
+
+    @Test
+    fun `o cua minh PHAI do theo chu so huu that`() {
         assertTrue(
             escalate.contains("DisplayParse.ownedVirtualDisplayIds("),
             "[ĐO xe 2026-09-15] display 1 = `kachi-slot-0` (màn ảo của CHÍNH launcher), cụm = display 2 ⇒ " +
@@ -67,7 +93,7 @@ class A11yBindStuckWiringContractTest {
         )
         assertTrue(
             escalate.contains("if (displayDump.isBlank()) null"),
-            "không đọc được `dumpsys display` ⇒ null ⇒ cổng ĐÓNG (không giết dựa trên bản đọc hỏng)",
+            "không đọc được `dumpsys display` ⇒ null ⇒ log nói 'không biết', không nói bừa ô rỗng",
         )
     }
 
@@ -88,8 +114,13 @@ class A11yBindStuckWiringContractTest {
     @Test
     fun `lenh tu giet PHAI di qua ham dung lenh co chot goi`() {
         val fn = escalate
+        // 2.83-B (owner 29/09): lời gọi thêm tham số đuôi về nhà — chuỗi canh giữ NGUYÊN ba đối số cũ (gói lấy từ
+        // chính app, component của mình) và khoá thêm tham số mới, không nới.
         assertTrue(
-            fn.contains("AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP)"),
+            fn.contains(
+                "AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP, " +
+                    "homeTail = AccessibilityRebind.homeTailFor(userAsked))",
+            ),
             "phải dựng lệnh qua hàm có chốt cứng gói (lệch gói ⇒ chuỗi rỗng), không tự ghép chuỗi tại chỗ",
         )
         assertFalse(
@@ -159,6 +190,24 @@ class A11yBindStuckWiringContractTest {
         )
         assertTrue(keepAlive.contains("\"sau-chua-ON\""), "ghi rõ ca chữa ĂN")
         assertTrue(keepAlive.contains("\"sau-chua-VAN-TAT\""), "và ca chữa KHÔNG ăn — nói dối một nửa là vô dụng")
+    }
+
+    /**
+     * Khoá lỗi [ĐO máy ảo 29/09, E2E 2.83 ca 4]: kẹt lúc đang chạy ⇒ cặp NOT_BOUND (watchdog) / STUCK (grant) mỗi 30 s
+     * ăn hết trần 200 dòng sau ~50 phút. Watchdog CHỈ hỏi binder ⇒ phải khai `binderOnly = true`; các chỗ ghi có
+     * bản dump hoặc là lượt CHẤM ĐIỂM (lớp 1/2, grant, `scoreAfterHeal`) thì KHÔNG được khai — khai nhầm là nuốt mất
+     * dòng `sau-chua-VAN-TAT` / bước KẸT→CHƯA-GẮN thật.
+     */
+    @Test
+    fun `watchdog ghi nhat ky dang quan sat CHI binder, cho khac thi khong`() {
+        val tick = SourceRoots.body(keepAlive, "private val watchdog = object : Runnable {")
+        assertEquals(1, Regex("A11yBindJournalStore\\.record\\(").findAll(tick).count(), "watchdog ghi đúng MỘT chỗ")
+        assertEquals(1, Regex("binderOnly = true").findAll(tick).count(), "và chỗ đó khai quan sát CHỈ binder")
+        val heal = SourceRoots.codeOf("src/main/java/com/byd/clusternav/A11yLifecycleHeal.kt")
+        for ((name, code) in listOf("NavConnect" to navConnect, "A11yLifecycleHeal" to heal)) {
+            assertTrue(code.contains("A11yBindJournalStore.record("), "$name vẫn phải ghi nhật ký")
+            assertFalse(code.contains("binderOnly"), "$name ghi quan sát CÓ dump / chấm điểm ⇒ không được nuốt bước đổi")
+        }
     }
 
     @Test

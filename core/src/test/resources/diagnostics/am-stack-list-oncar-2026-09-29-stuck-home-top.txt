@@ -1,0 +1,21 @@
+Stack id=24 bounds=[0,0][1920,720] displayId=1 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw480dp w1280dp h480dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 720) mAppBounds=Rect(0, 0 - 1920, 720) mWindowingMode=freeform mDisplayWindowingMode=freeform mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=27: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[20,60][1920,560] userId=0 visible=true topActivity=ComponentInfo{com.google.android.apps.maps/com.google.android.maps.MapsActivity}
+
+Stack id=23 bounds=[0,0][1920,720] displayId=1 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw480dp w1280dp h480dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 720) mAppBounds=Rect(0, 0 - 1920, 720) mWindowingMode=freeform mDisplayWindowingMode=freeform mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=26: com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity}
+
+Stack id=25 bounds=[0,0][1872,956] displayId=3 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw764dp w1497dp h764dp 200dpi xlrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1872, 956) mAppBounds=Rect(0, 0 - 1872, 956) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=28: com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity bounds=[0,0][1872,956] userId=0 visible=true topActivity=ComponentInfo{com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=4: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+  taskId=24: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=26 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=29: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+

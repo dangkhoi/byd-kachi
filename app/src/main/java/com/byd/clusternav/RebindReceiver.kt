@@ -57,8 +57,22 @@ class RebindReceiver : BroadcastReceiver() {
                 inProcessWatchdogAlive = VoiceKeyKeepAliveService.inProcessWatchdogAlive,
             )
         ) {
-            runCatching { NavConnect.grantAccessibility(context.applicationContext) }
-                .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }
+            // 2.83 lớp 3 — CÙNG cổng thuần với watchdog 30 s: dump gần nhất đã nói KẸT ⇒ toggle vô ích (AOSP
+            // `:1630-1631`) ⇒ không re-grant mỗi 60 s, chỉ kiểm lại chậm. Alarm này chỉ heal khi FGS keep-alive CHẾT —
+            // [ĐO xe c2 29/09] đúng khoảng TẮT MÁY (BYD giết keep-alive, chỉ dựng lại lúc mở xe), và là alarm WAKEUP ⇒
+            // không cổng này thì kẹt qua đêm = thức SoC ghi `enabled_accessibility_services` mỗi phút tới sáng.
+            // `bound` chỉ theo binder (không rơi về cờ RAM): binder không hỏi được ⇒ `false` ⇒ chưa biết kẹt thì đi
+            // grant như cũ (grant tự hỏi lại binder rồi đi shell) — không mất đường tự-heal 1.78.
+            val app = context.applicationContext
+            val bound = NavConnect.boundPerAccessibilityManager(app) == true
+            when (AccessibilityHealGates.watchdogStep(bound, A11yLifecycleHeal.runningStuckSeenAt(bound), SystemClock.elapsedRealtime())) {
+                AccessibilityHealGates.WatchdogStep.GRANT ->
+                    runCatching { NavConnect.grantAccessibility(context.applicationContext) }
+                        .onFailure { Log.e(TAG, "accessibility self-heal failed", it) }
+                AccessibilityHealGates.WatchdogStep.RECHECK -> A11yLifecycleHeal.recheckRunningStuck(app)
+                AccessibilityHealGates.WatchdogStep.NONE ->
+                    Log.d(TAG, "alarm: đã gắn, hoặc KẸT đã đo chưa tới nhịp kiểm lại → không toggle ($action)")
+            }
         } else if (action == ACTION_WATCHDOG) {
             Log.d(TAG, "watchdog alarm no-op: FGS keep-alive đang chạy watchdog in-process (hoặc phím-thoại tắt)")
         }

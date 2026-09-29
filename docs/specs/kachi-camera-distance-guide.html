@@ -70,7 +70,49 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <body><div class="wrap">
 
 <h1>Vạch chuẩn khoảng cách trên hình camera</h1>
-<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill wait">chờ đo trên xe</span></p>
+<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill block">RÚT — owner dẹp 29/09</span> (mã gỡ ở 2.83; tài liệu giữ làm lịch sử)</p>
+
+<div class="card">
+<b>RÚT LẠI — owner dẹp trên xe 2026-09-29.</b> Nguyên văn, đúng thứ tự: 12:00:47 <i>"đúng, bên trái thì giữa 7-8, giờ làm
+gì với mớ này, mớ vạch vẽ ra cho vui vậy chứ có ý nghĩa gì với đời đâu hả?"</i> rồi 12:02:39 <i>"ò, dẹp vạch đi"</i>.
+Bản 2.82 chứa tính năng này <b>không đăng OTA</b> (chỉ cài tay lên xe owner) ⇒ vạch <b>chưa từng lên kênh</b>. Mã gỡ ở
+<b>2.83</b> (việc D, spec <code>docs/specs/kachi-283-key-heal-acc-off.html</code>): màn Camera 16 → 14 hàng, khoá camera
+31 → 29, danh sách trắng cầu kiểm thử 46 → 44. Mọi phần bên dưới <b>giữ nguyên làm lịch sử</b>; kết quả đo trên xe ở
+§Verification, lý do kỹ thuật ở hình dưới.
+</div>
+
+<div class="diagram">
+<svg class="dg" viewBox="0 0 700 250" role="img" aria-label="Hình xoay 90 độ: khoảng cách ra xe bên cạnh chạy ngang khung nên vạch ngang sai trục; hình không xoay: khoảng cách chạy dọc nên vạch ngang đúng trục">
+  <text class="t" x="16" y="18">29/09 trên xe: vạch ngang chỉ đúng trục khi hình KHÔNG xoay</text>
+  <rect class="fr" x="40" y="40" width="150" height="190" rx="8"/>
+  <rect class="hi" x="40" y="40" width="26" height="190" rx="6"/>
+  <text class="s" x="44" y="36">xoay 90° (mặc định Seal)</text>
+  <text class="s" x="70" y="58">thân xe mình ở mép</text>
+  <text class="s" x="70" y="72">trái [SUY]</text>
+  <line class="ln" x1="66" y1="160" x2="190" y2="160"/>
+  <text class="m" x="120" y="154">vạch</text>
+  <line class="tick" x1="70" y1="190" x2="180" y2="190"/>
+  <path class="ar" d="M180 190 l-7 -5 l0 10 z"/>
+  <text class="s" x="72" y="206">khoảng cách chạy NGANG</text>
+  <text class="s" x="200" y="120">⇒ vạch ngang</text>
+  <text class="s" x="200" y="134">SAI TRỤC</text>
+  <rect class="fr" x="330" y="60" width="200" height="150" rx="8"/>
+  <rect class="hi" x="330" y="184" width="200" height="26" rx="6"/>
+  <text class="s" x="334" y="56">không xoay</text>
+  <text class="s" x="338" y="202">thân xe mình ở mép dưới</text>
+  <line class="ln" x1="330" y1="150" x2="530" y2="150"/>
+  <text class="m" x="336" y="145">phải: nấc 7 ≈ 20 cm</text>
+  <line class="tick" x1="500" y1="180" x2="500" y2="80"/>
+  <path class="ar" d="M500 80 l-5 7 l10 0 z"/>
+  <text class="s" x="404" y="84">càng lên càng xa</text>
+  <text class="s" x="545" y="120">⇒ vạch ngang</text>
+  <text class="s" x="545" y="134">đúng trục — nhưng</text>
+  <text class="s" x="545" y="148">~30 % dưới cùng</text>
+  <text class="s" x="545" y="162">khung chỉ ~20 cm thật</text>
+</svg>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.25)"></span>vùng thân xe mình</span><span class="sw">— vạch chuẩn · → hướng khoảng cách tăng</span></div>
+
 
 <div class="card">
 <b>Một câu:</b> hình camera hông làm người lái <i>tưởng</i> xe bên cạnh còn xa, nên cho người lái tự canh <b>một vạch ngang</b>
@@ -81,6 +123,7 @@ mỗi bên — nấc 1…9 — rồi từ đó đọc khoảng cách bằng <b>c
 <table>
 <tr><th>Ngày</th><th>Bản</th><th>Việc</th></tr>
 <tr><td>2026-09-28</td><td>2.82</td><td>Mở spec. Ba đường "làm hình thật hơn" đều đóng (§Context) ⇒ chốt đường vạch chuẩn. Code + test viết song song spec.</td></tr>
+<tr><td>2026-09-29</td><td>2.82 (cài tay, không đăng) → gỡ ở 2.83</td><td><b>RÚT.</b> Đo trên xe: GUIDE-1 đạt, GUIDE-2 cho thấy vạch ngang sai trục với hình xoay 90° (mặc định Seal). Owner: <i>"… mớ vạch vẽ ra cho vui vậy chứ có ý nghĩa gì với đời đâu hả?"</i> rồi <i>"ò, dẹp vạch đi"</i>. Thêm khối RÚT + hình trục, kết quả §Verification, đóng §Open Questions, Reviewer Log Pass 2.</td></tr>
 </table>
 
 <h2>Context</h2>
@@ -258,6 +301,19 @@ với nhãn <i>"Camera phải"</i> — đúng R3</td></tr>
 <p class="muted">Máy ảo <b>không</b> thay được phép đo trên xe: nó không có ảnh camera thật nên không nói được gì về
 R5 (thấy trên mọi nền) hay về việc vạch có <i>giúp đoán khoảng cách</i> hay không — đó là GUIDE-2/3 bên dưới.</p>
 
+<h3>Trên xe — đo 2026-09-29 (2.82 cài tay), rồi RÚT</h3>
+<table>
+<tr><th>#</th><th>Kết quả</th><th>Mức · nguồn</th></tr>
+<tr><td>GUIDE-1</td><td><span class="pill ok">ĐẠT hai bên</span> — khung overlay 371×495 (màn chính); nấc n nằm ở
+y = 137,5 + 49,5·n px, tức đúng n/10 chiều cao khung, mọi nấc lệch ≤ 1 px; nấc 1 ở 0,10 H, nấc 9 ở 0,90 H (không dính mép)</td>
+<td>[ĐO ảnh, đo bằng máy — dò hàng ~350 điểm trắng kẹp giữa viền tối] · báo cáo <code>docs/diagnostics/oncar-2026-09-29-findings.md</code> §3 (hàng GUIDE-1)</td></tr>
+<tr><td>GUIDE-2</td><td>Hình <b>xoay 90°</b> (mặc định Seal): vạch kẻ ô đỗ và xe bên cạnh chạy dọc khung ⇒ khoảng cách ra xe
+bên cạnh chạy <b>ngang</b> ⇒ vạch ngang <b>sai trục</b>. Hình <b>không xoay</b>: đúng trục; owner canh bên phải nấc 7 = mép trong
+vạch vàng, cách bánh ~20 cm; bên trái giữa nấc 7 và 8 (vạch mờ ~5 cm)</td>
+<td>[ĐO ảnh] + [SUY hình học] · [ĐO owner 11:58:43, 12:00:47]</td></tr>
+<tr><td>GUIDE-3…5</td><td><span class="pill">không đo</span> — tính năng bị rút trước khi tới</td><td>—</td></tr>
+</table>
+<p class="muted">Bảng kế hoạch đo ban đầu (giữ làm lịch sử):</p>
 <h3>Trên xe — chưa làm</h3>
 <pre>adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge \
   -a com.byd.launcher.TEST --es cmd prefs_set --es key camera_guide_right --es text 5
@@ -272,6 +328,7 @@ R5 (thấy trên mọi nền) hay về việc vạch có <i>giúp đoán khoản
 </table>
 
 <h2>Open Questions</h2>
+<p class="muted"><b>29/09 — cả ba câu ĐÓNG vì tính năng bị rút.</b> Q1/Q2 không còn đối tượng; Q3 (phạm vi hồ sơ của khoá camera) chuyển sang backlog <code>CAM-SCOPE-PROFILE</code> cho cả họ camera (sau 2.83 còn 29 khoá). Bảng giữ làm lịch sử.</p>
 <table>
 <tr><th>#</th><th>Câu hỏi</th><th>Mức</th><th>Cách chốt</th></tr>
 <tr><td>Q1</td><td>Nấc owner canh có <b>giống nhau giữa các đời xe</b> (Seal vs SL6) không? Nếu giống thì đặt sẵn vào
@@ -310,6 +367,12 @@ phải có chỗ gọi).</li>
 → bài canh dây nối + phá thử (T8). Đúng thứ tự tầng của CLAUDE.md §14 cho phần off-car.</li>
 <li>Hai bài canh của dự án <b>bắt đúng lỗi thật</b> trong lượt này: trần 500 dòng (phải tách T3) và số đếm khoá
 (<code>USER_KEYS</code>, danh sách trắng). Sửa code, <b>không</b> nới bài canh.</li>
+</ul>
+
+<h3>2026-09-29 — trên xe, rồi rút</h3>
+<ul>
+<li>Đo GUIDE-1/2 trên Seal (2.82 cài tay): vị trí vạch đúng tuyệt đối, nhưng với hình xoay 90° vạch nằm sai trục; hình không xoay thì đúng trục và owner canh được (phải nấc 7 ≈ 20 cm).</li>
+<li>Owner dẹp. Bài học ghi lại: một vạch ngang không theo góc xoay; một vạch = một mốc, còn camera xi-nhan được dùng để <b>liếc điểm mù</b> chứ không phải để đo khoảng cách từng chục cm — hỏi giá trị thật cho người lái trước khi dựng.</li>
 </ul>
 
 <h2>Reviewer Log</h2>
@@ -359,6 +422,21 @@ trực tiếp, không theo chủ đề; <code>ZeroBorderContractTest</code> đã
 <li><b>Kết quả</b>: <code>:app</code> 1 534 + <code>:core</code> 3 010 + <code>car-integration</code> 64 +
 <code>offcar-planner</code> 99 + <code>vehicle-contracts</code> 22 (+ biến thể <code>vehicleTest</code> 1 546) =
 <b>0 lỗi</b>, đếm từ <code>*/build/test-results/**/TEST-*.xml</code>.</li>
+</ul>
+
+<h3>Pass 2 — 2026-09-29 · sau buổi xe — <span class="pill block">WITHDRAWN</span></h3>
+<ul>
+<li><span class="tag p1">P1</span> <b>Thiết kế sai trục với hình xoay 90° — không bài canh nào bắt được.</b> Vạch là một
+đường <b>ngang</b> theo n/10 chiều cao khung, trong khi mặc định Seal xoay hình 90° nên khoảng cách ra xe bên cạnh chạy
+<b>ngang</b> khung [ĐO ảnh + SUY hình học]. 13 bài off-car chỉ khoá <i>vị trí</i> vạch (đúng — GUIDE-1 đạt), không khoá
+<i>ý nghĩa</i> của vạch với góc xoay. Bài học: vạch một chiều không theo góc xoay; hỏi giá trị thật cho người lái
+<b>trước</b> khi dựng.</li>
+<li><b>Quyết định owner</b>: dẹp (12:02:39 <i>"ò, dẹp vạch đi"</i>). 2.82 không đăng OTA ⇒ không ai nhận
+tính năng qua OTA; riêng xe owner <b>có</b> (2.82 cài tay 29/09). Gỡ mã ở 2.83 (việc D); sau commit gỡ mã thì chuyển spec này sang <code>docs/archive/</code> và gỡ dòng index (R1).</li>
+<li><b>Dữ liệu còn sót trên xe owner</b>: <code>clusternav_prefs</code> giữ <code>camera_guide_left/right</code> (nấc đã canh);
+gỡ mã xong thì không còn gì đọc hai khoá này — xoá một lần hay để yên là việc P3 của 2.83. Trạng thái prefs lúc hết
+buổi: [CHƯA BIẾT] (không chụp sau 11:56).</li>
+<li><b>Verdict</b>: <span class="pill block">WITHDRAWN</span> — không phải lỗi mã (GUIDE-1 đạt), mà là tính năng không có giá trị cho người lái.</li>
 </ul>
 
 </div></body></html>

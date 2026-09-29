@@ -1,0 +1,7 @@
+ACCESSIBILITY MANAGER (dumpsys accessibility)
+
+User state[attributes:{id=0, currentUser=true, touchExplorationEnabled=false, displayMagnificationEnabled=false, navBarMagnificationEnabled=false, autoclickEnabled=false, nonInteractiveUiTimeout=0, interactiveUiTimeout=0, installedServiceCount=3}
+     Bound services:{Service[label=.custom.StatusBarAcces…, feedbackType[FEEDBACK_SPOKEN, FEEDBACK_HAPTIC, FEEDBACK_AUDIBLE, FEEDBACK_VISUAL, FEEDBACK_GENERIC, FEEDBACK_BRAILLE], capabilities=43, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOW_CONTENT_CHANGED, TYPE_WINDOWS_CHANGED], notificationTimeout=100]}
+     Enabled services:{{com.byd.vrassistant.xf/com.iflytek.autofly.access.service.AccessibilityServices}, {com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService}, {com.android.systemui/com.android.systemui.custom.StatusBarAccessibilityService}}
+     Binding services:{{com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService}}]
+

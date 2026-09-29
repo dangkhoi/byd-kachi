@@ -50,10 +50,10 @@ Ghi thẳng vào backlog, đừng để trong đầu: 1) hướng ảnh camera g
 
 ## 7. Sự cố 27/09 tối — 7 ảnh xe lọt repo public ~10 phút (ĐÃ GỠ)
 
-Tôi chép ảnh xe vào `docs/guide/img/` cho hướng dẫn; `git check-ignore` báo *"không bị chặn"* và tôi coi đó là **giấy phép** thay vì **cờ đỏ**. Lọt lên `main` công khai trong commit `491e169`: **biển số một xe của người khác**, 3 ảnh cụm hiện **bản đồ sống chỉ đúng vị trí + giờ**, một ảnh đọc được **số nhà** + **avatar tài khoản Google**, 2 ảnh màn hình có **YouTube đang đăng nhập** + telemetry xe.
+Tôi chép ảnh xe vào `docs/guide/img/` cho hướng dẫn; `git check-ignore` báo *"không bị chặn"* và tôi coi đó là **giấy phép** thay vì **cờ đỏ**. Lọt lên `main` công khai trong một commit (đã ghi đè; SHA gửi riêng owner, không ghi ở tệp public): **biển số một xe của người khác**, 3 ảnh cụm hiện **bản đồ sống chỉ đúng vị trí + giờ**, một ảnh đọc được **số nhà** + **avatar tài khoản Google**, 2 ảnh màn hình có **YouTube đang đăng nhập** + telemetry xe.
 
 Đã xử lý: gỡ → `--amend` → `push --force-with-lease` cả hai nhánh → xác minh remote sạch (3 ref đều `4297555`, rồi `e720009`) → `.gitignore` chặn **theo mẫu tên tệp, độc lập đường dẫn** (`car-*.png` · `cum-*.png` · `camera-frame-*.png` · `cluster-fb-*.png` · `**/img/car-*.png`).
 
-**Việc của owner nếu muốn chắc chắn**: commit `491e169` có thể vẫn truy cập theo SHA tới khi GitHub dọn rác ⇒ mở ticket GitHub Support xin purge. Phần đáng gỡ triệt để nhất là **biển số của người thứ ba**.
+**Việc của owner nếu muốn chắc chắn**: commit bị ghi đè (SHA gửi riêng owner) có thể vẫn truy cập theo SHA tới khi GitHub dọn rác — còn truy cập được không: [CHƯA BIẾT] ⇒ mở ticket GitHub Support xin purge (backlog `BACKLOG-LOC-SCRUB`). Phần đáng gỡ triệt để nhất là **biển số của người thứ ba**.
 
 **Ba luật rút ra, đã ghi backlog + memory**: (a) `check-ignore` trả *"không chặn"* cho một tệp dữ liệu xe là **cờ đỏ**; (b) lưới chặn ghim theo thư mục không bảo vệ được thư mục **chưa tồn tại**; (c) 6 scanner song song bỏ sót vì không ai được giao đọc **thư mục mới** — chỉ vòng **critic** bắt được, nên vòng ấy là bắt buộc.

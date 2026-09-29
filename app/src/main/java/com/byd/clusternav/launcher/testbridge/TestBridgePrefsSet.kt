@@ -23,9 +23,6 @@ import com.byd.clusternav.cameraView
 import com.byd.clusternav.setCameraView
 import com.byd.clusternav.cameraPano
 import com.byd.clusternav.setCameraPano
-import com.byd.clusternav.cameraGuide
-import com.byd.clusternav.setCameraGuide
-import com.byd.clusternav.launcher.camera.CameraGuide
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraCirclePct
 import com.byd.clusternav.cameraCirclePct
@@ -191,10 +188,6 @@ internal object TestBridgePrefsSet {
             "camera_on_cluster" -> bool(raw)?.let { Prefs.setCameraOnCluster(app, it); it.toString() }
             // Góc nhìn TỪNG BÊN: CHỈ nhận tên có thật trong `CamView` — cùng lẽ với hai khoá góc hiện, để một
             // ca E2E gõ tên sai không PASS trong khi máy đang mở góc khác hẳn thứ nó tưởng.
-            "camera_guide_left" -> raw.trim().uppercase().takeIf { CameraGuide.isValue(it) }
-                ?.let { Prefs.setCameraGuide(app, left = true, v = it); it }
-            "camera_guide_right" -> raw.trim().uppercase().takeIf { CameraGuide.isValue(it) }
-                ?.let { Prefs.setCameraGuide(app, left = false, v = it); it }
             "camera_pano_left" -> raw.trim().uppercase().takeIf { CameraPanoCrop.isPanoMode(it) }
                 ?.let { Prefs.setCameraPano(app, left = true, v = it); it }
             "camera_pano_right" -> raw.trim().uppercase().takeIf { CameraPanoCrop.isPanoMode(it) }
@@ -301,8 +294,6 @@ internal object TestBridgePrefsSet {
             // mà không nói ghi được gì, đúng thứ KDoc [readBack] sinh ra để chặn. Vá luôn trong lượt R8-B.
             "camera_signal_enabled" -> Prefs.cameraSignalEnabled(app).toString()
             "camera_on_cluster" -> Prefs.cameraOnCluster(app).toString()
-            "camera_guide_left" -> Prefs.cameraGuide(app, left = true)
-            "camera_guide_right" -> Prefs.cameraGuide(app, left = false)
             "camera_pano_left" -> Prefs.cameraPano(app, left = true)
             "camera_pano_right" -> Prefs.cameraPano(app, left = false)
             "camera_view_left" -> Prefs.cameraView(app, left = true)

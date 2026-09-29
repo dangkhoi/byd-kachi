@@ -12,7 +12,6 @@ import com.byd.clusternav.launcher.automation.NavAutomationFired
 import com.byd.clusternav.launcher.automation.ScheduledNavPolicy
 import com.byd.clusternav.launcher.automation.ScheduledNavRule
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
-import com.byd.clusternav.launcher.voice.VoiceAppTarget
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.navAutomationFired
 import com.byd.clusternav.navAutomationRules
@@ -166,24 +165,15 @@ object ScheduledNavApplier {
         } else {
             null
         }
-        val handoff = handoffOf(target, pkg, place, coords) ?: run {
+        // Cửa DUY NHẤT dựng lượt giao điểm đến — cùng cửa với giọng nói (`VoiceTargetDispatch.deliver`), nên cờ của
+        // đích (vd `CLEAR_TASK` cho Google Maps, [ĐO xe 29/09]) đi y hệt. `null` = app không nhận điểm đến với dữ liệu này.
+        val handoff = VoiceAppIntents.destinationHandoff(target, pkg, place.query, coords) ?: run {
             Log.i(TAG, "luật ${rule.id}: ${target.label} không có đường giao điểm đến ⇒ bỏ lượt")
             return false
         }
         val ok = runCatching { VoiceAppIntents.send(app, handoff) }.getOrDefault(false)
         Log.i(TAG, "luật ${rule.id}: giao \"${place.name}\" cho ${target.label} ($pkg) ⇒ $ok")
         return ok
-    }
-
-    /** Lượt giao việc cho [target]; `null` khi app không có đường nhận điểm đến với dữ liệu đang có. */
-    private fun handoffOf(
-        target: VoiceAppTarget,
-        pkg: String,
-        place: SavedPlace,
-        coords: VoiceAppIntents.Coords?,
-    ): VoiceAppIntents.Handoff? {
-        val launch = target.destinationLaunch(coords != null) ?: return null
-        return VoiceAppIntents.Handoff(pkg, launch, place.query, coords, target.fallback)
     }
 
     /**

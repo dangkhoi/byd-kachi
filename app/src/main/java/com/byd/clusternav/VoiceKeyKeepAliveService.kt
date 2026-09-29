@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import com.byd.clusternav.modules.navaccess.A11yBindJournal
 import com.byd.clusternav.modules.navaccess.A11yBindJournalStore
+import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 import android.util.Log
 
 /**
@@ -41,6 +42,8 @@ class VoiceKeyKeepAliveService : Service() {
      * [NavConnect.isAccessibilityBound] (AccessibilityManager, không cờ kẹt) — chưa bound thì `grantAccessibility`
      * (idempotent: verify dumpsys, toggle rebind qua dadb khi cần). Không broadcast, không AlarmManager ⇒ ROM
      * không có gì để drop. Đây là đường tự-heal CHÍNH; broadcast/alarm giữ làm lưới phụ.
+     * 2.83: TRỪ khi dump gần nhất đã nói KẸT — khi đó toggle vô ích, nhịp chỉ kiểm lại chậm bằng dump
+     * ([AccessibilityHealGates.watchdogStep], [A11yLifecycleHeal.recheckRunningStuck]).
      */
     /** Xe vừa ra khỏi một đợt ngủ dài chưa; đồng thời cập nhật mốc cho lượt sau. */
     private fun wokeFromLongSleep(app: Context): Boolean {
@@ -62,6 +65,9 @@ class VoiceKeyKeepAliveService : Service() {
                 // Đợt ngủ dài = PHIÊN MỚI. Đầu máy chỉ tắt hẳn sau 3-4 ngày ([ĐO owner 2026-09-28]), nên cổng
                 // "mỗi lần nổ máy một lần" mà chỉ nhả khi reboot thì sau lần chữa đầu sẽ IM VĨNH VIỄN. Nhả mốc
                 // ở đây để mỗi sáng lại được chữa một lần.
+                // 2.83: mốc này KHÔNG còn chặn lượt tự chữa nào — watchdog này (lớp 3) không tự force-stop nữa, lớp 1/2
+                // dùng hạn mức theo sự kiện (`A11yLifecycleHeal`). Nhả vẫn giữ để màn Chẩn đoán và nhãn "sau-chua-*"
+                // dưới đây chỉ nói về đợt thức hiện tại.
                 if (woke) Prefs.setA11yEscalatedAt(app, -1L)
                 val bound = NavConnect.isAccessibilityBound(app)
                 // R7 — nhật ký bền: chỉ ghi khi ĐỔI trạng thái (+ nhịp tim 1 giờ), kèm hai đồng hồ ⇒ sáng hôm
@@ -70,20 +76,34 @@ class VoiceKeyKeepAliveService : Service() {
                 // nghĩa là tiến trình vừa bị chính mình giết để chữa; ghi ngay kết quả THẬT vào nhật ký. Không có
                 // dòng này thì nhật ký chỉ nói "đã leo", không nói "leo xong có ăn không" — mà đó mới là câu hỏi.
                 // KHÔNG xoá mốc ở đây: mốc là hạn mức mỗi đợt thức, chỉ `woke` mới được nhả (xem trên).
+                // 2.83: VÀ tiến trình này đúng là con của lượt chữa (`bornFromOwnHeal`) — mốc leo còn nguyên không đủ:
+                // [ĐO máy ảo 29/09] BYD giết lại trong cùng lần nổ máy ⇒ nhịp đầu tiến trình mới từng ghi oan `sau-chua-VAN-TAT`.
                 val note = when {
-                    firstTick && Prefs.a11yEscalatedAt(app) >= 0L -> if (bound) "sau-chua-ON" else "sau-chua-VAN-TAT"
+                    firstTick && Prefs.a11yEscalatedAt(app) >= 0L && A11yLifecycleHeal.bornFromOwnHeal() ->
+                        if (bound) "sau-chua-ON" else "sau-chua-VAN-TAT"
                     woke -> "wake"
                     else -> "watchdog"
                 }
                 firstTick = false
+                // Lớp 3 (2.83): dump gần nhất đã nói KẸT ⇒ toggle vô ích (AOSP :1630-1631) ⇒ không re-grant mỗi 30 s,
+                // chỉ kiểm lại chậm bằng dump; chưa biết là kẹt ⇒ đường grant cũ (toggle chữa được "bật mà chưa gắn").
+                val now = SystemClock.elapsedRealtime()
+                val stuckSeenAt = A11yLifecycleHeal.runningStuckSeenAt(bound)
+                // `binderOnly`: nhịp này chỉ hỏi binder ⇒ "chưa gắn" sau một dòng STUCK (do lượt grant có dump ghi)
+                // là CÙNG sự thật — không ghi cặp NOT_BOUND/STUCK mỗi 30 s đẩy mất dòng `tat-may`/`mo-xe` (2.83).
                 A11yBindJournalStore.record(
                     app,
-                    if (bound) A11yBindJournal.State.BOUND else A11yBindJournal.State.NOT_BOUND,
+                    AccessibilityHealGates.watchdogState(bound, stuckSeenAt, now),
                     note = note,
+                    binderOnly = true,
                 )
-                if (!bound) {
-                    Log.w(TAG, "a11y KHÔNG bound (vừa thức=$woke) → re-grant (in-process watchdog)")
-                    NavConnect.grantAccessibility(app)
+                when (AccessibilityHealGates.watchdogStep(bound, stuckSeenAt, now)) {
+                    AccessibilityHealGates.WatchdogStep.GRANT -> {
+                        Log.w(TAG, "a11y KHÔNG bound (vừa thức=$woke) → re-grant (in-process watchdog)")
+                        NavConnect.grantAccessibility(app)
+                    }
+                    AccessibilityHealGates.WatchdogStep.RECHECK -> A11yLifecycleHeal.recheckRunningStuck(app)
+                    AccessibilityHealGates.WatchdogStep.NONE -> Unit
                 }
             }.onFailure { Log.w(TAG, "watchdog re-grant lỗi: ${it.message}") }
             handler.postDelayed(this, WATCHDOG_MS)

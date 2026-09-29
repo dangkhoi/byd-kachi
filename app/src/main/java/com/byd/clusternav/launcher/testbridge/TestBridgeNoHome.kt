@@ -5,14 +5,16 @@ import android.content.Context
 /**
  * ═══ T-BRIDGE · NHỮNG LỆNH **KHÔNG CẦN MÀN CHÍNH** ══════════════════════════════════════════════════════════
  *
- * Bảy lệnh chỉ chạm HAL / prefs / thẻ nhớ, không chạm view nào — nên chúng phải chạy được cả khi `KachiHomeActivity`
+ * Tám lệnh chỉ chạm HAL / prefs / thẻ nhớ, không chạm view nào — nên chúng phải chạy được cả khi `KachiHomeActivity`
  * chưa lên. Đây là cùng một tính chất, và trước WP7 nó nằm rải trong `when` đầu của [KachiTestBridge.dispatch];
  * gom lại một chỗ vì đó **là** một khái niệm, không phải một tối ưu:
  *
  *  • một buổi RE trên xe hay bắt đầu bằng `force-stop` rồi đo ngay, và bắt lệnh chờ launcher lên mới trả lời là
  *    mất đúng những mục đo ngay sau khi khởi động lại;
  *  • `prefs` là ca cố ý đầu tiên của luật này (spec `kachi-test-bridge.html`: chạy được để chẩn đoán đúng ca
- *    *"launcher không lên"*), rồi `hal`/`sweep`/`featmap`/`voice_dump`/`prefs_set` đi theo, và WP7 thêm `captest`.
+ *    *"launcher không lên"*), rồi `hal`/`sweep`/`featmap`/`voice_dump`/`prefs_set` đi theo, và WP7 thêm `captest`;
+ *  • 2.83 thêm `a11ylog` ([TestBridgeA11yLog]): tắt máy là AccModeManagerService giết cả ba tiến trình Kachi
+ *    [ĐO xe 29/09], nên lúc cần đọc nhật ký gắn Hỗ trợ nhất cũng là lúc màn chính có thể chưa lên.
  *
  * ⚠ `prefs_set` nhận móc **nullable** (một khoá của nó phải đi qua màn chính — xem KDoc [TestBridgePrefsSet]), nên
  * nó vẫn thuộc đây: nó tự quyết định, không cần người gọi chặn trước.
@@ -31,6 +33,7 @@ internal object TestBridgeNoHome {
             TestBridgeCommands.VOICE_DUMP -> TestBridgeVoiceDump.run(app, cmd, reply)
             TestBridgeCommands.PREFS_SET -> TestBridgePrefsSet.run(app, cmd, KachiTestHooks.get(), reply)
             TestBridgeCommands.CAPTEST -> TestBridgeCapTest.run(app, cmd, reply)
+            TestBridgeCommands.A11YLOG -> TestBridgeA11yLog.run(app, cmd, reply)
             else -> return false
         }
         return true

@@ -7,6 +7,7 @@ import com.byd.clusternav.carexec.LocalShellResult
 import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.carexec.LocalShellText
 import com.byd.clusternav.core.FloatAppList
+import com.byd.clusternav.launcher.HomeActivityCmd
 import com.byd.clusternav.navigation.NavApps
 
 /**
@@ -241,7 +242,7 @@ object VietMapAutostart {
                         sh("monkey -p $PKG -c android.intent.category.LAUNCHER 1")
                         val ready = pollUntilInMap(sh)
                         if (returnToSelfPkg != null) sh("monkey -p $returnToSelfPkg -c android.intent.category.LAUNCHER 1")
-                        else sh("am start -a android.intent.action.MAIN -c android.intent.category.HOME")
+                        else sh(HomeActivityCmd.GO_HOME)   // byte y hệt chuỗi cũ — gom về một chỗ (DRY)
                         Log.i(TAG, "autostart silent-bg → launch VietMap + chờ-vào-map(ready=$ready) + trả nền (${returnToSelfPkg ?: "HOME"}) [bubbleOn=$bubbleOn running=$running hasActivity=$hasActivity] ⇒ VietMap ở nền để bóng hiện")
                     } else {
                         Log.i(TAG, "autostart silent-bg (badge-only) → VietMap process đã sống, giữ nguyên")

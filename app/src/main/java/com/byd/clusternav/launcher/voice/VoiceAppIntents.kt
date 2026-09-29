@@ -20,6 +20,14 @@ import android.util.Log
  *  3. **`NEW_TASK`, KHÔNG `CLEAR_TOP`.** [ĐO] VietMap là `singleTask`: ý-định thứ hai được giao vào task đang có
  *     (*"brought to the front"*). `CLEAR_TOP` ở đây là thay đổi ngăn xếp của app khác mà ta chưa kiểm được hậu
  *     quả — đúng thứ CLAUDE.md §4 dặn phải trả lời được phạm vi trước khi làm.
+ *  4. **`CLEAR_TASK` chỉ khi DỮ LIỆU của đích bảo thế** ([VoiceAppTarget.clearTaskOnNav] — hôm nay chỉ Google Maps,
+ *     [ĐO xe 29/09]). Cờ dựng ở đúng một chỗ ([launchFlags]); mọi lượt giao ĐIỂM ĐẾN (giọng nói theo tên/địa
+ *     chỉ/toạ độ, nơi đã lưu, dẫn theo lịch) dựng [Handoff] qua đúng một cửa ([destinationHandoff]). Chỉ đường
+ *     CHÍNH mang cờ; ý-định dự phòng chưa đo ⇒ `NEW_TASK` trơn (xem [send]).
+ *     Phạm vi (CLAUDE.md §4): chỉ task của CHÍNH gói đích (`setPackage`); AOSP `android-10.0.0_r47`
+ *     `ActivityStarter.java:2211-2225` (`setTaskFromIntentActivity`) **tái dùng** TaskRecord đó
+ *     (`performClearTaskLocked` rồi `mReuseTask = task`) ⇒ không đổi display/stack; `Intent.java:6085-6092` — cờ này
+ *     chỉ có nghĩa khi đi cùng `NEW_TASK`. Không cần hoàn tác: dọn phiên dẫn cũ chính là việc người lái vừa yêu cầu.
  */
 object VoiceAppIntents {
 
@@ -49,7 +57,31 @@ object VoiceAppIntents {
         val query: String,
         val coords: Coords? = null,
         val fallback: VoiceLaunch? = null,
+        /** Thêm `FLAG_ACTIVITY_CLEAR_TASK` — lấy từ [VoiceAppTarget.clearTaskOnNav] qua [destinationHandoff]. */
+        val clearTask: Boolean = false,
     )
+
+    /**
+     * Lượt giao **ĐIỂM ĐẾN** cho [target] — cửa DUY NHẤT dựng [Handoff] dẫn đường (quyết định 4).
+     *
+     * Giọng nói (`VoiceTargetDispatch.deliver`: theo tên/địa chỉ, toạ độ đã tra, nơi đã lưu) và dẫn theo lịch
+     * (`ScheduledNavApplier`) cùng đi qua đây, nên cờ của đích không thể lệch giữa hai đường.
+     *
+     * @return `null` khi app không có đường nhận điểm đến với dữ liệu đang có ([VoiceAppTarget.destinationLaunch]).
+     */
+    fun destinationHandoff(target: VoiceAppTarget, pkg: String, query: String, coords: Coords?): Handoff? {
+        val launch = target.destinationLaunch(coords != null) ?: return null
+        return Handoff(pkg, launch, query, coords, target.fallback, clearTask = target.clearTaskOnNav)
+    }
+
+    /**
+     * Cờ khởi chạy của MỌI ý-định giao việc — chỗ DUY NHẤT dựng cờ.
+     *
+     * `NEW_TASK` luôn có (bắn từ `Context` không phải Activity); `CLEAR_TASK` chỉ khi [clearTask] (quyết định 4).
+     * Hằng của nền tảng: `NEW_TASK` = `0x10000000`, `CLEAR_TASK` = `0x00008000` ⇒ cả hai = `0x10008000`.
+     */
+    fun launchFlags(clearTask: Boolean): Int =
+        Intent.FLAG_ACTIVITY_NEW_TASK or (if (clearTask) Intent.FLAG_ACTIVITY_CLEAR_TASK else 0)
 
     /**
      * Dựng ý-định cho một đường [launch].
@@ -57,9 +89,16 @@ object VoiceAppIntents {
      * @param pkg gói đích — **bắt buộc**, xem quyết định (1).
      * @param query chuỗi chữ (tên bài / điểm đến), nguyên văn.
      * @param coords toạ độ khi khuôn URI cần; `null` ⇒ khuôn cần toạ độ sẽ trả `null`.
+     * @param clearTask thêm `CLEAR_TASK` — xem [launchFlags].
      * @return `null` khi đường này không dựng được ý-định nào (vd [VoiceLaunch.OpenOnly], hoặc thiếu toạ độ).
      */
-    fun build(launch: VoiceLaunch, pkg: String, query: String, coords: Coords? = null): Intent? = when (launch) {
+    fun build(
+        launch: VoiceLaunch,
+        pkg: String,
+        query: String,
+        coords: Coords? = null,
+        clearTask: Boolean = false,
+    ): Intent? = when (launch) {
         is VoiceLaunch.Action -> Intent(launch.action).apply {
             setPackage(pkg)
             putExtra(launch.extra, query)
@@ -67,7 +106,7 @@ object VoiceAppIntents {
         }
         is VoiceLaunch.Uri -> uri(launch, query, coords)?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)).setPackage(pkg) }
         VoiceLaunch.OpenOnly -> null
-    }?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }?.addFlags(launchFlags(clearTask))
 
     /**
      * Thay chỗ trống trong khuôn URI.
@@ -88,10 +127,14 @@ object VoiceAppIntents {
      *
      * **Gọi trên luồng VẼ** (`startActivity` từ một `Context` không phải Activity vẫn cần `NEW_TASK`, đã có).
      *
+     * `CLEAR_TASK` ([Handoff.clearTask]) CHỈ đi với đường chính: [ĐO xe 29/09] đo trên đúng deep-link bắt đầu dẫn
+     * của đích; ý-định dự phòng (vd `geo:` — chỉ mở màn kết quả, không bắt đầu dẫn) CHƯA đo lần nào với cờ này, mà
+     * cờ xoá phiên dẫn đang chạy của app khác không hoàn tác được ⇒ giữ `NEW_TASK` trơn (spec 2.83 §4.6, CLAUDE.md §14).
+     *
      * @return `true` khi một ý-định thật sự được giao đi.
      */
     fun send(ctx: Context, h: Handoff): Boolean {
-        if (fire(ctx, build(h.launch, h.pkg, h.query, h.coords))) return true
+        if (fire(ctx, build(h.launch, h.pkg, h.query, h.coords, h.clearTask))) return true
         return h.fallback != null && fire(ctx, build(h.fallback, h.pkg, h.query, h.coords))
     }
 

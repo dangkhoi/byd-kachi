@@ -54,68 +54,72 @@ class AccessibilityHealGatesTest {
 
     // ─── Thang chữa (2026-09-28) — khoá bài học: nấc FORCE_STOP GIẾT LAUNCHER, chỉ được dùng đúng ca KẸT ───
 
+    // 2.83 (owner chốt 2026-09-29, quyết định A): cổng "không app khách" + hạn mức một-lần-mỗi-lần-nổ-máy của 2.79
+    // đã GỠ khỏi healStep — [ĐO xe 29/09] cổng app khách chặn đúng ca cần chữa (ô đã có YouTube khi lượt chữa tới nơi,
+    // nhật ký 11:34:29) và kẹt sinh ra ở MỖI lần tắt máy. Thay bằng PHA: đang chạy thì KHÔNG tự giết (người dùng bấm
+    // nút); tắt máy / mở xe thì giết, hạn mức một-lượt-mỗi-sự-kiện nằm ở tầng trên (A11yLifecycleGatesTest khoá).
     private fun step(
         bound: Boolean = false,
         stuck: Boolean = false,
         wanted: Boolean = true,
         userAsked: Boolean = false,
-        guestVisible: Boolean = false,
-        escalatedAt: Long = -1L,
-        now: Long = 60_000L,
-    ) = AccessibilityHealGates.healStep(bound, stuck, wanted, userAsked, guestVisible, escalatedAt, now)
+        phase: AccessibilityHealGates.HealPhase = AccessibilityHealGates.HealPhase.RUNNING,
+    ) = AccessibilityHealGates.healStep(bound, stuck, wanted, userAsked, phase)
+
+    private val allPhases = AccessibilityHealGates.HealPhase.entries
 
     @Test
     fun `da gan roi thi KHONG lam gi`() {
-        assertEquals(AccessibilityHealGates.HealStep.NONE, step(bound = true, stuck = true),
-            "đã gắn thì kể cả dump còn sót mục kẹt cũng KHÔNG được giết launcher")
+        allPhases.forEach { p ->
+            assertEquals(AccessibilityHealGates.HealStep.NONE, step(bound = true, stuck = true, phase = p),
+                "[$p] đã gắn thì kể cả dump còn sót mục kẹt cũng KHÔNG được giết launcher")
+            assertEquals(AccessibilityHealGates.HealStep.NONE, step(bound = true, stuck = true, userAsked = true, phase = p),
+                "[$p] kể cả bấm tay: đã gắn thì không có gì để chữa")
+        }
     }
 
     @Test
     fun `chua gan ma KHONG ket thi di duong re nhu cu`() {
-        assertEquals(AccessibilityHealGates.HealStep.TOGGLE, step(stuck = false),
-            "ca thường sau khi nổ máy: ghi lại settings là hệ gọi bindLocked thật")
+        allPhases.forEach { p ->
+            assertEquals(AccessibilityHealGates.HealStep.TOGGLE, step(stuck = false, phase = p),
+                "[$p] ca thường sau khi nổ máy: ghi lại settings là hệ gọi bindLocked thật — nấc TOGGLE giữ nguyên")
+        }
     }
 
     @Test
-    fun `ket thi leo thang force-stop`() {
-        assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true),
-            "[ĐO AOSP :1630-1631] ca kẹt thì toggle bị continue bỏ qua ⇒ đi tiếp là phí, phải leo")
+    fun `lop 3 dang chay ket thi KHONG tu giet launcher`() {
+        assertEquals(AccessibilityHealGates.HealStep.NONE, step(stuck = true, phase = AccessibilityHealGates.HealPhase.RUNNING),
+            "owner 2026-09-29: 'lúc đang chạy mà lỗi thì user tự chữa ok' — watchdog/alarm/Preflight thấy kẹt thì chỉ " +
+                "ghi nhận, KHÔNG force-stop (giết launcher giữa lúc lái = mảng đen phủ nhà, [ĐO xe 28/09])")
+    }
+
+    @Test
+    fun `lop 1 va lop 2 ket thi leo thang force-stop`() {
+        listOf(AccessibilityHealGates.HealPhase.TAT_MAY, AccessibilityHealGates.HealPhase.MO_XE).forEach { p ->
+            assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true, phase = p),
+                "[$p] [ĐO AOSP :1630-1631] ca kẹt thì toggle bị continue bỏ qua ⇒ phải leo; màn tắt / vừa mở xe " +
+                    "(ô có thể ĐÃ có app — [ĐO c2]) ⇒ bỏ qua cổng app khách (owner chấp nhận màn nhà load lại một nhịp)")
+        }
     }
 
     @Test
     fun `ngoai cong cua watchdog thi KHONG tu giet launcher`() {
-        assertEquals(AccessibilityHealGates.HealStep.NONE, step(stuck = true, wanted = false),
-            "R-nf5: đường TỰ ĐỘNG chỉ được leo trong đúng cổng của watchdog 30 s (phím-thoại bật) — vì chính " +
-                "watchdog đó là thứ lắp lại enabled_accessibility_services nếu nửa sau của lệnh tách rời không " +
-                "chạy. Leo ngoài cổng ấy = giết xong không ai lắp lại = phím chết HẲN, tệ hơn bệnh đang chữa")
-        assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true, wanted = false, userAsked = true),
-            "nhưng người dùng tự bấm thì vẫn được: họ đang ngồi đó, và vẫn còn đường bấm lại")
+        allPhases.forEach { p ->
+            assertEquals(AccessibilityHealGates.HealStep.NONE, step(stuck = true, wanted = false, phase = p),
+                "[$p] R-nf5: đường TỰ ĐỘNG chỉ được leo trong đúng cổng của watchdog 30 s (phím-thoại bật) — vì chính " +
+                    "watchdog đó là thứ lắp lại enabled_accessibility_services nếu nửa sau của lệnh tách rời không " +
+                    "chạy. Leo ngoài cổng ấy = giết xong không ai lắp lại = phím chết HẲN, tệ hơn bệnh đang chữa")
+            assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true, wanted = false, userAsked = true, phase = p),
+                "[$p] nhưng người dùng tự bấm thì vẫn được: họ đang ngồi đó, và vẫn còn đường bấm lại")
+        }
     }
 
     @Test
-    fun `app khach dang hien tren man chinh hay trong o thi KHONG tu y giet`() {
-        assertEquals(AccessibilityHealGates.HealStep.NONE, step(stuck = true, guestVisible = true),
-            "[ĐO xe 2026-09-28] giết launcher lúc đang chứa app ⇒ màn ảo chết ⇒ cửa sổ rơi lại thành mảng đen " +
-                "phủ kín nhà. Phát hiện muộn thì báo thật, để người dùng chọn")
-    }
-
-    @Test
-    fun `nguoi dung tu bam thi bo qua moi cong giu`() {
-        assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP,
-            step(stuck = true, userAsked = true, guestVisible = true, escalatedAt = 10_000L),
-            "bấm tay là đồng ý rõ ràng: họ đang ngồi đó và chủ động yêu cầu")
-    }
-
-    @Test
-    fun `moi lan no may chi leo MOT lan`() {
-        assertEquals(AccessibilityHealGates.HealStep.NONE, step(stuck = true, escalatedAt = 10_000L, now = 60_000L),
-            "đã leo lần này rồi mà vẫn kẹt ⇒ giết thêm cũng vô ích, chỉ tổ lặp vô hạn")
-    }
-
-    @Test
-    fun `khoi dong lai may thi duoc leo lai`() {
-        assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true, escalatedAt = 9_000_000L, now = 60_000L),
-            "mốc lưu LỚN HƠN đồng hồ hiện tại ⇒ elapsedRealtime đã về 0 ⇒ máy đã khởi động lại ⇒ cho leo lại")
+    fun `nguoi dung tu bam thi leo o moi pha`() {
+        allPhases.forEach { p ->
+            assertEquals(AccessibilityHealGates.HealStep.FORCE_STOP, step(stuck = true, userAsked = true, phase = p),
+                "[$p] bấm tay là đồng ý rõ ràng: họ đang ngồi đó và chủ động yêu cầu — nút 'Kiểm tra / Sửa ngay' giữ nguyên")
+        }
     }
 
     @Test

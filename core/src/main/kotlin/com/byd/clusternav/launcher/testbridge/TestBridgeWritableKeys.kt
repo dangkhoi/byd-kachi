@@ -56,10 +56,11 @@ object TestBridgeWritableKeys {
         "voice_keep_log",
         // Camera theo xi-nhan (findings 2026-09-23) — bật/tắt + chọn cam + chọn GÓC hiện từng bên, test nhanh
         // trên xe. `camera_lvds_option` đã GỠ cùng mười option LVDS (spec camera-turn-signal-hal-socket R6).
+        // ⚠ 2.83 — hai khoá trái/phải của vạch chuẩn khoảng cách (2.82) đã **RA KHỎI** danh sách này cùng cả tính
+        // năng, owner: *"dẹp vạch đi"*. Không còn dòng mã nào đọc ⇒ `prefs_set` phải trả `bad_prefs_key` (tên khoá cũ
+        // chỉ còn ở bài canh `CameraSettingsIaTest` / `CameraSettingsIaWiringContractTest`, cố ý).
         "camera_signal_enabled",
         "camera_on_cluster",
-        "camera_guide_left",
-        "camera_guide_right",
         "camera_pano_left",
         "camera_pano_right",
         "camera_view_left",

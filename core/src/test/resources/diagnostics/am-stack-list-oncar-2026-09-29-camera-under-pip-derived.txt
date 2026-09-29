@@ -1,0 +1,39 @@
+Stack id=43 bounds=[0,0][1920,720] displayId=1 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw480dp w1280dp h480dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 720) mAppBounds=Rect(0, 0 - 1920, 720) mWindowingMode=freeform mDisplayWindowingMode=freeform mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=51: com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity bounds=[0,0][1920,720] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.modules.clustercast.ClusterBlackActivity}
+
+Stack id=45 bounds=[0,0][1872,956] displayId=7 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw764dp w1497dp h764dp 200dpi xlrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1872, 956) mAppBounds=Rect(0, 0 - 1872, 956) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=53: com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity bounds=[0,0][1872,956] userId=0 visible=true topActivity=ComponentInfo{com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity}
+
+Stack id=54 bounds=[1455,808][1896,1056] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(1455, 808 - 1896, 1056) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=pinned mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=62: com.google.android.apps.maps/com.google.android.maps.MapsActivity bounds=[1455,808][1896,1056] userId=0 visible=true topActivity=ComponentInfo{com.google.android.apps.maps/com.google.android.maps.MapsActivity}
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=45: com.byd.avc/com.byd.avc.AutoVideoActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.avc/com.byd.avc.AutoVideoActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=4: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+  taskId=24: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+  taskId=37: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+  taskId=52: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=52 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=60: com.byd.carsettings/com.byd.carsettings.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.carsettings/com.byd.carsettings.MainActivity}
+
+Stack id=47 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=55: com.byd.diLinkAccount/com.byd.diLinkAccount.main.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.diLinkAccount/com.byd.diLinkAccount.main.MainActivity}
+
+Stack id=41 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=49: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity}
+
+Stack id=40 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 100000010byd_theme452mcc1mnc [vi_VN] ldltr sw720dp w1280dp h604dp 240dpi lrg long land finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 990) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.157}
+  taskId=47: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+

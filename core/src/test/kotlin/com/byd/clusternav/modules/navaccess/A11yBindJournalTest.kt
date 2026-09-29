@@ -1,5 +1,6 @@
 package com.byd.clusternav.modules.navaccess
 
+import com.byd.clusternav.modules.navaccess.A11yBindJournal.State as S
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -43,6 +44,30 @@ class A11yBindJournalTest {
         assertFalse(J.shouldAppend(A11yBindJournal.State.BOUND, A11yBindJournal.State.BOUND, 60_000L, 3_600_000L), "không đổi, chưa tới nhịp ⇒ im")
         assertTrue(J.shouldAppend(A11yBindJournal.State.BOUND, A11yBindJournal.State.STUCK, 60_000L, 3_600_000L), "ĐỔI ⇒ ghi, đây mới là thông tin")
         assertTrue(J.shouldAppend(A11yBindJournal.State.BOUND, A11yBindJournal.State.BOUND, 3_600_000L, 3_600_000L), "tới nhịp tim ⇒ ghi để biết còn sống")
+    }
+
+    /**
+     * Khoá lỗi [ĐO máy ảo 29/09, E2E 2.83 ca 4]: kẹt lúc xe đang chạy ⇒ watchdog (chỉ hỏi binder) ghi NOT_BOUND,
+     * lượt grant (có dump) ghi STUCK, mỗi 30 s một cặp ⇒ 200 dòng đầy sau ~50 phút, mất dòng `tat-may`/`mo-xe`.
+     */
+    @Test
+    fun `quan sat chi binder khong lat STUCK thanh NOT_BOUND moi 30 s`() {
+        val hb = 3_600_000L
+        assertFalse(J.shouldAppend(S.STUCK, S.NOT_BOUND, 30_000L, hb, binderOnly = true),
+            "binder không tách được NOT_BOUND khỏi STUCK ⇒ cùng sự thật, không ghi")
+        assertTrue(J.shouldAppend(S.STUCK, S.NOT_BOUND, 30_000L, hb, binderOnly = false),
+            "quan sát CÓ dump (grant/lớp 1-2/chấm điểm) nói NOT_BOUND sau STUCK là bước ĐỔI thật ⇒ vẫn ghi")
+        assertTrue(J.shouldAppend(S.STUCK, S.BOUND, 30_000L, hb, binderOnly = true), "đã gắn lại ⇒ luôn ghi")
+        assertTrue(J.shouldAppend(S.NOT_BOUND, S.STUCK, 30_000L, hb), "lần đầu thấy KẸT ⇒ ghi")
+        assertTrue(J.shouldAppend(S.STUCK, S.NOT_BOUND, hb, hb, binderOnly = true), "nhịp tim vẫn ghi — nhật ký còn sống")
+        // Mô phỏng 50 phút kẹt: trước bản vá ~200 dòng, nay 0 dòng thêm (ngoài dòng STUCK đầu).
+        var last = S.STUCK
+        var appended = 0
+        repeat(100) {
+            if (J.shouldAppend(last, S.NOT_BOUND, 30_000L, hb, binderOnly = true)) { appended++; last = S.NOT_BOUND }
+            if (J.shouldAppend(last, S.STUCK, 30_000L, hb)) { appended++; last = S.STUCK }
+        }
+        assertEquals(0, appended, "trần ${A11yBindJournal.MAX_LINES} dòng không được bị cặp watchdog/grant ăn hết")
     }
 
     @Test

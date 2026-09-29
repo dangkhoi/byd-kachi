@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.83 — phím vô-lăng sống qua tắt/bật máy · Sửa ngay về màn nhà · nhật ký đọc được · gỡ vạch chuẩn · CLEAR_TASK dẫn đường</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file / 1 bản phát hành 2.83.
+  Thứ tự section CỐ ĐỊNH (theo docs/specs/_template.html): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai (Implementation Log) · Reviewer Log.
+  Ba cổng duyệt (Requirements/Design/Tasks) duyệt NGOÀI tài liệu — KHÔNG lưu trạng thái duyệt ở đây.
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md §3.1).
+  Dữ liệu riêng tư: KHÔNG IP xe, KHÔNG địa chỉ/tên đích dẫn đường (luôn viết <đích>), KHÔNG ảnh, getprop chỉ khoá được phép.
+  Bằng chứng thô nằm ở thư mục bằng chứng ngoài repo (oncar-0929/) — chỉ ghi TÊN tệp, không chép nội dung vào repo.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 16px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.tbl{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.gate{border-color:var(--warn);background:rgba(191,95,0,.07)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:5px;border:1px solid var(--line);background:var(--card);color:var(--muted);white-space:nowrap}
+.ev.m{color:var(--ok);border-color:transparent;background:rgba(26,127,55,.12)}
+.ev.s{color:var(--accent);border-color:transparent;background:rgba(0,113,227,.12)}
+.ev.g{color:var(--warn);border-color:transparent;background:rgba(191,95,0,.12)}
+.ev.u{color:var(--muted)}
+.car{font-size:11.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:rgba(191,95,0,.12);color:var(--warn);white-space:nowrap}
+.nocar{font-size:11.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--card);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+
+/* ---- Diagram helpers (CLAUDE.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto;min-width:640px}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{border-color:var(--accent);background:rgba(0,113,227,.10)}
+.layer .node.bad{border-color:var(--warn);background:rgba(191,95,0,.10)}
+.layer .node.okn{border-color:var(--ok);background:rgba(26,127,55,.10)}
+.lname{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* SVG primitives — mọi fill/stroke đi qua CSS var để sáng/tối đều đọc được */
+svg .bx{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .bx-new{fill:rgba(0,113,227,.12);stroke:var(--accent);stroke-width:1.5}
+svg .bx-bad{fill:rgba(191,95,0,.14);stroke:var(--warn);stroke-width:1.5}
+svg .bx-ok{fill:rgba(26,127,55,.14);stroke:var(--ok);stroke-width:1.5}
+svg .bx-dash{fill:var(--bg);stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+svg .band-off{fill:rgba(191,95,0,.05);stroke:none}
+svg .band-on{fill:rgba(0,113,227,.05);stroke:none}
+svg .axis{stroke:var(--line);stroke-width:3}
+svg .t{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:12.5px;font-weight:650}
+svg .ts{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px}
+svg .tm{fill:var(--fg);font-family:"SF Mono",ui-monospace,monospace;font-size:10.5px}
+svg .th{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em}
+svg .tt{fill:var(--accent);font-family:"SF Mono",ui-monospace,monospace;font-size:11px;font-weight:700}
+svg .ln{stroke:var(--accent);stroke-width:1.6;fill:none}
+svg .ln-bad{stroke:var(--warn);stroke-width:1.6;fill:none}
+svg .ln-ok{stroke:var(--ok);stroke-width:1.6;fill:none}
+svg .mk-acc{fill:var(--accent)}svg .mk-bad{fill:var(--warn)}svg .mk-ok{fill:var(--ok)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.83 — phím vô-lăng sống qua tắt/bật máy, và bốn việc đi kèm</h1>
+<p class="muted">Slug <code>kachi-283-key-heal-acc-off</code> · Chủ sở hữu <b>dangkhoi</b> · Ngày <b>2026-09-29</b> · Nhánh <code>feat/voice-hotword-phrases</code> · Gốc mã <code>bfbb728</code> = 2.82 (183) · Bản đích <b>2.83 (184)</b> (<code>app/build.gradle.kts</code> đã bump <span class="ev m">[ĐO diff]</span>) — <b>đăng OTA không qua buổi xe của chủ xe</b> (chủ xe 14:05:56, xem banner), sau cổng kiểm off-car §6.1; anh em test trên xe của họ <b>sau</b> OTA (§6.2). <b>Đã đăng OTA 29/09</b>: <code>apk/Kachi-2.83-release.apk</code> 43 907 845 B, sha256 <code>b44691e65c53916e079dcece2ed1a455211a539581f50d95162ae984d82f2213</code> <span class="ev m">[ĐO <code>shasum -a 256</code>]</span>. Đối chiếu mã: lúc 17:18 (Pass 3) cho A–E; rào camera bản cuối đọc lại ở Pass 5 (tệp mã sửa muộn nhất <code>AccessibilityRebind.kt</code> 18:02:41) <span class="ev m">[ĐO <code>stat</code> + đọc mã]</span>.</p>
+
+<div class="card gate">
+<p><span class="pill ok">ĐÃ DUYỆT: Requirements · Design · Tasks</span> <span class="pill ok">ĐÃ TRIỂN KHAI + ĐĂNG OTA 29/09</span> <span class="pill wait">CHỜ PHẢN HỒI ANH EM (§6.2)</span></p>
+<p><b>Duyệt</b> <span class="ev m">[ĐO transcript]</span>: chủ xe cho chạy tự động tới APK — 12:31:55 <i>“… chốt hết chưa, autonomus cho đến khi ra apk đi nhé, cần hỏi gì nữa ko”</i>, 12:34:54 <i>“ok, làm đi, làm đi”</i> (trả lời kế hoạch 2.83 của phiên lúc 12:33:13), 12:37:33 <i>“chia nhau làm theo workflow, như gmaps là việc riêng kia, nhiều việc song song được mà đúng không? dựng lại home sau restart không để app mồ côi cũng riêng kìa ??”</i> — theo quy ước đã lưu của chủ xe <i>“làm đi” = đã duyệt</i> (memory <code>kachi-feedback-do-not-gate-on-questions</code>, 2026-09-15) ⇒ ba phần Requirements/Design/Tasks coi là đã duyệt. Thiết kế theo lớp do chính chủ xe nêu (12:27:07) và chốt (12:29:08 <i>“nghe có lý đó, lúc đang chạy mà lỗi thì user tự chửa ok … nút tự chữa đó phải trả về home, ko để app mồ côi là OK”</i>): <b>lớp 1</b> lúc tắt máy + <b>lớp 2</b> lúc mở xe tự chữa; <b>lớp 3</b> (đang chạy) người dùng tự bấm; nút sửa <b>luôn về màn nhà</b>. Bản ghi cổng duyệt chính thức vẫn nằm ngoài tài liệu (luật global §1); ở đây chỉ trích nguồn.</p>
+<p><b>Mã</b> <span class="ev m">[ĐO <code>git diff HEAD</code> + journal hai workflow]</span>: workflow <code>kachi-283-parallel</code> viết 5 làn (gộp 13:13–13:18) → E2E máy ảo vòng 1 → 3 lượt senior review; workflow thứ hai vá hai khoảng trống (nút sửa về nhà ở ca có app toàn màn nằm dưới · lớp 3 thôi tắt/bật vô ích khi đã biết kẹt) → E2E vòng 2 → 3 lượt senior review, lượt cuối <b>CLEAN</b>; workflow review mã thứ ba thêm <b>rào camera</b> cho mọi lần Home của lượt chữa (D-15) → 3 lượt senior review, lượt 3 <b>CLEAN</b>. Trên mã cuối: test <b>6 411 / 0</b> lỗi (735 XML), <code>lintDebug</code> 0 lỗi (§6.1). Mã + tài liệu + APK đi <b>cùng một commit</b> đăng 29/09.</p>
+<p><span class="pill wait">CỔNG PHÁT HÀNH ĐỔI 14:05:56</span> Chủ xe <span class="ev m">[ĐO transcript, tin người dùng 2026-09-29T07:05:56Z = 14:05:56 giờ VN]</span>: <i>“xong chắc kiểm tra kỷ rồi OTA luôn cho anh em test nhỉ, mình ko có thời gian on-car test”</i>. Phiên đáp 14:06:16 <span class="ev m">[ĐO transcript]</span>: ghi nhận <i>2.83 đi thẳng OTA, không qua buổi xe của chủ xe</i>; nêu hai rủi ro (phần tự chữa lúc tắt/mở máy <b>chưa từng chạy trên xe thật</b>; <b>OTA không lùi bản được</b> — lỗi thì phải ra 2.84); liệt kê “kiểm kỹ” = toàn bộ test + lint · E2E máy ảo · senior review lặp tới sạch · quét bảo mật · kiểm chữ ký + cờ debuggable; <i>“Có một mục nào không đạt thì tôi không đăng mà báo anh”</i>. Chủ xe không đáp thêm <span class="ev m">[ĐO transcript]</span> ⇒ danh sách kiểm là diễn giải của phiên, chủ xe không phản đối <span class="ev s">[SUY]</span>. “Không lùi bản” <span class="ev m">[ĐO mã]</span>: <code>UpdateChecker.kt:87</code> chỉ báo có bản mới khi <code>cmp(bestVer, cur) &gt; 0</code>. Cổng mới thay câu “không OTA tới khi nghiệm thu trên xe”: R-nf6, T16, T18, T19, §6.1, §6.2. Rủi ro chưa đo sẽ tới <b>mọi</b> xe ⇒ các quyết định trước OTA gom ở <b>§9 D-10</b>.</p>
+<p><b>Rủi ro còn lại khi đăng</b> (ghi rõ vì OTA tới <b>mọi</b> xe bật tự cập nhật): (1) lớp 1 và lớp 2 <b>chưa từng chạy trên xe thật</b> — chỉ E2E máy ảo, với lượt giết mô phỏng đúng chữ ký BYD (§6.1) <span class="ev s">[SUY: khớp cơ chế AOSP, thủ phạm trên xe gọi đúng hàm nào vẫn CHƯA BIẾT]</span>; (2) <b>OTA không lùi bản</b> <span class="ev m">[ĐO mã <code>UpdateChecker.kt:87</code> chỉ báo bản mới khi <code>cmp(bestVer, cur) &gt; 0</code>]</span> ⇒ lỗi hiện trường phải ra 2.84; (3) hai việc chủ xe <b>chưa trả lời riêng</b>: D-10 (lớp 1 chỉ dựa <code>isInteractive</code>) và <code>TEST-MODE-ACC-OFF</code> (§2.10) — xem §9, OQ11; (4) rào camera mới đo trên máy ảo (Settings đóng vai camera) — với <code>com.byd.avc</code> thật trên xe <span class="ev s">[SUY]</span>; camera bật đúng trong khe &lt; 1 s giữa lúc đọc và lúc <code>am start</code> thì vẫn có thể bị che <span class="ev s">[SUY]</span>.</p>
+<p class="muted">§4 Design đã <b>viết lại theo mã</b> ở Pass 3 (đối chiếu 17:18); rào camera theo mã của bản đăng ở Pass 5. Chỗ mã khác thiết kế Pass 0–2 ghi ở <b>§9 Nhật ký triển khai</b> (D-1…D-15). OQ1, OQ2 đã đóng.</p>
+<p><span class="pill ok">RÀO CAMERA BẢN CUỐI — Pass 5</span> Mọi lần Home của <b>cả hai</b> đuôi lượt chữa — bấm tay (<code>HomeTail.ALWAYS</code>) và tự động (<code>RETURN_HOME_IF_ORPHANED</code>) — đi qua <b>một</b> cửa <code>AccessibilityRebind.GO_HOME_UNLESS_CAMERA</code>: bỏ Home nếu <b>bất kỳ</b> stack đang hiện (<code>visible=true</code>) nào của display 0 là camera BYD <code>com.byd.avc/</code> (kể cả khi cửa sổ PIP hoặc cửa sổ mồ côi nằm trên camera), và <b>không</b> Home khi đọc hỏng / không có dòng <code>visible=true</code> (§4.3, D-15). <span class="ev m">[ĐO máy ảo 29/09: Settings đóng vai camera, chuỗi thật chạy trên <code>mksh</code>]</span> · trên xe <span class="ev s">[SUY]</span>. 3 lượt senior review, lượt 3 CLEAN. Cảnh báo Pass 4 (tệp <code>apk/Kachi-2.83-CHUA-DANG.apk</code> 17:13, sha256 <code>bde50207…</code>, thiếu vá) <b>đã xử lý</b>: APK dựng lại từ mã cuối (18:27), dex chứa đúng chuỗi rào bản cuối <span class="ev m">[ĐO grep dex]</span>, tệp đó mới là bản đăng (V-apk).</p>
+</div>
+
+<p class="muted">Nhãn mức bằng chứng (<code>.kiro/steering/conversation-protocol.md</code> P1, CLAUDE.md §2):
+<span class="ev m">[ĐO]</span> dữ liệu thật đã đọc (dump, log, mã) ·
+<span class="ev s">[SUY]</span> suy luận khớp dữ liệu, chưa đo trực tiếp ·
+<span class="ev g">[ĐOÁN]</span> mới chỉ hợp lý ·
+<span class="ev u">[CHƯA BIẾT]</span> chưa có dữ liệu. Bằng chứng thô của buổi xe 2026-09-29 (11:07–12:18, Seal DiLink 3, Android 10) nằm ở <b>thư mục bằng chứng ngoài repo</b> <code>oncar-0929/</code>; tài liệu này chỉ ghi <b>tên tệp</b>. Mã trong repo trích theo <code>file:line</code>: §2 ở gốc <code>bfbb728</code>; §3.x, §4, §8 “Trong repo”, §9 ở <b>mã của bản đăng 2.83</b> (các tệp khác không đổi sau 16:40; <code>AccessibilityRebind.kt</code> — 487 dòng — đọc lại ở Pass 5). Mọi đích dẫn đường viết là <code>&lt;đích&gt;</code>.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-09-29</b>: Khởi tạo spec sau buổi xe 29/09. Gốc rễ phím vô-lăng chết đã <b>tái hiện</b> được: mỗi lần tắt máy, hệ thống BYD giết mọi tiến trình Kachi đang sống (2–3) <b>mà không gửi</b> <code>PACKAGE_RESTARTED</code> <span class="ev m">[ĐO]</span>, và dịch vụ Hỗ trợ bị kẹt trong <code>Binding services</code> (đường park: <span class="ev s">[SUY]</span>); tự chữa 2.81 nhận ra kẹt nhưng bị cổng “có app khách trong ô” chặn. Không đăng 2.82, gom năm việc A–E vào 2.83: <span class="ev s">[SUY]</span> phiên đề xuất lúc 12:01:24, chủ xe không phản đối và duyệt kế hoạch 2.83 (12:34:54) — không có câu chủ xe nói thẳng về OTA 2.82. Lúc Pass 0, spec chỉ đặc tả; chưa có mã.</li>
+<li><b>Pass 1 — 2026-09-29</b> (vòng vá tài liệu sau 4 lăng kính phản biện): banner + OQ1 theo sự thật (chủ xe đã cho làm; mã đang viết, chưa commit); OQ2 đóng (chủ xe chốt lớp 1 + 2); R-E3/§4.6/OQ6 theo kế hoạch đã duyệt (Maps bật <code>CLEAR_TASK</code> theo bằng chứng display 0, ca cụm thành rủi ro nghiệm thu V-E4); R-A2 thêm luật fail-open; R-A4 thêm hạn mức “đã leo trong chính tiến trình này”; §4.2 ghi rủi ro <code>isInteractive</code> ≠ tắt máy và giới hạn FGS nền trên Android 12; §4.3 bảng ánh xạ verdict + phát lại <code>reflow</code>; §4.6 cờ của <code>build</code> + luật cho ý-định dự phòng; §4.7 thêm dòng E-M1…E-M5; DAG sửa phụ thuộc T7/T9/T15; thêm V-A5, V-B3; <b>thêm §9 Nhật ký triển khai</b> (đối chiếu thiết kế ↔ mã thật), Reviewer Log thành §10; sửa trích dẫn lệch (§2.6 bốn chú thích, <code>:65</code>, <code>:20-22</code>, <code>minSdk</code>), §2.7, §2.10 (chế độ kiểm thử lên <span class="ev m">[ĐO]</span>, mục backlog <code>TEST-MODE-ACC-OFF</code>).</li>
+<li><b>Pass 2 — 2026-09-29</b> (vòng vá tài liệu 2): <b>cổng phát hành theo chủ xe 14:05:56</b> — OTA không qua buổi xe, sau cổng off-car (banner, R-nf6, T16/T18/T19, §6.1, §6.2 thành nghiệm thu hiện trường sau OTA, OQ1); §9 chụp lại lúc ~14:35 (luật gộp <code>binderOnly</code> của nhật ký, <code>moXeFollowsTatMay</code> của lớp 2); <b>D-10</b> (lớp 1 theo <code>isInteractive</code> trái luật §4.2, V-A5 không đo được trước OTA — cần chủ xe quyết cùng V-E4, D-6, <code>TEST-MODE-ACC-OFF</code>); <b>D-11</b> (<code>binderOnly</code>); D-6 thêm vi phạm R-nf4 (<code>VoiceAppTargets.kt</code> 475 → 490); §2.10 liệt kê đủ các chỗ nói sai về vòng đời Chế độ kiểm thử.</li>
+<li><b>Pass 3 — 2026-09-29</b> (đối chiếu mã lúc 17:18, sau hai workflow mã + 6 lượt senior review): banner = <b>đã duyệt</b> (Requirements/Design/Tasks) + mã xong off-car + cổng OTA còn lại; <b>§4 viết lại theo mã</b> (luồng ba lớp thật: <code>A11yLifecycleHeal</code> · claim theo sự kiện · kẹt bền hai lần đo · <code>HomeTail.IF_ORPHANED/ALWAYS</code> · <code>watchdogStep</code> · <code>a11ylog</code> · <code>clearTaskOnNav</code>); §2.2/§4.9/§8 thay trích “qua spec cũ” bằng <b>AOSP fetch lại</b> (<code>android-10.0.0_r47</code> + <code>android-12.0.0_r34</code>, qua bản mirror vì nguồn chính trả 503) — kèm điều kiện mới của <code>onHandleForceStop</code> và khác biệt Android 12 (<code>mCrashedServices</code>); §5 thêm cột trạng thái theo mã; §6 điền kết quả E2E máy ảo + review; §6.2 = anh em test sau OTA + cách báo lỗi; OQ3/4/6/7 đóng theo mã; §9 chụp lại (D-3, D-6, D-8 đóng; thêm D-12…D-14); §10 Pass 3.</li>
+<li><b>Pass 4 — 2026-09-29</b> (soát độc lập tài liệu, ~17:40–17:50): phát hiện mã <b>đổi sau 17:18</b> — rào camera <code>GO_HOME_UNLESS_CAMERA</code> cho mọi lần Home của hai đuôi (workflow review mã thứ ba) ⇒ banner, §4.1 sơ đồ, §4.3 (bảng đuôi + số dòng <code>AccessibilityRebind.kt</code> đọc lại), §4.7, §5 T16/T18 + thứ tự còn lại, §6.1 (V-apk, V-review, V-rào-camera), §6.2 (V-B, câu cho người lái), §8, <b>D-15</b>; tệp <code>apk/Kachi-2.83-CHUA-DANG.apk</code> 17:13 <b>thiếu vá</b> ⇒ phải dựng lại; ranh giới <code>file:line</code> (§2 ở <code>bfbb728</code>, phần còn lại ở cây làm việc); §10 Pass 4.</li>
+<li><b>Pass 5 — 2026-09-29</b> (rào camera bản cuối + phát hành): trạng thái = <b>đã triển khai + đăng OTA 29/09, chờ phản hồi anh em</b> (banner, header); rào camera bản cuối — một cửa <code>GO_HOME_UNLESS_CAMERA</code> đọc cờ <code>visible</code> của mọi stack display 0, đọc hỏng ⇒ không Home — ở §3.x R-B2, §4.1, §4.3 (chuỗi + <code>file:line</code> mã bản đăng), §4.7, §4.8, §4.9 (AOSP của cờ <code>visible</code>), §5, §6.1 (V-unit 6 411, V-lint, V-review, V-apk với sha thật, <b>V-rào-camera</b> kết quả máy ảo), §6.2 V-B, OQ11, §8, D-14, <b>D-15 đóng</b>; §10 Pass 5.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>2. Context</h2>
+
+<h3>2.1 Năm việc chủ xe đã quyết cho 2.83</h3>
+<div class="tbl"><table>
+<tr><th>Mã</th><th>Việc</th><th>Căn cứ</th></tr>
+<tr><td><b>A</b></td><td>Chữa kẹt phím <b>đúng lúc</b> tắt máy / mở máy, không chờ người bấm.</td><td>Gốc rễ <span class="ev m">[ĐO]</span> 29/09, §2.2–§2.4.</td></tr>
+<tr><td><b>B</b></td><td>“Sửa ngay” phải đưa launcher lên lại và <b>không</b> để app trong ô thành cửa sổ freeform mồ côi.</td><td>Chủ xe 12:29:08: <i>“lúc đang chạy mà lỗi thì user tự chửa ok, ko cần mình tự chửa làm gì, nút tự chữa đó phải trả về home, ko để app mồ côi là OK”</i>.</td></tr>
+<tr><td><b>C</b></td><td>Nhật ký bền của dịch vụ Hỗ trợ phải <b>đọc được</b> trên bản phát hành.</td><td>Màn Chẩn đoán không mở được <span class="ev m">[ĐO]</span>, §2.6.</td></tr>
+<tr><td><b>D</b></td><td><b>Gỡ hẳn</b> vạch chuẩn khoảng cách trên hình camera.</td><td>Chủ xe 12:00:47 <i>“… mớ vạch vẽ ra cho vui vậy chứ có ý nghĩa gì với đời đâu hả?”</i> rồi 12:02:39 <i>“ò, dẹp vạch đi”</i>.</td></tr>
+<tr><td><b>E</b></td><td>Thêm <code>FLAG_ACTIVITY_CLEAR_TASK</code> cho lệnh <b>bắt đầu dẫn đường</b>, theo vai trò (không theo tên gói); VietMap phải đo shell trước.</td><td>Chủ xe 12:17:25: <i>“ok rồi đó em, ko có gps nên nó đứng, nhưng nó đã dẫn về &lt;đích&gt; rồi, clear task cũ ok đó em”</i>.</td></tr>
+</table></div>
+
+<h3>2.2 Gốc rễ phím chết: lượt giết lúc tắt máy của BYD</h3>
+<p>Phép thử nhân quả <b>sạch</b> là lượt tắt/bật máy lúc 11:33 — bộ ghi đúng cách (đọc trọn khối Bound + ServiceRecord + tập Binding) cho thấy trạng thái sạch tới 11:33:22 rồi kẹt sau khi mở máy. Dòng thời gian dưới đây lấy nguyên từ <code>c2-logcat-113538.txt</code>, <code>c2-bcast-113538.txt</code>, <code>usage-cycle2.log</code>, <code>poll-cycle2.txt</code>, <code>poll-cycle2-after.txt</code>. Trục <b>không theo tỉ lệ</b>.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 700" role="img" aria-label="Dòng thời gian lượt tắt máy 11:33 ngày 29/09: trạng thái sạch, BYD giết 25 gói trong đó có 3 tiến trình Kachi mà không gửi PACKAGE_RESTARTED, HOME dựng lại Kachi, màn tắt 48 giây, mở máy thì ô dựng và nạp YouTube trước khi thang chữa phân loại KẸT, cổng có app khách chặn nên phím chết">
+  <defs>
+    <marker id="a-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="a-bad" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-bad" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+
+  <!-- dải pha -->
+  <rect class="band-off" x="8" y="96" width="884" height="232" rx="10"/>
+  <rect class="band-on" x="8" y="398" width="884" height="292" rx="10"/>
+
+  <!-- tiêu đề cột -->
+  <text class="th" x="210" y="24" text-anchor="middle">HỆ THỐNG / BYD (system_server)</text>
+  <text class="th" x="450" y="24" text-anchor="middle">GIỜ XE</text>
+  <text class="th" x="690" y="24" text-anchor="middle">KACHI (com.byd.launcher)</text>
+  <line class="axis" x1="450" y1="34" x2="450" y2="686"/>
+
+  <!-- R0 sạch -->
+  <text class="tt" x="450" y="68" text-anchor="middle">11:33:22</text>
+  <rect class="bx-ok" x="500" y="44" width="380" height="42" rx="10"/>
+  <text class="t" x="690" y="62" text-anchor="middle">SẠCH — phím sống</text>
+  <text class="ts" x="690" y="78" text-anchor="middle">Bound · Binding rỗng · có ServiceRecord [ĐO poll-cycle2]</text>
+
+  <text class="th" x="22" y="114">① TẮT MÁY (ACC OFF)</text>
+
+  <!-- R1 -->
+  <text class="tt" x="450" y="144" text-anchor="middle">11:33:23.6</text>
+  <rect class="bx" x="20" y="120" width="380" height="44" rx="10"/>
+  <text class="t" x="210" y="139" text-anchor="middle">power_sleep_requested 1</text>
+  <text class="ts" x="210" y="156" text-anchor="middle">luồng AccModeManagerS ghi 41 dòng (chatty cắt) · tác nhân [SUY]</text>
+
+  <!-- R2 -->
+  <text class="tt" x="450" y="196" text-anchor="middle">11:33:24.3</text>
+  <rect class="bx-bad" x="20" y="172" width="380" height="44" rx="10"/>
+  <text class="t" x="210" y="191" text-anchor="middle">Đợt am_kill “stop &lt;gói&gt;” — 25 gói</text>
+  <text class="ts" x="210" y="208" text-anchor="middle">YouTube · VietMap · gms · Maps · … [ĐO]</text>
+
+  <!-- R3 -->
+  <text class="tt" x="450" y="252" text-anchor="middle">11:33:25.18</text>
+  <rect class="bx-bad" x="20" y="224" width="380" height="54" rx="10"/>
+  <text class="t" x="210" y="243" text-anchor="middle">Giết 3 tiến trình Kachi (chính · :wake · :tts)</text>
+  <text class="ts" x="210" y="259" text-anchor="middle">KHÔNG có PACKAGE_RESTARTED cho Kachi [ĐO c2-bcast]</text>
+  <text class="ts" x="210" y="273" text-anchor="middle">⇒ onHandleForceStop không chạy, không ai dọn [SUY]</text>
+
+  <!-- R4 -->
+  <path class="ln-bad" d="M 400 262 C 450 262, 450 306, 498 306" marker-end="url(#a-bad)"/>
+  <text class="tt" x="450" y="322" text-anchor="middle">11:33:25.52</text>
+  <rect class="bx" x="20" y="286" width="380" height="36" rx="10"/>
+  <text class="ts" x="210" y="303" text-anchor="middle">SCREEN_OFF phát đi 11:33:25.38 — SAU lượt giết</text>
+  <text class="ts" x="210" y="316" text-anchor="middle">⇒ không chữa trước bằng broadcast được (F4) [ĐO]</text>
+  <rect class="bx-bad" x="500" y="284" width="380" height="42" rx="10"/>
+  <text class="t" x="690" y="302" text-anchor="middle">HOME dựng lại Kachi, pid mới (+0,33 s) [ĐO]</text>
+  <text class="ts" x="690" y="318" text-anchor="middle">mục a11y bị park ở Binding, không ai gắn lại [SUY cơ chế]</text>
+
+  <!-- R5 màn tắt -->
+  <rect class="bx-dash" x="20" y="338" width="860" height="50" rx="10"/>
+  <text class="t" x="450" y="358" text-anchor="middle">② MÀN TẮT ≈ 48 s — bộ ghi adb không chạy ⇒ trạng thái trong khoảng này [CHƯA ĐO]</text>
+  <text class="ts" x="450" y="377" text-anchor="middle">Kachi vẫn chạy lệnh shell lúc màn tắt (F3) [ĐO] · nhưng không đoạn mã nào kiểm a11y lúc màn tắt (F2) [ĐO]</text>
+
+  <text class="th" x="22" y="416">③ MỞ MÁY (ACC ON, quickboot — không reboot)</text>
+
+  <!-- R6 -->
+  <text class="tt" x="450" y="446" text-anchor="middle">11:34:13.2</text>
+  <rect class="bx" x="20" y="424" width="380" height="40" rx="10"/>
+  <text class="t" x="210" y="449" text-anchor="middle">SCREEN_ON</text>
+
+  <!-- R7 -->
+  <text class="tt" x="450" y="498" text-anchor="middle">11:34:19</text>
+  <rect class="bx" x="20" y="474" width="380" height="44" rx="10"/>
+  <text class="t" x="210" y="493" text-anchor="middle">BOOT_COMPLETED(from_quickboot) vào hàng 11:34:18.1</text>
+  <text class="ts" x="210" y="510" text-anchor="middle">Kachi nhận 11:34:23.7 — SAU khi ô dựng (F4) [ĐO]</text>
+  <rect class="bx" x="500" y="474" width="380" height="44" rx="10"/>
+  <text class="t" x="690" y="493" text-anchor="middle">Ô dựng màn ảo display 6 (11:34:19.1)</text>
+  <text class="ts" x="690" y="510" text-anchor="middle">YouTube vào ô lúc 11:34:20.8 [ĐO]</text>
+
+  <!-- R8 -->
+  <path class="ln" d="M 690 518 L 690 530" marker-end="url(#a-acc)"/>
+  <text class="tt" x="450" y="556" text-anchor="middle">11:34:29.2</text>
+  <rect class="bx" x="500" y="532" width="380" height="44" rx="10"/>
+  <text class="t" x="690" y="551" text-anchor="middle">Toggle ép rebind 11:34:20.9 → 29.1: bound=false</text>
+  <text class="ts" x="690" y="568" text-anchor="middle">⇒ nhật ký NOT_BOUND → STUCK [ĐO usage-cycle2]</text>
+
+  <!-- R9 -->
+  <path class="ln-bad" d="M 690 576 L 690 588" marker-end="url(#a-bad)"/>
+  <text class="tt" x="450" y="614" text-anchor="middle">11:34:29.7</text>
+  <rect class="bx-bad" x="500" y="590" width="380" height="44" rx="10"/>
+  <text class="t" x="690" y="609" text-anchor="middle">Cổng “có app khách trong ô” ⇒ nấc NONE</text>
+  <text class="ts" x="690" y="626" text-anchor="middle">KHÔNG leo, lặp mỗi ~30 s [ĐO] (HealGates.kt:104)</text>
+
+  <!-- R10 -->
+  <path class="ln-bad" d="M 690 634 L 690 644" marker-end="url(#a-bad)"/>
+  <text class="tt" x="450" y="668" text-anchor="middle">11:34:48</text>
+  <rect class="bx-bad" x="500" y="646" width="380" height="40" rx="10"/>
+  <text class="t" x="690" y="663" text-anchor="middle">binding=1 · svcrec=0 [ĐO poll-cycle2-after]</text>
+  <text class="ts" x="690" y="679" text-anchor="middle">chủ xe 11:36:21: “phím mất bind rồi nhé”</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:rgba(26,127,55,.14);border-color:var(--ok)"></span> trạng thái khoẻ</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.14);border-color:var(--warn)"></span> mắt xích gây kẹt</span>
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> sự kiện trung tính</span>
+  <span class="sw"><span class="box" style="background:var(--bg);border-style:dashed"></span> khoảng chưa đo</span>
+</div>
+
+<h4>Cơ chế và quy kết — tách theo CLAUDE.md §2</h4>
+<div class="tbl"><table>
+<tr><th>Mệnh đề</th><th>Mức</th><th>Nguồn</th></tr>
+<tr><td>Mỗi lần tắt máy, hệ thống giết hàng loạt gói với lý do <code>stop &lt;gói&gt;</code>; Kachi mất 2–3 tiến trình rồi được HOME dựng lại sau 0,25–0,33 s.</td><td><span class="ev m">[ĐO]</span> 3 lượt: 28/09 18:25:41 · 29/09 11:20:50 · 11:33:25</td><td><code>k1-logcat-110944.txt:304-339</code> · <code>c1-logcat-112312.txt:3590-3650</code> · <code>c2-logcat-113538.txt:3414-3479</code></td></tr>
+<tr><td>Lượt giết lúc 11:33:25 <b>không</b> kèm <code>PACKAGE_RESTARTED</code> cho Kachi (cũng không cho 24 gói khác cùng đợt); “Sửa ngay” (<code>am force-stop</code> thật) <b>có</b> (#179, 143 ms sau lượt giết).</td><td><span class="ev m">[ĐO]</span> cho lượt 11:33 · <span class="ev s">[SUY]</span> cho hai lượt kia (cửa sổ lịch sử broadcast nền không phủ tới)</td><td><code>c2-bcast-113538.txt</code> (0 mục cho Kachi) · <code>fix-bcast-112813.txt:3141-3144</code></td></tr>
+<tr><td>Sau cả ba lượt giết, Kachi vẫn nằm trong <code>enabled_accessibility_services</code> (“đã có sẵn=true”) ⇒ <code>onHandleForceStop</code> đã không chạy.</td><td>dữ kiện <span class="ev m">[ĐO]</span> · suy ra <span class="ev s">[SUY]</span></td><td><code>usage-night.log</code>, <code>usage-cycle1.log</code>, <code>usage-cycle2.log:219</code> · mã đọc <code>NavConnect.kt:219</code></td></tr>
+<tr><td>Mục đang Bound mà bị đứt thì bị đẩy ngược vào <code>mBindingServices</code> (<code>AccessibilityManagerService.java:4114-4117</code>, gọi từ <code>binderDied()</code> ở <code>AccessibilityServiceConnection.java:265</code>), và <code>updateServicesLocked</code> bỏ qua mọi mục trong đó (<code>:1630-1632</code>, đứng trên <code>bindLocked()</code> <code>:1642</code> và <code>unbindLocked()</code> <code>:1645</code>); chỉ <code>onHandleForceStop</code> (<code>:453-484</code>, kích bởi <code>PACKAGE_RESTARTED</code> qua <code>PackageMonitor.java:412-416</code>) hoặc <code>onPackageUpdateFinished</code> (<code>:398-417</code>, dọn ở <code>:410-412</code>) dọn được. <b>Điều kiện mới</b>: <code>onHandleForceStop</code> duyệt <code>mEnabledServices</code> (<code>:464-469</code>) ⇒ chỉ gỡ mục Binding khi component <b>đang có</b> trong danh sách enabled lúc broadcast tới.</td><td><span class="ev m">[ĐO AOSP 29/09]</span> tag <code>android-10.0.0_r47</code>, đọc qua bản mirror (nguồn chính <code>android.googlesource.com</code> trả 503 cả 7 lần). Android 12 (<code>r34</code> = <code>r1</code>) <b>khác</b>: xem §4.9</td><td>T0a xong phần a11y + AMS + ActivityStarter + PowerManager (§4.9)</td></tr>
+<tr><td>Áp cơ chế đó vào ca 29/09: bị giết lúc đang Bound ⇒ <code>binderDied</code> ⇒ park ⇒ tiến trình mới không được gắn lại.</td><td><span class="ev s">[SUY]</span> khớp mọi dữ kiện, không có log nội bộ</td><td>không có <code>booster connected</code> trong suốt đời pid 682 và 29552</td></tr>
+<tr><td>Người ra tay là <code>AccModeManagerService</code> của BYD.</td><td><span class="ev s">[SUY]</span> nhiều khả năng</td><td>chatty <code>AccModeManagerS expire 41 lines</code> ngay trước đợt giết (<code>c2-logcat:3189</code>) — nhưng dòng chatty này lặp đều 10–20 s <b>suốt</b> pha tắt máy (<code>c2-logcat:3576, 3718, 3845, 3981, 3989</code>; cả 11:20:48–11:22:03 ở <code>:533–1167</code>) nên chỉ <b>gợi ý</b> tác nhân, không chỉ đích danh <span class="ev m">[ĐO]</span>; lớp có trong <code>../firmware/fw-2602-diff/cmp/services_NEW.jar</code> (mới chạy <code>strings</code>)</td></tr>
+<tr><td>BYD gọi hàm nào để giết mà bỏ qua <code>finishForceStopPackageLocked</code>; có danh sách miễn giết không.</td><td><span class="ev u">[CHƯA BIẾT]</span>. Cơ chế có thể <span class="ev m">[ĐO AOSP]</span>: <code>ActivityManagerService.killApplication</code> (<code>:4314-4339</code>, chỉ uid system) → <code>KILL_APPLICATION_MSG</code> (<code>:1725-1735</code>) → <code>forceStopPackageLocked(…)</code> <code>:1732</code> — cùng tham số với <code>am force-stop</code> nhưng <b>không</b> gọi <code>finishForceStopPackageLocked</code> (<code>:4516-4529</code>, chỉ gọi từ <code>:4280</code> và <code>:4075</code>) ⇒ không <code>PACKAGE_RESTARTED</code>. Đây là cách E2E máy ảo tái hiện chữ ký xe (§6.1)</td><td>chốt bằng dịch ngược <code>services_NEW.jar</code> (T0f), hoặc một quan sát: dòng <code>Force stopping &lt;gói&gt; … : &lt;lý do&gt;</code> (AMS <code>:4642-4643</code>) lúc tắt máy — lý do <code>from pid N</code> là đường <code>forceStopPackage</code>, lý do khác là <code>killApplication</code>/biến thể BYD. <b>Không chặn</b> 2.83: cách chữa chữa <b>trạng thái</b></td></tr>
+<tr><td>Hai đường chữa đo được: <code>am force-stop</code> thật (có <code>PACKAGE_RESTARTED</code>) và cài đè gói.</td><td><span class="ev m">[ĐO]</span></td><td><code>fix2-acc-112916.txt</code> (<code>Binding services:{}</code>) · <code>usage-282-120941.log:14,209</code> (<code>STUCK → BOUND</code> 11:39:46)</td></tr>
+</table></div>
+
+<h3>2.3 Vì sao tự chữa 2.81 không chạy</h3>
+<p>Thứ tự early-return trong <code>AccessibilityHealGates.healStep</code> (<code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityHealGates.kt:91-107</code>) <span class="ev m">[ĐO mã]</span>:</p>
+<div class="tbl"><table>
+<tr><th>Dòng</th><th>Điều kiện</th><th>Kết quả</th><th>Giá trị lúc 11:34:29</th></tr>
+<tr><td><code>:100</code></td><td><code>bound</code></td><td>NONE</td><td><code>false</code> (truyền cứng ở <code>NavConnect.kt:282</code>)</td></tr>
+<tr><td><code>:101</code></td><td><code>!wanted &amp;&amp; !userAsked</code></td><td>NONE</td><td><code>wanted</code> = phím-thoại bật <span class="ev s">[SUY]</span> (watchdog có chạy)</td></tr>
+<tr><td><code>:102</code></td><td><code>!stuckInBinding</code></td><td>TOGGLE</td><td><code>kẹt=true</code> <span class="ev m">[ĐO log]</span></td></tr>
+<tr><td><code>:103</code></td><td><code>userAsked</code></td><td>FORCE_STOP</td><td><code>tay=false</code> <span class="ev m">[ĐO log]</span></td></tr>
+<tr style="background:rgba(191,95,0,.07)"><td><b><code>:104</code></b></td><td><b><code>guestAppVisible</code></b></td><td><b>NONE — dừng ở đây</b></td><td><code>không app khách=false</code> ⇒ <code>true</code> <span class="ev m">[ĐO log]</span></td></tr>
+<tr><td><code>:105</code></td><td><code>escalatedThisBoot(…)</code></td><td>NONE</td><td>không tới — nhưng cũng sẽ chặn: mốc đã ghi lúc “Sửa ngay” 11:25:54 và chưa có đợt ngủ ≥ 2 giờ <span class="ev s">[SUY mã]</span></td></tr>
+</table></div>
+<ul>
+<li><b>Tiền đề thiết kế bị số đo bác bỏ</b> <span class="ev m">[ĐO]</span>: <code>AccessibilityHealGates.kt:84-85</code> và spec cũ (<code>kachi-a11y-bind-stuck-autofix.html</code> R4, §4.4) giả định “lúc xe vừa thức thì ô còn rỗng”. Thực tế: màn sáng → ô dựng sau ~6 s → YouTube vào ô → nấc toggle mất ~8 s → <b>mới</b> phân loại STUCK, lúc app khách đã nằm trong ô. Sáng 29/09 lặp y hệt (ô dựng 11:07:21.3, YouTube 11:07:23.2, STUCK 11:07:31.7). <b>Thứ tự này là cấu trúc: lượt nào cũng thua cuộc đua.</b></li>
+<li><b>Hạn mức leo chặn nhầm</b> <span class="ev s">[SUY mã]</span>: mốc <code>a11yEscalatedAt</code> được ghi cả khi <b>người bấm</b> (<code>NavConnect.kt:301</code>) và chỉ được nhả khi đo thấy một đợt ngủ sâu ≥ 2 giờ (<code>VoiceKeyKeepAliveService.kt:61-65</code>). Xe dừng nhiều lần trong ngày mà không lần nào ngủ đủ 2 giờ ⇒ chỉ lần đầu được tự chữa.</li>
+<li><b>Chấm điểm lệch</b> <span class="ev m">[ĐO]</span>: cài 2.82 lúc 11:39 ghi <code>STUCK → BOUND (sau-chua-ON)</code> dù không có lượt chữa nào — nhịp đầu của <b>mọi</b> tiến trình mới đều bị gắn nhãn “sau-chua-*” (<code>VoiceKeyKeepAliveService.kt:73-75</code>).</li>
+</ul>
+
+<h3>2.4 Vì sao không dựa vào broadcast, và cái gì còn chạy lúc màn tắt</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>Phát hiện</th><th>Mức · nguồn</th></tr>
+<tr><td><b>F2</b></td><td>Tiến trình vừa được HOME dựng lại lúc màn tắt <b>không</b> kiểm dịch vụ Hỗ trợ: <code>VoiceKeyKeepAliveService.sync</code> chỉ được gọi từ <code>bringUpShellChannel</code> (<code>KachiHomeWiring.kt:466</code>, chỉ chạy khi màn chính <b>đang hiện và có tiêu điểm</b> — <code>ShellChannelGate.kt:139-159</code>), từ <code>BootSetupService.kt:70</code> và từ công tắc phím-thoại (<code>ClusterNavBridgeKeys.kt:42</code>). Đêm 28→29 không có dòng a11y nào của pid 682 từ 18:25:42 tới 11:07:21.</td><td><span class="ev m">[ĐO]</span> mã + <code>usage-night.log</code></td></tr>
+<tr><td><b>F3</b></td><td>Kênh dadb <b>chạy được lúc màn tắt</b>: pid 29552 chạy <code>am stack list</code>, <code>service call AutoContainer…</code> từ 11:33:26.8 tới 11:33:37 trong khi <code>screen_toggled 0</code> lúc 11:33:24.475.</td><td><span class="ev m">[ĐO]</span> <code>usage-cycle2.log</code>; <code>c2-logcat:3317</code></td></tr>
+<tr><td><b>F4</b></td><td><code>SCREEN_OFF</code> phát đi lúc 11:33:25.384, <b>sau</b> lượt giết 11:33:25.182. Mở máy thì <code>BOOT_COMPLETED(from_quickboot=true)</code> vào hàng 11:34:18.072 và tới Kachi 11:34:23.7 — <b>sau</b> lúc ô đã dựng app. Báo thức <code>REBIND_WATCHDOG</code> bị ROM <code>ssc_skip</code>.</td><td><span class="ev m">[ĐO]</span> <code>c2-bcast-113538.txt</code>, <code>c1-bcast-112353.txt</code>, <code>k1-logcat-110944.txt:6049</code></td></tr>
+<tr><td>—</td><td>Lượt giết lúc tắt máy <b>không</b> hẹn khởi động lại dịch vụ nào của Kachi; lượt force-stop thật lúc “Sửa ngay” thì hẹn lại 4 dịch vụ.</td><td><span class="ev m">[ĐO]</span> <code>c2-logcat:3414-3418</code> so với <code>:2062-2069</code></td></tr>
+</table></div>
+
+<h3>2.5 “Sửa ngay”: phím sống lại, nhưng launcher không lên và YouTube mồ côi</h3>
+<ul>
+<li><span class="ev m">[ĐO]</span> “Sửa ngay” lúc 11:25:54 chữa được phím: <code>PACKAGE_RESTARTED</code> #179, <code>booster connected</code> 11:25:58.662, phím 328 ăn 11:27:34 và 11:30:41 (<code>usage-afterfix.log</code>).</li>
+<li><span class="ev m">[ĐO]</span> Nhưng lúc 11:28:13: stack 32 <code>mWindowingMode=freeform</code> trên display 0, YouTube <code>bounds=[37,136][1883,1043] visible=true</code>, <b>nằm trên</b> stack nhà; không display ≥ 2, không có dòng <code>tạo màn ảo</code> ⇒ ô không dựng lại (<code>fix-stacks-112813.txt</code>). Chủ xe 11:27:27: <i>“youtube nằm cô đơn ở chế độ freeform --&gt; vậy freeform work ở xe chứ không phải không work, launcher không lên lại, nếu giờ nhấn nút home 1-2 làn thì mới về lại đúng launcher”</i>.</li>
+<li><b>F1 — cửa sổ mồ côi do chính Kachi mở</b>, không phải do màn ảo chết làm app rơi xuống. <span class="ev m">[ĐO]</span> tác vụ #38 có <code>intent={act=MAIN cat=[LAUNCHER] flg=0x30000000 …youtube…}</code>, <code>mCallingUid=u0a138 mCallingPackage=com.byd.launcher</code> (<code>fix-activities-112813.txt:135-137</code>); cả dump chỉ có <b>một</b> tác vụ YouTube; sự kiện là <code>am_create_activity</code> mới lúc 11:25:57.261 cờ 805306368 (<code>c2-logcat:2190-2192</code>). <span class="ev s">[SUY mạnh]</span> chỉ <code>IntentAppLauncher.openInSlot</code> (<code>IntentAppLauncher.kt:20-30</code>: <code>NEW_TASK|SINGLE_TOP</code> + <code>setLaunchWindowingMode(5)</code> + khung ô) cho ra đúng bộ dấu hiệu này; nó là <code>appLauncher</code> mặc định (<code>KachiHomeActivity.kt:167</code>) và <code>LauncherWindows.reflow/placeApp</code> gọi nó khi <code>embedding=false</code>, tức khi <b>chưa</b> có kênh shell (<code>KachiHomeActivity.kt:175</code>, <code>LauncherWindows.kt:128-179</code>). <span class="ev u">[CHƯA BIẾT]</span> lời gọi cụ thể nào kích nó (ứng viên <code>KachiHomeRender.kt:74-84</code>; LauncherWindows không ghi log).</li>
+<li><span class="ev s">[SUY mạnh]</span> Launcher “không tự lên” vì cửa sổ mồ côi giữ tiêu điểm ⇒ <code>ShellChannelGate</code> (cần <code>focused</code>) không mở ⇒ ô không gắn ⇒ cửa sổ mồ côi không bị dọn. Bấm HOME thì nhà có tiêu điểm, kênh shell lên, <code>VdAppHost</code> force-stop YouTube (<code>VdAppHost.kt:251</code>) rồi mở lại vào ô (<code>c2-logcat:3035-3108</code>). Chủ xe 11:33:11: <i>“bấm HOME về OK ngay, bấm 1 lần là xong, đẹp”</i>.</li>
+<li><span class="ev m">[ĐO]</span> Freeform chạy được trên xe (stack 32 trên display 0; stack 33/34 trên display 1). Dấu vết <code>am_create_activity</code> tương tự còn có ở lượt tắt máy 28/09 18:25:43.688 (lúc màn đã tắt) và 11:33:26.526 (<code>k1-logcat:439</code>, <code>c2-logcat:3612</code>).</li>
+</ul>
+
+<h3>2.6 Nhật ký bền không có đường đọc trên bản phát hành</h3>
+<ul>
+<li><span class="ev m">[ĐO mã]</span> Tệp ở <code>filesDir/diag/a11y-bind.log</code> (<code>A11yBindJournalStore.kt:16,26</code>), bộ nhớ trong; bản phát hành không debuggable nên không <code>run-as</code>; <code>allowBackup="false"</code>. Nơi đọc duy nhất là <code>DiagActivity.kt:204</code>.</li>
+<li><span class="ev m">[ĐO]</span> <code>DiagActivity</code> khai <code>exported="false"</code> (<code>AndroidManifest.xml:89-92</code>), nút mở đã gỡ khỏi Cài đặt ngày 21/09 (<code>SettingsSectionsCast.kt:442</code>), và <code>am start -n …/DiagActivity</code> từ adb bị AMS ném ngoại lệ lúc 11:12:28 (KEY-4; nguyên văn lỗi bị <code>tail -3</code> cắt — <span class="ev s">[SUY mạnh]</span> <code>Permission Denial … not exported</code>).</li>
+<li><span class="ev m">[ĐO]</span> <b>Bốn</b> chú thích mã sai về đường đọc nhật ký / màn Chẩn đoán: <code>SettingsSectionsCast.kt:444-445</code> và <code>AndroidManifest.xml:89</code> ghi adb vẫn <code>am start</code> được; <code>SettingsSections.kt:291-299</code> cùng họ; <code>A11yBindJournalStore.kt:20</code> ghi <i>“màn Chẩn đoán đọc tệp này ra”</i> (sai vì màn đó không mở được trên bản phát hành) — gốc <code>bfbb728</code>. Bài canh <code>A11yBindStuckWiringContractTest.kt:142-151</code> khoá một đường <b>không tới được</b> (mẫu lỗi CLAUDE.md §8).</li>
+<li><span class="ev m">[ĐO]</span> Lệnh <code>diag</code> của cầu kiểm thử (<code>ClusterDiag.capture</code>, <code>KachiTestBridge.kt:410-424</code>) không chép nhật ký này và còn đòi kênh shell. Đường thay thế duy nhất hôm nay: dòng tag <code>A11yJournal</code> trong <code>kachi-logs/usage-*.log</code>.</li>
+</ul>
+
+<h3>2.7 Vạch chuẩn khoảng cách (2.82) — chủ xe dẹp</h3>
+<p><span class="ev m">[ĐO]</span> GUIDE-1 đạt hai bên (nấc n ở y = n/10 khung, lệch ≤ 1 px). Nhưng với hình xoay 90° (mặc định Seal) vạch ngang <b>sai trục</b>; với hình không xoay thì đúng trục, bên phải nấc 7 ≈ mép trong vạch vàng ~20 cm, bên trái giữa nấc 7–8 <span class="ev m">[ĐO owner]</span>. Chủ xe quyết gỡ (12:02:39). 2.82 chưa từng lên kênh OTA <span class="ev m">[ĐO]</span> nên không ai nhận vạch qua OTA; riêng xe chủ xe <b>có</b> vạch (2.82 cài tay 29/09, <code>inst-state.txt</code> <code>version_code 183</code>).</p>
+
+<h3>2.8 Google Maps: hộp “Thoát chế độ đi theo chỉ dẫn?” khoá nút “Có”</h3>
+<ul>
+<li><span class="ev m">[ĐO]</span> Kachi (uid 10138) bắn <code>VIEW google.navigation:q=&lt;đích&gt; flg=0x10000000 pkg=com.google.android.apps.maps</code> lúc đang dẫn ⇒ Maps mở một cửa sổ Dialog riêng (<code>DIM_BEHIND</code>) trên display 0; chủ xe 12:12:36: nút “Có” bị khoá, không chuyển hướng được (<code>gmaps-popup-*-121156</code>). URI dựng ở <code>VoiceAppTargets.kt:301</code>; cờ ở <code>VoiceAppIntents.kt:70</code>. Vì sao “Có” bị khoá: <span class="ev u">[CHƯA BIẾT]</span> (mã của Google; <span class="ev g">[ĐOÁN]</span> do chưa có định vị).</li>
+<li><span class="ev m">[ĐO]</span> Thêm cờ (<code>am start -W -a VIEW -d '&lt;đích&gt;' -f 0x10008000 -n …/MapsActivity</code>, từ uid shell): <code>Status: ok · WARM · 1152 ms</code>, 0 dòng <code>DIM_BEHIND</code> (<code>gmaps-exp-windows.txt</code>); chủ xe xác nhận đã dẫn sang đích mới (12:17:25).</li>
+<li>Giới hạn: một lần, từ uid 2000 (không phải uid Kachi), Maps ở <b>display 0</b>. Ca Maps đang chiếu <b>lên cụm</b> + <code>CLEAR_TASK</code>: <span class="ev u">[CHƯA BIẾT]</span>. VietMap: <span class="ev u">[CHƯA ĐO]</span>.</li>
+</ul>
+
+<h3>2.9 Tài liệu hiện có đang sai — phải đính chính cùng 2.83</h3>
+<div class="tbl"><table>
+<tr><th>Chỗ</th><th>Đang ghi</th><th>Số đo 29/09</th></tr>
+<tr><td><code>kachi-a11y-bind-stuck-autofix.html</code> §2.2 (bảng tuổi tiến trình + gạch “sống LIÊN TỤC”), R5, §4 bảng “Bằng chứng đo trên xe khớp chính xác”, §4.9 “Pass 1 rút lại”, §7 OQ1 (trích theo mục, không theo dòng — số dòng trôi khi tệp được vá)</td><td>“[ĐO] sống liên tục 10 g 13 ph ⇒ loại bỏ giả thuyết bị giết”</td><td>Pid 682 cũng “sống liên tục qua đêm” dù sinh ra từ lượt giết 18:25:41 ⇒ hình dạng số đo đó <b>không</b> loại trừ bị giết lúc tắt máy. Áp cho đêm 27→28: <span class="ev u">[CHƯA BIẾT]</span></td></tr>
+<tr><td>spec cũ: khối “Chức năng” (R2/R4, câu “chưa có app nào trong ô”) và §4.4 “Vì sao xe thức là đường chính”; <code>AccessibilityHealGates.kt:84-85</code> @<code>bfbb728</code></td><td>“Lúc xe vừa thức thì ô còn rỗng”</td><td>Sai <span class="ev m">[ĐO]</span> (§2.3)</td></tr>
+<tr><td><code>StackParse.kt:181-185</code>, <code>AccessibilityHealGates.kt:82-84</code>, <code>NavConnect.kt:273-275</code></td><td>“Màn ảo ô chết thì app khách rơi thành mảng đen/freeform mồ côi”</td><td>Cơ chế đo được là F1 (Kachi tự mở dự phòng). “Mảng đen” 28/09 cũng là F1: <span class="ev g">[ĐOÁN]</span></td></tr>
+<tr><td>Bốn chú thích mã về màn Chẩn đoán / đường đọc nhật ký (§2.6)</td><td>đường đọc nhật ký</td><td>Sai <span class="ev m">[ĐO KEY-4]</span> (§2.6)</td></tr>
+</table></div>
+
+<h3>2.10 Ngoài phạm vi 2.83</h3>
+<ul>
+<li><b>CAM-SL6-PROFILE</b> — chờ <code>getprop persist.sys.car.type</code> trên SL6; trên Seal <code>persist.sys.car.type=138</code> (cùng <code>persist.sys.vehicle_40d_code=138</code>), còn <code>ro.product.model=BYD AUTO</code>, <code>ro.product.name=DiLink3.0</code> không phân biệt đời xe <span class="ev m">[ĐO]</span>. Chủ xe 12:31:55 bỏ hướng này ⇒ <b>đóng</b> (backlog ❌ BỎ): không làm mặc định camera theo đời xe; người lái tự chọn trong picker. Cùng câu đó: SCHED-2/3 <b>không đo thêm</b>.</li>
+<li><b>CAM-SCOPE-PROFILE</b> — chờ chủ xe.</li>
+<li><b>AVM 360</b> — đóng hẳn: <code>pano_sdk.txt</code> <code>Permission denied</code> với uid shell, <code>content://carsettings/global</code> không có <code>panorama_online</code> <span class="ev m">[ĐO]</span>.</li>
+<li><b>⚠ Bảo mật — backlog <code>TEST-MODE-ACC-OFF</code></b> (chưa thuộc A–E; đề xuất chủ xe đưa vào 2.83): cửa sổ Chế độ kiểm thử — công tắc <b>duy nhất</b> chắn receiver exported <code>KachiTestBridge</code> (lệnh <code>ctl</code>/<code>hal set</code> chạm thân xe khi kèm <code>auto_confirm</code>, <code>TestBridgeCommand.kt:179-189</code>) — <b>sống qua tắt/bật máy</b>, trái câu UI <i>“Tự tắt sau 60 phút và sau khi tắt máy”</i> <span class="ev m">[ĐO]</span>. Cùng một khẳng định sai nằm ở <b>năm</b> chỗ, bản sửa (hoặc quyết định của chủ xe) phải phủ hết (CLAUDE.md §8): <code>app/src/main/res/values/strings_kachi.xml:527</code> (câu UI tiếng Việt) · <code>app/src/main/res/values-en/strings_kachi.xml:514</code> (câu UI tiếng Anh, <i>“after the engine is switched off”</i>) · <code>app/src/main/AndroidManifest.xml:306</code> (chú thích ngay cạnh receiver exported: <i>“tự tắt sau 60 phút, chết theo lần nổ máy”</i>) · <code>KachiTestBridge.kt:38</code> (KDoc hàng rào số 1: <i>“tự tắt sau 60 phút và chết theo lần nổ máy”</i>) · <code>core/…/testbridge/TestBridgeWindow.kt:14</code> (tính chất số 2: <i>“Chết theo lần nổ máy”</i>) <span class="ev m">[ĐO mã, cây làm việc 29/09]</span>. Số đo: <code>test_mode_minutes_left</code> 30 lúc 11:38:55 (<code>key5-state-113855.txt</code>) · 29 lúc 11:40:08 (<code>inst-state.txt</code>) · 22 lúc 11:46:28 (<code>usage-282-120941.log:1741</code>) ⇒ bật khoảng 11:08:55–11:09:55, rồi sống qua hai lượt tắt máy <code>am_kill</code> 11:20:50.162 (<code>c1-logcat-112312.txt:3590</code>) và 11:33:25.170 (<code>c2-logcat-113538.txt:3414</code>). Cơ chế <span class="ev m">[ĐO mã]</span>: cửa sổ khoá theo <code>boot_id</code> (<code>TestBridgeStore.kt:53-56</code>) + 60 phút <code>elapsedRealtime</code> (<code>TestBridgeWindow.kt:29,41</code>), mà BYD tắt máy không reboot. Phơi nhiễm: tới 60 phút sau khi bật, kể cả lúc xe đỗ không người. Hướng: lớp 1 của R-A đã bắt được sự kiện tắt máy ⇒ đóng cửa sổ ở đó; chưa làm thì ít nhất sửa cả năm chỗ trên cho đúng sự thật. Chủ xe quyết — <b>trước OTA</b>, vì 2.83 sẽ tới mọi xe (§9 D-10). <b>Đối chiếu 17:18</b> <span class="ev m">[ĐO grep]</span>: mã 2.83 <b>chưa</b> đụng năm chỗ này (số dòng như trên); chủ xe chưa trả lời riêng. Pass 3 chỉ sửa <b>tài liệu người dùng</b> cho đúng sự thật (<code>README.md</code> gốc · <code>HUONG-DAN-KACHI.md</code> · <code>guide/HUONG-DAN-CO-HINH.html</code> · <code>catalog/features.json</code>); năm chỗ trong mã nằm trong danh sách việc sửa mã để làm sau.</li>
+<li>Phát hiện phụ, không làm ở 2.83: stack nhà <b>có tích luỹ</b> tác vụ KachiHome <span class="ev m">[ĐO]</span> — 4, 24, 37 lúc 11:28 (<code>fix-stacks-112813.txt:7-9</code>), 4, 24, 37, 52 lúc 12:11 (<code>gmaps-popup-stacks-121156.txt:15-18</code>); lượt giết 11:20:50 không để lại tác vụ ⇒ “mỗi lần bị giết thêm một” là quá lời, cơ chế <span class="ev s">[SUY]</span>. Ô không tự dựng trong ~70 s đầu sau khi cài đè: <span class="ev u">[CHƯA BIẾT]</span> nguyên nhân.</li>
+</ul>
+
+<div class="card"><b>Cổng / phụ thuộc</b>
+<ul>
+<li><b>Cổng 1 — duyệt</b>: chủ xe đã cho làm tới APK (12:31:55 · 12:34:54 · 12:37:33), xem banner + OQ1.</li>
+<li><b>Cổng 2 — CLAUDE.md §14 (shell thô trên xe trước)</b>: phần <b>A</b> cần M-A1 + M-A2, phần <b>E</b> cho VietMap cần E-M1…E-M3/E-M5, <b>trước</b> khi viết mã tầng <code>core</code>/<code>app</code> của phần đó (bảng §4.8). Maps-trên-cụm (E-M4) là rủi ro nghiệm thu V-E4, không chặn (kế hoạch đã duyệt 12:33:13). D, B1, C không cần đo trước. ⚠ Mã A đã viết <b>trước</b> M-A1/M-A2 — lệch §14, ghi ở §9 (D-2).</li>
+<li><b>Cổng 3 — CLAUDE.md §3 (source AOSP trước khi ship)</b>: T0a fetch <code>android-10.0.0_r47</code> (+ Android 12 cho DL5) cho các khẳng định framework mà spec này dựa vào. <span class="pill ok">ĐẠT 29/09</span> <span class="ev m">[ĐO AOSP qua mirror]</span> cho a11y · AMS force-stop/<code>killApplication</code> · <code>CLEAR_TASK</code> · <code>isInteractive</code>/SCREEN_ON · HOME intent · <code>StackInfo.visible</code> (gồm cờ <code>visible</code> của mọi stack mà rào camera dựa vào, r47 + r34); <b>chưa kiểm</b>: FGS nền trên API 31+, <code>ActivityDisplay.remove</code>, mục 2–6 trên Android 12 (§4.9).</li>
+<li><b>Cổng 4 — phát hành (đổi 14:05:56)</b>: chủ xe cho OTA không qua buổi xe của mình, sau cổng kiểm off-car (§6.1, R-nf6) — <span class="pill ok">ĐẠT trên mã cuối · ĐÃ ĐĂNG 29/09</span>. Hệ quả: T0b–T0e (M-A1…M-A3, E-M1…E-M5) <b>không</b> có trước OTA ⇒ các rủi ro mà chúng lẽ ra khép lại đi thẳng tới người dùng — ghi ở §9 D-10 và trong tin nhắn gửi anh em (<code>docs/_handoff/tin-nhan-anh-em-2.83.md</code>).</li>
+</ul></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>3. Requirements</h2>
+
+<h3>R-A · Phím vô-lăng sống qua mỗi lần tắt/bật máy</h3>
+<p class="muted"><span class="ev m">[ĐO transcript]</span> Chủ xe chốt lớp 1 + lớp 2 tự chữa, lớp 3 không (12:27:07–12:34:54): chính chủ xe nêu luồng 12:27:07 <i>“là lức tắt máy thì chạy, ko đc thì lúc mở xe, kiểm tra ngay, nếu fail thì restart lại hả?”</i>; sau khi phiên bảo vệ lớp 1 (12:28:17), đáp 12:29:08 <i>“nghe có lý đó, lúc đang chạy mà lỗi thì user tự chửa ok …”</i>; phiên chốt bảng quyết định 12:29:26 (lớp 1 + 2 tự chữa); kế hoạch 12:33:13 ghi <i>“chữa phím lớp 1 + 2”</i>; chủ xe 12:34:54 <i>“ok, làm đi, làm đi”</i>. OQ2 đóng; OQ3 đóng theo mã (Pass 3).</p>
+<ul>
+<li><b>R-A1 — Lớp 1, lúc tắt máy.</b> Tiến trình Kachi được HOME dựng lại sau lượt giết của BYD (màn tắt) phải <b>tự kiểm</b> dịch vụ Hỗ trợ trong vài giây đầu đời tiến trình — <b>không</b> chờ màn chính có tiêu điểm hay kênh shell của màn chính. Nếu KẸT, màn tắt, ô không có app khách, phím-thoại bật ⇒ tự chữa bằng thang hiện có (TOGGLE → FORCE_STOP tách rời), im lặng.
+  <br><b>Chấp nhận</b>: nhật ký bền có dòng tiến trình mới sinh + dòng <code>STUCK → BOUND</code> ghi chú lớp 1, <b>trước</b> <code>SCREEN_ON</code> kế tiếp; hoặc, nếu CPU không thức đủ lâu để chạy (<span class="ev u">[CHƯA BIẾT]</span>, M-A1), lớp 2 bắt được (R-A2).</li>
+<li><b>R-A2 — Lớp 2, lúc mở xe, trước khi dựng app vào ô.</b> Khi kênh shell lên và <b>trước</b> khi ô gắn app (trước <code>applyEmbedSeam</code>), nếu dịch vụ Hỗ trợ <b>đã xác nhận</b> KẸT (<code>isInBindingServices</code> đúng) và phím-thoại bật ⇒ chữa ngay bằng FORCE_STOP, <b>bỏ</b> nấc TOGGLE (đã chứng minh vô ích với KẸT — <code>AccessibilityRebind.kt:236-258</code>). Đây là đổi luật “không nhảy cóc” (<code>AccessibilityHealGates.kt:43-47</code>) và chỉ áp cho ca KẸT đã xác nhận.
+  <br><b>Fail-open (bắt buộc — CLAUDE.md §3 rule đi kèm, §6)</b>: chỉ được <b>hoãn</b> gắn ô khi thang trả <code>FORCE_STOP</code> <b>và</b> lệnh tách rời đã bắn thật. Mọi nhánh khác — <code>NONE</code>, lệnh rỗng (<code>forceStopRebindCommand</code> trả <code>""</code> khi một mục <code>enabled_accessibility_services</code> không khớp <code>SAFE_ENTRY</code>, <code>AccessibilityRebind.kt:201-207</code> @<code>bfbb728</code>), lỗi dadb, hoặc quá hạn N giây — phải gắn ô <b>như cũ</b>. Không bao giờ để một trạng thái mà chỉ đường chữa mới làm mới được khoá ô suốt chuyến.
+  <br><b>Chấp nhận</b>: từ trạng thái kẹt lúc mở máy, không có app khách nào được gắn vào ô trước khi phím Bound (trừ nhánh fail-open ở trên); phím 328 ăn ≤ 30 s sau <code>SCREEN_ON</code>; test thuần/nối dây “KẸT + NONE ⇒ vẫn gắn ô” và “KẸT + lệnh rỗng ⇒ vẫn gắn ô”.</li>
+<li><b>R-A3 — Lớp 3, đang chạy: không tự giết.</b> Khi ô đã gắn (hoặc có app khách hiện) và màn sáng, đường <b>tự động</b> tối đa chỉ chạy nấc TOGGLE (hành vi hiện có, CLAUDE.md §6), <b>không bao giờ</b> FORCE_STOP. Người lái tự bấm “Sửa ngay” (xem R-B).
+  <br><b>Chấp nhận</b>: test thuần + test nối dây khoá: pha “đang chạy” ⇒ không có FORCE_STOP tự động.</li>
+<li><b>R-A4 — Hạn mức theo tiến trình, không theo đợt ngủ.</b> Bỏ luật “một lần mỗi lần nổ máy, nhả khi ngủ ≥ 2 giờ”. Thay bằng: tiến trình sinh ra <b>từ chính lượt chữa của mình</b> (sinh trong cửa sổ ngắn sau mốc leo) thì <b>không</b> được leo; tiến trình sinh do <b>bị giết từ bên ngoài</b> (BYD, crash, OOM) thì được leo <b>một</b> lần; tiến trình <b>đã leo trong chính đời mình</b> (<code>escalatedAt ≥ procStartElapsed</code> — lệnh tách rời không giết được nó: dadb rớt giữa <code>sh(cmd)</code>, <code>nohup</code> không chạy) thì <b>không</b> leo lại. Mốc vẫn ghi bền <b>trước</b> khi bắn lệnh (<code>commit()</code>, CLAUDE.md §5).
+  <br><b>Chấp nhận</b>: không thể có vòng giết–dựng–giết; tắt/bật máy nhiều lần trong ngày (không ngủ dài) thì <b>mỗi</b> lần đều được tự chữa.</li>
+<li><b>R-A5 — Không dựa vào broadcast để chữa trước.</b> <code>SCREEN_OFF</code> tới sau lượt giết, <code>BOOT_COMPLETED</code> tới sau lúc ô dựng (F4) ⇒ chúng không được là ngòi nổ chính của lớp 1/lớp 2.</li>
+</ul>
+
+<h3>R-B · “Sửa ngay” về màn nhà, không để app mồ côi</h3>
+<ul>
+<li><b>R-B1 — Cấm đường mở dự phòng khi chưa biết kết quả dò kênh shell.</b> <code>LauncherWindows.reflow/placeApp</code> chỉ được mở app bằng <code>IntentAppLauncher</code> (freeform trên display 0) khi đã <b>chắc</b> không có kênh shell (dò xong, thất bại đã phân loại). Khi đang dò (chưa biết) ⇒ không mở gì, chờ.
+  <br><b>Chấp nhận</b>: sau “Sửa ngay” lúc ô đang có YouTube: không có <code>am_create_activity</code> cờ <code>805306368</code> (= <code>0x30000000</code>) nào từ uid Kachi; không stack freeform nào của app khách trên display 0; YouTube quay lại màn ảo <code>kachi-slot</code>.</li>
+<li><b>R-B2 — Launcher tự lên.</b> Sau “Sửa ngay”, KachiHome có tiêu điểm trên display 0 <b>không cần</b> bấm HOME, trong ≤ ~3 s sau khi tiến trình mới sinh; ô dựng lại. Nếu đo sau R-B1 vẫn không đạt ⇒ thêm bước <code>am start</code> màn nhà <b>của chính mình</b> vào lệnh tách rời, <b>chỉ</b> ở nhánh người bấm (B2, §4.4). <i>Triển khai: nút bấm luôn về màn nhà <b>trừ</b> khi màn camera của xe đang hiện hoặc đọc hỏng (rào an toàn thêm lúc làm — §3.x R-B2, §4.3, D-15).</i></li>
+<li><b>R-B3 — Hành vi ngoài xe giữ nguyên.</b> Máy ảo / xe chưa duyệt gỡ lỗi USB (không dadb) vẫn mở app vào ô qua đường dự phòng như trước, chỉ chậm thêm đúng một lượt dò.</li>
+</ul>
+
+<h3>R-C · Nhật ký dịch vụ Hỗ trợ đọc được trên bản phát hành</h3>
+<ul>
+<li><b>R-C1 — Lệnh cầu kiểm thử <code>a11y_log</code></b> chạy được khi <b>chưa</b> có màn chính và <b>không</b> cần kênh shell: trả N dòng cuối nhật ký, mốc <code>a11yEscalatedAt</code>, pid, <code>elapsedRealtime</code> lúc sinh tiến trình, uptime.</li>
+<li><b>R-C2 — Bản sao ở bộ nhớ ngoài</b> <code>kachi-logs/a11y-bind.log</code> (cùng thư mục với <code>usage-*.log</code>, <code>adb pull</code> được kể cả khi Kachi chết). Thư mục không sẵn (null lúc vừa khởi động) ⇒ bỏ qua an toàn, bản trong <code>filesDir</code> vẫn ghi.</li>
+<li><b>R-C3 — Nhật ký phân biệt nguồn gốc tiến trình</b>: sinh từ lượt tự chữa · sinh sau cài đè (<code>MY_PACKAGE_REPLACED</code>) · sinh sau khi bị giết từ ngoài. Nhãn “sau-chua-*” chỉ dùng cho loại đầu.</li>
+<li><b>R-C4 — Sửa ba chú thích sai</b> và viết lại bài canh <code>A11yBindStuckWiringContractTest.kt:142-151</code> để khoá đường đọc <b>tới được thật</b> (R-C1 + R-C2).</li>
+<li><b>Riêng tư</b>: nội dung chỉ gồm mốc giờ, hai đồng hồ, pid, trạng thái, ghi chú lớp — không tên app, không vị trí.</li>
+</ul>
+
+<h3>R-D · Gỡ hẳn vạch chuẩn khoảng cách</h3>
+<ul>
+<li><b>R-D1</b> Xoá mã, khoá prefs khỏi danh sách người dùng + cầu kiểm thử, chuỗi, hàng Cài đặt, test. Cài đặt camera còn <b>14</b> hàng (từ 16); <code>CameraSettingsIa.USER_KEYS</code> 16 → 14; <code>TestBridgeWritableKeys.ALL</code> 46 → 44.</li>
+<li><b>R-D2</b> Hai khoá <code>camera_guide_*</code> vào danh sách “đã xoá hẳn” của test (cùng mẫu <code>camera_source</code>/<code>camera_hal_mode</code>) để không quay lại.</li>
+<li><b>R-D3</b> Không đổi gì khác ở camera: CAM-SEAL, CAM-B5, CAM-KEEP phải giữ nguyên kết quả.</li>
+</ul>
+
+<h3>R-E · <code>CLEAR_TASK</code> cho lệnh bắt đầu dẫn đường</h3>
+<ul>
+<li><b>R-E1 — Theo vai trò, không theo tên gói.</b> Chỉ các lượt <b>giao điểm đến</b> cho app có vai trò dẫn đường (<code>VoiceAppKind.NAV</code>) — giọng nói (<code>runNav</code>, <code>runNavSaved</code>) và tự dẫn theo lịch (<code>ScheduledNavApplier</code>) — mới thêm <code>FLAG_ACTIVITY_CLEAR_TASK</code>. Được bật cho target nào là <b>dữ liệu có mức bằng chứng</b> của target (cùng khuôn <code>coordEvidence</code>), không có <code>if (pkg == …)</code>.</li>
+<li><b>R-E2 — Không đụng</b>: nhạc, đường <code>watch</code> của YouTube, <code>OpenOnly</code>/mở app trơn, lệnh chiếu cụm <code>am start --display 1</code> qua shell. Vẫn cấm <code>CLEAR_TOP</code>.</li>
+<li><b>R-E3 — Đo trước khi bật</b>: Google Maps ở display 0 đã có bằng chứng <span class="ev m">[ĐO 29/09]</span> + chủ xe xác nhận (12:17:25) ⇒ <b>bật</b> cho Maps ngay ở 2.83, đúng kế hoạch đã duyệt (phiên 12:33:13 <i>“Riêng cờ này tôi chỉ bật cho Google Maps (đã đo trên xe hôm nay) … VietMap giữ nguyên hành vi cũ”</i>; chủ xe 12:34:54 <i>“ok, làm đi, làm đi”</i>). VietMap (E-M1…E-M3, E-M5) và Waze phải có phép đo shell <b>trước</b>; chưa đo ⇒ giữ <code>NEW_TASK</code> như cũ. Ca Maps <b>đang chiếu lên cụm</b> + <code>CLEAR_TASK</code> (E-M4): <span class="ev u">[CHƯA BIẾT]</span> — là <b>rủi ro nghiệm thu</b> V-E4, không chặn việc bật cho Maps.
+  <br><b>Chấp nhận</b>: Maps đang dẫn, đổi đích bằng giọng/lịch ⇒ không hộp thoại, dẫn thẳng đích mới; VietMap theo kết quả E-M3; Maps-trên-cụm không mất bản đồ trên cụm (V-E4) — không đạt ⇒ thêm luật loại trừ đo được (§4.6) ở bản sau.</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Mọi quyết định (pha chữa, hạn mức, luật dự phòng, luật <code>CLEAR_TASK</code>) là <b>hàm thuần</b> ở <code>:core</code>, test off-car. <code>:app</code> chỉ giữ I/O.</li>
+<li><b>R-nf2</b> — Mỗi lệnh đổi state hệ thống trả lời đủ bốn câu CLAUDE.md §4 (§4.7). State sống lâu hơn tiến trình có marker ghi <b>trước</b> (§5).</li>
+<li><b>R-nf3</b> — Generic (§7): phân nhánh theo <b>đo</b> (dump, stack, display, evidence dữ liệu), không theo tên gói.</li>
+<li><b>R-nf4</b> — Không tệp Kotlin nào vượt 500 dòng. Đang sát trần, <b>không</b> được dài thêm: <code>KachiTestBridge.kt</code> 497 · <code>CameraOverlayView.kt</code> 498 (sẽ giảm) · <code>KachiHomeWiring.kt</code> 492 · <code>Prefs.kt</code> 488 · <code>KachiHomeActivity.kt</code> 475 · <code>VoiceAppTargets.kt</code> 475 ⇒ mã mới vào tệp riêng. <i>Mã thật lệch: <code>VoiceAppTargets.kt</code> 475 → 490 — §9 D-6, cần quyết.</i></li>
+<li><b>R-nf5</b> — Mỗi bài học hiện trường có test hồi quy dựng từ fixture nguyên văn (CLAUDE.md §10), đã lọc dữ liệu riêng tư (không <code>&lt;đích&gt;</code> thật, không IP).</li>
+<li><b>R-nf6</b> — Bump <b>2.83 (184)</b> (CLAUDE.md §9); <b>cổng OTA = cổng off-car</b> (chủ xe 14:05:56 — banner): <code>./gradlew test --rerun-tasks</code> xanh, <code>lintRelease</code> sạch, E2E máy ảo đạt, senior review lặp tới 0 finding, quét bảo mật (global §6) sạch, <code>apksigner verify</code> + <code>aapt2 dump badging</code> đúng (cert, <code>versionCode=184</code>, không debuggable), APK đặt đúng khuôn <code>apk/Kachi-2.83-release.apk</code>; một mục đỏ ⇒ không đăng, báo chủ xe. §6.2 là nghiệm thu hiện trường <b>sau</b> OTA; OTA không lùi bản (<code>UpdateChecker.kt:87</code>) ⇒ lỗi hiện trường phải ra 2.84; mọi hàm mới có ≥ 1 call site production (§8); tài liệu cập nhật trong <b>cùng</b> commit với mã (CLAUDE.md §16, R2.1).</li>
+</ul>
+
+<h3>3.x Đối chiếu yêu cầu ↔ mã 2.83 (17:18 · rào camera + phát hành: Pass 5)</h3>
+<p class="muted">Yêu cầu ở trên giữ nguyên chữ đã duyệt. Bảng này nói mã <b>thật</b> đáp ứng từng yêu cầu tới đâu <span class="ev m">[ĐO <code>git diff HEAD</code>, test, E2E máy ảo]</span>; chỗ làm khác có mã <b>D-n</b> ở §9. “Trên xe” = chưa đo, vì 2.83 đi OTA không qua buổi xe (banner).</p>
+<div class="tbl"><table>
+<tr><th>Yêu cầu</th><th>Mã 2.83</th><th>Kết quả</th></tr>
+<tr><td>R-A1 lớp 1</td><td><code>A11yLifecycleHeal.install</code> gọi đầu <code>KachiApplication.onCreate</code> (<code>KachiApplication.kt:44</code>), không qua FGS; tiến trình khởi động lúc <code>isInteractive()==false</code> ⇒ pha <code>TAT_MAY</code>; kẹt bền ⇒ FORCE_STOP thẳng (bỏ nấc toggle vô ích)</td><td><span class="ok">Đạt</span> máy ảo ×3 · trên xe <span class="ev u">[CHƯA ĐO]</span> · D-1, D-10</td></tr>
+<tr><td>R-A2 lớp 2</td><td>Bộ thu động <code>ACTION_SCREEN_ON</code> ở tầng tiến trình, ân hạn 10 s, chỉ khi có claim lớp 1 mới hơn lần màn bật trước (<code>moXeFollowsTatMay</code>). <b>Không hoãn gắn ô</b>: cửa sổ mồ côi nếu có do đuôi <code>IF_ORPHANED</code> dọn</td><td><span class="warn">Đạt một phần</span> (không có “trước khi dựng app vào ô”) · D-1</td></tr>
+<tr><td>R-A3 lớp 3</td><td><code>healStep(…, RUNNING)</code> kẹt ⇒ NONE; <code>escalateOnLifecycle</code> từ chối <code>RUNNING</code>. Thêm: đã biết kẹt thì watchdog 30 s và alarm 60 s <b>không</b> tắt/bật cài đặt, chỉ kiểm lại (chỉ đọc) mỗi 10 phút</td><td><span class="ok">Đạt</span> + mở rộng · D-12</td></tr>
+<tr><td>R-A4 hạn mức</td><td>Một lượt mỗi <b>sự kiện</b>: claim <code>a11y_tat_may_elapsed</code> / <code>a11y_mo_xe_elapsed</code> ghi <code>commit()</code> <b>trước</b> khi đo; ghi hỏng ⇒ bỏ lượt. Không dùng cửa sổ 60 s <code>bornFromOwnEscalation</code></td><td><span class="ok">Đạt</span> theo cách khác (máy ảo: đúng 1 force-stop mỗi sự kiện) · D-4</td></tr>
+<tr><td>R-A5</td><td>Ngòi lớp 1 = tiến trình khởi động; lớp 2 = <code>SCREEN_ON</code> (mốc kịp nhất, §2.4) có cổng claim; không dùng <code>SCREEN_OFF</code>/<code>BOOT_COMPLETED</code></td><td><span class="ok">Đạt</span></td></tr>
+<tr><td>R-B1</td><td>Không làm: đường dự phòng <code>IntentAppLauncher</code> (gốc cửa sổ mồ côi) còn nguyên</td><td>Không làm · D-3</td></tr>
+<tr><td>R-B2</td><td>Nút bấm ⇒ đuôi <code>HomeTail.ALWAYS</code> = <code>GO_HOME_UNLESS_CAMERA ; sleep 3 ; RETURN_HOME_IF_ORPHANED</code> (<code>AccessibilityRebind.kt:225</code>): về màn nhà, 3 s sau đo lại cửa sổ mồ côi, tối đa 2 lần Home. <b>Mọi</b> lần Home của cả hai đuôi qua <b>một</b> cửa rào camera: bỏ Home nếu bất kỳ stack <code>visible=true</code> nào của display 0 là <code>com.byd.avc/</code> (kể cả dưới PIP / cửa sổ mồ côi); đọc hỏng / không có dòng <code>visible=true</code> ⇒ không Home. Phím vẫn đã được chữa trong mọi ca</td><td><span class="ok">Đạt</span> máy ảo (ca 5c + mồ côi mô phỏng) · rào camera <span class="ok">Đạt</span> máy ảo (Settings đóng vai camera, mksh) + <code>ForceStopReturnHomeTest</code> 18/0 · trên xe <span class="ev s">[SUY]</span> · D-14, D-15</td></tr>
+<tr><td>R-B3</td><td>B1 không làm ⇒ hành vi ngoài xe không đổi</td><td>Tầm thường</td></tr>
+<tr><td>R-C1</td><td>Lệnh cầu <b><code>a11ylog</code></b> (không phải <code>a11y_log</code>), chỉ đọc, không cần màn chính</td><td><span class="ok">Đạt</span> máy ảo, cả bản release · D-5</td></tr>
+<tr><td>R-C2</td><td>Không có tệp bản sao; thay bằng dòng logcat <code>journal &lt;dòng&gt; prev=&lt;trạng thái&gt;</code> (tag <code>A11yJournal</code>) nằm trong <code>kachi-logs/usage-*.log</code></td><td>Thay thế · D-5</td></tr>
+<tr><td>R-C3</td><td>Nhãn <code>sau-chua-*</code> chỉ cho tiến trình khởi động <b>đầu tiên</b> sau lượt leo (<code>firstStartAfterHeal</code> + <code>bornFromOwnHeal</code>); chưa có nhãn riêng “cài đè” / “bị giết từ ngoài”</td><td><span class="warn">Một phần</span> · D-13</td></tr>
+<tr><td>R-C4</td><td>KDoc <code>A11yBindJournalStore</code> đã sửa; 3 chú thích còn sai (danh sách việc sửa mã); bài canh mới <code>A11yLogBridgeWiringContractTest</code></td><td><span class="warn">Một phần</span> · D-5</td></tr>
+<tr><td>R-D1…D3</td><td>Gỡ hết; <code>USER_KEYS</code> 14, khoá camera 29, danh sách trắng cầu 44; grep trong mã chạy = 0</td><td><span class="ok">Đạt</span> · D-7</td></tr>
+<tr><td>R-E1, R-E2</td><td>Dữ liệu <code>VoiceAppTarget.clearTaskOnNav</code> (chỉ app NAV), một cửa <code>destinationHandoff</code> cho giọng nói + lịch, cờ dựng ở <code>launchFlags</code>; nhạc/watch/mở trơn/chiếu cụm không đổi; ý-định dự phòng <b>không</b> mang cờ</td><td><span class="ok">Đạt</span> · D-6</td></tr>
+<tr><td>R-E3</td><td>Google Maps bật; VietMap, Waze giữ <code>NEW_TASK</code>. Maps đang chiếu cụm: <span class="ev s">[SUY từ AOSP]</span> task ở lại display cũ (§4.6), trên xe <span class="ev u">[CHƯA ĐO]</span> (V-E4)</td><td><span class="ok">Đạt</span> cho Maps display 0 (máy ảo)</td></tr>
+<tr><td>R-nf1…nf3, nf5</td><td>Luật thuần ở <code>:core</code>; bốn câu §4 ở §4.7; không <code>if (pkg == …)</code>; fixture xe <code>a11y-0929/*</code>, <code>am-stack-list-oncar-2026-09-29-*</code></td><td><span class="ok">Đạt</span></td></tr>
+<tr><td>R-nf4</td><td><code>VoiceAppTargets.kt</code> 475 → 490 (vẫn dưới trần 500 của luật global §4.1)</td><td><span class="warn">Lệch luật chặt của spec</span> · D-6</td></tr>
+<tr><td>R-nf6</td><td>Bump 184/2.83; cổng OTA trên mã cuối: test 6 411 / 0 · <code>lintDebug</code> 0 lỗi · E2E máy ảo · review CLEAN (A–E + rào camera lượt 3) · APK ký đúng, 184/2.83, không debuggable, 0 <code>TEST_</code> · quét bảo mật trên diff của commit đăng; APK đúng khuôn <code>apk/Kachi-2.83-release.apk</code></td><td><span class="ok">Đạt · đã đăng OTA 29/09</span> (§6.1; <code>lintRelease</code> đầy đủ chỉ có báo cáo 13:19 — V-lint)</td></tr>
+</table></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>4. Design</h2>
+<p class="muted"><b>Viết lại theo mã ở Pass 3</b> — đối chiếu cây làm việc lúc 17:18 (tệp mã sửa muộn nhất 16:40:13; senior review lượt cuối CLEAN, không sửa gì) <span class="ev m">[ĐO <code>git diff HEAD</code> + <code>stat</code>]</span>. Mọi <code>file:line</code> ở mục này là của cây làm việc lúc đó — cũng là mã của bản đăng, trừ <code>AccessibilityRebind.kt</code> (rào camera, đọc lại ở Pass 5 trên mã bản đăng). Thiết kế viết trước mã (Pass 0–2) khác ở đâu: §9.</p>
+
+<h3>4.1 Luồng chữa theo mã — ba lớp và nút bấm</h3>
+<div class="diagram">
+<svg viewBox="0 0 900 760" role="img" aria-label="Luồng chữa phím vô-lăng của 2.83 theo mã: lớp 1 khi tiến trình launcher khởi động lúc màn không tương tác, lớp 2 khi có ACTION_SCREEN_ON sau một lần tắt máy, lớp 3 là watchdog chỉ đo; lớp 1 và 2 đo kẹt bền hai lần cách năm giây rồi vào escalateIfStuck; nút Kiểm tra Sửa ngay cũng vào đó với userAsked; healStep chọn FORCE_STOP cho lớp 1, lớp 2 và người bấm khi kẹt, còn lớp 3 thì không; cổng pha hỏi lại ngay trước khi bắn, ghi mốc rồi bắn lệnh tách rời; đuôi về màn nhà có điều kiện cho lớp 1 và 2, vô điều kiện cho người bấm; tiến trình mới được chấm điểm một lần và không mở lượt thứ hai cho cùng sự kiện">
+  <defs>
+    <marker id="c-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="c-bad" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-bad" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="c-ok" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-ok" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+
+  <!-- mũi tên -->
+  <path class="ln" d="M 150 72 L 150 92" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 450 72 L 450 92" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 750 72 L 750 92" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 150 166 L 150 186" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 450 166 L 450 186" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 300 256 L 300 280" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 750 256 L 750 280" marker-end="url(#c-acc)"/>
+  <path class="ln" d="M 630 166 L 630 177 L 600 177 L 600 280" marker-end="url(#c-acc)"/>
+  <text class="ts" x="592" y="272" text-anchor="end">watchdog GRANT → toggle → tới đây (RUNNING)</text>
+  <path class="ln-bad" d="M 450 346 L 450 366" marker-end="url(#c-bad)"/>
+  <path class="ln-bad" d="M 450 424 L 450 444" marker-end="url(#c-bad)"/>
+  <path class="ln-bad" d="M 230 520 L 230 546" marker-end="url(#c-bad)"/>
+  <path class="ln-bad" d="M 670 520 L 670 546" marker-end="url(#c-bad)"/>
+  <path class="ln-ok" d="M 230 624 L 230 652" marker-end="url(#c-ok)"/>
+  <path class="ln-ok" d="M 670 624 L 670 652" marker-end="url(#c-ok)"/>
+
+  <!-- hàng 0: ba ngòi -->
+  <rect class="bx-new" x="15" y="14" width="270" height="58" rx="12"/>
+  <text class="t" x="150" y="36" text-anchor="middle">LỚP 1 · tiến trình khởi động</text>
+  <text class="ts" x="150" y="53" text-anchor="middle">Application.onCreate → install</text>
+  <text class="ts" x="150" y="66" text-anchor="middle">isInteractive() == false ⇒ TAT_MAY</text>
+
+  <rect class="bx-new" x="315" y="14" width="270" height="58" rx="12"/>
+  <text class="t" x="450" y="36" text-anchor="middle">LỚP 2 · ACTION_SCREEN_ON</text>
+  <text class="ts" x="450" y="53" text-anchor="middle">bộ thu động ở tầng tiến trình</text>
+  <text class="ts" x="450" y="66" text-anchor="middle">onReceive chỉ lấy mốc, đẩy luồng nền</text>
+
+  <rect class="bx" x="615" y="14" width="270" height="58" rx="12"/>
+  <text class="t" x="750" y="36" text-anchor="middle">LỚP 3 · đang chạy</text>
+  <text class="ts" x="750" y="53" text-anchor="middle">watchdog 30 s · alarm 60 s</text>
+  <text class="ts" x="750" y="66" text-anchor="middle">(khi keep-alive chết) · Preflight</text>
+
+  <!-- hàng 1: cổng -->
+  <rect class="bx-new" x="15" y="94" width="270" height="72" rx="12"/>
+  <text class="t" x="150" y="114" text-anchor="middle">tatMayMayRun</text>
+  <text class="ts" x="150" y="131" text-anchor="middle">chưa claim cho lần tắt máy này</text>
+  <text class="ts" x="150" y="145" text-anchor="middle">(hoặc có mở-xe xen giữa · quá 10 ph)</text>
+  <text class="tm" x="150" y="159" text-anchor="middle">claim a11y_tat_may_elapsed commit()</text>
+
+  <rect class="bx-new" x="315" y="94" width="270" height="72" rx="12"/>
+  <text class="t" x="450" y="114" text-anchor="middle">moXeFresh → claim → ân hạn</text>
+  <text class="tm" x="450" y="131" text-anchor="middle">claim a11y_mo_xe_elapsed commit()</text>
+  <text class="ts" x="450" y="145" text-anchor="middle">withinMoXeGrace ≤ 10 s</text>
+  <text class="ts" x="450" y="159" text-anchor="middle">moXeFollowsTatMay: có claim lớp 1 mới hơn</text>
+
+  <rect class="bx-new" x="615" y="94" width="270" height="72" rx="12"/>
+  <text class="t" x="750" y="114" text-anchor="middle">watchdogStep</text>
+  <text class="ts" x="750" y="131" text-anchor="middle">đã gắn ⇒ NONE</text>
+  <text class="ts" x="750" y="145" text-anchor="middle">chưa gắn, chưa biết kẹt ⇒ GRANT</text>
+  <text class="ts" x="750" y="159" text-anchor="middle">đã biết kẹt ⇒ NONE; 10 ph ⇒ RECHECK (đọc)</text>
+
+  <!-- hàng 2 -->
+  <rect class="bx-new" x="15" y="188" width="570" height="68" rx="12"/>
+  <text class="t" x="300" y="209" text-anchor="middle">healIfStuck — phím-thoại bật? · đo · chờ 5 s · đo lại ⇒ KẸT BỀN</text>
+  <text class="ts" x="300" y="227" text-anchor="middle">đo = binder (gắn ⇒ 0 lệnh shell), không thì dumpsys accessibility qua dadb</text>
+  <text class="ts" x="300" y="243" text-anchor="middle">chờ: hỏi lại pha mỗi 250 ms — pha qua ⇒ bỏ lượt (nhường lớp 2)</text>
+
+  <rect class="bx-new" x="615" y="188" width="270" height="68" rx="12"/>
+  <text class="t" x="750" y="209" text-anchor="middle">NÚT “Kiểm tra / Sửa ngay”</text>
+  <text class="ts" x="750" y="227" text-anchor="middle">grantAccessibilityDetailed(reset = true)</text>
+  <text class="ts" x="750" y="243" text-anchor="middle">⇒ userAsked = true</text>
+
+  <!-- hàng 3 -->
+  <rect class="bx" x="15" y="282" width="870" height="64" rx="12"/>
+  <text class="t" x="450" y="303" text-anchor="middle">NavConnect.escalateIfStuck — dumpsys lần nữa · noteStuckDump · healStep(bound, kẹt, wanted, userAsked, pha)</text>
+  <text class="ts" x="450" y="321" text-anchor="middle">chưa kẹt ⇒ TOGGLE · kẹt + RUNNING ⇒ NONE (lớp 3 không tự giết) · kẹt + TAT_MAY / MO_XE ⇒ FORCE_STOP · kẹt + người bấm ⇒ FORCE_STOP</text>
+  <text class="ts" x="450" y="337" text-anchor="middle">lớp 1/2 vào qua escalateOnLifecycle (bỏ nấc toggle ~8 s, single-flight riêng, hạn đọc 30 s)</text>
+
+  <!-- hàng 4 -->
+  <rect class="bx-bad" x="15" y="368" width="870" height="56" rx="12"/>
+  <text class="t" x="450" y="390" text-anchor="middle">fireGate hỏi lại pha NGAY trước khi bắn → ghi a11y_forcestop_elapsed commit() → sh(lệnh tách rời)</text>
+  <text class="ts" x="450" y="408" text-anchor="middle">TAT_MAY: màn vẫn tắt · MO_XE: màn vẫn bật + còn trong ân hạn · người bấm: không qua cổng pha · luồng bị interrupt ⇒ không bắn</text>
+
+  <!-- hàng 5 -->
+  <rect class="bx-bad" x="15" y="446" width="870" height="74" rx="12"/>
+  <text class="t" x="450" y="467" text-anchor="middle">forceStopRebindCommand — lệnh tách rời (không đổi phần đầu so với 2.81)</text>
+  <text class="tm" x="450" y="487" text-anchor="middle">nohup sh -c 'am force-stop com.byd.launcher ; sleep 4 ; settings put secure enabled_accessibility_services "…:&lt;mình&gt;" ;</text>
+  <text class="tm" x="450" y="503" text-anchor="middle">settings put secure accessibility_enabled 1 ; sleep 2 ; &lt;đuôi về nhà&gt;' &gt;/dev/null 2&gt;&amp;1 &lt;/dev/null &amp;</text>
+
+  <!-- hàng 6: hai đuôi -->
+  <rect class="bx-new" x="15" y="548" width="430" height="76" rx="12"/>
+  <text class="t" x="230" y="569" text-anchor="middle">Đuôi IF_ORPHANED — lớp 1 / lớp 2</text>
+  <text class="ts" x="230" y="587" text-anchor="middle">đỉnh display 0 mang dấu vân tay freeform · fullscreen · standard</text>
+  <text class="ts" x="230" y="602" text-anchor="middle">⇒ qua rào camera ⇒ am start -a MAIN -c HOME; không khớp ⇒ thôi</text>
+  <text class="ts" x="230" y="617" text-anchor="middle">rào: camera hiện ở stack nào / đọc hỏng ⇒ bỏ Home (D-15)</text>
+
+  <rect class="bx-new" x="455" y="548" width="430" height="76" rx="12"/>
+  <text class="t" x="670" y="569" text-anchor="middle">Đuôi ALWAYS — người bấm</text>
+  <text class="ts" x="670" y="587" text-anchor="middle">GO_HOME_UNLESS_CAMERA ; sleep 3 ; đuôi IF_ORPHANED</text>
+  <text class="ts" x="670" y="602" text-anchor="middle">tối đa 2 lần Home — lần 2 bắt cửa sổ nổi do KachiHome</text>
+  <text class="ts" x="670" y="617" text-anchor="middle">dựng tươi mở lại (ca 5c) · owner: “nút … phải trả về home”</text>
+
+  <!-- hàng 7 -->
+  <rect class="bx-ok" x="15" y="654" width="870" height="94" rx="13"/>
+  <text class="t" x="450" y="676" text-anchor="middle">Tiến trình Kachi mới (hệ dựng lại vì là HOME) — Bound lại qua onHandleForceStop + lắp lại</text>
+  <text class="ts" x="450" y="696" text-anchor="middle">khởi động ĐẦU TIÊN sau lượt leo (≤ 2 ph, chưa ai nhận) ⇒ chấm điểm 15 s sau mốc: sau-chua-ON / sau-chua-VAN-TAT (firstStartAfterHeal)</text>
+  <text class="ts" x="450" y="714" text-anchor="middle">màn còn tắt ⇒ tatMayMayRun thấy claim của CÙNG lần tắt máy ⇒ không mở lượt thứ hai (chống vòng giết–dựng–giết)</text>
+  <text class="ts" x="450" y="732" text-anchor="middle">lượt của lớp 2 làm tiến trình dựng lại lúc màn ĐANG bật ⇒ không phải lớp 1, và không có SCREEN_ON mới ⇒ cũng không lặp</text>
+</svg>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.12);border-color:var(--accent)"></span> mới ở 2.83</span>
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> có sẵn, đổi luật</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.14);border-color:var(--warn)"></span> đường giết launcher</span>
+  <span class="sw"><span class="box" style="background:rgba(26,127,55,.14);border-color:var(--ok)"></span> đích khoẻ / chặn vòng lặp</span>
+</div>
+
+<h3>4.2 A — tự chữa theo vòng đời (lớp 1 · lớp 2 · lớp 3)</h3>
+<h4>Chỗ móc và luồng</h4>
+<ul>
+<li><b>Một móc duy nhất</b>: <code>A11yLifecycleHeal.install(this)</code> ở <code>KachiApplication.kt:44</code>, đứng <b>trước</b> <code>AppContainer.get</code>, chỉ ở tiến trình launcher (tiến trình <code>:tts</code>/<code>:wake</code> đã thoát sớm). Trên luồng chính chỉ hỏi binder <code>PowerManager.isInteractive</code> và đăng ký bộ thu; mọi đọc prefs/shell đi một luồng nối tiếp <code>kachi-a11y-lifecycle</code> (<code>A11yLifecycleHeal.kt:103-105</code>, <code>:112-125</code>).</li>
+<li><b>Vì sao bộ thu ở tầng tiến trình, không ở FGS keep-alive</b> <span class="ev m">[ĐO xe c2]</span>: màn bật 11:34:14.236 nhưng <code>VoiceKeyKeepAliveService</code> lên lại 11:34:18.725 (BYD giết nó lúc tắt máy, chỉ màn chính gọi <code>sync()</code> lại) ⇒ đăng ký trong service là lỡ đúng lần màn bật cần bắt; tiến trình launcher thì được HOME dựng lại ngay sau lượt giết (<code>A11yLifecycleHeal.kt:44-47</code>). Đồng thời tránh được câu hỏi FGS khởi chạy từ nền trên API 31+ cho lớp 1.</li>
+<li><b>Lớp 1</b> (<code>onProcessStart</code>, <code>:138-159</code>): chấm điểm lượt leo trước nếu đúng tiến trình đầu tiên sau lượt đó → <code>tatMayMayRun</code> → claim <code>a11y_tat_may_elapsed</code> bằng <code>commit()</code> (<b>ghi hỏng ⇒ không chữa</b>: claim là thứ duy nhất ngăn tiến trình do chính lượt này dựng lại mở lượt thứ hai) → <code>healIfStuck(TAT_MAY)</code>.</li>
+<li><b>Lớp 2</b> (<code>onScreenOn</code>, <code>:163-185</code>): đọc mốc mở-xe cũ <b>một lần trước khi claim</b> → <code>moXeFresh</code> → claim <code>a11y_mo_xe_elapsed</code> (claim luôn ghi, kể cả khi lỡ ân hạn — nó là bằng chứng “đã mở xe” cho lớp 1) → <code>withinMoXeGrace</code> → <code>moXeFollowsTatMay</code> (tắt/bật màn lúc đang lái không tính) → <code>healIfStuck(MO_XE)</code>.</li>
+<li><b>healIfStuck</b> (<code>:255-279</code>): phím-thoại tắt ⇒ không đo (cùng cổng <code>wanted</code>) → đo → ghi nhật ký → chờ <code>STUCK_CONFIRM_GAP_MS</code> 5 s trong khi hỏi lại pha mỗi 250 ms → đo lại → <code>stuckPersistent</code> ⇒ <code>NavConnect.escalateOnLifecycle(app, phase) { stillInPhase(…) }</code>. Không tự dựng lệnh nào ở đây.</li>
+<li><b>escalateOnLifecycle</b> (<code>NavConnect.kt:224</code>): từ chối <code>RUNNING</code>; single-flight <b>riêng</b> (cố ý không dùng chung <code>grantingAcc</code> của đường grant — <span class="ev m">[ĐO xe c2]</span> lượt grant của Preflight chạy 11:34:19 → 11:34:29,7, phủ trọn ân hạn mở xe); đi thẳng vào <code>escalateIfStuck</code>, bỏ nấc toggle ~8 s; phiên dadb hạn đọc 30 s.</li>
+<li><b>escalateIfStuck</b> (<code>NavConnect.kt:306</code>): đọc dump lần nữa → <code>A11yLifecycleHeal.noteStuckDump</code> (<code>:321</code>, mốc cho lớp 3) → ghi nhật ký (<code>grantNote</code>) → đo app khách (chỉ để log, không còn là cổng) → <code>healStep</code> (<code>:336</code>) → dựng lệnh với <code>homeTailFor(userAsked)</code> (<code>:351</code>) → cổng cuối <code>isInterrupted || !fireGate()</code> (<code>:359</code>) → mốc <code>a11y_forcestop_elapsed</code> <code>commit()</code> (<code>:364</code>) → <code>sh(cmd)</code>.</li>
+<li><b>Lớp 3</b> (đo, không chữa): watchdog 30 s của <code>VoiceKeyKeepAliveService</code> (<code>:82-106</code>) và alarm 60 s <code>RebindReceiver</code> (<code>:68</code>, chỉ khi keep-alive chết — đúng khoảng tắt máy) hỏi <code>watchdogStep</code>: đã biết kẹt (mốc từ dump) thì <b>không</b> re-grant, chỉ <code>recheckRunningStuck</code> (một lần <code>dumpsys</code>, chỉ đọc) mỗi 10 phút. Mốc kẹt sống trong RAM có chủ ý: là một <b>phép đo có hạn</b>, chỉ quyết định <b>bỏ</b> một việc đã chứng minh vô ích, không bao giờ đổi gì trên hệ thống (<code>A11yLifecycleHeal.kt:189-199</code>).</li>
+</ul>
+
+<h4>Hàm thuần (<code>:core</code>, <code>AccessibilityHealGates.kt</code>)</h4>
+<div class="tbl"><table>
+<tr><th>Hàm / hằng</th><th>Dòng</th><th>Luật</th></tr>
+<tr><td><code>HealPhase { RUNNING, TAT_MAY, MO_XE }</code></td><td><code>:71-87</code></td><td>Không có giá trị mặc định ở <code>healStep</code>: mọi chỗ gọi phải nói mình là lớp nào</td></tr>
+<tr><td><code>healStep(bound, stuckInBinding, wanted, userAsked, phase)</code></td><td><code>:124-139</code></td><td>gắn ⇒ NONE · <code>!wanted &amp;&amp; !userAsked</code> ⇒ NONE · chưa kẹt ⇒ TOGGLE · người bấm ⇒ FORCE_STOP · RUNNING ⇒ NONE · TAT_MAY/MO_XE ⇒ FORCE_STOP. Cổng “app khách” và hạn mức một-lần-mỗi-lần-nổ-máy đã gỡ</td></tr>
+<tr><td><code>watchdogStep</code> · <code>watchdogState</code> · <code>stuckMarkOf</code> · <code>STUCK_RECHECK_MS</code> = 10 ph</td><td><code>:149-194</code></td><td>Lớp 3: NONE / GRANT / RECHECK; nhịp tim khi kẹt ghi STUCK, không ghi NOT_BOUND giả; đọc hỏng ⇒ mốc <code>-1</code> ⇒ quay về đường grant (không gate đường chữa bằng dữ liệu không có — CLAUDE.md §3)</td></tr>
+<tr><td><code>STUCK_CONFIRM_GAP_MS</code> = 5 s · <code>BindObservation</code> · <code>observe</code> · <code>stuckPersistent</code></td><td><code>:208-261</code></td><td>Kẹt phải thấy hai lần cách ≥ 5 s (ngay sau force-stop, Binding có thể có mặt tạm thời). Dump rỗng/hỏng ⇒ không kẹt ⇒ không bao giờ giết dựa trên bản đọc hỏng</td></tr>
+<tr><td><code>MO_XE_GRACE_MS</code> = 10 s</td><td><code>:227</code></td><td>Trần để lượt tự giết không rơi muộn vào lúc người lái đã dùng xe — <b>không</b> phải ranh “trước khi app vào ô” (<span class="ev s">[SUY]</span> lượt lớp 2 rơi ≈ +7…8 s trên xe, app vào ô +7,6 s <span class="ev m">[ĐO c2]</span>)</td></tr>
+<tr><td><code>TAT_MAY_SAME_EVENT_MS</code> = 10 ph · <code>tatMayMayRun</code></td><td><code>:238</code>, <code>:270-275</code></td><td><code>interactive != false</code> ⇒ không chạy (null = không hỏi được ⇒ không đoán); claim cũ của đời máy trước ⇒ chạy; có mở-xe xen giữa ⇒ chạy; cùng sự kiện trong 10 ph ⇒ không</td></tr>
+<tr><td><code>moXeFresh</code> · <code>withinMoXeGrace</code> · <code>moXeFollowsTatMay</code></td><td><code>:284-310</code></td><td>Một lượt mỗi lần màn bật; lớp 2 chỉ khi có claim lớp 1 mới hơn lần màn bật trước <span class="ev m">[ĐO xe c1 + c2: mỗi lần tắt máy đều có am_proc_start KachiHome lúc màn đã tắt ⇒ lớp 1 luôn claim trước]</span></td></tr>
+<tr><td><code>lifecycleFireAllowed</code></td><td><code>:319-324</code></td><td>Cổng cuối ở tầng thi hành (CLAUDE.md §5)</td></tr>
+<tr><td><code>justHealed</code> · <code>firstStartAfterHeal</code></td><td><code>:331-345</code></td><td>Chỉ tiến trình khởi động <b>đầu tiên</b> sau lượt leo (≤ 2 ph, mốc <code>a11y_scored_for_elapsed</code> chưa nhận) được chấm điểm — sửa lỗi chấm oan đo được trên máy ảo 13:37:55</td></tr>
+</table></div>
+<p><b>State bền mới</b> (<code>PrefsA11yLifecycle.kt</code>, cùng tệp <code>clusternav_prefs</code>, ghi <code>commit()</code>): <code>a11y_tat_may_elapsed</code> · <code>a11y_mo_xe_elapsed</code> · <code>a11y_scored_for_elapsed</code>. Đều là mốc <code>elapsedRealtime</code> (mốc lớn hơn “bây giờ” = đời máy trước). <code>a11y_forcestop_elapsed</code> (có từ 2.79) vẫn ghi trước mỗi lần bắn nhưng <b>không còn chặn</b> lượt nào.</p>
+<p><b>Rủi ro còn mở của A</b>: (1) <code>isInteractive() == false</code> không phân biệt “tắt máy” với “tắt màn khi máy nổ” (§9 D-10) — lớp 1 chỉ mở lượt khi <b>tiến trình Kachi khởi động</b> lúc màn tắt, nên ca xấu cần thêm: tiến trình chết rồi được dựng lại đúng lúc đó <b>và</b> đang kẹt; (2) <code>StackInfo.visible</code> không phản ánh màn ngủ <span class="ev m">[ĐO AOSP <code>RootActivityContainer.java:1276</code>, <code>ActivityStack.getVisibility</code> <code>:1982-2098</code> không có thành phần ngủ/màn]</span> — lý do thêm để cổng “app khách” không dùng được lúc màn tắt; (3) Android 12 (DL5) park vào <code>mCrashedServices</code>, không vào <code>mBindingServices</code> (§4.9) ⇒ trên DL5 bản AOSP gốc, <code>isInBindingServices</code> xếp ca đó là “chưa gắn”, lớp 1/2 không leo, còn đường toggle rẻ thì <span class="ev s">[SUY từ AOSP]</span> chữa được; ROM DL5 có giữ AOSP gốc không: <span class="ev u">[CHƯA BIẾT]</span>.</p>
+
+<h3>4.3 B — nút sửa luôn về màn nhà, lượt tự động chỉ về khi có cửa sổ mồ côi</h3>
+<p>Gốc cửa sổ mồ côi (đường dự phòng <code>IntentAppLauncher.openInSlot</code> khi kênh shell chưa lên, F1 §2.5) <b>còn nguyên</b> ở 2.83 (D-3). B làm bằng <b>đuôi</b> của lệnh tách rời — chạy sau khi dịch vụ Hỗ trợ đã lắp lại, nối bằng <code>;</code>, nên Home hỏng thì phím vẫn đã được chữa (<code>AccessibilityRebind.kt:206-232</code>). <b>Mọi</b> lần Home của cả hai đuôi đi qua <b>một</b> cửa: <b>rào camera</b> <code>GO_HOME_UNLESS_CAMERA</code> (D-15) — bảng dưới theo mã của bản đăng <span class="ev m">[ĐO đọc mã, Pass 5]</span>; rào qua 3 lượt senior review, lượt 3 CLEAN; kết quả máy ảo ở §6.1 V-rào-camera.</p>
+<div class="tbl"><table>
+<tr><th>Đuôi</th><th>Ai dùng</th><th>Chuỗi (sau <code>sleep 2</code>)</th><th>Vì sao</th></tr>
+<tr><td><code>IF_ORPHANED</code> (mặc định)</td><td>lớp 1, lớp 2 (<code>homeTailFor(false)</code>)</td><td><code>t=$(am stack list | grep -A1 "displayId=0 " | head -n 2) ; case "$t" in *" mWindowingMode=freeform mDisplayWindowingMode=fullscreen mActivityType=standard "*) &lt;GO_HOME_UNLESS_CAMERA&gt; ;; esac</code> (<code>ORPHAN_SIGNATURE</code> <code>:375</code>, <code>RETURN_HOME_IF_ORPHANED</code> <code>:431-433</code>)</td><td>Không ai bấm gì; người lái có thể vừa mở một app hoặc đang lùi xe — camera lùi của BYD là một activity (<code>com.byd.avc/…AutoVideoActivity</code>), Home mù có che nó không: <span class="ev u">[CHƯA ĐO]</span> ⇒ lần Home duy nhất của đuôi này cũng qua rào camera</td></tr>
+<tr><td><code>GO_HOME_UNLESS_CAMERA</code> (rào camera, D-15)</td><td>mọi lần Home của hai đuôi — cửa duy nhất</td><td><code>c=$(am stack list | grep -A2 "displayId=0 " | grep "visible=true") ; case "$c" in "") ;; *"com.byd.avc/"*) ;; *) &lt;GO_HOME&gt; ;; esac</code> (<code>CAMERA_SCREEN_SIGNATURE</code> <code>:307</code>, <code>GO_HOME_UNLESS_CAMERA</code> <code>:343-345</code>)</td><td><code>grep -A2</code> lấy mọi stack display 0 (tiêu đề · <code>configuration</code> · dòng task đầu mang cờ <code>visible</code> + <code>topActivity</code> <b>của stack</b>); grep thứ hai chỉ giữ dòng <code>visible=true</code>. Có <code>com.byd.avc/</code> ở <b>bất kỳ</b> dòng nào ⇒ bỏ Home — kể cả khi PIP hoặc cửa sổ mồ côi freeform nằm trên camera: hai loại đó không làm camera khuất, còn Home chèn stack home <b>trên</b> camera và che hẳn (§4.9; <span class="ev m">[ĐO máy ảo]</span> rào bản đầu chỉ nhìn đỉnh đã để lọt đúng hai ca này — review lượt 1 [P2]). Không có dòng <code>visible=true</code> nào (rỗng · không hỗ trợ · ROM in dòng task khác dạng) ⇒ <b>không</b> Home: không biết màn đang hiện gì thì không đánh cược với camera lùi; không dùng tiêu đề <code>Stack id=</code> làm dấu “đọc được” vì tiêu đề khớp mà mất cờ <code>visible</code> sẽ hỏng theo chiều mở (review lượt 2 [P3]). Camera đã khuất (<code>visible=false</code>, ra khỏi số lùi) <b>không</b> chặn Home — rào không khoá chết nút. Phím vẫn đã chữa trong mọi ca. Giới hạn <span class="ev s">[SUY]</span>: camera bật trong khe giữa lúc đọc và lúc <code>am start</code> (&lt; 1 s) vẫn có thể bị che; đóng hẳn phải làm trong tiến trình hệ. ⚠ Dấu hiệu là <b>tên gói</b> viết cứng — đời xe khác dùng app camera khác thì rào không thấy (<span class="ev u">[CHƯA BIẾT]</span> cho DL4/DL5); KDoc mã tự ghi phải vào <code>ClusterProfile</code> (CLAUDE.md §7) — backlog <code>CODE-FIX-AFTER-283</code> (6)</td></tr>
+<tr><td><code>ALWAYS</code></td><td>nút <i>Kiểm tra / Sửa ngay</i> và gạt BẬT phím-thoại (<code>ClusterNavBridgeKeys.kt:48</code>, <code>:81</code> → <code>reset = true</code> → <code>userAsked</code>, <code>NavConnect.kt:180</code>)</td><td><code>&lt;GO_HOME_UNLESS_CAMERA&gt; ; sleep 3 ; &lt;IF_ORPHANED&gt;</code> (<code>:225</code>) — tối đa hai lần Home, cả hai qua rào camera (bản trước rào: lần đầu là <code>GO_HOME</code> vô điều kiện)</td><td>Chủ xe 12:29:08 <i>“nút tự chữa đó phải trả về home, ko để app mồ côi”</i>. <span class="ev m">[ĐO máy ảo ca 5c]</span> force-stop gỡ task home ⇒ app toàn màn nằm dưới (Maps) lên đỉnh — dấu vân tay mồ côi không khớp nên đuôi có điều kiện không đủ. Lượt đo thứ hai bắt cửa sổ nổi do KachiHome dựng tươi mở lại (<span class="ev m">[ĐO xe 3/3 lượt]</span>, <span class="ev s">[SUY mạnh]</span> rơi trên màn nhà vừa mở)</td></tr>
+</table></div>
+<ul>
+<li><code>HomeActivityCmd.GO_HOME</code> (<code>HomeActivityCmd.kt:49</code>) = đúng chuỗi <code>VietMapAutostart</code> đã chạy ngoài hiện trường (gom về một chỗ, DRY). <span class="ev m">[ĐO AOSP r47]</span>: đúng một <code>-c</code>, không <code>-n</code> — <code>ActivityRecord.isHomeIntent</code> <code>:1237-1243</code> đòi một category, <code>setActivityType</code> <code>:1283-1286</code> chỉ gán loại HOME khi không chỉ định component; không <code>--display</code> ⇒ display mặc định (<code>ActivityStarter.java:1484-1486</code>); uid shell được miễn chặn mở từ nền (<code>:993-996</code>). <b>Điều kiện</b>: phân giải qua <code>MATCH_DEFAULT_ONLY</code> (<code>ActivityStackSupervisor.resolveIntent</code> <code>:671-690</code>); một ứng viên ⇒ lấy luôn; nhiều ứng viên cùng ưu tiên ⇒ lấy HOME ưu tiên đã đặt; không có ⇒ ra hộp chọn (<code>PackageManagerService.chooseBestActivity</code> <code>:6737-6780</code>). Trên xe Kachi được đặt làm HOME bằng <code>set-home-activity</code> ⇒ <span class="ev s">[SUY]</span> có HOME ưu tiên.</li>
+<li>Nhịp chờ: <code>HOME_SETTLE_SEC</code> 2 (<code>:357</code>) — phép đo phải đứng sau cú mở lại app ô do chính Kachi bắn khi vừa sống lại (<span class="ev m">[ĐO]</span> muộn nhất 3,0 s sau <code>am_kill</code>); <code>ORPHAN_RECHECK_SEC</code> 3 (<code>:365</code>). Số dòng đọc lại ở Pass 5 trên mã của bản đăng (<code>AccessibilityRebind.kt</code> sửa lần cuối 18:02:41, 487 dòng).</li>
+<li>Đuôi và rào chỉ dùng <code>grep -A1</code>/<code>-A2</code>, <code>head</code>, <code>$(…)</code>, <code>case</code>, không dấu <code>'</code> (cả chuỗi nằm trong <code>sh -c '…'</code>). <span class="ev m">[ĐO]</span> chạy bằng <code>sh</code> thật (<code>/bin/sh</code>, <code>dash</code>) với 3 fixture xe + 4 fixture dẫn xuất (<code>ForceStopReturnHomeTest</code> 18/0) và trên mksh của máy ảo (cả chuỗi rào bản cuối); mksh/toybox của xe: <span class="ev s">[SUY]</span> (cú pháp POSIX thuần).</li>
+</ul>
+
+<h3>4.4 C — đọc nhật ký trên bản phát hành</h3>
+<ul>
+<li><b>Lệnh cầu kiểm thử <code>a11ylog</code></b> — chỉ đọc, không cần màn chính (<code>TestBridgeNoHome.kt:36</code>), sau công tắc Chế độ kiểm thử, không cần <code>auto_confirm</code>:
+<pre>adb shell am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd a11ylog [--ei n 50]</pre>
+Trả <code>n</code> (mặc định 50, kẹp 1…200 — <code>TestBridgeCommand.kt:289-296</code>) dòng cuối + <code>a11y_forcestop_elapsed</code> · <code>a11y_deep_sleep_ms</code> · <code>escalated_this_boot</code> · <code>a11y_tat_may_elapsed</code> · <code>a11y_mo_xe_elapsed</code> · <code>elapsed_now_ms</code> · <code>deep_sleep_now_ms</code> · <code>pid</code> · <code>proc_start_elapsed_ms</code> (<code>TestBridgeA11yLog.kt:31-57</code>). Không một lời gọi ghi nào (bài canh <code>A11yLogBridgeWiringContractTest</code>).</li>
+<li><b>logcat</b>: mọi dòng vừa ghi vào nhật ký (kể cả nhịp tim) ra <code>Log.i</code> tag <code>A11yJournal</code> dạng <code>journal &lt;dòng tệp nguyên văn&gt; prev=&lt;trạng thái trước | -&gt;</code> (<code>A11yBindJournal.kt:135-138</code>), <b>trước</b> khi ghi tệp ⇒ nằm trong <code>kachi-logs/usage-*.log</code> (<code>adb pull</code>, không cần root). Không có tệp bản sao ở <code>kachi-logs/</code>.</li>
+<li><b>Ghi chú trên dòng nhật ký</b>: <code>tat-may</code> (lớp 1) · <code>mo-xe</code> (lớp 2) · <code>kiem-lai</code> (lớp 3 kiểm lại, chỉ hiện khi trạng thái đổi) · <code>grant-tay</code> (người bấm) · <code>grant-tu-dong</code> (đang chạy, nay không tự giết) · <code>sau-chua-ON</code> / <code>sau-chua-VAN-TAT</code> (chấm điểm) · <code>watchdog</code> / <code>wake</code> (<code>A11yBindJournal.kt:35-56</code>).</li>
+<li><b>Luật gộp <code>binderOnly</code></b> (<code>A11yBindJournal.kt:106-107</code>): quan sát chỉ hỏi binder (watchdog) coi <code>STUCK → NOT_BOUND</code> là cùng sự thật ⇒ không ghi cặp NOT_BOUND/STUCK mỗi 30 s (trước vá: trần 200 dòng đầy sau ~50 phút, đẩy mất dòng <code>tat-may</code>/<code>mo-xe</code> — <span class="ev m">[ĐO máy ảo ca 4]</span>).</li>
+<li><b>Riêng tư</b>: dòng chỉ có mốc giờ, hai đồng hồ, pid, trạng thái, ghi chú — không tên app, không vị trí.</li>
+</ul>
+
+<h3>4.5 D — gỡ vạch chuẩn</h3>
+<p>Đúng danh sách Pass 0: xoá <code>CameraGuide.kt</code>, <code>CameraGuideLineView.kt</code>, <code>CameraGuideTest.kt</code>, <code>CameraGuideWiringContractTest.kt</code>; gỡ phần vạch ở <code>CameraOverlayView</code> (498 → 483 dòng), <code>CameraSignalController</code>, <code>PrefsAutomation</code>, <code>ClusterNavBridgeAutomation</code>, <code>SettingsSectionsCamera</code>, <code>TestBridgePrefsSet</code>, <code>CameraSettingsIa</code>, <code>TestBridgeWritableKeys</code>, bốn chuỗi VI + bốn chuỗi EN. <span class="ev m">[ĐO]</span> <code>USER_KEYS</code> 14 · khoá camera 29 · danh sách trắng cầu 44; <code>grep -rn "cameraGuide\|camera_guide\|CameraGuide"</code> trong mã chạy = 0 (chỉ còn trong bài canh “đã xoá hẳn”). Hai khoá <code>camera_guide_*</code> còn trong prefs xe chủ xe: không gì đọc (OQ8).</p>
+
+<h3>4.6 E — <code>CLEAR_TASK</code> theo dữ liệu từng đích</h3>
+<ul>
+<li><code>VoiceAppTarget.clearTaskOnNav: Boolean = false</code> (<code>VoiceAppTargets.kt:149</code>), <code>require(!clearTaskOnNav || kind == NAV)</code> (<code>:152</code>), <b>chỉ</b> Google Maps = <code>true</code> (<code>:320</code>). VietMap, Waze giữ <code>false</code>.</li>
+<li>Một cửa dựng lượt giao điểm đến: <code>VoiceAppIntents.destinationHandoff</code> (<code>VoiceAppIntents.kt:72</code>) — gọi từ giọng nói (<code>VoiceTargetDispatch.kt:235</code>) và dẫn theo lịch (<code>ScheduledNavApplier.kt:170</code>). Một chỗ dựng cờ: <code>launchFlags(clearTask)</code> (<code>:83</code>) = <code>NEW_TASK</code> (+ <code>CLEAR_TASK</code>) = <code>0x10000000</code> / <code>0x10008000</code>.</li>
+<li><code>send</code> (<code>:136-138</code>): cờ <b>chỉ</b> đi với đường chính; ý-định dự phòng dựng với cờ mặc định (<code>NEW_TASK</code> trơn) — chưa đo lần nào, và cờ xoá phiên dẫn của app khác không hoàn tác được. Hôm nay Maps không có dự phòng nên luật này chưa có tác động thật.</li>
+<li><b>Không đổi</b>: nhạc, đường <code>watch</code> của YouTube, mở app trơn, lệnh chiếu cụm qua shell. Vẫn cấm <code>CLEAR_TOP</code>.</li>
+<li><b>AOSP</b> <span class="ev m">[ĐO r47]</span>: <code>setTaskFromIntentActivity</code> (<code>ActivityStarter.java:2211-2226</code>) gọi <code>performClearTaskLocked()</code> (<code>:2224</code>) rồi <code>mReuseTask = task</code> (<code>:2225</code>) ⇒ <b>giữ cùng TaskRecord</b>; khi <code>willClearTask</code> (<code>:2132-2135</code>) khối đổi stack/display (<code>:2135-2182</code>) bị bỏ qua, task chỉ được đưa lên trước (<code>:2194-2198</code>). Javadoc cờ: <code>Intent.java:6085-6092</code>. ⇒ Maps đang chiếu cụm nhận <code>CLEAR_TASK</code> thì task <b>ở lại</b> display cũ <span class="ev s">[SUY từ AOSP]</span>; bản đồ trên cụm có mất một nhịp không, ROM BYD có khác AOSP không: <span class="ev u">[CHƯA ĐO]</span> (V-E4).</li>
+</ul>
+
+<h3>4.7 Bốn câu CLAUDE.md §4 cho mỗi lệnh đổi state</h3>
+<div class="tbl"><table>
+<tr><th>Lệnh</th><th>Display nào</th><th>App nào</th><th>Loại stack</th><th>Hoàn tác</th></tr>
+<tr><td><b>FORCE_STOP</b> (lớp 1/2 tự động, nút bấm) — phần đầu của <code>forceStopRebindCommand</code>, không đổi so với 2.81</td><td>Không nhắm display. Tác dụng phụ: màn ảo <b>của mình</b> chết theo; cụm (chủ xdja) tự hồi ~13 s <span class="ev m">[ĐO <code>c2-logcat:2322-2362</code>]</span></td><td>Chỉ gói của mình — gói phải trùng gói của component, mọi mục enabled qua <code>SAFE_ENTRY</code>, lệch ⇒ lệnh rỗng</td><td>Không nhắm stack; hệ tự dựng HOME</td><td>Nửa sau của chính lệnh ghi lại <code>enabled_accessibility_services</code>; chạy tách rời; mốc <code>commit()</code> trước; watchdog 30 s là lưới lắp lại</td></tr>
+<tr><td><b>Đuôi IF_ORPHANED</b></td><td>Chỉ display 0 (đo stack đầu tiên <code>displayId=0</code>; lần Home qua rào camera đọc mọi stack <code>displayId=0</code>; <code>am start</code> không <code>--display</code>)</td><td>HOME mặc định do hệ phân giải — không tên gói viết cứng</td><td>Chỉ đưa stack <code>home</code> lên trước; stack mồ côi (<code>standard</code>) chỉ bị che; <code>recents</code>/<code>pinned</code> không bao giờ khớp dấu vân tay</td><td>Không có gì để hoàn tác (chỉ đổi thứ tự z); đo hỏng ⇒ không làm gì = hành vi 2.82</td></tr>
+<tr><td><b>Đuôi ALWAYS</b></td><td>Display 0</td><td>HOME mặc định</td><td>Đưa <code>home</code> lên trước; <code>alwaysOnTop</code>/<code>pinned</code> vẫn ở trên (<code>ActivityDisplay.getTopInsertPosition</code> <code>:302-322</code>)</td><td>Như trên; mở lại app từ màn nhà là xong. Camera lùi trong ~7 s sau khi bấm: Home che camera không vẫn <span class="ev u">[CHƯA ĐO]</span> trên xe ⇒ mọi lần Home qua rào <code>GO_HOME_UNLESS_CAMERA</code> (bất kỳ stack <code>visible=true</code> nào của display 0 là <code>com.byd.avc/</code> / đọc hỏng ⇒ bỏ Home; D-15). Rào chỉ đọc (<code>am stack list</code>), không đổi state</td></tr>
+<tr><td><b>E</b> — <code>startActivity</code> VIEW + <code>NEW_TASK|CLEAR_TASK</code> (trong tiến trình, không shell)</td><td>Nơi task app dẫn đường đang nằm (AOSP: không đổi display)</td><td>Chỉ gói đích, luôn <code>setPackage</code></td><td>Stack thường của app dẫn đường</td><td>Không có — dọn phiên dẫn cũ chính là việc người lái vừa yêu cầu; chỉ bật theo bằng chứng</td></tr>
+<tr><td><b>Lớp 3</b> khi đã biết kẹt</td><td colspan="3">Không lệnh ghi nào — chỉ <code>dumpsys accessibility</code> mỗi 10 phút</td><td>Không cần</td></tr>
+<tr><td><b><code>a11ylog</code></b></td><td colspan="3">Không phải lệnh đổi state (chỉ đọc tệp + prefs của mình)</td><td>Không cần</td></tr>
+</table></div>
+<p><b>State sống lâu hơn tiến trình (§5)</b>: bốn mốc prefs của mình (<code>a11y_forcestop_elapsed</code>, <code>a11y_tat_may_elapsed</code>, <code>a11y_mo_xe_elapsed</code>, <code>a11y_scored_for_elapsed</code>) · <code>enabled_accessibility_services</code> (lệnh tách rời ghi lại) · tệp nhật ký · task của app dẫn đường sau <code>CLEAR_TASK</code> (của app khác, không hoàn tác ⇒ cổng bằng chứng). Không cờ RAM nào quyết định đổi state hệ thống; mốc kẹt RAM của lớp 3 chỉ quyết định <b>không</b> làm.</p>
+
+<h3>4.8 Bốn tầng CLAUDE.md §14 — đã đi tới đâu</h3>
+<div class="layers">
+  <div class="lname">Tầng 1 · shell thô trên xe</div>
+  <div class="layer">
+    <div class="node okn"><b>đã có (29/09)</b><span>lượt giết lúc tắt máy + không PACKAGE_RESTARTED · force-stop + lắp lại chữa được · F1 cửa sổ mồ côi · Maps CLEAR_TASK display 0</span></div>
+    <div class="node bad"><b>bỏ qua (D-2)</b><span>M-A1 / M-A2 (lớp 1/2 chạy trên xe thật) · E-M1…E-M5 (VietMap, Maps trên cụm) — không còn buổi xe trước OTA (14:05:56)</span></div>
+    <div class="node new"><b>thay bằng</b><span>E2E máy ảo tái hiện chữ ký lượt giết BYD bằng killApplication uid system (§6.1) — khớp cơ chế AOSP, không thay được phép đo xe</span></div>
+  </div>
+  <div class="lname">Tầng 2 · chuỗi lệnh / parse đã quan sát</div>
+  <div class="layer">
+    <div class="node new"><b>fixture xe mới</b><span><code>a11y-0929/k1-acc-stuck.txt</code> · <code>a11y-0929/fix2-acc-bound.txt</code> (khối Bound nhiều dòng) · ba <code>am-stack-list-oncar-2026-09-29-*</code> + bốn fixture <b>dẫn xuất</b> camera (<code>*-camera-*-derived</code>, không phải dump thật)</span></div>
+    <div class="node"><b>chuỗi lệnh</b><span><code>forceStopRebindCommand</code> + hai đuôi + rào camera, chạy <code>sh</code> thật với fixture; rào khớp <code>StackParse</code> trên mọi fixture</span></div>
+  </div>
+  <div class="lname">Tầng 3 · core thuần</div>
+  <div class="layer">
+    <div class="node new"><b>A</b><span>HealPhase · healStep · tatMayMayRun · moXe* · watchdogStep · firstStartAfterHeal</span></div>
+    <div class="node new"><b>B / C / E</b><span>HomeTail · a11yLogTail · sameState · clearTaskOnNav</span></div>
+  </div>
+  <div class="lname">Tầng 4 · app</div>
+  <div class="layer">
+    <div class="node new"><b>A</b><span>A11yLifecycleHeal · NavConnect · VoiceKeyKeepAliveService · RebindReceiver</span></div>
+    <div class="node"><b>C / E</b><span>TestBridgeA11yLog · A11yBindJournalStore · VoiceAppIntents</span></div>
+  </div>
+</div>
+<p class="muted">Lệch §14 có ghi (D-2): tầng 3–4 của A được viết trước phép đo tầng 1 trên xe; chủ xe chọn OTA không qua buổi xe (14:05:56) ⇒ tầng 1 trên xe của lớp 1/2 thành nghiệm thu hiện trường sau OTA (§6.2).</p>
+
+<h3>4.9 Nguồn framework (AOSP fetch lại 29/09) + Context7</h3>
+<p class="muted">Nguồn chính <code>android.googlesource.com</code> trả 503 cả 7 lần (có lùi dần) ⇒ đọc qua bản mirror của <code>platform_frameworks_base</code> ở tag <code>android-10.0.0_r47</code>; Android 12 ở <code>android-12.0.0_r34</code>, đối chiếu <code>r1</code> (ba tệp a11y giống hệt). Luồng AOSP chạy song song, không sửa tệp nào của repo. Viết tắt: AMS-a11y = <code>AccessibilityManagerService.java</code>, ASC = <code>AccessibilityServiceConnection.java</code>, AMS = <code>am/ActivityManagerService.java</code>.</p>
+<div class="tbl"><table>
+<tr><th>Khẳng định</th><th>Kết quả</th><th><code>file:line</code> (r47)</th></tr>
+<tr><td>Mối nối đứt ⇒ vào <code>mBindingServices</code></td><td><span class="ev m">[ĐO]</span> đúng</td><td>AMS-a11y <code>:4114-4117</code>; gọi từ ASC <code>binderDied()</code> <code>:265</code>; hai nguồn: death-recipient (<code>linkToDeath</code> <code>:149</code>) và <code>onServiceDisconnected</code> <code>:208-211</code>; chưa nối thì <code>return</code> (<code>:259-261</code>)</td></tr>
+<tr><td><code>updateServicesLocked</code> <code>continue</code> khi đang binding</td><td><span class="ev m">[ĐO]</span> đúng</td><td>AMS-a11y <code>:1630-1632</code>, trên <code>bindLocked()</code> <code>:1642</code> (nơi gọi duy nhất) và <code>unbindLocked()</code> <code>:1645</code></td></tr>
+<tr><td><code>onHandleForceStop</code> gỡ enabled + binding, ghi bền</td><td><span class="ev m">[ĐO]</span> đúng, <b>kèm điều kiện</b>: vòng lặp duyệt <code>mEnabledServices</code> ⇒ chỉ gỡ Binding khi component đang enabled lúc broadcast tới</td><td>AMS-a11y <code>:453-484</code> (<code>:464-469</code>, <code>:473</code>, <code>:474</code>, <code>:475-477</code>, <code>:478</code>)</td></tr>
+<tr><td><code>onPackageUpdateFinished</code> dọn binding</td><td><span class="ev m">[ĐO]</span> đúng</td><td>AMS-a11y <code>:398-417</code>; chú thích “during updating” <code>:400-403</code>; <code>removeIf</code> <code>:410-412</code></td></tr>
+<tr><td><code>PACKAGE_RESTARTED</code> → <code>onHandleForceStop(doit=true)</code></td><td><span class="ev m">[ĐO]</span></td><td><code>PackageMonitor.java:412-416</code> (filter <code>:49</code>); a11y đăng ký monitor AMS-a11y <code>:488</code></td></tr>
+<tr><td><code>am force-stop</code> gửi <code>PACKAGE_RESTARTED</code>; <code>killApplication</code> thì không</td><td><span class="ev m">[ĐO]</span></td><td>AMS <code>:4234-4287</code> (<code>:4279</code>, <code>:4280</code>); <code>finishForceStopPackageLocked</code> <code>:4516-4529</code>, chỉ gọi từ <code>:4280</code>, <code>:4075</code>; <code>killApplication</code> <code>:4314-4339</code> (chỉ uid system, <code>SecurityException</code> <code>:4336</code>) → <code>:1725-1735</code>, <code>:1732</code></td></tr>
+<tr><td>E2E dùng <code>killApplication</code> tái hiện đúng chữ ký xe</td><td>Cơ chế <span class="ev m">[ĐO AOSP]</span> khớp; BYD gọi đúng hàm đó không <span class="ev u">[CHƯA BIẾT]</span></td><td>Cùng bộ tham số với <code>am force-stop</code> (<code>:4510-4512</code> so <code>:1732</code>); cùng giết tiến trình (<code>:4654</code>) và hạ service (<code>:4659</code> → <code>ActiveServices</code> <code>:3432-3466</code>); chỉ thiếu <code>:4272</code> + <code>:4280</code></td></tr>
+<tr><td><code>NEW_TASK + CLEAR_TASK</code></td><td><span class="ev m">[ĐO]</span> giữ TaskRecord, không đổi display</td><td>§4.6</td></tr>
+<tr><td><code>isInteractive</code> và <code>SCREEN_ON/OFF</code></td><td><span class="ev m">[ĐO]</span> AWAKE/DREAMING = interactive; DOZING/ASLEEP thì không; broadcast ordered, không sticky, chỉ nhận bằng đăng ký động</td><td><code>PowerManager.java:1342-1382</code>; <code>PowerManagerService</code> <code>:2764-2767</code>; <code>PowerManagerInternal.java:95-97</code>; <code>Notifier.java:176-183</code>, <code>:748-760</code>, <code>:771-783</code>; <code>Intent.java:2180-2226</code></td></tr>
+<tr><td>HOME intent từ uid shell</td><td><span class="ev m">[ĐO]</span> đúng, kèm điều kiện phân giải</td><td>§4.3</td></tr>
+<tr><td><code>StackInfo.visible</code> lúc màn ngủ</td><td><span class="ev m">[ĐO AOSP]</span> không có thành phần ngủ/màn ⇒ <code>visible=true</code> lúc màn tắt là bình thường; bản ROM xe <span class="ev u">[CHƯA BIẾT]</span></td><td><code>RootActivityContainer.java:1276</code>; <code>ActivityStack.getVisibility</code> <code>:1982-2098</code></td></tr>
+<tr><td>Rào camera: cờ <code>visible</code> của stack</td><td><span class="ev m">[ĐO AOSP qua mirror, trích trong KDoc <code>AccessibilityRebind.kt</code>]</span> <code>visible</code> + <code>topActivity</code> là của <b>stack</b>, <code>StackInfo.toString</code> in lại trên mọi dòng task ⇒ dòng task đầu là đủ; stack chỉ khuất khi có stack <b>toàn màn đục</b> nằm trên ⇒ PIP / freeform trên camera không làm camera khuất; stack đỉnh có activity chạy luôn <code>visible=true</code>; Home chèn stack home ngay dưới các stack <code>alwaysOnTop</code> ⇒ trên camera. Android 12 <code>RootTaskInfo</code> in y hệt</td><td><code>RootActivityContainer.java:1276</code>, <code>:1303-1304</code>; <code>ActivityManager.java:2539</code>, <code>:2546-2548</code>; <code>ActivityStack.java:2000-2006</code>, <code>:2014-2034</code>; <code>ActivityDisplay.java:302-322</code>; r34 <code>ActivityTaskManager.java:553</code>, <code>:560-562</code></td></tr>
+<tr><td><b>Android 12 (DL5)</b>: mối nối đứt</td><td><b>Khác r47</b> <span class="ev m">[ĐO r34]</span>: <code>serviceDisconnectedLocked</code> đẩy vào <code>mCrashedServices</code>, không vào <code>mBindingServices</code>; <code>continue</code> áp cho cả binding lẫn crashed; <code>onHandleForceStop</code> gỡ cả hai (vẫn duyệt enabled); gỡ component khỏi <code>enabled_accessibility_services</code> gọi <code>updateCrashedServicesIfNeededLocked</code> ⇒ toggle hai lượt ghi <span class="ev s">[SUY từ AOSP]</span> chữa được ca crashed</td><td><code>AccessibilityUserState.java:254-257</code>, <code>:377-389</code>, <code>:566</code>; AMS-a11y <code>:1913-1917</code>, <code>:529-566</code> (<code>:555-556</code>), <code>:449-484</code>, <code>:3764-3769</code>; ASC <code>:326-344</code></td></tr>
+<tr><td>FGS khởi chạy từ nền trên API 31+ · <code>ActivityDisplay.remove</code> · mục 2–6 trên Android 12</td><td><span class="ev u">[CHƯA KIỂM]</span></td><td>— (lớp 1 không còn dùng FGS nên rủi ro A1 trên DL5 giảm, §4.2)</td></tr>
+<tr><td><code>registerReceiver</code> không cờ exported cho <code>ACTION_SCREEN_ON</code></td><td>OK — Context7 (<code>ContextWrapper.registerReceiver</code>): cờ <code>RECEIVER_(NOT_)EXPORTED</code> bắt buộc trừ khi đăng ký broadcast hệ thống; cùng cách <code>VoiceWakeService</code></td><td>senior review 29/09 (hai workflow)</td></tr>
+<tr><td><code>FLAG_ACTIVITY_CLEAR_TASK</code> · <code>isInteractive</code> · <code>Process.getStartElapsedRealtime</code> · <code>SharedPreferences.commit</code></td><td>Không deprecated (Context7 + <code>javap</code> trên <code>android.jar</code> compileSdk 37). Lint gợi ý <code>UseKtx</code> cho <code>edit().commit()</code> — giữ vì KTX trả <code>void</code>, mất giá trị Boolean mà cổng fail-safe cần</td><td>senior review 29/09</td></tr>
+</table></div>
+<p>2.83 <b>không</b> thêm thư viện nào; dadb 2.0.0, androidx.core 1.19.0, AGP 9.3.1, Kotlin 2.4.10 giữ nguyên <span class="ev m">[ĐO senior review]</span>.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>5. Tasks (DAG)</h2>
+<p class="muted">DAG gốc (Pass 1) giữ nguyên; cột <b>Trạng thái</b> theo mã thật lúc 17:18, cập nhật Pass 5 theo bản đăng 29/09. <span class="car">XE</span> = cần xe · <span class="nocar">KHÔNG</span> = off-car.</p>
+<div class="tbl"><table>
+<tr><th>T-id</th><th>Việc</th><th>Phụ thuộc</th><th>Cần xe</th><th>Trạng thái (bản đăng 29/09)</th></tr>
+<tr><td><b>T0a</b></td><td>Fetch AOSP r47 + Android 12, đối chiếu <code>file:line</code></td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong phần chính</span> (§4.9); còn FGS nền API 31+, <code>ActivityDisplay.remove</code>, mục 2–6 trên A12</td></tr>
+<tr><td><b>T0b–T0e</b></td><td>M-A1, M-A2, M-A3, E-M1…E-M5 trên xe</td><td>—</td><td><span class="car">XE</span></td><td>Bỏ trước OTA (14:05:56) — D-2; thay bằng E2E máy ảo + hiện trường sau OTA</td></tr>
+<tr><td><b>T0f</b></td><td>Dịch ngược <code>AccModeManagerService</code></td><td>—</td><td><span class="nocar">KHÔNG</span></td><td>Chưa (tuỳ chọn, không chặn)</td></tr>
+<tr><td><b>T1</b></td><td>D — gỡ vạch</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> (D-7)</td></tr>
+<tr><td><b>T2, T3</b></td><td>B1 — <code>ShellVerdict</code></td><td>—</td><td><span class="nocar">KHÔNG</span></td><td>Không làm — thay bằng đuôi (D-3)</td></tr>
+<tr><td><b>T4</b></td><td>C1 — lệnh đọc nhật ký</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span>, tên <code>a11ylog</code> (D-5)</td></tr>
+<tr><td><b>T5</b></td><td>C2 — bản sao ở <code>kachi-logs/</code></td><td>—</td><td><span class="nocar">KHÔNG</span></td><td>Thay bằng logcat <code>journal …</code> (D-5)</td></tr>
+<tr><td><b>T6</b></td><td>C — sửa chú thích sai + bài canh đường đọc</td><td>T4, T5</td><td><span class="nocar">KHÔNG</span></td><td>Một phần: 1/4 chú thích; 3 còn lại vào danh sách sửa mã; bài canh mới <code>A11yLogBridgeWiringContractTest</code></td></tr>
+<tr><td><b>T7</b></td><td>A core — pha + hạn mức + <code>healStep</code></td><td>T0a</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> theo thiết kế khác (D-4); test <code>A11yLifecycleGatesTest</code>, <code>AccessibilityHealGatesTest</code>, <code>A11yRunningStuckGatesTest</code></td></tr>
+<tr><td><b>T8</b></td><td>A lớp 1 app</td><td>T7</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> (<code>A11yLifecycleHeal</code>, D-1); test <code>A11yLifecycleHealWiringContractTest</code></td></tr>
+<tr><td><b>T9</b></td><td>A lớp 2</td><td>T7</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> bằng bộ thu <code>SCREEN_ON</code>, không hoãn gắn ô (D-1)</td></tr>
+<tr><td><b>T10</b></td><td>Nhật ký phân biệt nguồn gốc tiến trình</td><td>T8</td><td><span class="nocar">KHÔNG</span></td><td>Một phần (D-13) + luật gộp <code>binderOnly</code> (D-11)</td></tr>
+<tr><td><b>T11</b></td><td>Fixture hồi quy từ dump xe</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> (D-8); phá thử có ở mọi vá của review (§6.1)</td></tr>
+<tr><td><b>T12</b></td><td>Đính chính KDoc “mảng đen” theo F1</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td>Một phần: <code>StackParse.kt</code>, <code>AccessibilityHealGates.kt</code> sửa</td></tr>
+<tr><td><b>T13</b></td><td>B2 — Home ở nhánh người bấm</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span>: <code>HomeTail.ALWAYS</code> (D-14) + <code>IF_ORPHANED</code> cho lớp 1/2 (D-3); mọi lần Home qua rào camera (D-15)</td></tr>
+<tr><td><b>T14, T15</b></td><td>E core + app</td><td>—</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> theo thiết kế khác (D-6); test <code>VoiceNavClearTaskTest</code>, <code>VoiceNavClearTaskFlagTest</code></td></tr>
+<tr><td><b>T16</b></td><td>Bump 2.83 (184) + APK đúng khuôn</td><td>T1–T15</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> — APK dựng lại từ mã cuối (18:27), đúng khuôn <code>apk/Kachi-2.83-release.apk</code>, 43 907 845 B, sha256 <code>b44691e6…2213</code> (V-apk)</td></tr>
+<tr><td><b>T17</b></td><td>Tài liệu atomic cùng commit mã</td><td>T1–T16</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong</span> — Pass 3–5 (tệp này + tài liệu trạng thái/phát hành, xem Reviewer Log); đi cùng commit đăng</td></tr>
+<tr><td><b>T18</b></td><td>Cổng OTA: test · lint · E2E · review · quét · <code>apksigner</code>/<code>aapt2</code></td><td>T16, T17</td><td><span class="nocar">KHÔNG</span></td><td><span class="ok">Xong trên mã cuối</span>: test 6 411 / 0 ✅ · <code>lintDebug</code> ✅ · E2E ✅ · review CLEAN ✅ (A–E + rào camera lượt 3) · rào camera máy ảo ✅ · APK ✅ · quét bảo mật = cổng của commit đăng (§6.1)</td></tr>
+<tr><td><b>T19</b></td><td>Hiện trường sau OTA</td><td>T18 + OTA</td><td><span class="car">XE</span> (anh em)</td><td>OTA <b>đã đăng 29/09</b> — chờ phản hồi anh em; tin nhắn <code>docs/_handoff/tin-nhan-anh-em-2.83.md</code></td></tr>
+</table></div>
+<p class="muted">Sau đăng: gửi tin nhắn anh em → T19 (phản hồi hiện trường) → ổn thì CLOSEOUT + tag <code>v2.83</code>; đỏ thì 2.84 (OTA không lùi bản).</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>6. Verification</h2>
+
+<h3>6.1 Off-car <span class="pill wait">= cổng OTA (chủ xe 14:05:56)</span></h3>
+<p class="muted">Một mục đỏ ⇒ không đăng, báo chủ xe (phiên cam kết 14:06:16). Kết quả dưới <span class="ev m">[ĐO]</span> lấy từ journal hai workflow của phiên và thư mục bằng chứng ngoài repo (<code>e2e283/</code>, <code>e2e283/round2/</code>, <code>e2e283fix/</code>, <code>rv2/</code>, <code>rv3/</code> trong scratchpad của phiên — không chép vào repo; ảnh không đưa vào repo).</p>
+<div class="tbl"><table>
+<tr><th>Mục</th><th>Kết quả</th><th>Nguồn</th></tr>
+<tr><td><b>V-unit</b></td><td><span class="ok">6 411 / 0 lỗi, 0 bỏ qua</span> trên mã cuối — <code>app:testDebugUnitTest</code> 1 576 · <code>app:testVehicleTestUnitTest</code> 1 588 · <code>core</code> 3 062 · <code>car-integration</code> 64 · <code>offcar-planner</code> 99 · <code>vehicle-contracts</code> 22 (735 tệp XML, ghi 18:25–18:26; <code>ForceStopReturnHomeTest</code> 18/0). Lượt trước rào camera (17:07–17:09): 6 407 / 0</td><td>đếm lại từ XML, Pass 5</td></tr>
+<tr><td><b>V-đỏ-trước-xanh</b></td><td><span class="ok">Đạt</span> — mỗi vá có phá thử: vá 5c + lớp 3 (6 phá thử, đỏ đúng bài) · review lượt 1 (2) · review lượt 2 (4); khôi phục so <code>cmp</code> từng byte</td><td>journal workflow 2</td></tr>
+<tr><td><b>V-callsite</b></td><td><span class="ok">Đạt</span> — grep 34 tên hàm/hằng mới, mỗi cái ≥ 1 chỗ gọi ngoài định nghĩa</td><td>review lượt 3</td></tr>
+<tr><td><b>V-size</b></td><td><span class="ok">Đạt trần 500</span>: <code>A11yLifecycleHeal.kt</code> 367 · <code>AccessibilityHealGates.kt</code> 346 · <code>AccessibilityRebind.kt</code> 487 · <code>NavConnect.kt</code> 481 · <code>VoiceAppTargets.kt</code> 490 · <code>ForceStopReturnHomeTest.kt</code> 394 · <code>TestBridgeCommandTest.kt</code> 500 (chạm trần). Tệp sát trần ở R-nf4 không dài thêm, trừ <code>VoiceAppTargets.kt</code> 475 → 490 (D-6)</td><td><code>wc -l</code> mã bản đăng (Pass 5)</td></tr>
+<tr><td><b>V-gỡ</b></td><td><span class="ok">Đạt</span> — grep <code>cameraGuide|camera_guide|CameraGuide</code> trong mã chạy = 0</td><td>review lượt 1–3</td></tr>
+<tr><td><b>V-lint</b></td><td><code>lintDebug</code> trên mã cuối <span class="ok">0 lỗi</span> (528 cảnh báo; hai <code>ObsoleteSdkInt</code> có từ trước) <span class="ev m">[ĐO báo cáo 18:25]</span>. <code>lintVitalRelease</code> nằm trong <code>assembleRelease</code> với <code>checkReleaseBuilds = true</code>, <code>abortOnError = true</code> (<code>app/build.gradle.kts:166-169</code>) ⇒ APK đăng dựng xong là không có lỗi vital <span class="ev s">[SUY từ cấu hình]</span>. <code>lintRelease</code> đầy đủ chạy lại trên <b>mã cuối</b> trước commit đăng: <span class="ok">0 lỗi</span>, 528 cảnh báo (bằng lintDebug) <span class="ev m">[ĐO 18:58]</span></td><td>báo cáo lint trong <code>app/build/reports/</code> (Pass 5)</td></tr>
+<tr><td><b>V-E2E</b></td><td><span class="ok">Đạt</span> — bảng dưới</td><td>E2E vòng 1, vòng 2, E2E trong vá + review</td></tr>
+<tr><td><b>V-review</b></td><td><span class="ok">CLEAN</span> — A–E: lượt 3 của workflow 2 (không sửa gì; trước đó 5 lượt PATCHED — §10 Pass 3). Rào camera (workflow review mã thứ ba): <b>3 lượt, lượt 3 CLEAN</b> — lượt 1 [P2] rào chỉ nhìn stack trên cùng ⇒ đọc mọi stack <code>visible=true</code>; lượt 2 [P3] dấu “đọc được” = dòng <code>visible=true</code>, không phải tiêu đề <code>Stack id=</code> — §10 Pass 5</td><td>journal workflow · KDoc <code>AccessibilityRebind.kt:288-293</code>, <code>:329-335</code></td></tr>
+<tr><td><b>V-scan</b></td><td>Cổng của chính commit đăng (global §6): quét toàn bộ diff (mã + tài liệu này + fixture) + ruột APK; commit chỉ đi khi không có [BLOCK]</td><td>quét bảo mật trước commit</td></tr>
+<tr><td><b>V-apk</b></td><td><span class="ok">Đạt</span> <span class="ev m">[ĐO 29/09 trên tệp đăng]</span> — <code>apk/Kachi-2.83-release.apk</code> 43 907 845 B, sha256 <code>b44691e65c53916e079dcece2ed1a455211a539581f50d95162ae984d82f2213</code> · <code>apksigner verify</code> cert SHA-256 <code>92:57:…:99:17</code> · <code>aapt2 dump badging</code> <code>com.byd.launcher</code> 184 / 2.83, <b>không</b> debuggable · <code>aapt2 dump strings</code> 0 <code>TEST_</code> · dex chứa đúng chuỗi rào camera bản cuối. Tệp tạm 17:13 (sha256 <code>bde50207…</code>, thiếu vá rào — Pass 4) <b>không</b> đăng</td><td><code>shasum</code> · <code>apksigner</code> · <code>aapt2</code> · grep dex (Pass 5)</td></tr>
+<tr><td><b>V-rào-camera</b></td><td><span class="ok">Đạt</span> <span class="ev m">[ĐO máy ảo 29/09, journal workflow]</span> — chuỗi rào <b>bản cuối</b> chạy thật trên <code>mksh</code> của máy ảo, <b>Settings đóng vai camera</b>. KDoc mã ghi thêm <span class="ev m">[ĐO máy ảo]</span>: rào bản đầu (chỉ nhìn đỉnh) để lọt ca PIP nằm trên “camera” và ca cửa sổ mồ côi freeform nằm trên “camera” — Home làm “camera” <code>visible=true</code> → <code>false</code> — nên bản cuối đọc mọi stack <code>visible=true</code>. Host: <code>ForceStopReturnHomeTest</code> 18/0 chạy chuỗi bằng <code>sh</code> thật — camera ở đỉnh / dưới PIP / dưới cửa sổ mồ côi ⇒ <b>không</b> Home (cả lượt hai); camera đã khuất ⇒ vẫn Home; mất cờ <code>visible</code> hoặc <code>am stack list</code> rỗng ⇒ không Home; rào khớp <code>StackParse</code> trên cả 7 fixture. Trên xe với <code>com.byd.avc</code> thật: <span class="ev s">[SUY]</span>; khe &lt; 1 s giữa lúc đọc và <code>am start</code>: <span class="ev s">[SUY]</span> vẫn có thể che</td><td>journal workflow review mã · <code>ForceStopReturnHomeTest.kt:293-394</code> · fixture <code>am-stack-list-oncar-2026-09-29-camera-{top,under-pip,under-orphan,hidden}-derived.txt</code></td></tr>
+</table></div>
+
+<h4>E2E máy ảo — cách gây kẹt và kết quả</h4>
+<p class="muted">Máy ảo AVD <code>clusternav10</code> (Android 10 userdebug), bản vehicleTest/release 2.83 cùng khoá phát hành, cài bằng <code>install -r</code>. <b>Cách gây kẹt</b> <span class="ev m">[ĐO máy ảo]</span>: <code>kill -9</code> <b>không</b> tái hiện (AOSP tự dựng lại service, Binding rỗng); gọi <code>killApplication</code> bằng uid system — <code>su 1000 service call activity 83 s16 com.byd.launcher i32 &lt;uid của Kachi&gt; i32 0 s16 &lt;lý do&gt;</code> (mã giao dịch 83 đọc từ <code>framework.jar</code> của image) — cho đúng chữ ký xe: <code>am_kill … stop com.byd.launcher</code>, không <code>PACKAGE_RESTARTED</code>, <code>Bound {}</code>, Binding có Kachi. Giờ theo logcat máy ảo.</p>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>Kết quả</th><th>Bằng chứng</th></tr>
+<tr><td>Lớp 1 — tắt máy (màn tắt, giết kiểu BYD)</td><td><span class="ok">PASS</span> ×3</td><td>13:36:14.8 giết → 15.0 <code>STUCK note=tat-may</code> → 20.2 force-stop <b>đúng 1 lần</b> → tiến trình mới “tương tác=false → không mở lượt tắt-máy” → 35.2 <code>sau-chua-ON</code>; lặp 16:03:02 → 08.5 → 23; 16:44:50 → 16:45:11</td></tr>
+<tr><td>Lớp 2 — mở xe (<code>KEYCODE_WAKEUP</code>, đang kẹt)</td><td><span class="ok">PASS</span> ×4</td><td>leo ở +5,4 s · +6,9 s · +5,9 s (16:05:07.8 → 13.7) · +5,8 s, ân hạn 10 s; không có HOME từ uid 2000 (đuôi <code>IF_ORPHANED</code> không khớp ⇒ đúng hành vi); không kẹt thì không leo (16:45:25)</td></tr>
+<tr><td>Lớp 3 — kẹt lúc đang chạy (VietMap trong ô)</td><td><span class="ok">PASS</span></td><td>RUNNING ⇒ nấc NONE suốt ~4 ph (vòng 1). Vòng 2: kẹt <b>10 ph 40 s</b> — 0 lần ghi cài đặt bảo mật, 0 dòng nhật ký mới (chỉ NOT_BOUND rồi STUCK), 0 force-stop, pid giữ nguyên; kiểm lại 16:01:32 (10 ph 27 s) chỉ đọc; bấm nút 16:02:05 → đúng 1 dòng <code>BOUND sau-chua-ON</code>. Alarm 60 s khi keep-alive chết: “không toggle” (16:51:06, 16:52:03). Trước vá: 5 lần toggle + 14 lần ghi trong cùng khoảng</td></tr>
+<tr><td>Nút sửa — display 0 chỉ có nhà (5a)</td><td><span class="ok">PASS</span></td><td>13:34:48 <code>grant-tay</code> → force-stop → lắp lại → <code>sau-chua-ON</code>; KachiHome resumed; VietMap về màn ảo ô; 0 freeform trên display 0</td></tr>
+<tr><td>Đuôi mồ côi (5b, mở YouTube freeform 1,5 s sau force-stop)</td><td><span class="ok">PASS</span> trên mksh R57</td><td>13:44:28.950 <code>START … cat=[HOME] from uid 2000</code>; stack YouTube <code>visible=false</code>; nhánh không khớp chạy riêng cũng đúng</td></tr>
+<tr><td>Nút sửa — app toàn màn nằm dưới nhà (5c)</td><td>Vòng 1 <span class="warn">FAIL</span> (13:58:27 Maps lên đỉnh) ⇒ vá <code>ALWAYS</code> ⇒ <span class="ok">PASS</span> ×2</td><td>15:38:20 force-stop, Maps lên đỉnh → 15:38:26.6 HOME từ uid 2000 → KachiHome resumed → 15:38:33 <code>BOUND sau-chua-ON</code>; lặp 15:49:22 → 28.7 → 36; chụp lại +8 s và +90 s: KachiHome resumed, Maps <code>vis=false</code>, 0 stack freeform</td></tr>
+<tr><td>Cửa sổ mồ côi nổi <b>sau</b> lần Home đầu (mô phỏng 0,8 s)</td><td><span class="ok">PASS</span></td><td>16:49:01.729 Home lần 2, màn nhà lên, VietMap vào lại ô, phím BOUND; đối chứng không mồ côi (16:53): Home đúng một lần</td></tr>
+<tr><td><code>a11ylog</code> trên bản release (không debuggable)</td><td><span class="ok">PASS</span></td><td>đủ ghi chú <code>tat-may</code>/<code>mo-xe</code>/<code>grant-tay</code>/<code>grant-tu-dong</code>/<code>sau-chua-ON</code> + hai claim; lặp 16:44:50, 16:53:56</td></tr>
+<tr><td><code>CLEAR_TASK</code> Google Maps / đối chứng VietMap</td><td><span class="ok">PASS</span></td><td>13:40:32.683 <code>START {act=VIEW dat=google.navigation:q=&lt;đích&gt; flg=0x10008000 pkg=com.google.android.apps.maps} from uid &lt;Kachi&gt;</code>; VietMap <code>flg=0x10000000</code> (13:41:00)</td></tr>
+<tr><td>Nhãn nhật ký không chấm oan</td><td><span class="ok">PASS</span> sau 2 vá</td><td>lỗi 13:37:55 (<code>sau-chua-VAN-TAT</code> cho lượt đã ăn) ⇒ <code>firstStartAfterHeal</code>; lỗi 15:51:00 ở watchdog ⇒ <code>bornFromOwnHeal</code>; sau vá: BYD giết lại 49 s sau lượt chữa ⇒ <code>note=watchdog</code> (16:45:52)</td></tr>
+<tr><td>0 FATAL / ANR</td><td><span class="ok">PASS</span></td><td>13:25:58–13:59 và 15:44–16:08 (11 696 dòng, gồm bộ đệm crash): 0 <code>FATAL EXCEPTION</code>/<code>ANR in</code>/<code>am_anr</code>/<code>am_crash</code>/<code>Fatal signal</code>; <code>dumpsys dropbox</code> 0 mục crash/anr/tombstone</td></tr>
+</table></div>
+<p><b>Máy ảo không mô phỏng được</b>: hàm giết thật của BYD (chỉ mô phỏng bằng <code>killApplication</code>) · <code>isInteractive</code> khi tắt màn lúc máy nổ trên ROM xe · mksh/toybox của xe cho đuôi Home · cụm (display 1) · GPS · camera lùi. <b>Quan sát phụ, chưa sửa</b> <span class="ev m">[ĐO máy ảo]</span>: (1) giết kiểu BYD khi có app toàn màn nằm dưới nhà ⇒ Android không dựng lại KachiHome ngay (tiến trình lên lại ~10 s nhờ dịch vụ khởi động lại); lớp 1 vẫn chữa (13:45:48) nhưng lúc mở xe app đó ở đỉnh — trên xe (c2) Kachi được dựng lại +0,3 s, có app nằm dưới nhà hay không: <span class="ev u">[CHƯA BIẾT]</span>; (2) <code>SCREEN_ON</code> giả ở lần tắt màn đầu sau boot (13:36:12) — vô hại vì <code>fireGate</code> đòi màn tương tác; (3) <code>KachiAutostart.runBoot</code> chạy <code>am start -n …KachiHomeActivity</code> qua dadb sau mỗi lần cài ⇒ stack KachiHome loại <code>standard</code> — hình dạng khớp stack 41 trên xe <span class="ev s">[SUY]</span>.</p>
+
+<h3>6.2 Hiện trường <span class="pill wait">OTA đã đăng 29/09 — anh em test trên xe của họ</span></h3>
+<p class="muted">Không còn buổi xe của chủ xe trước OTA (14:05:56). Anh em cài 2.83 qua <i>Kiểm tra cập nhật</i> rồi dùng xe như thường. Tin nhắn soạn sẵn: <code>docs/_handoff/tin-nhan-anh-em-2.83.md</code>. OTA không lùi bản ⇒ ca nào đỏ phải ra 2.84.</p>
+<ul>
+<li><b>Mọi người — không cần adb</b> (CLAUDE.md §11): (1) sau <b>mỗi</b> lần tắt máy rồi mở lại, bấm phím vô-lăng trong 30 s đầu; (2) đang chạy mà phím chết ⇒ <i>Cài đặt › Phím vô-lăng › Kiểm tra / Sửa ngay</i> — giao diện khởi động lại một nhịp rồi <b>phải</b> về màn nhà (trừ lúc màn camera của xe đang hiện — rào D-15, phím vẫn được chữa), không để app nào nổi thành cửa sổ lẻ; (3) Google Maps đang dẫn, đổi đích bằng giọng nói hoặc lịch ⇒ không còn hộp <i>“Thoát chế độ đi theo chỉ dẫn?”</i>. Hỏng thì gửi <b>ảnh chụp màn hình + giờ + việc vừa làm + số bản</b> (<i>Cài đặt › Giới thiệu</i>).</li>
+<li><b>Ai có adb (tuỳ chọn)</b>: <code>adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/</code> (dòng <code>journal …</code> tag <code>A11yJournal</code> trong <code>usage-*.log</code>), hoặc bật Chế độ kiểm thử rồi <code>am broadcast -a com.byd.launcher.TEST -p com.byd.launcher --es cmd a11ylog</code>. Log lọc trước khi vào repo (không IP, không <code>&lt;đích&gt;</code>, không ảnh).</li>
+<li><b>Đọc nhật ký để chốt</b>: sau mỗi lần tắt máy phải có dòng <code>tat-may</code>; kẹt thì có một lần force-stop rồi <code>sau-chua-ON</code>; mở xe có <code>mo-xe</code> khi lớp 1 không kịp. Không có dòng <code>tat-may</code> nào ⇒ lớp 1 không chạy trên ROM đó (câu hỏi M-A1 vẫn <span class="ev u">[CHƯA BIẾT]</span>).</li>
+</ul>
+<p class="muted">Các dòng cần shell để đo cơ chế (V-A5, V-E2…V-E4) chỉ chạy được khi có người ngồi trong xe với adb; chưa chạy thì kết quả là <span class="ev u">[CHƯA BIẾT]</span>, không phải “đạt”. Khi đo: bộ ghi phím đọc trọn khối Bound + ServiceRecord + Binding (§2.2 findings); không <code>logcat -c</code>; mọi kết quả <code>tee</code>.</p>
+<div class="tbl"><table>
+<tr><th>Mã</th><th>Kịch bản</th><th>Đạt khi</th></tr>
+<tr><td><b>V-A1</b></td><td>Từ trạng thái sạch, tắt máy / mở máy 3 lần liên tiếp</td><td>Sau mỗi lần: phím 328 ăn ≤ 30 s sau <code>SCREEN_ON</code>; nhật ký có <code>tat-may</code> (hoặc <code>mo-xe</code>) và, nếu kẹt, <code>sau-chua-ON</code>; mỗi lần tắt máy ≤ 1 lượt tự force-stop</td></tr>
+<tr><td><b>V-A2</b></td><td>Như V-A1, có app trong ô trước khi tắt máy</td><td>Sau mở xe: màn nhà lên, app về lại ô, không cửa sổ freeform mồ côi (lớp 2 không hoãn gắn ô — D-1)</td></tr>
+<tr><td><b>V-A3</b></td><td>Đang chạy, phím chết</td><td>Không force-stop tự động ở pha RUNNING; nút <i>Kiểm tra / Sửa ngay</i> chữa được và về màn nhà</td></tr>
+<tr><td><b>V-A4</b></td><td>Không vòng lặp, xem 5 phút sau một lượt tự chữa</td><td>Không lượt force-stop thứ hai cho cùng sự kiện</td></tr>
+<tr><td><b>V-A5</b></td><td>Máy vẫn nổ, tắt màn ≥ 1 phút rồi bật</td><td>0 lượt tự force-stop. Theo mã (D-10) ca xấu cần thêm: tiến trình Kachi chết rồi dựng lại lúc màn tắt + đang kẹt — cách gây ra ca này trên xe không cần root: <span class="ev u">[CHƯA BIẾT]</span></td></tr>
+<tr><td><b>V-B</b></td><td>Ô đang chạy app, bấm <i>Kiểm tra / Sửa ngay</i> (thêm một lượt khi đang lùi xe, camera xe đang hiện)</td><td>KachiHome có tiêu điểm ≤ ~10 s, không bấm HOME; không stack freeform app khách trên display 0; phím ăn. Lượt đang lùi: camera <b>không</b> bị màn nhà che (rào D-15 — kể cả khi có cửa sổ nổi / PIP nằm trên camera), phím vẫn ăn; ra khỏi số lùi rồi bấm lại ⇒ về màn nhà bình thường</td></tr>
+<tr><td><b>V-C</b></td><td>Đọc nhật ký trên bản phát hành</td><td><code>a11ylog</code> trả dòng + mốc; <code>usage-*.log</code> có dòng <code>journal …</code>; kẹt lúc đang chạy không sinh cặp NOT_BOUND/STUCK mỗi 30 s</td></tr>
+<tr><td><b>V-D</b></td><td>Cài đặt › Camera; xi-nhan thật</td><td>14 hàng, không còn “Vạch chuẩn”; CAM-SEAL như 29/09</td></tr>
+<tr><td><b>V-E1</b></td><td>Maps đang dẫn (có GPS), đổi đích bằng giọng/lịch</td><td>Không hộp thoại, dẫn thẳng <code>&lt;đích&gt;</code> mới</td></tr>
+<tr><td><b>V-E2, V-E3</b></td><td>VietMap chưa dẫn / đang dẫn với <code>0x10008000</code></td><td>Chỉ để quyết bật cờ cho VietMap ở bản sau (hôm nay VietMap vẫn <code>NEW_TASK</code>)</td></tr>
+<tr><td><b>V-E4</b></td><td>Maps đang chiếu cụm, đổi đích</td><td>Task còn ở display 1, cụm không mất bản đồ. Không đạt ⇒ luật loại trừ đo được ở 2.84</td></tr>
+<tr><td><b>V-reg</b></td><td>Hồi quy chung</td><td>0 <code>FATAL EXCEPTION | Fatal signal | KachiCrash | ANR in com.byd.launcher</code>; lịch dẫn đường giữ nguyên sau nâng cấp (SCHED-1 như 2.82)</td></tr>
+</table></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1 — <span class="pill ok">ĐÃ ĐÓNG 29/09</span> Chờ duyệt hay tự chạy tới APK?</b> <span class="ev m">[ĐO transcript]</span> 12:31:55 <i>“… autonomus cho đến khi ra apk đi nhé, cần hỏi gì nữa ko”</i> · 12:34:54 <i>“ok, làm đi, làm đi”</i> · 12:37:33 chia việc song song ⇒ đã duyệt (quy ước <i>“làm đi” = đã duyệt</i>). <b>14:05:56</b> cổng OTA đổi: <i>“xong chắc kiểm tra kỷ rồi OTA luôn cho anh em test nhỉ, mình ko có thời gian on-car test”</i> ⇒ OTA sau cổng off-car (§6.1), anh em test sau OTA (§6.2). Câu “chờ duyệt trước khi code” trong khung công việc do script tính ra, không phải lời chủ xe.</li>
+<li><b>OQ2 — <span class="pill ok">ĐÃ ĐÓNG 29/09</span> Lớp 2 có làm không?</b> <span class="ev m">[ĐO transcript]</span> chủ xe nêu luồng (12:27:07) và đồng ý (12:29:08 <i>“nghe có lý đó …”</i>): lớp 1 + lớp 2 tự chữa, lớp 3 người dùng tự bấm. Không giữ wakelock.</li>
+<li><b>OQ3 — <span class="pill ok">ĐÃ ĐÓNG theo mã</span> Lớp 3 còn tự toggle không?</b> Còn, khi <b>chưa</b> biết kẹt (toggle chữa được ca “bật mà chưa gắn”); khi dump đã nói kẹt thì <b>không</b> — chỉ kiểm lại mỗi 10 phút (D-12). Lý do đo được: toggle vô hiệu với kẹt (AOSP <code>:1630-1632</code>) mà mỗi lần là ghi Secure Settings + ~12 lệnh shell; alarm 60 s còn đánh thức SoC cả đêm.</li>
+<li><b>OQ4 — <span class="pill ok">ĐÃ ĐÓNG theo mã</span> Cửa sổ 60 s?</b> Không dùng: hạn mức theo sự kiện (claim) + chấm điểm theo tiến trình đầu tiên trong 2 phút (D-4, D-13).</li>
+<li><b>OQ5 — Đưa Kachi vào danh sách miễn giết ACC của BYD (<code>setPkg2AccWhiteList</code>)?</b> Mở. 2.83 không code. Chỉ đọc trên xe khi có dịp (M-A3).</li>
+<li><b>OQ6 — <span class="pill ok">ĐÃ ĐÓNG theo mã</span> <code>CLEAR_TASK</code> theo bằng chứng từng đích?</b> Có — chỉ Maps; ý-định dự phòng không mang cờ; VietMap sau E-M3; Waze chưa.</li>
+<li><b>OQ7 — <span class="pill ok">ĐÃ ĐÓNG theo mã</span> Đường đọc nhật ký</b>: <code>a11ylog</code> + logcat trong <code>usage-*.log</code>; không lối vào ẩn trong app (giữ quyết định 21/09). Người lái không cần đọc nhật ký — ảnh chụp + giờ là đủ (§6.2).</li>
+<li><b>OQ8 — Hai khoá <code>camera_guide_*</code> còn trên xe chủ xe</b>: để yên (không gì đọc, vô hại). Mở ở mức P3.</li>
+<li><b>OQ9 — Nút “Có” của Maps bị khoá vì sao?</b> <span class="ev u">[CHƯA BIẾT]</span>; không chặn vì <code>CLEAR_TASK</code> bỏ qua hộp thoại.</li>
+<li><b>OQ10 — Đêm 27→28 có cùng kiểu giết không?</b> Không còn log; nhật ký 2.83 (dòng <code>tat-may</code>) trả lời cho mọi đêm sau.</li>
+<li><b>OQ11 — (mới) D-10 và <code>TEST-MODE-ACC-OFF</code></b>: hai việc Pass 2 ghi “chủ xe quyết trước OTA”; tới lúc đăng 2.83 (29/09) <b>chưa ghi nhận câu trả lời riêng</b> <span class="ev u">[CHƯA BIẾT]</span>. 2.83 đăng theo lựa chọn (a) của D-10 (chấp nhận, lý do ở §9) và không đổi Chế độ kiểm thử; tài liệu người dùng đã nói đúng sự thật. Pass 2–4 ghi “cần một câu xác nhận trước khi push” — câu đó chưa có ⇒ <b>còn mở</b>, chờ chủ xe; đổi hướng (b) phải ra 2.84.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>8. References</h2>
+<h4>Bằng chứng ngoài repo (không chép vào repo)</h4>
+<ul>
+<li>Buổi xe 29/09 (<code>oncar-0929/</code>): logcat <code>k1-logcat-110944.txt</code>, <code>c1-logcat-112312.txt</code>, <code>fix-logcat-112731.txt</code>, <code>c2-logcat-113538.txt</code>, <code>final-logcat-120941.txt</code>, <code>camb5-logcat.txt</code>, <code>gmaps-popup-logcat-121156.txt</code> · accessibility/services <code>k1-acc-110944.txt</code>, <code>fix2-acc-112916.txt</code>, <code>c2-acc-113538.txt</code>, <code>k1-svc-110944.txt</code>, <code>fix2-svc-113016.txt</code>, <code>c2-svc-113538.txt</code> · broadcast <code>c1-bcast-112353.txt</code>, <code>fix-bcast-112813.txt</code>, <code>c2-bcast-113538.txt</code> · bộ ghi <code>poll-cycle2.txt</code>, <code>poll-cycle2-after.txt</code> · log Kachi <code>usage-cycle2.log</code>, <code>usage-282-120941.log</code> · stack <code>fix-stacks-112813.txt</code>, <code>fix-activities-112813.txt</code>, <code>gmaps-exp-windows.txt</code> · trạng thái <code>inst-state.txt</code>, <code>key5-state-113855.txt</code>.</li>
+<li>E2E máy ảo 29/09 (scratchpad của phiên): <code>e2e283/</code> (<code>logcat-all.txt</code>, <code>snaps/</code>, <code>a11ylog-after-s3.txt</code>, <code>a11ylog-release.txt</code>, <code>orphan-watch.out</code>) · <code>e2e283/round2/</code> (<code>timeline-5c.txt</code>, <code>timeline-running.txt</code>, <code>timeline-l1-l2.txt</code>, <code>win-run-full.txt</code>, <code>settings-run-*-secure-history.txt</code>, <code>kill_byd.sh</code>) · <code>e2e283fix/</code> · <code>rv2/</code> · <code>rv3/</code>. Ảnh chụp ở đó, không đưa vào repo.</li>
+<li>Journal hai workflow mã của phiên (5 làn + gộp + E2E + 3 review + phát hành; vá + E2E + 3 review + phát hành).</li>
+</ul>
+<h4>Trong repo (mã của bản đăng 2.83)</h4>
+<ul>
+<li><code>app/src/main/java/com/byd/clusternav/A11yLifecycleHeal.kt</code> (mới) · <code>PrefsA11yLifecycle.kt</code> (mới) · <code>KachiApplication.kt:44</code> · <code>NavConnect.kt</code> (<code>:224</code>, <code>:306-367</code>) · <code>VoiceKeyKeepAliveService.kt</code> (<code>:77-106</code>) · <code>RebindReceiver.kt</code> (<code>:60-76</code>)</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/modules/navaccess/AccessibilityHealGates.kt</code> · <code>AccessibilityRebind.kt</code> (<code>:206-232</code>, <code>HomeTail</code> <code>:237-296</code>, rào camera <code>:307</code> + <code>:343-345</code>, nhịp chờ <code>:357</code>, <code>:365</code>, đuôi mồ côi <code>:375</code> + <code>:431-433</code> — 487 dòng, sửa lần cuối 18:02:41) · <code>A11yBindJournal.kt</code> · <code>launcher/HomeActivityCmd.kt:49</code></li>
+<li><code>app/…/launcher/testbridge/TestBridgeA11yLog.kt</code> (mới) · <code>TestBridgeNoHome.kt:36</code> · <code>core/…/testbridge/TestBridgeCommand.kt:289-296</code> · <code>app/…/modules/navaccess/A11yBindJournalStore.kt</code></li>
+<li><code>app/…/launcher/voice/VoiceAppIntents.kt</code> (<code>:72</code>, <code>:83</code>, <code>:136-138</code>) · <code>core/…/launcher/voice/VoiceAppTargets.kt</code> (<code>:149</code>, <code>:152</code>, <code>:320</code>) · <code>launcher/VoiceTargetDispatch.kt:235</code> · <code>automation/ScheduledNavApplier.kt:170</code></li>
+<li>Test mới: <code>A11yLifecycleGatesTest</code> · <code>A11yRunningStuckGatesTest</code> · <code>ForceStopReturnHomeTest</code> · <code>A11yBindJournalLogcatTest</code> · <code>TestBridgeA11yLogCommandTest</code> · <code>VoiceNavClearTaskTest</code> (<code>:core</code>) · <code>A11yLifecycleHealWiringContractTest</code> · <code>A11yRunningStuckWiringContractTest</code> · <code>A11yFixReturnHomeWiringTest</code> · <code>A11yLogBridgeWiringContractTest</code> · <code>VoiceNavClearTaskFlagTest</code> (<code>:app</code>). Fixture: <code>core/src/test/resources/diagnostics/a11y-0929/*</code>, <code>am-stack-list-oncar-2026-09-29-*.txt</code> (ba tệp nguyên văn từ xe + bốn tệp <code>*-camera-*-derived.txt</code> — <b>dựng lại</b> từ dump xe, sửa đúng chỗ ghi trong tên, không phải dump thật; <code>ForceStopReturnHomeTest.kt:30-35</code>)</li>
+<li>Hồ sơ buổi xe: <code>docs/diagnostics/oncar-2026-09-29-findings.md</code> · runbook <code>docs/diagnostics/oncar-runbook-2.82.md</code> · spec liên quan <code>docs/specs/kachi-a11y-bind-stuck-autofix.html</code>, <code>kachi-camera-distance-guide.html</code> (rút), <code>kachi-voice-command.html</code> (R17)</li>
+</ul>
+<h4>AOSP (fetch lại 29/09 qua mirror — §4.9)</h4>
+<ul>
+<li><code>android-10.0.0_r47</code>: <code>AccessibilityManagerService.java</code> (<code>:398-417</code>, <code>:453-484</code>, <code>:488</code>, <code>:1610-1666</code>, <code>:4114-4117</code>) · <code>AccessibilityServiceConnection.java</code> (<code>:149</code>, <code>:208-211</code>, <code>:259-265</code>) · <code>PackageMonitor.java:412-416</code> · <code>ActivityManagerService.java</code> (<code>:1725-1735</code>, <code>:4234-4339</code>, <code>:4516-4529</code>, <code>:4642-4659</code>) · <code>ActivityStarter.java</code> (<code>:993-996</code>, <code>:1484-1486</code>, <code>:2045-2087</code>, <code>:2132-2226</code>) · <code>ActivityRecord.java</code> (<code>:1237-1243</code>, <code>:1283-1286</code>) · <code>Intent.java</code> (<code>:2180-2226</code>, <code>:6085-6092</code>) · <code>PowerManager.java:1342-1382</code> · <code>Notifier.java</code> (<code>:176-183</code>, <code>:748-783</code>) · <code>RootActivityContainer.java</code> (<code>:1276</code>, <code>:1303-1304</code>) · <code>ActivityManager.java</code> (<code>:2539</code>, <code>:2546-2548</code>) · <code>ActivityStack.java:1982-2098</code> · <code>ActivityDisplay.java:302-322</code></li>
+<li><code>android-12.0.0_r34</code> (= <code>r1</code> cho ba tệp a11y): <code>AccessibilityUserState.java</code> (<code>:254-257</code>, <code>:377-389</code>, <code>:566</code>) · <code>AccessibilityManagerService.java</code> (<code>:449-484</code>, <code>:529-566</code>, <code>:1894-1917</code>, <code>:3764-3769</code>) · <code>PackageMonitor.java:421-425</code> · <code>ActivityTaskManager.java</code> (<code>:553</code>, <code>:560-562</code> — <code>RootTaskInfo</code> của rào camera)</li>
+</ul>
+<h4>Luật áp dụng</h4>
+<ul>
+<li><code>CLAUDE.md</code> §2 · §3 · §4 · §5 · §6 · §7 · §8 · §9 · §10 · §11 · §14 · §16 · <code>.kiro/steering/conversation-protocol.md</code> P1/P5 · <code>.kiro/steering/documentation-and-backlog.md</code> R1/R2.1/R2.6 · rule global §1.1, §5, §6.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">R2.6: spec phải phản ánh mã thật. <b>Ảnh chụp lúc 17:18</b> (Pass 3; ảnh trước ~14:35) <span class="ev m">[ĐO <code>git diff HEAD</code> / <code>stat</code> / journal]</span>: sau 14:35 có workflow thứ hai (vá 5c + lớp 3 → E2E vòng 2 → 3 lượt review; tệp mã sửa muộn nhất 16:40:13; lượt review cuối CLEAN, không sửa gì). Lượt tài liệu này <b>chỉ đọc</b> mã. <b>Pass 5</b>: D-14, D-15 cập nhật theo mã của bản đăng (rào camera bản cuối).</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Thiết kế Pass 0–2 nói</th><th>Mã thật (17:18)</th><th>Trạng thái</th></tr>
+<tr><td><b>D-1</b> A lớp 1/2</td><td><code>sync</code> keep-alive từ <code>Application</code>; <code>A11yPreMountHeal</code> hoãn gắn ô khi kẹt</td><td><code>A11yLifecycleHeal</code> ở tầng tiến trình (lớp 1 khởi động · lớp 2 <code>SCREEN_ON</code> 10 s + <code>moXeFollowsTatMay</code>); kẹt bền hai lần đo; <b>không hoãn gắn ô</b> — lượt lớp 2 nhiều khả năng rơi sau lúc app vào ô, cửa sổ mồ côi (nếu có) do đuôi <code>IF_ORPHANED</code> dọn</td><td>Giữ theo mã. Không có câu chủ xe riêng về “hoãn gắn ô”; R-A2 gốc sang bản sau nếu hiện trường thấy mồ côi sau mở xe (V-A2)</td></tr>
+<tr><td><b>D-2</b> §14</td><td>Mã A chỉ sau M-A1 + M-A2 trên xe</td><td>Mã viết trước; không còn buổi xe trước OTA</td><td>Lệch §14 có ghi; thay bằng E2E máy ảo (§6.1) + hiện trường sau OTA (§6.2)</td></tr>
+<tr><td><b>D-3</b> B</td><td>B1 <code>ShellVerdict</code> chữa gốc; B2 Home ở nhánh người bấm</td><td>Không B1; đuôi <code>IF_ORPHANED</code> cho lớp 1/2 + <code>ALWAYS</code> cho người bấm (D-14)</td><td><span class="ok">Đóng</span> — khớp chủ xe “nút … phải trả về home, ko để app mồ côi”; B1 (gốc dự phòng) sang bản sau</td></tr>
+<tr><td><b>D-4</b> cổng thuần</td><td><code>bornFromOwnEscalation</code> 60 s + 5b; giữ <code>guestAppVisible</code></td><td>Hạn mức theo sự kiện (claim), <code>lifecycleFireAllowed</code>; gỡ <code>guestAppVisible</code> khỏi <code>healStep</code> (vẫn đo để log)</td><td><span class="ok">Đóng</span> — máy ảo: 1 force-stop mỗi sự kiện, không vòng lặp</td></tr>
+<tr><td><b>D-5</b> C</td><td><code>a11y_log</code>; tệp bản sao; sửa 4 chú thích; nhãn nguồn gốc</td><td><code>a11ylog</code> (thêm pid, <code>proc_start_elapsed_ms</code>, hai claim); logcat <code>journal …</code>; 1/4 chú thích sửa</td><td>Giữ theo mã. 3 chú thích còn sai ⇒ danh sách sửa mã (<code>AndroidManifest.xml:89</code> · <code>SettingsSectionsCast.kt:442-445</code> · <code>SettingsSections.kt:297-298</code>)</td></tr>
+<tr><td><b>D-6</b> E</td><td>enum <code>clearTaskEvidence</code> + <code>VoiceLaunchPolicy</code>; dự phòng không mang cờ</td><td>Boolean <code>clearTaskOnNav</code> trong <code>VoiceAppTargets.kt</code> (475 → 490 dòng); dự phòng <b>không</b> mang cờ (vá review lượt 2, F4)</td><td><span class="ok">Đóng</span> phần dự phòng. R-nf4: đề xuất chấp nhận — trường là dữ liệu của chính đích, tách tệp là tách dữ liệu khỏi target; tệp vẫn dưới trần 500</td></tr>
+<tr><td><b>D-7</b> D</td><td>§4.5</td><td>Khớp</td><td><span class="ok">Đóng</span></td></tr>
+<tr><td><b>D-8</b> chung</td><td>Bump 2.83 (184); fixture</td><td>Bump xong <span class="ev m">[ĐO diff]</span>; fixture xe đã lọc riêng tư</td><td><span class="ok">Đóng</span></td></tr>
+<tr><td><b>D-9</b> DRY</td><td>—</td><td><code>HomeActivityCmd.GO_HOME</code> gom chuỗi HOME của <code>VietMapAutostart</code> (byte y hệt)</td><td><span class="ok">Đóng</span></td></tr>
+<tr><td><b>D-10</b> lớp 1 · phát hành</td><td>§4.2 cũ: chưa phân biệt “tắt màn khi máy nổ” với “tắt máy” thì lớp 1 không giết</td><td>Lớp 1 mở lượt ở mỗi lần tiến trình launcher khởi động khi <code>isInteractive()==false</code>; không tín hiệu ACC. Ca xấu cần <b>ba</b> điều cùng lúc: màn không tương tác khi máy nổ <span class="ev s">[SUY]</span> + tiến trình Kachi chết rồi dựng lại đúng lúc đó (tần suất <span class="ev u">[CHƯA BIẾT]</span>) + đang kẹt. Hậu quả: launcher tải lại một nhịp, màn ảo của mình chết, cụm tự hồi ~13 s; không chạm thân xe</td><td><b>Mở</b> — chủ xe chưa trả lời riêng (OQ11). Mã = lựa chọn (a) “chấp nhận rủi ro”. Nếu chọn (b) phải giữ việc ghi claim <code>a11y_tat_may_elapsed</code> (lớp 2 cần nó)</td></tr>
+<tr><td><b>D-11</b> C nhật ký</td><td>Ghi khi đổi + nhịp tim 1 giờ</td><td><code>sameState(…, binderOnly)</code>; chỉ watchdog khai <code>binderOnly = true</code> (<code>VoiceKeyKeepAliveService.kt:98</code>)</td><td><span class="ok">Đóng</span> — giữ</td></tr>
+<tr><td><b>D-12</b> A lớp 3 (mới)</td><td>OQ3: giữ toggle tự động</td><td><code>watchdogStep</code>: đã biết kẹt ⇒ không toggle, kiểm lại chỉ đọc mỗi 10 phút; alarm 60 s đi cùng cổng (vá review lượt 1, F2)</td><td><span class="ok">Đóng</span> — máy ảo 10 ph 40 s: 0 lần ghi settings</td></tr>
+<tr><td><b>D-13</b> C nhãn (mới)</td><td>R-C3: nhãn “tự chữa · cài đè · bị giết”</td><td><code>firstStartAfterHeal</code> + mốc <code>a11y_scored_for_elapsed</code> + cờ tiến trình <code>bornFromOwnHeal</code>: <code>sau-chua-*</code> chỉ cho tiến trình đầu tiên sau lượt leo; không có nhãn “cài đè”</td><td>Một phần — đủ để không chấm oan (máy ảo); nhãn nguồn gốc riêng sang bản sau</td></tr>
+<tr><td><b>D-14</b> B nút (mới)</td><td>B2 điều kiện: Home ở nhánh người bấm nếu đo cần</td><td><code>HomeTail.ALWAYS</code> cho <code>userAsked</code> (vá sau E2E 5c FAIL + review lượt 2 F3); bản đăng = <code>GO_HOME_UNLESS_CAMERA ; sleep 3 ; RETURN_HOME_IF_ORPHANED</code> (<code>AccessibilityRebind.kt:225</code>)</td><td><span class="ok">Đóng</span> — máy ảo 5c ×2 + mồ côi mô phỏng PASS. Camera lùi trong ~7 s sau khi bấm: Home che camera không <span class="ev u">[CHƯA ĐO]</span> trên xe ⇒ rào D-15</td></tr>
+<tr><td><b>D-15</b> B rào camera (Pass 4 · bản cuối Pass 5)</td><td>Không có trong thiết kế Pass 0–3 (chỉ ghi “Home mù có che camera lùi không: CHƯA ĐO”)</td><td><span class="ev m">[ĐO đọc mã bản đăng]</span> workflow review mã thứ ba thêm <b>một cửa</b> <code>GO_HOME_UNLESS_CAMERA</code> (<code>AccessibilityRebind.kt:343-345</code>) cho <b>mọi</b> lần Home của cả hai đuôi (<code>HomeTail.ALWAYS</code> + <code>RETURN_HOME_IF_ORPHANED</code>): <code>c=$(am stack list | grep -A2 "displayId=0 " | grep "visible=true") ; case "$c" in "") ;; *"com.byd.avc/"*) ;; *) &lt;GO_HOME&gt; ;; esac</code> — bỏ Home nếu bất kỳ stack đang hiện nào của display 0 là camera BYD (kể cả dưới PIP / cửa sổ mồ côi); không có dòng <code>visible=true</code> ⇒ không Home. 3 lượt senior review (lượt 1 [P2] chỉ nhìn đỉnh ⇒ mọi stack; lượt 2 [P3] dấu “đọc được” = dòng <code>visible=true</code>), lượt 3 CLEAN. Test <code>ForceStopReturnHomeTest</code> + bốn fixture <code>*-camera-*-derived</code></td><td><span class="ok">Đóng</span> — đã triển khai + đăng OTA 29/09 (APK <code>b44691e6…</code>); <span class="ev m">[ĐO máy ảo, Settings đóng vai camera, mksh]</span>, trên xe <span class="ev s">[SUY]</span>; khe &lt; 1 s <span class="ev s">[SUY]</span>. Hệ quả người dùng: nút <i>Kiểm tra / Sửa ngay</i> <b>không</b> tự về màn nhà khi màn camera của xe đang hiện (phím vẫn đã chữa) — tài liệu người dùng + tin nhắn anh em đã ghi. Nợ CLAUDE.md §7 (tên gói viết cứng thay vì <code>ClusterProfile</code>) ⇒ <code>CODE-FIX-AFTER-283</code> (6)</td></tr>
+</table></div>
+<p><b>Việc cần review mã (không phải số dòng)</b> — từ điều kiện mới của <code>onHandleForceStop</code> (§4.9): lệnh tách rời chỉ gỡ được mục Binding khi component <b>đang có</b> trong <code>enabled_accessibility_services</code> lúc <code>am force-stop</code>. Đường lớp 1/2 không toggle trước ⇒ thoả <span class="ev s">[SUY mã]</span>. Đường nút bấm toggle (gỡ rồi thêm lại) trước khi leo; nếu lượt ghi thứ hai của toggle hỏng giữa chừng (dadb rớt) thì lúc force-stop component vắng khỏi enabled ⇒ mục Binding <b>không</b> được gỡ, lệnh vẫn thêm lại ⇒ vẫn kẹt <span class="ev s">[SUY]</span>. Hiếm; ghi vào danh sách việc sửa mã (chèn một lượt <code>settings put … "&lt;danh sách có mình&gt;"</code> <b>trước</b> <code>am force-stop</code>, hoặc kiểm <code>cur</code> có mình).</p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass review thêm một mục <code>Pass N — YYYY-MM-DD</code>, KHÔNG ghi đè lịch sử. Tag mỗi finding <code>[P0]–[P3]</code>; ghi patch đã áp + kết quả test cuối + verdict (APPROVED / INCOMPLETE).</p>
+<h3>Pass 0 — 2026-09-29</h3>
+<ul>
+<li>(chưa có pass review — spec mới draft, chưa có mã.)</li>
+</ul>
+<h3>Pass 1 — 2026-09-29 · vòng vá tài liệu (4 lăng kính: security · facts · spec · consistency)</h3>
+<ul>
+<li><span class="tag p1">[P1]</span> Banner/OQ1/Tasks ghi “chưa code, chờ duyệt” trong khi chủ xe đã cho làm và mã đang ở cây làm việc ⇒ <b>đã vá</b>: banner, OQ1 đóng (trích nguyên văn 12:31:55 · 12:34:54 · 12:37:33 + quy ước “làm đi = đã duyệt”), §9 mới.</li>
+<li><span class="tag p1">[P1]</span> R-E3/§4.6/T15/OQ6 chặn Maps tới E-M4, trái kế hoạch đã duyệt ⇒ <b>đã vá</b> theo kế hoạch; ca cụm thành rủi ro V-E4.</li>
+<li><span class="tag p1">[P1]</span> Lớp 2 không có fail-open ⇒ <b>đã vá</b> R-A2/§4.2/T9 (mã thật không hoãn gắn ô — D-1).</li>
+<li><span class="tag p1">[P1]</span> Chế độ kiểm thử sống qua tắt máy bị hạ thành “phát hiện phụ” ⇒ <b>đã vá</b> §2.10 lên <span class="ev m">[ĐO]</span> + backlog <code>TEST-MODE-ACC-OFF</code>; câu UI sai là mã — chờ chủ xe quyết.</li>
+<li><span class="tag p2">[P2]</span> R-A4 thiếu hạn mức “đã leo trong chính tiến trình này” · ACC_OFF chỉ từ <code>isInteractive</code> · DAG lệch §14 · §4.7 thiếu E-M · thiếu §Nhật ký triển khai · B1 thiếu ánh xạ verdict/phát lại · FGS nền Android 12 · OQ2 hiểu thấp quyết định ⇒ <b>đã vá</b> (xem Changelog Pass 1).</li>
+<li><span class="tag p2">[P3]</span> <code>minSdk</code> trích sai nguồn · <code>:64</code>→<code>:65</code> · <code>:19-21</code>→<code>:20-22</code> · “ba” → “bốn” chú thích · chatty <code>AccModeManagerS</code> · <code>build</code> không nhận <code>Handoff</code> · “không người dùng nào” · tích luỹ KachiHome ⇒ <b>đã vá</b>.</li>
+<li><b>Verdict</b>: <span class="pill wait">INCOMPLETE</span> — spec chưa khớp mã (D-1…D-6 cần quyết); §4 viết lại sau senior review của mã.</li>
+</ul>
+<h3>Pass 2 — 2026-09-29 · vòng vá tài liệu 2</h3>
+<ul>
+<li><span class="tag p1">[P1]</span> Tài liệu còn cổng cũ (“không OTA tới khi nghiệm thu trên xe”, APK <code>CHUA-DANG</code>) trái quyết định chủ xe 14:05:56 ⇒ <b>đã vá</b>: banner (trích nguyên văn + lời đáp 14:06:16 của phiên), header, OQ1, Cổng 4, R-nf6, T16/T18/T19, §6.1 (= cổng OTA, thêm V-lint/V-E2E/V-review/V-scan/V-apk), §6.2 (hiện trường sau OTA, cách thu log), D-2. Cùng vòng: backlog <code>REL-2.83</code>, project-context, <code>apk/README.md</code>, closeout-plan.</li>
+<li><span class="tag p1">[P1]</span> Lớp 1 không theo luật §4.2 và V-A5 không đo được trước OTA ⇒ <b>đã vá</b>: <b>D-10</b> (cơ chế đo từ mã, điều kiện xảy ra, hai lựa chọn cho chủ xe, lưu ý giữ claim nếu chọn (b)), ghi chú ở §4.2 và V-A5. Quyết định thuộc chủ xe — chưa có.</li>
+<li><span class="tag p2">[P2]</span> §9 lỗi thời so với mã sau 13:55 ⇒ <b>đã vá</b>: chụp lại ~14:35, <b>D-11</b> (<code>binderOnly</code>), D-1/D-4 thêm <code>moXeFollowsTatMay</code> + <code>lifecycleFireAllowed</code>, D-5 dòng <code>:77</code> → <code>:75</code>, V-C, T10, T16, T18.</li>
+<li><span class="tag p2">[P2]</span> R-nf4 bị vi phạm mà không ghi (<code>VoiceAppTargets.kt</code> 475 → 490) ⇒ <b>đã vá</b>: D-6, R-nf4, kết quả V-size.</li>
+<li><span class="tag p2">[P2]</span> <code>TEST-MODE-ACC-OFF</code> chỉ nêu một chuỗi UI ⇒ <b>đã vá</b> §2.10: năm chỗ (thêm chuỗi tiếng Anh <code>values-en/strings_kachi.xml:514</code> ngoài bốn chỗ của phát hiện).</li>
+<li><b>Verdict</b>: <span class="pill wait">INCOMPLETE</span> — D-1, D-3, D-5, D-6, D-10 còn chờ quyết; §4 chưa viết lại theo mã.</li>
+</ul>
+<h3>Pass 3 — 2026-09-29 · đối chiếu mã (17:18) + tóm tắt senior review mã</h3>
+<p class="muted">Mục này gồm hai phần: (a) các lượt senior review <b>mã</b> (Opus, global §5) của hai workflow — trích từ journal, không chạy lại; (b) lượt vá <b>tài liệu</b> này. Không commit, không OTA, không đụng xe/máy ảo trong lượt tài liệu.</p>
+<h4>(a) Senior review mã — workflow 1 (<code>kachi-283-parallel</code>)</h4>
+<ul>
+<li>Lượt 1: <span class="tag p2">[P2]</span> nhật ký tràn khi kẹt lúc đang chạy (cặp NOT_BOUND/STUCK mỗi 30 s) ⇒ <b>đã vá</b> <code>sameState(…, binderOnly)</code> (D-11). Scope INCOMPLETE vì ca 5c.</li>
+<li>Lượt 2: <span class="tag p2">[P2]</span> lớp 2 có thể force-stop khi tắt/bật màn lúc đang lái ⇒ <b>đã vá</b> <code>moXeFollowsTatMay</code>. Scope INCOMPLETE (5c).</li>
+<li>Lượt 3: <span class="tag p2">[P3]</span> bằng chứng ghi sai thời điểm app vào ô (+10,6 s → +7,6 s, CLAUDE.md §2) · <span class="tag p2">[P3]</span> <code>a11ylog</code> thiếu <code>pid</code>/<code>proc_start_elapsed_ms</code> ⇒ <b>đã vá</b> cả hai. Scope INCOMPLETE (5c + “hoãn gắn ô”).</li>
+</ul>
+<h4>(a) Senior review mã — workflow 2 (vá hai khoảng trống)</h4>
+<ul>
+<li>Vá trước review: B ca 5c (<code>HomeTail.ALWAYS</code>) + lớp 3 thôi toggle khi đã biết kẹt (<code>watchdogStep</code>) — 6 phá thử đỏ đúng bài, E2E ca 4 + 5c PASS.</li>
+<li>Lượt 1: <span class="tag p2">[P2]</span> watchdog gắn nhãn <code>sau-chua-VAN-TAT</code> oan ⇒ <b>đã vá</b> <code>bornFromOwnHeal</code> · <span class="tag p2">[P2]</span> alarm 60 s bỏ qua cổng “đã biết kẹt” (đánh thức SoC ghi Secure Settings mỗi phút suốt đêm) ⇒ <b>đã vá</b> cùng cổng <code>watchdogStep</code>. VERDICT PATCHED.</li>
+<li>Lượt 2: <span class="tag p2">[P2]</span> ca 5c: cửa sổ nổi do KachiHome dựng tươi có thể rơi trên màn nhà vừa mở ⇒ <b>đã vá</b> đuôi <code>ALWAYS</code> = <code>GO_HOME ; sleep 3 ; IF_ORPHANED</code> · <span class="tag p2">[P3]</span> ý-định dự phòng mang <code>CLEAR_TASK</code> chưa đo ⇒ <b>đã vá</b>. E2E máy ảo xanh. VERDICT PATCHED.</li>
+<li>Lượt 3: <b>0 finding</b>, không sửa tệp nào; test <code>--rerun-tasks</code> 6 407 / 0 (một bài <code>offcar-planner</code> đỏ do tranh chấp công cụ, chạy lại xanh); Context7 không có API deprecated. <span class="pill ok">VERDICT CLEAN</span>.</li>
+<li><b>Tech freshness</b>: không thêm thư viện; <code>registerReceiver</code> không cờ cho broadcast hệ thống OK; <code>CLEAR_TASK</code>, <code>isInteractive</code>, <code>getStartElapsedRealtime</code>, <code>commit()</code> không deprecated.</li>
+</ul>
+<h4>(b) Lượt vá tài liệu</h4>
+<ul>
+<li><span class="tag p1">[P1]</span> §4 Design là thiết kế trước mã, lệch ở mọi hạng mục ⇒ <b>đã vá</b>: viết lại theo mã (§4.1 sơ đồ mới, §4.2–§4.9), kèm <code>file:line</code> cây làm việc 17:18.</li>
+<li><span class="tag p1">[P1]</span> Banner/trạng thái chưa ghi đã duyệt + mã xong off-car + cổng OTA còn lại ⇒ <b>đã vá</b> (banner, header, Cổng 3/4).</li>
+<li><span class="tag p1">[P1]</span> Trích AOSP còn “qua spec cũ, chưa đọc lại” ⇒ <b>đã vá</b> bằng kết quả fetch lại (r47 + r34 qua mirror): §2.2, §4.9, §8; thêm điều kiện <code>onHandleForceStop</code> chỉ gỡ khi component đang enabled, và khác biệt Android 12 (<code>mCrashedServices</code>).</li>
+<li><span class="tag p2">[P2]</span> §6 chưa có kết quả E2E/review ⇒ <b>đã vá</b> §6.1 (bảng kết quả, cách gây kẹt, giới hạn máy ảo, quan sát phụ); §6.2 = anh em test sau OTA + cách báo lỗi không cần adb.</li>
+<li><span class="tag p2">[P2]</span> §5/§9 lỗi thời (ảnh 14:35) ⇒ <b>đã vá</b>: cột trạng thái §5; §9 chụp lại, D-3/D-4/D-6/D-7/D-8/D-9/D-11 đóng, thêm D-12/D-13/D-14; OQ3/4/6/7 đóng theo mã; OQ11 mới.</li>
+<li><span class="tag p2">[P3]</span> §2.10: CAM-SL6-PROFILE ghi đóng; <code>TEST-MODE-ACC-OFF</code> thêm trạng thái đối chiếu (mã chưa đổi, tài liệu người dùng đã sửa).</li>
+<li>Tên pass: khung công việc gọi lượt này là “Pass 1 (đối chiếu mã)”, nhưng Reviewer Log đã có Pass 0–2 và là append-only ⇒ ghi là <b>Pass 3</b>.</li>
+<li><b>Verdict</b>: <span class="pill wait">INCOMPLETE</span> — tài liệu khớp mã; còn mở: V-scan, V-apk, <code>lintRelease</code> mã cuối (bước phát hành đang chạy), câu xác nhận của chủ xe cho D-10 + <code>TEST-MODE-ACC-OFF</code> (OQ11), và 3 chú thích mã + 5 chỗ Chế độ kiểm thử trong mã (danh sách việc sửa mã).</li>
+</ul>
+<h3>Pass 4 — 2026-09-29 · soát độc lập tài liệu (chỉ đọc mã, ~17:40–17:50)</h3>
+<p class="muted">Ba lăng kính: (a) bảo mật repo PUBLIC · (b) sự thật (phiên bản, số liệu, mức bằng chứng, <code>file:line</code>) · (c) khuôn spec + Reviewer Log append-only + index. Không sửa mã/test, không commit/push/OTA, không đụng xe/máy ảo.</p>
+<ul>
+<li><b>(a) Bảo mật — sạch</b> trên 20 tệp tài liệu đổi/mới + 9 fixture: 0 IP ngoài <code>127.0.0.1</code>/<code>10.0.2.3</code> (máy ảo) · 0 khớp tệp đích dẫn đường của buổi xe (so bằng máy, không in nội dung) — “Nhà”/“chợ Bến Thành” chỉ là câu mẫu có từ trước · 0 VIN/biển số/serial (các chuỗi số khớp là mốc ms, mã CAN) · 0 email · 0 <code>/Users/&lt;tên&gt;/</code> · 0 tên người ngoài handle <code>dangkhoi</code> · 0 ảnh mới · 0 SHA commit rò 27/09 · 0 khớp mẫu khoá bí mật.</li>
+<li><span class="tag p1">[P1]</span> <b>Mã đổi sau đối chiếu 17:18</b> — rào camera <code>GO_HOME_UNLESS_CAMERA</code> (17:19–17:42, <code>AccessibilityRebind.kt</code> + <code>ForceStopReturnHomeTest.kt</code> + 4 fixture <code>*-derived</code>) mà mọi tài liệu còn ghi “mã không đổi từ 16:40:13 · review cuối CLEAN” và “nút về màn nhà vô điều kiện” ⇒ <b>đã vá</b>: banner, §4.1, §4.3, §4.7, §3.x R-B2, §5 T16/T18, §6.1 (V-apk, V-review, V-rào-camera), §6.2, §8, D-14/<b>D-15</b>; cùng lượt: <code>docs/README.md</code>, backlog (REL-2.83, B, <code>CODE-FIX-AFTER-283</code> mục 6, <code>DOC-SYNC-0929-283</code>), project-context, <code>apk/README.md</code>, findings, closeout-plan, và câu người dùng (README gốc, <code>HUONG-DAN-KACHI.md</code> VI/EN, hướng dẫn có hình, tin nhắn anh em: “trừ lúc màn camera của xe đang hiện”).</li>
+<li><span class="tag p1">[P1]</span> <b>APK tạm không khớp mã</b>: <code>apk/Kachi-2.83-CHUA-DANG.apk</code> 17:13:15 (sha256 <code>bde50207…</code>) có 0 lần <code>com.byd.avc/</code> trong dex, bản dựng release 17:38 có 3 <span class="ev m">[ĐO]</span> — kế hoạch cũ “đổi tên tệp đó lên kênh” sẽ đăng bản thiếu vá ⇒ <b>đã vá</b> mọi chỗ ghi thứ tự đăng: dựng lại từ mã cuối rồi mới đổi tên.</li>
+<li><span class="tag p2">[P2]</span> Danh mục chức năng ghi Google Maps nhận chữ qua <code>geo:0,0?q=</code> (hai mục Voice/Sổ địa chỉ) — mã dùng <code>google.navigation:q=</code> từ 17/09 (<code>VoiceAppTargets.kt:310-314</code>), <code>geo:</code> chỉ là dự phòng của Waze; danh mục chưa có dòng nào nói tự chữa phím 2.83 ⇒ <b>đã vá</b> <code>features.json</code> (3 mục, không thêm dòng — tổng vẫn 165) + dựng lại <code>kachi-feature-catalog.html</code> bằng <code>scripts/docs/feature-catalog.py --date 2026-09-29</code> (chạy thử trước: y hệt tệp cũ).</li>
+<li><span class="tag p2">[P3]</span> project-context còn câu “lượt 29/09 chưa fetch lại source” mâu thuẫn bullet “AOSP fetch lại 29/09” ⇒ <b>đã vá</b>. Spec ghi “Mã trích theo <code>file:line</code> ở gốc <code>bfbb728</code>” trong khi §3.x/§4/§8/§9 trích cây làm việc ⇒ <b>đã vá</b> ranh giới. Số dòng <code>AccessibilityRebind.kt</code> ở §4.3/§8 đọc lại theo tệp 17:42 (mã còn đổi — tin tên ký hiệu).</li>
+<li><span class="tag p2">[P3]</span> Rào camera khớp <b>tên gói viết cứng</b> <code>com.byd.avc/</code> — lệch CLAUDE.md §7 (khác biệt đời xe vào <code>ClusterProfile</code>); là mã ⇒ <b>không vá</b>, ghi <code>CODE-FIX-AFTER-283</code> mục 6.</li>
+<li><b>Kiểm đã đạt, không cần vá</b>: kênh <code>main</code> = 2.81 <span class="ev m">[ĐO <code>git ls-tree origin/main apk/</code>]</span>; sha/kích thước 2.81, 2.82 khớp tệp; 2.83 sắp đăng, 2.82 không đăng + cài tay xe chủ xe — nhất quán ở <code>docs/README.md</code>, <code>apk/README.md</code>, backlog, project-context (README gốc, hai hướng dẫn, danh mục viết ở thì “đã lên kênh” — đổi thì lúc đăng, xem báo cáo Pass 3). <code>file:line</code> mã của §3.x/§4.2/§4.4/§4.6 khớp cây làm việc (<code>NavConnect.kt</code>, <code>AccessibilityHealGates.kt</code>, <code>A11yLifecycleHeal.kt</code>, <code>VoiceAppTargets.kt</code>, <code>VoiceAppIntents.kt</code>, <code>TestBridge*</code>, <code>A11yBindJournal.kt</code>, <code>UpdateChecker.kt:87</code>); <code>USER_KEYS</code> 14 · <code>NO_UI_KEYS</code> 15 · danh sách trắng cầu 44; 0 tệp <code>.kt</code> &gt; 500 dòng; tổng test 1 576 + 1 588 + 3 058 + 64 + 99 + 22 = 6 407; nhãn giao diện trong tin nhắn anh em (<i>Hệ thống &amp; quyền › Kiểm tra cập nhật</i>, <i>Phím vô-lăng › Kiểm tra / Sửa ngay</i>, <i>Giới thiệu</i> “Phiên bản … (mã …)”) có thật trong mã. Khuôn spec đúng thứ tự <code>_template.html</code>; HTML cân thẻ (5 spec + hướng dẫn); Reviewer Log của spec này và bốn spec đã theo dõi <b>chỉ thêm</b> (so <code>git diff</code> / bản chụp 16:23 + 17:26); index <code>docs/README.md</code> có đủ 5 tệp mới.</li>
+<li><b>Verdict</b>: <span class="pill wait">INCOMPLETE</span> — tài liệu khớp mã <b>lúc 17:42</b>; workflow review mã (rào camera) còn chạy ⇒ khi xong phải đối chiếu lại: số test, verdict review, số dòng <code>AccessibilityRebind.kt</code>, sha/kích thước APK <b>dựng lại</b>. Vẫn mở từ Pass 3: V-scan, V-apk, <code>lintRelease</code>, OQ11 (D-10 + <code>TEST-MODE-ACC-OFF</code>), danh sách <code>CODE-FIX-AFTER-283</code>.</li>
+</ul>
+<h3>Pass 5 — 2026-09-29 (rào camera: 3 lượt review, lượt 3 CLEAN; APK b44691e6…)</h3>
+<p class="muted">Lượt tài liệu cuối, khớp <b>bản đăng</b>: chỉ đọc mã/test/APK, không sửa mã/test/res. Nguồn <span class="ev m">[ĐO]</span>: <code>shasum -a 256</code> + <code>apksigner verify</code> + <code>aapt2 dump badging/strings</code> + grep dex trên tệp đăng; đếm test từ 735 XML; báo cáo lint; <code>wc -l</code>/<code>stat</code>/đọc <code>AccessibilityRebind.kt</code> + <code>ForceStopReturnHomeTest.kt</code>. Kết quả review mã của rào camera trích từ journal workflow review mã + KDoc, không chạy lại.</p>
+<ul>
+<li><b>(a) Senior review mã — rào camera (workflow review mã thứ ba)</b>: lượt 1 <span class="tag p2">[P2]</span> rào chỉ nhìn stack trên cùng, bỏ lọt PIP / cửa sổ mồ côi nằm trên camera (<span class="ev m">[ĐO máy ảo]</span> Home che “camera”) ⇒ <b>đã vá</b>: đọc cờ <code>visible</code> của mọi stack display 0, và đuôi tự động cũng qua rào · lượt 2 <span class="tag p2">[P3]</span> dùng tiêu đề <code>Stack id=</code> làm dấu “đọc được” sẽ hỏng theo chiều mở khi ROM đổi dạng dòng task ⇒ <b>đã vá</b>: “đọc được” = có dòng <code>visible=true</code> + bài <code>dong task mat co visible thi rao KHONG Home</code> · lượt 3: <span class="pill ok">CLEAN</span>.</li>
+<li><b>(b) Kết quả trên mã cuối</b>: test <b>6 411 / 0</b>, 0 bỏ qua (735 XML; <code>ForceStopReturnHomeTest</code> 18/0) · <code>lintDebug</code> 0 lỗi · rào camera trên máy ảo đạt (Settings đóng vai camera, <code>mksh</code>) · APK <code>apk/Kachi-2.83-release.apk</code> 43 907 845 B, sha256 <code>b44691e65c53916e079dcece2ed1a455211a539581f50d95162ae984d82f2213</code>, cert <code>92:57:…:99:17</code>, 184/2.83, không debuggable, 0 <code>TEST_</code>, dex chứa chuỗi rào bản cuối.</li>
+<li><span class="tag p1">[P1]</span> Trạng thái cả spec còn “chờ cổng OTA · APK tạm thiếu vá · kết quả rào [CHƯA BIẾT]” ⇒ <b>đã vá</b>: banner/header = đã triển khai + đăng OTA 29/09, chờ phản hồi anh em; T16/T18/T19; V-apk với sha thật; thứ tự “sau đăng”.</li>
+<li><span class="tag p1">[P1]</span> Chuỗi rào ghi trong §4.3 là bản trước lượt 2 (<code>grep -e "displayId=0 " -e "visible=true"</code>) ⇒ <b>đã vá</b> theo mã bản đăng (<code>grep "visible=true"</code>), kèm lý do lượt 2; <code>file:line</code> <code>AccessibilityRebind.kt</code> đọc lại (<code>:307</code>, <code>:343-345</code>, <code>:357</code>, <code>:365</code>, <code>:375</code>, <code>:431-433</code>; 487 dòng).</li>
+<li><span class="tag p2">[P2]</span> §6.1 V-rào-camera / V-review / V-unit / V-size / V-lint còn số trước rào ⇒ <b>đã vá</b> (6 411; review rào 3 lượt; <code>AccessibilityRebind.kt</code> 487; V-lint ghi rõ <code>lintRelease</code> đầy đủ chỉ có báo cáo 13:19 — trên mã cuối là <code>lintDebug</code> + <code>lintVitalRelease</code> trong <code>assembleRelease</code>).</li>
+<li><span class="tag p2">[P2]</span> §3.x R-B2 + R-nf6, §4.7, §4.8, §4.9 (AOSP của cờ <code>visible</code>), §6.2 V-B, §8, D-14, D-15 chưa theo bản cuối ⇒ <b>đã vá</b>; R-B2 ở §3 giữ chữ đã duyệt, chỉ thêm dòng <i>Triển khai</i> trỏ D-15.</li>
+<li><span class="tag p2">[P3]</span> OQ11: câu “cần một câu xác nhận của chủ xe trước khi push” chưa được đáp mà 2.83 vẫn đăng ⇒ ghi thẳng: <b>còn mở</b>, chờ chủ xe; đổi hướng phải ra 2.84.</li>
+<li><b>Tài liệu cùng lượt</b>: <code>apk/README.md</code> (sha/kích thước thật, kênh = 2.83) · <code>docs/README.md</code> · backlog (<code>REL-2.83</code>, <code>DOC-SYNC-0929-FINAL</code>) · project-context · <code>README.md</code> gốc · closeout-plan · tin nhắn anh em · findings §7.</li>
+<li><b>Verdict</b>: đối chiếu tài liệu ↔ mã ↔ APK đăng <span class="pill ok">CLEAN</span> (0 chỗ lệch còn lại). Phạm vi spec: <span class="pill wait">INCOMPLETE</span> ở các mục đã ghi “Một phần / Thay thế / Không làm” trong §3.x (R-A2 hoãn gắn ô, R-B1, R-C2, R-C3, R-C4 — D-1, D-3, D-5, D-13), cộng OQ11 (D-10 + <code>TEST-MODE-ACC-OFF</code>), <code>CODE-FIX-AFTER-283</code> và nghiệm thu hiện trường §6.2 (chờ phản hồi anh em).</li>
+</ul>
+
+</div></body>
+</html>

@@ -219,7 +219,12 @@ class VoiceTargetDispatch(
         return target to pkg
     }
 
-    /** Bắn một lượt giao việc và nói đúng thứ đã xảy ra. */
+    /**
+     * Bắn một lượt giao việc và nói đúng thứ đã xảy ra.
+     *
+     * [Handoff][VoiceAppIntents.Handoff] dựng qua cửa DUY NHẤT [VoiceAppIntents.destinationHandoff] — cùng cửa với
+     * dẫn theo lịch — để cờ của đích (vd `CLEAR_TASK` cho Google Maps, [ĐO xe 29/09]) không lệch giữa hai đường.
+     */
     private fun deliver(
         i: VoiceIntent,
         target: VoiceAppTarget,
@@ -227,10 +232,8 @@ class VoiceTargetDispatch(
         query: String,
         coords: VoiceAppIntents.Coords?,
     ) {
-        val launch = target.destinationLaunch(coords != null)
-        val ok = launch != null && sendToApp(
-            VoiceAppIntents.Handoff(pkg, launch, query, coords, target.fallback),
-        )
+        val handoff = VoiceAppIntents.destinationHandoff(target, pkg, query, coords)
+        val ok = handoff != null && sendToApp(handoff)
         if (ok) { say(VoiceReply.handedOver(i, target)); return }
         openPlain(i, target, pkg)
     }

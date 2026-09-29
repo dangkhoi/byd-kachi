@@ -70,7 +70,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <body><div class="wrap">
 
 <h1>Lịch dẫn đường + sổ địa chỉ theo hồ sơ</h1>
-<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill wait">chờ đo trên xe</span></p>
+<p class="muted">Kachi 2.82 · Owner: <code>dangkhoi</code> · Mở: 2026-09-28 · Trạng thái: <span class="pill ok">SCHED-1 đạt trên xe 29/09</span> · phát hành cùng 2.83 (2.82 không đăng OTA)</p>
 
 <div class="card">
 <b>Một câu:</b> owner phát hiện đổi hồ sơ mà <b>lịch dẫn đường vẫn y nguyên</b>; quyết định:
@@ -84,6 +84,7 @@ trình khác với việc đi làm hàng ngày chứ?"</i> ⇒ chuyển <code>na
 <tr><th>Ngày</th><th>Bản</th><th>Việc</th></tr>
 <tr><td>2026-09-28</td><td>2.82</td><td>Mở spec (viết SAU code — xem §Nhật ký, đây là một thiếu sót đã ghi nhận). Đổi
 phạm vi 2 khoá, thêm đường chuyển dữ liệu một-lần.</td></tr>
+<tr><td>2026-09-29</td><td>2.82 (cài tay, không đăng) → phát hành cùng 2.83</td><td>Nghiệm thu trên xe: <b>SCHED-1 đạt</b> (lịch giữ nguyên qua nâng cấp, mốc di trú ghi, cả hai hồ sơ có lịch). SCHED-2/3 owner bỏ đo; SCHED-4 chưa đo. Cập nhật §Verification + Reviewer Log Pass 2.</td></tr>
 </table>
 
 <h2>Context</h2>
@@ -170,6 +171,19 @@ phải một cài đặt người lái thấy).</li>
 <li><code>NavScheduleProfileScopeWiringTest</code> 6/6 · <code>ProfileScopeTest</code> xanh sau cập nhật.</li>
 <li>Bài canh toàn cục "mọi khoá lưu bền đều có phạm vi" xanh (R6).</li>
 </ul>
+<h3>Trên xe — đo 2026-09-29 (nâng cấp 2.81 → 2.82 bằng <code>adb install -r</code>, giữ dữ liệu)</h3>
+<table>
+<tr><th>#</th><th>Kết quả</th><th>Mức · nguồn</th></tr>
+<tr><td>SCHED-1</td><td><span class="pill ok">ĐẠT</span> tiêu chí (0)–(3): lịch sống trước cài (2.81) và sau cài (2.82) cùng sha1
+<code>13eeda82691d</code> (138 ký tự, 4 luật) · mốc <code>migrated_nav_schedule_v1=true</code> là khoá <b>duy nhất</b> được thêm
+vào <code>kachi_workspace</code> · ảnh của <b>cả hai</b> hồ sơ «Mặc định» và «Test» có <code>nav_automation_rules</code> trùng lịch sống
+(cả <code>nav_automation_fired</code> cũng được chép). Tiêu chí (4) — mở màn Lịch từng hồ sơ trên UI — <span class="pill">chưa đo</span></td>
+<td>[ĐO] lời đáp cầu kiểm thử chụp trước/sau cài (tệp <code>sched0-*</code>, <code>sched1-*</code> trong thư mục bằng chứng ngoài repo;
+sha1 tính lại trên tệp, không in nội dung — lịch và sổ địa chỉ là riêng tư) · báo cáo <code>docs/diagnostics/oncar-2026-09-29-findings.md</code> §3</td></tr>
+<tr><td>SCHED-2, SCHED-3</td><td><span class="pill">bỏ đo</span> — owner 12:31:55: <i>"cái hồ sơ đó chắc OK thôi, ko quan trọng gì đâu"</i>. Phần đổi hồ sơ / xuất hồ sơ đã có test khoá off-car</td><td>[ĐO owner]</td></tr>
+<tr><td>SCHED-4</td><td><span class="pill">chưa đo</span></td><td>—</td></tr>
+</table>
+<p class="muted">Phát hành: 2.82 <b>không đăng OTA</b> (owner) ⇒ phần này về tay người dùng cùng <b>2.83</b>. Bảng kế hoạch đo ban đầu giữ làm lịch sử:</p>
 <h3>Trên xe — chưa làm</h3>
 <table>
 <tr><th>#</th><th>Đo gì</th><th>Đạt khi</th></tr>
@@ -246,6 +260,13 @@ chạm — vẫn đúng R5 (<i>"hồ sơ mới = bản sao của hiện tại"</
 <li><b>Kết quả</b>: <code>:app</code> 1 534 + <code>:core</code> 3 010 + <code>car-integration</code> 64 +
 <code>offcar-planner</code> 99 + <code>vehicle-contracts</code> 22 (+ biến thể <code>vehicleTest</code> 1 546) =
 <b>0 lỗi</b>, đếm từ <code>*/build/test-results/**/TEST-*.xml</code>.</li>
+</ul>
+
+<h3>Pass 2 — 2026-09-29 · nghiệm thu trên xe (2.82 cài tay) — <span class="pill ok">SCHED-1 ĐẠT</span></h3>
+<ul>
+<li><b>Không có finding mới.</b> Đường chuyển dữ liệu một lần chạy đúng trên dữ liệu thật: lịch sha1 <code>13eeda82691d</code> trước = sau, mốc <code>migrated_nav_schedule_v1</code> ghi, cả hai hồ sơ được rót lịch [ĐO].</li>
+<li><b>Còn mở</b>: tiêu chí (4) của SCHED-1 (xem trên UI) và SCHED-4 chưa đo; SCHED-2/3 owner bỏ. Q1 (đổi hồ sơ giữa lúc lịch chờ bắn) vẫn [CHƯA BIẾT].</li>
+<li><b>Verdict</b>: <span class="pill ok">APPROVED</span> cho phần đã đo; phát hành cùng 2.83.</li>
 </ul>
 
 </div></body></html>

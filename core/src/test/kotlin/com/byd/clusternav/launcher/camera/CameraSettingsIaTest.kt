@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.camera
 
 import com.byd.clusternav.launcher.testbridge.TestBridgeCommands
+import com.byd.clusternav.launcher.testbridge.TestBridgeParse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,6 +28,8 @@ class CameraSettingsIaTest {
      * 2.77: 10 hàng — `camera_source` (hàng *Nguồn*) đã XOÁ cùng cả nguồn *Một camera*.
      * 2.80/2.81: **14 hàng** — thêm *thử camera số* và *dải hình*, mỗi thứ hai bên (CAM-SL6-RIGHT: owner trên
      * Sealion 6 không mở được cam phải, cần đường tự dò). Xem `specs/kachi-camera-source-picker.html`.
+     * 2.82: 16 hàng (+2 *vạch chuẩn khoảng cách*) · 2.83: **về lại 14** — owner gỡ hẳn vạch (*"dẹp vạch đi"*),
+     * xem bài `vach chuan khoang cach da xoa han` bên dưới.
      */
     @Test fun `man nguoi lai co dung 10 khoa, dung thu tu`() {
         assertEquals(
@@ -42,14 +45,11 @@ class CameraSettingsIaTest {
                 // +2 (2026-09-28, cùng ngày) — dải hình từng bên. Không có nó thì chọn được số camera mà hình
                 // vẫn ra nguyên khung ghép: đúng lỗi owner báo trên SL6.
                 "camera_pano_left", "camera_pano_right",
-                // +2 (2026-09-28, cùng ngày) — VẠCH CHUẨN khoảng cách từng bên. Owner trên xe: hình camera làm
-                // xe bên cạnh trông xa hơn 30cm thật; ba đường sửa-hình đều đóng nên đây là đường cho CON SỐ.
-                "camera_guide_left", "camera_guide_right",
             ),
             CameraSettingsIa.USER_KEYS,
             "đổi danh sách ⇒ đổi doc camera-ia-profile.md §IA + dòng CAM-F1 của runbook (owner đếm hàng trên xe)",
         )
-        assertEquals(16, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
+        assertEquals(14, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
         CameraSettingsIa.NO_UI_KEYS.forEach {
             assertFalse(it in CameraSettingsIa.USER_KEYS, "khoá không-UI $it lại lộ ra ở màn người lái")
         }
@@ -67,6 +67,37 @@ class CameraSettingsIaTest {
             assertFalse(k in CameraSettingsIa.USER_KEYS, "$k phải XOÁ, không phải ẩn")
             assertFalse(k in CameraSettingsIa.NO_UI_KEYS, "$k phải XOÁ, không phải chuyển sang danh sách không-UI")
             assertFalse(k in TestBridgeCommands.WRITABLE_PREFS_KEYS, "$k không còn ai đọc ⇒ không được ghi được")
+        }
+    }
+
+    /**
+     * 2.83 — hai khoá VẠCH CHUẨN khoảng cách (thêm ở 2.82) **bị xoá hẳn**, cùng lệ với cặp nguồn một-kênh của 2.77.
+     *
+     * Owner 29/09 sau buổi xe: *"dẹp vạch đi"*. Xoá khỏi cả hai danh sách IA **và** khỏi danh sách trắng, rồi hỏi
+     * thẳng bộ phân tích: `prefs_set` với khoá cũ phải trả `bad_prefs_key:<khoá>` — không phải `ok` rồi ghi vào một
+     * khoá không còn ai đọc. Hỏi qua `parse` (hành vi) chứ không chỉ `!in` (dữ liệu): một đường tắt nào đó nhận khoá
+     * trước danh sách trắng thì bài `!in` vẫn xanh còn bài này đỏ.
+     *
+     * Giá trị cũ trên đĩa (xe đã cài 2.82 và canh vạch) để nguyên: không dòng mã nào đọc nó nữa, và đó là prefs của
+     * chính Kachi, không phải state hệ thống (CLAUDE.md §5 không áp) — cùng cách 2.77 để lại `camera_source`.
+     */
+    @Test fun `vach chuan khoang cach da xoa han`() {
+        listOf("camera_guide_left", "camera_guide_right").forEach { k ->
+            assertFalse(k in CameraSettingsIa.USER_KEYS, "$k phải XOÁ, không phải ẩn")
+            assertFalse(k in CameraSettingsIa.NO_UI_KEYS, "$k phải XOÁ, không phải chuyển sang danh sách không-UI")
+            assertFalse(k in TestBridgeCommands.WRITABLE_PREFS_KEYS, "$k không còn ai đọc ⇒ không được ghi được")
+            val r = TestBridgeCommands.parse(
+                mapOf(
+                    TestBridgeCommands.EXTRA_CMD to TestBridgeCommands.PREFS_SET,
+                    TestBridgeCommands.EXTRA_KEY to k,
+                    TestBridgeCommands.EXTRA_TEXT to "5",
+                ),
+                emptySet(),
+            )
+            assertEquals(
+                TestBridgeParse.Err(TestBridgeCommands.ERR_BAD_PREFS_KEY + k), r,
+                "prefs_set $k phải bị từ chối ở tầng phân tích, nêu đúng tên khoá",
+            )
         }
     }
 
@@ -89,6 +120,7 @@ class CameraSettingsIaTest {
         assertEquals(emptySet<String>(), (user + noUi) - writable, "danh sách nhắc một khoá không còn ghi được qua prefs_set (bài canh rữa)")
         assertEquals(CameraSettingsIa.USER_KEYS.size, user.size, "không trùng trong USER_KEYS")
         assertEquals(CameraSettingsIa.NO_UI_KEYS.size, noUi.size, "không trùng trong NO_UI_KEYS")
-        assertEquals(31, writable.size, "16 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình +2 vạch chuẩn, 2026-09-28)")
+        // 31 → 29 (2.83): −2 vạch chuẩn khoảng cách (2.82), gỡ hẳn theo owner.
+        assertEquals(29, writable.size, "14 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình, 2026-09-28)")
     }
 }

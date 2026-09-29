@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.camera
 
 import com.byd.clusternav.testsupport.SourceRoots
+import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -42,10 +43,6 @@ class CameraSettingsIaWiringContractTest {
         "camera_view_right" to "bridge.cameraViewRight()",
         "camera_pano_left" to "bridge.cameraPanoLeft()",
         "camera_pano_right" to "bridge.cameraPanoRight()",
-        // +2 (2026-09-28) — vạch chuẩn khoảng cách. Hàng phải ĐỔI HÌNH NGAY khi chọn (`setCameraGuide` gọi
-        // `previewSide`): canh một vạch mà không thấy hình thì không canh được.
-        "camera_guide_left" to "bridge.cameraGuideLeft()",
-        "camera_guide_right" to "bridge.cameraGuideRight()",
     )
 
     /** Khoá KHÔNG còn UI → mảnh getter của hàng đã gỡ. Mảnh nào xuất hiện lại trong tệp Cài đặt là hàng đã sống lại. */
@@ -145,5 +142,39 @@ class CameraSettingsIaWiringContractTest {
             val line = vi.lines().first { "\"$k\"" in it }
             assertFalse("mặc định" in line, "$k còn nhãn '(mặc định)' — mặc định nay theo hồ sơ xe")
         }
+    }
+
+    /**
+     * ═══ 2.83 — VẠCH CHUẨN khoảng cách (2.82) phải VẮNG ở mọi tầng — canh bằng sự vắng mặt ════════════════════════
+     *
+     * Owner 29/09 sau buổi xe: *"dẹp vạch đi"*. Tính năng đi qua sáu tầng (pref → cầu → Cài đặt → `prefs_set` →
+     * bộ điều khiển → lớp vẽ), và các làn 2.83 khác đều dựng từ 2.82 — tức từ cây CÒN vạch. Một lượt gộp sơ ý ở bất kỳ
+     * tầng nào là vạch sống lại một nửa: hàng Cài đặt còn mà không ai vẽ, hay lớp vẽ còn mà không ai bật. Nên bài này
+     * quét **toàn cây `main` của mọi module** (mã đã bỏ chú thích — chú thích lịch sử được phép nhắc tên), không chỉ
+     * vài tệp đã biết.
+     *
+     * Muốn đưa vạch trở lại thì đó là một QUYẾT ĐỊNH của owner: sửa bài này cùng lúc, kèm câu của owner.
+     */
+    @Test fun `vach chuan khoang cach da go o moi tang`() {
+        val tokens = listOf("CameraGuide", "cameraGuide", "camera_guide_", "kachi_camera_guide_")
+        val files = SourceRoots.moduleSourceRoots().flatMap { root ->
+            Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
+        }
+        assertTrue(files.size > 100, "quét được ${files.size} tệp — cây nguồn không tìm thấy thì bài này xanh giả")
+        val hits = files.flatMap { p ->
+            val code = SourceRoots.codeOf(p.toString())
+            tokens.filter { it in code }.map { "${p.fileName}: $it" }
+        }
+        assertEquals(emptyList<String>(), hits, "mã của vạch chuẩn còn sót — tính năng đã gỡ hẳn ở 2.83")
+        val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
+        val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
+        assertFalse("kachi_camera_guide_" in vi, "chữ VI của vạch chuẩn mồ côi — hàng đã gỡ ở 2.83")
+        assertFalse("kachi_camera_guide_" in en, "chữ EN của vạch chuẩn mồ côi — hàng đã gỡ ở 2.83")
+        listOf(
+            "src/main/java/com/byd/clusternav/launcher/camera/CameraGuide.kt",
+            "src/main/java/com/byd/clusternav/launcher/camera/CameraGuideLineView.kt",
+        ).forEach { assertFalse(SourceRoots.exists(it), "$it phải xoá — để lại là mã không ai gọi (CLAUDE.md §8)") }
+        // Tệp tách của 2.82 ở LẠI: lý do tách là trần 500 dòng (CLAUDE.md §4.1), không phải vạch — gộp lại là vỡ trần.
+        assertTrue(SourceRoots.exists("src/main/java/com/byd/clusternav/launcher/camera/CameraOverlayLayout.kt"))
     }
 }

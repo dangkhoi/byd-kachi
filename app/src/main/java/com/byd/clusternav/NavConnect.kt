@@ -35,7 +35,8 @@ object NavConnect {
     // internal namespace com.byd.clusternav.* (unchanged) → component = "<appId>/com.byd.clusternav.<Class>".
     // Fully isolated from the legacy com.byd.clusternav app.
     private val COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.NavNotificationListener"
-    private val ACC_COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
+    /** `internal` (2.83) cho đúng một người đọc nữa: bộ đo kẹt của [A11yLifecycleHeal] — cùng một chuỗi, không chép. */
+    internal val ACC_COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
     private val reconnecting = java.util.concurrent.atomic.AtomicBoolean(false)   // single-flight: tap dồn dập / ensure trùng → 1 chu kỳ disallow→allow
     private val grantingAcc = java.util.concurrent.atomic.AtomicBoolean(false)    // single-flight cho grantAccessibility (dadb read-modify-write)
     private val grantGen = java.util.concurrent.atomic.AtomicInteger(0)          // #6: dấu thế hệ chống session timed-out ghi chồng
@@ -196,6 +197,47 @@ object NavConnect {
         return result.get()
     }
 
+    /** Single-flight riêng của [escalateOnLifecycle] (hai lớp cùng chạy trên một luồng nối tiếp, đây là chốt thứ hai). */
+    private val lifecycleEscalating = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * ĐƯỜNG VÀO LEO THANG cho LỚP 1 (tắt máy) / LỚP 2 (mở xe) — 2.83, owner chốt 2026-09-29.
+     *
+     * Chỉ gọi SAU KHI [A11yLifecycleHeal] đã thấy KẸT BỀN (hai lần `dumpsys accessibility` cách nhau ≥
+     * [AccessibilityHealGates.STUCK_CONFIRM_GAP_MS]). Vì vậy đi THẲNG vào [escalateIfStuck], BỎ nấc toggle của
+     * [grantViaShell]: [ĐO AOSP `:1630-1631`] toggle vô hiệu ở ca kẹt, mà nó tốn ~8 s (settle 1,2 s + toggle 0,8 s +
+     * 6 lượt đọc) — quá nửa ân hạn [AccessibilityHealGates.MO_XE_GRACE_MS]. [escalateIfStuck] vẫn đọc lại
+     * `dumpsys accessibility` lần thứ ba trước khi quyết.
+     *
+     * CỐ Ý KHÔNG lấy single-flight [grantingAcc] của đường grant: [ĐO xe c2 29/09] lượt grant của Preflight chạy
+     * 11:34:19 → 11:34:29,7 — phủ trọn ân hạn mở xe (màn bật 11:34:14) ⇒ dùng chung cờ là lớp 2 KHÔNG BAO GIỜ tới
+     * lượt. Hai đường cùng đọc-sửa-ghi `enabled_accessibility_services` vẫn an toàn: cả hai GIỮ nguyên dịch vụ hãng
+     * và luôn thêm mình vào cuối; lượt ghi cuối cùng là của lệnh tách rời (sau `sleep 4`), cũng chứa mình ⇒ không có
+     * thứ tự đan xen nào để lại danh sách thiếu mình hoặc mất dịch vụ hãng.
+     *
+     * Hạn giờ: phiên chạy với [LocalShellRetry.BACKGROUND_READ_CAP] (hạn ĐỌC 30 s — một socket câm không treo mãi,
+     * F6) và không cần luồng thợ + `join` như [doGrantResultWithTimeout]: ở đây không có UI nào chờ kết quả, và cổng
+     * [fireGate] hỏi lại pha NGAY trước khi bắn nên một lượt chậm tự bỏ thay vì giết muộn.
+     *
+     * @param fireGate hỏi lại NGAY TRƯỚC khi bắn (pha còn đúng không — [AccessibilityHealGates.lifecycleFireAllowed]).
+     */
+    internal fun escalateOnLifecycle(
+        ctx: Context,
+        phase: AccessibilityHealGates.HealPhase,
+        fireGate: () -> Boolean,
+    ): GrantResult {
+        val app = ctx.applicationContext
+        if (phase == AccessibilityHealGates.HealPhase.RUNNING) return GrantResult.NOT_BOUND   // lớp 3 không vào cửa này
+        if (!lifecycleEscalating.compareAndSet(false, true)) return GrantResult.NOT_BOUND
+        try {
+            return runCatching {
+                LocalDeviceShell.session(AdbKeys.ensure(app), LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
+                    escalateIfStuck(app, sh, userAsked = false, phase = phase, fireGate = fireGate)
+                } ?: GrantResult.DADB_FAILED
+            }.getOrElse { Log.e(TAG, "leo thang $phase qua dadb NÉM", it); GrantResult.DADB_FAILED }
+        } finally { lifecycleEscalating.set(false) }
+    }
+
     private fun doGrantResult(app: Context, userAsked: Boolean): GrantResult {
         if (!grantingAcc.compareAndSet(false, true)) { Log.i(TAG, "grantAccessibility đang chạy — bỏ lần trùng"); return GrantResult.NOT_BOUND }
         val myGen = grantGen.incrementAndGet()   // #6: dấu thế hệ của lượt grant này
@@ -249,13 +291,25 @@ object NavConnect {
      * CẢ `mEnabledServices` LẪN `mBindingServices` rồi ghi đĩa ⇒ **lắp lại là bắt buộc**. Lệnh chạy TÁCH RỜI
      * (xem [AccessibilityRebind.forceStopRebindCommand]) vì chính tiến trình này sắp bị giết.
      *
-     * Bốn cổng giữ trước khi giết (xem [AccessibilityHealGates.healStep]): đúng là ca KẸT · phím-thoại BẬT (cùng
-     * cổng với watchdog 30 s — chính nó là đường lắp lại nếu nửa sau của lệnh tách rời không chạy, spec R-nf5) ·
-     * không có app khách nào đang hiện trên màn chính hay trong một Ô (đo bằng `am stack list` +
-     * `dumpsys display`, KHÔNG dùng cờ RAM — CLAUDE.md §5) · chưa leo trong lần nổ máy này. Người dùng tự bấm
-     * "Sửa ngay" thì bỏ qua ba cổng sau, vì họ đang ngồi đó và chủ động yêu cầu.
+     * Cổng giữ trước khi giết (xem [AccessibilityHealGates.healStep]) — 2.83, owner chốt 2026-09-29: đúng là ca
+     * KẸT · phím-thoại BẬT (cùng cổng với watchdog 30 s — chính nó là đường lắp lại nếu nửa sau của lệnh tách rời
+     * không chạy, spec R-nf5) · và PHA: đang chạy ([AccessibilityHealGates.HealPhase.RUNNING], lớp 3) thì KHÔNG tự
+     * giết nữa; chỉ lượt tắt máy / mở xe (lớp 1/2, qua [escalateOnLifecycle]) hoặc người dùng tự bấm "Sửa ngay".
+     * Cổng "không app khách" và hạn mức một-lần-mỗi-lần-nổ-máy của 2.79 đã GỠ: [ĐO xe 29/09] cổng app khách chặn
+     * đúng ca cần chữa (ô đã có app khi lượt chữa tới nơi), còn kẹt sinh ra ở MỖI lần tắt máy. App khách vẫn được
+     * ĐO và ghi vào log (bằng chứng lượt giết có chạm app nào trong ô không).
+     *
+     * @param phase pha vòng đời; mặc định [AccessibilityHealGates.HealPhase.RUNNING] cho đường grant (watchdog /
+     *   alarm / Preflight / nút) — đường duy nhất được đổi pha là [escalateOnLifecycle].
+     * @param fireGate hỏi lại NGAY TRƯỚC khi ghi marker + bắn; `false` ⇒ không leo (pha đã qua).
      */
-    private fun escalateIfStuck(app: Context, sh: (String) -> LocalShellText, userAsked: Boolean): GrantResult {
+    private fun escalateIfStuck(
+        app: Context,
+        sh: (String) -> LocalShellText,
+        userAsked: Boolean,
+        phase: AccessibilityHealGates.HealPhase = AccessibilityHealGates.HealPhase.RUNNING,
+        fireGate: () -> Boolean = { true },
+    ): GrantResult {
         // Lượt grant này có thể đã bị [doGrantResultWithTimeout] BỎ (join hết giờ → interrupt) trong khi thân
         // vẫn chạy nốt. Caller đã trả kết quả cho UI rồi ⇒ tuyệt đối không được tự giết tiến trình sau lưng nó.
         if (Thread.currentThread().isInterrupted) {
@@ -263,12 +317,14 @@ object NavConnect {
             return GrantResult.NOT_BOUND
         }
         val stuck = AccessibilityRebind.isInBindingServices(sh("dumpsys accessibility").output, ACC_COMP)
+        // Lớp 3 (2.83): kết quả ĐO bằng dump ⇒ watchdog 30 s thôi toggle vô ích khi đã biết là kẹt (KDoc A11yLifecycleHeal).
+        A11yLifecycleHeal.noteStuckDump(stuck)
         // R7 — ghi NGAY tại chỗ phát hiện: đây là nơi DUY NHẤT phân biệt được KẸT với chỉ-là-chưa-gắn
         // (cần bản dump, watchdog 30 s không đọc nổi mỗi nhịp). Nhật ký nhờ đó có đủ ba trạng thái.
         A11yBindJournalStore.record(
             app,
             if (stuck) A11yBindJournal.State.STUCK else A11yBindJournal.State.NOT_BOUND,
-            note = if (userAsked) "grant-tay" else "grant-tu-dong",
+            note = A11yBindJournal.grantNote(userAsked, phase),
         )
         // Màn ảo của các Ô do CHÍNH tiến trình này tạo ⇒ chúng chết theo ta, và app khách trong đó là thứ rơi lại
         // thành mảng đen ([ĐO xe 2026-09-28]). Đọc chủ sở hữu thật từ `dumpsys display` (cùng lệnh dò đã proven
@@ -277,29 +333,36 @@ object NavConnect {
         val displayDump = sh(ClusterDisplayResolver.DETECT_CMD).output
         val ownVds = if (displayDump.isBlank()) null else DisplayParse.ownedVirtualDisplayIds(displayDump, app.packageName)
         val noGuest = StackParse.noGuestAppVisible(StackParse.parse(sh("am stack list").output), app.packageName, ownVds)
-        val now = SystemClock.elapsedRealtime()
         val step = AccessibilityHealGates.healStep(
             bound = false,
             stuckInBinding = stuck,
             // R-nf5: đường tự động dùng ĐÚNG cổng của watchdog 30 s (phím-thoại bật) — xem KDoc `wanted`.
             wanted = Prefs.voiceKeyEnabled(app),
             userAsked = userAsked,
-            guestAppVisible = !noGuest,
-            escalatedAtElapsed = Prefs.a11yEscalatedAt(app),
-            nowElapsed = now,
+            phase = phase,
         )
+        val where = "kẹt=$stuck, không app khách=$noGuest, ô của mình=$ownVds, tay=$userAsked, pha=$phase"
         if (step != AccessibilityHealGates.HealStep.FORCE_STOP) {
-            Log.i(TAG, "a11y chưa bound (kẹt=$stuck, không app khách=$noGuest, ô của mình=$ownVds, tay=$userAsked) → nấc $step, KHÔNG leo")
+            Log.i(TAG, "a11y chưa bound ($where) → nấc $step, KHÔNG leo")
             return GrantResult.NOT_BOUND
         }
         val cur = sh("settings get secure enabled_accessibility_services").output.trim()
-        val cmd = AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP)
+        // Bấm tay ⇒ LUÔN về màn nhà; lớp 1/2 ⇒ chỉ khi có cửa sổ mồ côi (KDoc `AccessibilityRebind.HomeTail`).
+        val cmd = AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP, homeTail = AccessibilityRebind.homeTailFor(userAsked))
         if (cmd.isBlank()) {
             Log.e(TAG, "a11y KẸT nhưng không dựng được lệnh (gói lệch component?) → không leo")
             return GrantResult.NOT_BOUND
         }
+        // Cổng CUỐI ở tầng thi hành (CLAUDE.md §5): lớp 1/2 hỏi lại pha còn đúng không (màn vẫn tắt / vẫn trong ân
+        // hạn mở xe) ngay trước khi bắn — giữa lần đo đầu và đây có thể đã trôi vài giây, hoặc máy đã ngủ rồi thức.
+        // Hỏi lại cả cờ interrupt: lượt grant có thể bị [doGrantResultWithTimeout] bỏ GIỮA chừng (sau chốt đầu hàm).
+        if (Thread.currentThread().isInterrupted || !fireGate()) {
+            Log.w(TAG, "a11y KẸT nhưng pha $phase đã qua ($where) → KHÔNG leo, để lớp khác / nút lo")
+            return GrantResult.NOT_BOUND
+        }
+        val now = SystemClock.elapsedRealtime()
         Prefs.setA11yEscalatedAt(app, now)   // marker TRƯỚC khi đổi state ngoài (CLAUDE.md §5) — ghi đồng bộ
-        Log.w(TAG, "a11y KẸT trong Binding services → tự force-stop + lắp lại; giao diện khởi động lại một nhịp")
+        Log.w(TAG, "a11y KẸT trong Binding services ($where) → tự force-stop + lắp lại; giao diện khởi động lại một nhịp")
         sh(cmd)
         return GrantResult.RESTARTING
     }

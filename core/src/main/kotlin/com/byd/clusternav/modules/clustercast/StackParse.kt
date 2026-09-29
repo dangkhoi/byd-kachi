@@ -175,8 +175,10 @@ object StackParse {
             .distinctBy { it.stackId }
 
     /**
-     * KHÔNG có app khách nào đang hiện ở chỗ mà việc GIẾT TIẾN TRÌNH NÀY sẽ làm hỏng — cổng của nấc chữa đắt
-     * nhất ([com.byd.clusternav.modules.navaccess.AccessibilityHealGates.healStep] → `FORCE_STOP`).
+     * KHÔNG có app khách nào đang hiện ở chỗ mà việc GIẾT TIẾN TRÌNH NÀY sẽ làm hỏng. 2.79–2.82: cổng của nấc chữa
+     * đắt nhất (`FORCE_STOP`). 2.83 (owner chốt 29/09): cổng đã GỠ khỏi
+     * [com.byd.clusternav.modules.navaccess.AccessibilityHealGates.healStep] — nó chặn đúng ca cần chữa (ô đã có
+     * app) — nên kết quả chỉ còn được ĐO và ghi log ở `NavConnect.escalateIfStuck` (lượt giết có chạm app khách không).
      *
      * ## Hai chỗ phải xét, và vì sao đúng hai chỗ đó
      * [ĐO xe 2026-09-28] giết launcher lúc một Ô đang chứa YouTube ⇒ **màn ảo của ô chết theo tiến trình**, cửa

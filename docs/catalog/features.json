@@ -683,7 +683,7 @@
  {
   "group": "Voice",
   "name": "Hiểu ý — Nav (dẫn đường tới điểm đến bất kỳ)",
-  "desc": "«dẫn đường tới X» / «chỉ đường đến X» / «tìm đường đến X», kèm đuôi tuỳ chọn «bằng/trên <app>». Điểm đến KHÔNG bao giờ bị đem đi khớp với từ vựng xe. Chọn app theo DỮ LIỆU: Google Maps nhận chữ qua `geo:0,0?q=`, Waze qua `waze://?q=…&navigate=yes` (đều [ĐO]), VietMap KHÔNG có cửa chữ — chỉ nhận TOẠ ĐỘ `vietmaplive://companion/navigation?lat&lng&poiName` ⇒ cần tra toạ độ (`VoiceGeocoder`: Geocoder của máy trước, Nominatim sau, giữ nhịp ≤ 1 req/s, chỉ gửi TÊN địa điểm, không gửi âm thanh). Điểm đến là từ vựng mở ⇒ luôn CONFIRM.",
+  "desc": "«dẫn đường tới X» / «chỉ đường đến X» / «tìm đường đến X», kèm đuôi tuỳ chọn «bằng/trên <app>». Điểm đến KHÔNG bao giờ bị đem đi khớp với từ vựng xe. Chọn app theo DỮ LIỆU: Google Maps nhận chữ qua `google.navigation:q=` (BẮT ĐẦU dẫn — [ĐO xe 2026-09-17, log owner] `geo:0,0?q=` chỉ mở màn kết quả nên đã thay; `geo:0,0?q=` nay chỉ còn là đường dự phòng của Waze) và toạ độ qua `google.navigation:ll=`; từ 2.83 lượt giao điểm đến cho Google Maps mang thêm `FLAG_ACTIVITY_CLEAR_TASK` (dữ liệu `VoiceAppTarget.clearTaskOnNav` — [ĐO xe 29/09] chỉ `NEW_TASK` thì hộp «Thoát chế độ đi theo chỉ dẫn?» khoá nút; VietMap, Waze giữ `NEW_TASK`). Waze qua `waze://?q=…&navigate=yes` ([ĐO]), VietMap KHÔNG có cửa chữ — chỉ nhận TOẠ ĐỘ `vietmaplive://companion/navigation?lat&lng&poiName` ⇒ cần tra toạ độ (`VoiceGeocoder`: Geocoder của máy trước, Nominatim sau, giữ nhịp ≤ 1 req/s, chỉ gửi TÊN địa điểm, không gửi âm thanh). Điểm đến là từ vựng mở ⇒ luôn CONFIRM.",
   "voice": [
    "dẫn đường đến Bitexco",
    "dẫn đường tới chợ Bến Thành bằng Waze",
@@ -691,7 +691,7 @@
   ],
   "voice_reply": "✓ Dẫn đường tới chợ Bến Thành trên Waze · «Dẫn đường tới Bitexco? ⏎ đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu» · ✗ … — chưa có app dẫn đường nào trên xe · ✓ … — chưa tra được điểm đến (mạng?), mới chỉ mở <app>",
   "status": "🚗 code xong chờ xe",
-  "evidence": "core/.../voice/VoiceIntent.kt:71 · core/.../voice/VoiceIntentParser.kt:357 · core/.../voice/VoiceAppTargets.kt:275,340 · app/.../voice/VoiceGeocoder.kt:39,84 · core/.../voice/VoiceReply.kt:153,162,243,265,278 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t53–t56 PASS · [CHƯA ĐO] VietMap nhận lat/lng thật (AWAITING_CAR)",
+  "evidence": "core/.../voice/VoiceIntent.kt:71 · core/.../voice/VoiceIntentParser.kt:357 · core/.../voice/VoiceAppTargets.kt:275,340 · app/.../voice/VoiceGeocoder.kt:39,84 · core/.../voice/VoiceReply.kt:153,162,243,265,278 · docs/diagnostics/emulator-voice-e2e-2026-09-15.md §2 t53–t56 PASS · [CHƯA ĐO] VietMap nhận lat/lng thật (AWAITING_CAR) · core/.../voice/VoiceAppTargets.kt:305-321 (Google Maps: `google.navigation:q=` · `ll=` · `clearTaskOnNav`, cây làm việc 29/09) · app/.../voice/VoiceAppIntents.kt:72,83 · spec docs/specs/kachi-283-key-heal-acc-off.html §4.6",
   "spec": "docs/specs/kachi-voice-command.html"
  },
  {
@@ -894,11 +894,11 @@
  {
   "group": "Sổ địa chỉ",
   "name": "Chọn app dẫn đường theo DỮ LIỆU của từng mục",
-  "desc": "Không có thứ tự ưu tiên trần: mục CÓ toạ độ thì mở được VietMap (`vietmaplive://companion/navigation?lat&lng&poiName` — lấy từ giải mã Kiki, chưa ai đo trên xe thật ⇒ AWAITING_CAR); mục CHỈ CÓ CHỮ thì đi Google Maps `geo:0,0?q=` ([ĐO] máy ảo). Waze nhận chữ qua `waze://?q=…&navigate=yes` ([ĐO]).",
+  "desc": "Không có thứ tự ưu tiên trần: mục CÓ toạ độ thì mở được VietMap (`vietmaplive://companion/navigation?lat&lng&poiName` — lấy từ giải mã Kiki, chưa ai đo trên xe thật ⇒ AWAITING_CAR); mục CHỈ CÓ CHỮ thì đi Google Maps `google.navigation:q=` ([ĐO xe 2026-09-17] — `geo:0,0?q=` cũ chỉ mở màn kết quả, không bắt đầu dẫn); Google Maps nhận cả toạ độ `google.navigation:ll=`. Từ 2.83 lịch dẫn đường và giọng nói đi chung một cửa `VoiceAppIntents.destinationHandoff`, Google Maps mang `FLAG_ACTIVITY_CLEAR_TASK`. Waze nhận chữ qua `waze://?q=…&navigate=yes` ([ĐO]).",
   "voice": [],
   "voice_reply": "✓ … — <app> chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ",
   "status": "🚗 code xong chờ xe",
-  "evidence": "core/.../voice/VoiceAppTargets.kt:96,125,275-340 · core/.../voice/VoiceReply.kt:307 · oncar-verify-1.63 §6d(b) (AWAITING_CAR — chưa ai đo VietMap nhận lat/lng thật)",
+  "evidence": "core/.../voice/VoiceAppTargets.kt:96,125,275-340 · core/.../voice/VoiceReply.kt:307 · oncar-verify-1.63 §6d(b) (AWAITING_CAR — chưa ai đo VietMap nhận lat/lng thật) · core/.../voice/VoiceAppTargets.kt:305-321 (cây làm việc 29/09) · app/.../automation/ScheduledNavApplier.kt:170",
   "spec": "docs/specs/kachi-voice-addresses.html"
  },
  {
@@ -1184,12 +1184,12 @@
  {
   "group": "Cài đặt",
   "name": "Nhóm «Phím vô-lăng» — gán nút vật lý",
-  "desc": "Công tắc «Nhận nút vật lý» + hàng trạng thái ba mức (đang tắt / ĐANG HOẠT ĐỘNG ✓ / MẤT KẾT NỐI) + nút «Kiểm tra / Sửa ngay». Khối «Gán phím» liệt kê từng cặp nút→đích, mỗi dòng có nút «Xoá»; nút «Thêm gán…» đi 2 bước (Bước 1 chọn nút — Bước 2 chọn đích). Khối «Nút tự học»: danh sách nút đã học (hiện «mã phím N»), nút «Học phím mới…» chờ bấm nút thật rồi hỏi tên. Một trong các đích là «Kachi nghe (tại máy)» (`__KACHI_VOICE__`) — mở thẳng phiên nghe của Kachi.",
+  "desc": "Công tắc «Nhận nút vật lý» + hàng trạng thái ba mức (đang tắt / ĐANG HOẠT ĐỘNG ✓ / MẤT KẾT NỐI) + nút «Kiểm tra / Sửa ngay». Khối «Gán phím» liệt kê từng cặp nút→đích, mỗi dòng có nút «Xoá»; nút «Thêm gán…» đi 2 bước (Bước 1 chọn nút — Bước 2 chọn đích). Khối «Nút tự học»: danh sách nút đã học (hiện «mã phím N»), nút «Học phím mới…» chờ bấm nút thật rồi hỏi tên. Một trong các đích là «Kachi nghe (tại máy)» (`__KACHI_VOICE__`) — mở thẳng phiên nghe của Kachi. Từ 2.83 (spec `kachi-283-key-heal-acc-off`): mối nối phím kẹt sau lượt giết của BYD lúc tắt máy được TỰ CHỮA lúc tắt máy (tiến trình vừa dựng lại khi màn tắt) và trong 10 s đầu khi mở xe — kẹt phải thấy hai lần cách 5 s, một lượt mỗi sự kiện; lúc đang chạy KHÔNG tự khởi động lại giao diện, người lái bấm «Kiểm tra / Sửa ngay» — nút đó sửa xong LUÔN về màn nhà (trừ khi màn camera của xe đang hiện: rào camera thêm sau 17:18, chưa có kết quả cuối). Nhật ký mối nối đọc trên bản phát hành bằng lệnh cầu kiểm thử `a11ylog` (chỉ đọc) hoặc dòng `journal …` tag `A11yJournal` trong `kachi-logs/usage-*.log`.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe",
-  "evidence": "app/.../SettingsSectionsKeys.kt:47-70,100-202,233-280 · app/.../modules/voicekey/AssistantLauncher.kt:55,79,123 · app/.../Prefs.kt:149 · core/.../SettingsCatalogEntries.kt:169-180",
-  "spec": "docs/specs/voicekey-rework-1.19.html · docs/specs/notif-grant-docs-voicekey-1.13.html"
+  "status": "🚗 code xong chờ xe · 2.83 tự chữa theo vòng đời: E2E máy ảo PASS (lượt giết mô phỏng chữ ký BYD bằng `killApplication`), 🚗 chưa chạy trên xe thật — nghiệm thu = anh em sau OTA",
+  "evidence": "app/.../SettingsSectionsKeys.kt:47-70,100-202,233-280 · app/.../modules/voicekey/AssistantLauncher.kt:55,79,123 · app/.../Prefs.kt:149 · core/.../SettingsCatalogEntries.kt:169-180 · app/.../A11yLifecycleHeal.kt · core/.../modules/navaccess/AccessibilityHealGates.kt · core/.../modules/navaccess/AccessibilityRebind.kt (HomeTail, GO_HOME_UNLESS_CAMERA) · app/.../launcher/testbridge/TestBridgeA11yLog.kt · docs/diagnostics/oncar-2026-09-29-findings.md",
+  "spec": "docs/specs/voicekey-rework-1.19.html · docs/specs/notif-grant-docs-voicekey-1.13.html · docs/specs/kachi-a11y-bind-stuck-autofix.html · docs/specs/kachi-283-key-heal-acc-off.html"
  },
  {
   "group": "Cài đặt",
@@ -1288,11 +1288,11 @@
  {
   "group": "Chẩn đoán",
   "name": "Màn Chẩn đoán cụm (DiagActivity) + `ClusterDiag.capture`",
-  "desc": "Cài đặt › Nâng cao › «Chẩn đoán và nhật ký» (cũng có ở khối Cứu hộ của Cast). Trong màn: «Làm mới» in trạng thái cast + kiến trúc + chi tiết từng trạng thái + khối prefs autostart; «Sao chép báo cáo»; «⬇ Kiểm tra cập nhật»; «Thử badge 50» / «Ẩn badge»; 4 vị trí đặt sẵn + chỉnh cỡ ±10 dp + X/Y ±20 px cho biển báo. `ClusterDiag.capture` chụp một loạt dump trong MỘT phiên shell (`dumpsys window displays` · `dumpsys display` · `am stack list` · `dumpsys window windows` · grep size-compat · `wm density/size -d <vd>` · cờ freeform), TỰ ĐO id màn cụm thay vì tin cờ RAM, và cảnh báo «⛔ CỤM CÓ N CỬA SỔ MỒ CÔI … chỉ tắt máy xe mới sạch» khi WM và AM lệch nhau. Kết luận được viết theo kiểu TỪ CHỐI KẾT LUẬN khi thiếu bằng chứng. Ghi ra `files/diag/diag-<mốc>.txt`, giữ 20 tệp mới nhất.",
+  "desc": "⚠ Đường vào đã GỠ: nút «Chẩn đoán và nhật ký» bị gỡ khỏi Cài đặt từ 21/09 (owner, bản release production — `SettingsSectionsCast.kt:442`). Mô tả dưới là nội dung màn khi còn mở được. Cài đặt › Nâng cao › «Chẩn đoán và nhật ký» (cũng có ở khối Cứu hộ của Cast). Trong màn: «Làm mới» in trạng thái cast + kiến trúc + chi tiết từng trạng thái + khối prefs autostart; «Sao chép báo cáo»; «⬇ Kiểm tra cập nhật»; «Thử badge 50» / «Ẩn badge»; 4 vị trí đặt sẵn + chỉnh cỡ ±10 dp + X/Y ±20 px cho biển báo. `ClusterDiag.capture` chụp một loạt dump trong MỘT phiên shell (`dumpsys window displays` · `dumpsys display` · `am stack list` · `dumpsys window windows` · grep size-compat · `wm density/size -d <vd>` · cờ freeform), TỰ ĐO id màn cụm thay vì tin cờ RAM, và cảnh báo «⛔ CỤM CÓ N CỬA SỔ MỒ CÔI … chỉ tắt máy xe mới sạch» khi WM và AM lệch nhau. Kết luận được viết theo kiểu TỪ CHỐI KẾT LUẬN khi thiếu bằng chứng. Ghi ra `files/diag/diag-<mốc>.txt`, giữ 20 tệp mới nhất.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe",
-  "evidence": "app/.../DiagActivity.kt:26,49-118,145-245,269-277 · app/.../ClusterDiag.kt:19,22-45,51-158 · core/.../modules/clustercast/WmParse.kt:6-16,153",
+  "status": "⛔ [ĐO xe 29/09, KEY-4] KHÔNG mở được trên bản phát hành: không còn nút, và `am start -n …/DiagActivity` bị AMS ném ngoại lệ, màn không mở [ĐO]; dòng lỗi nguyên văn không lưu — [SUY mạnh] là `Permission Denial … not exported` do `exported=\"false\"` (`AndroidManifest.xml:91-92`). Chú thích trong mã nói adb vẫn mở được là SAI trên ROM Seal. Nhật ký bền a11y chỉ có chỗ đọc ở màn này ⇒ 2.83 việc C (đường đọc trên bản phát hành)",
+  "evidence": "app/.../DiagActivity.kt:26,49-118,145-245,269-277 · app/.../ClusterDiag.kt:19,22-45,51-158 · core/.../modules/clustercast/WmParse.kt:6-16,153 · buổi xe 29/09: docs/diagnostics/oncar-2026-09-29-findings.md (KEY-4)",
   "spec": "docs/specs/kachi-hal187-cast-remediation.html"
  },
  {
@@ -1317,8 +1317,8 @@
  },
  {
   "group": "Bảo mật / an toàn",
-  "name": "Chế độ kiểm thử qua adb — TỰ TẮT sau 60 phút, CHẾT theo lần nổ máy",
-  "desc": "Cầu T-BRIDGE là receiver EXPORTED nên cổng thật KHÔNG phải là cờ exported (uid shell không gửi được vào receiver non-exported, mà `onReceive` cũng không có `getCallingUid`). Cổng là một CÔNG TẮC ở Cài đặt › Hệ thống & quyền › Nâng cao: chỉ bật được BẰNG TAY TRONG XE, tự tắt sau 60 phút, và chết theo lần nổ máy. Lưu một chuỗi duy nhất `<bootId>:<hạn dùng>` — danh tính là `/proc/sys/kernel/random/boot_id` chứ KHÔNG phải đồng hồ tường, vì [ĐO DiLink3 2026-09-14] đầu xe chỉnh giờ lệch > 5 s sau khi bật làm mốc cũ trôi và cầu trả `test_mode_off`. Đọc không được bootId ⇒ cửa sổ luôn ĐÓNG. Giá trị sửa tay quá 60 phút cũng bị từ chối. Công tắc cố ý là CHECKBOX (không phải nút «Mở 60 phút») để người dùng THẤY nó đang bật và tắt được ngay.",
+  "name": "Chế độ kiểm thử qua adb — TỰ TẮT sau 60 phút (tắt máy xe KHÔNG tắt nó)",
+  "desc": "Cầu T-BRIDGE là receiver EXPORTED nên cổng thật KHÔNG phải là cờ exported (uid shell không gửi được vào receiver non-exported, mà `onReceive` cũng không có `getCallingUid`). Cổng là một CÔNG TẮC ở Cài đặt › Hệ thống & quyền › Nâng cao: chỉ bật được BẰNG TAY TRONG XE và tự tắt sau 60 phút. ⚠ [ĐO xe 29/09] cửa sổ SỐNG QUA tắt/bật máy và qua cài đè: đầu xe BYD tắt máy không khởi động lại nên `boot_id` giữ nguyên — chỉ khởi động lại hẳn đầu xe mới đóng sớm; câu UI \"sau khi tắt máy\" đang sai (backlog TEST-MODE-ACC-OFF). Lưu một chuỗi duy nhất `<bootId>:<hạn dùng>` — danh tính là `/proc/sys/kernel/random/boot_id` chứ KHÔNG phải đồng hồ tường, vì [ĐO DiLink3 2026-09-14] đầu xe chỉnh giờ lệch > 5 s sau khi bật làm mốc cũ trôi và cầu trả `test_mode_off`. Đọc không được bootId ⇒ cửa sổ luôn ĐÓNG. Giá trị sửa tay quá 60 phút cũng bị từ chối. Công tắc cố ý là CHECKBOX (không phải nút «Mở 60 phút») để người dùng THẤY nó đang bật và tắt được ngay.",
   "voice": [],
   "voice_reply": "",
   "status": "🚗 code xong chờ xe",
@@ -1692,11 +1692,11 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Màn Camera MỘT tầng — 16 hàng người lái (10 ở 2.77 + 4 ở 2.81 + 2 ở 2.82); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
-  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. `CameraSettingsIa` có **16** `USER_KEYS` (2.77 chốt **10**, rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2 — và 2.82 thêm 2 — vạch chuẩn ×2) (bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt) = TOÀN BỘ màn, và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
+  "name": "Màn Camera MỘT tầng — 14 hàng người lái (10 ở 2.77 + 4 ở 2.81); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
+  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. Bản phát hành 2.81 có **14** `USER_KEYS` (2.77 chốt **10**: bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt; rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2). 2.82 từng thêm 2 hàng *vạch chuẩn* (16), nhưng owner dẹp trên xe 29/09 (*«ò, dẹp vạch đi»*) và 2.82 không đăng OTA ⇒ mã 2.83 (việc D, cây làm việc 29/09, chưa commit) gỡ lại về **14** hàng = TOÀN BỘ màn (`HEAD` 2.82 đếm 16 cho tới commit đó), và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
   "voice": [],
   "voice_reply": "",
-  "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá đúng 10 khoá + thứ tự; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 CAM-G1 chờ xe (đếm đúng 10 hàng, không còn khối gập kể cả khi BẬT chế độ kiểm thử)",
+  "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá danh sách + thứ tự — mã `HEAD` 2.82 = 16 khoá, về 14 khi 2.83 gỡ vạch; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 đếm hàng trên xe chưa làm (CAM-G1; CAM-F16 buổi xe 29/09 không đo) — không còn khối gập kể cả khi BẬT chế độ kiểm thử",
   "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §8 (§8.2 phép đo 686 vs 351 · §8.5 15 khoá ẩn-UI · §8.7 CAM-G1…G5) · core/.../camera/CameraSettingsIa.kt · app/.../SettingsSectionsCamera.kt",
   "spec": "docs/specs/kachi-276-closing.html"
  },
@@ -1798,23 +1798,13 @@
   "spec": "docs/specs/kachi-276-closing.html"
  },
  {
-  "group": "Camera xi-nhan",
-  "name": "Vạch chuẩn khoảng cách — người lái tự canh một mốc mỗi bên (2.82)",
-  "desc": "Owner trên xe: *\"camera nó tạo cảm giác xe mình rất xa xe bên cạnh, trong khi cách tầm 30cm thôi, nên khó phán đoán\"*. Nguyên nhân là HÌNH HỌC chứ không phải lỗi mã: ống mắt cá nén mạnh nhất đúng vùng 0–1 m ⇒ 30 cm và 1,5 m chiếm gần như cùng số điểm ảnh. Ba đường làm-hình-thật-hơn đều ĐÓNG có bằng chứng: (1) hình chim-bay AVM KHÔNG qua HAL (owner mò hết 8 chế độ: *\"ko có cái nào là xe ghép sẵn cả\"*); (2) ghép cam trước+sau cần dựng lại chính AVM của hãng (4 tâm quang khác nhau, cần homography theo xe + bù cao độ); (3) cắt hẹp vùng gần bị owner gỡ ngay: *\"nhìn kỳ lắm, trả lại đi\"*. ⇒ chốt đường CHO CON SỐ: hai hàng «Xi-nhan trái/phải: vạch chuẩn» (Tắt · 1–9, MẶC ĐỊNH TẮT). Người lái đỗ cạnh một vật mốc, chọn nấc cho vạch trùng vật đó, từ đó đọc khoảng cách bằng mốc đã canh thay vì bằng cảm giác. Nấc n ⇒ vạch ở n/10 chiều cao khung (không nấc nào dính mép). Vạch trắng CÓ VIỀN ĐEN (mẹo phụ đề) vì vạch trơn biến mất trên nền sáng đúng lúc cần nhất; nằm TRÊN video, DƯỚI nhãn «Camera trái/phải», và KHÔNG ăn chạm. CỐ Ý không in số mét: quy đổi nấc→mét phụ thuộc chiều cao gắn camera, góc chúc, đời xe — chưa đo cái nào, in số chưa đo là đánh lừa người lái đúng lúc họ tin nó nhất (CLAUDE.md §2).",
-  "voice": [],
-  "voice_reply": "",
-  "status": "🚗 chưa canh trên xe (off-car đã xanh: 13 bài + kiểm bằng phá thử 3 mắt xích)",
-  "evidence": "core/.../camera/CameraGuide.kt (thuần, 7 bài) · app/.../camera/CameraGuideLineView.kt · app/.../camera/CameraOverlayView.kt (addView giữa video và nhãn) · CameraGuideWiringContractTest (6 bài) · backlog CAM-GUIDE-ONCAR",
-  "spec": "docs/specs/kachi-camera-distance-guide.html"
- },
- {
   "group": "Hồ sơ",
   "name": "Lịch dẫn đường đi theo HỒ SƠ (2.82)",
   "desc": "Owner: *\"lịch theo profile luôn nhé, ví dụ tôi chuyển sang profile: Trip Đà Lạt, thì chắc chắn sẽ cần địa chỉ khác, lịch trình khác với việc đi làm hàng ngày chứ?\"*. `nav_automation_rules` + cờ `nav_automation_fired` chuyển từ phạm vi DEVICE (theo máy) sang PROFILE (theo hồ sơ) ⇒ đổi hồ sơ là đổi luôn lịch, và lịch đi theo xuất/nhập hồ sơ. Có đường CHUYỂN DỮ LIỆU MỘT LẦN: lần chạy đầu sau nâng cấp, lịch đang có được đổ sang ảnh của MỌI hồ sơ (chỉ điền khoá VẮNG, không ghi đè), mốc `migrated_nav_schedule_v1` ghi trong cùng một lượt editor để máy tắt nửa đường không để lại trạng thái chuyển một nửa ⇒ không ai mất lịch. **Sổ địa chỉ đã theo hồ sơ từ trước** — ghi lại để lần sau không ai đi sửa lại lần nữa.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 chưa nghiệm thu trên xe (off-car đã xanh)",
-  "evidence": "core/.../launcher/ProfileScope.kt (CLUSTERNAV_PROFILE_STATE_KEYS) · app/.../launcher/WorkspacePrefsProfile.kt (migrateNavScheduleOnce) · NavScheduleProfileScopeWiringTest (6 bài) · backlog SCHED-PROFILE-ONCAR",
+  "status": "✅ SCHED-1 [ĐO xe 29/09, 2.82 cài tay bằng `install -r`]: nâng cấp 2.81→2.82 giữ nguyên lịch — sha1 lịch `13eeda82691d` (138 ký tự) trước = sau · mốc `migrated_nav_schedule_v1=true` · cả hai hồ sơ «Mặc định» và «Test» có khoá lịch · SCHED-2/3 owner bỏ đo (*«chắc OK thôi, ko quan trọng gì đâu»*) · SCHED-4 chưa đo · phát hành cùng 2.83 (2.82 không đăng OTA)",
+  "evidence": "core/.../launcher/ProfileScope.kt (CLUSTERNAV_PROFILE_STATE_KEYS) · app/.../launcher/WorkspacePrefsProfile.kt (migrateNavScheduleOnce) · NavScheduleProfileScopeWiringTest (6 bài) · backlog SCHED-PROFILE-ONCAR · buổi xe 29/09: docs/diagnostics/oncar-2026-09-29-findings.md (SCHED-0/1)",
   "spec": "docs/specs/kachi-profile-scope-nav-schedule.html"
  }
 ]

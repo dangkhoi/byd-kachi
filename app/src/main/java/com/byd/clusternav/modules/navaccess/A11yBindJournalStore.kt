@@ -17,7 +17,15 @@ import java.util.Locale
  * thứ trả lời câu hỏi mà `logcat` không trả lời được: **mối nối đứt lúc nào, và lúc đó xe vừa ngủ bao lâu**
  * ([ĐO 2026-09-28] vòng đệm sự kiện trên xe chỉ còn 32 phút nên sáng ra đã trôi mất).
  *
- * Người dùng KHÔNG phải gõ adb: màn Chẩn đoán đọc tệp này ra, anh em chụp màn hình gửi về (CLAUDE.md §11).
+ * ## Ba đường đọc (2.83)
+ * [ĐO xe 29/09] trên bản PHÁT HÀNH màn Chẩn đoán không mở được (nút gỡ 21/09, `exported=false` ⇒ `am start` bị từ
+ * chối) và `run-as` không có (không debuggable) ⇒ trước 2.83 tệp này ghi được mà KHÔNG AI ĐỌC ĐƯỢC trên xe owner.
+ * Nay:
+ *  1. **Cầu kiểm thử** `am broadcast … --es cmd a11ylog [--ei n <số dòng>]` (chỉ đọc, sau công tắc chế độ kiểm thử
+ *     — `TestBridgeA11yLog`) trả N dòng cuối + hai mốc prefs của thang chữa;
+ *  2. **logcat** — MỌI dòng vừa ghi (kể cả nhịp tim) cũng ra `Log.i` tag [TAG] ([A11yBindJournal.logcatLine]) ⇒
+ *     `kachi-logs/usage-*.log` (`adb pull`, không cần root) mang theo;
+ *  3. màn Chẩn đoán — còn cho bản build mở được nó.
  */
 object A11yBindJournalStore {
 
@@ -55,18 +63,25 @@ object A11yBindJournalStore {
      * Ghi một dòng NẾU đáng ghi (đổi trạng thái, hoặc tới nhịp tim). Không ném ra ngoài: nhật ký hỏng thì
      * tính năng vẫn phải chạy — đây là dụng cụ chẩn đoán, không phải đường sống của phím.
      *
+     * @param binderOnly quan sát CHỈ hỏi binder (không có bản `dumpsys`) — không tách được NOT_BOUND khỏi STUCK, xem
+     *   [A11yBindJournal.sameState]. Chỉ watchdog 30 s truyền `true`.
      * @return `true` nếu vừa ghi thêm một dòng.
      */
-    fun record(ctx: Context, state: A11yBindJournal.State, note: String): Boolean = synchronized(lock) {
-        recordLocked(ctx, state, note)
+    fun record(
+        ctx: Context,
+        state: A11yBindJournal.State,
+        note: String,
+        binderOnly: Boolean = false,
+    ): Boolean = synchronized(lock) {
+        recordLocked(ctx, state, note, binderOnly)
     }
 
-    private fun recordLocked(ctx: Context, state: A11yBindJournal.State, note: String): Boolean = try {
+    private fun recordLocked(ctx: Context, state: A11yBindJournal.State, note: String, binderOnly: Boolean): Boolean = try {
         val f = file(ctx)
         val lines = readLocked(ctx)
         val prev = A11yBindJournal.stateOf(lines.lastOrNull())
         val sinceLast = if (f.isFile) (System.currentTimeMillis() - f.lastModified()).coerceAtLeast(0L) else Long.MAX_VALUE
-        if (!A11yBindJournal.shouldAppend(prev, state, sinceLast, HEARTBEAT_MS)) {
+        if (!A11yBindJournal.shouldAppend(prev, state, sinceLast, HEARTBEAT_MS, binderOnly)) {
             false
         } else {
             val line = A11yBindJournal.line(
@@ -77,9 +92,12 @@ object A11yBindJournalStore {
                 pid = Process.myPid(),
                 note = note,
             )
+            // Ra logcat TRƯỚC khi ghi tệp, và KHÔNG gác theo "có đổi trạng thái không": nhịp tim cũng là bằng
+            // chứng (nhật ký còn sống lúc đó). Ghi tệp hỏng (thẻ đầy, IOException bên dưới) thì dòng này vẫn đã nằm
+            // trong usage log — đường đọc duy nhất còn lại của bản phát hành (KDoc đối tượng này).
+            Log.i(TAG, A11yBindJournal.logcatLine(prev, line))
             val kept = A11yBindJournal.trim(lines + line)
             f.writeText(kept.joinToString("\n", postfix = "\n"))
-            if (prev != state) Log.i(TAG, "a11y $prev → $state ($note)")
             true
         }
     } catch (e: IOException) {

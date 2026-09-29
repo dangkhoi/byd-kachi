@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher.testbridge
 
+import com.byd.clusternav.modules.navaccess.A11yBindJournal
+
 /**
  * ═══ T-BRIDGE · MỘT LỆNH ĐÃ PHÂN TÍCH ════════════════════════════════════════════════════════════════════════
  *
@@ -30,6 +32,9 @@ package com.byd.clusternav.launcher.testbridge
  *   [method]. `set` là lượt GHI thân xe nên đi qua đúng cổng CONFIRM như `ctl` (cần `--ez auto_confirm true`).
  * @property key tên khoá prefs cho lệnh `prefs_set`, đã kiểm nằm trong [TestBridgeCommands.WRITABLE_PREFS_KEYS].
  *   Giá trị đi trong [text] (một chuỗi cho MỌI kiểu — xem KDoc [TestBridgeCommands.PREFS_SET]).
+ * @property tail số dòng cuối của nhật ký gắn Hỗ trợ cho lệnh `a11ylog`, **đã kẹp** ở [TestBridgeCommands.parse]
+ *   (đọc từ `--ei n`, xem [TestBridgeCommands.a11yLogTail]); `0` với mọi lệnh khác. Trường riêng chứ không mượn
+ *   [slot]: `slot` là số Ô 1-based, và một tầng thi hành đọc `cmd.slot` ra số dòng là chỗ đọc nhầm không ai thấy.
  */
 data class TestBridgeCommand(
     val name: String,
@@ -47,6 +52,7 @@ data class TestBridgeCommand(
     val halArgs: String = "",
     val op: String = "",
     val key: String = "",
+    val tail: Int = 0,
 )
 
 /** Kết quả phân tích: hoặc một lệnh dùng được, hoặc một **mã lỗi ASCII** cho script đọc. */
@@ -260,6 +266,35 @@ object TestBridgeCommands {
      */
     const val CAPTEST = "captest"
 
+    /**
+     * ═══ 2.83 · ĐỌC NHẬT KÝ GẮN DỊCH VỤ HỖ TRỢ (phím vô-lăng) — CHỈ ĐỌC ════════════════════════════════════
+     *
+     * `am broadcast … --es cmd a11ylog [--ei n <số dòng>]` ⇒ N dòng cuối của `filesDir/diag/a11y-bind.log` + hai
+     * mốc prefs của thang chữa (`a11y_forcestop_elapsed` · `a11y_deep_sleep_ms`).
+     *
+     * ## Vì sao phải có
+     * [ĐO xe 29/09] trên bản PHÁT HÀNH nhật ký bền không đọc được bằng đường nào: màn Chẩn đoán đã gỡ nút (21/09)
+     * và `exported=false` nên `am start` bị từ chối, `run-as` không có vì không debuggable. Tức đúng dữ liệu cần
+     * để chốt *"phím chết từ lúc nào, sau đợt ngủ bao lâu"* nằm trên xe mà không lấy ra được.
+     *
+     * ## Ranh giới
+     *  • **Không cần màn chính** (chỉ đọc đĩa + prefs) ⇒ chạy được ngay sau khi tắt máy vừa giết launcher — đúng
+     *    lúc cần đọc nhất.
+     *  • **Không `auto_confirm`**: không chạm xe, không đổi state, và nhật ký riêng tư theo thiết kế (chỉ mốc giờ ·
+     *    hai đồng hồ · pid · trạng thái — KDoc `A11yBindJournal`), khác [VOICE_DUMP] xuất tiếng cabin.
+     *  • `--ei n` **tuỳ chọn**, kẹp ở [a11yLogTail]: vắng/≤ 0 ⇒ [A11YLOG_DEFAULT_LINES], quá trần ⇒
+     *    [A11yBindJournal.MAX_LINES] (tệp không bao giờ dài hơn thế). Kẹp ở đây, không ở tầng thi hành — cùng luật
+     *    "một chỗ quyết định mặc định" như `op` của [CAPTEST].
+     */
+    const val A11YLOG = "a11ylog"
+
+    /** Số dòng mặc định của [A11YLOG] — gấp hơn hai lần 20 dòng màn Chẩn đoán từng in, vẫn dưới trần tệp. */
+    const val A11YLOG_DEFAULT_LINES = 50
+
+    /** Kẹp `--ei n` của [A11YLOG] về `1..MAX_LINES`; vắng/≤ 0 ⇒ mặc định (một lệnh đọc không đòi đối số). */
+    fun a11yLogTail(requested: Int): Int =
+        if (requested <= 0) A11YLOG_DEFAULT_LINES else requested.coerceAtMost(A11yBindJournal.MAX_LINES)
+
     /** Op của [CAPTEST] — ASCII, script đọc. `list` là mặc định khi `--es op` vắng. */
     object CapTestOps {
         const val LIST = "list"
@@ -345,6 +380,8 @@ object TestBridgeCommands {
         // WP7 — `op` tuỳ chọn (vắng ⇒ `list`), `id` chỉ bắt buộc với ba op đóng dấu; phép kiểm đó nằm trong
         // [parse] vì nó phụ thuộc GIÁ TRỊ của một extra khác, thứ mà [Spec.required] không diễn tả được.
         Spec(CAPTEST, emptyList(), listOf(EXTRA_OP, EXTRA_ID, EXTRA_TEXT)),
+        // 2.83 — chỉ đọc, `n` (số dòng) tuỳ chọn và được kẹp trong [parse] qua [a11yLogTail].
+        Spec(A11YLOG, emptyList(), listOf(EXTRA_SLOT)),
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -417,6 +454,7 @@ object TestBridgeCommands {
                 // mặc định lần thứ hai — đúng luật một-chỗ-quyết-định của dự án). Lệnh khác: `cap == op`.
                 op = cap,
                 key = key,
+                tail = if (name == A11YLOG) a11yLogTail(slot) else 0,
             ),
         )
     }

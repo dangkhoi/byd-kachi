@@ -1,6 +1,6 @@
 # Camera 2.76 — IA hai tầng · mặc định theo hồ sơ xe · lùi CHANNEL → PANO (làn L1, off-car 2026-09-27)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 · **Mục đích**: đóng ba yêu cầu R1/R2/R3 của spec
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-29 (ghi chú RÚT vạch chuẩn ở §10) · trước đó 2026-09-27 · **Mục đích**: đóng ba yêu cầu R1/R2/R3 của spec
 > `docs/specs/kachi-276-closing.html` sau buổi xe 27/09 — (1) màn *Tiện nghi xe › Camera* chỉ còn thứ người lái cần,
 > móc đo ẩn sau cổng chế độ kiểm thử; (2) mặc định camera đi theo **hồ sơ xe** (`ClusterProfile`), bộ Seal DL3 là
 > bộ owner đã duyệt trên xe, bỏ hằng kênh ghim trên `CamView` ([P3] review Pass 2); (3) nguồn *Một camera* mà đầu máy
@@ -330,6 +330,19 @@ sự dùng**, không theo `view.crop`.
 ---
 
 ## 10. 2.82 (2026-09-28, cùng ngày): vạch chuẩn khoảng cách — 14 → **16 hàng**
+
+> **⚠ RÚT 29/09 — owner dẹp vạch trên xe.** Nguyên văn: *"… mớ vạch vẽ ra cho vui vậy chứ có ý nghĩa gì với đời đâu
+> hả?"* (12:00:47) rồi *"ò, dẹp vạch đi"* (12:02:39). Đo trên xe 29/09 (2.82 cài tay): GUIDE-1 **đạt** hai bên (nấc n
+> nằm đúng n/10 chiều cao khung, lệch ≤ 1 px) [ĐO ảnh]; GUIDE-2: với hình **xoay 90°** (mặc định Seal) khoảng cách ra
+> xe bên cạnh chạy **ngang** khung ⇒ vạch ngang **sai trục** [ĐO ảnh + SUY hình học]; hình không xoay thì đúng trục,
+> owner canh bên phải nấc 7 ≈ mép trong vạch vàng ~20 cm, bên trái giữa 7–8 [ĐO owner]. 2.82 **không đăng OTA** ⇒ vạch
+> chưa từng lên kênh; mã gỡ ở **2.83** (việc D). Khi gỡ: `USER_KEYS` **16 → 14**, tổng khoá camera ghi được qua
+> `prefs_set` **31 → 29**, danh sách trắng cầu kiểm thử **46 → 44**; ba bài canh phải đổi theo (`CameraSettingsIaTest`,
+> `CameraSettingsIaWiringContractTest`, `TestBridgeCommandTest`) + dòng CAM-F1 của runbook. Mã gỡ 2.83 đã nằm trong cây làm
+> việc (29/09, chưa commit) với đúng 14/29/44 [ĐO test `CameraSettingsIaTest`, `TestBridgeCommandTest`]; `HEAD` (2.82) còn 16/31/46 cho tới commit đó. Bản phát hành (2.81) có **14** hàng.
+> Nội dung §10 dưới đây giữ nguyên làm lịch sử. Chi tiết: `docs/specs/kachi-camera-distance-guide.html` (trạng thái RÚT)
+> và `docs/diagnostics/oncar-2026-09-29-findings.md`. Cùng buổi, AVM 360 **đóng hẳn** [ĐO]: `pano_sdk.txt` bị cấm với uid
+> shell, không có `panorama_online` ở settings chuẩn lẫn `content://carsettings/global`.
 
 ### 10.1 Triệu chứng và nguyên nhân
 

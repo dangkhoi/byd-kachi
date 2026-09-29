@@ -1,6 +1,14 @@
 # Kachi launcher — Hướng dẫn sử dụng & cấu hình · User & configuration guide
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-28 · **Nội dung viết theo bản 2.74 (175)**; bản hiện tại là **2.81 (182)** (chưa đăng OTA — kênh `main` còn 2.79 (180)) và các mục dưới **chưa rà lại** cho 2.80/2.81: hai việc mới là *Cài đặt › Tiện nghi xe › Camera* thêm hàng **thử camera số** (8 số, chưa ai biết số nào là camera nào) + hàng **dải hình** cho từng bên, và Kachi **tự chữa** mối nối phím vô-lăng bị kẹt rồi ghi nhật ký đọc được ở *Cài đặt › Chiếu cụm › Chẩn đoán*. Package `com.byd.launcher` · **Mục đích**: hướng dẫn **dùng + cấu hình** Kachi cho anh em — cài/OTA · HOME · màn hình chính · hồ sơ · **từng nhóm Cài đặt theo đúng đường dẫn menu** · **bảng lệnh giọng nói theo nhóm** · ảnh/hình nền · automation · lấy log · FAQ. VI trước, EN sau.
+> **Trạng thái**: Current · **Cập nhật**: 2026-09-29 (sau buổi xe) · **Nội dung viết theo bản 2.74 (175)**; kênh OTA `main` phục vụ **2.81 (182)** [ĐO `git ls-tree origin/main apk/`, 29/09] — 2.82 (183) **không** đăng OTA (chỉ cài tay lên xe owner 29/09), 2.83 đang làm — và các mục dưới **chưa rà lại** cho 2.80/2.81: hai việc mới là *Cài đặt › Tiện nghi xe › Camera* thêm hàng **thử camera số** (8 số, chưa ai biết số nào là camera nào) + hàng **dải hình** cho từng bên, và Kachi **tự chữa** mối nối phím vô-lăng bị kẹt rồi ghi nhật ký. ⚠ Trên bản phát hành, màn *Chẩn đoán* **không** mở được [ĐO xe 29/09] — nhật ký phím vô-lăng đọc ở các dòng tag `A11yJournal` trong `kachi-logs/usage-*.log` (mục 10). Phím vô-lăng chết thì bấm *Sửa ngay*; với 2.81/2.82, sau đó bấm **Home một lần** để về màn nhà.
+>
+> **Bản mới hơn tài liệu — 2.83 (184) thay 2.81 trên kênh cập nhật tự động** (cập nhật 29/09/2026 chiều; tài liệu đầy đủ của thay đổi: `specs/kachi-283-key-heal-acc-off.html`):
+> - **Phím vô-lăng tự hồi phục sau khi tắt máy rồi mở lại.** Kachi tự kiểm lúc tắt máy và trong vài giây đầu khi mở xe; nếu phải sửa thì màn hình chính tải lại một nhịp — bình thường, không phải làm gì.
+> - **Nút *Kiểm tra / Sửa ngay* tự về màn nhà.** Đang chạy mà phím chết: *Cài đặt › Phím vô-lăng › Kiểm tra / Sửa ngay* — giao diện khởi động lại một nhịp rồi tự về màn hình chính (trừ lúc màn camera của xe đang hiện, ví dụ đang lùi — Kachi không che camera, phím vẫn được sửa), không còn phải bấm Home, không còn app nổi thành cửa sổ lẻ. Lúc xe đang chạy Kachi **không** tự sửa (để không làm gián đoạn).
+> - **Google Maps đổi đích khi đang dẫn**: nói điểm đến mới (hoặc lịch dẫn đường tới giờ) ⇒ Maps dẫn thẳng, hết hộp *"Thoát chế độ đi theo chỉ dẫn?"*. VietMap không đổi.
+> - **Vạch chuẩn khoảng cách trên camera đã bỏ** (chỉ có ở bản thử 2.82); màn Camera 14 hàng.
+> - **Lịch dẫn đường theo hồ sơ** lần đầu lên kênh (lịch cũ được chép sang mọi hồ sơ, không mất).
+> - Nhật ký phím vô-lăng đọc được trên bản phát hành bằng lệnh cầu kiểm thử `a11ylog` (người có adb) — người lái chỉ cần gửi ảnh chụp + giờ (mục 10). Package `com.byd.launcher` · **Mục đích**: hướng dẫn **dùng + cấu hình** Kachi cho anh em — cài/OTA · HOME · màn hình chính · hồ sơ · **từng nhóm Cài đặt theo đúng đường dẫn menu** · **bảng lệnh giọng nói theo nhóm** · ảnh/hình nền · automation · lấy log · FAQ. VI trước, EN sau.
 > Tên nhóm và tên hàng lấy **đúng nguyên văn** từ app (`SettingsCatalogGroups.kt` · `strings_kachi.xml`). Đời ClusterNav 1.x xem `HUONG-DAN.md` (Historical). Danh mục **mọi** chức năng + status trên xe: `kachi-feature-catalog.html`. Kỹ thuật/việc còn mở: `PROJECT-BACKLOG.md`, `CLOSEOUT-2026-09-25.md`.
 > Ký hiệu: **🚗** = code xong, **chưa đo trên xe thật** — đừng coi là đã chạy được.
 
@@ -86,7 +94,7 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 
 #### 5.3 Phím vô-lăng
 
-*Cài đặt › **Phím vô-lăng***: **Nhận nút vật lý** (công tắc chính) · **Danh sách gán nút** · **Nút tự học thêm** · **Học phím mới** (bấm nút trên vô-lăng để Kachi học mã) · **Kiểm tra và sửa ngay** (cấp lại quyền + nối lại khi reboot làm mất). Đích gán được: một app, trợ lý của xe, hoặc **Kachi nghe (tại máy)**. Chức năng gốc của nút **không bị mất** — Kachi chỉ nhận đúng tổ hợp đã cấu hình.
+*Cài đặt › **Phím vô-lăng***: **Nhận nút vật lý** (công tắc chính) · **Danh sách gán nút** · **Nút tự học thêm** · **Học phím mới** (bấm nút trên vô-lăng để Kachi học mã) · **Kiểm tra và sửa ngay** (nút ghi *Kiểm tra / Sửa ngay*: cấp lại quyền + nối lại khi mất; từ **2.83** giao diện khởi động lại một nhịp rồi **tự về màn nhà** (không về khi màn camera của xe đang hiện); sau khi tắt máy rồi mở lại Kachi đã tự kiểm và tự sửa, nên nút này chỉ cần khi phím chết lúc xe đang chạy). Đích gán được: một app, trợ lý của xe, hoặc **Kachi nghe (tại máy)**. Chức năng gốc của nút **không bị mất** — Kachi chỉ nhận đúng tổ hợp đã cấu hình.
 
 #### 5.4 Dẫn đường & cụm đồng hồ
 
@@ -108,10 +116,10 @@ xe** và không còn hàng nào để chỉnh; giá trị bạn đã đặt trư
 #### 5.6 Hệ thống & quyền
 
 **Quyền còn thiếu** (Kachi tự cấp qua dadb, không cần laptop) · **Tự mở Kachi khi nổ máy** · **Chạy dịch vụ nền khi nổ máy** · **Màn hình chính** (đặt/bỏ) · **Giữ Kachi làm màn hình chính khi nổ máy** · **Kiểm tra cập nhật** + **Tự động cập nhật** · **Dừng toàn bộ dẫn đường** · **Khởi động lại launcher** · **Chế độ kiểm thử qua adb**.
-**Nâng cao** nay chỉ còn **một** hàng: công tắc *Chế độ kiểm thử qua adb*. Owner 2026-09-21 đã gỡ HẾT bề mặt dev khỏi bản chạy thật — năm màn cũ (ClusterNav cũ · Chẩn đoán cụm · Kiểm tra từng chức năng xe · Gõ lệnh chữ · Nhận dạng tệp WAV thử) **không còn trong Cài đặt**. Khả năng thì không mất: bật *Chế độ kiểm thử*, hai màn chẩn đoán vẫn mở được bằng `am start -n com.byd.launcher/<lớp>` và cầu kiểm thử vẫn nhận `say` · `captest` · `prefs_set` · `voice_dump`.
+**Nâng cao** nay chỉ còn **một** hàng: công tắc *Chế độ kiểm thử qua adb*. Owner 2026-09-21 đã gỡ HẾT bề mặt dev khỏi bản chạy thật — năm màn cũ (ClusterNav cũ · Chẩn đoán cụm · Kiểm tra từng chức năng xe · Gõ lệnh chữ · Nhận dạng tệp WAV thử) **không còn trong Cài đặt**. Khi bật *Chế độ kiểm thử*, cầu kiểm thử vẫn nhận `say` · `captest` · `prefs_set` · `voice_dump`. ⚠ Câu cũ *"hai màn chẩn đoán vẫn mở được bằng `am start`"* **sai** trên bản phát hành: [ĐO xe 29/09] `am start` màn Chẩn đoán cụm bị hệ thống từ chối (màn khai `exported="false"`).
 *Giới thiệu*: **Phiên bản và giấy phép** · **Miễn trừ trách nhiệm**.
 
-> **Chế độ kiểm thử qua adb** chỉ bật được **bằng tay trong xe**, **tự tắt sau 60 phút**, và **chết theo lần nổ máy**. Mọi lệnh gửi vào đều ghi nhật ký.
+> **Chế độ kiểm thử qua adb** chỉ bật được **bằng tay trong xe** và **tự tắt sau 60 phút**. ⚠ **Tắt máy xe KHÔNG tắt nó** — đầu xe BYD không khởi động lại khi tắt máy nên cửa sổ 60 phút vẫn chạy tiếp, kể cả qua một lần cài đè bản mới [ĐO xe 29/09]; chỉ khi đầu xe khởi động lại hẳn nó mới tắt sớm. Dùng xong thì **tự gạt tắt**. Mọi lệnh gửi vào đều ghi nhật ký.
 
 ### 6. Bảng lệnh giọng nói theo nhóm
 
@@ -182,8 +190,8 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 
 ### 10. Lấy log / chẩn đoán gửi về khi gặp lỗi
 
-- **Cách dễ nhất (không cần adb)**: log phiên **tự ghi** ra thẻ, chép cả thư mục `kachi-logs/` bằng trình quản lý tệp rồi gửi về. Màn *Chẩn đoán cụm* **đã gỡ khỏi Cài đặt** (owner 2026-09-21, bản chạy thật) — mở lại được bằng `am start` khi *Chế độ kiểm thử* đang bật.
-- Log ghi ra thẻ: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` ghi **tự động suốt phiên** (đây là thứ luôn có); `snapshot-*.log` chỉ sinh khi bấm *Chụp log ngay* trên màn chẩn đoán, mà màn ấy nay phải mở bằng `am start`; `captest-report.txt` khi chạy `captest`.
+- **Cách dễ nhất (không cần adb)**: log phiên **tự ghi** ra thẻ, chép cả thư mục `kachi-logs/` bằng trình quản lý tệp rồi gửi về. Màn *Chẩn đoán cụm* **đã gỡ khỏi Cài đặt** (owner 2026-09-21, bản chạy thật) và **không** mở lại được bằng `am start` trên bản phát hành [ĐO xe 29/09]. Nhật ký phím vô-lăng nằm ngay trong `usage-*.log` (các dòng tag `A11yJournal`).
+- Log ghi ra thẻ: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` ghi **tự động suốt phiên** (đây là thứ luôn có); `snapshot-*.log` chỉ sinh khi bấm *Chụp log ngay* trên màn chẩn đoán, mà màn ấy không mở được trên bản phát hành nên thường không có; `captest-report.txt` khi chạy `captest`.
 - Lấy về: `adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/`, hoặc chép cả thư mục bằng trình quản lý tệp.
 - **Gửi kèm**: **phiên bản** (*Cài đặt › Giới thiệu*) + mô tả lỗi + ảnh chụp màn. Đừng đoán bản đang chạy — đọc từ màn Giới thiệu.
 
@@ -302,7 +310,7 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 
 #### 5.3 Steering-wheel keys
 
-*Settings › **Steering-wheel keys***: **Listen to physical buttons** (master switch) · **Button bindings** · **Self-learned buttons** · **Learn a new key** (press the wheel button so Kachi captures the code) · **Check and fix now** (re-grants and rebinds after a reboot drops it). Targets: an app, the car's own assistant, or **Kachi listens (on-device)**. The button's native function is **preserved** — Kachi consumes only the exact configured combo.
+*Settings › **Steering-wheel keys***: **Listen to physical buttons** (master switch) · **Button bindings** · **Self-learned buttons** · **Learn a new key** (press the wheel button so Kachi captures the code) · **Check and fix now** (re-grants and rebinds when the binding drops; from **2.83** the interface restarts for a beat and then **returns to the home screen by itself** (not while the car's own camera screen is showing, e.g. when reversing); after an engine off/on Kachi already checks and repairs on its own, so the button is only needed when the key dies while driving). **2.83** also: Google Maps switches destination while navigating (no more *"Exit navigation?"* dialog) and the camera distance guide is gone. Targets: an app, the car's own assistant, or **Kachi listens (on-device)**. The button's native function is **preserved** — Kachi consumes only the exact configured combo.
 
 #### 5.4 Navigation & cluster
 
@@ -324,10 +332,10 @@ tune; values you set earlier **survive the upgrade**. To probe them again, use `
 #### 5.6 System & permissions
 
 **Missing permissions** (self-granted over dadb, no laptop) · **Auto-start Kachi on engine start** · **Run background service on engine start** · **Home screen** (set/unset) · **Keep Kachi as home screen on engine start** · **Check for updates** + **Auto update** · **Stop all navigation** · **Restart launcher** · **ADB test mode**.
-**Advanced** now holds exactly **one** row: the *Test mode over adb* switch. The owner stripped every dev surface from the shipping build on 2026-09-21 — the five old screens (old ClusterNav · Cluster diagnostics · Per-feature car capability test · Type a command · Test a WAV file) are **gone from Settings**. The capability remains: with test mode on, both diagnostic screens still open via `am start -n com.byd.launcher/<class>`, and the test bridge still accepts `say` · `captest` · `prefs_set` · `voice_dump`. (was: the old ClusterNav screen · Cluster diagnostics · Per-feature car capability test · Type a command (test the parser without speaking) · **Recognise a test WAV**.
+**Advanced** now holds exactly **one** row: the *Test mode over adb* switch. The owner stripped every dev surface from the shipping build on 2026-09-21 — the five old screens (old ClusterNav · Cluster diagnostics · Per-feature car capability test · Type a command · Test a WAV file) are **gone from Settings**. With test mode on, the test bridge still accepts `say` · `captest` · `prefs_set` · `voice_dump`. ⚠ The old line *"both diagnostic screens still open via `am start`"* is **wrong** on the release build: [MEASURED on the car, 29/09] `am start` of the Cluster diagnostics screen is refused by the system (the screen is `exported="false"`). (was: the old ClusterNav screen · Cluster diagnostics · Per-feature car capability test · Type a command (test the parser without speaking) · **Recognise a test WAV**.
 *About*: **Version and licence** · **Disclaimer**.
 
-> **ADB test mode** can only be switched on **by hand in the car**, **self-expires after 60 min**, and **dies with the ignition cycle**. Every command is journalled.
+> **ADB test mode** can only be switched on **by hand in the car** and **self-expires after 60 min**. ⚠ **Switching the car off does NOT end it** — the BYD head unit does not reboot on engine off, so the 60-minute window keeps running, even across an in-place update [measured on the car, 29/09]; only a real head-unit reboot ends it early. **Switch it off yourself** when done. Every command is journalled.
 
 ### 6. Voice commands by group
 
@@ -400,7 +408,7 @@ All four follow one rule: **only undo what you turned on**. If you flipped it by
 
 ### 10. Logs / diagnostics to send in
 
-- **Easiest (no adb)**: session logs are written automatically to the card — copy the whole `kachi-logs/` folder with a file manager and send it. The *Cluster diagnostics* screen was **removed from Settings** (owner, 2026-09-21); with test mode on it still opens via `am start`. (was: send a screenshot; you never type a command.
+- **Easiest (no adb)**: session logs are written automatically to the card — copy the whole `kachi-logs/` folder with a file manager and send it. The *Cluster diagnostics* screen was **removed from Settings** (owner, 2026-09-21) and does **not** open via `am start` on the release build [MEASURED on the car, 29/09]. The steering-key log is inside `usage-*.log` (lines tagged `A11yJournal`). (was: send a screenshot; you never type a command.
 - Logs on the SD card: `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/` — `usage-*.log` · `snapshot-*.log` (from *Capture log now*) · `captest-report.txt`.
 - Pull with `adb pull /sdcard/Android/data/com.byd.launcher/files/kachi-logs/ ./kachi-logs/`, or copy the folder with a file manager.
 - **Send along**: the **version** (*Settings › About*) + what went wrong + a screenshot. Never guess the running version — read it from the About screen.

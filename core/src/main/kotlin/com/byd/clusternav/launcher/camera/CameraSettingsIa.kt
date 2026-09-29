@@ -10,7 +10,8 @@ package com.byd.clusternav.launcher.camera
  *
  * ## Hai danh sách, một khác biệt: có hàng trên màn hay không
  *  • [USER_KEYS] — **14 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra. (10 khoá tới 2.79;
- *    +2 *thử camera số* và +2 *dải hình* ở 2.80/2.81 — xem `specs/kachi-camera-source-picker.html`. Con số này
+ *    +2 *thử camera số* và +2 *dải hình* ở 2.80/2.81 — xem `specs/kachi-camera-source-picker.html`; 2.82 thêm +2
+ *    *vạch chuẩn khoảng cách* rồi 2.83 **gỡ hẳn** theo owner, *"dẹp vạch đi"* ⇒ về lại 14. Con số này
  *    do `CameraSettingsIaTest` khoá: sửa danh sách mà quên sửa đây là test ĐỎ. Chú thích đi trước mã chính là
  *    cái đã sinh ra CAM-SL6-RIGHT — `CameraSignalController` từng viết "SL6 chọn id 0 trong Cài đặt" trong khi
  *    hàng đó chưa bao giờ tồn tại.)
@@ -63,8 +64,6 @@ object CameraSettingsIa {
         "camera_view_right",
         "camera_pano_left",
         "camera_pano_right",
-        "camera_guide_left",
-        "camera_guide_right",
     )
 
     /**

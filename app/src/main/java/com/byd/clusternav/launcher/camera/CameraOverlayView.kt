@@ -92,8 +92,6 @@ class CameraOverlayView(private val appCtx: Context) {
         var streamW: Int,
         var streamH: Int,
         var rotationEffective: Boolean,
-        /** Vị trí vạch chuẩn khoảng cách theo chiều cao khung (`0f..1f`); `null` = người lái chưa bật. */
-        val guide: Float? = null,
     )
 
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
@@ -157,8 +155,6 @@ class CameraOverlayView(private val appCtx: Context) {
         synthOn: Boolean = false,
         synthFile: String = "",
         band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
-        /** Vạch chuẩn khoảng cách (`0f..1f` theo chiều cao khung); `null` = tắt. Xem `CameraGuide` ở `:core`. */
-        guide: Float? = null,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -177,10 +173,7 @@ class CameraOverlayView(private val appCtx: Context) {
             // "Theo cụm" chỉ có nghĩa trên display cụm THẬT (không phải theo pref) — quy về hình thật sự vẽ TRƯỚC.
             val shape = CameraClusterBand.effectiveShape(shape, cluster)
             val round = shape == CameraSignalPolicy.SHAPE_ROUND
-            val st = Live(
-                corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH,
-                rotationEffective = rotDone, guide = guide,
-            )
+            val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
             val g = geometry(st)
             val f = g.f
             // Bo góc: dải cụm mang bán kính của hồ sơ; còn lại = bán kính khung launcher (2.73).
@@ -202,14 +195,6 @@ class CameraOverlayView(private val appCtx: Context) {
                 }
                 roundOutline(radius, round)
                 addView(child, videoLp(st, g))
-                // Vạch chuẩn nằm TRÊN video và DƯỚI nhãn: nó phải đè lên hình để làm mốc đo, nhưng không được
-                // che chữ "Camera trái/phải" — thứ duy nhất cho biết overlay đang hiện đúng bên.
-                st.guide?.let { pos ->
-                    addView(
-                        CameraGuideLineView(ctx).apply { position = pos },
-                        android.widget.FrameLayout.LayoutParams(MATCH, MATCH),
-                    )
-                }
                 labelFor(ctx, side)?.let { tvl ->
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }

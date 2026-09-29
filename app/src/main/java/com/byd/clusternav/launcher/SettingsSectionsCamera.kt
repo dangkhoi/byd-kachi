@@ -4,7 +4,6 @@ import android.content.Context
 import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
-import com.byd.clusternav.launcher.camera.CameraGuide
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
@@ -32,7 +31,8 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
  * nguyên qua nâng cấp] — nên gỡ UI không đổi một pixel nào trên xe của owner.
  *
  * Hai khoá **bị XOÁ hẳn** (không phải ẩn): `camera_source` và `camera_hal_mode` — lý do ĐO ở KDoc
- * `CameraSettingsIa`.
+ * `CameraSettingsIa`. 2.83 xoá hẳn thêm hai hàng *vạch chuẩn khoảng cách* mà 2.82 vừa thêm (owner: *"dẹp vạch
+ * đi"*) ⇒ màn về lại đúng 14 hàng của 2.81.
  *
  * ## Vì sao mặc định KHÔNG viết vào nhãn
  * Mặc định theo **hồ sơ xe**; một nhãn *"(mặc định)"* đúng cho xe này và sai cho xe kia ⇒ chip đang chọn đã tự nói.
@@ -116,18 +116,6 @@ class SettingsCameraSection(
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_view_row_right), views, bridge.cameraViewRight(),
         ) { v -> bridge.setCameraView(left = false, v = v) })
-        // VẠCH CHUẨN KHOẢNG CÁCH. Owner 2026-09-28: *"camera tạo cảm giác xe mình rất xa xe bên cạnh, trong khi
-        // cách tầm 30cm thôi"*. Ba đường làm-hình-thật-hơn đều đóng (xem KDoc `CameraGuide`), nên đường còn lại là
-        // cho CON SỐ: người lái canh một lần mỗi bên rồi nhìn vạch mà đoán.
-        val guides = listOf(CameraGuide.OFF to context.getString(R.string.kachi_camera_guide_off)) +
-            (CameraGuide.STEP_MIN..CameraGuide.STEP_MAX).map { it.toString() to it.toString() }
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_guide_sub)))
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_guide_row_left), guides, bridge.cameraGuideLeft(),
-        ) { v -> bridge.setCameraGuide(left = true, v = v) })
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_guide_row_right), guides, bridge.cameraGuideRight(),
-        ) { v -> bridge.setCameraGuide(left = false, v = v) })
         // DẢI HÌNH từng bên. Khung ghép 4 dải; nhãn 1–4 là THỨ TỰ ĐỌC, ánh xạ sang chỉ số dải 0–3.
         // [ĐO owner 2026-09-28, ảnh khung thô SL6] thứ tự là `sau · trái · phải · trước`; [ĐO Seal 27/09] dải
         // trái/phải nằm đúng vị trí 2 và 3 ⇒ hai đời xe cùng bố cục, nhãn này nói được sự thật chứ không phán.

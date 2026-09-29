@@ -138,7 +138,20 @@ data class VoiceAppTarget(
      * id rồi mở `watch?v=`). `null` = app không có đường watch-theo-id ⇒ chỉ dùng [launch] (`MEDIA_PLAY_FROM_SEARCH`).
      */
     val watch: VoiceLaunch.Uri? = null,
+    /**
+     * Lệnh BẮT ĐẦU DẪN tới app này phải **dọn task cũ** (`FLAG_ACTIVITY_CLEAR_TASK` kèm `NEW_TASK`) — dữ liệu, không
+     * phải nhánh `if (pkg == …)` (CLAUDE.md §7). `:app` dịch cờ này ở đúng một chỗ (`VoiceAppIntents.launchFlags`).
+     *
+     * [ĐO xe 29/09] Google Maps đang dẫn + ý-định chỉ `NEW_TASK` ⇒ GMaps hỏi *"Thoát chế độ đi theo chỉ dẫn?"* và
+     * khoá nút *"Có"*; thêm `CLEAR_TASK` ⇒ phiên cũ bị dọn, dẫn thẳng đích mới (owner xác nhận). Mặc định `false`:
+     * VietMap (`singleTask`) và Waze CHƯA đo ca này ⇒ giữ nguyên đường đang chạy (CLAUDE.md §6/§14).
+     */
+    val clearTaskOnNav: Boolean = false,
 ) {
+    init {
+        require(!clearTaskOnNav || kind == VoiceAppKind.NAV) { "clearTaskOnNav chỉ dành cho app DẪN ĐƯỜNG: $key" }
+    }
+
     /** Cách NÓI ra tên app này — khai một chỗ ở [VoiceSynonyms.APP_TARGETS] (xem KDoc ở đó). */
     val spoken: List<String> get() = VoiceSynonyms.APP_TARGETS[key].orEmpty()
 
@@ -303,6 +316,8 @@ object VoiceAppTargets {
             // Đường toạ độ (khi đã geocode sẵn — vd sổ địa chỉ có lat/lng): dẫn thẳng bằng toạ độ, cũng không cần tra.
             coord = VoiceLaunch.Uri("google.navigation:ll=${VoiceLaunch.LAT},${VoiceLaunch.LNG}"),
             coordEvidence = VoiceAppEvidence.MEASURED,
+            // [ĐO xe 29/09] chỉ NEW_TASK ⇒ hộp "Thoát chế độ đi theo chỉ dẫn?" khoá nút; + CLEAR_TASK ⇒ dẫn thẳng.
+            clearTaskOnNav = true,
         ),
         VoiceAppTarget(
             key = WAZE,

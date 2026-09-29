@@ -151,9 +151,6 @@ class ZeroBorderContractTest {
             "VoiceWaveView.kt" to "hai vòng ripple mờ (STROKE) quanh vòng tròn khi ĐANG NGHE = tín hiệu 'máy đang nghe' (voice-ux R2) — nét LÀ waveform, không phải khung",
             "GridEditorView.kt" to "LƯỚI ô của trình vẽ bố cục — thứ người dùng canh theo khi kéo khung " +
                 "(viền quanh từng khung đã GỠ ở WP1; chỉ còn lưới)",
-            "CameraGuideLineView.kt" to "vạch chuẩn khoảng cách trên hình camera — nét LÀ cái mốc đo mà người lái " +
-                "tự canh; nét đen dày hơn vẽ trước chỉ là VIỀN TƯƠNG PHẢN của chính nó (vạch trắng trơn biến mất " +
-                "trên nền sáng), không phải khung quanh một bề mặt",
             "ClusterPreviewView.kt" to "vạch chia hai nửa cụm = nội dung; khung quanh mặt cụm đã tắt từ chỗ gọi " +
                 "launcher (`line = CLEAR` ở SettingsSectionsCast) vì view này dùng chung với màn ClusterNav cũ",
         )

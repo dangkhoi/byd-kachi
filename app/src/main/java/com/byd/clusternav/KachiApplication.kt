@@ -15,8 +15,9 @@ import com.byd.clusternav.launcher.voice.VoiceWakeService
  * Application của Kachi — điểm dựng [AppContainer] (đồ thị DI thủ công phía launcher) sớm nhất trong tiến trình,
  * để `ShellTransport.get` / `WindowCommandDispatcher.get` (nay uỷ quyền về container) luôn phân giải về MỘT đồ thị.
  *
- * Tối giản: chỉ khởi tạo container; KHÔNG chạm mạng/dadb (các field container đều `by lazy` — chỉ dựng khi được
- * truy cập lần đầu). Đăng ký ở `AndroidManifest.xml` qua `android:name`.
+ * Tối giản: chỉ khởi tạo container; KHÔNG chạm mạng/dadb TRÊN LUỒNG CHÍNH (các field container đều `by lazy` — chỉ
+ * dựng khi được truy cập lần đầu; lượt đo phím vô-lăng của [A11yLifecycleHeal] chạy trên luồng nền riêng). Đăng ký ở
+ * `AndroidManifest.xml` qua `android:name`.
  */
 class KachiApplication : Application() {
     override fun onCreate() {
@@ -37,6 +38,10 @@ class KachiApplication : Application() {
         // R4(b) — StrictMode CHỈ log, CHỈ build type `debug` (máy ảo). Đặt TRƯỚC `AppContainer.get` để vi phạm lúc
         // dựng đồ thị cũng lộ. Luật bật/tắt ở [StrictModeGate] (thuần, có bài canh). Không `penaltyDeath`.
         if (StrictModeGate.enabled(BuildConfig.DEBUG, BuildConfig.BUILD_TYPE)) enableStrictModeLogging()
+        // 2.83 · lớp 1/2 tự chữa phím vô-lăng — SỚM NHẤT của tiến trình launcher: [ĐO xe 29/09] BYD giết Kachi mỗi lần
+        // tắt máy và Android dựng lại nó 0,3 s sau lúc màn đã tắt; chỗ này là mã ĐẦU TIÊN chạy trong tiến trình mới.
+        // Chỉ hỏi binder + đăng ký bộ thu màn bật trên luồng chính; phần đo/leo chạy nền (xem KDoc [A11yLifecycleHeal]).
+        A11yLifecycleHeal.install(this)
         AppContainer.get(this)
         // V3 · R4 — nạp sẵn mô hình NGHE trên luồng nền ưu tiên thấp, sau 3 s. Ở đây chứ không ở màn chính:
         // tiến trình launcher sống suốt chuyến còn màn chính thì dựng lại nhiều lần, nên đặt ở activity là
