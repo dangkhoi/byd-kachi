@@ -71,7 +71,12 @@ class VoiceGrammarSnapshotWiringContractTest {
     @Test
     fun `khong co duong ghi K_PROFILES hoac K_ACTIVE hoac saved_places nao ngoai danh sach da canh`() {
         val keys = listOf("K_PROFILES", "K_ACTIVE", "K_PLACES")
-        listOf("WorkspacePrefs.kt" to prefs, "WorkspacePrefsProfile.kt" to prefsProfile).forEach { (name, src) ->
+        // V-CLUSTER (2026-09-30): +2 tệp tách từ `WorkspacePrefsProfile.kt` — chúng KHÔNG được ghi ba khoá này (0 hàm đã canh).
+        listOf(
+            "WorkspacePrefs.kt" to prefs, "WorkspacePrefsProfile.kt" to prefsProfile,
+            "WorkspacePrefsSnapshot.kt" to code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsSnapshot.kt"),
+            "WorkspacePrefsMigrations.kt" to code("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsMigrations.kt"),
+        ).forEach { (name, src) ->
             val covered = writers.filter { it.first == name }.map { (_, sig) -> SourceRoots.body(src, sig) }
             keys.forEach { key ->
                 val re = Regex("""put\w+\((?:WorkspacePrefs\.)?$key\b|put\w+\(key\($key\)""")
@@ -141,6 +146,8 @@ class VoiceGrammarSnapshotWiringContractTest {
         mapOf(
             "WorkspacePrefs.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt"),
             "WorkspacePrefsProfile.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsProfile.kt"),
+            "WorkspacePrefsSnapshot.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsSnapshot.kt"),
+            "WorkspacePrefsMigrations.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsMigrations.kt"),
             "KachiHomeWiring.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt"),
             "VoiceWakeService.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeService.kt"),
             "VoiceWakeSessionFactory.kt" to SourceRoots.text("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeSessionFactory.kt"),

@@ -1149,7 +1149,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
 
   <figure>
     <img src="img/cai-dat-tien-nghi-xe.png" alt="Toàn bộ trang Cài đặt Tiện nghi xe, ảnh ghép nhiều lần cuộn">
-    <figcaption>Cả trang <em>Tiện nghi xe</em> (ảnh ghép nhiều lần cuộn). Trong ảnh này công tắc “Mưa thì tự bật sấy kính” đang <strong>bật</strong> nên hai ô con bên dưới nó sáng bình thường; khi công tắc tắt thì hai ô con đó bị làm mờ. Dòng “Bụi mịn hiện tại: chưa đọc được” và đồng hồ bụi trống là vì ảnh chụp trên máy ảo. Nút “Lọc ngay một lượt” ở cuối mục bụi mịn bị cắt mất một phần ở mép dưới ảnh ghép.</figcaption>
+    <figcaption>Cả trang <em>Tiện nghi xe</em> (ảnh ghép nhiều lần cuộn, chụp ở bản 2.79). Mục sấy kính trong ảnh là giao diện <strong>cũ</strong> (công tắc “Mưa thì tự bật sấy kính” + hai ô con); từ 2.84 là hai ô độc lập + dòng tình trạng — xem 5.2. Dòng “Bụi mịn hiện tại: chưa đọc được” và đồng hồ bụi trống là vì ảnh chụp trên máy ảo. Nút “Lọc ngay một lượt” ở cuối mục bụi mịn bị cắt mất một phần ở mép dưới ảnh ghép.</figcaption>
   </figure>
 
   <h3>5.1 Lấy gió trong</h3>
@@ -1160,29 +1160,46 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
     <li>Tắt thì chỉ ngừng tự bật. Chế độ đang chạy trên xe <strong>không</strong> bị tắt theo — có thể đang cần nó, chỉ là không muốn nó tự bật nữa.</li>
   </ul>
 
-  <h3>5.2 Mưa thì tự bật sấy kính</h3>
+  <h3>5.2 Tự sấy kính khi mưa</h3>
 
-  <p>Mục này có một công tắc chính và hai ô con:</p>
+  <p><strong>Từ 2.84</strong> mục này có hai ô <strong>độc lập</strong> và một dòng tình trạng cho từng kính đang chọn — không còn công tắc chính:</p>
 
   <table>
     <thead><tr><th>Hàng</th><th>Nói gì</th></tr></thead>
     <tbody>
-      <tr><td><strong>Mưa thì tự bật sấy kính</strong></td><td>Đọc cảm biến mưa mỗi 5 phút; có mưa thì tự bật sấy kính (chọn bên dưới), hết mưa thì tắt.</td></tr>
-      <tr><td><strong>Sấy kính trước</strong></td><td>Kính chắn gió phía trước.</td></tr>
-      <tr><td><strong>Sấy kính sau + gương</strong></td><td>Kính sau và gương chiếu hậu.</td></tr>
+      <tr><td><strong>Mưa thì tự bật sấy kính trước</strong></td><td>Kính chắn gió phía trước.</td></tr>
+      <tr><td><strong>Mưa thì tự bật sấy kính sau + gương</strong></td><td>Kính sau và gương chiếu hậu (xe không có lệnh sấy gương riêng — gương đi chung với kính sau).</td></tr>
+      <tr><td><em>Dòng tình trạng</em> (mỗi kính đang chọn một dòng)</td><td>Lần kiểm gần nhất của đúng kính đó đã thấy gì và làm gì — cách đọc ở bảng dưới.</td></tr>
     </tbody>
   </table>
 
-  <p>Dưới cùng là một dòng ghi chú quan trọng: “<em>Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng.</em>”</p>
+  <p>Dưới cùng là ghi chú: “<em>Đọc cảm biến mưa mỗi 5 phút, hai ô độc lập. Đang mưa mà sấy tắt (xe tự tắt hoặc bạn tắt) thì Kachi bật lại; hết mưa Kachi chỉ tắt cái sấy do Kachi bật — bạn tự bật thì Kachi không đụng.</em>”</p>
+
+  <p><strong>Đọc dòng tình trạng</strong> — ví dụ “<em>Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: tắt → Kachi bật: tới xe ✓</em>”: lúc 14:02 cảm biến báo mưa mức 3, xe báo sấy sau đang tắt, Kachi ra lệnh bật và lệnh đã tới xe.</p>
+  <table>
+    <thead><tr><th>Thấy</th><th>Nghĩa là</th></tr></thead>
+    <tbody>
+      <tr><td>chấm xám · “<em>chưa kiểm lần nào từ lúc mở xe · nhịp kế ~14:07</em>”</td><td>Kachi chưa tới lượt kiểm kính này. Mỗi lần tắt máy xe tắt luôn Kachi, nên chuyến nào cũng bắt đầu từ đây; lượt đầu chạy ngay khi Kachi lên, mở lại trang sau khoảng một phút là có kết quả.</td></tr>
+      <tr><td>chấm vàng · “<em>cảm biến mưa không đọc được ⇒ để nguyên</em>”</td><td>Xe chưa trả số cảm biến mưa (có thể gặp ngay lúc vừa nổ máy; lúc nào cũng vàng thì có thể xe không có cảm biến này). Kachi thử lại mỗi phút, tối đa 5 lần, rồi về nhịp 5 phút. Không biết trời mưa hay không thì Kachi không đụng nút sấy nào.</td></tr>
+      <tr><td>chấm vàng · “<em>xe báo: không đọc được</em>”</td><td>Xe không cho biết sấy của kính này đang bật hay tắt ⇒ Kachi không ghi gì cho kính này. Kính kia vẫn chạy bình thường.</td></tr>
+      <tr><td>chấm xanh · “<em>Kachi bật: tới xe ✓</em>” / “<em>Kachi tắt: tới xe ✓</em>”</td><td>Lệnh đã tới xe. Xe có thật sự làm theo hay không thì lượt kiểm sau đọc lại (“xe báo: …”).</td></tr>
+      <tr><td>chấm vàng · “<em>xe báo: vẫn tắt sau lệnh bật 14:02</em>”</td><td>Lượt trước (14:02) Kachi ra lệnh bật và lệnh đã tới xe, vậy mà lượt này xe vẫn báo sấy tắt: xe không làm theo lệnh, tự tắt ngay, hoặc có người vừa tắt. Đang mưa nên Kachi bật lại. Lượt nào cũng thế thì <strong>chụp màn hình trang này gửi về</strong> — có thể đời xe này cần lệnh khác cho kính đó.</td></tr>
+      <tr><td>chấm đỏ · “<em>lệnh bật: không tới xe ✗</em>”</td><td>Xe không nhận lệnh. Lượt sau Kachi thử lại; lần nào cũng đỏ thì <strong>chụp màn hình trang này gửi về</strong>.</td></tr>
+      <tr><td>chấm đỏ · “<em>lệnh tắt: không tới xe ✗</em>”</td><td>Hết mưa, Kachi ra lệnh tắt cái sấy nó đã bật nhưng xe không nhận. Kachi <strong>không</strong> thử tắt lại (hết mưa là hết phần của Kachi) — sấy có thể vẫn bật, tự tắt trên xe; chụp màn hình gửi về.</td></tr>
+      <tr><td>chấm vàng · “<em>bỏ lệnh (vừa đổi lựa chọn)</em>”</td><td>Bạn vừa bỏ/tích ô của kính này đúng lúc Kachi đang kiểm ⇒ Kachi không ra lệnh theo lựa chọn cũ. Lượt kiểm kế (trong khoảng một phút) chạy theo lựa chọn mới.</td></tr>
+      <tr><td>“<em>đang sấy, để nguyên</em>” · “<em>không cần sấy</em>” · “<em>Kachi không quản, để nguyên</em>”</td><td>Không phải làm gì: đang mưa và sấy đã bật · trời khô và sấy tắt · trời khô, sấy đang bật nhưng Kachi không giữ nó — bạn tự bật, hoặc Kachi đã thôi quản (bạn vừa bỏ/tích lại ô, hay lệnh tắt trước đó không tới xe) ⇒ Kachi không tắt hộ.</td></tr>
+    </tbody>
+  </table>
 
   <p>Cách nó chạy, nói thẳng:</p>
   <ul>
-    <li>Mặc định <strong>tắt</strong>. Máy mới cài không đọc cảm biến và không đụng nút sấy nào cho tới khi có người tự bật.</li>
+    <li>Mặc định <strong>không kính nào</strong> được chọn. Máy mới cài không đọc cảm biến và không đụng nút sấy nào cho tới khi có người tích ô.</li>
     <li>Kachi biết trời mưa bằng cách đọc <strong>tốc độ cần gạt mưa</strong> của xe, 5 phút một lần. Cần gạt đang chạy = có mưa. Mưa mà cần gạt không chạy thì Kachi không biết.</li>
-    <li>Hai ô con mặc định <strong>cùng bật</strong>. Bỏ tích <strong>cả hai</strong> là tắt thật: không đọc cảm biến, không bật cái sấy nào.</li>
-    <li>Công tắc chính tắt thì hai ô con <strong>mờ đi và không bấm được</strong> — mờ chứ không ẩn, để người bật công tắc lên vẫn biết là có hai lựa chọn.</li>
-    <li>Tự tắt cái sấy <strong>giữa cơn mưa</strong> thì Kachi nhả quyền: nó không bật lại cho tới khi trời khô hẳn.</li>
+    <li>Hai ô <strong>không ràng buộc nhau</strong>: chỉ tích “sau + gương” là đủ để kính sau tự sấy. Mỗi kính tự đọc trạng thái, tự bật, tự tắt. Đổi ô có hiệu lực trong khoảng một phút.</li>
+    <li>Đang mưa mà sấy bị tắt — xe tự tắt sau một lúc, hoặc bạn tắt — thì lượt kiểm sau Kachi <strong>bật lại</strong>. Không muốn vậy thì bỏ tích ô của kính đó.</li>
+    <li>Bỏ tích một ô lúc Kachi đang giữ kính đó bật thì Kachi thôi quản kính đó, nhưng <strong>không tắt</strong> nó.</li>
     <li>Nổ máy lại thì Kachi quên cái sấy trước đó là do nó bật, nên nó sẽ không tự tắt hộ lần đó. Đây là hướng an toàn: thà quên tắt hơn là tắt mất cái sấy mà người lái vừa tự bật.</li>
+    <li><strong>Bản 2.83 trở về trước</strong> khác: có một công tắc chính “<em>Mưa thì tự bật sấy kính</em>”; công tắc tắt thì hai ô con mờ đi và không bấm được. Ảnh cả trang ở trên chụp ở bản cũ đó.</li>
   </ul>
 
   <h3>5.3 Camera theo xi-nhan</h3>
@@ -1450,8 +1467,8 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
       <tr><td>“Theo cụm” là hình tốt nhất vì nó bám viền đẹp</td><td>Nó mất khoảng 11 % tầm nhìn. Cần thấy nhiều nhất thì chọn <strong>Chữ nhật</strong>.</td></tr>
       <tr><td>Chọn “Theo cụm” mà nhìn vẫn như chữ nhật là lỗi</td><td>Nó chỉ khác khi đang hiện <strong>trên cụm</strong>. Bật hàng “Hiện camera lên màn cụm”.</td></tr>
       <tr><td>Tắt công tắc “Lấy gió trong” là tắt luôn chế độ đang chạy</td><td>Chỉ ngừng tự bật. Chế độ đang chạy trên xe không bị đụng.</td></tr>
-      <tr><td>Hai ô con sấy kính bị mờ là bị lỗi</td><td>Công tắc chính đang tắt. Bật nó lên thì hai ô con sáng lại.</td></tr>
-      <tr><td>Bỏ tích cả hai ô con mà vẫn để công tắc chính bật thì xe vẫn sấy</td><td>Bỏ tích cả hai = tắt thật, không đọc cảm biến, không bật cái sấy nào.</td></tr>
+      <tr><td>Chỉ tích “sau + gương” thì không chạy, phải tích cả kính trước</td><td>Từ 2.84 hai ô độc lập, một ô là đủ. Xem <strong>dòng tình trạng</strong> ngay dưới hai ô: nó nói lần kiểm gần nhất thấy gì (mưa/khô, xe báo bật/tắt) và lệnh có tới xe không. (2.83 trở về trước: công tắc chính phải bật thì hai ô con mới có tác dụng.)</td></tr>
+      <tr><td>Bỏ tích cả hai ô thì xe vẫn đang sấy là lỗi</td><td>Không tích ô nào = tắt thật: không đọc cảm biến, không bật cái sấy nào. Cái sấy đang bật lúc bạn bỏ tích thì Kachi để nguyên, không tắt hộ.</td></tr>
       <tr><td>Sơ đồ chỉ có hai ghế nghĩa là app không đọc được ghế sau</td><td>Số ghế do xe cho biết và về sau một nhịp. Máy ảo thì luôn hai ghế.</td></tr>
       <tr><td>“Lọc ngay một lượt” cần bật công tắc tự lọc mới bấm được</td><td>Nó chạy bất kể công tắc.</td></tr>
       <tr><td>Lịch dẫn đường không chạy vì app Kachi không mở</td><td>Nó chạy từ lúc nổ máy, không cần mở app. Kiểm năm lý do ở bảng trên.</td></tr>
@@ -1826,7 +1843,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
     <thead><tr><th>Theo HỒ SƠ — đổi hồ sơ là đổi theo</th><th>Theo XE — mọi hồ sơ dùng chung</th></tr></thead>
     <tbody>
       <tr><td>Bố cục màn chính (số ô, bố cục tự vẽ)</td><td>Toàn bộ nhóm <strong>Giọng nói</strong>: Hey Kachi, mô hình nghe đã tải, giọng đọc, hỏi xác nhận, nguồn micro, app dẫn đường mặc định</td></tr>
-      <tr><td>Nội dung từng ô</td><td><strong>Tự sấy kính khi mưa</strong> (cả hai ô con)</td></tr>
+      <tr><td>Nội dung từng ô</td><td><strong>Tự sấy kính khi mưa</strong> (cả hai ô)</td></tr>
       <tr><td>Thanh nút xe: nút nào, đặt ở viền nào, ẩn hay hiện</td><td><strong>Tự dẫn đường theo lịch</strong> (sổ luật và dấu đã-dẫn)</td></tr>
       <tr><td>Thanh trên: chip nào, thứ tự, hiện nhãn hay không</td><td><strong>Chiếu màn lên cụm</strong>: công tắc chính, nút nổi, khung hình đã đo cho cụm</td></tr>
       <tr><td>Giao diện sáng/tối, màu nhấn, tông thẻ</td><td><strong>Tự động cập nhật</strong></td></tr>

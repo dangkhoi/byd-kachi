@@ -47,20 +47,31 @@ class BubbleVisibilityWiringContractTest {
     }
 
     /**
-     * Khoá phải có CHỦ trong danh mục, đúng nhóm *Chiếu cụm*, và là khoá **theo XE**.
+     * Khoá phải có CHỦ trong danh mục, đúng nhóm *Chiếu cụm*, và là khoá **theo HỒ SƠ**.
      *
      * Không có mục nào nhận ⇒ `SettingsCoverageContractTest` sẽ đỏ, nhưng nó không nói được *"đúng nhóm nào"* —
      * mà một công tắc của nút nổi lạc sang nhóm khác là thứ owner phải đi tìm trên xe.
+     *
+     * ⚠ ĐẢO CHIỀU 2026-09-30 theo OWNER (V-CLUSTER): *"Phần cụm lưu hết thành profile nhé"*. Lịch sử: WP6 (09-20) xếp
+     * khoá này THEO XE với lý do *"cùng phạm vi với `cast_enabled`"*. Bất biến đó GIỮ và CHẶT HƠN: hai khoá vẫn cùng
+     * phạm vi (nay cùng HỒ SƠ), cùng đi qua ảnh chụp của CÙNG một tệp; và đổi hồ sơ không dựng lại dịch vụ (hai bài
+     * "không dựng lại dịch vụ" ở mục 2 bên dưới giữ nguyên).
      */
     @Test
-    fun `khoa co chu trong danh muc, dung nhom, theo XE`() {
+    fun `khoa co chu trong danh muc, dung nhom, theo HO SO cung pham vi voi cast_enabled`() {
         assertEquals(SettingsGroup.CAST, SettingsCatalog.groupOf("cast_bubble_visible"))
         assertEquals("simple_cast_prefs", SettingsCatalog.CLUSTERNAV_KEYS["cast_bubble_visible"])
+        val scope = com.byd.clusternav.launcher.ProfileScope
         assertEquals(
-            com.byd.clusternav.launcher.ProfileScope.Scope.DEVICE,
-            com.byd.clusternav.launcher.ProfileScope.scopeOf("cast_bubble_visible"),
+            com.byd.clusternav.launcher.ProfileScope.Scope.PROFILE, scope.scopeOf("cast_bubble_visible"),
+            "owner 2026-09-30: phần cụm theo hồ sơ",
+        )
+        assertEquals(
+            scope.scopeOf("cast_enabled"), scope.scopeOf("cast_bubble_visible"),
             "cùng phạm vi với `cast_enabled` mà nó phụ thuộc — hai khoá của một tính năng không được lệch phạm vi",
         )
+        val snapshotKeys = scope.CLUSTERNAV_KEYS.getValue("simple_cast_prefs")
+        assertTrue("cast_bubble_visible" in snapshotKeys && "cast_enabled" in snapshotKeys, "cả hai vào CÙNG một ảnh chụp")
     }
 
     // ── 2 · ⚠⚠ Ẩn nút nổi KHÔNG được tắt ba tính năng đi cùng dịch vụ ───────────────────────────

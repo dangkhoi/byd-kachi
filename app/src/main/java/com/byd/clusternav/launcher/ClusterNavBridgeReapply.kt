@@ -4,6 +4,7 @@ import android.util.Log
 import com.byd.clusternav.NavRepository
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.VmOverlayPosition
+import com.byd.clusternav.automation.AutomationService
 import com.byd.clusternav.comfort.Pm25FilterApplier
 import com.byd.clusternav.comfort.SeatComfortApplier
 
@@ -27,7 +28,13 @@ import com.byd.clusternav.comfort.SeatComfortApplier
  *     phím vô-lăng, mỗi lượt dispatch cast). Chúng tự đúng ở nhịp kế tiếp, gọi thêm chỉ là nhiễu:
  *     `marquee` (`ClusterBroadcaster.kt:129`, mỗi khung), `voicekey_enabled`/`voicekey_bindings`
  *     (`modules/navaccess/NavAccessibilityService.kt:91,95`, mỗi phím),
- *     `split_ratio_left_pct` (`SimpleCastCoordinator.kt:304,449,605`, mỗi lượt dispatch).
+ *     `cast_bubble_visible` (vòng 2 s `FloatingBubbleService.syncBubbleWindow` — ẩn/hiện cửa sổ, KHÔNG dựng lại dịch
+ *     vụ), 6 khoá camera sở thích (`CameraSignalController.openSession` đọc lại ở MỖI lượt xi-nhan; riêng
+ *     `camera_signal_enabled` còn cần [AutomationService.sync], xem thân hàm).
+ *     ⚠ V-CLUSTER (2026-09-30): `split_ratio_left_pct` + họ `config_*` (DPI/khung từng app) KHÔNG còn "tự áp giữa
+ *     phiên" — phiên chiếu GHIM chúng lúc bắt đầu (`CastSessionPin.kt`), nên giá trị của hồ sơ mới có hiệu lực ở
+ *     **lượt chiếu kế** (sửa refute C2/B6: trước đây repin + ô thứ hai đọc lại prefs ⇒ hình học của hồ sơ mới tự nổ
+ *     lên cụm giữa chuyến).
  *  2. **Có applier sống** — phải GỌI LẠI, và đó là toàn bộ nội dung của [reapplyAll] dưới đây.
  *  3. **Chỉ đọc lúc khởi động / lúc dựng màn** — không có gì để gọi, và cố gọi là **đổi nghĩa của khoá**. Danh
  *     sách + lý do ở KDoc từng dòng bị bỏ qua, cuối hàm.
@@ -71,6 +78,13 @@ internal fun ClusterNavBridge.reapplyAll() {
     // TẮT: vòng lọc là một thread đang chạy, không tắt thì nó lọc tiếp theo cấu hình của hồ sơ vừa rời.
     step("pm25") { if (Prefs.pm25FilterEnabled(app)) Pm25FilterApplier.enable(app) else Pm25FilterApplier.disable(app) }
 
+    // ── Tự động hoá (camera theo xi-nhan · luật dẫn đường theo lịch) ─────────────────────────────
+    // V-CLUSTER A3: `camera_signal_enabled` (theo hồ sơ từ 2026-09-30) và `nav_automation_rules` (theo hồ sơ từ
+    // 2026-09-28) quyết việc FGS tự động hoá có sống không. Đổi hồ sơ mà không đồng bộ thì hồ sơ B tắt camera vẫn để
+    // engine của A chạy (và ngược lại: B bật mà FGS đang dừng thì camera câm tới lần khởi động kế). Đúng hàm mà
+    // `setCameraSignal`/`setRainDefrost*` gọi sau khi ghi — idempotent, tự gác theo `anyEnabled`, không ném.
+    step("automation.sync") { AutomationService.sync(app) }
+
     // ── ⚠ CỐ Ý KHÔNG gọi lại — mỗi dòng là một quyết định, không phải một chỗ quên ───────────────
     //
     //  • `recirc_on_start_enabled` — nghĩa của khoá là *"lấy gió trong khi NỔ MÁY"* (`RecircApplier.applyOnStart`,
@@ -79,23 +93,27 @@ internal fun ClusterNavBridge.reapplyAll() {
     //  • `headless_autostart` — chỉ rẽ nhánh một quyết định của `RebindReceiver` lúc nhận BOOT_COMPLETED
     //    (`RebindReceiver.kt:42,64`). Không có dịch vụ nào đang chạy để báo.
     //  • `autostart_enabled` · `autostart_package` · `autostart_split_enabled` · `autostart_left_package` ·
-    //    `autostart_right_package` — cả năm đọc ĐÚNG MỘT LẦN trong `FloatingBubbleService.onCreate`
-    //    (`modules/clustercast/FloatingBubbleService.kt:164,422-423,448,462-463`). "Tự chiếu **khi nổ máy**" mà áp
-    //    ngay lúc đổi hồ sơ là bung một app lên cụm của xe đang chạy.
-    //  • `cast_enabled` — KHÔNG còn nằm trong ảnh chụp: OQ2 chốt ở Pass 1 review (2026-09-14) cho nó về
-    //    [ProfileScope.DEVICE_KEYS] (lý do đầy đủ ở đó). Hai nhánh đều hỏng nếu chỉ ĐỔI GIÁ TRỊ mà không mở/đóng
-    //    projection — mọi cổng đọc đều live (`ClusterNavLaneWidget.kt:110` · `NavRepository.kt:215` ·
-    //    `FloatingBubbleService.kt:170`) nên cụm có hai chủ; còn áp THẬT (`setCastEnabled` →
-    //    `ClusterNavBridgeCast.kt:52-64`) thì làm cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip.
-    //    Mở lại theo hồ sơ khi có đường áp gác theo "phiên chiếu không chạy" — backlog S4-OQ2.
+    //    `autostart_right_package` — hai cờ đọc ở `FloatingBubbleService.onCreate`, tên gói đọc khi phiên tới Idle
+    //    (`modules/clustercast/BubbleAutostart.kt:76-117`). "Tự chiếu **khi nổ máy**" mà áp ngay lúc đổi hồ sơ là
+    //    bung một app lên cụm của xe đang chạy.
+    //  • `cast_enabled` — theo HỒ SƠ từ V-CLUSTER (owner 2026-09-30) nhưng lượt áp ảnh chụp KHÔNG BAO GIỜ ghi khoá sống:
+    //    giá trị của hồ sơ đợi ở `cast_enabled_pending` (`ClusterSnapshotPlan` + `CastEnableDeferral`) và được chốt ở
+    //    `SimpleCastRuntime.create` của tiến trình kế (≈ lần nổ máy kế). Lý do của chốt S4-OQ2 cũ vẫn đúng: mọi cổng
+    //    đọc đều live (`ClusterNavLaneWidget.kt:110` · `NavRepository.kt:215` · `FloatingBubbleService.kt:152,313`)
+    //    nên đổi giá trị giữa phiên là cụm hai chủ; còn gọi `setCastEnabled` ở đây thì làm cụm trước mặt người lái tối
+    //    đi/sáng lên vì một cú chạm chip. Người lái muốn áp ngay ⇒ nút *Áp ngay* ở Cài đặt › Chiếu cụm (đường thật).
+    //  • `split_ratio_left_pct` · họ `config_*` — lượt chiếu kế (bản GHIM của phiên, xem đầu tệp). CẤM gọi
+    //    `applySplitRatioLive`/`applyPinned`/`resize*`/`setDensity*` ở đây: đó là lệnh `am`/`wm` lên cụm (VC-R5).
+    //  • `bubbleX`/`bubbleY` (tệp `cast-v2-app-catalog`) — lần dựng cửa sổ nút nổi kế (`FloatingBubbleService.showBubble`,
+    //    kẹp theo màn). Dời cửa sổ đang hiện có thể đánh nhau với một lượt kéo đang dở (spec OQ-VC1).
     //  • `theme_choice` — `ThemeMode.setChoice` đọc ở `attachBaseContext`, và KDoc của nó
     //    (`ThemeMode.kt:47`) nói rõ *"caller chịu trách nhiệm recreate Activity đang hiện"*. Màn ClusterNav đang
     //    mở là ca hiếm (người dùng đang ở màn chính để chạm chip hồ sơ); lần mở sau đã đúng.
     //  • `voicekey_custom_buttons` — [ĐO] không có consumer sống: chỉ `ClusterNavBridgeKeys.kt:159,162` đọc để đổ
     //    danh sách trong màn Cài đặt.
     //
-    // ⚠ `seat_level_1..3` KHÔNG theo hồ sơ được ở bản này: `SettingsCatalogClusterNav.KEYS` chỉ khai `seat_level_0`
-    // (ba ghế còn lại nằm dưới tiền tố dựng động), nên ảnh chụp chỉ mang ghế 0 — ghi backlog, không vá lén ở đây.
+    // (Chú thích cũ *"`seat_level_1..3` KHÔNG theo hồ sơ"* đã hết đúng từ S4-SEAT 2026-09-23: ba ghế đã khai ở
+    // `SettingsCatalogClusterNav.KEYS` nên vào ảnh chụp, và `SeatComfortApplier.applyNow` ở trên áp cả bốn.)
 }
 
 /**

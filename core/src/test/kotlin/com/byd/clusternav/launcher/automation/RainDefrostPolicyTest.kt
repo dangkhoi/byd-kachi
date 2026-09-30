@@ -218,6 +218,26 @@ class RainDefrostPolicyTest {
         assertEquals(RainDefrostAction.TurnOn, retry.action)
     }
 
+    /**
+     * kachi-automation V8 · K6 / ca C13 — từ V3 `TurnOn` xảy ra cả khi nhịp trước đã `owned = true` (bật lại sau khi
+     * xe tự tắt). Ghi bật lại HỎNG mà trả nguyên `before` là giữ chủ quyền một kính đang TẮT ⇒ người lái tự bật ⇒
+     * trời khô ⇒ Kachi tắt kính của người lái. Ghi hỏng ⇒ kính không phải của mình, bất kể nhịp trước.
+     */
+    @Test
+    fun `ghi bat LAI hong thi cung nha chu quyen - khong giu owned cho kinh dang tat`() {
+        val before = RainDefrostState(owned = true)
+        val step = RainDefrostOwner.step(before, rainSpeed = rain, defrostOn = false)
+        assertEquals(RainDefrostAction.TurnOn, step.action, "V3: đang mưa mà sấy tắt ⇒ bật lại")
+        val after = RainDefrostOwner.unclaim(before, step)
+        assertFalse(after.owned, "ghi hỏng ⇒ owned=false kể cả khi nhịp trước là của Kachi")
+
+        // Người lái tự bật giữa lúc đó, rồi trời khô ⇒ KHÔNG được tắt kính của người lái.
+        val driverOn = RainDefrostOwner.step(after, rainSpeed = rain, defrostOn = true)
+        assertEquals(RainDefrostAction.Leave, driverOn.action)
+        val dryTick = RainDefrostOwner.step(driverOn.state, rainSpeed = dry, defrostOn = true)
+        assertEquals(RainDefrostAction.Leave, dryTick.action, "kính người lái — hết mưa để nguyên")
+    }
+
     /** `unclaim` chỉ chạm nhánh TurnOn: nhánh hết-mưa đã xoá ký ức vì HẾT CƠN, không vì lệnh thành công. */
     @Test
     fun `unclaim khong hoan nguyen nhanh tat`() {

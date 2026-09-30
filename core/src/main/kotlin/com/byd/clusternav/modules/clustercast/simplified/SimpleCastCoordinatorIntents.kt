@@ -49,16 +49,19 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
     // BUT still restore the saved size + DPI: previously this branch used a fresh NORMAL_DEFAULT
     // config and returned BEFORE applySavedProfile, so a resized app lost its size on every
     // re-cast where it happened to already be on the cluster (owner bug #1, 2026-08-12).
+    //
+    // V-CLUSTER · VC-R6: đây là Ý ĐỊNH CHIẾU của người lái ⇒ đọc hồ sơ ĐANG DÙNG — MỘT lần ([pinFull]) cho cả hai nhánh,
+    // rồi ghim vào trạng thái. Mọi lượt áp tự động sau đó (repin) dùng bản ghim, không đọc lại prefs (refute B6).
+    val pin = pinFull(intent.pkg, intent.appType)
     if (geometry.isAppOnDisplay(intent.pkg, vd)) {
-        val adoptConfig = configurator.resolveConfig(intent.pkg, intent.appType, prefs)
-        setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, adoptConfig))
+        setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, pin.config, pinned = pin.pinned))
         if (intent.appType == AppType.NORMAL) {
-            geometry.applySavedProfile(intent.pkg, CastProfile.FULL)
+            geometry.applyPinned(intent.pkg, pin.pinned)
         }
         return
     }
 
-    val config = configurator.resolveConfig(intent.pkg, intent.appType, prefs)
+    val config = pin.config
     if (!configurator.apply(vd, config)) {
         setError("Display config failed")
         return
@@ -76,10 +79,10 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
         when (outcome) {
             is CastMutationOutcome.Verified -> {
                 val savedTaskId = if (castTaskId > 0) castTaskId else outcome.taskId
-                setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, config, savedTaskId))
-                // R6: Apply saved FULL-profile bounds + density ONLY after verified landing
+                setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, config, savedTaskId, pin.pinned))
+                // R6: Apply the PINNED FULL-profile bounds + density ONLY after verified landing
                 if (intent.appType == AppType.NORMAL) {
-                    geometry.applySavedProfile(intent.pkg, CastProfile.FULL)
+                    geometry.applyPinned(intent.pkg, pin.pinned)
                 }
             }
             else -> {
@@ -127,8 +130,12 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
     val vd = detectClusterDisplay()
     if (vd < 1) { setError("Slot rejected: cluster display unresolved / chưa dò thấy màn cụm"); return }
 
+    // V-CLUSTER · VC-R6 + sửa refute C2: tỉ lệ = tỉ lệ CỦA PHIÊN nếu đang chia (ô thứ hai KHÔNG đọc lại prefs — đổi hồ
+    // sơ giữa hai lượt chiếu ô là hai nửa chồng nhau/hở), chưa chia thì đọc hồ sơ đang dùng MỘT lần. Bản ghi của ô ghim
+    // theo đúng tỉ lệ đó.
+    val leftPercent = sessionLeftPercent(afterWait)
     val config = configurator.resolveConfig(intent.pkg, AppType.NORMAL, prefs)
-    val slot = SlotState(intent.pkg, config)
+    val slot = SlotState(intent.pkg, config, pinned = pinSlot(intent.pkg, intent.side, leftPercent))
 
     // Split mode: display config (wm size/overscan) is DISPLAY-GLOBAL on Android.
     if (afterWait is SimpleCastState.CastingSplit) {
@@ -140,7 +147,6 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
         }
     }
 
-    val leftPercent = prefs.splitRatioLeftPercent()
     val ok = mover.castToCluster(
         pkg = intent.pkg,
         activity = null,
@@ -164,14 +170,14 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
                 afterWait is SimpleCastState.CastingSplit && intent.side == ClusterSlotSide.RIGHT ->
                     afterWait.copy(right = slot)
                 intent.side == ClusterSlotSide.LEFT ->
-                    SimpleCastState.CastingSplit(left = slot, right = null)
+                    SimpleCastState.CastingSplit(left = slot, right = null, leftPercent = leftPercent)
                 else ->
-                    SimpleCastState.CastingSplit(left = null, right = slot)
+                    SimpleCastState.CastingSplit(left = null, right = slot, leftPercent = leftPercent)
             }
             setState(newState)
-            // R6: Restore saved profile geometry (bounds + DPI) ONLY after verified landing.
-            // If no profile is saved, the ratio-default bounds from AppMover.fitToCluster stand.
-            geometry.applySavedProfile(intent.pkg, CastProfile.of(intent.side, leftPercent))
+            // R6: Restore the PINNED profile geometry (bounds + DPI) ONLY after verified landing.
+            // If no profile is saved (pinned null), the ratio-default bounds from AppMover.fitToCluster stand.
+            geometry.applyPinned(intent.pkg, slot.pinned)
         }
         else -> {
             log("CastSlot postcondition FAIL: $outcome")
@@ -207,7 +213,8 @@ internal fun SimpleCastCoordinator.handleStop(intent: SimpleCastIntent.Stop) {
             if (remainingLeft == null && remainingRight == null) {
                 setState(SimpleCastState.Idle)
             } else {
-                setState(SimpleCastState.CastingSplit(left = remainingLeft, right = remainingRight))
+                // `copy` giữ tỉ lệ của PHIÊN (V-CLUSTER · C2): nửa còn lại vẫn đứng ở đúng tỉ lệ đó trên cụm.
+                setState(current.copy(left = remainingLeft, right = remainingRight))
             }
         }
         current is SimpleCastState.CastingSplit && intent.slot == null -> {

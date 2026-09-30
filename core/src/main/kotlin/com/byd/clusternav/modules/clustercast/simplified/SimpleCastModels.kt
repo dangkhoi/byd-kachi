@@ -53,6 +53,12 @@ data class DisplayConfig(
 data class SlotState(
     val pkg: String,
     val displayConfig: DisplayConfig,
+    /**
+     * V-CLUSTER · VC-R6 — bản ghi hình học ĐÃ LƯU của ô (gói × tỉ lệ của phiên), ghim MỘT lần lúc ô bắt đầu, rồi chỉ
+     * đổi theo lượt chỉnh tay. `null` = không có gì để áp lại. Mọi lượt áp TỰ ĐỘNG (repin) đọc ở đây, không đọc prefs
+     * — prefs là hồ sơ ĐANG DÙNG, có thể đã đổi giữa phiên (`CastSessionPin.kt`).
+     */
+    val pinned: DisplayConfig? = null,
 )
 
 enum class ClusterSlotSide { LEFT, RIGHT }
@@ -152,12 +158,19 @@ sealed interface SimpleCastState {
         val appType: AppType,
         val displayConfig: DisplayConfig,
         val taskId: Int? = null,  // saved at cast time for exact return
+        /** V-CLUSTER · VC-R6 — bản ghi FULL đã lưu, ghim lúc bắt đầu (xem [SlotState.pinned]). `null` = không có gì để áp lại. */
+        val pinned: DisplayConfig? = null,
     ) : SimpleCastState
 
     /** Two normal apps split the cluster left/right. */
     data class CastingSplit(
         val left: SlotState?,
         val right: SlotState?,
+        /**
+         * V-CLUSTER · VC-R6 — tỉ lệ nửa trái CỦA PHIÊN (sửa refute C2). Đọc prefs MỘT lần lúc ô đầu tiên bắt đầu; ô thứ
+         * hai, repin, −/+ và chip DPI đều dùng số này. Chỉ lượt đổi tỉ lệ tường minh (`applySplitRatioLive`) đổi nó.
+         */
+        val leftPercent: Int = CastProfile.DEFAULT_PERCENT,
     ) : SimpleCastState {
         init {
             require(left != null || right != null) { "At least one slot must be occupied" }
@@ -324,4 +337,20 @@ interface SimpleCastPrefs {
      */
     fun bubbleVisible(): Boolean
     fun setBubbleVisible(visible: Boolean)
+
+    /**
+     * V-CLUSTER · VC-R7 — lựa chọn Cast của HỒ SƠ đang dùng khi nó KHÁC giá trị hiệu lực [castEnabled] (khoá
+     * [CastEnableDeferral.PENDING_KEY], theo XE). `null` = không có gì chờ. Tầng UI đọc để nói thật (*"… áp dụng từ lần
+     * nổ máy sau"*); lượt đổi hồ sơ ghi nó qua ảnh chụp, KHÔNG qua giao diện này.
+     *
+     * Mặc định `null`/[CastEnableDeferral.AtStart.NoPending] để các bản giả lập của test không phải biết tới nó.
+     */
+    fun castEnabledPending(): Boolean? = null
+
+    /**
+     * Chốt bản chờ vào khoá sống — gọi MỘT lần lúc dựng coordinator, TRƯỚC mọi lượt đọc [castEnabled] của tiến trình;
+     * chỉ đọc/ghi prefs, không shell. Trả quyết định để chỗ gọi xếp lượt dọn projection mồ côi khi chốt BẬT→TẮT
+     * ([CastEnableDeferral.AtStart.Commit.closeOrphan]).
+     */
+    fun commitCastEnabledPending(): CastEnableDeferral.AtStart = CastEnableDeferral.AtStart.NoPending
 }

@@ -8,6 +8,7 @@ package com.byd.clusternav.modules.clustercast.simplified
  */
 class DisplayConfigurator(
     private val shell: SimpleCastShell,
+    private val log: (String) -> Unit = { println("[DisplayConfigurator] $it") },
 ) {
     @Volatile
     var currentConfig: DisplayConfig? = null
@@ -21,6 +22,13 @@ class DisplayConfigurator(
      */
     fun apply(displayId: Int, config: DisplayConfig): Boolean {
         if (config == currentConfig) return true
+        // V-CLUSTER · VC-R4 — CHỐT CUỐI ngay trước nội suy: ba chuỗi dưới đây đi NGUYÊN VĂN vào shell, và từ V-CLUSTER
+        // chúng có thể đến từ một tệp hồ sơ người khác gửi. Lượt đọc đã kiểm (lớp 3), nhưng chốt ở TẦNG THI HÀNH mới là
+        // chốt không đường vòng (CLAUDE.md §5): cấu hình không sạch ⇒ từ chối cả lượt, 0 lệnh.
+        if (!CastGeometryGuard.isShellSafe(config)) {
+            log("TỪ CHỐI cấu hình không sạch trước shell: size='${config.wmSize.take(24)}' — 0 lệnh wm")
+            return false
+        }
 
         // Set wm size
         val sizeResult = shell.execute("wm size ${config.wmSize} -d $displayId")

@@ -122,7 +122,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions, the cluster casting geometry, and About — is saved for profile «%1$s». Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units all change with it.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start and Run background service on engine start do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -315,14 +315,32 @@
     <string name="kachi_camera_signal_title">Camera on turn signal</string>
     <string name="kachi_camera_signal_sub">Left signal shows left camera; right signal shows right camera.</string>
     <string name="kachi_sub_rain_defrost">Auto-defrost when it rains</string>
-    <string name="kachi_rain_defrost_title">Turn the defroster on when it rains</string>
-    <string name="kachi_rain_defrost_sub">Reads the rain sensor every 5 minutes; turns on the selected defrosters (below) while it rains, off afterwards.</string>
-    <string name="kachi_rain_defrost_note">Only switches off a defroster Kachi turned on itself; if you turn it on, Kachi leaves it alone.</string>
-    <!-- V7 (owner 2026-09-25) — two sub-options: which glass gets defrosted. Both on by default. -->
-    <string name="kachi_rain_defrost_front">Front defrost</string>
+    <!-- kachi-automation V8 (owner 2026-09-30) — TWO independent rows, no master switch any more (spec §V8 · D1). -->
+    <string name="kachi_rain_defrost_front">Turn on the front defroster when it rains</string>
     <string name="kachi_rain_defrost_front_sub">The windscreen at the front.</string>
-    <string name="kachi_rain_defrost_rear">Rear defrost + mirrors</string>
+    <string name="kachi_rain_defrost_rear">Turn on the rear defroster + mirrors when it rains</string>
     <string name="kachi_rain_defrost_rear_sub">The rear window and the door mirrors.</string>
+    <string name="kachi_rain_defrost_note">Reads the rain sensor every 5 minutes; the two boxes are independent. While it rains, a defroster that gets switched off (by the car or by you) is turned back on; when the rain stops Kachi only switches off what Kachi turned on — if you turned it on, Kachi leaves it alone.</string>
+    <!-- kachi-automation V8.1 (2026-09-30) · R-V8.7 — per-glass status line under the two defrost rows. {n} = wiper level, {t} = HH:mm. -->
+    <string name="kachi_rain_st_front">Front windscreen</string>
+    <string name="kachi_rain_st_rear">Rear + mirrors</string>
+    <string name="kachi_rain_st_never">not checked since the car started</string>
+    <string name="kachi_rain_st_next">next check ~{t}</string>
+    <string name="kachi_rain_st_rain">rain (wiper {n})</string>
+    <string name="kachi_rain_st_dry">dry (wiper {n})</string>
+    <string name="kachi_rain_st_sensor_error">rain sensor unreadable ⇒ left as is</string>
+    <string name="kachi_rain_st_car_on">car says: on</string>
+    <string name="kachi_rain_st_car_off">car says: off</string>
+    <string name="kachi_rain_st_car_off_after_on">car says: still off after the {t} turn-on</string>
+    <string name="kachi_rain_st_car_error">car says: unreadable</string>
+    <string name="kachi_rain_st_turn_on_ok">Kachi turned it on: reached the car ✓</string>
+    <string name="kachi_rain_st_turn_on_fail">turn-on command: did not reach the car ✗</string>
+    <string name="kachi_rain_st_turn_off_ok">Kachi turned it off: reached the car ✓</string>
+    <string name="kachi_rain_st_turn_off_fail">turn-off command: did not reach the car ✗</string>
+    <string name="kachi_rain_st_skipped">command dropped (selection just changed)</string>
+    <string name="kachi_rain_st_keep_on">already on, left alone</string>
+    <string name="kachi_rain_st_nothing">nothing to do</string>
+    <string name="kachi_rain_st_not_ours">not managed by Kachi, left alone</string>
     <!-- #2 · Scheduled navigation (Navigation group) -->
     <string name="kachi_sec_nav_auto">Scheduled navigation</string>
     <string name="kachi_nav_auto_note">At the right time on the right day, opens your navigation app to a saved address. Each window navigates once per day.</string>
@@ -405,9 +423,14 @@
     <string name="kachi_sec_cast">Cluster cast</string>
     <string name="kachi_cast_enabled_title">Enable Cluster cast</string>
     <string name="kachi_cast_enabled_sub">Opens the cluster so it can host app windows. Turning it off hands the cluster back to the gauges.</string>
+    <string name="kachi_cast_enabled_pending">Running: %1$s · this profile: %2$s — applies from the next ignition.</string>
+    <string name="kachi_cast_enabled_apply_now">Apply now</string>
+    <string name="kachi_cast_state_on_short">ON</string>
+    <string name="kachi_cast_state_off_short">OFF</string>
     <string name="kachi_cast_bubble_title">Show the floating cast button</string>
     <string name="kachi_cast_bubble_sub">The Kachi blossom that floats over the screen; tap it to cast. Turning this off only hides the button — you can still cast with the four Cast-now buttons below, by voice, and on engine start.</string>
     <string name="kachi_cast_split">Split ratio</string>
+    <string name="kachi_cast_split_session_differs">Splitting %1$s now · this profile %2$s — applies from the next split (tap a ratio to apply now).</string>
     <string name="kachi_sub_cast_autostart">Cast on engine start</string>
     <string name="kachi_cast_autostart_title">Auto-cast full cluster</string>
     <string name="kachi_cast_autostart_sub">On engine start, one app takes the whole cluster. Mutually exclusive with split auto-cast.</string>
@@ -545,6 +568,7 @@
     <string name="kachi_cast_geom_dpi">Cluster DPI</string>
     <string name="kachi_cast_geom_dpi_note">DPI applies to the WHOLE cluster, not to one slot (a wm density limit on Android 10).</string>
     <string name="kachi_cast_geom_reset">Reset frame</string>
+    <string name="kachi_cast_geom_profile_differs">This profile: DPI %1$d, frame %2$d×%3$d, top-left %4$d,%5$d — applies from the next cast.</string>
 
     <!-- U7 · R6 — see values/strings_kachi.xml for why the badge changed from "bright amber on
          almost every tile" to "dim dot + one line per group". -->

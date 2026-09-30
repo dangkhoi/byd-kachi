@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.modules.clustercast.simplified.CastBounds
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 import com.byd.clusternav.modules.clustercast.simplified.CastProfile
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.DisplayConfig
@@ -27,6 +28,13 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
  * lệ chia ([CastProfile.of]). Cùng một app ở nửa trái tỉ lệ 30 và nửa trái tỉ lệ 50 là **hai** ô nhớ
  * khác nhau — đó là chủ ý của bản gốc (đổi tỉ lệ thì khung cũ không còn nghĩa), nên [CastGeometryTarget]
  * mang theo `side` và mọi hàm tự tra tỉ lệ ĐANG chạy thay vì nhận nó từ giao diện.
+ *
+ * ## V-CLUSTER (2026-09-30) — màn nói giá trị của PHIÊN, không phải prefs của hồ sơ (VC-R9, sửa refute C5)
+ * DPI/khung và tỉ lệ nay theo HỒ SƠ, nên ngay sau khi đổi hồ sơ giữa lúc chiếu thì prefs mang giá trị của hồ sơ mới
+ * trong khi cụm vẫn hiện giá trị đã GHIM của phiên (`CastSessionPin.kt`). Bốn thanh −/+ và chip DPI phải đọc bản ghim
+ * ([geometryBounds]/[geometryDensity]), dải kẹp phải theo tỉ lệ PHIÊN ([geometryBand]) — đọc prefs là vẽ một con số
+ * không có trên cụm, và cú −/+ kế tiếp nhảy từ con số sai đó. Giá trị của hồ sơ chỉ hiện ở một dòng phụ, và chỉ khi
+ * nó khác ([geometryProfileDiffers]).
  */
 
 /**
@@ -85,7 +93,7 @@ fun ClusterNavBridge.geometryFrame(): Pair<Int, Int> {
  */
 fun ClusterNavBridge.geometryBand(target: CastGeometryTarget): Pair<Int, Int> {
     val (width, _) = geometryFrame()
-    val split = (width * splitPct() / 100).coerceIn(1, (width - 1).coerceAtLeast(1))
+    val split = (width * bandPct() / 100).coerceIn(1, (width - 1).coerceAtLeast(1))
     return when (target.side) {
         null -> 0 to width
         ClusterSlotSide.LEFT -> 0 to split
@@ -94,16 +102,10 @@ fun ClusterNavBridge.geometryBand(target: CastGeometryTarget): Pair<Int, Int> {
 }
 
 /**
- * Khung hiện tại của ô — **hồ sơ đã lưu thắng khung mặc định** (R6 của bản gốc: mở lại đúng chỗ người
- * dùng đã kéo lần trước), mặc định thì là cả dải của ô.
+ * Khung hiện tại của ô — **bản GHIM của phiên thắng khung mặc định** (R6 của bản gốc: mở lại đúng chỗ người dùng đã
+ * kéo lần trước — nay qua bản ghim, V-CLUSTER VC-R9), mặc định thì là cả dải của ô.
  */
-fun ClusterNavBridge.geometryBounds(target: CastGeometryTarget): CastBounds {
-    val (_, height) = geometryFrame()
-    val (bandMin, bandMax) = geometryBand(target)
-    val saved = savedConfig(target)?.bounds
-        ?: (castState() as? SimpleCastState.CastingFull)?.displayConfig?.bounds?.takeIf { target.side == null }
-    return saved ?: CastBounds(bandMin, 0, bandMax, height)
-}
+fun ClusterNavBridge.geometryBounds(target: CastGeometryTarget): CastBounds = boundsOf(target, sessionConfig(target))
 
 /**
  * Áp khung MỚI cho ô — hai đường khác nhau, đúng như `CastGeometryEditor` gọi:
@@ -129,16 +131,37 @@ fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget) {
 }
 
 /**
- * DPI đang áp cho ô — hồ sơ đã lưu, lùi về 240 (`DisplayConfig.NORMAL_DEFAULT.density`).
+ * DPI đang áp cho ô — bản GHIM của phiên, lùi về 240 (`DisplayConfig.NORMAL_DEFAULT.density`).
  *
  * Bản gốc từng ghim nhãn ở "320" bất kể thực tế và owner (2026-08-12) báo là gây hiểu nhầm; chỗ này
  * lặp lại `CastGeometryEditor.densityIndexFor`: đọc số THẬT rồi mới vẽ nhãn.
  */
-fun ClusterNavBridge.geometryDensity(target: CastGeometryTarget): Int {
-    val saved = savedConfig(target)?.density
-        ?: (castState() as? SimpleCastState.CastingFull)?.displayConfig?.density?.takeIf { target.side == null }
-    val dpi = saved?.toIntOrNull() ?: return DEFAULT_DENSITY
-    return if (dpi in geometryDensityOptions()) dpi else DEFAULT_DENSITY
+fun ClusterNavBridge.geometryDensity(target: CastGeometryTarget): Int = densityOf(sessionConfig(target))
+
+/** DPI + khung mà HỒ SƠ đang dùng lưu cho một ô, dạng giống hệt thứ bốn thanh −/+ và chip DPI đang hiện. */
+data class CastGeometryProfileValue(val density: Int, val bounds: CastBounds)
+
+/**
+ * V-CLUSTER · VC-R9 — giá trị HỒ SƠ đang dùng lưu cho ô [target] (dưới ô nhớ của tỉ lệ PHIÊN), **chỉ khi** nó khác giá
+ * trị của phiên đang hiện; `null` = giống, không có gì để nói. Tầng Settings vẽ dòng *"Hồ sơ này: DPI … — áp dụng từ
+ * lần chiếu sau"*.
+ *
+ * Hai phía so bằng CÙNG một phép dựng ([boundsOf]/[densityOf]) và cùng một mặc định cho "chưa lưu gì" (toàn cụm:
+ * [DisplayConfig.NORMAL_DEFAULT], đúng thứ lượt chiếu kế dùng; một nửa: cả dải + 240) — nên chưa đổi hồ sơ thì không
+ * bao giờ có dòng phụ giả (bản ghi `"reset"` và `"240"` cùng ra nhãn 240, y như chip đang vẽ).
+ *
+ * ⚠ Senior review Pass 2 — một NỬA mà tỉ lệ PHIÊN ≠ tỉ lệ HỒ SƠ ⇒ `null`: lần chia đôi kế của hồ sơ ghim ô nhớ của tỉ lệ
+ * HỒ SƠ (`sessionLeftPercent` ← `splitRatioLeftPercent`), tức một khoá khác, một dải khác. In bản ghi của tỉ lệ PHIÊN
+ * kèm *"áp dụng từ lần chiếu sau"* là nói sai điều lần chiếu sau sẽ làm (VC-R9). Chuyện "lần sau chia khác" đã có dòng
+ * tỉ lệ *"Đang chia … · hồ sơ này …"* nói (`SettingsCastSection.rebuildSplit`).
+ */
+fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue? {
+    if (target.side != null && sessionSplitPct() != splitPct()) return null
+    val fullDefault = DisplayConfig.NORMAL_DEFAULT.takeIf { target.side == null }
+    val profile = savedConfig(target) ?: fullDefault
+    val session = sessionConfig(target)
+    val want = CastGeometryProfileValue(densityOf(profile), boundsOf(target, profile))
+    return want.takeIf { it != CastGeometryProfileValue(densityOf(session), boundsOf(target, session)) }
 }
 
 /**
@@ -154,49 +177,53 @@ fun ClusterNavBridge.setGeometryDensity(dpi: Int) {
 
 // ── Nội bộ ──────────────────────────────────────────────────────────────────────────────────────
 
-/** Hồ sơ lưu của ô: FULL dùng khoá không hậu tố, split dùng khoá (nửa, tỉ lệ đang chạy). */
+/** Tỉ lệ cho dải/ô nhớ của một nửa: tỉ lệ CỦA PHIÊN khi đang chia đôi (VC-R6), không thì tỉ lệ hồ sơ lưu. */
+private fun ClusterNavBridge.bandPct(): Int = sessionSplitPct() ?: splitPct()
+
+/**
+ * Bản ghi HỒ SƠ đang dùng lưu cho ô: FULL dùng khoá không hậu tố, split dùng khoá (nửa, tỉ lệ PHIÊN) — đúng ô nhớ mà
+ * lượt chỉnh tay đang ghi vào (`CastSessionPin.resizeSlotBody`).
+ */
 private fun ClusterNavBridge.savedConfig(target: CastGeometryTarget): DisplayConfig? = runCatching {
-    val profile = target.side?.let { CastProfile.of(it, splitPct()) } ?: CastProfile.FULL
+    val profile = target.side?.let { CastProfile.of(it, bandPct()) } ?: CastProfile.FULL
     coordinator.prefs.displayConfigFor(target.pkg, profile)
 }.getOrNull()
+
+/**
+ * Cấu hình của PHIÊN cho ô: bản ghim; chưa ghim gì ⇒ toàn cụm dùng cấu hình đang áp của phiên, một nửa thì `null`
+ * (dải mặc định + 240). Chỉ nhận khi gói của ô khớp trạng thái (màn có thể giữ một [CastGeometryTarget] cũ).
+ */
+private fun ClusterNavBridge.sessionConfig(target: CastGeometryTarget): DisplayConfig? = when (val s = castState()) {
+    is SimpleCastState.CastingFull ->
+        if (target.side == null && s.targetPkg == target.pkg) s.pinned ?: s.displayConfig else null
+    is SimpleCastState.CastingSplit ->
+        (if (target.side == ClusterSlotSide.LEFT) s.left else s.right)?.takeIf { it.pkg == target.pkg }?.pinned
+    else -> null
+}
+
+private fun ClusterNavBridge.boundsOf(target: CastGeometryTarget, config: DisplayConfig?): CastBounds {
+    val (_, height) = geometryFrame()
+    val (bandMin, bandMax) = geometryBand(target)
+    return config?.bounds ?: CastBounds(bandMin, 0, bandMax, height)
+}
+
+private fun ClusterNavBridge.densityOf(config: DisplayConfig?): Int {
+    val dpi = config?.density?.toIntOrNull() ?: return DEFAULT_DENSITY
+    return if (dpi in geometryDensityOptions()) dpi else DEFAULT_DENSITY
+}
 
 private fun ClusterNavBridge.clampToBand(target: CastGeometryTarget, bounds: CastBounds): CastBounds {
     val (_, height) = geometryFrame()
     val (bandMin, bandMax) = geometryBand(target)
-    return clampBounds(bounds, bandMin, bandMax, height)
+    return CastGeometryGuard.clampBounds(bounds, bandMin, bandMax, height)
 }
 
-/**
- * Kẹp [bounds] vào dải `[bandMin, bandMax]` × `[0, frameHeight]`, mỗi cạnh ít nhất [MIN_SPAN] — **hàm thuần**
- * (không đọc gì của cầu) để còn test off-device được (CLAUDE.md §10).
- *
- * ## Vì sao [MIN_SPAN] phải tự co lại, không được dùng thẳng
- * `coerceIn(min, max)` **NÉM** `IllegalArgumentException` khi `min > max` — nó không kẹp, nó nổ. Bản đầu viết
- * `coerceIn(bandMin, bandMax - MIN_SPAN)`, tức chỉ cần dải hẹp hơn 80px là màn *Cài đặt › Chiếu cụm* văng ngay
- * lúc mở. Dải hẹp hơn 80px KHÔNG phải chuyện giả tưởng: tỉ lệ chia thấp nhất là **10%**
- * ([CastProfile.SPLIT_PERCENTS] = 10..90), nên một cụm rộng < 800px cho nửa trái < 80px; và `wmSize` là chuỗi
- * ĐỌC TỪ PREFS của cụm từng đời xe (CLAUDE.md §7 — không được hardcode 1920×720), một giá trị lạ như `"720x0"`
- * đưa `frameHeight` về 0.
- *
- * Cạnh tối thiểu vì thế co theo dải thật: dải hẹp thì ô chỉ nhỏ đi, chứ màn không được chết.
- */
-internal fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, frameHeight: Int): CastBounds {
-    val hi = bandMax.coerceAtLeast(bandMin)
-    val height = frameHeight.coerceAtLeast(0)
-    val spanX = MIN_SPAN.coerceAtMost(hi - bandMin)
-    val spanY = MIN_SPAN.coerceAtMost(height)
-    val left = bounds.left.coerceIn(bandMin, hi - spanX)
-    val right = bounds.right.coerceIn(left + spanX, hi)
-    val top = bounds.top.coerceIn(0, height - spanY)
-    val bottom = bounds.bottom.coerceIn(top + spanY, height)
-    return CastBounds(left, top, right, bottom)
-}
+// V-CLUSTER (2026-09-30) — phép kẹp DỜI sang `:core` `CastGeometryGuard.clampBounds` (thân + bài test dời nguyên): tầng
+// UI này và lượt áp hình học của phiên chiếu phải dùng CHUNG một phép kẹp (spec §11.4.4, DRY). Lý do `MIN_SPAN` tự co
+// lại (dải tỉ lệ 10 %, `wmSize` lạ) nay nằm ở KDoc bên đó.
 
 /** Bước của một lần bấm −/+ (px trên cụm). Đủ thấy khác sau một cú chạm, đủ nhỏ để canh được mép. */
 internal const val GEOMETRY_STEP_PX = 20
-
-/** Cạnh nhỏ nhất còn nhìn thấy được — dưới mức này thì app coi như biến mất khỏi cụm. */
-private const val MIN_SPAN = 80
 
 /** `DisplayConfig.NORMAL_DEFAULT.density` = "240". */
 private const val DEFAULT_DENSITY = 240

@@ -54,12 +54,21 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
 .legend .sw{display:inline-flex;align-items:center;gap:6px}
 .legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* V-CLUSTER (2026-09-30): SVG dùng class để theo light/dark; bảng rộng cuộn ngang trên điện thoại */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sv-box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.sv-acc{fill:var(--bg);stroke:var(--accent);stroke-width:2}
+.sv-okb{fill:var(--bg);stroke:var(--ok);stroke-width:2}
+.sv-ln{stroke:var(--muted);stroke-width:1.4;fill:none}
+.sv-arf{fill:var(--muted)}
+.sv-txt{fill:var(--fg);font-size:13px;font-family:inherit}
+.sv-mut{fill:var(--muted);font-size:12px;font-family:inherit}
 </style>
 </head>
 <body><div class="wrap">
 <h1>Kachi — Hồ sơ tài xế là TẤT CẢ: gộp cảnh, mọi cấu hình theo hồ sơ, thanh trên chỉ còn đổi hồ sơ (S4)</h1>
-<p class="muted">Slug: <code>kachi-profiles-are-everything</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: DONE off-car 2026-09-14 — 1.47 (48) đăng OTA; chờ xe: V-switch applier thật</span> · Chủ: dangkhoi</p>
-<h2>1. Changelog</h2><ul><li>⚠ <b>(V) FEATURE-FILTER 2026-09-17</b>: owner gỡ thêm <b>19 mã chấm NO</b> (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và <b>ẩn 8 ô lốp lẻ</b> khỏi bộ chọn. Số hôm nay: <b>154 chức năng</b> = <b>47 nút · 100 thông tin · 4 gói · 3 hành động</b>; <code>status-by-id.json</code> <b>145</b> mục. Mọi con số cũ trong spec này là LỊCH SỬ — xem <code>docs/diagnostics/feature-filter-2026-09-16.md</code>.</li><li><b>2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher</b> (backlog (N) ADAS-PURGE). Mọi con số “187 / 191 / 123 / 64” trong spec này từ đây là <b>LỊCH SỬ</b>, giữ nguyên làm bằng chứng đo. Lúc đó (2026-09-16): <b>167 chức năng</b> = <b>54 nút · 106 thông tin · 4 gói · 3 hành động</b>; <code>status-by-id.json</code> <b>164</b> mục (191 trước đó) — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</li><li><b>Pass 0 — 2026-09-14</b>: Owner: <em>"có cảnh rồi có hồ sơ nữa hơi khó hiểu… profile cover bố cục, các cấu hình tất cả mọi thứ, app tự khởi động… mỗi người lái khác nhau hoặc tình huống khác nhau thì switch profile là OK, bỏ luôn các nút đổi bố cục trên header"</em>. Khởi tạo spec.</li></ul>
+<p class="muted">Slug: <code>kachi-profiles-are-everything</code> · Branch <code>main</code> · <span class="pill wait">Trạng thái: DONE off-car 2026-09-14 — 1.47 (48) đăng OTA; chờ xe: V-switch applier thật</span> · <span class="pill wait">Phụ lục V-CLUSTER 2026-09-30: mã off-car xong (§11.5.1–§11.5.2), chờ xe OC-1…7</span> · Chủ: dangkhoi</p>
+<h2>1. Changelog</h2><ul><li>⚠ <b>V-CLUSTER 2026-09-30</b>: owner <em>"Phần cụm lưu hết thành profile nhé"</em>. Chiếu lên cụm, nút nổi, DPI/khung từng app và phần sở thích của camera nay <b>theo hồ sơ</b>. Câu này <b>THAY</b> S4-OQ2 (§7) và vế "hình học khi chiếu" của R4. Chi tiết, bảng phân loại, thiết kế an toàn khi đổi giữa chuyến: <a href="#v-cluster">§11</a>.</li><li>⚠ <b>(V) FEATURE-FILTER 2026-09-17</b>: owner gỡ thêm <b>19 mã chấm NO</b> (12 thông tin + 7 nút — cụm SẠC, chế độ lái, gập gương, chế độ drift, trạng thái nguồn MCU, chìa Bluetooth, tự-đóng-kính-khi-mưa) và <b>ẩn 8 ô lốp lẻ</b> khỏi bộ chọn. Số hôm nay: <b>154 chức năng</b> = <b>47 nút · 100 thông tin · 4 gói · 3 hành động</b>; <code>status-by-id.json</code> <b>145</b> mục. Mọi con số cũ trong spec này là LỊCH SỬ — xem <code>docs/diagnostics/feature-filter-2026-09-16.md</code>.</li><li><b>2026-09-16 — owner gỡ TOÀN BỘ ADAS/an toàn khỏi launcher</b> (backlog (N) ADAS-PURGE). Mọi con số “187 / 191 / 123 / 64” trong spec này từ đây là <b>LỊCH SỬ</b>, giữ nguyên làm bằng chứng đo. Lúc đó (2026-09-16): <b>167 chức năng</b> = <b>54 nút · 106 thông tin · 4 gói · 3 hành động</b>; <code>status-by-id.json</code> <b>164</b> mục (191 trước đó) — xem <code>docs/diagnostics/adas-purge-2026-09-16.md</code>.</li><li><b>Pass 0 — 2026-09-14</b>: Owner: <em>"có cảnh rồi có hồ sơ nữa hơi khó hiểu… profile cover bố cục, các cấu hình tất cả mọi thứ, app tự khởi động… mỗi người lái khác nhau hoặc tình huống khác nhau thì switch profile là OK, bỏ luôn các nút đổi bố cục trên header"</em>. Khởi tạo spec.</li></ul>
 <h2>2. Context</h2>
 <p>Hiện có HAI khái niệm "bộ cấu hình có tên": <b>hồ sơ</b> (P5: bố cục · ô · thanh nút · chip · lưới · cảnh) và <b>cảnh</b> (P7/P6 <code>SceneBook</code>: bố cục + ô + thanh nút, có "cảnh lúc nổ máy"). Backlog P7 đã ghi <em>"đọc kỹ hai dòng thì chúng là CÙNG một khái niệm"</em>. Ngoài ra nhiều thứ còn <b>chung cả máy</b>: chủ đề, đơn vị, hình nền, ngôn ngữ, tự khởi động, và toàn bộ cấu hình ClusterNav (dẫn đường/biển báo/bong bóng/phím vô-lăng/tiện nghi/tự chiếu). Thanh trên có 5 nút bố cục sẵn + avatar xoay vòng hồ sơ.</p>
 <p>[ĐO] Khoá theo hồ sơ hiện tại: <code>WorkspacePrefs.PROFILE_SUFFIXES</code> = preset · dock_edge · dock_enabled · top_strip · grid_layout · scenes · boot_scene · slot_0..5. Khoá chung: theme_mode · unit_prefs · wallpaper_prefs · recent_apps · launcher_autostart · lang (tệp <code>clusternav_lang</code>) · theme_choice (<code>clusternav_theme</code>). ClusterNav: 22 khoá ở <code>clusternav_prefs</code> + 7 ở <code>simple_cast_prefs</code> (danh sách <code>SettingsCatalogClusterNav.KEYS</code>), đọc trực tiếp bởi dịch vụ (NavAccessibilityService, FloatingBubbleService, VietMapAutostart…).</p>
@@ -67,11 +76,11 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>R1 Một khái niệm</b>: bỏ hẳn "cảnh". <code>SceneBook</code>, <code>SceneController</code>, <code>SettingsSceneSection</code>, mục "Cảnh"/"Cảnh lúc nổ máy" trong danh mục, khoá <code>scenes</code>/<code>boot_scene</code> đều gỡ (CLAUDE.md §8: không để mã mồ côi).</li>
 <li><b>R2 Chuyển dữ liệu không mất</b>: lần đầu chạy bản mới, mỗi cảnh đã lưu → một hồ sơ cùng tên (trùng tên thì thêm hậu tố " 2"); nội dung = bố cục/ô/thanh nút của cảnh, các phần khác chép từ hồ sơ đang dùng; "cảnh lúc nổ máy" → "hồ sơ lúc nổ máy". Chạy MỘT lần (dấu <code>migrated_scenes_v1</code>), thuần ở <code>:core</code>, có test.</li>
 <li><b>R3 Hồ sơ giữ TẤT CẢ lựa chọn người dùng</b>: (a) launcher: bố cục · ô · lưới · thanh nút · chip · <b>hình nền · chủ đề · đơn vị · ngôn ngữ · tự mở Kachi khi nổ máy</b>; (b) ClusterNav: mọi khoá trong <code>SettingsCatalogClusterNav.KEYS</code> TRỪ danh sách theo-xe ở R4 và cờ tạm <code>voicekey_learn</code>. Danh sách theo-hồ-sơ và theo-xe khai <b>một chỗ</b> ở <code>:core</code> (<code>ProfileScope</code>) và có bài canh: mọi <code>SettingsEntry.prefKey</code> phải nằm ở đúng một trong hai danh sách — thêm mục mới mà không xếp loại thì đỏ.</li>
-<li><b>R4 Theo xe, KHÔNG theo hồ sơ</b> (phần cứng/hệ thống): quyền · kênh shell · cập nhật OTA · chẩn đoán · dữ liệu VietMap · khung/DPI/hình học khi chiếu (simple_cast_prefs trừ các khoá tự chiếu và tỉ lệ chia đôi) · <code>recent_apps</code> · danh sách hồ sơ và hồ sơ đang dùng. Lý do ghi ở KDoc từng khoá.</li>
+<li><b>R4 Theo xe, KHÔNG theo hồ sơ</b> (phần cứng/hệ thống): quyền · kênh shell · cập nhật OTA · chẩn đoán · dữ liệu VietMap · <s>khung/DPI/hình học khi chiếu (simple_cast_prefs trừ các khoá tự chiếu và tỉ lệ chia đôi)</s> · <code>recent_apps</code> · danh sách hồ sơ và hồ sơ đang dùng. Lý do ghi ở KDoc từng khoá.<br><span class="warn">⚠ BỊ THAY 2026-09-30 (owner: <em>"Phần cụm lưu hết thành profile nhé"</em>)</span>: vế gạch ngang là <b>tóm tắt của agent</b>, không phải lời owner. Từ V-CLUSTER, <code>cast_enabled</code> · <code>cast_bubble_visible</code> · họ <code>config_size_/overscan_/density_/bounds_</code> · vị trí nút nổi · 6 khoá camera sở thích đều <b>theo hồ sơ</b>. Còn theo xe: <code>last_display_id</code>, <code>doze_whitelist_applied</code>, 23 khoá hiệu chỉnh camera, cờ freeform, dấu mốc. Xem §11.4.1.</li>
 <li><b>R5 Đổi hồ sơ = áp cả bộ ngay</b>: cơ chế <b>chụp–áp</b> (snapshot): trước khi rời hồ sơ A, chụp giá trị hiện tại của mọi khoá R3(b) vào <code>A__cn__&lt;tệp&gt;.&lt;khoá&gt;</code> (giữ kiểu Boolean/Int/Long/Float/String/Set — codec thuần <code>PrefSnapshot</code>, test); rồi ghi bộ của B vào đúng tệp prefs ClusterNav; B chưa có bộ ⇒ giữ nguyên giá trị hiện tại (hồ sơ mới = bản sao của hiện tại). Sau khi ghi, gọi <b>đúng các applier đã có</b> qua <code>ClusterNavBridge</code> (không đường thứ hai) để dịch vụ đang chạy nhận cấu hình mới; agent phải liệt kê từng khoá có consumer sống (dịch vụ) và cách nó nhận đổi ([ĐO] từ source), khoá nào chưa có đường áp thì ghi [CHƯA BIẾT] + backlog.</li>
 <li><b>R6 Hồ sơ lúc nổ máy</b>: chọn ở nhóm Hồ sơ; mặc định "hồ sơ dùng gần nhất". Thay cho cảnh lúc nổ máy; đường khởi động nguội hiện có (<code>KachiAutostart</code>) chuyển hồ sơ trước khi dựng ô.</li>
 <li><b>R7 Thanh trên</b>: bỏ 5 nút bố cục sẵn. Avatar → <b>chip tên hồ sơ</b> (chữ cái + tên, chạm mở bộ chọn: danh sách hồ sơ + "Quản lý hồ sơ…" → Cài đặt › Hồ sơ). Bỏ xoay vòng bằng chạm (<code>ProfileBar.cycle</code>). Còn lại: Apps · Cài đặt. Đường chọn bố cục sẵn chỉ còn ở Cài đặt › Màn hình chính.</li>
-<li><b>R8 Nhóm Hồ sơ tài xế</b>: danh sách (tóm tắt U13 mở rộng: bố cục · chủ đề · tự khởi động) · hồ sơ lúc nổ máy · "Thêm hồ sơ (bản sao của hồ sơ đang dùng)" · Xoá (luật hiện có). Câu đầu nhóm Màn hình chính/Thanh nút (U13) mở rộng thành "mọi thiết lập ở Cài đặt (trừ nhóm Hệ thống, Chiếu-hình-học, Giới thiệu) lưu cho hồ sơ «X»".</li>
+<li><b>R8 Nhóm Hồ sơ tài xế</b>: danh sách (tóm tắt U13 mở rộng: bố cục · chủ đề · tự khởi động) · hồ sơ lúc nổ máy · "Thêm hồ sơ (bản sao của hồ sơ đang dùng)" · Xoá (luật hiện có). Câu đầu nhóm Màn hình chính/Thanh nút (U13) mở rộng thành "mọi thiết lập ở Cài đặt (trừ nhóm Hệ thống, Chiếu-hình-học, Giới thiệu) lưu cho hồ sơ «X»". <span class="warn">⚠ 2026-09-30: vế "Chiếu-hình-học" BỊ THAY. Hình học chiếu nay theo hồ sơ; câu <code>kachi_home_profile_note</code> được sửa ở V-CLUSTER A5.</span></li>
 <li><b>R9 Test</b>: <code>:core</code> thuần cho ProfileScope · PrefSnapshot · migration; bài canh: không còn <code>LayoutPreset</code> ở thanh trên; không còn chữ Scene/cảnh trong mã sản phẩm (trừ ghi chú lịch sử); ProfileKeysWiringContractTest cập nhật; i18n; SettingsCoverage. 5 module 0 đỏ.</li>
 <li><b>R11 Chip thanh trên nhiều hơn</b> (owner 2026-09-14: <em>"hiện chỉ cho chọn 3 trong khi có thể chọn nhiều hơn, bổ sung nhé"</em>): [ĐO] trần <code>TopStripConfig.CAP = 4</code>, mặc định 3 chip, mọi mục ĐỌC đều chippable qua "Thêm chip khác…" nhưng màn chọn chỉ bày 3 chip sẵn. Sau R7 thanh trên trống thêm ≈370 px ⇒ (a) CAP 4 → <b>8</b>; (b) thanh trên co chip/cắt "…" khi hết chỗ, không tràn ra ngoài Apps/Cài đặt — [ĐO] ảnh máy ảo 8 chip; (c) màn chọn bày <b>mọi mục đọc theo nhóm</b> (Domain) với dấu chưa-kiểm như ngăn kéo, đang bật lên đầu; giữ luật chỉ-đọc. Test: TopStripTest CAP, bài canh không tràn (đo bề rộng tối thiểu), SettingsCoverage.</li>
 <li><b>R12 Thanh trên gọn + "Ứng dụng" trên thanh nút</b> (owner 2026-09-14: <em>"đổi chữ Ứng Dụng, Cài Đặt thành icon luôn cho gọn, thêm cho chọn Ứng Dụng ở chỗ chọn nút cho Thanh"</em>): (a) hai nút <b>Ứng dụng</b>/<b>Cài đặt</b> ở thanh trên chỉ còn icon (đích chạm ≥ Sp.TOUCH, <code>contentDescription</code> song ngữ, cùng icon với ngăn kéo/ic-settings); (b) danh mục thêm loại <code>CapabilityKind.LAUNCHER</code> — hành động của launcher, không bắn lệnh xe, tier PROVEN, không chấm chưa-kiểm, KHÔNG chippable ở thanh trên; mục đầu: <code>launcher_apps</code> "Ứng dụng" (mở ngăn kéo) và <code>launcher_settings</code> "Cài đặt"; chọn được ở bộ chọn nút thanh xe (nhóm riêng "Launcher"), vẽ như nút thường; <code>ControlDockView</code> nhận <code>onLauncherAction(id)</code> nối về KachiHomeActivity (mở ngăn kéo/mở Cài đặt — cùng đường với thanh trên, không đường thứ hai). Test: DockSelection nhận LAUNCHER; TopStrip từ chối LAUNCHER; bài canh thanh trên không còn chữ Apps/Settings; i18n.</li>
@@ -83,7 +92,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <li><b>Phạm vi khoá — bảng chốt (T1 đo từ mã, không từ văn xuôi)</b>:
 <table><tr><th>Mức</th><th>Gồm</th><th>Lý do</th></tr>
 <tr><td>PROFILE</td><td>preset · grid_layout · dock_edge · dock_enabled · top_strip · slot_0..5 · theme_mode · unit_prefs · wallpaper_prefs · launcher_autostart · lang · <b>toàn bộ 28 khoá ClusterNav còn lại</b> (nav · biển báo · bong bóng · phím vô-lăng · tiện nghi · <b>6/7 khoá simple_cast_prefs</b> — 5 khoá tự chiếu + <code>split_ratio_left_pct</code>; <code>cast_enabled</code> <b>KHÔNG</b>, xem DEVICE) · <code>theme_choice</code></td><td>lựa chọn của MỘT người lái</td></tr>
-<tr><td>DEVICE</td><td>profiles · active_profile · boot_profile · migrated_scenes_v1 · <code>cast_enabled</code> (Pass 1 review) · recent_apps · last_display_id · doze_whitelist_applied · freeform_state · enable_freeform_support · force_resizable_activities · enabled_accessibility_services · accessibility_enabled · tiền tố <code>config_size_</code>/<code>config_overscan_</code>/<code>config_density_</code>/<code>config_bounds_</code></td><td>phần cứng · hệ thống · chính bộ máy hồ sơ</td></tr>
+<tr><td>DEVICE</td><td>profiles · active_profile · boot_profile · migrated_scenes_v1 · <s><code>cast_enabled</code> (Pass 1 review)</s> · recent_apps · last_display_id · doze_whitelist_applied · freeform_state · enable_freeform_support · force_resizable_activities · enabled_accessibility_services · accessibility_enabled · <s>tiền tố <code>config_size_</code>/<code>config_overscan_</code>/<code>config_density_</code>/<code>config_bounds_</code></s><br><span class="warn">⚠ Phần gạch ngang BỊ THAY 2026-09-30 → PROFILE (§11.4.1)</span></td><td>phần cứng · hệ thống · chính bộ máy hồ sơ</td></tr>
 <tr><td>TRANSIENT</td><td>voicekey_learn · scenes · boot_scene</td><td>cờ tạm / dữ liệu đời cũ — không chép, không giữ</td></tr></table></li>
 <li><b>PrefSnapshot (:core)</b> <span class="pill ok">T1 xong</span> — <code>core/…/launcher/PrefSnapshot.kt</code>. <code>encode(Map&lt;String, Any?&gt;): String</code> / <code>decode(String?): Map&lt;String, Any?&gt;</code>. Một chuỗi cho MỘT tệp prefs, lưu ở <code>&lt;hồ sơ&gt;__cn__&lt;tệp&gt;</code> (hậu tố sinh bằng <code>ProfileScope.snapshotSuffix</code>, đã có trong <code>LAUNCHER_SUFFIXES</code> ⇒ xoá hồ sơ là xoá cả ảnh chụp). Dạng lưu tự đọc được: mỗi dòng <code>&lt;thẻ kiểu&gt;|&lt;khoá&gt;|&lt;giá trị&gt;</code>, thẻ <code>b i l f s S E n</code> (bool · int · long · float · chuỗi · tập · tập rỗng · null).
 <br>⚠ <b>Vì sao giữ kiểu là bắt buộc</b>: <code>getBoolean</code> trên giá trị ghi bằng <code>putString</code> <b>ném</b> <code>ClassCastException</code>, và chỗ đọc là dịch vụ đang chạy trên xe ⇒ mất kiểu không hỏng lúc đổi hồ sơ mà hỏng <b>trên đường</b>. Hai ca đã làm bài canh đỏ ngay lần chạy đầu và nay bị khoá lại: <code>emptySet()</code> vs <code>setOf("")</code> (⇒ thẻ <code>E</code> riêng) và chuỗi chứa đúng hai ký tự <code>\</code>+<code>n</code> (⇒ escape <code>\\</code> đi đầu lúc mã hoá, cuối lúc giải mã). Dữ liệu hỏng ⇒ bỏ đúng dòng đó, KHÔNG ném (nguồn là đĩa, sửa tay được).</li>
@@ -100,7 +109,7 @@ kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;paddi
 <tr><td>T6</td><td>R12: icon-only Apps/Cài đặt ở thanh trên + CapabilityKind.LAUNCHER (launcher_apps/launcher_settings) trên thanh nút — sau T2+T3</td><td>KachiTopStrip · LauncherCatalog/CapabilityCatalog (:core) · DockSelection · ControlDockView · ControlTileFactory · DrawerController (bộ chọn) · KachiHomeWiring (nối)</td></tr>
 <tr><td>T4</td><td>Consolidate: 5 module 0 đỏ · ảnh máy ảo (khi owner không dùng) · senior review · scan · 1.47</td><td>—</td></tr></table>
 <h2>6. Verification</h2><ul><li>V-unit 5 module 0 đỏ; V-mig: fixture cảnh thật (định dạng SceneBook.encode hiện tại) → hồ sơ đúng tên/đúng nội dung; V-switch: chuyển hồ sơ đổi chủ đề + biển báo + phím vô-lăng, đọc lại prefs ClusterNav [ĐO]; V-emu: thanh trên không còn nút bố cục, chip hồ sơ mở bộ chọn.</li></ul>
-<h2>7. Open Questions</h2><ul><li>OQ1. Đổi hồ sơ bằng phím vô-lăng (qua bộ gán phím hiện có) — làm sau nếu owner muốn.</li><li>OQ2. <b>ĐÃ CHỐT (Pass 1 review, 2026-09-14): <code>cast_enabled</code> theo XE.</b> Lý do là an toàn, không phải sở thích — mọi cổng đọc khoá đều LIVE (<code>ClusterNavLaneWidget.kt:110</code> nhịp thông báo · <code>NavRepository.kt:215</code> mỗi khung · <code>FloatingBubbleService.kt:170</code> mỗi lượt start), nên đổi giá trị mà không mở/đóng projection cho ra cụm <b>hai chủ</b>: bật→tắt ⇒ <code>decide()</code> chuyển GATED_CAST → ASSERT và op 39 ghi đè lên cụm trong khi phiên chiếu vẫn chạy; tắt→bật ⇒ HUD thôi ghi mặt cụm mà không có phiên chiếu nào thay chỗ ⇒ cụm trống. Còn áp THẬT (<code>setCastEnabled</code>) thì một cú chạm chip hồ sơ làm cụm trước mặt người lái tối đi/sáng lên. <b>Mở lại theo hồ sơ</b> khi có đường áp gác theo *phiên chiếu không chạy* — owner quyết, backlog <code>S4-OQ2</code>.</li></ul>
+<h2>7. Open Questions</h2><ul><li>OQ1. Đổi hồ sơ bằng phím vô-lăng (qua bộ gán phím hiện có) — làm sau nếu owner muốn.</li><li>OQ2. <b>ĐÃ CHỐT (Pass 1 review, 2026-09-14): <code>cast_enabled</code> theo XE.</b> Lý do là an toàn, không phải sở thích — mọi cổng đọc khoá đều LIVE (<code>ClusterNavLaneWidget.kt:110</code> nhịp thông báo · <code>NavRepository.kt:215</code> mỗi khung · <code>FloatingBubbleService.kt:170</code> mỗi lượt start), nên đổi giá trị mà không mở/đóng projection cho ra cụm <b>hai chủ</b>: bật→tắt ⇒ <code>decide()</code> chuyển GATED_CAST → ASSERT và op 39 ghi đè lên cụm trong khi phiên chiếu vẫn chạy; tắt→bật ⇒ HUD thôi ghi mặt cụm mà không có phiên chiếu nào thay chỗ ⇒ cụm trống. Còn áp THẬT (<code>setCastEnabled</code>) thì một cú chạm chip hồ sơ làm cụm trước mặt người lái tối đi/sáng lên. <b>Mở lại theo hồ sơ</b> khi có đường áp gác theo *phiên chiếu không chạy* — owner quyết, backlog <code>S4-OQ2</code>.<br><span class="warn">⚠ BỊ THAY 2026-09-30</span>: owner <em>"Phần cụm lưu hết thành profile nhé"</em> ⇒ <code>cast_enabled</code> <b>theo hồ sơ</b>. Kết luận cũ là chốt của Pass 1 review, không phải của owner. <b>Lý do kỹ thuật ở trên vẫn đúng</b>, và thành ràng buộc thiết kế: lượt đổi hồ sơ <b>không bao giờ</b> ghi khoá sống. Giá trị hồ sơ đợi ở <code>cast_enabled_pending</code> và được chốt ở lần khởi động tiến trình kế. Nút "Áp ngay" đi đường thật. Xem §11.4.3.</li></ul>
 <h2>8. References</h2><ul><li>docs/specs/kachi-scenes-and-widgets.html (P7/P6 — phần cảnh bị thay thế) · kachi-settings-ia-v2.html §4.5 (5 nút bố cục ở thanh trên — bị thay) · docs/PROJECT-BACKLOG.md S4/U13</li></ul>
 <h2>9. Nhật ký triển khai</h2>
 <h3>T1 — <code>:core</code> thuần (2026-09-14)</h3>
@@ -239,8 +248,8 @@ trả <code>null</code> và vế tự tắt.</p>
 <tr><td><code>pm25_filter_enabled</code></td><td><code>Pm25FilterApplier.kt:181,185</code> (vòng lọc đang chạy)</td><td>boot + vòng poll</td><td><code>Pm25FilterApplier.enable/disable(app)</code> — phải gọi CẢ nhánh tắt, không thì vòng lọc chạy tiếp theo hồ sơ vừa rời</td></tr>
 <tr><td><code>recirc_on_start_enabled</code></td><td><code>RecircApplier.kt:46</code> ← <code>BootSetupService.kt:97</code></td><td>một lần mỗi lần nổ máy</td><td>— <b>cố ý</b>: <code>applyNowAsync</code> KHÔNG gate (<code>RecircApplier.kt:56-58</code>) ⇒ gọi nó là bật quạt lấy gió trong mỗi lần đổi hồ sơ</td></tr>
 <tr><td><code>headless_autostart</code></td><td><code>RebindReceiver.kt:42,64</code></td><td>một lần mỗi BOOT_COMPLETED</td><td>— (không có dịch vụ nào để báo)</td></tr>
-<tr><td><code>cast_enabled</code></td><td><code>ClusterNavLaneWidget.kt:111</code> · <code>NavRepository.kt:215</code> · <code>VmOverlayPosition.kt:69</code></td><td>nhịp thông báo / mỗi khung</td><td>— <b>cố ý</b>: <code>setCastEnabled</code> mở/đóng projection + start/stop <code>FloatingBubbleService</code> ⇒ cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip. <b>Backlog S4-OQ2</b>. <b>↪ Pass 1 review (§10) đã chuyển khoá này sang theo XE</b> — hàng này giữ lại làm lịch sử của T2.</td></tr>
-<tr><td><code>split_ratio_left_pct</code></td><td><code>SimpleCastCoordinator.kt:304,449,605</code></td><td>mỗi lượt dispatch cast</td><td>— (tự áp)</td></tr>
+<tr><td><code>cast_enabled</code></td><td><code>ClusterNavLaneWidget.kt:111</code> · <code>NavRepository.kt:215</code> · <code>VmOverlayPosition.kt:69</code></td><td>nhịp thông báo / mỗi khung</td><td>— <b>cố ý</b>: <code>setCastEnabled</code> mở/đóng projection + start/stop <code>FloatingBubbleService</code> ⇒ cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip. <b>Backlog S4-OQ2</b>. <b>↪ Pass 1 review (§10) đã chuyển khoá này sang theo XE</b> — hàng này giữ lại làm lịch sử của T2. <span class="warn">↪↪ 2026-09-30: owner đưa khoá này về THEO HỒ SƠ, áp hoãn qua <code>cast_enabled_pending</code> (§11.4.3).</span></td></tr>
+<tr><td><code>split_ratio_left_pct</code></td><td><code>SimpleCastCoordinator.kt:304,449,605</code></td><td>mỗi lượt dispatch cast</td><td>— (tự áp)<br><span class="warn">⚠ 2026-09-30: "tự áp" chính là lỗi C2. Phiên chia đôi đang chạy đọc lại tỉ lệ MỚI. Cách sửa: ghim tỉ lệ vào <code>CastingSplit</code> (§11.4.6). Số dòng trích ở đây đã cũ: tệp nay 448 dòng.</span></td></tr>
 <tr><td>5 khoá <code>autostart_*</code></td><td><code>FloatingBubbleService.kt:422-423,448,462-463</code></td><td>MỘT lần ở <code>onCreate</code></td><td>— <b>cố ý</b>: "tự chiếu <i>khi nổ máy</i>" mà áp lúc đổi hồ sơ là bung một app lên cụm xe đang chạy</td></tr>
 <tr><td><code>theme_choice</code></td><td><code>ThemeMode.kt:44</code> ← <code>attachBaseContext</code> của 4 Activity</td><td>mỗi lần Activity dựng</td><td>— (KDoc <code>ThemeMode.kt:47</code>: caller phải tự <code>recreate()</code>; lần mở sau đã đúng)</td></tr>
 </table>
@@ -287,7 +296,7 @@ phải phát lại).</p>
 
 <h4>Còn mở (việc của T4/owner)</h4>
 <ul>
-<li><b>S4-OQ2</b> (backlog): đổi hồ sơ KHÔNG tự bật/tắt phiên chiếu đang chạy — owner chốt (a) giữ · (b) áp ngay · (c) hỏi xác nhận. <b>↪ Pass 1 review chốt (a′): khoá về theo XE</b> (§7 OQ2 · §10) — an toàn nhất trong ba, và mở lại được khi có đường áp gác theo phiên chiếu.</li>
+<li><b>S4-OQ2</b> (backlog): đổi hồ sơ KHÔNG tự bật/tắt phiên chiếu đang chạy — owner chốt (a) giữ · (b) áp ngay · (c) hỏi xác nhận. <b>↪ Pass 1 review chốt (a′): khoá về theo XE</b> (§7 OQ2 · §10) — an toàn nhất trong ba, và mở lại được khi có đường áp gác theo phiên chiếu. <span class="warn">⚠ BỊ THAY 2026-09-30 bởi quyết định owner → §11 (V-CLUSTER).</span></li>
 <li><b>S4-SEAT</b> (backlog): <code>seat_level_1..3</code> chưa theo hồ sơ (cần khai khoá đi kèm ở <code>SettingsCatalogClusterNav</code>).</li>
 <li><b>Chưa đo trên máy/xe</b> — mọi kết luận trên là [ĐO] <b>từ source</b>, không phải từ một lượt chạy thật. V-switch (đổi hồ sơ đổi chủ đề + biển báo + phím vô-lăng, đọc lại prefs ClusterNav) và V-mig (fixture cảnh thật → hồ sơ) <b>chưa chạy</b>: owner đang dùng máy ảo.</li>
 <li><code>reapplyAll</code> chạy trên <b>luồng gọi</b> (main). Mọi applier bên trong tự đẩy việc nặng sang thread nền (<code>SeatComfortApplier</code>/<code>Pm25FilterApplier</code> tự <code>Thread{}</code>), nhưng chưa đo độ trễ thật của cú chạm đổi hồ sơ trên xe.</li>
@@ -469,5 +478,920 @@ kèm ở <code>SettingsCatalogClusterNav</code> trước.</li>
 <h4>Verdict</h4>
 <p><b>APPROVED cho phần off-car</b> (R1–R12 đủ, 5 module 0 đỏ, 4 vá đã khoá bằng bài canh đã-thử-làm-đỏ) — <b>chưa</b> phải
 "xong" theo P5: còn V-emu/V-switch/V-mig trên máy thật và bump 1.47.</p>
+
+<!-- ═══════════════════════════ PHỤ LỤC V-CLUSTER (2026-09-30) ═══════════════════════════ -->
+<h2 id="v-cluster">11. V-CLUSTER — Mọi thứ về cụm theo hồ sơ (2026-09-30)</h2>
+<p class="muted">Phụ lục của S4, cùng slug. Nhánh <code>feat/profile-cluster</code> (tách từ 2.83 <code>b5c0e87</code>).
+<span class="pill wait">Spec — chờ duyệt Requirements · Design · Tasks (out-of-band)</span> · Chủ: dangkhoi.
+Mọi <code>file:line</code> ở phụ lục này là [ĐO] đọc source tại <code>b5c0e87</code>, trừ chỗ ghi khác. <b>Chưa đo gì trên xe cho phụ lục này.</b></p>
+
+<h3>11.1 Changelog</h3>
+<ul>
+<li><b>Pass 0 — 2026-09-30.</b> Owner, nguyên văn: <em>"Phần cụm lưu hết thành profile nhé"</em>. Đây là câu trả lời cho câu hỏi
+<em>"chiếu lên cụm, vị trí bóng/nút lên cụm, DPI các kiểu có lưu theo hồ sơ chưa"</em>. Quyết định này <b>THAY</b> hai thứ:
+<ul>
+<li><b>S4-OQ2</b> (<code>cast_enabled</code> theo xe). Đó là chốt của Pass 1 review, không phải của owner (§7, §10).</li>
+<li>Dòng <b>R4</b> <em>"khung/DPI/hình học khi chiếu theo xe"</em>. Đó là tóm tắt của agent. Nguyên văn owner ngày 14/09 là
+<em>"profile cover … các cấu hình tất cả mọi thứ"</em> (§1 Pass 0).</li>
+</ul>
+Các chỗ cũ được <b>ghi chú là bị thay</b>, không xoá. Đầu vào là hai tệp điều tra đã phản biện (<code>investigate-profile.md</code> +
+<code>refute-profile.md</code>, refute thắng khi mâu thuẫn). Từng điểm đã được đọc lại trong source. Phụ lục này chỉ là spec: <b>0 dòng mã đổi</b>.</li>
+<li><b>Pass 0b — 2026-09-30 (mã, lượt <code>:core</code> + lớp lưu trữ).</b> C1–C5 + A1 xong, A2/A7/A8 một phần, C6/A3–A6 thuộc lane khác. Trạng thái
+theo mã thật, lệch kế hoạch và phá thử: <a href="#v-cluster-code">§11.5.1</a>.</li>
+<li><b>Pass 0c — 2026-09-30 (mã, lượt <code>:app</code> + C6).</b> C6 (ghim phiên, sửa C2/B6) · A2 phần còn lại (chốt bản chờ trong
+<code>create()</code> + dọn projection mồ côi) · A3 · A4 · A5 · A6 · A7 xong; A8 trừ <code>SettingsCatalogClusterNav.kt:125</code> (hoãn, luồng sấy kính).
+Hai chỗ lệch thiết kế có lý do đo được: <code>closeOrphanProjection</code> không đi <code>closeProjectionSync</code>, bản ghim chỉ cập nhật đúng trường vừa áp.
+Chi tiết, kết quả test và phá thử: <a href="#v-cluster-app">§11.5.2</a>.</li>
+<li><b>Pass 1 review — 2026-09-30 (senior, PATCHED).</b> Hai vá [P2]/[P3] + nợ nhỏ ghi backlog <code>V-CLUSTER-DEBT</code>. Chi tiết: §11.9.</li>
+<li><b>Pass 2 review — 2026-09-30 (senior, PATCHED).</b> Đóng hẳn [P1] §11.8 (khai kiểu MỌI khoá của ảnh chụp, có bài canh đối chiếu lượt <code>put*</code> thật) · dòng phụ khung của một nửa im khi tỉ lệ phiên ≠ tỉ lệ hồ sơ · sửa lệch tài liệu. Chi tiết: §11.9.</li>
+<li><b>Pass 3 review — 2026-09-30 (senior, PATCHED).</b> Ảnh chụp ĐÃ LƯU sai kiểu (tệp nhập ≤ 2.83) không còn làm lượt di trú trong <code>init</code> ném — đọc qua <code>storedSnapshot</code>, di trú rót ảnh sạch đè lên · V-CLUSTER-DEBT mục 3 lên mức [SUY từ ĐO code]. Chi tiết: §11.9.</li>
+<li><b>Pass 4 review — 2026-09-30 (senior, bản GỘP 2.84 = V-CLUSTER + kachi-automation V8/V8.1, PATCHED).</b> Lượt dọn VD (<code>closeOrphanProjection</code> → <code>cleanDisplay</code>) nay lọc theo LOẠI STACK (CLAUDE.md §4 câu 3) · lượt di trú lịch dẫn đường cũng đọc ảnh qua <code>storedSnapshot</code> · câu hồ sơ ở màn chính kể đủ mục theo xe. Chi tiết: §11.9.</li>
+<li><b>Pass 5 review — 2026-09-30 (senior, bản GỘP 2.84 lượt 2, PATCHED).</b> Một [P3]: câu hồ sơ ở màn chính còn sót <i>App dẫn đường mặc định</i> (theo XE) — bài canh đổi sang khoá TỔNG QUÁT. <code>storedSnapshot</code>, hai lượt di trú, bốn câu §4 của <code>closeOrphanProjection</code>, §6 soát lại: sạch. Chi tiết: §11.9.</li>
+<li><b>Pass 6 review — 2026-09-30 (senior, bản GỘP 2.84 lượt 3, PATCHED).</b> Một [P3]: cùng câu hồ sơ, chiều ngược lại — câu loại trừ TRỌN nhóm Hệ thống trong khi <i>Tự mở Kachi khi nổ máy</i> và <i>Chạy dịch vụ nền khi nổ máy</i> theo HỒ SƠ; câu kể hai mục đó là ngoại lệ, bài canh khoá cả hai chiều. Lượt dọn VD theo loại stack, <code>storedSnapshot</code> và hai lượt di trú, §6 và sấy kính: soát lại, sạch. Chi tiết: §11.9.</li>
+</ul>
+
+<h3>11.2 Context — ràng buộc thật (lý do của OQ2 cũ vẫn đúng, chỉ kết luận đổi)</h3>
+<p>Owner đổi <b>chỗ lưu</b> của lựa chọn. Owner không đổi vật lý của cụm. Các ràng buộc dưới đây quyết định <b>khi nào</b> một giá trị
+của hồ sơ mới được phép có hiệu lực:</p>
+<ul>
+<li><b>K1 — một cổng đọc duy nhất, và cổng đó LIVE.</b> [ĐO] Mọi chỗ đọc <code>cast_enabled</code> đều đi qua
+<code>SharedPrefsSimpleCastPrefs.castEnabled()</code> (<code>SimpleCastRuntime.kt:262</code>):
+<ul>
+<li><code>NavRepository.kt:214-215</code>: mỗi khung HUD;</li>
+<li><code>ClusterNavLaneWidget.kt:110-111</code>;</li>
+<li><code>FloatingBubbleService.kt:115,152,313-314</code>;</li>
+<li><code>VmOverlayPosition.kt:70-72</code>;</li>
+<li><code>RebindReceiver.kt:134-138</code>;</li>
+<li><code>KachiHomeWiring.kt:389-390</code>.</li>
+</ul>
+Vì vậy, nếu lượt đổi hồ sơ ghi thẳng vào khoá này thì cụm có <b>hai chủ</b>. Đó đúng là lập luận của OQ2 (<code>ProfileScope.kt:177-188</code>).</li>
+<li><b>K2 — ghi prefs xong thì runtime không tự biết.</b> [ĐO] Dự án có 0 lời gọi thật tới <code>registerOnSharedPreferenceChangeListener</code>.
+Runtime chỉ nhận cấu hình mới qua <code>reapplyAll</code> (<code>PrefsWorkspaceRepository.kt:206-213</code>).</li>
+<li><b>K3 — có đường TỰ áp lại hình học giữa chuyến, không ai bấm.</b> [ĐO] Chuỗi gọi như sau:
+<ul>
+<li>vòng 2 s <code>FloatingBubbleService.kt:99</code>;</li>
+<li>→ <code>repinEscapedCastApps</code> (<code>SimpleCastCoordinator.kt:424-435</code>);</li>
+<li>→ <code>doRepinEscapedCastApps</code>. Hàm này đọc <code>prefs.splitRatioLeftPercent()</code> (<code>SimpleCastCoordinatorOps.kt:124</code>)
+rồi <code>applySavedProfile</code>, và <code>applySavedProfile</code> đọc lại prefs (<code>CastGeometryController.kt:86-98</code>);</li>
+<li>→ <code>am task resize</code> + <code>wm density</code>.</li>
+</ul>
+Vì vậy, nếu hình học chỉ theo hồ sơ mà không ghim phiên, hồ sơ B sẽ tự nổ lên cụm lần đầu một app bị kéo khỏi cụm (refute B6).</li>
+<li><b>K4 — 4 khoá <code>config_*</code> là MỘT bản ghi.</b> [ĐO] Cả bốn được ghi trong cùng một lượt (<code>SimpleCastRuntime.kt:185-193</code>) và đọc
+thành một bản ghi (<code>:170-180</code>). Thiếu <code>config_size_</code> thì cả bản ghi thành <code>null</code> (<code>:172</code>). Vì vậy cả bốn phải đi cùng nhau (refute B2).
+<code>config_size_</code> <b>không phải</b> "sự thật xe": nó là hằng <code>1920x720</code> (<code>SimpleCastModels.kt:41</code>), hoặc được suy từ khung
+người dùng chọn ở đường lùi (<code>CastGeometryController.kt:45-55</code>) (refute B1).</li>
+<li><b>K5 — giá trị đi thẳng vào shell.</b> [ĐO] <code>DisplayConfigurator.kt:26,30,35</code> và <code>CastGeometryController.kt:92,96</code> nội suy nguyên văn
+chuỗi, rồi chạy qua <code>ShellTransport.exec</code> (<code>SimpleCastRuntime.kt:83</code>). <code>bounds</code> được parse bằng <code>toInt()</code> không có lưới đỡ
+(<code>:176-177</code>).
+<ul>
+<li>Hôm nay chỉ mã app ghi các khoá này: [ĐO] grep <code>config_</code> trong <code>TestBridgePrefsSet.kt</code>/<code>TestBridgeWritableKeys.kt</code> ra 0 kết quả.</li>
+<li>Xuất/nhập hồ sơ (<code>WorkspacePrefsProfile.kt:368-404</code>) sẽ là đường thứ hai, đi <b>từ một tệp người khác gửi</b>.</li>
+</ul></li>
+<li><b>K6 — ảnh chụp chỉ biết danh sách khoá cố định.</b> [ĐO] Ảnh chụp lặp theo danh sách khoá (<code>WorkspacePrefsProfile.kt:44-47</code>).
+Khoá vắng được áp thành <code>remove</code> (<code>:82</code>). Lượt áp lọc theo <code>ProfileScope</code> (<code>:76</code>). Hệ quả: họ khoá dựng động theo gói không vào ảnh được.</li>
+<li><b>K7 — không nhét khoá camera vào <code>SettingsCatalogClusterNav.KEYS</code> được.</b> [ĐO] <code>SettingsCatalog.kt:337-343</code> <code>require</code> rằng mọi khoá trong
+bảng đó phải có mục chủ. Màn camera lại không có mục danh mục nào (<code>SettingsSectionsCar.kt:52</code> → <code>SettingsCameraSection</code>) (refute B4).</li>
+<li><b>K8 — trạng thái phiên đã mang cấu hình, nhưng mang thiếu.</b> [ĐO] <code>CastingFull.displayConfig</code> có sẵn (<code>SimpleCastModels.kt:150-155</code>). Hai chỗ thiếu:
+<ul>
+<li><code>SlotState.displayConfig</code> là cấu hình <b>FULL</b> (<code>SimpleCastCoordinatorIntents.kt:130</code>), không phải cấu hình của ô;</li>
+<li><code>CastingSplit</code> <b>không mang tỉ lệ</b> (<code>:158-165</code>). Đây là gốc của lỗi C2.</li>
+</ul></li>
+</ul>
+
+<h3>11.3 Requirements</h3>
+<ul>
+<li><b>VC-R1 — Phân loại đầy đủ, không còn UNKNOWN.</b>
+<ul>
+<li>Mọi khoá ở bảng §11.4.1 có phạm vi PROFILE hoặc DEVICE, kèm lý do một dòng <b>tại chỗ khai</b>.</li>
+<li><code>ProfileScope.scopeOf(k) ≠ UNKNOWN</code> cho mọi khoá sau:
+<ul>
+<li>mọi khoá literal trong <code>SharedPrefsSimpleCastPrefs</code>;</li>
+<li><code>bubbleX</code>/<code>bubbleY</code> và các khoá khác của <code>CastAppCatalog</code>;</li>
+<li><b>cả 29</b> khoá <code>CameraSettingsIa.USER_KEYS ∪ NO_UI_KEYS</code>;</li>
+<li>các khoá đời cũ liệt kê ở bảng.</li>
+</ul></li>
+<li><i>Nghiệm thu</i>: một bài canh mới quét <b>source</b> bằng <code>SourceRoots.body()</code> (không <code>substringAfter/Before</code>). Nó đỏ khi xuất hiện khoá chưa xếp loại. Bài này đóng lỗ
+<em>"bài canh chỉ quét khoá đã khai"</em> (<code>ProfileScopeTest.kt:23-44</code>).</li>
+</ul></li>
+<li><b>VC-R2 — Họ tiền tố đi theo hồ sơ, cả hai chiều.</b>
+<ul>
+<li><code>config_size_</code>, <code>config_overscan_</code>, <code>config_density_</code>, <code>config_bounds_</code> là <b>một họ</b> (<code>cast_geometry</code>, tệp
+<code>simple_cast_prefs</code>). Cả bốn cùng đi, không tách (K4).</li>
+<li>Ảnh chụp mang <b>mốc "họ có mặt"</b>.</li>
+<li>Hồ sơ chưa từng có họ ⇒ giữ nguyên tệp sống.</li>
+<li>Hồ sơ có họ ⇒ sau khi áp, phần họ trong tệp sống <b>bằng đúng</b> họ của hồ sơ. Khoá thừa bị xoá (refute C4).</li>
+</ul></li>
+<li><b>VC-R3 — Di trú một lần, không ai mất cấu hình đang dùng.</b>
+<ul>
+<li>Giá trị đang theo xe được <b>chép vào mọi hồ sơ hiện có</b>.</li>
+<li>Chỉ điền chỗ trống, và đi trong <b>một <code>Editor</code></b> cùng mốc <code>migrated_cluster_profile_v1</code>.</li>
+<li>Chạy hai lần thì kết quả như một lần.</li>
+</ul></li>
+<li><b>VC-R4 — Kiểm đầu vào trước shell [P0].</b>
+<ul>
+<li>Mọi giá trị <code>config_*</code> đọc ra đều qua parse chặt. Điều này gồm cả giá trị từ tệp nhập, từ ảnh chụp trên đĩa và từ tệp sống.</li>
+<li>Giá trị sai ⇒ <b>bỏ đúng khoá đó, ghi log, không ném</b>.</li>
+<li>Khung được kẹp theo kích cụm <b>đo được</b>. Chỉ lùi về 1920×720 khi đo không được.</li>
+<li>Không một chuỗi nào tới <code>SimpleCastShell.execute</code> từ <code>DisplayConfig</code> mà chưa qua bộ kiểm.</li>
+</ul></li>
+<li><b>VC-R5 — Đổi hồ sơ KHÔNG bao giờ tự dựng/gỡ phiên chiếu, và KHÔNG chạy lệnh <code>wm</code>/<code>am</code> mới trên cụm.</b>
+<ul>
+<li>Mỗi khoá có một cột "có hiệu lực khi nào" ở §11.4.1, kèm lý do.</li>
+<li><i>Nghiệm thu off-car</i>: shell giả ghi 0 lệnh trong lượt đổi hồ sơ.</li>
+<li><i>Nghiệm thu on-car</i>: logcat <code>SimpleCast shell:</code> không có dòng nào trong 5 s sau cú chạm.</li>
+</ul></li>
+<li><b>VC-R6 — Ghim hình học của PHIÊN.</b>
+<ul>
+<li>Khi phiên bắt đầu, coordinator đọc prefs <b>một lần</b> rồi ghim vào trạng thái: cấu hình đã lưu của từng app/ô và tỉ lệ chia đôi.</li>
+<li>Mọi lượt áp <b>tự động</b> sau đó chỉ dùng bản ghim: repin, và lượt dò "app đã ở trên cụm" trong vòng watchdog.</li>
+<li>Lượt chỉnh <b>tường minh</b> của người dùng (−/+, chip DPI, chip tỉ lệ) vẫn chạy lệnh như hôm nay. Nó ghi vào hồ sơ <b>đang dùng</b> và cập nhật bản ghim.</li>
+<li>Sửa luôn C2: tỉ lệ nằm trong <code>CastingSplit</code>, không đọc lại prefs.</li>
+</ul></li>
+<li><b>VC-R7 — <code>cast_enabled</code> theo hồ sơ, áp ở lần khởi động tiến trình kế.</b>
+<ul>
+<li>Đổi hồ sơ <b>không</b> ghi khoá sống.</li>
+<li>Giá trị hồ sơ đợi trong <code>cast_enabled_pending</code> (khoá theo XE) và được chốt ở lần tiến trình khởi động kế. [ĐO 09-29, memory <code>kachi-car-facts-0929</code>] BYD giết Kachi mỗi lần tắt máy, nên trên thực tế đó là lần nổ máy kế.</li>
+<li>Cú chạm tường minh ("Áp ngay" hoặc gạt công tắc) đi đúng đường thật <code>setCastEnabled</code> và xoá bản chờ.</li>
+</ul></li>
+<li><b>VC-R8 — Xuất/nhập mang theo khoá mới, và kiểm cả KIỂU.</b>
+<ul>
+<li>Tệp xuất tự có khoá mới vì ảnh chụp đã có.</li>
+<li>Lúc nhập: lọc họ khoá theo regex và giá trị theo VC-R4.</li>
+<li>Lúc áp:
+<ul>
+<li>khoá có kiểu khai sẵn thì phải đúng kiểu đó;</li>
+<li>khoá khác thì kiểu phải bằng kiểu của giá trị sống, nếu tệp sống đang có khoá.</li>
+</ul></li>
+<li>Vị trí bong bóng VietMap được <b>kẹp lúc đọc</b>.</li>
+</ul></li>
+<li><b>VC-R9 — Giao diện nói thật.</b>
+<ul>
+<li>Đang chiếu ⇒ màn Cài đặt › Chiếu cụm hiện <b>giá trị của phiên</b>.</li>
+<li>Khi giá trị của hồ sơ khác giá trị phiên, thêm một dòng <em>"Hồ sơ này: … — áp dụng từ lần chiếu sau"</em>.</li>
+<li><code>cast_enabled</code> đang chờ ⇒ hiện dòng <em>"… áp dụng từ lần nổ máy sau"</em> và nút <b>Áp ngay</b>.</li>
+<li>Chuỗi VI/EN đầy đủ.</li>
+</ul></li>
+<li><b>VC-R10 — Kỷ luật.</b>
+<ul>
+<li>Mọi tệp ≤ 500 dòng. Kế hoạch tách ở §11.4.9.</li>
+<li>Mọi hàm mới có ít nhất một chỗ gọi production (grep, CLAUDE.md §8).</li>
+<li>Mỗi lỗi có sẵn được sửa ở đây có một bài hồi quy (§10).</li>
+<li>Không nới bài canh cũ. Ba bài bị <b>đảo chiều</b> do quyết định owner. Mỗi bài giữ lịch sử và thêm một khẳng định chặt hơn (§11.5).</li>
+</ul></li>
+</ul>
+
+<h3>11.4 Design</h3>
+<p class="muted">Không thêm thư viện hay dependency nào. Chỉ dùng <code>SharedPreferences</code> (Android) và Kotlin thuần ở <code>:core</code>. Context7 đã đối chiếu
+<code>developer.android.com</code> <code>getSharedPreferences</code>: <em>"Only one instance of the SharedPreferences object is returned to any callers for the same
+name, meaning they will see each other's edits as soon as they are made"</em>. Đó là cơ sở để lượt áp ghi vào tệp <code>cast-v2-app-catalog</code>
+và <code>FloatingBubbleService</code> (cùng tiến trình) thấy ngay.</p>
+
+<h4>11.4.1 Bảng phân loại đầy đủ — cụm · chiếu · camera · nút nổi</h4>
+<p class="muted">Có hai nguyên tắc:</p>
+<ul class="muted">
+<li><b>PROFILE</b> = sở thích của người lái về thứ hiện trên cụm/màn.</li>
+<li><b>DEVICE</b> = sự thật phần cứng của xe, hoặc trạng thái đã áp vào hệ thống, hoặc dấu mốc, hoặc dữ liệu đời cũ không ai đọc.</li>
+</ul>
+<p class="muted">Cột "Có hiệu lực" trả lời VC-R5. Nó trả lời lượt đổi hồ sơ làm gì với khoá đó, KHÔNG phải lượt chỉnh tay trong Cài đặt.</p>
+<div class="tscroll"><table>
+<tr><th>Khoá (tệp)</th><th>Phạm vi</th><th>Lý do (một dòng)</th><th>Có hiệu lực khi đổi hồ sơ</th><th>Nguồn</th></tr>
+<tr><td colspan="5"><b><code>simple_cast_prefs</code></b> — <code>SimpleCastRuntime.kt:164-277</code></td></tr>
+<tr><td><code>cast_enabled</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>"Có muốn chiếu lên cụm không" là lựa chọn của người lái</td><td><b>Lần khởi động tiến trình kế</b> (≈ lần nổ máy kế), qua <code>cast_enabled_pending</code> (§11.4.3). Lý do là K1.</td><td><code>:262-266</code> · <code>ProfileScope.kt:177-188</code></td></tr>
+<tr><td><code>cast_bubble_visible</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>Hiện hay ẩn cửa sổ nút trên <b>màn chính</b></td><td><b>Ngay</b>, ≤ 2 s. Vòng <code>syncBubbleWindow</code> ẩn/hiện cửa sổ và <b>không</b> dựng lại dịch vụ. Nó không chạm projection hay cụm.</td><td><code>FloatingBubbleService.kt:91-96,324-346</code> · <code>ClusterNavBridgeCast.kt:88-104</code></td></tr>
+<tr><td><code>split_ratio_left_pct</code></td><td>PROFILE (giữ)</td><td>Tỉ lệ chia đôi ưa dùng</td><td>Lần chia đôi kế. Phiên đang chia giữ tỉ lệ đã <b>ghim</b> (VC-R6, sửa C2).</td><td><code>:227-231</code></td></tr>
+<tr><td><code>autostart_enabled</code> · <code>_package</code> · <code>_split_enabled</code> · <code>_left_package</code> · <code>_right_package</code></td><td>PROFILE (giữ)</td><td>App tự chiếu khi nổ máy</td><td>Lần <code>FloatingBubbleService.onCreate</code> kế. Hai cờ đọc ở <code>onCreate</code>, tên gói đọc khi tới Idle (refute B5).</td><td><code>BubbleAutostart.kt:76-78,107-117</code></td></tr>
+<tr><td><code>config_density_&lt;gói&gt;[__L|R&lt;pct&gt;]</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>Người lái chọn qua chip 320/240/160 — <b>không phải</b> đo theo xe (lý do cũ <code>ProfileScope.kt:328</code> sai)</td><td><b>Lần bắt đầu chiếu kế</b> của app đó. Phiên đang chạy dùng bản ghim.</td><td><code>CastDensityControl.kt:58-72</code> · <code>:174</code></td></tr>
+<tr><td><code>config_bounds_&lt;…&gt;</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>Người lái kéo bằng thanh −/+ và "Đặt lại"</td><td>như trên</td><td><code>CastGeometryController.kt:147-150</code></td></tr>
+<tr><td><code>config_size_&lt;…&gt;</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>Là hằng hoặc suy từ khung người lái chọn (B1). Nằm cùng bản ghi nên phải đi cùng (K4, B2).</td><td>như trên</td><td><code>:172,185-193</code> · <code>CastGeometryController.kt:45-55</code></td></tr>
+<tr><td><code>config_overscan_&lt;…&gt;</code></td><td><b>PROFILE</b> <span class="warn">(đổi)</span></td><td>Chỉ chép mặc định <code>0,0,0,0</code>, nhưng cùng bản ghi (B2)</td><td>như trên</td><td><code>:173,189</code></td></tr>
+<tr><td><code>last_display_id</code></td><td>DEVICE (giữ)</td><td>Số hiệu VD cụm <b>đo được</b> của xe này</td><td>—</td><td><code>:204-211</code></td></tr>
+<tr><td><code>doze_whitelist_applied</code></td><td>DEVICE (giữ)</td><td>Trạng thái đã áp vào hệ thống (<code>deviceidle whitelist</code>)</td><td>—</td><td><code>:234-238</code> · <code>SimpleCastCoordinatorOps.kt:20-23</code></td></tr>
+<tr><td><code>cast_enabled_pending</code> <b>(MỚI)</b></td><td>DEVICE</td><td>Dấu "máy chưa khớp hồ sơ". Nếu nó theo hồ sơ thì đổi hồ sơ lại tự đẻ ra bản chờ giả.</td><td>—</td><td>§11.4.3</td></tr>
+<tr><td colspan="5"><b><code>cast-v2-app-catalog</code></b> — <code>CastAppCatalog.kt:37</code></td></tr>
+<tr><td><code>bubbleX</code> · <code>bubbleY</code></td><td><b>PROFILE</b> <span class="warn">(từ UNKNOWN)</span></td><td>Chỗ đặt nút nổi chiếu, theo tầm tay người lái</td><td>Lần <b>dựng cửa sổ nút kế</b>. <code>showBubble</code> đọc vị trí rồi kẹp theo màn (<code>clampX/Y</code>), nên giá trị lạ không đưa nút ra ngoài màn.</td><td><code>CastAppCatalog.kt:188-196</code> · <code>FloatingBubbleService.kt:214,377-385</code></td></tr>
+<tr><td><code>migrationVersion</code></td><td>DEVICE</td><td>Dấu di trú một lần</td><td>—</td><td><code>CastAppCatalog.kt:209-227</code></td></tr>
+<tr><td><code>bubbleEnabled</code> · <code>favorites</code> · <code>protected</code> · <code>legacyDefaultCandidate</code> · <code>rectStyle</code> · tiền tố <code>dpi:</code> · <code>scale-</code></td><td>DEVICE</td><td>Đời V2. [ĐO] Không có đường đọc sống (refute A, C7): giữ nguyên trên máy, không chép. Đề xuất gỡ ở backlog.</td><td>—</td><td><code>CastAppCatalog.kt:93-227</code></td></tr>
+<tr><td colspan="5"><b><code>clustercast</code></b></td></tr>
+<tr><td><code>profileOverride</code></td><td>DEVICE</td><td>Hồ sơ <b>đời xe</b> (kích cụm, tên service, chuỗi lệnh). Là sự thật phần cứng và đã có parse chặt riêng.</td><td>—</td><td><code>ClusterProfile.kt:158-162,259-275</code></td></tr>
+<tr><td><code>autoCast</code> · <code>castable</code> · <code>keepSession</code></td><td>DEVICE</td><td>Đời V1. Không còn ai ghi, chỉ còn chỗ đọc/di trú một lần.</td><td>—</td><td><code>VietMapAutostart.kt:160</code> · <code>CastAppCatalog.kt:212-218</code></td></tr>
+<tr><td colspan="5"><b><code>clusternav_prefs</code></b> — nhóm cụm đã theo hồ sơ từ S4 (giữ), cộng phần sót</td></tr>
+<tr><td><code>enabled</code> · <code>nav_cluster_screen_mode</code> · <code>marquee</code></td><td>PROFILE (giữ)</td><td>Dẫn đường lên cụm</td><td>Ngay (<code>ClusterNavBridgeReapply.kt:46,49</code>). <code>marquee</code> áp ở khung kế (refute C1).</td><td><code>SettingsCatalogClusterNav.kt:60</code></td></tr>
+<tr><td><code>badge_enabled</code> · <code>show_upcoming_badge</code> · <code>show_alert_chip</code> · <code>badge_size_dp</code> · <code>badge_center_x/y</code></td><td>PROFILE (giữ)</td><td>Biển báo tốc độ trên cụm</td><td>Ngay (<code>ClusterNavBridgeReapply.kt:55-59</code>)</td><td><code>PrefsBadge.kt:23-88</code></td></tr>
+<tr><td><code>vm_bubble_enabled</code> · <code>vm_bubble_x/y</code></td><td>PROFILE (giữ)</td><td>Bong bóng VietMap trên cụm</td><td>Vị trí áp ngay khi Cast bật (<code>ClusterNavBridgeReapply.kt:64</code>). Công tắc áp ở lần tự mở VietMap kế. <b>Mới:</b> kẹp lúc đọc (VC-R8).</td><td><code>VmOverlayPosition.kt:45-57,105-114</code></td></tr>
+<tr><td><code>vm_float_whitelist_applied</code></td><td>DEVICE <span class="warn">(từ UNKNOWN)</span></td><td>Đã ghi VietMap vào <code>byd_float_app_list</code>: trạng thái đã áp vào hệ thống</td><td>—</td><td><code>PrefsBadge.kt:61</code></td></tr>
+<tr><td><code>badge_corner</code> · <code>badge_dx</code> · <code>badge_dy</code> · <code>bubble_auto</code></td><td>DEVICE <span class="warn">(từ UNKNOWN)</span></td><td>Đời cũ. Chỉ đọc một lần để di trú, hoặc là mã chết.</td><td>—</td><td><code>PrefsBadge.kt:66-68</code> · <code>Prefs.kt:106-107</code></td></tr>
+<tr><td colspan="5"><b>Họ <code>camera_*</code> — 29 khoá</b> (<code>clusternav_prefs</code> qua <code>autoPrefs</code>, <code>PrefsAutomation.kt:28-29</code>) = <code>CameraSettingsIa.USER_KEYS</code> 14 + <code>NO_UI_KEYS</code> 15 (<code>CameraSettingsIa.kt:46-93</code>) — đóng backlog CAM-SCOPE-PROFILE</td></tr>
+<tr><td><code>camera_signal_enabled</code></td><td><b>PROFILE</b></td><td>Có muốn camera bật theo xi-nhan không. Là lựa chọn hiển thị, không điều khiển phần cứng nào.</td><td><b>Ngay</b>: <code>reapplyAll</code> gọi <code>AutomationService.sync</code>, đúng như <code>setCameraSignal</code> đang làm.</td><td><code>PrefsAutomation.kt:92-97</code> · <code>ClusterNavBridgeAutomation.kt:174-177</code></td></tr>
+<tr><td><code>camera_on_cluster</code></td><td><b>PROFILE</b></td><td>Hình camera hiện trên cụm hay màn chính</td><td><b>Lần xi-nhan kế</b>. <code>openSession</code> đọc giá trị này; khung đang treo giữ ngữ cảnh của nó.</td><td><code>PrefsAutomation.kt:99-103</code> · <code>CameraSignalController.kt:253,261</code></td></tr>
+<tr><td><code>camera_pos_left</code> · <code>camera_pos_right</code></td><td><b>PROFILE</b></td><td>Góc hiện hình. Phụ thuộc cách ngồi, vì vành lái/cột A có thể che (<code>PrefsAutomation.kt:114-115</code>).</td><td>Lần xi-nhan kế</td><td><code>PrefsAutomation.kt:159-176</code> · <code>CameraSignalController.kt:183</code></td></tr>
+<tr><td><code>camera_shape</code></td><td><b>PROFILE</b></td><td>Hình khung RECT/ROUND/CLUSTER là cách trình bày, có chip ở tầng người lái. <b>Sửa</b> câu "device-scope" ở <code>PrefsAutomation.kt:263-264</code>.</td><td>Lần xi-nhan kế</td><td><code>PrefsAutomation.kt:291-299</code> · <code>CameraSignalController.kt:196</code></td></tr>
+<tr><td><code>camera_dewarp_amount</code></td><td><b>PROFILE</b></td><td>"Có nắn hay không" (100/0) là thứ duy nhất người lái còn quyết (<code>CameraSettingsIa.kt:31-33</code>). Khoá vắng thì lùi về mặc định đời xe. <b>Sửa</b> KDoc sai <code>PrefsCameraDewarp.kt:18-22</code>.</td><td>Lần xi-nhan kế</td><td><code>PrefsCameraDewarp.kt:46-48</code></td></tr>
+<tr><td><code>camera_rot_left/right</code> · <code>camera_mirror_left/right</code></td><td>DEVICE</td><td>Chiều ghép/tay gương của hai cam trong ảnh 4-in-1: sự thật lắp đặt của xe</td><td>—</td><td><code>PrefsAutomation.kt:182-237</code></td></tr>
+<tr><td><code>camera_view_left/right</code> · <code>camera_pano_left/right</code> · <code>camera_cam_left/right</code></td><td>DEVICE</td><td>Cam nào là trái/phải/360, cắt dải nào. Cặp đúng khác nhau theo đời xe (<code>PrefsAutomation.kt:139-141</code>).</td><td>—</td><td><code>PrefsAutomation.kt:118-157,332-337</code></td></tr>
+<tr><td><code>camera_render</code> · <code>camera_gl_texmatrix</code></td><td>DEVICE</td><td>Đường kết xuất theo ROM/GPU của đầu máy</td><td>—</td><td><code>PrefsAutomation.kt:243-258</code> · <code>PrefsCameraDewarp.kt:38</code></td></tr>
+<tr><td><code>camera_span</code> · <code>camera_strip_left/right</code> · <code>camera_circle_scale</code></td><td>DEVICE</td><td>Hiệu chỉnh vùng gương trong ảnh HAL, owner dò trên xe</td><td>—</td><td><code>PrefsAutomation.kt:266-329</code></td></tr>
+<tr><td><code>camera_dewarp_cx/cy/k/focal/scale/pan_x/pan_y</code></td><td>DEVICE</td><td>Tham số quang học của ống kính</td><td>—</td><td><code>PrefsCameraDewarp.kt:31-37</code></td></tr>
+<tr><td colspan="5"><b>Hệ thống / launcher</b></td></tr>
+<tr><td><code>freeform_state</code> · <code>enable_freeform_support</code> · <code>force_resizable_activities</code></td><td>DEVICE (giữ)</td><td>Cờ boot của hệ thống</td><td>—</td><td><code>ProfileScope.kt:172-176,312-313</code></td></tr>
+<tr><td><code>migrated_cluster_profile_v1</code> <b>(MỚI, <code>kachi_workspace</code>)</b></td><td>DEVICE</td><td>Dấu chạy-một-lần phải rộng hơn thứ nó bảo vệ (cùng lẽ <code>migrated_nav_schedule_v1</code>)</td><td>—</td><td>§11.4.5</td></tr>
+<tr><td>Không phải khoá: DPI/overscan CarPlay · AA · <code>NORMAL_DEFAULT</code> · <code>SlotDensity</code> · <code>ClusterProfile.camera/band</code></td><td>—</td><td>Là hằng trong mã hoặc được tính ra. Hằng 1920×720 là nợ §7 có sẵn (OQ-VC4).</td><td>—</td><td><code>SimpleCastModels.kt:39-41</code> · <code>DisplayConfigurator.kt:62-68</code></td></tr>
+</table></div>
+<p><b>Đếm:</b> camera có 6 PROFILE + 23 DEVICE = 29, không khoá nào UNKNOWN. Nhóm chiếu/nút nổi có 4 khoá đổi DEVICE→PROFILE cộng họ
+<code>config_*</code> (4 tiền tố). Có 2 khoá từ UNKNOWN sang PROFILE (<code>bubbleX/Y</code>) và 2 khoá DEVICE mới.</p>
+
+<h4>11.4.2 Ảnh chụp theo HỌ TIỀN TỐ — mốc "họ có mặt"</h4>
+<p>Bảng mới <code>ProfileScopeCluster.FAMILIES</code> ở <code>:core</code> trả lời câu hỏi "tiền tố → tệp". Nó <b>không</b> dùng lại <code>PROFILE_KEY_PREFIXES</code>, vì bảng
+đó không có cột tệp và còn chứa <code>slot_</code> của launcher (refute B7).</p>
+<table>
+<tr><th>Họ</th><th>Tệp prefs ClusterNav</th><th>Tiền tố</th><th>Khoá hợp lệ (regex, neo hai đầu)</th></tr>
+<tr><td><code>cast_geometry</code></td><td><code>simple_cast_prefs</code></td><td><code>config_size_</code> · <code>config_overscan_</code> · <code>config_density_</code> · <code>config_bounds_</code></td><td><code>^config_(size|overscan|density|bounds)_PKG(__[LR](10|20|…|90))?$</code>. <code>PKG</code> dùng cùng regex gói của <code>CastAppCatalog.PACKAGE</code>; dải tỉ lệ sinh từ <code>CastProfile.SPLIT_PERCENTS</code>.</td></tr>
+</table>
+<ul>
+<li><b>Lúc chụp</b> (<code>snapshotClusterNav</code>), ảnh của tệp gồm:
+<ul>
+<li>khoá cố định như hôm nay, kể cả <code>null</code> cho khoá vắng;</li>
+<li>mọi khoá sống khớp họ (chỉ <code>String</code>);</li>
+<li>mốc <code>@family:cast_geometry = true</code>.</li>
+</ul>
+Tiền tố <code>@family:</code> được giữ riêng cho mốc. Bài canh kiểm rằng không khoá prefs thật nào bắt đầu bằng <code>@</code>.</li>
+<li><b>Lúc áp</b> (<code>applyClusterNav</code>), với mỗi họ:
+<ul>
+<li>ảnh <b>không có mốc</b> (ảnh cũ, hoặc hồ sơ chưa từng có họ) ⇒ <b>không chạm</b> khoá nào của họ trong tệp sống;</li>
+<li>ảnh <b>có mốc</b> ⇒ xoá mọi khoá sống của họ mà ảnh không có. Chiều này là chiều refute C4 bắt: cấu hình từng app của A không được tràn sang B;</li>
+<li>ghi các khoá của ảnh <b>đã qua</b> regex khoá, kiểu <code>String</code> và bộ kiểm giá trị (§11.4.4). Khoá trượt kiểm thì bị bỏ, coi như vắng, và ghi log.</li>
+</ul></li>
+<li><b>Hàm thuần</b>: <code>ClusterSnapshotPlan.apply(live, shot, fixedKeys, families, declaredTypes) → Edit(puts, removes, dropped)</code> ở <code>:core</code>, có test off-car.
+Tầng <code>:app</code> chỉ đổ <code>Edit</code> vào <code>Editor</code>.</li>
+<li>[SUY] Cỡ ảnh: mỗi bản ghi app × ô có 4 khoá, khoảng 40 byte một khoá. Năm app, ba ô mỗi app thì khoảng 2,4 KB cho mỗi hồ sơ trong <code>kachi_workspace</code>. Mức này chấp nhận được, và sẽ đo lại bằng
+bridge <code>prefs --es file kachi_workspace</code> trên máy ảo.</li>
+</ul>
+
+<div class="layers">
+<div class="layer"><div class="node"><b>Đổi hồ sơ A → B</b><span>chụp A → đặt con trỏ → áp B → <code>reapplyAll</code> (thứ tự giữ nguyên)</span></div></div>
+<div class="layer">
+<div class="node"><b>Khoá cố định</b><span>ghi tệp sống ngay (như S4) + kiểm kiểu</span></div>
+<div class="node"><b>Họ <code>cast_geometry</code></b><span>có mốc ⇒ tệp sống = đúng họ của B; không mốc ⇒ giữ nguyên</span></div>
+<div class="node"><b><code>cast_enabled</code></b><span>KHÔNG ghi khoá sống ⇒ <code>cast_enabled_pending</code></span></div>
+</div>
+<div class="layer">
+<div class="node"><b>Áp ngay</b><span>biển báo · VM bubble · nav · <code>cast_bubble_visible</code> (≤2 s) · <code>camera_signal_enabled</code> (sync)</span></div>
+<div class="node"><b>Áp lần chiếu kế</b><span>phiên đang chạy dùng bản GHIM (§11.4.6)</span></div>
+<div class="node"><b>Áp lần khởi động kế</b><span>chốt trong <code>SimpleCastRuntime.create()</code></span></div>
+</div>
+</div>
+
+<h4>11.4.3 <code>cast_enabled</code>: theo hồ sơ nhưng hoãn áp — khoá chờ <code>cast_enabled_pending</code></h4>
+<p>Ràng buộc K1 buộc phải thiết kế như sau: <b>khoá sống <code>cast_enabled</code> luôn là giá trị HIỆU LỰC khớp với projection thật</b>. Lượt đổi hồ sơ không bao giờ ghi vào nó.</p>
+<ul>
+<li><b>Chụp</b>: giá trị của hồ sơ = <code>pending</code> nếu có, không thì lấy khoá sống. Bản chờ chính là lựa chọn của hồ sơ đang dùng.</li>
+<li><b>Áp B</b>: <code>desired</code> lấy từ ảnh của B, với <code>null</code> nghĩa là mặc định <code>false</code> (<code>SimpleCastRuntime.kt:262</code>). Có ba trường hợp:
+<ul>
+<li><code>desired == hiệu lực</code> ⇒ xoá pending;</li>
+<li><code>desired</code> khác hiệu lực ⇒ ghi <code>pending = desired</code> kèm log;</li>
+<li>sai kiểu ⇒ bỏ và ghi log.</li>
+</ul>
+Hàm thuần <code>CastEnableDeferral</code> ở <code>:core</code>.</li>
+<li><b>Chốt</b>: trong <code>SimpleCastRuntime.create()</code>, <b>trước khi</b> dựng coordinator.
+<ul>
+<li>Mọi chỗ đọc đều phải đi qua <code>coordinator(...).prefs</code> (K1), nên chốt tại đây bảo đảm mọi chỗ đọc trong tiến trình thấy cùng một giá trị ngay từ đầu.</li>
+<li>Bước này chỉ đọc/ghi prefs, không có shell, nên chạy an toàn cả khi luồng gọi đầu tiên là luồng chính (<code>SimpleCastRuntime.kt:46-48</code>).</li>
+<li>Chốt BẬT ⇒ không làm gì thêm. Các đường khởi động sẵn có tự đọc BẬT và mở chiếu đúng như với một người dùng đang bật Cast:
+<code>RebindReceiver.kt:134-138</code>, <code>KachiHomeWiring.kt:389-397</code>.</li>
+<li>Chốt TẮT ⇒ xếp <code>coordinator.closeOrphanProjection()</code> lên executor. Hàm này dò VD cụm <b>thật</b> (<code>detectClusterDisplay()</code>): <code>vd &lt; 1</code> thì không làm gì;
+có VD thì đi đúng <code>closeProjectionSync</code> sẵn có (<code>SimpleCastCoordinator.kt:261-268</code>).
+<span class="warn">⚠ Lệch khi làm (§11.5.2): [ĐO code] <code>ProjectionManager.close</code> là no-op khi <code>isOpen == false</code>, mà tiến trình mới luôn như vậy ⇒ đường
+<code>closeProjectionSync</code> không đóng gì. Mã thật: <code>configurator.reset(vd)</code> → <code>cleanDisplay(vd)</code> (lượt dọn "projection sót từ tiến trình trước" của
+<code>openProjectionBody</code>) → <code>projection.resetState(true)</code> + <code>close</code>.</span></li>
+</ul></li>
+<li><b>Tường minh thắng</b>: <code>bridge.setCastEnabled(on)</code> (công tắc Cài đặt hoặc nút <b>Áp ngay</b>) xoá pending rồi đi đúng đường thật hôm nay
+(<code>ClusterNavBridgeCast.kt:66-84</code>).</li>
+<li><b>Bốn câu CLAUDE.md §4 cho <code>closeOrphanProjection</code></b>. Đây là lệnh đổi trạng thái DUY NHẤT phụ lục này thêm:
+<ol>
+<li><b>Display</b>: chỉ VD dò live, luôn <code>≥ 1</code>, không bao giờ dùng seed.</li>
+<li><b>App</b>: không bê app nào. Tiến trình mới có trạng thái <code>Off</code> nên <code>returnAllApps</code> không làm gì.</li>
+<li><b>Stack</b>: không đụng stack nào. Chỉ có <code>configurator.reset</code> trên VD đó và chuỗi teardown của hồ sơ đời xe.</li>
+<li><b>Hoàn tác</b>: nó <b>chính là</b> đường hoàn tác của phiên cũ. Chỉ chạy khi vừa chốt BẬT→TẮT <b>và</b> VD có thật.</li>
+</ol></li>
+<li>[CHƯA BIẾT] VD cụm có sống qua một lần tắt/nổ máy không. Nếu không, <code>closeOrphanProjection</code> luôn thành no-op, nhưng vẫn đúng. Cách chốt: OC-7.</li>
+<li>[SUY] Nếu tiến trình chết <b>giữa chuyến</b> (crash, OTA) thì bản chờ cũng được chốt khi tiến trình lên lại. Cụm vốn đã bị gián đoạn bởi chính lần khởi động lại đó
+(<code>openProjectionBody</code> dọn VD cũ rồi mở lại, <code>SimpleCastCoordinatorOps.kt:15-31</code>). Phương án chỉ chốt theo ACC/BOOT nằm ở OQ-VC3.</li>
+</ul>
+
+<h4>11.4.4 Kiểm đầu vào (VC-R4) — ba lớp, không lớp nào ném</h4>
+<p><code>CastGeometryGuard</code> (<code>:core</code>, thuần) dùng khuôn "chuỗi hồ sơ là dữ liệu không tin cậy" của <code>ClusterProfile.kt:158,181-192</code>
+(<code>SVC_OK</code> + dải <code>1..8192</code>):</p>
+<table>
+<tr><th>Trường</th><th>Hợp lệ</th><th>Sai thì</th></tr>
+<tr><td><code>density</code></td><td><code>reset</code> hoặc số nguyên trong <code>80..640</code>. Hằng được <b>dùng chung</b> với <code>CastDensityControl.kt:50</code> (DRY).</td><td>Coi như vắng ⇒ <code>reset</code></td></tr>
+<tr><td><code>wmSize</code></td><td><code>^\d{1,4}x\d{1,4}$</code>, W,H trong <code>1..8192</code></td><td>Coi như vắng ⇒ cả bản ghi <code>null</code> (giữ hành vi <code>:172</code>)</td></tr>
+<tr><td><code>overscan</code></td><td><code>^-?\d{1,4}(,-?\d{1,4}){3}$</code>, mỗi số trong <code>-4096..4096</code>. CarPlay dùng số âm (<code>SimpleCastModels.kt:39</code>).</td><td>Lùi về <code>0,0,0,0</code></td></tr>
+<tr><td><code>bounds</code></td><td><code>^\d{1,5}(,\d{1,5}){3}$</code>, <code>l&lt;r</code>, <code>t&lt;b</code>, mọi số ≤ 8192. Lúc <b>áp</b> thì kẹp theo khung đo được.</td><td><code>null</code> ⇒ không resize (thay <code>toInt()</code> có thể ném ở <code>:176-177</code>)</td></tr>
+</table>
+<div class="flow">
+<div class="fnode"><b>Tệp nhập</b><span>chuỗi người khác gửi</span></div><div class="arrow">→</div>
+<div class="fnode"><b>Lớp 1 · lúc nhập</b><span>lọc regex khoá họ + giá trị, rồi mã hoá lại ảnh</span></div><div class="arrow">→</div>
+<div class="fnode"><b>Lớp 2 · lúc áp</b><span><code>ProfileScope</code> + họ + kiểu + giá trị</span></div><div class="arrow">→</div>
+<div class="fnode"><b>Lớp 3 · lúc đọc</b><span><code>displayConfigFor</code> kiểm từng trường</span></div><div class="arrow">→</div>
+<div class="fnode"><b>Chốt cuối</b><span><code>isShellSafe</code> + kẹp khung đo được</span></div><div class="arrow">→</div>
+<div class="fnode"><b><code>wm</code> / <code>am task resize</code></b><span>chỉ chuỗi đã sạch</span></div>
+</div>
+<ul>
+<li><b>Vì sao ba lớp</b>:
+<ul>
+<li>Ảnh chụp trên đĩa sửa tay được (<code>PrefSnapshot</code> KDoc).</li>
+<li>Tệp sống có thể mang dữ liệu của một bản cũ.</li>
+<li>Chuỗi đi thẳng vào shell (K5).</li>
+</ul>
+Chốt cuối nằm ngay trước nội suy: <code>DisplayConfigurator.apply</code> và <code>applyPinned</code>. Cấu hình không sạch ⇒ từ chối và ghi log, không chạy lệnh nào.</li>
+<li><b>Khung đo được</b>: đọc <code>wm size -d &lt;vd&gt;</code> (chỉ đọc; <code>vd</code> là id dò live). Ưu tiên "Override", vì đó là khung logic đang hiệu lực mà <code>am task resize</code> dùng.
+Đo hụt thì lùi 1920×720. Phép parse hiện <b>chép hai nơi</b> (<code>AppMover.kt:273-285</code> và <code>CastGeometryController.kt:153-160</code>) ⇒ gom về
+<code>CastGeometryGuard.parseDisplaySize</code> (DRY).</li>
+<li><code>clampBounds</code> dời từ <code>ClusterNavBridgeGeometry.kt:183-193</code> sang <code>:core</code> (DRY). Tầng UI và lượt áp dùng chung một hàm.</li>
+</ul>
+
+<h4>11.4.5 Di trú một lần (VC-R3)</h4>
+<ul>
+<li>Viết <code>ProfileScopeMigration.rotDown(shots, live, newKeysByFile, familiesByFile)</code> thuần ở <code>:core</code>. Hàm trả ảnh mới cho từng hồ sơ, <b>chỉ điền chỗ trống</b>:
+<ul>
+<li>khoá cố định vắng trong ảnh ⇒ chép giá trị sống, kể cả <code>null</code> tường minh (cùng hợp đồng <code>WorkspacePrefsProfile.kt:240-247</code>);</li>
+<li>họ chưa có mốc ⇒ chép cả họ sống rồi đặt mốc.</li>
+</ul></li>
+<li><code>migrateClusterProfileOnce()</code> gom mọi ảnh + mốc <code>migrated_cluster_profile_v1</code> vào <b>một <code>Editor</code></b>. Nó chạy trong <code>PrefsWorkspaceRepository.init</code>
+<b>sau</b> <code>migrateNavScheduleOnce</code> (<code>:45-50</code>).
+<ul>
+<li>Khoá mới: <code>cast_enabled</code> (lấy giá trị hiệu lực; trước bản này chưa có pending), <code>cast_bubble_visible</code>, 6 khoá camera PROFILE, <code>bubbleX/Y</code> (tệp mới).</li>
+<li>Họ: <code>cast_geometry</code>.</li>
+</ul></li>
+<li><code>migrateNavScheduleOnce</code> (<code>WorkspacePrefsProfile.kt:229-257</code>, đang cứng <code>startsWith("nav_automation")</code> ở <code>:237</code>) chuyển sang gọi cùng
+<code>rotDown</code>, với mốc và hành vi <b>giữ nguyên</b>. Bài test cũ của nó phải xanh mà không sửa một dòng.</li>
+<li>Kết quả: sau nâng cấp, mọi hồ sơ bắt đầu bằng đúng cấu hình cụm đang dùng, rồi tách dần khi người lái chỉnh. Không ai mất gì.</li>
+</ul>
+
+<h4>11.4.6 Ghim hình học của phiên (VC-R6) — và sửa C2</h4>
+<div class="diagram">
+<svg viewBox="0 0 860 330" role="img" aria-label="Dòng thời gian: bắt đầu chiếu ghim DPI 320 của hồ sơ A; đổi sang B thì prefs sống thành 240 nhưng phiên giữ 320 và cụm không nhận lệnh; repin dùng 320; chiếu lại thì ghim 240">
+<defs><marker id="vc-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="sv-arf"/></marker></defs>
+<text x="10" y="84" class="sv-mut">prefs sống</text><text x="10" y="100" class="sv-mut">(hồ sơ đang dùng)</text>
+<text x="10" y="170" class="sv-mut">phiên (RAM)</text><text x="10" y="186" class="sv-mut">bản GHIM</text>
+<text x="10" y="258" class="sv-mut">lệnh lên cụm</text>
+<line x1="130" y1="40" x2="850" y2="40" class="sv-ln" marker-end="url(#vc-ar)"/>
+<g>
+<text x="190" y="30" class="sv-txt" text-anchor="middle">① Chiếu VietMap (A)</text>
+<rect x="135" y="62" width="110" height="46" rx="8" class="sv-box"/><text x="190" y="90" class="sv-txt" text-anchor="middle">A: DPI 320</text>
+<rect x="135" y="148" width="110" height="46" rx="8" class="sv-acc"/><text x="190" y="176" class="sv-txt" text-anchor="middle">ghim 320</text>
+<rect x="135" y="234" width="110" height="46" rx="8" class="sv-box"/><text x="190" y="256" class="sv-txt" text-anchor="middle">wm density</text><text x="190" y="272" class="sv-txt" text-anchor="middle">320</text>
+<line x1="190" y1="108" x2="190" y2="146" class="sv-ln" marker-end="url(#vc-ar)"/><line x1="190" y1="194" x2="190" y2="232" class="sv-ln" marker-end="url(#vc-ar)"/>
+</g>
+<g>
+<text x="370" y="30" class="sv-txt" text-anchor="middle">② Đổi sang B</text>
+<rect x="315" y="62" width="110" height="46" rx="8" class="sv-box"/><text x="370" y="90" class="sv-txt" text-anchor="middle">B: DPI 240</text>
+<rect x="315" y="148" width="110" height="46" rx="8" class="sv-acc"/><text x="370" y="176" class="sv-txt" text-anchor="middle">vẫn 320</text>
+<rect x="315" y="234" width="110" height="46" rx="8" class="sv-okb"/><text x="370" y="256" class="sv-txt" text-anchor="middle">0 lệnh</text><text x="370" y="272" class="sv-mut" text-anchor="middle">cụm không nháy</text>
+</g>
+<g>
+<text x="550" y="30" class="sv-txt" text-anchor="middle">③ Repin tự động</text>
+<rect x="495" y="62" width="110" height="46" rx="8" class="sv-box"/><text x="550" y="90" class="sv-mut" text-anchor="middle">(không đọc)</text>
+<rect x="495" y="148" width="110" height="46" rx="8" class="sv-acc"/><text x="550" y="176" class="sv-txt" text-anchor="middle">đọc ghim 320</text>
+<rect x="495" y="234" width="110" height="46" rx="8" class="sv-box"/><text x="550" y="256" class="sv-txt" text-anchor="middle">resize + density</text><text x="550" y="272" class="sv-txt" text-anchor="middle">320</text>
+<line x1="550" y1="194" x2="550" y2="232" class="sv-ln" marker-end="url(#vc-ar)"/>
+</g>
+<g>
+<text x="740" y="30" class="sv-txt" text-anchor="middle">④ Dừng · chiếu lại</text>
+<rect x="685" y="62" width="110" height="46" rx="8" class="sv-box"/><text x="740" y="90" class="sv-txt" text-anchor="middle">B: DPI 240</text>
+<rect x="685" y="148" width="110" height="46" rx="8" class="sv-acc"/><text x="740" y="176" class="sv-txt" text-anchor="middle">ghim 240</text>
+<rect x="685" y="234" width="110" height="46" rx="8" class="sv-box"/><text x="740" y="256" class="sv-txt" text-anchor="middle">wm density</text><text x="740" y="272" class="sv-txt" text-anchor="middle">240</text>
+<line x1="740" y1="108" x2="740" y2="146" class="sv-ln" marker-end="url(#vc-ar)"/><line x1="740" y1="194" x2="740" y2="232" class="sv-ln" marker-end="url(#vc-ar)"/>
+</g>
+<text x="430" y="318" class="sv-mut" text-anchor="middle">Chỉnh tay trong phiên (−/+, chip DPI, chip tỉ lệ) = chạy lệnh như hôm nay + lưu cho hồ sơ ĐANG DÙNG + cập nhật bản ghim.</text>
+</svg>
+</div>
+<ul>
+<li><b>Mô hình</b> (<code>SimpleCastModels.kt</code>): thêm trường, tất cả có mặc định nên các bản dựng cũ vẫn chạy:
+<ul>
+<li><code>CastingFull.pinned: DisplayConfig?</code>;</li>
+<li><code>SlotState.pinned: DisplayConfig?</code>;</li>
+<li><code>CastingSplit.leftPercent: Int</code>.</li>
+</ul>
+<code>pinned</code> là cấu hình <b>đã lưu</b> tại lúc bắt đầu (đã qua bộ kiểm). Giá trị <code>null</code> nghĩa là "không có gì để áp", giữ đúng ngữ nghĩa no-op của <code>applySavedProfile</code> (<code>:86-87</code>).</li>
+<li><b>Bắt đầu phiên</b> đọc prefs <b>một lần</b>, ở ba chỗ:
+<ul>
+<li><code>handleCastFull</code>: nhánh "app đã ở trên cụm" <code>:52-58</code> và nhánh thường <code>:61-84</code>. Đây là <b>ý định chiếu</b> nên đọc hồ sơ đang dùng là đúng;</li>
+<li><code>handleCastSlot</code>: tỉ lệ = <code>(afterWait as? CastingSplit)?.leftPercent ?: prefs.splitRatioLeftPercent()</code>. Ô thứ hai <b>dùng tỉ lệ của phiên</b>. Đây là
+mặt thứ hai của C2: hôm nay <code>:143</code> đọc lại prefs cho từng ô, nên đổi hồ sơ giữa hai lượt chiếu ô sẽ làm hai nửa chồng nhau hoặc hở ra.</li>
+</ul></li>
+<li><b>Áp tự động</b>:
+<ul>
+<li><code>doRepinEscapedCastApps</code> (<code>Ops :85-138</code>) lấy <code>leftPercent</code> và <code>pinned</code> từ trạng thái;</li>
+<li><code>geometry.applyPinned(pkg, pinned)</code> thay cho <code>applySavedProfile(pkg, profile)</code>. Hàm mới không đọc prefs, kẹp khung theo khung đo được, và chạy chốt <code>isShellSafe</code>.</li>
+</ul></li>
+<li><b>Chỉnh tường minh</b>:
+<ul>
+<li><code>resizeActiveTarget/Slot</code>, <code>setDensity/Split</code> lấy khoá ô từ <code>leftPercent</code> của phiên (thay <code>SimpleCastCoordinator.kt:300</code> và <code>CastDensityControl.kt:44</code>).</li>
+<li>Sau khi shell OK, <code>persist*</code> trả về bản ghi vừa lưu và trạng thái được cập nhật: <code>copy(pinned = …)</code>.
+<span class="warn">⚠ Lệch khi làm (§11.5.2): bản ghim chỉ nhận ĐÚNG trường vừa áp (khung hoặc DPI). Sau khi đổi hồ sơ giữa phiên, bản ghi vừa lưu mang DPI của hồ sơ
+mới trong khi cụm vẫn ở DPI đã ghim — lấy nguyên bản ghi làm bản ghim là để repin sau đó đổi DPI của cụm mà không ai chạm chip DPI.</span></li>
+<li><code>applySplitRatioLive</code> ghi prefs, resize, rồi cập nhật <code>leftPercent</code> + <code>pinned</code> của cả hai ô.</li>
+</ul></li>
+<li><b>Chỉnh sau khi đã đổi hồ sơ giữa phiên</b> ⇒ lưu cho hồ sơ <b>đang dùng</b> (B), dưới ô nhớ của tỉ lệ phiên. Đó là luật chung của mọi dòng Cài đặt:
+"chỉnh lúc đang ở hồ sơ nào thì lưu cho hồ sơ đó". Không có đường thứ hai.</li>
+<li><b>Tách tệp</b>: phần ghim đi vào <code>CastSessionPin.kt</code> (mới, hàm mở rộng <code>internal</code> cùng package, cùng khuôn <code>…Ops/…Intents</code>).
+<code>SimpleCastCoordinator.kt</code> đang 448 dòng nên chỉ nhận vài dòng gọi.</li>
+<li>[ĐO] <code>DisplayConfigurator.apply</code> (<code>wm size/overscan/density</code>) chỉ chạy lúc <b>bắt đầu</b> phiên (<code>Intents :62,:137</code>). Repin không gọi nó,
+nên ghim <code>bounds</code> + <code>density</code> + tỉ lệ là đủ phủ mọi lượt áp tự động.</li>
+<li>Log một dòng lúc ghim: <code>pin: pkg=… profile=… density=… bounds=… pct=…</code>. Anh em đọc được bằng logcat hoặc <code>ClusterDiag</code> mà không phải mò UI (CLAUDE.md §11, §15).</li>
+</ul>
+
+<h4>11.4.7 Xuất/nhập (VC-R8)</h4>
+<ul>
+<li><b>Xuất</b>: không đổi (<code>WorkspacePrefsProfile.kt:368-374</code>). Ảnh chụp đã mang khoá mới, họ và mốc.</li>
+<li><b>Nhập</b> (<code>:383-404</code>): với mỗi giá trị hậu tố <code>__cn__*</code>, bước làm như sau:
+<ol>
+<li>giải mã;</li>
+<li>bỏ khoá họ trượt regex hoặc trượt bộ kiểm;</li>
+<li>bỏ khoá có kiểu khai sẵn mà sai kiểu;</li>
+<li>mã hoá lại;</li>
+<li>ghi log số khoá đã bỏ.</li>
+</ol>
+Chữ ký <code>importProfile(): Boolean</code> giữ nguyên.</li>
+<li><b>[P1, lỗi có sẵn — SUY dựa trên ĐO code]</b> Lượt áp ghi theo <b>kiểu đã giải mã</b> (<code>WorkspacePrefsProfile.kt:79-91</code>), còn lượt nhập không kiểm ảnh lồng bên trong.
+Vì vậy một tệp nhập có thể đặt <code>enabled</code> hay <code>camera_on_cluster</code> thành <code>String</code>. Khi đó <code>getBoolean</code> trong dịch vụ đang chạy ném
+<code>ClassCastException</code> <b>trên đường</b>.
+<ul>
+<li>Vá tổng quát: nếu tệp sống đang có khoá k với kiểu T, giá trị ảnh khác <code>null</code> và khác kiểu T ⇒ bỏ và ghi log.</li>
+<li>Các khoá phụ lục này thêm có kiểu khai sẵn trong <code>ProfileScopeCluster.DECLARED_TYPES</code>.</li>
+</ul></li>
+<li><b>Bong bóng VietMap</b>: kẹp <b>lúc đọc</b> bằng <code>x()/y()</code> theo <code>X_MAX/Y_MAX</code> có sẵn (<code>VmOverlayPosition.kt:39-46</code>). Việc này rẻ, và giá trị hợp lệ không đổi.
+Kẹp theo kích cụm <b>đo được</b> để ở OQ-VC2.</li>
+</ul>
+
+<h4>11.4.8 Giao diện nói thật (VC-R9)</h4>
+<ul>
+<li><b>Bật chiếu màn</b>:
+<ul>
+<li>Công tắc hiện <b>giá trị của hồ sơ</b> (<code>pending ?: sống</code>), giống mọi dòng Cài đặt khác.</li>
+<li>Có pending ⇒ thêm dòng phụ <em>"Đang chạy: BẬT · hồ sơ này: TẮT — áp dụng từ lần nổ máy sau"</em> và nút <b>Áp ngay</b>, đi đường <code>setCastEnabled(pending)</code>.</li>
+</ul></li>
+<li><b>Tỉ lệ chia đôi</b>: đang chia đôi và tỉ lệ phiên khác tỉ lệ hồ sơ ⇒ thêm dòng <em>"Đang chia 3:7 · hồ sơ này 5:5 — áp dụng lần chia đôi sau (chạm để áp ngay)"</em>.
+Chạm chip là lượt <code>applySplitRatioLive</code> tường minh như hôm nay.</li>
+<li><b>Khung & DPI</b> (<code>ClusterNavBridgeGeometry.kt</code>):
+<ul>
+<li><code>geometryBand</code> dùng tỉ lệ phiên;</li>
+<li><code>geometryBounds/Density</code> đọc <code>pinned</code> khi đang chiếu (thay <code>savedConfig</code> đọc prefs ở <code>:158-161</code>, lỗi C5);</li>
+<li><code>geometryProfileDiffers(target)</code> so bản của hồ sơ với bản ghim để quyết có hiện dòng <em>"Hồ sơ này: DPI 240 — áp dụng từ lần chiếu sau"</em> hay không.</li>
+</ul></li>
+<li>Chuỗi VI/EN đi vào <code>strings_kachi.xml</code> cả hai bản (LangCoverage). Câu đầu nhóm <code>kachi_home_profile_note</code> (<code>strings_kachi.xml:133</code>) bỏ vế <em>"khung hình khi chiếu lên cụm"</em>. Nếu không sửa, chính màn Cài đặt nói ngược với R3 mới.</li>
+</ul>
+
+<h4>11.4.9 Trần 500 dòng — kế hoạch tách cụ thể</h4>
+<table>
+<tr><th>Tệp</th><th>Hôm nay [ĐO]</th><th>Kế hoạch</th></tr>
+<tr><td><code>WorkspacePrefs.kt</code></td><td>499</td><td><b>Không chạm.</b> Mọi thứ mới là hàm mở rộng ở tệp khác.</td></tr>
+<tr><td><code>WorkspacePrefsProfile.kt</code></td><td>404</td><td>Tách ba tệp:
+<ul>
+<li><code>WorkspacePrefsSnapshot.kt</code> (mới): chụp/áp + họ + pending + kiểu;</li>
+<li><code>WorkspacePrefsMigrations.kt</code> (mới): cảnh · lịch · cụm;</li>
+<li>tệp gốc giữ nhân bản · đổi tên · xuất/nhập (≈ 220).</li>
+</ul></td></tr>
+<tr><td><code>ProfileScope.kt</code></td><td>463</td><td>
+<ul>
+<li>Bảng mới dọn sang <code>ProfileScopeCluster.kt</code> (mới, <code>:core</code>).</li>
+<li>Gỡ 2 mục DEVICE (còn 2 dòng chú thích lịch sử) và 4 tiền tố <code>config_*</code>. <code>DEVICE_KEY_PREFIXES</code> giữ <code>scale-</code>/<code>dpi:</code> đời V2, kèm lý do đúng.</li>
+<li><code>scopeOf</code> + <code>CLUSTERNAV_KEYS</code> thêm khoảng 6 dòng. Tổng ≤ 463.</li>
+</ul></td></tr>
+<tr><td><code>SimpleCastCoordinator.kt</code></td><td>448</td><td>Chỉ nhận lời gọi (≤ +15). Phần ghim ở <code>CastSessionPin.kt</code> (mới).</td></tr>
+<tr><td><code>SettingsSectionsCast.kt</code></td><td>458</td><td>Tách khối hình học (<code>rebuildGeometry</code> · <code>addEdgeSteppers</code>, <code>:322-400</code>) sang <code>SettingsSectionsCastGeometry.kt</code> <b>trước</b> khi thêm dòng.</td></tr>
+<tr><td>Tệp <code>:core</code> mới</td><td>—</td><td><code>CastGeometryGuard</code> ≈150 · <code>ClusterSnapshotPlan</code> ≈140 · <code>CastEnableDeferral</code> ≈60 · <code>ProfileScopeMigration</code> ≈100 · <code>ProfileScopeCluster</code> ≈260 · <code>CastSessionPin</code> ≈120</td></tr>
+<tr><td>Tệp khác</td><td>—</td><td><code>SimpleCastRuntime</code> 277→≈320 · <code>ClusterNavBridgeGeometry</code> 205→≈230 · <code>ClusterNavBridgeReapply</code> 116→≈125 · <code>CastGeometryController</code> 161→≈185 · <code>VmOverlayPosition</code> 132→≈136</td></tr>
+</table>
+
+<h3>11.5 Tasks (DAG · <code>:core</code> → <code>:app</code>)</h3>
+<div class="layers">
+<div class="layer"><div class="node"><b>C1</b><span>ProfileScopeCluster + ProfileScope</span></div><div class="node"><b>C2</b><span>CastGeometryGuard</span></div><div class="node"><b>C3</b><span>ClusterSnapshotPlan</span></div><div class="node"><b>C4</b><span>CastEnableDeferral</span></div><div class="node"><b>C5</b><span>ProfileScopeMigration</span></div></div>
+<div class="layer"><div class="node"><b>C6</b><span>ghim phiên (cần C2)</span></div></div>
+<div class="layer"><div class="node"><b>A1</b><span>WorkspacePrefs* (C1·C3·C4·C5)</span></div><div class="node"><b>A2</b><span>SimpleCastRuntime (C2·C4·C6)</span></div><div class="node"><b>A3</b><span>Reapply (C1)</span></div><div class="node"><b>A4</b><span>Bridge geometry/cast (C2·C6)</span></div><div class="node"><b>A6</b><span>VmOverlayPosition</span></div></div>
+<div class="layer"><div class="node"><b>A5</b><span>UI + chuỗi (A4)</span></div><div class="node"><b>A7</b><span>bài canh app + đảo 3 bài</span></div><div class="node"><b>A8</b><span>doc/backlog/index</span></div></div>
+<div class="layer"><div class="node"><b>T-END</b><span>build + đếm test + §8 grep + senior review + scan</span></div></div>
+</div>
+<table>
+<tr><th>#</th><th>Việc</th><th>Chủ tệp</th><th>Test khoá</th></tr>
+<tr><td>C1</td><td>
+<ul>
+<li><code>ProfileScopeCluster</code>, bảng §11.4.1: camera sinh từ <code>CameraSettingsIa</code> (6 PROFILE/23 DEVICE, lý do từng khoá), <code>FAMILIES</code>, <code>EXTRA_FILES</code> (<code>cast-v2-app-catalog</code> + lý do), khoá đời cũ, tên pending, <code>DECLARED_TYPES</code>, tiền tố mốc.</li>
+<li><code>ProfileScope</code>: gỡ <code>cast_enabled</code>/<code>cast_bubble_visible</code> khỏi DEVICE, gỡ 4 tiền tố, sửa lý do sai <code>:326-329</code>. <code>scopeOf</code> tra bảng mới. <code>CLUSTERNAV_KEYS += PROFILE_EXTRA_KEYS</code>.</li>
+<li><code>NOT_SETTINGS</code> + DEVICE: <code>migrated_cluster_profile_v1</code>.</li>
+</ul></td><td><code>:core</code> launcher</td><td>ProfileScopeTest (xem A7) · ProfileScopeClusterTest: đủ 29 camera, không UNKNOWN, mọi dòng có lý do, không khoá nào vừa PROFILE vừa DEVICE, không khoá thật nào bắt đầu bằng <code>@</code></td></tr>
+<tr><td>C2</td><td>
+<ul>
+<li><code>CastGeometryGuard</code>: 4 bộ kiểm, <code>familyKey</code>, <code>isShellSafe</code>, <code>parseDisplaySize</code>, <code>clampBounds</code> (dời từ app).</li>
+<li><code>CastDensityControl</code> + <code>AppMover</code> + <code>CastGeometryController</code> dùng chung.</li>
+</ul></td><td><code>:core</code> clustercast</td><td>Bảng ca độc: <code>240;reboot</code>, <code>1920x720 &amp;&amp; x</code>, <code>$(id)</code>, <code>a,b,c,d</code>, <code>10,0,5,720</code> (l&gt;r), số 9 chữ số, chuỗi rỗng, NBSP ⇒ đều bị từ chối. Giá trị thật hôm nay (320/240/160, <code>1920x720</code>, <code>10,-120,10,50</code>, <code>0,0,1920,720</code>) ⇒ đều lọt qua.</td></tr>
+<tr><td>C3</td><td><code>ClusterSnapshotPlan</code>: chụp (cố định + họ + mốc), áp (lọc, họ hai chiều, kiểu khai sẵn/kiểu sống)</td><td><code>:core</code> launcher</td><td>Hai chiều C4 · ảnh cũ không mốc ⇒ 0 sửa · khoá lạ trong họ ⇒ bỏ · sai kiểu ⇒ bỏ · A→B→A trả đúng A</td></tr>
+<tr><td>C4</td><td><code>CastEnableDeferral</code>: <code>desiredForSnapshot</code>, <code>onApply</code>, <code>onProcessStart</code></td><td><code>:core</code></td><td>Bảng 3×3 (sống/chờ/muốn) · <code>null</code> = mặc định false · sai kiểu</td></tr>
+<tr><td>C5</td><td><code>ProfileScopeMigration.rotDown</code></td><td><code>:core</code></td><td>Idempotent · chỉ điền trống · <code>null</code> tường minh · họ chỉ chép khi chưa có mốc</td></tr>
+<tr><td>C6</td><td>
+<ul>
+<li>Ghim phiên: trường mới trong <code>SimpleCastModels</code>; <code>CastSessionPin.kt</code>.</li>
+<li>Intents/Ops/Coordinator/GeometryController (<code>applyPinned</code>, <code>persist*</code> trả bản ghi)/DensityControl.</li>
+<li><code>closeOrphanProjection</code>; log ghim.</li>
+</ul></td><td><code>:core</code> clustercast</td><td>Shell giả (khuôn E2E command-log): V-2, V-3 ở §11.6 · chỉnh tay cập nhật ghim · <code>closeOrphanProjection</code> có VD và không VD</td></tr>
+<tr><td>A1</td><td>
+<ul>
+<li>Tách <code>WorkspacePrefsSnapshot.kt</code>/<code>WorkspacePrefsMigrations.kt</code>.</li>
+<li>Chụp/áp nối C3+C4, gồm cả tệp <code>cast-v2-app-catalog</code>.</li>
+<li>Nhập làm sạch (§11.4.7).</li>
+<li><code>migrateClusterProfileOnce</code> + <code>migrateNavScheduleOnce</code> qua C5; gọi ở <code>PrefsWorkspaceRepository.init</code>.</li>
+</ul></td><td><code>launcher/WorkspacePrefs*</code> · <code>PrefsWorkspaceRepository</code></td><td>ProfileKeysWiringContractTest: thêm ca họ, pending, di trú một lượt <code>Editor</code>, thứ tự init</td></tr>
+<tr><td>A2</td><td><code>SimpleCastRuntime</code>:
+<ul>
+<li><code>displayConfigFor</code> qua bộ kiểm, không còn <code>toInt()</code> trần;</li>
+<li><code>castEnabledPending</code>/<code>setPending</code>/<code>commitPending</code>;</li>
+<li><code>create()</code> chốt rồi mới dựng coordinator; chốt TẮT thì xếp <code>closeOrphanProjection</code>.</li>
+</ul></td><td><code>clustercast/simplified</code></td><td>Tĩnh (<code>SourceRoots.body</code>): chốt đứng trước <code>SimpleCastCoordinator(</code> trong <code>create</code> · không còn <code>it[0].toInt()</code></td></tr>
+<tr><td>A3</td><td><code>reapplyAll</code>:
+<ul>
+<li>thêm <code>step("automation.sync") { AutomationService.sync(app) }</code>;</li>
+<li>sửa chú thích cũ <code>:30,:83,:85-90,:97-98</code>.</li>
+</ul></td><td><code>ClusterNavBridgeReapply.kt</code></td><td>Tĩnh: thân <code>reapplyAll</code> <b>không</b> chứa <code>setCastEnabled</code> · <code>openProjection</code> · <code>closeProjection</code> · <code>dispatch(</code> · <code>applySavedProfile</code> · <code>applyPinned</code> · <code>"wm </code> · <code>"am </code>; <b>có</b> <code>AutomationService.sync</code></td></tr>
+<tr><td>A4</td><td>Cầu:
+<ul>
+<li><code>castEnabledPending()</code> · <code>applyCastPendingNow()</code>;</li>
+<li><code>splitPct</code>/<code>geometry*</code> theo phiên; <code>geometryProfileDiffers</code>;</li>
+<li><code>clampBounds</code> lấy từ <code>:core</code>.</li>
+</ul></td><td><code>ClusterNavBridgeCast/Geometry</code></td><td>ClusterNavBridgeGeometryTest (clamp chuyển sang core test)</td></tr>
+<tr><td>A5</td><td>UI §11.4.8; tách <code>SettingsSectionsCastGeometry.kt</code>; chuỗi VI/EN; sửa câu <code>kachi_home_profile_note</code> (<code>values/strings_kachi.xml:133</code> + bản EN). Câu này đang ghi <em>"trừ … khung hình khi chiếu lên cụm"</em>, mà sau V-CLUSTER thì vế đó sai.</td><td><code>SettingsSectionsCast*</code> · <code>strings_kachi.xml</code> ×2</td><td>LangCoverage · SettingsCoverage · bài canh "dòng phụ chỉ hiện khi khác"</td></tr>
+<tr><td>A6</td><td><code>VmOverlayPosition.x()/y()</code> kẹp lúc đọc</td><td><code>VmOverlayPosition.kt</code></td><td>Tĩnh + thuần (hàm kẹp)</td></tr>
+<tr><td>A7</td><td>Bài canh app, và <b>đảo chiều</b> ba bài do quyết định owner. Mỗi bài giữ KDoc lịch sử, trích nguyên văn owner, và thêm khẳng định chặt hơn:
+<ol>
+<li><code>ProfileScopeTest.cong tac chinh … THEO XE — OQ2</code> (<code>:88-99</code>) → "THEO HỒ SƠ nhưng lượt đổi hồ sơ không bao giờ ghi khoá sống". Khẳng định thêm: <code>cast_enabled_pending</code> là DEVICE và không nằm trong ảnh.</li>
+<li><code>ProfileScopeTest.… hinh hoc khi chieu deu THEO XE</code> (<code>:102-107</code>) → bỏ 4 khoá <code>config_*</code> khỏi danh sách DEVICE, thêm bài "họ <code>cast_geometry</code> theo hồ sơ, đủ 4 tiền tố, một tệp".</li>
+<li><code>BubbleVisibilityWiringContractTest.khoa co chu … theo XE</code> (<code>:56-62</code>) → PROFILE. Giữ hai bài "không dựng lại dịch vụ".</li>
+</ol>
+Công thức <code>bang anh chup …</code> (<code>:171-183</code>) cộng thêm <code>PROFILE_EXTRA_KEYS</code>, vẫn là phép <b>bằng</b>.
+<code>moi tep trong bang anh chup …</code> (<code>:208-211</code>) nhận <code>CLUSTERNAV_PREFS_FILES ∪ EXTRA_FILES</code>. Kèm bài mới: <code>"cast-v2-app-catalog"</code>, <code>"bubbleX"</code>,
+<code>"bubbleY"</code> phải có nguyên văn trong <code>CastAppCatalog.kt</code>, chặt ngang <code>ClusterNavKeysContractTest</code>.</td><td>test <code>:app</code>/<code>:core</code></td><td>—</td></tr>
+<tr><td>A8</td><td>Doc:
+<ul>
+<li>KDoc <code>PrefsCameraDewarp.kt:18-22</code>, <code>PrefsAutomation.kt:263-264</code>;</li>
+<li><code>SettingsCatalogClusterNav.kt:125</code> (<code>kachi_workspace</code> → <code>clusternav_prefs</code>);</li>
+<li><code>ProfileScope.kt:182</code> (<code>FloatingBubbleService.kt:170</code> → <code>:152/:313</code>);</li>
+<li>backlog S4-OQ2/CAM-SCOPE-PROFILE/V-CLUSTER · README · <code>project-context.md</code>.</li>
+</ul></td><td>doc</td><td>—</td></tr>
+<tr><td>T-END</td><td>Chạy <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew --no-daemon -Pkotlin.compiler.execution.strategy=in-process clean assembleRelease testDebugUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test</code>,
+đếm bằng <code>python3 scripts/count-tests.py</code>. Sau đó: <code>wc -l</code> mọi tệp chạm; grep call site cho <code>applyPinned</code> · <code>closeOrphanProjection</code> · <code>commitPending</code> · <code>migrateClusterProfileOnce</code> ·
+<code>rotDown</code> · <code>isShellSafe</code> · <code>geometryProfileDiffers</code>; senior review (§5); scan (§6). <b>Không</b> commit/OTA/bump trong luồng này.</td><td>—</td><td>—</td></tr>
+</table>
+
+<h3 id="v-cluster-code">11.5.1 Trạng thái theo MÃ THẬT — lượt <code>:core</code> + lớp lưu trữ (2026-09-30)</h3>
+<p class="muted">[ĐO] đọc lại mã sau khi viết + <code>:core:test</code> 3122/0 · <code>:app:testDebugUnitTest</code> 1579/0 · <code>scripts/count-tests.py</code> 4701/0 GREEN.
+Chưa commit, chưa bump, chưa đụng xe/máy ảo. Chưa senior review/scan (T-END).</p>
+<table>
+<tr><th>#</th><th>Trạng thái</th><th>Mã thật</th><th>Lệch so với kế hoạch · lý do</th></tr>
+<tr><td>C1</td><td><span class="pill ok">xong</span></td><td><code>core/…/launcher/ProfileScopeCluster.kt</code> (mới) · <code>ProfileScope.kt</code> · <code>SettingsCatalog.kt</code> (<code>NOT_SETTINGS</code> + <code>migrated_cluster_profile_v1</code>)</td>
+<td>Bảng camera là <b>6 + 23 khoá liệt kê tường minh</b> + bài canh đòi hợp đúng bằng <code>CameraSettingsIa.USER_KEYS ∪ NO_UI_KEYS</code>, không sinh bằng mã: sinh
+bằng mã thì khoá camera mới im lặng rơi vào DEVICE, còn liệt kê + bài canh thì ĐỎ. Thêm <code>camera_rotation</code> (khoá di trú 2.67) vào DEVICE.
+<code>DECLARED_TYPES</code> phủ thêm 7 khoá <code>simple_cast_prefs</code> có sẵn (chặt hơn kế hoạch). Bốn lý do cũ trong <code>DEVICE_KEYS</code> thôi viện dẫn
+<code>cast_enabled</code> như khoá theo xe.</td></tr>
+<tr><td>C2</td><td><span class="pill ok">xong</span></td><td><code>…/simplified/CastGeometryGuard.kt</code> (mới) · chốt <code>isShellSafe</code> ở <code>DisplayConfigurator.apply</code> và
+<code>CastGeometryController.applySavedProfile</code> · <code>CastDensityControl</code> dùng <code>DENSITY_RANGE</code> · <code>AppMover</code>/<code>CastGeometryController</code> dùng
+<code>parseDisplaySize</code> · <code>clampBounds</code> dời từ <code>ClusterNavBridgeGeometry.kt</code> (bài <code>CastGeometryClampTest</code> dời <code>:app</code>→<code>:core</code>, thân giữ nguyên) ·
+<code>CastAppCatalog.PACKAGE = CastGeometryGuard.PACKAGE</code></td>
+<td><code>applyPinned</code> (C6) chưa có ⇒ chốt cuối đặt ở <code>applySavedProfile</code>; C6 PHẢI giữ chốt khi thay hàm. Thêm <code>sanitizeForSave</code>: lưu đúng
+thứ đã áp (DPI ngoài dải ⇒ lệnh đã chạy là <code>reset</code> ⇒ lưu <code>"reset"</code>). [ĐO test] <code>config_density_a.b__L55</code> là khoá FULL hợp lệ của gói
+<code>a.b__L55</code> (đoạn tên gói được chứa <code>_</code>) — không mang ký tự shell, chấp nhận.</td></tr>
+<tr><td>C3</td><td><span class="pill ok">xong</span></td><td><code>core/…/launcher/ClusterSnapshotPlan.kt</code> (mới, kèm <code>PrefType</code>, <code>SnapshotFamily</code>)</td>
+<td><code>snapshot(fixed, live, families, deferred)</code> nhận <code>fixed</code> do <code>:app</code> dựng bằng <code>associateWith</code> — giữ nguyên chữ bài canh cũ
+"ảnh chụp giữ cả khoá vắng". <code>apply(…)</code> trả <code>Edit(writes, dropped)</code> với <code>writes[k] = null</code> ⇒ xoá. Thêm <code>sanitize</code> (lớp 1) và <code>inScope</code>.</td></tr>
+<tr><td>C4</td><td><span class="pill ok">xong</span></td><td><code>…/simplified/CastEnableDeferral.kt</code> (mới)</td>
+<td>Đặt ở gói <code>clustercast.simplified</code> (không ở <code>launcher</code>) để <code>SimpleCastPrefs</code> dùng được. <code>onProcessStart</code> trả
+<code>NoPending</code> · <code>Commit(on, closeOrphan)</code> · <code>Discard</code> (bản chờ sai kiểu ⇒ xoá, không đổi khoá sống).</td></tr>
+<tr><td>C5</td><td><span class="pill ok">xong</span></td><td><code>core/…/launcher/ProfileScopeMigration.kt</code> (mới)</td>
+<td><b><code>migrateNavScheduleOnce</code> KHÔNG chuyển sang <code>rotDown</code></b> — dời NGUYÊN VĂN sang <code>WorkspacePrefsMigrations.kt</code>:
+<code>NavScheduleProfileScopeWiringTest</code> khoá thân hàm theo chữ (luật "không nới bài canh cũ") và CLAUDE.md §6. Nợ DRY còn lại: một vòng điền-trống ba dòng.</td></tr>
+<tr><td>C6</td><td><span class="pill wait">lane khác</span> <span class="pill ok">→ xong, §11.5.2</span></td><td>—</td>
+<td>⚠ <b>PHỤ THUỘC CỨNG</b>: lớp lưu trữ đã đưa hình học theo hồ sơ. Trước khi C6 ghim phiên, đổi hồ sơ giữa lúc chiếu rồi repin (K3) sẽ áp DPI/khung
+của hồ sơ MỚI lên cụm. Không phát hành lượt này thiếu C6.</td></tr>
+<tr><td>A1</td><td><span class="pill ok">xong</span></td><td><code>WorkspacePrefsSnapshot.kt</code> (mới: chụp · áp · <code>cleanImportedSnapshot</code>) · <code>WorkspacePrefsMigrations.kt</code> (mới: lịch ·
+cụm · <code>clusterNavPrefs</code>) · <code>WorkspacePrefsProfile.kt</code> (nhân bản · cảnh · đổi tên · xuất/nhập; nhập gọi <code>cleanImportedSnapshot</code>) ·
+<code>PrefsWorkspaceRepository.init</code>: cảnh → lịch → cụm</td>
+<td><code>migrateScenesOnce</code> ở lại <code>WorkspacePrefsProfile.kt</code> (bài canh ảnh-chụp-ngữ-pháp đọc nó ở đó). <code>clusterNavPrefs</code> nằm ở tệp di trú:
+tệp có lời mở prefs là tệp <code>SettingsCoverageContractTest</code> quét hằng ⇒ hai dấu di trú vẫn bị đòi lý do. Dấu <code>K_MIGRATED_CLUSTER</code> là literal,
+bài canh khoá nó BẰNG <code>ProfileScopeCluster.MIGRATED_KEY</code>.</td></tr>
+<tr><td>A2</td><td><span class="pill wait">một phần</span> <span class="pill ok">→ xong, §11.5.2</span></td><td><code>SimpleCastRuntime.kt</code>: <code>displayConfigFor</code> qua <code>CastGeometryGuard.readConfig</code> (đọc <code>all[…] as? String</code>,
+không <code>getString</code>/<code>toInt</code>) · <code>saveDisplayConfig</code> qua <code>sanitizeForSave</code> · <code>setCastEnabled</code> xoá bản chờ CÙNG Editor ·
+<code>castEnabledPending()</code> · <code>commitCastEnabledPending()</code> (commit đồng bộ) · <code>SimpleCastPrefs</code> thêm 2 hàm có mặc định</td>
+<td>⏳ Lane app/coordinator: gọi <code>commitCastEnabledPending()</code> trong <code>create()</code> TRƯỚC <code>SimpleCastCoordinator(</code>; khi
+<code>Commit.closeOrphan</code> ⇒ xếp <code>closeOrphanProjection</code> (C6). Chốt TẮT mà không dọn projection mồ côi là cụm hai chủ ⇒ hai việc phải đi cùng nhau,
+nên lượt này KHÔNG nối nửa đầu. §8: <code>commitCastEnabledPending</code> hiện 0 call site production.</td></tr>
+<tr><td>A3–A6</td><td><span class="pill wait">lane app</span> <span class="pill ok">→ xong, §11.5.2</span></td><td>A4: <code>ClusterNavBridgeGeometry</code> đã gọi <code>CastGeometryGuard.clampBounds</code></td><td>—</td></tr>
+<tr><td>A7</td><td><span class="pill ok">phần lưu trữ xong</span></td><td><code>ProfileScopeTest</code> (2 bài đảo + 1 bài mới + 2 công thức) · <code>BubbleVisibilityWiringContractTest</code> (đảo) ·
+<code>ClusterProfileScopeCoverageTest</code> (mới, 10 ca, quét SOURCE) · <code>ProfileKeysWiringContractTest</code>/<code>NavScheduleProfileScopeWiringTest</code>/
+<code>VoiceGrammarSnapshotWiringContractTest</code> đọc cả ba tệp tách (không nới một khẳng định nào)</td><td>—</td></tr>
+<tr><td>A8</td><td><span class="pill wait">một phần</span></td><td>KDoc <code>PrefsCameraDewarp.kt</code>, <code>PrefsAutomation.kt</code> (<code>camera_shape</code>), mục <code>cast_enabled</code> của <code>ProfileScope</code></td>
+<td><code>SettingsCatalogClusterNav.kt:125</code> cố ý HOÃN: luồng sấy kính đang sửa cùng tệp ⇒ tránh xung đột gộp.</td></tr>
+</table>
+<p><b>Phá thử (mutation) — 6/6 bị bắt</b>: M1 bỏ phép kiểm mốc họ ⇒ 2 bài đỏ (<code>ho so cu chua co ho</code>, <code>moc sai kieu</code>) · M2 bỏ regex DPI
+⇒ 8 bài đỏ (kể cả shell giả ghi <code>wm density 240;reboot -d 2</code>) · M3 bỏ chốt <code>isShellSafe</code> ở <code>DisplayConfigurator</code> ⇒ đỏ · M4 cho khoá hoãn ghi
+thẳng khoá sống ⇒ 3 bài đỏ · M5 bỏ <code>cleanImportedSnapshot</code> ở nhập ⇒ đỏ · M6 bỏ lời gọi di trú ở <code>init</code> ⇒ đỏ. Mọi đột biến đã hoàn nguyên.</p>
+<p><b>Verification đã phủ off-car bởi lượt này</b>: V-1 (phần prefs) · V-4 · V-5 (lớp 1 · 2 · 3 + chốt cuối) · V-6 · V-7 · V-8 (phần thuần) · V-11.
+Còn lại (V-2 · V-3 · V-9 · V-10 · V-12 · OC-*) thuộc lane C6/app/xe.</p>
+
+<h3 id="v-cluster-app">11.5.2 Trạng thái theo MÃ THẬT — lượt <code>:app</code> + C6 (2026-09-30)</h3>
+<p class="muted">[ĐO] đọc lại mã sau khi viết + chạy <code>testDebugUnitTest test lint assembleDebug</code> (số ở cuối mục). Chưa commit, chưa bump, chưa đụng xe/máy ảo.
+Chưa senior review/scan (T-END). Mọi tệp chạm ≤ 500 dòng; <code>WorkspacePrefs.kt</code> không chạm.</p>
+<table>
+<tr><th>#</th><th>Trạng thái</th><th>Mã thật</th><th>Lệch so với kế hoạch · lý do</th></tr>
+<tr><td>C6</td><td><span class="pill ok">xong</span></td><td>
+<code>SimpleCastModels.kt</code>: <code>CastingFull.pinned</code> · <code>SlotState.pinned</code> · <code>CastingSplit.leftPercent</code> (đều có mặc định) ·
+<code>CastSessionPin.kt</code> (mới, 159 dòng, 0 chuỗi shell): <code>pinFull</code> · <code>pinSlot</code> · <code>sessionLeftPercent</code> · log <code>pin: pkg=… profile=… density=… bounds=… pct=…</code> ·
+thân năm lượt chỉnh tay · <code>CastGeometryController.applyPinned</code> THAY <code>applySavedProfile</code> (không đọc prefs; chốt <code>isShellSafe</code> trước lệnh đầu; kẹp khung theo
+<code>wm size -d</code> ưu tiên Override, hụt ⇒ 1920×720) · <code>resizeFull/resizeSlot</code> trả <code>Boolean</code> · <code>CastDensityControl</code> trả chuỗi DPI đã áp + <code>setForSplit</code>
+theo <code>split.leftPercent</code> · <code>SimpleCastCoordinator.replaceState</code> (CAS theo danh tính) + <code>closeOrphanProjection</code> ·
+Intents: FULL đọc hồ sơ MỘT lần (bỏ <code>resolveConfig</code> thứ hai), ô dùng <code>sessionLeftPercent</code>, dừng một nửa giữ tỉ lệ · Ops: repin dùng
+<code>RepinTarget(pkg, side, pinned)</code> + tỉ lệ phiên; nhận lại app lúc mở projection cũng ghim.</td>
+<td>(1) Bản ghim chỉ nhận đúng trường vừa áp (§11.4.6 ⚠). Ô chưa có bản ghim dùng nền DPI <code>reset</code> ⇒ repin không chạm DPI của VD (trước đây repin của ô
+chưa lưu gì vẫn có thể ghi <code>wm density 240</code> từ bản ghi mặc định). (2) <code>closeOrphanProjection</code> ghép reset + <code>cleanDisplay</code> + đóng (§11.4.3 ⚠).
+(3) <code>applySplitRatioLive</code> resize hỏng ở một ô ⇒ ô đó bỏ khung trong bản ghim (khung cũ thuộc tỉ lệ cũ, để lại là hai nửa chồng nhau khi repin).
+Coordinator 448 → <b>437</b> dòng (thân chỉnh tay dời sang <code>CastSessionPin.kt</code>).</td></tr>
+<tr><td>A2</td><td><span class="pill ok">xong</span></td><td><code>SimpleCastRuntime.create()</code>: <code>prefs.commitCastEnabledPending()</code> TRƯỚC <code>SimpleCastCoordinator(</code>;
+<code>Commit.closeOrphan</code> ⇒ <code>coordinator.closeOrphanProjection()</code> (executor, không ở luồng gọi). [ĐO grep] <code>SimpleCastRuntime.shutdown</code> không có chỗ gọi ⇒
+<code>create()</code> chạy đúng một lần mỗi tiến trình.</td><td>—</td></tr>
+<tr><td>A3</td><td><span class="pill ok">xong</span></td><td><code>reapplyAll</code> + <code>step("automation.sync") { AutomationService.sync(app) }</code>; sửa chú thích cũ <code>:30</code> (tỉ lệ nay ghim phiên),
+<code>:83</code> (<code>BubbleAutostart.kt:76-117</code>), <code>:85-90</code> (<code>cast_enabled</code> hoãn), <code>:97-98</code> (ghế 1..3 đã theo hồ sơ từ 09-23); ghi rõ <code>bubbleX/Y</code> áp lần dựng cửa sổ kế.</td>
+<td>—</td></tr>
+<tr><td>A4</td><td><span class="pill ok">xong</span></td><td><code>ClusterNavBridgeCast</code>: <code>castEnabledPending</code> · <code>castEnabledForProfile</code> · <code>applyCastPendingNow</code> (đi <code>setCastEnabled</code>) · <code>sessionSplitPct</code>.
+<code>ClusterNavBridgeGeometry</code>: <code>geometryBand</code>/ô nhớ theo tỉ lệ PHIÊN (<code>bandPct</code>), <code>geometryBounds/Density</code> đọc bản ghim (<code>sessionConfig</code>),
+<code>geometryProfileDiffers</code> so hai phía bằng CÙNG phép dựng.</td><td>—</td></tr>
+<tr><td>A5</td><td><span class="pill ok">xong</span></td><td><code>SettingsSectionsCastGeometry.kt</code> (mới, 139; thân dời nguyên + dòng phụ "Hồ sơ này: DPI …, khung W×H — áp dụng từ lần chiếu sau" chỉ khi khác) ·
+<code>SettingsSectionsCast.kt</code> 458 → 424: công tắc hiện lựa chọn HỒ SƠ + dòng "Đang chạy: … · hồ sơ này: … — áp dụng từ lần nổ máy sau" + nút <b>Áp ngay</b>; dòng tỉ lệ
+"Đang chia … · hồ sơ này …" khi phiên ≠ hồ sơ; ô xem trước vẽ tỉ lệ PHIÊN · 6 chuỗi mới VI/EN · <code>kachi_home_profile_note</code> VI/EN bỏ vế "khung hình khi chiếu" và nói
+thời điểm có hiệu lực. Bốn bài canh bề mặt (lề STACK · bậc chữ · cấm chạm lớp ClusterNav · cấm ghi bền) nhận thêm tệp mới — không nới.</td>
+<td>Chạm chip tỉ lệ KHÔNG dựng lại hộp (lượt ghi prefs chạy trên executor ⇒ đọc lại ngay là vẽ chip ở số cũ); gỡ dòng "đang chia khác" tại chỗ.
+Màn camera KHÔNG thêm hàng ghi chú (runbook ĐẾM 14 hàng); câu hồ sơ ở màn chính nói phần camera theo xe.</td></tr>
+<tr><td>A6</td><td><span class="pill ok">xong</span></td><td><code>VmOverlayPosition.x()/y()</code> kẹp lúc đọc; <code>clampX/clampY</code> dùng chung cho lượt ghi và lượt đọc.</td><td>—</td></tr>
+<tr><td>A7</td><td><span class="pill ok">xong</span></td><td><code>ClusterProfileSwitchWiringContractTest</code> (mới, 9 bài) · <code>CastGeometryShellGateTest</code> đổi sang <code>applyPinned</code> (thêm ca khung suy biến) ·
+chú thích <code>PersistentWindowStateWriterGuardTest</code>/<code>CastProfileDensityTest</code> theo tên hàm mới (không đổi khẳng định).</td><td>—</td></tr>
+<tr><td>A8</td><td><span class="pill wait">một phần</span></td><td>Backlog: đóng CAM-SCOPE-PROFILE · sửa trạng thái S4-SEAT (đã xong 09-23) · V-CLUSTER ✅ off-car · thêm V-CLUSTER-C2 (✅) + V-CLUSTER-ONCAR (🚗) ·
+S4-REAPPLY; README; <code>DiagActivity</code> in <code>castEnabled=… pending=…</code> (bản ghim nằm sẵn trong dòng <code>state=</code>).</td>
+<td><code>SettingsCatalogClusterNav.kt:125</code> vẫn HOÃN (luồng sấy kính cùng tệp). <code>project-context.md</code>: chỉ sửa đúng dòng S4 mà nhánh này đã sửa (hết "chưa có mã"), không mở thêm chỗ xung đột với luồng khác.</td></tr>
+</table>
+<p><b>Grep chỗ gọi (CLAUDE.md §8)</b> — mọi hàm mới có ≥ 1 chỗ gọi production: <code>applyPinned</code> (Intents ×2, Ops repin) · <code>closeOrphanProjection</code> (<code>SimpleCastRuntime.create</code>) ·
+<code>commitCastEnabledPending</code> (<code>create</code>) · <code>pinFull</code> (Intents, Ops) · <code>pinSlot</code>/<code>sessionLeftPercent</code> (Intents) · <code>replaceState</code> (<code>CastSessionPin</code>) ·
+<code>castEnabledPending</code>/<code>castEnabledForProfile</code>/<code>applyCastPendingNow</code>/<code>sessionSplitPct</code>/<code>geometryProfileDiffers</code> (<code>SettingsSectionsCast*</code>) ·
+<code>AutomationService.sync</code> (<code>reapplyAll</code>) · <code>clampX/clampY</code> (<code>VmOverlayPosition</code>). <code>applySavedProfile</code>: 0 định nghĩa, 0 chỗ gọi.</p>
+<p><b>Test [ĐO]</b>: <code>testDebugUnitTest test lint assembleDebug</code> BUILD SUCCESSFUL (lint 0 lỗi, không cảnh báo nào trên dòng mới) ·
+<code>:core:test</code> <b>3135/0</b> (+13: <code>CastSessionPinTest</code> 7 · <code>CastApplyPinnedTest</code> 2 · <code>CastSessionPinWiringTest</code> 4) ·
+<code>:app:testDebugUnitTest</code> <b>1588/0</b> (+9: <code>ClusterProfileSwitchWiringContractTest</code>) · <code>:app:testVehicleTestUnitTest</code> 1600/0 ·
+<code>scripts/count-tests.py</code> sau lượt phá thử: <b>4908/0 GREEN</b>.</p>
+<p><b>Phá thử lượt này — 6/6 bị bắt</b> (mỗi đột biến chạy riêng, hoàn nguyên bằng máy, grep xác nhận không còn dấu):</p>
+<table>
+<tr><th>#</th><th>Mắt xích bị phá</th><th>Bài đỏ</th></tr>
+<tr><td>M-A</td><td>repin đọc lại prefs (<code>applyPinned(pkg, prefs.displayConfigFor(…))</code>)</td><td>3: V-2 · "phiên không có bản lưu" · bài tĩnh repin</td></tr>
+<tr><td>M-B</td><td><code>reapplyAll</code> gọi <code>setCastEnabled(false)</code> khi hồ sơ muốn TẮT</td><td>1: <code>reapplyAll khong dung go phien chieu…</code></td></tr>
+<tr><td>M-C</td><td>ô thứ hai đọc tỉ lệ ở prefs thay vì tỉ lệ phiên</td><td>2: V-3 · bài tĩnh bắt đầu phiên</td></tr>
+<tr><td>M-D</td><td>chốt bản chờ SAU khi dựng coordinator</td><td>1: <code>create chot ban cho TRUOC…</code></td></tr>
+<tr><td>M-G</td><td>bản ghim lấy nguyên bản ghi prefs sau −/+</td><td>1: <code>chinh khung sau khi doi ho so…</code></td></tr>
+<tr><td>M-E</td><td><code>geometryDensity</code> đọc prefs của hồ sơ</td><td>1: <code>cau hinh hoc doc ban ghim…</code></td></tr>
+</table>
+<p><b>Verification phủ off-car thêm ở lượt này</b>: V-2 · V-3 (shell giả) · V-8 phần <code>create()</code> + <code>closeOrphanProjection</code> (có VD / không VD / đã có phiên mới) ·
+V-9, V-10 (tĩnh). Còn lại: V-12 (máy ảo — lượt này không được đụng máy ảo) · OC-1…OC-7 (xe, backlog V-CLUSTER-ONCAR).</p>
+<h3>11.6 Verification</h3>
+<h4>Off-car (máy, không cần xe)</h4>
+<table>
+<tr><th>Ca</th><th>Dựng</th><th>Đạt khi</th></tr>
+<tr><td>V-1 Đổi hồ sơ lúc KHÔNG chiếu</td><td>A: VietMap FULL DPI 320; B: 240. Đổi A→B.</td><td>Tệp sống: <code>config_density_vn.vietmap.live=240</code>. Shell giả ghi <b>0</b> lệnh. Lần <code>CastFull</code> kế chạy <code>wm density 240</code>.</td></tr>
+<tr><td>V-2 Đổi hồ sơ lúc ĐANG CHIẾU</td><td><code>CastingFull</code> ghim 320 → áp B (240) vào prefs → giả lập app thoát cụm hai nhịp → repin</td><td>0 lệnh lúc đổi. Repin chạy <code>wm density 320</code> và khung của A. Dừng rồi chiếu lại thì chạy <code>wm density 240</code>.</td></tr>
+<tr><td>V-3 Đang CHIA ĐÔI</td><td>Chia 30 (A), prefs tỉ lệ → 50 (B). Repin, chỉnh −/+ ô trái, đổi DPI, chiếu thêm ô phải.</td><td><code>castToCluster(leftPercent=30)</code>. Lưu dưới <code>…__L30</code>/<code>__R30</code>. Ô phải dùng 30. Không lệnh nào mang 50. <code>applySplitRatioLive(50)</code> tường minh thì đổi cả phiên sang 50.</td></tr>
+<tr><td>V-4 Hồ sơ cũ chưa có họ</td><td>Ảnh không có mốc, tệp sống có 3 khoá họ</td><td>Sau khi áp, 3 khoá còn nguyên. Ngược lại, ảnh có mốc và thiếu khoá K ⇒ K bị xoá.</td></tr>
+<tr><td>V-5 Nhập tệp độc</td><td>Tệp nhập lồng: <code>config_density_x=240;reboot</code> · <code>config_bounds_x=a,b,c,d</code> · <code>config_size_x=1920x720 &amp;&amp; rm</code> · khoá <code>config_density_$(id)</code> · <code>enabled</code> kiểu <code>s</code> · <code>camera_on_cluster</code> kiểu <code>s</code></td><td>
+<ul>
+<li>Tất cả bị bỏ ở lớp 1. Nếu sửa tay ảnh trên đĩa để lọt qua lớp 1 thì lớp 2 và lớp 3 vẫn bỏ.</li>
+<li><code>displayConfigFor</code> không ném.</li>
+<li>Bài canh tĩnh: mọi lệnh <code>wm</code>/<code>am task resize</code> dựng từ <code>DisplayConfig</code> đều qua <code>isShellSafe</code>.</li>
+<li>Không lệnh nào của shell giả chứa <code>; &amp; | $ `</code>.</li>
+</ul></td></tr>
+<tr><td>V-6 Hai hồ sơ khác DPI cùng một app</td><td>A 320, B 240. Đổi A→B→A.</td><td>Tệp sống quay về 320. Ảnh B giữ 240. Cả hai ảnh có mốc.</td></tr>
+<tr><td>V-7 Di trú</td><td>Trước nâng cấp: sống <code>cast_enabled=true</code>, <code>cast_bubble_visible=false</code>, 3 khoá họ, <code>camera_pos_left=TR</code>, <code>bubbleX=100</code>; có 3 hồ sơ ảnh cũ.</td><td>Mỗi ảnh có đủ các khoá trên và mốc họ. Chạy lần hai: 0 thay đổi. Hồ sơ đã có khoá thì giữ khoá của mình. Mốc và dữ liệu ghi cùng một <code>Editor</code>.</td></tr>
+<tr><td>V-8 <code>cast_enabled</code> hoãn</td><td>Sống BẬT, đổi sang B (TẮT)</td><td>
+<ul>
+<li><code>castEnabled()</code> vẫn trả <code>true</code>, <code>pending=false</code>, ảnh B = <code>false</code>.</li>
+<li>Đổi về A ⇒ pending bị xoá.</li>
+<li>Dựng <code>create()</code> mới với <code>pending=false</code> ⇒ sống TẮT, pending hết. <code>closeOrphanProjection</code>: dò có VD ⇒ <code>reset wm</code> → <code>cleanDisplay</code> → đóng projection (không đi <code>closeProjectionSync</code> — xem ⚠ §11.4.3); không có VD ⇒ 0 lệnh ghi.</li>
+</ul></td></tr>
+<tr><td>V-9 Nút nổi</td><td>Đổi sang hồ sơ ẩn nút</td><td><code>bubbleVisible()</code> đổi. Bài canh cũ "không dựng lại dịch vụ" vẫn xanh.</td></tr>
+<tr><td>V-10 Camera</td><td>Đổi hồ sơ khác <code>camera_signal_enabled</code></td><td>Tĩnh: <code>reapplyAll</code> gọi <code>AutomationService.sync</code>. Các khoá camera DEVICE <b>không</b> nằm trong ảnh.</td></tr>
+<tr><td>V-11 Phủ khoá</td><td>Quét source</td><td>Mọi khoá literal của <code>SharedPrefsSimpleCastPrefs</code>, <code>CastAppCatalog</code> và 29 khoá camera có <code>scopeOf ≠ UNKNOWN</code>.</td></tr>
+<tr><td>V-12 Máy ảo</td><td><code>scripts/emulator</code> + bridge <code>prefs --es file simple_cast_prefs</code> / <code>kachi_workspace</code></td><td>Đổi hai hồ sơ, đọc lại tệp sống và ảnh [ĐO]. Chụp màn Chiếu cụm có dòng phụ.</td></tr>
+</table>
+<h4>On-car (anh em — app tự chụp, không gõ adb; CLAUDE.md §11/§15)</h4>
+<table>
+<tr><th>Ca</th><th>Làm</th><th>Đạt khi / bằng chứng</th></tr>
+<tr><td>OC-1 Hai hồ sơ khác DPI VietMap</td><td>
+<ol>
+<li>Hồ sơ A: chiếu VietMap, chip DPI 320.</li>
+<li>Đổi sang B: chiếu VietMap, chip 240, rồi dừng.</li>
+<li>Đổi về A và chiếu lại.</li>
+</ol></td><td>Cụm hiện VietMap ở DPI 320. Log <code>pin: … density=320</code> và <code>SimpleCast shell: wm density 320 -d &lt;vd&gt;</code>. Chụp màn Chiếu cụm.</td></tr>
+<tr><td>OC-2 Đổi giữa lúc chiếu</td><td>Đang chiếu VietMap (A, 320), chạm chip hồ sơ B (240)</td><td><b>Cụm không nháy</b> (quay video cụm). Không có dòng <code>SimpleCast shell:</code> trong 5 s sau cú chạm. Màn Chiếu cụm hiện 320 kèm dòng "Hồ sơ này: 240 — áp dụng từ lần chiếu sau".</td></tr>
+<tr><td>OC-3 Repin sau khi đổi</td><td>Như OC-2, rồi để một trigger ngoài kéo app khỏi cụm (khuôn TRIAL 2026-08-14)</td><td>Log repin dùng 320, không 240.</td></tr>
+<tr><td>OC-4 Chia đôi</td><td>Chia 3:7 ở A, đổi B (5:5)</td><td>Hai nửa giữ 3:7, không chồng, không hở. Chiếu lại chia đôi thì ra 5:5.</td></tr>
+<tr><td>OC-5 Bật/tắt chiếu theo hồ sơ</td><td>A bật Cast, B tắt. Đổi sang B khi đang chiếu, rồi tắt máy, nổ lại.</td><td>
+<ul>
+<li>Lúc đổi: không gì đổi, và có dòng "áp dụng từ lần nổ máy sau".</li>
+<li>Sau khi nổ lại: không chiếu, cụm đồng hồ + dẫn đường bình thường.</li>
+<li>Đổi về A rồi nổ lại: chiếu lên.</li>
+</ul></td></tr>
+<tr><td>OC-6 Nút nổi · camera</td><td>B ẩn nút nổi, camera ở màn chính. Đổi sang B, rồi xi-nhan.</td><td>Nút biến mất trong ≤ 2 s, phiên chiếu vẫn chạy. Hình camera hiện ở màn chính.</td></tr>
+<tr><td>OC-7 [CHƯA BIẾT] VD sống qua tắt máy?</td><td>Cast bật, tắt máy rồi nổ lại. <code>ClusterDiag</code> chụp <code>dumpsys display</code> <b>trước</b> khi Kachi mở chiếu.</td><td>Có hoặc không có VD <code>fission/xdja</code>. Kết quả chốt ý nghĩa của <code>closeOrphanProjection</code> (§11.4.3) và OQ-VC3.</td></tr>
+</table>
+
+<h3>11.7 Open Questions (cần ĐO, không cần hỏi lại owner)</h3>
+<ul>
+<li><b>OQ-VC1</b> — <code>bubbleX/Y</code> hiện áp ở lần dựng cửa sổ kế. Muốn áp ngay thì dùng <code>updateViewLayout</code> trong <code>syncBubbleWindow</code>, nhưng phải tránh đánh nhau với lượt kéo đang dở.
+Làm sau nếu OC-6 cho thấy anh em thấy lạ.</li>
+<li><b>OQ-VC2</b> — Bong bóng VietMap hiện kẹp theo hằng 1920×720 (<code>VmOverlayPosition.kt:29-40</code>). Kẹp theo kích cụm đo được cần hai thứ: bản mod VietMap hiệu chỉnh trên
+một cụm khác kích thước ([ĐO calib 2026-08-28] mới chỉ có 1920×720), và một xe có cụm khác kích thước. Hôm nay [CHƯA BIẾT] có xe nào như vậy trong nhóm không.</li>
+<li><b>OQ-VC3</b> — Chốt pending "lần khởi động tiến trình" hay "đúng lần nổ máy" (ACC/BOOT). Cần OC-7 và phép đo tín hiệu nào tới trước khi Kachi lên sau khi nổ máy.
+[ĐO 09-29] cho biết tắt máy thì Kachi bị giết, nhưng chưa biết lần nổ máy có BOOT_COMPLETED không.</li>
+<li><b>OQ-VC4</b> — Hằng <code>NORMAL_DEFAULT</code> 1920×720 (<code>SimpleCastModels.kt:41</code>) là nợ CLAUDE.md §7 có sẵn (refute B1). Phụ lục này <b>không</b> đổi nó.
+Kẹp khung theo khung đo được chỉ giảm hậu quả.</li>
+</ul>
+
+<h3>11.8 Lệch tài liệu &amp; lỗi có sẵn phát hiện khi đọc (đều được xử trong Tasks trên)</h3>
+<ul>
+<li><b>[P1]</b> C2: tỉ lệ chia đôi lệch khi đổi hồ sơ lúc đang chia. Thêm mặt thứ hai: ô thứ hai đọc lại prefs (<code>SimpleCastCoordinatorIntents.kt:143</code>). → C6.</li>
+<li><b>[P1, SUY dựa trên ĐO code]</b> Tệp nhập có thể đặt sai kiểu một khoá ClusterNav, dẫn tới <code>ClassCastException</code> trong dịch vụ đang chạy (§11.4.7). → C3/A1. <span class="warn">Pass 2:</span> phép "so với kiểu sống" không bắt được khi tệp sống VẮNG khoá (ca thường) ⇒ nay MỌI khoá của ảnh chụp có kiểu khai sẵn (<code>ProfileScopeCluster.DECLARED_TYPES</code>, gồm cả khoá S4 ngoài nhóm cụm như <code>voicekey_bindings</code>), bài canh đòi đủ và đối chiếu với lượt <code>put*</code> thật.</li>
+<li><b>[P2]</b> <code>displayConfigFor</code> dùng <code>toInt()</code> không có lưới đỡ (<code>SimpleCastRuntime.kt:176-177</code>). → A2.</li>
+<li><b>[P2, SUY]</b> <code>reapplyAll</code> không gọi <code>AutomationService.sync</code> (grep: chỉ <code>BootSetupService.kt:106</code>, <code>KachiAutostart.kt:126</code> và các setter ở cầu gọi). Hệ quả: nếu FGS đang dừng thì
+<code>nav_automation_rules</code> theo hồ sơ (09-28) và <code>camera_signal_enabled</code> không có hiệu lực tới lần đồng bộ kế. → A3. Chưa đo trên máy.</li>
+<li><b>[P3]</b> Chú thích cũ:
+<ul>
+<li><code>ClusterNavBridgeReapply.kt:30</code> trích <code>SimpleCastCoordinator.kt:449,605</code>, trong khi tệp chỉ có 448 dòng;</li>
+<li><code>:83</code> trích <code>FloatingBubbleService</code>, nay phần đó ở <code>BubbleAutostart.kt:76-117</code>;</li>
+<li><code>:97-98</code> nói ghế 1..3 chưa theo hồ sơ, nhưng đã theo từ 09-23;</li>
+<li><code>ProfileScope.kt:182</code> trích <code>FloatingBubbleService.kt:170</code>, nay là <code>:152/:313</code>;</li>
+<li><code>SettingsCatalogClusterNav.kt:125</code> ghi <code>kachi_workspace</code>, thật ra là <code>clusternav_prefs</code>;</li>
+<li><code>PrefsCameraDewarp.kt:18-22</code> nói bảy khoá nằm trong <code>DEVICE_KEYS</code>, nhưng [ĐO] chúng đang UNKNOWN;</li>
+<li><code>PrefsAutomation.kt:263-264</code> xếp <code>camera_shape</code> vào device-scope.</li>
+</ul>
+→ A3/A8.</li>
+</ul>
+
+<h3>11.9 Reviewer Log (append-only)</h3>
+<p class="muted">Ba cổng Requirements · Design · Tasks được duyệt out-of-band (portal / prompt), không ghi trạng thái ở đây.</p>
+
+<h3>Pass 1 — 2026-09-30</h3>
+<p>Senior review toàn bộ <code>git diff</code> của nhánh <code>feat/profile-cluster</code> (mã · test · doc), đối chiếu VC-R1…R10, C1–C6, A1–A8 và
+hai tệp điều tra (refute thắng). Soi riêng: tràn cấu hình hai chiều · di trú · chèn lệnh qua tệp nhập · đổi hồ sơ giữa chuyến ·
+CLAUDE.md §4/§5/§6 · trần 500 dòng · DRY · i18n.</p>
+<ul>
+<li><b>[P2] VC-R8 còn lỗ kiểu ở nhóm "lên cụm" — ĐÃ VÁ.</b> [ĐO code] <code>enabled</code> · <code>marquee</code> · <code>nav_cluster_screen_mode</code> ·
+4 khoá biển báo · <code>vm_bubble_enabled/x/y</code> được DỊCH VỤ đang chạy đọc bằng <code>getBoolean</code>/<code>getInt</code>, nhưng không có kiểu khai sẵn.
+Tệp sống thường VẮNG chúng (chưa ai kéo bong bóng) ⇒ phép "so với kiểu sống" không bắt được một chuỗi từ tệp nhập ⇒ <code>ClassCastException</code>
+trên đường (chính ca §11.4.7 nêu đích danh <code>enabled</code>). Vá: 12 khoá vào <code>ProfileScopeCluster.DECLARED_TYPES</code> (kiểu lấy từ getter thật).
+Test: <code>ClusterSnapshotPlanTest.khoa len cum sai kieu bi bo ca khi tep song vang — lop 1 va lop 2</code> (kèm ca đúng kiểu đi qua nguyên vẹn);
+bài "khoá không khai kiểu" đổi sang hai khoá vẫn chưa khai, giữ nguyên độ chặt.</li>
+<li><b>[P3] Dòng phụ "Hồ sơ này: …" chỉ in W×H — ĐÃ VÁ.</b> <code>geometryProfileDiffers</code> so cả vị trí, nên hai khung cùng W×H lệch chỗ ra một dòng
+phụ in đúng con số đang hiện. Chuỗi VI/EN nay mang góc trên-trái (5 đối số, không có từ đứng sau <code>%d</code> ⇒ không thêm cảnh báo
+<code>PluralsCandidate</code>). Test tĩnh: <code>ClusterProfileSwitchWiringContractTest.dong phu ho so noi ca vi tri khung…</code>.</li>
+<li><b>[P3] Ghi backlog, không vá ở lượt này</b> (<code>V-CLUSTER-DEBT</code>): (1) <code>migrateNavScheduleOnce</code> chưa qua <code>rotDown</code> (bài canh cũ khoá chữ);
+(2) chú thích <code>SettingsCatalogClusterNav.kt:125</code> (xung đột với luồng sấy kính); (3) [SUY] hồ sơ lúc nổ máy có thể trễ một lần nổ máy
+mới chốt <code>cast_enabled</code>, tuỳ coordinator dựng trước hay sau lượt <code>switchProfile(boot)</code> — không nhánh nào sinh cụm hai chủ.</li>
+<li><b>Giữ nguyên, có lý do:</b> <code>commitCastEnabledPending</code> dùng <code>commit()</code> (lint <code>ApplySharedPref</code>) — chỉ chạy khi có bản chờ,
+và bài canh mới khoá nó; <code>apply()</code> cũng đúng (RAM cập nhật ngay, chạy lại là idempotent) nên đây là lựa chọn, không phải lỗi.
+Thứ tự <code>reset → cleanDisplay → close</code> của <code>closeOrphanProjection</code> khác <code>closeProjectionSync</code> là cố ý: [ĐO code]
+<code>CastDisplayCleaner.cleanDisplay</code> tự gửi 18 → 0, nên reset <code>wm</code> phải đi trước khi VD còn.</li>
+<li><b>Đã soi, không thấy lỗi:</b> chèn lệnh — mọi chuỗi <code>DisplayConfig</code> tới shell đều qua <code>isShellSafe</code> (2 chỗ nội suy duy nhất:
+<code>DisplayConfigurator.apply</code>, <code>applyPinned</code>); gói tự chiếu tới shell qua <code>CastSlotValidator.isValidPackage</code> có sẵn. Đổi hồ sơ giữa
+chuyến — <code>reapplyAll</code> không mở/đóng/dispatch/resize; repin + ô thứ hai + −/+ + chip DPI dùng số của phiên; không còn đường đọc prefs hình học
+tự động nào ngoài lúc bắt đầu phiên. Ca một hồ sơ — không bản chờ, không đổi thứ tự <code>wm size → overscan → density</code>.
+CarPlay/AA (<code>10,-120,10,50</code>, <code>1920x1080</code>) lọt chốt cuối.</li>
+</ul>
+<p>Test sau vá: xem <code>scripts/count-tests.py</code> ở báo cáo lượt review (không commit, không bump, không đụng xe/máy ảo). Scan bảo mật (T-END) chưa chạy.</p>
+<h3>Pass 2 — 2026-09-30</h3>
+<p>Senior review lượt 2 toàn bộ <code>git diff</code> của nhánh <code>feat/profile-cluster</code> (mã · test · doc) sau Pass 1, đối chiếu VC-R1…R10, C1–C6, A1–A8,
+hai tệp điều tra (refute thắng) và sáu câu (a)–(f). Mọi kết luận ở đây là [ĐO] đọc source; chưa đo gì trên xe/máy ảo.</p>
+<ul>
+<li><b>[P2] §11.8 [P1] mới đóng một nửa — ĐÃ VÁ.</b> [ĐO code] phép kiểm kiểu lùi về "kiểu của giá trị sống", mà tệp sống thường VẮNG khoá
+(chưa ai gán phím, chưa chỉnh ghế). Pass 1 khai kiểu cho nhóm "lên cụm"; các khoá S4 còn lại của ảnh chụp vẫn lọt. Ca đắt nhất:
+<code>voicekey_bindings</code> đọc bằng <code>getString</code> trong <code>NavAccessibilityService</code> mỗi lần bấm phím vô-lăng ⇒ tệp nhập đặt nó thành Boolean
+là dịch vụ phím nổ. Vá: khai kiểu 16 khoá còn lại (5 Boolean · 6 String · 5 Int) lấy từ lượt <code>put*</code> thật.
+Test: <code>ClusterSnapshotPlanTest."moi khoa cua anh chup deu khai kieu…"</code> (đòi <code>CLUSTERNAV_PROFILE_KEYS ⊆ DECLARED_TYPES</code> + ca độc lớp 1/lớp 2) ·
+<code>ClusterProfileScopeCoverageTest."kieu khai san khop luot ghi that trong ma"</code> (quét mọi <code>put*(&lt;khoá&gt;</code> của <code>:app</code>, đòi kiểu mã ghi == kiểu khai;
+4 khoá ghi qua hàm trung gian liệt kê kèm đoạn mã làm bằng chứng, bảng đó phải khớp đúng tập quét hụt). Bài cũ "khoá không khai kiểu thì so với kiểu sống"
+đổi sang khoá dựng riêng cho bài (không còn khoá thật nào chưa khai), giữ nguyên hai khẳng định. Phá thử: khai sai kiểu <code>seat_comfort_mode</code> ⇒ đỏ;
+bỏ <code>voicekey_bindings</code> khỏi bảng ⇒ đỏ.</li>
+<li><b>[P3] Dòng phụ khung của một NỬA nói sai khi tỉ lệ phiên ≠ tỉ lệ hồ sơ — ĐÃ VÁ.</b> [ĐO code] <code>geometryProfileDiffers</code> đọc ô nhớ của tỉ lệ PHIÊN,
+còn lần chia đôi kế ghim ô nhớ của tỉ lệ HỒ SƠ (<code>sessionLeftPercent</code> ← <code>splitRatioLeftPercent</code>) ⇒ dòng "Hồ sơ này: … — áp dụng từ lần chiếu sau"
+in số của một ô nhớ lần sau không dùng. Vá: một nửa mà hai tỉ lệ khác nhau ⇒ không vẽ dòng này (dòng tỉ lệ "Đang chia … · hồ sơ này …" đã nói).
+Test tĩnh: <code>ClusterProfileSwitchWiringContractTest."dong phu khung cua mot nua im khi ti le phien khac ti le ho so"</code> (chốt đứng TRƯỚC lượt đọc ô nhớ); phá thử ⇒ đỏ.</li>
+<li><b>[P3] Lệch tài liệu — ĐÃ SỬA.</b> §11.6 V-8 còn ghi <code>closeOrphanProjection</code> "đi <code>closeProjectionSync</code>" (mã đi reset → cleanDisplay → đóng);
+<code>project-context.md</code> còn trỏ chụp–áp vào <code>WorkspacePrefsProfile.kt</code> và ghi S4-SEAT còn nợ (xong 2026-09-23).</li>
+<li><b>Đã soi, không thấy lỗi mới</b> (ngoài các mục Pass 1 đã ghi): (a) họ hai chiều + mốc; khoá chờ không vào ảnh; bản sao chụp trước khi chép; nhập tệp cũ không mốc
+⇒ giữ tệp sống. (b) di trú một <code>Editor</code> + mốc, idempotent; nâng cấp 2.83 (một hồ sơ / nhiều hồ sơ / hồ sơ nổ máy ≠ đang dùng) ⇒ ảnh = giá trị sống ⇒ 0 đổi.
+(c) chuỗi <code>DisplayConfig</code> chỉ tới shell ở <code>DisplayConfigurator.apply</code> + <code>applyPinned</code>, cả hai qua <code>isShellSafe</code>; số nguyên (khung kẹp,
+toạ độ) không phải đường chèn; gói tự chiếu qua <code>CastSlotValidator</code>; khoá camera theo hồ sơ không tới shell (<code>HalHelperLauncher</code> không đọc prefs).
+(d) <code>reapplyAll</code>/<code>switchProfile</code> không chạm coordinator; mọi lượt đọc <code>displayConfigFor</code>/<code>splitRatioLeftPercent</code> còn lại chỉ ở
+lúc bắt đầu phiên, chỉnh tay hoặc UI; 0 listener prefs. (e) ca một hồ sơ: không bản chờ, thứ tự <code>wm size → overscan → density</code> giữ nguyên.
+(f) mọi tệp mã chạm ≤ 500 dòng; i18n đủ VI/EN; mọi hàm mới có chỗ gọi production.</li>
+<li><b>Ghi nhận, không vá (có sẵn từ trước, ngoài phạm vi):</b> bốn thanh −/+ đọc lại khung ngay sau khi xếp lệnh lên executor nên số hiện có thể trễ một nhịp —
+trước V-CLUSTER cũng vậy (đọc prefs cũng ghi trên executor).</li>
+</ul>
+<p>Test sau vá: xem báo cáo lượt review (không commit, không bump, không đụng xe/máy ảo). Scan bảo mật (T-END) chưa chạy.</p>
+<h3>Pass 3 — 2026-09-30</h3>
+<p>Senior review lượt 3 toàn bộ <code>git diff</code> của nhánh <code>feat/profile-cluster</code> (mã · test · doc) sau Pass 2, đối chiếu VC-R1…R10, C1–C6, A1–A8,
+hai tệp điều tra (refute thắng) và sáu câu (a)–(f). Mọi kết luận là [ĐO] đọc source trừ chỗ ghi khác; chưa đo gì trên xe/máy ảo.</p>
+<ul>
+<li><b>[P2] Ảnh chụp ĐÃ LƯU sai kiểu làm lượt di trú ném trong <code>init</code> — ĐÃ VÁ.</b> [ĐO code b5c0e87] lượt nhập hồ sơ tới 2.83 chép thẳng giá trị đã giải mã
+(<code>copyValue</code>, chưa có <code>cleanImportedSnapshot</code>) ⇒ <code>&lt;hồ sơ&gt;__cn__&lt;tệp&gt;</code> có thể nằm trên đĩa dưới dạng Boolean/Int. <code>migrateClusterProfileOnce</code>
+đọc bằng <code>sp.getString</code> ⇒ <code>ClassCastException</code> trong <code>PrefsWorkspaceRepository.init</code>, trước màn nhà, và dấu chạy-một-lần không bao giờ được ghi ⇒
+launcher sập MỌI lần mở ([SUY]: cần một tệp nhập sửa tay/độc ở bản cũ — xác suất thấp, hậu quả là màn HOME của xe). <code>applyClusterNav</code> cùng khuôn (sập lúc chạm chip hồ sơ).
+Vá: một hàm <code>storedSnapshot</code> (vắng HOẶC sai kiểu ⇒ <code>null</code> + log) cho cả hai chỗ đọc; ảnh sai kiểu = "chưa có ảnh" ⇒ <code>rotDown</code> rót ảnh sạch đè lên, tức lượt
+di trú tự chữa. Test tĩnh: <code>ClusterProfileScopeCoverageTest."doc anh chup da luu khong nem khi sai kieu"</code>; phá thử (trả <code>getString</code> ở từng chỗ) ⇒ đỏ cả hai.
+Không chạm <code>migrateNavScheduleOnce</code> (thân bị bài canh khoá theo chữ; dấu của nó đã đặt trên mọi xe đã chạy 2.82+ — xe nhảy thẳng từ ≤ 2.81 còn chịu đúng rủi ro cũ ở tệp <code>clusternav_prefs</code>, ghi nhận, [P3]).</li>
+<li><b>V-CLUSTER-DEBT mục 3 — lên mức [SUY từ ĐO code], không vá.</b> <code>FloatingBubbleService</code> trả <code>START_STICKY</code> (<code>:169,172</code>) và lượt chạm coordinator đầu
+tiên của <code>onCreate</code> là <code>castEnabledNow()</code> (<code>:115</code>); [ĐO xe 29/09] tiến trình được dựng lại 0,3 s sau khi BYD giết Kachi lúc tắt máy ⇒ khi chuyến trước
+Cast BẬT, <code>create()</code> nhiều khả năng chạy ngay lúc TẮT máy. Hệ quả tốt: đổi hồ sơ TAY được chốt đúng lúc tắt máy. Hệ quả trễ: <code>boot_profile</code> muốn TẮT sau
+một chuyến BẬT thì chuyến kế vẫn BẬT (màn Chiếu cụm nói thật + Áp ngay). Không có cụm hai chủ: <code>onCreate</code> cổng <code>castEnabledNow()</code> TRƯỚC
+<code>autostart.dispatch</code>, nên chốt TẮT ở lượt dựng lại dừng dịch vụ trước khi tự chiếu. Sửa thật cần OQ-VC3 + OC-7.</li>
+<li><b>Đã soi, không thấy lỗi mới:</b> (a) họ hai chiều + mốc, bản chờ không vào ảnh, nhân bản chụp trước khi chép; (b) di trú idempotent, nâng cấp 2.83 mọi tổ hợp ⇒ 0 đổi,
+hồ sơ tạo sau di trú (nhân bản/nhập) mang mốc; (c) chuỗi <code>DisplayConfig</code> tới shell chỉ ở <code>DisplayConfigurator.apply</code> + <code>applyPinned</code>, cả hai qua
+<code>isShellSafe</code>; <code>camera_pos/shape/dewarp_amount</code> tự lùi mặc định khi giá trị lạ; (d) <code>reapplyAll</code>/<code>switchProfile</code> không chạm coordinator, mọi
+<code>CastingSplit(</code> dựng mới đều mang <code>leftPercent</code>, <code>handleStop</code> một nửa giữ tỉ lệ qua <code>copy</code>; (e) ca một hồ sơ không đổi hành vi, thứ tự
+<code>wm size → overscan → density</code> giữ nguyên; (f) mọi tệp chạm ≤ 500 dòng, i18n đủ, mọi hàm mới có chỗ gọi production.</li>
+</ul>
+<p>Test sau vá: xem báo cáo lượt review (không commit, không bump, không đụng xe/máy ảo). Scan bảo mật (T-END) chưa chạy.</p>
+<h3>Pass 4 — 2026-09-30</h3>
+<p>Senior review lượt 1 của <b>bản gộp 2.84</b> (versionCode 185, chưa commit): <code>git diff HEAD</code> + tệp mới = lane V-CLUSTER (§11) + lane
+<code>kachi-automation</code> V8/V8.1 (sấy kính hai kính độc lập). Trọng tâm: tích hợp hai lane ở tệp chung, bản vá <code>storedSnapshot</code> (Pass 3, chưa ai soát lại),
+bốn câu CLAUDE.md §4 của <code>closeOrphanProjection</code>, sấy kính không ghi HAL từ luồng UI, CLAUDE.md §6. Mọi kết luận là [ĐO] đọc source (kèm AOSP
+<code>android-10.0.0_r47</code> fetch trực tiếp) trừ chỗ ghi khác; không đụng xe/máy ảo.</p>
+<ul>
+<li><b>[P1] <code>closeOrphanProjection</code> chọn task để bê bằng TÊN GÓI, không bằng LOẠI STACK — ĐÃ VÁ.</b> Chỗ gọi mới này chạy KHÔNG người trông, lúc tiến trình
+dựng lại (~0,3 s sau khi BYD giết Kachi lúc tắt máy, [ĐO 29/09]). Nó đi <code>CastDisplayCleaner.cleanDisplay</code> → <code>CastStackParser.tasksToClean</code>, vốn chỉ bỏ
+<code>com.android.*</code>/launcher3/systemui/CarPlay/placeholder. [ĐO dump xe 29/09 <code>am-stack-list-oncar-2026-09-29-*.txt</code>] stack HOME (<code>mActivityType=home</code>) của chính
+Kachi mang gói <code>com.byd.launcher</code> ⇒ nếu một stack home nằm trên VD thì nó lọt bộ lọc gói và bị <code>am stack move-task</code> — vùng cấm §4. [CHƯA BIẾT] VD cụm có
+bao giờ mang stack home không (VD <code>FLAG_OWN_CONTENT_ONLY</code>, không cờ system decorations ⇒ nhiều khả năng KHÔNG, <code>DisplayContent.java:5023-5029</code>) — nên
+vá ở tầng thi hành thay vì tin giả định (CLAUDE.md §5). Vá: <code>tasksToClean</code> loại task của stack không standard (home/recents/assistant) bằng phân loại CHUNG
+<code>StackParse</code> (bài học đơ Dudu, không viết parser thứ hai) — framework tự <code>finishAllActivities</code> các stack đó khi gỡ VD (<code>ActivityDisplay.java:1137-1139</code>);
+<code>findTargetStackOnDisplay0</code> bỏ stack không standard (ATMS ném, <code>ActivityTaskManagerService.java:2570-2573</code>) và stack pinned ([ĐO] dump dẫn xuất
+<code>camera-under-pip-derived</code>: đích cũ = 54 là PiP Google Maps ⇒ app vừa dọn khỏi cụm bị nhét vào cửa sổ PiP; nay 53). Task trong stack pinned vẫn được bê ở mức TASK như cũ —
+để lại thì gỡ VD là framework bê cả STACK pinned (<code>ActivityDisplay.java:1147</code>) và <code>addStackReferenceIfNeeded</code> NÉM khi display 0 đã có pinned (<code>:710-715</code>).
+Dump thường cho ra đúng đích như trước (53 · 26). KDoc bốn câu §4 của <code>closeOrphanProjectionBody</code> viết lại theo mã, có file:line. Test: <code>CastDisplayCleanerStackTypeTest</code>
+(7 ca, fixture dump xe thật + ca dẫn xuất ghi rõ); phá thử (bỏ hai bộ lọc) ⇒ đỏ 5/7.</li>
+<li><b>[P3] <code>migrateNavScheduleOnce</code> còn đọc ảnh bằng <code>sp.getString</code> — ĐÃ VÁ</b> (Pass 3 đã ghi nhận, chưa vá vì tưởng bài canh khoá thân hàm theo chữ — [ĐO]
+<code>NavScheduleProfileScopeWiringTest</code> không khoá dòng đó). Máy nâng thẳng từ ≤ 2.81 (lượt này chưa từng chạy) có ảnh sai kiểu từ tệp nhập ⇒ <code>init</code> ném ⇒ HOME sập mỗi
+lần mở. Nay đọc qua <code>storedSnapshot</code> như hai chỗ đọc kia; bài canh <code>ClusterProfileScopeCoverageTest."doc anh chup da luu khong nem khi sai kieu"</code> phủ cả ba.</li>
+<li><b>[P3] Tích hợp hai lane — câu hồ sơ ở màn chính nói ngược phạm vi — ĐÃ VÁ.</b> <code>kachi_home_profile_note</code> (lane này viết lại cho VC-R9) nói "mọi thiết lập … trừ
+Hệ thống, camera theo xe, Giới thiệu — đều lưu cho hồ sơ", trong khi <code>rain_defrost_*</code> (V8, cùng bản 2.84, nhóm Tiện nghi xe) · phần lớn nhóm Giọng nói ·
+<code>ui_glass_real</code> là theo XE (<code>ProfileScope.DEVICE_KEYS</code>). Sửa câu VI/EN kể đủ; bài canh thêm ở <code>ClusterProfileSwitchWiringContractTest</code>.</li>
+<li><b>Ghi nhận, KHÔNG vá (có sẵn từ 2026-09-24, ngoài phạm vi hai lane) → backlog <code>PROFILE-IMPORT-TYPES</code>:</b> lượt nhập hồ sơ chỉ làm sạch hậu tố ảnh chụp
+<code>__cn__*</code>; các hậu tố launcher (<code>slot_*</code>, <code>preset</code>, <code>grid_layout</code>…) vẫn chép nguyên KIỂU đã giải mã (<code>copyValue</code>). [SUY từ ĐO code] tệp nhập
+đặt <code>b|slot_0|true</code> ⇒ <code>load()</code> đọc <code>getString</code> (<code>WorkspacePrefs.kt</code> <code>load</code>) ném khi chuyển sang hồ sơ đó — và <code>active_profile</code> đã được ghi ⇒ HOME sập mỗi lần mở.</li>
+<li><b>Tích hợp — đã soi, không thấy lỗi:</b> 0 khoá chuỗi trùng (VI/EN khớp tập khoá); không trùng tên hàm; lane sấy KHÔNG thêm khoá bền mới (ba khoá cũ, theo XE —
+không vào ảnh chụp nên không cần <code>DECLARED_TYPES</code>); lý do phạm vi <code>rain_defrost_*</code> nhất quán V8; <code>reapplyAll</code> gọi <code>AutomationService.sync</code> (đổi
+<code>camera_signal_enabled</code> theo hồ sơ) không đụng nhịp mưa. Sấy kính: mọi lượt đọc/ghi HAL chỉ ở <code>RainDefrostApplier.tick</code>, gọi duy nhất từ vòng nền
+<code>AutomationService</code> (<code>:237</code>); cầu Cài đặt chỉ ghi prefs + RAM + <code>sync</code>. §6: thứ tự <code>wm size → overscan → density</code> nguyên (<code>DisplayConfigurator.apply</code>);
+ca một hồ sơ: <code>applyClusterNav</code> chỉ chạy khi đổi hồ sơ thật (<code>load()</code> bỏ qua khi <code>boot == active</code>), bản chờ vắng ⇒ <code>NoPending</code>.</li>
+</ul>
+<p>Test sau vá: <code>./gradlew testDebugUnitTest test lint --continue</code> — xem báo cáo lượt review. Không commit, không bump, không đụng xe/máy ảo. Scan bảo mật chưa chạy.</p>
+<h3>Pass 5 — 2026-09-30</h3>
+<p>Senior review lượt 2 của <b>bản gộp 2.84</b> (185, chưa commit), sau Pass 4. Trọng tâm như Pass 4, cộng soát lại bản vá <code>storedSnapshot</code> (chưa ai
+review lại) và các bản vá của chính Pass 4. [ĐO] đọc source + AOSP <code>android-10.0.0_r47</code> đã fetch ở Pass 4; không đụng xe/máy ảo.</p>
+<ul>
+<li><b>[P3] Câu hồ sơ ở màn chính vẫn nói ngược phạm vi cho một mục — ĐÃ VÁ.</b> Pass 4 kể tay các mục theo XE nhưng sót <i>App dẫn đường mặc định</i>
+(<code>nav_default_app</code>, nhóm Dẫn đường &amp; cụm, khoá <code>voice_nav_default_app</code> ∈ <code>ProfileScope.DEVICE_KEYS</code>). Thêm vào câu VI/EN. Bài canh
+<code>ClusterProfileSwitchWiringContractTest</code> nay TỔNG QUÁT: mọi mục <code>SettingsCatalog.ENTRIES</code> có <code>scopeOf(prefKey) == DEVICE</code> nằm ngoài bốn nhóm
+câu đã loại theo tên (Hệ thống · Giọng nói · Hồ sơ · Giới thiệu) phải được kể bằng ĐÚNG nhãn VI/EN của mục. Phá thử (bỏ cụm vừa thêm ở VI) ⇒ đỏ đúng mục đó.</li>
+<li><b>Soát lại, sạch:</b> <code>storedSnapshot</code> trả <code>null</code> cho vắng/sai kiểu, cả ba chỗ đọc ảnh (<code>applyClusterNav</code> · <code>migrateNavScheduleOnce</code> ·
+<code>migrateClusterProfileOnce</code>) đi qua nó; <code>PrefSnapshot.decode</code>, <code>rotDown</code>, các bộ kiểm <code>CastGeometryGuard</code> (regex giới hạn chữ số trước
+<code>toInt</code>) không ném ⇒ <code>init</code> không ném vì ảnh chụp; hai lượt di trú idempotent, dấu cùng <code>Editor</code>, lượt sau thấy ghi của lượt trước (<code>apply()</code>
+cập nhật RAM ngay). <code>closeOrphanProjection</code>: bốn câu §4 khớp mã (số dòng đã đối chiếu); task stack pinned bê ở mức TASK là đúng — gỡ VD mà để lại stack pinned
+thì <code>ActivityDisplay.remove</code> bê cả STACK và <code>addStackReferenceIfNeeded</code> ném (<code>:712</code>, <code>:1147</code>); stack pinned không bao giờ bị bê
+nguyên stack, không bao giờ là đích. Câu 2 (app) vẫn là "mọi thứ trừ…" — [ĐO dump 29/09] VD cụm chỉ mang thứ Kachi đặt (ClusterBlack + app chiếu), và không có sổ bền
+nào ghi app của phiên trước để dựng allow-list mà không mở phạm vi. §6 và sấy kính (HAL chỉ ở vòng nền) giữ nguyên kết luận Pass 4.</li>
+</ul>
+<p>Test sau vá: xem báo cáo lượt review. Không commit, không bump, không đụng xe/máy ảo. Scan bảo mật chưa chạy.</p>
+<h3>Pass 6 — 2026-09-30</h3>
+<p>Senior review lượt 3 của <b>bản gộp 2.84</b> (185, chưa commit), sau Pass 5. Trọng tâm như Pass 4–5, cộng soát lại bản vá của Pass 5 (câu hồ sơ + bài canh
+tổng quát) và lượt dọn VD theo loại stack của Pass 4 (tệp chưa staged). [ĐO] đọc source + dump xe 14/09 và 29/09; không đụng xe/máy ảo.</p>
+<ul>
+<li><b>[P3] Câu hồ sơ ở màn chính nói ngược phạm vi theo chiều NGƯỢC — ĐÃ VÁ.</b> Câu loại trừ TRỌN "nhóm Hệ thống và quyền" (không rào "hầu hết" như nhóm
+Giọng nói), nhưng [ĐO code, bảng <code>SettingsCatalog.ENTRIES</code> × <code>ProfileScope.scopeOf</code> in bằng máy] nhóm Hệ thống có hai mục theo HỒ SƠ:
+<i>Tự mở Kachi khi nổ máy</i> (<code>launcher_autostart</code>, <code>ProfileScope.LAUNCHER_PERSONAL_SUFFIXES</code>) và <i>Chạy dịch vụ nền khi nổ máy</i>
+(<code>headless_autostart</code>, ảnh chụp ClusterNav). Người đọc câu sẽ tin bật tự mở ở hồ sơ A là bật cho cả xe. Sửa câu VI/EN kể hai mục đó là ngoại lệ. Bài canh
+<code>ClusterProfileSwitchWiringContractTest</code> thêm chiều ngược: mục theo HỒ SƠ trong nhóm mà câu loại trừ trọn (Hệ thống · Giới thiệu) phải được kể bằng đúng nhãn
+VI/EN. Kèm: nhãn EN <code>null</code> từng làm vế EN đúng với mọi câu (<code>contains("")</code>), nay bị đòi có thật. Phá thử: bỏ cụm vừa thêm ở VI ⇒ đỏ đúng mục
+<code>system_autostart</code>. Nhóm Giọng nói: 5 mục theo XE, 1 theo HỒ SƠ (<i>App nhạc mặc định</i>) ⇒ "hầu hết" đúng.</li>
+<li><b>Soát lại, sạch:</b> <code>tasksToClean</code> lọc task của stack không standard bằng <code>StackParse</code> (cùng <code>displayId</code>, cùng <code>taskId</code> với
+<code>parseTasks</code>). Đích <code>findTargetStackOnDisplay0</code> ra như cũ trên dump thật (53 · 26). Ca biên [SUY từ AOSP]: stack home RỖNG có id &gt; 0 không có dòng task nên
+không vào tập loại trừ. Chỉ stack home mới được để rỗng, và home của display 0 là stack 0 ở cả hai dump ([ĐO] 14/09, 29/09). Nếu vẫn bị chọn, ATMS ném trước khi đổi trạng
+thái (Pass 4 đã trích) ⇒ không vá. Nhánh "không có đích ⇒ mở Settings trên display 0" của <code>cleanDisplay</code> có sẵn từ trước, không đổi. [ĐO dump 14/09, 29/09]
+display 0 có stack standard (<code>carsettings</code>, launcher3/Kachi) ⇒ nhiều khả năng không kích hoạt. <code>storedSnapshot</code> và hai lượt di trú: như Pass 5. Sấy kính: HAL chỉ ở
+<code>AutomationService.kt:237</code>; <code>sync</code> từ <code>reapplyAll</code> idempotent (cờ <code>running</code>) nên đổi hồ sơ không dựng lại vòng, không gọi <code>loopStarted</code>,
+không kéo nhịp mưa sớm. §6: <code>wm size → overscan → density</code> nguyên; một hồ sơ ⇒ <code>NoPending</code>. File ≤ 500 dòng, mọi hàm mới có chỗ gọi (§8).</li>
+</ul>
+<p>Test sau vá: <code>./gradlew testDebugUnitTest test lint --continue</code> EXIT 0 (lint 0 lỗi / 530 cảnh báo), <code>count-tests.py</code> 6 629 · 0 fail · 0 error.
+Không commit, không bump, không đụng xe/máy ảo. Scan bảo mật chưa chạy. Ghi chú gộp: <code>CastDisplayCleanerStackTypeTest.kt</code> đang UNTRACKED (<code>??</code>) — phải
+<code>git add</code> cùng lượt commit.</p>
 </div></body>
 </html>

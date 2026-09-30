@@ -1,5 +1,7 @@
 package com.byd.clusternav.modules.clustercast.simplified
 
+import com.byd.clusternav.modules.clustercast.StackParse
+
 /**
  * Parser for `am stack list` output on BYD DiLink3 (Android 10).
  *
@@ -179,10 +181,24 @@ object CastStackParser {
      * evicted — it stayed "forever until manually cleaned". We now keep ONLY the black placeholder
      * and evict every other ClusterNav activity (MainActivity, ClusterNavActivity, …) so the cluster
      * can return to the cast app or native gauges.
+     *
+     * ⚠ V-CLUSTER senior review (2.84, 2026-09-30) — CLAUDE.md §4 câu 3 (*loại stack nào?*) phải trả lời bằng LOẠI STACK,
+     * không bằng tên gói. Bộ lọc gói ở dưới chỉ chặn `com.android.*`/launcher3/systemui/CarPlay; một task nằm trong stack
+     * `home`/`recents`/`assistant` mang gói khác (home phụ của một launcher bên thứ ba, nếu VD từng được cấp system
+     * decorations — [ĐO AOSP 10 r47] `DisplayContent.java:5023-5029`) sẽ lọt qua và bị `am stack move-task` bê sang
+     * display 0. Nay loại mọi task của stack KHÔNG standard ([nonStandardStackTasks]) — chúng không cần ai bê: gỡ VD là
+     * framework tự `finishAllActivities` stack không standard ([ĐO AOSP] `ActivityDisplay.java:1137-1139`).
+     *
+     * Task trong stack `pinned` (loại vẫn là standard) GIỮ hành vi cũ — bị bê ở mức TASK vào một stack standard
+     * fullscreen: đó là đường AN TOÀN hơn để lại, vì gỡ VD thì framework bê cả STACK pinned sang display 0
+     * (`ActivityDisplay.java:1147`), và `addStackReferenceIfNeeded` NÉM nếu display 0 đã có stack pinned
+     * (`ActivityDisplay.java:710-715`) — đúng lớp lỗi "stack mồ côi" của vụ đơ Dudu (CLAUDE.md §4).
      */
     fun tasksToClean(amOutput: String, displayId: Int): List<ParsedTask> {
+        val forbidden = nonStandardStackTasks(amOutput, displayId)
         return parseTasks(amOutput).filter { task ->
             task.displayId == displayId &&
+                task.taskId !in forbidden &&
                 !task.pkg.startsWith("com.android.") &&
                 task.pkg !in ProjectionApps.STACK_SKIP_PKGS &&
                 // Keep ONLY the black placeholder; every other ClusterNav activity on the cluster is
@@ -221,15 +237,34 @@ object CastStackParser {
 
     /**
      * Find a usable target stack on display 0 (non-home, id > 0).
+     *
+     * V-CLUSTER senior review (2026-09-30): "non-home" trước đây chỉ là giả định *home = stack 0* ([ĐO] đúng ở dump xe
+     * `docs/diagnostics/carlog-kachi-20260914-2044/10-am-stack-list.txt`). Nay bỏ qua TƯỜNG MINH stack không standard
+     * (home/recents — `am stack move-task` vào đó thì ATMS NÉM, [ĐO AOSP 10 r47] `ActivityTaskManagerService.java:2570-2573`)
+     * và stack `pinned` (bê task vào đó là biến app vừa dọn khỏi cụm thành cửa sổ PiP trên màn chính). Thứ tự dòng tiêu đề
+     * giữ nguyên ⇒ dump thường (stack standard đầu tiên id > 0) ra đúng số như cũ.
      */
     fun findTargetStackOnDisplay0(amOutput: String): Int? {
+        val unfit = StackParse.parse(amOutput)
+            .filter { it.displayId == 0 && (!it.isStandard || it.isPinned) }
+            .mapTo(HashSet()) { it.stackId }
         for (line in amOutput.lines()) {
             val m = Regex("""Stack id=(\d+).*displayId=0""").find(line) ?: continue
             val stackId = m.groupValues[1].toIntOrNull() ?: continue
-            if (stackId > 0) return stackId
+            if (stackId > 0 && stackId !in unfit) return stackId
         }
         return null
     }
+
+    /**
+     * Task của stack KHÔNG standard (home · recents · assistant) trên [displayId] — vùng cấm của lượt dọn (CLAUDE.md §4
+     * câu 3). Phân loại dùng CHUNG [StackParse] (bài học đơ Dudu, `StackEntry.isStandard`) — không viết parser thứ hai.
+     * Dòng `configuration=` vắng ⇒ loại trống ⇒ coi là standard, đúng như `StackEntry.isStandard` (giữ hành vi cũ).
+     */
+    private fun nonStandardStackTasks(amOutput: String, displayId: Int): Set<Int> =
+        StackParse.parse(amOutput)
+            .filter { it.displayId == displayId && !it.isStandard }
+            .mapTo(HashSet()) { it.taskId }
 
     private val STACK_HEADER = Regex("""Stack id=\d+.*displayId=(\d+)""")
     /** Như [STACK_HEADER] nhưng CAPTURE cả stack id (group 1) lẫn display id (group 2). */

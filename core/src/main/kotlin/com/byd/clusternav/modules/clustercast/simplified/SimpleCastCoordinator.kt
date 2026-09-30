@@ -141,6 +141,14 @@ class SimpleCastCoordinator(
         notifyState(new)
     }
 
+    /**
+     * V-CLUSTER · VC-R6 — cập nhật bản ghim/tỉ lệ của phiên CHỈ khi phiên vẫn đúng là [expected] (CAS theo danh tính):
+     * lượt chỉnh tay không được đè một trạng thái mới hơn (Stop/cast khác đã lọt vào giữa). Thân ở `CastSessionPin.kt`.
+     */
+    internal fun replaceState(expected: SimpleCastState, new: SimpleCastState) {
+        if (_state.compareAndSet(expected, new)) notifyState(new)
+    }
+
     /** Phát cho người nghe (đã chụp danh sách dưới khoá) — tách khỏi [setState] để [setError] CAS được. */
     private fun notifyState(new: SimpleCastState) {
         val copy = synchronized(listeners) { listeners.toList() }
@@ -258,6 +266,15 @@ class SimpleCastCoordinator(
     /** Dọn task lạ khỏi VD cụm [vd] — caller PHẢI truyền id đã xác minh live (không bao giờ seed). */
     internal fun cleanDisplay(vd: Int) = CastDisplayCleaner.cleanDisplay(shell, vd)
 
+    /**
+     * V-CLUSTER · VC-R7 — dọn projection MỒ CÔI của tiến trình trước, sau khi lượt dựng coordinator vừa chốt
+     * `cast_enabled` BẬT→TẮT (`SimpleCastRuntime.create`). Chạy trên executor (shell). Bốn câu CLAUDE.md §4 + lý do chọn
+     * đường ở KDoc [closeOrphanProjectionBody].
+     */
+    fun closeOrphanProjection() {
+        executor.submit("close-orphan") { closeOrphanProjectionBody() }
+    }
+
     private fun closeProjectionSync() {
         returnAllApps()
         // Reset display to defaults before closing — undo all wm changes (chỉ trên id đã xác minh live, R2)
@@ -267,38 +284,26 @@ class SimpleCastCoordinator(
         if (ok) setState(SimpleCastState.Off) else setError("Close failed")
     }
 
-    // ─── Resize active target / slot ─────────────────────────────────────────
+    // ─── Resize active target / slot · tỉ lệ · DPI — CHỈNH TƯỜNG MINH ─────────────────
+    // V-CLUSTER · VC-R6: thân ở `CastSessionPin.kt` — lưu cho hồ sơ ĐANG DÙNG dưới ô nhớ của tỉ lệ PHIÊN, rồi cập nhật
+    // đúng trường vừa áp của bản ghim (repin sau đó dùng bản ghim, không đọc lại prefs — refute B6/C2).
 
     /**
      * Resize the currently casting full app to the given bounds (R5/R6). NORMAL-only.
      * Persistence (FULL profile) happens ONLY on shell success — see [CastGeometryController].
      * Thread-safe — queued on serial executor.
      */
-    fun resizeActiveTarget(left: Int, top: Int, right: Int, bottom: Int) = executor.submit("resize") {
-        val current = state as? SimpleCastState.CastingFull ?: return@submit
-        if (!current.appType.isResizable || right <= left || bottom <= top) {
-            log("resizeActiveTarget: skip (state/bounds invalid) [$left,$top,$right,$bottom]")
-            return@submit
-        }
-        geometry.resizeFull(current.targetPkg, left, top, right, bottom)
-    }
+    fun resizeActiveTarget(left: Int, top: Int, right: Int, bottom: Int) =
+        executor.submit("resize") { resizeFullBody(left, top, right, bottom) }
 
     /**
      * Resize one split slot's app to the given bounds (R5/R6). Only valid in
      * [SimpleCastState.CastingSplit]; targets the app currently in [side]. Persists to the
-     * matching profile ([CastProfile.of] on the current split ratio) ONLY on shell success.
+     * matching profile ([CastProfile.of] on the SESSION's split ratio) ONLY on shell success.
      * Thread-safe — queued on serial executor.
      */
     fun resizeActiveSlot(side: ClusterSlotSide, left: Int, top: Int, right: Int, bottom: Int) =
-        executor.submit("resize-slot") {
-            val current = state as? SimpleCastState.CastingSplit ?: return@submit
-            val pkg = (if (side == ClusterSlotSide.LEFT) current.left else current.right)?.pkg ?: return@submit
-            if (right <= left || bottom <= top) {
-                log("resizeActiveSlot: skip (bounds invalid) [$left,$top,$right,$bottom]")
-                return@submit
-            }
-            geometry.resizeSlot(pkg, CastProfile.of(side, prefs.splitRatioLeftPercent()), left, top, right, bottom)
-        }
+        executor.submit("resize-slot") { resizeSlotBody(side, left, top, right, bottom) }
 
     /**
      * Apply a new split ratio ([leftPercent]) live (Feature 2 · split-ratio buttons).
@@ -309,28 +314,12 @@ class SimpleCastCoordinator(
      *     W×H is the cluster display's measured size ([AppMover.queryDisplaySize], fallback 1920×720).
      *     Reuses the same [CastGeometryController.resizeSlot] path as [resizeActiveSlot], so per-slot
      *     bounds persist to the matching per-ratio profile ONLY on shell success (R6).
+     * (c) V-CLUSTER: lượt DUY NHẤT đổi [SimpleCastState.CastingSplit.leftPercent] của phiên.
      *
      * Thread-safe — queued on the serial executor.
      */
-    fun applySplitRatioLive(leftPercent: Int) = executor.submit("split-ratio-live") {
-        // Validate the incoming ratio to one of the 9 supported buckets (10..90). The UI only ever
-        // sends CastProfile.SPLIT_PERCENTS values, but this is a public entry point: an out-of-set
-        // percent would (a) persist a bad ratio that corrupts the NEXT split cast's fitToCluster
-        // bounds, (b) drive a degenerate `am task resize` (resizeSlot has no bounds guard), and
-        // (c) file per-slot bounds under a normalized profile key (CastProfile.of below) that no
-        // longer matches the geometry. Clamp to the R3 default (50) so all three stay consistent.
-        val pct = CastProfile.normalizePercent(leftPercent)
-        prefs.setSplitRatioLeftPercent(pct)
-        val current = state as? SimpleCastState.CastingSplit ?: return@submit
-        val (width, height) = mover.queryDisplaySize(displayId) ?: (1920 to 720)
-        val boundary = width * pct / 100
-        current.left?.let {
-            geometry.resizeSlot(it.pkg, CastProfile.of(ClusterSlotSide.LEFT, pct), 0, 0, boundary, height)
-        }
-        current.right?.let {
-            geometry.resizeSlot(it.pkg, CastProfile.of(ClusterSlotSide.RIGHT, pct), boundary, 0, width, height)
-        }
-    }
+    fun applySplitRatioLive(leftPercent: Int) =
+        executor.submit("split-ratio-live") { applySplitRatioLiveBody(leftPercent) }
 
     /** @see CastGeometryController.isFreeformAlive */
     fun isFreeformAlive(): Boolean = geometry.isFreeformAlive()
@@ -339,13 +328,13 @@ class SimpleCastCoordinator(
     /** @see CastDensityControl.set — persists ONLY on shell success (R6). */
     fun setDensity(dpi: Int?) = executor.submit("density") {
         val vd = verifiedClusterDisplay("setDensity") ?: return@submit
-        CastDensityControl.set(shell, prefs, vd, dpi, (state as? SimpleCastState.CastingFull)?.targetPkg)
+        setDensityBody(vd, dpi)
     }
 
     /** @see CastDensityControl.setForSplit — split DPI, persists the per-ratio profile on success (R4/#5). */
     fun setDensitySplit(dpi: Int?) = executor.submit("density-split") {
         val vd = verifiedClusterDisplay("setDensitySplit") ?: return@submit
-        CastDensityControl.setForSplit(shell, prefs, vd, dpi, state)
+        setDensitySplitBody(vd, dpi)
     }
     /** Shutdown executor. Call on app destroy. */
     fun shutdown() {

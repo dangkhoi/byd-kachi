@@ -35,6 +35,8 @@ class SettingsStackMarginContractTest {
         "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
         // 2.76 · R1 — camera tách khỏi `SettingsSectionsCar`, dựng bằng `rows.*` + khối gập.
         "SettingsSectionsCamera.kt",
+        // V-CLUSTER (2026-09-30) — khối khung/DPI tách khỏi `SettingsSectionsCast` (trần 500 dòng): cùng bề mặt, vào NGAY.
+        "SettingsSectionsCastGeometry.kt",
         // 2.74 · R3 — nhóm Giọng nói cũng dựng bằng `rows.*` (và nay có cả khối gập/mở).
         "SettingsVoiceSection.kt",
     )

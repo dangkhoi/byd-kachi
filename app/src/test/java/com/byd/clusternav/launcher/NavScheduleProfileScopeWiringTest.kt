@@ -20,8 +20,11 @@ import org.junit.jupiter.api.Test
 class NavScheduleProfileScopeWiringTest {
 
     private val scope = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ProfileScope.kt")
+    // V-CLUSTER (2026-09-30): phép di trú dời NGUYÊN VĂN sang `WorkspacePrefsMigrations.kt`, phép áp sang
+    // `WorkspacePrefsSnapshot.kt` (trần 500 dòng). Ghép cả ba tệp: mọi phép kiểm dưới đây giữ nguyên chữ.
     private val profilePrefs =
-        SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsProfile.kt")
+        listOf("WorkspacePrefsProfile.kt", "WorkspacePrefsSnapshot.kt", "WorkspacePrefsMigrations.kt")
+            .joinToString("\n") { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$it") }
     private val repo = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt")
 
     private fun migration(): String =

@@ -50,8 +50,31 @@ internal val clusterReopen = DelayedGatedRun(
 
 // ── Công tắc chính "Bật Cluster Cast" — lặp lại CastEnableSwitch.kt:44–80 ────────────────────────
 
-/** `CastEnableSwitch.kt:45`. */
+/** `CastEnableSwitch.kt:45`. Giá trị HIỆU LỰC — khớp projection thật (V-CLUSTER K1: mọi cổng đọc Cast đi qua đây). */
 fun ClusterNavBridge.castEnabled(): Boolean = coordinator.prefs.castEnabled()
+
+// ── V-CLUSTER · VC-R7/VC-R9 — `cast_enabled` theo HỒ SƠ, áp hoãn ───────────────────────────────────────────────
+
+/**
+ * Lựa chọn Cast của HỒ SƠ đang dùng khi nó KHÁC giá trị đang chạy (khoá `cast_enabled_pending`, ghi lúc đổi hồ sơ);
+ * `null` = không có gì chờ. Tầng Settings dùng để nói thật: *"… áp dụng từ lần nổ máy sau"* + nút *Áp ngay*.
+ */
+fun ClusterNavBridge.castEnabledPending(): Boolean? = runCatching { coordinator.prefs.castEnabledPending() }.getOrNull()
+
+/**
+ * Công tắc *"Bật Cluster Cast"* hiện lựa chọn của HỒ SƠ (bản chờ nếu có, không thì giá trị đang chạy) — giống mọi dòng
+ * Cài đặt khác. Chạm công tắc vẫn là lượt TƯỜNG MINH [setCastEnabled] (xoá bản chờ, mở/đóng thật).
+ */
+fun ClusterNavBridge.castEnabledForProfile(): Boolean = castEnabledPending() ?: castEnabled()
+
+/**
+ * Nút *Áp ngay*: đưa lựa chọn đang chờ của hồ sơ vào hiệu lực bằng ĐÚNG đường thật [setCastEnabled] — mở/đóng
+ * projection + nút nổi như một cú gạt công tắc, và đường đó xoá bản chờ trong cùng lượt ghi (tầng thi hành).
+ * Không có gì chờ ⇒ không làm gì.
+ */
+fun ClusterNavBridge.applyCastPendingNow() {
+    castEnabledPending()?.let { setCastEnabled(it) }
+}
 
 /**
  * Lặp lại `CastEnableSwitch.kt:49–53` + `enable()`/`disable()` (dòng 62–80) NGUYÊN thứ tự:
@@ -104,10 +127,16 @@ fun ClusterNavBridge.setCastBubbleVisible(on: Boolean) {
 }
 
 // ── Tỉ lệ chia đôi — lặp lại CastSplitRatioButtons.kt:41–66 ─────────────────────────────────────
-/** Phần trăm của nửa TRÁI (10…90) — `CastSplitRatioButtons.kt:62`. */
+/** Phần trăm của nửa TRÁI (10…90) mà HỒ SƠ đang dùng lưu — `CastSplitRatioButtons.kt:62`. Lần chia đôi KẾ dùng số này. */
 fun ClusterNavBridge.splitPct(): Int = CastProfile.normalizePercent(
     runCatching { coordinator.prefs.splitRatioLeftPercent() }.getOrDefault(CastProfile.DEFAULT_PERCENT),
 )
+
+/**
+ * V-CLUSTER · VC-R6 — tỉ lệ nửa trái CỦA PHIÊN chia đôi đang chạy (ghim lúc ô đầu tiên bắt đầu); `null` khi cụm không
+ * chia đôi. Khác [splitPct] ngay sau khi đổi hồ sơ giữa lúc chia: cụm vẫn chia theo số này (sửa refute C2).
+ */
+fun ClusterNavBridge.sessionSplitPct(): Int? = (castState() as? SimpleCastState.CastingSplit)?.leftPercent
 
 /**
  * Lặp lại `CastSplitRatioButtons.kt:52–55`: một lời gọi [SimpleCastCoordinator.applySplitRatioLive]

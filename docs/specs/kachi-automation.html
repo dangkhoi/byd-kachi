@@ -38,17 +38,30 @@
   .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 16px;font-size:14.5px}
   .kv div:nth-child(odd){color:var(--mut)}
   svg text{font-family:-apple-system,"SF Pro Text",sans-serif}
+  .t-bad{background:rgba(255,59,48,.14);color:var(--bad)}
+  .t-unk{background:var(--code);color:var(--mut);border:1px solid var(--line)}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .scroll table{min-width:760px}
+  .diagram svg.wide{min-width:680px}
+  .addendum{border-left:3px solid var(--accent);padding-left:14px}
+  @media (max-width:600px){ .wrap{padding:32px 16px 72px} .kv{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <h1>Kachi Automation</h1>
-<p class="sub">Tự sấy kính khi mưa · Tự động dẫn đường theo lịch · <span class="muted">docs/specs/kachi-automation.html · Đã ship 1.85 (86) — owner DUYỆT 2026-09-20 · T1–T5 xong off-car · 🚗 chờ buổi mưa + buổi khung giờ · cập nhật 2026-09-25</span></p>
+<p class="sub">Tự sấy kính khi mưa · Tự động dẫn đường theo lịch · <span class="muted">docs/specs/kachi-automation.html · Đã ship 1.85 (86) — owner DUYỆT 2026-09-20 · T1–T5 xong off-car · 🚗 chờ buổi mưa + buổi khung giờ · cập nhật 2026-09-30 · <b><a href="#v8">V8 — tự sấy: hai kính độc lập</a>: mã xong off-car 30/09</b> (chưa commit · chưa bump · 🚗 OC1–OC4 chưa chạy; duyệt 3 cổng là việc ngoài tài liệu) · <b><a href="#v81">V8.1 — tự chẩn đoán + nhịp đầu</a>: mã off-car xong 30/09</b> (dòng tình trạng từng kính · nhịp mưa đầu ngay + thử lại ≤5 · tài liệu người dùng "từ 2.84")</span></p>
 
 <h2>Changelog</h2>
 <div class="card">
 <div class="kv">
+<div>2026-09-30 v5.3 (soát V8.1)</div><div><a href="#v81-review-p9">Pass 9</a> senior review lượt 3 lô V8.1: D17 soát lại qua mọi đường ghi ký ức — đúng; 3 × P3 (dữ liệu bài hợp đồng <code>follow</code> khớp luật V3 · câu D17 ở <code>HUONG-DAN-KACHI.md</code> đủ ba nguyên nhân · <code>project-context.md</code> thêm Pass 7 + D17). 0 dòng mã chạy đổi; 6 515 / 0 đỏ.</div>
+<div>2026-09-30 v5.2 (soát V8.1)</div><div><a href="#v81-review-p8">Pass 8</a> senior review lượt 2 lô V8.1: dòng tình trạng nói <i>"xe báo: vẫn tắt sau lệnh bật HH:mm"</i> (vàng) khi lệnh bật trước ĐÃ tới xe mà nhịp này xe vẫn báo tắt — dấu hiệu OC4/OQ-V8.1 nay lộ trên một ảnh chụp (P2, D17 mới, bảng §C +1 hàng, +1 chuỗi × 2 ngôn ngữ).</div>
+<div>2026-09-30 v5.1 (soát V8.1)</div><div><a href="#v81-review-p7">Pass 7</a> senior review lượt 1 lô V8.1: dòng tình trạng làm tươi cả khi trang hiện lại (P2, D16 sửa) · chữ <i>"không do Kachi bật"</i> ⇒ <i>"Kachi không quản"</i> (P3, bảng §C) · hướng dẫn có hình thêm hai ca (P3). 6 510 / 0 đỏ.</div>
+<div>2026-09-30 v5 (V8.1)</div><div><b>Addendum <a href="#v81">V8.1 — Tự chẩn đoán + nhịp đầu</a></b> (owner 30/09: lỗi "chỉ sau + gương không work" có trên 2.83, không biết đời xe, không có thời gian test ⇒ app tự cho thấy nguyên nhân): R-V8.7 dòng tình trạng từng kính dưới hai hàng sấy · R-V8.8 nhịp mưa đầu chạy ngay + thử lại 60 s tối đa 5 lần (OQ-V8.6, gốc <code>79be642</code>) · R-V8.9 tài liệu người dùng "từ 2.84". Chốt mặc định OQ-V8.3 (giữ D8) · OQ-V8.4 (chấp nhận ≤5′) · OQ-V8.5 (giữ nhãn — không rẻ). Nhật ký: <a href="#v81-log">V8.1</a>.</div>
+<div>2026-09-30 v4 (mã V8)</div><div><b>V8 hiện thực off-car</b> (chưa commit, không bump, chưa lên xe): <code>:core</code> <code>RainDefrostGlasses.kt</code> mới (hai làn, ký ức + thế hệ từng kính, log <code>#seq</code>) · <code>unclaim</code> thắt (D5) · <code>:app</code> applier chỉ còn I/O · cờ <code>due</code> ≤60 s · prefs ghi 3 khoá một <code>edit()</code> · UI hai hàng độc lập. [ĐO] 6 454 test / 0 đỏ (738 XML) · lint 0 lỗi · thử phá 9/9 đỏ đúng ca. §V8.2 Design + §V8.3 Tasks cập nhật theo mã thật; chỗ mã khác bản DRAFT ghi ở <a href="#v8-impl">V8.2 › Mã thật khác DRAFT</a>. Nhật ký: <a href="#v8-log">2026-09-30 · V8</a>.</div>
+<div>2026-09-30 v3 (doc)</div><div>(1) <b>R1.x viết lại theo mã HEAD <code>b5c0e87</code></b> — bản cũ còn tả 1.85: V3 <code>cf2323e</code> (22/09) <i>đang mưa luôn bật lại, bỏ nhả quyền</i>; V7 <code>763a590</code> (25/09) <i>hai ô chọn kính + mỏ neo</i>; nhịp mưa theo thời gian trôi (25/09 · 2.29 <code>79be642</code> — soát Pass 5 sửa mốc "24/09", <span class="tag t-ok">ĐO git</span>). Sửa kèm các dòng §Design tả lại R1 cũ. (2) <b>Thêm <a href="#v8">addendum V8</a></b> — hai kính độc lập, theo yêu cầu owner 30/09 (nguyên văn ở §V8.0). DRAFT, chờ duyệt 3 cổng; chưa có mã.</div>
 <div>2026-09-25 v2 (doc)</div><div>Trạng thái chốt: <b>Đã ship 1.85 (86)</b> — dòng "Chờ duyệt" của v1 là lịch sử, owner đã duyệt 2026-09-20 (backlog). Cài đặt: <i>Tiện nghi xe › Tự sấy kính khi mưa</i> · <i>Dẫn đường & cụm đồng hồ › Tự dẫn đường theo lịch</i> (multi-app từ 2026-09-24 <code>5d1310f</code>). 🚗 vẫn chưa gặp mưa thật / chưa xác nhận <code>startActivity</code> từ FGS.</div>
 <div>2026-09-20 v1</div><div>Draft đầu — 2 automation từ phiên on-car 1.84. Owner chốt 3 điểm (sấy trước+sau · dẫn 1 lần/khung/ngày · nav check ~1 phút, rain ~5 phút). Chờ duyệt.</div>
 </div>
@@ -66,15 +79,50 @@
 
 <h2>Requirements</h2>
 
-<h3>R1 — Automation #1: Tự sấy kính khi mưa <span class="tag t-new">mới</span></h3>
+<h3>R1 — Automation #1: Tự sấy kính khi mưa <span class="tag t-ok">đã ship · hiện trạng mã</span></h3>
 <div class="card">
+<p class="muted">Viết lại 2026-09-30 cho khớp mã <b>HIỆN TẠI</b> (HEAD <code>b5c0e87</code>, [ĐO nguồn] đọc trong phiên này). Bản
+1.85 của mục này đã bị hai lô owner thay (bảng lịch sử ngay dưới). Chỗ nào V8 đề xuất đổi → đánh dấu
+<span class="tag t-new">V8</span> và trỏ sang <a href="#v8">§V8</a>.</p>
 <ul>
-<li><b>R1.1</b> Một <b>toggle</b> "Tự sấy kính khi mưa" ở khu tiện ích/Cài đặt (Khí hậu). Lưu bền <b>theo XE</b> (<code>ProfileScope.DEVICE_KEYS</code>), mặc định TẮT.</li>
-<li><b>R1.2</b> Khi BẬT: mỗi <b>~5 phút</b> đọc <code>SETTING_FRONT_RAIN_WIPER_SPEED</code>.</li>
-<li><b>R1.3</b> Có mưa (<code>&gt;1</code>) <b>và</b> sấy chưa chạy → <b>bật sấy TRƯỚC + SAU</b>.</li>
-<li><b>R1.4</b> Hết mưa (<code>=1</code>) <b>và</b> sấy do automation bật → <b>tắt sấy</b>.</li>
-<li><b>R1.5 (own-state)</b> Chỉ tắt cái sấy do CHÍNH automation bật. Người lái tự bật sấy → automation KHÔNG đụng (không auto-tắt). Nếu người lái tự tắt giữa chừng → automation nhả quyền (không bật lại tới lần mưa sau).</li>
+<li><b>R1.1 — Cài đặt.</b> Nhóm <i>Tiện nghi xe</i> (<code>SettingsSectionsCar.kt:74-119</code>): hàng chính
+<i>"Mưa thì tự bật sấy kính"</i> = khoá <code>rain_defrost_enabled</code> (mặc định <b>TẮT</b>) + từ V7 hai ô con
+<i>"Sấy kính trước"</i> = <code>rain_defrost_front</code> · <i>"Sấy kính sau + gương"</i> = <code>rain_defrost_rear</code>
+(cả hai mặc định <b>BẬT</b>) — cùng tệp <code>clusternav_prefs</code> (<code>PrefsAutomation.kt:37-72</code>), cả ba
+theo <b>XE</b> (<code>ProfileScope.kt:269-295</code>). Hàng chính tắt ⇒ hai ô con mờ + không bấm được
+(<code>gateRainGlass</code>). Lựa chọn hiệu lực = <code>chính &amp;&amp; con</code>; hai ô con cùng bỏ tích = tính năng
+tắt, động cơ nền dừng nếu không còn automation khác (<code>AutomationService.kt:148</code>).
+<span class="tag t-new">V8</span> bỏ hàng chính khỏi giao diện — R-V8.1.</li>
+<li><b>R1.2 — Nhịp.</b> Mỗi <b>~5 phút theo thời gian trôi</b> (<code>elapsedRealtime</code>, đổi 2026-09-25 ở 2.29 <code>79be642</code> — không
+còn đếm nhịp; <code>AutomationService.kt:227-230</code>) đọc <code>SETTING_FRONT_RAIN_WIPER_SPEED</code> trên
+<code>BYDAutoSettingDevice</code> (bind theo tên hằng, lùi về id đo được <code>1196425250</code>). <code>1</code> = khô,
+<code>≥2</code> = mưa; ngoài dải <code>1..12</code> (sentinel) = <i>không đọc được</i> ⇒ giữ nguyên mọi thứ
+(<code>RainDefrostPolicy.kt:82</code>). <span class="tag t-new">V8</span> đổi lựa chọn có hiệu lực ở nhịp 60 s kế — R-V8.5.</li>
+<li><b>R1.3 — Bật (V3 22/09 + V7 25/09).</b> <b>Mỏ neo</b> = ô đầu tiên được chọn (<code>pick.first()</code>: kính trước
+nếu tích, không thì kính sau — <code>RainDefrostApplier.kt:126-127</code>). Chỉ mỏ neo được ĐỌC
+(<code>getAcDefrostState(1)</code> hoặc <code>(2)</code>) và chỉ có MỘT ký ức. Mưa + mỏ neo <b>tắt</b> ⇒ ghi bật
+<b>mọi kính đã chọn</b> — kể cả lần thứ n: sấy tắt giữa mưa (xe tự tắt hay người lái tắt, không phân biệt được) ⇒ nhịp
+sau bật lại (<code>RainDefrostPolicy.kt:170-178</code>). Mưa + mỏ neo <b>bật</b> ⇒ không ghi kính nào.
+<span class="tag t-new">V8</span> mỗi kính tự đọc/tự quyết — R-V8.2, R-V8.4.</li>
+<li><b>R1.4 — Tắt.</b> Khô + mỏ neo bật + mỏ neo do Kachi bật ⇒ ghi tắt <b>mọi kính đã chọn</b>
+(<code>RainDefrostApplier.kt:152</code>). Khô ⇒ ký ức sạch (hết cơn). <span class="tag t-new">V8</span> chỉ tắt kính do
+Kachi bật — R-V8.3.</li>
+<li><b>R1.5 — Chủ quyền (V3 thay bản 1.85).</b> Ký ức RAM <code>RainDefrostState</code>, <b>một bộ</b> cho cả hai kính,
+theo mỏ neo. Người lái tự tắt giữa mưa ⇒ <b>không còn</b> nhả quyền: nhịp sau bật lại (owner 22/09: <i>"cứ luôn bật,
+tắt thì bật lại; ai không thích thì tắt tính năng"</i>; bit <code>suppressed</code> từ đó luôn <code>false</code>).
+Người lái tự bật trước khi Kachi thấy mưa ⇒ Kachi không nhận chủ quyền, hết mưa không tắt hộ. Lệnh bật mỏ neo không tới
+xe (rc <code>null</code>/sentinel) ⇒ trả ký ức nhịp trước (<code>unclaim</code>, <code>RainDefrostPolicy.kt:208-209</code>);
+rc của kính thứ hai bị bỏ (<code>RainDefrostApplier.kt:212-224</code>). <span class="tag t-new">V8</span> chủ quyền
+từng kính — R-V8.2, R-V8.3.</li>
 </ul>
+<table>
+<tr><th>Mốc</th><th>Đổi gì ở R1</th><th>Nguồn</th></tr>
+<tr><td>1.85 · 2026-09-20</td><td>Một công tắc; mưa ⇒ bật trước + sau; người lái tự tắt ⇒ nhả quyền tới hết cơn</td><td>spec v1 · <code>e0cb368</code></td></tr>
+<tr><td>V3 · 2026-09-22</td><td>Đang mưa luôn giữ sấy: sấy tắt ⇒ bật lại; bỏ nhả quyền. Lý do: [ĐO xe owner] thủ phạm là xe tự tắt, một bit <i>sấy=tắt</i> không phân biệt được với người tắt</td><td><code>cf2323e</code></td></tr>
+<tr><td>2.29 · 2026-09-25 09:09</td><td>Nhịp mưa theo thời gian trôi thay vì đếm nhịp (phụ phẩm lượt camera — OQ-V8.6)</td><td><code>79be642</code> · <code>AutomationService.kt:222-230</code></td></tr>
+<tr><td>V7 · 2026-09-25 18:43</td><td>Hai ô chọn kính (mặc định cả hai), mỏ neo = ô đầu tiên được chọn</td><td><code>763a590</code></td></tr>
+<tr><td><a href="#v8">V8</a> · 2026-09-30</td><td>Hai kính độc lập (mỗi kính tự đọc/quyết/ghi/chủ quyền), bỏ hàng chính khỏi UI — <b>mã off-car xong</b></td><td>working tree trên <code>b5c0e87</code>, chưa commit</td></tr>
+</table>
 </div>
 
 <h3>R2 — Automation #2: Tự động dẫn đường theo lịch <span class="tag t-new">mới</span></h3>
@@ -91,8 +139,11 @@
 <div class="card">
 <ul>
 <li><b>R3</b> GPS-available = <code>LocationManager</code> có provider GPS bật + fix gần đây (last-known trong ≤ N giây, N cấu hình mặc định ~120s). Không dùng weather/API ngoài.</li>
-<li><b>R4</b> MỘT engine nền chung (<code>AutomationService</code>, foreground, tick ~60s) chạy 2 rule; khởi động ở autostart khi có bất kỳ automation nào BẬT. Tick 60s: rule mưa cứ ~5 phút (đếm nhịp), rule nav mỗi tick.</li>
-<li><b>R5</b> Cấu hình lưu bền theo XE; sống qua nổ máy (autostart re-arm).</li>
+<li><b>R4</b> MỘT engine nền chung (<code>AutomationService</code>, foreground, tick ~60s) chạy 2 rule; khởi động ở autostart khi có bất kỳ automation nào BẬT. Tick 60s: rule mưa cứ ~5 phút (từ 2026-09-24 theo thời gian trôi, không đếm nhịp), rule nav mỗi tick.</li>
+<li><b>R5</b> Cấu hình lưu bền theo XE; sống qua nổ máy (autostart re-arm). <span class="muted">⚠ Lỗi thời một phần
+(ngoài phạm vi V8, chỉ ghi chú): từ 2026-09-28 <code>nav_automation_rules</code>/<code>nav_automation_fired</code> theo
+<b>HỒ SƠ</b> (owner quyết — <code>ProfileScope.kt</code>, chú thích ngay sau mục <code>rain_defrost_enabled</code>). Ba
+khoá sấy vẫn theo XE.</span></li>
 <li><b>R6</b> Logic quyết định ở <code>:core</code> THUẦN (test off-car); <code>:app</code> chỉ làm HAL/location/launch. An toàn: sấy/nav đều <b>đảo lại được</b>, không lệnh phá huỷ; sấy gate own-state; nav chỉ mở app (không ép).</li>
 </ul>
 </div>
@@ -119,7 +170,7 @@
   <!-- app actions -->
   <rect x="560" y="30" width="310" height="52" rx="12" fill="var(--card)" stroke="var(--line)"/>
   <text x="715" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">RainDefrostApplier</text>
-  <text x="715" y="70" text-anchor="middle" font-size="11" fill="var(--mut)">đọc SETTING_FRONT_RAIN_WIPER_SPEED · ghi defrost F+R</text>
+  <text x="715" y="70" text-anchor="middle" font-size="11" fill="var(--mut)">đọc SETTING_FRONT_RAIN_WIPER_SPEED · ghi nút sấy đã chọn (V7)</text>
   <rect x="560" y="110" width="310" height="46" rx="12" fill="var(--card)" stroke="var(--line)"/>
   <text x="715" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">GpsAvailability</text>
   <text x="715" y="147" text-anchor="middle" font-size="11" fill="var(--mut)">LocationManager · provider + fix</text>
@@ -139,7 +190,7 @@
 <h3>:core (thuần — có test)</h3>
 <div class="card">
 <ul>
-<li><code>RainDefrostPolicy.decide(rainSpeed, defrostOn, ownedByAuto)</code> → <code>TurnOn | TurnOff | Leave</code>. Luật R1.3–R1.5. Ngưỡng mưa = <code>rainSpeed &gt; 1</code> (hằng <code>RAIN_ON=2</code>).</li>
+<li><code>RainDefrostPolicy.decide(rainSpeed, defrostOn, ownedByAuto)</code> → <code>TurnOn | TurnOff | Leave</code>. Ngưỡng mưa = <code>rainSpeed &gt; 1</code> (neo vào <code>DRY=1</code>; <code>RAIN_ON=2</code> chỉ là mức đo được). <b>Hiện trạng:</b> chỗ gọi duy nhất là <code>RainDefrostOwner.step</code> (ký ức 2 bit) — từ V3 nhánh đang-mưa không gọi <code>decide</code> nữa mà <i>luôn giữ sấy</i> (<code>RainDefrostPolicy.kt:170-178</code>); <code>decide</code> chỉ còn quyết nhánh trời khô. <code>plausible()</code> lọc sentinel · <code>unclaim()</code> hoàn ký ức khi ghi bật hỏng (xem R1.5, và D5 của V8).</li>
 <li><code>ScheduledNavRule</code> (model: <code>enabled, startMin, endMin, days:Set&lt;DoW&gt;, requireGps, placeId, navApp</code>) + encode/decode một-dòng (khử ký tự ngăn ở cửa vào — bài học <code>SlotCodec.SEP</code>).</li>
 <li><code>ScheduledNavPolicy.decide(rule, nowMinOfDay, dow, gpsOk, lastFiredDay)</code> → <code>Launch | Skip(reason)</code>. Luật R2.3–R2.4 (đã-dẫn theo <code>rule.id + ngày</code>).</li>
 <li><code>NavAutomationBook</code> (danh sách rule + encode/decode, khoá theo XE).</li>
@@ -150,10 +201,10 @@
 <div class="card">
 <ul>
 <li><code>AutomationService</code> — foreground service, Handler tick 60s (mẫu <code>Pm25FilterApplier.startPollLoop</code> + guard <code>pollGeneration</code> chống race enable/disable). Gọi cả 2 policy mỗi tick (rain qua bộ đếm 5 phút). Start/stop ở autostart theo cờ bật.</li>
-<li><code>RainDefrostApplier</code> — đọc rain qua <code>BydHalGateway</code> (id 1196425250), đọc defrost state (front), gọi <code>RainDefrostPolicy</code>, ghi <code>AC_DEFROST_FRONT_STATE_SET</code>+<code>AC_DEFROST_REAR_STATE_SET</code>; giữ cờ <code>ownedByAuto</code> trong RAM (+ nhả khi người lái tự tắt).</li>
+<li><code>RainDefrostApplier</code> — đọc rain qua <code>BydHalGateway</code> (tên hằng → lùi id 1196425250), đọc trạng thái sấy của <b>mỏ neo</b> (<code>carControl.readState</code> → <code>getAcDefrostState(1|2)</code>), gọi <code>RainDefrostOwner.step</code>, ghi <b>những nút đã chọn</b> (V7: <code>defrost</code> → <code>AC_DEFROST_FRONT_STATE_SET</code> · <code>defrost_rear</code> → <code>AC_DEFROST_REAR_STATE_SET</code>) qua <code>carControl.toggle</code>; một <code>RainDefrostState</code> RAM cho cả tiến trình. Từ V3 không còn nhả quyền khi người lái tự tắt. <span class="tag t-new">V8</span> thay mỏ neo bằng hai làn — §V8.2.</li>
 <li><code>GpsAvailability.isAvailable()</code> — <code>LocationManager</code> (GPS provider enabled + <code>getLastKnownLocation</code> tuổi ≤ ngưỡng). 0 quyền mới (RECORD/FINE_LOCATION đã có? — nếu thiếu, tự <code>pm grant</code> như các quyền khác; xem Open Q).</li>
 <li><code>ScheduledNavApplier</code> — gọi <code>ScheduledNavPolicy</code>; khi Launch → tra <code>SavedPlaces[placeId]</code> → <code>VoiceAppTargets.navFor(place, navApp)</code> → launch. Ghi <code>lastFiredDay</code> (bền).</li>
-<li><b>UI</b>: (a) toggle #1 ở <code>SettingsSections</code> Khí hậu; (b) mục #2 ở <code>SettingsSectionsPlaces</code>/Dẫn đường — danh sách rule + màn thêm/sửa (giờ, thứ, GPS, điểm đến, app).</li>
+<li><b>UI</b>: (a) #1 ở <code>SettingsSectionsCar</code> (nhóm <i>Tiện nghi xe</i>) — hàng chính + hai ô con từ V7; (b) mục #2 ở <code>SettingsSectionsPlaces</code>/Dẫn đường — danh sách rule + màn thêm/sửa (giờ, thứ, GPS, điểm đến, app).</li>
 </ul>
 </div>
 
@@ -161,7 +212,7 @@
 <div class="card">
 <ul>
 <li><b>Foreground service tick, KHÔNG WorkManager</b>: Kachi vốn chạy nền thường trú (autostart); IVI khoá nhiều thứ; tick 60s trong FGS đơn giản + đã proven (PM2.5 poll). WorkManager min-interval 15 phút không đủ cho nav-window.</li>
-<li><b>Rain-off own-state</b>: cờ RAM (không cần bền — mưa qua đêm hiếm + reset khi nổ máy là an toàn). Nếu người lái tự bật/tắt sấy → automation nhả quyền lượt đó.</li>
+<li><b>Rain-off own-state</b>: cờ RAM (không cần bền — mưa qua đêm hiếm + reset khi nổ máy là an toàn). Người lái tự bật trước ⇒ Kachi không nhận chủ quyền, không tắt hộ. <i>(Bản 1.85 còn "người lái tự tắt ⇒ nhả quyền lượt đó" — V3 22/09 đã bỏ: đang mưa luôn bật lại.)</i></li>
 <li><b>Nav "1 lần/khung/ngày"</b>: <code>lastFiredDay[ruleId] = &lt;ngày&gt;</code> bền; so ngày hiện tại. Đổi ngày → cho dẫn lại.</li>
 <li><b>GPS gate qua LocationManager</b>, không đọc HAL GPS (Kachi không đọc được GPS HAL trên trim này — 4 datum GPS = X).</li>
 </ul>
@@ -195,12 +246,830 @@
 </ul>
 </div>
 
+<!-- ═══════════════════════════ ADDENDUM V8 (2026-09-30) ═══════════════════════════ -->
+<h2 id="v8">V8 — Tự sấy khi mưa: hai kính độc lập (2026-09-30)</h2>
+<p class="muted">Addendum theo CLAUDE.md §1 · duyệt 3 cổng (Requirements · Design · Tasks) là việc <b>ngoài tài liệu</b> ·
+<b>mã off-car xong 2026-09-30</b> (chưa commit, không bump version, chưa lên xe) — §V8.2/§V8.3 dưới đây đã sửa theo mã thật. Nhãn <b>V8</b> ở đây = <i>kachi-automation V8</i>, <b>không phải</b>
+"V8 — tự cập nhật" trong <code>PrefsAutomation.kt:73-74</code> / <code>SettingsCatalogClusterNav.kt:94</code> (lô owner
+25/09) — OQ-V8.5.</p>
+<p class="muted">Nhãn bằng chứng: <span class="tag t-ok">ĐO nguồn</span> = đọc mã ở HEAD <code>b5c0e87</code> trong phiên
+này, có file:line · <span class="tag t-ok">ĐO log dd/mm</span> = đọc lại trong phiên này từ tệp log của buổi xe đó — theo
+<code>conversation-protocol.md</code> P1.1 là dữ liệu cũ, chỉ đủ định hướng, V-oncar phải đo lại ·
+<span class="tag t-warn">SUY</span> · <span class="tag t-bad">ĐOÁN</span> · <span class="tag t-unk">CHƯA BIẾT</span>.</p>
+
+<div class="addendum">
+<h3>V8.0 Context</h3>
+<div class="card">
+<p><b>Owner, nguyên văn (2026-09-30):</b> <i>"Auto sấy kính khi trời mưa: nếu tắt auto sấy kính trước, chỉ chọn auto sấy
+kính sau + gương chiếu hậu --&gt; không work? Cần tách auto này độc lập, không constrain nhau"</i>.</p>
+<p><span class="tag t-ok">ĐO nguồn</span> <b>Không có dòng nào chặn "chỉ sau + gương".</b> Cổng duy nhất là
+<code>rain_defrost_enabled &amp;&amp; selection()</code> không rỗng (<code>RainDefrostApplier.kt:111-115</code>,
+<code>AutomationService.kt:148</code>). Chỉ tích ô sau thì mỏ neo = <code>defrost_rear</code>: đọc
+<code>getAcDefrostState(2)</code>, ghi <code>501219357</code>. Ràng buộc THẬT giữa hai kính nằm ở chỗ khác:</p>
+<div class="scroll"><table>
+<tr><th>#</th><th>Ràng buộc</th><th>Bằng chứng</th><th>Hệ quả</th></tr>
+<tr><td>K1</td><td><b>Mỏ neo</b>: cả hai được chọn thì chỉ đọc kính trước, một <code>RainDefrostOwner.step</code>, và quyết định của kính trước áp cho CẢ <code>pick</code></td><td><span class="tag t-ok">ĐO nguồn</span> <code>RainDefrostApplier.kt:126-127,136,148-152</code> · <code>RainDefrostPolicy.kt:176</code></td><td>Kính trước đang bật ⇒ <code>Leave</code> ⇒ kính sau bị BYD tự tắt <b>không bao giờ</b> được bật lại trong cơn mưa. <span class="tag t-ok">ĐO log 22/09</span> <code>perf-oncar-2026-09-26/kachi-logs/usage-1790074430819.log</code>: sấy sau (<code>getAcDefrostState area 2</code>) tắt sau ≈14 phút, hai lần — 17:58:49 Kachi ghi bật → 18:12:53 đọc tắt (≈14′04″) · 18:21:40 bật → 18:35:53 tắt (≈14′13″); độ phân giải đọc 10 s; trong lúc cảm biến báo mưa 2–3.</td></tr>
+<tr><td>K2</td><td>rc chỉ của mỏ neo</td><td><span class="tag t-ok">ĐO nguồn</span> <code>RainDefrostApplier.kt:212-224</code> (<code>if (i == 0) anchorOk = ok</code>)</td><td>Kính sau ghi hỏng: không nhả chủ quyền, không ai biết ngoài một dòng <code>I</code>.</td></tr>
+<tr><td>K3</td><td><code>TurnOff</code> ghi <code>false</code> cho mọi kính đã chọn</td><td><span class="tag t-ok">ĐO nguồn</span> <code>RainDefrostApplier.kt:152</code></td><td>Khô + kính trước do Kachi bật ⇒ tắt luôn kính sau <b>người lái tự bật</b> — trái câu trong app <i>"bạn tự bật thì Kachi không đụng"</i> (<code>strings_kachi.xml:332</code>).</td></tr>
+<tr><td>K4</td><td>Hàng chính khoá hai ô con</td><td><span class="tag t-ok">ĐO nguồn</span> <code>SettingsSectionsCar.kt:88-98,114-119</code> · mặc định <code>false</code> (<code>PrefsAutomation.kt:40</code>)</td><td>Ba hàng cùng kiểu ô tích; hàng chính tắt ⇒ hai ô mờ + không bấm được. <span class="tag t-bad">ĐOÁN</span> tắt hàng chính vì đọc nhầm là "sấy trước" ⇒ không kính nào chạy.</td></tr>
+<tr><td>K5</td><td>Đổi lựa chọn chờ tới 5 phút</td><td><span class="tag t-ok">ĐO nguồn</span> setter gọi <code>sync()</code> + <code>reset()</code> (<code>ClusterNavBridgeAutomation.kt:111-123</code>); vòng đang chạy ⇒ <code>startLoop</code> trả về sớm (<code>AutomationService.kt:201-205</code>), <code>lastRainMs</code> giữ nguyên (<code>:211</code>, <code>:227-230</code>)</td><td>Tích xong mà 5 phút sau mới có hiệu lực — dễ bị đọc là "không work".</td></tr>
+<tr><td>K6</td><td><code>unclaim</code> trả ký ức nhịp trước</td><td><span class="tag t-ok">ĐO nguồn</span> <code>RainDefrostPolicy.kt:208-209</code>; từ V3 (<code>:176-177</code>) <code>TurnOn</code> xảy ra cả khi <code>before.owned = true</code> (bật lại sau khi xe tự tắt)</td><td><span class="tag t-warn">SUY</span> ghi bật lại hỏng ⇒ vẫn giữ <code>owned = true</code> cho một kính đang TẮT ⇒ người lái tự bật rồi trời khô ⇒ Kachi tắt kính của người lái.</td></tr>
+<tr><td>K7</td><td>Log</td><td><span class="tag t-ok">ĐO nguồn</span> <code>KachiLog.kt:119-124</code> · <code>LogLineThrottle.WINDOW_MS = 10 s</code>, khoá = nội dung sau dấu thời gian; dòng quyết định chỉ có <code>sấy[$anchor]</code> (<code>RainDefrostApplier.kt:139-143</code>)</td><td><span class="tag t-warn">SUY</span> nhịp 5′ ≫ 10 s nên hôm nay gần như không bị nuốt; R-V8.5 cho phép hai nhịp cách nhau &lt; 10 s ⇒ dòng y hệt bị bỏ. Kính không phải mỏ neo không có dòng đọc nào.</td></tr>
+</table></div>
+<p><b>Owner gặp ca nào?</b> <span class="tag t-unk">CHƯA BIẾT</span>. Ứng viên: K4 <span class="tag t-bad">ĐOÁN</span> ·
+K5 <span class="tag t-warn">SUY</span> · K1 nếu tích cả hai <span class="tag t-warn">SUY</span> · xe Sealion 6: lệnh sấy sau
+từng ❌ ở CapTest 16/09 (<code>oncar-captest-sealion6-2026-09-16.md:215</code>, trước bản vá tra device R11, chưa đo lại)
+<span class="tag t-unk">CHƯA BIẾT</span>. Chốt bằng đúng một thứ: <code>usage-*.log</code> của buổi đó, grep
+<code>KachiRainDefrost</code> (CLAUDE.md §15 bước 2–3) — OQ-V8.2. V8 sửa K1–K7 dù là ca nào; SL6 để OQ-V8.1.</p>
+
+<p><b>Sự thật HAL dùng lại — V8 KHÔNG đổi đường đọc/ghi:</b></p>
+<div class="scroll"><table>
+<tr><th>Kính</th><th>Mã nút</th><th>Đọc</th><th>Ghi</th></tr>
+<tr><td>Trước</td><td><code>defrost</code></td><td><code>getAcDefrostState(1)</code> (readKey <code>defrost_front_state</code>, <code>HalReadTables.kt:47</code>)</td><td>feature <code>501219362</code> = <code>0x1DE00022</code> <code>AC_DEFROST_FRONT_STATE_SET</code> (<code>ControlRegistry.kt:160-162</code>)</td></tr>
+<tr><td>Sau + gương</td><td><code>defrost_rear</code></td><td><code>getAcDefrostState(2)</code> (readKey <code>defrost_rear_state</code>)</td><td>feature <code>501219357</code> = <code>0x1DE0001D</code> <code>AC_DEFROST_REAR_STATE_SET</code> (<code>ControlRegistry.kt:258-260</code>)</td></tr>
+</table></div>
+<ul>
+<li>Đường ghi: <code>carControl.toggle</code> → <code>WakeOnWriteControl</code> → <code>CarControlAdapter.toggle</code> →
+<code>HalBindingTable.write</code>; <code>ok = rc != null &amp;&amp; !sentinel</code> (<code>CarControlAdapter.kt:14,77</code>).
+<b>rc hợp lệ ≠ xe đã bật</b>: <span class="tag t-ok">ĐO log 22/09</span> 17:58:49 <code>toggle(defrost, true) ⇒ true</code>
+nhưng nhịp 18:03:49 đọc kính trước = 0; không có lượt đọc ở giữa ⇒ ghi không ăn hay bị tắt:
+<span class="tag t-unk">CHƯA BIẾT</span>. Vì vậy sự thật là <b>lần đọc của nhịp sau</b>, rc chỉ quyết chủ quyền.</li>
+<li>Gương: <span class="tag t-ok">ĐO featmap</span> không có lệnh sấy gương riêng; <code>getDefrostRearConfig() = 2</code>
+(<code>oncar-trace-2026-09-16b/hal-reads.txt:5</code>) khớp <code>DEFROST_REAR_MIRROR_HEATING_HAS_FUNC = 2</code> ⇒
+<span class="tag t-warn">SUY</span> gương đi chung mạch sấy sau. Xe owner (Seal): ghi sấy sau chạy
+<span class="tag t-ok">ĐO 21/09</span>; log 22/09: ghi 17:58:49 → đọc area 2 = 1 lúc 18:05:42.</li>
+<li>Mưa: <code>SETTING_FRONT_RAIN_WIPER_SPEED</code> (id <code>1196425250</code>) trên <code>BYDAutoSettingDevice</code>,
+1 = khô, ≥2 = mưa, lọc <code>1..12</code>; nhịp 5′ (không đổi).</li>
+</ul>
+</div>
+
+<h3>V8.1 Requirements</h3>
+<div class="card">
+<ul>
+<li><b>R-V8.1 — Hai lựa chọn ĐỘC LẬP.</b> <i>"Sấy kính trước"</i> và <i>"Sấy kính sau + gương"</i> (gương không tách riêng
+được: không có lệnh riêng, xem V8.0). Bật một cái không cần cái kia. <b>Không còn hàng chính trên giao diện</b> (lý do
+chọn: D1). Tương thích prefs cũ: lựa chọn hiệu lực = <code>rain_defrost_enabled &amp;&amp; child</code>; không khoá mới,
+không bước di trú; người dùng đổi một ô ⇒ ghi <b>cả 3 khoá</b> trong một lượt để khoá con cũ không "sống lại" (D2).
+<br><i>Nghiệm thu:</i> giao diện có một tiêu đề mục + hai hàng ô tích, không hàng nào mờ/khoá theo hàng khác; tích/bỏ một
+hàng không đổi hàng kia; hàng <i>g</i> hiện tích ⟺ <code>enabled &amp;&amp; child_g</code>; không lượt đọc/ghi HAL nào cho
+kính không tích.</li>
+<li><b>R-V8.2 — Mỗi kính một làn.</b> Mỗi kính đã tích TỰ đọc trạng thái (<code>getAcDefrostState(1)</code> /
+<code>(2)</code>), TỰ giữ ký ức chủ quyền, TỰ quyết bằng chính <code>RainDefrostOwner.step</code> của <code>:core</code>
+(không viết luật thứ hai), TỰ ghi, và rc của <b>từng</b> kính được kiểm — hỏng thì bỏ chủ quyền kính đó.
+<br><i>Nghiệm thu:</i> mỗi nhịp, mỗi kính đã tích có đúng 1 lượt đọc nút của chính nó, 1 lượt <code>step</code> với ký
+ức của chính nó, ≤ 1 lượt ghi nút của chính nó; đọc kính A lỗi (<code>null</code>) ⇒ A giữ nguyên, B vẫn chạy; ghi A hỏng
+⇒ chỉ A mất chủ quyền.</li>
+<li><b>R-V8.3 — Chỉ tắt kính do Kachi bật.</b> Đúng câu trong app <i>"bạn tự bật thì Kachi không đụng"</i>, theo từng
+kính. <br><i>Nghiệm thu:</i> <code>TurnOff</code> kính <i>g</i> chỉ khi <code>owned_g</code>; ghi bật <i>g</i> hỏng ⇒
+<code>owned_g = false</code> kể cả khi trước đó <code>true</code> (thắt <code>unclaim</code>, D5).</li>
+<li><b>R-V8.4 — Kính sau bị BYD tự tắt giữa mưa ⇒ bật lại</b>, như V3 cho kính trước, độc lập kính trước.
+<br><i>Nghiệm thu:</i> mưa + <i>g</i> đã tích + đọc <i>g</i> = tắt ⇒ <code>TurnOn</code> <i>g</i> ở nhịp mưa kế (≤ 5′), bất
+kể kính kia bật hay tắt.</li>
+<li><b>R-V8.5 — Đổi lựa chọn có hiệu lực ngay.</b> Đánh giá lại ở nhịp chính kế (≤ <code>TICK_MS</code> = 60 s), không
+chờ mốc 5′. Kính vừa đổi: quên ký ức của riêng nó.
+<br><i>Nghiệm thu:</i> engine đang chạy ⇒ dòng log nhịp mưa xuất hiện ≤ 60 s sau dòng "đổi lựa chọn"; engine đang dừng ⇒
+<code>sync</code> dựng vòng, nhịp đầu chạy ngay; ký ức kính KHÔNG đổi còn nguyên.</li>
+<li><b>R-V8.6 — Log từng kính mỗi nhịp.</b> Đọc được gì, quyết gì, ghi ⇒ kết quả; không bị <code>LogLineThrottle</code>
+nuốt dòng quyết định. <br><i>Nghiệm thu:</i> mỗi nhịp 1 dòng đầu (seq · mưa thô → đã lọc · lựa chọn) + 1 dòng/kính đã
+tích (seq · kính · đọc · owned trước · quyết định · <code>ghi=ok|hỏng|—</code> · owned sau) + 1 dòng mỗi lần đổi lựa chọn;
+hai nhịp liên tiếp cùng dữ liệu cho hai dòng khác khoá.</li>
+</ul>
+<p><b>Phi chức năng</b></p>
+<ul>
+<li><b>R-V8.nf1</b> Giữ phạm vi khoá (theo XE), giữ feature-id + đường ghi <code>carControl.toggle</code>, giữ nhịp 5′
+và luật V3 "đang mưa luôn bật lại".</li>
+<li><b>R-V8.nf2</b> Luật ở <code>:core</code> thuần, test off-car; mọi tệp ≤ 500 dòng; không nhánh theo đời xe / tên gói
+(CLAUDE.md §7).</li>
+<li><b>R-V8.nf3</b> Degrade-safe như cũ: off-car không ném; đọc không được ⇒ giữ nguyên.</li>
+<li><b>R-V8.nf4</b> Không nới bài canh cũ: mỗi assert V7 bị gỡ phải có assert V8 giữ cùng bất biến, chặt bằng hoặc hơn
+(bảng V8.3b).</li>
+</ul>
+<p><b>Ngoài phạm vi:</b> sấy gương riêng (không có lệnh) · đường ghi sấy sau trên Sealion 6 (OQ-V8.1) · đổi nhịp 5′
+(OQ-V8.4) · gỡ bit <code>suppressed</code> luôn-<code>false</code> từ V3 (P3, Reviewer Log Pass 2) · đổi luật V3.</p>
+</div>
+
+<h3>V8.2 Design</h3>
+<div class="diagram">
+<svg class="wide" viewBox="0 0 900 430" width="100%" role="img" aria-label="V7 một mỏ neo so với V8 hai làn độc lập">
+  <defs><marker id="ar8" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--mut)"/></marker></defs>
+  <!-- V7 -->
+  <text x="20" y="24" font-size="12.5" font-weight="700" fill="var(--mut)">V7 — MÃ HIỆN TẠI · một mỏ neo</text>
+  <rect x="20" y="38" width="170" height="58" rx="10" fill="var(--code)" stroke="var(--line)"/>
+  <text x="105" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Cảm biến mưa</text>
+  <text x="105" y="80" text-anchor="middle" font-size="11" fill="var(--mut)">1 khô · ≥2 mưa</text>
+  <rect x="220" y="38" width="180" height="58" rx="10" fill="var(--card)" stroke="var(--bad)"/>
+  <text x="310" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Đọc MỎ NEO</text>
+  <text x="310" y="80" text-anchor="middle" font-size="11" fill="var(--mut)">pick.first() · :126-127</text>
+  <rect x="430" y="38" width="170" height="58" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="515" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Một ký ức · một step</text>
+  <text x="515" y="80" text-anchor="middle" font-size="11" fill="var(--mut)">RainDefrostOwner · :136</text>
+  <rect x="630" y="38" width="250" height="58" rx="10" fill="var(--card)" stroke="var(--bad)"/>
+  <text x="755" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Ghi CẢ pick theo mỏ neo</text>
+  <text x="755" y="80" text-anchor="middle" font-size="11" fill="var(--mut)">chỉ rc mỏ neo được kiểm · :212-224</text>
+  <line x1="190" y1="67" x2="217" y2="67" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="400" y1="67" x2="427" y2="67" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="600" y1="67" x2="627" y2="67" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <text x="20" y="122" font-size="12" fill="var(--bad)">⚠ trước đang bật ⇒ Leave ⇒ kính sau bị BYD tắt (~14′) không được bật lại · ⚠ khô ⇒ tắt luôn kính sau người lái tự bật</text>
+  <line x1="20" y1="144" x2="880" y2="144" stroke="var(--line)" stroke-dasharray="4 4"/>
+  <!-- V8 -->
+  <text x="20" y="170" font-size="12.5" font-weight="700" fill="var(--accent)">V8 — ĐỀ XUẤT · một lần đọc mưa, hai làn độc lập</text>
+  <rect x="20" y="262" width="170" height="64" rx="10" fill="var(--code)" stroke="var(--accent)"/>
+  <text x="105" y="289" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">Cảm biến mưa</text>
+  <text x="105" y="308" text-anchor="middle" font-size="11" fill="var(--mut)">1 lần đọc / nhịp</text>
+  <!-- làn trước -->
+  <rect x="208" y="182" width="684" height="90" rx="12" fill="none" stroke="var(--line)"/>
+  <text x="220" y="199" font-size="11" font-weight="600" fill="var(--mut)">LÀN TRƯỚC — chỉ chạy khi tích</text>
+  <rect x="220" y="206" width="160" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="300" y="229" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Đọc kính trước</text>
+  <text x="300" y="247" text-anchor="middle" font-size="11" fill="var(--mut)">getAcDefrostState(1)</text>
+  <rect x="400" y="206" width="160" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="480" y="229" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Ký ức trước</text>
+  <text x="480" y="247" text-anchor="middle" font-size="11" fill="var(--mut)">RainDefrostOwner.step</text>
+  <rect x="580" y="206" width="150" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="655" y="229" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Ghi trước</text>
+  <text x="655" y="247" text-anchor="middle" font-size="11" fill="var(--mut)">501219362 · rc</text>
+  <rect x="750" y="206" width="130" height="56" rx="10" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="815" y="229" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Chủ quyền trước</text>
+  <text x="815" y="247" text-anchor="middle" font-size="11" fill="var(--mut)">rc hỏng ⇒ bỏ</text>
+  <line x1="380" y1="234" x2="397" y2="234" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="560" y1="234" x2="577" y2="234" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="730" y1="234" x2="747" y2="234" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <!-- làn sau -->
+  <rect x="208" y="302" width="684" height="90" rx="12" fill="none" stroke="var(--line)"/>
+  <text x="220" y="319" font-size="11" font-weight="600" fill="var(--mut)">LÀN SAU + GƯƠNG — chỉ chạy khi tích</text>
+  <rect x="220" y="326" width="160" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="300" y="349" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Đọc kính sau</text>
+  <text x="300" y="367" text-anchor="middle" font-size="11" fill="var(--mut)">getAcDefrostState(2)</text>
+  <rect x="400" y="326" width="160" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="480" y="349" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Ký ức sau</text>
+  <text x="480" y="367" text-anchor="middle" font-size="11" fill="var(--mut)">RainDefrostOwner.step</text>
+  <rect x="580" y="326" width="150" height="56" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="655" y="349" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Ghi sau</text>
+  <text x="655" y="367" text-anchor="middle" font-size="11" fill="var(--mut)">501219357 · rc</text>
+  <rect x="750" y="326" width="130" height="56" rx="10" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="815" y="349" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Chủ quyền sau</text>
+  <text x="815" y="367" text-anchor="middle" font-size="11" fill="var(--mut)">rc hỏng ⇒ bỏ</text>
+  <line x1="380" y1="354" x2="397" y2="354" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="560" y1="354" x2="577" y2="354" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="730" y1="354" x2="747" y2="354" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <!-- rẽ nhánh -->
+  <line x1="190" y1="282" x2="217" y2="240" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <line x1="190" y1="306" x2="217" y2="348" stroke="var(--mut)" marker-end="url(#ar8)"/>
+  <text x="20" y="418" font-size="12" fill="var(--mut)">Kính không tích: không đọc · không ghi · ký ức sạch. Kính này đọc/ghi hỏng không chặn kính kia. Mỗi làn một dòng log có #seq.</text>
+</svg>
+</div>
+
+<div class="card">
+<p><b>:core — thuần, có test</b> · tệp MỚI <code>core/…/launcher/automation/RainDefrostGlasses.kt</code> (296 dòng sau soát Pass 3, phần
+lớn KDoc). Chữ ký thật:</p>
+<pre>enum class RainGlass(val label: String) { FRONT("TRƯỚC"), REAR("SAU") }
+data class RainDefrostKeys(val enabled: Boolean, val front: Boolean, val rear: Boolean)
+
+/** Lựa chọn HIỆU LỰC — chỗ DUY NHẤT dịch 3 khoá cũ ⇄ 2 ô (D2). */
+data class RainDefrostChoice(val front: Boolean, val rear: Boolean) {
+    val any: Boolean                       // front || rear
+    fun has(glass: RainGlass): Boolean
+    fun with(glass: RainGlass, on: Boolean): RainDefrostChoice   // đổi đúng một ô
+    val glasses: List&lt;RainGlass&gt;          // kính đã chọn, thứ tự enum — KHÔNG còn là mỏ neo
+    fun toKeys(): RainDefrostKeys          // (enabled = any, front, rear) — ghi CẢ BA một lượt
+    companion object { val NONE; fun fromKeys(enabled, front, rear) = (enabled &amp;&amp; front, enabled &amp;&amp; rear) }
+}
+
+data class RainGlassPlan(val glass, val rainSpeed: Int?, val read: Boolean?, val before: RainDefrostState, val step: RainDefrostStep)
+data class RainGlassOutcome(val plan, val writeOk: Boolean?, val after: RainDefrostState, val committed: Boolean)
+
+/** Cổng I/O của một nhịp — :app cài bằng HAL + prefs, test cài bằng xe giả. Hợp đồng: readRain/readGlass/writeGlass/log
+ *  không ném (đọc lỗi ⇒ null, ghi lỗi ⇒ false); choice() ném (prefs hỏng) ⇒ cả nhịp bỏ ở applier, ký ức giữ (soát Pass 3). */
+interface RainGlassIo {
+    fun choice(): RainDefrostChoice; fun readRain(): Int?
+    fun readGlass(glass: RainGlass): Boolean?; fun writeGlass(glass: RainGlass, on: Boolean): Boolean
+    fun log(line: String)
+}
+
+data class RainGlassSnapshot(val states, val epochs) { fun stateOf(g); fun epochOf(g) }
+class RainGlassMemory {                    // ký ức + thế hệ TỪNG kính (D4), khoá ngắn, không giữ qua HAL
+    fun snapshot(): RainGlassSnapshot
+    fun isCurrent(glass, epochSeen): Boolean          // gác ngay trước lượt ghi xe
+    fun commit(glass, epochSeen, state): Boolean      // false = đã bị forget giữa nhịp
+    fun forget(glass); fun forgetAll()
+}
+
+object RainDefrostGlasses {
+    fun plan(glass, before, rainSpeed: Int?, read: Boolean?): RainGlassPlan   // lọc lại plausible; null ⇒ stepUnknown
+    fun settle(plan, writeOk: Boolean?): RainDefrostState                     // TurnOn &amp;&amp; writeOk != true ⇒ unclaim
+    fun tick(seq: Long, memory: RainGlassMemory, io: RainGlassIo): List&lt;RainGlassOutcome&gt;
+    fun headLine(seq, raw, speed, choice): String
+    fun logLine(seq, outcome): String
+    fun choiceLine(n, after, glass): String
+}</pre>
+<p><b>Một nhịp — <code>RainDefrostGlasses.tick</code></b> (thuần trừ <code>io</code> ⇒ test chạy THẬT cả đường đọc/quyết/ghi/ký ức):</p>
+<pre>val snap = memory.snapshot()                       // (1) chụp ký ức TRƯỚC khi đọc lựa chọn
+val choice = io.choice()
+RainGlass.entries.filterNot(choice::has).forEach(memory::forget)   // (2) kính không chọn ⇒ quên
+if (!choice.any) return emptyList()                // (3) không chọn gì: không đọc cảm biến, không ghi, không log
+val raw = io.readRain(); val speed = RainDefrostPolicy.plausible(raw)   // (4) MỘT lần đọc chung
+io.log(headLine(seq, raw, speed, choice))
+return choice.glasses.map { lane(seq, it, snap, speed, memory, io) }    // (5) mỗi kính một làn
+
+// lane(glass): chỉ nhìn kính của chính nó
+val epoch = snap.epochOf(glass)
+val read = if (speed == null) null else io.readGlass(glass)
+val plan = plan(glass, snap.stateOf(glass), speed, read)          // RainDefrostOwner.step / stepUnknown
+val on = when (plan.action) { TurnOn -&gt; true; TurnOff -&gt; false; Leave -&gt; null }
+val writeOk = if (on != null &amp;&amp; memory.isCurrent(glass, epoch)) io.writeGlass(glass, on) else null
+val after = settle(plan, writeOk)
+RainGlassOutcome(plan, writeOk, after, memory.commit(glass, epoch, after)).also { io.log(logLine(seq, it)) }</pre>
+<p>Sửa <code>RainDefrostOwner.unclaim</code> (<code>RainDefrostPolicy.kt:215-216</code> sau sửa): nhánh <code>TurnOn</code> trả
+<code>before.copy(owned = false)</code> thay vì <code>before</code> (D5). <code>step</code>, <code>stepUnknown</code>,
+<code>decide</code>, <code>plausible</code> giữ nguyên; chỉ KDoc đổi lời (<i>"sấy TRƯỚC"</i> → <i>"cái sấy của làn đang xét"</i>).</p>
+
+<p><b>:app — chỉ I/O</b></p>
+<pre>// RainDefrostApplier (186 dòng)
+private val memory = RainGlassMemory(); private val seq = AtomicLong(); private val changes = AtomicLong()
+private val due = AtomicBoolean(false)
+fun controlOf(glass) = when (glass) { FRONT -&gt; CTL_FRONT; REAR -&gt; CTL_REAR }   // "defrost" / "defrost_rear"
+fun choice(app) = Prefs.rainDefrostChoice(app)
+fun forget(glass) = memory.forget(glass);  fun forgetAll() = memory.forgetAll()
+fun requestSoon() = due.set(true);         fun consumeDue(): Boolean = due.getAndSet(false)
+fun logChoice(after, glass) = Log.i(TAG, RainDefrostGlasses.choiceLine(changes.incrementAndGet(), after, glass))
+fun tick(ctx): List&lt;RainGlassOutcome&gt; =
+    runCatching { RainDefrostGlasses.tick(seq.incrementAndGet(), memory, HalIo(app)) }.getOrElse { Log.w(…); emptyList() }
+private class HalIo(app) : RainGlassIo {
+    choice()          = RainDefrostApplier.choice(app)
+    readRain()        = RainDefrostApplier.readRain(app)            // featureIdByName ?: MEASURED_ID, lọc sentinel — không đổi
+    readGlass(glass)  = readDefrost(app, controlOf(glass))          // carControl.readState(controlId) — không đổi
+    writeGlass(g, on) = write(app, controlOf(g), on)                // carControl.toggle, rc trả về :core
+    log(line)         = Log.i(TAG, line)
+}</pre>
+<ul>
+<li>Gỡ: <code>selection()</code> · <code>writeSelected()</code> · mỏ neo · <code>stateNow()</code> · <code>reset()</code> (thay bằng
+<code>forget/forgetAll</code>). Hằng <code>CTL_FRONT</code>/<code>CTL_REAR</code>/<code>RAIN_CONST</code>/<code>MEASURED_ID</code>/<code>RAIN_DEVICE</code>
+giữ nguyên văn.</li>
+<li><code>AutomationService</code>: <code>anyEnabled</code> ← <code>RainDefrostApplier.choice(app).any</code>; vòng:
+<code>if (RainDefrostApplier.consumeDue() || nowMs - lastRainMs &gt;= TICK_MS * RAIN_EVERY_TICKS)</code> (<code>consumeDue()</code>
+đứng trước <code>||</code> để cờ luôn được xoá); nhánh tắt của <code>sync</code> gọi <code>forgetAll()</code>.</li>
+<li><code>PrefsAutomation</code>: <code>Prefs.rainDefrostChoice(ctx)</code> (3 <code>getBoolean</code> với mặc định cũ
+<code>false/true/true</code> → <code>fromKeys</code>) + <code>Prefs.setRainDefrostChoice(ctx, c)</code> (<b>một</b>
+<code>edit()</code>, 3 <code>putBoolean</code> từ <code>toKeys()</code>, <code>apply()</code>). Gỡ 3 setter lẻ <b>và</b> 3 getter lẻ
+(0 call site còn lại ⇒ <code>rainDefrostChoice</code> là cổng đọc duy nhất). Ba hằng khoá nguyên văn
+(<code>ClusterNavKeysContractTest</code> xanh).</li>
+<li>Cầu: <code>rainDefrostChoice()</code> + <code>setRainDefrostGlass(glass, on)</code> = <code>Prefs.rainDefrostChoice(app).with(glass, on)</code>
+→ <code>Prefs.setRainDefrostChoice</code> → <code>forget(glass)</code> → <code>requestSoon()</code> → <code>logChoice</code> →
+<code>AutomationService.sync</code> (thứ tự khoá bằng bài canh). Gỡ <code>rainDefrost()</code> · <code>setRainDefrost(on)</code> ·
+<code>rainDefrostFront/Rear()</code> · <code>setRainDefrostFront/Rear()</code>.</li>
+<li>UI <code>SettingsSectionsCar.rainDefrost</code>: tiêu đề mục <code>kachi_sub_rain_defrost</code> + hai <code>checkRow</code>
+(<code>on = choice.front</code> / <code>choice.rear</code>, ghi <code>setRainDefrostGlass(RainGlass.FRONT|REAR, on)</code>) + ghi chú; gỡ
+hàng chính + <code>gateRainGlass</code> (+ import <code>android.view.View</code> thừa). Chuỗi mỗi ngôn ngữ: <b>3 sửa</b>
+(<code>_front</code> <i>"Mưa thì tự bật sấy kính trước"</i> · <code>_rear</code> <i>"Mưa thì tự bật sấy kính sau + gương"</i> ·
+<code>_note</code> câu mới có vế V3 "bật lại"), <b>2 gỡ</b> (<code>_title</code>, <code>_sub</code>), <code>_front_sub</code>/<code>_rear_sub</code>
+giữ.</li>
+<li>Danh mục: mục <code>car_rain_defrost</code> giữ nguyên (chủ <code>rain_defrost_enabled</code> + 2 khoá đi kèm) ⇒ số mục/rail/đếm
+<code>LangCoverageTest</code> không đổi; KDoc <code>COMPANION_KEYS</code> + dòng HIDDEN_KEYS + chú thích <code>SettingsCatalogEntries</code> sửa
+lời; <code>ProfileScope</code> không đụng (ba khoá vẫn DEVICE).</li>
+</ul>
+
+<div class="card" id="v8-impl">
+<p><b>Mã thật khác bản DRAFT ở đâu (và vì sao)</b></p>
+<ol>
+<li><b>Trình tự một nhịp xuống <code>:core</code></b> (<code>RainDefrostGlasses.tick</code> + <code>RainGlassIo</code>), <code>:app</code> chỉ cài
+I/O. DRAFT để vòng lặp ở <code>:app</code> ⇒ đột biến "tắt cả khi khô" (M2) hay "rc làn này cho làn kia" (M7) chỉ canh được bằng quét
+nguồn. Nay C4–C13 chạy THẬT trên xe giả, và M2/M7 đỏ ở <code>:core</code> (R-V8.nf2 "luật ở :core, test off-car").</li>
+<li><b>Chụp ký ức TRƯỚC khi đọc lựa chọn + gác <code>isCurrent</code> ngay trước lượt ghi</b> (bổ sung D4). Cầu ghi prefs rồi mới
+<code>forget</code> ⇒ nhịp đang chạy dở hoặc đọc lựa chọn MỚI, hoặc bị bỏ commit; và không phát lệnh HAL theo lựa chọn cũ
+(<i>"bỏ ký ức nhịp này (vừa đổi lựa chọn)"</i> trong log). Có bài test riêng (<code>forget giua nhip…</code>).</li>
+<li><b><code>plan</code> một kính/lần</b> thay vì <code>plan(memory, choice, speed, reads)</code>: làn tự đọc rồi tự quyết; đọc mưa lỗi ⇒ không
+đọc kính nào (như DRAFT).</li>
+<li><b><code>toKeys()</code> trả <code>RainDefrostKeys</code></b> (tên cột) thay <code>Triple</code>; <b><code>RainGlassSnapshot</code></b> thay
+<code>Pair</code>; thêm <b><code>RainGlassOutcome</code></b> (kết quả một làn, cũng là giá trị trả về của <code>tick</code>).</li>
+<li><b>Không chọn gì ⇒ không log</b> (DRAFT: "log đầu; return"). Nhịp mưa vẫn chạy khi engine sống vì camera/lịch dẫn ⇒ 12 dòng/giờ vô
+nghĩa cho trạng thái mặc định của mọi người. Đổi lựa chọn đã có dòng <code>đổi lựa chọn #c…</code>.</li>
+<li><b>Dòng đổi lựa chọn dùng bộ đếm riêng <code>#c&lt;n&gt;</code></b> và chỉ in lựa chọn MỚI + 3 khoá ghi xuống.</li>
+<li><b>Getter lẻ cũng gỡ</b> (DRAFT chỉ nói gỡ setter) — 0 call site, và để lại là cửa đọc thứ hai bỏ qua <code>fromKeys</code>.</li>
+<li><b>D2 nguyên khối — [ĐO nguồn AOSP]</b> <code>SharedPreferencesImpl.java</code> tag <code>android-10.0.0_r47</code>
+(sha256 <code>e37a7984…91cd</code>): <code>apply()</code> gọi <code>commitToMemory()</code> (:458-461), hàm này áp <b>mọi</b> mục
+<code>mModified</code> vào <code>mMap</code> trong <b>một</b> <code>synchronized (mLock)</code> (:498-566); <code>getBoolean</code> đọc dưới
+cùng <code>mLock</code> (:328-333). ⇒ ba khoá được ghi nguyên khối. Ba lần <code>getBoolean</code> của <code>rainDefrostChoice</code> là ba
+lần khoá riêng nên một nhịp có thể đọc lẫn cũ/mới: <i>k khoá đầu cũ, phần sau mới</i> theo thứ tự đọc. ⚠ Soát Pass 5: lý lẽ cũ
+("mỗi lần đổi chỉ lật một ô + <code>enabled</code>") <b>sai</b> — từ prefs cài mới <code>(false, true, true)</code> một cú tích "trước" ghi
+<code>(true, true, false)</code>, tức lật cả <code>enabled</code> lẫn khoá <i>sau</i>. Điều giữ cho bản đọc lẫn vô hại là <b>thứ tự đọc</b>:
+<code>enabled</code> đọc TRƯỚC hai con ⇒ mỗi kính luôn ra giá trị hiệu lực cũ hoặc mới của chính nó. Đọc con trước thì có kính "ma": cài mới
++ tích "sau" ⇒ <code>front</code> cũ <code>true</code> + <code>enabled</code> mới <code>true</code> ⇒ Kachi bật kính trước không ai chọn và không
+bao giờ tắt hộ. <span class="tag t-ok">ĐO test</span> (thay cho chứng minh trên giấy): <code>RainDefrostGlassesTest › doc lan cu moi, enabled doc
+truoc…</code> (8 tổ hợp × 4 cú chạm × 4 bản đọc lẫn) + <code>RainDefrostV8WiringTest › doc enabled truoc hai o con</code> (thứ tự chữ = thứ tự
+tính đối số trong Kotlin); thử phá đảo thứ tự ⇒ bài sau đỏ. Nhịp sau (≤ 60 s nhờ <code>due</code>) đọc đúng.</li>
+</ol>
+</div>
+
+<p><b>Log (R-V8.6) — định dạng THẬT</b> (khoá bằng <code>RainDefrostGlassesTest › dinh dang dong log…</code>):</p>
+<pre>I/KachiRainDefrost: #41 mưa raw=3 → 3 (mưa) · chọn trước=có sau=có
+I/KachiRainDefrost: #41 TRƯỚC đọc=bật owned=true ⇒ Leave · ghi=— ⇒ owned=true
+I/KachiRainDefrost: #41 SAU đọc=tắt owned=true ⇒ TurnOn · ghi=ok ⇒ owned=true
+I/KachiRainDefrost: #42 mưa raw=65535 → không đọc được ⇒ giữ nguyên mọi kính · chọn trước=có sau=có
+I/KachiRainDefrost: #42 TRƯỚC đọc=— owned=true ⇒ Leave · ghi=— ⇒ owned=true
+I/KachiRainDefrost: #43 SAU đọc=lỗi owned=false ⇒ Leave · ghi=— ⇒ owned=false
+I/KachiRainDefrost: #44 SAU đọc=tắt owned=false ⇒ TurnOn · ghi=hỏng ⇒ owned=false
+I/KachiRainDefrost: #45 SAU đọc=tắt owned=false ⇒ TurnOn · ghi=— ⇒ owned=false · bỏ ký ức nhịp này (vừa đổi lựa chọn)
+I/KachiRainDefrost: đổi lựa chọn #c3: trước=có sau=không ⇒ ghi enabled=true front=true rear=false · quên SAU · nhịp mưa ≤60 s</pre>
+<p><code>đọc=—</code> = không đọc (mưa không rõ) · <code>đọc=lỗi</code> = đọc kính trả <code>null</code>. Không chọn kính nào ⇒ không dòng nào.</p>
+
+<p><b>Tương thích prefs (D2)</b></p>
+<div class="scroll"><table>
+<tr><th><code>enabled</code></th><th><code>front</code></th><th><code>rear</code></th><th>V8 hiển thị (trước · sau)</th><th>Ví dụ đổi ⇒ 3 khoá ghi xuống</th></tr>
+<tr><td>false (cài mới / đã tắt)</td><td>true</td><td>true</td><td>tắt · tắt</td><td>tích sau ⇒ <code>(true, false, true)</code> — trước KHÔNG sống lại</td></tr>
+<tr><td>true</td><td>true</td><td>true</td><td>bật · bật</td><td>bỏ trước ⇒ <code>(true, false, true)</code></td></tr>
+<tr><td>true</td><td>true</td><td>false</td><td>bật · tắt</td><td>bỏ trước ⇒ <code>(false, false, false)</code> ⇒ engine dừng nếu không còn automation khác</td></tr>
+<tr><td>true</td><td>false</td><td>true</td><td>tắt · bật (lựa chọn V7 giữ nguyên)</td><td>tích trước ⇒ <code>(true, true, true)</code></td></tr>
+<tr><td>true</td><td>false</td><td>false</td><td>tắt · tắt</td><td>tích trước ⇒ <code>(true, true, false)</code></td></tr>
+</table></div>
+
+<p><b>Quyết định thiết kế</b></p>
+<ul>
+<li><b>D1 — Bỏ hàng chính khỏi giao diện</b> (chọn), thay vì "hàng chính = OR của hai". Hàng chính là một NÚT OR: bật
+lên thì bật kính nào? Phải nhớ lựa chọn cũ = đúng cái khoá con "sống lại"; và tắt-rồi-bật khi hai con đều tắt là một nút
+bật mà không gì chạy. Hàng chính CHỈ HIỂN THỊ: một ô tích không bấm được đứng giữa hai ô bấm được, cùng kiểu hàng — lại
+đúng chỗ dễ đọc nhầm của K4. Hai hàng tự đủ nghĩa thì không có trạng thái ẩn, không hàng mờ. Tiêu đề mục giữ tên tính
+năng cho ô tìm kiếm Cài đặt.</li>
+<li><b>D2 — Giữ 3 khoá, hiệu lực = <code>enabled &amp;&amp; child</code>, ghi cả 3 một lượt.</b> Không khoá mới, không bước
+di trú (bước di trú là mã chạy mỗi lần mở app để sửa một thứ chỉ sai một lần). Ghi cả 3 vì: <code>(false, true,
+true)</code> mà tích "sau" chỉ bằng cách bật <code>enabled</code> ⇒ <code>front = true</code> cũ sống lại ⇒ Kachi sấy cả
+kính người dùng không chọn. Hạ cấp về V7: ba khoá vẫn đúng nghĩa cũ (<code>enabled</code> = có ít nhất một) ⇒ V7 chạy đúng
+lựa chọn (kèm K1–K3 của chính nó). <span class="tag t-warn">SUY</span> một <code>edit()…apply()</code> thay bản trong bộ nhớ
+nguyên khối — phải trích <code>SharedPreferencesImpl</code> android-10.0.0_r47 file:line trước khi ship (CLAUDE.md §3,
+T8); nếu không nguyên khối thì tệ nhất một nhịp đọc lẫn, nhịp sau (≤ 60 s) đọc đúng. → <b>Đã trích</b> (30/09, <a href="#v8-impl">Mã thật khác DRAFT</a> mục 8):
+ghi nguyên khối <span class="tag t-ok">ĐO nguồn AOSP</span>; ba lần đọc vẫn có thể lẫn cũ/mới — vô hại NHỜ đọc <code>enabled</code> trước,
+khoá bằng hai bài test ở soát Pass 5 (<a href="#v8-impl">Mã thật khác DRAFT</a> mục 8).</li>
+<li><b>D3 — Hai làn, một lần đọc mưa.</b> Cảm biến mưa là đầu vào chung (một feature); đọc hai lần là gấp đôi lượt HAL
+không thêm thông tin. Đọc mưa lỗi ⇒ cả hai giữ nguyên: thiếu dữ kiện chung, không phải ràng buộc giữa kính. Mọi thứ SAU
+lần đọc mưa tách theo kính: đọc trạng thái · ký ức · quyết định · ghi · rc · chủ quyền · log.</li>
+<li><b>D4 — Ký ức từng kính + thế hệ.</b> Nhịp chụp (ký ức, epoch) → làm I/O <b>không giữ khoá</b> →
+<code>commit(g, epochSeen, s)</code> chỉ ghi khi epoch chưa đổi; <code>forget(g)</code> (từ luồng vẽ) tăng epoch ⇒ thắng
+lượt commit của nhịp đang chạy dở. Không <code>synchronized</code> cả nhịp: nhịp giữ khoá qua lượt HAL ⇒ cú chạm Cài
+đặt chờ HAL trên luồng vẽ. Kính không chọn ⇒ nhịp tự <code>forget</code> — chịu được cả lượt đổi prefs không đi qua cầu
+(hạ/nâng cấp, sửa tay tệp; <code>prefs_set</code> của cầu kiểm thử thì từ chối ba khoá này — soát Pass 3, <code>TestBridgePrefsSet</code> nhánh <code>else</code>).</li>
+<li><b>D5 — Thắt <code>unclaim</code>.</b> 1.85 viết <code>unclaim</code> khi <code>TurnOn</code> chỉ xảy ra lúc
+<code>owned = false</code>; từ V3 nó xảy ra cả khi <code>owned = true</code> ⇒ trả <code>before</code> giữ chủ quyền một
+kính đang TẮT (K6, ca C13). V8: <code>before.copy(owned = false)</code>. Hai bài cũ
+(<code>ghi bat hong thi nha chu quyen…</code>, <code>unclaim khong hoan nguyen nhanh tat</code>) vẫn xanh nguyên văn
+(<code>before</code> của bài đầu có <code>owned = false</code>; nhánh <code>TurnOff</code> không đổi). <code>TurnOff</code>
+ghi hỏng giữ như cũ: ký ức sạch vì hết cơn; kính còn bật (hướng an toàn: vẫn nhìn được), log <code>ghi=hỏng</code>.</li>
+<li><b>D6 — R-V8.5 bằng cờ <code>due</code></b>, đọc ở vòng 60 s ⇒ độ trễ ≤ 60 s. Không <code>interrupt()</code> luồng:
+ngắt rơi đúng lúc luồng đang trong lời gọi binder/HAL thì cờ ngắt treo tới <code>Thread.sleep</code> kế ⇒ thêm một vòng
+chạy sớm cho nav/camera — thêm trạng thái để đổi lấy &lt; 60 s. Engine đang dừng ⇒ cầu đã <code>requestSoon()</code>
+trước <code>sync</code> ⇒ lượt đầu của vòng mới đọc <code>consumeDue() = true</code> ⇒ nhịp mưa chạy ngay. ⚠ Soát Pass 3
+<span class="tag t-ok">ĐO nguồn</span>: <b>không</b> phải nhờ <code>lastRainMs = 0</code> — điều kiện
+<code>nowMs - 0 ≥ 5′</code> với <code>nowMs = elapsedRealtime()</code> chỉ đúng khi đầu xe đã chạy ≥ 5 phút. Đường khởi động
+(boot/autostart, không có <code>due</code>) vì thế chạy nhịp mưa đầu ở uptime ≈ 5′, không phải "ngay" — hành vi có từ
+2.29 (<code>79be642</code>, 25/09 — soát Pass 4 sửa mốc "24/09"; nhịp theo thời gian trôi), <b>ngoài phạm vi V8</b>, không sửa trong lượt này; ghi ở OQ-V8.6.</li>
+<li><b>D7 — <code>#seq</code> trong mọi dòng</b> ⇒ khoá <code>LogLineThrottle</code> luôn khác ⇒ không dòng quyết định nào
+bị bỏ; không nâng lên mức <code>W</code> (một nhịp bình thường không phải cảnh báo). Chuỗi dựng ở <code>:core</code>
+(<code>logLine</code>) ⇒ có test.</li>
+<li><b>D8 — Bỏ tích một kính lúc Kachi đang giữ nó BẬT:</b> quên ký ức kính đó, không ghi (giữ hành vi
+<code>reset()</code> của V7). Một cú chạm Cài đặt không phát lệnh HAL ngầm; kính sau BYD tự tắt ~14′. OQ-V8.3.</li>
+<li><b>D9 — Generic (CLAUDE.md §7):</b> không nhánh theo đời xe/tên gói; nếu SL6 khác thì khác biệt phải lộ qua phép đo
+(OQ-V8.1) và nằm ở bảng HAL/<code>ClusterProfile</code>, không nằm trong luật V8. Chú thích trong mã ghi
+<code>kachi-automation V8</code>, không ghi trần "V8".</li>
+<li><b>Context7:</b> không thư viện mới — chỉ Android SDK + khối đã có ⇒ không cần.</li>
+</ul>
+<p><b>Trần dòng — [ĐO] <code>wc -l</code> sau mã (§4.1 ≤ 500), đo lại sau soát Pass 5:</b> <code>RainDefrostGlasses.kt</code> — → 296 · <code>RainDefrostPolicy.kt</code>
+210 → 217 · <code>RainDefrostApplier.kt</code> 225 → 186 · <code>AutomationService.kt</code> 246 → 251 · <code>PrefsAutomation.kt</code> 365 → 367 ·
+<code>ClusterNavBridgeAutomation.kt</code> 320 → 306 · <code>SettingsSectionsCar.kt</code> 266 → 235 · test: <code>RainDefrostGlassesTest.kt</code> 472 ·
+<code>RainDefrostV8WiringTest.kt</code> 164.</p>
+</div>
+
+<h3>V8.3 Tasks (DAG)</h3>
+<div class="card">
+<div class="scroll"><table>
+<tr><th>#</th><th>Việc + test</th><th>Tệp</th><th>Phụ thuộc</th></tr>
+<tr><td>T1</td><td><code>:core</code>: <code>RainGlass</code> · <code>RainDefrostChoice</code> · <code>RainGlassMemory</code> · <code>RainDefrostGlasses.plan/settle/logLine</code>; thắt <code>unclaim</code> (D5). Test <code>RainDefrostGlassesTest</code> (C1–C14, C16 phần ký ức, C17–C19) + 1 bài mới C13 trong <code>RainDefrostPolicyTest</code>; không sửa assert cũ</td><td><code>core/…/automation/RainDefrostGlasses.kt</code> (mới) · <code>RainDefrostPolicy.kt</code> · 2 tệp test</td><td>—</td></tr>
+<tr><td>T2</td><td><code>:app</code> động cơ: applier hai làn + <code>forget/forgetAll/requestSoon/consumeDue</code> + log <code>#seq</code>; gỡ mỏ neo/<code>selection</code>/<code>writeSelected</code>/<code>stateNow</code>; <code>AutomationService.anyEnabled</code> + vòng <code>consumeDue()</code> + <code>sync</code> nhánh tắt</td><td><code>RainDefrostApplier.kt</code> · <code>AutomationService.kt</code></td><td>T1</td></tr>
+<tr><td>T3</td><td><code>:app</code> prefs + cầu: <code>Prefs.rainDefrostChoice/setRainDefrostChoice</code>; <code>rainDefrostChoice()</code> + <code>setRainDefrostGlass()</code>; gỡ các hàm cũ sau khi grep 0 call site</td><td><code>PrefsAutomation.kt</code> · <code>ClusterNavBridgeAutomation.kt</code></td><td>T1</td></tr>
+<tr><td>T4</td><td>UI + chữ + danh mục: hai hàng độc lập, gỡ hàng chính + <code>gateRainGlass</code>; 3 chuỗi sửa + 2 chuỗi gỡ mỗi ngôn ngữ (VI/EN); KDoc <code>COMPANION_KEYS</code>; trace <code>car_rain_defrost</code> → <code>bridge.setRainDefrostGlass(</code></td><td><code>SettingsSectionsCar.kt</code> · <code>values{,-en}/strings_kachi.xml</code> · <code>SettingsCatalogClusterNav.kt</code> · <code>SettingsCatalogControlContractTest.kt</code></td><td>T3</td></tr>
+<tr><td>T5</td><td>Bài canh <code>:app</code>: <code>RainDefrostV8WiringTest</code> mới (<code>SourceRoots.body()</code>, cấm <code>substringAfter/Before</code>) — hai làn dùng cùng <code>controlOf(glass)</code> cho đọc và ghi, rc từng làn vào <code>settle</code>, không <code>pick.first()</code>, vòng có <code>consumeDue()</code>, setter có <code>setRainDefrostChoice</code> + <code>forget</code> + <code>requestSoon</code> + <code>sync</code>, UI không còn <code>bridge.setRainDefrost(</code> một tham số / <code>gateRainGlass</code>; cập nhật 3 bài cũ theo bảng V8.3b</td><td><code>app/src/test/…/automation/</code></td><td>T2 · T3 · T4</td></tr>
+<tr><td>T6</td><td>Thử phá (bảng V8.3c): mỗi phép phá đỏ ĐÚNG ca, hoàn nguyên khớp sha256</td><td>—</td><td>T5</td></tr>
+<tr><td>T7</td><td>Build + đếm: <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew clean assembleRelease testDebugUnitTest</code> · <code>./gradlew test --rerun-tasks --continue</code> (5 module) · <code>python3 scripts/count-tests.py</code> · grep call site mọi hàm mới (§8) · <code>wc -l</code> ≤ 500</td><td>—</td><td>T6</td></tr>
+<tr><td>T8</td><td>§Nhật ký triển khai + INDEX + BACKLOG + <code>project-context</code>; trích <code>SharedPreferencesImpl</code> r47 cho D2 (§3); senior review (Opus) + security scan trước commit; bump version chỉ khi owner cho giao APK</td><td>spec này · <code>docs/README.md</code> · <code>docs/PROJECT-BACKLOG.md</code></td><td>T7</td></tr>
+</table></div>
+<p><b>Trạng thái 2026-09-30</b> (đối chiếu từng việc với mã — chi tiết ở <a href="#v8-log">Nhật ký</a>):</p>
+<ul>
+<li>✅ <b>T1</b> <code>RainDefrostGlasses.kt</code> + <code>unclaim</code> D5 · <code>RainDefrostGlassesTest</code> <b>28 bài</b> (26 bài T1: C1–C14, C16–C19 + ký ức/thế
+hệ + bảng prefs + định dạng log + plan/settle · +1 bài 8 tổ hợp khoá cũ — Pass 3 · +1 bài đọc lẫn cũ/mới — Pass 5) ·
+<code>RainDefrostPolicyTest</code> +1 bài C13; 0 assert cũ sửa.</li>
+<li>✅ <b>T2</b> applier hai làn (trình tự ở <code>:core</code>, xem <a href="#v8-impl">khác DRAFT</a> mục 1) · <code>AutomationService</code>.</li>
+<li>✅ <b>T3</b> prefs + cầu (gỡ cả getter lẻ — mục 7).</li>
+<li>✅ <b>T4</b> UI + chữ VI/EN (3 sửa + 2 gỡ mỗi ngôn ngữ) + danh mục + trace.</li>
+<li>✅ <b>T5</b> <code>RainDefrostV8WiringTest</code> <b>9 bài</b> (8 + thứ tự đọc khoá — Pass 5; bài chữ thêm vế EN) + 3 bài cũ theo V8.3b + trace <code>SettingsCatalogControlContractTest</code>.</li>
+<li>✅ <b>T6</b> thử phá <b>9/9</b> đỏ đúng ca, hoàn nguyên khớp sha256 (V8.3c).</li>
+<li>✅ <b>T7</b> <code>./gradlew testDebugUnitTest test lint --continue</code> BUILD SUCCESSFUL · <code>count-tests.py</code> <b>6 454 / 0 đỏ / 0 lỗi / 0
+bỏ qua (738 XML)</b> · lint <b>0 lỗi</b> · grep call site ✅ · <code>wc -l</code> ✅. Sau soát Pass 3–4: 6 455 / 0 đỏ, và
+<code>test testDebugUnitTest --rerun-tasks</code> 73/73 task chạy thật ✅ (Pass 4). Sau Pass 5: <code>test testDebugUnitTest lint
+--rerun-tasks</code> 82/82 task, <b>6 458 / 0 đỏ (738 XML)</b>, lint 0 lỗi. ⚠ Chưa chạy <code>clean assembleRelease</code>
+(không phát APK trong lượt này).</li>
+<li>◐ <b>T8</b> ✅ Nhật ký + INDEX + BACKLOG + <code>project-context</code> + trích <code>SharedPreferencesImpl</code> r47 (D2) · ✅ senior review lượt 1
+(Opus, §5 — <a href="#v8-review-p3">Reviewer Log Pass 3</a>, 0 P0/P1/P2, 4 P3 đã vá) · ✅ senior review lượt 2
+(<a href="#v8-review-p4">Pass 4</a>, 0 P0/P1/P2, 3 P3 lệch tài liệu đã vá, 0 đổi hành vi) · ✅ senior review lượt 3
+(<a href="#v8-review-p5">Pass 5</a>, 0 P0/P1/P2, 4 P3 — 2 bài test khoá thứ tự đọc khoá + vế EN, lời tài liệu; 0 đổi mã chạy) ·
+❌ <b>security scan (§6) chưa chạy</b> — bắt buộc trước commit · bump: không (owner chưa cho giao APK) · khi giao APK: sửa
+hướng dẫn người dùng còn tả UI V7 (backlog <code>RAIN-DEFROST-V8</code>) — <b>→ đã sửa ở lô <a href="#v81">V8.1</a> (R-V8.9, ghi "từ 2.84"); còn chụp lại ảnh 2.79 khi có APK.</b></li>
+<li>🚗 OC1–OC4 chưa chạy (cần APK + mưa thật).</li>
+</ul>
+
+<p id="v8-3b"><b>V8.3b — Bài canh cũ bị đổi: bất biến giữ nguyên, assert thay chặt bằng hoặc hơn</b> (assert THẬT trong mã)</p>
+<div class="scroll"><table>
+<tr><th>Bài</th><th>Assert bị gỡ</th><th>Bất biến</th><th>Assert V8 thay (nguyên văn)</th></tr>
+<tr><td><code>Automation185WiringTest</code> · <i>say doc trang thai tu xe qua readState</i></td><td><code>val anchor = pick.first()</code> · <code>readDefrost(app, anchor)</code> · <code>RainDefrostPolicy.plausible(</code> / <code>RainDefrostOwner.step(</code> / <code>stepUnknown(</code> trong applier</td><td>cái được ĐỌC phải là cái đang được GHI · sentinel lọc · quyết qua máy trạng thái</td><td>giữ <code>carControl.readState(controlId)</code>; <code>pick.first()</code> <b>vắng</b>; thân <code>fun tick(</code> của applier chứa <code>RainDefrostGlasses.tick(</code>; tệp <code>:core</code> chứa <code>RainDefrostPolicy.plausible(</code> · <code>RainDefrostOwner.step(</code> · <code>stepUnknown(</code>; <code>RainDefrostV8WiringTest</code>: <code>readGlass</code> ⊃ <code>readDefrost(app, controlOf(glass))</code>, <code>writeGlass</code> ⊃ <code>write(app, controlOf(glass), on)</code>, không mã cứng <code>RainGlass.FRONT/REAR</code>; <code>:core</code> C5 · C11 · C12 chạy thật</td></tr>
+<tr><td><i>say chi ghi nhung nut da chon</i></td><td><code>pick.forEachIndexed</code> · <code>pick.isEmpty()</code> · <code>Prefs.rainDefrostFront(app)</code> · <code>Prefs.rainDefrostRear(app)</code></td><td>chỉ ghi kính đã chọn · không chọn gì = no-op + quên · lựa chọn dựng từ đúng các khoá</td><td>thân <code>fun tick(</code> (<code>:core</code>) ⊃ <code>choice.glasses.map</code> · <code>if (!choice.any) return emptyList()</code> · <code>filterNot(choice::has).forEach(memory::forget)</code>; thân <code>fun choice(</code> ⊃ <code>Prefs.rainDefrostChoice(app)</code>; thân <code>Prefs.rainDefrostChoice</code> ⊃ <code>RainDefrostChoice.fromKeys(</code> + ba khoá kèm mặc định nguyên văn; giữ <code>CTL_FRONT = "defrost"</code> · <code>CTL_REAR = "defrost_rear"</code> · <code>listOf(CTL_FRONT, CTL_REAR)</code> vắng; <code>:core</code> C1–C3, C14 chạy thật</td></tr>
+<tr><td><i>moi setter cua cau deu dong bo dong co</i></td><td><code>setRainDefrostEnabled(app, on)</code> + cắt vùng <code>substringAfter/Before</code> (cả phần <code>setNavRules</code>)</td><td>setter ghi đúng khoá thật + <code>sync</code></td><td><code>SourceRoots.body(bridge, "fun ClusterNavBridge.setRainDefrostGlass(")</code> ⊃ <code>Prefs.setRainDefrostChoice(app, after)</code> · <code>AutomationService.sync(app)</code>; phần <code>setNavRules</code> cũng chuyển sang <code>SourceRoots.body</code> (chặt hơn). <code>RainDefrostV8WiringTest</code>: 6 mắt xích đúng THỨ TỰ, không <code>forgetAll</code>; thân <code>Prefs.setRainDefrostChoice</code> đúng 1 <code>.edit()</code>, 3 <code>.putBoolean(</code> đúng cột, <code>.apply()</code></td></tr>
+<tr><td><code>SettingsCatalogControlContractTest</code> · <code>car_rain_defrost</code></td><td>trace <code>bridge.setRainDefrost(</code></td><td>mục danh mục có lời gọi GHI thật trên UI</td><td>trace <code>bridge.setRainDefrostGlass(</code></td></tr>
+</table></div>
+
+<p><b>V8.3c — Thử phá (T6)</b> — [ĐO 2026-09-30] mỗi phép: áp đột biến → chạy bộ lọc (<code>:core</code>: <code>*RainDefrost*</code> 41 bài;
+<code>:app</code>: <code>RainDefrostV8WiringTest</code> + <code>Automation185WiringTest</code> 24 bài) → đọc JUnit XML → hoàn nguyên, <code>sha256</code> khớp
+trước/sau cho cả 5 tệp mã.</p>
+<div class="scroll"><table>
+<tr><th>#</th><th>Phá</th><th>Đỏ thật (JUnit XML)</th></tr>
+<tr><td>M1</td><td><b>Khôi phục mỏ neo ở <code>:core</code></b>: mọi làn đọc <code>choice.glasses.first()</code></td><td><b>C5</b> (kính sau bị BYD tắt, kính trước bật) · C4 · C7 · C9 · C11 · C12 · định dạng log — 7 bài</td></tr>
+<tr><td>M1b</td><td>Làn <code>readGlass</code> của <code>:app</code> đọc <code>controlOf(RainGlass.FRONT)</code></td><td><code>RainDefrostV8WiringTest › doc va ghi cua mot lan…</code></td></tr>
+<tr><td>M2</td><td><b>Khôi phục <code>TurnOff</code> ghi mọi kính đã chọn</b> theo quyết định kính đầu</td><td><b>C8</b> (người lái tự bật kính sau — hết mưa không được tắt) — đúng 1 bài</td></tr>
+<tr><td>M3</td><td><code>unclaim</code> trả <code>before</code></td><td><b>C13</b> · bài mới <code>RainDefrostPolicyTest › ghi bat LAI hong…</code> · <code>settle - bat hong…</code></td></tr>
+<tr><td>M4</td><td>Gỡ <code>consumeDue()</code> khỏi vòng</td><td><code>RainDefrostV8WiringTest › vong nhip doc co due…</code></td></tr>
+<tr><td>M5</td><td>Bỏ <code>#seq</code> khỏi <code>logLine</code></td><td><b>C19</b> · C7 · C12 · định dạng log</td></tr>
+<tr><td>M6</td><td><code>toKeys()</code> ghi <code>enabled = front</code> thay <code>any</code></td><td><b>C17</b> · bảng tương thích prefs</td></tr>
+<tr><td>M7</td><td><code>settle</code> bỏ qua rc (luôn coi là ok)</td><td><b>C7</b> · C13</td></tr>
+<tr><td>M8</td><td>Cầu gọi <code>forgetAll()</code> thay <code>forget(glass)</code></td><td><code>RainDefrostV8WiringTest › cau doi mot kinh…</code></td></tr>
+<tr><td>M9 <span class="muted">(Pass 5)</span></td><td><code>Prefs.rainDefrostChoice</code> đọc <code>front</code> TRƯỚC <code>enabled</code></td><td><code>RainDefrostV8WiringTest › doc enabled truoc hai o con</code></td></tr>
+<tr><td>M10 <span class="muted">(Pass 5)</span></td><td><code>toKeys()</code> giữ hai con <code>true</code> khi hết kính (<code>front || !any</code>, dáng prefs cài mới)</td><td><code>doc lan cu moi, enabled doc truoc…</code> (kính trước "ma" khi đọc lẫn) · bảng tương thích prefs</td></tr>
+<tr><td>M11 <span class="muted">(Pass 5)</span></td><td>Chuỗi ghi chú EN bỏ vế "turned back on"</td><td><code>RainDefrostV8WiringTest › chu hai hang…</code></td></tr>
+</table></div>
+</div>
+
+<h3>V8.4 Verification</h3>
+<div class="card">
+<p><b>Off-car — bảng ca</b> (<code>:core RainDefrostGlassesTest</code> trừ ghi chú khác). "Kachi" = <code>owned = true</code>
+trước nhịp; "người lái" = bật khi <code>owned = false</code>. — = không đọc, không ghi.</p>
+<div class="scroll"><table>
+<tr><th>Ca</th><th>Chọn</th><th>Mưa</th><th>Xe trước nhịp (trước · sau)</th><th>V8: trước</th><th>V8: sau</th><th>V7 hiện tại</th></tr>
+<tr><td>C1</td><td>chỉ trước</td><td>mưa</td><td>tắt · tắt</td><td>TurnOn</td><td>—</td><td>như V8</td></tr>
+<tr><td>C2</td><td>chỉ sau</td><td>mưa</td><td>tắt · tắt</td><td>—</td><td>TurnOn</td><td>như V8 (mỏ neo = sau) — ca owner hỏi, khi hàng chính bật</td></tr>
+<tr><td>C3</td><td>chỉ sau</td><td>mưa</td><td>người lái bật · tắt</td><td>— (không đụng)</td><td>TurnOn</td><td>như V8</td></tr>
+<tr><td>C4</td><td>cả hai</td><td>mưa</td><td>tắt · tắt</td><td>TurnOn, rc riêng</td><td>TurnOn, rc riêng</td><td>TurnOn cả hai, chỉ rc trước được kiểm</td></tr>
+<tr><td>C5</td><td>cả hai</td><td>mưa</td><td>Kachi bật · <b>BYD tự tắt (~14′)</b></td><td>Leave</td><td><b>TurnOn</b></td><td>Leave cả hai ⇒ sau tắt tới hết mưa (K1)</td></tr>
+<tr><td>C6</td><td>cả hai</td><td>mưa</td><td>tắt · người lái bật</td><td>TurnOn</td><td>Leave, <code>owned_sau = false</code></td><td>TurnOn cả hai</td></tr>
+<tr><td>C7</td><td>cả hai</td><td>mưa</td><td>tắt · tắt; rc trước ok, rc sau hỏng</td><td><code>owned = true</code></td><td><code>owned = false</code>; nhịp sau đọc tắt ⇒ TurnOn lại; log <code>ghi=hỏng</code></td><td>rc sau bị bỏ (K2)</td></tr>
+<tr><td>C8</td><td>cả hai</td><td>khô</td><td>Kachi bật · người lái bật</td><td>TurnOff</td><td><b>Leave</b></td><td>TurnOff cả hai (K3)</td></tr>
+<tr><td>C9</td><td>cả hai</td><td>khô</td><td>người lái bật · Kachi bật</td><td>Leave</td><td>TurnOff</td><td>không biểu diễn được (một ký ức theo mỏ neo)</td></tr>
+<tr><td>C10</td><td>cả hai</td><td>mưa</td><td>người lái tự tắt giữa mưa · Kachi bật</td><td>TurnOn (luật V3 giữ nguyên)</td><td>Leave</td><td>TurnOn cả hai</td></tr>
+<tr><td>C11</td><td>cả hai</td><td>không đọc được (null/sentinel)</td><td>bất kỳ</td><td>Leave, ký ức giữ</td><td>Leave, ký ức giữ</td><td>như V8</td></tr>
+<tr><td>C12</td><td>cả hai</td><td>mưa</td><td>đọc trước = <code>null</code> · tắt</td><td>Leave, ký ức giữ</td><td>TurnOn</td><td>bỏ cả nhịp (mỏ neo <code>null</code>)</td></tr>
+<tr><td>C13</td><td>chỉ sau</td><td>mưa → khô</td><td>Kachi bật → BYD tắt → ghi bật lại <b>hỏng</b> → người lái tự bật → khô</td><td>—</td><td>Leave (không tắt kính người lái)</td><td>TurnOff (K6) — cũng test ở <code>RainDefrostPolicyTest</code></td></tr>
+<tr><td>C14</td><td>không gì</td><td>mưa</td><td>bất kỳ</td><td>—</td><td>—; không đọc cảm biến; engine dừng nếu không còn automation</td><td>như V8</td></tr>
+<tr><td>C15</td><td>chỉ trước → tích thêm sau lúc đang chạy</td><td>mưa</td><td>bật · tắt</td><td>Leave</td><td>TurnOn ở nhịp 60 s kế</td><td>chờ tới mốc 5′ (K5) — test tĩnh <code>:app</code></td></tr>
+<tr><td>C16</td><td>cả hai → bỏ tích sau</td><td>mưa</td><td>Kachi bật · Kachi bật</td><td>Leave, ký ức trước <b>còn nguyên</b></td><td>quên ký ức sau, không ghi (OQ-V8.3)</td><td><code>reset()</code> xoá ký ức cả hai</td></tr>
+<tr><td>C17</td><td colspan="3">prefs cũ <code>(false, true, true)</code> → tích sau</td><td>hiện tắt; không sống lại</td><td>ghi <code>(true, false, true)</code></td><td>hàng chính tắt, hai ô mờ</td></tr>
+<tr><td>C18</td><td colspan="3">prefs cũ <code>(true, false, true)</code></td><td>hiện tắt</td><td>hiện bật (lựa chọn V7 giữ)</td><td>như V8</td></tr>
+<tr><td>C19</td><td colspan="3">hai nhịp cách nhau &lt; 10 s, cùng dữ liệu</td><td colspan="2">hai dòng quyết định khác khoá (<code>#seq</code>) ⇒ cả hai xuống thẻ</td><td><span class="tag t-warn">SUY</span> dòng thứ hai bị <code>LogLineThrottle</code> bỏ</td></tr>
+</table></div>
+<p>Cổng off-car: 5 module 0 đỏ mới (<code>--rerun-tasks</code>), mọi phép thử phá của V8.3c đỏ đúng ca (9/9; DRAFT ghi 7/7 trước khi thêm M1b · M8), mọi hàm mới có call site
+production, mọi tệp ≤ 500 dòng.</p>
+<p><span class="tag t-ok">ĐO 2026-09-30</span> C1–C14 · C16–C19 chạy THẬT ở <code>RainDefrostGlassesTest</code> (xe giả cài
+<code>RainGlassIo</code>); C13 thêm ở <code>RainDefrostPolicyTest</code>; C15 là bài tĩnh <code>RainDefrostV8WiringTest › vong nhip doc co due…</code>.
+<code>testDebugUnitTest test lint --continue</code>: <b>6 454 / 0 đỏ (738 XML)</b>, lint 0 lỗi; thử phá <b>9/9</b> (V8.3c). ⚠ Chạy không
+<code>--rerun-tasks</code> (module không đổi lấy kết quả cache/up-to-date — số đếm khớp +43 = 26 + 1 + 8×2 biến thể <code>:app</code>).</p>
+
+<p><b>On-car — anh em</b> (không gõ adb, CLAUDE.md §11: bằng chứng = tệp <code>kachi-logs/usage-*.log</code> app tự ghi +
+một ảnh màn Cài đặt có số phiên bản). Mưa thật, hoặc tạt nước lên cảm biến sau gương chiếu hậu trong (cách buổi 1.84 đã
+đo ra mức 2; khô thì tự về 1).</p>
+<ul>
+<li><b>OC1</b> Chỉ tích <i>"sau + gương"</i> · có mưa ⇒ ≤ 60 s sau khi tích (engine đang chạy) hoặc ≤ 5′: sấy sau bật,
+sấy trước không đổi; log <code>#n SAU đọc=tắt … ⇒ TurnOn · ghi=ok</code>, không có dòng <code>TRƯỚC</code>. Sờ gương sau
+~5′ ấm hay không ⇒ chốt <span class="tag t-warn">SUY</span> gương chung mạch.</li>
+<li><b>OC2</b> Tích cả hai · mưa kéo dài ≥ 25′ ⇒ khi xe tự tắt kính sau (~14′) thì ≤ 5′ sau Kachi bật lại, kính trước
+không bị ghi; log cùng một <code>#n</code>: <code>TRƯỚC đọc=bật ⇒ Leave</code> và <code>SAU đọc=tắt ⇒ TurnOn</code>.</li>
+<li><b>OC3</b> Hết mưa: kính người lái tự bật không bị tắt; kính Kachi bật thì tắt (log <code>TurnOff</code> đúng kính).</li>
+<li><b>OC4</b> Nếu có xe Sealion 6: chạy OC1; <code>ghi=hỏng</code>, hoặc <code>ghi=ok</code> mà nhịp sau
+<code>đọc=tắt</code>, hoặc <code>SAU đọc=lỗi</code> ở mọi nhịp ⇒ mở OQ-V8.1. (Soát Pass 3: V8 phải <b>đọc</b> được kính sau
+mới ghi nó — đúng R-V8.2/R-V8.nf3; V7 "cả hai" ghi mù kính sau theo quyết định kính trước. Xe nào đọc
+<code>getAcDefrostState(2)</code> hỏng mà ghi được thì V8 sẽ không bật kính sau — dòng <code>đọc=lỗi</code> là dấu hiệu.
+Seal: đọc area 2 chạy <span class="tag t-ok">ĐO log 22/09</span>.)</li>
+</ul>
+</div>
+
+<h3>V8.5 Open Questions</h3>
+<div class="card">
+<ul>
+<li><b>OQ-V8.1 — Sealion 6: lệnh sấy sau.</b> CapTest 16/09 <code>defrost_rear</code> ❌ (trước bản vá tra device R11,
+chưa đo lại) <span class="tag t-unk">CHƯA BIẾT</span>. Spec cũ ghi API thật của BYD ghi <b>cặp</b>
+<code>{AC_DEFROST_*_STATE_SET, AC_CTRL_SOURCE_SET}</code> (<code>BYDAutoAcDevice.java:443-446</code>, trích trong
+<code>kachi-rain-defrost-and-rebind.html</code>) <span class="tag t-warn">SUY</span>. Nếu lỗi owner báo là trên SL6: đo
+shell thô trên xe TRƯỚC (CLAUDE.md §14) — (1) ghi feature <code>501219357 = 1</code> trần; (2) gọi method
+<code>setAcDefrostState(2, 1)</code> (đường có <code>AC_CTRL_SOURCE_SET</code>); (3) đọc <code>getAcDefrostState(2)</code>
+sau 2 s, lưu vào <code>docs/diagnostics/</code>. V8 không đổi đường ghi.</li>
+<li><b>OQ-V8.2 — Owner gặp ca nào?</b> Xe nào, bản nào, buổi nào — cần <code>usage-*.log</code> của buổi đó để chốt
+K4/K5/K1/SL6. Không chặn V8.</li>
+<li><b>OQ-V8.3 — Bỏ tích một kính lúc Kachi đang giữ nó bật giữa mưa.</b> V8 giữ hành vi V7: quên, không tắt (D8). Owner
+muốn tắt luôn kính đó? <b>→ Chốt mặc định ở <a href="#v81-ctx">V8.1</a>: giữ D8.</b></li>
+<li><b>OQ-V8.4 — Khoảng hở ≤ 5′</b> sau khi xe tự tắt kính sau (~14′): chấp nhận, hay muốn kiểm dày hơn cho kính sau?
+Mặc định V8: giữ 5′. <b>→ Chốt mặc định ở <a href="#v81-ctx">V8.1</a>: chấp nhận.</b></li>
+<li><b>OQ-V8.5 — Nhãn "V8"</b> trùng "V8 — tự cập nhật" (<code>PrefsAutomation.kt:73-74</code>). Đề xuất: mã ghi
+<code>kachi-automation V8</code>. Owner muốn đổi tên (vd V9)? <b>→ Chốt ở <a href="#v81-ctx">V8.1</a>: giữ nhãn (đổi không rẻ — 9 tệp gồm <code>ProfileScope.kt</code> đang cấm chạm).</b></li>
+<li><b>OQ-V8.6 — Nhịp mưa đầu sau khi nổ máy</b> (soát Pass 3, <span class="tag t-ok">ĐO nguồn</span>
+<code>AutomationService.startLoop</code>: <code>lastRainMs = 0</code>, so với <code>elapsedRealtime()</code>). Đường khởi động
+không có <code>due</code> ⇒ nhịp mưa đầu ở uptime ≈ 5′, không phải "ngay"; ai tạt nước thử cảm biến ngay sau khi nổ máy
+sẽ chờ tới ~5′ và dễ kết luận "không work". Sửa một dòng (nhịp mưa đầu của mỗi vòng chạy ngay) nhưng đổi hành vi
+đường khởi động đã chạy từ 25/09 (2.29 — soát Pass 5 sửa mốc "24/09") ⇒ ngoài phạm vi V8 (CLAUDE.md §4, §6) — owner quyết.<br>
+<i>Soát Pass 4 bổ sung dữ kiện để owner quyết:</i> (a) <span class="tag t-ok">ĐO nguồn git</span> gốc là <code>79be642</code>
+(2.29, 25/09 — lượt camera xi-nhan) thay <code>if (ticks % RAIN_EVERY_TICKS == 0)</code> (lượt đầu <code>ticks = 0</code> ⇒
+nhịp mưa chạy ngay — đúng bản chạy buổi mưa 22/09) bằng phép so thời gian trôi với <code>0L</code>, trong khi chú thích
+<i>"Nhịp ĐẦU chạy ngay"</i> ở đầu vòng giữ nguyên ⇒ độ trễ là phụ phẩm, không phải một quyết định. (b)
+<span class="tag t-ok">ĐO 29/09</span> <code>diagnostics/oncar-2026-09-29-findings.md</code> bảng dòng 1–2: tắt máy thì BYD
+giết tiến trình Kachi, HOME dựng lại sau 0,25–0,33 s — đầu xe <b>không</b> khởi động lại ⇒ <code>elapsedRealtime()</code>
+đã lớn ⇒ <span class="tag t-warn">SUY</span> ca thường (nổ máy lại) nhịp mưa chạy ở lượt thức đầu (≤ 60 s); OQ-V8.6 chỉ
+cắn sau một lần khởi động lại THẬT (uptime &lt; 5′). (c) <span class="tag t-ok">ĐO nguồn</span>
+<code>WakeOnWriteControl.kt:11</code>: lúc boot AC HAL chưa sẵn (đọc null) ⇒ <span class="tag t-warn">SUY</span> chỉ đổi giá trị
+đầu của <code>lastRainMs</code> thì ở ca khởi động thật nhịp đầu dễ ra <code>đọc=lỗi</code> rồi vẫn chờ 5′ — nếu owner muốn
+sửa, đường đúng là "nhịp đầu của vòng đọc lỗi ⇒ thử lại ở lượt thức kế, có trần số lần" (trim không có cảm biến thì
+đọc <code>null</code> mãi — thử lại vô hạn là ×5 lượt HAL suốt chuyến), không phải chỉ dời mốc. <b>→ Sửa ở <a href="#v81-req">V8.1 · R-V8.8</a> đúng hướng đó (nhịp đầu ngay + thử lại 60 s, tối đa 5 lần).</b></li>
+</ul>
+</div>
+</div>
+<!-- ═══════════════════════════ /ADDENDUM V8 ═══════════════════════════ -->
+
+<!-- ═══════════════════════════ ADDENDUM V8.1 (2026-09-30) ═══════════════════════════ -->
+<h2 id="v81">V8.1 — Tự chẩn đoán + nhịp đầu (addendum 2026-09-30)</h2>
+<p class="muted">Addendum theo CLAUDE.md §1, <b>lô tiếp</b> của <a href="#v8">V8</a> — "V8.1" là nhãn lô, <b>không phải</b> mục con
+<i>V8.1 Requirements</i> ở trên. Duyệt 3 cổng (Requirements · Design · Tasks) là việc ngoài tài liệu. Mã V8 và V8.1 cùng nằm trong
+cây làm việc trên <code>b5c0e87</code>, <b>chưa commit, không bump, chưa lên xe</b>. Nhãn bằng chứng như §V8.</p>
+
+<div class="addendum">
+<h3 id="v81-ctx">A · Context</h3>
+<div class="card">
+<p><b>Owner (30/09, qua workflow):</b> lỗi <i>"tắt sấy trước, chỉ chọn sau + gương → không work"</i> có trên bản đang chạy (2.83);
+không biết xe đời nào báo; owner <b>không có thời gian test trên xe</b> ⇒ app phải <b>tự cho thấy nguyên nhân</b> — anh em chỉ cần
+chụp màn hình gửi về, không gõ lệnh (CLAUDE.md §11).</p>
+<ul>
+<li><span class="tag t-ok">ĐO nguồn</span> Hôm nay nguyên nhân chỉ lộ qua <code>usage-*.log</code> (dòng <code>#seq</code> R-V8.6). Màn Cài đặt
+không nói gì về nhịp mưa ⇒ một ảnh chụp màn hình không chứa bằng chứng nào.</li>
+<li><span class="tag t-ok">ĐO git</span> OQ-V8.6: <code>79be642</code> (2.29, 25/09 09:09) thay <code>if (ticks % RAIN_EVERY_TICKS == 0)</code>
+bằng <code>if (nowMs - lastRainMs &gt;= TICK_MS * RAIN_EVERY_TICKS)</code> với <code>lastRainMs = 0L</code> và <code>nowMs = elapsedRealtime()</code>
+⇒ nhịp mưa đầu chỉ chạy khi <b>uptime ≥ 5′</b>, trái chú thích <i>"Nhịp ĐẦU chạy ngay"</i> ngay trên vòng. Thứ commit đó CẦN: lúc ấy vòng
+ngủ <code>CAMERA_TICK_MS = 250</code> khi bật camera ⇒ đếm nhịp không còn ra 5′ ⇒ nav/mưa phải gác theo <b>thời gian trôi</b>. BG-13 (25/09)
+đã gỡ nhịp 250 ms (vòng nay luôn ngủ <code>TICK_MS</code>), nhưng bất biến "gác theo thời gian, không đếm nhịp" vẫn là thứ phải giữ — một
+lượt thêm lại nhịp nhanh cho camera không được kéo nhịp mưa dày theo.</li>
+<li><span class="tag t-ok">ĐO nguồn</span> <code>WakeOnWriteControl.kt:11</code>: lúc boot AC HAL chưa sẵn (đọc <code>null</code>) ⇒
+<span class="tag t-warn">SUY</span> chỉ dời mốc nhịp đầu thì ở ca khởi động thật nhịp đầu dễ ra <code>đọc=lỗi</code> rồi vẫn chờ 5′ (Pass 4 đã chỉ
+ra) ⇒ cần <b>thử lại có trần</b>, không thử lại vô hạn (trim không có cảm biến đọc <code>null</code> mãi).</li>
+<li><span class="tag t-ok">ĐO manifest</span> <code>AutomationService</code> và <code>KachiHomeActivity</code> không khai <code>android:process</code>
+(<code>AndroidManifest.xml:119,223</code>) ⇒ cùng tiến trình ⇒ màn Cài đặt đọc được ký ức RAM của nhịp nền, không cần ghi bền.</li>
+</ul>
+<p><b>OQ owner để mặc định (memory: owner không muốn bị hỏi lòng vòng) — chốt ở lô này:</b></p>
+<ul>
+<li><b>OQ-V8.3</b> → giữ D8: bỏ tích một kính lúc Kachi đang giữ nó bật ⇒ quên, <b>không</b> tắt.</li>
+<li><b>OQ-V8.4</b> → chấp nhận hở ≤ 5′ sau khi xe tự tắt kính sau (~14′).</li>
+<li><b>OQ-V8.5</b> → <b>giữ</b> nhãn. Đổi nhãn "V8 — tự cập nhật" <b>không rẻ</b>: <span class="tag t-ok">ĐO grep</span> nhãn ấy nằm ở 9 tệp
+(chú thích mã, chú thích tài nguyên vi/en, danh mục) gồm <code>ProfileScope.kt:298</code> — tệp đang bị luồng hồ sơ sửa ở worktree khác,
+lô này <b>cấm chạm</b>. Đổi một nửa tệ hơn giữ nguyên; mã mưa đã ghi <code>kachi-automation V8</code> (D9).</li>
+<li><b>OQ-V8.6</b> → sửa trong lô này (R-V8.8).</li>
+</ul>
+</div>
+
+<h3 id="v81-req">B · Requirements</h3>
+<div class="card">
+<ul>
+<li><b>R-V8.7 — Dòng tình trạng.</b> Ngay dưới hai hàng sấy trong <i>Cài đặt › Tiện nghi xe</i>: <b>một dòng cho mỗi kính đang chọn</b>
+(không chọn kính nào ⇒ không dòng nào), ngắn, vi/en theo ngôn ngữ app, có chấm màu. Nội dung = kết quả <b>nhịp gần nhất của chính kính
+đó</b>: giờ (HH:mm) · mưa (mức gạt) hoặc cảm biến mưa không đọc được · xe báo bật/tắt hoặc không đọc được (xe báo tắt ngay sau một lệnh
+bật ĐÃ tới xe ⇒ nói rõ giờ lệnh đó, vàng — Pass 8, D17) · Kachi làm gì và lệnh có tới xe
+không. Chưa có nhịp nào cho kính đó từ lúc tiến trình sống (BYD giết Kachi mỗi lần tắt máy — <span class="tag t-ok">ĐO 29/09</span>) ⇒
+<i>"chưa kiểm lần nào từ lúc mở xe"</i> + giờ nhịp kế nếu biết.
+<br><i>Nghiệm thu:</i> mọi ca ở bảng C-mẫu (§C) ra đúng chuỗi vi và en (bài chạy THẬT định dạng ở <code>:core</code>, và bài <code>:app</code>
+dựng bảng chữ từ CHÍNH hai tệp <code>strings_kachi.xml</code> theo đúng ánh xạ của mã màn hình); dòng của kính <i>g</i> chỉ đọc kết quả của
+<i>g</i>; nguồn là RAM (<code>RainGlassLastResults</code> + <code>RainDefrostCadence</code>), không khoá prefs mới, không đọc HAL từ luồng vẽ;
+làm tươi khi dựng trang (mỗi lần mở Cài đặt dựng lại bảng), sau mỗi cú chạm một trong hai ô, và mỗi lần trang hiện lại (đổi nhóm rồi quay lại · HOME hết bị che — Pass 7, D16); không vị trí/không dữ liệu riêng tư.</li>
+<li><b>R-V8.8 — Nhịp mưa đầu chạy ngay + thử lại có trần.</b> Mỗi lần vòng của <code>AutomationService</code> bắt đầu, nhịp mưa đầu chạy ở
+<b>lượt thức đầu</b> — không phụ thuộc uptime. Nhịp mà HAL chưa sẵn (đọc mưa <code>null</code>, hoặc đọc một kính đã chọn <code>null</code>)
+⇒ thử lại sau 60 s, <b>tối đa 5 lần liên tiếp</b>, rồi về nhịp 5′; một nhịp đọc được đủ ⇒ trả trần thử lại về 0.
+<br><i>Nghiệm thu:</i> (a) vòng mới + uptime 30 s ⇒ nhịp mưa chạy ở lượt hỏi đầu; (b) HAL <code>null</code> mãi ⇒ nhịp ở 0 · 60 · 120 · 180 ·
+240 · 300 s rồi 600 · 900 s (đúng 5 lần thử lại); (c) hỏi dày mỗi 1 s (mô phỏng lại nhịp 250 ms của camera) ⇒ không bao giờ hai nhịp mưa
+cách nhau &lt; 60 s, kể cả khi có yêu cầu đổi lựa chọn (R-V8.5) — yêu cầu giữ tới khi được phép; (d) HAL ổn ⇒ nhịp đúng mỗi 5′
+theo thời gian trôi (bất biến của <code>79be642</code>).</li>
+<li><b>R-V8.9 — Tài liệu người dùng tả UI V8</b> (không còn công tắc chính · hai hàng độc lập · dòng tình trạng), ghi rõ <i>"từ 2.84"</i>:
+<code>docs/HUONG-DAN-KACHI.md</code> vùng sấy · <code>docs/guide/HUONG-DAN-CO-HINH.html</code> §5.2 · <code>docs/guide/OUTLINE.md</code> mục 8.2 ·
+<code>README.md</code> khối Tiện nghi xe. Không thêm ảnh chụp mới.</li>
+</ul>
+<p><b>Phi chức năng:</b> giữ nguyên R-V8.nf1–nf4 (đường đọc/ghi, feature-id, phạm vi khoá theo XE, luật V3); không khoá bền mới; luật + định
+dạng ở <code>:core</code> thuần, có test off-car; mọi tệp ≤ 500 dòng; không nhánh theo đời xe/tên gói; không đụng <code>ProfileScope.kt</code>.</p>
+<p><b>Ngoài phạm vi:</b> in số rc lên dòng tình trạng (D15) · nhịp nav đầu (<code>lastNavMs = 0L</code> cùng họ lỗi nhưng ≤ 60 s — ghi, không sửa) ·
+đổi nhịp 5′ · OC trên xe.</p>
+</div>
+
+<h3 id="v81-design">C · Design</h3>
+<div class="diagram">
+<svg class="wide" viewBox="0 0 900 360" width="100%" role="img" aria-label="V8.1: nhịp nền ghi kết quả từng kính vào RAM, màn Cài đặt đọc qua cầu">
+  <defs><marker id="ar81" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+    <path d="M0,0 L7,3 L0,6 Z" fill="var(--mut)"/></marker></defs>
+  <text x="20" y="22" font-size="12.5" font-weight="700" fill="var(--mut)">LUỒNG NỀN — AutomationService (vòng ngủ 60 s)</text>
+  <rect x="20" y="34" width="150" height="62" rx="10" fill="var(--code)" stroke="var(--line)"/>
+  <text x="95" y="60" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">Vòng bắt đầu</text>
+  <text x="95" y="78" text-anchor="middle" font-size="11" fill="var(--mut)">loopStarted()</text>
+  <rect x="195" y="34" width="190" height="62" rx="10" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="290" y="58" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">RainDefrostCadence</text>
+  <text x="290" y="76" text-anchor="middle" font-size="11" fill="var(--mut)">shouldRun(now, consumeDue())</text>
+  <text x="290" y="90" text-anchor="middle" font-size="10.5" fill="var(--mut)">≥60 s giữa hai nhịp · :core</text>
+  <rect x="410" y="34" width="190" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="505" y="58" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">RainDefrostGlasses.tick</text>
+  <text x="505" y="76" text-anchor="middle" font-size="11" fill="var(--mut)">hai làn V8 — không đổi</text>
+  <rect x="625" y="34" width="255" height="62" rx="10" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="752" y="58" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">record(wall, outcomes)</text>
+  <text x="752" y="76" text-anchor="middle" font-size="11" fill="var(--mut)">cadence.ran(now, halReady)</text>
+  <text x="752" y="90" text-anchor="middle" font-size="10.5" fill="var(--mut)">lỗi đọc ⇒ +60 s (≤5 lần) · ổn ⇒ +5′</text>
+  <line x1="170" y1="65" x2="192" y2="65" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="385" y1="65" x2="407" y2="65" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="600" y1="65" x2="622" y2="65" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <!-- RAM -->
+  <rect x="300" y="138" width="440" height="56" rx="12" fill="var(--code)" stroke="var(--line)" stroke-dasharray="5 4"/>
+  <text x="520" y="161" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">RAM của tiến trình (không lưu bền)</text>
+  <text x="520" y="179" text-anchor="middle" font-size="11" fill="var(--mut)">RainGlassLastResults: kính → (giờ, kết quả làn) · RainDefrostCadence: nhịp kế</text>
+  <line x1="752" y1="96" x2="700" y2="136" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="290" y1="96" x2="360" y2="136" stroke="var(--mut)" stroke-dasharray="4 3" marker-end="url(#ar81)"/>
+  <text x="20" y="232" font-size="12.5" font-weight="700" fill="var(--mut)">LUỒNG VẼ — Cài đặt › Tiện nghi xe (mở màn · chạm ô)</text>
+  <rect x="20" y="244" width="170" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="105" y="270" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">refreshRainStatus()</text>
+  <text x="105" y="288" text-anchor="middle" font-size="11" fill="var(--mut)">chữ từ strings_kachi</text>
+  <rect x="215" y="244" width="200" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="315" y="270" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">bridge.rainDefrostStatus</text>
+  <text x="315" y="288" text-anchor="middle" font-size="11" fill="var(--mut)">(words, clock) — không HAL</text>
+  <rect x="440" y="244" width="220" height="62" rx="10" fill="var(--card)" stroke="var(--accent)"/>
+  <text x="550" y="270" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">RainDefrostStatus.lines</text>
+  <text x="550" y="288" text-anchor="middle" font-size="11" fill="var(--mut)">mỗi kính CHỌN · lastOf(kính đó) · :core</text>
+  <rect x="685" y="244" width="195" height="62" rx="10" fill="var(--card)" stroke="var(--line)"/>
+  <text x="782" y="270" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">statusRow × kính</text>
+  <text x="782" y="288" text-anchor="middle" font-size="11" fill="var(--mut)">chấm xanh · vàng · đỏ · xám</text>
+  <line x1="190" y1="275" x2="212" y2="275" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="415" y1="275" x2="437" y2="275" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="660" y1="275" x2="682" y2="275" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <line x1="520" y1="194" x2="545" y2="241" stroke="var(--mut)" marker-end="url(#ar81)"/>
+  <text x="20" y="338" font-size="12" fill="var(--mut)">Luồng vẽ chỉ đọc RAM (khoá ngắn) — không lượt HAL nào. Cùng tiến trình [ĐO manifest]; tiến trình chết ⇒ "chưa kiểm lần nào từ lúc mở xe".</text>
+</svg>
+</div>
+
+<div class="card">
+<p><b>:core — hai tệp MỚI, thuần, có test</b></p>
+<pre>// RainDefrostCadence.kt — nhịp của automation mưa (R-V8.8)
+class RainDefrostCadence(periodMs = PERIOD_MS /*5′*/, retryMs = RETRY_MS /*60 s*/, maxRetries = MAX_RETRIES /*5*/) {
+    fun loopStarted()                                   // vòng mới: nhịp kế = NGAY, trần thử lại về 0 (giữ mốc nhịp trước cho sàn 60 s)
+    fun shouldRun(nowMs: Long, request: Boolean): Boolean   // sàn: now − lastRun &lt; retryMs ⇒ false; yêu cầu được GIỮ tới khi qua sàn
+    fun ran(nowMs: Long, halReady: Boolean)             // ổn ⇒ +period, trần về 0 · lỗi đọc ⇒ +retry (≤ maxRetries lần liên tiếp) rồi +period
+    fun nextDueMs(nowMs: Long, request: Boolean = false): Long?  // cho dòng tình trạng; request = cờ due vòng chưa đọc; null = vòng chưa từng bắt đầu / mốc quá hạn
+    companion object { fun halReady(outcomes): Boolean; fun toWallMs(elapsedAt, nowElapsed, nowWall): Long }
+}
+
+// RainDefrostStatus.kt — kết quả nhịp gần nhất từng kính + dòng tình trạng (R-V8.7)
+data class RainGlassLast(val atWallMs: Long, val outcome: RainGlassOutcome, val offAfterOnAtWallMs: Long? = null) {
+    companion object { fun follow(prev: RainGlassLast?, atWallMs, outcome): RainGlassLast }   // D17 (Pass 8)
+}
+class RainGlassLastResults { fun record(atWallMs, outcomes); fun of(glass): RainGlassLast? }   // khoá ngắn, RAM; record = follow(kết quả trước của CHÍNH kính đó)
+enum class RainStatusTone { OK, WAIT, FAIL, IDLE }
+data class RainStatusWords(front, rear, never, next, rain, dry, sensorError, carOn, carOff, carOffAfterOn, carError,
+                           turnOnOk, turnOnFail, turnOffOk, turnOffFail, skipped, keepOn, nothingToDo, notOurs)
+data class RainStatusLine(val glass: RainGlass, val text: String, val tone: RainStatusTone)
+object RainDefrostStatus {
+    fun lines(choice, lastOf: (RainGlass) -&gt; RainGlassLast?, nextAtWallMs: Long?, words, clock: (Long) -&gt; String): List&lt;RainStatusLine&gt;
+    fun line(glass, last, nextAtWallMs, words, clock): RainStatusLine
+}</pre>
+<p><b>:app — nối dây</b></p>
+<pre>// RainDefrostApplier
+private val cadence = RainDefrostCadence(periodMs = AutomationService.TICK_MS * AutomationService.RAIN_EVERY_TICKS, retryMs = AutomationService.TICK_MS)
+private val lastResults = RainGlassLastResults()
+fun loopStarted() = cadence.loopStarted()
+fun tickIfDue(ctx, nowMs): Boolean {                       // nowMs = elapsedRealtime() của lượt thức
+    if (!cadence.shouldRun(nowMs, consumeDue())) return false   // consumeDue() là ĐỐI SỐ ⇒ luôn đọc-và-xoá mỗi lượt
+    val outcomes = tick(ctx)
+    lastResults.record(System.currentTimeMillis(), outcomes)
+    cadence.ran(nowMs, RainDefrostCadence.halReady(outcomes)); return true
+}
+fun lastOf(glass) = lastResults.of(glass)
+fun nextCheckWallMs(): Long?                                // nextDueMs(elapsed, due.get()) → đồng hồ tường (đọc cờ, không xoá)
+// AutomationService.startLoop: RainDefrostApplier.loopStarted() TRƯỚC while; trong vòng:
+runCatching { RainDefrostApplier.tickIfDue(app, nowMs) }   // thay `if (consumeDue() || nowMs - lastRainMs &gt;= …)`; gỡ lastRainMs
+// ClusterNavBridgeAutomation
+fun ClusterNavBridge.rainDefrostStatus(words, clock) = RainDefrostStatus.lines(rainDefrostChoice(), RainDefrostApplier::lastOf, RainDefrostApplier.nextCheckWallMs(), words, clock)
+// SettingsSectionsCar.rainDefrost: hai checkRow (chạm ⇒ setRainDefrostGlass rồi refreshRainStatus()) → khối rainStatus → note</pre>
+
+<p><b>Dòng tình trạng — ánh xạ ca → chữ → màu</b> (ghép bằng <code>" · "</code> và <code>" → "</code> ở <code>:core</code>; mọi cụm chữ từ tài nguyên):</p>
+<div class="scroll"><table>
+<tr><th>Ca (kết quả làn gần nhất của CHÍNH kính đó)</th><th>Chữ (vi)</th><th>Màu</th></tr>
+<tr><td>chưa có nhịp nào cho kính này từ lúc tiến trình sống</td><td><code>Kính trước · chưa kiểm lần nào từ lúc mở xe · nhịp kế ~14:07</code> (không biết nhịp kế ⇒ bỏ vế cuối)</td><td>xám</td></tr>
+<tr><td>cảm biến mưa null/sentinel</td><td><code>… · 14:02 · cảm biến mưa không đọc được ⇒ để nguyên</code></td><td>vàng</td></tr>
+<tr><td>mưa, đọc kính null</td><td><code>… · 14:02 · mưa (gạt 3) · xe báo: không đọc được</code></td><td>vàng</td></tr>
+<tr><td>mưa, xe tắt, TurnOn, rc hợp lệ</td><td><code>Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: tắt → Kachi bật: tới xe ✓</code></td><td>xanh</td></tr>
+<tr><td>mưa, xe tắt, TurnOn — mà nhịp NGAY TRƯỚC của kính này là TurnOn rc hợp lệ và Kachi vẫn giữ kính (<code>before.owned</code>) (Pass 8, D17)</td><td><code>… · mưa (gạt 3) · xe báo: vẫn tắt sau lệnh bật 14:02 → Kachi bật: tới xe ✓</code> (lệnh lần này hỏng ⇒ <code>→ lệnh bật: không tới xe ✗</code>)</td><td>vàng (đỏ nếu lệnh lần này hỏng)</td></tr>
+<tr><td>mưa, xe tắt, TurnOn, rc null/sentinel/không cổng</td><td><code>… · xe báo: tắt → lệnh bật: không tới xe ✗</code></td><td>đỏ</td></tr>
+<tr><td>TurnOn/TurnOff bị bỏ vì vừa đổi lựa chọn giữa nhịp</td><td><code>… → bỏ lệnh (vừa đổi lựa chọn)</code></td><td>vàng</td></tr>
+<tr><td>mưa, xe bật</td><td><code>… · mưa (gạt 3) · xe báo: bật → đang sấy, để nguyên</code></td><td>xanh</td></tr>
+<tr><td>khô, xe bật, của Kachi, rc hợp lệ / hỏng</td><td><code>… · khô (gạt 1) · xe báo: bật → Kachi tắt: tới xe ✓</code> / <code>→ lệnh tắt: không tới xe ✗</code></td><td>xanh / đỏ</td></tr>
+<tr><td>khô, xe bật, Kachi không giữ (<code>owned = false</code>: người lái bật · hoặc Kachi đã nhả — lệnh tắt hỏng / bỏ-tích-lại ô)</td><td><code>… → Kachi không quản, để nguyên</code> (Pass 7: chữ cũ <i>"không do Kachi bật"</i> khẳng định nguồn gốc mà mã không biết)</td><td>xám</td></tr>
+<tr><td>khô, xe tắt</td><td><code>… · khô (gạt 1) · xe báo: tắt → không cần sấy</code></td><td>xám</td></tr>
+</table></div>
+
+<p><b>Quyết định thiết kế</b></p>
+<ul>
+<li><b>D10 — RAM, cùng tiến trình.</b> Không khoá bền: "kết quả nhịp trước khi tắt máy" là dữ liệu cũ, hiện lên như hiện tại là nói sai;
+tiến trình chết mỗi lần tắt máy <span class="tag t-ok">ĐO 29/09</span> ⇒ câu <i>"chưa kiểm lần nào từ lúc mở xe"</i> là sự thật. Khoá
+ngắn (<code>synchronized</code> trên map), không giữ qua HAL.</li>
+<li><b>D11 — Chữ đi qua tài nguyên, ghép ở <code>:core</code>.</b> Tầng <code>launcher/</code> bắt mọi chữ qua tài nguyên
+(<code>LauncherI18nContractTest</code>); <code>:core</code> không có tài nguyên ⇒ <code>:app</code> đưa bảng <code>RainStatusWords</code> dựng từ
+<code>getString</code>, <code>:core</code> chỉ chọn cụm + ghép. Chỗ điền số/giờ là <code>{n}</code>/<code>{t}</code>, không <code>%1$d</code>: chuỗi
+<code>%</code> lấy bằng <code>getString(id)</code> không đối số là thứ lint soi định dạng — tránh hẳn loại cảnh báo đó.</li>
+<li><b>D12 — Kết quả THEO KÍNH, không một báo cáo chung.</b> Vừa tích thêm kính sau ⇒ dòng kính sau nói "chưa kiểm" dù kính trước có kết
+quả; dòng của kính <i>g</i> chỉ đọc <code>lastOf(g)</code> — thử phá "đọc nhầm kính" phải đỏ.</li>
+<li><b>D13 — Thử lại chỉ vì ĐỌC lỗi</b> (mưa hoặc một kính đã chọn <code>null</code>), không vì ghi hỏng: ghi hỏng đã nhả chủ quyền và nhịp sau
+tự bật lại (D5); thêm cả ghi hỏng vào điều kiện là dội lệnh vào một xe đang từ chối mỗi 60 s.</li>
+<li><b>D14 — Nhịp sống ở applier (cả tiến trình), không trong biến cục bộ của vòng.</b> Dòng tình trạng cần giờ nhịp kế; và sàn 60 s phải
+giữ cả khi một vòng mới dựng lại ngay sau vòng cũ (vòng mới trong &lt; 60 s chờ tối đa 60 s — vẫn là "nhịp đầu ở lượt thức kế"). Yêu cầu
+đổi lựa chọn (<code>due</code>) được <code>consumeDue()</code> đọc-và-xoá MỖI lượt (là đối số, không nằm sau <code>||</code>) và nhịp giữ nó
+tới khi qua sàn.</li>
+<li><b>D15 — Không in số rc.</b> <code>CarControlPort.toggle</code> trả <code>Boolean</code> (<code>CarControlAdapter.kt:14,77</code>
+<span class="tag t-ok">ĐO nguồn</span>); lộ rc là đổi đường ghi — R-V8.nf1 cấm. Dòng ghi <i>"không tới xe ✗"</i> (đúng với cả ba nguyên nhân:
+rc <code>null</code>, sentinel, không có cổng điều khiển); chi tiết ở dòng log <code>#seq … ghi=hỏng</code>. Ví dụ <i>"xe từ chối (rc …)"</i>
+của yêu cầu vì vậy đổi lời.</li>
+<li><b>D16 — Làm tươi khi dựng trang + sau cú chạm + mỗi lần trang HIỆN LẠI</b>, không live: <code>HomePanels.openSettings</code> dựng <code>SettingsPanel</code> MỚI mỗi lần
+mở <span class="tag t-ok">ĐO nguồn</span> ⇒ dựng trang = đọc mới. Nhưng trong một lượt mở, <code>SettingsPanel.show</code> gắn lại trang ĐÃ NHỚ khi đổi nhóm
+(<code>pages.getOrPut</code>), và bảng còn mở khi HOME bị app khác che ⇒ Pass 7 thêm móc <code>onWindowVisibilityChanged(VISIBLE)</code> → <code>post { refreshRainStatus() }</code>
+trên chính khối dòng tình trạng (AOSP trích ở KDoc <code>SettingsCarSection.rainStatus</code>). Không thêm bộ hẹn giờ trên luồng vẽ.</li>
+<li><b>D17 — Lệnh bật tới xe mà xe vẫn báo tắt ⇒ nói ngay trên dòng</b> (Pass 8). OC4/OQ-V8.1 đặt dấu hiệu nghi của Sealion 6 là <i>"ghi=ok mà nhịp
+sau đọc=tắt"</i> — nhưng chỉ nhìn một nhịp thì mỗi lượt đều ra <i>"xe báo: tắt → Kachi bật: tới xe ✓"</i> xanh: ảnh chụp không phân biệt được lần bật
+đầu với lần thứ mười, tức đúng ca "xe không làm theo lệnh" mà V8.1 hứa phân biệt từ một ảnh (OC5) lại hiện như "ổn". <code>RainGlassLast.follow</code>
+(<code>:core</code>, thuần) so kết quả mới với kết quả TRƯỚC của CHÍNH kính đó: nhịp trước <code>TurnOn</code> + <code>writeOk == true</code>, nhịp này lại
+<code>TurnOn</code> (đang mưa, xe báo tắt), và <code>before.owned</code> (Kachi vẫn giữ kính từ lệnh đó — không bị quên giữa chừng, không qua nhịp khô) ⇒
+<code>carOff</code> đổi thành <i>"xe báo: vẫn tắt sau lệnh bật HH:mm"</i>, màu vàng (đỏ giữ đỏ). Chỉ nói điều đo được (hai lần đọc + một rc), không quy
+kết: xe không làm theo · tự tắt ngay · có người vừa tắt — cùng một dấu hiệu. Xe tự tắt sau ~14′ <span class="tag t-ok">ĐO log 22/09</span> không bị đánh
+dấu (giữa hai lệnh có nhịp "xe báo: bật"). Chỉ chiều BẬT: đó là lỗi owner báo ("không work") và là chiều an toàn nhìn đường; chiều tắt đã có hàng
+<i>"Kachi không quản"</i>. Không khoá bền, không lượt HAL mới, không đổi luật quyết định.</li>
+</ul>
+</div>
+
+<h3 id="v81-tasks">D · Tasks</h3>
+<div class="card">
+<div class="scroll"><table>
+<tr><th>#</th><th>Việc + test</th><th>Tệp</th><th>Phụ thuộc</th></tr>
+<tr><td>T9</td><td><code>:core</code> <code>RainDefrostCadence</code> + test (nhịp đầu ngay ở uptime nhỏ · trần 5 lần · sàn 60 s khi hỏi dày · yêu cầu giữ tới khi qua sàn · 5′ theo thời gian trôi · <code>nextDueMs</code>)</td><td><code>core/…/automation/RainDefrostCadence.kt</code> (mới) · <code>RainDefrostCadenceTest.kt</code> (mới)</td><td>—</td></tr>
+<tr><td>T10</td><td><code>:core</code> <code>RainGlassLastResults</code> + <code>RainDefrostStatus</code> + test mọi ca bảng trên, chạy THẬT <code>RainDefrostGlasses.tick</code> trên xe giả rồi định dạng</td><td><code>core/…/automation/RainDefrostStatus.kt</code> (mới) · <code>RainDefrostStatusTest.kt</code> (mới)</td><td>—</td></tr>
+<tr><td>T11</td><td><code>:app</code> applier <code>loopStarted/tickIfDue/lastOf/nextCheckWallMs</code>; <code>AutomationService</code> gọi <code>loopStarted()</code> trước vòng, <code>tickIfDue(app, nowMs)</code> không điều kiện, gỡ <code>lastRainMs</code></td><td><code>RainDefrostApplier.kt</code> · <code>AutomationService.kt</code></td><td>T9 · T10</td></tr>
+<tr><td>T12</td><td>Cầu <code>rainDefrostStatus</code> + UI khối dòng tình trạng + 18 chuỗi × 2 ngôn ngữ (Pass 8: +1 ⇒ 19, D17)</td><td><code>ClusterNavBridgeAutomation.kt</code> · <code>SettingsSectionsCar.kt</code> · <code>values{,-en}/strings_kachi.xml</code></td><td>T11</td></tr>
+<tr><td>T13</td><td>Bài canh <code>:app</code> <code>RainDefrostStatusWiringTest</code> (UI → cầu → applier → <code>:core</code>; chữ dựng từ hai tệp XML theo ánh xạ của mã màn hình); đổi 2 assert cũ theo bảng V8.1-b (không nới)</td><td><code>app/src/test/…/automation/</code></td><td>T12</td></tr>
+<tr><td>T14</td><td>Tài liệu người dùng (R-V8.9)</td><td>4 tệp ở R-V8.9</td><td>T12</td></tr>
+<tr><td>T15</td><td>Phá thử ≥ 3 mắt xích · <code>testDebugUnitTest test lint --continue</code> · <code>count-tests.py</code> · grep call site · <code>wc -l</code> · INDEX + BACKLOG + <code>project-context</code></td><td>—</td><td>T13 · T14</td></tr>
+</table></div>
+<p id="v81-3b"><b>V8.1-b — Bài canh cũ bị đổi: bất biến giữ nguyên, assert thay chặt bằng hoặc hơn</b></p>
+<div class="scroll"><table>
+<tr><th>Bài</th><th>Assert bị gỡ</th><th>Bất biến</th><th>Assert thay</th></tr>
+<tr><td><code>Automation185WiringTest</code> · <i>mot dong co, mot vong, hai nhip</i></td><td><code>"nowMs - lastRainMs &gt;= TICK_MS * RAIN_EVERY_TICKS" in service</code></td><td>mưa ≈ 5′ theo THỜI GIAN TRÔI (không đếm nhịp)</td><td>vòng lấy <code>nowMs = elapsedRealtime()</code> và gọi <code>RainDefrostApplier.tickIfDue(app, nowMs)</code>; applier dựng nhịp bằng <code>periodMs = AutomationService.TICK_MS * AutomationService.RAIN_EVERY_TICKS</code>; <code>:core</code> chạy THẬT: ổn ⇒ nhịp đúng ở +5′, không sớm hơn</td></tr>
+<tr><td><code>RainDefrostV8WiringTest</code> · <i>vong nhip doc co due…</i></td><td>chuỗi <code>if (RainDefrostApplier.consumeDue() || nowMs - lastRainMs &gt;= …)</code></td><td><code>due</code> đọc-và-xoá MỖI lượt thức; đổi lựa chọn ⇒ nhịp ở lượt thức kế (≤ 60 s); không <code>interrupt</code></td><td>thân <code>tickIfDue</code> ⊃ <code>cadence.shouldRun(nowMs, consumeDue())</code> (đối số ⇒ không có đường tắt <code>||</code> nào bỏ qua); dòng vòng gọi <code>tickIfDue</code> không nằm trong <code>if</code>; <code>:core</code> chạy THẬT: yêu cầu ⇒ nhịp ở lượt hỏi kế khi đã qua sàn, và được giữ khi chưa qua sàn</td></tr>
+</table></div>
+</div>
+
+<h3 id="v81-verify">E · Verification</h3>
+<div class="card">
+<p><b>Off-car</b> — xem <a href="#v81-log">Nhật ký V8.1</a> (số đo, phá thử, ảnh chữ mẫu).</p>
+<p><b>On-car — anh em (không gõ lệnh):</b></p>
+<ul>
+<li><b>OC5</b> Mở <i>Cài đặt › Tiện nghi xe</i> ngay sau khi nổ máy ⇒ dòng mỗi kính đã chọn nói <i>"chưa kiểm lần nào từ lúc mở xe · nhịp kế ~…"</i>;
+mở lại sau ≤ 1 phút ⇒ có giờ + kết quả. Một ảnh chụp màn hình (kèm tiêu đề có số phiên bản) là đủ để biết: cảm biến mưa có đọc được
+không, xe có báo trạng thái kính không, lệnh có tới xe không, và xe có làm theo lệnh bật trước không (<i>"xe báo: vẫn tắt sau lệnh bật …"</i>, D17)
+— tức phân biệt được "Kachi không chạy" / "không đọc được xe" / "xe không nhận lệnh" (OQ-V8.2).</li>
+<li><b>OC6</b> Xe khởi động lại thật (uptime &lt; 5′): dòng log <code>#1</code> xuất hiện ở lượt thức đầu của vòng (không chờ ~5′); nếu
+<code>đọc=lỗi</code> thì các dòng <code>#2…#6</code> cách nhau ≈ 60 s rồi về 5′.</li>
+</ul>
+</div>
+
+<h3 id="v81-oq">F · Open Questions</h3>
+<div class="card">
+<ul>
+<li><b>OQ-V8.7</b> — Đồng hồ tường của đầu xe bị vặn khi bắt giờ GPS (đã ghi ở Nhật ký 1.85) ⇒ giờ trên dòng tình trạng có thể lệch trong vài
+phút đầu. Chỉ là giờ hiển thị (nhịp đi theo <code>elapsedRealtime</code>). Chấp nhận, không sửa.</li>
+<li><b>OQ-V8.8</b> — Nhịp nav đầu cũng gác bằng <code>lastNavMs = 0L</code> ⇒ uptime &lt; 60 s thì nav chờ tới lượt thức kế (≤ 60 s). Cùng họ
+OQ-V8.6 nhưng trễ ≤ 1 phút; ngoài phạm vi lô này.</li>
+</ul>
+</div>
+</div>
+<!-- ═══════════════════════════ /ADDENDUM V8.1 ═══════════════════════════ -->
+
 <h2>References</h2>
 <div class="card">
 <ul>
 <li><code>docs/diagnostics/oncar-1.84-session-2026-09-20.md</code> — nguồn trigger mưa + GPS + route.</li>
 <li><code>docs/specs/kachi-rain-defrost-and-rebind.html</code> — spec cũ (phần trigger mưa bị spec này thay; phần cốp/AC-AUTO/GPS-đọc còn tham khảo).</li>
 <li>:core <code>SavedPlaces</code> · <code>VoiceAppTargets.navFor</code> · <code>voice_nav_default_app</code>; :app <code>Pm25FilterApplier</code> (mẫu poll) · <code>BydHalGateway</code>.</li>
+<li><b>V8</b> — mã (HEAD <code>b5c0e87</code>): <code>app/…/automation/RainDefrostApplier.kt</code> · <code>AutomationService.kt</code> ·
+<code>core/…/automation/RainDefrostPolicy.kt</code> · <code>PrefsAutomation.kt</code> · <code>ClusterNavBridgeAutomation.kt</code> ·
+<code>SettingsSectionsCar.kt</code> · <code>KachiLog.kt</code> + <code>LogLineThrottle.kt</code> · <code>CarControlAdapter.kt</code> ·
+<code>ControlRegistry.kt</code> · <code>HalReadTables.kt</code> · <code>ProfileScope.kt</code>. Commit: V3 <code>cf2323e</code> (22/09) ·
+V7 <code>763a590</code> (25/09). Bằng chứng: <code>docs/diagnostics/perf-oncar-2026-09-26/kachi-logs/usage-1790074430819.log</code>
+(buổi 22/09) · <code>docs/diagnostics/oncar-captest-sealion6-2026-09-16.md</code> · <code>docs/diagnostics/oncar-trace-2026-09-16b/hal-reads.txt</code>.
+Bài canh: <code>Automation185WiringTest</code> · <code>RainDefrostPolicyTest</code> · <code>SettingsCatalogControlContractTest</code>.</li>
+<li><b>V8 — mã 2026-09-30:</b> <code>core/…/automation/RainDefrostGlasses.kt</code> (mới) · bài mới <code>RainDefrostGlassesTest</code>
+(<code>:core</code>) · <code>RainDefrostV8WiringTest</code> (<code>:app</code>) · nguồn AOSP <code>frameworks/base/core/java/android/app/SharedPreferencesImpl.java</code>
+@ <code>android-10.0.0_r47</code>.</li>
 </ul>
 </div>
 
@@ -339,6 +1208,110 @@ gói <code>com.byd.launcher</code> vc86 vn1.85, <b>không</b> cờ debuggable, <
 <p><b>Chưa làm, có lý do</b> (owner hoãn ở đầu phiên): camera 360 · góc cam · khoá cửa chính. Hai cái đầu chưa có
 feature-id; cái thứ ba [ĐO] trả sentinel <code>NOT_PROVISIONED</code> trên trim này ⇒ ghi ở
 <code>0-PENDING</code> §E.4, <b>không</b> wire một nút chết.</p>
+<h3 id="v8-log">2026-09-30 · V8 T1–T7 DONE off-car (chưa commit · không bump · chưa lên xe)</h3>
+<p>Nền: HEAD <code>b5c0e87</code> + working tree. Phạm vi đúng §V8.1; chỗ mã khác bản DRAFT có lý do ở
+<a href="#v8-impl">V8.2 › Mã thật khác DRAFT</a>.</p>
+<p><b>Tệp</b> — mới: <code>core/…/launcher/automation/RainDefrostGlasses.kt</code> ·
+<code>core/src/test/…/automation/RainDefrostGlassesTest.kt</code> · <code>app/src/test/…/automation/RainDefrostV8WiringTest.kt</code>.
+Sửa: <code>RainDefrostPolicy.kt</code> (D5 + KDoc) · <code>RainDefrostApplier.kt</code> · <code>AutomationService.kt</code> ·
+<code>PrefsAutomation.kt</code> · <code>ClusterNavBridgeAutomation.kt</code> · <code>SettingsSectionsCar.kt</code> ·
+<code>values/strings_kachi.xml</code> · <code>values-en/strings_kachi.xml</code> · <code>SettingsCatalogClusterNav.kt</code> +
+<code>SettingsCatalogEntries.kt</code> (chú thích) · <code>RainDefrostPolicyTest.kt</code> (+1 bài) · <code>Automation185WiringTest.kt</code>
+(3 bài theo V8.3b) · <code>SettingsCatalogControlContractTest.kt</code> (trace).</p>
+<ul>
+<li><span class="tag t-ok">ĐO</span> <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --continue</code> — BUILD SUCCESSFUL;
+<code>python3 scripts/count-tests.py</code> <b>6 454 test / 0 đỏ / 0 lỗi / 0 bỏ qua, 738 XML</b> (2.83: 6 411 / 735 ⇒ +43 = 26 + 1 + 8 × 2 biến thể
+<code>:app</code>; +3 XML). Lint: <b>0 lỗi</b>; cảnh báo ở tệp đã chạm cùng loại có sẵn (<code>UseKtx</code> mọi setter của
+<code>PrefsAutomation.kt</code>, <code>ObsoleteSdkInt</code> có từ trước ở <code>AutomationService.kt</code>).</li>
+<li><span class="tag t-ok">ĐO</span> thử phá <b>9/9</b> đỏ đúng ca (bảng V8.3c), hoàn nguyên <code>sha256</code> khớp cho cả 5 tệp mã.</li>
+<li><span class="tag t-ok">ĐO</span> §8 call site production (ngoài định nghĩa, grep): <code>RainDefrostGlasses.tick</code> ←
+<code>RainDefrostApplier.tick</code> · <code>choiceLine</code> ← <code>logChoice</code> ← cầu · <code>forget</code>/<code>requestSoon</code>/<code>logChoice</code> ←
+<code>setRainDefrostGlass</code> ← <code>SettingsSectionsCar</code> (2 hàng) · <code>consumeDue</code>/<code>choice(app).any</code>/<code>forgetAll</code> ←
+<code>AutomationService</code> · <code>Prefs.rainDefrostChoice</code> ← applier + cầu · <code>Prefs.setRainDefrostChoice</code> ← cầu ·
+<code>controlOf</code> ← <code>HalIo.readGlass/writeGlass</code>. Hàm V7 bị gỡ: 0 tham chiếu còn lại trong <code>app/src</code> + <code>core/src</code>.</li>
+<li><span class="tag t-ok">ĐO</span> <code>wc -l</code>: mọi tệp chạm ≤ 500 (lớn nhất <code>RainDefrostGlassesTest.kt</code> 425, <code>SettingsCatalogEntries.kt</code> 388).</li>
+<li><span class="tag t-ok">ĐO nguồn AOSP</span> D2: <code>SharedPreferencesImpl.java</code> @ <code>android-10.0.0_r47</code> (tải từ
+<code>android.googlesource.com</code>, sha256 <code>e37a798450ed4087ba3157bf0f1cf655e463a73d8ea35b3878e608c098fb91cd</code>) :458-461 ·
+:498-566 · :328-333 — xem <a href="#v8-impl">mục 8</a>. Chưa đối chiếu ROM BYD đã sửa lớp này hay chưa <span class="tag t-unk">CHƯA BIẾT</span>
+(firmware ở <code>../firmware/</code> chưa trích).</li>
+<li>Không có dependency mới ⇒ Context7 không áp dụng; <code>RainGlass.entries</code> (Kotlin 2.4.10 của dự án) thay <code>values()</code>.</li>
+</ul>
+<p><b>Chưa làm — bắt buộc trước commit/ship:</b> senior review Opus (global §5) · security scan (§6) · <code>clean assembleRelease</code> +
+<code>--rerun-tasks</code> · bump version (chỉ khi owner cho giao APK) · 🚗 OC1–OC4. Owner vẫn chưa trả lời OQ-V8.1…5; mã đi theo mặc định
+đã ghi (D8 không tắt khi bỏ tích · giữ nhịp 5′ · nhãn "kachi-automation V8").</p>
+
+<h3 id="v81-log">2026-09-30 · V8.1 T9–T15 xong off-car (chưa commit · không bump · chưa lên xe)</h3>
+<p>Nền: HEAD <code>b5c0e87</code> + cây làm việc V8. Phạm vi đúng <a href="#v81-req">§V8.1 B</a>; không đụng <code>ProfileScope.kt</code>,
+không đụng xe/máy ảo.</p>
+<p><b>Tệp</b> — mới: <code>core/…/automation/RainDefrostCadence.kt</code> (119 dòng) · <code>core/…/automation/RainDefrostStatus.kt</code> (160) ·
+<code>core/src/test/…/RainDefrostCadenceTest.kt</code> (17 bài) · <code>RainDefrostStatusTest.kt</code> (16 bài) ·
+<code>app/src/test/…/automation/RainDefrostStatusWiringTest.kt</code> (8 bài). Sửa: <code>RainDefrostApplier.kt</code> (238 dòng: nhịp + kết quả
+từng kính + <code>loopStarted/tickIfDue/lastOf/nextCheckWallMs</code>) · <code>AutomationService.kt</code> (253: <code>loopStarted()</code> trước vòng,
+<code>tickIfDue(app, nowMs)</code> không điều kiện, gỡ <code>lastRainMs</code>) · <code>ClusterNavBridgeAutomation.kt</code> (320: <code>rainDefrostStatus</code>) ·
+<code>SettingsSectionsCar.kt</code> (295: khối dòng tình trạng + <code>refreshRainStatus</code> + <code>rainWords</code>) · <code>values{,-en}/strings_kachi.xml</code>
+(+18 khoá <code>kachi_rain_st_*</code> mỗi ngôn ngữ) · 2 assert cũ theo <a href="#v81-3b">bảng V8.1-b</a> (<code>Automation185WiringTest</code>,
+<code>RainDefrostV8WiringTest</code>) · tài liệu người dùng R-V8.9 (<code>HUONG-DAN-KACHI.md</code> · <code>guide/HUONG-DAN-CO-HINH.html</code> §5.2 +
+chú thích ảnh + 2 hàng "hay hiểu nhầm" + bảng phạm vi · <code>guide/OUTLINE.md</code> 8.2 · <code>README.md</code>) · danh mục
+(<code>catalog/features.json</code> + sinh lại <code>kachi-feature-catalog.html</code>).</p>
+<ul>
+<li><span class="tag t-ok">ĐO</span> <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --rerun-tasks --continue</code> — BUILD SUCCESSFUL,
+<b>82/82 task chạy thật</b>; <code>count-tests.py</code> <b>6 507 / 0 đỏ / 0 lỗi / 0 bỏ qua, 742 XML</b> (Pass 5: 6 458 / 738 ⇒ +49 = 17 + 16
+<code>:core</code> + 8 × 2 biến thể <code>:app</code>; +4 XML). Lint debug <b>0 lỗi</b>, 526 cảnh báo (bằng Pass 5; trên tệp chạm chỉ
+<code>ObsoleteSdkInt</code> có từ trước ở <code>AutomationService.kt</code>; 0 cảnh báo trên 36 chuỗi mới).</li>
+<li><span class="tag t-ok">ĐO</span> §8 call site production: <code>RainDefrostCadence(</code> ← applier · <code>loopStarted()</code> ← <code>AutomationService.startLoop</code> ·
+<code>tickIfDue(</code> ← vòng · <code>lastOf</code>/<code>nextCheckWallMs()</code> ← cầu <code>rainDefrostStatus</code> ← <code>SettingsSectionsCar.refreshRainStatus</code>
+(3 chỗ gọi: dựng trang + 2 cú chạm) · <code>RainDefrostStatus.lines(</code> ← cầu · <code>RainGlassLastResults()</code>/<code>record(</code> ← applier ·
+<code>halReady</code>/<code>toWallMs</code>/<code>nextDueMs</code> ← applier. <code>wc -l</code> mọi tệp chạm ≤ 500 (lớn nhất <code>RainDefrostGlassesTest.kt</code> 472).</li>
+<li><span class="tag t-ok">ĐO</span> sinh lại danh mục <code>scripts/docs/feature-catalog.py --date 2026-09-30</code>: trước khi sửa <code>features.json</code> trùng khít từng
+byte; sau khi thêm vế V8.1 vào mục sấy thì sinh lại (2 dòng đổi).</li>
+<li>Chốt OQ mặc định (không hỏi owner): OQ-V8.3 giữ D8 · OQ-V8.4 chấp nhận ≤ 5′ · OQ-V8.5 giữ nhãn (lý do ở <a href="#v81-ctx">§A</a>).</li>
+<li>Không dependency mới ⇒ Context7 không áp dụng (Android SDK <code>SimpleDateFormat</code>/<code>SystemClock</code> như chỗ khác của launcher).</li>
+</ul>
+
+<p><b>Phá thử (T15)</b> — [ĐO] mỗi phép: áp đột biến → chạy bộ lọc (<code>:core</code> <code>*RainDefrost*</code> 76 bài; <code>:app</code>
+<code>*RainDefrost*</code> + <code>*Automation185*</code> 33 bài) → đọc JUnit XML → hoàn nguyên, <code>sha256</code> trước = sau cho mọi phép (phép nào có tệp
+đích đổi sau bản vá "giờ nhịp kế tính cả <code>due</code>" đã chạy lại trên tệp cuối).</p>
+<div class="scroll"><table>
+<tr><th>#</th><th>Phá</th><th>Đỏ thật (JUnit XML)</th></tr>
+<tr><td>M12</td><td><b>Dòng tình trạng đọc sai kính</b>: <code>lines</code> dùng <code>lastOf(RainGlass.FRONT)</code> cho mọi kính</td><td>9 bài <code>RainDefrostStatusTest</code>, gồm <i>hai kinh khac ket qua…</i> · <i>kinh vua tich them…</i> · <i>chi sau, mua, xe tat…</i></td></tr>
+<tr><td>M13a</td><td><b>Bỏ nhịp đầu ngay</b> (dựng lại công thức <code>79be642</code>: chưa có mốc ⇒ chờ <code>now ≥ 5′</code>)</td><td>7 bài <code>RainDefrostCadenceTest</code>, gồm <i>nhip dau chay ngay… uptime 30 giay</i> · <i>vong moi chay nhip dau ngay…</i></td></tr>
+<tr><td>M13b</td><td>Vòng không gọi <code>RainDefrostApplier.loopStarted()</code></td><td><code>RainDefrostStatusWiringTest › vong goi loopStarted truoc khi vao vong</code></td></tr>
+<tr><td>M14</td><td><b>Bỏ trần thử lại</b> (<code>!halReady</code> ⇒ luôn +60 s)</td><td><i>HAL null mai thi thu lai dung 5 lan…</i> · <i>vong moi tra tran thu lai ve 0</i></td></tr>
+<tr><td>M15</td><td><b>Bỏ sàn 60 s</b></td><td><i>hoi day 250 ms, yeu cau don dap…</i> · <i>yeu cau chua qua san…</i> · <i>vong moi trong 60 giay…</i></td></tr>
+<tr><td>M16</td><td><code>tickIfDue</code> không ghi kết quả từng kính</td><td><code>RainDefrostStatusWiringTest › applier gac nhip, ghi ket qua…</code></td></tr>
+<tr><td>M17</td><td>Chạm ô "sau" không làm tươi dòng tình trạng</td><td><code>RainDefrostStatusWiringTest › khoi dong tinh trang ngay duoi hai hang…</code></td></tr>
+<tr><td>M18</td><td>Lộn khoá chữ <code>car_on</code> ⇄ <code>car_off</code> trong <code>rainWords</code></td><td><i>chu mau tieng Viet moi ca</i> · <i>chu mau tieng Anh moi ca</i></td></tr>
+<tr><td>M19</td><td>Yêu cầu chưa qua sàn bị vứt (đặt cờ SAU kiểm sàn)</td><td><i>yeu cau chua qua san thi duoc giu…</i> · <i>nextDueMs - vong vua bat dau…</i></td></tr>
+<tr><td>M20</td><td><code>tickIfDue</code> bỏ <code>consumeDue()</code> (R-V8.5 mất)</td><td><i>applier gac nhip…</i> · <code>RainDefrostV8WiringTest › vong nhip doc co due…</code></td></tr>
+<tr><td>M21</td><td>Vòng gác nhịp mưa lại bằng đếm lượt thức (<code>if (ticks % RAIN_EVERY_TICKS == 0)</code>)</td><td><code>RainDefrostV8WiringTest › vong nhip doc co due…</code></td></tr>
+<tr><td>M22a</td><td>Giờ nhịp kế bỏ qua cờ <code>due</code> chưa đọc</td><td><code>RainDefrostStatusWiringTest › lam tuoi chi doc RAM qua cau…</code></td></tr>
+<tr><td>M22b</td><td><code>nextDueMs</code> bỏ qua tham số <code>request</code></td><td><code>RainDefrostCadenceTest › nextDueMs - tinh ca yeu cau vong chua doc toi</code></td></tr>
+</table></div>
+
+<p><b>Ảnh chữ mẫu</b> — nguyên văn, dựng từ CHÍNH hai tệp <code>strings_kachi.xml</code> theo ánh xạ của mã màn hình
+(<code>RainDefrostStatusWiringTest › chu mau tieng Viet/Anh moi ca</code>):</p>
+<pre>● xám   Kính trước · chưa kiểm lần nào từ lúc mở xe · nhịp kế ~14:07
+● xám   Kính sau + gương · chưa kiểm lần nào từ lúc mở xe                      (không biết nhịp kế)
+● vàng  Kính sau + gương · 14:02 · cảm biến mưa không đọc được ⇒ để nguyên
+● vàng  Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: không đọc được
+● xanh  Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: tắt → Kachi bật: tới xe ✓
+● đỏ    Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: tắt → lệnh bật: không tới xe ✗
+● vàng  Kính sau + gương · 14:02 · mưa (gạt 3) · xe báo: tắt → bỏ lệnh (vừa đổi lựa chọn)
+● xanh  Kính trước · 14:02 · mưa (gạt 3) · xe báo: bật → đang sấy, để nguyên
+● xanh  Kính trước · 14:02 · khô (gạt 1) · xe báo: bật → Kachi tắt: tới xe ✓
+● đỏ    Kính trước · 14:02 · khô (gạt 1) · xe báo: bật → lệnh tắt: không tới xe ✗
+● xám   Kính sau + gương · 14:02 · khô (gạt 1) · xe báo: bật → không do Kachi bật, để nguyên
+● xám   Kính trước · 14:02 · khô (gạt 1) · xe báo: tắt → không cần sấy
+
+EN  Front windscreen · not checked since the car started · next check ~14:07
+EN  Rear + mirrors · 14:02 · rain sensor unreadable ⇒ left as is
+EN  Rear + mirrors · 14:02 · rain (wiper 3) · car says: off → Kachi turned it on: reached the car ✓
+EN  Rear + mirrors · 14:02 · rain (wiper 3) · car says: off → turn-on command: did not reach the car ✗
+EN  Front windscreen · 14:02 · dry (wiper 1) · car says: on → Kachi turned it off: reached the car ✓</pre>
+<p><b>Chưa làm — bắt buộc trước commit/ship:</b> senior review Opus độc lập cho phần V8.1 (global §5; lượt dưới là tự soát, không độc lập) ·
+security scan (§6) · <code>clean assembleRelease</code> · bump version (chỉ khi owner cho giao APK — tài liệu người dùng đã ghi "từ 2.84") ·
+chụp lại <code>cai-dat-tien-nghi-xe.png</code> khi có APK · 🚗 OC1–OC6.</p>
+
 
 <h2>Reviewer Log</h2>
 <div class="card">
@@ -407,6 +1380,353 @@ mới để đối chiếu. Mọi API Android dùng (<code>LocationManager</code
 (M1 hoàn nguyên script về dạng ngầm ⇒ 2 bài mới ĐỎ · M2 vô hiệu hoá <code>unclaim</code> ⇒ bài <i>"ghi bật hỏng
 thì nhả chủ quyền"</i> ĐỎ), mỗi lần hoàn nguyên đã kiểm <code>sha256</code> trùng khít.
 <b>Verdict: APPROVED off-car</b> (0 P0/P1 còn lại) — với giới hạn <i>không độc lập</i> nêu ở đầu.</p>
+
+<h3>Pass 2 — 2026-09-30 · soát SPEC (addendum V8 + viết lại R1.x) — KHÔNG độc lập, chưa có mã</h3>
+<p>⚠ Người soát = người viết addendum (sub-agent của một workflow), đối chiếu từng file:line với mã HEAD
+<code>b5c0e87</code> và log buổi 22/09 trong phiên này. Đây là soát <b>tài liệu</b>, không phải soát mã: không build, không
+test, không sửa tệp mã nào.</p>
+<p><b>Lỗi của mã HIỆN TẠI mà V8 sửa</b> (tag theo mức nghiêm trọng nếu ship tiếp như cũ):</p>
+<ul>
+<li><b>[P1]</b> K1 — mỏ neo: tích cả hai, kính trước đang bật ⇒ kính sau bị xe tự tắt (~14′, <span class="tag t-ok">ĐO log 22/09</span>)
+không được bật lại cả cơn mưa. → R-V8.2, R-V8.4.</li>
+<li><b>[P1]</b> K3 — <code>TurnOff</code> tắt kính sau người lái tự bật, trái câu chú thích trong app. → R-V8.3.</li>
+<li><b>[P2]</b> K2 — rc kính thứ hai bị bỏ. → R-V8.2.</li>
+<li><b>[P2]</b> K6 — <code>unclaim</code> trả <code>before</code> từ V3 có thể giữ <code>owned = true</code> cho kính đang tắt
+(<span class="tag t-warn">SUY</span> đọc nguồn, chưa có test đỏ). → D5, C13.</li>
+<li><b>[P2]</b> K5 — đổi lựa chọn chờ tới 5′. → R-V8.5.</li>
+<li><b>[P2]</b> K4 — hàng chính khoá hai ô (<span class="tag t-bad">ĐOÁN</span> đọc nhầm). → R-V8.1, D1.</li>
+<li><b>[P3]</b> K7 — dòng log chỉ có mỏ neo; nguy cơ bị tiết chế khi nhịp dày. → R-V8.6, D7.</li>
+<li><b>[P3]</b> <code>RainDefrostApplier.stateNow()</code> 0 call site (gỡ ở T2) · bit <code>suppressed</code> luôn
+<code>false</code> từ V3 (để lại, ngoài phạm vi) · nhãn "V8" trùng (OQ-V8.5) · R5 phần nav lỗi thời từ 28/09 (đã ghi chú
+tại chỗ, không viết lại).</li>
+</ul>
+<p><b>Lệch tài liệu đã sửa trong lượt này:</b> R1.1–R1.5 + R4 (nhịp mưa) + 5 dòng §Design (sơ đồ, <code>:core</code>,
+<code>:app</code>, UI, quyết định own-state) viết lại theo mã; Changelog v3.</p>
+<p><b>Chưa kiểm được trong lượt này:</b> tính nguyên khối của <code>SharedPreferences.Editor.apply()</code> (D2 — T8 phải
+trích nguồn r47) · hành vi on-car của mọi thứ trong V8 (OC1–OC4) · SL6 (OQ-V8.1).</p>
+<p><b>Verdict: DRAFT — chờ owner duyệt 3 cổng.</b> Không phải APPROVED: chưa có mã để soát phạm vi.</p>
+
+<h3 id="v8-review-p3">Pass 3 — 2026-09-30 · senior review mã V8 (global §5 + §5.1) — sub-agent Opus, không viết mã V8</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (mã + test + tài liệu) + 3 tệp mới, đối chiếu §V8.1–V8.4. Không
+đụng xe/máy ảo, không commit, không bump.</p>
+<p><b>Checklist phạm vi (§5.1)</b> — ✅ R-V8.1 (UI hai hàng, không hàng mờ; <code>fromKeys</code>/<code>toKeys</code>; C1–C3, C14,
+C17, C18 + bài 8 tổ hợp mới) · ✅ R-V8.2 (mỗi làn đọc/ghi qua <code>controlOf(glass)</code>, <code>step</code> với ký ức riêng, rc
+riêng; C4, C7, C12) · ✅ R-V8.3 (C8, C9, C13; <code>unclaim</code> D5) · ✅ R-V8.4 (C5) · ✅ R-V8.5 (<code>due</code> +
+<code>consumeDue()</code> trước <code>||</code>; bài tĩnh) · ✅ R-V8.6 (<code>#seq</code>, C19, định dạng) · ✅ nf1 (khoá DEVICE, id,
+nhịp 5′, luật V3 không đổi) · ✅ nf2 (≤ 500 dòng; không nhánh đời xe/tên gói) · ✅ nf3 · ✅ nf4 (bảng V8.3b: mỗi assert gỡ
+có assert thay chặt bằng/hơn). Call site §8: mọi hàm mới có chỗ gọi production.</p>
+<p><b>Đã soát, không phải lỗi</b> <span class="tag t-ok">ĐO nguồn</span>: (1) đa luồng — <code>forget</code> (luồng vẽ) vs nhịp
+(luồng nền): cầu ghi prefs → <code>forget</code>, nhịp chụp ký ức → đọc lựa chọn; mọi thứ tự xen kẽ cho ra hoặc nhịp đọc lựa chọn
+MỚI với thế hệ mới, hoặc <code>commit</code> bị bỏ + lượt ghi bị chặn nếu chưa phát; <code>forgetAll</code> không nguyên tử giữa hai
+kính nhưng từng kính vẫn sạch; hai vòng thế hệ cũ/mới chạy chồng một nhịp (có từ V7) nay vô hại hơn nhờ thế hệ.
+<code>AutomationService</code> cùng tiến trình với Cài đặt (manifest không khai <code>android:process</code>) ⇒ một
+<code>RainGlassMemory</code>. (2) 8 tổ hợp 3 khoá cũ ⇒ V8 hiện đúng lựa chọn V7 đang chạy, chạm một ô không làm sống lại ô kia —
+nay khoá bằng bài chạy thật. (3) Người lái tắt kính Kachi đã bật giữa mưa ⇒ Kachi bật lại: đúng luật V3 owner chốt 22/09
+(<code>RainDefrostOwner.step</code>), R-V8.nf1 cấm đổi; chuỗi ghi chú mới nói thật điều đó ở cả vi/en. (4) Tiến trình chết giữa
+mưa ⇒ ký ức mất ⇒ <code>owned = false</code> ⇒ hết mưa không tắt kính nào: hướng sai an toàn. (5) Đọc kính <code>null</code> ⇒
+<code>stepUnknown</code> giữ ký ức, kính kia vẫn chạy (C12). (6) §6 Seal "cả hai": làn trước y hệt mỏ neo V7; làn sau thêm
+bật-lại và bỏ tắt-nhầm; đọc area 2 trên Seal chạy <span class="tag t-ok">ĐO log 22/09</span>. (7) <code>prefs_set</code> không
+nhận ba khoá này (bảng khoá có kiểu ở <code>TestBridgePrefsSet</code>) ⇒ không có đường ghi sai kiểu.</p>
+<p><b>Đã vá</b> (mọi mục đều [P3], không có P0/P1/P2):</p>
+<ul>
+<li><b>[P3]</b> <code>AutomationService.anyEnabled</code>: dòng mưa là dòng DUY NHẤT không bọc <code>runCatching</code> (hai dòng
+anh em có bọc), và V8 đọc cả 3 khoá mỗi lần. Ném ở <code>onStartCommand</code>/điều kiện <code>while</code> của luồng daemon là nổ
+tiến trình. Vá: bọc, lỗi ⇒ <code>false</code> (không có việc mưa = hướng an toàn).</li>
+<li><b>[P3]</b> Hợp đồng <code>RainGlassIo</code> nói "không hàm nào được ném" nhưng <code>HalIo.choice()</code> đọc prefs không bọc.
+Giữ hành vi (ném ⇒ bỏ cả nhịp, ký ức giữ — tốt hơn nuốt thành <code>NONE</code> rồi quên mọi kính), sửa KDoc cho đúng.</li>
+<li><b>[P3]</b> Lỗ canh: bảng tương thích chỉ phủ 5/8 tổ hợp khoá cũ. Thêm bài <i>du 8 to hop khoa cu…</i>; thử phá
+<code>fromKeys</code> bỏ <code>enabled</code> cho kính sau ⇒ bài mới + C17 đỏ, hoàn nguyên <code>sha256</code> khớp.</li>
+<li><b>[P3]</b> Tài liệu lệch mã: D6 nói vòng mới "nhịp đầu chạy ngay nhờ <code>lastRainMs = 0</code>" — sai khi uptime &lt; 5′
+(đúng nhờ <code>due</code>); cổng off-car ghi "7/7 thử phá" trong khi V8.3c có 9; D2 còn ghi "phải trích" dù đã trích; OC4 chưa
+nói tới <code>SAU đọc=lỗi</code> (V8 cần đọc được kính sau mới ghi); D4 + KDoc <code>RainDefrostGlasses.tick</code> + một
+chú thích test lấy <code>prefs_set</code> làm ví dụ đường ghi không qua cầu, trong khi <code>prefs_set</code> từ chối ba khoá này. Sửa
+lời tại chỗ; mở OQ-V8.6.</li>
+</ul>
+<p><b>Ghi ra, KHÔNG vá (ngoài phạm vi / cần owner):</b> OQ-V8.6 nhịp mưa đầu sau nổ máy ở uptime ≈ 5′ (hành vi có từ
+24/09) · D8/OQ-V8.3 bỏ tích giữa mưa để nguyên kính đang bật (kính trước không biết xe có tự tắt) · 3 cổng spec + OQ-V8.1…5
+chưa có dấu owner duyệt trong phiên.</p>
+<p><b>Tech freshness:</b> không dependency mới, không đổi <code>build.gradle.kts</code> ⇒ Context7 không áp dụng.
+<code>Enum.entries</code> là API hiện hành của Kotlin (thay <code>values()</code>).</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --continue</code>
+BUILD SUCCESSFUL · <code>count-tests.py</code> <b>6 455 / 0 đỏ / 0 lỗi / 0 bỏ qua, 738 XML</b> (+1 = bài 8 tổ hợp) · lint debug +
+release <b>0 lỗi</b> (cảnh báo <code>ObsoleteSdkInt</code> ở <code>AutomationService.kt</code> có từ trước). <code>wc -l</code>:
+<code>RainDefrostGlasses.kt</code> 296 · <code>RainDefrostGlassesTest.kt</code> 448 · <code>AutomationService.kt</code> 251. Vòng soát lại
+trên phần vừa vá (một <code>runCatching</code>, KDoc, một bài test, lời tài liệu): 0 phát hiện mới.</p>
+<p><b>Verdict: PATCHED</b> — off-car. Phạm vi đủ (0 ❌); 🚗 OC1–OC4, security scan §6, <code>clean assembleRelease</code> +
+<code>--rerun-tasks</code> còn trước commit/ship.</p>
+
+<h3 id="v8-review-p4">Pass 4 — 2026-09-30 · senior review lượt 2 mã V8 (global §5 + §5.1) — sub-agent Opus, không viết mã V8</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (mã + test + tài liệu, gồm các bản vá Pass 3) + 3 tệp mới, đọc lại
+§V8.0–V8.5. Không đụng xe/máy ảo, không commit, không bump.</p>
+<p><b>Checklist phạm vi (§5.1)</b> — soát lại độc lập từng mục, cùng kết luận Pass 3: ✅ R-V8.1 (UI: tiêu đề mục + đúng hai
+<code>checkRow</code>, không <code>isEnabled</code>/<code>alpha</code>; <code>fromKeys</code>/<code>toKeys</code>, 8 tổ hợp) · ✅ R-V8.2
+(<code>readGlass</code>/<code>writeGlass</code> cùng <code>controlOf(glass)</code>; <code>settle</code> theo rc của chính làn; C4 · C7 · C12) · ✅ R-V8.3
+(C8 · C9 · C13, <code>unclaim</code> D5) · ✅ R-V8.4 (C5) · ✅ R-V8.5 (<code>requestSoon</code> trước <code>sync</code>, <code>consumeDue()</code> trước
+<code>||</code>) · ✅ R-V8.6 (<code>#seq</code> / <code>#c</code>) · ✅ nf1–nf4 · §8: mọi hàm mới có chỗ gọi production. <b>0 ❌.</b></p>
+<p><b>Soát thêm so với Pass 3 — không phải lỗi</b>:</p>
+<ul>
+<li><span class="tag t-ok">ĐO nguồn + ĐO log 22/09</span> §6 Seal "cả hai": làn SAU đọc bằng <code>carControl.readState("defrost_rear")</code> →
+<code>readPathOf</code> → datum <code>defrost_rear_state</code> → <code>getAcDefrostState(2)</code> (<code>HalRoutes.kt:41-45</code>,
+<code>HalReadTables.kt:47</code>) — đúng getter + tham số mà <code>usage-1790074430819.log</code> đọc ra: area 2 <code>state is: 1</code>
+18:05:42 → <code>0</code> 18:12:53 → <code>1</code> 18:21:40 → <code>0</code> 18:35:53 (1 = bật · 0 = tắt, khớp <code>it != 0</code>). Đường này KHÔNG
+qua <code>HalAbsentCache</code> (chỉ ở <code>CarDataAdapter</code>); cache tay cầm device của gateway chỉ nhớ lần hụt 30 s
+(<code>BydHalGateway.MISS_TTL_MS</code>) ≪ nhịp 5′.</li>
+<li><span class="tag t-ok">ĐO nguồn</span> <code>toggle(id, on)</code> là GHI GIÁ TRỊ (<code>table.write(id, if (on) 1 else 0)</code>,
+<code>CarControlAdapter.kt:14</code>), không đảo ⇒ TurnOn lặp ở hai nhịp liền (nhịp <code>due</code> + nhịp 5′) vô hại.</li>
+<li>Cờ <code>due</code> còn treo khi lượt bỏ tích cuối cùng làm engine dừng ⇒ lần engine sống lại (camera/lịch dẫn) chạy ngay một
+nhịp mưa, lựa chọn rỗng ⇒ <code>tick</code> trả sớm, 0 lượt HAL. Vô hại.</li>
+<li>Người lái tắt kính Kachi đã bật giữa mưa ⇒ Kachi bật lại: luật V3 (owner 22/09), R-V8.nf1 cấm đổi. V8 làm luật ấy áp cả
+cho kính sau khi chọn "cả hai" (V7: mỏ neo trước đang bật ⇒ không bao giờ bật lại kính sau) — đổi hành vi CÓ CHỦ Ý (R-V8.4),
+ghi chú trong app nói rõ ở vi/en; muốn Kachi thôi đụng kính nào thì bỏ tích ô đó.</li>
+<li>Khởi động lại giữa mưa: <code>onDestroy</code> không quên ký ức (tiến trình còn ⇒ chủ quyền vẫn đúng); nhánh dừng của
+<code>sync</code> quên cả hai; tiến trình chết ⇒ <code>owned = false</code> ⇒ hết mưa không tắt kính nào (sai về phía an toàn).
+<span class="tag t-ok">ĐO 29/09</span> BYD giết tiến trình Kachi mỗi lần tắt máy ⇒ mỗi chuyến bắt đầu với ký ức sạch.</li>
+<li><code>docs/kachi-feature-catalog.html</code>: sinh lại bằng <code>scripts/docs/feature-catalog.py --date 2026-09-30</code> ra tệp
+trùng khít từng byte với tệp trong cây.</li>
+<li>Lint trên tệp V8: 0 lỗi; cảnh báo đều có từ trước (<code>ObsoleteSdkInt</code>; <code>UseKtx</code> ở MỌI setter của
+<code>PrefsAutomation.kt</code> — setter V8 theo khuôn cả tệp, và bài canh ghim đúng <code>.edit()</code> · <code>.apply()</code>).</li>
+</ul>
+<p><b>Đã vá</b> (mọi mục [P3], chỉ lời — 0 đổi hành vi, 0 đổi assert):</p>
+<ul>
+<li><b>[P3]</b> KDoc <code>RainDefrostApplier</code> §Degrade-safe còn viết "hợp đồng <code>RainGlassIo</code>: không hàm nào ném" sau khi
+Pass 3 đã sửa hợp đồng (<code>choice()</code> được ném ⇒ bỏ cả nhịp) ⇒ sửa lời cho khớp.</li>
+<li><b>[P3]</b> §V8.2: khối chữ ký <code>RainGlassIo</code> còn "không hàm nào ném"; số dòng 292 · 248 · 425 lệch mã (296 · 251 · 448;
+<code>RainDefrostApplier.kt</code> 186) ⇒ sửa.</li>
+<li><b>[P3]</b> D6 + OQ-V8.6: mốc "24/09" sai — <span class="tag t-ok">ĐO git</span> gốc là <code>79be642</code> (2.29, 25/09). Bổ
+sung ba dữ kiện cho owner quyết (xem OQ-V8.6). INDEX (<code>docs/README.md</code>) + BACKLOG cập nhật trạng thái review.</li>
+</ul>
+<p><b>Ghi ra, KHÔNG vá:</b> OQ-V8.6 vẫn để owner quyết (dữ kiện mới làm nó hiếm hơn trên xe owner, và cho thấy "dời mốc
+<code>lastRainMs</code>" một mình chưa đủ) · OQ-V8.3 · OQ-V8.4 · lý do trong <code>ProfileScope</code> của
+<code>rain_defrost_front</code>/<code>_rear</code> còn tả nhãn V7 ("ô con 'Sấy kính trước'") — phạm vi DEVICE vẫn đúng và §V8.2
+chốt "ProfileScope không đụng" ⇒ để nguyên · <code>RainDefrostChoice.NONE</code> chỉ test dùng (hằng, không phải hàm chưa nối).</p>
+<p><b>Tech freshness:</b> không dependency mới, <code>build.gradle.kts</code> không đổi ⇒ Context7 không áp dụng. API dùng đều hiện
+hành (<code>Enum.entries</code>; <code>SharedPreferences.Editor.apply()</code> không deprecated — KTX <code>edit { }</code> chỉ là
+tiện ích, đổi riêng setter V8 là lệch khuôn cả tệp).</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --continue</code>
+BUILD SUCCESSFUL · <code>count-tests.py</code> <b>6 455 / 0 đỏ / 0 lỗi / 0 bỏ qua, 738 XML</b> · lint 0 lỗi · và
+<code>./gradlew test testDebugUnitTest --rerun-tasks --continue</code> BUILD SUCCESSFUL, <b>73/73 task chạy thật</b> (không lấy cache),
+đếm lại vẫn 6 455 / 0 đỏ / 738 XML. Vòng soát lại trên phần vừa vá (một đoạn KDoc + lời tài liệu): 0 phát hiện mới.</p>
+<p><b>Verdict: PATCHED</b> — off-car, chỉ vá lời (3 × P3), 0 P0/P1/P2. Phạm vi đủ (0 ❌). <code>--rerun-tasks</code> nay đã
+chạy (mục còn treo của Pass 3). Còn trước commit/ship: security scan §6 · <code>clean assembleRelease</code> · 🚗 OC1–OC4.</p>
+
+<h3 id="v8-review-p5">Pass 5 — 2026-09-30 · senior review lượt 3 mã V8 (global §5 + §5.1) — sub-agent Opus, không viết mã V8</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (mã + test + tài liệu, gồm bản vá Pass 3–4) + 3 tệp mới, đọc lại
+§V8.0–V8.5 và các tài liệu người dùng có nhắc tính năng. Không đụng xe/máy ảo, không commit, không bump.</p>
+<p><b>Checklist phạm vi (§5.1)</b> — soát lại độc lập: ✅ R-V8.1 (tiêu đề mục + đúng hai <code>checkRow</code>, không hàng mờ; 8 tổ hợp khoá
+cũ) · ✅ R-V8.2 (<code>controlOf(glass)</code> cho cả đọc lẫn ghi; <code>settle</code> theo rc của chính làn; C4 · C7 · C12) · ✅ R-V8.3 (C8 · C9 ·
+C13; <code>unclaim</code> D5) · ✅ R-V8.4 (C5) · ✅ R-V8.5 (thứ tự cầu ghi prefs → <code>forget</code> → <code>requestSoon</code> → <code>sync</code>;
+mọi xen kẽ với nhịp nền đã liệt kê: <code>requestSoon</code> đến sau <code>consumeDue</code> ⇒ cờ còn ⇒ nhịp kế ≤ 60 s; đến trước ⇒ nhịp này đã
+thấy prefs mới + thế hệ mới) · ✅ R-V8.6 · ✅ nf1–nf4 · §8 call site ✅. <b>0 ❌.</b></p>
+<p><b>Soát thêm — không phải lỗi</b>: <span class="tag t-ok">ĐO nguồn</span> <code>HalBindingTable.readState</code> → <code>readInt</code> →
+<code>coerceInt</code> lọc sentinel ⇒ đọc kính ra 65535/−10011 thành <code>null</code> (<code>đọc=lỗi</code>), không thành "đang bật" · cửa sổ
+nhỏ giữa <code>isCurrent</code> và <code>writeGlass</code> (người dùng bỏ tích đúng lúc đó ⇒ một lượt ghi theo lựa chọn cũ, ký ức không
+commit, kính không thuộc Kachi) cho cùng kết cục D8 — không giữ khoá qua HAL là quyết định D4 · người lái tắt kính Kachi đã bật giữa mưa ⇒
+Kachi bật lại: luật V3, R-V8.nf1 · <code>docs/kachi-feature-catalog.html</code> sinh lại <code>--date 2026-09-30</code> trùng khít từng byte
+<span class="tag t-ok">ĐO</span>.</p>
+<p><b>Đã vá</b> (mọi mục [P3]; 0 dòng mã chạy đổi — chỉ test + lời):</p>
+<ul>
+<li><b>[P3]</b> D2 · "đọc lẫn vô hại" dựa trên lý lẽ SAI và chưa có test. Lý lẽ cũ "mỗi lần đổi chỉ lật một ô + <code>enabled</code>" không đúng:
+từ prefs cài mới một cú tích "trước" lật cả <code>enabled</code> lẫn khoá <i>sau</i>. Kết luận vẫn đúng nhưng vì một lý do KHÁC không được
+canh: <code>Prefs.rainDefrostChoice</code> đọc <code>enabled</code> TRƯỚC hai con. Đảo thứ tự (một lượt dọn mã vô hại về hình thức) ⇒ nhịp chen
+giữa lượt ghi đọc được <code>front</code> cũ <code>true</code> + <code>enabled</code> mới <code>true</code> ⇒ Kachi bật kính trước không ai
+chọn, không bao giờ tắt hộ. Vá: <code>RainDefrostGlassesTest › doc lan cu moi, enabled doc truoc - khong kinh ma</code> (8 tổ hợp × 4 cú chạm × 4
+bản đọc lẫn, mỗi kính phải ra giá trị cũ hoặc mới của chính nó) + <code>RainDefrostV8WiringTest › doc enabled truoc hai o con</code>; sửa lời
+<a href="#v8-impl">mục 8</a> + D2 từ <span class="tag t-warn">SUY</span> sang <span class="tag t-ok">ĐO test</span>.</li>
+<li><b>[P3]</b> i18n: bài chữ canh vế "Kachi bật lại" ở VI nhưng không canh EN ⇒ trả EN về câu V7 (thiếu vế V3) vẫn xanh. Thêm
+<code>"turned back on" in en</code>.</li>
+<li><b>[P3]</b> Spec lệch mã/git (sót sau Pass 4): mốc "24/09" của nhịp theo thời gian trôi còn ở R1.2 · bảng lịch sử R1 (xếp sau V7) ·
+Changelog v3 · câu đầu OQ-V8.6 — <span class="tag t-ok">ĐO git</span> <code>79be642</code> 2026-09-25 09:09, trước V7 <code>763a590</code> 18:43
+⇒ sửa cả bốn, xếp lại bảng; khối <code>:app</code> §V8.2 "185 dòng" → 186; T4 "4 chuỗi sửa" → 3 sửa + 2 gỡ mỗi ngôn ngữ (đếm theo diff);
+T1 "26 bài" → 28, T5 "8 bài" → 9; trần dòng test 448 → 472 · 149 → 164. (Dòng "24/09" trong Pass 3 là lịch sử, giữ nguyên.)</li>
+<li><b>[P3]</b> Tài liệu người dùng còn tả UI V7 (công tắc chính + hai ô con mờ): <code>docs/HUONG-DAN-KACHI.md:72</code> ·
+<code>docs/guide/HUONG-DAN-CO-HINH.html</code> §5.2 (ảnh 2.79) · <code>docs/guide/OUTLINE.md:101</code> · <code>README.md:352</code>. Chúng viết theo
+bản ĐÃ phát hành (2.74/2.79) mà V8 chưa phát hành ⇒ sửa bây giờ là tả sai bản đang chạy; ghi vào backlog <code>RAIN-DEFROST-V8</code> là việc
+của lượt giao APK.</li>
+</ul>
+<p><b>Thử phá bài mới</b> <span class="tag t-ok">ĐO</span>: M9 · M10 · M11 (bảng V8.3c) — cả ba đỏ đúng bài, hoàn nguyên <code>shasum -a 256 -c</code> OK
+cho 3 tệp.</p>
+<p><b>Ghi ra, KHÔNG vá:</b> OQ-V8.3 · OQ-V8.4 · OQ-V8.6 (owner quyết) · <code>Automation185WiringTest</code> dòng 173–175 (bài nav, có từ trước V8)
+còn <code>substringAfter/Before</code> — ngoài phạm vi V8 · lý do <code>ProfileScope</code> còn nhãn V7 (như Pass 4).</p>
+<p><b>Tech freshness:</b> không dependency mới, <code>build.gradle.kts</code> không đổi ⇒ Context7 không áp dụng.</p>
+<p id="v8-review-p5-run"><span class="tag t-ok">ĐO</span> sau vá: focused <code>:core:test --tests '*RainDefrostGlassesTest*'</code> 28/0 ·
+<code>:app:testDebugUnitTest --tests '*RainDefrostV8WiringTest*'</code> 9/0 · full
+<code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew test testDebugUnitTest lint --rerun-tasks --continue</code> BUILD SUCCESSFUL,
+<b>82/82 task chạy thật</b> · <code>count-tests.py</code> <b>6 458 / 0 đỏ / 0 lỗi / 0 bỏ qua, 738 XML</b> (+3 = 1 bài <code>:core</code> + 1 bài
+<code>:app</code> × 2 biến thể) · lint debug <b>0 lỗi</b> (526 cảnh báo, không loại mới trên tệp V8). Vòng soát lại trên phần vừa vá (2 bài test,
+1 assert, lời tài liệu): 0 phát hiện mới.</p>
+<p><b>Verdict: PATCHED</b> — off-car, 4 × P3 (2 bài test mới + 1 assert + lời), 0 P0/P1/P2, 0 dòng mã chạy đổi. Phạm vi đủ (0 ❌). Còn
+trước commit/ship: security scan §6 · <code>clean assembleRelease</code> · 🚗 OC1–OC4 · lượt giao APK sửa tài liệu người dùng.</p>
+
+<h3 id="v81-review-p6">Pass 6 — 2026-09-30 · tự soát lô V8.1 — KHÔNG độc lập (người soát = người viết mã V8.1, sub-agent của workflow)</h3>
+<p>⚠ Giới hạn nói trước: đây không phải senior review độc lập của global §5 — lượt độc lập (Opus) cho phần V8.1 vẫn còn phải chạy trước
+commit. Phạm vi: diff V8.1 (mã + test + tài liệu) trên cây làm việc V8, đối chiếu <a href="#v81">§V8.1</a>.</p>
+<p><b>Checklist phạm vi</b> — ✅ R-V8.7 (khối dòng tình trạng dưới hai hàng; một dòng mỗi kính CHỌN; mọi ca có chuỗi vi/en khoá bằng test dựng
+từ XML; nguồn RAM, không HAL/ghi bền trên đường hiển thị — bài canh cấm từng token; làm tươi khi dựng trang + sau cú chạm) · ✅ R-V8.8 (nhịp đầu
+ngay · thử lại đúng 5 lần · sàn 60 s cả khi hỏi 250 ms · yêu cầu giữ tới khi qua sàn · 5′ theo thời gian trôi) · ✅ R-V8.9 (4 tệp, "từ 2.84",
+không ảnh mới) · ✅ nf (không khoá mới, ≤ 500 dòng, không nhánh đời xe, <code>ProfileScope.kt</code> không chạm) · §8 call site ✅.</p>
+<p><b>Tìm ra và đã vá trong lượt</b></p>
+<ul>
+<li><b>[P2]</b> Giờ nhịp kế sai ngay sau cú chạm: cầu gọi <code>requestSoon()</code> (cờ <code>due</code> ở applier) rồi màn hình làm tươi TRƯỚC khi
+vòng đọc cờ ⇒ <code>nextDueMs</code> không thấy yêu cầu ⇒ hứa "+5′" cho một nhịp sẽ chạy trong ≤ 60 s — đúng loại chữ sai mà dòng tình trạng sinh
+ra để chữa. Vá: <code>nextDueMs(nowMs, request)</code> + applier truyền <code>due.get()</code> (đọc, không xoá). Test: <i>nextDueMs - tinh ca yeu cau
+vong chua doc toi</i> + assert <code>cadence.nextDueMs(elapsed, due.get())</code> và cấm <code>consumeDue()</code> ở đường hiển thị; phá M22a/M22b đỏ.</li>
+<li><b>[P3]</b> Bài canh "làm tươi sau cú chạm" ban đầu lấy biên là <i>hàng kế</i> ⇒ với hàng cuối, lượt làm tươi lúc DỰNG TRANG có thể giả làm lượt
+sau cú chạm. Vá: biên = hàng kế hoặc chỗ gắn khối; phá M17 (gỡ làm tươi của hàng CUỐI) đỏ.</li>
+</ul>
+<p><b>Đã soát, không phải lỗi</b>: (1) đa luồng — <code>cadence</code>/<code>lastResults</code> khoá ngắn trên map, không giữ qua HAL; hai vòng thế hệ
+chồng nhau chỉ gọi nhịp qua cùng một <code>cadence</code> đã khoá, sàn 60 s giữ. (2) Nhịp lỗi cả chuyến (trim không cảm biến): mỗi vòng tối đa 6
+lượt đọc trong 5′ đầu rồi 5′ — có trần. (3) <code>tick</code> ném ⇒ applier trả rỗng ⇒ <code>halReady = true</code> ⇒ không thử lại dồn (đúng D13). (4)
+Vòng mới dựng lại &lt; 60 s sau nhịp trước ⇒ chờ tới lượt thức kế (≤ 60 s) — vẫn thoả R-V8.5. (5) Đồng hồ tường chỉ để hiện; nhịp theo
+<code>elapsedRealtime</code> (OQ-V8.7). (6) Chữ EN không dấu Việt — <code>LauncherI18nContractTest</code> xanh; hai tệp cùng bộ khoá.</p>
+<p><b>Ghi ra, KHÔNG vá:</b> không in số rc (D15 — đổi đường ghi, R-V8.nf1 cấm) · nhịp nav đầu (OQ-V8.8) · ảnh <code>cai-dat-tien-nghi-xe.png</code> còn UI
+2.79 (chú thích đã nói rõ; chụp lại khi có APK).</p>
+<p><b>Tech freshness:</b> không dependency mới, <code>build.gradle.kts</code> không đổi ⇒ Context7 không áp dụng.</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: <code>testDebugUnitTest test lint --rerun-tasks --continue</code> BUILD SUCCESSFUL 82/82 task · <b>6 507 / 0 đỏ / 742 XML</b> ·
+lint debug 0 lỗi · phá thử 13/13 đỏ đúng bài, <code>sha256</code> hoàn nguyên khớp.</p>
+<p><b>Verdict: PATCHED (tự soát)</b> — 1 × P2 + 1 × P3 đã vá, 0 P0/P1. Phạm vi đủ (0 ❌). Còn trước commit: senior review Opus độc lập (§5) ·
+security scan (§6) · <code>clean assembleRelease</code>.</p>
+
+<h3 id="v81-review-p7">Pass 7 — 2026-09-30 · senior review lượt 1 lô V8.1 (global §5 + §5.1) — sub-agent Opus, KHÔNG viết mã V8.1</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (V8 + V8.1: mã, test, tài liệu), đối chiếu <a href="#v8">§V8</a> + <a href="#v81">§V8.1</a> +
+Reviewer Log Pass 2–6. Không đụng <code>ProfileScope.kt</code> / <code>byd-launcher-profile</code> / xe / máy ảo; không commit, không bump.</p>
+<p><b>Checklist phạm vi</b> — ✅ R-V8.7 (sau vá P2 dưới: làm tươi cả khi trang hiện lại) · ✅ R-V8.8 (nhịp đầu ngay · 5 lần thử lại · sàn 60 s ·
+yêu cầu giữ · 5′ theo thời gian trôi — đọc cả vòng thật: lượt thức = 60 s + việc ≥ <code>retryMs</code> ⇒ lần thử lại rơi đúng lượt thức kế, mốc 5′ rơi lượt thức
+thứ 5) · ✅ R-V8.9 (+ hai hàng còn thiếu trong bảng đọc dòng tình trạng, dưới) · ✅ nf · §8 call site ✅ (grep: <code>loopStarted</code> ← vòng ·
+<code>tickIfDue</code> ← vòng · <code>lastOf</code>/<code>nextCheckWallMs</code> ← cầu ← <code>refreshRainStatus</code>, nay 4 chỗ gọi: dựng trang · 2 cú chạm · móc hiện lại).</p>
+<p><b>Tìm ra và đã vá</b></p>
+<ul>
+<li><b>[P2]</b> Dòng tình trạng đứng im khi trang HIỆN LẠI — đúng loại ảnh chụp nói sai mà V8.1 sinh ra để chữa. <span class="tag t-ok">ĐO nguồn</span>
+<code>SettingsPanel.show</code> gắn lại trang đã nhớ (<code>pages.getOrPut(group)</code>) khi đổi nhóm, và bảng còn mở khi HOME bị app khác che; D16 chỉ làm
+tươi lúc dựng + cú chạm ⇒ mở Tiện nghi xe lúc vừa nổ máy, sang nhóm khác (hoặc sang app bản đồ) rồi quay lại sau vài phút vẫn thấy <i>"chưa kiểm lần nào ·
+nhịp kế ~14:07"</i> lúc 14:12 ⇒ người xem ảnh kết luận "Kachi không chạy". OC5 viết "mở lại sau ≤ 1 phút" — anh em hiểu là đổi nhóm rồi quay lại là gặp đúng
+ca này. Vá: <code>rainStatus</code> là <code>LinearLayout</code> ghi đè <code>onWindowVisibilityChanged</code>, <code>VISIBLE</code> ⇒ <code>post { refreshRainStatus() }</code>.
+<span class="tag t-ok">ĐO AOSP android-10.0.0_r47</span> (tải trong phiên): gắn lại ⇒ <code>View.java:19582-19584</code> gọi <code>onWindowVisibilityChanged</code>;
+HOME bị che/hiện lại ⇒ <code>ActivityThread.java:4634-4656</code> đổi decor INVISIBLE/VISIBLE ⇒ <code>ViewRootImpl.java:2044</code>
+<code>dispatchWindowVisibilityChanged</code> ⇒ <code>ViewGroup.java:1574-1580</code> truyền xuống con; <code>post</code> vì trong lượt phát sự kiện gắn con của khối
+chưa được gắn (<code>ViewGroup.java:3428-3438</code>) mà <code>removeAllViews</code> phát "tháo" cho chúng (<code>ViewGroup.java:5588-5589 → 5617, 5642</code>).
+Chỉ đọc RAM như cũ. Test: <i>khoi dong tinh trang lam tuoi moi lan trang hien lai</i>; phá M23 (móc gọi thẳng <code>refreshRainStatus()</code>, bỏ cổng
+<code>VISIBLE</code> + <code>post</code>) ⇒ đỏ đúng bài, <code>sha256</code> hoàn nguyên khớp. 🚗 chưa chạy trên máy thật — OC5 xác nhận luôn.</li>
+<li><b>[P3]</b> Chữ <i>"không do Kachi bật, để nguyên"</i> khẳng định NGUỒN GỐC mà mã không biết: nhánh đó là <code>Leave</code> + khô + xe báo bật +
+<code>owned = false</code>, và <code>owned = false</code> còn ra ở hai ca Kachi CÓ bật — lệnh TẮT không tới xe (hết mưa ⇒ <code>RainDefrostOwner.step</code> xoá ký
+ức, <code>settle</code> giữ <code>step.state</code> ⇒ nhịp sau không thử tắt lại) và bỏ-tích-lại ô lúc Kachi đang giữ (D8). Vá: <i>"Kachi không quản, để nguyên"</i> /
+<i>"not managed by Kachi, left alone"</i> (khoá <code>kachi_rain_st_not_ours</code> giữ tên); bảng §C sửa hàng; test <i>lenh tat khong toi xe thi nhip sau noi Kachi
+khong quan…</i> chạy THẬT chuỗi bật → tắt hỏng → nhịp sau.</li>
+<li><b>[P3]</b> Tài liệu người dùng (<code>HUONG-DAN-CO-HINH.html</code> §5.2): bảng đọc dòng tình trạng thiếu hai ca mã THẬT hiện — <i>"lệnh tắt: không tới
+xe ✗"</i> (khác <i>"lệnh bật"</i>: Kachi KHÔNG thử tắt lại) và <i>"bỏ lệnh (vừa đổi lựa chọn)"</i>; "hay gặp ngay lúc vừa nổ máy" là
+<span class="tag t-warn">SUY</span> ⇒ "có thể gặp…; lúc nào cũng vàng thì có thể xe không có cảm biến này"; hàng xanh "bật hay không" ⇒ "làm theo hay không"
+(đúng cả lệnh tắt).</li>
+</ul>
+<p><b>Đã soát, không phải lỗi</b>: (1) ✓ chỉ khi <code>writeOk == true</code> = <code>toggle</code> trả <code>true</code>; <code>WakeOnWriteControl.toggle</code> chuyển nguyên
+kết quả (<code>WakeOnWriteControl.kt:44</code>) ⇒ không bao giờ ✓ khi rc hỏng. (2) Không trộn kính: <code>record</code> theo <code>plan.glass</code>, dòng của
+<i>g</i> chỉ đọc <code>lastOf(g)</code>. (3) Sau đổi lựa chọn: tích lại một kính đã có kết quả trong tiến trình ⇒ dòng hiện kết quả CŨ kèm giờ của nó tới nhịp kế
+(≤ 60 s) — đúng sự thật có ghi giờ; đổi sang "chưa kiểm lần nào từ lúc mở xe" mới là nói sai. Đổi giữa nhịp ⇒ gác thế hệ ⇒ "bỏ lệnh" — đúng. (4) Đa luồng:
+luồng vẽ đọc <code>cadence</code>/<code>lastResults</code> dưới khoá ngắn, <code>RainGlassLast</code> bất biến, không HAL. <i>Đính chính Pass 6 (1)</i>:
+<code>shouldRun</code> và <code>ran</code> là hai vùng khoá ⇒ hai thế hệ vòng chồng nhau (tắt hết ô rồi tích lại trong lúc vòng cũ đang giữa nhịp) CÓ thể cùng
+qua <code>shouldRun</code> — sàn 60 s không chặt giữa hai thế hệ. Vô hại: <code>forgetAll</code>/<code>forget</code> đã tăng thế hệ ⇒ làn của vòng cũ không ghi
+(<code>isCurrent</code>); còn "giành nhịp" ngay trong <code>shouldRun</code> sẽ làm mất yêu cầu R-V8.5 của vòng mới ⇒ để nguyên. (5) Tải HAL có trần: mưa
+<code>null</code> ⇒ không đọc kính nào (làn đọc kính chỉ khi <code>speed != null</code>) ⇒ trim không cảm biến = 6 lượt đọc mưa trong 5′ đầu mỗi lần vòng
+THẬT bắt đầu (<code>startLoop</code> gác <code>running</code>) rồi 1/5′. (6) Bất biến <code>79be642</code>: đồng hồ <code>elapsedRealtime</code> + sàn;
+sự kiện xi-nhan không đi qua vòng (BG-13). (7) Cờ <code>due</code> treo khi FGS không dựng được sau cú chạm ⇒ "nhịp kế ~bây giờ" có thể lặp — chỉ lý
+thuyết (ROM chặn <code>startForegroundService</code>), ghi INFO, không vá.</p>
+<p><b>Tech freshness</b>: không dependency mới, <code>build.gradle.kts</code> không đổi ⇒ Context7 không áp dụng. <code>SimpleDateFormat</code> là API cũ (không
+deprecated; <code>java.time</code> dùng được vì <code>minSdk = 29</code>) — giữ cho khớp 11 tệp launcher đang dùng nó, 0 tệp dùng <code>DateTimeFormatter</code>;
+đổi cả launcher là việc riêng, ngoài phạm vi.</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: focused <code>:core:test --tests '*RainDefrost*'</code> + <code>:app:testDebugUnitTest</code> (RainDefrost* · Automation185 ·
+Settings*Contract · LauncherI18n · TypeScale · ClusterNavSettings · CameraSettingsIa · Goi2) 181 / 0 đỏ; rồi
+<code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --rerun-tasks --continue</code> BUILD SUCCESSFUL, 82/82 task chạy thật ·
+<code>count-tests.py</code> <b>6 510 / 0 đỏ / 0 lỗi / 0 bỏ qua, 742 XML</b> (= 6 507 + 1 <code>:core</code> + 1 × 2 biến thể <code>:app</code>) · lint debug
+0 lỗi, 526 cảnh báo (bằng Pass 6; 0 cảnh báo trên chuỗi mới/sửa và trên <code>SettingsSectionsCar.kt</code>). <code>wc -l</code>: <code>SettingsSectionsCar.kt</code>
+314 · mọi tệp chạm ≤ 500.</p>
+<p><b>Verdict: PATCHED</b> — 1 × P2 + 2 × P3 đã vá, 0 P0/P1. Phạm vi V8.1 đủ (0 ❌). Còn trước commit: security scan (§6) · <code>clean assembleRelease</code>;
+lượt review kế (review loop §5) vì mã đã đổi ở lượt này.</p>
+
+<h3 id="v81-review-p8">Pass 8 — 2026-09-30 · senior review lượt 2 lô V8.1 (global §5 + §5.1) — sub-agent Opus, KHÔNG viết mã V8.1</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (V8 + V8.1 + bản vá Pass 7), đối chiếu <a href="#v8">§V8</a> + <a href="#v81">§V8.1</a> + Reviewer Log
+Pass 2–7 + OC4/OQ-V8.1. Không đụng <code>ProfileScope.kt</code> / <code>byd-launcher-profile</code> / xe / máy ảo; không commit, không bump.</p>
+<p><b>Soát lại bản vá Pass 7 [P2]</b> — <span class="tag t-ok">ĐO AOSP android-10.0.0_r47</span> đọc lại ba chỗ trích: <code>View.java:19582-19584</code>
+(<code>dispatchAttachedToWindow</code> gọi <code>onWindowVisibilityChanged(vis)</code> khi <code>vis != GONE</code>), <code>ViewRootImpl.java:2042-2044</code>
+(<code>viewVisibilityChanged</code> ⇒ <code>host.dispatchWindowVisibilityChanged</code>), <code>ViewGroup.java:1574-1580</code> (truyền xuống con) và
+<code>ViewGroup.java:3428-3438</code> (con được gắn SAU <code>super.dispatchAttachedToWindow</code> ⇒ <code>post</code> là cần). Đường tháo phát <code>GONE</code> ⇒ không làm
+tươi thừa. <code>SettingsPanel</code> là view trong cây của Activity (không phải Dialog) ⇒ HOME bị che/hiện lại đi đúng đường trên. Đúng.</p>
+<p><b>Checklist phạm vi</b> — ✅ R-V8.7 (sau vá P2 dưới: dòng lộ cả dấu hiệu OC4 trên một ảnh) · ✅ R-V8.8 · ✅ R-V8.9 (+1 hàng bảng đọc dòng tình trạng) ·
+✅ nf (không khoá bền, không lượt HAL mới, không nhánh đời xe; <code>wc -l</code>: <code>RainDefrostStatus.kt</code> 210 · <code>RainDefrostStatusTest.kt</code> 369 ·
+<code>SettingsSectionsCar.kt</code> 315 · <code>RainDefrostStatusWiringTest.kt</code> 264 — mọi tệp chạm ≤ 500) · §8 call site ✅ (<code>RainGlassLast.follow</code> ←
+<code>RainGlassLastResults.record</code> ← <code>RainDefrostApplier.tickIfDue</code> ← vòng; <code>carOffAfterOn</code> ← <code>rainWords</code> ← <code>refreshRainStatus</code>).</p>
+<p><b>Tìm ra và đã vá</b></p>
+<ul>
+<li><b>[P2] Dấu hiệu "lệnh bật tới xe mà xe không làm theo" hiện XANH trên dòng tình trạng.</b> OC4/OQ-V8.1 tự đặt dấu hiệu nghi của Sealion 6 là
+<i>"ghi=ok mà nhịp sau đọc=tắt"</i> (<span class="tag t-warn">SUY</span> spec cũ: API BYD ghi cặp <code>{AC_DEFROST_*_STATE_SET, AC_CTRL_SOURCE_SET}</code>, Kachi ghi một) —
+nhưng dòng chỉ nói nhịp gần nhất nên mỗi lượt đều ra <i>"xe báo: tắt → Kachi bật: tới xe ✓"</i> chấm xanh: một ảnh chụp không phân biệt được lần bật đầu với
+lần thứ mười ⇒ người xem kết luận "chạy tốt" đúng ở ca "không work" mà V8.1 sinh ra để lộ (OC5 hứa phân biệt "xe không nhận lệnh" từ một ảnh). Vá (D17):
+<code>RainGlassLast.follow</code> ở <code>:core</code> so kết quả mới với kết quả TRƯỚC của CHÍNH kính đó — nhịp trước <code>TurnOn</code> + <code>writeOk == true</code>,
+nhịp này lại <code>TurnOn</code>, và <code>before.owned</code> (Kachi còn giữ kính từ lệnh đó) ⇒ vế xe đổi thành <i>"xe báo: vẫn tắt sau lệnh bật HH:mm"</i> /
+<i>"car says: still off after the HH:mm turn-on"</i>, màu vàng (đỏ giữ đỏ). Chỉ nói điều đo được, không quy kết (xe không làm theo · tự tắt ngay · có người
+vừa tắt). Xe tự tắt sau ~14′ không bị đánh dấu (giữa hai lệnh có nhịp "xe báo: bật"); quên ký ức giữa hai nhịp (đổi ô · động cơ dừng) ⇒ không nối. Khoá mới
+<code>kachi_rain_st_car_off_after_on</code> × vi/en; bảng §C +1 hàng; hướng dẫn có hình §5.2 +1 hàng; <code>HUONG-DAN-KACHI.md</code> +1 câu. Test <code>:core</code>
+(chạy THẬT <code>RainDefrostGlasses.tick</code> trên xe giả "rc hợp lệ mà không đổi trạng thái"): <code>lenh bat toi xe ma nhip sau xe van tat…</code> ·
+<code>xe khong lam theo o kinh sau khong lay sang kinh truoc</code> · <code>xe tu tat sau mot luc…khong nghi</code> · <code>quen ky uc giua hai nhip…</code> ·
+<code>follow - ba dieu kien, moi cai tu dung</code>; <code>:app</code> <code>RainDefrostStatusWiringTest</code>: 18 ⇒ 19 khoá (chặt hơn, không nới) + ca mẫu vi/en dựng từ CHÍNH XML.
+Phá thử 6 mắt xích (bỏ <code>before.owned</code> · <code>writeOk == true</code> ⇒ <code>!= null</code> · bỏ điều kiện "nhịp này lại TurnOn" · bỏ màu vàng · bỏ chữ · bỏ
+<code>follow</code> trong <code>record</code>) ⇒ đỏ đúng bài; lần đầu <code>writeOk != null</code> sống sót (qua <code>tick</code> thật, lệnh hỏng luôn kéo <code>owned = false</code>
+nên điều kiện 1 bị điều kiện 3 che) ⇒ thêm bài hợp đồng gọi thẳng <code>follow</code> ⇒ đỏ; <code>sha256</code> hoàn nguyên khớp.
+🚗 <span class="tag t-warn">CHƯA BIẾT</span> xe nào thật sự rơi vào ca này — OC4/OC5 sẽ trả lời bằng chính dòng này.</li>
+</ul>
+<p><b>Đã soát, không phải lỗi</b>: (1) ✓ chỉ khi <code>writeOk == true</code> ⇐ <code>CarControlAdapter.ok(rc) = rc != null && !isSentinelRc(rc)</code>
+(<code>CarControlAdapter.kt:77</code>) qua <code>WakeOnWriteControl.toggle</code> nguyên kết quả ⇒ không bao giờ ✓ khi rc hỏng. (2) Không trộn kính: <code>record</code> và
+<code>follow</code> đều theo <code>plan.glass</code>; bài mới khoá kính trước không bị kéo theo kính sau. (3) Đa luồng: <code>follow</code> chạy trong khoá của
+<code>RainGlassLastResults</code> (luồng nền), luồng vẽ đọc ảnh chụp bất biến; không khoá chéo (<code>nextCheckWallMs</code> chỉ khoá <code>cadence</code>). (4) Nhịp:
+dấu hiệu mới không đổi <code>halReady</code> ⇒ xe "không làm theo" vẫn 5′/lượt, không dội lệnh; mưa <code>null</code> vẫn không đọc kính nào; trần 6 lượt/5′ đầu mỗi
+vòng thật giữ; <code>79be642</code> giữ (elapsed + sàn 60 s). (5) Chữ dài nhất (EN, ~120 ký tự) xuống dòng — <code>statusRow</code> không <code>singleLine</code>/<code>ellipsize</code>
+nên vế ✓/✗ ở cuối không bị cắt. (6) Dòng đứng im khi đang mở trang (D16 — không hẹn giờ) là quyết định đã ghi; ảnh chụp luôn có giờ của kết quả.</p>
+<p><b>Tech freshness</b>: không dependency mới, <code>build.gradle.kts</code> không đổi ⇒ Context7 không áp dụng.</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: focused <code>:core:test --tests '*RainDefrost*'</code> + <code>:app:testDebugUnitTest</code> (RainDefrost* · LauncherI18n ·
+Automation185 · SettingsCatalogControlContract) xanh; rồi <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --rerun-tasks --continue</code>
+BUILD SUCCESSFUL, 82/82 task chạy thật · <code>count-tests.py</code> <b>6 515 / 0 đỏ / 0 lỗi / 0 bỏ qua, 742 XML</b> (= 6 510 + 5 <code>:core</code>) · lint debug 0 lỗi,
+526 cảnh báo (bằng Pass 7; 0 cảnh báo trên <code>SettingsSectionsCar.kt</code>, <code>kachi_rain_st_*</code>, <code>RainDefrostStatus</code>).</p>
+<p><b>Verdict: PATCHED</b> — 1 × P2 đã vá, 0 P0/P1/P3. Phạm vi V8.1 đủ (0 ❌). Mã đổi ⇒ còn một lượt review kế (review loop §5); rồi security scan (§6) ·
+<code>clean assembleRelease</code>.</p>
+
+<h3 id="v81-review-p9">Pass 9 — 2026-09-30 · senior review lượt 3 lô V8.1 (global §5 + §5.1) — sub-agent Opus, KHÔNG viết mã V8.1</h3>
+<p>Phạm vi: toàn bộ <code>git diff</code> trên <code>b5c0e87</code> (V8 + V8.1 + bản vá Pass 7–8), đối chiếu <a href="#v8">§V8</a> + <a href="#v81">§V8.1</a> + Reviewer Log
+Pass 2–8 + OC4/OC5/OQ-V8.1. Không đụng <code>ProfileScope.kt</code> / <code>byd-launcher-profile</code> / xe / máy ảo; không commit, không bump.</p>
+<p><b>Soát lại bản vá Pass 8 [P2] (D17)</b> — <span class="tag t-ok">ĐO nguồn</span> đi hết mọi đường ghi ký ức để xem <code>RainGlassLast.follow</code> có nối nhầm hai
+lệnh không: (1) <code>prev</code> luôn là bản ghi trước của CHÍNH kính — <code>record</code> theo <code>plan.glass</code>, chỗ gọi DUY NHẤT là <code>tickIfDue</code> (grep);
+(2) <code>before.owned = true</code> ⟺ nhịp trước đã commit một <code>TurnOn</code> tới xe: <code>step</code> V3 đặt <code>owned</code> khi <code>TurnOn</code>, <code>settle</code> nhả khi ghi hỏng,
+<code>forget</code>/<code>forgetAll</code> xoá + tăng thế hệ, <code>commit</code> bỏ khi thế hệ đổi ⇒ đổi ô · dừng động cơ · quên giữa nhịp đều cắt chuỗi;
+(3) <code>TurnOn</code> ⇒ <code>rainSpeed != null</code> và <code>read == false</code> ⇒ vế <code>carOffAfterOn</code> không bao giờ đè "xe báo: bật" / "không đọc được";
+(4) nhịp này bị bỏ lệnh (quên giữa nhịp ⇒ <code>writeOk == null</code>) mà vẫn đánh dấu ⇒ dòng "vẫn tắt sau lệnh bật … → bỏ lệnh" — hai lần đọc + rc trước là
+thật ⇒ đúng; (5) <code>readState</code> đọc thẳng getter (<code>HalBindingTable.readRaw</code>, không đệm giá trị) ⇒ "vẫn tắt" không đến từ giá trị cũ;
+(6) <code>AppContainer.kt:98</code> <code>carControl = WakeOnWriteControl(CarControlAdapter(…))</code> ⇒ ✓ chỉ khi <code>ok(rc)</code>. Khoảng trống dài mà ký ức
+còn: <code>onDestroy</code> của FGS không <code>forgetAll</code>, nhưng service chỉ bị huỷ mà tiến trình còn sống qua <code>stopService</code>/<code>stopSelf</code> — hai đường
+đó đi qua <code>sync</code> (<code>!anyEnabled</code> ⇒ <code>forgetAll</code>) hoặc <code>onStartCommand</code> <code>!anyEnabled</code> (không kính nào chọn ⇒ tích lại ô là
+<code>forget</code>) ⇒ không nối được qua khoảng trống. Còn <code>choice()</code> ném nhiều nhịp liền (nhịp rỗng, ký ức giữ) — lý thuyết, và dòng in cả hai giờ nên
+người xem thấy khoảng cách ⇒ INFO, không vá. Đúng.</p>
+<p><b>Tìm ra và đã vá</b></p>
+<ul>
+<li><b>[P3]</b> Bài hợp đồng <code>follow - ba dieu kien, moi cai tu dung</code> dựng dữ liệu trái luật V3: <code>read = action != Leave</code> ⇒ <code>TurnOn</code> đi với
+"xe báo BẬT". <code>follow</code> không đọc <code>read</code> nên bài xanh, nhưng một lượt thắt hợp lệ sau này (thêm <code>read == false</code> vào điều kiện 2 — thừa về nghĩa)
+sẽ làm đỏ ca dương tính và chặn nhầm. Vá: <code>read = action == Leave</code> (mưa gạt 3: <code>TurnOn</code> ⟺ tắt, <code>Leave</code> ⟺ bật). Phá thử: thêm
+<code>&amp;&amp; outcome.plan.read == false</code> vào <code>follow</code> ⇒ bài xanh (đúng: thắt thừa không được đỏ); sha256 hoàn nguyên khớp. 0 dòng mã chạy đổi.</li>
+<li><b>[P3]</b> <code>docs/HUONG-DAN-KACHI.md</code>: câu chấm vàng D17 thiếu một trong ba nguyên nhân mà D17 và hướng dẫn có hình §5.2 đều nêu ⇒ thêm "tự tắt ngay".</li>
+<li><b>[P3]</b> <code>.kiro/steering/project-context.md</code> (CLAUDE.md §16 — INDEX + BACKLOG + project-context cùng phiên): khối V8.1 chưa có bản vá Pass 7 (làm tươi
+khi trang hiện lại) và D17 ⇒ thêm một câu.</li>
+</ul>
+<p><b>Đã soát, không phải lỗi:</b> (1) không trộn kính (<code>record</code>/<code>follow</code>/<code>lastOf</code> đều theo kính). (2) Đa luồng: <code>follow</code> trong khoá
+của <code>RainGlassLastResults</code>, luồng vẽ đọc ảnh chụp bất biến, không khoá chéo. (3) Nhịp đầu + tải HAL: <code>startLoop</code> gác <code>running</code> ⇒
+<code>loopStarted</code> chỉ ở vòng thật mới; mưa null ⇒ không đọc kính; trần 6 lượt/5′ đầu mỗi vòng; <code>79be642</code> giữ (elapsed + sàn 60 s, lượt thức = 60 s +
+việc ≥ <code>retryMs</code>). (4) Chữ: 19 khoá × vi/en khớp ánh xạ màn hình, <code>{t}</code> có trong <code>carOffAfterOn</code> cả hai ngôn ngữ. (5) Lint: 20 cảnh báo trên
+tệp chạm đều là kiểu có sẵn của tệp (<code>UseKtx</code> × 18 ở <code>PrefsAutomation.kt</code> — dòng 69 của V8 cùng khuôn 17 dòng cũ; <code>ObsoleteSdkInt</code> × 2
+có từ trước); 0 trên <code>kachi_rain_st_*</code> / <code>SettingsSectionsCar.kt</code> / <code>RainDefrost*</code>. <span class="tag t-warn">CHƯA BIẾT</span> xe báo trạng thái sấy
+chậm hơn 60 s sau lệnh (khi nhịp thử lại 60 s rơi ngay sau một lệnh bật) — dòng in cả giờ lệnh lẫn giờ đọc, OC5 sẽ lộ.</p>
+<p><b>Phạm vi</b> — ✅ R-V8.7 · ✅ R-V8.8 · ✅ R-V8.9 · ✅ nf (<code>ProfileScope.kt</code> / <code>byd-launcher-profile</code> không chạm; <code>wc -l</code>
+<code>RainDefrostStatusTest.kt</code> 370, mọi tệp chạm ≤ 500) · §8 call site ✅ (<code>follow</code> ← <code>record</code> ← <code>tickIfDue</code> ← vòng; <code>carOffAfterOn</code> ←
+<code>rainWords</code> ← <code>refreshRainStatus</code>). Tech freshness: không dependency mới ⇒ Context7 không áp dụng.</p>
+<p><span class="tag t-ok">ĐO</span> sau vá: focused <code>:core:test --tests '*RainDefrost*'</code> + <code>:app:testDebugUnitTest</code> (RainDefrost* · Automation185 ·
+LauncherI18n · SettingsCatalogControlContract) xanh; rồi <code>JAVA_HOME=/opt/homebrew/opt/openjdk@17 ./gradlew testDebugUnitTest test lint --rerun-tasks --continue</code>
+BUILD SUCCESSFUL, <b>82/82 task chạy thật</b> · <code>count-tests.py</code> <b>6 515 / 0 đỏ / 0 lỗi / 0 bỏ qua, 742 XML</b> (bằng Pass 8 — vá chỉ đổi dữ liệu một bài) ·
+lint debug 0 lỗi, 526 cảnh báo (bằng Pass 8).</p>
+<p><b>Verdict: PATCHED</b> — 3 × P3 (1 dữ liệu test, 2 tài liệu), 0 P0/P1/P2, <b>0 dòng mã chạy đổi</b>. Phạm vi V8.1 đủ (0 ❌). Vá là một dòng dữ liệu test + tài liệu
+(điều kiện bỏ review của §5: một tệp &lt; 20 dòng · tài liệu) ⇒ vòng review khép. Còn trước commit: security scan (§6) · <code>clean assembleRelease</code>.</p>
 </div>
 
 </div>

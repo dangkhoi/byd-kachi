@@ -76,22 +76,33 @@ class ProfileScopeTest {
     }
 
     /**
-     * ⚠⚠ S4 · OQ2 chốt ở Pass 1 review — `cast_enabled` theo **XE**, không theo hồ sơ.
+     * ⚠⚠ `cast_enabled` — ĐẢO CHIỀU 2026-09-30 theo quyết định OWNER (V-CLUSTER): *"Phần cụm lưu hết thành profile
+     * nhé"*. Lịch sử: S4 · OQ2 do Pass 1 review (2026-09-14) chốt THEO XE — chốt của reviewer, không phải của owner.
      *
-     * Bài này khoá một quyết định AN TOÀN, không khoá một sở thích: mọi cổng đọc khoá đó đều LIVE
-     * (`ClusterNavLaneWidget.kt:110` · `NavRepository.kt:215` · `FloatingBubbleService.kt:170`), nên để nó theo hồ
-     * sơ mà lượt đổi hồ sơ KHÔNG mở/đóng projection thì hai bên cùng tưởng mình sở hữu mặt cụm — ghi đè lên nhau
-     * trước mặt người lái. Muốn đổi lại thì phải có đường áp gác theo *"phiên chiếu không chạy"* (backlog S4-OQ2),
-     * và lúc đó bài này là chỗ ghi quyết định mới.
+     * Lý do an toàn của chốt cũ VẪN ĐÚNG và bài này giữ nó dưới dạng CHẶT HƠN: mọi cổng đọc khoá đều LIVE
+     * (`NavRepository` mỗi khung · `ClusterNavLaneWidget` · `FloatingBubbleService`), nên nếu lượt đổi hồ sơ ghi thẳng
+     * khoá sống thì hai bên cùng tưởng mình sở hữu mặt cụm. Hợp đồng mới: khoá THEO HỒ SƠ, nhưng lượt áp hồ sơ **không
+     * bao giờ** ghi khoá sống — chỉ ghi bản chờ `cast_enabled_pending` (theo XE, không bao giờ vào ảnh chụp).
      */
     @Test
-    fun `cong tac chinh cua phien chieu la THEO XE — OQ2`() {
-        assertEquals(ProfileScope.Scope.DEVICE, ProfileScope.scopeOf("cast_enabled"))
-        assertFalse("cast_enabled" in ProfileScope.CLUSTERNAV_PROFILE_KEYS, "không được đi qua ảnh chụp")
-        assertTrue(
-            ProfileScope.DEVICE_KEYS.getValue("cast_enabled").isNotBlank(),
-            "quyết định phải kèm lý do tại chỗ — xem KDoc ProfileScope.DEVICE_KEYS",
-        )
+    fun `cong tac chinh cua phien chieu THEO HO SO nhung luot doi ho so khong bao gio ghi khoa song`() {
+        assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf("cast_enabled"))
+        assertTrue("cast_enabled" in ProfileScope.CLUSTERNAV_PROFILE_KEYS, "phải đi qua ảnh chụp (owner 2026-09-30)")
+        assertFalse("cast_enabled" in ProfileScope.DEVICE_KEYS, "hai câu trả lời trái nhau cho cùng một khoá")
+        // Khẳng định CHẶT HƠN chốt cũ: khoá chờ theo XE, ngoài ảnh chụp, và lượt áp không có đường nào ghi khoá sống.
+        assertEquals(ProfileScope.Scope.DEVICE, ProfileScope.scopeOf("cast_enabled_pending"))
+        assertFalse("cast_enabled_pending" in ProfileScope.CLUSTERNAV_PROFILE_KEYS)
+        assertEquals(mapOf("cast_enabled" to "cast_enabled_pending"), ProfileScopeCluster.DEFERRED)
+        listOf(true, false, null).forEach { live ->
+            listOf(true, false, null).forEach { want ->
+                val edit = ClusterSnapshotPlan.apply(
+                    mapOf("cast_enabled" to live), mapOf("cast_enabled" to want),
+                    ProfileScope.CLUSTERNAV_KEYS.getValue("simple_cast_prefs"), emptyList(),
+                    ProfileScopeCluster.DECLARED_TYPES, ProfileScopeCluster.DEFERRED,
+                )
+                assertFalse("cast_enabled" in edit.writes, "sống=$live muốn=$want: lượt đổi hồ sơ ghi khoá sống ⇒ cụm hai chủ")
+            }
+        }
     }
 
     /**
@@ -99,12 +110,33 @@ class ProfileScopeTest {
      * sơ?), hoặc **mất dữ liệu** (xoá một hồ sơ mà mất lịch sử mở app của cả xe).
      */
     @Test
-    fun `danh sach ho so, lich su mo app va hinh hoc khi chieu deu THEO XE`() {
+    fun `danh sach ho so, lich su mo app, so hieu VD cum va co he thong deu THEO XE`() {
         listOf(
             "profiles", "active_profile", "boot_profile", "migrated_scenes_v1", "recent_apps",
             "last_display_id", "doze_whitelist_applied", "freeform_state", "enable_freeform_support",
-            "config_size_com.byd.androidauto", "config_overscan_x", "config_density_x", "config_bounds_x",
+            // ⚠ 2026-09-30 (owner, V-CLUSTER): 4 khoá `config_*` (hình học khi chiếu) RỜI danh sách này sang theo HỒ SƠ
+            // — xem bài `ho cast_geometry THEO HO SO` ngay dưới. Lý do cũ ("đã đo theo xe") sai: DPI/khung do người lái chọn.
+            "migrated_cluster_profile_v1", "cast_enabled_pending",
         ).forEach { assertEquals(ProfileScope.Scope.DEVICE, ProfileScope.scopeOf(it), "khoá $it") }
+    }
+
+    /**
+     * V-CLUSTER — hình học chiếu THEO HỒ SƠ: đủ BỐN tiền tố (một bản ghi — tách phạm vi là ghép khung của A với
+     * `wm size` của B, refute B2), cùng MỘT tệp, và khoá dựng từ tên gói lạ/độc thì KHÔNG thuộc họ.
+     */
+    @Test
+    fun `ho cast_geometry THEO HO SO, du 4 tien to, mot tep`() {
+        listOf(
+            "config_size_com.byd.androidauto", "config_overscan_x.y", "config_density_vn.vietmap.live",
+            "config_bounds_a.b__L30",
+        ).forEach { assertEquals(ProfileScope.Scope.PROFILE, ProfileScope.scopeOf(it), "khoá $it") }
+        val fam = ProfileScopeCluster.CAST_GEOMETRY
+        assertEquals(listOf("config_size_", "config_overscan_", "config_density_", "config_bounds_"), fam.prefixes)
+        assertEquals("simple_cast_prefs", fam.file)
+        assertEquals(setOf("simple_cast_prefs"), ProfileScopeCluster.FAMILIES.map { it.file }.toSet())
+        assertTrue(fam.prefixes.all { it in ProfileScope.PROFILE_KEY_PREFIXES })
+        assertTrue(ProfileScope.DEVICE_KEY_PREFIXES.keys.none { it.startsWith("config_") }, "không còn tiền tố config_ theo XE")
+        assertFalse(fam.owns("config_density_$(id)"), "tên gói độc không phải khoá của họ")
     }
 
     /**
@@ -174,7 +206,10 @@ class ProfileScopeTest {
             ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS.keys +
             // +1 (2026-09-28): khoá TRẠNG THÁI theo hồ sơ, cố ý không có trong danh mục Cài đặt vì không có hàng
             // trên UI. Vẫn phải cộng vào đây, nếu không nó rơi khỏi ảnh chụp và đổi hồ sơ là mất sổ đã-dẫn.
-            ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.keys
+            ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.keys +
+            // +8 (V-CLUSTER 2026-09-30): khoá theo hồ sơ KHÔNG có mục Cài đặt — 6 khoá camera + `bubbleX/Y`. Vẫn là
+            // phép BẰNG: thêm một khoá ngoài hai bảng này vào ảnh chụp thì đỏ.
+            ProfileScopeCluster.PROFILE_EXTRA_KEYS.keys
         assertEquals(expected, ProfileScope.CLUSTERNAV_PROFILE_KEYS)
         assertTrue("voicekey_learn" !in ProfileScope.CLUSTERNAV_PROFILE_KEYS)
     }
@@ -206,7 +241,10 @@ class ProfileScopeTest {
 
     @Test
     fun `moi tep trong bang anh chup deu la tep prefs da khai ly do`() {
-        val unknown = ProfileScope.CLUSTERNAV_KEYS.keys.filterNot { it in SettingsCatalog.CLUSTERNAV_PREFS_FILES }
+        // V-CLUSTER: + tệp ngoài danh mục Cài đặt (`cast-v2-app-catalog`, vị trí nút nổi), vẫn phải có LÝ DO tại chỗ.
+        val declared = SettingsCatalog.CLUSTERNAV_PREFS_FILES.keys + ProfileScopeCluster.EXTRA_FILES.keys
+        assertTrue(ProfileScopeCluster.EXTRA_FILES.values.all { it.isNotBlank() })
+        val unknown = ProfileScope.CLUSTERNAV_KEYS.keys.filterNot { it in declared }
         assertEquals(emptyList<String>(), unknown, "ảnh chụp ghi vào một tệp chưa ai khai = ghi vào hư không")
     }
 
@@ -227,6 +265,7 @@ class ProfileScopeTest {
         listOf(
             ProfileScope.DEVICE_KEYS, ProfileScope.DEVICE_KEY_PREFIXES, ProfileScope.TRANSIENT_KEYS,
             ProfileScope.PROFILE_KEY_PREFIXES, ProfileScope.LAUNCHER_OWNED_CLUSTERNAV_KEYS,
+            ProfileScopeCluster.DEVICE_KEYS, ProfileScopeCluster.EXTRA_FILES,
         ).forEach { table ->
             assertTrue(table.values.all { it.isNotBlank() }, "thiếu lý do: $table")
         }

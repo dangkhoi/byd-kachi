@@ -1,4 +1,5 @@
 package com.byd.clusternav.cast.platform
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 import com.byd.clusternav.modules.clustercast.simplified.ProjectionApps
 
 import com.byd.clusternav.modules.clustercast.AppScale
@@ -235,6 +236,8 @@ class CastAppCatalog(
 
     companion object {
         const val MIGRATION_VERSION = 2
-        private val PACKAGE = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+")
+        // V-CLUSTER (2026-09-30): MỘT mẫu tên gói cho cả hai nơi — khoá họ `config_*` theo hồ sơ dùng CHÍNH mẫu này để
+        // chặn khoá độc trong tệp nhập (`CastGeometryGuard.FAMILY_KEY`). Hai bản chép là hai lằn ranh sẽ lệch nhau.
+        private val PACKAGE = CastGeometryGuard.PACKAGE
     }
 }

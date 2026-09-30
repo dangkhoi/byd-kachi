@@ -8,10 +8,10 @@ package com.byd.clusternav.launcher.automation
  * là chỗ chỗ gọi tự diễn giải thành "ghi lại cho chắc", tức ghi HAL mỗi phút cho một chiếc xe đang đỗ khô.
  */
 sealed interface RainDefrostAction {
-    /** Bật sấy TRƯỚC + SAU (spec R1.3 — owner chốt bật cả hai, không chỉ kính lái). */
+    /** Bật cái sấy của làn đang xét (kachi-automation V8: mỗi kính một làn, `RainDefrostGlasses`). */
     object TurnOn : RainDefrostAction
 
-    /** Tắt sấy — CHỈ khi chính automation đã bật nó (spec R1.5). */
+    /** Tắt cái sấy của làn đang xét — CHỈ khi chính automation đã bật nó (spec R1.5, theo TỪNG kính từ V8). */
     object TurnOff : RainDefrostAction
 
     /** Không ghi gì cả. */
@@ -102,7 +102,7 @@ object RainDefrostPolicy {
      * bản sao thứ hai.
      *
      * @param rainSpeed lần đọc `SETTING_FRONT_RAIN_WIPER_SPEED` đã qua [plausible].
-     * @param defrostOn sấy kính TRƯỚC đang bật (đọc từ xe, không phải cờ RAM — cờ RAM không thấy người lái bấm).
+     * @param defrostOn cái sấy của làn đang xét đang bật (đọc từ xe, không phải cờ RAM — cờ RAM không thấy người lái bấm).
      * @param ownedByAuto cái sấy đang bật do CHÍNH automation bật ([RainDefrostOwner] giữ).
      */
     fun decide(rainSpeed: Int, defrostOn: Boolean, ownedByAuto: Boolean): RainDefrostAction = when {
@@ -138,8 +138,9 @@ data class RainDefrostStep(
 /**
  * ═══ CHỦ QUYỀN NÚT SẤY QUA THỜI GIAN — nơi R1.5 thành thật ═══════════════════════════════════════════════════
  *
- * Thuần (không đồng hồ, không I/O) ⇒ bơm chuỗi nhịp giả mà kiểm. `RainDefrostApplier` (`:app`) giữ đúng **một**
- * [RainDefrostState] trong RAM và gọi [step] mỗi nhịp; mọi luật ở đây.
+ * Thuần (không đồng hồ, không I/O) ⇒ bơm chuỗi nhịp giả mà kiểm. Từ kachi-automation V8 mỗi kính có **một**
+ * [RainDefrostState] riêng (`RainGlassMemory`) và `RainDefrostGlasses.plan` gọi [step] cho từng kính mỗi nhịp —
+ * một luật, áp độc lập cho hai kính; mọi luật ở đây.
  *
  * ## Ba việc nó làm mà [RainDefrostPolicy.decide] một mình không làm được
  *  1. **Thấy người lái tắt sấy** — `owned && !defrostOn` giữa cơn mưa là chuyện chỉ nhận ra được khi so với nhịp
@@ -158,7 +159,7 @@ object RainDefrostOwner {
      *
      * @param state ký ức của nhịp TRƯỚC.
      * @param rainSpeed lần đọc đã lọc.
-     * @param defrostOn sấy TRƯỚC đang bật, đọc **từ xe**.
+     * @param defrostOn cái sấy của làn đang xét đang bật, đọc **từ xe** (V8: mỗi kính đọc chính nó).
      */
     fun step(state: RainDefrostState, rainSpeed: Int, defrostOn: Boolean): RainDefrostStep {
         if (!RainDefrostPolicy.isRaining(rainSpeed)) {
@@ -189,7 +190,7 @@ object RainDefrostOwner {
         RainDefrostStep(RainDefrostAction.Leave, state)
 
     /**
-     * Ký ức đúng khi lệnh bật **không tới được xe** — trả về ký ức của nhịp TRƯỚC.
+     * Ký ức đúng khi lệnh bật **không tới được xe** — ký ức của nhịp TRƯỚC với `owned = false` (V8 · D5, dưới).
      *
      * ## Vì sao cần: một lần ghi hỏng từng làm automation bỏ cả cơn mưa, im lặng
      * [step] nhận chủ quyền ở đúng nhịp nó **ra lệnh** bật, chứ không phải nhịp lệnh ấy **thành công** — nó thuần,
@@ -204,7 +205,13 @@ object RainDefrostOwner {
      * ⚠ Chỉ gọi cho nhánh [RainDefrostAction.TurnOn] ghi hỏng. Với [RainDefrostAction.TurnOff] ghi hỏng thì giữ
      * nguyên `step.state` là đúng: ký ức ở đó đã được xoá sạch vì **hết mưa** (hết cơn ⇒ hết chủ quyền), không
      * phải vì lệnh thành công; hoàn nguyên nó sẽ giữ lại một chủ quyền của cơn mưa đã qua.
+     *
+     * ## kachi-automation V8 · D5 — `owned = false`, KHÔNG trả nguyên `before`
+     * 1.85 viết hàm này khi `TurnOn` chỉ xảy ra lúc `before.owned = false`, nên *"trả `before`"* = *"nhả chủ
+     * quyền"*. Từ V3 (đang mưa ⇒ luôn bật lại) `TurnOn` xảy ra cả khi `before.owned = true` (bật lại sau khi xe tự
+     * tắt). Trả `before` lúc đó là **giữ** chủ quyền một kính đang TẮT ⇒ người lái tự bật nó ⇒ trời khô ⇒ Kachi tắt
+     * kính của người lái (spec V8 · K6, ca C13). Ghi hỏng thì kính không phải của mình — bất kể nhịp trước ra sao.
      */
     fun unclaim(before: RainDefrostState, step: RainDefrostStep): RainDefrostState =
-        if (step.action == RainDefrostAction.TurnOn) before else step.state
+        if (step.action == RainDefrostAction.TurnOn) before.copy(owned = false) else step.state
 }

@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import com.byd.clusternav.launcher.automation.RainDefrostChoice
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 
@@ -28,48 +29,49 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 internal fun autoPrefs(ctx: Context) =
     ctx.applicationContext.getSharedPreferences("clusternav_prefs", Context.MODE_PRIVATE)
 
-// ── AUTOMATION #1 · Tự sấy kính khi mưa (R1) ──────────────────────────────────────────────────────
-// MẶC ĐỊNH TẮT — cài mới KHÔNG đọc cảm biến, KHÔNG đụng nút sấy tới khi owner tự bật. BẬT ⇒
-// `AutomationService` đọc `SETTING_FRONT_RAIN_WIPER_SPEED` ([ĐO xe 2026-09-20]: 1 khô / ≥2 mưa) mỗi ~5 phút và
-// bật/tắt sấy TRƯỚC+SAU theo `RainDefrostPolicy`.
-// ⚠ Ký ức R1.5 (*"sấy này của tôi"* / *"người lái vừa tự tắt"*) là cờ RAM trong `RainDefrostApplier`, KHÔNG ở
-// đây — lý do đầy đủ ở KDoc `RainDefrostState` (nổ máy lại thì quên là hướng sai AN TOÀN).
+// ── AUTOMATION #1 · Tự sấy kính khi mưa (R1 · §V8 hai kính độc lập) ─────────────────────────────
+// MẶC ĐỊNH TẮT — cài mới KHÔNG đọc cảm biến, KHÔNG đụng nút sấy tới khi owner tự tích một kính. Có kính được
+// chọn ⇒ `AutomationService` đọc `SETTING_FRONT_RAIN_WIPER_SPEED` ([ĐO xe 2026-09-20]: 1 khô / ≥2 mưa) mỗi ~5
+// phút và bật/tắt TỪNG kính đã chọn, độc lập (`RainDefrostGlasses`).
+// ⚠ Ký ức *"sấy này của tôi"* là cờ RAM trong `RainDefrostApplier`, KHÔNG ở đây — lý do đầy đủ ở KDoc
+// `RainDefrostState` (nổ máy lại thì quên là hướng sai AN TOÀN).
+//
+// ## Ba khoá, hai ô (kachi-automation V8 · D2)
+// `rain_defrost_enabled` là công tắc CHÍNH của 1.85/V7 (mặc định false); `rain_defrost_front`/`_rear` là hai ô
+// con của V7 (mặc định true = hành vi 1.85 "bật cả hai"). V8 bỏ công tắc chính khỏi giao diện nhưng GIỮ khoá:
+// lựa chọn hiệu lực = `enabled && con` (`RainDefrostChoice.fromKeys`) ⇒ không khoá mới, không bước di trú, hạ cấp
+// về V7 vẫn đúng nghĩa. Hai ô con là hai khoá riêng, KHÔNG một khoá 3 giá trị ("front"/"rear"/"both"): chuỗi ba
+// giá trị sinh ra trạng thái thứ tư không ai định nghĩa khi prefs bị sửa tay (`prefs_set` trên xe).
 private const val K_RAIN_DEFROST = "rain_defrost_enabled"
-
-/** AUTOMATION #1 — "Tự sấy kính khi mưa". Mặc định **false**. */
-fun Prefs.rainDefrostEnabled(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_RAIN_DEFROST, false)
-
-/** Xem [rainDefrostEnabled]. Chỗ gọi phải `AutomationService.sync` sau khi ghi (xem `ClusterNavBridge`). */
-fun Prefs.setRainDefrostEnabled(ctx: Context, v: Boolean) =
-    autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST, v).apply()
-
-// ── V7 (owner 2026-09-25) — CHỌN kính nào được sấy: trước · sau+gương · cả hai ────────────────────
-// Owner: *"tách 2 option riêng, user chọn cả 2 hoặc 1 trong 2"*. Hai khoá con, KHÔNG phải một khoá 3 giá trị
-// ("front"/"rear"/"both"): ba-giá-trị-trong-một-chuỗi là chỗ sinh ra trạng thái thứ tư không ai định nghĩa khi
-// prefs bị sửa tay (`prefs_set` trên xe), và nó cũng không nói được ca "cả hai TẮT".
-//
-// ⚠ Quan hệ với [K_RAIN_DEFROST]: đó là công tắc CHÍNH (bật/tắt tính năng); hai khoá này chỉ có nghĩa khi chính
-// đang bật. Cả hai TẮT ⇒ `RainDefrostApplier` coi như tính năng tắt (không đọc cảm biến, không ghi nút nào) — xem
-// KDoc `RainDefrostApplier.selection`.
-//
-// MẶC ĐỊNH CẢ HAI BẬT = giữ NGUYÊN hành vi của bản trước (1.85 ghi cả hai nút, R1.3): người đã bật tính năng rồi
-// nâng cấp lên bản này không được thấy nó lặng lẽ làm ít hơn hôm qua.
 private const val K_RAIN_DEFROST_FRONT = "rain_defrost_front"
 private const val K_RAIN_DEFROST_REAR = "rain_defrost_rear"
 
-/** V7 — mưa thì bật sấy kính TRƯỚC. Mặc định **true** (hành vi 1.85). */
-fun Prefs.rainDefrostFront(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_RAIN_DEFROST_FRONT, true)
+/**
+ * AUTOMATION #1 — kính nào được tự sấy khi mưa (lựa chọn HIỆU LỰC). Cổng ĐỌC duy nhất của ba khoá: cả động cơ
+ * (`RainDefrostApplier.choice`, `AutomationService.anyEnabled`) lẫn màn Cài đặt (qua cầu) đều hỏi đây.
+ */
+fun Prefs.rainDefrostChoice(ctx: Context): RainDefrostChoice {
+    val p = autoPrefs(ctx)
+    return RainDefrostChoice.fromKeys(
+        enabled = p.getBoolean(K_RAIN_DEFROST, false),
+        front = p.getBoolean(K_RAIN_DEFROST_FRONT, true),
+        rear = p.getBoolean(K_RAIN_DEFROST_REAR, true),
+    )
+}
 
-/** Xem [rainDefrostFront]. Chỗ gọi phải `AutomationService.sync` sau khi ghi (xem `ClusterNavBridge`). */
-fun Prefs.setRainDefrostFront(ctx: Context, v: Boolean) =
-    autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST_FRONT, v).apply()
-
-/** V7 — mưa thì bật sấy kính SAU + gương chiếu hậu (`defrost_rear`). Mặc định **true** (hành vi 1.85). */
-fun Prefs.rainDefrostRear(ctx: Context): Boolean = autoPrefs(ctx).getBoolean(K_RAIN_DEFROST_REAR, true)
-
-/** Xem [rainDefrostRear]. */
-fun Prefs.setRainDefrostRear(ctx: Context, v: Boolean) =
-    autoPrefs(ctx).edit().putBoolean(K_RAIN_DEFROST_REAR, v).apply()
+/**
+ * Ghi lựa chọn: CẢ BA khoá trong MỘT `edit()` (V8 · D2) — ghi lẻ `enabled` sẽ làm ô con cũ `true` "sống lại" (cài
+ * mới là `(false, true, true)`: tích "sau" chỉ bằng cách bật `enabled` ⇒ kính trước cũng chạy). Chỗ gọi phải
+ * `AutomationService.sync` sau khi ghi (xem `ClusterNavBridge.setRainDefrostGlass`).
+ */
+fun Prefs.setRainDefrostChoice(ctx: Context, choice: RainDefrostChoice) {
+    val k = choice.toKeys()
+    autoPrefs(ctx).edit()
+        .putBoolean(K_RAIN_DEFROST, k.enabled)
+        .putBoolean(K_RAIN_DEFROST_FRONT, k.front)
+        .putBoolean(K_RAIN_DEFROST_REAR, k.rear)
+        .apply()
+}
 
 // ── V8 (owner 2026-09-25) — TỰ CẬP NHẬT khi mở app ───────────────────────────────────────────────
 // Owner: *"tách auto-update thành 1 toggle riêng ở Hệ thống, KHÔNG gắn với Nav+HUD"*. Trước V8 lượt dò bản mới
@@ -260,8 +262,10 @@ fun Prefs.setCameraRender(ctx: Context, v: String) =
 // ── VÙNG GƯƠNG trong ảnh pano: bề rộng · dải · hình khung · kênh HAL (R8-A · 2.74) ───────────────
 // RE `docs/diagnostics/electro-camera-RE-2026-09-26.md` §5 K10: crop của 2.73 chỉ rộng 0.10 = **40 % một dải** ở rìa
 // vòng fisheye ⇒ méo như ống. §6.1 (phương án A) nới crop, và vì **dải nào là hướng nào vẫn [CHƯA BIẾT]** (§7 Q1/Q2)
-// thì chỉ số dải phải là pref owner dò được trên xe, không phải hằng. Cả năm khoá device-scope (`autoPrefs`): cách
-// HAL ghép ảnh 4-in-1 là chuyện của XE, không của hồ sơ tài xế — cùng lẽ `camera_rot_*`/`camera_render`.
+// thì chỉ số dải phải là pref owner dò được trên xe, không phải hằng. Bốn khoá vùng gương (`span`, `strip_*`,
+// `circle_scale`) theo XE: cách HAL ghép ảnh 4-in-1 là chuyện của XE, không của hồ sơ tài xế — cùng lẽ
+// `camera_rot_*`/`camera_render`. ⚠ V-CLUSTER (2026-09-30): `camera_shape` (RECT/ROUND/CLUSTER) là cách TRÌNH BÀY có
+// chip ở tầng người lái ⇒ theo HỒ SƠ (`ProfileScopeCluster.CAMERA_PROFILE_KEYS`).
 // Mặc định của CẢ NĂM = hành vi 2.73 từng pixel (CLAUDE.md §6); hình học ở `:core` [CameraPanoCrop].
 private const val K_CAMERA_SPAN = "camera_span"
 private const val K_CAMERA_SHAPE = "camera_shape"

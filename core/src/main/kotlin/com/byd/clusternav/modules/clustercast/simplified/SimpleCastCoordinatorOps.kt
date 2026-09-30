@@ -74,7 +74,10 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
             }
             if (ext != null) {
                 val appType = AppMover.classifyApp(ext.pkg)
-                setState(SimpleCastState.CastingFull(ext.pkg, appType, DisplayConfig.forAppType(appType)))
+                // V-CLUSTER · VC-R6: nhận lại app đang nằm trên cụm = BẮT ĐẦU một phiên ⇒ ghim bản ghi FULL của hồ sơ đang
+                // dùng (một lượt đọc) để repin sau này có đúng thứ để áp — trước đây repin đọc lại prefs mỗi lần.
+                val pinned = if (appType == AppType.NORMAL) pinFull(ext.pkg, appType).pinned else null
+                setState(SimpleCastState.CastingFull(ext.pkg, appType, DisplayConfig.forAppType(appType), pinned = pinned))
                 adopted = true
             }
         }
@@ -82,17 +85,27 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
     }
 }
 
+/** Một ô repin phải giữ: gói · nửa (`null` = toàn cụm) · bản ghim của PHIÊN (V-CLUSTER · VC-R6). */
+private class RepinTarget(val pkg: String, val side: ClusterSlotSide?, val pinned: DisplayConfig?)
+
+/**
+ * V-CLUSTER · VC-R6 (sửa refute B6/C2): lượt repin KHÔNG đọc prefs. Tỉ lệ lấy từ `CastingSplit.leftPercent`, hình học từ
+ * bản ghim của từng ô ([CastGeometryController.applyPinned]). Đổi hồ sơ giữa lúc chiếu chỉ đổi prefs; app bị kéo khỏi
+ * cụm sau đó được đặt lại ĐÚNG như phiên đang có — không phải theo hồ sơ vừa chọn.
+ */
 internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
-    val expected: List<Pair<String, ClusterSlotSide?>> = when (val cur = state) {
+    val cur = state
+    val expected: List<RepinTarget> = when (cur) {
         is SimpleCastState.CastingSplit -> buildList {
-            cur.left?.let { add(it.pkg to ClusterSlotSide.LEFT) }
-            cur.right?.let { add(it.pkg to ClusterSlotSide.RIGHT) }
+            cur.left?.let { add(RepinTarget(it.pkg, ClusterSlotSide.LEFT, it.pinned)) }
+            cur.right?.let { add(RepinTarget(it.pkg, ClusterSlotSide.RIGHT, it.pinned)) }
         }
         is SimpleCastState.CastingFull ->
-            if (cur.appType == AppType.NORMAL) listOf(cur.targetPkg to null) else emptyList()
+            if (cur.appType == AppType.NORMAL) listOf(RepinTarget(cur.targetPkg, null, cur.pinned)) else emptyList()
         else -> emptyList()
     }
     if (expected.isEmpty()) return
+    val leftPercent = (cur as? SimpleCastState.CastingSplit)?.leftPercent ?: CastProfile.DEFAULT_PERCENT
     // ═══ H2 (PERF 2026-09-16) — một lượt ĐỌC = một lệnh shell, không phải 1+N ═══════════════════════════
     // [ĐO xe 2026-09-16] (`docs/diagnostics/perf-profile-2026-09-16.md` §0): 305 `am stack list` + 304
     // `dumpsys display` trong 47 phút (≈13 lệnh/phút) — mỗi lượt watchdog chạy CẢ HAI, rồi `isAppOnDisplay`
@@ -107,7 +120,9 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
     val stackOut = shell.execute("am stack list").let { if (it.success) it.stdout else null }
     if (stackOut == null) { log("repin: không đọc được am stack list — bỏ lượt"); return }
     val now = System.currentTimeMillis()
-    for ((pkg, side) in expected) {
+    for (target in expected) {
+        val pkg = target.pkg
+        val side = target.side
         if (pkg == selfPackage) continue
         if (CastStackParser.isAppOnDisplay(stackOut, pkg, probeVd)) { repinMissStreak.remove(pkg); continue }
         // Debounce: require MISSING on two consecutive probes (ignore transient parse gaps and the
@@ -120,8 +135,7 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
         // nhịp đọc). Hụt ⇒ bỏ lượt, KHÔNG rơi về seed — đúng như đường cũ.
         val vd = detectClusterDisplay()
         if (vd < 1) { log("repin: dò lại không thấy VD cụm trước khi đặt — bỏ lượt"); return }
-        log("repin: $pkg escaped cluster → re-cast to slot=$side (keep running task/nav)")
-        val leftPercent = prefs.splitRatioLeftPercent()
+        log("repin: $pkg escaped cluster → re-cast to slot=$side pct=$leftPercent (bản ghim phiên, keep running task/nav)")
         val ok = mover.castToCluster(
             pkg = pkg, activity = null, displayId = vd,
             appType = AppType.NORMAL, slotSide = side, leftPercent = leftPercent,
@@ -129,10 +143,61 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
         repinCooldownUntil[pkg] = now + SimpleCastCoordinator.REPIN_COOLDOWN_MS
         repinMissStreak.remove(pkg)
         if (ok != null) {
-            geometry.applySavedProfile(pkg, if (side != null) CastProfile.of(side, leftPercent) else CastProfile.FULL)
+            geometry.applyPinned(pkg, target.pinned)
             log("repin: $pkg re-cast issued (slot=$side)")
         } else {
             log("repin: $pkg re-cast FAILED")
         }
     }
+}
+
+/**
+ * V-CLUSTER · VC-R7 — thân của [SimpleCastCoordinator.closeOrphanProjection]: tiến trình MỚI vừa chốt `cast_enabled`
+ * BẬT→TẮT, mà tiến trình trước có thể đã để lại projection đang mở trên cụm ([CHƯA BIẾT] VD có sống qua tắt máy không —
+ * OC-7). Không dọn thì cụm có HAI CHỦ: HUD thấy Cast TẮT nên ghi op 39, trong khi mặt chiếu cũ vẫn đứng đó.
+ *
+ * ## Vì sao KHÔNG đi `closeProjectionSync` như spec §11.4.3 phác
+ * [ĐO code] `ProjectionManager.close` là no-op khi `isOpen == false` (`ProjectionManager.kt:56`), mà tiến trình mới luôn
+ * có `isOpen = false` ⇒ đường đó chỉ reset `wm` rồi báo Off, projection cũ vẫn mở. Nên ghép lại từ ba mảnh ĐÃ CHẠY TRÊN
+ * XE (CLAUDE.md §6 — không dựng đường mới):
+ *  • `configurator.reset` — bước hoàn tác `wm` của `closeProjectionSync`;
+ *  • `cleanDisplay` — đúng lượt dọn *"projection còn sót từ tiến trình trước"* của `openProjectionBody`: trả task thật về
+ *    display 0 (rồi tự gửi 18 → 0). ⚠ Nó RETURN SỚM khi VD chỉ còn placeholder `ClusterBlack` (không gửi 18/0);
+ *  • `projection.resetState(true)` + `projection.close` — VD dò LIVE thấy = projection ĐANG MỞ (sự thật đo được, không cờ
+ *    RAM, CLAUDE.md §5), rồi đúng chuỗi đóng 18 → 0. Gửi 18/0 lần hai sau `cleanDisplay` là điều `closeProjection()` (công
+ *    tắc TẮT, chạy trên xe) vốn đã làm.
+ *
+ * ## Bốn câu CLAUDE.md §4 (senior review 2.84 — trả lời bằng mã, file:line)
+ *  1. **Display**: chỉ id dò LIVE — `detectClusterDisplay()` (`SimpleCastCoordinator.kt:70-85`) → `ClusterDisplayResolver.resolve`
+ *     (`ClusterDisplayResolver.kt:46-50`: grep `fission|xdja`, trả `-1` khi hụt HOẶC là VD của chính launcher, không
+ *     bao giờ 0, không seed); `vd < 1` ⇒ return trước mọi lệnh ghi (dưới đây), và `CastDisplayCleaner.kt:24` chặn lần nữa.
+ *  2. **App**: allow-list NGƯỢC — mọi task trên đúng VD đó TRỪ `com.android.*` · `ProjectionApps.STACK_SKIP_PKGS` (launcher3,
+ *     systemui, CarPlay) · placeholder `ClusterBlack` (`CastStackParser.kt:197-208`); cùng bộ lọc lượt dọn trước khi mở
+ *     (`openProjectionBody` :31) đã chạy trên xe. Không có gói nào bị nhắm theo tên (CLAUDE.md §7).
+ *  3. **Stack**: chỉ task của stack loại `standard` — task của stack home/recents/assistant bị loại
+ *     (`CastStackParser.nonStandardStackTasks`, dùng chung `StackParse`); việc bê là ở mức TASK (`am stack move-task`,
+ *     `CastDisplayCleaner.kt:46`), KHÔNG `am display move-stack` ⇒ không stack nào (nhất là home) bị đổi display. Đích là stack
+ *     standard, không pinned, id > 0 của display 0 (`CastStackParser.findTargetStackOnDisplay0`). Task trong stack pinned vẫn
+ *     được bê ở mức task — lý do [ĐO AOSP] ở KDoc `tasksToClean`.
+ *  4. **Hoàn tác**: chính nó LÀ đường hoàn tác của phiên cũ; `wm size/overscan/density reset` trên VD đó đi trước (khi VD
+ *     còn), cùng lẽ `undoTargetDisplay` — override `wm` sống qua reboot trong `display_settings.xml` (CLAUDE.md §5). Hỏng
+ *     giữa chừng: `isOpen` giữ `true` (sự thật đo được) ⇒ công tắc TẮT/BẬT tường minh sau đó đi đường thường.
+ *
+ * ⚠ Lúc chạy thực tế [SUY từ ĐO 29/09]: BYD giết Kachi mỗi lần tắt máy và Android dựng lại tiến trình ~0,3 s sau
+ * (`FloatingBubbleService` `START_STICKY`) ⇒ lượt chốt + lượt dọn này chạy NGAY LÚC TẮT MÁY, khi VD của phiên vừa rồi
+ * nhiều khả năng còn sống — tức đây là đường thường gặp chứ không phải ca hiếm. [CHƯA BIẾT] VD có sống qua lần tắt máy
+ * không (OC-7).
+ *
+ * Chỉ chạy khi trạng thái còn `Off` (tiến trình mới, chưa ai mở chiếu): nếu người lái đã kịp BẬT lại thì lượt mở đó đã tự
+ * dọn VD cũ, không được đóng chồng lên phiên mới.
+ */
+internal fun SimpleCastCoordinator.closeOrphanProjectionBody() {
+    if (state != SimpleCastState.Off) { log("closeOrphan: bỏ — trạng thái $state (đã có phiên mới)"); return }
+    val vd = detectClusterDisplay()
+    if (vd < 1) { log("closeOrphan: không dò thấy VD cụm — không có projection mồ côi, 0 lệnh ghi"); return }
+    log("closeOrphan: VD cụm $vd còn sống từ tiến trình trước mà Cast vừa chốt TẮT ⇒ reset wm + dọn + đóng projection")
+    configurator.reset(vd)
+    cleanDisplay(vd)
+    projection.resetState(true)
+    if (!projection.close(vd)) log("closeOrphan: đóng projection HỎNG — giữ isOpen=true (sự thật), lượt BẬT/TẮT sau đi đường thường")
 }

@@ -173,7 +173,7 @@ class CastProfileDensityTest {
         coordinator.dispatch(SimpleCastIntent.CastSlot("com.test.left", ClusterSlotSide.LEFT))
         awaitTrue { (coordinator.state as? SimpleCastState.CastingSplit)?.left?.pkg == "com.test.left" }
 
-        // The restore path (applySavedProfile) must re-issue the saved density for this ratio.
+        // The restore path (applyPinned — V-CLUSTER, was applySavedProfile) must re-issue the saved density for this ratio.
         awaitTrue { shell.history.any { it == "wm density 200 -d 1" } }
         assertTrue(
             shell.history.any { it == "wm density 200 -d 1" },
@@ -242,7 +242,7 @@ class CastProfileDensityTest {
         assertEquals(CastBounds(100, 50, 900, 600), cfg.bounds)
         assertEquals("200", cfg.density)
         // The saved bounds are actually re-applied on the cluster (only source of this exact resize).
-        // applySavedProfile runs on the executor right AFTER setState, so await the command landing.
+        // applyPinned (was applySavedProfile) runs on the executor right AFTER setState, so await the command landing.
         awaitTrue { shell.history.any { it.startsWith("am task resize") && it.endsWith("100 50 900 600") } }
     }
 

@@ -131,7 +131,7 @@ object ProfileScope {
             "keep_home_on_boot",
             "S5 — 'giữ Kachi làm màn hình chính khi nổ máy'. Màn hình chính là thuộc tính của **cả xe** (một " +
                 "`cmd package set-home-activity` cho user 0), không phải lựa chọn của một tài xế: chép nó theo hồ " +
-                "sơ thì đổi hồ sơ lại đi đặt/không-đặt HOME của cả máy. Cùng họ `boot_profile`/`cast_enabled` — " +
+                "sơ thì đổi hồ sơ lại đi đặt/không-đặt HOME của cả máy. Cùng họ `boot_profile`/`home_chosen` — " +
                 "quyết định mức máy, không mức người",
         )
         put(
@@ -154,7 +154,7 @@ object ProfileScope {
             "ui_glass_real",
             "UX-OVERHAUL WP1 · R1.3 — 'Kính thật (làm mờ nền)'. Theo XE: glass-thật là RenderEffect blur, một tính " +
                 "chất của PHẦN CỨNG (GPU) + ROM (API ≥ 31) của chính chiếc xe này, không phải sở thích đi theo " +
-                "người lái. [ĐO] xe DiLink là API 29 nên nó luôn lùi về glass-giả ở đó. Cùng họ cast_enabled/" +
+                "người lái. [ĐO] xe DiLink là API 29 nên nó luôn lùi về glass-giả ở đó. Cùng họ keep_home_on_boot/" +
                 "voice_wake_enabled — quyết định mức máy, không mức người",
         )
         put(
@@ -174,18 +174,11 @@ object ProfileScope {
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (lý do đầy đủ ở " +
                 "[SettingsCatalog.NOT_SETTINGS])",
         )
-        put(
-            "cast_enabled",
-            "S4 · OQ2 chốt ở Pass 1 review (2026-09-14) — công tắc CHÍNH của phiên chiếu lên cụm. Nó theo XE vì " +
-                "**không có đường áp an toàn** lúc đang lăn bánh: [ĐO] mọi cổng đọc nó đều LIVE " +
-                "(`ClusterNavLaneWidget.kt:110` nhịp thông báo · `NavRepository.kt:215` mỗi khung · " +
-                "`FloatingBubbleService.kt:170` mỗi lượt start), nên chỉ đổi giá trị mà không mở/đóng projection là " +
-                "để hai bên cùng tưởng mình sở hữu mặt cụm: bật→tắt ⇒ `decide()` chuyển GATED_CAST → ASSERT và op " +
-                "39 ghi đè lên cụm mà phiên chiếu vẫn chạy (đúng thứ KDoc `ClusterNavLaneWidget` cấm: *Cast ON " +
-                "still wins*); tắt→bật ⇒ HUD thôi ghi mặt cụm mà không có phiên chiếu nào thay chỗ ⇒ cụm trống. " +
-                "Còn áp THẬT (`setCastEnabled`) thì làm cụm trước mặt người lái tối đi/sáng lên vì một cú chạm chip " +
-                "hồ sơ. Mở lại theo hồ sơ được khi có đường áp gác theo 'phiên chiếu không chạy' — backlog S4-OQ2",
-        )
+        // ⚠ 2026-09-30 — `cast_enabled` ĐÃ RỜI danh sách này, chuyển sang theo HỒ SƠ. Owner: *"Phần cụm lưu hết thành
+        // profile nhé"* — THAY chốt S4-OQ2 của Pass 1 review (2026-09-14; không phải quyết định của owner). Lý do kỹ
+        // thuật của chốt cũ VẪN ĐÚNG ([ĐO] mọi cổng đọc đều LIVE qua `SimpleCastPrefs.castEnabled()` ⇒ ghi thẳng khoá
+        // sống lúc đổi hồ sơ là cụm HAI CHỦ) và nay là ràng buộc thiết kế: lượt đổi hồ sơ không bao giờ ghi khoá sống,
+        // giá trị hồ sơ đợi ở `cast_enabled_pending` (theo XE) tới lần khởi động tiến trình kế — `CastEnableDeferral`.
         put(
             "voice_speak_replies",
             "V1 pha NÓI · R4 — công tắc 'Đọc phản hồi bằng giọng'. Theo XE vì thứ quyết định nó có nghĩa hay " +
@@ -224,7 +217,7 @@ object ProfileScope {
             "voice_confirm_ids",
             "V3 · R7 — danh sách việc phải hỏi lại trước khi chạy. Theo XE: đây là một quyết định AN TOÀN về " +
                 "chính chiếc xe (owner chốt mặc định RỖNG 2026-09-16), và một hồ sơ chép sang xe khác không được " +
-                "mang theo lựa chọn 'không hỏi gì cả'. Cùng họ `cast_enabled` — quyết định mức máy, không mức người",
+                "mang theo lựa chọn 'không hỏi gì cả'. Cùng họ `keep_home_on_boot` — quyết định mức máy, không mức người",
         )
         put(
             "voice_follow_up_ms",
@@ -271,7 +264,7 @@ object ProfileScope {
             "AUTOMATION #1 (1.85, spec kachi-automation R1/R5) — 'Tự sấy kính khi mưa'. Theo XE: nó đọc một CẢM " +
                 "BIẾN của chiếc xe này ([ĐO] SETTING_FRONT_RAIN_WIPER_SPEED) và ghi hai nút sấy của chính nó, " +
                 "tức một quyết định về phần cứng chứ không phải sở thích đi theo người lái. Chép nó theo hồ sơ thì " +
-                "đổi hồ sơ giữa cơn mưa là sấy tự tắt/bật mà không ai hiểu vì sao — cùng họ cast_enabled/" +
+                "đổi hồ sơ giữa cơn mưa là sấy tự tắt/bật mà không ai hiểu vì sao — cùng họ keep_home_on_boot/" +
                 "voice_wake_enabled: quyết định mức máy, không mức người",
         )
         // ⚠ 2026-09-28 — `nav_automation_rules` và `nav_automation_fired` ĐÃ RỜI danh sách này, chuyển sang theo
@@ -283,7 +276,7 @@ object ProfileScope {
         // Xem [CLUSTERNAV_PROFILE_STATE_KEYS] cho khoá dấu-đã-dẫn (không phải cài đặt nên không nằm ở danh mục).
         put(
             "rain_defrost_front",
-            "V7 (owner 2026-09-25) — ô con *'Sấy kính trước'* của automation #1. Theo XE **cùng phạm vi với** " +
+            "V7 (owner 2026-09-25), độc lập từ kachi-automation V8 (2026-09-30) — hàng *'Mưa thì tự bật sấy kính trước'*. Theo XE **cùng phạm vi với** " +
                 "`rain_defrost_enabled` mà nó phụ thuộc: để hai khoá của CÙNG một tính năng ở hai phạm vi khác " +
                 "nhau là mời chúng lệch nhau (công tắc theo xe mà lựa chọn kính theo hồ sơ ⇒ đổi hồ sơ giữa cơn " +
                 "mưa là sấy đổi bên mà không ai hiểu vì sao). Nó cũng là một quyết định về PHẦN CỨNG của chiếc xe " +
@@ -291,7 +284,7 @@ object ProfileScope {
         )
         put(
             "rain_defrost_rear",
-            "V7 — ô con *'Sấy kính sau + gương'*. Cùng lý do [rain_defrost_front]: cùng tính năng thì cùng phạm vi",
+            "V7/V8 — hàng *'Mưa thì tự bật sấy kính sau + gương'*. Cùng lý do [rain_defrost_front]: cùng tính năng thì cùng phạm vi",
         )
         put(
             "auto_update_enabled",
@@ -301,33 +294,28 @@ object ProfileScope {
                 "tắt việc cập nhật của cả xe. Cùng họ `sherpa_model_id`/`doze_whitelist_applied` — trạng thái/" +
                 "quyết định mức máy",
         )
-        put(
-            "cast_bubble_visible",
-            "UX-OVERHAUL WP6 · R6.1 (owner 2026-09-20) — 'Hiện nút nổi chiếu cụm'. Theo XE, **cùng phạm vi với " +
-                "`cast_enabled`** mà nó phụ thuộc: để nó theo hồ sơ thì hai khoá của CÙNG một tính năng nằm ở hai " +
-                "phạm vi khác nhau, và đổi hồ sơ giữa lúc đang chiếu sẽ làm nút nổi biến mất/hiện lại mà không ai " +
-                "hiểu vì sao — trong khi phiên chiếu (theo XE) vẫn chạy. Nó cũng là một quyết định về BỀ MẶT CỦA " +
-                "CHIẾC XE (một cửa sổ nổi đè lên mọi app trên màn chính này), không phải sở thích đi theo người lái",
-        )
+        // ⚠ 2026-09-30 — `cast_bubble_visible` ĐÃ RỜI danh sách này (V-CLUSTER, cùng quyết định với `cast_enabled`).
+        // Lý do cũ chỉ là *"cùng phạm vi với cast_enabled"*; [ĐO code] khoá này chỉ ẩn/hiện cửa sổ nổi trên màn chính
+        // (vòng `syncBubbleWindow` 2 s), không dựng lại dịch vụ, không chạm projection ⇒ áp NGAY khi đổi hồ sơ là an toàn.
         put("enable_freeform_support", "cờ boot của HỆ THỐNG (`Settings.Global`) — thuộc máy")
         put("force_resizable_activities", "cờ boot của HỆ THỐNG (`Settings.Global`), gieo CẶP với khoá trên")
         put("enabled_accessibility_services", "danh sách trợ năng DÙNG CHUNG với mọi app khác (`Settings.Secure`)")
         put("accessibility_enabled", "cờ trợ năng toàn hệ thống (`Settings.Secure`) — máy tự đổi sau lưng")
+        // V-CLUSTER — khoá cụm/chiếu/camera theo XE (23 khoá hiệu chỉnh camera, dấu mốc, đời cũ): bảng + lý do ở
+        // [ProfileScopeCluster.DEVICE_KEYS] (tách vì trần 500 dòng), không chép lại ở đây.
+        putAll(ProfileScopeCluster.DEVICE_KEYS)
     }
 
     /**
-     * Tiền tố khoá **dựng động** theo xe → lý do. `SimpleCastRuntime` ghi `"config_size_$key"` với `key` = gói + hồ
-     * sơ chiếu, nên bốn tên đầy đủ không tồn tại nguyên văn trong mã (cùng ca [SettingsCatalog.SLOT_KEY_PREFIX]).
+     * Tiền tố khoá **dựng động** theo xe → lý do. Nay chỉ còn hai họ đời V2 của `CastAppCatalog` (`scale-*:<gói>`,
+     * `dpi:<gói>`), bảng ở [ProfileScopeCluster.DEVICE_KEY_PREFIXES].
      *
-     * Đây là **hình học khi chiếu** mà R4 chỉ đích danh: khung/DPI đo theo *màn cụm của chiếc xe này*. Chép sang xe
-     * khác — hoặc sang hồ sơ rồi áp ngược lại — là áp một khung sai lên phần cứng thật.
+     * ⚠ 2026-09-30 (V-CLUSTER) — bốn tiền tố `config_size_/overscan_/density_/bounds_` ĐÃ RỜI bảng này sang theo HỒ SƠ
+     * ([ProfileScopeCluster.CAST_GEOMETRY]). Lý do cũ (*"`wm density` đã ĐO cho màn cụm của chính xe này"*) sai: DPI và
+     * khung do người lái chọn bằng chip và thanh −/+, còn `config_size_` là hằng `1920x720` hoặc suy từ khung người lái
+     * chọn. Cả bốn là MỘT bản ghi nên cùng đi (spec §11.2 K4).
      */
-    val DEVICE_KEY_PREFIXES: Map<String, String> = mapOf(
-        "config_size_" to "`wm size` đã đo cho màn cụm của chính xe này",
-        "config_overscan_" to "`wm overscan` đã đo cho màn cụm của chính xe này",
-        "config_density_" to "`wm density` đã đo cho màn cụm của chính xe này",
-        "config_bounds_" to "khung cửa sổ đã đo cho màn cụm của chính xe này",
-    )
+    val DEVICE_KEY_PREFIXES: Map<String, String> = ProfileScopeCluster.DEVICE_KEY_PREFIXES
 
     /**
      * Khoá **tạm / đời cũ** → lý do. Không theo hồ sơ **và** không theo xe: chúng không phải một lựa chọn để nhớ.
@@ -378,7 +366,9 @@ object ProfileScope {
             SettingsCatalog.CLUSTERNAV_KEYS
                 .filterKeys { key ->
                     key !in DEVICE_KEYS && key !in TRANSIENT_KEYS && key !in LAUNCHER_OWNED_CLUSTERNAV_KEYS
-                } + CLUSTERNAV_PROFILE_STATE_KEYS
+                } + CLUSTERNAV_PROFILE_STATE_KEYS +
+                // V-CLUSTER — khoá theo hồ sơ KHÔNG có mục Cài đặt (6 khoá camera + vị trí nút nổi chiếu).
+                ProfileScopeCluster.PROFILE_EXTRA_KEYS
             )
             .entries
             .groupBy({ it.value }, { it.key })
@@ -459,5 +449,7 @@ object ProfileScope {
                 "${WorkspaceState.SLOT_CAP} (SLOT_CAP)",
         )
         putAll(SettingsCatalog.CLUSTERNAV_DYNAMIC_KEY_PREFIXES)
+        // V-CLUSTER — họ `cast_geometry` (DPI/khung từng app khi chiếu) theo HỒ SƠ.
+        putAll(ProfileScopeCluster.FAMILY_PREFIXES)
     }
 }

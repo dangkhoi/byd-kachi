@@ -30,8 +30,15 @@ class ProfileKeysWiringContractTest {
 
     private fun prefs() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefs.kt")
 
-    /** S4 · T2 — phần chụp–áp/nhân bản/chuyển đổi là **hàm mở rộng của cùng lớp**, ở tệp thứ hai (trần 500 dòng). */
-    private fun prefsProfile() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsProfile.kt")
+    /**
+     * S4 · T2 — phần chụp–áp/nhân bản/chuyển đổi là **hàm mở rộng của cùng lớp**, ở tệp thứ hai (trần 500 dòng).
+     *
+     * V-CLUSTER (2026-09-30): tệp thứ hai lại tách ba (trần 500 dòng) — chụp–áp ở `WorkspacePrefsSnapshot.kt`, di trú ở
+     * `WorkspacePrefsMigrations.kt`. Bài quét CẢ BA (ghép nguồn): mọi phép kiểm cũ giữ nguyên, và phép "mọi khoá theo hồ
+     * sơ đều có trong danh sách hậu tố" nay nhìn thêm hai tệp — rộng hơn, không hẹp đi.
+     */
+    private fun prefsProfile() = listOf("WorkspacePrefsProfile.kt", "WorkspacePrefsSnapshot.kt", "WorkspacePrefsMigrations.kt")
+        .joinToString("\n") { SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$it") }
 
     private fun repo() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt")
 

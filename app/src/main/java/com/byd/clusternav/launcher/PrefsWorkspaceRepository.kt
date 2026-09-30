@@ -48,6 +48,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         // ảnh chụp cũ (chưa có hai khoá lịch) làm các hồ sơ lệch nhau. Rót giá trị đang sống xuống mọi hồ sơ
         // trước thì lượt áp đầu tiên đã có đủ dữ liệu để áp đúng.
         prefs.migrateNavScheduleOnce()
+        // V-CLUSTER (owner 2026-09-30): cùng lẽ — cụm/chiếu/camera/nút nổi vừa đổi phạm vi XE → HỒ SƠ; rót giá trị đang
+        // sống xuống mọi hồ sơ TRƯỚC lượt áp đầu tiên (spec §11.4.5). Sau lịch dẫn đường: hai lượt độc lập, thứ tự cố định.
+        prefs.migrateClusterProfileOnce()
     }
 
     /**

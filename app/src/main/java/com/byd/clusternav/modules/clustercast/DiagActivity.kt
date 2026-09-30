@@ -192,6 +192,9 @@ class DiagActivity : Activity() {
             appendLine("autoStartSplit=${prefs.autoStartSplitEnabled()}")
             appendLine("splitRatioLeft=${prefs.splitRatioLeftPercent()}%")
             appendLine("dozeWhitelist=${prefs.dozeWhitelistApplied()}")
+            // V-CLUSTER (OC-5): giá trị HIỆU LỰC + bản chờ của hồ sơ (chốt lần nổ máy kế). Bản ghim hình học + tỉ lệ của
+            // phiên nằm sẵn trong dòng `state=` ở trên (`pinned=…`, `leftPercent=…`) — chụp màn này là đủ, không gõ adb.
+            appendLine("castEnabled=${prefs.castEnabled()} pending=${prefs.castEnabledPending() ?: "-"}")
 
             // R7 (spec kachi-a11y-bind-stuck-autofix) — NHẬT KÝ BỀN của trạng thái gắn dịch vụ Hỗ trợ (phím
             // vô-lăng). Đây là ĐƯỜNG ĐỌC của nhật ký: [ĐO xe 2026-09-28] vòng đệm logcat chỉ còn 32 phút nên

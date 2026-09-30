@@ -6,6 +6,10 @@ package com.byd.clusternav.modules.clustercast.simplified
  *
  * R6: Persists density ONLY after successful shell application.
  * If `wm density` fails, prior saved value is preserved (no corruption).
+ *
+ * V-CLUSTER · VC-R6: hai hàm trả **đúng chuỗi DPI đã áp** (`"240"` / `"reset"`) khi shell OK, `null` khi hỏng — chỗ gọi
+ * ([SimpleCastCoordinator.setDensity]/[SimpleCastCoordinator.setDensitySplit]) cập nhật trường DPI của bản ghim phiên
+ * bằng ĐÚNG giá trị đó (sự thật vừa áp), không đọc lại prefs (prefs là hồ sơ ĐANG DÙNG, có thể đã đổi giữa phiên).
  */
 internal object CastDensityControl {
 
@@ -13,24 +17,28 @@ internal object CastDensityControl {
      * Set or reset cluster display density. Saves per-app ONLY if shell succeeds.
      * @param dpi density value, or null to reset.
      * @param activePkg the currently casting full-mode package (for per-app save), or null.
+     * @return chuỗi DPI đã áp khi shell OK (kể cả khi không có [activePkg] để lưu), `null` khi hỏng.
      */
-    fun set(shell: SimpleCastShell, prefs: SimpleCastPrefs, displayId: Int, dpi: Int?, activePkg: String?) {
-        val success = applyDensity(shell, displayId, dpi)
-        if (success && activePkg != null) {
-            saveForPkg(prefs, activePkg, dpi)
-        }
+    fun set(shell: SimpleCastShell, prefs: SimpleCastPrefs, displayId: Int, dpi: Int?, activePkg: String?): String? {
+        val applied = applyDensity(shell, displayId, dpi) ?: return null
+        if (activePkg != null) saveForPkg(prefs, activePkg, dpi)
+        return applied
     }
 
     /**
      * Split-mode density (R4 / owner bug #5). `wm density` is display-global on Android 10, so it
      * is applied once; on success the value is persisted under the **per-ratio profile key**
-     * ([CastProfile.of] with the current leftPercent) of EVERY occupied slot — the SAME key
+     * ([CastProfile.of] with the SESSION's leftPercent) of EVERY occupied slot — the SAME key
      * [bounds][DisplayConfig.bounds] use — so re-casting either app at this ratio restores its DPI.
      *
      * This closes the gap behind "DPI not saved after adjusting per ratio": the split DPI control
      * previously routed through [set] with a null active package (state is CastingSplit, not
      * CastingFull), so nothing was ever written. No-op unless [state] is [SimpleCastState.CastingSplit].
      * Persists ONLY on shell success.
+     *
+     * V-CLUSTER · sửa refute C2: tỉ lệ lấy từ [SimpleCastState.CastingSplit.leftPercent] (tỉ lệ ĐANG chia trên cụm), không
+     * đọc `prefs.splitRatioLeftPercent()` — đổi hồ sơ giữa lúc chia đôi thì prefs mang tỉ lệ của hồ sơ mới, và DPI sẽ bị
+     * lưu nhầm vào ô nhớ của một tỉ lệ không có trên cụm.
      */
     fun setForSplit(
         shell: SimpleCastShell,
@@ -38,21 +46,24 @@ internal object CastDensityControl {
         displayId: Int,
         dpi: Int?,
         state: SimpleCastState,
-    ) {
-        val split = state as? SimpleCastState.CastingSplit ?: return
-        if (!applyDensity(shell, displayId, dpi)) return
-        val leftPercent = prefs.splitRatioLeftPercent()
+    ): String? {
+        val split = state as? SimpleCastState.CastingSplit ?: return null
+        val applied = applyDensity(shell, displayId, dpi) ?: return null
+        val leftPercent = split.leftPercent
         split.left?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.LEFT, leftPercent), dpi) }
         split.right?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.RIGHT, leftPercent), dpi) }
+        return applied
     }
 
-    private fun applyDensity(shell: SimpleCastShell, displayId: Int, dpi: Int?): Boolean {
-        val result = if (dpi != null && dpi in 80..640) {
+    /** Chuỗi DPI đã áp khi shell OK (`"<dpi>"` hoặc `"reset"` — đúng nhánh lệnh đã chạy), `null` khi hỏng. */
+    private fun applyDensity(shell: SimpleCastShell, displayId: Int, dpi: Int?): String? {
+        val result = if (dpi != null && dpi in CastGeometryGuard.DENSITY_RANGE) {
             shell.execute("wm density $dpi -d $displayId")
         } else {
             shell.execute("wm density reset -d $displayId")
         }
-        return result.success
+        if (!result.success) return null
+        return if (dpi != null && dpi in CastGeometryGuard.DENSITY_RANGE) dpi.toString() else CastGeometryGuard.DENSITY_RESET
     }
 
     private fun saveForPkg(prefs: SimpleCastPrefs, pkg: String, dpi: Int?) {
@@ -65,7 +76,7 @@ internal object CastDensityControl {
     /** Persist [dpi] under the exact ([pkg], [profile]) geometry key — same key bounds use (R4/#5). */
     private fun saveForProfile(prefs: SimpleCastPrefs, pkg: String, profile: CastProfile, dpi: Int?) {
         // Seed bounds-less (see [saveForPkg]): a split slot whose DPI is changed before it is resized
-        // must NOT inherit NORMAL_DEFAULT's full-cluster bounds, or applySavedProfile would blow the
+        // must NOT inherit NORMAL_DEFAULT's full-cluster bounds, or applyPinned would blow the
         // slot up to the whole display on re-cast and destroy the split layout.
         val existing = prefs.displayConfigFor(pkg, profile) ?: DisplayConfig.NORMAL_DEFAULT.copy(bounds = null)
         prefs.saveDisplayConfig(pkg, profile, existing.copy(density = dpi?.toString() ?: "reset"))

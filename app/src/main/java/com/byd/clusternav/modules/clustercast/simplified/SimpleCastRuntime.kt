@@ -11,6 +11,8 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.ProjectionManager
 import com.byd.clusternav.modules.clustercast.simplified.DisplayConfigurator
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
+import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
+import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 
 /**
  * Android-side runtime for the simplified Cluster Cast coordinator.
@@ -37,8 +39,14 @@ object SimpleCastRuntime {
         android.util.Log.i("SimpleCast", "Creating SimpleCastCoordinator")
         val shell = DadbSimpleCastShell(app)
         val prefs = SharedPrefsSimpleCastPrefs(app)
+        // V-CLUSTER · VC-R7 — CHỐT bản chờ `cast_enabled_pending` (lựa chọn Cast của hồ sơ, ghi lúc đổi hồ sơ) vào khoá
+        // sống TRƯỚC khi dựng coordinator: mọi chỗ đọc `castEnabled()` đều đi qua `coordinator(...).prefs` (spec K1), nên
+        // chốt ở đây là mọi chỗ đọc của tiến trình thấy CÙNG một giá trị ngay từ đầu. Chỉ prefs (commit đồng bộ), không
+        // shell ⇒ an toàn cả khi luồng gọi đầu tiên là luồng chính. [ĐO 09-29] BYD giết Kachi mỗi lần tắt máy ⇒ trên thực
+        // tế đây là lần nổ máy kế.
+        val atStart = prefs.commitCastEnabledPending()
         val projection = ProjectionManager(shell)
-        val configurator = DisplayConfigurator(shell)
+        val configurator = DisplayConfigurator(shell) { message -> android.util.Log.w("SimpleCast", "DisplayConfigurator: $message") }
         val mover = AppMover(
             shell = shell,
             log = { message -> android.util.Log.i("SimpleCast", "AppMover: $message") },
@@ -57,7 +65,13 @@ object SimpleCastRuntime {
             "Cluster display seed = $displayId (source=$displaySource) — NOT used for placement; " +
                 "live-resolved after projection open",
         )
-        return SimpleCastCoordinator(projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID)
+        val coordinator = SimpleCastCoordinator(projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID)
+        // Chốt BẬT→TẮT ⇒ tiến trình trước có thể đã để projection mở trên cụm: không dọn là cụm HAI CHỦ (HUD thấy TẮT nên
+        // ghi op 39 trong khi mặt chiếu cũ vẫn đứng). Xếp lên executor của coordinator (shell ở nền, không ở luồng gọi).
+        // Chốt TẮT→BẬT thì không làm gì thêm: các đường khởi động sẵn có tự đọc BẬT và mở chiếu (RebindReceiver,
+        // KachiHomeWiring.ensureCastBubble) như với một người đang bật Cast.
+        if (atStart is CastEnableDeferral.AtStart.Commit && atStart.closeOrphan) coordinator.closeOrphanProjection()
+        return coordinator
     }
 
     /** Shutdown the coordinator. Call from Application.onTerminate or process exit. */
@@ -167,28 +181,44 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
 
     override fun displayConfigFor(pkg: String): DisplayConfig? = displayConfigFor(pkg, CastProfile.FULL)
 
+    /**
+     * V-CLUSTER · VC-R4 lớp 3 — đọc bản ghi hình học QUA BỘ KIỂM [CastGeometryGuard.readConfig], không bao giờ ném.
+     *
+     * Trước đây `bounds` đọc bằng `toInt()` trần (chuỗi hỏng ⇒ `NumberFormatException` trong dịch vụ đang chạy) và ba
+     * chuỗi còn lại đi NGUYÊN VĂN vào `wm size/overscan/density`. Từ V-CLUSTER họ `config_*` theo hồ sơ ⇒ đi qua tệp
+     * xuất/nhập ⇒ là dữ liệu người khác gửi. Đọc bằng `all[...] as? String` (không `getString`): một giá trị sai KIỂU
+     * trên đĩa là `ClassCastException` với `getString`, còn ở đây nó chỉ là "vắng".
+     */
     override fun displayConfigFor(pkg: String, profile: CastProfile): DisplayConfig? {
         val key = profileKey(pkg, profile)
-        val size = sp.getString("config_size_$key", null) ?: return null
-        val overscan = sp.getString("config_overscan_$key", "0,0,0,0") ?: "0,0,0,0"
-        val density = sp.getString("config_density_$key", "reset") ?: "reset"
-        val boundsStr = sp.getString("config_bounds_$key", null)
-        val bounds = boundsStr?.split(",")?.takeIf { it.size == 4 }?.let {
-            CastBounds(it[0].toInt(), it[1].toInt(), it[2].toInt(), it[3].toInt())
-        }
-        return DisplayConfig(wmSize = size, overscan = overscan, density = density, bounds = bounds)
+        val all = sp.all
+        return CastGeometryGuard.readConfig(
+            size = all["config_size_$key"] as? String,
+            overscan = all["config_overscan_$key"] as? String,
+            density = all["config_density_$key"] as? String,
+            bounds = all["config_bounds_$key"] as? String,
+        ) { msg -> android.util.Log.w("SimpleCast", "displayConfigFor($key): $msg") }
     }
 
     override fun saveDisplayConfig(pkg: String, config: DisplayConfig) =
         saveDisplayConfig(pkg, CastProfile.FULL, config)
 
+    /**
+     * Ghi bản ghi hình học — CHUẨN HOÁ trước ([CastGeometryGuard.sanitizeForSave]): lưu đúng thứ đã áp (DPI ngoài dải ⇒
+     * lệnh đã chạy là `wm density reset` ⇒ lưu `"reset"`, không lưu `"700"`), và không bao giờ lưu một chuỗi mà lượt đọc
+     * sau sẽ phải bỏ. `wmSize` hỏng ⇒ KHÔNG ghi (thiếu kích thước thì cả bản ghi vô nghĩa) + log.
+     */
     override fun saveDisplayConfig(pkg: String, profile: CastProfile, config: DisplayConfig) {
         val key = profileKey(pkg, profile)
+        val clean = CastGeometryGuard.sanitizeForSave(config) ?: run {
+            android.util.Log.w("SimpleCast", "saveDisplayConfig($key): bỏ — wmSize hỏng '${config.wmSize.take(40)}'")
+            return
+        }
         sp.edit()
-            .putString("config_size_$key", config.wmSize)
-            .putString("config_overscan_$key", config.overscan)
-            .putString("config_density_$key", config.density)
-            .putString("config_bounds_$key", config.bounds?.toString())
+            .putString("config_size_$key", clean.wmSize)
+            .putString("config_overscan_$key", clean.overscan)
+            .putString("config_density_$key", clean.density)
+            .putString("config_bounds_$key", clean.bounds?.toString())
             .apply()
     }
 
@@ -261,8 +291,38 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
     // the cluster immediately. Users who want to cast apps turn Cast on explicitly (persisted).
     override fun castEnabled(): Boolean = sp.getBoolean("cast_enabled", false)
 
+    /**
+     * Cú bật/tắt TƯỜNG MINH (công tắc Cài đặt, nút *Áp ngay*, lệnh giọng nói — mọi đường đều qua cầu `setCastEnabled`).
+     *
+     * V-CLUSTER · VC-R7: ý người lái vừa bày tỏ THẮNG mọi bản chờ của lượt đổi hồ sơ ⇒ xoá khoá chờ trong CÙNG lượt
+     * ghi. Ghim ở tầng THI HÀNH này (không ở tầng UI, CLAUDE.md §5): quên xoá thì lần nổ máy sau bản chờ cũ chốt đè
+     * lên đúng lựa chọn người lái vừa bấm.
+     */
     override fun setCastEnabled(enabled: Boolean) {
-        sp.edit().putBoolean("cast_enabled", enabled).apply()
+        sp.edit().putBoolean("cast_enabled", enabled).remove(CastEnableDeferral.PENDING_KEY).apply()
+    }
+
+    override fun castEnabledPending(): Boolean? = sp.all[CastEnableDeferral.PENDING_KEY] as? Boolean
+
+    /**
+     * Chốt bản chờ (V-CLUSTER · VC-R7): quyết định thuần ở [CastEnableDeferral.onProcessStart]; ghi khoá sống + xoá khoá
+     * chờ trong MỘT `commit()` đồng bộ — lượt đọc `castEnabled()` ngay sau đó (cùng tiến trình, cùng lượt dựng) phải
+     * thấy giá trị đã chốt. Không shell ⇒ an toàn cả khi luồng gọi là luồng chính.
+     */
+    override fun commitCastEnabledPending(): CastEnableDeferral.AtStart {
+        val all = sp.all
+        val decision = CastEnableDeferral.onProcessStart(all[CastEnableDeferral.LIVE_KEY], all[CastEnableDeferral.PENDING_KEY])
+        when (decision) {
+            is CastEnableDeferral.AtStart.Commit ->
+                sp.edit().putBoolean("cast_enabled", decision.on).remove(CastEnableDeferral.PENDING_KEY).commit()
+            is CastEnableDeferral.AtStart.Discard -> {
+                android.util.Log.w("SimpleCast", "cast_enabled_pending: ${decision.reason} — xoá bản chờ")
+                sp.edit().remove(CastEnableDeferral.PENDING_KEY).commit()
+            }
+            CastEnableDeferral.AtStart.NoPending -> Unit
+        }
+        if (decision != CastEnableDeferral.AtStart.NoPending) android.util.Log.i("SimpleCast", "cast_enabled chốt lúc khởi động: $decision")
+        return decision
     }
 
     // WP6 · R6.1 — HIỆN nút nổi hay không. Mặc định TRUE, **ngược** với `cast_enabled` ngay trên, và có lý do:

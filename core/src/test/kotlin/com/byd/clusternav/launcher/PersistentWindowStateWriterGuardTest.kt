@@ -104,7 +104,7 @@ class PersistentWindowStateWriterGuardTest {
         assertEquals(
             setOf(
                 "FreeformSeedPolicy.kt",               // ✅ SANCTIONED — :core system, densityCmd() (the API).
-                "CastGeometryController.kt",           // ⏳ DEFERRED — :core cast, applySavedProfile() density. TODO(on-car).
+                "CastGeometryController.kt",           // ⏳ DEFERRED — :core cast, applyPinned() density (V-CLUSTER thay applySavedProfile). TODO(on-car).
                 "DisplayConfigurator.kt",              // ⏳ DEFERRED — :core cast, apply() density. TODO(on-car).
                 "CastDensityControl.kt",               // ⏳ DEFERRED — :core cast, set()/setForSplit() density. TODO(on-car).
                 // CastShell.kt + ClusterCast.kt XOÁ (quality-review 2026-09-15 Pha 3 — orchestrator cast chết đã gỡ).

@@ -86,7 +86,7 @@ internal object SettingsCatalogClusterNav {
             // ⚠ Khoá thứ ba `nav_automation_fired` KHÔNG ở đây: nó là TRẠNG THÁI CHẠY, khai ở
             // `SettingsCatalog.NOT_SETTINGS` — bảng này chỉ nhận khoá **có mặt trên UI**.
             "rain_defrost_enabled", "nav_automation_rules",
-            // V7 (owner 2026-09-25) — hai ô CON của công tắc #1 (*"chọn kính nào được sấy"*). Khai ở
+            // V7 (owner 2026-09-25) — hai ô chọn kính của #1 (V8 2026-09-30: hai hàng độc lập). Khai ở
             // `PrefsAutomation.kt`, cùng tệp `clusternav_prefs`. Chủ của chúng là mục `car_rain_defrost` — xem
             // [COMPANION_KEYS] về vì sao KHÔNG mở hai mục danh mục riêng.
             "rain_defrost_front", "rain_defrost_rear",
@@ -122,7 +122,7 @@ internal object SettingsCatalogClusterNav {
         // S4-SEAT (owner 2026-09-23): 3 ghế còn lại đi kèm ghế lái. `Prefs.setSeatComfortLevel` ghi
         // `"seat_level_$seatIndex"` cho 4 ghế trong MỘT hàm; chỉ `seat_level_0` được khai trong CLUSTERNAV_KEYS nên
         // ProfileScope (sinh từ bảng đó) chỉ phủ ghế lái ⇒ đổi hồ sơ, 3 ghế kia giữ mức người trước. Khai đi-kèm để
-        // cả 4 vào ảnh chụp theo hồ sơ. (Cùng tệp `kachi_workspace` như seat_level_0.)
+        // cả 4 vào ảnh chụp theo hồ sơ. (Cùng tệp `clusternav_prefs` như seat_level_0 — `Prefs.kt` FILE, :420-422.)
         "seat_level_1" to "car_seat_levels",
         "seat_level_2" to "car_seat_levels",
         "seat_level_3" to "car_seat_levels",
@@ -135,9 +135,10 @@ internal object SettingsCatalogClusterNav {
         // và một khoá vẫn có đúng MỘT chủ — bất biến của [SettingsCatalog] nguyên vẹn.
         //
         // Vì sao KHÔNG mở hai mục danh mục riêng: `car_rain_defrost_front`/`_rear` sẽ là hai dòng nữa ở rail đếm
-        // *"nhóm này có N mục"* cho hai ô tích **không tự đứng được** (chúng vô nghĩa khi công tắc chính tắt — và
-        // giao diện đã nói điều đó bằng cách làm mờ chúng). Cùng lẽ `badge_center_y`: tách ra thành mục riêng là
-        // dựng một trạng thái mà người dùng đặt được nửa vời.
+        // *"nhóm này có N mục"* cho **một** tính năng. kachi-automation V8 (owner 2026-09-30) bỏ công tắc chính
+        // khỏi giao diện — hai hàng nay độc lập, không hàng nào mờ — nhưng ba khoá vẫn là MỘT lựa chọn: mỗi cú
+        // chạm ghi cả ba trong một lượt (`enabled = trước || sau`, `RainDefrostChoice.toKeys`), nên chúng vẫn chung
+        // một chủ. Tách chủ là mời hai mục ghi lệch nhau đúng cái bộ ba mà V8 sinh ra để giữ khớp.
         "rain_defrost_front" to "car_rain_defrost",
         "rain_defrost_rear" to "car_rain_defrost",
         // ── V8 (owner 2026-09-25) — công tắc *"Tự động cập nhật"* ──

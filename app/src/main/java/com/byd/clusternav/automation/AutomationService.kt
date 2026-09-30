@@ -14,14 +14,15 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.automation.NavAutomationBook
 import com.byd.clusternav.navAutomationRules
-import com.byd.clusternav.rainDefrostEnabled
 import com.byd.clusternav.cameraSignalEnabled
 
 /**
  * ═══ MỘT ĐỘNG CƠ NỀN CHO CẢ HAI AUTOMATION ═══════════════════════════════════════════════════════════════════
  *
  * Spec `docs/specs/kachi-automation.html` R4. Foreground service, nhịp [TICK_MS]; mỗi nhịp gọi
- * [ScheduledNavApplier.tick], còn [RainDefrostApplier.tick] chạy mỗi [RAIN_EVERY_TICKS] nhịp (≈5 phút, R1.2).
+ * [ScheduledNavApplier.tick], còn nhịp mưa đi qua [RainDefrostApplier.tickIfDue] mỗi lượt thức và tự gác: ngay ở
+ * đầu vòng, rồi mỗi [RAIN_EVERY_TICKS] nhịp (≈5 phút, R1.2) theo thời gian trôi — hoặc ở lượt thức kế sau khi người
+ * dùng đổi lựa chọn kính (V8 · R-V8.5), hoặc 60 s sau một nhịp đọc HAL lỗi, tối đa 5 lần (V8.1 · R-V8.8).
  *
  * ## Vì sao FGS + `Thread.sleep`, KHÔNG WorkManager / AlarmManager
  * Spec §Quyết định thiết kế: Kachi vốn **thường trú** (nó là HOME, autostart mỗi lần nổ máy), IVI khoá nhiều
@@ -114,7 +115,8 @@ class AutomationService : Service() {
         const val TICK_MS = 60_000L
 
         /**
-         * Rule mưa chạy mỗi ngần này nhịp ⇒ ≈5 phút (R1.2).
+         * Rule mưa chạy mỗi ngần này nhịp ⇒ ≈5 phút (R1.2) — tính theo thời gian trôi: `RainDefrostApplier` dựng
+         * `RainDefrostCadence(periodMs = TICK_MS * RAIN_EVERY_TICKS)` (kachi-automation V8.1).
          *
          * Đếm nhịp thay vì dựng vòng thứ hai: hai vòng là hai thứ phải nhớ dừng lúc huỷ, và [ĐO] lịch sử dự án
          * cho thấy cái thứ hai là cái bị quên (KDoc `PhotoWidgetView` — nhịp sống lâu hơn ô).
@@ -139,13 +141,14 @@ class AutomationService : Service() {
          */
         fun anyEnabled(ctx: Context): Boolean {
             val app = ctx.applicationContext
-            // V7 (owner 2026-09-25): công tắc chính BẬT nhưng bỏ tích **cả hai** ô kính = không còn việc gì. Phải
-            // xét cả `selection()` ở đây, không chỉ công tắc: nếu không thì FGS thường trú với một thông báo mà
-            // `RainDefrostApplier.tick` chỉ trả `Leave` mỗi 5 phút — đúng thứ KDoc lớp này gọi là "chi phí ròng"
-            // (giữ tiến trình, chiếm một dòng thông báo, và làm người đọc log tin rằng automation đang chạy).
-            // Bỏ tích đi qua `ClusterNavBridge.setRainDefrostFront/Rear`, mà hai hàm đó gọi `sync` ⇒ service tự
-            // dừng ngay lượt đó, và tự dựng lại khi tích lại.
-            if (Prefs.rainDefrostEnabled(app) && RainDefrostApplier.selection(app).isNotEmpty()) return true
+            // kachi-automation V8: hỏi đúng lựa chọn HIỆU LỰC (`enabled && ô con`, `RainDefrostChoice.fromKeys`) —
+            // không chọn kính nào = không còn việc gì. Hỏi công tắc cũ một mình thì FGS thường trú với một thông báo
+            // mà nhịp mưa không làm gì — đúng thứ KDoc lớp này gọi là "chi phí ròng". Đổi ô đi qua
+            // `ClusterNavBridge.setRainDefrostGlass`, mà hàm đó gọi `sync` ⇒ service tự dừng/dựng lại ngay lượt đó.
+            // Bọc như hai dòng dưới (soát V8 Pass 3 · P3): V8 đọc cả 3 khoá mỗi lần (V7 chỉ đọc hai khoá con khi công
+            // tắc chính bật). Hàm này chạy ở `onStartCommand` và ở điều kiện `while` của vòng nền — ném ở đó là
+            // `onStartCommand` nổ / luồng daemon chết vì ngoại lệ không bắt. Đọc lỗi ⇒ "không có việc mưa" = hướng an toàn.
+            if (runCatching { RainDefrostApplier.choice(app).any }.getOrDefault(false)) return true
             if (runCatching { Prefs.cameraSignalEnabled(app) }.getOrDefault(false)) return true
             return runCatching {
                 NavAutomationBook.decode(Prefs.navAutomationRules(app)).any { it.enabled }
@@ -173,7 +176,7 @@ class AutomationService : Service() {
                         generation++
                         running = false
                     }
-                    RainDefrostApplier.reset()
+                    RainDefrostApplier.forgetAll()
                     app.stopService(Intent(app, AutomationService::class.java))
                     Log.i(TAG, "sync: không còn automation nào bật ⇒ dừng")
                     return
@@ -208,10 +211,12 @@ class AutomationService : Service() {
             Thread({
                 var ticks = 0
                 var lastNavMs = 0L
-                var lastRainMs = 0L
                 try {
                     // Nhịp ĐẦU chạy ngay (không ngủ trước): bật công tắc lúc 7h05 mà phải chờ tới 7h06 mới đánh
                     // giá là một phút không giải thích được với người vừa bấm.
+                    // kachi-automation V8.1 · R-V8.8: nhịp MƯA đầu cũng ngay — [ĐO git] `79be642` so với `lastRainMs = 0L`
+                    // nên nó chỉ chạy khi uptime ≥ 5′. Nhịp mưa nay do `RainDefrostCadence` của applier gác.
+                    RainDefrostApplier.loopStarted()
                     while (myGen == generation && anyEnabled(app)) {
                         val nowMs = android.os.SystemClock.elapsedRealtime()
                         // Camera theo xi-nhan — đồng bộ công tắc mỗi nhịp (controller DÙNG CHUNG qua AppContainer, BG-15).
@@ -219,15 +224,17 @@ class AutomationService : Service() {
                         // trên tiền cảnh ⇒ HOME stopped ⇒ render KHÔNG chạy ⇒ xi-nhan không lên camera. FGS chạy bất
                         // kể tiền cảnh. Sự kiện ON/OFF + HOLD hết hạn KHÔNG đi qua nhịp này (socket + postDelayed, BG-13).
                         syncCamera(app)
-                        // Nav/mưa theo THỜI GIAN TRÔI (giữ mốc elapsed — không phụ thuộc số nhịp).
+                        // Nav theo THỜI GIAN TRÔI (giữ mốc elapsed — không phụ thuộc số nhịp); mưa ngay dưới, cùng bất biến.
                         if (nowMs - lastNavMs >= TICK_MS) {
                             lastNavMs = nowMs
                             runCatching { ScheduledNavApplier.tick(app) }.onFailure { Log.w(TAG, "tick nav lỗi", it) }
                         }
-                        if (nowMs - lastRainMs >= TICK_MS * RAIN_EVERY_TICKS) {
-                            lastRainMs = nowMs
-                            runCatching { RainDefrostApplier.tick(app) }.onFailure { Log.w(TAG, "tick mưa lỗi", it) }
-                        }
+                        // Mưa: gọi MỖI lượt thức, không điều kiện — `tickIfDue` tự gác (kachi-automation V8.1 · R-V8.8):
+                        // đầu vòng ngay · đọc HAL lỗi ⇒ thử lại 60 s, tối đa 5 lần · sàn 60 s giữa hai nhịp · còn lại
+                        // TICK_MS × RAIN_EVERY_TICKS (≈5′) theo THỜI GIAN TRÔI `nowMs` (bất biến `79be642`: không đếm
+                        // lượt thức). Đổi lựa chọn kính (R-V8.5) ⇒ `requestSoon()` ⇒ `consumeDue()` là ĐỐI SỐ trong
+                        // `tickIfDue` nên luôn được đọc-và-xoá; cờ, không `interrupt()` (spec V8 · D6).
+                        runCatching { RainDefrostApplier.tickIfDue(app, nowMs) }.onFailure { Log.w(TAG, "tick mưa lỗi", it) }
                         ticks++
                         runCatching { Thread.sleep(TICK_MS) }
                         // Kiểm LẠI sau khi ngủ: công tắc có thể đã tắt trong lúc đó. KHÔNG đọc [running] ở đây —

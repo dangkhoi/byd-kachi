@@ -274,14 +274,8 @@ class AppMover(
         val result = shell.execute("wm size -d $displayId")
         if (!result.success) return null
         // Output: "Physical size: 1920x720" or "Override size: 1920x720\nPhysical size: 1920x720"
-        // Use override if present, else physical.
-        val regex = Regex("(?:Override|Physical) size:\\s*(\\d+)x(\\d+)")
-        val matches = regex.findAll(result.stdout).toList()
-        val match = matches.firstOrNull { it.value.startsWith("Override") } ?: matches.firstOrNull()
-            ?: return null
-        val w = match.groupValues[1].toIntOrNull() ?: return null
-        val h = match.groupValues[2].toIntOrNull() ?: return null
-        return if (w > 0 && h > 0) w to h else null
+        // Use override if present, else physical — phép parse gom về [CastGeometryGuard.parseDisplaySize] (DRY, V-CLUSTER).
+        return CastGeometryGuard.parseDisplaySize(result.stdout, preferOverride = true)
     }
 
     /**

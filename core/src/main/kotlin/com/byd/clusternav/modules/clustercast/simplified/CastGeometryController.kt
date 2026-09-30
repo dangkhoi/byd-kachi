@@ -33,16 +33,18 @@ internal class CastGeometryController(
      * (V0.36 approach) when freeform resize is rejected.
      *
      * R6: persists to the [CastProfile.FULL] profile ONLY on shell success.
+     *
+     * @return true khi một trong hai tầng áp được (V-CLUSTER · VC-R6: chỗ gọi cập nhật bản ghim của phiên CHỈ khi true).
      */
-    fun resizeFull(pkg: String, left: Int, top: Int, right: Int, bottom: Int) {
-        val taskId = findTaskIdForPkg(pkg) ?: return
+    fun resizeFull(pkg: String, left: Int, top: Int, right: Int, bottom: Int): Boolean {
+        val taskId = findTaskIdForPkg(pkg) ?: return false
         val result = shell.execute("am task resize $taskId $left $top $right $bottom")
         if (result.success) {
             persistBounds(pkg, CastProfile.FULL, left, top, right, bottom)
-            return
+            return true
         }
         // Fallback: change logical display size, keeping height to avoid letterbox.
-        val (physW, physH) = queryDisplayPhysicalSize() ?: (1920 to 720)
+        val (physW, physH) = queryDisplaySize(preferOverride = false) ?: (1920 to 720)
         val scaleW = (right - left).coerceIn(320, physW)
         val scaleH = (bottom - top).coerceIn(240, physH)
         val sizeResult = shell.execute("wm size ${scaleW}x${scaleH} -d $displayId")
@@ -54,9 +56,10 @@ internal class CastGeometryController(
                 CastProfile.FULL,
                 existing.copy(wmSize = "${scaleW}x${scaleH}", bounds = CastBounds(left, top, right, bottom)),
             )
-        } else {
-            log("resizeActiveTarget FAILED — both task resize and wm size failed")
+            return true
         }
+        log("resizeActiveTarget FAILED — both task resize and wm size failed")
+        return false
     }
 
     /**
@@ -65,35 +68,52 @@ internal class CastGeometryController(
      * No `wm size` fallback: split geometry needs per-task bounds (freeform), and `wm size`
      * is display-global — it cannot place two apps in two halves. If the resize is rejected,
      * freeform is not alive (needs a one-time power-cycle) and nothing is persisted.
+     *
+     * @return true khi `am task resize` thành công (chỗ gọi cập nhật bản ghim của phiên CHỈ khi true).
      */
-    fun resizeSlot(pkg: String, profile: CastProfile, left: Int, top: Int, right: Int, bottom: Int) {
-        val taskId = findTaskIdForPkg(pkg) ?: return
+    fun resizeSlot(pkg: String, profile: CastProfile, left: Int, top: Int, right: Int, bottom: Int): Boolean {
+        val taskId = findTaskIdForPkg(pkg) ?: return false
         val result = shell.execute("am task resize $taskId $left $top $right $bottom")
         if (result.success) {
             persistBounds(pkg, profile, left, top, right, bottom)
-        } else {
-            log("resizeActiveSlot FAILED — am task resize rejected for $pkg ($profile); freeform likely not alive")
+            return true
         }
+        log("resizeActiveSlot FAILED — am task resize rejected for $pkg ($profile); freeform likely not alive")
+        return false
     }
 
     /**
-     * Apply saved bounds (+ density) for [pkg] under [profile] AFTER a verified landing (R6).
+     * Áp bản ghi hình học [pinned] ĐÃ GHIM của phiên cho [pkg] — sau một lượt đặt đã xác minh (R6) và ở mọi lượt repin.
      *
-     * Bounds are per-task (safe per-app). Density is display-global on Android 10 —
-     * applying it here is "last edit wins" for the whole cluster display.
-     * No-op when no profile is saved (caller then keeps the ratio/type default).
+     * V-CLUSTER · VC-R6 (thay `applySavedProfile`, hàm cũ đọc lại prefs mỗi lần gọi): hàm này **không đọc prefs**. Prefs là
+     * hồ sơ ĐANG DÙNG — đổi hồ sơ giữa phiên rồi repin mà đọc lại prefs là DPI/khung của hồ sơ mới tự nổ lên cụm, không
+     * ai bấm (refute B6). Bản ghim được đọc MỘT lần lúc phiên bắt đầu (`CastSessionPin.kt`).
+     *
+     * Ba chốt trước khi chạm shell, theo thứ tự:
+     *  1. `pinned == null` ⇒ không có gì để áp (giữ nguyên no-op của hàm cũ khi chưa lưu gì);
+     *  2. **chốt cuối** [CastGeometryGuard.isShellSafe] (VC-R4) — bản ghi đi theo hồ sơ ⇒ theo tệp xuất/nhập: không sạch ⇒ 0 lệnh;
+     *  3. khung được KẸP vào khung logic ĐO ĐƯỢC của VD (`wm size -d`, ưu tiên *Override* — khung `am task resize` dùng),
+     *     đo hụt ⇒ 1920×720. Một khung lưu cho cụm khác kích thước (tệp nhập từ xe khác) không đẩy task ra ngoài màn.
+     *
+     * Bounds are per-task (safe per-app). Density is display-global on Android 10 — "last edit wins" for the display.
      */
-    fun applySavedProfile(pkg: String, profile: CastProfile) {
-        val savedConfig = prefs.displayConfigFor(pkg, profile) ?: return
-        val bounds = savedConfig.bounds
+    fun applyPinned(pkg: String, pinned: DisplayConfig?) {
+        if (pinned == null) return
+        if (!CastGeometryGuard.isShellSafe(pinned)) {
+            log("applyPinned: TỪ CHỐI cấu hình không sạch của $pkg — 0 lệnh")
+            return
+        }
+        val bounds = pinned.bounds
         if (bounds != null) {
             val taskId = findTaskIdForPkg(pkg)
             if (taskId != null) {
-                shell.execute("am task resize $taskId ${bounds.left} ${bounds.top} ${bounds.right} ${bounds.bottom}")
+                val (w, h) = queryDisplaySize(preferOverride = true) ?: (1920 to 720)
+                val b = CastGeometryGuard.clampBounds(bounds, 0, w, h)
+                shell.execute("am task resize $taskId ${b.left} ${b.top} ${b.right} ${b.bottom}")
             }
         }
-        if (savedConfig.density != "reset") {
-            shell.execute("wm density ${savedConfig.density} -d $displayId")
+        if (pinned.density != CastGeometryGuard.DENSITY_RESET) {
+            shell.execute("wm density ${pinned.density} -d $displayId")
         }
     }
 
@@ -149,13 +169,14 @@ internal class CastGeometryController(
         prefs.saveDisplayConfig(pkg, profile, existing.copy(bounds = CastBounds(left, top, right, bottom)))
     }
 
-    /** Query physical display size from `wm size -d <displayId>`. Returns WxH or null. */
-    private fun queryDisplayPhysicalSize(): Pair<Int, Int>? {
+    /**
+     * Kích VD cụm từ `wm size -d <displayId>` (CHỈ ĐỌC). [preferOverride] = false ⇒ *Physical* (biên kẹp của đường lùi
+     * `wm size`, hành vi cũ); true ⇒ *Override* nếu có — khung logic đang hiệu lực mà `am task resize` dùng
+     * ([applyPinned]). Phép parse ở [CastGeometryGuard.parseDisplaySize]. `null` = đo hụt.
+     */
+    private fun queryDisplaySize(preferOverride: Boolean): Pair<Int, Int>? {
         val result = shell.execute("wm size -d $displayId")
         if (!result.success) return null
-        val match = Regex("Physical size:\\s*(\\d+)x(\\d+)").find(result.stdout) ?: return null
-        val w = match.groupValues[1].toIntOrNull() ?: return null
-        val h = match.groupValues[2].toIntOrNull() ?: return null
-        return w to h
+        return CastGeometryGuard.parseDisplaySize(result.stdout, preferOverride)
     }
 }

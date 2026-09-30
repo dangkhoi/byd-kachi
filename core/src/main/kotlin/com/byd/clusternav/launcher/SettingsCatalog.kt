@@ -103,6 +103,12 @@ object SettingsCatalog {
                 "phải cấu hình — cùng họ `migrated_scenes_v1`/`top_strip_migrated_ux5b`. Lên UI thì tắt nó đi là " +
                 "chạy lại phép rót, đè lên lịch người dùng vừa sửa",
         )
+        put(
+            "migrated_cluster_profile_v1",
+            "dấu vết lượt chuyển đổi (V-CLUSTER 2026-09-30: cụm/chiếu/camera/nút nổi đã rót từ theo-XE xuống mọi " +
+                "HỒ SƠ), không phải cấu hình — cùng họ `migrated_nav_schedule_v1`. Lên UI thì tắt nó đi là rót lại, đè " +
+                "lên DPI/khung/camera người lái vừa chỉnh theo hồ sơ",
+        )
         // 2026-09-15 (HOME-alias): marker "người dùng ĐÃ bấm Đặt-làm-màn-hình-chính thành công" — lối vào HOME là
         // activity-alias tắt sẵn (để BYD GUI-install không chặn), KachiAutostart đọc marker để bật alias + set-home
         // lại sau nâng cấp. Là lựa chọn ĐÃ BÀY TỎ được ghi lại, không phải một công tắc để bật/tắt trong Cài đặt

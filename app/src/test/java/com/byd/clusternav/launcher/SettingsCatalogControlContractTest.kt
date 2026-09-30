@@ -150,8 +150,9 @@ class SettingsCatalogControlContractTest {
             "car_seat_levels" to ("SettingsSectionsCar" to "bridge.setSeatLevel("),
             "car_pm25" to ("SettingsSectionsCar" to "bridge.setPm25Enabled("),
             "car_pm25_clean" to ("SettingsSectionsCar" to "bridge.pm25CleanNow()"),
-            // AUTOMATION #1 (1.85) — công tắc "Tự sấy kính khi mưa", cùng tệp nhóm Tiện nghi xe.
-            "car_rain_defrost" to ("SettingsSectionsCar" to "bridge.setRainDefrost("),
+            // AUTOMATION #1 (1.85) — "Tự sấy kính khi mưa", cùng tệp nhóm Tiện nghi xe. kachi-automation V8: dấu
+            // vết là lời GHI của hai hàng độc lập (`setRainDefrostGlass(`) — công tắc chính một-tham-số đã gỡ.
+            "car_rain_defrost" to ("SettingsSectionsCar" to "bridge.setRainDefrostGlass("),
             // ── 9 · Hệ thống & quyền ──
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),

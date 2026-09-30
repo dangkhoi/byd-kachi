@@ -252,7 +252,7 @@ internal object SettingsCatalogEntries {
         SettingsEntry("car_pm25", SettingsGroup.CAR, "Tự lọc bụi mịn", "pm25_filter_enabled", "Automatic air purifier"),
         // btn_pm25_clean_now + pm25_gauge · Pm25FilterApplier.cleanNow/readLevel — VIỆC LÀM
         SettingsEntry("car_pm25_clean", SettingsGroup.CAR, "Lọc ngay một lượt", labelEn = "Purify now"),
-        // AUTOMATION #1 (1.85, spec kachi-automation R1.1) · bridge.setRainDefrost + AutomationService.sync.
+        // AUTOMATION #1 (1.85, spec kachi-automation R1.1 · §V8) · bridge.setRainDefrostGlass + AutomationService.sync.
         // Ở nhóm CAR (không phải SYSTEM) vì người dùng đi tìm nó ở "thứ cabin tự làm hộ", không ở "dịch vụ nền" —
         // cùng ranh giới mà sổ địa chỉ đã chọn khi nằm ở nhóm NAV dù dữ liệu theo hồ sơ.
         SettingsEntry(

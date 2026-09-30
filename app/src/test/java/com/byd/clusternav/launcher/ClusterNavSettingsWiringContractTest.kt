@@ -35,6 +35,8 @@ class ClusterNavSettingsWiringContractTest {
         "SettingsSectionsNav.kt", "SettingsSectionsCast.kt", "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
         // 2.76 · R1 — camera tách khỏi `SettingsSectionsCar`; vẫn là section của ClusterNav, 100 % qua cầu.
         "SettingsSectionsCamera.kt",
+        // V-CLUSTER (2026-09-30) — khối khung/DPI tách khỏi `SettingsSectionsCast` (trần 500 dòng): vẫn 100 % qua cầu.
+        "SettingsSectionsCastGeometry.kt",
     )
 
     /**

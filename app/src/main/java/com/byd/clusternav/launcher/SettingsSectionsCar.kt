@@ -8,6 +8,11 @@ import com.byd.clusternav.comfort.Pm25Filter
 import com.byd.clusternav.comfort.Pm25GaugeView
 import com.byd.clusternav.comfort.SeatComfort
 import com.byd.clusternav.comfort.SeatDiagramView
+import com.byd.clusternav.launcher.automation.RainGlass
+import com.byd.clusternav.launcher.automation.RainStatusTone
+import com.byd.clusternav.launcher.automation.RainStatusWords
+import java.text.SimpleDateFormat
+import java.util.Date
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -39,6 +44,26 @@ class SettingsCarSection(
     private var gaugeView: Pm25GaugeView? = null
     private lateinit var pm25Row: SettingsRows.StatusRow
 
+    /**
+     * kachi-automation V8.1 · R-V8.7 — khối dòng tình trạng dưới hai hàng sấy (một dòng mỗi kính đang chọn).
+     *
+     * Làm tươi cả mỗi lần cửa sổ HIỆN LẠI (soát V8.1 Pass 7 · P2): trang được NHỚ suốt một lượt mở bảng
+     * (`SettingsPanel.show` tháo rồi gắn lại trang cũ khi đổi nhóm) và bảng còn mở khi HOME bị app khác che — chỉ làm
+     * tươi lúc dựng thì rời nhóm/rời app rồi quay lại sau một phút vẫn "chưa kiểm lần nào" ⇒ ảnh chụp nói sai.
+     * [ĐO AOSP android-10.0.0_r47] `View.dispatchAttachedToWindow` gọi `onWindowVisibilityChanged` khi gắn lại
+     * (View.java:19582-19584); HOME bị che/hiện lại ⇒ `ActivityThread.updateVisibility` đổi decor INVISIBLE/VISIBLE
+     * (ActivityThread.java:4634-4656) ⇒ `ViewRootImpl` phát `dispatchWindowVisibilityChanged` (ViewRootImpl.java:2044),
+     * `ViewGroup` truyền xuống con (ViewGroup.java:1574-1580). `post`, không làm ngay: đang giữa lượt phát sự kiện gắn,
+     * con của khối chưa được gắn (ViewGroup.java:3428-3438) mà `removeAllViews` lại phát "tháo" cho chúng
+     * (ViewGroup.java:5588-5589 → 5617, 5642). Chỉ đọc RAM (xem [refreshRainStatus]).
+     */
+    private val rainStatus: LinearLayout = object : LinearLayout(context) {
+        override fun onWindowVisibilityChanged(visibility: Int) {
+            super.onWindowVisibilityChanged(visibility)
+            if (visibility == View.VISIBLE) post { refreshRainStatus() }
+        }
+    }.apply { orientation = LinearLayout.VERTICAL }
+
     fun build(body: LinearLayout) {
         recirc(body)
         rainDefrost(body)
@@ -54,7 +79,7 @@ class SettingsCarSection(
     // ── AUTOMATION #1 · Tự sấy kính khi mưa ──────────────────────────────────────────────────────
 
     /**
-     * Công tắc *"Tự sấy kính khi mưa"* (1.85, spec `kachi-automation.html` R1.1) — theo XE, mặc định TẮT.
+     * *"Tự sấy kính khi mưa"* (1.85, spec `kachi-automation.html` R1 · §V8) — theo XE, mặc định không kính nào.
      *
      * ## Vì sao ở nhóm *Tiện nghi xe* và đứng ngay sau lấy-gió-trong
      * Nhóm chia theo **thứ người dùng đang nghĩ tới** (KDoc [SettingsGroup]). Người ta vào đây để chỉnh những thứ
@@ -62,61 +87,85 @@ class SettingsCarSection(
      * thống* (cùng chỗ với autostart) sẽ đúng về **cơ chế** (nó là một dịch vụ nền) mà sai về **chỗ người dùng đi
      * tìm** — cùng ranh giới mà sổ địa chỉ đã chọn khi nằm ở *Dẫn đường* dù dữ liệu theo hồ sơ.
      *
-     * Bật/tắt đi qua cầu (`bridge.setRainDefrost`), và chính cầu đồng bộ động cơ nền ngay trong lượt đó — xem ⚠ ở
-     * KDoc `ClusterNavBridgeAutomation` về vì sao lượt `sync` không được để chỗ gọi nhớ.
+     * ## kachi-automation V8 (owner 2026-09-30) — HAI hàng độc lập, không hàng chính
+     * V7 có ba hàng cùng kiểu ô tích: một công tắc chính (mặc định tắt) khoá + làm mờ hai ô con. Owner: *"tắt auto
+     * sấy kính trước, chỉ chọn sau + gương --> không work?"* — hàng chính dễ đọc nhầm là "sấy trước", và tắt nó là
+     * tắt cả hai (spec V8 · K4). V8 chỉ còn **tiêu đề mục** (không bấm được) + hai hàng tự đủ nghĩa, không hàng nào
+     * mờ/khoá theo hàng khác, hàng hiện tích ⟺ kính đó thật sự đang được tự sấy (`enabled && ô con`, D1/D2).
      *
-     * ## V7 (owner 2026-09-25) — hai ô CON: *"Sấy kính trước"* · *"Sấy kính sau + gương"*
-     * Owner chốt tách hai lựa chọn để dùng riêng được từng cái (kính sau + gương ăn điện liên tục). Cả hai **mặc
-     * định BẬT** ⇒ ai không vào đây thì hành vi y như 1.85. Bỏ tích cả hai = tính năng tắt trên thực tế
-     * ([RainDefrostApplier.selection] rỗng) — cố ý KHÔNG lùi về *"ghi cả hai"*, vì một người vừa bỏ tích cả hai ô
-     * mà thấy xe bật cả hai cái sấy sẽ không có cách nào hiểu vì sao.
+     * Mỗi cú chạm đi qua cầu (`bridge.setRainDefrostGlass`), và chính cầu ghi đủ 3 khoá + đồng bộ động cơ nền
+     * ngay trong lượt đó — xem ⚠ ở KDoc `ClusterNavBridgeAutomation` về vì sao lượt `sync` không để chỗ gọi nhớ.
+     *
+     * ## kachi-automation V8.1 — dòng tình trạng ngay dưới hai hàng
+     * Owner 30/09: lỗi *"chỉ chọn sau + gương → không work"* có trên 2.83, không biết đời xe, không ai rảnh đi test ⇒
+     * trang này phải tự nói nhịp gần nhất của TỪNG kính đang chọn đã thấy gì và làm gì — một ảnh chụp màn hình là đủ
+     * bằng chứng (CLAUDE.md §11). Làm tươi khi dựng trang (mỗi lần mở Cài đặt dựng bảng mới), sau mỗi cú chạm, và mỗi
+     * lần trang hiện lại trên màn (KDoc [rainStatus]).
      */
     private fun rainDefrost(body: LinearLayout) {
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_rain_defrost)))
-        // V7 (owner 2026-09-25) — hai ô CON: chọn kính nào được sấy. Dựng TRƯỚC công tắc chính để cú gạt công tắc
-        // có tham chiếu tới chúng mà làm mờ/khoá ngay; thứ tự trên MÀN vẫn là chính → con (addView bên dưới).
-        val front = rows.checkRow(
-            on = bridge.rainDefrostFront(),
+        val choice = bridge.rainDefrostChoice()
+        body.addView(rows.checkRow(
+            on = choice.front,
             title = context.getString(R.string.kachi_rain_defrost_front),
             sub = context.getString(R.string.kachi_rain_defrost_front_sub),
-        ) { on -> bridge.setRainDefrostFront(on) }
-        val rear = rows.checkRow(
-            on = bridge.rainDefrostRear(),
+        ) { on ->
+            bridge.setRainDefrostGlass(RainGlass.FRONT, on)
+            refreshRainStatus()
+        })
+        body.addView(rows.checkRow(
+            on = choice.rear,
             title = context.getString(R.string.kachi_rain_defrost_rear),
             sub = context.getString(R.string.kachi_rain_defrost_rear_sub),
-        ) { on -> bridge.setRainDefrostRear(on) }
-        body.addView(rows.checkRow(
-            on = bridge.rainDefrost(),
-            title = context.getString(R.string.kachi_rain_defrost_title),
-            sub = context.getString(R.string.kachi_rain_defrost_sub),
         ) { on ->
-            bridge.setRainDefrost(on)
-            gateRainGlass(front, rear, on)
+            bridge.setRainDefrostGlass(RainGlass.REAR, on)
+            refreshRainStatus()
         })
-        body.addView(front)
-        body.addView(rear)
-        gateRainGlass(front, rear, bridge.rainDefrost())
+        body.addView(rainStatus)
+        refreshRainStatus()
         body.addView(rows.note(context.getString(R.string.kachi_rain_defrost_note)))
     }
 
     /**
-     * Công tắc chính TẮT ⇒ hai ô con **mờ + không bấm được** (V7). MỜ, không ẩn — bài học U12: *"cắt vì nhóm dài
-     * không được biến thành ẩn tính năng"*; ẩn đi thì người bật công tắc lên không biết là có hai lựa chọn.
-     *
-     * ## Vì sao `isEnabled` trên hàng là ĐỦ ở đây (và vì sao thường thì không)
-     * [SettingsRows.Stepper.isEnabled] có một KDoc dài về việc cờ `enabled` của cha **không** lan xuống con
-     * ([ĐO] AOSP `View.setEnabled` không đệ quy, `ViewGroup.dispatchTouchEvent` không đọc cờ đó) — nên tắt một
-     * hàng có **nút con bấm được** là khoá giả. Hàng của [SettingsRows.checkRow] thì khác: nó giữ
-     * `setOnClickListener` trên **chính** `LinearLayout` gốc và **không con nào clickable**, nên cú chạm rơi về
-     * `onTouchEvent` của đúng view đang bị tắt (`View.java` nhánh `DISABLED` trả về mà KHÔNG gọi listener).
-     * Không dựa vào `alpha`: alpha chỉ là chuyện VẼ, một hàng mờ vẫn ăn cú chạm.
+     * Dựng lại khối dòng tình trạng — chỉ đọc RAM qua cầu (không HAL ⇒ chạy thẳng trên luồng vẽ). Luật chọn chữ + màu
+     * ở `:core` (`RainDefrostStatus`); ở đây chỉ dịch mã màu sang bảng màu của launcher.
      */
-    private fun gateRainGlass(front: View, rear: View, on: Boolean) {
-        listOf(front, rear).forEach {
-            it.isEnabled = on
-            it.alpha = if (on) 1f else 0.4f
+    private fun refreshRainStatus() {
+        rainStatus.removeAllViews()
+        val hhmm = SimpleDateFormat("HH:mm", LangHost.locale())
+        bridge.rainDefrostStatus(rainWords()) { hhmm.format(Date(it)) }.forEach { line ->
+            val colour = when (line.tone) {
+                RainStatusTone.OK -> KachiTheme.GREEN
+                RainStatusTone.WAIT -> KachiTheme.AMBER
+                RainStatusTone.FAIL -> KachiTheme.RED
+                RainStatusTone.IDLE -> KachiTheme.MUT2
+            }
+            rainStatus.addView(rows.statusRow(colour, line.text).view)
         }
     }
+
+    /** Các cụm chữ của dòng tình trạng — MỌI chữ từ tài nguyên (tầng `launcher/`, `LauncherI18nContractTest`). */
+    private fun rainWords() = RainStatusWords(
+        front = context.getString(R.string.kachi_rain_st_front),
+        rear = context.getString(R.string.kachi_rain_st_rear),
+        never = context.getString(R.string.kachi_rain_st_never),
+        next = context.getString(R.string.kachi_rain_st_next),
+        rain = context.getString(R.string.kachi_rain_st_rain),
+        dry = context.getString(R.string.kachi_rain_st_dry),
+        sensorError = context.getString(R.string.kachi_rain_st_sensor_error),
+        carOn = context.getString(R.string.kachi_rain_st_car_on),
+        carOff = context.getString(R.string.kachi_rain_st_car_off),
+        carOffAfterOn = context.getString(R.string.kachi_rain_st_car_off_after_on),
+        carError = context.getString(R.string.kachi_rain_st_car_error),
+        turnOnOk = context.getString(R.string.kachi_rain_st_turn_on_ok),
+        turnOnFail = context.getString(R.string.kachi_rain_st_turn_on_fail),
+        turnOffOk = context.getString(R.string.kachi_rain_st_turn_off_ok),
+        turnOffFail = context.getString(R.string.kachi_rain_st_turn_off_fail),
+        skipped = context.getString(R.string.kachi_rain_st_skipped),
+        keepOn = context.getString(R.string.kachi_rain_st_keep_on),
+        nothingToDo = context.getString(R.string.kachi_rain_st_nothing),
+        notOurs = context.getString(R.string.kachi_rain_st_not_ours),
+    )
 
     // ── Lấy gió trong ────────────────────────────────────────────────────────────────────────────
 

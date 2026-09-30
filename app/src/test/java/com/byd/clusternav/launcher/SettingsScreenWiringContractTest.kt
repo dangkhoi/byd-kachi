@@ -46,6 +46,8 @@ class SettingsScreenWiringContractTest {
     private val bars by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsBars.kt") }
     private val nav by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt") }
     private val cast by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCast.kt") }
+    // V-CLUSTER (2026-09-30) — khối khung/DPI tách khỏi `SettingsSectionsCast` (trần 500 dòng) ⇒ vào bài canh ghi bền NGAY.
+    private val castGeometry by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCastGeometry.kt") }
     private val keys by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsKeys.kt") }
     private val car by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCar.kt") }
     private val places by lazy { code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsPlaces.kt") }
@@ -129,6 +131,7 @@ class SettingsScreenWiringContractTest {
             "SettingsPanel" to panel, "SettingsSections" to sections, "SettingsSectionsHome" to home,
             "SettingsSectionsBars" to bars, "SettingsSectionsNav" to nav,
             "SettingsSectionsCast" to cast, "SettingsSectionsKeys" to keys, "SettingsSectionsCar" to car,
+            "SettingsSectionsCastGeometry" to castGeometry,
             // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — section MỚI, và là section đầu tiên ghi một
             // khoá **của launcher** (không phải của ClusterNav qua `bridge`), nên nó đúng là loại tệp mà bài này
             // sinh ra để canh: mọi lượt ghi phải đi qua `deps.onSavedPlaces` → ViewModel.

@@ -5,17 +5,18 @@ import com.byd.clusternav.automation.AutomationService
 import com.byd.clusternav.automation.RainDefrostApplier
 import com.byd.clusternav.automation.ScheduledNavApplier
 import com.byd.clusternav.launcher.automation.NavAutomationBook
+import com.byd.clusternav.launcher.automation.RainDefrostChoice
+import com.byd.clusternav.launcher.automation.RainDefrostStatus
+import com.byd.clusternav.launcher.automation.RainGlass
+import com.byd.clusternav.launcher.automation.RainStatusLine
+import com.byd.clusternav.launcher.automation.RainStatusWords
 import com.byd.clusternav.launcher.automation.ScheduledNavRule
 import com.byd.clusternav.navAutomationRules
-import com.byd.clusternav.rainDefrostEnabled
-import com.byd.clusternav.rainDefrostFront
-import com.byd.clusternav.rainDefrostRear
+import com.byd.clusternav.rainDefrostChoice
+import com.byd.clusternav.setRainDefrostChoice
 import com.byd.clusternav.autoUpdateEnabled
 import com.byd.clusternav.setAutoUpdateEnabled
 import com.byd.clusternav.setNavAutomationRules
-import com.byd.clusternav.setRainDefrostEnabled
-import com.byd.clusternav.setRainDefrostFront
-import com.byd.clusternav.setRainDefrostRear
 import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.cameraOnCluster
@@ -81,46 +82,45 @@ import com.byd.clusternav.setCameraMirror
  * Vì thế `sync` nằm **trong** hai setter dưới đây, không phải một bước chỗ gọi phải nhớ.
  */
 
-/** AUTOMATION #1 — công tắc "Tự sấy kính khi mưa" (theo XE, mặc định TẮT). */
-fun ClusterNavBridge.rainDefrost(): Boolean = Prefs.rainDefrostEnabled(app)
+/**
+ * AUTOMATION #1 — kính nào được tự sấy khi mưa (theo XE, mặc định KHÔNG kính nào). Một biểu thức cho hai hàng ô
+ * tích của màn Cài đặt (`choice.front` · `choice.rear`) — đúng lựa chọn hiệu lực mà động cơ nền đang dùng.
+ */
+fun ClusterNavBridge.rainDefrostChoice(): RainDefrostChoice = Prefs.rainDefrostChoice(app)
 
 /**
- * Đặt công tắc #1 rồi đồng bộ động cơ nền NGAY (xem ⚠ ở KDoc tệp).
+ * kachi-automation V8 — tích/bỏ MỘT kính, kính kia giữ nguyên (owner 2026-09-30: *"tách auto này độc lập, không
+ * constrain nhau"*).
  *
- * Nhánh TẮT: [AutomationService.sync] cũng là chỗ **quên ký ức** R1.5 (`RainDefrostApplier.reset`) — thiếu bước
- * đó thì tắt-lúc-đang-mưa rồi bật-lại-lúc-đã-khô sẽ tắt cái sấy mà người lái có thể vừa tự bật.
+ * ## Thứ tự trong thân là một hợp đồng
+ *  1. **Ghi prefs trước** (cả 3 khoá, `Prefs.setRainDefrostChoice`) rồi mới [RainDefrostApplier.forget]: nhịp nền
+ *     chụp ký ức RỒI mới đọc lựa chọn, nên quên-sau-ghi đảm bảo một nhịp đang chạy dở hoặc đọc lựa chọn MỚI, hoặc
+ *     bị bỏ commit (thế hệ đổi) — ký ức không bao giờ được ghi từ lựa chọn cũ (KDoc `RainDefrostGlasses.tick`).
+ *  2. **Quên RIÊNG kính vừa đổi** (V8 · D4/D8): không ghi xe, ký ức kính kia còn nguyên. V7 gọi `reset()` xoá cả
+ *     hai ⇒ bỏ tích "sau" làm Kachi quên luôn cái sấy trước nó đang giữ, hết mưa không tắt hộ được.
+ *  3. [RainDefrostApplier.requestSoon] rồi [AutomationService.sync] (xem ⚠ ở KDoc tệp): engine đang chạy ⇒ nhịp
+ *     mưa ở lượt thức kế (≤ 60 s, R-V8.5); engine đang dừng ⇒ `sync` dựng vòng mới, nhịp đầu chạy ngay; không còn
+ *     kính nào (và không automation nào khác) ⇒ `sync` dừng engine.
  */
-fun ClusterNavBridge.setRainDefrost(on: Boolean) {
-    Prefs.setRainDefrostEnabled(app, on)
+fun ClusterNavBridge.setRainDefrostGlass(glass: RainGlass, on: Boolean) {
+    val after = Prefs.rainDefrostChoice(app).with(glass, on)
+    Prefs.setRainDefrostChoice(app, after)
+    RainDefrostApplier.forget(glass)
+    RainDefrostApplier.requestSoon()
+    RainDefrostApplier.logChoice(after, glass)
     AutomationService.sync(app)
 }
 
 /**
- * V7 (owner 2026-09-25) — **hai ô con** của công tắc #1: sấy kính TRƯỚC · sấy kính SAU + gương.
+ * kachi-automation V8.1 · R-V8.7 — dòng tình trạng cho MỖI kính đang chọn (owner 30/09: app phải tự cho thấy nguyên
+ * nhân, anh em chỉ cần chụp màn hình — CLAUDE.md §11).
  *
- * Hai hàm đọc RIÊNG (không một hàm nhận `front: Boolean`) vì ô tích trong Cài đặt cần **một biểu thức cho một
- * hàng** — cùng khuôn `cameraPosLeft`/`cameraPosRight` ở dưới.
- *
- * ⚠ Lượt GHI vẫn phải `AutomationService.sync`, y như công tắc chính: bỏ tích **cả hai** ô là *"không còn việc
- * gì"* ([RainDefrostApplier.selection] rỗng ⇒ `tick` no-op), nhưng `anyEnabled` chỉ đọc công tắc CHÍNH nên động
- * cơ nền vẫn chạy. `sync` ở đây là chỗ **quên ký ức** R1.5 (`RainDefrostApplier.reset`) — thiếu nó thì bỏ tích ô
- * TRƯỚC giữa lúc Kachi đang giữ cái sấy đó sẽ để lại `owned = true` cho một nút không còn ai ghi, và nhịp sau đọc
- * mỏ neo MỚI (sấy sau) với ký ức của mỏ neo CŨ.
+ * Chỉ đọc RAM của tiến trình (kết quả nhịp gần nhất từng kính + giờ nhịp kế — `RainDefrostApplier`, cùng tiến trình
+ * với Cài đặt [ĐO manifest]) và prefs của lựa chọn — **không một lượt HAL** nên gọi được trên luồng vẽ. Luật chọn/ghép
+ * chữ ở `:core` ([RainDefrostStatus]); chữ do màn Cài đặt đưa vào ([words], từ tài nguyên) cùng đồng hồ HH:mm.
  */
-fun ClusterNavBridge.rainDefrostFront(): Boolean = Prefs.rainDefrostFront(app)
-fun ClusterNavBridge.setRainDefrostFront(on: Boolean) {
-    Prefs.setRainDefrostFront(app, on)
-    AutomationService.sync(app)
-    RainDefrostApplier.reset()
-}
-
-/** Xem [rainDefrostFront]. */
-fun ClusterNavBridge.rainDefrostRear(): Boolean = Prefs.rainDefrostRear(app)
-fun ClusterNavBridge.setRainDefrostRear(on: Boolean) {
-    Prefs.setRainDefrostRear(app, on)
-    AutomationService.sync(app)
-    RainDefrostApplier.reset()
-}
+fun ClusterNavBridge.rainDefrostStatus(words: RainStatusWords, clock: (Long) -> String): List<RainStatusLine> =
+    RainDefrostStatus.lines(rainDefrostChoice(), RainDefrostApplier::lastOf, RainDefrostApplier.nextCheckWallMs(), words, clock)
 
 // ── V8 · TỰ CẬP NHẬT (owner 2026-09-25) ──────────────────────────────────────────────────────────
 

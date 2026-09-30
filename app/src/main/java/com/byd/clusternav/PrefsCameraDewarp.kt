@@ -15,10 +15,13 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
  * Tệp riêng vì [PrefsAutomation] đã 323 dòng và bộ này là **một vai khác**: nó không cấu hình một automation nào, nó
  * là bảng tham số quang học của một ống kính. Cùng lẽ `PrefsVoiceV3` tách khỏi `Prefs`.
  *
- * ## Cả bảy khoá theo XE (`ProfileScope.DEVICE_KEYS`)
+ * ## Bảy núm nắn + `uTexMatrix` theo XE; `camera_dewarp_amount` theo HỒ SƠ (V-CLUSTER 2026-09-30)
  * Ống kính, cách HAL ghép ảnh 4-in-1, GPU đầu xe — đều là chuyện của **chiếc xe**, không của sở thích người lái. Cùng
- * họ `camera_span`/`camera_shape`/`camera_render`. Đổi hồ sơ thì bộ số nắn **không** đổi, và đó là hành vi đúng: hai
- * người lái cùng một chiếc xe nhìn cùng một ống kính.
+ * họ `camera_span`/`camera_render`. Đổi hồ sơ thì bộ số nắn **không** đổi, và đó là hành vi đúng: hai người lái cùng
+ * một chiếc xe nhìn cùng một ống kính. Riêng *"có nắn hay không"* (`camera_dewarp_amount` 100/0) là lựa chọn của người
+ * lái ⇒ theo hồ sơ. Bảng + lý do từng khoá: `ProfileScopeCluster.CAMERA_DEVICE_KEYS` / `CAMERA_PROFILE_KEYS` (`:core`).
+ * ⚠ [ĐO] trước bản này chú thích ghi *"`ProfileScope.DEVICE_KEYS`"* trong khi các khoá chưa từng được khai ở đó
+ * (`scopeOf` trả UNKNOWN) — lời nói đi trước mã.
  *
  * ## Mặc định = của HỒ SƠ XE (2.76 · R2), pref đã đặt luôn thắng
  * Khoá VẮNG ⇒ [CameraDefaults.of] (Seal DL3 = bộ owner duyệt trên xe 27/09 `F 55 · K 100 · S 130 · amount 100`; đời xe

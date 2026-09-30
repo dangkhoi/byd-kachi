@@ -56,6 +56,8 @@ class TypeScaleContractTest {
         "SettingsSectionsKeys.kt", "SettingsSectionsCar.kt",
         // 2.76 · R1 — camera tách khỏi `SettingsSectionsCar` (hai tầng người lái / kỹ thuật). Cùng lý do trên.
         "SettingsSectionsCamera.kt",
+        // V-CLUSTER (2026-09-30) — khối khung/DPI tách khỏi `SettingsSectionsCast` (trần 500 dòng). Cùng lý do trên.
+        "SettingsSectionsCastGeometry.kt",
     )
 
     /**

@@ -41,17 +41,27 @@ object VmOverlayPosition {
 
     private fun sp(ctx: Context) = ctx.applicationContext.getSharedPreferences("clusternav_prefs", Context.MODE_PRIVATE)
 
-    /** x/y đã lưu = TOẠ ĐỘ TUYỆT ĐỐI góc-trên-trái bong bóng (cluster px); mặc định = preset nửa-phải. */
-    fun x(ctx: Context): Int = sp(ctx).getInt(K_X, rightHalfX())
-    fun y(ctx: Context): Int = sp(ctx).getInt(K_Y, rightHalfY())
+    /**
+     * x/y đã lưu = TOẠ ĐỘ TUYỆT ĐỐI góc-trên-trái bong bóng (cluster px); mặc định = preset nửa-phải.
+     *
+     * V-CLUSTER A6 (VC-R8): **kẹp cả lúc ĐỌC**, không chỉ lúc ghi ([set]). Hai khoá này theo HỒ SƠ ⇒ đi qua ảnh chụp và
+     * tệp xuất/nhập, tức một giá trị ngoài cụm có thể tới tệp sống mà không qua [set]; không kẹp thì lượt bắn kế tiếp
+     * đưa bong bóng ra ngoài mặt cụm. Giá trị hợp lệ không đổi (phép kẹp là đồng nhất trong dải).
+     */
+    fun x(ctx: Context): Int = clampX(sp(ctx).getInt(K_X, rightHalfX()))
+    fun y(ctx: Context): Int = clampY(sp(ctx).getInt(K_Y, rightHalfY()))
+
+    /** Kẹp góc-trên-trái vào cụm — MỘT phép cho cả lượt ghi và lượt đọc (DRY). Thuần, test off-car. */
+    internal fun clampX(v: Int): Int = v.coerceIn(0, X_MAX)
+    internal fun clampY(v: Int): Int = v.coerceIn(0, Y_MAX)
 
     fun rightHalfX(): Int = (CLUSTER_W - BUBBLE_W) * 3 / 4        // left ~1162: bong bóng ở nửa phải
     fun rightHalfY(): Int = (CLUSTER_H - BUBBLE_H) / 2           // giữa theo chiều dọc
 
     /** Đặt tuyệt đối góc-trên-trái (cluster px) + lưu + bắn (nếu Cast ON). */
     fun set(ctx: Context, newX: Int, newY: Int, sendNow: Boolean = true) {
-        val cx = newX.coerceIn(0, X_MAX)
-        val cy = newY.coerceIn(0, Y_MAX)
+        val cx = clampX(newX)
+        val cy = clampY(newY)
         sp(ctx).edit().putInt(K_X, cx).putInt(K_Y, cy).apply()
         if (sendNow) send(ctx)
     }

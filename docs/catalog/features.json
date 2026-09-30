@@ -1548,11 +1548,11 @@
  {
   "group": "Automation",
   "name": "Mưa thì tự bật sấy kính",
-  "desc": "Cài đặt › Tiện nghi xe › «Tự sấy kính khi mưa» › công tắc «Mưa thì tự bật sấy kính», cộng hai ô chọn cái gì được bật: «Sấy kính trước» (kính chắn gió) và «Sấy kính sau + gương». Đọc cảm biến mưa mỗi 5 phút; hết mưa thì tắt — và ghi chú trong app nói rõ luật sở hữu: «Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng».",
+  "desc": "Cài đặt › Tiện nghi xe › «Tự sấy kính khi mưa» — HAI ô độc lập (kachi-automation V8, 2026-09-30; không còn công tắc chính): «Mưa thì tự bật sấy kính trước» và «Mưa thì tự bật sấy kính sau + gương». Mỗi kính tự đọc trạng thái, tự quyết, tự ghi, tự giữ chủ quyền. Đọc cảm biến mưa mỗi 5 phút (đổi ô ⇒ đánh giá lại ≤60 s). Đang mưa mà sấy tắt (xe tự tắt hoặc người tắt) thì bật lại; hết mưa chỉ tắt cái sấy do Kachi bật — ghi chú trong app: «bạn tự bật thì Kachi không đụng». V8.1 (2026-09-30): ngay dưới hai ô có DÒNG TÌNH TRẠNG cho từng kính đang chọn (giờ · mưa/khô kèm mức gạt · xe báo bật/tắt · Kachi làm gì, lệnh tới xe ✓/✗; «chưa kiểm lần nào từ lúc mở xe» khi chưa có nhịp) để một ảnh chụp màn hình đủ chẩn đoán; nhịp mưa đầu chạy ngay khi động cơ nền bắt đầu, đọc HAL lỗi thì thử lại mỗi 60 s, tối đa 5 lần.",
   "voice": [],
   "voice_reply": "",
   "status": "🚗 code xong chờ xe (chưa gặp buổi mưa thật)",
-  "evidence": "[ĐO xe 1.84] cảm biến mưa THẬT id 1196425250 (rơ-le gạt CHẾT) · core RainPolicy thuần + test · app/.../SettingsSectionsCar.kt:141-165 · strings kachi_rain_defrost_*",
+  "evidence": "[ĐO xe 1.84] cảm biến mưa THẬT id 1196425250 (rơ-le gạt CHẾT) · core RainDefrostPolicy + RainDefrostGlasses (V8, hai làn) thuần + test C1–C19 · app/.../SettingsSectionsCar.kt rainDefrost() · strings kachi_rain_defrost_* · [ĐO log 22/09] xe tự tắt sấy sau ~14′ giữa mưa · V8.1: core RainDefrostCadence + RainDefrostStatus thuần + test (nhịp đầu ngay · thử lại ≤5 · sàn 60 s · chữ mẫu mọi ca) · strings kachi_rain_st_* · V8/V8.1 chưa lên xe",
   "spec": "docs/specs/kachi-automation.html"
  },
  {

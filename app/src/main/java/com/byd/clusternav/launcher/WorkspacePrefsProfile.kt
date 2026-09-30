@@ -1,11 +1,13 @@
 package com.byd.clusternav.launcher
 
-import android.content.Context
 import android.content.SharedPreferences
 import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
 
 /**
- * ═══ S4 · R2/R5/R8 — phần **theo hồ sơ** của [WorkspacePrefs]: chụp–áp · nhân bản · chuyển đổi một-lần ═════════
+ * ═══ S4 · R2/R5/R8 — phần **theo hồ sơ** của [WorkspacePrefs]: nhân bản · chuyển cảnh · đổi tên · xuất/nhập ═══════
+ *
+ * ⚠ V-CLUSTER (2026-09-30, trần 500 dòng): phép **chụp–áp** dời sang `WorkspacePrefsSnapshot.kt`, hai lượt **di trú
+ * phạm vi** (lịch dẫn đường · cụm) sang `WorkspacePrefsMigrations.kt`. Văn xuôi "được/mất" dưới đây vẫn đúng cho cả ba.
  *
  * Spec `docs/specs/kachi-profiles-are-everything.html` R2 · R5 · R8. Đây là **hàm mở rộng của chính
  * [WorkspacePrefs]** chứ không phải một lớp mới — cùng cách `ClusterNavBridge` tách phần Cast/Phím ra
@@ -26,73 +28,6 @@ import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
  * lý do `PrefsWorkspaceRepository.switchProfile` chụp A **trước** khi đổi con trỏ, và là lý do không có đường thứ hai
  * nào được phép ghi thẳng vào `<hồ sơ>__cn__*`.
  */
-
-/**
- * Chụp giá trị ĐANG có của mọi khoá ClusterNav theo hồ sơ vào ảnh chụp của [profile].
- *
- * Một chuỗi cho **một tệp** prefs (khoá `<hồ sơ>__cn__<tên tệp>`, hậu tố sinh bởi [ProfileScope.snapshotSuffix] nên
- * nó nằm sẵn trong [ProfileScope.LAUNCHER_SUFFIXES] ⇒ xoá hồ sơ là xoá cả ảnh chụp, không phải nhớ thêm gì).
- *
- * ## ⚠⚠ Khoá VẮNG MẶT cũng phải được chụp — dưới dạng `null` tường minh
- * `sp.all` chỉ trả khoá **có mặt**. Nếu ảnh chụp bỏ qua khoá vắng thì lượt áp sau này cũng bỏ qua nó, tức nó **giữ
- * nguyên giá trị của hồ sơ vừa rời**: A chưa từng bật bong bóng, B bật ⇒ A → B → A và A tự nhiên có bong bóng, vĩnh
- * viễn, không có đường quay lại. [PrefSnapshot] có thẻ kiểu `n` đúng cho ca này, và [applyClusterNav] dịch nó thành
- * `remove(key)` — tức "trả khoá về đúng trạng thái chưa-ai-đặt".
- */
-internal fun WorkspacePrefs.snapshotClusterNav(profile: String) {
-    val e = sp.edit()
-    ProfileScope.CLUSTERNAV_KEYS.forEach { (file, keys) ->
-        val all = clusterNavPrefs(file).all
-        // `associateWith` giữ CẢ khoá vắng (giá trị `null`) — xem KDoc ở trên, đây là nửa dễ quên nhất của phép chụp.
-        val values: Map<String, Any?> = keys.associateWith { all[it] }
-        e.putString(keyOf(profile, ProfileScope.snapshotSuffix(file)), PrefSnapshot.encode(values))
-    }
-    e.apply()
-}
-
-/**
- * Ghi ảnh chụp của [profile] trở lại đúng tệp prefs mà dịch vụ ClusterNav đang đọc.
- *
- * **Hồ sơ chưa có ảnh chụp ⇒ KHÔNG làm gì với tệp đó** (giữ nguyên giá trị hiện tại), đúng R5: *"hồ sơ mới = bản sao
- * của hiện tại"*. Đây là phân biệt giữa *"chưa có ảnh"* (khoá vắng) và *"ảnh rỗng"* (khoá có, chuỗi rỗng) — ảnh rỗng
- * chỉ xảy ra khi tệp đó thật sự không có khoá nào, và lúc đó **không có gì để áp** nên hai ca ra cùng kết quả.
- *
- * ⚠ Ghi **đúng kiểu**: `getBoolean` trên giá trị ghi bằng `putString` **ném** `ClassCastException`, và chỗ đọc là dịch
- * vụ đang chạy trên xe (`FloatingBubbleService`, `NavAccessibilityService`) chứ không phải màn Cài đặt — mất kiểu thì
- * không hỏng lúc đổi hồ sơ mà hỏng **trên đường** (xem KDoc [PrefSnapshot]).
- *
- * ⚠ Ghi bằng `apply()` chứ không `commit()`: `apply()` cập nhật bản đồ **trong RAM ngay lập tức** (lượt đọc kế tiếp
- * của dịch vụ thấy ngay) và đẩy xuống đĩa ở thread nền — còn `commit()` chặn luồng vẽ để chờ I/O của **29 khoá trên 3
- * tệp** đúng lúc người dùng vừa chạm đổi hồ sơ.
- */
-internal fun WorkspacePrefs.applyClusterNav(profile: String) {
-    ProfileScope.CLUSTERNAV_KEYS.forEach { (file, keys) ->
-        val raw = sp.getString(keyOf(profile, ProfileScope.snapshotSuffix(file)), null) ?: return@forEach
-        // ⚠⚠ Lọc theo [ProfileScope] NGAY LÚC ÁP, không chỉ lúc chụp: ảnh chụp nằm trên đĩa của xe **lâu hơn** bản
-        // phân loại đã sinh ra nó. Một khoá bị xếp lại sang "theo XE" ở bản sau (đã xảy ra: `cast_enabled`, S4 OQ2)
-        // vẫn còn nguyên trong ảnh chụp cũ, và không có phép lọc này thì lượt đổi hồ sơ **vẫn** ghi đè nó — tức
-        // quyết định "khoá này thuộc cả xe" chỉ có hiệu lực trên máy mới cài. [ProfileScope] phải là nguồn duy nhất
-        // ở CẢ hai đầu, không thì nó chỉ là nguồn duy nhất của một nửa.
-        val values = PrefSnapshot.decode(raw).filterKeys { it in keys }
-        if (values.isEmpty()) return@forEach
-        val e = clusterNavPrefs(file).edit()
-        values.forEach { (k, v) ->
-            when (v) {
-                // Khoá vắng lúc chụp ⇒ trả nó về "chưa ai đặt" thay vì để nguyên giá trị của hồ sơ vừa rời.
-                null -> e.remove(k)
-                is Boolean -> e.putBoolean(k, v)
-                is Int -> e.putInt(k, v)
-                is Long -> e.putLong(k, v)
-                is Float -> e.putFloat(k, v)
-                is String -> e.putString(k, v)
-                // `PrefSnapshot` chỉ sinh `Set<String>`; lọc lại vì kiểu tĩnh là `Set<*>` (mất kiểu qua `Any?`).
-                is Set<*> -> e.putStringSet(k, v.filterIsInstance<String>().toSet())
-                else -> Unit
-            }
-        }
-        e.apply()
-    }
-}
 
 /**
  * S4 · R8 — **thêm hồ sơ = BẢN SAO của hồ sơ đang dùng**, rồi chuyển sang nó.
@@ -201,70 +136,6 @@ internal fun WorkspacePrefs.migrateScenesOnce() {
     VoiceGrammarSnapshotStore.write(this)
 }
 
-/**
- * DI TRÚ MỘT LẦN: *tự dẫn đường theo lịch* từ phạm vi **theo XE** sang **theo HỒ SƠ** (owner 2026-09-28).
- *
- * ## Vì sao cần, và vì sao làm sai là mất dữ liệu của người dùng
- * Trước bản này, luật lịch và sổ đã-dẫn nằm chung cả máy. Đổi phạm vi mà không làm gì thì [applyClusterNav] gặp
- * ảnh chụp CŨ (chụp hồi hai khoá còn theo xe nên KHÔNG chứa chúng), `filterKeys` loại chúng ra, và giá trị đang
- * sống được giữ nguyên. Nghe thì có vẻ lành, nhưng hệ quả là **hồ sơ nào được chụp trước thì chiếm luật**, các hồ
- * sơ còn lại ăn theo cái đang sống rồi lệch dần — kiểu hỏng không ai thấy cho tới lúc một buổi sáng lịch không nổ.
- *
- * ## Cách làm: rót xuống, không bốc lên
- * Chép giá trị ĐANG SỐNG vào ảnh chụp của **mọi** hồ sơ hiện có. Sau lượt này ai cũng bắt đầu bằng đúng cái lịch
- * người dùng đang có, rồi mới tách ra khi họ sửa. Không ai mất gì, và không hồ sơ nào bỗng dưng trống.
- *
- * ⚠ Chỉ ĐIỀN VÀO CHỖ TRỐNG (`putIfAbsent`): một hồ sơ đã có sẵn khoá trong ảnh chụp — vì người dùng đã đổi hồ sơ
- * sau khi nâng cấp — thì giữ nguyên của nó. Ghi đè ở đây là xoá lựa chọn vừa mới đặt.
- *
- * ⚠ Dấu đã-di-trú ghi **CÙNG một lượt** với dữ liệu, đúng bài học của [migrateScenesOnce]: tách hai lượt thì một
- * lần chết máy giữa chừng cho lượt sau chạy lại trên dữ liệu đã chuyển.
- *
- * ⚠ Khoá đang VẮNG ở tệp sống vẫn được rót — dưới dạng `null` tường minh (thẻ `n` của [PrefSnapshot]), cùng hợp
- * đồng với [snapshotClusterNav]. Bỏ nó đi là để sổ ĐÃ-DẪN của hồ sơ vừa rời **tràn sang** hồ sơ mới; xem chú
- * thích tại chỗ.
- *
- * Chạy xong là **đặt dấu** rồi thôi, kể cả khi không có gì để rót — khỏi quét lại mỗi lần mở.
- */
-internal fun WorkspacePrefs.migrateNavScheduleOnce() {
-    if (sp.getBoolean(K_MIGRATED_NAV_SCHEDULE, false)) return
-    val e = sp.edit()
-    ProfileScope.CLUSTERNAV_PROFILE_STATE_KEYS.entries
-        .groupBy({ it.value }, { it.key })
-        .forEach { (file, stateKeys) ->
-            // Hai khoá của cùng một tính năng phải đi cùng nhau: luật (đã có trong danh mục) + sổ đã-dẫn (không).
-            val keys = (ProfileScope.CLUSTERNAV_KEYS[file].orEmpty().toSet() + stateKeys)
-                .filter { it.startsWith("nav_automation") }
-            if (keys.isEmpty()) return@forEach
-            val live = clusterNavPrefs(file).all
-            // ⚠⚠ Khoá VẮNG ở tệp sống cũng phải vào ảnh, dưới dạng `null` TƯỜNG MINH — đúng hợp đồng đã ghi ở
-            // KDoc [snapshotClusterNav] và thẻ `n` của [PrefSnapshot]. Lọc `null` ra (bản đầu của hàm này) là bỏ
-            // khoá ấy khỏi ảnh của mọi hồ sơ, và lượt [applyClusterNav] khi đó **giữ nguyên giá trị của hồ sơ vừa
-            // rời**. Ca thật: lúc di trú, `nav_automation_fired` thường CHƯA có (chưa lịch nào bắn) ⇒ vắng ở mọi
-            // ảnh ⇒ hồ sơ A bắn xong, đổi sang B thì sổ đã-dẫn của A vẫn còn sống, mà luật của B là BẢN SAO cùng
-            // id (chính lượt di trú này rót xuống) ⇒ B bị coi là **đã bắn** và bỏ đúng một lượt, im lặng. Đó là
-            // R5 của spec `kachi-profile-scope-nav-schedule`.
-            val carry: Map<String, Any?> = keys.associateWith { live[it] }
-            val suffix = ProfileScope.snapshotSuffix(file)
-            profiles().forEach { p ->
-                val shot = PrefSnapshot.decode(sp.getString(keyOf(p, suffix), null).orEmpty()).toMutableMap()
-                var touched = false
-                carry.forEach { (k, v) -> if (k !in shot) { shot[k] = v; touched = true } }
-                if (touched) e.putString(keyOf(p, suffix), PrefSnapshot.encode(shot))
-            }
-        }
-    e.putBoolean(K_MIGRATED_NAV_SCHEDULE, true).apply()
-}
-
-/**
- * Dấu đã chuyển *tự dẫn đường theo lịch* từ theo-XE sang theo-HỒ-SƠ — xem [migrateNavScheduleOnce].
- *
- * Đặt ở ĐÂY chứ không trong `WorkspacePrefs` vì đó là nơi DUY NHẤT đọc nó, và vì tệp kia đã sát trần 500 dòng
- * (CLAUDE.md §4.1) — thêm vào đấy là đẩy nó qua trần, bài canh kích thước đỏ ngay. Hằng ở cạnh chỗ dùng cũng
- * đúng hơn: dấu di trú thuộc về phép di trú.
- */
-private const val K_MIGRATED_NAV_SCHEDULE = "migrated_nav_schedule_v1"
-
 /** Ghi một hồ sơ do lượt chuyển đổi dựng ra: ba thứ của cảnh + **chép phần còn lại** từ [source] (R2). */
 private fun WorkspacePrefs.writeRecord(e: SharedPreferences.Editor, source: String, record: ProfileRecord) {
     val name = record.name
@@ -298,14 +169,6 @@ private fun copyValue(e: SharedPreferences.Editor, to: String, value: Any?) {
         else -> Unit
     }
 }
-
-/**
- * Tệp prefs của phía ClusterNav theo tên. Mở qua `Context` (mỗi tên là một `SharedPreferences` riêng) — Android
- * cache theo tên trong cùng tiến trình, nên đây **vẫn là** đúng đối tượng mà dịch vụ đang giữ, và mọi listener đã
- * đăng ký (`registerOnSharedPreferenceChangeListener`) đều nhận được lượt ghi này.
- */
-private fun WorkspacePrefs.clusterNavPrefs(file: String): SharedPreferences =
-    appCtx.getSharedPreferences(file, Context.MODE_PRIVATE)
 
 /**
  * ═══ S4 · ĐỔI TÊN một hồ sơ (owner 2026-09-16 · E5) ══════════════════════════════════════════════════
@@ -396,8 +259,11 @@ internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): B
     val e = sp.edit()
     list.add(target)
     e.putString(WorkspacePrefs.K_PROFILES, list.joinToString("\n"))
-    // Chỉ ghi các hậu tố HỢP LỆ (PROFILE_SUFFIXES) — chống chuỗi lạ nhét khoá ngoài phạm vi hồ sơ.
-    values.filterKeys { it in WorkspacePrefs.PROFILE_SUFFIXES }.forEach { (suffix, v) -> copyValue(e, keyOf(target, suffix), v) }
+    // Chỉ ghi các hậu tố HỢP LỆ (PROFILE_SUFFIXES) — chống chuỗi lạ nhét khoá ngoài phạm vi hồ sơ. V-CLUSTER · VC-R8:
+    // ảnh chụp ClusterNav bên trong còn được LÀM SẠCH (phạm vi · kiểu · bộ kiểm hình học trước shell) — tệp nhập là dữ
+    // liệu người khác gửi, và họ `config_*` đi thẳng vào `wm`/`am task resize`.
+    values.filterKeys { it in WorkspacePrefs.PROFILE_SUFFIXES }
+        .forEach { (suffix, v) -> copyValue(e, keyOf(target, suffix), cleanImportedSnapshot(suffix, v)) }
     e.apply()
     VoiceGrammarSnapshotStore.write(this)
     return true

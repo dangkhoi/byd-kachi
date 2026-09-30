@@ -130,7 +130,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền, khung hình khi chiếu lên cụm, và Giới thiệu — đều lưu cho hồ sơ «%1$s». Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đều đổi theo.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy và Chạy dịch vụ nền khi nổ máy vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -327,14 +327,32 @@
     <string name="kachi_camera_signal_title">Bật camera khi xi-nhan</string>
     <string name="kachi_camera_signal_sub">Xi-nhan trái → hiện camera trái; xi-nhan phải → camera phải.</string>
     <string name="kachi_sub_rain_defrost">Tự sấy kính khi mưa</string>
-    <string name="kachi_rain_defrost_title">Mưa thì tự bật sấy kính</string>
-    <string name="kachi_rain_defrost_sub">Đọc cảm biến mưa mỗi 5 phút; có mưa thì tự bật sấy kính (chọn bên dưới), hết mưa thì tắt.</string>
-    <string name="kachi_rain_defrost_note">Chỉ tắt cái sấy do Kachi bật; bạn tự bật thì Kachi không đụng.</string>
-    <!-- V7 (owner 2026-09-25) — hai ô con: chọn kính nào được sấy. Mặc định cả hai BẬT. -->
-    <string name="kachi_rain_defrost_front">Sấy kính trước</string>
+    <!-- kachi-automation V8 (owner 2026-09-30) — HAI hàng độc lập, không còn công tắc chính (spec §V8 · D1). -->
+    <string name="kachi_rain_defrost_front">Mưa thì tự bật sấy kính trước</string>
     <string name="kachi_rain_defrost_front_sub">Kính chắn gió phía trước.</string>
-    <string name="kachi_rain_defrost_rear">Sấy kính sau + gương</string>
+    <string name="kachi_rain_defrost_rear">Mưa thì tự bật sấy kính sau + gương</string>
     <string name="kachi_rain_defrost_rear_sub">Kính sau và gương chiếu hậu.</string>
+    <string name="kachi_rain_defrost_note">Đọc cảm biến mưa mỗi 5 phút, hai ô độc lập. Đang mưa mà sấy tắt (xe tự tắt hoặc bạn tắt) thì Kachi bật lại; hết mưa Kachi chỉ tắt cái sấy do Kachi bật — bạn tự bật thì Kachi không đụng.</string>
+    <!-- kachi-automation V8.1 (2026-09-30) · R-V8.7 — dòng tình trạng từng kính dưới hai hàng sấy. {n} = mức gạt, {t} = HH:mm (không dùng %1$d: xem spec V8.1 · D11). -->
+    <string name="kachi_rain_st_front">Kính trước</string>
+    <string name="kachi_rain_st_rear">Kính sau + gương</string>
+    <string name="kachi_rain_st_never">chưa kiểm lần nào từ lúc mở xe</string>
+    <string name="kachi_rain_st_next">nhịp kế ~{t}</string>
+    <string name="kachi_rain_st_rain">mưa (gạt {n})</string>
+    <string name="kachi_rain_st_dry">khô (gạt {n})</string>
+    <string name="kachi_rain_st_sensor_error">cảm biến mưa không đọc được ⇒ để nguyên</string>
+    <string name="kachi_rain_st_car_on">xe báo: bật</string>
+    <string name="kachi_rain_st_car_off">xe báo: tắt</string>
+    <string name="kachi_rain_st_car_off_after_on">xe báo: vẫn tắt sau lệnh bật {t}</string>
+    <string name="kachi_rain_st_car_error">xe báo: không đọc được</string>
+    <string name="kachi_rain_st_turn_on_ok">Kachi bật: tới xe ✓</string>
+    <string name="kachi_rain_st_turn_on_fail">lệnh bật: không tới xe ✗</string>
+    <string name="kachi_rain_st_turn_off_ok">Kachi tắt: tới xe ✓</string>
+    <string name="kachi_rain_st_turn_off_fail">lệnh tắt: không tới xe ✗</string>
+    <string name="kachi_rain_st_skipped">bỏ lệnh (vừa đổi lựa chọn)</string>
+    <string name="kachi_rain_st_keep_on">đang sấy, để nguyên</string>
+    <string name="kachi_rain_st_nothing">không cần sấy</string>
+    <string name="kachi_rain_st_not_ours">Kachi không quản, để nguyên</string>
     <!-- #2 · Tự dẫn đường theo lịch (nhóm Dẫn đường) -->
     <string name="kachi_sec_nav_auto">Tự dẫn đường theo lịch</string>
     <string name="kachi_nav_auto_note">Đúng giờ, đúng thứ thì tự mở app dẫn đường tới một địa chỉ đã lưu. Mỗi khung giờ chỉ dẫn một lần trong ngày.</string>
@@ -417,9 +435,14 @@
     <string name="kachi_sec_cast">Cluster Cast</string>
     <string name="kachi_cast_enabled_title">Bật Cluster Cast</string>
     <string name="kachi_cast_enabled_sub">Mở cụm để nhận cửa sổ app. Tắt là trả cụm về đồng hồ ngay.</string>
+    <string name="kachi_cast_enabled_pending">Đang chạy: %1$s · hồ sơ này: %2$s — áp dụng từ lần nổ máy sau.</string>
+    <string name="kachi_cast_enabled_apply_now">Áp ngay</string>
+    <string name="kachi_cast_state_on_short">BẬT</string>
+    <string name="kachi_cast_state_off_short">TẮT</string>
     <string name="kachi_cast_bubble_title">Hiện nút nổi chiếu cụm</string>
     <string name="kachi_cast_bubble_sub">Nút hoa Kachi nổi trên màn, chạm để chiếu. Tắt chỉ ẩn nút — vẫn chiếu được bằng bốn nút Chiếu ngay ở dưới, bằng giọng nói, và tự chiếu khi nổ máy.</string>
     <string name="kachi_cast_split">Tỉ lệ chia đôi</string>
+    <string name="kachi_cast_split_session_differs">Đang chia %1$s · hồ sơ này %2$s — áp dụng lần chia đôi sau (chạm một tỉ lệ để áp ngay).</string>
     <string name="kachi_sub_cast_autostart">Tự chiếu khi nổ máy</string>
     <string name="kachi_cast_autostart_title">Tự chiếu toàn cụm</string>
     <string name="kachi_cast_autostart_sub">Nổ máy là đưa một app lên chiếm cả cụm. Loại trừ với tự chiếu chia đôi.</string>
@@ -559,6 +582,7 @@
     <string name="kachi_cast_geom_dpi">DPI cụm</string>
     <string name="kachi_cast_geom_dpi_note">DPI áp cho CẢ cụm, không riêng một ô (giới hạn của wm density trên Android 10).</string>
     <string name="kachi_cast_geom_reset">Đặt lại khung</string>
+    <string name="kachi_cast_geom_profile_differs">Hồ sơ này: DPI %1$d, khung %2$d×%3$d, góc trên-trái %4$d,%5$d — áp dụng từ lần chiếu sau.</string>
 
     <!-- ══ U7 · R6 — dấu "chưa kiểm trên xe" đảo chiều (spec kachi-icon-set-v2 §3 R6) ══
          [ĐO] chỉ 21/195 mã ở mức PROVEN ⇒ gần như MỌI ô mang một chấm hổ phách sáng ở góc icon: một dấu mà

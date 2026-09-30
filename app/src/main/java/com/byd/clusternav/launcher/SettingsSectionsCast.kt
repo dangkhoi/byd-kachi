@@ -6,7 +6,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import com.byd.clusternav.R
-import com.byd.clusternav.modules.clustercast.simplified.CastBounds
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
 import com.byd.clusternav.ui.ClusterPreviewView
@@ -40,14 +39,18 @@ class SettingsCastSection(
     private var preview: ClusterPreviewView? = null
 
     /**
-     * Khối "khung và DPI" (R2a) — nó phụ thuộc **trạng thái chiếu đang chạy**, mà trang Cài đặt thì được nhớ lại
-     * ([SettingsPanel.pages]) chứ không dựng lại. Nên khối này nằm trong một hộp riêng được [rebuildGeometry]
-     * dựng lại sau mỗi hành động đổi trạng thái — cùng khuôn với [rebuildAutostart], vì cùng lý do.
+     * Khối "khung và DPI" (R2a) — tệp riêng `SettingsSectionsCastGeometry.kt` (V-CLUSTER, trần 500 dòng). Nó phụ thuộc
+     * **trạng thái chiếu đang chạy**, nên [refreshStatus] dựng lại nó sau mỗi hành động đổi trạng thái.
      */
-    private var geometryHolder: LinearLayout? = null
+    private val geometryBlock = SettingsCastGeometryBlock(context, rows, deps)
 
-    /** Nửa đang chỉnh khi cụm chia đôi (`null` = toàn cụm). Nhớ lại giữa hai lần dựng để không nhảy về ô trái. */
-    private var geometrySide: ClusterSlotSide? = null
+    /**
+     * V-CLUSTER · VC-R9 — hai hộp dựng lại được của phần đầu trang: công tắc Cast (+ dòng *"áp dụng từ lần nổ máy sau"*
+     * + nút *Áp ngay*) và tỉ lệ chia (+ dòng *"đang chia … · hồ sơ này …"*). [SettingsRows.checkRow]/`chipRow` giữ trạng
+     * thái trong closure, nên nói thật sau một lượt áp = dựng lại hộp, không phải đặt lại dấu tích từ ngoài.
+     */
+    private var masterHolder: LinearLayout? = null
+    private var splitHolder: LinearLayout? = null
 
     /** Ba nút chọn app (full · trái · phải) — giữ để đổi CHỮ tại chỗ sau khi chọn, không dựng lại trang. */
     private val appButtons = HashMap<Slot, TextView>()
@@ -59,7 +62,7 @@ class SettingsCastSection(
         master(body)
         autostart(body)
         castNow(body)
-        geometry(body)
+        geometryBlock.build(body)
         rescue(body)
     }
 
@@ -67,14 +70,8 @@ class SettingsCastSection(
 
     private fun master(body: LinearLayout) {
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_sec_cast)))
-        body.addView(rows.checkRow(
-            on = bridge.castEnabled(),
-            title = context.getString(R.string.kachi_cast_enabled_title),
-            sub = context.getString(R.string.kachi_cast_enabled_sub),
-        ) { on ->
-            bridge.setCastEnabled(on)
-            refreshStatus()
-        })
+        masterHolder = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }.also { body.addView(it) }
+        rebuildMaster()
         // WP6 · R6.1 — công tắc HIỆN NÚT NỔI, đặt NGAY DƯỚI công tắc chính vì nó chỉ có nghĩa khi Cast đang bật.
         // Dòng phụ nói thẳng điều người dùng cần biết: ẩn nút nổi KHÔNG tắt chiếu, và còn lối chiếu nào thay thế.
         body.addView(rows.checkRow(
@@ -82,12 +79,68 @@ class SettingsCastSection(
             title = context.getString(R.string.kachi_cast_bubble_title),
             sub = context.getString(R.string.kachi_cast_bubble_sub),
         ) { on -> bridge.setCastBubbleVisible(on) })
-        body.addView(rows.chipRow(
+        splitHolder = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }.also { body.addView(it) }
+        rebuildSplit()
+    }
+
+    /**
+     * Công tắc chính — hiện lựa chọn của HỒ SƠ (`castEnabledForProfile`), như mọi dòng Cài đặt khác.
+     *
+     * V-CLUSTER · VC-R7/VC-R9: lượt đổi hồ sơ KHÔNG bật/tắt chiếu (cụm hai chủ — spec K1); lựa chọn của hồ sơ đợi tới lần
+     * nổ máy kế. Khi có bản chờ, màn nói thẳng *đang chạy gì · hồ sơ muốn gì · khi nào áp*, kèm nút *Áp ngay* đi đúng
+     * đường thật `setCastEnabled` (người lái đang đỗ muốn đổi luôn thì không phải tắt máy).
+     */
+    private fun rebuildMaster() {
+        val holder = masterHolder ?: return
+        holder.removeAllViews()
+        holder.addView(rows.checkRow(
+            on = bridge.castEnabledForProfile(),
+            title = context.getString(R.string.kachi_cast_enabled_title),
+            sub = context.getString(R.string.kachi_cast_enabled_sub),
+        ) { on ->
+            bridge.setCastEnabled(on)
+            refreshStatus()
+        })
+        val pending = bridge.castEnabledPending() ?: return
+        holder.addView(rows.note(context.getString(
+            R.string.kachi_cast_enabled_pending, onOff(bridge.castEnabled()), onOff(pending),
+        )))
+        holder.addView(rows.button(context.getString(R.string.kachi_cast_enabled_apply_now)) {
+            bridge.applyCastPendingNow()
+            refreshStatus()
+        })
+    }
+
+    /**
+     * Tỉ lệ chia đôi — chip là lựa chọn của HỒ SƠ (lần chia đôi kế dùng số này). Đang chia đôi mà tỉ lệ của PHIÊN khác
+     * (vừa đổi hồ sơ giữa lúc chia) ⇒ thêm một dòng nói cả hai số; chạm chip là lượt `applySplitRatioLive` tường minh như
+     * hôm nay (đổi cả phiên). V-CLUSTER · VC-R9, sửa refute C2.
+     */
+    private fun rebuildSplit() {
+        val holder = splitHolder ?: return
+        holder.removeAllViews()
+        val profilePct = bridge.splitPct()
+        var note: View? = null
+        holder.addView(rows.chipRow(
             label = context.getString(R.string.kachi_cast_split),
             options = bridge.splitPctOptions().map { it.toString() to ClusterNavSettingsModel.splitRatioLabel(it) },
-            current = bridge.splitPct().toString(),
-        ) { code -> code.toIntOrNull()?.let { bridge.setSplitPct(it) } })
+            current = profilePct.toString(),
+        ) { code ->
+            code.toIntOrNull()?.let { bridge.setSplitPct(it) }
+            // Chạm chip = lượt áp TƯỜNG MINH cho cả phiên ⇒ dòng "đang chia khác" hết đúng. Gỡ nó tại chỗ, KHÔNG dựng lại
+            // hộp: lượt ghi prefs chạy trên executor của coordinator, đọc lại ngay lúc này là vẽ lại chip ở số CŨ.
+            note?.let { holder.removeView(it) }
+            note = null
+        })
+        val session = bridge.sessionSplitPct()?.takeIf { it != profilePct } ?: return
+        note = rows.note(context.getString(
+            R.string.kachi_cast_split_session_differs,
+            ClusterNavSettingsModel.splitRatioLabel(session), ClusterNavSettingsModel.splitRatioLabel(profilePct),
+        )).also { holder.addView(it) }
     }
+
+    private fun onOff(on: Boolean): String =
+        context.getString(if (on) R.string.kachi_cast_state_on_short else R.string.kachi_cast_state_off_short)
 
     // ── Tự chiếu khi nổ máy ──────────────────────────────────────────────────────────────────────
 
@@ -271,7 +324,9 @@ class SettingsCastSection(
         }
         statusRow.update(colour, text)
         refreshPreview(state)
-        rebuildGeometry()
+        rebuildMaster()
+        rebuildSplit()
+        geometryBlock.rebuild()
     }
 
     /**
@@ -288,7 +343,8 @@ class SettingsCastSection(
         val view = preview ?: return
         when (state) {
             is SimpleCastState.CastingSplit -> {
-                val leftPct = bridge.splitPct()
+                // V-CLUSTER: vẽ tỉ lệ ĐANG chia trên cụm (của phiên), không phải số hồ sơ lưu cho lần chia kế.
+                val leftPct = state.leftPercent
                 view.setSplit(
                     leftPct / 100f,
                     context.getString(
@@ -304,97 +360,7 @@ class SettingsCastSection(
         }
     }
 
-    // ── Khung và DPI của ô đang chiếu (R2a) ──────────────────────────────────────────────────────
-
-    /**
-     * Bộ chỉnh **khung + DPI** của màn cũ (`CastGeometryEditor`, đã gỡ 2026-09-13), dựng lại bằng các hàng chuẩn.
-     *
-     * ## Vì sao thành bốn thanh −/+, không phải khung kéo-thả
-     * Bản cũ cho kéo một hình chữ nhật (`CastResizeView`). Kéo thì nhanh khi đã quen, nhưng nó không nói **số**,
-     * mà việc thật ở đây là *"đẩy mép phải vào 20px cho khỏi che đồng hồ"* — một việc cần độ chính xác, làm trên
-     * màn xe, có thể đang đỗ giữa đường. Thanh −/+ có đích chạm 48 và nói rõ toạ độ đang ở đâu; khung kéo-thả nếu
-     * cần vẫn còn ở nhóm *Dẫn đường* cho biển báo (nơi vị trí là cảm tính, không phải số).
-     *
-     * ## Ẩn hẳn khi không chiếu — không "hiện mà bấm không ăn"
-     * `bridge.geometryTargets()` rỗng ⇒ chưa chiếu, hoặc đang chiếu CarPlay/Android Auto (resize không ăn, đã
-     * chứng minh). Bản cũ cũng ẩn (`updateVisibility`); bốn thanh trơ ra mà bấm không đổi gì còn tệ hơn không có.
-     */
-    private fun geometry(body: LinearLayout) {
-        val holder = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-        geometryHolder = holder
-        body.addView(holder)
-        rebuildGeometry()
-    }
-
-    private fun rebuildGeometry() {
-        val holder = geometryHolder ?: return
-        holder.removeAllViews()
-        val targets = bridge.geometryTargets()
-        if (targets.isEmpty()) return
-        val target = targets.firstOrNull { it.side == geometrySide } ?: targets.first()
-        geometrySide = target.side
-
-        holder.addView(rows.subHeader(context.getString(R.string.kachi_sub_cast_geometry)))
-        if (targets.size > 1) {
-            holder.addView(rows.chipRow(
-                label = context.getString(R.string.kachi_cast_geom_slot),
-                options = targets.map { it.side!!.name to slotLabel(it.side) },
-                current = target.side?.name.orEmpty(),
-            ) { code ->
-                geometrySide = ClusterSlotSide.values().firstOrNull { it.name == code }
-                rebuildGeometry()
-            })
-        }
-        addEdgeSteppers(holder, target)
-        holder.addView(rows.chipRow(
-            label = context.getString(R.string.kachi_cast_geom_dpi),
-            options = bridge.geometryDensityOptions().map { it.toString() to it.toString() },
-            current = bridge.geometryDensity(target).toString(),
-        ) { code -> code.toIntOrNull()?.let { bridge.setGeometryDensity(it) } })
-        holder.addView(rows.note(context.getString(R.string.kachi_cast_geom_dpi_note)))
-        holder.addView(rows.button(context.getString(R.string.kachi_cast_geom_reset)) {
-            bridge.resetGeometry(target)
-            rebuildGeometry()
-        })
-    }
-
-    /**
-     * Bốn mép của ô, mỗi mép một hàng −/+.
-     *
-     * Giá trị hiển thị đọc **lại từ cầu** sau mỗi lần bấm (cầu kẹp vào dải của ô), chứ không cộng dồn một biến
-     * trong màn: kẹp im lặng mà màn vẫn đếm tiếp thì hai bên lệch nhau ngay ở cú bấm thứ hai — đúng bệnh mà
-     * `syncBadge` ở nhóm *Dẫn đường* đã phải chữa.
-     */
-    private fun addEdgeSteppers(holder: LinearLayout, target: CastGeometryTarget) {
-        data class Edge(val labelRes: Int, val read: (CastBounds) -> Int, val write: (CastBounds, Int) -> CastBounds)
-        val edges = listOf(
-            Edge(R.string.kachi_cast_geom_edge_left, { it.left }, { b, v -> b.copy(left = v) }),
-            Edge(R.string.kachi_cast_geom_edge_top, { it.top }, { b, v -> b.copy(top = v) }),
-            Edge(R.string.kachi_cast_geom_edge_right, { it.right }, { b, v -> b.copy(right = v) }),
-            Edge(R.string.kachi_cast_geom_edge_bottom, { it.bottom }, { b, v -> b.copy(bottom = v) }),
-        )
-        val steppers = HashMap<Int, SettingsRows.Stepper>()
-        fun nudge(edge: Edge, delta: Int) {
-            val now = bridge.geometryBounds(target)
-            bridge.setGeometryBounds(target, edge.write(now, edge.read(now) + delta))
-            val after = bridge.geometryBounds(target)
-            edges.forEach { steppers[it.labelRes]?.setValue(px(it.read(after))) }
-        }
-        edges.forEach { edge ->
-            val stepper = rows.stepperRow(
-                context.getString(edge.labelRes), px(edge.read(bridge.geometryBounds(target))),
-                onMinus = { nudge(edge, -GEOMETRY_STEP_PX) }, onPlus = { nudge(edge, GEOMETRY_STEP_PX) },
-            )
-            steppers[edge.labelRes] = stepper
-            holder.addView(stepper.view)
-        }
-    }
-
-    private fun slotLabel(side: ClusterSlotSide?): String = context.getString(
-        if (side == ClusterSlotSide.RIGHT) R.string.kachi_cast_geom_right else R.string.kachi_cast_geom_left,
-    )
-
-    private fun px(value: Int): String = context.getString(R.string.kachi_px_value, value)
+    // ── Khung và DPI của ô đang chiếu (R2a) → `SettingsSectionsCastGeometry.kt` (V-CLUSTER, trần 500 dòng) ──────
 
     /** Tên ngắn của app đang chiếu — `substringAfterLast('.')`, **y như màn cũ** để hai màn nói cùng một tên. */
     private fun shortName(pkg: String): String = pkg.substringAfterLast('.')
