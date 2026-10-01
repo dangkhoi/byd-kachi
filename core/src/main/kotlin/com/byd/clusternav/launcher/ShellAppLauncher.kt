@@ -61,14 +61,23 @@ class ShellAppLauncher(
     private fun rejected(out: String): Boolean =
         out.contains("Error", true) || out.contains("Exception", true) || out.contains("not allowed", true)
 
-    private companion object {
-        const val POLL_TRIES = 12
-        const val POLL_STEP_MS = 250L
+    internal companion object {
+        private const val POLL_TRIES = 12
+        private const val POLL_STEP_MS = 250L
 
-        /** Tên gói Android hợp lệ — xem [safe]. */
+        /**
+         * Tên gói Android hợp lệ — xem [safe]. `internal` (không còn `private`) để [FloatingWindowLedger] lọc tên gói
+         * bằng ĐÚNG mẫu này (PROFILE-SWITCH-SLOTS R-B4) — một mẫu, không chép.
+         */
         val PKG = Regex("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)*")
     }
 
+    /**
+     * ⚠ Màn nhà KHÔNG gọi tới hàm này (PROFILE-SWITCH-SLOTS E10 · R-B5): bộ mở này chỉ được gán khi có kênh shell
+     * (`KachiHomeActivity` `onSeam`), mà khi có kênh thì `LauncherWindows.closeApp` thoát sớm vì `embedding = true`.
+     * Và lệnh của nó là [FreeformLaunch.fullscreenCmd] — đưa app lên TOÀN MÀN đè nhà, KHÔNG phải đóng cửa sổ. Việc
+     * đóng cửa sổ nổi Kachi đã mở thuộc `LauncherWindows.sweepFloating` (`am stack remove <id>`, [FloatingOrphanPlan]).
+     */
     override fun closeSlot(pkg: String) {
         if (!safe(pkg)) return
         val comp = FreeformLaunch.parseComponent(sh(FreeformLaunch.resolveCmd(pkg))) ?: return

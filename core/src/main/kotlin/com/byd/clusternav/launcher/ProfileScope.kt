@@ -174,6 +174,12 @@ object ProfileScope {
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (lý do đầy đủ ở " +
                 "[SettingsCatalog.NOT_SETTINGS])",
         )
+        put(
+            "kachi_floating_opened",
+            "PROFILE-SWITCH-SLOTS R-B4 — dấu 'Kachi đã mở gói này thành cửa sổ nổi' ([FloatingWindowLedger]). Theo XE: " +
+                "cửa sổ nằm trên màn của CHIẾC XE này; theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Cũng " +
+                "khai ở [SettingsCatalog.NOT_SETTINGS]",
+        )
         // ⚠ 2026-09-30 — `cast_enabled` ĐÃ RỜI danh sách này, chuyển sang theo HỒ SƠ. Owner: *"Phần cụm lưu hết thành
         // profile nhé"* — THAY chốt S4-OQ2 của Pass 1 review (2026-09-14; không phải quyết định của owner). Lý do kỹ
         // thuật của chốt cũ VẪN ĐÚNG ([ĐO] mọi cổng đọc đều LIVE qua `SimpleCastPrefs.castEnabled()` ⇒ ghi thẳng khoá

@@ -10,9 +10,13 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
  * Sắp [workspace] + [dock] trong vùng chính theo viền [DockConfig.edge] (BOTTOM/TOP/LEFT/RIGHT) — tách khỏi
- * [KachiHomeActivity] (B5b). Byte-giữ so với `layoutMainArea()` cũ: cùng orientation, cùng LayoutParams, cùng gap.
+ * [KachiHomeActivity] (B5b). Cùng orientation, cùng LayoutParams, cùng gap như `layoutMainArea()` cũ.
  *
- * Gỡ [workspace]/[dock] khỏi cha cũ trước khi gắn lại (đổi viền ⇒ đổi thứ tự/chiều) nên gọi lại được nhiều lần.
+ * ⚠⚠ PROFILE-SWITCH-SLOTS · R-A1 (2026-10-01): **KHÔNG BAO GIỜ tháo [workspace] khỏi `mainArea`.** Bản 1.55–2.84 gỡ
+ * vùng ô rồi gắn lại mỗi lần đổi viền/ẩn-hiện ⇒ cả cây ô nhận `onDetachedFromWindow` ⇒ `VdAppHost.release()` ⇒ ô app
+ * **đen mãi** khi đổi giữa hai hồ sơ khác cạnh thanh nút [ĐO máy ảo]. Nay thứ tự các bước do [DockAreaPlan] (thuần,
+ * `:core`) quyết: chỉ khung cuộn của thanh nút bị tháo/gắn; vùng ô chỉ đổi chiều xếp + tham số bố trí. Gọi lại được
+ * nhiều lần (lần dựng đầu ở `onCreate`: `mainArea` rỗng ⇒ gắn cả hai).
  */
 object DockAreaLayout {
 
@@ -21,30 +25,39 @@ object DockAreaLayout {
     /** Áp bố cục: [mainArea] chứa [workspace] (giãn) + [dock] (cố định) theo [cfg]. [density] = displayMetrics.density. */
     fun apply(mainArea: LinearLayout, workspace: View, dock: View, cfg: DockConfig, density: Float) {
         fun dp(v: Int): Int = (v * density).toInt()
-        (workspace.parent as? ViewGroup)?.removeView(workspace)
+        val target = DockAreaPlan.target(cfg)
+        // Thanh nút rời khung cuộn cũ (khung cũ cuộn theo trục cũ; viền mới có thể khác trục) — như bản trước.
         (dock.parent as? ViewGroup)?.removeView(dock)
-        mainArea.removeAllViews()
-        // S1b — thanh ẩn: vùng ô lấp trọn màn, KHÔNG gắn dock (giữ nguyên viền/nút đã chọn trong cfg để hiện lại).
-        if (!cfg.visible) {
-            mainArea.orientation = LinearLayout.VERTICAL
-            mainArea.addView(workspace, LinearLayout.LayoutParams(MATCH, MATCH))
-            return
+        val current = (0 until mainArea.childCount).map {
+            if (mainArea.getChildAt(it) === workspace) DockAreaChild.WORKSPACE else DockAreaChild.DOCK
         }
-        val vertical = !cfg.isVertical()
-        mainArea.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
-        val wsLp = if (vertical) LinearLayout.LayoutParams(MATCH, 0, 1f) else LinearLayout.LayoutParams(0, MATCH, 1f)
-        val dockLp = if (vertical) LinearLayout.LayoutParams(MATCH, dp(Bars.DOCK_THICK)) else LinearLayout.LayoutParams(dp(Bars.DOCK_WIDE), MATCH)
-        // Nhiều nút hơn chiều dài/cao của dock ⇒ CUỘN, không cắt cụt. Bọc dock trong khung cuộn đúng trục:
-        // viền TRÊN/DƯỚI (dock nằm ngang) → cuộn ngang; viền TRÁI/PHẢI (dock dọc) → cuộn dọc. `fillViewport` để
-        // khi ít nút thì dock vẫn lấp trọn khung (căn như cũ), chỉ khi tràn mới cuộn. Thanh cuộn tắt (màn xe).
-        val scroller = scrollWrap(dock, cfg.isVertical())
+        mainArea.orientation = if (target.vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+        // S1b — thanh ẩn: vùng ô lấp trọn màn, KHÔNG gắn dock (giữ nguyên viền/nút đã chọn trong cfg để hiện lại).
+        val wsLp = when {
+            !target.dockShown -> LinearLayout.LayoutParams(MATCH, MATCH)
+            target.vertical -> LinearLayout.LayoutParams(MATCH, 0, 1f)
+            else -> LinearLayout.LayoutParams(0, MATCH, 1f)
+        }
+        val dockLp = if (target.vertical) LinearLayout.LayoutParams(MATCH, dp(Bars.DOCK_THICK)) else LinearLayout.LayoutParams(dp(Bars.DOCK_WIDE), MATCH)
         val gap = dp(Sp.SLOT_GAP)
         when (cfg.edge) {
-            DockEdge.BOTTOM -> { mainArea.addView(workspace, wsLp); dockLp.topMargin = gap; mainArea.addView(scroller, dockLp) }
-            DockEdge.TOP -> { dockLp.bottomMargin = gap; mainArea.addView(scroller, dockLp); mainArea.addView(workspace, wsLp) }
-            DockEdge.LEFT -> { dockLp.marginEnd = gap; mainArea.addView(scroller, dockLp); mainArea.addView(workspace, wsLp) }
-            DockEdge.RIGHT -> { mainArea.addView(workspace, wsLp); dockLp.marginStart = gap; mainArea.addView(scroller, dockLp) }
+            DockEdge.BOTTOM -> dockLp.topMargin = gap
+            DockEdge.TOP -> dockLp.bottomMargin = gap
+            DockEdge.LEFT -> dockLp.marginEnd = gap
+            DockEdge.RIGHT -> dockLp.marginStart = gap
         }
+        for (step in DockAreaPlan.steps(current, target)) {
+            when (step) {
+                is DockAreaStep.Remove -> mainArea.removeViewAt(step.index)
+                DockAreaStep.AddWorkspace -> mainArea.addView(workspace, wsLp)
+                // Nhiều nút hơn chiều dài/cao của dock ⇒ CUỘN, không cắt cụt — xem [scrollWrap].
+                is DockAreaStep.AddDock ->
+                    mainArea.addView(scrollWrap(dock, cfg.isVertical()), if (step.atStart) 0 else mainArea.childCount, dockLp)
+            }
+        }
+        // Vùng ô đã ở sẵn ⇒ CHỈ đổi tham số bố trí (setLayoutParams chỉ `requestLayout()`, không tháo — AOSP ở KDoc
+        // [DockAreaPlan]). Ô đổi cỡ đi đường `VdAppHost.resize` như mọi lượt bố trí lại.
+        workspace.layoutParams = wsLp
     }
 
     /**

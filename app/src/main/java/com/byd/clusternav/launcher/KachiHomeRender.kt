@@ -50,9 +50,11 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     // ⚠ S4 · R7 — KHÔNG còn dải nút bố cục trên thanh trên nên ở đây không còn gì để tô sáng. Ô đang sáng của
     // bố cục sẵn nay chỉ nằm trong Cài đặt › Màn hình chính, và trang đó tự dựng lại khi state đổi.
     if (prev?.dock != state.dock) {
-        // Dựng lại cây bố cục khi ĐỔI VIỀN hoặc ĐỔI cờ ẩn/hiện (S1b): cả hai đều đổi vị trí/việc gắn của
+        // Đặt lại chỗ thanh nút khi ĐỔI VIỀN hoặc ĐỔI cờ ẩn/hiện (S1b): cả hai đều đổi vị trí/việc gắn của
         // thanh nút trong `mainArea`, mà `dock.setConfig` chỉ đổi nút BÊN TRONG thanh, không gắn/tháo thanh.
         // Thiếu nhánh `visible` thì bật/tắt "Hiện thanh nút" không có tác dụng tới khi đổi viền/dựng lại màn.
+        // ⚠ R-A1 (PROFILE-SWITCH-SLOTS): chạy SAU `workspace.render` ở trên ⇒ vùng ô phải ở yên trong cây view, nếu
+        // không ô app vừa dựng bị nhả ngay (đen mãi). `DockAreaLayout.apply` chỉ tháo/gắn thanh nút — [DockAreaPlan].
         val layoutChanged = prev != null &&
             (prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
         dock.setConfig(state.dock)

@@ -319,7 +319,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // Thân ở [Activity.bringUpShellChannel] (trần 500 dòng) — nguyên đường cũ, không sửa một bước nào.
             onChannelUp = {
                 bringUpShellChannel(dadb, seam, workspace, viewModel, container) { s ->
-                    shell = s; appLauncher = ShellAppLauncher(s)
+                    shell = s; appLauncher = ShellAppLauncher(s); windows.sweepFloating("shell-up")   // R-B3: dọn cửa sổ nổi Kachi mở lúc chưa có kênh
                 }
             },
             // Chưa có kênh: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng biết vì sao

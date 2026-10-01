@@ -31,7 +31,13 @@ class IntentAppLauncher(private val activity: Activity) : AppLauncher {
         return runCatching { activity.startActivity(intent, opts.toBundle()); true }.getOrDefault(false)
     }
 
-    override fun closeSlot(pkg: String) { /* API path không đóng tường minh; xe dùng ShellAppLauncher.fullscreenCmd */ }
+    /**
+     * RỖNG có lý do: app thường không có API công khai để đóng cửa sổ của app KHÁC (spec PROFILE-SWITCH-SLOTS §4.4 L1).
+     * ⚠ ĐÍNH CHÍNH (R-B5): chú thích cũ ghi "xe dùng ShellAppLauncher.fullscreenCmd" — sai: màn nhà không bao giờ gọi
+     * `ShellAppLauncher.closeSlot`, và lệnh đó đưa app lên TOÀN MÀN chứ không đóng. Cửa sổ nổi do Kachi mở được đóng
+     * bằng `LauncherWindows.sweepFloating` (`am stack remove <id>`) khi kênh shell có — nhờ dấu bền ghi trước lúc mở.
+     */
+    override fun closeSlot(pkg: String) = Unit
 
     /** Không có shell → không resize được cửa sổ đang chạy; best-effort mở lại theo bound mới. */
     override fun moveToSlot(pkg: String, slot: SlotRect): Boolean = openInSlot(pkg, slot)

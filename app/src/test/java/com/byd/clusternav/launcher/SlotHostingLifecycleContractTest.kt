@@ -4,6 +4,7 @@ import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -165,6 +166,51 @@ class SlotHostingLifecycleContractTest {
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
         assertTrue("\"kachi_slot_app_closed\"" in vi && "\"kachi_slot_app_closed\"" in en,
             "nhãn ô chết phải có ở CẢ values/ lẫn values-en/")
+    }
+
+    // ══ (3) PROFILE-SWITCH-SLOTS (2026-10-01) — lỗi A: ô đen khi đổi hồ sơ khác cạnh thanh nút ═══════════════════
+
+    /**
+     * R-A2 — **nhả trước khi mở thì KHÔNG `am force-stop`.** [ĐO máy ảo 2026-10-01] lượt A→B: `Force stopping
+     * com.google.android.youtube` dù YouTube **chưa từng** được mở trong ô (ô bị nhả trước khi có mặt vẽ). `launched` bật
+     * ở `maybeLaunch` ngay trước luồng mở app ⇒ đọc nó TRƯỚC dòng `launched = false` cuối `release()` là đủ biết.
+     */
+    @Test
+    fun `nha truoc khi mo app thi KHONG force-stop app cua nguoi dung`() {
+        val release = SourceRoots.body(host, "fun release()")
+        val read = release.indexOf("val wasLaunched = launched")
+        val reset = release.indexOf("launched = false")
+        assertTrue(read >= 0, "release() phải chụp cờ đã-mở: $release")
+        assertTrue(reset > read, "phải đọc cờ TRƯỚC khi hạ nó — đọc sau thì luôn là false (hoặc luôn force-stop)")
+        assertEquals(1, Regex("""am force-stop""").findAll(release).count(), "đúng một lệnh dừng app trong release()")
+        assertTrue(
+            Regex("""if \([^)\n]*\bwasLaunched\b[^)\n]*\)[^\n]*am force-stop""").containsMatchIn(release),
+            "lệnh `am force-stop` phải nằm sau điều kiện có `wasLaunched` (R-A2): $release",
+        )
+        val launch = SourceRoots.body(host, "private fun maybeLaunch()")
+        assertTrue(launch.indexOf("launched = true") in 0 until launch.indexOf("Thread {"),
+            "`launched` phải bật TRƯỚC luồng mở app — nếu không, wasLaunched = false mà app vẫn được mở")
+    }
+
+    /**
+     * R-A4 — **lưới: tháo-gắn lại cây ô thì DỰNG LẠI ô, không đen câm.** Gốc lỗi A đã sửa ở `DockAreaLayout`
+     * (`DockAreaLayoutContractTest`); lưới này cho mọi đường tháo-gắn chưa biết. Dựng lại đi qua nhánh SẴN CÓ
+     * (`renderInternal(…, embedChanged = true)` — P-bug2), không hồi sinh host đã nhả (H2).
+     */
+    @Test
+    fun `gan lai cua so ma o App da bi nha thi dung lai o — khong hoi sinh host`() {
+        val attached = SourceRoots.body(workspace, "override fun onAttachedToWindow()")
+        assertTrue("super.onAttachedToWindow()" in attached, "phải gọi lớp cha")
+        assertTrue("post {" in attached, "dựng lại SAU lượt gắn (post), không sửa danh sách con giữa lúc đang duyệt nó")
+        assertTrue("isAttachedToWindow && SlotHostHeal.anyReleased(slotViews)" in attached,
+            "chỉ dựng lại khi CÒN gắn và thật sự có ô cầm host đã nhả — không đốt một lượt dựng lại vô cớ")
+        assertTrue("renderInternal(displayed, displayedStatus, embedChanged = true)" in attached,
+            "đi qua đường dựng-lại-ô-App sẵn có, không viết đường thứ hai")
+        val heal = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/SlotHostHeal.kt")
+        assertTrue("as? VdAppHost)?.isReleased == true" in heal, "phải hỏi đúng host của ô")
+        assertTrue("val isReleased: Boolean get() = released" in host, "cờ đọc-chỉ phản chiếu đúng `released`")
+        assertFalse(Regex("""(?m)^\s*released\s*=\s*false""").containsMatchIn(host),
+            "host đã nhả KHÔNG được hồi sinh (H2: màn ảo của ô có thể đã về tay chủ khác)")
     }
 
     /** Cả cây `:app`: bệnh cần chặn là **tệp thứ hai** mai này tạo màn ảo rồi quên nhả. */

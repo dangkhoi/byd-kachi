@@ -13,8 +13,9 @@ import org.junit.jupiter.api.Test
  *  - **P-bug2**: kênh nhúng phải được gắn NGUYÊN KHỐI (không gán rời từng field, không gọi `render` trần ở nhánh
  *    dò-kênh-thành-công — chính chỗ đã sinh ra lỗi app-không-hiện-lúc-mở).
  *  - **U3**: có đường mở app TOÀN MÀN và nó KHÔNG ghi vào trạng thái ô.
- *  - **U2**: đường đưa app đang chạy về ô dùng đặt-lại-khung, còn đường đặt-mới giữ nguyên; `reflow` KHÔNG bị đổi
- *    (nó cố ý mở lại để nâng cửa sổ lên trước launcher — đổi mù sẽ làm app tụt sau launcher).
+ *  - **U2**: đường đưa app đang chạy về ô dùng đặt-lại-khung, còn đường đặt-mới giữ nguyên; `reflow` KHÔNG dùng
+ *    `moveToSlot`. (Từ PROFILE-SWITCH-SLOTS R-B1, 2026-10-01: `reflow` cũng không tự mở lại app nào nữa — có spec +
+ *    số đo, không phải "đổi mù"; xem bài `reflow KHONG doi khung…` bên dưới.)
  */
 class OpenAppWiringContractTest {
 
@@ -144,10 +145,17 @@ class OpenAppWiringContractTest {
         assertTrue(fn.contains("launcher.openInSlot("), "đường đặt-mới vẫn mở vào ô")
     }
 
+    /**
+     * ⚠ PROFILE-SWITCH-SLOTS R-B1 (owner 2026-10-01 *"2 ok sửa"*) — bài này ĐỔI có chủ đích, theo hướng CHẶT hơn:
+     * bản cũ đòi `reflow` vẫn `openInSlot` (để nâng cửa sổ lên trước launcher). Nay `reflow` không được tự mở app nào
+     * ([ĐO máy ảo 01/10] đường tự mở là nguồn app nổi mồ côi khi đổi hồ sơ lúc chưa có kênh) ⇒ vế "không moveToSlot"
+     * giữ nguyên, vế "vẫn openInSlot" thay bằng "không openInSlot". Lý do + bằng chứng: spec
+     * `docs/specs/kachi-profile-switch-slots.html` §2.5, §4.4; khoá đầy đủ ở `FloatingWiringContractTest`.
+     */
     @Test
-    fun `reflow KHONG bi doi sang dat-lai-khung — no can mo lai de nang cua so len truoc launcher`() {
+    fun `reflow KHONG doi khung va KHONG tu mo app - R-B1 PROFILE-SWITCH-SLOTS`() {
         val fn = SourceRoots.body(windows, "fun reflow()")
-        assertTrue(fn.contains("launcher.openInSlot("), "reflow vẫn dùng openInSlot")
+        assertFalse(fn.contains("openInSlot"), "reflow KHÔNG được tự mở app thành cửa sổ nổi (R-B1)")
         assertFalse(fn.contains("moveToSlot"), "reflow KHÔNG được dùng moveToSlot (mất thứ tự lớp)")
     }
 

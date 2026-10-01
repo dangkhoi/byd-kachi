@@ -141,6 +141,14 @@ object SettingsCatalog {
                 "con số mà họ không có cách nào hiểu, và sửa sai thì mất đường app-vào-ô",
         )
         put(
+            "kachi_floating_opened",
+            "trạng thái máy, không phải cấu hình — dấu bền PROFILE-SWITCH-SLOTS R-B4 (`FloatingWindowLedger`, tệp " +
+                "`clusternav_state`): những gói Kachi đã TỰ MỞ thành cửa sổ nổi trên màn chính lúc chưa có kênh shell. " +
+                "Lượt dọn (`am stack remove <id>`) chỉ được đóng đúng các cửa sổ trong danh sách này — allow-list, không " +
+                "phải 'mọi cửa sổ nổi trừ…'. Người dùng không đặt và không sửa nó; bày ra như một dòng cài đặt thì sửa " +
+                "tay là hoặc đóng nhầm cửa sổ của người khác, hoặc để sót cửa sổ của Kachi",
+        )
+        put(
             "enable_freeform_support",
             "trạng thái máy (`Settings.Global`), không phải cấu hình — cờ boot của hệ thống, điều kiện để app vào " +
                 "được ô. Hàng 'Quyền còn thiếu' đã ĐỌC và BÁO nó (`LauncherRequirements.FREEFORM`), còn việc bật thì " +
@@ -202,7 +210,9 @@ object SettingsCatalog {
             "tệp cấu hình CHÍNH của launcher — mọi khoá trong nó phải thuộc đúng một nhóm của màn Cài đặt",
         "clusternav_state" to
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
-                "đã nằm trên đĩa của máy đang chạy). Chỉ chứa `freeform_state`",
+                "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state` và `kachi_floating_opened` (dấu cửa sổ nổi " +
+                "Kachi đã mở, PROFILE-SWITCH-SLOTS) — cả hai là dấu theo XE của trạng thái cửa sổ ngoài hệ thống, không " +
+                "đi theo hồ sơ",
         "kachi_test_bridge" to
             "T-BRIDGE — chỉ chứa `test_bridge_until`, công tắc PHIÊN của cầu kiểm thử qua adb. Cố ý ĐỂ RIÊNG khỏi " +
                 "`kachi_workspace`: tệp đó đi theo hồ sơ (chụp–áp, nhân bản, xoá hồ sơ) còn cái này thì **không " +

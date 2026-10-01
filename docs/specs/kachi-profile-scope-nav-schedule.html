@@ -85,6 +85,9 @@ trình khác với việc đi làm hàng ngày chứ?"</i> ⇒ chuyển <code>na
 <tr><td>2026-09-28</td><td>2.82</td><td>Mở spec (viết SAU code — xem §Nhật ký, đây là một thiếu sót đã ghi nhận). Đổi
 phạm vi 2 khoá, thêm đường chuyển dữ liệu một-lần.</td></tr>
 <tr><td>2026-09-29</td><td>2.82 (cài tay, không đăng) → phát hành cùng 2.83</td><td>Nghiệm thu trên xe: <b>SCHED-1 đạt</b> (lịch giữ nguyên qua nâng cấp, mốc di trú ghi, cả hai hồ sơ có lịch). SCHED-2/3 owner bỏ đo; SCHED-4 chưa đo. Cập nhật §Verification + Reviewer Log Pass 2.</td></tr>
+<tr><td>2026-10-01</td><td>2.84 (không đổi mã)</td><td><b>Owner chốt Q1: <i>"1. Giữ nguyên theo profile"</i></b> — sổ "đã dẫn hôm nay"
+(<code>nav_automation_fired</code>) giữ theo hồ sơ; đổi hồ sơ buổi sáng thì hồ sơ mới dẫn lại là hành vi đúng. Bằng chứng ở Q1.
+Không sửa mã.</td></tr>
 </table>
 
 <h2>Context</h2>
@@ -197,8 +200,12 @@ sha1 tính lại trên tệp, không in nội dung — lịch và sổ địa ch
 <table>
 <tr><th>#</th><th>Câu hỏi</th><th>Mức</th><th>Cách chốt</th></tr>
 <tr><td>Q1</td><td>Đổi hồ sơ giữa lúc một lịch <b>đang chờ bắn</b> thì nên bắn theo hồ sơ nào?</td>
-<td><span class="pill">[CHƯA BIẾT]</span></td><td>Hiện: cờ "đã bắn" theo hồ sơ ⇒ lịch của hồ sơ <b>mới</b> tính từ đầu.
-Chưa đo trên xe xem có gây bắn lặp trong cùng một ngày không.</td></tr>
+<td><span class="pill">ĐÃ CHỐT 2026-10-01</span></td><td>Hiện: cờ "đã bắn" theo hồ sơ ⇒ lịch của hồ sơ <b>mới</b> tính từ đầu.
+[ĐO máy ảo 2026-10-01] bắn lặp trong cùng ngày có thật: luật r1 giao "Nha" cho Google Maps lúc 07:00:08.264 khi sang hồ sơ B
+và lúc 07:02:08.621 khi về hồ sơ A (log <code>KachiAutoNav</code>); bắn ngay lúc đổi hồ sơ vì 2.84 thêm
+<code>step("automation.sync")</code> vào lượt áp lại (<code>ClusterNavBridgeReapply.kt:86</code>, commit <code>4811431</code>).
+<b>Owner 2026-10-01: <i>"1. Giữ nguyên theo profile"</i></b> ⇒ đúng thiết kế, không sửa. Trên xe: chưa đo.
+Xem <code>specs/kachi-profile-switch-slots.html</code> §2.8.</td></tr>
 <tr><td>Q2</td><td>Có nên có một hồ sơ "mặc định" mà lịch <b>dùng chung</b> cho mọi hồ sơ?</td>
 <td><span class="pill">[ĐOÁN]</span></td><td>Không làm trước khi owner gặp nhu cầu thật — thêm một tầng chia sẻ là
 thêm một chỗ để lệch.</td></tr>

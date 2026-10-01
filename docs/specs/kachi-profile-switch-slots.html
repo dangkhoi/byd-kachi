@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đổi hồ sơ: ô app không đen, không sót app nổi — Kachi</title>
+<!--
+  Spec Kiro-style (consolidated) dựng từ docs/specs/_template.html.
+  Thứ tự: Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Approval gate (Requirements / Design / Tasks) đi ngoài tài liệu.
+  Diagram = HTML/SVG visual (không mermaid/ascii).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--newbg:rgba(0,113,227,.10);--badbg:rgba(191,95,0,.12)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--newbg:rgba(41,151,255,.16);--badbg:rgba(255,159,10,.16)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 16px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:var(--badbg);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.tbl{overflow-x:auto;margin:12px 0;-webkit-overflow-scrolling:touch}
+.tbl table{min-width:680px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.warn{border-color:var(--warn)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px;white-space:nowrap}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ev{font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;border:1px solid var(--line);white-space:nowrap}
+.ev.do{color:var(--ok);border-color:var(--ok)}.ev.suy{color:var(--accent);border-color:var(--accent)}.ev.doan{color:var(--warn);border-color:var(--warn)}.ev.cb{color:var(--muted)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+/* diagram helpers (từ _template.html) */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .lname{flex:0 0 100%;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.layer .node{flex:1 1 170px;min-width:150px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.node.new,.fnode.new{background:var(--newbg);border-color:var(--accent)}
+.node.bad,.fnode.bad{background:var(--badbg);border-color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.flow .ftitle{flex:0 0 100%;text-align:left;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13px;min-width:120px;max-width:220px}
+.fnode b{display:block;font-size:13.5px}.fnode span{color:var(--muted);font-size:11.5px;overflow-wrap:anywhere}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* SVG theo token để sáng/tối */
+.s-box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.s-new{fill:var(--newbg);stroke:var(--accent);stroke-width:1.2}
+.s-bad{fill:var(--badbg);stroke:var(--warn);stroke-width:1.2}
+.s-t{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,sans-serif;font-size:13px;font-weight:600}
+.s-m{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,sans-serif;font-size:11.5px}
+.s-a{stroke:var(--accent);stroke-width:1.6;fill:none}
+.s-x{stroke:var(--warn);stroke-width:1.6;fill:none;stroke-dasharray:4 3}
+.s-ah{fill:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Đổi hồ sơ: ô app không đen, không sót app nổi</h1>
+<p class="muted">Slug: <code>kachi-profile-switch-slots</code> · Backlog <code>PROFILE-SWITCH-SLOTS</code> · Mã gốc đọc tại HEAD <code>8d0f0e5</code> (kênh OTA = 2.84 (185)) · Owner: <code>dangkhoi</code> · <span class="pill wait">Trạng thái: Draft — chờ duyệt Requirements · Design · Tasks</span> · <span class="pill ok">Lỗi A: mã off-car xong 2026-10-01 (T1–T3 + T3b), chưa commit/bump</span> · <span class="pill ok">Lỗi B: T0a xanh trên máy ảo + mã off-car xong 2026-10-01 (T4–T8), chưa commit/bump</span> · <span class="pill ok">T9 E2E máy ảo 01/10: A ✅ · B1 ✅ · B2 ⚠ (OQ-7)</span> · <span class="pill ok">Review lượt 1 (Pass 3): 1 vá [P2]</span> · <span class="pill ok">Review lượt 2 (Pass 4): CLEAN — 0 vá mã</span> · còn quét bảo mật · OC-0 trên xe trước OTA</p>
+<p class="muted">Tuân <code>CLAUDE.md</code> §2 · §3 · §4 · §5 · §6 · §7 · §8 · §10 · §14 · §15 và <code>.kiro/steering/{documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code>. Pass 0 chỉ kèm 6 fixture <code>am stack list</code> chép nguyên văn từ máy ảo (§2.7); mã lỗi A ở Pass 1, mã lỗi B + 2 fixture T0a ở Pass 2 (§9).</p>
+
+<div class="card">
+<b>Tóm tắt 10 giây</b>
+<ul>
+<li><b>Lỗi A — ô app đen</b> (đường có kênh shell = đường chạy trên xe): đổi giữa hai hồ sơ khác <i>cạnh</i> hoặc khác <i>ẩn/hiện</i> thanh nút ⇒ ô app đen mãi. Sửa: đổi cạnh thanh nút <b>chỉ dời thanh nút</b>, không tháo vùng ô khỏi cây view; rào phụ: không <code>am force-stop</code> app mà ô chưa từng mở. Không thêm lệnh <code>am</code>/<code>wm</code> nào.</li>
+<li><b>Lỗi B — app nổi sót lại</b>: (B1) chưa có kênh shell thì đổi hồ sơ <i>tự mở</i> app của hồ sơ mới thành cửa sổ nổi và không đóng được app của hồ sơ cũ; (B2) kênh shell lên muộn thì không ai dọn cửa sổ nổi đã mở trước đó. Sửa: chưa có kênh ⇒ <b>không tự mở</b> app khách thành cửa sổ nổi (ô hiện thẻ <i>Chạm để mở</i>); chạm tay vẫn mở như cũ nhưng <b>ghi dấu bền trước</b>; có kênh ⇒ đóng <b>đúng</b> stack nổi do Kachi mở bằng <code>am stack remove &lt;id&gt;</code>, quyết bằng <code>am stack list</code>.</li>
+<li><b>Lịch tự dẫn đường</b>: owner 2026-10-01 <i>"Giữ nguyên theo profile"</i> ⇒ không sửa; sổ <i>đã dẫn hôm nay</i> theo hồ sơ (§2.8).</li>
+<li><b>Android 12 (DL5)</b> [ĐO AOSP]: <code>am stack list</code>/<code>am stack remove</code> còn nguyên, cùng định dạng; nhưng A12 <b>bỏ</b> rào loại stack ở framework ⇒ bộ lọc <code>standard</code> của Kachi là rào duy nhất trên DL5 (§2.6).</li>
+</ul>
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-01</b>: Khởi tạo spec từ điều tra máy ảo cùng ngày (phiên chính) + đọc lại mã tại HEAD <code>8d0f0e5</code> + fetch AOSP <code>android-10.0.0_r47</code> và <code>android-12.0.0_r34</code> từ <code>android.googlesource.com</code>. Owner 2026-10-01: <i>"1. Giữ nguyên theo profile. 2 ok sửa"</i>. Chép 6 fixture <code>am-stack-list-emulator-2026-10-01-*.txt</code>.</li>
+<li><b>Pass 1 — 2026-10-01</b>: Mã lỗi A (T1 · T2 · T3) + lưới <b>R-A4</b> (T3b — thêm vào phạm vi theo nhiệm vụ đợt mã 01/10: <i>"nếu vẫn có đường tháo-gắn lại thì ô phải tự dựng lại màn ảo hoặc hiện thẻ 'app đã đóng' — không bao giờ đen câm"</i>; trước đó là OQ-4 "chưa vào phạm vi"). Tên bước thật trong mã là <code>Remove(i)</code> (spec Pass 0 gọi <code>RemoveDockAt(i)</code>). Không đụng lỗi B. Xem §9.</li>
+<li><b>Pass 2 — 2026-10-01</b>: <b>T0a xanh trên máy ảo A10</b> (uid 2000, <code>docs/diagnostics/profile-switch-slots-emulator-2026-10-01.md</code>) rồi mới viết mã lỗi B (T4–T8). Ba điểm lệch so với Pass 0, ghi lý do tại chỗ: (1) thân lượt dọn ở <code>:core</code> <code>FloatingOrphanSweep</code> (không phải <code>:app</code> <code>FloatingSweep</code>) để test bằng shell ghi âm trên dump thật, không chỉ quét mã (§4.2); (2) xoá dấu chặt hơn: gói còn được ô giữ ở lại trong dấu (§4.3, chống đua với lượt chạm mở); (3) bài canh cũ <code>OpenAppWiringContractTest</code> <i>"reflow vẫn dùng openInSlot"</i> đổi thành <i>"reflow không openInSlot"</i> — hệ quả trực tiếp của R-B1, chặt hơn, vế "không moveToSlot" giữ nguyên. Thêm 2 fixture <code>am-stack-list-emulator-2026-10-01-t0a-{opened,after-remove}.txt</code>. Xem §9.</li>
+<li><b>Pass 3 — 2026-10-01</b>: Kết quả T9 E2E máy ảo (APK release 19:51) + <b>senior review lượt 1</b> (§10). Vá [P2] lượt dọn đọc lại sau lệnh gỡ quá sớm (<code>FloatingOrphanSweep.settle</code> — đọc lại tới khi stack đã gửi biến mất, trần 5 lần × 250 ms); +2 ca test. Ghi thêm OQ-7 (cổng kênh shell F4 chờ tiêu điểm ⇒ cửa sổ nổi do chạm mở giữ tiêu điểm thì kênh không lên tới khi về HOME — có từ trước, không vá ở spec này) và OQ-8 (app ô thoát màn ảo về display 0 — có từ trước). L1 ghi lại cho đúng số đo.</li>
+<li><b>Pass 4 — 2026-10-01</b>: <b>Senior review lượt 2</b> (§10) trên bản đã vá ở Pass 3: <b>CLEAN, không đổi mã</b>. Chỉ sửa tài liệu: §2.7 đếm đúng 8 fixture (trước ghi "Sáu tệp"); References ghi rõ hai fixture chỉ làm bằng chứng; OQ-7 thêm độ dài khoảng không-kênh theo mã và việc cần đo trên xe.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Nguồn việc</h3>
+<p>E2E máy ảo 2026-10-01: đổi hồ sơ <i>Mặc định → Mặc định 2 → Mặc định</i> (A→B→A), hai hồ sơ có ô app và khác cạnh thanh nút. Hai triệu chứng tuỳ Kachi có kênh shell (dadb loopback) hay không. Owner duyệt sửa cả hai (<i>"2 ok sửa"</i>). Cả hai lỗi có từ trước 2.84, không do V-CLUSTER gây ra.</p>
+
+<h3>2.2 Bảng mức bằng chứng</h3>
+<p class="muted">Nhãn theo <code>conversation-protocol.md</code> P1. Dữ liệu xe cũ (29/09) chỉ được dùng ở mức <b>[SUY]</b> cho hôm nay (§14).</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Khẳng định</th><th>Mức</th><th>Nguồn</th></tr>
+<tr><td>E1</td><td>Chuỗi cơ chế lỗi A (§2.3)</td><td><span class="ev do">[ĐO] đọc mã</span></td><td><code>KachiHomeRender.kt:34,56-59</code> · <code>WorkspaceView.kt:115-123,358-359</code> · <code>DockAreaLayout.kt:24-26</code> · <code>VdAppHost.kt:134,375-392</code></td></tr>
+<tr><td>E2</td><td>Lỗi A trên máy ảo: A→B nhả <code>kachi-slot-0</code> (display 2) lúc 06:00:57.541; <code>Force stopping vn.vietmap.live</code> 06:00:58.860; <code>Force stopping com.google.android.youtube</code> 06:00:59.962 dù YouTube chưa từng được mở trong ô; sau đó không có dòng <code>Display device added</code> nào trong lượt. B→A: <code>Force stopping vn.vietmap.live</code> 06:25:09.892, không màn ảo nào được tạo</td><td><span class="ev do">[ĐO] log máy ảo</span></td><td>log phiên 01/10 (không đưa vào repo); fixture <code>…-embedded-initial.txt</code> (trước: VietMap ở display 2) và <code>…-embedded-after-B.txt</code> (sau: chỉ còn stack home)</td></tr>
+<tr><td>E3</td><td>Đối chứng: chỉ đổi cạnh thanh nút của A cho giống B ⇒ đổi hồ sơ tạo màn ảo bình thường: <code>kachi-slot-1</code> display 7 lúc 07:00:08.106, <code>kachi-slot-0</code> display 8 lúc 07:02:01.732</td><td><span class="ev do">[ĐO] log máy ảo</span></td><td>log đối chứng phiên 01/10</td></tr>
+<tr><td>E4</td><td>Gốc lỗi A: <code>releaseAppHosts()</code> khi tháo view có từ <code>4a0709f</code> (1.53); dựng lại bố cục khi đổi cạnh/ẩn-hiện trong <code>render</code> có từ <code>944d323</code> (1.55) ⇒ lỗi A có từ 1.55</td><td><span class="ev do">[ĐO] git</span> / bản đầu tiên bị: <span class="ev suy">[SUY]</span> chưa bisect APK</td><td><code>git log -S</code></td></tr>
+<tr><td>E5</td><td>Chuỗi cơ chế lỗi B1 (§2.4)</td><td><span class="ev do">[ĐO] đọc mã</span></td><td><code>KachiHomeRender.kt:38,74-84</code> · <code>LauncherWindows.kt:65-71,128-154,182-186</code> · <code>IntentAppLauncher.kt:20-34</code></td></tr>
+<tr><td>E6</td><td>B1 trên máy ảo (không kênh): lúc sang B, <code>START … flg=0x30000000 pkg=com.google.android.youtube … from uid 10163</code> (06:43:45.072); lúc về A, <code>START … pkg=vn.vietmap.live … from uid 10163</code> (06:43:55.923); uid 10163 = <code>com.byd.launcher</code>. Sau A→B→A: YouTube stack nổi khung <code>[198,620][1883,1043]</code> (= khung ô 1 của B) <code>visible=true</code> đè lên nhà</td><td><span class="ev do">[ĐO] log + fixture máy ảo</span></td><td>fixture <code>…-noshell-A-start.txt</code> → <code>…-noshell-B.txt</code> → <code>…-noshell-A-back.txt</code> (lượt 05:22, cùng kịch bản, cùng bản cài)</td></tr>
+<tr><td>E7</td><td>B2: kênh shell lên rồi mà YouTube vẫn là stack nổi trên display 0 (<code>visible=false</code>, dưới stack Kachi)</td><td><span class="ev do">[ĐO] fixture máy ảo</span></td><td><code>…-shellup-A.txt</code> stack 3</td></tr>
+<tr><td>E8</td><td>Trên xe (29/09): sau <i>Sửa ngay</i>, Kachi tự mở YouTube thành cửa sổ nổi trên display 0 lúc tiến trình mới sinh, chưa có kênh; cửa sổ đó giữ tiêu điểm nên kênh shell không lên</td><td><span class="ev suy">[SUY]</span> (dữ liệu xe cũ, đo 29/09)</td><td><code>specs/kachi-283-key-heal-acc-off.html</code> §2.5 F1; fixture <code>am-stack-list-oncar-2026-09-29-after-fix-orphan-top.txt</code> stack 32</td></tr>
+<tr><td>E9</td><td><code>IntentAppLauncher.closeSlot</code> rỗng từ <code>f7a7b58</code>; bước gỡ gọi <code>closeApp</code> từ <code>ad33a52</code> (1.63)</td><td><span class="ev do">[ĐO] git</span></td><td><code>git log -S</code></td></tr>
+<tr><td>E10</td><td><code>ShellAppLauncher.closeSlot</code> không bao giờ chạy trên màn nhà, và nếu chạy thì sai nghĩa (đưa app lên toàn màn)</td><td><span class="ev do">[ĐO] đọc mã</span></td><td>gán chỉ khi có shell <code>KachiHomeActivity.kt:322</code> ⇒ <code>embedding</code> true <code>:175</code> ⇒ <code>closeApp</code> thoát <code>LauncherWindows.kt:183</code>; lệnh <code>fullscreenCmd</code> <code>ShellAppLauncher.kt:72-76</code></td></tr>
+<tr><td>E11</td><td>Chỉ đổi cạnh thanh nút trong Cài đặt (không đổi hồ sơ) cũng làm đen ô app</td><td><span class="ev suy">[SUY]</span> cùng nhánh <code>prev.dock.edge != state.dock.edge</code>; chưa đo</td><td><code>KachiHomeRender.kt:52-60</code></td></tr>
+<tr><td>E12</td><td>Trên xe, kênh shell thường đã lên ⇒ owner sẽ gặp <b>ô đen</b> nhiều hơn app sót</td><td><span class="ev suy">[SUY]</span></td><td>chưa đo trên xe</td></tr>
+<tr><td>E13</td><td><code>am stack remove</code> trên ROM BYD (DiLink 3/4, Android 10) cho stack nổi của app khách</td><td><span class="ev cb">[CHƯA BIẾT]</span></td><td>chưa đo trên xe; máy ảo A10 đã xanh (E15); tiền lệ mã <code>SimpleCastCoordinator.kt:389</code> (stack pinned); <code>dashcast-src/CHANGELOG.md</code> 0.2.92 ghi ROM có thể khác nhau; <code>archive/review/HANDOFF-2026-07-23-oncar-freeze.md</code>: trên xe <code>am stack remove</code> bất lực với cửa sổ CarPlay mồ côi mà AM không còn thấy (ca khác: stack không có trong <code>am stack list</code>) ⇒ OC-0 (§6)</td></tr>
+<tr><td>E15</td><td>T0a máy ảo A10, uid 2000: mở YouTube bằng <code>FreeformLaunch.launchCmd</code> ⇒ stack 26 <code>freeform</code> <code>standard</code> display 0; <code>am stack remove 26</code> ⇒ stdout rỗng, <code>exit=0</code>, stack biến mất; stack 24 (VietMap, màn ảo 15) + stack 0 (home) giữ nguyên; tiến trình YouTube <b>còn sống</b> (activity chưa dừng — <code>WindowProcessController.java:694-709</code> r47). <code>am stack remove 0</code> (home) ⇒ <code>IllegalArgumentException: Removing non-standard stack is not allowed.</code> <code>exit=255</code>, không gỡ. Id không có ⇒ <code>exit=0</code> + <code>W removeStack: No stack with id=99999</code></td><td><span class="ev do">[ĐO] máy ảo</span></td><td><code>diagnostics/profile-switch-slots-emulator-2026-10-01.md</code>; fixture <code>…-t0a-opened.txt</code> / <code>…-t0a-after-remove.txt</code></td></tr>
+<tr><td>E14</td><td>DL5 (Android 12): chưa có dump <code>am stack list</code> nào của DL5 trong repo</td><td><span class="ev cb">[CHƯA BIẾT]</span></td><td><code>StackParseTest</code> chỉ có đoạn A12 dựng tay</td></tr>
+</table></div>
+
+<h3>2.3 Lỗi A: vì sao ô đen</h3>
+<div class="flow">
+  <div class="ftitle">Hôm nay (2.84), trong MỘT lượt <code>render(state)</code> khi hồ sơ mới khác cạnh/ẩn-hiện thanh nút</div>
+  <div class="fnode"><b>workspace.render</b><span>dựng ô mới, tạo <code>VdAppHost</code> + <code>bind(pkg)</code><br><code>KachiHomeRender.kt:34</code> · <code>WorkspaceView.kt:358-359</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>DockAreaLayout.apply</b><span><code>removeView(workspace)</code> + <code>removeAllViews()</code><br><code>DockAreaLayout.kt:24,26</code> (gọi ở <code>KachiHomeRender.kt:59</code>)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>onDetachedFromWindow</b><span><code>releaseAppHosts()</code> <code>WorkspaceView.kt:120-123</code><br><code>VdAppHost.release()</code> <code>:375-387</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>released = true</b><span>+ <code>am force-stop &lt;pkg&gt;</code> <code>:382</code><br>dù màn ảo chưa tạo</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>gắn lại cây view</b><span><code>surfaceChanged</code>: <code>if (released) return</code> <code>:134</code> ⇒ không tạo màn ảo ⇒ <b>ô đen</b>, không thẻ "app đã đóng"</span></div>
+</div>
+<p>[ĐO AOSP] tháo một view khỏi cha luôn đẩy <code>dispatchDetachedFromWindow()</code> xuống cả cây con khi cha đang gắn cửa sổ — đây là cơ chế, không phải quy kết:</p>
+<ul>
+<li><code>removeView</code> → <code>removeViewInternal(View)</code> → <code>removeViewInternal(int, View)</code> → <code>view.dispatchDetachedFromWindow()</code>: A10 <code>ViewGroup.java:5332-5337, 5399-5406, 5430-5431</code>; A12 <code>ViewGroup.java:5473-5478, 5540-5547, 5571-5572</code>.</li>
+<li><code>removeAllViews</code> → <code>removeAllViewsInLayout</code> → tháo từng con: A10 <code>:5588-5592, 5617, 5642-5643</code>; A12 <code>:5729-5733, 5758, 5783-5784</code>.</li>
+<li><code>ViewGroup.dispatchDetachedFromWindow</code> đệ quy xuống mọi con: A10 <code>:3780, 3805-3807</code>; A12 <code>:3922, 3948</code>.</li>
+<li>Ngược lại, <code>addView(child, index, …)</code> chỉ gắn <b>đúng</b> con mới (<code>child.dispatchAttachedToWindow</code> A10 <code>:5145-5149</code>, A12 <code>:5286-5290</code>), không đụng anh em; <code>View.setLayoutParams</code> chỉ <code>requestLayout()</code> (A10 <code>View.java:17268-17278</code>, A12 <code>:18445-18455</code>); <code>LinearLayout.setOrientation</code> chỉ <code>requestLayout()</code> (A10/A12 <code>LinearLayout.java:1839-1844</code>). ⇒ Đổi thứ tự + chiều + tham số bố trí mà <b>không</b> tháo vùng ô là làm được bằng API công khai.</li>
+</ul>
+
+<h3>2.4 Lỗi B: vì sao sót app nổi</h3>
+<div class="flow">
+  <div class="ftitle">B1 — chưa có kênh shell (<code>hosting.embedded=false</code>)</div>
+  <div class="fnode"><b>render</b><span><code>reconcileLocations</code> <code>KachiHomeRender.kt:38</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>evict từ sổ RAM</b><span><code>AppLocationRegistry</code> <code>LauncherWindows.kt:65-71</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>closeApp → closeSlot</b><span><code>IntentAppLauncher.closeSlot</code> RỖNG <code>IntentAppLauncher.kt:34</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>reflow</b><span><code>KachiHomeRender.kt:74-84</code> → <code>openInSlot</code> app của hồ sơ MỚI <code>LauncherWindows.kt:150</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>app cũ nổi + app mới nổi</b><span>fixture <code>…-noshell-A-back.txt</code>: stack 4 + stack 3 trên stack home</span></div>
+</div>
+<div class="flow">
+  <div class="ftitle">B2 — kênh shell lên muộn</div>
+  <div class="fnode"><b>bringUpShellChannel</b><span><code>KachiHomeWiring.kt:456-492</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>applyEmbedSeam</b><span>dựng ô lên màn ảo <code>:481-488</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>không ai dọn</b><span>cửa sổ nổi mở lúc chưa có kênh còn nguyên (<code>…-shellup-A.txt</code> stack 3)</span></div>
+</div>
+<p>[ĐO đọc mã] Chú thích <code>LauncherWindows.kt:56-63</code> ghi bước gỡ "đóng cửa sổ freeform off-car" — sai với mã (bước đóng là hàm rỗng). Chú thích <code>IntentAppLauncher.kt:34</code> ghi "xe dùng <code>ShellAppLauncher.fullscreenCmd</code>" — sai (E10).</p>
+
+<h3>2.5 Đọc mã trước khi quyết đường không-kênh (§6): ai dùng đường mở cửa sổ nổi</h3>
+<p>[ĐO đọc mã] Mọi hàm mở cửa sổ của <code>LauncherWindows</code> (<code>reflow</code>, <code>placeApp</code>, <code>closeApp</code>) thoát sớm khi <code>embedding</code> = <code>shell != null || SlotAppHost.embeddingUsable</code> (<code>KachiHomeActivity.kt:175</code>; <code>LauncherWindows.kt:129,167,183</code>). Tức đường cửa sổ nổi <b>chỉ</b> chạy khi chưa có kênh shell và ROM không cho ActivityView; khi đó bộ mở là <code>IntentAppLauncher</code> (<code>KachiHomeActivity.kt:168</code>).</p>
+<div class="tbl"><table>
+<tr><th>Lối gọi</th><th>Ai kích</th><th>Mở gì</th><th>Đánh giá</th></tr>
+<tr><td><code>KachiHomeSlots.assignApp</code> → <code>placeApp(fresh=true)</code> (<code>KachiHomeSlots.kt:42</code>); gọi từ ngăn kéo app, giọng nói "ô N", cầu kiểm thử (<code>KachiHomeActivity.kt:79,149,292</code>; <code>TestBridgeHooks.kt:202,210</code>)</td><td>Người dùng, tường minh</td><td>app vừa chọn, vào đúng ô</td><td>Giữ — người dùng vừa yêu cầu</td></tr>
+<tr><td><code>KachiHomeSlots.reopenApp</code> → <code>placeApp</code> (<code>:51</code>); chạm thẻ ô (<code>WorkspaceView</code> <code>onAppOpen</code>, <code>KachiHomeActivity.kt:259</code>)</td><td>Người dùng, tường minh</td><td>app của ô vừa chạm</td><td>Giữ</td></tr>
+<tr><td><code>LauncherWindows.reflow</code> (<code>KachiHomeRender.kt:76,83</code>): đổi bố cục sẵn · đổi cạnh/ẩn-hiện thanh · đổi bố cục tự vẽ · <b>đổi hồ sơ</b> · lần vẽ đầu khi có bố cục tự vẽ (<code>prev == null</code> ⇒ <code>prev?.customLayout != state.customLayout</code>)</td><td><b>Tự động</b></td><td><b>mọi</b> app ô đang hiện</td><td>Nguồn đo được của app mồ côi: E6 (máy ảo, đổi hồ sơ) · E8 (xe 29/09, tiến trình mới sinh)</td></tr>
+</table></div>
+<p><b>Có tính năng nào đang chạy tốt bị mất nếu bỏ đường tự mở?</b></p>
+<ul>
+<li>Xe có kênh shell (cấu hình thật ngoài đường): trạng thái không-kênh chỉ là khoảng ngắn sau khi tiến trình sinh (trước khi <code>ShellChannelGate</code> mở). Trong khoảng đó đường tự mở <b>có hại</b> [SUY từ E8]: cửa sổ nổi cướp tiêu điểm, cổng kênh chờ tiêu điểm nên kênh không lên.</li>
+<li>Xe chưa từng có kênh shell: [ĐO AOSP] cửa sổ nổi chỉ có khi máy hỗ trợ freeform — <code>FEATURE_FREEFORM_WINDOW_MANAGEMENT</code> hoặc <code>Settings.Global</code> <code>enable_freeform_support</code>, đọc một lần lúc <code>systemReady</code> (A10 <code>ActivityTaskManagerService.java:721-725</code> qua <code>ActivityManagerService.java:9031</code>; A12 <code>ActivityTaskManagerService.java:836-840</code> qua <code>ActivityManagerService.java:7588</code>); không hỗ trợ ⇒ chế độ 5 bị hạ về <code>UNDEFINED</code> = chế độ của màn (A10 <code>ActivityDisplay.java:880-918</code>; A12 <code>TaskDisplayArea.java:1619,1653-1667</code>). [SUY] Cờ toàn cục này chỉ ghi được qua shell (Kachi gieo bằng <code>FreeformSeedPolicy</code> qua kênh shell) ⇒ trên xe chưa từng có kênh, "mở vào ô" thực ra là <b>mở toàn màn đè lên nhà</b>, và đường tự mở bật lần lượt mọi app ô lên toàn màn mỗi lần đổi hồ sơ/bố cục. Không phải tính năng chạy tốt.</li>
+<li>Máy ảo phát triển không có cầu dadb: cửa sổ nổi trong ô chạy được. Chạm tay vẫn giữ nên vẫn xem được app trong ô; chỉ mất lượt <i>tự</i> mở lại khi đổi bố cục.</li>
+</ul>
+<p>⇒ Quyết định ở §4.4: bỏ <b>đường tự mở</b>, giữ <b>đường chạm tay</b> (ít phá nhất, khớp hướng owner duyệt <i>"không mở app khách thành cửa sổ nổi khi chưa có kênh, ô hiện thẻ chạm để mở"</i>). Phương án chặt hơn (chạm tay cũng mở toàn màn) để owner chọn ở OQ-2.</p>
+
+<h3>2.6 AOSP: lệnh <code>am stack</code> trên Android 10 và Android 12 [ĐO source]</h3>
+<p class="muted">Tải 2026-10-01 từ <code>android.googlesource.com/platform/frameworks/base/+/refs/tags/&lt;tag&gt;/…?format=TEXT</code>, tag <code>android-10.0.0_r47</code> và <code>android-12.0.0_r34</code>. Bản tải lưu ở thư mục nháp của phiên (không đưa vào repo).</p>
+<div class="tbl"><table>
+<tr><th>Điểm</th><th>Android 10 (r47)</th><th>Android 12 (r34, DL5)</th><th>Hệ quả cho Kachi</th></tr>
+<tr><td>Lệnh <code>am stack list</code></td><td><code>ActivityManagerShellCommand.java:273-274</code> → <code>runStack</code> <code>:2460-2485</code> (<code>"list"</code> <code>:2473-2474</code>) → <code>runStackList</code> <code>:2613-2619</code> in từng <code>StackInfo</code></td><td><code>:298-299</code> → <code>runStack</code> <code>:2625-2640</code> → <code>runStackList</code> <code>:2700-2706</code> in từng <code>RootTaskInfo</code></td><td>Cùng lệnh, cả hai đời</td></tr>
+<tr><td>Định dạng in</td><td><code>ActivityManager.java:2529-2553</code>: <code>Stack id=N bounds=… displayId=D userId=U</code> / <code> configuration=…</code> / <code>  taskId=T: pkg/cls bounds=… userId=… visible=… topActivity=…</code>. <code>visible</code> là của <b>stack</b>, in lặp trên mỗi dòng task</td><td><code>ActivityTaskManager.java:542-567</code>: giống hệt, chỉ đổi đầu dòng thành <code>RootTask id=N</code>; dòng task vẫn <code>  taskId=T: …</code> (<code>:554-555</code>)</td><td><code>StackParse</code> đã nhận cả hai đầu dòng (<code>StackParse.kt:56,60</code>). <code>mWindowingMode</code>/<code>mActivityType</code> nằm trong dòng <code>configuration=</code></td></tr>
+<tr><td>Quyền đọc</td><td><code>getAllStackInfos</code> đòi <code>MANAGE_ACTIVITY_STACKS</code> (<code>ActivityTaskManagerService.java:2763-2773</code>); gói Shell có quyền này (<code>packages/Shell/AndroidManifest.xml:138</code>)</td><td><code>getAllRootTaskInfos</code> → <code>enforceTaskPermission</code> (<code>:2313-2323</code>, <code>:3031-3037</code>: <code>MANAGE_ACTIVITY_TASKS</code>, hoặc <code>MANAGE_ACTIVITY_STACKS</code> đã lỗi thời); Shell có (<code>AndroidManifest.xml:233</code>)</td><td>Chạy được qua uid 2000 (dadb). ROM BYD có thể sửa: <span class="ev cb">[CHƯA BIẾT]</span></td></tr>
+<tr><td>Lệnh <code>am stack remove &lt;id&gt;</code></td><td><code>"remove"</code> <code>:2479-2480</code> → <code>runStackRemove</code> <code>:2629-2634</code> → <code>removeStack(stackId)</code></td><td><code>"remove"</code> <code>:2634-2635</code> → <code>runRootTaskRemove</code> <code>:2716-2721</code> → <code>removeTask(taskId)</code> (id = root task id)</td><td>Cùng chuỗi lệnh ⇒ <b>không</b> cần mục mới trong <code>ClusterProfile</code> (§7)</td></tr>
+<tr><td><b>Rào loại stack của framework</b></td><td><code>ActivityTaskManagerService.removeStack</code> <code>:3373-3392</code>: <code>stack == null</code> ⇒ log rồi về (<code>:3379-3381</code>); <code>!isActivityTypeStandardOrUndefined()</code> ⇒ ném <code>IllegalArgumentException("Removing non-standard stack is not allowed.")</code> (<code>:3383-3386</code>); quyền <code>MANAGE_ACTIVITY_STACKS</code> (<code>:3374</code>)</td><td><code>ActivityTaskManagerService.removeTask</code> <code>:1904-1926</code>: quyền <code>REMOVE_TASKS</code> (<code>:1905</code>; Shell có, <code>AndroidManifest.xml:136</code>); task không có ⇒ log, trả <code>false</code> (<code>:1911-1913</code>); <b>KHÔNG kiểm loại</b>; lá ⇒ <code>removeTask</code>, không lá ⇒ <code>removeRootTask</code> (<code>:1916-1920</code>)</td><td>⚠ Trên DL5, một id sai (vd root task <code>home</code>) sẽ bị gỡ thật. Bộ lọc <code>activityType == standard</code> của Kachi là <b>rào duy nhất</b> trên A12 ⇒ phải chặt, đọc hỏng là không làm gì</td></tr>
+<tr><td>Gỡ làm gì với task/tiến trình</td><td>Stack thường: mỗi task <code>removeTaskByIdLocked(…, killProcess=true, REMOVE_FROM_RECENTS)</code> (<code>ActivityStackSupervisor.java:1733-1759</code>); pinned thì dời task về fullscreen (<code>:1735-1752</code>). <code>cleanUpRemovedTaskLocked</code> <code>:1806-1870</code>: bỏ khỏi Gần đây, dọn service theo task; <b>không</b> giết tiến trình home (<code>:1839-1842</code>), tiến trình còn activity ở task khác chưa dừng (<code>:1848-1852</code>), hoặc có foreground service (<code>:1854-1857</code>)</td><td>Như A10: <code>removeRootTaskInSurfaceTransaction</code> <code>ActivityTaskSupervisor.java:1504-1517</code> (pinned riêng <code>:1505-1506</code>); <code>removeTask</code> <code>:1548-1572</code>; <code>cleanUpRemovedTaskLocked</code> <code>:1574-1638</code> cùng ba ngoại lệ (<code>:1607-1610, 1616-1625</code>)</td><td>≈ người dùng vuốt app khỏi Gần đây; nhẹ hơn <code>am force-stop</code> (app dẫn đường/nhạc có foreground service không bị giết tiến trình)</td></tr>
+<tr><td>Id có bị tái dùng giữa lúc đọc và lúc gỡ không</td><td>Bộ đếm tĩnh tăng dần <code>sNextFreeStackId++</code> (<code>ActivityDisplay.java:91, 405-407</code>)</td><td>Id task theo người dùng, tăng dần, chỉ quay vòng ở <code>MAX_TASK_IDS_PER_USER</code> và bỏ qua id đang dùng (<code>ActivityTaskSupervisor.java:521-541</code>)</td><td>Cửa sổ TOCTOU dưới một giây không gặp id tái dùng; stack đã biến mất thì lệnh gỡ là no-op có log</td></tr>
+</table></div>
+<p><b>Kết luận DL5:</b> [ĐO AOSP] chuỗi lệnh giống A10 ⇒ không rẽ nhánh theo đời xe. [CHƯA BIẾT] ROM BYD DL5 có cắt <code>am stack</code> không (tiền lệ: ROM DL5 cắt <code>cmd activity set-task-windowing-mode</code>, CLAUDE.md §12). Thiết kế tự an toàn: lệnh không có ⇒ output lỗi ⇒ <code>StackParse.parse</code> rỗng ⇒ <b>không gỡ gì, không xoá dấu</b> + một dòng log. Không cần nhánh "DL5 tắt hẳn".</p>
+<p><b>T0a (Pass 2) [ĐO máy ảo A10, E15]:</b> cơ chế chạy đúng như source nói — gỡ đúng một stack nổi, không đụng stack khác, rào loại của A10 có thật. Thêm một hệ quả [ĐO + AOSP]: gỡ cửa sổ đang hiện <b>không</b> giết tiến trình app (<code>ActivityStackSupervisor.java:1848-1852</code> → <code>WindowProcessController.shouldKillProcessForRemovedTask</code> <code>:694-709</code>: còn activity chưa dừng ⇒ không giết) — nhẹ hơn cả "vuốt khỏi Gần đây".</p>
+
+<h3>2.7 Fixture (chép nguyên văn, đã kiểm sạch)</h3>
+<p>Tám tệp ở <code>core/src/test/resources/diagnostics/</code> (sáu chép ở Pass 0, hai <code>t0a-*</code> ở Pass 2), mỗi tệp là đúng phần output của lệnh <code>am stack list</code> trong một lần chụp trên <b>máy ảo Android 10</b> (không phải xe) ngày 2026-10-01. Đã kiểm: không IP, không serial, không đường dẫn tuyệt đối, không địa chỉ; chỉ tên gói/lớp, khung, id task.</p>
+<div class="tbl"><table>
+<tr><th>Tệp</th><th>Lúc chụp</th><th>Nội dung chính</th></tr>
+<tr><td><code>am-stack-list-emulator-2026-10-01-noshell-A-start.txt</code></td><td>05:22:37 · không kênh · hồ sơ A</td><td>chỉ stack 0 (home, Kachi)</td></tr>
+<tr><td><code>…-noshell-B.txt</code></td><td>05:22:44 · sau A→B</td><td>stack 3 YouTube <code>freeform</code> <code>standard</code> khung ô 1 của B + stack home</td></tr>
+<tr><td><code>…-noshell-A-back.txt</code></td><td>05:22:59 · sau B→A</td><td>stack 4 VietMap (ô 0 của A) + stack 3 YouTube (mồ côi), cả hai <code>freeform</code> <code>visible=true</code>, trên stack home</td></tr>
+<tr><td><code>…-shellup-A.txt</code></td><td>05:26:56 · kênh vừa lên</td><td>stack 5 Kachi <code>standard</code> fullscreen; stack 3 YouTube <code>freeform</code> <code>visible=false</code> (B2); stack 0 home không dòng task</td></tr>
+<tr><td><code>…-embedded-initial.txt</code></td><td>06:00:06 · có kênh · A</td><td>stack 0 home + stack 6 VietMap ở <b>display 2</b> (<code>kachi-slot-0</code>)</td></tr>
+<tr><td><code>…-embedded-after-B.txt</code></td><td>06:13:20 · sau A→B (lỗi A)</td><td>chỉ stack home — ô của B không có màn ảo</td></tr>
+<tr><td><code>…-t0a-opened.txt</code> (Pass 2)</td><td>19:33:49 · T0a, uid 2000, có kênh</td><td>stack 24 VietMap ở <b>display 15</b> (ô nhúng) + stack 26 YouTube <code>freeform</code> <code>standard</code> display 0 + stack 0 home</td></tr>
+<tr><td><code>…-t0a-after-remove.txt</code> (Pass 2)</td><td>19:33:58 · sau <code>am stack remove 26</code></td><td>chỉ còn stack 24 + stack 0 — cặp trước/sau của CÙNG một lệnh, dùng cho ca vàng của <code>FloatingOrphanSweepTest</code></td></tr>
+</table></div>
+<div class="card warn"><b>Không dùng làm fixture</b> [ĐO tệp]: các tệp chụp bằng công cụ thứ hai của phiên (<code>10/11/12-noshell-*</code>, <code>02/03/04-*</code>, <code>20/21/22-ctl-*</code>, <code>30-*</code>) đã bị lọc bỏ dòng <code>configuration=</code> lúc chụp (lệnh chụp có <code>grep -v "configuration="</code>) ⇒ <b>không nguyên văn</b>: thiếu <code>mWindowingMode</code>/<code>mActivityType</code>, nên <code>StackParse</code> đọc ra chế độ rỗng và loại rỗng. Bản nguyên văn của cùng kịch bản là bộ <code>noshell-*</code> lượt 05:22 ở trên. Ca "dump thiếu dòng cấu hình" vẫn được test bằng cách bỏ các dòng đó <b>trong test</b> từ fixture nguyên văn (§5 T4).</div>
+
+<h3>2.8 Lịch tự dẫn đường: giữ theo hồ sơ (owner chốt, không sửa)</h3>
+<p>[ĐO log máy ảo 01/10] Trong lượt đối chứng, lịch r1 bắn cho hồ sơ B lúc 07:00:08.264 (<code>KachiAutoNav: luật r1: giao "Nha" cho Google Maps … ⇒ true</code>) và bắn lại cho hồ sơ A lúc 07:02:08.621 cùng ngày, vì sổ <code>nav_automation_fired</code> theo hồ sơ (R5 của <code>specs/kachi-profile-scope-nav-schedule.html</code>). [ĐO git] Lịch bắn ngay lúc đổi hồ sơ vì 2.84 thêm <code>step("automation.sync")</code> vào lượt áp lại (<code>ClusterNavBridgeReapply.kt:86</code>, commit <code>4811431</code>). <b>Owner 2026-10-01: <i>"1. Giữ nguyên theo profile"</i></b> ⇒ mỗi hồ sơ có sổ "đã dẫn hôm nay" riêng; đổi hồ sơ buổi sáng thì hồ sơ mới dẫn lại là hành vi đúng. Đã ghi vào spec lịch (Q1) và backlog. Spec này không đụng mã lịch.</p>
+
+<div class="card warn"><b>Cổng §14 (bắt buộc đọc):</b> <code>am stack remove</code> cho stack nổi của app khách là cơ chế <b>mới</b> với đường màn nhà. Tầng 1 (shell thô) mới có <b>source AOSP</b>, chưa có phép đo shell thô nào — kể cả máy ảo — cho đúng ca này. Thứ tự đề xuất: <b>T0a</b> shell thô trên máy ảo (làm được off-car) phải xanh trước khi viết mã tầng 2–3 của phần dọn <span class="pill ok">✅ Pass 2 — xanh trước khi viết mã (E15)</span>; <b>T0b</b> shell thô trên xe (OC-0) phải xanh trước khi đăng OTA <span class="pill wait">chưa đo</span>. Viết mã trước T0b là lệch §14 ⇒ owner quyết ở <b>OQ-1</b>. Lỗi A và phần "không tự mở" (R-B1/R-B2) không phụ thuộc cổng này (không có lệnh shell mới).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng — Lỗi A (ô đen)</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>Yêu cầu</th><th>Tiêu chí nghiệm thu đo được</th></tr>
+<tr><td>R-A1</td><td>Đổi cạnh thanh nút hoặc đổi cờ ẩn/hiện (do đổi hồ sơ hay do Cài đặt) <b>không tháo vùng ô khỏi cây view</b>; chỉ thanh nút (và khung cuộn bọc nó) được tháo/gắn lại</td><td>(1) Test thuần: mọi cặp chuyển trạng thái (4 cạnh × ẩn/hiện ⇒ 8 × 8 = 64 cặp) có 0 lần tháo vùng ô và thứ tự con cuối đúng bố cục đích. (2) Máy ảo có kênh, A (cạnh dưới) ↔ B (cạnh trái), đổi qua lại 3 lượt: mỗi lượt có dòng <code>tạo màn ảo kachi-slot-N</code> + <code>START</code> app của ô; không ô nào đen sau 10 s</td></tr>
+<tr><td>R-A2</td><td><code>VdAppHost.release()</code> chỉ <code>am force-stop &lt;pkg&gt;</code> khi chính host này <b>đã</b> bắt đầu mở app (<code>launched</code> đã bật trước khi nhả)</td><td>Test hợp đồng trên thân <code>release()</code>; phá thử: bỏ điều kiện ⇒ test đỏ. Máy ảo: dựng ô rồi nhả trước khi có mặt vẽ ⇒ không có dòng <code>Force stopping &lt;pkg&gt;</code></td></tr>
+<tr><td>R-A3</td><td>Giữ nguyên mọi luật đang có của <code>VdAppHost</code>/<code>WorkspaceView</code> (H2: <code>release</code> idempotent, nhả tường minh trước khi tháo ô, <code>onDetachedFromWindow</code> vẫn là lưới an toàn)</td><td><code>SlotHostingLifecycleContractTest</code> xanh, không sửa bài canh</td></tr>
+<tr><td>R-A4</td><td><b>Lưới</b>: nếu còn một đường tháo-rồi-gắn-lại cây ô nào đó (chưa biết hôm nay), ô App có host đã nhả phải được <b>dựng lại</b> (màn ảo mới, app mở lại) — không bao giờ đen câm. Không hồi sinh host đã nhả (H2), không thêm lệnh <code>am</code>/<code>wm</code></td><td>Test hợp đồng: <code>WorkspaceView.onAttachedToWindow</code> <code>post</code> lượt kiểm, dựng lại qua <code>renderInternal(…, embedChanged = true)</code> chỉ khi còn gắn và có host đã nhả; <code>VdAppHost</code> không có lệnh gán <code>released = false</code>. Phá thử: bỏ dòng <code>post</code> ⇒ đỏ</td></tr>
+</table></div>
+
+<h3>Chức năng — Lỗi B (app nổi sót)</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>Yêu cầu</th><th>Tiêu chí nghiệm thu đo được</th></tr>
+<tr><td>R-B1</td><td>Chưa có kênh shell ⇒ Kachi <b>không tự</b> mở app khách thành cửa sổ (đổi hồ sơ · đổi bố cục sẵn · đổi cạnh/ẩn-hiện · đổi bố cục tự vẽ · lần vẽ đầu). Ô App hiện thẻ icon + tên + dòng <b>"Chạm để mở"</b> / <b>"Tap to open"</b></td><td>Máy ảo không kênh, A→B→A: <code>am stack list</code> sau mỗi bước không có stack <code>freeform</code> nào của app khách; logcat không có <code>START … from uid &lt;Kachi&gt;</code> cho app ô trong các lượt đổi. Test hợp đồng: thân <code>reflow</code> không gọi <code>openInSlot</code>/<code>closeSlot</code></td></tr>
+<tr><td>R-B2</td><td>Hành động tường minh (chọn app vào ô, chạm thẻ ô, giọng nói "ô N") vẫn mở như hôm nay; <b>trước</b> khi mở, ghi tên gói vào <b>dấu bền theo xe</b> (prefs, <code>commit()</code>)</td><td>Test hợp đồng: trong <code>placeApp</code>, lời ghi dấu đứng trước <code>openInSlot</code>/<code>moveToSlot</code>. Máy ảo: chạm thẻ ⇒ tệp prefs có gói đó ngay cả khi tiến trình bị giết ngay sau</td></tr>
+<tr><td>R-B3</td><td>Có kênh shell ⇒ dọn cửa sổ nổi Kachi đã mở, ở <b>hai mốc</b>: (a) lượt <code>reconcileLocations</code> có gỡ app (<code>evict</code> khác rỗng); (b) kênh shell vừa lên. Dọn = <code>am stack list</code> → chọn stack theo §4.3 → <code>am stack remove &lt;id&gt;</code> từng stack → <code>am stack list</code> lần hai → xoá khỏi dấu các gói không còn cửa sổ nổi ở display 0 <b>và không còn ô nào giữ</b> (Pass 2, §4.3). Không gửi lệnh gỡ nào ⇒ bản đọc lần một là sự thật hiện tại, không đọc lần hai. <b>Không</b> <code>am force-stop</code>, <b>không</b> <code>fullscreenCmd</code></td><td>Test kế hoạch thuần trên 6 fixture máy ảo + 1 fixture xe 29/09 (§5 T4). Máy ảo: kịch bản V-emu-B2 (§6) kết thúc với <code>am stack list</code> không còn stack nổi của gói đã gỡ và dấu rỗng</td></tr>
+<tr><td>R-B4</td><td>Dấu bền: tối đa 16 gói (vượt thì bỏ gói cũ nhất), chỉ nhận tên gói hợp lệ (cùng biểu thức <code>ShellAppLauncher.PKG</code>), theo <b>xe</b> (không theo hồ sơ, không xuất/nhập), dấu rỗng ⇒ không chạy lệnh shell nào</td><td>Test thuần cho trần, lọc tên, thứ tự; test hợp đồng: dọn thoát trước lệnh shell khi dấu rỗng</td></tr>
+<tr><td>R-B5</td><td>Sửa hai chú thích sai (<code>LauncherWindows.kt:56-63</code>, <code>IntentAppLauncher.kt:34</code>); ghi rõ trên <code>ShellAppLauncher.closeSlot</code> rằng màn nhà không gọi tới nó</td><td>Đọc diff</td></tr>
+<tr><td>R-B6</td><td>Mỗi lượt dọn ghi <b>một</b> dòng log (tag <code>KachiFloat</code>): mốc (<code>evict</code>/<code>shell-up</code>), số stack đã gỡ, gói còn nổi, gói đã xoá khỏi dấu, hoặc lý do bỏ (đọc hỏng · dấu rỗng)</td><td>Dòng xuất hiện trong <code>usage-*.log</code> (log theo pid của Kachi) ở V-emu-B2</td></tr>
+</table></div>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> Lỗi A: không thêm lệnh <code>am</code>/<code>wm</code> nào. Lỗi B: lệnh mới duy nhất là <code>am stack remove &lt;id&gt;</code> (+ đọc <code>am stack list</code>), đi qua kênh shell của màn nhà (<code>WindowCommandDispatcher.launcherSeam</code> → một <code>ShellTransport</code>), luôn trên luồng nền, không bao giờ trên luồng chính.</li>
+<li><b>R-nf2</b> Bảng §4 bốn câu (§4.3) phải đúng cho mọi lệnh; guard nằm ở <b>tầng thi hành</b> (§5): bộ thi hành chỉ gỡ id lấy từ bản đọc <code>am stack list</code> của chính lượt đó, sau khi qua bộ lọc thuần.</li>
+<li><b>R-nf3</b> Không rẽ nhánh theo tên gói (§7); không rẽ nhánh theo đời xe (chuỗi lệnh A10 = A12, §2.6).</li>
+<li><b>R-nf4</b> Trần 500 dòng: <code>WorkspaceView.kt</code> 494 · <code>KachiHomeWiring.kt</code> 492 · <code>KachiHomeActivity.kt</code> 475 [ĐO <code>wc -l</code>] ⇒ logic mới vào tệp mới, các tệp trên chỉ thêm ≤ 3 dòng mỗi tệp. <b>Cập nhật Pass 1</b> [ĐO <code>wc -l</code>]: R-A4 đưa <code>WorkspaceView.kt</code> lên <b>499</b> (+6 dòng <code>onAttachedToWindow</code>, −1 dòng trống thừa; logic ở tệp mới <code>SlotHostHeal.kt</code>) ⇒ T7 chỉ được <b>sửa</b> dòng gọi <code>appCard</code>, không thêm dòng nào vào tệp này.</li>
+<li><b>R-nf5</b> Test tĩnh dùng <code>SourceRoots.body()</code>; cấm <code>substringAfter</code>/<code>substringBefore</code>. Không nới bài canh cũ: <code>SlotHostingLifecycleContractTest</code>, <code>LauncherWindowingGuardTest</code>, <code>WindowReconcileApplyTest</code>, <code>LauncherCommandGoldenTest</code>, <code>StackParseTest</code>.</li>
+<li><b>R-nf6</b> Chuỗi mới có đủ <code>values/strings_kachi.xml</code> (vi) và <code>values-en/strings_kachi.xml</code> (en).</li>
+<li><b>R-nf7</b> Mỗi thay đổi hành vi có test hồi quy dựng từ fixture nguyên văn và đã phá thử (gỡ dòng vá → đỏ → trả lại → xanh).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 Lỗi A — dời thanh nút, giữ nguyên vùng ô</h3>
+<div class="flow">
+  <div class="ftitle">Sau sửa — cùng lượt render</div>
+  <div class="fnode"><b>workspace.render</b><span>dựng ô mới + <code>VdAppHost</code> (như cũ)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>DockAreaPlan.steps</b><span>(:core, thuần) chỉ gỡ/gắn <b>DOCK</b>; WORKSPACE không bao giờ nằm trong bước gỡ</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>DockAreaLayout.apply</b><span>gỡ khung cuộn cũ · <code>setOrientation</code> · <code>workspace.layoutParams = …</code> · gắn thanh ở đầu (TRÊN/TRÁI) hoặc cuối (DƯỚI/PHẢI)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>workspace vẫn gắn</b><span><code>surfaceChanged</code> lần đầu ⇒ tạo <code>kachi-slot-N</code> ⇒ mở app; đổi cỡ sau đó đi <code>VdAppHost.resize</code></span></div>
+</div>
+<ul>
+<li><b>Mới — <code>core/…/launcher/DockAreaPlan.kt</code></b> (thuần): <code>enum DockAreaChild { WORKSPACE, DOCK }</code>; <code>target(cfg: DockConfig)</code> ⇒ chiều + thứ tự đích (ẩn ⇒ <code>[WORKSPACE]</code> dọc; DƯỚI ⇒ <code>[WORKSPACE, DOCK]</code> dọc; TRÊN ⇒ <code>[DOCK, WORKSPACE]</code> dọc; TRÁI ⇒ <code>[DOCK, WORKSPACE]</code> ngang; PHẢI ⇒ <code>[WORKSPACE, DOCK]</code> ngang — đúng thứ tự của <code>DockAreaLayout.kt:42-47</code> hiện nay); <code>steps(current, target)</code> ⇒ danh sách bước <code>Remove(i)</code> (chỉ con không phải vùng ô, duyệt từ cuối lên) · <code>AddWorkspace</code> (chỉ khi vùng ô chưa có trong <code>mainArea</code> — lần dựng ở <code>onCreate</code>, <code>KachiHomeActivity.kt:277</code>) · <code>AddDock(atStart)</code>. Bất biến: nếu WORKSPACE có trong <code>current</code> thì không bước nào gỡ nó.</li>
+<li><b>Sửa — <code>DockAreaLayout.apply</code></b>: ánh xạ con của <code>mainArea</code> sang <code>DockAreaChild</code> (con <code>=== workspace</code> ⇒ WORKSPACE, còn lại ⇒ DOCK), chạy các bước; <code>LayoutParams</code> của vùng ô và thanh nút giữ <b>nguyên giá trị</b> hiện nay (<code>DockAreaLayout.kt:35-36,41-47</code>), chỉ đổi cách gắn (<code>setLayoutParams</code> thay vì <code>addView(workspace, lp)</code> khi vùng ô đã ở đó). Bỏ <code>removeView(workspace)</code> và <code>mainArea.removeAllViews()</code>.</li>
+<li><b>Thanh nút</b> vẫn bị tháo khỏi khung cuộn cũ rồi bọc khung mới (<code>scrollWrap</code>) — đúng như hôm nay. [ĐO đọc mã] <code>ControlDockView</code> không có <code>onDetachedFromWindow</code>; các view có móc tháo (<code>PhotoWidgetView</code>, <code>CarImageView</code>, <code>DoorBoardView</code>) nằm trong ô hoặc thanh và chỉ dừng/chạy lại nhịp như trước.</li>
+<li><b>Rào phụ R-A2 — <code>VdAppHost.release()</code></b>: đọc <code>val wasLaunched = launched</code> ở đầu thân (trước dòng <code>launched = false</code> <code>VdAppHost.kt:386</code>), lệnh <code>am force-stop $p</code> (<code>:382</code>) chỉ chạy khi <code>wasLaunched</code>. <code>launched</code> bật ở <code>maybeLaunch</code> (<code>:228</code>) ngay trước luồng nền mở app, nên <code>wasLaunched == false</code> ⇔ host chưa từng ra lệnh mở. Chuỗi <code>am force-stop $p</code> giữ nguyên byte (bài canh <code>LauncherWindowingGuardTest</code>).</li>
+<li><s>Không làm: lưới tự hồi phục … để OQ-4.</s> <b>Pass 1 — đã làm (R-A4, T3b)</b>: <code>WorkspaceView.onAttachedToWindow</code> <code>post</code> một lượt kiểm; còn gắn mà có ô cầm <code>VdAppHost</code> đã nhả (<code>SlotHostHeal.anyReleased</code>, đọc cờ chỉ-đọc <code>VdAppHost.isReleased</code>) ⇒ <code>renderInternal(displayed, displayedStatus, embedChanged = true)</code> — nhánh P-bug2 sẵn có dựng lại mọi ô App với host mới. [ĐO AOSP] tháo: con tháo trước cha (A10 <code>ViewGroup.java:3806, 3814</code>; A12 <code>:3948, 3956</code>) ⇒ mọi host đã nhả khi tới lượt cha; gắn lại: <code>View.dispatchAttachedToWindow</code> gán <code>mAttachInfo</code> rồi gọi <code>onAttachedToWindow</code> (A10 <code>View.java:19544, 19568</code>; A12 <code>:20729, 20753</code>), <code>ViewGroup</code> gọi phần của chính nó trước khi duyệt con (A10 <code>ViewGroup.java:3428-3438</code>; A12 <code>:3488-3498</code>); <code>post</code> lúc đã gắn = <code>mAttachInfo.mHandler.post</code> (A10 <code>View.java:17850-17854</code>; A12 <code>:19028-19032</code>) ⇒ dựng lại chạy sau lượt gắn. Vì sao dựng lại mà không hồi sinh host: H2 — màn ảo của ô có thể đã về tay chủ khác qua <code>SlotVdOwner</code>. Hôm nay không còn đường nào tháo-gắn lại vùng ô khi Activity sống [ĐO grep: <code>removeView(</code> trên <code>mainArea</code>/<code>workspace</code> chỉ còn bước <code>Remove</code> của kế hoạch, chỉ trỏ vào khung cuộn thanh nút] ⇒ lưới này không chạy trên đường thường (lần gắn đầu ở <code>onCreate</code> chưa có host ⇒ không làm gì).</li>
+</ul>
+
+<h3>4.2 Lỗi B — ba tầng</h3>
+<div class="layers">
+  <div class="layer"><div class="lname">:core (thuần, test off-device)</div>
+    <div class="node new"><b>FloatingWindowLedger</b><span>dấu "Kachi đã mở thành cửa sổ nổi": <code>markOpened</code> (lọc tên gói, trần 16, FIFO) · <code>opened()</code> · <code>forget(set)</code>; cổng <code>Store</code> (đọc/ghi đồng bộ)</span></div>
+    <div class="node new"><b>FloatingOrphanPlan</b><span><code>plan(entries, opened, held, selfPkg)</code> ⇒ stack cần gỡ · <code>admissible(id, …)</code> (guard) · <code>forgettable</code> · <code>stillFloating</code> · <code>LIST_CMD</code> · <code>removeCmd(id)</code></span></div>
+    <div class="node new"><b>FloatingOrphanSweep</b><span>(Pass 2 — dời từ <code>:app</code>) <code>run(sh, held, reason)</code>: khoá toàn tiến trình · dấu rỗng ⇒ thoát · đọc → kế hoạch → <code>removeStack</code> (guard thi hành) → đọc lại → xoá dấu · <code>Report.line()</code></span></div>
+    <div class="node"><b>StackParse</b><span>đã có: <code>parse</code> nhận <code>Stack id=</code>/<code>RootTask id=</code></span></div>
+  </div>
+  <div class="layer"><div class="lname">:app (thi hành)</div>
+    <div class="node new"><b>FloatingLedgerStore</b><span>prefs <code>clusternav_state</code> (tệp dấu theo xe sẵn có của <code>FreeformSeedStore</code>), khoá mới <code>kachi_floating_opened</code>, <code>commit()</code></span></div>
+    <div class="node new"><b>LauncherWindows.sweepFloating</b><span>cổng kênh · nộp <code>winExec</code> · <code>held</code> đọc lúc chạy · một dòng log <code>KachiFloat</code> = <code>Report.line()</code></span></div>
+  </div>
+  <div class="layer"><div class="lname">Điểm nối (sửa)</div>
+    <div class="node"><b>LauncherWindows.placeApp</b><span><code>markOpened(pkg)</code> trước <code>openInSlot</code>/<code>moveToSlot</code></span></div>
+    <div class="node"><b>LauncherWindows.reflow</b><span>không mở/đóng app nữa; chỉ cập nhật nút ⇄ nổi</span></div>
+    <div class="node"><b>LauncherWindows.reconcileLocations</b><span><code>evict</code> khác rỗng ⇒ <code>sweepFloating("evict")</code></span></div>
+    <div class="node"><b>KachiHomeActivity onSeam</b><span>ngay sau <code>shell = s</code> ⇒ <code>windows.sweepFloating("shell-up")</code></span></div>
+    <div class="node"><b>WorkspaceViewCards.appCard</b><span>thêm dòng "Chạm để mở" khi ô không có bộ chiếu</span></div>
+  </div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--newbg);border-color:var(--accent)"></span> khối mới</span><span class="sw"><span class="box" style="background:var(--bg)"></span> khối có sẵn / điểm sửa</span></div>
+<ul>
+<li><b><code>sweepFloating(reason)</code></b> (hàm mới của <code>LauncherWindows</code>): <code>val s = shell() ?: return</code>; nộp vào <code>winExec</code> qua <code>submit</code> sẵn có; <code>held</code> đọc <b>lúc chạy</b> từ <code>state().slots</code> (mọi <code>SlotContent.App</code>, kể cả ô tràn). Không xét <code>embedding()</code> — khác <code>closeApp</code>. Hai mốc có thể trùng giờ ⇒ <code>FloatingOrphanSweep</code> tự tuần tự hoá bằng khoá toàn tiến trình (dấu là MỘT tệp của cả xe; màn nhà <code>recreate()</code> thì có lúc hai bộ dấu cùng sống ⇒ <code>FloatingWindowLedger</code> cũng khoá toàn tiến trình).</li>
+<li><b>Vì sao thân lượt dọn ở <code>:core</code></b> (Pass 2, lệch Pass 0): <code>:core</code> nhận kênh shell dạng <code>(String) -&gt; String</code> nên test được bằng shell ghi âm trả dump nguyên văn (chuỗi lệnh từng byte + hành vi đọc hỏng/lệnh ném) — mạnh hơn bài quét mã "đếm 2 lần <code>LIST_CMD</code>". <code>:app</code> chỉ còn kho prefs + nối dây + log.</li>
+<li><b>Vì sao mốc (a) dùng <code>evict</code> từ sổ RAM</b>: sổ RAM chỉ quyết <b>khi nào nhìn</b>, không quyết <b>đóng gì</b>; đóng gì do <code>am stack list</code> + dấu bền quyết (§5). Không chạy theo mỗi lượt render vì render chạy theo nhịp trạng thái xe; dấu khác rỗng mà gói còn được giữ thì mỗi lượt sẽ bắn một <code>am stack list</code>.</li>
+<li><b>Thẻ "Chạm để mở"</b>: <code>appCard(pkg, tapHint)</code> ở <code>WorkspaceViewCards.kt:74</code>; <code>tapHint = shell == null &amp;&amp; !SlotAppHost.embeddingUsable(context)</code> tính ở <code>WorkspaceView.makeSlot</code> nhánh App (sửa một dòng gọi, không thêm dòng). Chuỗi mới <code>kachi_slot_tap_to_open</code>. Kênh lên ⇒ <code>applyEmbedSeam</code> dựng lại ô ⇒ thẻ có bộ chiếu, dòng gợi ý biến mất.</li>
+</ul>
+
+<h3>4.3 Bộ lọc stack và bảng §4 bốn câu</h3>
+<div class="diagram">
+<svg viewBox="0 0 900 250" role="img" aria-label="Phễu chọn stack để gỡ">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="s-ah"/></marker></defs>
+  <rect x="10" y="20" width="150" height="70" rx="10" class="s-box"/>
+  <text x="85" y="48" text-anchor="middle" class="s-t">am stack list</text>
+  <text x="85" y="68" text-anchor="middle" class="s-m">đọc lần 1</text>
+  <line x1="160" y1="55" x2="190" y2="55" class="s-a" marker-end="url(#ah)"/>
+  <rect x="192" y="20" width="150" height="70" rx="10" class="s-box"/>
+  <text x="267" y="48" text-anchor="middle" class="s-t">StackParse.parse</text>
+  <text x="267" y="68" text-anchor="middle" class="s-m">rỗng ⇒ DỪNG, không xoá dấu</text>
+  <line x1="342" y1="55" x2="372" y2="55" class="s-a" marker-end="url(#ah)"/>
+  <rect x="374" y="10" width="250" height="90" rx="10" class="s-new"/>
+  <text x="499" y="32" text-anchor="middle" class="s-t">Lọc từng STACK</text>
+  <text x="499" y="51" text-anchor="middle" class="s-m">displayId = 0 · activityType = "standard" (đọc được)</text>
+  <text x="499" y="68" text-anchor="middle" class="s-m">mode = "freeform" · không pinned</text>
+  <text x="499" y="85" text-anchor="middle" class="s-m">MỌI task ∈ dấu − held − Kachi − gói có task ở display ≠ 0</text>
+  <line x1="624" y1="55" x2="654" y2="55" class="s-a" marker-end="url(#ah)"/>
+  <rect x="656" y="20" width="230" height="70" rx="10" class="s-box"/>
+  <text x="771" y="48" text-anchor="middle" class="s-t">am stack remove &lt;id&gt;</text>
+  <text x="771" y="68" text-anchor="middle" class="s-m">từng stack đã chọn</text>
+  <line x1="771" y1="90" x2="771" y2="140" class="s-a" marker-end="url(#ah)"/>
+  <rect x="616" y="142" width="270" height="80" rx="10" class="s-box"/>
+  <text x="751" y="168" text-anchor="middle" class="s-t">am stack list (lần 2)</text>
+  <text x="751" y="188" text-anchor="middle" class="s-m">rỗng ⇒ không xoá dấu</text>
+  <text x="751" y="206" text-anchor="middle" class="s-m">xoá dấu = dấu − stillFloating</text>
+  <rect x="200" y="150" width="340" height="64" rx="10" class="s-bad"/>
+  <text x="370" y="174" text-anchor="middle" class="s-t">Không bao giờ chạm</text>
+  <text x="370" y="194" text-anchor="middle" class="s-m">home · recents · assistant · pinned · loại trống</text>
+  <text x="370" y="208" text-anchor="middle" class="s-m">display ≠ 0 (màn ảo ô, cụm) · stack chứa Kachi</text>
+  <line x1="499" y1="100" x2="420" y2="148" class="s-x" marker-end="url(#ah)"/>
+</svg>
+</div>
+<p><b>Chặt hơn <code>StackParse.floatingOnMain</code></b>: hàm sẵn có coi loại <b>trống</b> là <code>standard</code> (<code>StackParse.kt:38</code>) — chấp nhận được cho cast vì nó chỉ đọc; với lệnh gỡ trên A12 (không có rào framework) thì loại trống phải là <b>bỏ qua</b>. Kế hoạch dùng <code>floatingOnMain</code> rồi lọc thêm <code>activityType == "standard"</code>; không sửa <code>floatingOnMain</code> (đường cast đang dùng, §6).</p>
+<p><b>Guard ở tầng thi hành (Pass 2)</b>: <code>FloatingOrphanSweep.removeStack</code> là chỗ <b>duy nhất</b> dựng và chạy <code>am stack remove</code> (bài <code>FloatingWiringContractTest</code> cấm mọi tệp màn nhà tự viết chuỗi này). Ngay trước lệnh, nó gọi lại <code>FloatingOrphanPlan.admissible(id, bản đọc của chính lượt đó, …)</code>: id không có trong bản đọc · display ≠ 0 · loại ≠ <code>standard</code> (kể cả trống) · không <code>freeform</code> · pinned · có task của gói ngoài dấu / còn giữ / chính Kachi / có task ở display khác ⇒ <b>từ chối, 0 lệnh shell</b>. Phá thử: gỡ guard ⇒ ca "từ chối home/màn ảo/ngoài dấu/còn giữ/id lạ" đỏ.</p>
+<p><b>Xoá dấu chặt hơn Pass 0</b>: chỉ xoá gói <i>không còn cửa sổ nổi ở display 0</i> <b>và</b> <i>không còn ô nào giữ</i>. Lý do: lượt chạm mở (ghi dấu → <code>startActivity</code>) và lượt dọn cùng chạy trên <code>winExec</code>; cửa sổ hiện ra bất đồng bộ sau <code>startActivity</code> ⇒ một lượt dọn chen vào đúng lúc đó sẽ thấy "gói chưa nổi" và xoá dấu của đúng cửa sổ sắp hiện. Gói còn giữ ở lại trong dấu tới khi rời ô — trần 16 chặn phình.</p>
+<div class="tbl"><table>
+<tr><th>Lệnh</th><th>Display nào</th><th>App nào (allow-list)</th><th>Loại stack nào</th><th>Hoàn tác</th></tr>
+<tr><td><code>am stack list</code> (mới ở đường này, chỉ đọc)</td><td>đọc mọi display, chỉ dùng display 0</td><td>—</td><td>—</td><td>Không đổi trạng thái</td></tr>
+<tr><td><code>am stack remove &lt;id&gt;</code> (mới)</td><td>Chỉ stack có <code>displayId=0</code> trong bản đọc của chính lượt đó</td><td>Gói trong <b>dấu bền</b> (Kachi tự mở thành cửa sổ nổi) − gói state còn giữ − <code>com.byd.launcher</code> − gói có task ở display ≠ 0. Stack có bất kỳ task nào ngoài tập này ⇒ bỏ cả stack</td><td>Chỉ <code>standard</code> + <code>freeform</code>, không <code>pinned</code>; home/recents/assistant/loại trống cấm. A10 framework chặn thêm non-standard (<code>ATMS:3383-3386</code>); A12 <b>không</b> (<code>ATMS:1904-1926</code>)</td><td>Không hoàn tác được (≈ vuốt khỏi Gần đây, §2.6); người dùng mở lại bằng chạm thẻ ô hoặc ngăn kéo. Hỏng giữa chừng ⇒ dấu còn (chỉ xoá sau lần đọc 2) ⇒ mốc sau dọn tiếp. Stack đã biến mất ⇒ lệnh no-op có log (A10 <code>:3379-3381</code>, A12 <code>:1911-1913</code>)</td></tr>
+<tr><td><code>am force-stop &lt;pkg&gt;</code> trong <code>VdAppHost.release</code> (có sẵn, <b>thu hẹp</b>)</td><td>— (theo gói)</td><td>Đúng gói của ô, và chỉ khi host đã mở nó (R-A2)</td><td>—</td><td>Ô dựng lại thì mở lại app (như cũ)</td></tr>
+<tr><td><code>startActivity</code> khung ô + chế độ 5 (<code>IntentAppLauncher.openInSlot</code>, không phải shell; <b>thu hẹp</b>)</td><td>Display 0</td><td>Chỉ gói người dùng vừa chọn/chạm; dấu bền ghi trước</td><td>Stack do hệ thống tạo (standard)</td><td>Có kênh ⇒ R-B3 dọn khi gói bị gỡ khỏi ô; chưa có kênh ⇒ giới hạn L1 (§4.4)</td></tr>
+<tr><td><code>FreeformLaunch.fullscreenCmd</code> / <code>ShellAppLauncher.closeSlot</code></td><td colspan="4"><b>Không dùng</b> cho việc gỡ (sai nghĩa: đưa app lên toàn màn đè nhà, E10)</td></tr>
+</table></div>
+
+<h3>4.4 Quyết định đường không-kênh (đã đọc mã, §2.5)</h3>
+<div class="card">
+<b>Chọn: bỏ đường TỰ mở, giữ đường CHẠM TAY + dấu bền.</b>
+<ul>
+<li>Lý do 1 — đúng nguồn bệnh: hai lần đo app mồ côi do Kachi mở đều là đường tự mở (E6 đổi hồ sơ; E8 tiến trình mới sinh).</li>
+<li>Lý do 2 — §6: đường chạm tay là hành động người dùng vừa yêu cầu, chạy như hôm nay; không đổi trải nghiệm của ai đang dùng nó.</li>
+<li>Lý do 3 — không mất tính năng chạy tốt (§2.5): trên xe có kênh, khoảng không-kênh ngắn và đường tự mở có hại; trên xe chưa từng có kênh, cửa sổ nổi không bật được nên "mở vào ô" vốn là mở toàn màn.</li>
+<li>Lý do 4 — dọn được về sau: cái mở bằng tay có dấu bền ⇒ kênh lên là R-B3 dọn đúng cái đó.</li>
+<li>Bao trùm R-B1 của spec 2.83 (<i>"cấm đường mở dự phòng khi chưa biết kết quả dò kênh"</i>, hoãn ở D-3): lượt tự mở lúc tiến trình mới sinh không còn.</li>
+</ul>
+</div>
+<p><b>Giới hạn còn lại (ghi rõ, không giấu):</b></p>
+<ul>
+<li><b>L1</b> — Chưa có kênh, người dùng <i>chạm</i> mở app X trong ô, rồi đổi sang hồ sơ không có X ⇒ cửa sổ X còn nổi tới khi kênh shell lên (lúc đó R-B3 dọn). [ĐO AOSP] không có API công khai để app thường đóng cửa sổ của app khác: <code>killBackgroundProcesses</code> chỉ giết tiến trình có <code>adj ≥ SERVICE_ADJ</code> (A10 <code>ActivityManagerService.java:4135-4169</code>; A12 <code>:3579-3614</code>), app đang hiện có adj thấp hơn; <code>removeStack</code>/<code>removeTask</code> đòi <code>MANAGE_ACTIVITY_STACKS</code>/<code>REMOVE_TASKS</code> (§2.6) mà Kachi cài ngoài không có [SUY: mức bảo vệ signature]. Hướng giảm nhẹ không-kênh (đưa nhà lên trước để che) ⇒ OQ-3, phải đo trước (§14). <b>Pass 3 [ĐO máy ảo E2E ca 3a]</b>: "tới khi kênh lên" thực tế là <b>tới khi màn Kachi lấy lại tiêu điểm</b> — cổng F4 (<code>ShellChannelGate.kt:149</code> → <code>FirstOpenApprovalPolicy.kt:98</code> <code>screenShowing &amp;&amp; windowFocused</code>) không dò kênh khi cửa sổ nổi đang giữ tiêu điểm; chạm vùng trống của Kachi không lấy lại được, bấm HOME thì được (kênh lên 3 s sau, lượt dọn đóng đúng cửa sổ). Xem OQ-7.</li>
+<li><b>L2</b> — Chưa có kênh, cửa sổ đã chạm mở <b>không tự dời</b> theo bố cục mới khi đổi bố cục/cạnh (trước đây <code>reflow</code> mở lại theo khung mới). Chạm lại thẻ ô ⇒ <code>moveToSlot</code> đặt lại khung (như hôm nay). [CHƯA BIẾT] <code>startActivity</code> có áp khung mới lên task đang sống không.</li>
+<li><b>L3</b> (Pass 2, ghi để không ai tưởng là lỗ) — Gói <b>còn được ô giữ</b> mà đang nổi lúc kênh lên: lượt dọn KHÔNG gỡ nó (allow-list trừ gói còn giữ). Cửa sổ đó vẫn biến mất vì [ĐO mã] <code>VdAppHost.maybeLaunch</code> <code>am force-stop</code> rồi mới <code>am start --display</code> (<code>VdAppHost.kt:255-256</code>, đường có sẵn của ô nhúng) — khớp [ĐO fixture] <code>shellup-A</code>: VietMap (ô của A, trước đó nổi ở stack 4) không còn stack nào sau khi kênh lên. Dấu của gói đó ở lại tới khi rời ô, rồi lượt dọn kế xoá.</li>
+</ul>
+<p><b>Phương án đã cân nhắc, không chọn:</b></p>
+<div class="tbl"><table>
+<tr><th>Phương án</th><th>Vì sao không chọn</th></tr>
+<tr><td>Chạm tay cũng mở <b>toàn màn</b> khi chưa có kênh (không bao giờ có cửa sổ nổi)</td><td>Hết hẳn L1, nhưng đổi hành vi của một hành động tường minh và bỏ xem-trong-ô khi chưa có kênh. Để owner chọn: <b>OQ-2</b></td></tr>
+<tr><td>Nhận diện cửa sổ "do Kachi mở" bằng <code>launchedFromPackage</code> trong <code>dumpsys activity activities</code> (không cần dấu)</td><td>Là sự thật của hệ, nhưng định dạng <code>dumpsys</code> to và đổi theo đời Android; dấu bền là khuôn sẵn của dự án (§5, <code>FreeformSeedStore</code>). Có thể dùng làm kiểm chéo sau này</td></tr>
+<tr><td>Giữ <code>reflow</code> tự mở nhưng chỉ cho gói có dấu</td><td>Vẫn tự mở lại app người dùng đã tự đóng, và vẫn chạy lúc tiến trình mới sinh (E8)</td></tr>
+<tr><td>Sửa <code>ShellAppLauncher.closeSlot</code> rồi cho chạy khi có kênh</td><td>Lệnh của nó là <code>fullscreenCmd</code> — đưa app lên toàn màn, không phải đóng (E10)</td></tr>
+</table></div>
+
+<h3>4.5 Android 12 (DL5)</h3>
+<ul>
+<li>Không thêm mục nào vào <code>ClusterProfile</code>: chuỗi <code>am stack list</code>/<code>am stack remove</code> và định dạng in giống A10 (§2.6).</li>
+<li>Khác biệt duy nhất có hệ quả: A12 không chặn loại stack ở <code>removeTask</code> ⇒ bộ lọc chặt §4.3 là bắt buộc, có test riêng "loại trống ⇒ không gỡ" và "home ⇒ không gỡ" trên đoạn <code>RootTask id=</code>.</li>
+<li>ROM DL5 cắt lệnh ⇒ đọc rỗng ⇒ không làm gì, log <code>KachiFloat … đọc hỏng</code>. Không có dump DL5 thật ⇒ OQ-5.</li>
+</ul>
+
+<h3>4.6 Context7</h3>
+<p>Không dùng thư viện mới: chỉ Android SDK (<code>ViewGroup</code>, <code>LinearLayout</code>, <code>SharedPreferences</code>) và khối sẵn có của dự án (<code>StackParse</code>, <code>WindowCommandDispatcher</code>, khuôn <code>FreeformSeedStore</code>) ⇒ không cần Context7. Hành vi framework đã kiểm bằng source AOSP (§2.3, §2.5, §2.6).</p>
+
+<h2>5. Tasks (DAG)</h2>
+<div class="flow">
+  <div class="ftitle">Thứ tự phụ thuộc</div>
+  <div class="fnode new"><b>A: T1 → T2 → T3 → T3b</b><span>không phụ thuộc cổng §14 · ✅ mã off-car 01/10</span></div>
+  <div class="fnode new"><b>B-không-kênh: T6a · T7 · T8</b><span>không có lệnh shell mới · ✅ 01/10</span></div>
+  <div class="fnode new"><b>T0a</b><span>shell thô máy ảo · ✅ 01/10 (E15)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>T4 → T5 → T6b</b><span>dọn khi có kênh · ✅ mã off-car 01/10</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>T9 → T10 → T11 → T12</b><span>E2E · test đủ · review · tài liệu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>T0b (OC-0)</b><span>shell thô trên xe — trước OTA</span></div>
+</div>
+<div class="tbl"><table>
+<tr><th>#</th><th>Việc + test</th><th>Tệp</th><th>Yêu cầu</th></tr>
+<tr><td>T0a</td><td>Tầng 1 trên máy ảo (không chạm xe): mở một app thành cửa sổ nổi trên display 0 (chạm thẻ ô lúc không kênh, hoặc <code>FreeformLaunch.launchCmd</code>), <code>am stack list</code>, <code>am stack remove &lt;id&gt;</code>, <code>am stack list</code>; thêm thử <code>am stack remove &lt;id stack home&gt;</code> để ghi nguyên văn lỗi framework A10. Lưu output vào <code>docs/diagnostics/</code>. ⚠ Không chạy khi máy ảo đang phục vụ phiên test khác. <span class="pill ok">✅ 01/10 Pass 2</span> 19:32–19:34 (máy ảo rảnh: không phiên adb/gradle nào khác lúc đo; trả về đúng trạng thái trước đo — chỉ còn stack VietMap ô + home, Kachi giữ pid) — E15</td><td><code>docs/diagnostics/profile-switch-slots-emulator-2026-10-01.md</code></td><td>§14 tầng 1 (máy ảo)</td></tr>
+<tr><td>T1</td><td><code>DockAreaPlan</code> thuần + test: 64 cặp chuyển, bộ chứa giả đếm số lần tháo; vùng ô tháo 0 lần; thứ tự cuối = đích; lần đầu (chưa có vùng ô) gắn đủ. <span class="pill ok">✅ 01/10</span> 6 ca (64 cặp · lần đầu · không gắn lại vùng ô · vùng ô nằm giữa · đích = bố cục 2.84 · kịch bản đo A↔B ×3)</td><td><code>core/…/launcher/DockAreaPlan.kt</code> (+<code>DockAreaPlanTest</code>)</td><td>R-A1</td></tr>
+<tr><td>T2</td><td><code>DockAreaLayout.apply</code> chạy theo <code>DockAreaPlan</code>; test hợp đồng (<code>SourceRoots.body</code>): thân <code>apply</code> không còn <code>removeAllViews()</code> và không <code>removeView(workspace)</code>, có gọi <code>DockAreaPlan</code>. <span class="pill ok">✅ 01/10</span> 4 ca: cấm 8 lối tháo trong <code>apply</code> + đúng một <code>mainArea.remove…</code> · ánh xạ từng bước = bộ chứa giả ở <code>:core</code> · không tệp nào của màn nhà tháo vùng ô · call site <code>onCreate</code> + <code>render</code> (sau <code>workspace.render</code>, §8)</td><td><code>app/…/launcher/DockAreaLayout.kt</code> (+<code>DockAreaLayoutContractTest</code>), chú thích <code>KachiHomeRender.kt</code></td><td>R-A1</td></tr>
+<tr><td>T3</td><td>Rào phụ <code>VdAppHost.release</code> + bổ sung một ca vào <code>SlotHostingLifecycleContractTest</code> (không sửa ca cũ): <code>wasLaunched</code> đọc trước <code>launched = false</code>, force-stop có điều kiện. <span class="pill ok">✅ 01/10</span> ca <code>nha truoc khi mo app thi KHONG force-stop…</code> (thêm <code>launched = true</code> đứng trước luồng mở app ở <code>maybeLaunch</code>); 10 ca cũ không sửa</td><td><code>app/…/launcher/VdAppHost.kt</code></td><td>R-A2, R-A3</td></tr>
+<tr><td>T3b</td><td><b>Lưới R-A4</b> (thêm ở Pass 1): <code>SlotHostHeal.anyReleased</code> + <code>WorkspaceView.onAttachedToWindow</code> (<code>post</code> → còn gắn &amp;&amp; có host đã nhả ⇒ <code>renderInternal(…, embedChanged = true)</code>) + cờ chỉ-đọc <code>VdAppHost.isReleased</code>. Ca <code>gan lai cua so ma o App da bi nha thi dung lai o — khong hoi sinh host</code> trong <code>SlotHostingLifecycleContractTest</code>. <span class="pill ok">✅ 01/10</span></td><td><code>app/…/launcher/SlotHostHeal.kt</code> (mới), <code>WorkspaceView.kt</code>, <code>VdAppHost.kt</code></td><td>R-A4, R-A3</td></tr>
+<tr><td>T4</td><td><code>FloatingWindowLedger</code> + <code>FloatingOrphanPlan</code> thuần. Test trên fixture: <code>noshell-A-back</code> dấu {VietMap, YouTube}, giữ {VietMap} ⇒ gỡ [3]; giữ {} ⇒ gỡ [4, 3]; dấu {} ⇒ không gỡ · <code>shellup-A</code> dấu {YouTube} giữ {VietMap} ⇒ gỡ [3] dù <code>visible=false</code>, không bao giờ 5 (Kachi) / 0 (home) · <code>embedded-initial</code> dấu {VietMap} giữ {} ⇒ không gỡ (display 2) · <code>noshell-A-back</code> bỏ dòng <code>configuration=</code> trong test ⇒ không gỡ (loại trống) · fixture xe <code>am-stack-list-oncar-2026-09-29-after-fix-orphan-top.txt</code> dấu {YouTube} ⇒ gỡ [32]; giữ {YouTube} ⇒ không · đoạn <code>RootTask id=</code> (A12, dựng tay, ghi rõ là dẫn xuất) với root task <code>home</code> cùng gói trong dấu ⇒ không gỡ · stack trộn hai gói ⇒ không gỡ · gói có task ở display ≥ 1 ⇒ không gỡ. Golden: <code>am stack list</code>, <code>am stack remove 3</code> từng byte. Ledger: trần 16, FIFO, tên gói sai bị từ chối. <span class="pill ok">✅ 01/10 Pass 2</span> <code>FloatingOrphanPlanTest</code> 15 ca (đủ các ca trên + <code>t0a-opened</code> ⇒ [26] không đụng màn ảo 15 · loại trống bằng xoá <code>mActivityType</code> giữ <code>freeform</code> — khoá CẢ bộ lọc chặt lẫn guard · xoá dấu) · <code>FloatingWindowLedgerTest</code> 6 ca</td><td><code>core/…/launcher/FloatingWindowLedger.kt</code>, <code>FloatingOrphanPlan.kt</code> (+test); <code>ShellAppLauncher.PKG</code> thành <code>internal</code> (dùng lại, không chép mẫu)</td><td>R-B3, R-B4, R-nf2</td></tr>
+<tr><td>T5</td><td><code>FloatingLedgerStore</code> (prefs <code>clusternav_state</code>, khoá <code>kachi_floating_opened</code>, <code>commit()</code>) + <code>FloatingSweep</code> (khoá tuần tự; dấu rỗng ⇒ 0 lệnh shell; đọc → kế hoạch → gỡ → đọc lại → xoá dấu; log <code>KachiFloat</code>). Test hợp đồng: thân <code>sweep</code> có đúng 2 lần <code>LIST_CMD</code>, 0 <code>force-stop</code>, 0 <code>fullscreenCmd</code>, lệnh gỡ chỉ dựng từ <code>removeCmd</code>. <span class="pill ok">✅ 01/10 Pass 2</span> — <b>lệch có lý do</b>: thân lượt dọn là <code>:core</code> <code>FloatingOrphanSweep</code> (không phải <code>:app</code> <code>FloatingSweep</code>) để khoá bằng HÀNH VI: <code>FloatingOrphanSweepTest</code> 8 ca với shell ghi âm trả dump nguyên văn — vàng <code>t0a-opened → t0a-after-remove</code> ⇒ đúng <code>[am stack list, am stack remove 26, am stack list]</code>, dấu rỗng · lệnh gỡ không ăn ⇒ giữ dấu · dấu rỗng ⇒ 0 lệnh · đọc hỏng (ném/rỗng) · đọc lần hai hỏng · lệnh gỡ ném · guard thi hành (<code>removeStack</code>) từ chối home/màn ảo/ngoài dấu/còn giữ/id lạ với 0 lệnh. Mọi ca: không <code>force-stop</code>, không <code>--windowingMode</code>, không <code>am task</code>. Không gửi lệnh gỡ ⇒ chỉ 1 lần đọc</td><td><code>app/…/launcher/FloatingLedgerStore.kt</code>, <code>core/…/launcher/FloatingOrphanSweep.kt</code> (+<code>FloatingOrphanSweepTest</code>); khai <code>kachi_floating_opened</code> ở <code>SettingsCatalog.NOT_SETTINGS</code> + <code>ProfileScope</code> DEVICE</td><td>R-B3, R-B4, R-B6</td></tr>
+<tr><td>T6a</td><td><code>LauncherWindows.reflow</code> thôi mở/đóng app (chỉ cập nhật nút ⇄); <code>placeApp</code> gọi <code>markOpened</code> trước <code>openInSlot</code>/<code>moveToSlot</code>. Test hợp đồng bằng vị trí trong thân hàm (<code>SourceRoots.body</code>). <span class="pill ok">✅ 01/10 Pass 2</span> — bỏ luôn hằng <code>HOME_FRONT</code> (chỉ <code>reflow</code> cũ dùng). ⚠ Đổi bài canh cũ <code>OpenAppWiringContractTest</code> <i>"reflow vẫn dùng openInSlot"</i> → <i>"reflow KHÔNG openInSlot"</i> (chặt hơn; vế "không moveToSlot" giữ nguyên) — hệ quả trực tiếp của R-B1, có lý do trong KDoc bài</td><td><code>app/…/launcher/LauncherWindows.kt</code> (+<code>FloatingWiringContractTest</code>)</td><td>R-B1, R-B2</td></tr>
+<tr><td>T6b</td><td><code>sweepFloating(reason)</code> + gọi ở <code>reconcileLocations</code> (khi <code>evict</code> khác rỗng) và ở lambda <code>onSeam</code> của <code>KachiHomeActivity</code> ngay sau <code>shell = s</code>. Grep call site (§8). <span class="pill ok">✅ 01/10 Pass 2</span> <code>KachiHomeActivity.kt</code> +0 dòng (sửa đúng dòng <code>onSeam</code>, vẫn 475)</td><td><code>LauncherWindows.kt</code>, <code>KachiHomeActivity.kt</code> (≤ 3 dòng)</td><td>R-B3</td></tr>
+<tr><td>T7</td><td>Dòng "Chạm để mở"/"Tap to open" ở <code>appCard</code> khi ô không có bộ chiếu; chuỗi vi + en. <span class="pill ok">✅ 01/10 Pass 2</span> <code>WorkspaceView.kt</code> vẫn 499 (sửa đúng dòng gọi)</td><td><code>WorkspaceViewCards.kt</code>, <code>WorkspaceView.kt</code> (sửa 1 dòng gọi), <code>strings_kachi.xml</code> ×2</td><td>R-B1, R-nf6</td></tr>
+<tr><td>T8</td><td>Sửa chú thích sai (R-B5) <span class="pill ok">✅ 01/10 Pass 2</span></td><td><code>LauncherWindows.kt</code>, <code>IntentAppLauncher.kt</code>, <code>ShellAppLauncher.kt</code></td><td>R-B5</td></tr>
+<tr><td>T9</td><td>E2E máy ảo: V-emu-A, V-emu-B1, V-emu-B2 (§6). Cài đè bản vehicleTest/debug cùng chữ ký, sao lưu + trả shared_prefs về đúng từng byte sau khi đo. <span class="pill ok">✅ 01/10 (APK release 19:51)</span> V-emu-A ✅ · V-emu-B1 ✅ · V-emu-B2 ⚠ dọn đúng nhưng chỉ sau HOME (OQ-7) + lượt đọc lại sớm (đã vá Pass 3) — §9</td><td>—</td><td>R-A1, R-B1…R-B6</td></tr>
+<tr><td>T10</td><td><code>./gradlew test --rerun-tasks --continue</code> đủ 5 module + <code>assembleRelease</code> + lint; đếm bằng <code>python3 scripts/count-tests.py</code>; phá thử từng bản vá (R-nf7)</td><td>—</td><td>P5</td></tr>
+<tr><td>T11</td><td>Senior review (Opus) theo rule global §5 + quét bảo mật trước commit (§6). Không commit/push/OTA, không bump version trong đợt viết mã này nếu owner chưa bảo. <span class="pill ok">Review lượt 1 (PATCHED) + lượt 2 (CLEAN) xong — §10</span> · quét bảo mật: chưa</td><td>—</td><td>—</td></tr>
+<tr><td>T12</td><td>Cập nhật spec (§9 Nhật ký triển khai, §10 Reviewer Log), <code>docs/README.md</code>, <code>docs/PROJECT-BACKLOG.md</code>, <code>.kiro/steering/project-context.md</code> trong cùng phiên</td><td>—</td><td>R2.1</td></tr>
+</table></div>
+
+<h2>6. Verification</h2>
+<h3>Off-car</h3>
+<ul>
+<li><b>V-unit</b>: <code>DockAreaPlanTest</code> · <code>FloatingOrphanPlanTest</code> · <code>FloatingWindowLedgerTest</code> · golden lệnh · các test hợp đồng mới; bài canh cũ (§3 R-nf5) xanh không sửa.</li>
+<li><b>V-break</b> (phá thử, P5.3): (1) trả <code>mainArea.removeAllViews()</code> vào <code>DockAreaLayout</code> ⇒ test đỏ <span class="pill ok">✅ đã phá 01/10</span>; (2) bỏ <code>wasLaunched</code> ⇒ đỏ <span class="pill ok">✅</span>; (2b) <code>DockAreaPlan.steps</code> tháo cả vùng ô ⇒ 3 ca thuần đỏ <span class="pill ok">✅</span>; (2c) bỏ dòng <code>post</code> của lưới R-A4 ⇒ đỏ <span class="pill ok">✅</span>; (2d) đổi thứ tự đích viền TRÊN ⇒ ca đích đỏ <span class="pill ok">✅</span>; (3) bỏ lọc <code>activityType == "standard"</code> ⇒ ca loại trống/A12 home đỏ <span class="pill ok">✅ Pass 2 (B1)</span>; (4) đổi thứ tự ghi dấu sau <code>openInSlot</code> ⇒ đỏ <span class="pill ok">✅ (B3)</span>; (5) trả <code>openInSlot</code> vào <code>reflow</code> ⇒ đỏ <span class="pill ok">✅ (B4)</span>; thêm Pass 2: (6) gỡ guard thi hành ⇒ đỏ <span class="pill ok">✅ (B2)</span>; (7) xoá dấu cả gói còn giữ ⇒ đỏ <span class="pill ok">✅ (B5)</span>; (8) bỏ mốc <code>shell-up</code> ⇒ đỏ <span class="pill ok">✅ (B6)</span>. Chi tiết §9.</li>
+<li><b>V-emu-A</b> (có kênh): A cạnh dưới + ô app, B cạnh trái + ô app; A→B→A ×3; thêm ca chỉ bật/tắt "Hiện thanh nút" và ca chỉ đổi cạnh trong Cài đặt (E11). Đạt khi mỗi lượt có <code>tạo màn ảo kachi-slot-N</code> + <code>START</code> app của ô, ảnh chụp không ô đen, không <code>Force stopping</code> app chưa từng mở.</li>
+<li><b>V-emu-B1</b> (không kênh): cùng hai hồ sơ; A→B→A ⇒ <code>am stack list</code> không có stack <code>freeform</code> của app khách; ô hiện thẻ "Chạm để mở"; chạm thẻ ⇒ app nổi đúng khung ô + dấu có gói đó.</li>
+<li><b>V-emu-B2</b> (kênh lên muộn): không kênh, chạm mở VietMap ở A; đổi sang B (không có VietMap) ⇒ VietMap còn nổi (L1, đúng thiết kế); bật kênh ⇒ trong ≤ 10 s <code>am stack list</code> không còn stack VietMap ở display 0, dấu rỗng, một dòng <code>KachiFloat</code> trong <code>usage-*.log</code>; ô của B dựng lên màn ảo bình thường. <b>Kết quả 01/10</b> [ĐO]: ⚠ không đạt "≤ 10 s" — hai lần thử (120 s; 90 s) không có kênh vì cửa sổ VietMap (chạm mở) giữ tiêu điểm (OQ-7); sau HOME: kênh lên, <code>am stack remove 40</code>, VietMap thoát, ô B dựng màn ảo ✅; dấu chỉ xoá ở lượt dọn sau vì bản đọc lại chạy sớm ⇒ vá Pass 3 (<code>settle</code>).</li>
+</ul>
+<h3>On-car (anh em / owner)</h3>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>Ai</th><th>Làm</th><th>Đạt khi</th></tr>
+<tr><td>OC-0 (T0b, tầng 1)</td><td>Owner, cần adb</td><td>Trên xe (Seal DiLink, Android 10; DL5 nếu có): mở một app thành cửa sổ nổi ở display 0, <code>am stack list</code>, <code>am stack remove &lt;id&gt;</code>, <code>am stack list</code>; lưu output vào <code>docs/diagnostics/</code></td><td>Stack biến mất, app không đè nhà, không lỗi; chép output nguyên văn làm fixture xe</td></tr>
+<tr><td>OC-A1</td><td>Anh em</td><td>Tạo hai hồ sơ có ô app, một hồ sơ thanh nút ở <b>dưới</b>, một hồ sơ ở <b>trái</b> (hoặc một hồ sơ ẩn thanh nút). Đổi qua lại 3–5 lần</td><td>Mỗi lần đổi, ô có app hiện lên trong vài giây; <b>không ô nào đen</b>; không cần bấm gì thêm</td></tr>
+<tr><td>OC-A2</td><td>Anh em</td><td>Cài đặt › thanh nút: đổi cạnh khi ô đang chạy app</td><td>App trong ô vẫn hiện (không đen)</td></tr>
+<tr><td>OC-B1</td><td>Anh em</td><td>Sau OC-A1, nhìn màn nhà</td><td><b>Không</b> có cửa sổ app nào nổi lơ lửng đè lên nhà; chụp màn hình gửi về nếu có</td></tr>
+<tr><td>OC-B2</td><td>Owner, cần adb</td><td><code>am force-stop com.byd.launcher</code>, trước khi kênh lên chạm thẻ một ô app, đổi hồ sơ, đợi kênh lên</td><td>Cửa sổ nổi biến mất sau khi kênh lên; <code>usage-*.log</code> có dòng <code>KachiFloat</code></td></tr>
+</table></div>
+
+<h2>7. Open Questions</h2>
+<div class="tbl"><table>
+<tr><th>#</th><th>Câu hỏi</th><th>Trạng thái</th></tr>
+<tr><td>OQ-1</td><td><b>Cổng §14</b>: cho viết mã tầng 2–3 của phần dọn (T4–T6b) sau T0a (máy ảo) mà chưa có OC-0 trên xe, với điều kiện không OTA trước OC-0? Hay đăng OTA với OC-0 chưa đo (rủi ro bị chặn: phần dọn chỉ chạy khi dấu có gói, tức chỉ sau một lần chạm mở lúc chưa có kênh)?</td><td><span class="pill wait">chờ owner</span> — Pass 2: T0a ✅ (E15) rồi mới viết mã T4–T6b (owner "2 ok sửa" + nhiệm vụ đợt mã 01/10); <b>không OTA trước OC-0</b> vẫn là đề xuất. [SUY] Trên xe có kênh thì dấu thường rỗng ⇒ lượt dọn chỉ ghi một dòng log, 0 lệnh shell</td></tr>
+<tr><td>OQ-2</td><td>Chưa có kênh: chạm thẻ ô mở app <b>trong ô</b> (cửa sổ nổi, như hôm nay — spec chọn) hay <b>toàn màn</b> (hết hẳn L1, bỏ xem-trong-ô lúc chưa có kênh)?</td><td><span class="pill wait">chờ owner</span></td></tr>
+<tr><td>OQ-3</td><td>L1: chưa có kênh, sau khi gỡ app khỏi ô, Kachi tự đưa màn nhà lên trước để che cửa sổ nổi còn lại? [CHƯA BIẾT] trên ROM BYD stack home có lên trên stack freeform không — phải đo shell thô trước (§14)</td><td><span class="pill">để sau, cần đo</span></td></tr>
+<tr><td>OQ-4</td><td>Lưới tự hồi phục: một <code>VdAppHost</code> đã nhả mà bị gắn lại vào cửa sổ ⇒ dựng lại ô thay vì đen câm? Sửa gốc (R-A1) đã loại đường đo được; lưới này chỉ cho đường tháo-gắn chưa biết</td><td><span class="pill ok">đã làm Pass 1 (R-A4 · T3b) — dựng lại ô</span></td></tr>
+<tr><td>OQ-5</td><td>DL5: cần một dump <code>am stack list</code> thật (qua <code>ClusterDiag</code> hoặc adb) để có fixture <code>RootTask id=</code> nguyên văn</td><td><span class="pill">cần xe DL5</span></td></tr>
+<tr><td>OQ-6</td><td><code>ShellAppLauncher.closeSlot</code>/<code>reflow</code> nhánh có kênh là mã không tới được trên màn nhà (E10) — dọn hay giữ? Spec chỉ sửa chú thích (§6)</td><td><span class="pill">backlog</span></td></tr>
+<tr><td>OQ-7</td><td><b>Cổng kênh F4 chờ tiêu điểm</b> [ĐO máy ảo E2E ca 3a, 01/10]: chưa có kênh, người dùng chạm thẻ ô ⇒ app mở thành cửa sổ nổi và <b>giữ tiêu điểm</b> ⇒ <code>FirstOpenApproval.attemptAllowed(showing, focused)</code> (<code>FirstOpenApprovalPolicy.kt:98</code>, gọi ở <code>ShellChannelGate.kt:149</code>) không cho dò ⇒ kênh không lên (hai lần thử: 120 s, rồi 90 s kể cả chạm vùng trống của Kachi), cũng không có lượt dọn "shell-up", tới khi người dùng bấm HOME. Có từ F4 (09-14), <b>không do spec này gây ra</b> — spec này còn bỏ được nguồn tự động (R-B1: lượt tự mở lúc tiến trình mới sinh, E8 xe 29/09); còn lại đúng ca người dùng chạm thẻ trong ~2 s trước khi kênh lên. Rào tiêu điểm của F4 có lý do đã đo (không dựng hộp thoại "Cho phép gỡ lỗi USB?" chồng nhau — <code>FirstOpenApprovalPolicy.kt:89-97</code>, [CHƯA BIẾT] mở lại kết nối lúc hộp thoại treo có bung thêm hộp thoại không) ⇒ nới nó là đổi đường F4 đang chạy tốt (CLAUDE.md §6) — cần spec riêng + đo. Hướng gợi ý (chưa đo): cho dò khi mất tiêu điểm <i>do chính cửa sổ nổi Kachi vừa mở</i> và chưa từng thấy <code>AWAITING_APPROVAL</code> trong phiên. <b>Review lượt 2 (Pass 4) ghi thêm</b>: "~2 s" là đường thuận [ĐO mã]: lần dò đầu chờ khung đầu + tiêu điểm + <code>SETTLE_MS = 1 500</code> (<code>car-integration/…/FirstOpenApprovalPolicy.kt:41</code>, <code>ShellChannelGate.kt:88-93</code>). Dò hỏng thì khoảng không-kênh dài hơn [ĐO mã]: <code>AWAITING_APPROVAL</code> ⇒ thử lại mỗi <code>RETRY_EVERY_MS = 20 000</code> (<code>:47</code>, <code>:84-85</code>); lỗi khác (vd <code>PORT_CLOSED</code>) ⇒ nhánh <code>Environment</code>, không tự thử lại tới khi màn lấy lại tiêu điểm/hiện lại (<code>:86</code>; <code>ShellChannelGate.kt:96-99, 118-130</code>). Suốt khoảng đó thẻ ô hiện "Chạm để mở" (R-B1), và một lần chạm rơi đúng vào OQ-7. Trên xe sau nổ máy, lần dò đầu có hỏng không và khoảng không-kênh dài bao lâu: [CHƯA BIẾT] ⇒ đo ở OC-A1/OC-B2 (log <code>ShellChannelGate</code> trong <code>usage-*.log</code>). Không phải hồi quy: trước bản này chạm thẻ trong khoảng đó cũng mở cửa sổ nổi y hệt, chỉ thiếu dòng gợi ý; còn lượt tự mở lúc vẽ đầu (bố cục tự vẽ, E8) thì nay đã bỏ.</td><td><span class="pill wait">chờ owner</span> — backlog <code>PROFILE-SWITCH-SLOTS-OQ7</code></td></tr>
+<tr><td>OQ-8</td><td>[ĐO máy ảo E2E ca 1a, 01/10] YouTube bản cũ trên máy ảo tự mở <code>NewVersionAvailableActivity</code> ⇒ hệ thống <code>Failed to put TaskRecord … on display 18</code> (<code>ActivityStackSupervisor.java:2436</code> r47) và đưa task về display 0 toàn màn, che Kachi tới khi bấm HOME. Kachi không phát hiện task của app ô rời màn ảo (<code>VdAppHost.kt:251-260</code>). Có từ trước, không phải hồi quy; trên xe [CHƯA BIẾT]</td><td><span class="pill">backlog, cần đo xe</span></td></tr>
+</table></div>
+
+<h2>8. References</h2>
+<ul>
+<li>Mã (HEAD <code>8d0f0e5</code>): <code>KachiHomeRender.kt</code> · <code>DockAreaLayout.kt</code> · <code>WorkspaceView.kt</code> · <code>WorkspaceViewCards.kt</code> · <code>VdAppHost.kt</code> · <code>LauncherWindows.kt</code> · <code>IntentAppLauncher.kt</code> · <code>KachiHomeSlots.kt</code> · <code>KachiHomeActivity.kt</code> · <code>KachiHomeWiring.kt</code> · <code>core/…/launcher/ShellAppLauncher.kt</code> · <code>core/…/clustercast/StackParse.kt</code> · <code>core/…/simplified/SimpleCastCoordinator.kt:389</code> · <code>app/…/system/FreeformSeedStore.kt</code> · <code>app/…/system/WindowCommandDispatcher.kt</code> · <code>ClusterNavBridgeReapply.kt:86</code>.</li>
+<li>Commit: <code>4a0709f</code> (1.53) · <code>944d323</code> (1.55) · <code>ad33a52</code> (1.63) · <code>f7a7b58</code> · <code>4811431</code> (2.84).</li>
+<li>AOSP <code>android-10.0.0_r47</code>: <code>ActivityManagerShellCommand.java</code> · <code>ActivityTaskManagerService.java</code> · <code>ActivityStackSupervisor.java</code> · <code>ActivityDisplay.java</code> · <code>ActivityManager.java</code> · <code>ActivityManagerService.java</code> · <code>ViewGroup.java</code> · <code>View.java</code> · <code>LinearLayout.java</code> · <code>packages/Shell/AndroidManifest.xml</code>.</li>
+<li>AOSP <code>android-12.0.0_r34</code>: <code>ActivityManagerShellCommand.java</code> · <code>ActivityTaskManagerService.java</code> · <code>ActivityTaskSupervisor.java</code> · <code>TaskDisplayArea.java</code> · <code>ActivityTaskManager.java</code> · <code>ActivityManagerService.java</code> · <code>ViewGroup.java</code> · <code>View.java</code> · <code>LinearLayout.java</code> · <code>packages/Shell/AndroidManifest.xml</code>.</li>
+<li>Fixture: <code>core/src/test/resources/diagnostics/am-stack-list-emulator-2026-10-01-*.txt</code> (8 tệp, §2.7; hai tệp <code>noshell-A-start</code> và <code>embedded-after-B</code> là bằng chứng trạng thái — E2/E6 — không bài test nào đọc: chỉ có stack home, mọi ca "không gỡ home" đã khoá trên <code>t0a-opened</code>/<code>shellup-A</code>) · <code>am-stack-list-oncar-2026-09-29-after-fix-orphan-top.txt</code> (xe).</li>
+<li>Spec liên quan: <code>specs/kachi-283-key-heal-acc-off.html</code> (§2.5 F1, R-B1, D-3) · <code>specs/kachi-profile-scope-nav-schedule.html</code> (Q1 — quyết định 01/10) · <code>specs/kachi-profiles-are-everything.html</code> · <code>specs/kachi-open-app-correctly.html</code>.</li>
+<li>Luật: <code>CLAUDE.md</code> §3 · §4 · §5 · §6 · §7 · §8 · §10 · §14 · §15; <code>dashcast-src/CHANGELOG.md</code> 0.2.92-alpha (lệnh gỡ task khác nhau theo ROM).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi viết mã (R2.6). Lỗi A có mã từ 2026-10-01 (Pass 1); lỗi B có mã từ 2026-10-01 (Pass 2).</p>
+<ul>
+<li><b>2026-10-01 · lỗi A — mã off-car (T1 · T2 · T3 · T3b)</b>. Không commit/push/OTA, không bump, không đụng xe, không chạy máy ảo (máy ảo đang phục vụ phiên test chiếu cụm khác ⇒ <b>V-emu-A chưa chạy</b>, thuộc T9).
+<ul>
+<li><b>Tệp</b>: mới <code>core/…/launcher/DockAreaPlan.kt</code> (84 dòng) · <code>app/…/launcher/SlotHostHeal.kt</code> (36) · <code>core/…/launcher/DockAreaPlanTest.kt</code> · <code>app/…/launcher/DockAreaLayoutContractTest.kt</code>; sửa <code>DockAreaLayout.kt</code> (95: bỏ <code>removeView(workspace)</code> + <code>removeAllViews()</code>, chạy theo kế hoạch, vùng ô chỉ <code>setLayoutParams</code>) · <code>VdAppHost.kt</code> (401: <code>wasLaunched</code> + <code>isReleased</code> chỉ-đọc) · <code>WorkspaceView.kt</code> (499: <code>onAttachedToWindow</code>) · <code>KachiHomeRender.kt</code> (chỉ chú thích) · <code>SlotHostingLifecycleContractTest.kt</code> (+2 ca, 10 ca cũ không sửa).</li>
+<li><b>§4 bốn câu</b>: không thêm lệnh <code>am</code>/<code>wm</code>. Lệnh có sẵn <code>am force-stop &lt;pkg&gt;</code> trong <code>release()</code> bị <b>thu hẹp</b> (chỉ khi host đã mở app), chuỗi giữ nguyên byte (<code>LauncherWindowingGuardTest</code> xanh).</li>
+<li><b>§8 call site</b> [ĐO grep]: <code>DockAreaPlan.target/steps</code> ← <code>DockAreaLayout.kt:28,49</code>; <code>DockAreaLayout.apply</code> ← <code>KachiHomeActivity.kt:277</code> + <code>KachiHomeRender.kt:61</code>; <code>SlotHostHeal.anyReleased</code> ← <code>WorkspaceView.kt:128</code>; <code>VdAppHost.isReleased</code> ← <code>SlotHostHeal.kt:34</code>; <code>wasLaunched</code> ← <code>VdAppHost.kt:385,390</code>.</li>
+<li><b>Phá thử</b> [ĐO, gradle hẹp, sao lưu + trả lại từng byte — <code>cmp</code> khớp]: M1 trả <code>mainArea.removeAllViews()</code> ⇒ 2 ca <code>DockAreaLayoutContractTest</code> đỏ · M2 bỏ <code>wasLaunched &amp;&amp;</code> ⇒ ca R-A2 đỏ · M3 <code>steps</code> tháo cả vùng ô ⇒ 3 ca <code>DockAreaPlanTest</code> đỏ (64 cặp · vùng ô nằm giữa · kịch bản A↔B) · M4 bỏ dòng <code>post</code> lưới ⇒ ca R-A4 đỏ · M5 đổi đích viền TRÊN thành <code>[W, D]</code> ⇒ ca đích đỏ. 10 ca H2 cũ xanh suốt các lượt phá.</li>
+<li><b>Kết quả</b> [ĐO]: <code>./gradlew testDebugUnitTest test lint --continue</code> ⇒ <code>EXIT=0</code>; <code>scripts/count-tests.py</code>: <b>6 717 test / 0 lỗi</b> (768 XML; chạy mới: core 3 258 · app 3 274 · offcar-planner 99 · car-integration 64; vehicle-contracts 22 up-to-date, không đổi). Lint debug: <b>0 errors</b>, không cảnh báo mới ở tệp mới/sửa.</li>
+<li><b>Còn lại của lỗi A</b>: T9 V-emu-A (máy ảo có kênh, A cạnh dưới ↔ B cạnh trái ×3 + ca chỉ đổi cạnh trong Cài đặt E11 + ca ẩn/hiện) · T11 senior review + quét bảo mật · 🚗 OC-A1/OC-A2 anh em. Hành vi trên xe [CHƯA BIẾT] tới khi có OC-A1.</li>
+</ul></li>
+<li><b>2026-10-01 · lỗi B — T0a máy ảo rồi mã off-car (T4 · T5 · T6a · T6b · T7 · T8)</b>. Không commit/push/OTA, không bump (APK dựng ra vẫn mang 2.84 (185) ⇒ KHÔNG được phát cho ai trước khi bump — CLAUDE.md §9), không đụng xe.
+<ul>
+<li><b>T0a</b> [ĐO máy ảo A10, 19:32–19:34]: kiểm máy ảo rảnh trước (không phiên adb/gradle nào khác, logcat không có lệnh mới); đo bằng uid 0 rồi lặp lại bằng uid 2000 (<code>su shell</code>); trả máy ảo về đúng trạng thái trước đo (stack 24 VietMap ô + stack 0 home, Kachi giữ pid). Kết quả E15 + <code>docs/diagnostics/profile-switch-slots-emulator-2026-10-01.md</code>; 2 fixture <code>…-t0a-{opened,after-remove}.txt</code> (đã kiểm: không IP/serial/đường dẫn tuyệt đối).</li>
+<li><b>Tệp</b>: mới <code>core/…/launcher/FloatingWindowLedger.kt</code> (86) · <code>FloatingOrphanPlan.kt</code> (100) · <code>FloatingOrphanSweep.kt</code> (132) · <code>app/…/launcher/FloatingLedgerStore.kt</code> (30) · test <code>FloatingOrphanPlanTest</code> (15 ca) · <code>FloatingWindowLedgerTest</code> (6) · <code>FloatingOrphanSweepTest</code> (8) · <code>FloatingWiringContractTest</code> (8); sửa <code>LauncherWindows.kt</code> (224: <code>reflow</code> chỉ còn nút nổi, bỏ <code>HOME_FRONT</code>; <code>placeApp</code> ghi dấu trước lệnh mở; <code>reconcileLocations</code> → <code>sweepFloating("evict")</code>; hàm mới <code>sweepFloating</code>; KDoc đính chính) · <code>KachiHomeActivity.kt</code> (475, +0 dòng: mốc <code>shell-up</code> trong <code>onSeam</code>) · <code>WorkspaceView.kt</code> (499, +0) · <code>WorkspaceViewCards.kt</code> (<code>appCard(pkg, tapHint)</code>) · <code>IntentAppLauncher.kt</code> + <code>ShellAppLauncher.kt</code> (chú thích R-B5; <code>PKG</code> thành <code>internal</code>) · <code>SettingsCatalog.kt</code> (<code>NOT_SETTINGS</code> + mô tả tệp <code>clusternav_state</code>) · <code>ProfileScope.kt</code> (DEVICE) · <code>strings_kachi.xml</code> vi/en (<code>kachi_slot_tap_to_open</code>) · <code>OpenAppWiringContractTest.kt</code> (bài reflow đổi theo R-B1 — chặt hơn).</li>
+<li><b>§4 bốn câu</b>: lệnh mới duy nhất <code>am stack remove &lt;id&gt;</code> (+ đọc <code>am stack list</code>) — display 0 · allow-list dấu bền trừ gói còn giữ/Kachi/gói có task ở display khác · chỉ <code>standard</code>+<code>freeform</code>, không pinned · không hoàn tác (≈ vuốt khỏi Gần đây, tiến trình còn sống [ĐO]). Guard ở tầng thi hành <code>FloatingOrphanSweep.removeStack</code>. Không <code>force-stop</code>, không <code>fullscreenCmd</code>, không rẽ theo tên gói / đời xe.</li>
+<li><b>§8 call site</b> [ĐO grep]: <code>FloatingWindowLedger</code>/<code>FloatingLedgerStore</code>/<code>FloatingOrphanSweep</code> ← <code>LauncherWindows.kt:78-79</code>; <code>floatingSweep.run</code> ← <code>LauncherWindows.kt:94</code>; <code>sweepFloating</code> ← <code>LauncherWindows.kt:74</code> (evict) + <code>KachiHomeActivity.kt:322</code> (shell-up); <code>markOpened</code> ← <code>LauncherWindows.kt:182</code>; <code>FloatingOrphanPlan.plan/admissible/forgettable/stillFloating/removeCmd/LIST_CMD</code> ← <code>FloatingOrphanSweep.kt</code>; <code>appCard(…, tapHint)</code> ← <code>WorkspaceView.kt:361</code>; <code>kachi_slot_tap_to_open</code> ← <code>WorkspaceViewCards.kt:97</code>; <code>ShellAppLauncher.PKG</code> ← <code>FloatingWindowLedger.kt:72</code>.</li>
+<li><b>Phá thử</b> [ĐO, gradle hẹp, chạy bằng kịch bản sao lưu → phá → test → trả lại, <code>cmp</code> khớp từng byte cả 6 lần]: B1 bỏ lọc <code>activityType == STANDARD</code> trong <code>strictFloatingOnMain</code> ⇒ 1 đỏ (<code>loai stack TRONG…</code>) · B2 gỡ guard thi hành ⇒ 1 đỏ (<code>guard thi hanh tu choi…</code>) · B5 xoá dấu cả gói còn giữ ⇒ 2 đỏ · B3 ghi dấu SAU <code>openInSlot</code> ⇒ 1 đỏ (R-B2) · B4 trả <code>openInSlot</code> vào <code>reflow</code> ⇒ 2 đỏ (<code>FloatingWiringContractTest</code> + <code>OpenAppWiringContractTest</code>) · B6 bỏ mốc <code>shell-up</code> ⇒ 1 đỏ.</li>
+<li><b>Kết quả</b> [ĐO]: <code>./gradlew testDebugUnitTest test lint assembleRelease --continue</code> (nền, tạm dừng máy ảo) ⇒ <code>EXIT=0</code>; <code>scripts/count-tests.py</code>: <b>6 762 test / 0 lỗi</b> (773 XML; +45 so với Pass 1 = 37 ca mới + 8 ca <code>FloatingWiringContractTest</code> chạy thêm ở biến thể <code>:app:test</code>); <code>vehicle-contracts</code> up-to-date (không đổi). Lint debug: 0 error; 2 cảnh báo <code>UseKtx</code> mới cùng loại mã sẵn cạnh bên (<code>FloatingLedgerStore.kt:24</code> như <code>FreeformSeedStore.kt:30</code> — cần giá trị trả về của <code>commit()</code> nên không đổi sang KTX <code>edit {}</code>; <code>WorkspaceViewCards.kt:98</code> như 7 chỗ <code>Color.parseColor</code> sẵn trong tệp). APK: <code>app/build/outputs/apk/release/app-release.apk</code> (19:51, 2.84 (185) — chưa bump).</li>
+<li><b>Còn lại của lỗi B</b>: T9 V-emu-B1/B2 (cài bản mới lên máy ảo, sao lưu/trả prefs) · T11 senior review + quét bảo mật · T12 <code>docs/README.md</code>/<code>PROJECT-BACKLOG.md</code>/<code>project-context.md</code> (gồm mục chỉ mục cho <code>diagnostics/profile-switch-slots-emulator-2026-10-01.md</code>) · 🚗 OC-0 trên xe trước OTA (OQ-1) · OC-B1/OC-B2.</li>
+</ul></li>
+<li><b>2026-10-01 · T9 E2E máy ảo</b> (Android 10, APK release 19:51 vc185 — chưa bump ⇒ không phát). Bằng chứng (127 tệp: <code>am stack list</code> nguyên văn, ảnh, logcat, dump giao diện) ở thư mục nháp của phiên, không đưa vào repo. [ĐO]
+<ul>
+<li><b>V-emu-A</b> ✅: có kênh A↔B ×3 rồi về A — cả 7 lượt có <code>Display device removed</code> ô cũ + <code>Display device added kachi-slot-N</code> + <code>START</code> app ô sau 1–2 s, không ô đen, không cửa sổ nổi trên display 0; đổi cạnh/ẩn/hiện trong Cài đặt (E11): màn ảo ô sống suốt 4 bước, không <code>Force stopping</code> nào. Lượt 1a ⚠ do YouTube bản cũ tự thoát màn ảo (OQ-8, có từ trước).</li>
+<li><b>V-emu-B1</b> ✅: không kênh, A→B→A→B→A — chỉ còn stack home, không <code>START</code> app khách; thẻ ô hiện "Chạm để mở"; chạm thẻ ⇒ stack 40 <code>standard freeform</code> display 0 khung nằm trong ô, dấu <code>kachi_floating_opened=vn.vietmap.live</code>; đổi sang B ⇒ VietMap còn nổi (L1, đúng thiết kế).</li>
+<li><b>V-emu-B2</b> ⚠: kênh không lên khi VietMap giữ tiêu điểm (OQ-7); sau HOME: <code>am stack remove 40</code> ⇒ VietMap thoát, ô B dựng màn ảo; dòng <code>KachiFloat … gỡ=[]/[40] còn-nổi=[vn.vietmap.live] xoá-dấu=[]</code> sai vì bản đọc lại chạy trước khi task rời stack ⇒ vá ở review lượt 1 (§10). Ca L3 (gói còn giữ đang nổi lúc kênh lên) ✅ đúng thiết kế.</li>
+<li><b>Màn nhà / Gần đây / crash</b> ✅: <code>Stack #0: type=home</code> mọi ảnh chụp; cả phiên đúng 1 lệnh gỡ (stack 40); <code>logcat -b crash</code> rỗng. Prefs trả về đúng sha256 cả 10 tệp; chế độ kiểm thử tắt; kênh shell như lúc đầu.</li>
+</ul></li>
+<li><b>2026-10-01 · dữ liệu</b> — Fixture lấy từ bộ chụp nguyên văn (lượt 05:22 và 06:00/06:13); bộ chụp lượt 06:24–07:16 bị lọc dòng <code>configuration=</code> lúc chụp nên không dùng (§2.7).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass review thêm một mục <code>Pass N — YYYY-MM-DD</code>; tag <code>[P0]–[P3]</code>; ghi vá đã áp, kết quả test, verdict.</p>
+<ul>
+<li>(chưa có pass review — spec mới draft.)</li>
+</ul>
+<h3>Pass 1 — 2026-10-01</h3>
+<p class="muted">Senior review lượt 1 (Opus, rule global §5 · §5.1 · §5.2; T11). Đọc: spec này + toàn bộ <code>git diff</code> (19 tệp sửa) + 21 tệp mới + báo cáo E2E T9 + bằng chứng E2E (<code>KachiFloat</code>, logcat) + soi lại AOSP.</p>
+<ul>
+<li><b>[P2] ĐÃ VÁ — lượt dọn đọc lại quá sớm</b> (E2E ca 3b [ĐO]: <code>KachiFloat … gỡ=[]/[40] còn-nổi=[vn.vietmap.live] xoá-dấu=[]</code> lúc 20:14:17.607, VietMap kết thúc 17.651). Gốc [ĐO AOSP r47, tải thêm <code>TaskRecord.java</code>]: <code>removeTaskByIdLocked</code> (<code>ActivityStackSupervisor.java:1789-1800</code>) → <code>removeTaskActivitiesLocked</code> (<code>TaskRecord.java:1530-1533</code>) chỉ <i>yêu cầu</i> activity kết thúc (<code>performClearTaskAtIndexLocked</code> <code>:1432-1452</code>, <code>pauseImmediately=false</code>); task rời stack khi activity cuối được gỡ thật (<code>removeActivity</code> <code>:1371-1395</code>). Hệ quả: log sai + dấu ở lại tới lượt dọn sau (cửa sổ allow-list rộng hơn cần). Vá: <code>FloatingOrphanSweep.settle</code> (<code>FloatingOrphanSweep.kt:115</code>) đọc lại tới khi mọi stack đã gửi biến mất, trần <code>SETTLE_READS = 5</code> × <code>SETTLE_STEP_MS = 250</code> (chặn <code>winExec</code> thêm ≤ ~1 s, chỉ khi đã gửi lệnh gỡ); bị ngắt (<code>shutdownNow</code>) ⇒ trả bản đọc gần nhất, giữ cờ ngắt, không ném (ném ra luồng nền = sập HOME); log thêm <code>đọc-lại=N</code>. Giấc ngủ tiêm vào được (test không ngủ thật). Không lệnh shell mới, chuỗi lệnh giữ nguyên byte; A12 [SUY] cùng kiểu kết-thúc-bất-đồng-bộ, vòng đọc lại không phụ thuộc đời Android ⇒ không mục <code>ClusterProfile</code>. Test: <code>FloatingOrphanSweepTest</code> 8 → 10 ca (ca E2E dẫn xuất từ cặp t0a: đọc lại lần đầu còn stack 26 ⇒ ngủ 1 nhịp ⇒ <code>removed=[26]</code>, dấu rỗng, <code>đọc-lại=2</code> · ca bị ngắt), ca <code>noshell-A-back</code> cập nhật đúng trần (1 + 1 + 5 lệnh, 4 nhịp ngủ). Phá thử [ĐO, sao lưu + trả lại, <code>cmp</code> khớp]: R1 bỏ vòng đọc lại ⇒ 3 ca đỏ · R2 bỏ bắt <code>InterruptedException</code> ⇒ 1 ca đỏ.</li>
+<li><b>[P2] KHÔNG VÁ ở spec này — có từ F4 (09-14)</b>: cổng kênh shell chờ tiêu điểm ⇒ cửa sổ nổi do chạm mở giữ tiêu điểm thì kênh không lên tới khi bấm HOME (E2E ca 3a [ĐO]). Không phải hồi quy (spec này còn bỏ nguồn tự động — R-B1). Nới rào tiêu điểm là đổi đường F4 đang chạy tốt và chạm một [CHƯA BIẾT] đã ghi ở <code>FirstOpenApprovalPolicy.kt:89-97</code> ⇒ cần spec + đo riêng (CLAUDE.md §1, §6). Ghi <b>OQ-7</b> + backlog <code>PROFILE-SWITCH-SLOTS-OQ7</code>; L1 (§4.4) và V-emu-B2 (§6) ghi lại cho đúng số đo.</li>
+<li><b>[P3] KHÔNG VÁ — có từ trước</b>: app ô tự thoát màn ảo về display 0 toàn màn (YouTube bản cũ trên máy ảo, E2E ca 1a) — <b>OQ-8</b>. [P3, ngoài phạm vi, máy ảo] ô đồng hồ đứng giờ (E2E #4, nghi <code>WidgetViews.kt:376-397</code> chỉ vẽ lại khi dữ liệu xe đổi) — không chạm tệp đó, để phiên khác xác minh.</li>
+<li><b>[P3] ĐÃ VÁ — T12 tài liệu</b>: <code>diagnostics/profile-switch-slots-emulator-2026-10-01.md</code> chưa có dòng index (doc mồ côi = không tồn tại, R2.1) ⇒ thêm dòng ở <code>docs/README.md</code>; trạng thái "chưa code" ở README / <code>PROJECT-BACKLOG.md</code> / <code>project-context.md</code> sửa thành "mã off-car xong, chưa commit"; thêm hai sự thật bền vào <code>project-context.md</code> (gỡ stack bất đồng bộ · cổng F4 chờ tiêu điểm).</li>
+<li><b>§4 bốn câu — soi lại bằng mã</b>: <code>am stack remove &lt;id&gt;</code> chỉ chạy ở <code>FloatingOrphanSweep.removeStack</code> (<code>:142-160</code>) sau <code>FloatingOrphanPlan.admissible</code> trên bản đọc của chính lượt đó (<code>FloatingOrphanPlan.kt:61-76</code>): display 0 · <code>mActivityType</code> đúng chữ <code>standard</code> (home/recents/assistant/trống đều loại) · <code>freeform</code> · không pinned · mọi task thuộc dấu − gói còn giữ − Kachi − gói có task ở display ≠ 0 (<code>:51-54</code>). Không <code>force-stop</code>/<code>fullscreenCmd</code> trong đường dọn (<code>FloatingWiringContractTest</code>). A10 framework chặn thêm (<code>ATMS:3383-3386</code>); A12 không (<code>ATMS.removeTask :1904-1926</code> — soi lại [ĐO]) và <code>RootTaskInfo.toString</code> vẫn in <code>configuration=</code> (<code>ActivityTaskManager.java:542-567</code> [ĐO]) ⇒ bộ lọc chặt đọc được loại trên DL5; ROM cắt lệnh ⇒ đọc rỗng ⇒ không làm gì. Hoàn tác: không có (≈ vuốt khỏi Gần đây), đã ghi.</li>
+<li><b>§5 dấu bền</b>: ghi <code>commit()</code> trong <code>placeApp</code> TRƯỚC <code>openInSlot</code>/<code>moveToSlot</code> (khoá <code>FloatingWiringContractTest</code>); quyết bằng <code>am stack list</code>; dọn dấu sau bản đọc lại (nay có <code>settle</code>). <b>Không vòng lặp dọn/mở lại</b>: đường dọn không gọi đường mở nào; <code>reflow</code> không còn tự mở; lượt dọn chỉ chạy ở hai mốc sự kiện (evict · kênh vừa lên), không theo nhịp.</li>
+<li><b>§6 cùng cạnh thanh nút</b>: <code>DockAreaLayout.apply</code> chỉ chạy khi <code>layoutChanged</code> (<code>KachiHomeRender.kt:58-61</code>) ⇒ đổi hồ sơ cùng cạnh đi đúng đường cũ; E2E ca 1b ✅. <code>DockAreaPlan.target</code> khớp từng cạnh với bản 2.84 (<code>git show HEAD:…/DockAreaLayout.kt</code>), <code>scrollWrap(dock, cfg.isVertical())</code> giữ nguyên trục.</li>
+<li><b>Scope §5.1</b>: R-A1…R-A4 ✅ (mã + test + E2E V-emu-A) · R-B1 ✅ · R-B2 ✅ · R-B3 ✅ (mã + test; E2E đúng sau HOME — OQ-7) · R-B4 ✅ · R-B5 ✅ · R-B6 ✅ (dòng <code>KachiFloat</code> trong <code>usage-*.log</code> [ĐO E2E]) · R-nf1…R-nf7 ✅ (WorkspaceView 499 · KachiHomeActivity 475 · KachiHomeWiring 492 dòng; không <code>substringAfter/Before</code> trong test mới; bài canh cũ không nới — <code>OpenAppWiringContractTest</code> đổi theo hướng chặt hơn, có lý do). T9 ✅ (⚠ B2) · T10 ✅ · T11 lượt 1 xong, <b>quét bảo mật chưa</b> · T12 ✅ (vá ở trên) · 🚗 OC-0/OC-A*/OC-B* chưa.</li>
+<li><b>Tech freshness §5.2</b>: không thêm thư viện; chỉ Android SDK (<code>ViewGroup</code>/<code>LinearLayout</code>/<code>SharedPreferences.commit</code> — không deprecated) + Kotlin stdlib (<code>data object</code>). Hành vi framework kiểm bằng source AOSP A10 r47 + A12 r34 (mạnh hơn tài liệu) ⇒ Context7 không áp dụng.</li>
+<li><b>Verdict lượt 1</b>: PATCHED (1 vá mã [P2] + 1 vá tài liệu [P3]) — theo vòng review, cần lượt 2 trên bản đã vá. Không commit/push/OTA, không bump, không đụng xe/máy ảo.</li>
+</ul>
+<h3>Pass 2 — 2026-10-01</h3>
+<p class="muted">Senior review lượt 2 (Opus, rule global §5 · §5.1 · §5.2) trên bản đã vá ở lượt 1. Đọc: spec này + toàn bộ <code>git diff</code> (19 tệp sửa) + tệp mới (<code>DockAreaPlan</code> · <code>FloatingWindowLedger</code> · <code>FloatingOrphanPlan</code> · <code>FloatingOrphanSweep</code> · <code>FloatingLedgerStore</code> · <code>SlotHostHeal</code> + 6 tệp test + 8 fixture) + dòng <code>KachiFloat</code>/logcat của E2E T9 + soi lại AOSP.</p>
+<ul>
+<li><b>Mã: 0 lỗi [P0]–[P3], không vá dòng mã nào.</b></li>
+<li><b>§4 bốn câu, soi lại theo từng lệnh</b>:
+  <ul>
+  <li><code>am stack remove &lt;id&gt;</code>: chỉ dựng ở <code>FloatingOrphanPlan.removeCmd</code> và chỉ chạy ở <code>FloatingOrphanSweep.removeStack</code> (<code>:142-160</code>), sau <code>admissible</code> (<code>FloatingOrphanPlan.kt:61-76</code>) trên bản đọc của chính lượt đó. Display 0; <code>mActivityType</code> đúng chữ <code>standard</code>, nên home/recents/assistant/dream/undefined/trống đều bị loại; chỉ freeform; không pinned. Mọi task phải thuộc dấu, trừ gói còn giữ, trừ Kachi, trừ gói có task ở display khác 0. Id chỉ là <code>Int</code>, không ghép chuỗi người dùng. Không force-stop, không <code>fullscreenCmd</code>.</li>
+  <li><code>am force-stop</code> trong <code>VdAppHost.release</code>: chỉ bị thu hẹp (cần <code>wasLaunched</code>), chuỗi giữ nguyên byte. [ĐO mã] màn ảo ô tạo với cờ <code>256</code> (DESTROY_CONTENT_ON_REMOVAL, <code>VdAppHost.kt:151</code>), nên host chưa từng mở app thì không để lại cửa sổ nào khi nhả.</li>
+  <li>Không có lệnh <code>am</code>/<code>wm</code> mới nào khác.</li>
+  </ul></li>
+<li><b>DL5 (§3, §7) [ĐO AOSP]</b>:
+  <ul>
+  <li><code>runStack</code> A12 vẫn nhận <code>list</code>/<code>remove</code> (<code>ActivityManagerShellCommand.java:298-299, 2625-2640, 2700-2721</code>).</li>
+  <li><code>RootTaskInfo.toString</code> in dòng <code>configuration=</code> (<code>ActivityTaskManager.java:542-567</code>).</li>
+  <li>Tải thêm <code>WindowConfiguration.java</code>: dòng đó chứa <code>mWindowingMode=</code>/<code>mActivityType=</code> ở cả A10 (<code>:565, 567</code>) lẫn A12 (<code>:662, 664</code>). A12 thêm loại <code>dream</code> (<code>:885</code>), cũng bị bộ lọc chữ <code>standard</code> loại.</li>
+  <li>Vì <code>ATMS.removeTask</code> A12 (<code>:1904-1926</code>) không kiểm loại stack, bộ lọc của Kachi đọc được loại và là rào duy nhất trên DL5. ROM cắt lệnh hoặc bộ điều phối từ chối thì seam trả <code>""</code> (<code>WindowCommandDispatcher.kt:63-68</code>; <code>ShellTransport.run</code> nuốt lỗi, trả <code>""</code>), parse ra rỗng, lượt dọn <code>READ_FAILED</code>/<code>READ2_FAILED</code>, giữ dấu và không gửi lệnh gỡ.</li>
+  </ul></li>
+<li><b>Ngắt luồng (lượt 1 thêm <code>settle</code>)</b>: seam không bao giờ ném lỗi (<code>ShellTransport.run</code> dùng <code>runCatching</code>), nên bị ngắt giữa lúc đọc thì nhận <code>""</code> và <code>settle</code> thoát ngay vì đọc hỏng; bị ngắt lúc ngủ thì bắt <code>InterruptedException</code> và giữ cờ ngắt. Vòng đọc lại luôn dừng sau ≤ 5 lần đọc.</li>
+<li><b>§5 dấu bền</b>: <code>markOpened</code> chạy trong <code>submit</code>, trước cả <code>openInSlot</code> lẫn <code>moveToSlot</code>, ghi bằng <code>commit()</code>. Quyết định bằng <code>am stack list</code>; dọn dấu theo bản đọc lại. Khoá <code>FloatingWindowLedger.LOCK</code> chỉ lồng bên trong <code>FloatingOrphanSweep.LOCK</code>, không có chiều ngược lại, nên không có deadlock.</li>
+<li><b>Không vòng lặp dọn/mở lại</b>: <code>reflow</code> chỉ còn <code>updateOverlayHeads</code>; đường dọn không gọi đường mở nào. [ĐO E2E] mọi lượt <code>evict</code> lúc dấu rỗng đều là <code>0 lệnh shell</code>.</li>
+<li><b>§6 cùng cạnh thanh nút</b>: <code>DockAreaLayout.apply</code> chỉ chạy khi <code>layoutChanged</code>. Khi đổi cạnh, <code>target</code>, <code>dockLp</code>, khoảng cách và trục cuộn đều khớp bản 2.84; vùng ô chỉ nhận <code>setLayoutParams</code>, mà theo [ĐO AOSP] lệnh này chỉ gọi <code>onSetLayoutParams</code> + <code>requestLayout</code>, không tháo view (<code>View.java:17268-17278</code> A10).</li>
+<li><b>[P3] ĐÃ VÁ (chỉ tài liệu)</b>:
+  <ul>
+  <li>§2.7 ghi "Sáu tệp" trong khi bảng có 8; References ghi "(6 tệp)". Đã sửa thành 8 tệp, và ghi rõ hai tệp <code>noshell-A-start</code>/<code>embedded-after-B</code> chỉ là bằng chứng trạng thái (E2/E6), không bài test nào đọc. Hai tệp này chỉ có stack home; ca "không gỡ home" đã khoá trên <code>t0a-opened</code>/<code>shellup-A</code>.</li>
+  <li>OQ-7 thiếu độ dài khoảng không-kênh theo mã (đường thuận ~1,5 s; dò hỏng thì 20 s, hoặc tới lần lấy lại tiêu điểm) và việc thẻ "Chạm để mở" hiện suốt khoảng đó. Đã ghi kèm file:line và việc cần đo trên xe (OC-A1/OC-B2). Đây không phải hồi quy, và quyết định thuộc owner ở OQ-7.</li>
+  </ul></li>
+<li><b>Scope §5.1</b>:
+  <ul>
+  <li>R-A1…R-A4 ✅ · R-B1…R-B6 ✅ (R-B3 trên E2E chỉ đúng sau HOME — OQ-7) · R-nf1…R-nf7 ✅.</li>
+  <li>Số dòng: WorkspaceView 499 · KachiHomeActivity 475 · KachiHomeWiring 492 · LauncherWindows 224 · VdAppHost 401 · FloatingOrphanSweep 187.</li>
+  <li>Test mới không dùng <code>substringAfter</code>/<code>substringBefore</code>. Chỗ <code>substringBefore("//")</code> ở <code>SlotHostingLifecycleContractTest</code> có sẵn từ HEAD.</li>
+  <li>Bài canh cũ không bị nới.</li>
+  <li>§8: mọi hàm mới đều có call site [ĐO grep].</li>
+  <li>Còn lại: T11 quét bảo mật · 🚗 OC-0 trước OTA · OC-A*/OC-B*.</li>
+  </ul></li>
+<li><b>Tech freshness §5.2</b>: không thêm thư viện; chỉ Android SDK + Kotlin stdlib, không API deprecated. Hành vi framework kiểm bằng source AOSP A10 r47 / A12 r34, nên Context7 không áp dụng.</li>
+<li><b>Chạy [ĐO]</b>:
+  <ul>
+  <li>Test hẹp <code>--rerun</code>: 112 ca / 0 lỗi (12 lớp, gồm các bài canh <code>LauncherWindowingGuardTest</code> · <code>WindowReconcileApplyTest</code> · <code>LauncherCommandGoldenTest</code> · <code>StackParseTest</code>).</li>
+  <li>Full <code>testDebugUnitTest --rerun test --rerun lint assembleRelease --continue</code> (nền, tạm dừng máy ảo): <code>EXIT=0</code>; <code>scripts/count-tests.py</code>: 6 764 test / 0 lỗi (773 XML); lint debug 0 lỗi.</li>
+  </ul></li>
+<li><b>Verdict lượt 2</b>: CLEAN — không đổi mã, chỉ 2 vá tài liệu [P3], nên vòng review dừng ở đây. Không commit/push/OTA, không bump, không đụng xe; máy ảo chỉ bị tạm dừng trong lúc chạy gradle.</li>
+</ul>
+
+</div></body>
+</html>

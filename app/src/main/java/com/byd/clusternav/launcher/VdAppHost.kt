@@ -83,6 +83,9 @@ class VdAppHost(
     // [maybeLaunch]. Thiếu nó thì luồng nền có thể mãi thấy `false` và vẫn bắn `am start` cho một màn ảo đã nhả.
     @Volatile private var released = false
 
+    /** Chỉ ĐỌC — cho lưới dựng-lại-ô của [WorkspaceView] ([SlotHostHeal]). Host đã nhả không bao giờ sống lại (H2). */
+    val isReleased: Boolean get() = released
+
     /** H2: khoá theo dõi ở [SlotLiveProbe] — riêng cho từng chủ×ô để hai màn Kachi không đạp lên nhau. */
     private val probeKey = "$owner#$slot"
 
@@ -366,7 +369,8 @@ class VdAppHost(
     // ── H2·1 · GIẢI PHÓNG MÀN ẢO ────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Nhả màn ảo của ô này + dừng app + thôi đo. **Idempotent** — [WorkspaceView] gọi tường minh TRƯỚC khi tháo
+     * Nhả màn ảo của ô này + dừng app (CHỈ khi chính host này đã mở nó — R-A2) + thôi đo. **Idempotent** —
+     * [WorkspaceView] gọi tường minh TRƯỚC khi tháo
      * view (đường chắc chắn), `onDetachedFromWindow` gọi lại (đường cũ, cho mọi ca tháo view ngoài tầm nhìn).
      *
      * Vì sao không dựa mỗi vào `onDetachedFromWindow`: [ĐO] 2026-09-14 cho thấy màn Kachi mang cờ "đang kết thúc"
@@ -375,11 +379,15 @@ class VdAppHost(
     fun release() {
         if (released) return
         released = true
+        // ⚠ PROFILE-SWITCH-SLOTS · R-A2: đọc TRƯỚC dòng `launched = false` cuối hàm. `launched` bật ở [maybeLaunch] ngay
+        // trước luồng mở app ⇒ `false` = host này CHƯA từng ra lệnh mở. [ĐO máy ảo 2026-10-01] thiếu rào này thì ô bị
+        // nhả trước khi có mặt vẽ vẫn `am force-stop` app của người dùng (YouTube) dù chưa bao giờ mở nó trong ô.
+        val wasLaunched = launched
         // Ô đang bị nhả giữa một cử chỉ ⇒ bỏ luôn, đừng bắn lệnh chạm cho một màn ảo sắp biến mất.
         gesture.reset()
         SlotLiveProbe.unwatch(probeKey)
         val p = pkg; val sh = shell
-        if (p != null && sh != null) Thread { runCatching { sh("am force-stop $p") } }.start()
+        if (wasLaunched && p != null && sh != null) Thread { runCatching { sh("am force-stop $p") } }.start()
         vdDisplayId = null
         SlotVdOwner.release(owner, slot)   // gỡ đăng ký + VirtualDisplay.release() nằm trong VdLease.free()
         vd = null

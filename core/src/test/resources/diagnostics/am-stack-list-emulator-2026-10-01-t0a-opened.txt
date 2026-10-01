@@ -1,0 +1,11 @@
+Stack id=24 bounds=[0,0][1129,804] displayId=15 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2000: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+Stack id=26 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=freeform mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2002: com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell$HomeActivity bounds=[657,36][1264,1116] userId=0 visible=true topActivity=ComponentInfo{com.google.android.youtube/com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=1999: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}

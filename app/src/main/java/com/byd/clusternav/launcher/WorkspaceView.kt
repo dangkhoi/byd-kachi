@@ -122,6 +122,12 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         releaseAppHosts()
     }
 
+    /** R-A4 (PROFILE-SWITCH-SLOTS): gắn lại cửa sổ mà ô App đã bị nhả ⇒ DỰNG LẠI ô, không đen câm — xem [SlotHostHeal]. */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        post { if (isAttachedToWindow && SlotHostHeal.anyReleased(slotViews)) renderInternal(displayed, displayedStatus, embedChanged = true) }
+    }
+
     /**
      * Áp trạng thái [s] lên view (was `setState`). PURE VIEW: chỉ RENDER — KHÔNG giữ nguồn sự thật.
      * Cập nhật TĂNG DẦN: cùng preset → chỉ dựng lại ô có nội dung ĐỔI (so với khung đang hiển thị [displayed]);
@@ -352,7 +358,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
             is SlotContent.App -> {
-                fl.addView(appCard(content.pkg), mm)                       // fallback phía sau (hiện nếu nhúng lỗi)
+                fl.addView(appCard(content.pkg, tapHint = shell == null && !SlotAppHost.embeddingUsable(context)), mm)   // fallback phía sau; R-B1: không bộ chiếu ⇒ "Chạm để mở"
                 val sh = shell
                 if (sh != null) {
                     val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient, slot = index, owner = hostOwner)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
@@ -427,7 +433,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     // ⚠ T5 đã XOÁ `headBtnLp()` + `headBtn()` ở đây: [ĐO] chúng chỉ được KHAI, không chỗ nào gọi (thanh đầu ô
     // nay do [OverlayHeads] dựng, và ô widget chỉ có một nút ⇄ trong [slotHead]). Giữ lại thì T5 phải quyết cỡ
     // đích chạm cho hai hàm mà người dùng không bao giờ chạm tới được — cùng lối dọn với `cycleDockEdge` ở S1.
-
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)

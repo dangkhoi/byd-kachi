@@ -241,6 +241,8 @@
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->
     <string name="kachi_slot_open_app">Open an app</string>
+    <!-- PROFILE-SWITCH-SLOTS R-B1: thẻ ô App khi chưa có kênh shell — Kachi không tự mở app thành cửa sổ nổi nữa -->
+    <string name="kachi_slot_tap_to_open">Tap to open</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>
