@@ -172,6 +172,7 @@ fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeo
  *  - còn lại ⇒ `setDensity` — bản FULL-only, và nó **no-op** khi đang split (R4/#5 của bản gốc).
  */
 fun ClusterNavBridge.setGeometryDensity(dpi: Int) {
+    if (!ShellAccessUi.allowOrPrompt(app)) return   // READY-AT-HOME R1.3: DPI cụm cần kênh — chưa có quyền thì nói vì sao
     if (castState() is SimpleCastState.CastingSplit) coordinator.setDensitySplit(dpi) else coordinator.setDensity(dpi)
 }
 

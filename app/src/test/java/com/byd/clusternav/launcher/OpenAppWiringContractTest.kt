@@ -137,12 +137,18 @@ class OpenAppWiringContractTest {
 
     // ── U2 ───────────────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * ⚠ READY-AT-HOME R1.3 (owner 2026-10-01 *"không có quyền, không dùng đc app"*) — bài U2 ĐỔI có chủ đích, theo hướng
+     * CHẶT hơn: đường đặt-lại-khung / đặt-mới bằng cửa sổ nổi (`moveToSlot`/`openInSlot`/`am force-stop`) chỉ chạy khi
+     * ô CHƯA có bộ chiếu — tức đúng lúc chưa có kênh shell. Nay ca đó không mở gì: chờ kênh hoặc thẻ xin quyền.
+     */
     @Test
-    fun `dua app dang chay ve o thi DAT LAI KHUNG, dat app moi thi giu duong cu`() {
+    fun `cham o chua co bo chieu KHONG dat khung, KHONG mo moi - READY-AT-HOME R1_3`() {
         val fn = SourceRoots.body(windows, "fun placeApp(")
-        assertTrue(fn.contains("launcher.moveToSlot("), "đường không-làm-mới phải dùng moveToSlot")
-        assertTrue(fn.contains("am force-stop"), "đường đặt-mới vẫn dừng hẳn app trước")
-        assertTrue(fn.contains("launcher.openInSlot("), "đường đặt-mới vẫn mở vào ô")
+        listOf("launcher.moveToSlot(", "am force-stop", "launcher.openInSlot(").forEach {
+            assertFalse(fn.contains(it), "placeApp không được còn '$it'")
+        }
+        assertTrue(fn.contains("ShellAccessUi.slotTap"), "thay bằng chờ kênh / thẻ xin quyền")
     }
 
     /**

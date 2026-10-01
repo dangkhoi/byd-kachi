@@ -155,6 +155,7 @@ class VdAppHost(
                     // của launcherSeam sẽ REJECT lệnh `am start --display <vdId>` (fail-safe deny display không chủ).
                     created?.display?.displayId?.let { id ->
                         vdDisplayId = id
+                        com.byd.clusternav.KachiReadyLog.tile(id, slot)   // READY-AT-HOME §4.10 — mốc "ô có màn ảo"
                         runCatching { registerVd(id) }
                         // H2·1: giao tay cầm cho chủ sở hữu theo Ô — màn ảo CŨ của chính ô này (kể cả do một màn
                         // Kachi đời trước tạo và chưa kịp chết) được giải phóng NGAY tại đây.

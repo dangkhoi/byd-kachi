@@ -84,6 +84,18 @@ object AccessibilityHealGates {
          * [MO_XE_GRACE_MS]); owner chấp nhận màn nhà load lại một nhịp, cửa sổ mồ côi do đuôi về nhà của lệnh tách rời dọn.
          */
         MO_XE,
+
+        /**
+         * LỚP 2 MỞ RỘNG — ÂN HẠN KHỞI ĐỘNG (READY-AT-HOME, 02/10): tiến trình launcher được DỰNG LẠI lúc màn ĐANG bật
+         * (không phải tiến trình đầu tiên của lần nổ máy, không sinh từ lượt chữa của chính mình — [bootGraceMayRun]),
+         * trong [BOOT_GRACE_MS] kể từ lúc tiến trình bật. Coi như lớp 2: HOME vừa dựng lại, người lái chưa kịp dùng ô.
+         *
+         * Vì sao — [ĐO E2E máy ảo 02/10 ca 1] giết kiểu BYD (`killApplication`, không `PACKAGE_RESTARTED`) lúc màn bật
+         * ⇒ tiến trình mới `tương tác=true` ⇒ lớp 1 không mở (màn bật), lớp 2 không mở (không có `ACTION_SCREEN_ON` mới)
+         * ⇒ `force-rebind xong: bound=false` → `nấc NONE, KHÔNG leo` (pha RUNNING) ⇒ phím chết ~70 s tới lần tắt màn sau.
+         * Ngoài ân hạn thì vẫn là [RUNNING] — luật 2.83 không đổi.
+         */
+        KHOI_DONG,
     }
 
     /**
@@ -100,7 +112,8 @@ object AccessibilityHealGates {
      * mình=[6]` — nhật ký 11:34:29), còn hạn mức một-lần-mỗi-lần-nổ-máy thì vô nghĩa vì kẹt sinh ra ở MỖI lần tắt
      * máy. Nay:
      *  • [HealPhase.RUNNING] kẹt ⇒ [HealStep.NONE] — không bao giờ tự giết khi xe đang dùng; người dùng bấm nút.
-     *  • [HealPhase.TAT_MAY] / [HealPhase.MO_XE] kẹt ⇒ [HealStep.FORCE_STOP], BỎ QUA cổng app khách (màn tắt / vừa
+     *  • [HealPhase.TAT_MAY] / [HealPhase.MO_XE] / [HealPhase.KHOI_DONG] (READY-AT-HOME 02/10 — lớp 2 mở rộng sang
+     *    ân hạn khởi động) kẹt ⇒ [HealStep.FORCE_STOP], BỎ QUA cổng app khách (màn tắt / vừa
      *    mở xe — lúc mở xe ô có thể ĐÃ có app, xem [MO_XE_GRACE_MS]; owner chấp nhận màn nhà load lại một nhịp).
      *    Hạn mức là **một lượt mỗi SỰ KIỆN**, giữ ở [tatMayMayRun]/[moXeFresh] + marker ghi `commit()`
      *    trước khi đo (không phải ở đây, vì sự kiện chỉ tầng trên nhìn thấy).
@@ -134,7 +147,7 @@ object AccessibilityHealGates {
         if (userAsked) return HealStep.FORCE_STOP
         return when (phase) {
             HealPhase.RUNNING -> HealStep.NONE
-            HealPhase.TAT_MAY, HealPhase.MO_XE -> HealStep.FORCE_STOP
+            HealPhase.TAT_MAY, HealPhase.MO_XE, HealPhase.KHOI_DONG -> HealStep.FORCE_STOP
         }
     }
 
@@ -314,6 +327,8 @@ object AccessibilityHealGates {
      *  • [HealPhase.TAT_MAY]: màn phải VẪN tắt. Máy có thể ngủ giữa hai lần đo và thức dậy đúng lúc người lái mở
      *    xe — khi đó lượt tắt-máy phải bỏ, để lớp 2 lo theo luật của nó.
      *  • [HealPhase.MO_XE]: màn phải VẪN bật và còn trong ân hạn.
+     *  • [HealPhase.KHOI_DONG]: màn phải VẪN bật và còn trong [BOOT_GRACE_MS] kể từ lúc tiến trình bật — quá ân hạn
+     *    là người lái đã dùng xe ⇒ luật lớp 3 (không tự giết). Màn TẮT giữa chừng ⇒ trao lớp 1 ([bootGraceHandsOffToTatMay]).
      *  • [HealPhase.RUNNING]: đường tự động không bao giờ tới đây với FORCE_STOP; đường bấm tay không qua cổng này.
      */
     fun lifecycleFireAllowed(phase: HealPhase, interactiveNow: Boolean?, screenOnAt: Long, nowElapsed: Long): Boolean =
@@ -321,6 +336,8 @@ object AccessibilityHealGates {
             HealPhase.RUNNING -> false
             HealPhase.TAT_MAY -> interactiveNow == false
             HealPhase.MO_XE -> interactiveNow == true && withinMoXeGrace(screenOnAt, nowElapsed)
+            // [screenOnAt] mang mốc NEO của lượt: ở pha này là lúc tiến trình bật (xem [bootGraceMayRun]).
+            HealPhase.KHOI_DONG -> interactiveNow == true && withinBootGrace(screenOnAt, nowElapsed)
         }
 
     /**
@@ -343,4 +360,89 @@ object AccessibilityHealGates {
      */
     fun firstStartAfterHeal(escalatedAt: Long, scoredFor: Long, nowElapsed: Long, windowMs: Long): Boolean =
         justHealed(escalatedAt, nowElapsed, windowMs) && scoredFor != escalatedAt
+
+    // ─── LỚP 2 MỞ RỘNG — ÂN HẠN KHỞI ĐỘNG (READY-AT-HOME, 02/10) ────────────────────────────────────────────
+
+    /**
+     * Cửa sổ "tiến trình sinh ra từ lượt chữa của chính mình" sau một mốc leo: dùng để chấm điểm (`A11yLifecycleHeal`)
+     * VÀ để nhận ra con của lượt chữa cho ân hạn khởi động ([ownHealChild]) — MỘT nguồn số cho cả hai, không chép hằng.
+     */
+    const val OWN_HEAL_WINDOW_MS = 2 * 60_000L
+
+    /**
+     * TRẦN ân hạn khởi động, tính từ lúc tiến trình bật. Quá chừng này ⇒ [HealPhase.RUNNING] (người dùng bấm *Sửa ngay*).
+     *
+     * [ĐO E2E máy ảo 02/10 ca 1] kênh lên +0,27 s sau tiến trình bật; một lượt đo-chờ-đo-leo = dump + [STUCK_CONFIRM_GAP_MS]
+     * + dump + ~4 lệnh của nấc leo ⇒ bắn ≈ +7 s trên máy ảo; [SUY từ ĐO xe 29/09: kênh nền +1,0–1,3 s, mỗi lệnh dadb
+     * 0,2–0,5 s] ≈ +8…10 s trên xe. 20 s = lề gấp đôi cho xe tải nặng mà vẫn trong lúc HOME vừa dựng lại; trễ hơn thì bỏ
+     * lượt (fail-safe), không giết muộn.
+     */
+    const val BOOT_GRACE_MS = 20_000L
+
+    /** Còn trong ân hạn khởi động kể từ lúc tiến trình bật [startedAt]. Đồng hồ lùi (âm) ⇒ KHÔNG. */
+    fun withinBootGrace(startedAt: Long, nowElapsed: Long): Boolean =
+        nowElapsed - startedAt in 0..BOOT_GRACE_MS
+
+    /**
+     * Lần khởi động tiến trình này có được mở MỘT lượt [HealPhase.KHOI_DONG] không. Mọi đầu vào là sự thật ĐO/ghi bền ở lúc
+     * tiến trình bật, không cờ RAM xuyên tiến trình (CLAUDE.md §5):
+     *
+     * @param interactive `PowerManager.isInteractive()` lúc tiến trình bật. `false` = lớp 1 lo; `null` = không hỏi được ⇒
+     *   KHÔNG (không đoán).
+     * @param prevProcStartAt mốc bật của tiến trình launcher TRƯỚC (đọc trước khi ghi mốc của tiến trình này). Phải thuộc
+     *   lần nổ máy này và nhỏ hơn [startedAt] ⇒ tiến trình này là DỰNG LẠI (tiến trình trước đã chết: BYD giết, crash, OOM,
+     *   nâng cấp). Tiến trình ĐẦU TIÊN của lần nổ máy ⇒ KHÔNG: kẹt chỉ sinh ra khi một tiến trình chết lúc dịch vụ đang
+     *   gắn ([ĐO AOSP `AccessibilityManagerService.java:4114-4117`]), còn `Binding` lúc vừa khởi động máy là lúc hệ đang
+     *   gắn lần đầu bình thường.
+     * @param ownHealChild tiến trình này do CHÍNH một lượt chữa dựng lại ([ownHealChild]) ⇒ KHÔNG leo nữa: chốt chống vòng
+     *   giết–dựng–giết "trong cùng sự kiện" (2.83 R-A4). Một lần giết MỚI từ bên ngoài sau đó vẫn được chữa.
+     */
+    fun bootGraceMayRun(interactive: Boolean?, prevProcStartAt: Long, ownHealChild: Boolean, startedAt: Long): Boolean {
+        if (interactive != true) return false
+        if (prevProcStartAt !in 0 until startedAt) return false
+        return !ownHealChild
+    }
+
+    /**
+     * Tiến trình bật lúc [startedAt] có phải CON của lượt chữa có mốc leo [escalatedAt] không (mốc ghi `commit()` TRƯỚC mọi
+     * lần bắn — lớp 1/2, ân hạn khởi động, nút *Sửa ngay*). Đúng 2.83 R-A4: *"sinh từ chính lượt chữa ⇒ không leo; bị giết
+     * từ bên ngoài ⇒ được leo một lần"*.
+     *
+     * @param claimedHere tiến trình này vừa NHẬN chấm điểm mốc leo đó ([firstStartAfterHeal] + claim `a11y_scored_for_elapsed`
+     *   ghi `commit()` ở `A11yLifecycleHeal.onProcessStart`) ⇒ nó là tiến trình ĐẦU TIÊN sau lượt leo = con.
+     * @param scoredFor mốc leo mà một tiến trình đã nhận chấm (đọc SAU lượt nhận của chính mình).
+     *
+     * Không nhận được mà mốc leo còn trong [OWN_HEAL_WINDOW_MS] và CHƯA ai nhận ⇒ claim ghi hỏng ⇒ COI LÀ CON (fail-safe:
+     * thà sót một lượt chữa còn hơn mở cửa vòng lặp). Mốc trong cửa sổ nhưng một tiến trình KHÁC đã nhận ⇒ mình sinh do một
+     * lần giết MỚI ⇒ không phải con. [ĐO E2E máy ảo 02/10 01:51:43] BYD giết lần hai 61 s sau một lượt chữa: bản cửa-sổ-thuần
+     * bỏ lượt ⇒ `nấc NONE, KHÔNG leo`, phím chết — luật này chữa được ca đó mà vẫn chặn con của lượt chữa.
+     */
+    fun ownHealChild(claimedHere: Boolean, escalatedAt: Long, scoredFor: Long, startedAt: Long): Boolean =
+        claimedHere || (justHealed(escalatedAt, startedAt, OWN_HEAL_WINDOW_MS) && scoredFor != escalatedAt)
+
+    /**
+     * Lượt [HealPhase.KHOI_DONG] đã thấy KẸT rồi bị CẮT vì màn TẮT giữa chừng ⇒ có TRAO cho LỚP 1 không.
+     *
+     * [ĐO E2E máy ảo 02/10 ca C6] giết lúc màn bật, màn tắt ở +2 s ⇒ `khoi-dong: pha đã qua … → bỏ` ⇒ không lớp nào nhận:
+     * lớp 1 chỉ mở lúc tiến trình BẬT khi màn tắt, lớp 2 đòi claim lớp 1 mới hơn ([moXeFollowsTatMay]) ⇒ phím chết tới khi
+     * bấm tay (112 s; trên xe — nếu BYD giết TRƯỚC khi tắt màn, [CHƯA BIẾT] — là cả chuyến sau). Màn vừa tắt trong ân hạn =
+     * đúng tình huống lớp 1 ("không ai nhìn màn") ⇒ dùng NGUYÊN cổng [tatMayMayRun] (một lượt mỗi lần tắt máy) — claim của
+     * nó chặn tiến trình con (dựng lại lúc màn vẫn tắt) leo lần hai, và làm lần màn bật kế là MỞ XE cho lớp 2.
+     * Chỉ khi màn tắt TRONG ân hạn: quá [BOOT_GRACE_MS] là luật lớp 3, không đổi.
+     */
+    fun bootGraceHandsOffToTatMay(
+        interactiveNow: Boolean?,
+        startedAt: Long,
+        lastTatMayAt: Long,
+        lastMoXeAt: Long,
+        nowElapsed: Long,
+    ): Boolean = withinBootGrace(startedAt, nowElapsed) && tatMayMayRun(interactiveNow, lastTatMayAt, lastMoXeAt, nowElapsed)
+
+    /**
+     * Ngay trước khi bắn: mốc leo (`a11y_forcestop_elapsed` — chốt chống vòng lặp của mọi lượt TỰ ĐỘNG, và là gốc của
+     * [ownHealChild] cho [HealPhase.KHOI_DONG]) đã ghi được chưa. Ghi hỏng ⇒ lượt tự động KHÔNG bắn (CLAUDE.md §5: marker trước, đổi state
+     * sau — không có marker là tiến trình dựng lại không biết mình sinh từ lượt chữa ⇒ leo lần nữa). Người dùng tự bấm thì
+     * vẫn bắn: không có lượt tự động nào nối theo một lần bấm tay mà không qua chính chốt này.
+     */
+    fun autoFireAllowed(userAsked: Boolean, markerWritten: Boolean): Boolean = userAsked || markerWritten
 }

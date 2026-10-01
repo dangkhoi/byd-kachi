@@ -195,16 +195,19 @@ fun ClusterNavBridge.setAutostartRightPkg(pkg: String?) = coordinator.prefs.setA
 
 /** Chiếu FULL cụm — `MainActivityCastController.kt:210` (`AppMover.classifyApp` chọn hồ sơ hiển thị). */
 fun ClusterNavBridge.castFull(pkg: String) {
+    if (!ShellAccessUi.allowOrPrompt(app)) return   // READY-AT-HOME R1.3: chưa có quyền ⇒ không chiếu, nói vì sao
     coordinator.dispatch(SimpleCastIntent.CastFull(pkg, AppMover.classifyApp(pkg)))
 }
 
 /** Chiếu nửa TRÁI — `MainActivityCastController.kt:212`. */
 fun ClusterNavBridge.castLeft(pkg: String) {
+    if (!ShellAccessUi.allowOrPrompt(app)) return   // READY-AT-HOME R1.3: chưa có quyền ⇒ không chiếu, nói vì sao
     coordinator.dispatch(SimpleCastIntent.CastSlot(pkg, ClusterSlotSide.LEFT))
 }
 
 /** Chiếu nửa PHẢI — `MainActivityCastController.kt:212`. */
 fun ClusterNavBridge.castRight(pkg: String) {
+    if (!ShellAccessUi.allowOrPrompt(app)) return   // READY-AT-HOME R1.3: chưa có quyền ⇒ không chiếu, nói vì sao
     coordinator.dispatch(SimpleCastIntent.CastSlot(pkg, ClusterSlotSide.RIGHT))
 }
 

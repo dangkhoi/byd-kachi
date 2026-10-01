@@ -177,7 +177,8 @@ ClusterNavBridge ActivityTaskManager ActivityManager NavAccess VmOverlayPos Seat
 NavigationSpeedSign NavRepository Preflight CastLifecycle ClusterCastBubble KachiAutostart \
 KachiAutostartSvc UpdateRelaunch \
 KachiVoiceTtsLink KachiVoiceTtsProc KachiVoiceTts KachiVoiceTtsOffline KachiVoiceSpeak \
-KachiVoiceVad KachiVoiceTiming YtResolve WakeListen WakeKws WakeSvc KachiPerf}"
+KachiVoiceVad KachiVoiceTiming YtResolve WakeListen WakeKws WakeSvc KachiPerf \
+KachiReady KachiAccess ShellApprovalProbe A11yLifecycle}"
 
 K_LOG_PID=""
 K_LOG_STEP=""

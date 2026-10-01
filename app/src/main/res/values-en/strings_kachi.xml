@@ -82,6 +82,19 @@
     <!-- ── F4 — first-open ADB approval strip (ShellChannelGate) ── -->
     <string name="kachi_shell_approval_msg">The system is asking \"Allow USB debugging?\" — tick \"Always allow\", then OK, so Kachi can put apps into slots.</string>
     <string name="kachi_shell_approval_retry">Retry</string>
+    <!-- READY-AT-HOME §4.9 — access card + channel status on slots without a projector -->
+    <string name="kachi_access_title">Kachi needs window control permission</string>
+    <string name="kachi_access_never_body">To put apps in slots, cast to the cluster and fix the steering-wheel keys, allow debugging. When \"Allow USB debugging?\" appears, tick \"Always allow from this computer\", then OK.</string>
+    <string name="kachi_access_lost_title">The car no longer accepts Kachi\'s permission</string>
+    <string name="kachi_access_lost_body">It may have expired after a long break, been revoked, or was allowed only once last time. Tap Ask again and tick \"Always allow\".</string>
+    <string name="kachi_access_env_title">Window control channel is not available</string>
+    <string name="kachi_access_env_body">The car\'s debugging port isn\'t ready. Tap Retry in a few seconds.</string>
+    <string name="kachi_access_ask_again">Ask again</string>
+    <string name="kachi_access_later">Later</string>
+    <string name="kachi_slot_connecting">Connecting…</string>
+    <string name="kachi_slot_needs_access">Permission needed</string>
+    <string name="kachi_slot_no_channel">No control channel</string>
+    <string name="kachi_access_feature_blocked">Needs window control permission — open the home screen to grant it</string>
 
     <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
     <string name="kachi_sec_units">Display units</string>
@@ -241,8 +254,6 @@
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->
     <string name="kachi_slot_open_app">Open an app</string>
-    <!-- PROFILE-SWITCH-SLOTS R-B1: thẻ ô App khi chưa có kênh shell — Kachi không tự mở app thành cửa sổ nổi nữa -->
-    <string name="kachi_slot_tap_to_open">Tap to open</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>

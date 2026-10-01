@@ -237,11 +237,17 @@ object LocalDeviceShell {
      *   cài lúc khoá adb chưa cấp KHÔNG treo vĩnh viễn; `<= 0` = đọc vô hạn (hành vi trước 2026-08-25).
      */
     fun installApk(keys: AdbKeyPair, apk: File, vararg options: String, socketTimeoutMs: Int = 0): LocalInstallOutcome {
+        // READY-AT-HOME §4.6 — cửa thứ hai của cổng thi hành: cài nền (OTA) là phiên NỀN.
+        if (!LocalShellAdmission.admit(ShellSessionKind.BACKGROUND)) {
+            return LocalInstallOutcome.NoShellChannel(LocalShellFailure.NOT_APPROVED)
+        }
         val adb = runCatching {
             val d = if (socketTimeoutMs <= 0) Dadb.create(HOST, PORT, keys) else Dadb.create(HOST, PORT, keys, 0, socketTimeoutMs)
             runCatching { d.supportsFeature("shell_v2") }.onFailure { runCatching { d.close() } }.getOrThrow()
             d
         }.getOrElse { return LocalInstallOutcome.NoShellChannel(LocalShellFailures.classify(it)) }
+        // Bắt tay xong ⇒ khoá được nhận (sự thật đo được, báo cho tầng app).
+        LocalShellAdmission.report(ShellSessionKind.BACKGROUND, handshook = true, null, dispatched = false, eagerHandshake = true)
         return adb.use { dadb ->
             runCatching { dadb.install(apk, *options) }.fold(
                 onSuccess = { r ->

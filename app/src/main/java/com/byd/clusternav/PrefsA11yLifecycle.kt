@@ -43,3 +43,15 @@ private const val K_A11Y_SCORED_FOR = "a11y_scored_for_elapsed"
 fun Prefs.a11yScoredFor(ctx: Context): Long = sp(ctx).getLong(K_A11Y_SCORED_FOR, -1L)
 
 fun Prefs.setA11yScoredFor(ctx: Context, v: Long): Boolean = sp(ctx).edit().putLong(K_A11Y_SCORED_FOR, v).commit()
+
+private const val K_A11Y_PROC_START_AT = "a11y_proc_start_elapsed"
+
+/**
+ * READY-AT-HOME (02/10) — mốc `elapsedRealtime` lúc tiến trình launcher GẦN NHẤT bật (ghi ở MỌI lần bật, `commit()`).
+ * Tiến trình mới đọc nó TRƯỚC khi ghi mốc của mình: mốc của lần nổ máy này ⇒ mình là tiến trình DỰNG LẠI (tiến trình trước
+ * đã chết) ⇒ được xét ân hạn khởi động
+ * ([com.byd.clusternav.modules.navaccess.AccessibilityHealGates.bootGraceMayRun]). `-1` = chưa từng.
+ */
+fun Prefs.a11yProcStartAt(ctx: Context): Long = sp(ctx).getLong(K_A11Y_PROC_START_AT, -1L)
+
+fun Prefs.setA11yProcStartAt(ctx: Context, v: Long): Boolean = sp(ctx).edit().putLong(K_A11Y_PROC_START_AT, v).commit()

@@ -26,6 +26,26 @@ object AdbKeys {
         }
     }
 
+    /**
+     * READY-AT-HOME §4.4.1 — vân tay của khoá CÔNG KHAI đang dùng (SHA-256 hex của `adb.pub`). Dấu bền "xe đã duyệt"
+     * gắn với vân tay này: khoá sinh lại ([ensure] khi đọc hỏng) = khoá mới = chưa duyệt, dấu cũ tự hết hiệu lực.
+     * Không bao giờ in khoá ra log — chỉ 8 ký tự đầu của vân tay (R-nf6). `null` = không đọc được khoá.
+     */
+    @Synchronized
+    fun fingerprint(ctx: Context): String? = try {
+        ensure(ctx)
+        val pub = File(ctx.applicationContext.filesDir, "adb.pub")
+        java.security.MessageDigest.getInstance("SHA-256").digest(pub.readBytes())
+            .joinToString("") { String.format(java.util.Locale.ROOT, "%02x", it) }
+    } catch (e: java.io.IOException) {
+        android.util.Log.w("AdbKeys", "không đọc được adb.pub để lấy vân tay: ${e.message}"); null
+    } catch (e: java.security.GeneralSecurityException) {
+        android.util.Log.w("AdbKeys", "không băm được adb.pub: ${e.message}"); null
+    } catch (e: RuntimeException) {
+        // `ensure` ném `IllegalStateException` khi rename cặp khoá hỏng (xem [generate]) — không có khoá thì không có vân tay.
+        android.util.Log.w("AdbKeys", "khoá adb lỗi khi lấy vân tay: ${e.message}"); null
+    }
+
     /** Sinh keypair NGUYÊN TỬ: ghi file tạm rồi rename vào đích. Ném nếu rename hỏng (khỏi để lại cặp ghi-dở/thiếu). */
     private fun generate(dir: File, priv: File, pub: File) {
         val tp = File(dir, "adb.key.tmp"); val tb = File(dir, "adb.pub.tmp")

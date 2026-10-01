@@ -141,6 +141,14 @@ object SettingsCatalog {
                 "con số mà họ không có cách nào hiểu, và sửa sai thì mất đường app-vào-ô",
         )
         put(
+            "kachi_shell_approval",
+            "trạng thái máy, không phải cấu hình — dấu bền READY-AT-HOME (`ShellApprovalStore`, tệp `clusternav_state`): " +
+                "xe NÀY đã duyệt khoá adb hiện tại của Kachi lúc nào (vân tay + giờ + hạn `adb_allowed_connection_time`). " +
+                "Chỉ quyết có nối kênh sớm lúc tiến trình bật hay không; mọi quyết định khác dựa trên phép đo. Người dùng " +
+                "không đặt nó — sửa tay là hoặc làm Kachi nối bằng khoá chưa duyệt (bung hộp gỡ lỗi từ nền), hoặc bắt " +
+                "người lái chờ F4 vô ích",
+        )
+        put(
             "kachi_floating_opened",
             "trạng thái máy, không phải cấu hình — dấu bền PROFILE-SWITCH-SLOTS R-B4 (`FloatingWindowLedger`, tệp " +
                 "`clusternav_state`): những gói Kachi đã TỰ MỞ thành cửa sổ nổi trên màn chính lúc chưa có kênh shell. " +
@@ -210,9 +218,9 @@ object SettingsCatalog {
             "tệp cấu hình CHÍNH của launcher — mọi khoá trong nó phải thuộc đúng một nhóm của màn Cài đặt",
         "clusternav_state" to
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
-                "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state` và `kachi_floating_opened` (dấu cửa sổ nổi " +
-                "Kachi đã mở, PROFILE-SWITCH-SLOTS) — cả hai là dấu theo XE của trạng thái cửa sổ ngoài hệ thống, không " +
-                "đi theo hồ sơ",
+                "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state`, `kachi_floating_opened` (dấu cửa sổ nổi " +
+                "Kachi đã mở, PROFILE-SWITCH-SLOTS) và `kachi_shell_approval` (dấu xe đã duyệt khoá adb, READY-AT-HOME) " +
+                "— đều là dấu theo XE của trạng thái ngoài hệ thống, không đi theo hồ sơ",
         "kachi_test_bridge" to
             "T-BRIDGE — chỉ chứa `test_bridge_until`, công tắc PHIÊN của cầu kiểm thử qua adb. Cố ý ĐỂ RIÊNG khỏi " +
                 "`kachi_workspace`: tệp đó đi theo hồ sơ (chụp–áp, nhân bản, xoá hồ sơ) còn cái này thì **không " +

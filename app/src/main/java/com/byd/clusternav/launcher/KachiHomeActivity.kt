@@ -321,12 +321,14 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
                 bringUpShellChannel(dadb, seam, workspace, viewModel, container) { s ->
                     shell = s; appLauncher = ShellAppLauncher(s); windows.sweepFloating("shell-up")   // R-B3: dọn cửa sổ nổi Kachi mở lúc chưa có kênh
                 }
+                if (shell == null) shellGate.wiringFailed()   // READY-AT-HOME lượt 3: nối dây hỏng ⇒ nhả cờ, F4 thử lại
             },
             // Chưa có kênh: VẪN kiểm quyền (đọc trạng thái KHÔNG cần shell — ràng buộc C4) để người dùng biết vì sao
             // app không vào được ô. `awaiting` = hệ thống đang hỏi ⇒ dải nhắc nói, toast im (xem `runAndReport`).
             onReport = { awaiting -> PermissionPreflight.runAndReport(this, false, null, awaitingApproval = awaiting) },
         )
         shellGate.arm()
+        wireReadyAtHome(this, shellGate, rootFrame, handler)   // READY-AT-HOME: nhận kênh đã sẵn + thẻ xin quyền (R1/R2)
 
         // S3 — hai việc chuyển từ màn cũ (đã gỡ 2026-09-13); thân hàm ở [KachiHomeWiring].
         maybeShowDisclaimer()

@@ -251,6 +251,11 @@ object UpdateChecker {
             else "tap \"Allow\" (tick \"always allow\") on the USB-debugging dialog, then install again"
         LocalShellFailure.PORT_CLOSED, LocalShellFailure.IO_ERROR, LocalShellFailure.UNKNOWN ->
             if (vi) "xem Cài đặt › Hệ thống & quyền" else "see Settings › System & permissions"
+        // READY-AT-HOME §4.6 — cổng thi hành chặn (kênh chưa được duyệt trong tiến trình, không có dấu tươi): không có
+        // hộp thoại nào đang mở ⇒ việc cần làm là về màn chính để Kachi hỏi quyền (thẻ xin quyền + hộp hệ thống).
+        LocalShellFailure.NOT_APPROVED ->
+            if (vi) "mở màn chính Kachi để cấp quyền điều khiển cửa sổ (Cho phép gỡ lỗi USB) rồi cài lại"
+            else "open the Kachi home screen to grant window control (Allow USB debugging), then install again"
     }
 
     /**

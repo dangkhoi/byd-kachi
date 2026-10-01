@@ -151,7 +151,7 @@ class HomePanels(
             state = state,
             // P8: đọc MỚI mỗi lượt dựng trang — quyền có thể vừa được tự cấp xong ở nhịp khởi động.
             permissions = {
-                PermissionPreflight.check(activity, shellUsable = shellUsable(), awaitingApproval = shellAwaiting())
+                PermissionPreflight.check(activity, shellUsable = shellUsable(), awaitingApproval = shellAwaiting() || com.byd.clusternav.ShellReadiness.needsApproval())
             },
             // U4: nói CHỖ bỏ ảnh vào — người dùng không có cách nào tự đoán, và màn chọn tệp của hệ thống bị khoá trên xe.
             wallpaperFolderHint = WallpaperStore.folderHint(activity),

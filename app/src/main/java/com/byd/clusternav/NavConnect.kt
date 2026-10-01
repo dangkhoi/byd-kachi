@@ -256,7 +256,9 @@ object NavConnect {
     private fun grantViaShell(app: Context, myGen: Int, userAsked: Boolean): GrantResult =
         runCatching {
             val keyPair = AdbKeys.ensure(app)
-            LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
+            // READY-AT-HOME R1.1: bấm tay (*Kiểm tra / Sửa ngay*) = đường HỎI — cổng thi hành cho qua, hộp "Cho phép gỡ
+            // lỗi USB?" bung đúng lúc người dùng đang nhìn. Đường nền (watchdog, B1, alarm) giữ chính sách NỀN cũ.
+            LocalDeviceShell.session(keyPair, if (userAsked) LocalShellRetry.USER_READ_CAP else LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
                 val cur = sh("settings get secure enabled_accessibility_services").output.trim()
                 val has = cur.split(':').any { it.trim() == ACC_COMP }
                 if (!has) {
@@ -361,7 +363,13 @@ object NavConnect {
             return GrantResult.NOT_BOUND
         }
         val now = SystemClock.elapsedRealtime()
-        Prefs.setA11yEscalatedAt(app, now)   // marker TRƯỚC khi đổi state ngoài (CLAUDE.md §5) — ghi đồng bộ
+        // marker TRƯỚC khi đổi state ngoài (CLAUDE.md §5) — ghi đồng bộ. Nó là chốt chống vòng lặp của MỌI lượt tự động
+        // (và là gốc của `AccessibilityHealGates.ownHealChild` cho ân hạn khởi động) ⇒ ghi hỏng thì không tự bắn.
+        val marked = Prefs.setA11yEscalatedAt(app, now)
+        if (!AccessibilityHealGates.autoFireAllowed(userAsked, marked)) {
+            Log.e(TAG, "a11y KẸT nhưng không ghi được mốc leo ($where) → KHÔNG tự leo (tránh vòng lặp giết launcher)")
+            return GrantResult.NOT_BOUND
+        }
         Log.w(TAG, "a11y KẸT trong Binding services ($where) → tự force-stop + lắp lại; giao diện khởi động lại một nhịp")
         sh(cmd)
         return GrantResult.RESTARTING

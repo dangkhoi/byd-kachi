@@ -5,6 +5,7 @@ import android.os.Process
 import android.os.SystemClock
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.a11yMoXeAt
+import com.byd.clusternav.a11yProcStartAt
 import com.byd.clusternav.a11yTatMayAt
 import com.byd.clusternav.modules.navaccess.A11yBindJournal
 import com.byd.clusternav.modules.navaccess.A11yBindJournalStore
@@ -45,10 +46,13 @@ internal object TestBridgeA11yLog {
             // lượt tắt-máy / mở-xe có chạy và có tự lặp không, không cần bản debug.
             "a11y_tat_may_elapsed" to Prefs.a11yTatMayAt(app),
             "a11y_mo_xe_elapsed" to Prefs.a11yMoXeAt(app),
+            // READY-AT-HOME (02/10) — mốc bật của tiến trình launcher gần nhất: cổng "dựng lại" của ân hạn khởi động.
+            "a11y_proc_start_elapsed" to Prefs.a11yProcStartAt(app),
             "elapsed_now_ms" to elapsedNow,
             "deep_sleep_now_ms" to A11yBindJournal.deepSleepMs(elapsedNow, uptimeNow),
             // R-C1 (spec 2.83) — tiến trình ĐANG TRẢ LỜI sinh lúc nào: so với `a11y_tat_may_elapsed` (claim ghi ở
-            // `Application.onCreate`, vài trăm ms sau mốc này) là biết ngay tiến trình này có phải cái được HOME dựng
+            // `Application.onCreate`, vài trăm ms sau mốc này — hoặc ≤ 20 s sau nếu màn tắt giữa lượt ân hạn khởi động
+            // và lượt được trao lớp 1, READY-AT-HOME) là biết ngay tiến trình này có phải cái được HOME dựng
             // lại lúc tắt máy hay không, và `pid` khớp cột `pid=` của các dòng nhật ký. Chỉ đọc (API 24, minSdk 29;
             // [ĐO] `javap` android.jar compileSdk 37: có, không `@Deprecated`).
             "pid" to Process.myPid(),

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong
  *  • [HAL_SKIP_ABSENT] — một datum đã **chứng minh là không có trên xe này** nên tạm ngưng đọc (xem
  *    `BydHalGateway`); khác [HAL_SKIP_OFFSCREEN] vì đây là *"xe không có"*, kia là *"màn không hiện"*.
  *  • [SHELL_CMD] — một lệnh shell qua dadb (mỗi lệnh là một lượt chặn trên hàng đợi dùng chung).
+ *  • [SHELL_DENY] — READY-AT-HOME §4.6: cổng thi hành chặn một phiên NỀN vì kênh chưa được duyệt (R-nf9).
  *  • [LOG_BYTES] — số byte app tự ghi ra thẻ (nguồn I/O + hao thẻ).
  *
  * ⚠ **Không** đặt thêm bộ đếm cho thứ có thể suy ra từ những cái trên; mỗi bộ đếm là một dòng log dài thêm, mà
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 object KachiPerf {
 
-    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES }
+    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY }
 
     private val values: Map<Counter, AtomicLong> =
         Counter.values().associateWith { AtomicLong(0) }
@@ -83,14 +84,16 @@ object KachiPerf {
         val absent = perMin(Counter.HAL_SKIP_ABSENT)
         val shell = perMin(Counter.SHELL_CMD)
         val logKb = perMin(Counter.LOG_BYTES) / 1024.0
+        val deny = perMin(Counter.SHELL_DENY)
         // ⚠ `Locale.ROOT`: `String.format` không có locale dùng locale MẶC ĐỊNH của máy, mà xe của owner chạy
         // `vi-VN` ⇒ `%.1f` in ra `1,5` thay vì `1.5`. Dòng này là **số đo** được chép vào `docs/diagnostics/perf-*`
         // và so giữa hai lần chạy; đổi dấu thập phân theo ngôn ngữ máy là làm hai lần đo không so được với nhau.
         // Cùng luật với [TelemetryReadout] (`Locale.US`) và [Units.format] (`Locale.ROOT`).
         return String.format(
             Locale.ROOT,
-            "cửa sổ %ds · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút",
-            elapsed / 1000, read, offscreen, absent, shell, logKb,
+            "cửa sổ %ds · HAL đọc=%.0f/phút · bỏ-không-hiện=%.0f · bỏ-xe-không-có=%.0f · shell=%.1f/phút · log=%.1f KB/phút" +
+                " · shell-chặn=%.1f/phút",
+            elapsed / 1000, read, offscreen, absent, shell, logKb, deny,
         )
     }
 

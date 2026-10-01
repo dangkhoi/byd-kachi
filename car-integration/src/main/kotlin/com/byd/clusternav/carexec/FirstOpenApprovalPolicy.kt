@@ -65,6 +65,7 @@ object FirstOpenApproval {
         socketTimeoutMs = PROBE_READ_TIMEOUT_MS,
         eagerHandshake = true,
         retryOn = emptySet(),
+        mayPromptUser = true,   // READY-AT-HOME §4.6: đường HỎI (màn chính có tiêu điểm) — cổng thi hành luôn cho
     )
 
     /**

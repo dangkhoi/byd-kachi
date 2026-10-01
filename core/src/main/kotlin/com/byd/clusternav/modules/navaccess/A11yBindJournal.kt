@@ -38,19 +38,26 @@ object A11yBindJournal {
     const val NOTE_MO_XE = "mo-xe"
 
     /**
+     * READY-AT-HOME (02/10) — lớp 2 mở rộng: dòng ghi bởi lượt kiểm trong ÂN HẠN KHỞI ĐỘNG (tiến trình DỰNG LẠI lúc màn
+     * đang bật — [AccessibilityHealGates.HealPhase.KHOI_DONG]).
+     */
+    const val NOTE_KHOI_DONG = "khoi-dong"
+
+    /**
      * 2.83 lớp 3 — dòng ghi bởi lượt KIỂM LẠI một ca kẹt đã đo (mỗi [AccessibilityHealGates.STUCK_RECHECK_MS], chỉ
      * đọc `dumpsys`). Vẫn kẹt thì cùng trạng thái ⇒ không thêm dòng; chỉ bước ĐỔI (hết kẹt) mới hiện chữ này.
      */
     const val NOTE_RECHECK = "kiem-lai"
 
     /**
-     * Ghi chú cho dòng nhật ký của nấc leo thang: bấm tay (`grant-tay`), lớp 1/2 (`tat-may`/`mo-xe`), hay đường tự
+     * Ghi chú cho dòng nhật ký của nấc leo thang: bấm tay (`grant-tay`), lớp 1/2 (`tat-may`/`mo-xe`/`khoi-dong`), hay đường tự
      * động lúc đang chạy (`grant-tu-dong`, nay KHÔNG còn tự giết — chỉ ghi nhận kẹt để người dùng bấm nút).
      */
     fun grantNote(userAsked: Boolean, phase: AccessibilityHealGates.HealPhase): String = when {
         userAsked -> "grant-tay"
         phase == AccessibilityHealGates.HealPhase.TAT_MAY -> NOTE_TAT_MAY
         phase == AccessibilityHealGates.HealPhase.MO_XE -> NOTE_MO_XE
+        phase == AccessibilityHealGates.HealPhase.KHOI_DONG -> NOTE_KHOI_DONG
         else -> "grant-tu-dong"
     }
 

@@ -152,10 +152,9 @@ class LauncherWindows(
      * MỌI app ô thành cửa sổ nổi mỗi lần đổi bố cục/hồ sơ và ở lượt vẽ đầu — đúng hai nguồn app mồ côi đã đo: [ĐO máy
      * ảo 01/10] đổi hồ sơ lúc chưa có kênh ⇒ app ô của hồ sơ cũ nổi lại trên nhà (không ai đóng được, `closeApp` rỗng);
      * [SUY dữ liệu xe 29/09] tiến trình mới sinh mở YouTube nổi, cướp tiêu điểm nên kênh shell không lên. Đường này chỉ
-     * chạy khi CHƯA có kênh và ROM không cho ActivityView — khi đó ô hiện thẻ "Chạm để mở" (`WorkspaceViewCards.appCard`)
-     * và chạm thẻ đi [placeApp] (ghi dấu bền trước khi mở ⇒ kênh lên thì [sweepFloating] dọn được).
-     * Giới hạn đã ghi ở spec §4.4: L1 cửa sổ đã chạm mở còn nổi tới khi kênh lên; L2 không tự dời theo bố cục mới
-     * (chạm lại thẻ ô ⇒ [placeApp] đặt lại khung).
+     * chạy khi CHƯA có kênh và ROM không cho ActivityView — khi đó ô hiện thẻ app + chữ tình trạng kênh
+     * (`WorkspaceViewCards.appCard`) và chạm thẻ đi [placeApp] — từ READY-AT-HOME R1.3 KHÔNG mở cửa sổ nổi nữa (chờ
+     * kênh / thẻ xin quyền), nên giới hạn L1/L2 của spec PROFILE-SWITCH-SLOTS §4.4 không còn đường sinh ra.
      */
     fun reflow() {
         if (embedding()) return   // nhúng: ô đổi kích thước theo layout view → app tự reflow, không cần am task resize
@@ -163,31 +162,21 @@ class LauncherWindows(
     }
 
     /**
-     * Mở/đặt cửa sổ app THẬT vào ô [index] (freeform + resize) trên thread nền (dadb blocking).
+     * Chạm ô App / gắn app mới vào ô khi ô CHƯA có bộ chiếu (chưa có kênh shell và ROM không cho ActivityView).
      *
-     * [fresh] = true (đặt app MỚI vào ô): dừng hẳn app trước để nó mở TƯƠI dạng freeform, KHÔNG tái dùng task
-     * fullscreen cũ (gốc lỗi đè full).
-     *
-     * [fresh] = false (đưa app ĐANG chạy về ô — vd chạm ô): **chỉ đặt lại khung**, KHÔNG mở lại app ⇒ hết nháy /
-     * hết cướp focus (U2). `moveToSlot` tự lùi về `openInSlot` nếu app chưa có task hoặc đang toàn màn (bị từ chối
-     * resize) ⇒ suy giảm an toàn, không mất chức năng.
+     * ⚠ READY-AT-HOME R1.3 (owner 2026-10-01 *"không có quyền, không dùng đc app"*): KHÔNG còn mở app thành cửa sổ nổi
+     * ở ca nào — kể cả "cửa sổ nổi dự phòng" của bản trước (`IntentAppLauncher.openInSlot`/`moveToSlot`, ghi dấu
+     * `FloatingWindowLedger` trước khi mở). Lý do đo được: cửa sổ nổi Kachi tự mở lúc chưa có kênh là nguồn app mồ côi
+     * (PROFILE-SWITCH-SLOTS) và [SUY mạnh, xe 29/09] cướp tiêu điểm nên kênh lên trễ 4 s. State ô ĐÃ được lưu trước lời
+     * gọi này (`viewModel.assignApp` ở `KachiHomeSlots`) ⇒ kênh lên là `WorkspaceView.applyEmbedSeam` tự nhúng app vào
+     * ô; ở đây chỉ còn NÓI: kênh đang dò ⇒ ô "Đang kết nối…" (chờ tối đa 10 s), kênh đã đo là không có ⇒ thẻ xin quyền
+     * ([ShellAccessUi.slotTap], luật thuần `ShellReadinessPolicy.slotTap`). [sweepFloating] vẫn dọn cửa sổ nổi do bản
+     * cũ để lại sau nâng cấp. [fresh] giữ chữ ký cho bên gọi; chỉ còn vào nhật ký.
      */
     fun placeApp(pkg: String, index: Int, fresh: Boolean = false) {
-        if (embedding()) return   // WorkspaceView nhúng app bằng ActivityView → không cần freeform
-        val rect = absoluteSlotRect(index) ?: return
-        val s = shell(); val launcher = appLauncher()
-        submit {
-            // PROFILE-SWITCH-SLOTS R-B2: dấu bền TRƯỚC lệnh mở (CLAUDE.md §5) — chết ngay sau lệnh mở thì dấu vẫn còn,
-            // kênh lên là [sweepFloating] biết cửa sổ nổi này do Kachi mở. Ghi hỏng vẫn mở: người dùng vừa yêu cầu.
-            if (!floatingLedger.markOpened(pkg)) Log.w(FLOAT_TAG, "không ghi được dấu cửa sổ nổi cho $pkg — vẫn mở")
-            if (fresh) {
-                if (s != null) runCatching { s("am force-stop $pkg") }
-                launcher.openInSlot(pkg, appRect(rect))
-            } else {
-                launcher.moveToSlot(pkg, appRect(rect))
-            }
-            activity.runOnUiThread { updateOverlayHeads() }
-        }
+        if (embedding()) return   // có bộ chiếu (VdAppHost/ActivityView) ⇒ WorkspaceView nhúng app, không gì phải làm ở đây
+        Log.i(FLOAT_TAG, "ô $index ($pkg, mới=$fresh): chưa có bộ chiếu → không mở cửa sổ nổi (READY-AT-HOME R1.3)")
+        ShellAccessUi.slotTap { embedding() }
     }
 
     /**

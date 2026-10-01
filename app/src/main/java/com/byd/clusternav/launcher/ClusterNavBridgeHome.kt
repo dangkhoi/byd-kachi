@@ -39,6 +39,11 @@ fun ClusterNavBridge.currentHomePackage(): String? = DefaultHome.currentPackage(
  * Ngoại lệ ngoài dự kiến (khoá adb hỏng…) ⇒ [LocalSetHomeOutcome.NoShellChannel] để UI nói đúng việc.
  */
 fun ClusterNavBridge.setDefaultHome(onResult: (LocalSetHomeOutcome) -> Unit) {
+    // READY-AT-HOME R1.3: chưa có quyền điều khiển cửa sổ ⇒ thẻ xin quyền + câu "không có kênh" (KHÔNG nối từ nền).
+    if (!ShellAccessUi.allowOrPrompt(app)) {
+        ui(Runnable { onResult(LocalSetHomeOutcome.NoShellChannel(LocalShellFailure.NOT_APPROVED)) })   // cùng đường hậu kỳ
+        return
+    }
     Thread({
         // BƯỚC 1 (2026-09-15, DuDu-style): BẬT lối vào HOME (alias tắt sẵn để GUI-install không bị chặn). Bật xong hệ
         // thống có ứng viên home mới ⇒ ROM có thể tự hiện hộp chọn launcher (owner [ĐO] DuDu). Không cần shell.

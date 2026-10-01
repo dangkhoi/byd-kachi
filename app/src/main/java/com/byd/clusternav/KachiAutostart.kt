@@ -43,6 +43,9 @@ import com.byd.clusternav.system.FreeformSeedStore
 object KachiAutostart {
     private const val TAG = "KachiAutostart"
 
+    /** READY-AT-HOME — chờ F4 đo kênh ở lượt nâng cấp đầu (chưa có dấu duyệt). Hết hạn ⇒ cổng quyết như thường. */
+    private const val AUTOSTART_CHANNEL_WAIT_MS = 60_000L
+
     /** Minimum spacing between two runs — mirrors [VietMapAutostart.COOLDOWN_MS]. */
     const val COOLDOWN_MS = 30_000L
 
@@ -75,6 +78,11 @@ object KachiAutostart {
         }
         try {
             runCatching {
+                // READY-AT-HOME §4.6 — mọi lệnh dưới đây đi qua cổng thi hành. Lượt NÂNG CẤP đầu tiên lên bản có cổng chưa
+                // có dấu duyệt ⇒ cổng chặn tới khi F4 ở màn chính đo được kênh (UpdateRelaunch đưa màn chính lên). Chờ
+                // phép đo đó (tối đa 60 s, luồng nền của FGS) thay vì để set-home/`am start` bị chặn mất cả lượt.
+                val ready = ShellReadiness.awaitMeasured(AUTOSTART_CHANNEL_WAIT_MS)
+                Log.i(TAG, "shell channel before boot run: ${ready.phase}")
                 val container = AppContainer.get(app)
                 val seam = container.windowDispatcher.launcherSeam()
                 val comp = DefaultHome.component(app)              // alias HOME — đích của `set-home-activity`

@@ -6,54 +6,9 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 
-/**
- * Vì sao một phiên adb loopback (`localhost:5555`) KHÔNG mở được.
- *
- * Trước 2026-08-24 mọi thất bại của [LocalDeviceShell] bị `runCatching{}.getOrNull()` gộp thành **một chữ
- * `null` duy nhất** — "chưa bấm Cho phép gỡ lỗi USB", "adb-tcp chưa bật", "đứt giữa chừng" nhìn giống hệt
- * nhau. Hệ quả owner báo (F2): giữ phím mic ở lần mở app đầu thì im lặng, phải tắt/mở lại app mới dùng
- * được — vì chờ hộp thoại là việc ĐÁNG chờ mà không ai chờ, còn cổng đóng là việc KHÔNG đáng chờ mà cũng
- * không ai nói ra.
- *
- * Bằng chứng phân loại — đọc thẳng bytecode `dev.mobile:dadb:2.0.0`
- * (`javap -c dadb/AdbConnection$Companion.class`, luồng `connect(AdbReader, AdbWriter, AdbKeyPair, Closeable)`):
- *  1. `writeConnect()` → `readMessage()`; nếu máy trả `AUTH` (0x48545541) thì ký token, `writeAuth(2, chữ-ký)`.
- *  2. Máy trả `AUTH` lần nữa ⇒ khoá lạ ⇒ client gửi `writeAuth(3, khoá-công-khai)` rồi `readMessage()`.
- *     Đây là chỗ hệ thống bung hộp thoại "Cho phép gỡ lỗi USB?" — adbd **không trả lời gì** tới khi người
- *     dùng bấm, nên lần đọc này **treo**.
- *  3. Đọc xong mà vẫn là `AUTH` ⇒ ném `AdbAuthException("Device rejected authentication (unauthorized)")`.
- *     Không phải `CNXN` và không phải `AUTH` ⇒ `AdbConnectException`.
- *  4. `DadbImpl.newConnection` đặt `socket.setSoTimeout(socketTimeout)`; `Dadb.create(host, port, keys)`
- *     truyền `socketTimeout = 0` = **đọc vô hạn** ⇒ bước 2 treo VĨNH VIỄN chứ không ném lỗi.
- *
- * Nên hai dạng "chưa được cấp quyền" phải nhận diện được cả hai kiểu: máy trả lời AUTH ([AUTH_REJECTED])
- * và máy im lặng chờ người dùng bấm ([AWAITING_APPROVAL] — chỉ lộ ra khi có hạn đọc, xem
- * [LocalShellRetry.socketTimeoutMs]).
- *
- * KHÔNG dùng chung bộ phân loại với `vehicleprobe/DadbVehicleTransport.classifyExpectedFailure`: đó là
- * transport của cổng T10 đang NIÊM PHONG (`docs/specs/seal-hud-sign-vehicle-test-t10.html`), từ vựng của
- * nó (`TransportFailureKind`) mô tả một hợp đồng khác. Gộp lại sẽ phải mở niêm phong để phục vụ một nhu
- * cầu không liên quan.
- */
-enum class LocalShellFailure {
-    /**
-     * TCP nối được nhưng adbd chưa trả `CNXN` trong hạn đọc — máy **đang chờ người dùng bấm "Cho phép gỡ
-     * lỗi USB"**. Chờ thêm là có nghĩa.
-     */
-    AWAITING_APPROVAL,
-
-    /** adbd trả `AUTH` lần nữa = từ chối khoá (đã bấm Từ chối, hoặc khoá bị gỡ khỏi `adb_keys`). */
-    AUTH_REJECTED,
-
-    /** Không có gì lắng nghe cổng 5555 (adb-tcp chưa bật). Chờ trong 30 s cũng vô ích — phải báo owner. */
-    PORT_CLOSED,
-
-    /** Nối được rồi hỏng giữa chừng (đứt socket / EOF). Một số ROM đóng socket thay vì trả `AUTH`. */
-    IO_ERROR,
-
-    /** Không phân loại được — giữ nguyên để không giả vờ biết. */
-    UNKNOWN,
-}
+// `enum class LocalShellFailure` (từ vựng lý do hỏng — thuần) nằm ở `:core` `carexec/LocalShellFailure.kt` (READY-AT-HOME:
+// chính sách thuần của kênh mức tiến trình `ShellReadinessPolicy` dùng nó, và luật Q1 đặt mọi tệp thuần ở `:core`).
+// Bộ phân loại [LocalShellFailures.classify] ở lại đây vì nó đọc đúng loại ngoại lệ của dadb.
 
 /** Phân loại lỗi transport thành [LocalShellFailure]. Thuần, không đụng thiết bị ⇒ test off-car được. */
 object LocalShellFailures {
@@ -136,6 +91,12 @@ data class LocalShellRetry(
     val socketTimeoutMs: Int = 0,
     val eagerHandshake: Boolean = false,
     val retryOn: Set<LocalShellFailure> = emptySet(),
+    /**
+     * READY-AT-HOME (spec §4.6) — phiên này là đường HỎI người dùng: chỉ chạy khi người dùng đứng trước Kachi (F4 khi
+     * màn chính có tiêu điểm; nút bấm). Cổng thi hành ([LocalShellAdmission]) LUÔN cho qua. Mặc định `false` = phiên
+     * NỀN ⇒ mọi chỗ dựng [LocalShellRetry] hiện có không đổi hành vi khi kênh đã lên.
+     */
+    val mayPromptUser: Boolean = false,
 ) {
     init {
         require(attempts >= 1) { "attempts phải >= 1, nhận $attempts" }
@@ -180,6 +141,14 @@ data class LocalShellRetry(
         )
 
         /**
+         * READY-AT-HOME (spec R1.1) — y hệt [BACKGROUND_READ_CAP] (một lần thử, hạn đọc 30 s, nối lười) nhưng là đường
+         * HỎI: người dùng VỪA bấm (nút *Kiểm tra / Sửa ngay* của phím vô-lăng) nên hộp "Cho phép gỡ lỗi USB?" bung ra
+         * đúng lúc họ đang nhìn — một trong hai nơi R1.1 cho phép. 30 s đủ để bấm Cho phép trong cùng phiên. Cũng là
+         * phiên của nút *Hỏi lại* trên thẻ xin quyền khi màn chính ĐÃ nối dây (`ShellApprovalProbe.askUser`, review lượt 1).
+         */
+        val USER_READ_CAP = BACKGROUND_READ_CAP.copy(mayPromptUser = true)
+
+        /**
          * Chờ owner bấm "Cho phép gỡ lỗi USB" — dùng cho các đường mà **owner đang đứng trước xe và vừa
          * ra lệnh** (giữ phím mic, chọn trợ lý trong app), tức lúc hộp thoại bung ra là lúc owner đang
          * nhìn màn hình.
@@ -219,9 +188,14 @@ data class LocalShellRetry(
                 LocalShellFailure.AUTH_REJECTED,
                 LocalShellFailure.IO_ERROR,
             ),
+            mayPromptUser = true,   // READY-AT-HOME: owner đứng trước xe và vừa ra lệnh — đường HỎI, cổng luôn cho
         )
     }
 }
+
+/** READY-AT-HOME §4.6 — loại phiên cho cổng thi hành: chỉ chính sách tự khai [LocalShellRetry.mayPromptUser] là đường HỎI. */
+internal fun LocalShellRetry.sessionKind(): ShellSessionKind =
+    if (mayPromptUser) ShellSessionKind.ASK else ShellSessionKind.BACKGROUND
 
 /** Kết quả một phiên [LocalDeviceShell] — thay cho `T?` để bên gọi biết hỏng vì cái gì. */
 sealed interface LocalShellResult<out T> {
@@ -278,11 +252,20 @@ internal object LocalShellSessions {
         sleepMs: (Long) -> Unit,
         block: (shell: (String) -> LocalShellText) -> T,
     ): LocalShellResult<T> {
+        // READY-AT-HOME (spec §4.6) — cổng thi hành, TRƯỚC khi mở socket: bị chặn thì không có kết nối nào ⇒ adbd không
+        // thấy khoá ⇒ không bung hộp "Cho phép gỡ lỗi USB?" từ nền (R1.1). `attempts = 0` = chưa thử lần nào.
+        val kind = retry.sessionKind()
+        if (!LocalShellAdmission.admit(kind)) {
+            return LocalShellResult.Failed(LocalShellFailure.NOT_APPROVED, attempts = 0, cause = null)
+        }
         val startedAt = nowMs()
         var attempt = 0
         var reason = LocalShellFailure.UNKNOWN
         var cause: Throwable? = null
         var dispatched = false
+        // Bắt tay ADB đã XONG ở một lần thử nào đó (ép sớm, hoặc lệnh đầu đã trả về) ⇒ khoá ĐƯỢC NHẬN — sự thật đo được
+        // mà tầng app dùng để biết kênh đã lên (READY-AT-HOME §4.6 "báo kết quả ngược lên").
+        var handshook = false
 
         while (true) {
             attempt++
@@ -290,16 +273,17 @@ internal object LocalShellSessions {
             // bao giờ được phép làm chết luồng gọi (phím mic chạy trên thread rời, boot chạy trong FGS).
             val outcome = runCatching {
                 connector.open(keys, retry.socketTimeoutMs).use { connection ->
-                    if (retry.eagerHandshake) connection.handshake()
+                    if (retry.eagerHandshake) { connection.handshake(); handshook = true }
                     block { command ->
                         // Đặt cờ TRƯỚC khi gọi: lệnh đã được ghi ra socket rồi mới tới lượt đọc kết quả,
                         // nên hạn đọc nổ ở đây KHÔNG có nghĩa là thiết bị chưa nhận lệnh.
                         dispatched = true
-                        connection.shell(command)
+                        connection.shell(command).also { handshook = true }
                     }
                 }
             }
             if (outcome.isSuccess) {
+                LocalShellAdmission.report(kind, handshook, null, dispatched, retry.eagerHandshake)
                 // `as T` chứ không phải `getOrNull()?.let{}`: block ĐƯỢC PHÉP trả null (đường cũ trả `T?`),
                 // và null hợp lệ vẫn là THÀNH CÔNG — không được rơi xuống nhánh thử lại.
                 @Suppress("UNCHECKED_CAST")
@@ -342,6 +326,7 @@ internal object LocalShellSessions {
                 break
             }
         }
+        LocalShellAdmission.report(kind, handshook, reason, dispatched, retry.eagerHandshake)
         return LocalShellResult.Failed(reason, attempt, cause, commandDispatched = dispatched)
     }
 }

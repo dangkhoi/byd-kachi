@@ -90,6 +90,19 @@
     <!-- ── F4 — dải nhắc khi hệ thống đang hỏi "Cho phép gỡ lỗi USB?" (ShellChannelGate) ── -->
     <string name="kachi_shell_approval_msg">Hệ thống đang hỏi \"Cho phép gỡ lỗi USB?\" — tích \"Luôn cho phép\" rồi bấm OK để Kachi đưa app vào ô được.</string>
     <string name="kachi_shell_approval_retry">Thử lại</string>
+    <!-- READY-AT-HOME §4.9 — thẻ xin quyền + chữ tình trạng kênh trên ô chưa có bộ chiếu -->
+    <string name="kachi_access_title">Kachi cần quyền điều khiển cửa sổ</string>
+    <string name="kachi_access_never_body">Để đưa app vào ô, chiếu lên cụm và tự sửa phím vô-lăng, hãy cho phép gỡ lỗi. Khi hộp \"Cho phép gỡ lỗi USB?\" hiện: tích \"Luôn cho phép từ máy tính này\" rồi bấm OK.</string>
+    <string name="kachi_access_lost_title">Xe không còn nhận quyền của Kachi</string>
+    <string name="kachi_access_lost_body">Có thể do lâu không dùng (quá hạn của hệ thống), đã thu hồi, hoặc lần trước chỉ chọn \"Cho phép\" một lần. Bấm Hỏi lại và nhớ tích \"Luôn cho phép\".</string>
+    <string name="kachi_access_env_title">Kênh điều khiển cửa sổ chưa mở</string>
+    <string name="kachi_access_env_body">Cổng gỡ lỗi của xe chưa sẵn sàng. Bấm Thử lại sau ít giây.</string>
+    <string name="kachi_access_ask_again">Hỏi lại</string>
+    <string name="kachi_access_later">Để sau</string>
+    <string name="kachi_slot_connecting">Đang kết nối…</string>
+    <string name="kachi_slot_needs_access">Cần cấp quyền</string>
+    <string name="kachi_slot_no_channel">Chưa có kênh điều khiển</string>
+    <string name="kachi_access_feature_blocked">Cần quyền điều khiển cửa sổ — mở màn chính để cấp</string>
 
     <!-- ── SettingsSections — Hiển thị & đơn vị ── -->
     <string name="kachi_sec_units">Đơn vị hiển thị</string>
@@ -251,8 +264,6 @@
 
     <!-- ── WorkspaceView — ô trống giữa màn ── -->
     <string name="kachi_slot_open_app">Mở ứng dụng</string>
-    <!-- PROFILE-SWITCH-SLOTS R-B1: thẻ ô App khi chưa có kênh shell — Kachi không tự mở app thành cửa sổ nổi nữa -->
-    <string name="kachi_slot_tap_to_open">Chạm để mở</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widget của app khác</string>

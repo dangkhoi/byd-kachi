@@ -247,6 +247,12 @@ object AssistantLauncher {
             "Không nối được vào xe để mở trợ lý. Thử lại sau.",
             "Could not reach the head unit to open the assistant. Try again later.",
         )
+        // READY-AT-HOME §4.6 — cổng chặn đường NỀN (vd BootSetup) khi kênh chưa được duyệt: cùng việc cần làm với
+        // AWAITING_APPROVAL, nhưng hộp thoại chưa bung (không có kết nối nào được mở) ⇒ chỉ đúng chỗ bấm.
+        LocalShellFailure.NOT_APPROVED -> Lang.t(
+            "Chưa được cấp quyền gỡ lỗi USB. Mở màn chính Kachi để cấp (nhớ tích \"luôn cho phép\") rồi thử lại.",
+            "USB debugging not authorised yet. Open the Kachi home screen to grant it (tick \"always allow\") then try again.",
+        )
     }
 
     private fun toast(ctx: Context, text: String) {

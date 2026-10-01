@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>READY-AT-HOME — lên HOME là sẵn</title>
+<!--
+  Spec Kiro-style (consolidated) — 1 file / 1 việc (backlog READY-AT-HOME).
+  Thứ tự section CỐ ĐỊNH (docs/specs/_template.html): Changelog · Context · Requirements · Design · Tasks ·
+  Verification · Open Questions · References · Nhật ký triển khai · Reviewer Log.
+  Ba cổng duyệt (Requirements/Design/Tasks) duyệt NGOÀI tài liệu — KHÔNG lưu trạng thái duyệt ở đây.
+  Diagram = HTML visual (inline SVG dùng CSS var) — CẤM mermaid/ascii (CLAUDE.md global §3.1).
+  Riêng tư: KHÔNG IP xe, KHÔNG đường dẫn máy cá nhân, KHÔNG nội dung khoá adb. Bằng chứng thô ngoài repo chỉ ghi TÊN thư mục.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 16px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px;color:var(--muted)}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+.tbl{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.gate{border-color:var(--warn);background:rgba(191,95,0,.07)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.ev{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:1px 6px;border-radius:5px;border:1px solid var(--line);background:var(--card);color:var(--muted);white-space:nowrap}
+.ev.m{color:var(--ok);border-color:transparent;background:rgba(26,127,55,.12)}
+.ev.s{color:var(--accent);border-color:transparent;background:rgba(0,113,227,.12)}
+.ev.g{color:var(--warn);border-color:transparent;background:rgba(191,95,0,.12)}
+.ev.u{color:var(--muted)}
+.car{font-size:11.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:rgba(191,95,0,.12);color:var(--warn);white-space:nowrap}
+.nocar{font-size:11.5px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--card);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+/* ---- Diagram helpers: inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:16px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto;min-width:660px}
+.cap{font-size:12.5px;color:var(--muted);margin:6px 2px 0;text-align:left}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{border-color:var(--accent);background:rgba(0,113,227,.10)}
+.layer .node.bad{border-color:var(--warn);background:rgba(191,95,0,.10)}
+.layer .node.okn{border-color:var(--ok);background:rgba(26,127,55,.10)}
+.lname{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center}
+.down{text-align:center;color:var(--accent);font-weight:700;font-size:16px;line-height:1}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted);justify-content:center}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* Mẫu thẻ R1 (chỉ minh hoạ — UI thật dựng bằng KachiTheme) */
+.mock{max-width:520px;margin:14px auto;background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.mock .t{font-weight:700;font-size:16px;margin:0 0 6px}
+.mock .b{font-size:14px;color:var(--muted);margin:0 0 12px}
+.mock .row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.mock .btn{font-size:14px;font-weight:650;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+.mock .btn.pri{background:var(--accent);color:#fff;border-color:transparent}
+/* SVG primitives — mọi fill/stroke qua CSS var để sáng/tối đều đọc được */
+svg .bx{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .bx-new{fill:rgba(0,113,227,.14);stroke:var(--accent);stroke-width:1.5}
+svg .bx-bad{fill:rgba(191,95,0,.16);stroke:var(--warn);stroke-width:1.5}
+svg .bx-ok{fill:rgba(26,127,55,.16);stroke:var(--ok);stroke-width:1.5}
+svg .bx-dash{fill:var(--bg);stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+svg .band-off{fill:rgba(191,95,0,.05);stroke:none}
+svg .band-on{fill:rgba(0,113,227,.05);stroke:none}
+svg .axis{stroke:var(--line);stroke-width:3}
+svg .tick{stroke:var(--muted);stroke-width:1}
+svg .vl{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+svg .vl-ok{stroke:var(--ok);stroke-width:1.6}
+svg .vl-bad{stroke:var(--warn);stroke-width:1.6}
+svg .vl-acc{stroke:var(--accent);stroke-width:1.6}
+svg .t{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:12.5px;font-weight:650}
+svg .ts{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px}
+svg .tf{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11.5px}
+svg .th{fill:var(--muted);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;font-size:11px;font-weight:700;letter-spacing:.05em}
+svg .ln{stroke:var(--accent);stroke-width:1.6;fill:none}
+svg .ln-bad{stroke:var(--warn);stroke-width:1.6;fill:none}
+svg .ln-ok{stroke:var(--ok);stroke-width:1.6;fill:none}
+svg .ln-dash{stroke:var(--muted);stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+svg .mk-acc{fill:var(--accent)}svg .mk-bad{fill:var(--warn)}svg .mk-ok{fill:var(--ok)}svg .mk-mut{fill:var(--muted)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>READY-AT-HOME — lên HOME là mọi thứ đã sẵn</h1>
+<p class="muted">Slug <code>kachi-ready-at-home</code> · Backlog <code>READY-AT-HOME</code> · Chủ sở hữu <b>dangkhoi</b> · Ngày <b>2026-10-01</b> · Nhánh <code>feat/voice-hotword-phrases</code> · Mã gốc đọc tại <code>e28ed08</code> (kênh OTA = 2.84 (185)) · Không bump version, không commit, không OTA trong pha spec · <span class="pill wait">Trạng thái: Draft — chờ duyệt Requirements · Design · Tasks</span> · <span class="pill ok">Mã off-car: chế độ DỰ PHÒNG xong 02/10 (chưa commit, không bump) — §9</span></p>
+
+<div class="card gate">
+<p><span class="pill wait">CỔNG TRƯỚC KHI CODE</span></p>
+<ol>
+<li><b>Owner duyệt</b> ba phần Requirements · Design · Tasks (ngoài tài liệu — luật global §1). Bảy câu hỏi mở ở §7 có đề xuất mặc định; owner nói “làm đi” = nhận mặc định.</li>
+<li><b>CLAUDE.md §14 tầng 1</b> cho cơ chế MỚI duy nhất của spec này — <b>dò im lặng</b> (§4.3, bắt tay adb chỉ bằng chữ ký, không bao giờ gửi khoá công khai). Cơ chế đã có bằng chứng ở mức nguồn AOSP + bytecode dadb <span class="ev m">[ĐO]</span>, nhưng ROM BYD có giữ đúng hành vi đó không thì <span class="ev u">[CHƯA BIẾT]</span>. T0a (máy ảo) và T0b (xe, owner) phải xanh trước khi viết mã <code>:car-integration</code>/<code>:app</code> cho nó. T0 đỏ ⇒ dùng <b>chế độ dự phòng</b> §4.4.3 (chỉ dấu bền), đúng thiết kế phiên chính đề xuất.</li>
+<li>Phần <b>không</b> phụ thuộc T0 — dấu bền, trạng thái kênh mức tiến trình, cổng thi hành, HOME nhận kênh sẵn, kiểm phím trong chuỗi, giao diện R1, mốc log — làm được song song sau khi duyệt.</li>
+</ol>
+</div>
+
+<p class="muted">Nhãn mức bằng chứng (CLAUDE.md §2, <code>.kiro/steering/conversation-protocol.md</code>):
+<span class="ev m">[ĐO]</span> dữ liệu thật đã đọc (mã, dump, nguồn AOSP, bytecode) ·
+<span class="ev s">[SUY]</span> suy luận khớp dữ liệu, chưa đo trực tiếp ·
+<span class="ev g">[ĐOÁN]</span> mới chỉ hợp lý ·
+<span class="ev u">[CHƯA BIẾT]</span> chưa có dữ liệu. Mã trong repo trích theo <code>file:line</code> ở <code>e28ed08</code>. Nguồn AOSP fetch lại trong phiên 01/10 (googlesource, <code>?format=TEXT</code>): <code>android-10.0.0_r47</code> (Seal DiLink 3) và <code>android-12.0.0_r34</code> (DL5). Bằng chứng xe 29/09 nằm ở thư mục bằng chứng ngoài repo <code>oncar-0929/</code>; tài liệu này chỉ ghi tên tệp.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 8 — 2026-10-02</b>: Senior review (Opus) lượt 3 cho TOÀN BỘ READY-AT-HOME (§10 Pass 7) — PATCHED 3 × [P3], <b>không đổi mã chạy</b> (APK release trùng byte bản E2E Pass 6, sha256 <code>919c3aff…</code>): (1) hai bài canh mới quét toàn cây bằng <code>KotlinSource.stripComments</code> dùng chung thay cho bản tự chép cắt ở <code>//</code> — bản cũ để lọt một tham chiếu <code>HealPhase.KHOI_DONG</code> đứng sau chuỗi <code>"https://x"</code> <span class="ev m">[ĐO phá thử: cũ 11/11 xanh, mới đỏ đúng bài]</span>; (2) §4.7 sáu điều kiện của <code>adopt</code> + nhánh F4 giữ ô, ghi chú lệch “giữ nguyên byte” dưới R-nf2; (3) <code>project-context.md</code> có khối READY-AT-HOME, kể cả NGOẠI LỆ ân hạn khởi động của luật 2.83 (T15 ✅). Test 6 865 / 0; lint 0 lỗi. Không phát hiện nào ở mã chạy.</li>
+<li><b>Pass 7 — 2026-10-02</b>: Senior review (Opus) lượt 2 cho TOÀN BỘ READY-AT-HOME, trọng tâm ân hạn khởi động (§10 Pass 6) — PATCHED 2 × [P3]: (1) <b>nhánh F4 nhận kênh nay cũng giữ ô</b> như <code>adopt</code> (<code>KeyReady.holdTileIfEscalating</code> trước <code>onChannelUp</code>) — lý do miễn của §10 Pass 2 (d) (“tiến trình bật lúc màn sáng ⇒ không có lượt nào có thể force-stop”) hết đúng từ Pass 5 (ân hạn khởi động chạy ĐÚNG ở tiến trình đó); F4 thắng đua khi lượt sớm chậm hơn tiêu điểm + 1,5 s ⇒ trước bản vá ô mở app trong lúc lượt khởi động còn đo ⇒ app ô mở hai lần sau force-stop. <span class="ev m">[ĐO E2E máy ảo F4H: <code>home f4</code> rồi 5,8 s tới lượt force-stop, 0 dòng <code>tile</code> trong tiến trình bị giết, VietMap tạo đúng MỘT lần]</span>; (2) bài canh <code>A11yBootGraceWiringContractTest</code> bỏ <code>substringBefore</code> (cùng cách bỏ chú thích của hai bài canh anh em). E2E máy ảo chạy lại lỗi gốc ca 1 trên APK cuối: phím gắn lại 8,1 s sau lần giết, đúng một force-stop. Luật 2.83 lúc đang chạy không đổi.</li>
+<li><b>Pass 6 — 2026-10-02</b>: Senior review (Opus) lượt 1 cho ân hạn khởi động (§10 Pass 5) — PATCHED 1 × [P3]: <b>màn TẮT giữa lượt ân hạn</b> (đã thấy kẹt, còn trong 20 s) không còn rơi vào khe “không lớp nào nhận” <span class="ev m">[ĐO E2E máy ảo C6: phím chết 112 s tới khi bấm tay]</span> — lượt được <b>trao lớp 1 nguyên vẹn</b> (cổng <code>tatMayMayRun</code>, claim <code>commit()</code> trước khi đo, cùng <code>healIfStuck</code>); claim đó chặn tiến trình con chạy lớp 1 lần hai và làm lần màn bật kế là MỞ XE cho lớp 2. Luật 2.83 lúc đang chạy (màn sáng, ngoài ân hạn) không đổi. Phá thử 6/6 đỏ. E2E máy ảo chạy lại <span class="ev m">[ĐO]</span>: C6 phím gắn lại ≈ 12,5 s sau lần giết (trước: 112 s), C6b (màn bật lại giữa chừng ⇒ lớp 2 nhận) và C1 hồi quy — mỗi lần giết đúng một force-stop, 0 crash.</li>
+<li><b>Pass 5 — 2026-10-02</b> (phiên điều phối, sau E2E máy ảo R2 ca 1): <b>ÂN HẠN KHỞI ĐỘNG</b> — lớp 2 mở rộng (R2.7 · §4.8.1). Lỗi còn lại <span class="ev m">[ĐO]</span>: giết kiểu BYD lúc màn ĐANG bật ⇒ kênh lên sớm, ô có app, nhưng <code>nấc NONE, KHÔNG leo</code> (pha RUNNING) ⇒ phím chết ≈ 70 s. Nay tiến trình DỰNG LẠI lúc màn sáng, không phải con của lượt chữa, có MỘT lượt kiểm–chữa trong 20 s đầu đời qua đúng thân <code>healIfStuck</code> + đường leo 2.83 (không đường thứ hai, không lệnh mới); ngoài 20 s luật 2.83 “đang chạy thì không tự khởi động lại launcher” giữ nguyên. Mốc leo ghi hỏng ⇒ lượt tự động không bắn. Dòng <code>keys=</code> nói kết quả thật (lượt vòng đời, chấm điểm, gắn muộn). <b>9 OQ đã chốt</b> theo uỷ quyền owner (§7). E2E máy ảo lặp lại: phím Bound 12,3 s sau lần giết (trước: ≈ 70 s), đúng MỘT lần force-stop, con của lượt chữa không leo, lần giết thứ hai 27 s sau được chữa lại, ca 2 (lớp 1) + nâng cấp không đổi. Chi tiết §9 Pass 2 + §10 Pass 4.</li>
+<li><b>Pass 4 — 2026-10-02</b>: Senior review lượt 3 (§10) — PATCHED 1 × [P2] + 1 × [P3]: màn chính <b>không còn kẹt ở “đã nhận kênh”</b> khi đường nối dây chạy mà vẫn không có kênh (nhánh <code>dadb.probe()</code> hỏng — vd cổng 5555 chưa mở lúc màn bật sau khi lượt sớm đo UP lúc màn tắt): <code>ShellChannelGate.wiringFailed()</code> nhả cờ <code>channelUp</code> và hẹn lượt F4 20 s, nút <i>Thử lại</i> trên thẻ hết chết; bên vẽ (thẻ, chữ ô) đọc trạng thái kênh MỚI NHẤT thay vì giá trị chụp lúc báo. Chi tiết ở §10.</li>
+<li><b>Pass 3 — 2026-10-02</b>: Senior review lượt 2 (§10) — PATCHED 2 × [P3] mã + 1 × [P3] tài liệu: F4 tự dò lại khi cổng 5555 đóng <b>cả khi có dấu tươi</b> (dấu chỉ mở đường nền, không đưa màn chính lên); <code>settle</code> của F4 thử <code>adopt()</code> sau khi nhả <code>inFlight</code> (kênh lên trong lúc lượt F4 bay không còn bị bỏ lỡ); dòng INDEX của spec này hết nói “chưa code”. Chi tiết ở §10.</li>
+<li><b>Pass 2 — 2026-10-02</b>: Senior review lượt 1 (§10) — PATCHED 2 × [P2] + 6 × [P3]: kết quả cấp phím THẬT vào nhật ký/Chẩn đoán; nút <i>Hỏi lại</i> không còn chết khi màn đã nối dây mà kênh rơi khỏi UP; F4 tự dò lại khi cổng 5555 đóng mà đường nền bị chặn; lý do loại DUYỆT không hạ CẦN DUYỆT xuống MÔI TRƯỜNG; nhãn nguồn <code>up src=early/f4</code>; thẻ mờ dần khi kênh tự lên; câu thẻ MÔI TRƯỜNG nói đúng; tiết chế dòng <code>deny</code> không phình. Chi tiết + bằng chứng ở §10.</li>
+<li><b>Pass 1 — 2026-10-02</b>: Hiện thực <b>chế độ DỰ PHÒNG</b> (§4.4.3 cột phải — chỉ dấu bền) theo lệnh “hiện thực spec” của phiên điều phối. Cơ chế <b>dò im lặng</b> (§4.3, T2) <b>KHÔNG</b> viết mã: T0a/T0b chưa chạy ⇒ CLAUDE.md §14 cấm code tầng 2–4 cho cơ chế chưa có bằng chứng shell thô. Ba sai lệch có chủ đích so với bản thiết kế, lý do ở §9: (a) chính sách thuần + cổng nằm ở <code>:core</code> (luật Q1 <code>LayeringRulesTest</code>: tệp không dùng dadb thuộc <code>:core</code>) và enum <code>LocalShellFailure</code> dời sang <code>:core</code> cùng package; (b) ở chế độ dự phòng thẻ CHƯA TỪNG chỉ hiện SAU phép đo F4 đầu tiên (không biết “chưa từng” trước khi đo — OQ9 chỉ làm được ở chế độ im lặng); (c) <code>KachiAutostart</code> chờ phép đo kênh ≤ 60 s ở lượt nâng cấp đầu (nếu không, lượt đặt lại HOME sau OTA bị cổng chặn mất). Kiểm off-car + E2E máy ảo ở §9.</li>
+<li><b>Pass 0 — 2026-10-01</b>: Khởi tạo spec từ yêu cầu owner cùng ngày (§2.1) và báo cáo điều tra chỉ-đọc của phiên. Khi viết spec, phiên đọc thêm hai nguồn và có một phát hiện mới. Nguồn adbd: <code>adb.cpp</code> và <code>daemon/auth.cpp</code>, bản A10 r47 và A12 r34. Nguồn dadb: bytecode <code>dadb-2.0.0</code>. Phát hiện: adbd <b>chỉ</b> hỏi người dùng khi client gửi khoá công khai, còn dadb <b>luôn</b> gửi khoá công khai sau khi chữ ký bị từ chối. Từ đó có thiết kế dò im lặng (§4.3); thiết kế này cần cổng §14 trước khi code. Chưa có mã.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>2. Context</h2>
+
+<h3>2.1 Yêu cầu owner (nguyên văn, 2026-10-01)</h3>
+<div class="card"><p><i>“Xe chưa từng cho phép phải hiện popup yêu cầu, không có quyền, không dùng đc app. Xe đã cấp phép thì mình phải tự động nối ngay bước đầu tiên, khi lên HOME thì mọi thứ phải ready, bao gồm kiểm tra binding phím”</i></p></div>
+<p>Phiên chính diễn giải yêu cầu thành ba ca: R1 (xe chưa từng cho phép), R2 (xe đã cấp quyền) và R3 (xe từng cấp nhưng bị thu hồi). Theo ghi chú workflow, owner chưa phản đối diễn giải này <span class="ev s">[SUY]</span>. Đây <b>chưa</b> phải duyệt: §3 viết lại ba ca thành tiêu chí đo được để owner chốt.</p>
+
+<h3>2.2 Hôm nay tiến trình bật thế nào <span class="ev m">[ĐO mã]</span></h3>
+<p>Ngòi bật hay gặp nhất: mỗi lần <b>tắt máy</b>, BYD giết Kachi, và Android dựng lại HOME sau 0,25–0,33 s, khi màn đã tắt <span class="ev m">[ĐO <code>c2-logcat</code> :3418→3479]</span>. Ngòi <code>BOOT_COMPLETED</code> tới <b>sau</b> lúc ô đã dựng. Các dịch vụ <code>START_STICKY</code> không dựng lại tiến trình, vì lượt giết của BYD không kèm <code>am_schedule_service_restart</code> <span class="ev m">[ĐO 29/09]</span>.</p>
+<div class="tbl"><table>
+<tr><th>Bước</th><th>Ở đâu</th><th>Có nối dadb?</th><th>Cổng</th></tr>
+<tr><td>1</td><td><code>KachiApplication.onCreate</code> → <code>A11yLifecycleHeal.install</code> (<code>KachiApplication.kt:44</code>)</td><td><b>Có, từ nền</b>: lớp 1 đo bằng <code>LocalDeviceShell.run</code> (<code>A11yLifecycleHeal.kt:285-293</code>)</td><td>màn tắt + claim + phím-thoại bật + binder chưa gắn</td></tr>
+<tr><td>2</td><td><code>KachiHomeActivity.onCreate</code> dựng <code>ShellChannelGate</code>, gọi <code>arm()</code> (<code>:317-329</code>)</td><td>—</td><td>chờ <code>decorView.post</code> rồi yên 1,5 s</td></tr>
+<tr><td>3</td><td><code>onResume</code> → <code>ensureCastBubble</code> (<code>:375</code>, <code>KachiHomeWiring.kt:389-397</code>) → SimpleCast qua <code>ShellTransport</code></td><td><b>Có, từ nền</b></td><td><code>cast_enabled</code> + quyền vẽ nổi</td></tr>
+<tr><td>4</td><td><code>onWindowFocusChanged</code> → <code>gate.onFocus</code> → <code>attempt()</code> (<code>ShellChannelGate.kt:145-159</code>)</td><td>—</td><td><code>attemptAllowed(showing &amp;&amp; focused)</code> (<code>FirstOpenApprovalPolicy.kt:98</code>)</td></tr>
+<tr><td>5</td><td><code>ShellApprovalProbe.probe</code>: phiên rời, chính sách <code>PROBE</code>, đọc tối đa 6 s (<code>ShellChannelGate.kt:280-294</code>)</td><td><b>Có</b> — lượt dò chính thức của F4</td><td>—</td></tr>
+<tr><td>6</td><td><code>bringUpShellChannel</code> (<code>KachiHomeWiring.kt:456-492</code>): watchdog → keep-alive → <code>dadb.probe()</code> → <code>applyEmbedSeam</code> (ô dựng <code>VdAppHost</code>) → <code>PermissionPreflight</code> (B1 cấp lại Hỗ trợ, <code>PermissionPreflight.kt:289-294</code>)</td><td>Có</td><td>—</td></tr>
+</table></div>
+<p>Ngoài các bước trên, những đường sau cũng nối kênh từ nền và không chờ HOME: watchdog phím 30 s, alarm 60 s <code>RebindReceiver</code>, <code>KachiAutostart</code> (BOOT/OTA, mặc định <b>bật</b>), BootSetup (VietMap, trợ lý), camera helper và tự cập nhật. Không đường nào trong số đó có một cổng chung trả lời câu “khoá đã được duyệt chưa” <span class="ev m">[ĐO grep]</span>.</p>
+
+<h3>2.3 Bằng chứng xe 29/09: nối nền bằng khoá đã duyệt đã chạy thật — nhưng ô vẫn chậm 5,9 s</h3>
+<div class="tbl"><table>
+<tr><th>Mốc</th><th>Lượt 1</th><th>Lượt 2</th><th>Nguồn</th></tr>
+<tr><td>Kênh dùng được từ nền, màn tắt (cast <code>shell OK</code>)</td><td>+1,33 s sau <code>proc_start</code></td><td>+1,02 s</td><td><code>usage-cycle1.log:137</code> · <code>usage-cycle2.log:134-136</code> <span class="ev m">[ĐO]</span></td></tr>
+<tr><td><code>AutoContainer</code> nhận lệnh từ <code>callingUid = 2000</code> lúc màn tắt</td><td>11:20:52.692</td><td>11:33:27.332</td><td><code>c1-logcat:3650</code> · <code>c2-logcat:3656</code> <span class="ev m">[ĐO]</span>; “uid 2000 = dadb của Kachi” <span class="ev s">[SUY mạnh]</span></td></tr>
+<tr><td>Màn bật → KachiHome có tiêu điểm</td><td>3,97 s</td><td>3,82 s</td><td><code>c2-logcat:4200,4208</code> <span class="ev m">[ĐO]</span></td></tr>
+<tr><td>Tiêu điểm → bắt đầu <code>bringUpShellChannel</code></td><td>1,66 s</td><td>1,61 s</td><td><code>usage-cycle2.log:211-214</code> <span class="ev m">[ĐO]</span></td></tr>
+<tr><td><b>Màn bật → màn ảo ô 0</b></td><td><b>5,92 s</b></td><td><b>5,88 s</b></td><td><code>usage-cycle2.log:216-218</code> <span class="ev m">[ĐO]</span></td></tr>
+<tr><td>Kênh đã dùng được trước khi ô dựng</td><td>~73 s</td><td>~53 s</td><td>hiệu hai mốc <span class="ev m">[ĐO]</span></td></tr>
+</table></div>
+<p>Khoảng 3,8–4 s chờ tiêu điểm là do cửa sổ YouTube nổi mà chính Kachi mở lúc màn tắt giữ tiêu điểm <span class="ev s">[SUY mạnh — trùng kết luận spec 2.83 F1]</span>. Bản <code>e28ed08</code> (R-B1) đã bỏ việc tự mở cửa sổ đó. Phần còn lại vẫn đứng nguyên: cổng tiêu điểm, 1,5 s yên và một lượt dò mới, dù tiến trình đã có kênh từ ~1 s sau khi bật. Tóm lại, cơ chế nối nền đã có; cái thiếu là <b>quyết định dùng nó</b> và đưa kết quả cho HOME.</p>
+
+<h3>2.4 Duyệt khoá không vĩnh viễn, và Kachi chưa có dấu bền nào <span class="ev m">[ĐO]</span></h3>
+<ul>
+<li>Khoá adb nằm ở <code>filesDir/adb.key</code> và <code>adb.pub</code> (<code>AdbKeys.kt:19-21</code>). Nếu đọc hỏng, khoá <b>tự sinh lại</b> (<code>:23-26</code>), và khoá mới thì coi như chưa duyệt.</li>
+<li>Không có dấu nào ghi lại rằng “xe này đã duyệt khoá này” <span class="ev m">[ĐO grep <code>app</code>/<code>core</code>/<code>car-integration</code>]</span>. <code>ShellChannelGate.awaitingApproval</code> chỉ là cờ RAM (<code>ShellChannelGate.kt:69</code>).</li>
+<li>Android 10 coi khoá “Luôn cho phép” là <b>hết hạn</b> nếu khoá đó không nối lại trong <code>adb_allowed_connection_time</code>, mặc định <code>604800000</code> ms = 7 ngày (<code>Settings.java:12393</code>; <code>AdbDebuggingManager.java:1123-1141</code>; giá trị <code>0</code> = không bao giờ hết hạn, <code>:1135</code>). Log xe 14/09 in đúng <code>authWindow = 604800000</code> <span class="ev m">[ĐO <code>carlog-kachi-20260914-2044/</code>]</span>. Mỗi lần nối thành công làm mới mốc này: CK ở <code>:461-473</code>, DC ở <code>:421-437</code>. Android 12 giữ nguyên cơ chế <span class="ev m">[ĐO 12r34]</span>.</li>
+</ul>
+
+<h3>2.5 Hộp “Cho phép gỡ lỗi USB?” bung ra khi nào — phát hiện của Pass 0 <span class="ev m">[ĐO AOSP + bytecode]</span></h3>
+<ul>
+<li><b>adbd</b>, Android 10 r47, <code>adb.cpp:337-356</code>: khi nhận <code>AUTH(SIGNATURE)</code> mà chữ ký sai, adbd chỉ gọi <code>send_auth_request</code> để gửi một <code>AUTH(TOKEN)</code> mới (<code>daemon/auth.cpp:262-276</code>) và <b>không</b> báo gì lên framework. Chỉ khi nhận <code>AUTH(RSAPUBLICKEY)</code> adbd mới gọi <code>adbd_auth_confirm_key</code>, rồi gửi <code>"PK"</code> lên framework (<code>auth.cpp:169-185</code>). Framework xử lý <code>MESSAGE_ADB_CONFIRM</code> → <code>startConfirmation</code> → <code>startActivityAsUser(… NEW_TASK)</code> (<code>AdbDebuggingManager.java:388-411, 573-613</code>), bất kể màn hay app tiền cảnh.</li>
+<li>Android 12 r34 giống hệt: <code>adb.cpp:406-425</code>, và chỉ <code>adbd_auth_confirm_key</code> mới gọi <code>adbd_auth_prompt_user</code> (<code>daemon/auth.cpp:284-294</code>).</li>
+<li><b>dadb 2.0.0</b>, bytecode <code>AdbConnection$Companion.connect</code>: gửi <code>CNXN</code>, đọc gói đầu. Nếu là <code>AUTH</code> thì ký token và gửi <code>AUTH(SIGNATURE)</code>, rồi đọc gói kế. Nếu gói kế lại là <code>AUTH</code> thì dadb <b>luôn</b> gửi <code>AUTH(RSAPUBLICKEY)</code> = <code>getPublicKeyBytes$dadb()</code> rồi chờ. Gói sau đó vẫn là <code>AUTH</code> thì dadb ném <code>AdbAuthException("Device rejected authentication (unauthorized)")</code>. ⇒ Mọi đường nối của Kachi đều đi qua dadb (<code>LocalDeviceShell</code>, <code>ShellTransport</code>, <code>installApk</code>), nên với khoá chưa được nhận, <b>mọi</b> lần nối đều dựng hộp thoại.</li>
+<li>Activity hộp thoại khai <code>finishOnCloseSystemDialogs="true"</code> (<code>SystemUI AndroidManifest.xml:413-418</code>). Khi adb TCP đang bật, nó không nghe sự kiện rút USB (<code>UsbDebuggingActivity.java:62-64</code>). Đóng kết nối cũng <b>không</b> gỡ hộp: <code>MESSAGE_ADB_DISCONNECT</code> chỉ cập nhật mốc (<code>AdbDebuggingManager.java:421-437</code>) <span class="ev m">[ĐO]</span>. Trên ROM BYD hộp thoại bị đóng bằng đường nào thì <span class="ev u">[CHƯA BIẾT]</span>; hiện tượng hộp bị đóng thì đã đo ngày 14/09 <span class="ev m">[ĐO]</span>.</li>
+</ul>
+<p><b>Hệ quả cho thiết kế:</b> nếu client dừng sau bước chữ ký và <b>không</b> gửi khoá công khai, nó biết được “khoá có được nhận không” mà không bao giờ dựng hộp thoại. Đó là <b>dò im lặng</b> (§4.3). Ngoài ra, khi chữ ký được nhận, adbd báo <code>CK</code> lên framework và framework làm mới mốc 7 ngày (<code>auth.cpp:220-235</code> → <code>AdbDebuggingManager.java:461-473</code>).</p>
+
+<h3>2.6 Khi chưa có kênh, hôm nay chuyện gì xảy ra <span class="ev m">[ĐO mã]</span></h3>
+<div class="tbl"><table>
+<tr><th>Tính năng</th><th>Hành vi ở <code>e28ed08</code></th><th>file:line</th></tr>
+<tr><td>Ô app (hiển thị)</td><td>thẻ icon + tên + “Chạm để mở”</td><td><code>WorkspaceView.kt:361</code>, <code>WorkspaceViewCards.kt:80-104</code></td></tr>
+<tr><td>Chạm ô / gắn app mới</td><td><b>vẫn mở cửa sổ nổi</b> qua <code>IntentAppLauncher.openInSlot</code> (ghi dấu <code>kachi_floating_opened</code> trước)</td><td><code>KachiHomeSlots.kt:34-52</code> → <code>LauncherWindows.kt:175-191</code></td></tr>
+<tr><td>Mở app toàn màn (ngăn kéo)</td><td>intent thường, không cần kênh</td><td><code>KachiHomeSlots.kt:62-68</code></td></tr>
+<tr><td>Chiếu cụm / DPI cụm / camera helper / Đặt HOME / KachiAutostart</td><td>đi <code>ShellTransport</code> và <b>tự mở kết nối</b>, nên với khoá chưa duyệt sẽ bung hộp từ nền. Hỏng thì <code>run</code> trả <code>""</code> (<code>ShellTransport.kt:104-108</code>), không có lời nhắc quyền</td><td><code>SimpleCastRuntime.kt:97</code>, <code>BubbleAutostart.kt:58-68</code></td></tr>
+<tr><td>Cài cập nhật</td><td>có câu riêng cho <code>AWAITING_APPROVAL/AUTH_REJECTED</code></td><td><code>UpdateChecker.kt:221-252</code></td></tr>
+<tr><td>UI quyền</td><td>dải nhắc đáy (chỉ khi F4 đã phân loại <code>AWAITING_APPROVAL</code>) · hàng “Kênh điều khiển cửa sổ” trong Cài đặt · một toast mỗi tiến trình. <b>Không có thẻ hay popup giải thích</b></td><td><code>ShellChannelGate.kt:194-260</code>, <code>LauncherRequirements.kt:220-251</code></td></tr>
+</table></div>
+
+<h3>2.7 Ràng buộc từ mã và luật</h3>
+<ul>
+<li><b>Đường đang chạy tốt, không được phá</b> (CLAUDE.md §6):
+  <ul>
+  <li>F4 <code>ShellChannelGate</code>: hoãn tới khi có tiêu điểm + 1,5 s, thử lại 20 s, dải nhắc. Bài canh <code>ShellApprovalWiringContractTest</code> <b>không được nới</b>.</li>
+  <li>Thân <code>bringUpShellChannel</code>, giữ là “nguyên khối” (<code>KachiHomeWiring.kt:442-455</code>).</li>
+  <li>Cơ chế tự chữa phím 3 lớp của 2.83: <code>A11yLifecycleHeal</code>, <code>AccessibilityHealGates</code>, rào camera <code>GO_HOME_UNLESS_CAMERA</code>.</li>
+  <li>B1 trong <code>PermissionPreflight</code>.</li>
+  </ul>
+</li>
+<li><b>Trần 500 dòng</b> (global §4.1): <code>KachiHomeWiring.kt</code> đang 492 dòng, <code>KachiHomeActivity.kt</code> 475 dòng. Mã mới phải vào tệp mới.</li>
+<li><b>Đổi hồ sơ / PROFILE-SWITCH-SLOTS</b> (<code>e28ed08</code>): đã bỏ đường <i>tự</i> mở cửa sổ nổi. Còn lại đường chạm tay. Spec này tắt nốt đường đó khi chưa có kênh (R1.3). Nó cũng bao trùm <code>PROFILE-SWITCH-SLOTS-OQ7</code> (cổng tiêu điểm khi chưa có kênh).</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>3. Requirements</h2>
+<p class="muted">Ba trạng thái của xe, gọi thống nhất trong mọi chỗ: <b>CHƯA TỪNG</b> (xe chưa duyệt khoá hiện tại của Kachi, chưa có dấu) · <b>ĐÃ DUYỆT</b> (khoá được adbd nhận) · <b>MẤT DUYỆT</b> (từng có dấu, nay khoá không còn được nhận: thu hồi, quá hạn, “cho phép một lần”, khoá sinh lại).</p>
+
+<h3>R1 — Xe CHƯA TỪNG cho phép (hoặc MẤT DUYỆT): hỏi rõ ràng, không quyền thì không dùng</h3>
+<ul>
+<li><b>R1.1 — Chỉ hai nơi được phép làm bung hộp hệ thống.</b> Nơi thứ nhất là cổng F4, khi HOME ở trước, có tiêu điểm và đã yên 1,5 s (đường hiện có, không đổi). Nơi thứ hai là nút xin quyền do người dùng bấm trong Kachi: <i>Hỏi lại</i> trên thẻ R1.2, hoặc <i>Kiểm tra / Sửa ngay</i> của phím vô-lăng. Mọi đường nền khác (cast, DPI, camera helper, Autostart, BootSetup, lớp 1/2/3 chữa phím, cập nhật, Chẩn đoán…) <b>không được</b> gửi khoá công khai cho adbd.
+  <br><b>Chấp nhận:</b>
+  <ul>
+  <li>Bảng cổng thi hành (§4.6) được test đủ ô.</li>
+  <li>Bài canh tĩnh khoá đủ ba điểm vào transport.</li>
+  <li>Trên xe OC-2/OC-3: dòng <code>am_create_activity … UsbDebuggingActivity</code> chỉ xuất hiện <b>sau</b> mốc KachiHome có tiêu điểm, hoặc ngay sau một lần bấm <i>Hỏi lại</i>.</li>
+  </ul></li>
+<li><b>R1.2 — Thẻ xin quyền trong HOME (vi/en).</b> Thẻ là view nằm trong cửa sổ của HOME, không phải cửa sổ hệ thống, nên luôn nằm <b>dưới</b> hộp hệ thống và không đè lên nó. Không có nền phủ toàn màn, không chặn chạm ra ngoài thẻ. Thẻ có hai nút: <i>Hỏi lại</i> (gọi F4 dò ngay, vẫn qua cổng tiêu điểm) và <i>Để sau</i> (thu thẻ về dải nhắc đáy đang có). Thẻ tự biến mất khi kênh lên. Lời nói khác nhau cho ba ca CHƯA TỪNG / MẤT DUYỆT / MÔI TRƯỜNG.
+  <br><b>Chấp nhận:</b> máy ảo, khi ép trạng thái: thẻ hiện đúng biến thể; chạm ra ngoài thẻ vẫn tới ô và thanh nút; Kênh lên ⇒ thẻ biến mất trong ≤ 1 s.</li>
+<li><b>R1.3 — Tính năng cần kênh không chạy khi chưa có kênh, và nói vì sao.</b> Áp cho:
+  <ul>
+  <li>đặt app vào ô, <b>kể cả cửa sổ nổi dự phòng</b>;</li>
+  <li>chiếu cụm, cả bật tay lẫn tự chiếu;</li>
+  <li>DPI khung cụm;</li>
+  <li>camera helper;</li>
+  <li>Đặt HOME;</li>
+  <li>cài cập nhật;</li>
+  <li>phần shell của Autostart/BootSetup;</li>
+  <li>tự chữa phím.</li>
+  </ul>
+  Mỗi lần người dùng chạm vào một trong các tính năng này thì có lời nhắc: thẻ R1.2 nếu đang ở HOME, còn ngoài HOME là một thông báo ngắn kèm hàng quyền trong Cài đặt. Ô app thay chữ “Chạm để mở” bằng chữ theo trạng thái (§4.9).
+  <br><b>Chấp nhận:</b> máy ảo, trạng thái CẦN DUYỆT: chạm ô ⇒ 0 cửa sổ freeform mới trên display 0 (<code>am stack list</code>), thẻ hiện; bật chiếu ⇒ không lệnh <code>service call AutoContainer</code> nào, lời nhắc hiện.</li>
+<li><b>R1.4 — Mở app toàn màn từ ngăn kéo vẫn chạy.</b> Đường này dùng intent thường, không cần kênh, và R1 chỉ nói “mở app vào ô”. Owner chốt ở OQ1.</li>
+</ul>
+
+<h3>R2 — Xe ĐÃ DUYỆT: nối ngay khi tiến trình bật, lên HOME là sẵn</h3>
+<ul>
+<li><b>R2.1 — Nối kênh ngay khi tiến trình launcher bật</b>, từ <code>Application</code> chứ không đợi HOME. Áp cả cho lượt BYD dựng lại Kachi lúc màn tắt.
+  <br><b>Chấp nhận:</b> mốc <code>KachiReady up src=early</code> ≤ 2 s sau <code>proc_start</code> (máy ảo; xe đo ở OC-1). Baseline xe: kênh nền đã dùng được ở +1,0–1,3 s <span class="ev m">[ĐO]</span>.</li>
+<li><b>R2.2 — HOME nhận kênh đã sẵn.</b> Không chờ tiêu điểm, không chờ 1,5 s, không dò lại. Điều kiện: màn <b>tương tác</b> (<code>isInteractive</code>), HOME đã <code>STARTED</code>, khung đầu đã vẽ. Lúc màn tắt thì ô không gắn app.
+  <br><b>Chấp nhận:</b> màn bật → màn ảo ô 0 ≤ 1,5 s (mục tiêu; baseline 5,9 s <span class="ev m">[ĐO 29/09]</span>). Ở lượt tắt máy: 0 dòng <code>màn ảo ô</code> trong khoảng màn tắt.</li>
+<li><b>R2.3 — Kiểm phím nằm trong cùng chuỗi chuẩn bị.</b> Lúc kênh lên mà màn tương tác thì hỏi binder (0 lệnh shell). Nếu chưa gắn thì dùng <b>đúng</b> đường chữa của 2.83: lớp 2 nếu lần mở này theo sau một lần tắt máy, còn không thì <code>NavConnect.grantAccessibility</code> (cùng hàm B1, có single-flight). Ô <b>không</b> gắn app trong lúc một lượt chữa có thể force-stop còn đang chờ kết luận; chờ tối đa 8 s rồi bỏ chờ (fail-open). Không viết đường chữa thứ hai (DRY).
+  <br><b>Chấp nhận:</b> E2E máy ảo với kẹt mô phỏng như 2.83: app ô chỉ mở <b>một</b> lần sau mở xe, đo bằng <code>am_create_activity</code> của gói ô. Ca không kẹt: không chậm thêm so với ca chỉ có binder.</li>
+<li><b>R2.4 — Vài giây đầu khi kênh đang dò: chạm ô thì chờ, không mở nổi.</b> Ô hiện “Đang kết nối…”. Ý định đã lưu vào state, nên kênh lên là ô tự nhúng app. Quá 10 s mà chưa lên thì hiện thẻ R1.2, biến thể theo trạng thái.</li>
+<li><b>R2.5 — Có mốc log đo được “ready”</b> (tag <code>KachiReady</code>, §4.10), ghi vào nhật ký phiên và hiện trên màn Chẩn đoán (CLAUDE.md §11).</li>
+<li><b>R2.6 — Keep-alive phím và watchdog</b> khởi ngay từ chuỗi sớm (best-effort). Đường cũ trong <code>bringUpShellChannel</code> giữ nguyên làm lưới an toàn.</li>
+<li><b>R2.7 — Tiến trình dựng lại lúc màn ĐANG bật: lên HOME là phím sẵn</b> (thêm 02/10, Pass 5). Bằng chứng <span class="ev m">[ĐO E2E máy ảo 02/10 ca 1]</span>: giết kiểu BYD (<code>killApplication</code>, không <code>PACKAGE_RESTARTED</code>) lúc màn bật ⇒ tiến trình mới <code>tương tác=true</code> ⇒ kênh lên sớm, ô có app, <b>nhưng</b> <code>force-rebind xong: bound=false</code> → <code>nấc NONE, KHÔNG leo</code> (pha RUNNING) ⇒ phím chết ≈ 70 s, tới lần tắt màn sau. Lớp 1 không mở (màn bật), lớp 2 không mở (không có <code>ACTION_SCREEN_ON</code> mới).
+  <br>Yêu cầu: tiến trình launcher bật khi màn tương tác, <b>không</b> phải tiến trình đầu tiên của lần nổ máy (có mốc bật của một tiến trình trước, ghi bền) và <b>không</b> phải <b>con của một lượt chữa</b> (tiến trình ĐẦU TIÊN bật sau mốc leo — nhận chấm điểm bằng <code>commit()</code>; claim hỏng mà mốc leo &lt; 2 ph thì coi là con; một lần giết MỚI từ bên ngoài sau đó vẫn được chữa — đúng 2.83 R-A4) được coi như <b>lớp 2</b> — <b>ân hạn khởi động</b>. Trong <b>20 s</b> kể từ lúc tiến trình bật: đo kẹt hai lần cách ≥ 5 s như lớp 1/2; KẸT BỀN ⇒ force-stop + lắp lại <b>một</b> lần qua đúng đường leo 2.83 (<code>escalateOnLifecycle</code> → <code>escalateIfStuck</code> → <code>forceStopRebindCommand</code>, đuôi <code>HomeTail.IF_ORPHANED</code>, rào camera giữ nguyên). Mốc leo ghi <code>commit()</code> trước khi bắn; <b>ghi hỏng thì lượt tự động không bắn</b>. Chuỗi kiểm phím (R2.3) và giữ ô chờ lượt này như chờ lớp 2 (≤ 8 s, fail-open). <b>Ngoài ân hạn</b> ⇒ luật 2.83 pha RUNNING giữ nguyên: không tự khởi động lại launcher, người dùng bấm <i>Sửa ngay</i>. <b>Màn TẮT giữa lượt</b> (đã thấy kẹt, còn trong 20 s — Pass 6) ⇒ trao <b>lớp 1</b> nguyên vẹn: cổng một-lượt-mỗi-lần-tắt-máy, claim <code>commit()</code> trước khi đo, cùng thân đo/leo <span class="ev m">[ĐO E2E máy ảo C6: trước bản vá phím chết 112 s]</span>.
+  <br><b>Chấp nhận:</b> bảng thuần pha × ân hạn × mốc × kết quả đo ⇒ leo/không leo; bài canh nối dây (một lối vào duy nhất lúc tiến trình bật — không phải mỗi lần mở Cài đặt; đường grant vẫn RUNNING); phá thử ≥ 3 mắt xích ⇒ đỏ; E2E máy ảo ca 1 lặp lại ⇒ đúng <b>một</b> lần force-stop, tiến trình dựng lại <b>không</b> leo lần hai, phím Bound. Trên xe: BYD có giết Kachi lúc màn đang bật không thì <span class="ev u">[CHƯA BIẾT]</span> <span class="car">CẦN XE</span> — cơ chế vẫn đúng cho crash/OOM lúc màn sáng.</li>
+</ul>
+
+<h3>R3 — Xe MẤT DUYỆT: xoá dấu, về F4</h3>
+<ul>
+<li><b>R3.1</b> — Lượt sớm biết khoá không còn được nhận thì: xoá dấu, chuyển trạng thái CẦN DUYỆT (MẤT DUYỆT), và chặn mọi đường nền trong tiến trình. F4 sẽ hỏi lại đúng lúc HOME ở trước và có tiêu điểm.</li>
+<li><b>R3.2</b> — Lượt sớm <b>không bao giờ</b> gửi khoá công khai (dò im lặng), nên không bung hộp thoại lúc HOME chưa ở trước.
+  <br><b>Chế độ dự phòng</b> (T0 đỏ): chỉ nối sớm khi dấu còn hạn. Nếu lượt sớm gặp <code>AWAITING_APPROVAL</code>/<code>AUTH_REJECTED</code> thì đóng phiên ngay, xoá dấu, về F4. Rủi ro còn lại phải ghi rõ: ở chế độ này hộp có thể đã bung <b>một</b> lần, vì đóng phiên không gỡ được hộp (§2.5).</li>
+<li><b>R3.3</b> — Lỗi môi trường (<code>PORT_CLOSED</code>, <code>IO_ERROR</code>, <code>UNKNOWN</code>): giữ dấu, thử lại có giới hạn (3 lần, giãn 1 s rồi 2 s), sau đó để F4 lo như hôm nay.</li>
+</ul>
+
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Không thêm thay đổi trạng thái hệ thống.</b> Lệnh shell mới duy nhất là <code>settings get global adb_allowed_connection_time</code>, chỉ đọc (§4.11). <code>adb_allowed_connection_time=0</code> chỉ làm nếu owner đồng ý ở OQ3, kèm đường hoàn tác.</li>
+<li><b>R-nf2 — Đường mới xuống cuối</b> (§6):
+  <ul>
+  <li><code>EarlyShellChannel.start</code> là dòng cuối của <code>KachiApplication.onCreate</code>.</li>
+  <li>HOME thêm một lối vào nữa tới <b>cùng</b> <code>onChannelUp</code>.</li>
+  <li>F4, B1, 3 lớp 2.83 và thân <code>bringUpShellChannel</code> giữ nguyên byte.</li>
+  </ul>
+  Thay đổi hành vi <b>có chủ ý</b> duy nhất là bỏ cửa sổ nổi dự phòng (R1.3), vì owner yêu cầu.
+  <br><i>Ghi lại ở review lượt 3 (02/10) — mã thực tế lệch dòng “giữ nguyên byte”, mọi lệch đều có chủ đích và đã ghi:</i> B1 (<code>PermissionPreflight</code>) và thân <code>bringUpShellChannel</code> (<code>KachiHomeWiring.kt</code>) đúng là không đổi byte <span class="ev m">[ĐO git diff]</span>; F4 (<code>ShellChannelGate.settle</code>) có thêm lời gọi báo trạng thái, hẹn dò lại cổng đóng, nhận kênh sau lượt bay và giữ ô (§4.7, §10 Pass 2–6); 3 lớp 2.83 (<code>A11yLifecycleHeal</code>, <code>AccessibilityHealGates</code>, <code>NavConnect.escalateIfStuck</code>) có thêm cờ chờ cho chuỗi kiểm phím (§4.8), chốt mốc leo ghi hỏng thì không tự bắn, và một <b>thay đổi hành vi có chủ đích thứ hai</b> — ân hạn khởi động R2.7 (§4.8.1): tiến trình dựng lại lúc màn sáng được tự force-stop một lần trong 20 s đầu đời; ngoài 20 s luật 2.83 “đang chạy thì không tự khởi động lại launcher” giữ nguyên.</li>
+<li><b>R-nf3 — Luồng:</b> không chạm socket hay dadb trên luồng chính. Chờ trong cổng thi hành chỉ xảy ra trên luồng nền; gọi từ luồng chính thì không chờ, và ghi một dòng W.</li>
+<li><b>R-nf4 — Mọi tệp ≤ 500 dòng.</b> <code>KachiHomeActivity.kt</code> chỉ thêm ≤ 5 dòng (đích ≤ 480); <code>KachiHomeWiring.kt</code> không thêm dòng nào.</li>
+<li><b>R-nf5 — Xử lý lỗi:</b> bắt ngoại lệ cụ thể (<code>IOException</code>, <code>SocketTimeoutException</code>, <code>GeneralSecurityException</code>). Ranh giới luồng nền dùng mẫu <code>guarded</code> như <code>A11yLifecycleHeal.kt:358-366</code>, có lý do ghi tại chỗ. Không nuốt câm.</li>
+<li><b>R-nf6 — Riêng tư:</b> log chỉ in 8 ký tự hex đầu của vân tay khoá. Không in khoá, token hay chữ ký.</li>
+<li><b>R-nf7 — Chuỗi vi/en đủ</b> cho mọi chữ mới (bảng §4.9).</li>
+<li><b>R-nf8 — Test off-car:</b> chính sách thuần và codec dò im lặng nằm ở <code>:car-integration</code>, có fixture byte. Bài canh tĩnh dùng <code>SourceRoots.body()</code>, cấm <code>substringAfter/Before</code>.</li>
+<li><b>R-nf9 — Quan sát được:</b> có mốc <code>KachiReady</code>, cộng bộ đếm <code>KachiPerf</code> cho số lần cổng chặn và số lần dò im lặng. App Android không có <code>/metrics</code>, nên quan sát qua log + màn Chẩn đoán.</li>
+<li><b>R-nf10 — Generic</b> (§7): không rẽ theo tên gói, không thêm mục <code>ClusterProfile</code>. DL5 dùng cùng cơ chế adbd <span class="ev m">[ĐO 12r34]</span>.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>4. Design</h2>
+
+<h3>4.1 Dòng thời gian khởi động — hôm nay và sau READY-AT-HOME</h3>
+<div class="diagram">
+<svg viewBox="0 0 960 470" role="img" aria-label="Hai bảng dòng thời gian. Bảng A lúc tắt máy: hôm nay BYD giết Kachi ở 0,71 giây, tiến trình mới ở 1,04 giây, HOME tạo rồi dừng, cast đã dùng kênh ở 2,06 giây, F4 không dò. Sau thay đổi: tiến trình mới, dò im lặng, kênh sẵn và ghi dấu, lớp 1 chữa phím nếu kẹt, HOME không gắn ô vì màn tắt. Bảng B lúc mở xe: hôm nay HOME có tiêu điểm ở 3,82 giây, bắt đầu nối ở 5,43 giây, màn ảo ô ở 5,88 giây. Sau thay đổi: màn bật, HOME nhận kênh sẵn ngay, kiểm phím, ô có app trong 1,5 giây mục tiêu.">
+  <defs>
+    <marker id="t-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+  <rect class="band-off" x="20" y="34" width="450" height="420" rx="10"/>
+  <rect class="band-on" x="490" y="34" width="450" height="420" rx="10"/>
+  <text class="th" x="30" y="26">A · LÚC TẮT MÁY — MỐC 0 = MÀN TẮT</text>
+  <text class="th" x="500" y="26">B · LÚC MỞ XE — MỐC 0 = MÀN BẬT</text>
+
+  <!-- ───── Hàng 1: hôm nay (A) ───── -->
+  <text class="t" x="30" y="58">2.84 hôm nay — đo xe 29/09, lượt 2</text>
+  <line class="axis" x1="50" y1="200" x2="450" y2="200"/>
+  <line class="tick" x1="50" y1="196" x2="50" y2="206"/><line class="tick" x1="183" y1="196" x2="183" y2="206"/><line class="tick" x1="317" y1="196" x2="317" y2="206"/><line class="tick" x1="450" y1="196" x2="450" y2="206"/>
+  <text class="ts" x="44" y="218">0 s</text><text class="ts" x="177" y="218">1 s</text><text class="ts" x="311" y="218">2 s</text><text class="ts" x="436" y="218">3 s</text>
+  <line class="vl" x1="144" y1="80" x2="144" y2="200"/><text class="tf" x="148" y="86">BYD giết Kachi +0,71</text>
+  <line class="vl" x1="189" y1="96" x2="189" y2="200"/><text class="tf" x="193" y="104">tiến trình mới +1,04</text>
+  <line class="vl-ok" x1="324" y1="114" x2="324" y2="200"/><text class="tf" x="329" y="122">kênh nền chạy +2,06</text><text class="ts" x="329" y="136">(cast, uid 2000)</text>
+  <rect class="bx-dash" x="269" y="160" width="38" height="16" rx="3"/><text class="ts" x="265" y="154" text-anchor="end">HOME tạo→dừng 1,64–1,93</text>
+  <text class="ts" x="50" y="240">F4 không dò (màn tắt) · ô không gắn · kênh có mà HOME không biết</text>
+
+  <!-- ───── Hàng 2: đề xuất (A) ───── -->
+  <text class="t" x="30" y="262">READY-AT-HOME — mục tiêu, chưa đo</text>
+  <line class="axis" x1="50" y1="400" x2="450" y2="400"/>
+  <line class="tick" x1="50" y1="396" x2="50" y2="406"/><line class="tick" x1="183" y1="396" x2="183" y2="406"/><line class="tick" x1="317" y1="396" x2="317" y2="406"/><line class="tick" x1="450" y1="396" x2="450" y2="406"/>
+  <text class="ts" x="44" y="418">0 s</text><text class="ts" x="177" y="418">1 s</text><text class="ts" x="311" y="418">2 s</text><text class="ts" x="436" y="418">3 s</text>
+  <line class="vl" x1="189" y1="280" x2="189" y2="400"/><text class="tf" x="193" y="286">tiến trình mới</text>
+  <rect class="bx-new" x="190" y="330" width="27" height="16" rx="3"/><text class="tf" x="193" y="302">dò im lặng (chỉ chữ ký, 0 hộp thoại)</text>
+  <line class="vl-ok" x1="217" y1="310" x2="217" y2="400"/><text class="tf" x="222" y="320">SẴN: ghi dấu · keep-alive · watchdog</text>
+  <rect class="bx-dash" x="190" y="362" width="260" height="12" rx="3"/><text class="ts" x="192" y="388">lớp 1 chữa phím nếu kẹt — 2.83, giữ nguyên</text>
+  <rect class="bx-dash" x="269" y="330" width="38" height="16" rx="3"/>
+  <text class="ts" x="50" y="440">HOME tạo→dừng: không gắn ô (màn tắt) · đường nền chạy sau SẴN</text>
+
+  <!-- ───── Hàng 1: hôm nay (B) ───── -->
+  <text class="t" x="500" y="58">2.84 hôm nay — đo xe 29/09, lượt 2</text>
+  <line class="axis" x1="520" y1="200" x2="920" y2="200"/>
+  <line class="tick" x1="520" y1="196" x2="520" y2="206"/><line class="tick" x1="649" y1="196" x2="649" y2="206"/><line class="tick" x1="778" y1="196" x2="778" y2="206"/><line class="tick" x1="907" y1="196" x2="907" y2="206"/>
+  <text class="ts" x="514" y="218">0 s</text><text class="ts" x="643" y="218">2 s</text><text class="ts" x="772" y="218">4 s</text><text class="ts" x="901" y="218">6 s</text>
+  <line class="vl" x1="522" y1="80" x2="522" y2="200"/><text class="tf" x="526" y="86">HOME bật lại</text>
+  <line class="vl" x1="766" y1="96" x2="766" y2="200"/><text class="tf" x="762" y="104" text-anchor="end">HOME có tiêu điểm +3,82</text>
+  <line class="vl" x1="870" y1="114" x2="870" y2="200"/><text class="tf" x="866" y="122" text-anchor="end">bắt đầu nối (yên 1,5 s + dò) +5,43</text>
+  <line class="vl-bad" x1="899" y1="132" x2="899" y2="200"/><text class="tf" x="895" y="140" text-anchor="end">màn ảo ô 0 +5,88</text>
+  <rect class="bx-bad" x="528" y="166" width="238" height="10" rx="3"/><text class="ts" x="530" y="188">chờ tiêu điểm (cửa sổ nổi Kachi tự mở — đã gỡ ở e28ed08)</text>
+  <text class="ts" x="520" y="240">phím: B1 chạy SAU ô (2.82: STUCK ở +16 s) · 2.83 thêm lớp 2</text>
+
+  <!-- ───── Hàng 2: đề xuất (B) ───── -->
+  <text class="t" x="500" y="262">READY-AT-HOME — mục tiêu, chưa đo</text>
+  <line class="axis" x1="520" y1="400" x2="920" y2="400"/>
+  <line class="tick" x1="520" y1="396" x2="520" y2="406"/><line class="tick" x1="649" y1="396" x2="649" y2="406"/><line class="tick" x1="778" y1="396" x2="778" y2="406"/><line class="tick" x1="907" y1="396" x2="907" y2="406"/>
+  <text class="ts" x="514" y="418">0 s</text><text class="ts" x="643" y="418">2 s</text><text class="ts" x="772" y="418">4 s</text><text class="ts" x="901" y="418">6 s</text>
+  <line class="vl" x1="522" y1="280" x2="522" y2="400"/><text class="tf" x="526" y="286">màn bật · lớp 2 (nếu theo sau tắt máy)</text>
+  <line class="vl-acc" x1="527" y1="296" x2="527" y2="400"/><text class="tf" x="531" y="304">HOME STARTED + tương tác + kênh SẴN ⇒ nhận kênh ngay</text>
+  <rect class="bx-new" x="527" y="314" width="14" height="14" rx="3"/><text class="tf" x="546" y="325">kiểm phím: binder (0 lệnh) · lớp 2 đang đo ⇒ giữ ô ≤ 8 s</text>
+  <rect class="bx-ok" x="533" y="340" width="84" height="14" rx="3"/><text class="tf" x="622" y="351">ô có app ≤ 1,5 s (mục tiêu OC-1)</text>
+  <rect class="bx-dash" x="541" y="368" width="172" height="10" rx="3"/><text class="ts" x="718" y="377">chưa gắn, không kẹt ⇒ grant (hàm B1)</text>
+  <text class="ts" x="520" y="440">F4 không còn trên đường này — chỉ là lối dự phòng khi kênh CHƯA sẵn</text>
+</svg>
+<p class="cap">Hàng trên: số đo xe 29/09 (lượt 2, bản 2.82, trước <code>e28ed08</code>) <span class="ev m">[ĐO]</span>. Hàng dưới: mục tiêu của spec này <span class="ev g">[ĐOÁN — chưa đo]</span>. Trục không cùng tỉ lệ giữa A và B.</p>
+</div>
+
+<h3>4.2 Ba ngả sau khi tiến trình bật</h3>
+<div class="diagram">
+<svg viewBox="0 0 960 400" role="img" aria-label="Luồng quyết định: tiến trình launcher bật, dò im lặng. Khoá được nhận thì sẵn kênh, ghi dấu, HOME nhận kênh ngay khi màn tương tác rồi kiểm phím và gắn ô. Khoá không được nhận thì xoá dấu, cần duyệt, chặn mọi đường nền, F4 hỏi khi HOME ở trước với thẻ hướng dẫn; cho phép xong thì về nhánh sẵn. Lỗi môi trường thì giữ dấu, thử lại tối đa ba lần, F4 như hôm nay. Giao thức lạ thì chế độ dự phòng theo dấu bền.">
+  <defs>
+    <marker id="b-acc" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-acc" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="b-ok" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-ok" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="b-bad" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-bad" d="M0,0 L9,3.5 L0,7 z"/></marker>
+    <marker id="b-mut" markerWidth="9" markerHeight="7" refX="8.5" refY="3.5" orient="auto"><path class="mk-mut" d="M0,0 L9,3.5 L0,7 z"/></marker>
+  </defs>
+  <rect class="bx" x="20" y="170" width="150" height="60" rx="10"/>
+  <text class="t" x="95" y="195" text-anchor="middle">Tiến trình bật</text>
+  <text class="ts" x="95" y="213" text-anchor="middle">Application.onCreate (cuối)</text>
+  <path class="ln" d="M170 200 L196 200" marker-end="url(#b-acc)"/>
+  <rect class="bx-new" x="200" y="165" width="165" height="70" rx="10"/>
+  <text class="t" x="282" y="190" text-anchor="middle">Dò im lặng</text>
+  <text class="ts" x="282" y="207" text-anchor="middle">CNXN → AUTH(chữ ký)</text>
+  <text class="ts" x="282" y="222" text-anchor="middle">không bao giờ khoá công khai</text>
+
+  <path class="ln-ok" d="M365 190 C 385 190, 380 65, 398 65" marker-end="url(#b-ok)"/>
+  <path class="ln-bad" d="M365 200 C 385 200, 380 165, 398 165" marker-end="url(#b-bad)"/>
+  <path class="ln-dash" d="M365 210 C 385 210, 380 260, 398 260" marker-end="url(#b-mut)"/>
+  <path class="ln-dash" d="M365 220 C 385 220, 380 340, 398 340" marker-end="url(#b-mut)"/>
+
+  <rect class="bx-ok" x="400" y="30" width="210" height="70" rx="10"/>
+  <text class="t" x="505" y="55" text-anchor="middle">Khoá được nhận → SẴN</text>
+  <text class="ts" x="505" y="72" text-anchor="middle">ghi/làm mới dấu · keep-alive</text>
+  <text class="ts" x="505" y="87" text-anchor="middle">watchdog · đường nền được chạy</text>
+  <rect class="bx-bad" x="400" y="130" width="210" height="70" rx="10"/>
+  <text class="t" x="505" y="155" text-anchor="middle">Không được nhận → CẦN DUYỆT</text>
+  <text class="ts" x="505" y="172" text-anchor="middle">xoá dấu · chặn mọi đường nền</text>
+  <text class="ts" x="505" y="187" text-anchor="middle">0 hộp thoại từ nền</text>
+  <rect class="bx" x="400" y="230" width="210" height="60" rx="10"/>
+  <text class="t" x="505" y="255" text-anchor="middle">Môi trường (cổng câm / IO)</text>
+  <text class="ts" x="505" y="273" text-anchor="middle">giữ dấu · thử lại ≤ 3 lần</text>
+  <rect class="bx-dash" x="400" y="310" width="210" height="60" rx="10"/>
+  <text class="t" x="505" y="335" text-anchor="middle">Giao thức lạ / T0 đỏ</text>
+  <text class="ts" x="505" y="353" text-anchor="middle">chế độ dự phòng (dấu bền)</text>
+
+  <path class="ln-ok" d="M610 65 L636 65" marker-end="url(#b-ok)"/>
+  <path class="ln-bad" d="M610 165 L636 165" marker-end="url(#b-bad)"/>
+  <path class="ln-dash" d="M610 260 L636 260" marker-end="url(#b-mut)"/>
+  <path class="ln-dash" d="M610 340 L636 340" marker-end="url(#b-mut)"/>
+
+  <rect class="bx-ok" x="640" y="30" width="300" height="70" rx="10"/>
+  <text class="t" x="790" y="55" text-anchor="middle">HOME tương tác ⇒ nhận kênh ngay</text>
+  <text class="ts" x="790" y="72" text-anchor="middle">kiểm phím (giữ ô nếu lớp 2 đang đo) → gắn ô</text>
+  <text class="ts" x="790" y="87" text-anchor="middle">không chờ tiêu điểm, không 1,5 s, không dò lại</text>
+  <rect class="bx-new" x="640" y="130" width="300" height="70" rx="10"/>
+  <text class="t" x="790" y="155" text-anchor="middle">F4 hỏi khi HOME trước + tiêu điểm</text>
+  <text class="ts" x="790" y="172" text-anchor="middle">hộp hệ thống · thẻ hướng dẫn + Hỏi lại</text>
+  <text class="ts" x="790" y="187" text-anchor="middle">ô: “Cần cấp quyền”, không mở nổi</text>
+  <rect class="bx" x="640" y="230" width="300" height="60" rx="10"/>
+  <text class="t" x="790" y="255" text-anchor="middle">F4 như hôm nay</text>
+  <text class="ts" x="790" y="273" text-anchor="middle">thẻ “chưa có kênh” · Thử lại</text>
+  <rect class="bx-dash" x="640" y="310" width="300" height="60" rx="10"/>
+  <text class="t" x="790" y="335" text-anchor="middle">dấu tươi ⇒ dò PROBE sớm; không ⇒ F4</text>
+  <text class="ts" x="790" y="353" text-anchor="middle">PROBE gặp AWAITING ⇒ đóng phiên, xoá dấu, F4</text>
+
+  <path class="ln-ok" d="M790 130 L790 104" marker-end="url(#b-ok)"/>
+  <text class="ts" x="796" y="121">Cho phép (Luôn) ⇒ SẴN</text>
+</svg>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.14)"></span> khối mới</span>
+  <span class="sw"><span class="box" style="background:rgba(26,127,55,.16)"></span> kênh sẵn</span>
+  <span class="sw"><span class="box" style="background:rgba(191,95,0,.16)"></span> cần người dùng</span>
+  <span class="sw"><span class="box" style="border-style:dashed"></span> dự phòng / giữ nguyên</span>
+</div>
+</div>
+
+<h3>4.3 Dò im lặng — cơ chế mới duy nhất (cổng §14)</h3>
+<p><b>Cái gì:</b> <code>SilentAdbAuth</code> ở <code>:car-integration</code> (<code>carexec/</code>). Hàm thuần đi kèm: mã hoá/giải mã gói adb (đầu gói 24 byte) và phân loại kết quả. Bộ nối được tiêm vào để test bằng luồng byte giả.</p>
+<ol>
+<li>Mở socket tới <code>localhost:5555</code>: hạn nối 2 s, hạn đọc 3 s.</li>
+<li>Gửi <code>CNXN(0x01000000, 1048576, "host::\0")</code>. Đây đúng là gói dadb gửi <span class="ev m">[ĐO javap <code>AdbWriter.writeConnect</code>, <code>Constants.CONNECT_PAYLOAD</code>]</span>.</li>
+<li>Đọc <b>một</b> gói:
+  <ul>
+  <li><code>CNXN</code> ⇒ <b>Authorized</b>. adbd không đòi xác thực, ví dụ máy ảo <code>ro.adb.secure=0</code>.</li>
+  <li><code>AUTH(TOKEN)</code> ⇒ ký token giống hệt dadb (<code>RSA/ECB/NoPadding</code> trên <code>SIGNATURE_PADDING ‖ token</code> <span class="ev m">[ĐO javap <code>AdbKeyPair.signPayload$dadb</code>]</span>) rồi gửi <code>AUTH(SIGNATURE)</code>.</li>
+  </ul></li>
+<li>Đọc <b>một</b> gói nữa:
+  <ul>
+  <li><code>CNXN</code> ⇒ <b>Authorized</b>.</li>
+  <li><code>AUTH(TOKEN)</code> ⇒ <b>NotAuthorized</b>: đóng socket <b>ngay</b> và <b>không</b> gửi <code>AUTH(RSAPUBLICKEY)</code>.</li>
+  </ul></li>
+<li>Lỗi:
+  <ul>
+  <li><code>ConnectException</code> ⇒ <code>Unavailable(PORT_CLOSED)</code>.</li>
+  <li>Hết hạn đọc, đứt kết nối ⇒ <code>Unavailable(IO_ERROR)</code>. Lưu ý: ở đây hết hạn đọc <b>không</b> có nghĩa là <code>AWAITING_APPROVAL</code>, vì chưa gửi khoá thì adbd không thể đang chờ người bấm.</li>
+  <li>Gói lạ (<code>STLS</code>, lệnh khác, độ dài sai) ⇒ <code>Unsupported</code>, chuyển tiến trình này sang chế độ dự phòng.</li>
+  </ul></li>
+</ol>
+<p><b>Khoá dùng:</b> đọc cùng tệp <code>filesDir/adb.key</code>. Tệp này là PEM PKCS#8 do dadb sinh (dòng đầu là tiêu đề khoá riêng PKCS#8 chuẩn, parse qua <code>dadb.PKCS8</code> <span class="ev m">[ĐO javap]</span>). Hàm mới <code>AdbKeys.privateKey(ctx)</code> dùng <code>KeyFactory("RSA")</code> + <code>PKCS8EncodedKeySpec</code>, giữ chung khoá <code>@Synchronized</code> với <code>ensure</code>. Không lấy qua reflection, vì <code>AdbKeyPair.privateKey</code> là <code>private</code>. Vân tay = SHA-256 của nội dung <code>adb.pub</code>.</p>
+<p><b>Tái dùng dadb hay tự viết codec:</b> <code>dadb.AdbReader</code> và <code>dadb.AdbWriter</code> là lớp public trong bytecode, nhưng mức hiển thị Kotlin (<code>internal</code>?) thì <span class="ev u">[CHƯA BIẾT]</span>. T2 thử dùng lại trước. Không biên dịch được thì tự viết codec tối thiểu: đầu gói 6 × uint32 little-endian, <code>magic = command xor 0xffffffff</code>, khoảng 80 dòng, test bằng fixture byte.</p>
+<p><b>Không đổi trạng thái hệ thống:</b> không lệnh shell nào chạy. Nếu chữ ký được nhận, adbd báo <code>CK</code> và framework làm mới mốc 7 ngày (§2.5). Đây là cùng hiệu ứng phụ với mọi lần nối thành công hôm nay.</p>
+<p><b>Mức bằng chứng:</b></p>
+<ul>
+<li>Hành vi adbd theo AOSP A10 r47 / A12 r34 <span class="ev m">[ĐO]</span>.</li>
+<li>dadb luôn gửi khoá công khai <span class="ev m">[ĐO]</span>.</li>
+<li>ROM BYD giữ nguyên adbd của AOSP <span class="ev u">[CHƯA BIẾT]</span> ⇒ cần T0b.</li>
+<li>Thời gian dò ≪ 1 s <span class="ev g">[ĐOÁN]</span> ⇒ đo ở T0/OC-1.</li>
+</ul>
+<p>Tài liệu Tango ADB (Context7 <code>/websites/tangoadb_dev</code>) xác nhận thêm từ phía client: có hai cách xác thực, và “public key authentication … the device then prompts the user”. Đây chỉ là nguồn phụ; nguồn chính là AOSP.</p>
+<p><b>T0 — bằng chứng thô trước khi code</b> (§14 tầng 1). Một script Python ngoài APK (<code>scripts/vehicle/silent-auth-probe.py</code>) chạy dò im lặng với hai khoá:</p>
+<ul>
+<li><b>khoá mới sinh</b> ⇒ kỳ vọng nhận <code>AUTH(TOKEN)</code> lần 2 và logcat có <b>0</b> dòng <code>UsbDebuggingActivity</code> / <code>AWAITING_USER_APPROVAL</code>;</li>
+<li><b>khoá đã được duyệt sẵn</b> (khoá adb của máy Mac owner, không phải khoá của Kachi) ⇒ kỳ vọng <code>CNXN</code>.</li>
+</ul>
+<p>Chạy trên máy ảo có <code>ro.adb.secure=1</code> nếu dựng được (T0a), và trên xe qua cầu nc (T0b, owner). Kết quả lưu ở <code>docs/diagnostics/</code>.</p>
+
+<h3>4.4 Dấu bền “xe này đã duyệt khoá này”</h3>
+<h4>4.4.1 Lưu ở đâu, ghi và xoá thế nào</h4>
+<ul>
+<li><b>Chỗ lưu:</b> tệp prefs theo xe <code>clusternav_state</code>, cùng chỗ với <code>FloatingLedgerStore</code> (<code>FloatingLedgerStore.kt:16-29</code>). Khoá <code>kachi_shell_approval</code>, giá trị JSON <code>{v:1, fp:"&lt;sha256 hex&gt;", ok:&lt;wallMs&gt;, win:&lt;ms&gt;}</code>. Khai vào <code>SettingsCatalog.NOT_SETTINGS</code> và <code>ProfileScope</code> DEVICE, để dấu không vào ảnh chụp hồ sơ hay tệp xuất hồ sơ. Ghi bằng <code>commit()</code>. <code>allowBackup=false</code> sẵn (<code>AndroidManifest.xml:76-80</code>): cài lại thì mất cả khoá lẫn dấu, hai thứ vẫn khớp nhau.</li>
+<li><b>Ghi qua MỘT hàm</b> <code>ShellApprovalStore.markUp(fp, nowWall, win)</code>. Chỉ <code>ShellReadiness.reportUp(src)</code> được gọi hàm này, và <code>reportUp</code> được gọi từ mọi lần kênh lên: dò im lặng Authorized · F4 <code>ChannelUp</code> · <code>ShellTransport</code> nối được · phiên <code>LocalDeviceShell</code> bắt tay xong. Không ghi mỗi lệnh: chỉ ghi lại khi <code>fp</code> đổi hoặc <code>ok</code> đã cũ hơn 6 giờ. Đây là chỗ duy nhất biến CHƯA TỪNG thành ĐÃ DUYỆT.</li>
+<li><b>Xoá qua MỘT hàm</b> <code>ShellApprovalStore.forget(reason)</code>, gọi khi:
+  <ol>
+  <li>dò im lặng trả NotAuthorized;</li>
+  <li>một phiên <b>hỏi</b> (chính sách có <code>eagerHandshake = true</code>: <code>PROBE</code> hoặc <code>AWAIT_ADB_APPROVAL</code>) hỏng ngay ở bước bắt tay vì <code>AWAITING_APPROVAL</code> hoặc <code>AUTH_REJECTED</code>;</li>
+  <li>ở chế độ dự phòng: lượt <code>PROBE</code> sớm gặp hai lý do trên.</li>
+  </ol>
+  Lỗi xảy ra <b>sau</b> khi lệnh đã gửi thì không bao giờ xoá dấu. Lý do: hết hạn đọc giữa một lệnh dài cũng được phân loại là <code>AWAITING_APPROVAL</code> (<code>LocalShellRetryPolicy.kt:72-81</code>), nhưng khoá thì vẫn đang được nhận.</li>
+</ul>
+<h4>4.4.2 Thế nào là “dấu tươi”</h4>
+<p>Hàm <code>fresh(curFp, now)</code> ở <code>ShellReadinessPolicy</code> là hàm thuần. Dấu tươi khi <code>fp == curFp</code> và một trong hai điều kiện sau đúng:</p>
+<ul>
+<li><code>win == 0</code> — framework coi là không bao giờ hết hạn (<code>:1135</code>);</li>
+<li><code>0 ≤ now − ok &lt; win − margin</code>, với <code>margin = min(24 h, win/2)</code>.</li>
+</ul>
+<p>Thiếu <code>win</code> thì lấy 7 ngày. Nếu <code>now &lt; ok</code> (giờ tường lùi) thì coi là <b>không tươi</b>. Cách này thận trọng hơn framework, vì framework coi trường hợp đó là còn hạn (<code>:1135-1136</code>).</p>
+<p><code>win</code> đọc bằng <code>settings get global adb_allowed_connection_time</code> qua kênh, tối đa một lần mỗi tiến trình sau khi SẴN. Đây là lệnh chỉ đọc. Giá trị thật trên Seal và DL5 thì <span class="ev u">[CHƯA BIẾT]</span> ⇒ đo ở OC-0.</p>
+<h4>4.4.3 Dấu dùng vào việc gì — hai chế độ</h4>
+<div class="tbl"><table>
+<tr><th>Việc</th><th>Chế độ im lặng (T0 xanh)</th><th>Chế độ dự phòng (T0 đỏ hoặc gói lạ)</th></tr>
+<tr><td>Có nối sớm không</td><td><b>Luôn</b> dò im lặng, kể cả khi không có dấu. Không gây hộp thoại, nên dò được cả khi chưa có dấu; nhờ vậy lần đầu sau nâng cấp đã biết ngay</td><td>Chỉ khi dấu tươi: nối sớm bằng <code>ShellApprovalProbe</code> (<code>PROBE</code>: một lần, đọc 6 s)</td></tr>
+<tr><td>Cổng thi hành khi lượt sớm ra MÔI TRƯỜNG</td><td>Dò im lặng lại ngay trước lệnh (single-flight, cách nhau ≥ 5 s); dấu không quyết</td><td>Dấu tươi ⇒ cho; không ⇒ chặn</td></tr>
+<tr><td>Ô trong vài giây đầu</td><td colspan="2">Dấu tươi ⇒ “Đang kết nối…” (chờ có hạn 10 s); không có dấu ⇒ thẻ R1</td></tr>
+<tr><td>Lời nói trên thẻ</td><td colspan="2">Chưa từng có dấu ⇒ CHƯA TỪNG; có dấu mà bị xoá ⇒ MẤT DUYỆT</td></tr>
+<tr><td>Rủi ro còn lại</td><td>ROM sửa adbd (T0b)</td><td>Khoá đã bị thu hồi, quá hạn hoặc “một lần” trong khi dấu còn tươi ⇒ lượt sớm có thể dựng hộp <b>một</b> lần lúc HOME chưa ở trước. Đóng phiên không gỡ được hộp (§2.5). Lần đầu sau nâng cấp đi F4, chậm như 2.84</td></tr>
+</table></div>
+
+<h3>4.5 Trạng thái kênh mức tiến trình — <code>ShellReadiness</code></h3>
+<p>Có năm trạng thái: <code>UNKNOWN</code> · <code>CHECKING</code> · <code>UP</code> · <code>NEEDS_APPROVAL(never|lost)</code> · <code>ENVIRONMENT(reason)</code>. Trạng thái nằm trong RAM của tiến trình, và chỉ <b>được đặt bởi một phép đo trong chính tiến trình</b>: dò im lặng, F4, phiên bắt tay. Dấu bền chỉ là gợi ý (CLAUDE.md §5: quyết bằng sự thật, cờ RAM không thay phép đo). Bảng chuyển trạng thái nằm ở <code>ShellReadinessPolicy.next(state, event)</code>, là hàm thuần có test:</p>
+<div class="tbl"><table>
+<tr><th>Từ</th><th>Sự kiện</th><th>Sang</th><th>Dấu</th></tr>
+<tr><td>UNKNOWN</td><td>bắt đầu lượt sớm</td><td>CHECKING</td><td>—</td></tr>
+<tr><td>CHECKING</td><td>Authorized</td><td>UP</td><td>markUp</td></tr>
+<tr><td>CHECKING</td><td>NotAuthorized</td><td>NEEDS_APPROVAL(never nếu chưa từng có dấu / lost nếu có)</td><td>forget</td></tr>
+<tr><td>CHECKING</td><td><code>PORT_CLOSED</code>/<code>IO_ERROR</code>/<code>UNKNOWN</code> sau 3 lần (giãn 1 s, 2 s)</td><td>ENVIRONMENT</td><td>giữ</td></tr>
+<tr><td>CHECKING</td><td>Unsupported</td><td>dự phòng: dấu tươi ⇒ CHECKING (PROBE) · không ⇒ UNKNOWN</td><td>—</td></tr>
+<tr><td>mọi trạng thái ≠ UP</td><td>F4 <code>ChannelUp</code> · phiên bắt tay xong · <code>ShellTransport</code> nối được</td><td>UP</td><td>markUp</td></tr>
+<tr><td>mọi</td><td>F4 <code>AwaitingUser</code></td><td>NEEDS_APPROVAL (F4 giữ vòng 20 s của nó)</td><td>—</td></tr>
+<tr><td>mọi</td><td>phiên <i>hỏi</i> hỏng ở bắt tay với <code>AWAITING_APPROVAL</code>/<code>AUTH_REJECTED</code></td><td>NEEDS_APPROVAL(lost)</td><td>forget</td></tr>
+<tr><td>UP</td><td>lỗi lệnh / đứt <code>ShellTransport</code></td><td>UP — lỗi lệnh không có nghĩa là mất duyệt</td><td>—</td></tr>
+</table></div>
+<p>Bên nghe: HOME (§4.7), chuỗi phím (§4.8), giao diện (§4.9). Hàm <code>awaitSettled(ms)</code> dùng một latch; gọi trên luồng chính thì trả ngay. Mỗi lần chuyển trạng thái in đúng một dòng <code>KachiReady</code>.</p>
+
+<h3>4.6 Cổng thi hành — chặn ở đúng chỗ lệnh rời tiến trình</h3>
+<p>Mọi lần nối adbd của Kachi chỉ đi qua <b>ba</b> cửa <span class="ev m">[ĐO grep <code>Dadb.create</code>]</span>: <code>LocalShellSessions.run</code> (mọi phiên <code>LocalDeviceShell</code>), <code>LocalDeviceShell.installApk</code>, và <code>ShellTransport.conn()</code>. Đặt cổng ở ba cửa đó thì phủ mọi người gọi hôm nay và mai sau. Đúng nguyên tắc CLAUDE.md §5: guard ở tầng thi hành, không ở UI.</p>
+<div class="layers">
+  <div class="lname">Người gọi (không sửa từng chỗ)</div>
+  <div class="layer">
+    <div class="node"><b>Cast · DPI · camera helper</b><span>ShellTransport</span></div>
+    <div class="node"><b>KachiAutostart · Đặt HOME</b><span>ShellTransport</span></div>
+    <div class="node"><b>Lớp 1/2/3 · B1 · alarm</b><span>LocalDeviceShell</span></div>
+    <div class="node"><b>BootSetup · Chẩn đoán</b><span>LocalDeviceShell</span></div>
+    <div class="node"><b>Cập nhật</b><span>installApk</span></div>
+  </div>
+  <div class="down">▼</div>
+  <div class="lname">Cổng thi hành (mới) — một quyết định thuần, ba cửa</div>
+  <div class="layer">
+    <div class="node new"><b>LocalShellAdmission</b><span>móc ở LocalShellSessions.run + installApk</span></div>
+    <div class="node new"><b>ShellTransport.exec</b><span>hỏi cùng móc trước attempt</span></div>
+    <div class="node okn"><b>Đường HỎI (luôn cho)</b><span>FirstOpenApproval.PROBE · AWAIT_ADB_APPROVAL</span></div>
+  </div>
+  <div class="down">▼</div>
+  <div class="layer"><div class="node"><b>adbd localhost:5555</b><span>dadb 2.0.0</span></div></div>
+</div>
+<p><b>Hai loại phiên.</b> Loại thứ nhất là <code>ASK</code>: chính sách có cờ mới <code>LocalShellRetry.mayPromptUser = true</code>, đặt cho <code>FirstOpenApproval.PROBE</code> và <code>LocalShellRetry.AWAIT_ADB_APPROVAL</code>. Đây là hai đường hỏi đã có; chỉ chạy khi người dùng đứng trước Kachi, và luôn được cho qua. Loại thứ hai là <code>BACKGROUND</code>: mọi phiên khác, cộng mọi lệnh của <code>ShellTransport</code>. Cờ mới mặc định <code>false</code>, nên mọi chỗ dựng <code>LocalShellRetry</code> hiện có không đổi.</p>
+<div class="tbl"><table>
+<tr><th><code>ShellReadiness</code></th><th>BACKGROUND — chế độ im lặng</th><th>BACKGROUND — chế độ dự phòng</th></tr>
+<tr><td>UP</td><td>cho</td><td>cho</td></tr>
+<tr><td>NEEDS_APPROVAL</td><td><b>chặn</b></td><td><b>chặn</b></td></tr>
+<tr><td>CHECKING</td><td>chờ ≤ <code>EARLY_WAIT_MS = 8 s</code> (chỉ luồng nền), rồi xét lại <b>một</b> lần</td><td>như cột trái</td></tr>
+<tr><td>ENVIRONMENT / UNKNOWN</td><td>dò im lặng ngay (single-flight, ≥ 5 s mỗi lần) rồi xét theo kết quả</td><td>dấu tươi ⇒ cho · không ⇒ <b>chặn</b></td></tr>
+</table></div>
+<p><b>Khi bị chặn:</b></p>
+<ul>
+<li>Phiên <code>LocalDeviceShell</code> trả <code>LocalShellFailure.NOT_APPROVED</code>, một giá trị enum mới. Vì vậy <code>when</code> đủ nhánh ở <code>UpdateChecker.kt:252</code> và <code>AssistantLauncher.kt:242-246</code> bị trình biên dịch buộc xử lý; cả hai dùng cùng câu với <code>AWAITING_APPROVAL/AUTH_REJECTED</code>. <code>FirstOpenApproval.step</code> không bao giờ thấy giá trị này, vì đường hỏi luôn được cho.</li>
+<li><code>ShellTransport.exec</code> ném <code>ShellNotApprovedException</code> (lớp con <code>IOException</code>) và <b>không</b> thử lại. <code>run()</code> vẫn trả <code>""</code> như hợp đồng cũ (<code>ShellTransport.kt:104-108</code>).</li>
+<li>Mỗi lần chặn in một dòng <code>KachiReady deny</code>, tiết chế theo người gọi.</li>
+</ul>
+<p><b>Báo kết quả ngược lên</b> qua móc <code>LocalShellAdmission.onOutcome(kind, handshakeOk, failure, dispatched)</code>:</p>
+<ul>
+<li>bắt tay xong ⇒ <code>reportUp</code>;</li>
+<li>phiên ASK hỏng trước khi gửi lệnh (<code>dispatched = false</code>, cờ đã có ở <code>LocalShellRetryPolicy.kt:285-297</code>) với <code>AWAITING_APPROVAL</code>/<code>AUTH_REJECTED</code> ⇒ <code>reportRevoked</code>;</li>
+<li>mọi lỗi khác ⇒ không đổi gì.</li>
+</ul>
+<p>Móc cài ở <code>KachiApplication.onCreate</code>. Mặc định của <code>:car-integration</code> = cho tất cả, nên test và đường T10 niêm phong không đổi.</p>
+
+<h3>4.7 HOME nhận kênh đã sẵn — <code>ShellChannelGate.adopt()</code></h3>
+<ul>
+<li><b>Thêm một hàm vào cuối lớp</b>, không sửa thân các hàm cũ: <code>adopt()</code>. Hàm chỉ chạy khi đủ sáu điều kiện (<code>ShellReadinessPolicy.adoptAllowed</code>): <code>ShellReadiness == UP</code>, <code>framed</code>, <code>showing</code>, <code>PowerManager.isInteractive()</code>, <code>!channelUp</code>, và không có lượt F4 đang bay (<code>!inFlight</code> — lượt đó tự chạy <code>onChannelUp</code>; thêm từ §9 Pass 1, ghi lại ở review lượt 3). Khi chạy, nó đặt <code>channelUp = true</code>, ẩn dải nhắc, rồi <code>submitBg { KeyReady.holdTileIfEscalating(); onChannelUp() }</code>. Đó là <b>đúng</b> <code>onChannelUp</code> đang có (<code>KachiHomeActivity.kt:320-324</code>, thân <code>bringUpShellChannel</code> không đổi).</li>
+<li><b>Ai gọi <code>adopt</code>:</b>
+  <ul>
+  <li>khối <code>decorView.post</code> của <code>arm()</code>, <code>onShown()</code> và <code>onFocus()</code> — mỗi chỗ thêm một dòng, trước <code>schedule(...)</code>;</li>
+  <li>bộ nghe <code>ShellReadiness</code>, đăng ký trong <code>ReadyAtHomeWiring.kt</code> (tệp mới) và đẩy về <code>handler</code>.</li>
+  </ul>
+  Chưa UP thì mọi thứ y như F4 hôm nay.</li>
+<li><b>Vì sao bỏ được tiêu điểm và 1,5 s:</b> F4 chỉ cần hai điều đó để <b>giữ hộp hệ thống sống</b> (<code>FirstOpenApprovalPolicy.kt:89-98</code>, bệnh đo ngày 14/09). Khi UP, chữ ký của chính khoá này vừa được nhận trong tiến trình, nên không lần nối nào sinh hộp nữa: adbd chỉ hỏi khi nhận khoá công khai (§2.5) <span class="ev m">[ĐO AOSP]</span>. Ngoại lệ duy nhất là người dùng tự thu hồi giữa chừng; khi đó cổng thi hành trả về ca MẤT DUYỆT.</li>
+<li><b>Vì sao phải có <code>isInteractive</code>:</b> ở lượt tắt máy, KachiHome đi <code>create→start→resume→stop</code> trong 0,3 s <span class="ev m">[ĐO <code>c2-logcat:3558-3582</code>]</span>. Nhận kênh ở đó là app ô (có tiếng) chạy lúc xe tắt. Màn bật thì <code>onRestart→onStart</code> gọi lại <code>adopt</code>. Đây cũng là tín hiệu mà 2.83 lớp 1 dùng để nhận ra tắt máy; rủi ro “tương tác ≠ nổ máy” đã ghi ở 2.83 D-10 <span class="ev s">[SUY]</span>.</li>
+<li><b>Nối dây hỏng thì không kẹt</b> (review lượt 3): <code>onChannelUp</code> chạy xong mà màn vẫn không có kênh (nhánh <code>dadb.probe()</code> hỏng của <code>bringUpShellChannel</code> — thân không đổi) ⇒ dòng cuối của lambda ở <code>KachiHomeActivity</code> gọi <code>shellGate.wiringFailed()</code>: nhả <code>channelUp</code>, hẹn lượt F4 sau <code>RETRY_EVERY_MS</code> (20 s, cùng cổng vòng đời + tiêu điểm, <code>onHidden</code> dừng). Kênh vẫn UP ⇒ lượt đó không dò lại mà chạy lại đúng <code>onChannelUp</code>; kênh đã rơi khỏi UP ⇒ F4 hỏi như thường.</li>
+<li>Khi F4 tự dò được thì <code>settle(ChannelUp)</code> gọi <code>ShellReadiness.reportUp("f4")</code>, và dấu được ghi từ chỗ đó. <code>AwaitingUser</code> gọi <code>reportNeedsApproval()</code>. Hai việc này chỉ là <b>thêm</b> một lời gọi, nhánh cũ không đổi. Từ review lượt 2 (§10 Pass 6), nhánh <code>ChannelUp</code> còn <b>giữ ô</b> trước <code>onChannelUp</code> y như <code>adopt</code> (<code>KeyReady.holdTileIfEscalating</code>, ≤ 8 s, fail-open — §4.8.1 “Chờ”).</li>
+<li>Bài canh <code>ShellApprovalWiringContractTest</code> giữ nguyên: màn chính vẫn không tự <code>dadb.probe()</code>, và lượt dò F4 vẫn qua cổng. Bài canh mới <code>ReadyAtHomeWiringContractTest</code> khoá rằng <code>adopt</code> đòi <code>isInteractive</code>, <code>framed</code>, <code>showing</code> và gọi đúng <code>onChannelUp</code>.</li>
+</ul>
+
+<h3>4.8 Kiểm phím trong chuỗi chuẩn bị — tái dùng 2.83, không có đường thứ hai</h3>
+<p>Chạy khi <code>ShellReadiness</code> vừa UP mà màn tương tác, hoặc khi màn bật mà kênh đã UP. Chạy trên luồng nền, mỗi tiến trình một lượt cho mỗi lần màn bật:</p>
+<ol>
+<li>Phím-thoại tắt ⇒ <code>keys=OFF</code>, xong.</li>
+<li><code>NavConnect.boundPerAccessibilityManager == true</code> ⇒ <code>keys=BOUND</code>. Bước này không chạy lệnh shell nào.</li>
+<li>Lớp 2 đang đo, tức <code>A11yLifecycleHeal.moXePending()</code> ⇒ chờ <code>awaitMoXeVerdict(≤ 8 s)</code>. Nếu lớp 2 leo thang (force-stop) thì tiến trình chết, và chuỗi mới chạy lại trong tiến trình mới.</li>
+<li>Hỏi binder lần nữa. Vẫn chưa gắn, và tiến trình <b>không</b> sinh ra từ chính lượt chữa của mình (<code>bornFromOwnHeal()</code>, <code>A11yLifecycleHeal.kt:97-100</code>) ⇒ gọi <code>NavConnect.grantAccessibility(app)</code>. Đây là <b>cùng hàm</b> B1 gọi (<code>PermissionPreflight.kt:289-294</code>); hàm có single-flight <code>grantingAcc</code> và tự bỏ qua khi đã gắn (<code>NavConnect.kt:150-198</code>). Vì vậy B1 sau đó thấy BOUND và bỏ qua. B1 vẫn ở nguyên chỗ, làm lưới an toàn.</li>
+</ol>
+<p><b>Giữ ô:</b> <code>KeyReady.holdTileIfEscalating()</code> chỉ chờ khi lớp 2 đang đo, binder nói chưa gắn và chưa có kết luận. Chờ tối đa 8 s: 5 s khoảng xác nhận kẹt (<code>STUCK_CONFIRM_GAP_MS</code>) cộng hai lần <code>dumpsys</code>. Hết 8 s thì bỏ chờ (fail-open). Như vậy ca kẹt không còn mở app ô hai lần. Đây là R-A2 “trước khi dựng app vào ô” mà 2.83 mới “Đạt một phần” (2.83 §6, D-1).</p>
+<p><b>Sửa tối thiểu ở <code>A11yLifecycleHeal</code>:</b> thêm <code>moXePending()</code> và <code>awaitMoXeVerdict(ms)</code>, dựa trên một latch. Latch được đặt ngay đầu <code>onScreenOn</code>, sau các cổng claim/ân hạn/<code>moXeFollowsTatMay</code> và khi binder chưa gắn; được nhả trong <code>finally</code> của <code>healIfStuck</code>. Đây là cờ RAM để phối hợp trong chính tiến trình. Lý do giống <code>runningStuckAt</code> (<code>:189-199</code>): nó chỉ quyết định <b>hoãn</b> một việc của chính Kachi, không quyết định đổi gì trên hệ thống. Lớp 1/2/3, các cổng, hạn mức và rào camera không đổi. Tệp tăng từ 367 lên khoảng 395 dòng.</p>
+
+<h4>4.8.1 Ân hạn khởi động — lớp 2 mở rộng (R2.7, Pass 5 · 02/10)</h4>
+<p>Lỗ hổng <span class="ev m">[ĐO E2E ca 1]</span>: 2.83 chỉ cho tự leo ở hai SỰ KIỆN — tiến trình bật lúc màn tắt (lớp 1) và màn bật sau một lần tắt máy (lớp 2). Tiến trình bị giết rồi dựng lại <b>lúc màn đang sáng</b> không khớp sự kiện nào ⇒ mọi đường còn lại là RUNNING ⇒ <code>healStep</code> trả NONE. Ân hạn khởi động thêm <b>sự kiện thứ ba</b>, neo vào lúc tiến trình bật — không neo vào HOME, màn bật hay màn Cài đặt — và đi <b>cùng một thân</b> <code>healIfStuck</code> + đường leo của lớp 1/2 (§4.1 DRY: không có đường chữa thứ hai, không lệnh shell mới).</p>
+<div class="layers" role="img" aria-label="Luồng ân hạn khởi động: tiến trình bật trên luồng chính đặt cờ đang xét; luồng nối tiếp chạy lớp 1 không đổi rồi lượt mới onBootGrace; qua cổng thì đo kẹt hai lần; kẹt bền thì leo qua đúng đường 2.83 với mốc leo ghi trước; tiến trình dựng lại không leo lần hai; ngoài ân hạn thì luật RUNNING">
+  <div class="lname">Tiến trình launcher bật · luồng chính</div>
+  <div class="layer">
+    <div class="node"><b>A11yLifecycleHeal.install</b><span>hỏi <code>isInteractive</code> · <code>bootGraceBusy = (màn sáng)</code> · không I/O</span></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="lname">Luồng nối tiếp <code>kachi-a11y-lifecycle</code></div>
+  <div class="layer">
+    <div class="node"><b>onProcessStart</b><span>lớp 1 + chấm điểm — không đổi một dòng</span></div>
+    <div class="node new"><b>onBootGrace</b> (mới, xếp SAU)<span>đọc mốc tiến trình trước → ghi mốc mình (<code>commit</code>) → <code>bootGraceMayRun</code> → <code>withinBootGrace</code> (≤ 20 s)</span></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="lname">Đo (thân chung lớp 1/2)</div>
+  <div class="layer">
+    <div class="node"><b>healIfStuck(KHOI_DONG)</b><span>binder → dump → chờ 5 s (hỏi lại ân hạn mỗi 250 ms) → dump → KẸT BỀN?</span></div>
+    <div class="node okn"><b>không kẹt / kẹt tạm</b><span>nhả cờ ⇒ KeyReady cấp như cũ (R2.3)</span></div>
+    <div class="node new"><b>màn TẮT giữa lượt (Pass 6)</b><span>báo CẮT ⇒ <code>handOffToTatMay</code>: <code>bootGraceHandsOffToTatMay</code> → claim lớp 1 <code>commit()</code> → <code>healIfStuck(TAT_MAY)</code></span></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="lname">Leo — đường 2.83, không đổi</div>
+  <div class="layer">
+    <div class="node"><b>escalateOnLifecycle → escalateIfStuck</b><span><code>healStep</code> = FORCE_STOP · cổng cuối: màn sáng + ≤ 20 s · mốc leo <code>commit()</code> — hỏng ⇒ không bắn</span></div>
+    <div class="node"><b>forceStopRebindCommand</b><span>force-stop · sleep 4 · lắp lại · đuôi <code>IF_ORPHANED</code> + rào camera</span></div>
+  </div>
+  <div class="down">↓</div>
+  <div class="lname">Tiến trình mới (do chính lệnh trên dựng lại, màn vẫn sáng)</div>
+  <div class="layer">
+    <div class="node okn"><b>ownHealChild = true ⇒ không mở</b><span>con của lượt chữa ⇒ không leo lần hai · <code>keys=SKIP_OWN_HEAL</code> → chấm điểm <code>HEALED-&gt;BOUND</code></span></div>
+    <div class="node bad"><b>Ngoài 20 s / đường grant</b><span>pha RUNNING ⇒ NONE — luật 2.83 giữ nguyên, người dùng bấm <i>Sửa ngay</i></span></div>
+  </div>
+</div>
+<div class="tbl"><table>
+<tr><th>Đầu vào của <code>bootGraceMayRun</code></th><th>Nguồn (sự thật bền, không cờ RAM — CLAUDE.md §5)</th><th>Vì sao</th></tr>
+<tr><td>Màn sáng lúc tiến trình bật</td><td><code>PowerManager.isInteractive()</code> ở <code>install</code></td><td>Màn tắt = lớp 1 lo; <code>null</code> = không đoán</td></tr>
+<tr><td>Có tiến trình launcher TRƯỚC trong lần nổ máy này</td><td>mốc mới <code>a11y_proc_start_elapsed</code> (<code>PrefsA11yLifecycle</code>, <code>commit()</code>, ghi ở MỌI lần bật, đọc TRƯỚC khi ghi)</td><td>Kẹt chỉ sinh khi một tiến trình chết lúc dịch vụ đang gắn <span class="ev m">[ĐO AOSP <code>AccessibilityManagerService.java:4114-4117</code>]</span>; tiến trình đầu tiên sau khởi động máy chỉ thấy <code>Binding</code> lúc hệ gắn lần đầu bình thường</td></tr>
+<tr><td>Không phải con của lượt chữa (<code>ownHealChild</code>)</td><td>mốc leo <code>a11y_forcestop_elapsed</code> (ghi <code>commit()</code> trước MỌI lần bắn) + claim chấm điểm <code>a11y_scored_for_elapsed</code> (<code>commit()</code>, do <code>onProcessStart</code> nhận TRƯỚC trên cùng luồng nối tiếp); cửa sổ <code>OWN_HEAL_WINDOW_MS</code> = 2 ph, một nguồn số với cửa sổ chấm điểm</td><td>Chốt chống vòng giết–dựng–giết “trong cùng sự kiện” (2.83 R-A4) — chung cho con của lượt khởi động, lớp 2, nút <i>Sửa ngay</i>. Claim hỏng ⇒ coi là con (fail-safe). Tiến trình KHÁC đã nhận ⇒ mình sinh từ lần giết MỚI ⇒ được chữa <span class="ev m">[ĐO E2E 01:59:16: lần giết thứ hai 27 s sau lượt chữa — chữa lại, Bound sau 12,3 s]</span></td></tr>
+</table></div>
+<p><b>Màn TẮT giữa lượt — trao lớp 1</b> (Pass 6, senior review): <span class="ev m">[ĐO E2E máy ảo C6, 02:18:42–02:20:49]</span> giết lúc màn bật, màn tắt ở +2 s ⇒ <code>khoi-dong: pha đã qua … → bỏ</code> ⇒ không lớp nào nhận (lớp 1 chỉ mở lúc tiến trình BẬT khi màn tắt; lớp 2 đòi claim lớp 1 mới hơn) ⇒ phím chết 112 s tới khi bấm tay; trên xe, nếu BYD giết TRƯỚC khi tắt màn <span class="ev u">[CHƯA BIẾT]</span>, là cả chuyến sau. Nay <code>healIfStuck</code> báo CẮT (đã thấy kẹt, pha qua ở nhánh chờ hoặc ở cổng cuối) ⇒ <code>onBootGrace</code> gọi <code>handOffToTatMay</code>: luật thuần <code>bootGraceHandsOffToTatMay</code> = <code>withinBootGrace</code> ∧ <code>tatMayMayRun</code> (màn TẮT, một lượt mỗi lần tắt máy) ⇒ claim <code>a11y_tat_may_elapsed</code> <code>commit()</code> TRƯỚC khi đo (ghi hỏng ⇒ bỏ) ⇒ <code>healIfStuck(TAT_MAY)</code>. Tiến trình con dựng lại lúc màn vẫn tắt thấy claim ⇒ không chạy lớp 1 lần hai; màn bật lại giữa chừng ⇒ lớp 1 nhường, lần màn bật đó là MỞ XE (claim mới hơn) ⇒ lớp 2 nhận. Màn vẫn sáng ⇒ không trao (luật 2.83 lúc đang chạy giữ nguyên).</p>
+<p><b>Chờ:</b> <code>moXePending()</code> = lớp 2 đang/sắp xét <b>hoặc</b> <code>bootGraceBusy</code> ⇒ <code>KeyReady.prepare</code> và <code>holdTileIfEscalating</code> chờ kết luận (≤ 8 s, fail-open) — lượt khởi động có thể giết launcher, gắn ô trước đó là mở app ô hai lần. Ca thường (đã gắn, hoặc không qua cổng) nhả cờ sau một lần đọc prefs + một lần hỏi binder. <b>Cả hai lối</b> nhận kênh của màn chính giữ ô trước <code>onChannelUp</code>: <code>adopt</code> và nhánh <code>ChannelUp</code> của F4 (review lượt 2 — F4 thắng đua khi lượt sớm chậm hơn tiêu điểm + 1,5 s; <span class="ev m">[ĐO E2E F4H]</span> §10 Pass 6).</p>
+<p><b>Thời gian</b> <span class="ev m">[ĐO E2E ca 1]</span>: kênh lên +0,27 s sau tiến trình bật ⇒ dump → 5 s → dump → ~4 lệnh leo ⇒ bắn ≈ +7 s trên máy ảo; trên xe <span class="ev s">[SUY từ ĐO 29/09: kênh nền +1,0–1,3 s, mỗi lệnh 0,2–0,5 s]</span> ≈ +8…10 s. Trần 20 s là lề gấp đôi; đo xong mà quá trần ⇒ bỏ lượt, không giết muộn.</p>
+<p><b>Dòng <code>keys=</code> nói kết quả thật:</b> lượt vòng đời (lớp 1/2/khởi động) ghi <code>keys=STUCK(&lt;ghi chú&gt;)-&gt;ESCALATE</code> <b>trước</b> khi leo (dòng duy nhất chắc ra kịp — lệnh bắn mở đầu bằng <code>am force-stop</code>) và <code>-&gt;&lt;kết quả&gt;</code> sau; tiến trình sinh từ lượt chữa ghi <code>SKIP_OWN_HEAL</code> rồi chấm điểm ghi <code>HEALED-&gt;BOUND|NOT_BOUND</code>; lượt cấp của chuỗi kiểm phím trả <code>NOT_BOUND</code> thì hỏi binder thêm ≤ 10 s (chỉ đọc) và ghi <code>GRANT-&gt;BOUND(late)</code> nếu phím gắn muộn — <span class="ev m">[ĐO máy ảo 02/10 01:45:25.824]</span> lượt cấp của chuỗi thua single-flight ⇒ <code>keys=GRANT-&gt;NOT_BOUND</code> trong khi lượt thắng ghi <code>đã BOUND</code> lúc 27.523 (đúng ca “(b)” Pass 3 để lại, nay đo được là có thật). Nhật ký bền ghi <code>note=khoi-dong</code> — hiện ở màn Chẩn đoán.</p>
+<p><b>Quan sát lúc cài đè</b> <span class="ev m">[ĐO máy ảo 02/10 01:58:00–:10]</span>: <code>installPackageLI</code> giết Kachi không kèm <code>PACKAGE_RESTARTED</code> ⇒ tiến trình kế tiếp thấy <code>STUCK</code> ở lần đo đầu; hệ tự gắn lại khi gói thay xong (<code>onPackageUpdateFinished</code> dọn <code>mBindingServices</code>) ⇒ lần đo thứ hai <code>bound=true</code> ⇒ <b>không leo</b> (<code>khoi-dong: kẹt KHÔNG bền</code>). Cái giá: ô chờ kết luận một lần ≈ 4,7 s (<code>keys=HOLD(4718)-&gt;VERDICT</code>, <code>summary screen_on-&gt;tile=7315</code>) — chỉ ở lượt cài đè. <span class="ev s">[SUY]</span> trên xe, nếu khoảng giữa hai lần giết của trình cài &gt; 5 s thì có thể có MỘT lần force-stop thừa trong lúc cài (vô hại: trình cài đằng nào cũng khởi động lại launcher, lệnh lắp lại vẫn chạy).</p>
+<p><b>Bốn câu §4:</b> không có lệnh mới — lượt này bắn đúng chuỗi lệnh của lớp 2 (gói = chính app, chốt <code>SAFE_ENTRY</code>, đuôi chỉ display 0 + rào camera, hoàn tác = phần lắp lại của chính chuỗi). §6: <code>onProcessStart</code> không đổi, lượt mới xếp SAU trên cùng luồng nối tiếp.</p>
+
+<h3>4.9 Giao diện R1 — thẻ, ô, lời nhắc</h3>
+<p><b>Thẻ xin quyền</b> <code>ShellAccessCard</code>: view trong <code>rootFrame</code> của HOME, căn giữa vùng ô, <code>WRAP_CONTENT</code>, rộng tối đa <code>Sp.NOTE_MAX_W</code>. Thẻ giữ ba tính chất của dải nhắc F4 (<code>ShellChannelGate.kt:219-225</code>): không nền phủ, không nuốt chạm ngoài khung, chữ lấy từ res và màu lấy từ <code>KachiTheme</code>. Thẻ không phải cửa sổ hệ thống, nên không bao giờ đè lên hộp “Cho phép gỡ lỗi USB?”; hộp đó là một activity nằm trên HOME.</p>
+<div class="mock">
+  <p class="t">Kachi cần quyền điều khiển cửa sổ</p>
+  <p class="b">Để đưa app vào ô, chiếu lên cụm và tự sửa phím vô-lăng, hãy cho phép gỡ lỗi. Khi hộp “Cho phép gỡ lỗi USB?” hiện: tích “Luôn cho phép từ máy tính này” rồi bấm OK.</p>
+  <div class="row"><span class="btn">Để sau</span><span class="btn pri">Hỏi lại</span></div>
+</div>
+<p class="cap" style="text-align:center">Mẫu minh hoạ biến thể CHƯA TỪNG — UI thật dựng bằng <code>KachiTheme</code>/<code>KachiType</code>, chạy cả hai chế độ sáng/tối.</p>
+<ul>
+<li><b>Khi nào thẻ tự hiện:</b> mỗi tiến trình <b>một</b> lần, khi HOME có tiêu điểm và trạng thái là NEEDS_APPROVAL, hoặc ENVIRONMENT khi không có dấu tươi. Có tiêu điểm nghĩa là hộp hệ thống không ở trên. Với biến thể CHƯA TỪNG, thẻ hiện ngay, đứng trước hộp hệ thống mà F4 sẽ dựng 1,5 s sau; thẻ giải thích việc sắp diễn ra (OQ9). Thẻ cũng hiện mỗi lần người dùng chạm một tính năng bị chặn.</li>
+<li><b>Nút <i>Hỏi lại</i></b> gọi <code>gate.retryNow()</code> — lượt F4 ngay, vẫn qua cổng tiêu điểm. Biến thể MÔI TRƯỜNG dùng nút <i>Thử lại</i>: chạy dò im lặng lại rồi gọi F4. <b><i>Để sau</i></b> thu thẻ về dải nhắc đáy có sẵn.</li>
+<li><b>Ô app — chữ thay “Chạm để mở”:</b>
+  <ul>
+  <li>CHECKING và có dấu tươi ⇒ “Đang kết nối…”;</li>
+  <li>NEEDS_APPROVAL ⇒ “Cần cấp quyền”;</li>
+  <li>ENVIRONMENT ⇒ “Chưa có kênh điều khiển”.</li>
+  </ul>
+  Chạm ô thì hiện thẻ. Hàm <code>appCard(pkg, tapHint)</code> (<code>WorkspaceViewCards.kt:80</code>) nhận thêm một tham số trạng thái.</li>
+<li><b><code>LauncherWindows.placeApp</code></b> (<code>:175-191</code>), nhánh chưa nhúng: <b>không còn</b> gọi <code>launcher.openInSlot</code> hay <code>moveToSlot</code>. Thay vào đó gọi <code>ShellAccessUi.prompt(SLOT_APP)</code>, trừ ca CHECKING có dấu tươi: ô ghi “Đang kết nối…” và hẹn 10 s; hết hẹn mà chưa UP thì hiện thẻ. State ô vẫn được lưu (<code>viewModel.assignApp</code>), nên khi kênh lên, <code>applyEmbedSeam</code> tự nhúng app. <code>sweepFloating</code> giữ nguyên để dọn cửa sổ nổi của bản cũ còn sót sau nâng cấp.</li>
+<li><b>Tính năng khác</b> — chiếu cụm (bật tay + <code>BubbleAutostart</code>), DPI cụm, Đặt HOME, cài cập nhật: kiểm <code>ShellAccess.usable()</code> ở điểm vào rồi hiện lời nhắc chung. Nếu một điểm vào quên kiểm, cổng thi hành (§4.6) vẫn chặn.</li>
+<li><b>Hàng quyền Cài đặt:</b> dùng <code>SHELL_CHANNEL_AWAITING_APPROVAL</code> (<code>LauncherRequirements.kt:247-251</code>) khi <code>ShellReadiness == NEEDS_APPROVAL</code>, không chỉ khi F4 đang treo hộp.</li>
+</ul>
+<div class="tbl"><table>
+<tr><th>Khoá chuỗi (mới)</th><th>vi</th><th>en</th></tr>
+<tr><td><code>kachi_access_title</code></td><td>Kachi cần quyền điều khiển cửa sổ</td><td>Kachi needs window control permission</td></tr>
+<tr><td><code>kachi_access_never_body</code></td><td>Để đưa app vào ô, chiếu lên cụm và tự sửa phím vô-lăng, hãy cho phép gỡ lỗi. Khi hộp “Cho phép gỡ lỗi USB?” hiện: tích “Luôn cho phép từ máy tính này” rồi bấm OK.</td><td>To put apps in slots, cast to the cluster and fix the steering-wheel keys, allow debugging. When “Allow USB debugging?” appears, tick “Always allow from this computer”, then OK.</td></tr>
+<tr><td><code>kachi_access_lost_title</code></td><td>Xe không còn nhận quyền của Kachi</td><td>The car no longer accepts Kachi's permission</td></tr>
+<tr><td><code>kachi_access_lost_body</code></td><td>Có thể do lâu không dùng (quá hạn của hệ thống), đã thu hồi, hoặc lần trước chỉ chọn “Cho phép” một lần. Bấm Hỏi lại và nhớ tích “Luôn cho phép”.</td><td>It may have expired after a long break, been revoked, or was allowed only once last time. Tap Ask again and tick “Always allow”.</td></tr>
+<tr><td><code>kachi_access_env_title</code></td><td>Kênh điều khiển cửa sổ chưa mở</td><td>Window control channel is not available</td></tr>
+<tr><td><code>kachi_access_env_body</code></td><td>Cổng gỡ lỗi của xe chưa sẵn sàng. Bấm Thử lại sau ít giây.</td><td>The car's debugging port isn't ready. Tap Retry in a few seconds.</td></tr>
+<tr><td><code>kachi_access_ask_again</code></td><td>Hỏi lại</td><td>Ask again</td></tr>
+<tr><td><code>kachi_access_later</code></td><td>Để sau</td><td>Later</td></tr>
+<tr><td><code>kachi_slot_connecting</code></td><td>Đang kết nối…</td><td>Connecting…</td></tr>
+<tr><td><code>kachi_slot_needs_access</code></td><td>Cần cấp quyền</td><td>Permission needed</td></tr>
+<tr><td><code>kachi_slot_no_channel</code></td><td>Chưa có kênh điều khiển</td><td>No control channel</td></tr>
+<tr><td><code>kachi_access_feature_blocked</code></td><td>Cần quyền điều khiển cửa sổ — mở màn chính để cấp</td><td>Needs window control permission — open the home screen to grant it</td></tr>
+</table></div>
+<p class="muted">Nút <i>Thử lại</i> dùng lại chuỗi <code>kachi_shell_approval_retry</code> đang có (<code>strings_kachi.xml:92</code>). “Chạm để mở” (<code>:255</code>) không còn chỗ dùng sau R1.3 ⇒ gỡ trong cùng đợt (lint <code>UnusedResources</code>).</p>
+
+<h3>4.10 Mốc log “ready” — tag <code>KachiReady</code></h3>
+<p>Mỗi mốc là một dòng có: <code>t</code> = ms tính từ lúc tiến trình bật (<code>Process.getStartElapsedRealtime()</code>), <code>so</code> = ms tính từ lần màn bật gần nhất, và giờ tường. Dòng đi vào <code>usage-*.log</code> qua <code>KachiLog</code>, đúng cách 2.83 ghi nhật ký mối nối. Màn Chẩn đoán hiện dòng <code>summary</code> gần nhất (§11: anh em chỉ cần chụp màn).</p>
+<div class="tbl"><table>
+<tr><th>Mốc</th><th>Ghi ở</th><th>Ví dụ</th></tr>
+<tr><td><code>proc</code></td><td><code>EarlyShellChannel.start</code></td><td><code>KachiReady proc t=0 interactive=false</code></td></tr>
+<tr><td><code>early</code></td><td>bắt đầu và kết thúc lượt sớm</td><td><code>early mode=SILENT ledger=FRESH fp=1a2b3c4d → AUTHORIZED in=38ms</code></td></tr>
+<tr><td><code>up</code> / <code>needs</code> / <code>env</code></td><td><code>ShellReadiness</code> mỗi lần chuyển trạng thái</td><td><code>up src=early t=212</code></td></tr>
+<tr><td><code>screen_on</code></td><td>bộ thu sẵn có của <code>A11yLifecycleHeal</code></td><td><code>screen_on t=49031</code></td></tr>
+<tr><td><code>keys</code></td><td><code>KeyReady</code></td><td><code>keys=BOUND so=+31</code> · <code>keys=HOLD(5400)→RESTART</code></td></tr>
+<tr><td><code>home</code></td><td><code>adopt</code> / F4 <code>ChannelUp</code></td><td><code>home adopt so=+118</code></td></tr>
+<tr><td><code>tile</code></td><td><code>VdAppHost</code> lúc tạo màn ảo (một dòng)</td><td><code>tile vd=6 slot=0 so=+640</code></td></tr>
+<tr><td><code>summary</code></td><td>một lần mỗi lần màn bật, khi ô đầu có màn ảo</td><td><code>summary screen_on→tile=640 proc→up=212 keys=BOUND</code></td></tr>
+<tr><td><code>deny</code></td><td>cổng thi hành (tiết chế)</td><td><code>deny BACKGROUND caller=SimpleCast state=NEEDS_APPROVAL</code></td></tr>
+</table></div>
+
+<h3>4.11 Bốn câu §4, cùng §5/§6/§7</h3>
+<div class="tbl"><table>
+<tr><th>Câu</th><th>Trả lời</th></tr>
+<tr><td>Nhắm display nào?</td><td>Spec <b>không thêm</b> lệnh <code>am</code>/<code>wm</code>/<code>service call</code> nào. Gắn ô vẫn đi <code>applyEmbedSeam</code> → <code>VdAppHost</code> (màn ảo của launcher), không đổi.</td></tr>
+<tr><td>Nhắm app nào?</td><td>Không có lệnh theo gói mới. Grant phím dùng hàm đã có (<code>NavConnect.ACC_COMP</code> của chính Kachi).</td></tr>
+<tr><td>Loại stack nào?</td><td>Không chạm stack.</td></tr>
+<tr><td>Hoàn tác?</td><td>Không đổi trạng thái hệ thống. Lệnh mới duy nhất là <code>settings get</code> (đọc). Dò im lặng không chạy lệnh shell. Dấu bền là tệp của Kachi; xoá dữ liệu thì mất dấu, và lần sau dò lại từ đầu.</td></tr>
+</table></div>
+<ul>
+<li><b>§5</b>: quyết định dựa trên sự thật đo trong tiến trình (dò im lặng, F4, bắt tay). Dấu bền ghi <b>sau</b> sự thật, và chỉ là gợi ý cho giao diện và chế độ dự phòng. Guard đặt ở tầng thi hành, gồm ba cửa transport.</li>
+<li><b>§6</b>: đường mới xuống cuối — lượt sớm ở dòng cuối <code>onCreate</code>; <code>adopt</code> chỉ là lối vào thêm. F4, B1, 3 lớp 2.83 và thân <code>bringUpShellChannel</code> không đổi. Cửa sổ nổi dự phòng là thay đổi <b>do owner yêu cầu</b> (R1), không phải do suy luận.</li>
+<li><b>§7</b>: không tên gói, không mục <code>ClusterProfile</code>. Khác biệt giữa các xe lộ ra qua đo (kết quả dò, <code>win</code> đọc từ máy).</li>
+<li><b>Android 12 (DL5)</b>: <code>targetSdk = 37</code>, nên khởi FGS keep-alive từ nền có thể bị chặn <span class="ev s">[SUY từ giới hạn FGS nền đã ghi ở 2.83 §4.2]</span>. Lời gọi sớm bọc <code>runCatching</code> như hiện có; đường HOME vẫn gọi lại khi resume.</li>
+</ul>
+
+<h3>4.12 Tệp, module, ngân sách dòng, Context7</h3>
+<div class="tbl"><table>
+<tr><th>Tệp</th><th>Mới / sửa</th><th>Nội dung</th></tr>
+<tr><td><code>car-integration/…/carexec/SilentAdbAuth.kt</code></td><td>mới (~160)</td><td>codec gói, ký token, <code>probe(connector, key)</code> → <code>Authorized|NotAuthorized|Unavailable(reason)|Unsupported</code></td></tr>
+<tr><td><code>car-integration/…/carexec/ShellReadinessPolicy.kt</code></td><td>mới (~180)</td><td>trạng thái, <code>next()</code>, <code>fresh()</code>, <code>admit()</code>, hằng số (<code>EARLY_WAIT_MS</code>, <code>ENV_RETRIES</code>, <code>TOUCH_GAP_MS</code>, <code>SLOT_WAIT_MS</code>, <code>KEY_HOLD_MAX_MS</code>)</td></tr>
+<tr><td><code>car-integration/…/carexec/LocalShellAdmission.kt</code></td><td>mới (~60)</td><td>giao diện móc + chỗ giữ (mặc định cho tất cả)</td></tr>
+<tr><td><code>LocalShellRetryPolicy.kt</code> · <code>FirstOpenApprovalPolicy.kt</code> · <code>LocalDeviceShell.kt</code></td><td>sửa</td><td><code>mayPromptUser</code>; enum <code>NOT_APPROVED</code>; móc ở <code>run</code>/<code>installApk</code></td></tr>
+<tr><td><code>app/…/ShellReadiness.kt</code> · <code>ShellApprovalStore.kt</code></td><td>mới</td><td>trạng thái tiến trình + latch + bên nghe; kho dấu bền</td></tr>
+<tr><td><code>app/…/EarlyShellChannel.kt</code></td><td>mới</td><td>lượt sớm, chuỗi SẴN (keep-alive, watchdog, đọc <code>win</code>), <code>KeyReady</code></td></tr>
+<tr><td><code>KachiApplication.kt</code> · <code>AdbKeys.kt</code></td><td>sửa</td><td>cài móc + dòng cuối <code>EarlyShellChannel.start(this)</code>; <code>privateKey()</code> + <code>fingerprint()</code></td></tr>
+<tr><td><code>ShellTransport.kt</code></td><td>sửa</td><td>hỏi cổng trước <code>attempt</code>; <code>reportUp</code> khi nối được</td></tr>
+<tr><td><code>launcher/ShellChannelGate.kt</code></td><td>sửa</td><td><code>adopt()</code> ở cuối lớp; hai lời gọi báo trạng thái trong <code>settle</code></td></tr>
+<tr><td><code>launcher/ReadyAtHomeWiring.kt</code> · <code>launcher/ShellAccessCard.kt</code></td><td>mới</td><td>bên nghe HOME, trạng thái ô, thẻ, <code>ShellAccessUi.prompt</code></td></tr>
+<tr><td><code>KachiHomeActivity.kt</code></td><td>sửa ≤ 5 dòng</td><td>gọi <code>wireReadyAtHome(...)</code>; 475 → ≤ 480</td></tr>
+<tr><td><code>LauncherWindows.kt</code> · <code>WorkspaceView.kt</code> · <code>WorkspaceViewCards.kt</code> · <code>VdAppHost.kt</code></td><td>sửa</td><td>cổng <code>placeApp</code>; chữ ô theo trạng thái; dòng <code>tile</code></td></tr>
+<tr><td><code>A11yLifecycleHeal.kt</code></td><td>sửa</td><td><code>moXePending</code> / <code>awaitMoXeVerdict</code></td></tr>
+<tr><td><code>UpdateChecker.kt</code> · <code>AssistantLauncher.kt</code> · <code>ClusterNavBridgeHome.kt</code> · <code>BubbleAutostart.kt</code></td><td>sửa</td><td>nhánh <code>NOT_APPROVED</code>; lời nhắc ở điểm vào</td></tr>
+<tr><td><code>SettingsCatalog.kt</code> · <code>ProfileScope.kt</code> · <code>strings_kachi.xml</code> (vi + en)</td><td>sửa</td><td>khoá <code>kachi_shell_approval</code> DEVICE; chuỗi §4.9</td></tr>
+</table></div>
+<ul>
+<li><b>Context7 + phiên bản:</b> không thêm thư viện. <code>dev.mobile:dadb:2.0.0</code> đang dùng là bản mới nhất trên Maven Central <span class="ev m">[ĐO <code>maven-metadata.xml</code>: latest = release = 2.0.0, cập nhật 2026-06-22]</span>. Context7 <b>không có</b> mục dadb <span class="ev m">[ĐO resolve 01/10]</span>, nên hành vi bắt tay được đọc bằng <code>javap</code>. Context7 <code>/websites/tangoadb_dev</code> xác nhận phụ phần chữ ký và khoá công khai. Phần còn lại chỉ dùng Android SDK / JDK: <code>PowerManager.isInteractive</code>, <code>SharedPreferences.commit</code>, <code>java.net.Socket</code>, <code>javax.crypto.Cipher("RSA/ECB/NoPadding")</code> — chính dadb đang dùng nó trên xe <span class="ev m">[ĐO javap]</span>, <code>KeyFactory</code>/<code>PKCS8EncodedKeySpec</code>.</li>
+<li><b>§8 call site</b> — sau mã, mỗi hàm mới phải có ít nhất một lời gọi ngoài định nghĩa:
+  <ul>
+  <li><code>EarlyShellChannel.start</code> ← <code>KachiApplication</code></li>
+  <li><code>adopt</code> ← <code>ShellChannelGate</code> + <code>ReadyAtHomeWiring</code></li>
+  <li><code>SilentAdbAuth.probe</code> ← <code>EarlyShellChannel</code> + cổng thi hành</li>
+  <li><code>ShellApprovalStore.markUp/forget</code> ← <code>ShellReadiness</code></li>
+  <li><code>awaitMoXeVerdict</code> ← <code>KeyReady</code></li>
+  <li><code>ShellAccessUi.prompt</code> ← <code>placeApp</code> + bốn điểm vào</li>
+  </ul>
+  Kiểm bằng <code>grep -rn</code> (T10).</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>5. Tasks (DAG)</h2>
+<div class="tbl"><table>
+<tr><th>#</th><th>Việc + test</th><th>Phụ thuộc</th><th>Xe?</th><th>Trạng thái 02/10</th></tr>
+<tr><td><b>T0a</b></td><td><b>§14 tầng 1 — máy ảo.</b> Script <code>scripts/vehicle/silent-auth-probe.py</code> chạy dò im lặng với khoá mới và khoá đã duyệt. Cần ảnh <code>ro.adb.secure=1</code>; dựng được hay không thì <span class="ev u">[CHƯA BIẾT]</span>. Lưu bằng chứng ở <code>docs/diagnostics/ready-at-home-silent-auth-2026-10-xx.md</code> (header + index)</td><td>duyệt</td><td><span class="nocar">KHÔNG</span></td><td>⏸ chưa chạy — máy ảo <code>clusternav10</code> là <code>ro.adb.secure=0</code> (không dựng được ca khoá lạ). Thay bằng adbd CÂM giả (§9 E3) cho phần chế độ dự phòng</td></tr>
+<tr><td><b>T0b</b></td><td><b>OC-0 — xe, owner.</b> Cùng script, chạy qua cầu nc. Khoá mới ⇒ <code>AUTH</code> lần 2 + 0 <code>UsbDebuggingActivity</code>; khoá Mac ⇒ <code>CNXN</code>. Đọc thêm <code>settings get global adb_allowed_connection_time</code> (Seal; DL5 nếu có xe)</td><td>T0a</td><td><span class="car">CÓ</span></td><td>⏸ cần xe + owner</td></tr>
+<tr><td><b>T1</b></td><td><code>ShellReadinessPolicy</code> thuần + bảng test: <code>fresh</code> (khoá đổi, quá hạn, <code>win=0</code>, giờ lùi, thiếu <code>win</code>) · <code>next</code> (mọi ô §4.5) · <code>admit</code> (mọi ô §4.6, hai chế độ)</td><td>duyệt</td><td><span class="nocar">KHÔNG</span></td><td>✅ <code>ShellReadinessPolicy</code> (<code>:core</code>) · <code>ShellReadinessPolicyTest</code> 16 ca — chỉ cột dự phòng (cột im lặng chưa có mã, §14)</td></tr>
+<tr><td><b>T2</b></td><td><code>SilentAdbAuth</code> + test fixture byte: CNXN ngay; AUTH→chữ ký→CNXN; AUTH→chữ ký→AUTH ⇒ NotAuthorized và <b>không có gói <code>AUTH</code> loại 3 nào được ghi ra</b> (bài khoá R3.2); nối bị từ chối; hết hạn đọc ⇒ <code>IO_ERROR</code> (không phải <code>AWAITING</code>); gói lạ ⇒ Unsupported; ký khớp phép kiểm bằng khoá công khai</td><td>T0a xanh (T0b trước OTA)</td><td><span class="nocar">KHÔNG</span></td><td>❌ KHÔNG làm — cổng §14 (T0 chưa xanh). Spec §4.4.3: T0 chưa chạy ⇒ chế độ dự phòng</td></tr>
+<tr><td><b>T3</b></td><td><code>LocalShellAdmission</code> + <code>mayPromptUser</code> + <code>NOT_APPROVED</code> + móc ở <code>LocalShellSessions.run</code>/<code>installApk</code> + báo kết quả (cờ <code>dispatched</code>) + sửa các <code>when</code>; test: mặc định cho tất cả, đường ASK luôn cho</td><td>T1</td><td><span class="nocar">KHÔNG</span></td><td>✅ <code>LocalShellAdmission</code> (<code>:core</code>) + <code>mayPromptUser</code> + <code>USER_READ_CAP</code> + <code>NOT_APPROVED</code> + móc ở <code>LocalShellSessions.run</code>/<code>installApk</code> · <code>LocalShellAdmissionTest</code> 6 ca</td></tr>
+<tr><td><b>T4</b></td><td><code>ShellApprovalStore</code> + <code>ShellReadiness</code> + <code>EarlyShellChannel</code> (hai chế độ) + <code>KachiApplication</code> (dòng cuối) + <code>AdbKeys.privateKey/fingerprint</code> + khai khoá DEVICE</td><td>T1, T3 (T2 cho chế độ im lặng)</td><td><span class="nocar">KHÔNG</span></td><td>✅ chỉ chế độ dự phòng — <code>ShellApprovalStore</code> · <code>ShellReadiness</code> · <code>EarlyShellChannel</code> · <code>AdbKeys.fingerprint</code> (không <code>privateKey</code> — chỉ dò im lặng cần) · khoá DEVICE</td></tr>
+<tr><td><b>T5</b></td><td><code>ShellTransport</code> hỏi cổng + <code>reportUp</code> + <code>ShellNotApprovedException</code> không thử lại</td><td>T4</td><td><span class="nocar">KHÔNG</span></td><td>✅ cổng trong <code>exec</code> trước <code>attempt</code>; <code>reportUp</code> khi kết nối mới trả lệnh đầu</td></tr>
+<tr><td><b>T6</b></td><td>HOME: <code>ShellChannelGate.adopt</code> + <code>ReadyAtHomeWiring</code> + hai lời gọi báo trạng thái từ F4</td><td>T4</td><td><span class="nocar">KHÔNG</span></td><td>✅ <code>adopt()</code> + <code>ReadyAtHomeWiring</code> + ba lời gọi báo trạng thái từ F4 + <code>probeForHome</code></td></tr>
+<tr><td><b>T7</b></td><td>Phím: <code>moXePending/awaitMoXeVerdict</code> + <code>KeyReady</code> (bước 1–4 §4.8) + giữ ô ≤ 8 s</td><td>T4, T6</td><td><span class="nocar">KHÔNG</span></td><td>✅ <code>moXePending/awaitMoXeVerdict</code> + <code>KeyReady</code> + luật <code>KeyReadyPlan</code> (<code>:core</code>, 4 ca)</td></tr>
+<tr><td><b>T7b</b></td><td><b>Ân hạn khởi động</b> (R2.7 · §4.8.1): <code>HealPhase.KHOI_DONG</code> + <code>bootGraceMayRun</code> / <code>withinBootGrace</code> / <code>autoFireAllowed</code> / <code>OWN_HEAL_WINDOW_MS</code> (<code>:core</code>) · <code>A11yLifecycleHeal.onBootGrace</code> + mốc <code>a11y_proc_start_elapsed</code> · chốt mốc leo ở <code>NavConnect.escalateIfStuck</code> · dòng <code>keys=</code> thật (lượt vòng đời + chấm điểm) · test bảng + nối dây + phá thử</td><td>T7 + E2E ca 1</td><td><span class="nocar">KHÔNG</span></td><td>✅ 02/10 (Pass 5) — <code>A11yBootGraceGatesTest</code> 9 · <code>A11yBootGraceWiringContractTest</code> 9 · <code>KeyReadyPlanTest</code> +1 · phá thử 10/10 đỏ; E2E máy ảo ca 1 / giết lần hai / ca 2 / nâng cấp ✅ (§9 Pass 2). Pass 6: trao lớp 1 khi màn tắt giữa lượt — <code>A11yBootGraceGatesTest</code> 11 · <code>A11yBootGraceWiringContractTest</code> 10 · phá thử R1–R6 6/6 đỏ; E2E máy ảo C6 / C6b / C1 chạy lại ✅ (§10 Pass 5). Pass 7: nhánh F4 giữ ô — <code>A11yBootGraceWiringContractTest</code> 11 · phá thử 1/1 đỏ; E2E máy ảo F4H + C1 ✅ (§10 Pass 6)</td></tr>
+<tr><td><b>T8</b></td><td>Giao diện R1: <code>ShellAccessCard</code>, chữ ô theo trạng thái, <code>placeApp</code> không mở nổi, lời nhắc ở cast/DPI/Đặt HOME/cập nhật, hàng quyền, chuỗi vi/en, gỡ chuỗi chết</td><td>T4, T6</td><td><span class="nocar">KHÔNG</span></td><td>✅ thẻ 3 biến thể, chữ ô theo trạng thái, <code>placeApp</code> không mở nổi, lời nhắc ở chiếu cụm/DPI/Đặt HOME (cập nhật: câu <code>NOT_APPROVED</code>), hàng quyền, 12 chuỗi vi/en, gỡ <code>kachi_slot_tap_to_open</code></td></tr>
+<tr><td><b>T9</b></td><td>Mốc <code>KachiReady</code> (§4.10) + dòng tóm tắt ở màn Chẩn đoán + bộ đếm <code>KachiPerf</code></td><td>T4–T8</td><td><span class="nocar">KHÔNG</span></td><td>✅ mốc <code>KachiReady</code> + dòng ở màn Chẩn đoán + <code>KachiPerf.SHELL_DENY</code></td></tr>
+<tr><td><b>T10</b></td><td>Bài canh tĩnh <code>SourceRoots.body()</code> (§6 V-static) + grep call site §8 + <code>wc -l</code> mọi tệp sửa</td><td>T1–T9</td><td><span class="nocar">KHÔNG</span></td><td>✅ <code>ReadyAtHomeWiringContractTest</code> 11 ca + phá thử 9 mắt xích (§9)</td></tr>
+<tr><td><b>T11</b></td><td>E2E máy ảo (§6 V-emu)</td><td>T10</td><td><span class="nocar">KHÔNG</span></td><td>🟡 E1 ✅ ×2 (×1 dính lỗi máy ảo đã biết của 2.83) · E3 CHƯA TỪNG ✅ · E3 MẤT DUYỆT ✅ · E2/E4 ⏸ (§9)</td></tr>
+<tr><td><b>T12</b></td><td><code>./gradlew clean assembleRelease testDebugUnitTest lintDebug lintRelease</code> (chạy nền, tạm dừng máy ảo, <code>--continue</code>), đếm bằng <code>python3 scripts/count-tests.py</code></td><td>T10</td><td><span class="nocar">KHÔNG</span></td><td>✅ xem §9 (số test, lint, APK)</td></tr>
+<tr><td><b>T13</b></td><td>Senior review Opus, lặp tới khi sạch [P0]–[P3] + quét bảo mật trước commit (global §5, §6)</td><td>T11, T12</td><td><span class="nocar">KHÔNG</span></td><td>🟡 senior review Opus: §10 Pass 1–3, 5–7 — lượt 3 cho toàn bộ (§10 Pass 7) PATCHED chỉ bài canh + tài liệu, 0 phát hiện ở mã chạy; ⏸ quét bảo mật trước commit (việc của phiên điều phối)</td></tr>
+<tr><td><b>T14</b></td><td>OC-1…OC-5 trên xe (owner / anh em)</td><td>T13 + quyết định phát hành của owner</td><td><span class="car">CÓ</span></td><td>⏸ cần xe</td></tr>
+<tr><td><b>T15</b></td><td>Tài liệu đi cùng mã: §9 Nhật ký triển khai, INDEX, BACKLOG, <code>project-context.md</code></td><td>xuyên suốt</td><td><span class="nocar">KHÔNG</span></td><td>✅ spec §5/§9/§10 + INDEX + BACKLOG cập nhật mỗi lượt; <code>project-context.md</code> thêm khối READY-AT-HOME dưới mục 2.83 (review lượt 3, §10 Pass 7) — có ghi NGOẠI LỆ ân hạn khởi động cho luật 2.83</td></tr>
+</table></div>
+<p class="muted">Nếu T0a hoặc T0b đỏ: bỏ T2, T4 chỉ dựng chế độ dự phòng, còn lại không đổi. Ghi lệch vào §9.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>6. Verification</h2>
+<h3>6.1 Off-car</h3>
+<ul>
+<li><b>V-unit</b>: bảng T1, fixture T2, móc T3, cùng các bài cũ <code>FirstOpenApprovalPolicyTest</code>, <code>LocalDeviceShellRunTest</code>, <code>AccessibilityHealGates*</code>, đều xanh. Số test đếm bằng <code>scripts/count-tests.py</code>, không đọc console.</li>
+<li><b>V-static</b> (dùng <code>SourceRoots.body()</code>, cấm <code>substringAfter/Before</code>):
+  <ol>
+  <li>trong <code>KachiApplication.onCreate</code>, <code>EarlyShellChannel.start</code> đứng <b>sau</b> <code>A11yLifecycleHeal.install</code> và là lời gọi cuối;</li>
+  <li><code>EarlyShellChannel</code> không gọi <code>ShellTransport</code> trước khi trạng thái là UP, và không dùng <code>AWAIT_ADB_APPROVAL</code>;</li>
+  <li>ba cửa transport đều hỏi <code>LocalShellAdmission</code>;</li>
+  <li>dấu bền chỉ được ghi trong <code>ShellApprovalStore.markUp</code> và chỉ được xoá trong <code>forget</code>;</li>
+  <li><code>adopt</code> đòi <code>isInteractive</code> và gọi <code>onChannelUp</code>;</li>
+  <li><code>placeApp</code> không còn <code>openInSlot</code>/<code>moveToSlot</code> ở nhánh chưa nhúng;</li>
+  <li><code>ShellApprovalWiringContractTest</code> <b>không đổi một dòng</b>.</li>
+  </ol></li>
+<li><b>V-lint</b>: <code>lintDebug</code> và <code>lintRelease</code> 0 lỗi; chuỗi vi/en đủ cặp.</li>
+</ul>
+<h3>6.2 Máy ảo (Android 10, <code>clusternav10</code>)</h3>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>Làm</th><th>Đạt khi</th></tr>
+<tr><td><b>E1</b> đã duyệt (<code>ro.adb.secure=0</code>)</td><td>Giết kiểu BYD lúc màn tắt (mô phỏng như E2E 2.83), chờ 30 s, bật màn</td><td><code>up src=early</code> ≤ 2 s sau <code>proc</code>; không có dòng <code>tile</code> lúc màn tắt; <code>summary screen_on→tile</code> ≤ 1,5 s; 0 dòng <code>home f4</code></td></tr>
+<tr><td><b>E2</b> kẹt phím</td><td>Như kịch bản kẹt của E2E 2.83</td><td>app ô chỉ <code>am_create_activity</code> <b>một</b> lần sau mở xe; <code>keys=HOLD…→RESTART</code>; phím sống sau đó</td></tr>
+<tr><td><b>E3</b> CHƯA TỪNG / MẤT DUYỆT</td><td>Dùng ảnh <code>ro.adb.secure=1</code> nếu T0a dựng được. Không thì ép trạng thái qua cầu kiểm thử, chỉ ở bản <code>vehicleTest</code></td><td>Thẻ đúng biến thể; chạm ô ⇒ 0 stack <code>freeform</code> mới (<code>am stack list</code>); bật chiếu ⇒ không <code>service call</code>; ở ảnh secure: 0 <code>UsbDebuggingActivity</code> trước khi HOME có tiêu điểm</td></tr>
+<tr><td><b>E4</b> vài giây đầu</td><td>Giả độ trễ dò (cầu kiểm thử), chạm ô trong lúc CHECKING</td><td>ô “Đang kết nối…”, kênh lên ⇒ tự nhúng; quá 10 s ⇒ thẻ</td></tr>
+<tr><td><b>V-reg</b></td><td>Hồi quy chung</td><td>0 <code>FATAL EXCEPTION | KachiCrash | ANR in com.byd.launcher</code>; đổi hồ sơ (PROFILE-SWITCH-SLOTS A/B) vẫn đạt</td></tr>
+</table></div>
+<h3>6.3 Trên xe <span class="car">CẦN XE</span></h3>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>Ai</th><th>Kịch bản</th><th>Bằng chứng / đạt khi</th></tr>
+<tr><td><b>OC-0</b></td><td>owner (adb)</td><td>T0b + đọc <code>adb_allowed_connection_time</code></td><td>logcat + đầu ra script, lưu <code>docs/diagnostics/</code></td></tr>
+<tr><td><b>OC-1</b> xe đã duyệt</td><td>owner / anh em</td><td>Tắt máy ≥ 60 s, mở xe, ×3 lần</td><td>Màn Chẩn đoán <code>summary screen_on→tile</code> ≤ 1,5 s (mục tiêu; baseline 5,9 s); bấm phím thoại ăn ngay; ảnh chụp màn Chẩn đoán</td></tr>
+<tr><td><b>OC-2</b> xe mới cài</td><td>owner</td><td>Cài sạch, mở Kachi; lần 1 bỏ qua hộp; lần 2 bấm Hỏi lại → Luôn cho phép</td><td>Hộp hiện khi HOME ở trước; bỏ qua ⇒ thẻ CHƯA TỪNG; chạm ô ⇒ lời nhắc, 0 cửa sổ nổi; bật chiếu ⇒ lời nhắc; cho phép ⇒ thẻ mất, ô có app ≤ 3 s</td></tr>
+<tr><td><b>OC-3</b> mất duyệt</td><td>owner</td><td>“Thu hồi uỷ quyền gỡ lỗi USB” nếu ROM cho (màn Cài đặt hệ thống khoá trên xe ⇒ <span class="ev u">[CHƯA BIẾT]</span>), rồi tắt/mở máy</td><td>0 <code>UsbDebuggingActivity</code> trước khi HOME có tiêu điểm; thẻ MẤT DUYỆT; F4 hỏi đúng lúc</td></tr>
+<tr><td><b>OC-4</b> hồi quy</td><td>anh em</td><td>Phím 3 lớp (V-A1/V-A2 của 2.83), tự chiếu, VietMap tự mở, camera</td><td>như nghiệm thu 2.83</td></tr>
+<tr><td><b>OC-5</b> &gt; 7 ngày</td><td>—</td><td>Không đo theo lịch được; chỉ đo nếu owner cho rút ngắn <code>adb_allowed_connection_time</code> tạm thời (đổi trạng thái hệ thống, cần đồng ý + hoàn tác, OQ3)</td><td><span class="ev u">[CHƯA ĐO]</span> — dựa trên AOSP + dò im lặng</td></tr>
+</table></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>7. Open Questions</h2>
+<div class="card"><p><b>Đã chốt 2026-10-02</b> — nguồn: phiên điều phối theo uỷ quyền owner (owner uỷ quyền chốt theo đề xuất mặc định, không hỏi lại). Cả chín câu đóng theo đề xuất mặc định; OQ4/OQ6/OQ8 để lại việc có ngày ở backlog.</p></div>
+<ul>
+<li><b>OQ1</b> — Chưa có kênh: vẫn giữ mở app <b>toàn màn</b> từ ngăn kéo (intent thường)? — <span class="muted">Đề xuất: giữ, vì R1 nói “vào ô”.</span> <span class="pill ok">Đã chốt: GIỮ</span> (R1.4).</li>
+<li><b>OQ2</b> — “Popup” của R1: thẻ giữa màn, không chặn chạm, <i>Để sau</i> thu về dải đáy (§4.9)? Hay chỉ giữ dải đáy và viết rõ hơn? — <span class="muted">Đề xuất: thẻ. Hộp hệ thống vẫn là popup thật, thẻ không đè lên nó.</span> <span class="pill ok">Đã chốt: THẺ giữa màn, không chặn chạm</span> (R1.2). Lỗi E2E [P3] “thẻ che chữ ô 0” đóng theo câu này.</li>
+<li><b>OQ3</b> — Xe để quá hạn duyệt (mặc định 7 ngày) không nổ máy: chấp nhận hỏi lại một lần qua F4 (mặc định)? Hay đặt <code>adb_allowed_connection_time=0</code> qua kênh? Cách thứ hai đổi trạng thái hệ thống, sống qua reboot, cần đường hoàn tác. — <span class="muted">Đề xuất: không đổi.</span> <span class="pill ok">Đã chốt: KHÔNG đổi</span> <code>adb_allowed_connection_time</code> (R-nf1 giữ: lệnh mới duy nhất là <code>settings get</code>).</li>
+<li><b>OQ4</b> — Duyệt cơ chế <b>dò im lặng</b> (tầng giao thức, mới — §4.3) với cổng T0a/T0b. T0 đỏ thì dùng chế độ dự phòng. — <span class="muted">Đề xuất: làm T0 trước.</span> <span class="pill ok">Đã chốt: ĐỂ SAU</span> — T2 không code tới khi T0a/T0b xanh (cổng CLAUDE.md §14); bản này chạy chế độ dự phòng. Backlog <code>READY-AT-HOME-T0</code>.</li>
+<li><b>OQ5</b> — Xe đã duyệt mà cổng 5555 câm (MÔI TRƯỜNG): ô chờ 10 s rồi hiện thẻ, <b>không</b> mở nổi ở bất kỳ ca nào. Owner xác nhận bỏ hẳn cửa sổ nổi dự phòng? — <span class="muted">Đề xuất: bỏ hẳn.</span> <span class="pill ok">Đã chốt: BỎ HẲN</span> cửa sổ nổi dự phòng (R1.3).</li>
+<li><b>OQ6</b> — Gỡ hẳn mã <code>IntentAppLauncher.openInSlot/moveToSlot</code> (không còn đường gọi sau R1.3) ngay đợt này hay bản sau? — <span class="muted">Đề xuất: bản sau, mục backlog riêng; đợt này chỉ cắt lời gọi.</span> <span class="pill ok">Đã chốt: BẢN SAU</span> — backlog <code>READY-AT-HOME-OQ6</code>.</li>
+<li><b>OQ7</b> — Kiểm phím: chạy grant <b>sớm</b> (ngay khi SẴN và màn tương tác, cùng hàm B1, single-flight — §4.8)? Hay để B1 sau ô như hôm nay? — <span class="muted">Đề xuất: sớm.</span> <span class="pill ok">Đã chốt: SỚM</span> (R2.3) — và mở rộng cho tiến trình dựng lại lúc màn sáng (R2.7, ân hạn khởi động).</li>
+<li><b>OQ8</b> — Đóng <code>PROFILE-SWITCH-SLOTS-OQ7</code> khi READY-AT-HOME xong? Xe đã duyệt thì không còn chờ tiêu điểm; xe chưa duyệt thì không còn cửa sổ nổi giữ tiêu điểm. — <span class="muted">Đề xuất: đóng sau OC-1/OC-2.</span> <span class="pill ok">Đã chốt: ĐÓNG SAU OC-1/OC-2</span> <span class="car">CẦN XE</span>.</li>
+<li><b>OQ9</b> — Thẻ CHƯA TỪNG hiện <b>ngay</b> (trước hộp hệ thống 1,5 s, để giải thích) hay chỉ sau khi hộp bị bỏ qua? — <span class="muted">Đề xuất: ngay.</span> <span class="pill ok">Đã chốt: như Pass 1 ghi</span> — chế độ dự phòng chỉ biết “chưa từng” SAU phép đo F4 đầu tiên ⇒ thẻ hiện sau lượt F4 đó (§9 sai lệch (b)); “hiện ngay” chỉ làm được ở chế độ dò im lặng (chờ OQ4).</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>8. References</h2>
+<ul>
+<li><b>Mã</b> (<code>e28ed08</code>):
+  <ul>
+  <li>Kênh và cổng F4: <code>FirstOpenApprovalPolicy.kt</code> · <code>ShellChannelGate.kt</code> · <code>KachiHomeActivity.kt:197-338, 367-412</code> · <code>KachiHomeWiring.kt:389-397, 442-492</code> · <code>ShellTransport.kt</code></li>
+  <li>Transport dadb: <code>LocalDeviceShell.kt</code> · <code>LocalShellRetryPolicy.kt</code> · <code>AdbKeys.kt</code></li>
+  <li>Tiến trình và phím: <code>KachiApplication.kt</code> · <code>A11yLifecycleHeal.kt</code> · <code>NavConnect.kt:84, 150-260</code> · <code>PermissionPreflight.kt:284-294</code></li>
+  <li>Ô và cửa sổ nổi: <code>LauncherWindows.kt:148-202</code> · <code>KachiHomeSlots.kt</code> · <code>WorkspaceView.kt:355-368</code> · <code>WorkspaceViewCards.kt:74-104</code> · <code>FloatingLedgerStore.kt</code></li>
+  <li>Quyền và cập nhật: <code>LauncherRequirements.kt:215-251</code> · <code>UpdateChecker.kt:221-252</code></li>
+  </ul></li>
+<li><b>AOSP</b> <code>android-10.0.0_r47</code>:
+  <ul>
+  <li><code>system/core/adb/adb.cpp:327-363</code> · <code>adb/daemon/auth.cpp:130-142, 169-185, 220-235, 262-282</code></li>
+  <li><code>services/core/java/com/android/server/adb/AdbDebuggingManager.java:388-437, 461-475, 573-613, 1009-1027, 1123-1141</code></li>
+  <li><code>Settings.java:12393, 12406-12407</code> · <code>SystemUI/AndroidManifest.xml:413-418</code> · <code>UsbDebuggingActivity.java:62-64, 117-167</code></li>
+  </ul></li>
+<li><b>AOSP</b> <code>android-12.0.0_r34</code>: <code>packages/modules/adb/adb.cpp:392-432</code> · <code>daemon/auth.cpp:284-298</code> · <code>AdbDebuggingManager.java:2168, 2273, 2283-2295</code> (theo báo cáo điều tra).</li>
+<li><b>dadb 2.0.0</b> (<code>javap -c</code>): <code>AdbConnection$Companion.connect(AdbReader, AdbWriter, AdbKeyPair, Closeable)</code> · <code>AdbWriter.writeConnect</code> · <code>AdbKeyPair.signPayload$dadb</code> · <code>AdbKeyPair$Companion.read</code> (<code>dadb.PKCS8</code>).</li>
+<li><b>Spec liên quan</b>: <a href="kachi-283-key-heal-acc-off.html"><code>kachi-283-key-heal-acc-off.html</code></a> (3 lớp phím, R-A2, D-1, D-10) · <a href="kachi-profile-switch-slots.html"><code>kachi-profile-switch-slots.html</code></a> (R-B1, OQ-7) · <a href="kachi-permission-preflight.html"><code>kachi-permission-preflight.html</code></a> (P8/B1).</li>
+<li><b>Diagnostics</b>: <a href="../diagnostics/carlog-kachi-20260914-2044/"><code>diagnostics/carlog-kachi-20260914-2044/</code></a> (F4, <code>authWindow</code>) · <a href="../diagnostics/oncar-2026-09-29-findings.md"><code>diagnostics/oncar-2026-09-29-findings.md</code></a>.</li>
+<li><b>Ngoài repo</b> (chỉ ghi tên): thư mục bằng chứng <code>oncar-0929/</code> (<code>c1-logcat-112312.txt</code>, <code>c2-logcat-113538.txt</code>, <code>usage-cycle1.log</code>, <code>usage-cycle2.log</code>) · báo cáo điều tra chỉ-đọc 01/10 và bản AOSP đã fetch (<code>ready-at-home/</code>).</li>
+<li><b>Context7</b>: <code>/websites/tangoadb_dev</code> (credential store, xác thực). Maven Central <code>dev/mobile/dadb/maven-metadata.xml</code>.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi <b>ngay khi code</b> (R2.6 <code>documentation-and-backlog.md</code>): quyết định · trade-off · sai lệch spec · bug và cách xử · “spec không work → đổi X”, kèm ngày và file:line. Quyết định kiến trúc xuyên suốt ⇒ mở ADR ở <code>docs/decisions/</code>.</p>
+<h3>Pass 1 — 2026-10-02 · chế độ DỰ PHÒNG (chỉ dấu bền)</h3>
+<p><b>Phạm vi đã làm.</b> R1 · R2 · R3 theo cột “chế độ dự phòng” của §4.4.3 và §4.6. <b>Không</b> có mã cho dò im lặng (§4.3 / T2): T0a/T0b chưa chạy, CLAUDE.md §14 cấm viết tầng 2–4 cho một cơ chế chưa có bằng chứng shell thô. Máy ảo <code>clusternav10</code> là <code>ro.adb.secure=0</code> nên không dựng được ca “khoá lạ” cho T0a <span class="ev m">[ĐO <code>getprop ro.adb.secure</code> = 0]</span>.</p>
+
+<p><b>Luồng mã (tóm tắt).</b></p>
+<div class="tbl"><table>
+<tr><th>Bước</th><th>Ở đâu</th><th>Ghi chú</th></tr>
+<tr><td>Móc cổng thi hành, không I/O</td><td><code>KachiApplication.onCreate</code> → <code>ShellReadiness.install</code> (TRƯỚC <code>A11yLifecycleHeal.install</code>)</td><td>Phiên tự chữa đầu tiên của lớp 1 có thể chạy ngay dòng sau ⇒ cổng phải có mặt trước. Pha khởi đầu <code>STARTING</code> ⇒ đường nền CHỜ (≤ 8 s, luồng nền) tới khi lượt sớm quyết.</td></tr>
+<tr><td>Lượt sớm</td><td><code>EarlyShellChannel.start</code> = dòng cuối <code>onCreate</code>; luồng <code>kachi-ready</code></td><td>Dấu tươi ⇒ <code>CHECKING</code> → <code>ShellApprovalProbe.probe</code> (PROBE, phiên rời 6 s) → UP / THU HỒI (xoá dấu, không thử lại) / môi trường (thử 3 lần 1 s–2 s). Không dấu ⇒ <code>UNKNOWN</code>, chờ F4. <code>finally</code> không bao giờ để kênh kẹt ở STARTING/CHECKING.</td></tr>
+<tr><td>Ba cửa</td><td><code>LocalShellSessions.run</code> · <code>LocalDeviceShell.installApk</code> · <code>ShellTransport.exec</code></td><td>Bị chặn ⇒ <code>NOT_APPROVED</code> / <code>ShellNotApprovedException</code>, KHÔNG mở socket. Đường HỎI (<code>mayPromptUser</code>): <code>FirstOpenApproval.PROBE</code>, <code>AWAIT_ADB_APPROVAL</code>, <code>USER_READ_CAP</code> (nút <i>Kiểm tra / Sửa ngay</i>, R1.1). Kết quả phiên báo ngược: bắt tay xong ⇒ UP + <code>markUp</code>; phiên HỎI hỏng ở bắt tay với <code>AWAITING_APPROVAL/AUTH_REJECTED</code> ⇒ THU HỒI + <code>forget</code>.</td></tr>
+<tr><td>HOME</td><td><code>ShellChannelGate.adopt()</code> từ <code>arm</code>/<code>onShown</code>/<code>onFocus</code> + bên nghe <code>ReadyAtHomeWiring</code></td><td>Đòi UP + khung đã vẽ + màn hiện + <code>isInteractive</code> + chưa nhận + không có lượt F4 đang bay. Trước <code>onChannelUp</code>: <code>KeyReady.holdTileIfEscalating</code>. F4 dò qua <code>probeForHome</code>: lượt sớm đang bay ⇒ chờ; đã UP ⇒ không dò lại.</td></tr>
+<tr><td>Phím</td><td><code>KeyReady.prepare</code> (chuỗi SẴN, mỗi lần thức một lượt) · <code>A11yLifecycleHeal.moXePending/awaitMoXeVerdict</code></td><td>Binder → chờ lớp 2 (≤ 8 s) → <code>NavConnect.grantAccessibility</code> (hàm B1). Lớp 2 “sắp xét” = luật thuần <code>KeyReadyPlan.layer2Expected</code> (tiến trình bật lúc màn tắt, chưa thấy SCREEN_ON, lần thức kế là mở xe) — vì HOME có thể hiện TRƯỚC broadcast [ĐO xe c2 + máy ảo].</td></tr>
+<tr><td>R1.3</td><td><code>LauncherWindows.placeApp</code> → <code>ShellAccessUi.slotTap</code></td><td>Không còn mở cửa sổ nổi ở ca nào. Đang dò ⇒ ô “Đang kết nối…”, chờ ≤ 10 s; đã đo là không có ⇒ thẻ. Lời nhắc ở <code>castFull/Left/Right</code>, <code>setGeometryDensity</code>, <code>setDefaultHome</code>.</td></tr>
+</table></div>
+
+<p><b>Sai lệch so với bản thiết kế (có chủ đích).</b></p>
+<ol>
+<li><b>Module.</b> <code>ShellReadinessPolicy</code>, <code>ShellApprovalLedger</code>, <code>LocalShellAdmission</code> ở <code>:core</code> (không phải <code>:car-integration</code>): <code>LayeringRulesTest.moi file trong car-integration phai that su dung dadb</code> đỏ khi để ở đó <span class="ev m">[ĐO 01/10 23:4x]</span>. Enum <code>LocalShellFailure</code> (thuần) dời sang <code>:core</code> cùng package — không đổi một tham chiếu nào; <code>LocalShellFailures.classify</code> (đọc ngoại lệ dadb) ở lại.</li>
+<li><b>Dấu bền mã hoá <code>key=value;…</code></b> thay JSON (<code>:core</code> không có <code>org.json</code>). Thêm dạng “bia mộ” <code>v=1;lost=&lt;ms&gt;</code> để phân biệt MẤT DUYỆT với CHƯA TỪNG sau khi xoá dấu.</li>
+<li><b>Thẻ CHƯA TỪNG chỉ hiện SAU phép đo F4 đầu tiên</b> (OQ9 không làm được ở chế độ dự phòng): không có dấu ≠ chưa từng duyệt — bản nâng cấp từ 2.84 lên cũng không có dấu. Trước phép đo, ô ghi “Đang kết nối…”. Thẻ tự hiện đòi thêm <b>màn tương tác</b> <span class="ev m">[ĐO máy ảo 01/10 23:57:12 — cửa sổ HOME vẫn “có tiêu điểm” lúc màn tắt, thẻ tiêu lượt “một lần” lúc xe tắt máy]</span> và hỏi lại 2,5 s sau mỗi lần HOME hiện / lấy lại tiêu điểm (không nháy thẻ ngay sau khi người dùng vừa bấm Cho phép).</li>
+<li><b><code>KachiAutostart</code> chờ phép đo kênh ≤ 60 s</b> (<code>ShellReadiness.awaitMeasured</code>): lượt nâng cấp ĐẦU lên bản có cổng chưa có dấu ⇒ cổng chặn <code>set-home-activity</code>/<code>am start</code> của lượt <code>MY_PACKAGE_REPLACED</code> <span class="ev m">[ĐO máy ảo 01/10 23:50:43 “set Kachi as HOME activity (was unresolved)” bị chặn]</span>. Sau vá: <span class="ev m">[ĐO 23:52:48]</span> “shell channel before boot run: UP” rồi mới đặt HOME. <code>VietMapAutostart</code>/<code>BootSetup</code> KHÔNG được thêm chờ: ở lượt nâng cấp đầu chúng bị chặn một lần (giới hạn đã biết, chỉ một lần sau OTA).</li>
+<li><b>Mốc màn bật</b> = tín hiệu sớm nhất trong (<code>ACTION_SCREEN_ON</code>, HOME nhận kênh) — <span class="ev m">[ĐO máy ảo]</span> <code>home adopt</code> 23:53:30.034 đi trước <code>screen_on</code> 23:53:30.444; chuỗi SẴN (kiểm phím) chạy ngay lúc HOME nhận kênh (<code>EarlyShellChannel.homeVisible</code>).</li>
+<li><b>Chuỗi SẴN không chạy lúc màn tắt</b> (keep-alive + watchdog chỉ khởi khi màn tương tác): lúc tắt máy lớp 1 của 2.83 là chủ việc phím — không chen toggle vào khoảng 5 s xác nhận kẹt của nó.</li>
+<li><b><code>ShellApprovalProbe.probeForHome</code></b> (mới, F4 dùng): chờ lượt sớm đang bay thay vì mở kết nối thứ hai; thân <code>probe()</code> không đổi.</li>
+<li><code>WorkspaceView.kt</code> (499 dòng) không đổi: điều kiện <code>tapHint</code> giữ nguyên, chữ đổi trong <code>WorkspaceViewCards.appCard</code> (tự cập nhật theo trạng thái kênh).</li>
+</ol>
+
+<p><b>Kiểm off-car</b> <span class="ev m">[ĐO 02/10 00:03]</span>: <code>./gradlew testDebugUnitTest test lint lintRelease assembleRelease :app:assembleVehicleTest --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL · <code>scripts/count-tests.py</code> 6 812 test / 0 hỏng / 0 lỗi (778 XML; <code>test</code> gốc chạy test <code>:app</code> cho cả ba biến thể) · lint debug + release <b>0 lỗi</b>, 533 cảnh báo · APK <code>app/build/outputs/apk/release/app-release.apk</code> (44 176 013 B) và <code>…/vehicleTest/app-vehicleTest.apk</code>. Test mới: <code>ShellReadinessPolicyTest</code> 16 · <code>KeyReadyPlanTest</code> 4 · <code>LocalShellAdmissionTest</code> 6 · <code>ReadyAtHomeWiringContractTest</code> 11. Bài canh ĐỔI có chủ đích theo hướng chặt hơn (R1.3): <code>FloatingWiringContractTest</code> (R-B2 → “chạm tay KHÔNG mở cửa sổ nổi”; R-B1 → chữ tình trạng kênh), <code>OpenAppWiringContractTest</code> (U2 → không đặt khung, không mở mới). <code>ShellApprovalWiringContractTest</code> không đổi một dòng.</p>
+
+<p><b>Phá thử 9 mắt xích</b> <span class="ev m">[ĐO 02/10, script tự khôi phục]</span> — mỗi mắt xích đỏ đúng bài: M1 bỏ cổng ở <code>LocalShellSessions.run</code> (3 bài) · M2 nối sớm khi chưa có dấu · M3 <code>adopt</code> bỏ màn tương tác · M4 <code>placeApp</code> mở lại cửa sổ nổi (4 bài) · M5 gắn ô trước khi kiểm phím · M6 AWAITING lượt sớm lại thử lại · M7 lượt sớm không còn dòng cuối · M8 lỗi sau khi gửi lệnh cũng xoá dấu · M9 chưa đo + không dấu vẫn cho đường nền.</p>
+
+<p><b>E2E máy ảo</b> (Android 10 <code>clusternav10</code>, bản <code>vehicleTest</code> cài <code>install -r</code>, giết kiểu BYD = <code>killApplication</code> uid system như E2E 2.83; giờ theo logcat máy ảo):</p>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>Kết quả</th><th>Bằng chứng</th></tr>
+<tr><td>Nâng cấp đầu (chưa có dấu)</td><td>✅</td><td>23:50:42 <code>plan=GATE_NEVER -> gate(F4)</code>; đường nền bị chặn, 0 kết nối; F4 23:50:45 <code>up</code> + <code>ledger markUp</code>; ô có màn ảo +3,4 s sau tiến trình</td></tr>
+<tr><td><b>E1</b> đã duyệt, giết lúc màn tắt</td><td>✅ ×2 · ⚠ ×1</td><td>tiến trình mới <code>interactive=false</code> → <code>up</code> +0,33…0,38 s (dò 71–92 ms); 0 dòng <code>tile</code> lúc màn tắt; <code>summary screen_on->tile=321</code> và <code>=257</code> ms (mục tiêu ≤ 1 500; baseline xe 5 900); 0 <code>home f4</code>. Lượt ⚠: HOME không được dựng lại ngay sau lượt giết (tiến trình lên lại ~10 s nhờ dịch vụ) — đúng quan sát phụ (1) của E2E 2.83 khi có stack <code>standard</code> KachiHomeActivity nằm dưới nhà; không do bản vá này <span class="ev s">[SUY]</span></td></tr>
+<tr><td><b>E2</b> kẹt phím (lượt cuối, 00:06)</td><td>✅</td><td><code>home adopt</code> 00:06:09.18 → <code>keys=HOLD(301)->VERDICT</code> → lớp 2 force-stop 00:06:09.53 → tiến trình mới <code>keys=SKIP_OWN_HEAL</code> → HOME nhận kênh → <code>keys=BOUND</code>, ô +318 ms. <code>am_create_activity</code> của app ô sau lần mở xe: <b>một</b> lần (00:06:27.169)</td></tr>
+<tr><td><b>E3</b> MẤT DUYỆT</td><td>✅</td><td>adbd CÂM giả (<code>adb reverse tcp:5555 tcp:5556</code> + máy chủ TCP không trả lời): lượt sớm 6,17 s → <code>AWAITING_APPROVAL</code> → <code>ledger forget</code> (bia mộ <code>v=1;lost=…</code>) → <code>needs lost</code>; lớp 1 <code>NOT_APPROVED</code> (không nối); máy chủ câm chỉ nhận kết nối của lượt sớm + F4 (31 byte = <code>CNXN</code>, không gói khoá nào). Thẻ MẤT DUYỆT + dải F4; ô “Cần cấp quyền”; chạm ô ⇒ thẻ, <b>0 stack freeform</b>, dòng <code>KachiFloat … không mở cửa sổ nổi</code>; trả kênh + <i>Hỏi lại</i> ⇒ <code>up</code> + <code>markUp</code>, thẻ + dải biến mất, VietMap vào ô</td></tr>
+<tr><td><b>E3</b> CHƯA TỪNG</td><td>✅</td><td>xoá dấu + adbd câm: <code>GATE_NEVER</code> → nền bị chặn → F4 (1 kết nối) → <code>needs never</code> → thẻ CHƯA TỪNG</td></tr>
+<tr><td><b>E4</b> chạm ô lúc CHECKING</td><td>⏸</td><td>chưa dựng được độ trễ dò có kiểm soát; luật khoá bằng <code>ShellReadinessPolicyTest.da duyet ma kenh chua len…</code></td></tr>
+<tr><td><b>V-reg</b></td><td>⚠ 1 crash KHÔNG thuộc mã này</td><td>23:54:49 <code>NullPointerException</code> trong <code>ActivityThread.handleBindApplication</code> (trước <code>Application.onCreate</code>) đúng lúc <code>install -r</code> thay gói — đua của framework khi cập nhật gói <span class="ev s">[SUY]</span>; 0 ANR</td></tr>
+</table></div>
+
+<p><b>Còn mở / cần owner:</b> T0a/T0b (dò im lặng) · E4 · OC-0…OC-5 trên xe · review Opus + quét bảo mật (T13) · <code>project-context.md</code> (T15). Ảnh + log E2E ở thư mục bằng chứng ngoài repo <code>ready-at-home/e2e/</code> của phiên.</p>
+
+<h3>Pass 2 — 2026-10-02 · ân hạn khởi động (R2.7) — vá lỗi còn lại của E2E ca 1</h3>
+<p><b>Bằng chứng gốc</b> <span class="ev m">[ĐO E2E máy ảo R2 ca 1, <code>R2-logcat-stream.txt</code>]</span>: giết kiểu BYD 00:14:56.473 lúc màn bật ⇒ tiến trình mới 56.645 <code>tương tác=true</code> ⇒ <code>A11yLifecycle: khởi động tiến trình (tương tác=true) → không mở lượt tắt-máy</code> ⇒ không có <code>ACTION_SCREEN_ON</code> mới ⇒ đường duy nhất còn lại là grant (RUNNING) ⇒ <code>force-rebind xong: bound=false</code> 15:06.372 → <code>nấc NONE, KHÔNG leo</code>; dumpsys <code>Bound {}</code>, Kachi trong <code>Binding</code> ≈ 70 s.</p>
+<div class="tbl"><table>
+<tr><th>Tệp</th><th>Thay đổi</th></tr>
+<tr><td><code>core/…/navaccess/AccessibilityHealGates.kt</code> (346 → 430)</td><td><code>HealPhase.KHOI_DONG</code>; <code>healStep</code> KHOI_DONG ⇒ FORCE_STOP (cùng cổng <code>wanted</code>); <code>lifecycleFireAllowed</code> KHOI_DONG = màn sáng + <code>withinBootGrace</code>; mới: <code>OWN_HEAL_WINDOW_MS</code> (2 ph, một nguồn với cửa sổ chấm điểm), <code>BOOT_GRACE_MS</code> (20 s), <code>withinBootGrace</code>, <code>bootGraceMayRun</code>, <code>ownHealChild</code>, <code>autoFireAllowed</code></td></tr>
+<tr><td><code>core/…/navaccess/A11yBindJournal.kt</code></td><td><code>NOTE_KHOI_DONG = "khoi-dong"</code> + nhánh <code>grantNote</code></td></tr>
+<tr><td><code>core/…/navaccess/KeyReadyPlan.kt</code></td><td>KDoc bước 3 (chờ cả lượt khởi động); <code>LATE_BIND_WATCH_MS</code> 10 s · <code>LATE_BIND_POLL_MS</code> 1 s</td></tr>
+<tr><td><code>app/…/A11yLifecycleHeal.kt</code> (408 → 466)</td><td><code>install</code>: <code>bootGraceBusy</code> + lượt <code>onBootGrace</code> xếp SAU <code>onProcessStart</code> (không đổi); <code>onBootGrace</code>: đọc mốc tiến trình trước → ghi mốc mình → <code>ownHealChild</code> → <code>bootGraceMayRun</code> → <code>withinBootGrace</code> → <code>healIfStuck(KHOI_DONG)</code>; <code>moXePending</code> gồm <code>bootGraceBusy</code>; <code>healIfStuck</code> ghi <code>keys=STUCK(…)-&gt;ESCALATE</code> / <code>-&gt;kết quả</code>; <code>scoreAfterHeal</code> ghi <code>keys=HEALED-&gt;…</code>; <code>AFTER_HEAL_WINDOW_MS = OWN_HEAL_WINDOW_MS</code></td></tr>
+<tr><td><code>app/…/NavConnect.kt</code> (483 → 489)</td><td><code>escalateIfStuck</code>: <code>val marked = Prefs.setA11yEscalatedAt(…)</code>; <code>autoFireAllowed(userAsked, marked)</code> sai ⇒ không bắn</td></tr>
+<tr><td><code>app/…/PrefsA11yLifecycle.kt</code></td><td>mốc mới <code>a11y_proc_start_elapsed</code> (<code>commit()</code>)</td></tr>
+<tr><td><code>app/…/KeyReady.kt</code></td><td><code>confirmLateBind</code>: sau <code>GRANT-&gt;NOT_BOUND</code> hỏi binder ≤ 10 s (chỉ đọc, luồng daemon) ⇒ <code>GRANT-&gt;BOUND(late)</code></td></tr>
+<tr><td><code>app/…/testbridge/TestBridgeA11yLog.kt</code></td><td>trường đọc <code>a11y_proc_start_elapsed</code> (chỉ đọc)</td></tr>
+<tr><td>Test mới</td><td><code>core/…/A11yBootGraceGatesTest.kt</code> (9: bảng cổng vào · bảng con của lượt chữa · ngoài ân hạn không leo + RUNNING giữ nguyên · nấc + cổng <code>wanted</code> · hằng số · marker · bảng quyết định 15 hàng pha × ân hạn × mốc × kết quả đo trên dump xe 29/09 · chuỗi E2E không vòng lặp · ghi chú nhật ký) · <code>app/…/A11yBootGraceWiringContractTest.kt</code> (9, <code>SourceRoots.body</code>) · <code>KeyReadyPlanTest</code> +1</td></tr>
+</table></div>
+<p><b>Spec không work → đổi</b> <span class="ev m">[ĐO E2E 01:51:43–:54]</span>: bản đầu chặn ân hạn khởi động bằng cửa sổ thuần “mốc leo &lt; 2 ph”. Lần BYD giết thứ hai 61 s sau một lượt chữa ⇒ <code>ân hạn khởi động: không mở</code> ⇒ <code>nấc NONE, KHÔNG leo</code> ⇒ phím chết — trái 2.83 R-A4 (<i>“bị giết từ bên ngoài ⇒ được leo một lần”</i>) và trái “trong cùng sự kiện” của lệnh. Đổi sang <code>ownHealChild</code>: chỉ tiến trình ĐẦU TIÊN sau mốc leo (claim chấm điểm <code>commit()</code>) là con; claim hỏng ⇒ coi là con (fail-safe). Phá thử M1/M8/M9 khoá cả ba nhánh.</p>
+<p><b>Thêm ngoài dự kiến</b> <span class="ev m">[ĐO E2E 01:45:25.824]</span>: <code>keys=GRANT-&gt;NOT_BOUND</code> trong khi phím gắn 1,7 s sau (lượt cấp của chuỗi thua single-flight). Lệnh yêu cầu “dòng KeyReady/Chẩn đoán phản ánh kết quả thật” ⇒ <code>confirmLateBind</code> (chỉ đọc binder) — không đổi API <code>NavConnect</code>.</p>
+<p><b>E2E máy ảo</b> <code>emulator-5554</code> (Android 10, <code>ro.adb.secure=0</code>), bản release vc185 (cùng khoá), cài <code>install -r</code> 01:58:00; giết kiểu BYD = <code>su 1000 service call activity 83 s16 com.byd.launcher i32 10163 i32 0 s16 &lt;lý do&gt;</code> (<code>killApplication</code>, không <code>PACKAGE_RESTARTED</code>). Logcat đầy đủ: thư mục bằng chứng ngoài repo <code>scratchpad/ready-at-home/e2e3/logcat.txt</code> + <code>marks.txt</code>.</p>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>KQ</th><th>Bằng chứng <span class="ev m">[ĐO]</span></th></tr>
+<tr><td><b>1</b> · giết lúc màn BẬT</td><td>✅</td><td>giết 01:58:43.097 → tiến trình 3284 lúc 43.186 → <code>STUCK note=khoi-dong</code> 43.838 → <code>home adopt</code> 44.090 (ô GIỮ, 0 dòng <code>tile</code> trong tiến trình này) → <code>keys=STUCK(khoi-dong)-&gt;ESCALATE</code> 49.107 → <code>pha=KHOI_DONG → tự force-stop</code> 49.478 (<code>không app khách=true, ô của mình=[]</code>) → tiến trình 3526 lúc 49.603: <code>ân hạn khởi động: không mở (… con của lượt chữa=true)</code> → <code>keys=SKIP_OWN_HEAL</code> → <code>tile</code> 50.792 (<code>summary screen_on-&gt;tile=660</code>) → VietMap <code>am_create_activity</code> MỘT lần 52.594 → <code>BOUND note=sau-chua-ON</code> 55.412 (<b>12,3 s</b> sau lần giết; trước bản vá ≈ 70 s) → <code>keys=HEALED-&gt;BOUND</code> 59:04.474. Đúng MỘT lần force-stop do Kachi.</td></tr>
+<tr><td><b>1b</b> · giết lần hai 27 s sau lượt chữa</td><td>✅</td><td>giết 01:59:16.584 → 4133: <code>STUCK khoi-dong</code> 17.427 → <code>ESCALATE</code> 22.524 → force-stop 22.922 → 4316: <code>con của lượt chữa=true</code>, <code>SKIP_OWN_HEAL</code> → <code>tile</code> 24.225 → VietMap một lần 25.923 → <code>BOUND sau-chua-ON</code> 28.889 (12,3 s) → <code>HEALED-&gt;BOUND</code></td></tr>
+<tr><td><b>2</b> · màn tắt rồi giết (lớp 1, hồi quy)</td><td>✅</td><td>ngủ 01:59:49 → giết 50.846 → 4986 <code>interactive=false</code> → <code>STUCK note=tat-may</code> → <code>ESCALATE</code> 56.355 → <code>pha=TAT_MAY</code> force-stop → 5212 <code>tương tác=false</code>, <code>con của lượt chữa=true</code> → <code>HEALED-&gt;BOUND</code> 02:00:11.981; 0 dòng <code>tile</code> lúc màn tắt. Bật màn 02:00:25.6 → <code>keys=BOUND</code> → <code>mo-xe: không kẹt</code> → <code>tile</code> 26.099 (<code>screen_on-&gt;tile=264</code>) → VietMap 27.476</td></tr>
+<tr><td><b>Nâng cấp</b> · <code>install -r</code></td><td>✅</td><td><code>installPackageLI</code> 01:58:00.962 → tiến trình trung gian bị “pkg removed” giết 03.962 → 2254: lần đo đầu kẹt, lần hai <code>bound=true</code> ⇒ <code>khoi-dong: kẹt KHÔNG bền → không leo</code>; <code>keys=HOLD(4718)-&gt;VERDICT</code>, <code>keys=BOUND(after-layer2)</code>, <code>screen_on-&gt;tile=7315</code> (giá một lần mỗi lượt cài)</td></tr>
+<tr><td><b>V-reg</b></td><td>✅</td><td>0 <code>FATAL EXCEPTION | ANR in com.byd | KachiCrash</code> từ 01:58:00; <code>logcat -b crash</code> 0 dòng launcher; 0 stack freeform (<code>am stack list</code>); dumpsys cuối <code>Bound</code> có Kachi, <code>Binding {}</code></td></tr>
+</table></div>
+<p><b>Không kiểm được trên máy ảo / cần xe</b>: BYD có giết Kachi lúc màn ĐANG bật không <span class="ev u">[CHƯA BIẾT]</span> — [ĐO xe 29/09] mọi lượt giết đã thấy là lúc tắt máy (màn đã tắt); cơ chế vẫn có ích cho crash/OOM/nâng cấp lúc màn sáng. Thời gian bắn trên xe ≈ +8…10 s <span class="ev s">[SUY]</span> — đo ở OC-4 bằng dòng <code>keys=STUCK(khoi-dong)-&gt;ESCALATE</code>.</p>
+<p><b>Kiểm off-car</b> <span class="ev m">[ĐO 02/10 01:56]</span>: <code>testDebugUnitTest test lint lintRelease assembleRelease --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL · <code>count-tests.py</code> <b>6 859 / 0 hỏng / 0 lỗi</b> (781 XML; +28 so với 6 831) · lint debug + release <b>0 lỗi</b>, 534 cảnh báo (+1 <code>UseKtx</code> ở <code>PrefsA11yLifecycle.kt:57</code>, cùng mẫu ba hàm anh em: <code>edit(commit = true) {}</code> của KTX trả <code>Unit</code>, mất kết quả <code>commit()</code> mà chốt fail-safe cần) · phá thử 10 mắt xích ⇒ 10/10 đỏ đúng bài, khôi phục <code>cmp</code> khớp (§10 Pass 4) · mọi tệp sửa ≤ 500 dòng · grep call site: <code>onBootGrace</code> ← <code>install</code>; <code>bootGraceMayRun</code>/<code>ownHealChild</code>/<code>withinBootGrace</code> ← <code>onBootGrace</code>; <code>autoFireAllowed</code> ← <code>escalateIfStuck</code>; <code>a11yProcStartAt</code> ← <code>onBootGrace</code> + cầu kiểm thử; <code>confirmLateBind</code> ← <code>KeyReady.prepare</code>. APK <code>app/build/outputs/apk/release/app-release.apk</code> vc185 / 2.84 (không bump — chưa báo APK cho người dùng), sha256 <code>bd48c8d5…b97c</code>.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════════════════════════ -->
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi lượt review thêm mục <code>Pass N — YYYY-MM-DD</code>, gắn [P0]–[P3], ghi bản vá + kết quả test + verdict.</p>
+<h3>Pass 1 — 2026-10-02 · senior review (Opus) · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> toàn bộ <code>git diff</code> + 17 tệp mới, spec này, báo cáo E2E máy ảo (<code>R2-*</code>). Trọng tâm: không nối từ nền khi chưa có dấu · thu hồi ⇒ xoá dấu, về F4, không vòng lặp · không vòng nối dày · 3 lớp phím 2.83 không chạy hai lần · tính năng cần kênh bị chặn sạch · hàng đợi chạm ô có hạn · DL5/A12.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P2]</td><td>E2E ca 1: <code>KeyReady</code> in <code>keys=GRANT</code> lúc lượt cấp VỪA BẮT ĐẦU; kết quả thật NOT_BOUND (kẹt, pha RUNNING không leo — luật 2.83) không bao giờ tới nhật ký/màn Chẩn đoán ⇒ phím chết mà nhật ký nói như đã cấp</td><td><code>KeyReady.prepare</code>: nhãn <code>GRANT(pending)</code> rồi <code>grantAccessibilityDetailed</code> ghi <code>keys=GRANT-&gt;BOUND|NOT_BOUND|DADB_FAILED|RESTARTING</code> khi xong; <code>summaryForDiag</code> thêm <code>keys(now)=</code></td></tr>
+<tr><td>2</td><td>[P2]</td><td>Màn đã nối dây (<code>channelUp</code>) mà kênh mức tiến trình rơi khỏi UP (một phiên HỎI sau đó — phím mic — hỏng ở bắt tay ⇒ THU HỒI) ⇒ thẻ MẤT DUYỆT hiện nhưng <i>Hỏi lại</i> → <code>retryNow</code> → <code>attempt</code> thoát ở <code>channelUp</code> ⇒ nút CHẾT tới khi tiến trình chết</td><td><code>retryNow</code> nhánh <code>channelUp</code>: <code>ShellApprovalProbe.askUser</code> (phiên <code>USER_READ_CAP</code>, 30 s, nhãn <code>ask</code>), KHÔNG chạy lại <code>onChannelUp</code></td></tr>
+<tr><td>3</td><td>[P3]</td><td>E2E ca 3a: cổng 5555 đóng + không dấu tươi ⇒ đường nền bị chặn mà F4 không hẹn lượt sau ⇒ trả cổng xong vẫn phải bấm tay (trước bản vá đường nền tự nối)</td><td>Luật thuần <code>envReprobeMs</code>: CHỈ <code>PORT_CLOSED</code> + không dấu tươi ⇒ F4 hẹn lại 20 s (không kết nối tới adbd ⇒ không thể dựng hộp; <code>AUTH_REJECTED</code> không hỏi lại)</td></tr>
+<tr><td>4</td><td>[P3]</td><td>Câu <code>kachi_access_env_body</code> nói "Kachi đã thử lại" — sai ở đường không dấu (chỉ một lượt F4)</td><td>vi/en: "Cổng gỡ lỗi của xe chưa sẵn sàng. Bấm Thử lại sau ít giây." (+ bảng §4.9)</td></tr>
+<tr><td>5</td><td>[P3]</td><td>F4 xếp <code>AUTH_REJECTED</code> vào MÔI TRƯỜNG ⇒ <code>next</code> hạ NEEDS_APPROVAL (do chính phiên dò đó báo THU HỒI) xuống ENVIRONMENT ⇒ người vừa bấm Từ chối thấy "cổng chưa sẵn sàng", ô ghi "Chưa có kênh"</td><td><code>ShellReadinessPolicy.next</code>: lý do loại DUYỆT không hạ CẦN DUYỆT; test bảng</td></tr>
+<tr><td>6</td><td>[P3]</td><td>E2E: <code>up src=</code> là tên luồng (<code>kachi-ready</code>, <code>pool-1-thread-1</code>), không phải <code>early</code>/<code>f4</code> (§4.10)</td><td><code>LocalShellAdmission.labeled(src)</code> (ThreadLocal) ở lượt sớm, F4, <i>Hỏi lại</i>; test nhãn tự gỡ</td></tr>
+<tr><td>7</td><td>[P3]</td><td>E2E ca 3b: thẻ biến mất tức thì khi kênh tự lên ⇒ cú chạm <i>Hỏi lại</i> đang tới rơi xuống ô đồng hồ</td><td><code>fadeOutCard</code> 700 ms — khung vẫn nhận chạm lúc mờ</td></tr>
+<tr><td>8</td><td>[P3]</td><td>Tiết chế dòng <code>deny</code> theo tên luồng: <code>NavConnect</code> dựng <code>Thread-N</code> mới mỗi lượt ⇒ bản đồ phình theo giờ chạy, tiết chế vô hiệu · <code>ShellAccessUi.embeddedNow</code> giữ <code>LauncherWindows</code> của màn đã huỷ · hai chú thích XML mồ côi sau khi gỡ <code>kachi_slot_tap_to_open</code></td><td>khoá tiết chế bỏ số + trần 64 · <code>detach</code> trả lambda · gỡ chú thích</td></tr>
+</table></div>
+<p><b>Không sửa (có lý do):</b> E2E [P3] "thẻ che chữ ô 0" — thẻ nói cùng việc và có <i>Để sau</i>; vị trí là OQ2 của owner. Ngoài phạm vi: ô dựng → app mở ≈ 1,4 s (<code>VdAppHost</code> không đổi) · đồng hồ widget đứng trên máy ảo.</p>
+<p><b>Cần owner / đo trên xe:</b> (a) phím kẹt ở pha RUNNING (tiến trình bật lúc màn SÁNG) — luật 2.83 không tự leo; nay nhật ký nói đúng nhưng người lái chưa được báo — có hiện gợi ý "Sửa ngay" không? (b) <span class="ev u">[CHƯA BIẾT]</span> giờ tường lúc nổ máy: nếu đầu xe khởi động với giờ lùi, <code>fresh()</code> trả không tươi ⇒ lượt sớm KHÔNG nối (dòng <code>early … plan=GATE_STALE</code>) — đo ở OC-1. (c) <span class="ev s">[SUY]</span> nếu <code>isInteractive</code> còn <code>false</code> lúc HOME <code>onStart</code> khi màn bật, <code>adopt</code> lỡ và HOME đi F4 (+1,5 s) — đo ở OC-1 bằng dòng <code>home adopt</code> / <code>home f4</code>. (d) Ngày 6–7 không chạy xe (lề an toàn 24 h trước hạn 7 ngày): lượt sớm không nối ⇒ lớp 1/2 của lần nổ máy đó bị cổng chặn một lần.</p>
+<p><b>TECH FRESHNESS:</b> <code>dev.mobile:dadb</code> 2.0.0 → latest 2.0.0 <span class="ev m">[ĐO Maven Central maven-metadata.xml, lastUpdated 2026-06-22]</span> — OK; Context7 không có mục dadb <span class="ev m">[ĐO resolve 02/10: chỉ trả Jadb]</span>. Bản vá không thêm thư viện; API dùng thêm: <code>ThreadLocal</code>, <code>ViewPropertyAnimator.withEndAction</code> (API 16) — không deprecated.</p>
+<p><b>Kiểm:</b> hẹp <code>ShellReadinessPolicyTest</code> 18 · <code>LocalShellAdmissionTest</code> 7 · <code>ReadyAtHomeWiringContractTest</code> 16 · <code>ShellApprovalWiringContractTest</code> 15 (không đổi một dòng) xanh. Đầy đủ <code>testDebugUnitTest test lint lintRelease assembleRelease :app:assembleVehicleTest</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL · <code>count-tests.py</code> <b>6 825 / 0 hỏng / 0 lỗi</b> (778 XML) · lint debug + release 0 lỗi (533 cảnh báo, không đổi). Không chạy lại E2E máy ảo ở lượt này.</p>
+<p><b>SCOPE:</b> chế độ DỰ PHÒNG R1/R2/R3 ✅ có mã + nối dây + test; T2 dò im lặng ❌ có chủ đích (cổng §14, T0 chưa chạy); E4 ⏸; OC-0…OC-5 🚗; T13 quét bảo mật + <code>project-context.md</code> (T15) còn mở ⇒ INCOMPLETE theo plan đầy đủ, nhưng không có gap trong phạm vi chế độ dự phòng đã làm.</p>
+
+<h3>Pass 2 — 2026-10-02 · senior review (Opus) · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> toàn bộ <code>git diff</code> (31 tệp sửa) + 17 tệp mới, spec này (§1–§10), báo cáo E2E máy ảo <code>R2-*</code> (5 lỗi — 4 đã vá ở Pass 1, 1 giữ OQ2). Soi lại: ba cửa transport (<code>Dadb.create</code> chỉ còn ở <code>LocalShellSessions</code>/<code>installApk</code>/<code>ShellTransport</code> + công cụ CLI <code>CarExecShell</code> + T10 niêm phong) <span class="ev m">[ĐO grep]</span>; mọi phiên HỎI (<code>mayPromptUser</code>) đều do người dùng đứng trước xe: F4, lượt sớm (chỉ dấu tươi), phím mic / “Thêm gán” / <i>Kiểm tra – Sửa ngay</i> (<code>AWAIT_ADB_APPROVAL</code>), công tắc phím + <i>Sửa ngay</i> (<code>USER_READ_CAP</code> qua <code>reset = true</code> — chỉ <code>SettingsSectionsKeys</code> gọi), <i>Hỏi lại</i> <span class="ev m">[ĐO grep]</span>; BootSetup dùng <code>NONE</code> (NỀN, bị cổng chặn); <code>:tts</code>/<code>:wake</code> thoát trước <code>ShellReadiness.install</code> và không có mã dadb.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P3]</td><td>Lý do miễn dò lại của Pass 1 #3 (“có dấu tươi ⇒ đường nền tự nối khi cổng mở”) không đúng cho MÀN CHÍNH: HOME chỉ nối dây qua F4 hoặc <code>adopt</code> (khi một phiên báo UP), mà trước khi HOME nối dây không có phiên nền định kỳ nào chắc chạy — watchdog phím chỉ cấp khi binder nói CHƯA gắn; <code>scheduleWatchdog</code>/keep-alive chỉ khởi sau khi kênh lên <span class="ev m">[ĐO grep]</span>. Ca: dấu tươi + adbd TCP lên muộn hơn HOME (lượt sớm hết 3 lần thử ⇒ MÔI TRƯỜNG, F4 gặp <code>PORT_CLOSED</code>) ⇒ ô nằm “Chưa có kênh” tới khi người dùng bấm tay. Có xảy ra trên xe không <span class="ev u">[CHƯA BIẾT]</span></td><td><code>envReprobeMs(reason)</code>: <code>PORT_CLOSED</code> ⇒ 20 s bất kể dấu (dò lại cổng đóng không chạm adbd ⇒ không thể dựng hộp — cùng lý do Pass 1). Test bảng + bài canh <code>settle</code> không còn <code>ledgerFresh</code></td></tr>
+<tr><td>2</td><td>[P3]</td><td>Kênh lên ở tầng tiến trình TRONG lúc một lượt F4 đang bay (một phiên nền khác bắt tay xong): bên nghe gọi <code>adopt()</code> bị hoãn vì <code>inFlight</code> (đúng — tránh nối dây hai lần), nhưng không có sự kiện đổi trạng thái nào gọi lại; nếu lượt F4 đó trả MÔI TRƯỜNG (lỗi lệnh không hạ UP — bảng §4.5) thì HOME không nối dây tới lần <code>onStart</code>/lấy tiêu điểm kế <span class="ev s">[SUY từ mã — cửa sổ hẹp, chưa tái hiện]</span></td><td><code>settle</code> gọi <code>adopt()</code> sau mọi nhánh (đã nhả <code>inFlight</code>); ChannelUp/AwaitingUser ⇒ <code>adopt</code> tự bỏ. Bài canh mới <code>F4 tra ve thi thu nhan kenh da len trong luc no bay</code></td></tr>
+<tr><td>3</td><td>[P3]</td><td>Tài liệu: dòng INDEX <code>docs/README.md</code> của spec này vẫn ghi “chưa code, không bump” (R2.1 documentation-and-backlog: INDEX phải đúng trong cùng phiên)</td><td>Cập nhật cột trạng thái + dòng “Cập nhật” đầu INDEX</td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) thẻ do người dùng chạm một tính năng bị chặn lúc kênh còn <code>UNKNOWN</code> (chưa đo — vài giây đầu sau HOME) hiện biến thể CHƯA TỪNG dù xe có thể đã duyệt; nút <i>Hỏi lại</i> chạy F4 ngay và thẻ mờ đi khi kênh lên — chuyển tiếp ngắn, không chặn sai. (b) Một phiên HỎI (phím mic) hết 4 lần thử ở bắt tay vì adbd treo chứ không vì thu hồi ⇒ THU HỒI giả, đường nền bị chặn tới khi bấm <i>Hỏi lại</i> — đúng bảng §4.5 (lớp lý do do <code>LocalShellFailures.classify</code>, không đoán thêm). (c) <code>KachiAutostart</code> lúc dấu cũ/không có và Kachi không phải HOME mặc định: chờ ≤ 60 s rồi bị chặn, không tự đưa Kachi lên — hệ quả có chủ đích của R1.1 (không nối từ nền bằng khoá chưa chắc đã duyệt), cùng họ với mục (d) Pass 1. (d) Lượt F4 nhận kênh (không qua <code>adopt</code>) không gọi <code>KeyReady.holdTileIfEscalating</code> — chỉ xảy ra khi lượt sớm còn CHECKING lúc HOME đã có tiêu điểm + 1,5 s; lúc đó tiến trình bật khi màn sáng ⇒ lớp 2 không chờ xét.</p>
+<p><b>TECH FRESHNESS:</b> <code>dev.mobile:dadb</code> 2.0.0 → latest 2.0.0 <span class="ev m">[ĐO Maven Central maven-metadata.xml 02/10: latest = release = 2.0.0]</span> — OK; Context7 vẫn không có mục dadb <span class="ev m">[ĐO resolve 02/10: chỉ Jadb]</span>. Bản vá không thêm thư viện, không thêm API.</p>
+<p><b>Kiểm:</b> hẹp <code>ShellReadinessPolicyTest</code> 18 · <code>ReadyAtHomeWiringContractTest</code> 17 · <code>ShellApprovalWiringContractTest</code> 15 (không đổi một dòng) · <code>FloatingWiringContractTest</code> 8 · <code>OpenAppWiringContractTest</code> 12 — xanh. Đầy đủ <code>testDebugUnitTest test lint lintRelease assembleRelease :app:assembleVehicleTest --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL <span class="ev m">[ĐO 02/10 01:03]</span> · <code>count-tests.py</code> 6 827 / 0 hỏng / 0 lỗi (+2 = bài canh mới × hai biến thể <code>:app</code>) · lint debug + release 0 lỗi, 533 cảnh báo (không đổi) · mọi tệp sửa ≤ 500 dòng (<code>ShellChannelGate.kt</code> 398).</p>
+<p><b>SCOPE:</b> như Pass 1 — chế độ DỰ PHÒNG R1/R2/R3 ✅; T2 ❌ có chủ đích (§14); E4 ⏸; OC-0…OC-5 🚗; T13 quét bảo mật + <code>project-context.md</code> còn mở. Chưa chạy lại E2E máy ảo sau hai bản vá này (cả hai chỉ thêm một lượt dò/nhận ở F4).</p>
+
+<h3>Pass 3 — 2026-10-02 · senior review (Opus) · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> toàn bộ <code>git diff</code> (31 tệp sửa) + 17 tệp mới, spec này (§1–§10), báo cáo E2E máy ảo <code>R2-*</code> (5 lỗi: 4 đã vá ở Pass 1, #3 “thẻ che chữ ô 0” giữ OQ2 — không còn lỗi E2E nào chưa xử lý). Soi lại theo trọng tâm: (1) không nối từ nền khi chưa có dấu — <code>Dadb.create</code> vẫn chỉ ở ba cửa có cổng (+ CLI <code>CarExecShell</code>, T10 niêm phong; <code>:app</code> không gọi hai thứ đó) <span class="ev m">[ĐO grep]</span>; mọi phiên HỎI (<code>FirstOpenApproval.PROBE</code>, <code>AWAIT_ADB_APPROVAL</code>, <code>USER_READ_CAP</code>) chỉ ở F4, lượt sớm (dấu tươi), phím mic, “Thêm gán”, <i>Kiểm tra – Sửa ngay</i> + công tắc phím (<code>reset = true</code>, chỉ <code>ClusterNavBridgeKeys</code>), <i>Hỏi lại</i>; BootSetup truyền <code>NONE</code> <span class="ev m">[ĐO grep]</span>. (2) Thu hồi ⇒ bia mộ + về F4, lượt sớm không thử lại. (3) Không vòng nối dày: lượt sớm ≤ 3, đường nền bị chặn trả ngay (0 socket), dò lại cổng đóng 20 s. (4) 2.83: <code>KeyReady</code> chỉ hỏi binder → chờ lớp 2 → hàm B1 (single-flight); không có đường leo thứ hai. (5) <code>placeApp</code> không còn đường mở nổi; <code>IntentAppLauncher.openInSlot</code>/<code>moveToSlot</code> không còn lời gọi <span class="ev m">[ĐO grep]</span>; mọi điểm vào có lời nhắc (chiếu, DPI, Đặt HOME) đều nằm trong <code>SettingsPanel</code> — view trong <code>rootFrame</code> của HOME, thẻ thêm sau nằm trên. (6) Hàng chạm ô: một mốc chờ, trần 10 s, chỉ hiện thẻ, không mở app nào ⇒ đổi hồ sơ không thể mở app sai ô. (7) DL5/A12: không thêm lệnh <code>am</code>/<code>wm</code>, không mục <code>ClusterProfile</code>; <code>ACTION_SCREEN_ON</code> là broadcast bảo vệ (không cần cờ exported); FGS sớm bọc bắt lỗi, đường HOME gọi lại.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P2]</td><td>Màn chính <b>kẹt ở “đã nhận kênh”</b>: <code>adopt</code>/F4 đặt <code>channelUp = true</code> rồi chạy <code>onChannelUp</code>; nếu nhánh <code>dadb.probe()</code> của <code>bringUpShellChannel</code> hỏng (ShellTransport không nối được — cổng 5555 chưa mở lúc màn bật, kết nối cũ chết sau giấc ngủ, hay cổng thi hành vừa chặn vì kênh rơi khỏi UP) thì cờ không bao giờ nhả: F4 không chạy lại, <code>adopt</code> tự bỏ, nút <i>Thử lại</i> của thẻ (biến thể MÔI TRƯỜNG, hiện sau 10 s chạm ô) thoát ở nhánh <code>channelUp</code> vì kênh vẫn UP ⇒ ô “Đang kết nối…” cả chuyến tới lần màn chính bị dựng lại. Nhánh hỏng có từ trước, nhưng READY-AT-HOME nới khoảng hở: <code>adopt</code> nối dây lúc màn BẬT dựa trên phép đo của lượt sớm có thể từ lúc màn TẮT (trước đó F4 dò xong là nối dây ngay) <span class="ev s">[SUY từ mã]</span>; có xảy ra trên xe không <span class="ev u">[CHƯA BIẾT]</span></td><td><code>ShellChannelGate.wiringFailed()</code> (mới, cuối lớp): nhảy về <code>handler</code>, nhả <code>channelUp</code>, dòng <code>KachiReady home wiring failed -&gt; f4</code>, hẹn lượt F4 sau <code>RETRY_EVERY_MS</code> (20 s; cùng cổng vòng đời + tiêu điểm, <code>onHidden</code> dừng, không đếm số lần). Gọi từ dòng cuối lambda <code>onChannelUp</code> ở <code>KachiHomeActivity</code> khi <code>shell == null</code> (thân <code>bringUpShellChannel</code> không đổi, <code>KachiHomeActivity.kt</code> 476 → 477). Kênh vẫn UP ⇒ <code>probeForHome</code> không dò lại, chạy lại đúng <code>onChannelUp</code>; kênh đã rơi ⇒ F4 hỏi như thường. Bài canh mới <code>noi day hong thi nha co va hen F4…</code>; phá thử (bỏ lời gọi / bỏ <code>channelUp = false</code>) ⇒ đỏ đúng bài</td></tr>
+<tr><td>2</td><td>[P3]</td><td><code>ShellReadiness.apply</code> gọi bên nghe NGOÀI khoá ⇒ hai lần chuyển từ hai luồng (vd phiên HỎI báo THU HỒI trong lúc phiên khác báo UP) có thể tới bên nghe ngược thứ tự; <code>ReadyAtHomeWiring</code> và chữ ô vẽ theo giá trị chụp lúc báo ⇒ thẻ/ô nói trạng thái cũ tới lần đổi kế <span class="ev s">[SUY từ mã — cửa sổ micro-giây]</span></td><td>Bên vẽ đọc <code>ShellReadiness.state()</code> lúc chạy trên luồng chính (<code>ReadyAtHomeWiring</code>, <code>ShellAccessUi.tileHint</code>). Bài canh mới <code>ben ve doc trang thai moi nhat…</code>; phá thử ⇒ đỏ</td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) Trong vòng thử lại của bản vá #1, mỗi lượt <code>bringUpShellChannel</code> gọi lại <code>RebindReceiver.scheduleWatchdog</code> ⇒ alarm 60 s bị đặt lại mỗi 20 s, không nổ trong lúc vòng còn chạy; chấp nhận: vòng chỉ chạy khi HOME đang ở trước + có tiêu điểm, keep-alive FGS (<code>sync</code> cũng gọi lại mỗi lượt) chạy watchdog 30 s trong tiến trình — alarm là lưới phụ cho ca FGS chết, và lúc đó kênh cũng đang hỏng nên nó không cấp được gì. (b) <code>KeyReady</code> ghi <code>keys=GRANT-&gt;NOT_BOUND</code> nếu lượt cấp của nó thua single-flight <code>grantingAcc</code> (lượt trùng trả NOT_BOUND) trong khi lượt kia có thể gắn được; thứ tự thực tế: <code>KeyReady</code> khởi luồng cấp TRƯỚC <code>VoiceKeyKeepAliveService.sync</code> và trước B1 (sau <code>dadb.probe</code> + dựng ô) ⇒ hiếm; màn Chẩn đoán có mục nhật ký gắn dịch vụ Hỗ trợ (sự thật binder) ngay dưới — không đổi API công khai của <code>NavConnect</code> cho một nhãn. (c) UP mức tiến trình không có hạn: tiến trình sống qua một lần đỗ xe dài hơn hạn duyệt (mặc định 7 ngày) ⇒ lúc màn bật <code>adopt</code> nối dây bằng UP cũ, ShellTransport (đường NỀN) gửi khoá ⇒ hộp bung ngay lúc HOME resume (đúng bệnh F4) — cùng mức phơi bày với trước READY-AT-HOME (HOME đã nối dây trước khi đỗ cũng nối lại lúc đó), và nhờ bản vá #1 nay tự hỏi lại mỗi 20 s khi HOME có tiêu điểm thay vì kẹt. Tiến trình có sống qua &gt; 7 ngày đỗ không <span class="ev u">[CHƯA BIẾT]</span> (đã [ĐO] sống 10 g 13 ph qua đêm, xe 28/09); chốt bằng uptime tiến trình sau một lần đỗ dài + <code>adb_allowed_connection_time</code> ở OC-0; OQ3 (đặt 0) sẽ xoá hẳn ca này — việc của owner.</p>
+<p><b>TECH FRESHNESS:</b> <code>dev.mobile:dadb</code> 2.0.0 → latest 2.0.0 <span class="ev m">[ĐO Maven Central maven-metadata.xml 02/10: latest = release = 2.0.0]</span> — OK. Bản vá không thêm thư viện, không thêm API (chỉ <code>Handler.post</code>, đã dùng sẵn).</p>
+<p><b>Kiểm:</b> hẹp <code>ReadyAtHomeWiringContractTest</code> 19 (+2) · <code>ShellApprovalWiringContractTest</code> 15 (không đổi một dòng) · <code>FloatingWiringContractTest</code> 8 · <code>OpenAppWiringContractTest</code> 12 · <code>PermissionPreflightWiringContractTest</code> 10 — xanh; phá thử 3 mắt xích ⇒ 2 bài mới đỏ, tự khôi phục (so <code>cmp</code> khớp). Đầy đủ <code>testDebugUnitTest test lint lintRelease assembleRelease :app:assembleVehicleTest --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL <span class="ev m">[ĐO 02/10 01:21]</span> · <code>count-tests.py</code> <b>6 831 / 0 hỏng / 0 lỗi</b> (778 XML; +4 = 2 bài mới × hai biến thể <code>:app</code>) · lint debug + release 0 lỗi, 533 cảnh báo (không đổi) · tệp sửa ≤ 500 dòng (<code>ShellChannelGate.kt</code> 419, <code>KachiHomeActivity.kt</code> 477, <code>KachiHomeWiring.kt</code> không đổi).</p>
+<p><b>SCOPE:</b> như Pass 2 — chế độ DỰ PHÒNG R1/R2/R3 ✅; T2 ❌ có chủ đích (§14); E4 ⏸; OC-0…OC-5 🚗; T13 quét bảo mật + <code>project-context.md</code> còn mở. Chưa chạy lại E2E máy ảo; ca mới đáng chạy cho bản vá #1: lượt giết kiểu BYD lúc màn tắt (lượt sớm UP) → gỡ <code>adb reverse</code> → bật màn ⇒ kỳ vọng <code>home adopt</code> → <code>home wiring failed -&gt; f4</code> → trả <code>adb reverse</code> ⇒ ≤ 20 s sau có <code>home f4</code> + dòng <code>tile</code>, 0 cửa sổ nổi.</p>
+
+<h3>Pass 4 — 2026-10-02 · vá lỗi E2E ca 1 (phiên điều phối — KHÔNG phải senior review) · VERDICT: PATCHED — chờ senior review Opus (T13)</h3>
+<p><b>Đọc:</b> <code>A11yLifecycleHeal.kt</code>, <code>AccessibilityHealGates.kt</code> (pha/nấc, <code>firstStartAfterHeal</code>, marker), <code>KeyReady.kt</code>, <code>EarlyShellChannel.kt</code> (<code>readyChain</code>), <code>NavConnect.escalateIfStuck</code>, <code>AccessibilityRebind</code> (<code>forceStopRebindCommand</code>, <code>HomeTail</code>), spec 2.83 (R-A1…R-A5, §4.2), báo cáo E2E R2.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P1]</td><td>E2E ca 1 <span class="ev m">[ĐO]</span>: tiến trình dựng lại lúc màn BẬT không thuộc sự kiện nào của 2.83 ⇒ chỉ còn pha RUNNING ⇒ phím kẹt ≈ 70 s dù “lên HOME” đã sẵn kênh + ô</td><td>Ân hạn khởi động (R2.7, §4.8.1): pha <code>KHOI_DONG</code>, một lối vào ở <code>install</code>, 20 s, cùng <code>healIfStuck</code> + đường leo; ngoài ân hạn RUNNING giữ nguyên</td></tr>
+<tr><td>2</td><td>[P2]</td><td>Bản vá #1 lượt đầu chặn bằng cửa sổ thuần 2 ph ⇒ lần giết MỚI trong 2 ph sau lượt chữa không được chữa <span class="ev m">[ĐO 01:51:43]</span> — trái 2.83 R-A4</td><td><code>ownHealChild</code> (claim chấm điểm; claim hỏng ⇒ coi là con) <span class="ev m">[ĐO 01:59:16: chữa lại, Bound 12,3 s]</span></td></tr>
+<tr><td>3</td><td>[P2]</td><td><code>keys=GRANT-&gt;NOT_BOUND</code> khi lượt cấp của chuỗi thua single-flight, phím gắn 1,7 s sau <span class="ev m">[ĐO 01:45:25.824]</span> — Pass 3 (b) đã để lại vì cho là hiếm</td><td><code>KeyReady.confirmLateBind</code> (binder, chỉ đọc, ≤ 10 s) ⇒ <code>GRANT-&gt;BOUND(late)</code></td></tr>
+<tr><td>4</td><td>[P3]</td><td><code>escalateIfStuck</code> bỏ qua kết quả <code>commit()</code> của mốc leo — với lượt khởi động, mốc đó là gốc của chốt chống vòng lặp</td><td><code>autoFireAllowed(userAsked, marked)</code>: lượt TỰ ĐỘNG không bắn khi ghi hỏng; bấm tay giữ nguyên</td></tr>
+</table></div>
+<p><b>Phá thử</b> (áp từng đột biến, chạy test hẹp, khôi phục, so <code>cmp</code> — cả 10 khớp):</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mắt xích phá</th><th>Bài đỏ</th></tr>
+<tr><td>M1</td><td><code>bootGraceMayRun</code> bỏ chốt con của lượt chữa (vòng lặp)</td><td>3 — bảng cổng vào · bảng quyết định · chuỗi E2E không vòng lặp</td></tr>
+<tr><td>M2</td><td><code>lifecycleFireAllowed</code> KHOI_DONG bỏ trần 20 s (giết muộn lúc đang chạy)</td><td>2 — bảng quyết định · ngoài ân hạn KHÔNG leo</td></tr>
+<tr><td>M3</td><td><code>healStep</code> KHOI_DONG ⇒ NONE (lỗi ca 1 quay lại)</td><td>2 — nấc + cổng wanted · bảng quyết định</td></tr>
+<tr><td>M4</td><td>gỡ chốt <code>autoFireAllowed</code> ở <code>escalateIfStuck</code></td><td>1 — mốc leo ghi hỏng thì không bắn</td></tr>
+<tr><td>M5</td><td>nuốt call site <code>onBootGrace</code> trong <code>install</code> (§8)</td><td>3 — xếp sau lớp 1 · một lối vào · chuỗi chờ</td></tr>
+<tr><td>M6</td><td><code>moXePending</code> bỏ <code>bootGraceBusy</code> (ô/kiểm phím không chờ)</td><td>1 — chuỗi kiểm phím và ô chờ</td></tr>
+<tr><td>M7</td><td>đọc mốc tiến trình SAU khi ghi (ai cũng là “dựng lại”)</td><td>1 — đọc trước rồi mới ghi</td></tr>
+<tr><td>M8</td><td><code>ownHealChild</code> bỏ nhánh fail-safe (claim hỏng ⇒ vẫn leo)</td><td>2 — bảng con của lượt chữa · bảng quyết định</td></tr>
+<tr><td>M9</td><td><code>onBootGrace</code> không hỏi con của lượt chữa</td><td>1 — thứ tự cổng vào</td></tr>
+<tr><td>M10</td><td><code>KeyReady</code> bỏ xác nhận gắn muộn</td><td>1 — xác nhận NOT_BOUND bằng binder</td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) ô chờ ≈ 4,7 s một lần sau mỗi lượt cài đè (lần đo đầu thấy <code>Binding</code> tạm của trình cài) <span class="ev m">[ĐO 01:58:10]</span> — không rút ngắn: lối thoát sớm phải sửa <code>waitInPhase</code> dùng chung với lớp 1/2. (b) <span class="ev s">[SUY]</span> khoảng giữa hai lần giết của trình cài &gt; 5 s thì có thể có một force-stop thừa trong lúc cài — vô hại. (c) Lượt khởi động chạy SAU lớp 1 trên cùng luồng ⇒ tiến trình bật lúc màn tắt mà bị chính lớp 1 giết thì không kịp ghi mốc tiến trình — tiến trình kế đọc mốc của tiến trình trước nữa (vẫn cùng lần nổ máy); chỉ lệch ở tiến trình đầu tiên sau khởi động máy (fail-safe: bỏ lượt). (d) Lượt grant của chuỗi kiểm phím có thể chạy song song với lượt khởi động nếu đo quá 8 s (fail-open) — đọc-sửa-ghi an toàn như KDoc <code>escalateOnLifecycle</code>.</p>
+<p><b>TECH FRESHNESS:</b> không thêm thư viện; API dùng thêm đều đã có trong mã (<code>SharedPreferences.commit</code>, <code>Thread</code> daemon, <code>AccessibilityManager.getEnabledAccessibilityServiceList</code>). <code>dev.mobile:dadb</code> 2.0.0 không đổi (Pass 1–3 đã đối chiếu Maven Central).</p>
+<p><b>SCOPE:</b> R2.7 ✅ mã + nối dây + test + phá thử + E2E máy ảo; OC trên xe 🚗 (BYD giết lúc màn bật có xảy ra không: <span class="ev u">[CHƯA BIẾT]</span>); T13 senior review Opus + quét bảo mật trước commit vẫn mở.</p>
+
+<h3>Pass 5 — 2026-10-02 · senior review (Opus) lượt 1 cho ân hạn khởi động · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> toàn bộ <code>git diff</code> (36 tệp sửa) + 19 tệp mới, trọng tâm phần Pass 5: <code>A11yLifecycleHeal.kt</code>, <code>AccessibilityHealGates.kt</code>, <code>NavConnect.escalateOnLifecycle/escalateIfStuck</code>, <code>KeyReady.kt</code>, <code>KeyReadyPlan.kt</code>, <code>PrefsA11yLifecycle.kt</code>, <code>A11yBindJournal.kt</code>, <code>LocalShellAdmission</code>/<code>ShellReadiness.admit</code> (phiên đo của lượt khởi động đi qua cổng thi hành, chờ lượt sớm ≤ <code>EARLY_WAIT_MS</code>); spec này §2/§4.8/§4.8.1/§7/§9/§10; spec 2.83; báo cáo E2E máy ảo 02/10 02:11–02:24 (<code>e2e2/</code>, 3 lỗi [P3]).</p>
+<p><b>Soi theo trọng tâm</b> <span class="ev m">[ĐO mã + E2E]</span>: (1) <b>không vòng tự giết</b> — mốc leo <code>commit()</code> trước MỌI lần bắn, ghi hỏng ⇒ lượt tự động không bắn (<code>autoFireAllowed</code>); tiến trình đầu tiên sau mốc leo nhận chấm (<code>commit()</code>) ⇒ <code>ownHealChild</code>; claim hỏng ⇒ coi là con. E2E dưới: 3 lần giết ⇒ đúng 3 lần force-stop, mỗi con <code>con của lượt chữa=true</code>. (2) <b>Không leo ngoài ân hạn lúc màn sáng</b> — <code>healStep(RUNNING)</code> = NONE không đổi; <code>lifecycleFireAllowed(KHOI_DONG)</code> đòi màn sáng + ≤ 20 s; đường grant mặc định RUNNING. (3) <b>Không chạy lớp 1 hai lần</b> — lượt khởi động chỉ mở khi tiến trình bật lúc màn SÁNG, lớp 1 chỉ khi bật lúc màn TẮT (loại trừ nhau); bản vá dưới claim lớp 1 TRƯỚC khi đo ⇒ con dựng lại lúc màn tắt bỏ lượt. (4) <b>Rào camera / đuôi HOME</b> — <code>AccessibilityRebind.kt</code> không có trong diff; lượt tự động dùng <code>homeTailFor(false)</code> = <code>IF_ORPHANED</code>. (5) <b>KeyReady nói thật</b> — <code>GRANT(pending)</code> → <code>GRANT-&gt;…</code>/<code>BOUND(late)</code>, <code>STUCK(…)-&gt;ESCALATE/-&gt;kết quả</code>, <code>HEALED-&gt;BOUND</code> thấy đủ trong E2E dưới. (6) <b>Spec ghi chốt OQ</b> — §7 “Đã chốt 2026-10-02, nguồn: phiên điều phối theo uỷ quyền owner”, OQ1–OQ9 + backlog <code>READY-AT-HOME-OQ6</code>/<code>-T0</code>.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P3]</td><td>E2E lỗi 1 <span class="ev m">[ĐO C6, <code>e2e2/logcat.txt</code> 02:18:42.606–02:18:54.131]</span>: lượt khởi động đã thấy KẸT, màn tắt ở +2 s ⇒ <code>pha đã qua → bỏ</code> ⇒ không lớp nào nhận (lớp 1 chỉ mở lúc tiến trình BẬT khi màn tắt — <code>A11yLifecycleHeal.kt:167-177</code> cũ; lớp 2 đòi claim lớp 1 mới hơn — <code>AccessibilityHealGates.moXeFollowsTatMay</code>) ⇒ phím chết 112 s tới khi bấm tay; ô còn mở app lúc màn đã tắt. Trên xe: chỉ khi BYD giết TRƯỚC khi tắt màn <span class="ev u">[CHƯA BIẾT]</span> — khi đó là cả chuyến sau</td><td><code>healIfStuck</code> trả <code>true</code> = đã thấy kẹt mà bị pha cắt (nhánh chờ, hoặc cổng cuối của đường leo); <code>onBootGrace</code> ⇒ <code>handOffToTatMay</code>: luật thuần <code>bootGraceHandsOffToTatMay</code> = <code>withinBootGrace</code> ∧ <code>tatMayMayRun</code> (màn TẮT, một lượt mỗi lần tắt máy) ⇒ claim <code>a11y_tat_may_elapsed</code> <code>commit()</code> (hỏng ⇒ bỏ) ⇒ <code>healIfStuck(TAT_MAY)</code>. Không lệnh mới, không đường leo mới; <code>onProcessStart</code>/<code>onScreenOn</code>/pha KHOI_DONG không đổi. Test: <code>A11yBootGraceGatesTest</code> +2 (bảng trao lấy mốc nguyên văn C6 · chuỗi không vòng lặp + lớp 2 nhận khi màn bật lại), <code>A11yBootGraceWiringContractTest</code> +1</td></tr>
+<tr><td>2</td><td>[P3]</td><td>Chú thích R-C1 của <code>TestBridgeA11yLog</code> nói claim tắt-máy chỉ ghi ở <code>Application.onCreate</code> — sai sau bản vá #1 (claim có thể ghi lúc màn tắt, ≤ 20 s sau)</td><td>Sửa chú thích (không đổi mã)</td></tr>
+</table></div>
+<p><b>Phá thử</b> (<code>scratchpad/ready-at-home/mutrev1/</code>, áp từng đột biến → test hẹp → khôi phục, cả 6 <code>cmp</code> KHỚP): R1 nuốt lời gọi trao · R2 trao mà không claim · R3 nhánh chờ thôi báo CẮT · R6 cổng cuối nói pha qua mà không báo CẮT ⇒ đỏ <code>man tat giua luot an han thi trao lop 1 sau khi claim</code>; R4 cổng trao bỏ trần ân hạn · R5 cổng trao bỏ luật một-lượt-mỗi-lần-tắt-máy ⇒ đỏ <code>bang ca trao lop 1 khi man tat giua luot an han</code>. <b>6/6 đỏ đúng bài.</b></p>
+<p><b>Kiểm off-car</b> <span class="ev m">[ĐO 02/10 02:41]</span>: test hẹp xanh (<code>A11yBootGraceGatesTest</code> 11 · <code>A11yBootGraceWiringContractTest</code> 10 · <code>A11yLifecycleHealWiringContractTest</code> 13); <code>testDebugUnitTest test lint lintRelease assembleRelease --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL; <code>count-tests.py</code> <b>6 863 / 0 hỏng / 0 lỗi</b>; lint debug + release 0 lỗi, 534 cảnh báo (không đổi); <code>A11yLifecycleHeal.kt</code> 490 dòng, <code>AccessibilityHealGates.kt</code> 448 (≤ 500); grep call site: <code>handOffToTatMay</code> ← <code>onBootGrace</code>; <code>bootGraceHandsOffToTatMay</code> ← <code>handOffToTatMay</code>. APK release vc185 / 2.84 (không bump) sha256 <code>b1eed319…5da1c4</code>.</p>
+<p><b>E2E máy ảo</b> <code>emulator-5554</code> <span class="ev m">[ĐO, <code>scratchpad/ready-at-home/e2e4/</code>]</span>, <code>install -r</code> 02:43:20 (nâng cấp: lần đo đầu kẹt tạm, lần hai <code>bound=true</code> ⇒ không leo — như cũ):</p>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>KQ</th><th>Bằng chứng</th></tr>
+<tr><td><b>C6r</b> · giết lúc màn bật, tắt màn +2 s</td><td>✅</td><td>giết 02:44:10.536 → tiến trình 24160 <code>tương tác=true</code> → <code>khoi-dong: pha đã qua</code> 13.017 → <code>màn tắt giữa lượt (+2125 ms) → trao lớp 1</code> 13.024 → <code>keys=STUCK(tat-may)-&gt;ESCALATE</code> 18.366 → force-stop 18.884 (<code>pha=TAT_MAY</code>, <code>ô của mình=[]</code> — ô giữ, không app nào mở lúc màn tắt) → con 24379 <code>tương tác=false</code>: <code>không mở lượt tắt-máy</code> (claim) + <code>con của lượt chữa=true</code> → <code>HEALED-&gt;BOUND</code> 33.893. Dump 43.011: Bound có Kachi, Binding <code>{}</code>. Bật màn 45:01.977 → <code>mo-xe: không kẹt (bound=true)</code> → <code>keys=BOUND</code> → ô 193 ms → VietMap trong ô. Trước bản vá: phím chết 112 s</td></tr>
+<tr><td><b>C6b</b> · giết, tắt màn +2 s, bật lại +4 s</td><td>✅</td><td>giết 02:45:31.925 → 25025 → trao lớp 1 34.390 → <code>tat-may: pha đã qua</code> 36.749 (màn bật) → lớp 2 (claim lớp 1 mới hơn) <code>STUCK(mo-xe)-&gt;ESCALATE</code> 42.059 → force-stop 42.726 (<code>pha=MO_XE</code>) → con 25457 <code>SKIP_OWN_HEAL</code>, không leo → <code>HEALED-&gt;BOUND</code> 57.749. Đúng 1 force-stop</td></tr>
+<tr><td><b>C1r</b> · giết lúc màn bật (hồi quy)</td><td>✅</td><td>giết 02:46:45.673 → 26149 → <code>STUCK(khoi-dong)-&gt;ESCALATE</code> 51.794 → force-stop 52.133 (<code>pha=KHOI_DONG</code>, +6,2 s) → con 26336 không leo → ô 53.226 → <code>HEALED-&gt;BOUND</code> 07.130</td></tr>
+<tr><td>Hồi quy chung</td><td>✅</td><td>3 lần giết ⇒ 3 force-stop; 0 <code>FATAL|ANR in com.byd|KachiCrash</code>; <code>logcat -b crash</code> 0 dòng launcher; 0 stack freeform; Bound cuối có Kachi. Máy ảo giờ chạy APK <code>b1eed319…</code></td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) E2E lỗi 2 — F4 hẹn cứng 20 s sau <code>wiring failed</code> (<code>ShellChannelGate.kt</code> <code>wiringFailed</code>): nhịp chung của vòng F4; hẹn dày hơn là thêm lượt nối khi chưa biết nguyên nhân kênh chết, nút <i>Thử lại</i> của thẻ chạy F4 ngay (Pass 4); có xảy ra trên xe không <span class="ev u">[CHƯA BIẾT]</span>. (b) E2E lỗi 3 — thẻ che ô 0: đóng theo OQ2 (thẻ giữa màn, không chặn chạm). (c) <span class="ev s">[SUY từ mã]</span> “dựng lại” đọc bằng mốc <code>elapsedRealtime</code> (cùng luật <code>escalatedThisBoot</code> mọi mốc khác dùng): sau khởi động lại máy, nếu lần nổ máy trước KHÔNG có lần dựng lại nào và Kachi bật ở đó sớm hơn lần này (vd khởi động lại hai lần liền) ⇒ tiến trình đầu tiên bị coi là dựng lại ⇒ lượt khởi động đo; chỉ leo nếu <code>Binding</code> lúc gắn lần đầu kéo dài ≥ 5 s ở cả hai lần đo ⇒ tối đa một lần khởi động lại launcher lúc bật máy. Nhận diện lần nổ máy chắc hơn (mốc giờ tường / <code>boot_count</code>) là cơ chế mới cần đo trên xe (§14) — để ngỏ. (d) <span class="ev m">[ĐO C6b]</span> chuỗi KHOI_DONG → TAT_MAY → MO_XE dài hơn trần giữ ô 8 s ⇒ ô hết chờ (<code>HOLD(8007)-&gt;TIMEOUT</code>) và VietMap mở hai lần (VD 76 rồi 77); <code>KeyReady</code> lọt qua khe vài chục ms giữa lúc lượt trao kết thúc và lúc <code>ACTION_SCREEN_ON</code> tới ⇒ lượt cấp RUNNING chạy song song lượt lớp 2 (đọc-sửa-ghi an toàn theo KDoc <code>escalateOnLifecycle</code>). Fail-open có chủ đích; ca này cần màn tắt rồi bật lại trong ~5 s sau một lần giết. (e) <span class="ev s">[SUY]</span> Kachi crash liên tiếp: ActivityManager hẹn dựng lại dịch vụ lùi dần, nên <code>Binding</code> có thể kéo dài ≥ 5 s ⇒ lượt khởi động có thể force-stop một lần; con của nó không leo ⇒ không thành vòng.</p>
+<p><b>TECH FRESHNESS:</b> không thêm thư viện, không thêm API (bản vá chỉ dùng <code>PowerManager.isInteractive</code>, <code>SharedPreferences.commit</code> đã có). Context7 không có chỉ mục cho <code>dev.mobile:dadb</code> (resolve 02/10 chỉ trả Jadb / adb_client / Tango) ⇒ giữ đối chiếu Maven Central 2.0.0 của Pass 1–3 — OK, không đổi.</p>
+<p><b>SCOPE:</b> R2.7 ✅ (mã + nối dây + test + phá thử + E2E máy ảo C1/C1b/C2/C6/C6b + nâng cấp); chế độ DỰ PHÒNG R1/R2/R3 ✅ như Pass 3; T2 ❌ có chủ đích (§14, OQ4); OC-0…OC-5 🚗; T13 quét bảo mật trước commit còn mở. Chưa commit, chưa bump, chưa OTA, không đụng xe.</p>
+
+<h3>Pass 6 — 2026-10-02 · senior review (Opus) lượt 2 — toàn bộ READY-AT-HOME, trọng tâm ân hạn khởi động · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> <code>git diff</code> (36 tệp sửa) + 19 tệp mới; trọng tâm phần mới (Pass 5 + Pass 6 changelog): <code>A11yLifecycleHeal.kt</code> (<code>install</code>/<code>onBootGrace</code>/<code>handOffToTatMay</code>/<code>healIfStuck</code>/<code>moXePending</code>), <code>AccessibilityHealGates.kt</code> (<code>KHOI_DONG</code>, <code>bootGraceMayRun</code>, <code>ownHealChild</code>, <code>bootGraceHandsOffToTatMay</code>, <code>autoFireAllowed</code>), <code>NavConnect.escalateOnLifecycle/escalateIfStuck</code>, <code>KeyReady</code>/<code>KeyReadyPlan</code>, <code>EarlyShellChannel</code>, <code>ShellChannelGate</code> (<code>adopt</code>, <code>settle</code>), <code>ShellReadiness.admit</code>, <code>AccessibilityRebind.forceStopRebindCommand</code> (đọc, không đổi), hai bài test mới; spec này §3 R2.3/R2.7, §4.7–§4.8.1, §7, §10 Pass 1–5; báo cáo E2E ca 1 (<code>e2e-result.md</code>).</p>
+<p><b>Soi theo trọng tâm</b> <span class="ev m">[ĐO mã + E2E]</span>: lỗi còn lại của E2E ca 1 (giết lúc màn ĐANG bật ⇒ <code>nấc NONE, KHÔNG leo</code>) — đã đóng bởi lượt khởi động, chạy lại trên APK cuối bên dưới. Không vòng tự giết (mốc leo <code>commit()</code> trước khi bắn, <code>autoFireAllowed</code>; con đầu tiên nhận chấm ⇒ <code>ownHealChild</code>); không leo ngoài ân hạn lúc màn sáng (<code>healStep(RUNNING)</code> = NONE; cổng cuối <code>lifecycleFireAllowed(KHOI_DONG)</code>); lớp 1 không chạy hai lần (claim của lượt trao chặn tiến trình con); đuôi <code>IF_ORPHANED</code> + rào camera không đổi (<code>AccessibilityRebind.kt</code> ngoài diff); <code>KeyReady</code> ghi kết quả thật; §7 ghi chốt OQ1–OQ9.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P3]</td><td>Nhánh <code>ChannelUp</code> của F4 (<code>ShellChannelGate.settle</code>) chạy <code>onChannelUp</code> mà KHÔNG giữ ô; chỉ <code>adopt</code> giữ. Lý do miễn ở Pass 2 (d) — “lúc đó tiến trình bật khi màn sáng ⇒ lớp 2 không chờ xét” — hết đúng từ Pass 5: lượt khởi động chạy ĐÚNG ở tiến trình dựng lại lúc màn sáng. Khi lượt sớm chậm hơn tiêu điểm + 1,5 s (cổng 5555 lên muộn, lượt sớm thử lại 1 s / 2 s), F4 chờ <code>awaitSettled</code> rồi thắng đua (bên nghe <code>adopt</code> bị chặn vì <code>inFlight</code>) ⇒ ô mở app trong lúc lượt khởi động còn đo ⇒ force-stop ⇒ app ô mở hai lần + cửa sổ mồ côi cho đuôi dọn — trái R2.3/R2.7 (“giữ ô chờ lượt này như chờ lớp 2”). Có xảy ra trên xe không <span class="ev u">[CHƯA BIẾT]</span> (cần cả giết lúc màn sáng lẫn lượt sớm chậm)</td><td><code>submitBg { KeyReady.holdTileIfEscalating(activity.applicationContext); onChannelUp() }</code> — cùng hàm, cùng trần 8 s fail-open như <code>adopt</code>; ca thường 0 ms (một lần hỏi binder). <code>ShellApprovalWiringContractTest</code> không đổi một dòng (vẫn xanh). Bài canh mới <code>moi loi nhan kenh cua man chinh deu giu o truoc onChannelUp - ca F4</code> (cả hai lối, đúng hai lời gọi <code>onChannelUp()</code>)</td></tr>
+<tr><td>2</td><td>[P3]</td><td><code>A11yBootGraceWiringContractTest.strip</code> dùng <code>substringBefore("//")</code> — trái luật bài canh tĩnh của phiên (cấm <code>substringAfter/Before</code>); hai bài canh anh em của spec này dùng <code>split("//", limit = 2)[0]</code></td><td>Đổi sang cùng cách của hai bài anh em (không đổi ngữ nghĩa)</td></tr>
+</table></div>
+<p><b>Phá thử</b> (<code>scratchpad/ready-at-home/mutrev2/</code>): bỏ lời giữ ô ở nhánh F4 ⇒ đỏ đúng bài mới (<code>26 tests completed, 1 failed</code>), <code>ShellApprovalWiringContractTest</code> vẫn xanh; khôi phục, <code>cmp</code> KHỚP.</p>
+<p><b>Kiểm off-car</b> <span class="ev m">[ĐO 02/10 03:00]</span>: test hẹp xanh (<code>A11yBootGraceWiringContractTest</code> 11 · <code>ShellApprovalWiringContractTest</code> · <code>ReadyAtHomeWiringContractTest</code> · <code>FloatingWiringContractTest</code> · <code>OpenAppWiringContractTest</code> · <code>A11yLifecycleHealWiringContractTest</code>); <code>testDebugUnitTest test lint lintRelease assembleRelease --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL; <code>count-tests.py</code> <b>6 865 / 0 hỏng / 0 lỗi</b> (+2 = bài mới × hai biến thể <code>:app</code>); lint debug + release 0 lỗi, 534 cảnh báo (không đổi); <code>ShellChannelGate.kt</code> 421, <code>A11yLifecycleHeal.kt</code> 490 (≤ 500). APK release vc185 / 2.84 (không bump) sha256 <code>919c3aff…3a1026f5</code>.</p>
+<p><b>E2E máy ảo</b> <code>emulator-5554</code> <span class="ev m">[ĐO, <code>scratchpad/ready-at-home/e2e5/</code> — <code>logcat.txt</code>, <code>marks.txt</code>, <code>f4h.sh</code>]</span>, <code>install -r</code> 03:01:42 (nâng cấp: <code>khoi-dong: không kẹt (bound=true)</code>, <code>keys=BOUND</code>, ô 746 ms):</p>
+<div class="tbl"><table>
+<tr><th>Ca</th><th>KQ</th><th>Bằng chứng</th></tr>
+<tr><td><b>C1 lỗi gốc</b> · giết kiểu BYD lúc màn bật</td><td>✅</td><td>giết 03:02:10.266 → tiến trình 29059 <code>tương tác=true</code> → <code>home adopt</code> 11.328 (ô giữ, 0 dòng <code>tile</code>) → <code>keys=STUCK(khoi-dong)-&gt;ESCALATE</code> 16.395 → force-stop 16.893 (<code>pha=KHOI_DONG</code>, +6,4 s) → con 29254 <code>con của lượt chữa=true</code>, <code>keys=SKIP_OWN_HEAL</code> → ô 18.013 → <code>accessibility booster connected</code> 18.379 (<b>8,1 s sau lần giết</b>; trước READY-AT-HOME ≈ 70 s) → VietMap <code>am_create_activity</code> MỘT lần 19.638 → <code>HEALED-&gt;BOUND</code></td></tr>
+<tr><td><b>F4H</b> · bản vá #1: gỡ <code>adb reverse</code>, giết lúc màn bật, trả reverse sau 2,5 s</td><td>✅</td><td>lượt sớm <code>PORT_CLOSED</code> ×2 (29.376, 30.380) → <b><code>home f4</code> 32.451</b> (F4 thắng đua; lượt sớm UP lần 3 ngay sau) → 0 dòng <code>tile</code> và 0 lần mở VietMap trong tiến trình 29964 suốt 5,8 s → <code>keys=STUCK(khoi-dong)-&gt;ESCALATE</code> 37.773 → force-stop 38.256 (+9,1 s) → con 30155 không leo → ô 39.357 → VietMap MỘT lần 41.128 → <code>HEALED-&gt;BOUND</code>. Con (adopt) dựng ô 361 ms sau khi nhận kênh — trước bản vá nhánh F4 sẽ dựng ô ngay ở 32,4 s</td></tr>
+<tr><td>Hồi quy chung</td><td>✅</td><td>2 lần giết ⇒ 2 force-stop; 0 <code>FATAL|ANR in com.byd|KachiCrash</code>; <code>logcat -b crash</code> 0 dòng launcher; 0 stack freeform; dump cuối: Bound có Kachi, Binding <code>{}</code>; <code>adb reverse</code> trả về <code>tcp:5555 tcp:5555</code>. Máy ảo giờ chạy APK <code>919c3aff…</code></td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) Sau lượt trao lớp 1 (màn tắt giữa lượt), nếu BYD giết THÊM một lần lúc màn tắt trong cùng lần tắt máy ⇒ claim của lượt trao chặn lớp 1 lần hai (luật “một lượt mỗi lần tắt máy” của 2.83); lần mở xe kế, lớp 2 nhận (claim lớp 1 mới hơn) ⇒ phím chữa trong ân hạn mở xe — đúng lưới 2.83, cần hai lần giết trong một lần tắt máy. (b) Sau <code>RESTARTING</code>, cờ <code>bootGraceBusy</code> nhả trong <code>finally</code> trước khi lệnh tách rời kịp giết ⇒ về lý thuyết ô có thể gắn app trong khe đó; <span class="ev m">[ĐO]</span> lệnh tách rời mở đầu bằng <code>am force-stop</code> (<code>AccessibilityRebind.kt:227</code>) và giết tới trước (C1, F4H, E2E Pass 5: 0 dòng <code>tile</code> trong tiến trình bị giết) — không đổi. (c) Pass 5 (c)/(d)/(e) giữ nguyên lý do. (d) Lượt khởi động không đo được khi dấu không tươi (cổng thi hành chặn <code>dumpsys</code>) ⇒ cùng giới hạn đã ghi ở Pass 1 (d) cho lớp 1/2.</p>
+<p><b>TECH FRESHNESS:</b> không thêm thư viện, không thêm API (bản vá chỉ gọi lại <code>KeyReady.holdTileIfEscalating</code> đã có). Context7 resolve “dadb” 02/10 03:00: chỉ trả AOSP adb / adb_shell / appium-adb / Tango / adb_client — vẫn không có chỉ mục <code>dev.mobile:dadb</code> ⇒ giữ đối chiếu Maven Central 2.0.0 (latest) của Pass 1–3 — OK.</p>
+<p><b>SCOPE:</b> R2.7 ✅ (nay cả nhánh F4 giữ ô — ĐO F4H); R2.3 ✅; chế độ DỰ PHÒNG R1/R2/R3 ✅; T2 ❌ có chủ đích (§14, OQ4); E4 ⏸; OC-0…OC-5 🚗; T13 quét bảo mật trước commit còn mở. Chưa commit, chưa bump, chưa OTA, không đụng xe. Vòng review: bản vá đổi mã ⇒ soát lại riêng phần vá (luồng nền, ca chưa duyệt lần đầu không chờ, <code>wiringFailed</code> → F4 vẫn giữ ô đúng một lần) — không còn phát hiện [P0]–[P3].</p>
+
+<h3>Pass 7 — 2026-10-02 · senior review (Opus) lượt 3 — toàn bộ READY-AT-HOME, trọng tâm phần mới (Pass 7 changelog) · VERDICT: PATCHED</h3>
+<p><b>Đọc:</b> <code>git diff</code> (36 tệp sửa) + 19 tệp mới; trọng tâm: <code>ShellChannelGate.settle</code> (nhánh F4 giữ ô) + <code>adopt</code>/<code>wiringFailed</code>, <code>A11yLifecycleHeal.kt</code> (<code>install</code>/<code>onBootGrace</code>/<code>handOffToTatMay</code>/<code>healIfStuck</code>/<code>moXePending</code>), <code>AccessibilityHealGates.kt</code> (KHOI_DONG, <code>bootGraceMayRun</code>, <code>ownHealChild</code>, <code>bootGraceHandsOffToTatMay</code>, <code>autoFireAllowed</code>, <code>tatMayMayRun</code>), <code>NavConnect.escalateOnLifecycle/escalateIfStuck</code>, <code>KeyReady</code>/<code>KeyReadyPlan</code>, <code>EarlyShellChannel</code>, <code>ShellReadiness</code> + <code>ShellReadinessPolicy</code>, <code>LocalShellAdmission</code> + ba cửa, <code>ShellAccessUi</code>, hai bài canh mới; spec này §3 R2.3/R2.7, §4.7–§4.8.1, §5, §7, §10 Pass 1–6; báo cáo E2E ca 1 (<code>e2e-result.md</code>).</p>
+<p><b>Soi theo trọng tâm</b> <span class="ev m">[ĐO mã]</span>: (1) lỗi còn lại của E2E ca 1 (giết lúc màn ĐANG bật ⇒ <code>nấc NONE, KHÔNG leo</code>) — đóng bởi lượt khởi động; APK release lượt này <b>trùng byte</b> bản đã chạy E2E ở Pass 6 (sha256 <code>919c3aff…3a1026f5</code>) ⇒ số đo C1/F4H của Pass 6 vẫn là số đo của bản này. (2) Không vòng tự giết: <code>escalateIfStuck</code> ghi mốc leo <code>commit()</code> TRƯỚC <code>sh(cmd)</code> và <code>autoFireAllowed</code> gác lệnh bắn; <code>onProcessStart</code> (nhận chấm) xếp TRƯỚC <code>onBootGrace</code> trên cùng luồng nối tiếp ⇒ <code>ownHealChild</code> thấy kết quả nhận; nhận hỏng ⇒ coi là con. (3) Không leo ngoài ân hạn: <code>healStep(RUNNING)=NONE</code>; đường grant mặc định RUNNING; <code>escalateOnLifecycle</code> chặn RUNNING; cổng cuối <code>lifecycleFireAllowed(KHOI_DONG)</code> = màn sáng ∧ ≤ 20 s; <code>HealPhase.KHOI_DONG</code> chỉ ở <code>onBootGrace</code> (bài canh đếm toàn cây). (4) Lớp 1 không chạy hai lần: KHOI_DONG chỉ mở khi tiến trình bật lúc màn SÁNG; lượt trao claim <code>a11y_tat_may_elapsed</code> <code>commit()</code> trước khi đo. (5) Rào camera / đuôi HOME: <code>AccessibilityRebind.kt</code> ngoài diff, lượt tự động dùng <code>homeTailFor(false)</code> = <code>IF_ORPHANED</code>. (6) <code>KeyReady</code> ghi kết quả thật (<code>GRANT(pending)</code> → <code>GRANT-&gt;…</code>/<code>BOUND(late)</code>; <code>STUCK(…)-&gt;ESCALATE</code>; <code>HEALED-&gt;…</code>). (7) Cả hai lối chạy <code>onChannelUp</code> giữ ô; giữ chỉ khi phím-thoại bật ∧ binder chưa gắn ∧ lớp 2/khởi động chưa kết luận, trần 8 s fail-open; ca chưa duyệt lần đầu không chờ (tiến trình đầu tiên sau cài không có mốc tiến trình trước). (8) §7 ghi chốt OQ1–OQ9 theo uỷ quyền owner + backlog <code>READY-AT-HOME-OQ6</code>/<code>-T0</code>. (9) Mọi tệp sửa ≤ 500 dòng; không <code>os.getenv</code>; <code>catch (Exception)</code> rộng chỉ ở hai chỗ có từ trước (<code>UpdateChecker.kt:142</code>, <code>WorkspaceViewCards.kt:94</code>), không do diff này.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Bản vá</th></tr>
+<tr><td>1</td><td>[P3]</td><td>Hai bài canh mới (<code>A11yBootGraceWiringContractTest.mainFiles</code>, <code>ReadyAtHomeWiringContractTest.mainFiles</code>) tự chép bộ bỏ chú thích cắt mỗi dòng ở <code>//</code> đầu tiên ⇒ một chuỗi <code>"https://…"</code> nuốt luôn phần MÃ phía sau trên cùng dòng ⇒ bài quét toàn cây (một lối vào KHOI_DONG, một chủ của dấu bền, call site §8) im lặng thôi gác; đồng thời chép lặp (global §4.1 DRY) trong khi <code>testFixtures</code> đã có <code>KotlinSource.stripComments</code> (bộ quét theo trạng thái, giữ string literal — sinh ra 08-23 vì đúng lỗi này). <b>Phá thử</b> <span class="ev m">[ĐO 02/10, <code>scratchpad/ready-at-home/mutrev3/</code>]</span>: thêm <code>private val mutUrl = "https://x"; private val mutPhase = …HealPhase.KHOI_DONG</code> vào <code>KeyReady.kt</code> ⇒ bản cũ 11/11 XANH (lọt) lúc 03:16; bản mới đỏ đúng <code>pha KHOI_DONG chi co MOT loi vao…</code> (<code>30 tests completed, 1 failed</code>) lúc 03:17; khôi phục, <code>cmp</code> KHỚP</td><td>Cả hai bài dùng <code>KotlinSource.stripComments</code>; gỡ hai bản chép (<code>strip</code>, <code>stripComments</code>). Không nới bài nào: cùng các khẳng định, chỉ đổi bộ quét sang loại không lọt</td></tr>
+<tr><td>2</td><td>[P3]</td><td>Tài liệu lệch mã: §4.7 ghi <code>adopt</code> “đủ năm điều kiện” — mã đòi sáu (thêm <code>!inFlight</code>, <code>ShellReadinessPolicy.adoptAllowed</code>); câu “nhánh cũ không đổi” của <code>settle(ChannelUp)</code> chưa nói việc giữ ô (Pass 6); R-nf2 “F4, B1, 3 lớp 2.83 … giữ nguyên byte” + “thay đổi hành vi có chủ ý duy nhất là bỏ cửa sổ nổi” không còn đúng từ Pass 1/Pass 5</td><td>Sửa §4.7 (sáu điều kiện; nhánh F4 giữ ô); thêm ghi chú có ngày dưới R-nf2 liệt kê đúng phần đổi byte <span class="ev m">[ĐO git diff: <code>PermissionPreflight</code>, <code>KachiHomeWiring.kt</code>, <code>AccessibilityRebind.kt</code> không đổi]</span> và thay đổi hành vi có chủ đích thứ hai (R2.7). Không đổi yêu cầu</td></tr>
+<tr><td>3</td><td>[P3]</td><td>T15 / CLAUDE.md §16 (R2.1): <code>.kiro/steering/project-context.md</code> chưa có dòng nào về READY-AT-HOME, còn mục 2.83 ở đó khẳng định “lớp 3 (đang chạy) KHÔNG tự force-stop” — phiên sau chỉ nạp project-context sẽ không biết có ngoại lệ ân hạn khởi động và có cổng thi hành ở ba cửa adbd</td><td>Thêm khối <b>READY-AT-HOME</b> ngay dưới mục 2.83 (ba cửa + đường HỎI, lượt sớm/<code>adopt</code>, R1.3, NGOẠI LỆ KHOI_DONG + trao lớp 1 + giữ ô, giới hạn dấu không tươi, mốc <code>KachiReady</code>) + dòng “Cập nhật”; T15 ✅</td></tr>
+</table></div>
+<p><b>Soi, không sửa (có lý do):</b> (a) <code>SourceRoots.codeOf</code> (testFixtures dùng chung, có từ trước) cùng lỗi cắt ở <code>//</code> — phá thử trên cho thấy bài <code>keyReady.contains("HealPhase")</code> (đọc qua <code>codeOf</code>) cũng không bắt được đột biến. Đổi helper dùng chung là đổi nền cho mọi bài canh của repo ⇒ ngoài phạm vi; ghi backlog <code>TEST-CODEOF-STRIP</code>. (b) Trần giữ ô 8 s với lượt khởi động trên xe <span class="ev s">[SUY]</span>: từ lúc kênh lên, một lượt = dump + 5 s + dump + phiên leo (~5 lệnh) ≈ 6,6–9 s với 0,2–0,5 s/lệnh <span class="ev s">[SUY từ ĐO xe 29/09]</span>; <code>adopt</code> tới ≈ 0,2 s sau kênh (<span class="ev m">[ĐO C1: 227 ms]</span>) ⇒ ca chậm có thể hết trần ≈ 0,8 s trước lúc bắn ⇒ app ô mở hai lần + <code>KeyReady</code> cấp song song (fail-open có chủ đích — R2.3/R2.7, Pass 4 (d)); máy ảo cần 5,6–5,8 s. Không đổi hằng khi chưa có số đo (CLAUDE.md §2) — chốt ở OC-4: <code>keys=HOLD(n)-&gt;TIMEOUT</code> và hiệu <code>keys=STUCK(khoi-dong)-&gt;ESCALATE</code> − <code>home adopt</code>. (c) Dấu không tươi (đỗ 6–7 ngày, lần đầu sau nâng cấp) ⇒ lượt khởi động/lớp 1/2 bị cổng chặn <code>dumpsys</code> một lần — giữ như Pass 1 (d), Pass 6 (d), quyết định của owner. (d) <code>registerReceiver(…, IntentFilter(ACTION_SCREEN_ON))</code> không cờ: Context7 (<code>/websites/developer_android_guide</code>) khuyên khai <code>RECEIVER_(NOT_)EXPORTED</code>; broadcast hệ thống được bảo vệ được miễn, lint 0 lỗi, xe chạy A10/A12 (cờ chỉ có từ API 33); cùng mẫu có từ 2.83 (<code>A11yLifecycleHeal</code>) và <code>VoiceWakeService</code> — không đổi. (e) Pass 6 (a)–(d) giữ nguyên lý do.</p>
+<p><b>TECH FRESHNESS:</b> <code>dev.mobile:dadb</code> 2.0.0 → latest 2.0.0 <span class="ev m">[ĐO Maven Central <code>maven-metadata.xml</code> 02/10 03:1x: latest = release = 2.0.0]</span> — OK; Context7 resolve “dadb” 02/10: chỉ Jadb / adb_client / Tango / appium-adb — vẫn không có chỉ mục. Android <code>registerReceiver</code>: xem (d). Bản vá không thêm thư viện, không thêm API (<code>KotlinSource</code> là testFixtures sẵn có).</p>
+<p><b>Kiểm off-car</b> <span class="ev m">[ĐO 02/10 03:18]</span>: phá thử như #1; <code>testDebugUnitTest test lint lintRelease assembleRelease --continue</code> (nền, tạm dừng máy ảo) ⇒ BUILD SUCCESSFUL; <code>count-tests.py</code> 6 865 / 0 hỏng / 0 lỗi (781 XML; số bài không đổi — chỉ đổi bộ quét); <code>A11yBootGraceWiringContractTest</code> 11 + <code>ReadyAtHomeWiringContractTest</code> 19 xanh ở cả <code>testDebugUnitTest</code> lẫn <code>testVehicleTestUnitTest</code>; lint debug + release 0 lỗi, 534 cảnh báo (không đổi); APK release sha256 <code>919c3aff…3a1026f5</code> KHÔNG đổi (mã chạy không đổi) ⇒ không cần chạy lại E2E. Máy ảo đã cho chạy lại (không còn dừng), vẫn vc185 / 2.84, <code>adb reverse</code> = <code>tcp:5555 tcp:5555</code>.</p>
+<p><b>SCOPE:</b> R2.7 ✅; R2.3 ✅; chế độ DỰ PHÒNG R1/R2/R3 ✅; T15 ✅ (project-context); T2 ❌ có chủ đích (§14, OQ4); E4 ⏸; OC-0…OC-5 🚗; T13 quét bảo mật trước commit còn mở. Chưa commit, chưa bump, chưa OTA, không đụng xe. <b>Vòng review:</b> bản vá chỉ đổi hai tệp bài canh + tài liệu ⇒ soát lại riêng phần vá (không còn tham chiếu tới hai bản chép; bài đỏ với đột biến, xanh khi sạch; không khẳng định nào bị nới) — không còn phát hiện [P0]–[P3].</p>
+
+</div></body>
+</html>

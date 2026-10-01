@@ -13,6 +13,7 @@ import com.byd.clusternav.modules.navaccess.A11yBindJournalStore
 import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 import com.byd.clusternav.modules.navaccess.AccessibilityHealGates.BindObservation
 import com.byd.clusternav.modules.navaccess.AccessibilityHealGates.HealPhase
+import com.byd.clusternav.modules.navaccess.KeyReadyPlan
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -37,6 +38,12 @@ import java.util.concurrent.atomic.AtomicLong
  *  • LỚP 2 — bộ thu `ACTION_SCREEN_ON` đăng ký ĐỘNG trên applicationContext, sống cùng tiến trình: mỗi lần màn bật
  *    SAU MỘT LẦN TẮT MÁY ([AccessibilityHealGates.moXeFollowsTatMay] — tắt/bật màn lúc đang lái không tính) mở một
  *    lượt [HealPhase.MO_XE] trong ân hạn [AccessibilityHealGates.MO_XE_GRACE_MS].
+ *  • LỚP 2 MỞ RỘNG — ÂN HẠN KHỞI ĐỘNG (READY-AT-HOME 02/10, [onBootGrace]): tiến trình DỰNG LẠI lúc màn ĐANG bật (BYD
+ *    giết lúc màn sáng, crash, OOM) không có `ACTION_SCREEN_ON` nào để lớp 2 bắt ⇒ [ĐO E2E máy ảo 02/10 ca 1] phím kẹt
+ *    tới lần tắt màn sau. Lượt [HealPhase.KHOI_DONG] chạy MỘT lần mỗi tiến trình, chỉ trong
+ *    [AccessibilityHealGates.BOOT_GRACE_MS] kể từ lúc tiến trình bật, cổng thuần
+ *    [AccessibilityHealGates.bootGraceMayRun]. Cùng thân [healIfStuck], cùng đường leo — không có đường thứ hai. Màn TẮT
+ *    giữa lượt (đã thấy kẹt, còn trong ân hạn) ⇒ trao LỚP 1 nguyên vẹn ([handOffToTatMay], [ĐO E2E C6]).
  *  • LỚP 3 — CHỈ ĐO, không chữa: nhớ lần dump gần nhất nói KẸT ([noteStuckDump]) để watchdog 30 s (và alarm 60 s
  *    `RebindReceiver` khi keep-alive chết) thôi toggle vô ích,
  *    và kiểm lại chậm ([recheckRunningStuck], mỗi [AccessibilityHealGates.STUCK_RECHECK_MS]) trên cùng luồng nối tiếp.
@@ -60,6 +67,11 @@ import java.util.concurrent.atomic.AtomicLong
  *  • Chính lượt force-stop của lớp 1 làm Android dựng lại Kachi lúc màn vẫn tắt ⇒ tiến trình mới thấy claim của
  *    cùng lần tắt máy (chưa có lần mở xe nào xen giữa, trong [AccessibilityHealGates.TAT_MAY_SAME_EVENT_MS]) ⇒ bỏ.
  *  • Lượt force-stop của lớp 2 làm Kachi dựng lại lúc màn ĐANG bật ⇒ không phải lớp 1, và không có SCREEN_ON mới.
+ *    Nó LẠI là ứng viên ân hạn khởi động — chốt bằng mốc leo `a11y_forcestop_elapsed` (ghi `commit()` TRƯỚC mỗi lần bắn,
+ *    lượt tự động không bắn nếu ghi hỏng — [AccessibilityHealGates.autoFireAllowed]) + claim chấm điểm: tiến trình ĐẦU
+ *    TIÊN bật sau mốc đó là CON của lượt chữa ⇒ KHÔNG leo ([AccessibilityHealGates.ownHealChild]). Cùng chốt cho con của
+ *    lượt khởi động, của nút *Sửa ngay*, và của lớp 1 (lớp 1 dựng lại lúc màn tắt, đằng nào cũng không qua cổng
+ *    `tương tác`). Một lần giết MỚI từ bên ngoài sau đó vẫn được chữa (2.83 R-A4).
  *  • KẸT phải BỀN: hai lần `dumpsys accessibility` cách ≥ [AccessibilityHealGates.STUCK_CONFIRM_GAP_MS]; ngay sau
  *    force-stop, `Binding` có thể có mặt TẠM THỜI trong lúc hệ gắn lại bình thường.
  *  • Hạn mức cũ `a11y_forcestop_elapsed` (một lần mỗi lần nổ máy, nhả khi xe thức sau ngủ dài) KHÔNG còn chặn gì:
@@ -77,7 +89,7 @@ object A11yLifecycleHeal {
      * Tiến trình khởi động ĐẦU TIÊN trong chừng này sau mốc leo = do CHÍNH lượt force-stop trước dựng lại ⇒ chấm điểm
      * (các lần khởi động sau trong cùng cửa sổ thì không — [Prefs.a11yScoredFor]).
      */
-    private const val AFTER_HEAL_WINDOW_MS = 2 * 60_000L
+    private const val AFTER_HEAL_WINDOW_MS = AccessibilityHealGates.OWN_HEAL_WINDOW_MS
 
     /** Chấm điểm sau mốc leo chừng này: 4 s `sleep` của lệnh tách rời + thời gian hệ gắn lại dịch vụ. */
     private const val AFTER_HEAL_SCORE_DELAY_MS = 15_000L
@@ -114,6 +126,10 @@ object A11yLifecycleHeal {
         val app = ctx.applicationContext
         val startedAt = SystemClock.elapsedRealtime()
         val interactive = interactive(app)
+        startedNonInteractive = interactive == false   // READY-AT-HOME §4.8 — xem [moXePending]
+        // Ân hạn khởi động: báo "đang xét" NGAY (trước khi luồng nền kịp chạy — cùng mẫu bộ thu màn bật), nhả trong
+        // `finally` của lượt [onBootGrace]. Chỉ tiến trình bật lúc màn SÁNG mới có thể là ứng viên.
+        bootGraceBusy.set(interactive == true)
         try {
             app.registerReceiver(ScreenOnReceiver(app), IntentFilter(Intent.ACTION_SCREEN_ON))
         } catch (e: RuntimeException) {
@@ -122,6 +138,8 @@ object A11yLifecycleHeal {
             Log.e(TAG, "không đăng ký được bộ thu màn bật — lớp 2 tắt trong tiến trình này", e)
         }
         submit("khởi động (tương tác=$interactive)") { onProcessStart(app, interactive, startedAt) }
+        // Đường MỚI xuống CUỐI (CLAUDE.md §6): xếp SAU lớp 1 trên cùng luồng nối tiếp — [onProcessStart] giữ nguyên.
+        submit("ân hạn khởi động") { try { onBootGrace(app, interactive, startedAt) } finally { bootGraceBusy.set(false) } }
     }
 
     /** `onReceive` của broadcast ORDERED: chỉ lấy mốc sự kiện rồi trả ngay (`Notifier.java:748-754`). */
@@ -129,7 +147,9 @@ object A11yLifecycleHeal {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != Intent.ACTION_SCREEN_ON) return
             val at = SystemClock.elapsedRealtime()
-            submit("màn bật") { onScreenOn(app, at) }
+            // READY-AT-HOME §4.8 — báo "lớp 2 đang xét" NGAY lúc nhận (trước khi luồng nền kịp chạy), nhả khi xét xong.
+            screenOnSeen.set(true); moXeBusy.set(true)
+            submit("màn bật") { try { onScreenOn(app, at) } finally { moXeBusy.set(false) } }
         }
     }
 
@@ -182,6 +202,57 @@ object A11yLifecycleHeal {
             return
         }
         healIfStuck(app, HealPhase.MO_XE, screenOnAt)
+    }
+
+    // ─── Lớp 2 mở rộng — ÂN HẠN KHỞI ĐỘNG (READY-AT-HOME 02/10) ──────────────────────────────────────────
+
+    /**
+     * MỘT lượt mỗi tiến trình (chỉ gọi từ [install]; không lối vào nào khác — mở Cài đặt, màn bật, nút đều không tới đây).
+     * Cổng thuần [AccessibilityHealGates.bootGraceMayRun] trên sự thật bền: màn sáng lúc bật · có tiến trình launcher
+     * trước trong lần nổ máy này (mình là DỰNG LẠI) · không phải con của lượt chữa ([AccessibilityHealGates.ownHealChild]).
+     * Qua cổng ⇒ cùng
+     * [healIfStuck] của lớp 1/2 (đo → chờ 5 s → đo lại → KẸT BỀN mới leo, cổng cuối hỏi lại ân hạn ngay trước khi bắn).
+     */
+    private fun onBootGrace(app: Context, interactive: Boolean?, startedAt: Long) {
+        // Mốc tiến trình TRƯỚC: đọc MỘT lần, TRƯỚC khi ghi mốc của mình (đọc sau là luôn thấy chính mình ⇒ ai cũng là
+        // "dựng lại"). Ghi ở MỌI lần bật, kể cả lúc màn tắt. Ghi hỏng chỉ làm tiến trình KẾ không biết có mình ⇒ nó bỏ
+        // lượt (fail-safe); chốt chống vòng lặp của chính lượt này là mốc leo, không phải mốc này.
+        val prevProcStart = Prefs.a11yProcStartAt(app)
+        if (!Prefs.setA11yProcStartAt(app, startedAt)) Log.w(TAG, "không ghi được mốc tiến trình — tiến trình kế sẽ bỏ ân hạn khởi động")
+        // Con của lượt chữa? — kết quả lượt NHẬN chấm điểm (`commit()`) của [onProcessStart] chạy TRƯỚC trên cùng luồng nối
+        // tiếp, cộng mốc bền đọc lại (nhận hỏng ⇒ coi là con). Không quyết bằng cờ RAM xuyên tiến trình (CLAUDE.md §5).
+        val escalatedAt = Prefs.a11yEscalatedAt(app)
+        val ownChild = AccessibilityHealGates.ownHealChild(bornFromOwnHeal.get(), escalatedAt, Prefs.a11yScoredFor(app), startedAt)
+        if (!AccessibilityHealGates.bootGraceMayRun(interactive, prevProcStart, ownChild, startedAt)) {
+            Log.i(TAG, "ân hạn khởi động: không mở (tương tác=$interactive, tiến trình trước=$prevProcStart, leo=$escalatedAt, con của lượt chữa=$ownChild)")
+            return
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (!AccessibilityHealGates.withinBootGrace(startedAt, now)) {
+            Log.w(TAG, "ân hạn khởi động đã qua (${now - startedAt} ms) → bỏ lượt, luật lớp 3")
+            return
+        }
+        // [screenOnAt] của [healIfStuck] = mốc NEO của pha; ở đây là lúc tiến trình bật (KDoc `lifecycleFireAllowed`).
+        if (healIfStuck(app, HealPhase.KHOI_DONG, screenOnAt = startedAt)) handOffToTatMay(app, startedAt)
+    }
+
+    /**
+     * Lượt khởi động đã thấy KẸT mà bị cắt vì pha qua ⇒ màn vừa TẮT trong ân hạn thì trao LỚP 1 nguyên vẹn (cổng + claim
+     * `commit()` TRƯỚC khi đo + [healIfStuck]) — luật + [ĐO E2E C6] ở [AccessibilityHealGates.bootGraceHandsOffToTatMay].
+     * Chỉ gọi từ [onBootGrace] ⇒ một lần mỗi tiến trình.
+     */
+    private fun handOffToTatMay(app: Context, startedAt: Long) {
+        val now = SystemClock.elapsedRealtime()
+        if (!AccessibilityHealGates.bootGraceHandsOffToTatMay(interactive(app), startedAt, Prefs.a11yTatMayAt(app), Prefs.a11yMoXeAt(app), now)) {
+            Log.i(TAG, "khoi-dong: pha qua, không trao lớp 1 (màn chưa tắt / quá ân hạn / lần tắt máy này đã có lượt)")
+            return
+        }
+        if (!Prefs.setA11yTatMayAt(app, now)) {
+            Log.e(TAG, "không ghi được claim tắt-máy (trao từ ân hạn khởi động) → bỏ lượt (tránh vòng lặp giết launcher)")
+            return
+        }
+        Log.i(TAG, "khoi-dong: màn tắt giữa lượt (+${now - startedAt} ms) → trao lớp 1")
+        healIfStuck(app, HealPhase.TAT_MAY, screenOnAt = -1L)
     }
 
     // ─── Lớp 3 — CHỈ ĐO (kẹt lúc đang chạy) ──────────────────────────────────────────────────────────────
@@ -246,36 +317,85 @@ object A11yLifecycleHeal {
         }
     }
 
+    // ─── READY-AT-HOME §4.8 — cho chuỗi chuẩn bị HỎI lớp 2, không chữa thêm gì ─────────────────────────────
+
+    /**
+     * Cờ RAM phối hợp TRONG tiến trình (cùng lý do [runningStuckAt]): nó chỉ quyết HOÃN một việc của chính Kachi (gắn
+     * app vào ô / gọi cấp quyền) trong lúc lớp 2 đang đo, không quyết đổi gì trên hệ thống (CLAUDE.md §5).
+     */
+    private val moXeBusy = AtomicBoolean(false)
+    private val screenOnSeen = AtomicBoolean(false)
+    @Volatile private var startedNonInteractive = false
+
+    /** Lượt ân hạn khởi động ([onBootGrace]) chưa kết luận — đặt ở [install], nhả trong `finally`. Cùng lý do [moXeBusy]. */
+    private val bootGraceBusy = AtomicBoolean(false)
+
+    /**
+     * Lớp 2 đang xét (đã nhận `ACTION_SCREEN_ON`, chưa xong) HOẶC sắp xét (tiến trình bật lúc màn tắt, chưa thấy lần
+     * màn bật nào, và lần màn bật kế là mở xe — luật thuần [KeyReadyPlan.layer2Expected]) HOẶC lượt ân hạn khởi động
+     * (lớp 2 mở rộng) chưa kết luận — nó cũng có thể force-stop launcher, nên chuỗi kiểm phím và ô chờ y như lớp 2.
+     */
+    internal fun moXePending(app: Context): Boolean = moXeBusy.get() || bootGraceBusy.get() || KeyReadyPlan.layer2Expected(
+        startedNonInteractive, screenOnSeen.get(), Prefs.voiceKeyEnabled(app),
+        Prefs.a11yTatMayAt(app), Prefs.a11yMoXeAt(app), SystemClock.elapsedRealtime(),
+    )
+
+    /** Chờ lớp 2 kết luận, tối đa [maxMs] (fail-open). `true` = đã kết luận. ⚠ CHẶN — chỉ gọi trên luồng nền. */
+    internal fun awaitMoXeVerdict(app: Context, maxMs: Long): Boolean {
+        val until = SystemClock.elapsedRealtime() + maxMs
+        while (moXePending(app)) {
+            val left = until - SystemClock.elapsedRealtime()
+            if (left <= 0L) return false
+            try {
+                Thread.sleep(minOf(left, VERDICT_POLL_MS))
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return false
+            }
+        }
+        return true
+    }
+
+    private const val VERDICT_POLL_MS = 100L
+
     // ─── Chung ───────────────────────────────────────────────────────────────────────────────────────────
 
     /**
      * Đo → chờ → đo lại → KẸT BỀN thì vào ĐÚNG đường leo thang sẵn có ([NavConnect.escalateOnLifecycle] →
      * `escalateIfStuck` → `AccessibilityRebind.forceStopRebindCommand`). Không tự dựng lệnh nào ở đây.
+     *
+     * @return `true` = đã thấy KẸT nhưng lượt bị CẮT vì pha qua (chưa kết luận) — chỉ [onBootGrace] dùng (trao lớp 1).
      */
-    private fun healIfStuck(app: Context, phase: HealPhase, screenOnAt: Long) {
+    private fun healIfStuck(app: Context, phase: HealPhase, screenOnAt: Long): Boolean {
         val note = A11yBindJournal.grantNote(userAsked = false, phase = phase)
         // R-nf5 — cùng cổng `wanted` của healStep; hỏi ở đây để không mở phiên shell vô ích khi phím-thoại tắt.
         if (!Prefs.voiceKeyEnabled(app)) {
             Log.i(TAG, "$note: phím-thoại TẮT → không đo")
-            return
+            return false
         }
-        val first = observe(app) ?: return
+        val first = observe(app) ?: return false
         A11yBindJournalStore.record(app, stateOf(first), note)
         if (!first.stuck) {
             Log.i(TAG, "$note: không kẹt (bound=${first.bound}, binding=${first.inBinding})")
-            return
+            return false
         }
         if (!waitInPhase(app, phase, screenOnAt, AccessibilityHealGates.STUCK_CONFIRM_GAP_MS)) {
             Log.i(TAG, "$note: pha đã qua trong lúc chờ đo lại → bỏ")
-            return
+            return true
         }
-        val second = observe(app) ?: return
+        val second = observe(app) ?: return false
         if (!AccessibilityHealGates.stuckPersistent(first, second)) {
             Log.i(TAG, "$note: kẹt KHÔNG bền (lần 2 bound=${second.bound}, binding=${second.inBinding}) → không leo")
-            return
+            return false
         }
+        // READY-AT-HOME — dòng `keys=` (summary + màn Chẩn đoán) nói đúng điều lượt này thấy. Dòng TRƯỚC khi leo là dòng
+        // duy nhất chắc ra kịp: lệnh bắn mở đầu bằng `am force-stop` ⇒ tiến trình này chết ngay sau đó.
+        KachiReadyLog.keys("STUCK($note)->ESCALATE")
         val r = NavConnect.escalateOnLifecycle(app, phase) { stillInPhase(app, phase, screenOnAt) }
+        KachiReadyLog.keys("STUCK($note)->$r")
         Log.w(TAG, "$note: kẹt BỀN ${second.atElapsed - first.atElapsed} ms → leo thang: $r")
+        // Cổng cuối của đường leo nói "pha qua" ⇒ không bắn ⇒ cũng là CẮT (cùng nghĩa với nhánh chờ ở trên).
+        return r != NavConnect.GrantResult.RESTARTING && !stillInPhase(app, phase, screenOnAt)
     }
 
     /**
@@ -327,6 +447,9 @@ object A11yLifecycleHeal {
         val score = Runnable {
             guarded("chấm điểm sau chữa") {
                 val bound = NavConnect.boundPerAccessibilityManager(app) ?: return@guarded
+                // READY-AT-HOME — tiến trình sinh từ lượt chữa thì `KeyReady` ghi `SKIP_OWN_HEAL` (không cấp chồng); kết
+                // quả THẬT của lượt chữa tới ở đây ⇒ dòng `keys=` / màn Chẩn đoán nói phím có sống không.
+                KachiReadyLog.keys(if (bound) "HEALED->BOUND" else "HEALED->NOT_BOUND")
                 A11yBindJournalStore.record(
                     app,
                     if (bound) A11yBindJournal.State.BOUND else A11yBindJournal.State.NOT_BOUND,

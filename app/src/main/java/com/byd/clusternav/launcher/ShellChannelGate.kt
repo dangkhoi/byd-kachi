@@ -8,13 +8,22 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.os.PowerManager
 import com.byd.clusternav.AdbKeys
+import com.byd.clusternav.EarlyShellChannel
+import com.byd.clusternav.KachiReadyLog
+import com.byd.clusternav.KeyReady
 import com.byd.clusternav.R
+import com.byd.clusternav.ShellReadiness
 import com.byd.clusternav.carexec.FirstOpenApproval
 import com.byd.clusternav.carexec.FirstOpenStep
 import com.byd.clusternav.carexec.LocalDeviceShell
+import com.byd.clusternav.carexec.LocalShellAdmission
 import com.byd.clusternav.carexec.LocalShellFailure
 import com.byd.clusternav.carexec.LocalShellResult
+import com.byd.clusternav.carexec.LocalShellRetry
+import com.byd.clusternav.carexec.ShellChannelPhase
+import com.byd.clusternav.carexec.ShellReadinessPolicy
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -55,8 +64,8 @@ internal class ShellChannelGate(
     /** Cửa đẩy việc xuống thread nền của màn chính (`KachiHomeActivity.submitBg`); `false` = đã huỷ. */
     private val submitBg: (() -> Unit) -> Boolean,
     /** MỘT lượt dò (chặn, thread nền). `null` = kênh lên được. Tiêm vào để test off-device. */
-    private val probe: () -> LocalShellFailure? = { ShellApprovalProbe.probe(activity) },
-    /** Đường nối dây ĐÃ CÓ từ trước F4 — chạy trên thread nền, đúng một lần. */
+    private val probe: () -> LocalShellFailure? = { ShellApprovalProbe.probeForHome(activity) },
+    /** Đường nối dây ĐÃ CÓ từ trước F4 — chạy trên thread nền, một lần mỗi lần nhận kênh (hỏng ⇒ [wiringFailed]). */
     private val onChannelUp: () -> Unit,
     /** Vòng kiểm quyền khi CHƯA có kênh; `awaiting` = đang chờ người dùng bấm. Thread nền, một lần mỗi ca. */
     private val onReport: (awaiting: Boolean) -> Unit,
@@ -88,6 +97,7 @@ internal class ShellChannelGate(
     fun arm() {
         activity.window.decorView.post {
             framed = true
+            adopt()   // READY-AT-HOME §4.7 — kênh đã SẴN ở tầng tiến trình ⇒ nhận ngay, không dò lại
             schedule(FirstOpenApproval.SETTLE_MS)
         }
     }
@@ -95,6 +105,7 @@ internal class ShellChannelGate(
     /** `onStart` — màn hiện lại thì vòng dò chạy tiếp (người dùng có thể vừa bấm Cho phép ở hộp thoại). */
     fun onShown() {
         showing = true
+        adopt()   // READY-AT-HOME §4.7 — màn bật lại sau lượt tắt máy ⇒ kênh đã sẵn từ lúc màn tắt
         schedule(FirstOpenApproval.SETTLE_MS)
     }
 
@@ -118,6 +129,7 @@ internal class ShellChannelGate(
     fun onFocus(hasFocus: Boolean) {
         focused = hasFocus
         if (!hasFocus) return
+        adopt()   // READY-AT-HOME §4.7
         // Lấy lại tiêu điểm = cửa sổ nằm trên vừa biến mất — rất có thể chính là hộp thoại người dùng vừa trả lời.
         // Dời lượt ĐÃ HẸN lên sớm (thay vì ngồi hết phần còn lại của nhịp 20 s) chính là thứ làm dải nhắc biến mất
         // ngay sau khi họ bấm. Chỉ DỜI lịch, không tự bắn: [attempt] vẫn phải qua cổng vòng đời + tiêu điểm. Không
@@ -131,6 +143,23 @@ internal class ShellChannelGate(
 
     /** Nút *Thử lại* trên dải nhắc — bỏ qua phần còn lại của nhịp 20 s, không bỏ qua cổng vòng đời. */
     fun retryNow() {
+        // READY-AT-HOME · review lượt 1 [P2]: màn ĐÃ nối dây (`channelUp`) mà kênh mức tiến trình rơi khỏi UP (một phiên
+        // HỎI sau đó — vd phím mic — gặp adbd hỏi lại / từ chối ⇒ NEEDS_APPROVAL, thẻ MẤT DUYỆT hiện) thì [attempt] thoát
+        // ngay ở `channelUp` ⇒ nút *Hỏi lại* CHẾT. Người dùng vừa bấm trong HOME (có tiêu điểm — R1.1 nơi thứ hai) ⇒ hỏi
+        // bằng một phiên hạn đọc 30 s ([ShellApprovalProbe.askUser]); KHÔNG chạy lại [onChannelUp] (dây đã nối rồi).
+        if (channelUp) {
+            if (ShellReadiness.isUp() || inFlight) return
+            inFlight = true
+            val queued = submitBg {
+                try {
+                    ShellApprovalProbe.askUser(activity)
+                } finally {
+                    handler.post { inFlight = false }
+                }
+            }
+            if (!queued) inFlight = false
+            return
+        }
         handler.removeCallbacks(attemptRunnable)
         scheduled = true
         handler.post(attemptRunnable)
@@ -167,9 +196,14 @@ internal class ShellChannelGate(
                 hideBanner()
                 handler.removeCallbacks(attemptRunnable)
                 scheduled = false
-                submitBg { onChannelUp() }
+                // READY-AT-HOME · review lượt 2 (ân hạn khởi động) [P3]: giữ ô như [adopt] — tiến trình DỰNG LẠI lúc màn sáng
+                // nay cũng có lượt có thể force-stop (KHOI_DONG, R2.7); F4 thắng đua khi lượt sớm chậm hơn tiêu điểm + 1,5 s.
+                submitBg { KeyReady.holdTileIfEscalating(activity.applicationContext); onChannelUp() }
+                ShellReadiness.reportUp("f4")   // READY-AT-HOME §4.7 — phép đo của F4 cũng là sự thật mức tiến trình
+                KachiReadyLog.line("home f4")
             }
             is FirstOpenStep.AwaitingUser -> {
+                ShellReadiness.reportNeedsApproval("f4")   // READY-AT-HOME §4.5 — thẻ xin quyền + ô nói đúng việc
                 awaitingApproval = true
                 showBanner()
                 // Vòng kiểm quyền chạy MỘT lần cho ca này: nó chỉ đọc trạng thái (không cần kênh shell) nên vẫn có
@@ -181,15 +215,80 @@ internal class ShellChannelGate(
                 if (step.retryAfterMs > FirstOpenApproval.NO_RETRY) schedule(step.retryAfterMs)
             }
             is FirstOpenStep.Environment -> {
+                ShellReadiness.reportEnvironment(step.reason, "f4")   // READY-AT-HOME §4.5 (đã UP thì giữ UP)
                 awaitingApproval = false
                 hideBanner()
                 if (!reportedEnvironment) {
                     reportedEnvironment = true
                     submitBg { onReport(false) }
                 }
+                // READY-AT-HOME · review lượt 1–2 [P3]: cổng 5555 đóng ⇒ F4 tự hẹn dò lại (luật thuần
+                // [ShellReadinessPolicy.envReprobeMs] — chỉ PORT_CLOSED: không có kết nối tới adbd ⇒ không thể dựng hộp).
+                val again = ShellReadinessPolicy.envReprobeMs(step.reason)
+                if (again > 0L) schedule(again)
             }
         }
+        // READY-AT-HOME · review lượt 2 [P3]: kênh có thể đã lên ở tầng tiến trình TRONG lúc lượt này bay (một phiên nền
+        // khác bắt tay xong) — bên nghe gọi [adopt] lúc đó bị hoãn vì `inFlight`, và không có sự kiện đổi trạng thái nào
+        // gọi lại. Lượt này trả MÔI TRƯỜNG (lỗi lệnh không hạ UP — bảng §4.5) ⇒ nhận ngay ở đây. ChannelUp/AwaitingUser ⇒
+        // [adopt] tự bỏ (đã nhận / không còn UP).
+        adopt()
     }
+
+    // ── READY-AT-HOME §4.7 — nhận kênh ĐÃ SẴN ở tầng tiến trình ─────────────────────────────────────────
+
+    /**
+     * Kênh đã ĐO là lên trong tiến trình này ([ShellReadiness], vd lượt sớm lúc màn tắt) ⇒ chạy NGAY đường nối dây cũ
+     * ([onChannelUp] — thân `bringUpShellChannel` không đổi), không chờ tiêu điểm, không chờ 1,5 s, không dò lại.
+     *
+     * Vì sao bỏ được tiêu điểm + 1,5 s: F4 cần hai điều đó CHỈ để hộp "Cho phép gỡ lỗi USB?" sống ([ĐO] 14/09). Khi
+     * kênh đã lên, khoá vừa được nhận trong tiến trình ⇒ không lần nối nào sinh hộp nữa (adbd chỉ hỏi khi nhận khoá công
+     * khai — [ĐO AOSP] spec §2.5). Chưa lên ⇒ hàm này không làm gì, F4 y như cũ.
+     *
+     * Điều kiện ở [ShellReadinessPolicy.adoptAllowed] (thuần, có test): kênh UP + khung đã vẽ + màn đang hiện + màn
+     * TƯƠNG TÁC (lượt tắt máy: HOME tạo rồi dừng trong 0,3 s [ĐO] — nhận lúc đó là app ô có tiếng chạy lúc xe tắt) +
+     * chưa nhận + không có lượt F4 đang bay (lượt đó tự chạy [onChannelUp] — nhận thêm là chạy HAI lần).
+     *
+     * Trước [onChannelUp]: [KeyReady.holdTileIfEscalating] — lớp 2 (2.83) đang xét một lần mở xe mà phím chưa gắn thì ô
+     * CHƯA gắn app (tối đa 8 s, fail-open) ⇒ lượt force-stop của lớp 2 không làm app ô mở hai lần (R-A2 của 2.83).
+     */
+    fun adopt() {
+        if (!ShellReadinessPolicy.adoptAllowed(ShellReadiness.isUp(), framed, showing, interactiveNow(), channelUp, inFlight)) return
+        channelUp = true
+        awaitingApproval = false
+        hideBanner()
+        handler.removeCallbacks(attemptRunnable)
+        scheduled = false
+        val app = activity.applicationContext
+        EarlyShellChannel.homeVisible(app)   // mốc màn bật sớm nhất + chuỗi SẴN (kiểm phím) chạy song song, không chặn ô
+        KachiReadyLog.line("home adopt")
+        val queued = submitBg { KeyReady.holdTileIfEscalating(app); onChannelUp() }
+        if (!queued) channelUp = false   // thread nền đã tắt (màn huỷ) ⇒ không kẹt cờ
+    }
+
+    /**
+     * READY-AT-HOME · review lượt 3 [P2] — đường nối dây ([onChannelUp], thân `bringUpShellChannel` không đổi) đã chạy mà
+     * màn chính vẫn KHÔNG có kênh (nhánh `dadb.probe()` hỏng: cổng 5555 chưa mở lúc màn bật, kết nối cũ chết sau giấc
+     * ngủ, hoặc cổng thi hành vừa chặn vì kênh rơi khỏi UP). Trước bản vá cờ [channelUp] kẹt `true` ⇒ không lượt F4 nào
+     * chạy lại, [adopt] tự bỏ, nút *Thử lại* của thẻ thoát ở nhánh `channelUp` ⇒ ô nằm "Đang kết nối…" tới khi màn chính
+     * bị dựng lại. Khoảng hở rộng ra từ READY-AT-HOME: [adopt] nối dây lúc màn BẬT dựa trên phép đo của lượt sớm có thể từ
+     * lúc màn TẮT (trước đó F4 dò xong là nối dây ngay). Có xảy ra trên xe không: [CHƯA BIẾT].
+     *
+     * Nay: nhả cờ rồi hẹn lượt F4 sau [FirstOpenApproval.RETRY_EVERY_MS] — cùng nhịp vòng F4, cùng cổng vòng đời + tiêu
+     * điểm, [onHidden] dừng. Kênh vẫn UP ⇒ [ShellApprovalProbe.probeForHome] không dò lại ⇒ lượt đó chạy lại đúng
+     * [onChannelUp]; kênh đã rơi khỏi UP ⇒ F4 hỏi như thường. Gọi từ thread nền (cuối `onChannelUp` của màn chính).
+     */
+    fun wiringFailed() {
+        handler.post {
+            if (!channelUp) return@post
+            channelUp = false
+            KachiReadyLog.line("home wiring failed -> f4 in=${FirstOpenApproval.RETRY_EVERY_MS}ms")
+            schedule(FirstOpenApproval.RETRY_EVERY_MS)
+        }
+    }
+
+    private fun interactiveNow(): Boolean =
+        (activity.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive == true
 
     // ── Dải nhắc: nói đúng một việc, không chặn thao tác nào ─────────────────────────────────────────
 
@@ -275,6 +374,33 @@ internal object ShellApprovalProbe {
 
     const val PROBE_CMD = "echo kachi_ok"
     private const val TOKEN = "kachi_ok"
+
+    /**
+     * READY-AT-HOME §4.7 — lượt dò của MÀN CHÍNH (F4). Lượt sớm của tiến trình đang bay ⇒ chờ nó (≤ 8 s) thay vì mở
+     * kết nối thứ hai (với khoá đã bị thu hồi, hai kết nối = hộp chồng hộp [CHƯA BIẾT F2 §4.3]). Kênh đã ĐO là lên trong
+     * tiến trình ⇒ `null` (sự thật đo được, không dò lại). Còn lại ⇒ đúng lượt dò cũ [probe].
+     */
+    fun probeForHome(ctx: Context): LocalShellFailure? {
+        val s = ShellReadiness.awaitSettled(ShellReadinessPolicy.EARLY_WAIT_MS)
+        if (s.phase == ShellChannelPhase.UP) return null
+        return LocalShellAdmission.labeled("f4") { probe(ctx) }
+    }
+
+    /**
+     * READY-AT-HOME — lượt HỎI do người dùng BẤM (*Hỏi lại* / *Thử lại*) khi màn chính ĐÃ nối dây ([ShellChannelGate.retryNow]
+     * nhánh `channelUp`): một phiên [LocalShellRetry.USER_READ_CAP] (hạn đọc 30 s, nối lười) để hộp "Cho phép gỡ lỗi
+     * USB?" bung ra và được trả lời TRONG cùng phiên — không có vòng F4 nào chạy lại ở trạng thái này. Kết quả tự báo về
+     * `ShellReadiness` qua cổng thi hành (bắt tay xong ⇒ UP) — nên hàm không trả gì. ⚠ CHẶN — chỉ gọi trên thread nền.
+     */
+    fun askUser(ctx: Context) {
+        val keys = runCatching { AdbKeys.ensure(ctx) }
+            .onFailure { android.util.Log.w("ShellApprovalProbe", "AdbKeys.ensure: ${it.javaClass.simpleName}: ${it.message}") }
+            .getOrNull() ?: return
+        val result = LocalShellAdmission.labeled("ask") {
+            LocalDeviceShell.sessionResult(keys, LocalShellRetry.USER_READ_CAP) { sh -> sh(PROBE_CMD) }
+        }
+        android.util.Log.i("ShellApprovalProbe", "hỏi lại (màn đã nối dây): ${if (result is LocalShellResult.Failed) result.reason else "UP"}")
+    }
 
     /** `null` = kênh lên được; khác `null` = lý do đã phân loại. ⚠ CHẶN — chỉ gọi trên thread nền. */
     fun probe(ctx: Context): LocalShellFailure? {

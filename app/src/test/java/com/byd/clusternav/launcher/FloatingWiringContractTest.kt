@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
  * khoá: ai GỌI nó, ở đâu, theo thứ tự nào.
  *
  *  - R-B1: `reflow` không tự mở/đóng app nào (nguồn app mồ côi đo được ở máy ảo 01/10 và xe 29/09).
- *  - R-B2: chạm tay vẫn mở, nhưng dấu bền được ghi TRƯỚC lệnh mở (CLAUDE.md §5).
+ *  - R-B2 → READY-AT-HOME R1.3: chạm tay KHÔNG còn mở cửa sổ nổi (không quyền thì không dùng được app).
  *  - R-B3: dọn ở đúng hai mốc — gỡ app (evict) và kênh shell vừa lên — chỉ khi có kênh, trên luồng nền.
  *  - R-B4: dấu theo XE, tệp `clusternav_state` sẵn có, khai lý do ở danh mục.
  *
@@ -37,16 +37,20 @@ class FloatingWiringContractTest {
         assertTrue(fn.contains("if (embedding()) return"), "nhúng thì không có nút nổi để dựng")
     }
 
+    /**
+     * ⚠ READY-AT-HOME R1.3 (owner 2026-10-01 *"không có quyền, không dùng đc app"*) — bài này ĐỔI có chủ đích, theo
+     * hướng CHẶT hơn: bản R-B2 đòi chạm tay vẫn MỞ cửa sổ nổi (ghi dấu trước). Nay chạm ô chưa có bộ chiếu KHÔNG mở cửa
+     * sổ nổi ở ca nào ⇒ cũng không còn gì để ghi dấu; lượt dọn [sweepFloating] vẫn giữ cho cửa sổ do bản cũ để lại sau
+     * nâng cấp. Khoá đầy đủ: `ReadyAtHomeWiringContractTest.placeApp…`; luật thuần `ShellReadinessPolicyTest`.
+     */
     @Test
-    fun `R-B2 cham tay ghi dau ben TRUOC lenh mo, ca duong dat-moi lan dat-lai-khung`() {
+    fun `R1_3 cham tay KHONG mo cua so noi - khong con lenh mo nen khong con dau phai ghi`() {
         val fn = SourceRoots.body(windows, "fun placeApp(")
-        val mark = fn.indexOf("floatingLedger.markOpened(pkg)")
-        assertTrue(mark >= 0, "placeApp phải ghi dấu bền")
-        val open = fn.indexOf("launcher.openInSlot(")
-        val move = fn.indexOf("launcher.moveToSlot(")
-        assertTrue(open > mark && move > mark, "dấu phải đứng TRƯỚC mọi lệnh mở (mark=$mark open=$open move=$move)")
-        assertTrue(fn.indexOf("submit {") in 0 until mark, "ghi dấu (commit() đồng bộ) phải ở luồng nền, không ở luồng chính")
-        assertTrue(fn.indexOf("if (embedding()) return") in 0 until mark, "có kênh/nhúng thì không mở cửa sổ nổi ⇒ không ghi dấu")
+        listOf("floatingLedger.markOpened(pkg)", "launcher.openInSlot(", "launcher.moveToSlot(", "submit {").forEach {
+            assertFalse(fn.contains(it), "placeApp không được còn '$it' (READY-AT-HOME R1.3)")
+        }
+        assertTrue(fn.indexOf("if (embedding()) return") in 0 until fn.indexOf("ShellAccessUi.slotTap"), "có bộ chiếu ⇒ không làm gì")
+        assertTrue(windows.contains("FloatingOrphanSweep(floatingLedger"), "lượt dọn cửa sổ nổi của bản cũ vẫn phải còn")
     }
 
     @Test
@@ -104,17 +108,24 @@ class FloatingWiringContractTest {
         assertTrue(FloatingLedgerStore.KEY in SettingsCatalog.NOT_SETTINGS, "trạng thái máy — không phải dòng cài đặt")
     }
 
+    /**
+     * READY-AT-HOME §4.9 — chữ trên ô chưa có bộ chiếu đổi từ "Chạm để mở" (chạm không còn mở nổi) sang TÌNH TRẠNG KÊNH,
+     * tự đổi theo trạng thái. Điều kiện hiện vẫn y R-B1: ô KHÔNG có bộ chiếu (không kênh shell, không ActivityView).
+     */
     @Test
-    fun `R-B1 the o App khong bo chieu thi hien Cham de mo, du vi va en`() {
+    fun `R1_3 the o App khong bo chieu thi noi tinh trang kenh, du vi va en`() {
         assertTrue(
             view.contains("appCard(content.pkg, tapHint = shell == null && !SlotAppHost.embeddingUsable(context))"),
             "gợi ý chỉ hiện khi ô KHÔNG có bộ chiếu (không kênh shell, không ActivityView)",
         )
         val fn = SourceRoots.body(cards, "internal fun WorkspaceView.appCard(")
-        assertTrue(fn.contains("if (tapHint)") && fn.contains("R.string.kachi_slot_tap_to_open"))
+        assertTrue(fn.contains("if (tapHint) col.addView(ShellAccessUi.tileHint(context))"))
+        assertFalse(fn.contains("kachi_slot_tap_to_open"))
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
-        assertTrue(vi.contains("<string name=\"kachi_slot_tap_to_open\">Chạm để mở</string>"))
-        assertTrue(en.contains("<string name=\"kachi_slot_tap_to_open\">Tap to open</string>"))
+        assertTrue(vi.contains("<string name=\"kachi_slot_connecting\">Đang kết nối…</string>"))
+        assertTrue(vi.contains("<string name=\"kachi_slot_needs_access\">Cần cấp quyền</string>"))
+        assertTrue(en.contains("<string name=\"kachi_slot_connecting\">Connecting…</string>"))
+        assertTrue(en.contains("<string name=\"kachi_slot_needs_access\">Permission needed</string>"))
     }
 }

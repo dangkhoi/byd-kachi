@@ -200,6 +200,14 @@ class DiagActivity : Activity() {
             // vô-lăng). Đây là ĐƯỜNG ĐỌC của nhật ký: [ĐO xe 2026-09-28] vòng đệm logcat chỉ còn 32 phút nên
             // sáng hôm sau khoảnh khắc đứt đã trôi mất. Hiện ở màn Chẩn đoán để anh em chỉ cần CHỤP MÀN HÌNH
             // gửi về, không phải gõ adb (CLAUDE.md §11). Tệp chỉ chứa mốc giờ + hai đồng hồ + pid + trạng thái.
+            // READY-AT-HOME §4.10 (CLAUDE.md §11) — kênh điều khiển cửa sổ: trạng thái đo được trong tiến trình, dấu
+            // duyệt theo xe, và dòng summary "màn bật → ô có app" gần nhất. Chụp màn này là đủ, không gõ adb.
+            appendLine()
+            appendLine("── kênh điều khiển cửa sổ · sẵn sàng ──")
+            appendLine(com.byd.clusternav.EarlyShellChannel.describe())
+            appendLine("dấu duyệt: ${com.byd.clusternav.ShellReadiness.ledger().javaClass.simpleName} · chặn nền: ${com.byd.clusternav.KachiReadyLog.denyCount()}")
+            appendLine(com.byd.clusternav.KachiReadyLog.summaryForDiag())
+
             appendLine()
             appendLine("── phím vô-lăng · nhật ký gắn dịch vụ Hỗ trợ ──")
             val escalatedAt = Prefs.a11yEscalatedAt(applicationContext)

@@ -41,6 +41,9 @@ class KachiApplication : Application() {
         // 2.83 · lớp 1/2 tự chữa phím vô-lăng — SỚM NHẤT của tiến trình launcher: [ĐO xe 29/09] BYD giết Kachi mỗi lần
         // tắt máy và Android dựng lại nó 0,3 s sau lúc màn đã tắt; chỗ này là mã ĐẦU TIÊN chạy trong tiến trình mới.
         // Chỉ hỏi binder + đăng ký bộ thu màn bật trên luồng chính; phần đo/leo chạy nền (xem KDoc [A11yLifecycleHeal]).
+        // READY-AT-HOME §4.6 — cổng thi hành của kênh shell phải có mặt TRƯỚC phiên tự chữa đầu tiên (luồng nền của
+        // lớp 1 có thể chạy ngay sau dòng kế). Chỉ gán móc, không I/O, không nối gì.
+        ShellReadiness.install(this)
         A11yLifecycleHeal.install(this)
         AppContainer.get(this)
         // V3 · R4 — nạp sẵn mô hình NGHE trên luồng nền ưu tiên thấp, sau 3 s. Ở đây chứ không ở màn chính:
@@ -50,6 +53,9 @@ class KachiApplication : Application() {
         // B1.1 (1.70) — hâm sẵn Silero VAD (0,64 MB ONNX) để bỏ phần nạp ONNX khỏi đường "bấm → mic mở"
         // ([ĐO xe 2026-09-17] 1,5 s lần đầu). Giữ MỘT instance sống, mỗi lượt chỉ reset — xem KDoc VoiceVad.
         VoiceVad.preload(this)
+        // READY-AT-HOME R2.1 — nối kênh shell NGAY khi tiến trình bật (cả lượt BYD dựng lại Kachi lúc màn tắt), CHỈ khi
+        // xe đã duyệt khoá này (dấu bền còn tươi); không thì để F4 hỏi đúng lúc. Đường MỚI ⇒ dòng CUỐI (CLAUDE.md §6).
+        EarlyShellChannel.start(this)
     }
 
     /**

@@ -72,10 +72,11 @@ internal fun WorkspaceView.deadWidgetCard(content: SlotContent.AppWidget): View 
     }
 
 /**
- * [tapHint] — PROFILE-SWITCH-SLOTS R-B1: ô KHÔNG có bộ chiếu (chưa có kênh shell và ROM không cho ActivityView) thì
- * Kachi không còn tự mở app thành cửa sổ nổi; thẻ nói rõ "Chạm để mở" để người dùng biết vì sao ô chỉ có icon. Chạm
- * ô đi `onAppOpen` → `LauncherWindows.placeApp` (ghi dấu bền trước khi mở). Kênh lên ⇒ `applyEmbedSeam` dựng lại ô
- * với bộ chiếu ⇒ thẻ dựng lại không còn dòng này.
+ * [tapHint] — ô KHÔNG có bộ chiếu (chưa có kênh shell và ROM không cho ActivityView). PROFILE-SWITCH-SLOTS R-B1 bỏ việc
+ * tự mở app thành cửa sổ nổi; READY-AT-HOME R1.3 bỏ nốt đường chạm-để-mở-nổi ⇒ dòng chữ nói TÌNH TRẠNG KÊNH thay cho
+ * "Chạm để mở": "Đang kết nối…" / "Cần cấp quyền" / "Chưa có kênh điều khiển" (luật `ShellReadinessPolicy.tileHint`),
+ * tự đổi khi trạng thái kênh đổi ([ShellAccessUi.tileHint]). Chạm ô đi `onAppOpen` → `LauncherWindows.placeApp` →
+ * chờ kênh hoặc thẻ xin quyền. Kênh lên ⇒ `applyEmbedSeam` dựng lại ô với bộ chiếu ⇒ thẻ dựng lại không còn dòng này.
  */
 internal fun WorkspaceView.appCard(pkg: String, tapHint: Boolean = false): View {
     val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER }
@@ -93,10 +94,6 @@ internal fun WorkspaceView.appCard(pkg: String, tapHint: Boolean = false): View 
     } catch (e: Exception) {
         col.addView(placeholder("▣  $pkg"))
     }
-    if (tapHint) col.addView(TextView(context).apply {
-        text = context.getString(R.string.kachi_slot_tap_to_open)
-        setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
-        gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
-    })
+    if (tapHint) col.addView(ShellAccessUi.tileHint(context))
     return col
 }

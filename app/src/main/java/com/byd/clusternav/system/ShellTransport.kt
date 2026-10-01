@@ -2,6 +2,8 @@ package com.byd.clusternav.system
 
 import android.content.Context
 import com.byd.clusternav.AdbKeys
+import com.byd.clusternav.carexec.LocalShellAdmission
+import com.byd.clusternav.carexec.ShellSessionKind
 import dadb.Dadb
 
 /**
@@ -72,7 +74,10 @@ class ShellTransport private constructor(context: Context) {
         // PERF 2026-09-16: đếm Ở ĐÂY (chỗ lệnh thật sự rời tiến trình), không ở `exec` — một `exec` hỏng rồi thử
         // lại là HAI lượt chặn trên hàng đợi dùng chung, và đó đúng là cái giá mà bộ đếm phải nói ra.
         com.byd.clusternav.launcher.KachiPerf.add(com.byd.clusternav.launcher.KachiPerf.Counter.SHELL_CMD)
+        val fresh = db == null
         val r = conn().shell(cmd)
+        // READY-AT-HOME §4.6 — kết nối MỚI vừa trả lệnh đầu ⇒ bắt tay đã xong ⇒ khoá được nhận (sự thật đo được).
+        if (fresh) LocalShellAdmission.report(ShellSessionKind.BACKGROUND, handshook = true, null, dispatched = true, eagerHandshake = false)
         return Response(r.exitCode, r.output, r.errorOutput, r.allOutput)
     }
 
@@ -84,6 +89,10 @@ class ShellTransport private constructor(context: Context) {
      * STOP/RESCUE path may pass a higher priority to preempt queued NORMAL launcher commands.
      */
     fun exec(cmd: String, priority: MutationPriority = MutationPriority.NORMAL): Response = onOwner(priority) {
+        // READY-AT-HOME §4.6 — cửa thứ ba của cổng thi hành, TRƯỚC khi mở kết nối: mọi lệnh cửa sổ/cast/camera/HOME là
+        // đường NỀN. Bị chặn ⇒ ném (không thử lại) — `run()` vẫn trả "" như hợp đồng cũ. Chờ (kênh đang dò) chỉ xảy ra
+        // ở luồng chủ `kachi-window-shell`, không bao giờ ở luồng chính.
+        if (!LocalShellAdmission.admit(ShellSessionKind.BACKGROUND)) throw ShellNotApprovedException()
         runCatching { attempt(cmd) }.getOrElse {
             closeConn()
             // ═══ 1.70 · [ĐO xe 2026-09-17] lệnh `input …` KHÔNG được gửi lại ═══════════════════════════
@@ -140,3 +149,10 @@ class ShellTransport private constructor(context: Context) {
         fun get(context: Context): ShellTransport = com.byd.clusternav.AppContainer.get(context).shellTransport
     }
 }
+
+/**
+ * READY-AT-HOME §4.6 — cổng thi hành chặn một lệnh của [ShellTransport] vì kênh chưa được duyệt trong tiến trình và
+ * không có dấu duyệt còn tươi. Là [java.io.IOException] để mọi chỗ bắt lỗi I/O sẵn có (và `run()` → `""`) xử lý y như
+ * một lần mất kênh — nhưng KHÔNG có kết nối nào được mở, nên adbd không hỏi người dùng từ nền.
+ */
+class ShellNotApprovedException : java.io.IOException("shell channel not approved (READY-AT-HOME gate)")

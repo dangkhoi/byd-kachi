@@ -175,6 +175,12 @@ object ProfileScope {
                 "[SettingsCatalog.NOT_SETTINGS])",
         )
         put(
+            "kachi_shell_approval",
+            "READY-AT-HOME — dấu 'xe này đã duyệt khoá adb này' (`ShellApprovalStore`). Theo XE: duyệt nằm trong " +
+                "`adb_keys` của CHIẾC XE này; chép sang hồ sơ/xe khác là nối sớm bằng khoá chưa được nhận ở đó. Cũng khai " +
+                "ở [SettingsCatalog.NOT_SETTINGS]",
+        )
+        put(
             "kachi_floating_opened",
             "PROFILE-SWITCH-SLOTS R-B4 — dấu 'Kachi đã mở gói này thành cửa sổ nổi' ([FloatingWindowLedger]). Theo XE: " +
                 "cửa sổ nằm trên màn của CHIẾC XE này; theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Cũng " +
