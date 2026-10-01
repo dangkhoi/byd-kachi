@@ -43,12 +43,12 @@ import com.byd.clusternav.Lang as ClusterNavLang
  * vừa dọn xong.
  */
 fun WorkspacePrefs.langMode(): LangMode {
-    val k = key(WorkspacePrefs.K_LANG)
-    sp.getString(k, null)?.let { return LangMode.of(it) }
+    // PROFILE-IMPORT-TYPES: đọc qua [stringOrNull] — giá trị sai kiểu (tệp nhập ≤ 2.84) = vắng ⇒ đi đường lùi, không ném.
+    sp.stringOrNull(key(WorkspacePrefs.K_LANG))?.let { return LangMode.of(it) }
     // Lùi MỘT lần về chỗ lưu chung cũ rồi ghi sang hồ sơ: người đang dùng English không được mất lựa chọn đó chỉ
     // vì bản mới chia khoá theo hồ sơ (cùng luật [profileString], chỉ khác chỗ lưu).
     val legacy = LangMode.of(ClusterNavLang.choice(appCtx).code)
-    sp.edit().putString(k, legacy.code).apply()
+    sp.edit().putString(key(WorkspacePrefs.K_LANG), legacy.code).apply()
     return legacy
 }
 

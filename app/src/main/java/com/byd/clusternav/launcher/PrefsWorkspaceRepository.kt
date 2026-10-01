@@ -221,10 +221,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         return load()
     }
 
-    /** #4 — xuất hồ sơ đang dùng ra chuỗi (WorkspacePrefsProfile.exportProfile). */
-    override fun exportActiveProfile(): String? = prefs.exportProfile(prefs.activeProfile())
+    /** #4 · PROFILE-IO-0930 — xuất hồ sơ đang dùng ra chuỗi kiểu [kind] (WorkspacePrefsProfile.exportProfile). */
+    override fun exportActiveProfile(kind: ProfileTransfer.Kind): String? = prefs.exportProfile(prefs.activeProfile(), kind)
 
-    /** #4 — nhập hồ sơ từ chuỗi; trả state mới nếu thêm được, null nếu header sai / tên trùng. */
+    /** #4 — nhập hồ sơ từ chuỗi; trả state mới nếu thêm được, null nếu tệp không hợp lệ. */
     override fun importProfileData(data: String): HomeUiState? =
         if (prefs.importProfile(data)) load() else null
 

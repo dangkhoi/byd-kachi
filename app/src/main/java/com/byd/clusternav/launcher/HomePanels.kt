@@ -66,9 +66,12 @@ class HomePanels(
      */
     private val onDuplicateProfile: (String) -> Unit = {},
     private val onDeleteProfile: (String) -> Unit,
-    /** #4 — chuỗi export hồ sơ đang dùng (ViewModel) + nhập danh sách chuỗi file (trả số vào được) + tên hồ sơ đang dùng. */
-    private val onExportProfileData: () -> String? = { null },
-    private val onImportProfilesData: (List<String>) -> Int = { 0 },
+    /**
+     * #4 · PROFILE-IO-0930 — chuỗi export kiểu [ProfileTransfer.Kind] của hồ sơ đang dùng (ViewModel) + nhập nội dung
+     * MỘT tệp (trả tên hồ sơ vừa tạo, `null` = tệp hỏng) + tên hồ sơ đang dùng (đặt tên tệp).
+     */
+    private val onExportProfileData: (ProfileTransfer.Kind) -> String? = { null },
+    private val onImportProfileData: (String) -> String? = { null },
     private val activeProfileName: () -> String = { "profile" },
     private val onRenameProfile: (String, String) -> Unit = { _, _ -> },
     /** Tóm tắt bố cục của MỘT hồ sơ (theo tên) cho thẻ hồ sơ ở Cài đặt — đọc-để-vẽ, qua ViewModel. */
@@ -181,12 +184,14 @@ class HomePanels(
             // (`SettingsDialogs.askName`), lớp này chỉ nối hai đầu dây.
             onDuplicateProfile = { name -> onDuplicateProfile(name) },
             onDeleteProfile = { name -> onDeleteProfile(name) },
-            // #4 (owner 2026-09-24) — Xuất: lấy chuỗi export từ ViewModel → ghi file (ProfileIoStore); trả đường dẫn.
-            //          Nhập: đọc mọi file trong thư mục → đẩy vào ViewModel; trả số hồ sơ vào được.
-            onExportProfile = {
-                onExportProfileData()?.let { data -> ProfileIoStore.write(activity, activeProfileName(), data) }
+            // #4 · PROFILE-IO-0930 — Xuất: chuỗi kiểu [kind] từ ViewModel → tệp MỚI (ProfileIoStore, không ghi đè);
+            //          trả đường dẫn. Nhập: liệt kê tệp cho người dùng CHỌN → đọc đúng MỘT tệp → ViewModel; trả tên
+            //          hồ sơ vừa tạo. (Bản #4 đọc MỌI tệp mỗi lần bấm ⇒ nhân bản hồ sơ.)
+            onExportProfile = { kind ->
+                onExportProfileData(kind)?.let { data -> ProfileIoStore.write(activity, activeProfileName(), kind, data) }
             },
-            onImportProfiles = { onImportProfilesData(ProfileIoStore.readAll(activity)) },
+            profileFiles = { ProfileIoStore.list(activity) },
+            onImportProfileFile = { fileName -> ProfileIoStore.read(activity, fileName)?.let { onImportProfileData(it) } },
             profileFolderPath = { ProfileIoStore.folderPath(activity) },
             onRenameProfile = { old, new -> onRenameProfile(old, new) },
             // S4 · R6 — hồ sơ lúc nổ máy (theo XE, không theo hồ sơ — R4).

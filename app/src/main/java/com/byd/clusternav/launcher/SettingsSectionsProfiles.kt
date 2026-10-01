@@ -9,6 +9,9 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
@@ -102,26 +105,63 @@ class SettingsProfilesSection(
                 context.getString(R.string.kachi_profile_copy_of, active),
             ) { name -> deps.onDuplicateProfile(name) }
         })
-        // #4 (owner 2026-09-24) — Xuất/Nhập hồ sơ để backup + chia sẻ (file ở thư mục app, chép qua USB).
-        body.addView(rows.button(context.getString(R.string.kachi_profile_export)) {
-            val path = deps.onExportProfile()
-            Toast.makeText(
-                context,
-                if (path != null) context.getString(R.string.kachi_profile_exported, path)
-                else context.getString(R.string.kachi_profile_export_fail),
-                Toast.LENGTH_LONG,
-            ).show()
-        })
+        profileIo(body)
+    }
+
+    /**
+     * #4 (owner 2026-09-24) · PROFILE-IO-0930 (owner 2026-09-30) — **Xuất / Nhập** hồ sơ (tệp ở thư mục app, chép qua USB).
+     *
+     *  • HAI nút xuất (IO-R3): *đầy đủ* = sao lưu (có sổ địa chỉ + lịch dẫn đường) · *chia sẻ* = bỏ mọi dữ liệu vị trí
+     *    ([ProfileSharePolicy]). Mỗi lần xuất là một tệp MỚI, không bao giờ ghi đè (IO-R2).
+     *  • Nhập (IO-R1) = **chọn MỘT tệp** trong danh sách mới-nhất-trước ([SettingsDialogs.pick] — hộp chọn có sẵn, không
+     *    dựng hộp mới). Bản #4 nhập MỌI tệp mỗi lần bấm ⇒ nhân bản hồ sơ; toast đếm `list.size` chứ không phải số vào.
+     *    Thư mục rỗng ⇒ [SettingsDialogs.pick] nói rõ đường dẫn thư mục để chép tệp vào.
+     */
+    private fun profileIo(body: LinearLayout) {
+        listOf(
+            ProfileTransfer.Kind.FULL to R.string.kachi_profile_export_full,
+            ProfileTransfer.Kind.SHARE to R.string.kachi_profile_export_share,
+        ).forEach { (kind, label) ->
+            body.addView(rows.button(context.getString(label)) {
+                val path = deps.onExportProfile(kind)
+                toast(
+                    if (path != null) context.getString(R.string.kachi_profile_exported, path)
+                    else context.getString(R.string.kachi_profile_export_fail),
+                )
+            })
+        }
         body.addView(rows.button(context.getString(R.string.kachi_profile_import)) {
-            val n = deps.onImportProfiles()
-            Toast.makeText(
+            val files = deps.profileFiles()
+            SettingsDialogs.pick(
                 context,
-                if (n > 0) context.getString(R.string.kachi_profile_imported, n)
-                else context.getString(R.string.kachi_profile_import_none, deps.profileFolderPath()),
-                Toast.LENGTH_LONG,
-            ).show()
+                context.getString(R.string.kachi_profile_import_pick),
+                files.map(::fileLabel),
+                context.getString(R.string.kachi_profile_import_none, deps.profileFolderPath()),
+            ) { i -> importFile(files[i]) }
         })
     }
+
+    private fun importFile(entry: ProfileFiles.Entry) {
+        val created = deps.onImportProfileFile(entry.fileName)
+        toast(
+            if (created != null) context.getString(R.string.kachi_profile_imported, ProfileNames.display(created))
+            else context.getString(R.string.kachi_profile_import_fail, entry.fileName),
+        )
+    }
+
+    /** Một dòng của hộp chọn: tên hồ sơ · kiểu · ngày giờ, dòng dưới là tên tệp (hai tệp cùng hồ sơ phân biệt được). */
+    private fun fileLabel(e: ProfileFiles.Entry): String {
+        val kind = when (e.header?.kind) {
+            ProfileTransfer.Kind.FULL -> context.getString(R.string.kachi_profile_kind_full)
+            ProfileTransfer.Kind.SHARE -> context.getString(R.string.kachi_profile_kind_share)
+            null -> context.getString(R.string.kachi_profile_kind_unknown)
+        }
+        val time = SimpleDateFormat(LIST_TIME, Locale.US).format(Date(e.modifiedMs))
+        val name = e.header?.name?.let(ProfileNames::display) ?: e.fileName
+        return "$name · $kind · $time\n${e.fileName}"
+    }
+
+    private fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_LONG).show()
 
     /**
      * Một hồ sơ: tên + dấu "Đang dùng" + nút Xoá.
@@ -231,5 +271,8 @@ class SettingsProfilesSection(
          * biểu diễn, quy đổi ở ĐÚNG một chỗ ([bootProfile]).
          */
         const val BOOT_LAST_CODE = "__LAST__"
+
+        /** Ngày giờ trong hộp chọn tệp: ISO, không nhập nhằng giữa ngày/tháng ở cả hai ngôn ngữ. */
+        const val LIST_TIME = "yyyy-MM-dd HH:mm"
     }
 }

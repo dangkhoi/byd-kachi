@@ -96,8 +96,8 @@ internal fun WorkspacePrefs.migrateScenesOnce() {
     val taken = existing.toMutableList()
     val plans = existing.map { p ->
         val plan = ScenesMigration.plan(
-            scenesRaw = sp.getString(keyOf(p, WorkspacePrefs.LEGACY_SCENES), null),
-            bootSceneId = sp.getString(keyOf(p, WorkspacePrefs.LEGACY_BOOT_SCENE), null),
+            scenesRaw = sp.stringOrNull(keyOf(p, WorkspacePrefs.LEGACY_SCENES)),
+            bootSceneId = sp.stringOrNull(keyOf(p, WorkspacePrefs.LEGACY_BOOT_SCENE)),
             activeProfile = active,
             existingNames = taken,
         )
@@ -217,53 +217,49 @@ fun WorkspacePrefs.renameProfile(old: String, new: String): Boolean {
 }
 
 
-// ═══ #4 EXPORT / IMPORT HỒ SƠ (owner 2026-09-24: backup + chia sẻ) ═══════════════════════════════════════════
+// ═══ #4 EXPORT / IMPORT HỒ SƠ (owner 2026-09-24: backup + chia sẻ) · PROFILE-IO-0930 (owner 2026-09-30) ══════════════
 //
-// Serialize TOÀN BỘ hồ sơ (bố cục · chip · đơn vị · theme · ảnh chụp ClusterNav) qua [PrefSnapshot] (đã typed,
-// đã test) — KHÔNG nghĩ format thứ hai. Một dòng đầu = header "kachi-profile\tv1\t<tên>" để nhận dạng + đặt tên khi
-// nhập. KHÔNG xuất khoá nhạy cảm: PROFILE_SUFFIXES chỉ là cấu hình launcher (không có IP xe/token — những thứ đó
-// nằm ở tệp prefs khác, không theo hồ sơ).
+// Định dạng, lọc bản chia sẻ, chọn ảnh chụp khi xuất và kế hoạch nhập là phép THUẦN ở `:core` ([ProfileTransfer],
+// [ProfileSharePolicy], test off-device) — spec `kachi-profiles-are-everything.html` §12. Ở đây chỉ cấp cửa đọc và đổ
+// kế hoạch vào MỘT `Editor`. ⚠ Tệp đầy đủ CÓ sổ địa chỉ + lịch dẫn đường (KDoc cũ "không xuất khoá nhạy cảm" sai từ khi
+// hai thứ đó vào hồ sơ) — gửi người khác thì dùng [ProfileTransfer.Kind.SHARE].
 
-private const val PROFILE_IO_HEADER = "kachi-profile"
-private const val PROFILE_IO_VERSION = "v1"
+/**
+ * Xuất hồ sơ [profile] ra chuỗi tệp kiểu [kind].
+ *
+ * ⚠⚠ KHÔNG tự gọi [snapshotClusterNav] ở đây: tệp sống chỉ là cấu hình của hồ sơ ĐANG DÙNG, và chụp nó vào ảnh của một
+ * hồ sơ khác vừa xuất sai vừa ghi đè vĩnh viễn ảnh của hồ sơ kia (lỗi ẩn #4). Quyết định "chụp hay dùng ảnh đã lưu" là
+ * của [ProfileTransfer.export] — cửa [ProfileTransfer.Source.snapshotLive] bên dưới là chỗ DUY NHẤT được chụp.
+ */
+internal fun WorkspacePrefs.exportProfile(profile: String, kind: ProfileTransfer.Kind): String =
+    ProfileTransfer.export(transferSource(), profile, activeProfile(), kind)
 
-/** Xuất hồ sơ [profile] ra chuỗi (ghi file để backup/chia sẻ). Chụp ClusterNav trước cho tươi (như duplicate). */
-internal fun WorkspacePrefs.exportProfile(profile: String): String {
-    snapshotClusterNav(profile)
-    val values: Map<String, Any?> = WorkspacePrefs.PROFILE_SUFFIXES.associateWith { sp.all[keyOf(profile, it)] }
-        .filterValues { it != null }
-    val header = listOf(PROFILE_IO_HEADER, PROFILE_IO_VERSION, profile).joinToString("\t")
-    return header + "\n" + PrefSnapshot.encode(values)
+private fun WorkspacePrefs.transferSource(): ProfileTransfer.Source {
+    val prefs = this
+    return object : ProfileTransfer.Source {
+        override fun stored(): Map<String, *> = prefs.sp.all
+        override fun keyOf(profile: String, suffix: String): String = prefs.keyOf(profile, suffix)
+        override fun snapshotLive(profile: String) = prefs.snapshotClusterNav(profile)
+    }
 }
 
 /**
- * Nhập hồ sơ từ chuỗi [data] thành hồ sơ tên [name] (mặc định lấy tên trong header). Trả `true` nếu nhập được.
+ * Nhập hồ sơ từ chuỗi [data] thành hồ sơ MỚI tên [name] (mặc định lấy tên trong header). Trả `true` nếu nhập được.
  *
- * Tên TRÙNG ⇒ **sinh tên duy nhất** "<tên> 2", "<tên> 3"… (owner 2026-09-25: export hồ sơ đang dùng rồi import
- * lại — tên khớp hồ sơ đang có, trước đây bị `return false` ⇒ "không có file hợp lệ" dù file có thật). KHÔNG đè
- * hồ sơ đang có (đè = xoá cấu hình đang dùng). Header sai / rỗng ⇒ false.
+ * Tên TRÙNG ⇒ **sinh tên duy nhất** "<tên> 2", "<tên> 3"… (owner 2026-09-25) — KHÔNG đè hồ sơ đang có. Header sai /
+ * rỗng / kiểu lạ ⇒ false. Chỉ ghi khoá mang tên hồ sơ MỚI ⇒ không chạm hồ sơ khác; bản chia sẻ ra hồ sơ không có địa
+ * chỉ và lịch ([ProfileTransfer.planImport]).
  */
 internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean {
-    val lines = data.trim().split("\n", limit = 2)
-    if (lines.size < 2) return false
-    val head = lines[0].split("\t")
-    if (head.getOrNull(0) != PROFILE_IO_HEADER) return false
-    val base = (name ?: head.getOrNull(2))?.trim()?.replace(Regex("[\\r\\n]"), " ").orEmpty()
-    if (base.isEmpty()) return false
-    val list = profiles().toMutableList()
-    // Trùng tên ⇒ thêm hậu tố số cho tới khi duy nhất (backup-restore luôn ra một hồ sơ mới, không đè cái đang có).
-    var target = base
-    var n = 2
-    while (target in list) { target = "$base $n"; n++ }
-    val values = PrefSnapshot.decode(lines[1])
-    val e = sp.edit()
-    list.add(target)
-    e.putString(WorkspacePrefs.K_PROFILES, list.joinToString("\n"))
-    // Chỉ ghi các hậu tố HỢP LỆ (PROFILE_SUFFIXES) — chống chuỗi lạ nhét khoá ngoài phạm vi hồ sơ. V-CLUSTER · VC-R8:
-    // ảnh chụp ClusterNav bên trong còn được LÀM SẠCH (phạm vi · kiểu · bộ kiểm hình học trước shell) — tệp nhập là dữ
-    // liệu người khác gửi, và họ `config_*` đi thẳng vào `wm`/`am task resize`.
-    values.filterKeys { it in WorkspacePrefs.PROFILE_SUFFIXES }
-        .forEach { (suffix, v) -> copyValue(e, keyOf(target, suffix), cleanImportedSnapshot(suffix, v)) }
+    val plan = ProfileTransfer.planImport(data, name, profiles()) ?: return false
+    // PROFILE-IMPORT-TYPES (lớp nhập): hậu tố launcher sai kiểu đã thành `null` trong kế hoạch — nói ra, không im lặng.
+    logDropped("import launcher", plan.dropped)
+    val list = profiles() + plan.target
+    val e = sp.edit().putString(WorkspacePrefs.K_PROFILES, list.joinToString("\n"))
+    // V-CLUSTER · VC-R8: ảnh chụp ClusterNav bên trong còn được LÀM SẠCH (phạm vi · kiểu · bộ kiểm hình học trước shell) —
+    // tệp nhập là dữ liệu người khác gửi, và họ `config_*` đi thẳng vào `wm`/`am task resize`. Giá trị `null` (hậu tố
+    // vắng trong tệp) ⇒ `remove`.
+    plan.writes.forEach { (suffix, v) -> copyValue(e, keyOf(plan.target, suffix), cleanImportedSnapshot(suffix, v)) }
     e.apply()
     VoiceGrammarSnapshotStore.write(this)
     return true

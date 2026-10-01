@@ -1892,8 +1892,11 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
   <h3>7.5 Sao lưu: xuất và nhập</h3>
 
   <ul>
-    <li><strong>Xuất hồ sơ (backup)</strong> ghi ra một tệp đuôi <code>.kachi</code> trong thư mục riêng của app ở bộ nhớ ngoài. Đường dẫn hiện trong thông báo chớp ngay sau khi bấm — đọc nó lúc đó, vì <strong>không có hộp chọn tệp</strong>.</li>
-    <li><strong>Nhập hồ sơ từ file</strong> đọc <em>tất cả</em> tệp <code>.kachi</code> có trong đúng thư mục ấy, rồi báo đã nhập mấy hồ sơ. Không thấy tệp nào thì nó in đường dẫn thư mục cần chép vào.</li>
+    <li><em>Bản sau 2.84 (PROFILE-IO-0930):</em> có <strong>hai nút xuất</strong>. <strong>Xuất đầy đủ (sao lưu)</strong> ghi mọi thứ của hồ sơ, <em>kể cả sổ địa chỉ và lịch dẫn đường</em>. <strong>Xuất để chia sẻ (không kèm địa chỉ và lịch dẫn đường)</strong> bỏ sổ địa chỉ, lịch dẫn đường và sổ ghi các lần lịch đã chạy — dùng bản này khi gửi cho người khác.</li>
+    <li>Mỗi lần xuất ra một tệp <strong>mới</strong> đuôi <code>.kachi</code> trong thư mục riêng của app ở bộ nhớ ngoài, tên <code>&lt;hồ sơ&gt;-&lt;năm tháng ngày-giờ phút&gt;[-share].kachi</code>; trùng tên thì thêm <code>-2</code>, <code>-3</code>… — tệp cũ không bao giờ bị đè. Đường dẫn hiện trong thông báo chớp ngay sau khi bấm.</li>
+    <li><strong>Nhập hồ sơ từ file</strong> hiện danh sách tệp <code>.kachi</code> trong đúng thư mục ấy, mới nhất trên cùng, mỗi dòng: tên hồ sơ · <em>đầy đủ</em>/<em>chia sẻ</em> · ngày giờ, dòng dưới là tên tệp. Chạm <strong>một</strong> dòng để nhập đúng tệp đó; thông báo nói tên hồ sơ vừa tạo. Thư mục trống thì hộp thoại in đường dẫn thư mục cần chép tệp vào.</li>
+    <li>Nhập bản chia sẻ ra một hồ sơ mới <strong>không có</strong> địa chỉ và lịch dẫn đường; hồ sơ đang có của bạn giữ nguyên sổ địa chỉ và lịch của chúng.</li>
+    <li><em>2.84 trở về trước:</em> một nút <em>Xuất hồ sơ (backup)</em> đè lên tệp cùng tên, và nút nhập nạp <em>mọi</em> tệp trong thư mục mỗi lần bấm (bấm hai lần ra hai bản sao).</li>
     <li>Nhập một hồ sơ trùng tên hồ sơ đang có thì máy <strong>tạo thêm</strong> “&lt;tên&gt; 2”, không đè lên cái đang dùng.</li>
     <li>Chép tệp qua USB hoặc trình quản lý file là chia sẻ được cấu hình giữa hai xe. Lưu ý: những thứ <em>theo xe</em> ở bảng §7.2 không nằm trong tệp đó.</li>
   </ul>
@@ -2437,7 +2440,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
         <td>Xuất hồ sơ ra tệp <code>.kachi</code> trước khi xoá</td>
       </tr>
       <tr>
-        <td><strong>Không có hộp chọn tệp</strong> khi xuất/nhập hồ sơ và khi thêm ảnh</td>
+        <td><strong>Không có hộp chọn tệp của hệ thống</strong> khi xuất/nhập hồ sơ và khi thêm ảnh (bản sau 2.84: nút nhập hồ sơ liệt kê tệp, nhưng chỉ trong thư mục riêng của app)</td>
         <td>Đầu xe không có màn chọn tệp</td>
         <td>Đọc đường dẫn app in ra (có nút sao chép), chép tệp vào đúng thư mục bằng USB hoặc app Quản lý tệp</td>
       </tr>

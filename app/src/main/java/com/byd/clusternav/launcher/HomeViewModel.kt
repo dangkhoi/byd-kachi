@@ -101,14 +101,20 @@ class HomeViewModel(
 
     fun addProfile(name: String) = reload { repository.addProfile(name) }
 
-    /** #4 — chuỗi export của hồ sơ đang dùng (wiring ghi ra file). null nếu không xuất được. */
-    fun exportActiveProfile(): String? = repository.exportActiveProfile()
+    /** #4 · PROFILE-IO-0930 — chuỗi export kiểu [kind] của hồ sơ đang dùng (wiring ghi ra file). null nếu không xuất được. */
+    fun exportActiveProfile(kind: ProfileTransfer.Kind): String? = repository.exportActiveProfile(kind)
 
-    /** #4 — nhập hồ sơ từ chuỗi (wiring đọc từ file); reload nếu thêm được. Trả true nếu ít nhất một cái vào. */
-    fun importProfiles(dataList: List<String>): Boolean {
-        var any = false
-        dataList.forEach { data -> repository.importProfileData(data)?.let { _uiState.value = it.copy(embedded = _uiState.value.embedded, carStatus = _uiState.value.carStatus); any = true } }
-        return any
+    /**
+     * PROFILE-IO-0930 · IO-R1 — nhập MỘT tệp người dùng vừa chọn (wiring đọc đúng tệp đó). Trả **tên hồ sơ vừa tạo**
+     * (cho toast), `null` nếu tệp không hợp lệ. Thay `importProfiles(list)` của #4: nhập mọi tệp mỗi lần bấm ⇒ nhân bản,
+     * và toast đếm `list.size` chứ không phải số hồ sơ vào được.
+     */
+    fun importProfile(data: String): String? {
+        val before = _uiState.value.profiles.toSet()
+        val next = repository.importProfileData(data) ?: return null
+        reload { next }
+        // Hồ sơ nhập luôn được nối CUỐI danh sách (`importProfile` ở nơi lưu) — lùi về đó nếu state trước lượt nhập đã cũ.
+        return next.profiles.firstOrNull { it !in before } ?: next.profiles.lastOrNull()
     }
 
     /**

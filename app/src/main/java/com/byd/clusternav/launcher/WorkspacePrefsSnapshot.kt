@@ -103,9 +103,13 @@ internal fun WorkspacePrefs.applyClusterNav(profile: String) {
  * Hậu tố không phải ảnh chụp ClusterNav ⇒ trả nguyên [value] (bố cục/chip… có bộ giải mã tự chữa riêng). Hậu tố ảnh
  * chụp ⇒ chỉ giữ khoá trong phạm vi, đúng kiểu khai sẵn, mốc đúng `true`, khoá họ + giá trị qua bộ kiểm hình học;
  * giá trị không phải chuỗi ⇒ `null` (chỗ gọi xoá khoá đích). Số khoá bị bỏ được ghi log — không ném, không im lặng.
+ *
+ * PROFILE-IO-0930: `null` = hậu tố VẮNG trong tệp ([ProfileTransfer.planImport] trả mọi hậu tố, vắng ⇒ `null` ⇒ chỗ gọi
+ * `remove`) — ca bình thường, trả `null` không ghi log (trước đó mỗi lượt nhập phun một cảnh báo giả cho mỗi ảnh vắng).
  */
 internal fun cleanImportedSnapshot(suffix: String, value: Any?): Any? {
     val file = ProfileScope.CLUSTERNAV_KEYS.keys.firstOrNull { ProfileScope.snapshotSuffix(it) == suffix } ?: return value
+    if (value == null) return null
     val raw = value as? String ?: run {
         Log.w(TAG, "nhập hồ sơ: bỏ ảnh $file — kiểu ${value?.let { it::class.simpleName }}, cần chuỗi")
         return null
@@ -136,7 +140,7 @@ internal fun storedSnapshot(stored: Map<String, *>, key: String): String? {
 }
 
 /** Một dòng log cho các khoá bị bỏ (giá trị hỏng / sai kiểu) — cắt ngắn, để một tệp độc không phun rác vào logcat. */
-private fun logDropped(what: String, dropped: List<String>) {
+internal fun logDropped(what: String, dropped: List<String>) {
     if (dropped.isEmpty()) return
     val shown = dropped.take(5).joinToString { k -> k.take(60).map { c -> if (c < ' ') '?' else c }.joinToString("") }
     Log.w(TAG, "$what: bỏ ${dropped.size} khoá hỏng/sai kiểu: $shown")

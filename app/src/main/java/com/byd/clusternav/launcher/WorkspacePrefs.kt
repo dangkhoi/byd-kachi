@@ -171,12 +171,12 @@ class WorkspacePrefs(context: Context) {
         val active = activeProfile()
         return profiles().filter { it != active }.flatMapTo(mutableSetOf()) { p ->
             AppWidgetIds.idsInStored(
-                slotRaw = (0 until WorkspaceState.SLOT_CAP).map { sp.getString(keyOf(p, "slot_$it"), "") ?: "" },
+                slotRaw = (0 until WorkspaceState.SLOT_CAP).map { sp.stringOrNull(keyOf(p, "slot_$it")) ?: "" },
                 // ⚠⚠ S4 · R2 — vẫn đọc chuỗi CẢNH đời cũ, và đó không phải mã thừa. Trong cửa sổ *"bản mới đã cài
                 // nhưng `migrateScenesOnce` chưa chạy"* thì id widget của một cảnh **chỉ còn nằm ở đây**; bỏ vế này
                 // là để lượt dọn rác đầu tiên của bản mới thu hồi chúng **vĩnh viễn** — tức chính lượt nâng cấp làm
                 // mất dữ liệu. Sau khi chuyển xong, khoá này đã bị xoá nên phép đọc trả `null` và vế tự tắt.
-                scenesRaw = sp.getString(keyOf(p, LEGACY_SCENES), null),
+                scenesRaw = sp.stringOrNull(keyOf(p, LEGACY_SCENES)),
             )
         }
     }
@@ -195,18 +195,18 @@ class WorkspacePrefs(context: Context) {
      */
     fun profileLayout(name: String): Pair<LayoutPreset?, Int> {
         val custom = grid(name)
-        val preset = runCatching { LayoutPreset.valueOf(sp.getString(keyOf(name, "preset"), LayoutPreset.THREE.name)!!) }
+        val preset = runCatching { LayoutPreset.valueOf(sp.stringOrNull(keyOf(name, "preset")) ?: LayoutPreset.THREE.name) }
             .getOrDefault(LayoutPreset.THREE)
         val shown = EffectiveLayout.slotCount(preset, custom).coerceAtMost(WorkspaceState.SLOT_CAP)
-        val filled = (0 until shown).count { decode(sp.getString(keyOf(name, "slot_$it"), "") ?: "") != SlotContent.Empty }
+        val filled = (0 until shown).count { decode(sp.stringOrNull(keyOf(name, "slot_$it")) ?: "") != SlotContent.Empty }
         return EffectiveLayout.highlightedPreset(preset, custom) to filled
     }
 
     // ── Workspace (theo hồ sơ) ──
     fun load(): WorkspaceState {
-        val preset = runCatching { LayoutPreset.valueOf(sp.getString(key("preset"), LayoutPreset.THREE.name)!!) }
+        val preset = runCatching { LayoutPreset.valueOf(sp.stringOrNull(key("preset")) ?: LayoutPreset.THREE.name) }
             .getOrDefault(LayoutPreset.THREE)
-        val slots = (0 until WorkspaceState.SLOT_CAP).map { decode(sp.getString(key("slot_$it"), "") ?: "") }
+        val slots = (0 until WorkspaceState.SLOT_CAP).map { decode(sp.stringOrNull(key("slot_$it")) ?: "") }
         return WorkspaceState(preset, slots)
     }
 
@@ -220,15 +220,15 @@ class WorkspacePrefs(context: Context) {
 
     // ── Dock (theo hồ sơ) ──
     fun loadDock(): DockConfig {
-        val edge = runCatching { DockEdge.valueOf(sp.getString(key("dock_edge"), DockEdge.BOTTOM.name)!!) }
+        val edge = runCatching { DockEdge.valueOf(sp.stringOrNull(key("dock_edge")) ?: DockEdge.BOTTOM.name) }
             .getOrDefault(DockEdge.BOTTOM)
-        val enabled = sp.getString(key("dock_enabled"), null)?.split(",")?.filter { it.isNotBlank() }
+        val enabled = sp.stringOrNull(key("dock_enabled"))?.split(",")?.filter { it.isNotBlank() }
             // 1.95+ (bug 2026-09-22 "đặt 10 hiện 6"): lọc mã đã XOÁ khỏi bộ đăng ký qua [DockSelection.sanitize]
             // (một nguồn, test ở :core) — cấu hình cũ lưu lock/door/window/mac_door_light (gỡ 1.94/1.95) thì
             // `ControlDockView.rebuild` bỏ qua IM LẶNG nên "10 đang bật" mà chỉ 6 nút hiện. Lọc ở cửa NẠP.
             ?.let { DockSelection.sanitize(it) }
             ?: ControlRegistry.defaultEnabledIds()
-        val visible = sp.getBoolean(key("dock_visible"), true)   // S1b — vắng = hiện (giữ hành vi cũ)
+        val visible = sp.booleanOrNull(key("dock_visible")) ?: true   // S1b — vắng = hiện (giữ hành vi cũ)
         return DockConfig(edge, enabled, visible)
     }
 
@@ -249,7 +249,7 @@ class WorkspacePrefs(context: Context) {
 
     // ── VISUAL-REFRESH P1b · R8 — màu nhấn/tông thẻ theo hồ sơ. Khoá MỚI ⇒ đọc thẳng `key()` (không có bản chung cũ
     //    để lùi về, cùng lẽ [savedPlaces]); thiếu/rác ⇒ mặc định = bảng màu 1.69, không hỏi (AC8.4).
-    fun colorChoice(): ColorChoice = ColorChoice.decode(sp.getString(key(K_COLOR), null))
+    fun colorChoice(): ColorChoice = ColorChoice.decode(sp.stringOrNull(key(K_COLOR)))
 
     fun setColorChoice(c: ColorChoice) { sp.edit().putString(key(K_COLOR), c.encode()).apply() }
 
@@ -297,9 +297,9 @@ class WorkspacePrefs(context: Context) {
      * [TopStripConfig.decode]. Hồ sơ **chưa từng lưu** danh sách thì đang ăn mặc định MỚI ⇒ đóng mốc luôn.
      */
     fun topStrip(): TopStripConfig {
-        val labels = sp.getBoolean(key("top_strip_labels"), true)
-        val saved = sp.getString(key("top_strip"), null)
-        val done = sp.getBoolean(key(K_STRIP_MIGRATED), false)
+        val labels = sp.booleanOrNull(key("top_strip_labels")) ?: true
+        val saved = sp.stringOrNull(key("top_strip"))
+        val done = sp.booleanOrNull(key(K_STRIP_MIGRATED)) ?: false
         if (saved == null && !done) sp.edit().putBoolean(key(K_STRIP_MIGRATED), true).apply()
         if (saved == null || done) return TopStripConfig.decode(saved, labels, applyMigration = false)
         val cfg = TopStripConfig.decode(saved, labels)   // lượt DUY NHẤT được di trú
@@ -323,7 +323,7 @@ class WorkspacePrefs(context: Context) {
      * (cứu tay qua `run-as … cat`). Mọi phép chữa dữ liệu hỏng/thiếu nằm ở [HeaderLayout.decode] — ở đây chỉ đọc
      * chuỗi, để việc *"bản sau thêm một vật thì vật đó xuất hiện ở cuối"* kiểm được off-car.
      */
-    fun headerLayout(): HeaderLayout = HeaderLayout.decode(sp.getString(key("header_order"), null))
+    fun headerLayout(): HeaderLayout = HeaderLayout.decode(sp.stringOrNull(key("header_order")))
 
     fun setHeaderLayout(layout: HeaderLayout) {
         sp.edit().putString(key("header_order"), HeaderLayout.encode(layout)).apply()
@@ -337,7 +337,7 @@ class WorkspacePrefs(context: Context) {
      * sửa một trong hai (cùng họ với bẫy hai-bản-sao đã ghi ở KDoc [PROFILE_SUFFIXES]).
      */
     private fun grid(name: String): GridLayout {
-        val raw = WorkspaceGrid.decode(sp.getString(keyOf(name, K_GRID), null))
+        val raw = WorkspaceGrid.decode(sp.stringOrNull(keyOf(name, K_GRID)))
         val sane = raw.frames.filter {
             it.cols in WorkspaceGrid.MIN_COLS..WorkspaceGrid.COLS &&
                 it.rows in WorkspaceGrid.MIN_ROWS..WorkspaceGrid.ROWS &&
@@ -368,7 +368,7 @@ class WorkspacePrefs(context: Context) {
      *
      * Chuỗi rỗng/rác ⇒ sổ rỗng (phép giải mã ở `:core` bỏ dòng hỏng, không ném — xem [SavedPlaces.decode]).
      */
-    fun savedPlaces(): List<SavedPlace> = SavedPlaces.decode(sp.getString(key(K_PLACES), null))
+    fun savedPlaces(): List<SavedPlace> = SavedPlaces.decode(sp.stringOrNull(key(K_PLACES)))
 
     fun setSavedPlaces(places: List<SavedPlace>) {
         sp.edit().putString(key(K_PLACES), SavedPlaces.encode(places)).apply()
@@ -396,8 +396,8 @@ class WorkspacePrefs(context: Context) {
      */
     private fun profileString(suffix: String): String? {
         val k = key(suffix)
-        if (sp.contains(k)) return sp.getString(k, null)
-        val legacy = runCatching { sp.getString(suffix, null) }.getOrNull() ?: return null
+        sp.stringOrNull(k)?.let { return it }   // sai kiểu = vắng (PROFILE-IMPORT-TYPES) ⇒ đi tiếp đường lùi
+        val legacy = sp.stringOrNull(suffix) ?: return null
         sp.edit().putString(k, legacy).apply()
         return legacy
     }
@@ -405,9 +405,9 @@ class WorkspacePrefs(context: Context) {
     /** [profileString] cho giá trị `Boolean` (`launcher_autostart`). Cùng luật, cùng lý do. */
     private fun profileBoolean(suffix: String, def: Boolean): Boolean {
         val k = key(suffix)
-        if (sp.contains(k)) return sp.getBoolean(k, def)
+        sp.booleanOrNull(k)?.let { return it }
         if (!sp.contains(suffix)) return def
-        val legacy = runCatching { sp.getBoolean(suffix, def) }.getOrDefault(def)
+        val legacy = sp.booleanOrNull(suffix) ?: def
         sp.edit().putBoolean(k, legacy).apply()
         return legacy
     }

@@ -48,7 +48,7 @@
 - *Cài đặt › **Hồ sơ tài xế***: **Danh sách hồ sơ** · **Hồ sơ đang dùng** · **Hồ sơ lúc nổ máy** (*Gần nhất* hoặc một hồ sơ cố định) · **Thêm hồ sơ (bản sao)**. Đổi tên và **Xoá** ở nút cạnh từng hồ sơ.
 - **Cái gì thuộc hồ sơ**: bố cục, nội dung ô, chip thanh trên, thanh nút, hình nền, giao diện, đơn vị, ngôn ngữ, sổ địa chỉ. **Không** thuộc hồ sơ: nhóm *Hệ thống & quyền*, khung hình khi chiếu lên cụm, *Giới thiệu*.
 - **"Cảnh" đã gộp vào hồ sơ** — mỗi cảnh cũ nay là một hồ sơ cùng tên; chỉ còn một khái niệm để nhớ.
-- **Xuất / nhập**: *Xuất hồ sơ (backup)* ghi ra `Android/data/com.byd.launcher/files/profiles/`; *Nhập hồ sơ từ file* đọc cùng thư mục. Trùng tên tự thành `<tên> 2`, `<tên> 3`… (không bị từ chối).
+- **Xuất / nhập** (bản sau 2.84, PROFILE-IO-0930): hai nút xuất — *Xuất đầy đủ (sao lưu)* và *Xuất để chia sẻ (không kèm địa chỉ và lịch dẫn đường)* — ghi một tệp **mới** vào `Android/data/com.byd.launcher/files/profiles/`, tên `<hồ sơ>-<năm tháng ngày-giờ phút>[-share].kachi`, không bao giờ đè tệp cũ. Tệp đầy đủ có **sổ địa chỉ và lịch dẫn đường** — gửi người khác thì dùng bản chia sẻ. *Nhập hồ sơ từ file* hiện danh sách tệp trong thư mục đó (mới nhất trên cùng, kèm tên hồ sơ · đầy đủ/chia sẻ · ngày giờ); chạm **một** tệp để nhập đúng tệp đó. Trùng tên tự thành `<tên> 2`, `<tên> 3`… Nhập bản chia sẻ ra một hồ sơ mới không có địa chỉ và lịch, không đụng hồ sơ nào khác. *(2.84 trở về trước: một nút xuất đè tệp cùng tên, nút nhập nạp mọi tệp mỗi lần bấm.)*
 - **Đổi nhanh**: chạm chip hồ sơ ở thanh trên, hoặc nói *"chuyển sang hồ sơ X"*.
 
 ### 5. Cấu hình theo nhóm Cài đặt
@@ -263,7 +263,7 @@ Cả bốn việc tự động đều theo một luật: **chỉ hoàn tác cái
 - *Settings › **Driver profiles***: **Profile list** · **Active profile** · **Profile on engine start** (last used, or a fixed one) · **Add profile (a copy)**; rename and **Delete** sit next to each profile.
 - **What a profile owns**: layout, slot contents, top-bar chips, button bar, wallpaper, theme, units, language, address book. **Not** owned: *System & permissions*, the cluster-cast geometry, *About*.
 - **"Scenes" were folded into profiles** — each old scene is now a profile of the same name; one concept instead of two.
-- **Export / import**: *Export profile (backup)* writes into `Android/data/com.byd.launcher/files/profiles/`; *Import from file* reads the same folder. Duplicate names become `<name> 2`, `<name> 3`…
+- **Export / import** (after 2.84, PROFILE-IO-0930): two export buttons — *Export full (backup)* and *Export for sharing (without addresses and navigation schedule)* — each writes a **new** file into `Android/data/com.byd.launcher/files/profiles/` named `<profile>-<yyyyMMdd-HHmm>[-share].kachi`; an existing file is never overwritten. A full export contains your **address book and navigation schedule** — use the sharing export when sending it to someone else. *Import from file* lists the files in that folder (newest first, with profile name · full/shared · date and time); tap **one** file to import exactly that file. Duplicate names become `<name> 2`, `<name> 3`… Importing a shared file creates a new profile without addresses or schedule and touches no other profile. *(Up to 2.84: one export button overwrote a same-name file, and import loaded every file on each tap.)*
 - **Quick switch**: the profile chip in the top bar, or say *"chuyển sang hồ sơ X"*.
 
 ### 5. Configuration by Settings group

@@ -108,13 +108,19 @@
     <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
-    <string name="kachi_profile_export">Export profile (backup)</string>
+    <string name="kachi_profile_export_full">Export full (backup)</string>
+    <string name="kachi_profile_export_share">Export for sharing (without addresses and navigation schedule)</string>
     <string name="kachi_profile_import">Import profile from file</string>
     <string name="kachi_profile_exported">Exported: %1$s</string>
     <string name="kachi_profile_export_fail">Could not export profile</string>
-    <string name="kachi_profile_imported">Imported %1$d profile(s)</string>
-    <string name="kachi_profile_import_none">No valid profile files in %1$s</string>
-    <string name="kachi_profiles_note">Each profile keeps its OWN copy of nearly everything: layout, slot contents, button bar, chips, wallpaper, theme, units, language and even the navigation settings. Tap a profile to switch to it — the profile chip on the top bar switches too, but creating and deleting happen only here.</string>
+    <string name="kachi_profile_imported">Imported as profile “%1$s”</string>
+    <string name="kachi_profile_import_pick">Choose a profile file to import</string>
+    <string name="kachi_profile_import_fail">%1$s is not a valid Kachi profile file</string>
+    <string name="kachi_profile_kind_full">full</string>
+    <string name="kachi_profile_kind_share">shared</string>
+    <string name="kachi_profile_kind_unknown">unreadable</string>
+    <string name="kachi_profile_import_none">No profile files (.kachi) yet. Copy a file into this folder:\n%1$s</string>
+    <string name="kachi_profiles_note">Each profile keeps its OWN copy of nearly everything: layout, slot contents, button bar, chips, wallpaper, theme, units, language, navigation settings, instrument cluster, cluster casting and camera. Tap a profile to switch to it — the profile chip on the top bar switches too, but creating and deleting happen only here. A full export contains your saved addresses and navigation schedule — use Export for sharing when sending it to someone else.</string>
     <string name="kachi_profiles_add">Add profile (a copy of %1$s)</string>
     <string name="kachi_profile_sub_active">In use · %1$s</string>
     <string name="kachi_profile_sub_switch">%1$s · tap to switch to this profile</string>

@@ -174,14 +174,15 @@ interface WorkspaceRepository {
     fun duplicateProfile(name: String): HomeUiState = addProfile(name)
 
     /**
-     * #4 (owner 2026-09-24) — EXPORT hồ sơ đang dùng ra chuỗi (để ghi file backup/chia sẻ). `null` = không xuất được.
-     * Mặc định `null` (bản giả in-memory không có tệp prefs thật để serialize).
+     * #4 (owner 2026-09-24) · PROFILE-IO-0930 — EXPORT hồ sơ đang dùng ra chuỗi tệp kiểu [kind] ([ProfileTransfer.Kind.SHARE]
+     * = không kèm sổ địa chỉ + lịch dẫn đường). `null` = không xuất được. Mặc định `null` (bản giả in-memory không có
+     * tệp prefs thật để serialize).
      */
-    fun exportActiveProfile(): String? = null
+    fun exportActiveProfile(kind: ProfileTransfer.Kind): String? = null
 
     /**
-     * IMPORT một hồ sơ từ chuỗi [data] (đọc từ file). Trả state mới (đã thêm hồ sơ) nếu nhập được, `null` nếu hỏng
-     * (header sai / tên trùng). Mặc định `null`.
+     * IMPORT một hồ sơ từ chuỗi [data] (nội dung MỘT tệp người dùng chọn). Trả state mới (đã thêm hồ sơ, tên trùng ⇒
+     * hậu tố số) nếu nhập được, `null` nếu tệp không hợp lệ. Mặc định `null`.
      */
     fun importProfileData(data: String): HomeUiState? = null
 }
