@@ -71,7 +71,7 @@ shq() { local s=$1 q="'"; s=${s//$q/$q\\$q$q}; printf '%s' "$q$s$q"; }
 # đúng chỗ đáng lẽ là camera gương — CLAUDE.md §4 (lệnh đổi state phải nêu tường minh nó nhắm cái gì).
 case "$SERIAL" in
   emulator-*) ;;
-  *) [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die "«$SERIAL» không phải máy ảo — từ chối bật ảnh tổng hợp thay camera.
+  *) [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die "«${SERIAL}» không phải máy ảo — từ chối bật ảnh tổng hợp thay camera.
    Đặt ALLOW_NON_EMULATOR=YES nếu thật sự có chủ ý." ;;
 esac
 
@@ -266,7 +266,7 @@ pset camera_rot_left 0
 # ── 8. KHUNG THẬT từ xe (tuỳ chọn, chỉ để XEM — ảnh thật không có chân trời màu để chấm điểm) ────────────────────
 if [ -n "$STRIP_PNG" ]; then
   if [ ! -f "$STRIP_PNG" ]; then
-    echo "   ✗ --strip-png «$STRIP_PNG» không có thật — bỏ qua mục 8"
+    echo "   ✗ --strip-png «${STRIP_PNG}» không có thật — bỏ qua mục 8"
   else
     note "đẩy khung THẬT $(basename "$STRIP_PNG") vào getExternalFilesDir rồi bơm qua đúng đường GL"
     REMOTE_DIR="/sdcard/Android/data/$PKG/files"

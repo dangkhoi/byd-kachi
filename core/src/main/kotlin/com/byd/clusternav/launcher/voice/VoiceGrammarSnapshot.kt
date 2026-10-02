@@ -51,9 +51,18 @@ data class VoiceGrammarSnapshot(
     fun placeLabels(): List<String> = VoicePlaces.labelsOf(places)
 
     /**
-     * `HomeUiState` **đủ cho `VoiceDispatcher`** của phiên `:wake`: nó đọc `state().profiles` (parse), `state().savedPlaces`
-     * (parse + giải địa chỉ) và `state().activeProfile`. Chưa có ảnh chụp ⇒ mặc định của `HomeUiState` (hồ sơ
+     * `HomeUiState` cho `VoiceDispatcher` của phiên `:wake` — **CHỈ ba trường là thật**: `profiles` (parse),
+     * `savedPlaces` (parse + giải địa chỉ), `activeProfile`. Chưa có ảnh chụp ⇒ mặc định của `HomeUiState` (hồ sơ
      * "Mặc định", sổ rỗng) — đúng hành vi trước bản vá, không tệ hơn.
+     *
+     * ⚠ VOICE-WAKE-SLOTCOUNT (2026-10-02) — MỌI trường khác là **mặc định, không phải màn thật**: `workspace` (bố cục
+     * `THREE` = 3 ô) · `customLayout` (`null`) · `carStatus` (`CarStatus()` rỗng) · … [ĐO ảnh owner 02/10] bố cục tự vẽ
+     * 6 khung mà `:wake` trả *"bố cục hiện chỉ có 3 ô"*. Quyết định nào cần chúng thì `:wake` KHÔNG được quyết bằng
+     * state này: gắn ô ⇒ giao Activity (`VoiceDispatcher.placeInSlot` → `VoiceWakeHomeRelay.performSlot`); số liệu xe
+     * ⇒ đọc tươi (`freshCar`, nhu cầu màn của `:wake` = rỗng) — TRỪ `carStatus.controls` (gió đang AUTO?): ở `:wake` nó
+     * luôn rỗng ⇒ `null` = "chưa biết", hàng thiết kế của `ClimateAuto.stepIntent`, chưa đọc tươi (backlog
+     * `VOICE-WAKE-AUTOON`). Bài canh `VoiceWakeFakeStateContractTest` liệt kê đúng những chỗ dispatcher đọc `state()` —
+     * thêm một chỗ đọc trường khác (hoặc chuyển nguyên lambda sang lớp mới) là ĐỎ.
      */
     fun homeState(): HomeUiState = HomeUiState(
         activeProfile = activeProfile.ifBlank { HomeUiState.DEFAULT_PROFILE },

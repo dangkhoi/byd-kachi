@@ -10,6 +10,8 @@ import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceRisk
 import com.byd.clusternav.launcher.voice.VoiceRiskTable
+import com.byd.clusternav.launcher.voice.SlotPlaceOutcome
+import com.byd.clusternav.launcher.voice.VoiceSlotPlace
 import com.byd.clusternav.launcher.voice.VoiceWriteLane
 
 /**
@@ -138,7 +140,18 @@ class VoiceDispatcher(
      * Mặc định `{ null }` ⇒ test/bề mặt chưa nối giữ đường search-play cũ.
      */
     private val resolveVideo: (String) -> String? = { null },
+    /**
+     * VOICE-WAKE-SLOTCOUNT — *"mở X vào ô N"* giao cho NƠI GIỮ BỐ CỤC THẬT. `null` (mặc định) = bề mặt này chung
+     * tiến trình với màn chính ⇒ kiểm dải bằng [state] rồi [assignAppToSlot], y nguyên 2.85. `:wake` PHẢI truyền:
+     * [state] của nó là `VoiceGrammarSnapshot.homeState()`, bố cục trong đó là mặc định (3 ô), không phải màn thật.
+     */
+    placeInSlot: ((Int, String) -> SlotPlaceOutcome)? = null,
 ) {
+
+    /** Xem tham số `placeInSlot`. Đây là chỗ DUY NHẤT của lớp này đọc bố cục từ [state]. */
+    private val place: (Int, String) -> SlotPlaceOutcome = placeInSlot ?: { idx, pkg ->
+        VoiceSlotPlace.decide(idx, VoiceSlotPlace.slotCountOf(state())) { assignAppToSlot(idx, pkg) }
+    }
 
     /**
      * Vai *"giao chữ/toạ độ cho một app ngoài"* — tách tệp ở voice pha 2 (2026-09-16) vì trần 500 dòng, xem KDoc
@@ -382,8 +395,9 @@ class VoiceDispatcher(
     /**
      * Mở app — và từ 1.50, mở **vào một ô** nếu câu nêu ô (*"mở YouTube vào ô số 2"*).
      *
-     * Số ô kiểm ở ĐÂY chứ không ở `:core`: chỉ tầng này biết bố cục đang dùng có mấy ô (bố cục tự vẽ đổi được
-     * giữa hai câu nói). Ngoài dải ⇒ nói ra **con số thật**, xem [VoiceReply.slotOutOfRange].
+     * Số ô KHÔNG tính ở đây: chỉ nơi giữ bố cục thật biết bố cục đang dùng có mấy ô (bố cục tự vẽ đổi được giữa hai
+     * câu nói, và `:wake` không có bố cục thật) — xem [place]. Ngoài dải ⇒ nói ra **con số thật** mà nơi ấy trả về,
+     * xem [VoiceReply.slotOutOfRange].
      */
     private fun runOpenApp(i: VoiceIntent.OpenApp, labels: Map<String, String>) {
         // Nhãn thật trước; chỉ câu gọi app bằng **cách nói tiếng Việt** mới tra bảng đích (§3 L6: *"mở bản đồ"*).
@@ -403,11 +417,14 @@ class VoiceDispatcher(
             say(if (openApp(pkg)) VoiceReply.done(shown) else VoiceReply.cannotOpen(shown))
             return
         }
-        val st = state()
-        val count = EffectiveLayout.slotCount(st.workspace.preset, st.customLayout)
-        if (slot !in 1..count) { say(VoiceReply.slotOutOfRange(shown, count)); return }
         // 1-based (như người ta nói) → 0-based (như mảng ô). Phép đổi nằm ở ĐÚNG MỘT chỗ, là chỗ này.
-        say(if (assignAppToSlot(slot - 1, pkg)) VoiceReply.done(shown) else VoiceReply.cannotOpen(shown))
+        say(
+            when (val out = place(slot - 1, pkg)) {
+                SlotPlaceOutcome.Placed -> VoiceReply.done(shown)
+                SlotPlaceOutcome.Failed -> VoiceReply.cannotOpen(shown)
+                is SlotPlaceOutcome.OutOfRange -> VoiceReply.slotOutOfRange(shown, out.slotCount)
+            },
+        )
     }
 
     /**

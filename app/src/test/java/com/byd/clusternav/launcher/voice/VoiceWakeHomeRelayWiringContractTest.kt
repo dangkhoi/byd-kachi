@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.testsupport.SourceRoots
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -32,8 +33,14 @@ class VoiceWakeHomeRelayWiringContractTest {
     @Test
     fun `buildSession noi assignAppToSlot va onLayout qua relay perform, onListen khong con rong`() {
         val build = SourceRoots.body(factory, "internal fun VoiceWakeService.buildSession(): VoiceSession {")
-        assertTrue(build.contains("assignAppToSlot = { idx, pkg -> relay.perform(VoiceHomeAction.ASSIGN_APP_TO_SLOT, VoiceHomeRelay.encodeSlot(idx, pkg)) }"),
-            "gắn app vào ô từ `:wake` phải đi relay.perform với tham số mã hoá ở :core (ô 0-based như KachiHomeSlots.assignApp)")
+        // VOICE-WAKE-SLOTCOUNT (2026-10-02) — mốc đổi tên, tính chất GIỮ NGUYÊN: gắn ô từ `:wake` đi relay (chờ ack có hạn)
+        // với tham số mã hoá ở :core, ô 0-based. Nay qua `placeInSlot` → `performSlot` (Activity trả cả số ô thật);
+        // canh đầy đủ ở `VoiceWakeFakeStateContractTest`.
+        assertTrue(build.contains("placeInSlot = { idx, pkg -> relay.performSlot(idx, pkg) }"),
+            "gắn app vào ô từ `:wake` phải đi relay với tham số mã hoá ở :core (ô 0-based như KachiHomeSlots.assignApp)")
+        assertTrue(SourceRoots.body(relay, "fun performSlot(slot: Int, pkg: String): SlotPlaceOutcome {")
+            .contains("exchange(VoiceHomeAction.ASSIGN_APP_TO_SLOT, VoiceHomeRelay.encodeSlot(slot, pkg))"),
+            "performSlot phải đi CHÍNH lượt hỏi–đáp có hạn của relay, tham số mã hoá ở :core")
         assertTrue(build.contains("onLayout = { preset -> relay.perform(VoiceHomeAction.SET_LAYOUT, VoiceHomeRelay.encodeLayout(preset)) }"),
             "đổi bố cục từ `:wake` phải đi relay.perform")
         assertFalse(build.contains("onListen = { }"), "`Kachi nghe` trong phiên `:wake` không được là lambda rỗng (nói xong mà không làm gì)")
@@ -48,7 +55,11 @@ class VoiceWakeHomeRelayWiringContractTest {
 
     @Test
     fun `perform cho ack tren HandlerThread rieng, het han thi false, chi true khi Activity bao true`() {
-        val fn = SourceRoots.body(relay, "fun perform(action: VoiceHomeAction, arg: String?): Boolean {")
+        // VOICE-WAKE-SLOTCOUNT — thân chờ-ack dời từ `perform` sang `exchange` (dùng chung cho `performSlot`); mọi tính
+        // chất dưới đây canh NGUYÊN trên thân mới, và `perform` = "chỉ true khi có ack VÀ Activity báo true".
+        val fn = SourceRoots.body(relay, "private fun exchange(action: VoiceHomeAction, arg: String?): VoiceHomeRelay.Ack? {")
+        assertTrue(SourceRoots.body(relay, "fun perform(action: VoiceHomeAction, arg: String?): Boolean")
+            .contains("exchange(action, arg)?.done == true"), "perform: không ack (null) ⇒ false; ack ⇒ đúng `done` của Activity")
         // Receiver KHÔNG được nhận trên main: luồng gọi (main của `:wake`) đang đứng chờ chính ack này.
         assertTrue(fn.contains("Handler(ackThread.looper)"), "receiver ack phải đăng ký với Handler của luồng riêng — main đang chặn thì ack không bao giờ tới")
         assertTrue(relay.contains("HandlerThread(\"KachiHomeAck\")"), "luồng ack là HandlerThread riêng")
@@ -58,11 +69,17 @@ class VoiceWakeHomeRelayWiringContractTest {
             "hạn lấy từ :core theo phép ĐO, không hằng rải")
         assertTrue(fn.contains("Activity ack sau \$ms ms (hạn \$timeoutMs ms, \$who)"),
             "🚗 phải có MỘT dòng log thời gian ack THẬT — không thể chốt hạn 1,5/4 s trên xe nếu không đo được")
-        assertTrue(fn.contains("return acked && done.get()"), "chỉ true khi ack TỚI và Activity báo true — không lạc quan")
+        assertTrue(fn.contains("return if (acked) VoiceHomeRelay.Ack(done.get(), slots.get()) else null"),
+            "chỉ có lời đáp khi ack TỚI (kèm đúng done của Activity) — không lạc quan")
         assertFalse(fn.contains("return true"), "không có đường nào trả true mà không qua ack")
+        // [SOÁT lượt 3 · 02/10] Dòng trên là canh của bản `Boolean`: thân nay trả `Ack?` nên chuỗi "return true" không bao
+        // giờ xuất hiện ⇒ canh RỖNG. Cùng tính chất ở hình dạng mới: lời đáp chỉ được DỰNG ở đúng một chỗ — chỗ ack đã tới.
+        // [ĐO phá thử] chèn `if (action == VoiceHomeAction.SET_LAYOUT) return VoiceHomeRelay.Ack(true)` đầu thân ⇒ bản trước vẫn xanh.
+        assertEquals(1, Regex("""\bAck\(""").findAll(fn).count(),
+            "exchange chỉ được dựng lời đáp ở ĐÚNG một chỗ (khi ack tới) — thêm một `Ack(...)` khác là hứa mà không nghe")
         assertTrue(fn.contains("if (i.getStringExtra(EXTRA_VOICE_HOME_NONCE) != nonce) return"), "ack của lượt khác (về muộn) không được tính cho lượt này")
         assertTrue(fn.contains("val deadline = now() + timeoutMs"), "hạn gửi cho Activity = cùng hạn `:wake` chờ")
-        assertTrue(fn.contains("if (!registered) return false"), "không đăng ký được receiver ⇒ không hứa (false), không gửi việc")
+        assertTrue(fn.contains("if (!registered) return null"), "không đăng ký được receiver ⇒ không hứa (không lời đáp ⇒ false), không gửi việc")
         assertTrue(fn.contains("finally {") && fn.contains("unregisterReceiver(rx)"), "receiver phải gỡ ở mọi đường thoát")
         val launch = SourceRoots.body(relay, "private fun launch(action: VoiceHomeAction, arg: String?, nonce: String?, deadline: Long): Boolean")
         assertTrue(launch.contains("putExtra(EXTRA_VOICE_HOME_NONCE, nonce).putExtra(EXTRA_VOICE_HOME_DEADLINE, deadline)"), "intent phải mang nonce + hạn")
@@ -101,7 +118,7 @@ class VoiceWakeHomeRelayWiringContractTest {
         )
         assertFalse(relay.contains("require("), "một launcher không được chết vì tính năng phụ — cổng là log + từ chối")
         assertTrue(
-            SourceRoots.body(relay, "fun perform(action: VoiceHomeAction, arg: String?): Boolean {")
+            SourceRoots.body(relay, "private fun exchange(action: VoiceHomeAction, arg: String?): VoiceHomeRelay.Ack? {")
                 .contains("if (Looper.myLooper() == ackThread.looper) {"),
             "gọi trên chính luồng ack ⇒ từ chối có log, không ném",
         )
@@ -111,25 +128,29 @@ class VoiceWakeHomeRelayWiringContractTest {
 
     @Test
     fun `Activity thi hanh bang dung lambda in-process, kiem han truoc, ack sau khi lam`() {
-        val perform = SourceRoots.body(entry, "fun perform(action: VoiceHomeAction, arg: String?): Boolean = when (action) {")
-        assertTrue(perform.contains("VoiceHomeAction.ASSIGN_APP_TO_SLOT -> VoiceHomeRelay.decodeSlot(arg)?.let { assignAppToSlot(it.slot, it.pkg) } ?: false"),
-            "gắn ô phải giải mã ở :core rồi gọi CHÍNH lambda assignAppToSlot; tham số hỏng ⇒ false")
-        assertTrue(perform.contains("VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { onLayout(it) } ?: false"))
+        // VOICE-WAKE-SLOTCOUNT — `perform` trả `VoiceHomeRelay.Ack` (kèm số ô thật khi ngoài dải); tính chất giữ nguyên:
+        // giải mã ở :core rồi gọi CHÍNH lambda in-process; tham số hỏng ⇒ không làm (FAILED = done false).
+        val perform = SourceRoots.body(entry, "fun perform(action: VoiceHomeAction, arg: String?): VoiceHomeRelay.Ack = when (action) {")
+        assertTrue(perform.contains("VoiceHomeAction.ASSIGN_APP_TO_SLOT -> VoiceHomeRelay.decodeSlot(arg)?.let { s ->") &&
+            perform.contains("{ assignAppToSlot(s.slot, s.pkg) })") && perform.contains("} ?: FAILED"),
+            "gắn ô phải giải mã ở :core rồi gọi CHÍNH lambda assignAppToSlot; tham số hỏng ⇒ FAILED")
+        assertTrue(perform.contains("VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { VoiceHomeRelay.Ack(onLayout(it)) } ?: FAILED"))
+        assertTrue(entry.contains("val FAILED = VoiceHomeRelay.Ack(done = false)"), "FAILED phải là done = false")
         val fromIntent = SourceRoots.body(entry, "fun performFromIntent(ctx: Context, intent: Intent, action: VoiceHomeAction, arg: String?): Boolean {")
         val expired = fromIntent.indexOf("VoiceHomeRelay.expired(deadline")
-        val done = fromIntent.indexOf("val done = perform(action, arg)")
-        val ack = fromIntent.indexOf("VoiceEntry.ackHome(ctx, nonce, done)")
+        val done = fromIntent.indexOf("val ack = perform(action, arg)")
+        val ack = fromIntent.indexOf("VoiceEntry.ackHome(ctx, nonce, ack)")
         assertTrue(expired in 0 until done, "kiểm hạn phải TRƯỚC khi thi hành — quá hạn thì `:wake` đã nói không, làm nữa là màn khác lời")
         assertTrue(ack > done, "ack phải SAU khi thi hành, mang đúng kết quả")
         assertTrue(fromIntent.contains("intent.removeExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE)"), "singleTask: extra ở lại getIntent() ⇒ xoá")
         // KachiHomeWiring: sáu lambda, hai cái mới là đúng hai cái dispatcher in-process nhận (assignAppToSlot · onLayout).
-        assertTrue(wiring.contains("VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout)"))
+        assertTrue(wiring.contains("VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) })"))
         // Đính chính owner 01/10 (spec shortcuts-autostart §2.2): giọng nói "vào ô n" là đặt TẠM ⇒ lambda in-process là
         // CHÍNH `slots.placeTemporary` (cùng lớp `KachiHomeSlots` lo cả state lẫn cửa sổ), không còn `slots.assignApp`.
         assertTrue(activity.contains("assignAppToSlot = { idx, pkg -> slots.placeTemporary(idx, pkg) }"), "Activity vẫn truyền CHÍNH lối đặt tạm của KachiHomeSlots")
         assertTrue(activity.contains("onLayout = { preset -> selectPreset(preset); true }"), "Activity vẫn truyền CHÍNH selectPreset (đường chip bố cục)")
         assertTrue(entry.contains("const val ACTION_HOME_ACTION_ACK = \"com.byd.launcher.HOME_ACTION_ACK\""))
-        assertTrue(SourceRoots.body(entry, "fun ackHome(ctx: Context, nonce: String, done: Boolean)").contains("setPackage(ctx.packageName)"), "ack chỉ trong gói")
+        assertTrue(SourceRoots.body(entry, "fun ackHome(ctx: Context, nonce: String, ack: VoiceHomeRelay.Ack)").contains("setPackage(ctx.packageName)"), "ack chỉ trong gói")
     }
 
     // ══ (4) Mặc định của bộ dây chung KHÔNG đổi ═══════════════════════════════════════════════════════════════

@@ -83,7 +83,8 @@ class VoiceEntryRouteWiringContractTest {
     fun `voiceSession trong KachiHomeWiring truyen VoiceEntry voi dung 6 lambda cua dispatcher`() {
         val fn = SourceRoots.body(wiring, "internal fun Activity.voiceSession(")
         // 2.69 (VOICE-WAKE-SLOT-LAYOUT): 4 → 6 — thêm đúng hai lambda Boolean mà dispatcher in-process đã nhận.
-        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout))"),
+        // VOICE-WAKE-SLOTCOUNT — thêm `slotCount` (state THẬT của màn) cho việc gắn ô; sáu lambda giữ nguyên thứ tự.
+        assertTrue(fn.contains("VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) }))"),
             "VoiceHomeActions phải là CÙNG sáu lambda mà VoiceWiring.dispatcher dùng — không mở đường thứ hai")
         assertTrue(fn.contains("entry = entry"), "VoiceSession của màn chính phải nhận entry")
     }

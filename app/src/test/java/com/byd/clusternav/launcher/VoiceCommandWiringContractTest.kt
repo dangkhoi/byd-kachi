@@ -126,10 +126,16 @@ class VoiceCommandWiringContractTest {
         assertTrue(console.contains("assignAppToSlot = deps.assignAppToSlot"),
             "ô *Gõ lệnh chữ* cũng phải gắn thật vào ô, không được mở toàn màn thay thế")
 
+        // VOICE-WAKE-SLOTCOUNT (2026-10-02) — số ô không còn tính TRONG runOpenApp (ở `:wake` state là bố cục giả); hai
+        // tính chất cũ giữ nguyên ở chỗ mới: số ô từ bố cục ĐANG dùng (EffectiveLayout qua VoiceSlotPlace), và phép đổi
+        // 1-based → 0-based ở ĐÚNG một chỗ.
         val fn = SourceRoots.body(dispatcher, "private fun runOpenApp(")
-        assertTrue(fn.contains("EffectiveLayout.slotCount("),
+        val place = SourceRoots.body(dispatcher, "private val place: (Int, String) -> SlotPlaceOutcome")
+        assertTrue(place.contains("VoiceSlotPlace.slotCountOf(state())") &&
+            SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/voice/VoiceSlotPlace.kt")
+                .contains("fun slotCountOf(st: HomeUiState): Int = EffectiveLayout.slotCount(st.workspace.preset, st.customLayout)"),
             "số ô phải đọc từ bố cục ĐANG dùng (bố cục tự vẽ đổi được giữa hai câu), không phải một hằng")
-        assertTrue(fn.contains("assignAppToSlot(slot - 1, pkg)"),
+        assertTrue(fn.contains("place(slot - 1, pkg)") && place.contains("{ assignAppToSlot(idx, pkg) }"),
             "phép đổi 1-based (người nói) → 0-based (mảng ô) phải nằm ở ĐÚNG một chỗ, là chỗ này")
     }
 

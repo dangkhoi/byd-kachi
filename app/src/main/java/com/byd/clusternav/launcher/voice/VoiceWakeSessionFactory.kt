@@ -13,9 +13,10 @@ import android.content.Intent
  *    ([VoiceHomeAction], fire-and-forget: [VoiceWakeHomeRelay.send]). Trước CLOSE-3 chỗ này gửi `EXTRA_START_VOICE` —
  *    tức "mở Kachi rồi mở một phiên nghe MỚI", không phải việc vừa nói; và từ khi EXTRA ấy cũng đi route `:wake` thì
  *    thành vòng lặp. KHÔNG dùng lại `EXTRA_START_VOICE` ở đây (bài canh `VoiceEntryRouteWiringContractTest`).
- *  • **gắn app vào ô · đổi bố cục** (2.69, VOICE-WAKE-SLOT-LAYOUT) — cần `Boolean` thật ⇒ [VoiceWakeHomeRelay.perform]
+ *  • **gắn app vào ô · đổi bố cục** (2.69, VOICE-WAKE-SLOT-LAYOUT) — cần kết quả thật ⇒ [VoiceWakeHomeRelay]
  *    chờ Activity ack ≤ `VoiceHomeRelay.ACK_MS`; hết hạn = từ chối thật, không lạc quan. Trước 2.69 hai lambda này ở
- *    mặc định `false` của `VoiceWiring.dispatcher` ⇒ wake ON thì nút mic mất *"mở YouTube vào ô 2"*.
+ *    mặc định `false` của `VoiceWiring.dispatcher` ⇒ wake ON thì nút mic mất *"mở YouTube vào ô 2"*. Từ
+ *    VOICE-WAKE-SLOTCOUNT gắn ô đi `placeInSlot` → [VoiceWakeHomeRelay.performSlot]: số ô do Activity đo (state thật).
  *  • `onListen` (*"Kachi nghe"* giữa phiên) — cùng nghĩa in-process (`KachiHomeWiring.voiceSession`: `session.start()`
  *    no-op khi đang chạy): xin lại phiên đang giữ của tiến trình ([VoiceWakeSessions.acquire]) rồi `start()`.
  *
@@ -52,8 +53,13 @@ internal fun VoiceWakeService.buildSession(): VoiceSession {
                 confirm = confirm,
                 say = say,
                 // Hai đường có KẾT QUẢ: chờ Activity thật, ô 0-based đúng như `KachiHomeSlots.assignApp` nhận.
-                assignAppToSlot = { idx, pkg -> relay.perform(VoiceHomeAction.ASSIGN_APP_TO_SLOT, VoiceHomeRelay.encodeSlot(idx, pkg)) },
+                // VOICE-WAKE-SLOTCOUNT — gắn ô KHÔNG đi `assignAppToSlot` (đường ấy kiểm dải bằng `state()`, mà `state()` ở
+                // đây là bố cục mặc định 3 ô): giao NGUYÊN lệnh, Activity kiểm bằng bố cục thật và trả số ô thật.
+                placeInSlot = { idx, pkg -> relay.performSlot(idx, pkg) },
                 onLayout = { preset -> relay.perform(VoiceHomeAction.SET_LAYOUT, VoiceHomeRelay.encodeLayout(preset)) },
+                // VOICE-WAKE-SLOTCOUNT (dữ liệu xe) — `:wake` không có màn, không vòng poll: `state().carStatus` ở đây là
+                // `CarStatus()` rỗng của `homeState()` ⇒ câu hỏi số liệu + cổng tốc độ cốp/ca-pô phải đọc TƯƠI.
+                screenless = true,
             )
         },
         openPermissions = { openHome(VoiceHomeAction.PERMISSIONS, null) },

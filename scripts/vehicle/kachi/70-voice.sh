@@ -113,7 +113,7 @@ if ! ls "$WAVDIR"/*.wav >/dev/null 2>&1; then
       i=$((i + 1))
       say -v Linh -o "/tmp/kachi-wav-$i.aiff" "$t" >/dev/null 2>&1 \
         && afconvert -f WAVE -d LEI16@16000 -c 1 "/tmp/kachi-wav-$i.aiff" "$WAVDIR/0$i.wav" >/dev/null 2>&1 \
-        && k_ok "0$i.wav — «$t»"
+        && k_ok "0$i.wav — «${t}»"
       rm -f "/tmp/kachi-wav-$i.aiff"
     done
   else
@@ -170,7 +170,7 @@ voice_one() {
   [ -n "$heard" ] || heard="$(k_json "$K_TEST_JSON" heard)"
   ms="$(ms_between "$TMPL")"
   cat "$TMPL" >> "$OUT/70-logcat-utterances.txt"
-  k_shot 70 "pha$phase «$say_it»"
+  k_shot 70 "pha$phase «${say_it}»"
   printf '  nghe được : %s\n  độ trễ    : %s ms\n' "${heard:-(logcat không có dòng nghe được)}" "${ms:-?}"
   printf '  Ý mà màn hiện (chép NGUYÊN VĂN dòng → của app, Enter nếu không có): '
   read -r intent < /dev/tty
@@ -185,7 +185,7 @@ voice_one() {
     printf '%s,' "$(csv_field "$ok")"
     printf '%s\n' "$(csv_field "${ms:-}")"
   } >> "$CSV"
-  k_note "voice pha$phase «$say_it» → «${heard:-}» · $ok · ${ms:-?} ms"
+  k_note "voice pha$phase «${say_it}» → «${heard:-}» · $ok · ${ms:-?} ms"
 }
 
 # run_phase <pha> <tiêu đề> <danh sách câu, mỗi câu một dòng>

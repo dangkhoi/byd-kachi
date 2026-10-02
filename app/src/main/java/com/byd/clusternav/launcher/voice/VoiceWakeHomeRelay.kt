@@ -19,6 +19,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ═══ VOICE-WAKE-SLOT-LAYOUT (2.69) — `:wake` giao việc cần Activity và (khi cần) CHỜ KẾT QUẢ THẬT ═══════════════════
@@ -80,14 +81,28 @@ internal class VoiceWakeHomeRelay(
      * @return `true` CHỈ khi Activity đã thi hành và báo `true` trong hạn. Mọi đường khác (gửi hỏng · không đăng ký
      * được receiver · hết hạn · Activity báo `false`) ⇒ `false`, có log.
      */
-    fun perform(action: VoiceHomeAction, arg: String?): Boolean {
+    fun perform(action: VoiceHomeAction, arg: String?): Boolean = exchange(action, arg)?.done == true
+
+    /**
+     * VOICE-WAKE-SLOTCOUNT — *"mở X vào ô N"* giao NGUYÊN cho Activity: `:wake` không có bố cục thật (state của nó là
+     * `VoiceGrammarSnapshot.homeState()`, bố cục mặc định 3 ô), nên KHÔNG kiểm dải ở đây. Activity kiểm bằng state
+     * thật ([VoiceSlotPlace.decide], cùng luật với phiên in-process) và ack kèm số ô thật khi ngoài dải.
+     * Ô âm: Activity sẽ coi là tham số hỏng ([VoiceHomeRelay.decodeSlot]) ⇒ không đưa Kachi lên cho một việc chắc hỏng.
+     */
+    fun performSlot(slot: Int, pkg: String): SlotPlaceOutcome {
+        if (slot < 0) return SlotPlaceOutcome.Failed
+        return VoiceHomeRelay.slotOutcome(exchange(VoiceHomeAction.ASSIGN_APP_TO_SLOT, VoiceHomeRelay.encodeSlot(slot, pkg)))
+    }
+
+    /** Một lượt hỏi–đáp với Activity. `null` = không có ack trong hạn (hoặc không gửi được) — xem [perform]. */
+    private fun exchange(action: VoiceHomeAction, arg: String?): VoiceHomeRelay.Ack? {
         // [SOÁT 2.69 · P2] KHÔNG `require`/`throw`: `VoiceSession.execute` chạy trong một `post` tới luồng main
         // (`VoiceSession.kt:285`) — NGOÀI `try/catch` của `runSession` ⇒ một ngoại lệ ở đây là `:wake` **sập**, và
         // một launcher không được chết vì tính năng phụ. Ca này không xảy ra hôm nay (dispatcher ở main), nhưng
         // cái giá của việc nhầm là cả tiến trình, nên cổng là một dòng log + từ chối.
         if (Looper.myLooper() == ackThread.looper) {
             Log.w(TAG, "perform() bị gọi trên chính luồng ack — ack sẽ không bao giờ tới, từ chối ngay ${action.id}")
-            return false
+            return null
         }
         val warm = mainAlive()
         val timeoutMs = VoiceHomeRelay.ackTimeoutMs(warm)
@@ -95,11 +110,13 @@ internal class VoiceWakeHomeRelay(
         val deadline = now() + timeoutMs
         val latch = CountDownLatch(1)
         val done = AtomicBoolean(false)
+        val slots = AtomicInteger(0)
         val rx = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) {
                 if (i?.action != VoiceEntry.ACTION_HOME_ACTION_ACK) return
                 if (i.getStringExtra(EXTRA_VOICE_HOME_NONCE) != nonce) return   // ack của lượt khác
                 done.set(i.getBooleanExtra(VoiceEntry.EXTRA_HOME_ACTION_DONE, false))
+                slots.set(i.getIntExtra(VoiceEntry.EXTRA_HOME_ACTION_SLOTS, 0))
                 latch.countDown()
             }
         }
@@ -110,17 +127,18 @@ internal class VoiceWakeHomeRelay(
             )
         }.onFailure { Log.w(TAG, "không đăng ký được receiver ack — không gửi việc ${action.id} (không nghe được kết quả thì không hứa)", it) }
             .isSuccess
-        if (!registered) return false
+        if (!registered) return null
         try {
-            if (!launch(action, arg, nonce, deadline)) return false
+            if (!launch(action, arg, nonce, deadline)) return null
             val acked = latch.await(timeoutMs, TimeUnit.MILLISECONDS)
             // 🚗 MỘT dòng để chốt hạn trên xe (§Reviewer Log Pass 4 để lại đúng phép đo này): thời gian ack THẬT + hạn đang dùng
             // + trạng thái tiến trình chính. `deadline - timeoutMs` = mốc bắt đầu, không cần thêm biến.
             val ms = now() - (deadline - timeoutMs)
             val who = if (warm) "tiến trình chính sống" else "tiến trình chính lạnh"
-            if (acked) Log.i(TAG, "${action.id}: Activity ack sau $ms ms (hạn $timeoutMs ms, $who) ⇒ ${done.get()}")
+            if (acked) Log.i(TAG, "${action.id}: Activity ack sau $ms ms (hạn $timeoutMs ms, $who) ⇒ ${done.get()} · ngoài dải ${slots.get()}")
             else Log.w(TAG, "Activity không ack ${action.id} trong $timeoutMs ms ($who) ⇒ từ chối thật (Activity cũng không làm — quá hạn)")
-            return acked && done.get()
+            // Chỉ có lời đáp khi ack TỚI trong hạn — không lạc quan (hết hạn ⇒ `null` ⇒ `perform` = false).
+            return if (acked) VoiceHomeRelay.Ack(done.get(), slots.get()) else null
         } finally {
             runCatching { ctx.unregisterReceiver(rx) }
         }

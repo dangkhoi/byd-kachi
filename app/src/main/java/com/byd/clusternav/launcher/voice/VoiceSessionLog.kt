@@ -64,7 +64,11 @@ internal fun VoiceSession.logHeard(rec: VoiceRecognizer, heard: VoiceCapture.Hea
  * [followUp] sau khi câu trả lời đã đọc xong, nên tại đây nó còn là số của các lượt TRƯỚC — và đó đúng là thứ
  * đáng biết khi nghe lại (*"khúc này nằm ở giữa một cuộc hội thoại"*).
  */
-internal fun VoiceSession.logDone(intents: List<VoiceIntent>, replies: List<String>) {
+internal fun VoiceSession.logDone(
+    intents: List<VoiceIntent>,
+    replies: List<String>,
+    clarify: Boolean = clarifyRound > 0,
+) {
     val stamp = utteranceStamp ?: return
     utteranceStamp = null
     val base = utteranceMeta ?: VoiceUtteranceLog.Meta()
@@ -75,9 +79,23 @@ internal fun VoiceSession.logDone(intents: List<VoiceIntent>, replies: List<Stri
                 intents = intents.map { it::class.simpleName.orEmpty() },
                 decision = lastDecision,
                 replies = ArrayList(replies),
-                clarify = clarifyRound > 0,
+                clarify = clarify,
                 followUp = followUps > 0,
             ),
         )
     }.onFailure { Log.w(VoiceSession.TAG, "không cập nhật được nhật ký lượt nói", it) }
 }
+
+/**
+ * ═══ Nửa SAU của lượt dừng ở **HỎI LẠI** hoặc **BỎ CUỘC** — hai lối thoát của `execute` không đi qua `settle()` ═════
+ *
+ * [ĐO máy ảo 02/10, mục `20261002-172417-715` · `20261002-172621-101`] logcat có *"hỏi lại (lượt 1)"* mà tệp JSON của
+ * lượt ấy giữ `decision`/`replies` RỖNG: `execute` thoát ở nhánh hỏi lại TRƯỚC `logDone`, và lượt trả lời (nếu có chữ)
+ * tự mở mốc MỚI ở [logHeard] ⇒ không ai còn ghi nửa sau cho mốc cũ. Đúng những lượt cần chẩn đoán nhất (*"vì sao Kachi
+ * hỏi lại?"*) lại là những lượt nhật ký câm.
+ *
+ * Ghi câu Kachi THẬT SỰ nói ([line]: câu hỏi lại / câu bỏ cuộc), cờ `clarify` = true. Mốc vẫn bị xoá như [logDone]:
+ * lượt trả lời là một mục riêng, có tiếng riêng.
+ */
+internal fun VoiceSession.logAsked(intents: List<VoiceIntent>, line: String) =
+    logDone(intents, listOf(line), clarify = true)

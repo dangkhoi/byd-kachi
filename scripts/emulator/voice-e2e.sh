@@ -81,9 +81,9 @@ require_emulator() {
     emulator-*) ;;
     *)
       [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die \
-        "«$SERIAL» không phải máy ảo — từ chối chạy bộ ca có lệnh thi hành thật (t109 mở cốp…) trên đầu xe.
+        "«${SERIAL}» không phải máy ảo — từ chối chạy bộ ca có lệnh thi hành thật (t109 mở cốp…) trên đầu xe.
    Đặt ALLOW_NON_EMULATOR=YES nếu thật sự có chủ ý, và đọc lại voice-cases.tsv cột auto trước đã."
-      echo "⚠ ALLOW_NON_EMULATOR=YES — đang chạy trên thiết bị THẬT «$SERIAL»"
+      echo "⚠ ALLOW_NON_EMULATOR=YES — đang chạy trên thiết bị THẬT «${SERIAL}»"
       ;;
   esac
 }
@@ -95,6 +95,7 @@ require_emulator() {
 # để ngỏ là để lại một mặt điều khiển toàn thiết bị gần một giờ. Chạy qua `trap` nên nó vẫn dọn khi script chết
 # giữa chừng (Ctrl-C, `die`) — đúng luật CLAUDE.md §5: đổi state ngoài tiến trình thì phải có đường trả lại.
 TEST_MODE_ON=0
+ORIG_PROFILE=""
 cleanup() {
   local rc=$?
   if [ "$TEST_MODE_ON" = "1" ]; then
@@ -103,6 +104,8 @@ cleanup() {
     # một mã đang bật nghĩa là lượt chạy SAU đo nhầm một cổng đang mở sẵn. Cùng luật CLAUDE.md §5: đổi state
     # ngoài tiến trình thì phải có đường trả lại, và đường đó phải chạy cả khi script chết.
     reset_all_prefs || true
+    # Ca đổi hồ sơ (t58, `auto_confirm=1`) để máy ở hồ sơ KHÁC — cùng luật trên: trả lại hồ sơ lúc bắt đầu.
+    restore_profile || true
   fi
   if [ "$TEST_MODE_ON" = "1" ]; then
     "$ADB" -s "$SERIAL" shell am force-stop "$PKG" </dev/null >/dev/null 2>&1 || true
@@ -126,6 +129,29 @@ bridge() {
 }
 
 state_json() { bridge "--es cmd state"; }
+
+# ═══ restore_profile — trả hồ sơ đang dùng về lúc bắt đầu lượt chạy ═════════════════════════════════════
+#
+# [ĐO máy ảo 2026-10-02, E2E VOICE-WAKE-SLOTCOUNT] sau một lượt `--only all`, hồ sơ đang dùng là "Mặc định 2" thay vì
+# "Mặc định" (ca t58 *"chuyển sang hồ sơ @PROFILE@"* tự xác nhận), và `kachi_workspace.xml` đổi sha. `cleanup` cũ chỉ
+# trả 5 khoá prefs ⇒ lượt chạy SAU (và người dùng máy ảo) bắt đầu trên một hồ sơ khác — đúng lỗi "đổi state ngoài
+# tiến trình mà không có đường trả lại" (CLAUDE.md §5). Đi lệnh `profile` của cầu kiểm thử: CHÍNH `viewModel.switchProfile`
+# mà chip hồ sơ dùng. Cầu móc theo Activity ⇒ đưa Kachi lên trước. Không trả được thì NÓI RA, không im.
+restore_profile() {
+  [ -n "$ORIG_PROFILE" ] || return 0
+  local now
+  now="$(state_json | python3 "$HERE/voice_e2e_json.py" get profile.active)"
+  [ "$now" = "$ORIG_PROFILE" ] && return 0
+  start_home
+  bridge "--es cmd profile --es name $(shq "$ORIG_PROFILE")" >/dev/null
+  now="$(state_json | python3 "$HERE/voice_e2e_json.py" get profile.active)"
+  if [ "$now" = "$ORIG_PROFILE" ]; then
+    echo "── hồ sơ đã về «${ORIG_PROFILE}»"
+  else
+    echo "⚠ KHÔNG trả được hồ sơ về «${ORIG_PROFILE}» (đang: «${now:-?}») — đổi tay trước lượt chạy sau"
+    return 1
+  fi
+}
 
 # ═══ prefs_set — đặt/dọn một khoá trong DANH SÁCH TRẮNG của cầu kiểm thử ═════════════════════════
 #
@@ -312,6 +338,9 @@ enable_test_mode
 LEFT="$(state_json | python3 "$HERE/voice_e2e_json.py" get test_mode_minutes_left)"
 [ "${LEFT:-0}" -gt 0 ] 2>/dev/null || die "chế độ kiểm thử vẫn TẮT (còn $LEFT phút) — xem reply: $(state_json | head -c 400)"
 note "chế độ kiểm thử: còn $LEFT phút"
+# Hồ sơ lúc bắt đầu — `cleanup` trả về đúng hồ sơ này (xem `restore_profile`).
+ORIG_PROFILE="$(state_json | python3 "$HERE/voice_e2e_json.py" get profile.active)"
+note "hồ sơ lúc bắt đầu: ${ORIG_PROFILE:-<không đọc được>}"
 # Nền sạch cho cả lượt chạy: một lượt trước chết giữa chừng có thể để lại một mã đang bật trong
 # `voice_confirm_ids` — và ca nào cũng đo *"mặc định không hỏi gì"*, nên nền bẩn làm hỏng cả bảng.
 reset_all_prefs

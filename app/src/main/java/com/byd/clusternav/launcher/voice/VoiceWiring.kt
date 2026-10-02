@@ -131,6 +131,18 @@ object VoiceWiring {
          * đường mà chip bố cục dùng (nó còn bỏ bố cục tự vẽ trước khi đặt preset).
          */
         onLayout: (com.byd.clusternav.launcher.LayoutPreset) -> Boolean = { false },
+        /**
+         * VOICE-WAKE-SLOTCOUNT — chỉ bề mặt KHÔNG chung tiến trình với màn chính (`:wake`) truyền: nó giao nguyên lệnh
+         * gắn ô cho Activity, nơi giữ bố cục thật. `null` = kiểm dải bằng [state] (xem `VoiceDispatcher.placeInSlot`).
+         */
+        placeInSlot: ((Int, String) -> SlotPlaceOutcome)? = null,
+        /**
+         * VOICE-WAKE-SLOTCOUNT — tiến trình của bề mặt này KHÔNG có màn (`:wake`): không vòng poll nào, và [state] không
+         * mang số liệu xe (`CarStatus()` rỗng). Khi ấy "nhu cầu màn" của tiến trình là RỖNG — sự thật — chứ không phải
+         * `null` (= "vòng poll đang đọc hết"); để `null` thì `AppContainer.refreshForRead` luôn trả `null` và mọi câu hỏi
+         * số liệu / cổng tốc độ rơi về ảnh rỗng. `false` (mặc định) = y nguyên 2.85 cho bề mặt chung tiến trình với màn.
+         */
+        screenless: Boolean = false,
     ): VoiceDispatcher = VoiceDispatcher(
         control = { AppContainer.get(ctx).carControl },
         state = state,
@@ -159,12 +171,20 @@ object VoiceWiring {
         // [SOÁT P1-1 · 2026-09-16] Cổng H1 giữ giá trị cũ cho datum ngoài màn ⇒ câu hỏi bằng giọng phải ghim
         // datum đó vào nhu cầu rồi đọc NGAY một lượt. `AppContainer.refreshForRead` tự trả `null` khi ảnh chụp
         // vốn đã tươi, nên chỗ này không phải biết gì về lịch poll.
-        freshCar = { id -> runCatching { AppContainer.get(ctx).refreshForRead(id) }.getOrNull() },
+        freshCar = { id ->
+            runCatching {
+                val c = AppContainer.get(ctx)
+                // Chỉ tiến trình KHÔNG màn; vẫn lười (chỉ khi có câu hỏi số liệu), không dựng gì ngoài đường đọc HAL.
+                if (screenless && c.carDemand.get() == null) c.carDemand.set(emptySet())
+                c.refreshForRead(id)
+            }.getOrNull()
+        },
         // App dẫn đường mặc định (owner chọn trong Cài đặt › Dẫn đường) — đọc mỗi lượt để đổi là ăn ngay.
         navDefault = { com.byd.clusternav.Prefs.voiceNavDefaultApp(ctx) },
         // App nhạc mặc định (owner 2026-09-21) — "" nghĩa là tự chọn ⇒ trả null để pickMusic lùi về hành vi cũ.
         musicDefault = { com.byd.clusternav.Prefs.voiceMusicDefaultApp(ctx).ifBlank { null } },
         // Giải video_id bài đầu (YouTube) để "phát luôn" — có thời hạn cứng, hỏng thì lùi search-play.
         resolveVideo = { q -> VoiceYoutubeResolver.firstVideoIdBounded(q) },
+        placeInSlot = placeInSlot,
     )
 }

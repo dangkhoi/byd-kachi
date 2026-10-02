@@ -79,7 +79,10 @@ enum class VoiceHomeAction(
     PERMISSIONS("permissions"),
     /** Tham số = tên hồ sơ (extra `EXTRA_VOICE_HOME_ARG`). */
     SWITCH_PROFILE("switch_profile"),
-    /** Tham số = [VoiceHomeRelay.encodeSlot] (ô 0-based + tên gói). Activity thi hành bằng lambda `assignAppToSlot`. */
+    /**
+     * Tham số = [VoiceHomeRelay.encodeSlot] (ô 0-based + tên gói). Activity thi hành bằng lambda `assignAppToSlot`.
+     * Từ VOICE-WAKE-SLOTCOUNT Activity cũng kiểm DẢI ô bằng state thật ([VoiceSlotPlace.decide]) và ack kèm số ô.
+     */
     ASSIGN_APP_TO_SLOT("assign_app_to_slot", awaitsResult = true),
     /** Tham số = [VoiceHomeRelay.encodeLayout] (`LayoutPreset.name`). Activity thi hành bằng lambda `onLayout`. */
     SET_LAYOUT("set_layout", awaitsResult = true);
@@ -144,6 +147,27 @@ object VoiceHomeRelay {
         val pkg = arg.substring(at + 1)
         if (slot < 0 || !PKG.matches(pkg)) return null
         return SlotAssign(slot, pkg)
+    }
+
+    /**
+     * Lời đáp của Activity cho một việc có kết quả. [outOfRangeSlots] > 0 CHỈ khi việc gắn ô bị từ chối vì ô không có
+     * trong bố cục — mang số ô THẬT về cho `:wake` nói *"bố cục hiện chỉ có N ô"* (VOICE-WAKE-SLOTCOUNT); `0` = không có.
+     */
+    data class Ack(val done: Boolean, val outOfRangeSlots: Int = 0)
+
+    /** Activity: kết quả gắn ô → lời đáp. */
+    fun ackOf(outcome: SlotPlaceOutcome): Ack = when (outcome) {
+        SlotPlaceOutcome.Placed -> Ack(done = true)
+        SlotPlaceOutcome.Failed -> Ack(done = false)
+        is SlotPlaceOutcome.OutOfRange -> Ack(done = false, outOfRangeSlots = outcome.slotCount)
+    }
+
+    /** `:wake`: lời đáp → kết quả gắn ô. `null` (không ack trong hạn) ⇒ [SlotPlaceOutcome.Failed] — từ chối thật. */
+    fun slotOutcome(ack: Ack?): SlotPlaceOutcome = when {
+        ack == null -> SlotPlaceOutcome.Failed
+        ack.done -> SlotPlaceOutcome.Placed
+        ack.outOfRangeSlots > 0 -> SlotPlaceOutcome.OutOfRange(ack.outOfRangeSlots)
+        else -> SlotPlaceOutcome.Failed
     }
 
     fun encodeLayout(preset: LayoutPreset): String = preset.name

@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.LayoutPreset
+import com.byd.clusternav.launcher.WorkspaceState
 
 /**
  * ═══ MỆNH ĐỀ **"VÀO Ô SỐ N"** Ở DẠNG CÓ DẤU — để tầng NGHE bias được cái đuôi ═════════════════════════════════
@@ -39,13 +40,18 @@ import com.byd.clusternav.launcher.LayoutPreset
 object VoiceSlotPhrases {
 
     /**
-     * Số ô tối đa mà một bố cục có — đọc thẳng [LayoutPreset] thay vì viết một con số ở đây.
+     * Số ô tối đa mà một bố cục có — đọc thẳng trần thật thay vì viết một con số ở đây: bố cục sẵn ([LayoutPreset])
+     * **và** bố cục tự vẽ (tối đa [WorkspaceState.SLOT_CAP] khung).
      *
      * Thêm một bố cục nhiều ô hơn ⇒ tự có cụm, không ai phải nhớ sửa hai chỗ (cùng lẽ [VoiceLayouts.WORDS]).
      * Số ngoài dải này vẫn **hiểu** được (bộ phân tích không kẹp — xem KDoc [VoiceIntent.OpenApp.slot], chỗ gọi
      * mới nói *"bố cục hiện chỉ có N ô"*); nó chỉ không được **bias**, vì không bố cục nào có ô ấy.
+     *
+     * VOICE-WAKE-SLOTCOUNT (2026-10-02): tới 2.85 chỉ đọc [LayoutPreset] (= 4) trong khi trần ô đã đi 4 → 6 cho bố cục
+     * tự vẽ ⇒ *"vào ô số năm/sáu"* không có hotword nào đỡ, và đuôi rụng chữ *"ô"* (*"mở youtube sáu"*,
+     * `VoiceTailClause.bareSlot`) bị kẹp mất ⇒ app mở toàn màn thay vì vào ô 6 — trên đúng bố cục 6 khung của owner.
      */
-    val MAX_SLOT: Int = LayoutPreset.entries.maxOf { it.slotCount }
+    val MAX_SLOT: Int = maxOf(LayoutPreset.entries.maxOf { it.slotCount }, WorkspaceState.SLOT_CAP)
 
     /** Con số **có dấu**, 1-based — chỉ tới [MAX_SLOT] (phần tử `0` không dùng, giữ chỗ cho chỉ số 1-based). */
     private val NUMBERS = listOf("", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám")

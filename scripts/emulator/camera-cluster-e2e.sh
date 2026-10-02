@@ -61,7 +61,7 @@ shq() { local s=$1 q="'"; s=${s//$q/$q\\$q$q}; printf '%s' "$q$s$q"; }
 # ═══ CHỐT: KHÔNG chạy trên XE THẬT — vòng này ghi prefs camera, bật ảnh tổng hợp và TẠO một display giả ═════════════
 case "$SERIAL" in
   emulator-*) ;;
-  *) [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die "«$SERIAL» không phải máy ảo — từ chối tạo overlay display + ảnh tổng hợp." ;;
+  *) [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die "«${SERIAL}» không phải máy ảo — từ chối tạo overlay display + ảnh tổng hợp." ;;
 esac
 
 PY=""

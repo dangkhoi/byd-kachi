@@ -133,12 +133,16 @@ class VoiceEntry(
         const val ACTION_HOME_ACTION_ACK = "com.byd.launcher.HOME_ACTION_ACK"
         const val EXTRA_HOME_ACTION_DONE = "done"
 
-        fun ackHome(ctx: Context, nonce: String, done: Boolean) {
+        /** VOICE-WAKE-SLOTCOUNT — số ô THẬT khi việc gắn ô bị từ chối vì ngoài dải; vắng/`0` = không có. */
+        const val EXTRA_HOME_ACTION_SLOTS = "out_of_range_slots"
+
+        fun ackHome(ctx: Context, nonce: String, ack: VoiceHomeRelay.Ack) {
             runCatching {
                 ctx.sendBroadcast(
                     Intent(ACTION_HOME_ACTION_ACK).setPackage(ctx.packageName)
                         .putExtra(com.byd.clusternav.launcher.EXTRA_VOICE_HOME_NONCE, nonce)
-                        .putExtra(EXTRA_HOME_ACTION_DONE, done),
+                        .putExtra(EXTRA_HOME_ACTION_DONE, ack.done)
+                        .putExtra(EXTRA_HOME_ACTION_SLOTS, ack.outOfRangeSlots),
                 )
             }.onFailure { Log.w(TAG, "gửi ack việc Activity hỏng", it) }
         }
@@ -150,9 +154,10 @@ class VoiceEntry(
  * phiên in-process dùng (`KachiHomeWiring.voiceSession` truyền đúng sáu cái đó vào đây). `:wake` gửi
  * [VoiceHomeAction.id] qua extra; `KachiHomeWiring.startVoiceIfRequested` gọi [performFromIntent].
  *
- * Hai đường 2.69 (gắn app vào ô · đổi bố cục) trả `Boolean` — đúng lambda mà `KachiHomeActivity` truyền cho phiên
- * in-process (`slots.assignApp` · `selectPreset`), nên *"mở YouTube vào ô 2"* qua `:wake` và qua nút mic in-process là
- * **một** đường (KDoc `VoiceDispatcher`: không mở đường thứ hai).
+ * Hai đường 2.69 (gắn app vào ô · đổi bố cục) trả kết quả thật — đúng lambda mà `KachiHomeActivity` truyền cho phiên
+ * in-process (`slots.placeTemporary` · `selectPreset`), nên *"mở YouTube vào ô 2"* qua `:wake` và qua nút mic in-process
+ * là **một** đường (KDoc `VoiceDispatcher`: không mở đường thứ hai). Dải ô kiểm ở ĐÂY bằng [slotCount] (state thật,
+ * VOICE-WAKE-SLOTCOUNT) qua cùng [VoiceSlotPlace.decide] mà phiên in-process dùng.
  */
 class VoiceHomeActions(
     val openAppList: () -> Unit,
@@ -161,15 +166,26 @@ class VoiceHomeActions(
     val switchProfile: (String) -> Unit,
     val assignAppToSlot: (Int, String) -> Boolean,
     val onLayout: (LayoutPreset) -> Boolean,
+    /**
+     * VOICE-WAKE-SLOTCOUNT — số ô của bố cục ĐANG HIỆU LỰC, đọc từ state THẬT của màn chính. KHÔNG mặc định: quên nối
+     * là không biên dịch được (đúng lẽ `VoiceDispatcher.onListen`), vì `:wake` không có nguồn nào khác cho con số này.
+     */
+    val slotCount: () -> Int,
 ) {
-    /** `false` ⇒ thiếu/hỏng tham số (đổi hồ sơ không tên · ô/gói/bố cục sai dạng) — không đoán, có log ở chỗ gọi. */
-    fun perform(action: VoiceHomeAction, arg: String?): Boolean = when (action) {
-        VoiceHomeAction.APP_LIST -> { openAppList(); true }
-        VoiceHomeAction.SETTINGS -> { openSettings(); true }
-        VoiceHomeAction.PERMISSIONS -> { openPermissions(); true }
-        VoiceHomeAction.SWITCH_PROFILE -> arg?.takeIf { it.isNotBlank() }?.let { switchProfile(it); true } ?: false
-        VoiceHomeAction.ASSIGN_APP_TO_SLOT -> VoiceHomeRelay.decodeSlot(arg)?.let { assignAppToSlot(it.slot, it.pkg) } ?: false
-        VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { onLayout(it) } ?: false
+    /**
+     * `done = false` ⇒ thiếu/hỏng tham số (đổi hồ sơ không tên · ô/gói/bố cục sai dạng) — không đoán, có log ở chỗ
+     * gọi — hoặc ô ngoài dải (khi ấy [VoiceHomeRelay.Ack.outOfRangeSlots] = số ô THẬT, cùng luật [VoiceSlotPlace.decide]
+     * với phiên in-process).
+     */
+    fun perform(action: VoiceHomeAction, arg: String?): VoiceHomeRelay.Ack = when (action) {
+        VoiceHomeAction.APP_LIST -> { openAppList(); DONE }
+        VoiceHomeAction.SETTINGS -> { openSettings(); DONE }
+        VoiceHomeAction.PERMISSIONS -> { openPermissions(); DONE }
+        VoiceHomeAction.SWITCH_PROFILE -> arg?.takeIf { it.isNotBlank() }?.let { switchProfile(it); DONE } ?: FAILED
+        VoiceHomeAction.ASSIGN_APP_TO_SLOT -> VoiceHomeRelay.decodeSlot(arg)?.let { s ->
+            VoiceHomeRelay.ackOf(VoiceSlotPlace.decide(s.slot, slotCount()) { assignAppToSlot(s.slot, s.pkg) })
+        } ?: FAILED
+        VoiceHomeAction.SET_LAYOUT -> VoiceHomeRelay.decodeLayout(arg)?.let { VoiceHomeRelay.Ack(onLayout(it)) } ?: FAILED
     }
 
     /**
@@ -186,12 +202,15 @@ class VoiceHomeActions(
             Log.w(TAG_HOME, "việc ${action.id} tới sau hạn ${deadline} ms — `:wake` đã từ chối, không thi hành")
             return false
         }
-        val done = perform(action, arg)
-        if (nonce != null) VoiceEntry.ackHome(ctx, nonce, done)
-        return done
+        val ack = perform(action, arg)
+        if (ack.outOfRangeSlots > 0) Log.i(TAG_HOME, "việc ${action.id}: ô ngoài dải — bố cục đang hiệu lực có ${ack.outOfRangeSlots} ô")
+        if (nonce != null) VoiceEntry.ackHome(ctx, nonce, ack)
+        return ack.done
     }
 
     private companion object {
         const val TAG_HOME = "KachiVoiceEntry"
+        val DONE = VoiceHomeRelay.Ack(done = true)
+        val FAILED = VoiceHomeRelay.Ack(done = false)
     }
 }

@@ -55,9 +55,9 @@ SWITCHED=0
 if [ "$BRIDGE" = "1" ]; then
   printf '  Tên hồ sơ muốn đổi SANG (Enter để tự chạm bằng tay): '
   read -r PNAME < /dev/tty
-  if [ -n "${PNAME:-}" ] && k_confirm "đổi hồ sơ sang «$PNAME» qua cầu kiểm thử (áp 8 applier THẬT lên xe)" \
+  if [ -n "${PNAME:-}" ] && k_confirm "đổi hồ sơ sang «${PNAME}» qua cầu kiểm thử (áp 8 applier THẬT lên xe)" \
        "chạy lại lệnh này với tên hồ sơ CŨ, hoặc chạm chip hồ sơ cũ trên thanh trên"; then
-    k_timed "cầu: profile «$PNAME»" k_test profile --es name "$PNAME" && SWITCHED=1
+    k_timed "cầu: profile «${PNAME}»" k_test profile --es name "$PNAME" && SWITCHED=1
   fi
 fi
 if [ "$SWITCHED" = "0" ]; then

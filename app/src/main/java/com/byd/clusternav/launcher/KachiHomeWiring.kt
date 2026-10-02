@@ -19,6 +19,7 @@ import com.byd.clusternav.launcher.voice.VoiceHomeAction
 import com.byd.clusternav.launcher.voice.VoiceHomeActions
 import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceSession
+import com.byd.clusternav.launcher.voice.VoiceSlotPlace
 import kotlinx.coroutines.launch
 import com.byd.clusternav.launcher.voice.VoiceWiring
 
@@ -306,8 +307,9 @@ internal fun Activity.voiceSession(
     lateinit var session: VoiceSession
     // §8.2 (A) — ảnh chụp ngữ pháp cho phiên `:wake` có NGAY từ lần mở màn đầu (máy vừa nâng cấp chưa đổi hồ sơ lần nào).
     VoiceGrammarSnapshotStore.write(WorkspacePrefs(this))
-    // CLOSE-3 / 2.69 — cùng SÁU lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent.
-    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout))
+    // CLOSE-3 / 2.69 — cùng SÁU lambda ở dưới (không mở đường thứ hai): `:wake` trả việc cần Activity về đây qua intent;
+    // VOICE-WAKE-SLOTCOUNT — số ô từ state THẬT (`:wake` không có bố cục thật, giao nguyên lệnh gắn ô về đây).
+    val entry = VoiceEntry(this, VoiceHomeActions(openAppList, openSettings, openPermissions, onSwitchProfile, assignAppToSlot, onLayout, slotCount = { VoiceSlotPlace.slotCountOf(state()) }))
     session = VoiceSession(
         ctx = this,
         entry = entry,

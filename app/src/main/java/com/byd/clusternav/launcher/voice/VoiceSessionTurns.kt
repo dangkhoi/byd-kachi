@@ -68,6 +68,7 @@ internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>, my: Int): Bo
     if (VoiceClarify.ask(only, 0, sessionTerms()) == null) return false
     clarifyRound = 0
     val line = VoiceClarify.giveUp()
+    logAsked(intents, line)   // nhật ký lượt nói: lối thoát này cũng không qua `settle()` — xem KDoc [logAsked]
     VoiceChime.error()   // R1 voice-ux: earcon "chưa hiểu"
     overlay?.render(R.string.kachi_voice_heard, line)
     scheduleClose(VoiceSpeakBudget.estimateMs(listOf(line), VoiceSession.SPEAK_SAFETY_MS))

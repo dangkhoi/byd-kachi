@@ -298,7 +298,7 @@ class VoiceSession(
         // Đặt TRƯỚC `d.execute`: một câu chỉ có [VoiceIntent.Unknown] thì không có gì để thi hành, và để nó
         // chạy qua đường thường là để `VoiceReply.unknown` phát ra một dòng *"không hiểu"* rồi phiên chết —
         // đúng chỗ người lái phải bấm lại và nói lại **cả câu** (xem KDoc [VoiceClarify]).
-        clarifyAsk(intents)?.let { ask -> askAgain(ask, my); return }
+        clarifyAsk(intents)?.let { ask -> logAsked(intents, ask.question); askAgain(ask, my); return }
         // ⚠ [SOÁT Pass 1 · P2 · 2026-09-16] Hết trần hỏi ⇒ **bỏ cuộc lịch sự**, không rơi về câu *"không hiểu"*
         // thường. [VoiceClarify.ask] trả `null` ở hai ca khác hẳn nhau (không nên hỏi · đã hỏi đủ 2 lượt) và tới
         // bản này cả hai rơi vào cùng một chỗ ⇒ [VoiceClarify.giveUp] — câu nêu một ví dụ có thật, đúng thứ spec
