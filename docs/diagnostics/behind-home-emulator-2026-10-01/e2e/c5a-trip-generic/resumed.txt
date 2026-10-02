@@ -1,0 +1,5 @@
+    mResumedActivity: ActivityRecord{b20ba12 u0 vn.vietmap.live/.MainActivity t2465}
+ ResumedActivity:ActivityRecord{b20ba12 u0 vn.vietmap.live/.MainActivity t2465}
+    mResumedActivity: ActivityRecord{e9f01d9 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity t2453}
+ ResumedActivity:ActivityRecord{e9f01d9 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity t2453}
+  ResumedActivity: ActivityRecord{b20ba12 u0 vn.vietmap.live/.MainActivity t2465}

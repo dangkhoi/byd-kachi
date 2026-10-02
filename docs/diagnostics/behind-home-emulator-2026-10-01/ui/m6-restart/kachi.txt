@@ -1,0 +1,3 @@
+--------- beginning of system
+--------- beginning of main
+10-02 05:35:29.104 24159 24212 I KachiBehind: recovery dấu=2 nổi-lên=false giữ=2

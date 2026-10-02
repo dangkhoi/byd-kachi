@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import com.byd.clusternav.system.PackageQueries
 
 /**
@@ -25,4 +26,15 @@ object InstalledApps {
             .distinctBy { it.pkg }
             .sortedBy { it.name.lowercase() }
     }.getOrDefault(emptyList())
+
+    /**
+     * Nhãn ỨNG DỤNG của [pkg] — cùng nhãn thẻ ô app (`WorkspaceViewCards`); `null` = chưa cài. Một chỗ cho lối tắt (khối
+     * thanh nút · widget · Cài đặt · lời nhắc khi chạm) và lượt đặt tạm (`KachiHomeSlots`) — global §4.1 DRY.
+     */
+    fun labelOf(ctx: Context, pkg: String): String? = try {
+        val pm = ctx.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+    } catch (e: PackageManager.NameNotFoundException) {
+        null
+    }
 }

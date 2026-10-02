@@ -113,7 +113,9 @@ class DockPickerContractTest {
     @Test
     fun `ngan keo co che do chon nut thanh xe`() {
         assertTrue(
-            Regex("""enum class Mode \{ ASSIGN_SLOT, OPEN_APP, PICK_DOCK \}""").containsMatchIn(drawer),
+            // F1 · U1 (2026-10-02): + `PICK_SHORTCUTS` (chọn app cho lối tắt) — cùng luật: chế độ của CHÍNH bảng này.
+            // F2 · U6 (02/10, nhóm C): + `PICK_TRIP` (chọn app mở khi nổ máy) — cùng luật: chế độ của CHÍNH bảng này.
+            Regex("""enum class Mode \{ ASSIGN_SLOT, OPEN_APP, PICK_DOCK, PICK_SHORTCUTS, PICK_TRIP \}""").containsMatchIn(drawer),
             "phải là chế độ thứ ba của CHÍNH bảng này — dựng một bảng thứ hai là quay lại 'hai lưới một tập ô'",
         )
     }

@@ -109,7 +109,7 @@ class TopStripTest {
     @Test
     fun `hanh dong cua launcher KHONG len duoc thanh tren`() {
         val cfg = TopStripConfig(listOf(TopStripConfig.PM25))
-        LauncherActions.ALL.forEach { a ->
+        LauncherActions.placeable.forEach { a ->   // F1: + khối lối tắt — một hàng icon, không vẽ được trong chip
             assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "tiền đề: ${a.id} là loại LAUNCHER")
             assertFalse(TopStripConfig.isChippable(a.id), "${a.id} không được coi là chip được")
             assertEquals(cfg, cfg.setEnabled(a.id, true), "${a.id} KHÔNG được lên thanh trên")

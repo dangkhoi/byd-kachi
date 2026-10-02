@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="kachi_trip_ledger">v=1;trip=n39.t190711257;phase=FIRED;tries=1</string>
+    <string name="kachi_shell_approval">v=1;fp=<redacted>;ok=1790898505119;win=604800000</string>
+    <int name="freeform_state" value="1" />
+    <string name="kachi_trip_last">v=1;trip=n39.t190711257;code=RAN;at=1790912161247;d=ready after 20426ms | music:com.google.android.apps.youtube.music:in-slot:uritrue playing</string>
+</map>

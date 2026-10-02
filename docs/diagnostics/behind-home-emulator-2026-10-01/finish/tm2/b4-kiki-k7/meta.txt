@@ -1,0 +1,3 @@
+T0=10-02 10:32:08.000 pkg=ai.zalo.kiki.car comp=ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity mech=k7 vd=173 task=2619 pids_before={'ai.zalo.kiki.car': '6907', 'com.byd.launcher': '3401'}
+pids_after_detach={'ai.zalo.kiki.car': '6907', 'com.byd.launcher': '3401'}
+T8=10-02 10:32:17.000 k8_vd=173 pids_after_k8={'ai.zalo.kiki.car': '6907', 'com.byd.launcher': '3401'}

@@ -1,0 +1,3 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:34:04.795 22028 22028 I KachiShortcut: tap com.google.android.deskclock S1 usable=true stages=0 -> Noop(highlight=0, reason=null)

@@ -377,7 +377,7 @@ class KachiTestBridge : BroadcastReceiver() {
 
     /** Nội dung một ô, dạng chuỗi ĐÚNG NHƯ trên đĩa (xem KDoc [TestBridgeState]). */
     private fun contentOf(hooks: TestBridgeHooks, index: Int): String =
-        hooks.state().slots.getOrNull(index)?.let { SlotCodec.encode(it) }.orEmpty()
+        hooks.state().effectiveWorkspace.slots.getOrNull(index)?.let { SlotCodec.encode(it) }.orEmpty()
 
     private fun runOpen(app: Context, cmd: TestBridgeCommand, hooks: TestBridgeHooks, reply: TestBridgeReply) {
         if (!installed(app, cmd.pkg)) {

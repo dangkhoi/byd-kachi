@@ -1,0 +1,23 @@
+--------- beginning of main
+--------- beginning of system
+10-02 10:35:24.964  9973  9973 I KachiReady: proc interactive=false t=319 so=- wall=10:35:24.964
+10-02 10:35:25.110  9973 10006 I KachiReady: checking src=early t=467 so=- wall=10:35:25.110
+10-02 10:35:25.229  9973 10006 I KachiReady: up src=early t=586 so=- wall=10:35:25.229
+10-02 10:35:25.236  9973 10006 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=125ms t=594 so=- wall=10:35:25.236
+10-02 10:35:25.384  9973 10006 I KachiReady: window adb_allowed_connection_time=default t=742 so=- wall=10:35:25.384
+10-02 10:35:25.502  9973  9973 I KachiTest: hooks attached
+10-02 10:35:30.444  9973 10003 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 10:35:30.448  9973 10003 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=190685422, leo=163604535, con của lượt chữa=false)
+10-02 10:35:34.685  9973  9973 I KachiReady: screen_on src=home t=10043 so=+0 wall=10:35:34.685
+10-02 10:35:34.686  9973  9973 I KachiReady: home adopt t=10043 so=+0 wall=10:35:34.686
+10-02 10:35:34.697  9973 10006 I KachiReady: keys=BOUND t=10054 so=+11 wall=10:35:34.697
+10-02 10:35:34.925  9973 10199 I KachiTrip: wait BOOT (streak=0 home=[com.byd.launcher/com.byd.clusternav.launcher.KachiHome, com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity])
+10-02 10:35:34.966  9973 10003 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 10:35:35.105  9973  9973 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 10:35:35.111  9973  9973 I KachiReady: tile vd=177 slot=0 t=10468 so=+425 wall=10:35:35.110
+10-02 10:35:35.111  9973  9973 I KachiReady: summary screen_on->tile=425 proc->up=586 src=early keys=BOUND
+10-02 10:35:35.111  9973  9973 I KachiVd : tạo màn ảo kachi-slot-0-1790912135104 — ô 0 · display 177 · chủ ws@198225510 · đang sống 1
+10-02 10:35:35.158  9973  9973 I VdAppHost: [slot-density] slot=1 short=395 dpi=200→200 (316,0dp→316,0dp)
+10-02 10:35:35.162  9973  9973 I KachiReady: tile vd=178 slot=1 t=10519 so=+476 wall=10:35:35.162
+10-02 10:35:35.162  9973  9973 I KachiVd : tạo màn ảo kachi-slot-1-1790912135158 — ô 1 · display 178 · chủ ws@198225510 · đang sống 2
+10-02 10:36:01.276  9973 10199 I KachiTrip: run trip=n39.t190711257 tries=1 -> RAN in=26485ms saved=true :: ready after 20426ms | music:com.google.android.apps.youtube.music:in-slot:uri=true playing

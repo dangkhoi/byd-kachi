@@ -1,0 +1,7 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:54:19.590 15765 15786 I A11yLifecycle: màn bật không theo sau lần tắt máy nào (tắt-máy=177363115, mở-xe trước=177372126) → không tự chữa
+10-02 06:54:19.596 15765 15765 I KachiReady: screen_on src=broadcast t=83240 so=+0 wall=06:54:19.586
+10-02 06:54:19.603 15765 15790 I KachiReady: keys=BOUND t=83256 so=+16 wall=06:54:19.603
+10-02 06:54:19.608 15765 15887 I KachiTrip: skip trip=n39.t177363115 why=ALREADY_FIRED
+10-02 06:54:19.727 15765 15882 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=1

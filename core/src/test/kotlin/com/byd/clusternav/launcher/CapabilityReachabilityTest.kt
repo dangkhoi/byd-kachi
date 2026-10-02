@@ -85,17 +85,18 @@ class CapabilityReachabilityTest {
     fun `hai hanh dong launcher deu dat duoc va chi o khoi Launcher`() {
         val reach = reachable()
         val section = CapabilityPicker.launcherPicks().map { it.id }
-        LauncherActions.ALL.forEach { a ->
+        // F1 (2026-10-02): `placeable` = ba việc gọi bằng lời + khối lối tắt (`LauncherActions.BLOCKS`).
+        LauncherActions.placeable.forEach { a ->
             assertTrue(a.id in reach, "hành động '${a.label}' (${a.id}) không có đường đặt vào thanh nút")
             assertTrue(a.id in section, "phải nằm trong khối Launcher, không rải vào lĩnh vực của xe")
             assertEquals(CapabilityKind.LAUNCHER, CapabilityCatalog.kindOf(a.id), "phải phân loại là LAUNCHER")
         }
-        assertEquals(LauncherActions.ALL.size, section.size, "khối Launcher bày ĐÚNG các hành động đó, không thêm")
+        assertEquals(LauncherActions.placeable.size, section.size, "khối Launcher bày ĐÚNG các hành động đó, không thêm")
         // Và chúng KHÔNG được lọt vào lĩnh vực của xe — ở đó chúng sẽ có ô THỨ HAI (bảng `mã → view` bị ghi đè,
         // đúng lỗi RW0 mà `CapabilityPicker.singlesOf` đang chặn cho NHÓM).
         val inDomains = CapabilityCatalog.byDomain().flatMap { it.second }.map { it.id }
         assertTrue(
-            LauncherActions.ALL.none { it.id in inDomains },
+            LauncherActions.placeable.none { it.id in inDomains },
             "hành động launcher không thuộc lĩnh vực nào của xe ⇒ không được xuất hiện trong byDomain()",
         )
     }

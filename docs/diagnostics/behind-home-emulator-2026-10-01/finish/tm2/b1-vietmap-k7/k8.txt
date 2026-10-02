@@ -1,0 +1,2 @@
+am start --display 173 -n vn.vietmap.live/.MainActivity
+Starting: Intent { cmp=vn.vietmap.live/.MainActivity }

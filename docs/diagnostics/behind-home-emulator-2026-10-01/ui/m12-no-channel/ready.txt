@@ -1,0 +1,13 @@
+--------- beginning of system
+--------- beginning of main
+10-02 05:44:07.176 31527 31527 I KachiReady: proc interactive=true t=334 so=- wall=05:44:07.176
+10-02 05:44:07.225 31527 31551 I KachiReady: checking src=early t=385 so=- wall=05:44:07.224
+10-02 05:44:13.299 31527 31551 W KachiReady: ledger forget src=early ok=true
+10-02 05:44:13.300 31527 31551 I KachiReady: needs lost src=early t=6460 so=- wall=05:44:13.300
+10-02 05:44:13.300 31527 31547 I KachiReady: deny BACKGROUND caller=kachi-a11y-lifecycle state=NEEDS_APPROVAL total=1 t=6461 so=- wall=05:44:13.300
+10-02 05:44:13.301 31527 31578 I KachiReady: deny BACKGROUND caller=kachi-window-shell state=NEEDS_APPROVAL total=2 t=6462 so=- wall=05:44:13.301
+10-02 05:44:13.306 31527 31551 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> AWAITING_APPROVAL in=6081ms t=6467 so=- wall=05:44:13.306
+10-02 05:44:13.311 31527 31527 I KachiReady: card show variant=LOST t=6471 so=- wall=05:44:13.311
+10-02 05:44:13.314 31527 31551 W KachiReady: ledger forget src=early ok=true
+10-02 05:44:19.329 31527 31627 W KachiReady: ledger forget src=f4 ok=true
+10-02 05:44:19.344 31527 31639 I KachiReady: deny BACKGROUND caller=Thread-7 state=NEEDS_APPROVAL total=15 t=12504 so=- wall=05:44:19.344

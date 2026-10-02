@@ -1,0 +1,231 @@
+VD=107 PKG=com.google.android.apps.youtube.music
+T0=10-02 06:13:18.000
+--- [start] 06:13:18.758 mWakefulness=Awake
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=162 bounds=[0,0][1129,804] displayId=107 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+    mResumedActivity: ActivityRecord{6ed3efd u0 vn.vietmap.live/.MainActivity t2350}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=1043 pidVM=2026
+--- [after-force-stop] 06:13:19.865 mWakefulness=Awake
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=162 bounds=[0,0][1129,804] displayId=107 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+    mResumedActivity: ActivityRecord{6ed3efd u0 vn.vietmap.live/.MainActivity t2350}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX= pidVM=2026
+$ am start --display 107 --windowingMode 1 -a android.intent.action.VIEW -d 'https://music.youtube.com/watch?v=dQw4w9WgXcQ' -p com.google.android.apps.youtube.music -f 0x10000000
+Starting: Intent { act=android.intent.action.VIEW dat=https://music.youtube.com/... flg=0x10000000 pkg=com.google.android.apps.youtube.music }
+--- [after-k9-cold] 06:13:30.112 mWakefulness=Awake
+Stack id=164 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2352: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=162 bounds=[0,0][1129,804] displayId=107 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+    mResumedActivity: ActivityRecord{f3e6568 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2352}
+pidX=3881 pidVM=2026
+      package=com.google.android.apps.youtube.music
+      active=true
+      state=PlaybackState {state=3, position=98, buffered position=0, speed=1.0, updated=174991974, actions=2600855, custom actions=[Action:mName='Like, mIcon=2131233463, mExtras=null, Action:mName='Shuffle off, mIcon=2131232823, mExtras=null, Action:mName='Repeat off, mIcon=2131232725, mExtras=null, Action:mName='Dislike, mIcon=2131233459, mExtras=null], active item id=1, error=null}
+$ am start --display 107 --windowingMode 1 -a android.intent.action.VIEW -d 'https://music.youtube.com/watch?v=kJQP7kiw5Fk' -p com.google.android.apps.youtube.music -f 0x10000000
+Starting: Intent { act=android.intent.action.VIEW dat=https://music.youtube.com/... flg=0x10000000 pkg=com.google.android.apps.youtube.music }
+--- [after-k9-warm] 06:13:41.261 mWakefulness=Awake
+Stack id=164 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2352: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=162 bounds=[0,0][1129,804] displayId=107 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+    mResumedActivity: ActivityRecord{f3e6568 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2352}
+pidX=3881 pidVM=2026
+      package=com.google.android.apps.youtube.music
+      active=true
+      state=PlaybackState {state=3, position=2359, buffered position=0, speed=1.0, updated=175002908, actions=2600887, custom actions=[Action:mName='Like, mIcon=2131233463, mExtras=null, Action:mName='Shuffle off, mIcon=2131232823, mExtras=null, Action:mName='Repeat off, mIcon=2131232725, mExtras=null, Action:mName='Dislike, mIcon=2131233459, mExtras=null], active item id=27, error=null}
+$ am start --display 107 -n 'vn.vietmap.live/vn.vietmap.live.MainActivity'   (K3: app của ô lên lại)
+Starting: Intent { cmp=vn.vietmap.live/.MainActivity }
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+--- [after-k3] 06:13:47.077 mWakefulness=Awake
+Stack id=164 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2352: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}
+
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=162 bounds=[0,0][1129,804] displayId=107 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+    mResumedActivity: ActivityRecord{f3e6568 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2352}
+pidX=3881 pidVM=2026
+      package=com.google.android.apps.youtube.music
+      active=true
+      state=PlaybackState {state=3, position=2359, buffered position=0, speed=1.0, updated=175002908, actions=2600887, custom actions=[Action:mName='Like, mIcon=2131233463, mExtras=null, Action:mName='Shuffle off, mIcon=2131232823, mExtras=null, Action:mName='Repeat off, mIcon=2131232725, mExtras=null, Action:mName='Dislike, mIcon=2131233459, mExtras=null], active item id=27, error=null}
+--- events
+10-02 06:13:18.832  6254  6641 I am_kill : [0,1043,com.google.android.apps.youtube.music,945,stop com.google.android.apps.youtube.music]
+10-02 06:13:19.960  6254  6324 I wm_stack_created: 163
+10-02 06:13:19.962  6254  6324 I wm_task_created: [2351,163]
+10-02 06:13:19.963  6254  6324 I wm_task_moved: [2351,0,2147483647]
+10-02 06:13:19.963  6254  6324 I am_focused_stack: [0,107,163,162,reuseOrNewTask]
+10-02 06:13:19.963  6254  6324 I am_create_task: [0,2351]
+10-02 06:13:19.963  6254  6324 I am_create_activity: [0,89463866,2351,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,android.intent.action.VIEW,NULL,https://music.youtube.com/...,276824064]
+10-02 06:13:19.963  6254  6324 I wm_task_moved: [2351,0,2147483647]
+10-02 06:13:19.963  6254  6324 I am_pause_activity: [0,116211453,vn.vietmap.live/.MainActivity,userLeaving=true]
+10-02 06:13:19.982  2026  2026 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 06:13:20.007  6254  6281 I am_proc_start: [0,3881,10147,com.google.android.apps.youtube.music,activity,{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity}]
+10-02 06:13:20.033  6254  6324 I am_restart_activity: [0,89463866,2351,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity]
+10-02 06:13:20.034  6254  6324 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,minimalResumeActivityLocked]
+10-02 06:13:20.707  6254  6324 I wm_stack_created: 164
+10-02 06:13:20.710  6254  6324 I wm_task_created: [2352,164]
+10-02 06:13:20.711  6254  6324 I wm_task_moved: [2352,0,2147483647]
+10-02 06:13:20.711  6254  6324 I am_focused_stack: [0,0,164,0,reuseOrNewTask]
+10-02 06:13:20.711  6254  6324 I am_create_task: [0,2352]
+10-02 06:13:20.711  6254  6324 I am_create_activity: [0,255747432,2352,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.VIEW,NULL,https://music.youtube.com/...,268435456]
+10-02 06:13:20.711  6254  6324 I wm_task_moved: [2352,0,2147483647]
+10-02 06:13:20.711  6254  6324 I am_pause_activity: [0,220115819,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,userLeaving=true]
+10-02 06:13:20.712  1393  1393 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-02 06:13:20.713  6254  6324 I am_add_to_stopping: [0,220115819,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,makeInvisible]
+10-02 06:13:20.713  6254  6324 I am_restart_activity: [0,255747432,2352,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 06:13:20.714  6254  6324 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.activities.MusicActivity,minimalResumeActivityLocked]
+10-02 06:13:20.730  6254  6324 I am_finish_activity: [0,89463866,2351,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,app-request]
+10-02 06:13:20.730  6254  6324 I am_pause_activity: [0,89463866,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,userLeaving=false]
+10-02 06:13:20.737  3881  3881 I am_on_create_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performCreate]
+10-02 06:13:21.074  6254 10188 I wm_task_created: [2353,163]
+10-02 06:13:21.075  6254 10188 I wm_task_moved: [2353,0,2147483647]
+10-02 06:13:21.075  6254 10188 I am_create_task: [0,2353]
+10-02 06:13:21.075  6254 10188 I am_create_activity: [0,178692929,2353,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,NULL,NULL,NULL,276824064]
+10-02 06:13:21.075  6254 10188 I wm_task_moved: [2353,0,2147483647]
+10-02 06:13:21.233  6254  6274 I am_add_to_stopping: [0,89463866,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,finishCurrentActivityLocked]
+10-02 06:13:21.234  6254  6274 I am_restart_activity: [0,178692929,2353,com.android.systemui/.stackdivider.ForcedResizableInfoActivity]
+10-02 06:13:21.235  6254  6274 I am_set_resumed_activity: [0,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,minimalResumeActivityLocked]
+10-02 06:13:21.326  6388  6388 I am_on_create_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,performCreate]
+10-02 06:13:21.327  6388  6388 I am_on_start_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,handleStartActivity]
+10-02 06:13:21.327  6388  6388 I am_on_resume_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,RESUME_ACTIVITY]
+10-02 06:13:21.427  6254  6272 I am_pause_activity: [0,178692929,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,userLeaving=false]
+10-02 06:13:21.434  6254  6272 I am_add_to_stopping: [0,116211453,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 06:13:21.435  6254  6274 I am_stop_activity: [0,116211453,vn.vietmap.live/.MainActivity]
+10-02 06:13:21.435  6254  6274 I am_destroy_activity: [0,89463866,2351,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,finish-imm:activityIdleInternalLocked]
+10-02 06:13:21.443  6254  6274 I am_stop_activity: [0,220115819,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-02 06:13:21.454  6388  6388 I am_on_paused_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,performPause]
+10-02 06:13:21.454  6254  6270 I am_add_to_stopping: [0,178692929,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,completePauseLocked]
+10-02 06:13:21.457  6254 10188 I am_stop_activity: [0,178692929,com.android.systemui/.stackdivider.ForcedResizableInfoActivity]
+10-02 06:13:21.464  6254 10188 I am_finish_activity: [0,178692929,2353,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,app-request]
+10-02 06:13:21.464  6254 10188 I am_focused_stack: [0,107,162,163,finishActivity adjustFocus adjustFocusToNextFocusableStack]
+10-02 06:13:21.464  6254 10188 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,finishActivity]
+10-02 06:13:21.464  6254 10188 I am_destroy_activity: [0,178692929,2353,com.android.systemui/.stackdivider.ForcedResizableInfoActivity,finish-imm:finishActivityLocked]
+10-02 06:13:21.469  6388  6388 I am_on_stop_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,STOP_ACTIVITY_ITEM]
+10-02 06:13:21.470  6388  6388 I am_on_destroy_called: [0,com.android.systemui.stackdivider.ForcedResizableInfoActivity,performDestroy]
+10-02 06:13:21.475  1393  1393 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,STOP_ACTIVITY_ITEM]
+10-02 06:13:21.486  6254 10188 I wm_task_removed: [2353,removeAppToken: last token]
+10-02 06:13:21.486  6254 10188 I am_remove_task: [2353,163]
+10-02 06:13:21.486  6254 10188 I wm_task_removed: [2353,removeTask]
+10-02 06:13:21.526  2026  2026 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,sleeping]
+10-02 06:13:22.507  3881  3881 I am_on_create_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performCreate]
+10-02 06:13:22.607  3881  3881 I am_on_start_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,handleStartActivity]
+10-02 06:13:22.709  3881  3881 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,RESUME_ACTIVITY]
+10-02 06:13:22.972  6254 10188 I am_failed_to_pause: [0,89463866,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,(none)]
+10-02 06:13:22.990  3881  3881 I am_on_destroy_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performDestroy]
+10-02 06:13:23.000  6254 10188 I wm_task_removed: [2351,removeAppToken: last token]
+10-02 06:13:23.001  6254 10188 I am_remove_task: [2351,163]
+10-02 06:13:23.001  6254 10188 I wm_task_removed: [2351,removeTask]
+10-02 06:13:23.006  6254 10188 I wm_stack_removed: 163
+10-02 06:13:24.309  6254  6281 I am_proc_start: [0,4055,10071,com.android.musicfx,broadcast,{com.android.musicfx/com.android.musicfx.ControlPanelReceiver}]
+10-02 06:13:29.012  6254  6281 I am_proc_start: [0,4105,10119,com.google.android.gms.unstable,service,{com.google.android.gms/com.google.android.gms.droidguard.DroidGuardService}]
+10-02 06:13:31.027  6254  6648 I wm_stack_created: 165
+10-02 06:13:31.039  6254  6648 I wm_task_created: [2354,165]
+10-02 06:13:31.044  6254  6648 I wm_task_moved: [2354,0,2147483647]
+10-02 06:13:31.044  6254  6648 I am_focused_stack: [0,107,165,162,reuseOrNewTask]
+10-02 06:13:31.044  6254  6648 I am_create_task: [0,2354]
+10-02 06:13:31.044  6254  6648 I am_create_activity: [0,10392213,2354,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,android.intent.action.VIEW,NULL,https://music.youtube.com/...,276824064]
+10-02 06:13:31.044  6254  6648 I wm_task_moved: [2354,0,2147483647]
+10-02 06:13:31.047  6254  6648 I am_restart_activity: [0,10392213,2354,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity]
+10-02 06:13:31.047  6254  6648 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,minimalResumeActivityLocked]
+10-02 06:13:31.048  6254  6648 I am_add_to_stopping: [0,10392213,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,makeInvisible]
+10-02 06:13:31.048  6254  6648 I am_pause_activity: [0,10392213,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,userLeaving=false]
+10-02 06:13:31.171  6254 10188 I am_new_intent: [0,255747432,2352,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.VIEW,NULL,https://music.youtube.com/...,268435456]
+10-02 06:13:31.175  6254 10188 I am_finish_activity: [0,10392213,2354,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,app-request]
+10-02 06:13:31.177  3881  3881 I am_on_create_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performCreate]
+10-02 06:13:31.197  6254  7192 I am_focused_stack: [0,107,162,165,noMoreActivities adjustFocusToNextFocusableStack]
+10-02 06:13:31.238  3881  3881 I am_on_paused_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performPause]
+10-02 06:13:31.245  3881  3881 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,LIFECYCLER_RESUME_ACTIVITY]
+10-02 06:13:34.071  6254  7192 I am_destroy_activity: [0,10392213,2354,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,finish-idle]
+10-02 06:13:34.088  3881  3881 I am_on_destroy_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performDestroy]
+10-02 06:13:34.096  6254  7192 I wm_task_removed: [2354,removeAppToken: last token]
+10-02 06:13:34.096  6254  7192 I am_remove_task: [2354,165]
+10-02 06:13:34.096  6254  7192 I wm_task_removed: [2354,removeTask]
+10-02 06:13:34.107  6254  7192 I wm_stack_removed: 165
+10-02 06:13:41.808  6254  7194 I am_new_intent: [0,116211453,2350,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 06:13:41.820  6254  7194 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,resumeTopActivityInnerLocked]
+10-02 06:13:41.823  6254  7194 I am_resume_activity: [0,116211453,2350,vn.vietmap.live/.MainActivity]
+10-02 06:13:41.827  6254  7194 I am_add_to_stopping: [0,116211453,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 06:13:41.833  6254  7194 I am_pause_activity: [0,116211453,vn.vietmap.live/.MainActivity,userLeaving=false]
+10-02 06:13:41.870  2026  2026 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 06:13:41.893  2026  2026 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 06:13:41.908  2026  2026 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 06:13:41.912  2026  2026 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 06:13:41.927  6254  6274 I am_stop_activity: [0,116211453,vn.vietmap.live/.MainActivity]
+10-02 06:13:41.942  2026  2026 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]

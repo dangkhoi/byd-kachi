@@ -1,0 +1,4 @@
+--------- beginning of main
+10-02 05:34:16.583 22028 22028 I KachiShortcut: tap com.google.android.apps.youtube.music B usable=true stages=1 -> StartBehind
+10-02 05:34:16.661 22028 22860 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=96 C=com.google.android.deskclock) → đang chạy (pidof), 0 lệnh đổi cửa sổ
+--------- beginning of system

@@ -1,0 +1,5 @@
+--------- beginning of main
+--------- beginning of system
+10-02 11:02:51.306 22862 22862 I KachiShortcut: tap vn.vietmap.live F usable=true stages=0 -> DetachToFull(slot=0, byIntent=false)
+10-02 11:02:51.826 22862 22936 I KachiDetach: detach vd=186 vn.vietmap.live → FULL task=2667 đọc=1
+10-02 11:02:54.672 22862 22936 I KachiDetach: return vd=186 task=2667 → app đã đóng

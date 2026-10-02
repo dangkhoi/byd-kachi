@@ -1,0 +1,2 @@
+am start --display 173 -n com.google.android.deskclock/com.android.deskclock.DeskClock
+Starting: Intent { cmp=com.google.android.deskclock/com.android.deskclock.DeskClock }

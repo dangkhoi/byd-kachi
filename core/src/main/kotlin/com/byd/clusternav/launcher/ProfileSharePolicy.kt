@@ -49,6 +49,8 @@ object ProfileSharePolicy {
         listOf(
             "preset", "dock_edge", "dock_enabled", "dock_visible", "top_strip", "grid_layout", "top_strip_labels",
             "top_strip_migrated_ux5b", "header_order",
+            // F1 R1.1 — chuỗi `pkg|S2,pkg|F,…` (AppShortcutCodec): chỉ tên gói + kiểu mở, không vị trí.
+            "app_shortcuts",
         ).forEach { put(it, R_LAYOUT) }
         listOf("theme_mode", "unit_prefs", "launcher_autostart", "lang", "color_choice", "theme_choice")
             .forEach { put(it, R_LOOK) }
@@ -72,6 +74,8 @@ object ProfileSharePolicy {
             "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
         ).forEach { put(it, R_CAST) }
         listOf("voice_music_default_app", "headless_autostart").forEach { put(it, R_APPS) }
+        // F2/F3 — `pkg|B,pkg|N` (tên gói + kiểu) và `ytmusic|<từ khoá/link mã hoá>`: lựa chọn app/nhạc, không vị trí.
+        listOf("ignition_apps", "ignition_music").forEach { put(it, R_APPS) }
     }
 
     /**

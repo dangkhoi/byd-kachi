@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="kachi_trip_ledger">v=1;trip=n39.t186391496;phase=FIRED;tries=1</string>
+    <string name="kachi_behind_marks">2550:com.waze,2552:com.google.android.apps.youtube.music</string>
+    <string name="kachi_shell_approval">v=1;fp=<redacted>;ok=1790898505119;win=604800000</string>
+    <int name="freeform_state" value="1" />
+    <string name="kachi_trip_last">v=1;trip=n39.t186391496;code=RAN;at=1790907851875;d=ready after 20872ms | com.waze:bg-MOVED | music:com.google.android.apps.youtube.music:MOVED:resumetrue playing</string>
+</map>

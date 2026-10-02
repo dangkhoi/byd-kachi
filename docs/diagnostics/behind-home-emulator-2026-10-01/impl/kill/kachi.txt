@@ -1,0 +1,13 @@
+--------- beginning of main
+--------- beginning of system
+10-02 04:40:00.574  9332  9332 I KachiReady: proc interactive=true t=693 so=- wall=04:40:00.574
+10-02 04:40:00.761  9332  9374 I KachiReady: checking src=early t=892 so=- wall=04:40:00.760
+10-02 04:40:00.987  9332  9374 I KachiReady: up src=early t=1112 so=- wall=04:40:00.981
+10-02 04:40:00.992  9332  9374 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=232ms t=1124 so=- wall=04:40:00.992
+10-02 04:40:01.251  9332  9374 I KachiReady: window adb_allowed_connection_time=default t=1383 so=- wall=04:40:01.251
+10-02 04:40:01.253  9332  9374 I KachiReady: screen_on src=up t=1385 so=+0 wall=04:40:01.253
+10-02 04:40:01.860  9332  9374 I KachiBehind: recovery dấu=1 nổi-lên=true giữ=1
+10-02 04:40:01.928  9332  9374 I KachiReady: keys=BOUND t=2056 so=+671 wall=04:40:01.925
+10-02 04:40:02.923  9332  9332 I KachiReady: home adopt t=3054 so=+1669 wall=04:40:02.923
+10-02 04:40:03.312  9332  9332 I KachiReady: tile vd=86 slot=0 t=3443 so=+2058 wall=04:40:03.312
+10-02 04:40:03.312  9332  9332 I KachiReady: summary screen_on->tile=2058 proc->up=1112 src=early keys=BOUND

@@ -1,0 +1,24 @@
+--------- beginning of main
+--------- beginning of system
+10-02 08:13:47.927 30242 30242 I KachiReady: proc interactive=false t=47 so=- wall=08:13:47.926
+10-02 08:13:47.988 30242 30265 I KachiReady: checking src=early t=109 so=- wall=08:13:47.988
+10-02 08:13:48.130 30242 30265 I KachiReady: up src=early t=250 so=- wall=08:13:48.129
+10-02 08:13:48.130 30242 30265 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=141ms t=250 so=- wall=08:13:48.130
+10-02 08:13:48.206 30242 30265 I KachiReady: window adb_allowed_connection_time=default t=327 so=- wall=08:13:48.206
+10-02 08:13:53.369 30242 30261 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 08:13:53.374 30242 30261 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=182067157, leo=163604535, con của lượt chữa=false)
+10-02 08:14:00.035 30242 30242 I KachiReady: screen_on src=home t=12155 so=+0 wall=08:14:00.034
+10-02 08:14:00.035 30242 30242 I KachiReady: home adopt t=12156 so=+1 wall=08:14:00.035
+10-02 08:14:00.091 30242 30265 I KachiReady: keys=BOUND t=12211 so=+56 wall=08:14:00.091
+10-02 08:14:00.325 30242 30422 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 08:14:00.353 30242 30261 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 08:14:00.374 30242 30419 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0
+10-02 08:14:00.377 30242 30242 I VdAppHost: [slot-density] slot=0 short=956 dpi=200→200 (764,8dp→764,8dp)
+10-02 08:14:00.405 30242 30242 I KachiReady: tile vd=146 slot=0 t=12525 so=+370 wall=08:14:00.405
+10-02 08:14:00.405 30242 30242 I KachiReady: summary screen_on->tile=370 proc->up=250 src=early keys=BOUND
+10-02 08:14:00.405 30242 30242 I KachiVd : tạo màn ảo kachi-slot-0-1790903640376 — ô 0 · display 146 · chủ ws@197066633 · đang sống 1
+10-02 08:14:00.408 30242 30416 I KachiFloat: dọn[shell-up] bỏ: dấu rỗng (0 lệnh shell)
+10-02 08:14:00.422 30242 30242 I VdAppHost: [slot-density] slot=2 short=472 dpi=200→125 (377,6dp→604,2dp)
+10-02 08:14:00.423 30242 30242 I KachiReady: tile vd=147 slot=2 t=12544 so=+389 wall=08:14:00.423
+10-02 08:14:00.423 30242 30242 I KachiVd : tạo màn ảo kachi-slot-2-1790903640422 — ô 2 · display 147 · chủ ws@197066633 · đang sống 2
+10-02 08:14:24.144 30242 30422 I KachiTrip: run trip=n39.t182214220 tries=1 -> RAN in=24001ms saved=true :: ready after 21313ms | music:com.google.android.apps.youtube.music:resume-existing=true playing

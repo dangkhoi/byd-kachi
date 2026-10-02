@@ -1,0 +1,17 @@
+10-02 10:30:52.724  6254  7609 I am_new_intent: [0,71259568,2614,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:30:52.724  6254  7609 I wm_stack_created: 315
+10-02 10:30:52.748  6254  7609 I wm_task_removed: [2614,reParentTask]
+10-02 10:30:52.749  6254  7609 I wm_task_moved: [2614,1,0]
+10-02 10:30:52.749  6254  7609 I am_remove_task: [2614,309]
+10-02 10:30:52.749  6254  7609 I wm_stack_removed: 309
+10-02 10:30:52.750  6254  7609 I am_focused_stack: [0,173,315,314,reparentToDisplay]
+10-02 10:30:52.752  6254  7609 I am_pause_activity: [0,254054227,vn.vietmap.live/.MainActivity,userLeaving=true]
+10-02 10:30:52.756  3625  3625 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 10:30:52.756  6254  8542 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.activities.MusicActivity,resumeTopActivityInnerLocked]
+10-02 10:30:52.756  6254  8542 I am_add_to_stopping: [0,254054227,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 10:30:52.757  6254  8542 I am_resume_activity: [0,71259568,2614,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 10:30:52.824  4518  4518 I am_on_restart_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performRestartActivity]
+10-02 10:30:53.084  4518  4518 I am_on_start_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,handleStartActivity]
+10-02 10:30:53.220  4518  4518 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,RESUME_ACTIVITY]
+10-02 10:30:54.444  6254  6274 I am_stop_activity: [0,254054227,vn.vietmap.live/.MainActivity]
+10-02 10:30:54.512  3625  3625 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]

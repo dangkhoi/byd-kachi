@@ -93,6 +93,7 @@ object WidgetViews {
         "w_car" -> carState(ctx, data)
         "w_board" -> board(ctx, data)
         "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
+        "w_apps" -> ShortcutIconsView(ctx, grid = true)   // F1 R1.3 — tự nghe danh sách lối tắt (ShortcutHub)
         // G1·T3: NHÓM khả năng → ba bộ vẽ dùng chung. Đặt TRƯỚC nhánh hành động (thứ tự y như
         // [CapabilityCatalog.kindOf]); bảng 4 bánh truyền vào bằng lambda để KHÔNG có bản dựng thứ hai.
         else -> if (CapabilityGroups.byId(id) != null) GroupTiles.build(ctx, id, data) { c, d -> tyreBoard(c, d) }
@@ -212,6 +213,7 @@ object WidgetViews {
             "w_car"    -> miniCard(ctx, data, "ic-lock", KachiTheme.GREEN) { MiniValue(ctx.getString(R.string.kachi_widget_car)) }
             "w_board"  -> miniCard(ctx, data, "ic-grid", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kachi_widget_board)) }
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
+            "w_apps"   -> ShortcutIconsView(ctx, grid = true, compact = true)
             // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
             else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
             else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)

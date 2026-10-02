@@ -62,6 +62,12 @@ object SlotLiveProbe {
         start()
     }
 
+    /**
+     * A5 (spec shortcuts-autostart R0.3) — ô [key] đã được ĐO thấy app sống ít nhất một nhịp (chưa kết luận chết). Chỗ
+     * dàn dựng BEHIND-HOME chỉ dùng ô đã sống: ô vừa mở (chưa nhịp đo nào) có thể là app chưa bao giờ vào được ô (H1).
+     */
+    fun seenAlive(key: String): Boolean = subs.firstOrNull { it.key == key }?.liveness?.seenAlive == true
+
     /** Thôi theo dõi ô [key] (ô đóng / host nhả / đã báo chết). Không còn ô nào ⇒ ticker tự tắt. */
     fun unwatch(key: String) {
         subs.removeAll(subs.filter { it.key == key })

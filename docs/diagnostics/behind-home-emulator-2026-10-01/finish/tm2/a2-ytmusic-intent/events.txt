@@ -1,0 +1,6 @@
+10-02 10:28:02.544  6254 13811 I am_new_intent: [0,71259568,2614,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:28:02.555  4518  4518 I am_on_paused_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performPause]
+10-02 10:28:02.575  4518  4518 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,LIFECYCLER_RESUME_ACTIVITY]
+10-02 10:28:10.756  6254  6269 I am_new_intent: [0,71259568,2614,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:28:10.766  4518  4518 I am_on_paused_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performPause]
+10-02 10:28:10.793  4518  4518 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,LIFECYCLER_RESUME_ACTIVITY]

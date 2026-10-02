@@ -1,0 +1,3 @@
+    package=com.android.server.telecom
+      package=com.google.android.apps.youtube.music
+      state=PlaybackState {state=3, position=28707, buffered position=0, speed=1.0, updated=177747877, actions=2600887, custom actions=[Action:mName='Like, mIcon=2131233463, mExtras=null, Action:mName='Shuffle off, mIcon=2131232823, mExtras=null, Action:mName='Repeat off, mIcon=2131232725, mExtras=null, Action:mName='Dislike, mIcon=2131233459, mExtras=null], active item id=27, error=null}

@@ -88,8 +88,8 @@ android {
         // (RE Electro, đo máy ảo) · README/hướng dẫn/danh mục/audit. Review Opus Pass 1 APPROVED (1 P0 + 7 P1 vá).
         // 2.77 (178) — off-car 27/09 chiều sau buổi xe closing: GỠ nguồn "một camera" + khối Nâng cao (kỹ thuật)
         // ([ĐO] cạnh 686 vs 351 ⇒ một kênh chỉ kéo ngang) · mặt nạ camera bám ĐƯỜNG CONG kính cụm (bảng leftEdge 9 mẫu).
-        versionCode = 185
-        versionName = "2.84"
+        versionCode = 186
+        versionName = "2.85"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

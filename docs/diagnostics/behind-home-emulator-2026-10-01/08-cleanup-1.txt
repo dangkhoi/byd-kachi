@@ -1,0 +1,11 @@
+## 00:04:51 CLEANUP after P1-warm
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+    mResumedActivity: ActivityRecord{8efb853 u0 vn.vietmap.live/.MainActivity t2080}
+yt= ytm=28124
+    package=com.android.server.telecom

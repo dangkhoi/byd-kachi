@@ -58,6 +58,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         homePanels(
             activity = this, rootFrame = rootFrame, viewModel = viewModel, bridge = bridge,
             openDockPicker = { sel, apply -> drawerController.openDockPicker(sel, apply) },
+            shortcuts = shortcuts,   // F1 · U2 — trang Cài đặt lối tắt
+            trip = trip,   // F2/F3 — chủ chuyến lên xe (TripHub) + trang Cài đặt; dựng cùng `panels` ở onCreate
             onApplyLayout = { l -> applyCustomLayout(l) },
             // S4 · R7 gỡ 5 nút bố cục khỏi thanh trên ⇒ đây là bề mặt DUY NHẤT chọn bố cục sẵn (intent giữ nguyên).
             onPreset = { p -> selectPreset(p) },
@@ -76,7 +78,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             // V1 · R6 — hai đường mà đường thử lệnh bằng chữ dùng; CÙNG lambda với thanh nút và ngăn kéo.
             openAppList = { drawerController.openAppList() },
             openAppByPackage = { pkg -> appOpener.openByIntent(pkg) },
-            assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
+            assignAppToSlot = { idx, pkg -> slots.placeTemporary(idx, pkg) },   // owner 01/10: giọng nói đặt TẠM
             // Kiểm tra từng nút (owner 2026-09-15): chạy hành động qua cùng adapter điều khiển xe (`actByKind` định
             // tuyến đúng cửa theo kind); đọc datum qua cùng bảng HAL mà widget dùng — không mở đường thứ hai.
             runAction = { id, arg -> container.carControl.actByKind(id, arg) },
@@ -129,7 +131,16 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             appOpener = appOpener,
             shell = { shell },
             submitBg = { block -> submitBg(block) },
+            workspace = { workspace }, app = applicationContext,
         )
+    }
+
+    /** F2/F3 — chuyến lên xe (chủ của `TripHub` + trang Cài đặt): thân ở [KachiHomeTrip]. */
+    private val trip: KachiHomeTrip by lazy { KachiHomeTrip(this, viewModel, { slots }, { workspace }, { drawerController }) { shell } }
+
+    /** F1 — lối tắt ứng dụng (khối thanh nút + widget `w_apps` + trang Cài đặt): thân ở [KachiHomeShortcuts]. */
+    internal val shortcuts: KachiHomeShortcuts by lazy {
+        KachiHomeShortcuts(this, viewModel, { slots }, { workspace }, { drawerController }) { panels.openSettings(SettingsGroup.BARS) }
     }
 
     /**
@@ -145,8 +156,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             openSettings = { panels.openSettings() },
             onSwitchProfile = { name -> viewModel.switchProfile(name) },
             openPermissions = { panels.openSettings(SettingsGroup.SYSTEM) },
-            // V1.1 — CÙNG đường mà ngăn kéo dùng khi người ta chọn app cho một ô.
-            assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true },
+            // V1.1 + đính chính owner 01/10: "mở X vào ô n" là đặt TẠM (không ghi slot_n); ngăn kéo vẫn LƯU.
+            assignAppToSlot = { idx, pkg -> slots.placeTemporary(idx, pkg) },
             // L7 — CÙNG đường mà chip bố cục ở Cài đặt dùng (nó còn bỏ bố cục tự vẽ trước, xem `selectPreset`).
             onLayout = { preset -> selectPreset(preset); true },
         )
@@ -257,6 +268,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onSlotClear = { slots.clearSlot(it) }
             onSlotSwap = { a, b -> slots.swapSlots(a, b) }
             onAppOpen = { slots.reopenApp(it) }
+            onAppSwapped = { i, vd, a, b -> slots.evictBehind(i, vd, a, b) }   // đặt TẠM: app cũ ra sau màn nhà (R0.1)
         }
         windows = LauncherWindows(
             this, workspace, winExec,
@@ -369,6 +381,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     override fun onStart() {
         super.onStart(); lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START); appWidgets.startListening()
         SlotLiveProbe.resume()   // H2·2 — màn hiện lại thì đo tiếp (xem [onStop])
+        workspace.returnDetached()   // F1 dòng 9 — app ô đang mở toàn màn (K7) về lại ô (K8), spec shortcuts-autostart
         shellGate.onShown()      // F4 — màn hiện lại thì vòng dò kênh shell chạy tiếp
     }
 

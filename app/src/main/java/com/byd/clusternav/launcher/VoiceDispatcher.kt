@@ -79,13 +79,13 @@ class VoiceDispatcher(
     /** Nói một câu cho người dùng (hôm nay: hiện chữ). */
     private val say: (String) -> Unit,
     /**
-     * V1.1 — gắn một app vào **ô số [slot]** (0-based). `true` = đã gắn.
+     * V1.1 — đưa một app vào **ô số [slot]** (0-based). `true` = đã đưa.
      *
-     * ⚠ Phải là **chính** lambda mà ngăn kéo dùng khi người ta chọn app cho một ô (`KachiHomeSlots.assignApp`),
-     * không phải một `viewModel.assignApp` gọi thẳng: đường của ngăn kéo còn làm hai việc nữa mà state không
-     * làm hộ được — gỡ app cũ khỏi sổ vị trí (`windowDispatcher.remove`) và đặt cửa sổ app mới vào đúng khung ô
-     * (`LauncherWindows.placeApp`). Bỏ một trong hai là lỗi *"ô thay app khác mà app cũ còn nguyên trong sổ vị
-     * trí"* đã có thật (xem KDoc `KachiHomeSlots`).
+     * ⚠ Đính chính owner 01/10: đây là lượt ĐẶT TẠM (`KachiHomeSlots.placeTemporary`) — không ghi `slot_n`, app cũ
+     * của ô ra sau màn nhà thay vì bị force-stop. Vẫn phải đi qua `KachiHomeSlots`, không phải một ViewModel gọi
+     * thẳng: lớp đó làm CẢ HAI nửa (state + side-effect cửa sổ `LauncherWindows.placeApp`), cùng khuôn với đường
+     * LƯU của ngăn kéo (`KachiHomeSlots.assignApp`). Bỏ một nửa là lỗi *"ô thay app khác mà app cũ còn nguyên trong
+     * sổ vị trí"* đã có thật (xem KDoc `KachiHomeSlots`).
      */
     private val assignAppToSlot: (Int, String) -> Boolean,
     /**

@@ -1,0 +1,78 @@
+## 00:05:12 P5 (iii) — YouTube playing fullscreen, then HOME on top: playback state (media_session state 3=PLAYING, 2=PAUSED)
+T0=10-02 00:05:12.000 mWakefulness=Awake
+[front] 00:06:05 poll=25 
+[front+3s] 
+    mResumedActivity: ActivityRecord{5c5ba73 u0 com.google.android.youtube/com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity t2083}
+[behind HOME +3s] 00:06:11 
+[behind HOME +7s]   pid=16562
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=70 displayId=0 userId=0
+  taskId=2083: com.google.android.youtube/com.google.android.youtube.UrlActivity userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=0 displayId=0 userId=0
+    mResumedActivity: ActivityRecord{5c5ba73 u0 com.google.android.youtube/com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity t2083}
+--- events
+10-02 00:05:12.362  6254  9729 I am_focused_stack: [0,0,70,0,reuseOrNewTask]
+10-02 00:05:12.363 15015 15015 I am_on_top_resumed_lost_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-02 00:05:12.377 15015 15015 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-02 00:05:13.161 15015 15015 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,STOP_ACTIVITY_ITEM]
+10-02 00:05:13.457 16562 16562 I am_on_create_called: [0,com.google.android.youtube.UrlActivity,performCreate]
+10-02 00:05:13.704 16562 16562 I am_on_create_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,performCreate]
+10-02 00:05:13.711 16562 16562 I am_on_start_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleStartActivity]
+10-02 00:05:13.715 16562 16562 I am_on_resume_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,RESUME_ACTIVITY]
+10-02 00:05:13.743 16562 16562 I am_on_top_resumed_gained_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,topStateChangedWhenResumed]
+10-02 00:05:13.947 16562 16562 I am_on_destroy_called: [0,com.google.android.youtube.UrlActivity,performDestroy]
+10-02 00:05:25.677  6254  6373 I am_focused_stack: [0,0,71,70,reuseOrNewTask]
+10-02 00:05:25.678 16562 16562 I am_on_top_resumed_lost_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,topStateChangedWhenResumed]
+10-02 00:05:25.688 16562 16562 I am_on_paused_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,performPause]
+10-02 00:05:26.127  6254  9236 I am_focused_stack: [0,0,72,71,reuseOrNewTask]
+10-02 00:05:26.194 16791 16791 I am_on_create_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,performCreate]
+10-02 00:05:26.371 16791 16791 I am_on_start_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,handleStartActivity]
+10-02 00:05:26.391 16791 16791 I am_on_resume_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,RESUME_ACTIVITY]
+10-02 00:05:26.394 16791 16791 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,topStateChangedWhenResumed]
+10-02 00:05:26.401 16791 16791 I am_on_top_resumed_lost_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,topStateChangedWhenResumed]
+10-02 00:05:26.403 16791 16791 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,performPause]
+10-02 00:05:26.445 16562 16562 I am_on_stop_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,STOP_ACTIVITY_ITEM]
+10-02 00:05:27.678 16791 16791 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHomeActivity,STOP_ACTIVITY_ITEM]
+10-02 00:05:31.926  6254  6324 I am_focused_stack: [0,0,0,72,reuseOrNewTask]
+10-02 00:05:32.162 16791 16791 I am_on_create_called: [0,com.byd.clusternav.launcher.KachiHome,performCreate]
+10-02 00:05:32.242 16791 16791 I am_on_start_called: [0,com.byd.clusternav.launcher.KachiHome,handleStartActivity]
+10-02 00:05:32.246 16791 16791 I am_on_resume_called: [0,com.byd.clusternav.launcher.KachiHome,RESUME_ACTIVITY]
+10-02 00:05:32.281 16791 16791 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-02 00:05:34.491 16791 16791 I am_on_top_resumed_lost_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-02 00:05:44.319 16791 16791 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-02 00:05:44.341  6254  6254 I screen_toggled: 0
+10-02 00:05:44.387 16791 16791 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,sleeping]
+10-02 00:05:47.051 16562 16562 I am_on_restart_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleWindowVisibility]
+10-02 00:05:47.134 16562 16562 I am_on_start_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleWindowVisibility]
+10-02 00:05:47.151 16562 16562 I am_on_stop_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,sleeping]
+10-02 00:06:03.206  6254  6254 I screen_toggled: 1
+10-02 00:06:03.211 16562 16562 I am_on_restart_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleSleeping]
+10-02 00:06:03.270 16562 16562 I am_on_start_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleSleeping]
+10-02 00:06:03.299 16562 16562 I am_on_resume_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,RESUME_ACTIVITY]
+10-02 00:06:03.299 16562 16562 I am_on_top_resumed_gained_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,topWhenResuming]
+10-02 00:06:08.186  6254  6270 I am_focused_stack: [0,0,0,70,reuseOrNewTask]
+10-02 00:06:08.187 16562 16562 I am_on_top_resumed_lost_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,topStateChangedWhenResumed]
+10-02 00:06:08.190 16562 16562 I am_on_paused_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,performPause]
+10-02 00:06:08.535 17898 17898 I am_on_create_called: [0,com.byd.clusternav.launcher.KachiHome,performCreate]
+10-02 00:06:08.679 17898 17898 I am_on_start_called: [0,com.byd.clusternav.launcher.KachiHome,handleStartActivity]
+10-02 00:06:08.710 17898 17898 I am_on_resume_called: [0,com.byd.clusternav.launcher.KachiHome,RESUME_ACTIVITY]
+10-02 00:06:08.724 17898 17898 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-02 00:06:09.327 16562 16562 I am_on_stop_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,STOP_ACTIVITY_ITEM]
+10-02 00:06:09.542 16562 16562 I am_on_restart_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,performRestartActivity]
+10-02 00:06:09.569 16562 16562 I am_on_start_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,handleStartActivity]
+10-02 00:06:09.570 16562 16562 I am_on_resume_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,RESUME_ACTIVITY]
+10-02 00:06:09.570 16562 16562 I am_on_top_resumed_gained_called: [0,com.google.android.apps.youtube.app.application.upgrade.NewVersionAvailableActivity,topWhenResuming]
+## 00:06:25 NOTE P5: YouTube on emulator stuck at NewVersionAvailableActivity (forced update) ⇒ playback NOT measurable here; foreign loop killed Kachi at 00:05:25 & slept screen 00:05:44–00:06:03 ⇒ run INVALID. CLEANUP:
+Stack id=0 displayId=0 userId=0
+  taskId=2089: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=74 displayId=46 userId=0
+  taskId=2090: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+    mResumedActivity: ActivityRecord{7807534 u0 vn.vietmap.live/.MainActivity t2090}
+    mResumedActivity: ActivityRecord{3ea879f u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2089}

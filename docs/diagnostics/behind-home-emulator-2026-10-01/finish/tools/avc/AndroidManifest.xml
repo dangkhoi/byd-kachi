@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Máy ảo ONLY — đứng thay màn camera lùi để đo rào CameraGuard (dấu hiệu "com.byd.avc/" của Seal DL3). Không mã. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.byd.avc" android:versionCode="1" android:versionName="emulator-standin">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="29" />
+    <application android:hasCode="false" android:label="camera stand-in">
+        <activity android:name="android.app.Activity" android:exported="true"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+            <intent-filter><action android:name="android.intent.action.MAIN" /></intent-filter>
+        </activity>
+    </application>
+</manifest>

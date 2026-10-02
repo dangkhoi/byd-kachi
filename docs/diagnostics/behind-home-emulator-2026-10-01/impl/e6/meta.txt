@@ -1,0 +1,3 @@
+T0=10-02 04:29:55.000
+pid_kachi_before=5004 pid_vm=5362
+pid_kachi_after=6491 pid_vm=5362

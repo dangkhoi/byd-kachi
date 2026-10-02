@@ -1,0 +1,3 @@
+--------- beginning of main
+10-02 05:39:29.515 27913 27913 I KachiShortcut: tap com.waze F usable=true stages=0 -> OpenFull(reason=null)
+--------- beginning of system

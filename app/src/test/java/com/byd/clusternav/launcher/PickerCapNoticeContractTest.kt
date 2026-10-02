@@ -58,7 +58,11 @@ class PickerCapNoticeContractTest {
     @Test
     fun `tran la cua che do, va che do gan o van lay tu MAX`() {
         assertTrue(
-            Regex("""val cap: Int = if \(mode == Mode\.PICK_DOCK\) NO_CAP else MAX""").containsMatchIn(drawer),
+            // F2 · U6 (02/10, nhóm C): + chế độ PICK_TRIP (app mở khi nổ máy) có trần RIÊNG của nó (`TripAppCodec.MAX` = 6,
+            // `:core`). Ghim đổi dạng `if` → `when` nhưng vẫn khoá cả ba vế: thanh nút không trần · chuyến = trần :core ·
+            // mọi chế độ còn lại (gán ô) = MAX.
+            Regex("""val cap: Int = when \(mode\) \{\s*Mode\.PICK_DOCK -> NO_CAP\s*Mode\.PICK_TRIP -> TripAppCodec\.MAX[^\n]*\s*else -> MAX\s*\}""")
+                .containsMatchIn(drawer),
             "trần phải tính theo CHẾ ĐỘ: thanh nút xe không trần, ô giữa màn vẫn đúng MAX",
         )
         assertTrue(

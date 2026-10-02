@@ -435,7 +435,8 @@ object CapabilityCatalog {
         }
         // S4 · R12 — ĐỨNG CUỐI, cố ý: đây là việc của launcher, không phải khả năng của xe. Bộ chọn bày chúng ở
         // khối RIÊNG ([LauncherActions.SECTION_TITLE]) chứ không qua [byDomain] (chúng `domain = null`).
-        LauncherActions.ALL.forEach { add(launcherPick(it)) }
+        // F1 (shortcuts-autostart R1.2): + khối lối tắt ([LauncherActions.BLOCKS]) — đặt được, không gọi bằng lời.
+        LauncherActions.placeable.forEach { add(launcherPick(it)) }
     }
 
     /**
@@ -468,7 +469,7 @@ object CapabilityCatalog {
         (CapabilityGroups.ALL.map { it.label } + WidgetRegistry.ALL.map { it.label } +
             TelemetryRegistry.ALL.map { it.label } +
             ControlRegistry.ALL.map { it.label } + ActionMacros.ALL.map { it.label } +
-            LauncherActions.ALL.map { it.label })
+            LauncherActions.placeable.map { it.label })
             .groupBy { it }.filterValues { it.size > 1 }.keys
     }
 
@@ -487,7 +488,7 @@ object CapabilityCatalog {
         val m = ActionMacros.ALL.map { it.id }
         // S4 · R12 thêm nguồn thứ SÁU (hành động launcher). Tiền tố `launcher_` hôm nay chắc chắn không trùng, nhưng
         // đưa vào phép kiểm mới biến điều đó thành BẢO ĐẢM — y như lý do G1 đã được thêm vào đây.
-        val l = LauncherActions.ALL.map { it.id }
+        val l = LauncherActions.placeable.map { it.id }
         return (g + w + t + c + m + l).groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
     }
 }

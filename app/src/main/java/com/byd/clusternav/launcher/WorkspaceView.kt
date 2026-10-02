@@ -22,6 +22,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     var onSlotClear: ((Int) -> Unit)? = null
     var onSlotSwap: ((Int, Int) -> Unit)? = null
     var onAppOpen: ((Int) -> Unit)? = null
+    /** Đặt TẠM xong (spec shortcuts-autostart R0.1): (ô, màn ảo, app cũ, app mới) ⇒ màn chính giao `BehindHomeRunner`. */
+    var onAppSwapped: ((Int, Int, String, String) -> Unit)? = null
 
     /**
      * T4 — dựng view cho ô widget bên thứ ba. `null` (chưa gắn, hoặc trả `null`) ⇒ ô hiện thẻ *"widget không còn"*.
@@ -134,7 +136,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * giữ nguyên View (và VdAppHost) của các ô khác → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác,
      * launcher đứng yên. Đổi preset/số ô → dựng lại cả. Nguồn sự thật do HomeViewModel giữ; đây chỉ phản chiếu.
      */
-    fun render(s: WorkspaceState, status: CarStatus = carStatus) = renderInternal(s, status, embedChanged = false)
+    fun render(s: WorkspaceState, status: CarStatus = carStatus, swap: Set<Int> = emptySet()) =
+        renderInternal(s, status, embedChanged = false, swap = swap)
 
     /**
      * Gắn NGUYÊN KHỐI kênh nhúng (dadb shell + kênh chạm + đăng ký/gỡ màn ảo) rồi tự áp [state] lại MỘT LẦN.
@@ -160,7 +163,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         renderInternal(state, status, embedChanged = !had)
     }
 
-    private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean) {
+    private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean, swap: Set<Int> = emptySet()) {
         mediaCache = null      // lượt mới ⇒ đọc lại nhạc đúng MỘT lần cho cả lượt
         val old = displayed
         val oldStatus = displayedStatus
@@ -170,10 +173,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         when (val plan = WorkspaceRenderPlanner.decide(old, s, slotViews.size, status != oldStatus, embedChanged,
             // P9: số ô THỰC TẾ (bố cục tự vẽ có thể khác bố cục sẵn). Đọc từ bố cục sẵn ở đây sẽ
             // làm bộ quyết định thấy 'số view lệch số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục.
-            slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout),
+            slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout), swap = swap,
         )) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); return }
-            is WorkspaceRenderPlan.PerSlot -> plan.rebuild.forEach { i ->
+            is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap.filterNot { swapInPlace(it, s.slots) }).sorted().forEach { i ->
                 val nc = s.slots.getOrElse(i) { SlotContent.Empty }
                 val oc = old.slots.getOrElse(i) { SlotContent.Empty }
                 // [SOÁT P1-1] Ô chỉ cần LÀM MỚI SỐ (nội dung không đổi, năng lực nhúng không đổi) ⇒ đổi tại chỗ
@@ -266,10 +269,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /**
-     * Dựng lại CHỈ những ô đang là widget — dùng cho việc đổi thứ mà chỉ widget đọc (hiện tại: lựa chọn đơn vị).
-     * Ô App và ô trống giữ nguyên view ⇒ bộ chiếu app trong ô không bị nhả/gắn lại (C5).
-     */
-    /**
      * #10 (owner 2026-09-23) — ĐỔI MÀU theme mà GIỮ STATE: dựng lại ô widget + ô trống với bảng màu mới, nhưng
      * **KHÔNG đụng ô App** (giữ `VdAppHost` ⇒ app trong ô KHÔNG bị giết/restart). Gọi khi theme đổi (light↔dark)
      * thay cho `recreate()` cả Activity. Nền/thẻ ô chrome lấy màu mới; app đang chiếu chạy tiếp.
@@ -285,6 +284,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         requestLayout(); invalidate()
     }
 
+    /** Dựng lại CHỈ ô widget (đổi thứ chỉ widget đọc: đơn vị, ảnh) — ô App giữ view ⇒ bộ chiếu không bị nhả (C5). */
     private fun rebuildWidgetSlots() {
         for (i in slotViews.indices) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
@@ -430,10 +430,6 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     private fun slotHead(index: Int): View =
         SlotSwapButton.centered(context) { onSlotTap?.invoke(index) }
 
-    // ⚠ T5 đã XOÁ `headBtnLp()` + `headBtn()` ở đây: [ĐO] chúng chỉ được KHAI, không chỗ nào gọi (thanh đầu ô
-    // nay do [OverlayHeads] dựng, và ô widget chỉ có một nút ⇄ trong [slotHead]). Giữ lại thì T5 phải quyết cỡ
-    // đích chạm cho hai hàm mà người dùng không bao giờ chạm tới được — cùng lối dọn với `cycleDockEdge` ở S1.
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
         val h = MeasureSpec.getSize(heightMeasureSpec)
@@ -489,6 +485,11 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             requestLayout()
         }
         return super.onApplyWindowInsets(insets)
+    }
+
+    /** Bộ chiếu màn ảo của ô [i] (`null` = ô không có) — cho đường đặt tạm ở `WorkspaceViewSwap.kt`. */
+    internal fun hostAt(i: Int): VdAppHost? = (slotViews.getOrNull(i) as? ViewGroup)?.let { g ->
+        (0 until g.childCount).firstNotNullOfOrNull { g.getChildAt(it) as? VdAppHost }
     }
 
     /** `internal` (không `private`) vì năm hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. */

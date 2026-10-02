@@ -15,6 +15,7 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
 import com.byd.clusternav.launcher.KachiSpace as Sp
+import com.byd.clusternav.launcher.trip.TripAppCodec
 
 /**
  * Ngăn kéo app — **ba chế độ** (cùng một view, không nhân bản UI):
@@ -48,8 +49,14 @@ class AppDrawer(
     private val onApply: (Set<String>) -> Unit = {},
 ) : FrameLayout(context) {
 
-    /** Ngăn kéo dùng để GÁN VÀO Ô (như cũ), MỞ APP toàn màn (U3), hay CHỌN NÚT cho thanh nút xe (T6). */
-    enum class Mode { ASSIGN_SLOT, OPEN_APP, PICK_DOCK }
+    /**
+     * Ngăn kéo dùng để GÁN VÀO Ô (như cũ), MỞ APP toàn màn (U3), CHỌN NÚT cho thanh nút xe (T6), hay CHỌN APP cho lối tắt
+     * (F1 · U1 — đa chọn trên danh sách app, trần [MAX] = `AppShortcutCodec.MAX`, phần dựng ở `AppDrawerShortcutPick.kt`).
+     */
+    enum class Mode { ASSIGN_SLOT, OPEN_APP, PICK_DOCK, PICK_SHORTCUTS, PICK_TRIP }
+
+    /** Hai chế độ chọn APP đa chọn (F1 lối tắt · F2 app nổ máy) — cùng lưới, cùng nút *Áp dụng (N)*, khác trần + chữ. */
+    private val appPick: Boolean get() = mode == Mode.PICK_SHORTCUTS || mode == Mode.PICK_TRIP
 
     /**
      * Trần số mục **của bảng này** — không phải một hằng toàn cục.
@@ -59,10 +66,17 @@ class AppDrawer(
      * một cấu hình đang có 10 nút sẽ **cắt mất 2 nút mà không nói gì**, đúng họ lỗi "chặn im lặng" mà
      * [toggleSelection] sinh ra để chống.
      */
-    internal val cap: Int = if (mode == Mode.PICK_DOCK) NO_CAP else MAX
+    internal val cap: Int = when (mode) {
+        Mode.PICK_DOCK -> NO_CAP
+        Mode.PICK_TRIP -> TripAppCodec.MAX   // F2 R2.1 — tối đa 6 app khi nổ máy (`:core`, một nguồn)
+        else -> MAX
+    }
 
     internal val selected = ArrayList<String>().apply { addAll(initialWidgets.take(cap)) }
     internal val widgetTiles = HashMap<String, LinearLayout>()
+
+    /** F1 · U1 — ô app của chế độ [Mode.PICK_SHORTCUTS] (gói → ô). Riêng [widgetTiles]: ô app không nhuộm icon. */
+    internal val appPickTiles = HashMap<String, View>()
     private var placeBtn: TextView? = null
 
     /** Phần danh sách ứng dụng (tách tệp vì trần 500 dòng) — xem [AppDrawerApps]. */
@@ -85,7 +99,7 @@ class AppDrawer(
         val plp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).also {
             it.setMargins(dpi(context, Sp.XXL), dpi(context, Sp.XXL), dpi(context, Sp.XXL), dpi(context, Sp.XXL)); it.gravity = Gravity.CENTER
         }
-        val assign = mode == Mode.ASSIGN_SLOT; val dock = mode == Mode.PICK_DOCK
+        val assign = mode == Mode.ASSIGN_SLOT; val dock = mode == Mode.PICK_DOCK; val pick = appPick
 
         panel.addView(TextView(context).apply {
             text = context.getString(
@@ -93,6 +107,8 @@ class AppDrawer(
                     Mode.ASSIGN_SLOT -> R.string.kachi_drawer_title_assign
                     Mode.OPEN_APP -> R.string.kachi_drawer_title_open
                     Mode.PICK_DOCK -> R.string.kachi_drawer_title_dock
+                    Mode.PICK_SHORTCUTS -> R.string.kachi_drawer_title_shortcuts
+                    Mode.PICK_TRIP -> R.string.kachi_drawer_title_trip
                 },
             )
             setTextColor(c(KachiTheme.INK))
@@ -104,6 +120,8 @@ class AppDrawer(
                     Mode.ASSIGN_SLOT -> R.string.kachi_drawer_hint_assign
                     Mode.OPEN_APP -> R.string.kachi_drawer_hint_open
                     Mode.PICK_DOCK -> R.string.kachi_drawer_hint_dock
+                    Mode.PICK_SHORTCUTS -> R.string.kachi_drawer_hint_shortcuts
+                    Mode.PICK_TRIP -> R.string.kachi_drawer_hint_trip
                 },
             )
             setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION)
@@ -148,6 +166,9 @@ class AppDrawer(
             body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_widgets)).also { it.setPadding(0, dpi(context, Sp.L), 0, dpi(context, Sp.XS)) })
             addWidgetGrid(body, cols = COLS_TILE)
             singlesSection(body)
+        } else if (pick) {
+            body.addView(sectionLabel(context.getString(R.string.kachi_drawer_section_apps)))
+            shortcutPickSection(body, apps, COLS_APP)   // F1 · U1 — lưới app đa chọn (AppDrawerShortcutPick.kt)
         } else {
             // ── Chế độ MỞ THƯỜNG: gần đây trước, rồi tất cả ──
             val all = apps.load()
@@ -191,7 +212,7 @@ class AppDrawer(
         // [ĐO] trước đây nó nằm trong thân cuộn (cạnh tiêu đề mục đầu), nên cuộn xuống là **mất nút**: điểm sáng ở
         // vùng nút đi 7242 → 83 → 0. Người dùng chọn xong ở cuối danh sách thì không còn đường áp — phải cuộn ngược
         // lên mới thấy, mà không có gì nói cho họ biết điều đó. Nút quyết định phải luôn ở trong tầm mắt.
-        if (assign || dock) {
+        if (assign || dock || pick) {
             panel.addView(placeBar(), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             refreshPlaceBtn()
         }
@@ -253,7 +274,7 @@ class AppDrawer(
             // Một nút, hai đích đến theo chế độ — KHÔNG hai nút: thanh đáy chỉ có chỗ cho một quyết định, và hai nút
             // trong đó thì lúc nào cũng có đúng một cái là nút chết.
             setOnClickListener {
-                if (mode == Mode.PICK_DOCK) onApply(selected.toSet()) else onPickWidgets(selected.toList())
+                if (mode == Mode.PICK_DOCK || mode == Mode.PICK_TRIP || mode == Mode.PICK_SHORTCUTS) onApply(selected.toSet()) else onPickWidgets(selected.toList())
             }
         }
         placeBtn = btn; addView(btn)
@@ -269,13 +290,18 @@ class AppDrawer(
      * `Context`), và trần vẫn lấy từ [MAX] chứ không gõ lại — `PickerCapNoticeContractTest` đọc CHÍNH tệp tài nguyên
      * để chốt hai tính chất cũ (nêu số trần · nói cách đi tiếp), nên phép kiểm không yếu đi khi chữ dời chỗ.
      */
-    private fun capNote(): String = context.getString(R.string.kachi_drawer_cap_note, MAX)
+    private fun capNote(): String =
+        when (mode) {
+            Mode.PICK_SHORTCUTS -> context.getString(R.string.kachi_sc_cap_note, MAX)
+            Mode.PICK_TRIP -> context.getString(R.string.kachi_trip_cap_note, cap)
+            else -> context.getString(R.string.kachi_drawer_cap_note, MAX)
+        }
 
     private fun refreshPlaceBtn() {
         placeBtn?.text = when {
             // Chọn nút cho thanh xe: nút luôn là "Áp dụng (N)" kể cả N = 0 — bỏ HẾT nút khỏi thanh là một lựa chọn
             // hợp lệ (thanh ẩn đi), không phải một trạng thái phải đổi tên nút.
-            mode == Mode.PICK_DOCK -> context.getString(R.string.kachi_drawer_apply_n, selected.size)
+            mode == Mode.PICK_DOCK || appPick -> context.getString(R.string.kachi_drawer_apply_n, selected.size)
             selected.isEmpty() -> context.getString(R.string.kachi_drawer_place_none)
             else -> context.resources.getQuantityString(R.plurals.kachi_drawer_place_n, selected.size, selected.size)
         }
@@ -370,7 +396,7 @@ class AppDrawer(
     // Lưới ô: `addWidgetGrid` · `widgetTile` · `addPickGrid` · `kindPill` · `pickTile` → `AppDrawerTiles.kt` (tách THUẦN theo trần
     // 500 dòng, L6-debt 2026-09-27): hàm mở rộng `internal` cùng package, thân giữ nguyên byte; `selected` · `widgetTiles` ·
     // `cap` · `widgets` · `toggleSelection` · `applyTileState` vì thế là `internal`.
-    private fun refreshTiles() { widgetTiles.keys.forEach { applyTileState(it) } }
+    private fun refreshTiles() { widgetTiles.keys.forEach { applyTileState(it) }; appPickTiles.keys.forEach { applyAppPickState(it) } }
 
     /**
      * ⚠ U7 · R6 — hàm `iconWithBadge` CŨ đã dời sang [PickerBadge.icon].
@@ -379,6 +405,9 @@ class AppDrawer(
      * mã thì hai màn nói hai điều khác nhau về độ tin cậy của nó. Gom về một nơi là cách duy nhất để hai màn không
      * lệch tiếp — cùng lẽ với [CapabilityPicker.COLS].
      */
+
+    /** Độ mờ ô hết chỗ — MỘT hằng ([DIMMED]) cho cả ô khả năng lẫn ô app của [Mode.PICK_SHORTCUTS]. */
+    internal val dimmedAlpha: Float get() = DIMMED
 
     internal fun applyTileState(id: String) {
         val tile = widgetTiles[id] ?: return

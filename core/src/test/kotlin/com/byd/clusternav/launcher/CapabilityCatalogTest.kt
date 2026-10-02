@@ -35,7 +35,7 @@ class CapabilityCatalogTest {
         // S4 · R12 thêm nguồn thứ SÁU: hành động của CHÍNH launcher ([LauncherActions]) — bấm được nhưng không
         // gửi gì xuống xe. Ý định phép kiểm không đổi: gộp không được làm MẤT hay NHÂN ĐÔI mục nào.
         val total = CapabilityGroups.ALL.size + WidgetRegistry.ALL.size + TelemetryRegistry.ALL.size +
-            ControlRegistry.ALL.size + ActionMacros.ALL.size + LauncherActions.ALL.size
+            ControlRegistry.ALL.size + ActionMacros.ALL.size + LauncherActions.ALL.size + LauncherActions.BLOCKS.size
         assertEquals(total, CapabilityCatalog.allIncludingHidden().size, "gộp không được làm mất hay nhân đôi mục nào")
         // U6: `all()` = bản kê ĐẦY ĐỦ trừ đúng những mã cố ý ẩn khỏi màn chọn — không được trừ thêm gì khác.
         assertEquals(

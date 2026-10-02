@@ -1,0 +1,7 @@
+--------- beginning of main
+--------- beginning of system
+10-02 09:16:04.386 12050 12050 I KachiReady: proc interactive=false t=30 so=- wall=09:16:04.386
+10-02 09:16:04.428 12050 12073 I KachiReady: checking src=early t=73 so=- wall=09:16:04.428
+10-02 09:16:04.528 12050 12073 I KachiReady: up src=early t=173 so=- wall=09:16:04.528
+10-02 09:16:04.532 12050 12073 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=100ms t=177 so=- wall=09:16:04.532
+10-02 09:16:04.670 12050 12073 I KachiReady: window adb_allowed_connection_time=default t=315 so=- wall=09:16:04.670

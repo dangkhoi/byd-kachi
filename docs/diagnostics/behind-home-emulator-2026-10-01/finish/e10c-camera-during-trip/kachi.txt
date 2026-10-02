@@ -1,0 +1,21 @@
+--------- beginning of main
+--------- beginning of system
+10-02 10:41:49.290 17663 17663 I KachiReady: proc interactive=false t=227 so=- wall=10:41:49.290
+10-02 10:41:49.341 17663 17695 I KachiReady: checking src=early t=284 so=- wall=10:41:49.341
+10-02 10:41:49.410 17663 17695 I KachiReady: up src=early t=354 so=- wall=10:41:49.410
+10-02 10:41:49.412 17663 17695 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=70ms t=355 so=- wall=10:41:49.412
+10-02 10:41:49.499 17663 17695 I KachiReady: window adb_allowed_connection_time=default t=442 so=- wall=10:41:49.498
+10-02 10:41:49.591 17663 17663 I KachiTest: hooks attached
+10-02 10:41:54.641 17663 17691 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 10:41:54.646 17663 17691 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=191082094, leo=163604535, con của lượt chữa=false)
+10-02 10:41:59.273 17663 17663 I KachiReady: screen_on src=home t=10168 so=+0 wall=10:41:59.225
+10-02 10:41:59.273 17663 17663 I KachiReady: home adopt t=10217 so=+49 wall=10:41:59.273
+10-02 10:41:59.344 17663 17695 I KachiReady: keys=BOUND t=10288 so=+120 wall=10:41:59.344
+10-02 10:41:59.422 17663 17849 I KachiTrip: wait BOOT (streak=0 home=[com.byd.launcher/com.byd.clusternav.launcher.KachiHome, com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity])
+10-02 10:41:59.514 17663 17691 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 10:41:59.600 17663 17663 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 10:41:59.603 17663 17663 I KachiReady: tile vd=184 slot=0 t=10547 so=+379 wall=10:41:59.603
+10-02 10:41:59.604 17663 17663 I KachiReady: summary screen_on->tile=379 proc->up=354 src=early keys=BOUND
+10-02 10:41:59.604 17663 17663 I KachiVd : tạo màn ảo kachi-slot-0-1790912519599 — ô 0 · display 184 · chủ ws@171246234 · đang sống 1
+10-02 10:42:23.085 17663 18628 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=184 C=vn.vietmap.live) chờ=0ms · evict vd=184 A=com.google.android.apps.youtube.music B=vn.vietmap.live → KEPT_UNDER task=2661 S=334 top0=335 kiểm=NOT_MOVED gỡ=0 dọn-trước=0
+10-02 10:42:39.193 17663 17849 I KachiTrip: run trip=n39.t191095577 tries=1 -> RAN in=39781ms saved=true :: ready after 21037ms | com.google.android.apps.youtube.music:bg-KEPT_UNDER | com.waze:normal-OPENED

@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.trip.TripGate
+
 /**
  * NGUỒN DUY NHẤT cho *"cấu hình nào thuộc nhóm nào"* (S1 · §4.3). Thuần Kotlin (`:core`, cấm `android.*`) ⇒ kiểm
  * off-car.
@@ -88,6 +90,8 @@ object SettingsCatalog {
      * người thêm khoá phải trả lời câu *"đây là cấu hình hay là trạng thái máy"* bằng chữ.
      */
     val NOT_SETTINGS: Map<String, String> = buildMap {
+        // F2/F3 — sổ chuyến lên xe + kết quả + mốc khởi động: trạng thái máy, lý do khai ở chỗ chủ ([TripGate.DEVICE_KEYS]).
+        putAll(TripGate.DEVICE_KEYS)
         // [SOÁT Opus 2026-09-27 · UX5b] Mốc *"phép di trú chip thanh trên đã chạy cho hồ sơ này"*
         // (`WorkspacePrefs.K_STRIP_MIGRATED`). Cùng họ `migrated_scenes_v1`: một dấu vết của LƯỢT CHUYỂN ĐỔI, không
         // phải một lựa chọn. Lên UI thì nó là một công tắc mà bật/tắt đều làm danh sách chip của người dùng bị xếp
@@ -157,6 +161,13 @@ object SettingsCatalog {
                 "tay là hoặc đóng nhầm cửa sổ của người khác, hoặc để sót cửa sổ của Kachi",
         )
         put(
+            "kachi_behind_marks",
+            "trạng thái máy, không phải cấu hình — dấu bền BEHIND-HOME (`BehindMarks`, tệp `clusternav_state`): task Kachi " +
+                "đã đẩy ra sau màn nhà, ghi TRƯỚC `move-task`. Lượt thức sau một lần Kachi bị giết dùng nó để đưa màn nhà " +
+                "lên lại khi đúng app đó nổi lên che màn nhà. Người dùng không đặt; sửa tay là hoặc màn nhà bị một app " +
+                "của Kachi che sau mỗi lần tắt máy, hoặc Kachi đẩy màn nhà lên trên một app người dùng tự mở",
+        )
+        put(
             "enable_freeform_support",
             "trạng thái máy (`Settings.Global`), không phải cấu hình — cờ boot của hệ thống, điều kiện để app vào " +
                 "được ô. Hàng 'Quyền còn thiếu' đã ĐỌC và BÁO nó (`LauncherRequirements.FREEFORM`), còn việc bật thì " +
@@ -219,7 +230,9 @@ object SettingsCatalog {
         "clusternav_state" to
             "dấu mốc gieo cờ cửa sổ tự do, dùng CHUNG với đường chiếu-cụm (cố ý không đổi tên: nó là trạng thái " +
                 "đã nằm trên đĩa của máy đang chạy). Chứa `freeform_state`, `kachi_floating_opened` (dấu cửa sổ nổi " +
-                "Kachi đã mở, PROFILE-SWITCH-SLOTS) và `kachi_shell_approval` (dấu xe đã duyệt khoá adb, READY-AT-HOME) " +
+                "Kachi đã mở, PROFILE-SWITCH-SLOTS), `kachi_shell_approval` (dấu xe đã duyệt khoá adb, READY-AT-HOME) " +
+                "`kachi_behind_marks` (task Kachi đẩy ra sau màn nhà, BEHIND-HOME) và sổ chuyến lên xe " +
+                "(`kachi_trip_ledger`/`kachi_trip_last`/`kachi_boot_seen`, F2/F3) " +
                 "— đều là dấu theo XE của trạng thái ngoài hệ thống, không đi theo hồ sơ",
         "kachi_test_bridge" to
             "T-BRIDGE — chỉ chứa `test_bridge_until`, công tắc PHIÊN của cầu kiểm thử qua adb. Cố ý ĐỂ RIÊNG khỏi " +

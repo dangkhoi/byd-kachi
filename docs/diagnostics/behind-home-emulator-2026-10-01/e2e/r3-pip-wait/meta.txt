@@ -1,0 +1,5 @@
+T0=10-02 10:00:46.000 pids_before=['28288', '28442']
+killed_at=10:00:49
+pids_while_off=['29941', '30019']
+wake=10:01:00
+pip_after_wake at=10:01:14 stack=293 move='' tops=('com.google.android.apps.maps/com.google.android.maps.MapsActivity[pip]', 'com.byd.launcher/com.byd.clusternav.launcher.KachiHome')

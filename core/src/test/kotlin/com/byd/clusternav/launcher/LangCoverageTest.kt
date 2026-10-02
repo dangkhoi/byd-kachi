@@ -85,8 +85,9 @@ class LangCoverageTest {
     }
 
     @Test
-    fun `moi widget co nhan EN, dung 9 widget`() {
-        assertEquals(9, WidgetRegistry.ALL.size)
+    fun `moi widget co nhan EN, dung 10 widget`() {
+        // F1 (2026-10-02): 9 → 10 = `w_apps` (lưới lối tắt ứng dụng, spec shortcuts-autostart R1.3).
+        assertEquals(10, WidgetRegistry.ALL.size)
         val missing = WidgetRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "widget thiếu nhãn tiếng Anh: $missing")
     }
@@ -135,7 +136,10 @@ class LangCoverageTest {
         // owner: *"chỉ giữ model đang OK trên xe, không thử nghiệm gì nữa"*) ⇒ bề mặt chọn-mô-hình không còn gì để
         // chọn giữa, `VoiceModelSettings.lightModelRows` gỡ. Hàng *trạng thái + Tải/Gỡ* của gói duy nhất Ở LẠI
         // (nó chưa bao giờ là một mục danh mục — nó thuộc khối dựng tay cùng `voice_tts_pack`). 2.74 · R3: **75 → 76 (+1)** = `voice_commands`, mục THÔNG TIN *"Câu lệnh nói được"* / *"Spoken commands"*.
-        assertEquals(76, SettingsCatalog.ENTRIES.size)
+        // F1 lối tắt (2026-10-02): **76 → 77 (+1)** = `bars_app_shortcuts` *"Lối tắt ứng dụng"* / *"App shortcuts"*.
+        // F2/F3 chuyến lên xe (2026-10-02, nhóm C): **77 → 79 (+2)** = `system_ignition_apps` *"Mở app khi nổ máy"* / *"Open
+        // apps at ignition"* + `voice_ignition_music` *"Tự mở nhạc khi lên xe"* / *"Play music when you get in"*; EN tại chỗ khai.
+        assertEquals(79, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -177,7 +181,7 @@ class LangCoverageTest {
         val all: List<Localized> = TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL +
             WidgetRegistry.ALL + ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
-            LauncherRequirements.ALL + LauncherActions.ALL + HeaderItem.values().toList()
+            LauncherRequirements.ALL + LauncherActions.ALL + LauncherActions.BLOCKS + HeaderItem.values().toList()
         // 302 = 265 + 3 nhóm mới (nav · cast · keys — `bars` bù cho `clusternav` bị bỏ) + 36 mục mới của IA v2,
         // trừ 1 mục `system_advanced_screen` gỡ cùng màn ClusterNav cũ (S3 · 2026-09-13), rồi S4 · R1/R6 −3 mục
         // cảnh +2 mục hồ sơ.
@@ -225,7 +229,12 @@ class LangCoverageTest {
         // `seat_heat_state_r`), đều có nhãn ĐẦY + nhãn NGẮN ở cả hai thứ tiếng tại chỗ khai. Hai chip GỘP mới không
         // cộng vào đây: nhãn của chúng là `Strings.t(...)` inline ở `TopStripChips`/`TopStripConfig.choices` (không
         // phải dòng registry), đúng như ba chip dựng sẵn cũ.
-        assertEquals(241, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // F1 lối tắt ứng dụng (2026-10-02): **241 → 244 (+3)** = widget `w_apps` ("Lưới lối tắt app" / "App shortcut
+        // grid") + mục Cài đặt `bars_app_shortcuts` + khối thanh nút `launcher_shortcuts` — bộ đăng ký MỚI
+        // `LauncherActions.BLOCKS` (đặt được, không gọi bằng lời) đưa vào tầm quét ngay lượt này. Cả ba có EN tại chỗ khai.
+        // F2/F3 chuyến lên xe (2026-10-02, nhóm C): **244 → 246 (+2)** = hai mục Cài đặt `system_ignition_apps` ·
+        // `voice_ignition_music` (xem `tong so muc Cai dat…`), cả hai có EN tại chỗ khai.
+        assertEquals(246, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -341,7 +350,7 @@ class LangCoverageTest {
             TelemetryRegistry.ALL.map { it.id to (it.label to it.labelEn) } +
             ControlRegistry.ALL.map { it.id to (it.label to it.labelEn) } +
             ActionMacros.ALL.map { it.id to (it.label to it.labelEn) } +
-            LauncherActions.ALL.map { it.id to (it.label to it.labelEn) }
+            LauncherActions.placeable.map { it.id to (it.label to it.labelEn) }
         val newlyColliding = rows
             .groupBy { it.second.second ?: it.second.first }         // gom theo nhãn EN thực dùng
             .filterValues { group -> group.size > 1 && group.map { it.second.first }.distinct().size > 1 }

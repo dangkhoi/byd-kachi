@@ -1,0 +1,139 @@
+VD=122 PKG=com.google.android.apps.youtube.music COMP=com.google.android.apps.youtube.music/.activities.MusicActivity
+T0=10-02 07:05:38.000
+--- [start] 07:05:39.359
+Stack id=189 displayId=122 userId=0
+  taskId=2399: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2398: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+    mResumedActivity: ActivityRecord{622ea8b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2398}
+    mResumedActivity: ActivityRecord{626c1c6 u0 vn.vietmap.live/.MainActivity t2399}
+pidX=
+$ am start --display 122 --windowingMode 1 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n 'com.google.android.apps.youtube.music/.activities.MusicActivity'
+--- [after-k4] 07:05:47.775
+Stack id=0 displayId=0 userId=0
+  taskId=2398: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=192 displayId=122 userId=0
+  taskId=2402: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=189 displayId=122 userId=0
+  taskId=2399: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{e035988 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2402}
+    mResumedActivity: ActivityRecord{622ea8b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2398}
+pidX=29120
+$ am start --display 122 --windowingMode 1 -a android.intent.action.VIEW -d 'https://music.youtube.com/watch?v=9bZkp7q19f0' -p com.google.android.apps.youtube.music -f 0x10000000
+--- [after-k9-on-vd-task] 07:05:58.159
+Stack id=194 displayId=0 userId=0
+  taskId=2402: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2398: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=false 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=189 displayId=122 userId=0
+  taskId=2399: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+    mResumedActivity: ActivityRecord{e035988 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2402}
+pidX=29120
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+$ am start --display 122 -n 'vn.vietmap.live/vn.vietmap.live.MainActivity'   (K3)
+Warning: Activity not started, intent has been delivered to currently running top-most instance.
+--- [after-k3] 07:06:03.927
+Stack id=194 displayId=0 userId=0
+  taskId=2402: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2398: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=false 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=189 displayId=122 userId=0
+  taskId=2399: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+    mResumedActivity: ActivityRecord{e035988 u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2402}
+pidX=29120
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+--- events
+10-02 07:05:38.289  6254 12622 I am_kill : [0,28200,com.google.android.apps.youtube.music,900,stop com.google.android.apps.youtube.music]
+10-02 07:05:38.290  6254 12622 I am_finish_activity: [0,144540933,2400,com.google.android.apps.youtube.music/.activities.MusicActivity,proc died without state saved]
+10-02 07:05:38.298  6254 12622 I wm_task_removed: [2400,removeAppToken: last token]
+10-02 07:05:38.298  6254 12622 I am_remove_task: [2400,191]
+10-02 07:05:38.298  6254 12622 I wm_task_removed: [2400,removeTask]
+10-02 07:05:38.300  6254 12622 I wm_stack_removed: 191
+10-02 07:05:39.691  6254  7609 I wm_stack_created: 192
+10-02 07:05:39.693  6254  7609 I wm_task_created: [2402,192]
+10-02 07:05:39.694  6254  7609 I wm_task_moved: [2402,0,2147483647]
+10-02 07:05:39.694  6254  7609 I am_focused_stack: [0,122,192,189,reuseOrNewTask]
+10-02 07:05:39.694  6254  7609 I am_create_task: [0,2402]
+10-02 07:05:39.694  6254  7609 I am_create_activity: [0,235100552,2402,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 07:05:39.694  6254  7609 I wm_task_moved: [2402,0,2147483647]
+10-02 07:05:39.695  6254  7609 I am_pause_activity: [0,103203270,vn.vietmap.live/.MainActivity,userLeaving=true]
+10-02 07:05:39.696  6254  7609 I am_add_to_stopping: [0,103203270,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 07:05:39.696 27514 27514 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 07:05:39.772  6254  6281 I am_proc_start: [0,29120,10147,com.google.android.apps.youtube.music,activity,{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}]
+10-02 07:05:39.810  6254  7193 I am_restart_activity: [0,235100552,2402,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 07:05:39.810  6254  7193 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.activities.MusicActivity,minimalResumeActivityLocked]
+10-02 07:05:41.239 29120 29120 I am_on_create_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performCreate]
+10-02 07:05:41.328 29120 29120 I am_on_start_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,handleStartActivity]
+10-02 07:05:41.412 29120 29120 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,RESUME_ACTIVITY]
+10-02 07:05:43.939  6254 12764 I am_stop_activity: [0,103203270,vn.vietmap.live/.MainActivity]
+10-02 07:05:43.947 27514 27514 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-02 07:05:48.042  6254  7193 I wm_stack_created: 193
+10-02 07:05:48.044  6254  7193 I wm_task_created: [2403,193]
+10-02 07:05:48.044  6254  7193 I wm_task_moved: [2403,0,2147483647]
+10-02 07:05:48.044  6254  7193 I am_focused_stack: [0,122,193,192,reuseOrNewTask]
+10-02 07:05:48.044  6254  7193 I am_create_task: [0,2403]
+10-02 07:05:48.044  6254  7193 I am_create_activity: [0,55567087,2403,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,android.intent.action.VIEW,NULL,https://music.youtube.com/...,276824064]
+10-02 07:05:48.044  6254  7193 I wm_task_moved: [2403,0,2147483647]
+10-02 07:05:48.045  6254  7193 I am_pause_activity: [0,235100552,com.google.android.apps.youtube.music/.activities.MusicActivity,userLeaving=true]
+10-02 07:05:48.079 29120 29120 I am_on_paused_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performPause]
+10-02 07:05:48.100  6254  7193 I am_restart_activity: [0,55567087,2403,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity]
+10-02 07:05:48.102  6254  7193 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,minimalResumeActivityLocked]
+10-02 07:05:48.179  6254  7193 I am_new_intent: [0,235100552,2402,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 07:05:48.179  6254  7193 I wm_stack_created: 194
+10-02 07:05:48.180  6254  7193 I wm_task_removed: [2402,reParentTask]
+10-02 07:05:48.182  6254  7193 I wm_task_moved: [2402,1,0]
+10-02 07:05:48.182  6254  7193 I am_remove_task: [2402,192]
+10-02 07:05:48.182  6254  7193 I wm_stack_removed: 192
+10-02 07:05:48.187  6254  7193 I am_focused_stack: [0,0,194,0,reparentToDisplay]
+10-02 07:05:48.187  6254  7193 I am_pause_activity: [0,102951563,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,userLeaving=true]
+10-02 07:05:48.189  6254  7193 I am_add_to_stopping: [0,102951563,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,makeInvisible]
+10-02 07:05:48.197 27271 27271 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-02 07:05:48.209 27514 27514 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,handleWindowVisibility]
+10-02 07:05:48.211  6254  7194 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.activities.MusicActivity,resumeTopActivityInnerLocked]
+10-02 07:05:48.212  6254  7194 I am_resume_activity: [0,235100552,2402,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 07:05:48.212 27514 27514 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleWindowVisibility]
+10-02 07:05:48.223  6254  6274 I am_stop_activity: [0,102951563,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-02 07:05:48.225  6254 12764 I am_finish_activity: [0,55567087,2403,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,app-request]
+10-02 07:05:48.226  6254 12764 I am_pause_activity: [0,55567087,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,userLeaving=false]
+10-02 07:05:48.227 29120 29120 I am_on_create_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performCreate]
+10-02 07:05:48.250  6254  6272 I am_add_to_stopping: [0,103203270,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 07:05:48.309 27514 27514 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,sleeping]
+10-02 07:05:48.310  6254  6274 I am_stop_activity: [0,103203270,vn.vietmap.live/.MainActivity]
+10-02 07:05:48.323 27271 27271 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,STOP_ACTIVITY_ITEM]
+10-02 07:05:48.546 29120 29120 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,RESUME_ACTIVITY]
+10-02 07:05:48.585  6254  7193 I am_add_to_stopping: [0,55567087,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,finishCurrentActivityLocked]
+10-02 07:05:48.586  6254  7193 I am_focused_stack: [0,122,189,193,noMoreActivities adjustFocusToNextFocusableStack]
+10-02 07:05:48.587  6254  6274 I am_destroy_activity: [0,55567087,2403,com.google.android.apps.youtube.music/.deeplink.MusicServiceDeepLinkActivity,finish-imm:activityIdleInternalLocked]
+10-02 07:05:48.904 29120 29120 I am_on_destroy_called: [0,com.google.android.apps.youtube.music.deeplink.MusicServiceDeepLinkActivity,performDestroy]
+10-02 07:05:48.906  6254  9729 I wm_task_removed: [2403,removeAppToken: last token]
+10-02 07:05:48.907  6254  9729 I am_remove_task: [2403,193]
+10-02 07:05:48.907  6254  9729 I wm_task_removed: [2403,removeTask]
+10-02 07:05:48.909  6254  9729 I wm_stack_removed: 193
+10-02 07:05:50.113  6254  6281 I am_proc_start: [0,29328,10071,com.android.musicfx,broadcast,{com.android.musicfx/com.android.musicfx.ControlPanelReceiver}]
+10-02 07:05:58.708  6254  7193 I am_new_intent: [0,103203270,2399,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 07:05:58.712  6254  7193 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,resumeTopActivityInnerLocked]
+10-02 07:05:58.712  6254  7193 I am_resume_activity: [0,103203270,2399,vn.vietmap.live/.MainActivity]
+10-02 07:05:58.713  6254  7193 I am_add_to_stopping: [0,103203270,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 07:05:58.713  6254  7193 I am_pause_activity: [0,103203270,vn.vietmap.live/.MainActivity,userLeaving=false]
+10-02 07:05:58.730 27514 27514 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 07:05:58.734 27514 27514 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 07:05:58.741 27514 27514 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 07:05:58.746 27514 27514 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 07:05:58.751  6254  6274 I am_stop_activity: [0,103203270,vn.vietmap.live/.MainActivity]
+10-02 07:05:58.757 27514 27514 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]

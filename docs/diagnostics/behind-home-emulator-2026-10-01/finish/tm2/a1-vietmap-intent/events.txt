@@ -1,0 +1,6 @@
+10-02 10:26:29.195  6254  6324 I am_new_intent: [0,254054227,2613,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:26:29.198  3625  3625 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 10:26:29.202  3625  3625 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,LIFECYCLER_RESUME_ACTIVITY]
+10-02 10:26:37.494  6254 12764 I am_new_intent: [0,254054227,2613,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:26:37.495  3625  3625 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 10:26:37.502  3625  3625 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,LIFECYCLER_RESUME_ACTIVITY]

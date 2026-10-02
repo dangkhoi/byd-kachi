@@ -1,0 +1,11 @@
+                      com.byd.clusternav.launcher.ShortcutIconsView{b5a2b77 V.E...... ........ 478,15-568,124}
+                        android.widget.ImageView{3acf3e4 VFED..C.. ........ 6,15-84,93}
+                      android.widget.LinearLayout{94b804d VFE...C.. ........ 580,15-686,124}
+                        android.widget.ImageView{ecb4702 V.ED..... ........ 38,14-68,44}
+                        android.widget.TextView{9bc0813 V.ED..... ........ 6,50-100,94}
+                      android.widget.LinearLayout{1376a50 VFE...C.. ........ 698,15-804,124}
+                        android.widget.ImageView{dcd449 V.ED..... ........ 38,14-68,44}
+                        android.widget.TextView{2ad14e V.ED..... ........ 6,50-100,94}
+                      android.widget.LinearLayout{e55126f VFE...C.. ........ 816,15-922,124}
+                        android.widget.ImageView{6b0db7c V.ED..... ........ 38,14-68,44}
+                        android.widget.TextView{a156c05 V.ED..... ........ 6,50-100,94}

@@ -194,6 +194,9 @@ class LayeringRulesTest {
         // của `WorkspacePrefs`** (giữ `SharedPreferences` + `Context`) và gọi `ClusterNavLang` (prefs của ClusterNav).
         // Chuyển sang `:core` là kéo cả hai thứ đó theo — cùng lẽ `ThemeHost.kt`/`ClusterNavBridgeHome.kt`.
         "WorkspacePrefsLang.kt" to "hàm mở rộng WorkspacePrefs (SharedPreferences/Context-bound) — gọi ClusterNavLang",
+        // F2/F3 (2026-10-02): `ignition_apps`/`ignition_music` tách khỏi `WorkspacePrefs.kt` (trần 500) — cùng lẽ `WorkspacePrefsLang.kt`:
+        // hàm mở rộng của `WorkspacePrefs` (giữ `SharedPreferences` của `kachi_workspace`); phép mã hoá thuần đã ở :core.
+        "WorkspacePrefsTrip.kt" to "hàm mở rộng WorkspacePrefs (SharedPreferences/Context-bound) — codec chuyến đã ở :core",
         // VISUAL-REFRESH P1b · R8: phép SUY bảng màu theo lựa chọn người dùng — hàm mở rộng của `KachiPalette` (bảng
         // MÃ MÀU, đã ở danh sách này), đọc hạt giống hex của nó. Phép TÍNH thì đã ở :core (`ColorMath` ·
         // `ContrastGuard`); thứ ở lại :app là đúng phần chạm vào hex — cùng lẽ với chính `KachiPalette.kt`.

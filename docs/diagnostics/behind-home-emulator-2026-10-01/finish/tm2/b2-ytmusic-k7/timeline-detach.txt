@@ -1,0 +1,11 @@
+10:28:22 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:22 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:23 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:23 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:24 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:24 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:25 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:25 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:26 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:26 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity
+10:28:26 top0=2614:com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity

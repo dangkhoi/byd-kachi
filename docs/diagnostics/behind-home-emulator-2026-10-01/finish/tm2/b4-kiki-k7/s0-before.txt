@@ -1,0 +1,36 @@
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2612: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=208 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2438: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=71 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+
+Stack id=318 bounds=[0,0][1129,804] displayId=173 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2619: ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity}
+
+Stack id=316 bounds=[0,0][1129,804] displayId=173 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2616: com.waze/com.waze.FreeMapAppActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{com.waze/com.waze.MainActivity}
+
+Stack id=315 bounds=[0,0][1129,804] displayId=173 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2614: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity bounds=[0,0][1129,804] userId=0 visible=false topActivity=ComponentInfo{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}
+
+Stack id=314 bounds=[0,0][1129,804] displayId=173 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2613: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=false topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+Stack id=313 bounds=[0,0][1129,804] displayId=173 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2618: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1129,804] userId=0 visible=false topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+

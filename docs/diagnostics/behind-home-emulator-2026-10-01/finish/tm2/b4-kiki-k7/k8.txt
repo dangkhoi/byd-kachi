@@ -1,0 +1,2 @@
+am start --display 173 -n ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity
+Starting: Intent { cmp=ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity }

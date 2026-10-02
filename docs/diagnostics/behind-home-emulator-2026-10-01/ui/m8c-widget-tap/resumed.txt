@@ -1,0 +1,4 @@
+    mResumedActivity: ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}
+ ResumedActivity:ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}
+ ResumedActivity:ActivityRecord{f97f8cd u0 vn.vietmap.live/.MainActivity t2337}
+  ResumedActivity: ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}

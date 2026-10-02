@@ -199,7 +199,7 @@ internal fun Activity.attachTestBridge(
                     onListen = { voice().start() },
                     confirm = confirm,
                     say = say,
-                    assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },
+                    assignAppToSlot = { index, pkg -> slots().placeTemporary(index, pkg) },   // giọng nói = đặt TẠM (owner 01/10)
                     // L7 — CÙNG lambda mà lệnh `preset` của cầu kiểm thử dùng (`setPreset` ngay dưới), để hai
                     // lệnh của cùng một cầu không đi hai đường. ⚠ Khác đường của màn chính đúng MỘT bước: ở đó
                     // `selectPreset` còn bỏ bố cục tự vẽ trước. Cầu kiểm thử cố ý **không** bỏ — nó là bề mặt ĐO,

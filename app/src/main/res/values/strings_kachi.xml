@@ -149,7 +149,7 @@
     <string name="kachi_row_boot_profile">Lên bằng hồ sơ</string>
     <string name="kachi_profile_boot_last">Gần nhất</string>
     <string name="kachi_boot_profile_note">"Gần nhất" = lên đúng hồ sơ bạn đang dùng lúc tắt máy. Chọn một hồ sơ cụ thể thì mỗi lần nổ máy Kachi đều đổi về hồ sơ đó, kể cả khi chuyến trước bạn đã đổi sang hồ sơ khác.</string>
-    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy và Chạy dịch vụ nền khi nổ máy vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
+    <string name="kachi_home_profile_note">Mọi thiết lập ở Cài đặt — trừ nhóm Hệ thống và quyền (riêng Tự mở Kachi khi nổ máy, Chạy dịch vụ nền khi nổ máy và Mở app khi nổ máy vẫn theo hồ sơ), hầu hết nhóm Giọng nói, App dẫn đường mặc định, Kính thật (làm mờ nền), Tự sấy kính khi mưa, phần chỉnh camera theo xe (xoay, lật gương, góc nhìn), và Giới thiệu — đều lưu cho hồ sơ «%1$s», kể cả chiếu lên cụm, khung và DPI từng app, nút nổi và camera. Đổi sang hồ sơ khác ở nhóm Hồ sơ tài xế thì bố cục, nội dung ô, chip, thanh nút, giao diện và đơn vị đổi ngay; khung và DPI khi chiếu đổi từ lần chiếu sau, còn bật/tắt chiếu đổi từ lần nổ máy sau.</string>
     <string name="kachi_delete">Xoá</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -696,6 +696,35 @@
     <string name="kachi_voice_pill_title">Nút mic trên thanh trạng thái</string>
     <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
     <string name="kachi_slot_app_closed">App đã đóng — chạm để mở lại</string>
+    <!-- shortcuts-autostart §4.14 — lượt đặt TẠM không thành: app mới không vào được màn ảo của ô, ô trả về app cũ. -->
+    <string name="kachi_sc_place_failed">%1$s không vào được ô</string>
+    <!-- shortcuts-autostart §4.14 · nhóm B — lối tắt ứng dụng (ngăn kéo chọn app · Cài đặt · khối thanh nút · widget · lý do khi chạm) -->
+    <string name="kachi_drawer_title_shortcuts">Chọn ứng dụng cho lối tắt</string>
+    <string name="kachi_drawer_hint_shortcuts">Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · chạm nền để đóng</string>
+    <string name="kachi_sc_cap_note">Lối tắt có tối đa %1$d ứng dụng — bỏ một app để thêm</string>
+    <string name="kachi_sc_section">Lối tắt ứng dụng (%1$d)</string>
+    <string name="kachi_sc_note">Hiện trên khối Lối tắt ứng dụng của thanh nút (đặt khối bằng nút chọn ở trên) và trong widget Lưới lối tắt app. Ô n: đặt tạm vào ô, app cũ ra sau màn nhà; khởi động lại launcher là về bố cục đã lưu.</string>
+    <string name="kachi_sc_pick_n">Chọn ứng dụng… (%1$d/%2$d)</string>
+    <string name="kachi_sc_mode_slot">Ô %1$d</string>
+    <string name="kachi_sc_mode_full">Toàn màn</string>
+    <string name="kachi_sc_mode_bg">Chạy ngầm</string>
+    <string name="kachi_sc_slot_outside">Bố cục hiện có %1$d ô — ô mờ sẽ mở toàn màn</string>
+    <string name="kachi_sc_order_title">Thứ tự lối tắt</string>
+    <string name="kachi_sc_order_hint">▲/▼ dời một ứng dụng trong khối thanh nút và widget</string>
+    <string name="kachi_sc_empty">Chưa có lối tắt — chạm để chọn ứng dụng</string>
+    <string name="kachi_sc_reason_absent">Bố cục hiện có %1$d ô — mở toàn màn</string>
+    <string name="kachi_sc_reason_widget">Ô %1$d đang là widget — mở toàn màn</string>
+    <string name="kachi_sc_in_slot">%1$s đang ở ô %2$d</string>
+    <string name="kachi_sc_running">%1$s đang chạy</string>
+    <string name="kachi_sc_no_stage">Chạy ngầm cần ít nhất một ô app đang mở trên màn nhà</string>
+    <string name="kachi_sc_refuse_system">Không chạy ngầm được app hệ thống</string>
+    <string name="kachi_sc_refuse_self">Không chạy ngầm được chính Kachi</string>
+    <string name="kachi_sc_refuse_cast">%1$s đang chiếu lên cụm</string>
+    <string name="kachi_sc_not_installed">%1$s chưa cài</string>
+    <string name="kachi_sc_bg_failed">%1$s chưa chạy ngầm được</string>
+    <!-- F1 · R1.5 dòng 9 (spec shortcuts-autostart): app của ô đang mở toàn màn (K7); về ô khi màn nhà hiện lại (K8). -->
+    <string name="kachi_sc_full_card">Đang mở toàn màn — chạm để đưa về ô</string>
+    <string name="kachi_sc_full_failed">Không mở toàn màn được %1$s</string>
     <string name="kachi_captest_title">Kiểm tra từng nút xe</string>
     <string name="kachi_captest_note">Đi hết mọi thông tin và hành động của xe. Với NÚT: bấm Chạy rồi tự chấm OK hoặc Không OK. Với THÔNG TIN: xem giá trị đọc được. Kết quả được ghi lại để soát cạn trên xe.</string>
     <string name="kachi_captest_summary">Đã soát %1$d/%2$d · OK %3$d · Không OK %4$d</string>
@@ -762,4 +791,30 @@
     <string name="kachi_camera_dewarp_on_sub_header">Nắn hình</string>
     <string name="kachi_camera_dewarp_on_title">Nắn hình (bớt cong ống kính)</string>
     <string name="kachi_camera_dewarp_on_sub">Tắt = ảnh thô như camera đưa ra. Bộ tham số nắn đã chốt sẵn theo xe.</string>
+    <!-- F2/F3 — chuyến lên xe (spec shortcuts-autostart §4.14, nhóm C 02/10) -->
+    <string name="kachi_drawer_title_trip">Chọn app mở khi nổ máy</string>
+    <string name="kachi_drawer_hint_trip">Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · kiểu mở chọn trong Cài đặt</string>
+    <string name="kachi_trip_cap_note">Mở khi nổ máy có tối đa %1$d ứng dụng — bỏ một app để thêm</string>
+    <string name="kachi_trip_title">Mở app khi nổ máy</string>
+    <string name="kachi_trip_hint">Chạy một lần mỗi lần nổ máy, sau khi màn nhà sẵn sàng (khoảng 15–45 giây). Chạy nền = mở trong một ô rồi đưa ra sau màn nhà, ô có thể nháy 1–2 giây. App đã ở ô hoặc đang chiếu cụm thì bỏ qua.</string>
+    <string name="kachi_trip_add_n">+ Thêm app (%1$d/%2$d)</string>
+    <string name="kachi_trip_mode_bg">Chạy nền</string>
+    <string name="kachi_trip_mode_normal">Mở bình thường</string>
+    <string name="kachi_trip_remove">Bỏ</string>
+    <string name="kachi_trip_slot_hint">Muốn app luôn mở và hiện ra mỗi lần nổ máy thì đặt nó vào một ô của hồ sơ.</string>
+    <string name="kachi_trip_no_slot_warn">Bố cục của hồ sơ này không có ô app — chạy nền sẽ bị bỏ qua.</string>
+    <string name="kachi_trip_normal_unsupported">Đời xe này chưa biết màn camera — không tự mở app lên trước.</string>
+    <string name="kachi_trip_last_ran">Lần nổ máy gần nhất: %1$s</string>
+    <string name="kachi_trip_res_ran">đã chạy lúc %1$s</string>
+    <string name="kachi_trip_res_nothing">không có gì để mở (%1$s)</string>
+    <string name="kachi_trip_res_gave_up">bỏ sau hai lần thử (%1$s)</string>
+    <string name="kachi_trip_expired">Hết hạn chờ — chuyến này không mở app</string>
+    <string name="kachi_trip_wait_channel">Đang chờ kênh điều khiển cửa sổ</string>
+    <string name="kachi_trip_music_title">Tự mở nhạc khi lên xe</string>
+    <string name="kachi_trip_music_mode">Nhạc</string>
+    <string name="kachi_trip_music_off">Tắt</string>
+    <string name="kachi_trip_music_car">Theo player của xe</string>
+    <string name="kachi_trip_music_query">Phát gì (từ khoá hoặc link YouTube; để trống = tiếp tục)</string>
+    <string name="kachi_trip_music_query_set">Phát gì: %1$s</string>
+    <string name="kachi_trip_music_note">Sau khi tắt máy app thường bị đóng — đặt từ khoá hoặc link để chắc có nhạc. Đang có nguồn khác phát thì Kachi không đè.</string>
 </resources>

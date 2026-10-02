@@ -42,7 +42,7 @@ class LauncherWindows(
      */
     fun seedLocations() {
         val d = dispatcher() ?: return
-        LauncherBootPlan.plan(state().slots) { pkg -> !d.locations.isCastable(pkg) }
+        LauncherBootPlan.plan(state().effectiveWorkspace.slots) { pkg -> !d.locations.isCastable(pkg) }
             .mount.forEach { d.place(it.pkg, 0, it.slot) }
     }
 
@@ -129,7 +129,7 @@ class LauncherWindows(
         val st = state(); val n = EffectiveLayout.slotCount(st.preset, custom())
         val heads = ArrayList<OverlayHeads.Head>()
         for (i in 0 until n) {
-            (st.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
+            (st.effectiveWorkspace.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
                 absoluteSlotRect(i)?.let { r ->
                     val a = appRect(r)
                     heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appTop = a.top, onSwap = { onSlotSwap(i) }))

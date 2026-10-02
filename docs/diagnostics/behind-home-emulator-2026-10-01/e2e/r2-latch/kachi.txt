@@ -1,0 +1,5 @@
+--------- beginning of system
+--------- beginning of main
+10-02 09:34:17.192 21415 21415 I KachiReady: screen_on src=broadcast t=95253 so=+0 wall=09:34:17.192
+10-02 09:34:17.195 21415 21440 I KachiReady: keys=BOUND t=95256 so=+3 wall=09:34:17.195
+10-02 09:34:17.224 21415 21589 I KachiTrip: skip trip=n39.t186948290 why=ALREADY_FIRED

@@ -1,0 +1,6 @@
+10-02 10:29:50.881  6254  7194 I am_new_intent: [0,208456110,2618,com.google.android.deskclock/com.android.deskclock.DeskClock,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:29:50.887  5614  5614 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-02 10:29:50.889  5614  5614 I am_on_resume_called: [0,com.android.deskclock.DeskClock,LIFECYCLER_RESUME_ACTIVITY]
+10-02 10:29:59.562  6254  7194 I am_new_intent: [0,208456110,2618,com.google.android.deskclock/com.android.deskclock.DeskClock,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:29:59.564  5614  5614 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-02 10:29:59.567  5614  5614 I am_on_resume_called: [0,com.android.deskclock.DeskClock,LIFECYCLER_RESUME_ACTIVITY]

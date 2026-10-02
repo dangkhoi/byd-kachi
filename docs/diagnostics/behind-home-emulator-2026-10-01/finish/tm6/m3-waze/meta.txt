@@ -1,0 +1,5 @@
+T0=10-02 10:30:58.000 pkg=com.waze comp=com.waze/.FreeMapAppActivity task=2616 vd=173 marks=<string name="kachi_behind_marks">2613:vn.vietmap.live,2614:com.google.android.apps.youtube.music</string>
+$ am start --display 173 -n com.waze/.FreeMapAppActivity
+Starting: Intent { cmp=com.waze/.FreeMapAppActivity }
+
+pids_before={'com.waze': '5197', 'com.byd.launcher': '3401'} pids_after={'com.waze': '5197', 'com.byd.launcher': '3401'}

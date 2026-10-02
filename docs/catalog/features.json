@@ -175,6 +175,16 @@
   "spec": "docs/specs/kachi-icon-set-v2.html"
  },
  {
+  "group": "Thanh nút",
+  "name": "Khối «Lối tắt ứng dụng» trên thanh nút (F1)",
+  "desc": "Mã thanh nút `launcher_shortcuts` (chọn ở bộ chọn nút, khối Launcher): một hàng icon app — chỉ icon, tên app là contentDescription — dài theo trục thanh (n × 52 dp + 2 × 4 dp; thanh dọc thì cao ra), tràn thì khung cuộn sẵn của thanh cuộn. Chạm một icon đi qua bảng quyết định `ShortcutPlan` (:core): *Ô n* = đặt TẠM vào ô n (không ghi bố cục hồ sơ; app cũ ra SAU màn nhà, không bị giết) · *Toàn màn* = mở bằng Intent (không cần kênh) · *Chạy ngầm* = mở qua một ô app đang sống rồi đưa ra sau màn nhà. Icon kiểu *Ô n*/*Chạy ngầm* mờ 40 % khi chưa có kênh điều khiển cửa sổ, chạm ⇒ thẻ READY-AT-HOME; app đã gỡ ⇒ hình app chung mờ, chạm báo «chưa cài». Danh sách rỗng ⇒ một ô «chạm để chọn» mở Cài đặt › Thanh trạng thái & thanh nút. KHÔNG gọi bằng lời (khối, không phải việc).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (đường chạm THẬT: E1/E3/E5/E6/E7) · 🚗 chưa đo trên xe — OC-1 (move-task trên ROM BYD) · OC-2 (khoá avoidMoveToFront) [CHƯA BIẾT]",
+  "evidence": "app/.../ShortcutIconsView.kt · ControlDockView.kt shortcutStrip · KachiHomeShortcuts.kt · core/.../ShortcutPlan.kt · ShortcutSelection.kt · LauncherActions.BLOCKS · ShortcutsWiringContractTest · docs/diagnostics/behind-home-emulator-2026-10-01/ui/ (m1/m2/m3b/m4/m5/m7/m12/m13)",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
+ },
+ {
   "group": "Thanh trên",
   "name": "Thanh trên — đồng hồ, chip đọc, mic, Ứng dụng, Cài đặt, chip hồ sơ",
   "desc": "Từ trái sang: giờ + ngày · hàng chip thông tin · nút mic · nút «Ứng dụng» (chỉ icon) · nút «Cài đặt» (chỉ icon, tô nổi) · chip hồ sơ. Hàng chip đặt `0dp + weight 1` nên chip đông tới mấy cũng KHÔNG ép được mấy nút bên phải; chip tự chia đều phần rộng còn lại. Chip dựng MỘT LẦN, sau đó mỗi nhịp chỉ đổi CHỮ (trước đó dựng lại 3 chip + tra + tô drawable mỗi nhịp).",
@@ -1236,6 +1246,46 @@
   "spec": "docs/specs/kachi-settings-screen.html"
  },
  {
+  "group": "Cài đặt",
+  "name": "Cài đặt › Thanh trạng thái & thanh nút › «Lối tắt ứng dụng» (F1)",
+  "desc": "Theo HỒ SƠ (khoá `app_shortcuts`, đi theo bản chia sẻ — chỉ tên gói + kiểu). Nút «Chọn ứng dụng… (n/8)» mở ngăn kéo chế độ chọn nhiều (trần 8, nói ra khi đủ trần); mỗi app một hàng chip *Ô 1…Ô N* (N = số ô bố cục đang dùng; ô đã chọn mà nằm ngoài bố cục hiện mờ + «bố cục hiện có k ô») · *Toàn màn* · *Chạy ngầm*; danh sách ▲/▼ sắp thứ tự; cảnh báo khi có app *Chạy ngầm* mà bố cục không có ô app. Mọi lượt ghi qua ViewModel.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (m9 · m10: chip đổi kiểu, ▲/▼, ngăn kéo Áp dụng ⇒ prefs đổi đúng) · 🚗 chưa đo trên xe",
+  "evidence": "app/.../SettingsSectionsShortcuts.kt · AppDrawerShortcutPick.kt · DrawerController.openShortcutPicker · WorkspacePrefsShortcuts.kt · SettingsCatalogEntries bars_app_shortcuts · docs/diagnostics/behind-home-emulator-2026-10-01/ui/m10-picker/steps.txt",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
+ },
+ {
+  "group": "Cài đặt",
+  "name": "Cài đặt › Hệ thống & quyền › Khởi động › «Mở app khi nổ máy» (F2)",
+  "desc": "Theo HỒ SƠ (khoá `ignition_apps`, đi theo bản chia sẻ — tên gói + kiểu). «+ Thêm app (n/6)» mở ngăn kéo chế độ chọn nhiều `PICK_TRIP` (trần 6, ẩn chính Kachi); mỗi app một hàng chip *Chạy nền* · *Mở bình thường* (tối đa một app) · *Bỏ*. Đời xe chưa biết màn camera ⇒ *Mở bình thường* mờ + một câu lý do. Bố cục hồ sơ không có ô app ⇒ cảnh báo chạy nền sẽ bị bỏ. Cuối trang: «Đang chờ kênh điều khiển cửa sổ» (chạm ⇒ thẻ READY-AT-HOME) khi kênh chưa dùng được + «Lần nổ máy gần nhất: …». Mọi lượt ghi qua ViewModel.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (chạm thật: chip ⇒ `com.waze|B`; ngăn kéo Áp dụng (2) ⇒ prefs đúng) · 🚗 chưa đo trên xe",
+  "evidence": "app/.../SettingsSectionsTrip.kt · AppDrawer.Mode.PICK_TRIP · KachiHomeTrip · WorkspacePrefsTrip.kt · SettingsCatalogEntries system_ignition_apps · docs/diagnostics/behind-home-emulator-2026-10-01/trip/e2e/u6-settings/",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
+ },
+ {
+  "group": "Tự động",
+  "name": "Tự mở app khi nổ máy — một lần mỗi chuyến (F2)",
+  "desc": "Sau mỗi lần nổ máy thật (BYD giết Kachi lúc tắt máy ⇒ claim tắt-máy lớp 1; hoặc khởi động lại máy) và khi màn nhà đã sẵn (kênh điều khiển cửa sổ + kiểm phím xong + ô app sống + HOME đứng yên 3 lần đọc), chạy các app đã chọn: *Chạy nền* = mở qua một ô đang sống rồi đưa ra SAU màn nhà (không che, không giết); *Mở bình thường* = mở lên trước, CUỐI chuỗi, qua rào camera trong cùng một lệnh. Một lượt mỗi chuyến (sổ hai pha ghi trước khi làm — Kachi bị giết giữa chừng thì tiến trình mới chạy tiếp đúng một lần; tắt/bật màn hay nâng cấp APK không tính). Chưa có kênh ⇒ chờ; kênh lên trong 3 phút ⇒ chạy, quá ⇒ bỏ chuyến. Bỏ qua: chính Kachi · chưa cài · app hệ thống (chạy nền) · app đang ở ô · app đang chạy · không có ô sống.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (E8 ba lần giết kiểu BYD ⇒ ba lượt; tắt/bật màn / cài đè ⇒ 0; E9 giết giữa chuyến; E10; E15 kênh muộn / quá hạn) · 🚗 chưa đo trên xe — OC-4/OC-5 [CHƯA BIẾT]",
+  "evidence": "core/.../trip/TripGate.kt · TripPlan.kt · app/.../trip/TripStart.kt · TripHub.kt · EarlyShellChannel.readyChain · TripGateTest · TripPlanTest · TripWiringContractTest · docs/diagnostics/behind-home-emulator-2026-10-01/trip/e2e/",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
+ },
+ {
+  "group": "Tự động",
+  "name": "Tự mở nhạc khi lên xe — YouTube / YT Music (F3)",
+  "desc": "Cài đặt › Giọng nói › «Tự mở nhạc khi lên xe» (theo HỒ SƠ, khoá `ignition_music`): *Tắt* · *Theo player của xe* (Kachi không làm gì) · YouTube / YouTube Music (chỉ app đã cài) + ô «Phát gì» (từ khoá hoặc link YouTube; trống = tiếp tục). Trong chuyến lên xe, sau các app chạy nền: đang có nguồn khác phát hoặc không đọc được phiên nhạc ⇒ không đè; app đã có phiên ⇒ tiếp tục phiên; không ⇒ app ở ô thì ô tự mở, không thì chạy SAU màn nhà; rồi đưa bài vào PHIÊN nhạc (`playFromUri` link/từ khoá giải bằng lõi của giọng nói, hoặc `play()`), không bao giờ bằng ý-định VIEW (đo: che màn nhà). App mở nguội không dựng phiên ⇒ chỉ mở app.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (E12 link ⇒ đúng bài sau màn nhà; E12b giới hạn không phiên) · 🚗 chưa đo trên xe — OC-3/OC-8 [CHƯA BIẾT]",
+  "evidence": "core/.../trip/TripMusicPlan.kt · app/.../trip/TripMusicRun.kt · MediaBridge.sessions/playPackage/playFromUri · VoiceAppIntents.watchHandoff · TripMusicPlanTest · docs/diagnostics/behind-home-emulator-2026-10-01/trip/ (tm3*, e2e/e12*)",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
+ },
+ {
   "group": "Chẩn đoán",
   "name": "«Kiểm tra từng nút xe» (CapTest) — 100 thông tin + 47 hành động",
   "desc": "Cài đặt › Hệ thống & quyền › Nâng cao › «Kiểm tra từng nút xe»: bảng dựng ĐỘNG từ 3 bộ đăng ký + 154 diễn giải song ngữ (2026-09-17 owner gỡ 19 mã chấm NO — trước đó 167; trước lượt gỡ ADAS/an toàn 2026-09-16 là 187), gom theo Nhóm, mỗi dòng gắn thẻ [THÔNG TIN] / [HÀNH ĐỘNG] và một huy hiệu kết quả (xanh OK / đỏ Không OK / mờ chưa thử). Bốn nút đầu màn: «▶ Bắt đầu / Tiếp tục» (đi tuần tự từ mục chưa thử đầu tiên) · «Xuất báo cáo» (lưu luôn ra thẻ rồi hiện) · «Chụp log ngay» · «Xoá kết quả». Chạm một mục mở popup «Đang test: X» + diễn giải: mục THÔNG TIN đọc giá trị trên luồng nền rồi hiện (HAL read là binder chặn, cấm chạy trên luồng vẽ); mục HÀNH ĐỘNG hiện nút chạy + cảnh báo an toàn với nút thân xe, rồi chấm OK / Không OK / Bỏ qua.",
@@ -1786,6 +1836,16 @@
   "status": "✅ off-car (khối lốp đo máy ảo SAU: tâm khớp; ảnh user chỉ khoá bằng test số học — máy ảo không có ảnh user) · 🚗 §6: bảng lốp 2 hàng cân giữa thân xe · thả ảnh ≥ 3000 px vào `files/car/` ⇒ hiện đúng, `dumpsys meminfo` Graphics không tăng theo cỡ ảnh gốc",
   "evidence": "docs/diagnostics/offcar-2026-09-27/layout-nits-close.md §2 (2)(3) · §4 · §5 · core/.../CarLayout.kt · app/.../TyreBoardView.kt · app/.../CarImageStore.kt",
   "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Widget Kachi",
+  "name": "Widget «Lưới lối tắt app» `w_apps` (F1)",
+  "desc": "Widget dựng tay đặt vào ô giữa màn qua ngăn kéo (mục Thẻ dựng tay): lưới ≤ 4 cột icon app (khe 64 dp ở ô to, 52 dp ở ô nén), CÙNG danh sách + cùng đường chạm với khối trên thanh nút. Tự lo nội dung (không bị dựng lại theo nhịp trạng thái xe 1 Hz), không đọc dữ liệu xe, không lọt vào bộ chọn chip thanh trên hay bộ chọn nút thanh xe. Lối tắt kiểu *Ô n* trỏ đúng ô đang chứa widget ⇒ mở toàn màn (không đè widget). Nhãn EN «App shortcut grid».",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + E2E máy ảo 02/10 (đường chạm THẬT: E1/E3/E5/E6/E7) · 🚗 chưa đo trên xe — OC-1 (move-task trên ROM BYD) · OC-2 (khoá avoidMoveToFront) [CHƯA BIẾT]",
+  "evidence": "core/.../WidgetRegistry.kt w_apps · WorkspaceRenderPlan SELF_DRIVEN · CarDataDemand · app/.../WidgetViews.kt · ShortcutPlacementTest · docs/diagnostics/behind-home-emulator-2026-10-01/ui/ (m8c, m12)",
+  "spec": "docs/specs/kachi-launcher-shortcuts-autostart.html"
  },
  {
   "group": "Camera xi-nhan",

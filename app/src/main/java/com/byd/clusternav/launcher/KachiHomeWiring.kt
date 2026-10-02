@@ -110,6 +110,8 @@ internal fun homePanels(
     viewModel: HomeViewModel,
     bridge: ClusterNavBridge,
     openDockPicker: (Set<String>, (Set<String>) -> Unit) -> Unit,
+    shortcuts: ShortcutSettingsPort,   // F1 · U2 — trang Cài đặt lối tắt (chủ: KachiHomeShortcuts)
+    trip: TripSettingsPort,   // F2/F3 · U6 — trang Cài đặt chuyến lên xe (chủ: KachiHomeTrip)
     onApplyLayout: (GridLayout?) -> Unit,
     onPreset: (LayoutPreset) -> Unit,
     onWallpaperChanged: (WallpaperPrefs) -> Unit,
@@ -134,6 +136,8 @@ internal fun homePanels(
     state = { viewModel.uiState.value },
     bridge = bridge,
     openDockPicker = openDockPicker,
+    shortcuts = shortcuts,
+    trip = trip,
     // T6 · R-UI (m): tập người dùng vừa chốt đã được `DockSelection.apply` gấp thành cấu hình ở tầng Cài đặt;
     // ở đây chỉ còn một intent — **không** ghi bền trực tiếp (`GridSeamGuardTest.chi ViewModel duoc ghi ben`).
     onDockConfig = { config -> viewModel.setDockConfig(config) },
@@ -483,7 +487,7 @@ internal fun Activity.bringUpShellChannel(
             inputClient = container.inputDaemonClient,   // daemon do AppContainer sở hữu, tiêm vào
             registerVd = dispatcher::registerLauncherVirtualDisplay,   // VD ô thuộc LAUNCHER → ownership cho phép
             unregisterVd = dispatcher::unregisterLauncherVirtualDisplay,
-            state = viewModel.uiState.value.workspace,
+            state = viewModel.uiState.value.effectiveWorkspace,   // bố cục đang HIỆN (gồm lớp đặt tạm)
             status = viewModel.uiState.value.carStatus,
         )
         viewModel.setEmbedded(true)   // dadb nối được → nhúng (giữ embedded khớp getter)

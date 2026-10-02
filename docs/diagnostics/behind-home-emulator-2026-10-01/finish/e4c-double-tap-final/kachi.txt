@@ -1,0 +1,5 @@
+--------- beginning of main
+--------- beginning of system
+10-02 11:22:08.291 28516 28516 I KachiShortcut: tap vn.vietmap.live F usable=true stages=0 -> DetachToFull(slot=0, byIntent=false)
+10-02 11:22:09.306 28516 29110 I KachiDetach: detach vd=190 vn.vietmap.live → FULL task=2701 đọc=1
+10-02 11:22:20.312 28516 29110 I KachiDetach: return vd=190 task=2701 → K8 vn.vietmap.live/vn.vietmap.live.MainActivity → IN_SLOT

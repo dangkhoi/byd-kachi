@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import com.byd.clusternav.launcher.trip.TripConfig
 
 /**
  * Bản thật của [WorkspaceRepository] cho :app — bọc [WorkspacePrefs] (SharedPreferences, khoá theo hồ sơ tài xế).
@@ -134,6 +135,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // ca **đổi hồ sơ** tự đúng: `switchProfile` gọi lại `load()` nên sổ của hồ sơ mới về cùng lúc với mọi
             // thứ khác, không phải nhớ nạp lại bằng tay ở tầng UI (bài học [SOÁT P1-1]).
             savedPlaces = prefs.savedPlaces(),
+            // F1 — lối tắt ứng dụng (theo hồ sơ), nạp CÙNG lượt như sổ địa chỉ ⇒ đổi hồ sơ là khối + widget đổi theo.
+            shortcuts = prefs.appShortcuts(),
+            trip = prefs.tripConfig(),   // F2/F3 — chuyến lên xe theo hồ sơ, nạp cùng lượt ⇒ đổi hồ sơ là trang Cài đặt đổi theo
             topStrip = prefs.topStrip(),
             // UX-OVERHAUL · WP4 — thứ tự các vật trên thanh trên, nạp CÙNG lượt (theo hồ sơ như `topStrip` ngay
             // trên) ⇒ đổi hồ sơ là thanh sắp lại theo hồ sơ đó, không phải nhớ nạp bằng tay ở tầng UI.
@@ -281,6 +285,14 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun savedPlaces(): List<SavedPlace> = prefs.savedPlaces()
 
     override fun setSavedPlaces(places: List<SavedPlace>) = prefs.setSavedPlaces(places)
+
+    override fun appShortcuts(): List<AppShortcut> = prefs.appShortcuts()
+
+    override fun setAppShortcuts(items: List<AppShortcut>) = prefs.setAppShortcuts(items)
+
+    override fun tripConfig(): TripConfig = prefs.tripConfig()
+
+    override fun setTripConfig(cfg: TripConfig) = prefs.setTripConfig(cfg)
 
     override fun wallpaperPrefs(): WallpaperPrefs = prefs.wallpaperPrefs()
 

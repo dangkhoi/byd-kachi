@@ -1,0 +1,2 @@
+android.widget.LinearLayout desc='Chưa có lối tắt — chạm để chọn ứng dụng' bounds=(1166, 651, 1896, 760)
+android.widget.LinearLayout desc='Chưa có lối tắt — chạm để chọn ứng dụng' bounds=(514, 953, 580, 1019)

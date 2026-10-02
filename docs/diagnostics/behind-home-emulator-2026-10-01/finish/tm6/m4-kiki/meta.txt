@@ -1,0 +1,5 @@
+T0=10-02 10:31:40.000 pkg=ai.zalo.kiki.car comp=ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity task=2619 vd=173 marks=<string name="kachi_behind_marks">2613:vn.vietmap.live,2614:com.google.android.apps.youtube.music</string>
+$ am start --display 173 -n ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity
+Starting: Intent { cmp=ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity }
+
+pids_before={'ai.zalo.kiki.car': '6907', 'com.byd.launcher': '3401'} pids_after={'ai.zalo.kiki.car': '6907', 'com.byd.launcher': '3401'}

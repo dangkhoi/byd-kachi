@@ -1,0 +1,2 @@
+10:42:22 camera ON (thấy YT Music trong bản đọc): Starting: Intent { cmp=com.byd.avc/android.app.Activity }
+10:42:38 camera OFF (force-stop stand-in)

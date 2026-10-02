@@ -80,6 +80,7 @@ class SettingsVoiceSection(
             options = deps.bridge.musicAppChoices().map { it to musicAppLabel(it) },
             current = deps.bridge.musicDefaultApp(),
         ) { key -> deps.bridge.setMusicDefaultApp(key) })
+        SettingsTripMusicSection(context, rows, deps).section(body)   // F3 — nhạc khi lên xe (SettingsSectionsTrip.kt)
 
         commandListRows(body)
     }

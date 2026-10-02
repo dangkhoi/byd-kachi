@@ -1,0 +1,19 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:52:56.853 15765 15765 I KachiReady: proc interactive=false t=503 so=- wall=06:52:56.852
+10-02 06:52:57.026 15765 15790 I KachiReady: checking src=early t=679 so=- wall=06:52:57.026
+10-02 06:52:57.168 15765 15790 I KachiReady: up src=early t=818 so=- wall=06:52:57.168
+10-02 06:52:57.170 15765 15790 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=144ms t=824 so=- wall=06:52:57.170
+10-02 06:52:57.318 15765 15786 I A11yLifecycle: tat-may: không kẹt (bound=true, binding=false)
+10-02 06:52:57.327 15765 15786 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177255098, leo=163604535, con của lượt chữa=false)
+10-02 06:52:57.351 15765 15790 I KachiReady: window adb_allowed_connection_time=default t=1004 so=- wall=06:52:57.351
+10-02 06:53:05.814 15765 15765 I KachiReady: screen_on src=broadcast t=9467 so=+0 wall=06:53:05.813
+10-02 06:53:05.822 15765 15786 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 06:53:05.826 15765 15790 I KachiReady: keys=BOUND t=9480 so=+13 wall=06:53:05.826
+10-02 06:53:06.243 15765 15887 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 06:53:06.475 15765 15882 I KachiBehind: recovery dấu=1 nổi-lên=true giữ=1
+10-02 06:53:07.427 15765 15765 I KachiReady: home adopt t=11081 so=+1614 wall=06:53:07.427
+10-02 06:53:07.951 15765 15765 I KachiReady: tile vd=113 slot=0 t=11604 so=+2137 wall=06:53:07.950
+10-02 06:53:07.951 15765 15765 I KachiReady: summary screen_on->tile=2137 proc->up=818 src=early keys=BOUND
+10-02 06:53:28.548 15765 15882 I KachiBehind: behind X=com.waze qua ô 0 (vd=113 C=vn.vietmap.live) → đang chạy (pidof), 0 lệnh đổi cửa sổ
+10-02 06:53:28.569 15765 15887 I KachiTrip: run trip=n39.t177363115 tries=1 -> RAN in=22558ms saved=true :: ready after 20491ms | com.waze:bg-ALREADY_RUNNING

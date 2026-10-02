@@ -1,0 +1,1 @@
+t0=10-02 09:34:07.000 pid_kachi_before=['21415', '21492'] after=['21415', '21492'] top_before_off=com.waze/com.waze.FreeMapAppActivity

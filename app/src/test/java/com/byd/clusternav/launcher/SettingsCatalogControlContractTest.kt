@@ -89,6 +89,8 @@ class SettingsCatalogControlContractTest {
             // đó là thứ chứng minh hàng có tác dụng thật, chứ không chỉ có mặt trên trang.
             "bars_header_order" to ("SettingsSectionsBars" to "deps.onHeaderLayout("),
             "bars_dock_order" to ("SettingsSectionsBars" to "dock.moveEnabled("),
+            // F1 · U2 — trang lối tắt dựng NGAY trong nhóm Thanh (thân ở `SettingsSectionsShortcuts.kt`).
+            "bars_app_shortcuts" to ("SettingsSectionsBars" to "SettingsShortcutsSection(context, rows, deps).section(body)"),
             // ── 3 · Hiển thị & đơn vị ──
             "display_units" to ("SettingsSections" to "rows.unitRow("),
             "display_theme" to ("SettingsSections" to "deps.onThemeMode("),
@@ -157,10 +159,14 @@ class SettingsCatalogControlContractTest {
             "system_permissions" to ("SettingsSections" to "rows.permissionRow("),
             "system_autostart" to ("SettingsSections" to "deps.onAutostart("),
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
+            // F2 · U6 — trang app mở khi nổ máy dựng NGAY trong nhóm Hệ thống (thân ở `SettingsSectionsTrip.kt`).
+            "system_ignition_apps" to ("SettingsSections" to "SettingsTripAppsSection(context, rows, deps).section(body)"),
             // ── Giọng nói (owner 2026-09-21 tách nhóm riêng) ──
             // "Hey Kachi" — công tắc bridge, dựng ở SettingsVoiceSection (đầu nhóm Voice).
             "voice_wake" to ("SettingsVoiceSection" to "deps.bridge.setWakeEnabled("),
             "voice_music_default_app" to ("SettingsVoiceSection" to "deps.bridge.setMusicDefaultApp("),
+            // F3 · U6 — nhạc khi lên xe dựng ngay dưới app nhạc mặc định (thân ở `SettingsSectionsTrip.kt`).
+            "voice_ignition_music" to ("SettingsVoiceSection" to "SettingsTripMusicSection(context, rows, deps).section(body)"),
             // 2.74 · R3 — danh sách câu nói được. Dấu vết là **lời gọi bộ sinh** (hành vi), không phải nhãn: đổi
             // chữ tiêu đề thì bài này vẫn xanh, còn gỡ danh sách đi thì đỏ ngay.
             "voice_commands" to ("SettingsVoiceSection" to "VoiceCommandCatalog.groups("),

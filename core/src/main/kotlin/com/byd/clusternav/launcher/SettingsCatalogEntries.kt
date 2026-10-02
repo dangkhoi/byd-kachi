@@ -75,6 +75,9 @@ internal object SettingsCatalogEntries {
             "bars_dock_order", SettingsGroup.BARS, "Vị trí trên thanh nút xe",
             null, "Car-bar item order",
         ),
+        // F1 (owner 01/10, spec shortcuts-autostart R1.4) — app nào hiện trên khối lối tắt (thanh nút) + widget
+        // `w_apps`, mỗi app một kiểu mở. Ở nhóm THANH vì chỗ người dùng gặp khối này đầu tiên là chính thanh nút.
+        SettingsEntry("bars_app_shortcuts", SettingsGroup.BARS, "Lối tắt ứng dụng", "app_shortcuts", "App shortcuts"),
 
         // ── Hiển thị & đơn vị ──
         SettingsEntry("display_units", SettingsGroup.DISPLAY, "Đơn vị hiển thị", "unit_prefs", "Display units"),
@@ -280,6 +283,9 @@ internal object SettingsCatalogEntries {
             "voice_music_default_app", SettingsGroup.VOICE, "App nhạc mặc định",
             "voice_music_default_app", "Default music app",
         ),
+        // F3 (owner 01/10, spec shortcuts-autostart R3.1) — nhạc khi lên xe, đứng NGAY dưới "App nhạc mặc định": cùng một
+        // câu hỏi "app nhạc nào", nhưng KHÔNG dùng chung khoá (miền giá trị khác — §4.6). Khoá `ignition_music` theo hồ sơ.
+        SettingsEntry("voice_ignition_music", SettingsGroup.VOICE, "Tự mở nhạc khi lên xe", "ignition_music", "Play music when you get in"),
         // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
         // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
         SettingsEntry("voice_tts_pack", SettingsGroup.VOICE, "Giọng đọc offline", labelEn = "Offline voice pack"),
@@ -342,6 +348,9 @@ internal object SettingsCatalogEntries {
             "system_headless_autostart", SettingsGroup.SYSTEM, "Chạy dịch vụ nền khi nổ máy",
             "headless_autostart", "Run background service on engine start",
         ),
+        // F2 (owner 01/10, spec shortcuts-autostart R2.1) — app mở khi nổ máy, đứng cạnh hai công tắc khởi động: cả ba trả
+        // lời "nổ máy thì Kachi làm gì". Khoá `ignition_apps` theo hồ sơ (S4).
+        SettingsEntry("system_ignition_apps", SettingsGroup.SYSTEM, "Mở app khi nổ máy", "ignition_apps", "Open apps at ignition"),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

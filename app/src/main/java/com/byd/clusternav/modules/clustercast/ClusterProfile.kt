@@ -3,6 +3,7 @@ package com.byd.clusternav.modules.clustercast
 import android.content.Context
 import com.byd.clusternav.launcher.camera.CameraProfileDefaults
 import com.byd.clusternav.launcher.camera.ClusterBandSpec
+import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import com.byd.clusternav.SysProps
 
 /**
@@ -63,6 +64,13 @@ data class ClusterProfile(
      * (CLAUDE.md §7). Xem KDoc [ClusterBandSpec.SEAL_DL3_NO_CURVE].
      */
     val band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3_NO_CURVE,
+    /**
+     * Dấu hiệu MÀN CAMERA (lùi/360) của đời xe trong `am stack list` — đầu vào của rào `CameraGuard.unlessCamera` cho
+     * mọi lệnh đưa app lên TRƯỚC display 0 (spec shortcuts-autostart §4.8). Không vào [export]/[parse], gán theo id như
+     * [camera]. Seal DL3 = `com.byd.avc/` [ĐO dump SurfaceFlinger + dịch ngược 28/09]; đời khác `null` [CHƯA BIẾT] ⇒
+     * tính năng mới KHÔNG mở gì lên trước display 0 (CLAUDE.md §7 — khác biệt đời xe nằm ở đây, không rải trong mã).
+     */
+    val cameraSignature: String? = null,
 ) {
     /** Đời xe này có đổi được kiểu cong/thẳng không — UI dựa vào đây để hiện hay ẩn nút. */
     val supportsStyle: Boolean get() = styleOps != null
@@ -124,7 +132,11 @@ data class ClusterProfile(
             camera = SEAL_DL3_CAMERA,
             // ĐỜI DUY NHẤT đã đo đường cong kính (2.77) ⇒ đời duy nhất được mang bảng `leftEdge`.
             band = ClusterBandSpec.SEAL_DL3,
+            cameraSignature = AccessibilityRebind.CAMERA_SCREEN_SIGNATURE,
         )
+
+        /** Dấu hiệu màn camera theo `id` seed — cùng luật với [cameraFor]: chỉ đời ĐÃ ĐO mới có; khác ⇒ `null`. */
+        fun cameraSignatureFor(id: String): String? = if (id == SEAL_DL3.id) SEAL_DL3.cameraSignature else null
 
         /** Mặc định camera theo `id` seed: chỉ seed ĐÃ ĐO mới có bộ riêng; id lạ/đời khác ⇒ trung tính. */
         fun cameraFor(id: String): CameraProfileDefaults =
@@ -203,7 +215,7 @@ data class ClusterProfile(
             }
             return ClusterProfile(
                 id, diLink, w, h, cast, tear, hint, svc, style,
-                camera = cameraFor(id), band = bandFor(id),
+                camera = cameraFor(id), band = bandFor(id), cameraSignature = cameraSignatureFor(id),
             )
         }
 

@@ -324,7 +324,7 @@ class CapabilityGroupsTest {
         // phụ đã có từ B10, lượt này chúng chỉ được nối thêm `readKey`.
         assertEquals(66, TelemetryRegistry.ALL.size, "mục đọc rời: 64 + 2 datum ghế phụ (UX5b 2026-09-27)")
         assertEquals(33, ControlRegistry.ALL.size, "1.94: kính tường minh (5 full + 5 half + 1 close-all)")
-        assertEquals(9, WidgetRegistry.ALL.size, "widget dựng tay phải còn nguyên 9")
+        assertEquals(10, WidgetRegistry.ALL.size, "widget dựng tay: 9 + `w_apps` (F1 lối tắt, 2026-10-02)")
         assertEquals(2, ActionMacros.ALL.size, "1.94: 2 gói (mở/đóng hết kính)")
         // Và tổng khả năng = 4 bộ cũ + nhóm, không mất không nhân đôi.
         assertEquals(
@@ -332,7 +332,8 @@ class CapabilityGroupsTest {
             // phép kiểm "gom nhóm chỉ CỘNG THÊM" vẫn nguyên ý, chỉ nói đúng nguồn hơn.
             // S4 · R12 thêm nguồn thứ SÁU (hành động của chính launcher — [LauncherActions]). Kể nó vào ĐÂY chứ
             // không nới con số: bài này canh *"gom nhóm chỉ CỘNG THÊM"*, nên mọi nguồn phải hiện tên ra.
-            66 + 33 + 9 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size -
+            // F1 (2026-10-02): widget 9 → 10 (`w_apps`) + nguồn `LauncherActions.BLOCKS` (khối lối tắt thanh nút).
+            66 + 33 + 10 + 2 + CapabilityGroups.ALL.size + LauncherActions.ALL.size + LauncherActions.BLOCKS.size -
                 CapabilityCatalog.HIDDEN_FROM_PICKER.size,
             CapabilityCatalog.all().size,
             "gộp nhóm vào catalog không được làm mất hay nhân đôi mục nào",

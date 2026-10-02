@@ -122,12 +122,29 @@ class ControlDockView(context: Context) : LinearLayout(context) {
                 // [onLauncherAction] chứ không xuống [control]. Nhánh riêng (không gộp vào WRITE) vì gộp thì
                 // `ControlRegistry.byId` trả null, `ActionMacros.byId` cũng null ⇒ ô **không được thêm vào thanh**
                 // mà cũng không báo gì — đúng lỗi "bật vào thanh rồi tưởng hỏng" đã phải vá cho gói lệnh ở W2.
-                CapabilityKind.LAUNCHER -> CapabilityCatalog.pick(id)?.let { pick ->
+                // F1 (spec shortcuts-autostart R1.2): khối LỐI TẮT không phải một nút mà một hàng icon dài theo số app
+                // ⇒ cỡ do chính khối đặt theo [shortcutStripLength] (không qua [sized]); bề dày = bề dày một ô.
+                CapabilityKind.LAUNCHER -> if (id == LauncherActions.SHORTCUTS) addView(shortcutStrip())
+                else CapabilityCatalog.pick(id)?.let { pick ->
                     addView(sized(tiles.launcherTile(pick) { onLauncherAction(id) }))
                 }
                 null -> Unit   // mã lạ (rác prefs / mã đã xoá) → bỏ qua, KHÔNG sập
             }
         }
+    }
+
+    /**
+     * Khối lối tắt (F1 · U3): bề DÀY = bề dày một ô của thanh (cùng số [Bars] với [sized]); bề DÀI do khối tự đặt theo
+     * số app ([shortcutStripLength]) mỗi lần danh sách đổi — thanh dọc thì khối cao ra, ngang thì rộng ra (R1.2).
+     */
+    private fun shortcutStrip(): View = ShortcutIconsView(context, grid = false).apply {
+        val v = config.isVertical()
+        val len = shortcutStripLength(context, ShortcutHub.items().size)
+        layoutParams = LayoutParams(
+            if (v) dpi(context, Bars.DOCK_TILE_W_VERTICAL) else len,
+            if (v) len else dpi(context, Bars.DOCK_TILE_H),
+        ).also { it.setMargins(dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS), dpi(context, Sp.XS)) }
+        vertical = v
     }
 
     /** Cỡ ô của thanh nút (WP5: 83×60 khi dọc, 71×73 khi ngang, lề 4dp) — mọi số lấy từ [Bars]. */

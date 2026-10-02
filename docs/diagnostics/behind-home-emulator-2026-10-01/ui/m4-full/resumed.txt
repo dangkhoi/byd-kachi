@@ -1,0 +1,4 @@
+    mResumedActivity: ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}
+ ResumedActivity:ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}
+ ResumedActivity:ActivityRecord{c9e93e5 u0 com.google.android.deskclock/com.android.deskclock.DeskClock t2321}
+  ResumedActivity: ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}

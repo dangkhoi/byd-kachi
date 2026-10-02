@@ -136,6 +136,10 @@ class SettingsScreenWiringContractTest {
             // khoá **của launcher** (không phải của ClusterNav qua `bridge`), nên nó đúng là loại tệp mà bài này
             // sinh ra để canh: mọi lượt ghi phải đi qua `deps.onSavedPlaces` → ViewModel.
             "SettingsSectionsPlaces" to places,
+            // F1 · U2 — trang lối tắt ghi khoá `app_shortcuts` CỦA LAUNCHER: chỉ qua `port.save` → ViewModel.
+            "SettingsSectionsShortcuts" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsShortcuts.kt"),
+            // F2/F3 · U6 — trang chuyến lên xe ghi `ignition_apps`/`ignition_music` CỦA LAUNCHER: chỉ qua `deps.trip.save` → ViewModel.
+            "SettingsSectionsTrip" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsTrip.kt"),
         ).forEach {
             (name, src) ->
             listOf("WorkspacePrefs", "workspaceRepository", "getSharedPreferences", "Prefs.set").forEach { bad ->

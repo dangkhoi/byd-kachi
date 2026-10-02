@@ -1,0 +1,136 @@
+VD=107 PKG=com.google.android.apps.youtube.music COMP=com.google.android.apps.youtube.music/.activities.MusicActivity
+T0=10-02 06:16:10.000
+--- [start] 06:16:11.357 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+    mResumedActivity: ActivityRecord{6ed3efd u0 vn.vietmap.live/.MainActivity t2350}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=
+$ am start --display 107 --windowingMode 1 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n 'com.google.android.apps.youtube.music/.activities.MusicActivity'
+--- [after-k4-cold] 06:16:21.870 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{54abffc u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2355}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=6905
+session pkg=com.google.android.apps.youtube.music state=2 actions=2600887 title=Despacito
+$ MS play com.google.android.apps.youtube.music
+session pkg=com.google.android.apps.youtube.music state=2 actions=2600887 title=Despacito
+  -> play sent to com.google.android.apps.youtube.music
+--- [after-play] 06:16:30.403 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{54abffc u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2355}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=6905
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+$ MS uri com.google.android.apps.youtube.music https://music.youtube.com/watch?v=kJQP7kiw5Fk
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+  -> uri sent to com.google.android.apps.youtube.music
+--- [after-uri] 06:16:41.056 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{54abffc u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2355}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=6905
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+$ MS search com.google.android.apps.youtube.music 'son tung mtp'
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+  -> search sent to com.google.android.apps.youtube.music
+--- [after-search] 06:16:52.010 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=true 
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{54abffc u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2355}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=6905
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+$ am start --display 107 -n 'vn.vietmap.live/vn.vietmap.live.MainActivity'   (K3)
+Warning: Activity not started, its current task has been brought to the front
+--- [after-k3] 06:16:58.903 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{6ed3efd u0 vn.vietmap.live/.MainActivity t2350}
+    mResumedActivity: ActivityRecord{d1eb36b u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2348}
+pidX=6905
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+--- events
+10-02 06:16:11.685  6254  6373 I wm_stack_created: 166
+10-02 06:16:11.686  6254  6373 I wm_task_created: [2355,166]
+10-02 06:16:11.686  6254  6373 I wm_task_moved: [2355,0,2147483647]
+10-02 06:16:11.687  6254  6373 I am_focused_stack: [0,107,166,162,reuseOrNewTask]
+10-02 06:16:11.687  6254  6373 I am_create_task: [0,2355]
+10-02 06:16:11.687  6254  6373 I am_create_activity: [0,88784892,2355,com.google.android.apps.youtube.music/.activities.MusicActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 06:16:11.687  6254  6373 I wm_task_moved: [2355,0,2147483647]
+10-02 06:16:11.688  6254  6373 I am_pause_activity: [0,116211453,vn.vietmap.live/.MainActivity,userLeaving=true]
+10-02 06:16:11.689  6254  6373 I am_add_to_stopping: [0,116211453,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 06:16:11.695  2026  2026 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 06:16:11.744  6254  6281 I am_proc_start: [0,6905,10147,com.google.android.apps.youtube.music,activity,{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity}]
+10-02 06:16:11.761  6254 14005 I am_restart_activity: [0,88784892,2355,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 06:16:11.761  6254 14005 I am_set_resumed_activity: [0,com.google.android.apps.youtube.music/.activities.MusicActivity,minimalResumeActivityLocked]
+10-02 06:16:13.201  6905  6905 I am_on_create_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performCreate]
+10-02 06:16:13.258  6905  6905 I am_on_start_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,handleStartActivity]
+10-02 06:16:13.303  6905  6905 I am_on_resume_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,RESUME_ACTIVITY]
+10-02 06:16:16.325  6254  8702 I am_stop_activity: [0,116211453,vn.vietmap.live/.MainActivity]
+10-02 06:16:16.330  2026  2026 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-02 06:16:52.639  6254  9213 I am_new_intent: [0,116211453,2350,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 06:16:52.640  6254  9213 I wm_task_moved: [2350,0,2147483647]
+10-02 06:16:52.641  6254  9213 I am_focused_stack: [0,107,162,166,bringingFoundTaskToFront]
+10-02 06:16:52.641  6254  9213 I wm_task_moved: [2350,0,2147483647]
+10-02 06:16:52.641  6254  9213 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,bringingFoundTaskToFront]
+10-02 06:16:52.641  6254  9213 I am_pause_activity: [0,88784892,com.google.android.apps.youtube.music/.activities.MusicActivity,userLeaving=true]
+10-02 06:16:52.642  6254  9213 I am_task_to_front: [0,2350]
+10-02 06:16:52.687  6905  6905 I am_on_paused_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,performPause]
+10-02 06:16:52.694  6254  6648 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,resumeTopActivityInnerLocked]
+10-02 06:16:52.694  6254  6648 I am_add_to_stopping: [0,88784892,com.google.android.apps.youtube.music/.activities.MusicActivity,makeInvisible]
+10-02 06:16:52.695  6254  6648 I am_resume_activity: [0,116211453,2350,vn.vietmap.live/.MainActivity]
+10-02 06:16:52.713  2026  2026 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 06:16:52.720  2026  2026 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 06:16:52.724  2026  2026 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 06:16:53.408  6254  6274 I am_stop_activity: [0,88784892,com.google.android.apps.youtube.music/.activities.MusicActivity]
+10-02 06:16:53.563  6905  6905 I am_on_stop_called: [0,com.google.android.apps.youtube.music.activities.MusicActivity,STOP_ACTIVITY_ITEM]

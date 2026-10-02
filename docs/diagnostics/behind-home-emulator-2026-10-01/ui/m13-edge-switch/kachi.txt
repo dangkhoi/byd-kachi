@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:48:40.575 31527 31527 I VdAppHost: [slot-resize] ô 0 1129x804 → 1032x956
+10-02 05:48:40.576 31527 31527 I VdAppHost: [slot-density] slot=0 short=956 dpi=200→200 (764,8dp→764,8dp)

@@ -1,0 +1,20 @@
+--------- beginning of main
+--------- beginning of system
+10-02 10:39:24.654 15603 15603 I KachiReady: proc interactive=false t=218 so=- wall=10:39:24.654
+10-02 10:39:24.714 15603 15635 I KachiReady: checking src=early t=279 so=- wall=10:39:24.713
+10-02 10:39:24.800 15603 15635 I KachiReady: up src=early t=365 so=- wall=10:39:24.800
+10-02 10:39:24.806 15603 15635 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=92ms t=371 so=- wall=10:39:24.806
+10-02 10:39:24.885 15603 15635 I KachiReady: window adb_allowed_connection_time=default t=450 so=- wall=10:39:24.885
+10-02 10:39:24.982 15603 15603 I KachiTest: hooks attached
+10-02 10:39:29.899 15603 15631 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 10:39:29.903 15603 15631 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=190938492, leo=163604535, con của lượt chữa=false)
+10-02 10:39:34.674 15603 15603 I KachiReady: screen_on src=home t=10238 so=+0 wall=10:39:34.673
+10-02 10:39:34.674 15603 15603 I KachiReady: home adopt t=10239 so=+1 wall=10:39:34.674
+10-02 10:39:34.711 15603 15635 I KachiReady: keys=BOUND t=10274 so=+36 wall=10:39:34.709
+10-02 10:39:34.852 15603 15794 I KachiTrip: wait BOOT (streak=0 home=[com.byd.launcher/com.byd.clusternav.launcher.KachiHome, com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity])
+10-02 10:39:34.905 15603 15631 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 10:39:35.004 15603 15603 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 10:39:35.036 15603 15603 I KachiReady: tile vd=182 slot=0 t=10601 so=+363 wall=10:39:35.035
+10-02 10:39:35.036 15603 15603 I KachiReady: summary screen_on->tile=363 proc->up=365 src=early keys=BOUND
+10-02 10:39:35.036 15603 15603 I KachiVd : tạo màn ảo kachi-slot-0-1790912375003 — ô 0 · display 182 · chủ ws@171246234 · đang sống 1
+10-02 10:39:55.845 15603 15794 I KachiTrip: run trip=n39.t190950940 tries=1 -> RAN in=21062ms saved=true :: ready after 20304ms | music:UNKNOWN_MEDIA

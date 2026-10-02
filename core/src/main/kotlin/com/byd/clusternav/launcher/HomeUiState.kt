@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.trip.TripConfig
+
 /**
  * Trạng thái UI TOÀN màn HOME của launcher (Kachi) — MỘT nguồn sự thật duy nhất do [HomeViewModel] (:app) giữ trong
  * `StateFlow<HomeUiState>`. Immutable + copy-based: mọi thay đổi là một [HomeUiState] mới → chảy MỘT chiều xuống view.
@@ -125,6 +127,19 @@ data class HomeUiState(
      */
     val savedPlaces: List<SavedPlace> = emptyList(),
     /**
+     * F1 — **lối tắt ứng dụng** của hồ sơ đang dùng (khoá `app_shortcuts`, spec shortcuts-autostart R1.1): tối đa
+     * [AppShortcutCodec.MAX] app, mỗi app một [ShortcutMode]. Ở trong state vì HAI bề mặt vẽ nó (khối trên thanh nút +
+     * widget `w_apps`) và màn Cài đặt vẽ nó — cùng luật [savedPlaces]: đường ghi một chiều `HomeViewModel.setAppShortcuts`
+     * → repository, không qua `persist()`; `load()` nạp cùng lượt ⇒ đổi hồ sơ là danh sách đổi theo.
+     */
+    val shortcuts: List<AppShortcut> = emptyList(),
+    /**
+     * F2/F3 — **chuyến lên xe** của hồ sơ đang dùng (khoá `ignition_apps` + `ignition_music`, spec shortcuts-autostart R2.1/R3.1):
+     * chỉ màn Cài đặt vẽ nó (chuyến đọc thẳng từ đĩa ở mức tiến trình — `TripStart`). Cùng luật [shortcuts]: ghi một
+     * chiều `HomeViewModel.setTripConfig` → repository, không qua `persist()`; `load()` nạp cùng lượt.
+     */
+    val trip: TripConfig = TripConfig(),
+    /**
      * ⚠⚠ [SOÁT P0-1] Id widget bên thứ ba đang bị **các hồ sơ tài xế KHÁC** giữ (đọc từ đĩa lúc [WorkspaceRepository.load]).
      *
      * ## Vì sao một trường "dữ liệu của người khác" lại nằm trong state của hồ sơ này
@@ -144,7 +159,23 @@ data class HomeUiState(
      * chạy lại.
      */
     val widgetIdsOtherProfiles: Set<Int> = emptySet(),
+    /**
+     * Lớp ĐẶT TẠM (đính chính owner 01/10, spec shortcuts-autostart §4.4.4) — RUNTIME, cùng loại với [embedded]/
+     * [carStatus]: `persist()` không ghi, `reload()` (đổi hồ sơ) dựng state mới nên tự xoá. Màn chính vẽ từ
+     * [effectiveWorkspace], không từ [workspace].
+     */
+    val overlay: SlotOverlay = SlotOverlay.EMPTY,
+    /**
+     * Mốc của lượt đặt tạm gần nhất theo ô — RUNTIME. Ô có mốc MỚI ở lượt render này và đổi App(A) → App(B) thì tầng
+     * vẽ GIỮ màn ảo, đổi app tại chỗ (`VdAppHost.swapApp`, app cũ ra sau màn nhà) thay vì nhả ô + force-stop. Chỉ
+     * `HomeViewModel.placeTemporary`/`revertTemporary` đặt mốc ⇒ đường LƯU (ngăn kéo, ⇄, đổi hồ sơ…) vẫn đi đường
+     * hôm nay (R1.7, CLAUDE.md §6).
+     */
+    val swapNonce: Map<Int, Long> = emptyMap(),
 ) {
+    /** Bố cục đang HIỆN trên màn = lớp LƯU + lớp tạm ([SlotOverlay.applyTo]). Không có mục tạm ⇒ chính [workspace]. */
+    val effectiveWorkspace: WorkspaceState get() = if (overlay.isEmpty) workspace else overlay.applyTo(workspace)
+
     /** Preset bố cục hiện tại (tiện đọc, uỷ quyền [WorkspaceState.preset]). */
     val preset: LayoutPreset get() = workspace.preset
 

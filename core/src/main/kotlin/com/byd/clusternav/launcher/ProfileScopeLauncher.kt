@@ -36,11 +36,11 @@ object ProfileScopeLauncher {
     /** Hậu tố → kiểu mà `WorkspacePrefs` ghi và đọc. Kiểu chỉ có hai: chuỗi mã hoá hoặc cờ. */
     val DECLARED_TYPES: Map<String, PrefType> = buildMap {
         // Bố cục — `WorkspacePrefs.save/saveDock/setTopStrip/setHeaderLayout/setGridLayout` + `writeRecord` của lượt chuyển cảnh.
-        listOf("preset", "dock_edge", "dock_enabled", "top_strip", "grid_layout", "header_order")
+        listOf("preset", "dock_edge", "dock_enabled", "top_strip", "grid_layout", "header_order", "app_shortcuts")
             .forEach { put(it, PrefType.STRING) }
         listOf("dock_visible", "top_strip_labels", "top_strip_migrated_ux5b").forEach { put(it, PrefType.BOOLEAN) }
         // Cá nhân — chuỗi mã hoá của `:core` (`UnitPrefs`, `WallpaperPrefs`, `SavedPlaces`, `ColorChoice`, `LangMode`…).
-        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "lang", "saved_places", "color_choice")
+        listOf("theme_mode", "unit_prefs", "wallpaper_prefs", "lang", "saved_places", "color_choice", "ignition_apps", "ignition_music")
             .forEach { put(it, PrefType.STRING) }
         put("launcher_autostart", PrefType.BOOLEAN)
         // Sinh từ CÙNG nguồn với [ProfileScope.LAUNCHER_SUFFIXES]: trần ô và số tệp ClusterNav còn đổi được, chép tay con

@@ -1,0 +1,2 @@
+<string name="kachi_trip_ledger">v=1;trip=n39.t177658136;phase=FIRED;tries=1</string>
+<string name="kachi_trip_last">v=1;trip=n39.t177658136;code=RAN;at=1790899112611;d=ready after 20577ms | music:com.google.android.apps.youtube.music:MOVED:uritrue playing</string>

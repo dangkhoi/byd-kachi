@@ -22,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import com.byd.clusternav.launcher.KachiSpace as Sp
+import com.byd.clusternav.launcher.behind.BehindHomePlan
 
 /**
  * Dudu-style app projection, done a bit better.
@@ -231,48 +232,137 @@ class VdAppHost(
         if (launched) return
         launched = true
         val displayId = v.display.displayId
+        Thread { launchInto(displayId, p, sh) }.start()
+    }
+
+    /**
+     * Thân MỞ APP vào màn ảo của ô — một bản, hai lối gọi: [maybeLaunch] (ô mới) và [swapApp] (đặt TẠM, giữ màn ảo).
+     * Chuỗi lệnh giữ NGUYÊN byte so với trước khi tách (spec shortcuts-autostart A2, CLAUDE.md §6): phân giải → khoá
+     * xoay → `am force-stop` app MỚI → ngủ 1 s → `am start --display` → thử lại một lần sau 2 s → bắt đầu đo ô sống.
+     * Chặn (ngủ) ⇒ CHỈ gọi trên luồng nền.
+     */
+    private fun launchInto(displayId: Int, p: String, sh: (String) -> String) {
+        // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
+        val comp = resolveComponent(p, sh) ?: "$p/.MainActivity"
+        // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
+        // an inline string. displayId = this host's OWN VirtualDisplay (a private secondary display for the
+        // slot), NOT the cluster. Touch/force-stop lifecycle stays inline (moves to the input daemon in B4).
+        val cmd = FreeformLaunch.launchOnDisplayCmd(comp, displayId, windowingMode = 1)
+        // ⚠ CHỐNG XOAY DỌC (bug "YouTube co vào giữa", owner 2026-09-15) — khoá màn ảo ô về hướng NGANG gốc
+        // TRƯỚC khi mở app, để app đòi portrait cũng không xoay được ô. Làm bằng `wm` qua shell (KHÔNG đổi cờ
+        // hiển thị VD ⇒ app vẫn vẽ vào ô, tránh lỗi ĐEN của FLAG_PRESENTATION). Best-effort: ROM thiếu lệnh
+        // (`-d` per-display có từ Android 10; nếu vắng thì trả chuỗi lỗi, không ném). Đặt cả hai cho chắc:
+        // `set-user-rotation lock 0` ghim giá trị, `set-fix-to-user-rotation enabled` để mọi app không xoay ô.
+        runCatching {
+            sh("wm set-user-rotation lock -d $displayId 0")           // ghim hướng ô = 0 (ngang gốc)
+            sh("wm set-fix-to-user-rotation -d $displayId enabled")   // mọi app KHÔNG xoay được ô
+        }
+        // ⚠ [SOÁT OCR] Ô có thể đã bị tháo TRONG lúc luồng này chạy (đổi bố cục · đổi hồ sơ · màn huỷ):
+        // `release()` đặt `released = true` và nhả `VirtualDisplay`, nhưng KHÔNG cắt được luồng này. Không
+        // kiểm ở đây thì `am force-stop` + `am start --display <id>` vẫn bắn cho một màn ảo KHÔNG CÒN TỒN
+        // TẠI — tức giết app của người dùng rồi mở lại nó ở một nơi không ai nhìn thấy. Kiểm ở ĐÚNG hai mốc:
+        // trước khi giết app, và sau giấc ngủ 1 giây (cửa sổ rộng nhất).
+        if (released) return
+        // R1.8 (spec shortcuts-autostart §4.2.6, T-M6 [ĐO máy ảo 02/10]): app do CHÍNH Kachi đẩy ra sau màn nhà (dấu bền)
+        // ⇒ K8 đưa đúng task đó về ô, KHÔNG giết. Không dấu ⇒ 0 lệnh, đường golden bên dưới giữ nguyên byte.
+        if (SlotReturnRun.bringBackMarked(context, displayId, p, sh)) {
+            runCatching { inputClient?.ensureStarted() }   // như đường golden: hâm nóng daemon bơm chạm (B4)
+            post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
+            return
+        }
+        sh("am force-stop $p")
+        Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
+        if (released) return
+        sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)
+        runCatching { inputClient?.ensureStarted() }   // B4: hâm nóng daemon bơm chạm (lifecycle qua queue) — chạm sau mượt; không block
+        // #12 (owner 2026-09-21 · [ĐO xe] YouTube ô ĐEN sau NỔ MÁY): trên cold-boot, `am start --display <vd>`
+        // đôi khi TRƯỢT (system chưa sẵn / VD vừa dựng) và KHÔNG có gì thử lại ⇒ ô đen, app KHÔNG chạy. Kiểm
+        // MỘT lần sau 2s: app chưa có tiến trình ⇒ relaunch ĐÚNG MỘT lần nữa. An toàn — chỉ bắn khi app THẬT
+        // SỰ chưa lên (pidof rỗng), nên đường thường (mở được ngay lần đầu) KHÔNG bị nháy. Guard `released`.
+        //
+        // ⚠ [SOÁT 2026-09-21 · P2] Giấc ngủ này đứng SAU lượt hâm nóng daemon chạm, không trước: nó chạy ở MỌI
+        // lần mở app (không chỉ cold-boot), nên đặt trước là dời việc hâm nóng đi 2 giây trên đường thường —
+        // một cái giá trả cho mọi người để chữa một ca chỉ xảy ra lúc nổ máy. Lượt ĐO ô sống (`SlotLiveProbe`)
+        // thì cố ý vẫn nằm sau: nó chỉ được bắt đầu đếm khi lượt thử-mở-lại đã xong.
+        Thread.sleep(2000)
+        if (!released && !appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
+        // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
+        // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm.
+        post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
+    }
+
+    /**
+     * ═══ ĐẶT TẠM — đổi app của ô TẠI CHỖ, giữ màn ảo (spec shortcuts-autostart R0.1 · §4.4.5) ═══════════════════════
+     *
+     * Đường hôm nay (nhả ô + `am force-stop` app cũ) GIỮ cho mọi thao tác LƯU (R1.7). Đây là đường của lượt đặt TẠM
+     * (lối tắt · giọng nói): app cũ A KHÔNG bị giết — B mở vào CÙNG màn ảo bằng đúng [launchInto] (B lên đỉnh, A nằm
+     * dưới: O1), rồi [onLaunched] (`vd`, A, B) giao cho `BehindHomeRunner.evict` đẩy A ra sau màn nhà.
+     *
+     * `false` = host không đổi được tại chỗ (chưa có màn ảo / chưa từng mở / đã nhả) ⇒ bên gọi dựng lại ô như cũ.
+     * Cùng gói ⇒ `true`, không làm gì (lượt trả ô về app đang hiện — [adoptShown]).
+     */
+    fun swapApp(newPkg: String, onLaunched: (Int, String, String) -> Unit): Boolean {
+        val v = vd ?: return false
+        val sh = shell ?: return false
+        val old = pkg ?: return false
+        if (released || !launched) return false
+        if (old == newPkg) return true
+        SlotLiveProbe.unwatch(probeKey)                 // thôi đo A TRƯỚC lệnh: A rời đỉnh không phải "app đã đóng"
+        closedCard?.let { removeView(it) }; closedCard = null
+        full.reset()                                    // A đang toàn màn (dòng 9) không còn là app của ô này
+        surface.visibility = VISIBLE
+        gesture.reset()
+        pkg = newPkg
+        val displayId = v.display.displayId
         Thread {
-            // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
-            val comp = resolveComponent(p, sh) ?: "$p/.MainActivity"
-            // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
-            // an inline string. displayId = this host's OWN VirtualDisplay (a private secondary display for the
-            // slot), NOT the cluster. Touch/force-stop lifecycle stays inline (moves to the input daemon in B4).
-            val cmd = FreeformLaunch.launchOnDisplayCmd(comp, displayId, windowingMode = 1)
-            // ⚠ CHỐNG XOAY DỌC (bug "YouTube co vào giữa", owner 2026-09-15) — khoá màn ảo ô về hướng NGANG gốc
-            // TRƯỚC khi mở app, để app đòi portrait cũng không xoay được ô. Làm bằng `wm` qua shell (KHÔNG đổi cờ
-            // hiển thị VD ⇒ app vẫn vẽ vào ô, tránh lỗi ĐEN của FLAG_PRESENTATION). Best-effort: ROM thiếu lệnh
-            // (`-d` per-display có từ Android 10; nếu vắng thì trả chuỗi lỗi, không ném). Đặt cả hai cho chắc:
-            // `set-user-rotation lock 0` ghim giá trị, `set-fix-to-user-rotation enabled` để mọi app không xoay ô.
-            runCatching {
-                sh("wm set-user-rotation lock -d $displayId 0")           // ghim hướng ô = 0 (ngang gốc)
-                sh("wm set-fix-to-user-rotation -d $displayId enabled")   // mọi app KHÔNG xoay được ô
-            }
-            // ⚠ [SOÁT OCR] Ô có thể đã bị tháo TRONG lúc luồng này chạy (đổi bố cục · đổi hồ sơ · màn huỷ):
-            // `release()` đặt `released = true` và nhả `VirtualDisplay`, nhưng KHÔNG cắt được luồng này. Không
-            // kiểm ở đây thì `am force-stop` + `am start --display <id>` vẫn bắn cho một màn ảo KHÔNG CÒN TỒN
-            // TẠI — tức giết app của người dùng rồi mở lại nó ở một nơi không ai nhìn thấy. Kiểm ở ĐÚNG hai mốc:
-            // trước khi giết app, và sau giấc ngủ 1 giây (cửa sổ rộng nhất).
-            if (released) return@Thread
-            sh("am force-stop $p")
-            Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
-            if (released) return@Thread
-            sh(cmd)                // mở ĐÚNG 1 lần trên VD — KHÔNG relaunch/di lần 2 (bỏ vòng retry gây nháy + làm app ô khác nhảy)
-            runCatching { inputClient?.ensureStarted() }   // B4: hâm nóng daemon bơm chạm (lifecycle qua queue) — chạm sau mượt; không block
-            // #12 (owner 2026-09-21 · [ĐO xe] YouTube ô ĐEN sau NỔ MÁY): trên cold-boot, `am start --display <vd>`
-            // đôi khi TRƯỢT (system chưa sẵn / VD vừa dựng) và KHÔNG có gì thử lại ⇒ ô đen, app KHÔNG chạy. Kiểm
-            // MỘT lần sau 2s: app chưa có tiến trình ⇒ relaunch ĐÚNG MỘT lần nữa. An toàn — chỉ bắn khi app THẬT
-            // SỰ chưa lên (pidof rỗng), nên đường thường (mở được ngay lần đầu) KHÔNG bị nháy. Guard `released`.
-            //
-            // ⚠ [SOÁT 2026-09-21 · P2] Giấc ngủ này đứng SAU lượt hâm nóng daemon chạm, không trước: nó chạy ở MỌI
-            // lần mở app (không chỉ cold-boot), nên đặt trước là dời việc hâm nóng đi 2 giây trên đường thường —
-            // một cái giá trả cho mọi người để chữa một ca chỉ xảy ra lúc nổ máy. Lượt ĐO ô sống (`SlotLiveProbe`)
-            // thì cố ý vẫn nằm sau: nó chỉ được bắt đầu đếm khi lượt thử-mở-lại đã xong.
-            Thread.sleep(2000)
-            if (!released && !appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
-            // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
-            // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm.
-            post { if (!released) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
+            launchInto(displayId, newPkg, sh)
+            if (!released && pkg == newPkg) onLaunched(displayId, old, newPkg)
         }.start()
+        return true
+    }
+
+    /**
+     * B không vào được ô (app tự rơi về display 0) mà A vẫn ở đỉnh màn ảo ⇒ host nhận lại A làm app của ô, KHÔNG lệnh
+     * nào (A chưa từng rời màn ảo). Gọi trên luồng chính, trước khi lớp tạm trả ô về A.
+     */
+    fun adoptShown(shownPkg: String) {
+        val v = vd ?: return
+        val sh = shell ?: return
+        if (released) return
+        pkg = shownPkg
+        SlotLiveProbe.watch(probeKey, shownPkg, v.display.displayId, sh) { onAppClosed() }
+    }
+
+    /** F1 dòng 9 — Ô ⇄ TOÀN MÀN (K7 ra, K8 về; T-M2/T-M6 [ĐO]): trạng thái + thẻ + lệnh ở [SlotFullscreen]. */
+    private val full = SlotFullscreen(this, surface, probeKey, { p -> !released && pkg == p }, ::onAppClosed, ::reopen) { returnFromFull() }
+
+    /** Kéo app của ô ra toàn màn display 0 (K7 qua rào). `false` = ô chưa sẵn, 0 lệnh. [done] (luồng chính): đã tách được? */
+    fun detachToFull(sig: String?, homeComps: List<String>, done: (Boolean) -> Unit): Boolean {
+        val id = vd?.display?.displayId ?: return false
+        val sh = shell ?: return false
+        val p = pkg ?: return false
+        if (released || !launched) return false
+        full.detach(id, p, sh, sig, homeComps, done)
+        return true
+    }
+
+    /** Màn nhà hiện lại / chạm thẻ ⇒ K8 đưa app đang toàn màn về ô (không về được ⇒ golden; app đã đóng ⇒ thẻ "đã đóng"). */
+    fun returnFromFull() {
+        val id = vd?.display?.displayId ?: return
+        val sh = shell ?: return
+        val p = pkg ?: return
+        if (!released) full.bringBack(id, p, sh)
+    }
+
+    /**
+     * A5 — ô này làm chỗ dàn dựng BEHIND-HOME (R0.3) được không: có màn ảo, đã mở app, chưa nhả; `alive` = [SlotLiveProbe]
+     * đã đo thấy app sống. `null` = không có màn ảo / chưa mở / đã nhả. Chọn ô là việc của `BehindHomePlan.stagingSlot`.
+     */
+    fun stage(): BehindHomePlan.Stage? {
+        val id = vd?.display?.displayId ?: return null
+        val p = pkg ?: return null
+        if (released || !launched) return null
+        return BehindHomePlan.Stage(slot, id, p, width.toLong() * height, SlotLiveProbe.seenAlive(probeKey))
     }
 
     /** App đang có tiến trình chưa — `pidof` rỗng ⇒ chưa lên (dùng cho retry mở-lại trên cold boot, #12). */
@@ -388,7 +478,8 @@ class VdAppHost(
         gesture.reset()
         SlotLiveProbe.unwatch(probeKey)
         val p = pkg; val sh = shell
-        if (wasLaunched && p != null && sh != null) Thread { runCatching { sh("am force-stop $p") } }.start()
+        // App đang mở TOÀN MÀN (F1 dòng 9) không còn ở ô: nó là app người dùng đang thấy trên display 0 ⇒ nhả ô không giết nó.
+        if (wasLaunched && p != null && sh != null && !full.isDetached) Thread { runCatching { sh("am force-stop $p") } }.start()
         vdDisplayId = null
         SlotVdOwner.release(owner, slot)   // gỡ đăng ký + VirtualDisplay.release() nằm trong VdLease.free()
         vd = null

@@ -1,0 +1,2 @@
+T0=10-02 10:34:24.000 tap=(492, 454, 588, 550) pids_before={'com.waze': '', 'com.google.android.apps.youtube.music': ''} pids_after={'com.waze': '', 'com.google.android.apps.youtube.music': ''} same_stack=True
+shell-like lines in logcat: 0

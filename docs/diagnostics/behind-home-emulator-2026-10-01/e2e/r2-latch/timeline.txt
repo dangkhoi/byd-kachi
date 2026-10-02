@@ -1,0 +1,15 @@
+09:34:18 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:19 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:20 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:21 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:22 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:23 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:24 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:25 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:26 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:27 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:28 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:29 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:30 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:31 top0=com.waze/com.waze.FreeMapAppActivity
+09:34:32 top0=com.waze/com.waze.FreeMapAppActivity

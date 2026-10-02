@@ -1,0 +1,20 @@
+--------- beginning of main
+--------- beginning of system
+10-02 10:37:35.385 13665 13665 I KachiReady: proc interactive=false t=402 so=- wall=10:37:35.385
+10-02 10:37:35.429 13665 13697 I KachiReady: checking src=early t=449 so=- wall=10:37:35.428
+10-02 10:37:35.512 13665 13697 I KachiReady: up src=early t=532 so=- wall=10:37:35.511
+10-02 10:37:35.518 13665 13697 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=87ms t=537 so=- wall=10:37:35.518
+10-02 10:37:35.617 13665 13697 I KachiReady: window adb_allowed_connection_time=default t=637 so=- wall=10:37:35.616
+10-02 10:37:35.789 13665 13665 I KachiTest: hooks attached
+10-02 10:37:40.617 13665 13693 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 10:37:40.621 13665 13693 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=190816385, leo=163604535, con của lượt chữa=false)
+10-02 10:37:45.108 13665 13665 I KachiReady: screen_on src=home t=10128 so=+0 wall=10:37:45.108
+10-02 10:37:45.109 13665 13665 I KachiReady: home adopt t=10129 so=+1 wall=10:37:45.109
+10-02 10:37:45.135 13665 13697 I KachiReady: keys=BOUND t=10146 so=+18 wall=10:37:45.128
+10-02 10:37:45.391 13665 13693 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 10:37:45.491 13665 13665 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 10:37:45.497 13665 13665 I KachiReady: tile vd=180 slot=0 t=10517 so=+389 wall=10:37:45.496
+10-02 10:37:45.498 13665 13665 I KachiReady: summary screen_on->tile=390 proc->up=532 src=early keys=BOUND
+10-02 10:37:45.498 13665 13665 I KachiVd : tạo màn ảo kachi-slot-0-1790912265490 — ô 0 · display 180 · chủ ws@209270731 · đang sống 1
+10-02 10:37:45.594 13665 13886 I KachiTrip: wait BOOT (streak=1 home=[com.byd.launcher/com.byd.clusternav.launcher.KachiHome, com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity])
+10-02 10:38:07.177 13665 13886 I KachiTrip: run trip=n39.t190841666 tries=1 -> RAN in=21843ms saved=true :: ready after 20761ms | music:OTHER_PLAYING

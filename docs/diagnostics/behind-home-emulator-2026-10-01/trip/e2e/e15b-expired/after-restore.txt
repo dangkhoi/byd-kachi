@@ -1,0 +1,4 @@
+10-02 07:13:27.750 32250 32391 I KachiReady: up src=f4 t=220617 so=+210168 wall=07:13:27.750
+10-02 07:13:27.915 32250 32282 I KachiReady: screen_on src=up t=220782 so=+0 wall=07:13:27.915
+10-02 07:13:27.928 32250  1686 I KachiTrip: close trip=n39.t178373713 code=EXPIRED tries=1 saved=true
+10-02 07:13:28.245 32250 32250 I KachiReady: summary screen_on->tile=330 proc->up=220617 src=f4 keys=BOUND

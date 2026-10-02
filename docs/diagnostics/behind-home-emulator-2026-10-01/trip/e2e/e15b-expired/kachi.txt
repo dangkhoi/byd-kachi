@@ -1,0 +1,23 @@
+--------- beginning of main
+--------- beginning of system
+10-02 07:09:47.423 32250 32250 I KachiReady: proc interactive=false t=288 so=- wall=07:09:47.423
+10-02 07:09:47.484 32250 32282 I KachiReady: checking src=early t=348 so=- wall=07:09:47.484
+10-02 07:09:53.632 32250 32282 W KachiReady: ledger forget src=early ok=true
+10-02 07:09:53.633 32250 32282 I KachiReady: needs lost src=early t=6500 so=- wall=07:09:53.632
+10-02 07:09:53.633 32250 32282 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> AWAITING_APPROVAL in=6149ms t=6501 so=- wall=07:09:53.633
+10-02 07:09:53.635 32250 32282 W KachiReady: ledger forget src=early ok=true
+10-02 07:09:53.636 32250 32278 I KachiReady: deny BACKGROUND caller=kachi-a11y-lifecycle state=NEEDS_APPROVAL total=2 t=6503 so=- wall=07:09:53.635
+10-02 07:09:53.636 32250 32296 I KachiReady: deny BACKGROUND caller=kachi-window-shell state=NEEDS_APPROVAL total=2 t=6503 so=- wall=07:09:53.635
+10-02 07:09:53.636 32250 32278 W A11yLifecycle: dumpsys accessibility qua dadb hỏng: NOT_APPROVED
+10-02 07:09:53.641 32250 32278 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=178200405, leo=163604535, con của lượt chữa=false)
+10-02 07:09:57.582 32250 32250 I KachiReady: screen_on src=broadcast t=10449 so=+0 wall=07:09:57.582
+10-02 07:09:57.591 32250 32278 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 07:09:59.851 32250 32250 I KachiReady: card show variant=LOST t=12718 so=+2269 wall=07:09:59.851
+10-02 07:10:04.869 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:10:30.910 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:10:56.974 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:11:23.063 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:11:49.141 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:12:15.317 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:12:41.334 32250 32391 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:13:07.458 32250 32391 W KachiReady: ledger forget src=f4 ok=true

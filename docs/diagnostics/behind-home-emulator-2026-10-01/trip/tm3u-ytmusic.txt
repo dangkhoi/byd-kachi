@@ -1,0 +1,59 @@
+T0=10-02 06:17:23.000
+--- [start] 06:17:23.306
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=false 
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+$ MS uri com.google.android.apps.youtube.music https://music.youtube.com/watch?v=9bZkp7q19f0
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Despacito
+  -> uri sent to com.google.android.apps.youtube.music
+--- [after-uri] 06:17:38.732
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=false 
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+$ MS search com.google.android.apps.youtube.music 'son tung mtp'
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+  -> search sent to com.google.android.apps.youtube.music
+--- [after-search] 06:17:54.371
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=false 
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+$ MS uri com.google.android.apps.youtube.music https://music.youtube.com/playlist?list=RDCLAK5uy_kmPRjHDECIcuVwnKsx2Ng7fyNgFKWNJFs
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+  -> uri sent to com.google.android.apps.youtube.music
+--- [after-uri-playlist] 06:18:09.885
+Stack id=0 displayId=0 userId=0
+  taskId=2348: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=162 displayId=107 userId=0
+  taskId=2350: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=166 displayId=107 userId=0
+  taskId=2355: com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.activities.MusicActivity userId=0 visible=false 
+session pkg=com.google.android.apps.youtube.music state=3 actions=2600887 title=Gangnam Style
+--- events

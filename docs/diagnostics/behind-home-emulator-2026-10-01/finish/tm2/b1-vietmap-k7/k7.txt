@@ -1,0 +1,2 @@
+am start --display 0 --windowingMode 1 -f 0x20000000 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n 'vn.vietmap.live/.MainActivity'
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x20000000 cmp=vn.vietmap.live/.MainActivity }

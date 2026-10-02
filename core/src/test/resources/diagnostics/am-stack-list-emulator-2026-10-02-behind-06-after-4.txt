@@ -1,0 +1,9 @@
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=68 displayId=0 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=false 
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 

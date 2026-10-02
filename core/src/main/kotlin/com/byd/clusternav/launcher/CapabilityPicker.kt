@@ -64,8 +64,8 @@ object CapabilityPicker {
     /** Câu phụ của khối Launcher: nói VIỆC, không nói kiến trúc (cùng luật [GROUPS_NOTE]). */
     val LAUNCHER_NOTE: String
         get() = Strings.t(
-            "Không gửi lệnh nào xuống xe: mở danh sách ứng dụng, mở Cài đặt — đúng hai nút đang ở thanh trên.",
-            "These send nothing to the car: open the app list, open Settings — the same two buttons as the top bar.",
+            "Không gửi lệnh nào xuống xe: mở danh sách ứng dụng, mở Cài đặt, nói với xe, khối lối tắt ứng dụng.",
+            "These send nothing to the car: open the app list, open Settings, talk to the car, the app-shortcut block.",
         )
 
     /**

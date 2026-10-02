@@ -1,0 +1,20 @@
+--------- beginning of main
+--------- beginning of system
+10-02 07:01:25.875 24937 24937 I KachiReady: proc interactive=false t=260 so=- wall=07:01:25.875
+10-02 07:01:25.937 24937 24963 I KachiReady: checking src=early t=324 so=- wall=07:01:25.936
+10-02 07:01:26.050 24937 24963 I KachiReady: up src=early t=436 so=- wall=07:01:26.049
+10-02 07:01:26.058 24937 24963 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=121ms t=445 so=- wall=07:01:26.058
+10-02 07:01:26.127 24937 24959 I A11yLifecycle: tat-may: không kẹt (bound=true, binding=false)
+10-02 07:01:26.134 24937 24959 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177766275, leo=163604535, con của lượt chữa=false)
+10-02 07:01:26.150 24937 24963 I KachiReady: window adb_allowed_connection_time=default t=537 so=- wall=07:01:26.150
+10-02 07:01:35.334 24937 24937 I KachiReady: screen_on src=broadcast t=9720 so=+0 wall=07:01:35.333
+10-02 07:01:35.341 24937 24963 I KachiReady: keys=BOUND t=9728 so=+8 wall=07:01:35.341
+10-02 07:01:35.369 24937 24959 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 07:01:35.497 24937 25065 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 07:01:35.736 24937 25064 I KachiBehind: recovery dấu=1 nổi-lên=true giữ=1
+10-02 07:01:36.447 24937 24937 I KachiReady: home adopt t=10834 so=+1114 wall=07:01:36.446
+10-02 07:01:36.827 24937 24937 I KachiReady: tile vd=120 slot=0 t=11214 so=+1494 wall=07:01:36.827
+10-02 07:01:36.827 24937 24937 I KachiReady: summary screen_on->tile=1495 proc->up=436 src=early keys=BOUND
+--------- beginning of crash
+10-02 07:01:57.243 24937 25064 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=120 C=vn.vietmap.live) → đang chạy (pidof), 0 lệnh đổi cửa sổ
+10-02 07:02:12.390 24937 25065 I KachiTrip: run trip=n39.t177872165 tries=1 -> RAN in=36985ms saved=true :: ready after 20473ms | music:com.google.android.apps.youtube.music:ALREADY_RUNNING:open-only (no session)

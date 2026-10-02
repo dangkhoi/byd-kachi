@@ -1,6 +1,14 @@
 package com.byd.clusternav.launcher
 
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
 import com.byd.clusternav.AppContainer
+import com.byd.clusternav.R
+import com.byd.clusternav.launcher.behind.BehindHomePlan
+import com.byd.clusternav.launcher.behind.BehindHomeRunner
+import com.byd.clusternav.launcher.behind.BehindHomeSequence
+import com.byd.clusternav.modules.clustercast.ClusterProfile
 
 /**
  * ═══ GLUE INTENT THEO-Ô của màn chính — TÁCH KHỎI [KachiHomeActivity] (trần 500 dòng) ═══════════════════════
@@ -29,7 +37,60 @@ internal class KachiHomeSlots(
     private val shell: () -> ((String) -> String)?,
     /** Cửa duy nhất đẩy việc xuống thread nền của màn chính (đã huỷ ⇒ tự bỏ) — xem `KachiHomeActivity.submitBg`. */
     private val submitBg: (() -> Unit) -> Boolean,
+    /** Khung ô (lateinit ở màn chính) — chỉ để trả host về app đang hiện khi lượt đặt tạm không thành. */
+    private val workspace: () -> WorkspaceView,
+    /** Context ỨNG DỤNG (không phải Activity — lớp này không giữ màn chính): runner BEHIND-HOME + chuỗi lý do. */
+    private val app: Context,
 ) {
+
+    /** BEHIND-HOME (spec shortcuts-autostart R0) — bên thi hành dùng chung; mutex là luồng `kachi-behind` của tiến trình. */
+    private val behind by lazy { BehindHomeRunner(app, shell) }
+
+    /**
+     * ĐẶT TẠM [pkg] vào ô [index] (0-based) — giọng nói *"mở X vào ô n"* (và lối tắt kiểu *Ô n*, nhóm B). Đính chính
+     * owner 01/10: KHÔNG ghi `slot_n`. Cùng hai nửa với [assignApp] (state qua ViewModel + side-effect cửa sổ), khác
+     * đúng một chỗ: lớp tạm thay cho lớp lưu, và ô đang có app khác thì app cũ ra sau màn nhà ([evictBehind]) thay vì
+     * bị force-stop. `false` = ô ngoài bố cục đang hiện.
+     */
+    fun placeTemporary(index: Int, pkg: String): Boolean {
+        drawer().close()
+        if (!viewModel.placeTemporary(index, pkg)) return false
+        windows().placeApp(pkg, index, fresh = true)   // chưa có bộ chiếu ⇒ lời nhắc kênh (READY-AT-HOME); có ⇒ no-op
+        return true
+    }
+
+    /**
+     * Host của ô [index] vừa mở [b] vào màn ảo [vd] TRÊN [a] (đặt tạm) ⇒ đẩy [a] ra sau màn nhà (R0.1). B không vào
+     * được ô mà A còn ở đỉnh ⇒ host nhận lại A + lớp tạm trả ô về A + một dòng lý do (§4.4.5).
+     */
+    fun evictBehind(index: Int, vd: Int, a: String, b: String) {
+        behind.evict(vd, a, b) { out ->
+            if (out.result != BehindHomeSequence.Result.B_NOT_IN_SLOT) return@evict
+            Log.i(BehindHomeRunner.TAG, "ô $index: $b không vào được ô — trả ô về $a")
+            runCatching { workspace().hostAt(index)?.adoptShown(a) }
+            viewModel.revertTemporary(index, a)
+            Toast.makeText(app, app.getString(R.string.kachi_sc_place_failed, appLabel(b)), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * R0.3 — chạy [pkg] PHÍA SAU màn nhà qua một ô đang sống trong [stages] (lối tắt kiểu *Chạy ngầm*, nhóm B; chuyến lên
+     * xe, nhóm C). `null` = không có ô sống nào ⇒ 0 lệnh, bên gọi nói `kachi_sc_no_stage` (§4.2.4). [done] chạy trên
+     * luồng chính với kết quả của chuỗi (đã có dòng log `KachiBehind`). Cùng runner (mutex `kachi-behind`) với [evictBehind].
+     */
+    fun startBehind(pkg: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit): BehindHomePlan.Stage? =
+        behind.startBehind(pkg, stages, done)
+
+    /**
+     * F1 · R1.5 dòng 9 — lối tắt *Toàn màn* cho app ĐANG ở ô [index]: K7 qua rào (màn nhà Kachi đang hiện; dấu hiệu camera
+     * của đời xe nếu đã biết — `ClusterProfile.cameraSignature`). Về lại ô khi màn nhà hiện lại ([WorkspaceView.returnDetached]).
+     * `false` = ô chưa sẵn sàng, 0 lệnh. [done] (luồng chính): đã ra toàn màn chưa.
+     */
+    fun detachToFull(index: Int, done: (Boolean) -> Unit): Boolean = workspace().detachToFull(
+        index, ClusterProfile.resolveCached(app).cameraSignature, DefaultHome.shownComponents(app), done,
+    )
+
+    private fun appLabel(pkg: String): String = InstalledApps.labelOf(app, pkg) ?: pkg
 
     fun assignApp(index: Int, pkg: String) {
         drawer().close()
@@ -48,7 +109,7 @@ internal class KachiHomeSlots(
     }
 
     fun reopenApp(index: Int) {
-        (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows().placeApp(it.pkg, index) }
+        (viewModel.uiState.value.effectiveWorkspace.slots.getOrNull(index) as? SlotContent.App)?.let { windows().placeApp(it.pkg, index) }
     }
 
     /**
@@ -69,7 +130,7 @@ internal class KachiHomeSlots(
 
     fun clearSlot(index: Int) {
         // Đóng cửa sổ NGAY cho phản hồi tức thì; registry do `reconcileLocations` (render) gỡ theo state (evict).
-        (viewModel.uiState.value.slots.getOrNull(index) as? SlotContent.App)?.let { windows().closeApp(it.pkg) }
+        (viewModel.uiState.value.effectiveWorkspace.slots.getOrNull(index) as? SlotContent.App)?.let { windows().closeApp(it.pkg) }
         viewModel.clearSlot(index)   // state+persist → collector: workspace.render + reconcileLocations
     }
 

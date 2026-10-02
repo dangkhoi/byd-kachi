@@ -1,0 +1,10 @@
+before: com.google.android.deskclock|S1,com.example.notinstalled|F,com.waze|F,com.google.android.apps.youtube.music|B
+after chip Waze=Chạy ngầm: com.google.android.deskclock|S1,com.example.notinstalled|F,com.waze|B,com.google.android.apps.youtube.music|B
+after ▼ Đồng hồ: com.example.notinstalled|F,com.google.android.deskclock|S1,com.waze|B,com.google.android.apps.youtube.music|B
+picker: Chọn ứng dụng cho lối tắt (84, 72, 1836, 113)
+picker: Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · chạm nền để đóng (84, 113, 1836, 162)
+picker: Áp dụng (4) (1685, 936, 1836, 1008)
+chrome tile: {'desc': '', 'text': 'Chrome', 'cls': 'android.widget.TextView', 'b': (390, 297, 648, 337), 'click': False}
+apply btn: Áp dụng (5)
+after picker apply: com.example.notinstalled|F,com.google.android.deskclock|S1,com.waze|B,com.google.android.apps.youtube.music|B,com.android.chrome|F
+section title: ['Lối tắt ứng dụng (5)']

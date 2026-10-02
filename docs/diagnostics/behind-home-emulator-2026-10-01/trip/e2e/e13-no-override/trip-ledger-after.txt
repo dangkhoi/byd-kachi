@@ -1,0 +1,2 @@
+<string name="kachi_trip_ledger">v=1;trip=n39.t177766275;phase=FIRED;tries=1</string>
+<string name="kachi_trip_last">v=1;trip=n39.t177766275;code=RAN;at=1790899226714;d=ready after 21115ms | music:com.google.android.apps.youtube.music:ALREADY_RUNNING:open-only (no session)</string>

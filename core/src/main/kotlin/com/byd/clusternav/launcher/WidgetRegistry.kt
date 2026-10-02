@@ -34,6 +34,10 @@ object WidgetRegistry {
         // hình nền, nhưng chạy ĐỘC LẬP: người dùng có thể muốn một khung ảnh trong ô mà KHÔNG đổi nền màn hình.
         // Kind LOCAL vì nguồn là tệp trên máy, không phải dữ liệu xe (nên off-car vẫn chạy đầy đủ).
         WidgetDef("w_photos", "Trình chiếu ảnh",     "ic-photo", WidgetKind.LOCAL, "Photo slideshow"),
+        // F1 (owner 01/10, spec kachi-launcher-shortcuts-autostart R1.3) — lưới icon lối tắt ứng dụng, CÙNG danh sách
+        // với khối trên thanh nút (`app_shortcuts` theo hồ sơ). LOCAL: không đọc gì của xe. Nhãn khác khối thanh nút
+        // ("Lối tắt ứng dụng") để hai mục không thành cặp nhãn trùng ([CapabilityCatalog.collidingLabels]).
+        WidgetDef("w_apps",   "Lưới lối tắt app",    "ic-apps",  WidgetKind.LOCAL, "App shortcut grid"),
     )
 
     fun byId(id: String): WidgetDef? = ALL.firstOrNull { it.id == id }

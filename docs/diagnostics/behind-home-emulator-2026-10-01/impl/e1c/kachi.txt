@@ -1,0 +1,5 @@
+--------- beginning of main
+10-02 04:50:15.840 14709 14709 I KachiTest: cmd cmd=say text=mở đồng hồ vào ô 1
+--------- beginning of system
+10-02 04:50:17.617 14709 14709 I KachiTest: reply cmd=say ok=true ms=1720 file=/storage/emulated/0/Android/data/com.byd.launcher/files/test/20261002-045017-567-say.json json={"ok":true,"cmd":"say","ms":1720,"said":"mở đồng hồ vào ô 1","auto_confirm":false,"intents":[{"kind":"OpenApp","preview":"Mở ứng dụng Đồng hồ vào ô 1"}],"replies":["✓ Mở ứng dụng Đồng hồ vào ô 1"],"needs_confirm":[],"wait_ms":372}
+10-02 04:50:21.407 14709 15370 I KachiBehind: evict vd=91 A=vn.vietmap.live B=com.google.android.deskclock → MOVED task=2294 S=139 top0=0 kiểm=OK gỡ=1 dọn-trước=0

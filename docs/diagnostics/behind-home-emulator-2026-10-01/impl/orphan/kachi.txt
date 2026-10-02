@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-02 04:41:38.705 12719 12719 I KachiBehind: anchor mồ côi của tiến trình trước bị resume — tự gỡ, không tắt tính năng
+10-02 04:41:39.654 12719 12761 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0

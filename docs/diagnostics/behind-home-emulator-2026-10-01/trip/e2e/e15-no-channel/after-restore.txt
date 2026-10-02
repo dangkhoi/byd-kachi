@@ -1,0 +1,14 @@
+--------- beginning of main
+10-02 07:08:23.985 30577 30718 I KachiReady: ledger markUp fp=<redacted> win=604800000 ok=true
+10-02 07:08:23.985 30577 30718 I KachiReady: up src=f4 t=90103 so=+79705 wall=07:08:23.985
+10-02 07:08:24.218 30577 30577 I KachiReady: home f4 t=90337 so=+79939 wall=07:08:24.218
+10-02 07:08:24.221 30577 30609 I KachiReady: window adb_allowed_connection_time=default t=90340 so=+79942 wall=07:08:24.221
+10-02 07:08:24.242 30577 30609 I KachiReady: screen_on src=up t=90360 so=+0 wall=07:08:24.242
+10-02 07:08:24.261 30577 30609 I KachiReady: keys=BOUND t=90379 so=+19 wall=07:08:24.260
+10-02 07:08:24.291 30577 31346 I KachiTrip: wait HOME_SCREEN (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+--------- beginning of system
+10-02 07:08:24.535 30577 30577 I KachiReady: tile vd=124 slot=0 t=90653 so=+293 wall=07:08:24.535
+10-02 07:08:24.535 30577 30577 I KachiReady: summary screen_on->tile=294 proc->up=90103 src=f4 keys=BOUND
+10-02 07:08:25.566 30577 31346 I KachiTrip: wait SLOTS (streak=1 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 07:08:36.413 30577 31712 I KachiBehind: behind X=com.waze qua ô 0 (vd=124 C=vn.vietmap.live) chờ=0ms · evict vd=124 A=com.waze B=vn.vietmap.live → MOVED task=2410 S=198 top0=0 kiểm=OK gỡ=1 dọn-trước=0
+10-02 07:08:36.427 30577 31346 I KachiTrip: run trip=n39.t178200405 tries=1 -> RAN in=12138ms saved=true :: ready after 89251ms | com.waze:bg-MOVED

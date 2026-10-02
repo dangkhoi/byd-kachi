@@ -1,0 +1,3 @@
+--------- beginning of main
+--------- beginning of system
+10-02 11:04:32.071 23734 24602 I KachiBehind: evict vd=187 A=vn.vietmap.live B=com.waze → MOVED task=2676 S=351 top0=0 kiểm=OK gỡ=1 dọn-trước=0

@@ -1,0 +1,3 @@
+T0=10-02 10:26:29.000 pkg=vn.vietmap.live comp=vn.vietmap.live/.MainActivity mech=intent vd=173 task=2613 pids_before={'vn.vietmap.live': '3625', 'com.byd.launcher': '3401'}
+pids_after_detach={'vn.vietmap.live': '3625', 'com.byd.launcher': '3401'}
+T8=10-02 10:26:37.000 k8_vd=173 pids_after_k8={'vn.vietmap.live': '3625', 'com.byd.launcher': '3401'}

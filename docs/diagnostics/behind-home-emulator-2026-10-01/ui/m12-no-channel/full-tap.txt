@@ -1,0 +1,5 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:45:14.586 31527 31527 I KachiShortcut: tap com.waze F usable=false stages=0 -> OpenFull(reason=null)
+
+    mResumedActivity: ActivityRecord{1ca7855 u0 com.waze/.MainActivity t2325}

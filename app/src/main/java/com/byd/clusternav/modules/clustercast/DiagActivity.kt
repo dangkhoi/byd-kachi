@@ -207,6 +207,7 @@ class DiagActivity : Activity() {
             appendLine(com.byd.clusternav.EarlyShellChannel.describe())
             appendLine("dấu duyệt: ${com.byd.clusternav.ShellReadiness.ledger().javaClass.simpleName} · chặn nền: ${com.byd.clusternav.KachiReadyLog.denyCount()}")
             appendLine(com.byd.clusternav.KachiReadyLog.summaryForDiag())
+            appendLine(com.byd.clusternav.launcher.trip.TripStart.describe(applicationContext))   // F2/F3 — chuyến lên xe gần nhất
 
             appendLine()
             appendLine("── phím vô-lăng · nhật ký gắn dịch vụ Hỗ trợ ──")

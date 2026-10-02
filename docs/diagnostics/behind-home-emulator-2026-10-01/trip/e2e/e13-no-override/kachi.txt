@@ -1,0 +1,19 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:59:39.993 23633 23633 I KachiReady: proc interactive=false t=434 so=- wall=06:59:39.992
+10-02 06:59:40.096 23633 23659 I KachiReady: checking src=early t=539 so=- wall=06:59:40.096
+10-02 06:59:40.205 23633 23659 I KachiReady: up src=early t=648 so=- wall=06:59:40.205
+10-02 06:59:40.208 23633 23659 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=111ms t=651 so=- wall=06:59:40.208
+10-02 06:59:40.354 23633 23655 I A11yLifecycle: tat-may: không kẹt (bound=true, binding=false)
+10-02 06:59:40.362 23633 23659 I KachiReady: window adb_allowed_connection_time=default t=805 so=- wall=06:59:40.362
+10-02 06:59:40.366 23633 23655 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177658136, leo=163604535, con của lượt chữa=false)
+10-02 06:59:49.108 23633 23633 I KachiReady: screen_on src=broadcast t=9551 so=+0 wall=06:59:49.108
+10-02 06:59:49.137 23633 23655 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 06:59:49.138 23633 23659 I KachiReady: keys=BOUND t=9581 so=+30 wall=06:59:49.138
+10-02 06:59:49.332 23633 23766 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 06:59:49.488 23633 23764 I KachiBehind: recovery dấu=1 nổi-lên=true giữ=1
+10-02 06:59:50.175 23633 23633 I KachiReady: home adopt t=10618 so=+1067 wall=06:59:50.174
+10-02 06:59:50.491 23633 23633 I KachiReady: tile vd=119 slot=0 t=10935 so=+1384 wall=06:59:50.491
+10-02 06:59:50.492 23633 23633 I KachiReady: summary screen_on->tile=1384 proc->up=648 src=early keys=BOUND
+10-02 07:00:11.067 23633 23764 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=119 C=vn.vietmap.live) → đang chạy (pidof), 0 lệnh đổi cửa sổ
+10-02 07:00:26.717 23633 23766 I KachiTrip: run trip=n39.t177766275 tries=1 -> RAN in=37523ms saved=true :: ready after 21115ms | music:com.google.android.apps.youtube.music:ALREADY_RUNNING:open-only (no session)

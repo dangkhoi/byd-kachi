@@ -1,0 +1,2 @@
+Broadcasting: Intent { act=com.byd.launcher.TEST flg=0x400000 pkg=com.byd.launcher (has extras) }
+Broadcast completed: result=0, data="{"ok":true,"cmd":"say","ms":1021,"said":"mở đồng hồ vào ô 1","auto_confirm":false,"intents":[{"kind":"OpenApp","preview":"Mở ứng dụng Đồng hồ vào ô 1"}],"replies":["✓ Mở ứng dụng Đồng hồ vào ô 1"],"needs_confirm":[],"wait_ms":383}"

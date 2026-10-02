@@ -1,0 +1,113 @@
+## 23:55:30 P1 — am start <app>; am start HOME (as uid 2000)
+$ cat p1.sh
+C=com.google.android.deskclock/com.android.deskclock.DeskClock
+echo "pid_before=$(pidof com.google.android.deskclock)"
+T=$(date '+%m-%d %H:%M:%S.000'); echo "T0=$T"
+su 2000 am start -n $C
+su 2000 am start -a android.intent.action.MAIN -c android.intent.category.HOME
+sleep 4
+echo "pid_after=$(pidof com.google.android.deskclock)"
+am stack list | grep -E 'Stack id|taskId'
+dumpsys activity activities | grep -E 'mResumedActivity|mFocusedApp'
+echo '--- events'
+logcat -b events -d -v threadtime -T "$T" | grep -E ' (am_|wm_)' | grep -vE 'am_pss|am_mem|am_low_memory|am_meminfo'
+$ sh p1.sh
+pid_before=
+T0=10-01 23:55:29.000
+Starting: Intent { cmp=com.google.android.deskclock/com.android.deskclock.DeskClock }
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] }
+Warning: Activity not started, its current task has been brought to the front
+pid_after=11298
+Stack id=57 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2064: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+--- events
+10-01 23:55:29.648  6254  6288 I am_pause_activity: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,userLeaving=false]
+10-01 23:55:29.651 10774 10774 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-01 23:55:29.659  6254  7609 I am_add_to_stopping: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,completePauseLocked]
+10-01 23:55:29.666  6254  6274 I am_stop_activity: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-01 23:55:29.674  6254  6272 I am_pause_activity: [0,267202608,vn.vietmap.live/.MainActivity,userLeaving=false]
+10-01 23:55:29.676 11010 11010 I am_on_top_resumed_lost_called: [0,vn.vietmap.live.MainActivity,topStateChangedWhenResumed]
+10-01 23:55:29.679 11010 11010 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-01 23:55:29.681  6254  7609 I am_add_to_stopping: [0,267202608,vn.vietmap.live/.MainActivity,completePauseLocked]
+10-01 23:55:29.687  6254  6274 I am_stop_activity: [0,267202608,vn.vietmap.live/.MainActivity]
+10-01 23:55:29.699 10774 10774 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,sleeping]
+10-01 23:55:29.743 11010 11010 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-01 23:55:29.762  6254 10188 I wm_stack_created: 57
+10-01 23:55:29.763  6254 10188 I wm_task_created: [2064,57]
+10-01 23:55:29.764  6254 10188 I wm_task_moved: [2064,0,2147483647]
+10-01 23:55:29.765  6254 10188 I am_focused_stack: [0,0,57,0,reuseOrNewTask]
+10-01 23:55:29.765  6254 10188 I am_create_task: [0,2064]
+10-01 23:55:29.765  6254 10188 I am_create_activity: [0,256667677,2064,com.google.android.deskclock/com.android.deskclock.DeskClock,NULL,NULL,NULL,268435456]
+10-01 23:55:29.765  6254 10188 I wm_task_moved: [2064,0,2147483647]
+10-01 23:55:29.774  6254  6274 I am_uid_running: 10139
+10-01 23:55:29.794  6254  6281 I am_proc_start: [0,11298,10139,com.google.android.deskclock,activity,{com.google.android.deskclock/com.android.deskclock.DeskClock}]
+10-01 23:55:29.813  6254 10981 I am_new_intent: [0,212145040,2062,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,android.intent.action.MAIN,NULL,NULL,268435712]
+10-01 23:55:29.814  6254 10981 I wm_task_moved: [2062,0,2147483647]
+10-01 23:55:29.814  6254 10981 I am_focused_stack: [0,0,0,57,bringingFoundTaskToFront]
+10-01 23:55:29.814  6254 10981 I wm_task_moved: [2062,0,2147483647]
+10-01 23:55:29.814  6254 10981 I am_set_resumed_activity: [0,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,bringingFoundTaskToFront]
+10-01 23:55:29.814  6254 10981 I am_set_resumed_activity: [0,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,resumeTopActivityInnerLocked]
+10-01 23:55:29.815  6254 10981 I am_add_to_stopping: [0,256667677,com.google.android.deskclock/com.android.deskclock.DeskClock,makeInvisible]
+10-01 23:55:29.815  6254 10981 I am_resume_activity: [0,212145040,2062,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-01 23:55:29.816  6254 10981 I am_pause_activity: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,userLeaving=false]
+10-01 23:55:29.817  6254 10981 I am_task_to_front: [0,2062]
+10-01 23:55:29.841 10774 10774 I am_on_restart_called: [0,com.byd.clusternav.launcher.KachiHome,performRestartActivity]
+10-01 23:55:29.847 10774 10774 I am_on_start_called: [0,com.byd.clusternav.launcher.KachiHome,handleStartActivity]
+10-01 23:55:29.861  6254  6270 I am_proc_bound: [0,11298,com.google.android.deskclock]
+10-01 23:55:29.867 10774 10774 I am_on_resume_called: [0,com.byd.clusternav.launcher.KachiHome,RESUME_ACTIVITY]
+10-01 23:55:29.867 10774 10774 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topWhenResuming]
+10-01 23:55:29.868 10774 10774 I am_on_top_resumed_lost_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-01 23:55:29.868 10774 10774 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-01 23:55:29.868  6254  6646 I am_add_to_stopping: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,completePauseLocked]
+10-01 23:55:29.870  6254  6274 I am_stop_activity: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-01 23:55:29.917  6254  6272 I am_resume_activity: [0,267202608,2063,vn.vietmap.live/.MainActivity]
+10-01 23:55:29.955 11010 11010 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-01 23:55:29.959 11010 11010 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-01 23:55:29.960 11010 11010 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-01 23:55:29.968  6254  6279 I am_activity_launch_time: [0,212145040,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,195]
+10-01 23:55:29.986  6254  6272 I am_pause_activity: [0,267202608,vn.vietmap.live/.MainActivity,userLeaving=false]
+10-01 23:55:30.007 10774 10774 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,sleeping]
+10-01 23:55:30.027  6254  6270 I am_add_to_stopping: [0,267202608,vn.vietmap.live/.MainActivity,makeInvisible]
+10-01 23:55:30.047 11010 11010 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-01 23:55:30.048  6254  6274 I am_stop_activity: [0,267202608,vn.vietmap.live/.MainActivity]
+10-01 23:55:30.068 11010 11010 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-01 23:55:32.277  6254  6280 I am_kill : [0,10840,com.byd.launcher:wake,200,stop com.byd.launcher]
+10-01 23:55:32.281  6254  6280 I am_schedule_service_restart: [0,com.byd.launcher/com.byd.clusternav.launcher.voice.VoiceWakeService,1000]
+10-01 23:55:32.281  6254  6280 I am_uid_stopped: 10163
+10-01 23:55:32.281  6254  6280 I am_kill : [0,10774,com.byd.launcher,50,stop com.byd.launcher]
+10-01 23:55:32.287  6254  6280 I am_schedule_service_restart: [0,com.byd.launcher/com.byd.clusternav.VoiceKeyKeepAliveService,10994]
+10-01 23:55:32.287  6254  6280 I am_schedule_service_restart: [0,com.byd.launcher/com.byd.clusternav.modules.navaccess.NavAccessibilityService,20994]
+10-01 23:55:32.287  6254  6280 I am_schedule_service_restart: [0,com.byd.launcher/com.byd.clusternav.modules.clustercast.FloatingBubbleService,30994]
+10-01 23:55:32.287  6254  6280 I am_schedule_service_restart: [0,com.byd.launcher/com.byd.clusternav.NavNotificationListener,40994]
+10-01 23:55:32.287  6254  6280 I am_finish_activity: [0,212145040,2062,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,proc died without state saved]
+10-01 23:55:32.292  6254  6280 I wm_task_removed: [2062,removeAppToken: last token]
+10-01 23:55:32.292  6254  6280 I am_remove_task: [2062,0]
+10-01 23:55:32.292  6254  6280 I wm_task_removed: [2062,removeTask]
+10-01 23:55:32.295  6254  6280 I am_restart_activity: [0,256667677,2064,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-01 23:55:32.302  6254  6280 I am_set_resumed_activity: [0,com.google.android.deskclock/com.android.deskclock.DeskClock,minimalResumeActivityLocked]
+10-01 23:55:32.304  6254  6280 I am_pause_activity: [0,256667677,com.google.android.deskclock/com.android.deskclock.DeskClock,userLeaving=false]
+10-01 23:55:32.345  6254  6272 I am_destroy_activity: [0,267202608,2063,vn.vietmap.live/.MainActivity,finish-imm:finishAllActivitiesLocked]
+10-01 23:55:32.347  6254  6274 I am_uid_active: 10139
+10-01 23:55:32.456 11298 11298 I am_on_create_called: [0,com.android.deskclock.DeskClock,performCreate]
+10-01 23:55:32.464 11298 11298 I am_on_start_called: [0,com.android.deskclock.DeskClock,handleStartActivity]
+10-01 23:55:32.466 11298 11298 I am_on_resume_called: [0,com.android.deskclock.DeskClock,RESUME_ACTIVITY]
+10-01 23:55:32.473 11298 11298 I am_on_top_resumed_gained_called: [0,com.android.deskclock.DeskClock,topStateChangedWhenResumed]
+10-01 23:55:32.473 11298 11298 I am_on_top_resumed_lost_called: [0,com.android.deskclock.DeskClock,topStateChangedWhenResumed]
+10-01 23:55:32.478 11298 11298 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-01 23:55:32.479  6254  6646 I am_add_to_stopping: [0,256667677,com.google.android.deskclock/com.android.deskclock.DeskClock,completePauseLocked]
+10-01 23:55:32.480  6254  6274 I am_stop_activity: [0,256667677,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-01 23:55:32.693  6254  6373 I am_proc_died: [0,11010,vn.vietmap.live,0,11]
+10-01 23:55:32.698  6254  6373 I am_uid_stopped: 10146
+10-01 23:55:32.700  6254  6373 I wm_task_removed: [2063,removeAppToken: last token]
+10-01 23:55:32.700  6254  6373 I am_remove_task: [2063,56]
+10-01 23:55:32.700  6254  6373 I wm_task_removed: [2063,removeTask]
+10-01 23:55:32.701  6254  6373 I wm_stack_removed: 56
+10-01 23:55:32.784 11298 11298 I am_on_stop_called: [0,com.android.deskclock.DeskClock,sleeping]
+## 23:56:02 RESTORE after P1 (deskclock was left on top after foreign e2e-byd-kill at 23:55:32)
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2065: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false

@@ -1,0 +1,186 @@
+## 00:02:36 P3 steps 3-7 (continuing from 05-p3-gated state: VD44 = [deskclock t2081 top, vietmap t2080], S = stack 68 settings placeholder bottom of display 0)
+T0=10-02 00:02:36.000
+--- [start] 00:02:36.304 mWakefulness=Awake
+Stack id=67 displayId=44 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=true 
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=68 displayId=0 userId=0
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+    mResumedActivity: ActivityRecord{ccc5b5 u0 com.google.android.deskclock/com.android.deskclock.DeskClock t2081}
+pidA=15789 pidB=15439
+$ [3] am start --display 44 -n vn.vietmap.live/.MainActivity  (B-first: B to front inside VD)
+Warning: Activity not started, its current task has been brought to the front
+--- [after-3] 00:02:38.504 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=68 displayId=0 userId=0
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=67 displayId=44 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=false 
+    mResumedActivity: ActivityRecord{8efb853 u0 vn.vietmap.live/.MainActivity t2080}
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+pidA=15789 pidB=15439
+$ [4] am stack move-task 2081 68 false  (A out; B on top of A in VD)
+--- [after-4] 00:02:40.773 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=68 displayId=0 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=false 
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+    mResumedActivity: ActivityRecord{8efb853 u0 vn.vietmap.live/.MainActivity t2080}
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+pidA=15789 pidB=15439
+$ [5] am start --display 44 -n com.google.android.deskclock/com.android.deskclock.DeskClock  (A back into VD, on top)
+Warning: Activity not started, its current task has been brought to the front
+--- [after-5] 00:02:42.890 mWakefulness=Awake
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=68 displayId=0 userId=0
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+Stack id=69 displayId=44 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=true 
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=false 
+    mResumedActivity: ActivityRecord{ccc5b5 u0 com.google.android.deskclock/com.android.deskclock.DeskClock t2081}
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+pidA=15789 pidB=15439
+$ [6] am stack move-task 2081 68 false  (T1: A is TOP of VD)
+--- [after-6] 00:02:45.187 mWakefulness=Awake
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=68 displayId=0 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=true 
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=false 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+    mResumedActivity: ActivityRecord{2b123cc u0 com.android.settings/.Settings t2082}
+pidA=15789 pidB=15439
+$ [7] am start HOME
+Warning: Activity not started, its current task has been brought to the front
+--- [after-7] 00:02:47.327 mWakefulness=Awake
+Stack id=66 displayId=44 userId=0
+  taskId=2080: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=68 displayId=0 userId=0
+  taskId=2081: com.google.android.deskclock/com.android.deskclock.DeskClock userId=0 visible=false 
+  taskId=2082: com.android.settings/com.android.settings.Settings userId=0 visible=false 
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+    mResumedActivity: ActivityRecord{446884 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2079}
+    mResumedActivity: ActivityRecord{8efb853 u0 vn.vietmap.live/.MainActivity t2080}
+pidA=15789 pidB=15439
+--- events
+10-02 00:02:36.371  6254 12764 I am_new_intent: [0,149928019,2080,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 00:02:36.371  6254 12764 I wm_task_moved: [2080,0,2147483647]
+10-02 00:02:36.371  6254 12764 I am_focused_stack: [0,44,66,67,bringingFoundTaskToFront]
+10-02 00:02:36.372  6254 12764 I wm_task_moved: [2080,0,2147483647]
+10-02 00:02:36.372  6254 12764 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,bringingFoundTaskToFront]
+10-02 00:02:36.372  6254 12764 I am_pause_activity: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock,userLeaving=true]
+10-02 00:02:36.372 15015 15015 I am_on_top_resumed_lost_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]
+10-02 00:02:36.373  6254 12764 I am_task_to_front: [0,2080]
+10-02 00:02:36.376 15789 15789 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-02 00:02:36.377  6254  7192 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,resumeTopActivityInnerLocked]
+10-02 00:02:36.377  6254  7192 I am_add_to_stopping: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock,makeInvisible]
+10-02 00:02:36.377  6254  7192 I am_resume_activity: [0,149928019,2080,vn.vietmap.live/.MainActivity]
+10-02 00:02:36.378 15439 15439 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 00:02:36.399 15439 15439 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 00:02:36.406 15439 15439 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 00:02:36.406 15439 15439 I am_on_top_resumed_gained_called: [0,vn.vietmap.live.MainActivity,topWhenResuming]
+10-02 00:02:37.097  6254  6274 I am_stop_activity: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-02 00:02:37.121 15789 15789 I am_on_stop_called: [0,com.android.deskclock.DeskClock,STOP_ACTIVITY_ITEM]
+10-02 00:02:38.616  6254  8261 I wm_task_removed: [2081,reParentTask]
+10-02 00:02:38.616  6254  8261 I wm_task_moved: [2081,0,0]
+10-02 00:02:38.616  6254  8261 I am_remove_task: [2081,67]
+10-02 00:02:38.617  6254  8261 I wm_stack_removed: 67
+10-02 00:02:40.846  6254  8261 I am_new_intent: [0,13419957,2081,com.google.android.deskclock/com.android.deskclock.DeskClock,NULL,NULL,NULL,268435456]
+10-02 00:02:40.846  6254  8261 I wm_stack_created: 69
+10-02 00:02:40.847  6254  8261 I wm_task_removed: [2081,reParentTask]
+10-02 00:02:40.848  6254  8261 I wm_task_moved: [2081,1,0]
+10-02 00:02:40.848  6254  8261 I am_remove_task: [2081,68]
+10-02 00:02:40.848  6254  8261 I am_focused_stack: [0,44,69,66,reparentToDisplay]
+10-02 00:02:40.850  6254  8261 I am_pause_activity: [0,149928019,vn.vietmap.live/.MainActivity,userLeaving=true]
+10-02 00:02:40.851 15439 15439 I am_on_top_resumed_lost_called: [0,vn.vietmap.live.MainActivity,topStateChangedWhenResumed]
+10-02 00:02:40.855 15439 15439 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 00:02:40.856  6254  7192 I am_set_resumed_activity: [0,com.google.android.deskclock/com.android.deskclock.DeskClock,resumeTopActivityInnerLocked]
+10-02 00:02:40.856  6254  7192 I am_add_to_stopping: [0,149928019,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 00:02:40.856  6254  7192 I am_resume_activity: [0,13419957,2081,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-02 00:02:40.879 15789 15789 I am_on_restart_called: [0,com.android.deskclock.DeskClock,performRestartActivity]
+10-02 00:02:40.893 15789 15789 I am_on_start_called: [0,com.android.deskclock.DeskClock,handleStartActivity]
+10-02 00:02:40.894 15789 15789 I am_on_resume_called: [0,com.android.deskclock.DeskClock,RESUME_ACTIVITY]
+10-02 00:02:40.897 15789 15789 I am_on_top_resumed_gained_called: [0,com.android.deskclock.DeskClock,topWhenResuming]
+10-02 00:02:41.571  6254  6274 I am_stop_activity: [0,149928019,vn.vietmap.live/.MainActivity]
+10-02 00:02:41.582 15439 15439 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-02 00:02:42.962  6254  8542 I wm_task_removed: [2081,reParentTask]
+10-02 00:02:42.963  6254  8542 I wm_task_moved: [2081,0,0]
+10-02 00:02:42.963  6254  8542 I am_remove_task: [2081,69]
+10-02 00:02:42.963  6254  8542 I wm_stack_removed: 69
+10-02 00:02:42.964  6254  8542 I am_focused_stack: [0,0,68,0,moveTaskToStack]
+10-02 00:02:42.964 15789 15789 I am_on_top_resumed_lost_called: [0,com.android.deskclock.DeskClock,topStateChangedWhenResumed]
+10-02 00:02:42.969  6254  8542 I am_set_resumed_activity: [0,com.google.android.deskclock/com.android.deskclock.DeskClock,moveTaskToStack]
+10-02 00:02:43.005  6254  8542 I am_add_to_stopping: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock,makeInvisible]
+10-02 00:02:43.006  6254  8542 I am_add_to_stopping: [0,4483204,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,makeInvisible]
+10-02 00:02:43.008  6254  8542 I am_resume_activity: [0,149928019,2080,vn.vietmap.live/.MainActivity]
+10-02 00:02:43.008  6254  8542 I am_pause_activity: [0,4483204,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,userLeaving=false]
+10-02 00:02:43.009  6254  8542 I am_pause_activity: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock,userLeaving=false]
+10-02 00:02:43.013 15015 15015 I am_on_paused_called: [0,com.byd.clusternav.launcher.KachiHome,performPause]
+10-02 00:02:43.034  6254  6274 I am_stop_activity: [0,4483204,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-02 00:02:43.038 15439 15439 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,handleWindowVisibility]
+10-02 00:02:43.040 15439 15439 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleWindowVisibility]
+10-02 00:02:43.055  6254  6272 I am_pause_activity: [0,149928019,vn.vietmap.live/.MainActivity,userLeaving=false]
+10-02 00:02:43.071 15439 15439 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 00:02:43.076 15789 15789 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-02 00:02:43.077  6254  8542 I am_add_to_stopping: [0,149928019,vn.vietmap.live/.MainActivity,makeInvisible]
+10-02 00:02:43.081  6254  6274 I am_stop_activity: [0,13419957,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-02 00:02:43.088 15015 15015 I am_on_stop_called: [0,com.byd.clusternav.launcher.KachiHome,STOP_ACTIVITY_ITEM]
+10-02 00:02:43.114  6254  6281 I am_proc_start: [0,16275,1000,com.android.settings,activity,{com.android.settings/com.android.settings.Settings}]
+10-02 00:02:43.174 15439 15439 I am_on_paused_called: [0,vn.vietmap.live.MainActivity,performPause]
+10-02 00:02:43.176  6254  8261 I am_restart_activity: [0,45163468,2082,com.android.settings/.Settings]
+10-02 00:02:43.176  6254  8261 I am_set_resumed_activity: [0,com.android.settings/.Settings,minimalResumeActivityLocked]
+10-02 00:02:43.178  6254  6274 I am_stop_activity: [0,149928019,vn.vietmap.live/.MainActivity]
+10-02 00:02:43.271 15789 15789 I am_on_stop_called: [0,com.android.deskclock.DeskClock,STOP_ACTIVITY_ITEM]
+10-02 00:02:43.285 15439 15439 I am_on_stop_called: [0,vn.vietmap.live.MainActivity,STOP_ACTIVITY_ITEM]
+10-02 00:02:43.312 16275 16275 I am_on_create_called: [0,com.android.settings.Settings,performCreate]
+10-02 00:02:43.440 16275 16275 I am_on_start_called: [0,com.android.settings.Settings,handleStartActivity]
+10-02 00:02:43.440 16275 16275 I am_on_resume_called: [0,com.android.settings.Settings,RESUME_ACTIVITY]
+10-02 00:02:43.471 16275 16275 I am_on_top_resumed_gained_called: [0,com.android.settings.Settings,topStateChangedWhenResumed]
+10-02 00:02:45.289  6254  8542 I am_new_intent: [0,4483204,2079,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,android.intent.action.MAIN,NULL,NULL,268435712]
+10-02 00:02:45.289  6254  8542 I wm_task_moved: [2079,0,2147483647]
+10-02 00:02:45.289  6254  8542 I am_focused_stack: [0,0,0,68,bringingFoundTaskToFront]
+10-02 00:02:45.289  6254  8542 I wm_task_moved: [2079,0,2147483647]
+10-02 00:02:45.290  6254  8542 I am_set_resumed_activity: [0,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,bringingFoundTaskToFront]
+10-02 00:02:45.290  6254  8542 I am_pause_activity: [0,45163468,com.android.settings/.Settings,userLeaving=true]
+10-02 00:02:45.290  6254  8542 I am_task_to_front: [0,2079]
+10-02 00:02:45.362 16275 16275 I am_on_top_resumed_lost_called: [0,com.android.settings.Settings,topStateChangedWhenResumed]
+10-02 00:02:45.364 16275 16275 I am_on_paused_called: [0,com.android.settings.Settings,performPause]
+10-02 00:02:45.364  6254  7192 I am_set_resumed_activity: [0,com.byd.launcher/com.byd.clusternav.launcher.KachiHome,resumeTopActivityInnerLocked]
+10-02 00:02:45.365  6254  7192 I am_add_to_stopping: [0,45163468,com.android.settings/.Settings,makeInvisible]
+10-02 00:02:45.365  6254  7192 I am_resume_activity: [0,4483204,2079,com.byd.launcher/com.byd.clusternav.launcher.KachiHome]
+10-02 00:02:45.369 15015 15015 I am_on_restart_called: [0,com.byd.clusternav.launcher.KachiHome,performRestartActivity]
+10-02 00:02:45.375 15015 15015 I am_on_start_called: [0,com.byd.clusternav.launcher.KachiHome,handleStartActivity]
+10-02 00:02:45.382 15015 15015 I am_on_resume_called: [0,com.byd.clusternav.launcher.KachiHome,RESUME_ACTIVITY]
+10-02 00:02:45.382 15015 15015 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topWhenResuming]
+10-02 00:02:45.440  6254  6272 I am_resume_activity: [0,149928019,2080,vn.vietmap.live/.MainActivity]
+10-02 00:02:45.473 15439 15439 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 00:02:45.475 15439 15439 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 00:02:45.477 15439 15439 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 00:02:46.123  6254  6274 I am_stop_activity: [0,45163468,com.android.settings/.Settings]
+10-02 00:02:46.134 16275 16275 I am_on_stop_called: [0,com.android.settings.Settings,STOP_ACTIVITY_ITEM]

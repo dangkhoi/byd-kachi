@@ -1,0 +1,5 @@
+T0=10-02 10:30:51.000 pkg=com.google.android.apps.youtube.music comp=com.google.android.apps.youtube.music/.activities.MusicActivity task=2614 vd=173 marks=<string name="kachi_behind_marks">2613:vn.vietmap.live,2614:com.google.android.apps.youtube.music</string>
+$ am start --display 173 -n com.google.android.apps.youtube.music/.activities.MusicActivity
+Starting: Intent { cmp=com.google.android.apps.youtube.music/.activities.MusicActivity }
+
+pids_before={'com.google.android.apps.youtube.music': '4518', 'com.byd.launcher': '3401'} pids_after={'com.google.android.apps.youtube.music': '4518', 'com.byd.launcher': '3401'}

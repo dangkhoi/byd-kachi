@@ -1,0 +1,17 @@
+## 00:07:15 FINAL CLEANUP + state vs baseline
+0
+$ am stack list
+Stack id=74 displayId=46 userId=0
+  taskId=2090: vn.vietmap.live/vn.vietmap.live.MainActivity userId=0 visible=true 
+Stack id=0 displayId=0 userId=0
+  taskId=2089: com.byd.launcher/com.byd.clusternav.launcher.KachiHome userId=0 visible=true 
+Stack id=71 displayId=0 userId=0
+  taskId=2084: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+Stack id=53 displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity userId=0 visible=false
+$ dumpsys activity activities | grep -E "mResumedActivity|mFocusedApp"
+    mResumedActivity: ActivityRecord{3ea879f u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2089}
+    mResumedActivity: ActivityRecord{7807534 u0 vn.vietmap.live/.MainActivity t2090}
+com.google.android.deskclock pid=
+com.android.settings pid=
+com.google.android.youtube pid=

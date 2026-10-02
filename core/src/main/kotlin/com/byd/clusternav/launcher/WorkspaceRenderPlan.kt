@@ -12,8 +12,13 @@ sealed interface WorkspaceRenderPlan {
     /** Dựng lại TOÀN BỘ ô (đổi bố cục, hoặc số ô đang dựng không khớp số ô của bố cục). */
     object RebuildAll : WorkspaceRenderPlan
 
-    /** Chỉ dựng lại các ô có chỉ số trong [rebuild] (tăng dần, không trùng). Rỗng = không làm gì. */
-    data class PerSlot(val rebuild: List<Int>) : WorkspaceRenderPlan
+    /**
+     * Chỉ dựng lại các ô có chỉ số trong [rebuild] (tăng dần, không trùng). Rỗng = không làm gì.
+     *
+     * [swap] (spec shortcuts-autostart §4.4.5): ô ĐỔI APP TẠI CHỖ — giữ màn ảo, app cũ ra sau màn nhà, không nhả ô.
+     * Không giao với [rebuild]. Mặc định rỗng ⇒ mọi chỗ gọi/so sánh cũ giữ nguyên.
+     */
+    data class PerSlot(val rebuild: List<Int>, val swap: List<Int> = emptyList()) : WorkspaceRenderPlan
 }
 
 /**
@@ -65,9 +70,11 @@ object WorkspaceRenderPlanner {
         statusChanged: Boolean,
         embedChanged: Boolean = false,
         slotCount: Int = new.preset.slotCount,
+        swap: Set<Int> = emptySet(),
     ): WorkspaceRenderPlan {
         if (old.preset != new.preset || builtSlotCount != slotCount) return WorkspaceRenderPlan.RebuildAll
         val out = ArrayList<Int>()
+        val swapOut = ArrayList<Int>()
         for (i in 0 until slotCount) {
             val oc = old.slots.getOrElse(i) { SlotContent.Empty }
             val nc = new.slots.getOrElse(i) { SlotContent.Empty }
@@ -80,10 +87,22 @@ object WorkspaceRenderPlanner {
             // quan sát được vì trạng thái luôn rỗng, nên chỗ này khoá bằng test chứ không bằng phép đo off-car.
             val widgetNeedsFreshValues = statusChanged && nc is SlotContent.Widget && hasReadContent(nc)
             val appNeedsHostAttach = embedChanged && nc is SlotContent.App
+            if (i in swap && !appNeedsHostAttach && oc is SlotContent.App && nc is SlotContent.App && contentChanged) {
+                swapOut.add(i)      // đặt TẠM App(A) → App(B): đổi tại chỗ, không nhả màn ảo (R0.1)
+                continue
+            }
             if (contentChanged || widgetNeedsFreshValues || appNeedsHostAttach) out.add(i)
         }
-        return WorkspaceRenderPlan.PerSlot(out)
+        return WorkspaceRenderPlan.PerSlot(out, swapOut)
     }
+
+    /**
+     * Ô nào được phép ĐỔI APP TẠI CHỖ ở lượt render [prev] → [next]: mốc đặt tạm ([HomeUiState.swapNonce]) của ô đó
+     * MỚI ở lượt này. Mốc biến mất (đổi hồ sơ dựng state mới) KHÔNG tính — đường đó là đường LƯU, đi như hôm nay.
+     * [decide] còn tự kiểm App→App khác gói, nên tập này chỉ cần nói "lượt này có phải lượt đặt tạm không".
+     */
+    fun swapCandidates(prev: Map<Int, Long>?, next: Map<Int, Long>): Set<Int> =
+        next.filter { (i, n) -> prev?.get(i) != n }.keys
 
     /**
      * Ô widget này có thứ gì **đọc từ xe** để làm mới không.
@@ -120,5 +139,6 @@ object WorkspaceRenderPlanner {
     fun selfDriven(id: String): Boolean = isSelfDriven(id)
 
     /** Widget tự lo nội dung: trình chiếu ảnh (nhịp riêng, nguồn là tệp trên máy). */
-    private val SELF_DRIVEN = setOf("w_photos")
+    // `w_apps` (F1 R1.3): lưới icon tự nghe danh sách lối tắt + kênh — nhịp trạng thái xe không được dựng lại nó.
+    private val SELF_DRIVEN = setOf("w_photos", "w_apps")
 }

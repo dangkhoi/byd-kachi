@@ -83,6 +83,10 @@ class SettingsDeps(
      */
     val onDockConfig: (DockConfig) -> Unit,
     val onDockEdge: (DockEdge) -> Unit,
+    /** F1 · U2 — chọn app cho lối tắt + ghi danh sách (chủ: `KachiHomeShortcuts`); xem [ShortcutSettingsPort]. */
+    val shortcuts: ShortcutSettingsPort,
+    /** F2/F3 · U6 — chọn app nổ máy + ghi cấu hình chuyến (chủ: `KachiHomeTrip`); xem [TripSettingsPort]. */
+    val trip: TripSettingsPort,
     /**
      * Công cụ kiểm tra từng nút (owner 2026-09-15): chạy MỘT hành động xe theo id + tham số ([CarControlPort.actByKind]).
      * Trả `true` nếu lệnh gửi được (off-car / chưa map ⇒ `false`). KHÔNG gate — người dùng tự chấm kết quả bằng mắt.

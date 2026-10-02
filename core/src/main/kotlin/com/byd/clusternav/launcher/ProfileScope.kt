@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.trip.TripGate
+
 /**
  * ═══ S4 · R3/R4 — PHẠM VI của một khoá lưu bền: **theo HỒ SƠ** hay **theo XE** ═════════════════════════════════
  *
@@ -59,6 +61,9 @@ object ProfileScope {
             // `top_strip`/`dock_enabled` ngay cạnh: cả ba trả lời *"thanh này bày gì, ở đâu"*. Thứ tự các nút của
             // thanh nút KHÔNG cần khoá mới — nó LÀ thứ tự của `dock_enabled` ([DockConfig.moveEnabled]).
             "header_order",
+            // F1 (owner 01/10, spec shortcuts-autostart R1.1) — LỐI TẮT ỨNG DỤNG: app nào hiện trên khối thanh nút +
+            // widget `w_apps`, mỗi app một kiểu mở. Cùng họ `dock_enabled`: *"thanh này bày gì"*, đi theo hồ sơ (S4).
+            "app_shortcuts",
         )
 
     /**
@@ -83,6 +88,9 @@ object ProfileScope {
             // thẻ (+ chỗ để sẵn màu sơn P3) là *lựa chọn của một người* y như `theme_mode` ngay cạnh ⇒ theo hồ sơ
             // (AC8.4). Khoá MỚI hoàn toàn: không có bản chung-cả-máy để lùi về, đọc thẳng `key()` như `saved_places`.
             "color_choice",
+            // F2/F3 (owner 01/10, spec shortcuts-autostart R2.1/R3.1) — app mở khi nổ máy + nhạc lên xe: lựa chọn của MỘT
+            // người lái như `launcher_autostart` ngay cạnh (S4 "mọi cấu hình theo hồ sơ"). Khoá mới, không có bản chung.
+            "ignition_apps", "ignition_music",
         )
 
     /**
@@ -185,6 +193,12 @@ object ProfileScope {
             "PROFILE-SWITCH-SLOTS R-B4 — dấu 'Kachi đã mở gói này thành cửa sổ nổi' ([FloatingWindowLedger]). Theo XE: " +
                 "cửa sổ nằm trên màn của CHIẾC XE này; theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Cũng " +
                 "khai ở [SettingsCatalog.NOT_SETTINGS]",
+        )
+        put(
+            "kachi_behind_marks",
+            "BEHIND-HOME — dấu 'task này do Kachi đẩy ra sau màn nhà' (`BehindMarks`). Theo XE: task nằm trên màn của " +
+                "CHIẾC XE này và sống qua lần BYD giết Kachi; theo hồ sơ thì đổi hồ sơ là mất dấu. Cũng khai ở " +
+                "[SettingsCatalog.NOT_SETTINGS]",
         )
         // ⚠ 2026-09-30 — `cast_enabled` ĐÃ RỜI danh sách này, chuyển sang theo HỒ SƠ. Owner: *"Phần cụm lưu hết thành
         // profile nhé"* — THAY chốt S4-OQ2 của Pass 1 review (2026-09-14; không phải quyết định của owner). Lý do kỹ
@@ -316,6 +330,7 @@ object ProfileScope {
         // V-CLUSTER — khoá cụm/chiếu/camera theo XE (23 khoá hiệu chỉnh camera, dấu mốc, đời cũ): bảng + lý do ở
         // [ProfileScopeCluster.DEVICE_KEYS] (tách vì trần 500 dòng), không chép lại ở đây.
         putAll(ProfileScopeCluster.DEVICE_KEYS)
+        putAll(TripGate.DEVICE_KEYS)   // F2/F3 — sổ chuyến lên xe + mốc khởi động (theo XE); lý do ở chỗ chủ
     }
 
     /**

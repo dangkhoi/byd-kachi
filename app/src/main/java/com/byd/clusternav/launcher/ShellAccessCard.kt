@@ -154,11 +154,20 @@ internal object ShellAccessUi {
      * Quên gọi ở một điểm vào thì cổng thi hành (`LocalShellAdmission`) vẫn chặn — đây chỉ là phần NÓI.
      */
     fun allowOrPrompt(ctx: Context): Boolean {
-        val p = ShellReadiness.phase()
-        val fresh = p != ShellChannelPhase.UP && p != ShellChannelPhase.NEEDS_APPROVAL && ShellReadiness.ledgerFresh()
-        if (ShellReadinessPolicy.usable(p, fresh)) return true
+        if (usableNow()) return true
         main.post { prompt(ctx.applicationContext) }
         return false
+    }
+
+    /**
+     * Kênh dùng được NGAY (cùng phép [allowOrPrompt], KHÔNG nhắc) — cho chỗ chỉ VẼ theo kênh (icon lối tắt mờ khi kênh
+     * không dùng được, spec shortcuts-autostart R1.5) và cho bảng chạm `ShortcutPlan` (`usable`). Tách ra để hai chỗ
+     * dùng MỘT phép, không chép hai dòng điều kiện (global §4.1 DRY).
+     */
+    fun usableNow(): Boolean {
+        val p = ShellReadiness.phase()
+        val fresh = p != ShellChannelPhase.UP && p != ShellChannelPhase.NEEDS_APPROVAL && ShellReadiness.ledgerFresh()
+        return ShellReadinessPolicy.usable(p, fresh)
     }
 
     /** Hiện thẻ nếu màn chính đang sống; không thì một thông báo ngắn (tiết chế 5 s). */

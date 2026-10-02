@@ -1,0 +1,3 @@
+T0=10-02 04:50:15.000
+pid_vietmap_before=14964 pid_clock_before=13364 pid_kachi=14709
+pid_vietmap_after=14964 pid_clock_after=15292 pid_kachi=14709

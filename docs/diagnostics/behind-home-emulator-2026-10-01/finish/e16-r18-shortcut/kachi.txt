@@ -1,0 +1,7 @@
+--------- beginning of main
+--------- beginning of system
+10-02 11:03:48.159 23734 23734 I KachiShortcut: tap com.google.android.apps.youtube.music S1 usable=true stages=0 -> PlaceTemp(slot=0, evict=vn.vietmap.live)
+10-02 11:03:52.319 23734 24602 I KachiBehind: evict vd=187 A=vn.vietmap.live B=com.google.android.apps.youtube.music → MOVED task=2676 S=347 top0=0 kiểm=OK gỡ=1 dọn-trước=0
+10-02 11:04:02.084 23734 23734 I KachiShortcut: tap vn.vietmap.live S1 usable=true stages=0 -> PlaceTemp(slot=0, evict=com.google.android.apps.youtube.music)
+10-02 11:04:02.962 23734 24744 I KachiDetach: r1.8 vd=187 vn.vietmap.live → K8 vn.vietmap.live/vn.vietmap.live.MainActivity → IN_SLOT
+10-02 11:04:03.527 23734 24602 I KachiBehind: evict vd=187 A=com.google.android.apps.youtube.music B=vn.vietmap.live → MOVED task=2677 S=349 top0=0 kiểm=OK gỡ=1 dọn-trước=0

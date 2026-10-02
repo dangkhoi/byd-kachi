@@ -5,10 +5,11 @@ import org.junit.jupiter.api.Test
 
 class WidgetRegistryTest {
 
-    @Test fun `co 9 widget id duy nhat`() {
+    @Test fun `co 10 widget id duy nhat`() {
         // Chốt số lượng để ai thêm widget phải nghĩ. 8 cái đầu = bộ prototype owner đã duyệt; cái thứ 9
-        // (trình chiếu ảnh) thêm ở U4 theo yêu cầu owner — xem spec kachi-wallpaper.html.
-        assertEquals(9, WidgetRegistry.ALL.size)
+        // (trình chiếu ảnh) thêm ở U4 theo yêu cầu owner — xem spec kachi-wallpaper.html; cái thứ 10 (lưới lối tắt
+        // ứng dụng `w_apps`) theo owner 01/10 — spec kachi-launcher-shortcuts-autostart.html R1.3.
+        assertEquals(10, WidgetRegistry.ALL.size)
         val ids = WidgetRegistry.ALL.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
     }
@@ -22,5 +23,7 @@ class WidgetRegistryTest {
         assertEquals(WidgetKind.BOARD, WidgetRegistry.byId("w_board")!!.kind)
         // Trình chiếu ảnh đọc tệp trên máy, KHÔNG phải dữ liệu xe ⇒ off-car vẫn chạy đầy đủ.
         assertEquals(WidgetKind.LOCAL, WidgetRegistry.byId("w_photos")!!.kind)
+        // Lưới lối tắt: icon app trên máy, KHÔNG đọc xe.
+        assertEquals(WidgetKind.LOCAL, WidgetRegistry.byId("w_apps")!!.kind)
     }
 }

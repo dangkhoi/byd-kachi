@@ -1,0 +1,19 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:57:51.847 21806 21806 I KachiReady: proc interactive=false t=239 so=- wall=06:57:51.847
+10-02 06:57:51.889 21806 21841 I KachiReady: checking src=early t=287 so=- wall=06:57:51.889
+10-02 06:57:52.004 21806 21841 I KachiReady: up src=early t=398 so=- wall=06:57:52.002
+10-02 06:57:52.004 21806 21841 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=115ms t=402 so=- wall=06:57:52.004
+10-02 06:57:52.082 21806 21841 I KachiReady: window adb_allowed_connection_time=default t=479 so=- wall=06:57:52.082
+10-02 06:57:57.220 21806 21837 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 06:57:57.226 21806 21837 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177646466, leo=163604535, con của lượt chữa=false)
+10-02 06:58:01.796 21806 21806 I KachiReady: screen_on src=home t=10193 so=+0 wall=06:58:01.796
+10-02 06:58:01.796 21806 21806 I KachiReady: home adopt t=10194 so=+1 wall=06:58:01.796
+10-02 06:58:01.808 21806 21841 I KachiReady: keys=BOUND t=10206 so=+13 wall=06:58:01.808
+10-02 06:58:02.117 21806 21837 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 06:58:02.191 21806 21806 I KachiReady: tile vd=118 slot=0 t=10588 so=+395 wall=06:58:02.190
+10-02 06:58:02.191 21806 21806 I KachiReady: summary screen_on->tile=396 proc->up=397 src=early keys=BOUND
+10-02 06:58:02.220 21806 21975 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0
+10-02 06:58:02.276 21806 21977 I KachiTrip: wait BOOT (streak=1 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 06:58:24.563 21806 21975 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=118 C=vn.vietmap.live) chờ=0ms · evict vd=118 A=com.google.android.apps.youtube.music B=vn.vietmap.live → MOVED task=2390 S=185 top0=0 kiểm=OK gỡ=1 dọn-trước=0
+10-02 06:58:32.616 21806 21977 I KachiTrip: run trip=n39.t177658136 tries=1 -> RAN in=30674ms saved=true :: ready after 20577ms | music:com.google.android.apps.youtube.music:MOVED:uri=true playing

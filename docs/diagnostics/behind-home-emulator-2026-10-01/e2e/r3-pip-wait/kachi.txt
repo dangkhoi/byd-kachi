@@ -1,0 +1,22 @@
+--------- beginning of main
+--------- beginning of system
+10-02 10:00:48.959 29941 29941 I KachiReady: proc interactive=false t=49 so=- wall=10:00:48.959
+10-02 10:00:49.019 29941 29964 I KachiReady: checking src=early t=110 so=- wall=10:00:49.019
+10-02 10:00:49.144 29941 29964 I KachiReady: up src=early t=235 so=- wall=10:00:49.144
+10-02 10:00:49.144 29941 29964 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=125ms t=235 so=- wall=10:00:49.144
+10-02 10:00:49.234 29941 29964 I KachiReady: window adb_allowed_connection_time=default t=325 so=- wall=10:00:49.234
+10-02 10:00:54.225 29941 29960 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 10:00:54.231 29941 29960 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=188447127, leo=163604535, con của lượt chữa=false)
+10-02 10:00:59.080 29941 29941 I KachiReady: screen_on src=home t=10171 so=+0 wall=10:00:59.080
+10-02 10:00:59.081 29941 29941 I KachiReady: home adopt t=10171 so=+0 wall=10:00:59.081
+10-02 10:00:59.097 29941 29964 I KachiReady: keys=BOUND t=10188 so=+17 wall=10:00:59.097
+10-02 10:00:59.241 29941 29960 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 10:00:59.311 29941 30103 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0
+10-02 10:00:59.315 29941 30101 I KachiFloat: dọn[shell-up] bỏ: dấu rỗng (0 lệnh shell)
+10-02 10:00:59.321 29941 29941 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 10:00:59.324 29941 29941 I KachiReady: tile vd=170 slot=0 t=10415 so=+244 wall=10:00:59.324
+10-02 10:00:59.324 29941 29941 I KachiReady: summary screen_on->tile=244 proc->up=235 src=early keys=BOUND
+10-02 10:00:59.324 29941 29941 I KachiVd : tạo màn ảo kachi-slot-0-1790910059320 — ô 0 · display 170 · chủ ws@245133244 · đang sống 1
+10-02 10:00:59.506 29941 30105 I KachiTrip: wait BOOT (streak=1 home=[com.byd.launcher/com.byd.clusternav.launcher.KachiHome, com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity])
+10-02 10:01:27.212 29941 30103 I KachiBehind: behind X=com.waze qua ô 0 (vd=170 C=vn.vietmap.live) chờ=0ms · evict vd=170 A=com.waze B=vn.vietmap.live → MOVED task=2595 S=296 top0=0 kiểm=OK gỡ=1 dọn-trước=0
+10-02 10:01:27.247 29941 30105 I KachiTrip: run trip=n39.t188635263 tries=1 -> RAN in=27991ms saved=true :: ready after 20808ms | com.waze:bg-MOVED

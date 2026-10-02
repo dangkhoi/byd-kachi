@@ -1,6 +1,9 @@
 package com.byd.clusternav.launcher
 
 import androidx.lifecycle.ViewModel
+import com.byd.clusternav.launcher.trip.TripAppCodec
+import com.byd.clusternav.launcher.trip.TripConfig
+import com.byd.clusternav.launcher.trip.TripMusicCodec
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,15 +32,48 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     // ── Intent: workspace (ô + bố cục) ───────────────────────────────────────────
-    fun setPreset(preset: LayoutPreset) = mutate { it.copy(workspace = it.workspace.withPreset(preset)) }
+    // Đổi bố cục ⇒ chỉ số ô đổi nghĩa ⇒ bỏ lớp tạm (R1.6). Mọi đường LƯU dưới đây gỡ lớp tạm của ô bị chạm (§2.2).
+    fun setPreset(preset: LayoutPreset) =
+        mutate { it.copy(workspace = it.workspace.withPreset(preset), overlay = SlotOverlay.EMPTY) }
 
-    fun assignApp(slot: Int, pkg: String) =
-        mutate { it.copy(workspace = it.workspace.withSlot(slot, SlotContent.App(pkg))) }
+    fun assignApp(slot: Int, pkg: String) = mutate {
+        it.copy(workspace = it.workspace.withSlot(slot, SlotContent.App(pkg)), overlay = it.overlay.afterSave(listOf(slot), listOf(pkg)))
+    }
 
     fun assignWidgets(slot: Int, ids: List<String>) = mutate {
         val content = if (ids.isEmpty()) SlotContent.Empty else SlotContent.Widget(ids)
-        it.copy(workspace = it.workspace.withSlot(slot, content))
+        it.copy(workspace = it.workspace.withSlot(slot, content), overlay = it.overlay.afterSave(listOf(slot)))
     }
+
+    /**
+     * ĐẶT TẠM [pkg] vào ô [slot] (0-based) — đính chính owner 01/10: lối tắt + giọng nói *"mở X vào ô n"* KHÔNG ghi
+     * `slot_n`. Chỉ đổi state (lớp tạm + mốc đổi-tại-chỗ), **không** gọi [persist] — `HomeViewModelTest.placeTemporary doi o dang hien nhung KHONG ghi ben` khoá.
+     * Ô ngoài số ô đang hiện ⇒ `false`, không đổi gì. Ô đang hiện đúng [pkg] ⇒ `true`, không đổi gì.
+     */
+    fun placeTemporary(slot: Int, pkg: String): Boolean {
+        val cur = _uiState.value
+        if (pkg.isBlank() || slot !in 0 until EffectiveLayout.slotCount(cur.workspace.preset, cur.customLayout)) return false
+        if ((cur.effectiveWorkspace.slots.getOrNull(slot) as? SlotContent.App)?.pkg == pkg) return true
+        _uiState.update {
+            it.copy(overlay = it.overlay.place(slot, pkg), swapNonce = it.swapNonce + (slot to nextSwapNonce()))
+        }
+        return true
+    }
+
+    /**
+     * Lượt đặt tạm không thành (app mới không vào được màn ảo — app cũ [shownPkg] vẫn ở đỉnh ô): trả ô về [shownPkg]
+     * mà KHÔNG mở lại gì (host đã nhận lại app đang hiện — `VdAppHost.adoptShown`). Ô LƯU đang là [shownPkg] ⇒ bỏ mục
+     * tạm; khác ⇒ mục tạm = [shownPkg]. Không ghi bền.
+     */
+    fun revertTemporary(slot: Int, shownPkg: String) = _uiState.update {
+        val saved = (it.workspace.slots.getOrNull(slot) as? SlotContent.App)?.pkg
+        val overlay = if (saved == shownPkg) it.overlay.drop(slot) else it.overlay.place(slot, shownPkg)
+        it.copy(overlay = overlay, swapNonce = it.swapNonce + (slot to nextSwapNonce()))
+    }
+
+    /** Mốc đổi-tại-chỗ tăng dần — chỉ cần KHÁC lần trước của cùng ô (xem [HomeUiState.swapNonce]). */
+    private var swapCounter = 0L
+    private fun nextSwapNonce(): Long = ++swapCounter
 
     /**
      * T4 — đặt một widget Android của app khác vào ô. [content] đã **ràng buộc xong** (có id nền tảng cấp).
@@ -47,11 +83,13 @@ class HomeViewModel(
      * là cách chắc chắn để một trong hai bị quên khi ô đổi nội dung bằng đường khác (kéo-thả, đổi hồ sơ, xoá ô).
      */
     fun assignAppWidget(slot: Int, content: SlotContent.AppWidget) =
-        mutate { it.copy(workspace = it.workspace.withSlot(slot, content)) }
+        mutate { it.copy(workspace = it.workspace.withSlot(slot, content), overlay = it.overlay.afterSave(listOf(slot))) }
 
-    fun clearSlot(slot: Int) = mutate { it.copy(workspace = it.workspace.clearSlot(slot)) }
+    fun clearSlot(slot: Int) =
+        mutate { it.copy(workspace = it.workspace.clearSlot(slot), overlay = it.overlay.afterSave(listOf(slot))) }
 
-    fun swapSlots(a: Int, b: Int) = mutate { it.copy(workspace = it.workspace.swap(a, b)) }
+    fun swapSlots(a: Int, b: Int) =
+        mutate { it.copy(workspace = it.workspace.swap(a, b), overlay = it.overlay.afterSave(listOf(a, b))) }
 
     // ── Intent: dock (thanh điều khiển) ──────────────────────────────────────────
     /**
@@ -161,7 +199,7 @@ class HomeViewModel(
 
     /** Bố cục tự vẽ (P9). `null` = quay về bố cục sẵn. Cập nhật state + lưu bền trong MỘT lượt. */
     fun setCustomLayout(layout: GridLayout?) {
-        _uiState.update { it.copy(customLayout = layout) }
+        _uiState.update { it.copy(customLayout = layout, overlay = SlotOverlay.EMPTY) }
         persistLayout(layout)
     }
 
@@ -212,6 +250,29 @@ class HomeViewModel(
     fun setSavedPlaces(places: List<SavedPlace>) {
         _uiState.update { it.copy(savedPlaces = places) }
         repository.setSavedPlaces(places)
+    }
+
+    /**
+     * F1 — **lối tắt ứng dụng** của hồ sơ đang dùng (spec shortcuts-autostart R1.1/R1.4). State + lưu bền trong MỘT lượt,
+     * cùng khuôn [setSavedPlaces] (khoá `app_shortcuts` nằm ngoài bộ khoá mà `persist` ghi). Phép sửa (chọn · đổi kiểu ·
+     * dời) là hàm thuần ở `:core` ([ShortcutSelection]); ở đây chỉ nhận danh sách đã chốt, qua [AppShortcutCodec.sanitize]
+     * để state không bao giờ mang thứ mà đĩa sẽ không giữ (trần 8 · gói hợp lệ · không trùng).
+     */
+    fun setAppShortcuts(items: List<AppShortcut>) {
+        val clean = AppShortcutCodec.sanitize(items)
+        _uiState.update { it.copy(shortcuts = clean) }
+        repository.setAppShortcuts(clean)
+    }
+
+    /**
+     * F2/F3 — **chuyến lên xe** của hồ sơ đang dùng (spec shortcuts-autostart R2.1/R3.1). Cùng khuôn [setAppShortcuts]:
+     * state + lưu bền một lượt, qua phép làm sạch của `:core` ([TripAppCodec.sanitize] — trần 6, ≤ 1 app *Mở bình
+     * thường*; [TripMusicCodec.clean]) để state không mang thứ đĩa sẽ không giữ.
+     */
+    fun setTripConfig(cfg: TripConfig) {
+        val clean = TripConfig(TripAppCodec.sanitize(cfg.apps), cfg.music.copy(query = TripMusicCodec.clean(cfg.music.query)))
+        _uiState.update { it.copy(trip = clean) }
+        repository.setTripConfig(clean)
     }
 
     /** Lựa chọn hình nền (U4). */

@@ -64,11 +64,35 @@ object LauncherActions {
      */
     const val VOICE = "launcher_voice"
 
+    /**
+     * F1 (owner 01/10, spec `kachi-launcher-shortcuts-autostart.html` R1.2) — **khối lối tắt ứng dụng** trên thanh nút:
+     * *"có thể add vào taskbar của launcher nhé, như vậy size của widget đấy phải động"*. Một mã, nhưng ô của nó là
+     * một KHỐI icon dài theo số app (`ShortcutIconsView`), không phải một nút.
+     */
+    const val SHORTCUTS = "launcher_shortcuts"
+
+    /** Việc của launcher GỌI ĐƯỢC BẰNG LỜI — nguồn của từ vựng giọng nói (`VoiceGrammar`/hotword/danh mục câu). */
     val ALL: List<LauncherActionDef> = listOf(
         LauncherActionDef(APPS, "Ứng dụng", "ic-apps", labelEn = "Apps"),
         LauncherActionDef(SETTINGS, "Cài đặt", "ic-settings", labelEn = "Settings"),
         LauncherActionDef(VOICE, "Nói với xe", "ic-mic", labelEn = "Talk to car"),
     )
 
-    fun byId(id: String): LauncherActionDef? = ALL.firstOrNull { it.id == id }
+    /**
+     * Khối của launcher chỉ ĐẶT được trên thanh nút — **không** phải một việc để gọi bằng lời, nên KHÔNG nằm trong [ALL].
+     *
+     * Vì sao tách (lệch spec §4.4.2 *"thêm vào ALL"*, ghi ở §9): [ALL] là nguồn sinh từ vựng giọng nói, câu mẫu, hotword
+     * và danh mục tính năng. *"Mở lối tắt ứng dụng"* không có nghĩa nào để thi hành — khối là một CHỖ CHỨA icon, việc
+     * thật là chạm từng icon. Thêm vào [ALL] thì `VoiceDispatcher.runLauncher` nhận một mã nó chỉ trả lời được
+     * *"chưa làm được"*, và tệp hotword phải dựng lại cho một câu vô nghĩa. Danh mục khả năng ([CapabilityCatalog]) vẫn
+     * thấy khối này qua [byId]/[placeable] ⇒ bộ chọn nút thanh xe bày nó trong khối Launcher như ba việc kia.
+     */
+    val BLOCKS: List<LauncherActionDef> = listOf(
+        LauncherActionDef(SHORTCUTS, "Lối tắt ứng dụng", "ic-apps", labelEn = "App shortcuts"),
+    )
+
+    /** Mọi mã đặt được lên thanh nút: việc gọi bằng lời ([ALL]) rồi tới khối ([BLOCKS]). */
+    val placeable: List<LauncherActionDef> get() = ALL + BLOCKS
+
+    fun byId(id: String): LauncherActionDef? = ALL.firstOrNull { it.id == id } ?: BLOCKS.firstOrNull { it.id == id }
 }

@@ -81,6 +81,7 @@ object CarDataDemand {
         "w_clock" to setOf("ext_temp"),
         "w_media" to emptySet(),
         "w_photos" to emptySet(),
+        "w_apps" to emptySet(),   // F1 R1.3 — icon lối tắt, không đọc xe
     )
 
     /**

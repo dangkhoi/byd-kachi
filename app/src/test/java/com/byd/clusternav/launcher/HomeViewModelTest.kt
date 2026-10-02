@@ -401,4 +401,51 @@ class HomeViewModelTest {
         HomeViewModel(fake).setBootProfile("Đi xa")
         assertEquals("Đi xa", HomeViewModel(fake).uiState.value.bootProfile)
     }
+
+    // ── ĐẶT TẠM (đính chính owner 01/10, spec shortcuts-autostart §2.2 · C2) ─────────────────────────────────────
+
+    @Test fun `placeTemporary doi o dang hien nhung KHONG ghi ben`() {
+        val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
+        val vm = HomeViewModel(r)
+        val before = r.persistCount
+        assertTrue(vm.placeTemporary(0, "com.b"))
+        val s = vm.uiState.value
+        assertEquals(SlotContent.App("com.b"), s.effectiveWorkspace.slots[0], "màn hiện app đặt tạm")
+        assertEquals(SlotContent.App("com.a"), s.workspace.slots[0], "lớp LƯU giữ nguyên")
+        assertEquals(before, r.persistCount, "đặt tạm không bao giờ gọi persist() — slot_n trên đĩa không đổi")
+        assertTrue(0 in s.swapNonce, "lượt đặt tạm đặt mốc đổi-tại-chỗ ⇒ tầng vẽ giữ màn ảo")
+    }
+
+    @Test fun `placeTemporary ngoai so o dang hien thi tu choi, khong doi gi`() {
+        val vm = HomeViewModel(repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.TWO_COL))))
+        assertFalse(vm.placeTemporary(2, "com.b"))
+        assertTrue(vm.uiState.value.overlay.isEmpty)
+    }
+
+    @Test fun `duong LUU va doi bo cuc va doi ho so deu xoa lop tam`() {
+        val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
+        r.seed("P2", HomeUiState(activeProfile = "P2"))
+        val vm = HomeViewModel(r)
+        vm.placeTemporary(0, "com.b"); vm.placeTemporary(1, "com.c")
+        vm.assignApp(1, "com.d")                                   // ngăn kéo ⇒ ô 1 LƯU, mục tạm ô 1 đi
+        assertEquals(mapOf(0 to "com.b"), vm.uiState.value.overlay.entries)
+        vm.setPreset(LayoutPreset.THREE)
+        assertTrue(vm.uiState.value.overlay.isEmpty, "đổi bố cục ⇒ bỏ lớp tạm")
+        vm.placeTemporary(0, "com.b")
+        vm.switchProfile("P2")
+        assertTrue(vm.uiState.value.overlay.isEmpty, "đổi hồ sơ ⇒ state mới, lớp tạm mất")
+        assertTrue(vm.uiState.value.swapNonce.isEmpty())
+    }
+
+    @Test fun `revertTemporary tra o ve app dang hien, khong ghi ben`() {
+        val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
+        val vm = HomeViewModel(r)
+        vm.placeTemporary(0, "com.b")
+        val n = vm.uiState.value.swapNonce.getValue(0)
+        val before = r.persistCount
+        vm.revertTemporary(0, "com.a")
+        assertTrue(vm.uiState.value.overlay.isEmpty, "ô LƯU đang là app hiện ⇒ chỉ bỏ mục tạm")
+        assertTrue(vm.uiState.value.swapNonce.getValue(0) != n, "mốc mới ⇒ tầng vẽ đổi tại chỗ (host đã nhận lại app)")
+        assertEquals(before, r.persistCount)
+    }
 }

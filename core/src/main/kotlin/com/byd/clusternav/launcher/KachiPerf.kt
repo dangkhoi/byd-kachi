@@ -37,7 +37,11 @@ import java.util.concurrent.atomic.AtomicLong
  */
 object KachiPerf {
 
-    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY }
+    /**
+     * `BEHIND_*` (spec shortcuts-autostart R0.5): số lần BEHIND-HOME lùi về O1 · số lần activity giữ chỗ bị ROM chạy
+     * thật. Đếm dồn (không vào [dueLine], không đổi định dạng dòng đo đang so giữa các bản) — đọc bằng [value].
+     */
+    enum class Counter { HAL_READ, HAL_SKIP_OFFSCREEN, HAL_SKIP_ABSENT, SHELL_CMD, LOG_BYTES, SHELL_DENY, BEHIND_FAIL, BEHIND_ANCHOR_RAN }
 
     private val values: Map<Counter, AtomicLong> =
         Counter.values().associateWith { AtomicLong(0) }

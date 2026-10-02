@@ -1,0 +1,8 @@
+10:32:18 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:19 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:19 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:20 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:20 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:21 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:21 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome
+10:32:22 top0=2612:com.byd.launcher/com.byd.clusternav.launcher.KachiHome

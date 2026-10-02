@@ -1,0 +1,19 @@
+--------- beginning of system
+--------- beginning of main
+10-02 07:03:33.895 27271 27271 I KachiReady: proc interactive=false t=245 so=- wall=07:03:33.895
+10-02 07:03:33.926 27271 27305 I KachiReady: checking src=early t=279 so=- wall=07:03:33.926
+10-02 07:03:34.003 27271 27305 I KachiReady: up src=early t=355 so=- wall=07:03:34.003
+10-02 07:03:34.012 27271 27305 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=82ms t=364 so=- wall=07:03:34.012
+10-02 07:03:34.159 27271 27305 I KachiReady: window adb_allowed_connection_time=default t=511 so=- wall=07:03:34.159
+10-02 07:03:39.252 27271 27301 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 07:03:39.260 27271 27301 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177988016, leo=163604535, con của lượt chữa=false)
+10-02 07:03:43.884 27271 27271 I KachiReady: screen_on src=home t=10168 so=+0 wall=07:03:43.884
+10-02 07:03:43.885 27271 27271 I KachiReady: home adopt t=10237 so=+69 wall=07:03:43.885
+10-02 07:03:43.887 27271 27305 I KachiReady: keys=BOUND t=10239 so=+71 wall=07:03:43.887
+10-02 07:03:44.006 27271 27447 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 07:03:44.120 27271 27301 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 07:03:44.196 27271 27444 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0
+10-02 07:03:44.235 27271 27271 I KachiReady: tile vd=122 slot=0 t=10587 so=+419 wall=07:03:44.235
+10-02 07:03:44.238 27271 27271 I KachiReady: summary screen_on->tile=420 proc->up=355 src=early keys=BOUND
+10-02 07:04:07.493 27271 27444 I KachiBehind: behind X=com.google.android.apps.youtube.music qua ô 0 (vd=122 C=vn.vietmap.live) chờ=0ms · evict vd=122 A=com.google.android.apps.youtube.music B=vn.vietmap.live → MOVED task=2400 S=191 top0=0 kiểm=OK gỡ=1 dọn-trước=0
+10-02 07:04:23.016 27271 27447 I KachiTrip: run trip=n39.t178000182 tries=1 -> RAN in=39076ms saved=true :: ready after 20456ms | music:com.google.android.apps.youtube.music:MOVED:open-only (no session)

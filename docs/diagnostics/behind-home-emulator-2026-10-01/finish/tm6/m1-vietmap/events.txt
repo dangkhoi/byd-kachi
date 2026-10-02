@@ -1,0 +1,17 @@
+10-02 10:30:40.593  6254  6546 I am_new_intent: [0,254054227,2613,vn.vietmap.live/.MainActivity,android.intent.action.MAIN,NULL,NULL,268435456]
+10-02 10:30:40.593  6254  6546 I wm_stack_created: 314
+10-02 10:30:40.595  6254  6546 I wm_task_removed: [2613,reParentTask]
+10-02 10:30:40.596  6254  6546 I wm_task_moved: [2613,1,0]
+10-02 10:30:40.596  6254  6546 I am_remove_task: [2613,305]
+10-02 10:30:40.596  6254  6546 I wm_stack_removed: 305
+10-02 10:30:40.599  6254  6546 I am_focused_stack: [0,173,314,313,reparentToDisplay]
+10-02 10:30:40.599  6254  6546 I am_pause_activity: [0,208456110,com.google.android.deskclock/com.android.deskclock.DeskClock,userLeaving=true]
+10-02 10:30:40.605  5614  5614 I am_on_paused_called: [0,com.android.deskclock.DeskClock,performPause]
+10-02 10:30:40.606  6254  6546 I am_set_resumed_activity: [0,vn.vietmap.live/.MainActivity,resumeTopActivityInnerLocked]
+10-02 10:30:40.607  6254  6546 I am_add_to_stopping: [0,208456110,com.google.android.deskclock/com.android.deskclock.DeskClock,makeInvisible]
+10-02 10:30:40.607  6254  6546 I am_resume_activity: [0,254054227,2613,vn.vietmap.live/.MainActivity]
+10-02 10:30:40.676  3625  3625 I am_on_restart_called: [0,vn.vietmap.live.MainActivity,performRestartActivity]
+10-02 10:30:40.711  3625  3625 I am_on_start_called: [0,vn.vietmap.live.MainActivity,handleStartActivity]
+10-02 10:30:40.728  3625  3625 I am_on_resume_called: [0,vn.vietmap.live.MainActivity,RESUME_ACTIVITY]
+10-02 10:30:41.389  6254  6274 I am_stop_activity: [0,208456110,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-02 10:30:41.449  5614  5614 I am_on_stop_called: [0,com.android.deskclock.DeskClock,STOP_ACTIVITY_ITEM]

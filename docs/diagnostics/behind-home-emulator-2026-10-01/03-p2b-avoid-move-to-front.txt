@@ -1,0 +1,24 @@
+## 23:59:26 P2b — bundle key android.activity.avoidMoveToFront=true (no hidden-API call; plain Bundle key), NEW_TASK, cold app com.android.settings, HOME on top
+screen: mWakefulness=Awake  pid_before=
+T0=10-01 23:59:26.000
+mode=avoid flags=0x10000000 result=0
+pid_after=
+Stack id=59 bounds=[0,0][1129,804] displayId=41 userId=0
+  taskId=2071: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2070: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+Stack id=60 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2072: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=61 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2073: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+    mResumedActivity: ActivityRecord{3a509ed u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2070}
+    mResumedActivity: ActivityRecord{657abc5 u0 vn.vietmap.live/.MainActivity t2071}
+--- events
+10-01 23:59:26.477  6254  7194 I wm_stack_created: 61
+10-01 23:59:26.533  6254  7194 I wm_task_created: [2073,61]
+10-01 23:59:26.533  6254  7194 I wm_task_moved: [2073,0,2147483647]
+10-01 23:59:26.533  6254  7194 I am_create_task: [0,2073]
+10-01 23:59:26.533  6254  7194 I am_create_activity: [0,232790529,2073,com.android.settings/.Settings,android.intent.action.MAIN,NULL,NULL,268435456]
+10-01 23:59:26.533  6254  7194 I wm_task_moved: [2073,0,2147483647]

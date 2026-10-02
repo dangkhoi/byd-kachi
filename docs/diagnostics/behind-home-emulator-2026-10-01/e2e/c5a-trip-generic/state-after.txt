@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="kachi_trip_ledger">v=1;trip=n39.t181050431;phase=CLAIMED;tries=1</string>
+    <string name="kachi_shell_approval">v=1;fp=<redacted>;ok=1790898505119;win=604800000</string>
+    <int name="freeform_state" value="1" />
+    <string name="kachi_trip_last">v=1;trip=n39.t180705221;code=NOTHING;at=1790902129322;d=config empty</string>
+</map>

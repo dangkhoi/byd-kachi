@@ -190,7 +190,7 @@ class CarDataDemandRendererContractTest {
     }
 
     /**
-     * Hai widget khai nhu cầu RỖNG phải thật sự **không đọc gì của xe** — nếu không thì "rỗng" là một lỗ hổng
+     * Ba widget khai nhu cầu RỖNG (`w_media` · `w_photos` · `w_apps`) phải thật sự **không đọc gì của xe** — nếu không thì "rỗng" là một lỗ hổng
      * chứ không phải một sự thật. Bộ vẽ của chúng nằm ở tệp khác nên kiểm thẳng tệp ấy.
      */
     @Test
@@ -198,6 +198,8 @@ class CarDataDemandRendererContractTest {
         val external = mapOf(
             "w_media" to "app/src/main/java/com/byd/clusternav/launcher/MediaWidgetView.kt",
             "w_photos" to "app/src/main/java/com/byd/clusternav/launcher/PhotoWidgetView.kt",
+            // F1 R1.3 — lưới lối tắt: icon app trên máy + trạng thái kênh, không một số nào của xe.
+            "w_apps" to "app/src/main/java/com/byd/clusternav/launcher/ShortcutIconsView.kt",
         )
         external.forEach { (widgetId, path) ->
             assertTrue(

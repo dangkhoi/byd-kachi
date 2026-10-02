@@ -75,6 +75,25 @@ object VoiceAppIntents {
     }
 
     /**
+     * LÕI "phát bài theo từ khoá" DÙNG CHUNG (spec shortcuts-autostart R3.4 bước 3 · §4.6 — tách từ
+     * `VoiceTargetDispatch.runMediaQuery`, không có đường giải bài thứ hai): app có khuôn `watch` ⇒ giải `video_id` bài đầu
+     * bằng [resolveVideo] (mạng, CHẶN — luồng nền) ⇒ [Handoff] watch. `null` = app không có đường watch / giải hỏng ⇒ bên
+     * gọi tự lùi (giọng nói: `MEDIA_PLAY_FROM_SEARCH` với TÊN bài; chuyến lên xe: tiếp tục phiên của app).
+     *
+     * ⚠ `fallback = null` (không phải `target.launch`): fallback bắn cùng `query`, mà ở watch `query` = video_id.
+     * Hai bên giao khác nhau vì đích khác nhau: giọng nói bắn ý-định ([send], app lên trước — người lái vừa xin); chuyến
+     * lên xe đưa [url] vào PHIÊN nhạc (`MediaBridge.playFromUri`) vì ý-định VIEW che màn nhà [ĐO `trip/tm3-ytmusic.txt`].
+     */
+    fun watchHandoff(target: VoiceAppTarget, pkg: String, query: String, resolveVideo: (String) -> String?): Handoff? {
+        val watch = target.watch ?: return null
+        val vid = runCatching { resolveVideo(query) }.getOrNull() ?: return null
+        return Handoff(pkg, watch, vid, null, null)
+    }
+
+    /** Chuỗi URI mà [send] sẽ mở cho [h] (khuôn [VoiceLaunch.Uri]); `null` = đường không phải URI / thiếu toạ độ. */
+    fun urlOf(h: Handoff): String? = (h.launch as? VoiceLaunch.Uri)?.let { uri(it, h.query, h.coords) }
+
+    /**
      * Cờ khởi chạy của MỌI ý-định giao việc — chỗ DUY NHẤT dựng cờ.
      *
      * `NEW_TASK` luôn có (bắn từ `Context` không phải Activity); `CLEAR_TASK` chỉ khi [clearTask] (quyết định 4).

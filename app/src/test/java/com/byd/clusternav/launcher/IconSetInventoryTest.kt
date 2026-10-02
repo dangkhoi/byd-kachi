@@ -42,7 +42,7 @@ class IconSetInventoryTest {
         WidgetRegistry.ALL.forEach { w -> n++; resolves(w.icon)?.let { bad += "widget ${w.id}: $it" } }
         CapabilityGroups.ALL.forEach { g -> n++; resolves(g.icon)?.let { bad += "nhóm ${g.id}: $it" } }
         ActionMacros.ALL.forEach { m -> n++; resolves(m.icon)?.let { bad += "macro ${m.id}: $it" } }
-        LauncherActions.ALL.forEach { a -> n++; resolves(a.icon)?.let { bad += "hành động ${a.id}: $it" } }
+        LauncherActions.placeable.forEach { a -> n++; resolves(a.icon)?.let { bad += "hành động ${a.id}: $it" } }
         // Sàn 150 → 120 sau UX-OVERHAUL WP8 2026-09-20 (purge 29 datum + 8 nút + 1 nhóm ⇒ [ĐO] 136 mục).
         // → 112 sau lượt gỡ 7 datum CHẾT 2026-09-25 ([ĐO] 119 mục). Sàn = số thật trừ ~6 %, để bắt "đọc hụt
         // registry" mà không đỏ vì một lượt xoá có chủ ý.

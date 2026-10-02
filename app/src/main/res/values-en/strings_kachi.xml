@@ -141,7 +141,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start and Run background service on engine start do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start and Open apps at ignition do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -678,6 +678,35 @@
     <string name="kachi_voice_pill_title">Mic button on the status bar</string>
     <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
     <string name="kachi_slot_app_closed">App closed — tap to reopen</string>
+    <!-- shortcuts-autostart §4.14 — a temporary placement failed: the new app could not open in the slot. -->
+    <string name="kachi_sc_place_failed">%1$s couldn\'t open in the slot</string>
+    <!-- shortcuts-autostart §4.14 · group B — app shortcuts (app picker · Settings · bar block · widget · tap reasons) -->
+    <string name="kachi_drawer_title_shortcuts">Pick apps for shortcuts</string>
+    <string name="kachi_drawer_hint_shortcuts">Tap to add or remove an app · tap Apply to save · tap the backdrop to close</string>
+    <string name="kachi_sc_cap_note">Shortcuts hold at most %1$d apps — remove one to add another</string>
+    <string name="kachi_sc_section">App shortcuts (%1$d)</string>
+    <string name="kachi_sc_note">Shown in the App shortcuts block on the button bar (add the block with the button picker above) and in the App shortcut grid widget. Slot n: placed in the slot for now, the old app moves behind the home screen; restarting the launcher brings back the saved layout.</string>
+    <string name="kachi_sc_pick_n">Choose apps… (%1$d/%2$d)</string>
+    <string name="kachi_sc_mode_slot">Slot %1$d</string>
+    <string name="kachi_sc_mode_full">Full screen</string>
+    <string name="kachi_sc_mode_bg">Background</string>
+    <string name="kachi_sc_slot_outside">This layout has %1$d slots — a dimmed slot opens full screen</string>
+    <string name="kachi_sc_order_title">Shortcut order</string>
+    <string name="kachi_sc_order_hint">▲/▼ moves an app in the bar block and the widget</string>
+    <string name="kachi_sc_empty">No shortcuts yet — tap to choose apps</string>
+    <string name="kachi_sc_reason_absent">This layout has %1$d slots — opening full screen</string>
+    <string name="kachi_sc_reason_widget">Slot %1$d holds a widget — opening full screen</string>
+    <string name="kachi_sc_in_slot">%1$s is already in slot %2$d</string>
+    <string name="kachi_sc_running">%1$s is already running</string>
+    <string name="kachi_sc_no_stage">Running in the background needs at least one open app slot on the home screen</string>
+    <string name="kachi_sc_refuse_system">System apps can\'t run in the background</string>
+    <string name="kachi_sc_refuse_self">Kachi can\'t run itself in the background</string>
+    <string name="kachi_sc_refuse_cast">%1$s is being cast to the cluster</string>
+    <string name="kachi_sc_not_installed">%1$s is not installed</string>
+    <string name="kachi_sc_bg_failed">%1$s couldn\'t start in the background</string>
+    <!-- F1 row 9 (spec shortcuts-autostart): the slot app is open full screen (K7); back to the slot on HOME (K8). -->
+    <string name="kachi_sc_full_card">Showing full screen — tap to bring it back to the slot</string>
+    <string name="kachi_sc_full_failed">Couldn\'t open %1$s full screen</string>
     <string name="kachi_captest_title">Test each car function</string>
     <string name="kachi_captest_note">Walk through every readout and action on the car. For an ACTION: tap Run, then mark OK or Not OK. For a READOUT: check the value shown. Results are saved so you can verify everything on the car.</string>
     <string name="kachi_captest_summary">Checked %1$d/%2$d · OK %3$d · Not OK %4$d</string>
@@ -744,4 +773,30 @@
     <string name="kachi_camera_dewarp_on_sub_header">Dewarp</string>
     <string name="kachi_camera_dewarp_on_title">Dewarp (straighten the lens)</string>
     <string name="kachi_camera_dewarp_on_sub">Off = the raw picture as the camera delivers it. The dewarp numbers are preset per car.</string>
+    <!-- F2/F3 — trip at ignition (spec shortcuts-autostart §4.14, group C 2026-10-02) -->
+    <string name="kachi_drawer_title_trip">Pick apps to open at ignition</string>
+    <string name="kachi_drawer_hint_trip">Tap to add or remove an app · tap Apply to save · choose how each opens in Settings</string>
+    <string name="kachi_trip_cap_note">Ignition apps hold at most %1$d apps — remove one to add another</string>
+    <string name="kachi_trip_title">Open apps at ignition</string>
+    <string name="kachi_trip_hint">Runs once per ignition, after the home screen is ready (about 15–45 seconds). Background = opened in a slot, then moved behind the home screen; the slot may flash for 1–2 seconds. Apps already in a slot or cast to the cluster are skipped.</string>
+    <string name="kachi_trip_add_n">+ Add apps (%1$d/%2$d)</string>
+    <string name="kachi_trip_mode_bg">Run in background</string>
+    <string name="kachi_trip_mode_normal">Open normally</string>
+    <string name="kachi_trip_remove">Remove</string>
+    <string name="kachi_trip_slot_hint">To have an app open and visible at every ignition, put it in a slot of this profile.</string>
+    <string name="kachi_trip_no_slot_warn">This profile\'s layout has no app slot — background apps will be skipped.</string>
+    <string name="kachi_trip_normal_unsupported">The camera screen is unknown on this car — apps won\'t be opened in front.</string>
+    <string name="kachi_trip_last_ran">Last ignition: %1$s</string>
+    <string name="kachi_trip_res_ran">ran at %1$s</string>
+    <string name="kachi_trip_res_nothing">nothing to open (%1$s)</string>
+    <string name="kachi_trip_res_gave_up">gave up after two tries (%1$s)</string>
+    <string name="kachi_trip_expired">Timed out — no apps opened this trip</string>
+    <string name="kachi_trip_wait_channel">Waiting for the window-control channel</string>
+    <string name="kachi_trip_music_title">Play music when you get in</string>
+    <string name="kachi_trip_music_mode">Music</string>
+    <string name="kachi_trip_music_off">Off</string>
+    <string name="kachi_trip_music_car">Car\'s player</string>
+    <string name="kachi_trip_music_query">What to play (keyword or YouTube link; empty = resume)</string>
+    <string name="kachi_trip_music_query_set">What to play: %1$s</string>
+    <string name="kachi_trip_music_note">Apps are usually closed after the car is switched off — set a keyword or link to be sure music plays. If something else is already playing, Kachi leaves it alone.</string>
 </resources>

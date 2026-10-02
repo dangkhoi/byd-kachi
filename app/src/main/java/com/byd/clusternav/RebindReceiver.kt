@@ -10,6 +10,7 @@ import android.os.SystemClock
 import android.service.notification.NotificationListenerService
 import android.util.Log
 import com.byd.clusternav.launcher.KachiHomeActivity
+import com.byd.clusternav.launcher.trip.TripStart
 import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 
 /**
@@ -79,6 +80,7 @@ class RebindReceiver : BroadcastReceiver() {
         when (action) {
             Intent.ACTION_BOOT_COMPLETED -> {
                 scheduleWatchdog(context)
+                TripStart.onBootCompleted(context)   // F2/F3 R2.3a — khoá lần khởi động này (commit), không phụ thuộc công tắc
                 // 1.21 Item 1 (owner): HEADLESS auto-start — do the boot setup in a background
                 // foreground-service (BootSetupService) WITHOUT foregrounding any screen on the main
                 // display (also dodges the dudu size-compat letterbox). Toggle defaults ON; when OFF, fall

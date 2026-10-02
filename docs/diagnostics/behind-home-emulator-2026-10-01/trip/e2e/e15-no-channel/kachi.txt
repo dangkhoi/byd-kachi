@@ -1,0 +1,18 @@
+--------- beginning of main
+--------- beginning of system
+10-02 07:06:54.126 30577 30577 I KachiReady: proc interactive=false t=244 so=- wall=07:06:54.126
+10-02 07:06:54.193 30577 30609 I KachiReady: checking src=early t=311 so=- wall=07:06:54.193
+10-02 07:07:00.254 30577 30609 W KachiReady: ledger forget src=early ok=true
+10-02 07:07:00.255 30577 30605 I KachiReady: deny BACKGROUND caller=kachi-a11y-lifecycle state=NEEDS_APPROVAL total=1 t=6373 so=- wall=07:07:00.255
+10-02 07:07:00.255 30577 30605 W A11yLifecycle: dumpsys accessibility qua dadb hỏng: NOT_APPROVED
+10-02 07:07:00.257 30577 30623 I KachiReady: deny BACKGROUND caller=kachi-window-shell state=NEEDS_APPROVAL total=2 t=6375 so=- wall=07:07:00.257
+10-02 07:07:00.262 30577 30609 I KachiReady: needs lost src=early t=6381 so=- wall=07:07:00.262
+10-02 07:07:00.263 30577 30609 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> AWAITING_APPROVAL in=6069ms t=6381 so=- wall=07:07:00.263
+10-02 07:07:00.264 30577 30605 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=178187966, leo=163604535, con của lượt chữa=false)
+10-02 07:07:00.267 30577 30609 W KachiReady: ledger forget src=early ok=true
+10-02 07:07:04.279 30577 30577 I KachiReady: screen_on src=broadcast t=10398 so=+0 wall=07:07:04.279
+10-02 07:07:04.284 30577 30605 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 07:07:06.553 30577 30577 I KachiReady: card show variant=LOST t=12671 so=+2273 wall=07:07:06.553
+10-02 07:07:11.682 30577 30718 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:07:37.749 30577 30718 W KachiReady: ledger forget src=f4 ok=true
+10-02 07:08:03.840 30577 30718 W KachiReady: ledger forget src=f4 ok=true

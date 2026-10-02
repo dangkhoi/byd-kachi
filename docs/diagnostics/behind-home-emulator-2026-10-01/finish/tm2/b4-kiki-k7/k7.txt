@@ -1,0 +1,2 @@
+am start --display 0 --windowingMode 1 -f 0x20000000 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n 'ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity'
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x20000000 cmp=ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity }

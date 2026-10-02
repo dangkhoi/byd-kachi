@@ -97,6 +97,17 @@
             android:exported="false"
             android:label="Dữ liệu VietMap" />
 
+        <!-- BEHIND-HOME (spec kachi-launcher-shortcuts-autostart §4.2.5): activity GIỮ CHỖ — không bao giờ chạy khi
+             mọi thứ đúng (khoá avoidMoveToFront ⇒ mDoResume=false); chỉ để có một stack S nằm đáy display 0. Chạy thật
+             ⇒ ROM bỏ qua khoá ⇒ tự báo + tự gỡ. Không exported: chỉ chính Kachi mở. -->
+        <activity
+            android:name=".launcher.behind.BehindAnchorActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="com.byd.clusternav.behind"
+            android:theme="@android:style/Theme.NoDisplay" />
+
         <activity
             android:name=".modules.clustercast.ClusterBlackActivity"
             android:exported="true"

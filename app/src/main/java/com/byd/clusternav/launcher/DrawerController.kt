@@ -104,7 +104,35 @@ class DrawerController(
         )
     }
 
-    /** Gắn ngăn kéo lên màn — dùng CHUNG cho cả 3 chế độ (byte-giữ so với nhánh overlay cũ). */
+    /**
+     * F1 · U1 (spec shortcuts-autostart R1.4) — bộ chọn APP cho lối tắt: [AppDrawer.Mode.PICK_SHORTCUTS], cùng hình dạng
+     * [openDockPicker] (đa chọn, tô sẵn theo [selected], **Áp dụng (N)** ⇒ [onApply] rồi tự đóng). Trần 8 = trần của
+     * bảng (`AppDrawer.cap` = `MAX`) = [AppShortcutCodec.MAX].
+     *
+     * Hợp đồng với chỗ gọi (trang Cài đặt lối tắt): [selected] đọc lại MỖI lần mở; [onApply] nhận danh sách gói THEO
+     * THỨ TỰ CHẠM (tập của bảng là `LinkedHashSet` — `selected.toSet()`), gấp bằng [ShortcutSelection.apply] rồi đẩy qua
+     * intent ViewModel — KHÔNG ghi bền trực tiếp (`GridSeamGuardTest.chi ViewModel duoc ghi ben`).
+     */
+    fun openShortcutPicker(
+        selected: List<String>,
+        onApply: (List<String>) -> Unit,
+        /** F2 · U6 — [AppDrawer.Mode.PICK_TRIP] (app mở khi nổ máy, trần 6): CÙNG bộ chọn, khác trần + chữ. */
+        mode: AppDrawer.Mode = AppDrawer.Mode.PICK_SHORTCUTS,
+    ) {
+        if (drawer != null) return
+        show(
+            AppDrawer(
+                activity, WidgetRegistry.ALL, selected,
+                onPickApp = {},
+                onPickWidgets = {},
+                onClose = { close() },
+                mode = mode,
+                onApply = { ids -> onApply(ids.toList()); close() },
+            ),
+        )
+    }
+
+    /** Gắn ngăn kéo lên màn — dùng CHUNG cho cả 4 chế độ (byte-giữ so với nhánh overlay cũ). */
     private fun show(d: AppDrawer) {
         drawer = d
         onClearOverlays()

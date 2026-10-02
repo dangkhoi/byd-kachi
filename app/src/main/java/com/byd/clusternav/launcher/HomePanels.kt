@@ -32,6 +32,10 @@ class HomePanels(
     private val bridge: ClusterNavBridge,
     private val openDockPicker: (Set<String>, (Set<String>) -> Unit) -> Unit,
     private val onDockConfig: (DockConfig) -> Unit,
+    /** F1 · U2 — trang Cài đặt lối tắt; chuyển thẳng xuống [SettingsDeps.shortcuts]. */
+    private val shortcuts: ShortcutSettingsPort,
+    /** F2/F3 · U6 — trang Cài đặt chuyến lên xe; chuyển thẳng xuống [SettingsDeps.trip]. */
+    private val trip: TripSettingsPort,
     private val runAction: (String, Int) -> Boolean,
     private val readInfo: (String) -> String?,
     private val onApplyLayout: (GridLayout?) -> Unit,
@@ -169,6 +173,8 @@ class HomePanels(
             openDockPicker = { selected, onApply -> openDockPicker(selected, onApply) },
             onDockConfig = { config -> onDockConfig(config) },
             onDockEdge = { e -> onDockEdge(e) },
+            shortcuts = shortcuts,
+            trip = trip,
             runAction = { id, arg -> runAction(id, arg) },
             readInfo = { id -> readInfo(id) },
             // R11: đổi đơn vị ⇒ lưu bền + áp lại NGAY cho cả thanh nút và ô giữa màn (không cần mở lại app).

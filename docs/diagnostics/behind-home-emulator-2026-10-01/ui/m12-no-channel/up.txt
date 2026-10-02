@@ -1,0 +1,4 @@
+10-02 05:42:55.315 30638 30638 I KachiReady: summary screen_on->tile=1738 proc->up=1276 src=early keys=GRANT(pending)
+10-02 05:45:45.775 31527 31627 I KachiReady: up src=f4 t=98935 so=- wall=05:45:45.774
+10-02 05:45:46.022 31527 31527 I KachiReady: tile vd=105 slot=0 t=99182 so=+114 wall=05:45:46.022
+10-02 05:45:46.023 31527 31527 I KachiReady: summary screen_on->tile=115 proc->up=98935 src=f4 keys=GRANT(pending)

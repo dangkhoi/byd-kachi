@@ -1,0 +1,3 @@
+T0=10-02 04:41:33.000 vm=11562 kachi=11379
+hit=1 polls=134 killed_at=04:41:38.345
+after: vm=12895 kachi=12719

@@ -1,0 +1,27 @@
+## 23:52:25 BASELINE
+$ am stack list
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw720dp w1280dp h696dp 240dpi xlrg long land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1920, 1080) mAppBounds=Rect(0, 0 - 1920, 1080) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2037: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+
+Stack id=47 bounds=[0,0][1129,804] displayId=34 userId=0
+ configuration={1.0 310mcc260mnc [vi_VN] ldltr sw643dp w903dp h643dp 200dpi lrg land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1129, 804) mAppBounds=Rect(0, 0 - 1129, 804) mWindowingMode=fullscreen mDisplayWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} s.14}
+  taskId=2038: vn.vietmap.live/vn.vietmap.live.MainActivity bounds=[0,0][1129,804] userId=0 visible=true topActivity=ComponentInfo{vn.vietmap.live/vn.vietmap.live.MainActivity}
+
+$ dumpsys activity activities | grep -E "mResumedActivity|mFocusedApp"
+    mResumedActivity: ActivityRecord{e694363 u0 vn.vietmap.live/.MainActivity t2038}
+    mResumedActivity: ActivityRecord{326080a u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2037}
+$ dumpsys display | grep -E "kachi|mDisplayId=|uniqueId"
+  DisplayDeviceInfo{"kachi-slot-0-1790873445320": uniqueId="virtual:com.byd.launcher,10163,kachi-slot-0-1790873445320,0", 1129 x 804, modeId 39, defaultModeId 39, supportedModes [{id=39, width=1129, height=804, fps=60.0}], colorMode 0, supportedColorModes [0], HdrCapabilities null, density 200, 200.0 x 200.0 dpi, appVsyncOff 0, presDeadline 16666666, touch NONE, rotation 0, type VIRTUAL, state ON, owner com.byd.launcher (uid 10163), FLAG_PRIVATE, FLAG_NEVER_BLANK, FLAG_OWN_CONTENT_ONLY}
+    mUniqueId=virtual:com.byd.launcher,10163,kachi-slot-0-1790873445320,0
+    mDisplayId=0
+    mDisplayId=34
+    mPrimaryDisplayDevice=kachi-slot-0-1790873445320
+    mBaseDisplayInfo=DisplayInfo{"kachi-slot-0-1790873445320, displayId 34", uniqueId "virtual:com.byd.launcher,10163,kachi-slot-0-1790873445320,0", app 1129 x 804, real 1129 x 804, largest app 1129 x 804, smallest app 1129 x 804, mode 39, defaultMode 39, modes [{id=39, width=1129, height=804, fps=60.0}], colorMode 0, supportedColorModes [0], hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 34, appVsyncOff 0, presDeadline 16666666, type VIRTUAL, state ON, owner com.byd.launcher (uid 10163), FLAG_PRIVATE, removeMode 1}
+    mOverrideDisplayInfo=DisplayInfo{"kachi-slot-0-1790873445320, displayId 34", uniqueId "virtual:com.byd.launcher,10163,kachi-slot-0-1790873445320,0", app 1129 x 804, real 1129 x 804, largest app 1129 x 1129, smallest app 804 x 804, mode 39, defaultMode 39, modes [{id=39, width=1129, height=804, fps=60.0}], colorMode 0, supportedColorModes [0], hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 34, appVsyncOff 0, presDeadline 16666666, type VIRTUAL, state ON, owner com.byd.launcher (uid 10163), FLAG_PRIVATE, removeMode 1}
+$ dumpsys package com.byd.launcher | grep versionName
+    versionCode=185 minSdk=29 targetSdk=37
+    versionName=2.84
+$ cmd package resolve-activity HOME
+priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true
+com.byd.launcher/com.byd.clusternav.launcher.KachiHome

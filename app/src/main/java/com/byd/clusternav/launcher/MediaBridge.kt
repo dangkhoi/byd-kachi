@@ -7,7 +7,9 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
+import android.net.Uri
 import com.byd.clusternav.NavNotificationListener
+import com.byd.clusternav.launcher.trip.TripMusicPlan
 
 /** Ảnh chụp phiên nhạc đang phát cho widget nhạc. Mọi field nullable/rỗng-an-toàn → widget "—" khi không có. */
 data class MediaSnapshot(
@@ -109,6 +111,29 @@ class MediaBridge(context: Context) : MediaTransport {
             "prev" -> prev()
         }
     }
+
+    /**
+     * F3 (spec shortcuts-autostart R3.4/R3.5) — MỌI phiên đang hoạt động (gói + đang phát?). `null` = KHÔNG ĐỌC ĐƯỢC
+     * (chưa có quyền nghe thông báo / lỗi) — khác [read], vốn trả `null` cả khi đơn giản là chưa có phiên nào: chuyến
+     * lên xe phải phân biệt *"không ai đang phát"* với *"không biết"* (không biết ⇒ không đè, fail-safe).
+     */
+    fun sessions(): List<TripMusicPlan.Session>? =
+        activeControllers()?.map { c -> TripMusicPlan.Session(c.packageName, Real(c).playing()) }
+
+    /** `play()` vào ĐÚNG phiên của [pkg] (không phải phiên [active] đang được widget theo). `false` = gói không có phiên. */
+    fun playPackage(pkg: String): Boolean = onPackage(pkg) { it.play() }
+
+    /**
+     * `playFromUri` vào phiên của [pkg]. [url] phải đã qua `TripMusicPlan.safeWatchUrl` (bên gọi kiểm) — [ĐO máy ảo 02/10
+     * `trip/tm3u-ytmusic.txt`] YT Music đổi đúng bài, 0 sự kiện cửa sổ; khác ý-định VIEW (che màn nhà, `tm3-ytmusic.txt`).
+     */
+    fun playFromUri(pkg: String, url: String): Boolean = onPackage(pkg) { it.playFromUri(Uri.parse(url), null) }
+
+    private fun onPackage(pkg: String, block: (MediaController.TransportControls) -> Unit): Boolean = runCatching {
+        val c = activeControllers()?.firstOrNull { it.packageName == pkg } ?: return false
+        block(c.transportControls)
+        true
+    }.getOrDefault(false)
 
     private fun tx(block: (MediaController.TransportControls) -> Unit): Boolean = runCatching {
         if (active == null) read()          // chưa ai dò phiên lần nào (vd cầu giọng nói) — dò đúng một lần

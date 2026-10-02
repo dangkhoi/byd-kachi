@@ -79,6 +79,9 @@ class SettingsBarsSection(
         headerOrder.section(body, R.string.kachi_header_order_title, R.string.kachi_header_order_hint)
         voicePill(body)
         dock(body)
+        // F1 · U2 — lối tắt ứng dụng NGAY SAU thanh nút: khối lối tắt là một mã của thanh nút (chọn ở nút ngay trên),
+        // nên người vừa đặt khối lên thanh tìm thấy chỗ chọn app ở liền dưới. Widget `w_apps` dùng cùng danh sách.
+        SettingsShortcutsSection(context, rows, deps).section(body)
     }
 
     /**

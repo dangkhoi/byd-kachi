@@ -1,0 +1,3 @@
+T0=10-02 10:28:20.000 pkg=com.google.android.apps.youtube.music comp=com.google.android.apps.youtube.music/.activities.MusicActivity mech=k7 vd=173 task=2614 pids_before={'com.google.android.apps.youtube.music': '4518', 'com.byd.launcher': '3401'}
+pids_after_detach={'com.google.android.apps.youtube.music': '4518', 'com.byd.launcher': '3401'}
+T8=10-02 10:28:29.000 k8_vd=173 pids_after_k8={'com.google.android.apps.youtube.music': '4518', 'com.byd.launcher': '3401'}

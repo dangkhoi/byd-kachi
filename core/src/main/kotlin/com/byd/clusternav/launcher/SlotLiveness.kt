@@ -26,7 +26,9 @@ package com.byd.clusternav.launcher
  */
 class SlotLiveness(private val missesToDie: Int = DEFAULT_MISSES) {
 
-    private var seenAlive = false
+    /** Đã thấy app sống ít nhất một nhịp — ĐỌC được cho chỗ dàn dựng BEHIND-HOME (A5: chỉ ô đã sống mới được dùng). */
+    var seenAlive = false
+        private set
     private var misses = 0
     private var reported = false
 

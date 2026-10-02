@@ -1,0 +1,4 @@
+--------- beginning of main
+10-02 10:28:02.536  3401  3401 I KachiTest: cmd cmd=open pkg=com.google.android.apps.youtube.music
+--------- beginning of system
+10-02 10:28:02.558  3401  3401 I KachiTest: reply cmd=open ok=true ms=11 file=/storage/emulated/0/Android/data/com.byd.launcher/files/test/20261002-102802-549-open.json json={"ok":true,"cmd":"open","ms":11,"pkg":"com.google.android.apps.youtube.music","requested":true}

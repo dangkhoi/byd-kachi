@@ -1,0 +1,5 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:35:59.005 24159 24212 I KachiBehind: recovery dấu=2 nổi-lên=false giữ=2
+10-02 05:35:59.074 24159 24159 I VdAppHost: [slot-density] slot=0 short=804 dpi=200→200 (643,2dp→643,2dp)
+10-02 05:35:59.079 24159 24159 I KachiVd : tạo màn ảo kachi-slot-0-1790894159073 — ô 0 · display 97 · chủ ws@261171083 · đang sống 1

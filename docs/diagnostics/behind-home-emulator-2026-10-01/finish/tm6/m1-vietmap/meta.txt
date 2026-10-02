@@ -1,0 +1,5 @@
+T0=10-02 10:30:39.000 pkg=vn.vietmap.live comp=vn.vietmap.live/.MainActivity task=2613 vd=173 marks=<string name="kachi_behind_marks">2613:vn.vietmap.live,2614:com.google.android.apps.youtube.music</string>
+$ am start --display 173 -n vn.vietmap.live/.MainActivity
+Starting: Intent { cmp=vn.vietmap.live/.MainActivity }
+
+pids_before={'vn.vietmap.live': '3625', 'com.byd.launcher': '3401'} pids_after={'vn.vietmap.live': '3625', 'com.byd.launcher': '3401'}

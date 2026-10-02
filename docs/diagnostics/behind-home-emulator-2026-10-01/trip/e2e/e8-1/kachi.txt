@@ -1,0 +1,17 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:49:05.719 11906 11906 I KachiReady: proc interactive=false t=247 so=- wall=06:49:05.718
+10-02 06:49:05.761 11906 11938 I KachiReady: checking src=early t=291 so=- wall=06:49:05.761
+10-02 06:49:05.848 11906 11938 I KachiReady: up src=early t=378 so=- wall=06:49:05.847
+10-02 06:49:05.848 11906 11938 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=87ms t=379 so=- wall=06:49:05.848
+10-02 06:49:05.933 11906 11938 I KachiReady: window adb_allowed_connection_time=default t=464 so=- wall=06:49:05.933
+10-02 06:49:10.977 11906 11934 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 06:49:10.981 11906 11934 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=177113626, leo=163604535, con của lượt chữa=false)
+10-02 06:49:15.669 11906 11906 I KachiReady: screen_on src=home t=10199 so=+0 wall=06:49:15.669
+10-02 06:49:15.670 11906 11906 I KachiReady: home adopt t=10200 so=+1 wall=06:49:15.670
+10-02 06:49:15.674 11906 11938 I KachiReady: keys=BOUND t=10205 so=+6 wall=06:49:15.674
+10-02 06:49:15.883 11906 11934 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 06:49:15.999 11906 11906 I KachiReady: tile vd=110 slot=0 t=10529 so=+330 wall=06:49:15.999
+10-02 06:49:16.000 11906 11906 I KachiReady: summary screen_on->tile=331 proc->up=378 src=early keys=BOUND
+10-02 06:49:16.096 11906 12079 I KachiTrip: wait BOOT (streak=1 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 06:49:36.474 11906 12079 I KachiTrip: run trip=n39.t177132007 tries=1 -> RAN in=20663ms saved=true :: ready after 20207ms | com.google.android.deskclock:skip-SYSTEM_APP

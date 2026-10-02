@@ -1,0 +1,7 @@
+    mResumedActivity: ActivityRecord{2fa96bd u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2496}
+ ResumedActivity:ActivityRecord{2fa96bd u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2496}
+    mResumedActivity: ActivityRecord{274849e u0 vn.vietmap.live/.MainActivity t2495}
+ ResumedActivity:ActivityRecord{274849e u0 vn.vietmap.live/.MainActivity t2495}
+    mResumedActivity: ActivityRecord{1e8d18f u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2494}
+ ResumedActivity:ActivityRecord{1e8d18f u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2494}
+  ResumedActivity: ActivityRecord{2fa96bd u0 com.google.android.apps.youtube.music/.activities.MusicActivity t2496}

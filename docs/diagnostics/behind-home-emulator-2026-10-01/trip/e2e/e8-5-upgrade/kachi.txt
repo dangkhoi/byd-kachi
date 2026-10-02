@@ -1,0 +1,16 @@
+--------- beginning of main
+--------- beginning of system
+10-02 06:54:59.359 17631 17677 I A11yLifecycle: khởi động tiến trình (tương tác=true) → không mở lượt tắt-máy
+10-02 06:54:59.378 17631 17631 I KachiReady: proc interactive=true t=800 so=- wall=06:54:59.378
+10-02 06:54:59.485 17631 17681 I KachiReady: checking src=early t=910 so=- wall=06:54:59.484
+10-02 06:54:59.666 17631 17681 I KachiReady: up src=early t=1091 so=- wall=06:54:59.666
+10-02 06:54:59.675 17631 17681 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=190ms t=1100 so=- wall=06:54:59.675
+10-02 06:54:59.920 17631 17681 I KachiReady: window adb_allowed_connection_time=default t=1345 so=- wall=06:54:59.920
+10-02 06:54:59.920 17631 17681 I KachiReady: screen_on src=up t=1346 so=+0 wall=06:54:59.920
+10-02 06:54:59.949 17631 17677 I A11yLifecycle: khoi-dong: không kẹt (bound=true, binding=false)
+10-02 06:54:59.982 17631 17681 I KachiReady: keys=BOUND t=1407 so=+61 wall=06:54:59.981
+10-02 06:55:00.071 17631 17737 I KachiTrip: skip trip=n39.t177363115 why=ALREADY_FIRED
+10-02 06:55:00.390 17631 17733 I KachiBehind: recovery dấu=1 nổi-lên=true giữ=1
+10-02 06:55:03.177 17631 17631 I KachiReady: home adopt t=4602 so=+3256 wall=06:55:03.176
+10-02 06:55:08.826 17631 17631 I KachiReady: tile vd=114 slot=0 t=10251 so=+8905 wall=06:55:08.826
+10-02 06:55:08.826 17631 17631 I KachiReady: summary screen_on->tile=8906 proc->up=1091 src=early keys=BOUND

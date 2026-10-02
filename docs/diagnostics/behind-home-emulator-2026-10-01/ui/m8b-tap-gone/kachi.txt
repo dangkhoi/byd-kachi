@@ -1,0 +1,3 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:39:26.145 27913 27913 I KachiShortcut: tap com.example.notinstalled F usable=true stages=0 -> Refuse(reason=NOT_INSTALLED)

@@ -17,6 +17,8 @@ import com.byd.clusternav.carexec.ShellChannelPhase
 import com.byd.clusternav.carexec.ShellReadinessPolicy
 import com.byd.clusternav.carexec.ShellReadinessState
 import com.byd.clusternav.launcher.ShellApprovalProbe
+import com.byd.clusternav.launcher.behind.BehindHomeRecovery
+import com.byd.clusternav.launcher.trip.TripStart
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
@@ -149,11 +151,12 @@ internal object EarlyShellChannel {
         readyChain(app, KachiReadyLog.lastScreenOnAt())
     }
 
-    /** Một lượt mỗi lần màn bật: kiểm phím (2.83) rồi keep-alive + watchdog. */
+    /** Một lượt mỗi lần màn bật: kiểm phím (2.83) rồi keep-alive + watchdog, rồi chuyến lên xe (luồng riêng). */
     private fun readyChain(app: Context, epoch: Long) {
         val prev = chainFor.get()
         if (prev == epoch || !chainFor.compareAndSet(prev, epoch)) return
         if (!ShellReadiness.isUp() || interactive(app) != true) return
+        BehindHomeRecovery.onReady(app)   // app Kachi đẩy ra sau nhà nổi lên vì Kachi bị giết ⇒ HOME lên lại (§5)
         KeyReady.prepare(app)
         // R2.6 — best-effort: Android 12 (DL5) có thể chặn khởi FGS từ nền [SUY 2.83 §4.2] (`sync` tự bắt + log). Đường
         // cũ trong `bringUpShellChannel` vẫn gọi lại khi HOME nhận kênh — đây chỉ là khởi SỚM hơn.
@@ -163,6 +166,7 @@ internal object EarlyShellChannel {
         } catch (e: RuntimeException) {
             Log.w(TAG, "khởi keep-alive/watchdog sớm hỏng (đường HOME sẽ gọi lại): ${e.message}")
         }
+        TripStart.onReady(app)   // F2/F3 chuyến lên xe — đẩy sang luồng `kachi-trip`, trả ngay (spec shortcuts-autostart §4.5)
     }
 
     /** `adb_allowed_connection_time` — lệnh CHỈ ĐỌC, một lần mỗi tiến trình, khi kênh đã lên (§4.4.2, R-nf1). */

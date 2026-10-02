@@ -1,0 +1,3 @@
+T0=10-02 06:52:52.000 pids_before=['13952', '14036']
+pids_while_off=['15765'] interactive=mWakefulness=Asleep
+wake=06:53:06

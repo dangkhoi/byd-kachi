@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.trip.TripConfig
+
 /**
  * Tầng-dữ-liệu (data-layer seam) cho trạng thái HOME của launcher — ranh giới giữa [HomeViewModel] và nơi lưu bền.
  *
@@ -110,6 +112,21 @@ interface WorkspaceRepository {
 
     /** Ghi bền sổ địa chỉ (cả danh sách một lượt — phép thêm/sửa/xoá là hàm thuần ở [SavedPlaces]). */
     fun setSavedPlaces(places: List<SavedPlace>) {}
+
+    /**
+     * F1 — lối tắt ứng dụng của hồ sơ đang dùng (khoá `<hồ sơ>__app_shortcuts`, [ProfileScope.LAUNCHER_LAYOUT_SUFFIXES]).
+     * Thân MẶC ĐỊNH (rỗng / không lưu) ⇒ bản giả in-memory trong test không phải sửa; rỗng KHỚP mặc định nơi lưu bền.
+     */
+    fun appShortcuts(): List<AppShortcut> = emptyList()
+
+    /** Ghi bền cả danh sách lối tắt (phép sửa là hàm thuần ở [ShortcutSelection]). Mặc định: không lưu (bản giả). */
+    fun setAppShortcuts(items: List<AppShortcut>) {}
+
+    /** F2/F3 — cấu hình chuyến lên xe của hồ sơ đang dùng (`ignition_apps` + `ignition_music`). Mặc định rỗng = mặc định đĩa. */
+    fun tripConfig(): TripConfig = TripConfig()
+
+    /** Ghi bền cấu hình chuyến (một lượt cho hai khoá). Mặc định: không lưu (bản giả). */
+    fun setTripConfig(cfg: TripConfig) {}
 
     fun wallpaperPrefs(): WallpaperPrefs = WallpaperPrefs.DEFAULT
 

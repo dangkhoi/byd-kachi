@@ -27,6 +27,10 @@ class LauncherProfileTypesCoverageTest {
     private val files = listOf(
         "WorkspacePrefs.kt", "WorkspacePrefsLang.kt", "WorkspacePrefsProfile.kt", "WorkspacePrefsSnapshot.kt",
         "WorkspacePrefsMigrations.kt",
+        // F1 (2026-10-02) — `app_shortcuts` đọc/ghi ở tệp riêng (WorkspacePrefs.kt 499/500 dòng).
+        "WorkspacePrefsShortcuts.kt",
+        // F2/F3 (2026-10-02, nhóm C) — `ignition_apps` + `ignition_music` đọc/ghi ở tệp riêng (cùng lẽ).
+        "WorkspacePrefsTrip.kt",
     )
 
     private fun code(file: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")

@@ -1,0 +1,6 @@
+10-02 10:31:54.253  6254 10188 I am_new_intent: [0,247924381,2619,ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity,NULL,NULL,NULL,268435456]
+10-02 10:31:54.256  6907  6907 I am_on_paused_called: [0,ai.zalo.kiki.auto.ui.CarMainActivity,performPause]
+10-02 10:31:54.259  6907  6907 I am_on_resume_called: [0,ai.zalo.kiki.auto.ui.CarMainActivity,LIFECYCLER_RESUME_ACTIVITY]
+10-02 10:32:03.705  6254 10188 I am_new_intent: [0,247924381,2619,ai.zalo.kiki.car/ai.zalo.kiki.auto.ui.CarMainActivity,NULL,NULL,NULL,268435456]
+10-02 10:32:03.710  6907  6907 I am_on_paused_called: [0,ai.zalo.kiki.auto.ui.CarMainActivity,performPause]
+10-02 10:32:03.712  6907  6907 I am_on_resume_called: [0,ai.zalo.kiki.auto.ui.CarMainActivity,LIFECYCLER_RESUME_ACTIVITY]

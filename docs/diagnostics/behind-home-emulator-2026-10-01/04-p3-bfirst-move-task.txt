@@ -1,0 +1,114 @@
+## 00:01:01 P3 — B-first then move-task A (VD41 -> display-0 stack 61 behind HOME, toTop=false)
+T0=10-02 00:01:01.000 screen=mWakefulness=Asleep
+--- [start] 00:01:01.148
+Stack id=60 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2072: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=61 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2073: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+pidA=13302 pidB=
+$ [1 setup: A into slot VD] am start --display 41 -n com.google.android.deskclock/com.android.deskclock.DeskClock
+Starting: Intent { cmp=com.google.android.deskclock/com.android.deskclock.DeskClock }
+Security exception: Permission Denial: starting Intent { flg=0x10000000 cmp=com.google.android.deskclock/com.android.deskclock.DeskClock } from null (pid=14993, uid=2000) with launchDisplayId=41
+
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=com.google.android.deskclock/com.android.deskclock.DeskClock } from null (pid=14993, uid=2000) with launchDisplayId=41
+	at com.android.server.wm.SafeActivityOptions.checkPermissions(SafeActivityOptions.java:217)
+	at com.android.server.wm.SafeActivityOptions.getOptions(SafeActivityOptions.java:123)
+	at com.android.server.wm.ActivityStarter.startActivity(ActivityStarter.java:783)
+	at com.android.server.wm.ActivityStarter.startActivity(ActivityStarter.java:583)
+	at com.android.server.wm.ActivityStarter.startActivityMayWait(ActivityStarter.java:1288)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1058)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1032)
+	at com.android.server.am.ActivityManagerService.startActivityAsUser(ActivityManagerService.java:3504)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:518)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:172)
+	at android.os.ShellCommand.exec(ShellCommand.java:104)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:9774)
+	at android.os.Binder.shellCommand(Binder.java:881)
+	at android.os.Binder.onTransact(Binder.java:765)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:4498)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2741)
+	at android.os.Binder.execTransactInternal(Binder.java:1021)
+	at android.os.Binder.execTransact(Binder.java:994)
+--- [after-1] 00:01:04.211
+Stack id=60 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2072: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=61 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2073: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+pidA=13302 pidB=
+$ [2 B-first: bring B to front inside VD] am start --display 41 -n vn.vietmap.live/.MainActivity
+Starting: Intent { cmp=vn.vietmap.live/.MainActivity }
+Security exception: Permission Denial: starting Intent { flg=0x10000000 cmp=vn.vietmap.live/.MainActivity } from null (pid=15011, uid=2000) with launchDisplayId=41
+
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 cmp=vn.vietmap.live/.MainActivity } from null (pid=15011, uid=2000) with launchDisplayId=41
+	at com.android.server.wm.SafeActivityOptions.checkPermissions(SafeActivityOptions.java:217)
+	at com.android.server.wm.SafeActivityOptions.getOptions(SafeActivityOptions.java:123)
+	at com.android.server.wm.ActivityStarter.startActivity(ActivityStarter.java:783)
+	at com.android.server.wm.ActivityStarter.startActivity(ActivityStarter.java:583)
+	at com.android.server.wm.ActivityStarter.startActivityMayWait(ActivityStarter.java:1288)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1058)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1032)
+	at com.android.server.am.ActivityManagerService.startActivityAsUser(ActivityManagerService.java:3504)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:518)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:172)
+	at android.os.ShellCommand.exec(ShellCommand.java:104)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:9774)
+	at android.os.Binder.shellCommand(Binder.java:881)
+	at android.os.Binder.onTransact(Binder.java:765)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:4498)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2741)
+	at android.os.Binder.execTransactInternal(Binder.java:1021)
+	at android.os.Binder.execTransact(Binder.java:994)
+--- [after-2] 00:01:07.339
+Stack id=60 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2072: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.google.android.deskclock/com.android.deskclock.DeskClock}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=61 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2073: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=false topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+pidA=13302 pidB=
+$ [3 A out, B on top of A in VD] am stack move-task 2072 61 false
+--- [after-3] 00:01:10.487
+Stack id=61 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2072: com.google.android.deskclock/com.android.deskclock.DeskClock bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+  taskId=2073: com.android.settings/com.android.settings.Settings bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.android.settings/com.android.settings.Settings}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+pidA=13302 pidB=
+--- events
+10-02 00:01:06.780  6254  6281 I am_proc_start: [0,15015,10163,com.byd.launcher,service,{com.byd.launcher/com.byd.clusternav.NavNotificationListener}]
+10-02 00:01:07.394  6254  6646 I wm_task_removed: [2072,reParentTask]
+10-02 00:01:07.395  6254  6646 I wm_task_moved: [2072,0,0]
+10-02 00:01:07.395  6254  6646 I am_remove_task: [2072,60]
+10-02 00:01:07.395  6254  6646 I wm_stack_removed: 60
+10-02 00:01:07.399  6254  6646 I am_add_to_stopping: [0,89247198,com.google.android.deskclock/com.android.deskclock.DeskClock,makeInvisible]
+10-02 00:01:07.401  6254  6274 I am_stop_activity: [0,89247198,com.google.android.deskclock/com.android.deskclock.DeskClock]
+10-02 00:01:07.412  6254  6281 I am_proc_start: [0,15060,1000,com.android.settings,activity,{com.android.settings/com.android.settings.Settings}]
+10-02 00:01:07.426  6254  6646 I am_restart_activity: [0,232790529,2073,com.android.settings/.Settings]
+10-02 00:01:07.427  6254  6646 I am_set_resumed_activity: [0,com.android.settings/.Settings,minimalResumeActivityLocked]
+10-02 00:01:07.427  6254  6646 I am_pause_activity: [0,232790529,com.android.settings/.Settings,userLeaving=false]
+10-02 00:01:07.599 15060 15060 I am_on_create_called: [0,com.android.settings.Settings,performCreate]
+10-02 00:01:07.659 15060 15060 I am_on_start_called: [0,com.android.settings.Settings,handleStartActivity]
+10-02 00:01:07.659 15060 15060 I am_on_resume_called: [0,com.android.settings.Settings,RESUME_ACTIVITY]
+10-02 00:01:07.665  6254  6281 I am_proc_start: [0,15099,10106,com.android.settings.intelligence,service,{com.android.settings.intelligence/com.android.settings.intelligence.suggestions.SuggestionService}]
+10-02 00:01:07.724 15060 15060 I am_on_top_resumed_gained_called: [0,com.android.settings.Settings,topStateChangedWhenResumed]
+10-02 00:01:07.724 15060 15060 I am_on_top_resumed_lost_called: [0,com.android.settings.Settings,topStateChangedWhenResumed]
+10-02 00:01:07.725 15060 15060 I am_on_paused_called: [0,com.android.settings.Settings,performPause]
+10-02 00:01:07.725  6254  6646 I am_add_to_stopping: [0,232790529,com.android.settings/.Settings,completePauseLocked]
+10-02 00:01:07.726  6254  6274 I am_stop_activity: [0,232790529,com.android.settings/.Settings]
+10-02 00:01:07.926 15060 15060 I am_on_stop_called: [0,com.android.settings.Settings,sleeping]
+## 00:01:26 NOTE: P3 run INVALID — at T0 screen Asleep + Kachi dead (foreign e2e loop), VD41 gone ⇒ 'am start --display 41' denied (SafeActivityOptions:217). Step 3 ran with A (deskclock) top on display 0 ⇒ stack 61 moved to front (wasFront path). Cleanup:
+Stack id=0 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2079: com.byd.launcher/com.byd.clusternav.launcher.KachiHome bounds=[0,0][1920,1080] userId=0 visible=true topActivity=ComponentInfo{com.byd.launcher/com.byd.clusternav.launcher.KachiHome}
+Stack id=53 bounds=[0,0][1920,1080] displayId=0 userId=0
+  taskId=2055: com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity bounds=[0,0][1920,1080] userId=0 visible=false
+mWakefulness=Awake

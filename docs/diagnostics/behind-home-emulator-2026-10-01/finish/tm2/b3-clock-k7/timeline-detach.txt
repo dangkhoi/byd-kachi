@@ -1,0 +1,12 @@
+10:30:05 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:05 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:06 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:06 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:06 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:07 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:07 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:08 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:08 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:09 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:09 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock
+10:30:10 top0=2618:com.google.android.deskclock/com.android.deskclock.DeskClock

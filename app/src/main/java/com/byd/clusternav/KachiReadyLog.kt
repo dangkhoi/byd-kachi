@@ -37,6 +37,8 @@ internal object KachiReadyLog {
 
     private val procStart: Long = runCatching { Process.getStartElapsedRealtime() }.getOrDefault(SystemClock.elapsedRealtime())
     private val screenOnAt = AtomicLong(-1L)
+    /** Lần THỨC đầu tiên của tiến trình (không bị lần thức sau ghi đè) — hạn chuyến lên xe tính từ đây (spec shortcuts R2.3). */
+    private val firstScreenOnAt = AtomicLong(-1L)
     private val upAt = AtomicLong(-1L)
     @Volatile private var upSrc: String = "-"
     @Volatile private var keys: String = "-"
@@ -62,10 +64,14 @@ internal object KachiReadyLog {
         val cur = screenOnAt.get()
         if (cur >= 0 && at >= cur && at - cur < SAME_WAKE_MS) return
         screenOnAt.set(at)
+        firstScreenOnAt.compareAndSet(-1L, at)
         line("screen_on src=$src")
     }
 
     fun lastScreenOnAt(): Long = screenOnAt.get()
+
+    /** Mốc thức đầu tiên của tiến trình; `-1` = chưa thức lần nào (tiến trình bật lúc màn tắt và màn chưa bật lại). */
+    fun firstWakeAt(): Long = firstScreenOnAt.get()
 
     fun up(src: String) {
         upAt.compareAndSet(-1L, SystemClock.elapsedRealtime())

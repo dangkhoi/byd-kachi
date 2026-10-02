@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-02 05:33:30.622 22028 22028 I KachiShortcut: tap com.google.android.deskclock S1 usable=true stages=0 -> PlaceTemp(slot=0, evict=vn.vietmap.live)
+10-02 05:33:35.235 22028 22860 I KachiBehind: evict vd=96 A=vn.vietmap.live B=com.google.android.deskclock → MOVED task=2320 S=147 top0=0 kiểm=OK gỡ=1 dọn-trước=0

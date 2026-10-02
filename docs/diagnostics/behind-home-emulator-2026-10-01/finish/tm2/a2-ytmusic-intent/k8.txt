@@ -1,0 +1,2 @@
+am start --display 173 -n com.google.android.apps.youtube.music/.activities.MusicActivity
+Starting: Intent { cmp=com.google.android.apps.youtube.music/.activities.MusicActivity }

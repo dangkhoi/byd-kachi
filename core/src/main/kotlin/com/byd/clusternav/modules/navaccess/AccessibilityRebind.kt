@@ -1,6 +1,7 @@
 package com.byd.clusternav.modules.navaccess
 
 import com.byd.clusternav.launcher.HomeActivityCmd
+import com.byd.clusternav.launcher.camera.CameraGuard
 
 /**
  * PURE (no-Android) decision + string logic for FORCE-REBINDING the accessibility service.
@@ -338,11 +339,10 @@ object AccessibilityRebind {
      * trình hệ, không làm được bằng `sh`.
      *
      * Bốn câu CLAUDE.md §4 như [HomeTail.ALWAYS] (chỉ display 0 · Home mặc định của hệ · chỉ đưa stack `home` lên ·
-     * không state bền). Không có dấu `'` — cả chuỗi nằm trong `sh -c '…'`.
+     * không state bền). Không có dấu `'` — cả chuỗi nằm trong `sh -c '…'`. Dựng bằng [CameraGuard] (bộ dựng rào DUY
+     * NHẤT, spec shortcuts-autostart C8); `ForceStopReturnHomeTest` khoá chuỗi trùng từng byte bản 2.83.
      */
-    const val GO_HOME_UNLESS_CAMERA: String =
-        "c=\$(am stack list | grep -A2 \"displayId=0 \" | grep \"visible=true\") ; " +
-            "case \"\$c\" in \"\") ;; *\"$CAMERA_SCREEN_SIGNATURE\"*) ;; *) ${HomeActivityCmd.GO_HOME} ;; esac"
+    val GO_HOME_UNLESS_CAMERA: String = CameraGuard.unlessCamera(CAMERA_SCREEN_SIGNATURE, null, HomeActivityCmd.GO_HOME)
 
     /** Người dùng tự bấm ⇒ [HomeTail.ALWAYS]; mọi đường TỰ ĐỘNG (lớp 1/2) ⇒ [HomeTail.IF_ORPHANED]. */
     fun homeTailFor(userAsked: Boolean): HomeTail = if (userAsked) HomeTail.ALWAYS else HomeTail.IF_ORPHANED
@@ -428,7 +428,7 @@ object AccessibilityRebind {
      * Android 10 29/09] trên đúng bộ công cụ của ROM: mksh R57 + BSD grep 2.5.1 + toybox `head`, với `am` giả in
      * fixture xe — cùng kết quả. Xe thật: chốt bằng một lượt "Sửa ngay" có app trong Ô, đọc `am stack list` sau ~8 s.
      */
-    const val RETURN_HOME_IF_ORPHANED: String =
+    val RETURN_HOME_IF_ORPHANED: String =
         "t=\$(am stack list | grep -A1 \"displayId=0 \" | head -n 2) ; " +
             "case \"\$t\" in *\"$ORPHAN_SIGNATURE\"*) $GO_HOME_UNLESS_CAMERA ;; esac"
 

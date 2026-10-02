@@ -1,0 +1,21 @@
+--------- beginning of main
+--------- beginning of system
+10-02 07:54:24.136 19273 19273 I KachiReady: proc interactive=false t=45 so=- wall=07:54:24.135
+10-02 07:54:24.180 19273 19295 I KachiReady: checking src=early t=91 so=- wall=07:54:24.180
+10-02 07:54:24.344 19273 19295 I KachiReady: up src=early t=254 so=- wall=07:54:24.343
+10-02 07:54:24.344 19273 19295 I KachiReady: early mode=LEDGER fp=<redacted> try=1 -> UP in=163ms t=254 so=- wall=07:54:24.344
+10-02 07:54:24.447 19273 19295 I KachiReady: window adb_allowed_connection_time=default t=358 so=- wall=07:54:24.447
+10-02 07:54:29.565 19273 19292 I A11yLifecycle: tat-may: kẹt KHÔNG bền (lần 2 bound=true, binding=false) → không leo
+10-02 07:54:29.570 19273 19292 I A11yLifecycle: ân hạn khởi động: không mở (tương tác=false, tiến trình trước=180705221, leo=163604535, con của lượt chữa=false)
+10-02 07:55:09.289 19273 19273 I KachiReady: screen_on src=home t=45200 so=+0 wall=07:55:09.289
+10-02 07:55:09.291 19273 19273 I KachiReady: home adopt t=45201 so=+1 wall=07:55:09.290
+10-02 07:55:09.305 19273 19295 I KachiReady: keys=BOUND t=45216 so=+16 wall=07:55:09.305
+10-02 07:55:09.473 19273 19451 I KachiTrip: wait BOOT (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)
+10-02 07:55:09.523 19273 19292 I A11yLifecycle: mo-xe: không kẹt (bound=true, binding=false)
+10-02 07:55:09.657 19273 19444 I KachiBehind: recovery dấu=1 nổi-lên=false giữ=0
+10-02 07:55:09.676 19273 19445 I KachiFloat: dọn[shell-up] bỏ: dấu rỗng (0 lệnh shell)
+10-02 07:55:09.688 19273 19273 I VdAppHost: [slot-density] slot=0 short=956 dpi=200→200 (764,8dp→764,8dp)
+10-02 07:55:09.691 19273 19273 I KachiReady: tile vd=138 slot=0 t=45601 so=+401 wall=07:55:09.691
+10-02 07:55:09.691 19273 19273 I KachiReady: summary screen_on->tile=402 proc->up=254 src=early keys=BOUND
+10-02 07:55:09.691 19273 19273 I KachiVd : tạo màn ảo kachi-slot-0-1790902509688 — ô 0 · display 138 · chủ ws@38647633 · đang sống 1
+10-02 07:55:29.662 19273 19451 I KachiTrip: wait HOME_STEADY (streak=0 home=com.byd.launcher/com.byd.clusternav.launcher.KachiHome)

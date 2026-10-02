@@ -1,0 +1,5 @@
+T0=10-02 09:32:38.000 pids_before=['20869', '20954']
+killed_at=09:32:42
+pids_while_off=['21415', '21492'] mWakefulness=Asleep
+trip_lines_while_off=0
+wake=09:32:53

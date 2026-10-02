@@ -110,12 +110,17 @@ class VoiceCommandWiringContractTest {
      */
     @Test
     fun `duong gan app vao o la dung duong cua ngan keo`() {
-        assertTrue(
-            activity.contains("assignAppToSlot = { idx, pkg -> slots.assignApp(idx, pkg); true }"),
-            "Activity phải truyền CHÍNH `slots.assignApp` — cùng hàm mà `onPickApp` của ngăn kéo gọi",
+        // Đính chính owner 01/10 (spec shortcuts-autostart §2.2): giọng nói "mở X vào ô n" là đặt TẠM — CẢ HAI lối
+        // vào giọng nói của màn chính (phiên nghe + ô gõ lệnh chữ) đi `slots.placeTemporary`, không còn lối nào đi
+        // `slots.assignApp` (ghi bền); ngăn kéo vẫn LƯU qua `slots.assignApp`. Cùng một lớp `KachiHomeSlots` lo cả hai.
+        assertEquals(
+            2, Regex(Regex.escape("assignAppToSlot = { idx, pkg -> slots.placeTemporary(idx, pkg) }")).findAll(activity).count(),
+            "hai lối giọng nói của Activity phải truyền CHÍNH `slots.placeTemporary`",
         )
+        assertFalse(activity.contains("assignAppToSlot = { idx, pkg -> slots.assignApp("),
+            "giọng nói không được ghi bền bố cục hồ sơ (owner 01/10: đặt vào ô lúc chạy là tạm)")
         assertTrue(activity.contains("onPickApp = { idx, pkg -> slots.assignApp(idx, pkg) }"),
-            "…và ngăn kéo vẫn phải dùng đúng hàm ấy (nếu dòng này đổi, dòng trên không còn là *cùng đường*)")
+            "…và ngăn kéo vẫn phải LƯU qua đúng hàm ấy (chọn app cho ô bằng ngăn kéo là sửa bố cục)")
         assertTrue(wiring.contains("assignAppToSlot = assignAppToSlot"),
             "khối nối dây phải chuyển tiếp xuống cả phiên NGHE lẫn bảng Cài đặt")
         assertTrue(console.contains("assignAppToSlot = deps.assignAppToSlot"),

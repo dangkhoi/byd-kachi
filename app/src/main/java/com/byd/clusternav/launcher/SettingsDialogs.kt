@@ -170,4 +170,22 @@ internal object SettingsDialogs {
             .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
+
+    /**
+     * Hỏi một dòng CHỮ TỰ DO được phép XOÁ TRẮNG (F3 — ô *"Phát gì"*: rỗng = tiếp tục phiên của app). Khác [askName] đúng
+     * một chỗ: ô trống là một câu trả lời hợp lệ, không lùi về [initial] — ở đây xoá chữ chính là lựa chọn của người dùng.
+     */
+    fun askText(context: Context, title: String, initial: String, onOk: (String) -> Unit) {
+        val input = EditText(context).apply {
+            setText(initial)
+            inputType = InputType.TYPE_CLASS_TEXT
+            setSelection(0, initial.length)
+        }
+        AlertDialog.Builder(context)
+            .setTitle(title)
+            .setView(input)
+            .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ -> onOk(input.text.toString().trim()) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
 }

@@ -8,6 +8,7 @@ import com.byd.clusternav.launcher.HomeUiState
 import com.byd.clusternav.launcher.PermissionPreflight
 import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
+import com.byd.clusternav.launcher.SlotContent
 import com.byd.clusternav.launcher.UnitFormat
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.inputdDisabled
@@ -120,17 +121,15 @@ internal object TestBridgeState {
             "preset" to s.workspace.preset.name,
             "custom" to (s.customLayout != null),
             "slot_count" to count,
-            "slots" to TestBridgeJson.Raw(
-                TestBridgeJson.arr(
-                    s.slots.mapIndexed { i, c ->
-                        TestBridgeJson.Raw(
-                            TestBridgeJson.obj("n" to i + 1, "content" to SlotCodec.encode(c)),
-                        )
-                    },
-                ),
-            ),
+            // `slots` = ô ĐANG HIỆN (lớp lưu + lớp đặt tạm — đính chính owner 01/10); `saved_slots` = lớp LƯU của hồ sơ.
+            "slots" to TestBridgeJson.Raw(slotsJson(s.effectiveWorkspace.slots)),
+            "saved_slots" to TestBridgeJson.Raw(slotsJson(s.slots)),
         )
     }
+
+    private fun slotsJson(slots: List<SlotContent>): String = TestBridgeJson.arr(
+        slots.mapIndexed { i, c -> TestBridgeJson.Raw(TestBridgeJson.obj("n" to i + 1, "content" to SlotCodec.encode(c))) },
+    )
 
     /**
      * Tên các màn ảo của ô **đang sống thật** — trả lời câu *"ô có bao nhiêu màn ảo"* bằng phép đo của nền tảng.

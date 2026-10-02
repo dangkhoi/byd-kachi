@@ -205,4 +205,26 @@ object KachiBars {
      * việc cắt đó **im lặng** (`LinearLayout` gravity CENTER không báo gì).
      */
     const val DOCK_TILE_H_VERTICAL = 60
+
+    /**
+     * F1 · R1.2 (owner 01/10: *"icon 52 dp"*) — KHE của MỘT app trong khối lối tắt trên thanh nút. Khối dài
+     * `n × SHORTCUT_CELL + 2 × SHORTCUT_PAD` theo trục thanh (n = `ShortcutStrip.cells`). 52 ≥ [KachiSpace.TOUCH] nên
+     * khe là đích chạm đủ; vừa bề dày ô thanh ở cả hai hướng (73 ngang · [DOCK_TILE_W_VERTICAL] = 83 dọc).
+     */
+    const val SHORTCUT_CELL = 52
+
+    /** Icon trong khe lối tắt = [KachiSpace.ICON_XL] (44): chừa 4 dp mỗi bên để hai icon cạnh nhau không dính. */
+    const val SHORTCUT_ICON = KachiSpace.ICON_XL
+
+    /** Lề hai đầu khối lối tắt — cùng bậc lề trong của thanh ([DOCK_PAD]). */
+    const val SHORTCUT_PAD = KachiSpace.XS
+
+    /**
+     * Widget `w_apps` ở ô TO (R1.3): khe 64 / icon 52 — ô giữa màn rộng hơn thanh nút nhiều; khe vẫn ≥ [KachiSpace.TOUCH].
+     * Ở ô NÉN (lưới nhiều widget) dùng lại khe/icon của thanh ([SHORTCUT_CELL]/[SHORTCUT_ICON]).
+     */
+    const val SHORTCUT_GRID_CELL = 64
+
+    /** Icon trong khe widget `w_apps` ô to — xem [SHORTCUT_GRID_CELL]. */
+    const val SHORTCUT_GRID_ICON = 52
 }

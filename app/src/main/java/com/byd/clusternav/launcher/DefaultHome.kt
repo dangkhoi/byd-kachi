@@ -48,6 +48,14 @@ object DefaultHome {
      */
     fun launchComponent(ctx: Context): String = "${ctx.packageName}/${KachiHomeActivity::class.java.name}"
 
+    /**
+     * Mọi dạng mà `am stack list` in cho MÀN NHÀ của Kachi đang hiện: [component] (alias — hệ mở bằng ý-định HOME) và
+     * [launchComponent] (task dựng bằng `am start -n`, vd `KachiAutostart` lúc `MY_PACKAGE_REPLACED` hay nút khởi động
+     * lại launcher). [ĐO máy ảo 02/10, E2E `c5a-trip-generic`] dạng sau nằm trong stack `standard`, stack `home` rỗng, và
+     * vẫn là màn nhà qua nhiều lần BYD giết Kachi ⇒ phép "màn nhà Kachi có đang ở trước không" phải nhận cả hai.
+     */
+    fun shownComponents(ctx: Context): List<String> = listOf(component(ctx), launchComponent(ctx))
+
     private fun alias(ctx: Context) = ComponentName(ctx.packageName, HOME_ALIAS_CLASS)
 
     private fun homeIntent(): Intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)

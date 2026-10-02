@@ -262,6 +262,7 @@ class SettingsSections(
             title = context.getString(R.string.kachi_headless_title),
             sub = context.getString(R.string.kachi_headless_sub),
         ) { on -> deps.bridge.setHeadlessAutostart(on) })
+        SettingsTripAppsSection(context, rows, deps).section(body)   // F2 — app mở khi nổ máy (SettingsSectionsTrip.kt)
 
         // ── Bảo trì ──
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_maint)))

@@ -1,0 +1,4 @@
+T0=10-02 11:03:46.000 T_tap_vietmap=10-02 11:04:00.000
+pids before={'vn.vietmap.live': '23956', 'com.google.android.apps.youtube.music': ''} after_yt={'vn.vietmap.live': '23956', 'com.google.android.apps.youtube.music': '24448'} after_vm={'vn.vietmap.live': '23956', 'com.google.android.apps.youtube.music': '24448'}
+marks after YT tap: <string name="kachi_behind_marks">2676:vn.vietmap.live</string>
+marks after VM tap: <string name="kachi_behind_marks">2677:com.google.android.apps.youtube.music</string>

@@ -1,0 +1,1 @@
+T0=10-02 11:02:11.000 task=2667 vd=186 tap=(1483, 658, 1579, 754) pids before={'vn.vietmap.live': '20147'} detached={'vn.vietmap.live': '20147'} after_home={'vn.vietmap.live': '20147'}

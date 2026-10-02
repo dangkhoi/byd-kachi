@@ -1,0 +1,5 @@
+    mResumedActivity: ActivityRecord{5ebc0c0 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2319}
+ ResumedActivity:ActivityRecord{5ebc0c0 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2319}
+    mResumedActivity: ActivityRecord{c9e93e5 u0 com.google.android.deskclock/com.android.deskclock.DeskClock t2321}
+ ResumedActivity:ActivityRecord{c9e93e5 u0 com.google.android.deskclock/com.android.deskclock.DeskClock t2321}
+  ResumedActivity: ActivityRecord{5ebc0c0 u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t2319}

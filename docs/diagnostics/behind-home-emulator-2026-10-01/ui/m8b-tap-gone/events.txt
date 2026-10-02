@@ -1,0 +1,2 @@
+10-02 05:39:26.029 28345 28345 I am_on_top_resumed_lost_called: [0,vn.vietmap.live.MainActivity,topStateChangedWhenResumed]
+10-02 05:39:26.042 27913 27913 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]

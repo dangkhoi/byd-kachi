@@ -78,7 +78,8 @@ class AppDrawerApps(private val context: Context, private val onPickApp: (String
     fun grid(parent: LinearLayout, items: List<Item>, cols: Int) =
         CapabilityTileGrid.rows(context, parent, items.size, cols) { i -> tile(items[i]) }
 
-    private fun tile(item: Item): View =
+    /** `internal` (không `private`): ô app của chế độ chọn lối tắt (`AppDrawerShortcutPick.kt`) dùng CHÍNH ô này. */
+    internal fun tile(item: Item): View =
         LinearLayout(context).apply {
             // Căn DỌC-TRÊN như ô khả năng (không CENTER): ô cao `MATCH_PARENT` theo hàng, căn giữa dọc sẽ làm icon
             // của ô nhãn ngắn tụt xuống lệch với ô cùng hàng.

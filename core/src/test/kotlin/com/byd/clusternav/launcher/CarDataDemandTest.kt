@@ -110,7 +110,8 @@ class CarDataDemandTest {
      */
     @Test
     fun `hanh dong launcher tren thanh nut khong keo theo datum nao`() {
-        LauncherActions.ALL.forEach { a ->
+        // F1: `placeable` = ba việc gọi bằng lời + khối lối tắt (`LauncherActions.BLOCKS`) — cả bốn đặt được lên thanh.
+        LauncherActions.placeable.forEach { a ->
             val d = CarDataDemand.of(state(dock = listOf(a.id)))
             assertNotNull(d, "mã ${a.id} làm nhu cầu về null ⇒ cổng H1 tắt im lặng, đọc lại cả bảng datum")
             assertTrue(d!!.isEmpty(), "${a.id} không chạm CarControlPort nên không bày một số nào của xe")

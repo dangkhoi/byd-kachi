@@ -1,0 +1,7 @@
+10-02 09:34:07.534  6254  6641 I am_focused_stack: [0,0,278,0,bringingFoundTaskToFront]
+10-02 09:34:07.535  6254  6641 I am_set_resumed_activity: [0,com.waze/.FreeMapAppActivity,bringingFoundTaskToFront]
+10-02 09:34:07.549  6254  9820 I am_set_resumed_activity: [0,com.waze/.FreeMapAppActivity,resumeTopActivityInnerLocked]
+10-02 09:34:07.662  6254  8261 I am_set_resumed_activity: [0,com.waze/.MainActivity,minimalResumeActivityLocked]
+10-02 09:34:12.994  6254  6254 I screen_toggled: 0
+10-02 09:34:16.726  6254  6254 I screen_toggled: 1
+10-02 09:34:16.734  6254  6288 I am_set_resumed_activity: [0,com.waze/.MainActivity,resumeTopActivityInnerLocked]

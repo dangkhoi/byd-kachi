@@ -1,0 +1,2 @@
+<string name="kachi_trip_ledger">v=1;trip=n39.t177255098;phase=FIRED;tries=1</string>
+<string name="kachi_trip_last">v=1;trip=n39.t177255098;code=RAN;at=1790898700421;d=ready after 20040ms | com.waze:bg-MOVED</string>
