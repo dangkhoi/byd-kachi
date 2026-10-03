@@ -124,7 +124,6 @@ internal object LauncherI18nAllowlists {
      */
     val uiLiteralAllowed: Map<String, String> = mapOf(
         "HH:mm" to "mẫu định dạng giờ của SimpleDateFormat — ký hiệu API, không phải chữ cho người đọc",
-        "EEEE, dd/MM" to "mẫu định dạng ngày của SimpleDateFormat; NGÔN NGỮ do `LangHost.locale()` quyết định",
         "dd/MM" to "mẫu định dạng ngày (không có tên thứ nên không phụ thuộc ngôn ngữ)",
         // Mã icon tra trong `KachiTheme.iconRes` — định danh tài nguyên, không phải chữ cho người đọc.
         // S4 · R12 thêm `ic-apps`/`ic-settings`: hai pill của thanh trên nay CHỈ có icon, và tên hình được truyền

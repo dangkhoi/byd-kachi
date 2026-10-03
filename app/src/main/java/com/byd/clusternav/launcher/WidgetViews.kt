@@ -392,7 +392,7 @@ object WidgetViews {
         fun fillClock(d: WidgetData) {
             val temp = d.car.climate.outsideTempC?.let { "$it°C" } ?: "—"
             time.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
-            date.text = SimpleDateFormat("EEEE, dd/MM", LangHost.locale()).format(Date())
+            date.text = SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date())
             outside.text = ctx.getString(R.string.kachi_outside_temp, temp)
         }
         fillClock(data)

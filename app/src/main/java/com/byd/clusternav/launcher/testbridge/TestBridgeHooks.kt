@@ -15,7 +15,9 @@ import com.byd.clusternav.launcher.HomeViewModel
 import com.byd.clusternav.launcher.KachiHomeSlots
 import com.byd.clusternav.launcher.LayoutPreset
 import com.byd.clusternav.launcher.SettingsGroup
+import com.byd.clusternav.launcher.Strings
 import com.byd.clusternav.launcher.VoiceDispatcher
+import com.byd.clusternav.launcher.voiceLangOf
 import com.byd.clusternav.launcher.clusterNavBridge
 import com.byd.clusternav.launcher.voice.VoiceSession
 import com.byd.clusternav.launcher.voice.VoiceWiring
@@ -205,6 +207,9 @@ internal fun Activity.attachTestBridge(
                     // `selectPreset` còn bỏ bố cục tự vẽ trước. Cầu kiểm thử cố ý **không** bỏ — nó là bề mặt ĐO,
                     // và một lệnh đo không được tự tay xoá cấu hình của người dùng.
                     onLayout = { preset -> viewModel.setPreset(preset); true },
+                    // i18n R6 — tiếng GIỌNG NÓI suy từ tiếng màn (tiến trình chính). KHÔNG `voice().voiceLang()`: chạm
+                    // `voice()` ở đây là dựng cả một `VoiceSession` (mô hình, micro) chỉ để đọc một giá trị thuần.
+                    lang = voiceLangOf(Strings.current),
                 )
             },
             assignAppToSlot = { index, pkg -> slots().assignApp(index, pkg); true },

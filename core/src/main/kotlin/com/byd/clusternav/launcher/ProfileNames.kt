@@ -34,9 +34,12 @@ object ProfileNames {
      *
      * ⚠ Hàm này **chỉ được dùng ở chỗ vẽ**. Truyền kết quả của nó trở lại `switchProfile`/`deleteProfile`/`key()` sẽ
      * làm mất sạch cấu hình của người dùng ở máy tiếng Anh — có bài canh đòi mọi đường ghi/tra vẫn dùng tên GỐC.
+     *
+     * [lang] mặc định = tiếng giao diện; câu NÓI (`VoiceReply.preview`) truyền tiếng GIỌNG NÓI (spec
+     * `kachi-i18n-zh-th-ms.html` R6).
      */
-    fun display(name: String): String =
-        if (name == HomeUiState.DEFAULT_PROFILE) Strings.t(HomeUiState.DEFAULT_PROFILE, "Default") else name
+    fun display(name: String, lang: Lang = Strings.current): String =
+        if (name == HomeUiState.DEFAULT_PROFILE) Strings.t(HomeUiState.DEFAULT_PROFILE, "Default", lang) else name
 
     /**
      * Chữ đầu cho ĐĨA avatar thanh trên — theo **nhãn** (nên máy tiếng Anh hiện `D`, không phải `M`).
@@ -71,9 +74,11 @@ object ProfileNames {
         val layout = preset?.label ?: Strings.t("Tự vẽ", "Custom")
         // ⚠ Số ít/số nhiều của tiếng Anh phải làm BẰNG TAY ở `:core` (không có `Context` nên không có
         // `getQuantityString`) — cùng lỗi mà `finding #18` đã bắt một lần ở `layoutSummary`: bản một-chuỗi in
-        // *"1 slots filled"*. Tiếng Việt không chia số nên một câu là đủ.
-        val en = if (filledSlots == 1) "1 slot filled" else "$filledSlots slots filled"
-        val parts = mutableListOf(Strings.t("$layout · $filledSlots ô có nội dung", "$layout · $en"))
+        // *"1 slots filled"*. Tiếng Việt không chia số nên một câu là đủ. Hai mẫu TRỌN VẸN (cả hai là khoá bảng dịch).
+        val parts = mutableListOf(
+            if (filledSlots == 1) Strings.f("{0} · {1} ô có nội dung", "{0} · {1} slot filled", layout, filledSlots)
+            else Strings.f("{0} · {1} ô có nội dung", "{0} · {1} slots filled", layout, filledSlots),
+        )
         // S4 · R8 — hồ sơ nay giữ CẢ chủ đề và cờ tự mở, nên câu tóm tắt phải nói ra: owner 2026-09-14 hỏi đúng câu
         // *"chưa thấy hồ sơ nó gắn với bố cục chỗ nào?"* cho phần bố cục, và từ S4 phần "giữ những gì" rộng hơn hẳn.
         // ⚠ Cả hai tham số là TUỲ CHỌN và mặc định `null` = **không biết** (chỗ gọi chưa đọc được giá trị của hồ sơ

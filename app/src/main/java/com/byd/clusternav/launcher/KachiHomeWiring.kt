@@ -333,6 +333,7 @@ internal fun Activity.voiceSession(
                 say = say,
                 assignAppToSlot = assignAppToSlot,
                 onLayout = onLayout,
+                lang = session.voiceLang(),   // i18n R6 — CÙNG nguồn tiếng GIỌNG NÓI mà phiên dùng (gộp câu đọc · chọn giọng)
             )
         },
         openPermissions = openPermissions,

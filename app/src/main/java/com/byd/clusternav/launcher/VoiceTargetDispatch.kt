@@ -64,6 +64,8 @@ class VoiceTargetDispatch(
      * định `{ null }` để test/bề mặt chưa nối giữ đường cũ (search-play).
      */
     private val resolveVideo: (String) -> String? = { null },
+    /** Ngôn ngữ của mọi câu trả lời — tiếng GIỌNG NÓI của [VoiceDispatcher] (spec `kachi-i18n-zh-th-ms.html` R6). */
+    private val lang: Lang = voiceLangOf(Strings.current),
 ) {
     // ══ V1.1 · TỪ VỰNG MỞ → APP ĐÍCH ════════════════════════════════════════════════════════════
 
@@ -85,8 +87,8 @@ class VoiceTargetDispatch(
         val installed = labels.values.toSet()
         val asked = i.app
         val target = pickNav(asked, installed)
-        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i)); return }
-        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
+        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked, lang) else VoiceReply.noNavApp(i, lang)); return }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key, lang)); return }
 
         // "42 lý thường kiệt" → ASR "bốn hai lý thương kiệt" ⇒ đổi chuỗi số đọc → chữ số trước khi gửi bản đồ
         // (findings 2026-09-23 mục 3b). Không đụng phần chữ (giữ dấu).
@@ -94,14 +96,14 @@ class VoiceTargetDispatch(
 
         if (!target.needsCoords) { deliver(i, target, pkg, q, null); return }
         // Cần toạ độ ⇒ lượt mạng/dịch vụ: **luồng nền**, và người lái phải biết là máy đang làm gì.
-        say(VoiceReply.resolving(i))
+        say(VoiceReply.resolving(i, lang))
         background {
             val coords = runCatching { geocode(q) }.getOrNull()
             onUi {
                 // [owner 2026-09-18] KHÔNG fallback chéo: geocode hỏng thì mở CHÍNH app đã chọn + nói rõ chưa
                 // tra được điểm đến — "cái nào ra cái đó", KHÔNG lặng lẽ chuyển sang Google Maps.
                 if (coords == null) {
-                    say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target) else VoiceReply.cannotOpen(i))
+                    say(if (openApp(pkg)) VoiceReply.navNoPlace(i, target, lang) else VoiceReply.cannotOpen(i, lang))
                     return@onUi
                 }
                 // owner 2026-09-24: BỎ cổng hỏi xác nhận tên geocode ("Cobi Tower?" — "lòng vòng khó đoán"). Tra
@@ -127,7 +129,7 @@ class VoiceTargetDispatch(
      */
     fun runNavSaved(i: VoiceIntent.NavigateSaved, labels: Map<String, String>) {
         val place = SavedPlaces.find(state().savedPlaces, i.placeName)
-        if (place == null) { say(VoiceReply.placeNotSaved(i, VoicePlaces.displayLabel(i.placeName))); return }
+        if (place == null) { say(VoiceReply.placeNotSaved(i, VoicePlaces.displayLabel(i.placeName, lang), lang)); return }
         val installed = labels.values.toSet()
         val asked = i.app
         val target = if (asked != null) {
@@ -136,14 +138,14 @@ class VoiceTargetDispatch(
             defaultTarget(installed) ?: VoiceAppTargets.navFor(place.hasCoords, NAV_PREFERENCE, installed)
         }
         if (target == null) {
-            say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noNavApp(i))
+            say(if (asked != null) VoiceReply.appNotInstalled(i, asked, lang) else VoiceReply.noNavApp(i, lang))
             return
         }
-        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key, lang)); return }
         // Mục KHÔNG toạ độ + app chỉ nhận toạ độ ⇒ mở app trơn, và nói ra **việc người dùng làm được** (thêm
         // lat/lng) thay vì câu chung chung "app này không nhận điểm đến" — xem [VoiceReply.placeNeedsCoords].
         if (!place.hasCoords && target.needsCoords) {
-            say(if (openApp(pkg)) VoiceReply.placeNeedsCoords(i, target) else VoiceReply.cannotOpen(i))
+            say(if (openApp(pkg)) VoiceReply.placeNeedsCoords(i, target, lang) else VoiceReply.cannotOpen(i, lang))
             return
         }
         val coords = if (place.hasCoords) {
@@ -183,7 +185,7 @@ class VoiceTargetDispatch(
     private fun runMediaQuery(i: VoiceIntent.Media, labels: Map<String, String>) {
         val (target, pkg) = musicTarget(i, labels) ?: return
         if (target.watch == null) { deliver(i, target, pkg, i.query, null); return }
-        say(VoiceReply.searchingMusic(i))
+        say(VoiceReply.searchingMusic(i, lang))
         background {
             // Lõi DÙNG CHUNG với chuyến lên xe (F3): `VoiceAppIntents.watchHandoff` — giải id + dựng Handoff watch ở MỘT chỗ.
             val h = VoiceAppIntents.watchHandoff(target, pkg, i.query, resolveVideo)
@@ -192,7 +194,7 @@ class VoiceTargetDispatch(
                 if (h != null && sendToApp(h)) {
                     // `autoplay = true`: mở URL watch thì app tự phát ⇒ câu trả lời KHÔNG được nhắc *"bấm Play"*
                     // (owner báo [ĐO xe 2026-09-20 §5]). Đường `deliver` dưới đây vẫn nhắc, và vẫn đúng.
-                    say(VoiceReply.handedOver(i, target, autoplay = true))
+                    say(VoiceReply.handedOver(i, target, autoplay = true, lang = lang))
                 } else {
                     deliver(i, target, pkg, i.query, null)
                 }
@@ -207,15 +209,15 @@ class VoiceTargetDispatch(
     private fun runPlayInApp(i: VoiceIntent.Media, labels: Map<String, String>, playing: String?) {
         val (target, pkg) = musicTarget(i, labels) ?: return
         if (playing == pkg) { runTransport(i); return }
-        say(if (openApp(pkg)) VoiceReply.musicAppOpened(i, target) else VoiceReply.cannotOpen(i))
+        say(if (openApp(pkg)) VoiceReply.musicAppOpened(i, target, lang) else VoiceReply.cannotOpen(i, lang))
     }
 
     /** App nhạc đích + gói của nó. `null` ⇒ **đã nói ra** lý do (chưa cài / không có app nhạc nào). */
     private fun musicTarget(i: VoiceIntent.Media, labels: Map<String, String>): Pair<VoiceAppTarget, String>? {
         val installed = labels.values.toSet(); val asked = i.app
         val target = pickMusic(asked, installed)
-        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked) else VoiceReply.noMusicApp(i)); return null }
-        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key)); return null }
+        if (target == null) { say(if (asked != null) VoiceReply.appNotInstalled(i, asked, lang) else VoiceReply.noMusicApp(i, lang)); return null }
+        val pkg = target.packageIn(installed) ?: run { say(VoiceReply.appNotInstalled(i, target.key, lang)); return null }
         return target to pkg
     }
 
@@ -234,13 +236,13 @@ class VoiceTargetDispatch(
     ) {
         val handoff = VoiceAppIntents.destinationHandoff(target, pkg, query, coords)
         val ok = handoff != null && sendToApp(handoff)
-        if (ok) { say(VoiceReply.handedOver(i, target)); return }
+        if (ok) { say(VoiceReply.handedOver(i, target, lang = lang)); return }
         openPlain(i, target, pkg)
     }
 
     /** Không giao được chữ ⇒ vẫn **mở app** (đó là phần chắc chắn làm được) rồi nói ra phần chưa làm được. */
     private fun openPlain(i: VoiceIntent, target: VoiceAppTarget, pkg: String) {
-        say(if (openApp(pkg)) VoiceReply.navOpenedNoHandover(i, target) else VoiceReply.cannotOpen(i))
+        say(if (openApp(pkg)) VoiceReply.navOpenedNoHandover(i, target, lang) else VoiceReply.cannotOpen(i, lang))
     }
 
     /**
@@ -296,7 +298,7 @@ class VoiceTargetDispatch(
             VoiceMediaOp.PREV -> bridge.prev()
             VoiceMediaOp.QUERY -> false
         }
-        say(if (ok) VoiceReply.done(i) else VoiceReply.noMediaSession(i))
+        say(if (ok) VoiceReply.done(i, lang) else VoiceReply.noMediaSession(i, lang))
     }
 
     private companion object {

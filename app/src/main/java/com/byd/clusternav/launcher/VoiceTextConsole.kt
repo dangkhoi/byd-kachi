@@ -52,7 +52,16 @@ class VoiceTextConsole(
      */
     private val appsByLabel: Map<String, String> by lazy { VoiceWiring.appsByLabel(context) }
 
+    /**
+     * spec `kachi-i18n-zh-th-ms.html` R6 — ô này là ĐƯỜNG THỬ của phiên giọng nói (cùng cầu, cùng câu đáp), nên dòng
+     * *"đã hiểu là…"* và câu trả lời theo tiếng GIỌNG NÓI y như phiên nghe thật — không theo tiếng màn (giao diện
+     * zh/th/ms ⇒ tiếng Việt). Chụp một lần mỗi lượt dựng trang: đổi tiếng là màn dựng lại.
+     */
+    private val voiceLang: Lang = voiceLangOf(Strings.current)
+
     fun build(body: LinearLayout) {
+        // R4 — giọng nói chỉ hiểu tiếng Việt: nói rõ NGAY ở ô thử, trước câu ví dụ gõ chữ bên dưới.
+        body.addView(rows.note(context.getString(R.string.kachi_voice_lang_only)))
         body.addView(rows.note(context.getString(R.string.kachi_voice_note)))
 
         val out = TextView(context).apply {
@@ -89,7 +98,7 @@ class VoiceTextConsole(
                 // không ăn (off-car mọi lệnh xe đều no-op) — đó mới là thứ cần đo ở pha này.
                 // Phân tích ĐÚNG MỘT lần rồi chạy chính danh sách vừa hiện (xem KDoc `VoiceDispatcher.execute`).
                 val intents = dispatcher.preview(text)
-                intents.forEach { log.add(ARROW + VoiceReply.preview(it)) }
+                intents.forEach { log.add(ARROW + VoiceReply.preview(it, voiceLang)) }
                 dispatcher.execute(intents)
             }
         })
@@ -121,7 +130,7 @@ class VoiceTextConsole(
                             }
                             // Hiện luôn Ý ĐỊNH: câu hỏi thật không phải "nghe ra chữ gì" mà "chữ ấy có thành
                             // việc không". Chỉ PHÂN TÍCH, không thi hành — đây là phép đo, không phải lệnh.
-                            dispatcher.preview(r.heard).forEach { log.add(ARROW + VoiceReply.preview(it)) }
+                            dispatcher.preview(r.heard).forEach { log.add(ARROW + VoiceReply.preview(it, voiceLang)) }
                         }
                     }
                 }
@@ -166,6 +175,7 @@ class VoiceTextConsole(
         // (`SettingsSectionsHome` → `deps.onPreset`). Không nối thì ô thử báo "chưa đổi được bố cục từ đây" cho
         // một việc mà màn Cài đặt hoàn toàn làm được — tức nói dối theo hướng ngược lại.
         onLayout = { preset -> deps.onPreset(preset); true },
+        lang = voiceLang,
     )
 
     /**

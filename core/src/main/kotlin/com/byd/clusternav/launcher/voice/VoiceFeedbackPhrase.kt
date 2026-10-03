@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.Strings
 
 /**
@@ -118,13 +119,13 @@ object VoiceFeedbackPhrase {
      * **"Đã đã gửi Nhiệt độ 24, xe báo 23"**. Kiểm bằng **nội dung** chứ không bằng một danh sách hàm được miễn:
      * bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy cũng không được nhận thêm một lời dẫn thứ hai.
      */
-    private fun hasDoneLead(body: String): Boolean =
-        body.startsWith(Strings.t("Đã ", "Done: "), ignoreCase = true)
+    private fun hasDoneLead(body: String, lang: Lang): Boolean =
+        body.startsWith(Strings.t("Đã ", "Done: ", lang), ignoreCase = true)
 
     private fun words(s: String): Int = s.split(' ', '\n', '\t').count { it.isNotBlank() }
 
     /** Câu thay thế khi vượt [MAX_WORDS] — nói **số việc**, không nói sai. */
-    private fun tooMany(n: Int): String = Strings.t("Đã xong $n việc", "$n things done")
+    private fun tooMany(n: Int, lang: Lang): String = Strings.fIn(lang, "Đã xong {0} việc", "{0} things done", n)
 
     /**
      * Gộp các dòng `say` của **một lượt** thành một câu để đọc; `null` ⇒ không có gì đáng đọc.
@@ -136,8 +137,12 @@ object VoiceFeedbackPhrase {
      * mấy từ đầu, và mấy từ đầu phải là thứ cần nhìn lại.
      *
      * @param lines các dòng theo đúng thứ tự `VoiceDispatcher` phát ra.
+     * @param lang ngôn ngữ của CHÍNH các dòng ấy (spec `kachi-i18n-zh-th-ms.html` R6 — phiên nói truyền tiếng GIỌNG
+     *   NÓI). ⚠ Phải là **cùng** ngôn ngữ mà [VoiceReply] đã dùng để dựng [lines]: [hasDoneLead] so lời dẫn
+     *   *"Đã "* / *"Done: "* của chính bảng dịch — lệch tiếng là lỗi *"Đã đã gửi…"* quay lại. Cả năm lời gọi dịch của
+     *   tệp này đọc đúng một [lang] (không lời gọi nào đọc [Strings.current] riêng).
      */
-    fun merge(lines: List<String>): String? {
+    fun merge(lines: List<String>, lang: Lang = Strings.current): String? {
         val kept = lines.map { it to kindOf(it) }.filter { it.second != Kind.INTERIM }
         if (kept.isEmpty()) return null
 
@@ -145,12 +150,12 @@ object VoiceFeedbackPhrase {
         val bad = kept.filter { it.second != Kind.OK }
 
         if (bad.isEmpty()) {
-            val lead = Strings.t("Đã ", "Done: ")
+            val lead = Strings.t("Đã ", "Done: ", lang)
             val single = ok.singleOrNull()?.let { body(it.first) }
             // Dòng đã tự mang lời dẫn ⇒ giữ NGUYÊN VĂN (kể cả chữ hoa đầu câu): `decap` ở đây sẽ cho ra
             // *"đã gửi…"* — một câu mở đầu bằng chữ thường.
             val sentence =
-                if (single != null && hasDoneLead(single)) single
+                if (single != null && hasDoneLead(single, lang)) single
                 // ⚠ [SOÁT 1.69 · P2] Nhánh NHIỀU dòng cũng phải kiểm, không chỉ nhánh một dòng. KDoc
                 // [hasDoneLead] hứa *"bất kỳ dòng nào mở đầu bằng chính lời dẫn ấy"*, nhưng tới lượt soát này
                 // phép kiểm chỉ chạy trên `ok.singleOrNull()` ⇒ hai vế mà một vế là [VoiceReply.doneActual]
@@ -160,7 +165,7 @@ object VoiceFeedbackPhrase {
                 // câu, đúng như nhánh một-dòng.
                 else lead + ok.joinToString(", ") { p ->
                     val b = body(p.first)
-                    decap(if (hasDoneLead(b)) b.substring(lead.length) else b)
+                    decap(if (hasDoneLead(b, lang)) b.substring(lead.length) else b)
                 }
             // ⚠ [SOÁT chuỗi-lời-đáp 2026-09-17] MỘT dòng thì KHÔNG bao giờ lùi về câu đếm việc.
             // `tooMany` ("Đã xong 1 việc") sinh ra cho ca **nhiều việc** — ở đó nó nói ngắn mà vẫn đủ. Với MỘT
@@ -168,15 +173,15 @@ object VoiceFeedbackPhrase {
             // 24 · xe báo 23), và "Đã xong 1 việc" nuốt đúng hai con số ấy. Cắt theo từ như nhánh HỎNG bên dưới:
             // mất phần đuôi còn hơn mất phần đầu.
             if (words(sentence) <= MAX_WORDS) return sentence
-            return if (ok.size == 1) clampWords(sentence, MAX_WORDS) else tooMany(ok.size)
+            return if (ok.size == 1) clampWords(sentence, MAX_WORDS) else tooMany(ok.size, lang)
         }
 
         val head = bad.first()
         val headText = when (head.second) {
-            Kind.FAIL -> Strings.t("Chưa ", "Could not ") + decap(body(head.first))
+            Kind.FAIL -> Strings.t("Chưa ", "Could not ", lang) + decap(body(head.first))
             else -> body(head.first)
         }
-        val tail = if (ok.isEmpty()) "" else Strings.t(", ${ok.size} việc khác đã xong", ", ${ok.size} other(s) done")
+        val tail = if (ok.isEmpty()) "" else Strings.fIn(lang, ", {0} việc khác đã xong", ", {0} other(s) done", ok.size)
         val sentence = headText + tail
         // Vế hỏng dài quá trần vẫn PHẢI đọc (nó là thứ người lái cần biết) — cắt ở ranh giới từ, không cắt giữa từ.
         return if (words(sentence) > MAX_WORDS) clampWords(sentence, MAX_WORDS) else sentence

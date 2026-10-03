@@ -29,9 +29,10 @@ object VoiceSpeakerSelector {
     /**
      * Kết quả đo tại máy, không phải lời khai.
      *
-     * @param androidLangStatus số nguyên `isLanguageAvailable(…)` trả về cho **ngôn ngữ đang dùng** (`:app` hỏi
-     *   qua `LangHost.locale()` — một chỗ map ngôn ngữ→`Locale` duy nhất của dự án); `null` = chưa dựng được
-     *   dịch vụ đọc nào (không có engine, hoặc `onInit` báo `ERROR`).
+     * @param androidLangStatus số nguyên `isLanguageAvailable(…)` trả về cho **ngôn ngữ GIỌNG NÓI** (`:app` hỏi
+     *   qua `LangHost.voiceLocale(…)` — một chỗ map ngôn ngữ→`Locale` duy nhất của dự án; giao diện zh/th/ms ⇒ vi,
+     *   spec `kachi-i18n-zh-th-ms.html` R6); `null` = chưa dựng được dịch vụ đọc nào (không có engine, hoặc
+     *   `onInit` báo `ERROR`).
      * @param sherpaVoiceReady thư mục gói giọng offline đã đủ tệp trên đĩa chưa (`:app` tự kiểm, không tin pref).
      * @param preferOffline người dùng đã chọn ưu tiên gói offline (pha 2 — công tắc trong Cài đặt). Mặc định
      *   `false`: khi cả hai cùng dùng được thì máy đọc của hệ thống thắng, vì nó **0 MB** đĩa và **0 MB** RAM,

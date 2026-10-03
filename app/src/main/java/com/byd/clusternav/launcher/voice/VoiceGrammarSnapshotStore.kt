@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.voice
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import com.byd.clusternav.launcher.LangHost
 import com.byd.clusternav.launcher.WorkspacePrefs
 import java.io.File
 import java.io.IOException
@@ -33,6 +34,10 @@ import java.io.IOException
  * FIX286 · VK4 (2.86): tệp mang thêm prefs tươi cho `:wake` ([VoiceWakePrefs] — công tắc wake · phím gán Kachi nghe ·
  * tập hỏi xác nhận · app dẫn đường/nhạc). Ngoài các đường ghi hồ sơ ở trên, setter của các khoá ấy và
  * `VoiceWakeService.sync` gọi [write] qua `VoiceWakePrefsMain.publish`.
+ *
+ * spec `kachi-i18n-zh-th-ms.html` R6 (2.87): tệp mang thêm tiếng giao diện ĐÃ GIẢI NGHĨA (`uiLang`, qua
+ * `LangHost.resolved`) — `:wake` suy ra tiếng giọng nói + tài nguyên của nó. Đường đổi tiếng (`setLangMode`) gọi [write];
+ * đổi hồ sơ đi qua `setActiveProfile` (đã gọi) nên tiếng của hồ sơ mới theo cùng lượt.
  */
 object VoiceGrammarSnapshotStore {
 
@@ -74,6 +79,11 @@ object VoiceGrammarSnapshotStore {
                 wake = runCatching { VoiceWakePrefsMain.collect(ctx) }
                     .onFailure { Log.w(TAG, "không đọc được prefs cho `:wake` — ảnh chụp không mang phần ấy", it) }
                     .getOrDefault(VoiceWakePrefs.EMPTY),
+                // i18n R6 — tiếng giao diện ĐÃ GIẢI NGHĨA (cùng phép `LangHost.wrap`): `:wake` không có `Strings.current`
+                // và không được gọi `langMode()`. Đọc hỏng ⇒ không mang (`:wake` lùi về VI như trước bản này).
+                uiLang = runCatching { LangHost.resolved(prefs) }
+                    .onFailure { Log.w(TAG, "không đọc được ngôn ngữ cho `:wake` — ảnh chụp không mang phần ấy", it) }
+                    .getOrNull(),
             )
             // `PrefsWorkspaceRepository.persist` gọi `setActiveProfile` ở MỌI lượt lưu (đổi ô, đổi chủ đề…) ⇒ nội dung
             // thường không đổi. So với bản tiến trình này vừa ghi (bỏ mốc giờ) — chỉ tiến trình chính ghi, nên bản

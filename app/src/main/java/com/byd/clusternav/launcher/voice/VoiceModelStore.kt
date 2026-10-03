@@ -132,9 +132,10 @@ object VoiceModelStore {
         // ⚠ Cổng `downloadable` chỉ chặn đường MẠNG. Gói chưa ghim mà có ĐỦ tệp side-load thì vẫn lắp được —
         // và đó chính là ca của chiếc xe không internet: sai một byte vẫn bị phép so sha256 dưới kia bắt.
         if (!pack.downloadable && sideloaded < pack.files.size) {
-            onStep(Step.Failed(Lang.t(
-                "gói '${pack.label}' chưa có nguồn tải (chờ mirror) — chép tệp vào thẻ hoặc chọn bản khác",
-                "'${pack.label}' has no download source yet (awaiting mirror) — side-load it or pick another",
+            onStep(Step.Failed(Lang.f(
+                "gói '{0}' chưa có nguồn tải (chờ mirror) — chép tệp vào thẻ hoặc chọn bản khác",
+                "'{0}' has no download source yet (awaiting mirror) — side-load it or pick another",
+                pack.label,
             )))
             return
         }
@@ -153,8 +154,8 @@ object VoiceModelStore {
             var done = 0L
             for (mf in pack.files) {
                 val safe = requireSafe(mf.name) ?: run {
-                    onStep(Step.Failed(Lang.t(
-                        "tên tệp không hợp lệ: ${mf.name}", "invalid file name: ${mf.name}",
+                    onStep(Step.Failed(Lang.f(
+                        "tên tệp không hợp lệ: {0}", "invalid file name: {0}", mf.name,
                     ))); return
                 }
                 val target = File(out, safe)
@@ -170,7 +171,7 @@ object VoiceModelStore {
             val missing = pack.files.filterNot { File(out, it.name).let { f -> f.isFile && f.length() > 0L } }
             if (missing.isNotEmpty()) {
                 out.deleteRecursively()
-                onStep(Step.Failed(Lang.t("thiếu tệp: ${missing.first().name}", "missing ${missing.first().name}")))
+                onStep(Step.Failed(Lang.f("thiếu tệp: {0}", "missing {0}", missing.first().name)))
                 return
             }
 
@@ -247,9 +248,10 @@ object VoiceModelStore {
         val need = pack.totalBytes + SPACE_MARGIN_BYTES
         val free = runCatching { app.filesDir.usableSpace }.getOrDefault(0L)
         if (free <= 0L || free >= need) return null
-        return Lang.t(
-            "máy còn ${free / MB} MB, cần khoảng ${need / MB} MB — xoá bớt rồi thử lại",
-            "only ${free / MB} MB free, about ${need / MB} MB needed — free some space and retry",
+        return Lang.f(
+            "máy còn {0} MB, cần khoảng {1} MB — xoá bớt rồi thử lại",
+            "only {0} MB free, about {1} MB needed — free some space and retry",
+            free / MB, need / MB,
         )
     }
 
@@ -263,7 +265,7 @@ object VoiceModelStore {
         onStep: (Step) -> Unit,
         sideload: File? = null,
     ): String? {
-        if (!mf.pinned) return Lang.t("tệp ${mf.name} chưa ghim sha256/cỡ", "${mf.name} is not pinned")
+        if (!mf.pinned) return Lang.f("tệp {0} chưa ghim sha256/cỡ", "{0} is not pinned", mf.name)
         onStep(Step.Downloading(if (totalAll > 0) ((doneBefore * 100) / totalAll).toInt() else -1))
         if (sideload != null) {
             // Có tệp side-load ⇒ KHÔNG chạm mạng. Sai ⇒ báo thẳng (người chép USB cần biết), không rơi về mạng.
@@ -273,19 +275,21 @@ object VoiceModelStore {
             )
         }
         if (mf.url.isBlank()) {
-            return Lang.t(
-                "tệp ${mf.name} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)",
-                "${mf.name} has no download source — side-load it from a USB stick",
+            return Lang.f(
+                "tệp {0} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)",
+                "{0} has no download source — side-load it from a USB stick",
+                mf.name,
             )
         }
         val got = runCatching { download(mf.url, target, totalAll, doneBefore, onStep) }
-            .getOrElse { return Lang.t("lỗi mạng ${mf.name}: ${it.message}", "network error ${mf.name}: ${it.message}") }
-            ?: return Lang.t("máy chủ từ chối ${mf.name}", "server refused ${mf.name}")
+            .getOrElse { return Lang.f("lỗi mạng {0}: {1}", "network error {0}: {1}", mf.name, it.message) }
+            ?: return Lang.f("máy chủ từ chối {0}", "server refused {0}", mf.name)
         if (got.bytes != mf.bytes || !got.sha256.equals(mf.sha256, ignoreCase = true)) {
             target.delete()
-            return Lang.t(
-                "tệp ${mf.name} không khớp bản ghim (${got.bytes} byte, sha ${got.sha256.take(12)}…)",
-                "${mf.name} does not match pin (${got.bytes} bytes, sha ${got.sha256.take(12)}…)",
+            return Lang.f(
+                "tệp {0} không khớp bản ghim ({1} byte, sha {2}…)",
+                "{0} does not match pin ({1} bytes, sha {2}…)",
+                mf.name, got.bytes, got.sha256.take(12),
             )
         }
         return null

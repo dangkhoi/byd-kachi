@@ -182,7 +182,8 @@ class TopStripStateIconTest {
         // nào bị nhận diện qua một dòng đã bị bình luận ra.
         val body = SourceRoots.body(
             SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/TelemetryReadout.kt"),
-            "private fun format(id: String, s: CarStatus): String? = when (id) {",
+            // kachi-i18n-zh-th-ms T2: `format` nhận `lang` (đường ĐỌC của giọng nói truyền tiếng giọng nói) — cùng bảng `when`.
+            "private fun format(id: String, s: CarStatus, lang: Lang): String? = when (id) {",
         )
         val marks = Regex("""^\s*"([a-z0-9_]+)"\s*->""", RegexOption.MULTILINE).findAll(body).toList()
         assertTrue(marks.size > 40, "chỉ đọc được ${marks.size} nhánh — bài đang quét vùng SAI (quét tràn = test giả)")

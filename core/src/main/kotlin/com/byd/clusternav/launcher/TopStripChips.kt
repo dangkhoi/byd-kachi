@@ -33,7 +33,7 @@ object TopStripChips {
             } ?: TelemetryView.PLACEHOLDER
             ChipView(
                 if (labels) "PM2.5 · $pm" else pm, "ic-leaf", ChipTone.NEUTRAL,
-                Strings.t("Bụi mịn trong xe: $pm", "Fine dust in the car: $pm"),
+                Strings.f("Bụi mịn trong xe: {0}", "Fine dust in the car: {0}", pm),
             )
         }
         TopStripConfig.TEMP -> {
@@ -42,7 +42,7 @@ object TopStripChips {
                 ?: TelemetryView.PLACEHOLDER
             ChipView(
                 if (labels) "$t$u " + Strings.t("ngoài", "outside") else "$t$u", null, ChipTone.NEUTRAL,
-                Strings.t("Nhiệt độ ngoài xe $t$u", "Outside temperature $t$u"),
+                Strings.f("Nhiệt độ ngoài xe {0}{1}", "Outside temperature {0}{1}", t, u),
             )
         }
         TopStripConfig.ENERGY -> {
@@ -52,9 +52,10 @@ object TopStripChips {
             val soc = status.energy.soc
             ChipView(
                 "${soc ?: TelemetryView.PLACEHOLDER}% · $r $u", "ic-bolt", ChipTone.ENERGY,
-                Strings.t(
-                    "Pin ${soc ?: "chưa đọc được"} phần trăm, đi thêm $r $u",
-                    "Battery ${soc ?: "not read yet"} per cent, $r $u to go",
+                Strings.f(
+                    "Pin {0} phần trăm, đi thêm {1} {2}",
+                    "Battery {0} per cent, {1} {2} to go",
+                    soc ?: Strings.t("chưa đọc được", "not read yet"), r, u,
                 ),
             )
         }

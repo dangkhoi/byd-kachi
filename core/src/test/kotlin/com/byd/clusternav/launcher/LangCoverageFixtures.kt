@@ -25,12 +25,18 @@ internal object LangCoverageFixtures {
         // ⚠⚠ 1.90 — 4 mục nữa gỡ cùng luật: "EV / HEV"/"EV"/"HEV" (`powertrain_mode`) + "Auto" (`headlight_mode`).
     )
 
-    /** Mọi dòng có nhãn, ở đúng một chỗ để các bài không lệch phạm vi quét. */
+    /**
+     * Mọi dòng có nhãn, ở đúng một chỗ để các bài không lệch phạm vi quét.
+     *
+     * i18n zh/th/ms (2026-10-03): +[LauncherActions.ALL] · [LauncherActions.BLOCKS] · [HeaderItem] — ba bộ mang
+     * [Localized] mà trước đây chỉ bài đếm tổng (`tong so nhan co ban EN…`) thấy; bảng dịch ZH/TH/MS duyệt từ đây
+     * (`I18nPairs.runtime`) nên thiếu một bộ là thiếu cả một khối chữ cần dịch.
+     */
     fun localizedRows(): List<Localized> =
         TelemetryRegistry.ALL + ControlRegistry.ALL + CapabilityGroups.ALL + WidgetRegistry.ALL +
             ActionMacros.ALL + SettingsCatalog.GROUPS + SettingsCatalog.ENTRIES +
             Domain.values().toList() + Quantity.values().toList() + TyreCorner.values().toList() +
-            LauncherRequirements.ALL
+            LauncherRequirements.ALL + LauncherActions.ALL + LauncherActions.BLOCKS + HeaderItem.values().toList()
 
     /**
      * Dấu tiếng Việt — chữ có mặt trong tiếng Việt mà **không** có trong tiếng Anh.

@@ -23,12 +23,17 @@ import android.content.Intent
  * §8.2 (A) — hồ sơ + sổ địa chỉ đọc từ TỆP ảnh chụp (tiến trình chính ghi ở mỗi đường ghi), đọc lại MỖI lần gọi —
  * không cache trong `:wake` (cache theo tiến trình chính là cái bệnh của SharedPreferences ở đây). FIX286 · VK4: cùng
  * tệp mang thêm tập hỏi xác nhận + app dẫn đường/nhạc mặc định (`fresh`); VK6: mốc phiên cho nhật ký bền (`marks`).
+ *
+ * spec `kachi-i18n-zh-th-ms.html` R6 — tiếng GIỌNG NÓI cũng đọc từ ảnh chụp ấy (`voiceLang` = `voiceLangOf(uiLang)`,
+ * thiếu ⇒ VI), và CÙNG một lambda đi vào cả phiên (gộp câu đọc · hỏi lại · máy đọc) lẫn dispatcher (câu trả lời ·
+ * geocoder). Trước bản này `:wake` không có ngôn ngữ: người dùng English bấm phím vô-lăng nghe trả lời tiếng Việt.
  */
 internal fun VoiceWakeService.buildSession(): VoiceSession {
     val app = applicationContext
     val relay = VoiceWakeHomeRelay(app)
     val openHome = { action: VoiceHomeAction, arg: String? -> relay.send(action, arg) }
     val grammar = { VoiceGrammarSnapshotStore.read(app) }
+    val voiceLang = { grammar().voiceLang }
     return VoiceSession(
         ctx = app,
         profiles = { grammar().profiles },
@@ -62,9 +67,11 @@ internal fun VoiceWakeService.buildSession(): VoiceSession {
                 // `CarStatus()` rỗng của `homeState()` ⇒ câu hỏi số liệu + cổng tốc độ cốp/ca-pô phải đọc TƯƠI.
                 screenless = true,
                 fresh = { VoiceWakeHold.prefs(app) },
+                lang = voiceLang(),
             )
         },
         openPermissions = { openHome(VoiceHomeAction.PERMISSIONS, null) },
         marks = WakeSessionLog.Marks(app),
+        voiceLang = voiceLang,
     )
 }

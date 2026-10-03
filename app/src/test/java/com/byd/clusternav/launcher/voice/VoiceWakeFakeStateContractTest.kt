@@ -99,7 +99,8 @@ class VoiceWakeFakeStateContractTest {
         assertTrue(open.contains("place(slot - 1, pkg)"), "1-based → 0-based ở ĐÚNG một chỗ, qua `place`")
         assertFalse(open.contains("state()"), "runOpenApp không được tự đọc bố cục — trong `:wake` đó là bố cục giả")
         assertFalse(open.contains("EffectiveLayout"), "runOpenApp không được tự tính số ô")
-        assertTrue(open.contains("is SlotPlaceOutcome.OutOfRange -> VoiceReply.slotOutOfRange(shown, out.slotCount)"),
+        // kachi-i18n-zh-th-ms T2: thêm `lang` (tiếng GIỌNG NÓI của cầu) — số ô vẫn là `out.slotCount` của nơi giữ bố cục.
+        assertTrue(open.contains("is SlotPlaceOutcome.OutOfRange -> VoiceReply.slotOutOfRange(shown, out.slotCount, lang)"),
             "câu 'chỉ có N ô' phải mang N do nơi giữ bố cục trả về")
 
         val build = SourceRoots.body(factory, "internal fun VoiceWakeService.buildSession(): VoiceSession {")

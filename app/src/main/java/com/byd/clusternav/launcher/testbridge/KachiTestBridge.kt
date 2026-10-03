@@ -490,7 +490,8 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeJson.Raw(
                 TestBridgeJson.obj(
                     "kind" to (intent::class.simpleName ?: UNNAMED),
-                    "preview" to VoiceReply.preview(intent),
+                    // i18n R6 — tiếng GIỌNG NÓI: voice-audio-e2e.sh đưa đúng chuỗi này qua Piper tiếng Việt.
+                    "preview" to VoiceReply.preview(intent, com.byd.clusternav.launcher.Strings.current.voice),
                 ),
             )
     }

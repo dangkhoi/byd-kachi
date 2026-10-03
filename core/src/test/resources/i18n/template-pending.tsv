@@ -1,0 +1,3 @@
+# :app còn Lang.t("…$x…") chờ T1b chuyển sang Lang.f — I18nSourceGuardTest luật (i).
+# Cột: <module>:<đường sau com/byd/clusternav/><TAB>số chỗ còn lại<TAB>lý do. Phải KHỚP ĐÚNG; chuyển xong thì hạ số/xoá dòng.
+# 2026-10-03 T1b: :app đã chuyển hết 24 chỗ sang Lang.f — danh sách rỗng. Đừng thêm dòng: câu có biến mới dùng Lang.f/Strings.f.

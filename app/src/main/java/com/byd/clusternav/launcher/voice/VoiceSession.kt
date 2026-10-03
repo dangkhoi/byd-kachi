@@ -58,6 +58,8 @@ class VoiceSession(
     internal val entry: VoiceEntry? = null,
     /** FIX286 · VK6 — mốc cho nhật ký phiên `:wake` (`WakeSessionLog.Marks`); `null` = phiên màn chính, không ghi. */
     internal val marks: VoiceSessionMarks? = null,
+    /** i18n R6 — tiếng GIỌNG NÓI (đáp · hỏi lại · máy đọc), đọc mỗi lần dùng; `:wake` truyền tiếng từ ảnh chụp ngữ pháp. */
+    internal val voiceLang: () -> com.byd.clusternav.launcher.Lang = { com.byd.clusternav.launcher.Strings.current.voice },
 ) {
 
     internal val ui = Handler(Looper.getMainLooper())
@@ -77,7 +79,7 @@ class VoiceSession(
      * tiếp theo đã đi đường mới — không phải khởi động lại launcher. Cùng lẽ với `profiles`/`appsByLabel`.
      */
     internal val speaker: VoiceSpeaker =
-        runCatching { VoiceSpeakerRouter(ctx, preferOffline = { Prefs.voicePreferOffline(ctx) }) }
+        runCatching { VoiceSpeakerRouter(ctx, preferOffline = { Prefs.voicePreferOffline(ctx) }, voiceLang = voiceLang) }
             .onFailure { Log.w(TAG, "không dựng được đường ra tiếng — chỉ còn chữ", it) }
             .getOrDefault(SilentSpeaker)
 

@@ -195,7 +195,7 @@ class SettingsSections(
      * Cùng khuôn một chiều với nút chủ đề ngay trên: `deps.state().langMode` đọc từ nguồn sự thật →
      * `deps.onLangMode` là intent → `HomeViewModel` ghi bền → màn dựng lại. Tầng UI **0** lần ghi bền trực tiếp.
      *
-     * ⚠ Nhãn hai thứ tiếng cụ thể ("Tiếng Việt"/"English") KHÔNG dịch — xem KDoc [LangMode.label]. Đặt ở nhóm
+     * ⚠ Tên các thứ tiếng ("Tiếng Việt"/"English"/"简体中文"/"ไทย"/"Bahasa Melayu") KHÔNG dịch — xem KDoc [LangMode.label]. Đặt ở nhóm
      * *Hiển thị* chứ không mở một nhóm mới: ngôn ngữ là **cách trình bày**, đúng định nghĩa của nhóm đó trong
      * [SettingsGroup.DISPLAY] (*"cách trình bày, không phụ thuộc bố cục"*).
      *
@@ -209,6 +209,7 @@ class SettingsSections(
             label = context.getString(R.string.kachi_row_lang),
             options = LangMode.entries.map { it.name to it.label() },
             current = deps.state().langMode.name,
+            wrap = true,   // 6 mục (spec kachi-i18n-zh-th-ms R1): một hàng ngang đẩy chip cuối ra ngoài mép
         ) { code -> deps.onLangMode(LangMode.valueOf(code)) })
         // Dòng "màn ClusterNav dùng chung lựa chọn này" cũng xoá: sau IA v2 chỉ còn MỘT màn cấu hình, nên không
         // còn "màn kia" nào để so — câu nhắc chỉ làm người đọc đi tìm một bề mặt đã biến mất.

@@ -30,6 +30,9 @@ class SettingsVoiceSection(
     private val deps: SettingsDeps,
 ) {
     fun build(body: LinearLayout) {
+        // kachi-i18n-zh-th-ms R4 — câu đầu nhóm: giọng nói chỉ hiểu tiếng Việt, ở MỌI ngôn ngữ giao diện (một gói ASR
+        // zipformer-vi). Đứng TRƯỚC mọi công tắc: người chọn 简体中文/ไทย/Melayu phải biết điều này trước khi bật mic.
+        body.addView(rows.note(context.getString(R.string.kachi_voice_lang_only)))
         // "Hey Kachi" wake-word (W-WAKE). Mặc định TẮT. Gạt ⇒ ghi pref (theo XE) + VoiceWakeService.sync.
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_wake_section)))
         body.addView(rows.checkRow(
@@ -96,6 +99,10 @@ class SettingsVoiceSection(
      */
     private fun commandListRows(body: LinearLayout) {
         body.addView(rows.sectionLabel(context.getString(R.string.kachi_voice_cmds_section)))
+        // kachi-i18n-zh-th-ms R4/R5 — đầu danh sách: các câu dưới đây là tiếng Việt ở MỌI tiếng giao diện
+        // (`VoiceCommandCatalog` dựng câu bằng Lang.VI); cột "Kachi làm gì" theo tiếng màn. Danh sách nằm cuối một
+        // trang dài, nên dòng ở đầu nhóm Giọng nói không đủ — người cuộn thẳng xuống đây phải thấy lại.
+        body.addView(rows.note(context.getString(R.string.kachi_voice_lang_only)))
         body.addView(rows.note(context.getString(R.string.kachi_voice_cmds_sub)))
         val st = deps.state()
         VoiceCommandCatalog.groups(

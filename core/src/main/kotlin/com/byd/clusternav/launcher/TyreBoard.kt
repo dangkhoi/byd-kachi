@@ -162,7 +162,9 @@ object TyreBoard {
             .mapNotNull { st -> readings.count { it.status == st }.takeIf { it > 0 }?.let { n -> n to st } }
         if (faults.isEmpty()) return Strings.t("lốp ổn", "tyres OK")
         return faults.joinToString(" · ") { (n, st) ->
-            Strings.t("$n bánh ${st.reason}", "$n ${if (n == 1) "wheel" else "wheels"} ${st.reason}")
+            // Số ít/nhiều của tiếng Anh = HAI mẫu trọn vẹn (cả hai là khoá bảng dịch), không rẽ nhánh trong đối số.
+            if (n == 1) Strings.f("{0} bánh {1}", "{0} wheel {1}", n, st.reason)
+            else Strings.f("{0} bánh {1}", "{0} wheels {1}", n, st.reason)
         }
     }
 

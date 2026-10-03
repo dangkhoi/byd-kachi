@@ -8,6 +8,7 @@ import android.os.Looper
 import android.util.Log
 import com.byd.clusternav.AppContainer
 import com.byd.clusternav.launcher.HomeUiState
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.MediaBridge
 import com.byd.clusternav.launcher.VoiceDispatcher
 import com.byd.clusternav.system.PackageQueries
@@ -149,6 +150,13 @@ object VoiceWiring {
          * KDoc [VoiceWakePrefs]). Trường nào ảnh chụp không mang (`null`) ⇒ lùi về prefs như cũ. `null` = màn chính.
          */
         fresh: (() -> VoiceWakePrefs)? = null,
+        /**
+         * spec `kachi-i18n-zh-th-ms.html` R6 — ngôn ngữ GIỌNG NÓI của lượt này (`voiceLangOf(giao diện)`): mọi câu trả
+         * lời + geocoder. KHÔNG có mặc định, có chủ ý: tiến trình chính đọc từ `Strings.current`, còn `:wake` PHẢI đọc
+         * từ ảnh chụp ngữ pháp (ở đó `Strings.current` luôn là VI mặc định) — một mặc định ở đây là đúng đường để
+         * `:wake` của người dùng English lặng lẽ trả lời tiếng Việt như trước bản này.
+         */
+        lang: Lang,
     ): VoiceDispatcher = VoiceDispatcher(
         control = { AppContainer.get(ctx).carControl },
         state = state,
@@ -171,7 +179,7 @@ object VoiceWiring {
         onLayout = onLayout,
         // V1.1 — ba đường của bảng đích. Dựng ở ĐÂY, không ở hai bề mặt: xem KDoc lớp (một bộ dây, một chỗ khai).
         sendToApp = { handoff -> VoiceAppIntents.send(ctx, handoff) },
-        geocode = { place -> VoiceGeocoder.resolveBounded(ctx, place) },
+        geocode = { place -> VoiceGeocoder.resolveBounded(ctx, place, lang) },
         mediaPackage = { MediaBridge(ctx).activePackage() },
         onUi = { block ->
             if (Looper.myLooper() == Looper.getMainLooper()) block() else Handler(Looper.getMainLooper()).post(block)
@@ -194,5 +202,6 @@ object VoiceWiring {
         // Giải video_id bài đầu (YouTube) để "phát luôn" — có thời hạn cứng, hỏng thì lùi search-play.
         resolveVideo = { q -> VoiceYoutubeResolver.firstVideoIdBounded(q) },
         placeInSlot = placeInSlot,
+        lang = lang,
     )
 }

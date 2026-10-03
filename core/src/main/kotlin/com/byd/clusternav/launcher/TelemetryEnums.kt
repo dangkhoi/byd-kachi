@@ -80,8 +80,14 @@ object TelemetryEnums {
         ),
     )
 
-    /** Mọi bảng, tra theo mã datum. Thêm datum nhiều chế độ = thêm một [Table] và một dòng ở đây. */
-    private val BY_ID: Map<String, Table> = listOf(POWER_LEVEL, HEADLIGHT_MODE).associateBy { it.id }
+    /**
+     * Mọi bảng. Thêm datum nhiều chế độ = thêm một [Table] và một dòng ở đây. Công khai để bài canh bảng dịch
+     * (`I18nPairsFixture`) duyệt được MỌI cặp (VI, EN) lúc chạy — bảng thêm mới tự vào tầm quét.
+     */
+    val ALL: List<Table> = listOf(POWER_LEVEL, HEADLIGHT_MODE)
+
+    /** Mọi bảng, tra theo mã datum. */
+    private val BY_ID: Map<String, Table> = ALL.associateBy { it.id }
 
     /**
      * Số trạng thái đã khai của [id]; `0` = không phải datum nhiều chế độ. Là câu hỏi về **bảng khai** (như
@@ -91,11 +97,11 @@ object TelemetryEnums {
     fun size(id: String): Int = BY_ID[id]?.entries?.size ?: 0
 
     /** Chữ cho ([id], [code]); `null` nếu [id] không có bảng. Chỗ gọi DUY NHẤT ở mã chạy: [TelemetryReadout.format]. */
-    fun text(id: String, code: Int): String? = BY_ID[id]?.text(code)
+    fun text(id: String, code: Int, lang: Lang = Strings.current): String? = BY_ID[id]?.text(code, lang)
 
     /**
      * Mã ngoài mọi bảng ⇒ *"mã N"* / *"code N"*: hiện con số để còn chẩn đoán, nhưng có tiền tố để không ai đọc nó
      * thành một giá trị. Dùng chung cho cả datum hai chế độ khi khung trả mã lạ (xem [TelemetryReadout.format]).
      */
-    fun unknown(code: Int, lang: Lang = Strings.current): String = Strings.t("mã $code", "code $code", lang)
+    fun unknown(code: Int, lang: Lang = Strings.current): String = Strings.fIn(lang, "mã {0}", "code {0}", code)
 }

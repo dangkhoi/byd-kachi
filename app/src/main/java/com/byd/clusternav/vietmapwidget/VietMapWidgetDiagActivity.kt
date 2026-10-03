@@ -30,7 +30,8 @@ class VietMapWidgetDiagActivity : Activity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(ThemeMode.wrap(newBase))
+        // Locale của NGƯỜI DÙNG (không phải của máy) cho tài nguyên — spec kachi-i18n-zh-th-ms R9.
+        super.attachBaseContext(com.byd.clusternav.launcher.LangHost.localized(ThemeMode.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

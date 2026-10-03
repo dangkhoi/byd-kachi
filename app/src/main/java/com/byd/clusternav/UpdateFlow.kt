@@ -21,8 +21,8 @@ object UpdateFlow {
             activity.runOnUiThread {
                 if (activity.isFinishing || activity.isDestroyed) return@runOnUiThread
                 when {
-                    r.error != null -> setStatus(Lang.t("lỗi: ${r.error}", "error: ${r.error}"), true)
-                    !r.hasUpdate -> setStatus(Lang.t("đang ở bản mới nhất (v${r.current})", "up to date (v${r.current})"), false)
+                    r.error != null -> setStatus(Lang.f("lỗi: {0}", "error: {0}", r.error), true)
+                    !r.hasUpdate -> setStatus(Lang.f("đang ở bản mới nhất (v{0})", "up to date (v{0})", r.current), false)
                     else -> {
                         // ⚠ `hasUpdate == true` KHÔNG kéo theo `downloadUrl != null`: [UpdateChecker.check] đặt
                         // `bestUrl = o.optString("download_url").takeIf { it.isNotBlank() }` (⇒ có thể null) trong
@@ -57,10 +57,11 @@ object UpdateFlow {
     ) {
         if (activity.isFinishing || activity.isDestroyed) return
         AlertDialog.Builder(activity)
-            .setTitle(Lang.t("Có bản mới: v$latest", "New version: v$latest"))
-            .setMessage(Lang.t(
-                "Đang dùng v$cur. Tải v$latest và cài đè? App sẽ tự khởi động lại.",
-                "You have v$cur. Download v$latest and install? The app will restart.",
+            .setTitle(Lang.f("Có bản mới: v{0}", "New version: v{0}", latest))
+            .setMessage(Lang.f(
+                "Đang dùng v{0}. Tải v{1} và cài đè? App sẽ tự khởi động lại.",
+                "You have v{0}. Download v{1} and install? The app will restart.",
+                cur, latest,
             ))
             .setPositiveButton(Lang.t("Tải & cài", "Download & install")) { _, _ -> doUpdate(activity, url, setStatus) }
             .setNegativeButton(Lang.t("Để sau", "Later"), null)
@@ -79,7 +80,7 @@ object UpdateFlow {
         }
         Thread({
             val f = UpdateChecker.download(app, url) { pct ->
-                ui(if (pct < 0) Lang.t("đang tải…", "downloading…") else Lang.t("đang tải… $pct%", "downloading… $pct%"), false)
+                ui(if (pct < 0) Lang.t("đang tải…", "downloading…") else Lang.f("đang tải… {0}%", "downloading… {0}%", pct), false)
             }
             if (f == null) {
                 ui(Lang.t("tải thất bại", "download failed"), true)

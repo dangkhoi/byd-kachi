@@ -486,7 +486,7 @@ class KachiTopStrip(
     /** Cập nhật đồng hồ + ngày (do vòng tick / onResume gọi). */
     fun updateClock() {
         clock.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
-        dateText.text = SimpleDateFormat("EEEE, dd/MM", LangHost.locale()).format(Date())
+        dateText.text = SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date())
     }
 
     private fun dp(v: Int): Int = (v * activity.resources.displayMetrics.density).toInt()

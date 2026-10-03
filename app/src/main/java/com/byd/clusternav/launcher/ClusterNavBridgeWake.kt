@@ -172,7 +172,7 @@ fun ClusterNavBridge.wakeModelStatus(): Pair<WakeModelState, String> = when {
     WakeModelFetch.downloading -> {
         val p = WakeModelFetch.lastPercent
         WakeModelState.DOWNLOADING to
-            if (p in 1..99 || p == 0) Lang.t("Đang chuẩn bị model câu gọi… $p%", "Preparing wake model… $p%")
+            if (p in 1..99 || p == 0) Lang.f("Đang chuẩn bị model câu gọi… {0}%", "Preparing wake model… {0}%", p)
             else Lang.t("Đang chuẩn bị model câu gọi…", "Preparing wake model…")
     }
     runCatching { VoiceModelStore.isReady(app, WakeModelCatalog) }.getOrDefault(false) ->

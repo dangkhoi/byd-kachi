@@ -148,9 +148,10 @@ class SettingsRows(internal val context: Context) {
 
     /**
      * Một hàng: nhãn trái + dãy chip chọn phải. Dùng chung cho hình nền + các lựa chọn segmented.
-     * Nhãn dùng [KachiSpace.LABEL_COL] làm bề rộng tối thiểu (không `weight` — xem KDoc hằng).
+     * Nhãn dùng [KachiSpace.LABEL_COL] làm bề rộng tối thiểu (không `weight` — xem KDoc hằng). [wrap] = chip tự xuống
+     * dòng khi tràn ([ChipFlowLayout]; vừa một hàng thì y hệt bản thường) — cho danh sách dài như bộ chọn 6 ngôn ngữ.
      */
-    fun chipRow(label: String, options: List<Pair<String, String>>, current: String,
+    fun chipRow(label: String, options: List<Pair<String, String>>, current: String, wrap: Boolean = false,
                 onPick: (String) -> Unit): View {
         val chips = HashMap<String, TextView>()
         var chosen = current
@@ -163,7 +164,8 @@ class SettingsRows(internal val context: Context) {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             layoutParams = stackLp()
             addView(rowLabel(label))
-            options.forEach { (code, text) -> chips[code] = addChip(this, text) { chosen = code; paint(); onPick(code) } }
+            val host: ViewGroup = if (!wrap) this else ChipFlowLayout(context, dpi(context, Sp.S)).also { addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)) }
+            options.forEach { (code, text) -> chips[code] = addChip(host, text) { chosen = code; paint(); onPick(code) } }
             paint()
         }
     }
@@ -173,7 +175,7 @@ class SettingsRows(internal val context: Context) {
      * đậm. Rút ra dùng chung cho [chipRow] và [unitRow] để chip hai chỗ **giống hệt** (trước đây hai chỗ dựng
      * `TextView` riêng với padding lệch nhau).
      */
-    private fun addChip(row: LinearLayout, text: String, onTap: () -> Unit): TextView {
+    private fun addChip(row: ViewGroup, text: String, onTap: () -> Unit): TextView {
         val tv = TextView(context).apply {
             this.text = text; KachiType.apply(this, KachiType.CAPTION, bold = true); gravity = Gravity.CENTER
             setPadding(dpi(context, Sp.M), dpi(context, Sp.S), dpi(context, Sp.M), dpi(context, Sp.S))

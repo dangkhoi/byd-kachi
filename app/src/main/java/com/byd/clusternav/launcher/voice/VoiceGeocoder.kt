@@ -3,7 +3,10 @@ package com.byd.clusternav.launcher.voice
 import android.content.Context
 import android.location.Geocoder
 import android.util.Log
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.LangHost
+import com.byd.clusternav.launcher.Strings
+import com.byd.clusternav.launcher.voiceLangOf
 import com.byd.clusternav.net.HttpConn
 import org.json.JSONArray
 
@@ -99,9 +102,9 @@ object VoiceGeocoder {
      * @return `null` khi không giải được — chỗ gọi phải **nói ra** điều đó, không được im lặng mở app trơn rồi
      *   báo dấu ✓ (xem [VoiceReply.navOpenedNoHandover]).
      */
-    fun resolve(ctx: Context, place: String): VoiceAppIntents.Coords? {
+    fun resolve(ctx: Context, place: String, voiceLang: Lang = voiceLangOf(Strings.current)): VoiceAppIntents.Coords? {
         if (place.isBlank()) return null
-        return onDevice(ctx, place) ?: online(place)
+        return onDevice(ctx, place, voiceLang) ?: online(place)
     }
 
     // [ĐO xe 2026-09-24] Xe không GMS: Geocoder.isPresent()=true nhưng getFromLocationName ném
@@ -120,10 +123,10 @@ object VoiceGeocoder {
      * về Google Maps dẫn bằng chữ). Luồng phụ là daemon: ca treo dai dẳng là điều kiện ROM cố định, sau lần đầu
      * chỗ gọi đã lùi sang GMaps nên không gọi lại — không rò luồng theo thời gian.
      */
-    fun resolveBounded(ctx: Context, place: String): VoiceAppIntents.Coords? {
+    fun resolveBounded(ctx: Context, place: String, voiceLang: Lang = voiceLangOf(Strings.current)): VoiceAppIntents.Coords? {
         if (place.isBlank()) return null
         var out: VoiceAppIntents.Coords? = null
-        val worker = Thread { out = runCatching { resolve(ctx, place) }.getOrNull() }
+        val worker = Thread { out = runCatching { resolve(ctx, place, voiceLang) }.getOrNull() }
             .apply { isDaemon = true; name = "kachi-geocode"; start() }
         worker.join(TOTAL_BUDGET_MS)
         if (worker.isAlive) Log.w(TAG, "geocode quá hạn ${TOTAL_BUDGET_MS}ms cho \"$place\" — lùi về dẫn bằng chữ")
@@ -131,13 +134,14 @@ object VoiceGeocoder {
     }
 
     /** Đường của nền tảng. `isPresent()` false ⇒ ROM không có dịch vụ nào đứng sau, gọi cũng chỉ trả rỗng. */
-    private fun onDevice(ctx: Context, place: String): VoiceAppIntents.Coords? {
+    private fun onDevice(ctx: Context, place: String, voiceLang: Lang): VoiceAppIntents.Coords? {
         if (onDeviceDead || !Geocoder.isPresent()) return null
         return runCatching {
             @Suppress("DEPRECATION")   // Bản `GeocodeListener` chỉ có từ API 33; app chạy từ API 29.
-            // `LangHost.locale()` chứ không `Locale.getDefault()`: ngôn ngữ của **người dùng chọn trong Kachi**,
-            // không phải của máy — cùng luật với mọi chỗ định dạng khác (`LauncherLocaleContractTest`).
-            val hit = Geocoder(ctx, LangHost.locale()).getFromLocationName(place, 1)?.firstOrNull()
+            // `LangHost.voiceLocale(…)` chứ không `Locale.getDefault()` / `LangHost.locale()`: ngôn ngữ của GIỌNG NÓI
+            // người dùng (spec `kachi-i18n-zh-th-ms.html` R6 — giao diện zh/th/ms ⇒ vi): câu vừa nói là tiếng Việt,
+            // tên nơi trả về được ĐỌC LẠI bằng giọng Việt. Locale dựng ở đúng một chỗ (`LauncherLocaleContractTest`).
+            val hit = Geocoder(ctx, LangHost.voiceLocale(voiceLang)).getFromLocationName(place, 1)?.firstOrNull()
             hit?.let {
                 VoiceAppIntents.Coords(it.latitude, it.longitude, it.featureName ?: place)
             }

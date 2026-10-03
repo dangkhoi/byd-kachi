@@ -165,8 +165,8 @@ object KeyCtlTargets {
             KeyCtlAction.ON -> s("Bật ", "Turn on ") + n
             KeyCtlAction.OFF -> s("Tắt ", "Turn off ") + n
             KeyCtlAction.FLIP ->
-                if (def.kind == ControlKind.COVER) s("Mở/đóng $n (đảo)", "Open/close $n (toggle)")
-                else s("Bật/tắt $n (đảo)", "Toggle $n")
+                if (def.kind == ControlKind.COVER) Strings.fIn(lang, "Mở/đóng {0} (đảo)", "Open/close {0} (toggle)", n)
+                else Strings.fIn(lang, "Bật/tắt {0} (đảo)", "Toggle {0}", n)
             KeyCtlAction.UP -> "$n +1"
             KeyCtlAction.DOWN -> "$n −1"
             KeyCtlAction.OPEN -> s("Mở ", "Open ") + n

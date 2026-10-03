@@ -118,7 +118,7 @@
     <string name="kachi_color_note">Saved with the current profile. "From wallpaper" takes the dominant colour of the first photo in the wallpaper folder. Text always stays readable: on a very light accent the button text turns dark by itself. Changing the colour rebuilds the screen once.</string>
     <string name="kachi_sec_lang">Language</string>
     <string name="kachi_row_lang">On-screen text</string>
-    <string name="kachi_lang_note">"By car" follows the system language: a Vietnamese system gets Vietnamese, anything else gets English. Changing the language rebuilds the screen once.</string>
+    <string name="kachi_lang_note">\"By car\" = Vietnamese when the car is set to Vietnamese, otherwise English. Chinese, Thai and Malay are only used when you pick them. Voice commands understand Vietnamese only, whatever the on-screen language. Changing the language rebuilds the screen once.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
     <string name="kachi_profile_export_full">Export full (backup)</string>
@@ -654,7 +654,9 @@
 
     <!-- ══ 2.74 · R3 — list of SPOKEN COMMANDS at the end of the Voice group ════════════════════════════ -->
     <string name="kachi_voice_cmds_section">Spoken commands</string>
-    <string name="kachi_voice_cmds_sub">This list is generated from the grammar Kachi itself uses, so it always matches what the car understands. Tap a group to see the phrases, then say them exactly as shown. A few groups (layout, saved places, profiles) are only spoken in Vietnamese.</string>
+    <string name="kachi_voice_cmds_sub">This list is generated from the grammar Kachi itself uses, so it always matches what the car understands. Tap a group to see the phrases. They are in Vietnamese, the only language Kachi understands, so say them exactly as shown.</string>
+    <!-- kachi-i18n-zh-th-ms R4: speech recognition is Vietnamese only (one zipformer-vi ASR pack), in EVERY UI language. -->
+    <string name="kachi_voice_lang_only">Voice commands work in Vietnamese only — say the Vietnamese phrases exactly as listed.</string>
     <plurals name="kachi_voice_cmds_count">
         <item quantity="one">%1$d phrase</item>
         <item quantity="other">%1$d phrases</item>

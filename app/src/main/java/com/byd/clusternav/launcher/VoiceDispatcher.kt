@@ -146,6 +146,13 @@ class VoiceDispatcher(
      * [state] của nó là `VoiceGrammarSnapshot.homeState()`, bố cục trong đó là mặc định (3 ô), không phải màn thật.
      */
     placeInSlot: ((Int, String) -> SlotPlaceOutcome)? = null,
+    /**
+     * Ngôn ngữ của MỌI câu trả lời của cầu này (spec `kachi-i18n-zh-th-ms.html` R6): `voiceLangOf(giao diện)` — EN ⇒ EN,
+     * còn lại ⇒ VI (giọng đọc Piper chỉ có tiếng Việt). Giá trị chụp lúc dựng: cầu dựng lại mỗi lượt nói, nên một lượt
+     * nói một tiếng. Mặc định đọc [Strings.current] — đúng cho tiến trình chính; `:wake` PHẢI truyền tiếng từ ảnh chụp
+     * ngữ pháp (`Strings.current` ở đó luôn là VI mặc định).
+     */
+    private val lang: Lang = voiceLangOf(Strings.current),
 ) {
 
     /** Xem tham số `placeInSlot`. Đây là chỗ DUY NHẤT của lớp này đọc bố cục từ [state]. */
@@ -172,6 +179,7 @@ class VoiceDispatcher(
         navDefault = navDefault,
         musicDefault = musicDefault,
         resolveVideo = resolveVideo,
+        lang = lang,
     )
 
     /**
@@ -246,9 +254,9 @@ class VoiceDispatcher(
         if (VoiceRiskTable.of(intent, confirmIds()) == VoiceRisk.CONFIRM) {
             val remaining = intents.size - (from + 1)
             confirm(
-                VoiceReply.confirmQuestion(intent),
+                VoiceReply.confirmQuestion(intent, lang),
                 { run(intent, labels, next) },
-                { say(VoiceReply.cancelled(intent, remaining)); done() },
+                { say(VoiceReply.cancelled(intent, remaining, lang)); done() },
             )
             settled()
             return
@@ -292,7 +300,7 @@ class VoiceDispatcher(
             is VoiceIntent.Control -> { runControl(intent, next); return }
             is VoiceIntent.Macro -> { runMacro(intent, next); return }
             is VoiceIntent.Launcher -> runLauncher(intent)
-            is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent)) }
+            is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent, lang)) }
             is VoiceIntent.Read -> runRead(intent)
             is VoiceIntent.Nav -> targets.runNav(intent, labels)
             is VoiceIntent.NavigateSaved -> targets.runNavSaved(intent, labels)
@@ -302,13 +310,13 @@ class VoiceDispatcher(
             // đã là nơi ghi bền DUY NHẤT của nó.
             is VoiceIntent.Layout ->
                 say(if (runCatching { onLayout(intent.preset) }.getOrDefault(false)) {
-                    VoiceReply.done(intent)
+                    VoiceReply.done(intent, lang)
                 } else {
-                    VoiceReply.layoutNotHere(intent)
+                    VoiceReply.layoutNotHere(intent, lang)
                 })
-            is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent))
+            is VoiceIntent.Unknown -> say(VoiceReply.unknown(intent, lang))
             // Req2 (owner 2026-09-24) — câu kết thúc: nói ngắn rồi để phiên tự đóng (không mở hội thoại nối).
-            VoiceIntent.EndSession -> say(VoiceReply.bye())
+            VoiceIntent.EndSession -> say(VoiceReply.bye(lang))
         }
         next()
     }
@@ -318,7 +326,7 @@ class VoiceDispatcher(
      * 2.76 vì trần 500 dòng). Dựng **một lần** cho cả đời cầu, cùng lẽ với [targets].
      */
     private val controls = VoiceControlDispatch(
-        control = control, state = state, say = say, freshCar = freshCar, onUi = onUi, background = background,
+        control = control, state = state, say = say, freshCar = freshCar, onUi = onUi, background = background, lang = { lang },
     )
 
     private fun runControl(i: VoiceIntent.Control, next: () -> Unit) = controls.run(i, next)
@@ -330,9 +338,9 @@ class VoiceDispatcher(
      */
     private fun runMacro(i: VoiceIntent.Macro, next: () -> Unit) {
         val macro = ActionMacros.byId(i.id)
-        if (macro == null) { say(VoiceReply.failed(i)); next(); return }
+        if (macro == null) { say(VoiceReply.failed(i, lang = lang)); next(); return }
         if (!ControlTileState.shared.beginRun(macro.id)) {
-            say(VoiceReply.busy(i))
+            say(VoiceReply.busy(i, lang))
             next()
             return
         }
@@ -349,10 +357,10 @@ class VoiceDispatcher(
                         ControlTileState.shared.setOn(r.controlId, macro.steps.first { it.controlId == r.controlId }.arg > 0)
                     }
                 }
-                say(res.notice(macro.displayLabel) ?: VoiceReply.done(i))
+                say(res.notice(macro.labelIn(lang), lang) ?: VoiceReply.done(i, lang))
             } catch (t: Throwable) {
                 Log.w(TAG, "gói ${macro.id} hỏng giữa lượt chạy", t)
-                say(VoiceReply.failed(i))
+                say(VoiceReply.failed(i, lang = lang))
             } finally {
                 ControlTileState.shared.endRun(macro.id)
                 onUi(next)
@@ -366,9 +374,9 @@ class VoiceDispatcher(
             LauncherActions.SETTINGS -> openSettings()
             LauncherActions.VOICE -> onListen()
             // Mã launcher tương lai mà bản này chưa biết: im lặng mở nhầm một màn còn tệ hơn nói thẳng là chưa có.
-            else -> { say(VoiceReply.failed(i)); return }
+            else -> { say(VoiceReply.failed(i, lang = lang)); return }
         }
-        say(VoiceReply.done(i))
+        say(VoiceReply.done(i, lang))
     }
 
     private fun runRead(i: VoiceIntent.Read) {
@@ -376,13 +384,14 @@ class VoiceDispatcher(
         // [SOÁT P1-1] Cổng hiệu năng H1 giữ giá trị CŨ cho datum không hiện trên màn ⇒ hỏi một lượt TƯƠI trước
         // khi nói. Hụt/không cần ⇒ `null` ⇒ dùng ảnh chụp như bản 1.66. Xem KDoc [freshCar].
         val car = runCatching { freshCar(i.datumId) }.getOrNull() ?: state().carStatus
-        val view = TelemetryReadout.of(i.datumId, car)
+        // Nhãn + CHỮ giá trị theo tiếng GIỌNG NÓI ([lang]), không theo màn: câu này được đọc lên (spec R6).
+        val view = TelemetryReadout.of(i.datumId, car, lang)
         val value = view?.displayWithUnit()
         say(
             when {
-                spec == null -> VoiceReply.failed(i)
-                value.isNullOrBlank() || value == NO_VALUE -> VoiceReply.noReading(spec.displayLabel)
-                else -> spec.displayLabel + ": " + value
+                spec == null -> VoiceReply.failed(i, lang = lang)
+                value.isNullOrBlank() || value == NO_VALUE -> VoiceReply.noReading(spec.labelIn(lang), lang)
+                else -> spec.labelIn(lang) + ": " + value
             },
         )
     }
@@ -404,7 +413,7 @@ class VoiceDispatcher(
         val key = i.appKey
         val pkg = labels[i.appName] ?: key?.let { VoiceAppTargets.byKey(it)?.packageIn(labels.values.toSet()) }
         if (pkg == null) {
-            say(if (key != null) VoiceReply.appNotInstalled(i, key) else VoiceReply.cannotOpen(i))
+            say(if (key != null) VoiceReply.appNotInstalled(i, key, lang) else VoiceReply.cannotOpen(i, lang))
             return
         }
         // H3 · [ĐO máy ảo 2026-09-16, ca t73–t76] Câu khớp bằng **dạng ĐỌC** (*"mở du túp"*) mang theo đúng chuỗi
@@ -414,15 +423,15 @@ class VoiceDispatcher(
         val shown = displayName(pkg, labels)?.takeIf { it != i.appName }?.let { i.copy(appName = it) } ?: i
         val slot = i.slot
         if (slot == null) {
-            say(if (openApp(pkg)) VoiceReply.done(shown) else VoiceReply.cannotOpen(shown))
+            say(if (openApp(pkg)) VoiceReply.done(shown, lang) else VoiceReply.cannotOpen(shown, lang))
             return
         }
         // 1-based (như người ta nói) → 0-based (như mảng ô). Phép đổi nằm ở ĐÚNG MỘT chỗ, là chỗ này.
         say(
             when (val out = place(slot - 1, pkg)) {
-                SlotPlaceOutcome.Placed -> VoiceReply.done(shown)
-                SlotPlaceOutcome.Failed -> VoiceReply.cannotOpen(shown)
-                is SlotPlaceOutcome.OutOfRange -> VoiceReply.slotOutOfRange(shown, out.slotCount)
+                SlotPlaceOutcome.Placed -> VoiceReply.done(shown, lang)
+                SlotPlaceOutcome.Failed -> VoiceReply.cannotOpen(shown, lang)
+                is SlotPlaceOutcome.OutOfRange -> VoiceReply.slotOutOfRange(shown, out.slotCount, lang)
             },
         )
     }

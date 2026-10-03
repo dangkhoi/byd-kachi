@@ -71,7 +71,8 @@ class VoiceCommandWiringContractTest {
             "is VoiceIntent.NavigateSaved ->" to "runNavSaved(intent, labels)",
             "is VoiceIntent.Media ->" to "runMedia(intent, labels)",
             "is VoiceIntent.OpenApp ->" to "runOpenApp(intent, labels)",
-            "is VoiceIntent.Unknown ->" to "VoiceReply.unknown(intent)",
+            // kachi-i18n-zh-th-ms T2: câu trả lời theo tiếng GIỌNG NÓI của cầu (`lang`), không tiếng màn.
+            "is VoiceIntent.Unknown ->" to "VoiceReply.unknown(intent, lang)",
         ).forEach { (branch, target) ->
             assertTrue(run.contains(branch), "thiếu nhánh $branch — ý định bị nuốt im lặng")
             assertTrue(run.contains(target), "nhánh $branch phải gọi `$target`, không được để rỗng")

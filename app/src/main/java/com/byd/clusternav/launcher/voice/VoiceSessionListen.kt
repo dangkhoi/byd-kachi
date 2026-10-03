@@ -76,7 +76,8 @@ internal fun VoiceSession.runListen(my: Int) {
                 // 2026-09-17] owner không nhìn màn khi lái, và một phiên kết thúc câm là *"không làm được gì"*.
                 Log.i(VoiceSession.TAG, "quyết định: \"\" ⇒ không nghe thấy tiếng nào (không giải mã)")
                 fail(my, R.string.kachi_voice_nothing_heard, openSettingsAction = false)
-                post { if (!stale(my)) speakLines(listOf(ctx.getString(R.string.kachi_voice_nothing_heard))) }
+                // Tấm chữ ở dòng trên giữ `R.string` (tiếng màn); câu ĐỌC lấy từ `:core` theo tiếng GIỌNG NÓI (i18n R6).
+                post { if (!stale(my)) speakLines(listOf(VoiceReply.nothingHeard(voiceLang()))) }
                 return
             }
             post { if (!stale(my)) execute(sentence) }

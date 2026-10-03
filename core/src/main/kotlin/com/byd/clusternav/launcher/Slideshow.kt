@@ -42,9 +42,9 @@ object Slideshow {
 
     /** Nhãn cho người đọc, tránh bắt họ tự quy đổi giây. */
     fun intervalLabel(sec: Int): String = when {
-        sec < 60 -> Strings.t("$sec giây", "$sec s")
-        sec < 3600 -> Strings.t("${sec / 60} phút", "${sec / 60} min")
-        else -> Strings.t("${sec / 3600} giờ", "${sec / 3600} h")
+        sec < 60 -> Strings.f("{0} giây", "{0} s", sec)
+        sec < 3600 -> Strings.f("{0} phút", "{0} min", sec / 60)
+        else -> Strings.f("{0} giờ", "{0} h", sec / 3600)
     }
 
     /**

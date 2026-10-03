@@ -150,7 +150,7 @@ object VoiceWavProbe {
      */
     fun run(ctx: Context, profiles: List<String>, apps: List<String>, installed: Set<String> = emptySet()): Result {
         val file = findFile(ctx)
-            ?: return Result("", "", Lang.t("không thấy tệp $FILE_NAME", "no $FILE_NAME found"))
+            ?: return Result("", "", Lang.f("không thấy tệp {0}", "no {0} found", FILE_NAME))
         val rec = VoiceRecognizer.open(ctx, profiles, apps, installed)
             ?: return Result(file.absolutePath, "", Lang.t("mô hình chưa sẵn sàng", "model not ready"))
         return runCatching {

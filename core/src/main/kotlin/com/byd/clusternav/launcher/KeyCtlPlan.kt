@@ -60,14 +60,15 @@ object KeyCtlPlan {
             ControlKind.SELECT -> Strings.t("gán từng mức", "bind each level", lang)
             else -> Strings.t("gán Bật / Tắt riêng", "bind On / Off separately", lang)
         }
-        return Strings.t("Không đọc được $n — ", "Can't read $n — ", lang) + fix
+        return Strings.fIn(lang, "Không đọc được {0} — {1}", "Can't read {0} — {1}", n, fix)
     }
 
     /** Mã đích hỏng, hoặc nút/hành động không còn trên bản Kachi đang chạy (registry đổi) — gán lại. */
-    fun invalidReply(spec: String, lang: Lang = Strings.current): String = Strings.t(
-        "Phím gán nút xe không còn hợp lệ ($spec) — gán lại ở Cài đặt › Nút vật lý",
-        "This key binding is no longer valid ($spec) — rebind it in Settings › Physical buttons",
+    fun invalidReply(spec: String, lang: Lang = Strings.current): String = Strings.fIn(
         lang,
+        "Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý",
+        "This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons",
+        spec,
     )
 }
 

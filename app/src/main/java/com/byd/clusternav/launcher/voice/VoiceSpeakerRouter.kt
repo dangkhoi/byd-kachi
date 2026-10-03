@@ -2,6 +2,9 @@ package com.byd.clusternav.launcher.voice
 
 import android.content.Context
 import android.util.Log
+import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.Strings
+import com.byd.clusternav.launcher.voiceLangOf
 
 /**
  * ═══ CHỌN ĐƯỜNG RA TIẾNG — mỗi câu đo lại, không rẽ nhánh theo cờ RAM ════════════════════════════════════════
@@ -15,9 +18,14 @@ class VoiceSpeakerRouter(
     ctx: Context,
     /** Pha 2 — công tắc *"ưu tiên giọng offline"* trong Cài đặt. Chưa có ⇒ luôn `false`, xem KDoc probe. */
     private val preferOffline: () -> Boolean = { false },
+    /**
+     * spec `kachi-i18n-zh-th-ms.html` R6 — ngôn ngữ GIỌNG NÓI cho máy đọc hệ thống (giọng nào được hỏi ⇒ cả phép đo
+     * [probe]). Phiên truyền lambda của nó (`:wake` đọc ảnh chụp ngữ pháp); mặc định = suy từ `Strings.current`.
+     */
+    voiceLang: () -> Lang = { voiceLangOf(Strings.current) },
 ) : VoiceSpeaker {
 
-    private val android = AndroidTtsSpeaker(ctx)
+    private val android = AndroidTtsSpeaker(ctx, voiceLang)
 
     /**
      * Đường Piper — **qua ranh giới tiến trình** từ #0 (2026-09-18).

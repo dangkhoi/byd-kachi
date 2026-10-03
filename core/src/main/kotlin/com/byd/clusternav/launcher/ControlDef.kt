@@ -170,15 +170,23 @@ data class ControlDef(
 
     /** Bậc lùi: [shortEn] → [labelEn] → [short] → [label]. Xem KDoc [TelemetrySpec.shortLabelIn] về lý do. */
     fun shortLabelIn(lang: Lang): String =
-        if (lang == Lang.EN) (shortEn?.takeIf { it.isNotBlank() } ?: labelEn?.takeIf { it.isNotBlank() } ?: shortLabel)
-        else shortLabel
+        Strings.pick(shortLabel, shortEn?.takeIf { it.isNotBlank() } ?: labelEn, lang)
 
     /** [args] theo [Strings.current] — xem [argsEn] về luật lùi. */
     val displayArgs: List<String> get() = argsIn(Strings.current)
 
-    /** [args] theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test). */
-    fun argsIn(lang: Lang): List<String> =
-        if (lang == Lang.EN && argsEn.size == args.size && argsEn.isNotEmpty()) argsEn else args
+    /**
+     * [args] theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test).
+     *
+     * [argsEn] lệch số phần tử ⇒ CẢ danh sách tiếng Việt (luật cũ của EN, áp cho mọi tiếng không phải VI). ZH/TH/MS
+     * dịch TỪNG phần tử theo cặp song song `(args[i], argsEn[i])` — từ đồng hình như `"Open"` khoá theo cặp nên lệnh
+     * Mở ở đây không lẫn với trạng thái Đang mở ở `TelemetryReadout`.
+     */
+    fun argsIn(lang: Lang): List<String> = when {
+        lang == Lang.VI || argsEn.size != args.size || argsEn.isEmpty() -> args
+        lang == Lang.EN -> argsEn
+        else -> args.indices.map { Strings.pick(args[it], argsEn[it], lang) }
+    }
 }
 
 /**

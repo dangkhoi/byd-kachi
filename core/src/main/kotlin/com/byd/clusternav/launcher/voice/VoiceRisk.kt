@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.Strings
 
 /**
@@ -47,8 +48,11 @@ object VoiceRiskTable {
          */
         val askByDefault: Boolean = false,
     ) {
-        /** Lý do theo ngôn ngữ đang dùng — nó HIỆN trong hộp xác nhận, nên phải dịch như mọi chữ khác. */
-        fun why(): String = Strings.t(whyVi, whyEn)
+        /**
+         * Lý do theo [lang] — nó HIỆN trong hộp xác nhận, nên phải dịch như mọi chữ khác. Màn Cài đặt
+         * ([VoiceRiskTable.askableLabel]) để mặc định = tiếng giao diện; hộp hỏi của phiên nói truyền tiếng GIỌNG NÓI.
+         */
+        fun why(lang: Lang = Strings.current): String = Strings.t(whyVi, whyEn, lang)
 
         /**
          * ═══ FIX286 · SR5(a) — lệnh có rơi vào **vế** mà dòng này hỏi không ═══════════════════════════════════
@@ -218,9 +222,10 @@ object VoiceRiskTable {
      *
      * Câu rỗng thì không có gì để đọc lại ⇒ [VoiceRisk.NORMAL] (*"phát nhạc"* vẫn là một cú chạm như trước).
      */
-    private fun openVocabWhy(): String = Strings.t(
+    private fun openVocabWhy(lang: Lang = Strings.current): String = Strings.t(
         "đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu",
         "the quoted part came from free-form recognition — less accurate than the rest",
+        lang,
     )
 
     /**
@@ -251,23 +256,27 @@ object VoiceRiskTable {
         else -> null
     }
 
-    /** Vì sao việc này phải hỏi lại — hiện thẳng trong hộp xác nhận, không giấu trong mã. */
-    fun reason(intent: VoiceIntent): String? = when (intent) {
+    /**
+     * Vì sao việc này phải hỏi lại — hiện thẳng trong hộp xác nhận, không giấu trong mã. [lang] = ngôn ngữ của câu
+     * hỏi ([VoiceReply.confirmQuestion]): phiên nói truyền tiếng GIỌNG NÓI (spec `kachi-i18n-zh-th-ms.html` R6).
+     */
+    fun reason(intent: VoiceIntent, lang: Lang = Strings.current): String? = when (intent) {
         is VoiceIntent.Profile -> Strings.t(
             "đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng",
             "switching profile replaces the whole layout and current settings",
+            lang,
         )
-        is VoiceIntent.Control -> ruleFor(intent)?.why()
+        is VoiceIntent.Control -> ruleFor(intent)?.why(lang)
         is VoiceIntent.Macro -> if (intent.id in MACRO_IDS) {
-            Strings.t("hạ hết kính", "lowers every window")
+            Strings.t("hạ hết kính", "lowers every window", lang)
         } else {
             null
         }
-        is VoiceIntent.Nav -> openVocabReason(intent.query)
-        is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY) openVocabReason(intent.query) else null
+        is VoiceIntent.Nav -> openVocabReason(intent.query, lang)
+        is VoiceIntent.Media -> if (intent.op == VoiceMediaOp.QUERY) openVocabReason(intent.query, lang) else null
         else -> null
     }
 
     /** Lý do cho dòng TỪ VỰNG MỞ — xem KDoc [askableLabel]. Câu rỗng thì không có gì để đọc lại ⇒ không lý do. */
-    private fun openVocabReason(query: String): String? = if (query.isBlank()) null else openVocabWhy()
+    private fun openVocabReason(query: String, lang: Lang): String? = if (query.isBlank()) null else openVocabWhy(lang)
 }

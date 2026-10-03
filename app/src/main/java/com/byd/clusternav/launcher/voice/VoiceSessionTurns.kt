@@ -37,7 +37,8 @@ import com.byd.clusternav.voiceFollowUpMs
  */
 internal fun VoiceSession.clarifyAsk(intents: List<VoiceIntent>): VoiceClarify.Ask? {
     val only = intents.singleOrNull() as? VoiceIntent.Unknown ?: return null
-    return VoiceClarify.ask(only, clarifyRound, sessionTerms())   // ⚠ từ vựng CỦA PHIÊN — xem KDoc [sessionTerms]
+    // ⚠ từ vựng CỦA PHIÊN — xem KDoc [sessionTerms]. Câu hỏi được ĐỌC lên ⇒ tiếng GIỌNG NÓI (i18n R6), không tiếng màn.
+    return VoiceClarify.ask(only, clarifyRound, sessionTerms(), voiceLang())
 }
 
 /**
@@ -65,9 +66,9 @@ internal fun VoiceSession.clarifyAsk(intents: List<VoiceIntent>): VoiceClarify.A
 internal fun VoiceSession.clarifyGaveUp(intents: List<VoiceIntent>, my: Int): Boolean {
     if (clarifyRound < VoiceClarify.MAX_ROUNDS) return false
     val only = intents.singleOrNull() as? VoiceIntent.Unknown ?: return false
-    if (VoiceClarify.ask(only, 0, sessionTerms()) == null) return false
+    if (VoiceClarify.ask(only, 0, sessionTerms(), voiceLang()) == null) return false
     clarifyRound = 0
-    val line = VoiceClarify.giveUp()
+    val line = VoiceClarify.giveUp(voiceLang())
     logAsked(intents, line)   // nhật ký lượt nói: lối thoát này cũng không qua `settle()` — xem KDoc [logAsked]
     VoiceChime.error()   // R1 voice-ux: earcon "chưa hiểu"
     overlay?.render(R.string.kachi_voice_heard, line)
@@ -120,7 +121,7 @@ private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {
     // mức ấy tự nạp lại. Đếm chung một quỹ thì cả hai đường cộng lại vẫn không vượt được trần của phiên.
     if (followUps >= VoiceSession.MAX_FOLLOW_UPS) {
         Log.i(VoiceSession.TAG, "hết quỹ lượt nối của phiên — không hỏi lại nữa")
-        overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp())
+        overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp(voiceLang()))
         scheduleClose(VoiceSession.LINGER_MS)
         return
     }
@@ -136,7 +137,7 @@ private fun VoiceSession.listenAgain(ask: VoiceClarify.Ask, my: Int) {
             val joined = VoiceClarify.combine(ask.carry, heard)
             // [P0-1b] Rỗng **hoặc chỉ toàn từ đệm** ⇒ coi như không có câu trả lời. Xem KDoc [endsConversation].
             if (endsConversation(heard)) {
-                overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp())
+                overlay?.render(R.string.kachi_voice_heard, VoiceClarify.giveUp(voiceLang()))
                 scheduleClose(VoiceSession.LINGER_MS)
             } else {
                 execute(joined)
@@ -448,12 +449,15 @@ internal fun VoiceSession.onReplyDone(my: Int, pending: Boolean, endSession: Boo
  * phép gộp câu (một lượt Piper tốn hàng trăm ms CPU cho câu không ai nghe). [onDone] chạy ở MỌI đường thoát —
  * kể cả khi không đọc gì (hội thoại/đóng-overlay treo trên chính mốc này; một cổng chờ mốc không bao giờ về là
  * cổng chết im). Không có giọng ⇒ degrade, không ném (tấm chữ + âm báo vẫn như 1.63).
+ *
+ * Phép gộp đọc [VoiceSession.voiceLang] — CÙNG nguồn mà dispatcher của phiên dùng để dựng [lines] (i18n R6): lời dẫn
+ * *"Đã "* · *"Done: "* phải cùng tiếng với dòng, không thì lỗi *"Đã đã gửi…"* quay lại (KDoc `VoiceFeedbackPhrase.merge`).
  */
 internal fun VoiceSession.speakLines(lines: List<String>, onDone: () -> Unit = {}) {
     val sentence = when {
         lines.isEmpty() || micOpen() || confirmOpen.get() -> null
         !speakReplies() -> null
-        else -> VoiceFeedbackPhrase.merge(lines)
+        else -> VoiceFeedbackPhrase.merge(lines, voiceLang())
     }
     if (sentence == null) { onDone(); return }
     runCatching { speaker.speak(sentence) { onDone() } }

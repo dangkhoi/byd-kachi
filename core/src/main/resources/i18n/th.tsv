@@ -1,0 +1,753 @@
+# Kachi — bảng dịch th (ไทย · Thai). Spec docs/specs/kachi-i18n-zh-th-ms.html §4.2.
+# Định dạng: UTF-8, mỗi dòng vi<TAB>en<TAB>bản-dịch. Dòng mở bằng # và dòng trắng bị bỏ qua.
+# Thoát trong ô: \t = tab, \n = xuống dòng, \\ = gạch chéo ngược (không thoát gì khác).
+# Cột vi RỖNG = dòng chỉ-en (đường lùi chung). Tra: cặp (vi,en) → chỉ-en → tiếng Anh.
+# Câu có biến khoá theo MẪU {0}..{9} (Strings.f), giữ đủ các chỗ trống của bản tiếng Anh.
+# Danh sách cặp cần dịch: core/build/i18n/pairs.tsv (./gradlew :core:test --tests "*I18nExportTest*").
+Đang khởi động nền…	Starting in background…	กำลังเริ่มทำงานเบื้องหลัง…
+Đang chuẩn bị màn hình chính…	Preparing home screen…	กำลังเตรียมหน้าจอหลัก…
+không đọc được phản hồi	empty response	ไม่มีข้อมูลตอบกลับ
+không thấy APK trên nhánh {0}	no APK found on branch {0}	ไม่พบ APK ในแบรนช์ {0}
+lỗi mạng: {0}	network error: {0}	ข้อผิดพลาดเครือข่าย: {0}
+đã cài — đang mở lại…	installed — reopening…	ติดตั้งแล้ว — กำลังเปิดใหม่…
+không có kênh shell tới xe ({0}) — {1}. APK đã tải ở: {2}	no shell channel to the head unit ({0}) — {1}. APK saved at: {2}	ไม่มีช่องทาง shell ไปยังระบบรถ ({0}) — {1} ไฟล์ APK บันทึกไว้ที่: {2}
+pm install từ chối: {0}. APK đã tải ở: {1}	pm install rejected: {0}. APK saved at: {1}	pm install ปฏิเสธ: {0} ไฟล์ APK บันทึกไว้ที่: {1}
+bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB rồi cài lại	tap "Allow" (tick "always allow") on the USB-debugging dialog, then install again	แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB แล้วติดตั้งอีกครั้ง
+xem Cài đặt › Hệ thống & quyền	see Settings › System & permissions	ดูที่ การตั้งค่า › ระบบและสิทธิ์
+mở màn chính Kachi để cấp quyền điều khiển cửa sổ (Cho phép gỡ lỗi USB) rồi cài lại	open the Kachi home screen to grant window control (Allow USB debugging), then install again	เปิดหน้าจอหลัก Kachi เพื่อให้สิทธิ์ควบคุมหน้าต่าง (อนุญาตการแก้ไขข้อบกพร่อง USB) แล้วติดตั้งอีกครั้ง
+pm không in gì	pm printed nothing	pm ไม่แสดงผลลัพธ์ใดๆ
+đang kiểm tra…	checking…	กำลังตรวจสอบ…
+lỗi: {0}	error: {0}	ข้อผิดพลาด: {0}
+đang ở bản mới nhất (v{0})	up to date (v{0})	เป็นเวอร์ชันล่าสุดแล้ว (v{0})
+có bản mới nhưng kênh không có link tải — thử lại sau	a new version exists but the channel has no download link — try again later	มีเวอร์ชันใหม่ แต่ช่องทางนี้ยังไม่มีลิงก์ดาวน์โหลด — ลองใหม่ภายหลัง
+Có bản mới: v{0}	New version: v{0}	เวอร์ชันใหม่: v{0}
+Đang dùng v{0}. Tải v{1} và cài đè? App sẽ tự khởi động lại.	You have v{0}. Download v{1} and install? The app will restart.	ขณะนี้ใช้ v{0} ต้องการดาวน์โหลด v{1} และติดตั้งหรือไม่ แอปจะรีสตาร์ทเอง
+Tải & cài	Download & install	ดาวน์โหลดและติดตั้ง
+Để sau	Later	ไว้ภายหลัง
+đang tải… 0%	downloading… 0%	กำลังดาวน์โหลด… 0%
+đang tải…	downloading…	กำลังดาวน์โหลด…
+đang tải… {0}%	downloading… {0}%	กำลังดาวน์โหลด… {0}%
+tải thất bại	download failed	ดาวน์โหลดไม่สำเร็จ
+đang cài…	installing…	กำลังติดตั้ง…
+Đang mở VietMap…	Starting VietMap…	กำลังเปิด VietMap…
+Kéo để đặt bong bóng	Drag to place the bubble	ลากเพื่อวางบับเบิล
+Bong bóng	Bubble	บับเบิล
+Phím-thoại đang bật	Voice key active	ปุ่มสั่งงานด้วยเสียงทำงานอยู่
+Tự động hoá đang chạy	Automation running	ระบบอัตโนมัติกำลังทำงาน
+Lái	Driver	คนขับ
+Phụ	Front R	ผู้โดยสาร
+Sau T	Rear L	หลังซ้าย
+Sau P	Rear R	หลังขวา
+M	L	L
+Đang chuẩn bị model câu gọi… {0}%	Preparing wake model… {0}%	กำลังเตรียมโมเดลคำปลุก… {0}%
+Đang chuẩn bị model câu gọi…	Preparing wake model…	กำลังเตรียมโมเดลคำปลุก…
+Model câu gọi đã sẵn sàng	Wake model ready	โมเดลคำปลุกพร้อมแล้ว
+Chưa nạp model câu gọi (bật công tắc để chuẩn bị)	Wake model not loaded (turn on to prepare)	ยังไม่ได้โหลดโมเดลคำปลุก (เปิดสวิตช์เพื่อเตรียม)
+side-load {0}: không đọc/chép được ({1})	side-load {0}: cannot read/copy ({1})	ไซด์โหลด {0}: อ่าน/คัดลอกไม่ได้ ({1})
+side-load {0} không khớp bản ghim ({1}/{2} byte, sha {3}…) — chép lại tệp đúng	side-load {0} does not match pin ({1}/{2} bytes, sha {3}…) — copy the correct file	ไซด์โหลด {0} ไม่ตรงกับค่าที่กำหนด ({1}/{2} ไบต์, sha {3}…) — คัดลอกไฟล์ที่ถูกต้องอีกครั้ง
+gói '{0}' chưa có nguồn tải (chờ mirror) — chép tệp vào thẻ hoặc chọn bản khác	'{0}' has no download source yet (awaiting mirror) — side-load it or pick another	'{0}' ยังไม่มีแหล่งดาวน์โหลด (รอมิเรอร์) — ไซด์โหลดเองหรือเลือกแพ็กอื่น
+đang cài rồi — đợi lượt này xong	an install is already running	กำลังติดตั้งอยู่แล้ว
+tên tệp không hợp lệ: {0}	invalid file name: {0}	ชื่อไฟล์ไม่ถูกต้อง: {0}
+thiếu tệp: {0}	missing {0}	ขาดไฟล์ {0}
+không ghi được .version (thẻ đầy?)	could not write .version (storage full?)	เขียน .version ไม่ได้ (พื้นที่เต็ม?)
+không chuyển được thư mục gói	could not move the pack folder	ย้ายโฟลเดอร์แพ็กไม่ได้
+máy còn {0} MB, cần khoảng {1} MB — xoá bớt rồi thử lại	only {0} MB free, about {1} MB needed — free some space and retry	เหลือพื้นที่ {0} MB ต้องใช้ประมาณ {1} MB — ลบข้อมูลบางส่วนแล้วลองใหม่
+tệp {0} chưa ghim sha256/cỡ	{0} is not pinned	ไฟล์ {0} ยังไม่ได้กำหนด sha256/ขนาด
+tệp {0} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)	{0} has no download source — side-load it from a USB stick	{0} ไม่มีแหล่งดาวน์โหลด — ไซด์โหลดจากแฟลชไดรฟ์ USB
+lỗi mạng {0}: {1}	network error {0}: {1}	ข้อผิดพลาดเครือข่าย {0}: {1}
+máy chủ từ chối {0}	server refused {0}	เซิร์ฟเวอร์ปฏิเสธ {0}
+tệp {0} không khớp bản ghim ({1} byte, sha {2}…)	{0} does not match pin ({1} bytes, sha {2}…)	{0} ไม่ตรงกับค่าที่กำหนด ({1} ไบต์, sha {2}…)
+chưa có lượt nói nào được ghi — bật công tắc rồi nói một câu	no utterances recorded yet — turn the switch on and say something	ยังไม่มีการบันทึกคำพูด — เปิดสวิตช์แล้วลองพูดสักประโยค
+không thấy tệp {0}	no {0} found	ไม่พบ {0}
+mô hình chưa sẵn sàng	model not ready	โมเดลยังไม่พร้อม
+Kéo để đặt biển báo	Drag to place the badge	ลากเพื่อวางป้าย
+Đang trả app về…	Returning app…	กำลังส่งแอปกลับ…
+Đang chuẩn bị cụm…	Preparing cluster…	กำลังเตรียมหน้าปัด…
+Chiếu {0}…	Casting {0}…	กำลังฉาย {0}…
+Không cast màn hình chính	Won't cast the launcher/home screen	ไม่ฉายภาพหน้าจอหลัก (ลันเชอร์)
+Nhấn để mở điều khiển	Tap to open controls	แตะเพื่อเปิดการควบคุม
+Khắc phục sự cố	Troubleshooting	การแก้ไขปัญหา
+Khắc phục sự cố — đang mở	Troubleshooting — open	การแก้ไขปัญหา — เปิดอยู่
+Đóng nhóm hành động khắc phục sự cố	Close troubleshooting actions	ปิดกลุ่มคำสั่งแก้ไขปัญหา
+Mở nhóm hành động khắc phục sự cố	Open troubleshooting actions	เปิดกลุ่มคำสั่งแก้ไขปัญหา
+⬇ Kiểm tra cập nhật	⬇ Check update	⬇ ตรวจสอบอัปเดต
+Thử badge 50	TEST BADGE 50	ทดสอบป้าย 50
+Đã buộc badge 50 trên cụm (display 1)	Forced badge 50 on cluster (display 1)	บังคับแสดงป้าย 50 บนหน้าปัด (display 1)
+Ẩn badge	HIDE badge	ซ่อนป้าย
+Đã ẩn badge	Badge hidden	ซ่อนป้ายแล้ว
+Chỉnh vị trí / cỡ badge	Badge position / size	ตำแหน่ง / ขนาดป้าย
+↖ Trên-trái	↖ Top-left	↖ บนซ้าย
+↗ Trên-phải	↗ Top-right	↗ บนขวา
+↙ Dưới-trái	↙ Bottom-left	↙ ล่างซ้าย
+↘ Dưới-phải	↘ Bottom-right	↘ ล่างขวา
+Cỡ −10	Size −10	ขนาด −10
+Cỡ +10	Size +10	ขนาด +10
+Tâm badge: X={0} Y={1} (px cụm) · cỡ {2}dp	Badge centre: X={0} Y={1} (cluster px) · size {2}dp	จุดกึ่งกลางป้าย: X={0} Y={1} (px หน้าปัด) · ขนาด {2}dp
+Đang xử lý thao tác trước…	Previous operation in progress…	กำลังดำเนินการคำสั่งก่อนหน้า…
+Đang thử nối vào xe để mở trợ lý — chờ vài giây…	Still reaching the head unit to open the assistant — hang on…	กำลังเชื่อมต่อระบบรถเพื่อเปิดผู้ช่วย — รอสักครู่…
+Đã gửi lệnh mở trợ lý nhưng xe không trả lời kịp — thử lại nếu chưa thấy trợ lý.	Sent the assistant key but the head unit did not answer in time — retry if nothing opened.	ส่งคำสั่งเปิดผู้ช่วยแล้ว แต่ระบบรถไม่ตอบสนองทันเวลา — ลองใหม่หากผู้ช่วยยังไม่เปิด
+Bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB — app đang chờ…	Tap "Allow" (tick "always allow") on the USB-debugging dialog — waiting…	แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB — กำลังรอ…
+Chưa được cấp quyền gỡ lỗi USB. Bấm "Cho phép/Allow" (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Tap "Allow" (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") แล้วลองใหม่
+Cổng gỡ lỗi 5555 chưa bật trên xe — trợ lý giọng nói không chạy được.	Debug port 5555 is off on the head unit — the voice assistant cannot run.	พอร์ตดีบัก 5555 ปิดอยู่บนระบบรถ — ผู้ช่วยเสียงทำงานไม่ได้
+Không nối được vào xe để mở trợ lý. Thử lại sau.	Could not reach the head unit to open the assistant. Try again later.	เชื่อมต่อระบบรถเพื่อเปิดผู้ช่วยไม่ได้ ลองใหม่ภายหลัง
+Chưa được cấp quyền gỡ lỗi USB. Mở màn chính Kachi để cấp (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Open the Kachi home screen to grant it (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB เปิดหน้าจอหลัก Kachi เพื่ออนุญาต (ติ๊ก "อนุญาตเสมอ") แล้วลองใหม่
+Công thức trợ lý mới chạy được một phần — bật lại công tắc để chạy đủ.	The assistant recipe was only partly applied — toggle it again to finish.	ตั้งค่าผู้ช่วยได้เพียงบางส่วน — สลับสวิตช์อีกครั้งเพื่อให้ครบ
+Đang tự cấp quyền bind…	Granting bind permission…	กำลังให้สิทธิ์ผูกวิดเจ็ต…
+xe không nhận lệnh nào	the car took no command	รถไม่รับคำสั่งใดเลย
+chưa làm được — 	not done — 	ยังไม่สำเร็จ — 
+gói rỗng	empty pack	ชุดคำสั่งว่าง
+đủ {0} bước	all {0} steps	ครบทั้ง {0} ขั้นตอน
+không bước nào ăn ({0} bước)	no step took ({0} steps)	ไม่มีขั้นตอนใดสำเร็จ ({0} ขั้นตอน)
+{0}/{1} bước ăn; hỏng: {2}	{0}/{1} steps took; failed: {2}	สำเร็จ {0}/{1} ขั้นตอน · ล้มเหลว: {2}
+{0} mục	{0} item	{0} รายการ
+{0} mục	{0} items	{0} รายการ
+{0} nút	{0} button	{0} ปุ่ม
+{0} nút	{0} buttons	{0} ปุ่ม
+Nhóm — xem cả cụm cùng lúc	Groups — see a whole set at once	กลุ่ม — ดูทั้งชุดในคราวเดียว
+Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái.	One tile for a whole set: all the tyres, all the windows, the whole light strip. Place one tile instead of placing each one.	ช่องเดียวสำหรับทั้งชุด: ยางทุกเส้น กระจกทุกบาน ไฟทั้งแถบ วางช่องเดียวแทนการวางทีละรายการ
+Từng mục riêng	Individual items	รายการเดี่ยว
+Launcher — việc của chính màn hình này	Launcher — this screen's own actions	ลันเชอร์ — คำสั่งของหน้าจอนี้เอง
+Không gửi lệnh nào xuống xe: mở danh sách ứng dụng, mở Cài đặt, nói với xe, khối lối tắt ứng dụng.	These send nothing to the car: open the app list, open Settings, talk to the car, the app-shortcut block.	รายการเหล่านี้ไม่ส่งคำสั่งใดไปยังรถ: เปิดรายการแอป เปิดการตั้งค่า คุยกับรถ บล็อกทางลัดแอป
+Đã có trong nhóm: 	Already in a group: 	อยู่ในกลุ่มแล้ว: 
+KIỂM TRA TỪNG NÚT — Kachi	CAR FUNCTION CHECK — Kachi	ตรวจสอบฟังก์ชันรถ — Kachi
+OK 	OK 	ผ่าน 
+ · Không OK 	 · Not OK 	 · ไม่ผ่าน 
+ · Chưa soát 	 · Not checked 	 · ยังไม่ตรวจ 
+(tin)	(info)	(ข้อมูล)
+(nút)	(action)	(ปุ่ม)
+  · ghi chú: 	  · note: 	  · หมายเหตุ: 
+Xanh Kachi	Kachi blue	ฟ้า Kachi
+Tím	Violet	ม่วง
+Lục ngọc	Teal	เขียวหัวเป็ด
+Hổ phách	Amber	อำพัน
+Hồng anh đào	Cherry pink	ชมพูเชอร์รี
+Đỏ san hô	Coral red	แดงปะการัง
+Bạc	Silver	เงิน
+Trắng ấm	Warm white	ขาวนวล
+Theo ảnh nền	From wallpaper	ตามภาพพื้นหลัง
+Trung tính	Neutral	เป็นกลาง
+Ấm	Warm	อุ่น
+Lạnh	Cool	เย็น
+Dưới	Bottom	ล่าง
+Trái	Left	ซ้าย
+Phải	Right	ขวา
+Trên	Top	บน
+{0} bộ phận · chưa đọc được	{0} parts · not read yet	{0} ชิ้นส่วน · ยังอ่านค่าไม่ได้
+Tất cả đã đóng	All closed	ปิดทั้งหมด
+Đã đóng · {0} chưa đọc được	Closed · {0} not read yet	ปิดแล้ว · ยังอ่านค่าไม่ได้ {0} รายการ
+{0} cửa mở	{0} door open	ประตูเปิด {0} บาน
+{0} cửa mở	{0} doors open	ประตูเปิด {0} บาน
+{0} chưa đọc được	{0} not read yet	ยังอ่านค่าไม่ได้ {0} รายการ
+{0} cảnh báo	{0} alert	แจ้งเตือน {0} รายการ
+{0} cảnh báo	{0} alerts	แจ้งเตือน {0} รายการ
+{0} lưu ý	{0} to note	ควรตรวจดู {0} รายการ
+gán Mở / Đóng riêng	bind Open / Close separately	กำหนดเปิด / ปิดแยกกัน
+gán từng mức	bind each level	กำหนดทีละระดับ
+gán Bật / Tắt riêng	bind On / Off separately	กำหนดเปิด / ปิดแยกกัน
+Không đọc được {0} — {1}	Can't read {0} — {1}	อ่าน {0} ไม่ได้ — {1}
+Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	การกำหนดปุ่มนี้ใช้ไม่ได้แล้ว ({0}) — กำหนดใหม่ที่ การตั้งค่า › ปุ่มกายภาพ
+Bật 	Turn on 	เปิด
+Tắt 	Turn off 	ปิด
+Mở/đóng {0} (đảo)	Open/close {0} (toggle)	เปิด/ปิด {0} (สลับ)
+Bật/tắt {0} (đảo)	Toggle {0}	สลับเปิด/ปิด {0}
+Mở 	Open 	เปิด
+Đóng 	Close 	ปิด
+: mức kế tiếp	: next	: ระดับถัดไป
+Bấm 	Press 	กด
+Theo xe	By car	ตามระบบรถ
+nhóm	group	กลุ่ม
+thẻ	card	การ์ด
+xem	view	ดู
+bấm	press	กด
+Tự vẽ	Custom	กำหนดเอง
+{0} · {1} ô có nội dung	{0} · {1} slot filled	{0} · ใช้แล้ว {1} ช่อง
+{0} · {1} ô có nội dung	{0} · {1} slots filled	{0} · ใช้แล้ว {1} ช่อง
+Tự mở	Auto-start	เปิดอัตโนมัติ
+Phủ kín	Fill	เต็มกรอบ
+Vừa khung	Fit	พอดีกรอบ
+{0} giây	{0} s	{0} วินาที
+{0} phút	{0} min	{0} นาที
+{0} giờ	{0} h	{0} ชั่วโมง
+mã {0}	code {0}	รหัส {0}
+Trong	Recirc	หมุนเวียนภายใน
+Ngoài	Fresh	อากาศภายนอก
+Chỉnh tay	Manual	ปรับเอง
+Có	Yes	ใช่
+Không	No	ไม่ใช่
+Bật	On	เปิด
+Tắt	Off	ปิด
+Mở	Open	เปิด
+Đóng	Closed	ปิด
+Mức {0}	Level {0}	ระดับ {0}
+Sáng	Light	สว่าง
+Tối	Dark	มืด
+Tự động	Auto	อัตโนมัติ
+Tốt	Good	ดี
+TB	Fair	พอใช้
+Kém	Poor	แย่
+Bụi mịn trong xe: {0}	Fine dust in the car: {0}	ฝุ่นละอองในรถ: {0}
+ngoài	outside	ภายนอก
+Nhiệt độ ngoài xe {0}{1}	Outside temperature {0}{1}	อุณหภูมิภายนอกรถ {0}{1}
+Pin {0} phần trăm, đi thêm {1} {2}	Battery {0} per cent, {1} {2} to go	แบตเตอรี่ {0} เปอร์เซ็นต์ วิ่งได้อีก {1} {2}
+chưa đọc được	not read yet	ยังอ่านค่าไม่ได้
+Ghế lái	Driver seat	ที่นั่งคนขับ
+Ghế phụ	Passenger seat	ที่นั่งผู้โดยสาร
+Mức 	Level 	ระดับ 
+non	low	ลมอ่อน
+căng	high	ลมเกิน
+lệch	uneven	ลมไม่เท่ากัน
+chưa đọc được áp suất	pressure not read yet	ยังอ่านแรงดันลมยางไม่ได้
+lốp ổn	tyres OK	ยางปกติ
+{0} bánh {1}	{0} wheel {1}	ยาง{1} {0} เส้น
+{0} bánh {1}	{0} wheels {1}	ยาง{1} {0} เส้น
+bố cục rỗng: chưa vẽ khung nào	empty layout: no frame drawn yet	เลย์เอาต์ว่าง: ยังไม่ได้วาดกรอบ
+khung {0} nhỏ quá ({1}×{2}), tối thiểu {3}×{4}	frame {0} is too small ({1}×{2}), minimum {3}×{4}	กรอบ {0} เล็กเกินไป ({1}×{2}) ขั้นต่ำ {3}×{4}
+khung {0} ra ngoài lưới {1}×{2}	frame {0} falls outside the {1}×{2} grid	กรอบ {0} อยู่นอกตาราง {1}×{2}
+khung {0} và khung {1} đè lên nhau	frame {0} and frame {1} overlap	กรอบ {0} และกรอบ {1} ทับกัน
+bố cục tự vẽ có {0} khung, bản này đỡ tối đa {1}	the custom layout has {0} frames; this build supports at most {1}	เลย์เอาต์ที่วาดเองมี {0} กรอบ แต่เวอร์ชันนี้รองรับสูงสุด {1} กรอบ
+bố cục tự vẽ đang lỗi: 	the custom layout has a problem: 	เลย์เอาต์ที่วาดเองมีปัญหา: 
+1 ô	1 slot	1 ช่อง
+2 cột	2 columns	2 คอลัมน์
+2 hàng	2 rows	2 แถว
+3 ô	3 slots	3 ช่อง
+4 ô	4 slots	4 ช่อง
+hồ sơ	profile	โปรไฟล์
+{0} gì?	{0} what?	{0} อะไร?
+Chưa rõ — nói lại giúp	Not sure — say that again	ไม่แน่ใจ — พูดอีกครั้ง
+Vẫn chưa rõ — thử nói "bật đèn đọc"	Still not sure — try saying "turn on the reading light"	ยังไม่แน่ใจ — ลองพูดว่า "เปิดไฟอ่านหนังสือ"
+{0} hay {1}	{0} or {1}	{0} หรือ {1}
+{0}, hay {1}	{0}, or {1}	{0} หรือ {1}
+{0} nào — {1}?	Which {2} — {1}?	{2}ไหน — {1}?
+Nhạc	Music	เพลง
+Dẫn đường	Navigation	การนำทาง
+Ứng dụng · ô · bố cục	Apps · slots · layout	แอป · ช่อง · เลย์เอาต์
+Hồ sơ tài xế	Driver profiles	โปรไฟล์ผู้ขับขี่
+điểm đến	a place	สถานที่
+Tính năng {0} đã bỏ khỏi Kachi — dùng màn hình của xe	{1} was removed from Kachi — use the car's own screen	{1} ถูกนำออกจาก Kachi แล้ว — ใช้หน้าจอของรถแทน
+Kachi chưa điều khiển được {0} — dùng nút trên xe	Kachi cannot control {0} yet — use the car's own control	Kachi ยังควบคุม {0} ไม่ได้ — ใช้ปุ่มควบคุมของรถแทน
+Đã 	Done: 	เรียบร้อย: 
+Đã xong {0} việc	{0} things done	ทำเสร็จแล้ว {0} อย่าง
+Chưa 	Could not 	ไม่สามารถ
+, {0} việc khác đã xong	, {0} other(s) done	 อีก {0} อย่างเสร็จแล้ว
+Chạy gói 	Run pack 	เรียกใช้ชุดคำสั่ง 
+Đổi sang hồ sơ 	Switch to profile 	สลับไปโปรไฟล์ 
+Xem 	Show 	ดู
+Dẫn đường tới 	Navigate to 	นำทางไป 
+Mở ứng dụng 	Open app 	เปิดแอป 
+Bố cục 	Layout 	เลย์เอาต์ 
+Tạm biệt	Bye	ลาก่อน
+chỉ mở được khi xe đang dừng	only while the car is stopped	ใช้ได้เฉพาะเมื่อรถหยุดนิ่ง
+Đã gửi {0} {1} — xe báo {2}	Sent {0} {1} — the car reports {2}	ส่ง {0} {1} แล้ว — รถรายงาน {2}
+chưa kiểm trên xe	not yet checked on this car	ยังไม่ได้ทดสอบกับรถคันนี้
+xe không nhận lệnh	the car refused	รถไม่รับคำสั่ง
+việc trước còn đang chạy	the previous run is still going	คำสั่งก่อนหน้ายังทำงานอยู่
+chưa đọc được	no reading	ยังอ่านค่าไม่ได้
+chưa điều khiển được trên xe này	not controllable on this car	ควบคุมไม่ได้บนรถคันนี้
+chưa có app dẫn đường nào trên xe	no navigation app on this car	ไม่มีแอปนำทางในรถคันนี้
+đã mở app dẫn đường; nhập lại điểm đến trong app (đường chuyển giao chưa đo trên xe)	navigation app opened; enter the destination there (hand-over not measured on-car yet)	เปิดแอปนำทางแล้ว ป้อนจุดหมายในแอป (การส่งต่อยังไม่ได้ทดสอบบนรถจริง)
+chưa có phiên nhạc nào — mở app nhạc rồi nói lại	no active music session — open a music app first	ไม่มีเซสชันเพลงที่ทำงานอยู่ — เปิดแอปเพลงก่อน
+Kachi không tìm bài hát offline — mở app nhạc rồi nói lại ở đó	Kachi does not search songs offline — open a music app and ask there	Kachi ไม่ค้นหาเพลงแบบออฟไลน์ — เปิดแอปเพลงแล้วค้นหาในแอปนั้น
+bố cục hiện chỉ có {0} ô	the current layout only has {0} slot(s)	เลย์เอาต์ปัจจุบันมีเพียง {0} ช่อง
+chưa cài {0} trên xe	{0} is not installed	ยังไม่ได้ติดตั้ง {0}
+đã mở {0}; chưa có phiên nhạc nào để điều khiển — bấm Play trong app	opened {0}; no music session to control yet — press Play in the app	เปิด {0} แล้ว ยังไม่มีเซสชันเพลงให้ควบคุม — กดเล่นในแอป
+chưa có app nhạc nào trên xe	no music app on this car	ไม่มีแอปเพลงในรถคันนี้
+đang phát	playing now	กำลังเล่น
+chưa kiểm cửa nhận chữ của {0}	{0}'s hand-over door is not verified yet	ช่องทางรับข้อความของ {0} ยังไม่ได้ตรวจสอบ
+đã mở kết quả tìm — bấm Play để phát	search results opened — press Play	เปิดผลการค้นหาแล้ว — กดเล่น
+đang tra điểm đến…	looking the place up…	กำลังค้นหาสถานที่…
+đang tìm bài…	finding the track…	กำลังค้นหาเพลง…
+Dẫn đường tới «{0}» trên {1}?	Navigate to «{0}» on {1}?	นำทางไป «{0}» บน {1}?
+tên này do bên tra cứu trả về, không phải nguyên văn câu vừa nói	this name came from the lookup service, not from what you said	ชื่อนี้ได้จากบริการค้นหา ไม่ใช่คำที่คุณพูด
+{0} chưa nhận điểm đến bằng giọng; gõ tay trong app	{0} takes no destination from outside; type it in the app	{0} ไม่รับจุดหมายจากภายนอก พิมพ์ในแอปแทน
+chưa tra được điểm đến (mạng?), mới chỉ mở {0}	could not look the place up (network?) — only opened {0}	ค้นหาสถานที่ไม่ได้ (เครือข่าย?) — เปิดเพียง {0}
+không mở được	could not open	เปิดไม่ได้
+chưa đổi được bố cục từ đây — nói ở màn chính, hoặc đổi trong Cài đặt › Màn hình chính	cannot change the layout from here — say it on the home screen, or use Settings › Home screen	เปลี่ยนเลย์เอาต์จากตรงนี้ไม่ได้ — พูดที่หน้าจอหลัก หรือใช้ การตั้งค่า › หน้าจอหลัก
+chưa lưu địa chỉ «{0}» — thêm ở Cài đặt › Dẫn đường › Sổ địa chỉ	no address saved for «{0}» — add it in Settings › Navigation › Address book	ยังไม่ได้บันทึกที่อยู่สำหรับ «{0}» — เพิ่มที่ การตั้งค่า › การนำทาง › สมุดที่อยู่
+{0} chỉ nhận toạ độ; thêm lat/lng cho mục này trong Sổ địa chỉ	{0} only takes coordinates — add lat/lng to this entry in the address book	{0} รับเฉพาะพิกัด — เพิ่ม lat/lng ให้รายการนี้ในสมุดที่อยู่
+đã huỷ	cancelled	ยกเลิกแล้ว
+, {0} việc sau không chạy	, {0} later step(s) not run	 อีก {0} ขั้นตอนถัดไปไม่ได้ทำงาน
+xe này không có bộ phận này (xe tự báo)	this car reports it doesn't have this part	รถคันนี้รายงานว่าไม่มีชิ้นส่วนนี้
+Tăng 	Increase 	เพิ่ม
+Giảm 	Decrease 	ลด
+{0} nấc	by {0}	{0} ระดับ
+Đặt 	Set 	ตั้งค่า
+Phát nhạc	Play	เล่นเพลง
+Dừng nhạc	Pause	หยุดเพลงชั่วคราว
+Chuyển bài tiếp theo	Skip to the next track	ข้ามไปเพลงถัดไป
+Quay lại bài trước	Go back to the previous track	กลับไปเพลงก่อนหน้า
+Tìm bài 	Search 	ค้นหา 
+ trên 	 on 	 บน 
+ vào ô {0}	 in slot {0}	 ในช่อง {0}
+Chưa có câu lệnh nào	No command yet	ยังไม่มีคำสั่ง
+Chưa rõ cần làm gì — thử {0}	No action word — commands are in Vietnamese, e.g. {0}	ไม่พบคำกริยา — คำสั่งต้องเป็นภาษาเวียดนาม เช่น {0}
+Không tìm thấy thứ đó trong xe hay trong ứng dụng	No such thing on this car or in the app	ไม่พบสิ่งนี้ในรถหรือในแอป
+Việc đó không đi với thứ đó — thử nêu mức, hoặc đổi động từ	That action does not fit that thing — give a level, or use another verb	คำสั่งนี้ใช้กับสิ่งนั้นไม่ได้ — ระบุระดับ หรือใช้คำกริยาอื่น
+Phần này Kachi không tự làm offline (tên bài hát / điểm đến)	Kachi does not do this offline (song names / destinations)	Kachi ทำส่วนนี้แบบออฟไลน์ไม่ได้ (ชื่อเพลง / จุดหมาย)
+Chưa đóng được app bằng giọng — bấm phím Home, hoặc mở app khác đè lên	Closing an app by voice is not supported yet — press Home, or open another app over it	ยังปิดแอปด้วยเสียงไม่ได้ — กดปุ่ม Home หรือเปิดแอปอื่นทับ
+Đã bỏ qua vế không hiểu	Skipped a clause I did not understand	ข้ามส่วนที่ไม่เข้าใจแล้ว
+Tính năng này Kachi không làm	Kachi does not do this	Kachi ไม่รองรับฟังก์ชันนี้
+Không nghe rõ	Didn't catch that	ฟังไม่ชัด
+đoạn trong ngoặc do nhận dạng tự do đọc ra — kém chính xác hơn phần còn lại của câu	the quoted part came from free-form recognition — less accurate than the rest	ส่วนในเครื่องหมายคำพูดมาจากการรู้จำแบบอิสระ — แม่นยำน้อยกว่าส่วนอื่น
+hạ hết kính	lowers every window	เปิดกระจกลงทุกบาน
+Đổi hồ sơ	Switch profile	สลับโปรไฟล์
+đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng	switching profile replaces the whole layout and current settings	การสลับโปรไฟล์จะแทนที่เลย์เอาต์และการตั้งค่าปัจจุบันทั้งหมด
+Dẫn đường tới nơi vừa đọc	Navigate to a spoken place	นำทางไปสถานที่ที่พูด
+Mở bài vừa đọc	Play a spoken track	เล่นเพลงที่พูด
+Pin (SOC)	Battery (SOC)	แบตเตอรี่ (SOC)
+Tầm hoạt động EV	EV range	ระยะทาง EV คงเหลือ
+Tầm hoạt động xăng	Fuel range	ระยะทางน้ำมันคงเหลือ
+Mức xăng	Fuel level	ระดับน้ำมัน
+Odo tổng	Odometer	ระยะทางสะสม
+Quãng đường chuyến	Trip distance	ระยะทางทริป
+Thời gian chuyến	Trip time	เวลาทริป
+Tiêu thụ 50km	Consumption last 50 km	อัตราสิ้นเปลือง 50 km ล่าสุด
+Công suất mô-tơ	Motor power	กำลังมอเตอร์
+Sức khỏe pin (SOH)	Battery health (SOH)	สุขภาพแบตเตอรี่ (SOH)
+Tốc độ	Speed	ความเร็ว
+Số	Gear	เกียร์
+Mức bụi mịn	Dust level	ระดับฝุ่น
+Bụi mịn PM2.5	Fine dust PM2.5	ฝุ่น PM2.5
+Cảm biến bụi mịn	Fine dust sensor	เซ็นเซอร์ฝุ่น
+Bụi mịn ngoài xe	Outside fine dust	ฝุ่นภายนอกรถ
+Nhiệt trong cabin	Cabin temp	อุณหภูมิในห้องโดยสาร
+Nhiệt cài đặt	Set temp	อุณหภูมิที่ตั้งไว้
+Nhiệt ngoài xe	Outside temp	อุณหภูมิภายนอก
+Điều hòa	Air conditioning	ระบบปรับอากาศ
+Mức quạt gió	Fan level	ระดับพัดลม
+Chế độ lấy gió	Recirculation mode	โหมดหมุนเวียนอากาศ
+Đơn vị nhiệt	Temperature unit	หน่วยอุณหภูมิ
+Ion âm	Negative ions	ไอออนลบ
+Mức ghế mát	Seat ventilation level	ระดับระบายอากาศที่นั่ง
+Mức ghế sưởi	Seat heating level	ระดับทำความร้อนที่นั่ง
+Mức ghế mát phụ	Passenger seat ventilation level	ระดับระบายอากาศที่นั่งผู้โดยสาร
+Mức ghế sưởi phụ	Passenger seat heating level	ระดับทำความร้อนที่นั่งผู้โดยสาร
+Trạng thái sấy trước	Front defrost state	สถานะไล่ฝ้าหน้า
+Trạng thái sấy sau	Rear defrost state	สถานะไล่ฝ้าหลัง
+Chế độ điều hòa	A/C control mode	โหมดควบคุมระบบปรับอากาศ
+Chế độ gió	Fan mode	โหมดพัดลม
+Áp lốp trước-trái	Tyre pressure front-left	แรงดันลมยางหน้าซ้าย
+Áp lốp trước-phải	Tyre pressure front-right	แรงดันลมยางหน้าขวา
+Áp lốp sau-trái	Tyre pressure rear-left	แรงดันลมยางหลังซ้าย
+Áp lốp sau-phải	Tyre pressure rear-right	แรงดันลมยางหลังขวา
+Nhiệt lốp trước-trái	Tyre temp front-left	อุณหภูมิยางหน้าซ้าย
+Nhiệt lốp trước-phải	Tyre temp front-right	อุณหภูมิยางหน้าขวา
+Nhiệt lốp sau-trái	Tyre temp rear-left	อุณหภูมิยางหลังซ้าย
+Nhiệt lốp sau-phải	Tyre temp rear-right	อุณหภูมิยางหลังขวา
+Kính lái	Driver window	กระจกคนขับ
+Kính phụ	Passenger window	กระจกผู้โดยสาร
+Kính sau trái	Rear-left window	กระจกหลังซ้าย
+Kính sau phải	Rear-right window	กระจกหลังขวา
+Cửa trước-trái	Door front-left	ประตูหน้าซ้าย
+Cửa trước-phải	Door front-right	ประตูหน้าขวา
+Cửa sau-trái	Door rear-left	ประตูหลังซ้าย
+Cửa sau-phải	Door rear-right	ประตูหลังขวา
+Cửa sổ trời	Sunroof	ซันรูฟ
+Rèm che nắng	Sunshade	ม่านบังแดด
+Nguồn xe	Vehicle power	สถานะไฟของรถ
+Mẫu xe	Vehicle model	รุ่นรถ
+Cảnh báo khẩn	Emergency alarm	สัญญาณเตือนฉุกเฉิน
+Đèn cốt	Low beam	ไฟต่ำ
+Đèn pha	High beam	ไฟสูง
+Đèn sương mù trước	Front fog lights	ไฟตัดหมอกหน้า
+Đèn sương mù sau	Rear fog lights	ไฟตัดหมอกหลัง
+Xi-nhan trái	Left indicator	ไฟเลี้ยวซ้าย
+Xi-nhan phải	Right indicator	ไฟเลี้ยวขวา
+Đèn hông	Side lights	ไฟบอกตำแหน่ง
+Đèn ban ngày	Daytime lights (DRL)	ไฟกลางวัน (DRL)
+Chế độ đèn pha	Headlight mode	โหมดไฟหน้า
+Ắc-quy 12V	12V battery	แบตเตอรี่ 12V
+Số VIN	VIN	หมายเลข VIN
+Mức dầu	Oil level	ระดับน้ำมันเครื่อง
+Âm lượng giải trí	Media volume	ระดับเสียงมีเดีย
+Cốp sau	Tailgate	ฝากระโปรงท้าย
+Đèn đọc	Reading light	ไฟอ่านหนังสือ
+Lọc bụi	Air purifier	กรองอากาศ
+Mát ghế lái	Driver seat ventilation	ระบายอากาศที่นั่งคนขับ
+Nhiệt độ	Temperature	อุณหภูมิ
+Gió	Fan	พัดลม
+Sấy kính trước	Front defrost	ไล่ฝ้าหน้า
+Camera 360	360 camera	กล้อง 360 องศา
+Đèn pha	Headlights	ไฟหน้า
+Sưởi ghế lái	Driver seat heating	ทำความร้อนที่นั่งคนขับ
+Lấy gió trong	Recirculation	หมุนเวียนอากาศภายใน
+Gió tự động	Auto fan	พัดลมอัตโนมัติ
+Sấy kính sau	Rear defrost	ไล่ฝ้าหลัง
+Lọc ngay	Clean now	กรองอากาศทันที
+4 kính	All windows	กระจกทุกบาน
+50% kính lái	50% driver window	กระจกคนขับ 50%
+50% kính phụ	50% passenger window	กระจกผู้โดยสาร 50%
+50% kính sau trái	50% rear-left window	กระจกหลังซ้าย 50%
+50% kính sau phải	50% rear-right window	กระจกหลังขวา 50%
+50% 4 kính	50% all windows	กระจกทุกบาน 50%
+Đóng tất cả kính	Close all windows	ปิดกระจกทุกบาน
+Khóa trẻ em trái	Child lock left	ล็อกนิรภัยเด็กซ้าย
+Khóa trẻ em phải	Child lock right	ล็อกนิรภัยเด็กขวา
+Sạc không dây	Wireless charging	ชาร์จไร้สาย
+Mát ghế phụ	Passenger seat ventilation	ระบายอากาศที่นั่งผู้โดยสาร
+Sưởi ghế phụ	Passenger seat heating	ทำความร้อนที่นั่งผู้โดยสาร
+Lốp	Tyres	ยาง
+Kính	Windows	กระจก
+Cửa & khoang	Doors & openings	ประตูและช่องเปิด
+Đèn	Lights	ไฟ
+Khí hậu & không khí	Climate & air	อุณหภูมิและคุณภาพอากาศ
+Năng lượng	Energy	พลังงาน
+Sức khỏe pin	Battery health	สุขภาพแบตเตอรี่
+Chuyến đi	Trip	ทริป
+Áp suất lốp	Tyre pressure	แรงดันลมยาง
+Không khí	Air quality	คุณภาพอากาศ
+Đồng hồ + thời tiết	Clock + weather	นาฬิกา + สภาพอากาศ
+Đang phát	Now playing	กำลังเล่น
+Trạng thái xe	Car status	สถานะรถ
+Bảng tổng hợp	Overview board	แผงภาพรวม
+Trình chiếu ảnh	Photo slideshow	สไลด์โชว์ภาพ
+Lưới lối tắt app	App shortcut grid	ตารางทางลัดแอป
+Mở hết kính	Open all	เปิดกระจกทั้งหมด
+Đóng hết kính	Close all	ปิดกระจกทั้งหมด
+Màn hình chính	Home screen	หน้าจอหลัก
+Thanh trạng thái & thanh nút	Status bar & button bar	แถบสถานะและแถบปุ่ม
+Hiển thị & đơn vị	Display & units	การแสดงผลและหน่วย
+Dẫn đường & cụm đồng hồ	Navigation & cluster	การนำทางและหน้าปัด
+Chiếu màn lên cụm	Cluster cast	ฉายภาพขึ้นหน้าปัด
+Phím vô-lăng	Steering-wheel keys	ปุ่มพวงมาลัย
+Tiện nghi xe	Car comfort	ความสะดวกสบายในรถ
+Giọng nói	Voice	สั่งงานด้วยเสียง
+Hệ thống & quyền	System & permissions	ระบบและสิทธิ์
+Giới thiệu	About	เกี่ยวกับ
+Bố cục sẵn	Preset layout	เลย์เอาต์สำเร็จรูป
+Bố cục tự vẽ	Custom layout	เลย์เอาต์ที่วาดเอง
+Vẽ bố cục riêng…	Draw your own layout…	วาดเลย์เอาต์เอง…
+Hình nền & trình chiếu	Wallpaper & slideshow	ภาพพื้นหลังและสไลด์โชว์
+Chip thanh trạng thái	Status-bar chips	ชิปแถบสถานะ
+Hiện nhãn trên thanh trên	Show chip labels	แสดงชื่อบนชิป
+Vị trí trên thanh trên	Status-bar item order	ลำดับรายการบนแถบสถานะ
+Hiện thanh nút xe	Show the car bar	แสดงแถบปุ่มรถ
+Viền đặt thanh nút	Button bar edge	ขอบที่วางแถบปุ่ม
+Nút trên thanh nút xe	Buttons on the car bar	ปุ่มบนแถบปุ่มรถ
+Vị trí trên thanh nút xe	Car-bar item order	ลำดับรายการบนแถบปุ่มรถ
+Lối tắt ứng dụng	App shortcuts	ทางลัดแอป
+Đơn vị hiển thị	Display units	หน่วยที่แสดง
+Giao diện sáng/tối	Light / dark theme	ธีมสว่าง / มืด
+Màu sắc	Colours	สี
+Ngôn ngữ	Language	ภาษา
+Kính thật (làm mờ nền)	Real glass (blur the backdrop)	กระจกจริง (เบลอพื้นหลัง)
+Danh sách hồ sơ	Profile list	รายการโปรไฟล์
+Hồ sơ đang dùng	Active profile	โปรไฟล์ที่ใช้อยู่
+Hồ sơ lúc nổ máy	Profile on engine start	โปรไฟล์เมื่อสตาร์ทรถ
+Thêm hồ sơ (bản sao)	Add profile (a copy)	เพิ่มโปรไฟล์ (คัดลอก)
+Sổ địa chỉ	Address book	สมุดที่อยู่
+Thêm địa chỉ…	Add an address…	เพิ่มที่อยู่…
+Dẫn đường lên cụm	Navigation on the cluster	การนำทางบนหน้าปัด
+Chế độ hiện trên cụm	Cluster display mode	โหมดแสดงผลบนหน้าปัด
+Chạy chữ tên đường	Scroll long street names	เลื่อนชื่อถนนที่ยาว
+App dẫn đường mặc định	Default navigation app	แอปนำทางเริ่มต้น
+Tự dẫn đường theo lịch	Scheduled navigation	นำทางตามกำหนดเวลา
+Kết nối lại nguồn dẫn đường	Reconnect the navigation source	เชื่อมต่อแหล่งข้อมูลนำทางใหม่
+Biển báo tốc độ	Speed limit badge	ป้ายจำกัดความเร็ว
+Giới hạn sắp tới	Upcoming limit	ความเร็วจำกัดข้างหน้า
+Chip cảnh báo camera	Camera alert chip	ชิปแจ้งเตือนกล้อง
+Cỡ biển báo	Badge size	ขนาดป้าย
+Vị trí biển báo	Badge position	ตำแหน่งป้าย
+Bong bóng VietMap	VietMap bubble	บับเบิล VietMap
+Vị trí bong bóng	Bubble position	ตำแหน่งบับเบิล
+Bật chiếu màn	Enable casting	เปิดการฉายภาพ
+Hiện nút nổi chiếu cụm	Show the floating cast button	แสดงปุ่มลอยสำหรับฉายภาพ
+Tỉ lệ chia đôi	Split ratio	สัดส่วนการแบ่งจอ
+Tự chiếu khi nổ máy	Autostart on engine start	ฉายอัตโนมัติเมื่อสตาร์ทรถ
+App tự chiếu toàn màn	Full-screen autostart app	แอปที่ฉายเต็มจออัตโนมัติ
+Tự chiếu chia đôi	Autostart split view	ฉายแบบแบ่งจออัตโนมัติ
+App bên trái	Left-hand app	แอปฝั่งซ้าย
+App bên phải	Right-hand app	แอปฝั่งขวา
+Chiếu ngay: toàn màn, trái, phải, dừng	Cast now: full, left, right, stop	ฉายทันที: เต็มจอ ซ้าย ขวา หยุด
+Cứu hộ cụm	Cluster rescue	กู้คืนหน้าปัด
+Nhận nút vật lý	Listen to physical buttons	รับคำสั่งจากปุ่มกายภาพ
+Danh sách gán nút	Button bindings	การกำหนดปุ่ม
+Nút tự học thêm	Self-learned buttons	ปุ่มที่เรียนรู้เอง
+Học phím mới	Learn a new key	เรียนรู้ปุ่มใหม่
+Kiểm tra và sửa ngay	Check and fix now	ตรวจสอบและแก้ไขทันที
+Tự lấy gió trong khi nổ máy	Recirculation on engine start	หมุนเวียนอากาศภายในเมื่อสตาร์ทรถ
+Ghế mát/sưởi tự động	Automatic seat cooling / heating	ระบายอากาศ / ทำความร้อนที่นั่งอัตโนมัติ
+Chế độ ghế: mát hay sưởi	Seat mode: cool or heat	โหมดที่นั่ง: ระบายอากาศหรือทำความร้อน
+Mức từng ghế	Level per seat	ระดับของแต่ละที่นั่ง
+Tự lọc bụi mịn	Automatic air purifier	กรองอากาศอัตโนมัติ
+Lọc ngay một lượt	Purify now	กรองอากาศหนึ่งรอบทันที
+Tự sấy kính khi mưa	Auto-defrost when it rains	ไล่ฝ้าอัตโนมัติเมื่อฝนตก
+"Hey Kachi" gọi bằng giọng	"Hey Kachi" wake word	คำปลุก "Hey Kachi"
+Đọc phản hồi bằng giọng	Speak replies out loud	อ่านคำตอบออกเสียง
+Ưu tiên giọng offline	Prefer the offline voice	ใช้เสียงออฟไลน์เป็นหลัก
+App nhạc mặc định	Default music app	แอปเพลงเริ่มต้น
+Tự mở nhạc khi lên xe	Play music when you get in	เล่นเพลงเมื่อขึ้นรถ
+Giọng đọc offline	Offline voice pack	แพ็กเสียงอ่านออฟไลน์
+Câu lệnh nói được	Spoken commands	คำสั่งเสียง
+Hỏi xác nhận trước khi chạy	Ask before running	ถามก่อนดำเนินการ
+Đọc to câu hỏi xác nhận	Read confirmation questions aloud	อ่านคำถามยืนยันออกเสียง
+Nguồn micro	Microphone source	แหล่งไมโครโฟน
+Quyền còn thiếu	Missing permissions	สิทธิ์ที่ยังขาด
+Tự mở Kachi khi nổ máy	Auto-start Kachi on engine start	เปิด Kachi อัตโนมัติเมื่อสตาร์ทรถ
+Chạy dịch vụ nền khi nổ máy	Run background service on engine start	เรียกใช้บริการเบื้องหลังเมื่อสตาร์ทรถ
+Mở app khi nổ máy	Open apps at ignition	เปิดแอปเมื่อสตาร์ทรถ
+Giữ Kachi làm màn hình chính khi nổ máy	Keep Kachi as home screen on engine start	คง Kachi เป็นหน้าจอหลักเมื่อสตาร์ทรถ
+Kiểm tra cập nhật	Check for updates	ตรวจสอบอัปเดต
+Dừng toàn bộ dẫn đường	Stop all navigation	หยุดการนำทางทั้งหมด
+Chế độ kiểm thử qua adb	ADB test mode	โหมดทดสอบผ่าน ADB
+Phiên bản và giấy phép	Version and licence	เวอร์ชันและสัญญาอนุญาต
+Miễn trừ trách nhiệm	Disclaimer	ข้อจำกัดความรับผิดชอบ
+Năng lượng & sạc	Energy & charging	พลังงานและการชาร์จ
+Động lực & tốc độ	Drivetrain & speed	ระบบขับเคลื่อนและความเร็ว
+Thân xe · cửa · kính	Body · doors · windows	ตัวถัง · ประตู · กระจก
+Danh tính · khoá	Identity · keys	ข้อมูลประจำรถ · กุญแจ
+Giải trí · cụm · HUD	Media · cluster · HUD	มีเดีย · หน้าปัด · HUD
+Áp suất	Pressure	แรงดัน
+Khoảng cách	Distance	ระยะทาง
+Tiêu thụ điện	Energy use	การใช้พลังงาน
+Mô-men xoắn	Torque	แรงบิด
+Chiều dài	Length	ความยาว
+Trước trái	Front left	หน้าซ้าย
+Trước phải	Front right	หน้าขวา
+Sau trái	Rear left	หลังซ้าย
+Sau phải	Rear right	หลังขวา
+Kênh điều khiển cửa sổ	Window control channel	ช่องทางควบคุมหน้าต่าง
+Cho phép cửa sổ tự do	Freeform windows enabled	เปิดใช้หน้าต่างแบบอิสระ
+Là màn hình chính	Set as home screen	ตั้งเป็นหน้าจอหลัก
+Vẽ trên màn khác	Draw over other apps	แสดงทับแอปอื่น
+Đọc thông báo	Notification access	การเข้าถึงการแจ้งเตือน
+Trợ năng	Accessibility	การช่วยเหลือพิเศษ
+Micro	Microphone	ไมโครโฟน
+Định vị	Location	ตำแหน่ง
+Ứng dụng	Apps	แอป
+Cài đặt	Settings	การตั้งค่า
+Nói với xe	Talk to car	คุยกับรถ
+Đồng hồ và ngày	Clock and date	นาฬิกาและวันที่
+Chip trạng thái xe	Car status chips	ชิปสถานะรถ
+Nút nói	Talk button	ปุ่มพูด
+Nút ứng dụng	Apps button	ปุ่มแอป
+Nút cài đặt	Settings button	ปุ่มการตั้งค่า
+Chip hồ sơ	Profile chip	ชิปโปรไฟล์
+Tầm điện	EV range	ระยะ EV
+Tầm xăng	Fuel range	ระยะน้ำมัน
+Quãng chuyến	Trip dist.	ระยะทริป
+Tiêu thụ 50km	Use 50 km	ใช้ไป 50 km
+SOH pin	SOH	SOH
+PM2.5	PM2.5	PM2.5
+Cảm biến	Sensor	เซ็นเซอร์
+Bụi ngoài	Outside dust	ฝุ่นภายนอก
+Trong xe	In car	ในรถ
+Điều hòa	A/C	แอร์
+Chế độ lấy gió	Air intake	หมุนเวียนอากาศ
+Đơn vị nhiệt	Temp unit	หน่วยอุณหภูมิ
+Ghế mát	Seat vent	ระบายลมที่นั่ง
+Ghế sưởi	Seat heat	อุ่นที่นั่ง
+Ghế mát phụ	Pass. vent	ระบายลมผู้โดยสาร
+Ghế sưởi phụ	Pass. heat	อุ่นผู้โดยสาร
+Sấy trước	Front defrost	ไล่ฝ้าหน้า
+Sấy sau	Rear defrost	ไล่ฝ้าหลัง
+Chế độ ĐH	A/C mode	โหมดแอร์
+Gió auto	Fan auto	พัดลมอัตโนมัติ
+Lốp TT	Tyre FL	ยางหน้าซ้าย
+Lốp TP	Tyre FR	ยางหน้าขวา
+Lốp ST	Tyre RL	ยางหลังซ้าย
+Lốp SP	Tyre RR	ยางหลังขวา
+Nhiệt TT	Temp FL	อุณหภูมิหน้าซ้าย
+Nhiệt TP	Temp FR	อุณหภูมิหน้าขวา
+Nhiệt ST	Temp RL	อุณหภูมิหลังซ้าย
+Nhiệt SP	Temp RR	อุณหภูมิหลังขวา
+Kính lái	Driver win	กระจกคนขับ
+Kính phụ	Pass. win	กระจกผู้โดยสาร
+Kính ST	Win RL	กระจกหลังซ้าย
+Kính SP	Win RR	กระจกหลังขวา
+Cửa trước-trái	Door FL	ประตูหน้าซ้าย
+Cửa trước-phải	Door FR	ประตูหน้าขวา
+Cửa sau-trái	Door RL	ประตูหลังซ้าย
+Cửa sau-phải	Door RR	ประตูหลังขวา
+Đèn sương mù trước	Fog front	ไฟตัดหมอกหน้า
+Đèn sương mù sau	Fog rear	ไฟตัดหมอกหลัง
+Đèn ban ngày	DRL	DRL
+Âm lượng	Volume	ระดับเสียง
+Đèn ban ngày	Daytime (DRL)	ไฟกลางวัน
+Gió auto	Auto fan	พัดลมอัตโนมัติ
+4 kính	All win	กระจกทุกบาน
+50% lái	50% drv	คนขับ 50%
+50% phụ	50% pass	ผู้โดยสาร 50%
+50% ST	50% RL	หลังซ้าย 50%
+50% SP	50% RR	หลังขวา 50%
+50% 4 kính	50% all	ทุกบาน 50%
+Đóng cả cụm	Close all win	ปิดกระจกทั้งหมด
+Khóa trẻ T	Child lock L	ล็อกเด็กซ้าย
+Khóa trẻ P	Child lock R	ล็อกเด็กขวา
+TT	FL	หน้าซ้าย
+TP	FR	หน้าขวา
+ST	RL	หลังซ้าย
+SP	RR	หลังขวา
+Mức 1	Level 1	ระดับ 1
+Mức 2	Level 2	ระดับ 2
+Đóng	Close	ปิด
+Nửa	Half	เปิดครึ่ง
+áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	แรงดันลมและอุณหภูมิของยางแต่ละเส้น
+mở/đóng và mở nửa từng kính · đóng cả cụm	open/close and half-open each window · close all	เปิด/ปิด และเปิดครึ่งกระจกแต่ละบาน · ปิดทั้งหมด
+cửa, nóc, rèm	doors, sunroof, sunshade	ประตู ซันรูฟ ม่านบังแดด
+đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	ไฟภายนอก ไฟหน้า ไฟอ่านหนังสือในรถ
+nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	อุณหภูมิภายใน/ภายนอก ระบบปรับอากาศ ฝุ่นละออง
+pin, tầm chạy, mức tiêu thụ	battery, range, consumption	แบตเตอรี่ ระยะทางคงเหลือ อัตราสิ้นเปลือง
+sức khoẻ pin, điện áp ắc-quy	battery health, auxiliary battery voltage	สุขภาพแบตเตอรี่ แรงดันไฟแบตเตอรี่เสริม
+quãng đường, thời gian, điện tiêu thụ, odo	distance, time, energy used, odometer	ระยะทาง เวลา พลังงานที่ใช้ ระยะทางสะสม
+Bố cục và hình nền	Layout and wallpaper	เลย์เอาต์และภาพพื้นหลัง
+Chip trên đỉnh và thanh nút xe	Top chips and the car button bar	ชิปด้านบนและแถบปุ่มรถ
+Đơn vị đo, sáng/tối và ngôn ngữ	Units, light/dark theme and language	หน่วย ธีมสว่าง/มืด และภาษา
+Mỗi hồ sơ giữ bố cục riêng	Each profile keeps its own layout	แต่ละโปรไฟล์มีเลย์เอาต์ของตัวเอง
+Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	บอกเส้นทาง ป้ายความเร็ว และบับเบิล
+Đưa app lên cụm, chia đôi, tự chiếu	Apps on the cluster, split view, autostart	แอปบนหน้าปัด แบ่งจอ ฉายอัตโนมัติ
+Gán nút vật lý cho app, trợ lý hoặc nút xe	Bind physical buttons to apps or car controls	กำหนดปุ่มกายภาพให้แอปหรือปุ่มควบคุมรถ
+Lấy gió trong, ghế, lọc bụi mịn	Recirculation, seats, air purifier	หมุนเวียนอากาศ ที่นั่ง กรองอากาศ
+Nói với xe, giọng đọc, Hey Kachi	Talk to the car, reply voice, Hey Kachi	คุยกับรถ เสียงตอบกลับ Hey Kachi
+Quyền, khởi động, bảo trì, nâng cao	Permissions, startup, maintenance	สิทธิ์ การเริ่มทำงาน การบำรุงรักษา
+Phiên bản, giấy phép và miễn trừ	Version, licence and disclaimer	เวอร์ชัน สัญญาอนุญาต และข้อจำกัดความรับผิดชอบ
+app không vào được ô — đây là tính năng lõi của launcher	apps cannot go into a slot — this is the launcher's core feature	แอปเข้าไปอยู่ในช่องไม่ได้ — นี่คือฟังก์ชันหลักของลันเชอร์
+app không vào được ô theo đường cửa sổ tự do	apps cannot go into a slot over the freeform-window path	แอปเข้าไปอยู่ในช่องผ่านหน้าต่างแบบอิสระไม่ได้
+bấm HOME không về Kachi	pressing HOME does not come back to Kachi	กด HOME แล้วไม่กลับมาที่ Kachi
+Vào Cài đặt › Hệ thống & quyền › Màn hình chính rồi bấm "Đặt Kachi làm màn hình chính"	Open Settings › System & permissions › Home screen, then tap "Set Kachi as home screen"	เปิด การตั้งค่า › ระบบและสิทธิ์ › หน้าจอหลัก แล้วแตะ "ตั้ง Kachi เป็นหน้าจอหลัก"
+dải tiêu đề ô và ngăn kéo app không nổi lên được	slot title bars and the app drawer cannot float on top	แถบชื่อช่องและลิ้นชักแอปแสดงทับด้านบนไม่ได้
+dẫn đường trên cụm mất nguồn dữ liệu	cluster navigation loses its data source	การนำทางบนหน้าปัดจะไม่มีแหล่งข้อมูล
+gán phím vô-lăng và đọc màn hình dẫn đường không chạy	steering-wheel key mapping and navigation screen reading stop working	การกำหนดปุ่มพวงมาลัยและการอ่านหน้าจอนำทางจะหยุดทำงาน
+không nói được với xe (ô "Nói với xe" và nút mic)	you cannot talk to the car (the "Talk to car" tile and the mic button)	คุยกับรถไม่ได้ (ช่อง "คุยกับรถ" และปุ่มไมค์)
+tự dẫn đường theo lịch không biết đã ra khỏi hầm chưa nên sẽ không dẫn	scheduled navigation cannot tell whether you have left the car park, so it never starts	การนำทางตามกำหนดเวลาไม่รู้ว่าออกจากที่จอดรถแล้วหรือยัง จึงไม่เริ่มนำทาง
+Phần trăm pin cao áp còn lại	High-voltage battery charge remaining (%)	ประจุแบตเตอรี่แรงดันสูงคงเหลือ (%)
+Quãng đường ước tính còn chạy bằng điện	Estimated remaining driving range on electric power (km)	ระยะทางที่ขับได้ด้วยไฟฟ้าโดยประมาณ (km)
+Quãng đường ước tính còn chạy bằng xăng	Estimated remaining driving range on petrol (km)	ระยะทางที่ขับได้ด้วยน้ำมันโดยประมาณ (km)
+Phần trăm nhiên liệu xăng còn lại	Petrol fuel level remaining (%)	ระดับน้ำมันเชื้อเพลิงคงเหลือ (%)
+Tổng quãng đường xe đã đi	Total lifetime distance driven (km)	ระยะทางที่ขับมาทั้งหมด (km)
+Quãng đường của chuyến đi hiện tại	Distance covered on the current trip (km)	ระยะทางของทริปปัจจุบัน (km)
+Thời gian đã đi của chuyến hiện tại	Elapsed time of the current trip (h)	เวลาที่ใช้ในทริปปัจจุบัน (h)
+Mức tiêu thụ điện trung bình 50km gần nhất	Average power consumption over the last 50km	อัตราสิ้นเปลืองพลังงานเฉลี่ยในช่วง 50km ล่าสุด
+Công suất mô-tơ điện đang phát ra	Electric motor power output (kW)	กำลังขับของมอเตอร์ไฟฟ้า (kW)
+Tình trạng sức khoẻ pin so với lúc mới	Battery health versus original capacity (%)	สุขภาพแบตเตอรี่เทียบกับความจุเดิม (%)
+Điện áp ắc-quy 12V hiện tại	Current 12V auxiliary battery voltage (V)	แรงดันแบตเตอรี่เสริม 12V ปัจจุบัน (V)
+Bật/tắt sạc không dây cho điện thoại	Turn the wireless phone charger on/off	เปิด/ปิดแท่นชาร์จโทรศัพท์ไร้สาย
+Tốc độ di chuyển hiện tại của xe	Current vehicle road speed (km/h)	ความเร็วรถปัจจุบัน (km/h)
+Số hiện tại đang cài đặt (P/R/N/D)	Currently selected gear (P/R/N/D)	เกียร์ที่เลือกอยู่ (P/R/N/D)
+Mức đánh giá chất lượng không khí trong xe	Cabin air-quality rating based on fine dust	ระดับคุณภาพอากาศในห้องโดยสารตามปริมาณฝุ่นละออง
+Nồng độ bụi mịn PM2.5 trong cabin	PM2.5 fine dust concentration in the cabin (µg/m³)	ความเข้มข้นฝุ่น PM2.5 ในห้องโดยสาร (µg/m³)
+Cảm biến bụi mịn có đang hoạt động không	Whether the PM2.5 sensor is online	เซ็นเซอร์ PM2.5 ทำงานอยู่หรือไม่
+Nồng độ bụi mịn PM2.5 NGOÀI xe — cùng getter với ô trong cabin, lấy ô thứ hai của mảng (chờ xác nhận trên xe)	Outside-cabin PM2.5 — same getter as the in-cabin value, second array slot (pending on-car confirmation)	PM2.5 ภายนอกรถ — ใช้ getter เดียวกับค่าในห้องโดยสาร ช่องที่สองของอาร์เรย์ (รอยืนยันบนรถจริง)
+Nhiệt độ thực tế đo trong khoang cabin	Actual measured cabin air temperature (°C)	อุณหภูมิอากาศในห้องโดยสารที่วัดได้จริง (°C)
+Nhiệt độ điều hoà đã cài đặt	A/C target temperature currently set (°C)	อุณหภูมิเป้าหมายของระบบปรับอากาศที่ตั้งไว้ (°C)
+Nhiệt độ không khí bên ngoài xe	Outside ambient air temperature (°C)	อุณหภูมิอากาศภายนอกรถ (°C)
+Điều hoà có đang bật hay không	Whether the air conditioning is currently on	ระบบปรับอากาศเปิดอยู่หรือไม่
+Mức quạt gió điều hoà đang chạy	Current A/C fan speed level	ระดับความแรงพัดลมของระบบปรับอากาศปัจจุบัน
+Chế độ lấy gió trong/ngoài đang dùng	Current air recirculation mode (fresh/recirculated)	โหมดหมุนเวียนอากาศปัจจุบัน (อากาศภายนอก/หมุนเวียนภายใน)
+Đơn vị hiển thị nhiệt độ đang dùng (°C/°F)	Temperature display unit in use (°C/°F)	หน่วยแสดงอุณหภูมิที่ใช้อยู่ (°C/°F)
+Chức năng ion âm có đang bật không	Whether the anion (ioniser) function is active	ฟังก์ชันไอออนลบทำงานอยู่หรือไม่
+Ghế lái đang thổi mát ở mức mấy	Driver seat ventilation level in use	ระดับระบายอากาศที่นั่งคนขับที่ใช้อยู่
+Ghế lái đang sưởi ở mức mấy	Driver seat heating level in use	ระดับทำความร้อนที่นั่งคนขับที่ใช้อยู่
+Ghế phụ đang thổi mát ở mức mấy	Passenger seat ventilation level in use	ระดับระบายอากาศที่นั่งผู้โดยสารที่ใช้อยู่
+Ghế phụ đang sưởi ở mức mấy	Passenger seat heating level in use	ระดับทำความร้อนที่นั่งผู้โดยสารที่ใช้อยู่
+Sấy kính trước có đang bật không	Whether front windscreen defrost is on	ระบบไล่ฝ้ากระจกหน้าเปิดอยู่หรือไม่
+Sấy kính sau có đang bật không	Whether rear windscreen defrost is on	ระบบไล่ฝ้ากระจกหลังเปิดอยู่หรือไม่
+Điều hòa đang ở chế độ AUTO hay chỉnh tay	Whether the A/C is in AUTO or manual mode	ระบบปรับอากาศอยู่ในโหมด AUTO หรือปรับเอง
+Quạt gió đang tự động hay do người lái chỉnh tay (chỉ báo của nút Gió tự động)	Whether the fan is on auto or set by hand (indicator behind the Auto-fan button)	พัดลมทำงานแบบอัตโนมัติหรือปรับเอง (สถานะของปุ่มพัดลมอัตโนมัติ)
+Bật/tắt chế độ lọc bụi mịn tự động	Turn automatic air purification on/off	เปิด/ปิดการกรองอากาศอัตโนมัติ
+Bật/tắt quạt làm mát ghế	Turn seat ventilation on/off	เปิด/ปิดระบายอากาศที่นั่ง
+Tăng/giảm nhiệt độ điều hoà	Raise/lower the A/C temperature	เพิ่ม/ลดอุณหภูมิระบบปรับอากาศ
+Tăng/giảm mức quạt gió điều hoà	Raise/lower the A/C fan speed	เพิ่ม/ลดความแรงพัดลมระบบปรับอากาศ
+Bật/tắt sấy kính chắn gió trước	Turn the front windscreen defroster on/off	เปิด/ปิดระบบไล่ฝ้ากระจกหน้า
+Bật/tắt sưởi ghế	Turn seat heating on/off	เปิด/ปิดทำความร้อนที่นั่ง
+Bật/tắt chế độ lấy gió trong xe	Turn cabin air recirculation on/off	เปิด/ปิดการหมุนเวียนอากาศภายในห้องโดยสาร
+Bật/tắt quạt gió TỰ ĐỘNG (xe tự chọn mức gió). Không đụng nhiệt độ — xe này không có chế độ nhiệt tự động	Turn the AUTO fan on/off (the car picks the fan level). Does not touch temperature — this car has no auto-temp mode	เปิด/ปิดพัดลม AUTO (รถเลือกระดับพัดลมเอง) ไม่เปลี่ยนอุณหภูมิ — รถคันนี้ไม่มีโหมดอุณหภูมิอัตโนมัติ
+Bật/tắt sấy kính chắn gió sau	Turn the rear windscreen defroster on/off	เปิด/ปิดระบบไล่ฝ้ากระจกหลัง
+Chạy lọc không khí một lần ngay	Run a one-shot air purification now	กรองอากาศหนึ่งรอบทันที
+Bật/tắt quạt làm mát ghế phụ	Turn passenger seat ventilation on/off	เปิด/ปิดระบายอากาศที่นั่งผู้โดยสาร
+Bật/tắt sưởi ghế phụ	Turn passenger seat heating on/off	เปิด/ปิดทำความร้อนที่นั่งผู้โดยสาร
+Áp suất lốp trước bên trái	Front-left tyre pressure (kPa)	แรงดันลมยางหน้าซ้าย (kPa)
+Áp suất lốp trước bên phải	Front-right tyre pressure (kPa)	แรงดันลมยางหน้าขวา (kPa)
+Áp suất lốp sau bên trái	Rear-left tyre pressure (kPa)	แรงดันลมยางหลังซ้าย (kPa)
+Áp suất lốp sau bên phải	Rear-right tyre pressure (kPa)	แรงดันลมยางหลังขวา (kPa)
+Nhiệt độ lốp trước bên trái	Front-left tyre temperature (°C)	อุณหภูมิยางหน้าซ้าย (°C)
+Nhiệt độ lốp trước bên phải	Front-right tyre temperature (°C)	อุณหภูมิยางหน้าขวา (°C)
+Nhiệt độ lốp sau bên trái	Rear-left tyre temperature (°C)	อุณหภูมิยางหลังซ้าย (°C)
+Nhiệt độ lốp sau bên phải	Rear-right tyre temperature (°C)	อุณหภูมิยางหลังขวา (°C)
+Độ mở kính cửa trước bên trái	Front-left window open percentage (%)	เปอร์เซ็นต์การเปิดกระจกหน้าซ้าย (%)
+Độ mở kính cửa trước bên phải	Front-right window open percentage (%)	เปอร์เซ็นต์การเปิดกระจกหน้าขวา (%)
+Độ mở kính cửa sau bên trái	Rear-left window open percentage (%)	เปอร์เซ็นต์การเปิดกระจกหลังซ้าย (%)
+Độ mở kính cửa sau bên phải	Rear-right window open percentage (%)	เปอร์เซ็นต์การเปิดกระจกหลังขวา (%)
+Trạng thái đóng/mở cửa trước bên trái	Front-left door open/closed state	สถานะเปิด/ปิดประตูหน้าซ้าย
+Trạng thái đóng/mở cửa trước bên phải	Front-right door open/closed state	สถานะเปิด/ปิดประตูหน้าขวา
+Trạng thái đóng/mở cửa sau bên trái	Rear-left door open/closed state	สถานะเปิด/ปิดประตูหลังซ้าย
+Trạng thái đóng/mở cửa sau bên phải	Rear-right door open/closed state	สถานะเปิด/ปิดประตูหลังขวา
+Trạng thái đóng/mở cửa sổ trời	Sunroof open/closed state	สถานะเปิด/ปิดซันรูฟ
+Vị trí mở hiện tại của rèm che nắng	Current sunshade open position (%)	ตำแหน่งการเปิดม่านบังแดดปัจจุบัน (%)
+Cấp nguồn hiện tại của xe (tắt/ACC/bật máy)	Current vehicle power level (off/ACC/on)	สถานะไฟของรถปัจจุบัน (ปิด/ACC/เปิด)
+Mã model của xe	Vehicle model identifier	รหัสรุ่นรถ
+Đèn cảnh báo khẩn cấp có đang bật không	Whether the hazard warning alarm is active	ไฟฉุกเฉินทำงานอยู่หรือไม่
+Bật/tắt mở cốp sau, dịch chuyển cốp vật lý	Turn the boot/tailgate release on/off (moves the boot)	เปิด/ปิดฝากระโปรงท้าย (ฝาท้ายขยับจริง)
+Bật/tắt điều khiển cửa sổ trời, dịch chuyển tấm kính	Turn sunroof control on/off (moves the glass panel)	เปิด/ปิดซันรูฟ (แผงกระจกขยับจริง)
+Mở/đóng kính cửa trước bên trái	Open/close the front-left window	เปิด/ปิดกระจกหน้าซ้าย
+Mở/đóng kính cửa trước bên phải	Open/close the front-right window	เปิด/ปิดกระจกหน้าขวา
+Mở/đóng kính cửa sau bên trái	Open/close the rear-left window	เปิด/ปิดกระจกหลังซ้าย
+Mở/đóng kính cửa sau bên phải	Open/close the rear-right window	เปิด/ปิดกระจกหลังขวา
+Mở/đóng đồng thời toàn bộ kính cửa xe	Open/close all windows at once	เปิด/ปิดกระจกทุกบานพร้อมกัน
+Mở kính cửa lái tới 50% (chạm lại để đóng)	Half-open the driver window (tap again to close)	เปิดกระจกคนขับครึ่งหนึ่ง (แตะอีกครั้งเพื่อปิด)
+Mở kính cửa phụ tới 50% (chạm lại để đóng)	Half-open the passenger window (tap again to close)	เปิดกระจกผู้โดยสารครึ่งหนึ่ง (แตะอีกครั้งเพื่อปิด)
+Mở kính sau bên trái tới 50% (chạm lại để đóng)	Half-open the rear-left window (tap again to close)	เปิดกระจกหลังซ้ายครึ่งหนึ่ง (แตะอีกครั้งเพื่อปิด)
+Mở kính sau bên phải tới 50% (chạm lại để đóng)	Half-open the rear-right window (tap again to close)	เปิดกระจกหลังขวาครึ่งหนึ่ง (แตะอีกครั้งเพื่อปิด)
+Mở toàn bộ kính tới 50% (chạm lại để đóng)	Half-open all windows (tap again to close)	เปิดกระจกทุกบานครึ่งหนึ่ง (แตะอีกครั้งเพื่อปิด)
+Đóng toàn bộ kính cửa (nút dự phòng)	Close all windows (backup button)	ปิดกระจกทุกบาน (ปุ่มสำรอง)
+Mở/đóng rèm che nắng cửa sổ trời	Open/close the sunroof sunshade	เปิด/ปิดม่านบังแดดซันรูฟ
+Bật/tắt khoá trẻ em cửa sau BÊN TRÁI (chốt trong cửa — trẻ ngồi sau không mở được cửa đó)	Turn the LEFT rear child-safety lock on/off (that door can't be opened from inside)	เปิด/ปิดล็อกนิรภัยเด็กประตูหลังฝั่งซ้าย (เปิดประตูนั้นจากด้านในไม่ได้)
+Bật/tắt khoá trẻ em cửa sau BÊN PHẢI — nút riêng, vì xe phơi hai lệnh tách nhau cho hai bên	Turn the RIGHT rear child-safety lock on/off — a separate button, the car exposes one command per side	เปิด/ปิดล็อกนิรภัยเด็กประตูหลังฝั่งขวา — เป็นปุ่มแยก เพราะรถมีคำสั่งแยกสำหรับแต่ละฝั่ง
+Đèn cốt có đang bật hay không	Whether the low-beam headlights are on	ไฟต่ำเปิดอยู่หรือไม่
+Đèn pha (chiếu xa) có đang bật hay không	Whether the high-beam headlights are on	ไฟสูงเปิดอยู่หรือไม่
+Đèn sương mù trước có đang bật hay không	Whether the front fog lights are on	ไฟตัดหมอกหน้าเปิดอยู่หรือไม่
+Đèn sương mù sau có đang bật hay không	Whether the rear fog light is on	ไฟตัดหมอกหลังเปิดอยู่หรือไม่
+Xi-nhan trái có đang nháy hay không	Whether the left turn signal is flashing	ไฟเลี้ยวซ้ายกะพริบอยู่หรือไม่
+Xi-nhan phải có đang nháy hay không	Whether the right turn signal is flashing	ไฟเลี้ยวขวากะพริบอยู่หรือไม่
+Đèn hông (đèn định vị) có đang bật không	Whether the side marker lights are on	ไฟบอกตำแหน่งเปิดอยู่หรือไม่
+Đèn chạy ban ngày (DRL) có đang bật không	Whether the daytime running lights are on	ไฟกลางวัน (DRL) เปิดอยู่หรือไม่
+Chế độ đèn pha hiện tại (auto/thủ công…)	Current headlight mode feedback (auto/manual/…)	โหมดไฟหน้าปัจจุบัน (อัตโนมัติ/ปรับเอง/…)
+Bật/tắt đèn đọc sách trong cabin	Turn the cabin reading light on/off	เปิด/ปิดไฟอ่านหนังสือในห้องโดยสาร
+Bật/tắt đèn pha	Turn the headlights on/off	เปิด/ปิดไฟหน้า
+Bật/tắt đèn chạy ban ngày	Turn the daytime running lights on/off	เปิด/ปิดไฟกลางวัน (DRL)
+Số khung nhận dạng xe (VIN)	Vehicle identification number (VIN)	หมายเลขตัวถังรถ (VIN)
+Phần trăm dầu động cơ còn lại	Engine oil level remaining (%)	ระดับน้ำมันเครื่องคงเหลือ (%)
+Âm lượng nhạc/giải trí đang đặt ở mức mấy	Current media (music) volume level	ระดับเสียงมีเดีย (เพลง) ปัจจุบัน
+Bật/tắt hiển thị camera 360 độ	Turn the 360-degree camera view on/off	เปิด/ปิดภาพกล้อง 360 องศา
+ACC	ACC	ACC
+Sẵn sàng	Ready	พร้อม
+Sẵn sàng (giả)	Ready (fake)	พร้อม (จำลอง)
+Không xác định	Invalid	ไม่ถูกต้อง
+Auto	Auto	อัตโนมัติ
+Đèn hông	Position	ไฟบอกตำแหน่ง
+Cốt	Low beam	ไฟต่ำ
+Không khí trong xe	Cabin air quality	คุณภาพอากาศในห้องโดยสาร
+Nhiệt độ ngoài	Outside temperature	อุณหภูมิภายนอก
+Pin và tầm chạy	Battery and range	แบตเตอรี่และระยะทาง
+Ghế lái (sưởi/mát)	Driver seat (heat/vent)	ที่นั่งคนขับ (ทำความร้อน/ระบายอากาศ)
+Ghế phụ (sưởi/mát)	Passenger seat (heat/vent)	ที่นั่งผู้โดยสาร (ทำความร้อน/ระบายอากาศ)
+hạ HẾT 4 kính — mưa, bụi, hoặc đồ để trên ghế; đóng lại mất nhiều giây	lowers ALL four windows — rain, dust, or belongings on the seats; closing takes seconds	เปิดกระจกลงทั้ง 4 บาน — ฝน ฝุ่น หรือของที่วางบนที่นั่ง การปิดกลับใช้เวลาหลายวินาที
+mở cốp khi xe đang đỗ nơi công cộng — đồ trong cốp phơi ra cho tới khi có người đóng lại	opens the boot in a public car park — whatever is inside stays exposed until someone closes it	เปิดท้ายรถในที่จอดรถสาธารณะ — ของในท้ายรถจะเปิดโล่งจนกว่าจะมีคนปิด
+mở cửa sổ trời — mưa và bụi vào thẳng khoang, đóng lại mất nhiều giây	opens the sunroof — rain and dust go straight in, and closing takes seconds	เปิดซันรูฟ — ฝนและฝุ่นเข้ามาในห้องโดยสารโดยตรง และการปิดกลับใช้เวลาหลายวินาที
+đèn khẩn cấp	the hazard lights	ไฟฉุกเฉิน
+dây an toàn	the seat belts	เข็มขัดนิรภัย
+cảm biến đỗ	the parking sensors	เซ็นเซอร์ช่วยจอด
+độ sáng HUD	the HUD brightness	ความสว่าง HUD
+HUD kính lái	the windscreen HUD	HUD บนกระจกหน้า
+mức tái tạo	the regen level	ระดับการชาร์จพลังงานกลับ
+chế độ lái	the drive mode	โหมดการขับขี่
+chế độ phanh	the brake mode	โหมดเบรก
+mở khoá cửa	unlocking the doors	การปลดล็อกประตู
+độ sáng màn	the screen brightness	ความสว่างหน้าจอ
+xi-nhan	the indicators	ไฟเลี้ยว
+cảnh báo điểm mù	blind-spot warning	ระบบเตือนจุดอับสายตา
+cảnh báo chuyển làn	lane-change warning	ระบบเตือนการเปลี่ยนเลน
+gập gương	folding the mirrors	การพับกระจกมองข้าง
+theo dõi sạc	charge monitoring	การติดตามการชาร์จ
+đèn viền	the ambient light	ไฟสร้างบรรยากาศ
+gạt mưa	the wipers	ที่ปัดน้ำฝน
+khoá xe	locking the car	การล็อกรถ
+gói rời xe	the leave-car routine	ชุดคำสั่งเมื่อลงจากรถ
+âm lượng	the volume	ระดับเสียง
+Rất tốt	Excellent	ดีมาก
+Khá	Low grade	น้อย
+Trung bình	Moderate	ปานกลาง
+Nặng	Heavy	หนัก
+Nghiêm trọng	Serious	รุนแรง
+Nhà	Home	บ้าน
+Công ty	Work	ที่ทำงาน
+Mặc định	Default	ค่าเริ่มต้น

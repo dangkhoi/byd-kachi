@@ -87,10 +87,12 @@ data class TelemetrySpec(
      * Bậc lùi có thứ tự: [shortEn] → [labelEn] → [short] → [label]. Lùi sang **nhãn đầy tiếng Anh** trước khi lùi về
      * tiếng Việt là có chủ ý: một chip đọc `"Battery health (SOH)"` hơi dài vẫn tốt hơn một chip đột ngột nói tiếng
      * Việt giữa màn tiếng Anh.
+     *
+     * ZH/TH/MS đi qua [Strings.pick] với CẶP `(nhãn ngắn Việt, nhãn ngắn Anh thực dùng)` — cùng bậc lùi, nên bảng dịch
+     * khoá đúng chữ Anh đang hiện trên chip (kể cả khi chip đó lùi về [labelEn]).
      */
     fun shortLabelIn(lang: Lang): String =
-        if (lang == Lang.EN) (shortEn?.takeIf { it.isNotBlank() } ?: labelEn?.takeIf { it.isNotBlank() } ?: shortLabel)
-        else shortLabel
+        Strings.pick(shortLabel, shortEn?.takeIf { it.isNotBlank() } ?: labelEn, lang)
 }
 
 /**

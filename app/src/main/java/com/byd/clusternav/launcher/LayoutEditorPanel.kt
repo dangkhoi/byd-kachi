@@ -88,7 +88,7 @@ class LayoutEditorPanel(
         // ── Báo lỗi + thông tin ──
         problem = TextView(context).apply {
             text = " "        // giữ một dòng chiều cao ngay từ đầu
-            minLines = 1; maxLines = 1
+            minLines = 1; maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END   // R8: tràn ⇒ "…"
             setTextColor(Color.parseColor(KachiTheme.RED))
             KachiType.apply(this, KachiType.CAPTION)
             setPadding(0, dp(Sp.S), 0, 0)

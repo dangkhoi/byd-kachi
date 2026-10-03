@@ -83,9 +83,9 @@ object UpdateChecker {
                     bestVer = ver; bestUrl = o.optString("download_url").takeIf { it.isNotBlank() }
                 }
             }
-            if (bestVer == null) Result(cur, null, null, false, Lang.t("không thấy APK trên nhánh $BRANCH", "no APK found on branch $BRANCH"))
+            if (bestVer == null) Result(cur, null, null, false, Lang.f("không thấy APK trên nhánh {0}", "no APK found on branch {0}", BRANCH))
             else Result(cur, bestVer, bestUrl, cmp(bestVer!!, cur) > 0, null)
-        }.getOrElse { Result(cur, null, null, false, Lang.t("lỗi mạng: ${it.message}", "network error: ${it.message}")) }
+        }.getOrElse { Result(cur, null, null, false, Lang.f("lỗi mạng: {0}", "network error: {0}", it.message)) }
     }
 
     /**
@@ -218,15 +218,15 @@ object UpdateChecker {
      */
     internal fun installMessage(outcome: LocalInstallOutcome, apkPath: String): String = when (outcome) {
         is LocalInstallOutcome.Ok -> Lang.t("đã cài — đang mở lại…", "installed — reopening…")
-        is LocalInstallOutcome.NoShellChannel -> Lang.t(
-            "không có kênh shell tới xe (${outcome.reason.name}) — ${channelRemedy(outcome.reason, vi = true)}. " +
-                "APK đã tải ở: $apkPath",
-            "no shell channel to the head unit (${outcome.reason.name}) — ${channelRemedy(outcome.reason, vi = false)}. " +
-                "APK saved at: $apkPath",
+        is LocalInstallOutcome.NoShellChannel -> Lang.f(
+            "không có kênh shell tới xe ({0}) — {1}. APK đã tải ở: {2}",
+            "no shell channel to the head unit ({0}) — {1}. APK saved at: {2}",
+            outcome.reason.name, channelRemedy(outcome.reason), apkPath,
         )
-        is LocalInstallOutcome.PmRejected -> Lang.t(
-            "pm install từ chối: ${pmReason(outcome.pmOutput, vi = true)}. APK đã tải ở: $apkPath",
-            "pm install rejected: ${pmReason(outcome.pmOutput, vi = false)}. APK saved at: $apkPath",
+        is LocalInstallOutcome.PmRejected -> Lang.f(
+            "pm install từ chối: {0}. APK đã tải ở: {1}",
+            "pm install rejected: {0}. APK saved at: {1}",
+            pmReason(outcome.pmOutput), apkPath,
         )
     }
 
@@ -242,20 +242,27 @@ object UpdateChecker {
      * đúng việc từ 2026-08-24; chỗ OTA thì chưa.
      *
      * Mã lý do (`reason.name`) vẫn nằm trong câu ở [installMessage] — ảnh chụp màn đủ để chẩn đoán từ xa.
+     *
+     * Trả câu theo ngôn ngữ ĐANG dùng qua `Lang.t` (cặp chữ cố định = khoá bảng dịch ZH/TH/MS). Bản trước nhận cờ
+     * `vi: Boolean` rồi được ghép vào một mẫu `$` ⇒ hai thứ tiếng là hai nhánh `if`, không dịch được tiếng thứ ba.
      */
-    internal fun channelRemedy(reason: LocalShellFailure, vi: Boolean): String = when (reason) {
+    internal fun channelRemedy(reason: LocalShellFailure): String = when (reason) {
         // Hộp thoại đang ở ngay trước mặt ⇒ nói đúng cái nút phải bấm. Nhắc "luôn cho phép" vì mỗi lần thử là một
         // kết nối MỚI: không tích thì quyền chết theo đúng kết nối đang treo (xem `AssistantLauncher.reportProgress`).
         LocalShellFailure.AWAITING_APPROVAL, LocalShellFailure.AUTH_REJECTED ->
-            if (vi) "bấm \"Cho phép/Allow\" (tích \"luôn cho phép\") trên hộp thoại gỡ lỗi USB rồi cài lại"
-            else "tap \"Allow\" (tick \"always allow\") on the USB-debugging dialog, then install again"
+            Lang.t(
+                "bấm \"Cho phép/Allow\" (tích \"luôn cho phép\") trên hộp thoại gỡ lỗi USB rồi cài lại",
+                "tap \"Allow\" (tick \"always allow\") on the USB-debugging dialog, then install again",
+            )
         LocalShellFailure.PORT_CLOSED, LocalShellFailure.IO_ERROR, LocalShellFailure.UNKNOWN ->
-            if (vi) "xem Cài đặt › Hệ thống & quyền" else "see Settings › System & permissions"
+            Lang.t("xem Cài đặt › Hệ thống & quyền", "see Settings › System & permissions")
         // READY-AT-HOME §4.6 — cổng thi hành chặn (kênh chưa được duyệt trong tiến trình, không có dấu tươi): không có
         // hộp thoại nào đang mở ⇒ việc cần làm là về màn chính để Kachi hỏi quyền (thẻ xin quyền + hộp hệ thống).
         LocalShellFailure.NOT_APPROVED ->
-            if (vi) "mở màn chính Kachi để cấp quyền điều khiển cửa sổ (Cho phép gỡ lỗi USB) rồi cài lại"
-            else "open the Kachi home screen to grant window control (Allow USB debugging), then install again"
+            Lang.t(
+                "mở màn chính Kachi để cấp quyền điều khiển cửa sổ (Cho phép gỡ lỗi USB) rồi cài lại",
+                "open the Kachi home screen to grant window control (Allow USB debugging), then install again",
+            )
     }
 
     /**
@@ -265,11 +272,11 @@ object UpdateChecker {
      * dòng mang `Failure`/`Error` (chỗ pm nói mã lỗi thật, vd `INSTALL_FAILED_UPDATE_INCOMPATIBLE`), không có thì
      * lấy dòng cuối còn chữ. pm câm hẳn cũng là một sự thật, và nói ra vẫn hơn một câu tự bịa nguyên nhân.
      */
-    internal fun pmReason(pmOutput: String, vi: Boolean): String {
+    internal fun pmReason(pmOutput: String): String {
         val lines = pmOutput.lines().map { it.trim() }.filter { it.isNotEmpty() }
         return lines.firstOrNull { it.contains("Failure", true) || it.contains("Error", true) }
             ?: lines.lastOrNull()
-            ?: if (vi) "pm không in gì" else "pm printed nothing"
+            ?: Lang.t("pm không in gì", "pm printed nothing")
     }
 
     // ── nội bộ ──

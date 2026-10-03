@@ -79,9 +79,17 @@ data class CapabilityGroup(
      */
     val contentLine: String
         get() = buildString {
-            append("$visibleReadCount " + Strings.t("mục", if (visibleReadCount == 1) "item" else "items"))
+            // Số ít/nhiều tiếng Anh = hai MẪU trọn vẹn (khoá bảng dịch), không rẽ nhánh trong đối số.
+            append(
+                if (visibleReadCount == 1) Strings.f("{0} mục", "{0} item", visibleReadCount)
+                else Strings.f("{0} mục", "{0} items", visibleReadCount),
+            )
             if (writes.isNotEmpty()) {
-                append(" · ${writes.size} " + Strings.t("nút", if (writes.size == 1) "button" else "buttons"))
+                append(" · ")
+                append(
+                    if (writes.size == 1) Strings.f("{0} nút", "{0} button", writes.size)
+                    else Strings.f("{0} nút", "{0} buttons", writes.size),
+                )
             }
             val s = displaySub
             if (s.isNotEmpty()) append(" · $s")

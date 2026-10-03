@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.ControlRegistry
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.Strings
 import com.byd.clusternav.launcher.TelemetryRegistry
 
@@ -52,11 +53,14 @@ object VoiceClarify {
      *
      * @param round lượt hỏi thứ mấy (0 = chưa hỏi lần nào). ≥ [MAX_ROUNDS] ⇒ `null`.
      * @param terms từ vựng đang dùng (truyền vào để `:app` khỏi dựng lại, và để test bơm bảng giả).
+     * @param lang ngôn ngữ của câu hỏi — phiên nghe truyền ngôn ngữ GIỌNG NÓI (`voiceLangOf`, spec
+     *   `kachi-i18n-zh-th-ms.html` R6): câu hỏi này được đọc lên. [Ask.carry] luôn là chữ người ta vừa NÓI (tiếng Việt).
      */
     fun ask(
         unknown: VoiceIntent.Unknown,
         round: Int,
         terms: List<VoiceTerm> = VoiceGrammar.terms(),
+        lang: Lang = Strings.current,
     ): Ask? {
         if (round >= MAX_ROUNDS) return null
         when (unknown.reason) {
@@ -91,10 +95,10 @@ object VoiceClarify {
         // Đứng TRƯỚC [ambiguity] vì cụm đánh dấu *"hồ sơ"* hẹp hơn hẳn phép dò họ nhãn: [ĐO] chữ *"số"* (nhãn datum
         // `gear`) khớp giữa chính câu này, nên để [ambiguity] chạy trước là hỏi lại về một cái nút số.
         VoiceProfileNames.missingName(tokens, terms)?.let { names ->
-            return Ask(question(Strings.t("hồ sơ", "profile"), names), tokens.map { it.raw })
+            return Ask(question(Strings.t("hồ sơ", "profile", lang), names, lang), tokens.map { it.raw })
         }
 
-        ambiguity(tokens, terms, asking, asked)?.let { return it }
+        ambiguity(tokens, terms, asking, asked, lang)?.let { return it }
 
         // *"&lt;động từ&gt; gì?"* chỉ đúng khi đầu câu THẬT LÀ một động từ. [ĐO xe 2026-09-18] *"hev đi được bao
         // nhiêu"* trước đây ra *"Hev gì?"* — máy lấy một danh từ làm động từ rồi hỏi một câu vô nghĩa; nay câu ấy
@@ -104,11 +108,11 @@ object VoiceClarify {
         val verb = if (asking) null else leadVerb(tokens)
         if (verb != null && unknown.reason == VoiceUnknownReason.NO_OBJECT) {
             return Ask(
-                Strings.t("${capitalize(verb)} gì?", "${capitalize(verb)} what?"),
+                Strings.fIn(lang, "{0} gì?", "{0} what?", capitalize(verb)),
                 listOf(verb),
             )
         }
-        return Ask(vague(), carryFor(tokens, asking, asked))
+        return Ask(vague(lang), carryFor(tokens, asking, asked))
     }
 
     /*
@@ -122,15 +126,16 @@ object VoiceClarify {
      */
 
     /** Câu chung khi không bám được vào đâu. */
-    fun vague(): String = Strings.t("Chưa rõ — nói lại giúp", "Not sure — say that again")
+    fun vague(lang: Lang = Strings.current): String = Strings.t("Chưa rõ — nói lại giúp", "Not sure — say that again", lang)
 
     /**
      * Câu **bỏ cuộc lịch sự** sau [MAX_ROUNDS] lượt. Nêu một câu mẫu có thật thay vì *"không hiểu"* lần thứ ba —
      * [ĐO] mẫu UX Kiki §5: sau hai lượt vật lộn thì thứ giúp được là **một ví dụ**, không phải một lời xin lỗi.
      */
-    fun giveUp(): String = Strings.t(
+    fun giveUp(lang: Lang = Strings.current): String = Strings.t(
         "Vẫn chưa rõ — thử nói \"bật đèn đọc\"",
         "Still not sure — try saying \"turn on the reading light\"",
+        lang,
     )
 
     /**
@@ -200,6 +205,7 @@ object VoiceClarify {
         terms: List<VoiceTerm>,
         asking: Boolean,
         asked: Boolean,
+        lang: Lang,
     ): Ask? {
         // Chỉ đo trên từ mang NGHĨA VỀ XE: bộ khung câu hỏi bị trừ ra — xem KDoc [VoiceQuestion.FRAME_WORDS] về
         // ca *"kính lái đang mở bao nhiêu"* từng hỏi lại thành *"Đang nào — Tốc độ hay Đèn đọc?"*.
@@ -228,10 +234,10 @@ object VoiceClarify {
                 val others = words - head.norm
                 val labels = readsFirst(familyIds(head.norm, terms), asking)
                     .sortedByDescending { id -> support(listOf(id), others, terms) }
-                    .mapNotNull { labelOf(it) }
+                    .mapNotNull { labelOf(it, lang) }
                     .distinct()
                     .take(MAX_CHOICES)
-                if (labels.size >= 2) return Ask(question(head.raw, labels), carry)
+                if (labels.size >= 2) return Ask(question(head.raw, labels, lang), carry)
             }
         return null
     }
@@ -381,8 +387,8 @@ object VoiceClarify {
     /** Nhiều hơn ba lựa chọn thì câu hỏi dài hơn câu lệnh — người lái không nghe hết. */
     private const val MAX_CHOICES = 3
 
-    private fun labelOf(id: String): String? =
-        ControlRegistry.byId(id)?.displayLabel ?: TelemetryRegistry.byId(id)?.displayLabel
+    private fun labelOf(id: String, lang: Lang): String? =
+        ControlRegistry.byId(id)?.labelIn(lang) ?: TelemetryRegistry.byId(id)?.labelIn(lang)
 
     /**
      * Vị trí của một mã trong danh mục — nút trước, datum sau; mã lạ xuống cuối.
@@ -399,15 +405,13 @@ object VoiceClarify {
         out
     }
 
-    private fun question(head: String, labels: List<String>): String {
+    private fun question(head: String, labels: List<String>, lang: Lang): String {
         val list = when (labels.size) {
-            2 -> Strings.t("${labels[0]} hay ${labels[1]}", "${labels[0]} or ${labels[1]}")
-            else -> Strings.t(
-                labels.dropLast(1).joinToString(", ") + ", hay " + labels.last(),
-                labels.dropLast(1).joinToString(", ") + ", or " + labels.last(),
-            )
+            2 -> Strings.fIn(lang, "{0} hay {1}", "{0} or {1}", labels[0], labels[1])
+            else -> Strings.fIn(lang, "{0}, hay {1}", "{0}, or {1}", labels.dropLast(1).joinToString(", "), labels.last())
         }
-        return Strings.t("${capitalize(head)} nào — $list?", "Which ${head.lowercase()} — $list?")
+        // {0} = đầu cụm viết hoa (đầu câu tiếng Việt) · {2} = đầu cụm viết thường (giữa câu tiếng Anh) · {1} = danh sách.
+        return Strings.fIn(lang, "{0} nào — {1}?", "Which {2} — {1}?", capitalize(head), list, head.lowercase())
     }
 
     private fun capitalize(s: String): String =

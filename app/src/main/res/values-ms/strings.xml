@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kachi — bản dịch ms của 5 khoá còn dùng trong values/strings.xml (tệp gốc niêm phong, không đụng). -->
+<resources>
+    <string name="app_name">Kachi</string>
+    <string name="nav_listener_label">ClusterNav — pembaca navigasi</string>
+    <string name="idle">Menunggu navigasi…</string>
+    <string name="acc_label">ClusterNav — penguat bacaan peta</string>
+    <string name="acc_desc">Membaca jarak ke selekoh seterusnya yang dipaparkan dalam Google Maps untuk dihantar ke panel instrumen dengan lebih tepat. Hanya membaca semasa Google Maps dibuka; tiada sentuhan, tiada data peribadi dikumpul.</string>
+</resources>

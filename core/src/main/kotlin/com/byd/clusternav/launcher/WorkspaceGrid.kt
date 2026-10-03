@@ -56,19 +56,19 @@ data class GridLayout(val frames: List<GridFrame>) {
         frames.forEachIndexed { i, f ->
             if (f.cols < WorkspaceGrid.MIN_COLS || f.rows < WorkspaceGrid.MIN_ROWS) {
                 out.add(
-                    Strings.t(
-                        "khung ${i + 1} nhỏ quá (${f.cols}×${f.rows}), tối thiểu " +
-                            "${WorkspaceGrid.MIN_COLS}×${WorkspaceGrid.MIN_ROWS}",
-                        "frame ${i + 1} is too small (${f.cols}×${f.rows}), minimum " +
-                            "${WorkspaceGrid.MIN_COLS}×${WorkspaceGrid.MIN_ROWS}",
+                    Strings.f(
+                        "khung {0} nhỏ quá ({1}×{2}), tối thiểu {3}×{4}",
+                        "frame {0} is too small ({1}×{2}), minimum {3}×{4}",
+                        i + 1, f.cols, f.rows, WorkspaceGrid.MIN_COLS, WorkspaceGrid.MIN_ROWS,
                     ),
                 )
             }
             if (f.col < 0 || f.row < 0 || f.colEnd > WorkspaceGrid.COLS || f.rowEnd > WorkspaceGrid.ROWS) {
                 out.add(
-                    Strings.t(
-                        "khung ${i + 1} ra ngoài lưới ${WorkspaceGrid.COLS}×${WorkspaceGrid.ROWS}",
-                        "frame ${i + 1} falls outside the ${WorkspaceGrid.COLS}×${WorkspaceGrid.ROWS} grid",
+                    Strings.f(
+                        "khung {0} ra ngoài lưới {1}×{2}",
+                        "frame {0} falls outside the {1}×{2} grid",
+                        i + 1, WorkspaceGrid.COLS, WorkspaceGrid.ROWS,
                     ),
                 )
             }
@@ -78,9 +78,10 @@ data class GridLayout(val frames: List<GridFrame>) {
             for (j in i + 1 until frames.size) {
                 if (frames[i].overlaps(frames[j])) {
                     out.add(
-                        Strings.t(
-                            "khung ${i + 1} và khung ${j + 1} đè lên nhau",
-                            "frame ${i + 1} and frame ${j + 1} overlap",
+                        Strings.f(
+                            "khung {0} và khung {1} đè lên nhau",
+                            "frame {0} and frame {1} overlap",
+                            i + 1, j + 1,
                         ),
                     )
                 }
@@ -277,9 +278,10 @@ object EffectiveLayout {
     /** Lý do bố cục tự vẽ bị bỏ qua — để nói cho người dùng, không im lặng. `null` = đang dùng nó. */
     fun ignoredReason(custom: GridLayout?, cap: Int = WorkspaceState.SLOT_CAP): String? = when {
         custom == null || custom.frames.isEmpty() -> null          // chưa vẽ gì: không phải "bị bỏ qua"
-        custom.frames.size > cap -> Strings.t(
-            "bố cục tự vẽ có ${custom.frames.size} khung, bản này đỡ tối đa $cap",
-            "the custom layout has ${custom.frames.size} frames; this build supports at most $cap",
+        custom.frames.size > cap -> Strings.f(
+            "bố cục tự vẽ có {0} khung, bản này đỡ tối đa {1}",
+            "the custom layout has {0} frames; this build supports at most {1}",
+            custom.frames.size, cap,
         )
         !custom.valid -> Strings.t("bố cục tự vẽ đang lỗi: ", "the custom layout has a problem: ") +
             custom.problems().first()

@@ -144,9 +144,10 @@ class VoiceFastNaturalWiringContractTest {
         // 2026-09-26 (VOICE-PROFILE-NAME-PHONETIC): lời gọi nay mang thêm **từ vựng của phiên** ([sessionTerms])
         // — mặc định `VoiceGrammar.terms()` chỉ có tập TĨNH nên mọi câu hỏi lại cần tên hồ sơ/app sẽ không bao giờ
         // nổ (CLAUDE.md §8). Tính chất bài canh KHÔNG đổi: trần lượt hỏi vẫn do `:core` giữ.
-        assertTrue(turns.contains("VoiceClarify.ask(only, clarifyRound, sessionTerms())"), "trần lượt hỏi do `:core` giữ")
+        // kachi-i18n-zh-th-ms T2: câu hỏi lại được ĐỌC ⇒ tiếng GIỌNG NÓI của phiên (`voiceLang()`).
+        assertTrue(turns.contains("VoiceClarify.ask(only, clarifyRound, sessionTerms(), voiceLang())"), "trần lượt hỏi do `:core` giữ")
         assertTrue(turns.contains("VoiceClarify.combine("), "câu trả lời phải được GHÉP với ngữ cảnh")
-        assertTrue(turns.contains("VoiceClarify.giveUp()"), "hết lượt thì nói một câu có ích, không im")
+        assertTrue(turns.contains("VoiceClarify.giveUp(voiceLang())"), "hết lượt thì nói một câu có ích, không im")
     }
 
     @Test
@@ -275,7 +276,7 @@ class VoiceFastNaturalWiringContractTest {
         assertTrue(g.contains("VoiceClarify.MAX_ROUNDS"), "trần vẫn do `:core` giữ, không chép một bản thứ hai")
         // 2026-09-26: cùng lời gọi, cùng **từ vựng của phiên** như `clarifyAsk` — hai chỗ đo cùng một câu hỏi
         // *"có nên hỏi không"* nên chúng phải hỏi với cùng một bảng, nếu không thì một ca `null` là ca giả.
-        assertTrue(g.contains("VoiceClarify.ask(only, 0, sessionTerms())"), "phân biệt hai ca `null` bằng chính luật của `:core`")
+        assertTrue(g.contains("VoiceClarify.ask(only, 0, sessionTerms(), voiceLang())"), "phân biệt hai ca `null` bằng chính luật của `:core`")
         assertTrue(g.contains("clarifyRound = 0"), "bỏ cuộc rồi thì lượt sau được hỏi lại từ đầu")
         // [ĐO xe 2026-09-18 §B] Đường này cũng ĐỌC một câu ⇒ cũng phải có lưới theo độ dài câu. Bản 1.78 hẹn đóng
         // bằng LINGER_MS (2,5 s) TRƯỚC lượt đọc, mà câu bỏ cuộc dài ~40 ký tự ⇒ tấm chữ đi trước khi loa nói hết.

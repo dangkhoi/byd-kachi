@@ -33,6 +33,8 @@ internal class VoiceReadback(
     private val say: (String) -> Unit,
     private val onUi: (() -> Unit) -> Unit,
     private val background: (() -> Unit) -> Unit,
+    /** Ngôn ngữ câu trả lời — cùng lambda của [VoiceControlDispatch]; chụp một lần đầu mỗi lượt đọc lại. */
+    private val lang: () -> Lang,
 ) {
 
     /**
@@ -49,12 +51,13 @@ internal class VoiceReadback(
      */
     fun step(shown: VoiceIntent.Control, st: ControlTileState) {
         val port = control()
+        val l = lang()
         // Câu không nêu đích (`value == null`) thì không có gì để so — giữ nguyên câu cũ. Bộ phân tích không
         // sinh ra ca này cho STEP (xem `VoiceIntentParser.step`), nhưng một nhánh mới mai sau thì có thể.
-        val want = shown.value ?: run { say(VoiceReply.done(shown)); return }
+        val want = shown.value ?: run { say(VoiceReply.done(shown, l)); return }
         val first = runCatching { port.readStep(shown.id) }.getOrNull()
         if (first == null || first == want) {
-            say(if (first == null) VoiceReply.done(shown) else VoiceReply.doneActual(shown, first))
+            say(if (first == null) VoiceReply.done(shown, l) else VoiceReply.doneActual(shown, first, l))
             return
         }
         background {
@@ -62,7 +65,7 @@ internal class VoiceReadback(
             val again = runCatching { port.readStep(shown.id) }.getOrNull() ?: first
             onUi {
                 st.setValue(shown.id, again)
-                say(VoiceReply.doneActual(shown, again))
+                say(VoiceReply.doneActual(shown, again, l))
             }
         }
     }
@@ -100,11 +103,12 @@ internal class VoiceReadback(
      */
     fun act(shown: VoiceIntent.Control, def: ControlDef, arg: Int, st: ControlTileState) {
         val port = control()
+        val l = lang()
         val wantOn = arg > 0
         val first = runCatching { port.readState(def.id) }.getOrNull()
         // Nhánh 1 — không đọc được ⇒ giữ nguyên câu 1.79 (còn cả đuôi hedge). Không bịa một lời xác nhận.
-        if (first == null) { say(VoiceReply.done(shown)); return }
-        if ((first > 0) == wantOn) { say(VoiceReply.doneConfirmed(shown)); return }
+        if (first == null) { say(VoiceReply.done(shown, l)); return }
+        if ((first > 0) == wantOn) { say(VoiceReply.doneConfirmed(shown, l)); return }
         background {
             runCatching { Thread.sleep(READBACK_SETTLE_MS) }
             val again = runCatching { port.readState(def.id) }.getOrNull() ?: first
@@ -123,9 +127,9 @@ internal class VoiceReadback(
                 if (def.kind == ControlKind.TOGGLE && !(slow && !confirmed)) st.setOn(def.id, again > 0)
                 say(
                     when {
-                        confirmed -> VoiceReply.doneConfirmed(shown)
-                        slow -> VoiceReply.done(shown)
-                        else -> VoiceReply.failed(shown)
+                        confirmed -> VoiceReply.doneConfirmed(shown, l)
+                        slow -> VoiceReply.done(shown, l)
+                        else -> VoiceReply.failed(shown, lang = l)
                     },
                 )
             }

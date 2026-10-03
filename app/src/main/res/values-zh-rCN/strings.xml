@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kachi — bản dịch zh-rCN của 5 khoá còn dùng trong values/strings.xml (tệp gốc niêm phong, không đụng). -->
+<resources>
+    <string name="app_name">Kachi</string>
+    <string name="nav_listener_label">ClusterNav——导航读取器</string>
+    <string name="idle">正在等待导航…</string>
+    <string name="acc_label">ClusterNav——地图读取增强</string>
+    <string name="acc_desc">读取 Google Maps 中显示的到下一个转弯的距离，以便更精确地传送到仪表。仅在 Google Maps 打开时读取；不进行点按，不收集个人数据。</string>
+</resources>

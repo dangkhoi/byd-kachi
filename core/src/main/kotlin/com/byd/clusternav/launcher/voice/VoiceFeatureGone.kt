@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.Strings
 import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
 
@@ -128,17 +129,27 @@ internal object VoiceFeatureGone {
     /**
      * Câu trả lời cho [g] — hai câu cho hai việc khác nhau (xem luật khai §3).
      *
-     * Ở `:core` vì nó ghép **tên tính năng** vào giữa, đúng lý do đã ghi ở KDoc [VoiceReply].
+     * Ở `:core` vì nó ghép **tên tính năng** vào giữa, đúng lý do đã ghi ở KDoc [VoiceReply]. [lang] = ngôn ngữ của
+     * câu (phiên nói truyền tiếng GIỌNG NÓI — `VoiceReply.unknown`).
      */
-    fun reply(g: Gone): String = if (g.removed) {
-        Strings.t(
-            "Tính năng ${g.label} đã bỏ khỏi Kachi — dùng màn hình của xe",
-            "${g.labelEn.replaceFirstChar { it.uppercase() }} was removed from Kachi — use the car's own screen",
-        )
-    } else {
-        Strings.t(
-            "Kachi chưa điều khiển được ${g.label} — dùng nút trên xe",
-            "Kachi cannot control ${g.labelEn} yet — use the car's own control",
-        )
+    fun reply(g: Gone, lang: Lang = Strings.current): String {
+        // Tên tính năng theo [lang]; {1} = cùng tên viết HOA chữ đầu (đầu câu tiếng Anh). Mẫu nào cần dạng nào thì
+        // dùng dạng đó — khoá bảng dịch là MẪU, không phải câu đã ghép tên.
+        val name = Strings.pick(g.label, g.labelEn, lang)
+        return if (g.removed) {
+            Strings.fIn(
+                lang,
+                "Tính năng {0} đã bỏ khỏi Kachi — dùng màn hình của xe",
+                "{1} was removed from Kachi — use the car's own screen",
+                name, name.replaceFirstChar { it.uppercase() },
+            )
+        } else {
+            Strings.fIn(
+                lang,
+                "Kachi chưa điều khiển được {0} — dùng nút trên xe",
+                "Kachi cannot control {0} yet — use the car's own control",
+                name,
+            )
+        }
     }
 }

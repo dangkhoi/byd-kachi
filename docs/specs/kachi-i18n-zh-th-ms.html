@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi thêm tiếng Trung · Thái · Mã Lai — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node.new{background:var(--new)}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi thêm tiếng Trung · Thái · Mã Lai</h1>
+<p class="muted">Slug: <code>kachi-i18n-zh-th-ms</code> · Branch <code>feat/i18n-zh-th-ms</code> · <span class="pill">Trạng thái: Current — đang làm</span> · Cập nhật 2026-10-03 · Chủ: dangkhoi</p>
+<p class="muted">Mục đích: thêm ba ngôn ngữ giao diện (简体中文 · ไทย · Bahasa Melayu) cạnh Tiếng Việt / English; giọng nói ghi rõ chỉ hiểu tiếng Việt. Gom vào 2.87, chưa OTA.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-03</b>: Khởi tạo. Owner: <i>"làm thêm tiếng Trung, Thái, Mã lai đi, cho nó vui, chỗ voice ghi rõ chỉ hỗ trợ tiếng việt hay tiếng anh gì là đc"</i> → <i>"Cứ làm nhé, chưa OTA, chờ có bug anh em báo mình gôm luôn"</i>. Kiểm kê bằng 3 agent đọc mã (workflow <code>wf_76dc4a6f-f42</code>).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Kachi đã có đa ngôn ngữ VI/EN (spec <code>kachi-i18n-and-light-theme.html</code>, U5) theo <b>hai đường</b>: tệp tài nguyên Android (<code>strings_kachi.xml</code>) và cặp Việt/Anh nằm trong mã (<code>Strings.t</code>/<code>pick</code> ở <code>:core</code>, <code>Lang.t</code> ở <code>:app</code>, <code>labelEn</code> của registry). Mọi chỗ rẽ nhánh đều chỉ có hai nhánh.</p>
+<table>
+<tr><th>Kiểm kê [ĐO 2026-10-03]</th><th>Số</th><th>Nguồn</th></tr>
+<tr><td>Tài nguyên <code>strings_kachi.xml</code></td><td>710 chuỗi + 5 plurals (VI = EN)</td><td><code>app/src/main/res/values{,-en}/</code></td></tr>
+<tr><td><code>strings.xml</code> (niêm phong sha)</td><td>24 khoá VI · 5 khoá EN (5 khoá còn sống)</td><td><code>ExpansionTransportFenceFixtures.kt:475</code></td></tr>
+<tr><td>Lời gọi dịch trong mã</td><td>307 / 53 tệp: 216 cặp chữ thuần · 72 có biến <code>$x</code> · 22 đối số không phải chữ</td><td>app 87 · core 220</td></tr>
+<tr><td>Nhãn registry (Localized)</td><td>16 lớp hiện thực, 246 nhãn + shortEn/subEn/argsEn/desc</td><td><code>LangCoverageFixtures.kt:29-33</code></td></tr>
+<tr><td>Rẽ nhánh hai ngôn ngữ</td><td>≈ 25 chỗ</td><td><code>Lang.kt:61-65,124,136</code> · <code>LangHost.kt:48,60</code> · <code>ControlDef.kt:173,181</code>…</td></tr>
+</table>
+<div class="card"><b>Sự thật quyết định thiết kế</b>
+<ul>
+<li>[ĐO] <b>Giọng nói chỉ nhận dạng tiếng Việt</b>: một gói ASR <code>zipformer-vi-int8-2025-04-20</code> (<code>SherpaModelCatalog.kt:143-209</code>), bảng BPE 2000 mảnh toàn chữ Việt. Parser có động từ tiếng Anh (<code>VoiceGrammar.kt:66-136</code>) nhưng chỉ dùng được khi gõ chữ. Màn EN đang hiện câu mẫu <i>"turn on X"</i> mà ASR không nghe được.</li>
+<li>[ĐO] <b>Lỗi sập tiềm ẩn</b>: <code>WorkspacePrefsLang.kt:71</code> <code>Choice.entries.first{…}</code> ném khi mã ngôn ngữ của <code>:core</code> không có trong <code>Lang.Choice</code> của <code>:app</code> — chạy mỗi lần chọn tiếng và mỗi lần đổi hồ sơ.</li>
+<li>[ĐO] Câu trả lời giọng nói (VoiceReply 63 lời gọi…) đọc <code>Strings.current</code>; giọng đọc + geocoder lấy <code>LangHost.locale()</code>. Không tách thì giọng Piper tiếng Việt phải đọc chữ Hán/Thái.</li>
+<li>[ĐO] Tiến trình <code>:wake</code> không có ngôn ngữ (<code>Strings.current</code> chỉ ghi ở <code>LangHost.kt:46</code>); người dùng EN hôm nay: phiên tiến trình chính trả lời EN, phiên phím vô-lăng (<code>:wake</code>) trả lời VI.</li>
+<li>[ĐO] Firmware DiLink3 Android 10 (<code>13.1.33.2602030</code>) có <code>NotoSansCJK-Regular.ttc</code>, <code>NotoSansThai*</code>, <code>NotoSansThaiUI*</code>; Mã Lai dùng Roboto. App không đóng gói phông. DL5: [CHƯA BIẾT].</li>
+<li>[ĐO] Android 10/12 <code>Calendar.createCalendar</code> luôn Gregorian (libcore <code>Calendar.java:1680-1686</code>); JDK17 tạo BuddhistCalendar cho <code>th_TH</code> ⇒ dùng <code>Locale("th")</code> không kèm quốc gia.</li>
+<li>[ĐO] Lint AGP 9.3.1: <code>ExtraTranslation</code>/<code>MissingDefaultResource</code> = FATAL (chặn <code>assembleRelease</code>), <code>MissingTranslation</code> = ERROR; khoá thiếu trong thư mục mới lùi về <code>values/</code> = tiếng Việt.</li>
+<li>[ĐO] Nguồn thuật ngữ: <code>CarSetting.apk</code> + <code>AirConditioning.apk</code> của BYD trong system.img có zh/th/ms/vi (2904 + 206 chuỗi). Dùng để khớp chữ trên màn xe; <b>không</b> đưa tệp BYD vào repo.</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R1</td><td>Bộ chọn ngôn ngữ có 6 mục: Theo xe · Tiếng Việt · English · 简体中文 · ไทย · Bahasa Melayu (tên tiếng viết bằng chính tiếng đó)</td><td>chọn → màn dựng lại đúng tiếng; lưu theo hồ sơ như hiện nay; đổi hồ sơ không sập; mã đĩa <code>zh</code>/<code>th</code>/<code>ms</code></td></tr>
+<tr><td>R2</td><td>"Theo xe" giữ nguyên luật cũ: máy <code>vi</code> → Tiếng Việt, còn lại → English</td><td>test: hệ thống zh/th/ms + AUTO ⇒ EN (không tự đổi giao diện người đang dùng)</td></tr>
+<tr><td>R3</td><td>Mọi chữ đang có bản EN đều có bản zh/th/ms: tài nguyên, cặp trong mã, nhãn registry, bộ dịch cũ <code>Lang.t</code></td><td>bài canh off-car đỏ nếu thiếu một khoá/cặp ở bất kỳ tiếng nào; lúc chạy thiếu ⇒ lùi English (không phải tiếng Việt)</td></tr>
+<tr><td>R4</td><td>Giọng nói ghi rõ <b>chỉ hiểu tiếng Việt</b></td><td>dòng thông báo (dịch đủ 5 tiếng) ở: đầu Cài đặt › Giọng nói, đầu danh sách câu lệnh, ô gõ thử lệnh, ghi chú bộ chọn ngôn ngữ</td></tr>
+<tr><td>R5</td><td>Danh sách câu lệnh: cột <i>câu nói</i> luôn là câu tiếng Việt parser hiểu (mọi tiếng giao diện, kể cả EN); cột <i>Kachi làm gì</i> theo tiếng giao diện</td><td>test: mọi câu mẫu ở mọi <code>Lang</code> parse ra đúng ý định</td></tr>
+<tr><td>R6</td><td>Ngôn ngữ của giọng nói = EN nếu giao diện EN, còn lại VI; áp như nhau ở tiến trình chính và <code>:wake</code></td><td>giao diện zh/th/ms: câu trả lời đọc/hiện tiếng Việt, giọng đọc + geocoder locale <code>vi</code>; giao diện EN: phím vô-lăng trả lời EN như nút mic</td></tr>
+<tr><td>R7</td><td>Ngày/giờ theo tiếng giao diện; không lịch Phật giáo; giờ 24h</td><td>tên thứ đúng tiếng; năm (nếu có) dương lịch; <code>SettingsSectionsTrip.kt:179</code> hết theo locale máy</td></tr>
+<tr><td>R8</td><td>Chữ không bị cắt mất nghĩa</td><td>ảnh chụp máy ảo các màn chính × zh/th/ms; dòng 1-dòng bị tràn có "…"</td></tr>
+<tr><td>R9</td><td>Màn/dịch vụ chưa bọc ngôn ngữ không đổi theo locale máy sau khi thêm thư mục mới</td><td>DiagActivity, VietMapWidgetDiagActivity, ClusterBlackActivity, ClusterNavActivity, thông báo/toast của <code>:wake</code> dùng lựa chọn của người dùng</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. VI và EN <b>không đổi một byte</b>: mọi test hiện có xanh; chuỗi VI/EN của mọi call site giữ nguyên.</li>
+<li>R-nf2. <code>:core</code> vẫn JVM thuần (0 <code>android.*</code>); bảng dịch nạp lười, một lần mỗi tiếng.</li>
+<li>R-nf3. Không đụng <code>values/strings.xml</code> (niêm phong). 0 tệp Kotlin &gt; 500 dòng; <code>Voice*.kt</code> ≤ 500 (bài canh <code>VoiceListenWiringContractTest</code>).</li>
+<li>R-nf4. Không thêm thư viện. Không thêm nhãn zh/th/ms vào ngữ pháp/hotword giọng nói.</li>
+<li>R-nf5. Harness <code>scripts/emulator/voice-e2e.sh</code> chạy lại, không tụt so với mốc (T1 108/108, T2 23/27).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng chữ</h3>
+<div class="layers">
+  <div class="layer">
+    <div class="node"><b>Lựa chọn</b><span>LangMode AUTO·VI·EN·<u>ZH·TH·MS</u> — prefs <code>&lt;hồ sơ&gt;__lang</code> + <code>clusternav_lang</code></span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>LangHost.wrap</b><span>giải nghĩa → <code>Strings.current</code> + locale Context (5 nhánh)</span></div>
+    <div class="node new"><b>LangHost.localized</b><span>chỉ đặt locale, không ghi <code>Strings.current</code> (màn phụ, dịch vụ, <code>:wake</code>)</span></div>
+    <div class="node new"><b>voiceLang / voiceLocale</b><span>EN→EN, còn lại→VI</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>Tài nguyên Android</b><span>values · values-en · <u>values-zh-rCN · values-th · values-ms</u></span></div>
+    <div class="node new"><b>I18nCatalog (:core)</b><span><code>core/src/main/resources/i18n/{zh,th,ms}.tsv</code> — khoá (vi, en)</span></div>
+    <div class="node"><b>Giọng nói</b><span>câu trả lời · giọng đọc · geocoder theo voiceLang</span></div>
+  </div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> có sẵn (mở rộng)</span><span class="sw"><span class="box" style="background:var(--new)"></span> mới</span></div>
+
+<h3>4.2 Bảng dịch trong mã — khoá theo CẶP (vi, en)</h3>
+<div class="flow">
+  <div class="fnode"><b>Strings.t(vi, en, lang)</b><span>/ pick / labelIn</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VI → vi · EN → en</b><span>không đổi</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>ZH/TH/MS</b><span>catalog[(vi,en)] → catalog[en] → en</span></div>
+</div>
+<ul>
+<li><b>Khoá là cặp (vi, en)</b>, không chỉ en: tránh từ đồng hình (<i>Open</i> = lệnh ở <code>ControlRegistry.kt:344</code> vs trạng thái ở <code>TelemetryReadout.kt:381</code>; tiếng Mã Lai <i>Buka</i> ≠ <i>Terbuka</i>). Mọi call site đều có sẵn cả hai chữ nên không tốn gì. Dòng chỉ-en là đường lùi chung.</li>
+<li><b>Câu có biến</b> chuyển sang chỗ trống tường minh <code>Strings.f("{0} nấc", "by {0}", n)</code> — khoá tĩnh, bản dịch được đổi trật tự từ. Plural tiếng Anh viết trong đối số (<code>if (n == 1) "door" else "doors"</code>) tách thành hai mẫu, cả hai vào bảng.</li>
+<li><b>Mảnh câu</b> (<code>"Turn on "</code> + nhãn) giữ dạng mảnh; bản dịch tự quyết khoảng trắng (zh/th không cách).</li>
+<li><b>Định dạng tệp</b>: TSV UTF-8 <code>vi⇥en⇥dịch</code>, một dòng một cặp, <code>\t \n \\</code> thoát; nạp qua classpath của <code>:core</code> (đóng gói vào APK như tài nguyên Java). Không dùng <code>mapOf</code> Kotlin vì giới hạn 64 KB/phương thức và luật 500 dòng.</li>
+<li><b>Bài canh</b>: (a) quét nguồn <code>app</code>+<code>core</code> lấy mọi cặp chữ trong <code>t</code>/<code>f</code>/<code>pick</code>, cặp có <code>$</code> trong <code>t()</code> là lỗi (phải dùng <code>f</code>); (b) duyệt registry lúc chạy (khuôn <code>LangCoverageFixtures</code>, thêm LauncherActions/HeaderItem/CapabilityDescriptions/TelemetryEnums/…); (c) mỗi cặp phải có dòng ở cả 3 bảng, chỗ trống <code>{n}</code> khớp, không dấu tiếng Việt, zh có chữ Hán, th có chữ Thái; (d) dòng thừa không có call site ⇒ cảnh báo trong test (để dọn).</li>
+</ul>
+
+<h3>4.3 Tài nguyên Android</h3>
+<ul>
+<li>Thư mục <code>values-zh-rCN</code> (locale <code>Locale.SIMPLIFIED_CHINESE</code>), <code>values-th</code> (<code>Locale("th")</code>, không quốc gia), <code>values-ms</code> (<code>Locale("ms")</code>). Mỗi thư mục: <code>strings_kachi.xml</code> đủ 710 khoá + 5 plurals chỉ hạng <code>other</code>; <code>strings.xml</code> mới chỉ 5 khoá còn sống (tệp niêm phong không đụng).</li>
+<li><code>LauncherI18nContractTest</code> lặp cả 5 tệp: cùng tập khoá, cùng tham số định dạng (kể cả <code>%s</code> trần), plurals đúng hạng, không dấu tiếng Việt ngoài <code>values/</code>, kiểm chữ viết (Hán/Thái), Mã Lai không trùng nguyên văn tiếng Anh trừ danh sách cho phép (HUD, ECO, km/h, tên app…).</li>
+</ul>
+
+<h3>4.4 Giọng nói</h3>
+<ul>
+<li><code>voiceLang(ui) = if (ui == EN) EN else VI</code> — hàm thuần ở <code>:core</code>; các hàm dựng câu nói (VoiceReply, VoiceClarify, VoiceRisk, VoiceFeedbackPhrase, VoiceFeatureGone, VoicePlaces, ProfileNames.display, LayoutPreset.label, MacroResult.notice, TelemetryReadout trên đường đọc) nhận <code>lang</code> tường minh; đường nói truyền voiceLang. Không thêm biến toàn cục.</li>
+<li><code>:wake</code>: tiến trình chính ghi tiếng giao diện đã giải nghĩa vào <code>VoiceGrammarSnapshot</code> (lúc ghi ảnh chụp và lúc đổi tiếng); <code>:wake</code> đọc ra, truyền vào phiên, đặt locale cho tài nguyên của nó. Không ghi <code>Strings.current</code> ở <code>:wake</code>, không gọi <code>WorkspacePrefs.langMode()</code> (tự ghi khi migrate).</li>
+<li>Danh sách câu lệnh: câu nói dựng bằng <code>Lang.VI</code> tường minh; tiêu đề nhóm + cột "làm gì" (<code>VoiceReply.preview(i, uiLang)</code>) theo giao diện. Câu <i>"không nghe rõ"</i> đọc ra lấy từ <code>:core</code> theo voiceLang; tấm chữ giữ <code>R.string</code>.</li>
+<li>Giọng đọc Android + geocoder: <code>LangHost.voiceLocale()</code> (đặt trong <code>LangHost.kt</code> theo luật một-chỗ-dựng-Locale).</li>
+</ul>
+
+<h3>4.5 Hiển thị</h3>
+<ul>
+<li><code>LangHost</code>: <code>when</code> vét cạn 5 nhánh cho locale; mẫu ngày "EEEE, dd/MM" giữ cho VI/EN/TH/MS, ZH dùng <code>"M月d日 EEEE"</code>; một chỗ khai.</li>
+<li>Bộ chọn 6 mục không nhét được một hàng chip ⇒ đổi sang hàng chip xuống dòng hoặc bảng chọn (đo trên máy ảo).</li>
+<li>TextView một dòng không "…" ở <code>ControlTileFactory.kt:245-248</code>, <code>WidgetTelemetry.kt:332-335</code>, <code>LayoutEditorPanel.kt:91</code>, <code>BubbleSubmenuOverlay.kt:149</code> ⇒ thêm <code>ellipsize = END</code>.</li>
+<li>Nhãn ngắn (short) zh/th/ms giữ trong ngân sách ô dock 60 dp: bài canh độ dài theo tiếng (zh ≤ 6 ký tự, th/ms ≤ 14 ký tự hiển thị).</li>
+</ul>
+
+<h3>4.6 Context7</h3>
+<ul>
+<li><b>Context7</b> <code>/websites/developer_android_guide</code> (2026-10-03): qualifier ngôn ngữ ISO 639-1 + vùng <code>-rXX</code>; từ API 24 có thẻ BCP-47 <code>b+zh+Hans</code> và tự lùi về phương ngữ cha. minSdk 29 ⇒ <code>values-zh-rCN</code> với <code>Locale.SIMPLIFIED_CHINESE</code> khớp đúng (AOSP <code>ResourceTypes.cpp:2685-2708</code> xét script trước quốc gia). Không đặt <code>resourceConfigurations</code> (đã kiểm: chưa đặt ⇒ thư mục mới vào APK). Không dùng <code>AppCompatDelegate.setApplicationLocales</code>: dự án có cơ chế riêng <code>LangHost</code> (UI dựng bằng mã, chọn theo hồ sơ) — giữ một cơ chế.</li>
+<li>Không thêm thư viện.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>Phụ thuộc</th></tr>
+<tr><td>T1</td><td>Cơ chế: <code>Lang</code>/<code>LangMode</code>/<code>Lang.Choice</code> 5 tiếng · <code>I18nCatalog</code> + <code>Strings.f</code> · chuyển 72 câu có biến · <code>LangHost</code> 5 nhánh + <code>localized</code> · màn phụ bọc ngôn ngữ · bộ chọn 6 mục · khoá thông báo "chỉ hiểu tiếng Việt" (VI/EN) · bài canh mở rộng · công cụ xuất danh sách cặp cần dịch</td><td>—</td></tr>
+<tr><td>T2</td><td>Giọng nói: voiceLang, <code>lang</code> tường minh cho đường nói, <code>:wake</code> qua ảnh chụp, danh sách câu lệnh, voiceLocale, đặt thông báo vào 3 màn, tách VoiceReply</td><td>T1</td></tr>
+<tr><td>T3</td><td>Dịch zh / th / ms (tài nguyên + bảng cặp), đối chiếu thuật ngữ BYD; ghi vào thư mục tạm, chưa vào repo</td><td>T1 (danh sách cặp)</td></tr>
+<tr><td>T4</td><td>Ráp bản dịch, bù cặp T2 sinh thêm, build + toàn bộ test + lint</td><td>T2, T3</td></tr>
+<tr><td>T5</td><td>Soát dịch độc lập từng tiếng (dịch ngược, thuật ngữ, độ dài)</td><td>T4</td></tr>
+<tr><td>T6</td><td>Máy ảo: chụp các màn chính × zh/th/ms, sửa chữ tràn; voice-e2e chạy lại</td><td>T4</td></tr>
+<tr><td>T7</td><td>Senior review (vòng lặp tới 0 phát hiện) + docs/INDEX/BACKLOG + quét bảo mật + commit mã nguồn (không APK)</td><td>T5, T6</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>./gradlew test --rerun-tasks --continue</code> đủ module, 0 đỏ mới; <code>lint</code> 0 lỗi; <code>assembleRelease</code> xanh.</li>
+<li>V-thử-phá: gỡ một dòng bảng zh ⇒ bài canh đỏ; thêm khoá thừa vào <code>values-th</code> ⇒ đỏ; bỏ ZH khỏi <code>Lang.Choice</code> ⇒ đỏ.</li>
+<li>V-máy-ảo: chọn từng tiếng → màn chính, Cài đặt (mọi nhóm), danh sách câu lệnh, bảng vẽ bố cục, hồ sơ; đổi hồ sơ không sập; ảnh lưu ở scratchpad (không commit ảnh).</li>
+<li>V-oncar: [CHƯA BIẾT] phông DL5; chữ Thái trên ô dock trên xe thật — gom vào phiếu thử 2.87.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. "Theo xe" có tự chọn zh/th/ms khi máy đặt tiếng đó? — <span class="muted">Chốt KHÔNG (owner nhận đề xuất 2026-10-03): tránh xe nhập đang để tiếng Trung tự đổi giao diện sau khi cập nhật.</span></li>
+<li>OQ2. Chữ Trung giản thể hay phồn thể? — <span class="muted">Giản thể (khớp BYD Trung Quốc đại lục). Phồn thể = backlog nếu có người xin.</span></li>
+<li>OQ3. Giọng nói: owner <i>"ghi rõ chỉ hỗ trợ tiếng việt"</i> ⇒ thông báo + cột câu nói tiếng Việt ở mọi tiếng (sửa luôn màn EN đang hiện câu tiếng Anh không nghe được).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-i18n-and-light-theme.html</code> — U5, cơ chế VI/EN gốc.</li>
+<li>Kiểm kê: workflow <code>wf_76dc4a6f-f42</code> (3 agent đọc mã, 2026-10-03).</li>
+<li>Firmware: <code>../firmware/fw-2602-diff/new_out/system.img</code> (<code>/system/fonts</code>, <code>/system/etc/fonts.xml</code>, <code>CarSetting.apk</code>, <code>AirConditioning.apk</code>).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-03 · quyết định</b> — khoá bảng dịch theo cặp (vi, en) thay vì chỉ en (đề xuất ban đầu): kiểm kê thấy từ đồng hình và 41 mảnh câu; cặp có sẵn ở mọi call site.</li>
+<li><b>2026-10-03 · quyết định</b> — dịch cả chuỗi giọng nói vào bảng (dù đường nói chỉ dùng VI/EN) để bài canh không cần danh sách loại trừ theo thư mục; cột "Kachi làm gì" cần chúng.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review.)</li>
+</ul>
+
+</div></body>
+</html>

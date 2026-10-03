@@ -12,7 +12,7 @@ import com.byd.clusternav.launcher.trip.TripMusicMode
 import com.byd.clusternav.launcher.trip.TripStart
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.modules.clustercast.ClusterProfile
-import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
 
 /**
@@ -176,7 +176,9 @@ private fun statusRows(list: LinearLayout, context: Context, rows: SettingsRows)
         list.addView(rows.button(context.getString(R.string.kachi_trip_wait_channel)) { ShellAccessUi.allowOrPrompt(context) })
     }
     val r = TripStart.last(context) ?: return
-    val at = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(r.atWall))
+    // Giờ 24h theo ngôn ngữ NGƯỜI DÙNG chọn (cùng mẫu đồng hồ thanh trên) — `DateFormat.getTimeInstance` không truyền
+    // locale thì theo locale MÁY (xe đặt `ms`/`en_US` ra 12h + AM/PM), lệch với đồng hồ ngay trên màn (spec R7).
+    val at = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date(r.atWall))
     val text = when (r.code) {
         TripGate.Code.RAN -> context.getString(R.string.kachi_trip_res_ran, at)
         TripGate.Code.NOTHING -> context.getString(R.string.kachi_trip_res_nothing, at)

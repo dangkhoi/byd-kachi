@@ -163,9 +163,12 @@ data class GroupBoardModel(
      */
     fun summary(): String {
         val alerts = cells.count { it.tone == GroupTone.ALERT }
-        if (alerts > 0) return Strings.t("$alerts cảnh báo", "$alerts ${if (alerts == 1) "alert" else "alerts"}")
+        if (alerts > 0) {
+            return if (alerts == 1) Strings.f("{0} cảnh báo", "{0} alert", alerts)
+            else Strings.f("{0} cảnh báo", "{0} alerts", alerts)
+        }
         val warns = cells.count { it.tone == GroupTone.WARN }
-        if (warns > 0) return Strings.t("$warns lưu ý", "$warns to note")
+        if (warns > 0) return Strings.f("{0} lưu ý", "{0} to note", warns)
         return lead?.takeIf { it.available }?.value ?: TelemetryView.PLACEHOLDER
     }
 }

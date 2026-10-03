@@ -245,7 +245,7 @@ class ControlTileFactory(
         val optView = if (bar != null) null else TextView(ctx).apply {
             setTextColor(c(KachiTheme.ACCENT_INK))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.optionSp); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
-            maxLines = 1; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
+            maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; setPadding(0, dpi(ctx, Sp.XS), 0, 0)
         }
         tile.addView(bar ?: optView)
         fun show(index: Int) {

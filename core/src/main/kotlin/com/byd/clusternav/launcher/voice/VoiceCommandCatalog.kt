@@ -17,8 +17,9 @@ import com.byd.clusternav.launcher.TelemetrySpec
 /**
  * Một câu **nói được** + việc Kachi sẽ làm với nó.
  *
- * Cả [phrase] và [does] đã theo ngôn ngữ đang dùng ([Strings.current]) — tầng vẽ KHÔNG phải tra lại nhãn gốc của
- * `:core` (`LauncherI18nContractTest.tang ve khong doc nhan GOC cua core`).
+ * [phrase] **luôn tiếng Việt** (thứ tiếng duy nhất bộ nhận dạng nghe được — spec `kachi-i18n-zh-th-ms.html` R5/OQ3);
+ * [does] đã theo ngôn ngữ giao diện — tầng vẽ KHÔNG phải tra lại nhãn gốc của `:core`
+ * (`LauncherI18nContractTest.tang ve khong doc nhan GOC cua core`).
  *
  * @property intent ý định mà [phrase] **phải** phân tích ra. Nó là nguồn của [does]/[asksFirst], và là thứ
  *   `VoiceCommandCatalogTest` đem đối chiếu với [VoiceIntentParser.parseOne] — tức bài canh *"màn hình không
@@ -65,18 +66,21 @@ data class VoiceCommandGroup(
  * Danh từ = nhãn của chính bộ đăng ký (qua [SherpaHotwords.phrasesOf], cùng phép dọn dấu câu mà tệp hotword
  * dùng). Động từ = [SherpaPhraseHotwords.CONTROL_VERBS] × [SherpaSpokenWords.VERBS] — **đúng hai bảng** mà
  * [VoiceIntentParser] chấp nhận, nên không câu nào sinh ra mà parser không hiểu. Tiêu đề nhóm xe =
- * [Domain.displayLabel] (đã dịch, đã được `LangCoverageTest` đếm).
+ * [Domain.labelIn] (đã dịch, đã được `LangCoverageTest` đếm).
  *
  * Bốn tiêu đề [FAMILY_TITLES] là chuỗi khai tại đây — **không** bộ đăng ký nào mang chúng, và khai ở `:core`
  * song ngữ là đúng lệ [VoiceReply] (hàng chục câu trả lời khai bằng [Strings.t] ngay cạnh bộ phân tích).
  *
- * ## Ngôn ngữ: theo [Strings.current], KHÔNG có tham số `lang`
- * Cột *"Kachi làm gì"* là [VoiceReply.preview] — hàm đó đọc [Strings.current] và **không** có nạp chồng nhận
- * `lang` (tệp đã 487/500 dòng). Nhận một tham số `lang` ở đây sẽ cho một danh sách mà câu theo `lang` còn phần
- * giải thích theo [Strings.current] — hai thứ tiếng trên một hàng. Nên cả tệp đi theo [Strings.current], y như
- * mọi bề mặt hiển thị khác của `:core`. Bài canh tự lật [Strings.current] rồi trả lại (khuôn `LangCoverageTest`).
- * Ngoại lệ duy nhất: [coverageSentence] nhận `lang` tường minh — nó chỉ trả một CÂU (không có phần giải thích)
- * và nó thay đúng hai bảng mẫu câu của bài canh độ phủ, vốn dựng cả hai thứ tiếng trong một lượt chạy.
+ * ## Ngôn ngữ: CÂU NÓI luôn tiếng Việt · tiêu đề + *"Kachi làm gì"* theo giao diện (spec `kachi-i18n-zh-th-ms.html`)
+ * [ĐO] Bộ nhận dạng chỉ có một gói tiếng Việt (`SherpaModelCatalog`), hotword cố ý loại chữ Anh. Tới bản này màn EN
+ * bày *"turn on X"* — parser hiểu khi GÕ, nhưng nói ra thì ASR không bao giờ nghe thấy; màn zh/th/ms còn tệ hơn
+ * (động từ Việt + nhãn chữ Hán, không parse được). Nên cột câu nói dựng bằng [Lang.VI] ở **mọi** tiếng giao diện
+ * (động từ/cụm phụ mặc định [Lang.VI], danh từ = nhãn GỐC [Localized.label]) — owner chốt OQ3. Tiêu đề nhóm và cột
+ * [VoiceCommandExample.does] ([VoiceReply.preview]`(i, lang)`) theo `lang` của [groups] (mặc định [Strings.current]):
+ * người đọc màn tiếng Trung cần biết câu tiếng Việt ấy LÀM GÌ bằng chữ họ đọc được. Bài canh lặp cả [Lang.entries]
+ * truyền `lang` tường minh, không lật [Strings.current].
+ * [coverageSentence] vẫn nhận `lang` (kể cả EN): nó thay hai bảng mẫu câu của bài canh độ phủ PARSER — parser hiểu
+ * chữ Anh khi gõ (`VoiceTextConsole`), và bài ấy phải tiếp tục canh đường đó.
  *
  * ## Ngân sách thread giao diện
  * **Không** gọi [SherpaPhraseHotwords.phrases] (≈2000 cụm + `VoiceLexicon.tokenize`, [ĐO] 6,6 ms trên host ⇒
@@ -95,21 +99,24 @@ object VoiceCommandCatalog {
      *   mà bộ phân tích thật sự nhận.
      * @param confirmIds tập mã đang bật ở *Hỏi xác nhận* (`Prefs.voiceConfirmIds`). Rỗng ⇒ [VoiceCommandExample
      *   .asksFirst] luôn `false`, đúng mặc định owner chốt 2026-09-16.
+     * @param lang ngôn ngữ của tiêu đề nhóm + cột *"Kachi làm gì"* (mặc định tiếng giao diện). KHÔNG đổi câu nói —
+     *   câu nói luôn tiếng Việt (KDoc tệp).
      */
     fun groups(
         profiles: List<String> = emptyList(),
         apps: List<String> = emptyList(),
         places: List<String> = emptyList(),
         confirmIds: Set<String> = emptySet(),
+        lang: Lang = Strings.current,
     ): List<VoiceCommandGroup> {
         val out = ArrayList<VoiceCommandGroup>(Domain.entries.size + FAMILY_TITLES.size)
         Domain.entries.forEach { d ->
-            val ex = domainPairs(d).map { ex(it, confirmIds) }
-            if (ex.isNotEmpty()) out.add(VoiceCommandGroup("dom_" + d.name.lowercase(), d.displayLabel, d, ex))
+            val ex = domainPairs(d).map { ex(it, confirmIds, lang) }
+            if (ex.isNotEmpty()) out.add(VoiceCommandGroup("dom_" + d.name.lowercase(), d.labelIn(lang), d, ex))
         }
         FAMILY_TITLES.forEach { (id, title) ->
-            val ex = familyPairs(id, profiles, apps, places).map { ex(it, confirmIds) }
-            if (ex.isNotEmpty()) out.add(VoiceCommandGroup(id, title(), null, ex))
+            val ex = familyPairs(id, profiles, apps, places).map { ex(it, confirmIds, lang) }
+            if (ex.isNotEmpty()) out.add(VoiceCommandGroup(id, title(lang), null, ex))
         }
         return out
     }
@@ -136,10 +143,10 @@ object VoiceCommandCatalog {
                     val on = v == VoiceVerb.ON || v == VoiceVerb.OPEN
                     out.add("${verb(v)} $noun" to VoiceIntent.Control(def.id, if (on) 1 else 0))
                 }
-                // Mức NỬA (kính/rèm): tên mức là **dữ liệu của chính dòng đó** (`args[2]`), và câu chỉ được bày ra
-                // khi [VoiceControlParse.mentionsHalf] thật sự nhận nó — nên bản tiếng Anh (*"half"*, ngữ pháp
-                // chưa có) tự vắng mặt thay vì bày một câu không ai hiểu. Không có từ "nửa" nào viết cứng ở đây.
-                def.displayArgs.getOrNull(HALF_INDEX)?.let { half ->
+                // Mức NỬA (kính/rèm): tên mức là **dữ liệu của chính dòng đó** (`args[2]`, bản GỐC tiếng Việt — câu
+                // nói luôn tiếng Việt), và câu chỉ được bày ra khi [VoiceControlParse.mentionsHalf] thật sự nhận nó.
+                // Không có từ "nửa" nào viết cứng ở đây.
+                def.args.getOrNull(HALF_INDEX)?.let { half ->
                     val p = "${verb(VoiceVerb.OPEN)} ${half.lowercase()} $noun"
                     if (VoiceControlParse.mentionsHalf(VoiceLexicon.tokenize(p))) {
                         out.add(p to VoiceIntent.Control(def.id, HALF_INDEX))
@@ -163,8 +170,8 @@ object VoiceCommandCatalog {
             // Nút BẤM: cả câu là TÊN của việc (luật `VoiceIntentParser.headMatch`) — *"bấm Lọc ngay"* không ai nói.
             ControlKind.BUTTON -> out.add(noun to VoiceIntent.Control(def.id, null))
             // SELECT: tên nút + tên lựa chọn (đuôi là đối số thật — xem KDoc [VoiceGrammar.readsTail]).
-            ControlKind.SELECT -> def.displayArgs.indices.take(2).forEach { i ->
-                out.add("$noun ${def.displayArgs[i].lowercase()}" to VoiceIntent.Control(def.id, i))
+            ControlKind.SELECT -> def.args.indices.take(2).forEach { i ->
+                out.add("$noun ${def.args[i].lowercase()}" to VoiceIntent.Control(def.id, i))
             }
         }
         return out
@@ -185,13 +192,19 @@ object VoiceCommandCatalog {
 
     // ══ 2 · Bốn họ NGOÀI bộ đăng ký ═════════════════════════════════════════════════════════════════════
 
-    /** Mã nhóm → tiêu đề (gọi trễ để đọc [Strings.current] lúc dựng, không lúc nạp lớp). */
-    private val FAMILY_TITLES: List<Pair<String, () -> String>> = listOf(
-        "media" to { Strings.t("Nhạc", "Music") },
-        "nav" to { Strings.t("Dẫn đường", "Navigation") },
-        "apps" to { Strings.t("Ứng dụng · ô · bố cục", "Apps · slots · layout") },
-        "profile" to { Strings.t("Hồ sơ tài xế", "Driver profiles") },
+    /** Mã nhóm → tiêu đề theo ngôn ngữ (gọi trễ: ngôn ngữ là của lượt dựng, không của lúc nạp lớp). */
+    private val FAMILY_TITLES: List<Pair<String, (Lang) -> String>> = listOf(
+        "media" to { l -> Strings.t("Nhạc", "Music", l) },
+        "nav" to { l -> Strings.t("Dẫn đường", "Navigation", l) },
+        "apps" to { l -> Strings.t("Ứng dụng · ô · bố cục", "Apps · slots · layout", l) },
+        "profile" to { l -> Strings.t("Hồ sơ tài xế", "Driver profiles", l) },
     )
+
+    /**
+     * Chỗ giữ chỗ ĐIỂM ĐẾN trong câu mẫu dẫn đường — chữ Việt vì câu nói luôn tiếng Việt (parser đọc nó thành
+     * `Nav(query = NAV_PLACE)`). Cột *"Kachi làm gì"* đổi nó sang tiếng giao diện qua [shown].
+     */
+    private const val NAV_PLACE = "điểm đến"
 
     @Suppress("CyclomaticComplexMethod")
     private fun familyPairs(
@@ -209,8 +222,7 @@ object VoiceCommandCatalog {
             longVerb(VoiceVerb.PREV) to VoiceIntent.Media(VoiceMediaOp.PREV),
         )
         "nav" -> buildList {
-            val where = Strings.t("điểm đến", "a place")
-            add("${longVerb(VoiceVerb.NAV)} $where" to VoiceIntent.Nav(where))
+            add("${longVerb(VoiceVerb.NAV)} $NAV_PLACE" to VoiceIntent.Nav(NAV_PLACE))
             // Sổ địa chỉ: động từ có ĐIỀU KIỆN của [VoicePlaces] (*"đi đến Nhà"*) — chỉ hiện nơi ĐÃ LƯU.
             places.take(SHOWN_PER_LIST).forEach { p ->
                 add("${VoicePlaces.PLACE_VERBS.first()} $p" to VoiceIntent.NavigateSaved(p))
@@ -332,8 +344,11 @@ object VoiceCommandCatalog {
         VoiceVerb.PREV to "previous track",
     )
 
-    /** Dạng NGẮN NHẤT của một động từ (dạng đi cùng một đối tượng). */
-    private fun verb(v: VoiceVerb, lang: Lang = Strings.current): String =
+    /**
+     * Dạng NGẮN NHẤT của một động từ (dạng đi cùng một đối tượng). Mặc định [Lang.VI] — câu bày cho người dùng luôn
+     * tiếng Việt (KDoc tệp); chỉ [coverageSentence] truyền EN.
+     */
+    private fun verb(v: VoiceVerb, lang: Lang = Lang.VI): String =
         if (lang == Lang.EN) EN_VERBS.getValue(v) else SherpaSpokenWords.VERBS.getValue(v).first()
 
     /**
@@ -347,7 +362,7 @@ object VoiceCommandCatalog {
      * ngoại lệ (CLAUDE.md §7): [VoiceVerb.NEXT] (*"bài tiếp theo"*) · [VoiceVerb.NAV] · [VoiceVerb.SWITCH] không
      * đổi vì từ cuối của chúng không phải từ chỉ đối tượng.
      */
-    private fun longVerb(v: VoiceVerb, lang: Lang = Strings.current): String {
+    private fun longVerb(v: VoiceVerb, lang: Lang = Lang.VI): String {
         if (lang == Lang.EN) return EN_VERBS.getValue(v)
         val forms = SherpaSpokenWords.VERBS.getValue(v).sortedByDescending { it.count { c -> c == ' ' } }
         return forms.firstOrNull { !endsWithObjectWord(it) } ?: forms.first()
@@ -365,7 +380,7 @@ object VoiceCommandCatalog {
      * nên hai dạng này phải được **khai**. Bài canh ép cụm sinh ra mang một [VoiceProfileNames.MARKERS] thật ⇒
      * không lệch được.
      */
-    private fun profileMarker(lang: Lang = Strings.current): String =
+    private fun profileMarker(lang: Lang = Lang.VI): String =
         if (lang == Lang.EN) "profile" else "hồ sơ"
 
     /**
@@ -373,7 +388,7 @@ object VoiceCommandCatalog {
      * hiện trường); tiếng Anh thì bảng ấy **không có** dạng nào, nên khai tại đây — và cả hai chỉ được dùng khi
      * [VoiceTailClause.slotAt] thật sự đọc ra số ô (xem chỗ gọi), tức không có cụm nào bày ra mà máy không hiểu.
      */
-    private fun slotTail(lang: Lang = Strings.current): String =
+    private fun slotTail(lang: Lang = Lang.VI): String =
         if (lang == Lang.EN) "in slot 1" else VoiceSlotPhrases.SPOKEN.first()
 
     /** Mức NỬA của một nút COVER = chỉ số 2 của `args` (xem `VoiceReply.controlPreview`, nhánh COVER ≥ 2). */
@@ -397,7 +412,7 @@ object VoiceCommandCatalog {
     internal const val MEDIA_NOUN_VI = "nhac"
 
     /** Từ chỉ NHẠC: bản có dấu cho tiếng Việt, bản KHÔNG có dạng Việt (tiếng Anh trong bảng) cho tiếng Anh. */
-    private fun mediaNoun(lang: Lang = Strings.current): String =
+    private fun mediaNoun(lang: Lang = Lang.VI): String =
         if (lang == Lang.EN) {
             VoiceSynonyms.MEDIA_WORDS.firstOrNull { SherpaSpokenWords.ACCENTED[it] == null }
                 ?: VoiceSynonyms.MEDIA_WORDS.first()
@@ -414,9 +429,13 @@ object VoiceCommandCatalog {
      * *"khoá"* — dùng được hay không phụ thuộc từ vựng đang có, mà từ vựng thì đổi mỗi lần thêm cách nói. Hỏi
      * thẳng [VoiceGrammar] thì câu sinh ra tự đúng, và nhãn nào bị một dòng KHÁC cùng loại giành mất cụm ngắn sẽ
      * tự dùng nhãn dài (đúng luật *"dãy dài nhất thắng"* của bộ phân tích).
+     *
+     * Nhãn GỐC tiếng Việt ([Localized.label]) ở MỌI tiếng giao diện: câu nói luôn tiếng Việt (KDoc tệp). Trước bản này
+     * là `displayLabel` ⇒ giao diện zh ra *"bật &lt;nhãn chữ Hán&gt;"* — `resolves` hỏng, lùi về nhãn đầy đủ, câu
+     * không parse được.
      */
     private fun nounOf(row: Localized, kind: VoiceTermKind): String {
-        val full = row.displayLabel
+        val full = row.label
         val terms = VoiceGrammar.terms()
         val id = idOf(row)
         val cleaned = SherpaHotwords.phrasesOf(full)
@@ -450,10 +469,18 @@ object VoiceCommandCatalog {
         return hits.isNotEmpty() && hits.all { it.id == id }
     }
 
-    private fun ex(pair: Pair<String, VoiceIntent>, confirmIds: Set<String>) = VoiceCommandExample(
+    private fun ex(pair: Pair<String, VoiceIntent>, confirmIds: Set<String>, lang: Lang) = VoiceCommandExample(
         phrase = pair.first,
-        does = VoiceReply.preview(pair.second),
+        does = VoiceReply.preview(shown(pair.second, lang), lang),
         asksFirst = VoiceRiskTable.of(pair.second, confirmIds) == VoiceRisk.CONFIRM,
         intent = pair.second,
     )
+
+    /**
+     * Ý định để dựng cột *"Kachi làm gì"*: chỗ giữ chỗ [NAV_PLACE] (chữ Việt của câu nói) đổi sang [lang] — không thì
+     * màn EN đọc *"Navigate to điểm đến"*. VI ra y nguyên câu cũ. Mọi ý định khác giữ nguyên ([intent] vẫn là ý định
+     * THẬT mà câu nói phân tích ra — bài canh đối chiếu bằng nó).
+     */
+    private fun shown(i: VoiceIntent, lang: Lang): VoiceIntent =
+        if (i is VoiceIntent.Nav && i.query == NAV_PLACE) i.copy(query = Strings.t("điểm đến", "a place", lang)) else i
 }

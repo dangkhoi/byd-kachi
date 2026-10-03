@@ -71,16 +71,18 @@ internal object VoiceModelSideload {
             .getOrElse { t ->
                 runCatching { out.delete() }
                 // Chữ hiện trên màn cài mô hình (Step.Failed) ⇒ song ngữ qua Lang.t như VoiceModelStore (bài canh i18n :app).
-                return Lang.t(
-                    "side-load ${src.name}: không đọc/chép được (${t.javaClass.simpleName})",
-                    "side-load ${src.name}: cannot read/copy (${t.javaClass.simpleName})",
+                return Lang.f(
+                    "side-load {0}: không đọc/chép được ({1})",
+                    "side-load {0}: cannot read/copy ({1})",
+                    src.name, t.javaClass.simpleName,
                 )
             }
         if (got.bytes != expectedBytes || !got.sha256.equals(expectedSha256, ignoreCase = true)) {
             runCatching { out.delete() }
-            return Lang.t(
-                "side-load ${src.name} không khớp bản ghim (${got.bytes}/${expectedBytes} byte, sha ${got.sha256.take(12)}…) — chép lại tệp đúng",
-                "side-load ${src.name} does not match pin (${got.bytes}/${expectedBytes} bytes, sha ${got.sha256.take(12)}…) — copy the correct file",
+            return Lang.f(
+                "side-load {0} không khớp bản ghim ({1}/{2} byte, sha {3}…) — chép lại tệp đúng",
+                "side-load {0} does not match pin ({1}/{2} bytes, sha {3}…) — copy the correct file",
+                src.name, got.bytes, expectedBytes, got.sha256.take(12),
             )
         }
         return null

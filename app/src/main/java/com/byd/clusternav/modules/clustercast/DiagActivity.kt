@@ -35,7 +35,8 @@ class DiagActivity : Activity() {
     private lateinit var badgeInfo: TextView
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(ThemeMode.wrap(newBase))
+        // Locale của NGƯỜI DÙNG (không phải của máy) cho tài nguyên — spec kachi-i18n-zh-th-ms R9.
+        super.attachBaseContext(com.byd.clusternav.launcher.LangHost.localized(ThemeMode.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -271,9 +272,10 @@ class DiagActivity : Activity() {
     private fun refreshBadgeInfo() {
         if (!::badgeInfo.isInitialized) return
         val ctx = applicationContext
-        badgeInfo.text = Lang.t(
-            "Tâm badge: X=${Prefs.badgeCenterX(ctx)} Y=${Prefs.badgeCenterY(ctx)} (px cụm) · cỡ ${Prefs.badgeSizeDp(ctx)}dp",
-            "Badge centre: X=${Prefs.badgeCenterX(ctx)} Y=${Prefs.badgeCenterY(ctx)} (cluster px) · size ${Prefs.badgeSizeDp(ctx)}dp",
+        badgeInfo.text = Lang.f(
+            "Tâm badge: X={0} Y={1} (px cụm) · cỡ {2}dp",
+            "Badge centre: X={0} Y={1} (cluster px) · size {2}dp",
+            Prefs.badgeCenterX(ctx), Prefs.badgeCenterY(ctx), Prefs.badgeSizeDp(ctx),
         )
     }
 

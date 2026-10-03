@@ -177,21 +177,25 @@ object GroupBoard {
     private fun doorVerdict(parts: List<CarPartState>): String {
         if (parts.isEmpty()) return ""
         if (parts.none { it.available }) {
-            return Strings.t("${parts.size} bộ phận · chưa đọc được", "${parts.size} parts · not read yet")
+            return Strings.f("{0} bộ phận · chưa đọc được", "{0} parts · not read yet", parts.size)
         }
         val unread = parts.count { !it.available }
         val doors = parts.count { it.part.isDoor && it.open }
         val others = parts.filter { !it.part.isDoor && it.open }
         if (doors == 0 && others.isEmpty()) {
             return if (unread == 0) Strings.t("Tất cả đã đóng", "All closed")
-            else Strings.t("Đã đóng · $unread chưa đọc được", "Closed · $unread not read yet")
+            else Strings.f("Đã đóng · {0} chưa đọc được", "Closed · {0} not read yet", unread)
         }
         return buildList {
             if (doors > 0) {
-                add(Strings.t("$doors cửa mở", "$doors ${if (doors == 1) "door" else "doors"} open"))
+                // Số ít/nhiều tiếng Anh = hai mẫu trọn vẹn (cả hai là khoá bảng dịch).
+                add(
+                    if (doors == 1) Strings.f("{0} cửa mở", "{0} door open", doors)
+                    else Strings.f("{0} cửa mở", "{0} doors open", doors),
+                )
             }
             others.forEach { add("${it.label} · ${it.value}") }
-            if (unread > 0) add(Strings.t("$unread chưa đọc được", "$unread not read yet"))
+            if (unread > 0) add(Strings.f("{0} chưa đọc được", "{0} not read yet", unread))
         }.joinToString("   ")
     }
 

@@ -126,7 +126,7 @@
     <string name="kachi_color_note">Lưu theo hồ sơ đang dùng. "Theo ảnh nền" lấy màu trội của ảnh đầu tiên trong thư mục hình nền. Chữ luôn được giữ đọc được: màu nào quá sáng thì chữ trên nút tự đậm lại. Đổi màu thì màn hình dựng lại một lượt.</string>
     <string name="kachi_sec_lang">Ngôn ngữ</string>
     <string name="kachi_row_lang">Chữ trên màn</string>
-    <string name="kachi_lang_note">"Theo xe" = theo ngôn ngữ của máy: máy tiếng Việt thì tiếng Việt, còn lại tiếng Anh. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
+    <string name="kachi_lang_note">\"Theo xe\" = tiếng Việt khi xe đặt tiếng Việt, còn lại tiếng Anh. Tiếng Trung, Thái và Mã Lai chỉ dùng khi bạn tự chọn. Giọng nói chỉ hiểu tiếng Việt, dù chữ trên màn là tiếng nào. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>
 
     <!-- ── SettingsSections — Hồ sơ tài xế ── -->
     <string name="kachi_profile_export_full">Xuất đầy đủ (sao lưu)</string>
@@ -673,7 +673,9 @@
 
     <!-- ══ 2.74 · R3 — danh sách CÂU LỆNH NÓI ĐƯỢC ở cuối nhóm Giọng nói ═══════════════════════════════ -->
     <string name="kachi_voice_cmds_section">Câu lệnh nói được</string>
-    <string name="kachi_voice_cmds_sub">Danh sách này sinh từ chính ngữ pháp của Kachi, nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu, rồi nói đúng như chữ hiện ra.</string>
+    <string name="kachi_voice_cmds_sub">Danh sách này sinh từ chính ngữ pháp của Kachi, nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu bằng tiếng Việt — thứ tiếng duy nhất Kachi nghe hiểu — rồi nói đúng như chữ hiện ra.</string>
+    <!-- kachi-i18n-zh-th-ms R4: giọng nói chỉ nhận dạng tiếng Việt (một gói ASR zipformer-vi), ở MỌI ngôn ngữ giao diện. -->
+    <string name="kachi_voice_lang_only">Giọng nói hiện chỉ hiểu tiếng Việt — hãy nói đúng các câu tiếng Việt trong danh sách.</string>
     <!-- ⚠ `<plurals>` chứ không `<string>`: bản một-chuỗi in "1 phrases" ở tiếng Anh (cùng finding #18 của
          `kachi_layout_frames_n`). Tiếng Việt không chia số nên chỉ có `other`, nhưng khoá vẫn phải là plurals —
          nếu để `<string>` ở bản Việt thì bản Anh không có chỗ khai `one`. -->

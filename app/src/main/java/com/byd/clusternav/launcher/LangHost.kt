@@ -42,10 +42,29 @@ internal object LangHost {
      * @return `Context` đã ép locale; mọi `getString` sau đó (kể cả trong view dựng bằng mã) sẽ tra đúng tệp tài nguyên.
      */
     fun wrap(base: Context): Context {
-        val lang = WorkspacePrefs(base).langMode().resolve(systemLanguage(base))
+        val lang = chosen(base)
         Strings.current = lang   // ⇐ CHỖ GHI DUY NHẤT của `Strings.current` trong toàn dự án
+        return localized(base, lang)
+    }
+
+    /**
+     * Áp ngôn ngữ NGƯỜI DÙNG đã chọn lên tài nguyên của [base] — **không** ghi `Strings.current`.
+     *
+     * Cho các màn phụ của tiến trình chính (`DiagActivity` · `VietMapWidgetDiagActivity` · `ClusterBlackActivity` ·
+     * `ClusterNavActivity`) — spec `kachi-i18n-zh-th-ms.html` R9. Trước đây chúng chỉ áp `ThemeMode.wrap` ⇒ tài nguyên
+     * theo locale MÁY; khi đã có `values-zh-rCN/-th/-ms` thì một xe đặt tiếng Trung mà người dùng chọn English sẽ ra
+     * màn phụ tiếng Trung, cạnh chữ `Lang.t` tiếng Anh trên CÙNG màn đó.
+     *
+     * Không ghi `Strings.current`: đúng một nơi ghi là [wrap] (`LauncherLocaleContractTest`). Đọc `WorkspacePrefs` ⇒
+     * CHỈ dùng ở tiến trình chính; `:wake` dùng bản [localized] nhận `Lang` tường minh (không được gọi
+     * `WorkspacePrefs.langMode()` — nó tự ghi khi migrate, xem `VoiceWakeIsolationContractTest`).
+     */
+    fun localized(base: Context): Context = localized(base, chosen(base))
+
+    /** Như trên với ngôn ngữ ĐÃ GIẢI NGHĨA [lang] (vd `:wake` đọc từ ảnh chụp ngữ pháp). Một chỗ dựng cấu hình locale. */
+    fun localized(base: Context, lang: Lang): Context {
         val cfg = Configuration(base.resources.configuration)
-        cfg.setLocale(if (lang == Lang.EN) Locale.ENGLISH else VIETNAMESE)
+        cfg.setLocale(localeOf(lang))
         return base.createConfigurationContext(cfg)
     }
 
@@ -57,7 +76,49 @@ internal object LangHost {
      * mã** — nó do `SimpleDateFormat` sinh ra — nên cả bài canh "0 chuỗi viết cứng" lẫn phép so hai tệp tài nguyên
      * đều không thể thấy. Đưa về một chỗ để lần sau chỉ có một thứ phải sửa.
      */
-    fun locale(): Locale = if (Strings.current == Lang.EN) Locale.ENGLISH else VIETNAMESE
+    fun locale(): Locale = localeOf(Strings.current)
+
+    /**
+     * `Locale` của GIỌNG NÓI (giọng đọc Android · geocoder) = locale của `voiceLangOf(lang)`: EN → English, mọi tiếng
+     * khác → tiếng Việt (spec R6). Giao diện ZH/TH/MS mà giọng đọc theo [locale] thì máy đọc đi tìm giọng zh/th/ms cho
+     * một câu trả lời tiếng Việt. Gọi ở `AndroidTtsSpeaker.configure` + `VoiceGeocoder.onDevice`.
+     *
+     * [lang] = ngôn ngữ giao diện HOẶC ngôn ngữ giọng nói đã suy (phép `voice` là luỹ đẳng: VI/EN giữ nguyên). Mặc
+     * định [Strings.current] chỉ đúng ở tiến trình chính; `:wake` truyền tiếng từ ảnh chụp ngữ pháp (ở đó
+     * `Strings.current` không bao giờ được ghi — luôn VI).
+     */
+    fun voiceLocale(lang: Lang = Strings.current): Locale = localeOf(lang.voice)
+
+    /**
+     * Mẫu ngày "thứ + ngày/tháng" cho đồng hồ thanh trên + widget đồng hồ — MỘT chỗ khai (spec §4.5).
+     *
+     * VI/EN/TH/MS giữ `"EEEE, dd/MM"` (VI/EN y byte như trước). ZH dùng `"M月d日 EEEE"` (`10月3日 星期六`): thứ tự "thứ,
+     * ngày/tháng" đọc ngược với người Trung Quốc. `月`/`日` không phải chữ cái A–Z/a–z nên `SimpleDateFormat` coi là
+     * chữ thường, không cần nháy. Không mẫu nào có năm (lịch Phật giáo không thể lộ — xem [THAI]).
+     */
+    fun datePattern(): String = when (Strings.current) {
+        Lang.ZH -> "M月d日 EEEE"
+        Lang.VI, Lang.EN, Lang.TH, Lang.MS -> "EEEE, dd/MM"
+    }
+
+    /** `when` VÉT CẠN — thêm một [Lang] mà quên ở đây là lỗi biên dịch, không phải màn rơi về tiếng Việt im lặng. */
+    private fun localeOf(lang: Lang): Locale = when (lang) {
+        Lang.VI -> VIETNAMESE
+        Lang.EN -> Locale.ENGLISH
+        Lang.ZH -> Locale.SIMPLIFIED_CHINESE
+        Lang.TH -> THAI
+        Lang.MS -> MALAY
+    }
+
+    /** Lựa chọn của hồ sơ đang dùng, đã giải nghĩa theo locale máy (AUTO: `vi` → VI, còn lại → EN). */
+    private fun chosen(base: Context): Lang = resolved(WorkspacePrefs(base), base)
+
+    /**
+     * Tiếng giao diện ĐÃ GIẢI NGHĨA của hồ sơ đang dùng trong [prefs] — CÙNG phép với [wrap] (một chỗ, không bản sao).
+     * Cho `VoiceGrammarSnapshotStore.write` ghi vào ảnh chụp ngữ pháp để `:wake` biết người dùng đọc tiếng gì (spec
+     * `kachi-i18n-zh-th-ms.html` R6). ⚠ CHỈ tiến trình chính: `langMode()` tự ghi khi migrate.
+     */
+    fun resolved(prefs: WorkspacePrefs, ctx: Context = prefs.appCtx): Lang = prefs.langMode().resolve(systemLanguage(ctx))
 
     /**
      * Lựa chọn ngôn ngữ có ĐỔI giữa hai lượt render không (⇒ chỗ gọi dựng lại màn).
@@ -81,4 +142,14 @@ internal object LangHost {
 
     /** `Locale.ENGLISH` có sẵn, tiếng Việt thì không — dựng một lần thay vì mỗi lần mở màn. */
     private val VIETNAMESE: Locale = Locale("vi")
+
+    /**
+     * Tiếng Thái KHÔNG kèm quốc gia — khớp `values-th`. [ĐO] JDK 17 `Calendar.createCalendar` dựng `BuddhistCalendar`
+     * cho `th_TH` (năm 2569), còn libcore Android 10/12 luôn Gregorian ⇒ `Locale("th", "TH")` làm test off-car và xe
+     * lệch nhau ngay khi một mẫu có năm. `LangHostTest` khoá điều này.
+     */
+    private val THAI: Locale = Locale("th")
+
+    /** Tiếng Mã Lai — khớp `values-ms`. */
+    private val MALAY: Locale = Locale("ms")
 }

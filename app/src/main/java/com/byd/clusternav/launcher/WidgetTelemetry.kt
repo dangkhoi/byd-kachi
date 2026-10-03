@@ -333,6 +333,7 @@ internal object WidgetTelemetry {
         text = ctx.getString(R.string.kachi_badge_unverified); setTextColor(c(KachiTheme.AMBER))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f); gravity = Gravity.CENTER
         setPadding(dpi(ctx, Sp.S), dpi(ctx, Sp.XS), dpi(ctx, Sp.S), dpi(ctx, Sp.XS)); maxLines = 1
+        ellipsize = TextUtils.TruncateAt.END   // Mã Lai dài hơn ~20–40%: cắt thì phải có "…" (spec i18n-zh-th-ms R8)
         background = GradientDrawable().apply {
             cornerRadius = dpi(ctx, Sp.RADIUS_S).toFloat(); setColor(c(KachiTheme.AMBER_SOFT))
         }

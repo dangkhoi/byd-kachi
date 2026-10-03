@@ -1,5 +1,8 @@
 package com.byd.clusternav.comfort
 
+import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.Strings
+
 /**
  * LỌC BỤI MỊN (PM2.5) TỰ ĐỘNG · pure model (không Android, unit-test off-car được).
  *
@@ -66,5 +69,18 @@ object Pm25Filter {
         HEAVY -> "Heavy"
         SERIOUS -> "Serious"
         else -> "—"
+    }
+
+    /**
+     * Nhãn mức bụi để HIỆN, theo ngôn ngữ giao diện [lang] (mặc định [Strings.current]) — cặp
+     * ([levelLabelVi], [levelLabelEn]) qua [Strings.pick], nên ZH/TH/MS tra bảng dịch như mọi nhãn khác.
+     *
+     * Spec `kachi-i18n-zh-th-ms.html` R3: trước đây đồng hồ PM2.5 (`Pm25GaugeView`) vẽ thẳng [levelLabelVi] ở MỌI
+     * ngôn ngữ (cả English). Hai hàm VI/EN giữ nguyên cho nhật ký và test cũ; tầng vẽ đọc hàm này.
+     * Mức không rõ ⇒ `"—"` ở mọi tiếng (dấu gạch không dịch).
+     */
+    fun levelLabel(level: Int, lang: Lang = Strings.current): String {
+        val vi = levelLabelVi(level)
+        return if (vi == "—") vi else Strings.pick(vi, levelLabelEn(level), lang)
     }
 }

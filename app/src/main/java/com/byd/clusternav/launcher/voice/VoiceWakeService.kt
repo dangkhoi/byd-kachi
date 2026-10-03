@@ -357,7 +357,7 @@ class VoiceWakeService : Service() {
     /** Cầu chì false-accept: [P2] ghi cờ tệp RIÊNG (KHÔNG đụng `clusternav_prefs` chung) + báo + dừng service. */
     private fun autoDisable() {
         runCatching { Prefs.setWakeServiceDisabled(this, true) }
-        runCatching { Toast.makeText(this, getString(R.string.kachi_wake_auto_off), Toast.LENGTH_LONG).show() }
+        runCatching { Toast.makeText(this, VoiceWakeHold.uiRes(this).getString(R.string.kachi_wake_auto_off), Toast.LENGTH_LONG).show() }
         stopListening()   // VK2 — cầu chì chỉ tắt "Hey Kachi"; còn phím gán Kachi nghe ⇒ ở lại HOLD (giữ mô hình, đổi chữ thông báo)
         if (mode() == VoiceWakeMode.HOLD) { startForegroundOnce(); Log.i(TAG, "cầu chì nổ — ở lại HOLD cho phím vô-lăng") } else stopSelf()
     }

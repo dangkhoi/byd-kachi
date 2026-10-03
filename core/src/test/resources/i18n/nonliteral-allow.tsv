@@ -1,0 +1,25 @@
+# Lời gọi dịch có đối số KHÔNG phải chữ cố định — I18nSourceGuardTest luật (ii).
+# Cột: <module>:<đường sau com/byd/clusternav/>:<khai báo gần nhất><TAB>lý do (dữ liệu được duyệt ở đâu).
+# Mọi dòng phải còn lời gọi khớp (dòng thừa = đỏ). Dữ liệu của chúng phải nằm trong I18nPairs.runtime().
+core:launcher/Lang.kt:displayLabel	Localized.displayLabel — mọi registry; duyệt ở I18nPairs.runtime (localizedRows + picker/nhóm phím)
+core:launcher/Lang.kt:labelIn	Localized.labelIn — cùng dữ liệu với displayLabel
+core:launcher/TelemetryRegistry.kt:shortLabelIn	nhãn ngắn datum (short/shortEn/labelEn) — runtime "telemetry:<id>.short"
+core:launcher/ControlDef.kt:shortLabelIn	nhãn ngắn nút (short/shortEn/labelEn) — runtime "control:<id>.short"
+core:launcher/ControlDef.kt:argsIn	lựa chọn của nút, cặp song song args[i]/argsEn[i] — runtime "control:<id>.args[i]"
+core:launcher/TyreBoard.kt:displayShortLabel	viết tắt góc bánh TyreCorner — runtime "TyreCorner.<X>.short"
+core:launcher/CapabilityGroupModel.kt:displaySub	dòng phụ nhóm (sub/subEn) — runtime "group:<id>.sub"
+core:launcher/SettingsCatalogGroups.kt:displaySub	dòng phụ nhóm Cài đặt (sub/subEn) — runtime "settings-group:<id>.sub"
+core:launcher/CapabilityTest.kt:displayLabel	mục kiểm tra từng nút (nhãn registry) — runtime "captest:<id>"
+core:launcher/CapabilityTest.kt:displayDesc	diễn giải CapabilityDescriptions — runtime "captest:<id>.desc"
+core:launcher/LauncherCatalog.kt:displayLabel	CapabilityPick (registry + chip tổng hợp TopStrip) — runtime "pick:<id>"
+core:launcher/LauncherRequirements.kt:displayLoses	câu "mất gì" — runtime "req:<id>.loses"
+core:launcher/LauncherRequirements.kt:displayUserAction	việc cần làm — runtime "req:<id>.action"
+core:launcher/TelemetryEnums.kt:text	bảng mã → chữ (POWER_LEVEL, HEADLIGHT_MODE) — runtime "enum-table:<id>#<mã>"
+core:launcher/KeyCtlTarget.kt:s	hàm bọc s(vi, en) — các lời gọi s("…","…") được bộ quét đọc như chữ cố định
+core:launcher/ProfileNames.kt:display	hằng HomeUiState.DEFAULT_PROFILE ("Mặc định") — runtime "profile:default"
+core:launcher/voice/VoicePlaces.kt:displayLabel	hằng HOME/WORK ("Nhà"/"Công ty") — runtime "place:HOME"/"place:WORK"
+core:launcher/voice/VoiceRisk.kt:why	Rule.whyVi/whyEn — runtime "risk:<controlId>"
+core:launcher/voice/VoiceFeatureGone.kt:name	Gone.label/labelEn (tên tính năng ghép vào câu) — runtime "gone:<cụm>"
+core:comfort/Pm25Filter.kt:vi	levelLabelVi/En — runtime "pm25:<mức>"
+app:Lang.kt:t	hàm bọc Lang.t(vi, en) của :app → CoreStrings.t(…, effective().core); các lời gọi Lang.t("…","…") được bộ quét đọc như chữ cố định
+app:Lang.kt:f	hàm bọc Lang.f(vi, en, args) của :app → CoreStrings.fIn(effective().core, …); các lời gọi Lang.f("…","…", x) được bộ quét đọc như mẫu cố định

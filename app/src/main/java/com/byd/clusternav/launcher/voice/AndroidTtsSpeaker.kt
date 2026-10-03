@@ -7,7 +7,10 @@ import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.LangHost
+import com.byd.clusternav.launcher.Strings
+import com.byd.clusternav.launcher.voiceLangOf
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -18,12 +21,17 @@ import java.util.concurrent.atomic.AtomicReference
  * Spec `docs/specs/kachi-voice-feedback.html` **R2a**. Rẻ nhất trong ba đường: 0 byte đĩa, 0 byte RAM của Kachi,
  * và trên đầu xe có sẵn gói `vi-VN` thì nó đọc ngay từ bản cài đầu tiên.
  *
- * ## Hỏi giọng của **ngôn ngữ ĐANG dùng**, không viết cứng `vi-VN`
- * Ngôn ngữ đi qua [LangHost.locale] — cùng một chỗ map ngôn ngữ→`Locale` mà mọi chỗ định dạng của launcher dùng
- * (`LauncherLocaleContractTest` canh điều đó). Hai lý do, lý do thứ hai mới là lý do thật:
- *  1. một chiếc xe đặt English đang nhận câu trả lời **tiếng Anh** (`VoiceReply` đi qua `Strings.t`) — đọc chuỗi
+ * ## Hỏi giọng của **ngôn ngữ GIỌNG NÓI**, không viết cứng `vi-VN`
+ * Ngôn ngữ đi qua [LangHost.voiceLocale] (spec `kachi-i18n-zh-th-ms.html` R6: giao diện EN ⇒ English, mọi tiếng khác
+ * ⇒ tiếng Việt) — cùng một chỗ map ngôn ngữ→`Locale` mà mọi chỗ định dạng của launcher dùng
+ * (`LauncherLocaleContractTest` canh điều đó). Ba lý do:
+ *  1. một chiếc xe đặt English đang nhận câu trả lời **tiếng Anh** (`VoiceReply` theo tiếng giọng nói) — đọc chuỗi
  *     ấy bằng giọng Việt cho ra một thứ không ai nghe ra là tiếng gì;
- *  2. viết cứng `Locale("vi","VN")` ở đây là dựng **chỗ map thứ hai**, và chỗ thứ hai bao giờ cũng là chỗ lệch.
+ *  2. giao diện zh/th/ms nhận câu trả lời **tiếng Việt** — hỏi giọng theo tiếng giao diện ([LangHost.locale]) là đi
+ *     tìm giọng Trung/Thái cho một câu tiếng Việt;
+ *  3. viết cứng `Locale("vi","VN")` ở đây là dựng **chỗ map thứ hai**, và chỗ thứ hai bao giờ cũng là chỗ lệch.
+ * [voiceLang] là lambda của phiên (`VoiceSession.voiceLang`): ở `:wake` nó đọc ảnh chụp ngữ pháp, không phải
+ * `Strings.current` (luôn VI ở đó).
  *
  * Đổi ngôn ngữ giữa chuyến **không** cần đường áp lại: `LangHost.changed` làm màn chính `recreate()` ⇒
  * `onDestroy` gọi `VoiceSession.stop()` ⇒ [shutdown], và phiên mới dựng một máy đọc mới đọc lại locale.
@@ -43,7 +51,11 @@ import java.util.concurrent.atomic.AtomicReference
  * **nhỏ xuống** chứ không dừng: một câu xác nhận 2 giây mà làm đứt bài nhạc đang nghe là một cái giá không ai
  * chịu trả hai lần — họ sẽ tắt luôn tính năng.
  */
-class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
+class AndroidTtsSpeaker(
+    ctx: Context,
+    /** Ngôn ngữ GIỌNG NÓI để chọn giọng (xem KDoc lớp); mặc định suy từ `Strings.current` (tiến trình chính). */
+    private val voiceLang: () -> Lang = { voiceLangOf(Strings.current) },
+) : VoiceSpeaker {
 
     override val kind: VoiceSpeakerKind = VoiceSpeakerKind.ANDROID_TTS
 
@@ -173,7 +185,7 @@ class AndroidTtsSpeaker(ctx: Context) : VoiceSpeaker {
     }
 
     private fun configure(engine: TextToSpeech) {
-        val want = LangHost.locale()
+        val want = LangHost.voiceLocale(runCatching { voiceLang() }.getOrDefault(Lang.VI))
         val st = runCatching { engine.isLanguageAvailable(want) }.getOrNull()
         langStatus.set(st)
         if (st == null || st < VoiceSpeakerSelector.LANG_AVAILABLE) {

@@ -104,10 +104,10 @@ class UpdateCheckerTest {
     @Test fun `chon dung dong dang doc trong output cua pm`() {
         assertEquals(
             "Failure [INSTALL_FAILED_VERSION_DOWNGRADE]",
-            UpdateChecker.pmReason("Performing Streamed Install\nFailure [INSTALL_FAILED_VERSION_DOWNGRADE]\n", vi = true),
+            UpdateChecker.pmReason("Performing Streamed Install\nFailure [INSTALL_FAILED_VERSION_DOWNGRADE]\n"),
         )
-        assertEquals("Success-ish tail", UpdateChecker.pmReason("first\n  Success-ish tail  ", vi = true), "không có dòng lỗi ⇒ dòng cuối còn chữ")
-        assertEquals("pm không in gì", UpdateChecker.pmReason("   \n\n", vi = true), "pm câm cũng phải nói ra, không bịa nguyên nhân")
+        assertEquals("Success-ish tail", UpdateChecker.pmReason("first\n  Success-ish tail  "), "không có dòng lỗi ⇒ dòng cuối còn chữ")
+        assertEquals("pm không in gì", UpdateChecker.pmReason("   \n\n"), "pm câm cũng phải nói ra, không bịa nguyên nhân")
     }
 
     // ── [SOÁT OCR 2026-09-16 · P1] OTA: "có bản mới" KHÔNG kéo theo "có link tải" ──────────────────
@@ -133,6 +133,51 @@ class UpdateCheckerTest {
         assertFalse("r.downloadUrl!!" in src, "một `!!` ở đây là NPE trên main thread khi kênh thiếu link tải")
         assertFalse("r.latest!!" in src, "cùng lý do: `latest` cũng chỉ là `String?`")
         assertTrue("url.isNullOrBlank()" in src, "phải có nhánh kiểm link rỗng/null trước khi mở hộp xác nhận")
+    }
+
+    /**
+     * [kachi-i18n-zh-th-ms T1b] `installMessage` chuyển từ mẫu `$` + cờ `vi: Boolean` sang `Lang.f` với `{n}` — VI/EN
+     * phải ra Y TỪNG BYTE như câu cũ. Câu mong đợi viết tay theo đúng phép ghép của bản cũ (`"…(${reason.name}) —
+     * ${channelRemedy(…, vi)}. " + "APK đã tải ở: $apkPath"`), không suy từ mã mới.
+     */
+    @Test fun `cau cai hong VI va EN y byte nhu ban mau cu`() {
+        val p = "/data/x/update.apk"
+        val noCh = LocalInstallOutcome.NoShellChannel(LocalShellFailure.PORT_CLOSED)
+        val wait = LocalInstallOutcome.NoShellChannel(LocalShellFailure.AWAITING_APPROVAL)
+        assertEquals(
+            "không có kênh shell tới xe (PORT_CLOSED) — xem Cài đặt › Hệ thống & quyền. APK đã tải ở: $p",
+            UpdateChecker.installMessage(noCh, p),
+        )
+        assertEquals(
+            "không có kênh shell tới xe (AWAITING_APPROVAL) — bấm \"Cho phép/Allow\" (tích \"luôn cho phép\") trên hộp " +
+                "thoại gỡ lỗi USB rồi cài lại. APK đã tải ở: $p",
+            UpdateChecker.installMessage(wait, p),
+        )
+        assertEquals("pm install từ chối: pm không in gì. APK đã tải ở: $p", UpdateChecker.installMessage(LocalInstallOutcome.PmRejected(""), p))
+        CoreStrings.current = CoreLang.EN
+        assertEquals(
+            "no shell channel to the head unit (PORT_CLOSED) — see Settings › System & permissions. APK saved at: $p",
+            UpdateChecker.installMessage(noCh, p),
+        )
+        assertEquals(
+            "pm install rejected: Failure [X]. APK saved at: $p",
+            UpdateChecker.installMessage(LocalInstallOutcome.PmRejected("Failure [X]"), p),
+        )
+        assertEquals("pm printed nothing", UpdateChecker.pmReason(" \n"))
+    }
+
+    /**
+     * ZH/TH/MS: bảng dịch chưa có dòng ⇒ câu TIẾNG ANH (R3), không bao giờ tiếng Việt — kể cả mảnh lồng
+     * (`channelRemedy`) đi qua `Lang.t` riêng. Bảng trong repo có thể đã có dòng khi T4 ráp bản dịch, nên bài này chỉ
+     * khoá điều luôn đúng: KHÔNG còn chữ Việt, và mã lý do + đường dẫn vẫn nằm trong câu.
+     */
+    @Test fun `tieng moi khong bao gio ra tieng Viet`() {
+        for (lang in listOf(CoreLang.ZH, CoreLang.TH, CoreLang.MS)) {
+            CoreStrings.current = lang
+            val msg = UpdateChecker.installMessage(LocalInstallOutcome.NoShellChannel(LocalShellFailure.IO_ERROR), "/p.apk")
+            assertFalse(msg.contains("kênh") || msg.contains("Cài đặt"), "$lang: lọt tiếng Việt — $msg")
+            assertTrue(msg.contains("IO_ERROR") && msg.contains("/p.apk"), "$lang: mất đối số — $msg")
+        }
     }
 
     /** Bản Anh phải là câu ANH thật, không phải tiếng Việt lọt lưới (cả hai câu mới của U11). */

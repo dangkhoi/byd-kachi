@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.I18nScripts
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -18,8 +19,9 @@ import com.byd.clusternav.launcher.LauncherI18nAllowlists.uiLiteralAllowed
  * Spec `docs/specs/kachi-i18n-and-light-theme.html` §3.1 (R1 · R3). Năm tính chất, năm loại bằng chứng khác nhau:
  *
  *  1. **Quét MÃ NGUỒN** — không còn chuỗi tiếng Việt viết cứng trong tầng vẽ launcher (trừ danh sách loại trừ có lý do).
- *  2. **So HAI TỆP TÀI NGUYÊN** — cùng tập khoá, hai chiều.
- *  3. **Quét bản dịch** — `values-en/` không được còn dấu tiếng Việt.
+ *  2. **So TỆP TÀI NGUYÊN** — cùng tập khoá, hai chiều · cùng tham số (2026-10-03: chạy cho cả 4 thư mục dịch ở
+ *     [LauncherI18nLocalesContractTest]; ở đây còn khoá mồ côi).
+ *  3. **Quét bản dịch** — không còn dấu tiếng Việt ngoài `values/` (cũng ở [LauncherI18nLocalesContractTest]).
  *  4. **Đếm dây nối** — đúng MỘT chỗ ghi `Strings.current`; đúng MỘT chỗ lưu lựa chọn ngôn ngữ.
  *  5. **Chốt an toàn dữ liệu** — `DEFAULT_PROFILE` không đi qua lớp dịch.
  *
@@ -62,8 +64,10 @@ class LauncherI18nContractTest {
     // (xem KDoc `KachiMem.trim`: *"vào log, để đọc `logcat -s KachiMem:D` biết đường nào ăn"*). Nó ở đây chứ không
     // ở [allowed] vì đây là một LUẬT về cấu trúc: mọi call site mới của `trim` đều là nhãn nhật ký, và bốn mục
     // [allowed] mang cùng một lý do thì lý do ấy phải thành mã (đúng doctrine ghi ở KDoc dưới).
+    // `Lang.f(` (kachi-i18n-zh-th-ms T1b) = cùng cơ chế song ngữ với `Lang.t(` cho câu có biến (`{0}`…) — là CẶP chữ
+    // tại chỗ gọi, được `I18nSourceGuardTest` (:core) quét làm khoá bảng dịch; bắt nó ở đây là bắt nhầm.
     private val DIAGNOSTIC_CALL =
-        Regex("""(\bLog\.[a-z]+\(|\blog[IDWE]\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.t\(|\bKachiMem\.trim\()""")
+        Regex("""(\bLog\.[a-z]+\(|\blog[IDWE]\(|\bthrow \w+\(|\berror\(|\brequire\(|\bcheck\(|\bLang\.[tf]\(|\bKachiMem\.trim\()""")
 
     /** Chỉ số dòng nằm TRONG một lời gọi chẩn đoán (kể cả phần xuống dòng của nó). */
     private fun diagnosticLines(src: String): Set<Int> {
@@ -118,41 +122,12 @@ class LauncherI18nContractTest {
         assertTrue(launcherSources().size >= 40, "bộ quét chỉ thấy ${launcherSources().size} tệp — nghi sai gốc quét")
     }
 
-    // ══ (2) HAI TỆP TÀI NGUYÊN — CÙNG tập khoá, so hai chiều ═══════════════════════════════════════════════
-
-    @Test
-    fun `hai tep tai nguyen co cung tap khoa`() {
-        // Dùng [declaredKeys] (gồm `<plurals>`) chứ không [stringKeys]: `kachi_drawer_place_n` là plurals, và một
-        // phép so chỉ biết `<string>` sẽ bỏ nó ra khỏi phạm vi — tức khoá duy nhất có hai nhánh ngôn ngữ lại là khoá
-        // KHÔNG được canh.
-        val vi = declaredKeys(VI_XML)
-        val en = declaredKeys(EN_XML)
-        assertTrue(vi.size >= 100, "chỉ đọc được ${vi.size} khoá — nghi chính bộ đọc XML hỏng")
-        assertEquals(
-            emptyList<String>(), (vi - en).sorted(),
-            "khoá CÓ ở values/ mà THIẾU ở values-en/ ⇒ người dùng English thấy đúng chỗ đó bằng tiếng Việt " +
-                "(Android tự lùi về tệp mặc định, im lặng)",
-        )
-        assertEquals(
-            emptyList<String>(), (en - vi).sorted(),
-            "khoá CÓ ở values-en/ mà THIẾU ở values/ ⇒ `R.string` đó KHÔNG biên dịch được ở cấu hình mặc định",
-        )
-    }
-
-    /** Tham số phải khớp: `%1$s` ở bản Việt mà bản Anh không có (hoặc ngược lại) là một lỗi ĐỊNH DẠNG lúc chạy. */
-    @Test
-    fun `tham so dinh dang khop giua hai ban dich`() {
-        val vi = stringMap(VI_XML)
-        val en = stringMap(EN_XML)
-        // Chỉ so khoá CÓ Ở CẢ HAI: khoá thiếu một bên đã là việc của bài trên, và nếu ném ở đây thì thông điệp đỏ
-        // sẽ là `NoSuchElementException` — đỏ đúng nhưng nói sai nguyên nhân.
-        val bad = vi.keys.filter { it in en && args(vi.getValue(it)) != args(en.getValue(it)) }
-        assertEquals(
-            emptyList<String>(), bad.sorted(),
-            "số/loại tham số lệch giữa hai bản dịch ⇒ `getString(...)` ném `IllegalFormatException` LÚC CHẠY, chỉ ở " +
-                "một thứ tiếng. Đây là loại lỗi chỉ người dùng ngôn ngữ kia gặp",
-        )
-    }
+    // ══ (2) TÀI NGUYÊN — tập khoá · tham số · dấu tiếng Việt: nay ở `LauncherI18nLocalesContractTest` ═══════════
+    //
+    // [kachi-i18n-zh-th-ms T1b] Ba bài so CỨNG `VI_XML`↔`EN_XML` (cùng tập khoá · tham số định dạng · values-en không
+    // dấu) chuyển sang tệp kia và chạy cho TỪNG thư mục values-en/-zh-rCN/-th/-ms — phép so tham số nay thấy cả `%s`
+    // trần. Không nới gì: values-en vẫn qua đúng ba phép đó, chỉ là thêm ba thư mục nữa. Ở lại đây: khoá mồ côi (một
+    // tính chất của values/ với MÃ) và tiếng Anh Anh (một tính chất riêng của values-en).
 
     /**
      * Không có khoá MỒ CÔI theo cả hai chiều: khoá không ai dùng (chữ đã bỏ mà bản dịch còn) và mã gọi một khoá không
@@ -177,17 +152,7 @@ class LauncherI18nContractTest {
         )
     }
 
-    // ══ (3) BẢN DỊCH không được còn tiếng Việt ═════════════════════════════════════════════════════════════
-
-    @Test
-    fun `values-en khong con dau tieng Viet`() {
-        val offenders = stringMap(EN_XML).filterValues { VN.containsMatchIn(it) }.keys.sorted()
-        assertEquals(
-            emptyList<String>(), offenders,
-            "câu tiếng Việt còn trong values-en/ ⇒ sai IM LẶNG: chỉ người dùng English gặp, và người soát bản Việt " +
-                "không có cách nào thấy",
-        )
-    }
+    // ══ (3) BẢN DỊCH — "không còn dấu tiếng Việt" chạy cho cả 4 thư mục ở `LauncherI18nLocalesContractTest` ══════
 
     /** Tiếng Anh ANH (owner đã chốt; `:core` đã dịch 123 datum theo lối đó — hai lối viết trên một màn đọc như lỗi). */
     @Test
@@ -346,8 +311,8 @@ class LauncherI18nContractTest {
     // ── Hạ tầng ──────────────────────────────────────────────────────────────────────────────────
 
     private companion object {
-        /** Dải dấu tiếng Việt. ⚠ KHÔNG dùng để ĐẾM (chữ không dấu như "khung" lọt) — chỉ để CHẶN. */
-        val VN = Regex("[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]", RegexOption.IGNORE_CASE)
+        /** Dải dấu tiếng Việt — một bản ở testFixtures, dùng chung với bài canh 5 thư mục tài nguyên. */
+        val VN = I18nScripts.VIETNAMESE_MARK
 
         /**
          * Bề mặt chữ: 9 dạng của Android + 6 hàm dựng view **của launcher** (xem KDoc
@@ -422,8 +387,4 @@ class LauncherI18nContractTest {
         Regex("""<string name="([^"]+)">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
             .findAll(SourceRoots.text(rel))
             .associate { it.groupValues[1] to it.groupValues[2] }
-
-    /** Tham số định dạng theo THỨ TỰ (`%1$s`, `%2$d`) — dùng để so hai bản dịch. */
-    private fun args(value: String): Set<String> =
-        Regex("""%(\d+)\$([sdf])""").findAll(value).map { "${it.groupValues[1]}${it.groupValues[2]}" }.toSet()
 }

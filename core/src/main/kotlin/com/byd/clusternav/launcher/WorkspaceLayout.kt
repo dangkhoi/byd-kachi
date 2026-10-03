@@ -22,13 +22,19 @@ enum class LayoutPreset(val slotCount: Int) {
      * ở mọi chỗ đang dựng enum này.
      */
     val label: String
-        get() = when (this) {
-            ONE -> Strings.t("1 ô", "1 slot")
-            TWO_COL -> Strings.t("2 cột", "2 columns")
-            TWO_ROW -> Strings.t("2 hàng", "2 rows")
-            THREE -> Strings.t("3 ô", "3 slots")
-            QUAD -> Strings.t("4 ô", "4 slots")
-        }
+        get() = labelIn(Strings.current)
+
+    /**
+     * [label] theo một ngôn ngữ CỤ THỂ — câu NÓI *"Bố cục 2 cột"* (`VoiceReply.preview`) truyền tiếng GIỌNG NÓI (spec
+     * `kachi-i18n-zh-th-ms.html` R6), còn chip ở Cài đặt đọc [label] (tiếng giao diện). Một bảng chữ cho cả hai.
+     */
+    fun labelIn(lang: Lang): String = when (this) {
+        ONE -> Strings.t("1 ô", "1 slot", lang)
+        TWO_COL -> Strings.t("2 cột", "2 columns", lang)
+        TWO_ROW -> Strings.t("2 hàng", "2 rows", lang)
+        THREE -> Strings.t("3 ô", "3 slots", lang)
+        QUAD -> Strings.t("4 ô", "4 slots", lang)
+    }
 }
 
 /** Khung 1 ô theo px thiết bị: [left,top,right,bottom]. index 0..3 (khớp thứ tự slot). */

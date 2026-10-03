@@ -58,14 +58,35 @@ class LauncherLocaleContractTest {
     @Test
     fun `LangHost ap ca hai kenh trong cung mot ham`() {
         val body = SourceRoots.body(host, "fun wrap(base: Context): Context")
-        assertTrue(body.contains("Strings.current ="), "phải ghi `Strings.current` (kênh nhãn dữ liệu của :core)")
-        assertTrue(body.contains("setLocale("), "phải đặt locale của Context (kênh tài nguyên `R.string`)")
-        assertTrue(body.contains("createConfigurationContext"), "và trả về Context đã ép cấu hình")
+        assertTrue(body.contains("Strings.current = lang"), "phải ghi `Strings.current` (kênh nhãn dữ liệu của :core)")
+        // [kachi-i18n-zh-th-ms T1b] Phần đặt locale tách thành `localized(base, lang)` để màn phụ dùng lại (R9) — nên
+        // bài canh đòi `wrap` đưa ĐÚNG biến `lang` vừa ghi vào hàm đó: hai kênh vẫn đọc một giá trị trong một lời gọi.
+        assertTrue(body.contains("localized(base, lang)"), "phải đặt locale của Context bằng CHÍNH ngôn ngữ vừa ghi")
+        val apply = SourceRoots.body(host, "fun localized(base: Context, lang: Lang): Context")
+        assertTrue(apply.contains("setLocale("), "phải đặt locale của Context (kênh tài nguyên `R.string`)")
+        assertTrue(apply.contains("createConfigurationContext"), "và trả về Context đã ép cấu hình")
+        assertFalse(apply.contains("Strings.current"), "đường đặt locale KHÔNG được ghi `Strings.current` (màn phụ dùng nó)")
         assertFalse(
             Regex("""AUTO\s*(->|==)[^\n]*return base""").containsMatchIn(body),
             "ca \"Theo xe\" KHÔNG được trả `base` trần: `values-en/` chỉ khớp locale `en*`, nên trên xe locale khác " +
                 "(ja/th/zh) nhãn :core sẽ tiếng Anh mà chữ trên màn vẫn tiếng Việt",
         )
+    }
+
+    /**
+     * R9 (spec `kachi-i18n-zh-th-ms.html`) — MỌI Activity của `:app` phải áp ngôn ngữ người dùng ở `attachBaseContext`
+     * (`LangHost.wrap` cho màn chính, `LangHost.localized` cho màn phụ). Trước đây bốn màn phụ chỉ áp
+     * `ThemeMode.wrap` ⇒ tài nguyên theo locale MÁY; có `values-zh-rCN/-th/-ms` rồi thì xe đặt tiếng Trung + người dùng
+     * chọn English ra màn phụ tiếng Trung, cạnh chữ `Lang.t` tiếng Anh trên CÙNG màn.
+     */
+    @Test
+    fun `moi Activity ap ngon ngu nguoi dung o attachBaseContext`() {
+        val sites = allAppSources().filter { "override fun attachBaseContext(" in code(it) }
+        assertTrue(sites.size >= 5, "chỉ thấy ${sites.size} chỗ attachBaseContext — bộ quét hỏng?")
+        val bad = sites.filterNot { f ->
+            Regex("""LangHost\.(wrap|localized)\(""").containsMatchIn(SourceRoots.body(code(f), "override fun attachBaseContext("))
+        }.map { it.fileName.toString() }
+        assertEquals(emptyList<String>(), bad, "attachBaseContext không qua LangHost ⇒ màn đó theo locale MÁY")
     }
 
     /**
@@ -135,12 +156,35 @@ class LauncherLocaleContractTest {
             "khoá ngôn ngữ ('$key') phải thuộc nhóm Hiển thị của màn Cài đặt (R2: không cấu hình nào nằm lẻ tẻ)",
         )
         // Định dạng trên đĩa dùng CHUNG: lệch một ký tự thì một trong hai màn im lặng rơi về mặc định.
-        val choices = Regex("""(\w+)\("(auto|vi|en)"\)""").findAll(src).map { it.groupValues[2] }.toSet()
+        // [kachi-i18n-zh-th-ms T1b] Đọc THÂN `enum class Choice` với mọi mã chữ thường — bản cũ khớp cứng
+        // `(auto|vi|en)` nên một mã mới thiếu ở `Choice` (đúng ca zh/th/ms) không bao giờ hiện ra ở vế phải.
+        val choiceBody = SourceRoots.body(src, "enum class Choice(val code: String) {")
+        val choices = Regex("""(\w+)\("([a-z]+)"\)""").findAll(choiceBody).associate { it.groupValues[1] to it.groupValues[2] }
         assertEquals(
-            LangMode.entries.map { it.code }.toSet(), choices,
-            "ba mã lưu của LangMode (:core) phải khớp TỪNG KÝ TỰ với Lang.Choice của ClusterNav — chúng đọc/ghi " +
+            LangMode.entries.associate { it.name to it.code }, choices,
+            "mã lưu (và tên) của LangMode (:core) phải khớp TỪNG KÝ TỰ với Lang.Choice của ClusterNav — chúng đọc/ghi " +
                 "CÙNG một giá trị trên đĩa, và `of()` lùi về AUTO chứ không ném nên lệch là sai IM LẶNG",
         )
+        // Và cùng điều đó LÚC CHẠY (không phụ thuộc định dạng mã nguồn).
+        assertEquals(
+            LangMode.entries.map { it.name to it.code }, com.byd.clusternav.Lang.Choice.entries.map { it.name to it.code },
+            "Lang.Choice phải có đúng các mục của LangMode, cùng tên + mã + thứ tự",
+        )
+    }
+
+    /**
+     * [ĐO] P0 2026-10-03 — `broadcastLang` từng viết `Choice.entries.first { … }`: `:core` thêm ZH/TH/MS mà `Choice`
+     * chưa có thì `NoSuchElementException` ở MỌI lần chọn tiếng và MỌI lần đổi hồ sơ. Bài này khoá hai điều: ánh xạ
+     * KHỚP ĐÚNG mã cho mọi [LangMode] (không ca nào phải đi đường lùi), và đường lùi là TỔNG (mã lạ ⇒ AUTO, không ném).
+     */
+    @Test
+    fun `anh xa LangMode sang Lang Choice la tong va khop ma`() {
+        LangMode.entries.forEach { m -> assertEquals(m.code, choiceFor(m).code, "$m: ánh xạ rơi vào đường lùi") }
+        assertEquals(com.byd.clusternav.Lang.Choice.AUTO, com.byd.clusternav.Lang.Choice.of("xx"), "mã lạ ⇒ AUTO")
+        assertEquals(com.byd.clusternav.Lang.Choice.AUTO, com.byd.clusternav.Lang.Choice.of(null), "null ⇒ AUTO")
+        val prefsLang = code(SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspacePrefsLang.kt"))
+        assertFalse(Regex("""Choice\.entries\.first\s*\{""").containsMatchIn(prefsLang), "`first {}` ném khi thiếu mã")
+        assertTrue(SourceRoots.body(prefsLang, "internal fun WorkspacePrefs.broadcastLang(").contains("choiceFor(mode)"))
     }
 
     // ══ (2) LOCALE ĐỊNH DẠNG — một chỗ map ngôn ngữ → Locale ═══════════════════════════════════════════════
@@ -153,9 +197,12 @@ class LauncherLocaleContractTest {
      */
     @Test
     fun `chi LangHost duoc dung Locale tieng Viet`() {
+        // [kachi-i18n-zh-th-ms T1b] Mở rộng cho ba tiếng mới: một chỗ tự dựng `Locale("th", "TH")` là lịch Phật giáo
+        // trên JVM test, còn `Locale.CHINESE` (không vùng) không khớp `values-zh-rCN` như `SIMPLIFIED_CHINESE`.
         val offenders = launcherSources().filter { f ->
             f.fileName.toString() != "LangHost.kt" &&
-                Regex("""Locale\(\s*"vi"|forLanguageTag\(\s*"vi"""").containsMatchIn(code(f))
+                Regex("""Locale\(\s*"(vi|zh|th|ms)"|forLanguageTag\(\s*"(vi|zh|th|ms)|Locale\.(SIMPLIFIED_CHINESE|CHINESE|CHINA|PRC)\b""")
+                    .containsMatchIn(code(f))
         }
         assertEquals(
             emptyList<String>(), offenders.map { it.fileName.toString() },
@@ -188,6 +235,14 @@ class LauncherLocaleContractTest {
             "dùng `Locale.getDefault()` = định dạng theo locale MÁY, không theo ngôn ngữ người dùng chọn ⇒ chữ số có " +
                 "thể ra hệ khác (ar/fa/my/bn) ngay cạnh chữ số La-tinh. Dùng `LangHost.locale()`",
         )
+        // [kachi-i18n-zh-th-ms T1b · R7] `DateFormat.getTimeInstance(DateFormat.SHORT)` cũng là locale MÁY — chỉ là
+        // không viết chữ `getDefault()` ra nên bài trên mù [ĐO: SettingsSectionsTrip.kt:179]. Xe đặt `ms`/`en_US` ⇒ giờ
+        // 12h + AM/PM cạnh đồng hồ 24h. Mọi `DateFormat.get…Instance(…)` phải truyền một `Locale`.
+        val noLocale = Regex("""DateFormat\.get(?:Date|Time|DateTime)?Instance\(([^()]*(?:\([^()]*\)[^()]*)*)\)""")
+        val bad = launcherSources().flatMap { f ->
+            noLocale.findAll(code(f)).filterNot { it.groupValues[1].contains("ocale") }.map { "${f.fileName}: ${it.value}" }
+        }
+        assertEquals(emptyList<String>(), bad, "DateFormat.get…Instance không truyền Locale ⇒ theo locale MÁY. Dùng LangHost.locale()")
     }
 
     // ── Hạ tầng ──────────────────────────────────────────────────────────────────────────────────

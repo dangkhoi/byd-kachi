@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.Lang as ClusterNavLang
+import com.byd.clusternav.launcher.voice.VoiceGrammarSnapshotStore
 
 /**
  * ═══ S4 · R3a — NGÔN NGỮ theo hồ sơ: một chỗ lưu, hai bề mặt đọc ════════════════════════════════════════════
@@ -55,6 +56,9 @@ fun WorkspacePrefs.langMode(): LangMode {
 fun WorkspacePrefs.setLangMode(mode: LangMode) {
     sp.edit().putString(key(WorkspacePrefs.K_LANG), mode.code).apply()
     broadcastLang(mode)
+    // spec `kachi-i18n-zh-th-ms.html` R6 — `:wake` đọc tiếng giao diện từ ảnh chụp ngữ pháp (nó không có
+    // `Strings.current` và không được gọi `langMode()`), nên đổi tiếng phải chụp lại, SAU `apply()` (khuôn mọi đường ghi).
+    VoiceGrammarSnapshotStore.write(this)
 }
 
 /**
@@ -68,5 +72,15 @@ fun WorkspacePrefs.setLangMode(mode: LangMode) {
  * thì đổi sang một hồ sơ dùng English mà màn ClusterNav vẫn tiếng Việt.
  */
 internal fun WorkspacePrefs.broadcastLang(mode: LangMode = langMode()) =
-    ClusterNavLang.setChoice(appCtx, ClusterNavLang.Choice.entries.first { it.code == mode.code })
+    ClusterNavLang.setChoice(appCtx, choiceFor(mode))
+
+/**
+ * [LangMode] (`:core`) → `Lang.Choice` (màn cũ) theo MÃ ĐĨA — phép ánh xạ TỔNG: mã không có ở `Choice` ⇒ `AUTO`.
+ *
+ * ⚠ [ĐO] 2026-10-03 (spec `kachi-i18n-zh-th-ms.html`): bản cũ viết `entries.first { … }` — `:core` thêm ZH/TH/MS mà
+ * `Choice` chưa có thì `NoSuchElementException` ở **mỗi** lần chọn tiếng VÀ mỗi lần đổi hồ sơ (cả hai đi qua
+ * [broadcastLang]). Hai bộ mã giờ khớp nhau (`LauncherLocaleContractTest` canh bằng máy); lùi `AUTO` chỉ là lưới an
+ * toàn để một lệch mã sau này là "màn cũ theo xe" chứ không phải launcher sập trên xe đang chạy.
+ */
+internal fun choiceFor(mode: LangMode): ClusterNavLang.Choice = ClusterNavLang.Choice.of(mode.code)
 

@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.SavedPlace
 import com.byd.clusternav.launcher.SavedPlaces
 import com.byd.clusternav.launcher.Strings
@@ -81,11 +82,12 @@ object VoicePlaces {
     /**
      * Nhãn HIỆN cho người đọc: hai nhãn chuẩn có bản tiếng Anh, nhãn người dùng tự đặt thì trả **nguyên văn**.
      *
-     * Cùng lệ [VoiceReply.labelOf]/`ProfileNames.display`: mã lạ ⇒ trả chính nó, không sập và không bịa.
+     * Cùng lệ [VoiceReply.labelOf]/`ProfileNames.display`: mã lạ ⇒ trả chính nó, không sập và không bịa. [lang] mặc
+     * định = tiếng giao diện (Cài đặt); câu NÓI truyền tiếng giọng nói (`VoiceReply.preview`).
      */
-    fun displayLabel(label: String): String = when (label) {
-        HOME -> Strings.t(HOME, "Home")
-        WORK -> Strings.t(WORK, "Work")
+    fun displayLabel(label: String, lang: Lang = Strings.current): String = when (label) {
+        HOME -> Strings.t(HOME, "Home", lang)
+        WORK -> Strings.t(WORK, "Work", lang)
         else -> label
     }
 

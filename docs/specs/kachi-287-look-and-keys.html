@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.87 — độ trong suốt nền · ⇄ tự ẩn · phím Đảo · lưới lối tắt tự co giãn — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.87 — độ trong suốt nền · ⇄ tự ẩn · phím Đảo · lưới lối tắt tự co giãn</h1>
+<p class="muted">Slug: <code>kachi-287-look-and-keys</code> · Branch <code>feat/i18n-zh-th-ms</code> (làm SAU khi I18N ráp xong) · <span class="pill">Trạng thái: Current — chờ triển khai</span> · Cập nhật 2026-10-03 · Chủ: dangkhoi</p>
+<p class="muted">Mục đích: bốn yêu cầu owner 03/10 gom vào 2.87 (chưa OTA). Backlog <code>UI-BG-OPACITY</code> · <code>SLOT-SWAP-AUTOHIDE</code> · <code>KEYCTL-FLIP-ALL</code> · <code>SHORTCUT-GRID-FIT</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0b — 2026-10-03</b>: thêm R-SI (lưới icon lối tắt trong widget tự co giãn) theo owner.</li>
+<li><b>Pass 0 — 2026-10-03</b>: Khởi tạo từ ba yêu cầu owner + kiểm kê đọc mã (workflow <code>wf_4014da82-0a0</code>, 2 agent). Owner chốt: khung TRỐNG cũng ẩn ⇄; mọi nút đảo được phải có phím Đảo.</li>
+</ul>
+
+<h2>2. Context — nguyên văn owner (03/10)</h2>
+<ul>
+<li><i>"Cho chỉnh độ transparent của header bar, taskbar, widget được không? Chỉnh chung, không cần riêng từng cái. Với cái nút switch chỉnh app / widget vào khung, cho ẩn đi đc ko, khi nào nhấn vô khung đó thì mới hiện ra, kiểu auto hide đi sau mấy giây ấy, cho nó đẹp"</i></li>
+<li><i>"Khung trống cũng cần ẩn luôn, thế mới lòi hình nền lên mới đẹp, nhấn đại vào màn nó lại lòi ra ấy mà, hoặc user chọn app shortcut, hoặc voice mà"</i></li>
+<li><i>"phím đóng mở cốp không chung được à, phải 2 nút à? Cái nút picker trên widget thì nhấn cái đóng, nhấn cái mở đc mà?"</i> → <i>"Mấy cái khác cũng thế, cái nào đảo đc phải làm đảo hết nhé, chứ hao phím lắm"</i></li>
+<li><i>"Thêm cái icon shortcut app nhét vô widget có thể autoscale được không, nhiều thì bé lại, to thì giãn ra cho cân đối trong widget là đẹp, đồng size, khoảng cách đều nhau"</i></li>
+</ul>
+<div class="card"><b>Sự thật từ mã [ĐO 2026-10-03]</b>
+<ul>
+<li>Nền thanh trên: <code>KachiTopStrip.kt:110,211</code> <code>KachiTheme.card(…, BAR_TOP)</code> (tối ≈60 %, sáng ≈90 % đục). Taskbar: <code>ControlDockView.kt:56-58,93-97</code> <code>setColor(c(KachiTheme.BAR))</code> (≈85 %). Ô dock: <code>ControlTileFactory.applyBg :448</code>, <code>ReadTile.kt:103</code>. Widget: mọi nền đi qua <code>KachiGlass.apply</code> (<code>WallGlass.kt:126</code>) — có hình nền thì nền kính = ảnh mờ + màn phủ do <code>GlassVeil.alphaFor</code> giải để chữ ≥ 4.5:1.</li>
+<li>Không có chỗ chung sẵn: bảng màu (<code>BAR_TOP</code>, <code>surface</code>…) dùng chung với Cài đặt, hộp thoại, ngăn kéo ⇒ không được nhân alpha vào bảng màu.</li>
+<li>Nút ⇄: dựng một chỗ <code>SlotSwapButton.centered</code> (<code>SlotSwapButton.kt:62-87</code>), gắn cho mọi ô qua <code>WorkspaceView.slotHead</code>; luôn hiện. Ô chạy app trên màn ảo: <code>VdAppHost.onTouchEvent</code> nhận mọi chạm rồi bơm vào màn ảo (<code>VdAppHost.kt:439-465</code>) ⇒ <code>WorkspaceView.dispatchTouchEvent</code> quan sát được mà không lấy chạm của app.</li>
+<li>Widget lưới lối tắt <code>w_apps</code>: <code>ShortcutIconsView(grid = true)</code> dùng ô CỐ ĐỊNH 64 dp / icon 52 dp (<code>KachiSpaceBars.kt:226-229</code>; bản nén trong ô dock 52 dp) và số cột <code>ShortcutStrip.gridCols(n) = n.coerceIn(1, 4)</code> (<code>ShortcutSelection.kt:68</code>) — không nhìn kích cỡ khung ⇒ ít app thì icon bé lọt thỏm, nhiều app thì tràn.</li>
+<li>Phím: Đảo/Kế tiếp chỉ sinh khi nút có <code>readKey</code> (<code>KeyCtlTarget.kt:113-128</code>); ô trên màn thì đảo theo lệnh cuối Kachi gửi (<code>ControlTileFactory.kt:220-226</code>, <code>ControlTileState.selIndex</code> trong RAM của Activity).</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<table>
+<tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
+<tr><td>R-OP1</td><td>Một hàng chọn chung "Độ trong suốt nền" (100 · 85 · 70 · 55 · 40 %), áp cho nền thanh trên + taskbar + widget/ô dock (nền NEUTRAL/WELL, ô dock TẮT, ô đọc số)</td><td>chọn → đóng Cài đặt thấy nền trong hơn; 100 % = giống hệt hôm nay (byte); theo hồ sơ; xuất/nhập hồ sơ mang theo</td></tr>
+<tr><td>R-OP2</td><td>Chữ và icon KHÔNG mờ; nền mang thông tin giữ nguyên (ô đang BẬT, ô cảnh báo, nền widget bên thứ ba, nút nhấn màu, Cài đặt/ngăn kéo/hộp thoại)</td><td>bài canh nguồn: hàm làm mờ chỉ được gọi ở 5 chỗ dựng của màn chính</td></tr>
+<tr><td>R-OP3</td><td>Đọc được trên mọi hình nền: có ảnh nền thì độ đục không xuống dưới mức cần để chữ ≥ 4.5:1 (cùng bộ giải <code>GlassVeil</code>)</td><td>quét độ chói 0..1 × 2 chủ đề × mọi bậc: 0 ca dưới 4.5 (ở chỗ hôm nay đạt)</td></tr>
+<tr><td>R-AH1</td><td>Nút ⇄ của MỌI khung (kể cả khung trống) ẩn khi nghỉ; chạm vào vùng khung ⇒ ⇄ khung đó hiện; chạm ngoài mọi khung ⇒ ⇄ mọi khung hiện; 4 s sau lần nhấc tay cuối thì mờ dần ẩn</td><td>máy ảo: chạm ô app → ⇄ hiện sau khi nhấc tay, 5 s sau mất; chạm khung trống → hiện</td></tr>
+<tr><td>R-AH2</td><td>Không ăn cắp chạm của app trong ô: chạm đầu tiên luôn tới app; nhấp đúp vẫn tới app; chạm vào chỗ ⇄ đang ẩn ⇒ tới app, không mở bảng chọn</td><td>nhật ký bơm chạm màn ảo thấy đủ; bảng chọn không mở</td></tr>
+<tr><td>R-AH3</td><td>Công tắc "Tự ẩn nút ⇄" theo hồ sơ, mặc định BẬT; TalkBack bật ⇒ luôn hiện; đường ActivityView/không-máy-chiếu ⇒ luôn hiện (không quan sát được chạm / có bản sao ⇄ thứ hai)</td><td>bảng chính sách thuần ở <code>:core</code> có test đủ ô</td></tr>
+<tr><td>R-FL1</td><td>Mọi nút <code>TOGGLE</code>/<code>COVER</code> có đích phím "Đảo"; mọi nút <code>SELECT</code> có "Kế tiếp" (vòng như chạm ô); cốp là một nút Đảo</td><td><code>KeyCtlTargetTest</code>: mọi nút đủ đích, sinh từ registry</td></tr>
+<tr><td>R-FL2</td><td>Nguồn trạng thái để đảo: đọc xe nếu nút có <code>readKey</code> và đọc được; không thì <b>lệnh cuối Kachi đã gửi</b> — một trí nhớ dùng chung cho ô trên màn + phím + giọng nói, ghi ở tầng thi hành, mặc định chỉ số 0 khi tiến trình bật</td><td>test: mở bằng ô rồi bấm phím Đảo ⇒ đóng; đảo hai lần ⇒ về như cũ; cổng an toàn (tốc độ khi MỞ cốp…) áp theo hành động đã giải</td></tr>
+<tr><td>R-SI1</td><td>Lưới icon trong widget lối tắt tự co giãn theo khung: mọi icon CÙNG cỡ, cỡ lớn nhất vừa khung; khoảng cách giữa các icon và tới mép ĐỀU nhau theo mỗi trục; hàng cuối thiếu thì căn giữa với cùng khoảng cách</td><td>test thuần: n = 1…8 × nhiều tỉ lệ khung ⇒ cỡ icon cực đại, không tràn, khe đều; máy ảo: khung 1×1 / 2×1 / 2×2 với 1, 3, 8 app</td></tr>
+<tr><td>R-FL3</td><td>Dữ liệu gán phím cũ (≤ 2.86) đọc nguyên vẹn; đích Mở/Đóng riêng vẫn còn</td><td>test đọc chuỗi đích cũ</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>Chuỗi mới có đủ 5 tiếng (vi · en · zh · th · ms) — bài canh I18N bắt.</li>
+<li>0 tệp Kotlin &gt; 500 dòng (<code>KachiTopStrip</code> 500, <code>WorkspacePrefs</code> 499, <code>WorkspaceView</code> 489, <code>ControlTileFactory</code> 497 ⇒ logic mới ở tệp mới, sửa cũ chỉ là bọc cùng dòng hoặc tách trước).</li>
+<li>Giữ nguyên chữ các dòng bị bài canh ghim (<code>WallGlassContractTest:28</code>, <code>ZeroBorderContractTest:99</code>, <code>SlotHeadParityContractTest</code>, <code>SurfaceMaterialContractTest:128-143</code>…) — hoặc sửa bài canh có lý do ghi ở §9.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Độ trong suốt nền (R-OP)</h3>
+<div class="flow">
+  <div class="fnode"><b>ColorChoice</b><span>+ <code>o&lt;pct&gt;</code> trong chuỗi <code>color_choice</code> (đã theo hồ sơ, đã chia sẻ)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>ThemeHost.sync</b><span>applyTheme <u>or</u> KachiChrome.apply</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KachiChrome</b><span>fraction · fade(d) · barAlpha(lum)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>5 chỗ dựng</b><span>KachiGlass.paint · applyBg TẮT · ReadTile · thanh trên · taskbar</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> có sẵn</span><span class="sw"><span class="box" style="background:var(--new)"></span> mới</span></div>
+<ul>
+<li>Lưu trong <code>ColorChoice</code> (token gắn nhãn <code>o70</code> — bản ≤ 2.86 bỏ qua trường lạ, dạng cũ <code>ACCENT;TONE;paint;model</code> không bao giờ đọc nhầm) ⇒ thừa hưởng phân loại theo hồ sơ + chia sẻ, khỏi chạm ~12 tệp của một khoá mới.</li>
+<li><code>:core ChromeOpacity</code>: <code>STEPS = 100,85,70,55,40</code>, <code>effective(base, f, needed) = f ≥ 1 ? base : max(base·f, min(base, needed))</code> — không bao giờ thấp hơn <code>min(hôm nay, mức cần để đọc)</code>.</li>
+<li>Không có ảnh nền: <code>GradientDrawable.setAlpha</code> (AOSP r47 <code>GradientDrawable.java:724-772</code>, không lớp offscreen vì không viền). Có ảnh nền: nhân alpha vào bề mặt + hạ sàn màn phủ <code>GlassVeil.MIN × f</code> (vì <code>WallWindowDrawable.setAlpha</code> không làm gì, <code>WallGlass.kt:101</code>). Thanh trên/taskbar: sàn đọc được theo độ chói vùng ảnh dưới thanh, tính lại khi ảnh nền đổi (đi qua cơ chế tag/refresh của <code>KachiGlass</code>).</li>
+<li>Hàng chọn đặt trong Hiển thị › Màu sắc, ngay dưới "Tông thẻ" (<code>SettingsSections.color()</code>); dùng <code>chipRow</code> như hàng độ tối hình nền. Không dựng lại Activity (đi <code>applyThemeInPlace</code>); ô app + màn ảo giữ nguyên.</li>
+</ul>
+<h3>4.2 ⇄ tự ẩn (R-AH)</h3>
+<div class="flow">
+  <div class="fnode"><b>WorkspaceView.dispatchTouchEvent</b><span>super TRƯỚC, rồi quan sát</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>SlotHeadAutoHide</b><span>reveal sau nhấc tay + double-tap timeout · ẩn sau 4 s</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>SlotHeadRest (:core)</b><span>ALWAYS / AUTO_HIDE theo loại ô · đường chiếu · công tắc · TalkBack</span></div>
+</div>
+<ul>
+<li>Ẩn = <code>INVISIBLE</code> (không nhận chạm, chỉ invalidate — <code>View.java:13462-13464, 15227-15262</code>), không <code>GONE</code> (đo lại cả workspace mỗi chạm), không chỉ alpha (thành nút vô hình).</li>
+<li>Gọi <code>super.dispatchTouchEvent</code> trước ⇒ đích chạm được chọn trước khi ⇄ đổi trạng thái; hiện ⇄ sau <code>ACTION_UP</code> + <code>ViewConfiguration.getDoubleTapTimeout()</code>; DOWN rơi vào vùng ⇄ đang ẩn ⇒ không hiện (để ô tìm kiếm của Google Maps ở giữa-trên vẫn bấm được).</li>
+<li>Khung trống không có view nào nhận chạm ⇒ <code>WorkspaceView</code> không thấy UP; nên với DOWN mà không con nào nhận (khung trống / khe giữa khung) ⇒ hiện ngay: trong khung trống ⇒ ⇄ khung đó; ngoài mọi khung ⇒ ⇄ mọi khung (owner: <i>"nhấn đại vào màn nó lại lòi ra"</i>).</li>
+<li>Hẹn giờ theo chỉ số ô, hủy khi ô đăng ký lại (4 đường dựng lại) và khi tách khỏi cửa sổ; mọi animation <code>cancel()</code> trước (r47 <code>ViewPropertyAnimator.java:1084-1091</code>).</li>
+<li>Khác với khuyến nghị của bản kiểm kê (giữ ⇄ ở khung trống): owner chốt ẩn. Bỏ điều cấm "vùng trong suốt chạm được" của FIX286 ES1 KHÔNG cần — khung trống vẫn không nhận chạm; chỉ <code>WorkspaceView</code> quan sát.</li>
+</ul>
+<h3>4.3 Phím Đảo cho mọi nút (R-FL)</h3>
+<div class="flow">
+  <div class="fnode"><b>Ô · phím · giọng nói</b><span>mọi đường ghi nút xe</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>ControlLastSent (:core)</b><span>controlId → chỉ số lệnh cuối đã GỬI thành công · cấp tiến trình</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>KeyCtlPlan</b><span>Đảo/Kế tiếp: đọc xe (readKey) → không thì lệnh cuối → hành động cụ thể → cổng an toàn</span></div>
+</div>
+<ul>
+<li><code>KeyCtlTarget.actionsFor</code>: bỏ điều kiện <code>readable</code> cho FLIP/NEXT. KDoc giải thích trí nhớ lệnh cuối + giới hạn.</li>
+<li>Trí nhớ lệnh cuối: một chỗ ghi ở tầng thi hành (nơi ô và giọng nói/phím cùng đi qua), <code>ControlTileState.selIndex</code> của ô đọc/ghi qua đó để ô và phím không lệch nhau. Trạng thái 0 (tắt/đóng) khi tiến trình bật — BYD giết Kachi mỗi lần tắt máy.</li>
+<li>Nút đổi bằng đường khác (chìa, công tắc cửa, app BYD) ⇒ lần bấm đầu có thể trùng trạng thái (không tác dụng), bấm lại là được — chấp nhận theo owner.</li>
+</ul>
+
+<h3>4.4 Lưới lối tắt tự co giãn (R-SI)</h3>
+<ul>
+<li><code>:core ShortcutGridFit.fit(n, w, h, gapRatio, minIcon, maxIcon)</code> — thuần, đơn vị px: thử mọi số cột <code>c = 1…n</code>, hàng <code>r = ⌈n/c⌉</code>; cỡ icon <code>s</code> lớn nhất sao cho <code>c·s + (c+1)·g ≤ w</code> và <code>r·s + (r+1)·g ≤ h</code> với khe <code>g = gapRatio·s</code>; chọn <code>c</code> cho <code>s</code> lớn nhất (hoà thì ít hàng trống hơn). Trả về cột, hàng, cỡ icon, khe X/Y (khe chia ĐỀU phần dư mỗi trục: <code>(w − c·s)/(c+1)</code>).</li>
+<li><code>ShortcutIconsView</code> chế độ lưới: đo lại khi <code>onSizeChanged</code>, đặt vị trí icon theo kết quả (một <code>onLayout</code> riêng, không lồng LinearLayout có khe cứng); hàng cuối căn giữa cùng khe. Khối trên taskbar không đổi (đã đúng: dài theo số app).</li>
+<li>Kẹp: icon tối thiểu 28 dp (≤ 8 app nên hiếm khi chạm), tối đa 120 dp (khung to 1 app không thành icon khổng lồ).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>Phụ thuộc</th></tr>
+<tr><td>L1</td><td>R-OP: ChromeOpacity + ColorChoice + KachiChrome + 5 chỗ dựng + hàng chọn + test</td><td>I18N ráp xong</td></tr>
+<tr><td>L2</td><td>R-AH: SlotHeadRest + SlotHeadAutoHide + công tắc theo hồ sơ + test (tách WorkspaceView/WorkspacePrefs trước)</td><td>L1 (cùng <code>SlotSwapButton</code>/<code>KachiGlass.apply</code>)</td></tr>
+<tr><td>L3</td><td>R-FL: KeyCtlTarget + trí nhớ lệnh cuối + KeyCtlPlan + test</td><td>I18N ráp xong (song song L1 — khác tệp)</td></tr>
+<tr><td>L3b</td><td>R-SI: ShortcutGridFit (:core) + bố trí lưới trong <code>ShortcutIconsView</code> + test</td><td>I18N ráp xong (khác tệp với L1–L3)</td></tr>
+<tr><td>L4</td><td>Dịch chuỗi mới 4 tiếng · máy ảo (ảnh 100/70/40 × tối/sáng × có/không ảnh nền; chạm ô app/khung trống) · senior review · quét bảo mật · commit</td><td>L1–L3</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>./gradlew test --rerun-tasks --continue</code> 5 module, 0 đỏ mới; lint 0.</li>
+<li>V-thử-phá: bỏ sàn đọc được ⇒ bài quét độ chói đỏ; đổi <code>INVISIBLE</code> thành alpha ⇒ bài canh đỏ; bỏ FLIP khỏi một nút ⇒ <code>KeyCtlTargetTest</code> đỏ.</li>
+<li>V-máy-ảo (AVD <code>clusternav10</code>, API 29 như xe): ảnh + đo pixel; nhật ký bơm chạm màn ảo.</li>
+<li>V-oncar: phím Đảo cốp/kính trên xe thật — gom vào phiếu thử 2.87.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Khung trống ẩn ⇄? — <span class="muted">Chốt CÓ (owner 03/10).</span></li>
+<li>OQ2. Bậc thấp nhất 40 %? — <span class="muted">Chọn 40 % (dưới 20 % chữ trên nền sáng hụt 4.5:1 theo tính toán); owner có thể đổi.</span></li>
+<li>OQ3. Trên ảnh nền rất sáng, sàn đọc được giữ nền đục ⇒ có thể thấy "chỉnh không ăn" — ghi chú dưới hàng chọn nói rõ.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Kiểm kê: workflow <code>wf_4014da82-0a0</code> (2026-10-03).</li>
+<li><code>docs/specs/kachi-286-field-fixes.html</code> R-ES (khung trống trong suốt) · R-KC (gán phím mọi nút).</li>
+<li><code>docs/specs/kachi-i18n-zh-th-ms.html</code> (chuỗi mới phải đủ 5 tiếng).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li>(chưa triển khai.)</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review.)</li>
+</ul>
+
+</div></body>
+</html>

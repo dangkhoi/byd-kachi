@@ -27,13 +27,19 @@ internal class VoiceControlDispatch(
     private val freshCar: (String) -> CarStatus?,
     private val onUi: (() -> Unit) -> Unit,
     private val background: (() -> Unit) -> Unit,
+    /**
+     * Ngôn ngữ của câu trả lời (spec `kachi-i18n-zh-th-ms.html` R6), đọc ở MỖI câu. Phiên giọng nói ([VoiceDispatcher])
+     * truyền tiếng GIỌNG NÓI; mặc định = tiếng giao diện cho `KeyCtlDispatch` (phím gán nút — câu hiện thành TOAST,
+     * không đọc lên; bộ chạy ấy dựng một lần cho cả tiến trình nên phải đọc lại mỗi câu, không chụp).
+     */
+    private val lang: () -> Lang = { Strings.current },
 ) {
 
     /**
      * ═══ R5 + E · đọc lại xe rồi mới nói — [VoiceReadback] (trần 500 dòng) ════════════════════════════════════
      * Dựng **một lần** cho cả đời cầu: nó chỉ cầm chính những lambda mà cầu này đã cầm.
      */
-    private val readback = VoiceReadback(control = control, say = say, onUi = onUi, background = background)
+    private val readback = VoiceReadback(control = control, say = say, onUi = onUi, background = background, lang = lang)
 
     /** UX4 · thi hành [ClimateAuto.StepPlan]; nhánh rời-AUTO chờ 400 ms nên phải xuống luồng nền — xem [VoiceClimateStep]. */
     private val climate = VoiceClimateStep(control = control, onUi = onUi, background = background)
@@ -59,8 +65,9 @@ internal class VoiceControlDispatch(
      * @param done báo *"vế này đã ghi xong"* cho làn ghi — hợp đồng ở KDoc lớp.
      */
     fun run(i: VoiceIntent.Control, done: () -> Unit) {
+        val l = lang()   // một câu, một tiếng — kể cả nhánh trả lời từ luồng nền (`finish` ở dưới)
         val def = ControlRegistry.byId(i.id)
-        if (def == null) { say(VoiceReply.failed(i)); done(); return }
+        if (def == null) { say(VoiceReply.failed(i, lang = l)); done(); return }
         val st = ControlTileState.shared
         // ═══ UX4 — nấc ĐÁY của nút có `autoId` tên là **AUTO**, không phải mức 0 ══════════════════════════════
         // Cùng bảng quyết định THUẦN mà cú chạm −/+ dùng ([ClimateAuto.stepPlan] ← `ControlTileFactory.nudge`): nói
@@ -77,7 +84,7 @@ internal class VoiceControlDispatch(
         val arg = plan?.shown ?: (i.value ?: 1)
         val shown = if (i.relative != 0) VoiceIntent.Control(def.id, arg) else i
         // Đang AUTO mà còn nói *"giảm"* (`act = false`): mã này không có nấc TẮT ⇒ **không bắn gì**, nhưng vẫn NÓI RA.
-        if (plan != null && !plan.act) { say(VoiceReply.autoLevel(def.id)); done(); return }
+        if (plan != null && !plan.act) { say(VoiceReply.autoLevel(def.id, l)); done(); return }
         // ═══ C (owner test xe 2026-09-19) · CỐP/CA-PÔ chỉ MỞ được khi xe đang DỪNG ════════════════════════
         //
         // Đặt **trước** [CarControlPort.actByKind], sau khi đã biết `arg`: chỉ chặn lượt MỞ (`arg > 0`) — đóng
@@ -95,7 +102,7 @@ internal class VoiceControlDispatch(
         if (CtlSafetyPolicy.requiresStationary(def.id) && arg > 0) {
             val kmh = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
                 ?: state().carStatus.drivetrain.speedKmh
-            if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown)); done(); return }
+            if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown, l)); done(); return }
         }
         // ═══ [SOÁT 2.74 · P2] Cú ghi RỜI AUTO chờ 400 ms ⇒ đuôi *"nói gì"* phải là một LỜI GỌI LẠI ═════════════
         //
@@ -132,9 +139,9 @@ internal class VoiceControlDispatch(
                 }
                 say(
                     when {
-                        noPart -> VoiceReply.partNotOnThisCar(shown)
-                        absent -> VoiceReply.notOnThisCar(shown)
-                        else -> VoiceReply.failed(shown)
+                        noPart -> VoiceReply.partNotOnThisCar(shown, l)
+                        absent -> VoiceReply.notOnThisCar(shown, l)
+                        else -> VoiceReply.failed(shown, lang = l)
                     },
                 )
                 done()
@@ -152,11 +159,11 @@ internal class VoiceControlDispatch(
             when {
                 // UX4 · `EnableAuto` (auto BẬT, không ghi mức): mức xe đang thổi KHÔNG đổi, nên đọc-lại-so-mức sẽ nói
                 // *"đã đặt Gió = 1"* — đúng số, sai việc. Câu thuật trạng thái mới là câu thật.
-                plan?.auto == true -> say(VoiceReply.autoLevel(def.id))
+                plan?.auto == true -> say(VoiceReply.autoLevel(def.id, l))
                 def.kind == ControlKind.STEP -> readback.step(shown, st)
                 (def.kind == ControlKind.TOGGLE || def.kind == ControlKind.COVER) && def.readKey.isNotBlank() ->
                     readback.act(shown, def, arg, st)
-                else -> say(VoiceReply.done(shown))
+                else -> say(VoiceReply.done(shown, l))
             }
             done()
         }

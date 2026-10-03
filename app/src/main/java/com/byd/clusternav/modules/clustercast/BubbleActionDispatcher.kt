@@ -118,7 +118,7 @@ internal class BubbleActionDispatcher(
 
     private fun castingToast(pkg: String): String {
         val name = pkg.substringAfterLast('.')
-        return Lang.t("Chiếu $name…", "Casting $name…")
+        return Lang.f("Chiếu {0}…", "Casting {0}…", name)
     }
 
     /**

@@ -40,7 +40,8 @@ class VoiceClarifyLogContractTest {
     @Test
     fun `nhanh bo cuoc ghi dung cau bo cuoc`() {
         val g = SourceRoots.body(turns, "internal fun VoiceSession.clarifyGaveUp(")
-        val line = g.indexOf("val line = VoiceClarify.giveUp()")
+        // kachi-i18n-zh-th-ms T2: câu bỏ cuộc được ĐỌC ⇒ tiếng GIỌNG NÓI của phiên (`voiceLang()`), không tiếng màn.
+        val line = g.indexOf("val line = VoiceClarify.giveUp(voiceLang())")
         val logged = g.indexOf("logAsked(intents, line)")
         assertTrue(line >= 0 && logged > line, "nhánh bỏ cuộc phải ghi đúng câu bỏ cuộc vào nhật ký")
         assertTrue(logged < g.indexOf("return true"), "ghi trước khi thoát")

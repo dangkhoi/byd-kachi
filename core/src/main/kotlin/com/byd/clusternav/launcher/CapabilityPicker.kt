@@ -50,8 +50,7 @@ object CapabilityPicker {
     val GROUPS_NOTE: String
         get() = Strings.t(
             "Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái.",
-            "One tile for a whole set: all the tyres, all the windows, the whole light strip. " +
-                "Place one tile instead of placing each one.",
+            "One tile for a whole set: all the tyres, all the windows, the whole light strip. Place one tile instead of placing each one.",
         )
 
     /** Tiêu đề phần MỤC RỜI — vẫn còn nguyên cho ai chỉ muốn một con số to giữa màn (§4.2). */

@@ -8,6 +8,7 @@ import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.LangHost
 
 /**
  * ═══ FIX286 · VK2 — chế độ HOLD của `:wake`: giữ mô hình nạp sẵn cho phím vô-lăng gán Kachi nghe ═══════════════════
@@ -75,15 +76,27 @@ internal object VoiceWakeHold {
         return done
     }
 
+    /**
+     * spec `kachi-i18n-zh-th-ms.html` R9 — Context TÀI NGUYÊN theo tiếng GIAO DIỆN người dùng, cho chữ của chính `:wake`
+     * (thông báo FGS dưới · toast cầu chì ở `VoiceWakeService.autoDisable`). `:wake` không có Activity nên không đi qua
+     * `LangHost.wrap`: tài nguyên của nó theo locale MÁY — có `values-zh-rCN` rồi thì xe đặt tiếng Trung + người dùng
+     * chọn English sẽ ra thông báo tiếng Trung. Tiếng đọc từ ảnh chụp ngữ pháp (tiến trình chính ghi, đã giải nghĩa);
+     * KHÔNG ghi `Strings.current`, KHÔNG gọi `WorkspacePrefs.langMode()` (tự ghi khi migrate). Ảnh chụp chưa mang tiếng
+     * ⇒ [ctx] nguyên vẹn = hành vi cũ. Chỉ dùng cho `getString` — dịch vụ hệ thống vẫn xin qua [ctx].
+     */
+    fun uiRes(ctx: Context): Context =
+        VoiceGrammarSnapshotStore.read(ctx).uiLang?.let { LangHost.localized(ctx, it) } ?: ctx
+
     /** Thông báo FGS theo chế độ: WAKE giữ chữ cũ ("Hey Kachi / Đang nghe câu gọi"); HOLD/OFF nói đúng việc phím. */
     fun notification(ctx: Context, mode: VoiceWakeMode): Notification {
         // minSdk 29 ⇒ kênh thông báo luôn có (lint ObsoleteSdkInt của hai nhánh `SDK_INT >= O` cũ — dọn cùng lượt dời tệp).
         val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, ctx.getString(R.string.kachi_wake_notif_title), NotificationManager.IMPORTANCE_MIN))
+        val res = uiRes(ctx)   // i18n R9 — chữ theo tiếng người dùng chọn, không theo locale máy
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, res.getString(R.string.kachi_wake_notif_title), NotificationManager.IMPORTANCE_MIN))
         val b = Notification.Builder(ctx, CHANNEL)
         val wake = mode == VoiceWakeMode.WAKE
-        return b.setContentTitle(ctx.getString(if (wake) R.string.kachi_wake_notif_title else R.string.kachi_wake_hold_notif_title))
-            .setContentText(ctx.getString(if (wake) R.string.kachi_wake_notif_text else R.string.kachi_wake_hold_notif_text))
+        return b.setContentTitle(res.getString(if (wake) R.string.kachi_wake_notif_title else R.string.kachi_wake_hold_notif_title))
+            .setContentText(res.getString(if (wake) R.string.kachi_wake_notif_text else R.string.kachi_wake_hold_notif_text))
             .setSmallIcon(R.drawable.ic_mic)
             .setOngoing(true)
             .build()

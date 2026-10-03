@@ -104,18 +104,24 @@ data class TelemetryView(
  */
 object TelemetryReadout {
 
-    /** [TelemetryView] cho [id] từ [status], hoặc null nếu [id] không có trong [TelemetryRegistry]. */
-    fun of(id: String, status: CarStatus): TelemetryView? {
+    /**
+     * [TelemetryView] cho [id] từ [status], hoặc null nếu [id] không có trong [TelemetryRegistry].
+     *
+     * [lang] = ngôn ngữ của nhãn + CHỮ giá trị (*"Bật"* · *"Mở"* · *"Mức 2"*). Mặc định tiếng giao diện (ô/chip); câu NÓI
+     * của `VoiceDispatcher.runRead` truyền tiếng GIỌNG NÓI (spec `kachi-i18n-zh-th-ms.html` R6) — không thì giao diện
+     * tiếng Trung cho ra *"Đèn cốt: 开"* trong một câu giọng Việt đọc lên.
+     */
+    fun of(id: String, status: CarStatus, lang: Lang = Strings.current): TelemetryView? {
         val spec = TelemetryRegistry.byId(id) ?: return null
         // Datum bật/tắt đi qua [boolOf] — MỘT chỗ biết "id nào là bật/tắt", và chính chỗ đó cũng dựng chữ. Tách
         // thành hai bảng (một để biết, một để format) là đúng bẫy hai-bản-sao: chúng lệch nhau ở đúng lần ai đó
         // thêm datum thứ 14 mà chỉ sửa một bên, và lỗi ấy im lặng.
         val bool = boolOf(id, status)
-        val value = if (bool != null) bool.on?.let { onOff(it) } else format(id, status)
+        val value = if (bool != null) bool.on?.let { onOff(it, lang) } else format(id, status, lang)
         // U5 · T2: nhãn theo ngôn ngữ ngay tại đây — `TelemetryView` là thứ tầng vẽ đọc, nên nếu để nhãn gốc thì
         // `:app` phải tự dịch lại (bản-sao-thứ-hai của phép chọn ngôn ngữ).
         return TelemetryView(
-            spec.id, spec.displayLabel, spec.unit, spec.widgetKind, spec.tier, value, bool?.on,
+            spec.id, spec.labelIn(lang), spec.unit, spec.widgetKind, spec.tier, value, bool?.on,
             level = levelOf(id, status),
             state = stateOf(id, status),
         )
@@ -246,8 +252,8 @@ object TelemetryReadout {
      */
     fun isOnOff(id: String): Boolean = boolOf(id, CarStatus()) != null
 
-    /** Giá trị hiển thị đã format cho telemetry [id] từ [s]; null = chưa đọc/không có ⇒ "—". */
-    private fun format(id: String, s: CarStatus): String? = when (id) {
+    /** Giá trị hiển thị đã format cho telemetry [id] từ [s] theo [lang]; null = chưa đọc/không có ⇒ "—". */
+    private fun format(id: String, s: CarStatus, lang: Lang): String? = when (id) {
         // ── A1. Năng lượng ──────────────────────────────────────────────────────────────
         "soc" -> s.energy.soc?.toString()
         "ev_range_km" -> s.energy.evRangeKm?.toString()
@@ -269,7 +275,7 @@ object TelemetryReadout {
         "pm25_level" -> s.climate.pm25Level?.toString()
         "pm25_value" -> s.climate.pm25ValueUgm3?.toString()
         "pm25_outside" -> s.climate.pm25OutsideUgm3?.toString()
-        "pm25_online" -> s.climate.pm25Online?.let { yesNo(it) }
+        "pm25_online" -> s.climate.pm25Online?.let { yesNo(it, lang) }
         "cabin_temp" -> s.climate.cabinTempC?.toString()
         "ext_temp" -> s.climate.outsideTempC?.toString()
         // UX4 — đang AUTO thì chip/ô nói `"AUTO 1"`: mức là số THẬT ([ĐO xe 2026-09-16] xe báo `getAcWindLevel` ngay
@@ -278,7 +284,7 @@ object TelemetryReadout {
         // `CarDataDemandRendererContractTest` dựa vào, và `fanText` **cần** được gọi cả khi mức chưa đọc được —
         // đang AUTO mà mức còn null thì chip vẫn phải nói `"AUTO"`.
         "ac_wind" -> s.climate.fanLevel.let { ClimateAuto.fanText(it, s.climate.acWindAutoRaw) }
-        "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc") else Strings.t("Ngoài", "Fresh") }
+        "ac_cycle" -> s.climate.recircOn?.let { if (it) Strings.t("Trong", "Recirc", lang) else Strings.t("Ngoài", "Fresh", lang) }
         "inside_temp" -> s.climate.setTempC?.toString()
         "temp_unit" -> s.climate.tempUnit
         // H1 · T2 — ghế đọc ra MÃ mức của khung, phải đổi qua [ControlLevels] mới thành chữ người ta hiểu. Mã NGOÀI
@@ -289,18 +295,18 @@ object TelemetryReadout {
         // suy ra bảng datum↔field từ chính chỗ này để canh nhu cầu đọc của mọi ô). Đổi dạng là làm bài canh ấy mù.
         // Nguy cơ hai-bản-sao được **đo** thay vì hy vọng: `TelemetryReadoutTest.chu muc va so muc khong bao gio lech`
         // đỏ ngay nếu một bên có mã mà bên kia không.
-        "seat_vent_state" -> s.climate.seatVentRaw?.let { levelText("seatc", it) }
-        "seat_heat_state" -> s.climate.seatHeatRaw?.let { levelText("seath", it) }
+        "seat_vent_state" -> s.climate.seatVentRaw?.let { levelText("seatc", it, lang) }
+        "seat_heat_state" -> s.climate.seatHeatRaw?.let { levelText("seath", it, lang) }
         // UX5b — ghế PHỤ. Giữ ĐÚNG dạng `"id" -> s.<cụm>.<field>` như mọi dòng khác: đó là hợp đồng đọc-ngược bằng
         // máy mà `CarDataDemandRendererContractTest` dựa vào (xem ⚠ ngay trên).
-        "seat_vent_state_r" -> s.climate.seatVentRRaw?.let { levelText("seatc_r", it) }
-        "seat_heat_state_r" -> s.climate.seatHeatRRaw?.let { levelText("seath_r", it) }
+        "seat_vent_state_r" -> s.climate.seatVentRRaw?.let { levelText("seatc_r", it, lang) }
+        "seat_heat_state_r" -> s.climate.seatHeatRRaw?.let { levelText("seath_r", it, lang) }
         // 0 = AUTO (`AC_CTRLMODE_AUTO`) — đảo Ở ĐÂY, và chỉ ở đây, cho bề mặt ĐỌC; nút `ac_auto` có đường riêng
         // ([ControlDef.readInverted]) nên không chỗ nào đảo hai lần.
         // 2.76: mã ngoài {0, 1} (sentinel) ⇒ *"mã N"* ([TelemetryEnums.unknown]) thay vì bịa "Chỉnh tay" — cùng lúc
         // [stateTable] trả `null` cho mã ấy, nên chữ và hình không bao giờ nói hai điều.
         "ac_mode_auto" -> s.climate.acModeRaw?.let {
-            when (it) { 0 -> ClimateAuto.AUTO; 1 -> Strings.t("Chỉnh tay", "Manual"); else -> TelemetryEnums.unknown(it) }
+            when (it) { 0 -> ClimateAuto.AUTO; 1 -> Strings.t("Chỉnh tay", "Manual", lang); else -> TelemetryEnums.unknown(it, lang) }
         }
         // 1.85 — cùng quy ước và cùng lý do với dòng trên: `AC_WINDLEVEL_MANUAL_SIGN_OFF = 0` ⇒ gió đang AUTO.
         // Đảo Ở ĐÂY cho bề mặt ĐỌC; nút `ac_auto` đảo bằng [ControlDef.readInverted] nên không ai đảo hai lần.
@@ -310,8 +316,8 @@ object TelemetryReadout {
         "ac_wind_auto" -> s.climate.acWindAutoRaw?.let {
             when {
                 ClimateAuto.autoOnFromRaw(it) == true -> ClimateAuto.AUTO
-                it == 1 -> Strings.t("Chỉnh tay", "Manual")
-                else -> TelemetryEnums.unknown(it)   // 2.76: sentinel ⇒ "mã N", khớp [stateTable] trả null
+                it == 1 -> Strings.t("Chỉnh tay", "Manual", lang)
+                else -> TelemetryEnums.unknown(it, lang)   // 2.76: sentinel ⇒ "mã N", khớp [stateTable] trả null
             }
         }
 
@@ -333,21 +339,21 @@ object TelemetryReadout {
         "window_rf" -> s.body.windowRfPct?.toString()
         "window_lr" -> s.body.windowLrPct?.toString()
         "window_rr" -> s.body.windowRrPct?.toString()
-        "door_lf" -> s.body.doorLfOpen?.let { openShut(it) }
-        "door_rf" -> s.body.doorRfOpen?.let { openShut(it) }
-        "door_lr" -> s.body.doorLrOpen?.let { openShut(it) }
-        "door_rr" -> s.body.doorRrOpen?.let { openShut(it) }
+        "door_lf" -> s.body.doorLfOpen?.let { openShut(it, lang) }
+        "door_rf" -> s.body.doorRfOpen?.let { openShut(it, lang) }
+        "door_lr" -> s.body.doorLrOpen?.let { openShut(it, lang) }
+        "door_rr" -> s.body.doorRrOpen?.let { openShut(it, lang) }
         "sunshade_pct" -> s.body.sunshadePct?.toString()
         // 2.76 (R8) — MÃ → CHỮ qua bảng OEM ([TelemetryEnums.POWER_LEVEL]); trước đó chip in "Nguồn xe · 2" [P3 UX8].
-        "power_level" -> s.body.powerLevel?.let { TelemetryEnums.text("power_level", it) }
+        "power_level" -> s.body.powerLevel?.let { TelemetryEnums.text("power_level", it, lang) }
         "vehicle_type" -> s.body.vehicleType
-        "sunroof_state" -> s.body.sunroofOpen?.let { openShut(it) }
+        "sunroof_state" -> s.body.sunroofOpen?.let { openShut(it, lang) }
 
         // ── A6. Đèn ─────────────────────────────────────────────────────────────────────
         // 8 datum đèn bật/tắt (cốt/pha/sương trước-sau/xi-nhan/đèn hông/DRL) nằm ở [boolOf] — chỉ `headlight_feedback`
         // là CHẾ ĐỘ (một con số, không phải công tắc) nên nó ở lại đây.
         // 2.76 (R8) — bảng từ CarSettings OEM ([TelemetryEnums.HEADLIGHT_MODE]); trước đó chip in "Chế độ đèn pha · 2".
-        "headlight_feedback" -> s.lights.headlightMode?.let { TelemetryEnums.text("headlight_feedback", it) }
+        "headlight_feedback" -> s.lights.headlightMode?.let { TelemetryEnums.text("headlight_feedback", it, lang) }
 
         // ── A7. Điện phụ 12V / nguồn máy (nhóm "An toàn · ADAS" đã gỡ hẳn 2026-09-16) ───
         "volt_12v" -> s.energy.volt12v?.let { dec1(it) }
@@ -376,18 +382,18 @@ object TelemetryReadout {
      * nên không có ngôn ngữ nào để mà lệch. [onOff] chỉ còn được gọi từ [of] (đường bật/tắt) — đừng gọi nó ở chỗ
      * khác, vì chỗ gọi mới sẽ là một datum bật/tắt mà [boolOf] không biết ⇒ chip mất icon trạng thái, im lặng.
      */
-    private fun yesNo(b: Boolean) = if (b) Strings.t("Có", "Yes") else Strings.t("Không", "No")
-    private fun onOff(b: Boolean) = if (b) Strings.t("Bật", "On") else Strings.t("Tắt", "Off")
-    private fun openShut(b: Boolean) = if (b) Strings.t("Mở", "Open") else Strings.t("Đóng", "Closed")
+    private fun yesNo(b: Boolean, lang: Lang) = if (b) Strings.t("Có", "Yes", lang) else Strings.t("Không", "No", lang)
+    private fun onOff(b: Boolean, lang: Lang) = if (b) Strings.t("Bật", "On", lang) else Strings.t("Tắt", "Off", lang)
+    private fun openShut(b: Boolean, lang: Lang) = if (b) Strings.t("Mở", "Open", lang) else Strings.t("Đóng", "Closed", lang)
     /**
      * Mã mức thô của khung → chữ *"Tắt" / "Mức n"*, hoặc `null` khi mã nằm NGOÀI thang của nút ấy (⇒ ô hiện "—").
      *
      * Tra bằng mã **NÚT** (`seatc`/`seath`) chứ không bằng mã datum: thang là tính chất của cái người ta bấm, và
      * [ControlLevels] đã khai đúng một chỗ cho cả đường đọc lẫn đường ghi.
      */
-    private fun levelText(controlId: String, raw: Int): String? =
+    private fun levelText(controlId: String, raw: Int, lang: Lang): String? =
         ControlLevels.levelOf(controlId, raw)?.let {
-            if (it == 0) Strings.t("Tắt", "Off") else Strings.t("Mức $it", "Level $it")
+            if (it == 0) Strings.t("Tắt", "Off", lang) else Strings.fIn(lang, "Mức {0}", "Level {0}", it)
         }
 
     private fun dec0(d: Double) = Math.round(d).toString()

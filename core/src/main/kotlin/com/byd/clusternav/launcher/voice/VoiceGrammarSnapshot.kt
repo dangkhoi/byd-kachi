@@ -1,8 +1,10 @@
 package com.byd.clusternav.launcher.voice
 
 import com.byd.clusternav.launcher.HomeUiState
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.SavedPlace
 import com.byd.clusternav.launcher.SavedPlaces
+import com.byd.clusternav.launcher.voiceLangOf
 
 /**
  * ═══ ẢNH CHỤP NGỮ PHÁP — phần ĐỘNG của ngữ pháp voice, ở dạng một TỆP mà tiến trình khác đọc được ═══════════════
@@ -42,6 +44,11 @@ import com.byd.clusternav.launcher.SavedPlaces
  * @property wake FIX286 · VK4 — prefs tươi cho `:wake` ([VoiceWakePrefs]): năm bản ghi `wake` · `keyhold` · `confirm`
  *   · `nav` · `music`, chỉ ghi khi có giá trị ⇒ tệp ≤ 2.85 (không có chúng) đọc ra [VoiceWakePrefs.EMPTY], và bản ghi
  *   này không đổi một byte của ba loại bản ghi cũ.
+ * @property uiLang spec `kachi-i18n-zh-th-ms.html` R6 · §4.4 — ngôn ngữ GIAO DIỆN **đã giải nghĩa** (`LangHost` của
+ *   tiến trình chính: AUTO đã thành VI/EN) của hồ sơ đang dùng; bản ghi `lang`. `:wake` không có `Strings.current`
+ *   (chỉ tiến trình chính ghi biến đó) và không được gọi `WorkspacePrefs.langMode()` (nó tự ghi khi migrate) ⇒ đây là
+ *   đường DUY NHẤT để phiên phím vô-lăng biết người dùng đọc tiếng gì. `null` = tệp cũ / chưa ghi ⇒ [voiceLang] = VI
+ *   (đúng hành vi `:wake` trước bản này) và tài nguyên của `:wake` giữ locale máy.
  */
 data class VoiceGrammarSnapshot(
     val profiles: List<String> = emptyList(),
@@ -49,10 +56,14 @@ data class VoiceGrammarSnapshot(
     val places: List<SavedPlace> = emptyList(),
     val writtenAtMs: Long = 0L,
     val wake: VoiceWakePrefs = VoiceWakePrefs.EMPTY,
+    val uiLang: Lang? = null,
 ) {
 
     /** Nhãn sổ địa chỉ cho hotword + parser — cùng hàm mà đường in-process dùng ([VoicePlaces.labelsOf]). */
     fun placeLabels(): List<String> = VoicePlaces.labelsOf(places)
+
+    /** Ngôn ngữ GIỌNG NÓI của phiên `:wake` = `voiceLangOf(uiLang)`; ảnh chụp thiếu/cũ ⇒ VI (xem [uiLang]). */
+    val voiceLang: Lang get() = voiceLangOf(uiLang ?: Lang.VI)
 
     /**
      * `HomeUiState` cho `VoiceDispatcher` của phiên `:wake` — **CHỈ ba trường là thật**: `profiles` (parse),
@@ -84,6 +95,7 @@ data class VoiceGrammarSnapshot(
         wake.confirmIds?.let { ids -> append(REC_CONFIRM).append(SEP).append(ids.sorted().joinToString(ID_SEP)).append('\n') }
         wake.navDefault?.let { append(REC_NAV).append(SEP).append(cleanName(it)).append('\n') }
         wake.musicDefault?.let { append(REC_MUSIC).append(SEP).append(cleanName(it)).append('\n') }
+        uiLang?.let { append(REC_LANG).append(SEP).append(it.code).append('\n') }
     }
 
     /** Kết quả [decode]: [snapshot] luôn dùng được; [problem] ≠ `null` khi có gì đó bị bỏ (để chỗ gọi ghi log). */
@@ -103,6 +115,9 @@ data class VoiceGrammarSnapshot(
         private const val REC_CONFIRM = "confirm"
         private const val REC_NAV = "nav"
         private const val REC_MUSIC = "music"
+
+        /** spec `kachi-i18n-zh-th-ms.html` R6 — [uiLang] bằng [Lang.code] (`vi`/`en`/`zh`/`th`/`ms`). */
+        private const val REC_LANG = "lang"
         private const val ID_SEP = ","
 
         private fun bit(b: Boolean): String = if (b) "1" else "0"
@@ -143,6 +158,7 @@ data class VoiceGrammarSnapshot(
             val profiles = ArrayList<String>()
             val places = ArrayList<SavedPlace>()
             var wake = VoiceWakePrefs.EMPTY
+            var uiLang: Lang? = null
             var problem: String? = null
             fun note(msg: String) { if (problem == null) problem = msg }
             // Bit hỏng ⇒ bỏ bản ghi (trường giữ `null` = chỗ đọc lùi về đường cũ), không đoán 0/1.
@@ -165,10 +181,13 @@ data class VoiceGrammarSnapshot(
                     REC_CONFIRM -> wake = wake.copy(confirmIds = value.split(ID_SEP).map { it.trim() }.filter { it.isNotEmpty() }.toSet())
                     REC_NAV -> wake = wake.copy(navDefault = cleanName(value))
                     REC_MUSIC -> wake = wake.copy(musicDefault = cleanName(value))
+                    // Mã lạ ⇒ bỏ bản ghi (`null` = VI cho giọng, locale máy cho tài nguyên), không đoán một tiếng.
+                    REC_LANG -> Lang.entries.firstOrNull { it.code == value.trim() }?.let { uiLang = it }
+                        ?: note("dòng $row: ngôn ngữ lạ ${safe(value)}")
                     else -> note("dòng $row: bản ghi lạ ${safe(kind)}")
                 }
             }
-            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at, wake), problem)
+            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at, wake, uiLang), problem)
         }
     }
 }

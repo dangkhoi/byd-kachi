@@ -147,6 +147,7 @@ internal class BubbleSubmenuOverlay(
                 setTextColor(TEXT)
                 textSize = ROW_TEXT_SP
                 maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END   // R8 (spec i18n-zh-th-ms): tràn ⇒ "…", không cắt cứng
             },
         )
         return row

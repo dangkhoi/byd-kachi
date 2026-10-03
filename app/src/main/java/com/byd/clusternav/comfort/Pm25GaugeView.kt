@@ -102,8 +102,9 @@ class Pm25GaugeView @JvmOverloads constructor(
             canvas.drawArc(arcRect, startAngle, sweepTotal * fraction, false, arcPaint)
         }
 
-        // Centre: big value (Vi label — doubles as the readout) over a small "PM2.5" caption. INVALID → "—".
-        val label = if (valid) Pm25Filter.levelLabelVi(level) else "—"
+        // Centre: big value (level label in the UI language — doubles as the readout) over a small "PM2.5" caption.
+        // INVALID → "—". Was `levelLabelVi` in EVERY language (spec kachi-i18n-zh-th-ms R3); VI output is unchanged.
+        val label = if (valid) Pm25Filter.levelLabel(level) else "—"
         valuePaint.textSize = fitText(label, arcRect.width() * 0.74f, size * 0.28f)
         val fm = valuePaint.fontMetrics
         canvas.drawText(label, cx, cy - (fm.ascent + fm.descent) / 2f - size * 0.05f, valuePaint)

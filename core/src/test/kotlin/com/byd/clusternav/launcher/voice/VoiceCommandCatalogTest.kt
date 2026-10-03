@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test
  * ([VoiceIntentParser.parseOne]) và phải ra **đúng ý định mà cột "Kachi làm gì" đang hứa** — ở CẢ hai thứ tiếng.
  *
  * ## Tự dọn [Strings.current]
- * Cả tệp đọc [Strings.current] (xem KDoc [VoiceCommandCatalog] về vì sao không có tham số `lang`), nên mỗi bài
- * tự trả nó về [Lang.VI] — `var` toàn cục rò từ bài này sang bài khác là một họ lỗi rất khó lần ra
- * (khuôn `LangCoverageTest`).
+ * [VoiceCommandCatalog.groups] mặc định đọc [Strings.current] cho tiêu đề + cột *"làm gì"* (câu nói thì luôn tiếng
+ * Việt — spec `kachi-i18n-zh-th-ms.html` R5), và vài bài cũ lật nó; mỗi bài tự trả nó về [Lang.VI] — `var` toàn cục
+ * rò từ bài này sang bài khác là một họ lỗi rất khó lần ra (khuôn `LangCoverageTest`).
  */
 class VoiceCommandCatalogTest {
 
@@ -76,6 +76,40 @@ class VoiceCommandCatalogTest {
                     assertEquals(VoiceReply.preview(got), e.does, "$lang · ${g.id} · \"${e.phrase}\"")
                 }
             }
+        }
+    }
+
+    /**
+     * spec `kachi-i18n-zh-th-ms.html` R5/OQ3 — ở **mọi** tiếng giao diện (kể cả EN): cột câu nói là ĐÚNG bộ câu tiếng
+     * Việt (bộ nhận dạng chỉ nghe tiếng Việt), mọi câu parse ra đúng ý định đã hứa, còn tiêu đề nhóm + cột *"Kachi
+     * làm gì"* theo tiếng màn. Trước bản này giao diện zh ghép *"bật &lt;nhãn chữ Hán&gt;"* — câu không parse được — và
+     * bài canh chỉ lặp VI/EN nên không thấy. Chạy cả hai đường gọi: `lang` tường minh và mặc định `Strings.current`.
+     */
+    @Test
+    fun `moi tieng giao dien - cau noi tieng Viet parse dung, tieu de va cot lam gi theo tieng man`() {
+        val viPhrases = VoiceCommandCatalog.groups(profiles, apps, places, lang = Lang.VI)
+            .map { g -> g.id to g.examples.map { it.phrase } }
+        Lang.entries.forEach { lang ->
+            val explicit = VoiceCommandCatalog.groups(profiles, apps, places, lang = lang)
+            Strings.current = lang
+            val byCurrent = groups()
+            Strings.current = Lang.VI
+            assertEquals(explicit, byCurrent, "$lang: mặc định phải = tiếng màn (Strings.current)")
+            assertEquals(viPhrases, explicit.map { g -> g.id to g.examples.map { it.phrase } }, "$lang: câu nói phải là đúng bộ câu tiếng Việt")
+            val misses = ArrayList<String>()
+            explicit.forEach { g ->
+                g.examples.forEach { e ->
+                    val got = VoiceIntentParser.parseOne(e.phrase, profiles, apps, places)
+                    if (!same(got, e.intent)) misses.add("$lang · ${g.id} · \"${e.phrase}\" → $got (chờ ${e.intent})")
+                    // Điểm đến là chỗ giữ chỗ (từ vựng mở) ⇒ cột "làm gì" dịch chỗ giữ chỗ, không so chuỗi.
+                    if (g.id != "nav") assertEquals(VoiceReply.preview(got, lang), e.does, "$lang · ${g.id} · \"${e.phrase}\"")
+                }
+                g.domain?.let { assertEquals(it.labelIn(lang), g.title, "$lang · tiêu đề nhóm ${g.id} phải theo tiếng màn") }
+            }
+            assertTrue(misses.isEmpty(), "$lang: câu bày ra mà bộ phân tích không hiểu — ${misses.size}:\n" + misses.joinToString("\n"))
+            // Cột "làm gì" của câu dẫn đường: chỗ giữ chỗ theo tiếng màn (VI y nguyên câu cũ).
+            val nav = explicit.first { it.id == "nav" }.examples.first { it.intent is VoiceIntent.Nav }
+            assertEquals(VoiceReply.preview(VoiceIntent.Nav(Strings.t("điểm đến", "a place", lang)), lang), nav.does, "$lang · nav")
         }
     }
 

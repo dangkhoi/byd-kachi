@@ -109,24 +109,26 @@ data class MacroResult(val macroId: String, val results: List<MacroStepResult>) 
      * Gọi bước hỏng bằng **nhãn** chứ không bằng mã, vì đây là câu cho người đọc — và bằng nhãn theo **ngôn ngữ đang
      * dùng** ([ControlDef.displayLabel]), không thì một câu tiếng Anh sẽ kể tên nút bằng tiếng Việt.
      *
-     * @param macroLabel nhãn gói **đã theo ngôn ngữ** (chỗ gọi truyền [ActionMacro.displayLabel]).
+     * @param macroLabel nhãn gói **đã theo [lang]** (chỗ gọi truyền [ActionMacro.labelIn] của cùng ngôn ngữ).
+     * @param lang mặc định = tiếng giao diện (thanh nút); câu NÓI của `VoiceDispatcher.runMacro` truyền tiếng GIỌNG NÓI.
      */
-    fun notice(macroLabel: String): String? {
+    fun notice(macroLabel: String, lang: Lang = Strings.current): String? {
         if (results.isEmpty()) return null
         if (allOk) return null
-        val names = failed.map { ControlRegistry.byId(it)?.displayLabel ?: it }.distinct()
-        return if (allFailed) "$macroLabel: " + Strings.t("xe không nhận lệnh nào", "the car took no command")
-        else "$macroLabel: " + Strings.t("chưa làm được — ", "not done — ") + names.joinToString(", ")
+        val names = failed.map { ControlRegistry.byId(it)?.labelIn(lang) ?: it }.distinct()
+        return if (allFailed) "$macroLabel: " + Strings.t("xe không nhận lệnh nào", "the car took no command", lang)
+        else "$macroLabel: " + Strings.t("chưa làm được — ", "not done — ", lang) + names.joinToString(", ")
     }
 
     /** Một câu ngắn cho nhật ký / thông báo. */
     fun summary(): String = when {
         results.isEmpty() -> Strings.t("gói rỗng", "empty pack")
-        allOk -> Strings.t("đủ $total bước", "all $total steps")
-        allFailed -> Strings.t("không bước nào ăn ($total bước)", "no step took ($total steps)")
-        else -> Strings.t(
-            "$okCount/$total bước ăn; hỏng: ${failed.joinToString(", ")}",
-            "$okCount/$total steps took; failed: ${failed.joinToString(", ")}",
+        allOk -> Strings.f("đủ {0} bước", "all {0} steps", total)
+        allFailed -> Strings.f("không bước nào ăn ({0} bước)", "no step took ({0} steps)", total)
+        else -> Strings.f(
+            "{0}/{1} bước ăn; hỏng: {2}",
+            "{0}/{1} steps took; failed: {2}",
+            okCount, total, failed.joinToString(", "),
         )
     }
 }

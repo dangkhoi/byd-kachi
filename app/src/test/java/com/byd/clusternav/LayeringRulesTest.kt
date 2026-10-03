@@ -62,7 +62,11 @@ class LayeringRulesTest {
 
         // Ngoại lệ: đối tượng kiểm của nó là build script CỦA `:app`, nên nó thuộc `:app` dù không chạm
         // Android hay lớp Kotlin nào.
-        val allowed = setOf("BuildArtifactNamingTest.kt")
+        // `LauncherI18nLocalesContractTest.kt` (kachi-i18n-zh-th-ms T1b): đối tượng kiểm là `app/src/main/res/values*/`
+        // — tài nguyên Android CỦA `:app` (Gradle khai `inputs.dir("src/main/res")` cho đúng task test này); nó không
+        // gọi lớp Kotlin nào của `:app`, cũng không kiểm logic `:core` nào. Dời sang `:core` là bài quét tài nguyên
+        // của module X nằm ngoài X — đúng cái bẫy UP-TO-DATE mà KDoc `LauncherI18nContractTest` đã trả giá.
+        val allowed = setOf("BuildArtifactNamingTest.kt", "LauncherI18nLocalesContractTest.kt")
 
         val misplaced = kotlinFiles(appTests)
             .filter { it.fileName.toString() !in allowed }
