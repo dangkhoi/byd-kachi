@@ -71,7 +71,8 @@ class SlotHeadRestTest {
 
     @Test
     fun `hen gio trong khoang owner noi vai giay`() {
-        assertTrue(SlotHeadRest.HIDE_AFTER_MS in 3_000L..5_000L, "\"auto hide đi sau mấy giây\" — spec chốt 4 s")
+        // L6 (owner 03/10, kèm nút chạy nền / tắt): *"Nút cũng tự hide sau 3s"* ⇒ chốt ĐÚNG 3 s (trước: khoảng 3–5 s, spec 4 s).
+        assertEquals(3_000L, SlotHeadRest.HIDE_AFTER_MS, "owner 03/10: \"Nút cũng tự hide sau 3s\"")
         assertTrue(SlotHeadRest.FADE_IN_MS in 1L..SlotHeadRest.FADE_OUT_MS, "hiện nhanh hơn (hoặc bằng) lúc mờ đi")
         assertTrue(SlotHeadRest.FADE_OUT_MS < SlotHeadRest.HIDE_AFTER_MS)
     }

@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.modules.clustercast.StackEntry
-import com.byd.clusternav.modules.clustercast.StackParse
 
 /**
  * ═══ PROFILE-SWITCH-SLOTS · R-B3/R-B6 — MỘT LƯỢT DỌN cửa sổ nổi do Kachi mở (thuần JVM, nhận kênh shell) ══════════
@@ -112,27 +111,11 @@ class FloatingOrphanSweep(
      * Bị ngắt (màn huỷ ⇒ `winExec.shutdownNow()`) ⇒ trả bản đọc gần nhất (an toàn: dấu chỉ xoá theo sự thật đã đọc),
      * giữ cờ ngắt, KHÔNG ném ra luồng nền (ném ra là sập HOME — xem [removeStack]).
      */
-    private fun settle(sh: (String) -> String, sent: List<Int>): Settled {
-        var last = read(sh)
-        var reads = 1
-        while (true) {
-            val e = last.entries ?: return Settled(last, reads)
-            if (reads >= SETTLE_READS || sent.none { id -> e.any { it.stackId == id } }) return Settled(last, reads)
-            try {
-                sleep(SETTLE_STEP_MS)
-            } catch (ie: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return Settled(last, reads)
-            }
-            last = read(sh)
-            reads++
-        }
-    }
-
-    private class Settled(val read: Read, val reads: Int)
+    private fun settle(sh: (String) -> String, sent: List<Int>): StackReads.Settled =
+        StackReads.settle(sh, sleep, SETTLE_READS, SETTLE_STEP_MS) { e -> sent.none { id -> e.any { it.stackId == id } } }
 
     /**
-     * ★ GUARD Ở TẦNG THI HÀNH (CLAUDE.md §5 · R-nf2) — chỗ DUY NHẤT dựng và chạy lệnh gỡ.
+     * ★ GUARD Ở TẦNG THI HÀNH (CLAUDE.md §5 · R-nf2) — chỗ DUY NHẤT chạy lệnh gỡ CỬA SỔ NỔI (gỡ app trong ô: [SlotCloseRun]).
      *
      * Kiểm LẠI [FloatingOrphanPlan.admissible] trên [read] — bản đọc `am stack list` của CHÍNH lượt này — ngay trước
      * khi chạy lệnh: id không có trong bản đọc · stack không ở display 0 · không `standard` · không `freeform` · pinned
@@ -159,16 +142,8 @@ class FloatingOrphanSweep(
         }
     }
 
-    private class Read(val entries: List<StackEntry>?, val error: String?)
-
-    /** Đọc + parse; ném lỗi hoặc parse rỗng (máy thật luôn có stack home) ⇒ `entries = null` = đọc hỏng. */
-    private fun read(sh: (String) -> String): Read = try {
-        val parsed = StackParse.parse(sh(FloatingOrphanPlan.LIST_CMD))
-        if (parsed.isEmpty()) Read(null, "rỗng") else Read(parsed, null)
-    } catch (e: Exception) {
-        // Cùng lý do bắt rộng ở [removeStack]: đọc hỏng = không làm gì, giữ dấu.
-        Read(null, e.javaClass.simpleName)
-    }
+    /** Đọc + parse — bản dùng chung [StackReads.read] (ném / parse rỗng ⇒ `entries = null` = đọc hỏng, giữ dấu). */
+    private fun read(sh: (String) -> String): StackReads.Read = StackReads.read(sh)
 
     companion object {
         /** Khoá toàn tiến trình — dấu là MỘT tệp của cả xe, nên lượt dọn cũng chỉ được MỘT tại một thời điểm. */

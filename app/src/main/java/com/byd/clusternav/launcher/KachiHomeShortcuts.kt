@@ -23,7 +23,7 @@ import com.byd.clusternav.launcher.behind.BehindHomeSequence
  *  | `StartBehind` | [KachiHomeSlots.startBehind] qua ô sống ([stagingCandidates], A5) — mảnh chung R0.3 |
  *  | `Noop`/`Highlight` | nháy khung ô ([flashSlot]) + một dòng lý do |
  *  | `DetachToFull` | `allowOrPrompt` rồi [KachiHomeSlots.detachToFull] — K7 qua rào (T-M2 [ĐO]: Intent không tách được app khỏi màn ảo); về ô = K8 khi màn nhà hiện lại |
- *  | `Reopen` | `allowOrPrompt` rồi [KachiHomeSlots.reviveInSlot] — đường của thẻ "App đã đóng" (FIX286 R-SC2); ô chưa sẵn ⇒ nháy ô |
+ *  | `Reopen` | `allowOrPrompt` rồi [KachiHomeSlots.reviveInSlot] — `VdAppHost.reopen` (FIX286 R-SC2); ô chưa sẵn ⇒ nháy ô |
  *  | `Refuse` | một dòng lý do — 0 lệnh |
  *
  * FIX286 · R-SC2: dòng 4/9/12 (B được XẾP ở một ô) quyết theo SỰ THẬT lúc chạm — [ShortcutPlan.presenceSlot] chỉ ra ô cần đo,
@@ -121,7 +121,7 @@ internal class KachiHomeShortcuts(
                 if (!started) { workspace().flashSlot(action.slot); say(reasonText(ShortcutPlan.Reason.IN_OTHER_SLOT, sc, count, action.slot)) }
             }
             // FIX286 · R-SC2 (dòng 4a/12a): bố cục xếp B ở ô, `am stack list` lúc chạm nói B KHÔNG còn task ⇒ mở lại vào ô, cùng
-            // đường chạm thẻ "App đã đóng — chạm để mở lại". Ô chưa sẵn / lượt mở đang chạy dở ⇒ chỉ nháy ô, 0 lệnh.
+            // đường `VdAppHost.reopen` (thẻ "đã đóng" cũ gỡ ở L6). Ô chưa sẵn / lượt mở đang chạy dở ⇒ chỉ nháy ô, 0 lệnh.
             is ShortcutAction.Reopen -> {
                 if (!ShellAccessUi.allowOrPrompt(activity)) return
                 val ok = slots().reviveInSlot(action.slot, sc.pkg)

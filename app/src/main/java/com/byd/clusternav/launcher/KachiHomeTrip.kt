@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.app.Activity
 import com.byd.clusternav.launcher.behind.BehindHomePlan
+import com.byd.clusternav.launcher.behind.BehindHomeRunner
 import com.byd.clusternav.launcher.behind.BehindHomeSequence
 import com.byd.clusternav.launcher.trip.TripConfig
 import com.byd.clusternav.launcher.trip.TripHub
@@ -52,6 +53,12 @@ internal class KachiHomeTrip(
         stages: List<BehindHomePlan.Stage>,
         done: (BehindHomeSequence.Outcome) -> Unit,
     ): BehindHomePlan.Stage? = slots().startBehind(pkg, stages, done)
+
+    override fun behindChain(
+        what: String,
+        body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome,
+        done: (BehindHomeSequence.Outcome) -> Unit,
+    ) = slots().behindChain(what, body, done)
 
     // ── TripSettingsPort ────────────────────────────────────────────────────────────────────────────────────────
 

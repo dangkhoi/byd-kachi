@@ -149,7 +149,7 @@ sealed interface ShortcutAction {
 
     /**
      * FIX286 · R-SC2 — B được xếp ở ô [slot] mà phép đo lúc chạm thấy KHÔNG còn task ([SlotPresence.GONE]) ⇒ mở lại B vào
-     * đúng ô đó bằng đường của thẻ "App đã đóng — chạm để mở lại" (golden; app Kachi đẩy ra sau màn nhà ⇒ K8). Cần kênh.
+     * đúng ô đó bằng `VdAppHost.reopen` (golden; app Kachi đẩy ra sau màn nhà ⇒ K8; thẻ "đã đóng" cũ gỡ ở L6). Cần kênh.
      */
     data class Reopen(val slot: Int) : ShortcutAction
 

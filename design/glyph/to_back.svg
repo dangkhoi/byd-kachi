@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CHẠY NỀN (L6, owner 03/10) — mũi tên chúi xuống một vạch đáy: app rời ô, chạy tiếp phía sau màn nhà. -->
+  <style>:root{--ink:#ffffff;--main:#eaf0f8;--light:#ffffff;--deep:#b9c4d4}</style>
+  <path d="M12,3.6 L12,14.6 M7.4,10.2 L12,14.6 L16.6,10.2" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M4.6,19.6 L19.4,19.6" data-layer="main" fill="none" stroke="var(--light)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

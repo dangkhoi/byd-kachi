@@ -12,6 +12,7 @@ import android.os.Process
 import android.util.Log
 import com.byd.clusternav.launcher.DefaultHome
 import com.byd.clusternav.launcher.KachiPerf
+import com.byd.clusternav.modules.clustercast.ClusterProfile
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import java.io.IOException
 import java.util.concurrent.Executors
@@ -27,8 +28,8 @@ import java.util.concurrent.RejectedExecutionException
  *     `PackageManager` xem có phải app hệ thống;
  *  3. ghi MỘT dòng `KachiBehind` mỗi lượt + đếm [KachiPerf.Counter.BEHIND_FAIL] khi lùi về O1 (R0.5).
  *
- * Không có kênh ⇒ không lệnh nào (kết quả [BehindHomeSequence.Result.KEPT_UNDER]); mọi lệnh đi qua kênh hiện có nên
- * vẫn chịu cổng thi hành READY-AT-HOME (`ShellReadiness.admit`).
+ * Không có kênh ⇒ không lệnh nào (kết quả [BehindHomeSequence.Result.NO_CHANNEL] — L4 · D1: mã riêng, trước là
+ * `KEPT_UNDER` chung chung); mọi lệnh đi qua kênh hiện có nên vẫn chịu cổng thi hành READY-AT-HOME (`ShellReadiness.admit`).
  */
 class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> String)?) {
 
@@ -40,7 +41,7 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
      * màn ảo TRƯỚC (đường mở ô sẵn có) — đó là bước 1 của chuỗi đã đo.
      */
     fun evict(vd: Int, a: String, b: String, done: (BehindHomeSequence.Outcome) -> Unit = {}) =
-        submit("evict vd=$vd A=$a B=$b", done) { it.evict(vd, a, b) }
+        submit("evict vd=$vd A=$a B=$b", done) { it.seq.evict(vd, a, b) }
 
     /**
      * R0.3 — chạy [x] phía sau màn nhà qua một ô đang sống ([stages], chọn bằng [BehindHomePlan.stagingSlot]). Không có
@@ -48,12 +49,27 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
      * ngầm* (U5) và chuyến lên xe (R1/R2) — nhóm B/C của spec.
      */
     fun startBehind(x: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit = {}): BehindHomePlan.Stage? {
-        val stage = BehindHomePlan.stagingSlot(stages, x) ?: return null
-        submit("behind X=$x", done) { it.startBehind(x, stage) }
+        val stage = BehindHomePlan.stagingSlot(stages, x)
+        if (stage == null) {
+            // L4 · D1(c): lượt từ chối này trước đây KHÔNG để lại dòng nào — chuyến ghi "đã chạy" mà nhật ký trống trơn.
+            Log.i(TAG, "no-stage X=$x stages=${stages.size} alive=${stages.count { it.alive }} vd=${stages.map { it.vd }}")
+            return null
+        }
+        submit("behind X=$x", done) { it.seq.startBehind(x, stage) }
         return stage
     }
 
-    private fun submit(what: String, done: (BehindHomeSequence.Outcome) -> Unit, body: (BehindHomeSequence) -> BehindHomeSequence.Outcome) {
+    /**
+     * L4 — một chuỗi tuỳ ý trên CÙNG mutex `kachi-behind` (chuyến lên xe: màn ảo ẩn D2(a), K4-VIEW D3(ii)). [body] nhận
+     * [Kit] dựng mới mỗi lượt (kênh đọc lại, `StagingDisplay` riêng của lượt). Mọi cổng của [submit] giữ nguyên: không kênh /
+     * đã tắt ⇒ 0 lệnh; ném giữa chừng ⇒ gỡ giữ chỗ, lùi O1; một dòng `KachiBehind`.
+     */
+    fun chain(what: String, done: (BehindHomeSequence.Outcome) -> Unit, body: (Kit) -> BehindHomeSequence.Outcome) = submit(what, done, body)
+
+    /** Bộ thi hành của MỘT lượt: chuỗi BEHIND-HOME + chỗ dàn dựng ẩn + kênh (để `:core` dựng chuỗi khác như `TripMusicView`). */
+    class Kit(val seq: BehindHomeSequence, val hidden: BehindHomeSequence.HiddenStagePort, val sh: (String) -> String, val app: Context)
+
+    private fun submit(what: String, done: (BehindHomeSequence.Outcome) -> Unit, body: (Kit) -> BehindHomeSequence.Outcome) {
         execute(what) {
             val out = try {
                 runOnce(what, body)
@@ -72,22 +88,28 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
     /**
      * Kênh ném giữa chuỗi (dadb đứt, cổng thi hành từ chối) ⇒ KHÔNG để lọt ra luồng nền (lọt = sập HOME = crash-loop
      * mỗi lần tắt máy — cùng lý do `EarlyShellChannel.guarded`). Gỡ giữ chỗ (có thể đã dựng) rồi lùi O1.
+     *
+     * L4 · D1: `IOException` = kênh đứt ⇒ mã `NO_CHANNEL` (sổ không được nói "đang chạy ẩn" cho một lượt không biết đã
+     * tới đâu). Màn ảo ẩn của lượt (nếu đã tạo) KHÔNG nhả ở đây: không đọc được `am stack list` thì không biết trên đó còn
+     * app người dùng không (rào nhả D2) — nó chết theo tiến trình, cờ 256 kết thúc activity trên đó.
      */
     private fun failed(what: String, e: Exception): BehindHomeSequence.Outcome {
         Log.e(TAG, "$what: chuỗi lỗi giữa chừng — lùi O1, gỡ giữ chỗ", e)
         val gone = try { AndroidAnchor(app).removeAll() } catch (re: RuntimeException) { Log.w(TAG, "gỡ giữ chỗ hỏng", re); -1 }
-        return BehindHomeSequence.Outcome(BehindHomeSequence.Result.KEPT_UNDER, "$what -> KEPT_UNDER (${e.javaClass.simpleName}) anchors=$gone")
+        val r = if (e is IOException) BehindHomeSequence.Result.NO_CHANNEL else BehindHomeSequence.Result.KEPT_UNDER
+        return BehindHomeSequence.Outcome(r, "$what -> $r (${e.javaClass.simpleName}) anchors=$gone")
     }
 
-    private fun runOnce(what: String, body: (BehindHomeSequence) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {
+    private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {
         // Dòng kết quả là NHẬT KÝ (in qua `Log.i` ở [submit]) — viết không dấu để bài canh i18n không coi là chữ trên màn.
-        disabledReason?.let { return BehindHomeSequence.Outcome(BehindHomeSequence.Result.KEPT_UNDER, "$what -> disabled ($it), 0 cmd") }
-        val sh = shell() ?: return BehindHomeSequence.Outcome(BehindHomeSequence.Result.KEPT_UNDER, "$what -> no channel, 0 cmd")
+        disabledReason?.let { return BehindHomeSequence.Outcome(BehindHomeSequence.Result.DISABLED, "$what -> disabled ($it), 0 cmd") }
+        val sh = shell() ?: return BehindHomeSequence.Outcome(BehindHomeSequence.Result.NO_CHANNEL, "$what -> no channel, 0 cmd")
         val seq = BehindHomeSequence(
             sh, AndroidAnchor(app), app.packageName, AccessibilityRebind.GO_HOME_UNLESS_CAMERA,
             homeComps = DefaultHome.shownComponents(app),
+            cameraSig = ClusterProfile.resolveCached(app).cameraSignature,
         )
-        val out = body(seq)
+        val out = body(Kit(seq, StagingDisplay(app), sh, app))
         if (out.result == BehindHomeSequence.Result.ANCHOR_IN_FRONT) disable("anchor-in-front")
         return out
     }

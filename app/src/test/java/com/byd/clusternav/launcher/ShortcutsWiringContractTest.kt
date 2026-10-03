@@ -131,8 +131,10 @@ class ShortcutsWiringContractTest {
         assertTrue(SourceRoots.body(slotsSrc, "fun reviveInSlot(index: Int, pkg: String)").contains("workspace().hostAt(index)?.reviveInSlot(pkg) ?: false"))
         val host = code("VdAppHost.kt")
         val revive = SourceRoots.body(host, "fun reviveInSlot(expect: String)")
-        assertTrue(revive.contains("closedCard == null && !full.isDetached && !SlotLiveProbe.watching(probeKey)"),
-            "lượt mở đang chạy dở (chưa vào nhịp đo, chưa thẻ, không toàn màn) ⇒ không mở chồng — force-stop giữa lượt mở")
+        // ⚠ L6 (owner 03/10): thẻ "đã đóng" (`closedCard`) gỡ — dấu "nhịp đo đã báo app rời ô" nay là cờ `dead` (đặt ở
+        // `onAppClosed`, hạ ở `reopen`/`swapApp`). Cùng rào: chưa báo chết, chưa đo, không toàn màn ⇒ lượt mở đang chạy dở.
+        assertTrue(revive.contains("!dead && !full.isDetached && !SlotLiveProbe.watching(probeKey)"),
+            "lượt mở đang chạy dở (chưa vào nhịp đo, chưa báo chết, không toàn màn) ⇒ không mở chồng — force-stop giữa lượt mở")
         assertTrue(revive.contains("if (released || !launched || pkg != expect || busy) return false"))
         order(revive, "SlotLiveProbe.unwatch(probeKey)", "full.reset()", "reopen()")
     }

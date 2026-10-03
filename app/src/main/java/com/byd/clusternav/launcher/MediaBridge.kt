@@ -118,7 +118,14 @@ class MediaBridge(context: Context) : MediaTransport {
      * lên xe phải phân biệt *"không ai đang phát"* với *"không biết"* (không biết ⇒ không đè, fail-safe).
      */
     fun sessions(): List<TripMusicPlan.Session>? =
-        activeControllers()?.map { c -> TripMusicPlan.Session(c.packageName, Real(c).playing()) }
+        activeControllers()?.map { c -> TripMusicPlan.Session(c.packageName, Real(c).playing(), acceptsUri(c)) }
+
+    /**
+     * L4 · D3 — phiên NÓI là nhận `playFromUri` (bit `ACTION_PLAY_FROM_URI` trong `PlaybackState.actions`). [ĐO máy ảo 03/10
+     * `e2e/e5`] YT Music 9.35.54: `actions=2600887` (0x27AFB7) — có bit 0x2000. Không trạng thái ⇒ `false` (không đoán).
+     */
+    private fun acceptsUri(c: MediaController): Boolean =
+        runCatching { (c.playbackState?.actions ?: 0L) and PlaybackState.ACTION_PLAY_FROM_URI != 0L }.getOrDefault(false)
 
     /** `play()` vào ĐÚNG phiên của [pkg] (không phải phiên [active] đang được widget theo). `false` = gói không có phiên. */
     fun playPackage(pkg: String): Boolean = onPackage(pkg) { it.play() }

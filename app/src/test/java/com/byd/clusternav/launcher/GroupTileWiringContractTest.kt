@@ -89,6 +89,9 @@ class GroupTileWiringContractTest {
             // 2.87 · R-OP3 (2026-10-03): chỉ ĐỌC nền + mực ô cảnh báo qua `GroupTileView.fillOf/tintOf` để tính sàn
             // đọc được khi khay dưới ô mờ đi — không dựng ô nào, không gắn nền nào (bài KachiChromeContractTest canh).
             "KachiChrome.kt" to "đọc fillOf/tintOf để tính sàn độ đục nền — không dựng ô nhóm",
+            // 2.87 · L5 WIDGET-FIT-ALL (2026-10-03): khung khớp lưới widget chỉ NHẬN DIỆN ô nhóm (`is GroupTileView`)
+            // để coi nó là ô TỰ lấp khung (không co bằng FitScale — co hai lần) — không dựng, không đọc GroupBoard.
+            "FitGridLayout.kt" to "chỉ nhận diện GroupTileView là ô tự lấp khung (selfFitting) — không dựng ô nhóm",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
             s.map { it.fileName.toString() }

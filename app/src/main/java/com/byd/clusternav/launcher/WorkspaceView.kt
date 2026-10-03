@@ -37,8 +37,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * T4 — tên nhà cung cấp của một ô widget bên thứ ba, dùng cho thẻ *"widget không còn"* ([deadWidgetCard]).
      *
      * ⚠ **KHÔNG** phải nhãn hiện ở dải đầu ô: [slotHead] chỉ vẽ nút ⇄ ([SlotSwapButton]) và **không nhận** tên
-     * nữa; [OverlayHeads] (đường freeform) cũng chỉ vẽ đúng nút đó. Không còn nhãn/✕ ở dải đầu ô trên bất kỳ
-     * đường nào (owner 2026-09-12/13).
+     * nữa; [OverlayHeads] (đường freeform) cũng chỉ vẽ đúng nút đó. Không còn nhãn ở dải đầu ô (owner 2026-09-12/13);
+     * ✕ *tắt* + *chạy nền* (owner 03/10, L6) là cụm RIÊNG cạnh ⇄ ([SlotActionsCluster]), không phải nhãn.
      */
     var appWidgetName: ((SlotContent.AppWidget) -> String)? = null
     // UDF: trạng thái xe LIVE đến từ HomeUiState.carStatus (KHÔNG đọc port trong view). Off-car mọi field null ⇒ "—".
@@ -92,8 +92,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      */
     private val hostOwner = "ws@${System.identityHashCode(this)}"
 
-    /** 2.87 · R-AH — nút ⇄ tự ẩn của mọi ô ([SlotHeadAutoHide]). Khai TRƯỚC `init`: `rebuild()` đăng ký nút ngay lượt đầu. */
-    private val heads = SlotHeadAutoHide(this)
+    /** 2.87 · R-AH — nút đầu ô tự ẩn ([SlotHeadAutoHide]; L6: + chạy nền/tắt qua `heads.actions`). Khai TRƯỚC `init`. */
+    internal val heads = SlotHeadAutoHide(this)
 
     init { rebuild() }
 
@@ -355,7 +355,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.addView(appCard(content.pkg, tapHint = shell == null && !SlotAppHost.embeddingUsable(context)), mm)   // fallback phía sau; R-B1: không bộ chiếu ⇒ "Chạm để mở"
                 val sh = shell
                 if (sh != null) {
-                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient, slot = index, owner = hostOwner)  // sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
+                    val host = VdAppHost(context, slotDensityDpi, registerVd, unregisterVd, inputClient, slot = index, owner = hostOwner) { p -> heads.actions?.onAppGone(index, p) }  // L6: app rời ô ⇒ luật hoàn ô · sideload: app render lên VirtualDisplay (display phụ → KHÔNG caption) qua dadb — kiểu Dudu, SurfaceView cho đỡ lag; chạm qua input-daemon (fallback `input -d`)
                     fl.addView(host, mm); host.bind(content.pkg, sh)
                 } else if (SlotAppHost.embeddingUsable(context)) {
                     val host = SlotAppHost(context, dp(Sp.RADIUS_L).toFloat())

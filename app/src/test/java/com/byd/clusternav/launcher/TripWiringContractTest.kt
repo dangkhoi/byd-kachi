@@ -15,8 +15,9 @@ import org.junit.jupiter.api.Test
  * Mỗi bài khoá một điều đã ĐO hoặc spec chốt:
  *  - lối vào DUY NHẤT là dòng CUỐI chuỗi SẴN, và lối đó không chặn luồng `kachi-ready` (R2.3, R-nf4);
  *  - sổ chuyến CLAIMED ghi TRƯỚC mọi việc (CLAUDE.md §5) — một lượt mỗi chuyến kể cả khi Kachi tự force-stop;
- *  - nhạc KHÔNG dùng ý-định VIEW [ĐO máy ảo 02/10 `trip/tm3-ytmusic.txt`: che màn nhà] — đi qua phiên nhạc;
- *  - "không đè": đọc phiên TRƯỚC khi đụng gì, `null` ⇒ bỏ (R3.5);
+ *  - nhạc đi qua PHIÊN nhạc trước; L4 · D3(ii): link mà phiên không nhận URI ⇒ ý-định VIEW CHỈ dựng ở `:core`
+ *    (`TripMusicPlan.viewCmd`) và chỉ đi qua chuỗi dàn dựng (dấu + K12 khi app thoát lên trước màn nhà — [ĐO `p3/e2e-L4/m5a`]);
+ *  - đọc phiên TRƯỚC khi đụng gì, `null` ⇒ bỏ; L4 · D3(i): nguồn khác đang phát KHÔNG còn chặn khi chọn app cụ thể;
  *  - từ khoá đi qua LÕI giải bài của giọng nói (không đường thứ hai);
  *  - *Mở bình thường* chỉ bằng chuỗi có rào camera (K10).
  */
@@ -96,12 +97,17 @@ class TripWiringContractTest {
             "TripPlan.homeTopVisible(entries, homeComps)", "TripPlan.waitFor(")
     }
 
+    /**
+     * L4 · D2 — ĐỔI PIN có lý do: bố cục chỉ có widget từng ra `NO_STAGE` (0 lệnh) [ĐO `e2e/e6-no-app-slot`]. Nay sau đường ô
+     * sống (đã đo, LUÔN trước — CLAUDE.md §6) là màn ảo ẨN (`startBehindHidden`), cùng bên thi hành/mutex của màn chính.
+     */
     @Test
-    fun `chay nen di qua ben thi hanh BEHIND-HOME cua man chinh, mo binh thuong chi qua K10`() {
-        val bg = SourceRoots.body(start, "private fun behind(host: TripHub.Host, pkg: String): BehindHomeSequence.Outcome? {")
-        assertTrue(bg.contains("host.startBehind(pkg, stages)"))
+    fun `chay nen di qua ben thi hanh BEHIND-HOME cua man chinh - o song truoc, man ao an sau, mo binh thuong chi qua K10`() {
+        val bg = SourceRoots.body(start, "private fun behind(host: TripHub.Host, pkg: String): BehindHomeSequence.Outcome {")
+        order(bg, "host.startBehind(pkg, stages, done)", "host.behindChain(", "kit.seq.startBehindHidden(pkg, kit.hidden)")
         assertEquals("slots().startBehind(pkg, stages, done)", SourceRoots.body(glue, "override fun startBehind(").trim().removePrefix("=").trim())
-        val normal = SourceRoots.body(start, "private fun normal(host: TripHub.Host, pkg: String): String {")
+        assertEquals("slots().behindChain(what, body, done)", SourceRoots.body(glue, "override fun behindChain(").trim().removePrefix("=").trim())
+        val normal = SourceRoots.body(start, "private fun normal(host: TripHub.Host, pkg: String): Pair<TripStepCode, String> {")
         order(normal, "cameraSignature ?: return", "BehindHomePlan.safeComponent(", "TripPlan.normalCmd(sig, homeComps, comp)",
             "BehindHomePlan.LIST_CMD", "TripPlan.normalOutcome(")
         listOf(start, music).forEach { src ->
@@ -111,19 +117,30 @@ class TripWiringContractTest {
 
     // ── Nhạc ─────────────────────────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * L4 · D3 — ĐỔI PIN có lý do (owner 03/10, xe 2.86: *"auto mở nhạc youtube không chạy? Cả để trống lẫn để link"*): bản cũ
+     * chỉ giao nhạc qua PHIÊN — YouTube nguội không có phiên [ĐO máy ảo e3] ⇒ link không bao giờ tới. Nay: phiên trước (0 lệnh
+     * cửa sổ, [ĐO] e5/e8), có link mà không phiên nhận URI ⇒ `Play.View` qua cổng [Ports.view] (chuỗi dàn dựng, lệnh dựng ở
+     * `:core`). TripMusicRun vẫn KHÔNG tự dựng ý-định / lệnh cửa sổ nào.
+     */
     @Test
-    fun `nhac khong co y-dinh VIEW nao - di qua phien nhac, va doc phien TRUOC khi dung gi`() {
-        listOf("ACTION_VIEW", "android.intent.action.VIEW", "startActivity", "sendToApp", "VoiceAppIntents.send(").forEach {
-            assertFalse(music.contains(it), "ý-định VIEW vào màn ảo ô che màn nhà [ĐO trip/tm3-ytmusic.txt] — cấm '$it'")
+    fun `nhac - phien truoc, VIEW chi qua cong cua chuoi dan dung, doc phien TRUOC khi dung gi`() {
+        listOf("ACTION_VIEW", "android.intent.action.VIEW", "startActivity", "sendToApp", "VoiceAppIntents.send(", "am start").forEach {
+            assertFalse(music.contains(it), "bước nhạc không tự dựng ý-định/lệnh cửa sổ — cấm '$it'")
         }
-        val fn = SourceRoots.body(music, "fun run(music: TripMusic, installed: Set<String>, view: TripHub.HomeView): String {")
-        order(fn, "bridge.sessions()", "TripMusicPlan.gate(", "if (gate != TripMusicPlan.Gate.GO", "behind(pkg)",
-            "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions()", "TripMusicPlan.play(url, hasSession)",
-            "bridge.playFromUri(pkg, p.url)")
-        assertTrue(fn.contains("if (pkg in view.appSlots) \"in-slot\""), "app đã ở ô ⇒ ô tự mở nó, KHÔNG lệnh thêm (R3.3)")
+        val fn = SourceRoots.body(music, "fun run(music: TripMusic, installed: Set<String>, view: TripHub.HomeView): Done {")
+        order(fn, "bridge.sessions()", "TripMusicPlan.gate(", "TripOutcome.ofGate(gate)", "ports.behind(pkg)",
+            "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions())", "TripMusicPlan.play(url, session)",
+            "bridge.playFromUri(pkg, p.url)", "ports.view(pkg, p.url, slotVd)")
+        assertTrue(fn.contains("inSlot -> \"in-slot\""), "app đã ở ô ⇒ ô tự mở nó, KHÔNG lệnh thêm (R3.3)")
+        // L4 · D1(e): app hệ thống ngoài ô ⇒ mã SYSTEM_APP, TRƯỚC mọi lượt chạy ngầm (R0.6 giữ nguyên).
+        order(fn, "inSlot -> \"in-slot\"", "ports.isSystem(pkg) -> return done(id, TripStepCode.SYSTEM_APP", "ports.behind(pkg)")
         // Lỗi E2E (6) [ĐO `c6b-music-slot`]: phiên của app TRONG Ô là phiên Kachi vừa tạo ⇒ không được đi nhánh resume-existing.
-        order(fn, "TripMusicPlan.gate(", "TripMusicPlan.preexisting(pkg, before, inSlot = pkg in view.appSlots)", "resume-existing", "behind(pkg)")
+        order(fn, "TripMusicPlan.gate(", "TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)", "resume-existing", "ports.behind(pkg)")
         assertFalse(fn.contains("before.orEmpty().any"), "quyết 'phiên có trước' chỉ ở hàm thuần `TripMusicPlan.preexisting`")
+        val view = SourceRoots.body(start, "override fun view(pkg: String, url: String, slotVd: Int?): String {")
+        order(view, "TripMusicPlan.viewCmd(vd, url, pkg)", "host.behindChain(", "viewInSlot(kit, pkg, slotVd, url)",
+            "BehindHomePlan.stageFor(stages, pkg)", "kit.seq.startBehindHidden(pkg, kit.hidden, view = k4)", "kit.seq.startBehind(pkg, st, view = k4)")
     }
 
     @Test
@@ -168,6 +185,14 @@ class TripWiringContractTest {
             "TripHub.bind(" to "KachiHomeTrip.kt",
             "KachiHomeTrip(" to "KachiHomeActivity.kt",
             "TripMusicRun(" to "TripStart.kt",
+            "TripOutcome.tripCode(" to "TripStart.kt",
+            "tripResultRows(" to "SettingsSectionsTrip.kt",
+            "TripStart.now(" to "SettingsSectionsTrip.kt",
+            "StagingDisplay(" to "BehindHomeRunner.kt",
+            "TripMusicView(" to "TripStart.kt",
+            "TripMusicPlan.viewCmd(" to "TripStart.kt",
+            "BehindHomePlan.stageFor(" to "TripStart.kt",
+            "InstalledApps.isSystem(" to "SettingsSectionsTrip.kt",
             "bridge.sessions()" to "TripMusicRun.kt",
             "bridge.playPackage(" to "TripMusicRun.kt",
             "bridge.playFromUri(" to "TripMusicRun.kt",

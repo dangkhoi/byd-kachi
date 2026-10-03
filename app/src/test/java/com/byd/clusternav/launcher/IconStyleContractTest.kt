@@ -322,9 +322,8 @@ class IconStyleContractTest {
             "nút 'Mở khoá cửa' (door) đã gỡ 1.94 (NOT_PROVISIONED trên xe); giữ hình cho lần wire lại nếu trim khác cho",
         "ic-car-top-lock" to
             "nút 'Khoá / mở khoá' (lock) đã gỡ 1.94 (NOT_PROVISIONED); giữ hình cho lần wire lại nếu trim khác cho",
-        "ic-close" to
-            "nút ✕ của thanh đầu ô đã gỡ ở S2 (owner: \"chỉ 1 nút ⇄\"); giữ dòng này để `ic_close.xml` không thành " +
-                "tệp mồ côi, và để bày lại nút đóng ở đâu đó là có sẵn đúng hình",
+        // ⚠ L6 (owner 03/10) — `ic-close` RA khỏi danh sách: nút *tắt* cạnh ⇄ (`SlotActionsCluster`) dùng lại đúng hình mà dòng
+        // miễn-trừ cũ đã giữ "để bày lại nút đóng ở đâu đó là có sẵn đúng hình".
         "ic-target" to
             "datum 'Mục tiêu sạc' (target_soc) đã gỡ 2026-09-25 — SET_DR_SOC_TARGET không phân giải trên ROM xe " +
                 "owner; icon là tài sản SINH (design/icon-grammar.json) nên xoá tệp sẽ làm gen-icons --check lệch byte",

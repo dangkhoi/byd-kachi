@@ -4,7 +4,9 @@ import android.content.Context
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import com.byd.clusternav.R
+import com.byd.clusternav.ShellReadiness
 import com.byd.clusternav.launcher.trip.TripAppCodec
 import com.byd.clusternav.launcher.trip.TripConfig
 import com.byd.clusternav.launcher.trip.TripGate
@@ -12,8 +14,6 @@ import com.byd.clusternav.launcher.trip.TripMusicMode
 import com.byd.clusternav.launcher.trip.TripStart
 import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import com.byd.clusternav.modules.clustercast.ClusterProfile
-import java.text.SimpleDateFormat
-import java.util.Date
 
 /**
  * Hai cổng mà trang Cài đặt chuyến lên xe cần — chủ là `KachiHomeTrip` (màn chính). Cùng khuôn [ShortcutSettingsPort].
@@ -86,6 +86,18 @@ class SettingsTripAppsSection(
                 )
             }
             if (!cameraKnown) (row as? ViewGroup)?.getChildAt(1 + options.indexOfFirst { it.first == NORMAL })?.alpha = DIM
+            // L4 · D5 — app hệ thống: chạy nền bị từ chối (R0.6, giữ nguyên) ⇒ chip *Chạy nền* MỜ + KHÔNG đổi kiểu được, chạm
+            // chỉ nói lý do; một dòng lý do ngay dưới hàng. Đo bằng `FLAG_SYSTEM` (CÙNG phép của chuyến), không bảng tên gói.
+            if (InstalledApps.isSystem(context, a.pkg)) {
+                val reason = context.getString(R.string.kachi_trip_system_bg, appLabel(a.pkg))
+                (row as? ViewGroup)?.getChildAt(1 + options.indexOfFirst { it.first == BG })?.apply {
+                    alpha = DIM
+                    setOnClickListener { Toast.makeText(context, reason, Toast.LENGTH_SHORT).show() }
+                }
+                list.addView(row)
+                list.addView(rows.note(reason))
+                return@forEach
+            }
             list.addView(row)
         }
         if (!cameraKnown && cfg.apps.isNotEmpty()) list.addView(rows.note(context.getString(R.string.kachi_trip_normal_unsupported)))
@@ -163,6 +175,9 @@ class SettingsTripMusicSection(
                 save(cfg.copy(music = cfg.music.copy(query = text)))
             }
         })
+        // L4 · D3(iii) — kiểu không "phát tiếp" ([TripMusicMode.resumable], dữ liệu của kiểu — lúc chạy vẫn quyết bằng phiên đo
+        // được) mà ô "Phát gì" trống ⇒ nói thật: chỉ mở app; dán link để tự phát, hoặc chọn YT Music.
+        if (!cfg.music.mode.resumable && q.isEmpty()) extra.addView(rows.note(context.getString(R.string.kachi_trip_music_link_hint)))
         extra.addView(rows.note(context.getString(R.string.kachi_trip_music_note)))
     }
 }
@@ -175,15 +190,16 @@ private fun statusRows(list: LinearLayout, context: Context, rows: SettingsRows)
     if (!ShellAccessUi.usableNow()) {
         list.addView(rows.button(context.getString(R.string.kachi_trip_wait_channel)) { ShellAccessUi.allowOrPrompt(context) })
     }
-    val r = TripStart.last(context) ?: return
-    // Giờ 24h theo ngôn ngữ NGƯỜI DÙNG chọn (cùng mẫu đồng hồ thanh trên) — `DateFormat.getTimeInstance` không truyền
-    // locale thì theo locale MÁY (xe đặt `ms`/`en_US` ra 12h + AM/PM), lệch với đồng hồ ngay trên màn (spec R7).
-    val at = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date(r.atWall))
-    val text = when (r.code) {
-        TripGate.Code.RAN -> context.getString(R.string.kachi_trip_res_ran, at)
-        TripGate.Code.NOTHING -> context.getString(R.string.kachi_trip_res_nothing, at)
-        TripGate.Code.EXPIRED -> context.getString(R.string.kachi_trip_expired)
-        TripGate.Code.GAVE_UP -> context.getString(R.string.kachi_trip_res_gave_up, at)
+    // L4 · D1 — lần nổ máy NÀY chưa có kết quả (kênh không lên ⇒ chuyến không chạy — [ĐO `p3/e2e-L4/e12-channel-down`]) ⇒
+    // nói ra, để dòng kết quả bên dưới không bị đọc nhầm là của lần này.
+    when (TripStart.now(context)) {
+        TripGate.Now.SHOWN -> Unit
+        TripGate.Now.RUNNING -> list.addView(rows.note(context.getString(R.string.kachi_trip_now_running)))
+        TripGate.Now.NOT_RUN -> list.addView(rows.note(context.getString(
+            if (ShellReadiness.isUp()) R.string.kachi_trip_now_wait_home else R.string.kachi_trip_now_wait_channel,
+        )))
     }
-    list.addView(rows.note(context.getString(R.string.kachi_trip_last_ran, text)))
+    // L4 · D1(b): mã chuyến (RAN / NOOP / PARTIAL …) + MỘT câu cho từng bước — `SettingsTripResult.kt`.
+    val r = TripStart.last(context) ?: return
+    tripResultRows(list, context, rows, r)
 }

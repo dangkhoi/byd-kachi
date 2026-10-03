@@ -1,9 +1,5 @@
 package com.byd.clusternav.launcher
 
-import kotlin.math.floor
-import kotlin.math.min
-import kotlin.math.roundToInt
-
 /**
  * ═══ R-SI1 — LƯỚI LỐI TẮT TỰ CO GIÃN theo khung THẬT của widget `w_apps` (thuần, `:core`, đơn vị px) ═══════════════
  *
@@ -24,6 +20,13 @@ import kotlin.math.roundToInt
  *
  * Số dp KHÔNG sống ở đây (`SpacingScaleContractTest.core khong giu so dp`): tầng vẽ đổi 28/120 dp
  * (`KachiBars.SHORTCUT_GRID_MIN_ICON`/`MAX_ICON`) ra px rồi mới gọi.
+ *
+ * ## L5 WIDGET-FIT-ALL (2.87) — nay là MỘT cấu hình của [GridFit]
+ * Phép khớp ở trên KHÔNG đổi một px: nó chính là [GridFit.fit] với hộp `1×1` (icon vuông, `k` = cạnh icon px),
+ * [GridFit.Placement.EVEN_GAPS] (ô = icon, khe = phần dư chia đều), [GridFit.RowSplit.FULL_FIRST] (hàng cuối nhận phần
+ * lẻ) và `quantum = 1` (px nguyên + hai vòng sửa ranh giới). `ShortcutGridFitTest` (vét cạn độc lập) giữ nguyên và
+ * xanh — đó là bằng chứng tương đương. Lý do gộp: owner nói CÙNG một mục tiêu cho lưới lối tắt và mọi nội dung
+ * widget; hai bộ giải là hai chỗ để lệch nhau.
  */
 object ShortcutGridFit {
 
@@ -61,18 +64,15 @@ object ShortcutGridFit {
          * Mép trái (px, so với khung) của icon thứ [i]. Mỗi hàng căn giữa với CÙNG [gapXPx]: hàng đủ thì mép trái =
          * đúng một khe; hàng cuối thiếu thì dồn vào giữa, khe giữa các icon không đổi.
          */
-        fun left(i: Int): Int {
-            val row = i / cols
-            val k = inRow(row)
-            val rowW = k * iconPx + (k - 1) * gapXPx
-            return ((widthPx - rowW) / 2f + (i % cols) * (iconPx + gapXPx)).roundToInt()
-        }
+        fun left(i: Int): Int = grid().left(i)
 
         /** Mép trên (px, so với khung) của icon thứ [i] — cả khối căn giữa theo chiều dọc với [gapYPx]. */
-        fun top(i: Int): Int {
-            val blockH = rows * iconPx + (rows - 1) * gapYPx
-            return ((heightPx - blockH) / 2f + (i / cols) * (iconPx + gapYPx)).roundToInt()
-        }
+        fun top(i: Int): Int = grid().top(i)
+
+        /** Hình học dùng chung với lưới widget ([GridFit.Grid]) — một công thức đặt ô, không phải hai. */
+        private fun grid() = GridFit.Grid(
+            GridFit.rowCounts(count, cols, GridFit.RowSplit.FULL_FIRST), iconPx, iconPx, gapXPx, gapYPx, widthPx, heightPx,
+        )
     }
 
     /**
@@ -80,40 +80,14 @@ object ShortcutGridFit {
      * tự dựng ô "chưa có lối tắt". Khung ≤ 0 (chưa đo) ⇒ icon = [minIconPx].
      */
     fun fit(n: Int, widthPx: Int, heightPx: Int, gapRatio: Double, minIconPx: Int, maxIconPx: Int): Fit {
-        val w = widthPx.coerceAtLeast(0)
-        val h = heightPx.coerceAtLeast(0)
-        if (n <= 0) return Fit(0, 0, 0, 0, 0f, 0f, w, h)
-        val ratio = gapRatio.coerceAtLeast(0.0)
-        var bestCols = 1
-        var bestRows = n
-        var bestS = -1
-        for (c in 1..n) {
-            val r = (n + c - 1) / c
-            val s = largest(c, r, w, h, ratio)
-            val empty = c * r - n
-            val bestEmpty = bestCols * bestRows - n
-            val better = s > bestS || (s == bestS && (empty < bestEmpty || (empty == bestEmpty && r < bestRows)))
-            if (better) { bestCols = c; bestRows = r; bestS = s }
-        }
-        val lo = minIconPx.coerceAtLeast(0)
-        val s = bestS.coerceIn(lo, maxIconPx.coerceAtLeast(lo))
-        val gapX = ((w - bestCols * s) / (bestCols + 1f)).coerceAtLeast(0f)
-        val gapY = ((h - bestRows * s) / (bestRows + 1f)).coerceAtLeast(0f)
-        return Fit(n, bestCols, bestRows, s, gapX, gapY, w, h)
-    }
-
-    /** Sai số cho phép khi so tích số thực với khung nguyên (0,3 không biểu diễn đúng ở cơ số 2). */
-    private const val EPS = 1e-6
-
-    /** Cỡ icon nguyên lớn nhất để [cols] × [rows] icon cùng khe `ratio·s` vừa `w × h`. */
-    private fun largest(cols: Int, rows: Int, w: Int, h: Int, ratio: Double): Int {
-        val perX = cols + (cols + 1) * ratio
-        val perY = rows + (rows + 1) * ratio
-        fun fits(s: Int) = s * perX <= w + EPS && s * perY <= h + EPS
-        // Phép chia cho ra đáp số; hai vòng sửa chỉ chạy khi số thực lệch đúng tại ranh giới (≤ 1 bước).
-        var s = floor(min(w / perX, h / perY)).toInt().coerceAtLeast(0)
-        while (s > 0 && !fits(s)) s--
-        while (fits(s + 1)) s++
-        return s
+        val g = GridFit.fit(
+            n, widthPx, heightPx,
+            listOf(GridFit.Shape(GridFit.Form.ICON_ONLY, 1.0, 1.0, minIconPx.coerceAtLeast(0).toDouble(), fallback = false)),
+            GridFit.Spec(
+                gapRatio = gapRatio.coerceAtLeast(0.0), maxScale = maxIconPx.toDouble(), quantum = 1.0,
+                rowSplit = GridFit.RowSplit.FULL_FIRST, placement = GridFit.Placement.EVEN_GAPS,
+            ),
+        )
+        return Fit(g.count, g.cols, g.rows, g.cellW, g.grid.gapX, g.grid.gapY, g.grid.widthPx, g.grid.heightPx)
     }
 }

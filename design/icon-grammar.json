@@ -426,6 +426,10 @@
    "domain": "TYRES",
    "note": "LỐP (`tyre_*`; nhận dạng nhóm Lốp)"
   },
+  "to_back": {
+   "domain": "LAUNCHER",
+   "note": "CHẠY NỀN — app rời ô, chạy tiếp sau màn nhà (L6, nút cạnh ⇄)"
+  },
   "volume": {
    "domain": "INFOTAINMENT",
    "note": "ÂM LƯỢNG (`vol` · `media_vol`)"

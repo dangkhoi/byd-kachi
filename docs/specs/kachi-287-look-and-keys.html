@@ -38,6 +38,7 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 1 — 2026-10-03</b>: thêm §4.5 (widget co giãn — lỗi xe 2.86) và §4.6 (ô app tắt ⇒ trong suốt, đặt tạm kết thúc ⇒ về nội dung đã lưu, nút [chạy nền][⇄][tắt], tự ẩn 3 s) theo owner 03/10; ráp mã đợt 3.</li>
 <li><b>Pass 0b — 2026-10-03</b>: thêm R-SI (lưới icon lối tắt trong widget tự co giãn) theo owner.</li>
 <li><b>Pass 0 — 2026-10-03</b>: Khởi tạo từ ba yêu cầu owner + kiểm kê đọc mã (workflow <code>wf_4014da82-0a0</code>, 2 agent). Owner chốt: khung TRỐNG cũng ẩn ⇄; mọi nút đảo được phải có phím Đảo.</li>
 </ul>
@@ -132,6 +133,169 @@ ul{padding-left:22px}li{margin:3px 0}
 <li><code>ShortcutIconsView</code> chế độ lưới: đo lại khi <code>onSizeChanged</code>, đặt vị trí icon theo kết quả (một <code>onLayout</code> riêng, không lồng LinearLayout có khe cứng); hàng cuối căn giữa cùng khe. Khối trên taskbar không đổi (đã đúng: dài theo số app).</li>
 <li>Kẹp: icon tối thiểu 28 dp (≤ 8 app nên hiếm khi chạm), tối đa 120 dp (khung to 1 app không thành icon khổng lồ).</li>
 </ul>
+
+<h3>4.5 WIDGET-FIT-ALL (lỗi xe 2.86) — mọi nội dung widget co giãn theo khung</h3>
+<div class="card">
+<!-- SPEC ADDENDUM — L5 WIDGET-FIT-ALL (2.87) · mọi nội dung widget vừa khung. Coordinator ghép vào spec. -->
+<h3>L5 · WIDGET-FIT-ALL — Yêu cầu</h3>
+<ul>
+  <li><b>R-WF1</b> Mọi nội dung trong khung widget (lưới 2..8 mục VÀ một mục) khớp theo khung THẬT: nhiều mục thì bé lại, ít mục / khung to thì giãn ra; mọi ô cùng cỡ, khe đều (owner 03/10).</li>
+  <li><b>R-WF2</b> Không chữ nào bị cắt khi còn một bố cục có nhãn đọc được: ca ảnh 03/10 (6 nút, khung một hàng lưới ≈ 615×148px) KHÔNG được ra 2×3 dọc.</li>
+  <li><b>R-WF3</b> Không bóp chữ dưới sàn 10sp; khung quá nhỏ thì đổi dạng (ngang · chỉ-icon nếu icon phân biệt được) hoặc báo sức chứa, không co tiếp.</li>
+  <li><b>R-WF4</b> Lưới có ô bấm được giữ ô ≥ 48dp khi còn ứng viên đạt; nút nhạc 48dp không co dưới 48dp.</li>
+  <li><b>R-WF5</b> Một bộ giải chung <code>:core GridFit</code> cho lưới lối tắt (R-SI1) và mọi lưới widget; không rẽ nhánh theo mã widget.</li>
+  <li><b>R-WF6</b> Đổi hình khung không dựng lại view (đường <code>setCustomLayout</code>); nhịp 1 Hz không chạy phép đo dò.</li>
+</ul>
+
+<h3>Thiết kế</h3>
+<div class="flow">
+  <div class="fnode"><b>WidgetViews.buildGrid</b><span>1 mục · 2..8 mục</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>FitGridLayout</b><span>onMeasure, khoá (rộng, cao, số ô)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>FitProbe</b><span>đo hộp thang 1 / dạng</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>GridFit (:core)</b><span>cột × hàng × dạng × k</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>FitScale</b><span>áp k + dạng tại chỗ</span></div>
+</div>
+<ul>
+  <li><b>GridFit</b> (thuần, px): dạng VERTICAL-2 dòng · VERTICAL-1 dòng · HORIZONTAL · ICON_ONLY (lùi). Thứ tự từ điển: tầng đọc được → đích chạm → <code>min(k, trần)</code> lớn → dạng ưu tiên → k chưa kẹp lớn → ít ô trống → ô vuông → ít hàng. <code>capacity()</code> = số mục tối đa còn nhãn đọc được + đạt chạm. <code>ShortcutGridFit</code> = cấu hình EVEN_GAPS + FULL_FIRST + bước 1px.</li>
+  <li><b>FitProbe</b>: đo <code>UNSPECIFIED</code> rồi tìm nhị phân bề rộng NHỎ NHẤT không cắt chữ và không cao hơn ⇒ nhãn 2 dòng xuống dòng “miễn phí”, hàng chia <code>weight</code> đều lộ đúng nhu cầu; đúng mọi ngôn ngữ/phông vì là số đo.</li>
+  <li><b>FitScale</b>: chụp giá trị gốc một lần, áp gốc×k (lề, LayoutParams cố định, lề ngoài, cỡ chữ/dải autosize, minWidth/minHeight, drawable kèm chữ); ngang = lật khối dọc chính; chỉ-icon = ẩn nhãn, nhãn vào <code>content-desc</code>. Chỉ ghi khi đổi thật.</li>
+  <li>Ô tự vẽ theo khung (Ring, TyreBoard, Photo, CarMini, DoorBoard, lưới lối tắt, ô nhóm) được để nguyên (nhận diện theo LOẠI view).</li>
+  <li>Gỡ vá B5 của <code>MiniCard</code> (autosize trên chiều cao WRAP chỉ co, không giãn; ẩn icon) — dạng NGANG thay vai “ẩn icon”.</li>
+</ul>
+
+<h3>Hằng [ĐỀ XUẤT — owner chốt]</h3>
+<table>
+  <tr><th>Hằng</th><th>Giá trị</th><th>Lý do</th></tr>
+  <tr><td><code>KachiBars.FIT_TEXT_MIN</code></td><td>10sp</td><td>nhãn nhỏ nhất đang ship trong một ô (SELECT ở DOCK = 11.5−1.5)</td></tr>
+  <tr><td><code>MAX_SCALE_GRID</code></td><td>2.0</td><td>DOCK×2 ≈ BIG×1.5 (icon 40dp, nhãn 23sp)</td></tr>
+  <tr><td><code>MAX_SCALE_SINGLE</code></td><td>1.5</td><td>BIG×1.5 — cùng trần chữ với lưới</td></tr>
+  <tr><td><code>QUANTUM</code> / <code>SLACK_PX</code> / <code>VERIFY_STEPS</code></td><td>1/32 · 2px · 2</td><td>không giật khi đổi khung vài px · sai số làm tròn · lưới an toàn</td></tr>
+  <tr><td>Khe lưới / đích chạm / sàn icon</td><td><code>Sp.S</code> · <code>Sp.TOUCH</code> · <code>Sp.ICON_XS</code></td><td>khe y như 2.86 · 48dp · 16dp</td></tr>
+</table>
+
+<h3>Quyết định &amp; lệch so với bản đồ thiết kế</h3>
+<ul>
+  <li>Theo BUILD của nhiệm vụ (bộ áp đổi view tại chỗ), KHÔNG theo phương án FitContext ghi đè <code>densityDpi</code> + dựng lại trong onMeasure: dựng lại = mất cú bấm (SOÁT P1-1/C5), mỗi k một Resources.</li>
+  <li>Hộp tự nhiên = UNSPECIFIED + tìm bề rộng nhỏ nhất. [SUY] chỉ UNSPECIFIED cho bề rộng nhãn một dòng ⇒ ca ảnh k≈0.67 (dưới sàn) thay vì ≈1.03.</li>
+  <li>Sàn chữ 10sp chứ không <code>KachiType.CAPTION</code> 12 (nhãn DOCK 11.5 sẽ “không đọc được” ngay ở k=1); hằng sống ở <code>KachiBars</code> vì <code>TypeScaleContractTest</code> khoá đúng 5 bậc, <code>KachiSpace.kt</code> đã 490 dòng.</li>
+  <li>Phân hàng: widget BALANCED (luật <code>GroupTileView.rowsOf</code>), lối tắt giữ FULL_FIRST (test R-SI1 ghim) — OQ2 chốt theo từng bề mặt.</li>
+  <li><code>capacity()</code> mới nối vào dòng nhật ký QA; gợi ý ở trình chọn cần cỡ khung trong AppDrawer + chuỗi 5 ngôn ngữ ⇒ việc sau.</li>
+  <li>Không chạm <code>ControlTileFactory.kt</code>, <code>WorkspaceView.kt</code>, <code>TileSize.kt</code>, <code>strings.xml</code>; không thêm chữ người dùng thấy.</li>
+</ul>
+
+<h3>Bằng chứng</h3>
+<table>
+  <tr><th>Mục</th><th>Mức</th><th>Nguồn</th></tr>
+  <tr><td>Cơ chế cắt chữ ảnh 03/10</td><td>[ĐO AOSP r47]</td><td><code>TextView.java:9404-9405</code>, <code>LinearLayout.java:1625-1627</code></td></tr>
+  <tr><td>Khớp trong onMeasure hội tụ ≤ 1 lượt thừa</td><td>[ĐO AOSP r47]</td><td><code>View.java:24450-24474</code>, <code>:21952</code></td></tr>
+  <tr><td>Bộ đệm đo làm <code>getLayout()</code> cũ ⇒ ép đo lại</td><td>[ĐO AOSP r47]</td><td><code>View.java:24508-24552</code></td></tr>
+  <tr><td><code>setTextSize</code> vô hiệu khi autosize</td><td>[ĐO AOSP r47]</td><td><code>TextView.java:4271-4275</code></td></tr>
+  <tr><td>Số hộp ô DOCK ở 240dpi (82×94…)</td><td>[SUY]</td><td>fixture test, chưa đo trên máy</td></tr>
+  <tr><td>Khung thật + 6 mã trong ảnh, phông BYD, fontScale, chi phí lượt khớp</td><td>[CHƯA BIẾT]</td><td>dòng <code>logcat -s WidgetFit</code> in ms + cap</td></tr>
+</table>
+
+<h3>Kiểm thử</h3>
+<ul>
+  <li><code>GridFitTest</code> (:core, 14): lưới tham số 5376 ca + quét 2080 ca so oracle QUÉT độc lập; không tràn, khe đều ±1px, hàng cân bằng, sàn/trần, lượng tử; ca ảnh 03/10 (6×1 dọc 2 dòng, k ≥ 1, đạt chạm; quét bề ngang 580–1000px × cao 119/123/148 không bao giờ 2 hàng dọc); Thái ×1.16 / CJK ×1.23; QUAD 1 mục → 1.5, 2 mục → 2.0; đơn điệu theo n và theo khung; đích chạm; chỉ-icon chỉ là đường lùi; sức chứa (ảnh: 7).</li>
+  <li><code>FitGridWiringContractTest</code> (:app, 8): buildGrid qua FitGridLayout, không chia hàng theo số mục; khớp chỉ khi khoá đổi, đường đo không <code>requestLayout/post/addView</code>; bộ áp chỉ đổi tại chỗ; ô tự vẽ để nguyên; B5 đã gỡ; mọi hàm mới có chỗ gọi (CLAUDE.md §8); mọi tệp ≤ 500 dòng.</li>
+  <li><code>ShortcutGridFitTest</code> 10/10 không sửa (bằng chứng lưới lối tắt không đổi px).</li>
+  <li>Toàn bộ (XML): :core 3733/0 hỏng · :app 1873/0 hỏng. Cố ý làm đỏ: tắt tầng đọc được ⇒ 5/14 đỏ (ca ảnh ra ICON_ONLY); bỏ chặn <code>grew()</code> ⇒ 1/8 đỏ; khôi phục ⇒ xanh.</li>
+  <li><code>:app:lintDebug</code>: 1 lỗi CÓ SẴN ở f297411 (<code>values-ms kachi_bg_opacity_note</code>, “0% s”), không thuộc L5.</li>
+  <li>QA máy ảo (chưa làm — máy ảo do agent khác giữ): khung 4×1 với 6 nút kính, rồi 2×1, 3×1, 1×2, QUAD, có/không dock, VI/TH/ZH/MS; <code>uiautomator dump</code> mọi TextView không bị cắt, ô bằng nhau ±1px, chỉ-icon có <code>content-desc</code>; <code>logcat -s WidgetFit</code>.</li>
+</ul>
+
+<h3>Câu hỏi mở cho owner</h3>
+<ul>
+  <li>OQ-WF1: chốt sàn 10sp và trần 2.0 / 1.5.</li>
+  <li>OQ-WF2: bố cục đổi cả ở khung đang ổn (vd 4 mục khung rộng → 4×1 thay 2+2) — cần ảnh trước/sau.</li>
+  <li>OQ-WF3: khung quá nhỏ cho nhãn: cho chỉ-icon (icon OFF đang mờ — WIDGET-ICON-OFF-FAINT) hay cảnh báo sức chứa ở trình chọn?</li>
+  <li>OQ-WF4: nhạc trong khung một hàng: giữ nút 48dp (tràn) như hiện tại hay dạng nhạc rút gọn.</li>
+</ul>
+
+</div>
+<h3>4.6 Vòng đời ô — SLOT-DEAD-TRANSPARENT · SLOT-TEMP-REVERT · SLOT-APP-ACTIONS</h3>
+<div class="card">
+<!-- SPEC ADDENDUM · L6 — vòng đời ô (owner 03/10, xe thật 2.86). Phiên điều phối gộp vào spec; agent L6 KHÔNG sửa docs/specs. -->
+<h3>L6 — Vòng đời ô: app chết ⇒ trong suốt · hết đặt tạm ⇒ về hồ sơ · nút <em>chạy nền</em> / <em>tắt</em></h3>
+<p>Nguồn: owner 03/10 (ảnh ô Google Maps đã đóng còn icon + “App đã đóng — chạm để mở lại”) — <em>“Khi app bị tắt thì trả về transparent luôn…”</em> · <em>“widget đang để lốp, xong shortcut mở 1 app vào, xong tắt app đi, thì nó nên về đâu? Hiện tại nó về đen thui 1 mảng”</em> · <em>“Chỗ nút switch app/widget có thể thêm 2 nút, 1 là đẩy app ra chạy nền, 2 là tắt app luôn … Nút cũng tự hide sau 3s”</em> · <em>“Ô widget cũng cho tắt đc chứ hả”</em>. Mã off-car trong cây làm việc riêng, CHƯA commit, CHƯA đo máy ảo / xe (QA sau).</p>
+
+<h3>Yêu cầu</h3>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>Tiêu chí nhận (đo được)</th></tr>
+<tr><td>L6-a</td><td>App LƯU của ô rời màn ảo (chết / bị tắt ngoài Kachi) ⇒ ô TRONG SUỐT như khung trống (chỉ ⇄); KHÔNG còn thẻ icon + “chạm để mở lại”. Không ghi hồ sơ; khởi động lại / đổi hồ sơ ⇒ app mở lại như lúc khởi động.</td><td><code>SlotRevertPlanTest.a</code> · <code>HomeViewModelTest.slotRevert - app LUU chet…</code> · <code>SlotHostingLifecycleContractTest</code> (ghim cũ đảo có lý do) · chuỗi <code>kachi_slot_app_closed</code> gỡ ở 5 tệp. 🚗 OC-L6-1.</td></tr>
+<tr><td>L6-b</td><td>Lượt đặt TẠM kết thúc (app chết / bị tắt / ra nền) ⇒ ô về nội dung LƯU (widget về; app LƯU khác mở lại vào ô như lúc khởi động). Nội dung LƯU chính là app đó hoặc ô LƯU trống ⇒ trong suốt. Đặt tạm (lối tắt <em>Ô n</em>, giọng nói <em>“mở … vào ô n”</em>) không bao giờ ghi hồ sơ.</td><td><code>SlotRevertPlanTest</code> (240 ô + ca owner widget lốp) · <code>HomeViewModelTest</code> (0 lần <code>persist()</code>). 🚗 OC-L6-2.</td></tr>
+<tr><td>L6-c1</td><td>Đầu ô: app [chạy nền][⇄][tắt] · widget [⇄][tắt] · trống [⇄]. Nút không tồn tại khi việc không làm được (không kênh / không màn ảo ⇒ chỉ ⇄). Đích chạm ≥ 48 dp. Mô tả trợ năng 5 tiếng.</td><td><code>SlotHeadActionsTest</code> (60 ô) · <code>SlotLifecycleWiringContractTest</code> (48×48, mô tả, 5 tiếng).</td></tr>
+<tr><td>L6-c2</td><td>Mọi nút đầu ô đi cùng luật nghỉ tự ẩn (<code>SlotHeadRest</code>/<code>SlotHeadAutoHide</code>), ẩn sau 3 s (4 s → 3 s).</td><td><code>SlotHeadRestTest</code> chốt đúng 3 000 ms · bài nhịp nghỉ ở <code>SlotLifecycleWiringContractTest</code>.</td></tr>
+<tr><td>L6-c3</td><td><em>Tắt</em> ô app = gỡ ĐÚNG task của app trên màn ảo CỦA Ô (không <code>am force-stop</code> cả gói) rồi luật L6-b. <em>Tắt</em> ô widget = trong suốt tạm (không ghi; id widget bên thứ ba không thu hồi).</td><td><code>SlotCloseTest</code> (dump nguyên văn: <code>am stack remove 572</code> trên màn ảo 231) · <code>SlotRevertPlanTest.tat o widget…</code> (id 651 không rác). 🚗 OC-L6-3.</td></tr>
+<tr><td>L6-c4</td><td><em>Chạy nền</em> ô app = đưa app ra sau màn nhà bằng đường công khai sẵn có, ô của chính nó là chỗ dàn dựng, rồi luật L6-b.</td><td>Xem <strong>D-L6-1</strong> (chỉ làm được khi ô có app LƯU khác). 🚗 OC-L6-4.</td></tr>
+</table>
+
+<h3>Thiết kế (một nguồn sự thật “LƯU vs đang HIỆN”)</h3>
+<ul>
+<li><strong>Lớp tạm có sẵn</strong> (<code>SlotOverlay</code>, FIX286 R-SC1) mở rộng thêm <code>cleared</code> — ô trong suốt tạm. <code>applyTo</code> = LƯU + app tạm + ô trong suốt; <code>place</code>/<code>afterSave</code>/<code>drop</code> gỡ trạng thái trong suốt; đổi hồ sơ / đổi bố cục / khởi động lại ⇒ lớp tạm mất ⇒ ô về hồ sơ.</li>
+<li><strong><code>:core SlotRevertPlan</code></strong> — (LƯU × đang HIỆN × sự kiện × gói) → <code>Keep</code> · <code>ShowSaved(swapInPlace)</code> · <code>Clear</code>. Sự kiện: <code>APP_DIED</code> · <code>APP_CLOSED</code> · <code>APP_BACKGROUND</code> · <code>WIDGET_CLOSED</code>. Gói lệch gói đang hiện ⇒ <code>Keep</code> (sự kiện cũ). Chỉ đổi lớp TẠM (<code>overlayAfter</code>).</li>
+<li><strong><code>:core SlotHeadActions</code></strong> — loại ô × đường chiếu × kênh × <code>SlotRevertPlan.backgroundable</code> → nút trái→phải; <code>possible()</code> = nút được DỰNG cho loại ô.</li>
+<li><strong><code>:core SlotClosePlan</code> + <code>SlotCloseRun</code></strong> — đọc <code>am stack list</code> → stack của gói trên đúng màn ảo, <code>mActivityType=standard</code> bằng chữ, không ghim, mọi task cùng gói, không phải Kachi → <code>FloatingOrphanPlan.removeCmd</code> (bộ dựng duy nhất của <code>am stack remove</code>) → đọc lại (<code>StackReads.settle</code>, tách từ <code>FloatingOrphanSweep</code> — DRY, hành vi giữ byte). Kết luận bằng bản đọc lại.</li>
+<li><strong><code>:app</code></strong>: <code>SlotActionsCluster</code> (hàng [chạy nền][chỗ ⇄][tắt] chèn DƯỚI ⇄, nút 48×48 dp, icon <code>ic-to-back</code> mới · <code>ic-close</code> có sẵn, tô <code>MUT</code> như ⇄) do <code>SlotHeadAutoHide</code> quản cùng nhịp với ⇄; cổng <code>SlotActionsPort</code> = <code>KachiHomeSlotActions</code> (một cửa <code>revert</code>: quyết → host <code>relinquish</code> → <code>applySlotRevert</code>); <code>VdAppHost.onAppClosed</code> giấu mặt vẽ rồi báo <code>onGone</code> (thẻ “đã đóng” gỡ).</li>
+<li><strong>Thứ tự bắt buộc</strong>: host thả app (<code>relinquish</code>: <code>pkg = null</code>) TRƯỚC khi state đổi — lượt render nhả host, mà host còn giữ gói thì <code>release()</code> <code>am force-stop</code> cả gói.</li>
+</ul>
+<table>
+<tr><th>Lối vào</th><th>Phần Android trước khi state đổi</th><th>Sự kiện → ô</th></tr>
+<tr><td>Nhịp <code>SlotLiveProbe</code> thấy app rời màn ảo</td><td>giấu mặt vẽ · host thả app (không force-stop)</td><td><code>APP_DIED</code>: LƯU = app đó ⇒ trong suốt · LƯU khác ⇒ về LƯU (dựng lại ô; app LƯU: K8 nếu đang sau màn nhà, không thì đường ô golden)</td></tr>
+<tr><td>Nút <em>tắt</em> ô app</td><td><code>am stack remove &lt;stack của app trên màn ảo ô&gt;</code> (luồng nền, sau <code>allowOrPrompt</code>) → đọc lại → host thả app</td><td><code>APP_CLOSED</code> (như trên). Chưa gỡ được ⇒ ô giữ nguyên + “Chưa tắt được …”</td></tr>
+<tr><td>Nút <em>chạy nền</em> ô app</td><td>— (ô đổi TẠI CHỖ về app LƯU ⇒ <code>onAppSwapped</code> ⇒ <code>KachiHomeSlots.evictBehind</code> ⇒ <code>BehindHomeRunner.evict</code> sẵn có)</td><td><code>APP_BACKGROUND</code> ⇒ <code>ShowSaved(swapInPlace = true)</code></td></tr>
+<tr><td>Nút <em>tắt</em> ô widget</td><td>—</td><td><code>WIDGET_CLOSED</code> ⇒ trong suốt tạm</td></tr>
+</table>
+<p><strong>Bốn câu CLAUDE.md §4 cho <code>am stack remove &lt;id&gt;</code></strong> (KDoc <code>SlotClosePlan</code>): (1) display = màn ảo CỦA Ô (host giữ id, <code>vd ≥ 1</code>; mọi task của stack có <code>displayId = vd</code> trong bản đọc của chính lượt đó) · (2) app = đúng gói ô đang giữ, không bao giờ Kachi, stack lẫn gói khác ⇒ bỏ · (3) <code>standard</code> bằng CHỮ, không <code>pinned</code> (A12 <code>removeTask</code> không tự chặn loại ⇒ đây là rào duy nhất trên DL5) · (4) không hoàn tác (≈ vuốt khỏi Gần đây); mở lại bằng ⇄ / lối tắt / khởi động lại; hỏng giữa chừng ⇒ đọc lại vẫn thấy ⇒ ô không đổi + một câu báo.</p>
+
+<h3>Bằng chứng theo mức</h3>
+<table>
+<tr><th>#</th><th>Điểm</th><th>Mức</th><th>Căn cứ</th></tr>
+<tr><td>1</td><td><code>am stack remove</code> A10 → <code>removeStack</code> (ném nếu không standard/undefined) → mỗi task <code>removeTaskByIdLocked(killProcess = true, REMOVE_FROM_RECENTS)</code>; tiến trình chỉ bị giết khi không còn activity ở task khác trong Gần đây và không có dịch vụ tiền cảnh.</td><td>[ĐO nguồn]</td><td>r47 <code>ActivityManagerShellCommand.java:2629-2634</code> · <code>ActivityTaskManagerService.java:3373-3392</code> · <code>ActivityStackSupervisor.java:1733-1759, 1766-1768, 1789-1803, 1806-1866</code> (<code>:1848-1857</code>).</td></tr>
+<tr><td>2</td><td>A12 <code>am stack remove &lt;id&gt;</code> = <code>runRootTaskRemove</code> → <code>removeTask</code>, KHÔNG kiểm loại stack.</td><td>[ĐO nguồn]</td><td>r34 <code>ActivityManagerShellCommand.java:2716-2721</code> · <code>ActivityTaskManagerService.java:1904-1926</code>.</td></tr>
+<tr><td>3</td><td>Gỡ màn ảo ô (cờ 256) huỷ mọi activity trên đó ⇒ “chạy nền” KHÔNG làm được bằng cách để ô thả màn ảo.</td><td>[ĐO nguồn]</td><td>r47 <code>ActivityDisplay.java:1120-1139</code>, <code>:1214-1216</code>.</td></tr>
+<tr><td>4</td><td>Đẩy A ra sau màn nhà khi A đang ĐỈNH màn ảo ⇒ stack đích bị kéo lên trước màn nhà (lý do <code>evict</code> đòi B đứng trước).</td><td>[ĐO nguồn]</td><td>r47 <code>TaskRecord.java:736-737, 747-749</code> (<code>wasFront</code>).</td></tr>
+<tr><td>5</td><td>Hình dạng stack app trong màn ảo ô: <code>Stack id=572 … displayId=231</code>, <code>mActivityType=standard</code>, <code>mWindowingMode=fullscreen</code>.</td><td>[ĐO máy ảo 03/10, fixture FIX286]</td><td><code>am-stack-list-emulator-2026-10-03-sc-maps-in-slot.txt</code>.</td></tr>
+<tr><td>6</td><td><code>am stack remove</code> trên màn ảo ô chạy thật trên máy ảo / xe; hình bản đọc sau lệnh; app nào sống tiếp nhờ dịch vụ tiền cảnh.</td><td>[CHƯA BIẾT]</td><td>Chưa đo (luồng này không được dùng máy ảo). Lệnh đã đo trên display 0 (PROFILE-SWITCH-SLOTS R-B3). Chốt: OC-L6-3.</td></tr>
+<tr><td>7</td><td>Độ đọc rõ của icon <code>MUT</code> không đĩa trên nội dung app (như ⇄ hiện nay).</td><td>[CHƯA BIẾT]</td><td>Chốt bằng ảnh xe OC-L6-5.</td></tr>
+</table>
+
+<h3>Quyết định / lệch giao việc</h3>
+<ul>
+<li><strong>D-L6-1 (cần owner/điều phối)</strong> — <em>Chạy nền</em> chỉ có khi ô có app LƯU KHÁC app đang hiện (ca: lối tắt đặt Maps tạm lên ô YouTube). Đường công khai duy nhất <code>BehindHomeRunner.evict(vd, A, B)</code> đòi B đứng trước A trong màn ảo (#4); <code>startBehind(x, …)</code> dừng ở <code>ALREADY_RUNNING</code> khi x đã có task. Ô LƯU = chính app / widget / trống ⇒ không có B ⇒ nút KHÔNG tồn tại (luật “không nút chết”). Ca phổ biến của owner (ô LƯU Maps, muốn đẩy Maps ra nền cho trong suốt) CHƯA làm được. Mở khoá: L4 thêm một lối công khai “đẩy app ĐỈNH màn ảo ra sau màn nhà” (vd giữ chỗ trên màn ảo / K12 sau lệnh) — cần đo tầng 1 (CLAUDE.md §14) vì #4.</li>
+<li><strong>D-L6-2</strong> — “picker lúc chạy là tạm” (giao việc) KHÁC luật đang chạy: ⇄/ngăn kéo là đường LƯU (spec shortcuts-autostart §2.2, <code>SlotOverlay</code> KDoc). Giữ nguyên (không đổi hành vi VI/EN đang có); ⇄ trên ô trong suốt tạm ghi hồ sơ như mọi ô. Owner chốt nếu muốn khác.</li>
+<li><strong>D-L6-3</strong> — Nút mới KHÔNG đĩa kính, chỉ icon <code>MUT</code> như ⇄ của ô có nội dung (owner 09-14 “kín đáo, nhỏ gọn”); ⇄ bị ghim byte nên không đổi được để đồng bộ. Nếu xe cho thấy khó đọc ⇒ đổi sang đĩa kính (<code>SWAP_DISC</code>, hợp đồng 4.86:1 sẵn có).</li>
+<li><strong>D-L6-4</strong> — Nút hiện khi khung có bộ chiếu màn ảo chưa nhả + kênh dùng được NGAY (đọc từ CHÍNH khung — lúc dựng, <code>hostAt</code> còn trỏ khung cũ). <em>Tắt</em> khi app chưa được mở vào màn ảo ⇒ 0 lệnh, chỉ thả host + luật hoàn ô; <em>chạy nền</em> lúc app chưa mở xong ⇒ 0 lệnh + log (hiếm) — thay vì giấu nút và kẹt ẩn ở chế độ “luôn hiện”.</li>
+<li><strong>D-L6-5</strong> — <em>Tắt</em> mà đọc lại thấy app đã không ở màn ảo (đang toàn màn chỗ khác / tự đóng) ⇒ coi ô trống, áp luật hoàn ô; app ở display khác KHÔNG bị đụng.</li>
+<li><strong>Tách theo trần 500</strong>: <code>VdAppHost.kt</code> 500 → 483 (bộ thi hành chạm sang <code>VdTouchExec.kt</code>, nguyên byte; thẻ “đã đóng” gỡ). <code>WorkspaceView.kt</code> giữ 496 (0 dòng thêm: <code>heads</code> thành <code>internal</code>, một dòng dựng <code>VdAppHost</code> thêm lambda). <code>KachiTheme.kt</code> 499 (+1 dòng icon).</li>
+<li><strong>Ghim đổi có lý do</strong>: <code>SlotHostingLifecycleContractTest</code> (thẻ “đã đóng” ⇒ báo lên luật hoàn ô; nhãn gỡ ở 5 tiếng) · <code>ShortcutsWiringContractTest</code> (<code>closedCard == null</code> ⇒ <code>!dead</code>) · <code>IconStyleContractTest</code> (<code>ic-close</code> có chỗ dùng lại) · <code>SlotHeadRestTest</code> (3–5 s ⇒ đúng 3 s) · <code>LayeringRulesTest</code> (+<code>VdTouchExec.kt</code> kèm lý do).</li>
+<li>Không chạm <code>BehindHome*</code>/<code>Trip*</code>/<code>SlotSwapButton.kt</code>/<code>strings.xml</code>. Tài liệu cũ còn nhắc thẻ “đã đóng” ở <code>SlotReturnRun.kt</code> + <code>behind/SlotReturn.kt</code> (vùng L4) — để điều phối sửa khi gộp.</li>
+</ul>
+
+<h3>Kiểm off-car</h3>
+<table>
+<tr><th>Mục</th><th>Kết quả</th></tr>
+<tr><td>Bài mới :core</td><td><code>SlotRevertPlanTest</code> 10 (bảng 240 ô) · <code>SlotHeadActionsTest</code> 3 (bảng 60 ô) · <code>SlotCloseTest</code> 11 (dump nguyên văn A10 + dạng <code>RootTask</code> A12)</td></tr>
+<tr><td>Bài mới :app</td><td><code>SlotLifecycleWiringContractTest</code> 8 · <code>HomeViewModelTest</code> +3</td></tr>
+<tr><td>Thử phá</td><td>(1) <code>SlotRevertPlan</code> app LƯU chết ⇒ <code>ShowSaved</code> thay <code>Clear</code>: 3 bài đỏ (bảng 240 ô · ca (a) · VM) · (2) <code>revert()</code> thả host SAU <code>applySlotRevert</code>: bài thứ tự đỏ. Trả lại ⇒ xanh. [ĐO]</td></tr>
+<tr><td>Toàn bộ</td><td>[ĐO 03/10, đếm từ XML, <code>--rerun-tasks --continue</code>] <code>:core:test</code> 3 743 / 0 lỗi (391 XML) · <code>:app:testDebugUnitTest</code> 1 876 / 0 lỗi (230 XML).</td></tr>
+<tr><td>Lint</td><td>[ĐO] <code>:app:lintDebug</code> 0 lỗi / 555 cảnh báo. Lỗi CÓ SẴN ở gốc <code>f297411</code> (không phải L6): <code>values-ms</code> <code>kachi_bg_opacity_note</code> “0% seperti” bị đọc thành <code>% s</code> (StringFormatInvalid) ⇒ sửa chữ “0% kekal seperti asal” (nghĩa giữ nguyên, VI/EN không đổi).</td></tr>
+</table>
+
+<h3>Việc trên xe / máy ảo (🚗, QA sau)</h3>
+<ul>
+<li>OC-L6-1 — ô Maps (LƯU) → force-stop / vuốt Maps ⇒ ≤ 28 s ô trong suốt, không icon, không chữ; khởi động lại Kachi ⇒ Maps về ô.</li>
+<li>OC-L6-2 — ô widget lốp + lối tắt <em>Ô 1</em> Maps ⇒ tắt Maps (nút / ngoài) ⇒ widget lốp về; sha <code>kachi_workspace.xml</code> trước = sau.</li>
+<li>OC-L6-3 — nút <em>tắt</em> ô app: <code>logcat -s KachiSlotLife</code> thấy <code>am stack remove &lt;id&gt;</code> đúng stack trên màn ảo ô, đọc lại CLOSED; app dẫn đường đang chạy dịch vụ tiền cảnh còn tiến trình [CHƯA BIẾT]; không dòng <code>Force stopping</code>.</li>
+<li>OC-L6-4 — ô YouTube (LƯU) + lối tắt đặt Maps tạm ⇒ <em>chạy nền</em> ⇒ YouTube về ô (K8 / golden), <code>KachiBehind</code> <code>evict … MOVED</code>, Maps sau màn nhà.</li>
+<li>OC-L6-5 — ảnh: ba nút đầu ô tự ẩn sau 3 s, độ đọc icon trên Maps/YouTube, ô hẹp (bố cục tự vẽ) không cắt nút.</li>
+</ul>
+
+</div>
 
 <h2>5. Tasks (DAG)</h2>
 <table>

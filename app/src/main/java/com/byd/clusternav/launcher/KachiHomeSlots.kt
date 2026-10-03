@@ -83,6 +83,10 @@ internal class KachiHomeSlots(
     fun startBehind(pkg: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit): BehindHomePlan.Stage? =
         behind.startBehind(pkg, stages, done)
 
+    /** L4 — chuỗi tuỳ ý của chuyến lên xe (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG runner/mutex `kachi-behind`. */
+    fun behindChain(what: String, body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome, done: (BehindHomeSequence.Outcome) -> Unit) =
+        behind.chain(what, done, body)
+
     /**
      * F1 · R1.5 dòng 9 — lối tắt *Toàn màn* cho app ĐANG ở ô [index]: K7 qua rào (màn nhà Kachi đang hiện; dấu hiệu camera
      * của đời xe nếu đã biết — `ClusterProfile.cameraSignature`). Về lại ô khi màn nhà hiện lại ([WorkspaceView.returnDetached]).
@@ -112,11 +116,11 @@ internal class KachiHomeSlots(
     }
 
     /**
-     * FIX286 · R-SC2 — [pkg] được xếp ở ô [index] mà [presence] đo thấy KHÔNG còn task ⇒ mở lại vào đúng ô, CÙNG đường với
-     * chạm thẻ *"App đã đóng — chạm để mở lại"* (`VdAppHost.reopen` → mở ô golden: `am force-stop` + `am start --display`
-     * màn ảo của ô; app Kachi đẩy ra sau màn nhà ⇒ K8, không giết). Nhịp đo cũ thôi TRƯỚC (không dựng thẻ "đã đóng" giữa
-     * lượt mở lại), trạng thái "đang toàn màn" bỏ. `false` = 0 lệnh: ô không có host giữ [pkg] / đã nhả / lượt mở đang
-     * chạy dở (chưa vào nhịp đo, chưa có thẻ) ⇒ bên gọi chỉ nháy ô.
+     * FIX286 · R-SC2 — [pkg] được xếp ở ô [index] mà [presence] đo thấy KHÔNG còn task ⇒ mở lại vào đúng ô qua
+     * `VdAppHost.reopen` (mở ô golden: `am force-stop` + `am start --display` màn ảo của ô; app Kachi đẩy ra sau màn nhà ⇒
+     * K8, không giết). Nhịp đo cũ thôi TRƯỚC (không báo "app rời ô" giữa lượt mở lại — L6: thẻ "đã đóng" cũ đã gỡ, ô đi
+     * luật hoàn ô), trạng thái "đang toàn màn" bỏ. `false` = 0 lệnh: ô không có host giữ [pkg] / đã nhả / lượt mở đang
+     * chạy dở (chưa vào nhịp đo, chưa báo chết) ⇒ bên gọi chỉ nháy ô.
      */
     fun reviveInSlot(index: Int, pkg: String): Boolean = workspace().hostAt(index)?.reviveInSlot(pkg) ?: false
 

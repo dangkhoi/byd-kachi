@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.voice.VoiceAppTargets
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -32,20 +33,26 @@ class TripMusicPlanTest {
         assertEquals(TripMusicCodec.QUERY_MAX, TripMusicCodec.clean("a".repeat(500)).length)
     }
 
+    /**
+     * L4 · D3(i) — ĐỔI PIN có lý do: bản R3.5 cũ (`Gate.OTHER_PLAYING` khi nguồn khác đang phát / `isMusicActive`) làm bước
+     * nhạc KHÔNG BAO GIỜ chạy trên xe owner: BYD MediaAutoPlay tự phát lại nguồn cuối lúc nổ máy ([ĐO firmware] +
+     * `memory_play_back=1` [ĐO xe 29/09]). Chọn YouTube / YT Music là lựa chọn CỤ THỂ của người dùng ⇒ thắng nguồn xe.
+     * Còn giữ: Tắt / Theo player của xe ⇒ 0 lệnh; chưa cài; không đọc được phiên (null) ⇒ bỏ; app chọn ĐANG phát ⇒ xong.
+     */
     @Test
-    fun `cong khong de - null la CHUA BIET thi bo, dang phat hay isMusicActive thi bo`() {
+    fun `cong - chon app cu the thi THANG nguon xe dang phat, Theo player xe van khong lam gi`() {
         val idle = listOf(TripMusicPlan.Session("com.spotify.music", playing = false))
-        assertEquals(TripMusicPlan.Gate.OFF, TripMusicPlan.gate(TripMusicMode.OFF, pkg, idle, false))
-        assertEquals(TripMusicPlan.Gate.OFF, TripMusicPlan.gate(TripMusicMode.CAR, pkg, idle, false), "Theo player của xe ⇒ 0 lệnh")
-        assertEquals(TripMusicPlan.Gate.NOT_INSTALLED, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, null, idle, false))
-        assertEquals(TripMusicPlan.Gate.UNKNOWN_MEDIA, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, null, false))
-        assertEquals(TripMusicPlan.Gate.OTHER_PLAYING, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, idle, musicActive = true))
-        assertEquals(
-            TripMusicPlan.Gate.OTHER_PLAYING,
-            TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, listOf(TripMusicPlan.Session("com.byd.radio", playing = true)), false),
-        )
-        assertEquals(TripMusicPlan.Gate.GO, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, idle, false))
-        assertEquals(TripMusicPlan.Gate.GO, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, emptyList(), false))
+        assertEquals(TripMusicPlan.Gate.OFF, TripMusicPlan.gate(TripMusicMode.OFF, pkg, idle))
+        assertEquals(TripMusicPlan.Gate.OFF, TripMusicPlan.gate(TripMusicMode.CAR, pkg, idle), "Theo player của xe ⇒ 0 lệnh")
+        assertEquals(TripMusicPlan.Gate.NOT_INSTALLED, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, null, idle))
+        assertEquals(TripMusicPlan.Gate.UNKNOWN_MEDIA, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, null))
+        val radio = listOf(TripMusicPlan.Session("com.byd.radio", playing = true))
+        assertEquals(TripMusicPlan.Gate.GO, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, radio), "nguồn xe tự phát lại KHÔNG chặn nữa")
+        assertTrue(TripMusicPlan.otherPlaying(pkg, radio, musicActive = true), "nhưng sổ/nhật ký vẫn ghi là đã giành")
+        assertEquals(TripMusicPlan.Gate.SELF_PLAYING, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, listOf(TripMusicPlan.Session(pkg, true))))
+        assertEquals(TripMusicPlan.Gate.GO, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, idle))
+        assertEquals(TripMusicPlan.Gate.GO, TripMusicPlan.gate(TripMusicMode.YT_MUSIC, pkg, emptyList()))
+        assertFalse(TripMusicPlan.otherPlaying(pkg, listOf(TripMusicPlan.Session(pkg, true)), musicActive = true), "chính app chọn đang phát ≠ nguồn khác")
     }
 
     /**
@@ -62,13 +69,13 @@ class TripMusicPlanTest {
         assertFalse(TripMusicPlan.preexisting(pkg, null, inSlot = false), "không đọc được ⇒ không coi là có")
     }
 
+    /** L4 · D3(i) — ĐỔI PIN: nguồn khác vừa phát trong lúc chờ phiên (BYD tự phát lại) không còn dừng lượt — cùng lẽ [gate]. */
     @Test
     fun `kiem lai ngay truoc lenh phat`() {
-        assertEquals(TripMusicPlan.Recheck.UNKNOWN_MEDIA, TripMusicPlan.recheck(pkg, null, false))
-        assertEquals(TripMusicPlan.Recheck.OTHER_PLAYING, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session("x.y", true)), false))
-        assertEquals(TripMusicPlan.Recheck.SELF_PLAYING, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session(pkg, true)), true))
-        assertEquals(TripMusicPlan.Recheck.OTHER_PLAYING, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session(pkg, false)), true))
-        assertEquals(TripMusicPlan.Recheck.CLEAR, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session(pkg, false)), false))
+        assertEquals(TripMusicPlan.Recheck.UNKNOWN_MEDIA, TripMusicPlan.recheck(pkg, null))
+        assertEquals(TripMusicPlan.Recheck.CLEAR, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session("x.y", true))))
+        assertEquals(TripMusicPlan.Recheck.SELF_PLAYING, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session(pkg, true))))
+        assertEquals(TripMusicPlan.Recheck.CLEAR, TripMusicPlan.recheck(pkg, listOf(TripMusicPlan.Session(pkg, false))))
     }
 
     @Test
@@ -105,13 +112,50 @@ class TripMusicPlanTest {
         ).forEach { assertFalse(TripMusicPlan.safeWatchUrl(it), it) }
     }
 
+    /**
+     * L4 · D3(ii) — quyết bằng PHIÊN ĐO ĐƯỢC. ĐỔI PIN có lý do: bản cũ `play(url, hasSession=false)` ⇒ `OpenOnly` là đúng ca
+     * owner báo 03/10 (*"YouTube … để link không chạy"*): YouTube nguội trên trang chủ không có phiên ([ĐO máy ảo] e3
+     * `open-only (no session)`) ⇒ link không bao giờ tới. Nay có link mà không phiên NHẬN URI ⇒ `View` (activity, K4-VIEW).
+     * Phiên [ĐO máy ảo 03/10 e5/e8] YT Music `actions=2600887` có bit `ACTION_PLAY_FROM_URI` ⇒ vẫn `FromUri` (0 lệnh cửa sổ).
+     */
     @Test
-    fun `phat gi - URL hop le khi co phien, khong thi tiep tuc phien, khong co phien thi chi mo app`() {
+    fun `phat gi - phien nhan URI thi qua phien, khong phien hay phien khong nhan URI thi VIEW, khong link thi tiep tuc`() {
         val url = "https://music.youtube.com/watch?v=9bZkp7q19f0"
-        assertEquals(TripMusicPlan.Play.FromUri(url), TripMusicPlan.play(url, hasSession = true))
-        assertEquals(TripMusicPlan.Play.Resume, TripMusicPlan.play(null, hasSession = true))
-        assertEquals(TripMusicPlan.Play.Resume, TripMusicPlan.play("https://evil/x", hasSession = true), "URL không qua rào ⇒ không dùng")
-        assertEquals(TripMusicPlan.Play.OpenOnly, TripMusicPlan.play(url, hasSession = false))
+        val uri = TripMusicPlan.Session(pkg, playing = false, acceptsUri = true)
+        val noUri = TripMusicPlan.Session(pkg, playing = false, acceptsUri = false)
+        assertEquals(TripMusicPlan.Play.FromUri(url), TripMusicPlan.play(url, uri))
+        assertEquals(TripMusicPlan.Play.View(url), TripMusicPlan.play(url, noUri), "phiên không nhận URI ⇒ giao bằng activity")
+        assertEquals(TripMusicPlan.Play.View(url), TripMusicPlan.play(url, null), "không phiên (YouTube trang chủ) ⇒ giao bằng activity")
+        assertEquals(TripMusicPlan.Play.Resume, TripMusicPlan.play(null, uri))
+        assertEquals(TripMusicPlan.Play.Resume, TripMusicPlan.play("https://evil/x", uri), "URL không qua rào ⇒ không dùng")
+        assertEquals(TripMusicPlan.Play.OpenOnly, TripMusicPlan.play("https://evil/x", null), "URL lạ không bao giờ thành lệnh VIEW")
+        assertEquals(TripMusicPlan.Play.OpenOnly, TripMusicPlan.play(null, null))
+    }
+
+    /**
+     * L4 · D3(ii) — bốn câu CLAUDE.md §4 của lệnh MỚI K4-VIEW, khoá bằng chuỗi: chỉ màn ảo của Kachi (`vd ≥ 1`, không bao giờ
+     * display 0), đúng một gói (`-p`), URL chỉ là link xem một video (không `'` nào thoát cặp nháy).
+     */
+    @Test
+    fun `K4-VIEW - pham vi tuong minh, chuoi dung tung byte`() {
+        val url = "https://music.youtube.com/watch?v=9bZkp7q19f0"
+        assertEquals(
+            "am start --display 283 -a android.intent.action.VIEW -d 'https://music.youtube.com/watch?v=9bZkp7q19f0' -p $pkg",
+            TripMusicPlan.viewCmd(283, url, pkg),
+        )
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(0, url, pkg) }
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(-1, url, pkg) }
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, "https://music.youtube.com/watch?v=9bZkp7q19f0'; reboot", pkg) }
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, "intent://x", pkg) }
+        assertThrows(IllegalArgumentException::class.java) { TripMusicPlan.viewCmd(283, url, "a;reboot") }
+    }
+
+    /** L4 · D3(iii) — câu gợi ý "cần link" là DỮ LIỆU của kiểu, không phải nhánh lúc chạy (lúc chạy quyết bằng phiên đo). */
+    @Test
+    fun `kieu khong phat tiep - YouTube can link, YT Music tiep tuc duoc`() {
+        assertTrue(TripMusicMode.YT_MUSIC.resumable)
+        assertFalse(TripMusicMode.YOUTUBE.resumable)
+        assertFalse(TripMusicMode.OFF.resumable || TripMusicMode.CAR.resumable)
     }
 
     @Test

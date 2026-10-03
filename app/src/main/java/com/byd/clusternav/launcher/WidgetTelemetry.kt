@@ -66,29 +66,22 @@ internal object WidgetTelemetry {
         badge: Boolean,
         domain: Domain?,
     ) {
+        // ⚠ L5 WIDGET-FIT-ALL (2.87) — vá B5 (owner 2026-09-22: autosize 12..20sp + ẩn icon khi ô thấp) đã GỠ: ô nén chỉ
+        // sống trong `FitGridLayout`, nơi cỡ chữ/icon + dạng (ngang thay cho "ẩn icon") được khớp CHUNG cho cả lưới theo
+        // khung thật. [ĐO AOSP r47] autosize đọc khoảng trống đã đo (`TextView.java:9432-9471`) mà ô cao `WRAP` ⇒ nó
+        // chỉ co được, không bao giờ giãn ("khung to chữ to" không đúng); hai cơ chế cùng chỉnh cỡ thì đánh nhau.
         private val bigView: TextView = WidgetViews.tv(ctx, "", 17f, color, true)
-            .apply {
-                maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-                // B5 (owner 2026-09-22): khung nhỏ làm chữ mất tiêu (cỡ cố định 17sp không vừa). Autosize để số tự co
-                // trong dải ĐỌC-ĐƯỢC (12..20sp) theo bề rộng ô — khung to chữ to, khung nhỏ chữ vừa, không bao giờ bé quá.
-                androidx.core.widget.TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
-                    this, 12, 20, 1, TypedValue.COMPLEX_UNIT_SP,
-                )
-            }
+            .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
         private val subView: TextView = WidgetViews.tv(ctx, "", 10.5f, KachiTheme.MUT)
             .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
-        private var iconView: ImageView? = null
-
         val root: LinearLayout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             KachiGlass.apply(this, Sp.RADIUS_M, domain = domain)   // P1b: kính khi có ảnh nền, surface() khi không
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) {
-                val iv = ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) }
-                iconView = iv
                 addView(
-                    iv,
+                    ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
                     LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S))
                         .also { it.bottomMargin = dpi(ctx, Sp.XS) },
                 )
@@ -96,14 +89,6 @@ internal object WidgetTelemetry {
             addView(bigView)
             addView(subView)
             if (badge) addView(badgeView(ctx))
-            // B5: ô QUÁ THẤP thì icon (icon + số + phụ không đủ chỗ) → ẩn ICON, ưu tiên GIỮ SỐ + chữ đọc được.
-            // Ngưỡng = đủ cho icon + 2 dòng chữ ~ 3× ICON_S. Đo theo bố cục thật, không đoán.
-            addOnLayoutChangeListener { _, l, t, rr, b, ol, ot, or2, ob ->
-                if (b - t != ob - ot) {
-                    val tight = (b - t) < dpi(ctx, Sp.ICON_S) * 3
-                    iconView?.visibility = if (tight) View.GONE else View.VISIBLE
-                }
-            }
         }
 
         fun set(v: MiniValue) {

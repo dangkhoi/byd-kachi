@@ -80,8 +80,12 @@ object TripGate {
         data class Close(val fired: Ledger, val code: Code) : Decision
     }
 
-    /** Kết quả chuyến hiện ở Cài đặt + màn Chẩn đoán (R2.7). */
-    enum class Code { RAN, NOTHING, EXPIRED, GAVE_UP }
+    /**
+     * Kết quả chuyến hiện ở Cài đặt + màn Chẩn đoán (R2.7). L4 · D1: [RAN] = MỌI bước đạt; [NOOP] = có việc mà không bước nào
+     * làm được gì (trước L4 cũng ghi `RAN` ⇒ *"đã chạy lúc HH:mm"* cho một chuyến 0 lệnh); [PARTIAL] = lẫn. Suy bằng
+     * [TripOutcome.tripCode] — không bên thi hành nào tự chọn `RAN`.
+     */
+    enum class Code { RAN, NOTHING, EXPIRED, GAVE_UP, NOOP, PARTIAL }
 
     /** Khoá lần khởi động máy — xem KDoc lớp. [bootCount] `null`/âm = không đọc được. */
     fun bootKey(bootCount: Int?, wallNow: Long, elapsedNow: Long): String =
@@ -107,6 +111,20 @@ object TripGate {
         return Decision.Run(Ledger(trip, Phase.CLAIMED, tries))
     }
 
+    /**
+     * L4 · D1 — kết quả đang hiện ở Cài đặt có phải của LẦN NỔ MÁY NÀY không. [ĐO máy ảo 03/10 `p3/e2e-L4/e12-channel-down`]
+     * kênh không lên (`PORT_CLOSED`) ⇒ chuỗi SẴN không chạy ⇒ chuyến không chạy, sổ không đổi ⇒ Cài đặt vẫn hiện kết quả chuyến
+     * TRƯỚC như thể là của lần này. [current] = [tripId] của lúc hỏi.
+     */
+    enum class Now { SHOWN, RUNNING, NOT_RUN }
+
+    fun now(current: String, ledger: Ledger?, last: Result?): Now = when {
+        last?.trip == current -> Now.SHOWN
+        ledger?.trip == current && ledger.phase == Phase.CLAIMED -> Now.RUNNING
+        ledger?.trip == current -> Now.SHOWN      // FIRED mà ghi kết quả hỏng — không nói "chưa chạy" sai
+        else -> Now.NOT_RUN
+    }
+
     /** Còn trong hạn chuyến không — hỏi lại ở mỗi nhịp chờ (R2.3). */
     fun withinDeadline(firstWakeAt: Long, now: Long): Boolean =
         firstWakeAt in 0..now && now - firstWakeAt <= TRIP_DEADLINE_MS
@@ -128,17 +146,23 @@ object TripGate {
         return Ledger(trip, phase, tries)
     }
 
-    /** Kết quả chuyến gần nhất ([Code] + giờ tường + một dòng ASCII ngắn cho màn Chẩn đoán). */
-    data class Result(val trip: String, val code: Code, val atWall: Long, val detail: String)
+    /**
+     * Kết quả chuyến gần nhất ([Code] + giờ tường + một dòng ASCII ngắn cho màn Chẩn đoán + L4 · D1: MÃ từng bước [steps]
+     * — trường `s=` riêng, không cắt, Cài đặt dịch từng mã thành câu). Bản ghi cũ (không `s=`) ⇒ [steps] rỗng.
+     */
+    data class Result(val trip: String, val code: Code, val atWall: Long, val detail: String, val steps: List<TripStep> = emptyList())
 
-    fun encodeResult(r: Result): String =
-        "v=1;trip=${r.trip};code=${r.code};at=${r.atWall};d=${r.detail.filter { it in SAFE_DETAIL }.take(DETAIL_MAX)}"
+    fun encodeResult(r: Result): String {
+        val s = TripOutcome.encode(r.steps)
+        return "v=1;trip=${r.trip};code=${r.code};at=${r.atWall};d=${r.detail.filter { it in SAFE_DETAIL }.take(DETAIL_MAX)}" +
+            if (s.isEmpty()) "" else ";s=$s"
+    }
 
     fun decodeResult(raw: String?): Result? {
         val f = fields(raw) ?: return null
         val trip = f["trip"]?.takeIf { it.matches(ID) } ?: return null
         val code = Code.values().firstOrNull { it.name == f["code"] } ?: return null
-        return Result(trip, code, f["at"]?.toLongOrNull() ?: 0L, f["d"].orEmpty())
+        return Result(trip, code, f["at"]?.toLongOrNull() ?: 0L, f["d"].orEmpty(), TripOutcome.decode(f["s"]))
     }
 
     private fun fields(raw: String?): Map<String, String>? {

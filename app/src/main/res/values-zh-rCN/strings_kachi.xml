@@ -211,6 +211,10 @@
     <string name="kachi_tyre_pressure_unit">胎压（%1$s）</string>
     <string name="kachi_slot_swap_empty">为格位%1$d选择应用</string>
     <string name="kachi_slot_swap">更换格位%1$d的应用</string>
+    <string name="kachi_slot_to_back">将格位%1$d的应用转到后台运行</string>
+    <string name="kachi_slot_close_app">关闭格位%1$d的应用</string>
+    <string name="kachi_slot_close_widget">关闭格位%1$d的小组件</string>
+    <string name="kachi_slot_close_failed">无法关闭%1$s</string>
     <string name="kachi_slot_head_autohide_title">自动隐藏⇄按钮</string>
     <string name="kachi_slot_head_autohide_sub">框上的应用/小组件切换按钮自动隐藏，画面更清爽；点按该框（或屏幕空白处）即可显示几秒</string>
     <string name="kachi_drawer_section_appwidgets">其他应用的小组件</string>
@@ -614,7 +618,6 @@
     <string name="kachi_profile_rename_failed">无法重命名——名称为空或已被使用</string>
     <string name="kachi_voice_pill_title">顶栏麦克风按钮</string>
     <string name="kachi_voice_pill_sub">位于“应用”和“设置”旁，可快速说出指令</string>
-    <string name="kachi_slot_app_closed">应用已关闭——点按重新打开</string>
     <string name="kachi_sc_place_failed">%1$s无法在格位中打开</string>
     <string name="kachi_drawer_title_shortcuts">选择快捷方式应用</string>
     <string name="kachi_drawer_hint_shortcuts">点按即可添加或移除应用 · 点按“确定”保存 · 点按背景关闭</string>
@@ -710,13 +713,13 @@
     <string name="kachi_drawer_hint_trip">点按即可添加或移除应用 · 点按“确定”保存 · 在“设置”中选择各应用的打开方式</string>
     <string name="kachi_trip_cap_note">上电应用最多%1$d个——移除一个才能再添加</string>
     <string name="kachi_trip_title">上电时打开应用</string>
-    <string name="kachi_trip_hint">每次上电运行一次，在主屏幕就绪后（约15–45秒）执行。后台运行 = 先在某个格位中打开，再移到主屏幕后方；该格位可能闪烁1–2秒。已在格位中或正在投屏到仪表的应用会被跳过。</string>
+    <string name="kachi_trip_hint">每次上电运行一次，在主屏幕就绪后（约15–45秒）执行。后台运行 = 先在看不见的地方打开，再移到主屏幕后方（如有应用格位则使用该格位——该格位可能闪烁1–2秒）。已在格位中或正在投屏到仪表的应用会被跳过。</string>
     <string name="kachi_trip_add_n">+ 添加应用（%1$d/%2$d）</string>
     <string name="kachi_trip_mode_bg">后台运行</string>
     <string name="kachi_trip_mode_normal">正常打开</string>
     <string name="kachi_trip_remove">移除</string>
     <string name="kachi_trip_slot_hint">若要每次上电都打开并显示某个应用，请把它放进此档案的一个格位。</string>
-    <string name="kachi_trip_no_slot_warn">此档案的布局没有应用格位——后台应用将被跳过。</string>
+    <string name="kachi_trip_no_slot_warn">此档案的布局没有应用格位——后台应用会先在隐藏屏幕中打开，再移到主屏幕后方。</string>
     <string name="kachi_trip_normal_unsupported">本车型的摄像头界面尚未识别——不会将应用打开到前台。</string>
     <string name="kachi_trip_last_ran">上次上电：%1$s</string>
     <string name="kachi_trip_res_ran">于%1$s运行</string>
@@ -730,5 +733,37 @@
     <string name="kachi_trip_music_car">车载播放器</string>
     <string name="kachi_trip_music_query">播放内容（关键词或YouTube链接；留空 = 继续播放）</string>
     <string name="kachi_trip_music_query_set">播放内容：%1$s</string>
-    <string name="kachi_trip_music_note">车辆下电后应用通常会被关闭——设置关键词或链接可确保播放音乐。如果已有其他内容在播放，Kachi不会干扰。</string>
+    <string name="kachi_trip_music_note">车辆下电后应用通常会被关闭——设置关键词或链接可确保播放音乐。即使车辆正在播放其他音源，也会播放您选择的应用。</string>
+    <string name="kachi_trip_res_noop">没有打开任何应用（%1$s）</string>
+    <string name="kachi_trip_res_partial">于%1$s部分运行</string>
+    <string name="kachi_trip_step">• %1$s：%2$s</string>
+    <string name="kachi_trip_step_music">音乐（%1$s）</string>
+    <string name="kachi_trip_why_moved">正在主屏幕后方运行</string>
+    <string name="kachi_trip_why_home_restored">正在主屏幕后方运行（主屏幕曾被短暂遮挡）</string>
+    <string name="kachi_trip_why_already_running">已在运行</string>
+    <string name="kachi_trip_why_kept_under">正在隐藏运行，尚未移到主屏幕后方</string>
+    <string name="kachi_trip_why_in_slot">已在某个格位中</string>
+    <string name="kachi_trip_why_opened">已打开</string>
+    <string name="kachi_trip_why_playing">正在播放</string>
+    <string name="kachi_trip_why_self_playing">原本已在播放</string>
+    <string name="kachi_trip_why_sent">已发送播放指令，但未见播放</string>
+    <string name="kachi_trip_why_timeout">未知——等待超时</string>
+    <string name="kachi_trip_why_no_stage">已跳过——没有可在后台运行的位置</string>
+    <string name="kachi_trip_why_no_channel">已跳过——窗口控制通道尚未就绪</string>
+    <string name="kachi_trip_why_disabled">已跳过——后台运行因出错已自动关闭；重启Kachi可重新开启</string>
+    <string name="kachi_trip_why_system_app">已跳过——系统应用无法在后台运行；请把它放进一个格位</string>
+    <string name="kachi_trip_why_not_installed">已跳过——应用未安装</string>
+    <string name="kachi_trip_why_self">已跳过——这是Kachi本身</string>
+    <string name="kachi_trip_why_camera_unknown">已跳过——本车型尚不支持正常打开</string>
+    <string name="kachi_trip_why_camera">已跳过——摄像头界面正在显示</string>
+    <string name="kachi_trip_why_other_front">已跳过——另一个应用在前台</string>
+    <string name="kachi_trip_why_not_staged">已跳过——无法启动该应用</string>
+    <string name="kachi_trip_why_no_session">已打开，但应用没有可播放的音乐会话——粘贴链接即可自动播放</string>
+    <string name="kachi_trip_why_unknown_media">已跳过——Kachi尚无法读取正在播放的内容（通知使用权）</string>
+    <string name="kachi_trip_why_deadline">已跳过——本次行程时间已用完</string>
+    <string name="kachi_trip_system_bg">%1$s是系统应用——Kachi不会在后台运行系统应用。请选择正常打开，或把该应用放进一个格位。</string>
+    <string name="kachi_trip_music_link_hint">YouTube不会自动继续播放：留空时Kachi只会打开应用。粘贴一个视频链接即可自动播放，或选择YT Music。</string>
+    <string name="kachi_trip_now_running">本次上电：正在运行…</string>
+    <string name="kachi_trip_now_wait_channel">本次上电：尚未运行——窗口控制通道尚未连接</string>
+    <string name="kachi_trip_now_wait_home">本次上电：尚未运行——正在等待主屏幕就绪</string>
 </resources>

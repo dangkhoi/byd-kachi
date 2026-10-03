@@ -12,11 +12,17 @@ import java.net.URLEncoder
  * đâu. Youtube hay Yt Music thì …"*. [targetKey] = mã app trong bảng DỮ LIỆU [VoiceAppTargets] (CLAUDE.md §7 — không
  * gắn tên gói trong logic); [plays] = Kachi có việc để làm không.
  */
-enum class TripMusicMode(val code: String, val targetKey: String?) {
+enum class TripMusicMode(val code: String, val targetKey: String?, val resumable: Boolean = false) {
     OFF("off", null),
     CAR("car", null),
-    YT_MUSIC("ytmusic", VoiceAppTargets.YT_MUSIC),
+    YT_MUSIC("ytmusic", VoiceAppTargets.YT_MUSIC, resumable = true),
     YOUTUBE("youtube", VoiceAppTargets.YOUTUBE);
+
+    /*
+     * [resumable] = app có "phát tiếp" khi ô "Phát gì" để trống (YT Music giữ hàng chờ — [ĐO máy ảo] e5/e4a; YouTube không có
+     * API tiếp tục — [SUY] từ e3: không phiên nào trên trang chủ). CHỈ dùng cho câu gợi ý trong Cài đặt (L4 · D3(iii)); lúc chạy
+     * nhánh do PHIÊN ĐO ĐƯỢC quyết ([TripMusicPlan.play]), không do kiểu/tên gói (CLAUDE.md §7).
+     */
 
     val plays: Boolean get() = targetKey != null
 
@@ -81,6 +87,12 @@ object TripMusicCodec {
  *     ([watchUrl]) — không đưa chuỗi người dùng đi đâu cả.
  *  3. Là từ khoá ⇒ lõi giải bài của giọng nói (`VoiceAppIntents.watchHandoff`) ⇒ URL ⇒ `playFromUri`.
  *  4. Không có gì / giải hỏng ⇒ phiên app vừa mở có thì `play()` (bài cũ của app); không có phiên ⇒ chỉ mở app.
+ *
+ * ## L4 (owner 03/10 trên 2.86: *"auto mở nhạc youtube không chạy? Cả để trống lẫn để link"*) — phiên TRƯỚC, VIEW SAU
+ * Đường phiên vẫn đứng trước (0 lệnh cửa sổ, đã đo). Nhưng YouTube nguội trên trang chủ KHÔNG có phiên ([ĐO máy ảo] e3)
+ * ⇒ link không bao giờ tới được nó. Có link mà không phiên nhận URI ⇒ [Play.View]: K4-VIEW ([viewCmd]) — một ACTIVITY
+ * (qua được cổng `relatestart` của BYD), dàn trên màn ảo như mọi lượt chạy ngầm; app trung chuyển thoát lên display 0
+ * ⇒ dấu + K12 ngay (không chờ phát rồi mới về nhà). Nguồn xe đang phát KHÔNG còn chặn ([gate], D3(i)).
  */
 object TripMusicPlan {
 
@@ -88,23 +100,35 @@ object TripMusicPlan {
     const val SESSION_WAIT_MS = 15_000L
     const val SESSION_POLL_MS = 1_000L
 
-    /** Một phiên nhạc đọc từ `MediaSessionManager` (bên `:app` dịch `PlaybackState` sang [playing]). */
-    data class Session(val pkg: String, val playing: Boolean)
+    /**
+     * Một phiên nhạc đọc từ `MediaSessionManager` (bên `:app` dịch `PlaybackState` sang [playing]). [acceptsUri] = bit
+     * `ACTION_PLAY_FROM_URI` (0x2000) trong `PlaybackState.actions` — L4 · D3: link chỉ giao qua phiên khi phiên NÓI là nhận.
+     */
+    data class Session(val pkg: String, val playing: Boolean, val acceptsUri: Boolean = true)
 
-    enum class Gate { OFF, NOT_INSTALLED, UNKNOWN_MEDIA, OTHER_PLAYING, GO }
+    enum class Gate { OFF, NOT_INSTALLED, UNKNOWN_MEDIA, SELF_PLAYING, GO }
 
     /**
-     * R3.2/R3.5 — có làm gì không. [pkg] = gói đã cài của app chọn (`null` = chưa cài). [sessions] `null` = không đọc
-     * được (chưa có quyền nghe thông báo / lỗi) ⇒ CHƯA BIẾT ⇒ bỏ lượt (fail-safe, như `ScheduledNavApplier` với GPS).
-     * Có phiên ĐANG PHÁT (của bất kỳ ai) hoặc [musicActive] (`AudioManager.isMusicActive`) ⇒ không đè.
+     * R3.2 — có làm gì không. [pkg] = gói đã cài của app chọn (`null` = chưa cài). [sessions] `null` = không đọc được (chưa
+     * có quyền nghe thông báo / lỗi) ⇒ CHƯA BIẾT ⇒ bỏ lượt: không đọc được phiên thì không chờ được "đang phát", không giao
+     * được link qua phiên. Chính app chọn ĐANG PHÁT ⇒ xong, 0 lệnh.
+     *
+     * L4 · D3(i) — owner 01/10 *"Youtube hay Yt Music thì …"*: chọn app CỤ THỂ là lựa chọn của người dùng ⇒ THẮNG nguồn xe
+     * tự phát lại lúc nổ máy ([ĐO firmware] BYD MediaAutoPlay tiếp tục nguồn cuối, `memory_play_back=1` trên xe owner 29/09).
+     * Bản R3.5 cũ ("có nguồn khác đang phát ⇒ không đè") làm bước nhạc KHÔNG BAO GIỜ chạy trên xe có nguồn tự phát lại. Kiểu
+     * *Theo player của xe* vẫn không làm gì ([TripMusicMode.CAR] không [TripMusicMode.plays]).
      */
-    fun gate(mode: TripMusicMode, pkg: String?, sessions: List<Session>?, musicActive: Boolean): Gate = when {
+    fun gate(mode: TripMusicMode, pkg: String?, sessions: List<Session>?): Gate = when {
         !mode.plays -> Gate.OFF
         pkg == null -> Gate.NOT_INSTALLED
         sessions == null -> Gate.UNKNOWN_MEDIA
-        musicActive || sessions.any { it.playing } -> Gate.OTHER_PLAYING
+        sessions.any { it.pkg == pkg && it.playing } -> Gate.SELF_PLAYING
         else -> Gate.GO
     }
+
+    /** Nguồn KHÁC đang phát lúc bắt đầu (chỉ để sổ/nhật ký nói thật "đã giành từ nguồn xe" — không còn là cổng chặn). */
+    fun otherPlaying(pkg: String, sessions: List<Session>?, musicActive: Boolean): Boolean =
+        sessions.orEmpty().any { it.playing && it.pkg != pkg } || (musicActive && sessions.orEmpty().none { it.pkg == pkg && it.playing })
 
     /**
      * R3.4 bước 1 — phiên của [pkg] trong [before] có phải phiên CÓ TRƯỚC khi Kachi đụng gì (app sống qua lần tắt máy) không.
@@ -116,14 +140,15 @@ object TripMusicPlan {
     fun preexisting(pkg: String, before: List<Session>?, inSlot: Boolean): Boolean =
         !inSlot && before.orEmpty().any { it.pkg == pkg }
 
-    /** Kiểm lại NGAY TRƯỚC lệnh phát: app khác vừa phát ⇒ thôi; chính [pkg] đã tự phát ⇒ xong, không bắn gì. */
-    enum class Recheck { OTHER_PLAYING, SELF_PLAYING, CLEAR, UNKNOWN_MEDIA }
+    /**
+     * Kiểm lại NGAY TRƯỚC lệnh phát: chính [pkg] đã tự phát ⇒ xong, không bắn gì; không đọc được ⇒ dừng. Nguồn khác vừa
+     * phát (BYD tự phát lại trong lúc chờ phiên) KHÔNG còn chặn — L4 · D3(i), xem [gate].
+     */
+    enum class Recheck { SELF_PLAYING, CLEAR, UNKNOWN_MEDIA }
 
-    fun recheck(pkg: String, sessions: List<Session>?, musicActive: Boolean): Recheck = when {
+    fun recheck(pkg: String, sessions: List<Session>?): Recheck = when {
         sessions == null -> Recheck.UNKNOWN_MEDIA
-        sessions.any { it.playing && it.pkg != pkg } -> Recheck.OTHER_PLAYING
         sessions.any { it.playing && it.pkg == pkg } -> Recheck.SELF_PLAYING
-        musicActive -> Recheck.OTHER_PLAYING
         else -> Recheck.CLEAR
     }
 
@@ -181,14 +206,46 @@ object TripMusicPlan {
     /** Phát gì, sau khi app đã chắc chắn sống (R3.4 bước 2–4). */
     sealed interface Play {
         data class FromUri(val url: String) : Play
+        /** L4 · D3(ii) — giao link bằng một ACTIVITY (K4-VIEW, [viewCmd]): app không có phiên, hoặc phiên không nhận URI. */
+        data class View(val url: String) : Play
         object Resume : Play { override fun toString() = "Resume" }
         object OpenOnly : Play { override fun toString() = "OpenOnly" }
     }
 
-    fun play(url: String?, hasSession: Boolean): Play = when {
-        url != null && safeWatchUrl(url) && hasSession -> Play.FromUri(url)
-        hasSession -> Play.Resume
-        else -> Play.OpenOnly
+    /**
+     * Quyết bằng PHIÊN ĐO ĐƯỢC ([session] của chính app sau khi chờ, `null` = không có), không bằng tên gói (CLAUDE.md §7):
+     *  - có link + phiên nhận URI ⇒ [Play.FromUri] (0 lệnh cửa sổ — [ĐO] T-M3u, e5);
+     *  - có link mà không phiên / phiên không nhận URI ⇒ [Play.View] (L4 · D3(ii): YouTube nguội trên trang chủ không có phiên —
+     *    [ĐO máy ảo] e3 `open-only (no session)` — nên đường phiên KHÔNG BAO GIỜ phát được link cho nó);
+     *  - không link + có phiên ⇒ [Play.Resume]; không gì cả ⇒ [Play.OpenOnly] (sổ: `NO_SESSION`).
+     */
+    fun play(url: String?, session: Session?): Play {
+        val link = url?.takeIf { safeWatchUrl(it) }
+        return when {
+            link != null && session != null && session.acceptsUri -> Play.FromUri(link)
+            link != null -> Play.View(link)
+            session != null -> Play.Resume
+            else -> Play.OpenOnly
+        }
+    }
+
+    /**
+     * L4 · D3(ii) — K4-VIEW: mở [url] bằng ý-định VIEW nhắm ĐÚNG gói [pkg] lên màn ảo [vd] (ô của app, hoặc chỗ dàn dựng của
+     * chuỗi chạy ngầm). Activity start đi qua cổng `relatestart` của BYD (chỉ chặn service/broadcast/provider — [ĐO firmware]).
+     * Bốn câu CLAUDE.md §4:
+     *  1. **Display** — CHỈ màn ảo do Kachi sở hữu (`vd ≥ 1`, đã đăng ký với cổng ownership của kênh); không bao giờ display 0.
+     *  2. **App** — đúng gói [pkg] (`-p`, đã qua `ShellAppLauncher.PKG`); [url] chỉ là URL xem một video ([safeWatchUrl]) ⇒
+     *     không có `'` nào thoát được cặp nháy.
+     *  3. **Loại stack** — task `standard` của app (mới, hoặc task cũ bị kéo vào màn ảo — `reparentToDisplay`); không chạm
+     *     stack hệ thống.
+     *  4. **Hoàn tác** — app tự thoát lên display 0 (trung chuyển NEW_TASK, [ĐO] T-M3) ⇒ dấu + K12 (rào camera) đưa màn nhà lên;
+     *     ở lại màn ảo dàn dựng ⇒ chuỗi BEHIND-HOME đẩy ra sau màn nhà; ở ô ⇒ ở ô.
+     */
+    fun viewCmd(vd: Int, url: String, pkg: String): String {
+        require(vd >= 1) { "vd=$vd: K4-VIEW chỉ nhắm màn ảo của Kachi" }
+        require(safeWatchUrl(url)) { "URL không phải link xem: $url" }
+        require(pkg.matches(com.byd.clusternav.launcher.ShellAppLauncher.PKG)) { "tên gói lạ: $pkg" }
+        return "am start --display $vd -a android.intent.action.VIEW -d '$url' -p $pkg"
     }
 
     private val VIDEO_ID = Regex("[A-Za-z0-9_-]{11}")

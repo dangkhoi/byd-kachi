@@ -70,7 +70,7 @@ object SlotLiveProbe {
 
     /**
      * FIX286 · R-SC2 — ô [key] đang được đo (lượt mở app đã xong, chưa kết luận chết). Vắng ⇒ lượt mở còn đang chạy, hoặc
-     * đã báo chết (khi đó ô có thẻ "đã đóng"). `VdAppHost.reviveInSlot` dùng để không mở lại chồng lên một lượt mở dở.
+     * đã báo chết (L6: ô đi luật hoàn ô `SlotRevertPlan`). `VdAppHost.reviveInSlot` dùng để không mở lại chồng lượt mở dở.
      */
     fun watching(key: String): Boolean = subs.any { it.key == key }
 

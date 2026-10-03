@@ -40,6 +40,11 @@ import com.byd.clusternav.launcher.SlotHeadRest.Rest
  * ## Nút là con CUỐI của khung
  * Bốn nhánh của `makeSlot` đều gắn ⇄ sau cùng (để nó nổi trên cùng và được thử chạm trước). [register] lấy con cuối và
  * kiểm hình dạng (khung chạm clickable bên trong); khác hình ⇒ không quản lý ⇒ nút giữ nguyên `VISIBLE` (an toàn).
+ *
+ * ## L6 (owner 03/10) — *chạy nền* / *tắt* cạnh ⇄, cùng nhịp nghỉ
+ * Có [actions] (màn chính gắn) ⇒ [register] dựng thêm [SlotActionsCluster] NGAY DƯỚI ⇄ (⇄ vẫn là con cuối) và mọi chỗ
+ * đặt / hiện / ẩn / gỡ ⇄ ở đây kéo theo cụm đó — một hẹn giờ [SlotHeadRest.HIDE_AFTER_MS] (3 s) cho cả đầu ô. Chạm vào CHỖ
+ * một nút đang ẩn ⇒ không hiện (điều 4, cùng lẽ ⇄). Phần animate của cụm nằm ở tệp của nó (cùng luật cancel-trước).
  */
 internal class SlotHeadAutoHide(private val host: ViewGroup) {
 
@@ -49,6 +54,8 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         val hit: View,
         val kind: SlotHeadRest.Kind,
         val projector: SlotHeadRest.Projector,
+        /** L6 — cụm *chạy nền* / *tắt* của khung (`null` = ô không có nút nào ngoài ⇄ / chưa gắn cổng). */
+        val cluster: SlotActionsCluster?,
     ) {
         var rest: Rest = Rest.ALWAYS
         val reveal = Runnable { reveal(this) }
@@ -56,6 +63,9 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
     }
 
     private val entries = HashMap<Int, Entry>()
+
+    /** L6 — cổng màn chính cho nút *chạy nền* / *tắt* + báo app rời ô. `null` (dựng lượt đầu trong `init`) ⇒ chỉ ⇄. */
+    var actions: SlotActionsPort? = null
     private var enabled = true
     private var downSlot = -1
     private var downInHead = false
@@ -76,7 +86,9 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         val head = slot.getChildAt(slot.childCount - 1) as? ViewGroup ?: return
         val hit = head.getChildAt(0)?.takeIf { it.isClickable } ?: return
         val live = (0 until slot.childCount).any { slot.getChildAt(it) is AppWidgetHostView }
-        val e = Entry(head, hit, SlotHeadRest.kindOf(content, live), projectorOf(slot))
+        val kind = SlotHeadRest.kindOf(content, live)
+        val projector = projectorOf(slot)
+        val e = Entry(head, hit, kind, projector, actions?.let { SlotActionsCluster.attach(slot, index, kind, projector, it) })
         entries[index] = e
         settle(e, touchExploration())
     }
@@ -97,6 +109,7 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
             MotionEvent.ACTION_DOWN -> {
                 val i = slotAt(slots, ev.x, ev.y)
                 val e = i.takeIf { it >= 0 }?.let { valid(it, slots) }
+                e?.cluster?.refresh()   // L6: lớp tạm / kênh đổi mà khung không dựng lại (đổi app tại chỗ) ⇒ hỏi lại nút
                 downSlot = if (consumed) i else -1
                 downInHead = e != null && inHit(e, slots[i], ev.x, ev.y)
                 when {
@@ -111,7 +124,7 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
                 val e = i.takeIf { it >= 0 }?.let { valid(it, slots) } ?: return
                 if (e.rest != Rest.AUTO_HIDE) return
                 if (e.head.visibility == View.VISIBLE) {
-                    reveal(e)   // đang hiện / đang mờ dần (vẫn VISIBLE): giữ hiện, tính lại 4 s từ lần nhấc tay này
+                    reveal(e)   // đang hiện / đang mờ dần (vẫn VISIBLE): giữ hiện, tính lại 3 s từ lần nhấc tay này
                 } else if (!downInHead) {
                     host.postDelayed(e.reveal, ViewConfiguration.getDoubleTapTimeout().toLong())   // chờ qua nhịp nhấp đúp
                 }
@@ -147,12 +160,14 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         val hidden = e.rest == Rest.AUTO_HIDE
         e.head.alpha = if (hidden) 0f else 1f
         e.head.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
+        e.cluster?.settle(hidden)
     }
 
     private fun drop(e: Entry) {
         host.removeCallbacks(e.reveal)
         host.removeCallbacks(e.hide)
         e.head.animate().cancel()
+        e.cluster?.cancel()
     }
 
     private fun reveal(e: Entry) {
@@ -162,6 +177,7 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         e.head.animate().cancel()
         e.head.visibility = View.VISIBLE
         e.head.animate().alpha(1f).setDuration(SlotHeadRest.FADE_IN_MS)
+        e.cluster?.show()
         host.postDelayed(e.hide, SlotHeadRest.HIDE_AFTER_MS)
     }
 
@@ -171,16 +187,18 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         val head = e.head
         head.animate().cancel()
         head.animate().alpha(0f).setDuration(SlotHeadRest.FADE_OUT_MS).withEndAction { head.visibility = View.INVISIBLE }
+        e.cluster?.hide()
     }
 
     /** Mục của ô [i] còn đúng là nút của khung đang hiện (khung dựng lại mà chưa đăng ký ⇒ bỏ qua, không đụng view cũ). */
     private fun valid(i: Int, slots: List<View>): Entry? = entries[i]?.takeIf { it.head.parent === slots.getOrNull(i) }
 
-    /** DOWN có rơi vào KHUNG CHẠM của ⇄ không (toạ độ của workspace; ô không cuộn/biến hình). */
+    /** DOWN có rơi vào KHUNG CHẠM của ⇄ — hoặc của một nút L6 đang làm được — không (toạ độ của workspace). */
     private fun inHit(e: Entry, slot: View, x: Float, y: Float): Boolean {
         val l = slot.left + e.head.left + e.hit.left
         val t = slot.top + e.head.top + e.hit.top
-        return x >= l && x < l + e.hit.width && y >= t && y < t + e.hit.height
+        return (x >= l && x < l + e.hit.width && y >= t && y < t + e.hit.height) ||
+            e.cluster?.hits(x - slot.left, y - slot.top) == true
     }
 
     private fun slotAt(slots: List<View>, x: Float, y: Float): Int =

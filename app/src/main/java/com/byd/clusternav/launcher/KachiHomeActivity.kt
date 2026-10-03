@@ -135,6 +135,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         )
     }
 
+    /** L6 — vòng đời ô: app chết · hết lượt đặt tạm · nút chạy nền/tắt cạnh ⇄ (luật `SlotRevertPlan`): thân ở [KachiHomeSlotActions]. */
+    private val slotActions by lazy { KachiHomeSlotActions(this, viewModel, { workspace }, { shell }) { block -> submitBg(block) } }
+
     /** F2/F3 — chuyến lên xe (chủ của `TripHub` + trang Cài đặt): thân ở [KachiHomeTrip]. */
     private val trip: KachiHomeTrip by lazy { KachiHomeTrip(this, viewModel, { slots }, { workspace }, { drawerController }) { shell } }
 
@@ -269,6 +272,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             onSlotSwap = { a, b -> slots.swapSlots(a, b) }
             onAppOpen = { slots.reopenApp(it) }
             onAppSwapped = { i, vd, a, b -> slots.evictBehind(i, vd, a, b) }   // đặt TẠM: app cũ ra sau màn nhà (R0.1)
+            heads.actions = slotActions                                         // L6: nút chạy nền/tắt + app rời ô ⇒ luật hoàn ô
         }
         windows = LauncherWindows(
             this, workspace, winExec,

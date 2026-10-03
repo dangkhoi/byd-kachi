@@ -357,6 +357,7 @@ object KachiTheme {
         "ic-grid" -> R.drawable.ic_grid
         "ic-swap" -> R.drawable.ic_swap
         "ic-close" -> R.drawable.ic_close
+        "ic-to-back" -> R.drawable.ic_to_back   // L6 — nút *chạy nền* cạnh ⇄ (SlotActionsCluster)
         // U1: 6 icon MỚI cho khái niệm xuất hiện nhiều mà trước đây không có icon nào gần nghĩa
         "ic-road" -> R.drawable.ic_road
         "ic-battery" -> R.drawable.ic_battery

@@ -239,14 +239,20 @@ class BehindHomeSequenceTest {
      * Nhóm B (R1.5 dòng 12 · R2.4) — X ĐÃ có TASK (đang toàn màn / sau màn nhà / trong ô / đang chiếu) ⇒ dàn lại là kéo nó
      * khỏi chỗ người dùng đang dùng. Một lần đọc `am stack list` rồi dừng: 0 `am start`, 0 giữ chỗ.
      */
+    /**
+     * L4 · D4 — ĐỔI PIN có lý do: "đang chạy" nay = task VÀ tiến trình (`pidof`). Task không tiến trình là nguội — ca hiện
+     * trường + fixture nguyên văn ở `BehindHomeHiddenStageTest.task khong tien trinh la NGUOI`. Ở đây Đồng hồ có task VÀ pid
+     * ⇒ vẫn `ALREADY_RUNNING`, chỉ lệnh đọc (`pidof` chặn ở lớp bọc nên nhật ký chỉ còn `am stack list`).
+     */
     @Test
-    fun `chay ngam app da co task - ALREADY_RUNNING, chi mot lan doc, 0 lenh doi cua so`() {
+    fun `chay ngam app da co task va tien trinh - ALREADY_RUNNING, chi lenh doc, 0 lenh doi cua so`() {
         val stage = BehindHomePlan.Stage(0, 83, vm, area = 1, alive = true)
         val r = Rig(listOf(text("tm1-b-on-top")))      // Đồng hồ (task 2259) đang ở đỉnh màn ảo 83
-        val out = r.seq.startBehind(clock, stage, "a/b")
+        val sh: (String) -> String = { cmd -> if (cmd == "pidof $clock") "4242" else r.sh(cmd) }
+        val out = BehindHomeSequence(sh, r.port, "com.byd.launcher", home, sleep = {}).startBehind(clock, stage, "a/b")
         assertEquals(Result.ALREADY_RUNNING, out.result, out.line)
         assertFalse(out.moved)
-        assertEquals(listOf(list), r.log, "chỉ đọc am stack list rồi dừng")
+        assertEquals(listOf(list), r.log, "chỉ đọc am stack list (+ pidof) rồi dừng")
     }
 
     /**
@@ -277,7 +283,8 @@ class BehindHomeSequenceTest {
     fun `chay ngam app he thong hoac khong phan giai duoc - 0 lenh doi cua so`() {
         val stage = BehindHomePlan.Stage(0, 83, vm, area = 1, alive = true)
         val sys = Rig(listOf(text("tm1-before-swap")), system = true)
-        assertEquals(Result.KEPT_UNDER, sys.seq.startBehind(clock, stage, "a/b").result)
+        // L4 · D1(e) — ĐỔI PIN: từ chối app hệ thống nay có mã riêng (trước: KEPT_UNDER chung chung — sổ không nói được vì sao).
+        assertEquals(Result.SYSTEM_APP, sys.seq.startBehind(clock, stage, "a/b").result)
         assertTrue(sys.log.isEmpty(), sys.log.toString())
         val bad = Rig(listOf(text("tm1-before-swap")))
         assertEquals(Result.X_NOT_STAGED, bad.seq.startBehind(clock, stage, "x' ; reboot ; '/y").result)

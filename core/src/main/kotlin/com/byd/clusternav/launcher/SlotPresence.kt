@@ -21,7 +21,7 @@ enum class SlotPresence {
     /** App có task trên màn ảo của ô ⇒ đang sống trong ô. */
     IN_SLOT,
 
-    /** Đọc được bản `am stack list` và app KHÔNG còn task nào ở display nào ⇒ đã đóng (ô đen / thẻ "đã đóng"). */
+    /** Đọc được bản `am stack list` và app KHÔNG còn task nào ở display nào ⇒ đã đóng (khung cuối / ô vừa rời). */
     GONE,
 
     /** App còn task nhưng ở display khác màn ảo của ô (toàn màn · sau màn nhà · đang chiếu cụm) ⇒ không đụng. */

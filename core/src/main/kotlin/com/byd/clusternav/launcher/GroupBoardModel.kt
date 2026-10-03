@@ -110,14 +110,14 @@ data class GroupBoardModel(
      * Một nhóm mà phần lớn ô con mang CÙNG một hình thì icon **không mang thông tin nào**, nó chỉ chiếm chỗ của thứ
      * có mang (con số và cái nhãn, mà nhãn thì đang bị cắt).
      *
-     * Đo bằng *"có hình nào lặp ≥ [ICON_REPEAT_CAP] lần"* chứ không bằng *"mọi hình đều khác nhau"*: hai ô cùng hình
+     * Đo bằng *"có hình nào lặp ≥ [IconRepeat.CAP] lần"* chứ không bằng *"mọi hình đều khác nhau"*: hai ô cùng hình
      * (trái/phải của một cặp) vẫn phân biệt được nhờ nhãn và vị trí; ba ô trở lên thì mắt thôi phân loại được.
      *
      * [ĐO] hiện trạng — ba nhóm không phân biệt được (`g_windows` 4× kính · `g_doors` 4× cửa · `g_lights` nhiều ×
      * đèn). Cả ba **có nút** nên bộ vẽ vốn đã bỏ icon (chỗ đó cần bề cao cho hàng nút).
      */
     val iconsDistinguish: Boolean
-        get() = cells.groupingBy { it.icon }.eachCount().none { it.value >= ICON_REPEAT_CAP }
+        get() = IconRepeat.distinguishable(cells.map { it.icon })
 
     /**
      * Icon của các **NÚT** có phân biệt được không — cùng luật [iconsDistinguish], áp cho hàng nút.
@@ -134,17 +134,7 @@ data class GroupBoardModel(
      * Hai nhóm còn lại KHÔNG bị ảnh hưởng: *Cửa & khoang* (icon lặp tối đa 2) và *Đèn* (lặp tối đa 2) vẫn giữ icon.
      */
     val actionIconsDistinguish: Boolean
-        get() = actions.groupingBy { it.icon }.eachCount().none { it.value >= ICON_REPEAT_CAP }
-
-    private companion object {
-        /**
-         * Số lần một hình được lặp trước khi coi là "không phân biệt được".
-         *
-         * 3 chứ không 2: một CẶP trái/phải cùng hình là chuyện bình thường và vẫn đọc được nhờ nhãn; từ ba ô thì
-         * không còn là cặp nữa mà là một dãy đồng nhất.
-         */
-        const val ICON_REPEAT_CAP = 3
-    }
+        get() = IconRepeat.distinguishable(actions.map { it.icon })
 
     /**
      * Ô nhóm có mang dấu "chưa kiểm trên xe" không.

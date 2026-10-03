@@ -271,6 +271,10 @@
     <!-- ── WorkspaceView — nút ⇄ của ô (FIX286 · ES4: mô tả trợ năng; ô trống trong suốt nên đây là chữ duy nhất nói "chỗ đặt app") ── -->
     <string name="kachi_slot_swap_empty">Choose an app for slot %1$d</string>
     <string name="kachi_slot_swap">Change slot %1$d</string>
+    <string name="kachi_slot_to_back">Run the slot %1$d app in the background</string>
+    <string name="kachi_slot_close_app">Close the slot %1$d app</string>
+    <string name="kachi_slot_close_widget">Close the slot %1$d widget</string>
+    <string name="kachi_slot_close_failed">Couldn\'t close %1$s</string>
     <string name="kachi_slot_head_autohide_title">Auto-hide the ⇄ button</string>
     <string name="kachi_slot_head_autohide_sub">The app/widget switch on each frame hides for a cleaner screen; tap a frame (or any empty spot) to show it for a few seconds</string>
 
@@ -737,7 +741,6 @@
     <string name="kachi_profile_rename_failed">Could not rename — the name is empty or already used</string>
     <string name="kachi_voice_pill_title">Mic button on the status bar</string>
     <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
-    <string name="kachi_slot_app_closed">App closed — tap to reopen</string>
     <!-- shortcuts-autostart §4.14 — a temporary placement failed: the new app could not open in the slot. -->
     <string name="kachi_sc_place_failed">%1$s couldn\'t open in the slot</string>
     <!-- shortcuts-autostart §4.14 · group B — app shortcuts (app picker · Settings · bar block · widget · tap reasons) -->
@@ -837,13 +840,13 @@
     <string name="kachi_drawer_hint_trip">Tap to add or remove an app · tap Apply to save · choose how each opens in Settings</string>
     <string name="kachi_trip_cap_note">Ignition apps hold at most %1$d apps — remove one to add another</string>
     <string name="kachi_trip_title">Open apps at ignition</string>
-    <string name="kachi_trip_hint">Runs once per ignition, after the home screen is ready (about 15–45 seconds). Background = opened in a slot, then moved behind the home screen; the slot may flash for 1–2 seconds. Apps already in a slot or cast to the cluster are skipped.</string>
+    <string name="kachi_trip_hint">Runs once per ignition, after the home screen is ready (about 15–45 seconds). Background = opened out of sight, then moved behind the home screen (an app slot is used if there is one — that slot may flash for 1–2 seconds). Apps already in a slot or cast to the cluster are skipped.</string>
     <string name="kachi_trip_add_n">+ Add apps (%1$d/%2$d)</string>
     <string name="kachi_trip_mode_bg">Run in background</string>
     <string name="kachi_trip_mode_normal">Open normally</string>
     <string name="kachi_trip_remove">Remove</string>
     <string name="kachi_trip_slot_hint">To have an app open and visible at every ignition, put it in a slot of this profile.</string>
-    <string name="kachi_trip_no_slot_warn">This profile\'s layout has no app slot — background apps will be skipped.</string>
+    <string name="kachi_trip_no_slot_warn">This profile\'s layout has no app slot — background apps are opened on a hidden screen, then moved behind the home screen.</string>
     <string name="kachi_trip_normal_unsupported">The camera screen is unknown on this car — apps won\'t be opened in front.</string>
     <string name="kachi_trip_last_ran">Last ignition: %1$s</string>
     <string name="kachi_trip_res_ran">ran at %1$s</string>
@@ -857,5 +860,37 @@
     <string name="kachi_trip_music_car">Car\'s player</string>
     <string name="kachi_trip_music_query">What to play (keyword or YouTube link; empty = resume)</string>
     <string name="kachi_trip_music_query_set">What to play: %1$s</string>
-    <string name="kachi_trip_music_note">Apps are usually closed after the car is switched off — set a keyword or link to be sure music plays. If something else is already playing, Kachi leaves it alone.</string>
+    <string name="kachi_trip_music_note">Apps are usually closed after the car is switched off — set a keyword or link to be sure music plays. The app you choose plays even if the car is already playing another source.</string>
+    <string name="kachi_trip_res_noop">nothing could be opened (%1$s)</string>
+    <string name="kachi_trip_res_partial">partly ran at %1$s</string>
+    <string name="kachi_trip_step">• %1$s: %2$s</string>
+    <string name="kachi_trip_step_music">Music (%1$s)</string>
+    <string name="kachi_trip_why_moved">running behind the home screen</string>
+    <string name="kachi_trip_why_home_restored">running behind the home screen (home was covered for a moment)</string>
+    <string name="kachi_trip_why_already_running">already running</string>
+    <string name="kachi_trip_why_kept_under">running hidden, not yet moved behind the home screen</string>
+    <string name="kachi_trip_why_in_slot">already in a slot</string>
+    <string name="kachi_trip_why_opened">opened</string>
+    <string name="kachi_trip_why_playing">playing</string>
+    <string name="kachi_trip_why_self_playing">was already playing</string>
+    <string name="kachi_trip_why_sent">play sent, but no playback seen</string>
+    <string name="kachi_trip_why_timeout">unknown — timed out</string>
+    <string name="kachi_trip_why_no_stage">skipped — no place to run it in the background</string>
+    <string name="kachi_trip_why_no_channel">skipped — the window-control channel was not ready</string>
+    <string name="kachi_trip_why_disabled">skipped — background running turned itself off after an error; restart Kachi to turn it back on</string>
+    <string name="kachi_trip_why_system_app">skipped — system apps can\'t run in the background; put it in a slot</string>
+    <string name="kachi_trip_why_not_installed">skipped — app not installed</string>
+    <string name="kachi_trip_why_self">skipped — that is Kachi</string>
+    <string name="kachi_trip_why_camera_unknown">skipped — opening normally isn\'t supported on this car yet</string>
+    <string name="kachi_trip_why_camera">skipped — the camera screen was showing</string>
+    <string name="kachi_trip_why_other_front">skipped — another app was in front</string>
+    <string name="kachi_trip_why_not_staged">skipped — the app couldn\'t be started</string>
+    <string name="kachi_trip_why_no_session">opened, but the app had no music session to play — paste a link to autoplay</string>
+    <string name="kachi_trip_why_unknown_media">skipped — Kachi can\'t read what is playing yet (notification access)</string>
+    <string name="kachi_trip_why_deadline">skipped — the trip ran out of time</string>
+    <string name="kachi_trip_system_bg">%1$s is a system app — Kachi doesn\'t run system apps in the background. Choose Open normally, or put the app in a slot.</string>
+    <string name="kachi_trip_music_link_hint">YouTube doesn\'t resume on its own: left empty, Kachi only opens the app. Paste a video link to autoplay, or choose YT Music.</string>
+    <string name="kachi_trip_now_running">This ignition: running…</string>
+    <string name="kachi_trip_now_wait_channel">This ignition: not run yet — the window-control channel is not up</string>
+    <string name="kachi_trip_now_wait_home">This ignition: not run yet — waiting for the home screen to be ready</string>
 </resources>

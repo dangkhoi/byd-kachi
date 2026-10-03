@@ -108,6 +108,16 @@
             android:taskAffinity="com.byd.clusternav.behind"
             android:theme="@android:style/Theme.NoDisplay" />
 
+        <!-- L4 · D2(a) — lớp che trên màn ảo dàn dựng ẨN của Kachi (StagingDisplay): đóng vai app của ô để X không ở đỉnh
+             màn ảo lúc move-task (R0.2). Chỉ chính Kachi mở, lên màn ảo của chính Kachi; gỡ ngay sau lượt đẩy. -->
+        <activity
+            android:name=".launcher.behind.StageCoverActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:resizeableActivity="true"
+            android:taskAffinity="com.byd.clusternav.stage"
+            android:theme="@android:style/Theme.Black.NoTitleBar" />
+
         <activity
             android:name=".modules.clustercast.ClusterBlackActivity"
             android:exported="true"

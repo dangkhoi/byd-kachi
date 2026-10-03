@@ -38,8 +38,11 @@ object SlotHeadRest {
     /** Đường hiện app trong ô App: màn ảo qua dadb · ActivityView (ROM ký nền tảng) · không bộ chiếu (thẻ + ⇄ nổi). */
     enum class Projector { VD, ACTIVITY_VIEW, NONE }
 
-    /** Ẩn lại sau lần hiện cuối (≈ lần nhấc tay cuối) — owner *"auto hide đi sau mấy giây"*. */
-    const val HIDE_AFTER_MS = 4_000L
+    /**
+     * Ẩn lại sau lần hiện cuối (≈ lần nhấc tay cuối) — owner *"auto hide đi sau mấy giây"*; L6 (owner 03/10, kèm hai nút
+     * chạy nền / tắt cạnh ⇄): *"Nút cũng tự hide sau 3s"* ⇒ 4 s → 3 s, áp cho MỌI nút đầu ô (một hẹn giờ chung).
+     */
+    const val HIDE_AFTER_MS = 3_000L
 
     /** Hiện ra nhanh: người vừa chạm đang chờ thấy nút. */
     const val FADE_IN_MS = 150L

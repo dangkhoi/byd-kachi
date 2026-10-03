@@ -2,26 +2,18 @@ package com.byd.clusternav.launcher
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.util.Log
-import android.view.Gravity
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
-import android.widget.TextView
-import com.byd.clusternav.R
 import com.byd.clusternav.system.inputd.GestureFallback
 import com.byd.clusternav.system.inputd.InputDaemonClient
 import com.byd.clusternav.system.inputd.SlotTouchMapper
 import com.byd.clusternav.system.inputd.TouchRouter
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
-import com.byd.clusternav.launcher.KachiSpace as Sp
 import com.byd.clusternav.launcher.behind.BehindHomePlan
 
 /**
@@ -48,8 +40,9 @@ import com.byd.clusternav.launcher.behind.BehindHomePlan
  *     Nay mỗi màn ảo do [SlotVdOwner] cầm theo **ô**, và mọi đường thay/đóng/dựng lại/huỷ đều gọi [release] —
  *     idempotent. Xem KDoc [SlotVdLedger] cho phép đo sinh ra luật này.
  *  2. **Khung đóng băng.** App trên màn ảo chết thì `SurfaceView` giữ khung cuối ⇒ ô trông còn sống. Nay
- *     [SlotLiveProbe] đo 5 s/lần (một lệnh cho mọi ô); mất task ⇒ **giấu mặt vẽ** (khung cuối biến mất, lộ thẻ
- *     icon+tên phía sau) + hiện nhãn *"app đã đóng — chạm để mở lại"*, chạm là mở lại đúng ô này.
+ *     [SlotLiveProbe] đo 5 s/lần (một lệnh cho mọi ô); mất task ⇒ **giấu mặt vẽ** (khung cuối biến mất) rồi BÁO lên
+ *     ([onGone]). L6 (owner 03/10, *"trả về transparent luôn, không cần giữ icon và yêu cầu mở app"*): thẻ "app đã đóng —
+ *     chạm để mở lại" của H2 đã gỡ — ô đi theo luật hoàn ô `SlotRevertPlan` (trong suốt / về nội dung LƯU của hồ sơ).
  */
 class VdAppHost(
     context: Context,
@@ -65,6 +58,8 @@ class VdAppHost(
     private val slot: Int = 0,
     /** H2: chủ (một cây workspace). Hai màn Kachi cùng sống ⇒ hai chủ khác nhau, cùng tranh một ô. */
     private val owner: String = "ws",
+    /** L6 · (a)/(b): app của ô đo là đã rời màn ảo (luồng chính) ⇒ màn chính áp luật hoàn ô. Mặc định no-op (test). */
+    private val onGone: (String) -> Unit = {},
 ) : FrameLayout(context) {
 
     private val surface = SurfaceView(context)
@@ -103,26 +98,10 @@ class VdAppHost(
 
     private companion object {
         const val TAG = "VdAppHost"
-
-        /**
-         * ⚠ [SOÁT OCR] MỘT luồng dùng chung cho đường LÙI của chạm — trước 1.69 mỗi `ACTION_DOWN`/`ACTION_UP`
-         * dựng **một `Thread` mới** (hai luồng mỗi cú chạm), mỗi luồng chạy một lệnh dadb CHẶN. Cuộn một danh
-         * sách trong ô là hàng chục luồng sinh-và-chết trong vài giây, tất cả xếp hàng sau CÙNG một chủ
-         * `ShellTransport` — thêm luồng không làm nhanh hơn, chỉ làm mọi bản chụp luồng trên xe khó đọc.
-         *
-         * Hàng đợi **có trần** + [ThreadPoolExecutor.DiscardPolicy]: khi kênh shell nghẽn, bỏ cú chạm MỚI là
-         * đúng — giữ nó lại chỉ để thi hành muộn vài giây thì app trong ô nhận một cú chạm ở chỗ người dùng đã
-         * rời mắt từ lâu. Điều tuyệt đối KHÔNG được làm là chặn luồng vẽ (nên không có `CallerRunsPolicy`).
-         */
-        val TOUCH_FALLBACK: ThreadPoolExecutor = ThreadPoolExecutor(
-            1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue(16),
-            { r -> Thread(r, "kachi-slot-tap").apply { isDaemon = true } },
-            ThreadPoolExecutor.DiscardPolicy(),
-        )
     }
 
-    /** H2: thẻ "app đã đóng — chạm để mở lại"; chỉ dựng khi thật sự cần (ô sống thì không tốn view nào). */
-    private var closedCard: TextView? = null
+    /** H2·2 · L6: nhịp đo đã báo app rời màn ảo ([onAppClosed]) — chỉ để KHÔNG báo hai lần / rào lượt mở dở. */
+    private var dead = false
 
     init {
         // Default z-order: the surface composites BEHIND the window, so the slot header (added later,
@@ -308,7 +287,7 @@ class VdAppHost(
         if (released || !launched) return false
         if (old == newPkg) return true
         SlotLiveProbe.unwatch(probeKey)                 // thôi đo A TRƯỚC lệnh: A rời đỉnh không phải "app đã đóng"
-        closedCard?.let { removeView(it) }; closedCard = null
+        dead = false
         full.reset()                                    // A đang toàn màn (dòng 9) không còn là app của ô này
         surface.visibility = VISIBLE
         gesture.reset()
@@ -346,7 +325,7 @@ class VdAppHost(
         return true
     }
 
-    /** Màn nhà hiện lại / chạm thẻ ⇒ K8 đưa app đang toàn màn về ô (không về được ⇒ golden; app đã đóng ⇒ thẻ "đã đóng"). */
+    /** Màn nhà hiện lại / chạm thẻ ⇒ K8 đưa app đang toàn màn về ô (không về được ⇒ golden; app đã đóng ⇒ luật hoàn ô). */
     fun returnFromFull() {
         val id = vd?.display?.displayId ?: return
         val sh = shell ?: return
@@ -379,44 +358,48 @@ class VdAppHost(
     // ── H2·2 · KÊNH IM LẶNG PHẢI NÓI ────────────────────────────────────────────────────────────────────────
 
     /**
-     * App trong ô đã chết (đo ở [SlotLiveProbe]). Hai việc, đúng thứ tự:
-     *  1. **Giấu mặt vẽ** — `SurfaceView` bị GONE ⇒ khung hình cuối (đóng băng) biến mất, lộ thẻ icon+tên mà
-     *     [WorkspaceView] đã đặt sẵn phía sau. KHÔNG giải phóng màn ảo: mở lại dùng đúng màn ảo đó (bất biến
-     *     một-màn-ảo-mỗi-ô giữ nguyên, không có nhịp tạo/huỷ thừa).
-     *  2. **Nói ra** — nhãn "app đã đóng — chạm để mở lại", chạm là mở lại NGAY trong ô này.
+     * App trong ô đã rời màn ảo (đo ở [SlotLiveProbe] · hoặc lượt về-ô của [SlotFullscreen] thấy GONE). Hai việc, đúng
+     * thứ tự:
+     *  1. **Giấu mặt vẽ** — `SurfaceView` bị GONE ⇒ khung hình cuối (đóng băng) biến mất NGAY. KHÔNG giải phóng màn ảo ở
+     *     đây: nhả là việc của lượt render sau luật hoàn ô (bất biến một-màn-ảo-mỗi-ô giữ nguyên).
+     *  2. **Báo lên** ([onGone]) — L6 (owner 03/10): KHÔNG còn thẻ icon + *"chạm để mở lại"*; màn chính áp `SlotRevertPlan`
+     *     (`APP_DIED`): app LƯU của ô ⇒ ô trong suốt · app đặt tạm ⇒ ô về nội dung LƯU (widget / app LƯU mở lại).
      */
     private fun onAppClosed() {
-        if (released || closedCard != null) return
+        if (released || dead) return
+        dead = true
         surface.visibility = GONE
-        val card = TextView(context).apply {
-            text = context.getString(R.string.kachi_slot_app_closed)
-            setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
-            // ĐÁY ô, không phải giữa: thẻ icon+tên app do [WorkspaceView.appCard] vẽ nằm CHÍNH GIỮA và nay lộ ra
-            // sau khi mặt vẽ bị giấu — [ĐO ảnh 2026-09-14] để `gravity = CENTER` thì câu chữ đè lên icon.
-            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            setPadding(dp(Sp.L), dp(Sp.SLOT_HEAD_CLEAR), dp(Sp.L), dp(Sp.L))
-            setOnClickListener { reopen() }
-        }
-        closedCard = card
-        addView(card, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        pkg?.let(onGone)
     }
 
-    /** Người dùng chạm thẻ "đã đóng" ⇒ mở lại app trên đúng màn ảo của ô (không dựng lại view, không tạo VD mới). */
+    /** Mở lại app trên đúng màn ảo của ô (không dựng lại view, không tạo VD mới) — lối tắt R-SC2 · lượt về-ô hỏng. */
     private fun reopen() {
-        closedCard?.let { removeView(it) }; closedCard = null
+        dead = false
         surface.visibility = VISIBLE
         launched = false
         maybeLaunch()
     }
 
-    /** FIX286 · R-SC2 — app đo là đã đóng ⇒ mở lại như chạm thẻ "đã đóng"; `false` = 0 lệnh (KDoc `KachiHomeSlots.reviveInSlot`). */
+    /** FIX286 · R-SC2 — app đo là đã đóng ⇒ mở lại vào ô ([reopen]); `false` = 0 lệnh (KDoc `KachiHomeSlots.reviveInSlot`). */
     fun reviveInSlot(expect: String): Boolean {
-        val busy = closedCard == null && !full.isDetached && !SlotLiveProbe.watching(probeKey)   // lượt mở đang chạy, chưa đo
+        val busy = !dead && !full.isDetached && !SlotLiveProbe.watching(probeKey)   // lượt mở đang chạy, chưa đo
         if (released || !launched || pkg != expect || busy) return false
         SlotLiveProbe.unwatch(probeKey); full.reset(); reopen(); return true   // nhịp đo cũ thôi TRƯỚC: không dựng thẻ giữa lượt mở
     }
 
-    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+    /**
+     * L6 — app [expect] đã RỜI ô theo luật hoàn ô (chết / bị *tắt*: stack đã gỡ): host thôi giữ nó TRƯỚC lượt render nhả
+     * ô ⇒ [release] KHÔNG `am force-stop` (app có thể còn dịch vụ / task ở chỗ khác — tắt là đúng task trên màn ảo, không
+     * phải cả gói), không mở lại, không đo nữa. Gói khác [expect] (ô đã đổi app) ⇒ không làm gì. Luồng chính.
+     */
+    fun relinquish(expect: String) {
+        if (pkg != expect) return
+        SlotLiveProbe.unwatch(probeKey); full.reset()
+        pkg = null; launched = false
+    }
+
+    /** L6 — host chưa nhả và đang giữ [p] (kể cả khi chưa mở xong vào màn ảo — [stage] khi đó còn `null`). Luồng chính. */
+    fun holds(p: String): Boolean = !released && pkg == p
 
     /**
      * ═══ ĐƯA CHẠM VÀO MÀN ẢO CỦA Ô — hai đường, và đường lùi nay hiểu CỬ CHỈ (1.69) ══════════════════════════
@@ -460,7 +443,7 @@ class VdAppHost(
             return true
         }
         val cmd = gesture.feed(action, displayId, dx, dy, e.eventTime, e.getPointerId(0))
-        if (cmd != null) runCatching { TOUCH_FALLBACK.execute { runCatching { sh(cmd) } } }
+        if (cmd != null) runCatching { VdTouchExec.TOUCH_FALLBACK.execute { runCatching { sh(cmd) } } }
         return true
     }
 

@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.trip
 import android.content.Context
 import android.media.AudioManager
 import android.os.SystemClock
+import android.util.Log
 import com.byd.clusternav.launcher.MediaBridge
 import com.byd.clusternav.launcher.behind.BehindHomeSequence
 import com.byd.clusternav.launcher.voice.VoiceAppIntents
@@ -13,53 +14,93 @@ import com.byd.clusternav.launcher.voice.VoiceYoutubeResolver
 /**
  * ═══ F3 — TỰ MỞ NHẠC KHI LÊN XE: bên thi hành (luồng `kachi-trip`) ════════════════════════════════════════════════
  *
- * Spec R3 · §4.6 (R2 của Tasks); mọi quyết định ở [TripMusicPlan] (`:core`, KDoc ở đó có bằng chứng đo). Lớp này chỉ:
- *  1. đọc phiên nhạc qua [MediaBridge.sessions] (`null` = không biết ⇒ bỏ lượt) + `AudioManager.isMusicActive`;
- *  2. phiên của app ĐÃ có trước ⇒ `play()` đúng phiên đó (tiếp tục thứ người lái đang nghe) — 0 lệnh cửa sổ;
- *  3. chưa có: app nằm trong một ô đang hiện ⇒ ô tự mở nó (đường ô sẵn có), KHÔNG lệnh nào thêm; không ⇒ chạy nó phía sau
- *     màn nhà ([behind] = R0.3 qua MAIN/LAUNCHER — [ĐO] ở lại màn ảo, không che màn nhà);
- *  4. chờ phiên của app hiện ra → kiểm lại "không đè" NGAY trước lệnh → `playFromUri` (link / từ khoá giải bằng lõi
- *     chung của giọng nói) hoặc `play()` (bài cũ của app) hoặc chỉ để app mở.
+ * Spec R3 · §4.6 (R2 của Tasks) + L4 (owner 03/10 trên xe 2.86: *"auto mở nhạc youtube không chạy? Cả để trống lẫn để
+ * link"*). Mọi quyết định ở [TripMusicPlan] (`:core`, KDoc ở đó có bằng chứng đo). Lớp này chỉ:
+ *  1. đọc phiên nhạc qua [MediaBridge.sessions] (`null` = không biết ⇒ bỏ lượt) + ghi MỘT dòng sự thật đo (L4 · D1(d));
+ *  2. chính app chọn đang phát ⇒ xong. Nguồn KHÁC đang phát (BYD tự phát lại nguồn cuối lúc nổ máy) KHÔNG còn chặn —
+ *     chọn app cụ thể là lựa chọn của người dùng (L4 · D3(i));
+ *  3. phiên của app ĐÃ có trước ⇒ `play()` đúng phiên đó — 0 lệnh cửa sổ;
+ *  4. chưa có: app nằm trong một ô đang hiện ⇒ ô tự mở nó; app hệ thống ngoài ô ⇒ `SYSTEM_APP` (R0.6, nói thật — L4 ·
+ *     D1(e)); còn lại ⇒ chạy phía sau màn nhà ([Ports.behind]: ô sống, không thì màn ảo ẩn — L4 · D2);
+ *  5. chờ phiên của app → `playFromUri` (phiên nhận URI) · K4-VIEW ([Ports.view], có link mà không phiên nhận — L4 · D3(ii))
+ *     · `play()` (không link) · chỉ mở (`NO_SESSION` — Cài đặt nói rõ: đặt link để tự phát).
  *
- * Không có ý-định VIEW nào: [ĐO máy ảo 02/10 `trip/tm3-ytmusic.txt`] ý-định VIEW vào màn ảo ô bị app trung chuyển lên
- * display 0 ⇒ che màn nhà. Trả MỘT dòng ASCII cho sổ kết quả (`music:<bước>`).
+ * Trả MỘT [Done]: mã bước cho sổ (Cài đặt dịch thành câu) + một ghi chú ASCII cho nhật ký `KachiTrip`.
  */
 internal class TripMusicRun(
     private val app: Context,
     private val sleep: (Long) -> Unit,
-    /** R0.3 qua màn chính (`TripRun.behind`) — `null` = không có ô sống. */
-    private val behind: (String) -> BehindHomeSequence.Outcome?,
+    private val ports: Ports,
 ) {
+    /** Phần màn chính bước nhạc cần — `TripRun` cấp; đều CHẶN, đều đi qua mutex `kachi-behind` của màn. */
+    interface Ports {
+        /** R0.3 / L4 · D2 — chạy [pkg] phía sau màn nhà (ô sống trước, không thì màn ảo ẩn). */
+        fun behind(pkg: String): BehindHomeSequence.Outcome
+
+        /** L4 · D3(ii) — K4-VIEW: [slotVd] khác `null` ⇒ vào ô của app; không ⇒ dàn lại qua chỗ dàn dựng. Trả một dòng log. */
+        fun view(pkg: String, url: String, slotVd: Int?): String
+
+        /** L4 · D1(d) — sự thật đo cho nhật ký: task / pid của [pkg] (một `am stack list` + `pidof`). */
+        fun facts(pkg: String): String
+
+        /** `ApplicationInfo.FLAG_SYSTEM` (R0.6). */
+        fun isSystem(pkg: String): Boolean
+    }
+
+    data class Done(val step: TripStep, val note: String)
+
     private val bridge = MediaBridge(app)
     private val audio: AudioManager? = app.getSystemService(AudioManager::class.java)
 
     private fun musicActive(): Boolean = runCatching { audio?.isMusicActive == true }.getOrDefault(false)
 
-    fun run(music: TripMusic, installed: Set<String>, view: TripHub.HomeView): String {
-        val target = VoiceAppTargets.byKey(music.mode.targetKey) ?: return "music:off"
+    fun run(music: TripMusic, installed: Set<String>, view: TripHub.HomeView): Done {
+        val target = VoiceAppTargets.byKey(music.mode.targetKey) ?: return done(music.mode.code, TripStepCode.NOT_INSTALLED, "music:off")
         val pkg = target.packageIn(installed)
+        val id = pkg ?: music.mode.code
         val before = bridge.sessions()
-        val gate = TripMusicPlan.gate(music.mode, pkg, before, musicActive())
-        if (gate != TripMusicPlan.Gate.GO || pkg == null) return "music:$gate"
+        val active = musicActive()
+        Log.i(TripStart.TAG, "music facts pkg=$id system=${pkg?.let(ports::isSystem)} ${pkg?.let(ports::facts) ?: "-"} " +
+            "sessions=${describe(before)} musicActive=$active inSlot=${pkg in view.appSlots} query=${music.query.isNotEmpty()}")
+        val gate = TripMusicPlan.gate(music.mode, pkg, before)
+        TripOutcome.ofGate(gate)?.let { return done(id, it, "music:$id:$gate") }
+        if (pkg == null) return done(id, TripStepCode.NOT_INSTALLED, "music:$id:NOT_INSTALLED")
+        val over = if (TripMusicPlan.otherPlaying(pkg, before, active)) " override" else ""
         // R3.4 bước 1 — phiên có TRƯỚC khi Kachi đụng gì (app sống qua lần tắt máy): tiếp tục đúng nó, bỏ qua "Phát gì".
         // App trong ô KHÔNG tính: ô vừa force-stop + mở lại nó, phiên là của Kachi (KDoc [TripMusicPlan.preexisting]).
-        if (TripMusicPlan.preexisting(pkg, before, inSlot = pkg in view.appSlots)) {
-            return "music:$pkg:resume-existing=${bridge.playPackage(pkg)}${verify(pkg)}"
+        val inSlot = pkg in view.appSlots
+        if (TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)) {
+            return verified(id, pkg, "music:$pkg:resume-existing=${bridge.playPackage(pkg)}$over", VERIFY_TRIES)
         }
         val url = urlFor(target, pkg, music.query)
-        val start = if (pkg in view.appSlots) "in-slot" else behind(pkg)?.result?.name ?: return "music:$pkg:NO_STAGE"
-        if (start == BehindHomeSequence.Result.X_NOT_STAGED.name) return "music:$pkg:not-staged"
-        val hasSession = awaitSession(pkg)
-        when (val r = TripMusicPlan.recheck(pkg, bridge.sessions(), musicActive())) {
-            TripMusicPlan.Recheck.CLEAR -> Unit
-            else -> return "music:$pkg:$start:recheck-$r"
+        val start = when {
+            inSlot -> "in-slot"
+            ports.isSystem(pkg) -> return done(id, TripStepCode.SYSTEM_APP, "music:$pkg:SYSTEM_APP")
+            else -> ports.behind(pkg).let { o ->
+                val code = TripOutcome.ofBehind(o.result)
+                if (code.result == TripStepCode.Result.NOOP) return done(id, code, "music:$pkg:${o.result}")
+                o.result.name
+            }
         }
-        return "music:$pkg:$start:" + when (val p = TripMusicPlan.play(url, hasSession)) {
-            is TripMusicPlan.Play.FromUri -> "uri=${bridge.playFromUri(pkg, p.url)}${verify(pkg)}"
-            TripMusicPlan.Play.Resume -> "resume=${bridge.playPackage(pkg)}${verify(pkg)}"
-            TripMusicPlan.Play.OpenOnly -> "open-only (no session)"
+        val session = awaitSession(pkg)
+        when (TripMusicPlan.recheck(pkg, bridge.sessions())) {
+            TripMusicPlan.Recheck.CLEAR -> Unit
+            TripMusicPlan.Recheck.SELF_PLAYING -> return done(id, TripStepCode.PLAYING, "music:$pkg:$start:self-playing$over")
+            TripMusicPlan.Recheck.UNKNOWN_MEDIA -> return done(id, TripStepCode.UNKNOWN_MEDIA, "music:$pkg:$start:recheck-UNKNOWN_MEDIA")
+        }
+        val base = "music:$pkg:$start$over:"
+        return when (val p = TripMusicPlan.play(url, session)) {
+            is TripMusicPlan.Play.FromUri -> verified(id, pkg, base + "uri=${bridge.playFromUri(pkg, p.url)}", VERIFY_TRIES)
+            TripMusicPlan.Play.Resume -> verified(id, pkg, base + "resume=${bridge.playPackage(pkg)}", VERIFY_TRIES)
+            is TripMusicPlan.Play.View -> {
+                val slotVd = if (inSlot) view.stages.firstOrNull { it.pkg == pkg }?.vd else null
+                verified(id, pkg, base + "view(${ports.view(pkg, p.url, slotVd)})", VIEW_VERIFY_TRIES)
+            }
+            TripMusicPlan.Play.OpenOnly -> done(id, TripStepCode.NO_SESSION, base + "open-only (no session)")
         }
     }
+
+    private fun done(pkg: String, code: TripStepCode, note: String) = Done(TripStep(pkg, TripStepKind.MUSIC, code), note)
 
     /**
      * Ô "Phát gì" → URL xem chuẩn, hoặc `null`. Link ⇒ bóc `video_id` rồi dựng lại từ khuôn của bảng (chuỗi người dùng
@@ -73,26 +114,33 @@ internal class TripMusicRun(
         TripMusicPlan.Source.None, TripMusicPlan.Source.BadLink -> null
     }
 
-    /** Chờ phiên của [pkg] hiện ra (app vừa mở) tối đa [TripMusicPlan.SESSION_WAIT_MS]. */
-    private fun awaitSession(pkg: String): Boolean {
+    /** Chờ phiên của [pkg] hiện ra (app vừa mở) tối đa [TripMusicPlan.SESSION_WAIT_MS]. `null` = không có. */
+    private fun awaitSession(pkg: String): TripMusicPlan.Session? {
         val until = SystemClock.elapsedRealtime() + TripMusicPlan.SESSION_WAIT_MS
         while (true) {
-            if (bridge.sessions().orEmpty().any { it.pkg == pkg }) return true
-            if (SystemClock.elapsedRealtime() >= until) return false
+            bridge.sessions().orEmpty().firstOrNull { it.pkg == pkg }?.let { return it }
+            if (SystemClock.elapsedRealtime() >= until) return null
             sleep(TripMusicPlan.SESSION_POLL_MS)
         }
     }
 
-    /** Đọc lại sau lệnh (không quyết gì — chỉ để sổ kết quả nói thật: đã phát hay mới chỉ gửi). */
-    private fun verify(pkg: String): String {
-        repeat(VERIFY_TRIES) {
+    /** Đọc lại sau lệnh (không quyết gì — để sổ nói thật: ĐANG PHÁT hay mới chỉ gửi). */
+    private fun verified(id: String, pkg: String, note: String, tries: Int): Done {
+        repeat(tries) {
             sleep(TripMusicPlan.SESSION_POLL_MS)
-            if (bridge.sessions().orEmpty().any { it.pkg == pkg && it.playing }) return " playing"
+            if (bridge.sessions().orEmpty().any { it.pkg == pkg && it.playing }) return done(id, TripStepCode.PLAYING, "$note playing")
         }
-        return " sent"
+        return done(id, TripStepCode.SENT, "$note sent")
     }
+
+    /** Phiên cho dòng nhật ký: `pkg:play|stop:uri` — ASCII, không tiêu đề bài (không ghi nội dung người dùng nghe). */
+    private fun describe(s: List<TripMusicPlan.Session>?): String =
+        s?.joinToString(",", "[", "]") { "${it.pkg}:${if (it.playing) "play" else "stop"}${if (it.acceptsUri) ":uri" else ""}" } ?: "null"
 
     private companion object {
         const val VERIFY_TRIES = 8
+
+        /** K4-VIEW: app phải tải trang + video từ mạng — chờ lâu hơn (≈ 20 s). */
+        const val VIEW_VERIFY_TRIES = 20
     }
 }

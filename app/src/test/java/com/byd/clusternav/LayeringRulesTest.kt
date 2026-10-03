@@ -227,6 +227,10 @@ class LayeringRulesTest {
         // đo chỉ vì reflection không `import android.*` — nhưng `:core` bị CẤM nhắc chữ `android` kể cả trong chuỗi
         // (`core khong duoc biet Android`), nên nó không có chỗ nào khác ngoài `:app`.
         "SysProps.kt" to "reflection SystemProperties của hệ — :core bị cấm nhắc Android",
+        // L6 (2026-10-03): bộ thi hành đường LÙI của chạm vào màn ảo ô, tách khỏi `VdAppHost.kt` (500/500) nguyên byte để
+        // có chỗ cho luật hoàn ô. "Thuần" theo phép đo chỉ vì một `ThreadPoolExecutor` không import android — nhưng nó là
+        // một nửa của `VdAppHost.onTouchEvent` (View, chỉ một chỗ dùng), cùng lẽ `KachiSpaceBars.kt`/`WorkspacePrefsSlotHead.kt`.
+        "VdTouchExec.kt" to "nửa tách ra của VdAppHost (View) — luồng chạm đường lùi của màn ảo ô, một chỗ dùng",
     )
 
     @Test

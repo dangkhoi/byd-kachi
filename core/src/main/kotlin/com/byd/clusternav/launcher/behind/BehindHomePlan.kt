@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.behind
 
 import com.byd.clusternav.launcher.FreeformLaunch
+import com.byd.clusternav.launcher.ShellAppLauncher
 import com.byd.clusternav.modules.clustercast.StackEntry
 
 /**
@@ -219,7 +220,15 @@ object BehindHomePlan {
     // ── R0.3 — chỗ dàn dựng ──────────────────────────────────────────────────────────────────────────────────
 
     /** Một ô app ứng viên làm chỗ dàn dựng: màn ảo [vd], app [pkg], diện tích [area] px², đã thấy sống [alive]. */
-    data class Stage(val slot: Int, val vd: Int, val pkg: String, val area: Long, val alive: Boolean)
+    data class Stage(val slot: Int, val vd: Int, val pkg: String, val area: Long, val alive: Boolean) {
+        /** Màn ảo ẨN (L4 · D2) — không phải ô: id màn ảo chỉ biết lúc tạo, không có app C nào trên đó. */
+        val hidden: Boolean get() = slot == HIDDEN_SLOT
+
+        companion object {
+            private const val HIDDEN_SLOT = -1
+            val HIDDEN = Stage(HIDDEN_SLOT, -1, "", 0L, alive = true)
+        }
+    }
 
     /** Ô dàn dựng cho X: ô sống, có màn ảo, app ≠ X, diện tích NHỎ nhất (bằng nhau ⇒ ô chỉ số nhỏ). Không có ⇒ `null`. */
     fun stagingSlot(cands: List<Stage>, x: String): Stage? =
@@ -250,6 +259,34 @@ object BehindHomePlan {
         val top = topStackId(entries, vd) ?: return false
         return stack(entries, top).any { it.pkg == pkg }
     }
+
+    // ── L4 · D4 — "đang chạy" = có TASK **và** có TIẾN TRÌNH ─────────────────────────────────────────────────
+
+    /** K11 — đọc pid của [pkg] (chỉ đọc, không đổi gì). Tên gói đi vào lệnh shell ⇒ lọc bằng CÙNG regex đường mở app. */
+    fun pidCmd(pkg: String): String {
+        require(pkg.matches(ShellAppLauncher.PKG)) { "tên gói lạ: $pkg" }
+        return "pidof $pkg"
+    }
+
+    /**
+     * L4 · D4 — X ĐANG CHẠY thật: có task trong [entries] VÀ [pidOut] (kết quả [pidCmd]) có ít nhất một pid.
+     *
+     * Vì sao cần cả hai [ĐO máy ảo 03/10]:
+     *  - task KHÔNG tiến trình (`e2e/e2b-bg-ytmusic-dead-proc`): app bị giết mà task còn (BYD giết tiến trình lúc tắt máy)
+     *    ⇒ bản cũ chỉ nhìn task coi là "đang chạy" ⇒ 0 lệnh, chuyến ghi đã chạy mà app không chạy. Nay coi là NGUỘI: K4
+     *    (`am start --display <vd> -n X`) tìm thấy task cũ trên display 0 và KÉO nó vào màn ảo (`reparentToDisplay`, tiêu
+     *    điểm chỉ trên màn ảo — [ĐO `p3/e2e-L4/m1-stale-task-k4`]; nguồn A10 r47 `ActivityStarter.java:2096-2170`:
+     *    `mPreferredDisplayId != mTargetStack.mDisplayId` ⇒ `reparent(launchStack, ON_TOP, REPARENT_MOVE_STACK_TO_FRONT)`).
+     *  - tiến trình KHÔNG task (widget bật tiến trình bằng broadcast, `e2e/r2-alias-trip`) ⇒ vẫn nguội (luật Pass 6 giữ).
+     */
+    fun running(entries: List<StackEntry>, pkg: String, pidOut: String): Boolean =
+        entries.any { it.pkg == pkg } && pidOut.trim().split(Regex("\\s+")).any { (it.toIntOrNull() ?: 0) > 0 }
+
+    /**
+     * L4 · D2 — chọn chỗ dàn dựng cho X: một ô SỐNG nếu có ([stagingSlot], đường đã đo — LUÔN đứng trước, CLAUDE.md §6),
+     * không thì màn ảo ẨN của Kachi ([Stage.HIDDEN] — đường mới, đứng CUỐI). Bố cục chỉ có widget không còn ra `NO_STAGE`.
+     */
+    fun stageFor(cands: List<Stage>, x: String): Stage = stagingSlot(cands, x) ?: Stage.HIDDEN
 
     // ── R1.8 — app đang sống sau màn nhà ─────────────────────────────────────────────────────────────────────
 

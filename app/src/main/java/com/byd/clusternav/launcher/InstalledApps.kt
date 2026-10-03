@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import com.byd.clusternav.system.PackageQueries
 
@@ -36,5 +37,16 @@ object InstalledApps {
         pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
     } catch (e: PackageManager.NameNotFoundException) {
         null
+    }
+
+    /**
+     * App hệ thống (`ApplicationInfo.FLAG_SYSTEM`, R0.6) — MỘT phép cho chuyến lên xe (lập kế hoạch + bước nhạc) và Cài đặt
+     * (chip *Chạy nền* mờ — L4 · D5): hai bên phải đồng ý với nhau, không thì Cài đặt cho chọn thứ chuyến sẽ bỏ. Chưa cài ⇒
+     * `false` (bước lập kế hoạch đã loại bằng `NOT_INSTALLED`).
+     */
+    fun isSystem(ctx: Context, pkg: String): Boolean = try {
+        ctx.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0
+    } catch (e: PackageManager.NameNotFoundException) {
+        false
     }
 }

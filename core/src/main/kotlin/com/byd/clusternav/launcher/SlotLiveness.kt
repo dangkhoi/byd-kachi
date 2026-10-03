@@ -16,7 +16,7 @@ package com.byd.clusternav.launcher
  *  2. **Phải trượt [missesToDie] nhịp liên tiếp.** Một nhịp hụt đơn lẻ (shell timeout, app đang đổi task, dump
  *     bị cắt) không phải cái chết. Mặc định 2 nhịp × 5 s = 10 s im lặng mới kết luận.
  *
- * Sau khi đã báo chết, bộ đếm **không tự bật lại**: ô chuyển sang thẻ "chạm để mở lại". Một chu kỳ đo mới chỉ
+ * Sau khi đã báo chết, bộ đếm **không tự bật lại**: ô đi luật hoàn ô (L6 `SlotRevertPlan`). Một chu kỳ đo mới chỉ
  * bắt đầu khi ô đăng ký lại với `SlotLiveProbe.watch` (người dùng bấm mở lại) — và lần ấy là **một bản mới** của
  * lớp này, không phải bản cũ được bật lại.
  *

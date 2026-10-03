@@ -284,6 +284,10 @@
     <!-- ── WorkspaceView — nút ⇄ của ô (FIX286 · ES4: mô tả trợ năng; ô trống trong suốt nên đây là chữ duy nhất nói "chỗ đặt app") ── -->
     <string name="kachi_slot_swap_empty">Chọn ứng dụng cho ô %1$d</string>
     <string name="kachi_slot_swap">Đổi ứng dụng ô %1$d</string>
+    <string name="kachi_slot_to_back">Chạy nền ứng dụng ô %1$d</string>
+    <string name="kachi_slot_close_app">Tắt ứng dụng ô %1$d</string>
+    <string name="kachi_slot_close_widget">Tắt widget ô %1$d</string>
+    <string name="kachi_slot_close_failed">Chưa tắt được %1$s</string>
     <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
     <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>
 
@@ -760,7 +764,6 @@
     <string name="kachi_profile_rename_failed">Không đổi được — tên rỗng hoặc trùng hồ sơ khác</string>
     <string name="kachi_voice_pill_title">Nút mic trên thanh trạng thái</string>
     <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
-    <string name="kachi_slot_app_closed">App đã đóng — chạm để mở lại</string>
     <!-- shortcuts-autostart §4.14 — lượt đặt TẠM không thành: app mới không vào được màn ảo của ô, ô trả về app cũ. -->
     <string name="kachi_sc_place_failed">%1$s không vào được ô</string>
     <!-- shortcuts-autostart §4.14 · nhóm B — lối tắt ứng dụng (ngăn kéo chọn app · Cài đặt · khối thanh nút · widget · lý do khi chạm) -->
@@ -860,13 +863,13 @@
     <string name="kachi_drawer_hint_trip">Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · kiểu mở chọn trong Cài đặt</string>
     <string name="kachi_trip_cap_note">Mở khi nổ máy có tối đa %1$d ứng dụng — bỏ một app để thêm</string>
     <string name="kachi_trip_title">Mở app khi nổ máy</string>
-    <string name="kachi_trip_hint">Chạy một lần mỗi lần nổ máy, sau khi màn nhà sẵn sàng (khoảng 15–45 giây). Chạy nền = mở trong một ô rồi đưa ra sau màn nhà, ô có thể nháy 1–2 giây. App đã ở ô hoặc đang chiếu cụm thì bỏ qua.</string>
+    <string name="kachi_trip_hint">Chạy một lần mỗi lần nổ máy, sau khi màn nhà sẵn sàng (khoảng 15–45 giây). Chạy nền = mở ẩn rồi đưa ra sau màn nhà (dùng một ô app nếu có — ô đó có thể nháy 1–2 giây). App đã ở ô hoặc đang chiếu cụm thì bỏ qua.</string>
     <string name="kachi_trip_add_n">+ Thêm app (%1$d/%2$d)</string>
     <string name="kachi_trip_mode_bg">Chạy nền</string>
     <string name="kachi_trip_mode_normal">Mở bình thường</string>
     <string name="kachi_trip_remove">Bỏ</string>
     <string name="kachi_trip_slot_hint">Muốn app luôn mở và hiện ra mỗi lần nổ máy thì đặt nó vào một ô của hồ sơ.</string>
-    <string name="kachi_trip_no_slot_warn">Bố cục của hồ sơ này không có ô app — chạy nền sẽ bị bỏ qua.</string>
+    <string name="kachi_trip_no_slot_warn">Bố cục của hồ sơ này không có ô app — chạy nền sẽ mở app trong một màn ẩn rồi đưa ra sau màn nhà.</string>
     <string name="kachi_trip_normal_unsupported">Đời xe này chưa biết màn camera — không tự mở app lên trước.</string>
     <string name="kachi_trip_last_ran">Lần nổ máy gần nhất: %1$s</string>
     <string name="kachi_trip_res_ran">đã chạy lúc %1$s</string>
@@ -880,5 +883,37 @@
     <string name="kachi_trip_music_car">Theo player của xe</string>
     <string name="kachi_trip_music_query">Phát gì (từ khoá hoặc link YouTube; để trống = tiếp tục)</string>
     <string name="kachi_trip_music_query_set">Phát gì: %1$s</string>
-    <string name="kachi_trip_music_note">Sau khi tắt máy app thường bị đóng — đặt từ khoá hoặc link để chắc có nhạc. Đang có nguồn khác phát thì Kachi không đè.</string>
+    <string name="kachi_trip_music_note">Sau khi tắt máy app thường bị đóng — đặt từ khoá hoặc link để chắc có nhạc. App bạn chọn sẽ phát kể cả khi xe đang tự phát nguồn khác.</string>
+    <string name="kachi_trip_res_noop">không mở được gì (%1$s)</string>
+    <string name="kachi_trip_res_partial">chạy một phần lúc %1$s</string>
+    <string name="kachi_trip_step">• %1$s: %2$s</string>
+    <string name="kachi_trip_step_music">Nhạc (%1$s)</string>
+    <string name="kachi_trip_why_moved">đang chạy sau màn nhà</string>
+    <string name="kachi_trip_why_home_restored">đang chạy sau màn nhà (màn nhà bị che thoáng qua)</string>
+    <string name="kachi_trip_why_already_running">đã đang chạy</string>
+    <string name="kachi_trip_why_kept_under">đang chạy ẩn, chưa đưa được ra sau màn nhà</string>
+    <string name="kachi_trip_why_in_slot">đang ở trong một ô</string>
+    <string name="kachi_trip_why_opened">đã mở</string>
+    <string name="kachi_trip_why_playing">đang phát</string>
+    <string name="kachi_trip_why_self_playing">đã đang phát sẵn</string>
+    <string name="kachi_trip_why_sent">đã gửi lệnh phát nhưng chưa thấy phát</string>
+    <string name="kachi_trip_why_timeout">chưa rõ — quá thời gian chờ</string>
+    <string name="kachi_trip_why_no_stage">bỏ qua — không có chỗ để chạy nền</string>
+    <string name="kachi_trip_why_no_channel">bỏ qua — kênh điều khiển cửa sổ chưa sẵn sàng</string>
+    <string name="kachi_trip_why_disabled">bỏ qua — chạy nền đã tự tắt sau một lỗi; khởi động lại Kachi để bật lại</string>
+    <string name="kachi_trip_why_system_app">bỏ qua — app hệ thống không chạy nền được; hãy đặt nó vào một ô</string>
+    <string name="kachi_trip_why_not_installed">bỏ qua — app chưa cài</string>
+    <string name="kachi_trip_why_self">bỏ qua — đó là Kachi</string>
+    <string name="kachi_trip_why_camera_unknown">bỏ qua — đời xe này chưa hỗ trợ mở bình thường</string>
+    <string name="kachi_trip_why_camera">bỏ qua — màn camera đang hiện</string>
+    <string name="kachi_trip_why_other_front">bỏ qua — app khác đang ở trước</string>
+    <string name="kachi_trip_why_not_staged">bỏ qua — không mở được app</string>
+    <string name="kachi_trip_why_no_session">đã mở nhưng app không có phiên nhạc để phát — dán một link để tự phát</string>
+    <string name="kachi_trip_why_unknown_media">bỏ qua — Kachi chưa đọc được nhạc đang phát (truy cập thông báo)</string>
+    <string name="kachi_trip_why_deadline">bỏ qua — hết thời gian của chuyến</string>
+    <string name="kachi_trip_system_bg">%1$s là app hệ thống — Kachi không chạy nền app hệ thống. Chọn Mở bình thường, hoặc đặt app vào một ô.</string>
+    <string name="kachi_trip_music_link_hint">YouTube không tự phát tiếp: để trống thì Kachi chỉ mở app. Dán link một video để tự phát, hoặc chọn YT Music.</string>
+    <string name="kachi_trip_now_running">Lần nổ máy này: đang chạy…</string>
+    <string name="kachi_trip_now_wait_channel">Lần nổ máy này: chưa chạy — kênh điều khiển cửa sổ chưa lên</string>
+    <string name="kachi_trip_now_wait_home">Lần nổ máy này: chưa chạy — đang chờ màn nhà sẵn sàng</string>
 </resources>

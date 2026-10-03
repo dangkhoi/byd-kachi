@@ -103,30 +103,16 @@ object WidgetViews {
     }
 
     /**
-     * Nội dung ô widget: **1** widget → to, giữa ô; **2..8** → lưới card đều nhau (1·2·3=1 hàng; 4=2+2; 5=2+3;
-     * 6=3+3; 7=3+4; 8=4+4).
+     * Nội dung ô widget: **1** widget → to, lấp ô; **2..8** → lưới ô đều nhau. L5 WIDGET-FIT-ALL (2.87): số cột/hàng,
+     * dạng ô (dọc/ngang/chỉ-icon) và cỡ chữ/icon khớp theo khung THẬT qua [FitGridLayout] + `GridFit` (`:core`) —
+     * không còn chia hàng theo số mục (6 ⇒ 3+3 bất kể khung, ảnh 03/10 nhãn bị cắt nửa dưới).
      */
     fun buildGrid(ctx: Context, ids: List<String>, data: WidgetData): View {
         val list = ids.take(8)
-        if (list.isEmpty()) return labelCard(ctx, ctx.getString(R.string.kachi_widget_none), "—", "")
-        if (list.size == 1) return build(ctx, list[0], data).also { it.tag = WidgetTag(list[0], compact = false) }
-        val n = list.size
-        val topN = if (n <= 3) n else n / 2
-        val rows = if (n <= 3) listOf(list) else listOf(list.subList(0, topN), list.subList(topN, n))
-        val g = dpi(ctx, Sp.XS)
-        return LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL; setPadding(g, g, g, g)
-            rows.forEach { rowIds ->
-                val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-                rowIds.forEach { id ->
-                    row.addView(
-                        mini(ctx, id, data).also { it.tag = WidgetTag(id, compact = true) },
-                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-                            .also { it.setMargins(g, g, g, g) },
-                    )
-                }
-                addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-            }
+        if (list.isEmpty()) return FitGridLayout.single(ctx, labelCard(ctx, ctx.getString(R.string.kachi_widget_none), "—", ""))
+        if (list.size == 1) return FitGridLayout.single(ctx, build(ctx, list[0], data).also { it.tag = WidgetTag(list[0], compact = false) })
+        return FitGridLayout.grid(ctx, IconRepeat.ofIds(list)).apply {
+            list.forEach { id -> addView(mini(ctx, id, data).also { it.tag = WidgetTag(id, compact = true) }) }
         }
     }
 

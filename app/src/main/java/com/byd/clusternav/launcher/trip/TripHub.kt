@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.trip
 import android.os.Handler
 import android.os.Looper
 import com.byd.clusternav.launcher.behind.BehindHomePlan
+import com.byd.clusternav.launcher.behind.BehindHomeRunner
 import com.byd.clusternav.launcher.behind.BehindHomeSequence
 import java.lang.ref.WeakReference
 import java.util.concurrent.CountDownLatch
@@ -39,6 +40,12 @@ internal object TripHub {
 
         /** R0.3 qua bên thi hành của màn. `null` = không có ô sống (0 lệnh). [done] chạy trên luồng chính. */
         fun startBehind(pkg: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit): BehindHomePlan.Stage?
+
+        /**
+         * L4 — một chuỗi tuỳ ý (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG bên thi hành/mutex `kachi-behind` của màn. [done]
+         * chạy trên luồng chính, đúng một lần (kể cả khi không kênh / đã tắt: kết quả `NO_CHANNEL` / `DISABLED`).
+         */
+        fun behindChain(what: String, body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome, done: (BehindHomeSequence.Outcome) -> Unit)
     }
 
     @Volatile private var last: WeakReference<Host>? = null

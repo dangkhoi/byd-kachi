@@ -235,4 +235,13 @@ object KachiBars {
 
     /** R-SI1 — icon lưới lối tắt không lớn hơn 120 dp: khung to với 1 app không thành một icon khổng lồ; phần dư chia đều. */
     const val SHORTCUT_GRID_MAX_ICON = 120
+
+    /**
+     * L5 WIDGET-FIT-ALL — SÀN cỡ chữ (đơn vị **sp**) khi lưới widget CO nội dung theo khung (`FitGridLayout`): chữ không
+     * bao giờ bị co dưới 10sp; khung nhỏ hơn mức đó thì đổi dạng (ngang · chỉ-icon) hoặc báo sức chứa, KHÔNG bóp chữ.
+     * Số SUY từ chữ đang ship, không tự chọn: 10 = nhãn nhỏ nhất trong một ô 2.86 ([ĐO mã] nhãn ô SELECT ở `DOCK` =
+     * 11.5 − 1.5sp, `ControlTileFactory.tileSelect`). Sống ở đây chứ không ở `KachiType` vì thang chữ khoá đúng 5 bậc
+     * (`TypeScaleContractTest`) và một SÀN không phải bậc — cùng lệ `KachiSpace.BOARD_LABEL_MIN`.
+     */
+    const val FIT_TEXT_MIN = 10
 }

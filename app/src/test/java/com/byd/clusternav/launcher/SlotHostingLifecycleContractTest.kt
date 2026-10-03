@@ -114,12 +114,22 @@ class SlotHostingLifecycleContractTest {
 
     // ══ (2) KHUNG ĐÓNG BĂNG — KÊNH IM LẶNG PHẢI NÓI ════════════════════════════════════════════════════════
 
+    /**
+     * ⚠ L6 (owner 03/10, ảnh xe: ô Google Maps đã đóng hiện icon to + *"App đã đóng — chạm để mở lại"*): *"Khi app bị tắt
+     * thì trả về transparent luôn, không cần giữ icon và yêu cầu mở app như này nhé"*. Ghim CŨ (thẻ `kachi_slot_app_closed`
+     * + `setOnClickListener { reopen() }`) ĐẢO có chủ ý: giấu mặt vẽ vẫn bắt buộc (khung đóng băng), nhưng "NÓI ra" nay là
+     * BÁO LÊN màn chính ([onGone] → `SlotRevertPlan` `APP_DIED`: app LƯU ⇒ ô trong suốt · app đặt tạm ⇒ ô về nội dung LƯU).
+     * Mở lại vẫn có đường: lối tắt *Ô n* (R-SC2 / đặt tạm vào khung trống) · ⇄ · khởi động lại.
+     */
     @Test
-    fun `app trong o chet thi giau mat ve va NOI ra, cham la mo lai`() {
+    fun `app trong o chet thi giau mat ve va BAO len luat hoan o, khong the cham-de-mo-lai`() {
         val closed = SourceRoots.body(host, "private fun onAppClosed()")
         assertTrue("surface.visibility = GONE" in closed, "phải giấu mặt vẽ — nếu không, khung cuối đóng băng vẫn nằm đó")
-        assertTrue("R.string.kachi_slot_app_closed" in closed, "phải nói ra bằng chuỗi tài nguyên (VI + EN), không viết cứng")
-        assertTrue("setOnClickListener { reopen() }" in closed, "chạm phải mở lại được ngay trong ô")
+        assertTrue("pkg?.let(onGone)" in closed, "phải báo lên màn chính (luật hoàn ô) — thiếu là ô kẹt khung trống không ai dọn")
+        assertTrue("if (released || dead) return" in closed && "dead = true" in closed, "báo MỘT lần")
+        assertFalse("kachi_slot_app_closed" in closed || "TextView" in closed || "setOnClickListener" in closed,
+            "owner 03/10: không còn thẻ icon + 'chạm để mở lại'")
+        assertFalse("kachi_slot_app_closed" in host, "thẻ cũ gỡ hẳn")
         val reopen = SourceRoots.body(host, "private fun reopen()")
         assertTrue("surface.visibility = VISIBLE" in reopen && "maybeLaunch()" in reopen, "mở lại phải trả mặt vẽ + mở app")
         assertTrue("launched = false" in reopen, "không hạ cờ đã-mở thì maybeLaunch() trả về ngay ⇒ nút chết")
@@ -160,12 +170,12 @@ class SlotHostingLifecycleContractTest {
             "màn chính hiện lại phải đo tiếp — ngưng mà không có đường bật lại là tắt hẳn tính năng")
     }
 
+    /** L6 — nhãn ô chết đã GỠ (owner 03/10) ⇒ khoá ở CẢ năm tệp phải đi cùng (khoá mồ côi = bản dịch của câu đã bỏ). */
     @Test
-    fun `nhan app-da-dong co du hai ngon ngu`() {
-        val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
-        val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
-        assertTrue("\"kachi_slot_app_closed\"" in vi && "\"kachi_slot_app_closed\"" in en,
-            "nhãn ô chết phải có ở CẢ values/ lẫn values-en/")
+    fun `nhan app-da-dong da go o ca nam tieng`() {
+        listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { f ->
+            assertFalse("\"kachi_slot_app_closed\"" in SourceRoots.text("src/main/res/$f/strings_kachi.xml"), "$f còn nhãn ô chết")
+        }
     }
 
     // ══ (3) PROFILE-SWITCH-SLOTS (2026-10-01) — lỗi A: ô đen khi đổi hồ sơ khác cạnh thanh nút ═══════════════════

@@ -448,4 +448,42 @@ class HomeViewModelTest {
         assertTrue(vm.uiState.value.swapNonce.getValue(0) != n, "mốc mới ⇒ tầng vẽ đổi tại chỗ (host đã nhận lại app)")
         assertEquals(before, r.persistCount)
     }
+
+    // ── L6 · luật hoàn ô (SlotRevertPlan) — chỉ lớp TẠM, không bao giờ ghi bền ──────────────────────────────────────
+
+    @Test fun `slotRevert - app LUU chet thi o trong suot, khong ghi ben, khong moc doi-tai-cho`() {
+        val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
+        val vm = HomeViewModel(r)
+        val before = r.persistCount
+        val next = vm.slotRevert(0, SlotRevertPlan.Event.APP_DIED, "com.a")
+        assertEquals(SlotRevertPlan.Next.Clear, next)
+        assertEquals(SlotContent.App("com.a"), vm.uiState.value.effectiveWorkspace.slots[0], "slotRevert chỉ ĐỌC")
+        vm.applySlotRevert(0, next)
+        assertEquals(SlotContent.Empty, vm.uiState.value.effectiveWorkspace.slots[0])
+        assertEquals(SlotContent.App("com.a"), vm.uiState.value.workspace.slots[0], "lớp LƯU giữ nguyên")
+        assertEquals(before, r.persistCount, "không bao giờ persist()")
+        assertFalse(0 in vm.uiState.value.swapNonce, "dựng lại ô (nhả màn ảo), không đổi tại chỗ")
+    }
+
+    @Test fun `slotRevert - chay nen ve app LUU khac thi dat moc doi-tai-cho`() {
+        val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
+        val vm = HomeViewModel(r)
+        vm.placeTemporary(0, "com.b")
+        val n = vm.uiState.value.swapNonce.getValue(0)
+        val next = vm.slotRevert(0, SlotRevertPlan.Event.APP_BACKGROUND, "com.b")
+        assertEquals(SlotRevertPlan.Next.ShowSaved(swapInPlace = true), next)
+        vm.applySlotRevert(0, next)
+        assertEquals(SlotContent.App("com.a"), vm.uiState.value.effectiveWorkspace.slots[0])
+        assertTrue(vm.uiState.value.swapNonce.getValue(0) != n, "mốc mới ⇒ VdAppHost.swapApp(com.a) + evict(com.b)")
+        assertTrue(vm.uiState.value.overlay.isEmpty)
+    }
+
+    @Test fun `slotRevert - o trong suot tam, chon lai noi dung bang duong LUU thi thoi trong suot`() {
+        val vm = HomeViewModel(repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.Widget("w_tyres")))))
+        vm.applySlotRevert(0, vm.slotRevert(0, SlotRevertPlan.Event.WIDGET_CLOSED, null))
+        assertEquals(SlotContent.Empty, vm.uiState.value.effectiveWorkspace.slots[0])
+        vm.assignWidgets(0, listOf("w_tyres"))
+        assertEquals(SlotContent.Widget("w_tyres"), vm.uiState.value.effectiveWorkspace.slots[0])
+        assertTrue(vm.uiState.value.overlay.isEmpty)
+    }
 }

@@ -115,6 +115,7 @@ Mã repo trích <code>file:line</code> ở <code>b39b1d8</code>. AOSP: <code>and
 <!-- ═══════════════════════════════════════════════════════════════════════════════════════════ -->
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 2.87 — 2026-10-03</b>: FIELD-286-BEHIND (lỗi xe 2.86: chạy nền / YouTube tự mở không chạy) — gốc NO_STAGE + no-session [ĐO máy ảo]; sửa: màn ảo ẩn làm chỗ đứng tạm, mã kết quả từng bước + lý do ở Cài đặt, YouTube có link ⇒ VIEW, lựa chọn của người dùng thắng nguồn xe đang phát. Chi tiết §4.Z.</li>
 <li><b>Pass 13 — 2026-10-03</b>: chỉ dẫn — bảng §4.4.3 dòng 3 · 4 · 9 · 12 đổi theo lỗi xe owner 03/10, yêu cầu + thiết kế + đo nằm ở <a href="kachi-286-field-fixes.html"><code>kachi-286-field-fixes.html</code></a> §3.10 R-SC (ô widget ⇒ đặt tạm đè widget; app được xếp ở ô mà đã đóng ⇒ mở lại vào ô / dòng 9 mở bằng Intent — quyết bằng <code>am stack list</code> lúc chạm). Nội dung cũ dưới đây giữ nguyên làm lịch sử.</li>
 <li><b>Pass 12 — 2026-10-02</b>: Senior review lượt 7 (global §5 review loop) — <b>CLEAN</b>: 0 lỗi [P0]–[P2], không đổi mã chạy; chi tiết + verdict ở §10 Pass 8. Soát lại cổng “màn nhà ở đỉnh” ở cả ba đường K8 bằng chính bản đọc lúc K8 của E4/E4c/E16 (<span class="ev do">ĐO</span>: màn nhà <code>visible=true</code> đứng đỉnh display 0 ⇒ cổng không chặn nhầm đường đã đo). 2 × [P3] chữ sai sự thật: KDoc <code>BehindHomePlan.behindTaskOf</code> (“bật sau khi T-M6 xanh”) và <code>anchorStacks</code> (“để log”) — cả hai chỉ bài test dùng, R1.8 thật là <code>SlotReturn.markedBehind</code> — + dòng trạng thái §5 C4; <code>BehindHomePlan*.class</code> trùng sha1 trước/sau (<span class="ev do">ĐO</span>). Rủi ro mới ghi backlog <code>BEHIND-MARKS-BOOT</code> [P3]. Không bump.</li>
 <li><b>Pass 11 — 2026-10-02</b>: Senior review lượt 6 (global §5 review loop) — 1 lỗi [P2] vá + 2 [P3] tài liệu, chi tiết + verdict ở §10 Pass 7. (a) [P2] <span class="ev suy">SUY</span> từ mã + fixture nguyên văn <code>cam-standin-top</code>: cổng “màn nhà ở đỉnh” của lượt 5 chỉ đặt ở K8 tại chỗ của <code>detach</code>; hai đường K8 còn lại — <code>SlotReturnSequence.bringBack</code> (về ô từ <code>onStart</code> / chạm thẻ: bấm HOME rồi lùi xe ngay) và <code>bringBackMarked</code> (R1.8: ô dựng lại khi camera lùi đang ở trên — nổ máy rồi lùi) — vẫn K8 dưới camera ⇒ cùng cơ chế che camera (OC-9) ⇒ cả hai chỉ K8 khi <code>BehindHomePlan.homeOnTop</code>; không ở đỉnh ⇒ <code>bringBack</code> <code>KEEP</code> (thẻ ở lại) · R1.8 <code>GOLDEN</code> (đường mở ô 2.83). (b) [P3] dòng trạng thái C4 còn “K9 chưa” dù K9 đã bỏ (T-M3 ĐỎ). (c) [P3] §9 nhóm B ghi “chưa làm” cho cuộn-tới-mục Lối tắt mà không nói lý do + hành vi thay thế ⇒ ghi rõ (ngoài tiêu chí R1.4, backlog <code>APP-SHORTCUTS</code>). Không bump.</li>
@@ -863,6 +864,129 @@ Mã repo trích <code>file:line</code> ở <code>b39b1d8</code>. AOSP: <code>and
 <p class="muted">Ước lượng: ≈ 19 tệp mới (+ ≈ 10 tệp test), ≈ 32 tệp sửa. Cỡ <b>L</b>.</p>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════════════════════ -->
+<h3>4.Z — 2.87 · FIELD-286-BEHIND (sửa lỗi xe 2.86)</h3>
+<div class="card">
+<!-- L4 · FIELD-286-BEHIND — ADDENDUM cho docs/specs/kachi-launcher-shortcuts-autostart.html (điều phối ráp vào; không sửa tệp spec trực tiếp). -->
+<h3>L4 · FIELD-286-BEHIND — chạy nền / nhạc YouTube không chạy trên 2.86 (03/10)</h3>
+<p><b>Owner 03/10 (xe thật, 2.86):</b> <i>"auto mở nhạc youtube không chạy? Cả để trống lẫn để link. Autostart app background không work, để normal thì work"</i>. Ý gốc 01/10: chạy nền = app chạy SAU màn nhà, không bao giờ che; nhạc <i>"chọn auto là mở theo player xe sẵn … Youtube hay Yt Music thì … có trong khung nào thì mở ở khung đó, không có cho chạy fullscreen ở sau, không che home"</i>; <i>"Youtube, yt music có phát nền"</i>.</p>
+<ul>
+  <li><b>Gốc 1</b> [ĐO máy ảo <code>e2e/e6-no-app-slot</code>]: chạy nền chỉ dàn qua một Ô APP SỐNG ⇒ bố cục chỉ có widget = <code>NO_STAGE</code>, 0 lệnh, mà sổ ghi <code>code=RAN</code> ⇒ Cài đặt "đã chạy lúc HH:mm". Lần xe owner có ô app hay không: [CHƯA BIẾT].</li>
+  <li><b>Gốc 2</b> [ĐO mã + máy ảo e3]: nhạc chỉ giao qua PHIÊN nhạc; YouTube nguội trên trang chủ không có phiên ⇒ <code>open-only</code> cả khi để trống lẫn có link.</li>
+  <li><b>Gốc 3</b> [ĐO máy ảo]: app hệ thống bị từ chối chạy nền, sổ ghi <code>KEPT_UNDER</code> chung chung. <b>Gốc 4</b> [ĐO máy ảo e2b]: "đang chạy" = có task, kể cả khi tiến trình đã chết. <b>Gốc 5</b> [ĐO firmware]: BYD giết mọi app + xoá task lúc tắt máy; cổng <code>relatestart</code> chặn service/broadcast/provider vào app không chạy (ACTIVITY đi qua); MediaAutoPlay phát lại nguồn cuối (<code>memory_play_back=1</code>) ⇒ cổng "không đè" nhường. <b>Gốc 6</b>: không quan sát được từ Cài đặt.</li>
+</ul>
+
+<h3>Quyết định (điều phối thay owner, 03/10) + quyết định thiết kế L4</h3>
+<table>
+  <tr><th>Mã</th><th>Quyết định</th><th>Ghi chú / bằng chứng</th></tr>
+  <tr><td>D1</td><td>Mỗi bước MỘT mã bền (<code>pkg:B|N|M:CODE</code>, trường <code>s=</code> của <code>kachi_trip_last</code>); mã chuyến RAN/PARTIAL/NOOP suy từ bước; Cài đặt dịch từng mã thành câu ở 5 tiếng; log <code>KachiBehind no-stage …</code> + <code>KachiTrip music facts …</code>.</td><td>Thêm: dòng "Lần nổ máy này: chưa chạy — kênh … / màn nhà …" khi kết quả đang hiện là của lần trước ([ĐO] e12: kênh <code>PORT_CLOSED</code> ⇒ không chuyến, sổ không đổi); kết quả không phải hôm nay ⇒ kèm ngày.</td></tr>
+  <tr><td>D2</td><td>Chạy nền KHÔNG cần ô app: chọn (a) màn ảo ẨN của Kachi, đứng SAU đường ô sống (§6).</td><td>(b) đo [m3]: K10 + K12 ngay ⇒ HOME chỉ bị che ≈ 0,15 s nhưng activity của app KHÔNG BAO GIỜ resume (chỉ bật tiến trình) ⇒ muốn chạy thật phải chờ resume (che ≥ 0,35–0,4 s) + cần dấu hiệu camera (chỉ DL3) ⇒ loại. (a) đo [e6c/e6final]: 0 tiêu điểm display 0, 0 lần màn nhà pause.</td></tr>
+  <tr><td>D3</td><td>(i) Chọn app cụ thể THẮNG nguồn xe đang phát (Theo player xe vẫn 0 lệnh); (ii) có link mà phiên không nhận URI ⇒ ACTIVITY VIEW nhắm đúng gói (K4-VIEW), dàn ở ô của app / chỗ dàn dựng; app thoát lên display 0 ⇒ dấu + K12 NGAY; (iii) trống: YT Music tiếp tục phiên, YouTube chỉ mở + câu gợi ý cần link; (iv) không che nhà.</td><td>Nhánh quyết bằng PHIÊN ĐO (bit <code>ACTION_PLAY_FROM_URI</code>), không bằng tên gói (§7). Phiên nhận URI ⇒ vẫn <code>playFromUri</code> TRƯỚC (0 lệnh cửa sổ). Gợi ý "cần link" = dữ liệu của kiểu (<code>TripMusicMode.resumable</code>), chỉ cho câu Cài đặt.</td></tr>
+  <tr><td>D4</td><td>"Đang chạy" = task VÀ <code>pidof</code>; task không tiến trình = nguội.</td><td>[ĐO m1 + nguồn A10 r47 <code>ActivityStarter.java:2096-2170</code>]: K4 kéo task cũ vào màn ảo (<code>reparentToDisplay</code>), tiêu điểm chỉ trên màn ảo.</td></tr>
+  <tr><td>D5</td><td>App hệ thống: vẫn từ chối chạy nền (R0.6); chip <i>Chạy nền</i> mờ, chạm chỉ nói lý do, một dòng lý do dưới hàng; bước nhạc app hệ thống ngoài ô ⇒ mã <code>SYSTEM_APP</code>.</td><td>CÙNG phép <code>InstalledApps.isSystem</code> cho Cài đặt và chuyến.</td></tr>
+  <tr><td>L4-a</td><td>Màn ảo ẩn cần một LỚP CHE của chính Kachi (<code>StageCoverActivity</code>) đóng vai app C của ô.</td><td>R0.2: X ở đỉnh màn ảo nguồn lúc <code>move-task</code> ⇒ S lên che nhà (<code>TaskRecord.reparent</code> A10 :728-749). Kachi mở được activity của mình lên màn ảo riêng tư của mình (A10 <code>ActivityStackSupervisor.isCallerAllowedToLaunchOnDisplay</code> :1067-1130).</td></tr>
+  <tr><td>L4-b</td><td>Lớp che phải <code>onResume</code> TRƯỚC khi dựng giữ chỗ (chờ ≤ 3 s, trong tiến trình).</td><td>[ĐO e6-hidden lượt 1]: lớp che resume ≈ 0,5 s sau lúc tạo, giữ chỗ (<code>excludeFromRecents</code>) dựng trong khoảng đó bị hệ tỉa <code>recent-task-trimmed</code> ⇒ Missing ⇒ Waze tự thoát, che nhà ≈ 4,8 s. Sau vá: e6b/e6c/e6final MOVED.</td></tr>
+  <tr><td>L4-c</td><td>Rào nhả: KHÔNG nhả màn ảo khi còn task của APP NGƯỜI DÙNG; lớp che của Kachi còn (gỡ chậm) vẫn nhả.</td><td>[ĐO e6-hidden]: <code>finishAndRemoveTask</code> của lớp che hoàn tất sau 4,9 s. Cờ 256 kết thúc activity khi nhả (A10 <code>ActivityDisplay.remove</code> :1120-1160) — ROM BYD [CHƯA BIẾT] ⇒ không dựa vào nó cho app người dùng; lớp che tự gỡ nếu bị đẩy sang display khác.</td></tr>
+  <tr><td>L4-d</td><td>Mọi màn ảo dàn dựng đi qua <code>SlotVdOwner</code> (chủ <code>stage</code>, "ô" ÂM riêng mỗi lượt).</td><td>Luật <code>SlotHostingLifecycleContractTest</code>; ô âm không trùng ô thật; hai lượt không nhả màn ảo của nhau.</td></tr>
+  <tr><td>L4-e</td><td>Lối tắt <i>Chạy ngầm</i> KHÔNG dùng màn ảo ẩn (vẫn <code>kachi_sc_no_stage</code>).</td><td>Ngoài lỗi hiện trường; mở rộng = câu hỏi owner (OQ-L4-1).</td></tr>
+</table>
+
+<h3>Yêu cầu bổ sung (R-L4)</h3>
+<ul>
+  <li><b>R-L4.1 (D2)</b> Bố cục không có ô app sống ⇒ chạy nền qua màn ảo ẩn; kết thúc: app sống sau màn nhà (stack <code>standard</code> riêng, display 0, <code>visible=false</code>), màn ảo đã nhả. Chấp nhận: máy ảo e6final — HOME đỉnh 95/95 mẫu, tiêu điểm chỉ trên màn ảo ẩn, 0 <code>am_pause_activity</code> KachiHome, Waze pid sống; unit <code>BehindHomeHiddenStageTest</code> (fixture <code>l4-hidden-*</code> nguyên văn).</li>
+  <li><b>R-L4.2 (D2)</b> Đường ô sống luôn trước; màn ảo ẩn chỉ khi <code>stagingSlot</code> không có ô. Chấp nhận: <code>BehindHomePlan.stageFor</code> test + thứ tự <code>host.startBehind → host.behindChain</code> (<code>TripWiringContractTest</code>).</li>
+  <li><b>R-L4.3 (D2)</b> X thoát lên display 0 lúc đang dàn ⇒ không lớp che, dấu + K12 ngay; X kẹt màn ảo ẩn ⇒ K7 qua rào + dấu + K12, rồi mới nhả; K7 bị rào ⇒ GIỮ màn ảo. Chấp nhận: unit (fixture <code>l4-view-escaped</code> nguyên văn + dẫn xuất ghi tại chỗ).</li>
+  <li><b>R-L4.4 (D3)</b> Chọn YouTube / YT Music ⇒ không bỏ lượt vì nguồn khác đang phát; app chọn đang phát ⇒ xong. Chấp nhận: <code>TripMusicPlanTest</code> (đổi pin có lý do).</li>
+  <li><b>R-L4.5 (D3)</b> Link + phiên nhận URI ⇒ <code>playFromUri</code>; link + không phiên / phiên không nhận URI ⇒ K4-VIEW; trống + phiên ⇒ <code>play()</code>; trống + không phiên ⇒ <code>NO_SESSION</code>. Chấp nhận: unit; máy ảo e8/e11 (YT Music + link ⇒ PLAYING).</li>
+  <li><b>R-L4.6 (D3)</b> App ở ô + K4-VIEW ⇒ app thoát lên display 0 ⇒ dấu + K12 + K8 về ô. Chấp nhận: <code>TripMusicViewTest</code>; cơ chế [ĐO m5a/m5b]: thoát + K12 ⇒ phát sau nhà, nhà bị che 0,2–0,7 s.</li>
+  <li><b>R-L4.7 (D4)</b> Task không tiến trình ⇒ nguội (K4). Chấp nhận: unit fixture <code>l4-m1-stale-task</code> nguyên văn.</li>
+  <li><b>R-L4.8 (D1)</b> Chuyến toàn bước không làm gì ⇒ <code>NOOP</code>, KHÔNG BAO GIỜ <code>RAN</code>; mỗi mã bước một câu ở 5 tiếng; lần nổ máy này chưa chạy ⇒ nói ra. Chấp nhận: <code>TripOutcomeTest</code>, <code>L4TripBehindContractTest</code>; ảnh máy ảo VI + ZH.</li>
+  <li><b>R-L4.9 (D5)</b> App hệ thống: chip <i>Chạy nền</i> mờ + lý do; bước nhạc ⇒ <code>SYSTEM_APP</code>. Chấp nhận: contract test + ảnh máy ảo; e9 ⇒ <code>M:SYSTEM_APP</code> NOOP.</li>
+</ul>
+
+<h3>Thiết kế — chuỗi màn ảo ẩn (<code>BehindHomeSequence.startBehindHidden</code>)</h3>
+<table>
+  <tr><th>#</th><th>Bước</th><th>Ai</th><th>Ghi chú</th></tr>
+  <tr><td>1</td><td>Từ chối: chính Kachi / app hệ thống (<code>SYSTEM_APP</code>) / tên gói lạ</td><td>core</td><td>0 lệnh</td></tr>
+  <tr><td>2</td><td>Đọc <code>am stack list</code>; có task ⇒ <code>pidof</code>; task + pid ⇒ <code>ALREADY_RUNNING</code></td><td>core</td><td>D4; bỏ qua khi là K4-VIEW</td></tr>
+  <tr><td>3</td><td>Tạo màn ảo ẩn (cờ 8|256, cỡ + mật độ = display 0, mặt vẽ <code>ImageReader</code> được rút khung trên luồng riêng), đăng ký ownership, giao <code>SlotVdOwner</code></td><td>app <code>StagingDisplay</code></td><td>không lệnh <code>wm</code> nào (R0.7)</td></tr>
+  <tr><td>4</td><td>K4 (hoặc K4-VIEW) lên màn ảo; chờ X lên đỉnh ≤ 4 s; X thoát lên display 0 ⇒ sang bước 8 ngay</td><td>core</td><td></td></tr>
+  <tr><td>5</td><td>Lớp che của Kachi lên đỉnh màn ảo, CHỜ <code>onResume</code></td><td>app <code>StageCoverActivity</code></td><td>L4-b</td></tr>
+  <tr><td>6</td><td><code>evict(vd, X, Kachi)</code>: giữ chỗ → <code>move-task</code> → đọc lại (đường R0.1 sẵn có, byte không đổi)</td><td>core</td><td></td></tr>
+  <tr><td>7</td><td>Gỡ lớp che; đọc tới khi màn ảo không còn task của Kachi (≤ 8 × 250 ms); X còn trên đó ⇒ K7 (rào) + dấu + K12</td><td>core</td><td>L4-c</td></tr>
+  <tr><td>8</td><td>Nhả màn ảo chỉ khi không còn task app người dùng; đọc lại: X đứng trước nhà ⇒ dấu + K12</td><td>core</td><td></td></tr>
+</table>
+<p><b>Nhạc (<code>TripMusicRun</code>):</b> sự thật đo (log) → cổng (OFF/NOT_INSTALLED/UNKNOWN_MEDIA/SELF_PLAYING/GO) → phiên có trước ⇒ <code>play()</code> → ở ô ⇒ ô tự mở; app hệ thống ngoài ô ⇒ <code>SYSTEM_APP</code>; còn lại ⇒ chạy nền (ô sống, rồi màn ảo ẩn) → chờ phiên ≤ 15 s → <code>TripMusicPlan.play(url, phiên)</code>: <code>FromUri</code> · <code>View</code> (ở ô: <code>TripMusicView</code>; ngoài ô: chuỗi dàn dựng với K4-VIEW) · <code>Resume</code> · <code>OpenOnly</code> → đọc lại "đang phát" (≤ 8 s, VIEW ≤ 20 s) ⇒ <code>PLAYING</code> / <code>SENT</code>.</p>
+
+<h3>Mã bước (D1) — câu tiếng Việt (đủ EN/ZH/TH/MS trong <code>strings_kachi.xml</code>)</h3>
+<table>
+  <tr><th>Mã</th><th>Loại</th><th>Câu (VI)</th></tr>
+  <tr><td>MOVED</td><td>đạt</td><td>đang chạy sau màn nhà</td></tr>
+  <tr><td>HOME_RESTORED</td><td>đạt</td><td>đang chạy sau màn nhà (màn nhà bị che thoáng qua)</td></tr>
+  <tr><td>ALREADY_RUNNING · IN_SLOT · KEPT_UNDER · OPENED · PLAYING · SELF_PLAYING</td><td>đạt</td><td>đã đang chạy · đang ở trong một ô · đang chạy ẩn, chưa đưa được ra sau màn nhà · đã mở · đang phát · đã đang phát sẵn</td></tr>
+  <tr><td>SENT · TIMEOUT</td><td>chưa rõ</td><td>đã gửi lệnh phát nhưng chưa thấy phát · chưa rõ — quá thời gian chờ</td></tr>
+  <tr><td>NO_STAGE · NO_CHANNEL · DISABLED · SYSTEM_APP · NOT_INSTALLED · SELF · CAMERA_UNKNOWN · CAMERA · OTHER_FRONT · NOT_STAGED · NO_SESSION · UNKNOWN_MEDIA · DEADLINE</td><td>không làm gì</td><td>"bỏ qua — …" với lý do cụ thể; NO_SESSION: "đã mở nhưng app không có phiên nhạc để phát — dán một link để tự phát"</td></tr>
+</table>
+<p>Mã chuyến: mọi bước đạt ⇒ <code>RAN</code> ("đã chạy lúc"); không bước nào đạt và không bước nào "chưa rõ" ⇒ <code>NOOP</code> ("không mở được gì"); còn lại ⇒ <code>PARTIAL</code> ("chạy một phần lúc"). Bản ghi cũ (không <code>s=</code>) vẫn đọc được.</p>
+
+<h3>Bảng §4 — lệnh mới / dùng lại trong L4</h3>
+<table>
+  <tr><th>Lệnh</th><th>Display</th><th>App</th><th>Loại stack</th><th>Hoàn tác</th><th>Bằng chứng</th></tr>
+  <tr><td>K4 lên màn ảo ẩn (<code>BehindHomePlan.stageCmd</code>, byte của đường mở ô)</td><td>đúng id màn ảo ẩn vừa tạo (≥ 2, đăng ký, Kachi sở hữu)</td><td>đúng gói X người dùng chọn, qua <code>PKG</code></td><td>task <code>standard</code> mới / task cũ bị kéo vào</td><td>chuỗi R0.1 → sau nhà; hỏng ⇒ K7 + K12; Kachi chết ⇒ màn ảo chết theo, cờ 256</td><td>[ĐO] e6c/e6final</td></tr>
+  <tr><td>K4-VIEW <code>am start --display &lt;vd&gt; -a VIEW -d '&lt;watch url&gt;' -p &lt;pkg&gt;</code> (<code>TripMusicPlan.viewCmd</code>)</td><td>chỉ màn ảo Kachi (<code>vd ≥ 1</code>; ô của app hoặc màn ảo dàn dựng)</td><td>đúng gói (<code>-p</code>); URL chỉ link xem 1 video (<code>safeWatchUrl</code>)</td><td>task <code>standard</code> của app</td><td>thoát lên display 0 ⇒ dấu + K12; ở ô ⇒ K8 về ô</td><td>[ĐO] m5a/m5b (thô); chuỗi trên máy ảo: [CHƯA ĐO] (YT Music máy ảo luôn có phiên nhận URI)</td></tr>
+  <tr><td><code>pidof &lt;pkg&gt;</code> (K11, chỉ đọc)</td><td>—</td><td>đúng gói, qua <code>PKG</code></td><td>—</td><td>—</td><td>đang dùng</td></tr>
+  <tr><td>K7 (<code>SlotReturn.guardedDetachCmd</code>, có sẵn)</td><td>0, qua rào màn nhà + camera</td><td>X kẹt màn ảo ẩn</td><td>task sẵn có</td><td>dấu + K12</td><td>T-M2 [ĐO]; ca kẹt: unit</td></tr>
+  <tr><td>K12 (có sẵn, byte 2.83)</td><td>0</td><td>HOME</td><td>home</td><td>—</td><td>đang chạy</td></tr>
+</table>
+
+<h3>Bằng chứng đo (máy ảo A10 clusternav10, bản vehicleTest từ worktree L4) — (bằng chứng lưu ngoài repo — phiên điều phối 03/10)</h3>
+<table>
+  <tr><th>Lượt</th><th>Kết quả</th></tr>
+  <tr><td>m1 stale task + K4</td><td>[ĐO] <code>am_focused_stack [0,272,…,reparentToDisplay]</code>, task cũ vào màn ảo, tiến trình bật lại</td></tr>
+  <tr><td>m3 (b) K10 + K12 nguội</td><td>[ĐO] nhà bị che ≈ 0,15 s nhưng Waze không resume (chỉ bật tiến trình) ⇒ loại (b)</td></tr>
+  <tr><td>m5a / m5b K4-VIEW thô + K12</td><td>[ĐO] YT Music thoát lên display 0, K12 ⇒ phát sau nhà; che 0,67 s (nguội) / 0,18 s (task có sẵn)</td></tr>
+  <tr><td>e6c / e6final chỉ widget · Waze nền · YT Music trống</td><td>[ĐO] HOME đỉnh 88/88 · 95/95; Waze MOVED + sống; YT Music MOVED + PLAYING; sổ <code>s=com.waze:B:MOVED,…:M:PLAYING</code> RAN</td></tr>
+  <tr><td>e6final2 (sau gom vào <code>SlotVdOwner</code>)</td><td>[ĐO] HOME 91/91; Waze MOVED; YT Music MOVED, <code>play()</code> gửi nhưng không thấy phát (hàng chờ trống sau khôi phục dữ liệu) ⇒ <code>M:SENT</code>, chuyến <code>PARTIAL</code> — sổ nói thật</td></tr>
+  <tr><td>e7 / e7b Waze mở bình thường</td><td>[ĐO] hồ sơ chung ⇒ <code>N:CAMERA_UNKNOWN</code> NOOP; override Seal ⇒ <code>N:OPENED</code> RAN (không đổi so với 2.86)</td></tr>
+  <tr><td>e8 / e11 YT Music + link (e11: <code>pm clear</code>)</td><td>[ĐO] màn ảo ẩn → phiên nhận URI → <code>playFromUri</code> → PLAYING; HOME 86/86. E12b (nguội không phiên) KHÔNG tái hiện</td></tr>
+  <tr><td>e9 YouTube + link (YouTube = app hệ thống trên máy ảo)</td><td>[ĐO] <code>M:SYSTEM_APP</code> NOOP</td></tr>
+  <tr><td>e10 YouTube trong ô</td><td>KHÔNG hợp lệ: YouTube 15.18 đòi cập nhật, tự thoát ô lúc ô mở (có từ trước)</td></tr>
+  <tr><td>e12 kênh tắt</td><td>[ĐO] <code>PORT_CLOSED</code> ⇒ không chuyến; Cài đặt: "Lần nổ máy này: chưa chạy — kênh điều khiển cửa sổ chưa lên"; trả kênh ⇒ chuyến RAN</td></tr>
+</table>
+
+<h3>Kiểm (off-device)</h3>
+<ul>
+  <li>Test mới: <code>BehindHomeHiddenStageTest</code> (6) · <code>TripOutcomeTest</code> (6) · <code>TripMusicViewTest</code> (4) · <code>L4TripBehindContractTest</code> (6); đổi pin có lý do: <code>TripMusicPlanTest</code>, <code>BehindHomeSequenceTest</code> (2), <code>TripWiringContractTest</code> (3).</li>
+  <li>Fixture nguyên văn mới: <code>am-stack-list-emulator-2026-10-03-l4-{hidden-before,hidden-covered,hidden-anchor,hidden-moved,hidden-after,m1-stale-task,view-escaped,view-after-k12}.txt</code>.</li>
+  <li>Phá thử [ĐO]: chuyến toàn no-op ⇒ RAN (hành vi 2.86) làm đỏ <code>TripOutcomeTest</code>; bỏ phép pid làm đỏ bài D4; bỏ chờ lớp che <code>onResume</code> làm đỏ <code>L4TripBehindContractTest</code> — cả ba trả về nguyên byte.</li>
+  <li>Số đếm toàn bộ (đếm từ XML) + lint: xem báo cáo lane. Lint: 1 lỗi có từ commit gốc <code>f297411</code> (<code>values-ms</code> <code>kachi_bg_opacity_note</code> "0% seperti" ⇒ <code>StringFormatInvalid</code>), không thuộc L4.</li>
+</ul>
+
+<h3>Rủi ro / chưa biết trên xe (OC-L4)</h3>
+<table>
+  <tr><th>Mã</th><th>Câu hỏi</th><th>Cách chốt</th></tr>
+  <tr><td>OC-L4-1</td><td>ROM BYD cho Kachi mở activity của mình lên màn ảo riêng tư (lớp che) + <code>am start --display</code> lên màn ảo ẩn? [CHƯA BIẾT]</td><td>Một lần nổ máy với bố cục chỉ widget + Waze <i>Chạy nền</i>; chụp Cài đặt › Mở app khi nổ máy (mã MOVED / HOME_RESTORED / NO_STAGE)</td></tr>
+  <tr><td>OC-L4-2</td><td>Cờ 256 trên ROM BYD kết thúc hay đẩy activity khi nhả màn ảo? [CHƯA BIẾT] — rào nhả không dựa vào nó cho app người dùng</td><td>log <code>KachiVd giải phóng màn ảo kachi-stage-…</code> + không có màn đen/app lạ trước nhà</td></tr>
+  <tr><td>OC-L4-3</td><td>YouTube (bản trên xe owner) nhận link bằng VIEW: thoát lên display 0 hay ở lại? Có phát khi bị K12 đưa ra sau nhà (không Premium có thể dừng)? [CHƯA BIẾT]</td><td>YouTube + link; chụp Cài đặt (PLAYING / SENT) + nghe</td></tr>
+  <tr><td>OC-L4-4</td><td>YouTube là app hệ thống trên Seal? [CHƯA BIẾT] — nếu có, chỉ chạy được khi đặt vào ô (câu Cài đặt nói rõ)</td><td>Cài đặt hiện chip mờ + lý do</td></tr>
+  <tr><td>OC-L4-5</td><td>Giành nguồn BYD MediaAutoPlay: âm thanh YouTube/YT Music lấy được tiêu điểm âm thanh từ radio/BT? [SUY] có</td><td>nghe trên xe</td></tr>
+  <tr><td>OC-L4-6</td><td>Thời gian dàn trên xe (máy ảo 2–3 s/app)</td><td>log <code>KachiBehind stage create/release</code></td></tr>
+</table>
+
+<h3>Câu hỏi mở cho owner</h3>
+<ul>
+  <li><b>OQ-L4-1</b> Lối tắt <i>Chạy ngầm</i> có dùng màn ảo ẩn khi không có ô app (như chuyến lên xe) không? Đề xuất: có, sau khi OC-L4-1 xanh trên xe.</li>
+  <li><b>OQ-L4-2</b> Hazard F5 (Kachi chết, app không mang dấu ngay dưới HOME được resume — [ĐO máy ảo e6b] VietMap tự chạy nền để hiện bóng che nhà khi máy ảo không tự dựng lại HOME) — chưa xử lý; xe [ĐO 29/09] tự dựng lại HOME sau 0,25–0,33 s.</li>
+  <li><b>OQ-L4-3</b> "Đang chờ kênh" (<code>ShellAccessUi.usableNow</code>) coi dấu duyệt còn hạn là "dùng được" dù cổng đóng ⇒ nút không hiện ở e12; dòng mới "Lần nổ máy này: chưa chạy — kênh …" bù. Có đổi điều kiện nút không?</li>
+</ul>
+
+<h3>Tệp</h3>
+<ul>
+  <li><code>:core</code>: <code>trip/TripOutcome.kt</code> (mới) · <code>trip/TripMusicView.kt</code> (mới) · <code>trip/TripGate.kt</code> (Code NOOP/PARTIAL, <code>s=</code>, <code>now</code>) · <code>trip/TripMusicPlan.kt</code> (cổng, recheck, <code>play(url, phiên)</code>, <code>viewCmd</code>, <code>resumable</code>) · <code>behind/BehindHomePlan.kt</code> (<code>pidCmd</code>, <code>running</code>, <code>stageFor</code>, <code>Stage.HIDDEN</code>) · <code>behind/BehindHomeSequence.kt</code> (<code>startBehindHidden</code>, <code>HiddenStagePort</code>, K4-VIEW, D4, mã SYSTEM_APP/NO_STAGE/NO_CHANNEL/DISABLED/TIMEOUT).</li>
+  <li><code>:app</code>: <code>behind/StagingDisplay.kt</code> + <code>behind/StageCoverActivity.kt</code> (mới, manifest) · <code>behind/BehindHomeRunner.kt</code> (<code>chain</code>/<code>Kit</code>, mã, log no-stage) · <code>trip/TripStart.kt</code> · <code>trip/TripMusicRun.kt</code> · <code>trip/TripHub.kt</code> · <code>KachiHomeTrip.kt</code> · <code>KachiHomeSlots.kt</code> · <code>MediaBridge.kt</code> (<code>acceptsUri</code>) · <code>InstalledApps.kt</code> (<code>isSystem</code>) · <code>SettingsTripResult.kt</code> (mới) · <code>SettingsSectionsTrip.kt</code> · 5 × <code>strings_kachi.xml</code> (32 khoá mới, 3 khoá đổi chữ: <code>kachi_trip_hint</code>, <code>kachi_trip_no_slot_warn</code>, <code>kachi_trip_music_note</code>).</li>
+</ul>
+
+</div>
+
 <h2>5. Tasks (DAG)</h2>
 <div class="diagram">
 <svg viewBox="0 0 900 290" role="img" aria-label="DAG công việc: duyệt, đo máy ảo, nhóm A Core và Primitive, rồi nhóm B Shortcuts UI và nhóm C Trip song song, cuối cùng kiểm và tài liệu">

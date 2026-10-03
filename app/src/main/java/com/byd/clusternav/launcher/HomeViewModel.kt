@@ -71,6 +71,26 @@ class HomeViewModel(
         it.copy(overlay = overlay, swapNonce = it.swapNonce + (slot to nextSwapNonce()))
     }
 
+    /**
+     * L6 · luật hoàn ô — [event] vừa xảy ra ở ô [slot] (app [pkg] chết / bị tắt / ra nền, hoặc widget bị tắt): ô đi đâu,
+     * quyết ở `:core` ([SlotRevertPlan]) từ ĐÚNG hai lớp của state (LƯU vs đang HIỆN). Chỉ ĐỌC — bên gọi làm phần Android
+     * (host thôi giữ app) rồi mới [applySlotRevert]: lượt render nhả host của ô, mà host còn giữ app thì `release()` sẽ
+     * `am force-stop` nó — nên phần Android phải đi TRƯỚC khi state đổi.
+     */
+    fun slotRevert(slot: Int, event: SlotRevertPlan.Event, pkg: String?): SlotRevertPlan.Next {
+        val cur = _uiState.value
+        val saved = cur.workspace.slots.getOrElse(slot) { SlotContent.Empty }
+        return SlotRevertPlan.next(saved, cur.effectiveWorkspace.slots.getOrElse(slot) { SlotContent.Empty }, event, pkg)
+    }
+
+    /** Áp [next] của [slotRevert] lên lớp TẠM (+ mốc đổi-tại-chỗ khi giữ màn ảo) — KHÔNG ghi bền (owner 01/10). */
+    fun applySlotRevert(slot: Int, next: SlotRevertPlan.Next) = _uiState.update {
+        val overlay = SlotRevertPlan.overlayAfter(it.overlay, slot, next)
+        val inPlace = next is SlotRevertPlan.Next.ShowSaved && next.swapInPlace
+        if (overlay === it.overlay) it
+        else it.copy(overlay = overlay, swapNonce = if (inPlace) it.swapNonce + (slot to nextSwapNonce()) else it.swapNonce)
+    }
+
     /** Mốc đổi-tại-chỗ tăng dần — chỉ cần KHÁC lần trước của cùng ô (xem [HomeUiState.swapNonce]). */
     private var swapCounter = 0L
     private fun nextSwapNonce(): Long = ++swapCounter
