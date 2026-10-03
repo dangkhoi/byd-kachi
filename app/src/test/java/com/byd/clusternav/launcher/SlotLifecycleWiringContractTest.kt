@@ -58,6 +58,14 @@ class SlotLifecycleWiringContractTest {
             "heads.actions = slotActions" to "KachiHomeActivity.kt",
             "heads.actions?.onAppGone(index, p)" to "WorkspaceView.kt",
             "VdTouchExec.TOUCH_FALLBACK.execute" to "VdAppHost.kt",
+            // Soát 2.87 (P1/P2/P3) — hàm mới phải có chỗ gọi production (CLAUDE.md §8).
+            "slots::behindUsable" to "KachiHomeActivity.kt",
+            "SlotHeadTouch.onDown(" to "SlotHeadAutoHide.kt",
+            "SlotHeadTouch.onUp(" to "SlotHeadAutoHide.kt",
+            "SlotHeadTouch.onConfirmArmed(" to "SlotHeadAutoHide.kt",
+            "SlotCloseConfirm.onTap(" to "SlotActionsCluster.kt",
+            "heads.retain(slotViews.size)" to "WorkspaceView.kt",
+            "workspace().heads.refreshAll()" to "KachiHomeSlotActions.kt",
         ).forEach { (call, file) -> assertTrue(call in code(file), "'$call' phải được gọi trong $file") }
         assertTrue("StackReads.settle(" in core("FloatingOrphanSweep.kt") && "StackReads.settle(" in core("SlotClose.kt"),
             "một vòng đọc-lại cho cả hai lượt gỡ stack (DRY)")
@@ -92,7 +100,10 @@ class SlotLifecycleWiringContractTest {
         order(fn, "ShellAccessUi.allowOrPrompt(activity)", "val stage = host?.stage()",
             // Chưa mở vào màn ảo (chưa có task của nó ở đó) ⇒ 0 lệnh, chỉ thả host + luật hoàn ô — nút không chết lúc đang mở.
             "if (stage == null && host?.holds(pkg) == true)", "return revert(index, Event.APP_CLOSED, pkg)",
-            "stage.pkg != pkg", "submitBg {", "closer.run(sh, stage.vd, pkg)", "main.post {", "if (r.slotFree) revert(index, Event.APP_CLOSED, pkg)")
+            // Soát 2.87 · P3 — ĐỔI GHIM có lý do: ô bận suốt lượt gỡ stack (xếp hàng với chuỗi chạy nền của CÙNG ô).
+            "stage.pkg != pkg", "busy += index", "submitBg {", "closer.run(sh, stage.vd, pkg)", "main.post {", "busy -= index",
+            "if (r.slotFree) revert(index, Event.APP_CLOSED, pkg) else sayIfStill(index, R.string.kachi_slot_close_failed, pkg)",
+            "if (!accepted) { busy -= index;")
         assertTrue("fun holds(p: String): Boolean = !released && pkg == p" in host, "host đã nhả / giữ gói khác ⇒ không phải ô của app này")
         listOf(actions, cluster).forEach { src ->
             listOf("force-stop", "stack remove", "\"am ", "move-task", "BehindHome").forEach {
@@ -115,10 +126,14 @@ class SlotLifecycleWiringContractTest {
     @Test
     fun `chay nen - lop che tren man ao o, roi ra sau man nha, roi moi luat hoan o`() {
         val fn = SourceRoots.body(actions, "private fun background(")
-        order(fn, "if (index in backing) return", "InstalledApps.isSystem(activity, pkg)", "R.string.kachi_sc_refuse_system", "return",
+        // Soát 2.87 · P3 — ĐỔI GHIM có lý do: `backing` → `busy` (một việc đầu ô một ô một lúc, chung với *tắt*); BEHIND-HOME đã
+        // tắt ⇒ hỏi lại nút, 0 lệnh; câu "không chạy nền được" chỉ khi ô VẪN hiện app; xong chuỗi ⇒ hỏi lại nút mọi ô.
+        order(fn, "if (index in busy) return", "if (!behindUsable())", "workspace().heads.refreshAll(); return",
+            "InstalledApps.isSystem(activity, pkg)", "R.string.kachi_sc_refuse_system", "return",
             "ShellAccessUi.allowOrPrompt(activity)", "val stage = workspace().hostAt(index)?.stage()", "stage.pkg != pkg", "return",
-            "backing += index", "toBack(index, stage.vd, pkg) { left ->", "backing -= index",
-            "if (left) revert(index, Event.APP_BACKGROUND, pkg) else say(R.string.kachi_sc_bg_failed, pkg)")
+            "busy += index", "toBack(index, stage.vd, pkg) { left ->", "busy -= index",
+            "if (left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed, pkg)",
+            "workspace().heads.refreshAll()")
         val slotsSrc = code("KachiHomeSlots.kt")
         val toBack = SourceRoots.body(slotsSrc, "fun toBack(")
         order(toBack, "behind.chain(", "done(out.outOfStage)", "kit.seq.evictCovered(vd, pkg, kit.hidden)")
@@ -137,14 +152,60 @@ class SlotLifecycleWiringContractTest {
         assertTrue("e.cluster?.hits(x - slot.left, y - slot.top)" in SourceRoots.body(heads, "private fun inHit("),
             "chạm vào CHỖ một nút đang ẩn ⇒ không hiện (điều 4 của ⇄)")
         val reg = SourceRoots.body(heads, "fun register(")
-        order(reg, "val head = slot.getChildAt(slot.childCount - 1)", "SlotActionsCluster.attach(slot, index, kind, projector, it)")
+        // Soát 2.87 · P2 — ĐỔI GHIM có lý do: cụm nhận thêm móc `::armed` (tắt hai bước giữ đầu ô hiện suốt lượt chờ).
+        order(reg, "val head = slot.getChildAt(slot.childCount - 1)", "SlotActionsCluster.attach(slot, index, kind, projector, it, ::armed)")
         assertTrue("slot.addView(row, slot.childCount - 1," in cluster, "cụm chèn DƯỚI ⇄ — ⇄ vẫn là con cuối")
         // Lúc dựng khung, `WorkspaceView.hostAt(index)` còn trỏ KHUNG CŨ (đã nhả) ⇒ hỏi bộ chiếu của CHÍNH khung này.
         val refresh = SourceRoots.body(cluster, "fun refresh()")
         order(refresh, "slot.getChildAt(it) as? VdAppHost", "hostLive = host != null && !host.isReleased")
         assertFalse("hostAt(" in refresh)
-        assertTrue("ShellAccessUi.usableNow() && hostLive" in SourceRoots.body(actions, "override fun buttons("),
-            "không kênh / không bộ chiếu ⇒ ô app chỉ còn ⇄ (không nút chết)")
+        assertTrue("ShellAccessUi.usableNow() && hostLive, behindUsable()" in SourceRoots.body(actions, "override fun buttons("),
+            "không kênh / không bộ chiếu ⇒ ô app chỉ còn ⇄; BEHIND-HOME đã tắt ⇒ không nút chạy nền (không nút chết — P3)")
+        assertTrue("fun behindUsable(): Boolean = BehindHomeRunner.disabledReason == null" in code("KachiHomeSlots.kt"),
+            "cờ đọc từ đúng bên thi hành (một phép đo `ANCHOR_IN_FRONT` đặt nó)")
+    }
+
+    /** Soát 2.87 · P3 — *tắt* không được chạy chồng lên chuỗi *chạy nền* (hay lượt *tắt* khác) của CÙNG ô. */
+    @Test
+    fun `mot viec dau o mot o mot luc - tat cung xep hang voi chay nen`() {
+        val close = SourceRoots.body(actions, "private fun close(")
+        assertTrue(close.removePrefix("{").trimStart().startsWith("if (index in busy) return"), "chặn TRƯỚC mọi nhánh (app / widget): $close")
+        assertFalse("backing" in actions, "một tập bận cho cả hai việc")
+        val say = SourceRoots.body(actions, "private fun sayIfStill(")
+        assertTrue("(shownAt(index) as? SlotContent.App)?.pkg == pkg" in say, "ô đã đổi ⇒ không báo 'chưa làm được' sai")
+    }
+
+    /**
+     * Soát 2.87 · P2 (quyết định điều phối) — *tắt* = HAI chạm: luật ở `:core` [SlotCloseConfirm] (bảng `SlotCloseConfirmTest`);
+     * ở đây khoá dây nối: chạm nút đi qua `tap` (không gọi cổng thẳng), chạm đầu chỉ đổi trạng thái + mô tả + giữ đầu ô, lần hai
+     * mới gọi cổng; mọi lối rời (hết giờ · ẩn · dựng lại · nút thành không làm được) đều về như cũ. *Chạy nền* một chạm.
+     */
+    @Test
+    fun `tat hai buoc - cham dau chi doi trang thai, cham hai moi tat`() {
+        val attach = SourceRoots.body(cluster, "fun attach(")
+        assertTrue("made.forEach { (b, v) -> v.setOnClickListener { cluster.tap(b) } }" in attach)
+        assertFalse("port.onAction" in attach, "không nút nào gọi cổng thẳng từ lúc dựng")
+        val tap = SourceRoots.body(cluster, "private fun tap(")
+        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap)",
+            "SlotCloseConfirm.Tap.ARM -> arm()", "SlotCloseConfirm.Tap.WAIT -> Unit", "SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }")
+        assertEquals(1, Regex("""port\.onAction\(index, Button\.CLOSE\)""").findAll(cluster).count(), "đúng MỘT đường tới *tắt* thật")
+        val arm = SourceRoots.body(cluster, "private fun arm(")
+        order(arm, "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm", "slot.postDelayed(disarmTask, SlotCloseConfirm.WINDOW_MS)", "onArmed(this)")
+        val disarm = SourceRoots.body(cluster, "private fun disarm(")
+        order(disarm, "slot.removeCallbacks(disarmTask)", "armedAt = null", "paint(cell, confirm = false)", "describe(Button.CLOSE, kind), index + 1")
+        listOf("fun settle(", "fun hide()", "fun cancel()").forEach { assertTrue("disarm()" in SourceRoots.body(cluster, it), "$it phải gỡ lượt chờ") }
+        assertTrue("if (Button.CLOSE !in now) disarm()" in SourceRoots.body(cluster, "fun refresh()"))
+        val paint = SourceRoots.body(cluster, "private fun paint(")
+        order(paint, "KachiGlass.plain(disc,", "KachiTheme.RED", "KachiTheme.BG", "KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)", "KachiTheme.MUT")
+    }
+
+    /** Đĩa xác nhận ĐỎ + icon màu nền: ≥ 4.5:1 ở CẢ hai bảng màu (icon là thông tin duy nhất trên đĩa). */
+    @Test
+    fun `dia xac nhan tat du tuong phan ca hai bang mau`() {
+        listOf("TỐI" to KachiPalette.DARK, "SÁNG" to KachiPalette.LIGHT).forEach { (name, p) ->
+            val r = ColorMath.ratio(ColorMath.parse(p.bg), ColorMath.parse(p.red))
+            assertTrue(r >= 4.5, "bảng $name: icon ${p.bg} trên đĩa ${p.red} chỉ ${"%.2f".format(r)}:1")
+        }
     }
 
     @Test
@@ -162,14 +223,16 @@ class SlotLifecycleWiringContractTest {
         assertTrue("isClickable = true" in btn && "contentDescription = ctx.getString(describe(b, kind), index + 1)" in btn)
         assertTrue("isClickable = false" in btn, "icon không tự nhận chạm (một cú chạm, một lớp)")
         // L8 · D-L6-3 [ĐO máy ảo 03/10]: icon trần trên nội dung app 1.73:1 / 2.35:1 ⇒ đĩa kính CÙNG hợp đồng ⇄ ô trống, sau icon.
-        assertTrue("KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in btn, "đĩa kính NEUTRAL, tròn, không mờ R-OP")
-        order(btn, "addView(disc,", "addView(icon,")
+        // Soát 2.87 · P2 — ĐỔI GHIM có lý do: màu đĩa/icon đi qua `paint` (một chỗ cho trạng thái thường VÀ chờ xác nhận *tắt*).
+        assertTrue("KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in SourceRoots.body(cluster, "private fun paint("),
+            "đĩa kính NEUTRAL, tròn, không mờ R-OP")
+        order(btn, "addView(disc,", "addView(icon,", "paint(this, confirm = false)")
         assertTrue("val disc = View(ctx).apply { isClickable = false; isFocusable = false }" in btn, "đĩa không nhận chạm")
     }
 
     @Test
     fun `chuoi moi du nam tieng`() {
-        val keys = listOf("kachi_slot_to_back", "kachi_slot_close_app", "kachi_slot_close_widget", "kachi_slot_close_failed")
+        val keys = listOf("kachi_slot_to_back", "kachi_slot_close_app", "kachi_slot_close_widget", "kachi_slot_close_failed", "kachi_slot_close_confirm")
         listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { f ->
             val xml = SourceRoots.text("src/main/res/$f/strings_kachi.xml")
             keys.forEach { k -> assertTrue("\"$k\"" in xml, "$f thiếu $k") }

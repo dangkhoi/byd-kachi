@@ -38,6 +38,8 @@ internal class KachiHomeSlotActions(
     private val shell: () -> ((String) -> String)?,
     /** L8 — chuỗi *chạy nền* của ô (`KachiHomeSlots.toBack`: ô, màn ảo, gói, kết quả "đã rời ô" trên luồng chính). */
     private val toBack: (Int, Int, String, (Boolean) -> Unit) -> Unit,
+    /** Soát 2.87 · P3 — BEHIND-HOME còn dùng được trong tiến trình (`KachiHomeSlots.behindUsable`); `false` ⇒ không nút *chạy nền*. */
+    private val behindUsable: () -> Boolean,
     /** Cửa duy nhất xuống luồng nền của màn chính (đã huỷ ⇒ tự bỏ) — `KachiHomeActivity.submitBg`. */
     private val submitBg: (() -> Unit) -> Boolean,
 ) : SlotActionsPort {
@@ -45,13 +47,17 @@ internal class KachiHomeSlotActions(
     private val main = Handler(Looper.getMainLooper())
     private val closer by lazy { SlotCloseRun(activity.packageName) }
 
-    /** Ô đang chạy chuỗi *chạy nền* — chạm lần hai trong lúc chuỗi chạy bị bỏ (lượt hai sẽ thấy app đã rời ô ⇒ báo sai). */
-    private val backing = HashSet<Int>()
+    /**
+     * Ô đang có MỘT việc đầu ô đang bay (*chạy nền*: chuỗi `kachi-behind` 1–5 s · *tắt*: `am stack remove` + đọc lại trên luồng
+     * nền). Soát 2.87 · P3: trước chỉ *chạy nền* xét tập này ⇒ *tắt* chạy CHỒNG lên chuỗi chạy nền của cùng ô — hai bên thi hành
+     * không xếp hàng nhau, bên thua đọc lại thấy app đã rời ô và báo "không làm được" dù ô vừa đổi. Một việc một ô một lúc.
+     */
+    private val busy = HashSet<Int>()
 
     override fun buttons(index: Int, kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, hostLive: Boolean): List<Button> =
         // Kênh dùng được NGAY + khung có bộ chiếu màn ảo chưa nhả. Lượt mở app chưa bắt đầu ⇒ *tắt* vẫn làm được (thả host, 0
         // lệnh); *chạy nền* lúc app chưa mở xong ⇒ 0 lệnh + log (hiếm) — thà vậy còn hơn nút kẹt ẩn ở chế độ "luôn hiện".
-        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive)
+        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, behindUsable())
 
     override fun onAction(index: Int, button: Button) {
         when (button) {
@@ -69,6 +75,7 @@ internal class KachiHomeSlotActions(
         viewModel.uiState.value.effectiveWorkspace.slots.getOrElse(index) { SlotContent.Empty }
 
     private fun close(index: Int) {
+        if (index in busy) return
         when (val shown = shownAt(index)) {
             is SlotContent.App -> closeApp(index, shown.pkg)
             is SlotContent.Widget, is SlotContent.AppWidget -> revert(index, Event.WIDGET_CLOSED, null)
@@ -94,12 +101,16 @@ internal class KachiHomeSlotActions(
         }
         val sh = shell()
         if (stage == null || stage.pkg != pkg || sh == null) { Log.i(TAG, "ô $index: tắt $pkg — ô chưa sẵn, 0 lệnh"); return }
+        busy += index
         val accepted = submitBg {
             val r = closer.run(sh, stage.vd, pkg)
             Log.i(TAG, "ô $index: ${r.line()}")
-            main.post { if (r.slotFree) revert(index, Event.APP_CLOSED, pkg) else say(R.string.kachi_slot_close_failed, pkg) }
+            main.post {
+                busy -= index
+                if (r.slotFree) revert(index, Event.APP_CLOSED, pkg) else sayIfStill(index, R.string.kachi_slot_close_failed, pkg)
+            }
         }
-        if (!accepted) say(R.string.kachi_slot_close_failed, pkg)
+        if (!accepted) { busy -= index; say(R.string.kachi_slot_close_failed, pkg) }
     }
 
     /**
@@ -111,16 +122,19 @@ internal class KachiHomeSlotActions(
      */
     private fun background(index: Int) {
         val pkg = (shownAt(index) as? SlotContent.App)?.pkg ?: return
-        if (index in backing) return
+        if (index in busy) return
+        // P3: BEHIND-HOME đã tắt cả tiến trình (sau `ANCHOR_IN_FRONT`) ⇒ hỏi lại nút (nút chạy nền biến mất), 0 lệnh, không toast.
+        if (!behindUsable()) { Log.i(TAG, "ô $index: chạy nền $pkg — BEHIND-HOME đã tắt, 0 lệnh"); workspace().heads.refreshAll(); return }
         if (InstalledApps.isSystem(activity, pkg)) { say(activity.getString(R.string.kachi_sc_refuse_system)); return }
         if (!ShellAccessUi.allowOrPrompt(activity)) return
         val stage = workspace().hostAt(index)?.stage()
         if (stage == null || stage.pkg != pkg) { Log.i(TAG, "ô $index: chạy nền $pkg — ô chưa sẵn, 0 lệnh"); return }
-        backing += index
+        busy += index
         toBack(index, stage.vd, pkg) { left ->
-            backing -= index
+            busy -= index
             Log.i(TAG, "ô $index: chạy nền $pkg ⇒ ${if (left) "đã rời ô" else "ô giữ app"}")
-            if (left) revert(index, Event.APP_BACKGROUND, pkg) else say(R.string.kachi_sc_bg_failed, pkg)
+            if (left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed, pkg)
+            workspace().heads.refreshAll()   // P3: chuỗi có thể vừa TẮT BEHIND-HOME (`ANCHOR_IN_FRONT`) ⇒ hỏi lại nút mọi ô
         }
     }
 
@@ -134,6 +148,11 @@ internal class KachiHomeSlotActions(
     }
 
     private fun say(res: Int, pkg: String) = say(activity.getString(res, InstalledApps.labelOf(activity, pkg) ?: pkg))
+
+    /** Câu "chưa làm được" chỉ khi ô VẪN hiện [pkg] — ô đã đổi bằng đường khác (app chết, kéo-thả) thì câu đó sai (P3). */
+    private fun sayIfStill(index: Int, res: Int, pkg: String) {
+        if ((shownAt(index) as? SlotContent.App)?.pkg == pkg) say(res, pkg) else Log.i(TAG, "ô $index: $pkg đã rời ô — bỏ câu báo")
+    }
 
     private fun say(text: String) = Toast.makeText(activity.applicationContext, text, Toast.LENGTH_SHORT).show()
 

@@ -3,6 +3,8 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.util.TypedValue
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import com.byd.clusternav.launcher.GridFit.Form
 import com.byd.clusternav.launcher.KachiTheme.dpi
@@ -18,12 +20,14 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * `fontScale`. Với mỗi dạng ([OPTIONS]):
  *  1. áp dạng ở thang 1 ([FitScale.apply]);
  *  2. đo `UNSPECIFIED` ⇒ `w₀ × h₀` (nhãn một dòng nếu vừa, giữ chỗ đủ số dòng của dạng);
- *  3. tìm bề rộng NHỎ NHẤT mà ô vẫn cao ≤ `h₀` và KHÔNG chữ nào bị cắt/`…` ([clipped]) — nhãn 2 dòng được xuống dòng
- *     mà không tốn bề cao (chỗ đã giữ), hàng chia `weight` đều (bảng tổng hợp) tự lộ ra ô cần rộng hơn tổng tự nhiên.
- *     Tìm nhị phân, sai số [PRECISION_PX]. Không có bề rộng nào thoả (phép kiểm cắt chữ báo nhầm) ⇒ dùng `w₀`.
+ *  3. tìm bề rộng NHỎ NHẤT mà ô vẫn cao ≤ `h₀`, KHÔNG chữ nào bị cắt/`…` và KHÔNG con nào tràn khung cha
+ *     ([clipped]) — nhãn 2 dòng được xuống dòng mà không tốn bề cao (chỗ đã giữ), hàng chia `weight` đều (bảng tổng
+ *     hợp) tự lộ ra ô cần rộng hơn tổng tự nhiên, con cỡ cố định (nút nhạc 48dp, thanh tiến trình) đặt sàn bề rộng.
+ *     Tìm nhị phân, sai số [PRECISION_PX]. Không có bề rộng nào thoả ⇒ dạng đó KHÔNG DÙNG ĐƯỢC cho ô này
+ *     ([Need.usable] — soát vòng 1 P1: bản trước lùi về `w₀` và để một dạng không bao giờ vẽ trọn thành ứng viên).
  *
- * Kết quả cache theo từng ô ở [FitGridLayout] — chỉ đo lại khi ô mới vào lưới, hoặc khi chữ của ô ĐỔI và bị cắt
- * ([signature]). Nhịp trạng thái xe 1 Hz không chạy phép đo này.
+ * Kết quả cache theo từng ô ở [FitGridLayout] — chỉ đo lại khi ô mới vào lưới, hoặc khi chữ của ô ĐỔI ([signature])
+ * theo nhịp do [FitRules.reprobe] quyết. Nhịp trạng thái xe 1 Hz không chạy phép đo này.
  */
 internal object FitProbe {
 
@@ -55,13 +59,17 @@ internal object FitProbe {
         }
     }
 
-    /** Nhu cầu của một ô: một [GridFit.Shape] cho mỗi [OPTIONS] (cùng chỉ số) + dấu chữ lúc đo. */
-    class Need(val shapes: List<GridFit.Shape>, val sig: Int)
+    /**
+     * Nhu cầu của một ô: một [GridFit.Shape] cho mỗi [OPTIONS] (cùng chỉ số), [usable] = dạng đó có bề rộng nào vẽ
+     * trọn ô không (cùng chỉ số), [sig] = dấu chữ lúc đo.
+     */
+    class Need(val shapes: List<GridFit.Shape>, val usable: List<Boolean>, val sig: Int)
 
     /** Đo [child] (gốc của ô, [fs] = bộ áp của nó) ở mọi dạng. Để ô ở trạng thái của dạng cuối — chỗ gọi áp lại. */
     fun need(child: View, fs: FitScale, floors: Floors): Need {
         val hasLabels = fs.labels.isNotEmpty()
         val shapes = ArrayList<GridFit.Shape>(OPTIONS.size)
+        val usable = ArrayList<Boolean>(OPTIONS.size)
         OPTIONS.forEach { opt ->
             // Ô không có nhãn: số dòng vô nghĩa (dọc-2 ≡ dọc-1) và chỉ-icon ≡ dọc ⇒ dùng lại số đo, không đo lại.
             val same = when {
@@ -69,13 +77,19 @@ internal object FitProbe {
                 opt.form == Form.ICON_ONLY || (opt.form == Form.VERTICAL && opt.lines == 1) -> shapes.firstOrNull()
                 else -> null
             }
-            shapes += same?.copy(form = opt.form, lines = opt.lines, fallback = opt.form == Form.ICON_ONLY)
-                ?: shape(child, fs, opt, floors)
+            if (same != null) {
+                shapes += same.copy(form = opt.form, lines = opt.lines, fallback = opt.form == Form.ICON_ONLY)
+                usable += usable.first()
+            } else {
+                val (s, ok) = shape(child, fs, opt, floors)
+                shapes += s; usable += ok
+            }
         }
-        return Need(shapes, signature(fs))
+        return Need(shapes, usable, signature(fs))
     }
 
-    private fun shape(child: View, fs: FitScale, opt: Option, floors: Floors): GridFit.Shape {
+    /** Hộp tự nhiên của [child] ở dạng [opt] + có bề rộng nào vẽ trọn ô không (KDoc lớp, bước 1–3). */
+    private fun shape(child: View, fs: FitScale, opt: Option, floors: Floors): Pair<GridFit.Shape, Boolean> {
         fs.apply(1.0, opt.form, opt.lines)
         val un = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         fs.forceAll()
@@ -90,7 +104,8 @@ internal object FitProbe {
         var hi = w0
         var grow = 0
         while (!ok(hi) && grow < GROW_STEPS) { hi += hi / 2 + 1; grow++ }
-        if (grow == GROW_STEPS && !ok(hi)) hi = w0 else {
+        val usable = grow < GROW_STEPS || ok(hi)
+        if (!usable) hi = w0 else {
             var lo = 0
             while (hi - lo > PRECISION_PX) { val mid = (lo + hi) / 2; if (ok(mid)) hi = mid else lo = mid }
         }
@@ -99,7 +114,7 @@ internal object FitProbe {
         return GridFit.Shape(
             opt.form, hi.toDouble(), child.measuredHeight.toDouble(), minScale(fs, floors), opt.lines,
             fallback = opt.form == Form.ICON_ONLY,
-        )
+        ) to usable
     }
 
     /**
@@ -122,24 +137,48 @@ internal object FitProbe {
     private fun visible(tv: View, fs: FitScale): Boolean = fs.visibleInTile(tv)
 
     /**
-     * Có chữ nào của ô bị CẮT ở lần đo vừa rồi không — chính bệnh ảnh 03/10: nhãn bị kẹp `AT_MOST` còn nửa dòng
-     * (`TextView.java:9404-9405`), hoặc bị `…`, hoặc dòng bị bỏ (quá `maxLines` không ellipsize), hoặc một từ dài hơn
-     * bề rộng. Chữ tự co (autosize — ô giá trị STEP) tự lo, không xét.
+     * Có chữ nào của ô bị CẮT, hoặc con nào TRÀN khung cha, ở lần đo vừa rồi không — chính bệnh ảnh 03/10: nhãn bị kẹp
+     * `AT_MOST` còn nửa dòng (`TextView.java:9404-9405`), hoặc bị `…`, hoặc dòng bị bỏ (quá `maxLines` không
+     * ellipsize), hoặc một từ dài hơn bề rộng; con cỡ cố định rộng hơn chỗ ([spills]). Chữ tự co (autosize — ô giá trị
+     * STEP) tự lo, không xét; chữ TỰ DO một dòng ([FitScale.freeLine]) chỉ tính khi còn hẹp hơn ngân sách của nó.
      */
-    fun clipped(fs: FitScale): Boolean = fs.texts().any { tv -> visible(tv, fs) && !fs.autoSized(tv) && clippedText(tv) }
+    fun clipped(fs: FitScale): Boolean =
+        fs.texts().any { tv -> visible(tv, fs) && !fs.autoSized(tv) && clippedText(tv, fs.freeLine(tv)) } ||
+            fs.groups().any { g -> visible(g, fs) && spills(g) }
 
-    private fun clippedText(tv: TextView): Boolean {
+    private fun clippedText(tv: TextView, free: Boolean): Boolean {
         val l = tv.layout ?: return false
         val n = l.lineCount
         if (n == 0) return false
-        for (i in 0 until n) if (l.getEllipsisCount(i) > 0) return true
+        val availW = tv.measuredWidth - tv.compoundPaddingLeft - tv.compoundPaddingRight
+        val dots = (0 until n).any { l.getEllipsisCount(it) > 0 }
+        if (dots && (!free || FitRules.freeTextCut(availW.toFloat(), tv.textSize))) return true
         val max = tv.maxLines
         val shown = if (max in 1 until n) max else n
         if (l.getLineEnd(shown - 1) < l.text.length) return true
-        val availW = tv.measuredWidth - tv.compoundPaddingLeft - tv.compoundPaddingRight
-        for (i in 0 until shown) if (l.getLineWidth(i) > availW + 1f) return true
+        // `getLineMax` (KHÔNG tính khoảng trắng cuối dòng — bộ ngắt dòng cũng không tính nó, `Layout.java:1387-1401`
+        // r47), không `getLineWidth`: dòng "Sấy kính " vỡ sau dấu cách không bị báo cắt oan (soát vòng 1, P3).
+        for (i in 0 until shown) if (l.getLineMax(i) > availW + 1f) return true
         val availH = tv.measuredHeight - tv.compoundPaddingTop - tv.compoundPaddingBottom
         return l.getLineTop(shown) > availH + 1
+    }
+
+    /**
+     * Khung [g] để con TRÀN ra ngoài trên trục nào không ([FitRules.spills]): `LinearLayout` cộng dồn theo hướng của
+     * nó, trục chéo và mọi khung khác xét từng con. Đọc số đo của lượt vừa rồi, không đo thêm.
+     */
+    private fun spills(g: ViewGroup): Boolean {
+        val kids = (0 until g.childCount).map { g.getChildAt(it) }.filter { it.visibility != View.GONE }
+        if (kids.isEmpty()) return false
+        val row = (g as? LinearLayout)?.orientation
+        fun across(v: View): Int = v.measuredWidth + ((v.layoutParams as? ViewGroup.MarginLayoutParams)
+            ?.let { it.marginStart + it.marginEnd } ?: 0)
+        fun down(v: View): Int = v.measuredHeight + ((v.layoutParams as? ViewGroup.MarginLayoutParams)
+            ?.let { it.topMargin + it.bottomMargin } ?: 0)
+        val padX = g.paddingLeft + g.paddingRight
+        val padY = g.paddingTop + g.paddingBottom
+        return FitRules.spills(g.measuredWidth, padX, kids.map(::across), stacked = row == LinearLayout.HORIZONTAL) ||
+            FitRules.spills(g.measuredHeight, padY, kids.map(::down), stacked = row == LinearLayout.VERTICAL)
     }
 
     /** Dấu nội dung chữ của ô (chữ + hiện/ẩn) — đổi ⇒ hộp tự nhiên có thể đã đổi. */

@@ -37,8 +37,11 @@ internal class TripMusicRun(
         /** R0.3 / L4 · D2 — chạy [pkg] phía sau màn nhà (ô sống trước, không thì màn ảo ẩn). */
         fun behind(pkg: String): BehindHomeSequence.Outcome
 
-        /** L4 · D3(ii) — K4-VIEW: [slotVd] khác `null` ⇒ vào ô của app; không ⇒ dàn lại qua chỗ dàn dựng. Trả một dòng log. */
-        fun view(pkg: String, url: String, slotVd: Int?): String
+        /**
+         * L4 · D3(ii) — K4-VIEW. [inSlot] ⇒ CHỈ màn ảo của ô app, đọc MỚI lúc gọi (`TripMusicPlan.viewRoute`, review 287 [P2]);
+         * không ở ô ⇒ dàn qua chỗ dàn dựng. `null` = app ở ô mà ô chưa có màn ảo ⇒ 0 lệnh.
+         */
+        fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome?
 
         /** L4 · D1(d) — sự thật đo cho nhật ký: task / pid của [pkg] (một `am stack list` + `pidof`). */
         fun facts(pkg: String): String
@@ -92,9 +95,11 @@ internal class TripMusicRun(
         return when (val p = TripMusicPlan.play(url, session)) {
             is TripMusicPlan.Play.FromUri -> verified(id, pkg, base + "uri=${bridge.playFromUri(pkg, p.url)}", VERIFY_TRIES)
             TripMusicPlan.Play.Resume -> verified(id, pkg, base + "resume=${bridge.playPackage(pkg)}", VERIFY_TRIES)
-            is TripMusicPlan.Play.View -> {
-                val slotVd = if (inSlot) view.stages.firstOrNull { it.pkg == pkg }?.vd else null
-                verified(id, pkg, base + "view(${ports.view(pkg, p.url, slotVd)})", VIEW_VERIFY_TRIES)
+            // Review 287 [P2]: không dùng ảnh chụp ô ĐẦU chuyến ([view]) — cổng đọc lại lúc giao. Không lệnh nào đi ⇒ mã NOOP, không "đã gửi".
+            is TripMusicPlan.Play.View -> ports.view(pkg, p.url, inSlot).let { o ->
+                val code = TripOutcome.ofView(inSlot, o?.result)
+                if (code.result == TripStepCode.Result.NOOP) done(id, code, base + "view:${o?.result ?: code}")
+                else verified(id, pkg, base + "view(${o?.result})", VIEW_VERIFY_TRIES)
             }
             TripMusicPlan.Play.OpenOnly -> done(id, TripStepCode.NO_SESSION, base + "open-only (no session)")
         }

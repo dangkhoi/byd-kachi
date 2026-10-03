@@ -71,6 +71,27 @@ object CtlSafetyPolicy {
     fun requiresStationary(id: String): Boolean = id in REQUIRES_STATIONARY
 
     /**
+     * ═══ 2.87 · SOÁT vòng 1 · P1 — MỘT phép cho câu *"lệnh [arg] của nút [id] có bị cổng vận tốc CHẶN ngay lúc này?"* ═══
+     *
+     * Hai chỗ hỏi, cùng một phép ⇒ không thể lệch nhau:
+     *  1. **cổng thi hành** (`VoiceControlDispatch.run`) — chặn, nói *"chỉ mở được khi xe đang dừng"*;
+     *  2. **Đảo / Kế tiếp giải từ TRÍ NHỚ** ([KeyCtlPlan], [KeyCtlPlan.Basis.MEMORY]) — trí nhớ có thể CŨ (cốp mở bằng chìa,
+     *     công tắc cốp, app BYD, phiên giọng nói `:wake`, hay Kachi vừa dựng lại khi cốp đang mở) ⇒ hành động nó giải ra
+     *     mà bị chặn thì đổi sang [STATIONARY_SAFE_ARG] thay vì kẹt MỞ-bị-chặn mãi tới khi xe dừng.
+     *
+     * [kmh] gọi LƯỜI: chỉ đọc vận tốc khi nút thuộc [REQUIRES_STATIONARY] **và** lệnh là MỞ (`arg > 0`) — mọi nút khác không
+     * tốn một lượt đọc nào. `null` (không đọc được) ⇒ **không chặn** (fail-open — lý lẽ ở cổng trong `VoiceControlDispatch`).
+     */
+    fun blockedAtSpeed(id: String, arg: Int, kmh: () -> Int?): Boolean =
+        requiresStationary(id) && arg > 0 && (kmh()?.let { it > 0 } ?: false)
+
+    /**
+     * Lệnh mà cổng vận tốc KHÔNG BAO GIỜ chặn: [blockedAtSpeed] chỉ chặn `arg > 0` ⇒ `0` (đóng cốp) luôn đi được — *"đóng
+     * cốp lúc đang chạy là việc nên làm"*. Đóng một cốp vốn đã đóng thì không có tác dụng gì (không phải lối vòng qua cổng).
+     */
+    const val STATIONARY_SAFE_ARG = 0
+
+    /**
      * ═══ [SOÁT lượt E · P1] BỘ PHẬN CHẠY BẰNG MÔ-TƠ — mất **vài GIÂY** để tới mức mới ═════════════════════════
      *
      * Dùng bởi `VoiceReadback.act`: một lượt đọc lại sau ~300 ms **chứng minh được THÀNH CÔNG** (mức đã tới đích thì

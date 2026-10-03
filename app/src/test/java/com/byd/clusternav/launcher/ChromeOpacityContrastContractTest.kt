@@ -40,6 +40,10 @@ class ChromeOpacityContrastContractTest {
         val surfOn = intArrayOf(c(p.surfOnFrom), c(p.surfOnTo))
         val bar = c(p.bar)
         val barTop = c(p.barTop)
+        /** Chữ/icon chip thanh trên — từ CHÍNH bảng map thanh dùng để vẽ ([chipInk]), không từ bộ giải (soát 2.87 P3). */
+        val chipInks: Map<String, Int> = ChipTone.values().associate { "chip ${it.name}" to ColorMath.parse(chipInk(it)) }
+        /** Chữ MÀU trên thẻ ô nén/ô bảng — từ danh sách KHAI của bộ dựng ([ChromeInks.CARD], soát 2.87 P2). */
+        val cardInks: Map<String, Int> = ChromeInks.CARD.mapValues { (_, role) -> c(role(p)) }
         /** Ô con nhóm WARN/ALERT: nền = sắc ngữ nghĩa ở 0x59 (GroupTileView.SEMANTIC_ALPHA), chữ = chính sắc đó. */
         val warn = listOf(c(p.amber) to ColorMath.withAlpha(c(p.amber), 0x59), c(p.red) to ColorMath.withAlpha(c(p.red), 0x59))
         fun glassPair(tone: SurfaceTone) = when (tone) {                                       // = KachiTheme.surfacePair(tone, true)
@@ -105,6 +109,7 @@ class ChromeOpacityContrastContractTest {
                     val well = stack(pal.grounds, fade(pal.well, t))
                     val out = linkedMapOf(
                         "chữ thanh trên" to (pal.inks to top),
+                        *pal.chipInks.map { (n, ink) -> "$n thanh trên" to (intArrayOf(ink) to top) }.toTypedArray(),
                         "chữ thanh nút" to (pal.inks to bar),
                         "ô TẮT trên thanh nút" to (pal.tileInks to stack(bar, fade(pal.surf, td))),
                         "ô BẬT trên thanh nút" to (pal.onInk to stack(bar, pal.tileOn)),
@@ -114,13 +119,17 @@ class ChromeOpacityContrastContractTest {
                         "ô ACTIVE trong khay" to (intArrayOf(ColorMath.parse(pal.p.ink)) to stack(well, pal.surfOn)),
                     )
                     pal.warn.forEachIndexed { i, (ink, fill) -> out["ô cảnh báo $i trong khay"] = intArrayOf(ink) to stack(well, intArrayOf(fill)) }
+                    pal.cardInks.forEach { (n, ink) ->
+                        out["chữ $n trên thẻ trong khay"] = intArrayOf(ink) to stack(well, fade(pal.surf, t))
+                        if (n in ChromeInks.WELL) out["chữ $n thẳng trên khay"] = intArrayOf(ink) to well
+                    }
                     return out
                 }
                 val was = layers(true); val now = layers(false)
                 was.forEach { (k, v) -> s.check("${pal.name} $pct% $k", worst(v.first, v.second), worst(now.getValue(k).first, now.getValue(k).second)) }
             }
         }
-        assertTrue(s.n >= 2 * 24 * 5 * 10, "quét thiếu ca: ${s.n}")
+        assertTrue(s.n >= 2 * 24 * 5 * (10 + 4 + 5 + 2), "quét thiếu ca: ${s.n}")
         assertTrue(s.bad.isEmpty(), "nền mờ (không ảnh) làm hỏng chữ: ${s.report()}")
     }
 
@@ -133,14 +142,18 @@ class ChromeOpacityContrastContractTest {
                 KachiChrome.apply(pct, true)
                 listOf(SurfaceTone.NEUTRAL, SurfaceTone.WELL).forEach { tone ->
                     val pair = pal.glassPair(tone)
-                    /** Nền dưới chữ của thẻ ở hệ số [f] trên vùng ảnh độ chói [l] — đúng ba lớp của `WallWindowDrawable` + bề mặt. */
-                    fun glass(f: Double, l: Double): List<Int> {
+                    /**
+                     * Nền dưới chữ của thẻ ở hệ số [f] trên vùng ảnh độ chói [l] — đúng ba lớp của `WallWindowDrawable` +
+                     * bề mặt. [extra] = mực màu thẻ KHAI (`KachiGlass.apply(extraInks)` — ô nén khai màu chữ của nó).
+                     */
+                    fun glass(f: Double, l: Double, extra: IntArray = IntArray(0)): List<Int> {
                         val shown = if (f < 1.0) IntArray(pair.size) { drawn(pair[it], byteOf(f)) } else pair
-                        // QUYẾT ĐỊNH lớp che lấy từ sản phẩm, đúng công thức của `WallWindowDrawable.relocate`
-                        // (bài `KachiChromeContractTest` ghim công thức đó): max(bộ giải chữ, sàn thứ nằm trên khay).
+                        // QUYẾT ĐỊNH lớp che lấy từ sản phẩm, đúng công thức của `WallWindowDrawable.relocate` + `paint`
+                        // (bài `KachiChromeContractTest` ghim công thức đó): max(bộ giải chữ, sàn thứ trên khay/mực khai).
+                        val well = tone == SurfaceTone.WELL
                         val a = maxOf(
                             GlassVeil.alphaFor(l, pal.bg, shown, pal.inks, min = GlassVeil.MIN * f, max = if (f < 1.0) 1.0 else GlassVeil.MAX),
-                            if (f < 1.0 && tone == SurfaceTone.WELL) KachiChrome.wellOverlayFloor(l, pal.bg, pair, shown, pal.inks, GlassVeil.MIN * f) else 0.0,
+                            if (f < 1.0 && (well || extra.isNotEmpty())) KachiChrome.glassFloor(l, pal.bg, pair, shown, pal.inks, extra, well, GlassVeil.MIN * f) else 0.0,
                         )
                         val veiled = ColorMath.over(ColorMath.withAlpha(pal.bg, (a * 255).toInt()), ColorMath.grayOfLuminance(l))
                         return stack(listOf(veiled), shown)
@@ -150,6 +163,12 @@ class ChromeOpacityContrastContractTest {
                         val today = glass(1.0, l); val now = glass(f, l)
                         val tag = "${pal.name} $tone $pct% l=${"%.2f".format(l)}"
                         s.check("$tag chữ", worst(pal.inks, today), worst(pal.inks, now))
+                        // Chữ MÀU: thẻ NEUTRAL (ô nén/ô bảng) KHAI màu nó vẽ ⇒ quyết định có mực đó (mọi màu khai); khay
+                        // KHÔNG khai ⇒ đo đúng các màu widget to vẽ thẳng lên khay ([ChromeInks.WELL]).
+                        pal.cardInks.filterKeys { tone == SurfaceTone.NEUTRAL || it in ChromeInks.WELL }.forEach { (n, ink) ->
+                            val ex = if (tone == SurfaceTone.NEUTRAL) intArrayOf(ink) else IntArray(0)
+                            s.check("$tag chữ $n", worst(intArrayOf(ink), glass(1.0, l, ex)), worst(intArrayOf(ink), glass(f, l, ex)))
+                        }
                         if (tone == SurfaceTone.WELL) {
                             val t = KachiChrome.surfaceFraction(onBar = false, hasArt = true)
                             val off = if (t < 1.0) IntArray(pal.surf.size) { drawn(pal.surf[it], byteOf(t)) } else pal.surf
@@ -163,7 +182,7 @@ class ChromeOpacityContrastContractTest {
                 }
             }
         }
-        assertTrue(s.n >= 2 * 24 * 5 * 21 * 6, "quét thiếu ca: ${s.n}")
+        assertTrue(s.n >= 2 * 24 * 5 * 21 * (6 + 5 + 2), "quét thiếu ca: ${s.n}")
         assertTrue(s.bad.isEmpty(), "kính mờ theo bậc làm hỏng chữ: ${s.report()}")
     }
 
@@ -182,6 +201,7 @@ class ChromeOpacityContrastContractTest {
                     val topToday = stack(gray, intArrayOf(pal.barTop))
                     val topNow = stack(gray, intArrayOf(drawn(pal.barTop, KachiChrome.barAlpha(pal.barTop, doubleArrayOf(l), tiles = false))))
                     s.check("$tag chữ thanh trên", worst(pal.inks, topToday), worst(pal.inks, topNow))
+                    pal.chipInks.forEach { (n, ink) -> s.check("$tag $n thanh trên", worst(intArrayOf(ink), topToday), worst(intArrayOf(ink), topNow)) }
                     val barToday = stack(gray, intArrayOf(pal.bar))
                     val barNow = stack(gray, intArrayOf(drawn(pal.bar, KachiChrome.barAlpha(pal.bar, doubleArrayOf(l), tiles = true))))
                     s.check("$tag chữ thanh nút", worst(pal.inks, barToday), worst(pal.inks, barNow))
@@ -190,7 +210,7 @@ class ChromeOpacityContrastContractTest {
                 }
             }
         }
-        assertTrue(s.n >= 2 * 24 * 5 * 21 * 4, "quét thiếu ca: ${s.n}")
+        assertTrue(s.n >= 2 * 24 * 5 * 21 * (4 + 4), "quét thiếu ca: ${s.n}")
         assertTrue(s.bad.isEmpty(), "thanh mờ theo bậc làm hỏng chữ: ${s.report()}")
     }
 

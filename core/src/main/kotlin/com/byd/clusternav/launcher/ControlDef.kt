@@ -179,8 +179,9 @@ data class ControlDef(
      * [args] theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test).
      *
      * [argsEn] lệch số phần tử ⇒ CẢ danh sách tiếng Việt (luật cũ của EN, áp cho mọi tiếng không phải VI). ZH/TH/MS
-     * dịch TỪNG phần tử theo cặp song song `(args[i], argsEn[i])` — từ đồng hình như `"Open"` khoá theo cặp nên lệnh
-     * Mở ở đây không lẫn với trạng thái Đang mở ở `TelemetryReadout`.
+     * dịch TỪNG phần tử theo cặp song song `(args[i], argsEn[i])`. ⚠ Khoá cặp chỉ tách từ đồng hình khi chữ VIỆT cũng
+     * khác: `("Mở", "Open")` ở đây TRÙNG cặp với trạng thái `TelemetryReadout.openShut` ⇒ bản dịch của nó phải đúng cả
+     * như lệnh lẫn trạng thái (xem KDoc `I18nCatalog` · `I18nCatalogTest`).
      */
     fun argsIn(lang: Lang): List<String> = when {
         lang == Lang.VI || argsEn.size != args.size || argsEn.isEmpty() -> args

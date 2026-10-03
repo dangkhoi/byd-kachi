@@ -11,6 +11,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Shader
 import android.widget.FrameLayout
 import com.byd.clusternav.launcher.KachiSpace
+import com.byd.clusternav.launcher.LangHost
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
 
 /**
@@ -148,6 +149,11 @@ private fun halfPlane(p: CameraClusterBand.Placement, edge: List<Int>, atLeft: B
  *
  * Chữ đi qua tài nguyên (`R.string.kachi_camera_left/right`) như mọi chữ của tầng `launcher/` —
  * `LauncherI18nContractTest` quét chính điều đó.
+ *
+ * ⚠ [kachi-i18n-zh-th-ms R9 · soát 2.87] [ctx] ở đây là Context ỨNG DỤNG (`CameraSignalController(app)`), tức tài
+ * nguyên theo locale MÁY: có `values-zh-rCN/-th/-ms` rồi thì xe đặt tiếng Trung + người dùng chọn Tiếng Việt ra nhãn
+ * "左侧摄像头". Chữ đọc qua [LangHost.localized] (ngôn ngữ người dùng, tiến trình chính); TextView vẫn dựng bằng
+ * [ctx] — chỉ lượt TRA CHUỖI đổi, cửa sổ/WindowManager/GL không đụng (`LauncherLocaleContractTest` canh).
  */
 internal fun labelFor(ctx: Context, side: Side?): android.widget.TextView? {
     val res = when (side) {
@@ -157,7 +163,7 @@ internal fun labelFor(ctx: Context, side: Side?): android.widget.TextView? {
     }
     val pad = KachiSpace.dp(ctx, KachiSpace.S)
     return android.widget.TextView(ctx).apply {
-        text = ctx.getString(res)
+        text = LangHost.localized(ctx).getString(res)
         setTextColor(Color.WHITE)
         textSize = 12f
         setPadding(pad, pad, pad, pad)

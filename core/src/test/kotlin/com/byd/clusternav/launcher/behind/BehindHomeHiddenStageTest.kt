@@ -151,6 +151,52 @@ class BehindHomeHiddenStageTest {
     }
 
     /**
+     * Review 287 [P1] — rào nhả bị VƯỢT khi đọc hỏng: K4 đã đưa Waze lên màn ảo ẩn 277, rồi kênh đứt / cổng READY-AT-HOME từ chối
+     * (mọi `am stack list` sau K4 ném ⇒ bản cũ nuốt thành `[]`) ⇒ bản cũ đọc "màn ảo TRỐNG" ⇒ `RELEASE 277` khi Waze còn trên
+     * đó (A10: cờ 256 KẾT THÚC app người dùng vừa xin chạy; ROM BYD [CHƯA BIẾT] — OC-L4-2) mà sổ vẫn ghi `KEPT_UNDER` (OK ⇒ RAN).
+     * Nay: đọc hỏng ≠ trống ⇒ GIỮ màn ảo, mã `UNREAD` (chưa rõ — không phải OK).
+     */
+    @Test
+    fun `doc lai hong sau K4 - KHONG nha man ao, ma UNREAD chua ro, khong phai OK`() {
+        val r = Rig(listOf(text("l4-hidden-before"), ""))
+        val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
+        assertTrue(r.log.contains(BehindHomePlan.stageCmd(277, wazeComp)), "K4 đã chạy: ${r.log}")
+        assertFalse(r.log.any { it.startsWith("RELEASE") }, "đọc hỏng ⇒ KHÔNG nhả (Waze có thể còn trên màn ảo): ${r.log}")
+        assertFalse(r.log.any { it.startsWith("am stack move-task") || it.startsWith("MARK") || it == k12 }, r.log.toString())
+        assertEquals(Result.UNREAD, out.result, out.line)
+        assertTrue(out.line.contains("vd=277 GIỮ (không đọc được"), out.line)
+        val step = com.byd.clusternav.launcher.trip.TripOutcome.ofBehind(out.result)
+        assertEquals(com.byd.clusternav.launcher.trip.TripStepCode.Result.UNCONFIRMED, step.result, "sổ không được nói 'đã chạy'")
+    }
+
+    /**
+     * Review 287 [P1] — nhánh K7: X kẹt màn ảo ẩn ⇒ K7 qua rào; bản đọc SAU K7 hỏng. Bản cũ coi `[]` là "X đã rời" ⇒ dấu + K12 +
+     * `rescued` + NHẢ. Nay: không dấu (không có task id thật), KHÔNG K12 (K7 có thể đã bị rào chặn vì app khác ở trước — K12 khi
+     * đó kéo người dùng khỏi app họ đang dùng), không nhả, `UNREAD`.
+     */
+    @Test
+    fun `doc lai hong sau K7 - khong dau, khong K12, khong nha`() {
+        val stuck = alone()
+        val reads = listOf(text("l4-hidden-before"), stuck, text("l4-hidden-covered")) +
+            List(1 + 1 + BehindHomeSequence.ANCHOR_TRIES) { text("l4-hidden-covered") } + listOf(stuck, "")
+        val r = Rig(reads)
+        val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
+        val k7 = r.log.indexOfFirst { it.contains("--display 0") && it.contains(wazeComp) }
+        assertTrue(k7 > r.log.indexOf("UNCOVER"), "K7 đã chạy sau gỡ che: ${r.log}")
+        assertFalse(r.log.drop(k7 + 1).any { it == k12 || it.startsWith("MARK") || it.startsWith("RELEASE") }, "sau K7 + đọc hỏng: ${r.log}")
+        assertEquals(Result.UNREAD, out.result, out.line)
+    }
+
+    /** Review 287 [P1] — bản đọc ĐẦU hỏng: không biết X có đang ở ô / cụm không ⇒ 0 lệnh, không tạo màn ảo (K4 sẽ kéo X khỏi chỗ). */
+    @Test
+    fun `doc dau hong - 0 lenh, khong tao man ao`() {
+        val r = Rig(listOf(""))
+        val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
+        assertEquals(listOf(list), r.log, "chỉ một lệnh đọc")
+        assertEquals(Result.NO_CHANNEL, out.result, out.line)
+    }
+
+    /**
      * D4 [ĐO máy ảo 03/10 `p3/e2e-L4/m1-stale-task-k4`, fixture `l4-m1-stale-task` nguyên văn]: Waze còn task 3245 trên
      * display 0 mà tiến trình đã chết (`kill -9`) — bản 2.86 coi "có task" là đang chạy ⇒ `ALREADY_RUNNING`, 0 lệnh, chuyến ghi
      * đã chạy mà app không chạy. Nay: hỏi `pidof` ⇒ rỗng ⇒ NGUỘI ⇒ K4 (đã đo: K4 kéo task cũ vào màn ảo, `reparentToDisplay`).

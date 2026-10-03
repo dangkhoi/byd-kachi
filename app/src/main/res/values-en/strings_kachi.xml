@@ -274,6 +274,7 @@
     <string name="kachi_slot_to_back">Run the slot %1$d app in the background</string>
     <string name="kachi_slot_close_app">Close the slot %1$d app</string>
     <string name="kachi_slot_close_widget">Close the slot %1$d widget</string>
+    <string name="kachi_slot_close_confirm">Tap again to close</string>
     <string name="kachi_slot_close_failed">Couldn\'t close %1$s</string>
     <string name="kachi_slot_head_autohide_title">Auto-hide the ⇄ button</string>
     <string name="kachi_slot_head_autohide_sub">The app/widget switch on each frame hides for a cleaner screen; tap a frame (or any empty spot) to show it for a few seconds</string>
@@ -895,6 +896,9 @@
     <string name="kachi_trip_why_no_session">opened, but the app had no music session to play — paste a link to autoplay</string>
     <string name="kachi_trip_why_unknown_media">skipped — Kachi can\'t read what is playing yet (notification access)</string>
     <string name="kachi_trip_why_deadline">skipped — the trip ran out of time</string>
+    <string name="kachi_trip_why_anchor_in_front">running hidden; background running turned itself off because the system put the placeholder in front of the home screen — restart Kachi to turn it back on</string>
+    <string name="kachi_trip_why_unread">unknown — the app was started, but Kachi couldn\'t read the windows back (the control channel was interrupted)</string>
+    <string name="kachi_trip_why_slot_not_ready">skipped — the app is in a slot, but the slot wasn\'t ready to take the link</string>
     <string name="kachi_trip_system_bg">%1$s is a system app — Kachi doesn\'t run system apps in the background. Choose Open normally, or put the app in a slot.</string>
     <string name="kachi_trip_music_link_hint">YouTube doesn\'t resume on its own: left empty, Kachi only opens the app. Paste a video link to autoplay, or choose YT Music.</string>
     <string name="kachi_trip_now_running">This ignition: running…</string>

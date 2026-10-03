@@ -214,6 +214,7 @@
     <string name="kachi_slot_to_back">Jalankan apl petak %1$d di latar belakang</string>
     <string name="kachi_slot_close_app">Tutup apl petak %1$d</string>
     <string name="kachi_slot_close_widget">Tutup widget petak %1$d</string>
+    <string name="kachi_slot_close_confirm">Ketik sekali lagi untuk tutup</string>
     <string name="kachi_slot_close_failed">Tidak dapat menutup %1$s</string>
     <string name="kachi_slot_head_autohide_title">Sembunyi butang ⇄ secara automatik</string>
     <string name="kachi_slot_head_autohide_sub">Butang tukar apl/widget pada bingkai disembunyikan supaya skrin lebih kemas; ketik bingkai (atau ruang kosong pada skrin) untuk memaparkannya seketika</string>
@@ -768,6 +769,9 @@
     <string name="kachi_trip_why_no_session">dibuka, tetapi apl tiada sesi muzik untuk dimainkan — tampal pautan untuk main secara automatik</string>
     <string name="kachi_trip_why_unknown_media">dilangkau — Kachi belum dapat membaca apa yang sedang dimainkan (akses pemberitahuan)</string>
     <string name="kachi_trip_why_deadline">dilangkau — masa perjalanan telah habis</string>
+    <string name="kachi_trip_why_anchor_in_front">berjalan tersembunyi; larian latar belakang mematikan dirinya kerana sistem meletakkan tetingkap pemegang tempat di hadapan skrin utama — mulakan semula Kachi untuk menghidupkannya</string>
+    <string name="kachi_trip_why_unread">tidak diketahui — apl telah dimulakan, tetapi Kachi tidak dapat membaca semula keadaan tetingkap (saluran kawalan terputus)</string>
+    <string name="kachi_trip_why_slot_not_ready">dilangkau — apl berada dalam petak, tetapi petak belum sedia untuk menerima pautan</string>
     <string name="kachi_trip_system_bg">%1$s ialah apl sistem — Kachi tidak menjalankan apl sistem di latar belakang. Pilih Buka biasa, atau letakkan apl dalam petak.</string>
     <string name="kachi_trip_music_link_hint">YouTube tidak menyambung sendiri: jika kosong, Kachi hanya membuka apl. Tampal pautan video untuk main secara automatik, atau pilih YT Music.</string>
     <string name="kachi_trip_now_running">Kali ini kereta dihidupkan: sedang berjalan…</string>

@@ -214,6 +214,7 @@
     <string name="kachi_slot_to_back">将格位%1$d的应用转到后台运行</string>
     <string name="kachi_slot_close_app">关闭格位%1$d的应用</string>
     <string name="kachi_slot_close_widget">关闭格位%1$d的小组件</string>
+    <string name="kachi_slot_close_confirm">再次点按即可关闭</string>
     <string name="kachi_slot_close_failed">无法关闭%1$s</string>
     <string name="kachi_slot_head_autohide_title">自动隐藏⇄按钮</string>
     <string name="kachi_slot_head_autohide_sub">框上的应用/小组件切换按钮自动隐藏，画面更清爽；点按该框（或屏幕空白处）即可显示几秒</string>
@@ -768,6 +769,9 @@
     <string name="kachi_trip_why_no_session">已打开，但应用没有可播放的音乐会话——粘贴链接即可自动播放</string>
     <string name="kachi_trip_why_unknown_media">已跳过——Kachi尚无法读取正在播放的内容（通知使用权）</string>
     <string name="kachi_trip_why_deadline">已跳过——本次行程时间已用完</string>
+    <string name="kachi_trip_why_anchor_in_front">正在隐藏运行；系统把占位界面放到了主屏幕前方，后台运行已自动关闭——重启Kachi可重新开启</string>
+    <string name="kachi_trip_why_unread">未知——应用已启动，但Kachi无法回读窗口状态（控制通道中断）</string>
+    <string name="kachi_trip_why_slot_not_ready">已跳过——应用在某个格位中，但该格位尚未准备好接收链接</string>
     <string name="kachi_trip_system_bg">%1$s是系统应用——Kachi不会在后台运行系统应用。请选择正常打开，或把该应用放进一个格位。</string>
     <string name="kachi_trip_music_link_hint">YouTube不会自动继续播放：留空时Kachi只会打开应用。粘贴一个视频链接即可自动播放，或选择YT Music。</string>
     <string name="kachi_trip_now_running">本次上电：正在运行…</string>

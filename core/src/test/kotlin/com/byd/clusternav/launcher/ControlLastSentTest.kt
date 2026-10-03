@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -78,5 +79,51 @@ class ControlLastSentTest {
         assertTrue(errors.isEmpty(), "ngoại lệ khi đa luồng: ${errors.firstOrNull()}")
         assertTrue(m.index("shared_ctl") in 0 until threads)
         repeat(threads) { n -> assertEquals(rounds - 1, m.index("own_$n"), "mã riêng của luồng $n phải giữ lệnh cuối") }
+    }
+
+    // ══ 2.87 · SOÁT vòng 1 · P2 — CẦU `:wake` → chính (hợp đồng thuần; dây Android ở `ControlSentRelayWiringContractTest`) ══
+
+    /**
+     * Hai "tiến trình" = hai bảng, nối đúng như bản chạy: `:wake` [ControlLastSent.forwardTo] → (broadcast) →
+     * [ControlLastSent.absorb] ở tiến trình chính. Ca thật bị khoá: nói *"mở cốp"* bằng phím vô-lăng (phiên `:wake`) ⇒ bảng
+     * mà ô + phím Đảo của tiến trình chính đọc PHẢI thấy "mở" ⇒ phím Đảo kế tiếp ĐÓNG (trước bản này: MỞ lần nữa).
+     */
+    @Test
+    fun `cau wake sang chinh - moi luot ghi o wake toi bang chinh, khong vong nguoc`() {
+        val wake = ControlLastSent()
+        val main = ControlLastSent()
+        val wire = mutableListOf<Pair<String, Int>>()
+        wake.forwardTo { id, i -> wire += id to i; main.absorb(id, i) }
+        wake.record("trunk", 1)                                   // "mở cốp" thành công trong `:wake`
+        assertEquals(1, main.index("trunk"), "tiến trình chính thấy lệnh của `:wake`")
+        assertEquals(KeyCtlPlan.Outcome.Run(com.byd.clusternav.launcher.voice.VoiceIntent.Control("trunk", 0), KeyCtlPlan.Basis.MEMORY),
+            KeyCtlPlan.of(ControlRegistry.byId("trunk")!!, KeyCtlTarget("trunk", KeyCtlAction.FLIP), memory = main, speedKmh = { 0 }) { null },
+            "phím Đảo ở tiến trình chính ⇒ ĐÓNG (không MỞ lần nữa)")
+        wake.record("readl", 1); wake.record("seatc", 2)
+        assertEquals(1, main.index("readl")); assertEquals(2, main.index("seatc"))
+        // Tiến trình chính ghi (ô/phím) KHÔNG chuyển đi đâu: chỉ `:wake` nối cầu; và absorb không chuyển tiếp lần nữa.
+        main.record("trunk", 0)
+        assertEquals(1, wake.index("trunk"), "không có chiều ngược")
+        main.forwardTo { id, i -> wire += ("main:$id") to i }
+        main.absorb("trunk", 1)
+        assertEquals(listOf("trunk" to 1, "readl" to 1, "seatc" to 2), wire, "absorb KHÔNG chuyển tiếp ⇒ không thể có vòng")
+        wake.forwardTo(null)
+        wake.record("trunk", 0)
+        assertEquals(1, main.index("trunk"), "gỡ cầu ⇒ không chuyển nữa")
+    }
+
+    /** Đầu nhận kiểm hợp lệ: chỉ nút CÒN trong registry, đúng kiểu bảng mang, chỉ số không âm. */
+    @Test
+    fun `cau chi nhan dong hop le`() {
+        val main = ControlLastSent()
+        assertFalse(main.absorb(null, 1), "thiếu mã")
+        assertFalse(main.absorb("no_such_ctl", 1), "mã không còn trong registry")
+        assertFalse(main.absorb("fan", 3), "STEP không dùng bảng này")
+        assertFalse(main.absorb("trunk", -1), "chỉ số âm = extra thiếu")
+        assertEquals(0, main.index("trunk"), "dòng hỏng không đổi gì")
+        assertTrue(main.absorb("sunshade", 2), "COVER mức Nửa")
+        assertEquals(2, main.index("sunshade"))
+        ControlRegistry.ALL.filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER || it.kind == ControlKind.SELECT }
+            .forEach { assertTrue(ControlLastSent.relayable(it.id, 0), "${it.id} phải qua được cầu") }
     }
 }

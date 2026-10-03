@@ -164,4 +164,19 @@ class TripMusicPlanTest {
         TripMusicMode.values().filter { it.plays }.forEach { assertTrue(VoiceAppTargets.byKey(it.targetKey)?.watch != null, "$it phải có khuôn watch") }
         assertEquals(TripMusicMode.OFF, TripMusicMode.of("??"))
     }
+
+    /**
+     * Review 287 [P2] — bố cục ô 1 = Waze, ô 2 = YouTube; ảnh chụp đầu chuyến có TRƯỚC khi ô 2 mở xong (`VdAppHost.stage()` =
+     * `null` tới lúc `launched`) ⇒ bản cũ: `slotVd = null` ⇒ `stageFor` ⇒ K4-VIEW lên màn ảo của Waze / màn ảo ẩn ⇒ task YouTube
+     * bị kéo khỏi ô của nó (`reparentToDisplay`) rồi ô 2 đi luật hoàn ô (`force-stop`). Nay app Ở Ô chỉ đi đúng màn ảo của ô
+     * (đọc MỚI lúc giao); ô chưa có màn ảo ⇒ 0 lệnh, KHÔNG BAO GIỜ dàn qua chỗ khác.
+     */
+    @Test
+    fun `VIEW cua app o o khong bao gio dan qua cho khac`() {
+        assertEquals(TripMusicPlan.ViewRoute.SlotNotReady, TripMusicPlan.viewRoute(inSlot = true, slotVd = null))
+        assertEquals(TripMusicPlan.ViewRoute.SlotNotReady, TripMusicPlan.viewRoute(inSlot = true, slotVd = 0), "không bao giờ display 0")
+        assertEquals(TripMusicPlan.ViewRoute.Slot(283), TripMusicPlan.viewRoute(inSlot = true, slotVd = 283))
+        assertEquals(TripMusicPlan.ViewRoute.Stage, TripMusicPlan.viewRoute(inSlot = false, slotVd = null))
+        assertEquals(TripMusicPlan.ViewRoute.Stage, TripMusicPlan.viewRoute(inSlot = false, slotVd = 283))
+    }
 }

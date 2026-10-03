@@ -58,6 +58,39 @@ class TripOutcomeTest {
         assertEquals(null, TripOutcome.ofGate(TripMusicPlan.Gate.GO))
     }
 
+    /**
+     * Review 287 [P3]: đường ô sống, ROM bỏ qua khoá giữ chỗ ⇒ `ANCHOR_IN_FRONT` (X ở lại dưới app C trong màn ảo ô, BEHIND-HOME
+     * TỰ TẮT cho cả tiến trình). Bản cũ gộp vào HOME_RESTORED ("đang chạy sau màn nhà") ⇒ ảnh chụp Cài đặt giấu đúng sự kiện làm
+     * tính năng tắt (các bước sau chỉ thấy DISABLED). [P1]: đọc lại hỏng sau lệnh ⇒ `UNREAD` = CHƯA RÕ, không bao giờ RAN.
+     */
+    @Test
+    fun `giu cho len truoc man nha co ma rieng, doc lai hong la chua ro`() {
+        val anchor = TripOutcome.ofBehind(BehindHomeSequence.Result.ANCHOR_IN_FRONT)
+        assertEquals(TripStepCode.ANCHOR_IN_FRONT, anchor)
+        assertTrue(anchor != TripStepCode.HOME_RESTORED, "không được nói 'sau màn nhà' khi X còn trong chỗ dàn dựng")
+        val unread = TripOutcome.ofBehind(BehindHomeSequence.Result.UNREAD)
+        assertEquals(TripStepCode.UNREAD, unread)
+        assertEquals(TripStepCode.Result.UNCONFIRMED, unread.result)
+        assertEquals(TripGate.Code.PARTIAL, TripOutcome.tripCode(listOf(TripStep(waze, TripStepKind.BACKGROUND, unread))), "chưa rõ ≠ đã chạy")
+        // Khứ hồi qua sổ bền (tên enum ASCII).
+        val steps = listOf(TripStep(waze, TripStepKind.BACKGROUND, anchor), TripStep(ytm, TripStepKind.MUSIC, TripStepCode.SLOT_NOT_READY))
+        assertEquals(steps, TripOutcome.decode(TripOutcome.encode(steps)))
+    }
+
+    /**
+     * Review 287 [P2]: K4-VIEW của app Ở Ô mà ô chưa có màn ảo lúc giao (cổng trả `null`) hoặc màn ảo ô không có task của app
+     * (`TripMusicView.NOT_IN_SLOT` ⇒ `X_NOT_STAGED`) ⇒ 0 lệnh ⇒ `SLOT_NOT_READY` (NOOP) — không "đã gửi", không dàn qua chỗ khác.
+     */
+    @Test
+    fun `VIEW cua app o o - o chua san la SLOT_NOT_READY, ngoai o theo ma chuoi chay ngam`() {
+        assertEquals(TripStepCode.SLOT_NOT_READY, TripOutcome.ofView(inSlot = true, r = null))
+        assertEquals(TripStepCode.SLOT_NOT_READY, TripOutcome.ofView(true, BehindHomeSequence.Result.X_NOT_STAGED))
+        assertEquals(TripStepCode.Result.NOOP, TripStepCode.SLOT_NOT_READY.result)
+        assertEquals(TripStepCode.MOVED, TripOutcome.ofView(true, BehindHomeSequence.Result.MOVED), "ở lại ô / về ô")
+        assertEquals(TripStepCode.NOT_STAGED, TripOutcome.ofView(false, BehindHomeSequence.Result.X_NOT_STAGED))
+        assertEquals(TripStepCode.NO_STAGE, TripOutcome.ofView(false, null))
+    }
+
     @Test
     fun `so ket qua - truong s= khu hoi, ban ghi cu khong co s= van doc duoc`() {
         // [ĐO máy ảo 03/10 `p3/e2e-L4/e6c-hidden`] bản ghi L4 nguyên văn.

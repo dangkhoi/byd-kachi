@@ -30,6 +30,9 @@ import android.content.Intent
  */
 internal fun VoiceWakeService.buildSession(): VoiceSession {
     val app = applicationContext
+    // 2.87 · SOÁT vòng 1 · P2 — mọi lượt ghi bảng "lệnh cuối" của phiên `:wake` (ba lối vào: phím vô-lăng · nút mic · Hey
+    // Kachi) chuyển sang tiến trình chính để ô + phím Đảo thấy (KDoc [ControlSentRelay]). Gọi lại mỗi phiên vô hại.
+    ControlSentRelay.forwardFromWake(app)
     val relay = VoiceWakeHomeRelay(app)
     val openHome = { action: VoiceHomeAction, arg: String? -> relay.send(action, arg) }
     val grammar = { VoiceGrammarSnapshotStore.read(app) }

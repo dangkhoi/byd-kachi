@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityManager
+import com.byd.clusternav.ShellReadiness
+import com.byd.clusternav.carexec.ShellReadinessState
 import com.byd.clusternav.launcher.SlotHeadRest.Rest
 
 /**
@@ -45,6 +47,13 @@ import com.byd.clusternav.launcher.SlotHeadRest.Rest
  * Có [actions] (màn chính gắn) ⇒ [register] dựng thêm [SlotActionsCluster] NGAY DƯỚI ⇄ (⇄ vẫn là con cuối) và mọi chỗ
  * đặt / hiện / ẩn / gỡ ⇄ ở đây kéo theo cụm đó — một hẹn giờ [SlotHeadRest.HIDE_AFTER_MS] (3 s) cho cả đầu ô. Chạm vào CHỖ
  * một nút đang ẩn ⇒ không hiện (điều 4, cùng lẽ ⇄). Phần animate của cụm nằm ở tệp của nó (cùng luật cancel-trước).
+ *
+ * ## Soát 2.87 — ai QUYẾT, ai LÀM
+ *  - P2: cú chạm nào hiện / giữ / hẹn hiện đầu ô là bảng thuần `:core` [SlotHeadTouch] (bảng đủ ô `SlotHeadTouchTest`); ở đây
+ *    chỉ ĐO (ô nào, có con nhận, DOWN có trúng vùng nút, nút đang hiện không) rồi [exec] các việc nó trả về.
+ *  - P3: nút L6 được hỏi lại không chỉ ở DOWN — kênh shell đổi trạng thái ([attach] nghe `ShellReadiness`) và sau mỗi việc
+ *    đầu ô ([refreshAll], `KachiHomeSlotActions`) — chế độ luôn hiện / TalkBack không có DOWN nào để nhờ.
+ *  - P3: bố cục bớt ô ⇒ [retain] bỏ mục của ô đã mất (không giữ cây view đã tháo, không hỏi nút của ô chết).
  */
 internal class SlotHeadAutoHide(private val host: ViewGroup) {
 
@@ -67,12 +76,17 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
     /** L6 — cổng màn chính cho nút *chạy nền* / *tắt* + báo app rời ô. `null` (dựng lượt đầu trong `init`) ⇒ chỉ ⇄. */
     var actions: SlotActionsPort? = null
     private var enabled = true
-    private var downSlot = -1
-    private var downInHead = false
+
+    /** Cử chỉ đang diễn ra (DOWN → UP/CANCEL) — [SlotHeadTouch] quyết cái gì cần nhớ. */
+    private var gesture = SlotHeadTouch.Gesture.NONE
 
     private val a11y: AccessibilityManager? =
         host.context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
     private val teListener = AccessibilityManager.TouchExplorationStateChangeListener { reapply() }
+
+    /** P3 — kênh shell lên / xuống (luồng bất kỳ) ⇒ hỏi lại nút L6 trên luồng chính, không chờ một cú DOWN. */
+    private val refreshTask = Runnable { refreshAll() }
+    private val shellListener: (ShellReadinessState) -> Unit = { _ -> host.post(refreshTask) }
 
     private fun touchExploration(): Boolean = a11y?.isTouchExplorationEnabled == true
 
@@ -88,10 +102,18 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         val live = (0 until slot.childCount).any { slot.getChildAt(it) is AppWidgetHostView }
         val kind = SlotHeadRest.kindOf(content, live)
         val projector = projectorOf(slot)
-        val e = Entry(head, hit, kind, projector, actions?.let { SlotActionsCluster.attach(slot, index, kind, projector, it) })
+        val e = Entry(head, hit, kind, projector, actions?.let { SlotActionsCluster.attach(slot, index, kind, projector, it, ::armed) })
         entries[index] = e
         settle(e, touchExploration())
     }
+
+    /** P3 — bố cục còn [count] ô (`WorkspaceView.rebuild`) ⇒ bỏ mục của các ô đã mất (giữ = rò cây view đã tháo). */
+    fun retain(count: Int) {
+        entries.keys.filter { it >= count }.forEach { i -> entries.remove(i)?.let(::drop) }
+    }
+
+    /** P3 — hỏi lại nút L6 của MỌI ô (kênh đổi · BEHIND-HOME vừa tắt · việc đầu ô vừa xong). Luồng chính. */
+    fun refreshAll() = entries.values.forEach { it.cluster?.refresh() }
 
     /** Công tắc theo hồ sơ (R-AH3) — áp lại trạng thái nghỉ tại chỗ, KHÔNG dựng lại ô (app trong ô chạy tiếp). */
     fun setEnabled(on: Boolean) {
@@ -105,36 +127,51 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
      * Không đổi [ev], không trả gì ⇒ không thể nuốt chạm.
      */
     fun observe(ev: MotionEvent, slots: List<View>, consumed: Boolean) {
+        val at = { j: Int -> valid(j, slots) }
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val i = slotAt(slots, ev.x, ev.y)
-                val e = i.takeIf { it >= 0 }?.let { valid(it, slots) }
-                e?.cluster?.refresh()   // L6: lớp tạm / kênh đổi mà khung không dựng lại (đổi app tại chỗ) ⇒ hỏi lại nút
-                downSlot = if (consumed) i else -1
-                downInHead = e != null && inHit(e, slots[i], ev.x, ev.y)
-                when {
-                    !consumed && i >= 0 -> e?.let(::reveal)                         // khung trống: hiện ⇄ khung đó
-                    !consumed -> slots.indices.forEach { j -> valid(j, slots)?.let(::reveal) }   // khe/ngoài khung: mọi ⇄
-                    e != null -> { host.removeCallbacks(e.reveal); host.removeCallbacks(e.hide) }   // ngón đang đặt: giữ nguyên
-                }
+                val e = i.takeIf { it >= 0 }?.let(at)
+                e?.cluster?.refresh()   // L6: lớp tạm / kênh đổi mà khung không dựng lại ⇒ hỏi lại nút TRƯỚC khi đo vùng nút
+                val inHead = e != null && inHit(e, slots[i], ev.x, ev.y)
+                val step = SlotHeadTouch.onDown(i, consumed, inHead, heads(at))
+                gesture = step.gesture
+                exec(step.acts, at)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                val i = downSlot
-                downSlot = -1
-                val e = i.takeIf { it >= 0 }?.let { valid(it, slots) } ?: return
-                if (e.rest != Rest.AUTO_HIDE) return
-                if (e.head.visibility == View.VISIBLE) {
-                    reveal(e)   // đang hiện / đang mờ dần (vẫn VISIBLE): giữ hiện, tính lại 3 s từ lần nhấc tay này
-                } else if (!downInHead) {
-                    host.postDelayed(e.reveal, ViewConfiguration.getDoubleTapTimeout().toLong())   // chờ qua nhịp nhấp đúp
-                }
+                val g = gesture
+                gesture = SlotHeadTouch.Gesture.NONE
+                exec(SlotHeadTouch.onUp(g, heads(at)), at)
             }
         }
     }
 
-    /** Workspace gắn (lại) cửa sổ: nghe TalkBack bật/tắt và áp lại (trạng thái có thể đã đổi lúc rời cửa sổ). */
+    /** Đầu ô hợp lệ theo chỉ số, đúng dạng đầu vào của [SlotHeadTouch]. */
+    private fun heads(at: (Int) -> Entry?): Map<Int, SlotHeadTouch.Head> = entries.keys.mapNotNull { i ->
+        at(i)?.let { i to SlotHeadTouch.Head(it.rest, it.head.visibility == View.VISIBLE) }
+    }.toMap()
+
+    /** THI HÀNH việc `:core` đã quyết — không quyết gì ở đây. Nhịp nhấp đúp đọc tại chỗ (không chụp sẵn vào field). */
+    private fun exec(acts: List<SlotHeadTouch.Act>, at: (Int) -> Entry?) = acts.forEach { a ->
+        val e = at(a.slot) ?: return@forEach
+        when (a) {
+            is SlotHeadTouch.Act.Reveal -> reveal(e)
+            is SlotHeadTouch.Act.RevealAfterDoubleTap -> host.postDelayed(e.reveal, ViewConfiguration.getDoubleTapTimeout().toLong())
+            is SlotHeadTouch.Act.Hold -> { host.removeCallbacks(e.reveal); host.removeCallbacks(e.hide) }
+        }
+    }
+
+    /** L6 · *tắt* hai bước: nút *tắt* của [cluster] vừa vào trạng thái chờ ⇒ đầu ô hiện tiếp suốt lượt chờ (P2). */
+    private fun armed(cluster: SlotActionsCluster) {
+        val (i, e) = entries.entries.firstOrNull { it.value.cluster === cluster }?.toPair() ?: return
+        val at = { j: Int -> e.takeIf { j == i } }
+        exec(SlotHeadTouch.onConfirmArmed(i, heads(at)), at)
+    }
+
+    /** Workspace gắn (lại) cửa sổ: nghe TalkBack bật/tắt + kênh shell đổi, rồi áp lại (trạng thái có thể đã đổi lúc rời cửa sổ). */
     fun attach() {
         a11y?.addTouchExplorationStateChangeListener(teListener)
+        ShellReadiness.addListener(shellListener)
         reapply()
     }
 
@@ -145,7 +182,9 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
     fun release() {
         entries.values.forEach(::drop)
         a11y?.removeTouchExplorationStateChangeListener(teListener)
-        downSlot = -1
+        ShellReadiness.removeListener(shellListener)
+        host.removeCallbacks(refreshTask)
+        gesture = SlotHeadTouch.Gesture.NONE
     }
 
     private fun reapply() {

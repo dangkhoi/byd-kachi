@@ -9,6 +9,7 @@ import com.byd.clusternav.launcher.PermissionPreflight
 import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SlotCodec
 import com.byd.clusternav.launcher.SlotContent
+import com.byd.clusternav.launcher.Strings
 import com.byd.clusternav.launcher.UnitFormat
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.inputdDisabled
@@ -85,6 +86,9 @@ internal object TestBridgeState {
                     TestBridgeJson.obj(
                         "theme" to s.themeMode.name,
                         "lang" to s.langMode.name,
+                        // Tiếng GIỌNG NÓI mà `previewOf` dùng (CÙNG biểu thức) — voice-e2e.sh đòi `vi` trước khi so
+                        // preview với voice-cases.tsv (tiếng Việt); `lang` = AUTO thì chỉ trường này nói thật (soát 2.87).
+                        "voice_lang" to Strings.current.voice.code,
                         "units" to s.unitPrefs.encode(),
                         "units_in_use" to TestBridgeJson.Raw(
                             TestBridgeJson.arr(UnitFormat.quantitiesInUse().map { q -> q.name + "=" + s.unitPrefs.unitFor(q) }),

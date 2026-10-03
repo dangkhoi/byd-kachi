@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.launcher.SlotRevertPlan.Event
 import com.byd.clusternav.launcher.SlotRevertPlan.Next
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -63,7 +64,7 @@ class SlotRevertPlanTest {
         val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres))
         val next = SlotRevertPlan.next(st.workspace.slots[0], st.effectiveWorkspace.slots[0], Event.APP_DIED, maps)
         assertEquals(Next.Clear, next)
-        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.overlay, 0, next))
+        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.workspace, st.overlay, 0, next))
         assertEquals(SlotContent.Empty, after.effectiveWorkspace.slots[0], "ô hiện như khung trống (trong suốt + ⇄)")
         assertSame(st.workspace, after.workspace, "persist() ghi lớp LƯU — không được đổi")
         assertEquals(SlotContent.App(maps), after.copy(overlay = SlotOverlay.EMPTY).effectiveWorkspace.slots[0],
@@ -78,7 +79,7 @@ class SlotRevertPlanTest {
         listOf(Event.APP_DIED, Event.APP_CLOSED, Event.APP_BACKGROUND).forEach { ev ->
             val next = SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], ev, maps)
             assertEquals(Next.ShowSaved, next, "$ev")
-            val after = temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 0, next))
+            val after = temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.workspace, temp.overlay, 0, next))
             assertEquals(tyres, after.effectiveWorkspace.slots[0], "$ev ⇒ widget lốp về, không 'đen thui'")
             assertTrue(after.overlay.isEmpty)
         }
@@ -91,7 +92,7 @@ class SlotRevertPlanTest {
         assertEquals(Next.ShowSaved, SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], Event.APP_CLOSED, maps))
         val bg = SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
         assertEquals(Next.ShowSaved, bg, "L8: Maps đã ra sau màn nhà (lớp che) ⇒ ô dựng lại, YouTube mở lại như lúc khởi động")
-        assertEquals(SlotContent.App(yt), temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 0, bg)).effectiveWorkspace.slots[0])
+        assertEquals(SlotContent.App(yt), temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.workspace, temp.overlay, 0, bg)).effectiveWorkspace.slots[0])
     }
 
     /**
@@ -103,7 +104,7 @@ class SlotRevertPlanTest {
         val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres))
         val next = SlotRevertPlan.next(st.workspace.slots[0], st.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
         assertEquals(Next.Clear, next)
-        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.overlay, 0, next))
+        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.workspace, st.overlay, 0, next))
         assertEquals(SlotContent.Empty, after.effectiveWorkspace.slots[0])
         assertSame(st.workspace, after.workspace, "không ghi hồ sơ")
         assertEquals(SlotContent.App(maps), after.copy(overlay = SlotOverlay.EMPTY).effectiveWorkspace.slots[0])
@@ -111,7 +112,7 @@ class SlotRevertPlanTest {
             val t = HomeUiState(workspace = ws(savedSlot)).let { it.copy(overlay = it.overlay.place(0, maps)) }
             val n = SlotRevertPlan.next(t.workspace.slots[0], t.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
             assertEquals(Next.ShowSaved, n, "LƯU=$savedSlot")
-            assertEquals(back, t.copy(overlay = SlotRevertPlan.overlayAfter(t.overlay, 0, n)).effectiveWorkspace.slots[0])
+            assertEquals(back, t.copy(overlay = SlotRevertPlan.overlayAfter(t.workspace, t.overlay, 0, n)).effectiveWorkspace.slots[0])
         }
     }
 
@@ -121,7 +122,7 @@ class SlotRevertPlanTest {
         val temp = st.copy(overlay = st.overlay.place(2, maps))
         val next = SlotRevertPlan.next(temp.workspace.slots[2], temp.effectiveWorkspace.slots[2], Event.APP_DIED, maps)
         assertEquals(Next.ShowSaved, next)
-        assertEquals(SlotContent.Empty, temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 2, next)).effectiveWorkspace.slots[2])
+        assertEquals(SlotContent.Empty, temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.workspace, temp.overlay, 2, next)).effectiveWorkspace.slots[2])
     }
 
     @Test
@@ -130,7 +131,7 @@ class SlotRevertPlanTest {
         val n0 = SlotRevertPlan.next(st.workspace.slots[0], st.effectiveWorkspace.slots[0], Event.WIDGET_CLOSED)
         val n1 = SlotRevertPlan.next(st.workspace.slots[1], st.effectiveWorkspace.slots[1], Event.WIDGET_CLOSED)
         assertEquals(Next.Clear, n0); assertEquals(Next.Clear, n1)
-        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(SlotRevertPlan.overlayAfter(st.overlay, 0, n0), 1, n1))
+        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.workspace, SlotRevertPlan.overlayAfter(st.workspace, st.overlay, 0, n0), 1, n1))
         assertEquals(listOf(SlotContent.Empty, SlotContent.Empty), after.effectiveWorkspace.slots.take(2))
         assertEquals(emptySet<Int>(), AppWidgetIds.orphaned(st, after), "tắt tạm KHÔNG được thu hồi id 651")
         assertEquals(setOf(651), AppWidgetIds.used(after))
@@ -157,9 +158,48 @@ class SlotRevertPlanTest {
         assertSame(SlotOverlay.EMPTY, SlotOverlay.EMPTY.clear(WorkspaceState.SLOT_CAP), "ô ngoài trần bị bỏ qua")
     }
 
+    /**
+     * Soát 2.87 · P1 — hồ sơ LƯU Maps ở ô 1, lối tắt / giọng nói đặt Maps TẠM vào ô 3 (ô 1 hiện TRỐNG vì một-app-một-ô). Maps
+     * rời ô 3 (chết / *tắt* / *chạy nền*) ⇒ bỏ mục tạm của ô 3 thôi là lớp LƯU lộ lại, Maps "về" ô 1 ⇒ host ô 1 mở lại đúng app
+     * vừa tắt (`am force-stop` + `am start`), kéo app vừa chạy nền về (K8), mở lại app vừa chết. Phải: KHÔNG ô nào hiện Maps.
+     */
+    @Test
+    fun `P1 - app dat tam roi o thi khong ve o LUU khac cua no`() {
+        val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres, clock))
+        val temp = st.copy(overlay = st.overlay.place(2, maps))
+        assertEquals(listOf(SlotContent.Empty, tyres, SlotContent.App(maps)), temp.effectiveWorkspace.slots.take(3), "đặt tạm: một app một ô")
+        listOf(Event.APP_DIED, Event.APP_CLOSED, Event.APP_BACKGROUND).forEach { ev ->
+            val next = SlotRevertPlan.next(temp.workspace.slots[2], temp.effectiveWorkspace.slots[2], ev, maps)
+            assertEquals(Next.ShowSaved, next, "$ev")
+            val after = temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.workspace, temp.overlay, 2, next))
+            assertFalse(SlotContent.App(maps) in after.effectiveWorkspace.slots, "$ev: Maps không được mở lại ở ô LƯU khác — ${after.effectiveWorkspace.slots}")
+            assertEquals(listOf(SlotContent.Empty, tyres, clock), after.effectiveWorkspace.slots.take(3), "$ev: ô 3 về widget LƯU, ô 1 trong suốt")
+            assertSame(temp.workspace, after.workspace, "$ev: không ghi hồ sơ")
+            assertEquals(st.workspace.slots, after.copy(overlay = SlotOverlay.EMPTY).effectiveWorkspace.slots, "$ev: khởi động lại ⇒ Maps về ô 1")
+        }
+    }
+
+    @Test
+    fun `P1 - o LUU cua app dang hien app tam khac thi giu nguyen`() {
+        val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres, clock))
+        val temp = st.copy(overlay = st.overlay.place(0, yt).place(2, maps))
+        assertEquals(listOf(SlotContent.App(yt), tyres, SlotContent.App(maps)), temp.effectiveWorkspace.slots.take(3))
+        val next = SlotRevertPlan.next(temp.workspace.slots[2], temp.effectiveWorkspace.slots[2], Event.APP_CLOSED, maps)
+        val after = temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.workspace, temp.overlay, 2, next))
+        assertEquals(listOf(SlotContent.App(yt), tyres, clock), after.effectiveWorkspace.slots.take(3), "YouTube tạm ở ô 1 không bị đụng")
+        assertEquals(SlotOverlay(mapOf(0 to yt)), after.overlay)
+    }
+
+    @Test
+    fun `P1 - tat widget khong lam trong suot o nao khac`() {
+        val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres)).let { it.copy(overlay = it.overlay.place(2, yt)) }
+        val n = SlotRevertPlan.next(st.workspace.slots[1], st.effectiveWorkspace.slots[1], Event.WIDGET_CLOSED)
+        assertEquals(SlotOverlay(mapOf(2 to yt), setOf(1)), SlotRevertPlan.overlayAfter(st.workspace, st.overlay, 1, n))
+    }
+
     @Test
     fun `Keep khong doi lop tam`() {
         val o = SlotOverlay.EMPTY.place(1, maps)
-        assertSame(o, SlotRevertPlan.overlayAfter(o, 1, Next.Keep))
+        assertSame(o, SlotRevertPlan.overlayAfter(ws(), o, 1, Next.Keep))
     }
 }

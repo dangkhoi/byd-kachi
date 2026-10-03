@@ -1,7 +1,9 @@
 package com.byd.clusternav.launcher.behind
 
 import android.app.Activity
+import android.os.Build
 import android.util.Log
+import android.view.Display
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -29,8 +31,7 @@ class StageCoverActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        @Suppress("DEPRECATION")   // `Activity.getDisplay()` từ API 30; minSdk 29 — WindowManager của Activity gắn đúng display của nó
-        val on = windowManager.defaultDisplay.displayId
+        val on = shownOn()
         val want = expectedVd
         if (want < 1 || on != want) {
             Log.w(BehindHomeRunner.TAG, "stage cover resumed on display $on (want $want) -> self-remove")
@@ -39,6 +40,19 @@ class StageCoverActivity : Activity() {
         }
         resumed?.countDown()
     }
+
+    /**
+     * Display lớp che đang nằm (soát 2.87 · P3 — mỗi mức API dùng API HIỆN HÀNH của mức đó). API 30+: `Context.getDisplay()`
+     * [ĐO nguồn A12 r34 `ContextImpl.java:2820-2843`: Activity là ngữ cảnh gắn display; bị dời display ⇒
+     * `ActivityThread.java:5906-5908` `dispatchMovedToDisplay` cập nhật]. Không đọc được ⇒ `INVALID_DISPLAY` ⇒ lệch hẹn ⇒ tự gỡ
+     * (an toàn). API 29 (A10): `WindowManager.getDefaultDisplay()` — API hiện hành ở mức đó (deprecated từ 30); WindowManager
+     * của Activity gắn đúng display của nó.
+     */
+    private fun shownOn(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display?.displayId ?: Display.INVALID_DISPLAY else legacyDisplayId()
+
+    @Suppress("DEPRECATION")   // chỉ chạy ở API 29 (nhánh dưới `R` của [shownOn]) — ở đó đây là API hiện hành
+    private fun legacyDisplayId(): Int = windowManager.defaultDisplay.displayId
 
     companion object {
         /** Màn ảo được hẹn cho lượt che hiện tại (`StagingDisplay` đặt trước khi mở). Mutex `kachi-behind` ⇒ một lượt một lúc. */

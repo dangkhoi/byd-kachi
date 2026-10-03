@@ -229,6 +229,28 @@ object TripMusicPlan {
         }
     }
 
+    /** L4 · D3(ii) — K4-VIEW đi ĐÂU ([viewRoute]). */
+    sealed interface ViewRoute {
+        /** App ở ô ⇒ CHÍNH màn ảo [vd] của ô đó (owner 01/10: *"có trong khung nào thì mở ở khung đó"*). */
+        data class Slot(val vd: Int) : ViewRoute
+        /** App không ở ô ⇒ chỗ dàn dựng của chuỗi chạy ngầm (ô sống khác, không thì màn ảo ẩn). */
+        object Stage : ViewRoute { override fun toString() = "Stage" }
+        /** App ở ô mà ô CHƯA có màn ảo (chưa mở xong) ⇒ 0 lệnh. */
+        object SlotNotReady : ViewRoute { override fun toString() = "SlotNotReady" }
+    }
+
+    /**
+     * Review 287 [P2]: app ở ô ([inSlot]) ⇒ CHỈ màn ảo của ô đó, [slotVd] đọc MỚI lúc giao link (ảnh chụp đầu chuyến có thể có
+     * TRƯỚC khi ô mở xong — `VdAppHost.stage()` = `null` tới lúc `launched`). Chưa có ⇒ [ViewRoute.SlotNotReady]: KHÔNG BAO GIỜ
+     * dàn qua chỗ khác — K4-VIEW lên màn ảo khác kéo task của app ra khỏi ô của nó (`reparentToDisplay`, A10 r47
+     * `ActivityStarter.java:2096-2170`, cùng cơ chế D4) rồi ô đi luật hoàn ô (mở lại = `force-stop`, cắt bài vừa phát).
+     */
+    fun viewRoute(inSlot: Boolean, slotVd: Int?): ViewRoute = when {
+        !inSlot -> ViewRoute.Stage
+        slotVd != null && slotVd >= 1 -> ViewRoute.Slot(slotVd)
+        else -> ViewRoute.SlotNotReady
+    }
+
     /**
      * L4 · D3(ii) — K4-VIEW: mở [url] bằng ý-định VIEW nhắm ĐÚNG gói [pkg] lên màn ảo [vd] (ô của app, hoặc chỗ dàn dựng của
      * chuỗi chạy ngầm). Activity start đi qua cổng `relatestart` của BYD (chỉ chặn service/broadcast/provider — [ĐO firmware]).

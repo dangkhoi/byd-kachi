@@ -5,6 +5,8 @@ import android.graphics.ColorMatrixColorFilter
 import android.widget.ImageView
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
+import java.util.WeakHashMap
+import kotlin.math.roundToInt
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -67,8 +69,9 @@ internal object KachiIcons {
      * [KachiTheme.INK_ON_ACCENT]). [selected] chỉ có nghĩa ở mặt lớn + chủ đề tối.
      */
     fun tint(img: ImageView, sizeDp: Int, selected: Boolean, inkHex: String = KachiTheme.INK) {
+        drawn(img).also { it.tinted = true; it.selected = selected; it.ink = inkHex }
         when {
-            !KachiTheme.night || sizeDp < Sp.ICON_L -> img.setColorFilter(c(inkHex))
+            !KachiTheme.night || sized(img, sizeDp) < Sp.ICON_L -> img.setColorFilter(c(inkHex))
             selected -> img.colorFilter = null
             else -> img.colorFilter = UNSELECTED
         }
@@ -84,8 +87,46 @@ internal object KachiIcons {
      * mỗi ô (cùng lẽ `ControlLevelBar.light` chỉ đổi alpha). Không tra ra hình (`0`) ⇒ giữ nguyên, không xoá icon.
      */
     fun byLevel(img: ImageView, concept: String, level: Int, sizeDp: Int) {
-        val r = res(CapabilityIcons.forLevel(concept, level) ?: concept, sizeDp)
+        drawn(img).also { it.concept = concept; it.level = level }
+        val r = res(CapabilityIcons.forLevel(concept, level) ?: concept, sized(img, sizeDp))
         if (r != 0 && img.tag != r) { img.setImageResource(r); img.tag = r }
+    }
+
+    // ── L5 WIDGET-FIT-ALL (2.87, soát vòng 1 P3) — biến thể + tint theo cỡ ĐÃ KHỚP ─────────────────────────────────
+    /**
+     * Lần vẽ cuối của một icon — CHỈ giá trị, không giữ view nào (khoá yếu tự rơi khi ô bị gỡ; giá trị trỏ về khoá thì
+     * `WeakHashMap` không dọn được — bài học [WidgetRefreshers]). [fittedDp] = cỡ do `FitScale` đặt (0 = chưa khớp).
+     */
+    private class Drawn {
+        var concept: String? = null
+        var level = 0
+        var tinted = false
+        var selected = false
+        var ink = KachiTheme.INK
+        var fittedDp = 0
+    }
+
+    /** CHỈ luồng chính chạm (bộ dựng ô, `look`, lượt đo của `FitGridLayout`). */
+    private val drawnBy = WeakHashMap<ImageView, Drawn>()
+
+    private fun drawn(img: ImageView): Drawn = drawnBy.getOrPut(img) { Drawn() }
+
+    /** Cỡ chọn biến thể/tint: cỡ ĐÃ KHỚP nếu `FitScale` đã đặt, không thì cỡ của bộ dựng [sizeDp]. */
+    private fun sized(img: ImageView, sizeDp: Int): Int = drawnBy[img]?.fittedDp?.takeIf { it > 0 } ?: sizeDp
+
+    /**
+     * `FitScale` vừa đổi cỡ icon cố định thành [sidePx] (cạnh nhỏ) ⇒ chọn lại biến thể 32/48dp + luật tint theo cỡ THẬT
+     * và vẽ lại đúng lần vẽ cuối (hình theo mức, chọn/không chọn, mực). Không có bước này thì ô `DOCK` 20dp được nhân ×2
+     * thành 40dp vẫn mang biến thể + tint của mặt NHỎ, khác hẳn ô `BIG` cùng cỡ trên màn (soát vòng 1, P3). Icon chưa
+     * từng qua [tint]/[byLevel] (vd icon ô nén tô màu riêng) ⇒ chỉ ghi cỡ, không vẽ gì.
+     */
+    fun refit(img: ImageView, sidePx: Int) {
+        val dp = (sidePx / img.resources.displayMetrics.density).roundToInt()
+        val d = drawn(img)
+        if (d.fittedDp == dp) return
+        d.fittedDp = dp
+        d.concept?.let { byLevel(img, it, d.level, dp) }
+        if (d.tinted) tint(img, dp, d.selected, d.ink)
     }
 
     /**

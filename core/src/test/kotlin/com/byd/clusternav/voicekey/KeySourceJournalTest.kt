@@ -2,6 +2,7 @@ package com.byd.clusternav.voicekey
 
 import com.byd.clusternav.launcher.LogLineThrottle
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -111,6 +112,21 @@ class KeySourceJournalTest {
         assertTrue(KeySourceLog.line(na).contains(" tag=- seq=2"), "phím ngoài bảng: không có phần (read …)")
         val pending = KeySourceEntry(3, sample(), learned = true)
         assertTrue(KeySourceLog.line(pending).endsWith(" tag=? seq=3 learn"))
+    }
+
+    /**
+     * 2.87 · SOÁT vòng 1 · P3 — `busy` là lượt KHÔNG đọc (HAL trước còn treo): ảnh chụp/nhật ký từng in *"(read 0ms, +-1ms)"*
+     * — bịa một phép đo 0 ms mà bảng quyết định tầng 2 dựa vào thời lượng đọc. Quá hạn: có thời lượng (bằng trần) nhưng
+     * không có tuổi ⇒ không in "+-1ms".
+     */
+    @Test
+    fun `dong KachiKey cua luot khong doc khong in thoi luong doc`() {
+        val busy = KeySourceEntry(4, sample(), false, simulateKeys, KeySourceReading.failed(spec, KeySourceFailure.BUSY))
+        assertTrue(KeySourceLog.line(busy).contains(" tag=AUDIO_VOLUME_CTRL_MODE=!busy seq=4"), KeySourceLog.line(busy))
+        assertFalse(KeySourceLog.line(busy).contains("(read"), "busy: không đọc ⇒ không có phần (read …)")
+        val timeout = KeySourceEntry(5, sample(), false, simulateKeys,
+            KeySourceReading.failed(spec, KeySourceFailure.TIMEOUT, readMs = spec.budgetMs))
+        assertTrue(KeySourceLog.line(timeout).contains(" tag=AUDIO_VOLUME_CTRL_MODE=!timeout (read 250ms) seq=5"), KeySourceLog.line(timeout))
     }
 
     @Test

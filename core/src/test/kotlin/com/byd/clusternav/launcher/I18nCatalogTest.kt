@@ -103,6 +103,27 @@ class I18nCatalogTest {
         assertNull(I18nCatalog.lookup(Lang.EN, "Mở", "Open"))
     }
 
+    /**
+     * [soát 2.87 · P3] Từ đồng hình tiếng Mã Lai: `("Mở", "Open")` là CÙNG một cặp cho LỆNH (nút rèm che nắng ở
+     * CapTest/gán phím) và TRẠNG THÁI (`TelemetryReadout.openShut` — cửa/cửa sổ trời) ⇒ khoá cặp không tách được, và
+     * VI/EN không được đổi (R-nf1). Bản cũ dịch theo trạng thái (`Terbuka`) và cả lệnh `("Đóng", "Close")` cũng ra
+     * `Tertutup` ⇒ nút đọc *"Đã đóng | Đã mở | Nửa"*. Khoá: chữ của cặp dùng chung đúng cho CẢ HAI nghĩa (`Buka`/`Tutup`),
+     * lệnh đọc như lệnh, và trạng thái đọc như trạng thái cùng một cặp từ.
+     */
+    @Test
+    fun `tieng Ma Lai - lenh dong mo doc nhu lenh, trang thai cung cap tu`() {
+        val sunshade = ControlRegistry.byId("sunshade") ?: error("không còn nút «sunshade» — bài đang soi vùng không tồn tại")
+        assertEquals(listOf("Close", "Open", "Half"), sunshade.argsEn, "đầu vào của bài: đúng ba lệnh rèm che nắng")
+        assertEquals(listOf("Tutup", "Buka", "Separuh"), sunshade.argsIn(Lang.MS), "nút rèm che nắng = LỆNH")
+        val shut = CarStatus(body = CarStatus.Body(sunroofOpen = false))
+        val open = CarStatus(body = CarStatus.Body(sunroofOpen = true))
+        assertEquals("Tutup", TelemetryReadout.of("sunroof_state", shut, Lang.MS)?.valueText, "trạng thái đóng")
+        assertEquals("Buka", TelemetryReadout.of("sunroof_state", open, Lang.MS)?.valueText, "trạng thái mở")
+        // VI/EN của chính các cặp ấy giữ nguyên (R-nf1) — bản vá chỉ ở bảng ms.
+        assertEquals(listOf("Đóng", "Mở", "Nửa"), sunshade.argsIn(Lang.VI))
+        assertEquals("Open", TelemetryReadout.of("sunroof_state", open, Lang.EN)?.valueText)
+    }
+
     @Test
     fun `bang that nam tren classpath, doc duoc, khong loi dinh dang`() {
         for (lang in I18nPairs.TRANSLATED) {

@@ -90,6 +90,52 @@ class LauncherLocaleContractTest {
     }
 
     /**
+     * R9 (soát 2.87 · P2) — bài trên chỉ thấy Activity. Mã tiến trình chính ở `launcher/` (kể cả `camera/`) mà tra
+     * chuỗi qua **Context ứng dụng** cũng theo locale MÁY: nhãn camera, hai toast. Bộ quét + ba ca thật: [AppCtxResScan].
+     * Tra qua `LangHost.localized(app)` (Context ứng dụng giữ nguyên cho WindowManager/GL/Toast) là đường đúng.
+     */
+    @Test
+    fun `ma tien trinh chinh khong tra chuoi qua Context ung dung`() {
+        val files = launcherSources().associate { it.toString().substringAfter("launcher/") to code(it) }
+        assertTrue(files.size >= 100, "chỉ quét ${files.size} tệp — bộ quét hỏng?")
+        val hits = AppCtxResScan.offenders(files)
+        assertEquals(
+            emptyList<String>(), hits.filterNot { it in APP_CTX_RES_ALLOW },
+            "tra chuỗi qua Context ỨNG DỤNG ⇒ theo locale MÁY (R9). Dùng `LangHost.localized(app).getString(…)`, " +
+                "hoặc khai APP_CTX_RES_ALLOW kèm lý do",
+        )
+        assertEquals(emptyList<String>(), APP_CTX_RES_ALLOW.keys.filterNot { it in hits }, "mục APP_CTX_RES_ALLOW chết")
+    }
+
+    /** Thử-phá bộ quét bằng đúng ba ca hỏng thật (trước bản vá) + bản đã vá của chúng. */
+    @Test
+    fun `bo quet Context ung dung bat du ba ca that`() {
+        val broken = mapOf(
+            "camera/Mask.kt" to "internal fun labelFor(ctx: Context, side: Side?): TextView? {\n    text = ctx.getString(res)\n}\n",
+            "camera/View.kt" to "class V(private val appCtx: Context) {\n    fun show() {\n        val ctx = appCtx\n        labelFor(ctx, side)?.let { }\n    }\n}\n",
+            "Slots.kt" to "fun e() {\n    Toast.makeText(app, app.getString(R.string.kachi_sc_place_failed, x), Toast.LENGTH_SHORT).show()\n}\n",
+            "Card.kt" to "fun allow(ctx: Context) { main.post { prompt(ctx.applicationContext) } }\n" +
+                "private fun prompt(ctx: Context?) {\n    val c = ctx ?: return\n    Toast.makeText(c, R.string.kachi_access_feature_blocked, 1).show()\n}\n",
+        )
+        assertEquals(
+            listOf(
+                "Card.kt: prompt(ctx.applicationContext)",
+                "Slots.kt: app.getString(",
+                "camera/View.kt: labelFor(ctx,",
+            ),
+            AppCtxResScan.offenders(broken),
+        )
+        val fixed = mapOf(
+            "camera/Mask.kt" to "internal fun labelFor(ctx: Context, side: Side?): TextView? {\n    text = LangHost.localized(ctx).getString(res)\n}\n",
+            "camera/View.kt" to broken.getValue("camera/View.kt"),
+            "Slots.kt" to "fun e() {\n    Toast.makeText(app, LangHost.localized(app).getString(R.string.kachi_sc_place_failed, x), 0).show()\n}\n",
+            "Card.kt" to "fun allow(ctx: Context) { main.post { prompt(ctx.applicationContext) } }\n" +
+                "private fun prompt(ctx: Context?) {\n    val c = ctx ?: return\n    Toast.makeText(c, LangHost.localized(c).getText(R.string.x), 1).show()\n}\n",
+        )
+        assertEquals(emptyList<String>(), AppCtxResScan.offenders(fixed), "đường sửa (LangHost.localized) phải đi qua")
+    }
+
+    /**
      * ═══ MỘT NGUỒN SỰ THẬT cho ngôn ngữ — **bài đảo chiều ở S4 · R3(a)**, giữ nguyên lịch sử ═══════════════════
      *
      * **Chiều CŨ (U5 · T3)**: ngôn ngữ CHUNG cả máy, chỗ lưu là `clusternav_lang` của ClusterNav, và bài này **cấm**
@@ -246,6 +292,12 @@ class LauncherLocaleContractTest {
     }
 
     // ── Hạ tầng ──────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Ca HỢP LỆ của [AppCtxResScan] — `"đường/tương đối/từ launcher: đoạn khớp"` → lý do. Rỗng = mọi chỗ tra chuỗi bằng
+     * Context ứng dụng ở tiến trình chính đã đi qua ngôn ngữ người dùng.
+     */
+    private val APP_CTX_RES_ALLOW: Map<String, String> = emptyMap()
 
     private val host by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/LangHost.kt") }
 

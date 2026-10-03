@@ -59,8 +59,12 @@ class FitGridWiringContractTest {
             assertFalse(measurePath.contains(it), "đường đo có '$it' ⇒ dựng lại/đẩy việc ra ngoài lượt đo (giật, mất cú bấm)")
         }
         assertFalse(layout.contains("onSizeChanged"), "khớp trong onSizeChanged = đổi view giữa lượt LAYOUT")
-        // Lượt cache (nhịp 1 Hz) không đo dò lại ô khi khung vốn đã quá nhỏ.
-        assertTrue(SourceRoots.body(layout, "private fun grew()").contains("if (fit?.legible != true) return false"))
+        // Lượt cache (nhịp 1 Hz) không đo dò lại theo từng nhịp. ĐỔI GHIM (soát vòng 1, P2): bản trước ghim chặn trần
+        // `if (fit?.legible != true) return false` — chặn ấy làm lưới đã rơi xuống sàn (một tên bài dài) KHÔNG BAO GIỜ
+        // phục hồi tới lần dựng lại. Nay mọi lượt đo dò lại đi qua nhịp của [FitRules.reprobe] (cắt + đọc được ⇒ nhịp
+        // kế; còn lại ⇒ thưa 30 s) — `FitRulesTest` khoá nhịp, `FitRulesWiringContractTest` khoá chỗ nối.
+        assertTrue(SourceRoots.body(layout, "private fun grew()").contains("due(v)"))
+        assertTrue(SourceRoots.body(layout, "private fun due(v: View)").contains("FitRules.reprobe("))
         // Đặt đúng vị trí :core trả (khe đều, hàng thiếu căn giữa).
         val place = SourceRoots.body(layout, "override fun onLayout(")
         assertTrue(place.contains("f.left(i)") && place.contains("f.top(i)"))

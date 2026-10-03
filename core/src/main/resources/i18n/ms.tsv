@@ -172,8 +172,8 @@ Có	Yes	Ya
 Không	No	Tidak
 Bật	On	Hidup
 Tắt	Off	Mati
-Mở	Open	Terbuka
-Đóng	Closed	Tertutup
+Mở	Open	Buka
+Đóng	Closed	Tutup
 Mức {0}	Level {0}	Tahap {0}
 Sáng	Light	Cerah
 Tối	Dark	Gelap
@@ -575,7 +575,7 @@ ST	RL	BKr
 SP	RR	BKn
 Mức 1	Level 1	Tahap 1
 Mức 2	Level 2	Tahap 2
-Đóng	Close	Tertutup
+Đóng	Close	Tutup
 Nửa	Half	Separuh
 áp suất + nhiệt độ từng bánh	pressure and temperature of each wheel	tekanan dan suhu setiap roda
 mở/đóng và mở nửa từng kính · đóng cả cụm	open/close and half-open each window · close all	buka/tutup dan buka separuh setiap tingkap · tutup semua

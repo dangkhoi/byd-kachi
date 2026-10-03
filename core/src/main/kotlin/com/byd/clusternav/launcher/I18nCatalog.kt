@@ -10,9 +10,13 @@ import java.util.concurrent.ConcurrentHashMap
  * vào mã.
  *
  * ## Khoá là CẶP `(vi, en)`, không chỉ `en`
- * Từ đồng hình: `"Open"` là LỆNH ở `ControlRegistry` (Mở) và là TRẠNG THÁI ở `TelemetryReadout` (Đang mở) — tiếng
- * Mã Lai là `Buka` ≠ `Terbuka`. Mọi chỗ gọi đều có sẵn cả hai chữ nên khoá theo cặp không tốn gì. Dòng có cột `vi`
- * RỖNG là dòng chỉ-en: đường lùi chung cho mọi cặp cùng chữ Anh mà chưa có dòng riêng.
+ * Từ đồng hình: một chữ Anh có thể vừa là LỆNH vừa là TRẠNG THÁI (tiếng Mã Lai: lệnh `Buka` ≠ trạng thái `Terbuka`).
+ * Khoá theo cặp tách được chúng **chỉ khi chữ Việt cũng khác** (`Mở cốp`/`Open boot` ≠ `Đang mở`/`Open`). ⚠ [ĐO soát
+ * 2.87] cặp `("Mở", "Open")` dùng CHUNG cho lệnh (`ControlRegistry` rèm che nắng) lẫn trạng thái
+ * (`TelemetryReadout.openShut`) — không đổi được VI/EN (R-nf1) ⇒ bản dịch của cặp dùng chung phải đúng cho CẢ HAI
+ * nghĩa (ms: `Buka`/`Tutup` — kiểu biển "BUKA/TUTUP", đọc được như lệnh lẫn trạng thái; `I18nCatalogTest` khoá).
+ * Mọi chỗ gọi đều có sẵn cả hai chữ nên khoá theo cặp không tốn gì. Dòng có cột `vi` RỖNG là dòng chỉ-en: đường lùi
+ * chung cho mọi cặp cùng chữ Anh mà chưa có dòng riêng.
  *
  * Thứ tự tra: cặp đúng → dòng chỉ-en → `null` (chỗ gọi tự lùi về **tiếng Anh**, không bao giờ về tiếng Việt).
  *

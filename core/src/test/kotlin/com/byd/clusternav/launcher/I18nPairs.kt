@@ -177,6 +177,19 @@ internal object I18nPairs {
     /** Bản dịch chỉ gồm tên Latin — xem [I18nScripts.nameOnly]. */
     fun nameOnly(value: String): Boolean = I18nScripts.nameOnly(value)
 
+    /**
+     * Chữ Anh mà bản ms ĐÚNG LÀ trùng nguyên văn (từ mượn chuẩn của tiếng Mã Lai, cùng chính tả) — khoá theo chữ Anh,
+     * kèm lý do. Ngoài danh sách này, `v == en` ở bảng ms là bản chép cột Anh chưa dịch ([audit]). Mục chết (không còn
+     * dòng ms nào trùng chữ Anh ấy) làm `I18nCoverageTest` đỏ.
+     */
+    val MS_SAME_AS_EN: Map<String, String> = mapOf(
+        "{0} item" to "\"item\" là từ mượn chuẩn của tiếng Mã Lai (DBP); số nhiều không biến hình",
+        "Neutral" to "số N của hộp số — xe bán ở Malaysia ghi \"Neutral\"; \"neutral\" cũng là từ mượn chuẩn",
+        "Manual" to "\"manual\" là từ mượn chuẩn (chế độ chỉnh tay); dịch \"Manual\" → \"Manual\"",
+        "Odometer" to "\"odometer\" là từ mượn chuẩn, cùng chính tả",
+        "Gear" to "\"gear\" là từ mượn chuẩn (hộp số) trong tiếng Mã Lai ô tô",
+    )
+
     const val HEADER = "vi\ten\tkind\twhere\tcap"
 
     fun tsv(rows: List<ExportRow>): String = buildString {
@@ -224,6 +237,9 @@ internal object I18nPairs {
             if (placeholders(v) != placeholders(p.en)) quality += "chỗ trống {n} lệch bản Anh: $at"
             if (LangCoverageFixtures.hasVietnameseMark(v)) quality += "còn dấu tiếng Việt: $at"
             if (script != null && !hasScript(v, script) && !nameOnly(v)) quality += "không có chữ $script: $at"
+            // ms là chữ Latin ⇒ phép "có chữ của tiếng đó" ở trên không áp được; bản chép nguyên cột Anh lọt mọi phép
+            // khác. Cùng luật `ban Ma Lai khong trung nguyen van ban Anh` của 5 thư mục tài nguyên (soát 2.87 · P3).
+            if (lang == Lang.MS && v == p.en && !nameOnly(v) && p.en !in MS_SAME_AS_EN) quality += "trùng nguyên văn bản Anh: $at"
             capFor(p.cap, lang)?.let { cap ->
                 val len = displayLength(v)
                 if (len > cap) quality += "dài $len > trần $cap: $at"

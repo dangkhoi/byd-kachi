@@ -132,4 +132,20 @@ class CtlSafetyPolicyTest {
             }
         }
     }
+
+    /**
+     * 2.87 · SOÁT vòng 1 · P1 — [CtlSafetyPolicy.blockedAtSpeed] là MỘT phép cho cổng thi hành lẫn Đảo-từ-trí-nhớ: chặn
+     * đúng MỞ (`arg > 0`) nút thuộc REQUIRES_STATIONARY khi đang chạy; `null` ⇒ không chặn (fail-open); vận tốc đọc LƯỜI.
+     */
+    @Test fun `blockedAtSpeed chan dung MO cop luc chay, doc van toc luoi`() {
+        var reads = 0
+        val kmh = { v: Int? -> { reads++; v } }
+        assertTrue(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(30)))
+        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(0)))
+        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", 1, kmh(null)), "không đọc được ⇒ cho mở (fail-open)")
+        assertTrue(reads == 3)
+        assertFalse(CtlSafetyPolicy.blockedAtSpeed("trunk", CtlSafetyPolicy.STATIONARY_SAFE_ARG, kmh(120)), "ĐÓNG luôn được")
+        assertFalse(CtlSafetyPolicy.blockedAtSpeed("win_lf", 1, kmh(120)), "kính không bị gate theo vận tốc")
+        assertTrue(reads == 3, "ĐÓNG / nút ngoài tập không tốn lượt đọc vận tốc nào")
+    }
 }

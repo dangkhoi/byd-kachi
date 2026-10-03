@@ -379,6 +379,35 @@ if [ "$ONLY" = "all" ] || [ "$ONLY" = "wav" ]; then ensure_model && MODEL_OK=1; 
 PROFILE="$(state_json | python3 "$HERE/voice_e2e_json.py" pick_profile)"
 note "hồ sơ dùng cho ca đổi hồ sơ: ${PROFILE:-<không có>}"
 
+# ═══ Tiếng GIỌNG NÓI phải là tiếng Việt — kiểm TRƯỚC khi so preview (soát 2.87 · voice P3) ══════════════════
+#
+# Cột 5 của voice-cases.tsv là chuỗi preview TIẾNG VIỆT, còn `previewOf` (KachiTestBridge) dựng preview theo tiếng
+# GIỌNG NÓI (`Strings.current.voice`: English ⇒ English, mọi tiếng khác — kể cả 简体中文/ไทย/Melayu — ⇒ tiếng Việt;
+# spec kachi-i18n-zh-th-ms R6). Kachi để English, hoặc "Theo xe" (AUTO) trên máy ảo locale en-US mặc định ⇒ MỌI ca
+# FAIL "preview thiếu …" hàng loạt, không một dòng nào nói gốc là ngôn ngữ. Cầu KHÔNG có lệnh đổi ngôn ngữ (thêm là
+# quyết định của owner) và harness KHÔNG tự ghi prefs ngôn ngữ ⇒ KIỂM rồi DỪNG với lời nhắc đúng địa chỉ.
+# Ngôn ngữ theo HỒ SƠ ⇒ kiểm lại sau mỗi ca đổi hồ sơ (`profile:*`) — hồ sơ kia có thể đang dùng English.
+require_voice_vi() {
+  local why=$1 json vl mode loc
+  json="$(state_json)"
+  vl="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.voice_lang)"
+  mode="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.lang)"
+  if [ -z "$vl" ]; then
+    # APK cũ chưa phơi `look.voice_lang` ⇒ suy như LangMode.resolve: AUTO = locale máy vi* ⇒ VI, còn lại ⇒ EN.
+    case "$mode" in
+      EN) vl="en";;
+      AUTO)
+        loc="$(adbs shell getprop persist.sys.locale | tr -d '\r')"
+        [ -n "$loc" ] || loc="$(adbs shell getprop ro.product.locale | tr -d '\r')"
+        case "$loc" in vi*) vl="vi";; *) vl="en";; esac;;
+      VI|ZH|TH|MS) vl="vi";;
+      *) die "$why: không đọc được ngôn ngữ của Kachi (look.lang='${mode}') — xem reply: $(printf '%s' "$json" | head -c 300)";;
+    esac
+  fi
+  [ "$vl" = "vi" ] || die "$why: Kachi đang nói tiếng '$vl' (look.lang=${mode:-?}) nhưng voice-cases.tsv mong preview TIẾNG VIỆT. Đặt Cài đặt › Hiển thị › Ngôn ngữ = Tiếng Việt (hoặc 简体中文/ไทย/Melayu — giọng nói vẫn là tiếng Việt) cho hồ sơ đang dùng rồi chạy lại."
+  note "tiếng giọng nói: $vl (look.lang=${mode:-?}) — $why"
+}
+
 # ── 3. T1 ───────────────────────────────────────────────────────────────────────────────────────
 run_t1() {
   : > "$T1_TSV"
@@ -413,6 +442,8 @@ run_t1() {
     esac
     # Sau mỗi ca mở app: đưa Kachi lên lại để ca sau còn móc (hooks sống theo Activity, không theo tiêu điểm).
     case "$side" in resumed:*) start_home; LAST_ENDED_HOME=1;; *) LAST_ENDED_HOME=0;; esac
+    # Ngôn ngữ theo hồ sơ ⇒ ca vừa đổi hồ sơ có thể đã đổi tiếng của MỌI ca sau (xem `require_voice_vi`).
+    case "$side" in profile:*) require_voice_vi "sau ca $id (đổi hồ sơ)";; esac
     # Dọn NGAY sau ca: một mã còn bật sẽ làm ca kế tiếp (không khai `prefs`) bị hỏi lại ⇒ FAIL sai địa chỉ.
     reset_case_prefs "${prefs:--}"
     # ⚠ Cột `prefs` đi SAU `json` (cột thứ 10): `voice_e2e_json.py report` zip đúng 9 tên đầu, nên thêm ở
@@ -441,6 +472,7 @@ run_t2() {
   done 3< "$WAVDIR/cases.tsv"
 }
 
+require_voice_vi "trước lượt chạy"
 case "$ONLY" in
   say) note "T1 (say)"; run_t1;;
   # KHÔNG dùng `a && b || c`: run_t2 hụt (thiếu WAVDIR, push lỗi…) cũng rơi vào nhánh `||` và

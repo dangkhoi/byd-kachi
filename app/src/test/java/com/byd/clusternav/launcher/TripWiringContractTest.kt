@@ -131,16 +131,24 @@ class TripWiringContractTest {
         val fn = SourceRoots.body(music, "fun run(music: TripMusic, installed: Set<String>, view: TripHub.HomeView): Done {")
         order(fn, "bridge.sessions()", "TripMusicPlan.gate(", "TripOutcome.ofGate(gate)", "ports.behind(pkg)",
             "awaitSession(pkg)", "TripMusicPlan.recheck(pkg, bridge.sessions())", "TripMusicPlan.play(url, session)",
-            "bridge.playFromUri(pkg, p.url)", "ports.view(pkg, p.url, slotVd)")
+            "bridge.playFromUri(pkg, p.url)", "ports.view(pkg, p.url, inSlot)", "TripOutcome.ofView(inSlot, o?.result)")
         assertTrue(fn.contains("inSlot -> \"in-slot\""), "app đã ở ô ⇒ ô tự mở nó, KHÔNG lệnh thêm (R3.3)")
         // L4 · D1(e): app hệ thống ngoài ô ⇒ mã SYSTEM_APP, TRƯỚC mọi lượt chạy ngầm (R0.6 giữ nguyên).
         order(fn, "inSlot -> \"in-slot\"", "ports.isSystem(pkg) -> return done(id, TripStepCode.SYSTEM_APP", "ports.behind(pkg)")
         // Lỗi E2E (6) [ĐO `c6b-music-slot`]: phiên của app TRONG Ô là phiên Kachi vừa tạo ⇒ không được đi nhánh resume-existing.
         order(fn, "TripMusicPlan.gate(", "TripMusicPlan.preexisting(pkg, before, inSlot = inSlot)", "resume-existing", "ports.behind(pkg)")
         assertFalse(fn.contains("before.orEmpty().any"), "quyết 'phiên có trước' chỉ ở hàm thuần `TripMusicPlan.preexisting`")
-        val view = SourceRoots.body(start, "override fun view(pkg: String, url: String, slotVd: Int?): String {")
-        order(view, "TripMusicPlan.viewCmd(vd, url, pkg)", "host.behindChain(", "viewInSlot(kit, pkg, slotVd, url)",
-            "BehindHomePlan.stageFor(stages, pkg)", "kit.seq.startBehindHidden(pkg, kit.hidden, view = k4)", "kit.seq.startBehind(pkg, st, view = k4)")
+        // ĐỔI PIN có lý do (review 287 [P2]): bản cũ nhận `slotVd` từ ảnh chụp ô ĐẦU chuyến — ô của app nhạc chưa mở xong lúc đó ⇒
+        // `null` ⇒ dàn qua `stageFor` ⇒ K4-VIEW kéo task của app khỏi ô của nó. Nay cổng nhận `inSlot`, đọc ô MỚI, quyết bằng
+        // `TripMusicPlan.viewRoute` (`:core`, có test) và ô chưa sẵn ⇒ trả `null` TRƯỚC mọi lệnh / chuỗi.
+        val view = SourceRoots.body(start, "override fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome? {")
+        order(view, "host.view()", "TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd)",
+            "if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null", "TripMusicPlan.viewCmd(vd, url, pkg)", "host.behindChain(",
+            "if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url)", "BehindHomePlan.stageFor(stages, pkg)",
+            "kit.seq.startBehindHidden(pkg, kit.hidden, view = k4)", "kit.seq.startBehind(pkg, st, view = k4)")
+        assertFalse(fn.contains("view.stages"), "bước nhạc không được dùng ảnh chụp ô đầu chuyến cho K4-VIEW")
+        // NOT_IN_SLOT = 0 lệnh ⇒ mã 0-lệnh (`X_NOT_STAGED` ⇒ `SLOT_NOT_READY`), không còn KEPT_UNDER (OK ⇒ "đã gửi").
+        assertTrue(start.contains("TripMusicView.Result.NOT_IN_SLOT -> BehindHomeSequence.Result.X_NOT_STAGED"))
     }
 
     @Test
@@ -192,6 +200,9 @@ class TripWiringContractTest {
             "TripMusicView(" to "TripStart.kt",
             "TripMusicPlan.viewCmd(" to "TripStart.kt",
             "BehindHomePlan.stageFor(" to "TripStart.kt",
+            "TripMusicPlan.viewRoute(" to "TripStart.kt",
+            "TripOutcome.ofView(" to "TripMusicRun.kt",
+            "HiddenStageReclaim.run(" to "BehindHomeRunner.kt",
             "InstalledApps.isSystem(" to "SettingsSectionsTrip.kt",
             "bridge.sessions()" to "TripMusicRun.kt",
             "bridge.playPackage(" to "TripMusicRun.kt",

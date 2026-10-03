@@ -45,10 +45,14 @@ class VoiceSpeakWiringContractTest {
         // xoá `AndroidTtsSpeaker.kt`, bài trên vẫn xanh trong khi tính năng đã chết.
         val speaker = code("src/main/java/com/byd/clusternav/launcher/voice/AndroidTtsSpeaker.kt")
         assertTrue(speaker.contains("isLanguageAvailable"), "phải hỏi nền tảng có giọng vi-VN không, không đoán")
+        // [soát 2.87 · voice P2] Lượt hỏi/đặt tiếng tách sang `TtsVoiceLang` (theo tiếng TỪNG câu) — ngưỡng đi theo nó;
+        // `AndroidTtsSpeaker` quyết "dùng được" bằng `usable` của chính lượt đó, không tự so một con số.
+        val lang = code("src/main/java/com/byd/clusternav/launcher/voice/TtsVoiceLang.kt")
         assertTrue(
-            speaker.contains("VoiceSpeakerSelector.LANG_AVAILABLE"),
+            lang.contains("VoiceSpeakerSelector.LANG_AVAILABLE"),
             "ngưỡng phải đọc từ luật thuần (kiểm off-car), không viết một con số trần ở tầng Android",
         )
+        assertTrue(speaker.contains("voice.sync(") && speaker.contains("r.usable"), "máy đọc dùng đúng ngưỡng của lượt theo tiếng")
     }
 
     /**

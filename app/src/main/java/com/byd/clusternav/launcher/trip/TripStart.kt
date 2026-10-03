@@ -260,19 +260,22 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
     private fun musicPorts(host: TripHub.Host) = object : TripMusicRun.Ports {
         override fun behind(pkg: String) = behind(host, pkg)
 
-        override fun view(pkg: String, url: String, slotVd: Int?): String {
+        override fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome? {
+            // Ảnh chụp ô MỚI lúc giao link (review 287 [P2]): ảnh đầu chuyến có thể chụp TRƯỚC khi ô của app nhạc mở xong ⇒
+            // app ở ô KHÔNG BAO GIỜ dàn qua chỗ khác (kéo task khỏi ô của nó); ô chưa có màn ảo ⇒ 0 lệnh.
             val stages = TripHub.onMain(VIEW_TIMEOUT_MS) { host.view() }?.stages.orEmpty()
+            val route = TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd)
+            if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null
             val k4: (Int) -> String = { vd -> TripMusicPlan.viewCmd(vd, url, pkg) }
-            val out = await(pkg) { done ->
+            return await(pkg) { done ->
                 host.behindChain("view X=$pkg", { kit ->
-                    if (slotVd != null) viewInSlot(kit, pkg, slotVd, url)
+                    if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url)
                     else BehindHomePlan.stageFor(stages, pkg).let { st ->
                         if (st.hidden) kit.seq.startBehindHidden(pkg, kit.hidden, view = k4) else kit.seq.startBehind(pkg, st, view = k4)
                     }
                 }, done)
                 true
             }
-            return out?.result?.name ?: "not-accepted"
         }
 
         override fun facts(pkg: String): String {
@@ -292,7 +295,7 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
         val r = when (o.result) {
             TripMusicView.Result.STAYED, TripMusicView.Result.RETURNED -> BehindHomeSequence.Result.MOVED   // app ở ô: không phải lùi
             TripMusicView.Result.BEHIND -> BehindHomeSequence.Result.X_FRONT_HOME_RESTORED
-            TripMusicView.Result.NOT_IN_SLOT -> BehindHomeSequence.Result.KEPT_UNDER
+            TripMusicView.Result.NOT_IN_SLOT -> BehindHomeSequence.Result.X_NOT_STAGED   // 0 lệnh ⇒ không "đã gửi" (TripOutcome.ofView)
         }
         return BehindHomeSequence.Outcome(r, o.line)
     }

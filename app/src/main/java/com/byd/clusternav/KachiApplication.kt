@@ -6,6 +6,7 @@ import android.util.Log
 import com.byd.clusternav.launcher.KachiLog
 import com.byd.clusternav.system.KachiCrashHandler
 import com.byd.clusternav.system.StrictModeGate
+import com.byd.clusternav.launcher.voice.ControlSentRelay
 import com.byd.clusternav.launcher.voice.PiperTtsService
 import com.byd.clusternav.launcher.voice.VoiceEngine
 import com.byd.clusternav.launcher.voice.VoiceVad
@@ -53,6 +54,10 @@ class KachiApplication : Application() {
         // B1.1 (1.70) — hâm sẵn Silero VAD (0,64 MB ONNX) để bỏ phần nạp ONNX khỏi đường "bấm → mic mở"
         // ([ĐO xe 2026-09-17] 1,5 s lần đầu). Giữ MỘT instance sống, mỗi lượt chỉ reset — xem KDoc VoiceVad.
         VoiceVad.preload(this)
+        // 2.87 · SOÁT vòng 1 · P2 — nhận lượt ghi bảng "lệnh cuối" từ phiên giọng nói `:wake` vào bảng ô + phím của tiến
+        // trình NÀY (chỉ tiến trình chính — sau cổng nền ở trên). Chỉ đăng ký receiver, không I/O, không phụ thuộc gì ở
+        // trên/dưới; đứng TRƯỚC `EarlyShellChannel.start` vì dòng đó được chốt là lời gọi cuối (ReadyAtHomeWiringContractTest).
+        ControlSentRelay.receiveInMain(this)
         // READY-AT-HOME R2.1 — nối kênh shell NGAY khi tiến trình bật (cả lượt BYD dựng lại Kachi lúc màn tắt), CHỈ khi
         // xe đã duyệt khoá này (dấu bền còn tươi); không thì để F4 hỏi đúng lúc. Đường MỚI ⇒ dòng CUỐI (CLAUDE.md §6).
         EarlyShellChannel.start(this)

@@ -25,14 +25,23 @@ class KeyCtlPlanTest {
     /** Bảng lệnh cuối RIÊNG cho mỗi bài (không chạm `ControlLastSent.shared` của cả JVM kiểm). */
     private val mem = ControlLastSent()
 
-    private fun plan(spec: String, count: Int = 1, state: Int? = null, memory: ControlLastSent = mem): Outcome {
+    /** Số lượt đọc vận tốc của lần [plan] gần nhất (bài P1 khoá: chỉ Đảo/Kế tiếp TỪ TRÍ NHỚ ra MỞ cốp mới tốn lượt này). */
+    private var speedReads = 0
+
+    private fun plan(spec: String, count: Int = 1, state: Int? = null, memory: ControlLastSent = mem, speed: Int? = null): Outcome {
         var reads = 0
+        speedReads = 0
         val d = def(t(spec).controlId)
-        val o = KeyCtlPlan.of(d, t(spec), count, memory) { reads++; state }
+        val o = KeyCtlPlan.of(d, t(spec), count, memory, speedKmh = { speedReads++; speed }) { reads++; state }
         val needsRead = (t(spec).action == KeyCtlAction.FLIP || t(spec).action == KeyCtlAction.NEXT) && d.readKey.isNotBlank()
         assertEquals(if (needsRead) 1 else 0, reads, "$spec: chỉ Đảo/Kế tiếp của nút CÓ readKey được tốn một lượt đọc HAL")
+        assertTrue(speedReads <= 1, "$spec: tối đa MỘT lượt đọc vận tốc")
+        if (!CtlSafetyPolicy.requiresStationary(d.id)) assertEquals(0, speedReads, "$spec: nút không bị cổng tốc độ ⇒ không đọc vận tốc")
         return o
     }
+
+    /** Không đọc vận tốc (bài không nói về cổng tốc độ) — `null` = "không biết" ⇒ cổng không chặn. */
+    private val noSpeed: () -> Int? = { null }
     private fun run(id: String, value: Int? = null, relative: Int = 0, basis: KeyCtlPlan.Basis = KeyCtlPlan.Basis.DIRECT) =
         Outcome.Run(VoiceIntent.Control(id, value, relative), basis)
     private fun byCar(id: String, value: Int) = run(id, value, basis = KeyCtlPlan.Basis.CAR)
@@ -110,21 +119,61 @@ class KeyCtlPlanTest {
             val m = ControlLastSent()
             val start = m.index(d.id)
             val f = KeyCtlTarget(d.id, KeyCtlAction.FLIP)
-            val first = KeyCtlPlan.of(d, f, memory = m) { null }
+            val first = KeyCtlPlan.of(d, f, memory = m, speedKmh = noSpeed) { null }
             exec(first, memory = m)
             assertEquals(if (start > 0) 0 else 1, m.index(d.id), "${d.id}: Đảo lần một phải đổi chiều")
-            exec(KeyCtlPlan.of(d, f, memory = m) { null }, memory = m)
+            exec(KeyCtlPlan.of(d, f, memory = m, speedKmh = noSpeed) { null }, memory = m)
             assertEquals(start, m.index(d.id), "${d.id}: Đảo hai lần phải về như cũ")
         }
     }
 
-    /** Lệnh hỏng / bị cổng an toàn chặn ⇒ bảng KHÔNG đổi ⇒ lần Đảo kế vẫn ra cùng hành động (không "nhảy" chiều). */
+    /**
+     * Lệnh hỏng (xe từ chối) ⇒ bảng KHÔNG đổi ⇒ lần Đảo kế vẫn ra cùng hành động (không "nhảy" chiều).
+     * 2.87 · SOÁT vòng 1 · P1 (đổi khẳng định cũ *"bị cổng an toàn chặn ⇒ cùng hành động"*): đó chỉ còn đúng khi xe ĐỨNG
+     * YÊN hoặc không biết vận tốc — xe đang chạy thì Đảo từ trí nhớ KHÔNG ra MỞ cốp nữa (bài kế).
+     */
     @Test
     fun `lenh hong khong doi bang nen dao lan sau ra cung hanh dong`() {
-        val first = plan("ctl:trunk:flip")
-        assertEquals(byMem("trunk", 1), first, "đã giải ra MỞ trước khi thi hành ⇒ cổng tốc độ của MỞ cốp áp được")
+        val first = plan("ctl:trunk:flip", speed = 0)
+        assertEquals(byMem("trunk", 1), first, "đứng yên ⇒ giải ra MỞ; cổng thi hành vẫn hỏi lại vận tốc TƯƠI")
         exec(first, ok = false)
-        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip"))
+        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = 0))
+        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = null), "không biết vận tốc ⇒ không chặn (fail-open, như cổng)")
+    }
+
+    /**
+     * ═══ SOÁT vòng 1 · P1 — trí nhớ CŨ + xe chạy: Đảo cốp KHÔNG được kẹt ở MỞ-bị-chặn ═════════════════════════════
+     * Cốp mở bằng chìa/công tắc/app BYD (bảng vẫn "đóng") ⇒ trước bản này: mọi lần Đảo lúc chạy ⇒ MỞ ⇒ cổng chặn ⇒ bảng
+     * không đổi ⇒ lặp mãi, phím không bao giờ ĐÓNG được cốp tới khi xe dừng. Nay ⇒ hướng luôn được phép (ĐÓNG).
+     */
+    @Test
+    fun `dao tu tri nho ra mo cop luc xe chay thi lui ve dong`() {
+        val safe = run("trunk", CtlSafetyPolicy.STATIONARY_SAFE_ARG, basis = KeyCtlPlan.Basis.MEMORY_SAFE)
+        assertEquals(safe, plan("ctl:trunk:flip", speed = 30), "trí nhớ 'đóng' + 30 km/h ⇒ ĐÓNG, không MỞ-bị-chặn")
+        assertEquals(1, speedReads, "đọc vận tốc ĐÚNG một lần")
+        exec(safe)
+        assertEquals(0, mem.index("trunk"), "đóng thành công ⇒ bảng ghi 'đóng' (chỉ ghi khi thành công)")
+        assertEquals(byMem("trunk", 1), plan("ctl:trunk:flip", speed = 0), "xe dừng ⇒ Đảo lại MỞ như thường")
+        mem.record("trunk", 1)
+        assertEquals(byMem("trunk", 0), plan("ctl:trunk:flip", speed = 30), "trí nhớ 'mở' ⇒ ĐÓNG — không cần đổi gì")
+        assertEquals(0, speedReads, "lệnh ĐÓNG không bao giờ bị chặn ⇒ không tốn lượt đọc vận tốc")
+    }
+
+    /** Luật đi theo [CtlSafetyPolicy] + NGUỒN trạng thái, không theo tên nút: số đọc từ XE không đổi; Kế tiếp cũng áp. */
+    @Test
+    fun `lui ve huong an toan chi ap cho tri nho, khong ap cho so doc tu xe`() {
+        // Dựng tay (registry hôm nay: cốp không readKey) — id thuộc REQUIRES_STATIONARY nhưng ĐỌC ĐƯỢC xe.
+        val readable = ControlDef("trunk", "Cốp", "ic", ControlKind.COVER, readKey = "x")
+        val flip = KeyCtlTarget("trunk", KeyCtlAction.FLIP)
+        assertEquals(byCar("trunk", 1), KeyCtlPlan.of(readable, flip, memory = mem, speedKmh = { 30 }) { 0 },
+            "xe NÓI cốp đóng ⇒ MỞ bị cổng chặn là đúng sự thật — không đổi thành ĐÓNG")
+        val sel = ControlDef("trunk", "Cốp", "ic", ControlKind.SELECT, args = listOf("A", "B", "C"))
+        val next = KeyCtlTarget("trunk", KeyCtlAction.NEXT)
+        assertEquals(run("trunk", 0, basis = KeyCtlPlan.Basis.MEMORY_SAFE), KeyCtlPlan.of(sel, next, memory = mem, speedKmh = { 30 }) { null },
+            "Kế tiếp từ trí nhớ ra mức bị chặn ⇒ mức luôn được phép")
+        assertEquals(byMem("trunk", 1), KeyCtlPlan.of(sel, next, memory = mem, speedKmh = { 0 }) { null })
+        // Nút KHÔNG thuộc tập cổng tốc độ: chạy 90 km/h vẫn Đảo theo trí nhớ, và không hỏi vận tốc (bài `plan` đếm).
+        assertEquals(byMem("win_lf", 1), plan("ctl:win_lf:flip", speed = 90))
     }
 
     @Test
@@ -143,13 +192,13 @@ class KeyCtlPlanTest {
         val d = ControlDef("zz_sel", "Chọn", "ic", ControlKind.SELECT, args = listOf("A", "B", "C"))
         val next = KeyCtlTarget("zz_sel", KeyCtlAction.NEXT)
         var reads = 0
-        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, memory = mem) { reads++; 2 })
+        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, memory = mem, speedKmh = noSpeed) { reads++; 2 })
         assertEquals(0, reads, "không readKey ⇒ không hỏi HAL")
         mem.record("zz_sel", 2)
-        assertEquals(byMem("zz_sel", 0), KeyCtlPlan.of(d, next, memory = mem) { null })
-        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, count = 2, memory = mem) { null })
+        assertEquals(byMem("zz_sel", 0), KeyCtlPlan.of(d, next, memory = mem, speedKmh = noSpeed) { null })
+        assertEquals(byMem("zz_sel", 1), KeyCtlPlan.of(d, next, count = 2, memory = mem, speedKmh = noSpeed) { null })
         val one = ControlDef("zz_one", "Một", "ic", ControlKind.SELECT, args = listOf("A"))
-        assertEquals(Outcome.Invalid, KeyCtlPlan.of(one, KeyCtlTarget("zz_one", KeyCtlAction.NEXT), memory = mem) { null })
+        assertEquals(Outcome.Invalid, KeyCtlPlan.of(one, KeyCtlTarget("zz_one", KeyCtlAction.NEXT), memory = mem, speedKmh = noSpeed) { null })
     }
 
     @Test

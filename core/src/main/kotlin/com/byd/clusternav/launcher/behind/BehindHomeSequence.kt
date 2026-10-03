@@ -2,8 +2,8 @@ package com.byd.clusternav.launcher.behind
 
 import com.byd.clusternav.launcher.FreeformLaunch
 import com.byd.clusternav.launcher.ShellAppLauncher
+import com.byd.clusternav.launcher.StackReads
 import com.byd.clusternav.modules.clustercast.StackEntry
-import com.byd.clusternav.modules.clustercast.StackParse
 
 /**
  * ═══ BEHIND-HOME — CHUỖI thi hành (thuần, chặn, `:core`) ═══════════════════════════════════════════════════════════
@@ -42,6 +42,12 @@ class BehindHomeSequence(
 
         /** Nhả màn ảo [vd] (gỡ đăng ký + `release`). [startBehindHidden] chỉ gọi khi bản đọc thấy màn ảo đã TRỐNG. */
         fun release(vd: Int)
+
+        /** Màn ảo ẩn của các lượt TRƯỚC còn sống (bị GIỮ: rào nhả / đọc hỏng / chuỗi ném giữa chừng) — [HiddenStageReclaim]. */
+        fun kept(): Collection<Int> = emptyList()
+
+        /** Nhả màn ảo [vd] của một lượt trước — [HiddenStageReclaim] chỉ gọi khi bản đọc ĐỌC ĐƯỢC thấy không còn app người dùng. */
+        fun reclaim(vd: Int) {}
     }
 
     /**
@@ -109,6 +115,9 @@ class BehindHomeSequence(
 
         /** L4 · D1 — bên CHỜ (chuyến lên xe) không nhận được kết quả trong hạn; chuỗi có thể vẫn đang chạy ⇒ "chưa rõ", không đoán. */
         TIMEOUT,
+
+        /** Review 287 [P1] — đã ra lệnh rồi KHÔNG đọc lại được `am stack list` (kênh đứt giữa chuỗi): chưa rõ X ở đâu ⇒ GIỮ màn ảo. */
+        UNREAD,
     }
 
     /** Kết quả một lượt + một dòng log `KachiBehind` đọc được trên màn Chẩn đoán. */
@@ -119,7 +128,11 @@ class BehindHomeSequence(
         val outOfStage: Boolean get() = moved || result == Result.X_FRONT_HOME_RESTORED
     }
 
-    private fun read(): List<StackEntry> = StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault(""))
+    /** Một bản đọc; `null` = ĐỌC HỎNG (ném / parse rỗng — display 0 luôn có stack màn nhà) — KHÔNG phải "trống" ([StackReads.read]). */
+    private fun readOrNull(): List<StackEntry>? = StackReads.read(sh).entries
+
+    /** Bản đọc cho các phép mà rỗng đã là "không làm" ([BehindHomePlan.checkEvict] `NO_READ`, [BehindHomePlan.fellFront] `false`…). */
+    private fun read(): List<StackEntry> = readOrNull().orEmpty()
 
     /**
      * R0.1 — đẩy app A (đang ở màn ảo [vd], DƯỚI app B vừa mở vào cùng màn ảo) ra sau màn nhà.
@@ -190,12 +203,14 @@ class BehindHomeSequence(
      * `:1120-1160`: cờ 256 kết thúc activity thay vì đẩy lên display 0 — nhưng ROM BYD [CHƯA BIẾT] ⇒ không dựa vào nó cho app
      * người dùng; lớp che của chính Kachi thì được — nó tự gỡ nếu bị đẩy sang display khác). X không ra được ⇒ K7
      * (`SlotReturn.guardedDetachCmd` — rào màn nhà đang hiện + camera) đưa X ra display 0, ghi dấu, K12 ⇒ X sống sau màn nhà,
-     * màn ảo trống rồi mới nhả. K7 cũng không chạy được ⇒ GIỮ màn ảo (chết theo tiến trình, cờ 256), một dòng log.
+     * màn ảo trống rồi mới nhả. K7 cũng không chạy được ⇒ GIỮ màn ảo, một dòng log; lượt sau thu hồi khi đọc thấy nó trống
+     * ([HiddenStageReclaim]). Review 287 [P1]: đọc HỎNG ≠ trống — trước lệnh ⇒ 0 lệnh (`NO_CHANNEL`); sau lệnh ⇒ GIỮ, [Result.UNREAD].
      */
     fun startBehindHidden(x: String, port: HiddenStagePort, xComp: String? = null, view: ((Int) -> String)? = null): Outcome {
         val tag = "behind-hidden X=$x${if (view != null) " VIEW" else ""}"
         refuse(tag, x)?.let { return it }
-        val before = read()
+        // Không đọc được ⇒ không biết X có đang ở ô / cụm không (K4 lúc này kéo X khỏi chỗ người dùng) ⇒ 0 lệnh.
+        val before = readOrNull() ?: return Outcome(Result.NO_CHANNEL, "$tag → không đọc được am stack list, 0 lệnh")
         if (view == null && isRunning(before, x)) {
             return Outcome(Result.ALREADY_RUNNING, "$tag → đã có task + tiến trình (am stack list + pidof), 0 lệnh đổi cửa sổ")
         }
@@ -223,12 +238,14 @@ class BehindHomeSequence(
         // Rào nhả chỉ canh task của APP NGƯỜI DÙNG: lớp che của chính Kachi gỡ chậm (`finishAndRemoveTask` chờ activity dừng
         // hẳn — [ĐO máy ảo `e6-hidden` lượt 1]: 4,9 s) ⇒ còn trong bản đọc vẫn nhả, cờ 256 kết thúc nó; nó tự gỡ nếu bị hệ đẩy
         // sang display khác (`StageCoverActivity`). Giữ lại vì nó = màn ảo sống tới khi tiến trình chết, vẽ vô ích.
-        val foreign = v.left.filter { it.pkg != selfPkg }
-        val gone = if (foreign.isEmpty()) {
-            runCatching { port.release(vd) }
-            if (v.left.isEmpty()) "nhả" else "nhả (lớp che chưa gỡ xong)"
-        } else "GIỮ (còn ${foreign.joinToString { it.comp }})"
-        if (first != null) return first.copy(line = "${first.line} · vd=$vd $gone")
+        val foreign = v.left?.filter { it.pkg != selfPkg }
+        val gone = when {
+            foreign == null -> "GIỮ (không đọc được am stack list)"     // [P1]: đọc hỏng ≠ trống — không biết còn app người dùng không
+            foreign.isEmpty() -> { runCatching { port.release(vd) }; if (v.left.isNullOrEmpty()) "nhả" else "nhả (lớp che chưa gỡ xong)" }
+            else -> "GIỮ (còn ${foreign.joinToString { it.comp }})"
+        }
+        if (first != null && (v.left != null || first.outOfStage)) return first.copy(line = "${first.line} · vd=$vd $gone")
+        if (v.left == null) return Outcome(Result.UNREAD, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng ⇒ chưa rõ X ở đâu · vd=$vd $gone")
         if (v.rescued) {
             return Outcome(Result.X_FRONT_HOME_RESTORED, "$tag chờ=${waited}ms · ${out.line} · X kẹt màn ảo ẩn → K7 + dấu + K12 · vd=$vd $gone")
         }
@@ -290,8 +307,8 @@ class BehindHomeSequence(
         return res
     }
 
-    /** Kết quả dọn màn ảo ẩn: task còn lại trên đó + X có phải nhờ K7 mới ra được không (màn nhà bị che thoáng qua). */
-    private data class Vacated(val left: List<StackEntry>, val rescued: Boolean)
+    /** Kết quả dọn màn ảo ẩn: task còn lại ([left] `null` = ĐỌC HỎNG — chưa biết, cấm nhả) + X có nhờ K7 mới ra không. */
+    private data class Vacated(val left: List<StackEntry>?, val rescued: Boolean)
 
     /** Hai từ chối chung trước MỌI lệnh ([startBehind] · [startBehindHidden]): chính Kachi / app hệ thống (R0.6) / tên gói lạ. */
     private fun refuse(tag: String, x: String): Outcome? = when {
@@ -339,24 +356,23 @@ class BehindHomeSequence(
      * rào đưa X ra display 0 + dấu + K12. Trả các task CÒN trên màn ảo sau cùng (rỗng ⇒ nhả được).
      */
     private fun vacate(vd: Int, x: String): Vacated {
-        val left = settle(vd)
+        val left = settle(vd) ?: return Vacated(null, rescued = false)
         val stuck = left.firstOrNull { it.pkg == x && BehindHomePlan.safeComponent(it.comp) }
         if (stuck == null || homeComps.isEmpty()) return Vacated(left, rescued = false)
         sh(SlotReturn.guardedDetachCmd(cameraSig, homeComps.toList(), stuck.comp))
-        val after = settle(vd)
+        // [P1] Đọc HỎNG sau K7 ≠ "X đã rời": không dấu, không K12 (K7 có thể đã bị rào chặn vì app khác ở trước — K12 lúc đó
+        // kéo người dùng khỏi app họ đang dùng), không nhả.
+        val after = settle(vd) ?: return Vacated(null, rescued = false)
         if (after.any { it.pkg == x }) return Vacated(after, rescued = false)      // rào K7 chặn (camera / màn nhà không hiện)
         markMain(read(), setOf(x))
         runCatching { sh(goHomeCmd) }
         return Vacated(after, rescued = true)
     }
 
-    /** Đọc lại tối đa [SETTLE_READS] lượt cho tới khi màn ảo [vd] không còn task của chính Kachi (lớp che vừa gỡ). */
-    private fun settle(vd: Int): List<StackEntry> {
-        var onVd = read().filter { it.displayId == vd }
-        var i = 0
-        while (onVd.any { it.pkg == selfPkg } && i < SETTLE_READS) { sleep(X_TOP_STEP_MS); onVd = read().filter { it.displayId == vd }; i++ }
-        return onVd
-    }
+    /** Đọc lại (≤ 1 + [SETTLE_READS] lượt) tới khi màn ảo [vd] hết task của chính Kachi (lớp che vừa gỡ). `null` = đọc HỎNG. */
+    private fun settle(vd: Int): List<StackEntry>? =
+        StackReads.settle(sh, sleep, SETTLE_READS + 1, X_TOP_STEP_MS) { e -> e.none { it.displayId == vd && it.pkg == selfPkg } }
+            .read.entries?.filter { it.displayId == vd }
 
     /**
      * Đuôi chung của hai đường dàn dựng. Đọc lại cả khi `MOVED` (review lượt 3 [P3]): `verifyMoved` chỉ so đỉnh display 0

@@ -9,14 +9,17 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.media.ImageReader
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
+import android.view.WindowManager
 import com.byd.clusternav.launcher.SlotVdOwner
 import com.byd.clusternav.launcher.VdLease
 import com.byd.clusternav.system.WindowCommandDispatcher
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -35,6 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger
  *    chủ màn ảo riêng tư (A10 r47 `ActivityStackSupervisor.isCallerAllowedToLaunchOnDisplay` `:1067-1130`: activity cùng
  *    uid chủ + chủ gọi ⇒ cho). Nó đóng vai app C của ô: X không được ở ĐỈNH màn ảo nguồn lúc `move-task` (R0.2).
  *  - [uncover] / [release]: gỡ lớp che, nhả màn ảo — `:core` chỉ gọi [release] khi bản đọc thấy màn ảo đã TRỐNG.
+ *  - [kept] / [reclaim] (review 287 [P3]): màn ảo bị GIỮ của lượt trước nằm trong sổ [LIVE] cả tiến trình; `HiddenStageReclaim`
+ *    (đầu mỗi lượt `kachi-behind`) nhả cái nào bản đọc thấy đã trống app người dùng — trước đây chúng sống tới khi Kachi chết.
  *  - L8 — [cover] / [uncover] cũng là [BehindHomeSequence.CoverPort] của nút *chạy nền* đầu ô
  *    (`BehindHomeSequence.evictCovered`): lớp che lên màn ảo CỦA Ô (cũng do Kachi tạo, cùng cờ 8|256, cùng luật
  *    `isCallerAllowedToLaunchOnDisplay`). Lượt đó KHÔNG gọi [create] / [release] — màn ảo của ô là của host ô.
@@ -64,6 +69,13 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
         vdId?.let { return it }
         return try {
             val dm = app.getSystemService(DisplayManager::class.java) ?: return null
+            // Review 287 [P3] — GIỮ `getRealMetrics` (deprecated API 31) có chủ ý: bản thay mà review gợi ý (`createDisplayContext`
+            // → `WindowManager.maximumWindowMetrics`) bị tài liệu chính thức CẤM ("display contexts … should not be used to access
+            // … WindowManager instances directly" — Context7 /websites/developer_android_reference) và trên A12 (DL5) đọc
+            // `windowConfiguration.getMaxBounds()` mà `ResourcesManager.applyDisplayMetricsToConfiguration` KHÔNG đặt cho display
+            // context ([ĐO nguồn android-12.0.0_r1] `WindowManagerImpl.java:263-266`, `ResourcesManager.java:346-365`). Không có
+            // ngữ cảnh UI ở luồng `kachi-behind` ⇒ chưa có bản thay đã kiểm; cỡ = display 0 thật là điều kiện đã đo (e6c).
+            @Suppress("DEPRECATION")
             val m = DisplayMetrics().also { dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it) }
             if (m.widthPixels <= 0 || m.heightPixels <= 0 || m.densityDpi <= 0) return null
             val t = HandlerThread("kachi-stage").apply { start() }
@@ -84,6 +96,7 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
             SlotVdOwner.adopt(OWNER, k, name, VdLease(v, id, dispatcher::unregisterLauncherVirtualDisplay))
             key = k
             vdId = id
+            LIVE[id] = this
             Log.i(BehindHomeRunner.TAG, "stage create vd=$id ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} key=$k")
             id
         } catch (e: RuntimeException) {
@@ -122,6 +135,14 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
 
     override fun release(vd: Int) = release()
 
+    /** Màn ảo ẩn của các lượt TRƯỚC còn sống trong tiến trình (không tính màn ảo của chính lượt này). */
+    override fun kept(): Collection<Int> = LIVE.keys.filter { it != vdId }
+
+    /** Nhả màn ảo [vd] của một lượt trước (lease + mặt vẽ + luồng của CHÍNH lượt đó) — `HiddenStageReclaim` đã đọc thấy nó trống. */
+    override fun reclaim(vd: Int) {
+        LIVE[vd]?.takeIf { it !== this }?.release()
+    }
+
     /** Nhả màn ảo của lượt (qua [SlotVdOwner] — gỡ đăng ký + `release`) rồi mặt vẽ + luồng. Idempotent. */
     fun release() {
         key?.let { k -> SlotVdOwner.release(OWNER, k) }
@@ -131,6 +152,7 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
         thread?.quitSafely()
         thread = null
         Log.i(BehindHomeRunner.TAG, "stage release vd=$vdId")
+        vdId?.let { LIVE.remove(it, this) }
         vdId = null
     }
 
@@ -140,6 +162,9 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
 
         /** "Ô" âm, giảm dần mỗi lượt — xem KDoc [key]. */
         val NEXT_KEY = AtomicInteger(-1)
+
+        /** Sổ màn ảo ẩn CÒN SỐNG của cả tiến trình (id → lượt tạo nó) — để lượt sau thu hồi cái bị giữ ([kept] / [reclaim]). */
+        val LIVE = ConcurrentHashMap<Int, StagingDisplay>()
 
         /** 8 = OWN_CONTENT_ONLY · 256 = DESTROY_CONTENT_ON_REMOVAL — đúng cờ màn ảo ô (`VdAppHost`). */
         const val FLAGS = 8 or 256

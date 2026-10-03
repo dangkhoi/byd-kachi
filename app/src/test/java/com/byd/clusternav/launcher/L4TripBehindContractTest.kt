@@ -57,11 +57,42 @@ class L4TripBehindContractTest {
         val c = SourceRoots.body(staging, "override fun cover(vd: Int): Boolean = try {")
         order(c, "StageCoverActivity.arm(vd)", "setLaunchDisplayId(vd)", "app.startActivity(i, opts)", "StageCoverActivity.awaitResumed(COVER_RESUME_MS)")
         val r = SourceRoots.body(cover, "override fun onResume() {")
-        order(r, "windowManager.defaultDisplay.displayId", "if (want < 1 || on != want)", "finishAndRemoveTask()", "return", "resumed?.countDown()")
+        // Soát 2.87 · P3 — ĐỔI GHIM có lý do: đọc display đi qua `shownOn()` (API hiện hành theo mức API, xem bài dưới).
+        order(r, "val on = shownOn()", "if (want < 1 || on != want)", "finishAndRemoveTask()", "return", "resumed?.countDown()")
         val manifest = SourceRoots.text("src/main/AndroidManifest.xml")
         val entry = Regex("(?s)<activity\\s+android:name=\"\\.launcher\\.behind\\.StageCoverActivity\".*?/>").find(manifest)?.value
         assertTrue(entry != null && entry.contains("android:exported=\"false\"") && entry.contains("android:excludeFromRecents=\"true\""),
             "lớp che: không exported, không vào danh sách gần đây: $entry")
+    }
+
+    /**
+     * Soát 2.87 · P3 — mã MỚI không gọi API đã deprecated ở mức API đang chạy: `Display.getRealMetrics` (deprecated API 31) chỉ
+     * còn ở nhánh API < 31; `WindowManager.getDefaultDisplay` (deprecated API 30) chỉ còn ở nhánh API 29. Nhánh trên dùng đúng
+     * thay thế mà `@deprecated` chỉ ra (A12 r34 `Display.java:1423-1426`: `getMaximumWindowMetrics` + `Configuration.densityDpi`;
+     * `Context.getDisplay()` cho Activity). Mỗi `@Suppress("DEPRECATION")` đứng trên đúng MỘT hàm cũ, không phủ cả lớp.
+     */
+    @Test
+    fun `API display cu chi o nhanh muc API cu, nhanh moi dung API hien hanh`() {
+        // Gộp hai bản vá review 287 (04/10): màn ảo dàn dựng GIỮ `Display.getRealMetrics` của display 0 (deprecated API 31) có
+        // chủ ý — bản thay `maximumWindowMetrics` đọc cấu hình của NGỮ CẢNH (trên A12 tiến trình theo activity thêm sau cùng,
+        // có thể là màn cụm) chứ không phải display 0; cỡ = display 0 thật là điều kiện đã đo (e6c). Chặn DEPRECATION đúng
+        // một dòng, kèm lý do ngay trên.
+        val create = SourceRoots.body(staging, "override fun create(): Int? {")
+        assertTrue("dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it)" in create, "cỡ lấy từ display 0, không từ ngữ cảnh")
+        assertFalse("maximumWindowMetrics" in staging, "không đọc cỡ theo cấu hình ngữ cảnh")
+        assertEquals(1, Regex("""getRealMetrics\(""").findAll(staging).count(), "getRealMetrics chỉ ở MỘT chỗ")
+        val shown = SourceRoots.body(cover, "private fun shownOn(")
+        order(shown, "Build.VERSION.SDK_INT >= Build.VERSION_CODES.R", "display?.displayId ?: Display.INVALID_DISPLAY", "legacyDisplayId()")
+        assertEquals(1, Regex("""defaultDisplay""").findAll(cover).count(), "getDefaultDisplay chỉ ở MỘT chỗ")
+        assertTrue("windowManager.defaultDisplay.displayId" in SourceRoots.body(cover, "private fun legacyDisplayId("))
+        listOf(cover).forEach { src ->
+            Regex("""@Suppress\("DEPRECATION"\)[^\n]*\n\s*(private fun \w+)""").findAll(src).map { it.groupValues[1] }.toList().let { fns ->
+                assertTrue(fns.isNotEmpty() && fns.all { it == "private fun legacyRealMetrics" || it == "private fun legacyDisplayId" },
+                    "chặn DEPRECATION chỉ trên hàm của nhánh API cũ: $fns")
+            }
+            assertEquals(Regex("""@Suppress\("DEPRECATION"\)""").findAll(src).count(),
+                Regex("""@Suppress\("DEPRECATION"\)[^\n]*\n\s*private fun legacy""").findAll(src).count(), "không chặn DEPRECATION ở chỗ khác")
+        }
     }
 
     @Test
@@ -71,6 +102,23 @@ class L4TripBehindContractTest {
         order(once, "disabledReason?.let", "val sh = shell() ?: return", "Kit(seq, StagingDisplay(app), sh, app)")
         val sb = SourceRoots.body(runner, "fun startBehind(x: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit = {}): BehindHomePlan.Stage? {")
         order(sb, "BehindHomePlan.stagingSlot(stages, x)", "Log.i(TAG, \"no-stage X=", "return null")
+    }
+
+    /**
+     * Review 287 [P3]: màn ảo ẩn bị GIỮ (K7 bị rào chặn / đọc hỏng / chuỗi ném giữa chừng — `failed()` cố ý không nhả) trước đây
+     * sống tới khi BYD giết Kachi (màn ảo + luồng `kachi-stage` + `ImageReader` cỡ display 0, rò thêm mỗi lượt). Nay: sổ [LIVE]
+     * cả tiến trình; MỖI lượt `kachi-behind` thu hồi TRƯỚC thân lượt (quyết định + rào nhả ở `:core` `HiddenStageReclaim`, có test).
+     */
+    @Test
+    fun `man ao an bi giu - so LIVE ca tien trinh, moi luot thu hoi truoc than luot`() {
+        val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {")
+        order(once, "val sh = shell() ?: return", "Kit(seq, StagingDisplay(app), sh, app)", "HiddenStageReclaim.run(sh, kit.hidden, app.packageName)", "body(kit)")
+        val create = SourceRoots.body(staging, "override fun create(): Int? {")
+        order(create, "SlotVdOwner.adopt(", "vdId = id", "LIVE[id] = this")
+        order(SourceRoots.body(staging, "fun release() {"), "SlotVdOwner.release(OWNER, k)", "LIVE.remove(it, this)", "vdId = null")
+        assertTrue(staging.contains("override fun kept(): Collection<Int> = LIVE.keys.filter { it != vdId }"), "không tính màn ảo của chính lượt")
+        assertTrue(SourceRoots.body(staging, "override fun reclaim(vd: Int) {").contains("LIVE[vd]?.takeIf { it !== this }?.release()"),
+            "nhả bằng release() của CHÍNH lượt tạo nó (lease + mặt vẽ + luồng)")
     }
 
     /** D1(b): `when` của [reasonRes] phải phủ ĐỦ mã, và mỗi khoá câu phải có ở CẢ 5 thư mục (thiếu ⇒ Android lùi về tiếng Việt). */

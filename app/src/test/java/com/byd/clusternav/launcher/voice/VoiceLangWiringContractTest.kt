@@ -109,8 +109,13 @@ class VoiceLangWiringContractTest {
     @Test
     fun `giong doc va geocoder hoi theo voiceLocale, khong theo locale cua man`() {
         val tts = code(l + "voice/AndroidTtsSpeaker.kt")
-        val configure = SourceRoots.body(tts, "private fun configure(engine: TextToSpeech)")
-        assertTrue(configure.contains("LangHost.voiceLocale("), "giọng đọc phải hỏi theo tiếng GIỌNG NÓI")
+        // [soát 2.87 · voice P2] Locale nay ĐỌC LẠI cho TỪNG câu (lambda của `TtsVoiceLang`, `:core`) — phiên `:wake` dùng
+        // lại phải theo tiếng mới — không còn tính một lần ở `configure` (lúc onInit). Pin dời theo; hành vi khoá ở
+        // `TtsVoiceLangTest` (:core), dây nối ở bài `may doc he thong theo tieng o moi cua…` dưới.
+        assertTrue(
+            tts.contains("TtsVoiceLang { LangHost.voiceLocale(runCatching { voiceLang() }.getOrDefault(Lang.VI)) }"),
+            "giọng đọc phải hỏi theo tiếng GIỌNG NÓI của phiên, đọc lại mỗi lượt",
+        )
         assertFalse(tts.contains("LangHost.locale()"), "giọng đọc không được hỏi theo tiếng MÀN (zh/th/ms ⇒ giọng Trung/Thái cho câu Việt)")
         val geo = code(l + "voice/VoiceGeocoder.kt")
         assertTrue(geo.contains("Geocoder(ctx, LangHost.voiceLocale(voiceLang))"), "geocoder theo tiếng giọng nói")
@@ -184,5 +189,44 @@ class VoiceLangWiringContractTest {
             "đầu danh sách câu lệnh")
         assertTrue(SourceRoots.body(code(l + "VoiceTextConsole.kt"), "fun build(body: LinearLayout)").contains("R.string.kachi_voice_lang_only"),
             "ô gõ thử lệnh")
+    }
+
+    /**
+     * [soát 2.87 · voice P2] MỌI cửa đọc/chọn của máy đọc hệ thống đi qua lượt theo tiếng ([TtsVoiceLang.sync]):
+     * `available()` (cửa của `speak`) và `languageStatus()` (cửa của `VoiceSpeakerRouter.probe` — chọn Piper/Android).
+     * Không còn chỗ đọc tiếng một lần: `voiceLang()` chỉ còn trong lambda của `TtsVoiceLang`.
+     */
+    @Test
+    fun `may doc he thong theo tieng o moi cua doc va chon`() {
+        val tts = code(l + "voice/AndroidTtsSpeaker.kt")
+        assertTrue(SourceRoots.body(tts, "override fun available()").contains("follow("), "speak đi qua available() ⇒ theo tiếng")
+        assertTrue(SourceRoots.body(tts, "fun languageStatus()").contains("follow("), "bộ chọn đọc số của tiếng HIỆN TẠI")
+        assertTrue(SourceRoots.body(tts, "private fun follow(").contains("voice.sync("))
+        assertEquals(1, Regex("""voiceLang\(\)""").findAll(tts).count(), "đọc tiếng ĐÚNG một chỗ: lambda đọc lại mỗi lượt")
+        assertTrue(code(l + "voice/VoiceSpeakerRouter.kt").contains("androidLangStatus = android.languageStatus(),"),
+            "bộ chọn đường đọc lấy số qua languageStatus() (đã theo tiếng)")
+    }
+
+    // ══ (6) Harness E2E giọng nói kiểm tiếng TRƯỚC khi so preview tiếng Việt (soát 2.87 · voice P3) ═══════════════
+
+    /**
+     * `voice-cases.tsv` mong preview tiếng Việt; `previewOf` dựng theo `Strings.current.voice`. Harness phải đọc CHÍNH
+     * giá trị đó (cầu phơi `look.voice_lang` bằng CÙNG biểu thức) và dừng khi nó không phải `vi` — trước lượt chạy và
+     * sau mỗi ca đổi hồ sơ (ngôn ngữ theo hồ sơ). Không có kiểm này thì Kachi để English ⇒ mọi ca FAIL "preview thiếu"
+     * hàng loạt mà không chỉ ra gốc.
+     */
+    @Test
+    fun `voice-e2e kiem tieng giong noi la tieng Viet truoc khi so preview`() {
+        val bridge = code(l + "testbridge/KachiTestBridge.kt")
+        assertTrue(bridge.contains("VoiceReply.preview(intent, com.byd.clusternav.launcher.Strings.current.voice)"), "preview theo tiếng giọng nói")
+        assertTrue(code(l + "testbridge/TestBridgeState.kt").contains("\"voice_lang\" to Strings.current.voice.code"),
+            "cầu phơi ĐÚNG tiếng mà preview dùng")
+        val sh = com.byd.clusternav.testsupport.I18nCallScanner.repoRoot().resolve("scripts/emulator/voice-e2e.sh").toFile().readText()
+        val fn = sh.substringAfter("require_voice_vi() {").substringBefore("\n}\n")
+        assertTrue(fn.contains("get look.voice_lang") && fn.contains("[ \"\$vl\" = \"vi\" ] || die"), "đọc look.voice_lang, khác vi ⇒ dừng")
+        val dispatch = sh.indexOf("case \"\$ONLY\" in")
+        val pre = sh.indexOf("require_voice_vi \"trước lượt chạy\"")
+        assertTrue(pre in 0 until dispatch, "kiểm TRƯỚC khi chạy T1/T2")
+        assertTrue(sh.contains("profile:*) require_voice_vi "), "kiểm lại sau ca đổi hồ sơ")
     }
 }

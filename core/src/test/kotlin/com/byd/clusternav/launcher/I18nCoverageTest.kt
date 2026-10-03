@@ -11,7 +11,8 @@ import org.junit.jupiter.api.Test
  *  1. mọi cặp xuất ra ([I18nPairs.pairs] — quét nguồn + dữ liệu lúc chạy) đều có dòng (cặp hoặc chỉ-en);
  *  2. chỗ trống `{n}` của bản dịch = đúng tập của bản Anh (thiếu ⇒ mất số liệu; thừa ⇒ hiện `{1}` thô);
  *  3. không dấu tiếng Việt (dịch nửa vời / dán nhầm cột);
- *  4. zh có ≥ 1 chữ Hán, th có ≥ 1 chữ Thái — trừ bản chỉ gồm tên Latin ([I18nPairs.nameOnly]);
+ *  4. zh có ≥ 1 chữ Hán, th có ≥ 1 chữ Thái — trừ bản chỉ gồm tên Latin ([I18nPairs.nameOnly]); ms (chữ Latin) không
+ *     trùng nguyên văn bản Anh — trừ tên Latin và từ mượn đã khai [I18nPairs.MS_SAME_AS_EN] (soát 2.87);
  *  5. nhãn ngắn trong trần chữ theo tiếng ([I18nPairs.SHORT_CAPS], đếm ký tự HIỂN THỊ);
  *  6. không dòng hỏng, không trùng khoá;
  *  7. không dòng MỒ CÔI (khoá không còn cặp nào dùng — chữ nguồn đã đổi ⇒ bản dịch cũ chết im lặng).
@@ -84,6 +85,29 @@ class I18nCoverageTest {
         val th = I18nCatalog.parse("Mở\tOpen\tเปิด\n\tOpen\tเปิด\nTốt\tGood\tดี\n")
         val t = I18nPairs.audit(Lang.TH, th, rows.filter { it.en in setOf("Open", "Good") })
         assertTrue(t.ok, "bảng Thái hợp lệ (dòng chỉ-en phủ «Đang mở/Open») mà soát ra lỗi: $t")
+
+        // ms là chữ Latin ⇒ không có phép "có chữ của tiếng đó"; bản chép NGUYÊN cột Anh phải bị bắt (soát 2.87 · P3),
+        // trừ từ mượn đã khai ([I18nPairs.MS_SAME_AS_EN]) và bản chỉ gồm tên/viết tắt ([I18nPairs.nameOnly]).
+        val msRows = I18nPairs.merge(
+            listOf(
+                I18nPairs.Row("Mở cốp", "Open boot", I18nPairs.Kind.LABEL, "g"),
+                I18nPairs.Row("Số", "Gear", I18nPairs.Kind.LABEL, "h"),
+                I18nPairs.Row("Điều hòa", "A/C", I18nPairs.Kind.LABEL, "i"),
+                I18nPairs.Row("Mở", "Open", I18nPairs.Kind.ARGS, "j"),
+            ),
+        )
+        val ms = I18nCatalog.parse("Mở cốp\tOpen boot\tOpen boot\nSố\tGear\tGear\nĐiều hòa\tA/C\tA/C\nMở\tOpen\tBuka\n")
+        val m = I18nPairs.audit(Lang.MS, ms, msRows)
+        assertEquals(listOf("trùng nguyên văn bản Anh: «Open boot» → «Open boot» (g)"), m.quality, "chỉ bản chép cột Anh bị bắt")
+        assertTrue(I18nPairs.audit(Lang.ZH, I18nCatalog.parse("Số\tGear\t档位\n"), msRows.filter { it.en == "Gear" }).ok)
+    }
+
+    /** Mục [I18nPairs.MS_SAME_AS_EN] phải còn sống: bảng ms thật vẫn có dòng trùng nguyên văn đúng chữ Anh ấy. */
+    @Test
+    fun `muc MS_SAME_AS_EN khong chet`() {
+        val table = I18nCatalog.table(Lang.MS)
+        val live = I18nPairs.pairs.filter { table.lookup(it.vi, it.en) == it.en }.map { it.en }.toSet()
+        assertEquals(emptyList<String>(), I18nPairs.MS_SAME_AS_EN.keys.filterNot { it in live }, "mục chết — gỡ khỏi MS_SAME_AS_EN")
     }
 
     private companion object {

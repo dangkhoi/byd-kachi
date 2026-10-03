@@ -46,7 +46,7 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     private val readTiles = LinkedHashMap<String, ReadTile>()
     // Ô HÀNH ĐỘNG có đường đọc: giữ hàm refresh để đổ giá trị THẬT của xe (2026-09-17) mà KHÔNG dựng lại ô.
     private val actionRefreshers = LinkedHashMap<String, (CarStatus) -> Unit>()
-    private val tiles = ControlTileFactory(context, control = { control }, size = TileSize.DOCK)
+    private val tiles = ControlTileFactory(context, control = { control }, size = TileSize.DOCK, onBar = true)
 
     init {
         gravity = Gravity.CENTER

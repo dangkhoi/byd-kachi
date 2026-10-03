@@ -61,18 +61,27 @@ class KeySourceL7WiringContractTest {
         assertFalse(recorder.contains("KeyEvent.obtain") || Regex("""val\s+\w+\s*:\s*KeyEvent""").containsMatchIn(recorder))
     }
 
+    /**
+     * 2.87 · SOÁT vòng 1 · P2: LUẬT busy/trần/quá hạn/không chạy + thứ tự HAL-trước-thiết-bị nay là [KeySourceMeter] ở
+     * `:core`, CHẠY THẬT trong `KeySourceMeterTest` (bộ thi hành thật + gateway chặn bằng chốt). Ở đây chỉ còn DÂY:
+     * luồng đo gọi đúng bộ đo đó, với đúng bộ thi hành HAL riêng + đồng hồ cùng gốc với `KeyEvent.eventTime`.
+     */
     @Test
     fun `L2 - doc HAL tren luong rieng, co tran, khong xep chong khi treo`() {
-        val read = SourceRoots.body(recorder, "private fun readBounded(spec: KeySourceProbeSpec, sample: KeySample): KeySourceReading")
-        assertTrue(read.contains("if (inFlight?.isDone == false) return KeySourceReading.failed(spec, KeySourceFailure.BUSY"),
-            "HAL treo ⇒ các lần bấm sau ghi `busy` ngay, không chồng lượt đọc")
-        assertTrue(read.contains("exec.submit(Callable { KeySourceProbes.read(spec, gateway(), SystemClock::uptimeMillis, sample.eventTime) })"))
-        assertTrue(read.contains("f.get(spec.budgetMs, TimeUnit.MILLISECONDS)"), "chờ có TRẦN")
-        assertTrue(read.contains("KeySourceFailure.TIMEOUT"))
+        assertTrue(recorder.contains("KeySourceMeter(gateway = gateway, exec = { halExec }, clockMs = SystemClock::uptimeMillis)"),
+            "bộ đo thuần dùng ĐÚNG luồng HAL riêng + đồng hồ uptime (cùng gốc eventTime)")
+        assertTrue(SourceRoots.body(recorder, "fun start()").contains("halExec = Executors.newSingleThreadExecutor"),
+            "lượt đọc HAL chạy trên MỘT luồng riêng — không trên luồng đo, không trên luồng phím")
+        assertFalse(recorder.contains("inFlight") || recorder.contains("f.get("), "luật chống chồng lượt chỉ sống ở KeySourceMeter (:core)")
         val settle = SourceRoots.body(recorder, "private fun settle(seq: Long, sample: KeySample)")
-        assertTrue(settle.contains("readBounded(spec, sample)"))
+        assertTrue(settle.contains("meter.measure(sample, devices)"))
         assertTrue(settle.contains("Log.i(KeySourceLog.TAG, KeySourceLog.line(entry))"), "một dòng KachiKey mỗi DOWN ⇒ usage-*.log")
         assertTrue(settle.contains("catch (e: RuntimeException)"), "lỗi đo không được làm chết tiến trình giữ dịch vụ phím")
+        assertTrue(recorder.contains("private val devices = KeyDeviceCache(::lookupDevice)"), "P3: nhớ cả ca 'không có thiết bị'")
+        listOf("onInputDeviceAdded", "onInputDeviceRemoved", "onInputDeviceChanged").forEach {
+            assertTrue(Regex("""override fun $it\(deviceId: Int\) \{ devices\.forget\(deviceId\) \}""").containsMatchIn(recorder),
+                "$it phải bỏ nhớ thiết bị (kể cả 'thêm': id đã nhớ là 'không có')")
+        }
         val start = SourceRoots.body(recorder, "fun start()")
         assertTrue(start.contains("registerInputDeviceListener(deviceListener, h)"), "nhớ InputDevice theo id, làm mới qua listener")
         assertTrue(SourceRoots.body(recorder, "fun stop()").contains("unregisterInputDeviceListener(deviceListener)"))
@@ -104,6 +113,9 @@ class KeySourceL7WiringContractTest {
             "không có detail ⇒ hộp y nguyên như cũ; có ⇒ thêm một dòng dưới ô tên")
         val text = SourceRoots.body(detail, "fun text(ctx: Context, code: Int, e: KeySourceEntry?, gaveUp: Boolean): String")
         assertTrue(text.contains("R.string.kachi_key_src_detail"))
+        // SOÁT vòng 1 · P3: lượt KHÔNG đọc (`busy` · `not_running`) mang `readMs = -1` (KeySourceMeterTest) ⇒ hiện "—",
+        // không bao giờ *"đọc 0 ms"*.
+        assertTrue(text.contains("it.probe != null && it.readMs >= 0"), "chỉ hiện thời lượng khi CÓ lượt đọc")
         val label = SourceRoots.body(detail, "private fun sourceLabel(ctx: Context, e: KeySourceEntry?, gaveUp: Boolean): String")
         listOf("Pending", "NotMeasured", "Source", "UnknownValue", "Failed").forEach {
             assertTrue(label.contains("KeySourceVerdict.$it"), "nhánh $it thiếu nhãn")
@@ -139,7 +151,10 @@ class KeySourceL7WiringContractTest {
         assertEquals(listOf("SettingsSectionsKeys.kt"), callers("bridge.learnedKeySource(", "ClusterNavBridgeKeys.kt"))
         assertEquals(listOf("SettingsSectionsKeys.kt"), callers("KeySourceDetailText.bind(", "SettingsKeySourceDetail.kt"))
         assertTrue("KeySourceProbe.kt" in callers("gateway.featureRead(", "HalRoutes.kt"))
-        assertTrue("KeySourceRecorder.kt" in callers("KeySourceProbes.read(", "KeySourceProbe.kt"))
+        // SOÁT vòng 1 · P2: lượt đọc nay đi qua bộ đo thuần `:core`; bộ ghi gọi bộ đo.
+        assertTrue("KeySourceMeter.kt" in callers("KeySourceProbes.read(", "KeySourceProbe.kt"))
+        assertEquals(listOf("KeySourceRecorder.kt"), callers("KeySourceMeter(", "KeySourceMeter.kt"))
+        assertEquals(listOf("KeySourceRecorder.kt"), callers("KeyDeviceCache(", "KeySourceMeter.kt"))
         assertTrue("KeySourceRecorder.kt" in callers(".halGateway", "AppContainer.kt") ||
             "NavAccessibilityService.kt" in callers(".halGateway", "AppContainer.kt"))
     }

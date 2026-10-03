@@ -270,7 +270,7 @@ class KachiTopStrip(
         // cộng thẳng vào khe mắt người thấy giữa hai chip; khe ấy nay có đúng MỘT chủ là [Bars.CHIP_GAP].
         setPadding(0, 0, 0, 0)
         maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
-        applyChipFace(this, iconName, color.ifEmpty { CHIP_INK }, text)
+        applyChipFace(this, iconName, color.ifEmpty { chipInk(ChipTone.NEUTRAL) }, text)
     }
 
     /**
@@ -323,20 +323,7 @@ class KachiTopStrip(
         }
         chips.forEachIndexed { idx, c ->
             val v = chipViews[idx]
-            val color = when (c.tone) {
-                ChipTone.ENERGY -> KachiTheme.GREEN
-                // Trạng thái bật/tắt của datum boolean = MÀU, không phải chữ (owner 2026-09-21). Cả chữ lẫn icon đổi
-                // màu vì [applyChipFace] tint icon bằng CHÍNH màu này — đó là thứ làm "icon sáng / icon mờ".
-                //
-                // Vì sao hai vai này: [KachiTheme.ACCENT_INK] là vai *"màu nhấn dùng làm CHỮ"* — [ĐO] `accent` thuần
-                // (`#4c7dff`) làm chữ thì không đạt tương phản, nên bảng màu đã tách riêng vai này và cho nó đi qua
-                // `ContrastGuard.fitInk`. [KachiTheme.MUT2] là vai chữ mờ nhất còn đạt sàn tương phản. Dùng lại hai
-                // vai có sẵn thay vì thêm vai mới: "mờ" và "nhấn" đã được định nghĩa và đã được bài canh tương phản
-                // đo ở CẢ HAI bảng (tối + sáng) — thêm vai mới là thêm hai hex phải tự chứng minh lại.
-                ChipTone.ACTIVE -> KachiTheme.ACCENT_INK
-                ChipTone.INACTIVE -> KachiTheme.MUT2
-                ChipTone.NEUTRAL -> CHIP_INK
-            }
+            val color = chipInk(c.tone)   // bảng map MỘT chỗ — sàn đọc được của thanh khi mờ đọc CÙNG nó (ChromeRoles)
             // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn. UX6: khoá
             // gồm CẢ *"có chữ hay không"* vì khe icon↔chữ bật/tắt theo đó, mà chữ đổi được khi icon/màu thì không.
             val face = c.icon.toString() + color + c.text.isNotEmpty()
@@ -493,8 +480,5 @@ class KachiTopStrip(
 
     private companion object {
         const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
-
-        /** Màu chữ chip trung tính. Bảng màu chỉ ở `:app` — `:core` chỉ nói SẮC THÁI (xem [ChipTone]). */
-        val CHIP_INK: String get() = KachiTheme.INK2
     }
 }

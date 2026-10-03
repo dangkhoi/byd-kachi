@@ -74,10 +74,25 @@ object SlotRevertPlan {
         }
     }
 
-    /** Lớp tạm sau [next] ở ô [slot] — chỉ đổi lớp TẠM, không bao giờ lớp LƯU. */
-    fun overlayAfter(overlay: SlotOverlay, slot: Int, next: Next): SlotOverlay = when (next) {
-        Next.Keep -> overlay
-        Next.ShowSaved -> overlay.drop(slot)
-        Next.Clear -> overlay.clear(slot)
+    /**
+     * Lớp tạm sau [next] ở ô [slot] — chỉ đổi lớp TẠM [overlay], không bao giờ lớp LƯU [saved].
+     *
+     * ## App vừa rời ô không được "về" một ô LƯU KHÁC (soát 2.87 · P1)
+     * Đặt tạm P vào ô n (lối tắt *Ô n* / giọng nói) đi qua MỘT-APP-MỘT-Ô ([SlotOverlay.applyTo] → `WorkspaceState.withSlot`)
+     * ⇒ ô j mà hồ sơ LƯU là P đang hiện TRỐNG. Chỉ bỏ mục tạm của ô n thì lớp LƯU lộ lại ⇒ P "về" ô j ⇒ host j mở P: với
+     * *tắt* là `am force-stop` + `am start` đúng app người dùng vừa tắt, với *chạy nền* là K8 kéo app vừa ra sau màn nhà về
+     * lại, với app vừa chết là mở lại nó — ngược L6-a / L6-c3 / L8-1 (app rời ô ⇒ khung trong suốt, app ở yên sau màn nhà).
+     * ⇒ app P rời ô [slot] thì mọi ô KHÁC mà LƯU là `App(P)` và KHÔNG có mục tạm riêng (ô đang hiện app tạm khác giữ nguyên)
+     * cũng thành TRONG SUỐT TẠM — cùng luật "tạm" ([SlotOverlay.clear]): khởi động lại / đổi hồ sơ / đổi bố cục là P về ô j.
+     */
+    fun overlayAfter(saved: WorkspaceState, overlay: SlotOverlay, slot: Int, next: Next): SlotOverlay {
+        if (next == Next.Keep) return overlay
+        val gone = (overlay.applyTo(saved).slots.getOrNull(slot) as? SlotContent.App)?.pkg
+        val base = if (next == Next.Clear) overlay.clear(slot) else overlay.drop(slot)
+        if (gone == null) return base
+        return saved.slots.indices.fold(base) { o, j ->
+            val s = saved.slots[j]
+            if (j != slot && s is SlotContent.App && s.pkg == gone && !o.holds(j)) o.clear(j) else o
+        }
     }
 }

@@ -122,8 +122,9 @@ class WallWindowDrawable(
 /**
  * Tham số dựng nền của một view kính — giữ trong tag để [KachiGlass.refresh] dựng lại đúng thứ đó khi ảnh đổi.
  * [fade] = nền này theo độ đục chung [KachiChrome] (đã gộp điều kiện tone — xem [KachiChrome.fades]).
+ * [extraInks] = màu chữ KHÁC bộ mực trung tính mà thẻ này vẽ ([KachiGlass.apply]) — sàn lớp che giữ chúng đọc được khi mờ.
  */
-internal class GlassSpec(val radius: Int, val tone: SurfaceTone, val domain: Domain?, val fade: Boolean)
+internal class GlassSpec(val radius: Int, val tone: SurfaceTone, val domain: Domain?, val fade: Boolean, val extraInks: IntArray = IntArray(0))
 
 /**
  * 2.87 · R-OP — nền của một THANH (thanh trên · thanh nút xe): chính `Drawable` đã dựng ở chỗ gọi + vai màu của nó
@@ -146,11 +147,30 @@ object KachiGlass {
     /**
      * @param fade 2.87 · R-OP — `false` cho bề mặt là NÚT chứ không là nền (đĩa ⇄: độ tương phản ≥ 4.86:1 đo ở 100 %).
      *   Tone BẬT/LÕM không bao giờ mờ dù cờ này là gì ([KachiChrome.fades]).
+     * @param extraInks màu chữ KHÁC mut/mut2/ink mà thẻ vẽ (ô nén `w_board` vẽ nhãn bằng ACCENT thuần). Bộ giải lớp che
+     *   chỉ biết bộ mực trung tính ([veilInks]) ⇒ [ĐO bài quét · soát 2.87 P2] ACCENT trên thẻ mờ tụt 4.5 → 3.86:1. Khai
+     *   ở đây thì khi mờ (< 100 %) lớp che giữ chúng đọc được ở chỗ hôm nay đạt; ở 100 % không đổi một byte.
      */
-    fun apply(view: View, radius: Int = KachiSpace.RADIUS_XL, tone: SurfaceTone = SurfaceTone.NEUTRAL, domain: Domain? = null, fade: Boolean = true) {
-        val spec = GlassSpec(radius, tone, domain, fade && KachiChrome.fades(tone))
+    fun apply(
+        view: View, radius: Int = KachiSpace.RADIUS_XL, tone: SurfaceTone = SurfaceTone.NEUTRAL, domain: Domain? = null,
+        fade: Boolean = true, extraInks: IntArray = IntArray(0),
+    ) {
+        val spec = GlassSpec(radius, tone, domain, fade && KachiChrome.fades(tone), extraInks)
         view.setTag(R.id.kachi_glass_spec, spec)
         paint(view, spec)
+    }
+
+    /**
+     * Thẻ kính đã dựng đổi màu chữ giữa chừng (ô lốp: thường → hổ phách) ⇒ khai thêm [ink] vào [GlassSpec.extraInks].
+     * Gọi mỗi nhịp được: mực đã khai (hoặc thuộc bộ trung tính) ⇒ một phép so. Chỉ vẽ lại nền khi mực mới ĐỔI thứ được
+     * vẽ (đang mờ, có ảnh nền); còn lại chỉ ghi tag để lượt [refresh] sau dùng.
+     */
+    fun addInk(view: View, ink: Int) {
+        val spec = view.getTag(R.id.kachi_glass_spec) as? GlassSpec ?: return
+        if (ink in spec.extraInks || ink in veilInks(spec.tone)) return
+        val next = GlassSpec(spec.radius, spec.tone, spec.domain, spec.fade, spec.extraInks + ink)
+        view.setTag(R.id.kachi_glass_spec, next)
+        if (next.fade && KachiChrome.fraction < 1.0 && WallArtStore.current != null) paint(view, next)
     }
 
     /**
@@ -204,12 +224,14 @@ object KachiGlass {
         // lớp che (MIN × f); bộ giải vẫn đậm lớp che lên khi vùng ảnh sáng cần (R-OP3). Bề mặt đưa bộ giải là đúng
         // alpha ĐƯỢC VẼ (`ChromeStack.faded` = modulateAlpha của lớp `top`) — làm tròn khác 1/255 là hụt ở mép 4.5.
         // f = 1 ⇒ đúng đường cũ.
-        // Khay (WELL) còn chở ô nút/ô cảnh báo bán trong suốt ⇒ sàn lớp che tính cả chúng (`wellOverlayFloor`).
+        // Khay (WELL) còn chở ô nút/ô cảnh báo bán trong suốt, thẻ có chữ MÀU ([GlassSpec.extraInks]) ⇒ sàn lớp che
+        // tính cả chúng (`KachiChrome.glassFloor`).
         val f = if (spec.fade) KachiChrome.fraction else 1.0
         val pair = KachiTheme.surfacePair(spec.tone, overArtwork = true)
         val shown = if (f < 1.0) IntArray(pair.size) { ChromeStack.faded(pair[it], f) } else pair
         val veil = KachiTheme.c(KachiTheme.BG)
         val inks = veilInks(spec.tone)
+        val extra = spec.extraInks.filterNot { it in inks }.toIntArray()
         val window = WallWindowDrawable(
             art = art,
             radius = KachiSpace.dpf(ctx, spec.radius),
@@ -219,8 +241,8 @@ object KachiGlass {
             inks = inks,
             veilMin = GlassVeil.MIN * f,
             veilMax = if (f < 1.0) 1.0 else GlassVeil.MAX,
-            overlayFloor = if (f < 1.0 && spec.tone == SurfaceTone.WELL) {
-                { l -> KachiChrome.wellOverlayFloor(l, veil, pair, shown, inks, GlassVeil.MIN * f) }
+            overlayFloor = if (f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())) {
+                { l -> KachiChrome.glassFloor(l, veil, pair, shown, inks, extra, spec.tone == SurfaceTone.WELL, GlassVeil.MIN * f) }
             } else null,
         )
         val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)

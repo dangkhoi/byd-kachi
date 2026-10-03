@@ -99,8 +99,12 @@ object KeySourceLog {
         b.append(" rep=").append(s.repeatCount)
         b.append(" t=").append(s.eventTime)
         b.append(" tag=").append(tag(e.reading))
-        e.reading?.takeIf { it.probe != null }?.let { r ->
-            b.append(" (read ").append(r.readMs).append("ms, +").append(r.ageMs).append("ms)")
+        // 2.87 · SOÁT vòng 1 · P3: chỉ in khi CÓ lượt đọc (`readMs ≥ 0`) — `busy`/`not_running` không đọc gì, in
+        // "(read 0ms" là bịa một phép đo; tuổi `+Nms` chỉ có khi lượt đọc xong (quá hạn thì không có, không in "+-1ms").
+        e.reading?.takeIf { it.probe != null && it.readMs >= 0 }?.let { r ->
+            b.append(" (read ").append(r.readMs).append("ms")
+            if (r.ageMs >= 0) b.append(", +").append(r.ageMs).append("ms")
+            b.append(')')
         }
         b.append(" seq=").append(e.seq)
         if (e.learned) b.append(" learn")

@@ -50,7 +50,9 @@ class KeyCtlWiringContractTest {
         assertTrue(mk.contains("control = { AppContainer.get(app).carControl }"), "cùng cổng xe (WakeOnWriteControl) với ô/giọng nói")
         assertTrue(mk.contains("freshCar = { id -> fresh(app, id) }"), "cổng tốc độ phải đọc TƯƠI, không ảnh chụp cũ")
         val run = SourceRoots.body(dispatch, "fun run(f: KeyCtlThrottle.Step.Fire)")
-        assertTrue(run.contains("KeyCtlPlan.of(def, f.target, f.count)"))
+        // SOÁT vòng 1 · P1 (đổi chốt có lý do): `KeyCtlPlan.of` nay BẮT BUỘC nguồn vận tốc — CHÍNH nguồn của cổng thi hành
+        // (`VoiceControlDispatch.speedKmh`), để Đảo cốp từ trí nhớ lúc xe chạy lùi về ĐÓNG thay vì kẹt MỞ-bị-chặn.
+        assertTrue(run.contains("KeyCtlPlan.of(def, f.target, f.count, speedKmh = controls::speedKmh)"))
         assertTrue(run.contains("controls.run(o.intent)"))
         // Không có lệnh ghi HAL nào viết tay trong tệp phím.
         listOf(".toggle(", ".cover(", ".coverLevel(", ".select(", "actByKind(", "HalBindingTable", "featureSet", "namedInt")

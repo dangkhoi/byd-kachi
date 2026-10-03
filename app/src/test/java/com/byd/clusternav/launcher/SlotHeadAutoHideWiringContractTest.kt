@@ -78,26 +78,47 @@ class SlotHeadAutoHideWiringContractTest {
         assertTrue("animate().cancel()" in SourceRoots.body(helper, "private fun settle("), "đặt trạng thái đầu cũng phải huỷ lượt mờ cũ")
     }
 
+    /**
+     * Soát 2.87 · P2 — ĐỔI GHIM có lý do: LUẬT (khung trống / khe / ngón đang đặt / nhấp đúp / DOWN trúng vùng nút) chuyển
+     * sang `:core` [SlotHeadTouch] với bảng đủ ô `SlotHeadTouchTest` — grep mã không khoá được hành vi. Ở đây chỉ còn phần
+     * ĐO đúng thứ tự (hỏi lại nút TRƯỚC khi đo vùng nút — nút vừa thành làm-được phải chặn được lượt hiện) và THI HÀNH đúng
+     * việc được trả về; CANCEL đi cùng đường UP.
+     */
     @Test
-    fun `nhip nhap dup doc tai cho goi va chan DOWN trong vung nut`() {
+    fun `observe chi do roi thi hanh viec cua core - do vung nut SAU khi hoi lai nut`() {
         val fn = SourceRoots.body(helper, "fun observe(")
-        assertTrue("ViewConfiguration.getDoubleTapTimeout()" in fn, "đọc ngưỡng nhấp đúp tại chỗ gọi (không chụp sẵn)")
-        assertEquals(1, Regex("""getDoubleTapTimeout""").findAll(helper).count(), "không có bản chụp thứ hai ở field")
-        assertTrue("downInHead = e != null && inHit(e, slots[i], ev.x, ev.y)" in fn, "DOWN phải ghi lại có rơi vào khung chạm ⇄ không")
-        assertTrue(Regex("""else if \(!downInHead\) \{\s*host\.postDelayed\(e\.reveal""").containsMatchIn(fn),
-            "DOWN trong vùng ⇄ đang ẩn ⇒ KHÔNG hiện (ô tìm kiếm Google Maps giữa-trên vẫn gõ được)")
+        order(fn, "e?.cluster?.refresh()", "val inHead = e != null && inHit(e, slots[i], ev.x, ev.y)",
+            "SlotHeadTouch.onDown(i, consumed, inHead, heads(at))", "gesture = step.gesture", "exec(step.acts, at)")
+        order(fn, "MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->", "val g = gesture", "gesture = SlotHeadTouch.Gesture.NONE",
+            "exec(SlotHeadTouch.onUp(g, heads(at)), at)")
+        assertFalse(Regex("""\bconsumed\s*&&|!consumed""").containsMatchIn(fn), "observe không tự quyết theo `consumed` — đó là việc của :core")
+        assertTrue("it.head.visibility == View.VISIBLE" in SourceRoots.body(helper, "private fun heads("), "đầu vào 'đang hiện' đọc từ view thật")
         val inHit = SourceRoots.body(helper, "private fun inHit(")
         assertTrue("e.hit.left" in inHit && "e.hit.width" in inHit, "vùng chặn là KHUNG CHẠM của ⇄, không phải cả dải đầu ô")
     }
 
     @Test
-    fun `cham khong ai nhan thi hien ngay - khung do hoac moi khung`() {
-        val fn = SourceRoots.body(helper, "fun observe(")
-        assertTrue(Regex("""!consumed && i >= 0 -> e\?\.let\(::reveal\)""").containsMatchIn(fn), "khung trống: hiện ⇄ khung đó")
-        assertTrue(Regex("""!consumed -> slots\.indices\.forEach \{ j -> valid\(j, slots\)\?\.let\(::reveal\) \}""").containsMatchIn(fn),
-            "ngoài mọi khung: hiện ⇄ mọi khung (owner: 'nhấn đại vào màn nó lại lòi ra')")
+    fun `thi hanh dung viec - nhip nhap dup doc tai cho, giu la go ca hai hen, hien thi hen an lai`() {
+        val run = SourceRoots.body(helper, "private fun exec(")
+        assertTrue("is SlotHeadTouch.Act.Reveal -> reveal(e)" in run)
+        assertTrue("is SlotHeadTouch.Act.RevealAfterDoubleTap -> host.postDelayed(e.reveal, ViewConfiguration.getDoubleTapTimeout().toLong())" in run,
+            "đọc ngưỡng nhấp đúp tại chỗ thi hành (không chụp sẵn)")
+        assertEquals(1, Regex("""getDoubleTapTimeout""").findAll(helper).count(), "không có bản chụp thứ hai ở field")
+        assertTrue("is SlotHeadTouch.Act.Hold -> { host.removeCallbacks(e.reveal); host.removeCallbacks(e.hide) }" in run,
+            "giữ = huỷ CẢ hẹn hiện (nhấp đúp) lẫn hẹn ẩn (ngón đang đặt)")
         val reveal = SourceRoots.body(helper, "private fun reveal(")
         assertTrue("host.postDelayed(e.hide, SlotHeadRest.HIDE_AFTER_MS)" in reveal, "hiện xong phải hẹn ẩn lại")
+        assertTrue("SlotHeadTouch.onConfirmArmed(i, heads(at))" in SourceRoots.body(helper, "private fun armed("),
+            "tắt hai bước: đầu ô giữ hiện suốt lượt chờ (P2)")
+    }
+
+    private fun order(src: String, vararg parts: String) {
+        var at = -1
+        parts.forEach { p ->
+            val i = src.indexOf(p, at + 1)
+            assertTrue(i > at, "thứ tự sai / thiếu '$p' trong: ${src.take(600)}")
+            at = i
+        }
     }
 
     @Test
@@ -110,6 +131,24 @@ class SlotHeadAutoHideWiringContractTest {
         val drop = SourceRoots.body(helper, "private fun drop(")
         assertTrue("host.removeCallbacks(e.reveal)" in drop && "host.removeCallbacks(e.hide)" in drop && "animate().cancel()" in drop)
         assertTrue("addTouchExplorationStateChangeListener(teListener)" in SourceRoots.body(helper, "fun attach()"))
+        // Soát 2.87 · P3 — kênh shell đổi mà không ai chạm (luôn hiện / TalkBack) ⇒ nút L6 hỏi lại; người nghe gỡ cùng lúc rời cửa sổ.
+        assertTrue("ShellReadiness.addListener(shellListener)" in SourceRoots.body(helper, "fun attach()"))
+        assertTrue("ShellReadiness.removeListener(shellListener)" in release && "host.removeCallbacks(refreshTask)" in release,
+            "object sống bằng tiến trình không được giữ view đã tháo")
+        assertTrue(Regex("""shellListener: \(ShellReadinessState\) -> Unit = \{ _ -> host\.post\(refreshTask\) \}""").containsMatchIn(helper),
+            "bên nghe gọi từ luồng bất kỳ ⇒ chuyển về luồng chính")
+        assertTrue("entries.values.forEach { it.cluster?.refresh() }" in SourceRoots.body(helper, "fun refreshAll()"))
+    }
+
+    /** Soát 2.87 · P3 — bố cục 4 ô → 1 ô: mục 1..3 phải rời sổ (không giữ cây view đã tháo, không hỏi nút của ô chết). */
+    @Test
+    fun `bo cuc bot o thi so dau o bo muc cua o da mat`() {
+        val retain = SourceRoots.body(helper, "fun retain(")
+        assertTrue("entries.keys.filter { it >= count }.forEach { i -> entries.remove(i)?.let(::drop) }" in retain,
+            "bỏ khỏi sổ VÀ gỡ hẹn giờ / animation của ô đã mất")
+        val rebuild = SourceRoots.body(workspace, "private fun rebuild()")
+        val loop = rebuild.indexOf("for (i in 0 until EffectiveLayout.slotCount(")
+        assertTrue(rebuild.indexOf("heads.retain(slotViews.size)") > loop && loop >= 0, "retain SAU khi dựng đủ ô mới: $rebuild")
     }
 
     /** CLAUDE.md §8 — hàm mới phải có chỗ gọi thật; và ⇄ phải là con CUỐI của khung ở cả bốn nhánh. */

@@ -17,6 +17,9 @@ package com.byd.clusternav.launcher
  *    nền (R0.6, an toàn — tiền lệ CarPlay `move-task` làm sập surfaceflinger): nút vẫn có, chạm nói lý do, 0 lệnh (cùng cách
  *    chip *Chạy nền* của Cài đặt — L4 · D5).
  *  - Widget: *tắt* không cần kênh (chỉ lớp tạm) ⇒ luôn có, kể cả widget bên thứ ba đã chết.
+ *  - Soát 2.87 · P3 — BEHIND-HOME bị TẮT trong tiến trình ([behind] = `false`: một PHÉP ĐO `ANCHOR_IN_FRONT` đặt
+ *    `BehindHomeRunner.disabledReason` tới lần khởi động sau) ⇒ mọi lượt *chạy nền* trả `DISABLED`, 0 lệnh ⇒ nút *chạy nền*
+ *    KHÔNG có (*tắt* vẫn có — nó không đi qua BEHIND-HOME).
  *
  * Thứ tự trả về = thứ tự trái → phải trên màn (⇄ ở giữa, như hôm nay).
  */
@@ -24,15 +27,17 @@ object SlotHeadActions {
 
     enum class Button { BACKGROUND, SWAP, CLOSE }
 
-    /** Nút đang làm được của một ô, trái → phải. */
-    fun of(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, channel: Boolean): List<Button> =
+    /** Nút đang làm được của một ô, trái → phải. [behind] = BEHIND-HOME còn dùng được trong tiến trình này. */
+    fun of(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, channel: Boolean, behind: Boolean): List<Button> =
         when (kind) {
             SlotHeadRest.Kind.EMPTY -> listOf(Button.SWAP)
             SlotHeadRest.Kind.WIDGET, SlotHeadRest.Kind.APPWIDGET_LIVE, SlotHeadRest.Kind.APPWIDGET_DEAD ->
                 listOf(Button.SWAP, Button.CLOSE)
-            SlotHeadRest.Kind.APP ->
-                if (projector != SlotHeadRest.Projector.VD || !channel) listOf(Button.SWAP)
-                else listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE)
+            SlotHeadRest.Kind.APP -> when {
+                projector != SlotHeadRest.Projector.VD || !channel -> listOf(Button.SWAP)
+                !behind -> listOf(Button.SWAP, Button.CLOSE)
+                else -> listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE)
+            }
         }
 
     /**
@@ -40,5 +45,5 @@ object SlotHeadActions {
      * tập này không bao giờ được dựng. ⇄ không thuộc tập (bộ dựng riêng, `SlotSwapButton`).
      */
     fun possible(kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector): Set<Button> =
-        of(kind, projector, channel = true).toSet() - Button.SWAP
+        of(kind, projector, channel = true, behind = true).toSet() - Button.SWAP
 }

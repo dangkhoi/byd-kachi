@@ -85,10 +85,11 @@ class HomeViewModel(
 
     /**
      * Áp [next] của [slotRevert] lên lớp TẠM — KHÔNG ghi bền (owner 01/10). Không đặt mốc đổi-tại-chỗ (L8: mọi sự kiện của
-     * bảng đến SAU KHI app đã rời màn ảo ô ⇒ ô dựng lại; host đã thôi giữ app ⇒ nhả ô không `force-stop`).
+     * bảng đến SAU KHI app đã rời màn ảo ô ⇒ ô dựng lại; host đã thôi giữ app ⇒ nhả ô không `force-stop`). Đọc cả lớp LƯU:
+     * app rời ô không được "về" ô LƯU khác của nó (soát 2.87 · P1 — KDoc [SlotRevertPlan.overlayAfter]).
      */
     fun applySlotRevert(slot: Int, next: SlotRevertPlan.Next) = _uiState.update {
-        val overlay = SlotRevertPlan.overlayAfter(it.overlay, slot, next)
+        val overlay = SlotRevertPlan.overlayAfter(it.workspace, it.overlay, slot, next)
         if (overlay === it.overlay) it else it.copy(overlay = overlay)
     }
 

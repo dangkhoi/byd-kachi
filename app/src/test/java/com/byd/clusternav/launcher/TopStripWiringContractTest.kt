@@ -243,7 +243,11 @@ class TopStripWiringContractTest {
      */
     @Test
     fun `moi ChipTone deu co vai mau rieng, khong co nhanh else`() {
-        val map = SourceRoots.body(strip, "val color = when (c.tone)")
+        // [soát 2.87 · R-OP3 P3] Bảng map dời ra `TopStripChipInk.kt` (`chipInk`) để sàn đọc được của thanh trên khi nền
+        // mờ (`ChromeRoles.chipTexts`) đọc CÙNG bảng — luật của bài không đổi, chỉ đổi chỗ đọc; thanh vẽ phải gọi nó.
+        assertTrue(strip.contains("val color = chipInk(c.tone)"), "thanh trên vẽ chip bằng CHÍNH bảng map dùng chung")
+        val ink = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/TopStripChipInk.kt")
+        val map = SourceRoots.body(ink, "internal fun chipInk(tone: ChipTone): String = when (tone) {")
         ChipTone.values().forEach { tone ->
             assertTrue(map.contains("ChipTone.${tone.name}"), "sắc thái ${tone.name} chưa được map sang màu")
         }
@@ -256,7 +260,7 @@ class TopStripWiringContractTest {
         assertTrue(map.contains("ChipTone.ACTIVE -> KachiTheme.ACCENT_INK"), "ACTIVE phải là vai màu nhấn dùng làm CHỮ")
         assertTrue(map.contains("ChipTone.INACTIVE -> KachiTheme.MUT2"), "INACTIVE phải là vai chữ MỜ")
         assertFalse(
-            map.contains("ChipTone.ACTIVE -> CHIP_INK") || map.contains("ChipTone.INACTIVE -> CHIP_INK"),
+            map.contains("ChipTone.ACTIVE -> KachiTheme.INK2") || map.contains("ChipTone.INACTIVE -> KachiTheme.INK2"),
             "bật/tắt KHÔNG được dùng chung màu với chip trung tính — thế thì trạng thái lại vô hình",
         )
     }

@@ -178,7 +178,9 @@ internal object ShellAccessUi {
         if (now - lastToastAt < TOAST_GAP_MS) return
         lastToastAt = now
         try {
-            Toast.makeText(c, R.string.kachi_access_feature_blocked, Toast.LENGTH_LONG).show()
+            // R9: [c] là Context ỨNG DỤNG (`allowOrPrompt` chuyền `applicationContext`) — bản nhận mã chuỗi của
+            // `Toast.makeText` tra bằng tài nguyên của CHÍNH nó = locale MÁY ⇒ tra qua ngôn ngữ người dùng trước.
+            Toast.makeText(c, LangHost.localized(c).getText(R.string.kachi_access_feature_blocked), Toast.LENGTH_LONG).show()
         } catch (e: RuntimeException) {
             Log.w(TAG, "không hiện được lời nhắc quyền: ${e.message}")
         }

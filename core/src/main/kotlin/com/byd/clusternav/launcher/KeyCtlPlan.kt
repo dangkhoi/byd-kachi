@@ -23,12 +23,24 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
  * cổng tốc độ chặn MỞ cốp thì bảng giữ nguyên "đóng". Giới hạn của bảng (đổi bằng chìa/công tắc cửa, tiến trình `:wake`)
  * ở KDoc [ControlLastSent].
  *
+ * ## Trí nhớ CŨ + xe đang chạy ⇒ hướng LUÔN được phép (2.87 · SOÁT vòng 1 · P1, quyết định điều phối)
+ * Cốp mở bằng đường bảng không thấy (chìa, công tắc cốp, app BYD, Kachi dựng lại khi cốp đang mở) ⇒ bảng vẫn "đóng" ⇒
+ * Đảo giải ra MỞ ⇒ xe đang chạy ⇒ cổng tốc độ chặn, bảng không đổi ⇒ MỌI lần bấm sau lặp lại y hệt: phím Đảo KHÔNG BAO
+ * GIỜ đóng được cốp tới khi xe dừng — đúng ca *"bấm lại là được"* (spec §4.3) gãy. Luật: hành động giải từ TRÍ NHỚ
+ * ([Basis.MEMORY], không phải số đọc từ xe) mà cổng an toàn sẽ chặn NGAY LÚC NÀY ([CtlSafetyPolicy.blockedAtSpeed] —
+ * CÙNG phép của cổng thi hành) ⇒ đổi sang [CtlSafetyPolicy.STATIONARY_SAFE_ARG] ([Basis.MEMORY_SAFE]). Không một
+ * `if (cốp)`: tập nút nằm ở [CtlSafetyPolicy.REQUIRES_STATIONARY]. Số đọc từ XE ([Basis.CAR]) thì không đổi — ở đó MỞ bị
+ * chặn là đúng sự thật. Bảng vẫn chỉ ghi khi lệnh thành công.
+ *
  * Thuần (`:core`) ⇒ bài kiểm bảng chạy off-car (`KeyCtlPlanTest`).
  */
 object KeyCtlPlan {
 
-    /** Trạng thái mà Đảo / Kế tiếp đã dựa vào — vào nhật ký `KeyCtl` để soát trên xe (§11), không đổi hành vi. */
-    enum class Basis { DIRECT, CAR, MEMORY }
+    /**
+     * Trạng thái mà Đảo / Kế tiếp đã dựa vào — vào nhật ký `KeyCtl` để soát trên xe (§11), không đổi hành vi.
+     * [MEMORY_SAFE] = trí nhớ ra hành động mà cổng tốc độ sẽ chặn lúc này ⇒ đã đổi sang hướng luôn được phép (KDoc lớp).
+     */
+    enum class Basis { DIRECT, CAR, MEMORY, MEMORY_SAFE }
 
     sealed interface Outcome {
         /** Giao [intent] cho đường thi hành của nút. [basis] = nguồn trạng thái của Đảo / Kế tiếp ([Basis.DIRECT] cho việc khác). */
@@ -44,6 +56,9 @@ object KeyCtlPlan {
     /**
      * @param count số lần bấm đã gộp (≥ 1) — STEP: số nấc; SELECT Kế tiếp: số bước vòng; hành động khác bỏ qua.
      * @param memory bảng lệnh cuối của tiến trình — mặc định [ControlLastSent.shared] (bài kiểm tiêm bảng riêng).
+     * @param speedKmh vận tốc TƯƠI (`VoiceControlDispatch.speedKmh` — cùng nguồn của cổng thi hành), `null` = không biết.
+     *   KHÔNG mặc định: quên nối là không biên dịch được (mặc định `{ null }` sẽ im lặng đưa P1 "Đảo cốp kẹt MỞ" trở lại).
+     *   Chỉ được gọi khi Đảo / Kế tiếp giải từ TRÍ NHỚ ra lệnh MỞ cho nút thuộc [CtlSafetyPolicy.REQUIRES_STATIONARY].
      * @param readState đọc trạng thái THẬT của nút (`CarControlPort.readState` — 0/1 cho TOGGLE, % cho kính, chỉ số mức
      *   cho SELECT). Chỉ được gọi cho Đảo / Kế tiếp của nút CÓ readKey — mọi ca khác KHÔNG tốn một lượt đọc HAL nào.
      */
@@ -52,6 +67,7 @@ object KeyCtlPlan {
         t: KeyCtlTarget,
         count: Int = 1,
         memory: ControlLastSent = ControlLastSent.shared,
+        speedKmh: () -> Int?,
         readState: () -> Int?,
     ): Outcome {
         val n = count.coerceAtLeast(1)
@@ -61,6 +77,13 @@ object KeyCtlPlan {
         fun current(valid: (Int) -> Boolean): Pair<Int, Basis> =
             (if (def.readKey.isNotBlank()) readState()?.takeIf(valid) else null)?.let { it to Basis.CAR }
                 ?: (memory.index(def.id) to Basis.MEMORY)
+        // Trí nhớ có thể cũ ⇒ hành động nó giải ra mà cổng tốc độ sẽ chặn ⇒ hướng luôn được phép (KDoc lớp, P1).
+        fun resolved(value: Int, basis: Basis): Outcome.Run =
+            if (basis == Basis.MEMORY && CtlSafetyPolicy.blockedAtSpeed(def.id, value, speedKmh)) {
+                run(value = CtlSafetyPolicy.STATIONARY_SAFE_ARG, basis = Basis.MEMORY_SAFE)
+            } else {
+                run(value = value, basis = basis)
+            }
         return when (t.action) {
             KeyCtlAction.ON, KeyCtlAction.OPEN, KeyCtlAction.PRESS -> run(value = 1)
             KeyCtlAction.OFF, KeyCtlAction.CLOSE -> run(value = 0)
@@ -68,13 +91,13 @@ object KeyCtlPlan {
             KeyCtlAction.UP -> run(relative = n)
             KeyCtlAction.DOWN -> run(relative = -n)
             // `> 0` = đang bật/mở — CÙNG phép mà `VoiceReadback.act` dùng (kính đọc %, TOGGLE đọc 0/1, rèm mức 2 = Nửa).
-            KeyCtlAction.FLIP -> current { true }.let { (cur, b) -> run(value = if (cur > 0) 0 else 1, basis = b) }
+            KeyCtlAction.FLIP -> current { true }.let { (cur, b) -> resolved(if (cur > 0) 0 else 1, b) }
             KeyCtlAction.NEXT -> {
                 val size = def.args.size
                 if (size < 2) return Outcome.Invalid
                 // Mức đọc ngoài thang = không phải số hợp lệ ⇒ lùi về lệnh cuối (2.86: từ chối, không bắn).
                 val (cur, b) = current { it in 0 until size }
-                run(value = (cur.coerceIn(0, size - 1) + n) % size, basis = b)
+                resolved((cur.coerceIn(0, size - 1) + n) % size, b)
             }
         }
     }

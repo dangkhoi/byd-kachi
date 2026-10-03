@@ -51,9 +51,15 @@ class KachiChromeContractTest {
         assertEquals(listOf("WallGlass.kt"), callers("KachiChrome.barAlpha("), "sàn đọc được của thanh chỉ tính ở KachiGlass")
         assertEquals(listOf("WallGlass.kt"), callers("KachiChrome.fraction"), "hệ số chỉ đọc ở cửa kính")
         assertEquals(listOf("ThemeHost.kt"), callers("KachiChrome.apply("), "một chỗ ghi")
-        // Ô trên thanh nút biết mình ở thanh nút (sàn riêng khi có ảnh nền) — bằng cỡ ô, không bằng tên chỗ gọi.
-        assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius), size == TileSize.DOCK)" in code(file("ControlTileFactory.kt")))
-        assertTrue("size == TileSize.DOCK)" in code(file("ReadTile.kt")))
+        // Ô trên thanh nút biết mình ở thanh nút (sàn riêng) — [soát 2.87 · P3] chỗ gọi NÓI THẲNG (`onBar`), không suy từ
+        // cỡ ô nữa: ô hành động trong ô NÉN dùng cỡ DOCK mà nằm trong khay ⇒ từng nhận nhầm sàn thanh nút (40 tổ hợp lệch).
+        assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius), onBar)" in code(file("ControlTileFactory.kt")))
+        assertTrue("domain = pick.domain), onBar)" in code(file("ReadTile.kt")))
+        assertFalse("TileSize.DOCK)" in code(file("ReadTile.kt")) || "size == TileSize.DOCK)" in code(file("ControlTileFactory.kt")))
+        assertTrue("size = TileSize.DOCK, onBar = true)" in code(file("ControlDockView.kt")), "thanh nút: trên thanh")
+        assertTrue("size = size, onBar = false)" in code(file("WidgetViews.kt")), "ô hành động trong ô (kể cả ô nén cỡ DOCK): trong khay")
+        assertTrue("size = TileSize.GROUP, onBar = false," in code(file("GroupTileParts.kt")), "hàng nút ô nhóm: trong khay")
+        assertTrue("readTileOf(ctx, size, onBar, pick)" in code(file("ControlTileFactory.kt")))
         assertEquals(2, count("ControlDockView.kt", "KachiTheme.BAR, tiles = true)"), "thanh nút CHỞ ô ⇒ sàn tính cả ô")
         // Mỗi chỗ đúng số lượt gọi: thanh trên + thanh nút dựng nền ở init/build VÀ restyle — thiếu restyle là đổi chủ
         // đề xong thanh rơi về 100 %.
@@ -67,10 +73,7 @@ class KachiChromeContractTest {
 
     @Test
     fun `khong lan ra Cai dat, ngan keo, lop phu giong noi, bo chon, bo sua bo cuc`() {
-        val forbidden = Regex("""^(Settings.*|AppDrawer.*|VoiceOverlay|TopStripPicker|LayoutEditorPanel|VoiceTextConsole|ShellAccessCard|ShellChannelGate|WallView)\.kt$""")
-        val leaks = sources().filter { forbidden.matches(it.fileName.toString()) }
-            .filter { f -> listOf("KachiChrome.", "KachiGlass.bar(").any { it in code(f) } }
-            .map { it.fileName.toString() }
+        val leaks = chromeLeaks(sources().associate { it.fileName.toString() to code(it) })
         assertEquals(emptyList<String>(), leaks, "R-OP2: chỉ màn chính mờ — Cài đặt/hộp thoại/ngăn kéo/dải che giữ nguyên")
         // Bảng màu KHÔNG nhân alpha: KachiTheme/KachiPalette* không biết độ đục.
         listOf("KachiTheme.kt", "KachiThemeDrawables.kt", "KachiPalette.kt", "KachiPaletteDerive.kt").forEach {
@@ -82,7 +85,7 @@ class KachiChromeContractTest {
     fun `khong mo nen mang thong tin`() {
         val tiles = code(file("ControlTileFactory.kt"))
         val applyBg = SourceRoots.body(tiles, "private fun applyBg(")
-        assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius), size == TileSize.DOCK)" in applyBg, "nhánh TẮT mờ")
+        assertTrue("KachiChrome.fade(KachiTheme.surface(ctx, size.radius), onBar)" in applyBg, "nhánh TẮT mờ")
         assertTrue(Regex("""if \(active\) KachiTheme\.gradientSoft\(ctx, size\.radius\) else""").containsMatchIn(applyBg), "nhánh BẬT trần")
         assertFalse("KachiChrome.fade(KachiTheme.gradientSoft" in tiles, "ô BẬT mang trạng thái — không mờ")
         // Ô con nhóm WARN/ALERT: màu nền là thông tin.
@@ -132,8 +135,10 @@ class KachiChromeContractTest {
         val relocate = SourceRoots.body(code(file("WallGlass.kt")), "fun relocate(")
         assertTrue("maxOf(GlassVeil.alphaFor(lum, veilOpaque, surfaces, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum) ?: 0.0)" in relocate)
         assertTrue("veilMax = if (f < 1.0) 1.0 else GlassVeil.MAX," in paint, "100 % ⇒ trần cũ 90 %")
-        assertTrue("overlayFloor = if (f < 1.0 && spec.tone == SurfaceTone.WELL) {" in paint)
-        assertTrue("KachiChrome.wellOverlayFloor(l, veil, pair, shown, inks, GlassVeil.MIN * f)" in paint)
+        // [soát 2.87 · P2] sàn thêm nay cho KHAY và cho thẻ có mực màu KHAI (`extraInks`) — vẫn chỉ dưới 100 %.
+        assertTrue("overlayFloor = if (f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())) {" in paint)
+        assertTrue("KachiChrome.glassFloor(l, veil, pair, shown, inks, extra, spec.tone == SurfaceTone.WELL, GlassVeil.MIN * f)" in paint)
+        assertTrue("val extra = spec.extraInks.filterNot { it in inks }.toIntArray()" in paint, "mực trung tính không khai hai lần")
         assertEquals(GlassVeil.MIN, GlassVeil.MIN * 1.0, 0.0)
         // Bật/tắt ảnh hay đổi bảng màu ở 100 % KHÔNG làm apply báo đổi (không dựng lại ô mỗi lượt ảnh trình chiếu).
         assertFalse(KachiChrome.apply(100, false))
@@ -192,7 +197,73 @@ class KachiChromeContractTest {
             "không chen hàng nào giữa Tông thẻ và Độ đục nền")
     }
 
+    /**
+     * [soát 2.87 · P2] Thẻ ô nén/ô bảng vẽ số to bằng MÀU (w_board: ACCENT thuần) lên kính mờ — bộ giải lớp che chỉ biết
+     * mut/mut2/ink ⇒ ACCENT tụt 4.5 → 3.86:1. Thẻ phải KHAI màu nó vẽ (lúc dựng + khi màu đổi theo nhịp), và danh sách
+     * khai cho bài quét ([ChromeInks.CARD]) phải phủ MỌI màu mà chỗ dựng truyền vào.
+     */
+    @Test
+    fun `the o nen khai mau chu cho lop che, danh sach khai phu moi mau`() {
+        val tel = code(file("WidgetTelemetry.kt"))
+        val mini = SourceRoots.body(tel, "internal class MiniCard(")
+        assertTrue("KachiGlass.apply(this, Sp.RADIUS_M, domain = domain, extraInks = intArrayOf(c(color)))" in mini, "ô nén khai màu chữ")
+        assertTrue("v.color?.let { KachiGlass.addInk(root, c(it)) }" in SourceRoots.body(mini, "fun set("), "màu đổi theo nhịp cũng khai")
+        val cell = SourceRoots.body(tel, "internal class BoardCell(")
+        assertTrue("KachiGlass.apply(this, Sp.RADIUS_M, extraInks = intArrayOf(c(color)))" in cell, "ô bảng khai màu chữ")
+        assertTrue("v.color?.let { KachiGlass.addInk(root, c(it)) }" in SourceRoots.body(cell, "fun set("))
+        val neutral = setOf("INK", "MUT", "MUT2")
+        val used = listOf("WidgetViews.kt", "WidgetTelemetry.kt").flatMap { f ->
+            code(file(f)).lines().filter { l -> listOf("miniCard(", "BoardCell(", "MiniValue(", "val tone =").any { it in l } }
+                .flatMap { l -> Regex("""KachiTheme\.([A-Z_0-9]+)""").findAll(l).map { it.groupValues[1] } }
+        }.toSet()
+        assertTrue("ACCENT" in used && "GREEN" in used, "bộ quét nguồn hỏng? thấy $used")
+        assertEquals(emptySet<String>(), used - neutral - ChromeInks.CARD.keys, "màu chữ thẻ chưa khai trong ChromeInks.CARD")
+        // Chữ màu vẽ THẲNG lên khay (widget to, không qua thẻ khai mực): phải nằm trong ChromeInks.WELL — bài quét đo đúng chúng.
+        val onWell = code(file("WidgetViews.kt")).lines().filter { l -> "tv(ctx," in l || "setTextColor(" in l }
+            .flatMap { l -> Regex("""KachiTheme\.([A-Z_0-9]+)""").findAll(l).map { it.groupValues[1] } }.toSet() - neutral
+        assertTrue("GREEN" in onWell, "bộ quét nguồn hỏng? thấy $onWell")
+        assertEquals(emptySet<String>(), onWell - ChromeInks.WELL, "chữ màu thẳng trên khay chưa khai trong ChromeInks.WELL")
+        assertTrue(ChromeInks.CARD.keys.containsAll(ChromeInks.WELL))
+    }
+
+    /**
+     * [soát 2.87 · P3] `KachiGlass.apply` MỜ theo bậc theo mặc định (`fade = true`) ⇒ một thẻ kính đặt vào Cài đặt/ngăn
+     * kéo/hộp thoại sẽ mờ theo bậc mà bộ quét cũ (chỉ `KachiChrome.` + `KachiGlass.bar(`) không thấy. Thử-phá bằng tệp giả.
+     */
+    @Test
+    fun `bo quet ro ri bat KachiGlass apply mo mac dinh`() {
+        val leak = mapOf("SettingsPreview.kt" to "fun f(v: View) { KachiGlass.apply(v, Sp.RADIUS_M, SurfaceTone.NEUTRAL, slotDomain(x)) }")
+        assertEquals(listOf("SettingsPreview.kt"), chromeLeaks(leak), "thẻ kính mờ mặc định trong Cài đặt phải bị bắt")
+        val ok = mapOf(
+            "SettingsPreview.kt" to "fun f(v: View) { KachiGlass.apply(v, Sp.RADIUS_M, SurfaceTone.NEUTRAL, slotDomain(x), fade = false) }",
+            "WidgetViews.kt" to "fun f(v: View) { KachiGlass.apply(v, Sp.RADIUS_M) }",   // màn chính — được mờ
+        )
+        assertEquals(emptyList<String>(), chromeLeaks(ok), "`fade = false` (nút, không phải nền) và màn chính thì được")
+        assertEquals(listOf("AppDrawerX.kt"), chromeLeaks(mapOf("AppDrawerX.kt" to "val a = KachiChrome.fraction")))
+    }
+
     // ── Hạ tầng ──────────────────────────────────────────────────────────────────────────────────
+
+    /** Tệp NGOÀI màn chính (Cài đặt · ngăn kéo · lớp phủ giọng nói · bộ chọn · bộ sửa bố cục · dải che) chạm độ đục. */
+    private fun chromeLeaks(files: Map<String, String>): List<String> {
+        val forbidden = Regex("""^(Settings.*|AppDrawer.*|VoiceOverlay|TopStripPicker|LayoutEditorPanel|VoiceTextConsole|ShellAccessCard|ShellChannelGate|WallView)\.kt$""")
+        return files.filter { (name, src) ->
+            forbidden.matches(name) && (listOf("KachiChrome.", "KachiGlass.bar(").any { it in src } || fadingGlass(src))
+        }.keys.sorted()
+    }
+
+    /** Có lời gọi `KachiGlass.apply(` nào KHÔNG mang `fade = false` (đọc trọn đối số theo ngoặc, kể cả ngoặc lồng). */
+    private fun fadingGlass(src: String): Boolean {
+        var at = src.indexOf("KachiGlass.apply(")
+        while (at >= 0) {
+            var i = at + "KachiGlass.apply(".length
+            var depth = 1
+            while (i < src.length && depth > 0) { if (src[i] == '(') depth++ else if (src[i] == ')') depth--; i++ }
+            if (!Regex("""\bfade\s*=\s*false\b""").containsMatchIn(src.substring(at, i))) return true
+            at = src.indexOf("KachiGlass.apply(", i)
+        }
+        return false
+    }
 
     private fun sources(): List<Path> = SourceRoots
         .moduleSourceRoots().first { it.toString().contains("app") }

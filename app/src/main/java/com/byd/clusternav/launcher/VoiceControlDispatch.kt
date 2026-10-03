@@ -99,11 +99,10 @@ internal class VoiceControlDispatch(
         // thật gate này có số để chạy; `null` gần như chỉ xảy ra off-car/máy ảo, và ở đó chẳng có cốp nào để bung.
         // Chọn fail-CLOSED thì mọi lần đọc hụt trên xe đỗ sẽ thành một lời từ chối cho một việc hoàn toàn an toàn
         // (mở cốp lúc đỗ là ca dùng **thường nhất** của nút này) — tức một gate an toàn tự biến thành lỗi.
-        if (CtlSafetyPolicy.requiresStationary(def.id) && arg > 0) {
-            val kmh = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
-                ?: state().carStatus.drivetrain.speedKmh
-            if (kmh != null && kmh > 0) { say(VoiceReply.notWhileMoving(shown, l)); done(); return }
-        }
+        //
+        // 2.87 · SOÁT vòng 1 · P1: phép chặn là [CtlSafetyPolicy.blockedAtSpeed] — CÙNG phép mà Đảo/Kế tiếp từ trí nhớ
+        // (`KeyCtlPlan`) hỏi trước để lùi về hướng luôn được phép, nên hai chỗ không thể lệch nhau.
+        if (CtlSafetyPolicy.blockedAtSpeed(def.id, arg, ::speedKmh)) { say(VoiceReply.notWhileMoving(shown, l)); done(); return }
         // ═══ [SOÁT 2.74 · P2] Cú ghi RỜI AUTO chờ 400 ms ⇒ đuôi *"nói gì"* phải là một LỜI GỌI LẠI ═════════════
         //
         // `VoiceSession` gọi lớp này trên luồng VẼ, nên nhánh hai-lệnh của [VoiceClimateStep] trả lời từ luồng nền
@@ -173,4 +172,12 @@ internal class VoiceControlDispatch(
         if (plan == null) finish(runCatching { control().actByKind(def.id, arg) }.getOrDefault(false))
         else climate.apply(def, plan) { ok -> finish(ok) }
     }
+
+    /**
+     * Vận tốc TƯƠI cho cổng [CtlSafetyPolicy.blockedAtSpeed]: [freshCar] trước (vòng poll chỉ đọc datum đang hiện trên
+     * màn — ảnh chụp có thể mang tốc độ cũ hàng phút), ảnh chụp chỉ là đường lùi; `null` = không biết (fail-open).
+     * 2.87 · SOÁT vòng 1 · P1: cũng là nguồn vận tốc của `KeyCtlRunner` cho Đảo/Kế tiếp giải từ trí nhớ — một phép đọc.
+     */
+    fun speedKmh(): Int? = runCatching { freshCar("speed") }.getOrNull()?.drivetrain?.speedKmh
+        ?: state().carStatus.drivetrain.speedKmh
 }

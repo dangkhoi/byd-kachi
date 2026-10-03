@@ -76,7 +76,9 @@ internal object WidgetTelemetry {
             .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
         val root: LinearLayout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            KachiGlass.apply(this, Sp.RADIUS_M, domain = domain)   // P1b: kính khi có ảnh nền, surface() khi không
+            // P1b: kính khi có ảnh nền, surface() khi không. Khai màu chữ số to (vd ACCENT của `w_board`) để lớp che
+            // giữ nó đọc được khi nền mờ (soát 2.87 · R-OP3 P2) — ở 100 % không đổi gì.
+            KachiGlass.apply(this, Sp.RADIUS_M, domain = domain, extraInks = intArrayOf(c(color)))
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
             val r = KachiTheme.iconRes(icon)
             if (r != 0) {
@@ -94,6 +96,7 @@ internal object WidgetTelemetry {
         fun set(v: MiniValue) {
             bigView.text = v.big
             bigView.setTextColor(c(v.color ?: color))
+            v.color?.let { KachiGlass.addInk(root, c(it)) }   // màu đổi theo nhịp (lốp ⇒ hổ phách) cũng được khai
             subView.text = v.caption
             subView.visibility = if (v.caption.isEmpty()) View.GONE else View.VISIBLE
             root.alpha = if (v.dim) 0.5f else 1f
@@ -157,7 +160,7 @@ internal object WidgetTelemetry {
         private val subView: TextView = WidgetViews.tv(ctx, "", 11f, KachiTheme.MUT)
         val root: LinearLayout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            KachiGlass.apply(this, Sp.RADIUS_M)
+            KachiGlass.apply(this, Sp.RADIUS_M, extraInks = intArrayOf(c(color)))   // chữ màu — xem [MiniCard]
             val r = KachiTheme.iconRes(icon)
             if (r != 0) addView(
                 ImageView(ctx).apply { setImageResource(r); setColorFilter(c(color)) },
@@ -171,6 +174,7 @@ internal object WidgetTelemetry {
         fun set(v: MiniValue) {
             bigView.text = v.big
             bigView.setTextColor(c(v.color ?: color))
+            v.color?.let { KachiGlass.addInk(root, c(it)) }
             subView.text = v.caption
             subView.visibility = if (v.caption.isEmpty()) View.GONE else View.VISIBLE
         }

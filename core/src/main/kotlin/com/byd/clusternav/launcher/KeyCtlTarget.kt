@@ -38,7 +38,8 @@ package com.byd.clusternav.launcher
  *
  * ## Giới hạn (owner chấp nhận — spec §4.3)
  * Nút đổi bằng đường khác (chìa, công tắc cửa, app BYD) mà KHÔNG đọc được ⇒ bảng lệnh cuối không biết ⇒ lần Đảo đầu có
- * thể trùng trạng thái (không tác dụng), bấm lại là được. Trạng thái giả định khi tiến trình bật = tắt/đóng (BYD giết
+ * thể trùng trạng thái (không tác dụng), bấm lại là được — riêng ca MỞ-bị-cổng-tốc-độ (cốp lúc xe chạy) thì Đảo từ trí
+ * nhớ lùi về ĐÓNG ngay, không kẹt (KDoc [KeyCtlPlan], SOÁT vòng 1 · P1). Trạng thái giả định khi tiến trình bật = tắt/đóng (BYD giết
  * Kachi mỗi lần tắt máy) — chi tiết + giới hạn cấp tiến trình (`:wake`) ở KDoc [ControlLastSent]. Đích Mở / Đóng · Bật /
  * Tắt riêng VẪN còn cho ai muốn chắc chắn một chiều; mã đích đã lưu ≤ 2.86 đọc lên nguyên vẹn (cú pháp không đổi).
  */

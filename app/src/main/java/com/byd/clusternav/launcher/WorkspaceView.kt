@@ -260,7 +260,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)
         }
-        requestLayout(); invalidate()   // ⚠ KHÔNG ghi [slot-empty] ở đây: `init` gọi hàm này với state RỖNG trước lượt render đầu
+        heads.retain(slotViews.size); requestLayout(); invalidate()   // P3: bỏ đầu ô của ô đã mất · ⚠ KHÔNG ghi [slot-empty] ở đây: `init` gọi với state RỖNG
     }
 
     /**

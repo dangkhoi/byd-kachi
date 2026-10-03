@@ -71,7 +71,8 @@ internal class KachiHomeSlots(
             Log.i(BehindHomeRunner.TAG, "ô $index: $b không vào được ô — trả ô về $a")
             runCatching { workspace().hostAt(index)?.adoptShown(a) }
             viewModel.revertTemporary(index, a)
-            Toast.makeText(app, app.getString(R.string.kachi_sc_place_failed, appLabel(b)), Toast.LENGTH_SHORT).show()
+            // R9: [app] là Context ỨNG DỤNG = tài nguyên theo locale MÁY ⇒ tra chuỗi qua ngôn ngữ người dùng.
+            Toast.makeText(app, LangHost.localized(app).getString(R.string.kachi_sc_place_failed, appLabel(b)), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -102,6 +103,13 @@ internal class KachiHomeSlots(
      */
     fun toBack(index: Int, vd: Int, pkg: String, done: (Boolean) -> Unit) =
         behind.chain("slot-back slot=$index X=$pkg", { out -> done(out.outOfStage) }) { kit -> kit.seq.evictCovered(vd, pkg, kit.hidden) }
+
+    /**
+     * Soát 2.87 · P3 — BEHIND-HOME còn dùng được trong tiến trình này: một PHÉP ĐO `ANCHOR_IN_FRONT` (giữ chỗ bị ROM đưa lên
+     * trước màn nhà) đặt [BehindHomeRunner.disabledReason] tới lần khởi động sau ⇒ mọi lượt [toBack] trả `DISABLED`, 0 lệnh ⇒
+     * nút *chạy nền* đầu ô không được có (`SlotHeadActions.of` — luật "không nút chết"). Cờ RAM chỉ làm Kachi BỚT việc.
+     */
+    fun behindUsable(): Boolean = BehindHomeRunner.disabledReason == null
 
     /**
      * F1 · R1.5 dòng 9 — lối tắt *Toàn màn* cho app ĐANG ở ô [index]: K7 qua rào (màn nhà Kachi đang hiện; dấu hiệu camera

@@ -9,23 +9,17 @@ import android.util.Log
 import android.view.InputDevice
 import android.view.KeyEvent
 import com.byd.clusternav.launcher.HalGateway
+import com.byd.clusternav.voicekey.KeyDeviceCache
 import com.byd.clusternav.voicekey.KeyDeviceInfo
 import com.byd.clusternav.voicekey.KeySample
 import com.byd.clusternav.voicekey.KeySourceFailure
 import com.byd.clusternav.voicekey.KeySourceJournal
 import com.byd.clusternav.voicekey.KeySourceLog
-import com.byd.clusternav.voicekey.KeySourceProbeSpec
+import com.byd.clusternav.voicekey.KeySourceMeter
 import com.byd.clusternav.voicekey.KeySourceProbes
 import com.byd.clusternav.voicekey.KeySourceReading
-import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 /**
  * ═══ L7 · KEY-SOURCE-SPLIT tầng 1 — BỘ ĐO nguồn phím (chỉ ĐO, không đổi cách gán/khớp) ═══════════════════════════
@@ -40,12 +34,15 @@ import java.util.concurrent.TimeoutException
  *     `onKeyEvent` chạy trên MAIN looper của app (cũng là luồng vẽ launcher) và framework chờ kết quả tối đa 500 ms
  *     (`KeyEventDispatcher.java:51,153`) — quá hạn là phím lọt sang hệ thống. Ở đây chỉ chép field nguyên thuỷ +
  *     một lượt `post`: không binder, không I/O, không reflection.
- *  2. **Luồng đo `kachi-keysrc`** ([settle]): tra `InputDevice` (lần đầu mỗi id có thể là binder —
- *     `InputManager.getInputDevice` r47 :250-271; nhớ theo id, bỏ nhớ khi [deviceListener] báo đổi/gỡ), đợi lượt đọc
- *     HAL tối đa [KeySourceProbeSpec.budgetMs], ghi nhật ký.
+ *  2. **Luồng đo `kachi-keysrc`** ([settle]): [KeySourceMeter.measure] (`:core`, thuần, có bài chạy thật) — GỬI lượt đọc
+ *     HAL trước, rồi tra `InputDevice` trong lúc HAL chạy (lần đầu mỗi id có thể là binder —
+ *     `InputManager.getInputDevice` r47 :250-271; nhớ theo id kể cả ca "không có" — [KeyDeviceCache] — bỏ nhớ khi
+ *     [deviceListener] báo thêm/đổi/gỡ), đợi phần còn lại của trần [com.byd.clusternav.voicekey.KeySourceProbeSpec.budgetMs]
+ *     tính từ lúc gửi, ghi nhật ký.
  *  3. **Luồng HAL `kachi-keysrc-hal`** ([halExec]): lượt đọc reflection/binder THẬT. Không ngắt được một lời gọi binder
  *     treo, nên quá hạn thì luồng đo bỏ chờ (ghi `timeout`) và các lần bấm sau ghi `busy` NGAY cho tới khi lượt treo
- *     tự xong — không bao giờ xếp chồng lượt đọc mới lên một HAL đang treo (không bão thử lại).
+ *     tự xong — không bao giờ xếp chồng lượt đọc mới lên một HAL đang treo (không bão thử lại). Luật này nằm ở
+ *     [KeySourceMeter] (2.87 · SOÁT vòng 1 · P2: trước đó chỉ được khoá bằng grep mã nguồn).
  *
  * ## Phạm vi lệnh (CLAUDE.md §4/§5)
  * Chỉ ĐỌC: `BYDAutoAudioDevice.get(int[], Class)` — [ĐO fw src `AbsBYDAutoDevice.java:320-345`] không ghi gì xuống
@@ -60,14 +57,17 @@ class KeySourceRecorder(
     private val thread = HandlerThread(THREAD_NAME)
     @Volatile private var handler: Handler? = null
     @Volatile private var halExec: ExecutorService? = null
-    @Volatile private var inFlight: Future<KeySourceReading>? = null
     private var started = false
 
-    private val devices = ConcurrentHashMap<Int, KeyDeviceInfo>()
+    /** Phần đo thuần (`:core`) — chống chồng lượt + trần + thứ tự HAL-trước-thiết-bị; chỉ gọi từ luồng `kachi-keysrc`. */
+    private val meter = KeySourceMeter(gateway = gateway, exec = { halExec }, clockMs = SystemClock::uptimeMillis)
+
+    private val devices = KeyDeviceCache(::lookupDevice)
     private val deviceListener = object : InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = Unit
-        override fun onInputDeviceRemoved(deviceId: Int) { devices.remove(deviceId) }
-        override fun onInputDeviceChanged(deviceId: Int) { devices.remove(deviceId) }
+        // P3: "thêm" cũng bỏ nhớ — một id đã nhớ là "không có" phải được tra lại khi thiết bị ấy xuất hiện.
+        override fun onInputDeviceAdded(deviceId: Int) { devices.forget(deviceId) }
+        override fun onInputDeviceRemoved(deviceId: Int) { devices.forget(deviceId) }
+        override fun onInputDeviceChanged(deviceId: Int) { devices.forget(deviceId) }
     }
 
     /** Dựng luồng + đăng ký nghe thiết bị nhập. Gọi từ `onServiceConnected` (main); lần gọi thứ hai không làm gì. */
@@ -116,10 +116,8 @@ class KeySourceRecorder(
     /** LUỒNG ĐO. Không bao giờ ném ra ngoài: một lỗi đo không được làm chết tiến trình đang giữ dịch vụ phím. */
     private fun settle(seq: Long, sample: KeySample) {
         val entry = try {
-            val device = deviceInfo(sample.deviceId)
-            val spec = KeySourceProbes.forKey(sample.keyCode)
-            val reading = if (spec == null) KeySourceReading.NOT_MEASURED else readBounded(spec, sample)
-            journal.complete(seq, device, reading, sample)
+            val m = meter.measure(sample, devices)
+            journal.complete(seq, m.device, m.reading, sample)
         } catch (e: RuntimeException) {
             Log.w(KeySourceLog.TAG, "đo nguồn phím seq=$seq hỏng", e)
             journal.complete(seq, null, notRunning(sample), sample)
@@ -127,36 +125,12 @@ class KeySourceRecorder(
         Log.i(KeySourceLog.TAG, KeySourceLog.line(entry))
     }
 
-    /** Tra `InputDevice` theo id — nhớ lại; bỏ nhớ khi framework báo thiết bị đổi/gỡ ([deviceListener]). */
-    private fun deviceInfo(id: Int): KeyDeviceInfo? {
-        devices[id]?.let { return it }
-        // `getInputDevice` ném lại RemoteException dạng RuntimeException khi system_server lỗi — mất tên thiết bị
-        // thì dòng nhật ký vẫn phải ra (có deviceId), không bỏ cả lượt đo.
-        val d = try { InputDevice.getDevice(id) } catch (e: RuntimeException) { null } ?: return null
-        return KeyDeviceInfo(d.name.orEmpty(), d.descriptor.orEmpty(), d.isVirtual, d.vendorId, d.productId)
-            .also { devices[id] = it }
-    }
-
-    /** Một lượt đọc có TRẦN thời gian; lượt trước còn treo ⇒ `busy`, không chồng lượt mới. */
-    private fun readBounded(spec: KeySourceProbeSpec, sample: KeySample): KeySourceReading {
-        if (inFlight?.isDone == false) return KeySourceReading.failed(spec, KeySourceFailure.BUSY, readMs = 0)
-        val exec = halExec ?: return KeySourceReading.failed(spec, KeySourceFailure.NOT_RUNNING)
-        val f = try {
-            exec.submit(Callable { KeySourceProbes.read(spec, gateway(), SystemClock::uptimeMillis, sample.eventTime) })
-        } catch (e: RejectedExecutionException) {
-            return KeySourceReading.failed(spec, KeySourceFailure.NOT_RUNNING)
-        }
-        inFlight = f
-        return try {
-            f.get(spec.budgetMs, TimeUnit.MILLISECONDS)
-        } catch (e: TimeoutException) {
-            KeySourceReading.failed(spec, KeySourceFailure.TIMEOUT, readMs = spec.budgetMs)
-        } catch (e: ExecutionException) {
-            KeySourceReading.failed(spec, KeySourceFailure.READ_ERROR, errorClass = (e.cause ?: e).javaClass.simpleName)
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            KeySourceReading.failed(spec, KeySourceFailure.NOT_RUNNING)
-        }
+    /**
+     * Tra `InputDevice` theo id cho [KeyDeviceCache] (nhớ + bỏ nhớ ở đó). `getInputDevice` ném lại RemoteException dạng
+     * RuntimeException khi system_server lỗi — bộ nhớ coi đó là lỗi tạm thời (không nhớ), dòng nhật ký vẫn ra.
+     */
+    private fun lookupDevice(id: Int): KeyDeviceInfo? = InputDevice.getDevice(id)?.let { d ->
+        KeyDeviceInfo(d.name.orEmpty(), d.descriptor.orEmpty(), d.isVirtual, d.vendorId, d.productId)
     }
 
     private fun notRunning(sample: KeySample): KeySourceReading =

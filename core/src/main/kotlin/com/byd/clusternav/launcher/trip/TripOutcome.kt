@@ -52,7 +52,10 @@ enum class TripStepCode(val result: Result) {
     NOT_STAGED(Result.NOOP),        // không phân giải được / mở không lên
     NO_SESSION(Result.NOOP),        // nhạc: đã mở nhưng app không có phiên nhạc để phát
     UNKNOWN_MEDIA(Result.NOOP),     // nhạc: Kachi không đọc được phiên (thiếu quyền truy cập thông báo)
-    DEADLINE(Result.NOOP);          // hết hạn chuyến trước bước này
+    DEADLINE(Result.NOOP),          // hết hạn chuyến trước bước này
+    ANCHOR_IN_FRONT(Result.OK),     // sống, ẩn trong chỗ dàn dựng — ROM đưa giữ chỗ lên trước màn nhà ⇒ chạy nền TỰ TẮT (R0.5a)
+    UNREAD(Result.UNCONFIRMED),     // đã ra lệnh rồi không đọc lại được cửa sổ (kênh đứt giữa chuỗi) — chưa rõ X ở đâu
+    SLOT_NOT_READY(Result.NOOP);    // nhạc: app ở ô mà ô chưa có màn ảo / task để nhận link ⇒ 0 lệnh (không dàn qua chỗ khác)
 
     enum class Result { OK, UNCONFIRMED, NOOP }
 
@@ -102,8 +105,11 @@ object TripOutcome {
     fun ofBehind(r: BehindHomeSequence.Result?): TripStepCode = when (r) {
         null, BehindHomeSequence.Result.NO_STAGE -> TripStepCode.NO_STAGE
         BehindHomeSequence.Result.MOVED -> TripStepCode.MOVED
-        BehindHomeSequence.Result.MOVED_HOME_RESTORED, BehindHomeSequence.Result.X_FRONT_HOME_RESTORED,
-        BehindHomeSequence.Result.ANCHOR_IN_FRONT -> TripStepCode.HOME_RESTORED
+        BehindHomeSequence.Result.MOVED_HOME_RESTORED, BehindHomeSequence.Result.X_FRONT_HOME_RESTORED -> TripStepCode.HOME_RESTORED
+        // Review 287 [P3]: KHÔNG gộp vào HOME_RESTORED — X không ra sau màn nhà (ở lại ô / màn ảo ẩn) và đây là lần DUY NHẤT
+        // ghi lại sự kiện làm BEHIND-HOME tự tắt (các bước sau chỉ thấy DISABLED) ⇒ ảnh chụp Cài đặt phải nói ra.
+        BehindHomeSequence.Result.ANCHOR_IN_FRONT -> TripStepCode.ANCHOR_IN_FRONT
+        BehindHomeSequence.Result.UNREAD -> TripStepCode.UNREAD
         BehindHomeSequence.Result.KEPT_UNDER, BehindHomeSequence.Result.B_NOT_IN_SLOT -> TripStepCode.KEPT_UNDER
         BehindHomeSequence.Result.ALREADY_RUNNING -> TripStepCode.ALREADY_RUNNING
         BehindHomeSequence.Result.X_NOT_STAGED -> TripStepCode.NOT_STAGED
@@ -112,6 +118,13 @@ object TripOutcome {
         BehindHomeSequence.Result.DISABLED -> TripStepCode.DISABLED
         BehindHomeSequence.Result.TIMEOUT -> TripStepCode.TIMEOUT
     }
+
+    /**
+     * K4-VIEW của bước nhạc ⇒ mã bước (review 287 [P2]). App ở ô ([inSlot]): `null` (ô chưa có màn ảo lúc giao link) hoặc
+     * `X_NOT_STAGED` (màn ảo ô không có task của app — `TripMusicView.NOT_IN_SLOT`) ⇒ [TripStepCode.SLOT_NOT_READY], 0 lệnh.
+     */
+    fun ofView(inSlot: Boolean, r: BehindHomeSequence.Result?): TripStepCode =
+        if (inSlot && (r == null || r == BehindHomeSequence.Result.X_NOT_STAGED)) TripStepCode.SLOT_NOT_READY else ofBehind(r)
 
     /** Loại trừ lúc lập kế hoạch ⇒ mã bước. */
     fun ofSkip(w: TripPlan.Why): TripStepCode = when (w) {

@@ -23,8 +23,8 @@ import kotlin.math.roundToInt
  *  - [apply] đặt lại mọi số đó = gốc × `k` — vì MỌI kích thước trong ô cùng nhân `k`, hộp tự nhiên của ô cũng nhân
  *    đúng `k` (tuyến tính), nên phép khớp ở `:core` tính được trên số đo ở thang 1;
  *  - đổi DẠNG: [Form.HORIZONTAL] lật khối chính ([main]) dọc → ngang (lề "đệm dọc" của con xoay sang ngang, con dùng
- *    `weight` đổi trục); [Form.ICON_ONLY] ẩn NHÃN và chép chữ nhãn vào mô tả trợ năng của ô bấm (TalkBack +
- *    `uiautomator` vẫn đọc được); số dòng nhãn đặt CHUNG cho cả lưới (`minLines = maxLines = lines`) để icon các ô
+ *    `weight` đổi trục, con `MATCH_PARENT` chia hàng — [FitRules.lp], soát vòng 1 P1); [Form.ICON_ONLY] ẩn NHÃN và
+ *    chép chữ nhãn vào mô tả trợ năng của ô bấm (TalkBack + `uiautomator` vẫn đọc được); số dòng nhãn đặt CHUNG cho cả lưới (`minLines = maxLines = lines`) để icon các ô
  *    cùng một trục (luật KIỂM TOÁN UX mục 6 của [reserveTwoLines], nay áp cho mọi ô cùng lưới).
  *
  * **Nhãn** = `TextView` có `maxLines` 2..3 tường minh (nhãn ô nút/gói lệnh/lối tắt). Chữ số/giá trị (`maxLines = 1`)
@@ -63,6 +63,7 @@ internal class FitScale(private val root: View) {
         val minH = v.minimumHeight
         val text = (v as? TextView)?.let { TextBase(it) }
         val isLabel = text != null && text.maxLines in 2..3
+        val free = text != null && text.maxLines == 1 && (v as TextView).ellipsize != null
         val visibility = v.visibility
     }
 
@@ -172,15 +173,19 @@ internal class FitScale(private val root: View) {
         return true
     }
 
-    /** `LayoutParams`: cỡ cố định × k (con dùng `weight` đổi trục khi lật), lề ngoài × k (lề "chỉ dọc" xoay khi lật). */
+    /**
+     * `LayoutParams`: bề rộng/cao/`weight` đích do [FitRules.lp] quyết (`:core`, test thuần — cỡ cố định × k, con
+     * `weight` đổi trục khi lật, con `MATCH_PARENT` CHIA hàng ngang thay vì nuốt hết hàng); lề ngoài × k (lề "chỉ
+     * dọc" xoay khi lật). Icon cỡ cố định đổi cỡ ⇒ [KachiIcons.refit] chọn lại biến thể + tint theo cỡ ĐÃ KHỚP.
+     */
     private fun params(b: Base, k: Double, rot: Boolean): Boolean {
         val lp = b.v.layoutParams ?: return false
-        var w = if (b.lpW > 0) sc(b.lpW, k).coerceAtLeast(1) else b.lpW
-        var h = if (b.lpH > 0) sc(b.lpH, k).coerceAtLeast(1) else b.lpH
-        if (rot && b.weight > 0f) { val t = w; w = h; h = t }
+        val t = FitRules.lp(FitRules.Lp(b.lpW, b.lpH, b.weight), k, rot)
         var changed = false
-        if (lp.width != w) { lp.width = w; changed = true }
-        if (lp.height != h) { lp.height = h; changed = true }
+        if (lp.width != t.width) { lp.width = t.width; changed = true }
+        if (lp.height != t.height) { lp.height = t.height; changed = true }
+        if (lp is LinearLayout.LayoutParams && lp.weight != t.weight) { lp.weight = t.weight; changed = true }
+        if (changed && b.v is ImageView && t.width > 0 && t.height > 0) KachiIcons.refit(b.v, minOf(t.width, t.height))
         val m = b.margins
         if (m != null && lp is ViewGroup.MarginLayoutParams) {
             var (l, t, r, bt) = listOf(m[0], m[1], m[2], m[3])
@@ -270,6 +275,16 @@ internal class FitScale(private val root: View) {
 
     /** `true` nếu [tv] là chữ tự co (autosize) — nó tự lo khoảng trống, không đưa vào phép kiểm cắt chữ. */
     fun autoSized(tv: TextView): Boolean = bases.firstOrNull { it.v === tv }?.text?.auto == true
+
+    /**
+     * `true` nếu [tv] là chữ TỰ DO một dòng (bộ dựng đặt `maxLines = 1` + `ellipsize`: giá trị, tên bài) — `…` là thiết
+     * kế của nó, phép kiểm cắt chữ chỉ đòi nó trọn tới ngân sách [FitRules.FREE_TEXT_EM]. Nhãn (`maxLines` 2..3 GỐC) không
+     * phải, kể cả khi dạng 1 dòng đặt nó về `maxLines = 1`.
+     */
+    fun freeLine(tv: TextView): Boolean = bases.firstOrNull { it.v === tv }?.free == true
+
+    /** Mọi khung con (`ViewGroup`) của ô, kể cả gốc — cho phép kiểm con TRÀN khung cha ([FitProbe.clipped]). */
+    fun groups(): List<ViewGroup> = bases.mapNotNull { it.v as? ViewGroup }
 
     /** Cạnh nhỏ của các `ImageView` cỡ cố định (px gốc) — sàn icon. */
     fun baseIconSides(): List<Int> = bases.filter { it.v is ImageView && it.lpW > 0 && it.lpH > 0 }.map { minOf(it.lpW, it.lpH) }

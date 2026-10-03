@@ -17,33 +17,45 @@ import org.junit.jupiter.api.Test
  * L8 — ĐỔI GHIM có lý do (owner 03/10: nút chạy nền phải làm được ở MỌI ô app): bỏ điều kiện "ô có app LƯU khác" (D-L6-1) —
  * lớp che của Kachi trong màn ảo ô đứng trước app (`BehindHomeSequence.evictCovered`), không cần app B nào. Bảng 60 ô cũ
  * (thêm trục chạy-nền-được) còn 30 ô.
+ *
+ * Soát 2.87 · P3 — ĐỔI GHIM có lý do: thêm trục `behind` (BEHIND-HOME còn dùng được trong tiến trình — một phép đo
+ * `ANCHOR_IN_FRONT` tắt nó tới lần khởi động sau, mọi lượt *chạy nền* sau đó trả `DISABLED`, 0 lệnh) ⇒ 60 ô; `behind = false`
+ * thì ô app mất nút *chạy nền* (luật "không nút chết"), *tắt* giữ nguyên.
  */
 class SlotHeadActionsTest {
 
     /** Bảng mong đợi viết TAY. */
-    private fun expected(kind: Kind, projector: Projector, channel: Boolean): List<Button> = when (kind) {
+    private fun expected(kind: Kind, projector: Projector, channel: Boolean, behind: Boolean): List<Button> = when (kind) {
         Kind.EMPTY -> listOf(Button.SWAP)
         Kind.WIDGET, Kind.APPWIDGET_LIVE, Kind.APPWIDGET_DEAD -> listOf(Button.SWAP, Button.CLOSE)
         Kind.APP -> when {
             projector != Projector.VD -> listOf(Button.SWAP)
             !channel -> listOf(Button.SWAP)
+            !behind -> listOf(Button.SWAP, Button.CLOSE)                     // P3: BEHIND-HOME đã tắt ⇒ không nút chạy nền chết
             else -> listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE)   // L8: MỌI ô app có kênh + màn ảo
         }
     }
 
     @Test
-    fun `du bang 30 o`() {
+    fun `du bang 60 o`() {
         var cells = 0
-        for (kind in Kind.values()) for (p in Projector.values()) for (ch in listOf(true, false)) {
-            assertEquals(expected(kind, p, ch), SlotHeadActions.of(kind, p, ch), "$kind · $p · kênh=$ch")
+        for (kind in Kind.values()) for (p in Projector.values()) for (ch in listOf(true, false)) for (bh in listOf(true, false)) {
+            assertEquals(expected(kind, p, ch, bh), SlotHeadActions.of(kind, p, ch, bh), "$kind · $p · kênh=$ch · behind=$bh")
             cells++
         }
-        assertEquals(5 * 3 * 2, cells)
+        assertEquals(5 * 3 * 2 * 2, cells)
     }
 
     @Test
     fun `thu tu trai sang phai - chay nen, doi, tat - nut doi o giua`() {
-        assertEquals(listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE), SlotHeadActions.of(Kind.APP, Projector.VD, true))
+        assertEquals(listOf(Button.BACKGROUND, Button.SWAP, Button.CLOSE), SlotHeadActions.of(Kind.APP, Projector.VD, true, true))
+    }
+
+    /** P3 — sau `ANCHOR_IN_FRONT` (BEHIND-HOME tắt cả tiến trình) nút chạy nền phải BIẾN MẤT, không ở lại toast "không chạy nền được". */
+    @Test
+    fun `BEHIND-HOME da tat thi o app mat nut chay nen, giu nut tat`() {
+        assertEquals(listOf(Button.SWAP, Button.CLOSE), SlotHeadActions.of(Kind.APP, Projector.VD, channel = true, behind = false))
+        assertEquals(setOf(Button.BACKGROUND, Button.CLOSE), SlotHeadActions.possible(Kind.APP, Projector.VD), "vẫn DỰNG nút (BEHIND-HOME có thể bật lại ở tiến trình sau)")
     }
 
     @Test

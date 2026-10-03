@@ -89,7 +89,7 @@ object KachiChrome {
         plainDock = ChromeStack.floor(fraction, r.plainDock(), g)
         plainWell = ChromeStack.floor(fraction, r.plainWell(), g)
         dockTileArt = ChromeStack.floor(fraction, listOf(r.offTile()), r.barGroundsAtBase())
-        topArtStacks = listOf(r.text())
+        topArtStacks = listOf(r.text()) + r.chipTexts()
         dockArtStacks = listOf(r.text(), r.offTile(), r.onTile())
         wellArtStacks = r.wellOverlays()
         floorsFor = p to fraction
@@ -125,14 +125,21 @@ object KachiChrome {
     }
 
     /**
-     * Khay KÍNH trên ảnh: sàn lớp che để thứ nằm TRÊN khay (ô TẮT · ô BẬT · ô cảnh báo) không tệ hơn hôm nay ở vùng
-     * ảnh độ chói [l] — `WallWindowDrawable.relocate` lấy `max` với bộ giải chữ. [todaySurfaces] = bề mặt khay ở 100 %,
-     * [surfaces] = bề mặt đang vẽ (đã mờ), [veilMin] = sàn lớp che đang dùng. 100 % ⇒ 0 (không ràng buộc, đường cũ).
+     * Thẻ/khay KÍNH trên ảnh: sàn lớp che để thứ bộ giải chữ không thấy vẫn không tệ hơn hôm nay ở vùng ảnh độ chói
+     * [l] — `WallWindowDrawable.relocate` lấy `max` với bộ giải chữ. Hai nguồn: thứ nằm TRÊN khay ([well] — ô TẮT · ô
+     * BẬT · ô cảnh báo) và chữ MÀU thẻ tự khai ([extraInks], `KachiGlass.apply` — soát 2.87 P2: nhãn ACCENT của
+     * `w_board`), mỗi mực một chồng riêng (mực hôm nay đã hụt không kéo mực khác theo). [todaySurfaces] = bề mặt ở
+     * 100 %, [surfaces] = bề mặt đang vẽ (đã mờ), [veilMin] = sàn lớp che đang dùng. 100 % / không gì để giữ ⇒ 0.
      */
-    internal fun wellOverlayFloor(l: Double, veil: Int, todaySurfaces: IntArray, surfaces: IntArray, inks: IntArray, veilMin: Double): Double {
+    internal fun glassFloor(
+        l: Double, veil: Int, todaySurfaces: IntArray, surfaces: IntArray, inks: IntArray, extraInks: IntArray,
+        well: Boolean, veilMin: Double,
+    ): Double {
         if (fraction >= 1.0) return 0.0
+        val stacks = (if (well) wellArtStacks else emptyList()) + extraInks.map { Stack(emptyList(), intArrayOf(it)) }
+        if (stacks.isEmpty()) return 0.0
         val todayVeil = GlassVeil.alphaFor(l, veil, todaySurfaces, inks)
-        return ChromeStack.overlayVeil(l, veil, surfaces, todaySurfaces, todayVeil, wellArtStacks, surfaceFraction(onBar = false, hasArt = true), veilMin, max = 1.0)
+        return ChromeStack.overlayVeil(l, veil, surfaces, todaySurfaces, todayVeil, stacks, surfaceFraction(onBar = false, hasArt = true), veilMin, max = 1.0)
     }
 
     /**
@@ -171,6 +178,13 @@ internal class ChromeRoles {
     private val tileOn = Layer(intArrayOf(c(p.tileOnFrom), c(p.tileOnTo)))                           // applyBg BẬT (gradientSoft)
 
     fun text() = Stack(emptyList(), inks)
+
+    /**
+     * Chữ + icon chip thanh trên — màu theo CHÍNH bảng map của thanh ([chipInk], mọi [ChipTone]), mỗi màu một chồng
+     * (chip hôm nay đã hụt không kéo chữ thường theo). [ĐO bài quét · soát 2.87 P3] thiếu chúng thì ACCENT_INK của chip
+     * BẬT tụt 5.55 → 4.29 ở bảng sáng.
+     */
+    fun chipTexts(): List<Stack> = ChipTone.entries.map { c(chipInk(it)) }.distinct().map { Stack(emptyList(), intArrayOf(it)) }
     fun offTile() = Stack(listOf(surf), tileInks)
     fun onTile() = Stack(listOf(tileOn), intArrayOf(c(p.inkOnAccent)))
 
@@ -194,7 +208,10 @@ internal class ChromeRoles {
     )
 
     /** Không ảnh nền — thanh trên (KachiTopStrip): chữ/chip nằm thẳng trên nền thanh. */
-    fun plainTop(): List<Stack> = listOf(Stack(listOf(Layer(intArrayOf(c(p.barTop)), fades = true)), inks))
+    fun plainTop(): List<Stack> {
+        val top = Layer(intArrayOf(c(p.barTop)), fades = true)
+        return listOf(Stack(listOf(top), inks)) + chipTexts().map { Stack(listOf(top), it.inks) }
+    }
 
     /** Không ảnh nền — thanh nút (ControlDockView) + ô TẮT/ô đọc (mờ cùng hệ số) + ô BẬT trên nó. */
     fun plainDock(): List<Stack> {

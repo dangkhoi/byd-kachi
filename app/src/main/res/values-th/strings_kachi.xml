@@ -214,6 +214,7 @@
     <string name="kachi_slot_to_back">ส่งแอปในช่อง %1$d ไปทำงานเบื้องหลัง</string>
     <string name="kachi_slot_close_app">ปิดแอปในช่อง %1$d</string>
     <string name="kachi_slot_close_widget">ปิดวิดเจ็ตในช่อง %1$d</string>
+    <string name="kachi_slot_close_confirm">แตะอีกครั้งเพื่อปิด</string>
     <string name="kachi_slot_close_failed">ปิด %1$s ไม่ได้</string>
     <string name="kachi_slot_head_autohide_title">ซ่อนปุ่ม ⇄ อัตโนมัติ</string>
     <string name="kachi_slot_head_autohide_sub">ปุ่มสลับแอป/วิดเจ็ตของกรอบจะซ่อนไว้ให้หน้าจอโล่ง แตะที่กรอบ (หรือที่ว่างบนหน้าจอ) เพื่อแสดงสักครู่</string>
@@ -768,6 +769,9 @@
     <string name="kachi_trip_why_no_session">เปิดแล้ว แต่แอปไม่มีเซสชันเพลงให้เล่น — วางลิงก์เพื่อให้เล่นอัตโนมัติ</string>
     <string name="kachi_trip_why_unknown_media">ข้าม — Kachi ยังอ่านสิ่งที่กำลังเล่นไม่ได้ (การเข้าถึงการแจ้งเตือน)</string>
     <string name="kachi_trip_why_deadline">ข้าม — หมดเวลาของเที่ยวนี้</string>
+    <string name="kachi_trip_why_anchor_in_front">กำลังทำงานแบบซ่อนอยู่ แต่ระบบนำหน้าต่างจองที่ขึ้นมาไว้หน้าหน้าจอหลัก การทำงานเบื้องหลังจึงปิดตัวเอง — รีสตาร์ท Kachi เพื่อเปิดอีกครั้ง</string>
+    <string name="kachi_trip_why_unread">ไม่ทราบ — เปิดแอปแล้ว แต่ Kachi อ่านสถานะหน้าต่างกลับมาไม่ได้ (ช่องทางควบคุมขาดหาย)</string>
+    <string name="kachi_trip_why_slot_not_ready">ข้าม — แอปอยู่ในช่อง แต่ช่องยังไม่พร้อมรับลิงก์</string>
     <string name="kachi_trip_system_bg">%1$s เป็นแอประบบ — Kachi ไม่ทำงานเบื้องหลังให้แอประบบ เลือกเปิดตามปกติ หรือวางแอปไว้ในช่อง</string>
     <string name="kachi_trip_music_link_hint">YouTube ไม่เล่นต่อเอง: ถ้าเว้นว่าง Kachi จะแค่เปิดแอป วางลิงก์วิดีโอเพื่อให้เล่นอัตโนมัติ หรือเลือก YT Music</string>
     <string name="kachi_trip_now_running">การสตาร์ทรถครั้งนี้: กำลังทำงาน…</string>

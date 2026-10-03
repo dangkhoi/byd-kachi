@@ -91,7 +91,7 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
      *
      * L4 · D1: `IOException` = kênh đứt ⇒ mã `NO_CHANNEL` (sổ không được nói "đang chạy ẩn" cho một lượt không biết đã
      * tới đâu). Màn ảo ẩn của lượt (nếu đã tạo) KHÔNG nhả ở đây: không đọc được `am stack list` thì không biết trên đó còn
-     * app người dùng không (rào nhả D2) — nó chết theo tiến trình, cờ 256 kết thúc activity trên đó.
+     * app người dùng không (rào nhả D2) — lượt sau thu hồi nó khi bản đọc thấy trống ([HiddenStageReclaim], review 287 [P3]).
      */
     private fun failed(what: String, e: Exception): BehindHomeSequence.Outcome {
         Log.e(TAG, "$what: chuỗi lỗi giữa chừng — lùi O1, gỡ giữ chỗ", e)
@@ -109,7 +109,10 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
             homeComps = DefaultHome.shownComponents(app),
             cameraSig = ClusterProfile.resolveCached(app).cameraSignature,
         )
-        val out = body(Kit(seq, StagingDisplay(app), sh, app))
+        val kit = Kit(seq, StagingDisplay(app), sh, app)
+        // Review 287 [P3]: màn ảo ẩn bị GIỮ ở lượt trước — nhả cái đã trống app người dùng (0 lệnh nếu không có cái nào).
+        HiddenStageReclaim.run(sh, kit.hidden, app.packageName)?.let { Log.i(TAG, it) }
+        val out = body(kit)
         if (out.result == BehindHomeSequence.Result.ANCHOR_IN_FRONT) disable("anchor-in-front")
         return out
     }

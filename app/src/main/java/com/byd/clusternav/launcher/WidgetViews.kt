@@ -149,7 +149,8 @@ object WidgetViews {
                 // 2026-09-17 — ô HÀNH ĐỘNG (WRITE) KHÔNG dựng lại (C5), nhưng phải ĐỌC LẠI giá trị THẬT của xe qua
                 // hàm refresh đã giữ theo view. Gói lệnh không có refresher ⇒ bỏ qua như cũ.
                 if (keep) {
-                    WidgetRefreshers.refreshAction(v, data.car)
+                    // L5 (soát vòng 1): đổ tại chỗ không qua lượt đo ⇒ báo lưới khớp xét chữ mới có bị cắt không.
+                    if (WidgetRefreshers.refreshAction(v, data.car)) FitGridLayout.contentChanged(v)
                     return
                 }
                 // G1·T3 — ô NHÓM tự đổi chữ TẠI CHỖ. KHÔNG được thay view của nó: nhóm kính/cửa/đèn có **hàng
@@ -161,6 +162,7 @@ object WidgetViews {
                 }
                 // Đường CHÍNH của ô ĐỌC (curated + telemetry): đổ số mới vào CHÍNH view đang hiện.
                 if (WidgetRefreshers.refresh(v, data)) {
+                    FitGridLayout.contentChanged(v)
                     changed++
                     return
                 }
@@ -217,7 +219,8 @@ object WidgetViews {
     private fun actionTile(ctx: Context, id: String, data: WidgetData, size: TileSize): View {
         // Gói lệnh (W2) cũng là HÀNH ĐỘNG ⇒ đặt được trong ô giữa màn như mọi nút khác. Đi qua CÙNG lớp đệm với ô nút
         // (bản đầu trả ô trần ⇒ ô gói lệnh dính sát mép khung trong khi ô nút bên cạnh có đệm 12dp).
-        val factory = ControlTileFactory(ctx, control = { data.control }, size = size)
+        // Cỡ DOCK ở ô nén chỉ là CỠ — ô nằm trong khay ô làm việc, không trên thanh nút (sàn mờ của khay, soát 2.87 P3).
+        val factory = ControlTileFactory(ctx, control = { data.control }, size = size, onBar = false)
         // Nút đơn có đường đọc ⇒ ActionTile (view + refresh); gói lệnh ⇒ View trần (không có số để đọc lại).
         var refresh: ((CarStatus) -> Unit)? = null
         val tile = ActionMacros.byId(id)?.let { factory.macroTile(it) }

@@ -287,6 +287,7 @@
     <string name="kachi_slot_to_back">Chạy nền ứng dụng ô %1$d</string>
     <string name="kachi_slot_close_app">Tắt ứng dụng ô %1$d</string>
     <string name="kachi_slot_close_widget">Tắt widget ô %1$d</string>
+    <string name="kachi_slot_close_confirm">Chạm lần nữa để tắt</string>
     <string name="kachi_slot_close_failed">Chưa tắt được %1$s</string>
     <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
     <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>
@@ -919,6 +920,9 @@
     <string name="kachi_trip_why_no_session">đã mở nhưng app không có phiên nhạc để phát — dán một link để tự phát</string>
     <string name="kachi_trip_why_unknown_media">bỏ qua — Kachi chưa đọc được nhạc đang phát (truy cập thông báo)</string>
     <string name="kachi_trip_why_deadline">bỏ qua — hết thời gian của chuyến</string>
+    <string name="kachi_trip_why_anchor_in_front">đang chạy ẩn; chạy nền đã tự tắt vì hệ thống đưa lớp giữ chỗ lên trước màn nhà — khởi động lại Kachi để bật lại</string>
+    <string name="kachi_trip_why_unread">chưa rõ — đã mở app nhưng Kachi không đọc lại được cửa sổ (kênh điều khiển bị gián đoạn)</string>
+    <string name="kachi_trip_why_slot_not_ready">bỏ qua — app ở trong một ô nhưng ô chưa sẵn sàng để nhận link</string>
     <string name="kachi_trip_system_bg">%1$s là app hệ thống — Kachi không chạy nền app hệ thống. Chọn Mở bình thường, hoặc đặt app vào một ô.</string>
     <string name="kachi_trip_music_link_hint">YouTube không tự phát tiếp: để trống thì Kachi chỉ mở app. Dán link một video để tự phát, hoặc chọn YT Music.</string>
     <string name="kachi_trip_now_running">Lần nổ máy này: đang chạy…</string>

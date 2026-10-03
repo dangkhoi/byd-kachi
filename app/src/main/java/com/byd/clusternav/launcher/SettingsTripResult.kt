@@ -68,4 +68,7 @@ internal fun reasonRes(code: TripStepCode): Int = when (code) {
     TripStepCode.NO_SESSION -> R.string.kachi_trip_why_no_session
     TripStepCode.UNKNOWN_MEDIA -> R.string.kachi_trip_why_unknown_media
     TripStepCode.DEADLINE -> R.string.kachi_trip_why_deadline
+    TripStepCode.ANCHOR_IN_FRONT -> R.string.kachi_trip_why_anchor_in_front
+    TripStepCode.UNREAD -> R.string.kachi_trip_why_unread
+    TripStepCode.SLOT_NOT_READY -> R.string.kachi_trip_why_slot_not_ready
 }

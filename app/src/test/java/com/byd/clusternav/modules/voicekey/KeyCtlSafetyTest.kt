@@ -161,14 +161,32 @@ class KeyCtlSafetyTest {
         assertEquals(0, tile.sel("sunshade"))
     }
 
-    /** Cổng an toàn áp lên hành động ĐÃ GIẢI: Đảo ra MỞ cốp lúc xe chạy ⇒ từ chối, không bắn, bảng giữ "đóng". */
+    /**
+     * ═══ 2.87 · SOÁT vòng 1 · P1 (thay khẳng định cũ *"Đảo ra MỞ cốp lúc chạy ⇒ bị chặn, bảng giữ 'đóng'"*) ══════════
+     * Đúng ca gãy: cốp mở bằng chìa/công tắc/app BYD ⇒ bảng vẫn "đóng" (0) ⇒ bản trước giải Đảo ra MỞ, cổng tốc độ chặn,
+     * bảng không đổi ⇒ MỌI lần bấm lúc chạy lặp lại y hệt — phím Đảo không bao giờ ĐÓNG được cốp tới khi xe dừng. Nay
+     * Đảo giải từ TRÍ NHỚ mà cổng sẽ chặn ⇒ hướng luôn được phép: ĐÓNG (`cover:trunk:false`). Cổng KHÔNG bị vòng qua:
+     * lệnh MỞ thẳng (`ctl:trunk:open`) lúc chạy vẫn bị từ chối (bài đầu tệp), và không có lệnh MỞ nào được bắn.
+     */
     @Test
-    fun `dao ra mo cop luc xe chay thi bi cong toc do chan`() {
+    fun `dao cop tu tri nho luc xe chay thi DONG, khong ket o MO bi chan`() {
         val r = Rig(speedKmh = 30)
+        assertEquals(0, sent.index("trunk"), "trí nhớ CŨ: tiến trình nói 'đóng' (cốp thật đang mở bằng chìa)")
         r.press("ctl:trunk:flip")
-        assertEquals(emptyList<String>(), r.port.fired, "phím Đảo KHÔNG được là cửa sau của cổng tốc độ")
-        assertTrue(r.said.single().contains("chỉ mở được khi xe đang dừng"), "${r.said}")
-        assertEquals(0, sent.index("trunk"), "bị chặn = không gửi ⇒ bảng không đổi")
+        assertEquals(listOf("cover:trunk:false"), r.port.fired, "Đảo lúc chạy ⇒ ĐÓNG — hướng duy nhất cổng cho phép")
+        assertFalse(r.said.single().contains("chỉ mở được khi xe đang dừng"), "không còn lời từ chối MỞ: ${r.said}")
+        assertEquals(0, sent.index("trunk"), "đóng thành công ⇒ bảng ghi 'đóng'")
+        r.press("ctl:trunk:flip")
+        assertEquals(listOf("cover:trunk:false", "cover:trunk:false"), r.port.fired, "vẫn chạy ⇒ vẫn ĐÓNG, không bao giờ MỞ")
+        // Xe từ chối lệnh đóng ⇒ bảng không đổi (chỉ ghi khi thành công).
+        sent.record("trunk", 1)
+        r.port.accept = false
+        r.press("ctl:trunk:flip")
+        assertEquals("cover:trunk:false", r.port.fired.last())
+        assertEquals(1, sent.index("trunk"), "lệnh hỏng ⇒ bảng giữ nguyên")
+        // Xe dừng ⇒ Đảo theo trí nhớ như thường.
+        sent.record("trunk", 0)
+        Rig(speedKmh = 0).also { it.press("ctl:trunk:flip"); assertEquals(listOf("cover:trunk:true"), it.port.fired) }
     }
 
     @Test
