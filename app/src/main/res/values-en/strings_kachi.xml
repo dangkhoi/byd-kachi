@@ -100,7 +100,7 @@
     <string name="kachi_sec_units">Display units</string>
     <string name="kachi_sec_theme">Light / dark theme</string>
     <string name="kachi_row_palette">Colour palette</string>
-    <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette rebuilds the screen once.</string>
+    <string name="kachi_theme_note">"Auto" means dark from 18:00 to 06:00. Changing the palette applies in place; apps in slots keep running.</string>
     <!-- UX-OVERHAUL WP1 · R1.3 — fake glass (default) / real glass (blur backdrop, API 31+) -->
     <string name="kachi_glass_real_title">Real glass (blur the backdrop)</string>
     <string name="kachi_glass_real_sub">Blurs what is behind each card for a true glass effect. Runs only on newer head units (Android 12+); older ones fall back to the lighter fake glass. Applies next time the screen opens.</string>
@@ -117,7 +117,7 @@
     <string name="kachi_car_image_steps">How to change the car image (top-down view, transparent background works best):\n1. Plug a USB stick into the car, or open the Files app.\n2. Copy the image into this folder: %1$s\n3. The newest image in the folder is used; reopen the home screen to see it.\nTap the button below to copy the folder path.</string>
     <string name="kachi_copy_path">Copy folder path</string>
     <string name="kachi_path_copied">Folder path copied</string>
-    <string name="kachi_color_note">Saved with the current profile. "From wallpaper" takes the dominant colour of the first photo in the wallpaper folder. Text always stays readable: on a very light accent the button text turns dark by itself. Changing the colour rebuilds the screen once.</string>
+    <string name="kachi_color_note">Saved with the current profile. "From wallpaper" takes the dominant colour of the first photo in the wallpaper folder. Text always stays readable: on a very light accent the button text turns dark by itself. The new colour applies in place; apps in slots keep running.</string>
     <string name="kachi_sec_lang">Language</string>
     <string name="kachi_row_lang">On-screen text</string>
     <string name="kachi_lang_note">\"By car\" = Vietnamese when the car is set to Vietnamese, otherwise English. Chinese, Thai and Malay are only used when you pick them. Voice commands understand Vietnamese only, whatever the on-screen language. Changing the language rebuilds the screen once.</string>

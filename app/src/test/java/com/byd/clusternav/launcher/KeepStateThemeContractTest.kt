@@ -30,6 +30,29 @@ class KeepStateThemeContractTest {
         assertTrue(themeLine == null, "nhánh themeChanged KHÔNG được recreate: $themeLine")
     }
 
+    /**
+     * QA 2.87 — hai ghi chú Cài đặt (`kachi_theme_note` · `kachi_color_note`) nói *"đổi bảng màu/màu thì màn hình dựng lại một
+     * lượt"* ở cả 5 tiếng, trong khi mã (bài ngay trên) đổi màu TẠI CHỖ từ #10 — người dùng được dặn chờ một lượt dựng lại không
+     * bao giờ xảy ra. Ghi chú NGÔN NGỮ (`kachi_lang_note`) vẫn nói dựng lại — đúng, nhánh `LangHost.changed` ⇒ `recreate()`.
+     */
+    @Test
+    fun `ghi chu bang mau va mau nhan khong con hua dung lai man hinh`() {
+        val claimsRebuild = mapOf(
+            "values" to "dựng lại", "values-en" to "rebuild", "values-zh-rCN" to "重建",
+            "values-th" to "สร้างหน้าจอใหม่หนึ่งครั้ง", "values-ms" to "membina semula",
+        )
+        claimsRebuild.forEach { (dir, phrase) ->
+            val xml = SourceRoots.text("src/main/res/$dir/strings_kachi.xml")
+            listOf("kachi_theme_note", "kachi_color_note").forEach { key ->
+                val v = Regex("""<string name="$key">(.*?)</string>""").find(xml)?.groupValues?.get(1)
+                assertTrue(v != null, "$dir thiếu $key")
+                assertFalse(phrase in v!!, "$dir/$key còn hứa dựng lại màn hình (đổi màu là TẠI CHỖ): $v")
+            }
+            val lang = Regex("""<string name="kachi_lang_note">(.*?)</string>""").find(xml)?.groupValues?.get(1).orEmpty()
+            assertTrue(phrase in lang, "$dir/kachi_lang_note: đổi ngôn ngữ VẪN dựng lại (recreate) — ghi chú đó phải giữ: $lang")
+        }
+    }
+
     @Test
     fun `restyle GIU o App (khong nha VD, app khong restart)`() {
         val fn = SourceRoots.body(workspace, "fun restyle(")

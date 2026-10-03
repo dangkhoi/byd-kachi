@@ -53,7 +53,11 @@ class FitRulesRound2WiringContractTest {
         val refit = SourceRoots.body(layout, "private fun refit(w: Int, h: Int)")
         assertTrue(refit.contains("it.fresh = raw.takeIf { got !== raw }"), "giữ số đo thật khi settle giữ số cũ")
         assertTrue(refit.contains("it.cell.probed(SystemClock.elapsedRealtime(), kept = got !== raw)"))
-        assertTrue(refit.contains("it.cell.fitted(it.fs?.let { fs -> FitProbe.clipped(fs) } == true)"), "sau kiểm lại")
+        // ĐỔI GHIM (soát vòng 3, P3): `fitted` nhận thêm "chữ đang hiện là chữ đã đo dò" — kẹt chỉ chốt trên chữ ấy.
+        assertTrue(
+            refit.contains("it.cell.fitted(it.fs?.let { fs -> FitProbe.clipped(fs) } == true, probedContent = probed(it))"),
+            "sau kiểm lại",
+        )
         assertTrue(refit.contains("it.fresh?.let { n -> it.need = n }"), "nhận số đo thật rồi khớp lại")
         assertTrue(refit.contains("if (adopt.isEmpty()) break"), "dừng khi không còn ô nào phải nhận")
         // `settled` trả CHÍNH số đo mới khi mọi dạng nhận nó — không thì `got !== raw` luôn đúng, `kept` sai.

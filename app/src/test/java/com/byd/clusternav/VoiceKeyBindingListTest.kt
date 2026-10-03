@@ -241,6 +241,23 @@ class VoiceKeyBindingListTest {
     }
 
     /**
+     * QA 2.87 [P3] — học phím phải nuốt TRỌN lần nhấn (luật ở `:core` `KeyLearnTail`, bảng `KeyLearnTailTest`). Ở đây khoá dây
+     * nối: đuôi học chặn TRƯỚC cờ học (UP tới khi cờ đã tắt), dấu ghi đúng trong nhánh DOWN của lượt học, reset khi nối lại.
+     * Thiếu một trong ba ⇒ [ĐO máy ảo `l7/learn88-orphan-up.log`] UP mồ côi của phím media bật YT Music.
+     */
+    @Test
+    fun `hoc phim nuot ca UP cua lan nhan da hoc`() {
+        val body = serviceSrc.substringAfter("override fun onKeyEvent(").substringBefore("override fun onAccessibilityEvent(")
+        val tail = body.indexOf("if (learnTail.swallow(action, event.keyCode, event.downTime)) return true")
+        val learnBranch = body.indexOf("if (Prefs.voiceKeyLearn(app)) {")
+        assertTrue(tail in 0 until learnBranch, "đuôi học phải chặn TRƯỚC nhánh học (UP tới khi cờ đã tắt)")
+        val learned = body.indexOf("learnTail.learned(event.keyCode, event.downTime)")
+        assertTrue(learned > learnBranch && learned < body.indexOf("VoiceKeyLearnBus.publish(event.keyCode)"), "ghi dấu trong nhánh DOWN của lượt học")
+        val connected = serviceSrc.substringAfter("override fun onServiceConnected()").substringBefore("override fun onUnbind(")
+        assertTrue("learnTail.reset()" in connected, "nối lại service ⇒ không mang dấu cũ sang")
+    }
+
+    /**
      * UI phải có đủ 3 bước owner mô tả + danh sách + nút xoá từng dòng + nhắc khi rỗng.
      *
      * ⚠ So khớp **cả dấu nháy đóng** (`@+id/x"`), không phải `contains("x")`. Bản đầu của test này dùng

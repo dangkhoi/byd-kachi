@@ -219,14 +219,15 @@ class WidgetInPlaceValueContractTest {
             Regex("""(Weak|Identity)?HashMap<\s*View""").containsMatchIn(registry),
             "sổ keyed by View là rò View+Context: hàm đổ bắt chính view của nó nên khoá không bao giờ bị dọn",
         )
-        listOf("R.id.kachi_widget_fill", "R.id.kachi_widget_action_fill").forEach { key ->
+        // QA 04/10 (làn H1): thêm khoá thứ BA — hàm đổ theo nhịp đồng hồ (`liveTick`/`tickAll`), cùng luật sở hữu.
+        listOf("R.id.kachi_widget_fill", "R.id.kachi_widget_action_fill", "R.id.kachi_widget_tick_fill").forEach { key ->
             assertTrue(registry.contains(key), "hàm đổ phải giữ trên chính view qua tag `$key`")
         }
-        // Đọc/ghi tag chỉ được ở ĐÚNG tệp này — hai khoá lọt ra tệp khác là câu hỏi "ai đang đổ ô này" phải đi tìm.
-        listOf(widgets, shared, media).forEach { src ->
+        // Đọc/ghi tag chỉ được ở ĐÚNG tệp này — khoá lọt ra tệp khác là câu hỏi "ai đang đổ ô này" phải đi tìm.
+        listOf(widgets, shared, media, SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/GroupTiles.kt")).forEach { src ->
             assertFalse(
-                src.contains("kachi_widget_fill") || src.contains("kachi_widget_action_fill"),
-                "hai khoá tag là của riêng WidgetRefreshers — mọi chỗ khác đi qua live()/refresh()",
+                src.contains("kachi_widget_fill") || src.contains("kachi_widget_action_fill") || src.contains("kachi_widget_tick_fill"),
+                "các khoá tag là của riêng WidgetRefreshers — mọi chỗ khác đi qua live()/liveTick()/refresh()",
             )
         }
         // Và KHÔNG còn bản sao thứ hai của sổ ô hành động ở tầng vẽ (nó từng sống trong WidgetViews).

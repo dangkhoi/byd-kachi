@@ -65,7 +65,7 @@
     <string name="kachi_sec_units">Unit paparan</string>
     <string name="kachi_sec_theme">Tema cerah / gelap</string>
     <string name="kachi_row_palette">Palet warna</string>
-    <string name="kachi_theme_note">“Automatik” bermaksud gelap dari 18:00 hingga 06:00. Menukar palet akan membina semula skrin sekali.</string>
+    <string name="kachi_theme_note">“Automatik” bermaksud gelap dari 18:00 hingga 06:00. Menukar palet berkuat kuasa serta-merta; apl dalam petak terus berjalan.</string>
     <string name="kachi_glass_real_title">Kaca sebenar (kaburkan latar)</string>
     <string name="kachi_glass_real_sub">Mengaburkan apa yang di belakang setiap kad untuk kesan kaca sebenar. Hanya berfungsi pada skrin kereta yang lebih baharu (Android 12+); yang lama beralih kepada kaca tiruan yang lebih ringan. Berkuat kuasa pada kali seterusnya skrin dibuka.</string>
     <string name="kachi_sec_color">Warna</string>
@@ -80,7 +80,7 @@
     <string name="kachi_car_image_steps">Cara menukar imej kereta (pandangan dari atas, latar lutsinar paling sesuai):\n1. Pasang pemacu USB pada kereta, atau buka apl Fail.\n2. Salin imej ke folder ini: %1$s\n3. Imej terbaharu dalam folder akan digunakan; buka semula skrin utama untuk melihatnya.\nKetik butang di bawah untuk menyalin laluan folder.</string>
     <string name="kachi_copy_path">Salin laluan folder</string>
     <string name="kachi_path_copied">Laluan folder disalin</string>
-    <string name="kachi_color_note">Disimpan bersama profil semasa. “Dari kertas dinding” mengambil warna dominan foto pertama dalam folder kertas dinding. Teks sentiasa mudah dibaca: pada aksen yang sangat cerah, teks butang menjadi gelap dengan sendirinya. Menukar warna akan membina semula skrin sekali.</string>
+    <string name="kachi_color_note">Disimpan bersama profil semasa. “Dari kertas dinding” mengambil warna dominan foto pertama dalam folder kertas dinding. Teks sentiasa mudah dibaca: pada aksen yang sangat cerah, teks butang menjadi gelap dengan sendirinya. Warna baharu berkuat kuasa serta-merta; apl dalam petak terus berjalan.</string>
     <string name="kachi_sec_lang">Bahasa</string>
     <string name="kachi_row_lang">Teks pada skrin</string>
     <string name="kachi_lang_note">“Ikut kereta” = bahasa Vietnam jika kereta ditetapkan ke bahasa Vietnam, jika tidak bahasa Inggeris. Bahasa Cina, Thai dan Melayu hanya digunakan apabila anda memilihnya. Arahan suara hanya memahami bahasa Vietnam, walau apa pun bahasa pada skrin. Menukar bahasa akan membina semula skrin sekali.</string>

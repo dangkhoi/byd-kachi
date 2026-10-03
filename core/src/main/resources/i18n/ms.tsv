@@ -328,10 +328,10 @@ Nhiệt lốp trước-trái	Tyre temp front-left	Suhu tayar depan-kiri
 Nhiệt lốp trước-phải	Tyre temp front-right	Suhu tayar depan-kanan
 Nhiệt lốp sau-trái	Tyre temp rear-left	Suhu tayar belakang-kiri
 Nhiệt lốp sau-phải	Tyre temp rear-right	Suhu tayar belakang-kanan
-Kính lái	Driver window	Tingkap pemandu
-Kính phụ	Passenger window	Tingkap penumpang
-Kính sau trái	Rear-left window	Tingkap belakang kiri
-Kính sau phải	Rear-right window	Tingkap belakang kanan
+Kính lái	Driver window	Kaca pemandu
+Kính phụ	Passenger window	Kaca penumpang
+Kính sau trái	Rear-left window	Kaca blkg kiri
+Kính sau phải	Rear-right window	Kaca blkg kanan
 Cửa trước-trái	Door front-left	Pintu depan-kiri
 Cửa trước-phải	Door front-right	Pintu depan-kanan
 Cửa sau-trái	Door rear-left	Pintu belakang-kiri
@@ -357,29 +357,29 @@ Mức dầu	Oil level	Paras minyak enjin
 Cốp sau	Tailgate	Pintu but
 Đèn đọc	Reading light	Lampu bacaan
 Lọc bụi	Air purifier	Pemurnian udara
-Mát ghế lái	Driver seat ventilation	Pengudaraan tempat duduk pemandu
+Mát ghế lái	Driver seat ventilation	Pengudaraan pemandu
 Nhiệt độ	Temperature	Suhu
 Gió	Fan	Kipas
 Sấy kính trước	Front defrost	Penyahbeku depan
 Camera 360	360 camera	Kamera 360
 Đèn pha	Headlights	Lampu hadapan
-Sưởi ghế lái	Driver seat heating	Pemanasan tempat duduk pemandu
+Sưởi ghế lái	Driver seat heating	Pemanasan pemandu
 Lấy gió trong	Recirculation	Peredaran dalaman
 Gió tự động	Auto fan	Kipas auto
 Sấy kính sau	Rear defrost	Penyahbeku belakang
 Lọc ngay	Clean now	Murnikan sekarang
-4 kính	All windows	Semua tingkap
-50% kính lái	50% driver window	50% tingkap pemandu
-50% kính phụ	50% passenger window	50% tingkap penumpang
-50% kính sau trái	50% rear-left window	50% tingkap belakang kiri
-50% kính sau phải	50% rear-right window	50% tingkap belakang kanan
-50% 4 kính	50% all windows	50% semua tingkap
-Đóng tất cả kính	Close all windows	Tutup semua tingkap
+4 kính	All windows	Semua kaca
+50% kính lái	50% driver window	50% kaca pemandu
+50% kính phụ	50% passenger window	50% kaca penumpang
+50% kính sau trái	50% rear-left window	50% kaca blkg kiri
+50% kính sau phải	50% rear-right window	50% kaca blkg kanan
+50% 4 kính	50% all windows	50% semua kaca
+Đóng tất cả kính	Close all windows	Tutup semua kaca
 Khóa trẻ em trái	Child lock left	Kunci kanak-kanak kiri
 Khóa trẻ em phải	Child lock right	Kunci kanak-kanak kanan
 Sạc không dây	Wireless charging	Pengecasan wayarles
-Mát ghế phụ	Passenger seat ventilation	Pengudaraan tempat duduk penumpang
-Sưởi ghế phụ	Passenger seat heating	Pemanasan tempat duduk penumpang
+Mát ghế phụ	Passenger seat ventilation	Pengudaraan penumpang
+Sưởi ghế phụ	Passenger seat heating	Pemanasan penumpang
 Lốp	Tyres	Tayar
 Kính	Windows	Tingkap
 Cửa & khoang	Doors & openings	Pintu & bukaan
@@ -747,3 +747,8 @@ Nghiêm trọng	Serious	Sangat teruk
 Nhà	Home	Rumah
 Công ty	Work	Pejabat
 Mặc định	Default	Lalai
+# QA 2.87 [P2] — lý do bỏ nạp sẵn mô hình (VoicePreloadPolicy · PreloadSkip, ghi chú Cài đặt › Giọng nói).
+"Hey Kachi" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai	"Hey Kachi" is on or a steering-wheel key is set to Kachi listening ⇒ the model lives in the :wake process, no second copy is loaded	“Hey Kachi” dihidupkan atau butang stereng ditetapkan kepada Kachi mendengar ⇒ model berada dalam proses :wake, salinan kedua tidak dimuatkan
+hệ thống báo thiếu bộ nhớ (lowMemory=true)	the system reports low memory (lowMemory=true)	sistem melaporkan memori rendah (lowMemory=true)
+chưa biết cỡ mô hình ⇒ nạp như cũ	model size unknown ⇒ loads as before	saiz model tidak diketahui ⇒ dimuatkan seperti biasa
+còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB needed (model {2} MB + headroom {3} MB)	{0} MB bebas, {1} MB diperlukan (model {2} MB + ruang lebihan {3} MB)

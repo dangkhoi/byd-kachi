@@ -18,6 +18,7 @@ import kotlin.math.roundToInt
  * Soát vòng 2 (2.87) thêm: [Cell] + [known] (trình tự đo dò lại của một ô — trạng thái cắt CHƯA BIẾT không được chốt,
  * lượt thưa không nuốt vết cắt thật), [splitsNumber] (số bị bẻ đôi qua hai dòng), [sigStep] (dấu chữ không phụ thuộc dạng),
  * [weight] (bộ áp chỉ ghi weight nó sở hữu), [freeText] + [cut] (ngân sách `…` chỉ cho chữ tự do được khai).
+ * QA + soát vòng 3: [iconScale] (icon không bao giờ to hơn ô, giữ tỉ lệ), [Cell.fitted] chỉ chốt "kẹt" trên chữ đã đo dò.
  *
  * Số dp KHÔNG sống ở đây (`SpacingScaleContractTest`): mọi đầu vào là px do tầng vẽ đo/đổi.
  */
@@ -54,6 +55,20 @@ object FitRules {
             base.width == MATCH -> Lp(0, h, 1f)
             else -> Lp(w, h, base.weight)
         }
+    }
+
+    /**
+     * Hệ số áp cho một ICON cỡ cố định [w]×[h] (px gốc) khi lưới áp [k]: không lớn hơn chỗ [roomW]×[roomH] mà ô dành
+     * cho nó (ô trừ lề trong của các khung bọc + lề ngoài của icon, đã nhân `k`), CÙNG một hệ số cho hai trục ⇒ icon
+     * giữ tỉ lệ, nằm giữa ô (cha căn giữa). QA 04/10 ([ĐO] `l5/icononly-zoom.png`, bản 149dcab): icon 60px trong ô 36px
+     * bị khung lề cắt còn một dải 12px giữa (`LinearLayout.java:1653-1655` canh giữa ra lề âm + `clipToPadding` mặc định
+     * `ViewGroup.java:686-687` r47) — trông như hình bị bóp. Lưới đọc được thì hộp đo dò đã vừa ô ⇒ chặn này không đổi
+     * gì; nó chỉ chặn ca lưới KHÔNG đọc được (giữ sàn, tràn ô). Tối thiểu 1px.
+     */
+    fun iconScale(k: Double, w: Int, h: Int, roomW: Int, roomH: Int): Double {
+        if (w <= 0 || h <= 0) return k
+        val fit = minOf(roomW.toDouble() / w, roomH.toDouble() / h).coerceAtLeast(1.0 / maxOf(w, h))
+        return minOf(k, fit)
     }
 
     /**
@@ -278,9 +293,13 @@ object FitRules {
         /**
          * Sau lượt khớp (đã áp + kiểm lại): ô còn cắt/tràn ([clipped])? Trả `true` (một lần) khi phải nhận NGAY số đo
          * thật vì số đang dùng là số cũ [settle] giữ — hysteresis không được đổi lấy chữ bị cắt (R-WF2).
+         *
+         * [probedContent] = chữ đang hiện là chữ ô đã được ĐO DÒ (dấu chữ trùng lúc đo). Chỉ khi đó vết cắt mới nói
+         * "lượt đo dò không chữa được" ([stuck]); chữ MỚI chưa đo dò mà bị cắt (lượt khớp do ô khác/đổi khung chạy trước
+         * khi ô này đến lượt) thì không — chốt [stuck] lúc ấy biến nhịp nở 1 s thành chờ 30 s (soát vòng 3, P3).
          */
-        fun fitted(clipped: Boolean): Boolean {
-            stuck = clipped
+        fun fitted(clipped: Boolean, probedContent: Boolean = true): Boolean {
+            stuck = clipped && probedContent
             if (!clipped || !kept) return false
             kept = false
             return true

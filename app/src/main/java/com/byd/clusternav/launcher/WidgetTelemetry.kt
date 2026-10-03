@@ -121,11 +121,15 @@ internal object WidgetTelemetry {
         badge: Boolean = false,
         domain: Domain? = null,
         free: Boolean = false,
+        /** Nội dung theo GIỜ (ô nén đồng hồ) ⇒ đổ lại cả theo nhịp đồng hồ ([WidgetRefreshers.liveTick], QA 04/10). */
+        ticks: Boolean = false,
         value: (WidgetData) -> MiniValue,
     ): View {
         val card = MiniCard(ctx, icon, color, badge, domain, free)
-        val fillCard = { d: WidgetData -> card.set(value(d)) }
+        var last = data
+        val fillCard = { d: WidgetData -> last = d; card.set(value(d)) }
         fillCard(data)
+        if (ticks) WidgetRefreshers.liveTick(card.root) { fillCard(last) }
         return WidgetRefreshers.live(card.root, fillCard)
     }
 

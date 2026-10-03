@@ -71,6 +71,16 @@ internal class FitGridLayout private constructor(
 
     private val items = IdentityHashMap<View, Item>()
     private var fit: GridFit.Fit? = null
+
+    /**
+     * Lưới ở tầng đọc được ở lượt khớp GẦN NHẤT — KHÔNG xoá khi một ô con bị thay ([onViewAdded] xoá [fit]): soát vòng
+     * 3 (P2) — ô con thay view làm [fit] `null` ⇒ ô số đứng TRƯỚC nó trong lượt đổ đọc "không đọc được" ⇒ nhịp nở 1 s
+     * thành chờ 30 s ([FitRules.reprobe]).
+     */
+    private var legible = false
+
+    /** Bố cục của dòng nhật ký gần nhất — không xoá theo ô con, để dòng `WidgetFit` chỉ ghi khi bố cục ĐỔI thật. */
+    private var shown: GridFit.Fit? = null
     private var shapes: List<GridFit.Shape> = emptyList()
     private var options: List<FitProbe.Option> = emptyList()
     private var keyW = -1
@@ -153,17 +163,27 @@ internal class FitGridLayout private constructor(
             }
             // Soát vòng 2 (P1): ô còn cắt mà số đang dùng là số CŨ do settle giữ (lượt thưa) ⇒ nhận số đo thật đã có
             // (không đo dò thêm) rồi khớp lại. Mỗi vòng xoá cờ `kept` của ít nhất một ô ⇒ dừng sau tối đa số ô vòng.
-            val adopt = kids.filter { v -> val it = item(v); it.cell.fitted(it.fs?.let { fs -> FitProbe.clipped(fs) } == true) }
+            // Soát vòng 3 (P3): "kẹt" chỉ chốt khi chữ đang hiện là chữ đã đo dò ([probed]) — lượt khớp do ô khác chạy.
+            val adopt = kids.filter { v ->
+                val it = item(v)
+                it.cell.fitted(it.fs?.let { fs -> FitProbe.clipped(fs) } == true, probedContent = probed(it))
+            }
             if (adopt.isEmpty()) break
             adopt.forEach { v -> val it = item(v); it.fresh?.let { n -> it.need = n }; it.fresh = null }
         }
-        val same = f == fit && keyW == w && keyH == h && keyN == kids.size
-        fit = f; keyW = w; keyH = h; keyN = kids.size; refits++
+        val same = f == shown && keyW == w && keyH == h && keyN == kids.size
+        fit = f; shown = f; legible = f.legible; keyW = w; keyH = h; keyN = kids.size; refits++
         val ms = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
         // Lượt khớp vì chữ đổi mà ra đúng bố cục cũ ⇒ không ghi dòng bố cục, nhưng vẫn ghi CHI PHÍ đo dò lại (soát vòng 2,
         // P2: lượt đo dò theo nội dung trước đây vô hình với QA) — tối đa một dòng mỗi lượt đo dò thật, không theo nhịp.
         if (!same) report(f, spec, w, h, steps, ms)
         else if (probed > 0) Log.i(TAG, String.format(Locale.US, "reprobe cells=%d same-layout refit#%d %.1fms", probed, refits, ms))
+    }
+
+    /** Chữ đang hiện của ô là chữ lúc đo dò (dấu trùng) — ô không co giãn/chưa đo ⇒ `false`. */
+    private fun probed(it: Item): Boolean {
+        val fs = it.fs ?: return false
+        return FitProbe.signature(fs) == it.need?.sig
     }
 
     /**
@@ -195,6 +215,7 @@ internal class FitGridLayout private constructor(
             GridFit.Shape(
                 FitProbe.OPTIONS[i].form, s.maxOf { it.widthPx }, s.maxOf { it.heightPx }, s.maxOf { it.minScale },
                 FitProbe.OPTIONS[i].lines, fallback = FitProbe.OPTIONS[i].form == GridFit.Form.ICON_ONLY,
+                reserve = FitProbe.OPTIONS[i].reserve,
             )
         }
     }
@@ -210,11 +231,14 @@ internal class FitGridLayout private constructor(
         )
     }
 
-    /** Áp dạng + `k` đã chọn lên mọi ô co giãn (ô tự vẽ không đụng). */
+    /**
+     * Áp dạng + `k` đã chọn lên mọi ô co giãn (ô tự vẽ không đụng). Kèm cỡ ô: icon cỡ cố định không bao giờ to hơn ô
+     * ([FitRules.iconScale] — QA 04/10, icon bị khung lề cắt thành dải hẹp khi lưới giữ sàn).
+     */
     private fun applyAll(kids: List<View>, f: GridFit.Fit) {
         val at = shapes.indexOfFirst { it === f.shape }
         val opt = options.getOrNull(at) ?: return
-        kids.forEach { v -> item(v).fs?.apply(f.scale, opt.form, opt.lines) }
+        kids.forEach { v -> item(v).fs?.apply(f.scale, opt.form, opt.lines, f.cellW, f.cellH) }
     }
 
     private fun measureAll(cw: Int, ch: Int, force: Boolean) {
@@ -240,7 +264,7 @@ internal class FitGridLayout private constructor(
         val need = it.need ?: return FitRules.Verdict.DUE
         val same = FitProbe.signature(fs) == need.sig
         val now = SystemClock.elapsedRealtime()
-        return it.cell.check(same, fit?.legible == true, now) { FitRules.known(FitProbe.clip(fs), measured) }
+        return it.cell.check(same, legible, now) { FitRules.known(FitProbe.clip(fs), measured) }
     }
 
     /**

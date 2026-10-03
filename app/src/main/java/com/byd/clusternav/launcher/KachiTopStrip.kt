@@ -98,6 +98,17 @@ class KachiTopStrip(
     /** Thứ tự đang ĐẶT trên thanh — để [setLayout] bỏ qua lượt gọi không đổi gì (nó tháo/gắn cả hàng). */
     private var placed: HeaderLayout? = null
 
+    /**
+     * QA 2.87 [P2] — MỌI lượt tô màu chủ đề của view thanh này dựng ([themed]); [restyle] chạy lại hết. [ĐO máy ảo QA
+     * `l2/topright-light.png`] đổi Tối→Sáng tại chỗ (`applyThemeInPlace`, cũng là đường *Tự động* 06:00/18:00): nút mic + ứng
+     * dụng giữ filter/nền lúc DỰNG ⇒ 1,13:1 tới lần khởi động lại. [restyle] cũ liệt kê tay từng view và quên bốn nút; nay không
+     * còn danh sách tay (`TopStripSurfaceContractTest`: mọi dòng đọc màu chủ đề trong tệp đều qua [themed]).
+     */
+    private val painters = ArrayList<() -> Unit>()
+
+    /** Tô ngay + nhớ để [restyle] tô lại theo bảng màu MỚI (đọc `KachiTheme.*` lúc CHẠY, không chụp màu lúc dựng). */
+    private fun themed(paint: () -> Unit) { paint(); painters += paint }
+
     /** View thanh trạng thái (dựng lười một lần). */
     val view: View by lazy { build() }
 
@@ -112,9 +123,9 @@ class KachiTopStrip(
         }
         stripRow = strip
         clock = TextView(activity).apply {
-            setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
+            themed { setTextColor(c(KachiTheme.INK)) }; KachiType.apply(this, KachiType.SECTION, bold = true); letterSpacing = 0.02f
         }
-        dateText = TextView(activity).apply { setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION); setPadding(dp(Sp.M), 0, 0, 0) }
+        dateText = TextView(activity).apply { themed { setTextColor(c(KachiTheme.MUT)) }; KachiType.apply(this, KachiType.CAPTION); setPadding(dp(Sp.M), 0, 0, 0) }
         // WP4 — đồng hồ + ngày là MỘT vật ([HeaderItem.CLOCK], xem KDoc ở đó): chúng đọc liền nhau, tách ra chỉ
         // mời người dùng dựng những thứ tự không ai muốn.
         items[HeaderItem.CLOCK] = LinearLayout(activity).apply {
@@ -209,7 +220,7 @@ class KachiTopStrip(
     /** #10 (2026-09-23) — re-áp bảng màu theme MỚI lên các view đã dựng (thanh trên không giữ ô app). */
     fun restyle() {
         KachiGlass.bar(stripRow, KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP), KachiTheme.BAR_TOP)
-        clock.setTextColor(c(KachiTheme.INK)); dateText.setTextColor(c(KachiTheme.MUT))
+        painters.forEach { it() }             // QA 2.87 [P2]: đồng hồ · ngày · 3 pill · chip hồ sơ — mọi lượt tô của [build]
         chipViews.forEach { it.tag = null }   // ép applyChipFace chạy lại (đổi màu icon/chữ) ở refreshChips kế
         refreshChips(lastStatus, lastUnits, chipConfig)
     }
@@ -257,8 +268,7 @@ class KachiTopStrip(
         scaleType = ImageView.ScaleType.FIT_CENTER
         minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         dp(Bars.HEADER_BTN_PAD).let { setPadding(it, it, it, it) }
-        if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setColorFilter(c(KachiTheme.ON_ACCENT)) }
-        else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) }
+        themed { if (primary) { background = KachiTheme.gradient(context, Sp.RADIUS_PILL); setColorFilter(c(KachiTheme.ON_ACCENT)) } else { background = KachiTheme.pill(context); setColorFilter(c(KachiTheme.INK)) } }
         setOnClickListener { onClick() }
     }
 
@@ -415,20 +425,20 @@ class KachiTopStrip(
         // `CENTER` (không phải `CENTER_VERTICAL`): chỗ DƯ ngang phải chia ĐỀU hai bên — đĩa là vật duy nhất còn vẽ
         // nên tâm của nó PHẢI là tâm của nút (UX1 · R1).
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-        background = KachiTheme.pill(context)
+        themed { background = KachiTheme.pill(context) }
         // WP5 · R5.2 — chip hồ sơ là một NÚT ⇒ cùng đích chạm với ba pill ([Bars.HEADER_BTN], 70 % của [Sp.TOUCH]),
         // và khai CẢ HAI chiều đúng như [pill]: chỉ-icon thì bề NGANG không được để lề trong quyết.
         minimumWidth = dp(Bars.HEADER_BTN); minimumHeight = dp(Bars.HEADER_BTN)
         profileInitialView = TextView(activity).apply {
-            setTextColor(c(KachiTheme.ON_ACCENT))
+            themed { setTextColor(c(KachiTheme.ON_ACCENT)) }
             KachiType.apply(this, KachiType.BODY, bold = true); gravity = Gravity.CENTER
             // WP5 — đĩa chữ-cái-đầu 70 % ([Bars.HEADER_AVATAR]): giữ 32dp trong một chip cao 34dp thì đĩa ăn gần
             // trọn bề cao và chip đọc ra như một nút tròn dính hai mép.
             val s = dp(Bars.HEADER_AVATAR); width = s; height = s
-            background = KachiTheme.gradient(activity, Sp.RADIUS_PILL)
+            themed { background = KachiTheme.gradient(activity, Sp.RADIUS_PILL) }
         }
         profileNameView = TextView(activity).apply {
-            setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY, bold = true)
+            themed { setTextColor(c(KachiTheme.INK)) }; KachiType.apply(this, KachiType.BODY, bold = true)
             maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END; maxWidth = dp(Sp.LABEL_COL)
             setPadding(dp(Sp.S), 0, 0, 0)
             visibility = View.GONE   // V5 (owner 2026-09-25): chỉ icon hồ sơ, bỏ chữ tên (đỡ chật header)

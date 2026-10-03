@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.voice
 import android.content.Context
 import android.util.Log
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.Lang
 import com.byd.clusternav.launcher.perf.KachiMem
 import com.byd.clusternav.voiceBeam
 import com.byd.clusternav.voiceHotwordScore
@@ -283,7 +284,7 @@ object VoiceEngine {
      * người dùng, không phải một lượt tải 74 MB dữ liệu 4G tự khởi động trên một chiếc xe đang chạy.
      */
     @Volatile
-    var lastPreloadSkip: String? = null
+    var lastPreloadSkip: PreloadSkip? = null   // QA 2.87 [P2]: MÃ, không phải câu — Cài đặt dịch lúc hiện ([PreloadSkip.text])
         private set
 
     /**
@@ -368,8 +369,8 @@ object VoiceEngine {
                 // BẬT ∨ phím gán Kachi nghe ([VoiceWakeMode]) — không còn chỉ wake. Xem [VoicePreloadPolicy.shouldPreloadInMain].
                 val mode = if (inWake) VoiceWakeMode.HOLD else runCatching { VoiceWakePrefsMain.mode(app) }.getOrDefault(VoiceWakeMode.OFF)
                 if (!inWake && !VoicePreloadPolicy.shouldPreloadInMain(mode.modelInWake)) {
-                    lastPreloadSkip = VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL
-                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL} (chế độ $mode)")
+                    lastPreloadSkip = VoicePreloadPolicy.WAKE_OWNS_MODEL
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.WAKE_OWNS_MODEL.text(Lang.VI)} (chế độ $mode)")
                     // VK2 — chính không nạp thì `:wake` PHẢI giữ: HOLD có thể chưa ai dựng (BYD giết Kachi mỗi lần tắt
                     // máy, Android dựng lại tiến trình chính lúc màn tắt — không onResume, không boot ⇒ không `sync`).
                     // Đường MỚI xuống cuối (§6); WAKE không đổi byte nào (vòng đời wake có sẵn tự lo).
@@ -391,9 +392,9 @@ object VoiceEngine {
                 }
                 val bytes = runCatching { VoiceModelStore.selected(app).totalBytes }.getOrDefault(0L)
                 if (!VoicePreloadPolicy.shouldPreload(mem.availMem, mem.lowMemory, bytes)) {
-                    val why = VoicePreloadPolicy.reason(mem.availMem, mem.lowMemory, bytes)
+                    val why = VoicePreloadPolicy.skip(mem.availMem, mem.lowMemory, bytes)
                     lastPreloadSkip = why
-                    Log.i(TAG, "nạp sẵn: BỎ QUA — $why; lần bấm mic đầu sẽ nạp như cũ")
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${why.text(Lang.VI)}; lần bấm mic đầu sẽ nạp như cũ")
                     return@runCatching
                 }
                 lastPreloadSkip = null

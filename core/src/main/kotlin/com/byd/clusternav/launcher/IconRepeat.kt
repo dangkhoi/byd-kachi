@@ -23,9 +23,27 @@ object IconRepeat {
     fun distinguishable(icons: Iterable<String>): Boolean = icons.groupingBy { it }.eachCount().none { it.value >= CAP }
 
     /**
+     * Mảnh tên icon chỉ VỊ TRÍ trên cùng một hình (`ic-car-top-window-lf` ↔ `-rf`/`-lr`/`-rr`/`-all`, `ic-seat-heat-left`
+     * ↔ `-right`): các biến thể ấy khác nhau ở một dấu nhỏ trên CÙNG một bóng xe/ghế nhìn từ trên.
+     */
+    private val POSITION = setOf("lf", "rf", "lr", "rr", "fl", "fr", "rl", "all", "left", "right", "front", "rear")
+
+    /** Bóng hình của [icon] — tên bỏ các mảnh [POSITION] (`ic-car-top-window-lf` ⇒ `ic-car-top-window`). */
+    fun silhouette(icon: String): String = icon.split('-').filterNot { it in POSITION }.joinToString("-")
+
+    /**
+     * Luật cho ô KHÔNG NHÃN (dạng chỉ-icon của lưới widget, L5): đếm theo [silhouette], không theo tên tệp. QA 04/10
+     * ([ĐO] máy ảo, ảnh `l5/icononly-zoom.png`): bốn nút kính mang bốn tên khác nhau nên luật theo tên cho bỏ nhãn,
+     * nhưng ở 20–40dp bốn bóng xe chỉ khác một dấu kính cỡ 1–2px — người lái không phân biệt được kính nào. Ô nhóm vẫn
+     * dùng [distinguishable] theo tên vì ở đó nhãn LUÔN hiện cạnh icon (icon chỉ là phụ).
+     */
+    fun distinguishableWithoutLabels(icons: Iterable<String>): Boolean = distinguishable(icons.map(::silhouette))
+
+    /**
      * Cùng luật cho một danh sách MÃ khả năng (ô widget): hình tra từ [CapabilityCatalog.pick] — nguồn hình duy nhất
-     * của mọi bề mặt. Mã lạ / không có hình ⇒ bỏ qua (không có hình thì không có gì để lặp).
+     * của mọi bề mặt. Mã lạ / không có hình ⇒ bỏ qua (không có hình thì không có gì để lặp). Đây là cổng của dạng
+     * CHỈ-ICON (nhãn bị ẩn) ⇒ đếm theo bóng hình ([distinguishableWithoutLabels]).
      */
     fun ofIds(ids: List<String>): Boolean =
-        distinguishable(ids.mapNotNull { CapabilityCatalog.pick(it)?.icon?.takeIf { icon -> icon.isNotEmpty() } })
+        distinguishableWithoutLabels(ids.mapNotNull { CapabilityCatalog.pick(it)?.icon?.takeIf { icon -> icon.isNotEmpty() } })
 }

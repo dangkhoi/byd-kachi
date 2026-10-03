@@ -81,9 +81,11 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
             //    context ("display contexts … should not be used to access … WindowManager instances directly" — Context7
             //    /websites/developer_android_reference); luồng `kachi-behind` không có ngữ cảnh UI ⇒ chưa có bản thay đã kiểm;
             //    2.86 gọi đúng dòng này (không hồi quy). Đổi lời gọi khi chưa đo = trái CLAUDE.md §3/§6.
-            //  • [CHƯA BIẾT] DL5 — 🚗 đọc dòng `KachiBehind stage create vd=… WxH@dpi phys=PxQ` lúc ĐANG chiếu cụm: WxH ≠ PxQ
-            //    (cỡ vật lý display 0, `Display.getMode` — A12 `Display.java:995-1000`, không qua maxBounds) ⇒ cỡ đi theo cấu
-            //    hình ngữ cảnh, phải sửa có số đo.
+            //  • [CHƯA BIẾT] DL5 — 🚗 đọc dòng `KachiBehind stage create vd=… WxH@dpi phys=PxQ rot=R so=…` lúc ĐANG chiếu cụm
+            //    (PxQ = mode tấm nền display 0, `Display.getMode` — A12 `Display.java:995-1000`, không qua maxBounds). Soát vòng 3
+            //    [P3] — luật cũ "WxH ≠ PxQ ⇒ phải sửa" báo động GIẢ khi màn XOAY (cỡ logic hoán W/H, mode thì không) hoặc có
+            //    `wm size`: `so=` phân loại theo [StageSize] — khớp/xoay = đúng display 0; lệch = so tiếp `wm size` + cỡ cụm, chỉ
+            //    lệch không do override mà TRÙNG cỡ cụm mới là bằng chứng (KDoc [StageSize]).
             @Suppress("DEPRECATION")
             val m = DisplayMetrics().also { dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it) }
             if (m.widthPixels <= 0 || m.heightPixels <= 0 || m.densityDpi <= 0) return null
@@ -106,8 +108,11 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
             key = k
             vdId = id
             LIVE[id] = this
-            val phys = runCatching { dm.getDisplay(Display.DEFAULT_DISPLAY)?.mode?.let { "${it.physicalWidth}x${it.physicalHeight}" } }.getOrNull() ?: "?"
-            Log.i(BehindHomeRunner.TAG, "stage create vd=$id ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} phys=$phys key=$k")
+            val mode = runCatching { dm.getDisplay(Display.DEFAULT_DISPLAY)?.mode }.getOrNull()
+            val phys = mode?.let { "${it.physicalWidth}x${it.physicalHeight}" } ?: "?"
+            val so = StageSize.verdict(m.widthPixels, m.heightPixels, mode?.physicalWidth, mode?.physicalHeight)
+            val rot = runCatching { dm.getDisplay(Display.DEFAULT_DISPLAY)?.rotation }.getOrNull() ?: -1
+            Log.i(BehindHomeRunner.TAG, "stage create vd=$id ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} phys=$phys rot=$rot so=${so.tag} key=$k")
             id
         } catch (e: RuntimeException) {
             Log.w(BehindHomeRunner.TAG, "stage create failed", e)

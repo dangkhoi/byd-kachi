@@ -29,6 +29,11 @@ class SlotCloseConfirmTest {
             Row(t0, t0 - 1, 100, Tap.ARM),                      // đồng hồ lùi ⇒ không bao giờ FIRE nhờ hiệu âm
             Row(t0, t0 + 1_000, null, Tap.FIRE),                // cú chạm không đến từ ngón (trợ năng / bàn phím) ⇒ không chặn
             Row(t0, t0 + 1_000, -5, Tap.WAIT),                  // DOWN₂ trước UP₁ = số đo vô nghĩa ⇒ không FIRE trên nó
+            // Soát vòng 3 [P3] — chốt thứ hai click-tới-click: không có số đo DOWN₂ − UP₁ (click không ghép được lần nhấn) mà lượt
+            // hai tới 120 ms sau lượt đầu ⇒ không ai kịp thấy đĩa đỏ rồi xác nhận ⇒ WAIT, không FIRE.
+            Row(t0, t0 + 120, null, Tap.WAIT),
+            Row(t0, t0 + 299, null, Tap.WAIT),
+            Row(t0, t0 + 300, null, Tap.FIRE),
         )
         rows.forEach { r ->
             assertEquals(r.want, SlotCloseConfirm.onTap(r.armedAt, r.now, r.downGap, gap), "$r")

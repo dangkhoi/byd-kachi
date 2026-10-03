@@ -222,12 +222,14 @@ class BehindHomeHiddenStageTest {
     }
 
     /**
-     * Soát vòng 2 [P3] (c) — vacate: K7 đưa X ra display 0, bản đọc màn ảo sau K7 thấy X đã rời, nhưng bản đọc để ghi DẤU
-     * hỏng. Bản cũ: `markMain([])` = 0 dấu rồi VẪN K12 ⇒ X sau màn nhà KHÔNG mang dấu (Kachi chết là X nổi lên) + nhả màn ảo.
-     * Nay: 0 dấu, 0 K12, GIỮ màn ảo (lượt sau thu hồi), `UNREAD`.
+     * Soát vòng 2 [P3] (c) → ĐỔI GHIM ở soát vòng 3 [P3] (có lý do): vacate — K7 đưa X ra display 0, bản đọc màn ảo SAU K7 (đọc
+     * ĐƯỢC) thấy X đã rời ⇒ K7 đã chạy ⇒ X đang ở TRƯỚC màn nhà; rồi bản đọc để ghi DẤU hỏng. Bản vòng 2 trả sớm: 0 dấu, 0 K12,
+     * `UNREAD` ⇒ X (vd YT Music) che màn nhà, người lái phải tự bấm Home — trái luật [markMain] *"ghi hỏng vẫn bắn K12: đưa màn
+     * nhà lên lại quan trọng hơn dấu"*. Nay: đọc lại dấu thêm một lượt, vẫn hỏng ⇒ 0 dấu, VẪN K12 (rào camera), dòng kết quả ghi
+     * `dấu=0 (đọc hỏng)`; màn ảo nhả theo bản đọc `after` (đọc được, trống).
      */
     @Test
-    fun `doc hong luc ghi dau sau K7 - khong dau, khong K12, khong nha`() {
+    fun `doc hong luc ghi dau sau K7 - 0 dau nhung VAN K12, X khong che man nha`() {
         val stuck = alone()
         val reads = listOf(text("l4-hidden-before"), stuck, text("l4-hidden-covered")) +
             List(1 + 1 + BehindHomeSequence.ANCHOR_TRIES) { text("l4-hidden-covered") } + listOf(stuck, text("l4-hidden-after"), "")
@@ -235,8 +237,21 @@ class BehindHomeHiddenStageTest {
         val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
         val k7 = r.log.indexOfFirst { it.contains("--display 0") && it.contains(wazeComp) }
         assertTrue(k7 > r.log.indexOf("UNCOVER"), "K7 đã chạy sau gỡ che: ${r.log}")
-        assertFalse(r.log.drop(k7 + 1).any { it == k12 || it.startsWith("MARK") || it.startsWith("RELEASE") }, "sau K7 + đọc dấu hỏng: ${r.log}")
-        assertEquals(Result.UNREAD, out.result, out.line)
+        val tail = r.log.drop(k7 + 1)
+        assertFalse(tail.any { it.startsWith("MARK") }, "bản đọc dấu hỏng ⇒ không dấu (không có task id thật): ${r.log}")
+        assertTrue(tail.count { it == list } >= 3, "settle sau K7 + đọc dấu + đọc lại dấu một lần: ${r.log}")
+        assertTrue(k12 in tail, "K7 đã đưa X lên TRƯỚC màn nhà ⇒ K12 PHẢI chạy dù không ghi được dấu: ${r.log}")
+        assertTrue(r.log.indexOf("RELEASE 277") > r.log.lastIndexOf(k12), "nhả theo bản đọc `after` (đọc được, trống), SAU K12: ${r.log}")
+
+        // Hỏng thoáng qua MỘT lượt (một lỗi dadb) ⇒ lượt đọc lại ghi được dấu, rồi K12 — như đường thường.
+        val once = Rig(reads.dropLast(1) + listOf("", text("l4-hidden-after")))
+        val o = once.seq.startBehindHidden(waze, once.port, wazeComp)
+        val markAt = once.log.indexOf("MARK 3267 $waze")
+        assertTrue(markAt in 0 until once.log.lastIndexOf(k12), "đọc lại được ⇒ dấu TRƯỚC K12: ${once.log}")
+        assertEquals(Result.X_FRONT_HOME_RESTORED, o.result, o.line)
+        assertTrue(o.line.contains("dấu=1 + K12"), o.line)
+        assertEquals(Result.X_FRONT_HOME_RESTORED, out.result, out.line)
+        assertTrue(out.line.contains("dấu=0 (đọc hỏng)"), out.line)
     }
 
     /** Review 287 [P1] — bản đọc ĐẦU hỏng: không biết X có đang ở ô / cụm không ⇒ 0 lệnh, không tạo màn ảo (K4 sẽ kéo X khỏi chỗ). */

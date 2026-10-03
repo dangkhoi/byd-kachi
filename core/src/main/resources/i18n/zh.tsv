@@ -747,3 +747,8 @@ Nghiêm trọng	Serious	严重
 Nhà	Home	家
 Công ty	Work	公司
 Mặc định	Default	默认
+# QA 2.87 [P2] — lý do bỏ nạp sẵn mô hình (VoicePreloadPolicy · PreloadSkip, ghi chú Cài đặt › Giọng nói).
+"Hey Kachi" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai	"Hey Kachi" is on or a steering-wheel key is set to Kachi listening ⇒ the model lives in the :wake process, no second copy is loaded	“Hey Kachi”已开启或方向盘按键已设为Kachi聆听 ⇒ 模型驻留在:wake进程中，不加载第二份
+hệ thống báo thiếu bộ nhớ (lowMemory=true)	the system reports low memory (lowMemory=true)	系统报告内存不足（lowMemory=true）
+chưa biết cỡ mô hình ⇒ nạp như cũ	model size unknown ⇒ loads as before	模型大小未知 ⇒ 照常加载
+còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB needed (model {2} MB + headroom {3} MB)	剩余{0} MB，需要{1} MB（模型{2} MB + 余量{3} MB）

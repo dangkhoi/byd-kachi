@@ -89,8 +89,13 @@ class FitGridWiringContractTest {
         listOf("addView(", "removeView", "removeAllViews", "inflate(").forEach {
             assertFalse(scale.contains(it), "FitScale có '$it' ⇒ dựng lại view thay vì đổi tại chỗ")
         }
-        val apply = SourceRoots.body(scale, "fun apply(k: Double, f: Form, n: Int)")
-        assertTrue(apply.contains("if (k == scale && f == form && n == lines) return false"), "áp lại cùng bộ ba = no-op")
+        // ĐỔI GHIM (QA 04/10, làn H1): `apply` nhận thêm cỡ ô (cw, ch) để chặn icon theo ô ([FitRules.iconScale]) —
+        // khoá no-op nay là bộ NĂM (k, dạng, số dòng, cỡ ô); đo dò gọi bản không cỡ ô (mặc định = không chặn).
+        val apply = SourceRoots.body(scale, "fun apply(k: Double, f: Form, n: Int, cw: Int = Int.MAX_VALUE, ch: Int = Int.MAX_VALUE)")
+        assertTrue(
+            apply.contains("if (k == scale && f == form && n == lines && cw == cellW && ch == cellH) return false"),
+            "áp lại cùng bộ = no-op",
+        )
         // `setTextSize` là no-op khi autosize bật (TextView.java:4271-4275 r47) ⇒ ô STEP "AUTO" phải co dải autosize.
         val text = SourceRoots.body(scale, "private fun text(")
         assertTrue(text.contains("setAutoSizeTextTypeUniformWithConfiguration(") && text.contains("TypedValue.COMPLEX_UNIT_PX"))

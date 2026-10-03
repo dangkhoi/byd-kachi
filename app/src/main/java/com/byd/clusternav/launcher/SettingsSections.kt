@@ -141,7 +141,7 @@ class SettingsSections(
      * VISUAL-REFRESH P1b · R8 — **màu nhấn** (8 ô + *theo ảnh nền*) và **tông thẻ** (3 chip), theo hồ sơ.
      *
      * Cùng khuôn một chiều với nút chủ đề ngay trên: đọc `deps.state().colorChoice`, intent `deps.onColorChoice`,
-     * `ThemeHost.sync` đọc-để-vẽ rồi màn dựng lại một lượt. Màu xem trước của từng ô lấy từ **cùng** phép suy bảng
+     * `ThemeHost.sync` đọc-để-vẽ rồi `applyThemeInPlace` tô lại TẠI CHỖ (#10 — không dựng lại màn). Màu xem trước của từng ô lấy từ **cùng** phép suy bảng
      * màu sẽ được áp (`accentPreview`), không phải một bảng màu thứ hai vẽ riêng cho Cài đặt.
      */
     private fun color(body: LinearLayout) {

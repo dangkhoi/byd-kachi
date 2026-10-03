@@ -69,9 +69,14 @@ object SlotCloseConfirm {
     fun onTap(armedAt: Long?, now: Long, downGapMs: Long?, minGapMs: Long, windowMs: Long = WINDOW_MS): Tap {
         if (armedAt == null) return Tap.ARM
         val dt = now - armedAt
+        val gap = minGapMs.coerceIn(0L, WINDOW_MS / 2)
         return when {
             dt < 0 || dt >= window(windowMs) -> Tap.ARM
-            downGapMs != null && downGapMs < minGapMs.coerceIn(0L, WINDOW_MS / 2) -> Tap.WAIT
+            downGapMs != null && downGapMs < gap -> Tap.WAIT
+            // Soát vòng 3 [P3] — chốt thứ hai (click-tới-click, luật của bản đầu): một xác nhận CÓ CHỦ Ý (đã thấy đĩa đỏ rồi mới
+            // chạm) không bao giờ tới trong < nhịp nhấp đúp sau lượt đầu ⇒ chặn thêm không mất gì, mà đỡ mọi ca số đo DOWN₂ − UP₁
+            // vắng mặt (cú chạm không ghép được với lần nhấn của nó — [SlotCloseTouch]).
+            dt < gap -> Tap.WAIT
             else -> Tap.FIRE
         }
     }

@@ -276,6 +276,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val v = makeSlot(i, content)
             addView(v); slotViews[i] = v
         }
+        heads.restyleAll()   // QA 2.87: ⇄ + cụm nút của ô App (khung giữ nguyên) tô lại theo bảng màu mới
         requestLayout(); invalidate(); EmptySlotLog.note(displayed.slots, slotViews.size)
     }
 

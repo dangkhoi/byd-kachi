@@ -362,7 +362,9 @@ class VoiceModelTuningWiringContractTest {
     /** Thiếu RAM là một **ghi chú**, không bao giờ là một lượt tự đổi mô hình. */
     @Test
     fun `thieu RAM chi hien ghi chu, khong tu doi mo hinh`() {
-        assertTrue(engine.contains("var lastPreloadSkip: String?"), "phải giữ lại lý do bỏ qua nạp sẵn")
+        // QA 2.87 [P2] — ĐỔI GHIM có lý do: lý do là MÃ (`PreloadSkip`), không còn là câu tiếng Việt (câu ấy lọt nguyên vào ghi
+        // chú đã dịch ở EN/ZH/TH/MS). Tính chất canh không đổi: lý do vẫn được GIỮ để hàng Cài đặt hiện.
+        assertTrue(engine.contains("var lastPreloadSkip: PreloadSkip?"), "phải giữ lại lý do bỏ qua nạp sẵn (dạng mã)")
         assertTrue(
             SourceRoots.body(engine, "fun preload(").contains("lastPreloadSkip = why"),
             "chỗ bỏ qua phải ghi lý do lại, không chỉ in logcat",
@@ -372,6 +374,8 @@ class VoiceModelTuningWiringContractTest {
         val row = SourceRoots.body(settings, "private fun modelRow(")
         assertTrue(row.contains("VoiceEngine.lastPreloadSkip"), "hàng mô hình phải hiện ghi chú thiếu RAM")
         assertTrue(row.contains("R.string.kachi_voice_model_preload_skipped"))
+        // QA 2.87 [P2]: câu lý do dịch theo ngôn ngữ ĐANG HIỆN — truyền thẳng mã vào `getString` là in `toString()` của mã.
+        assertTrue(row.contains("R.string.kachi_voice_model_preload_skipped, it.text())"), "lý do phải qua PreloadSkip.text()")
     }
 
     /** `state.voice_model` phải mang ba trường mới, và `id` là id ĐANG CHỌN (không phải hằng mặc định). */

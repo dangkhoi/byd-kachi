@@ -45,11 +45,15 @@ class GridFitTest {
 
     // ── oracle độc lập ──────────────────────────────────────────────────────────────────────────────────────
 
+    // ĐỔI GHIM (QA 04/10, làn H1): thứ tự từ điển có thêm (a) tầng nhãn DỰ PHÒNG ([Shape.reserve]) giữa nhãn chính và
+    // chỉ-icon, (b) "gần đích chạm" — không ứng viên nào đạt 48dp thì cạnh ngắn của ô dài hơn (theo bậc 1/16 đích chạm)
+    // đứng trước cỡ chữ (khung 301×123 từng ra 6×1 ô 36px = 24dp), (c) tầng KHÔNG đọc được: hộp ở sàn còn vừa CAO ô
+    // đứng trước (tràn dọc = mất nửa dòng, bệnh ảnh 03/10). Oracle viết lại độc lập ba luật ấy.
     private data class O(
         val cols: Int, val rows: Int, val counts: List<Int>, val si: Int, val s: Shape, val k: Double,
-        val legible: Boolean, val touch: Boolean, val empty: Int, val aspect: Double,
+        val legible: Boolean, val touch: Boolean, val empty: Int, val aspect: Double, val near: Int, val tall: Boolean,
     ) {
-        val tier get() = if (!legible) 2 else if (s.fallback) 1 else 0
+        val tier get() = if (!legible) 3 else if (s.fallback) 2 else if (s.reserve) 1 else 0
     }
 
     private fun oracle(n: Int, w: Int, h: Int, shapes: List<Shape>, sp: GridFit.Spec): O {
@@ -65,10 +69,13 @@ class GridFitTest {
                 while ((k + q) * s.widthPx + sp.slackPx <= cw + 1e-9 && (k + q) * s.heightPx + sp.slackPx <= ch + 1e-9) k += q
                 val pw = (w - (cols + 1) * sp.gapPx).toDouble() / cols
                 val ph = (h - (r + 1) * sp.gapPx).toDouble() / r
+                // Dung sai 1e-6 px như bộ giải (pw là phân số — w/3 không biểu diễn đúng ở cơ số 2).
+                val near = if (sp.minCellPx <= 0) 0 else floor((maxOf(0.0, min(pw, ph)) + 1e-6) * 16 / sp.minCellPx).toInt()
                 all += O(
                     cols, r, counts, si, s, k, k + 1e-9 >= s.minScale,
                     sp.minCellPx <= 0 || (pw >= sp.minCellPx && ph >= sp.minCellPx), cols * r - n,
                     if (pw > 0 && ph > 0) abs(ln(pw / ph)) else Double.MAX_VALUE,
+                    near, s.minScale * s.heightPx + sp.slackPx <= ch + 1e-9,
                 )
             }
         }
@@ -79,6 +86,8 @@ class GridFitTest {
             when {
                 a.tier != b.tier -> a.tier.compareTo(b.tier)
                 a.touch != b.touch -> if (a.touch) -1 else 1
+                !a.touch && a.near != b.near -> b.near.compareTo(a.near)
+                a.tall != b.tall -> if (a.tall) -1 else 1
                 cmp(min(a.k, sp.maxScale), min(b.k, sp.maxScale), 1e-6) != 0 -> -cmp(min(a.k, sp.maxScale), min(b.k, sp.maxScale), 1e-6)
                 a.si != b.si -> a.si.compareTo(b.si)
                 cmp(a.k, b.k, 1e-6) != 0 -> -cmp(a.k, b.k, 1e-6)

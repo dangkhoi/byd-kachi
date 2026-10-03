@@ -2,11 +2,13 @@ package com.byd.clusternav.launcher
 
 import android.appwidget.AppWidgetHostView
 import android.content.Context
+import android.graphics.Color
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityManager
+import android.widget.ImageView
 import com.byd.clusternav.ShellReadiness
 import com.byd.clusternav.carexec.ShellReadinessState
 import com.byd.clusternav.launcher.SlotHeadRest.Rest
@@ -121,6 +123,17 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
 
     /** P3 — hỏi lại nút L6 của MỌI ô (kênh đổi · BEHIND-HOME vừa tắt · việc đầu ô vừa xong). Luồng chính. */
     fun refreshAll() = entries.values.forEach { it.cluster?.refresh() }
+
+    /**
+     * QA 2.87 — chủ đề đổi TẠI CHỖ (`WorkspaceView.restyle`): khung ô App giữ nguyên (app chạy tiếp) nên ⇄ + cụm nút của nó
+     * giữ màu icon của lúc DỰNG trong khi đĩa kính dưới chúng đã sang bảng mới (`KachiGlass.refresh`) — cùng họ lỗi nút mic thanh
+     * trên (1,13:1). Tô lại icon ⇄ bằng CÙNG vai [KachiTheme.MUT] của `SlotSwapButton.build` (bộ dựng ⇄ ghim byte ⇒ tô ở đây)
+     * + cụm tự tô lại. Ô khác vừa dựng lại thì tô lại lần nữa là vô hại.
+     */
+    fun restyleAll() = entries.values.forEach { e ->
+        (e.hit as? ViewGroup)?.let { h -> (0 until h.childCount).forEach { (h.getChildAt(it) as? ImageView)?.setColorFilter(Color.parseColor(KachiTheme.MUT)) } }
+        e.cluster?.restyle()
+    }
 
     /** Công tắc theo hồ sơ (R-AH3) — áp lại trạng thái nghỉ tại chỗ, KHÔNG dựng lại ô (app trong ô chạy tiếp). */
     fun setEnabled(on: Boolean) {

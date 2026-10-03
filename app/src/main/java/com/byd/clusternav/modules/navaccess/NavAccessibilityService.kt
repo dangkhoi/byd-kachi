@@ -19,6 +19,7 @@ import com.byd.clusternav.modules.voicekey.KeySourceRecorder
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyAction
 import com.byd.clusternav.voicekey.VoiceKeyConfig
+import com.byd.clusternav.voicekey.KeyLearnTail
 import com.byd.clusternav.voicekey.VoiceKeyMatcher
 
 /**
@@ -48,6 +49,9 @@ class NavAccessibilityService : AccessibilityService() {
     // T3: nút vật lý → trợ lý giọng nói. Matcher thuần ở :core; service chỉ map KeyEvent + phóng intent.
     private val voiceKeyMatcher = VoiceKeyMatcher()
 
+    // QA 2.87 [P3] — phần còn lại (DOWN lặp + UP) của lần nhấn vừa HỌC: nuốt nốt, không để UP mồ côi tới app media.
+    private val learnTail = KeyLearnTail()
+
     // L7 · KEY-SOURCE-SPLIT tầng 1 — CHỈ ĐO nguồn phím (chữ ký + feature HAL đánh dấu nguồn), không đổi khớp/gán.
     // Sống theo một lần bind: dựng ở onServiceConnected, dừng ở onUnbind/onDestroy.
     private var keySource: KeySourceRecorder? = null
@@ -55,6 +59,7 @@ class NavAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         NavAccessibilitySource.connected = true
         voiceKeyMatcher.reset()
+        learnTail.reset()
         keySource?.stop()
         val app = applicationContext
         keySource = KeySourceRecorder(app) { AppContainer.get(app).halGateway }.also { it.start() }
@@ -99,9 +104,19 @@ class NavAccessibilityService : AccessibilityService() {
             keySource?.onDown(KeySourceRecorder.sampleOf(event), learned = Prefs.voiceKeyLearn(app))
         }
 
+        val action = when (event.action) {
+            KeyEvent.ACTION_DOWN -> VoiceKeyAction.DOWN
+            KeyEvent.ACTION_UP -> VoiceKeyAction.UP
+            else -> VoiceKeyAction.OTHER
+        }
+        // QA 2.87 [P3] — DOWN lặp / UP của CHÍNH lần nhấn vừa học (cờ học đã tắt trên DOWN) ⇒ nuốt nốt. Trước: UP đi đường
+        // thường, phím chưa gán ⇒ tới hệ thống ⇒ [ĐO máy ảo `l7/learn88-orphan-up.log`] UP mồ côi bật YT Music.
+        if (learnTail.swallow(action, event.keyCode, event.downTime)) return true
+
         if (Prefs.voiceKeyLearn(app)) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 Prefs.setVoiceKeyLearn(app, false)
+                learnTail.learned(event.keyCode, event.downTime)
                 Log.i(TAG, "learned voice keycode=${event.keyCode} (${KeyEvent.keyCodeToString(event.keyCode)})")
                 VoiceKeyLearnBus.publish(event.keyCode)   // Activity (đang mở màn) hiện dialog đặt tên
             }
@@ -113,11 +128,6 @@ class NavAccessibilityService : AccessibilityService() {
         // F3 (owner 2026-08-24): tra DANH SÁCH gán, không so với một mã nữa. Danh sách rỗng ⇒ mọi phím
         // pass-through (matcher trả IGNORE) ⇒ không nuốt nhầm phím nào của xe.
         val cfg = VoiceKeyConfig(enabled = true, bindings = Prefs.voiceKeyBindings(app))
-        val action = when (event.action) {
-            KeyEvent.ACTION_DOWN -> VoiceKeyAction.DOWN
-            KeyEvent.ACTION_UP -> VoiceKeyAction.UP
-            else -> VoiceKeyAction.OTHER
-        }
         val decision = voiceKeyMatcher.onKey(cfg, action, event.keyCode, event.downTime)
         // Đích lấy TỪ quyết định (bất biến: fire ⟺ targetSpec != null) — KHÔNG tra lại prefs, tra hai lần
         // có thể ra hai kết quả nếu owner vừa sửa danh sách giữa DOWN và lúc phóng intent.

@@ -68,6 +68,12 @@ class SlotLifecycleWiringContractTest {
             "SlotCloseConfirm.window(" to "SlotActionsCluster.kt",
             "SlotCloseConfirm.hideAfterMs(e.cluster?.armedLeftMs())" to "SlotHeadAutoHide.kt",
             "observe(it, cluster)" to "SlotActionsCluster.kt",
+            // Soát vòng 3 [P3] — ghép click↔lần nhấn theo mốc sự kiện · QA 2.87 — đĩa sau ⇄ ô App + tô lại khi đổi chủ đề tại chỗ.
+            "presses.take(now)" to "SlotActionsCluster.kt",
+            "SlotCloseTouch.inView(" to "SlotActionsCluster.kt",
+            "swapDisc(ctx)" to "SlotActionsCluster.kt",
+            "e.cluster?.restyle()" to "SlotHeadAutoHide.kt",
+            "heads.restyleAll()" to "WorkspaceView.kt",
             "heads.retain(slotViews.size)" to "WorkspaceView.kt",
             "workspace().heads.refreshAll()" to "KachiHomeSlotActions.kt",
         ).forEach { (call, file) -> assertTrue(call in code(file), "'$call' phải được gọi trong $file") }
@@ -192,21 +198,29 @@ class SlotLifecycleWiringContractTest {
         val tap = SourceRoots.body(cluster, "private fun tap(")
         // Soát vòng 2 [P3] — ĐỔI GHIM có lý do: khoảng nhấp đúp là DOWN₂ − UP₁ (`MotionEvent.eventTime`, đúng phép
         // `GestureDetector.isConsideredDoubleTap`) chứ không phải click-tới-click; cửa sổ của lượt theo trợ năng ([armedWindow]).
-        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "val down = touchDown.takeIf { touchUp != null }",
-            "touchDown = null; touchUp = null", "val gap = down?.let { d -> lastUp?.let { d - it } }",
-            "SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap, tapGap, armedWindow)",
-            "SlotCloseConfirm.Tap.ARM -> arm(up)", "SlotCloseConfirm.Tap.WAIT -> lastUp = up",
+        // Soát vòng 3 [P3] — ĐỔI GHIM lần nữa, có lý do: cặp `touchDown/touchUp` "hiện tại" sai khi luồng chính trễ (click được
+        // POST — r47 `View.java:14820-14825`; DOWN₂ tới trước click₁ ⇒ click₁ xoá D₂ ⇒ nhấp đúp thành "không phải ngón" ⇒ FIRE).
+        // Nay mỗi click lấy ĐÚNG lần nhấn của nó ([SlotCloseTouch], bảng `SlotCloseTouchTest`) và mọi mốc là `eventTime`.
+        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "val press = presses.take(now)",
+            "val at = press?.up ?: now", "val gap = press?.let { p -> lastUp?.let { p.down - it } }",
+            "SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow)",
+            "SlotCloseConfirm.Tap.ARM -> arm(at, press?.up)", "SlotCloseConfirm.Tap.WAIT -> lastUp = press?.up",
             "SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }")
         assertEquals(1, Regex("""port\.onAction\(index, Button\.CLOSE\)""").findAll(cluster).count(), "đúng MỘT đường tới *tắt* thật")
         val track = SourceRoots.body(cluster, "private fun track(")
-        order(track, "MotionEvent.ACTION_DOWN -> { touchDown = ev.eventTime; touchUp = null }", "MotionEvent.ACTION_UP -> touchUp = ev.eventTime",
-            "MotionEvent.ACTION_CANCEL -> { touchDown = null; touchUp = null }")
+        order(track, "MotionEvent.ACTION_DOWN -> presses.down(ev.eventTime)",
+            "if (!SlotCloseTouch.inView(ev.x, ev.y, v.width, v.height, slop)) presses.left()",
+            "MotionEvent.ACTION_UP -> presses.up(ev.eventTime)", "MotionEvent.ACTION_CANCEL -> presses.cancel()")
+        assertTrue("ViewConfiguration.get(slot.context).scaledTouchSlop" in cluster, "cùng ngưỡng trượt của View (`mTouchSlop`)")
+        assertFalse("touchDown" in cluster || "touchUp" in cluster, "không còn cặp chạm 'hiện tại' (đọc lúc click chạy là đọc nhầm lần nhấn)")
         assertTrue("v.setOnTouchListener { _, ev -> cluster.track(ev); false }" in cluster,
             "người nghe chạm chỉ NHÌN — trả false, click + performClick (trợ năng) đi đường cũ")
         assertEquals(1, Regex("""setOnTouchListener""").findAll(cluster).count(), "chỉ nút *tắt* có người nghe chạm")
         val arm = SourceRoots.body(cluster, "private fun arm(")
-        order(arm, "armedWindow = windowNow()", "lastUp = up", "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm",
-            "slot.postDelayed(disarmTask, armedWindow)", "onArmed(this)")
+        // Soát vòng 3 — ĐỔI GHIM có lý do: mốc lượt đầu là `eventTime` của UP (không phải giờ handler) ⇒ hẹn hết giờ tính từ CÙNG
+        // mốc đó, để đĩa đỏ tắt đúng lúc [SlotCloseConfirm.onTap] thôi nhận xác nhận (không còn "đỏ mà chạm lại thành ARM").
+        order(arm, "armedAt = at", "armedWindow = windowNow()", "lastUp = up", "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm",
+            "slot.postDelayed(disarmTask, (at + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L))", "onArmed(this)")
         val win = SourceRoots.body(cluster, "private fun windowNow(")
         assertTrue("getRecommendedTimeoutMillis(SlotCloseConfirm.WINDOW_MS.toInt(), flags)" in win &&
             "AccessibilityManager.FLAG_CONTENT_CONTROLS or AccessibilityManager.FLAG_CONTENT_ICONS" in win && "SlotCloseConfirm.window(" in win,
@@ -248,6 +262,40 @@ class SlotLifecycleWiringContractTest {
             "đĩa kính NEUTRAL, tròn, không mờ R-OP")
         order(btn, "addView(disc,", "addView(icon,", "paint(this, confirm = false)")
         assertTrue("val disc = View(ctx).apply { isClickable = false; isFocusable = false }" in btn, "đĩa không nhận chạm")
+    }
+
+    /**
+     * QA 2.87 [P3] (D-L8-1) — ⇄ của ô App trần trên trang trắng Chrome gần như vô hình ([ĐO máy ảo `l4/s7-chrome-bg-toast.png`])
+     * trong khi hai nút cụm có ĐĨA KÍNH thì đọc được. Tương phản của đĩa là hợp đồng có sẵn — kính NEUTRAL không mờ R-OP giữ
+     * `MUT ≥ 4.5:1` trên MỌI độ chói ảnh và mọi lựa chọn màu (`ColorChoiceContractTest.lop che kinh du…`) — nên bài này khoá
+     * đúng ba mắt xích để ⇄ hưởng hợp đồng đó: (1) ô App dựng đĩa ở ô GIỮA của hàng (dưới ⇄) bằng CÙNG kính NEUTRAL `fade =
+     * false` và CÙNG hình học với đĩa của nút; (2) icon ⇄ tô `MUT` (bộ dựng ghim byte — không sửa ở đó); (3) nét chính của icon
+     * *chạy nền* mới ở alpha 1.0 (lớp main — tương phản của nó LÀ tương phản `MUT`-trên-kính). Đổi chủ đề TẠI CHỖ: ô App không
+     * dựng lại ⇒ ⇄ + cụm được tô lại (`restyleAll`), không giữ màu icon của bảng cũ trên đĩa đã sang bảng mới.
+     */
+    @Test
+    fun `dia kinh sau ⇄ o App, cung hop dong tuong phan voi nut cum, to lai khi doi chu de`() {
+        val attach = SourceRoots.body(cluster, "fun attach(")
+        assertTrue("b == null && kind == SlotHeadRest.Kind.APP -> swapDisc(ctx)" in attach, "ô giữa của hàng (dưới ⇄) của ô App = đĩa")
+        order(attach, "listOf(Button.BACKGROUND, null, Button.CLOSE)", "slot.addView(row, slot.childCount - 1,")
+        val disc = SourceRoots.body(cluster, "private fun swapDisc(")
+        assertTrue("KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in disc, "cùng kính NEUTRAL không mờ với đĩa nút")
+        assertTrue("addView(disc, discLp(ctx))" in disc && "addView(disc, discLp(ctx))" in SourceRoots.body(cluster, "private fun button("),
+            "đĩa ⇄ và đĩa nút dùng CHUNG một hình học (tâm đĩa = tâm icon ⇄)")
+        assertTrue("isClickable = false; isFocusable = false" in disc && "IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS" in disc,
+            "đĩa không nhận chạm (cú chạm tới khung ⇄ phía trên), không vào cây trợ năng")
+        assertFalse("swapDisc" in SourceRoots.body(cluster, "fun hits("), "đĩa không phải nút — không tính vùng nút")
+        assertTrue("setColorFilter(Color.parseColor(KachiTheme.MUT))" in code("SlotSwapButton.kt"), "icon ⇄ tô MUT — vai mà hợp đồng kính bảo đảm")
+        val icon = SourceRoots.text("src/main/res/drawable/ic_to_back.xml")
+        val main = Regex("""<path[^>]*android:strokeWidth="1.8"[^>]*/>""").findAll(icon).toList()
+        assertTrue(main.isNotEmpty() && main.none { "strokeAlpha" in it.value }, "nét chính của icon chạy nền ở alpha 1.0: $icon")
+        assertTrue("design/glyph/to_back.svg" in icon, "icon sinh bởi gen-icons.py từ nguồn SVG (không vá tay)")
+        // Đổi chủ đề tại chỗ: ô App giữ khung ⇒ phải tô lại ⇄ + cụm.
+        assertTrue("heads.restyleAll()" in SourceRoots.body(code("WorkspaceView.kt"), "fun restyle("))
+        val restyleAll = SourceRoots.body(heads, "fun restyleAll(")
+        assertTrue("setColorFilter(Color.parseColor(KachiTheme.MUT))" in restyleAll && "e.cluster?.restyle()" in restyleAll, restyleAll)
+        assertTrue("paint(it, confirm = b == Button.CLOSE && armedAt != null)" in SourceRoots.body(cluster, "fun restyle("),
+            "cụm tô lại theo bảng mới, nút đang chờ xác nhận giữ đỏ")
     }
 
     @Test

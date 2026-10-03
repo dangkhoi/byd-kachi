@@ -196,7 +196,7 @@ object WidgetViews {
             "w_pm25"   -> miniCard(ctx, data, "ic-leaf", KachiTheme.CYAN) { d -> MiniValue(pm25Ug(d.car)?.toString() ?: "—", "µg · " + (d.car.climate.pm25Level?.let { pm(ctx, it) } ?: "—")) }
             "w_speed"  -> miniCard(ctx, data, "ic-speed", KachiTheme.RED) { d -> MiniValue(d.car.drivetrain.speedKmh?.toString() ?: "—", "km/h") }
             "w_tire"   -> tyreMini(ctx, data)
-            "w_clock"  -> miniCard(ctx, data, "ic-sun", KachiTheme.INK) { MiniValue(SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()), SimpleDateFormat("dd/MM", LangHost.locale()).format(Date())) }
+            "w_clock"  -> miniCard(ctx, data, "ic-sun", KachiTheme.INK, ticks = true) { MiniValue(SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()), SimpleDateFormat("dd/MM", LangHost.locale()).format(Date())) }
             "w_media"  -> miniCard(ctx, data, "ic-music", KachiTheme.AMBER, free = true) { d -> MiniValue(d.media?.title ?: "—", d.media?.artist ?: "") }
             "w_car"    -> miniCard(ctx, data, "ic-lock", KachiTheme.GREEN) { MiniValue(ctx.getString(R.string.kachi_widget_car)) }
             "w_board"  -> miniCard(ctx, data, "ic-grid", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kachi_widget_board)) }
@@ -378,13 +378,17 @@ object WidgetViews {
             }
         }
         val root = col(ctx).apply { addView(time); addView(date); addView(outside) }
+        var last = data
         fun fillClock(d: WidgetData) {
+            last = d
             val temp = d.car.climate.outsideTempC?.let { "$it°C" } ?: "—"
             time.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
             date.text = SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date())
             outside.text = ctx.getString(R.string.kachi_outside_temp, temp)
         }
         fillClock(data)
+        // QA 04/10: giờ theo NHỊP ĐỒNG HỒ (10 s), không chỉ khi trạng thái xe đổi — xem WidgetRefreshers.liveTick.
+        WidgetRefreshers.liveTick(root) { fillClock(last) }
         return WidgetRefreshers.live(root, ::fillClock)
     }
 

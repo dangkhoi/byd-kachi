@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -119,6 +120,47 @@ class VoicePreloadPolicyTest {
         }
         assertEquals(ModelHolder.Release.entries.toSet(), (busy + listOf(ModelHolder.Release.RELEASED, ModelHolder.Release.EMPTY)).toSet(),
             "mọi kết cục của tryRelease đều có luật — thêm kết cục mới thì bài này đỏ, phải quyết nó")
+    }
+
+    /**
+     * QA 2.87 [P2] — ghi chú Cài đặt *"Kachi bỏ qua bước nạp sẵn mô hình (%1$s)"* đã dịch đủ 5 tiếng nhưng `%1$s` là CÂU tiếng
+     * Việt từ `:core` ⇒ máy EN/ZH/TH/MS thấy nửa câu tiếng Việt ([ĐO máy ảo `l1/{en,zh,th,ms}/g09-p00.xml`]). Nay lý do là MÃ
+     * ([PreloadSkip]) dịch lúc hiện. Bản tiếng Việt PHẢI giữ đúng từng byte câu cũ (log xe đọc như trước) — chuỗi cũ chép tay
+     * ở đây, không suy ra từ mã.
+     */
+    @Test
+    fun `ly do bo nap san la MA - ban tieng Viet giu nguyen tung byte`() {
+        assertEquals(
+            "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai",
+            VoicePreloadPolicy.WAKE_OWNS_MODEL.text(Lang.VI),
+        )
+        assertEquals("hệ thống báo thiếu bộ nhớ (lowMemory=true)", VoicePreloadPolicy.reason(500 * mb, lowMemory = true, modelBytes = 74 * mb))
+        assertEquals("chưa biết cỡ mô hình ⇒ nạp như cũ", VoicePreloadPolicy.reason(10 * mb, lowMemory = false, modelBytes = 0))
+        assertEquals(
+            "còn 100 MB, cần 185 MB (mô hình 74 MB + thở 111 MB)",
+            VoicePreloadPolicy.reason(100 * mb, lowMemory = false, modelBytes = 74 * mb),
+        )
+    }
+
+    /** Mọi mã có câu ở MỌI tiếng, không còn dấu tiếng Việt ngoài VI, và số MB đi qua đủ ở mọi tiếng. */
+    @Test
+    fun `ly do bo nap san dich du 5 tieng, khong lot tieng Viet`() {
+        val samples = PreloadSkip.Code.entries.map { code ->
+            if (code == PreloadSkip.Code.NOT_ENOUGH_RAM) VoicePreloadPolicy.skip(100 * mb, false, 74 * mb) else PreloadSkip(code)
+        }
+        val viMarks = Regex("[ạảãàáâậầấẩẫăắằặẳẵẹẻẽèéêếềệểễịỉĩìíọỏõòóôốồộổỗơớờợởỡụủũùúưứừựửữỳýỵỷỹđ]", RegexOption.IGNORE_CASE)
+        samples.forEach { s ->
+            Lang.entries.filter { it != Lang.VI }.forEach { lang ->
+                val t = s.text(lang)
+                assertFalse(viMarks.containsMatchIn(t), "${s.code} · $lang còn tiếng Việt: $t")
+                assertTrue(t != s.text(Lang.VI), "${s.code} · $lang trùng bản VI")
+                if (s.code == PreloadSkip.Code.NOT_ENOUGH_RAM) {
+                    listOf("100", "185", "74", "111").forEach { n -> assertTrue(n in t, "${s.code} · $lang mất số $n: $t") }
+                }
+            }
+        }
+        assertTrue(Regex("\\p{IsHan}").containsMatchIn(VoicePreloadPolicy.WAKE_OWNS_MODEL.text(Lang.ZH)), "zh phải là chữ Hán")
+        assertTrue(Regex("\\p{IsThai}").containsMatchIn(VoicePreloadPolicy.WAKE_OWNS_MODEL.text(Lang.TH)), "th phải là chữ Thái")
     }
 
     @Test

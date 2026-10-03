@@ -65,7 +65,7 @@
     <string name="kachi_sec_units">显示单位</string>
     <string name="kachi_sec_theme">浅色/深色主题</string>
     <string name="kachi_row_palette">配色方案</string>
-    <string name="kachi_theme_note">“自动”表示18:00至06:00使用深色。更改配色方案会让屏幕重建一次。</string>
+    <string name="kachi_theme_note">“自动”表示18:00至06:00使用深色。更改配色方案会立即就地生效，格位中的应用继续运行。</string>
     <string name="kachi_glass_real_title">真实玻璃效果（背景模糊）</string>
     <string name="kachi_glass_real_sub">模糊每张卡片后方的内容，呈现真实的玻璃效果。仅在较新的车机（Android 12+）上运行；旧车机会自动改用更轻量的仿玻璃效果。下次打开屏幕时生效。</string>
     <string name="kachi_sec_color">颜色</string>
@@ -80,7 +80,7 @@
     <string name="kachi_car_image_steps">如何更换车辆图片（俯视图，透明背景效果最佳）：\n1. 将U盘插入车辆，或打开“文件”应用。\n2. 将图片复制到此文件夹：%1$s\n3. 将使用文件夹中最新的图片；重新打开主屏幕即可看到。\n点按下方按钮可复制文件夹路径。</string>
     <string name="kachi_copy_path">复制文件夹路径</string>
     <string name="kachi_path_copied">已复制文件夹路径</string>
-    <string name="kachi_color_note">随当前档案保存。“取自壁纸”会提取壁纸文件夹中第一张照片的主色。文字始终清晰可读：强调色过浅时，按钮文字会自动变深。更改颜色会让屏幕重建一次。</string>
+    <string name="kachi_color_note">随当前档案保存。“取自壁纸”会提取壁纸文件夹中第一张照片的主色。文字始终清晰可读：强调色过浅时，按钮文字会自动变深。新颜色会立即就地生效，格位中的应用继续运行。</string>
     <string name="kachi_sec_lang">语言</string>
     <string name="kachi_row_lang">屏幕文字</string>
     <string name="kachi_lang_note">“跟随车机” = 车辆设为越南语时显示越南语，否则显示英语。中文、泰语和马来语仅在你手动选择时使用。无论屏幕显示哪种语言，语音指令都只能听懂越南语。更改语言会让屏幕重建一次。</string>

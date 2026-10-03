@@ -62,33 +62,59 @@ object GroupTiles {
      * Cố ý KHÔNG vẽ dải/bảng thu nhỏ: 10 ô con trong một khung 1/4 thì mỗi ô con còn vài chục pixel, chữ không đọc
      * được và người xem không rút ra gì. Thay vào đó hiện **tóm tắt** ([GroupBoardModel.summary] — thuần, test
      * off-car): *"1 cảnh báo"* trả lời đúng câu người lái hỏi, còn số của thành viên đầu tiên thì không.
+     *
+     * ## Soát vòng 3 (P2) — đổ TẠI CHỖ, không thay view mỗi nhịp
+     * Nhóm là mục ĐỌC ⇒ ô chứa nó được làm mới mỗi nhịp trạng thái xe. Bản trước không đăng ký hàm đổ ⇒
+     * `WidgetViews.refreshRead` rơi về đường LÙI (tháo + gắn view) MỖI GIÂY ⇒ `FitGridLayout` xoá kết quả khớp, đo dò lại
+     * cả lưới + một dòng `WidgetFit` mỗi giây, ô số đứng trước nó mất nhịp nở 1 s. Nay sắc thái (nền + màu icon) và
+     * nhãn đổ tại chỗ qua [WidgetRefreshers.live] — chỉ ghi khi đổi thật.
      */
     fun mini(ctx: Context, id: String, data: WidgetData): View {
-        val m = GroupBoard.of(id, data.car, data.units) ?: return fallback(ctx, id)
-        val worst = GroupTileView.worstTone(m)
-        return LinearLayout(ctx).apply {
+        val first = GroupBoard.of(id, data.car, data.units) ?: return fallback(ctx, id)
+        val domain = CapabilityGroups.byId(id)?.domain
+        var shown: GroupTone? = null
+        var icon: ImageView? = null
+        val label = GroupTileView.text(ctx, "", 10.5f, KachiTheme.MUT).apply {
+            maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+        }
+        val root = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            GroupTileView.surfaceOf(this, Sp.RADIUS_M, worst, CapabilityGroups.byId(id)?.domain)
             val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
-            val r = KachiTheme.iconRes(m.icon)
+            val r = KachiTheme.iconRes(first.icon)
             if (r != 0) addView(
-                ImageView(ctx).apply { setImageResource(r); setColorFilter(c(GroupTileView.tintOf(worst))) },
+                ImageView(ctx).apply { setImageResource(r) }.also { icon = it },
                 LinearLayout.LayoutParams(dpi(ctx, Sp.ICON_S), dpi(ctx, Sp.ICON_S)).also { it.bottomMargin = dpi(ctx, Sp.XS) },
             )
             // Owner 2026-09-23: bỏ dòng tóm tắt ("7 bộ phận"/"2 cảnh báo") dưới ô nhóm — giữ icon + nhãn nhóm.
-            addView(GroupTileView.text(ctx, m.label, 10.5f, KachiTheme.MUT).apply {
-                maxLines = 1; ellipsize = TextUtils.TruncateAt.END
-            })
+            addView(label)
         }
+        /** Sắc thái (nền + màu icon) và nhãn nhóm của [m] — chỉ ghi khi đổi thật (một cửa cho lượt dựng lẫn lượt đổ). */
+        fun paint(m: GroupBoardModel) {
+            val tone = GroupTileView.worstTone(m)
+            if (tone != shown) {
+                shown = tone
+                GroupTileView.surfaceOf(root, Sp.RADIUS_M, tone, domain)
+                icon?.setColorFilter(c(GroupTileView.tintOf(tone)))
+            }
+            if (label.text.toString() != m.label) label.text = m.label
+        }
+        paint(first)
+        fun fillGroupMini(d: WidgetData) {
+            GroupBoard.of(id, d.car, d.units)?.let(::paint)
+        }
+        return WidgetRefreshers.live(root, ::fillGroupMini)
     }
 
     /**
      * Mã nhóm không tra ra model — chỉ xảy ra nếu prefs còn mã của bản cũ. Hiện mã + `"—"` thay vì để trống, cùng lối
-     * suy giảm an toàn với [WidgetViews].
+     * suy giảm an toàn với [WidgetViews]. Không có gì để đổ (mã lạ không bao giờ thành có model) ⇒ đăng ký hàm đổ RỖNG
+     * để `refreshRead` không thay view này mỗi nhịp (soát vòng 3, P2).
      */
-    private fun fallback(ctx: Context, id: String): View = LinearLayout(ctx).apply {
-        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-        addView(GroupTileView.text(ctx, id, 12f, KachiTheme.MUT2))
-        addView(GroupTileView.text(ctx, TelemetryView.PLACEHOLDER, 26f, KachiTheme.MUT, bold = true))
-    }
+    private fun fallback(ctx: Context, id: String): View = WidgetRefreshers.live(
+        LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            addView(GroupTileView.text(ctx, id, 12f, KachiTheme.MUT2))
+            addView(GroupTileView.text(ctx, TelemetryView.PLACEHOLDER, 26f, KachiTheme.MUT, bold = true))
+        },
+    ) { }
 }

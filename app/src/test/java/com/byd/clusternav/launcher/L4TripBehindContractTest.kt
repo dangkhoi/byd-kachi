@@ -86,7 +86,11 @@ class L4TripBehindContractTest {
         assertEquals(1, Regex("""@Suppress\("DEPRECATION"\)""").findAll(staging).count(), "chặn DEPRECATION đúng một chỗ ở StagingDisplay")
         assertTrue(Regex("""@Suppress\("DEPRECATION"\)\s*\n\s*val m = DisplayMetrics\(\)\.also \{ dm\.getDisplay\(Display\.DEFAULT_DISPLAY\)\?\.getRealMetrics\(it\) \}""")
             .containsMatchIn(staging), "chặn DEPRECATION nằm NGAY trên dòng getRealMetrics, không phủ cả hàm/lớp")
-        assertTrue("phys=\$phys" in create && "?.mode?.let" in create, "dòng log có cỡ vật lý để đo DL5 trên xe ([CHƯA BIẾT])")
+        // Soát vòng 3 [P3] — ĐỔI GHIM có lý do: "WxH ≠ PxQ ⇒ phải sửa" báo động GIẢ khi màn xoay / có `wm size` (mode không xoay,
+        // không theo override) ⇒ dòng log mang thêm `rot=` + phân loại `so=` của [StageSize] (khớp · xoay · lệch-đối-chiếu…).
+        assertTrue("phys=\$phys" in create && "?.mode }" in create, "dòng log có cỡ vật lý để đo DL5 trên xe ([CHƯA BIẾT])")
+        assertTrue("StageSize.verdict(m.widthPixels, m.heightPixels, mode?.physicalWidth, mode?.physicalHeight)" in create &&
+            "rot=\$rot so=\${so.tag}" in create, "dòng log phân loại cỡ theo cả hai chiều xoay, kèm rotation")
         assertEquals(emptyList<String>(), unusedImports(staging), "StagingDisplay không còn import mồ côi")
         val shown = SourceRoots.body(cover, "private fun shownOn(")
         order(shown, "Build.VERSION.SDK_INT >= Build.VERSION_CODES.R", "display?.displayId ?: Display.INVALID_DISPLAY", "legacyDisplayId()")

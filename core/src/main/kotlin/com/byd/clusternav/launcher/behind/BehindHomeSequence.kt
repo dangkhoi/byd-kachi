@@ -247,7 +247,8 @@ class BehindHomeSequence(
         if (first != null && (v.left != null || first.outOfStage)) return first.copy(line = "${first.line} · vd=$vd $gone")
         if (v.left == null) return Outcome(Result.UNREAD, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng ⇒ chưa rõ X ở đâu · vd=$vd $gone")
         if (v.rescued) {
-            return Outcome(Result.X_FRONT_HOME_RESTORED, "$tag chờ=${waited}ms · ${out.line} · X kẹt màn ảo ẩn → K7 + dấu + K12 · vd=$vd $gone")
+            val marks = v.marked?.let { "dấu=$it" } ?: "dấu=0 (đọc hỏng)"
+            return Outcome(Result.X_FRONT_HOME_RESTORED, "$tag chờ=${waited}ms · ${out.line} · X kẹt màn ảo ẩn → K7 + $marks + K12 · vd=$vd $gone")
         }
         val res = afterStage(tag, x, waited, out, homeWasTop)
         return res.copy(line = "${res.line} · vd=$vd $gone")
@@ -307,8 +308,11 @@ class BehindHomeSequence(
         return res
     }
 
-    /** Kết quả dọn màn ảo ẩn: task còn lại ([left] `null` = ĐỌC HỎNG — chưa biết, cấm nhả) + X có nhờ K7 mới ra không. */
-    private data class Vacated(val left: List<StackEntry>?, val rescued: Boolean)
+    /**
+     * Kết quả dọn màn ảo ẩn: task còn lại ([left] `null` = ĐỌC HỎNG — chưa biết, cấm nhả) + X có nhờ K7 mới ra không + số dấu
+     * ghi trước K12 ([marked] `null` = bản đọc cho dấu hỏng ⇒ 0 dấu, K12 vẫn chạy).
+     */
+    private data class Vacated(val left: List<StackEntry>?, val rescued: Boolean, val marked: Int? = null)
 
     /** Hai từ chối chung trước MỌI lệnh ([startBehind] · [startBehindHidden]): chính Kachi / app hệ thống (R0.6) / tên gói lạ. */
     private fun refuse(tag: String, x: String): Outcome? = when {
@@ -364,12 +368,13 @@ class BehindHomeSequence(
         // kéo người dùng khỏi app họ đang dùng), không nhả.
         val after = settle(vd) ?: return Vacated(null, rescued = false)
         if (after.any { it.pkg == x }) return Vacated(after, rescued = false)      // rào K7 chặn (camera / màn nhà không hiện)
-        // Soát vòng 2 [P3]: bản đọc cho DẤU hỏng ⇒ không dấu, không K12 (X sau màn nhà mà không mang dấu thì Kachi chết là X
-        // nổi lên, lượt trả lại không nhận ra) — cùng luật nhánh trên: chưa rõ, GIỮ màn ảo, lượt sau thu hồi.
-        val main = readOrNull() ?: return Vacated(null, rescued = false)
-        markMain(main, setOf(x))
+        // Soát vòng 3 [P3] — `after` ĐỌC ĐƯỢC và thấy X đã rời màn ảo ⇒ K7 ĐÃ chạy ⇒ X đang ở TRƯỚC màn nhà. Bản đọc cho DẤU hỏng
+        // KHÔNG được chặn K12 (bản vòng 2 trả sớm ⇒ X che màn nhà tới khi người lái tự bấm Home): đưa màn nhà lên quan trọng hơn
+        // dấu (luật [markMain]). Đọc lại MỘT lần cho dấu; vẫn hỏng ⇒ 0 dấu, ghi rõ ở dòng kết quả. Nhả màn ảo theo `after`.
+        val main = readOrNull() ?: readOrNull()
+        val marked = main?.let { markMain(it, setOf(x)) }
         runCatching { sh(goHomeCmd) }
-        return Vacated(after, rescued = true)
+        return Vacated(after, rescued = true, marked = marked)
     }
 
     /** Đọc lại (≤ 1 + [SETTLE_READS] lượt) tới khi màn ảo [vd] hết task của chính Kachi (lớp che vừa gỡ). `null` = đọc HỎNG. */

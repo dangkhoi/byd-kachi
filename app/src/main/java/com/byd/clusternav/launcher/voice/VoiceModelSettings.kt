@@ -80,8 +80,9 @@ class VoiceModelSettings(
         // Ghi chú *"máy đã bỏ qua lượt nạp sẵn vì thiếu RAM"* — một DỮ KIỆN giải thích vì sao lần bấm mic đầu chờ
         // lâu, không phải một lượt tự đổi mô hình. Nó từng nằm trong khối chọn-mô-hình vừa gỡ; để nguyên ở đó thì
         // nó biến mất cùng khối, mà lý do nó tồn tại (RAM xe eo hẹp — [ĐO] còn 56–94 MB trống) thì không mất đi.
+        // QA 2.87 [P2]: lý do là MÃ ⇒ dịch ở ĐÂY theo ngôn ngữ đang hiện (trước là câu tiếng Việt chèn vào câu đã dịch).
         VoiceEngine.lastPreloadSkip?.let {
-            body.addView(rows.note(context.getString(R.string.kachi_voice_model_preload_skipped, it)))
+            body.addView(rows.note(context.getString(R.string.kachi_voice_model_preload_skipped, it.text())))
         }
 
         val action = rows.button(modelActionLabel()) {} as TextView

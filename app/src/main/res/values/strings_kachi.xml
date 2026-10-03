@@ -108,7 +108,7 @@
     <string name="kachi_sec_units">Đơn vị hiển thị</string>
     <string name="kachi_sec_theme">Giao diện sáng/tối</string>
     <string name="kachi_row_palette">Bảng màu</string>
-    <string name="kachi_theme_note">"Tự động" = tối từ 18h đến 6h. Đổi bảng màu thì màn hình dựng lại một lượt.</string>
+    <string name="kachi_theme_note">"Tự động" = tối từ 18h đến 6h. Đổi bảng màu thì áp ngay tại chỗ, app trong ô vẫn chạy tiếp.</string>
     <!-- UX-OVERHAUL WP1 · R1.3 — kính giả (mặc định) / kính thật (làm mờ nền, API 31+) -->
     <string name="kachi_glass_real_title">Kính thật (làm mờ nền)</string>
     <string name="kachi_glass_real_sub">Làm mờ nền phía sau thẻ cho hiệu ứng kính. Chỉ chạy trên máy mới (Android 12+); máy cũ tự dùng kính giả nhẹ hơn. Áp ở lần mở màn sau.</string>
@@ -126,7 +126,7 @@
     <string name="kachi_car_image_steps">Cách thay ảnh xe (nhìn từ trên, nền trong suốt là đẹp nhất):\n1. Cắm USB vào xe, hoặc mở app Quản lý tệp.\n2. Chép ảnh vào thư mục: %1$s\n3. Ảnh mới nhất trong thư mục sẽ được dùng; mở lại màn hình chính là thấy.\nBấm nút dưới để sao chép đường dẫn thư mục.</string>
     <string name="kachi_copy_path">Sao chép đường dẫn thư mục</string>
     <string name="kachi_path_copied">Đã sao chép đường dẫn</string>
-    <string name="kachi_color_note">Lưu theo hồ sơ đang dùng. "Theo ảnh nền" lấy màu trội của ảnh đầu tiên trong thư mục hình nền. Chữ luôn được giữ đọc được: màu nào quá sáng thì chữ trên nút tự đậm lại. Đổi màu thì màn hình dựng lại một lượt.</string>
+    <string name="kachi_color_note">Lưu theo hồ sơ đang dùng. "Theo ảnh nền" lấy màu trội của ảnh đầu tiên trong thư mục hình nền. Chữ luôn được giữ đọc được: màu nào quá sáng thì chữ trên nút tự đậm lại. Màu mới áp ngay tại chỗ, app trong ô vẫn chạy tiếp.</string>
     <string name="kachi_sec_lang">Ngôn ngữ</string>
     <string name="kachi_row_lang">Chữ trên màn</string>
     <string name="kachi_lang_note">\"Theo xe\" = tiếng Việt khi xe đặt tiếng Việt, còn lại tiếng Anh. Tiếng Trung, Thái và Mã Lai chỉ dùng khi bạn tự chọn. Giọng nói chỉ hiểu tiếng Việt, dù chữ trên màn là tiếng nào. Đổi ngôn ngữ thì màn hình dựng lại một lượt.</string>

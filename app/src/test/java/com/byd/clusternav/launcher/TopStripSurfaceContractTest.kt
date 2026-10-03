@@ -397,6 +397,30 @@ class TopStripSurfaceContractTest {
         }
     }
 
+    /**
+     * QA 2.87 [P2] (lỗi cũ từ 2.19) — đổi chủ đề TẠI CHỖ (`applyThemeInPlace`: Cài đặt › Bảng màu, và chủ đề *Tự động* lúc
+     * 06:00/18:00) để nút mic + nút ứng dụng giữ filter/nền của lúc dựng ⇒ [ĐO máy ảo `l2/topright-light.png`] 1,13:1 trên bảng
+     * sáng. Gốc: `restyle()` liệt kê tay (thanh · đồng hồ · chip) và quên các nút. Bài này khoá CÁCH LÀM, không khoá danh sách:
+     * MỌI dòng mã của tệp đọc màu chủ đề (`c(KachiTheme.…)`, `KachiTheme.pill(`/`gradient(`) phải nằm trong `themed { … }`
+     * (đăng ký để tô lại), và `restyle()` phải chạy lại mọi lượt đã đăng ký. Thêm một nút mới tô màu ngoài `themed` ⇒ đỏ.
+     * Ngoại lệ có tên: nền thanh (`KachiTheme.card` — `KachiGlass.bar` gọi ở CẢ build lẫn restyle, `KachiChromeContractTest`).
+     */
+    @Test
+    fun `doi chu de tai cho thi moi view thanh tren to lai - khong con danh sach tay`() {
+        val themeRead = Regex("""c\(KachiTheme\.|KachiTheme\.(pill|gradient)\(""")
+        val bare = strip.lines().withIndex().filter { (_, l) -> themeRead.containsMatchIn(l) && "themed {" !in l }
+        assertEquals(emptyList<String>(), bare.map { (i, l) -> "${i + 1}: ${l.trim()}" },
+            "dòng tô màu chủ đề KHÔNG qua themed { } ⇒ đổi chủ đề tại chỗ không tô lại nó (nút mic/ứng dụng 1,13:1)")
+        val themed = SourceRoots.body(strip, "private fun themed(")
+        assertTrue("paint()" in themed && "painters += paint" in themed, "themed phải tô ngay VÀ nhớ: $themed")
+        val restyle = SourceRoots.body(strip, "fun restyle(")
+        assertTrue("painters.forEach { it() }" in restyle, "restyle phải chạy lại MỌI lượt tô đã đăng ký: $restyle")
+        // Bốn nút (mic · ứng dụng · cài đặt · hồ sơ) đều tô qua themed — đúng các view QA đo thấy vô hình.
+        assertTrue("themed {" in SourceRoots.body(strip, "private fun pill("), "pill (mic · ứng dụng · cài đặt)")
+        assertTrue(Regex("themed \\{").findAll(SourceRoots.body(strip, "private fun profileChip()")).count() >= 3, "chip hồ sơ: nền · đĩa · chữ")
+        assertTrue(Regex("""KachiTheme\.card\(""").findAll(strip).count() == 2, "nền thanh: đúng build + restyle")
+    }
+
     /** Tên tệp Kotlin của `:app` mà **MÃ** (đã bỏ chú thích) chứa [token]. */
     private fun appSourcesContaining(token: String): List<String> {
         val root = SourceRoots.moduleSourceRoots().first { it.toString().contains("app") }

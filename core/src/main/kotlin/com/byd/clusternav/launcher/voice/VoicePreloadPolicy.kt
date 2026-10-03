@@ -1,5 +1,8 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.Strings
+
 /**
  * ═══ H6 (PERF 2026-09-16) — CÓ nên nạp sẵn mô hình nghe không, quyết bằng RAM CÒN LẠI ════════════════════════
  *
@@ -93,17 +96,30 @@ object VoicePreloadPolicy {
         maxWaitMs: Long = VoiceWakeStandDown.MAX_WAIT_MS,
     ): Boolean = (last == ModelHolder.Release.BUSY || last == ModelHolder.Release.SKIPPED) && modelInWake && waitedMs < maxWaitMs
 
-    /** Câu GIẢI THÍCH cho log (owner đọc log trên xe) — nói rõ vì sao bỏ qua, không im lặng. */
-    fun reason(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): String = when {
-        lowMemory -> "hệ thống báo thiếu bộ nhớ (lowMemory=true)"
-        modelBytes <= 0 -> "chưa biết cỡ mô hình ⇒ nạp như cũ"
-        else -> "còn ${availMemBytes / MB} MB, cần ${(modelBytes + headroomBytes(modelBytes)) / MB} MB " +
-            "(mô hình ${modelBytes / MB} MB + thở ${headroomBytes(modelBytes) / MB} MB)"
+    /**
+     * MÃ lý do của quyết định RAM ([shouldPreload]) — kèm số MB để câu dịch điền vào. Câu theo ngôn ngữ ở [PreloadSkip.text].
+     *
+     * QA 2.87 [P2] — trước đây trả thẳng một câu tiếng Việt và câu ấy được nhét vào ghi chú Cài đặt đã dịch
+     * (`kachi_voice_model_preload_skipped`) ⇒ máy EN/ZH/TH/MS thấy nửa câu tiếng Việt. Nay ghi chú giữ MÃ, dịch lúc HIỆN.
+     */
+    fun skip(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): PreloadSkip = when {
+        lowMemory -> PreloadSkip(PreloadSkip.Code.LOW_MEMORY)
+        modelBytes <= 0 -> PreloadSkip(PreloadSkip.Code.UNKNOWN_SIZE)
+        else -> PreloadSkip(
+            PreloadSkip.Code.NOT_ENOUGH_RAM,
+            availMb = availMemBytes / MB,
+            needMb = (modelBytes + headroomBytes(modelBytes)) / MB,
+            modelMb = modelBytes / MB,
+            headroomMb = headroomBytes(modelBytes) / MB,
+        )
     }
 
+    /** Câu GIẢI THÍCH cho log (owner đọc log trên xe) — nói rõ vì sao bỏ qua, không im lặng. Luôn tiếng Việt (byte như cũ). */
+    fun reason(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): String =
+        skip(availMemBytes, lowMemory, modelBytes).text(Lang.VI)
+
     /** Lý do bỏ nạp sẵn khi [shouldPreloadInMain] = false — hiện ở ghi chú Cài đặt (`VoiceEngine.lastPreloadSkip`). */
-    const val REASON_WAKE_OWNS_MODEL =
-        "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai"
+    val WAKE_OWNS_MODEL = PreloadSkip(PreloadSkip.Code.WAKE_OWNS_MODEL)
 
     private const val MB = 1024L * 1024L
 
@@ -124,4 +140,52 @@ object VoicePreloadPolicy {
      * gói phủ đỉnh cho int8 (111 MB) lẫn fp32 (399 MB); gói nhỏ vẫn được sàn 96 MB.
      */
     fun headroomBytes(modelBytes: Long): Long = maxOf(HEADROOM_BYTES, modelBytes.coerceAtLeast(0) * 3 / 2)
+}
+
+/**
+ * ═══ QA 2.87 [P2] — lý do bỏ nạp sẵn là MỘT MÃ, câu dịch lúc HIỆN ═══════════════════════════════════════════════════
+ *
+ * [ĐO máy ảo QA 2.87 `l1/{en,zh,th,ms}/g09-p00.xml`] ghi chú *"Lần khởi động vừa rồi Kachi bỏ qua bước nạp sẵn mô hình (%1$s)…"*
+ * đã dịch đủ 5 tiếng, nhưng `%1$s` là một câu tiếng Việt viết cứng ở `:core` ⇒ máy tiếng Anh/Trung/Thái/Mã Lai thấy nửa câu tiếng
+ * Việt — đúng ở cấu hình thường ngày của owner ("Hey Kachi" bật / phím vô-lăng gán Kachi nghe). Nay `VoiceEngine.lastPreloadSkip`
+ * giữ MÃ + số; [text] chọn câu theo ngôn ngữ ĐANG HIỆN (đổi ngôn ngữ sau lượt bỏ qua vẫn ra đúng tiếng). Bản tiếng Việt giữ đúng
+ * từng byte của câu cũ (log trên xe đọc như trước — `VoicePreloadPolicyTest`).
+ */
+data class PreloadSkip(
+    val code: Code,
+    val availMb: Long = 0,
+    val needMb: Long = 0,
+    val modelMb: Long = 0,
+    val headroomMb: Long = 0,
+) {
+    enum class Code {
+        /** Mô hình ở `:wake` ("Hey Kachi" BẬT hoặc phím vô-lăng gán Kachi nghe) — [VoicePreloadPolicy.shouldPreloadInMain]. */
+        WAKE_OWNS_MODEL,
+
+        /** `ActivityManager.MemoryInfo.lowMemory` = true. */
+        LOW_MEMORY,
+
+        /** Chưa biết cỡ gói ⇒ nạp như cũ (fail-open — [VoicePreloadPolicy.shouldPreload] không chặn ca này). */
+        UNKNOWN_SIZE,
+
+        /** Còn ít RAM hơn cỡ gói + khoảng thở. */
+        NOT_ENOUGH_RAM,
+    }
+
+    /** Câu theo [lang] — VI/EN viết ở đây, ZH/TH/MS tra bảng dịch theo cặp (vi, en). */
+    fun text(lang: Lang = Strings.current): String = when (code) {
+        Code.WAKE_OWNS_MODEL -> Strings.t(
+            "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai",
+            "\"Hey Kachi\" is on or a steering-wheel key is set to Kachi listening ⇒ the model lives in the :wake process, no second copy is loaded",
+            lang,
+        )
+        Code.LOW_MEMORY -> Strings.t("hệ thống báo thiếu bộ nhớ (lowMemory=true)", "the system reports low memory (lowMemory=true)", lang)
+        Code.UNKNOWN_SIZE -> Strings.t("chưa biết cỡ mô hình ⇒ nạp như cũ", "model size unknown ⇒ loads as before", lang)
+        Code.NOT_ENOUGH_RAM -> Strings.fIn(
+            lang,
+            "còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)",
+            "{0} MB free, {1} MB needed (model {2} MB + headroom {3} MB)",
+            availMb, needMb, modelMb, headroomMb,
+        )
+    }
 }

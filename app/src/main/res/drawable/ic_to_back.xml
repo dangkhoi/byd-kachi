@@ -1,5 +1,5 @@
 <!--
-  CHẠY NỀN (L6, owner 03/10) — mũi tên chúi xuống một vạch đáy: app rời ô, chạy tiếp phía sau màn nhà.
+  CHẠY NỀN (L6, owner 03/10; vẽ lại QA 2.87 — bản mũi tên chúi xuống một vạch đọc ra "tải xuống") — ĐƯA RA SAU: hai thẻ chồng nhau, thẻ TRƯỚC (màn nhà) mờ và che góc, thẻ SAU (app trong ô) là nét chính chỉ lộ phần không bị che ⇒ app đi ra phía sau, vẫn còn đó. Cố ý KHÁC biểu tượng "sao chép" (hai thẻ cùng độ đậm).
   ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/to_back.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
   chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
   bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
@@ -8,8 +8,10 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M 12 3.6 L 12 14.6 M 7.4 10.2 L 12 14.6 L 16.6 10.2"
+    <path android:pathData="M 5.6 3.4 L 12.4 3.4 A 2.2 2.2 0 0 1 14.6 5.6 L 14.6 12.4 A 2.2 2.2 0 0 1 12.4 14.6 L 5.6 14.6 A 2.2 2.2 0 0 1 3.4 12.4 L 3.4 5.6 A 2.2 2.2 0 0 1 5.6 3.4 Z"
+        android:fillColor="#FFFFFF" android:fillAlpha="0.16" />
+    <path android:pathData="M 5.6 3.4 L 12.4 3.4 A 2.2 2.2 0 0 1 14.6 5.6 L 14.6 12.4 A 2.2 2.2 0 0 1 12.4 14.6 L 5.6 14.6 A 2.2 2.2 0 0 1 3.4 12.4 L 3.4 5.6 A 2.2 2.2 0 0 1 5.6 3.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 16.9 9.4 L 18.4 9.4 A 2.2 2.2 0 0 1 20.6 11.6 L 20.6 18.4 A 2.2 2.2 0 0 1 18.4 20.6 L 11.6 20.6 A 2.2 2.2 0 0 1 9.4 18.4 L 9.4 16.9"
         android:fillColor="#00000000" android:strokeColor="#EAF0F8" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M 4.6 19.6 L 19.4 19.6"
-        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

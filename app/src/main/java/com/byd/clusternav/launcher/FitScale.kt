@@ -70,6 +70,10 @@ internal class FitScale(private val root: View) {
 
         /** `weight` bộ áp đang ghi đè lên con này (phép lật) — `null` = weight là của bộ dựng ([FitRules.weight]). */
         var heldWeight: Float? = null
+
+        /** Icon cỡ cố định: tổng lề (px gốc) ngang/dọc giữa nó và mép ô — lề trong mọi khung bọc + lề ngoài của nó. */
+        var insetX = 0
+        var insetY = 0
     }
 
     private val bases = ArrayList<Base>()
@@ -98,8 +102,13 @@ internal class FitScale(private val root: View) {
     var lines = 0
         private set
 
+    /** Cỡ ô của lượt áp gần nhất ([apply]) — chặn icon theo ô. */
+    private var cellW = Int.MAX_VALUE
+    private var cellH = Int.MAX_VALUE
+
     init {
         collect(root)
+        insets()
         main = bfsMain(root)
         mainOrientation = main?.orientation ?: LinearLayout.VERTICAL
         labels = bases.filter { it.isLabel }.map { it.v as TextView }
@@ -112,6 +121,22 @@ internal class FitScale(private val root: View) {
     private fun collect(v: View) {
         bases += Base(v)
         if (v is ViewGroup) for (i in 0 until v.childCount) collect(v.getChildAt(i))
+    }
+
+    /** Lề (px gốc) giữa mỗi icon cỡ cố định và mép ô: lề trong của mọi cha tới gốc ô + lề ngoài của chính nó. */
+    private fun insets() {
+        val byView = bases.associateBy { it.v }
+        bases.filter { it.v is ImageView && it.lpW > 0 && it.lpH > 0 }.forEach { b ->
+            var x = b.margins?.let { it[0] + it[2] } ?: 0
+            var y = b.margins?.let { it[1] + it[3] } ?: 0
+            var cur = b.v.parent as? View
+            while (cur != null) {
+                byView[cur]?.pad?.let { p -> x += p[0] + p[2]; y += p[1] + p[3] }
+                if (cur === root) break
+                cur = cur.parent as? View
+            }
+            b.insetX = x; b.insetY = y
+        }
     }
 
     private fun bfsMain(r: View): LinearLayout? {
@@ -137,18 +162,19 @@ internal class FitScale(private val root: View) {
     }
 
     /**
-     * Áp hệ số [k] + dạng [f] + số dòng nhãn [n] (0 = như bộ dựng). Trả `true` nếu có ít nhất một giá trị đổi
-     * (tức đã có `requestLayout`). Gọi lại với cùng bộ ba là no-op.
+     * Áp hệ số [k] + dạng [f] + số dòng nhãn [n] (0 = như bộ dựng) trong ô [cw]×[ch] (px; mặc định = không chặn — đo
+     * dò ở thang 1). Trả `true` nếu có ít nhất một giá trị đổi (tức đã có `requestLayout`). Gọi lại cùng bộ là no-op.
+     * Icon cỡ cố định không to hơn chỗ của nó trong ô ([iconK], QA 04/10).
      */
-    fun apply(k: Double, f: Form, n: Int): Boolean {
-        if (k == scale && f == form && n == lines) return false
-        scale = k; form = f; lines = n
+    fun apply(k: Double, f: Form, n: Int, cw: Int = Int.MAX_VALUE, ch: Int = Int.MAX_VALUE): Boolean {
+        if (k == scale && f == form && n == lines && cw == cellW && ch == cellH) return false
+        scale = k; form = f; lines = n; cellW = cw; cellH = ch
         var changed = false
         val dropLabels = f == Form.ICON_ONLY && hasIcon && labels.isNotEmpty()
         for (b in bases) {
             val rot = f == Form.HORIZONTAL && b.v.parent === main
             changed = padding(b, k, rot) or changed
-            changed = params(b, k, rot) or changed
+            changed = params(b, iconK(b, k), rot) or changed
             if (b.text == null) {
                 if (b.minW > 0 && b.v.minimumWidth != sc(b.minW, k)) { b.v.minimumWidth = sc(b.minW, k); changed = true }
                 if (b.minH > 0 && b.v.minimumHeight != sc(b.minH, k)) { b.v.minimumHeight = sc(b.minH, k); changed = true }
@@ -166,6 +192,15 @@ internal class FitScale(private val root: View) {
     }
 
     private fun sc(v: Int, k: Double): Int = (v * k).roundToInt()
+
+    /**
+     * Hệ số cho [b]: icon cỡ cố định ⇒ [FitRules.iconScale] chặn theo chỗ còn lại trong ô (ô trừ lề × [k]); mọi view
+     * khác ⇒ [k]. Không có ô (đo dò) ⇒ [k].
+     */
+    private fun iconK(b: Base, k: Double): Double {
+        if (b.v !is ImageView || b.lpW <= 0 || b.lpH <= 0 || cellW == Int.MAX_VALUE || cellH == Int.MAX_VALUE) return k
+        return FitRules.iconScale(k, b.lpW, b.lpH, cellW - sc(b.insetX, k), cellH - sc(b.insetY, k))
+    }
 
     /** Lề trong × k. Con của khối chính khi lật ngang: lề "chỉ dọc" (trái = phải = 0, không nền) xoay thành ngang. */
     private fun padding(b: Base, k: Double, rot: Boolean): Boolean {

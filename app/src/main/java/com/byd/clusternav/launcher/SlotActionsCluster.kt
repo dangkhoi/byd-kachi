@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.graphics.Color
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.SystemClock
 import android.view.Gravity
@@ -68,7 +69,9 @@ internal interface SlotActionsPort {
  * (`SlotLifecycleWiringContractTest` *đĩa xác nhận*: ≥ 4.5:1 cả hai bảng màu) + mô tả trợ năng *"Chạm lần nữa để tắt"* (5
  * tiếng), và báo [onArmed] để đầu ô hiện tiếp suốt lượt chờ. Chạm lần hai trong cửa sổ ⇒ tắt thật; hết cửa sổ / hàng ẩn /
  * khung dựng lại / nút thành không làm được ⇒ về như cũ. *Chạy nền* (đảo được) vẫn một chạm. Soát vòng 2: chặn nhấp đúp đo
- * DOWN₂ − UP₁ bằng `MotionEvent.eventTime` ([track] — chỉ NHÌN, trả `false` nên click vẫn nổ như cũ).
+ * DOWN₂ − UP₁ bằng `MotionEvent.eventTime` ([track] — chỉ NHÌN, trả `false` nên click vẫn nổ như cũ). Soát vòng 3: mỗi click
+ * lấy ĐÚNG lần nhấn của nó từ hàng đợi theo thứ tự UP ([SlotCloseTouch]) và mọi mốc là `eventTime` — luồng chính trễ (click
+ * được POST, DOWN₂ tới trước click₁) không còn biến một cú nhấp đúp thành "không phải ngón" ⇒ tắt.
  */
 internal class SlotActionsCluster private constructor(
     private val slot: ViewGroup,
@@ -89,9 +92,11 @@ internal class SlotActionsCluster private constructor(
     private var armedWindow = SlotCloseConfirm.WINDOW_MS
     private val disarmTask = Runnable { disarm() }
 
-    /** `MotionEvent.eventTime` của DOWN / UP của cú chạm đang (vừa) diễn ra trên nút *tắt* ([track]); dùng xong ở [tap] thì xoá. */
-    private var touchDown: Long? = null
-    private var touchUp: Long? = null
+    /** Các lần nhấn TRỌN của ngón trên nút *tắt* ([track]) chờ click của chúng ([tap]) — xem [SlotCloseTouch]. */
+    private val presses = SlotCloseTouch()
+
+    /** Cùng ngưỡng trượt của chính View (`mTouchSlop` — r47 `View.java:5059`) để [track] biết lần nhấn nào KHÔNG ra click. */
+    private val slop = ViewConfiguration.get(slot.context).scaledTouchSlop.toFloat()
 
     /** UP của cú chạm trước trong lượt chờ — mốc so cho DOWN kế (`GestureDetector.isConsideredDoubleTap`). `null` = không có. */
     private var lastUp: Long? = null
@@ -110,26 +115,31 @@ internal class SlotActionsCluster private constructor(
     /** Một chạm lên nút [b]: *tắt* đi qua [SlotCloseConfirm] (hai bước), nút khác làm ngay. */
     private fun tap(b: Button) {
         if (b != Button.CLOSE) return port.onAction(index, b)
-        // Click của View nổ ngay sau UP (`View.onTouchEvent` → PerformClick) ⇒ DOWN/UP vừa ghi là của CHÍNH cú chạm này; không
-        // có UP ⇒ click không đến từ ngón (trợ năng `ACTION_CLICK`, bàn phím) ⇒ không có khoảng nhấp đúp để đo.
-        val down = touchDown.takeIf { touchUp != null }
-        val up = touchUp
-        touchDown = null; touchUp = null
-        val gap = down?.let { d -> lastUp?.let { d - it } }
+        // Soát vòng 3 [P3]: click được POST sau UP (r47 `View.java:14820-14825`) ⇒ lúc nó chạy, ngón có thể đã nhấn tiếp. Lấy lần
+        // nhấn CỦA click này từ hàng đợi ([SlotCloseTouch]); mọi mốc là `eventTime` của nó. Không có ⇒ click không đến từ ngón
+        // (trợ năng `ACTION_CLICK`, bàn phím) ⇒ không có khoảng nhấp đúp để đo, mốc = giờ hiện tại.
+        val now = SystemClock.uptimeMillis()
+        val press = presses.take(now)
+        val at = press?.up ?: now
+        val gap = press?.let { p -> lastUp?.let { p.down - it } }
         val tapGap = ViewConfiguration.getDoubleTapTimeout().toLong()
-        when (SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap, tapGap, armedWindow)) {
-            SlotCloseConfirm.Tap.ARM -> arm(up)
-            SlotCloseConfirm.Tap.WAIT -> lastUp = up   // nhấp đúp: cú kế so với UP của cú NÀY (chuỗi nhấp nhanh vẫn là nhấp đúp)
+        when (SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow)) {
+            SlotCloseConfirm.Tap.ARM -> arm(at, press?.up)
+            SlotCloseConfirm.Tap.WAIT -> lastUp = press?.up   // nhấp đúp: cú kế so với UP của cú NÀY (chuỗi nhấp nhanh vẫn là nhấp đúp)
             SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }
         }
     }
 
-    /** Chỉ NHÌN cú chạm trên nút *tắt* (mốc DOWN/UP cho [tap]) — không nuốt: trả `false`, `View.onTouchEvent` vẫn ra click. */
+    /**
+     * Chỉ NHÌN cú chạm trên nút *tắt* (lần nhấn cho [tap]) — không nuốt: trả `false`, `View.onTouchEvent` vẫn ra click. Trượt khỏi
+     * nút quá ngưỡng ⇒ View không ra click (r47 `View.java:14931-14941`) ⇒ lần nhấn ấy không vào hàng đợi.
+     */
     private fun track(ev: MotionEvent) {
         when (ev.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { touchDown = ev.eventTime; touchUp = null }
-            MotionEvent.ACTION_UP -> touchUp = ev.eventTime
-            MotionEvent.ACTION_CANCEL -> { touchDown = null; touchUp = null }
+            MotionEvent.ACTION_DOWN -> presses.down(ev.eventTime)
+            MotionEvent.ACTION_MOVE -> buttons[Button.CLOSE]?.let { v -> if (!SlotCloseTouch.inView(ev.x, ev.y, v.width, v.height, slop)) presses.left() }
+            MotionEvent.ACTION_UP -> presses.up(ev.eventTime)
+            MotionEvent.ACTION_CANCEL -> presses.cancel()
         }
     }
 
@@ -147,15 +157,16 @@ internal class SlotActionsCluster private constructor(
     /** Phần còn lại của lượt chờ xác nhận (`null` = không chờ) — [SlotHeadAutoHide] không ẩn đầu ô trước khi nó hết. */
     fun armedLeftMs(): Long? = armedAt?.let { (it + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L) }
 
-    private fun arm(up: Long?) {
+    /** Vào chờ xác nhận từ mốc [at] (UP của lần nhấn, hoặc giờ hiện tại nếu không đến từ ngón); hết giờ theo CÙNG mốc đó. */
+    private fun arm(at: Long, up: Long?) {
         val cell = buttons[Button.CLOSE] as? ViewGroup ?: return
-        armedAt = SystemClock.uptimeMillis()
+        armedAt = at
         armedWindow = windowNow()
         lastUp = up
         paint(cell, confirm = true)
         cell.contentDescription = cell.context.getString(R.string.kachi_slot_close_confirm)
         slot.removeCallbacks(disarmTask)
-        slot.postDelayed(disarmTask, armedWindow)
+        slot.postDelayed(disarmTask, (at + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L))
         onArmed(this)
     }
 
@@ -201,6 +212,13 @@ internal class SlotActionsCluster private constructor(
     }
 
     /**
+     * QA 2.87 — chủ đề đổi TẠI CHỖ: khung ô App KHÔNG dựng lại (`WorkspaceView.restyle` giữ app chạy) ⇒ tô lại nút theo bảng
+     * màu mới (đĩa + icon [KachiTheme.MUT]; nút đang chờ xác nhận giữ đỏ). Đĩa sau ⇄ ([swapDisc]) mang thẻ kính ⇒
+     * `KachiGlass.refresh` của `applyThemeInPlace` đã tô lại.
+     */
+    fun restyle() = buttons.forEach { (b, v) -> (v as? ViewGroup)?.let { paint(it, confirm = b == Button.CLOSE && armedAt != null) } }
+
+    /**
      * Toạ độ ([x],[y] — trong KHUNG ô) có rơi vào một nút đang làm được không — để [SlotHeadAutoHide] không hiện đầu ô khi
      * cú chạm rơi vào CHỖ một nút đang ẩn (luật 4 của ⇄: ô tìm kiếm của Google Maps nằm giữa-trên).
      */
@@ -229,7 +247,11 @@ internal class SlotActionsCluster private constructor(
             val touch = KachiTheme.dpi(ctx, Sp.TOUCH)
             val made = LinkedHashMap<Button, View>()
             val row = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-            fun cell(b: Button?): View = if (b == null || b !in possible) Space(ctx) else button(slot, index, kind, b).also { made[b] = it }
+            fun cell(b: Button?): View = when {
+                b == null && kind == SlotHeadRest.Kind.APP -> swapDisc(ctx)   // QA 2.87 [P3]: ⇄ ô App cũng nằm trên đĩa kính
+                b == null || b !in possible -> Space(ctx)
+                else -> button(slot, index, kind, b).also { made[b] = it }
+            }
             listOf(Button.BACKGROUND, null, Button.CLOSE).forEach { row.addView(cell(it), LinearLayout.LayoutParams(touch, touch)) }
             slot.addView(row, slot.childCount - 1, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, touch, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
             val cluster = SlotActionsCluster(slot, index, kind, projector, port, row, made, onArmed)
@@ -257,18 +279,40 @@ internal class SlotActionsCluster private constructor(
                 isClickable = false; isFocusable = false
             }
             val iconPx = KachiTheme.dpi(ctx, Sp.ICON_S)
-            // Tâm icon ngang tâm icon ⇄ (⇄ canh giữa khung cao SLOT_HEAD_CLEAR): lề trên = (SLOT_HEAD_CLEAR − ICON_S) / 2.
-            val top = (KachiTheme.dpi(ctx, Sp.SLOT_HEAD_CLEAR) - iconPx) / 2
             // L8 · D-L6-3 — đĩa kính sau icon (luật 5): view RIÊNG, không bấm được; bán kính = nửa cạnh ⇒ tròn; NÚT ⇒ không mờ R-OP.
-            val discPx = KachiTheme.dpi(ctx, Sp.SWAP_DISC)
             val disc = View(ctx).apply { isClickable = false; isFocusable = false }
             return FrameLayout(ctx).apply {
                 isClickable = true
                 contentDescription = ctx.getString(describe(b, kind), index + 1)
-                addView(disc, FrameLayout.LayoutParams(discPx, discPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top - (discPx - iconPx) / 2 })
-                addView(icon, FrameLayout.LayoutParams(iconPx, iconPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top })
+                addView(disc, discLp(ctx))
+                addView(icon, FrameLayout.LayoutParams(iconPx, iconPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = iconTop(ctx) })
                 paint(this, confirm = false)
             }
+        }
+
+        /** Tâm icon ngang tâm icon ⇄ (⇄ canh giữa khung cao SLOT_HEAD_CLEAR): lề trên = (SLOT_HEAD_CLEAR − ICON_S) / 2. */
+        private fun iconTop(ctx: Context): Int = (KachiTheme.dpi(ctx, Sp.SLOT_HEAD_CLEAR) - KachiTheme.dpi(ctx, Sp.ICON_S)) / 2
+
+        /** Đĩa [Sp.SWAP_DISC] đồng tâm với icon (nút cụm và ⇄ dùng CHUNG một hình học — tâm đĩa = tâm icon ⇄). */
+        private fun discLp(ctx: Context): FrameLayout.LayoutParams {
+            val iconPx = KachiTheme.dpi(ctx, Sp.ICON_S)
+            val discPx = KachiTheme.dpi(ctx, Sp.SWAP_DISC)
+            return FrameLayout.LayoutParams(discPx, discPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = iconTop(ctx) - (discPx - iconPx) / 2 }
+        }
+
+        /**
+         * QA 2.87 [P3] (D-L8-1) — ĐĨA KÍNH sau ⇄ của ô App, ở ô giữa của hàng (đúng dưới ⇄ — ⇄ là con cuối của khung, vẽ trên hàng).
+         * [ĐO máy ảo QA `l4/s7-chrome-bg-toast.png`] ⇄ trần trên trang trắng của Chrome gần như vô hình, trong khi hai nút cụm có
+         * đĩa thì đọc được — app không theo chủ đề của Kachi nên không màu đơn nào đủ (lý lẽ luật 5). Đĩa ở ĐÂY (không trong
+         * `SlotSwapButton` — bộ dựng ⇄ bị ghim byte): chỉ ô App mới có cụm hiện cùng ⇄; nó ẩn/hiện CÙNG hàng (cùng nhịp nghỉ của
+         * ⇄), không bấm được, không vào cây trợ năng — cú chạm vẫn tới khung chạm của ⇄ nằm trên.
+         */
+        private fun swapDisc(ctx: Context): View = FrameLayout(ctx).apply {
+            isClickable = false; isFocusable = false
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            val disc = View(ctx).apply { isClickable = false; isFocusable = false }
+            addView(disc, discLp(ctx))
+            KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)
         }
 
         /**

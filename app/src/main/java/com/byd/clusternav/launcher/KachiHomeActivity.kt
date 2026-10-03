@@ -197,6 +197,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     private val tick = object : Runnable {
         override fun run() {
             topStrip.updateClock()
+            WidgetRefreshers.tickAll(workspace)   // QA 04/10: widget đồng hồ theo CÙNG nhịp, đổ tại chỗ (không dựng lại ô)
             wallpaper.step()   // U4: dùng LẠI nhịp có sẵn thay vì dựng thêm một vòng đếm riêng
             // PERF — báo cáo tải mỗi phút ([KachiPerf]); dùng LẠI nhịp này vì nó chạy đúng lúc vòng poll HAL chạy.
             // ⚠ `elapsedRealtime`, KHÔNG phải giờ tường: [ĐO] xe 14/09 giờ tường của đầu xe bị chỉnh nhảy >5 s giữa

@@ -31,15 +31,21 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  */
 internal object FitProbe {
 
-    /** Một dạng của lưới: hướng + số dòng nhãn giữ chỗ (0 = không đổi số dòng). */
-    data class Option(val form: Form, val lines: Int)
+    /**
+     * Một dạng của lưới: hướng + số dòng nhãn giữ chỗ (0 = không đổi số dòng). [reserve] = dạng có nhãn DỰ PHÒNG
+     * ([GridFit.Shape.reserve]) — chỉ dùng khi không dạng có nhãn chính nào đọc được.
+     */
+    data class Option(val form: Form, val lines: Int, val reserve: Boolean = false)
 
     /**
      * Thứ tự ƯU TIÊN (hoà cỡ ⇒ dạng đứng trước thắng): dọc giữ 2 dòng (dạng gốc, luật KIỂM TOÁN UX mục 6) · dọc 1 dòng
-     * (ô thấp, nhãn ngắn) · ngang 1 dòng (khung một hàng lưới) · chỉ-icon (đường lùi, xem [GridFit.Shape.fallback]).
+     * (ô thấp, nhãn ngắn) · ngang 1 dòng (khung một hàng lưới) · ngang 2 dòng DỰ PHÒNG (QA 04/10: nhãn Mã Lai dài không
+     * vừa một dòng cạnh icon, cũng không vừa ô dọc ⇒ trước đây rơi thẳng về chỉ-icon) · chỉ-icon (đường lùi, xem
+     * [GridFit.Shape.fallback]).
      */
     val OPTIONS: List<Option> = listOf(
-        Option(Form.VERTICAL, 2), Option(Form.VERTICAL, 1), Option(Form.HORIZONTAL, 1), Option(Form.ICON_ONLY, 0),
+        Option(Form.VERTICAL, 2), Option(Form.VERTICAL, 1), Option(Form.HORIZONTAL, 1),
+        Option(Form.HORIZONTAL, 2, reserve = true), Option(Form.ICON_ONLY, 0),
     )
 
     /** Sai số (px) của phép tìm bề rộng nhỏ nhất. */
@@ -72,15 +78,20 @@ internal object FitProbe {
         val shapes = ArrayList<GridFit.Shape>(OPTIONS.size)
         val usable = ArrayList<Boolean>(OPTIONS.size)
         OPTIONS.forEach { opt ->
-            // Ô không có nhãn: số dòng vô nghĩa (dọc-2 ≡ dọc-1) và chỉ-icon ≡ dọc ⇒ dùng lại số đo, không đo lại.
-            val same = when {
-                hasLabels -> null
-                opt.form == Form.ICON_ONLY || (opt.form == Form.VERTICAL && opt.lines == 1) -> shapes.firstOrNull()
-                else -> null
+            // Ô không có nhãn: số dòng vô nghĩa (dọc-2 ≡ dọc-1, ngang-2 ≡ ngang-1) và chỉ-icon ≡ dọc ⇒ dùng lại số đo
+            // của dạng tương đương đã đo (cùng chỉ số cho cờ dùng được), không đo lại.
+            val at = when {
+                hasLabels -> -1
+                opt.form == Form.ICON_ONLY || (opt.form == Form.VERTICAL && opt.lines == 1) -> 0
+                opt.form == Form.HORIZONTAL && opt.lines == 2 -> shapes.indexOfFirst { it.form == Form.HORIZONTAL }
+                else -> -1
             }
+            val same = shapes.getOrNull(at)
             if (same != null) {
-                shapes += same.copy(form = opt.form, lines = opt.lines, fallback = opt.form == Form.ICON_ONLY)
-                usable += usable.first()
+                shapes += same.copy(
+                    form = opt.form, lines = opt.lines, fallback = opt.form == Form.ICON_ONLY, reserve = opt.reserve,
+                )
+                usable += usable[at]
             } else {
                 val (s, ok) = shape(child, fs, opt, floors)
                 shapes += s; usable += ok
@@ -114,7 +125,7 @@ internal object FitProbe {
         child.measure(View.MeasureSpec.makeMeasureSpec(hi, View.MeasureSpec.EXACTLY), un)
         return GridFit.Shape(
             opt.form, hi.toDouble(), child.measuredHeight.toDouble(), minScale(fs, floors), opt.lines,
-            fallback = opt.form == Form.ICON_ONLY,
+            fallback = opt.form == Form.ICON_ONLY, reserve = opt.reserve,
         ) to usable
     }
 

@@ -56,6 +56,8 @@ internal object WidgetRefreshers {
 
     private class ActionFill(val fn: (CarStatus) -> Unit)
 
+    private class TickFill(val fn: () -> Unit)
+
     /**
      * Đăng ký đường đổ giá trị cho ô [view] rồi trả lại **chính nó**, để bộ vẽ `return` thẳng một dòng.
      *
@@ -85,6 +87,30 @@ internal object WidgetRefreshers {
         val fill = view.getTag(R.id.kachi_widget_action_fill) as? ActionFill ?: return false
         fill.fn(car)
         return true
+    }
+
+    /**
+     * Ô có nội dung theo GIỜ (đồng hồ) đăng ký thêm một hàm đổ theo nhịp đồng hồ — chạy ở [tickAll], không cần trạng
+     * thái xe đổi. QA 04/10 ([ĐO] máy ảo `l3/clock-check-1/2.png`: widget đứng 02:05 suốt 02:30–02:31): đồng hồ chỉ đổ
+     * lại khi `CarStatus` đổi, mà máy ảo/xe đỗ thì trạng thái không đổi. [fill] chỉ được đổi CHỮ trên view có sẵn
+     * (bất biến 1 ở KDoc lớp) và tự dùng dữ liệu lần đổ gần nhất của nó.
+     */
+    fun liveTick(view: View, fill: () -> Unit) {
+        view.setTag(R.id.kachi_widget_tick_fill, TickFill(fill))
+    }
+
+    /**
+     * Nhịp đồng hồ (10 s, `KachiHomeActivity.tick` — dùng LẠI nhịp đồng hồ thanh trên, không thêm vòng đếm): đổ lại mọi
+     * ô đã [liveTick] dưới [root], KHÔNG dựng view, KHÔNG dựng lại ô; báo lưới khớp ([FitGridLayout.contentChanged]) như
+     * mọi đường đổ tại chỗ (giờ 9:59 → 10:00 dài ra). Trả số ô đã đổ. Luồng chính.
+     */
+    fun tickAll(root: View): Int {
+        val fill = root.getTag(R.id.kachi_widget_tick_fill) as? TickFill
+        if (fill != null) { fill.fn(); FitGridLayout.contentChanged(root); return 1 }
+        if (root !is ViewGroup) return 0
+        var n = 0
+        for (i in 0 until root.childCount) n += tickAll(root.getChildAt(i))
+        return n
     }
 
     /**
