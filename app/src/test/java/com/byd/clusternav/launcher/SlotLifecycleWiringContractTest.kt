@@ -15,7 +15,8 @@ import org.junit.jupiter.api.Test
  *  - hàm mới phải có chỗ gọi thật (CLAUDE.md §8 — `CastShell.evictVd` compile sạch mà 0 call site);
  *  - host thôi giữ app TRƯỚC khi state đổi (thiếu ⇒ lượt render nhả ô ⇒ `release()` `am force-stop` cả gói);
  *  - *tắt* = lệnh dựng ở `:core` (`FloatingOrphanPlan.removeCmd`), chạy trên luồng nền, sau cổng kênh, KHÔNG force-stop;
- *  - *chạy nền* đi đúng đường công khai sẵn có (đổi tại chỗ → `onAppSwapped` → `evictBehind`), không chạm BehindHome*;
+ *  - *chạy nền* (L8, mọi ô app): lớp che của Kachi trên màn ảo ô → move-task → bản đọc cuối thấy app rời ô → MỚI luật hoàn
+ *    ô (host thả app trước ⇒ không force-stop app vừa ra sau màn nhà); chuỗi dựng ở `:core`, lớp keo không chạm BehindHome*;
  *  - nút đi cùng nhịp nghỉ của ⇄ và giữ luật cancel-trước-animate; đích chạm 48 dp; mô tả đủ năm tiếng.
  */
 class SlotLifecycleWiringContractTest {
@@ -42,7 +43,11 @@ class SlotLifecycleWiringContractTest {
         mapOf(
             "SlotRevertPlan.next(" to "HomeViewModel.kt",
             "SlotRevertPlan.overlayAfter(" to "HomeViewModel.kt",
-            "SlotRevertPlan.backgroundable(" to "KachiHomeSlotActions.kt",
+            "toBack(index, stage.vd, pkg)" to "KachiHomeSlotActions.kt",
+            "slots::toBack" to "KachiHomeActivity.kt",
+            "kit.seq.evictCovered(vd, pkg, kit.hidden)" to "KachiHomeSlots.kt",
+            "kit.seq.startBehindHidden(pkg, kit.hidden)" to "KachiHomeSlots.kt",
+            "slots().startBehindHidden(sc.pkg)" to "KachiHomeShortcuts.kt",
             "SlotHeadActions.of(" to "KachiHomeSlotActions.kt",
             "viewModel.slotRevert(" to "KachiHomeSlotActions.kt",
             "viewModel.applySlotRevert(" to "KachiHomeSlotActions.kt",
@@ -62,7 +67,8 @@ class SlotLifecycleWiringContractTest {
     fun `mot cua luat hoan o - quyet, host tha app, roi moi doi state`() {
         val fn = SourceRoots.body(actions, "private fun revert(")
         order(fn, "viewModel.slotRevert(index, event, pkg)", "if (next == Next.Keep) return",
-            "if (pkg != null && !(next is Next.ShowSaved && next.swapInPlace)) workspace().hostAt(index)?.relinquish(pkg)",
+            // L8 — ĐỔI GHIM có lý do: không còn ngoại lệ đổi-tại-chỗ (ShowSaved hết `swapInPlace`) ⇒ MỌI sự kiện app thả host.
+            "if (pkg != null) workspace().hostAt(index)?.relinquish(pkg)",
             "viewModel.applySlotRevert(index, next)")
         assertTrue("revert(index, Event.APP_DIED, pkg)" in SourceRoots.body(actions, "override fun onAppGone("))
         val vm = code("HomeViewModel.kt")
@@ -100,14 +106,26 @@ class SlotLifecycleWiringContractTest {
         assertFalse("force-stop" in close)
     }
 
+    /**
+     * L8 — ĐỔI GHIM có lý do (owner 03/10: nút chạy nền ở MỌI ô app; D-L6-1 mở khoá): bài cũ khoá đường đổi-tại-chỗ của L6
+     * (chỉ khi ô có app LƯU khác). Nay: app hệ thống ⇒ lý do, 0 lệnh (R0.6) → cổng kênh → ô sẵn (đúng gói, có màn ảo) →
+     * chuỗi lớp che trên ĐÚNG màn ảo của ô (`:core` `evictCovered`, mutex `kachi-behind`) → CHỈ khi bản đọc cuối thấy app đã
+     * rời ô mới luật hoàn ô; không ⇒ ô giữ app + một câu. Luật hoàn ô không còn đặt mốc đổi-tại-chỗ.
+     */
     @Test
-    fun `chay nen di dung duong doi-tai-cho san co roi evictBehind`() {
+    fun `chay nen - lop che tren man ao o, roi ra sau man nha, roi moi luat hoan o`() {
         val fn = SourceRoots.body(actions, "private fun background(")
-        order(fn, "ShellAccessUi.allowOrPrompt(activity)", "workspace().hostAt(index)?.stage()?.pkg != shown.pkg", "revert(index, Event.APP_BACKGROUND, shown.pkg)")
+        order(fn, "if (index in backing) return", "InstalledApps.isSystem(activity, pkg)", "R.string.kachi_sc_refuse_system", "return",
+            "ShellAccessUi.allowOrPrompt(activity)", "val stage = workspace().hostAt(index)?.stage()", "stage.pkg != pkg", "return",
+            "backing += index", "toBack(index, stage.vd, pkg) { left ->", "backing -= index",
+            "if (left) revert(index, Event.APP_BACKGROUND, pkg) else say(R.string.kachi_sc_bg_failed, pkg)")
+        val slotsSrc = code("KachiHomeSlots.kt")
+        val toBack = SourceRoots.body(slotsSrc, "fun toBack(")
+        order(toBack, "behind.chain(", "done(out.outOfStage)", "kit.seq.evictCovered(vd, pkg, kit.hidden)")
+        assertFalse("swapNonce" in SourceRoots.body(code("HomeViewModel.kt"), "fun applySlotRevert("),
+            "luật hoàn ô dựng lại ô (app đã rời màn ảo) — không mốc đổi-tại-chỗ")
         assertTrue("onAppSwapped = { i, vd, a, b -> slots.evictBehind(i, vd, a, b) }" in code("KachiHomeActivity.kt"),
-            "đổi tại chỗ xong ⇒ app vừa rời ô ra sau màn nhà qua BehindHomeRunner.evict (đường công khai sẵn có)")
-        assertTrue("it.swapNonce + (slot to nextSwapNonce())" in SourceRoots.body(code("HomeViewModel.kt"), "fun applySlotRevert("),
-            "ShowSaved(swapInPlace) phải đặt mốc đổi-tại-chỗ ⇒ WorkspaceView.swapInPlace, không dựng lại ô (dựng lại = force-stop)")
+            "đặt TẠM (lối tắt / giọng nói) vẫn đi đường đổi-tại-chỗ R0.1 sẵn có — L8 không đụng")
     }
 
     @Test
@@ -143,6 +161,10 @@ class SlotLifecycleWiringContractTest {
         val btn = SourceRoots.body(cluster, "private fun button(")
         assertTrue("isClickable = true" in btn && "contentDescription = ctx.getString(describe(b, kind), index + 1)" in btn)
         assertTrue("isClickable = false" in btn, "icon không tự nhận chạm (một cú chạm, một lớp)")
+        // L8 · D-L6-3 [ĐO máy ảo 03/10]: icon trần trên nội dung app 1.73:1 / 2.35:1 ⇒ đĩa kính CÙNG hợp đồng ⇄ ô trống, sau icon.
+        assertTrue("KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in btn, "đĩa kính NEUTRAL, tròn, không mờ R-OP")
+        order(btn, "addView(disc,", "addView(icon,")
+        assertTrue("val disc = View(ctx).apply { isClickable = false; isFocusable = false }" in btn, "đĩa không nhận chạm")
     }
 
     @Test

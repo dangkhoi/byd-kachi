@@ -489,6 +489,13 @@
     <string name="kachi_key_target_gemini">通过实体按键调用系统助手（Gemini · 231）</string>
     <string name="kachi_key_target_recognizer">语音识别器</string>
     <string name="kachi_key_target_kachi_voice">Kachi聆听（本地识别）</string>
+    <string name="kachi_key_src_detail">键码%1$d · 扫描码%2$s · 设备%3$s · 来源：%4$s · 读取%5$s</string>
+    <string name="kachi_key_src_knob">中控旋钮</string>
+    <string name="kachi_key_src_wheel">方向盘</string>
+    <string name="kachi_key_src_unknown">未知值（%1$s）</string>
+    <string name="kachi_key_src_failed">无法读取（%1$s）</string>
+    <string name="kachi_key_src_not_measured">此按键不测量</string>
+    <string name="kachi_key_src_pending">读取中…</string>
     <string name="kachi_sub_seat">座椅通风 / 加热</string>
     <string name="kachi_seat_enabled_title">按温度自动调节座椅</string>
     <string name="kachi_seat_enabled_sub">当车内温度需要时，车辆会为每个座椅应用你设定的挡位。</string>
@@ -635,7 +642,7 @@
     <string name="kachi_sc_reason_absent">当前布局有%1$d个格位——以全屏打开</string>
     <string name="kachi_sc_in_slot">%1$s已在格位%2$d中</string>
     <string name="kachi_sc_running">%1$s已在运行</string>
-    <string name="kachi_sc_no_stage">后台运行需要主屏幕上至少有一个打开的应用格位</string>
+    <string name="kachi_sc_no_stage">暂时无法准备后台运行的位置，请稍后再试</string>
     <string name="kachi_sc_refuse_system">系统应用无法在后台运行</string>
     <string name="kachi_sc_refuse_self">Kachi无法在后台运行自身</string>
     <string name="kachi_sc_refuse_cast">%1$s正在投屏到仪表</string>

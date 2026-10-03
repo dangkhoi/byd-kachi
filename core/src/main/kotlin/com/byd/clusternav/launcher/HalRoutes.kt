@@ -175,6 +175,28 @@ interface HalGateway {
      * vì thế không bao giờ dám kết luận một nút là *"xe này không có"*. Xem KDoc ở đó.
      */
     fun featureMapAvailable(): Boolean = false
+
+    /**
+     * L7 · KEY-SOURCE-SPLIT — như [featureGet] nhưng **nói lý do khi hụt** ([HalFeatureRead]). Đầu dò nguồn phím cần
+     * tách *"không lấy được device"* khỏi *"device ném (thiếu quyền)"* khỏi *"HAL trả rỗng"* — ba lý do dẫn tới ba
+     * đường xử lý khác nhau ở tầng 2 (vd ném SecurityException ⇒ lùi về hal-helper uid-shell).
+     *
+     * Mặc định bọc [featureGet] (không tách được lý do ⇒ `Empty`) để mọi gateway giả cũ giữ nguyên nghĩa.
+     */
+    fun featureRead(deviceFqn: String, id: Int): HalFeatureRead =
+        featureGet(deviceFqn, id)?.let { HalFeatureRead.Value(it) } ?: HalFeatureRead.Empty
+}
+
+/** Kết quả [HalGateway.featureRead]. */
+sealed class HalFeatureRead {
+    /** Chuỗi thô kiểu `"int=1 float=- buf=-"` (đọc bằng `HalBindingTable.coerceInt`). */
+    data class Value(val raw: String) : HalFeatureRead()
+    /** Không lấy được device (`getInstance` null — off-car / service HAL chưa lên). */
+    object NoDevice : HalFeatureRead()
+    /** `get` ném — [errorClass] = tên lớp ngoại lệ GỐC (vd `SecurityException`). */
+    data class Failed(val errorClass: String) : HalFeatureRead()
+    /** Gọi được nhưng không ra giá trị (null / sentinel `BYDAutoEventValue`). */
+    object Empty : HalFeatureRead()
 }
 
 /**

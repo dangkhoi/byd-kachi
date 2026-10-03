@@ -11,8 +11,8 @@ package com.byd.clusternav.launcher
  * Lớp này giữ phần QUYẾT ĐỊNH của phép đo đó, tách khỏi shell/Handler để test off-device. Hai luật:
  *
  *  1. **Chưa từng thấy sống thì không được kết luận chết.** `am start` tới lúc task hiện ra mất vài giây; nếu
- *     nhịp đo đầu tiên rơi vào khoảng đó mà đã kết luận thì ô vừa mở đã báo "app đã đóng" — và cái nhãn ấy sẽ
- *     hiện đúng ở lần dùng đầu tiên, tức là sai ở chỗ tệ nhất.
+ *     nhịp đo đầu tiên rơi vào khoảng đó mà đã kết luận thì ô vừa mở đã bị coi là "app đã đóng" — và ô sẽ bị trả về
+ *     trong suốt (luật hoàn ô L6) ngay ở lần dùng đầu tiên, tức là sai ở chỗ tệ nhất.
  *  2. **Phải trượt [missesToDie] nhịp liên tiếp.** Một nhịp hụt đơn lẻ (shell timeout, app đang đổi task, dump
  *     bị cắt) không phải cái chết. Mặc định 2 nhịp × 5 s = 10 s im lặng mới kết luận.
  *

@@ -23,7 +23,7 @@ import com.byd.clusternav.modules.clustercast.StackParse
  */
 object SlotReturn {
 
-    /** Kết quả lượt đưa về ô. Bên gọi: [IN_SLOT] xong · [KEEP] không làm gì · [GONE] thẻ "app đã đóng" · còn lại ⇒ golden. */
+    /** Kết quả lượt đưa về ô. Bên gọi: [IN_SLOT] xong · [KEEP] không làm gì · [GONE] app đã đóng ⇒ luật hoàn ô (L6) · còn lại ⇒ golden. */
     enum class Back { IN_SLOT, KEEP, GONE, NOT_BEHIND, FRONT_RESTORED, GOLDEN, UNREAD }
 
     /** Task đang ở đâu so với ô (màn ảo `vd`). */
@@ -148,7 +148,7 @@ class SlotReturnSequence(
         // Review lượt 5 [P2/P3]: K7 đã đưa app rời ô sang display 0 nhưng không ở trước, mà cũng không "ẩn dưới màn nhà" —
         // ẩn dưới camera / app khác, hoặc ngoài hai hình đã đo (đỉnh mà chưa `visible`: ROM chậm hơn 8 × 250 ms, màn tắt) ⇒ đo
         // lại ô cũng là ô đen câm như ca trên ⇒ coi như đang toàn màn: 0 lệnh thêm, thẻ ở ô, K8 khi màn nhà hiện lại
-        // ([bringBack]: còn trước / nơi khác ⇒ giữ thẻ · ẩn đúng hình S ⇒ K8 · mất ⇒ "đã đóng"). Camera tắt ⇒ app toàn màn
+        // ([bringBack]: còn trước / nơi khác ⇒ giữ thẻ · ẩn đúng hình S ⇒ K8 · mất ⇒ luật hoàn ô). Camera tắt ⇒ app toàn màn
         // hiện lại đúng như người dùng vừa xin.
         if (last.any { it.taskId == t.taskId && it.displayId == BehindHomePlan.MAIN_DISPLAY }) {
             return Detached(t.taskId, "$tag → rời ô, ở display 0 ($where, không K8 tại chỗ) ⇒ coi như toàn màn task=${t.taskId}")

@@ -83,12 +83,13 @@ class HomeViewModel(
         return SlotRevertPlan.next(saved, cur.effectiveWorkspace.slots.getOrElse(slot) { SlotContent.Empty }, event, pkg)
     }
 
-    /** Áp [next] của [slotRevert] lên lớp TẠM (+ mốc đổi-tại-chỗ khi giữ màn ảo) — KHÔNG ghi bền (owner 01/10). */
+    /**
+     * Áp [next] của [slotRevert] lên lớp TẠM — KHÔNG ghi bền (owner 01/10). Không đặt mốc đổi-tại-chỗ (L8: mọi sự kiện của
+     * bảng đến SAU KHI app đã rời màn ảo ô ⇒ ô dựng lại; host đã thôi giữ app ⇒ nhả ô không `force-stop`).
+     */
     fun applySlotRevert(slot: Int, next: SlotRevertPlan.Next) = _uiState.update {
         val overlay = SlotRevertPlan.overlayAfter(it.overlay, slot, next)
-        val inPlace = next is SlotRevertPlan.Next.ShowSaved && next.swapInPlace
-        if (overlay === it.overlay) it
-        else it.copy(overlay = overlay, swapNonce = if (inPlace) it.swapNonce + (slot to nextSwapNonce()) else it.swapNonce)
+        if (overlay === it.overlay) it else it.copy(overlay = overlay)
     }
 
     /** Mốc đổi-tại-chỗ tăng dần — chỉ cần KHÁC lần trước của cùng ô (xem [HomeUiState.swapNonce]). */

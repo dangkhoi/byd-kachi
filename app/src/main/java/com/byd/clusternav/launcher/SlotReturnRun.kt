@@ -97,8 +97,8 @@ internal object SlotReturnRun {
     }
 
     /**
-     * Thẻ "Đang mở toàn màn — chạm để đưa về ô" phủ ô [host] (chữ ở ĐÁY ô như thẻ "app đã đóng" — thẻ icon + tên của
-     * `WorkspaceView.appCard` nằm giữa, lộ ra khi mặt vẽ bị giấu). Trả view để host gỡ khi app về ô.
+     * Thẻ "Đang mở toàn màn — chạm để đưa về ô" phủ ô [host] (chữ ở ĐÁY ô — thẻ icon + tên của `WorkspaceView.appCard`
+     * nằm giữa, lộ ra khi mặt vẽ bị giấu). Trả view để host gỡ khi app về ô.
      */
     fun fullCard(host: FrameLayout, onTap: () -> Unit): View {
         val ctx = host.context
@@ -123,7 +123,8 @@ internal object SlotReturnRun {
  * bằng đường golden như hôm nay (không có trạng thái bền nào mới).
  *
  * @param current host chưa nhả và vẫn đang giữ app [String] (kết quả về muộn của một app cũ phải im).
- * @param onClosed thẻ "app đã đóng — chạm để mở lại" của host · @param reopen đường mở ô golden (force-stop + mở lại).
+ * @param onClosed app đã rời ô hẳn ⇒ host giấu mặt vẽ + báo lên luật hoàn ô (L6 `SlotRevertPlan.Event.APP_DIED`: trong suốt /
+ *   về nội dung LƯU — thẻ "app đã đóng — chạm để mở lại" cũ đã gỡ) · @param reopen đường mở ô golden (force-stop + mở lại).
  * @param onTap chạm thẻ "Đang mở toàn màn" ⇒ host gọi lại [bringBack] với màn ảo/kênh hiện tại.
  */
 internal class SlotFullscreen(
@@ -149,7 +150,7 @@ internal class SlotFullscreen(
             val t = out.taskId
             if (t == null) {
                 // Chạm đúp: lượt trước đã tách (app không còn ở ô) ⇒ lượt này không có gì để làm — KHÔNG đo lại ô (đo lại
-                // là 5 s sau thẻ "đã đóng" mọc lên trên app đang toàn màn).
+                // là 5 s sau ô bị coi là app đã đóng và đi luật hoàn ô trong khi app đang toàn màn).
                 if (task != null) { done(true); return@detach }
                 // Review lượt 4 [P2]: K7 đã đưa app rời ô mà nó ẩn ngay dưới màn nhà (HOME/Back trước lần đọc) ⇒ chuỗi đã xử lý
                 // như lượt về ô — chỉ đo lại ô khi app THẬT ở ô, không thì ô đen mãi (bộ đo chưa từng thấy app sống ở đó).
@@ -179,7 +180,7 @@ internal class SlotFullscreen(
         card?.let { host.removeView(it) }; card = null
     }
 
-    /** K8 về ô; [SlotReturn.Back.KEEP] ⇒ giữ thẻ; về được ⇒ đo lại; app đã đóng ⇒ thẻ "đã đóng"; K8 không ăn ⇒ golden. */
+    /** K8 về ô; [SlotReturn.Back.KEEP] ⇒ giữ thẻ; về được ⇒ đo lại; app đã đóng ⇒ [onClosed] (luật hoàn ô); K8 không ăn ⇒ golden. */
     fun bringBack(vd: Int, pkg: String, sh: (String) -> String) {
         val t = task ?: return
         SlotReturnRun.bringBack(host, vd, sh, t) { r ->

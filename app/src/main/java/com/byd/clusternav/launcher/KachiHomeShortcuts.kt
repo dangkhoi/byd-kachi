@@ -20,7 +20,8 @@ import com.byd.clusternav.launcher.behind.BehindHomeSequence
  *  | `Prompt` | `ShellAccessUi.allowOrPrompt` (thẻ READY-AT-HOME / toast) — 0 lệnh |
  *  | `OpenFull` | [KachiHomeSlots.openAppFullscreen] — đường ngăn kéo "Ứng dụng" (Intent, không cần kênh) |
  *  | `PlaceTemp` | [KachiHomeSlots.placeTemporary] — đặt TẠM (không ghi `slot_n`), app cũ ra sau màn nhà (R0.1) |
- *  | `StartBehind` | [KachiHomeSlots.startBehind] qua ô sống ([stagingCandidates], A5) — mảnh chung R0.3 |
+ *  | `StartBehind` | [KachiHomeSlots.startBehind] qua ô sống ([stagingCandidates], A5) — mảnh chung R0.3; ô vừa chết ⇒ như dòng dưới |
+ *  | `StartBehindHidden` | L8: [KachiHomeSlots.startBehindHidden] — màn ảo ẨN của Kachi (L4 · D2(a), cùng chuỗi chuyến lên xe) |
  *  | `Noop`/`Highlight` | nháy khung ô ([flashSlot]) + một dòng lý do |
  *  | `DetachToFull` | `allowOrPrompt` rồi [KachiHomeSlots.detachToFull] — K7 qua rào (T-M2 [ĐO]: Intent không tách được app khỏi màn ảo); về ô = K8 khi màn nhà hiện lại |
  *  | `Reopen` | `allowOrPrompt` rồi [KachiHomeSlots.reviveInSlot] — `VdAppHost.reopen` (FIX286 R-SC2); ô chưa sẵn ⇒ nháy ô |
@@ -132,7 +133,13 @@ internal class KachiHomeShortcuts(
             ShortcutAction.StartBehind -> {
                 if (!ShellAccessUi.allowOrPrompt(activity)) return
                 val stage = slots().startBehind(sc.pkg, stages) { out -> onBehindDone(sc, out) }
-                if (stage == null) say(reasonText(ShortcutPlan.Reason.NO_STAGE, sc, count, -1))
+                // Ô sống vừa chết giữa lúc quyết và lúc làm ⇒ đường cuối (L8): màn ảo ẩn — CLAUDE.md §6, đường mới đứng sau.
+                if (stage == null) slots().startBehindHidden(sc.pkg) { out -> onBehindDone(sc, out) }
+            }
+            // L8 (dòng 14): không có ô app sống ⇒ màn ảo ẨN của Kachi; không tạo được ⇒ chuỗi trả NO_STAGE ⇒ một câu lý do.
+            ShortcutAction.StartBehindHidden -> {
+                if (!ShellAccessUi.allowOrPrompt(activity)) return
+                slots().startBehindHidden(sc.pkg) { out -> onBehindDone(sc, out) }
             }
         }
     }
@@ -142,7 +149,11 @@ internal class KachiHomeShortcuts(
         when (out.result) {
             BehindHomeSequence.Result.ALREADY_RUNNING -> say(activity.getString(R.string.kachi_sc_running, label(sc.pkg)))
             BehindHomeSequence.Result.X_NOT_STAGED -> say(activity.getString(R.string.kachi_sc_bg_failed, label(sc.pkg)))
-            else -> Unit   // MOVED/MOVED_HOME_RESTORED: im lặng là đúng · KEPT_UNDER: app sống dưới app ô (O1), log đã ghi
+            BehindHomeSequence.Result.NO_STAGE -> say(activity.getString(R.string.kachi_sc_no_stage))   // L8: màn ảo ẩn không tạo được
+            BehindHomeSequence.Result.SYSTEM_APP -> say(activity.getString(R.string.kachi_sc_refuse_system))
+            // MOVED/MOVED_HOME_RESTORED/X_FRONT_HOME_RESTORED: im lặng là đúng · KEPT_UNDER: app sống dưới app ô (O1) hoặc
+            // trên màn ảo ẩn bị GIỮ (rào nhả) — log `KachiBehind` đã ghi.
+            else -> Unit
         }
     }
 

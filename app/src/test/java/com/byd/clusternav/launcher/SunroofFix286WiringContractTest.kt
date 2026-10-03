@@ -26,8 +26,11 @@ class SunroofFix286WiringContractTest {
         assertTrue(build.contains("releaseSchedulerInit = {"), "build() phải tiêm bộ hẹn nhả")
         assertTrue(build.contains("WriteReleaseScheduler.Jvm("), "bộ hẹn THẬT (không phải NONE) — thiếu ⇒ nóc không nhả 255")
         assertTrue(build.contains("ctlJournalInit = { CtlJournalStore.journal(app) }"), "nhật ký `ctl` THẬT")
+        // L7 (03/10): gateway tách thành `val halGateway` (một thực thể, đầu dò nguồn phím đọc qua CHÍNH nó) — bảng nối
+        // nhận đúng thực thể đó; ý của bài canh (bảng nhận bộ hẹn + nhật ký THẬT) giữ nguyên.
+        assertTrue(container.contains("val halGateway: HalGateway by lazy { carGatewayInit() }"), "một gateway HAL cho cả tiến trình")
         assertTrue(
-            container.contains("HalBindingTable(carGatewayInit(), releaseSchedulerInit(), ctlJournalInit())"),
+            container.contains("HalBindingTable(halGateway, releaseSchedulerInit(), ctlJournalInit())"),
             "bảng nối HAL dùng chung phải nhận cả hai — một bảng, mọi bề mặt (ô · giọng nói · gói · cầu ctl)",
         )
         assertEquals(1, Regex("""HalBindingTable\(""").findAll(container).count(), "một bảng nối HAL cho cả tiến trình")

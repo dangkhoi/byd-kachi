@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.launcher.SlotRevertPlan.Event
 import com.byd.clusternav.launcher.SlotRevertPlan.Next
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -17,6 +16,11 @@ import org.junit.jupiter.api.Test
  *  - (b) widget lốp + lối tắt đặt Maps tạm + tắt Maps ⇒ "đen thui 1 mảng" (2.86) ⇒ widget lốp phải về;
  *  - không bao giờ ghi lớp LƯU (owner 01/10: đặt lúc chạy là tạm) — khởi động lại là ô về hồ sơ;
  *  - id widget bên thứ ba không thành rác khi ô widget bị tắt tạm (xoá rồi là mất vĩnh viễn).
+ *
+ * L8 (owner 03/10, mở khoá D-L6-1) — ĐỔI GHIM có lý do: *chạy nền* nay làm được ở MỌI ô app (lớp che của Kachi trong màn ảo
+ * ô, `BehindHomeSequence.evictCovered`) và `APP_BACKGROUND` chỉ báo SAU KHI app đã rời màn ảo ⇒ ô đi đúng đường của app vừa
+ * đóng. Bảng cũ (`Keep` khi LƯU = chính app / widget / trống; `ShowSaved(swapInPlace = true)` khi có app LƯU khác) là luật
+ * của đường đổi-tại-chỗ L6 — đường đó không còn sinh từ bảng này (một đường chung, CLAUDE.md §7).
  */
 class SlotRevertPlanTest {
 
@@ -35,12 +39,9 @@ class SlotRevertPlanTest {
         }
         if (shown !is SlotContent.App) return Next.Keep
         if (pkg != null && pkg != shown.pkg) return Next.Keep
-        val bg = event == Event.APP_BACKGROUND
         return when {
-            saved == shown -> if (bg) Next.Keep else Next.Clear                  // (a) app LƯU của ô ⇒ trong suốt
-            saved is SlotContent.App -> Next.ShowSaved(swapInPlace = bg)          // app LƯU khác ⇒ mở lại / đứng trước
-            bg -> Next.Keep                                                       // không có B ⇒ không chạy nền được
-            else -> Next.ShowSaved(swapInPlace = false)                           // widget về · LƯU trống = trong suốt
+            saved == shown -> Next.Clear                     // (a) app LƯU của ô (chết / tắt / ra nền) ⇒ trong suốt
+            else -> Next.ShowSaved                           // app LƯU khác mở lại · widget về · LƯU trống = trong suốt
         }
     }
 
@@ -74,9 +75,9 @@ class SlotRevertPlanTest {
         val saved = HomeUiState(workspace = ws(tyres))
         val temp = saved.copy(overlay = saved.overlay.place(0, maps))
         assertEquals(SlotContent.App(maps), temp.effectiveWorkspace.slots[0])
-        listOf(Event.APP_DIED, Event.APP_CLOSED).forEach { ev ->
+        listOf(Event.APP_DIED, Event.APP_CLOSED, Event.APP_BACKGROUND).forEach { ev ->
             val next = SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], ev, maps)
-            assertEquals(Next.ShowSaved(swapInPlace = false), next, "$ev")
+            assertEquals(Next.ShowSaved, next, "$ev")
             val after = temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 0, next))
             assertEquals(tyres, after.effectiveWorkspace.slots[0], "$ev ⇒ widget lốp về, không 'đen thui'")
             assertTrue(after.overlay.isEmpty)
@@ -84,13 +85,34 @@ class SlotRevertPlanTest {
     }
 
     @Test
-    fun `b - app LUU khac thi mo lai app LUU, chay nen thi doi tai cho de day app tam ra sau man nha`() {
+    fun `b - app LUU khac thi mo lai app LUU, chay nen cung vay sau khi app tam da ra sau man nha`() {
         val saved = HomeUiState(workspace = ws(SlotContent.App(yt)))
         val temp = saved.copy(overlay = saved.overlay.place(0, maps))
-        assertEquals(Next.ShowSaved(false), SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], Event.APP_CLOSED, maps))
+        assertEquals(Next.ShowSaved, SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], Event.APP_CLOSED, maps))
         val bg = SlotRevertPlan.next(temp.workspace.slots[0], temp.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
-        assertEquals(Next.ShowSaved(swapInPlace = true), bg, "giữ màn ảo: YouTube về đứng TRÊN Maps ⇒ evict(vd, Maps, YouTube)")
+        assertEquals(Next.ShowSaved, bg, "L8: Maps đã ra sau màn nhà (lớp che) ⇒ ô dựng lại, YouTube mở lại như lúc khởi động")
         assertEquals(SlotContent.App(yt), temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 0, bg)).effectiveWorkspace.slots[0])
+    }
+
+    /**
+     * L8 — ca owner 03/10 phổ biến nhất (D-L6-1 cũ: KHÔNG làm được): ô LƯU Maps, bấm *chạy nền* ⇒ Maps sau màn nhà, ô TRONG
+     * SUỐT (*"để UI trong suốt thấy nền background cho đẹp"*); khởi động lại ⇒ Maps về ô (K8 vì Maps mang dấu sau màn nhà).
+     */
+    @Test
+    fun `L8 - o LUU chinh app, chay nen thi o trong suot, khoi dong lai thi app ve o`() {
+        val st = HomeUiState(workspace = ws(SlotContent.App(maps), tyres))
+        val next = SlotRevertPlan.next(st.workspace.slots[0], st.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
+        assertEquals(Next.Clear, next)
+        val after = st.copy(overlay = SlotRevertPlan.overlayAfter(st.overlay, 0, next))
+        assertEquals(SlotContent.Empty, after.effectiveWorkspace.slots[0])
+        assertSame(st.workspace, after.workspace, "không ghi hồ sơ")
+        assertEquals(SlotContent.App(maps), after.copy(overlay = SlotOverlay.EMPTY).effectiveWorkspace.slots[0])
+        listOf(SlotContent.Empty to SlotContent.Empty, tyres to tyres).forEach { (savedSlot, back) ->
+            val t = HomeUiState(workspace = ws(savedSlot)).let { it.copy(overlay = it.overlay.place(0, maps)) }
+            val n = SlotRevertPlan.next(t.workspace.slots[0], t.effectiveWorkspace.slots[0], Event.APP_BACKGROUND, maps)
+            assertEquals(Next.ShowSaved, n, "LƯU=$savedSlot")
+            assertEquals(back, t.copy(overlay = SlotRevertPlan.overlayAfter(t.overlay, 0, n)).effectiveWorkspace.slots[0])
+        }
     }
 
     @Test
@@ -98,7 +120,7 @@ class SlotRevertPlanTest {
         val st = HomeUiState(workspace = ws())
         val temp = st.copy(overlay = st.overlay.place(2, maps))
         val next = SlotRevertPlan.next(temp.workspace.slots[2], temp.effectiveWorkspace.slots[2], Event.APP_DIED, maps)
-        assertEquals(Next.ShowSaved(false), next)
+        assertEquals(Next.ShowSaved, next)
         assertEquals(SlotContent.Empty, temp.copy(overlay = SlotRevertPlan.overlayAfter(temp.overlay, 2, next)).effectiveWorkspace.slots[2])
     }
 
@@ -121,15 +143,6 @@ class SlotRevertPlanTest {
         assertEquals(Next.Keep, SlotRevertPlan.next(st.workspace.slots[0], st.effectiveWorkspace.slots[0], Event.APP_DIED, maps),
             "nhịp đo của Maps về muộn sau khi ô đã đổi sang YouTube ⇒ không được đổi ô")
         assertEquals(Next.Keep, SlotRevertPlan.next(SlotContent.Empty, SlotContent.Empty, Event.APP_DIED, maps), "lần hai (đã trong suốt) ⇒ không đổi")
-    }
-
-    @Test
-    fun `chay nen chi khi co app LUU khac - cung bang voi nut`() {
-        assertTrue(SlotRevertPlan.backgroundable(SlotContent.App(yt), SlotContent.App(maps)))
-        listOf(SlotContent.App(maps), tyres, clock, SlotContent.Empty).forEach {
-            assertFalse(SlotRevertPlan.backgroundable(it, SlotContent.App(maps)), "LƯU=$it: không có app đứng trước ⇒ không chạy nền")
-        }
-        assertFalse(SlotRevertPlan.backgroundable(SlotContent.App(yt), tyres), "ô đang hiện widget ⇒ không có app để đẩy")
     }
 
     @Test

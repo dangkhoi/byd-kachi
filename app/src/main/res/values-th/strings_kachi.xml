@@ -489,6 +489,13 @@
     <string name="kachi_key_target_gemini">ผู้ช่วยของระบบผ่านปุ่มฮาร์ดแวร์ (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">ตัวรู้จำเสียงพูด</string>
     <string name="kachi_key_target_kachi_voice">Kachi ฟัง (บนเครื่อง)</string>
+    <string name="kachi_key_src_detail">รหัส %1$d · สแกน %2$s · อุปกรณ์ %3$s · แหล่ง: %4$s · อ่าน %5$s</string>
+    <string name="kachi_key_src_knob">ปุ่มหมุนคอนโซลกลาง</string>
+    <string name="kachi_key_src_wheel">พวงมาลัย</string>
+    <string name="kachi_key_src_unknown">ค่าที่ไม่รู้จัก (%1$s)</string>
+    <string name="kachi_key_src_failed">อ่านไม่ได้ (%1$s)</string>
+    <string name="kachi_key_src_not_measured">ไม่วัดสำหรับปุ่มนี้</string>
+    <string name="kachi_key_src_pending">กำลังอ่าน…</string>
     <string name="kachi_sub_seat">ระบายอากาศ / ทำความร้อนที่นั่ง</string>
     <string name="kachi_seat_enabled_title">ปรับที่นั่งอัตโนมัติ</string>
     <string name="kachi_seat_enabled_sub">รถจะใช้ระดับที่คุณตั้งไว้สำหรับแต่ละที่นั่งเมื่ออุณหภูมิในห้องโดยสารถึงเงื่อนไข</string>
@@ -635,7 +642,7 @@
     <string name="kachi_sc_reason_absent">เลย์เอาต์นี้มี %1$d ช่อง — เปิดแบบเต็มหน้าจอ</string>
     <string name="kachi_sc_in_slot">%1$s อยู่ในช่อง %2$d แล้ว</string>
     <string name="kachi_sc_running">%1$s กำลังทำงานอยู่แล้ว</string>
-    <string name="kachi_sc_no_stage">การทำงานเบื้องหลังต้องมีช่องแอปที่เปิดอยู่อย่างน้อยหนึ่งช่องบนหน้าจอหลัก</string>
+    <string name="kachi_sc_no_stage">ยังเตรียมที่สำหรับทำงานเบื้องหลังไม่ได้ ลองใหม่อีกครั้งในอีกสักครู่</string>
     <string name="kachi_sc_refuse_system">แอประบบทำงานเบื้องหลังไม่ได้</string>
     <string name="kachi_sc_refuse_self">Kachi ทำงานเบื้องหลังเองไม่ได้</string>
     <string name="kachi_sc_refuse_cast">%1$s กำลังฉายบนหน้าปัด</string>

@@ -224,6 +224,8 @@ class SettingsKeysSection(
                 context,
                 context.getString(R.string.kachi_keys_learn_name),
                 bridge.defaultLearnName(code),
+                // L7 tầng 1 — chỉ HIỆN số đo nguồn phím (mã · scan · thiết bị · nguồn HAL) để chụp màn hình; tên/gán y nguyên.
+                detail = { tv -> KeySourceDetailText.bind(tv, code) { bridge.learnedKeySource(code) } },
             ) { name ->
                 bridge.addCustomButton(context.getString(R.string.kachi_key_custom_name, name, code), code)
                 rebuildButtons()

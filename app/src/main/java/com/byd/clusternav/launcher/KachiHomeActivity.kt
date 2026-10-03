@@ -136,7 +136,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
     }
 
     /** L6 — vòng đời ô: app chết · hết lượt đặt tạm · nút chạy nền/tắt cạnh ⇄ (luật `SlotRevertPlan`): thân ở [KachiHomeSlotActions]. */
-    private val slotActions by lazy { KachiHomeSlotActions(this, viewModel, { workspace }, { shell }) { block -> submitBg(block) } }
+    private val slotActions by lazy { KachiHomeSlotActions(this, viewModel, { workspace }, { shell }, slots::toBack) { block -> submitBg(block) } }
 
     /** F2/F3 — chuyến lên xe (chủ của `TripHub` + trang Cài đặt): thân ở [KachiHomeTrip]. */
     private val trip: KachiHomeTrip by lazy { KachiHomeTrip(this, viewModel, { slots }, { workspace }, { drawerController }) { shell } }

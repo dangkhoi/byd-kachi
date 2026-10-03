@@ -4,7 +4,9 @@ import com.byd.clusternav.NavConnect
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.voice.VoiceWakeService
 import com.byd.clusternav.modules.voicekey.AssistantLauncher
+import com.byd.clusternav.modules.voicekey.KeySourceRecorder
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
+import com.byd.clusternav.voicekey.KeySourceEntry
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import com.byd.clusternav.setVoiceConfirmIds
 import com.byd.clusternav.setVoiceMicSource
@@ -208,6 +210,14 @@ fun ClusterNavBridge.stopLearn() {
     VoiceKeyLearnBus.setListener(null)
     Prefs.setVoiceKeyLearn(app, false)
 }
+
+/**
+ * L7 · KEY-SOURCE-SPLIT tầng 1 — số đo của lần bấm vừa HỌC (chữ ký phím + nhãn nguồn HAL), cho dòng chi tiết dưới tên
+ * nút trong hộp đặt tên. `null` = chưa có (dịch vụ Hỗ trợ chưa bind / bộ đo không chạy). `reading == null` = đang đo.
+ *
+ * Chỉ ĐỌC vòng đệm RAM của [KeySourceRecorder] — không đổi danh tính gán, cách khớp hay JSON (tầng 2 mới làm).
+ */
+fun ClusterNavBridge.learnedKeySource(code: Int): KeySourceEntry? = KeySourceRecorder.journal.lastLearned(code)
 
 /**
  * Lưu nút vừa học.

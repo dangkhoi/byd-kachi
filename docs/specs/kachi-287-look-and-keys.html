@@ -38,6 +38,8 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 3 — 2026-10-03</b>: §4.6b — nút chạy nền cho mọi ô app (Activity che của Kachi đặt lên app trong màn ảo của ô rồi mới chuyển ra sau HOME) + lối tắt "Chạy ngầm" dùng màn ảo ẩn khi không có ô app; nút đầu ô có đĩa kính (đo tương phản 1,2–2,4 → 5,2–7,4:1) [ĐO máy ảo].</li>
+<li><b>Pass 2 — 2026-10-03</b>: thêm §4.7 KEY-SOURCE-SPLIT tầng 1 (owner: *"OD cũng thua em ạ, mình xem mình có cửa nào khác không thôi"*) — đo chữ ký phím + giá trị HAL <code>AUDIO_VOLUME_CTRL_MODE</code> ở màn Học phím; gán theo nguồn để 2.88 khi có ảnh xe xác nhận (CLAUDE.md §14).</li>
 <li><b>Pass 1 — 2026-10-03</b>: thêm §4.5 (widget co giãn — lỗi xe 2.86) và §4.6 (ô app tắt ⇒ trong suốt, đặt tạm kết thúc ⇒ về nội dung đã lưu, nút [chạy nền][⇄][tắt], tự ẩn 3 s) theo owner 03/10; ráp mã đợt 3.</li>
 <li><b>Pass 0b — 2026-10-03</b>: thêm R-SI (lưới icon lối tắt trong widget tự co giãn) theo owner.</li>
 <li><b>Pass 0 — 2026-10-03</b>: Khởi tạo từ ba yêu cầu owner + kiểm kê đọc mã (workflow <code>wf_4014da82-0a0</code>, 2 agent). Owner chốt: khung TRỐNG cũng ẩn ⇄; mọi nút đảo được phải có phím Đảo.</li>
@@ -294,6 +296,168 @@ ul{padding-left:22px}li{margin:3px 0}
 <li>OC-L6-4 — ô YouTube (LƯU) + lối tắt đặt Maps tạm ⇒ <em>chạy nền</em> ⇒ YouTube về ô (K8 / golden), <code>KachiBehind</code> <code>evict … MOVED</code>, Maps sau màn nhà.</li>
 <li>OC-L6-5 — ảnh: ba nút đầu ô tự ẩn sau 3 s, độ đọc icon trên Maps/YouTube, ô hẹp (bố cục tự vẽ) không cắt nút.</li>
 </ul>
+
+</div>
+
+<h3>4.6b Nút chạy nền cho MỌI ô app + lối tắt "Chạy ngầm" qua màn ảo ẩn (L8)</h3>
+<div class="card">
+<!-- SPEC ADDENDUM · L8 — nút "chạy nền" cho MỌI ô app · "Chạy ngầm" không cần ô sống · đĩa kính nút đầu ô (owner 03/10). Phiên điều phối gộp vào spec; agent L8 KHÔNG sửa docs/. Lớp CSS theo docs/specs/_template.html (.flow/.fnode/.arrow/.legend). -->
+<h3>L8 — <em>Chạy nền</em> ở MỌI ô app (lớp che trong màn ảo ô) · <em>Chạy ngầm</em> qua màn ảo ẩn · đĩa kính cho nút đầu ô</h3>
+<p>Nguồn: owner 03/10 — <em>“Chỗ nút switch app/widget có thể thêm 2 nút, 1 là đẩy app ra chạy nền, 2 là tắt app luôn, để UI trong suốt thấy nền background cho đẹp”</em>; điều phối: nút chạy nền phải làm được ở MỌI ô app (mở khoá D-L6-1), lối tắt <em>Chạy ngầm</em> dùng chuỗi màn ảo ẩn của L4 làm đường cuối (OQ-L4-1), chốt D-L6-3 bằng phép đo. Mã trong cây chính (UNSTAGED), đã đo máy ảo A10 <code>clusternav10</code>; chưa đo xe.</p>
+
+<h3>Yêu cầu</h3>
+<table>
+<tr><th>ID</th><th>Yêu cầu</th><th>Tiêu chí nhận (đo được)</th></tr>
+<tr><td>L8-1</td><td>Ô app có kênh + màn ảo ⇒ LUÔN có [chạy nền][⇄][tắt], kể cả khi ô không có app LƯU khác. Chạm <em>chạy nền</em> ⇒ app ra SAU màn nhà và vẫn chạy; màn nhà không bị che; ô theo luật hoàn ô (LƯU = chính app ⇒ trong suốt; LƯU khác / widget / trống ⇒ về nội dung LƯU). Không ghi hồ sơ; khởi động lại ⇒ app về ô bằng K8 (dấu bền).</td><td><span class="ev do">ĐO</span> máy ảo e1/e2b/e3/e5/e6: HOME đỉnh display 0 ở 100 % mẫu (163–235 mẫu/lượt; 29–77 mẫu trong cửa sổ chuỗi), <code>mResumedActivity</code> display 0 = KachiHome 100 %, 0 lần KachiHome pause; pid app giữ; YT Music <code>state=3</code>, vị trí tăng. Unit: <code>BehindHomeSlotCoverTest</code> (fixture <code>l8-slotback-*</code> nguyên văn), <code>SlotHeadActionsTest</code> (30 ô), <code>SlotRevertPlanTest</code> (240 ô), <code>HomeViewModelTest</code>.</td></tr>
+<tr><td>L8-2</td><td>App hệ thống (R0.6) ⇒ nút vẫn có, chạm nói <em>“Không chạy ngầm được app hệ thống”</em>, 0 lệnh.</td><td><span class="ev do">ĐO</span> ô Cài đặt: toast, 0 dòng <code>KachiBehind</code>, 0 lớp che / giữ chỗ. Unit: <code>BehindHomeSlotCoverTest.tu choi…</code>, <code>SlotLifecycleWiringContractTest</code>.</td></tr>
+<tr><td>L8-3</td><td>Lối tắt <em>Chạy ngầm</em> khi bố cục KHÔNG có ô app sống ⇒ chạy qua màn ảo ẩn của Kachi (cùng chuỗi chuyến lên xe); ô sống vẫn luôn trước; không dựng được màn ảo ẩn ⇒ một câu lý do.</td><td><span class="ev do">ĐO</span> e4 (chỉ widget, Waze <em>Chạy ngầm</em>): <code>StartBehindHidden</code> → <code>stage create vd=297</code> → MOVED → <code>vd=297 nhả</code>; HOME 134/134; Waze pid sống. Unit: <code>ShortcutPlanTest</code> dòng 14 (ghim đổi có lý do), <code>ShortcutsWiringContractTest</code>.</td></tr>
+<tr><td>L8-4</td><td>Nút <em>chạy nền</em> / <em>tắt</em> đọc được trên MỌI nội dung app: icon trên đĩa kính (cùng hợp đồng ⇄ ô trống).</td><td><span class="ev do">ĐO</span> tương phản icon↔nền: trần 1,21–2,35 : 1 (98–100 % điểm &lt; 3:1) ⇒ đĩa 5,24–7,40 : 1. Unit: <code>SlotLifecycleWiringContractTest.cum nut…</code>.</td></tr>
+</table>
+
+<h3>Thiết kế — chuỗi <em>chạy nền</em> của ô (<code>BehindHomeSequence.evictCovered</code>)</h3>
+<div class="flow">
+  <div class="fnode"><b>Chạm <em>chạy nền</em></b><span>app hệ thống ⇒ lý do · allowOrPrompt · ô sẵn</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Rào (:core, 1 lượt đọc)</b><span>vd ≥ 1 · A đúng 1 task standard ở ĐỈNH màn ảo ô · màn nhà ở đỉnh display 0</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Lớp che Kachi</b><span>lên màn ảo Ô, chờ onResume + đọc thấy ở đỉnh</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>evict(vd, A, Kachi)</b><span>giữ chỗ → dấu bền → move-task → đọc lại (byte R0.1)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode" style="background:rgba(0,113,227,.15)"><b>Gỡ che (finally) + đọc CUỐI</b><span>A còn trên màn ảo / không đọc được ⇒ ô giữ app</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Luật hoàn ô</b><span>host thả app TRƯỚC (không force-stop) → APP_BACKGROUND</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối có sẵn (R0.1, L4, L6)</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> mới ở L8</span>
+</div>
+
+<h3>Bảng §4 — lệnh của chuỗi</h3>
+<table>
+<tr><th>Lệnh</th><th>Display</th><th>App</th><th>Loại stack</th><th>Hoàn tác</th><th>Bằng chứng</th></tr>
+<tr><td>Lớp che <code>StageCoverActivity</code> (API trong tiến trình, <code>setLaunchDisplayId</code>)</td><td>đúng màn ảo CỦA Ô (Kachi tạo, cờ 8|256; <code>vd &lt; 1</code> ⇒ 0 lệnh)</td><td>chính Kachi</td><td><code>standard</code> (task riêng, <code>excludeFromRecents</code>)</td><td>gỡ trong <code>finally</code>; tự gỡ nếu resume ở display khác</td><td><span class="ev do">ĐO</span> e1–e6: <code>am_focused_stack [0,&lt;vd ô&gt;,…]</code>, resume ≈ 20–130 ms</td></tr>
+<tr><td>Giữ chỗ <code>BehindAnchorActivity</code> + <code>am stack move-task &lt;task A&gt; &lt;S&gt; true</code> (có sẵn)</td><td>display 0 (S ẩn sau màn nhà)</td><td>đúng gói của ô (task duy nhất trên màn ảo ô)</td><td><code>standard</code> bằng chữ, không ghim</td><td>K8 đưa về ô khi ô mở lại app (dấu bền); A lên trước ⇒ dấu + K12</td><td><span class="ev do">ĐO</span> <code>wm_task_moved [task,1,1]</code>; [ĐO nguồn] A10 r47 <code>TaskRecord.java:736-737, 747-749</code></td></tr>
+<tr><td>K12 (có sẵn, rào camera)</td><td>0</td><td>HOME</td><td>home</td><td>—</td><td>chỉ khi A / S lên trước màn nhà (không xảy ra ở 6 lượt đo)</td></tr>
+</table>
+
+<h3>Quyết định / lệch giao việc</h3>
+<ul>
+<li><b>D-L8-0</b> MỘT đường cho mọi ô app (CLAUDE.md §7): bản L6 “đổi tại chỗ về app LƯU khác rồi <code>evict(vd, A, B)</code>” không còn sinh từ luật hoàn ô; <code>SlotRevertPlan.Next.ShowSaved</code> hết <code>swapInPlace</code>, <code>backgroundable()</code> xoá. Đặt TẠM (lối tắt / giọng nói) vẫn đi R0.1 như cũ (e5 [ĐO]).</li>
+<li><b>D-L8-1</b> ⇄ của ô app vẫn icon trần (ghim): 1,76–2,67 : 1 (sáng) / 2,35 : 1 (tối trên app trắng). Đề xuất <code>disc = true</code> cho ô app — cần đổi ghim, chờ quyết.</li>
+<li><b>D-L8-2</b> nền đen của lớp che hiện trong ô 0,75–1,42 s rồi ô mới trong suốt [ĐO]. Giấu mặt vẽ trước chuỗi có thể làm màn ảo OFF ⇒ lớp che không resume [SUY, chưa đo] ⇒ chưa làm.</li>
+<li><b>D-L8-3</b> R0.6 giữ: app hệ thống trong ô chỉ nhận câu lý do. YouTube/Maps trên xe có là app hệ thống không — [CHƯA BIẾT] (OC-L4-4); nới R0.6 cho ô = quyết định owner.</li>
+<li><b>D-L8-4</b> <code>kachi_sc_no_stage</code> đổi nghĩa (5 tiếng): “chưa dựng được chỗ chạy ngầm — thử lại sau”; dòng nhắc “cần ít nhất một ô app” ở Cài đặt › Lối tắt gỡ.</li>
+</ul>
+
+<h3>Kiểm off-device</h3>
+<table>
+<tr><th>Mục</th><th>Kết quả</th></tr>
+<tr><td>Toàn bộ (đếm từ XML, <code>--rerun-tasks --continue</code>)</td><td><span class="ev do">ĐO</span> <code>:core:test</code> 3 781 / 0 lỗi (396 XML) · <code>:app:testDebugUnitTest</code> 1 890 / 0 lỗi (232 XML)</td></tr>
+<tr><td>Lint</td><td><span class="ev do">ĐO</span> <code>:app:lintDebug</code> 0 lỗi / 557 cảnh báo (tệp L8: chỉ <code>UseKtx</code> có sẵn)</td></tr>
+<tr><td>Phá thử (trả nguyên byte)</td><td>bỏ rào màn nhà ⇒ <code>BehindHomeSlotCoverTest</code> đỏ · <code>APP_BACKGROUND</code> + LƯU = chính app ⇒ <code>Keep</code> ⇒ <code>SlotRevertPlanTest</code> ×2 đỏ · không thả host khi chạy nền ⇒ <code>SlotLifecycleWiringContractTest</code> đỏ</td></tr>
+</table>
+
+<h3>Việc trên xe (🚗)</h3>
+<ul>
+<li><b>OC-L8-1</b> ROM BYD cho lớp che lên màn ảo của ô — log <code>KachiBehind slot-back vd=… MOVED</code>, ô trong suốt, app sống.</li>
+<li><b>OC-L8-2</b> DL5 (A12): <code>Task.reparent</code>/<code>wasFront</code> chưa fetch r34 — [CHƯA BIẾT].</li>
+<li><b>OC-L8-3</b> app dẫn đường sau màn nhà có giữ dẫn đường / giọng đọc — [CHƯA BIẾT].</li>
+<li><b>OC-L8-4</b> ảnh đầu ô trên xe (đĩa kính + ⇄ trần), sáng và tối.</li>
+</ul>
+
+</div>
+
+<h3>4.7 KEY-SOURCE-SPLIT tầng 1 — Kachi tự đo nguồn phím âm lượng (núm bệ giữa vs vô-lăng)</h3>
+<div class="card">
+<!-- ═══ ADDENDUM L7 · KEY-SOURCE-SPLIT tầng 1 (chỉ ĐO) — mảnh HTML để ráp vào docs/specs/kachi-287-look-and-keys.html
+     (dùng đúng lớp CSS của spec đó: .flow/.fnode/.legend/.card/table/.pill). Không tự sửa docs/ — người ráp chép vào. ═══ -->
+
+<h3 id="l7">4.5 KEY-SOURCE-SPLIT tầng 1 — đo xem phím âm lượng đến từ NÚT NÀO (L7)</h3>
+<p class="muted">Backlog đề xuất: <code>KEY-SOURCE-SPLIT</code> (tầng 1 = đo; tầng 2 = gán theo nguồn — CHƯA làm). Owner 03/10: xe có hai chỗ chỉnh âm lượng (nút vô-lăng và núm xoay trên yên ngựa); Kachi học cả hai thành cùng mã 291/292; owner muốn tách ra để gán núm cho việc khác (vd tốc độ quạt). Owner: <em>“OD cũng thua em ạ, mình xem mình có cửa nào khác không thôi.”</em></p>
+
+<h3>4.5.1 Mức bằng chứng — cái gì đã biết, cái gì tầng 1 đi đo</h3>
+<table>
+<tr><th>Khẳng định</th><th>Mức</th><th>Nguồn</th></tr>
+<tr><td>Overdrive cũng chỉ phân biệt theo keyCode</td><td>[ĐO]</td><td>đọc code OD (map nghiên cứu §A)</td></tr>
+<tr><td>Hai nút cùng đổ vào thiết bị ảo <code>simulate-keys</code>, cùng scancode 115/114 ⇒ cùng 291/292</td><td>[ĐO tĩnh fw 2602030]</td><td><code>auto.default.so</code>: <code>FunctionTable::keycode</code> @0x2c820 (vô-lăng) · <code>::boardkeycode</code> @0x2d154 (núm) · <code>simulate-keys.kl</code></td></tr>
+<tr><td>Vì thế KeyEvent của hai nút gần như chắc GIỐNG HỆT (deviceId · descriptor · scan · source · flags)</td><td>[SUY mạnh]</td><td>tầng 1 đo lại bằng chữ ký đầy đủ</td></tr>
+<tr><td>HAL đặt <code>AUDIO_VOLUME_CTRL_MODE</code> = <b>1</b> (núm, <code>boardkeycode</code>) / <b>2</b> (vô-lăng, <code>keycode</code>) NGAY TRƯỚC khi ghi phím</td><td>[ĐO tĩnh]</td><td><code>setIntValue(F+0x9a8, 1|2)</code> @0x2d300 / @0x2c8d4; slot +0x9a8 = <code>0x9900004E</code></td></tr>
+<tr><td>Xe owner có feature này trong bảng (device 1002)</td><td>[ĐO xe 16/09]</td><td><code>carlog-0916/device-features-map.tsv:31</code></td></tr>
+<tr><td>Đọc <code>get(int[], Class)</code> = chỉ ĐỌC, không ghi gì xuống HAL; quyền Java-side bị <code>BydHal.bypass</code> nuốt</td><td>[ĐO fw src]</td><td><code>AbsBYDAutoDevice.java:320-345</code> · <code>BYDAutoAudioDevice.java:437-442</code></td></tr>
+<tr><td><code>BYDAutoAudioDevice</code> còn khai hằng <code>VOLUME_SOURCE_KNOB = 11</code> / <code>VOLUME_SOURCE_WHEEL = 12</code> — dùng vào đâu chưa rõ (ứng viên đường thứ hai nếu đường chính hụt)</td><td>[ĐO tồn tại] · công dụng [CHƯA BIẾT]</td><td><code>BYDAutoAudioDevice.java</code> khối hằng</td></tr>
+<tr><td>Kachi đọc được feature này từ app uid, kết quả 1/2 khớp nút vừa bấm, độ trễ bao nhiêu</td><td><b>[CHƯA BIẾT]</b></td><td>← đúng thứ tầng 1 đo (§14: chưa đo thì chưa nối dây gán)</td></tr>
+</table>
+
+<h3>4.5.2 Thiết kế (chỉ đo — không đổi danh tính gán, cách khớp, JSON, hành vi)</h3>
+<div class="flow">
+  <div class="fnode"><b>onKeyEvent</b><span>main looper · hạn 500 ms</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KeySample</b><span>chép field nguyên thuỷ (event bị recycle)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>journal.begin</b><span>vòng đệm RAM 50 dòng · O(1)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>kachi-keysrc</b><span>InputDevice (nhớ theo id) · chờ ≤ 250 ms</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>kachi-keysrc-hal</b><span>KeySourceProbes.read → halGateway.featureRead</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KachiKey log + hộp Học phím</b><span>usage-*.log · dòng chi tiết để chụp</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> có sẵn</span><span class="sw"><span class="box" style="background:var(--new)"></span> mới (L7)</span></div>
+<ul>
+<li><b>Đầu dò là DỮ LIỆU</b> (<code>:core KeySourceProbes.ALL</code>): device <code>BYDAutoAudioDevice</code> · feature theo TÊN <code>AUDIO_VOLUME_CTRL_MODE</code> (phân giải trên xe qua <code>featureIdByName</code> — không hằng số) · giá trị <code>{1: núm yên ngựa, 2: vô-lăng}</code> · mã phím <code>{291, 292, 307, 308}</code> · trần 250 ms. Đời xe khác ⇒ thêm dòng, không thêm nhánh (§7).</li>
+<li><b>Luồng phím không chờ gì</b>: <code>onKeyEvent</code> chạy trên main looper của launcher [ĐO r47 <code>AccessibilityService.java:1622,1729,1873-1890</code>], framework chờ tối đa 500 ms [<code>KeyEventDispatcher.java:51</code>] ⇒ ở đó chỉ chép field + <code>post</code>. Tra <code>InputDevice</code> (lần đầu là binder, <code>InputManager.java:250-271</code>) và đọc HAL đều ở luồng riêng.</li>
+<li><b>Không bão thử lại</b>: lượt HAL quá trần ⇒ <code>timeout</code>; lượt đó còn treo ⇒ các lần bấm sau ghi <code>busy</code> ngay, không chồng lượt mới. Id/thiết bị vắng đã được nhớ ở <code>BydFeatureIds</code> (vĩnh viễn) và <code>BydHalGateway</code> (30 s).</li>
+<li><b>Một gateway</b>: <code>AppContainer.halGateway</code> (tách từ <code>HalBindingTable</code>, cùng thực thể) + <code>HalGateway.featureRead</code> mới giữ LÝ DO hụt: <code>no_framework · no_feature · no_device · read_error:&lt;Lớp&gt; · empty · not_provisioned · bad_value · timeout · busy · not_running</code>.</li>
+<li><b>Dòng nhật ký</b> (một dòng mỗi DOWN, tag <code>KachiKey</code>): <code>down k=291 scan=115 dev="simulate-keys"#7 virt=0 vp=0000:0000 desc=… src=0x101 fl=0x8 rep=0 t=… tag=AUDIO_VOLUME_CTRL_MODE=1 (read 3ms, +5ms) seq=12</code>. <code>t=</code>/<code>seq=</code> làm mỗi dòng khác nhau — [ĐO xe 17/09] dòng cũ y hệt nhau bị <code>chatty</code> gộp (“identical 2 lines”) đúng giữa một lượt xoay núm.</li>
+<li><b>Hộp Học phím mới</b>: dưới ô tên thêm MỘT dòng, vd <code>mã 291 · scan 115 · thiết bị "simulate-keys"#7 · nguồn: núm yên ngựa (AUDIO_VOLUME_CTRL_MODE=1) · đọc 3 ms</code>. Tên gợi ý, nhãn lưu, gán: y nguyên. Chuỗi 5 tiếng (VI/EN/ZH/TH/MS).</li>
+<li><b>Không làm ở tầng 1</b>: listener <code>AbsBYDAutoAudioListener</code> (gateway chưa có API listener chung; đăng ký listener = <code>enableDevice</code> một đăng ký HAL mới — chờ số đo), mục DiagActivity, tách gán theo nguồn.</li>
+</ul>
+
+<h3>4.5.3 Phiếu thử cho anh em (không cần adb, chỉ chụp màn hình)</h3>
+<div class="card">
+<ol>
+<li>Mở Kachi › <b>Cài đặt › Phím vô-lăng</b>. Dòng trạng thái phải là <b>đang hoạt động</b> (nếu “mất kết nối” ⇒ bấm <b>Kiểm tra / Sửa ngay</b> trước).</li>
+<li>Bấm <b>Học phím mới…</b> rồi bấm <b>nút tăng âm lượng trên VÔ-LĂNG</b> một lần.</li>
+<li>Hộp “Đặt tên cho nút vừa bấm” hiện ra — chờ 1–2 giây cho dòng chữ nhỏ dưới ô tên hết “đang đọc…”, rồi <b>chụp màn hình</b>. Bấm <b>Huỷ</b> (không cần lưu).</li>
+<li>Bấm <b>Học phím mới…</b> lần nữa, rồi <b>xoay NÚM trên yên ngựa tăng đúng MỘT nấc</b>.</li>
+<li>Chờ 1–2 giây, <b>chụp màn hình</b>, bấm <b>Huỷ</b>.</li>
+<li>(Nếu tiện) lặp lại 2–5 với nút <b>giảm</b> âm lượng / xoay núm <b>giảm</b>. Gửi các ảnh + đời xe + bản Kachi (tiêu đề Cài đặt) về nhóm.</li>
+</ol>
+<p class="muted">Bản ghi đầy đủ (mọi lần bấm, cả ngoài hộp học) nằm sẵn trong <code>kachi-logs/usage-*.log</code>, dòng bắt đầu bằng <code>KachiKey</code> — ai lấy được log thì gửi kèm.</p>
+</div>
+<table>
+<tr><th>Dòng “nguồn:” hiện</th><th>Nghĩa</th></tr>
+<tr><td><code>núm yên ngựa (AUDIO_VOLUME_CTRL_MODE=1)</code></td><td>Xe báo phím vừa rồi đến từ núm/bảng điều khiển giữa.</td></tr>
+<tr><td><code>vô-lăng (AUDIO_VOLUME_CTRL_MODE=2)</code></td><td>Xe báo phím vừa rồi đến từ vô-lăng.</td></tr>
+<tr><td><code>giá trị lạ (AUDIO_VOLUME_CTRL_MODE=N)</code></td><td>Đọc được nhưng số không phải 1/2 — ghi lại N.</td></tr>
+<tr><td><code>không đọc được (no_framework | no_feature | no_device)</code></td><td>Xe/ROM này không có đường đọc đó (máy ảo · thiếu feature · device không lên).</td></tr>
+<tr><td><code>không đọc được (read_error:SecurityException)</code></td><td>Có feature nhưng HAL từ chối app — tầng 2 phải đi đường hal-helper (uid shell).</td></tr>
+<tr><td><code>không đọc được (timeout | busy | empty | not_provisioned)</code></td><td>Đọc chậm quá 250 ms / lượt trước còn treo / HAL trả rỗng / feature không bật trên xe.</td></tr>
+<tr><td><code>không đo cho phím này</code></td><td>Phím không thuộc bảng (không phải 291/292/307/308).</td></tr>
+</table>
+<p><b>Phần “thiết bị” và “scan”</b>: nếu hai ảnh khác nhau ở tên thiết bị / số sau dấu <code>#</code> / scan ⇒ chính KeyEvent đã phân biệt được (không cần HAL).</p>
+
+<h3>4.5.4 Luật quyết định tầng 2 (sau khi có ảnh)</h3>
+<table>
+<tr><th>Kết quả đo (≥ 2 xe, mỗi nút ≥ 3 lần, cả tăng lẫn giảm)</th><th>Quyết định</th></tr>
+<tr><td>Nhãn nguồn khác nhau ỔN ĐỊNH: vô-lăng luôn 2, núm luôn 1 (kể cả bấm xen kẽ nhanh, <code>+ms</code> nhỏ)</td><td>Làm tầng 2: gán theo nguồn (<code>VoiceKeyBinding(keyCode, target, source?)</code>, khớp nguồn trước rồi keyCode; nguồn chưa gán thì cho đi qua để vô-lăng vẫn chỉnh âm lượng). Đọc nguồn phải nằm trong luồng phím có trần ⇒ đo latency trước khi chọn đọc-đồng-bộ hay listener.</td></tr>
+<tr><td>Thiết bị / scan / source trong KeyEvent khác nhau</td><td>Tầng 2 dùng chữ ký InputDevice (không cần HAL).</td></tr>
+<tr><td>Đọc được nhưng giá trị GIỐNG nhau / lẫn lộn / lệch pha (<code>+ms</code> lớn)</td><td>Báo owner: <b>“xe không phân biệt được hai nút qua đường này”</b> kèm ảnh; điều kiện mở khoá: listener <code>onVolumeCtrlModeChanged</code> (đo thứ tự) hoặc tín hiệu CAN khác.</td></tr>
+<tr><td><code>read_error:SecurityException</code></td><td>Thử lại bằng hal-helper uid-shell (đường đã chạy cho Light device) trước khi kết luận.</td></tr>
+<tr><td><code>no_feature / no_device / not_provisioned</code> trên đời xe đó</td><td>Đời xe đó: “không phân biệt được” (giữ keyCode-only), ghi vào bảng đầu dò theo đời xe nếu đời khác có đường riêng.</td></tr>
+</table>
+<p class="muted">Bỏ tính năng là quyết định của OWNER — tầng 1 chỉ đưa bằng chứng.</p>
+
+<h3>4.5.5 Tasks · Verification (L7)</h3>
+<table>
+<tr><th>#</th><th>Việc</th><th>Kiểm</th></tr>
+<tr><td>L7.1</td><td><code>:core</code> <code>KeySample</code> · <code>KeySourceProbes</code> (bảng + đọc + kết luận) · <code>KeySourceJournal</code> · <code>KeySourceLog</code>; <code>HalGateway.featureRead</code> + <code>HalFeatureRead</code></td><td><code>KeySourceProbeTest</code> (9) · <code>KeySourceJournalTest</code> (8, fixture xe 17/09 <code>usage-292-burst.txt</code>)</td></tr>
+<tr><td>L7.2</td><td><code>:app</code> <code>KeySourceRecorder</code> (luồng đo, trần, busy, InputDeviceListener) · <code>BydHalGateway.featureRead</code> · <code>AppContainer.halGateway</code> · nối <code>NavAccessibilityService</code></td><td><code>KeySourceL7WiringContractTest</code> L1–L3, L6</td></tr>
+<tr><td>L7.3</td><td>Hộp Học phím: <code>SettingsDialogs.askName(detail=)</code> · <code>KeySourceDetailText</code> · cầu <code>learnedKeySource</code> · 7 chuỗi × 5 tiếng</td><td>L4 · <code>LauncherI18nLocalesContractTest</code></td></tr>
+<tr><td>L7.4</td><td>Không đổi gán/khớp/JSON</td><td>L5 · <code>VoiceKeyBindingListTest</code> · <code>VoiceKeyMatcherTest</code> xanh</td></tr>
+<tr><td>L7.5</td><td>Đo trên xe theo phiếu 4.5.3</td><td><b>NEEDS-ONCAR</b> — anh em/owner</td></tr>
+</table>
 
 </div>
 

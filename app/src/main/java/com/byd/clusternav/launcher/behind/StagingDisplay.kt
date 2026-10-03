@@ -35,6 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger
  *    chủ màn ảo riêng tư (A10 r47 `ActivityStackSupervisor.isCallerAllowedToLaunchOnDisplay` `:1067-1130`: activity cùng
  *    uid chủ + chủ gọi ⇒ cho). Nó đóng vai app C của ô: X không được ở ĐỈNH màn ảo nguồn lúc `move-task` (R0.2).
  *  - [uncover] / [release]: gỡ lớp che, nhả màn ảo — `:core` chỉ gọi [release] khi bản đọc thấy màn ảo đã TRỐNG.
+ *  - L8 — [cover] / [uncover] cũng là [BehindHomeSequence.CoverPort] của nút *chạy nền* đầu ô
+ *    (`BehindHomeSequence.evictCovered`): lớp che lên màn ảo CỦA Ô (cũng do Kachi tạo, cùng cờ 8|256, cùng luật
+ *    `isCallerAllowedToLaunchOnDisplay`). Lượt đó KHÔNG gọi [create] / [release] — màn ảo của ô là của host ô.
  *
  * Bốn câu CLAUDE.md §4 cho các lệnh shell nhắm màn ảo này (K4 · K4-VIEW · K6 nguồn): **display** = đúng id vừa tạo (≥ 2,
  * đăng ký, Kachi sở hữu, không bao giờ display 0/1); **app** = đúng gói X người dùng chọn (+ lớp che của chính Kachi);

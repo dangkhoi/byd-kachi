@@ -10,21 +10,20 @@ package com.byd.clusternav.launcher
  *    mảng"* — luật (phiên điều phối chốt, generic): lượt đặt TẠM kết thúc ⇒ ô về nội dung LƯU của hồ sơ (widget lốp hiện
  *    lại; app LƯU khác ⇒ mở lại vào ô như lúc khởi động). Chỉ khi nội dung LƯU CHÍNH LÀ app đó, hoặc ô LƯU trống, ô mới
  *    trong suốt.
- *  - (c) hai nút cạnh ⇄ — *chạy nền* / *tắt* — đi qua đúng luật (b) sau khi làm xong việc của chúng.
+ *  - (c) hai nút cạnh ⇄ — *chạy nền* / *tắt* — đi qua đúng luật (b) sau khi làm xong việc của chúng (app đã rời màn ảo).
  *
  * ## Một nguồn sự thật cho "LƯU vs đang HIỆN"
  * Đầu vào là CHÍNH hai lớp của [HomeUiState]: `workspace` (LƯU, ghi bền) và `effectiveWorkspace` (đang HIỆN = LƯU +
  * [SlotOverlay]). Bảng không đọc gì khác; đầu ra ([Next]) chỉ đổi lớp TẠM ([overlayAfter]) ⇒ không đường nào ở đây ghi
  * hồ sơ (owner 01/10: đặt lúc chạy là tạm). Khởi động lại / đổi hồ sơ / đổi bố cục ⇒ lớp tạm mất ⇒ ô về đúng hồ sơ.
  *
- * ## Vì sao *chạy nền* chỉ có khi ô có app LƯU KHÁC
- * Đường "ra sau màn nhà" công khai DUY NHẤT ([com.byd.clusternav.launcher.behind.BehindHomeSequence.evict], qua
- * `BehindHomeRunner.evict`) đòi một app B đứng ĐỈNH màn ảo của ô TRÊN app A cần đẩy — [ĐO nguồn] A10 r47
- * `TaskRecord.java:728-749` (`wasFront`): A ở đỉnh màn ảo thì stack đích bị kéo lên TRƯỚC màn nhà (che nhà, đã đo
- * `behind-home-emulator-2026-10-01` bước 6). App LƯU khác của ô chính là B đó: ô đổi tại chỗ về B (`VdAppHost.swapApp`,
- * K8 nếu B đang sau màn nhà, không thì đường ô golden) rồi `evict(vd, A, B)` — ô của chính nó là chỗ dàn dựng. Ô LƯU là
- * chính A / widget / trống ⇒ không có B ⇒ đường công khai hôm nay KHÔNG làm được ⇒ nút không tồn tại ([SlotHeadActions]).
- * `startBehind` cũng không thay được: nó dừng ở `ALREADY_RUNNING` khi X đã có task (A đang ở ô = đã có task).
+ * ## *Chạy nền* = cùng luật với *tắt* (L8, mở khoá D-L6-1)
+ * Sự kiện [Event.APP_BACKGROUND] chỉ được báo SAU KHI app đã RỜI màn ảo của ô (bản đọc cuối của
+ * `BehindHomeSequence.evictCovered`: lớp che của Kachi đứng trước app trong màn ảo ô ⇒ move-task ra sau màn nhà, A10 r47
+ * `TaskRecord.java:736-737` `wasFront`). Lúc đó ô không còn gì để giữ trên màn ảo ⇒ ô đi đúng đường của app vừa đóng: LƯU
+ * là chính app ⇒ trong suốt (owner: *"để UI trong suốt thấy nền background"*) · LƯU là app khác / widget / trống ⇒ về nội
+ * dung LƯU. Bản L6 (đổi TẠI CHỖ về app LƯU khác rồi `evict(vd, A, B)`, chỉ khi ô có app LƯU khác) đã thay bằng MỘT đường
+ * chung cho mọi ô app — không còn mốc đổi-tại-chỗ nào sinh ra từ bảng này.
  */
 object SlotRevertPlan {
 
@@ -36,7 +35,7 @@ object SlotRevertPlan {
         /** Người dùng bấm *tắt* trên ô app và stack của app trên màn ảo ô đã gỡ xong — (c). */
         APP_CLOSED,
 
-        /** Người dùng bấm *chạy nền* trên ô app — (c). */
+        /** Người dùng bấm *chạy nền* trên ô app VÀ bản đọc cuối thấy app đã rời màn ảo ô (ra sau màn nhà) — (c), L8. */
         APP_BACKGROUND,
 
         /** Người dùng bấm *tắt* trên ô widget (Kachi hoặc bên thứ ba) — (c). */
@@ -49,11 +48,10 @@ object SlotRevertPlan {
         object Keep : Next { override fun toString() = "Keep" }
 
         /**
-         * Bỏ mục tạm ⇒ ô hiện nội dung LƯU. [swapInPlace] = giữ màn ảo, đổi app tại chỗ về app LƯU rồi đẩy app đang hiện
-         * ra sau màn nhà (đường đặt tạm sẵn có, R0.1) — CHỈ cho [Event.APP_BACKGROUND]. `false` = dựng lại ô (app đang hiện
-         * đã đóng: không còn gì để giữ trên màn ảo).
+         * Bỏ mục tạm ⇒ ô hiện nội dung LƯU (dựng lại ô: app đang hiện đã rời màn ảo — chết / bị tắt / đã ra sau màn nhà —
+         * nên không còn gì để giữ trên đó; app LƯU mở lại như lúc khởi động, K8 nếu nó đang sau màn nhà).
          */
-        data class ShowSaved(val swapInPlace: Boolean) : Next
+        object ShowSaved : Next { override fun toString() = "ShowSaved" }
 
         /** Ô trong suốt như khung trống ([SlotOverlay.clear]) — lớp LƯU giữ nguyên. */
         object Clear : Next { override fun toString() = "Clear" }
@@ -70,23 +68,16 @@ object SlotRevertPlan {
             val app = shown as? SlotContent.App
             when {
                 app == null || (pkg != null && pkg != app.pkg) -> Next.Keep
-                saved is SlotContent.App && saved.pkg == app.pkg ->
-                    if (event == Event.APP_BACKGROUND) Next.Keep else Next.Clear
-                saved is SlotContent.App -> Next.ShowSaved(swapInPlace = event == Event.APP_BACKGROUND)
-                event == Event.APP_BACKGROUND -> Next.Keep
-                else -> Next.ShowSaved(swapInPlace = false)   // LƯU là widget / trống ⇒ widget về · trống = trong suốt
+                saved is SlotContent.App && saved.pkg == app.pkg -> Next.Clear
+                else -> Next.ShowSaved   // app LƯU khác ⇒ mở lại · widget về · LƯU trống = trong suốt
             }
         }
     }
 
-    /** *Chạy nền* làm được ở ô này không — CÙNG bảng [next] (một nguồn, nút và thi hành không lệch nhau). */
-    fun backgroundable(saved: SlotContent, shown: SlotContent): Boolean =
-        next(saved, shown, Event.APP_BACKGROUND) == Next.ShowSaved(swapInPlace = true)
-
     /** Lớp tạm sau [next] ở ô [slot] — chỉ đổi lớp TẠM, không bao giờ lớp LƯU. */
     fun overlayAfter(overlay: SlotOverlay, slot: Int, next: Next): SlotOverlay = when (next) {
         Next.Keep -> overlay
-        is Next.ShowSaved -> overlay.drop(slot)
+        Next.ShowSaved -> overlay.drop(slot)
         Next.Clear -> overlay.clear(slot)
     }
 }

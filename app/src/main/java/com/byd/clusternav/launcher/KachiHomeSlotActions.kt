@@ -21,13 +21,14 @@ import com.byd.clusternav.launcher.SlotRevertPlan.Next
  * |---|---|---|
  * | nhịp đo thấy app rời màn ảo ([onAppGone]) | host thôi giữ app (không `force-stop`) | `APP_DIED` |
  * | *tắt* ô app | `am stack remove` ĐÚNG stack của app trên màn ảo ô ([SlotCloseRun], luồng nền) → đọc lại → host thôi giữ | `APP_CLOSED` |
- * | *chạy nền* ô app | — (ô đổi TẠI CHỖ về app LƯU, rồi `KachiHomeSlots.evictBehind` → `BehindHomeRunner.evict` sẵn có) | `APP_BACKGROUND` |
+ * | *chạy nền* ô app | lớp che của Kachi trên màn ảo ô → move-task ra sau màn nhà ([toBack] = `KachiHomeSlots.toBack`, luồng `kachi-behind`) → bản đọc cuối thấy app đã rời ô → host thôi giữ | `APP_BACKGROUND` |
  * | *tắt* ô widget | — (chỉ lớp tạm; id widget bên thứ ba ở lớp LƯU nên không bị thu hồi) | `WIDGET_CLOSED` |
  *
  * Vì sao "host thôi giữ app" phải đi TRƯỚC `applySlotRevert`: lượt render nhả host của ô, mà `VdAppHost.release` còn giữ
  * gói thì `am force-stop` cả gói — đúng thứ owner không muốn khi app chỉ vừa chết / vừa bị gỡ khỏi Ô (có thể còn dịch vụ
- * tiền cảnh: dẫn đường, nhạc). Cổng kênh: `ShellAccessUi.allowOrPrompt` ngay trước lệnh; cổng thi hành READY-AT-HOME vẫn
- * đứng sau (kênh của màn chính). Luồng chính, trừ lượt gỡ stack.
+ * tiền cảnh: dẫn đường, nhạc) — với *chạy nền* thì `force-stop` là giết đúng app vừa đưa ra sau màn nhà. Cổng kênh:
+ * `ShellAccessUi.allowOrPrompt` ngay trước lệnh; cổng thi hành READY-AT-HOME vẫn đứng sau (kênh của màn chính). Luồng
+ * chính, trừ lượt gỡ stack / chuỗi chạy nền.
  */
 internal class KachiHomeSlotActions(
     private val activity: Activity,
@@ -35,6 +36,8 @@ internal class KachiHomeSlotActions(
     private val workspace: () -> WorkspaceView,
     /** Kênh shell (dadb) — `null` khi chưa dò ra; đọc MỖI LẦN (gán ở luồng nền sau khi màn mở). */
     private val shell: () -> ((String) -> String)?,
+    /** L8 — chuỗi *chạy nền* của ô (`KachiHomeSlots.toBack`: ô, màn ảo, gói, kết quả "đã rời ô" trên luồng chính). */
+    private val toBack: (Int, Int, String, (Boolean) -> Unit) -> Unit,
     /** Cửa duy nhất xuống luồng nền của màn chính (đã huỷ ⇒ tự bỏ) — `KachiHomeActivity.submitBg`. */
     private val submitBg: (() -> Unit) -> Boolean,
 ) : SlotActionsPort {
@@ -42,14 +45,13 @@ internal class KachiHomeSlotActions(
     private val main = Handler(Looper.getMainLooper())
     private val closer by lazy { SlotCloseRun(activity.packageName) }
 
-    override fun buttons(index: Int, kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, hostLive: Boolean): List<Button> {
-        val st = viewModel.uiState.value
-        val saved = st.workspace.slots.getOrElse(index) { SlotContent.Empty }
-        val shown = st.effectiveWorkspace.slots.getOrElse(index) { SlotContent.Empty }
+    /** Ô đang chạy chuỗi *chạy nền* — chạm lần hai trong lúc chuỗi chạy bị bỏ (lượt hai sẽ thấy app đã rời ô ⇒ báo sai). */
+    private val backing = HashSet<Int>()
+
+    override fun buttons(index: Int, kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, hostLive: Boolean): List<Button> =
         // Kênh dùng được NGAY + khung có bộ chiếu màn ảo chưa nhả. Lượt mở app chưa bắt đầu ⇒ *tắt* vẫn làm được (thả host, 0
         // lệnh); *chạy nền* lúc app chưa mở xong ⇒ 0 lệnh + log (hiếm) — thà vậy còn hơn nút kẹt ẩn ở chế độ "luôn hiện".
-        return SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, SlotRevertPlan.backgroundable(saved, shown))
-    }
+        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive)
 
     override fun onAction(index: Int, button: Button) {
         when (button) {
@@ -101,29 +103,39 @@ internal class KachiHomeSlotActions(
     }
 
     /**
-     * *Chạy nền* app đang hiện ở ô [index]: nút chỉ có khi ô có app LƯU khác ([SlotRevertPlan.backgroundable]) — ô đổi TẠI
-     * CHỖ về app LƯU (`VdAppHost.swapApp`: K8 nếu nó đang sau màn nhà, không thì đường ô golden), rồi lối `onAppSwapped`
-     * sẵn có giao app vừa rời ô cho `BehindHomeRunner.evict` (ô của chính nó là chỗ dàn dựng). Host chưa sẵn ⇒ 0 lệnh
-     * (đổi tại chỗ không được thì tầng vẽ dựng lại ô ⇒ `release()` sẽ `force-stop` app đáng lẽ chạy nền).
+     * L8 — *chạy nền* app đang hiện ở ô [index], MỌI ô app (owner 03/10; D-L6-1 mở khoá): [toBack] chạy chuỗi lớp che trên
+     * màn ảo CỦA Ô (`BehindHomeSequence.evictCovered` — display = màn ảo ô, app = đúng gói ô, stack `standard`, màn nhà phải ở
+     * đỉnh display 0); bản đọc cuối thấy app đã rời ô ⇒ luật hoàn ô (`APP_BACKGROUND`: LƯU là chính app ⇒ trong suốt, khác ⇒
+     * về nội dung LƯU); không ⇒ ô giữ app + một câu. App hệ thống ⇒ nói lý do, 0 lệnh (R0.6, cùng phép `InstalledApps.isSystem`
+     * với chip *Chạy nền* của Cài đặt). Host chưa sẵn ⇒ 0 lệnh.
      */
     private fun background(index: Int) {
-        val shown = shownAt(index) as? SlotContent.App ?: return
+        val pkg = (shownAt(index) as? SlotContent.App)?.pkg ?: return
+        if (index in backing) return
+        if (InstalledApps.isSystem(activity, pkg)) { say(activity.getString(R.string.kachi_sc_refuse_system)); return }
         if (!ShellAccessUi.allowOrPrompt(activity)) return
-        if (workspace().hostAt(index)?.stage()?.pkg != shown.pkg) { Log.i(TAG, "ô $index: chạy nền ${shown.pkg} — ô chưa sẵn, 0 lệnh"); return }
-        revert(index, Event.APP_BACKGROUND, shown.pkg)
+        val stage = workspace().hostAt(index)?.stage()
+        if (stage == null || stage.pkg != pkg) { Log.i(TAG, "ô $index: chạy nền $pkg — ô chưa sẵn, 0 lệnh"); return }
+        backing += index
+        toBack(index, stage.vd, pkg) { left ->
+            backing -= index
+            Log.i(TAG, "ô $index: chạy nền $pkg ⇒ ${if (left) "đã rời ô" else "ô giữ app"}")
+            if (left) revert(index, Event.APP_BACKGROUND, pkg) else say(R.string.kachi_sc_bg_failed, pkg)
+        }
     }
 
-    /** MỘT cửa của luật hoàn ô: quyết ([HomeViewModel.slotRevert]) → host thôi giữ app (trừ khi đổi tại chỗ) → áp lớp tạm. */
+    /** MỘT cửa của luật hoàn ô: quyết ([HomeViewModel.slotRevert]) → host thôi giữ app → áp lớp tạm. */
     private fun revert(index: Int, event: Event, pkg: String?) {
         val next = viewModel.slotRevert(index, event, pkg)
         Log.i(TAG, "ô $index: $event ${pkg ?: "-"} -> $next")
         if (next == Next.Keep) return
-        if (pkg != null && !(next is Next.ShowSaved && next.swapInPlace)) workspace().hostAt(index)?.relinquish(pkg)
+        if (pkg != null) workspace().hostAt(index)?.relinquish(pkg)
         viewModel.applySlotRevert(index, next)
     }
 
-    private fun say(res: Int, pkg: String) =
-        Toast.makeText(activity.applicationContext, activity.getString(res, InstalledApps.labelOf(activity, pkg) ?: pkg), Toast.LENGTH_SHORT).show()
+    private fun say(res: Int, pkg: String) = say(activity.getString(res, InstalledApps.labelOf(activity, pkg) ?: pkg))
+
+    private fun say(text: String) = Toast.makeText(activity.applicationContext, text, Toast.LENGTH_SHORT).show()
 
     private companion object {
         /** Một thẻ log cho cả vòng đời ô (đọc trên màn Chẩn đoán / logcat). */

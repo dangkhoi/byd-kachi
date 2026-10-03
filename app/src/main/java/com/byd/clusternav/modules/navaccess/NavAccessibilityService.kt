@@ -12,8 +12,10 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.byd.clusternav.AppContainer
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.modules.voicekey.AssistantLauncher
+import com.byd.clusternav.modules.voicekey.KeySourceRecorder
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyAction
 import com.byd.clusternav.voicekey.VoiceKeyConfig
@@ -46,15 +48,30 @@ class NavAccessibilityService : AccessibilityService() {
     // T3: nút vật lý → trợ lý giọng nói. Matcher thuần ở :core; service chỉ map KeyEvent + phóng intent.
     private val voiceKeyMatcher = VoiceKeyMatcher()
 
+    // L7 · KEY-SOURCE-SPLIT tầng 1 — CHỈ ĐO nguồn phím (chữ ký + feature HAL đánh dấu nguồn), không đổi khớp/gán.
+    // Sống theo một lần bind: dựng ở onServiceConnected, dừng ở onUnbind/onDestroy.
+    private var keySource: KeySourceRecorder? = null
+
     override fun onServiceConnected() {
         NavAccessibilitySource.connected = true
         voiceKeyMatcher.reset()
+        keySource?.stop()
+        val app = applicationContext
+        keySource = KeySourceRecorder(app) { AppContainer.get(app).halGateway }.also { it.start() }
         Log.i(TAG, "accessibility booster connected")
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
         NavAccessibilitySource.connected = false
+        keySource?.stop()
+        keySource = null
         return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        keySource?.stop()
+        keySource = null
+        super.onDestroy()
     }
 
     override fun onInterrupt() {}
@@ -77,6 +94,9 @@ class NavAccessibilityService : AccessibilityService() {
         // xe bấm nút mà KHÔNG có dòng nào ⇒ service mất bound (rebind chưa phục hồi). Xem logcat tag "NavAccess".
         if (event.action == KeyEvent.ACTION_DOWN) {
             Log.i(TAG, "onKeyEvent DOWN keycode=${event.keyCode} (${KeyEvent.keyCodeToString(event.keyCode)})")
+            // L7 tầng 1: chép chữ ký (field nguyên thuỷ — event bị recycle sau khi hàm này trả về) rồi đo ở luồng
+            // riêng. KHÔNG I/O, KHÔNG HAL ở đây: onKeyEvent chạy trên main, framework chỉ chờ 500 ms.
+            keySource?.onDown(KeySourceRecorder.sampleOf(event), learned = Prefs.voiceKeyLearn(app))
         }
 
         if (Prefs.voiceKeyLearn(app)) {

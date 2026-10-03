@@ -17,6 +17,10 @@ package com.byd.clusternav.launcher
  *  - **Dòng 4 / 12 / 9** (B ở ô theo bố cục): sống/chết quyết bằng SỰ THẬT đo lúc chạm ([Input.presence], [SlotPresence]) —
  *    owner: *"tắt gmaps … bấm lại icon gmaps ở shortcut, chỉ hiện icon gmaps … thay vì mở lại gmaps lên ô 1"*. Bố cục
  *    chỉ nói B ĐƯỢC XẾP ở ô; [presenceSlot] chỉ ra ô cần đo, lớp keo đo rồi mới gọi [decide].
+ *
+ * ## L8 (owner 03/10, OQ-L4-1) — dòng 14 thôi từ chối
+ * *Chạy ngầm* khi bố cục không có ô app sống (chỉ widget) ⇒ [ShortcutAction.StartBehindHidden] (màn ảo ẩn của L4, cùng
+ * chuỗi với chuyến lên xe) thay cho `Refuse(NO_STAGE)`. Ô sống vẫn LUÔN trước ([ShortcutAction.StartBehind], dòng 15).
  */
 object ShortcutPlan {
 
@@ -108,7 +112,7 @@ object ShortcutPlan {
                 m >= 0 && i.presence == SlotPresence.GONE -> ShortcutAction.Reopen(m)                   // 12a — FIX286
                 m >= 0 || i.running -> ShortcutAction.Noop(highlight = m, reason = Reason.RUNNING)      // 12b
                 i.exclusion != null -> ShortcutAction.Refuse(reasonOf(i.exclusion))                     // 13
-                !i.hasLiveStage -> ShortcutAction.Refuse(Reason.NO_STAGE)                               // 14
+                !i.hasLiveStage -> ShortcutAction.StartBehindHidden                                     // 14 — L8: màn ảo ẩn
                 else -> ShortcutAction.StartBehind                                                      // 15
             }
         }
@@ -155,4 +159,11 @@ sealed interface ShortcutAction {
 
     /** Chạy B phía sau màn nhà (R0.3). */
     object StartBehind : ShortcutAction { override fun toString() = "StartBehind" }
+
+    /**
+     * L8 (dòng 14, trước là `Refuse(NO_STAGE)`): không có ô app sống ⇒ chạy B phía sau màn nhà qua màn ảo ẨN của Kachi —
+     * CÙNG chuỗi của chuyến lên xe (L4 · D2(a), `BehindHomeSequence.startBehindHidden`), đường mới đứng CUỐI (CLAUDE.md §6):
+     * chỉ khi đường ô sống không có. Không tạo được màn ảo ẩn ⇒ chuỗi trả `NO_STAGE` ⇒ lớp keo nói `kachi_sc_no_stage`.
+     */
+    object StartBehindHidden : ShortcutAction { override fun toString() = "StartBehindHidden" }
 }

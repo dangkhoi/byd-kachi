@@ -128,8 +128,18 @@ class ShortcutPlanTest {
         assertEquals(ShortcutAction.Refuse(Reason.SELF), go(bg) { it.copy(exclusion = Exclusion.SELF, hasLiveStage = true) })
     }
 
-    @Test fun `14 chay ngam - khong co o song nao thi tu choi NO_STAGE, khong lui ve O5`() =
-        assertEquals(ShortcutAction.Refuse(Reason.NO_STAGE), go(bg) { it.copy(hasLiveStage = false) })
+    /**
+     * L8 — ĐỔI GHIM có lý do (owner 03/10 + OQ-L4-1): dòng 14 thôi từ chối `NO_STAGE` — không ô app sống ⇒ màn ảo ẨN của Kachi
+     * (cùng chuỗi chuyến lên xe, L4 · D2(a)). Vẫn KHÔNG lùi về O5 (mở toàn màn) và các dòng trước (kênh, đang chạy, loại trừ
+     * R0.6) vẫn thắng; ô sống vẫn thắng màn ảo ẩn (dòng 15 — CLAUDE.md §6: đường mới đứng cuối).
+     */
+    @Test fun `14 chay ngam - khong co o song nao thi qua man ao an, khong lui ve O5`() {
+        assertEquals(ShortcutAction.StartBehindHidden, go(bg) { it.copy(hasLiveStage = false) })
+        assertEquals(ShortcutAction.StartBehind, go(bg) { it.copy(hasLiveStage = true) }, "ô sống LUÔN trước")
+        assertEquals(ShortcutAction.Prompt, go(bg, usable = false), "không kênh ⇒ hỏi quyền, không dàn")
+        assertEquals(ShortcutAction.Refuse(Reason.SYSTEM_APP), go(bg) { it.copy(exclusion = Exclusion.SYSTEM_APP) }, "R0.6 thắng")
+        assertEquals(ShortcutAction.Noop(highlight = -1, reason = Reason.RUNNING), go(bg) { it.copy(running = true) })
+    }
 
     @Test fun `15 chay ngam - con lai thi chay sau man nha`() =
         assertEquals(ShortcutAction.StartBehind, go(bg) { it.copy(hasLiveStage = true) })

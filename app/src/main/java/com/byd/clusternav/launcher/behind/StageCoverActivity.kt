@@ -9,9 +9,10 @@ import java.util.concurrent.TimeUnit
  * ═══ L4 · D2(a) — LỚP CHE trên màn ảo dàn dựng ẩn ═══════════════════════════════════════════════════════════════════
  *
  * Đóng vai app C của ô trong chuỗi R0.3: X phải KHÔNG ở đỉnh màn ảo nguồn lúc `am stack move-task` (R0.2 — `TaskRecord.reparent`
- * A10 `:728-749`: nguồn ở đỉnh ⇒ S bị đưa lên che màn nhà). Chỉ `StagingDisplay` mở nó (`exported=false`, display = màn ảo
- * ẩn); nó không vẽ gì (màn ảo không ai nhìn) và bị gỡ bằng `AppTask.finishAndRemoveTask` ngay sau lượt đẩy. Không dùng
- * `Theme.NoDisplay` (theme đó đòi `finish()` trước `onResume` — lớp che phải SỐNG tới lúc đẩy xong).
+ * A10 `:728-749`: nguồn ở đỉnh ⇒ S bị đưa lên che màn nhà). Chỉ `StagingDisplay` mở nó (`exported=false`), lên một màn ảo
+ * CỦA KACHI: màn ảo ẩn (L4, không ai nhìn) hoặc — L8, nút *chạy nền* của ô — màn ảo CỦA Ô, đứng trên app của ô (thấy được
+ * trong ô ≈ thời gian chuỗi chạy: nền đen của theme). Bị gỡ bằng `AppTask.finishAndRemoveTask` ngay sau lượt đẩy. Không
+ * dùng `Theme.NoDisplay` (theme đó đòi `finish()` trước `onResume` — lớp che phải SỐNG tới lúc đẩy xong).
  *
  * ## Vì sao bên mở phải CHỜ [onResume] [ĐO máy ảo 03/10, `p3/e2e-L4/e6-hidden` lượt 1]
  * Lớp che `onResume` muộn ≈ 0,5 s sau lúc tạo; giữ chỗ (anchor, `excludeFromRecents`) dựng TRONG khoảng đó ⇒ lượt resume

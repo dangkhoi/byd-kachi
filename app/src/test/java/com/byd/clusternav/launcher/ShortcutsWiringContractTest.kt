@@ -149,10 +149,20 @@ class ShortcutsWiringContractTest {
         }
     }
 
+    /**
+     * L8 — ĐỔI GHIM có lý do (owner 03/10, OQ-L4-1): không có ô sống ⇒ màn ảo ẨN (đường cuối, cùng chuỗi chuyến lên xe) thay
+     * cho câu từ chối. Câu `kachi_sc_no_stage` chỉ còn khi chuỗi trả `NO_STAGE` (không tạo được màn ảo ẩn).
+     */
     @Test
-    fun `chay ngam khong co o song - noi ly do, khong lenh`() {
+    fun `chay ngam khong co o song - qua man ao an, khong tao duoc thi noi ly do`() {
         val fn = SourceRoots.body(act, "ShortcutAction.StartBehind -> {")
-        order(fn, "slots().startBehind(", "if (stage == null) say(reasonText(ShortcutPlan.Reason.NO_STAGE")
+        order(fn, "ShellAccessUi.allowOrPrompt(activity)", "slots().startBehind(", "if (stage == null) slots().startBehindHidden(sc.pkg)")
+        order(SourceRoots.body(act, "ShortcutAction.StartBehindHidden -> {"), "ShellAccessUi.allowOrPrompt(activity)", "return",
+            "slots().startBehindHidden(sc.pkg) { out -> onBehindDone(sc, out) }")
+        assertTrue("BehindHomeSequence.Result.NO_STAGE -> say(activity.getString(R.string.kachi_sc_no_stage))" in
+            SourceRoots.body(glue, "private fun onBehindDone("))
+        assertFalse("kachi_sc_no_stage" in code("SettingsSectionsShortcuts.kt"),
+            "Cài đặt thôi nhắc 'cần ít nhất một ô app' — điều kiện đó không còn")
     }
 
     // ── R1.2 / R1.3 · một view, hai bề mặt ───────────────────────────────────────────────────────────────────

@@ -77,7 +77,7 @@ internal class KachiHomeSlots(
 
     /**
      * R0.3 — chạy [pkg] PHÍA SAU màn nhà qua một ô đang sống trong [stages] (lối tắt kiểu *Chạy ngầm*, nhóm B; chuyến lên
-     * xe, nhóm C). `null` = không có ô sống nào ⇒ 0 lệnh, bên gọi nói `kachi_sc_no_stage` (§4.2.4). [done] chạy trên
+     * xe, nhóm C). `null` = không có ô sống nào ⇒ 0 lệnh; bên gọi lùi về màn ảo ẩn ([startBehindHidden], L8). [done] chạy trên
      * luồng chính với kết quả của chuỗi (đã có dòng log `KachiBehind`). Cùng runner (mutex `kachi-behind`) với [evictBehind].
      */
     fun startBehind(pkg: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit): BehindHomePlan.Stage? =
@@ -86,6 +86,22 @@ internal class KachiHomeSlots(
     /** L4 — chuỗi tuỳ ý của chuyến lên xe (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG runner/mutex `kachi-behind`. */
     fun behindChain(what: String, body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome, done: (BehindHomeSequence.Outcome) -> Unit) =
         behind.chain(what, done, body)
+
+    /**
+     * L8 — lối tắt *Chạy ngầm* khi KHÔNG có ô app sống (`ShortcutAction.StartBehindHidden`): màn ảo ẨN của Kachi, CÙNG chuỗi
+     * với chuyến lên xe (L4 · D2(a)) — đường mới đứng sau đường ô sống ([startBehind]). [done] chạy trên luồng chính.
+     */
+    fun startBehindHidden(pkg: String, done: (BehindHomeSequence.Outcome) -> Unit) =
+        behind.chain("behind-hidden X=$pkg", done) { kit -> kit.seq.startBehindHidden(pkg, kit.hidden) }
+
+    /**
+     * L8 — nút *chạy nền* của ô [index]: lớp che của Kachi lên đỉnh màn ảo [vd] CỦA Ô → move-task app [pkg] ra sau màn nhà
+     * → gỡ che ([BehindHomeSequence.evictCovered] — bốn câu CLAUDE.md §4 ở KDoc đó). [done] (luồng chính): `true` = bản đọc
+     * cuối thấy app đã RỜI màn ảo ô và sống trên display 0 ⇒ bên gọi áp luật hoàn ô; `false` = ô giữ app (dòng `KachiBehind`).
+     * Lớp che dùng bộ phận Android của màn ảo ẩn (`StagingDisplay.cover/uncover` — không tạo / nhả màn ảo nào ở đây).
+     */
+    fun toBack(index: Int, vd: Int, pkg: String, done: (Boolean) -> Unit) =
+        behind.chain("slot-back slot=$index X=$pkg", { out -> done(out.outOfStage) }) { kit -> kit.seq.evictCovered(vd, pkg, kit.hidden) }
 
     /**
      * F1 · R1.5 dòng 9 — lối tắt *Toàn màn* cho app ĐANG ở ô [index]: K7 qua rào (màn nhà Kachi đang hiện; dấu hiệu camera

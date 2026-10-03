@@ -578,6 +578,13 @@
     <string name="kachi_key_target_gemini">System assistant via hard key (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">Speech recognizer</string>
     <string name="kachi_key_target_kachi_voice">Kachi listens (on-device)</string>
+    <string name="kachi_key_src_detail">code %1$d · scan %2$s · device %3$s · source: %4$s · read %5$s</string>
+    <string name="kachi_key_src_knob">centre-console knob</string>
+    <string name="kachi_key_src_wheel">steering wheel</string>
+    <string name="kachi_key_src_unknown">unknown value (%1$s)</string>
+    <string name="kachi_key_src_failed">could not read (%1$s)</string>
+    <string name="kachi_key_src_not_measured">not measured for this key</string>
+    <string name="kachi_key_src_pending">reading…</string>
 
     <!-- ── IA v2 nhóm 8 — Tiện nghi xe (SettingsCarSection): ghế + bụi mịn nhận từ màn ClusterNav ── -->
     <string name="kachi_sub_seat">Seat cooling / heating</string>
@@ -760,7 +767,7 @@
     <string name="kachi_sc_reason_absent">This layout has %1$d slots — opening full screen</string>
     <string name="kachi_sc_in_slot">%1$s is already in slot %2$d</string>
     <string name="kachi_sc_running">%1$s is already running</string>
-    <string name="kachi_sc_no_stage">Running in the background needs at least one open app slot on the home screen</string>
+    <string name="kachi_sc_no_stage">Couldn\'t set up a place to run it in the background — try again in a moment</string>
     <string name="kachi_sc_refuse_system">System apps can\'t run in the background</string>
     <string name="kachi_sc_refuse_self">Kachi can\'t run itself in the background</string>
     <string name="kachi_sc_refuse_cast">%1$s is being cast to the cluster</string>

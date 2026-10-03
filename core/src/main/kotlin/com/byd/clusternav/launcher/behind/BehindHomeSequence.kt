@@ -36,18 +36,24 @@ class BehindHomeSequence(
      * L4 · D2(a) — chỗ dàn dựng ẨN: một màn ảo riêng của Kachi KHÔNG gắn vào ô nào (bố cục không có ô app sống). Phần Android
      * ở `:app` (`StagingDisplay`); bản giả trong test. Thứ tự gọi do [startBehindHidden] giữ.
      */
-    interface HiddenStagePort {
+    interface HiddenStagePort : CoverPort {
         /** Tạo màn ảo ẩn (cùng cờ 8|256 của màn ảo ô, đăng ký với cổng ownership) ⇒ id ≥ 1; hỏng ⇒ `null`. */
         fun create(): Int?
 
-        /** Mở activity CHE của chính Kachi lên đỉnh màn ảo [vd] (API trong tiến trình — Kachi là chủ màn ảo riêng tư). */
+        /** Nhả màn ảo [vd] (gỡ đăng ký + `release`). [startBehindHidden] chỉ gọi khi bản đọc thấy màn ảo đã TRỐNG. */
+        fun release(vd: Int)
+    }
+
+    /**
+     * Lớp CHE của chính Kachi (`StageCoverActivity`) trên một màn ảo CỦA KACHI — màn ảo ẩn ([HiddenStagePort]) hoặc màn ảo
+     * của một ô ([evictCovered], L8). Phần Android ở `:app` (`StagingDisplay`), bản giả trong test.
+     */
+    interface CoverPort {
+        /** Mở activity CHE của chính Kachi lên đỉnh màn ảo [vd] rồi CHỜ nó `onResume` (API trong tiến trình — Kachi là chủ màn ảo riêng tư). */
         fun cover(vd: Int): Boolean
 
         /** Gỡ mọi task che (kể cả mồ côi của lượt trước). */
         fun uncover(): Int
-
-        /** Nhả màn ảo [vd] (gỡ đăng ký + `release`). [startBehindHidden] chỉ gọi khi bản đọc thấy màn ảo đã TRỐNG. */
-        fun release(vd: Int)
     }
 
     /** Phần Android của chuỗi — `BehindHomeRunner.AndroidAnchor` ở `:app`, bản giả trong test. */
@@ -108,6 +114,9 @@ class BehindHomeSequence(
     /** Kết quả một lượt + một dòng log `KachiBehind` đọc được trên màn Chẩn đoán. */
     data class Outcome(val result: Result, val line: String) {
         val moved: Boolean get() = result == Result.MOVED || result == Result.MOVED_HOME_RESTORED
+
+        /** L8 — X đã RA KHỎI chỗ dàn dựng và sống trên display 0 sau màn nhà (kể cả khi phải K12 đưa màn nhà lên lại). */
+        val outOfStage: Boolean get() = moved || result == Result.X_FRONT_HOME_RESTORED
     }
 
     private fun read(): List<StackEntry> = StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault(""))
@@ -225,6 +234,60 @@ class BehindHomeSequence(
         }
         val res = afterStage(tag, x, waited, out, homeWasTop)
         return res.copy(line = "${res.line} · vd=$vd $gone")
+    }
+
+    /**
+     * L8 — *chạy nền* từ đầu ô (owner 03/10: *"đẩy app ra chạy nền … để UI trong suốt thấy nền background"*) cho MỌI ô app,
+     * kể cả ô không có app LƯU khác (mở khoá D-L6-1). Cùng kỹ thuật lớp che của [startBehindHidden], nhưng chỗ dàn dựng là
+     * CHÍNH màn ảo của ô (A đang ở đó, đã sống ⇒ không K4): lớp che của Kachi lên đỉnh màn ảo ô (A thôi là đỉnh — R0.2, A10
+     * r47 `TaskRecord.java:736-737` `wasFront`) → [evict] với B = Kachi (giữ chỗ → move-task → đọc lại, byte không đổi) → gỡ
+     * che → đọc lại. KHÔNG nhả / đổi màn ảo nào (màn ảo của ô là của host ô; ô đổi theo luật hoàn ô ở bên gọi).
+     *
+     * Bốn câu CLAUDE.md §4 (lệnh đổi trạng thái của lượt: lớp che · giữ chỗ · `am stack move-task` · K12):
+     *  1. **display**: lớp che lên đúng màn ảo [vd] của ô (`vd < 1` ⇒ 0 lệnh); giữ chỗ + move-task về display 0 (đích S);
+     *  2. **app**: đúng gói [a] của ô — từ chối chính Kachi / app hệ thống (R0.6) / tên gói lạ; [a] phải có ĐÚNG MỘT task
+     *     trên [vd], ở ĐỈNH màn ảo, không lẫn display khác (đang chiếu cụm) — [BehindHomePlan.checkEvict];
+     *  3. **loại stack**: task của [a] `standard` bằng CHỮ, không ghim; lớp che là task `standard` của Kachi;
+     *  4. **hoàn tác**: hỏng trước move-task ⇒ gỡ che, A vẫn ở ô như cũ (0 lệnh đổi app); A lên trước màn nhà ⇒ dấu + K12
+     *     (rào camera); app sau màn nhà về lại ô bằng K8 khi ô mở lại nó (R1.8, dấu bền).
+     *
+     * Rào màn nhà: chỉ chạy khi màn nhà Kachi đang ở ĐỈNH display 0 (người dùng vừa chạm nút trên màn nhà; camera lùi / app
+     * khác ở trên ⇒ 0 lệnh). Kết quả "đã ra khỏi ô" (MOVED · MOVED_HOME_RESTORED · X_FRONT_HOME_RESTORED) chỉ trả khi bản
+     * đọc CUỐI không còn task nào của [a] trên [vd] — bên gọi đổi ô theo SỰ THẬT đó, không theo mã (CLAUDE.md §5).
+     */
+    fun evictCovered(vd: Int, a: String, cover: CoverPort): Outcome {
+        val tag = "slot-back vd=$vd A=$a"
+        if (vd < 1) return Outcome(Result.X_NOT_STAGED, "$tag → màn ảo không hợp lệ, 0 lệnh")
+        refuse(tag, a)?.let { return it }
+        val before = read()
+        val mine = before.filter { it.displayId == vd && it.pkg == a }
+        val stop = when {
+            before.isEmpty() -> "không đọc được am stack list"
+            mine.isEmpty() -> "A không ở màn ảo ô"
+            mine.any { it.activityType != BehindHomePlan.STANDARD || it.isPinned } -> "task A không phải standard"
+            !BehindHomePlan.topIs(before, vd, a) -> "A không ở đỉnh màn ảo ô"
+            homeComps.isEmpty() || !BehindHomePlan.homeOnTop(before, homeComps) -> "màn nhà không ở đỉnh display 0"
+            else -> null
+        }
+        if (stop != null) return Outcome(if (mine.isEmpty()) Result.X_NOT_STAGED else Result.KEPT_UNDER, "$tag → $stop, 0 lệnh")
+        val out = try {
+            when {
+                !cover.cover(vd) -> Outcome(Result.KEPT_UNDER, "$tag → lớp che không lên, 0 move-task")
+                waitTop(vd, selfPkg, false).timedOut -> Outcome(Result.KEPT_UNDER, "$tag → lớp che không lên đỉnh màn ảo ô, 0 move-task")
+                else -> evict(vd, a, selfPkg)
+            }
+        } finally {
+            runCatching { cover.uncover() }
+        }
+        val res = afterStage(tag, a, 0L, out, homeWasTop = true)
+        if (!res.outOfStage) return res
+        // Đọc CUỐI quyết ô (bên gọi nhả màn ảo ô theo kết quả này — cờ 256 kết thúc activity còn trên đó): không đọc được /
+        // A còn task trên màn ảo ⇒ ô GIỮ app (nhịp đo ô tự thấy nếu A thật ra đã rời — luật hoàn ô `APP_DIED`).
+        val fin = read()
+        if (fin.isEmpty() || fin.any { it.displayId == vd && it.pkg == a }) {
+            return Outcome(Result.KEPT_UNDER, "${res.line} · đọc lại: ${if (fin.isEmpty()) "không đọc được" else "A còn task trên màn ảo ô"} ⇒ ô giữ app")
+        }
+        return res
     }
 
     /** Kết quả dọn màn ảo ẩn: task còn lại trên đó + X có phải nhờ K7 mới ra được không (màn nhà bị che thoáng qua). */

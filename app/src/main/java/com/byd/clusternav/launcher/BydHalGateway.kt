@@ -128,6 +128,24 @@ class BydHalGateway(context: Context) : HalGateway {
         BydHal.readFeature(dev, id) { t -> warnOnce(deviceFqn, "0x%08x".format(id), t) }
     }.getOrElse { warnOnce(deviceFqn, "0x%08x".format(id), it); null }
 
+    /**
+     * L7 · KEY-SOURCE-SPLIT — cùng đường đọc với [featureGet] (cùng tay cầm [device] có hạn, cùng [BydHal.readFeature])
+     * nhưng giữ LÝ DO khi hụt cho đầu dò nguồn phím. Không mở đường reflection thứ hai; không ném ra ngoài.
+     */
+    override fun featureRead(deviceFqn: String, id: Int): HalFeatureRead {
+        KachiPerf.add(KachiPerf.Counter.HAL_READ)
+        val label = "0x%08x".format(id)
+        var err: Throwable? = null
+        val raw = runCatching {
+            val dev = device(deviceFqn) ?: return HalFeatureRead.NoDevice
+            BydHal.readFeature(dev, id) { t -> err = t }
+        }.getOrElse { err = it; null }
+        if (raw != null) return HalFeatureRead.Value(raw)
+        val e = err ?: return HalFeatureRead.Empty
+        warnOnce(deviceFqn, label, e)
+        return HalFeatureRead.Failed(BydHal.root(e).substringBefore(':'))
+    }
+
     /** Ghi feature-id + ghi trộm kết quả vào [HalWriteProbe] (bắt cả `rc=…` lẫn ngoại lệ "no permission …"). */
     override fun featureSet(deviceFqn: String, id: Int, value: Int): Long? = runCatching {
         val label = "0x%08x".format(id)

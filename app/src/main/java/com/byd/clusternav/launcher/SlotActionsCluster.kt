@@ -44,14 +44,17 @@ internal interface SlotActionsPort {
  *     ⇒ nút đặt trong đó không thể có đích chạm 48 dp (chạm ngoài biên cha không tới con). Hàng này cao [Sp.TOUCH], mỗi
  *     nút [Sp.TOUCH]×[Sp.TOUCH]. Hàng và khung ⇄ KHÔNG bấm được ⇒ chạm vào chỗ trống của chúng rơi xuống app/widget.
  *  2. **Nút không làm được thì không có**: chỉ dựng nút trong [SlotHeadActions.possible] của loại ô (ô trống / ô app không
- *     màn ảo ⇒ không dựng gì); nút có thể mà LÚC NÀY không làm được (không kênh, không app LƯU khác để chạy nền) ⇒
+ *     màn ảo ⇒ không dựng gì); nút có thể mà LÚC NÀY không làm được (không kênh / bộ chiếu đã nhả) ⇒
  *     `INVISIBLE` (không vẽ, không bấm, không vào cây trợ năng). Đổi `VISIBLE`↔`INVISIBLE` không đo lại bố cục.
  *  3. **Cùng nhịp nghỉ với ⇄**: [SlotHeadAutoHide] gọi [settle]/[show]/[hide]/[cancel] ở đúng bốn chỗ nó làm với ⇄ ⇒ một
  *     hẹn giờ ([SlotHeadRest.HIDE_AFTER_MS]) cho cả đầu ô. Ẩn = `INVISIBLE` (như ⇄ — nút vô hình không bấm được).
  *  4. **`animate().cancel()` trước MỌI animate** (r47 `ViewPropertyAnimator.java:418-433`): hiện lại giữa lúc mờ không
  *     để lại một `INVISIBLE` muộn — cùng luật `SlotHeadAutoHide`, bài canh riêng soi tệp này.
- *  5. **Hình như ⇄**: chỉ icon [Sp.ICON_S] tô [KachiTheme.MUT], không nền, không viền (owner 2026-09-14 *"kín đáo, nhỏ gọn"*)
- *     — tâm icon ngang tâm icon ⇄. Mô tả trợ năng theo loại ô, đủ 5 tiếng (tài nguyên).
+ *  5. **Icon trên ĐĨA KÍNH** (L8 · D-L6-3): icon [Sp.ICON_S] tô [KachiTheme.MUT] đặt trên đĩa [Sp.SWAP_DISC] ([KachiGlass]
+ *     NEUTRAL, `fade = false` — CÙNG đĩa của ⇄ ô trống, hợp đồng `MUT ≥ 4.5:1` trên mọi độ chói ảnh). [ĐO máy ảo 03/10,
+ *     `p4/e2e-L8`] icon trần (bản L6, như ⇄ ô có nội dung) trên nội dung APP: bảng sáng trên bản đồ tối VietMap 1.73:1, bảng
+ *     tối trên Cài đặt nền trắng 2.35:1 (100 % điểm nền dưới 3:1) — app không theo chủ đề của Kachi nên không màu đơn nào
+ *     đủ. Tâm đĩa = tâm icon = ngang tâm icon ⇄. Mô tả trợ năng theo loại ô, đủ 5 tiếng (tài nguyên).
  */
 internal class SlotActionsCluster private constructor(
     private val slot: ViewGroup,
@@ -133,7 +136,7 @@ internal class SlotActionsCluster private constructor(
             return SlotActionsCluster(slot, index, kind, projector, port, row, made)
         }
 
-        /** Một nút: khung chạm [Sp.TOUCH]² (bấm được, có mô tả) + icon [Sp.ICON_S] không bấm được, tâm ngang tâm ⇄. */
+        /** Một nút: khung chạm [Sp.TOUCH]² (bấm được, có mô tả) + đĩa kính + icon [Sp.ICON_S] không bấm được, tâm ngang tâm ⇄. */
         private fun button(slot: ViewGroup, index: Int, kind: SlotHeadRest.Kind, b: Button, onTap: () -> Unit): View {
             val ctx = slot.context
             val icon = ImageView(ctx).apply {
@@ -146,10 +149,15 @@ internal class SlotActionsCluster private constructor(
             val iconPx = KachiTheme.dpi(ctx, Sp.ICON_S)
             // Tâm icon ngang tâm icon ⇄ (⇄ canh giữa khung cao SLOT_HEAD_CLEAR): lề trên = (SLOT_HEAD_CLEAR − ICON_S) / 2.
             val top = (KachiTheme.dpi(ctx, Sp.SLOT_HEAD_CLEAR) - iconPx) / 2
+            // L8 · D-L6-3 — đĩa kính sau icon (luật 5): view RIÊNG, không bấm được; bán kính = nửa cạnh ⇒ tròn; NÚT ⇒ không mờ R-OP.
+            val discPx = KachiTheme.dpi(ctx, Sp.SWAP_DISC)
+            val disc = View(ctx).apply { isClickable = false; isFocusable = false }
+            KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)
             return FrameLayout(ctx).apply {
                 isClickable = true
                 contentDescription = ctx.getString(describe(b, kind), index + 1)
                 setOnClickListener { onTap() }
+                addView(disc, FrameLayout.LayoutParams(discPx, discPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top - (discPx - iconPx) / 2 })
                 addView(icon, FrameLayout.LayoutParams(iconPx, iconPx, Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top })
             }
         }

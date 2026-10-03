@@ -168,15 +168,36 @@ internal object SettingsDialogs {
      * Tên trắng ⇒ lùi về [initial] chứ không từ chối im lặng: người dùng vừa bấm một nút vật lý xong, bỏ công đó
      * đi vì một ô trống là mất cả phiên học.
      */
-    fun askName(context: Context, title: String, initial: String, onOk: (String) -> Unit) {
+    fun askName(
+        context: Context,
+        title: String,
+        initial: String,
+        detail: ((TextView) -> Unit)? = null,
+        onOk: (String) -> Unit,
+    ) {
         val input = EditText(context).apply {
             setText(initial)
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
             setSelection(0, initial.length)
         }
+        // L7 — dòng CHI TIẾT dưới ô tên (học phím: mã · scan · thiết bị · nguồn) để anh em chụp màn hình gửi về.
+        // [detail] tự điền/làm mới TextView; không có ⇒ hộp y nguyên như cũ (chỉ một ô nhập).
+        val view = if (detail == null) input else {
+            val pad = KachiTheme.dpi(context, KachiSpace.M)
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(pad, pad, pad, 0)
+                addView(input)
+                addView(TextView(context).apply {
+                    setTextColor(KachiTheme.c(KachiTheme.MUT))
+                    KachiType.apply(this, KachiType.CAPTION)
+                    detail(this)
+                })
+            }
+        }
         AlertDialog.Builder(context)
             .setTitle(title)
-            .setView(input)
+            .setView(view)
             .setPositiveButton(context.getString(R.string.kachi_save)) { _, _ ->
                 onOk(input.text.toString().trim().ifEmpty { initial })
             }

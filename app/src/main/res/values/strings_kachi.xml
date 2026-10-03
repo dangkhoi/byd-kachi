@@ -594,6 +594,14 @@
     <string name="kachi_key_target_gemini">Trợ lý qua phím cứng (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">Nhận dạng giọng nói</string>
     <string name="kachi_key_target_kachi_voice">Kachi nghe (tại máy)</string>
+    <!-- L7 · KEY-SOURCE-SPLIT tầng 1: dòng chi tiết dưới tên nút vừa học (mã · scan · thiết bị · nguồn HAL) — để anh em chụp màn hình. -->
+    <string name="kachi_key_src_detail">mã %1$d · scan %2$s · thiết bị %3$s · nguồn: %4$s · đọc %5$s</string>
+    <string name="kachi_key_src_knob">núm yên ngựa</string>
+    <string name="kachi_key_src_wheel">vô-lăng</string>
+    <string name="kachi_key_src_unknown">giá trị lạ (%1$s)</string>
+    <string name="kachi_key_src_failed">không đọc được (%1$s)</string>
+    <string name="kachi_key_src_not_measured">không đo cho phím này</string>
+    <string name="kachi_key_src_pending">đang đọc…</string>
 
     <!-- ── IA v2 nhóm 8 — Tiện nghi xe (SettingsCarSection): ghế + bụi mịn nhận từ màn ClusterNav ── -->
     <string name="kachi_sub_seat">Ghế mát / sưởi</string>
@@ -783,7 +791,7 @@
     <string name="kachi_sc_reason_absent">Bố cục hiện có %1$d ô — mở toàn màn</string>
     <string name="kachi_sc_in_slot">%1$s đang ở ô %2$d</string>
     <string name="kachi_sc_running">%1$s đang chạy</string>
-    <string name="kachi_sc_no_stage">Chạy ngầm cần ít nhất một ô app đang mở trên màn nhà</string>
+    <string name="kachi_sc_no_stage">Chưa dựng được chỗ chạy ngầm — thử lại sau giây lát</string>
     <string name="kachi_sc_refuse_system">Không chạy ngầm được app hệ thống</string>
     <string name="kachi_sc_refuse_self">Không chạy ngầm được chính Kachi</string>
     <string name="kachi_sc_refuse_cast">%1$s đang chiếu lên cụm</string>

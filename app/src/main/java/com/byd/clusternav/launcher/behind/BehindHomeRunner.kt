@@ -45,7 +45,7 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
 
     /**
      * R0.3 — chạy [x] phía sau màn nhà qua một ô đang sống ([stages], chọn bằng [BehindHomePlan.stagingSlot]). Không có
-     * ô sống ⇒ `null` trả ngay, 0 lệnh (§4.2.4) — bên gọi nói lý do `kachi_sc_no_stage`. Điểm gọi: lối tắt kiểu *Chạy
+     * ô sống ⇒ `null` trả ngay, 0 lệnh (§4.2.4) — bên gọi lùi về màn ảo ẩn ([chain] + `startBehindHidden`, L4/L8). Điểm gọi: lối tắt kiểu *Chạy
      * ngầm* (U5) và chuyến lên xe (R1/R2) — nhóm B/C của spec.
      */
     fun startBehind(x: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit = {}): BehindHomePlan.Stage? {

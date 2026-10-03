@@ -98,10 +98,8 @@ class SettingsShortcutsSection(
             modes.addView(row)
         }
         if (outside) modes.addView(rows.note(context.getString(R.string.kachi_sc_slot_outside, count)))
-        val hasAppSlot = st.effectiveWorkspace.slots.take(count).any { it is SlotContent.App }
-        if (items.any { it.mode == ShortcutMode.Background } && !hasAppSlot) {
-            modes.addView(rows.note(context.getString(R.string.kachi_sc_no_stage)))
-        }
+        // L8: dòng nhắc "Chạy ngầm cần ít nhất một ô app" GỠ — bố cục không có ô app sống thì lối tắt chạy qua màn ảo ẩn
+        // (`ShortcutAction.StartBehindHidden`), không còn điều kiện nào để nhắc trước.
     }
 
     private fun titleText() = context.getString(R.string.kachi_sc_section, items.size)

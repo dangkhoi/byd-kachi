@@ -489,6 +489,13 @@
     <string name="kachi_key_target_gemini">Pembantu sistem melalui butang fizikal (Gemini · 231)</string>
     <string name="kachi_key_target_recognizer">Pengecam pertuturan</string>
     <string name="kachi_key_target_kachi_voice">Kachi mendengar (dalam peranti)</string>
+    <string name="kachi_key_src_detail">kod %1$d · imbasan %2$s · peranti %3$s · sumber: %4$s · baca %5$s</string>
+    <string name="kachi_key_src_knob">tombol putar konsol tengah</string>
+    <string name="kachi_key_src_wheel">stereng</string>
+    <string name="kachi_key_src_unknown">nilai tidak dikenali (%1$s)</string>
+    <string name="kachi_key_src_failed">tidak dapat dibaca (%1$s)</string>
+    <string name="kachi_key_src_not_measured">tidak diukur untuk kekunci ini</string>
+    <string name="kachi_key_src_pending">sedang membaca…</string>
     <string name="kachi_sub_seat">Pengudaraan / pemanasan tempat duduk</string>
     <string name="kachi_seat_enabled_title">Laras tempat duduk secara automatik</string>
     <string name="kachi_seat_enabled_sub">Kereta menggunakan tahap yang anda tetapkan untuk setiap tempat duduk apabila suhu kabin memerlukannya.</string>
@@ -635,7 +642,7 @@
     <string name="kachi_sc_reason_absent">Susun atur ini ada %1$d petak — membuka dalam skrin penuh</string>
     <string name="kachi_sc_in_slot">%1$s sudah berada dalam petak %2$d</string>
     <string name="kachi_sc_running">%1$s sudah berjalan</string>
-    <string name="kachi_sc_no_stage">Berjalan di latar belakang memerlukan sekurang-kurangnya satu petak apl terbuka pada skrin utama</string>
+    <string name="kachi_sc_no_stage">Belum dapat menyediakan tempat untuk berjalan di latar belakang — cuba lagi sebentar lagi</string>
     <string name="kachi_sc_refuse_system">Apl sistem tidak boleh berjalan di latar belakang</string>
     <string name="kachi_sc_refuse_self">Kachi tidak boleh menjalankan dirinya di latar belakang</string>
     <string name="kachi_sc_refuse_cast">%1$s sedang dipancar ke panel instrumen</string>
