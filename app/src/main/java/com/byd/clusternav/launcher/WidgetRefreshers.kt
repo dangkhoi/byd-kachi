@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.view.View
+import android.view.ViewGroup
 import com.byd.clusternav.R
 
 /**
@@ -42,7 +43,7 @@ import com.byd.clusternav.R
  *  2. Ô chưa đăng ký ⇒ [refresh] trả `false` ⇒ chỗ gọi **lùi về** đường dựng lại cũ. Nhờ vậy thêm một bộ vẽ mà quên
  *     đăng ký thì ô đó chỉ mất tính mượt, **không bao giờ câm** — đúng hướng suy giảm mà dự án chọn ở mọi cổng khác.
  *  3. Hai khoá tag là **của riêng sổ này**. Đừng đọc/ghi chúng ở tệp khác: cả điểm đăng ký lẫn điểm đổ phải đi qua
- *     bốn hàm dưới đây, nếu không thì "ai đang đổ ô này" lại thành một câu hỏi phải đi tìm.
+ *     các hàm dưới đây, nếu không thì "ai đang đổ ô này" lại thành một câu hỏi phải đi tìm.
  */
 internal object WidgetRefreshers {
 
@@ -84,5 +85,18 @@ internal object WidgetRefreshers {
         val fill = view.getTag(R.id.kachi_widget_action_fill) as? ActionFill ?: return false
         fill.fn(car)
         return true
+    }
+
+    /**
+     * Soát vòng 2 [P3] — đổ lại MỌI ô HÀNH ĐỘNG dưới [root] với [car] KHÔNG đổi: bảng lệnh cuối (`ControlLastSent`) vừa đổi
+     * bởi tiến trình `:wake` (cầu `ControlSentRelay`) ⇒ hàm đổ của ô so hình với bảng (`TileResync.stale`) và vẽ lại ô lệch.
+     * Không dựng view nào (bất biến 1), không chạm ô ĐỌC/NHÓM. Trả số ô đã đổ. Luồng chính.
+     */
+    fun resyncActions(root: View, car: CarStatus): Int {
+        if (refreshAction(root, car)) { FitGridLayout.contentChanged(root); return 1 }
+        if (root !is ViewGroup) return 0
+        var n = 0
+        for (i in 0 until root.childCount) n += resyncActions(root.getChildAt(i), car)
+        return n
     }
 }

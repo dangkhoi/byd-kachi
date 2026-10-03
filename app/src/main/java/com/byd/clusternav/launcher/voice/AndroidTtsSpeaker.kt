@@ -184,7 +184,17 @@ class AndroidTtsSpeaker(
         configure(engine)
     }
 
-    /** Cấu hình CHUNG (không phụ thuộc tiếng) một lần, rồi lượt đặt tiếng đầu tiên ([follow]). */
+    /**
+     * Cấu hình CHUNG (không phụ thuộc tiếng) một lần, rồi lượt đặt tiếng đầu tiên ([follow]) — RỒI MỚI mở cổng [inited].
+     *
+     * ⚠ Soát vòng 2 [P3] — thứ tự là để KHÔNG có vòng khoá: `onInit` chạy trên luồng chính khi ĐANG giữ `mStartLock` của
+     * `TextToSpeech` [ĐO nguồn android-10.0.0_r47 `TextToSpeech.java:2220-2228` (onPostExecute `synchronized(mStartLock)`) →
+     * `:832-838` dispatchOnInit; `isLanguageAvailable`/`setLanguage` đi `runAction` `:756-766` cũng `synchronized(mStartLock)`;
+     * android-12.0.0_r34 cùng cấu trúc]. Bản trước mở [inited] TRƯỚC [follow]: trong khe đó một luồng phiên gọi [available]
+     * ⇒ giữ khoá của [TtsVoiceLang.sync] rồi chờ `mStartLock` (luồng chính giữ), còn luồng chính vào `voice.sync` chờ khoá kia
+     * ⇒ treo luồng chính vĩnh viễn (ANR). Nay [follow] xong (khoá `sync` đã nhả) mới mở cổng ⇒ không luồng nào khác vào được
+     * `voice.sync` trong lúc `onInit` còn giữ `mStartLock`.
+     */
     private fun configure(engine: TextToSpeech) {
         runCatching {
             engine.setAudioAttributes(
@@ -195,13 +205,13 @@ class AndroidTtsSpeaker(
             )
             engine.setOnUtteranceProgressListener(listener)
         }.onFailure { Log.w(TAG, "không cấu hình được máy đọc", it); return }
-        inited.set(true)
         follow(engine)
+        inited.set(true)
     }
 
     /**
      * Đưa engine về tiếng giọng nói của câu NÀY ([TtsVoiceLang.sync] — một phép so khi không đổi). `true` = tiếng ấy có
-     * giọng thật. Chỉ gọi sau khi dịch vụ đã dựng xong ([inited]).
+     * giọng thật. Chỉ gọi khi dịch vụ đã dựng xong: từ [configure] (lượt đầu, TRƯỚC khi mở [inited]) hoặc qua [ready].
      */
     private fun follow(engine: TextToSpeech): Boolean {
         val r = voice.sync(EnginePort(engine))

@@ -27,6 +27,11 @@ import com.byd.clusternav.launcher.ControlLastSent
  * Gửi: chỉ `:wake` ([forwardFromWake], gọi ở `VoiceWakeSessionFactory.buildSession`). Nhận: chỉ tiến trình chính
  * ([receiveInMain], `KachiApplication.onCreate` SAU cổng tiến trình nền). Ghi: một dòng RAM qua [ControlLastSent.absorb]
  * (kiểm hợp lệ, KHÔNG chuyển tiếp ⇒ không thể có vòng). Không đổi gì ngoài tiến trình, không bền ⇒ không cần hoàn tác.
+ *
+ * ## Ô vẽ lại NGAY (soát vòng 2 [P3])
+ * Dòng ĐỔI bảng ⇒ [ControlLastSent.relayed] tăng ⇒ màn chính (`collectHome`, luồng chính, khi đang STARTED) gọi
+ * `resyncTiles` ⇒ ô cốp đổi hình ngay sau câu "mở cốp". Trước đó ô chỉ theo kịp ở lần trạng thái xe đổi kế tiếp
+ * (`TileResync` — [CHƯA BIẾT] khi số liệu xe đứng yên). Màn khuất lúc dòng tới ⇒ vẽ một lần khi hiện lại.
  */
 internal object ControlSentRelay {
 

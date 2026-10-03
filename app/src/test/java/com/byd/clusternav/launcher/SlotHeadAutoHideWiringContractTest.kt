@@ -107,7 +107,9 @@ class SlotHeadAutoHideWiringContractTest {
         assertTrue("is SlotHeadTouch.Act.Hold -> { host.removeCallbacks(e.reveal); host.removeCallbacks(e.hide) }" in run,
             "giữ = huỷ CẢ hẹn hiện (nhấp đúp) lẫn hẹn ẩn (ngón đang đặt)")
         val reveal = SourceRoots.body(helper, "private fun reveal(")
-        assertTrue("host.postDelayed(e.hide, SlotHeadRest.HIDE_AFTER_MS)" in reveal, "hiện xong phải hẹn ẩn lại")
+        // Soát vòng 2 [P3] — ĐỔI GHIM có lý do: hẹn ẩn qua `SlotCloseConfirm.hideAfterMs` (= HIDE_AFTER_MS khi không chờ / cửa
+        // sổ gốc — bảng `SlotCloseConfirmTest`), để cửa sổ xác nhận theo trợ năng dài hơn 3 s không bị lượt ẩn cắt ngang.
+        assertTrue("host.postDelayed(e.hide, SlotCloseConfirm.hideAfterMs(e.cluster?.armedLeftMs()))" in reveal, "hiện xong phải hẹn ẩn lại")
         assertTrue("SlotHeadTouch.onConfirmArmed(i, heads(at))" in SourceRoots.body(helper, "private fun armed("),
             "tắt hai bước: đầu ô giữ hiện suốt lượt chờ (P2)")
     }
@@ -138,6 +140,14 @@ class SlotHeadAutoHideWiringContractTest {
         assertTrue(Regex("""shellListener: \(ShellReadinessState\) -> Unit = \{ _ -> host\.post\(refreshTask\) \}""").containsMatchIn(helper),
             "bên nghe gọi từ luồng bất kỳ ⇒ chuyển về luồng chính")
         assertTrue("entries.values.forEach { it.cluster?.refresh() }" in SourceRoots.body(helper, "fun refreshAll()"))
+        // Soát vòng 2 [P3] — BEHIND-HOME bị chuỗi KHÁC tắt (chuyến lên xe / lối tắt / đặt tạm: `ANCHOR_IN_FRONT`) ⇒ nút *chạy
+        // nền* phải biến mất ngay ở chế độ luôn hiện; bản cũ chỉ hỏi lại sau chuỗi của CHÍNH đầu ô (KachiHomeSlotActions).
+        assertTrue("BehindHomeRunner.addDisabledListener(behindListener)" in SourceRoots.body(helper, "fun attach()"))
+        assertTrue("BehindHomeRunner.removeDisabledListener(behindListener)" in release, "object sống bằng tiến trình không giữ view đã tháo")
+        assertTrue("private val behindListener: () -> Unit = { host.post(refreshTask) }" in helper, "báo từ `kachi-behind` ⇒ về luồng chính")
+        val runner = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/behind/BehindHomeRunner.kt")
+        assertTrue("off.off(reason)" in SourceRoots.body(runner, "fun disable("), "MỌI lối tắt đi qua công tắc có người nghe (`ProcessOffSwitch`)")
+        assertTrue("val disabledReason: String? get() = off.reason" in runner, "một nguồn sự thật — không còn `var` trần bên cạnh")
     }
 
     /** Soát 2.87 · P3 — bố cục 4 ô → 1 ô: mục 1..3 phải rời sổ (không giữ cây view đã tháo, không hỏi nút của ô chết). */

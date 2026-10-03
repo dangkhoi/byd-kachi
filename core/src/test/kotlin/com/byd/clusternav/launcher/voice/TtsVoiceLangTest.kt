@@ -78,4 +78,52 @@ class TtsVoiceLangTest {
         assertFalse(broken.changed || broken.usable, "lambda hỏng ⇒ không đoán tiếng, không đặt gì")
         assertNull(broken.locale)
     }
+
+    /**
+     * Soát vòng 2 [P3] — `LANG_NOT_SUPPORTED` (−2) lúc engine đang nối lại (AOSP r47 `TextToSpeech.java:2300-2321`: chưa nối ⇒
+     * errorResult) KHÔNG được nhớ như đáp án cuối. Bản cũ: lượt sau cùng Locale trả −2 mãi (đường Android chết tới lần đổi
+     * tiếng sau). Nay: trong [TtsVoiceLang.RECHECK_MS] chỉ một phép so; quá nhịp ⇒ hỏi lại, engine đã nối ⇒ dùng được + đặt tiếng.
+     */
+    @Test
+    fun `loi tam cua engine khong bi nho vinh vien - hoi lai sau nhip`() {
+        var clock = 1_000L
+        val answers = ArrayDeque(listOf(-2, 0))
+        val asked = mutableListOf<Locale>()
+        val set = mutableListOf<Locale>()
+        val flaky = object : TtsVoiceLang.Port {
+            override fun isLanguageAvailable(locale: Locale): Int { asked += locale; return answers.removeFirstOrNull() ?: 0 }
+            override fun setLanguage(locale: Locale) { set += locale }
+        }
+        val voice = TtsVoiceLang(nowMs = { clock }) { vi }
+        val first = voice.sync(flaky)
+        assertFalse(first.usable, "engine đang nối lại ⇒ lượt này chưa dùng được")
+        assertTrue(set.isEmpty())
+        clock += TtsVoiceLang.RECHECK_MS - 1
+        assertFalse(voice.sync(flaky).usable)
+        assertEquals(1, asked.size, "trong nhịp: một phép so, không gọi engine mỗi câu")
+        clock += 1
+        val again = voice.sync(flaky)
+        assertTrue(again.usable, "quá nhịp ⇒ hỏi lại, engine đã nối ⇒ dùng được (bản cũ: −2 mãi)")
+        assertTrue(again.changed, "số đổi ⇒ chỗ gọi ghi log")
+        assertEquals(listOf(vi), set, "dùng được thì đặt tiếng")
+        assertEquals(0, voice.status())
+        clock += 60_000L
+        assertFalse(voice.sync(flaky).changed)
+        assertEquals(2, asked.size, "số dùng được là đáp án cuối — không hỏi lại nữa")
+    }
+
+    @Test
+    fun `tieng that su khong co giong - hoi lai toi da moi nhip, khong lap log`() {
+        var clock = 0L
+        val engine = FakeEngine(emptySet())                   // máy không có giọng nào ⇒ −1 mãi
+        val voice = TtsVoiceLang(nowMs = { clock }) { vi }
+        assertTrue(voice.sync(engine).changed)
+        repeat(20) { clock += 100; voice.sync(engine) }       // 2 s nhiều câu ⇒ không hỏi thêm
+        assertEquals(1, engine.asked.size)
+        clock += TtsVoiceLang.RECHECK_MS
+        val r = voice.sync(engine)
+        assertEquals(2, engine.asked.size, "quá nhịp ⇒ hỏi lại đúng một lần")
+        assertFalse(r.changed, "vẫn −1 ⇒ không phải 'đổi' (không lặp dòng log)")
+        assertFalse(r.usable)
+    }
 }

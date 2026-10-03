@@ -364,7 +364,10 @@ class BehindHomeSequence(
         // kéo người dùng khỏi app họ đang dùng), không nhả.
         val after = settle(vd) ?: return Vacated(null, rescued = false)
         if (after.any { it.pkg == x }) return Vacated(after, rescued = false)      // rào K7 chặn (camera / màn nhà không hiện)
-        markMain(read(), setOf(x))
+        // Soát vòng 2 [P3]: bản đọc cho DẤU hỏng ⇒ không dấu, không K12 (X sau màn nhà mà không mang dấu thì Kachi chết là X
+        // nổi lên, lượt trả lại không nhận ra) — cùng luật nhánh trên: chưa rõ, GIỮ màn ảo, lượt sau thu hồi.
+        val main = readOrNull() ?: return Vacated(null, rescued = false)
+        markMain(main, setOf(x))
         runCatching { sh(goHomeCmd) }
         return Vacated(after, rescued = true)
     }
@@ -380,7 +383,12 @@ class BehindHomeSequence(
      * task chính mở NEW_TASK lên display 0) thì đỉnh "không đổi" mà màn nhà vẫn bị che. Chỉ bỏ qua `MOVED_HOME_RESTORED`.
      */
     private fun afterStage(tag: String, x: String, waited: Long, out: Outcome, homeWasTop: Boolean): Outcome {
-        val now = if (out.result != Result.MOVED_HOME_RESTORED && homeWasTop) read() else emptyList()
+        if (out.result == Result.MOVED_HOME_RESTORED || !homeWasTop) return out.copy(line = "$tag chờ=${waited}ms · ${out.line}")
+        // Soát vòng 2 [P3]: đọc HỎNG ≠ "X không lên trước màn nhà" — trước đây `[]` ⇒ `fellFront` false ⇒ trả nguyên mã
+        // (KEPT_UNDER/MOVED = OK) trong khi X có thể đang che màn nhà. Chưa rõ ⇒ UNREAD: không dấu (không có task id thật),
+        // không K12 (không quyết đổi cửa sổ trên một bản đọc không có).
+        val now = readOrNull()
+            ?: return Outcome(Result.UNREAD, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng ⇒ chưa rõ X có lên trước màn nhà, 0 dấu 0 K12")
         if (BehindHomePlan.fellFront(now, x)) {
             // X không ở lại màn ảo mà tự lên display 0 TRƯỚC màn nhà (activity trung chuyển mở NEW_TASK — cùng cơ chế [ĐO]
             // T-M3 với ý-định VIEW của YT Music) ⇒ người dùng xin CHẠY NGẦM mà thấy X che màn nhà. K12 (rào camera, byte 2.83)
@@ -428,7 +436,12 @@ class BehindHomeSequence(
             return Outcome(Result.KEPT_UNDER, "$tag → KEPT_UNDER (ghi dấu bền hỏng — không đẩy) gỡ=$gone")
         }
         sh(BehindHomePlan.moveTaskCmd(taskA, s))
-        val r3 = read()
+        // Soát vòng 2 [P3]: đọc lại HỎNG sau move-task ≠ NOT_MOVED — bản cũ (`[]` ⇒ NOT_MOVED) GỠ dấu bền trong khi A có thể đã
+        // sau màn nhà (CLAUDE.md §5: dấu phải sống lâu hơn thay đổi). Chưa rõ ⇒ GIỮ dấu, gỡ giữ chỗ (R0.7), 0 K12, UNREAD.
+        val r3 = readOrNull() ?: run {
+            val gone = finish()
+            return Outcome(Result.UNREAD, "$tag → UNREAD (đọc lại sau move-task hỏng — giữ dấu) task=$taskA S=$s gỡ=$gone dọn-trước=$cleaned")
+        }
         val moved = BehindHomePlan.verifyMoved(r3, taskA, s, top0)
         val gone = finish()
         val res = when (moved) {

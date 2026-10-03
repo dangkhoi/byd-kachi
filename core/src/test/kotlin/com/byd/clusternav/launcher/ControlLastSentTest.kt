@@ -126,4 +126,27 @@ class ControlLastSentTest {
         ControlRegistry.ALL.filter { it.kind == ControlKind.TOGGLE || it.kind == ControlKind.COVER || it.kind == ControlKind.SELECT }
             .forEach { assertTrue(ControlLastSent.relayable(it.id, 0), "${it.id} phải qua được cầu") }
     }
+
+    /**
+     * Soát vòng 2 [P3] — dòng từ `:wake` ĐỔI bảng ⇒ [ControlLastSent.relayed] tăng (màn chính thu nó để vẽ lại ô NGAY, không
+     * chờ trạng thái xe đổi). Dòng trùng chỉ số đang nhớ (kể cả mặc định lúc bật) / hỏng / ghi trong tiến trình ([record]) ⇒
+     * không tăng (không vẽ lại thừa; ô tự vẽ lượt chạm của nó).
+     */
+    @Test
+    fun `dong tu wake doi bang thi bao ve lai, dong trung hoac hong thi khong`() {
+        val main = ControlLastSent()
+        assertEquals(0L, main.relayed.value)
+        assertTrue(main.absorb("trunk", 0), "hợp lệ")
+        assertEquals(0L, main.relayed.value, "trùng mặc định lúc bật (đóng) ⇒ hình không đổi ⇒ không vẽ lại")
+        assertTrue(main.absorb("trunk", 1))
+        assertEquals(1L, main.relayed.value, "mở cốp qua `:wake` ⇒ ô phải vẽ lại")
+        assertTrue(main.absorb("trunk", 1))
+        assertEquals(1L, main.relayed.value, "lặp lại cùng chỉ số ⇒ không")
+        assertFalse(main.absorb("fan", 3))
+        assertEquals(1L, main.relayed.value, "dòng hỏng ⇒ không")
+        main.record("trunk", 0)
+        assertEquals(1L, main.relayed.value, "ghi trong tiến trình không đi đường này")
+        assertTrue(main.absorb("trunk", 1))
+        assertEquals(2L, main.relayed.value, "đổi lại ⇒ báo lại")
+    }
 }

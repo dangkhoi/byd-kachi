@@ -34,12 +34,17 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * CHƯA cờ `FORCE_LAYOUT`, và cờ đó xoá ở `layout()` cùng lượt ⇒ nhiều nhất MỘT lượt duyệt thừa cho mỗi lần đổi khung;
  * lượt thừa đó gặp khoá (rộng, cao, số ô) trùng ⇒ không đo dò, không áp ⇒ hội tụ.
  *
- * ## Chữ đổi giữa chuyến (nhịp 1 Hz) — soát vòng 1 (2.87)
+ * ## Chữ đổi giữa chuyến (nhịp 1 Hz) — soát vòng 1 + 2 (2.87)
  * Đường đổ số tại chỗ KHÔNG đo lại ô (`TextView` bề rộng tĩnh đổi chữ không `requestLayout`, `TextView.java:9641-9692`
- * r47), nên chỗ đổ gọi [contentChanged]. Ô có dấu chữ ([FitProbe.signature]) khác lúc đo ⇒ [FitRules.reprobe] quyết:
+ * r47), nên chỗ đổ gọi [contentChanged]. Ô có dấu chữ ([FitProbe.signature]) khác lúc đo ⇒ [FitRules.Cell] quyết:
  * chữ MỚI bị cắt mà lưới đọc được ⇒ đo dò lại ngay nhịp kế; còn lại (chữ vừa — có thể ngắn đi; lưới không đọc được;
  * lượt trước không chữa được) ⇒ thưa, [FitRules.RECHECK_MS]. Số đo mới nhận theo [FitRules.settle] (cắt ⇒ nhận; không
  * cắt ⇒ chỉ khi nhỏ đi rõ) ⇒ cỡ cả lưới không nhảy theo từng con số. Chỉ khi đến lượt mới xin MỘT lượt đo.
+ *
+ * Chữ bề rộng `WRAP` (số trong `AxisRow`, nhãn viên thuốc) thì khác: đổi chữ là BỎ bố cục + tự xin lượt đo
+ * (`TextView.java:9686-9691` r47) ⇒ lúc [contentChanged] chạy trạng thái cắt CHƯA BIẾT ⇒ không quyết gì; lượt đo kế
+ * ([grew], sau `measureAll`) quyết trên bố cục thật (soát vòng 2, P1). Lượt thưa mà để ô còn cắt ⇒ nhận ngay số đo
+ * thật ([FitRules.Cell.fitted]) thay vì ghi dấu của chữ đang cắt rồi không bao giờ xét lại.
  *
  * Đường `refreshRead` dựng-lại (lùi) thay một ô con ⇒ [onViewAdded] xoá kết quả cũ ⇒ ô mới được đo + áp ngay lượt
  * sau, nên ô dựng lại vẫn đúng cỡ. `WorkspaceView.setCustomLayout` đổi hình khung không dựng lại ⇒ chỉ khoá đổi ⇒
@@ -57,17 +62,11 @@ internal class FitGridLayout private constructor(
     private class Item(val fs: FitScale?) {
         var need: FitProbe.Need? = null
 
-        /** Đến lượt đo dò lại ([due]) — lượt khớp kế tiếp đo rồi gộp bằng [FitRules.settle]. */
-        var stale = false
+        /** Số đo THẬT của lượt đo dò gần nhất khi [settled] giữ số cũ ([FitRules.Cell.kept]) — nhận khi ô còn cắt. */
+        var fresh: FitProbe.Need? = null
 
-        /** Lượt đo dò lại đó vì chữ bị CẮT (nhận số mới) hay lượt thưa (chỉ nhận khi hộp nhỏ đi rõ). */
-        var grow = false
-
-        /** Sau lượt khớp trước ô vẫn còn cắt/tràn (lượt kiểm lại không chữa được) ⇒ lượt đo dò sau phải thưa. */
-        var stuck = false
-
-        /** `SystemClock.elapsedRealtime()` của lượt đo dò gần nhất. */
-        var probedAt = 0L
+        /** Nhịp đo dò lại của ô (`:core`, test thuần cả trình tự): đến lượt? lượt nhận số mới? kẹt? lúc nào đo? */
+        val cell = FitRules.Cell()
     }
 
     private val items = IdentityHashMap<View, Item>()
@@ -123,38 +122,58 @@ internal class FitGridLayout private constructor(
         val t0 = SystemClock.elapsedRealtimeNanos()
         val kids = kids()
         val floors = FitProbe.Floors.of(context)
+        var probed = 0
         kids.forEach { v ->
             val it = item(v); val fs = it.fs
-            if (fs != null && (it.need == null || it.stale)) {
-                it.need = settled(it.need, FitProbe.need(v, fs, floors), it.grow)
-                it.stale = false; it.grow = false; it.probedAt = SystemClock.elapsedRealtime()
+            if (fs != null && (it.need == null || it.cell.stale)) {
+                val raw = FitProbe.need(v, fs, floors)
+                val got = settled(it.need, raw, it.cell.grow)
+                it.need = got; it.fresh = raw.takeIf { got !== raw }
+                it.cell.probed(SystemClock.elapsedRealtime(), kept = got !== raw)
+                probed++
             }
         }
-        combine(kids)
-        val spec = spec(kids)
-        var f = GridFit.fit(kids.size, w, h, shapes, spec)
-        applyAll(kids, f)
-        measureAll(f.cellW, f.cellH, force = true)
-        var steps = 0
-        while (f.legible && steps < VERIFY_STEPS && kids.any { v -> item(v).fs?.let { FitProbe.clipped(it) } == true }) {
-            val k = f.scale - QUANTUM
-            if (k + 1e-9 < (f.shape?.minScale ?: 0.0)) break
-            f = f.copy(scale = k)
+        var f: GridFit.Fit
+        var spec: GridFit.Spec
+        var steps: Int
+        while (true) {
+            combine(kids)
+            spec = spec(kids)
+            f = GridFit.fit(kids.size, w, h, shapes, spec)
             applyAll(kids, f)
             measureAll(f.cellW, f.cellH, force = true)
-            steps++
+            steps = 0
+            while (f.legible && steps < VERIFY_STEPS && kids.any { v -> item(v).fs?.let { FitProbe.clipped(it) } == true }) {
+                val k = f.scale - QUANTUM
+                if (k + 1e-9 < (f.shape?.minScale ?: 0.0)) break
+                f = f.copy(scale = k)
+                applyAll(kids, f)
+                measureAll(f.cellW, f.cellH, force = true)
+                steps++
+            }
+            // Soát vòng 2 (P1): ô còn cắt mà số đang dùng là số CŨ do settle giữ (lượt thưa) ⇒ nhận số đo thật đã có
+            // (không đo dò thêm) rồi khớp lại. Mỗi vòng xoá cờ `kept` của ít nhất một ô ⇒ dừng sau tối đa số ô vòng.
+            val adopt = kids.filter { v -> val it = item(v); it.cell.fitted(it.fs?.let { fs -> FitProbe.clipped(fs) } == true) }
+            if (adopt.isEmpty()) break
+            adopt.forEach { v -> val it = item(v); it.fresh?.let { n -> it.need = n }; it.fresh = null }
         }
-        kids.forEach { v -> val it = item(v); it.stuck = it.fs?.let { fs -> FitProbe.clipped(fs) } == true }
         val same = f == fit && keyW == w && keyH == h && keyN == kids.size
         fit = f; keyW = w; keyH = h; keyN = kids.size; refits++
-        // Lượt khớp vì chữ đổi mà ra đúng bố cục cũ ⇒ không ghi nhật ký (dòng QA chỉ khi bố cục/khung đổi thật).
-        if (!same) report(f, spec, w, h, steps, (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0)
+        val ms = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
+        // Lượt khớp vì chữ đổi mà ra đúng bố cục cũ ⇒ không ghi dòng bố cục, nhưng vẫn ghi CHI PHÍ đo dò lại (soát vòng 2,
+        // P2: lượt đo dò theo nội dung trước đây vô hình với QA) — tối đa một dòng mỗi lượt đo dò thật, không theo nhịp.
+        if (!same) report(f, spec, w, h, steps, ms)
+        else if (probed > 0) Log.i(TAG, String.format(Locale.US, "reprobe cells=%d same-layout refit#%d %.1fms", probed, refits, ms))
     }
 
-    /** Gộp số đo mới [fresh] với số cũ [old] theo từng dạng ([FitRules.settle]); dạng giữ số cũ thì giữ cả cờ dùng được. */
+    /**
+     * Gộp số đo mới [fresh] với số cũ [old] theo từng dạng ([FitRules.settle]); dạng giữ số cũ thì giữ cả cờ dùng được.
+     * Trả CHÍNH [fresh] khi mọi dạng nhận số mới — chỗ gọi so `!==` để biết có dạng nào giữ số cũ ([FitRules.Cell.kept]).
+     */
     private fun settled(old: FitProbe.Need?, fresh: FitProbe.Need, grow: Boolean): FitProbe.Need {
         if (old == null) return fresh
         val shapes = fresh.shapes.indices.map { i -> FitRules.settle(old.shapes[i], fresh.shapes[i], grow) }
+        if (shapes.indices.all { shapes[it] === fresh.shapes[it] }) return fresh
         val usable = shapes.indices.map { i -> if (shapes[i] === fresh.shapes[i]) fresh.usable[i] else old.usable[i] }
         return FitProbe.Need(shapes, usable, fresh.sig)
     }
@@ -205,33 +224,37 @@ internal class FitGridLayout private constructor(
     }
 
     /** Đường cache (lượt đo không đổi khung): có ô nào đến lượt đo dò lại ([due]) ⇒ khớp lại. Xét MỌI ô (không dừng sớm). */
-    private fun grew(): Boolean = kids().fold(false) { any, v -> due(v) || any }
+    private fun grew(): Boolean = kids().fold(false) { any, v -> due(v, measured = true) == FitRules.Verdict.DUE || any }
 
     /**
-     * Ô [v] có phải đo dò lại không: chữ đã khác lúc đo ([FitProbe.signature]) VÀ đến lượt theo [FitRules.reprobe]
-     * (cắt + đọc được + chưa kẹt ⇒ sau [FitRules.GROW_GAP_MS]; còn lại ⇒ sau [FitRules.RECHECK_MS]). Có ⇒ đánh dấu cho
-     * lượt khớp kế. Chỉ đọc bố cục chữ + số đo đã có, không đo. Chữ không đổi mà vẫn cắt (khung vốn quá nhỏ) ⇒ không
-     * làm gì (không vòng lặp); lưới không đọc được vẫn tự phục hồi khi chữ ngắn lại (bản trước chặn vĩnh viễn).
+     * Ô [v] có phải đo dò lại không — quyết ở [FitRules.Cell.check] (`:core`): chữ đã khác lúc đo ([FitProbe.signature])
+     * VÀ đến lượt theo [FitRules.reprobe] (cắt + đọc được + chưa kẹt ⇒ sau [FitRules.GROW_GAP_MS]; còn lại ⇒ sau
+     * [FitRules.RECHECK_MS]); trạng thái cắt CHƯA BIẾT ([FitProbe.clip] — chữ `WRAP` vừa đổi, chưa có bố cục) ⇒ không
+     * quyết ([FitRules.Verdict.WAIT]); ô đã đến lượt mà lần xét sau thấy cắt ⇒ thành lượt nhận số mới. Chỉ đọc bố cục
+     * chữ + số đo đã có, không đo. Chữ không đổi mà vẫn cắt (khung vốn quá nhỏ) ⇒ không làm gì (không vòng lặp).
+     * [measured] = xét ngay sau `measureAll` ([grew]): khi đó chữ không bố cục là chữ không được vẽ ([FitRules.known]).
      */
-    private fun due(v: View): Boolean {
-        val it = items[v] ?: return false
-        if (it.stale) return true
-        val fs = it.fs ?: return false
-        val need = it.need ?: return true
-        if (FitProbe.signature(fs) == need.sig) return false
-        val clipped = FitProbe.clipped(fs)
-        val since = SystemClock.elapsedRealtime() - it.probedAt
-        if (!FitRules.reprobe(clipped, fit?.legible == true, it.stuck, since)) return false
-        it.stale = true; it.grow = clipped
-        return true
+    private fun due(v: View, measured: Boolean): FitRules.Verdict {
+        val it = items[v] ?: return FitRules.Verdict.NONE
+        val fs = it.fs ?: return FitRules.Verdict.NONE
+        val need = it.need ?: return FitRules.Verdict.DUE
+        val same = FitProbe.signature(fs) == need.sig
+        val now = SystemClock.elapsedRealtime()
+        return it.cell.check(same, fit?.legible == true, now) { FitRules.known(FitProbe.clip(fs), measured) }
     }
 
     /**
      * Đường đổ số TẠI CHỖ vừa đổi chữ của ô [child] mà không qua lượt đo (KDoc lớp, "Chữ đổi giữa chuyến") ⇒ đến lượt
-     * đo dò lại thì xin MỘT lượt đo; chưa đến lượt ⇒ không làm gì (không đo lại cả màn theo nhịp 1 Hz — 09-25).
+     * đo dò lại thì xin MỘT lượt đo; chưa đến lượt ⇒ không làm gì (không đo lại cả màn theo nhịp 1 Hz — 09-25). Chưa
+     * biết (chữ `WRAP` đã bỏ bố cục) ⇒ chính `TextView` đã xin lượt đo, và [grew] xét lại ở đó trên bố cục thật; chỉ
+     * xin thêm khi chưa có lượt đo nào chờ (không thì ô không bao giờ được xét).
      */
     private fun onContentChanged(child: View) {
-        if (due(child)) requestLayout()
+        when (due(child, measured = false)) {
+            FitRules.Verdict.DUE -> requestLayout()
+            FitRules.Verdict.WAIT -> if (!isLayoutRequested) requestLayout()
+            FitRules.Verdict.NONE -> Unit
+        }
     }
 
     /**

@@ -1,12 +1,15 @@
 package com.byd.clusternav.launcher
 
 import android.graphics.Color
+import android.annotation.SuppressLint
 import android.graphics.drawable.GradientDrawable
 import android.os.SystemClock
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
+import android.view.accessibility.AccessibilityManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -60,11 +63,12 @@ internal interface SlotActionsPort {
  *     đủ. Tâm đĩa = tâm icon = ngang tâm icon ⇄. Mô tả trợ năng theo loại ô, đủ 5 tiếng (tài nguyên).
  *
  * ## *Tắt* = HAI chạm (soát 2.87 · P2, quyết định điều phối — luật ở `:core` [SlotCloseConfirm])
- * Chạm đầu ⇒ nút *tắt* đổi sang trạng thái xác nhận [SlotCloseConfirm.WINDOW_MS] (2 s): đĩa ĐỎ ([KachiTheme.RED]) + icon tô
- * [KachiTheme.BG] (`SlotLifecycleWiringContractTest` *đĩa xác nhận*: ≥ 4.5:1 cả hai bảng màu) + mô tả trợ năng *"Chạm lần nữa
- * để tắt"* (5 tiếng),
- * và báo [onArmed] để đầu ô hiện tiếp suốt lượt chờ. Chạm lần hai trong 2 s ⇒ tắt thật; hết 2 s / hàng ẩn / khung dựng lại /
- * nút thành không làm được ⇒ về như cũ. *Chạy nền* (đảo được) vẫn một chạm.
+ * Chạm đầu ⇒ nút *tắt* đổi sang trạng thái xác nhận trong cửa sổ [armedWindow] (gốc [SlotCloseConfirm.WINDOW_MS] = 2 s, dài
+ * hơn theo *"Thời gian thực hiện hành động"* của trợ năng — [windowNow]): đĩa ĐỎ ([KachiTheme.RED]) + icon tô [KachiTheme.BG]
+ * (`SlotLifecycleWiringContractTest` *đĩa xác nhận*: ≥ 4.5:1 cả hai bảng màu) + mô tả trợ năng *"Chạm lần nữa để tắt"* (5
+ * tiếng), và báo [onArmed] để đầu ô hiện tiếp suốt lượt chờ. Chạm lần hai trong cửa sổ ⇒ tắt thật; hết cửa sổ / hàng ẩn /
+ * khung dựng lại / nút thành không làm được ⇒ về như cũ. *Chạy nền* (đảo được) vẫn một chạm. Soát vòng 2: chặn nhấp đúp đo
+ * DOWN₂ − UP₁ bằng `MotionEvent.eventTime` ([track] — chỉ NHÌN, trả `false` nên click vẫn nổ như cũ).
  */
 internal class SlotActionsCluster private constructor(
     private val slot: ViewGroup,
@@ -80,7 +84,17 @@ internal class SlotActionsCluster private constructor(
 
     /** Mốc (`SystemClock.uptimeMillis`) lượt chạm đầu của *tắt*; `null` = không chờ xác nhận. */
     private var armedAt: Long? = null
+
+    /** Cửa sổ chờ của lượt đang chờ ([windowNow] đọc lúc vào chờ). */
+    private var armedWindow = SlotCloseConfirm.WINDOW_MS
     private val disarmTask = Runnable { disarm() }
+
+    /** `MotionEvent.eventTime` của DOWN / UP của cú chạm đang (vừa) diễn ra trên nút *tắt* ([track]); dùng xong ở [tap] thì xoá. */
+    private var touchDown: Long? = null
+    private var touchUp: Long? = null
+
+    /** UP của cú chạm trước trong lượt chờ — mốc so cho DOWN kế (`GestureDetector.isConsideredDoubleTap`). `null` = không có. */
+    private var lastUp: Long? = null
 
     /** Hỏi lại cổng nút nào làm được LÚC NÀY; chỉ đổi view khi khác (không vẽ lại thừa). */
     fun refresh() {
@@ -96,27 +110,59 @@ internal class SlotActionsCluster private constructor(
     /** Một chạm lên nút [b]: *tắt* đi qua [SlotCloseConfirm] (hai bước), nút khác làm ngay. */
     private fun tap(b: Button) {
         if (b != Button.CLOSE) return port.onAction(index, b)
-        val gap = ViewConfiguration.getDoubleTapTimeout().toLong()
-        when (SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap)) {
-            SlotCloseConfirm.Tap.ARM -> arm()
-            SlotCloseConfirm.Tap.WAIT -> Unit
+        // Click của View nổ ngay sau UP (`View.onTouchEvent` → PerformClick) ⇒ DOWN/UP vừa ghi là của CHÍNH cú chạm này; không
+        // có UP ⇒ click không đến từ ngón (trợ năng `ACTION_CLICK`, bàn phím) ⇒ không có khoảng nhấp đúp để đo.
+        val down = touchDown.takeIf { touchUp != null }
+        val up = touchUp
+        touchDown = null; touchUp = null
+        val gap = down?.let { d -> lastUp?.let { d - it } }
+        val tapGap = ViewConfiguration.getDoubleTapTimeout().toLong()
+        when (SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap, tapGap, armedWindow)) {
+            SlotCloseConfirm.Tap.ARM -> arm(up)
+            SlotCloseConfirm.Tap.WAIT -> lastUp = up   // nhấp đúp: cú kế so với UP của cú NÀY (chuỗi nhấp nhanh vẫn là nhấp đúp)
             SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }
         }
     }
 
-    private fun arm() {
+    /** Chỉ NHÌN cú chạm trên nút *tắt* (mốc DOWN/UP cho [tap]) — không nuốt: trả `false`, `View.onTouchEvent` vẫn ra click. */
+    private fun track(ev: MotionEvent) {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { touchDown = ev.eventTime; touchUp = null }
+            MotionEvent.ACTION_UP -> touchUp = ev.eventTime
+            MotionEvent.ACTION_CANCEL -> { touchDown = null; touchUp = null }
+        }
+    }
+
+    /**
+     * Cửa sổ chờ lúc này: gốc 2 s, dài hơn nếu người dùng đặt *"Thời gian thực hiện hành động"* (API 29 = minSdk
+     * `getRecommendedTimeoutMillis` — [ĐO nguồn r47 `AccessibilityManager.java:895-907`]: CONTROLS ⇒ max(gốc, cài đặt tương tác),
+     * ICONS ⇒ max(…, cài đặt không tương tác)). Không có dịch vụ ⇒ gốc.
+     */
+    private fun windowNow(): Long {
+        val am = slot.context.getSystemService(AccessibilityManager::class.java) ?: return SlotCloseConfirm.WINDOW_MS
+        val flags = AccessibilityManager.FLAG_CONTENT_CONTROLS or AccessibilityManager.FLAG_CONTENT_ICONS
+        return SlotCloseConfirm.window(am.getRecommendedTimeoutMillis(SlotCloseConfirm.WINDOW_MS.toInt(), flags).toLong())
+    }
+
+    /** Phần còn lại của lượt chờ xác nhận (`null` = không chờ) — [SlotHeadAutoHide] không ẩn đầu ô trước khi nó hết. */
+    fun armedLeftMs(): Long? = armedAt?.let { (it + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L) }
+
+    private fun arm(up: Long?) {
         val cell = buttons[Button.CLOSE] as? ViewGroup ?: return
         armedAt = SystemClock.uptimeMillis()
+        armedWindow = windowNow()
+        lastUp = up
         paint(cell, confirm = true)
         cell.contentDescription = cell.context.getString(R.string.kachi_slot_close_confirm)
         slot.removeCallbacks(disarmTask)
-        slot.postDelayed(disarmTask, SlotCloseConfirm.WINDOW_MS)
+        slot.postDelayed(disarmTask, armedWindow)
         onArmed(this)
     }
 
     /** Về trạng thái thường (idempotent): màu, mô tả, hẹn giờ. */
     private fun disarm() {
         slot.removeCallbacks(disarmTask)
+        lastUp = null
         if (armedAt == null) return
         armedAt = null
         val cell = buttons[Button.CLOSE] as? ViewGroup ?: return
@@ -188,8 +234,17 @@ internal class SlotActionsCluster private constructor(
             slot.addView(row, slot.childCount - 1, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, touch, Gravity.TOP or Gravity.CENTER_HORIZONTAL))
             val cluster = SlotActionsCluster(slot, index, kind, projector, port, row, made, onArmed)
             made.forEach { (b, v) -> v.setOnClickListener { cluster.tap(b) } }   // *tắt* qua hai bước ([tap]), nút khác làm ngay
+            made[Button.CLOSE]?.let { observe(it, cluster) }
             return cluster
         }
+
+        /**
+         * Nút *tắt*: người nghe chạm CHỈ NHÌN ([track]) và trả `false` ⇒ `View.onTouchEvent` vẫn chạy, click (và `performClick`
+         * cho trợ năng) đi đúng đường cũ — lý do chặn lint `ClickableViewAccessibility` (nó đòi `performClick` khi người nghe
+         * TỰ xử lý chạm; ở đây không).
+         */
+        @SuppressLint("ClickableViewAccessibility")
+        private fun observe(v: View, cluster: SlotActionsCluster) = v.setOnTouchListener { _, ev -> cluster.track(ev); false }
 
         /** Một nút: khung chạm [Sp.TOUCH]² (bấm được, có mô tả) + đĩa kính + icon [Sp.ICON_S] không bấm được, tâm ngang tâm ⇄. */
         private fun button(slot: ViewGroup, index: Int, kind: SlotHeadRest.Kind, b: Button): View {

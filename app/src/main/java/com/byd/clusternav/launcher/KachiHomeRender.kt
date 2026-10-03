@@ -23,6 +23,18 @@ internal fun KachiHomeActivity.applyThemeInPlace() {
     topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
 }
 
+/**
+ * Soát vòng 2 [P3] — bảng lệnh cuối vừa đổi bởi `:wake` (cầu `ControlSentRelay` → `ControlLastSent.absorb`) ⇒ ô nút vẽ lại
+ * NGAY với trạng thái xe ĐANG CÓ: thanh nút ([ControlDockView.setCarStatus] — đổ lại ô đọc + ô hành động, không dựng lại)
+ * và ô hành động giữa màn ([WidgetRefreshers.resyncActions]). Hàm đổ của ô so hình với bảng (`TileResync.stale`) nên ô đã
+ * khớp không vẽ lại. Gọi từ [collectHome] (luồng chính).
+ */
+internal fun KachiHomeActivity.resyncTiles() {
+    val car = viewModel.uiState.value.carStatus
+    dock.setCarStatus(car)
+    WidgetRefreshers.resyncActions(workspace, car)
+}
+
 internal fun KachiHomeActivity.render(state: HomeUiState) {
     val prev = shownState
     // #10 (2026-09-23) GIỮ STATE: theme đổi ⇒ restyle tại chỗ (không recreate=không giết ô app); chỉ LANG mới recreate.

@@ -143,6 +143,32 @@ object KachiChrome {
     }
 
     /**
+     * Soát vòng 2 [P3] — hệ số BỀ MẶT của thẻ/khay kính trên vùng ảnh độ chói [l] (≥ [fraction]): khi lớp che tới 100 % vẫn
+     * không giữ được một chồng HÔM NAY đạt (chữ trung tính · thứ trên khay · mực màu KHAI [extraInks] — vd ACCENT lấy theo ảnh
+     * trên thẻ NEUTRAL bảng sáng) thì giữ bề mặt của ĐÚNG thẻ đó đục hơn ([ChromeStack.glassSurface]). Lớp che cho từng hệ số
+     * thử là đúng lớp che `WallWindowDrawable.relocate` sẽ chọn ([glassVeil]). 100 % ⇒ 1 (không đổi một byte).
+     */
+    internal fun glassSurface(
+        l: Double, veil: Int, pair: IntArray, inks: IntArray, extraInks: IntArray, well: Boolean, veilMin: Double,
+    ): Double {
+        if (fraction >= 1.0) return 1.0
+        val stacks = listOf(Stack(emptyList(), inks)) + (if (well) wellArtStacks else emptyList()) +
+            extraInks.map { Stack(emptyList(), intArrayOf(it)) }
+        val todayVeil = GlassVeil.alphaFor(l, veil, pair, inks)
+        return ChromeStack.glassSurface(l, veil, pair, todayVeil, stacks, surfaceFraction(onBar = false, hasArt = true), fraction) { shown ->
+            glassVeil(l, veil, pair, shown, inks, extraInks, well, veilMin)
+        }
+    }
+
+    /** Lớp che mà `WallWindowDrawable.relocate` chọn cho bề mặt đang vẽ [shown] dưới 100 %: max(bộ giải chữ, [glassFloor]). */
+    internal fun glassVeil(
+        l: Double, veil: Int, pair: IntArray, shown: IntArray, inks: IntArray, extraInks: IntArray, well: Boolean, veilMin: Double,
+    ): Double = maxOf(
+        GlassVeil.alphaFor(l, veil, shown, inks, min = veilMin, max = 1.0),
+        glassFloor(l, veil, pair, shown, inks, extraInks, well, veilMin),
+    )
+
+    /**
      * Alpha của `Drawable` (0..255) cho nền một THANH có màu vai [role] (mang alpha gốc). [lums] = độ chói các ô lưới
      * ảnh dưới thanh (`null` = không có ảnh nền ⇒ sàn vùng [plainTop]/[plainDock]); [tiles] = thanh chở ô (thanh nút) ⇒ ô TẮT/ô BẬT cũng phải
      * đọc được trên nó. Độ đục thực = [ChromeOpacity.effective] với mức cần = [ChromeStack.neededOver]; đổi ra alpha

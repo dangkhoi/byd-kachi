@@ -187,6 +187,58 @@ class BehindHomeHiddenStageTest {
         assertEquals(Result.UNREAD, out.result, out.line)
     }
 
+    /**
+     * Soát vòng 2 [P3] (a) — afterStage: X ĐÃ được thấy tự lên display 0 trước màn nhà (trung chuyển VIEW, `m5a`), rồi bản đọc
+     * lại của afterStage hỏng một lượt. Bản cũ: `[]` ⇒ `fellFront` false ⇒ trả `KEPT_UNDER` (OK ⇒ Cài đặt nói "đang chạy ẩn")
+     * trong khi YT Music che màn nhà. Nay: `UNREAD`, 0 dấu, 0 K12 (không quyết trên bản đọc không có).
+     */
+    @Test
+    fun `doc lai hong o afterStage sau khi thay X len truoc man nha - UNREAD, khong dau, khong K12`() {
+        val view: (Int) -> String = { vd -> "VIEW→$vd" }
+        val r = Rig(listOf(text("l4-hidden-before"), text("l4-view-escaped"), "", text("l4-view-after-k12")), vd = 284)
+        val out = r.seq.startBehindHidden(ytm, r.port, view = view)
+        assertEquals(Result.UNREAD, out.result, out.line)
+        assertFalse(r.log.any { it == k12 || it.startsWith("MARK") }, "đọc hỏng ⇒ không dấu, không K12: ${r.log}")
+        assertEquals(com.byd.clusternav.launcher.trip.TripStepCode.Result.UNCONFIRMED,
+            com.byd.clusternav.launcher.trip.TripOutcome.ofBehind(out.result).result, "sổ không được nói 'đã chạy ẩn'")
+    }
+
+    /**
+     * Soát vòng 2 [P3] (b) — moveBehind: move-task đã chạy, bản đọc ngay sau hỏng. Bản cũ: `verifyMoved([])` = NOT_MOVED ⇒
+     * `UNMARK` dấu bền trong khi Waze có thể đã ở sau màn nhà (CLAUDE.md §5: dấu phải sống lâu hơn thay đổi). Nay: GIỮ dấu,
+     * gỡ giữ chỗ, `UNREAD`.
+     */
+    @Test
+    fun `doc lai hong ngay sau move-task - GIU dau ben, go giu cho, UNREAD`() {
+        val r = Rig(listOf(text("l4-hidden-before"), alone()) + listOf("covered", "covered", "covered", "anchor").map { text("l4-hidden-$it") } +
+            listOf("") + listOf("after", "after").map { text("l4-hidden-$it") })
+        val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
+        val mv = r.log.indexOf("am stack move-task 3267 691 true")
+        assertTrue(mv > r.log.indexOf("MARK 3267 $waze"), "dấu trước lệnh, lệnh đã chạy: ${r.log}")
+        assertFalse(r.log.any { it.startsWith("UNMARK") }, "đọc hỏng ⇒ KHÔNG gỡ dấu bền: ${r.log}")
+        assertTrue(r.log.withIndex().any { (i, c) -> i > mv && c == "ANCHOR_REMOVE" }, "giữ chỗ vẫn gỡ ở mọi lối ra (R0.7): ${r.log}")
+        assertFalse(r.log.contains(k12), r.log.toString())
+        assertEquals(Result.UNREAD, out.result, out.line)
+    }
+
+    /**
+     * Soát vòng 2 [P3] (c) — vacate: K7 đưa X ra display 0, bản đọc màn ảo sau K7 thấy X đã rời, nhưng bản đọc để ghi DẤU
+     * hỏng. Bản cũ: `markMain([])` = 0 dấu rồi VẪN K12 ⇒ X sau màn nhà KHÔNG mang dấu (Kachi chết là X nổi lên) + nhả màn ảo.
+     * Nay: 0 dấu, 0 K12, GIỮ màn ảo (lượt sau thu hồi), `UNREAD`.
+     */
+    @Test
+    fun `doc hong luc ghi dau sau K7 - khong dau, khong K12, khong nha`() {
+        val stuck = alone()
+        val reads = listOf(text("l4-hidden-before"), stuck, text("l4-hidden-covered")) +
+            List(1 + 1 + BehindHomeSequence.ANCHOR_TRIES) { text("l4-hidden-covered") } + listOf(stuck, text("l4-hidden-after"), "")
+        val r = Rig(reads)
+        val out = r.seq.startBehindHidden(waze, r.port, wazeComp)
+        val k7 = r.log.indexOfFirst { it.contains("--display 0") && it.contains(wazeComp) }
+        assertTrue(k7 > r.log.indexOf("UNCOVER"), "K7 đã chạy sau gỡ che: ${r.log}")
+        assertFalse(r.log.drop(k7 + 1).any { it == k12 || it.startsWith("MARK") || it.startsWith("RELEASE") }, "sau K7 + đọc dấu hỏng: ${r.log}")
+        assertEquals(Result.UNREAD, out.result, out.line)
+    }
+
     /** Review 287 [P1] — bản đọc ĐẦU hỏng: không biết X có đang ở ô / cụm không ⇒ 0 lệnh, không tạo màn ảo (K4 sẽ kéo X khỏi chỗ). */
     @Test
     fun `doc dau hong - 0 lenh, khong tao man ao`() {

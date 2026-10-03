@@ -140,6 +140,41 @@ object ChromeStack {
         return max
     }
 
+    /**
+     * Soát vòng 2 [P3] — hệ số BỀ MẶT của một thẻ kính trên vùng ảnh độ chói [l]: nhỏ nhất ≥ [f] (lưới [STEP], cuối 1.0) mà ở
+     * đó lớp che bên thi hành chọn cho bề mặt ấy ([veilFor] — CÙNG công thức `WallWindowDrawable.relocate`) giữ mọi chồng
+     * [stacks] đạt sàn ở chỗ HÔM NAY đạt (hôm nay = bề mặt [pair] ở 100 % trên lớp che [todayVeil]; lớp mờ bên trong chồng
+     * vẽ ở hệ số [t]).
+     *
+     * Vì sao cần: [overlayVeil] chỉ nâng LỚP CHE, mà lớp che chỉ kéo nền thẻ về phía màu che. Khi thứ làm hụt là chính BỀ MẶT
+     * đã mờ (bề mặt sáng 80 % ở 100 % → nền thẻ hội tụ về màu che khi mờ, tương phản với mực MÀU kém hơn — [ĐO probe soát vòng
+     * 2] ACCENT lấy theo ảnh `#6E6E92` trên thẻ NEUTRAL bảng sáng: 4.51 hôm nay → 4.39 dù lớp che 100 %) thì lớp che 100 % vẫn
+     * hụt ⇒ giữ bề mặt của ĐÚNG thẻ đó đục hơn, chỉ ở vùng ảnh cần. Không chồng nào đạt hôm nay ⇒ [f] (không ràng buộc). [f] ≥ 1
+     * ⇒ 1 (100 % không đổi gì).
+     */
+    fun glassSurface(
+        l: Double, veil: Int, pair: IntArray, todayVeil: Double, stacks: List<Stack>, t: Double, f: Double,
+        veilFor: (IntArray) -> Double,
+    ): Double {
+        if (f >= 1.0) return 1.0
+        val art = ColorMath.grayOfLuminance(l)
+        fun grounds(a: Double, surfs: IntArray): List<Int> {
+            val veiled = ColorMath.over(ColorMath.withAlpha(veil, (a.coerceIn(0.0, 1.0) * 255).toInt()), art)
+            return surfs.map { ColorMath.over(it, veiled) }
+        }
+        val today = grounds(todayVeil, pair)
+        val live = stacks.filter { s -> today.all { worst(s, 1.0, it) >= FLOOR } }
+        if (live.isEmpty()) return f
+        var s = f
+        while (s < 1.0 - 1e-9) {
+            val shown = IntArray(pair.size) { faded(pair[it], s) }
+            val now = grounds(veilFor(shown), shown)
+            if (live.all { st -> now.all { worst(st, t, it) >= FLOOR } }) return s
+            s = nextStep(s)
+        }
+        return 1.0
+    }
+
     /** Bước kế trên lưới [STEP] (làm tròn để cộng dồn không trôi số). */
     private fun nextStep(x: Double): Double = (((x / STEP) + 1e-9).toInt() + 1) * STEP
 }

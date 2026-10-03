@@ -63,8 +63,10 @@ class FitGridWiringContractTest {
         // `if (fit?.legible != true) return false` — chặn ấy làm lưới đã rơi xuống sàn (một tên bài dài) KHÔNG BAO GIỜ
         // phục hồi tới lần dựng lại. Nay mọi lượt đo dò lại đi qua nhịp của [FitRules.reprobe] (cắt + đọc được ⇒ nhịp
         // kế; còn lại ⇒ thưa 30 s) — `FitRulesTest` khoá nhịp, `FitRulesWiringContractTest` khoá chỗ nối.
-        assertTrue(SourceRoots.body(layout, "private fun grew()").contains("due(v)"))
-        assertTrue(SourceRoots.body(layout, "private fun due(v: View)").contains("FitRules.reprobe("))
+        assertTrue(SourceRoots.body(layout, "private fun grew()").contains("due(v, measured = true) == FitRules.Verdict.DUE"))
+        // ĐỔI GHIM (soát vòng 2, P1): `due` quyết qua [FitRules.Cell.check] (gọi [FitRules.reprobe] bên trong, `:core`)
+        // thay vì gọi thẳng `FitRules.reprobe(` — để trạng thái cắt CHƯA BIẾT không bị chốt thành lượt thưa.
+        assertTrue(SourceRoots.body(layout, "private fun due(v: View, measured: Boolean)").contains("it.cell.check("))
         // Đặt đúng vị trí :core trả (khe đều, hàng thiếu căn giữa).
         val place = SourceRoots.body(layout, "override fun onLayout(")
         assertTrue(place.contains("f.left(i)") && place.contains("f.top(i)"))

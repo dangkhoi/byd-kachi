@@ -386,7 +386,10 @@ internal fun Activity.ensureCastBubble(bridge: ClusterNavBridge) {
  * Hai vòng THU của màn chính, tách khỏi [KachiHomeActivity] (trần 500 dòng — CLAUDE.md §4.1).
  *
  *  1. **state của ViewModel → [render]** (một chiều, view-only);
- *  2. **trạng thái xe LIVE** → bơm vào VM → state đổi → cũng ra [render].
+ *  2. **trạng thái xe LIVE** → bơm vào VM → state đổi → cũng ra [render];
+ *  3. soát vòng 2 [P3] — **bảng lệnh cuối đổi bởi `:wake`** ([ControlLastSent.relayed]) → [resyncTiles] vẽ lại ô nút NGAY (luồng
+ *     chính), không chờ trạng thái xe đổi. Chỉ khi số ĐỔI so với lượt đã vẽ (`seen`) — vào lại STARTED mà không có dòng mới
+ *     thì không làm gì; có dòng tới lúc màn khuất thì vẽ một lần khi hiện lại.
  *
  * Cả hai bọc trong `repeatOnLifecycle(STARTED)` nên tự huỷ khi màn xuống dưới STARTED — đó là tính chất phải giữ
  * khi đọc lại khối này: `carStatusRepository` poll 2 nhịp, chạy tiếp lúc màn khuất là poll HAL suốt chuyến mà
@@ -399,8 +402,15 @@ internal fun collectHome(
     owner: LifecycleOwner,
     viewModel: HomeViewModel,
     container: AppContainer,
+    resyncTiles: () -> Unit,
     render: (HomeUiState) -> Unit,
 ) {
+    var seen = ControlLastSent.shared.relayed.value
+    owner.lifecycleScope.launch {
+        owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            ControlLastSent.shared.relayed.collect { v -> if (v != seen) { seen = v; resyncTiles() } }
+        }
+    }
     owner.lifecycleScope.launch {
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.uiState.collect {

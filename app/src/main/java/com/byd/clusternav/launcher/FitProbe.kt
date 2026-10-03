@@ -61,7 +61,8 @@ internal object FitProbe {
 
     /**
      * Nhu cầu của một ô: một [GridFit.Shape] cho mỗi [OPTIONS] (cùng chỉ số), [usable] = dạng đó có bề rộng nào vẽ
-     * trọn ô không (cùng chỉ số), [sig] = dấu chữ lúc đo.
+     * trọn ô không (cùng chỉ số), [sig] = dấu chữ lúc đo — không phụ thuộc dạng ([signature]), nên bằng dấu ở dạng ô
+     * đang hiện dù đo dò để ô ở dạng cuối (chỉ-icon).
      */
     class Need(val shapes: List<GridFit.Shape>, val usable: List<Boolean>, val sig: Int)
 
@@ -139,12 +140,24 @@ internal object FitProbe {
     /**
      * Có chữ nào của ô bị CẮT, hoặc con nào TRÀN khung cha, ở lần đo vừa rồi không — chính bệnh ảnh 03/10: nhãn bị kẹp
      * `AT_MOST` còn nửa dòng (`TextView.java:9404-9405`), hoặc bị `…`, hoặc dòng bị bỏ (quá `maxLines` không
-     * ellipsize), hoặc một từ dài hơn bề rộng; con cỡ cố định rộng hơn chỗ ([spills]). Chữ tự co (autosize — ô giá trị
-     * STEP) tự lo, không xét; chữ TỰ DO một dòng ([FitScale.freeLine]) chỉ tính khi còn hẹp hơn ngân sách của nó.
+     * ellipsize), hoặc một từ dài hơn bề rộng, hoặc một con số bị bẻ đôi qua hai dòng; con cỡ cố định rộng hơn chỗ
+     * ([spills]). Chữ tự co (autosize — ô giá trị STEP) tự lo, không xét; chữ TỰ DO một dòng được KHAI
+     * ([FitScale.freeLine]) chỉ tính khi còn hẹp hơn ngân sách của nó.
      */
     fun clipped(fs: FitScale): Boolean =
         fs.texts().any { tv -> visible(tv, fs) && !fs.autoSized(tv) && clippedText(tv, fs.freeLine(tv)) } ||
             fs.groups().any { g -> visible(g, fs) && spills(g) }
+
+    /**
+     * Trạng thái cắt của ô cho phép xét đo dò lại ([FitRules.Cell.check]): [FitRules.Clip.UNKNOWN] khi một chữ đang
+     * hiện CHƯA có bố cục — `TextView` bề rộng `WRAP` vừa đổi chữ đã bỏ bố cục và tự xin lượt đo (KDoc
+     * [FitRules.Clip.UNKNOWN]); [clipped] khi đó đọc "không cắt" là đọc nhầm (soát vòng 2, P1).
+     */
+    fun clip(fs: FitScale): FitRules.Clip = when {
+        fs.texts().any { tv -> visible(tv, fs) && !fs.autoSized(tv) && tv.layout == null } -> FitRules.Clip.UNKNOWN
+        clipped(fs) -> FitRules.Clip.YES
+        else -> FitRules.Clip.NO
+    }
 
     private fun clippedText(tv: TextView, free: Boolean): Boolean {
         val l = tv.layout ?: return false
@@ -152,10 +165,13 @@ internal object FitProbe {
         if (n == 0) return false
         val availW = tv.measuredWidth - tv.compoundPaddingLeft - tv.compoundPaddingRight
         val dots = (0 until n).any { l.getEllipsisCount(it) > 0 }
-        if (dots && (!free || FitRules.freeTextCut(availW.toFloat(), tv.textSize))) return true
+        if (FitRules.cut(dots, free, availW.toFloat(), tv.textSize)) return true
         val max = tv.maxLines
         val shown = if (max in 1 until n) max else n
         if (l.getLineEnd(shown - 1) < l.text.length) return true
+        // Số bị BẺ ĐÔI qua hai dòng (`100` → `10`/`0`, chữ `WRAP` không `maxLines` hẹp hơn chính nó) — không cắt, không
+        // tràn, nhưng không đọc được (soát vòng 2, P1; [FitRules.splitsNumber]).
+        for (i in 1 until shown) if (FitRules.splitsNumber(l.text, l.getLineStart(i))) return true
         // `getLineMax` (KHÔNG tính khoảng trắng cuối dòng — bộ ngắt dòng cũng không tính nó, `Layout.java:1387-1401`
         // r47), không `getLineWidth`: dòng "Sấy kính " vỡ sau dấu cách không bị báo cắt oan (soát vòng 1, P3).
         for (i in 0 until shown) if (l.getLineMax(i) > availW + 1f) return true
@@ -181,7 +197,10 @@ internal object FitProbe {
             FitRules.spills(g.measuredHeight, padY, kids.map(::down), stacked = row == LinearLayout.VERTICAL)
     }
 
-    /** Dấu nội dung chữ của ô (chữ + hiện/ẩn) — đổi ⇒ hộp tự nhiên có thể đã đổi. */
+    /**
+     * Dấu nội dung chữ của ô (chữ + hiện/ẩn của chữ KHÔNG phải nhãn) — đổi ⇒ hộp tự nhiên có thể đã đổi. Hiện/ẩn của
+     * nhãn do bộ áp sở hữu nên không vào dấu ([FitRules.sigStep], soát vòng 2 P2).
+     */
     fun signature(fs: FitScale): Int =
-        fs.texts().fold(17) { h, tv -> 31 * (31 * h + tv.text.toString().hashCode()) + tv.visibility }
+        fs.texts().fold(17) { h, tv -> FitRules.sigStep(h, tv.text.toString(), tv.visibility, fs.isLabel(tv)) }
 }

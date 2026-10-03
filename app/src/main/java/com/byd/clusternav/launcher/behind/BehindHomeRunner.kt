@@ -102,16 +102,21 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
 
     private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {
         // Dòng kết quả là NHẬT KÝ (in qua `Log.i` ở [submit]) — viết không dấu để bài canh i18n không coi là chữ trên màn.
+        val sh = shell()
+        val hidden = StagingDisplay(app)
+        // Review 287 [P3]: màn ảo ẩn bị GIỮ ở lượt trước — nhả cái đã trống app người dùng (0 lệnh nếu không có cái nào).
+        // Soát vòng 2 [P3]: chạy TRƯỚC cổng DISABLED — BEHIND-HOME tắt (ANCHOR_IN_FRONT) ngay ở lượt giữ màn ảo thì mọi lượt
+        // sau trả DISABLED và màn ảo + luồng `kachi-stage` + `ImageReader` sống tới khi Kachi chết. Thu hồi không cần cổng đó:
+        // một lệnh CHỈ ĐỌC + `VirtualDisplay.release` trong tiến trình, không đổi cửa sổ nào (KDoc [HiddenStageReclaim]).
+        if (sh != null) HiddenStageReclaim.run(sh, hidden, app.packageName)?.let { Log.i(TAG, it) }
         disabledReason?.let { return BehindHomeSequence.Outcome(BehindHomeSequence.Result.DISABLED, "$what -> disabled ($it), 0 cmd") }
-        val sh = shell() ?: return BehindHomeSequence.Outcome(BehindHomeSequence.Result.NO_CHANNEL, "$what -> no channel, 0 cmd")
+        if (sh == null) return BehindHomeSequence.Outcome(BehindHomeSequence.Result.NO_CHANNEL, "$what -> no channel, 0 cmd")
         val seq = BehindHomeSequence(
             sh, AndroidAnchor(app), app.packageName, AccessibilityRebind.GO_HOME_UNLESS_CAMERA,
             homeComps = DefaultHome.shownComponents(app),
             cameraSig = ClusterProfile.resolveCached(app).cameraSignature,
         )
-        val kit = Kit(seq, StagingDisplay(app), sh, app)
-        // Review 287 [P3]: màn ảo ẩn bị GIỮ ở lượt trước — nhả cái đã trống app người dùng (0 lệnh nếu không có cái nào).
-        HiddenStageReclaim.run(sh, kit.hidden, app.packageName)?.let { Log.i(TAG, it) }
+        val kit = Kit(seq, hidden, sh, app)
         val out = body(kit)
         if (out.result == BehindHomeSequence.Result.ANCHOR_IN_FRONT) disable("anchor-in-front")
         return out
@@ -157,16 +162,26 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
         /** MỘT luồng cho cả tiến trình = mutex BEHIND-HOME (R-nf4). Daemon: không giữ tiến trình sống. */
         private val EXEC = Executors.newSingleThreadExecutor { r -> Thread(r, "kachi-behind").apply { isDaemon = true } }
 
+        /** Công tắc tắt một chiều của tiến trình + người nghe (soát vòng 2 [P3] — KDoc [ProcessOffSwitch]). */
+        private val off = ProcessOffSwitch()
+
         /**
          * Lý do BEHIND-HOME bị TẮT trong tiến trình này — chỉ do một PHÉP ĐO đặt (giữ chỗ bị ROM chạy thật / lên trước
          * màn nhà). Cờ RAM này chỉ làm Kachi BỚT việc (lùi O1), không bao giờ quyết một lệnh đổi cửa sổ (CLAUDE.md §5).
          */
-        @Volatile var disabledReason: String? = null
-            private set
+        val disabledReason: String? get() = off.reason
 
         fun disable(reason: String) {
-            if (disabledReason == null) disabledReason = reason
+            off.off(reason)
         }
+
+        /**
+         * Soát vòng 2 [P3] — báo "BEHIND-HOME vừa TẮT" (một lần, ở luồng của bên tắt: `kachi-behind` hoặc luồng chính của
+         * giữ chỗ). Đầu ô nghe để bỏ nút *chạy nền* NGAY, kể cả khi chuỗi tắt nó là của chuyến lên xe / lối tắt.
+         */
+        fun addDisabledListener(l: () -> Unit) = off.listen(l)
+
+        fun removeDisabledListener(l: () -> Unit) = off.unlisten(l)
 
         /** Đẩy [task] lên luồng `kachi-behind` (mutex BEHIND-HOME). Hàng đợi từ chối ⇒ log, không ném. */
         internal fun execute(what: String, task: () -> Unit) {

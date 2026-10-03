@@ -39,7 +39,12 @@ class FitRulesWiringContractTest {
     fun `P1 - bo ap dat LayoutParams va weight theo FitRules lp`() {
         val params = SourceRoots.body(scale, "private fun params(")
         assertTrue(params.contains("FitRules.lp(FitRules.Lp(b.lpW, b.lpH, b.weight), k, rot)"), "LP đích từ :core")
-        assertTrue(params.contains("lp.weight = t.weight"), "weight phải được đặt (và trả về gốc khi về dạng DỌC)")
+        // ĐỔI GHIM (soát vòng 2, P3): bản vòng 1 ghim `lp.weight = t.weight` — ghi weight = số lúc chụp ở MỌI lượt áp,
+        // kéo thanh tiến trình nhạc (weight đổi mỗi nhịp) về vị trí lúc dựng. Nay weight đặt (và trả về gốc khi về dạng
+        // DỌC) qua [FitRules.weight]: chỉ khi bộ áp sở hữu nó (phép lật) — `FitRulesRound2Test` khoá hành vi.
+        assertTrue(params.contains("FitRules.weight(b.weight, t.weight, lp.weight, b.heldWeight)"), "weight do :core quyết")
+        assertTrue(params.contains("b.heldWeight = t.weight.takeIf { it != b.weight }"), "nhớ weight mình đang ghi đè")
+        assertFalse(params.contains("lp.weight = t.weight"), "ghi weight vô điều kiện = reset thanh tiến trình nhạc")
         // Bản lỗi: chỉ đổi trục con có weight, giữ MATCH_PARENT ⇒ con sau rộng 0.
         assertFalse(params.contains("if (rot && b.weight > 0f)"), "phép đổi trục tự viết ở :app đã thay bằng FitRules.lp")
     }
@@ -61,7 +66,9 @@ class FitRulesWiringContractTest {
         val spills = SourceRoots.body(probe, "private fun spills(g: ViewGroup)")
         assertTrue(spills.contains("FitRules.spills("), "phép tràn từ :core")
         val text = SourceRoots.body(probe, "private fun clippedText(")
-        assertTrue(text.contains("FitRules.freeTextCut("), "ngân sách chữ tự do từ :core")
+        // ĐỔI GHIM (soát vòng 2, P3): ngân sách đi qua `FitRules.cut` (gọi `freeTextCut` trong :core) — chỉ chữ tự do
+        // được KHAI mới hưởng ([FitRules.freeText]).
+        assertTrue(text.contains("FitRules.cut(dots, free, availW.toFloat(), tv.textSize)"), "ngân sách chữ tự do từ :core")
         // P3: getLineWidth tính cả khoảng trắng cuối dòng (Layout.java:1387-1401 r47) ⇒ báo cắt oan.
         assertTrue(text.contains("getLineMax("))
         assertFalse(text.contains("getLineWidth("))
@@ -74,14 +81,19 @@ class FitRulesWiringContractTest {
         val calls = Regex("FitGridLayout\\.contentChanged\\(v\\)").findAll(refresh).count()
         assertEquals(2, calls, "cả ô ĐỌC (refresh) lẫn ô HÀNH ĐỘNG (refreshAction) đều đổ chữ tại chỗ")
         assertTrue(refresh.contains("if (WidgetRefreshers.refreshAction(v, data.car)) FitGridLayout.contentChanged(v)"))
+        // ĐỔI GHIM (soát vòng 2, P1): nhịp đo dò lại (stale/grow/stuck/probedAt) dời vào [FitRules.Cell] ở `:core` để
+        // test thuần cả TRÌNH TỰ đổ tại chỗ → lượt đo → lượt khớp (`FitRulesRound2Test`); [FitRules.reprobe] nay được gọi
+        // TRONG `Cell.check`. Bản vòng 1 ghim `if (due(child)) requestLayout()` + `FitRules.reprobe(` ở `due` + `it.grow`
+        // /`it.stuck =` ở `refit` — đúng chỗ đã chốt "lượt thưa" khi bố cục chữ WRAP còn `null`.
         val hook = SourceRoots.body(layout, "private fun onContentChanged(")
-        assertTrue(hook.contains("if (due(child)) requestLayout()"), "chỉ xin MỘT lượt đo khi đến lượt đo dò lại")
-        val due = SourceRoots.body(layout, "private fun due(v: View)")
-        assertTrue(due.contains("FitProbe.signature(fs) == need.sig") && due.contains("FitRules.reprobe("))
+        assertTrue(hook.contains("FitRules.Verdict.DUE -> requestLayout()"), "chỉ xin MỘT lượt đo khi đến lượt đo dò lại")
+        val due = SourceRoots.body(layout, "private fun due(v: View, measured: Boolean)")
+        assertTrue(due.contains("FitProbe.signature(fs) == need.sig") && due.contains("it.cell.check("))
         assertFalse(due.contains("requestLayout") || due.contains("measure("), "due chỉ ĐỌC, không đo")
         val refit = SourceRoots.body(layout, "private fun refit(w: Int, h: Int)")
-        assertTrue(refit.contains("settled(it.need, FitProbe.need(v, fs, floors), it.grow)"), "nhận số đo mới qua settle")
-        assertTrue(refit.contains("it.stuck ="), "lượt không chữa được vết cắt ⇒ lượt sau thưa")
+        assertTrue(refit.contains("val raw = FitProbe.need(v, fs, floors)") && refit.contains("settled(it.need, raw, it.cell.grow)"),
+            "nhận số đo mới qua settle, theo cờ của Cell")
+        assertTrue(refit.contains("it.cell.fitted("), "lượt không chữa được vết cắt ⇒ lượt sau thưa (stuck trong Cell)")
         assertTrue(SourceRoots.body(layout, "private fun settled(").contains("FitRules.settle("))
     }
 
@@ -110,8 +122,13 @@ class FitRulesWiringContractTest {
                     .anyMatch { strip(it.toFile().readText()).contains(token) }
             }
         }
-        listOf("FitRules.lp(", "FitRules.spills(", "FitRules.freeTextCut(", "FitRules.usable(", "FitRules.reprobe(",
-            "FitRules.settle(").forEach { assertTrue(uses(it, "FitRules.kt"), "$it chưa có chỗ gọi ở :app") }
+        // ĐỔI GHIM (soát vòng 2): `FitRules.reprobe(` và `FitRules.freeTextCut(` nay được gọi trong `:core`
+        // (`Cell.check`, `cut`) — :app đi qua `FitRules.Cell(` / `FitRules.cut(`; `FitRulesRound2WiringContractTest`
+        // khoá hai chỗ gọi trong :core.
+        listOf("FitRules.lp(", "FitRules.spills(", "FitRules.cut(", "FitRules.usable(", "FitRules.Cell(",
+            "FitRules.settle(", "FitRules.weight(", "FitRules.freeText(", "FitRules.splitsNumber(", "FitRules.sigStep(",
+            "FitRules.known(",
+        ).forEach { assertTrue(uses(it, "FitRules.kt"), "$it chưa có chỗ gọi ở :app") }
         assertTrue(uses("FitGridLayout.contentChanged(", "FitGridLayout.kt"))
         assertTrue(uses("KachiIcons.refit(", "KachiIcons.kt"))
         listOf(

@@ -40,11 +40,13 @@ ul{padding-left:22px}li{margin:3px 0}
 <body><div class="wrap">
 
 <h1>Kachi thêm tiếng Trung · Thái · Mã Lai</h1>
-<p class="muted">Slug: <code>kachi-i18n-zh-th-ms</code> · Branch <code>feat/i18n-zh-th-ms</code> · <span class="pill">Trạng thái: Current — đang làm</span> · Cập nhật 2026-10-03 · Chủ: dangkhoi</p>
-<p class="muted">Mục đích: thêm ba ngôn ngữ giao diện (简体中文 · ไทย · Bahasa Melayu) cạnh Tiếng Việt / English; giọng nói ghi rõ chỉ hiểu tiếng Việt. Gom vào 2.87, chưa OTA.</p>
+<p class="muted">Slug: <code>kachi-i18n-zh-th-ms</code> · Branch <code>feat/i18n-zh-th-ms</code> · <span class="pill">Trạng thái: Current — mã xong, chờ QA máy ảo + đăng 2.87</span> · Cập nhật 2026-10-04 · Chủ: dangkhoi</p>
+<p class="muted">Mục đích: thêm ba ngôn ngữ giao diện (简体中文 · ไทย · Bahasa Melayu) cạnh Tiếng Việt / English; giọng nói ghi rõ chỉ hiểu tiếng Việt. Gom vào 2.87, chưa OTA. Mã off-car T1–T5 xong 03/10, senior review 2 vòng + vá 04/10 (7 931 test / 0 · lint 0 [ĐO]); T6 máy ảo + T7 quét bảo mật/commit cuối: TODO (backlog <code>REL-2.87</code>).</p>
 
 <h2>1. Changelog</h2>
 <ul>
+<li><b>Pass 2 — 2026-10-04</b>: senior review 2 vòng (§10) + vá: R9 thêm ba chỗ tra chuỗi qua Context ứng dụng + bài canh quét; R6 giọng đọc theo tiếng từng câu (<code>TtsVoiceLang</code>); R3 thêm phép soát “Mã Lai chép nguyên tiếng Anh” cho bảng cặp; §4.2 sửa câu từ đồng hình Mã Lai; R-nf5 harness kiểm tiếng giọng nói. Trạng thái → mã xong, chờ QA máy ảo + đăng 2.87.</li>
+<li><b>Pass 1 — 2026-10-03</b>: T1–T5 có mã (§9): cơ chế, giọng nói, dịch, ráp, soát dịch 3 tiếng; P2 sửa theo owner (câu mẫu để nói là tiếng Việt ở mọi tiếng).</li>
 <li><b>Pass 0 — 2026-10-03</b>: Khởi tạo. Owner: <i>"làm thêm tiếng Trung, Thái, Mã lai đi, cho nó vui, chỗ voice ghi rõ chỉ hỗ trợ tiếng việt hay tiếng anh gì là đc"</i> → <i>"Cứ làm nhé, chưa OTA, chờ có bug anh em báo mình gôm luôn"</i>. Kiểm kê bằng 3 agent đọc mã (workflow <code>wf_76dc4a6f-f42</code>).</li>
 </ul>
 
@@ -76,13 +78,13 @@ ul{padding-left:22px}li{margin:3px 0}
 <tr><th>#</th><th>Yêu cầu</th><th>Nghiệm thu</th></tr>
 <tr><td>R1</td><td>Bộ chọn ngôn ngữ có 6 mục: Theo xe · Tiếng Việt · English · 简体中文 · ไทย · Bahasa Melayu (tên tiếng viết bằng chính tiếng đó)</td><td>chọn → màn dựng lại đúng tiếng; lưu theo hồ sơ như hiện nay; đổi hồ sơ không sập; mã đĩa <code>zh</code>/<code>th</code>/<code>ms</code></td></tr>
 <tr><td>R2</td><td>"Theo xe" giữ nguyên luật cũ: máy <code>vi</code> → Tiếng Việt, còn lại → English</td><td>test: hệ thống zh/th/ms + AUTO ⇒ EN (không tự đổi giao diện người đang dùng)</td></tr>
-<tr><td>R3</td><td>Mọi chữ đang có bản EN đều có bản zh/th/ms: tài nguyên, cặp trong mã, nhãn registry, bộ dịch cũ <code>Lang.t</code></td><td>bài canh off-car đỏ nếu thiếu một khoá/cặp ở bất kỳ tiếng nào; lúc chạy thiếu ⇒ lùi English (không phải tiếng Việt)</td></tr>
+<tr><td>R3</td><td>Mọi chữ đang có bản EN đều có bản zh/th/ms: tài nguyên, cặp trong mã, nhãn registry, bộ dịch cũ <code>Lang.t</code></td><td>bài canh off-car đỏ nếu thiếu một khoá/cặp ở bất kỳ tiếng nào; lúc chạy thiếu ⇒ lùi English (không phải tiếng Việt). <i>Soát 04/10</i>: bảng cặp <code>ms</code> trùng nguyên văn bản Anh cũng đỏ (<code>I18nPairs.audit</code>, danh sách cho phép <code>MS_SAME_AS_EN</code> 5 từ mượn có lý do), như thư mục tài nguyên</td></tr>
 <tr><td>R4</td><td>Giọng nói ghi rõ <b>chỉ hiểu tiếng Việt</b></td><td>dòng thông báo (dịch đủ 5 tiếng) ở: đầu Cài đặt › Giọng nói, đầu danh sách câu lệnh, ô gõ thử lệnh, ghi chú bộ chọn ngôn ngữ</td></tr>
 <tr><td>R5</td><td>Danh sách câu lệnh: cột <i>câu nói</i> luôn là câu tiếng Việt parser hiểu (mọi tiếng giao diện, kể cả EN); cột <i>Kachi làm gì</i> theo tiếng giao diện</td><td>test: mọi câu mẫu ở mọi <code>Lang</code> parse ra đúng ý định</td></tr>
-<tr><td>R6</td><td>Ngôn ngữ của giọng nói = EN nếu giao diện EN, còn lại VI; áp như nhau ở tiến trình chính và <code>:wake</code></td><td>giao diện zh/th/ms: câu trả lời đọc/hiện tiếng Việt, giọng đọc + geocoder locale <code>vi</code>; giao diện EN: phím vô-lăng trả lời EN như nút mic</td></tr>
+<tr><td>R6</td><td>Ngôn ngữ của giọng nói = EN nếu giao diện EN, còn lại VI; áp như nhau ở tiến trình chính và <code>:wake</code></td><td>giao diện zh/th/ms: câu trả lời đọc/hiện tiếng Việt, giọng đọc + geocoder locale <code>vi</code>; giao diện EN: phím vô-lăng trả lời EN như nút mic. <i>Soát 04/10</i>: máy đọc hệ thống theo tiếng TỪNG câu (phiên <code>:wake</code> dùng lại suốt đời tiến trình — đổi tiếng giữa hai lượt thì giọng + <code>langStatus</code> đổi theo, <code>TtsVoiceLang</code>); lỗi tạm của engine (chưa nối ⇒ <code>LANG_NOT_SUPPORTED</code>) hỏi lại sau 5 s, số dùng được là đáp án cuối; đặt tiếng đầu xong mới mở cổng (<code>follow</code> trước <code>inited</code>) ⇒ không khoá chéo với <code>mStartLock</code> của <code>onInit</code></td></tr>
 <tr><td>R7</td><td>Ngày/giờ theo tiếng giao diện; không lịch Phật giáo; giờ 24h</td><td>tên thứ đúng tiếng; năm (nếu có) dương lịch; <code>SettingsSectionsTrip.kt:179</code> hết theo locale máy</td></tr>
 <tr><td>R8</td><td>Chữ không bị cắt mất nghĩa</td><td>ảnh chụp máy ảo các màn chính × zh/th/ms; dòng 1-dòng bị tràn có "…"</td></tr>
-<tr><td>R9</td><td>Màn/dịch vụ chưa bọc ngôn ngữ không đổi theo locale máy sau khi thêm thư mục mới</td><td>DiagActivity, VietMapWidgetDiagActivity, ClusterBlackActivity, ClusterNavActivity, thông báo/toast của <code>:wake</code> dùng lựa chọn của người dùng</td></tr>
+<tr><td>R9</td><td>Màn/dịch vụ chưa bọc ngôn ngữ không đổi theo locale máy sau khi thêm thư mục mới</td><td>DiagActivity, VietMapWidgetDiagActivity, ClusterBlackActivity, ClusterNavActivity, thông báo/toast của <code>:wake</code> dùng lựa chọn của người dùng. <i>Soát 04/10</i>: mọi chỗ tiến trình chính tra chuỗi qua Context ỨNG DỤNG cũng vậy — đã vá ba chỗ: nhãn góc camera trên lớp phủ (<code>CameraOverlayMask.labelFor</code>), toast <code>kachi_sc_place_failed</code> (<code>KachiHomeSlots</code>), toast <code>kachi_access_feature_blocked</code> (<code>ShellAccessCard</code>) — tra qua <code>LangHost.localized</code>, Context ứng dụng giữ cho WindowManager/Toast/View; bài canh <code>LauncherLocaleContractTest</code> quét toàn <code>launcher/</code> bằng <code>AppCtxResScan</code> (danh sách trắng rỗng)</td></tr>
 </table>
 <h3>Phi chức năng</h3>
 <ul>
@@ -90,7 +92,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <li>R-nf2. <code>:core</code> vẫn JVM thuần (0 <code>android.*</code>); bảng dịch nạp lười, một lần mỗi tiếng.</li>
 <li>R-nf3. Không đụng <code>values/strings.xml</code> (niêm phong). 0 tệp Kotlin &gt; 500 dòng; <code>Voice*.kt</code> ≤ 500 (bài canh <code>VoiceListenWiringContractTest</code>).</li>
 <li>R-nf4. Không thêm thư viện. Không thêm nhãn zh/th/ms vào ngữ pháp/hotword giọng nói.</li>
-<li>R-nf5. Harness <code>scripts/emulator/voice-e2e.sh</code> chạy lại, không tụt so với mốc (T1 108/108, T2 23/27).</li>
+<li>R-nf5. Harness <code>scripts/emulator/voice-e2e.sh</code> chạy lại, không tụt so với mốc (T1 108/108, T2 23/27). <i>Soát 04/10</i>: harness đọc <code>look.voice_lang</code> (cầu kiểm thử, cùng biểu thức <code>previewOf</code> dùng) TRƯỚC T1/T2 và SAU mỗi ca <code>profile:*</code>; khác <code>vi</code> ⇒ dừng, câu dừng nêu tên hồ sơ mang ngôn ngữ sai (và nói rõ harness đã trả máy về hồ sơ gốc). <code>bash -n</code> sạch; CHƯA chạy trên máy ảo.</li>
 </ul>
 
 <h2>4. Design</h2>
@@ -121,7 +123,7 @@ ul{padding-left:22px}li{margin:3px 0}
   <div class="fnode new"><b>ZH/TH/MS</b><span>catalog[(vi,en)] → catalog[en] → en</span></div>
 </div>
 <ul>
-<li><b>Khoá là cặp (vi, en)</b>, không chỉ en: tránh từ đồng hình (<i>Open</i> = lệnh ở <code>ControlRegistry.kt:344</code> vs trạng thái ở <code>TelemetryReadout.kt:381</code>; tiếng Mã Lai <i>Buka</i> ≠ <i>Terbuka</i>). Mọi call site đều có sẵn cả hai chữ nên không tốn gì. Dòng chỉ-en là đường lùi chung.</li>
+<li><b>Khoá là cặp (vi, en)</b>, không chỉ en: tránh từ đồng hình. Mọi call site đều có sẵn cả hai chữ nên không tốn gì. Dòng chỉ-en là đường lùi chung. <b>Giới hạn (sửa 04/10)</b>: khoá cặp chỉ tách từ đồng hình khi chữ VIỆT cũng khác. Cặp <code>("Mở","Open")</code> dùng CHUNG cho lệnh (nút rèm che nắng <code>ControlRegistry</code> → CapTest/gán phím) và trạng thái (<code>TelemetryReadout.openShut</code>) ⇒ không tách được; bản <code>ms</code> dùng <i>Buka</i> / <i>Tutup</i> (cả <code>("Đóng","Closed")</code> → <i>Tutup</i>) — đọc đúng cả như lệnh lẫn trạng thái kiểu biển hiệu BUKA/TUTUP. KDoc <code>I18nCatalog</code> + <code>ControlDef.argsIn</code> sửa theo.</li>
 <li><b>Câu có biến</b> chuyển sang chỗ trống tường minh <code>Strings.f("{0} nấc", "by {0}", n)</code> — khoá tĩnh, bản dịch được đổi trật tự từ. Plural tiếng Anh viết trong đối số (<code>if (n == 1) "door" else "doors"</code>) tách thành hai mẫu, cả hai vào bảng.</li>
 <li><b>Mảnh câu</b> (<code>"Turn on "</code> + nhãn) giữ dạng mảnh; bản dịch tự quyết khoảng trắng (zh/th không cách).</li>
 <li><b>Định dạng tệp</b>: TSV UTF-8 <code>vi⇥en⇥dịch</code>, một dòng một cặp, <code>\t \n \\</code> thoát; nạp qua classpath của <code>:core</code> (đóng gói vào APK như tài nguyên Java). Không dùng <code>mapOf</code> Kotlin vì giới hạn 64 KB/phương thức và luật 500 dòng.</li>
@@ -140,6 +142,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <li><code>:wake</code>: tiến trình chính ghi tiếng giao diện đã giải nghĩa vào <code>VoiceGrammarSnapshot</code> (lúc ghi ảnh chụp và lúc đổi tiếng); <code>:wake</code> đọc ra, truyền vào phiên, đặt locale cho tài nguyên của nó. Không ghi <code>Strings.current</code> ở <code>:wake</code>, không gọi <code>WorkspacePrefs.langMode()</code> (tự ghi khi migrate).</li>
 <li>Danh sách câu lệnh: câu nói dựng bằng <code>Lang.VI</code> tường minh; tiêu đề nhóm + cột "làm gì" (<code>VoiceReply.preview(i, uiLang)</code>) theo giao diện. Câu <i>"không nghe rõ"</i> đọc ra lấy từ <code>:core</code> theo voiceLang; tấm chữ giữ <code>R.string</code>.</li>
 <li>Giọng đọc Android + geocoder: <code>LangHost.voiceLocale()</code> (đặt trong <code>LangHost.kt</code> theo luật một-chỗ-dựng-Locale).</li>
+<li><b>Máy đọc hệ thống theo tiếng từng câu (04/10)</b>: <code>:core TtsVoiceLang</code> (Locale muốn = lambda đọc lại mỗi lượt; khác Locale đã đặt ⇒ <code>isLanguageAvailable</code> + <code>setLanguage</code> chỉ khi có giọng + cập nhật số trạng thái; trùng ⇒ một phép so; số &lt; <code>LANG_AVAILABLE</code> hỏi lại sau <code>RECHECK_MS</code> = 5 s). <code>AndroidTtsSpeaker.available()</code> (cửa của <code>speak</code>) và <code>languageStatus()</code> (cửa của <code>VoiceSpeakerRouter.probe</code>) đều đi qua <code>follow()</code>. Nguồn: AOSP r47 <code>TextToSpeech.java:2220-2228, 832-838, 756-766, 1786-1808, 2300-2321</code> (r34 cùng cấu trúc).</li>
 </ul>
 
 <h3>4.5 Hiển thị</h3>
@@ -158,14 +161,14 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h2>5. Tasks (DAG)</h2>
 <table>
-<tr><th>#</th><th>Task</th><th>Phụ thuộc</th></tr>
-<tr><td>T1</td><td>Cơ chế: <code>Lang</code>/<code>LangMode</code>/<code>Lang.Choice</code> 5 tiếng · <code>I18nCatalog</code> + <code>Strings.f</code> · chuyển 72 câu có biến · <code>LangHost</code> 5 nhánh + <code>localized</code> · màn phụ bọc ngôn ngữ · bộ chọn 6 mục · khoá thông báo "chỉ hiểu tiếng Việt" (VI/EN) · bài canh mở rộng · công cụ xuất danh sách cặp cần dịch</td><td>—</td></tr>
-<tr><td>T2</td><td>Giọng nói: voiceLang, <code>lang</code> tường minh cho đường nói, <code>:wake</code> qua ảnh chụp, danh sách câu lệnh, voiceLocale, đặt thông báo vào 3 màn, tách VoiceReply</td><td>T1</td></tr>
-<tr><td>T3</td><td>Dịch zh / th / ms (tài nguyên + bảng cặp), đối chiếu thuật ngữ BYD; ghi vào thư mục tạm, chưa vào repo</td><td>T1 (danh sách cặp)</td></tr>
-<tr><td>T4</td><td>Ráp bản dịch, bù cặp T2 sinh thêm, build + toàn bộ test + lint</td><td>T2, T3</td></tr>
-<tr><td>T5</td><td>Soát dịch độc lập từng tiếng (dịch ngược, thuật ngữ, độ dài)</td><td>T4</td></tr>
-<tr><td>T6</td><td>Máy ảo: chụp các màn chính × zh/th/ms, sửa chữ tràn; voice-e2e chạy lại</td><td>T4</td></tr>
-<tr><td>T7</td><td>Senior review (vòng lặp tới 0 phát hiện) + docs/INDEX/BACKLOG + quét bảo mật + commit mã nguồn (không APK)</td><td>T5, T6</td></tr>
+<tr><th>#</th><th>Task</th><th>Phụ thuộc</th><th>Trạng thái (04/10)</th></tr>
+<tr><td>T1</td><td>Cơ chế: <code>Lang</code>/<code>LangMode</code>/<code>Lang.Choice</code> 5 tiếng · <code>I18nCatalog</code> + <code>Strings.f</code> · chuyển 72 câu có biến · <code>LangHost</code> 5 nhánh + <code>localized</code> · màn phụ bọc ngôn ngữ · bộ chọn 6 mục · khoá thông báo "chỉ hiểu tiếng Việt" (VI/EN) · bài canh mở rộng · công cụ xuất danh sách cặp cần dịch</td><td>—</td><td>✅ 03/10</td></tr>
+<tr><td>T2</td><td>Giọng nói: voiceLang, <code>lang</code> tường minh cho đường nói, <code>:wake</code> qua ảnh chụp, danh sách câu lệnh, voiceLocale, đặt thông báo vào 3 màn, tách VoiceReply</td><td>T1</td><td>✅ 03/10 (+ P2 owner 03/10)</td></tr>
+<tr><td>T3</td><td>Dịch zh / th / ms (tài nguyên + bảng cặp), đối chiếu thuật ngữ BYD; ghi vào thư mục tạm, chưa vào repo</td><td>T1 (danh sách cặp)</td><td>✅ 03/10</td></tr>
+<tr><td>T4</td><td>Ráp bản dịch, bù cặp T2 sinh thêm, build + toàn bộ test + lint</td><td>T2, T3</td><td>✅ 03/10</td></tr>
+<tr><td>T5</td><td>Soát dịch độc lập từng tiếng (dịch ngược, thuật ngữ, độ dài)</td><td>T4</td><td>✅ 03/10 (zh · th · ms)</td></tr>
+<tr><td>T6</td><td>Máy ảo: chụp các màn chính × zh/th/ms, sửa chữ tràn; voice-e2e chạy lại</td><td>T4</td><td>TODO — chưa chạy máy ảo</td></tr>
+<tr><td>T7</td><td>Senior review (vòng lặp tới 0 phát hiện) + docs/INDEX/BACKLOG + quét bảo mật + commit mã nguồn (không APK)</td><td>T5, T6</td><td>◐ senior review 2 vòng xong, PATCHED (§10; mã đổi ⇒ còn một lượt soát) · docs/INDEX/BACKLOG ✅ 04/10 · quét bảo mật + commit cuối TODO (đang có commit WIP <code>686745f</code> … <code>8104041</code>)</td></tr>
 </table>
 
 <h2>6. Verification</h2>
@@ -220,6 +223,12 @@ ul{padding-left:22px}li{margin:3px 0}
 <li><b>2026-10-03 · test</b> — mới: <code>VoiceSpokenLangTest</code> 5 · <code>VoiceGrammarSnapshotLangTest</code> 4 · <code>VoiceDispatcherLangTest</code> 3 · <code>VoiceLangWiringContractTest</code> 7 (+1 <code>VoiceCommandCatalogTest</code>, +1 <code>LangHostTest</code>). Thử-phá [ĐO]: bỏ <code>lang</code> ở <code>VoiceReplyPreview.by</code> ⇒ 2/5 đỏ.</li>
 </ul>
 
+<h3>T3 — dịch zh / th / ms</h3>
+<ul>
+<li><b>2026-10-03 · kết quả</b> [ĐO] — mỗi tiếng: tài nguyên 721 dòng (711 chuỗi + 5 plurals <code>other</code> + 5 khoá <code>strings.xml</code>; đề bài ghi 720 — lệch một vì T1 thêm <code>kachi_voice_lang_only</code>) + bảng cặp 746 dòng; vi/en của bảng trùng byte <code>pairs.tsv</code>, cùng thứ tự; tham số định dạng = EN; nhãn ngắn trong trần (zh6 · th14 · ms14). Ghi vào thư mục tạm rồi T4 ráp.</li>
+<li><b>2026-10-03 · thuật ngữ</b> — đối chiếu chữ BYD trong <code>CarSetting.apk</code>/<code>AirConditioning.apk</code> (zh-rCN/th/ms) khi có từ khớp (vd zh 上电/下电, 仪表, 前除霜, 内循环, “N挡”; th กรองอากาศ, แอร์ cho nhãn dock; ms Tetapan, Pemandu). Không đưa tệp BYD vào repo.</li>
+</ul>
+
 <h3>T4 — ráp bản dịch + kiểm toàn bộ</h3>
 <ul>
 <li><b>2026-10-03 · ráp</b> — <code>values-zh-rCN/-th/-ms</code>: mỗi thư mục <code>strings_kachi.xml</code> 711 chuỗi + 5 plurals (<code>other</code>) + <code>strings.xml</code> 5 khoá; 0 khoá thiếu/thừa. Bảng cặp 747 dòng/tiếng (T4 tự dịch 2 cặp T2 sinh thêm). <code>I18nScripts.NAME_WORDS</code> + <code>Hey</code>, <code>dp</code>, <code>px</code>. T4 sửa 16 chỗ bản dịch (R4 + nhất quán tên đang hiện trên màn).</li>
@@ -238,9 +247,29 @@ ul{padding-left:22px}li{margin:3px 0}
 <li><b>2026-10-03 · kết quả</b> [ĐO, đếm XML, chạy TẬP TRUNG vì người soát dịch sửa song song] — <code>:core</code> 20 lớp · <b>189 tests, 0 đỏ</b> (I18n* · TopStrip* · VoiceClarify* · VoiceCommandCatalog* · VoiceSpokenLang* · VoiceGrammarSnapshot* · LangCoverage* · VoiceReply* · VoiceConversationGolden*); <code>:app</code> 25 lớp · <b>225 tests, 0 đỏ</b> (LauncherI18n* · LauncherLocale* · VoiceWake* · VoiceLang* · VoiceClarify* · VoiceFastNatural* · VoiceCommand* · LangHost* · …). Test mới: <code>TopStripChipLevelLangTest</code> 3 · <code>VoiceWakeUiLangContractTest</code> 5 · <code>VoiceClarifyTest</code> +1 · <code>LauncherI18nLocalesContractTest</code> +5 (một bài × 5 thư mục). Bộ đầy đủ: điều phối chạy sau.</li>
 </ul>
 
+<h3>T5 — soát dịch độc lập (03/10, ba người soát song song, chỉ sửa giá trị — khoá, thứ tự, cột vi/en giữ byte)</h3>
+<ul>
+<li><b>zh</b> — tài nguyên 207 chuỗi (57 chữ/thuật ngữ + 150 chỉ khoảng trắng) + 1 khoá <code>strings.xml</code>; bảng cặp 44 dòng. Quyết định: KHÔNG chèn khoảng trắng giữa chữ Hán và Latin/số (<code>Kachi设置</code>, <code>%1$d个框</code>) — [ĐO] bảng thuật ngữ BYD zh-rCN 330 chỗ nối không cách / 155 có cách (phần lớn từ chuỗi AOSP); trừ tiêu đề hộp thoại AOSP trích nguyên văn. Hộp “允许 USB 调试吗？”: nút là “允许” (không phải 确定) [ĐO AOSP SystemUI r47 <code>UsbDebuggingActivity.java:78</code> / r34 <code>:91</code>] ⇒ 4 câu hướng dẫn sửa.</li>
+<li><b>th</b> — tài nguyên 34 chuỗi + bảng cặp 35 dòng; 14 xung đột thuật ngữ chốt (vd “navigation source” = แหล่งข้อมูลนำทาง ở mọi chỗ; “Fit” giữ hai chữ vì VI khác: tiêu đề hàng “Cách phủ” vs lựa chọn “Vừa khung”).</li>
+<li><b>ms</b> — tài nguyên 41 chuỗi + bảng cặp 44 dòng; 16 xung đột thuật ngữ chốt (Automatik · Tanda had laju · Pancar ke panel instrumen · nút vật lý = <i>butang</i> · Pemurnian udara theo BYD…). Câu kiểu Indonesia (<i>menerapkan</i>…) sửa sang Mã Lai. [SUY] “Kebolehaksesan”, đường Cài đặt Android trong <code>kachi_bridge_notification_fallback</code> lấy từ trí nhớ.</li>
+<li>Ba khoá của lane giọng nói (<code>kachi_voice_note</code>, <code>kachi_places_note</code>, <code>kachi_voice_cmds_sub</code>) + dòng “Still not sure…” không bị người soát chạm (kịch bản khẳng định trùng byte trước/sau).</li>
+</ul>
+
+<h3>Soát 2.87 — vá sau senior review (04/10)</h3>
+<ul>
+<li><b>2026-10-04 · R9 [P2]</b> — ba chỗ tra chuỗi qua Context ứng dụng (camera overlay, hai toast) ⇒ <code>LangHost.localized</code>; bài canh <code>AppCtxResScan</code> bắt (1) <code>&lt;ctx-ứng-dụng&gt;.getString/getText/getQuantityString…</code>, (2) <code>Toast.makeText(&lt;ctx-ứng-dụng&gt;, R.string…)</code>, (3) gọi hàm tra chuỗi với Context ứng dụng/bí danh. Phá thử: gỡ ba bản vá ⇒ bài canh liệt kê đúng 3 chỗ [ĐO].</li>
+<li><b>2026-10-04 · Mã Lai [P3]</b> — <code>ms.tsv</code>: <code>Mở/Open</code> → <i>Buka</i>, <code>Đóng/Close</code> → <i>Tutup</i>, <code>Đóng/Closed</code> → <i>Tutup</i> (câu “Tertutup · {0} belum dibaca” giữ — là câu). <code>I18nPairs.audit</code> thêm phép “ms = en” với <code>MS_SAME_AS_EN</code> (<code>{0} item</code>, <code>Neutral</code>, <code>Manual</code>, <code>Odometer</code>, <code>Gear</code>) + bài “mục MS_SAME_AS_EN không chết”.</li>
+<li><b>2026-10-04 · giọng đọc <code>:wake</code> [P2] + vòng 2 [P3]</b> — <code>TtsVoiceLang</code> (§4.4); vòng 2: đặt tiếng đầu trước khi mở cổng <code>inited</code> (khoá onInit), hỏi lại lỗi tạm sau 5 s. Test: <code>TtsVoiceLangTest</code> (đổi tiếng giữa hai câu, tiếng thiếu giọng, engine ném, lỗi tạm rồi dùng được) · <code>VoiceLangWiringContractTest</code> (thứ tự + một chỗ mở cổng). Hai ghim cũ dời có lý do (Locale không còn ở <code>configure</code>; ngưỡng <code>LANG_AVAILABLE</code> ở <code>TtsVoiceLang</code>).</li>
+<li><b>2026-10-04 · harness [P3]</b> — <code>voice-e2e.sh</code> <code>require_voice_vi</code> (R-nf5); cầu kiểm thử phơi <code>look.voice_lang</code>. Không thêm lệnh đổi ngôn ngữ vào cầu (cần owner duyệt). Ngoài phạm vi, chưa sửa: <code>voice-audio-e2e.sh</code> không kiểm tiếng.</li>
+<li><b>Kết quả gộp</b> [ĐO, đếm XML]: 7 931 test / 0 · lint 0. Hiển thị thật zh/th/ms trên máy ảo/xe: [CHƯA BIẾT] (T6).</li>
+</ul>
+
 <h2>10. Reviewer Log</h2>
 <ul>
-<li>(chưa có pass review.)</li>
+<li><b>Pass 1 — 2026-10-04</b> (reviewer i18n + reviewer giọng nói, chỉ đọc): cơ chế đứng vững — VI/EN không đổi byte ở 84 chỗ chuyển <code>$</code>→<code>{n}</code>, nạp bảng an toàn luồng, lỗi sập <code>Lang.Choice</code> đã chữa có bài canh. [P2] R9: nhãn camera trên overlay + toast lối tắt + thẻ quyền đọc chữ qua Context ứng dụng ⇒ theo locale máy (đã vá: <code>LangHost.localized</code> + bài canh quét). [P2] giọng đọc <code>:wake</code> giữ ngôn ngữ lúc dựng phiên (đã vá: cấu hình lại theo lượt). [P3] tiếng Mã Lai "Open/Close" lệnh vs trạng thái; bảng dịch thiếu kiểm "Mã Lai chép nguyên tiếng Anh" (đã thêm). Chất lượng dịch: ~85 cặp + 40 khoá mỗi tiếng dịch ngược — tốt.</li>
+<li><b>Pass 2 — 2026-10-04</b>: các mục vòng 1 RESOLVED; còn [P3] khoá thứ tự TTS + bộ nhớ lỗi tạm của engine (đang vá vòng 2).</li>
+<li><b>Pass 2 — kết quả vá (2026-10-04)</b>: [P3] khoá onInit (<code>follow</code> trước <code>inited</code>) · [P3] lỗi tạm engine hỏi lại sau 5 s · [P3] câu dừng <code>voice-e2e.sh</code> nêu tên hồ sơ · [P3] spec lệch mã (R6/R9/R-nf5/§4.2) — áp ở lượt cập nhật tài liệu 04/10. Mỗi bản vá phá một lần thấy đỏ [ĐO]. Kiểm gộp 7 931 test / 0 · lint 0 [ĐO]. Verdict: PATCHED — còn một lượt soát (review loop) + T6 máy ảo.</li>
+
 </ul>
 
 </div></body>

@@ -39,7 +39,11 @@ import com.byd.clusternav.R
  * hơn được qua đúng hai đầu vào đó. Bộ giải vẫn nâng lớp che lên khi vùng ảnh sáng cần (R-OP3).
  * [veilMax] — trần lớp che: [GlassVeil.MAX] ở 100 % (thẻ không bao giờ đục hẳn); dưới 100 % là 1.0, vì bề mặt đã trong
  * hơn thì trên vùng ảnh cực đoan (bảng sáng trên ảnh đen tuyền) 90 % lớp che không còn đủ giữ chữ [ĐO bài quét].
- * [overlayFloor] — sàn thêm cho thứ bán trong suốt nằm TRÊN thẻ (khay chở ô nút/ô cảnh báo); `null` ở 100 %.
+ * [overlayFloor] — sàn thêm cho thứ bán trong suốt nằm TRÊN thẻ (khay chở ô nút/ô cảnh báo); `null` ở 100 %. Nhận bề mặt
+ * ĐANG VẼ của vùng (soát vòng 2: có thể đục hơn [surfaces] — [surfaceAt]).
+ * [surfaceAt] — soát vòng 2 [P3]: hệ số bề mặt theo độ chói vùng ảnh (`KachiChrome.glassSurface`); `null` = bề mặt cố định
+ * [surfaces]. Có ⇒ bộ giải nhận [pair] ở hệ số đó và [onSurface] đặt CÙNG hệ số lên lớp bề mặt thật (lớp `top` của
+ * `KachiGlass.paint`) — thứ đưa bộ giải và thứ được vẽ là một số. Hệ số trả bằng hệ số dựng ⇒ đúng như trước bản vá.
  */
 class WallWindowDrawable(
     private val art: WallArt,
@@ -50,7 +54,10 @@ class WallWindowDrawable(
     private val inks: IntArray,
     private val veilMin: Double = GlassVeil.MIN,
     private val veilMax: Double = GlassVeil.MAX,
-    private val overlayFloor: ((Double) -> Double)? = null,
+    private val overlayFloor: ((Double, IntArray) -> Double)? = null,
+    private val surfaceAt: ((Double) -> Double)? = null,
+    private val pair: IntArray = surfaces,
+    private val onSurface: ((Double) -> Unit)? = null,
 ) : Drawable() {
     private val veilOpaque = ColorMath.withAlpha(veil, 255)
     private val shader = BitmapShader(art.blurred, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
@@ -88,8 +95,11 @@ class WallWindowDrawable(
         matrix.postTranslate(-loc[0].toFloat(), -loc[1].toFloat())
         shader.setLocalMatrix(matrix)
         val lum = art.luminanceOf(loc[0], loc[1], loc[0] + w, loc[1] + h)
-        val alpha = maxOf(GlassVeil.alphaFor(lum, veilOpaque, surfaces, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum) ?: 0.0)
+        val s = surfaceAt?.invoke(lum)
+        val shown = if (s == null) surfaces else IntArray(pair.size) { ChromeStack.faded(pair[it], s) }
+        val alpha = maxOf(GlassVeil.alphaFor(lum, veilOpaque, shown, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum, shown) ?: 0.0)
         veilPaint.color = ColorMath.withAlpha(veilOpaque, (alpha * 255).toInt())
+        if (s != null) onSurface?.invoke(s)
         invalidateSelf()
     }
 
@@ -232,6 +242,12 @@ object KachiGlass {
         val veil = KachiTheme.c(KachiTheme.BG)
         val inks = veilInks(spec.tone)
         val extra = spec.extraInks.filterNot { it in inks }.toIntArray()
+        val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)
+        if (spec.fade) KachiChrome.fade(top)
+        // Soát vòng 2 [P3]: thẻ có thứ phải giữ ngoài chữ trung tính (khay · mực màu KHAI) ⇒ bề mặt theo vùng ảnh, không chỉ lớp
+        // che — lớp che 100 % không cứu được chỗ hụt do chính bề mặt mờ (ACCENT theo ảnh). Hệ số trả = f ⇒ y như trước.
+        val fits = f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())
+        val well = spec.tone == SurfaceTone.WELL
         val window = WallWindowDrawable(
             art = art,
             radius = KachiSpace.dpf(ctx, spec.radius),
@@ -241,12 +257,13 @@ object KachiGlass {
             inks = inks,
             veilMin = GlassVeil.MIN * f,
             veilMax = if (f < 1.0) 1.0 else GlassVeil.MAX,
-            overlayFloor = if (f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())) {
-                { l -> KachiChrome.glassFloor(l, veil, pair, shown, inks, extra, spec.tone == SurfaceTone.WELL, GlassVeil.MIN * f) }
+            overlayFloor = if (fits) {
+                { l, s -> KachiChrome.glassFloor(l, veil, pair, s, inks, extra, well, GlassVeil.MIN * f) }
             } else null,
+            surfaceAt = if (fits) { l -> KachiChrome.glassSurface(l, veil, pair, inks, extra, well, GlassVeil.MIN * f) } else null,
+            pair = pair,
+            onSurface = { s -> ChromeStack.byteOf(s).let { if (top.alpha != it) top.alpha = it } },
         )
-        val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)
-        if (spec.fade) KachiChrome.fade(top)
         view.background = LayerDrawable(arrayOf(window, top))
         bind(view, window::relocate)
     }

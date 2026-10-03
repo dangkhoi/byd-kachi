@@ -65,15 +65,18 @@ internal object WidgetTelemetry {
         private val color: String,
         badge: Boolean,
         domain: Domain?,
+        free: Boolean = false,
     ) {
         // ⚠ L5 WIDGET-FIT-ALL (2.87) — vá B5 (owner 2026-09-22: autosize 12..20sp + ẩn icon khi ô thấp) đã GỠ: ô nén chỉ
         // sống trong `FitGridLayout`, nơi cỡ chữ/icon + dạng (ngang thay cho "ẩn icon") được khớp CHUNG cho cả lưới theo
         // khung thật. [ĐO AOSP r47] autosize đọc khoảng trống đã đo (`TextView.java:9432-9471`) mà ô cao `WRAP` ⇒ nó
         // chỉ co được, không bao giờ giãn ("khung to chữ to" không đúng); hai cơ chế cùng chỉnh cỡ thì đánh nhau.
+        // [free] = chữ của ô dài vô hạn theo thiết kế (tên bài/nghệ sĩ) ⇒ KHAI tự do cho phép khớp; số/chú thích thì
+        // không khai ⇒ phải hiện trọn khi còn bố cục đọc được (R-WF2, soát vòng 2 P3).
         private val bigView: TextView = WidgetViews.tv(ctx, "", 17f, color, true)
-            .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
+            .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; if (free) FitScale.markFree(this) }
         private val subView: TextView = WidgetViews.tv(ctx, "", 10.5f, KachiTheme.MUT)
-            .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
+            .apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; if (free) FitScale.markFree(this) }
         val root: LinearLayout = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             // P1b: kính khi có ảnh nền, surface() khi không. Khai màu chữ số to (vd ACCENT của `w_board`) để lớp che
@@ -117,9 +120,10 @@ internal object WidgetTelemetry {
         color: String,
         badge: Boolean = false,
         domain: Domain? = null,
+        free: Boolean = false,
         value: (WidgetData) -> MiniValue,
     ): View {
-        val card = MiniCard(ctx, icon, color, badge, domain)
+        val card = MiniCard(ctx, icon, color, badge, domain, free)
         val fillCard = { d: WidgetData -> card.set(value(d)) }
         fillCard(data)
         return WidgetRefreshers.live(card.root, fillCard)

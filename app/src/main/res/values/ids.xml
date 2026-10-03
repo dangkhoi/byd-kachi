@@ -9,4 +9,7 @@
          view của nó) thì WeakHashMap không dọn được mục nào, tức rò View + Context cả tiến trình. Xem KDoc ở đó. -->
     <item name="kachi_widget_fill" type="id" />
     <item name="kachi_widget_action_fill" type="id" />
+    <!-- L5 WIDGET-FIT-ALL · soát vòng 2 (P3): bộ dựng KHAI một TextView là chữ TỰ DO (tên bài, nghệ sĩ) ⇒ phép khớp cho
+         nó "…" sau ngân sách FitRules.FREE_TEXT_EM. Giá trị/chú thích không khai ⇒ phải hiện trọn (R-WF2). -->
+    <item name="kachi_fit_free_text" type="id" />
 </resources>

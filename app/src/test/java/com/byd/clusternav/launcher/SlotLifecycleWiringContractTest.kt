@@ -64,6 +64,10 @@ class SlotLifecycleWiringContractTest {
             "SlotHeadTouch.onUp(" to "SlotHeadAutoHide.kt",
             "SlotHeadTouch.onConfirmArmed(" to "SlotHeadAutoHide.kt",
             "SlotCloseConfirm.onTap(" to "SlotActionsCluster.kt",
+            // Soát vòng 2 — cửa sổ trợ năng + đầu ô không ẩn giữa lượt chờ + chặn nhấp đúp bằng DOWN₂ − UP₁.
+            "SlotCloseConfirm.window(" to "SlotActionsCluster.kt",
+            "SlotCloseConfirm.hideAfterMs(e.cluster?.armedLeftMs())" to "SlotHeadAutoHide.kt",
+            "observe(it, cluster)" to "SlotActionsCluster.kt",
             "heads.retain(slotViews.size)" to "WorkspaceView.kt",
             "workspace().heads.refreshAll()" to "KachiHomeSlotActions.kt",
         ).forEach { (call, file) -> assertTrue(call in code(file), "'$call' phải được gọi trong $file") }
@@ -186,13 +190,29 @@ class SlotLifecycleWiringContractTest {
         assertTrue("made.forEach { (b, v) -> v.setOnClickListener { cluster.tap(b) } }" in attach)
         assertFalse("port.onAction" in attach, "không nút nào gọi cổng thẳng từ lúc dựng")
         val tap = SourceRoots.body(cluster, "private fun tap(")
-        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap)",
-            "SlotCloseConfirm.Tap.ARM -> arm()", "SlotCloseConfirm.Tap.WAIT -> Unit", "SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }")
+        // Soát vòng 2 [P3] — ĐỔI GHIM có lý do: khoảng nhấp đúp là DOWN₂ − UP₁ (`MotionEvent.eventTime`, đúng phép
+        // `GestureDetector.isConsideredDoubleTap`) chứ không phải click-tới-click; cửa sổ của lượt theo trợ năng ([armedWindow]).
+        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "val down = touchDown.takeIf { touchUp != null }",
+            "touchDown = null; touchUp = null", "val gap = down?.let { d -> lastUp?.let { d - it } }",
+            "SlotCloseConfirm.onTap(armedAt, SystemClock.uptimeMillis(), gap, tapGap, armedWindow)",
+            "SlotCloseConfirm.Tap.ARM -> arm(up)", "SlotCloseConfirm.Tap.WAIT -> lastUp = up",
+            "SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }")
         assertEquals(1, Regex("""port\.onAction\(index, Button\.CLOSE\)""").findAll(cluster).count(), "đúng MỘT đường tới *tắt* thật")
+        val track = SourceRoots.body(cluster, "private fun track(")
+        order(track, "MotionEvent.ACTION_DOWN -> { touchDown = ev.eventTime; touchUp = null }", "MotionEvent.ACTION_UP -> touchUp = ev.eventTime",
+            "MotionEvent.ACTION_CANCEL -> { touchDown = null; touchUp = null }")
+        assertTrue("v.setOnTouchListener { _, ev -> cluster.track(ev); false }" in cluster,
+            "người nghe chạm chỉ NHÌN — trả false, click + performClick (trợ năng) đi đường cũ")
+        assertEquals(1, Regex("""setOnTouchListener""").findAll(cluster).count(), "chỉ nút *tắt* có người nghe chạm")
         val arm = SourceRoots.body(cluster, "private fun arm(")
-        order(arm, "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm", "slot.postDelayed(disarmTask, SlotCloseConfirm.WINDOW_MS)", "onArmed(this)")
+        order(arm, "armedWindow = windowNow()", "lastUp = up", "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm",
+            "slot.postDelayed(disarmTask, armedWindow)", "onArmed(this)")
+        val win = SourceRoots.body(cluster, "private fun windowNow(")
+        assertTrue("getRecommendedTimeoutMillis(SlotCloseConfirm.WINDOW_MS.toInt(), flags)" in win &&
+            "AccessibilityManager.FLAG_CONTENT_CONTROLS or AccessibilityManager.FLAG_CONTENT_ICONS" in win && "SlotCloseConfirm.window(" in win,
+            "cửa sổ theo 'Thời gian thực hiện hành động' (API 29), gốc 2 s, không bao giờ ngắn hơn")
         val disarm = SourceRoots.body(cluster, "private fun disarm(")
-        order(disarm, "slot.removeCallbacks(disarmTask)", "armedAt = null", "paint(cell, confirm = false)", "describe(Button.CLOSE, kind), index + 1")
+        order(disarm, "slot.removeCallbacks(disarmTask)", "lastUp = null", "armedAt = null", "paint(cell, confirm = false)", "describe(Button.CLOSE, kind), index + 1")
         listOf("fun settle(", "fun hide()", "fun cancel()").forEach { assertTrue("disarm()" in SourceRoots.body(cluster, it), "$it phải gỡ lượt chờ") }
         assertTrue("if (Button.CLOSE !in now) disarm()" in SourceRoots.body(cluster, "fun refresh()"))
         val paint = SourceRoots.body(cluster, "private fun paint(")

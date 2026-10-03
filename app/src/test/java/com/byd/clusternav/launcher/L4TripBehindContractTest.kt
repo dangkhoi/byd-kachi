@@ -66,32 +66,50 @@ class L4TripBehindContractTest {
     }
 
     /**
-     * Soát 2.87 · P3 — mã MỚI không gọi API đã deprecated ở mức API đang chạy: `Display.getRealMetrics` (deprecated API 31) chỉ
-     * còn ở nhánh API < 31; `WindowManager.getDefaultDisplay` (deprecated API 30) chỉ còn ở nhánh API 29. Nhánh trên dùng đúng
-     * thay thế mà `@deprecated` chỉ ra (A12 r34 `Display.java:1423-1426`: `getMaximumWindowMetrics` + `Configuration.densityDpi`;
-     * `Context.getDisplay()` cho Activity). Mỗi `@Suppress("DEPRECATION")` đứng trên đúng MỘT hàm cũ, không phủ cả lớp.
+     * Soát 2.87 · P3 + soát vòng 2 (gộp bản vá 04/10 — ĐỔI tên/KDoc/danh sách có lý do: bản cũ mô tả nhánh API 31 của F2 đã
+     * bị bỏ khi gộp, thân bài lại khẳng định điều ngược lại). Hình cuối cùng:
+     *  - `StagingDisplay` GIỮ `Display.getRealMetrics` của display 0 (deprecated API 31) CÓ CHỦ Ý, một chỗ, chặn
+     *    DEPRECATION đúng MỘT dòng ngay trên nó. Lý do thật (KDoc ở chỗ gọi): A10 = cỡ logic display 0 [ĐO nguồn r47
+     *    `Display.java:1074-1080`]; A12 trả maxBounds của cấu hình NGỮ CẢNH — CÙNG nguồn với bản thay `maximumWindowMetrics`
+     *    [ĐO nguồn r34 `Display.java:1429-1469`] ⇒ bản thay không hơn gì, cỡ trên DL5 lúc chiếu cụm [CHƯA BIẾT] (dòng log
+     *    `stage create … phys=` để đo trên xe).
+     *  - Chỉ `StageCoverActivity` rẽ nhánh theo mức API: `Context.getDisplay()` từ API 30, `getDefaultDisplay` (deprecated
+     *    API 30) chỉ ở nhánh API 29, chặn DEPRECATION trên đúng hàm đó.
+     *  - Không còn import mồ côi của bản F2 (`Build`, `WindowManager`).
      */
     @Test
-    fun `API display cu chi o nhanh muc API cu, nhanh moi dung API hien hanh`() {
-        // Gộp hai bản vá review 287 (04/10): màn ảo dàn dựng GIỮ `Display.getRealMetrics` của display 0 (deprecated API 31) có
-        // chủ ý — bản thay `maximumWindowMetrics` đọc cấu hình của NGỮ CẢNH (trên A12 tiến trình theo activity thêm sau cùng,
-        // có thể là màn cụm) chứ không phải display 0; cỡ = display 0 thật là điều kiện đã đo (e6c). Chặn DEPRECATION đúng
-        // một dòng, kèm lý do ngay trên.
+    fun `getRealMetrics display 0 giu co chu y, chi lop che re nhanh theo muc API`() {
         val create = SourceRoots.body(staging, "override fun create(): Int? {")
-        assertTrue("dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it)" in create, "cỡ lấy từ display 0, không từ ngữ cảnh")
-        assertFalse("maximumWindowMetrics" in staging, "không đọc cỡ theo cấu hình ngữ cảnh")
+        assertTrue("dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it)" in create, "cỡ lấy từ display 0 (giữ lời gọi 2.86)")
+        assertFalse("maximumWindowMetrics" in stripComments(staging), "không đọc cỡ theo cấu hình ngữ cảnh (A12: cùng nguồn maxBounds, KDoc)")
         assertEquals(1, Regex("""getRealMetrics\(""").findAll(staging).count(), "getRealMetrics chỉ ở MỘT chỗ")
+        assertEquals(1, Regex("""@Suppress\("DEPRECATION"\)""").findAll(staging).count(), "chặn DEPRECATION đúng một chỗ ở StagingDisplay")
+        assertTrue(Regex("""@Suppress\("DEPRECATION"\)\s*\n\s*val m = DisplayMetrics\(\)\.also \{ dm\.getDisplay\(Display\.DEFAULT_DISPLAY\)\?\.getRealMetrics\(it\) \}""")
+            .containsMatchIn(staging), "chặn DEPRECATION nằm NGAY trên dòng getRealMetrics, không phủ cả hàm/lớp")
+        assertTrue("phys=\$phys" in create && "?.mode?.let" in create, "dòng log có cỡ vật lý để đo DL5 trên xe ([CHƯA BIẾT])")
+        assertEquals(emptyList<String>(), unusedImports(staging), "StagingDisplay không còn import mồ côi")
         val shown = SourceRoots.body(cover, "private fun shownOn(")
         order(shown, "Build.VERSION.SDK_INT >= Build.VERSION_CODES.R", "display?.displayId ?: Display.INVALID_DISPLAY", "legacyDisplayId()")
         assertEquals(1, Regex("""defaultDisplay""").findAll(cover).count(), "getDefaultDisplay chỉ ở MỘT chỗ")
         assertTrue("windowManager.defaultDisplay.displayId" in SourceRoots.body(cover, "private fun legacyDisplayId("))
-        listOf(cover).forEach { src ->
-            Regex("""@Suppress\("DEPRECATION"\)[^\n]*\n\s*(private fun \w+)""").findAll(src).map { it.groupValues[1] }.toList().let { fns ->
-                assertTrue(fns.isNotEmpty() && fns.all { it == "private fun legacyRealMetrics" || it == "private fun legacyDisplayId" },
-                    "chặn DEPRECATION chỉ trên hàm của nhánh API cũ: $fns")
-            }
-            assertEquals(Regex("""@Suppress\("DEPRECATION"\)""").findAll(src).count(),
-                Regex("""@Suppress\("DEPRECATION"\)[^\n]*\n\s*private fun legacy""").findAll(src).count(), "không chặn DEPRECATION ở chỗ khác")
+        Regex("""@Suppress\("DEPRECATION"\)[^\n]*\n\s*(private fun \w+)""").findAll(cover).map { it.groupValues[1] }.toList().let { fns ->
+            assertEquals(listOf("private fun legacyDisplayId"), fns, "chặn DEPRECATION chỉ trên hàm của nhánh API 29")
+        }
+        assertEquals(1, Regex("""@Suppress\("DEPRECATION"\)""").findAll(cover).count(), "không chặn DEPRECATION ở chỗ khác của lớp che")
+    }
+
+    /** Bỏ chú thích `//…` và `/* … */` (đủ cho bài canh import — không phải bộ phân tích Kotlin). */
+    private fun stripComments(src: String): String =
+        src.replace(Regex("""(?s)/\*.*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
+
+    /** Import mà tên (hoặc bí danh) không xuất hiện trong MÃ (ngoài dòng import, ngoài chú thích) — Kotlin không báo lỗi. */
+    private fun unusedImports(src: String): List<String> {
+        val code = stripComments(src)
+        val imports = Regex("""(?m)^import\s+([\w.]+)(?:\s+as\s+(\w+))?\s*$""").findAll(code).toList()
+        val body = Regex("""(?m)^import\s+.*$""").replace(code, " ")
+        return imports.mapNotNull { m ->
+            val name = m.groupValues[2].ifEmpty { m.groupValues[1].substringAfterLast('.') }
+            m.groupValues[1].takeIf { name != "*" && !Regex("""\b${Regex.escape(name)}\b""").containsMatchIn(body) }
         }
     }
 
@@ -99,7 +117,10 @@ class L4TripBehindContractTest {
     fun `ben thi hanh - ma rieng cho khong kenh va da tat, dong log no-stage, mot Kit moi luot`() {
         val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {")
         assertTrue(once.contains("BehindHomeSequence.Result.DISABLED") && once.contains("BehindHomeSequence.Result.NO_CHANNEL"))
-        order(once, "disabledReason?.let", "val sh = shell() ?: return", "Kit(seq, StagingDisplay(app), sh, app)")
+        // Soát vòng 2 — ĐỔI GHIM có lý do: lượt thu hồi màn ảo ẩn chạy TRƯỚC cổng DISABLED (bài dưới); hai mã 0-lệnh vẫn
+        // đứng trước khi dựng chuỗi, mỗi lượt vẫn một `StagingDisplay` mới.
+        order(once, "val sh = shell()", "val hidden = StagingDisplay(app)", "disabledReason?.let", "if (sh == null) return",
+            "BehindHomeSequence(", "Kit(seq, hidden, sh, app)")
         val sb = SourceRoots.body(runner, "fun startBehind(x: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit = {}): BehindHomePlan.Stage? {")
         order(sb, "BehindHomePlan.stagingSlot(stages, x)", "Log.i(TAG, \"no-stage X=", "return null")
     }
@@ -108,11 +129,17 @@ class L4TripBehindContractTest {
      * Review 287 [P3]: màn ảo ẩn bị GIỮ (K7 bị rào chặn / đọc hỏng / chuỗi ném giữa chừng — `failed()` cố ý không nhả) trước đây
      * sống tới khi BYD giết Kachi (màn ảo + luồng `kachi-stage` + `ImageReader` cỡ display 0, rò thêm mỗi lượt). Nay: sổ [LIVE]
      * cả tiến trình; MỖI lượt `kachi-behind` thu hồi TRƯỚC thân lượt (quyết định + rào nhả ở `:core` `HiddenStageReclaim`, có test).
+     *
+     * Soát vòng 2 [P3] (ĐỔI GHIM có lý do): thu hồi đứng TRƯỚC cả cổng `DISABLED`. Bản trước trả `DISABLED` ở dòng đầu ⇒ lượt
+     * giữ màn ảo mà cũng là lượt TẮT BEHIND-HOME (`ANCHOR_IN_FRONT` khi K7 bị camera chặn) thì từ đó mọi lượt dừng trước thu
+     * hồi ⇒ đúng cái rò bản vá vòng 1 định đóng. Thu hồi chỉ cần kênh (một lệnh chỉ đọc + nhả trong tiến trình).
      */
     @Test
     fun `man ao an bi giu - so LIVE ca tien trinh, moi luot thu hoi truoc than luot`() {
         val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {")
-        order(once, "val sh = shell() ?: return", "Kit(seq, StagingDisplay(app), sh, app)", "HiddenStageReclaim.run(sh, kit.hidden, app.packageName)", "body(kit)")
+        order(once, "val sh = shell()", "val hidden = StagingDisplay(app)", "if (sh != null) HiddenStageReclaim.run(sh, hidden, app.packageName)",
+            "disabledReason?.let", "if (sh == null) return", "Kit(seq, hidden, sh, app)", "body(kit)")
+        assertEquals(1, Regex("""HiddenStageReclaim\.run\(""").findAll(once).count(), "một lượt thu hồi mỗi lượt chạy")
         val create = SourceRoots.body(staging, "override fun create(): Int? {")
         order(create, "SlotVdOwner.adopt(", "vdId = id", "LIVE[id] = this")
         order(SourceRoots.body(staging, "fun release() {"), "SlotVdOwner.release(OWNER, k)", "LIVE.remove(it, this)", "vdId = null")

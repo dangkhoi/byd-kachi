@@ -388,10 +388,17 @@ note "hồ sơ dùng cho ca đổi hồ sơ: ${PROFILE:-<không có>}"
 # quyết định của owner) và harness KHÔNG tự ghi prefs ngôn ngữ ⇒ KIỂM rồi DỪNG với lời nhắc đúng địa chỉ.
 # Ngôn ngữ theo HỒ SƠ ⇒ kiểm lại sau mỗi ca đổi hồ sơ (`profile:*`) — hồ sơ kia có thể đang dùng English.
 require_voice_vi() {
-  local why=$1 json vl mode loc
+  local why=$1 json vl mode loc prof where
   json="$(state_json)"
   vl="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.voice_lang)"
   mode="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.lang)"
+  # [soát 2.87 vòng 2 · P3] Nêu ĐÚNG TÊN hồ sơ đang mang ngôn ngữ sai (đọc cùng bản state). Sau ca đổi hồ sơ, `cleanup`
+  # (trap EXIT của `die`) trả máy về hồ sơ lúc bắt đầu ⇒ câu "hồ sơ đang dùng" chỉ QA sửa nhầm hồ sơ (đang đúng tiếng Việt).
+  prof="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get profile.active)"
+  where="cho hồ sơ «${prof:-?}»"
+  if [ -n "$prof" ] && [ -n "$ORIG_PROFILE" ] && [ "$prof" != "$ORIG_PROFILE" ]; then
+    where="$where (KHÔNG phải hồ sơ lúc bắt đầu «${ORIG_PROFILE}» — lúc dọn, harness đã trả máy về «${ORIG_PROFILE}»; mở hồ sơ «${prof}» để sửa)"
+  fi
   if [ -z "$vl" ]; then
     # APK cũ chưa phơi `look.voice_lang` ⇒ suy như LangMode.resolve: AUTO = locale máy vi* ⇒ VI, còn lại ⇒ EN.
     case "$mode" in
@@ -401,10 +408,10 @@ require_voice_vi() {
         [ -n "$loc" ] || loc="$(adbs shell getprop ro.product.locale | tr -d '\r')"
         case "$loc" in vi*) vl="vi";; *) vl="en";; esac;;
       VI|ZH|TH|MS) vl="vi";;
-      *) die "$why: không đọc được ngôn ngữ của Kachi (look.lang='${mode}') — xem reply: $(printf '%s' "$json" | head -c 300)";;
+      *) die "$why: không đọc được ngôn ngữ của Kachi (look.lang='${mode}') ${where} — xem reply: $(printf '%s' "$json" | head -c 300)";;
     esac
   fi
-  [ "$vl" = "vi" ] || die "$why: Kachi đang nói tiếng '$vl' (look.lang=${mode:-?}) nhưng voice-cases.tsv mong preview TIẾNG VIỆT. Đặt Cài đặt › Hiển thị › Ngôn ngữ = Tiếng Việt (hoặc 简体中文/ไทย/Melayu — giọng nói vẫn là tiếng Việt) cho hồ sơ đang dùng rồi chạy lại."
+  [ "$vl" = "vi" ] || die "$why: Kachi đang nói tiếng '$vl' (look.lang=${mode:-?}) nhưng voice-cases.tsv mong preview TIẾNG VIỆT. Đặt Cài đặt › Hiển thị › Ngôn ngữ = Tiếng Việt (hoặc 简体中文/ไทย/Melayu — giọng nói vẫn là tiếng Việt) ${where} rồi chạy lại."
   note "tiếng giọng nói: $vl (look.lang=${mode:-?}) — $why"
 }
 

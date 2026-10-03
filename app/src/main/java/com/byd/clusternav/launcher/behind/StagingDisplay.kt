@@ -9,13 +9,11 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.media.ImageReader
-import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Display
-import android.view.WindowManager
 import com.byd.clusternav.launcher.SlotVdOwner
 import com.byd.clusternav.launcher.VdLease
 import com.byd.clusternav.system.WindowCommandDispatcher
@@ -69,12 +67,23 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
         vdId?.let { return it }
         return try {
             val dm = app.getSystemService(DisplayManager::class.java) ?: return null
-            // Review 287 [P3] — GIỮ `getRealMetrics` (deprecated API 31) có chủ ý: bản thay mà review gợi ý (`createDisplayContext`
-            // → `WindowManager.maximumWindowMetrics`) bị tài liệu chính thức CẤM ("display contexts … should not be used to access
-            // … WindowManager instances directly" — Context7 /websites/developer_android_reference) và trên A12 (DL5) đọc
-            // `windowConfiguration.getMaxBounds()` mà `ResourcesManager.applyDisplayMetricsToConfiguration` KHÔNG đặt cho display
-            // context ([ĐO nguồn android-12.0.0_r1] `WindowManagerImpl.java:263-266`, `ResourcesManager.java:346-365`). Không có
-            // ngữ cảnh UI ở luồng `kachi-behind` ⇒ chưa có bản thay đã kiểm; cỡ = display 0 thật là điều kiện đã đo (e6c).
+            // Review 287 [P3] · soát vòng 2 (sửa LÝ DO) — GIỮ `getRealMetrics` (deprecated API 31) có chủ ý; nó KHÔNG bảo đảm
+            // "cỡ = display 0 thật" trên mọi đời:
+            //  • A10 (DL2/3/4) [ĐO nguồn android-10.0.0_r47 `Display.java:1074-1080`]: = `getLogicalMetrics` của display 0,
+            //    không phụ thuộc ngữ cảnh — đúng cỡ đã đo ở `e6c` (máy ảo A10).
+            //  • A12 (DL5) [ĐO nguồn android-12.0.0_r34 `Display.java:1429-1449` + `:1461-1469`, `DisplayManager.java:551-560`,
+            //    `ContextImpl.java:2856-2859`]: Display 0 lấy qua ngữ cảnh ỨNG DỤNG mang `Resources` của nó ⇒ khi
+            //    `windowConfiguration.maxBounds` của cấu hình tiến trình khác rỗng, `getRealMetrics` trả CHÍNH maxBounds đó —
+            //    cùng nguồn với bản thay `WindowManager.maximumWindowMetrics` (`WindowManagerImpl.java:263-266`). Cấu hình
+            //    tiến trình đi theo activity thêm SAU CÙNG (`WindowProcessController.java:1281-1300`) ⇒ đang chiếu cụm
+            //    (`ClusterBlackActivity`) thì cỡ ở đây có thể là cỡ CỤM [SUY].
+            //  • Vì sao vẫn giữ: bản thay duy nhất được gợi ý đọc CÙNG trường trên A12 và bị tài liệu chính thức cấm cho display
+            //    context ("display contexts … should not be used to access … WindowManager instances directly" — Context7
+            //    /websites/developer_android_reference); luồng `kachi-behind` không có ngữ cảnh UI ⇒ chưa có bản thay đã kiểm;
+            //    2.86 gọi đúng dòng này (không hồi quy). Đổi lời gọi khi chưa đo = trái CLAUDE.md §3/§6.
+            //  • [CHƯA BIẾT] DL5 — 🚗 đọc dòng `KachiBehind stage create vd=… WxH@dpi phys=PxQ` lúc ĐANG chiếu cụm: WxH ≠ PxQ
+            //    (cỡ vật lý display 0, `Display.getMode` — A12 `Display.java:995-1000`, không qua maxBounds) ⇒ cỡ đi theo cấu
+            //    hình ngữ cảnh, phải sửa có số đo.
             @Suppress("DEPRECATION")
             val m = DisplayMetrics().also { dm.getDisplay(Display.DEFAULT_DISPLAY)?.getRealMetrics(it) }
             if (m.widthPixels <= 0 || m.heightPixels <= 0 || m.densityDpi <= 0) return null
@@ -97,7 +106,8 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
             key = k
             vdId = id
             LIVE[id] = this
-            Log.i(BehindHomeRunner.TAG, "stage create vd=$id ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} key=$k")
+            val phys = runCatching { dm.getDisplay(Display.DEFAULT_DISPLAY)?.mode?.let { "${it.physicalWidth}x${it.physicalHeight}" } }.getOrNull() ?: "?"
+            Log.i(BehindHomeRunner.TAG, "stage create vd=$id ${m.widthPixels}x${m.heightPixels}@${m.densityDpi} phys=$phys key=$k")
             id
         } catch (e: RuntimeException) {
             Log.w(BehindHomeRunner.TAG, "stage create failed", e)

@@ -1,6 +1,10 @@
 package com.byd.clusternav.launcher
 
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * ═══ 2.87 · R-FL2 — TRÍ NHỚ *"LỆNH CUỐI KACHI ĐÃ GỬI"* của mỗi nút (KEYCTL-FLIP-ALL) ═══════════════════════════
@@ -55,6 +59,16 @@ class ControlLastSent {
     /** Nơi chuyển tiếp mỗi lượt [record] — chỉ `:wake` nối ([forwardTo]); tiến trình chính để `null`. */
     @Volatile private var forward: ((String, Int) -> Unit)? = null
 
+    private val relayedChanges = MutableStateFlow(0L)
+
+    /**
+     * Soát vòng 2 [P3] — số lượt [absorb] đã ĐỔI bảng (dòng từ tiến trình khác làm chỉ số của một nút KHÁC đi). Màn chính thu
+     * nó (luồng chính, `repeatOnLifecycle(STARTED)`) để vẽ lại ô nút NGAY — trước đây ô chỉ theo kịp ở lần trạng thái xe đổi
+     * kế tiếp (`TileResync`: [CHƯA BIẾT] khi số liệu xe đứng yên), tức ô cốp vẫn vẽ "đóng" sau câu "mở cốp" qua `:wake` và cú
+     * chạm kế làm ngược hình. Dòng trùng chỉ số đang nhớ / không hợp lệ ⇒ không đổi số (không vẽ lại thừa).
+     */
+    val relayed: StateFlow<Long> = relayedChanges.asStateFlow()
+
     /** Chỉ số hiện nhớ của nút [id]; chưa có lệnh nào ⇒ [startIndex]. */
     fun index(id: String): Int = sent[id] ?: startIndex(id)
 
@@ -70,7 +84,9 @@ class ControlLastSent {
      */
     fun absorb(id: String?, index: Int): Boolean {
         if (id == null || !relayable(id, index)) return false
+        val was = index(id)
         sent[id] = index
+        if (was != index) relayedChanges.update { it + 1 }
         return true
     }
 

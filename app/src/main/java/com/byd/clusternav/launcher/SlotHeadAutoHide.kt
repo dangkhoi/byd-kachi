@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityManager
 import com.byd.clusternav.ShellReadiness
 import com.byd.clusternav.carexec.ShellReadinessState
 import com.byd.clusternav.launcher.SlotHeadRest.Rest
+import com.byd.clusternav.launcher.behind.BehindHomeRunner
 
 /**
  * ═══ 2.87 · R-AH — nút ⇄ TỰ ẨN: một chủ cho trạng thái nút + hẹn giờ của mọi ô ═══════════════════════════════════════
@@ -87,6 +88,12 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
     /** P3 — kênh shell lên / xuống (luồng bất kỳ) ⇒ hỏi lại nút L6 trên luồng chính, không chờ một cú DOWN. */
     private val refreshTask = Runnable { refreshAll() }
     private val shellListener: (ShellReadinessState) -> Unit = { _ -> host.post(refreshTask) }
+
+    /**
+     * Soát vòng 2 [P3] — BEHIND-HOME vừa TẮT (luồng bất kỳ; chuỗi của chuyến lên xe / lối tắt / đặt tạm cũng tắt được nó) ⇒
+     * hỏi lại nút trên luồng chính: ở chế độ luôn hiện không có DOWN nào để nhờ, nút *chạy nền* cũ chạm vào là im lặng.
+     */
+    private val behindListener: () -> Unit = { host.post(refreshTask) }
 
     private fun touchExploration(): Boolean = a11y?.isTouchExplorationEnabled == true
 
@@ -168,10 +175,11 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         exec(SlotHeadTouch.onConfirmArmed(i, heads(at)), at)
     }
 
-    /** Workspace gắn (lại) cửa sổ: nghe TalkBack bật/tắt + kênh shell đổi, rồi áp lại (trạng thái có thể đã đổi lúc rời cửa sổ). */
+    /** Workspace gắn (lại) cửa sổ: nghe TalkBack bật/tắt + kênh shell đổi + BEHIND-HOME tắt, rồi áp lại (trạng thái có thể đã đổi lúc rời cửa sổ). */
     fun attach() {
         a11y?.addTouchExplorationStateChangeListener(teListener)
         ShellReadiness.addListener(shellListener)
+        BehindHomeRunner.addDisabledListener(behindListener)
         reapply()
     }
 
@@ -183,6 +191,7 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         entries.values.forEach(::drop)
         a11y?.removeTouchExplorationStateChangeListener(teListener)
         ShellReadiness.removeListener(shellListener)
+        BehindHomeRunner.removeDisabledListener(behindListener)
         host.removeCallbacks(refreshTask)
         gesture = SlotHeadTouch.Gesture.NONE
     }
@@ -217,7 +226,9 @@ internal class SlotHeadAutoHide(private val host: ViewGroup) {
         e.head.visibility = View.VISIBLE
         e.head.animate().alpha(1f).setDuration(SlotHeadRest.FADE_IN_MS)
         e.cluster?.show()
-        host.postDelayed(e.hide, SlotHeadRest.HIDE_AFTER_MS)
+        // Soát vòng 2 [P3]: đang chờ xác nhận *tắt* với cửa sổ trợ năng dài ⇒ không ẩn (= gỡ lượt chờ) trước khi nó hết;
+        // không chờ / cửa sổ gốc 2 s ⇒ đúng HIDE_AFTER_MS như cũ.
+        host.postDelayed(e.hide, SlotCloseConfirm.hideAfterMs(e.cluster?.armedLeftMs()))
     }
 
     private fun hide(e: Entry) {

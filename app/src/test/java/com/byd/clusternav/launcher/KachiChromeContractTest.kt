@@ -133,11 +133,25 @@ class KachiChromeContractTest {
         // Công thức lớp che mà bài quét ChromeOpacityContrastContractTest dựng lại: max(bộ giải chữ, sàn thứ trên khay);
         // sàn thêm chỉ cho KHAY và chỉ dưới 100 % (null ⇒ maxOf(…, 0.0) = đường cũ).
         val relocate = SourceRoots.body(code(file("WallGlass.kt")), "fun relocate(")
-        assertTrue("maxOf(GlassVeil.alphaFor(lum, veilOpaque, surfaces, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum) ?: 0.0)" in relocate)
+        // Soát vòng 2 [P3] — ĐỔI GHIM có lý do: bề mặt đưa bộ giải là bề mặt ĐANG VẼ của vùng (`surfaceAt` — thẻ mà lớp che 100 %
+        // không cứu được thì giữ bề mặt đục hơn); không có `surfaceAt` (100 %, thẻ không khai gì) ⇒ `shown = surfaces` = đường cũ.
+        order(relocate, "val s = surfaceAt?.invoke(lum)", "val shown = if (s == null) surfaces else IntArray(pair.size) { ChromeStack.faded(pair[it], s) }",
+            "maxOf(GlassVeil.alphaFor(lum, veilOpaque, shown, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum, shown) ?: 0.0)",
+            "if (s != null) onSurface?.invoke(s)")
         assertTrue("veilMax = if (f < 1.0) 1.0 else GlassVeil.MAX," in paint, "100 % ⇒ trần cũ 90 %")
         // [soát 2.87 · P2] sàn thêm nay cho KHAY và cho thẻ có mực màu KHAI (`extraInks`) — vẫn chỉ dưới 100 %.
-        assertTrue("overlayFloor = if (f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())) {" in paint)
-        assertTrue("KachiChrome.glassFloor(l, veil, pair, shown, inks, extra, spec.tone == SurfaceTone.WELL, GlassVeil.MIN * f)" in paint)
+        assertTrue("val fits = f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())" in paint)
+        assertTrue("overlayFloor = if (fits) {" in paint && "surfaceAt = if (fits) {" in paint, "cả hai chỉ dưới 100 %, cùng điều kiện")
+        assertTrue("KachiChrome.glassFloor(l, veil, pair, s, inks, extra, well, GlassVeil.MIN * f)" in paint)
+        assertTrue("KachiChrome.glassSurface(l, veil, pair, inks, extra, well, GlassVeil.MIN * f)" in paint)
+        assertTrue("onSurface = { s -> ChromeStack.byteOf(s).let { if (top.alpha != it) top.alpha = it } }" in paint,
+            "hệ số bề mặt đưa bộ giải = alpha của lớp bề mặt THẬT")
+        order(paint, "if (spec.fade) KachiChrome.fade(top)", "val window = WallWindowDrawable(", "LayerDrawable(arrayOf(window, top))")
+        // Lớp che bộ giải bề mặt thử = CÙNG công thức relocate (max(bộ giải chữ trần 1.0, sàn thứ trên thẻ)).
+        val veilFn = SourceRoots.body(chrome, "internal fun glassVeil(")
+        assertTrue("GlassVeil.alphaFor(l, veil, shown, inks, min = veilMin, max = 1.0)" in veilFn &&
+            "glassFloor(l, veil, pair, shown, inks, extraInks, well, veilMin)" in veilFn, veilFn)
+        assertTrue("if (fraction >= 1.0) return 1.0" in SourceRoots.body(chrome, "internal fun glassSurface("), "100 % ⇒ không đổi một byte")
         assertTrue("val extra = spec.extraInks.filterNot { it in inks }.toIntArray()" in paint, "mực trung tính không khai hai lần")
         assertEquals(GlassVeil.MIN, GlassVeil.MIN * 1.0, 0.0)
         // Bật/tắt ảnh hay đổi bảng màu ở 100 % KHÔNG làm apply báo đổi (không dựng lại ô mỗi lượt ảnh trình chiếu).
@@ -278,6 +292,15 @@ class KachiChromeContractTest {
         .map { it.fileName.toString() }.sorted()
 
     private fun count(name: String, token: String): Int = Regex(Regex.escape(token)).findAll(code(file(name))).count()
+
+    private fun order(src: String, vararg parts: String) {
+        var at = -1
+        parts.forEach { p ->
+            val i = src.indexOf(p, at + 1)
+            assertTrue(i > at, "thứ tự sai / thiếu '$p' trong: ${src.take(800)}")
+            at = i
+        }
+    }
 
     private fun code(f: Path): String = f.toFile().readText()
         .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")

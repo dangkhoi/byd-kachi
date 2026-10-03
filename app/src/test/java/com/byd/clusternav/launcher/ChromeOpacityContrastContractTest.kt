@@ -64,6 +64,41 @@ class ChromeOpacityContrastContractTest {
         }
     }
 
+    /**
+     * Soát vòng 2 [P3] — màu nhấn THEO ẢNH (`FROM_ART`): bảng màu dẫn xuất từ màu trội của ảnh, nên bài quét bảng cố định
+     * không thấy được. Một nhúm màu trội có chủ đích — gồm màu ÍT bão hoà (ca hỏng có thật của vòng 2: trội `hsv(240°,.25,.55)`
+     * ⇒ ACCENT trên thẻ NEUTRAL bảng sáng 4.51 → 4.39 dù lớp che 100 %) + vài màu đậm/sáng/tối cho đủ phía.
+     */
+    private val artDominants: List<Int> = listOf(
+        hsv(240, 0.25f, 0.55f), hsv(0, 0.25f, 0.55f), hsv(120, 0.25f, 0.55f), hsv(60, 0.25f, 0.9f),
+        hsv(30, 0.6f, 0.9f), hsv(200, 0.95f, 0.25f), hsv(300, 0.6f, 0.55f), hsv(180, 0.95f, 0.9f),
+    )
+
+    /** [forEachPalette] + mọi bảng `FROM_ART` dựng từ [artDominants] (hai chủ đề × mọi tông) — cho bài kính TRÊN ẢNH. */
+    private fun forEachArtPalette(block: (Pal) -> Unit): Int {
+        forEachPalette(block)
+        var n = 0
+        listOf("TỐI" to ThemeMode.NIGHT, "SÁNG" to ThemeMode.DAY).forEach { (name, mode) ->
+            artDominants.forEach { dom ->
+                CardTone.values().forEach { t ->
+                    KachiTheme.applyTheme(mode, 12, ColorChoice(AccentChoice.FROM_ART, t), intArrayOf(dom))
+                    block(Pal("$name·ẢNH#${"%06X".format(dom and 0xFFFFFF)}·$t", KachiTheme.palette)); n++
+                }
+            }
+        }
+        return n
+    }
+
+    private fun hsv(h: Int, s: Float, v: Float): Int {
+        val c = v * s; val x = c * (1 - Math.abs((h / 60f) % 2 - 1)); val m = v - c
+        val (r, g, b) = when {
+            h < 60 -> Triple(c, x, 0f); h < 120 -> Triple(x, c, 0f); h < 180 -> Triple(0f, c, x)
+            h < 240 -> Triple(0f, x, c); h < 300 -> Triple(x, 0f, c); else -> Triple(c, 0f, x)
+        }
+        fun ch(f: Float) = Math.round((f + m) * 255)
+        return (0xFF shl 24) or (ch(r) shl 16) or (ch(g) shl 8) or ch(b)
+    }
+
     /** Phép nhân của `GradientDrawable.modulateAlpha` (viết lại độc lập — không gọi `ChromeStack`). */
     private fun drawn(c: Int, a: Int): Int = ColorMath.withAlpha(c, (ColorMath.alpha(c) * (a + (a shr 7))) shr 8)
     private fun byteOf(t: Double) = Math.round(t * 255).toInt().coerceIn(0, 255)
@@ -137,7 +172,7 @@ class ChromeOpacityContrastContractTest {
     @Test
     fun `kinh tren anh nen doc duoc o moi bac, ke ca thu nam tren khay`() {
         val s = Sweep()
-        forEachPalette { pal ->
+        val artPalettes = forEachArtPalette { pal ->
             ChromeOpacity.STEPS.forEach { pct ->
                 KachiChrome.apply(pct, true)
                 listOf(SurfaceTone.NEUTRAL, SurfaceTone.WELL).forEach { tone ->
@@ -147,13 +182,16 @@ class ChromeOpacityContrastContractTest {
                      * bề mặt. [extra] = mực màu thẻ KHAI (`KachiGlass.apply(extraInks)` — ô nén khai màu chữ của nó).
                      */
                     fun glass(f: Double, l: Double, extra: IntArray = IntArray(0)): List<Int> {
-                        val shown = if (f < 1.0) IntArray(pair.size) { drawn(pair[it], byteOf(f)) } else pair
-                        // QUYẾT ĐỊNH lớp che lấy từ sản phẩm, đúng công thức của `WallWindowDrawable.relocate` + `paint`
-                        // (bài `KachiChromeContractTest` ghim công thức đó): max(bộ giải chữ, sàn thứ trên khay/mực khai).
+                        // QUYẾT ĐỊNH bề mặt + lớp che lấy từ sản phẩm, đúng công thức của `WallWindowDrawable.relocate` +
+                        // `paint` (bài `KachiChromeContractTest` ghim công thức đó): bề mặt theo vùng (soát vòng 2 — thẻ mà
+                        // lớp che 100 % không cứu được giữ bề mặt đục hơn), lớp che = max(bộ giải chữ, sàn thứ trên khay/mực khai).
                         val well = tone == SurfaceTone.WELL
+                        val fits = f < 1.0 && (well || extra.isNotEmpty())
+                        val sf = if (fits) KachiChrome.glassSurface(l, pal.bg, pair, pal.inks, extra, well, GlassVeil.MIN * f) else f
+                        val shown = if (sf < 1.0) IntArray(pair.size) { drawn(pair[it], byteOf(sf)) } else pair
                         val a = maxOf(
                             GlassVeil.alphaFor(l, pal.bg, shown, pal.inks, min = GlassVeil.MIN * f, max = if (f < 1.0) 1.0 else GlassVeil.MAX),
-                            if (f < 1.0 && (well || extra.isNotEmpty())) KachiChrome.glassFloor(l, pal.bg, pair, shown, pal.inks, extra, well, GlassVeil.MIN * f) else 0.0,
+                            if (fits) KachiChrome.glassFloor(l, pal.bg, pair, shown, pal.inks, extra, well, GlassVeil.MIN * f) else 0.0,
                         )
                         val veiled = ColorMath.over(ColorMath.withAlpha(pal.bg, (a * 255).toInt()), ColorMath.grayOfLuminance(l))
                         return stack(listOf(veiled), shown)
@@ -182,7 +220,8 @@ class ChromeOpacityContrastContractTest {
                 }
             }
         }
-        assertTrue(s.n >= 2 * 24 * 5 * 21 * (6 + 5 + 2), "quét thiếu ca: ${s.n}")
+        assertTrue(s.n >= 2 * (24 + artDominants.size * 3) * 5 * 21 * (6 + 5 + 2), "quét thiếu ca: ${s.n}")
+        assertEquals(2 * artDominants.size * CardTone.values().size, artPalettes, "phải quét cả bảng màu nhấn theo ảnh")
         assertTrue(s.bad.isEmpty(), "kính mờ theo bậc làm hỏng chữ: ${s.report()}")
     }
 

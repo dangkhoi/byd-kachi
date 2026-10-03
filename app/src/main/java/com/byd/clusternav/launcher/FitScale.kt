@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.byd.clusternav.R
 import com.byd.clusternav.launcher.GridFit.Form
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -63,8 +64,12 @@ internal class FitScale(private val root: View) {
         val minH = v.minimumHeight
         val text = (v as? TextView)?.let { TextBase(it) }
         val isLabel = text != null && text.maxLines in 2..3
-        val free = text != null && text.maxLines == 1 && (v as TextView).ellipsize != null
+        val free = text != null &&
+            FitRules.freeText(v.getTag(R.id.kachi_fit_free_text) == true, text.maxLines, (v as TextView).ellipsize != null)
         val visibility = v.visibility
+
+        /** `weight` bộ áp đang ghi đè lên con này (phép lật) — `null` = weight là của bộ dựng ([FitRules.weight]). */
+        var heldWeight: Float? = null
     }
 
     private val bases = ArrayList<Base>()
@@ -175,8 +180,9 @@ internal class FitScale(private val root: View) {
 
     /**
      * `LayoutParams`: bề rộng/cao/`weight` đích do [FitRules.lp] quyết (`:core`, test thuần — cỡ cố định × k, con
-     * `weight` đổi trục khi lật, con `MATCH_PARENT` CHIA hàng ngang thay vì nuốt hết hàng); lề ngoài × k (lề "chỉ
-     * dọc" xoay khi lật). Icon cỡ cố định đổi cỡ ⇒ [KachiIcons.refit] chọn lại biến thể + tint theo cỡ ĐÃ KHỚP.
+     * `weight` đổi trục khi lật, con `MATCH_PARENT` CHIA hàng ngang thay vì nuốt hết hàng), weight chỉ ghi khi bộ áp sở
+     * hữu nó ([FitRules.weight]); lề ngoài × k (lề "chỉ dọc" xoay khi lật). Icon cỡ cố định đổi cỡ ⇒
+     * [KachiIcons.refit] chọn lại biến thể + tint theo cỡ ĐÃ KHỚP.
      */
     private fun params(b: Base, k: Double, rot: Boolean): Boolean {
         val lp = b.v.layoutParams ?: return false
@@ -184,7 +190,12 @@ internal class FitScale(private val root: View) {
         var changed = false
         if (lp.width != t.width) { lp.width = t.width; changed = true }
         if (lp.height != t.height) { lp.height = t.height; changed = true }
-        if (lp is LinearLayout.LayoutParams && lp.weight != t.weight) { lp.weight = t.weight; changed = true }
+        if (lp is LinearLayout.LayoutParams) {
+            // Soát vòng 2 (P3): chỉ ghi weight bộ áp SỞ HỮU (lật ngang) — weight bộ dựng đổi lúc chạy (thanh tiến trình
+            // nhạc) không bị kéo về số lúc chụp ở mỗi lượt áp.
+            FitRules.weight(b.weight, t.weight, lp.weight, b.heldWeight)?.let { lp.weight = it; changed = true }
+            b.heldWeight = t.weight.takeIf { it != b.weight }
+        }
         if (changed && b.v is ImageView && t.width > 0 && t.height > 0) KachiIcons.refit(b.v, minOf(t.width, t.height))
         val m = b.margins
         if (m != null && lp is ViewGroup.MarginLayoutParams) {
@@ -277,11 +288,14 @@ internal class FitScale(private val root: View) {
     fun autoSized(tv: TextView): Boolean = bases.firstOrNull { it.v === tv }?.text?.auto == true
 
     /**
-     * `true` nếu [tv] là chữ TỰ DO một dòng (bộ dựng đặt `maxLines = 1` + `ellipsize`: giá trị, tên bài) — `…` là thiết
-     * kế của nó, phép kiểm cắt chữ chỉ đòi nó trọn tới ngân sách [FitRules.FREE_TEXT_EM]. Nhãn (`maxLines` 2..3 GỐC) không
-     * phải, kể cả khi dạng 1 dòng đặt nó về `maxLines = 1`.
+     * `true` nếu [tv] là chữ TỰ DO một dòng mà bộ dựng KHAI ([markFree] — tên bài, nghệ sĩ) — `…` là thiết kế của nó,
+     * phép kiểm cắt chữ chỉ đòi nó trọn tới ngân sách [FitRules.FREE_TEXT_EM]. Giá trị/chú thích `maxLines = 1` +
+     * `ellipsize` KHÔNG phải (soát vòng 2, P3 — [FitRules.freeText]); nhãn (`maxLines` 2..3 GỐC) cũng không.
      */
     fun freeLine(tv: TextView): Boolean = bases.firstOrNull { it.v === tv }?.free == true
+
+    /** `true` nếu [tv] là NHÃN của ô (KDoc lớp) — hiện/ẩn của nó do bộ áp sở hữu ([FitRules.sigStep]). */
+    fun isLabel(tv: TextView): Boolean = bases.firstOrNull { it.v === tv }?.isLabel == true
 
     /** Mọi khung con (`ViewGroup`) của ô, kể cả gốc — cho phép kiểm con TRÀN khung cha ([FitProbe.clipped]). */
     fun groups(): List<ViewGroup> = bases.mapNotNull { it.v as? ViewGroup }
@@ -292,4 +306,12 @@ internal class FitScale(private val root: View) {
     /** Cạnh nhỏ của các nút bấm cỡ cố định bên trong ô (px gốc) — sàn đích chạm (nút nhạc 48dp không được co). */
     fun baseTouchSides(): List<Int> =
         bases.filter { it.v !== root && it.v.isClickable && it.lpW > 0 && it.lpH > 0 }.map { minOf(it.lpW, it.lpH) }
+
+    companion object {
+        /**
+         * Bộ dựng KHAI [tv] là chữ tự do (dài vô hạn theo thiết kế: tên bài, nghệ sĩ) ⇒ được `…` sau ngân sách
+         * [FitRules.FREE_TEXT_EM] thay vì kéo cỡ cả lưới. Gọi lúc DỰNG, trước khi ô vào lưới khớp (bộ áp chụp một lần).
+         */
+        fun markFree(tv: TextView): TextView = tv.apply { setTag(R.id.kachi_fit_free_text, true) }
+    }
 }

@@ -205,6 +205,14 @@ class VoiceLangWiringContractTest {
         assertEquals(1, Regex("""voiceLang\(\)""").findAll(tts).count(), "đọc tiếng ĐÚNG một chỗ: lambda đọc lại mỗi lượt")
         assertTrue(code(l + "voice/VoiceSpeakerRouter.kt").contains("androidLangStatus = android.languageStatus(),"),
             "bộ chọn đường đọc lấy số qua languageStatus() (đã theo tiếng)")
+        // Soát vòng 2 [P3] — vòng khoá: `onInit` chạy khi luồng chính GIỮ `TextToSpeech.mStartLock` (AOSP r47 `:2220-2228`,
+        // `:832-838`); mở [inited] trước `follow` thì một luồng phiên vào `voice.sync` (giữ khoá `TtsVoiceLang`) rồi chờ
+        // `mStartLock`, còn luồng chính chờ khoá `TtsVoiceLang` ⇒ ANR. `follow` phải XONG trước khi mở cổng.
+        val configure = SourceRoots.body(tts, "private fun configure(engine: TextToSpeech)")
+        val follow = configure.indexOf("follow(engine)")
+        val gate = configure.indexOf("inited.set(true)")
+        assertTrue(follow in 0 until gate, "follow(engine) TRƯỚC inited.set(true): $configure")
+        assertEquals(1, Regex("""inited\.set\(true\)""").findAll(tts).count(), "đúng MỘT chỗ mở cổng")
     }
 
     // ══ (6) Harness E2E giọng nói kiểm tiếng TRƯỚC khi so preview tiếng Việt (soát 2.87 · voice P3) ═══════════════
@@ -228,5 +236,10 @@ class VoiceLangWiringContractTest {
         val pre = sh.indexOf("require_voice_vi \"trước lượt chạy\"")
         assertTrue(pre in 0 until dispatch, "kiểm TRƯỚC khi chạy T1/T2")
         assertTrue(sh.contains("profile:*) require_voice_vi "), "kiểm lại sau ca đổi hồ sơ")
+        // Soát vòng 2 [P3] — câu dừng nêu ĐÚNG TÊN hồ sơ mang ngôn ngữ sai (đọc từ cùng bản state). Sau ca đổi hồ sơ, `cleanup`
+        // đã trả máy về hồ sơ lúc bắt đầu ⇒ "hồ sơ đang dùng" chỉ QA sửa nhầm chỗ (CLAUDE.md §2: chẩn đoán sai địa chỉ).
+        assertTrue(fn.contains("get profile.active") && fn.contains("where=\"cho hồ sơ «\${prof:-?}»\""), "câu dừng nêu tên hồ sơ")
+        assertTrue(fn.contains("[ \"\$prof\" != \"\$ORIG_PROFILE\" ]") && fn.contains("harness đã trả máy về"), "nói rõ hồ sơ đã được trả về")
+        assertFalse(fn.contains("cho hồ sơ đang dùng"), "không còn câu chỉ nhầm hồ sơ")
     }
 }

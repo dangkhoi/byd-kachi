@@ -15,6 +15,10 @@ import kotlin.math.roundToInt
  *  - [usable]: dạng nào được đưa vào phép khớp;
  *  - [reprobe] + [settle]: khi nào đo dò lại một ô vì chữ đã đổi, và nhận số đo mới ra sao (không giật).
  *
+ * Soát vòng 2 (2.87) thêm: [Cell] + [known] (trình tự đo dò lại của một ô — trạng thái cắt CHƯA BIẾT không được chốt,
+ * lượt thưa không nuốt vết cắt thật), [splitsNumber] (số bị bẻ đôi qua hai dòng), [sigStep] (dấu chữ không phụ thuộc dạng),
+ * [weight] (bộ áp chỉ ghi weight nó sở hữu), [freeText] + [cut] (ngân sách `…` chỉ cho chữ tự do được khai).
+ *
  * Số dp KHÔNG sống ở đây (`SpacingScaleContractTest`): mọi đầu vào là px do tầng vẽ đo/đổi.
  */
 object FitRules {
@@ -53,12 +57,67 @@ object FitRules {
     }
 
     /**
-     * Ngân sách của chữ TỰ DO một dòng (`maxLines = 1` + `ellipsize`, không phải nhãn) tính theo em của chính nó:
-     * chữ ngắn hơn ngân sách (giá trị `2.3–2.5`, `418 km`, `µg · Tốt` ≈ 3–5 em) phải hiện TRỌN; chữ dài hơn (tên bài
-     * hát 100 ký tự) được `…` sau [FREE_TEXT_EM] em. Không có trần này thì một chuỗi dài quyết cỡ CẢ lưới (hộp chung
-     * = MAX các ô) và kéo mọi ô xuống sàn (soát vòng 1, P2). [ĐỀ XUẤT, owner chốt].
+     * `weight` bộ áp phải GHI cho một con (`null` = không đụng). [base] = weight của bộ dựng lúc chụp, [target] = weight
+     * [lp] trả, [current] = weight đang có, [held] = weight bộ áp đã ghi đè lần trước (`null` = không giữ).
+     *
+     * Bộ áp chỉ SỞ HỮU weight khi phép lật ĐỔI nó (con [MATCH] ⇒ `0 + weight 1`) — và trả lại [base] khi về dạng không
+     * lật, nếu weight đang có vẫn đúng là số nó đã ghi. Ngoài lúc đó weight là của BỘ DỰNG: thanh tiến trình nhạc đổi
+     * weight `done`/`rest` mỗi nhịp (`MediaWidgetView.fillMedia`); ghi weight = số lúc chụp ở mỗi lượt áp là kéo thanh
+     * về vị trí lúc dựng tới nhịp sau (soát vòng 2, P3).
+     */
+    fun weight(base: Float, target: Float, current: Float, held: Float?): Float? = when {
+        target != base -> target.takeIf { it != current }
+        held != null && current == held && current != base -> base
+        else -> null
+    }
+
+    /**
+     * Ngân sách của chữ TỰ DO một dòng (`maxLines = 1` + `ellipsize`, bộ dựng KHAI là tự do — [freeText]) tính theo em
+     * của chính nó: chữ ngắn hơn ngân sách phải hiện TRỌN; chữ dài hơn (tên bài hát 100 ký tự) được `…` sau
+     * [FREE_TEXT_EM] em. Không có trần này thì một chuỗi dài quyết cỡ CẢ lưới (hộp chung = MAX các ô) và kéo mọi ô
+     * xuống sàn (soát vòng 1, P2). [ĐỀ XUẤT, owner chốt].
      */
     const val FREE_TEXT_EM = 6.0
+
+    /**
+     * Chữ nào được hưởng ngân sách [FREE_TEXT_EM]: CHỈ chữ bộ dựng khai là tự do ([optIn] — tên bài, nghệ sĩ: dài vô hạn
+     * theo thiết kế) VÀ là một dòng có `…`. Giá trị (VIN, `418 km`), chú thích (nhãn làm dòng phụ khi không có đơn vị),
+     * dấu "chưa kiểm" KHÔNG: R-WF2 — còn bố cục đọc được thì phải hiện TRỌN. Bản soát vòng 1 cho MỌI chữ
+     * `maxLines = 1` + `ellipsize` hưởng ngân sách ⇒ `Chế độ vận h…`, `LGXC…` dù co nhỏ hơn vẫn đọc trọn (soát vòng 2, P3).
+     */
+    fun freeText(optIn: Boolean, maxLines: Int, ellipsized: Boolean): Boolean = optIn && maxLines == 1 && ellipsized
+
+    /** Chữ đang `…` ([ellipsized]) có tính là BỊ CẮT không: chữ thường ⇒ luôn; chữ tự do ([free]) ⇒ [freeTextCut]. */
+    fun cut(ellipsized: Boolean, free: Boolean, availPx: Float, textPx: Float): Boolean =
+        ellipsized && (!free || freeTextCut(availPx, textPx))
+
+    /**
+     * Dòng mới bắt đầu ở [at] có BẺ ĐÔI một con số không (`100` → `10` / `0`). `TextView` không `maxLines` mà hẹp hơn
+     * một "từ" thì bộ ngắt dòng bẻ ở MỌI ranh giới chữ (desperate break — `OptimalLineBreaker.cpp:163-176`, `:252-256`
+     * minikin android-10). Phép kiểm cắt chữ cũ chỉ thấy chữ bị cắt/tràn: số `WRAP` (hàng `AxisRow` ô tốc độ) dài thêm
+     * một chữ số mà ô còn chỗ theo chiều dọc thì hiện `10`/`0` mà không bị coi là cắt ⇒ không bao giờ đo dò lại
+     * (soát vòng 2, P1). Chỉ xét SỐ (chữ số; `.`/`,`/`:` kẹp giữa hai chữ số): mọi ngôn ngữ đều không xuống dòng giữa
+     * một con số, còn chữ Thái/Hán xuống dòng giữa hai chữ cái là bình thường.
+     */
+    fun splitsNumber(text: CharSequence, at: Int): Boolean {
+        fun numeric(i: Int): Boolean {
+            if (i !in text.indices) return false
+            val c = text[i]
+            if (c.isDigit()) return true
+            return c in ".,:" && i - 1 >= 0 && i + 1 < text.length && text[i - 1].isDigit() && text[i + 1].isDigit()
+        }
+        return at in 1 until text.length && numeric(at - 1) && numeric(at)
+    }
+
+    /**
+     * Một bước của dấu nội dung chữ của ô ([h] = dấu tới chữ trước): chữ + hiện/ẩn. Hiện/ẩn của NHÃN ([label]) KHÔNG vào
+     * dấu: bộ áp sở hữu nó (chỉ-icon ẩn nhãn, dạng khác trả lại). Tính vào thì dấu chụp lúc đo dò — đo dò để ô ở dạng
+     * cuối, chỉ-icon, nhãn `GONE` — không bao giờ khớp dấu ở dạng đang hiện ⇒ mọi ô nút/gói lệnh đo dò lại mỗi
+     * [RECHECK_MS] mãi mãi, kèm một lượt đo cả màn (soát vòng 2, P2). Không phụ thuộc dạng ⇒ dấu lúc đo dò = dấu ở dạng
+     * đang hiện, ở MỌI dạng.
+     */
+    fun sigStep(h: Int, text: String, visibility: Int, label: Boolean): Int =
+        31 * (31 * h + text.hashCode()) + if (label) 0 else visibility
 
     /**
      * Chữ tự do một dòng đang `…` có tính là BỊ CẮT không: chỉ khi chỗ dành cho nó ([availPx]) còn hẹp hơn ngân sách
@@ -122,5 +181,109 @@ object FitRules {
         val keep = 1.0 - SHRINK_HYSTERESIS
         val shrank = new.widthPx < old.widthPx * keep || new.heightPx < old.heightPx * keep
         return if (notBigger && shrank) new else old
+    }
+
+    /** Trạng thái cắt chữ của một ô lúc xét đo dò lại. */
+    enum class Clip {
+        NO,
+        YES,
+
+        /**
+         * CHƯA BIẾT: một chữ đang hiện CHƯA có bố cục. `TextView` bề rộng `WRAP` đổi chữ ⇒ `checkForRelayout` rơi nhánh
+         * bề rộng động ⇒ `nullLayouts()` + `requestLayout()` (`TextView.java:9686-9691`, `:8848-8861` r47; `:9817-9822`,
+         * `:8978-8992` 12_r34) ⇒ ngay sau `setText`, `getLayout()` là `null` tới lượt đo kế. Đọc "không cắt" lúc ấy là
+         * đọc nhầm (soát vòng 2, P1).
+         */
+        UNKNOWN,
+    }
+
+    /**
+     * Trạng thái cắt đọc NGAY SAU một lượt đo ([measured]): chữ vẫn không có bố cục nghĩa là khung cha không đo nó (không
+     * vẽ) ⇒ không thể cắt ⇒ [Clip.NO]. [Clip.UNKNOWN] chỉ có nghĩa TRƯỚC lượt đo (đổ tại chỗ). Không có bước này thì một
+     * chữ mà khung cha không bao giờ đo sẽ chặn MÃI việc xét lại ô — gate đường phục hồi bằng dữ liệu mà chỉ chính đường
+     * đó làm mới được (CLAUDE.md §3).
+     */
+    fun known(clip: Clip, measured: Boolean): Clip = if (measured && clip == Clip.UNKNOWN) Clip.NO else clip
+
+    /** Kết luận một lần xét ([Cell.check]). */
+    enum class Verdict {
+        /** Không làm gì. */
+        NONE,
+
+        /** Chưa biết — KHÔNG quyết gì; lượt đo kế (chữ đã tự xin) xét lại trên bố cục thật. */
+        WAIT,
+
+        /** Phải đo dò lại ô ở lượt khớp kế ([Cell.stale]). */
+        DUE,
+    }
+
+    /**
+     * Nhịp đo dò lại của MỘT ô co giãn (`FitGridLayout` giữ một cái cho mỗi ô). Kéo về `:core` ở soát vòng 2 (P1) để
+     * test thuần cả TRÌNH TỰ sự kiện (đổ tại chỗ → lượt đo → lượt khớp) — lỗi nằm ở thứ tự, không ở một phép tính:
+     *  - [check]: chữ đổi ⇒ theo nhịp [reprobe]; trạng thái cắt [Clip.UNKNOWN] ⇒ [Verdict.WAIT], KHÔNG chốt gì. Bản
+     *    trước chốt "lượt thưa" (`grow = false`) ngay chỗ đổ tại chỗ (bố cục `null` ⇒ "không cắt"); lượt đo sau thấy
+     *    cắt thật cũng không đổi được ⇒ [settle] giữ hộp cũ ⇒ số `100` kẹt `10`/`0`;
+     *  - ô đã [stale] mà lần xét sau THẤY cắt ⇒ nâng thành lượt nhận số mới ([grow]) — lượt thưa không bao giờ nuốt
+     *    một vết cắt thật;
+     *  - [fitted]: sau lượt khớp ô còn cắt/tràn mà số đo đang dùng là số CŨ do [settle] giữ ([kept]) ⇒ báo chỗ gọi
+     *    nhận số đo thật NGAY (không đo dò thêm), thay vì ghi dấu của chữ đang cắt rồi không bao giờ xét lại.
+     */
+    class Cell {
+        /** Đến lượt đo dò lại — lượt khớp kế đo rồi gộp bằng [settle]. */
+        var stale = false
+            private set
+
+        /** Lượt đo dò đó vì chữ bị CẮT (nhận số mới) hay lượt thưa (chỉ nhận khi hộp nhỏ đi rõ). */
+        var grow = false
+            private set
+
+        /** Sau lượt khớp trước ô vẫn còn cắt/tràn ⇒ lượt đo dò sau phải thưa ([reprobe]). */
+        var stuck = false
+            private set
+
+        /** Số đo đang dùng có dạng là số CŨ do [settle] giữ (lượt thưa) — chỗ gọi còn giữ số đo thật để nhận. */
+        var kept = false
+            private set
+
+        /** Thời điểm (ms, đồng hồ đơn điệu) của lượt đo dò gần nhất. */
+        var probedAt = 0L
+            private set
+
+        /**
+         * Xét ô: [sigSame] = dấu chữ trùng lúc đo, [legible] = lưới đang ở tầng đọc được, [nowMs] = giờ, [clip] = đọc
+         * trạng thái cắt (chỉ gọi khi cần — đọc bố cục chữ, không đo).
+         */
+        fun check(sigSame: Boolean, legible: Boolean, nowMs: Long, clip: () -> Clip): Verdict {
+            if (stale) {
+                if (!grow && clip() == Clip.YES) grow = true
+                return Verdict.DUE
+            }
+            if (sigSame) return Verdict.NONE
+            val c = clip()
+            if (c == Clip.UNKNOWN) return Verdict.WAIT
+            if (!reprobe(c == Clip.YES, legible, stuck, nowMs - probedAt)) return Verdict.NONE
+            stale = true
+            grow = c == Clip.YES
+            return Verdict.DUE
+        }
+
+        /** Lượt khớp vừa đo dò ô lúc [nowMs]; [kept] = [settle] giữ số cũ ở ít nhất một dạng. */
+        fun probed(nowMs: Long, kept: Boolean) {
+            stale = false
+            grow = false
+            probedAt = nowMs
+            this.kept = kept
+        }
+
+        /**
+         * Sau lượt khớp (đã áp + kiểm lại): ô còn cắt/tràn ([clipped])? Trả `true` (một lần) khi phải nhận NGAY số đo
+         * thật vì số đang dùng là số cũ [settle] giữ — hysteresis không được đổi lấy chữ bị cắt (R-WF2).
+         */
+        fun fitted(clipped: Boolean): Boolean {
+            stuck = clipped
+            if (!clipped || !kept) return false
+            kept = false
+            return true
+        }
     }
 }

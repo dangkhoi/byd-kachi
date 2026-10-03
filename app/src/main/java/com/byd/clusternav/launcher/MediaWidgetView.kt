@@ -34,10 +34,12 @@ object MediaWidgetView {
         val art = ImageView(ctx).apply {
             background = KachiTheme.gradient(ctx, Sp.RADIUS_L, KachiTheme.ORANGE, KachiTheme.ART_TO)
         }
-        val title = WidgetViews.tv(ctx, "", 15f, KachiTheme.INK, true)
-            .apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
-        val artist = WidgetViews.tv(ctx, "", 12.5f, KachiTheme.MUT)
-            .apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END }
+        // Tên bài + nghệ sĩ dài vô hạn theo thiết kế ⇒ KHAI là chữ tự do cho phép khớp (`…` sau ngân sách, không kéo cỡ
+        // cả ô) — giá trị/chú thích các ô khác không khai nên phải hiện trọn (soát vòng 2, P3).
+        val title = FitScale.markFree(WidgetViews.tv(ctx, "", 15f, KachiTheme.INK, true)
+            .apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
+        val artist = FitScale.markFree(WidgetViews.tv(ctx, "", 12.5f, KachiTheme.MUT)
+            .apply { maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END })
         // Thanh tiến trình = hai ô chia theo `weight`. Đổi tiến trình = đổi weight rồi đặt lại `layoutParams` (nó tự
         // `requestLayout`) — KHÔNG dựng lại thanh, vì dựng lại thanh là dựng lại cả ô.
         val done = View(ctx).apply {

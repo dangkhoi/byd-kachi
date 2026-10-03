@@ -197,7 +197,7 @@ object WidgetViews {
             "w_speed"  -> miniCard(ctx, data, "ic-speed", KachiTheme.RED) { d -> MiniValue(d.car.drivetrain.speedKmh?.toString() ?: "—", "km/h") }
             "w_tire"   -> tyreMini(ctx, data)
             "w_clock"  -> miniCard(ctx, data, "ic-sun", KachiTheme.INK) { MiniValue(SimpleDateFormat("HH:mm", LangHost.locale()).format(Date()), SimpleDateFormat("dd/MM", LangHost.locale()).format(Date())) }
-            "w_media"  -> miniCard(ctx, data, "ic-music", KachiTheme.AMBER) { d -> MiniValue(d.media?.title ?: "—", d.media?.artist ?: "") }
+            "w_media"  -> miniCard(ctx, data, "ic-music", KachiTheme.AMBER, free = true) { d -> MiniValue(d.media?.title ?: "—", d.media?.artist ?: "") }
             "w_car"    -> miniCard(ctx, data, "ic-lock", KachiTheme.GREEN) { MiniValue(ctx.getString(R.string.kachi_widget_car)) }
             "w_board"  -> miniCard(ctx, data, "ic-grid", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kachi_widget_board)) }
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }

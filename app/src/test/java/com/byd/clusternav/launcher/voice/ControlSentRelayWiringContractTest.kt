@@ -49,6 +49,30 @@ class ControlSentRelayWiringContractTest {
         assertFalse(manifest.contains("com.byd.launcher.CONTROL_SENT"), "không khai receiver tĩnh/exported cho kênh nội bộ này")
     }
 
+    /**
+     * Soát vòng 2 [P3] — dòng từ `:wake` ĐỔI bảng thì ô nút vẽ lại NGAY (bản trước: ô vẫn "đóng" tới lần trạng thái xe đổi kế
+     * tiếp, cú chạm kế làm ngược hình). Luật đếm ở `:core` (`ControlLastSentTest.dong tu wake doi bang…`); ở đây khoá dây:
+     * màn chính THU [ControlLastSent.relayed] trong `repeatOnLifecycle(STARTED)` (luồng chính, tự huỷ khi màn khuất), chỉ khi
+     * số đổi so với lượt đã vẽ, rồi đổ lại thanh nút + ô hành động giữa màn với trạng thái xe ĐANG CÓ.
+     */
+    @Test
+    fun `dong tu wake doi bang thi o nut ve lai ngay tren luong chinh`() {
+        val wiring = code("src/main/java/com/byd/clusternav/launcher/KachiHomeWiring.kt")
+        val collect = SourceRoots.body(wiring, "internal fun collectHome(")
+        val seen = collect.indexOf("var seen = ControlLastSent.shared.relayed.value")
+        val sub = collect.indexOf("ControlLastSent.shared.relayed.collect { v -> if (v != seen) { seen = v; resyncTiles() } }")
+        val life = collect.lastIndexOf("repeatOnLifecycle(Lifecycle.State.STARTED)", sub)
+        assertTrue(seen in 0 until life && life < sub, "thu trong repeatOnLifecycle(STARTED), mốc đã vẽ chụp TRƯỚC: $collect")
+        assertTrue("collectHome(this, viewModel, container, resyncTiles = { resyncTiles() })" in
+            code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt"), "màn chính nối đúng hàm vẽ lại")
+        val resync = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/KachiHomeRender.kt"), "internal fun KachiHomeActivity.resyncTiles()")
+        assertTrue("val car = viewModel.uiState.value.carStatus" in resync && "dock.setCarStatus(car)" in resync &&
+            "WidgetRefreshers.resyncActions(workspace, car)" in resync, "thanh nút + ô giữa màn, trạng thái xe ĐANG CÓ: $resync")
+        val walk = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/WidgetRefreshers.kt"), "fun resyncActions(")
+        assertTrue("refreshAction(root, car)" in walk && "FitGridLayout.contentChanged(root)" in walk, "đổ qua đúng hàm đổ của ô, không dựng view")
+        assertFalse("addView(" in walk || "removeView" in walk, "bất biến 1: hàm đổ không dựng/tháo view")
+    }
+
     /** CLAUDE.md §8 + chống nối ở CẢ HAI đầu: mỗi đầu đúng MỘT chỗ gọi, đúng tệp. */
     @Test
     fun `moi dau cau dung mot cho goi`() {

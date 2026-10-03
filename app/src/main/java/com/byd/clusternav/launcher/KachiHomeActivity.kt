@@ -315,7 +315,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
         )
 
         // Hai vòng thu (state của VM + trạng thái xe LIVE) — thân ở [collectHome] (trần 500 dòng).
-        collectHome(this, viewModel, container) { render(it) }
+        collectHome(this, viewModel, container, resyncTiles = { resyncTiles() }) { render(it) }
 
         // Nối shell dadb (localhost:5555) nền → ShellAppLauncher reflow như xe; dispatcher + ShellTransport + daemon do AppContainer sở hữu.
         val dadb = DadbShell(this)
