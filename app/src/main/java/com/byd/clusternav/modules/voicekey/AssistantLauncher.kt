@@ -12,11 +12,13 @@ import com.byd.clusternav.AdbKeys
 import com.byd.clusternav.Lang
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.voice.VoiceWakeService
+import com.byd.clusternav.launcher.voice.WakeSessionJournal
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellFailure
 import com.byd.clusternav.carexec.LocalShellResult
 import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.core.FloatAppList
+import com.byd.clusternav.launcher.KeyCtlTargets
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -76,6 +78,9 @@ object AssistantLauncher {
 
     /** @param spec package name của app, hoặc [TARGET_ASSIST]/[TARGET_RECOGNIZER]/[TARGET_GEMINI_KEY]. */
     fun launch(ctx: Context, spec: String): Boolean {
+        // FIX286 · R-KC — đích là một NÚT XE (`ctl:<nút>:<việc>`): không mở app nào; giao đường thi hành của nút
+        // (KeyCtlDispatch — chống dồn, làn nền, cùng cổng an toàn với giọng nói). Tên gói không chứa `:` ⇒ không trùng.
+        if (KeyCtlTargets.isCtl(spec)) return KeyCtlDispatch.fire(ctx, spec)
         // V1 pha NGHE: đích của CHÍNH Kachi — không mở app nào, mở một phiên nghe. Xem [launchKachiVoice].
         if (spec == TARGET_KACHI_VOICE) return launchKachiVoice(ctx)
         // Gemini/Google chỉ có nghĩa dạng ASSISTANT (voice). Mở app home = vô dụng (bug 1.19). → route keyevent 231.
@@ -123,7 +128,9 @@ object AssistantLauncher {
         // Owner 2026-09-25: mở phiên nghe HEADLESS (overlay nổi trên app đang xem), KHÔNG kéo KachiHomeActivity lên
         // đè app fullscreen. VoiceWakeService.listenNow dựng overlay TYPE_APPLICATION_OVERLAY từ service context —
         // cùng đường "Hey Kachi" đã dùng (fireWake). Chạy được cả khi wake TẮT.
-        VoiceWakeService.listenNow(app)
+        // FIX286 · VK6 — mang lối vào "phím" cho nhật ký phiên `:wake` (`wakelog`); FIX286 · VK2: khi phím gán Kachi nghe,
+        // `:wake` ở HOLD giữ mô hình nạp sẵn ⇒ lần bấm này dùng bản có sẵn, không nạp nguội 9–34 s như 2.62–2.85.
+        VoiceWakeService.listenNow(app, WakeSessionJournal.Entry.KEY)
         Log.i(TAG, "mở phiên nghe Kachi (headless overlay, không kéo launcher)")
         return true
     }

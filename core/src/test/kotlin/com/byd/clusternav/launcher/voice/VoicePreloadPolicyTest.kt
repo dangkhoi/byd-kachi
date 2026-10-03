@@ -61,12 +61,64 @@ class VoicePreloadPolicyTest {
 
     @Test
     fun `wake BAT thi tien trinh chinh khong nap san - mo hinh song o wake`() {
-        assertFalse(VoicePreloadPolicy.shouldPreloadInMain(wakeEnabled = true))
+        assertFalse(VoicePreloadPolicy.shouldPreloadInMain(modelInWake = true))
     }
 
     @Test
     fun `wake TAT thi giu nap san nhu cu (V3 R4)`() {
-        assertTrue(VoicePreloadPolicy.shouldPreloadInMain(wakeEnabled = false))
+        assertTrue(VoicePreloadPolicy.shouldPreloadInMain(modelInWake = false))
+    }
+
+    /**
+     * FIX286 · VK1 — bảng 4 ca (wake × phím): mô hình ở `:wake` (WAKE/HOLD) ⇒ chính KHÔNG nạp sẵn (một bản cho cả máy);
+     * OFF ⇒ nạp sẵn như V3 R4. Ca (wake TẮT, có phím) là ca đổi hành vi của 2.86: 2.85 nạp sẵn ở chính mà phím thì nghe
+     * ở `:wake` ⇒ bản nằm sai chỗ.
+     */
+    @Test
+    fun `bang 4 ca wake x phim - chi OFF moi nap san o tien trinh chinh`() {
+        listOf(false to false, false to true, true to false, true to true).forEach { (wake, key) ->
+            val mode = VoiceWakeMode.of(wake, key)
+            assertEquals(mode == VoiceWakeMode.OFF, VoicePreloadPolicy.shouldPreloadInMain(mode.modelInWake), "wake=$wake phím=$key")
+        }
+    }
+
+    /**
+     * [Senior review FIX286 Pass 2 · P2] chiều ngược của bảng trên: chế độ chuyển sang HOLD/WAKE GIỮA đời tiến trình thì
+     * bản đã nạp sẵn ở chính phải được TRẢ — nhưng không bao giờ dưới chân một phiên nghe đang chạy (giải mã trả rỗng).
+     * Bảng 4 ca (wake × phím) × có/không phiên: chỉ nhả khi mô hình ở `:wake` và không phiên nào chạy.
+     */
+    @Test
+    fun `tra ban cua tien trinh chinh khi mo hinh da o wake va khong co phien nao dang chay`() {
+        listOf(false to false, false to true, true to false, true to true).forEach { (wake, key) ->
+            val mode = VoiceWakeMode.of(wake, key)
+            assertEquals(mode.modelInWake, VoicePreloadPolicy.shouldHandOverToWake(mode.modelInWake, sessionRunning = false), "wake=$wake phím=$key")
+            assertFalse(VoicePreloadPolicy.shouldHandOverToWake(mode.modelInWake, sessionRunning = true), "phiên đang chạy ⇒ không nhả (wake=$wake phím=$key)")
+        }
+        // Hai chiều không bao giờ cùng đúng: nạp sẵn ở chính và trả bản của chính là hai quyết định loại trừ nhau.
+        listOf(true, false).forEach { inWake ->
+            assertFalse(VoicePreloadPolicy.shouldPreloadInMain(inWake) && VoicePreloadPolicy.shouldHandOverToWake(inWake, sessionRunning = false))
+        }
+    }
+
+    /**
+     * [Senior review FIX286 Pass 3 · P2] lượt trả bản không xong phải được HỎI LẠI — bản Pass 2 thử một lần rồi thôi nên
+     * lọt (a) chế độ đổi lúc chính đang nạp (BUSY) và (b) "đổi hồ sơ" nói bằng giọng từ phiên in-process (SKIPPED, không
+     * `onResume` nào tới sau đó). Hỏi lại chỉ khi chế độ vẫn ở `:wake` và chưa quá trần; xong (RELEASED/EMPTY) thì thôi.
+     */
+    @Test
+    fun `tra ban khong xong thi hoi lai khi che do van o wake va chua qua tran`() {
+        val busy = listOf(ModelHolder.Release.BUSY, ModelHolder.Release.SKIPPED)
+        busy.forEach { r ->
+            assertTrue(VoicePreloadPolicy.shouldRetryHandOver(r, modelInWake = true, waitedMs = 0), "$r ⇒ hỏi lại")
+            assertTrue(VoicePreloadPolicy.shouldRetryHandOver(r, true, VoiceWakeStandDown.MAX_WAIT_MS - 1), "$r còn trong trần")
+            assertFalse(VoicePreloadPolicy.shouldRetryHandOver(r, true, VoiceWakeStandDown.MAX_WAIT_MS), "$r quá trần ⇒ thôi")
+            assertFalse(VoicePreloadPolicy.shouldRetryHandOver(r, modelInWake = false, waitedMs = 0), "$r mà chế độ về OFF ⇒ chính GIỮ bản")
+        }
+        listOf(ModelHolder.Release.RELEASED, ModelHolder.Release.EMPTY).forEach { r ->
+            assertFalse(VoicePreloadPolicy.shouldRetryHandOver(r, modelInWake = true, waitedMs = 0), "$r ⇒ xong, không hỏi lại")
+        }
+        assertEquals(ModelHolder.Release.entries.toSet(), (busy + listOf(ModelHolder.Release.RELEASED, ModelHolder.Release.EMPTY)).toSet(),
+            "mọi kết cục của tryRelease đều có luật — thêm kết cục mới thì bài này đỏ, phải quyết nó")
     }
 
     @Test

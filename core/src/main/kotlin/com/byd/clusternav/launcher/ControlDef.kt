@@ -132,6 +132,33 @@ data class ControlDef(
      * trả `null` và ô **không bao giờ** dám nói AUTO (đúng, nhưng tính năng câm).
      */
     val autoId: String = "",
+    /**
+     * ═══ FIX286 · SR2 — lệnh **NHẢ** gửi sau mỗi lệnh ghi hợp lệ (mặc định `null` = không nhả, y như mọi bản trước) ═══
+     *
+     * [ĐO nguồn OEM, đọc lại 02/10] app Cài đặt BYD điều khiển nóc theo đúng một nhịp: `removeMessages(0)` → ghi →
+     * `sendEmptyMessageDelayed(0, 200)` → ghi **255** (`SunRoofFragment.java:834-836,858-860,1109`). Tức tín hiệu nóc
+     * là một **yêu cầu được giữ trên bus** cho tới khi bên gửi nhả — bắt buộc hay không: [SUY] (OEM luôn làm),
+     * chưa đo trên xe. Khai ở đây là DỮ LIỆU của dòng (CLAUDE.md §7, cùng khuôn [readInverted]/[halDevice]):
+     * `HalBindingTable.write` thi hành cho MỌI bề mặt (ô · giọng nói · gói lệnh · cầu `ctl`), nút không khai thì
+     * không đổi một lượt gọi nào.
+     */
+    val release: WriteRelease? = null,
+    /**
+     * ═══ FIX286 · SR4 — cổng *"xe này CÓ bộ phận này không"* theo **đo đạc**, không theo tên gói/đời xe ═══
+     *
+     * `null` (mặc định) ⇒ không cổng nào, y như trước. Khai ⇒ trước lệnh GHI, đọc getter cấu hình (nói **CÓ** thì cất
+     * MỘT lần mỗi tiến trình; nói "vắng" thì lệnh sau đọc lại — `ControlWriteFlow.presenceAbsent`); giá trị nằm trong
+     * [Presence.absentWhen] ⇒ tầng ghi **từ chối** (0 lượt gọi HAL) và nút được báo
+     * *"không có trên xe này"* qua đúng đường `featureAbsentOnCar` → `wiredOnThisCar` đã có. Đọc hỏng / sentinel /
+     * số lạ ⇒ **cho qua** (fail-open = hành vi hôm nay) — cổng chỉ được nói *"không có"* khi xe tự nói thế.
+     */
+    val presence: Presence? = null,
+    /**
+     * FIX286 · SR6 — getter **chẩn đoán** chụp thành MỘT dòng `ctl-probe` ở lượt ghi ĐẦU TIÊN của nút này trong mỗi
+     * tiến trình (nhật ký bền `ctl-writes.log`). Rỗng (mặc định) ⇒ không chụp gì. Đây là chỗ cho những getter mà
+     * một lượt thử hiện trường cần để **chốt nghĩa** (enum chưa rõ, cấu hình xe) — không phải đường đọc của ô.
+     */
+    val probe: List<HalProbe> = emptyList(),
 ) : Localized {
     fun clamp(v: Int): Int = if (kind == ControlKind.STEP) v.coerceIn(min, max) else v
 
@@ -152,4 +179,22 @@ data class ControlDef(
     /** [args] theo một ngôn ngữ CỤ THỂ (phép đọc thuần, cho test). */
     fun argsIn(lang: Lang): List<String> =
         if (lang == Lang.EN && argsEn.size == args.size && argsEn.isNotEmpty()) argsEn else args
+}
+
+/**
+ * FIX286 · SR4 — cổng có-mặt của một nút ([ControlDef.presence]).
+ *
+ * @property getter khoá getter dạng `bindingKey` named-method (`"BYDAutoBodyworkDevice.getMoonRoofConfig"`), 0 tham
+ *   số — cùng công thức FQN của [HalBindingTable.routeOf]; khoá không phân giải ra named-method ⇒ cổng câm (fail-open).
+ * @property absentWhen giá trị cấu hình nói *"xe này KHÔNG có bộ phận"*. Mọi giá trị khác, `null`, sentinel ⇒ có/không biết.
+ */
+data class Presence(val getter: String, val absentWhen: Set<Int>)
+
+/**
+ * FIX286 · SR6 — một getter chẩn đoán ([ControlDef.probe]): khoá named-method + tham số int (`null` = 0 tham số).
+ * Nhãn trong dòng nhật ký = tên method (kèm `(arg)` nếu có), để grep thẳng theo tên hàm của stub BYD.
+ */
+data class HalProbe(val getter: String, val arg: Int? = null) {
+    /** Nhãn trong dòng `ctl-probe`: `getWindowOpenPercent(5)` · `getMoonRoofConfig`. */
+    val label: String get() = getter.substringAfter('.') + (arg?.let { "($it)" } ?: "")
 }

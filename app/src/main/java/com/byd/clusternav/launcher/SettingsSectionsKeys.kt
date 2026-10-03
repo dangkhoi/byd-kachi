@@ -134,17 +134,47 @@ class SettingsKeysSection(
             context.getString(R.string.kachi_keys_no_buttons),
         ) { buttonIndex ->
             val code = buttons[buttonIndex].code
-            val targets = bridge.targetOptions()
-            SettingsDialogs.pick(
-                context,
-                context.getString(R.string.kachi_keys_pick_target),
-                targets.map { targetOptionLabel(it, targets) },
-                context.getString(R.string.kachi_keys_no_targets),
-            ) { targetIndex ->
-                bridge.addBinding(code, targets[targetIndex].spec)
+            pickTarget { spec ->
+                bridge.addBinding(code, spec)
                 rebuildBindings()
             }
         }
+    }
+
+    /**
+     * FIX286 · R-KC — bước 2 chọn **loại đích**: *"Ứng dụng · trợ lý"* (danh sách cũ, y nguyên) hoặc một NHÓM nút xe;
+     * nhóm ⇒ bước 3 chọn việc (*"Gió +1"*, *"Bật Kính lái"*…). Nhóm + việc SINH từ `ControlRegistry` qua
+     * [KeyCtlTargets.groups] (`:core`) — không chép tay, thêm nút vào registry là có mặt ở đây.
+     */
+    private fun pickTarget(onSpec: (String) -> Unit) {
+        val groups = KeyCtlTargets.groups()
+        SettingsDialogs.pick(
+            context,
+            context.getString(R.string.kachi_keys_pick_kind),
+            listOf(context.getString(R.string.kachi_keys_kind_apps)) + groups.map { it.displayLabel },
+            context.getString(R.string.kachi_keys_no_targets),
+        ) { kind ->
+            if (kind == 0) pickApp(onSpec) else pickControl(groups[kind - 1], onSpec)
+        }
+    }
+
+    private fun pickApp(onSpec: (String) -> Unit) {
+        val targets = bridge.targetOptions()
+        SettingsDialogs.pick(
+            context,
+            context.getString(R.string.kachi_keys_pick_target),
+            targets.map { targetOptionLabel(it, targets) },
+            context.getString(R.string.kachi_keys_no_targets),
+        ) { targetIndex -> onSpec(targets[targetIndex].spec) }
+    }
+
+    private fun pickControl(group: KeyCtlGroup, onSpec: (String) -> Unit) {
+        SettingsDialogs.pick(
+            context,
+            context.getString(R.string.kachi_keys_pick_action, group.displayLabel),
+            group.targets.map { KeyCtlTargets.displayLabel(it) },
+            context.getString(R.string.kachi_keys_no_targets),
+        ) { i -> onSpec(group.targets[i].spec) }
     }
 
     // ── Nút TỰ HỌC ───────────────────────────────────────────────────────────────────────────────
@@ -253,9 +283,14 @@ class SettingsKeysSection(
     private fun targetOptionLabel(option: TargetOption, targets: List<TargetOption>): String =
         option.appLabel ?: sentinelLabel(option.spec, targets)
 
-    /** [targets] truyền VÀO (không tự gọi `bridge.targetOptions()`): xem KDoc [rebuildBindings]. */
+    /**
+     * [targets] truyền VÀO (không tự gọi `bridge.targetOptions()`): xem KDoc [rebuildBindings].
+     * FIX286 · R-KC — đích nút xe (`ctl:…`) ⇒ nhãn sinh từ registry (*"Gió +1"*); mã hỏng/nút không còn ⇒ nguyên chuỗi
+     * (vẫn nhận ra dòng để xoá).
+     */
     private fun targetLabel(spec: String, targets: List<TargetOption>): String =
-        targets.firstOrNull { it.spec == spec }?.let { targetOptionLabel(it, targets) } ?: spec
+        if (KeyCtlTargets.isCtl(spec)) KeyCtlTargets.displayLabelOf(spec)
+        else targets.firstOrNull { it.spec == spec }?.let { targetOptionLabel(it, targets) } ?: spec
 
     /**
      * Tên các mục đặc biệt (ba mục cũ + *"Kachi nghe"* của V1 pha NGHE), tra theo **THỨ TỰ KHAI** của `ClusterNavBridge.targetOptions()` chứ không so chuỗi

@@ -1,0 +1,3 @@
+--------- beginning of system
+--------- beginning of main
+10-03 05:13:24.567 23364 24072 I KachiVd : ô ws@37466538#0: com.google.android.apps.maps không còn task trên display 232 ⇒ app đã đóng

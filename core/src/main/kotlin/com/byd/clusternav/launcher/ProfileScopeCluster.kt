@@ -119,6 +119,7 @@ object ProfileScopeCluster {
     /** Khoá theo XE của phụ lục này → lý do; [ProfileScope.DEVICE_KEYS] cộng bảng này. */
     val DEVICE_KEYS: Map<String, String> = buildMap {
         put(CastEnableDeferral.PENDING_KEY, "dấu 'máy chưa khớp hồ sơ' — theo hồ sơ thì đổi hồ sơ lại đẻ ra bản chờ giả")
+        put(CastEnableDeferral.COMMIT_MARK_KEY, "FIX286 — mốc bền lượt chốt bản chờ lúc khởi động của CHÍNH máy này (chẩn đoán)")
         put(MIGRATED_KEY, "dấu chạy-một-lần phải rộng hơn thứ nó bảo vệ (cùng lẽ migrated_nav_schedule_v1)")
         put("vm_float_whitelist_applied", "đã ghi VietMap vào byd_float_app_list — trạng thái đã áp vào HỆ THỐNG")
         put("profileOverride", "hồ sơ ĐỜI XE (kích cụm, tên service, chuỗi lệnh) — sự thật phần cứng, đã có parse chặt riêng")

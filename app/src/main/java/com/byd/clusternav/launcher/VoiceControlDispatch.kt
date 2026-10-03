@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.launcher.voice.VoiceIntent
 import com.byd.clusternav.launcher.voice.VoiceReply
+import com.byd.clusternav.launcher.voice.partNotOnThisCar
 
 /**
  * ═══ MỘT NÚT XE TỪ GIỌNG NÓI — và **báo xong** cho làn ghi ════════════════════════════════════════════════════
@@ -125,7 +126,17 @@ internal class VoiceControlDispatch(
                 val absent = VoiceReply.uncontrollable(shown) { id ->
                     !runCatching { control().wiredOnThisCar(id) }.getOrDefault(true)
                 }
-                say(if (absent) VoiceReply.notOnThisCar(shown) else VoiceReply.failed(shown))
+                // FIX286 · SR4 — vế hẹp hơn của `absent`: xe TỰ BÁO không có bộ phận (cổng có-mặt) ⇒ câu riêng.
+                val noPart = absent && VoiceReply.uncontrollable(shown) { id ->
+                    runCatching { control().partAbsentOnThisCar(id) }.getOrDefault(false)
+                }
+                say(
+                    when {
+                        noPart -> VoiceReply.partNotOnThisCar(shown)
+                        absent -> VoiceReply.notOnThisCar(shown)
+                        else -> VoiceReply.failed(shown)
+                    },
+                )
                 done()
                 return
             }

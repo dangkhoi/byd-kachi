@@ -179,8 +179,19 @@ class CapabilityIconsDiversityTest {
                 "nút `ac_auto` mang hình QUẠT, mà nhóm Khí hậu đã có đủ MAX_PER_DOMAIN=3 ô mang hình ấy " +
                     "(`fan` · `ac_auto` · datum `ac_wind`) ⇒ datum này lấy hình CHẾ ĐỘ, xem CapabilityIcons",
         )
+        // ⚠ 2.86 · FIX286 SR3 — nút MƯỢN getter của một datum cho một VÙNG KHÁC (`readArg` khác tham số của datum:
+        // `sunroof` đọc `getWindowOpenPercent(5)` qua datum `window_lf` = windowId 1) KHÔNG phải "ô xem của cùng một
+        // việc" — đúng phép tra `CapabilityDots.readsDatumItself`. Bỏ chúng khỏi phép so hình, nhưng chặt lại ở hai chỗ:
+        // danh sách người mượn là một tập ĐÓNG (thêm người mượn mới ⇒ đỏ, phải khai lý do), và hình của datum bị mượn
+        // vẫn phải là hình của nút CHÍNH CHỦ (kính lái), không bao giờ là hình của người mượn.
+        val borrowers = ControlRegistry.ALL.filter { it.readArg != null && it.readArg != HalBindingTable.readArg(it.readKey) }
+        assertEquals(listOf("sunroof"), borrowers.map { it.id }, "người mượn getter vùng khác phải khai tường minh ở đây")
+        borrowers.forEach { b ->
+            assertTrue(CapabilityDots.iconOverride(b.readKey) != b.icon, "${b.readKey} không được mang hình của ${b.id}")
+        }
         val mismatch = ControlRegistry.ALL
             .filter { it.readKey.isNotBlank() && TelemetryRegistry.byId(it.readKey) != null }
+            .filterNot { it in borrowers }
             .mapNotNull { def ->
                 val spec = TelemetryRegistry.byId(def.readKey)!!
                 val datumIcon = CapabilityDots.iconOverride(spec.id) ?: CapabilityIcons.forTelemetry(spec.id, spec.domain)

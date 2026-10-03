@@ -59,6 +59,28 @@ class SlotOverlayTest {
         assertTrue(SlotOverlay.EMPTY.afterSave(listOf(0), listOf(a)).isEmpty)
     }
 
+    /**
+     * FIX286 · R-SC1 — lối tắt *Ô n* đặt TẠM đè lên ô widget (owner 03/10 *"đạp widget ra để thay app vào đấy"*). Ba điều
+     * phải giữ: (1) id widget bên thứ ba KHÔNG thành rác — `AppWidgetIds.orphaned` đọc lớp LƯU, nên lượt render đặt tạm
+     * không gọi `deleteAppWidgetId` (id do nền tảng cấp, xoá rồi là mất vĩnh viễn); (2) widget của Kachi (trình chiếu ảnh)
+     * vẫn nằm nguyên trong lớp LƯU; (3) bỏ lớp tạm (khởi động lại = state mới · đổi hồ sơ = `reload`) ⇒ widget hiện lại.
+     */
+    @Test
+    fun `dat tam de len o widget - id widget khong thanh rac, lop luu giu widget, bo lop tam thi widget ve`() {
+        val aw = SlotContent.AppWidget(651, "com.google.android.deskclock/com.android.alarmclock.DigitalAppWidgetProvider")
+        val ws = saved(SlotContent.Widget("w_photos"), aw)
+        val before = HomeUiState(workspace = ws)
+        val after = before.copy(overlay = before.overlay.place(0, b).place(1, c))
+        assertEquals(SlotContent.App(b), after.effectiveWorkspace.slots[0], "ô trình chiếu ảnh hiện app đặt tạm")
+        assertEquals(SlotContent.App(c), after.effectiveWorkspace.slots[1], "ô widget bên thứ ba hiện app đặt tạm")
+        assertEquals(emptySet<Int>(), AppWidgetIds.orphaned(before, after), "đặt tạm KHÔNG được thu hồi id 651")
+        assertEquals(setOf(651), AppWidgetIds.used(after))
+        assertEquals(ws, after.workspace, "lớp LƯU (persist ghi) giữ nguyên hai widget")
+        val restarted = after.copy(overlay = SlotOverlay.EMPTY)
+        assertEquals(ws.slots, restarted.effectiveWorkspace.slots, "bỏ lớp tạm ⇒ cả hai widget về đúng ô")
+        assertEquals(emptySet<Int>(), AppWidgetIds.orphaned(after, restarted))
+    }
+
     @Test
     fun `o ngoai tran va goi rong bi bo qua, drop tra o ve lop luu`() {
         assertTrue(SlotOverlay.EMPTY.place(WorkspaceState.SLOT_CAP, a).isEmpty)

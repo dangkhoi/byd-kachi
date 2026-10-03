@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.byd.clusternav.launcher.BydHalGateway
 import com.byd.clusternav.launcher.CarControlAdapter
@@ -8,12 +9,15 @@ import com.byd.clusternav.launcher.CarControlPort
 import com.byd.clusternav.launcher.CarDataAdapter
 import com.byd.clusternav.launcher.CarDataPort
 import com.byd.clusternav.launcher.CarStatusRepository
+import com.byd.clusternav.launcher.CtlJournal
+import com.byd.clusternav.launcher.CtlJournalStore
 import com.byd.clusternav.launcher.HalBindingTable
 import com.byd.clusternav.launcher.HalGateway
 import com.byd.clusternav.launcher.HomeViewModelFactory
 import com.byd.clusternav.launcher.KachiLog
 import com.byd.clusternav.launcher.PrefsWorkspaceRepository
 import com.byd.clusternav.launcher.WorkspaceRepository
+import com.byd.clusternav.launcher.WriteReleaseScheduler
 import com.byd.clusternav.launcher.camera.CameraSignalController
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.system.ShellTransport
@@ -57,6 +61,10 @@ class AppContainer internal constructor(
     // Poll trạng thái xe = HAL binder reflection (IPC CHẶN) → chạy trên Dispatchers.IO (đúng pool cho blocking I/O),
     // KHÔNG phải Default (pool CPU) — tránh chiếm luồng CPU khi đọc HAL trên xe. Off-car (gateway null) vô hại.
     private val carScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    // FIX286 · SR2/SR6 — bộ hẹn lệnh NHẢ + nơi nhận nhật ký `ctl` của tầng ghi. Mặc định "không" để container test
+    // thuần (gateway giả) không dựng luồng nào và không chạm `filesDir`; [build] tiêm bản thật.
+    private val releaseSchedulerInit: () -> WriteReleaseScheduler = { WriteReleaseScheduler.NONE },
+    private val ctlJournalInit: () -> CtlJournal = { CtlJournal.NONE },
 ) {
     /** Chủ DUY NHẤT của kết nối dadb window/cast — [ShellTransport.get] uỷ quyền về đây. */
     val shellTransport: ShellTransport by lazy { shellTransportInit() }
@@ -72,7 +80,9 @@ class AppContainer internal constructor(
 
     // ── Lớp DỮ LIỆU + ĐIỀU KHIỂN XE (W1) — registry-driven, off-car trả null ⇒ UI "—" (OQ1: KHÔNG demo) ──
     /** Bảng nối HAL dùng CHUNG (1 gateway) cho cả đọc telemetry lẫn ghi control. */
-    private val halBindingTable: HalBindingTable by lazy { HalBindingTable(carGatewayInit()) }
+    private val halBindingTable: HalBindingTable by lazy {
+        HalBindingTable(carGatewayInit(), releaseSchedulerInit(), ctlJournalInit())
+    }
 
     /**
      * H1 (PERF 2026-09-16) — **nhu cầu dữ liệu của màn hình đang hiện**, cầu một chiều `state → poll`.
@@ -171,6 +181,12 @@ class AppContainer internal constructor(
             inputDaemonClientInit = { dispatcher -> buildInputDaemonClient(app, dispatcher) },
             carGatewayInit = { BydHalGateway(app) },
             cameraSignalInit = { CameraSignalController(app) },
+            // FIX286 · SR2 — nhả 255 sau 200 ms (cửa sổ trời, khai ở registry); một luồng daemon, tự tắt khi rỗi.
+            releaseSchedulerInit = {
+                WriteReleaseScheduler.Jvm(onError = { key, e -> Log.w(CtlJournalStore.TAG, "hẹn $key ném", e) })
+            },
+            // FIX286 · SR6 — nhật ký bền mỗi lệnh ghi xe (`ctl-writes.log` + logcat ⇒ `usage-*.log`).
+            ctlJournalInit = { CtlJournalStore.journal(app) },
         )
 
         /**

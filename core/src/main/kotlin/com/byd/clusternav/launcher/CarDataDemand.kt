@@ -267,6 +267,25 @@ object CarDataDemand {
             return try { body() } finally { extra = emptySet() }
         }
 
+        /**
+         * FIX286 · R-KC — đọc TƯƠI đúng [ids] khi màn chính KHÔNG công bố nhu cầu (`value == null`).
+         *
+         * Ca này là ca thường gặp nhất của phím gán nút xe: người lái đang ở app dẫn đường ⇒ màn chính đã `onStop` ⇒
+         * vòng poll ĐÃ DỪNG (`KachiHomeWiring`, `repeatOnLifecycle(STARTED)`) và [clear] đưa nhu cầu về `null` — nên
+         * `AppContainer.refreshForRead` trả `null` ("ảnh chụp đã tươi") trong khi ảnh chụp có thể cũ hàng phút. Quyết
+         * *"xe đang đứng yên, cho mở cốp"* bằng con số ấy là quyết bằng một con số cũ.
+         *
+         * Đặt nhu cầu RỖNG + ghim [ids] (cùng phép `VoiceWiring.screenless` của `:wake`) ⇒ lượt đọc trong [body] chạm
+         * đúng [ids]; xong trả nhu cầu về `null` — trừ khi màn đã kịp công bố nhu cầu thật trong lúc ấy (không ghi đè).
+         * Màn ĐANG công bố (`value != null`) ⇒ `null`, không chạy [body]: đường của màn (`refreshForRead`) đã lo.
+         * ⚠ Cùng giới hạn không-lồng của [withExtra].
+         */
+        fun <T> withSoloIfIdle(ids: Set<String>, body: () -> T): T? {
+            if (value != null) return null
+            value = emptySet()
+            return try { withExtra(ids, body) } finally { if (value?.isEmpty() == true) value = null }
+        }
+
         /** Màn chính rời tiền cảnh ⇒ quên nhu cầu; lần mở sau bắt đầu lại bằng một lượt đọc đủ. */
         fun clear() { value = null; extra = emptySet(); controls = emptySet() }
     }

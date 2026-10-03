@@ -56,6 +56,10 @@ class CarControlAdapter(private val table: HalBindingTable) : CarControlPort {
     override fun wiredOnThisCar(id: String): Boolean =
         runCatching { !table.featureAbsentOnCar(id) }.getOrDefault(true)
 
+    /** Xem KDoc [CarControlPort.partAbsentOnThisCar]. `runCatching` cùng lẽ [wiredOnThisCar] (reflection). */
+    override fun partAbsentOnThisCar(id: String): Boolean =
+        runCatching { table.partAbsentOnCar(id) }.getOrDefault(false)
+
     /**
      * Xem KDoc [CarControlPort.writeFailureIsReal]: `true` chỉ khi bảng HAL thật CÓ MẶT **và** nút không bị khai vắng.
      * Không có bảng (off-car · máy ảo · trim không provision) ⇒ `false` = *"không biết"*. `runCatching` cùng lẽ với

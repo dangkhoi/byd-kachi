@@ -313,12 +313,24 @@ class VoiceFastNaturalWiringContractTest {
         // `media_query`, `profile`). Không ghim SỐ cứng: đếm hàng `confirm=1` thật của TSV phải bằng số hàng có
         // cột prefs `voice_confirm_ids=` — tức MỌI ca hỏi xác nhận đều tự bật mã của nó.
         assertTrue(cases.contains("voice_confirm_ids=control:trunk"), "ca `mở cốp` phải tự bật mã của nó")
-        val confirmRows = cases.lines().filter { it.startsWith("t") && it.split("\t").getOrNull(5) == "1" }
+        val rows = cases.lines().filter { it.startsWith("t") }.map { it.split("\t") }
+        val confirmRows = rows.filter { it.getOrNull(5) == "1" }
         assertTrue(confirmRows.size >= 5, "bộ ca phải còn ≥ 5 ca confirm=1 để lớp canh cổng không trống (có ${confirmRows.size})")
-        assertEquals(
-            confirmRows.size,
-            cases.lines().count { it.startsWith("t") && it.contains("\tvoice_confirm_ids=") },
-            "mỗi ca confirm=1 phải mang cột prefs `voice_confirm_ids=` (và ngược lại)",
+        // ⚠⚠ 2.86 · FIX286 SR5 — vế "(và ngược lại)" của bài cũ (đếm confirm=1 == đếm hàng có cột prefs) ĐẢO có chủ ý:
+        // từ 2.86 cổng có hai vế phải canh — HỎI (mở nóc mặc định, tích một mã) và KHÔNG HỎI dù có prefs (đóng nóc khi
+        // đã tích · mở nóc khi người dùng chỉ tích cốp). Thay bằng ba luật CHẶT hơn phép đếm:
+        //  (1) MỌI ca confirm=1 mang cột `voice_confirm_ids=` (y như cũ — ca hỏi phải tự dựng nền của nó);
+        //  (2) ca có cột ấy mà confirm=0 CHỈ được ở lớp `confirm-neg` (một lớp khai tên, không lẫn vào ca thường);
+        //  (3) có ít nhất một ca đo MẶC ĐỊNH (giá trị rỗng = trả về mặc định) mà vẫn HỎI — chính là t06.
+        confirmRows.forEach { r ->
+            assertTrue(r.getOrNull(8).orEmpty().contains("voice_confirm_ids="), "ca confirm=1 ${r[0]} phải tự dựng cột prefs")
+        }
+        val negatives = rows.filter { it.getOrNull(8).orEmpty().contains("voice_confirm_ids=") && it.getOrNull(5) == "0" }
+        assertTrue(negatives.isNotEmpty(), "phải có ca canh vế KHÔNG hỏi của cổng (2.86)")
+        negatives.forEach { r -> assertEquals("confirm-neg", r[1], "ca ${r[0]} có prefs mà không hỏi ⇒ phải ở lớp confirm-neg") }
+        assertTrue(
+            confirmRows.any { r -> r.getOrNull(8).orEmpty().split(";").any { it == "voice_confirm_ids=" } },
+            "phải có ca đo MẶC ĐỊNH 2.86 (mở cửa sổ trời hỏi khi chưa ai tích gì)",
         )
     }
 }

@@ -136,8 +136,8 @@ object KachiTheme {
     val LINE: String get() = palette.line
     val LINE_STRONG: String get() = palette.lineStrong
     val GRID_LINE: String get() = palette.gridLine
-    val EMPTY_FILL: String get() = palette.emptyFill
-    // ⚠ WP1 · R1.1 — `EMPTY_LINE` XOÁ cùng vai `KachiPalette.emptyLine` (gạch đứt ô trống, mời mọc lại).
+    // ⚠ WP1 · R1.1 — `EMPTY_LINE` XOÁ cùng vai `KachiPalette.emptyLine` (gạch đứt ô trống, mời mọc lại); FIX286 · ES7 —
+    // `EMPTY_FILL` XOÁ cùng vai `emptyFill` (khung trống trong suốt, owner 03/10).
     val WASH: String get() = palette.wash
     val OVERLAY: String get() = palette.overlay
     val ACCENT: String get() = palette.accent

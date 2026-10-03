@@ -1,0 +1,840 @@
+--- a/app/src/main/java/com/byd/clusternav/launcher/SlotSwapButton.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/SlotSwapButton.kt
+@@ -4,7 +4,6 @@
+ import android.graphics.Color
+ import android.graphics.drawable.GradientDrawable
+ import android.view.Gravity
+-import android.view.View
+ import android.widget.FrameLayout
+ import android.widget.ImageView
+ import com.byd.clusternav.R
+@@ -26,12 +25,8 @@
+  * TOUCH×SLOT_HEAD_CLEAR ở [centered]; ở [strip] dải nền màu KHUNG Ô vẫn giữ vì nó che caption của cửa sổ freeform
+  * (chức năng, không phải trang trí).
+  *
+- * FIX286 (owner 03/10): ô TRỐNG nay trong suốt ⇒ ⇄ của nó nằm thẳng trên ảnh nền. Phương án A (không nền, tô màu theo
+- * độ chói đo dưới nút) [ĐO máy ảo 03/10] KHÔNG đạt 3:1 trên ảnh nhiều chi tiết — không một màu đơn nào đạt trên cả
+- * điểm sáng lẫn tối của cùng một vùng 30 px. ⇒ **Phương án B** (OQ8, chốt 2026-10-03 — phiên điều phối, owner có thể
+- * đổi): [centered] `disc = true` đặt icon lên một **đĩa kính** [Sp.SWAP_DISC] (cùng [KachiGlass] NEUTRAL như thẻ,
+- * không viền); icon giữ `MUT` như mọi ⇄ khác — tương phản do hợp đồng lớp che kính bảo đảm, không đo theo từng ảnh.
+- * Lòng ô vẫn trong suốt. Mọi nút có mô tả trợ năng.
++ * FIX286 (owner 03/10): ô TRỐNG nay trong suốt ⇒ ⇄ của nó vẫn không nền (phương án A) nhưng màu không còn là `MUT`
++ * cố định — [centered] `adaptive = true` tô theo độ chói đo dưới nút ([SwapTintBinding]). Mọi nút có mô tả trợ năng.
+  */
+ object SlotSwapButton {
+ 
+@@ -52,14 +47,10 @@
+     /**
+      * @param description mô tả trợ năng của nút (FIX286 · ES4 — trước đây 0 chỗ có): [describe]. Đặt trên khung CHẠM
+      *   (thứ nhận cú bấm), để trình đọc màn hình và uiautomator tìm được nút theo mô tả.
+-     * @param disc FIX286 · OQ8 phương án B — nút nằm trên ô TRONG SUỐT (ô trống) ⇒ icon đặt trên một đĩa kính
+-     *   [Sp.SWAP_DISC] ([KachiGlass] NEUTRAL: ảnh mờ + lớp che theo độ chói đo được + bề mặt 80 % — cùng hợp đồng
+-     *   `MUT ≥ 4.5:1` trên MỌI độ chói ảnh như thẻ kính, bài `ColorChoiceContractTest.lop che kinh du…`). Ô có nội
+-     *   dung không cần (nút nằm trên bề mặt ô). Đĩa là view RIÊNG phía sau icon: icon vẫn `background = null`, khung
+-     *   ô trống vẫn không mang tag kính (bẫy P1b) — tag kính nằm trên đĩa, lượt `KachiGlass.refresh` khi ảnh đổi
+-     *   dựng lại đúng đĩa (đường có sẵn, không đường mới).
++     * @param adaptive FIX286 · ES2 — nút nằm trên ô TRONG SUỐT (ô trống) ⇒ màu theo độ chói đo dưới nút
++     *   ([SwapTintBinding]) thay cho `MUT` cố định. Ô có nội dung giữ `MUT` (nút nằm trên bề mặt ô).
+      */
+-    fun centered(context: Context, description: String, disc: Boolean = false, onTap: () -> Unit): FrameLayout = FrameLayout(context).apply {
++    fun centered(context: Context, description: String, adaptive: Boolean = false, onTap: () -> Unit): FrameLayout = FrameLayout(context).apply {
+         // Đích chạm: hình VẼ 20dp nhưng vùng CHẠM là khung TOUCH×SLOT_HEAD_CLEAR quanh nó — soát ảnh
+         // v2 [ĐO] ⌀48px = 32dp < 48dp. Khung trong suốt nhận chạm, nút bên trong không nhận (clickable=false) để một
+         // cú chạm không rơi vào hai lớp.
+@@ -68,11 +59,7 @@
+             isClickable = true
+             contentDescription = description
+             setOnClickListener { onTap() }
+-            if (disc) {
+-                val d = View(context).apply { isClickable = false; isFocusable = false }
+-                KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL)   // bán kính = nửa cạnh ⇒ đĩa tròn
+-                addView(d, FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.SWAP_DISC), KachiTheme.dpi(context, Sp.SWAP_DISC), Gravity.CENTER))
+-            }
++            if (adaptive) SwapTintBinding.bind(this, visual)
+             addView(
+                 visual,
+                 // Hình 20dp ([Sp.ICON_S]) canh giữa theo cả hai chiều trong khung chạm — nhỏ gọn, không viền (owner 2026-09-14).
+--- /dev/null
++++ b/app/src/main/java/com/byd/clusternav/launcher/SwapTintBinding.kt
+@@ -0,0 +1,111 @@
++package com.byd.clusternav.launcher
++
++import android.graphics.Color
++import android.view.View
++import android.view.ViewTreeObserver
++import android.widget.ImageView
++import com.byd.clusternav.R
++
++/**
++ * ═══ FIX286 · ES2 — tô nút ⇄ của Ô TRỐNG theo độ chói ĐO dưới nút (phương án A: không nền) ═══════════════════
++ *
++ * Spec `docs/specs/kachi-286-field-fixes.html` §3.4 ES2 + §4.4. Khung ô trống nay trong suốt (owner 03/10) ⇒ icon ⇄
++ * nằm thẳng lên ảnh nền người dùng chọn; màu do [SwapTint.choose] (thuần, `:core`) chọn giữa hai mực chính của hai
++ * bảng màu, theo khoảng độ chói đo được ở **khung chạm** của nút.
++ *
++ * ## Đo ở đâu
++ *  • **Có ảnh nền** ([WallArtStore.current]): [WallArt.luminanceRange] — khoảng độ chói các ô lưới 16×9 dưới khung
++ *    chạm, cùng hệ toạ độ trong cửa sổ mà thẻ kính dùng (`WallWindowDrawable.relocate`). Lưới đo ảnh ĐÃ làm tối nhưng
++ *    TRƯỚC hai dải che đỉnh/đáy màn của [WallView] ⇒ phần nút trong dải tính thêm qua [SwapTint.underBand].
++ *    [ĐO máy ảo 03/10] đã thử đọc ảnh mờ ¼ độ phân giải thay lưới: KHÔNG hơn (ảnh sọc tổng hợp, làm tối 0 %: một ô tốt
++ *    lên, một ô tệ đi; mọi ca khác y hệt) ⇒ giữ lưới. [SUY] ảnh ¼ dựng bằng `drawBitmap` lọc song tuyến, thu 4× chỉ lấy
++ *    mẫu vài điểm ⇒ chi tiết nhỏ hơn ~4 px răng cưa ở cả hai nguồn.
++ *  • **Không ảnh**: [WallView] vẽ nền chủ đề + hai vầng sáng ⇒ khoảng = độ chói của `BG`, `GLOW1`, `GLOW2`.
++ *
++ * ## Làm mới — KHÔNG mở đường mới
++ *  • Đổi ảnh / trình chiếu / bật–tắt hình nền ⇒ `KachiGlass.refresh(rootFrame)` (đã chạy ở đúng các lượt đó) dò
++ *    thêm tag [R.id.kachi_swap_tint] và gọi [retint]. Tag RIÊNG, không mượn tag kính: tag kính trên khung ô trống
++ *    chính là bẫy P1b (lượt refresh đắp kính lên ô trống — xem `WorkspaceView.makeSlot`).
++ *  • Đổi chủ đề ⇒ `WorkspaceView.restyle()` dựng lại ô trống ⇒ nút mới tự đo khi gắn vào cửa sổ.
++ *  • Ô đổi chỗ / đổi cỡ (bố cục tự vẽ đặt lại chỗ mà KHÔNG dựng lại ô) ⇒ `OnGlobalLayoutListener`: khung chạm không đổi
++ *    bound so với cha khi CẢ Ô di chuyển, nên `OnLayoutChangeListener` trên nút sẽ không bao giờ kích. Mỗi lượt chỉ là
++ *    một `getLocationInWindow` + so khoá; đo lại chỉ khi vị trí/cỡ/ảnh/chủ đề thật sự đổi.
++ */
++internal class SwapTintBinding private constructor(private val hit: View, private val icon: ImageView) :
++    View.OnAttachStateChangeListener, ViewTreeObserver.OnGlobalLayoutListener {
++
++    private val loc = IntArray(2)
++
++    /**
++     * Observer đã gắn listener — giữ để GỠ đúng cái đó. `view.viewTreeObserver` sau khi tháo khỏi cửa sổ có thể là
++     * một observer tạm khác hẳn ⇒ gỡ trên nó là không gỡ gì, listener rò theo cửa sổ.
++     */
++    private var vto: ViewTreeObserver? = null
++    private var lastKey: List<Any>? = null
++    private var lastLogged: String? = null
++
++    override fun onViewAttachedToWindow(v: View) {
++        vto?.takeIf { it.isAlive }?.removeOnGlobalLayoutListener(this)
++        vto = v.viewTreeObserver.also { it.addOnGlobalLayoutListener(this) }
++        retint(force = false)
++    }
++
++    override fun onViewDetachedFromWindow(v: View) {
++        vto?.takeIf { it.isAlive }?.removeOnGlobalLayoutListener(this)
++        vto = null
++    }
++
++    override fun onGlobalLayout() = retint(force = false)
++
++    /** Đo lại + tô. [force] = bỏ qua khoá (ảnh vừa đổi tại cùng đối tượng / lượt `KachiGlass.refresh`). */
++    fun retint(force: Boolean) {
++        if (!hit.isAttachedToWindow || hit.width <= 0 || hit.height <= 0) return
++        hit.getLocationInWindow(loc)
++        val art = WallArtStore.current
++        val key = listOf(loc[0], loc[1], hit.width, hit.height, System.identityHashCode(art), KachiTheme.night, KachiTheme.BG)
++        if (!force && key == lastKey) return
++        lastKey = key
++        val range = range(art, loc[0], loc[1], hit.width, hit.height, hit.rootView.height)
++        val next = SwapTint.choose(range[0], range[1], LIGHT_INK, DARK_INK)
++        icon.setColorFilter(next)
++        // ES6 — ghi khi màu ĐỔI hoặc ảnh bật/tắt (không mỗi ảnh trình chiếu): bản trên xe đo ra nền nào, chọn màu nào.
++        val sig = "$next|${art != null}"
++        if (sig != lastLogged) {
++            lastLogged = sig
++            android.util.Log.i(
++                "KachiWorkspace",
++                "[slot-empty] ⇄ @${loc[0]},${loc[1]} màu ${ColorMath.hex(next)} · nền L %.3f–%.3f · ảnh=%s"
++                    .format(java.util.Locale.ROOT, range[0], range[1], if (art != null) "on" else "off"),
++            )
++        }
++    }
++
++    private fun range(art: WallArt?, x: Int, y: Int, w: Int, h: Int, windowH: Int): DoubleArray {
++        if (art == null) {
++            return SwapTint.span(Color.parseColor(KachiTheme.BG), Color.parseColor(KachiTheme.GLOW1), Color.parseColor(KachiTheme.GLOW2))
++        }
++        val r = art.luminanceRange(x, y, x + w, y + h)
++        // Dải che đỉnh/đáy màn (chỉ vẽ khi có ảnh): hàng ô trên cùng có ⇄ nằm trong dải trên [ĐO máy ảo 02/10].
++        val bandH = (windowH * WallView.BAND_FRACTION).toDouble()
++        return SwapTint.underBand(r[0], r[1], Color.parseColor(KachiTheme.BAR_TOP), y, y + h, bandH, windowH)
++    }
++
++    companion object {
++        /** Mực sáng = mực chính bảng TỐI; mực tối = mực chính bảng SÁNG (spec ES2: *"hai màu chữ chính"*). */
++        private val LIGHT_INK = Color.parseColor(KachiPalette.DARK.ink)
++        private val DARK_INK = Color.parseColor(KachiPalette.LIGHT.ink)
++
++        /** Gắn tô-theo-nền cho nút ⇄ [icon] trong khung chạm [hit]. Gọi MỘT lần lúc dựng nút. */
++        fun bind(hit: View, icon: ImageView) {
++            val b = SwapTintBinding(hit, icon)
++            hit.setTag(R.id.kachi_swap_tint, b)
++            hit.addOnAttachStateChangeListener(b)
++            if (hit.isAttachedToWindow) b.onViewAttachedToWindow(hit)
++        }
++
++        /** Lượt `KachiGlass.refresh` (ảnh đổi): đo lại nút ⇄ trên [view] nếu có. */
++        fun refresh(view: View) {
++            (view.getTag(R.id.kachi_swap_tint) as? SwapTintBinding)?.retint(force = true)
++        }
++    }
++}
+--- /dev/null
++++ b/core/src/main/kotlin/com/byd/clusternav/launcher/SwapTint.kt
+@@ -0,0 +1,101 @@
++package com.byd.clusternav.launcher
++
++/**
++ * ═══ FIX286 · ES2 — MÀU NÚT ⇄ CỦA Ô TRỐNG, CHỌN THEO ĐỘ CHÓI ĐO DƯỚI NÚT ═══════════════════════════════════════
++ *
++ * Spec `docs/specs/kachi-286-field-fixes.html` §3.4 ES2 + §4.4. Owner 03/10: khung trống (đã vẽ, chưa gán app) phải
++ * **trong suốt, thấy hình nền**, chỉ còn nút ⇄ để chọn app — phương án A: nút **không nền**.
++ *
++ * ## Vì sao phải chọn màu, không dùng `MUT` như ⇄ của các ô khác
++ * Ở ô có nội dung, ⇄ nằm trên một bề mặt mà bảng màu đã đo (kính/khay ô — `GlassVeil` giữ mực ≥ 4.5:1). Ô trống
++ * không còn bề mặt nào: icon nằm thẳng lên ảnh người dùng chọn, đã làm tối bằng `wallScrim #000000`. [SUY: tính WCAG
++ * ở phản biện 02/10] `MUT` sáng `#4c5869` chỉ 1.3–2.5:1 trên mọi ảnh đã làm tối, `MUT` tối `#9daabe` 1.4–2.2:1 khi
++ * ảnh sáng ⇒ ⇄ là dấu DUY NHẤT nói "chỗ này đặt được app" mà lại gần như vô hình. Không một màu cố định nào đạt
++ * 3:1 trên mọi ảnh; **hai** màu ở hai đầu độ chói thì luôn có một màu đạt (bài `SwapTintTest`).
++ *
++ * ## Vì sao đo một KHOẢNG độ chói, không một con số
++ * Lưới độ chói của ảnh là 16×9 ô (`WallArt`), ô lưới to hơn nút nhiều lần và nút có thể nằm vắt qua hai ô lưới. Chọn
++ * theo **trung bình** thì một nút nằm vắt qua mép trời sáng / mái nhà tối được tô theo một mức xám không có thật ở
++ * đâu cả. Chọn màu cho tương phản **tệ nhất** trên cả khoảng `[lo, hi]` thì đúng ở cả hai phía.
++ *
++ * ## Ngưỡng 3:1
++ * WCAG 2.x SC 1.4.11 (thành phần giao diện không phải chữ). Nút ⇄ là một icon, không phải chữ.
++ *
++ * Thuần số học, `Int` ARGB như [ColorMath]; không Android — `:app` chỉ đưa vào độ chói đo được và hai màu mực.
++ */
++object SwapTint {
++
++    /** Sàn WCAG 1.4.11 cho thành phần giao diện không phải chữ. */
++    const val MIN_CONTRAST = 3.0
++
++    /** Tỉ số tương phản giữa màu [ink] (đục) và một nền đồng nhất có độ chói WCAG [lum]. */
++    fun contrast(ink: Int, lum: Double): Double {
++        val a = ColorMath.luminance(ink)
++        val b = lum.coerceIn(0.0, 1.0)
++        return (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
++    }
++
++    /**
++     * Tương phản **tệ nhất** của [ink] trên mọi nền có độ chói trong `[lo, hi]`.
++     *
++     * Tỉ số chỉ giảm dần khi độ chói nền tiến về độ chói của mực ⇒ độ chói mực nằm TRONG khoảng thì có một điểm nền
++     * trùng màu mực (tỉ số 1); nằm ngoài thì điểm tệ nhất là đầu mút gần mực hơn — xét hai đầu mút là đủ.
++     */
++    fun worst(ink: Int, lo: Double, hi: Double): Double {
++        val a = minOf(lo, hi).coerceIn(0.0, 1.0)
++        val b = maxOf(lo, hi).coerceIn(0.0, 1.0)
++        val l = ColorMath.luminance(ink)
++        if (l in a..b) return 1.0
++        return minOf(contrast(ink, a), contrast(ink, b))
++    }
++
++    /**
++     * Chọn giữa mực [light] và mực [dark] màu có tương phản **tệ nhất** cao hơn trên khoảng độ chói `[lo, hi]` dưới
++     * nút. Hoà ⇒ [light] (ổn định: cùng đầu vào luôn ra cùng màu, không nhấp nháy giữa hai màu).
++     */
++    fun choose(lo: Double, hi: Double, light: Int, dark: Int): Int =
++        if (worst(dark, lo, hi) > worst(light, lo, hi)) dark else light
++
++    /** Nền đồng nhất — bất biến ES2 được phát biểu và kiểm trên dạng này. */
++    fun choose(lum: Double, light: Int, dark: Int): Int = choose(lum, lum, light, dark)
++
++    /**
++     * Độ chói của nền sau khi phủ thêm lớp [overlay] (có alpha) lên vùng có độ chói [lum] — để tính **dải che** đỉnh
++     * màn mà `WallView` vẽ đè lên ảnh (lưới độ chói của `WallArt` đo ảnh TRƯỚC dải che). Vùng ảnh mô hình bằng xám
++     * cùng độ chói, cùng lẽ [GlassVeil.alphaFor].
++     */
++    fun under(lum: Double, overlay: Int): Double =
++        if (ColorMath.alpha(overlay) == 0) lum.coerceIn(0.0, 1.0)
++        else ColorMath.luminance(ColorMath.over(overlay, ColorMath.grayOfLuminance(lum)))
++
++    /**
++     * Độ phủ (0..1) của hai dải che `WallView.drawBands` ở hàng điểm ảnh [y]: dải trên đục nhất ở `y = 0`, tan hết ở
++     * `y = bandH`; dải dưới ngược lại, từ `windowH − bandH` tới đáy. Ngoài hai dải ⇒ 0.
++     */
++    fun bandCover(y: Int, bandH: Double, windowH: Int): Double {
++        if (bandH <= 0.0) return 0.0
++        val top = 1.0 - y / bandH
++        val bottom = (y - (windowH - bandH)) / bandH
++        return maxOf(top, bottom).coerceIn(0.0, 1.0)
++    }
++
++    /**
++     * Khoảng độ chói `[lo, hi]` của ảnh dưới khung nút (đo từ lưới, TRƯỚC dải che) **sau** hai dải che màu [bar] (có
++     * alpha) — xem [bandCover]. Xét mép trên [top] và mép dưới [bottom] của khung rồi lấy khoảng BAO cả ảnh trần —
++     * bảo thủ, không giả định nút nằm ở đâu trong dải. Khung nằm ngoài cả hai dải ⇒ trả nguyên khoảng.
++     */
++    fun underBand(lo: Double, hi: Double, bar: Int, top: Int, bottom: Int, bandH: Double, windowH: Int): DoubleArray {
++        val a = minOf(lo, hi); val b = maxOf(lo, hi)
++        val all = listOf(top, bottom)
++            .map { y -> ColorMath.scaleAlpha(bar, bandCover(y, bandH, windowH)) }
++            .flatMap { ov -> listOf(under(a, ov), under(b, ov)) } + listOf(a, b)
++        return doubleArrayOf(all.min(), all.max())
++    }
++
++    /** Khoảng độ chói của một nền VẼ SẴN nhiều màu đục (không ảnh: nền chủ đề + hai vầng sáng của `WallView`). */
++    fun span(vararg colors: Int): DoubleArray {
++        require(colors.isNotEmpty())
++        val l = colors.map { ColorMath.luminance(it) }
++        return doubleArrayOf(l.min(), l.max())
++    }
++}
+--- /dev/null
++++ b/core/src/test/kotlin/com/byd/clusternav/launcher/SwapTintTest.kt
+@@ -0,0 +1,117 @@
++package com.byd.clusternav.launcher
++
++import org.junit.jupiter.api.Assertions.assertEquals
++import org.junit.jupiter.api.Assertions.assertTrue
++import org.junit.jupiter.api.Test
++
++/**
++ * FIX286 · ES2 — màu ⇄ của ô trống (trong suốt) chọn theo độ chói đo dưới nút.
++ *
++ * Bất biến của spec: với **mọi** nền đồng nhất có độ chói L ∈ [0, 1] (bước 0,01), màu được chọn đạt ≥ 3:1. Hai mực
++ * dưới đây là đúng hai mực chính của hai bảng màu (`KachiPalette.DARK.ink` / `LIGHT.ink` — bài
++ * `ThemePaletteContractTest.o trong nhan ra duoc nho nut doi app` ở `:app` khoá cùng bất biến trên bảng THẬT, bài này
++ * khoá phép toán).
++ */
++class SwapTintTest {
++
++    private val light = ColorMath.parse("#eaf0f8")
++    private val dark = ColorMath.parse("#0f1620")
++
++    @Test
++    fun `moi do choi nen dong nhat deu dat 3 tren 1`() {
++        val bad = mutableListOf<String>()
++        for (i in 0..100) {
++            val l = i / 100.0
++            val c = SwapTint.choose(l, light, dark)
++            val r = SwapTint.contrast(c, l)
++            if (r < SwapTint.MIN_CONTRAST) bad += "L=$l → ${ColorMath.hex(c)} = ${"%.2f".format(r)}"
++        }
++        assertEquals(emptyList<String>(), bad, "⇄ ô trống không đọc được trên nền: $bad")
++    }
++
++    @Test
++    fun `nen toi chon muc sang, nen sang chon muc toi`() {
++        assertEquals(light, SwapTint.choose(0.0, light, dark), "ảnh đen ⇒ mực sáng")
++        assertEquals(light, SwapTint.choose(0.05, light, dark), "ảnh đã làm tối ⇒ mực sáng")
++        assertEquals(dark, SwapTint.choose(0.6, light, dark), "ảnh sáng ⇒ mực tối")
++        assertEquals(dark, SwapTint.choose(1.0, light, dark), "ảnh trắng ⇒ mực tối")
++    }
++
++    /** Chọn theo ĐẦU MÚT XẤU NHẤT, không theo trung bình — nút vắt qua hai ô lưới sáng/tối. */
++    @Test
++    fun `khoang do choi chon theo dau mut xau nhat`() {
++        // [0.30, 0.90]: trung bình 0.60 — mực sáng ở đầu 0.30 chỉ ~2.6:1, mực tối ở đầu 0.30 ~6:1.
++        val c = SwapTint.choose(0.30, 0.90, light, dark)
++        assertEquals(dark, c)
++        assertTrue(SwapTint.worst(c, 0.30, 0.90) >= SwapTint.MIN_CONTRAST)
++        // Thứ tự đầu mút không quan trọng.
++        assertEquals(c, SwapTint.choose(0.90, 0.30, light, dark))
++        // [PHÁ THỬ 02/10 — đột biến "tệ nhất = tương phản ở TRUNG BÌNH" SỐNG với hai dòng trên] Ca mà trung bình và
++        // đầu mút chọn NGƯỢC nhau: [0.0, 0.4] — trung bình 0.2 nghiêng về mực tối, nhưng ở đầu 0.0 mực tối chỉ còn
++        // 1.15:1 (gần như trùng nền đen) trong khi mực sáng ở đầu 0.4 còn ~2:1 ⇒ phải chọn mực SÁNG.
++        assertEquals(SwapTint.contrast(light, 0.4), SwapTint.worst(light, 0.0, 0.4), 1e-9)
++        assertEquals(light, SwapTint.choose(0.0, 0.4, light, dark))
++    }
++
++    @Test
++    fun `worst bang 1 khi do choi muc nam trong khoang`() {
++        val gray = ColorMath.grayOfLuminance(0.4)
++        assertEquals(1.0, SwapTint.worst(gray, 0.2, 0.6), 1e-9)
++        assertTrue(SwapTint.worst(light, 0.0, 0.0) > 15.0)
++    }
++
++    @Test
++    fun `under phu dai che len vung anh`() {
++        // Lớp che trong suốt hẳn ⇒ không đổi; đục hẳn ⇒ ra đúng độ chói của lớp che.
++        assertEquals(0.3, SwapTint.under(0.3, 0x00ffffff), 1e-9)
++        val white = ColorMath.parse("#ffffff")
++        assertEquals(1.0, SwapTint.under(0.0, white), 1e-6)
++        // Nửa trong suốt ⇒ nằm giữa, kéo về phía lớp che.
++        val half = SwapTint.under(0.0, ColorMath.withAlpha(white, 128))
++        assertTrue(half > 0.15 && half < 0.3, "half=$half")
++    }
++
++    /** Dải che đỉnh/đáy của `WallView` (14 % màn): đục nhất ở mép màn, tan hết ở `bandH`; giữa màn không phủ. */
++    @Test
++    fun `bandCover theo hai dai che cua WallView`() {
++        val h = 1080; val band = h * 0.14
++        assertEquals(1.0, SwapTint.bandCover(0, band, h), 1e-9)
++        assertEquals(0.0, SwapTint.bandCover(band.toInt() + 1, band, h), 1e-9)
++        assertEquals(0.0, SwapTint.bandCover(540, band, h), 1e-9)
++        assertEquals(1.0, SwapTint.bandCover(h, band, h), 1e-9)
++        val mid = SwapTint.bandCover(130, band, h)
++        assertTrue(mid > 0.0 && mid < 0.2, "⇄ hàng trên (y≈130) chỉ bị phủ một chút: $mid")
++        assertEquals(0.0, SwapTint.bandCover(10, 0.0, h), 1e-9)
++    }
++
++    /**
++     * Hàng ô trên cùng: ⇄ nằm trong dải che (màu nền thanh trên). Khoảng phải BAO cả ảnh trần lẫn ảnh đã phủ — dải sáng
++     * (bảng SÁNG) kéo đầu cao lên, dải tối kéo đầu thấp xuống. Nằm ngoài dải ⇒ khoảng y nguyên.
++     */
++    @Test
++    fun `underBand bao ca anh tran lan anh da phu dai che`() {
++        val h = 1080; val band = h * 0.14
++        val lightBar = ColorMath.parse("#e6f4f6fa")
++        val r = SwapTint.underBand(0.10, 0.12, lightBar, 110, 170, band, h)
++        assertEquals(0.10, r[0], 1e-9)
++        assertTrue(r[1] > 0.12, "dải sáng phải kéo đầu cao lên: ${r[1]}")
++        val darkBar = ColorMath.parse("#99090c12")
++        val d = SwapTint.underBand(0.60, 0.70, darkBar, 110, 170, band, h)
++        assertTrue(d[0] < 0.60, "dải tối phải kéo đầu thấp xuống: ${d[0]}")
++        assertEquals(0.70, d[1], 1e-9)
++        val out = SwapTint.underBand(0.7, 0.3, lightBar, 400, 460, band, h)
++        assertEquals(0.3, out[0], 1e-9); assertEquals(0.7, out[1], 1e-9)
++    }
++
++    @Test
++    fun `span la khoang do choi cua cac mau ve san`() {
++        val s = SwapTint.span(ColorMath.parse("#000000"), ColorMath.parse("#ffffff"), ColorMath.parse("#808080"))
++        assertEquals(0.0, s[0], 1e-9); assertEquals(1.0, s[1], 1e-9)
++    }
++
++    @Test
++    fun `hoa thi giu muc sang - cung dau vao cung mau`() {
++        assertEquals(light, SwapTint.choose(0.5, 0.5, light, light))
++        repeat(3) { assertEquals(SwapTint.choose(0.18, light, dark), SwapTint.choose(0.18, light, dark)) }
++    }
++}
+--- a/app/src/main/java/com/byd/clusternav/launcher/WallGlass.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/WallGlass.kt
+@@ -144,9 +144,15 @@
+         view.background = background
+     }
+ 
+-    /** Dựng lại nền của mọi view kính dưới [root] theo ảnh hiện tại — gọi khi ảnh nền đổi / bật / tắt. */
++    /**
++     * Dựng lại nền của mọi view kính dưới [root] theo ảnh hiện tại — gọi khi ảnh nền đổi / bật / tắt.
++     *
++     * FIX286 · ES2: cùng lượt dò này đo lại màu nút ⇄ của ô TRỐNG ([SwapTintBinding], tag riêng) — ô trống trong suốt
++     * nên màu nút phải theo ảnh vừa đổi, và đây đã là đúng lượt chạy ở mọi lần ảnh đổi (không mở đường thứ hai).
++     */
+     fun refresh(root: View) {
+         (root.getTag(R.id.kachi_glass_spec) as? GlassSpec)?.let { paint(root, it) }
++        SwapTintBinding.refresh(root)
+         if (root is ViewGroup) for (i in 0 until root.childCount) refresh(root.getChildAt(i))
+     }
+ 
+--- a/app/src/main/java/com/byd/clusternav/launcher/WallArt.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/WallArt.kt
+@@ -44,14 +44,33 @@
+ ) {
+     /** Độ chói trung bình của vùng màn `[l, t, r, b]` (điểm ảnh màn) — trung bình các ô lưới bị vùng đó phủ. */
+     fun luminanceOf(l: Int, t: Int, r: Int, b: Int): Double {
+-        if (cols == 0 || rows == 0 || screenW <= 0 || screenH <= 0) return 0.5
++        var sum = 0.0; var n = 0
++        if (!forEachCell(l, t, r, b) { sum += it; n++ }) return 0.5
++        return if (n == 0) 0.5 else sum / n
++    }
++
++    /**
++     * FIX286 · ES2 — độ chói THẤP NHẤT và CAO NHẤT trong các ô lưới bị vùng `[l, t, r, b]` phủ (`[lo, hi]`).
++     *
++     * Cho nút ⇄ của ô trống: nút nhỏ hơn ô lưới nhiều lần và có thể vắt qua hai ô lưới khác hẳn nhau (mép trời sáng /
++     * mái nhà tối) — chọn màu theo trung bình là tô theo một mức xám không có thật ở đâu (xem KDoc `SwapTint`).
++     * Cùng phép chia ô với [luminanceOf] (một hàm duyệt chung, không phải bản chép thứ hai).
++     */
++    fun luminanceRange(l: Int, t: Int, r: Int, b: Int): DoubleArray {
++        var lo = 1.0; var hi = 0.0
++        if (!forEachCell(l, t, r, b) { lo = minOf(lo, it); hi = maxOf(hi, it) } || lo > hi) return doubleArrayOf(0.5, 0.5)
++        return doubleArrayOf(lo, hi)
++    }
++
++    /** Duyệt độ chói các ô lưới bị vùng màn phủ; `false` = lưới/màn rỗng, không duyệt được gì. */
++    private inline fun forEachCell(l: Int, t: Int, r: Int, b: Int, visit: (Double) -> Unit): Boolean {
++        if (cols == 0 || rows == 0 || screenW <= 0 || screenH <= 0) return false
+         val c0 = (l * cols / screenW).coerceIn(0, cols - 1)
+         val c1 = ((r - 1) * cols / screenW).coerceIn(c0, cols - 1)
+         val r0 = (t * rows / screenH).coerceIn(0, rows - 1)
+         val r1 = ((b - 1) * rows / screenH).coerceIn(r0, rows - 1)
+-        var sum = 0.0; var n = 0
+-        for (y in r0..r1) for (x in c0..c1) { sum += lum[y * cols + x]; n++ }
+-        return if (n == 0) 0.5 else sum / n
++        for (y in r0..r1) for (x in c0..c1) visit(lum[y * cols + x].toDouble())
++        return true
+     }
+ }
+ 
+--- a/app/src/main/java/com/byd/clusternav/launcher/WallView.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/WallView.kt
+@@ -149,8 +149,13 @@
+         bandBottom.shader = LinearGradient(0f, h - bandH, 0f, h.toFloat(), Color.TRANSPARENT, bar, Shader.TileMode.CLAMP)
+     }
+ 
+-    private companion object {
+-        /** Dải che cao 14 % màn (≈ 150 px trên 1080): phủ thanh trên + thanh nút, tan hết trước hàng ô đầu tiên. */
++    internal companion object {
++        /**
++         * Dải che cao 14 % màn (≈ 150 px trên 1080): phủ thanh trên + thanh nút, tan hết trước hàng ô đầu tiên.
++         *
++         * `internal` (FIX286 · ES2): nút ⇄ của ô trống hàng trên nằm TRONG dải này [ĐO máy ảo 02/10: ⇄ ở y≈115–145
++         * trên 1080] — `SwapTintBinding` tính dải vào độ chói dưới nút, vì lưới độ chói của `WallArt` đo ảnh TRƯỚC dải.
++         */
+         const val BAND_FRACTION = 0.14f
+     }
+ }
+--- a/app/src/main/res/values/ids.xml
++++ b/app/src/main/res/values/ids.xml
+@@ -4,6 +4,9 @@
+          để `KachiGlass.refresh` dựng lại đúng nền khi ảnh nền đổi mà không phải dựng lại cả màn. -->
+     <item name="kachi_glass_spec" type="id" />
+     <item name="kachi_glass_binding" type="id" />
++    <!-- FIX286 · ES2 — nút ⇄ của ô TRỐNG tô màu theo độ chói đo dưới nút (SwapTintBinding). Tag RIÊNG, không mượn
++         tag kính: `KachiGlass.refresh` dò cả hai, nhưng khung ô trống mang tag kính là bẫy P1b (đắp kính lên ô trống). -->
++    <item name="kachi_swap_tint" type="id" />
+     <!-- 2026-09-21 · ĐỔ GIÁ TRỊ TẠI CHỖ cho ô giữa màn (WidgetRefreshers): hàm đổ của ô ĐỌC và của ô HÀNH ĐỘNG.
+          Giữ TRÊN VIEW, không trong một map dùng chung — một map có giá trị trỏ về khoá (mọi hàm đổ đều bắt chính
+          view của nó) thì WeakHashMap không dọn được mục nào, tức rò View + Context cả tiến trình. Xem KDoc ở đó. -->
+--- a/app/src/main/java/com/byd/clusternav/launcher/KachiPalette.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/KachiPalette.kt
+@@ -183,7 +183,7 @@
+     val lineStrong: String,
+     val gridLine: String,
+     // ⚠ WP1 — vai `emptyLine` XOÁ (nó LÀ một cái viền, 0 chỗ vẽ, không có vai trò thứ hai nào). ⚠ FIX286 · ES7 — vai
+-    // `emptyFill` XOÁ nốt: khung trống nay TRONG SUỐT (owner 03/10), dấu "đặt được app" là nút ⇄ trên đĩa kính (OQ8 · B).
++    // `emptyFill` XOÁ nốt: khung trống nay TRONG SUỐT (owner 03/10), dấu "đặt được app" là nút ⇄ ≥ 3:1 (`SwapTint`).
+     val wash: String,
+     val overlay: String,
+     val accent: String,
+--- a/app/src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt
+@@ -370,7 +370,7 @@
+                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
+             }
+             // FIX286 · ES1 — khung trống TRONG SUỐT: không nền/viền/kính, KHÔNG nhận chạm cả ô (vùng trong suốt bấm được =
+-            // nút vô hình) — chỉ ⇄ trên đĩa kính nhỏ (OQ8 phương án B). Vẫn VISIBLE + giữ drag listener dưới ⇒ vẫn là điểm thả.
++            // nút vô hình) — chỉ ⇄ màu theo nền (ES2). Vẫn VISIBLE + giữ drag listener dưới ⇒ vẫn là điểm thả.
+             SlotContent.Empty -> fl.addView(slotHead(index, empty = true), headLp())
+         }
+         // Mọi ô là điểm THẢ: kéo 1 ô rồi thả lên ô khác → đổi chỗ nội dung.
+@@ -417,7 +417,7 @@
+      * để rồi vứt đi. Đúng lối dọn mà chính tệp này vừa làm với `headBtnLp()`/`headBtn()` ở T5 (CLAUDE.md §8).
+      */
+     private fun slotHead(index: Int, empty: Boolean = false): View =
+-        SlotSwapButton.centered(context, SlotSwapButton.describe(context, index, empty), disc = empty) { onSlotTap?.invoke(index) }
++        SlotSwapButton.centered(context, SlotSwapButton.describe(context, index, empty), adaptive = empty) { onSlotTap?.invoke(index) }
+ 
+     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+         val w = MeasureSpec.getSize(widthMeasureSpec)
+--- a/app/src/main/java/com/byd/clusternav/launcher/WorkspaceViewCards.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/WorkspaceViewCards.kt
+@@ -31,11 +31,10 @@
+ }
+ 
+ /**
+- * FIX286 · ES6 — dòng `[slot-empty]` cho `usage-*.log`: bản trên xe có khung trống trong suốt chưa, ⇄ của nó vẽ kiểu
+- * nào (OQ8 · phương án B: `⇄ trên đĩa kính` — owner đổi lại phương án thì dòng này phải đổi theo, để nhật ký chụp từ
+- * xe nói đúng bản đang chạy), đang có bao nhiêu ô trống, chủ đề nào (owner/anh em chụp màn hình gửi về — CLAUDE.md
+- * §9/§11). KHÔNG ghi trường ảnh nền: [ĐO máy ảo 02/10] ở lượt dựng đầu sau khi tiến trình bật, ảnh nền còn đang nạp
+- * trên luồng nền ⇒ một trường `ảnh=` ở dòng này sẽ báo `off` dù màn sắp hiện ảnh.
++ * FIX286 · ES6 — dòng `[slot-empty]` cho `usage-*.log`: bản trên xe có khung trống trong suốt chưa, đang có bao nhiêu
++ * ô trống, chủ đề nào (owner/anh em chụp màn hình gửi về — CLAUDE.md §9/§11). Phần **ảnh nền + màu ⇄ đã chọn** do
++ * `SwapTintBinding` ghi (dòng `[slot-empty] ⇄ @x,y …`) lúc nó THẬT SỰ đo — [ĐO máy ảo 02/10] ở lượt dựng đầu sau khi
++ * tiến trình bật, ảnh nền còn đang nạp trên luồng nền ⇒ một trường `ảnh=` ở dòng này sẽ báo `off` dù màn sắp hiện ảnh.
+  *
+  * Gọi ở MỌI lượt render theo state THẬT ([WorkspaceView] `renderInternal` — cả lượt không đổi cấu trúc: bố cục toàn ô
+  * trống giống hệt state rỗng của `init` nên lượt đầu không dựng lại gì) + `setCustomLayout` đổi số ô + `restyle`; không
+@@ -55,7 +54,7 @@
+         android.util.Log.i(
+             "KachiWorkspace",
+             "[slot-empty] ${empty.size} ô trống" +
+-                (if (empty.isEmpty()) "" else " (ô ${empty.joinToString(",") { "${it + 1}" }}) trong suốt · ⇄ trên đĩa kính") +
++                (if (empty.isEmpty()) "" else " (ô ${empty.joinToString(",") { "${it + 1}" }}) trong suốt") +
+                 " · chủ đề=${if (KachiTheme.night) "tối" else "sáng"}",
+         )
+     }
+--- a/app/src/main/java/com/byd/clusternav/launcher/KachiSpace.kt
++++ b/app/src/main/java/com/byd/clusternav/launcher/KachiSpace.kt
+@@ -288,12 +288,6 @@
+      * tệp khác với số trần quyết định cỡ nút.
+      */
+     const val SLOT_HEAD_CLEAR = XS + ICON_L + XS
+-
+-    /**
+-     * Đĩa kính dưới nút ⇄ của Ô TRỐNG (FIX286 · OQ8 phương án B, chốt 2026-10-03): `S` + `ICON_S` + `S` = 36dp —
+-     * suy ra từ cỡ icon như [SLOT_HEAD_CLEAR], không tự chọn; nằm trong khung chạm `TOUCH × SLOT_HEAD_CLEAR`.
+-     */
+-    const val SWAP_DISC = S + ICON_S + S
+ 
+     /**
+      * **KHE GIỮA CÁC Ô LÀM VIỆC** — và giữa vùng ô với thanh nút.
+--- a/app/src/test/java/com/byd/clusternav/launcher/ThemePaletteContractTest.kt
++++ b/app/src/test/java/com/byd/clusternav/launcher/ThemePaletteContractTest.kt
+@@ -1,7 +1,6 @@
+ package com.byd.clusternav.launcher
+ 
+ import com.byd.clusternav.testsupport.SourceRoots
+-import com.byd.clusternav.testsupport.SwapDiscModel
+ import com.byd.clusternav.testsupport.Wcag.fmt
+ import com.byd.clusternav.testsupport.Wcag.over
+ import com.byd.clusternav.testsupport.Wcag.ratio
+@@ -280,39 +279,36 @@
+     }
+ 
+     /**
+-     * Ô TRỐNG phải NHẬN RA ĐƯỢC — nhờ **nút ⇄ ≥ 3:1 trên MỌI nền**, không nhờ màu nền ô.
++     * Ô TRỐNG phải NHẬN RA ĐƯỢC — nay nhờ **nút ⇄ ≥ 3:1 trên MỌI nền**, không nhờ màu nền ô.
+      *
+-     * ## ⚠⚠ Lịch sử: bài này đã đổi chân BA lần, tính chất nó bảo vệ thì không đổi
++     * ## ⚠⚠ Lịch sử: bài này đã đổi chân HAI lần, tính chất nó bảo vệ thì không đổi
+      *  1. Bản đầu đòi `emptyLine trên emptyFill ≥ 3:1` — tức đòi một cái **gạch đứt**. Owner 2026-09-20: *"KHÔNG còn
+      *     viền ở BẤT CỨ ĐÂU hết"* ⇒ WP1 R1.1 đổi sang `emptyFill ÷ bg ≥ 1.15` (nền ô trống tách nền bằng bước sáng).
+-     *  2. **FIX286 · ES8 (owner 03/10, *"3 ok"*)**: khung trống **TRONG SUỐT** ⇒ vai `emptyFill` xoá; dấu DUY NHẤT của
+-     *     *"chỗ này đặt được app"* là nút ⇄ nằm thẳng trên ảnh ⇒ ≥ 3:1 (WCAG 1.4.11) trên **mọi** L ∈ [0, 1] bước 0,01
+-     *     với hai mực `SwapTint` (phương án A — không nền, màu theo độ chói đo dưới nút); không ảnh ≥ 4.5:1.
+-     *  3. **FIX286 · OQ8 phương án B (chốt 2026-10-03 — phiên điều phối, owner có thể đổi)**: [ĐO máy ảo 03/10] A KHÔNG
+-     *     đạt trên ảnh nhiều chi tiết (μ 2.60:1) — không MỘT màu nào đạt trên cả điểm sáng lẫn tối của cùng vùng 30 px.
+-     *     ⇄ nay nằm trên ĐĨA KÍNH NEUTRAL (`SlotSwapButton.centered(disc = true)`), icon giữ `MUT`. Cùng lượng từ (mọi L,
+-     *     bước 0,01), cùng hai sàn (3:1 có ảnh · 4.5:1 không ảnh), nay đo trên ĐÚNG chồng lớp của đĩa ([SwapDiscModel]:
+-     *     lớp che `GlassVeil` + nhuộm màu trội hai cực + bề mặt 80 %) — không còn giả định ảnh đồng màu dưới icon.
++     *  2. **FIX286 · ES8 (owner 03/10, *"3 ok"*)**: khung trống nay **TRONG SUỐT** thấy hình nền ⇒ vai `emptyFill` bị
++     *     xoá, và bước sáng của nền ô không còn gì để đo. Thứ DUY NHẤT còn nói *"chỗ này đặt được app"* là nút ⇄,
++     *     nằm thẳng trên ảnh người dùng chọn. Bất biến vì thế **chặt hơn** bản trước: không còn là một tỉ số trên MỘT
++     *     nền chủ đề, mà là ≥ 3:1 (WCAG 1.4.11) trên **mọi** độ chói nền L ∈ [0, 1] (bước 0,01), với đúng hai mực
++     *     thật của bảng màu mà `SwapTintBinding` đưa vào [SwapTint.choose].
+      *
+      * Bỏ bài cũ mà không viết bài này là đánh mất một bất biến — cùng lẽ lần đổi chân thứ nhất.
+      */
+     @Test
+     fun `o trong nhan ra duoc nho nut doi app tren moi nen`() {
++        val light = ColorMath.parse(KachiPalette.DARK.ink)
++        val dark = ColorMath.parse(KachiPalette.LIGHT.ink)
+         val bad = mutableListOf<String>()
++        for (i in 0..100) {
++            val l = i / 100.0
++            val c = SwapTint.choose(l, light, dark)
++            val r = SwapTint.contrast(c, l)
++            if (r < SwapTint.MIN_CONTRAST) bad += "L=$l ⇒ ${fmt(r)}"
++        }
++        // Không ảnh: `WallView` vẽ nền chủ đề + hai vầng sáng ⇒ đúng khoảng mà `SwapTintBinding` đưa vào (`SwapTint.span`).
++        // Nền biết trước nên đòi chặt hơn: 4.5:1.
+         forEachPalette { name, p ->
+-            val ink = ColorMath.parse(p.mut)
+-            // Có ảnh: đúng ba đối số `KachiGlass.paint` đưa cho lớp che ở tone NEUTRAL (veil = bg · `surfacePair(…, true)`
+-            // · `veilInks(NEUTRAL)` = MUT, MUT2, INK).
+-            val art = SwapDiscModel.worstOverArt(
+-                ink, ColorMath.parse(p.bg),
+-                intArrayOf(ColorMath.parse(p.surfFromOverArt), ColorMath.parse(p.surfToOverArt)),
+-                intArrayOf(ink, ColorMath.parse(p.mut2), ColorMath.parse(p.ink)),
+-            )
+-            if (art < 3.0) bad += "$name có ảnh, L xấu nhất ⇒ ${fmt(art)}"
+-            // Không ảnh: đĩa = `KachiTheme.surface(NEUTRAL)` trên nền chủ đề + hai vầng sáng. Nền biết trước ⇒ 4.5:1.
+-            val grounds = listOf(p.bg, p.glow1, p.glow2).map { ColorMath.parse(it) }
+-            val plain = SwapDiscModel.worstNoArt(ink, intArrayOf(ColorMath.parse(p.surfFrom), ColorMath.parse(p.surfTo)), grounds)
+-            if (plain < 4.5) bad += "$name không ảnh (bg + glow) ⇒ ${fmt(plain)}"
++            val span = SwapTint.span(ColorMath.parse(p.bg), ColorMath.parse(p.glow1), ColorMath.parse(p.glow2))
++            val r = SwapTint.worst(SwapTint.choose(span[0], span[1], light, dark), span[0], span[1])
++            if (r < 4.5) bad += "$name nền chủ đề (bg + glow) ⇒ ${fmt(r)}"
+         }
+         assertEquals(
+             emptyList<String>(), bad,
+--- a/app/src/test/java/com/byd/clusternav/launcher/SurfaceContrastContractTest.kt
++++ b/app/src/test/java/com/byd/clusternav/launcher/SurfaceContrastContractTest.kt
+@@ -1,7 +1,6 @@
+ package com.byd.clusternav.launcher
+ 
+ import com.byd.clusternav.testsupport.SourceRoots
+-import com.byd.clusternav.testsupport.SwapDiscModel
+ import com.byd.clusternav.testsupport.Wcag.fmt
+ import com.byd.clusternav.testsupport.Wcag.luminance
+ import com.byd.clusternav.testsupport.Wcag.over
+@@ -431,16 +430,12 @@
+             row("MUT2 trên slotTo", "nhãn nhóm mờ nhất, đáy khay", 4.5, ratio(p.mut2, over(p.slotTo, p.bg)))
+             row("lineStrong trên bg", "mốc cũ phải giữ", 3.0, ratio(over(p.lineStrong, p.bg), p.bg))
+             // WP1 · R1.1 — hàng `emptyLine trên emptyFill` đã ĐỔI CHÂN (gạch đứt gỡ ⇒ `emptyFill ÷ bg`); FIX286 · ES8 đổi
+-            // chân lần hai (khung trống TRONG SUỐT, ⇄ không nền theo độ chói); OQ8 · B (chốt 03/10) lần ba: ⇄ nằm trên
+-            // ĐĨA KÍNH ⇒ đo MUT trên đĩa ở ảnh XẤU NHẤT L ∈ [0, 1] — cùng mô hình `SwapDiscModel` với bài sàn của
+-            // `ThemePaletteContractTest.o trong nhan ra duoc nho nut doi app…`.
+-            val mutInk = ColorMath.parse(p.mut)
+-            val discWorst = SwapDiscModel.worstOverArt(
+-                mutInk, ColorMath.parse(p.bg),
+-                intArrayOf(ColorMath.parse(p.surfFromOverArt), ColorMath.parse(p.surfToOverArt)),
+-                intArrayOf(mutInk, ColorMath.parse(p.mut2), ColorMath.parse(p.ink)),
+-            )
+-            row("MUT (⇄ ô trống) trên đĩa kính, ảnh xấu nhất", "ô trống trong suốt: ⇄ là dấu duy nhất (OQ8 · B, L∈[0,1])", 3.0, discWorst)
++            // chân lần hai: khung trống TRONG SUỐT (owner 03/10), vai `emptyFill` xoá ⇒ thứ phải đo nay là **nút ⇄ của
++            // ô trống trên nền XẤU NHẤT** L ∈ [0, 1] — xem `ThemePaletteContractTest.o trong nhan ra duoc nho nut doi app…`.
++            val lightInk = ColorMath.parse(KachiPalette.DARK.ink)
++            val darkInk = ColorMath.parse(KachiPalette.LIGHT.ink)
++            val swapWorst = (0..100).minOf { i -> SwapTint.contrast(SwapTint.choose(i / 100.0, lightInk, darkInk), i / 100.0) }
++            row("⇄ ô trống trên nền xấu nhất", "ô trống trong suốt: ⇄ là dấu duy nhất (SwapTint, L∈[0,1])", 3.0, swapWorst)
+             row("ON_ACCENT trên gradFrom", "mốc cũ phải giữ", 4.5, ratio(p.onAccent, p.gradFrom))
+             // P1b — thẻ trên ẢNH NỀN: đo ở hai cực vì ảnh do người dùng chọn (xem bài `the tren anh nen...`).
+             listOf("#ffffff" to "ảnh sáng", "#000000" to "ảnh tối").forEach { (art, why) ->
+--- a/app/src/test/java/com/byd/clusternav/launcher/SlotHeadParityContractTest.kt
++++ b/app/src/test/java/com/byd/clusternav/launcher/SlotHeadParityContractTest.kt
+@@ -93,12 +93,11 @@
+     }
+     /**
+      * FIX286 · ES2/ES4 — ca Ô TRỐNG: cùng MỘT bộ dựng ([SlotSwapButton.centered]), cùng chỗ (giữa mép trên, khung
+-     * `headLp()`), cùng icon `MUT`, chỉ khác **đĩa kính** phía sau icon (`disc` — OQ8 phương án B, chốt 2026-10-03;
+-     * bản A trước đó khác MÀU theo nền) và mô tả trợ năng. Ô trống mà tự vẽ ⇄ riêng là đúng bệnh "lúc 1 icon lúc 2 icon"
+-     * (2026-09-13) quay lại ở loại ô thứ tư.
++     * `headLp()`), chỉ khác màu (`adaptive` — theo nền vì khung trong suốt) và mô tả trợ năng. Ô trống mà tự vẽ ⇄ riêng
++     * là đúng bệnh "lúc 1 icon lúc 2 icon" (2026-09-13) quay lại ở loại ô thứ tư.
+      */
+     @Test
+-    fun `o trong dung chung bo dung nut, chi khac dia kinh va mo ta`() {
++    fun `o trong dung chung bo dung nut, chi khac mau va mo ta`() {
+         val src = com.byd.clusternav.testsupport.SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
+         val makeSlot = com.byd.clusternav.testsupport.SourceRoots.body(src, "private fun makeSlot(")
+         assertTrue(
+@@ -108,11 +107,10 @@
+         val head = com.byd.clusternav.testsupport.SourceRoots.body(src, "private fun slotHead(")
+         assertTrue("SlotSwapButton.centered(" in head, "slotHead dựng qua SlotSwapButton.centered")
+         assertTrue("SlotSwapButton.describe(context, index, empty)" in head, "mọi ô có mô tả trợ năng theo loại ô")
+-        assertTrue("disc = empty" in head, "chỉ ô TRỐNG (khung trong suốt) có đĩa kính; ô có nội dung nằm trên bề mặt ô")
++        assertTrue("adaptive = empty" in head, "chỉ ô TRỐNG tô theo nền; ô có nội dung giữ MUT")
+         val centered = com.byd.clusternav.testsupport.SourceRoots.body(button, "fun centered(")
+         assertTrue("contentDescription = description" in centered, "mô tả đặt trên khung CHẠM (thứ nhận cú bấm)")
+-        assertTrue("if (disc) {" in centered, "disc ⇒ dựng đĩa kính sau icon")
+-        assertFalse("setColorFilter" in centered, "icon giữ MUT của build() ở MỌI ô — đĩa lo tương phản, không tô lại màu")
++        assertTrue("if (adaptive) SwapTintBinding.bind(this, visual)" in centered, "adaptive ⇒ gắn tô-theo-nền vào nút")
+         assertTrue(
+             "SlotSwapButton.describe(activity, hd.slot, empty = false)" in overlay,
+             "đường nổi (OverlayHeads, chỉ ô App) cũng có mô tả — ES4 'mọi ô'",
+--- a/app/src/test/java/com/byd/clusternav/launcher/EmptySlotFix286WiringContractTest.kt
++++ b/app/src/test/java/com/byd/clusternav/launcher/EmptySlotFix286WiringContractTest.kt
+@@ -1,9 +1,7 @@
+ package com.byd.clusternav.launcher
+ 
+ import com.byd.clusternav.testsupport.SourceRoots
+-import com.byd.clusternav.testsupport.SwapDiscModel
+ import java.nio.file.Files
+-import java.nio.file.Path
+ import kotlin.streams.toList
+ import org.junit.jupiter.api.Assertions.assertEquals
+ import org.junit.jupiter.api.Assertions.assertFalse
+@@ -13,10 +11,9 @@
+ /**
+  * ═══ FIX286 · R-ES — DÂY NỐI của ô trống trong suốt (spec `docs/specs/kachi-286-field-fixes.html` §3.4) ═══════════
+  *
+- * Phần THUẦN đã có bài riêng: `WorkspaceDefaultTest` (`:core` — khi nào nạp mặc định) và
+- * `ThemePaletteContractTest.o trong nhan ra duoc…` (tương phản ⇄ trên đĩa kính, mô hình `SwapDiscModel`). Bài này khoá
+- * phần mà bài thuần KHÔNG thấy được: hàm thuần có thật sự được GỌI ở đúng chỗ không (CLAUDE.md §8 — `CastShell.evictVd`
+- * viết cẩn thận mà 0 call site). Mỗi khẳng định ứng với một mắt xích đã thử phá.
++ * Phần THUẦN đã có bài riêng ở `:core` (`SwapTintTest` — chọn màu; `WorkspaceDefaultTest` — khi nào nạp mặc định).
++ * Bài này khoá phần mà bài thuần KHÔNG thấy được: hàm thuần có thật sự được GỌI ở đúng chỗ không (CLAUDE.md §8 —
++ * `CastShell.evictVd` viết cẩn thận mà 0 call site). Mỗi khẳng định ứng với một mắt xích đã thử phá ở lượt này.
+  */
+ class EmptySlotFix286WiringContractTest {
+ 
+@@ -45,33 +42,27 @@
+         )
+     }
+ 
+-    /**
+-     * OQ8 phương án B (chốt 2026-10-03 — phiên điều phối, owner có thể đổi) — ⇄ của ô trống nằm trên ĐĨA KÍNH.
+-     *
+-     * Bản A (ES2: không nền, tô màu theo độ chói đo dưới nút — `SwapTint`/`SwapTintBinding`) [ĐO máy ảo 03/10] không đạt
+-     * 3:1 trên ảnh nhiều chi tiết ⇒ gỡ cả bộ (bản khôi phục: `docs/diagnostics/fix286-oq8-disc-emulator-2026-10-03/`).
+-     * Mỗi khẳng định là một mắt xích mà mô hình tương phản giả định: đĩa đi qua ĐÚNG cửa kính ở tone NEUTRAL (hợp đồng
+-     * lớp che có `MUT`), nằm SAU icon, cỡ suy ra từ thang và lọt khung chạm; icon không bị tô lại; lớp nhuộm mà mô hình
+-     * mô phỏng vẫn đúng 0x0f; và không còn mảnh nào của A sống dở (§8).
+-     */
++    /** ES2 — tô theo nền: đúng hai mực, đúng phép đo, và làm mới theo đường ảnh-đổi có sẵn. */
+     @Test
+-    fun `nut doi app o trong nam tren dia kinh`() {
+-        val centered = SourceRoots.body(code("SlotSwapButton.kt"), "fun centered(")
+-        assertTrue("KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL)" in centered, "đĩa = kính NEUTRAL, tròn")
+-        val disc = centered.indexOf("addView(d, FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.SWAP_DISC), KachiTheme.dpi(context, Sp.SWAP_DISC), Gravity.CENTER))")
+-        val icon = centered.indexOf("visual,")
+-        assertTrue(disc in 0 until icon, "đĩa phải thêm TRƯỚC icon (nằm sau icon), canh giữa khung chạm")
+-        assertTrue(Regex("""const val SWAP_DISC = S \+ ICON_S \+ S\b""").containsMatchIn(SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiSpace.kt")))
+-        assertTrue(KachiSpace.SWAP_DISC <= KachiSpace.SLOT_HEAD_CLEAR && KachiSpace.SWAP_DISC <= KachiSpace.TOUCH, "đĩa lọt khung chạm")
++    fun `nut doi app o trong to theo nen do duoc`() {
++        val b = code("SwapTintBinding.kt")
++        val retint = SourceRoots.body(b, "fun retint(force: Boolean)")
++        assertTrue("SwapTint.choose(range[0], range[1], LIGHT_INK, DARK_INK)" in retint, "màu do hàm thuần :core chọn")
++        assertTrue("icon.setColorFilter(next)" in retint, "màu chọn xong phải được TÔ lên icon")
++        assertTrue("WallArtStore.current" in retint, "đo theo ảnh ĐANG hiển thị")
+         assertTrue(
+-            "const val TINT_ALPHA = 0x${"%02x".format(SwapDiscModel.TINT_ALPHA)}" in code("WallGlass.kt"),
+-            "lớp nhuộm mà SwapDiscModel mô phỏng phải khớp WallWindowDrawable",
++            Regex("""if \(sig != lastLogged\) \{[^}]*\[slot-empty\] ⇄""").containsMatchIn(retint),
++            "ES6 — màu + nền đo được phải vào usage log, và chỉ khi màu/ảnh ĐỔI (không mỗi lượt bố trí)",
+         )
+-        val launcher = SourceRoots.path("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt").parent
+-        val left = Files.walk(launcher).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
+-            .filter { f -> listOf("SwapTint", "luminanceRange", "kachi_swap_tint").any { it in f.toFile().readText() } }
+-        assertEquals(emptyList<Path>(), left, "mảnh phương án A còn sống dở")
+-        assertFalse("kachi_swap_tint" in SourceRoots.text("src/main/res/values/ids.xml"), "id tag của A phải gỡ")
++        assertTrue("LIGHT_INK = Color.parseColor(KachiPalette.DARK.ink)" in b, "mực sáng = mực chính bảng TỐI")
++        assertTrue("DARK_INK = Color.parseColor(KachiPalette.LIGHT.ink)" in b, "mực tối = mực chính bảng SÁNG")
++        val range = SourceRoots.body(b, "private fun range(")
++        assertTrue("art.luminanceRange(" in range, "có ảnh ⇒ đo khoảng độ chói (lưới) dưới khung chạm")
++        assertTrue("SwapTint.underBand(" in range && "WallView.BAND_FRACTION" in range, "tính dải che đỉnh/đáy của WallView")
++        assertTrue("SwapTint.span(" in range, "không ảnh ⇒ nền chủ đề + hai vầng sáng")
++        val refresh = SourceRoots.body(code("WallGlass.kt"), "fun refresh(root: View)")
++        assertTrue("SwapTintBinding.refresh(root)" in refresh, "ảnh đổi ⇒ cùng lượt KachiGlass.refresh đo lại ⇄ (không đường mới)")
++        assertTrue("R.id.kachi_swap_tint" in b && "R.id.kachi_glass_spec" !in b, "tag RIÊNG, không mượn tag kính")
+     }
+ 
+     /** ES6 — dòng `[slot-empty]` ở mọi lượt dựng/đổi cấu trúc ô (không mỗi ô). */
+@@ -98,9 +89,7 @@
+         // "3 ô trống" giả mỗi lần tiến trình bật. Cũng không ghi mỗi Ô (restyle dựng lại liên tục).
+         assertFalse("EmptySlotLog" in SourceRoots.body(src, "private fun rebuild()"), "không ghi ở rebuild() trần (init, state rỗng)")
+         assertFalse("EmptySlotLog" in SourceRoots.body(src, "private fun makeSlot("), "không ghi mỗi Ô")
+-        val note = SourceRoots.body(code("WorkspaceViewCards.kt"), "fun note(")
+-        assertTrue("[slot-empty]" in note, "đúng nhãn để grep usage log")
+-        assertTrue("trong suốt · ⇄ trên đĩa kính" in note, "nhật ký nói đúng phương án đang chạy (OQ8 · B) — ảnh chụp từ xe")
++        assertTrue("[slot-empty]" in SourceRoots.body(code("WorkspaceViewCards.kt"), "fun note("), "đúng nhãn để grep usage log")
+     }
+ 
+     /** ES7 — vai/hàm/chuỗi của ô trống đục cũ không còn ai dùng ⇒ đã gỡ, không mọc lại. */
+--- a/app/src/test/java/com/byd/clusternav/launcher/SurfaceMaterialContractTest.kt
++++ b/app/src/test/java/com/byd/clusternav/launcher/SurfaceMaterialContractTest.kt
+@@ -130,7 +130,7 @@
+         val makeSlot = SourceRoots.body(src, "private fun makeSlot(")
+         val empty = Regex("""SlotContent\.Empty ->[^\n]*""").find(makeSlot)?.value
+             ?: error("không thấy nhánh `SlotContent.Empty ->` trong makeSlot")
+-        assertTrue("slotHead(index, empty = true)" in empty, "ô trống phải có ⇄ (dạng ô trống — trên đĩa kính, OQ8 · B): $empty")
++        assertTrue("slotHead(index, empty = true)" in empty, "ô trống phải có ⇄ (dạng ô trống — màu theo nền): $empty")
+         listOf("background", "setOnClickListener", "KachiGlass", "GradientDrawable", "{").forEach {
+             assertFalse(it in empty, "nhánh ô trống không được có `$it` (khung trong suốt, không chạm cả ô): $empty")
+         }
+--- a/core/src/testFixtures/kotlin/com/byd/clusternav/testsupport/SwapDiscModel.kt
++++ /dev/null
+@@ -1,46 +0,0 @@
+-package com.byd.clusternav.testsupport
+-
+-import com.byd.clusternav.launcher.ColorMath
+-import com.byd.clusternav.launcher.GlassVeil
+-
+-/**
+- * ═══ FIX286 · OQ8 phương án B (chốt 2026-10-03) — mô hình THUẦN của nút ⇄ ô trống nằm trên ĐĨA KÍNH ═══════════════
+- *
+- * Spec `docs/specs/kachi-286-field-fixes.html` · R-OQ8. Hai bài canh đo CÙNG một con số qua đây (không chép công thức
+- * hai lần): `ThemePaletteContractTest.o trong nhan ra duoc…` (sàn 3:1 — WCAG 1.4.11, thành phần không phải chữ) và
+- * `SurfaceContrastContractTest.sinh bang do…` (dòng bảng đo tài liệu).
+- *
+- * Chồng lớp đúng như máy vẽ (`SlotSwapButton.centered(disc = true)` → `KachiGlass.apply(…, NEUTRAL)`):
+- *  • **có ảnh** ⇒ `WallWindowDrawable`: ảnh mờ → lớp che `veil @ GlassVeil.alphaFor(L)` → nhuộm màu trội
+- *    [TINT_ALPHA] → bề mặt `surf*OverArt` (80 %). Ảnh mô hình bằng xám cùng độ chói (cùng lẽ [GlassVeil]); màu nhuộm
+- *    lấy hai CỰC trắng/đen vì màu trội là của ảnh người dùng chọn;
+- *  • **không ảnh** ⇒ `KachiTheme.surface(NEUTRAL)` trên nền `WallView` (nền chủ đề + hai vầng sáng).
+- *
+- * Giới hạn đã biết: ảnh dưới đĩa là ảnh MỜ nhưng không đồng đều tuyệt đối — phần dư ấy chỉ đo được trên máy (bảng
+- * `docs/diagnostics/fix286-oq8-disc-emulator-2026-10-03/`).
+- */
+-object SwapDiscModel {
+-
+-    /** Alpha lớp nhuộm màu trội — cùng số với `WallWindowDrawable.TINT_ALPHA` (bài nối dây ghim nguyên văn bên đó). */
+-    const val TINT_ALPHA = 0x0f
+-
+-    /** Tương phản TỆ NHẤT của [ink] trên đĩa có ảnh: mọi L ∈ [0, 1] bước 0,01 × nhuộm ∈ {không, trắng, đen}. */
+-    fun worstOverArt(ink: Int, veil: Int, surfaces: IntArray, veilInks: IntArray): Double {
+-        val tints = listOf(null, ColorMath.withAlpha(0xffffff, TINT_ALPHA), ColorMath.withAlpha(0x000000, TINT_ALPHA))
+-        var worst = Double.MAX_VALUE
+-        for (i in 0..100) {
+-            val l = i / 100.0
+-            val alpha = GlassVeil.alphaFor(l, veil, surfaces, veilInks)
+-            val veiled = ColorMath.over(ColorMath.withAlpha(veil, (alpha * 255).toInt()), ColorMath.grayOfLuminance(l))
+-            for (t in tints) {
+-                val under = if (t == null) veiled else ColorMath.over(t, veiled)
+-                for (s in surfaces) worst = minOf(worst, ColorMath.ratio(ink, ColorMath.over(s, under)))
+-            }
+-        }
+-        return worst
+-    }
+-
+-    /** Tương phản TỆ NHẤT của [ink] trên đĩa không ảnh: mọi bề mặt [surfaces] trên mọi nền [grounds] của `WallView`. */
+-    fun worstNoArt(ink: Int, surfaces: IntArray, grounds: List<Int>): Double =
+-        grounds.minOf { g -> surfaces.minOf { s -> ColorMath.ratio(ink, ColorMath.over(s, g)) } }
+-}

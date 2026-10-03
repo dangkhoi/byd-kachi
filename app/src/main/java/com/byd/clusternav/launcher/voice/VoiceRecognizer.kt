@@ -13,9 +13,6 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
 /**
  * ═══ V2 pha NGHE · BỘ NHẬN DẠNG — sherpa-onnx OfflineRecognizer, **TẠI MÁY**, GIẢI MÃ TỰ DO + BIASING ════════
@@ -223,10 +220,10 @@ class VoiceRecognizer private constructor(
 /**
  * Giữ [OfflineRecognizer] cho cả tiến trình — encoder ONNX nặng, dựng vài giây, không nạp lại mỗi phiên.
  *
- * `@Volatile` + `synchronized`: hai lối vào mic có thể bấm gần nhau. Recognizer dựng cho **một** model id;
- * `release()` rồi lần sau dựng lại. ⚠ Từ 2026-09-21 danh mục chỉ còn MỘT mô hình và bề mặt chọn mô hình đã gỡ, nên
- * đường *"đổi lựa chọn ⇒ dựng lại bản mới"* không còn chỗ gọi nào; phép so `builtFor == model.id` ở lại vì nó
- * cũng là thứ bắt ca **gỡ rồi cài lại** gói cùng id (`release()` gọi ở đúng đường đó).
+ * Khoá dựng/dùng ở [ModelHolder] (FIX286 · VK3): hai lối vào mic có thể bấm gần nhau. Recognizer dựng cho **một**
+ * model id; `release()` rồi lần sau dựng lại. ⚠ Từ 2026-09-21 danh mục chỉ còn MỘT mô hình và bề mặt chọn mô hình đã
+ * gỡ, nên đường *"đổi lựa chọn ⇒ dựng lại bản mới"* không còn chỗ gọi nào; phép so khoá gói ở lại vì nó cũng là thứ
+ * bắt ca **gỡ rồi cài lại** gói cùng id (`release()` gọi ở đúng đường đó).
  */
 object VoiceEngine {
 
@@ -247,9 +244,24 @@ object VoiceEngine {
     private const val MIN_THREADS = 2
     private const val MAX_THREADS = 4
 
-    @Volatile private var recognizer: OfflineRecognizer? = null
-    @Volatile private var builtFor: String? = null
     @Volatile private var biasing = false
+
+    /**
+     * FIX286 · VK3 (S1) — bản recognizer của tiến trình + hai khoá dựng/dùng, đo được (`:core`, [ModelHolder]). Thay
+     * `synchronized(this)` + `ReentrantReadWriteLock` của 2.66–2.85: [release] cũ chờ đúng monitor mà lượt dựng 9–34 s
+     * đang giữ, và đứng xuống BG-20 gọi nó trên luồng CHÍNH của `:wake` (KDoc [ModelHolder]). `close` chạy dưới cả hai
+     * khoá: nhả native + tắt biasing + trả trang cho hệ (CLOSE-4 — `free` của jemalloc không tự trả).
+     */
+    private val holder = ModelHolder<String, OfflineRecognizer>(
+        close = { rec ->
+            runCatching { rec.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) }
+            biasing = false
+            // CLOSE-4 — mốc pha "nhả xong mô hình": `OfflineRecognizer.release()` gọi `free()` cho ~85-110 MB, mà free
+            // của jemalloc KHÔNG phải trả cho hệ (xem [KachiMem]). Không có dòng này thì BG-20 (đứng xuống `:wake` khi
+            // wake TẮT) chỉ giảm số trong `mallinfo`, PSS đứng nguyên — tức tiết kiệm trên giấy.
+            KachiMem.trim("sau nhả mô hình")
+        },
+    )
 
     /**
      * Một lượt nạp sẵn đang chạy (giữ suốt đời luồng `KachiVoicePreload`, nhả ở `finally`). [ĐO máy ảo 2.65] tiến
@@ -258,14 +270,6 @@ object VoiceEngine {
      * dựng chúng, không phải 3 lượt `preload`. Cờ này vẫn đúng chỗ: hai lời gọi gần nhau không được đẻ hai luồng.
      */
     private val preloading = AtomicBoolean(false)
-
-    /**
-     * Khoá DÙNG/NHẢ: giải mã giữ `read`, [release] giữ `write`. Không có nó, `release()` trong lúc một `decode`
-     * đang chạy (phiên lệnh, hoặc bộ nghe câu gọi ở `:wake`) là use-after-free native. Chỉ [decode] và [release]
-     * chạm; [recognizer] (`synchronized(this)`) gọi [release] khi đổi gói ⇒ monitor rồi mới `write`, còn `decode`
-     * không bao giờ lấy monitor ⇒ không có vòng chờ.
-     */
-    private val useLock = ReentrantReadWriteLock()
 
     /**
      * ═══ H6 — LÝ DO lượt nạp sẵn gần nhất bị BỎ QUA, hoặc `null` nếu không bị ═══════════════════════════
@@ -282,53 +286,52 @@ object VoiceEngine {
     var lastPreloadSkip: String? = null
         private set
 
-    /** Recognizer cho model đang chọn, nạp nếu chưa / dựng lại nếu đổi model. `null` = chưa cài / hỏng. */
+    /**
+     * Recognizer cho model đang chọn, nạp nếu chưa / dựng lại nếu đổi model. `null` = chưa cài / hỏng. **CHẶN** khi
+     * có lượt dựng khác đang chạy (chờ rồi nhận ĐÚNG bản ấy, không dựng lần hai) ⇒ chỉ gọi từ luồng NỀN.
+     */
     fun recognizer(ctx: Context): OfflineRecognizer? {
         val model = VoiceModelStore.selected(ctx)
-        recognizer?.let { if (builtFor == model.id) return it }
-        return synchronized(this) {
-            recognizer?.let { if (builtFor == model.id) return it else release() }
-            build(ctx.applicationContext, model)?.also { recognizer = it; builtFor = model.id }
-        }
+        return holder.get(model.id) { build(ctx.applicationContext, model) }
     }
 
     /** Engine hiện tại có bật được biasing không (đã nạp bpe vocab). Đọc sau [recognizer]. */
     fun biasingReady(): Boolean = biasing
 
     /**
-     * Trả recognizer về hệ thống — gọi khi người dùng **gỡ** / **đổi** mô hình, và (2026-09-25 · wake, BG-20) khi
-     * `:wake` đứng xuống sau một phiên nghe headless mà "Hey Kachi" đang TẮT. **Chờ** lượt giải mã đang chạy xong
-     * rồi mới nhả (xem [useLock]); gọi từ luồng main của một service không UI thì trần chờ là một lượt giải mã.
+     * Trả recognizer về hệ thống, CÓ CHỜ (lượt dựng / lượt giải mã đang chạy) — gọi khi người dùng **gỡ** / **đổi**
+     * mô hình (màn Cài đặt, luồng nền). ⚠ Từ FIX286 · VK3 KHÔNG còn chỗ gọi nào trên luồng chính của `:wake`: đứng
+     * xuống BG-20 và `onDestroy` dùng [tryRelease] (không chặn).
      */
-    // ⚠ Kiểu trả về khai TƯỜNG MINH `Unit`: thân-biểu-thức `= synchronized(this) { … }` lấy giá trị của câu lệnh
-    // CUỐI trong khối, nên thêm một dòng trả `Boolean` (như `KachiMem.trim`) sẽ âm thầm đổi chữ ký công khai của
-    // hàm này từ `Unit` sang `Boolean` — đúng họ lỗi "hợp đồng đổi mà không ai thấy" mà CLAUDE.md §8 nói tới.
-    fun release(): Unit = synchronized(this) {
-        useLock.write {
-            recognizer?.let { runCatching { it.release() }.onFailure { t -> Log.w(TAG, "đóng recognizer hỏng", t) } }
-            recognizer = null; builtFor = null; biasing = false
-        }
-        // CLOSE-4 — mốc pha "nhả xong mô hình": `OfflineRecognizer.release()` gọi `free()` cho ~85-110 MB, mà free
-        // của jemalloc KHÔNG phải trả cho hệ (xem [KachiMem]). Không có dòng này thì BG-20 (đứng xuống `:wake` khi
-        // wake TẮT) chỉ giảm số trong `mallinfo`, PSS đứng nguyên — tức tiết kiệm trên giấy.
-        KachiMem.trim("sau nhả mô hình")
-    }
+    fun release(): Unit = holder.release()
 
     /**
-     * Chạy [block] với `rec` khi nó **vẫn là** recognizer hiện hành, dưới khoá đọc; đã bị [release] ⇒ `null`, không
+     * FIX286 · VK3 — nhả KHÔNG CHẶN: đang nạp / đang giải mã ⇒ [ModelHolder.Release.BUSY], chỗ gọi hỏi lại nhịp sau.
+     * [precheck] chạy khi ĐÃ giữ khoá dựng — đứng xuống kiểm lại pha IDLE + epoch phiên chưa đổi tại đó.
+     */
+    fun tryRelease(precheck: () -> Boolean = { true }): ModelHolder.Release = holder.tryRelease(precheck)
+
+    /** FIX286 · VK3 — đang có lượt dựng/nhả (đọc thẳng từ khoá, không cờ ghi tay). Đầu vào `loading` của đứng xuống. */
+    fun loading(): Boolean = holder.loading()
+
+    /**
+     * Chạy [block] với `rec` khi nó **vẫn là** recognizer hiện hành, dưới khoá đọc; đã bị nhả ⇒ `null`, không
      * chạm native. Lỗi trong [block] được nuốt thành `""` (cùng luật cũ của `decode`: một tính năng phụ không được
      * giết phiên).
      */
-    internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = useLock.read {
-        if (recognizer !== rec) return@read null
+    internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = holder.withUse(rec) {
         runCatching(block).onFailure { Log.w(TAG, "giải mã hỏng", it) }.getOrDefault("")
     }
 
-    /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*). */
-    fun loaded(): Boolean = recognizer != null
+    /** Mô hình đang nằm sẵn trong bộ nhớ chưa (để Cài đặt nói *"lần nói đầu sẽ hơi chậm"*; tấm chữ "Đang nạp…"). */
+    fun loaded(): Boolean = holder.current() != null
 
     /** Mã gói ĐANG nằm trong RAM (`""` = chưa nạp) — cầu `state.voice_model.loaded_id` đối chiếu với gói đang chọn. */
-    fun loadedId(): String = builtFor.orEmpty()
+    fun loadedId(): String = holder.currentKey().orEmpty()
+
+    /** FIX286 · VK6 — số lượt dựng thành công + ms lượt gần nhất (nhật ký phiên `:wake` so trước/sau). */
+    fun builds(): Int = holder.builds()
+    fun lastBuildMs(): Long = holder.lastBuildMs()
 
     /**
      * ═══ V3 · R4 — NẠP SẴN mô hình, **trên luồng nền, ưu tiên thấp** ═══════════════════════════════════════
@@ -346,26 +349,36 @@ object VoiceEngine {
      *  3. **Không ném, không chặn** — chưa tải mô hình / máy hết RAM ⇒ [recognizer] trả `null` và đây im lặng rút
      *     lui. Một tính năng phụ không được giết launcher (cùng luật `VoiceSession.runSession`).
      *
-     * An toàn khi gọi nhiều lần: [recognizer] tự khoá `synchronized` và tự nhận ra mô hình đã nạp; và từ 2026-09-25
-     * hai lời gọi chồng nhau chỉ đẻ **một** luồng ([preloading]). Hàm này chỉ có nghĩa ở tiến trình **launcher**
-     * (`KachiApplication` chặn `:tts`/`:wake`); wake BẬT ⇒ tự rút lui, xem [VoicePreloadPolicy.shouldPreloadInMain].
+     * An toàn khi gọi nhiều lần: [recognizer] tự khoá (khoá dựng) và tự nhận ra mô hình đã nạp; và từ 2026-09-25
+     * hai lời gọi chồng nhau chỉ đẻ **một** luồng ([preloading]). Ở tiến trình **launcher** (`KachiApplication`; nó
+     * chặn `:tts`/`:wake`) mô hình nằm ở `:wake` ⇒ tự rút lui, xem [VoicePreloadPolicy.shouldPreloadInMain].
+     *
+     * @param inWake FIX286 · VK2 — gọi từ `:wake` ở chế độ HOLD (`VoiceWakeHold`): bỏ cổng tiến trình chính, chỉ còn
+     *   cổng RAM ([VoicePreloadPolicy.shouldPreload]) — cùng luồng nền ưu tiên thấp, cùng [preloading] chống chạy đôi.
      */
-    fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS) {
+    fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS, inWake: Boolean = false) {
         val app = ctx.applicationContext
         // 2026-09-25 · wake: tối đa MỘT luồng nạp sẵn sống tại một thời điểm (xem [preloading]).
         if (!preloading.compareAndSet(false, true)) { Log.i(TAG, "nạp sẵn: đã có lượt đang chạy — bỏ qua"); return }
         Thread({
             try { runCatching {
                 if (delayMs > 0) Thread.sleep(delayMs)
-                // 2026-09-25 · wake — MỘT mô hình cho cả máy: wake BẬT ⇒ `:wake` giữ recognizer, chính không nạp
-                // bản thứ hai. Đọc pref ở đây (luồng nền, sau 3 s), không ở `Application.onCreate`. Xem
-                // [VoicePreloadPolicy.shouldPreloadInMain].
-                val wakeOn = runCatching { Prefs.wakeEnabled(app) }.getOrDefault(false)
-                if (!VoicePreloadPolicy.shouldPreloadInMain(wakeOn)) {
+                // 2026-09-25 · wake — MỘT mô hình cho cả máy: mô hình ở `:wake` ⇒ chính không nạp bản thứ hai. Đọc
+                // prefs ở đây (luồng nền, sau 3 s), không ở `Application.onCreate`. FIX286 · VK1: "ở `:wake`" = wake
+                // BẬT ∨ phím gán Kachi nghe ([VoiceWakeMode]) — không còn chỉ wake. Xem [VoicePreloadPolicy.shouldPreloadInMain].
+                val mode = if (inWake) VoiceWakeMode.HOLD else runCatching { VoiceWakePrefsMain.mode(app) }.getOrDefault(VoiceWakeMode.OFF)
+                if (!inWake && !VoicePreloadPolicy.shouldPreloadInMain(mode.modelInWake)) {
                     lastPreloadSkip = VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL
-                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL}")
+                    Log.i(TAG, "nạp sẵn: BỎ QUA — ${VoicePreloadPolicy.REASON_WAKE_OWNS_MODEL} (chế độ $mode)")
+                    // VK2 — chính không nạp thì `:wake` PHẢI giữ: HOLD có thể chưa ai dựng (BYD giết Kachi mỗi lần tắt
+                    // máy, Android dựng lại tiến trình chính lúc màn tắt — không onResume, không boot ⇒ không `sync`).
+                    // Đường MỚI xuống cuối (§6); WAKE không đổi byte nào (vòng đời wake có sẵn tự lo).
+                    if (mode == VoiceWakeMode.HOLD) VoiceWakeService.sync(app)
                     return@runCatching
                 }
+                // [Senior review FIX286 Pass 2 · P3] `:wake`: HOLD có thể đã hết trong lúc ngủ chờ (gỡ phím ⇒ service dừng, nhả
+                // EMPTY) — nạp lúc này là 74 MB trong một tiến trình không còn service nào giữ và không ai nhả nữa.
+                if (inWake && !runCatching { VoiceWakeHold.modeInWake(app).modelInWake }.getOrDefault(false)) { Log.i(TAG, "nạp sẵn (:wake): BỎ QUA — chế độ không còn giữ mô hình"); return@runCatching }
                 if (!VoiceModelStore.isReady(app)) {
                     Log.i(TAG, "nạp sẵn: chưa có mô hình trên đĩa — bỏ qua")
                     return@runCatching
@@ -386,7 +399,7 @@ object VoiceEngine {
                 lastPreloadSkip = null
                 val t0 = System.currentTimeMillis()
                 val ok = recognizer(app) != null
-                Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok)")
+                Log.i(TIMING_TAG, "nạp sẵn mô hình ${System.currentTimeMillis() - t0} ms (ok=$ok${if (inWake) " · :wake HOLD" else ""})")
             }.onFailure { Log.w(TAG, "nạp sẵn hỏng — lần bấm mic đầu sẽ nạp như cũ", it) }
             } finally { preloading.set(false) }
         }, "KachiVoicePreload").apply {

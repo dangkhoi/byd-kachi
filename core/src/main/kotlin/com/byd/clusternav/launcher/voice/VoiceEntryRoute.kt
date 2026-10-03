@@ -9,7 +9,14 @@ import com.byd.clusternav.launcher.LayoutPreset
  * phiên lệnh R7/LISTEN_NOW chạy ở đó. Nút mic màn chính và `EXTRA_START_VOICE` lại mở phiên **trong tiến trình
  * chính** ⇒ `VoiceRecognizer.open` nạp **bản thứ hai** (~15 s lần bấm đầu, +74 MB) trên đầu xe còn 56–94 MB trống.
  * [VoicePreloadPolicy.shouldPreloadInMain] (2.66) chỉ bỏ *nạp sẵn*; lần bấm đầu vẫn nạp. Đây là quyết định còn
- * thiếu: **mọi lối vào** (nút mic · phím · EXTRA) đi `listenNow` của `:wake` khi wake bật.
+ * thiếu: nút mic màn chính + `EXTRA_START_VOICE` đi `listenNow` của `:wake` khi mô hình nằm ở đó.
+ *
+ * ⚠ [FIX286 · VK7 — sửa KDoc sai, ĐO mã 02/10] Bản 2.68 viết *"**mọi lối vào** (nút mic · phím · EXTRA) đi `listenNow`
+ * khi wake bật"* — sai về phím: phím vô-lăng KHÔNG hỏi hàm này, nó **luôn** đi `listenNow` (`AssistantLauncher.
+ * launchKachiVoice`, từ 2.62), kể cả khi wake TẮT. Hai lối vào chọn tiến trình theo hai luật khác nhau chính là gốc lỗi
+ * *"phím kẹt Getting ready, mic màn thì được"* (FIX286 R-VK). Từ 2.86 tham số là [VoiceWakeMode.modelInWake]
+ * (`wakeEnabled ∨ keyHold`), không còn `wakeEnabled`: người gán phím cho Kachi có mô hình ở `:wake`, nên nút mic màn
+ * của họ cũng đi `:wake` — một bản mô hình cho cả máy.
  *
  * ## Vì sao "service sống" KHÔNG đổi đường, chỉ đổi HẠN CHỜ
  * Wake bật mà `:wake` không sống (LMK vừa giết, `START_STICKY` chưa dựng lại) thì `startForegroundService` **tự
@@ -19,9 +26,11 @@ import com.byd.clusternav.launcher.LayoutPreset
  * ack dài hơn. Hết hạn không ack ⇒ [afterDispatch] trả IN_PROCESS: nút mic **không bao giờ chết** vì `:wake`
  * (trace-den-tan-cung), chỉ chậm hơn một lần.
  *
- * Wake TẮT ⇒ IN_PROCESS y như V3 R4 (tiến trình chính là nơi duy nhất nghe, giữ nạp sẵn).
+ * Mô hình KHÔNG ở `:wake` (wake TẮT, không phím gán Kachi nghe) ⇒ IN_PROCESS y như V3 R4 (tiến trình chính nạp sẵn).
+ * ⚠ Bản cũ viết *"tiến trình chính là nơi duy nhất nghe"* — sai từ 2.62 (phím vô-lăng nghe ở `:wake`), xem VK7 ở trên.
  *
- * THUẦN ⇒ test off-device; `:app` đọc `Prefs.wakeEnabled` + `ActivityManager.runningAppProcesses` rồi hỏi ở đây.
+ * THUẦN ⇒ test off-device; `:app` đọc chế độ (`VoiceWakePrefsMain.mode`) + `ActivityManager.runningAppProcesses`
+ * rồi hỏi ở đây.
  */
 object VoiceEntryRoute {
 
@@ -40,11 +49,12 @@ object VoiceEntryRoute {
     const val ACK_COLD_MS = 4_000L
 
     /**
-     * @param wakeEnabled `Prefs.wakeEnabled` — owner bật **và** cầu chì false-accept chưa nổ.
+     * @param modelInWake [VoiceWakeMode.modelInWake] — "Hey Kachi" bật (owner bật **và** cầu chì false-accept chưa
+     *   nổ) **hoặc** có phím vô-lăng gán Kachi nghe (FIX286 · VK1).
      * @param wakeProcessAlive tiến trình `:wake` đang chạy (đo bằng `runningAppProcesses`, không phải cờ RAM).
      */
-    fun decide(wakeEnabled: Boolean, wakeProcessAlive: Boolean): Plan = when {
-        !wakeEnabled -> Plan(Route.IN_PROCESS, 0L)
+    fun decide(modelInWake: Boolean, wakeProcessAlive: Boolean): Plan = when {
+        !modelInWake -> Plan(Route.IN_PROCESS, 0L)
         wakeProcessAlive -> Plan(Route.WAKE_PROCESS, ACK_WARM_MS)
         else -> Plan(Route.WAKE_PROCESS, ACK_COLD_MS)
     }

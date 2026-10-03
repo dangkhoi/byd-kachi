@@ -6,6 +6,7 @@ import android.util.Log
 import com.byd.clusternav.modules.hal.BydHal
 import com.byd.clusternav.navigation.BoundedNavigationOutputWorker
 import com.byd.clusternav.navigation.HudKeepAlivePolicy
+import com.byd.clusternav.navigation.HudWriteRecord
 import com.byd.clusternav.navigation.NavigationFrame
 import com.byd.clusternav.navigation.NavigationFrameContent
 import com.byd.clusternav.navigation.NavigationFrameDelivery
@@ -74,6 +75,7 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
             val isClear = c.distanceMeters == null && c.roadName == null && (c.maneuverCode ?: 0) == 0
             if (isClear) {
                 val rc = BydHal.clearNavFrame(appContext)
+                HudWriteRecord.note(HudWriteRecord.Kind.CLEAR, rc)
                 Log.i(TAG, "cluster-nav CLEAR → $rc")
                 lastClusterNavLogKey = null   // D4: state boundary → next guidance frame logs even if identical
                 synchronized(dedupLock) {
@@ -90,6 +92,7 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
                     // (vô tác dụng trên xe — owner báo). Làn cụm (strip) do broadcast riêng nên không bị đụng;
                     // OFF chỉ tắt overlay "Giữa+ETA".
                     val rc = BydHal.clearNavFrame(appContext)
+                    HudWriteRecord.note(HudWriteRecord.Kind.MODE_OFF, rc)
                     // D4 (closeout 1.28): log-on-change — while mode=OFF every frame hits this branch; only log
                     // the transition INTO OFF, not each ~4/sec re-clear.
                     if (lastClusterNavLogKey != "mode=OFF") {
@@ -117,6 +120,7 @@ class NavigationHudOwner(private val appContext: Context) : AutoCloseable {
                         arrivalClock = c.arrivalClock,
                         keepAlive = !realPush, writeSurface = realPushWriteSurface,
                     )
+                    HudWriteRecord.note(if (realPush) HudWriteRecord.Kind.GUIDE else HudWriteRecord.Kind.KEEPALIVE, rc)
                     // D4 (closeout 1.28): log-on-change — the 250ms keep-alive re-asserts identical content; only
                     // Log.i when icon|seg|road|mode changes (rc reflects the actual write just done).
                     val logKey = "$icon|$seg|$road|$mode"

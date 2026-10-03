@@ -132,7 +132,7 @@ class LauncherWindows(
             (st.effectiveWorkspace.slots.getOrNull(i) as? SlotContent.App)?.let { app ->
                 absoluteSlotRect(i)?.let { r ->
                     val a = appRect(r)
-                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appTop = a.top, onSwap = { onSlotSwap(i) }))
+                    heads.add(OverlayHeads.Head(a.left, r.top + dp(Sp.XS), a.width, a.height, appTop = a.top, slot = i, onSwap = { onSlotSwap(i) }))
                 }
             }
         }

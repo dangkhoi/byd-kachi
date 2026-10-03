@@ -66,6 +66,14 @@ object HalReadTables {
      */
     val ARRAY_INDEX: Map<String, Int> = mapOf("pm25_outside" to 1)
 
+    /**
+     * FIX286 · SR3 — `windowId` của **cửa sổ trời** trong `getWindowOpenPercent(int)`: [ĐO nguồn OEM]
+     * `SunRoofModel.java:113` đọc độ mở nóc bằng `getWindowOpenPercent(5)` (bốn kính là 1..4 — [readArg]). Nút
+     * `sunroof` ghi đè tham số đọc bằng số này (`ControlDef.readArg`) và bảy getter chẩn đoán của nó dùng lại đúng số
+     * này — một con số, một chỗ. Getter trả gì trên xe có nóc: [CHƯA BIẾT] (OC-SR).
+     */
+    const val SUNROOF_WINDOW_ID = 5
+
     // ⚠ (V) FEATURE-FILTER 2026-09-17 — MỘT bảng tra đã xoá cùng chủ của nó, KHÔNG để lại bảng rỗng:
     //  • `BOOL_WHEN_EQUALS` (bool = MỘT giá trị enum) chỉ từng có `is_charging`→2 của `getChargerWorkState()`.
     // Hai id ấy đều bị owner chấm NO. Một bảng rỗng cộng một nhánh `if` không bao giờ vào là dead code (ADAS-PURGE

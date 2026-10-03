@@ -1,0 +1,6 @@
+--------- beginning of main
+--------- beginning of system
+10-03 05:14:35.764 23364 23766 I KachiShortcut: đo ô 0: com.google.android.apps.maps vd=232 ⇒ GONE
+10-03 05:14:35.764 23364 23364 I KachiShortcut: tap com.google.android.apps.maps S1 usable=true stages=0 presence=GONE -> Reopen(slot=0)
+10-03 05:14:36.310 23364 23766 I KachiShortcut: đo ô 0: com.google.android.apps.maps vd=232 ⇒ GONE
+10-03 05:14:36.310 23364 23364 I KachiShortcut: tap com.google.android.apps.maps S1 usable=true stages=0 presence=GONE -> Reopen(slot=0)

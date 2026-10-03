@@ -25,6 +25,8 @@ class VoiceWakeStandDownWiringContractTest {
     private val owner by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionOwner.kt") }
     private val listener by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeListener.kt") }
     private val engine by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceRecognizer.kt") }
+    private val hold by lazy { SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceWakeHold.kt") }
+    private val holder by lazy { SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/voice/ModelHolder.kt") }
 
     @Test
     fun `LISTEN_NOW khi wake OFF phai len lich dung xuong, va nhanh dung xuong phai nha recognizer + stopSelf`() {
@@ -34,8 +36,17 @@ class VoiceWakeStandDownWiringContractTest {
         assertTrue(listenNow >= 0 && sched > listenNow, "nhánh LISTEN_NOW phải gọi scheduleStandDown() (BG-20)")
         val task = SourceRoots.body(service, "private val standDownTask = object : Runnable {")
         assertTrue(task.contains("VoiceWakeStandDown.decide("), "quyết định phải đi qua hàm thuần đã test")
-        assertTrue(task.contains("VoiceEngine.release()"), "đứng xuống mà không nhả recognizer là để 74 MB treo")
+        // FIX286 · VK3 — nhả vẫn bắt buộc (74 MB treo nếu không), nhưng KHÔNG CHẶN: đi `VoiceWakeHold.releaseModel` →
+        // `VoiceEngine.tryRelease` (kiểm lại pha + epoch dưới khoá). Bận ⇒ hẹn lại nhịp sau, KHÔNG stopSelf.
+        assertTrue(task.contains("VoiceWakeHold.releaseModel(epoch)"), "đứng xuống mà không nhả recognizer là để 74 MB treo")
+        val rel = SourceRoots.body(hold, "fun releaseModel(epoch: Int): Boolean")
+        assertTrue(rel.contains("VoiceEngine.tryRelease {"), "nhả phải là tryRelease (không chặn luồng chính)")
+        assertTrue(rel.contains("VoiceWakeSessions.epoch() == epoch") && rel.contains("VoiceWakeSessions.phase() == VoiceTurnPhase.IDLE"),
+            "kiểm lại pha IDLE + epoch DƯỚI khoá dựng — phiên B chen vào không bị nhả mô hình dưới chân")
+        val busy = task.indexOf("if (!VoiceWakeHold.releaseModel(epoch)) { main.postDelayed(this, VoiceWakeStandDown.POLL_MS); return }")
+        assertTrue(busy >= 0 && busy < task.indexOf("stopSelf(lastStartId)"), "bận ⇒ hỏi lại nhịp sau và KHÔNG đứng xuống")
         assertTrue(task.contains("stopSelf(lastStartId)"), "đứng xuống phải stopSelf(id của lượt start gần nhất) — start tới sau mốc quyết định không bị stop nhầm")
+        assertTrue(task.contains("VoiceEngine.loading()"), "đầu vào `loading` đọc từ chính khoá dựng (không cờ ghi tay)")
         // Wake BẬT ⇒ lượt chờ đứng xuống còn treo phải bị bỏ trước khi đi vào vòng đời thường.
         assertTrue(cmd.contains("main.removeCallbacks(standDownTask)"), "wake ON phải huỷ lượt chờ đứng xuống")
     }
@@ -115,15 +126,20 @@ class VoiceWakeStandDownWiringContractTest {
         // Mốc mang kiểu trả về TƯỜNG MINH `: Unit` từ CLOSE-4 (2026-09-26): `release()` thêm một dòng
         // `KachiMem.trim(...)` trả `Boolean` ở cuối, và thân-biểu-thức sẽ âm thầm đổi chữ ký hàm thành `Boolean`
         // nếu không khai kiểu. `SourceRoots.body` NỔ khi mốc không còn — đó là lý do mốc phải sửa theo, không tự rữa.
-        val release = SourceRoots.body(engine, "fun release(): Unit = synchronized(this) {")
-        assertTrue(release.contains("useLock.write"), "release phải giữ khoá ghi (chờ decode xong)")
-        val withUse = SourceRoots.body(engine, "internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = useLock.read {")
-        assertTrue(withUse.contains("recognizer !== rec"), "bản đã nhả không được chạm native")
+        // FIX286 · VK3 — khoá dùng/nhả dời xuống `ModelHolder` (`:core`, có bài luồng thật ở ModelHolderTest); VoiceEngine
+        // chỉ uỷ quyền. Cùng hai tính chất, nay canh ở chỗ chúng sống.
+        assertTrue(engine.contains("fun release(): Unit = holder.release()"), "VoiceEngine.release phải đi qua bộ giữ (một khoá)")
+        assertTrue(SourceRoots.body(holder, "private fun releaseHeld()").contains("use.write"), "release phải giữ khoá ghi (chờ decode xong)")
+        assertTrue(SourceRoots.body(holder, "fun tryRelease(precheck: () -> Boolean = { true }): Release {").contains("w.tryLock()"),
+            "tryRelease không được chờ khoá ghi — đang giải mã thì BUSY")
+        val withUse = SourceRoots.body(holder, "fun <R> withUse(m: T, block: () -> R): R? = use.read {")
+        assertTrue(withUse.contains("model !== m"), "bản đã nhả không được chạm native")
+        assertTrue(engine.contains("internal fun withUse(rec: OfflineRecognizer, block: () -> String): String? = holder.withUse(rec) {"))
     }
 
     @Test
     fun `preload chi de MOT luong tai mot thoi diem va rut lui khi wake BAT`() {
-        val pre = SourceRoots.body(engine, "fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS)")
+        val pre = SourceRoots.body(engine, "fun preload(ctx: Context, delayMs: Long = PRELOAD_DELAY_MS, inWake: Boolean = false)")
         assertTrue(pre.contains("preloading.compareAndSet(false, true)"), "thiếu cờ idempotent")
         assertTrue(pre.contains("finally { preloading.set(false) }"), "cờ phải nhả khi luồng kết")
         assertTrue(pre.contains("VoicePreloadPolicy.shouldPreloadInMain("), "một mô hình cho cả máy: hỏi policy thuần")

@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.byd.clusternav.Prefs
 import com.byd.clusternav.launcher.LayoutPreset
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -16,8 +15,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ═══ CLOSE-3 (2026-09-26) — LỐI VÀO phiên nghe của tiến trình CHÍNH: giao cho `:wake` khi "Hey Kachi" bật ═══════
  *
  * Quyết định ở `:core` ([VoiceEntryRoute]); lớp này chỉ làm ba việc mà chỉ tầng Android làm được:
- *  1. **Đọc sự thật**: `Prefs.wakeEnabled` + tiến trình `:wake` có đang chạy không ([VoiceWakeService.isProcessAlive]
- *     — `runningAppProcesses`, không phải cờ RAM; CLAUDE.md §5).
+ *  1. **Đọc sự thật**: mô hình nằm ở `:wake` không ([VoiceWakePrefsMain.mode] — FIX286 · VK1: wake BẬT ∨ phím vô-lăng
+ *     gán Kachi nghe) + tiến trình `:wake` có đang chạy không ([VoiceWakeService.isProcessAlive] — `runningAppProcesses`,
+ *     không phải cờ RAM; CLAUDE.md §5).
  *  2. **Gửi** `listenNow` (cùng đường mà phím vô-lăng `AssistantLauncher` và "Hey Kachi" đã dùng — R7 overlay độc lập).
  *  3. **Chờ ack** rồi **lùi**: `:wake` báo đã nhận bằng broadcast nội bộ [ACTION_LISTEN_ACK] (chỉ trong gói —
  *     `setPackage` + `RECEIVER_NOT_EXPORTED`). Không ack trong hạn ⇒ `onFallback()` mở phiên in-process như cũ.
@@ -46,7 +46,7 @@ class VoiceEntry(
     private val ctx: Context,
     /** Bốn đường Activity mà `:wake` trả về qua intent — xem [VoiceHomeActions]. */
     val home: VoiceHomeActions,
-    private val wakeEnabled: () -> Boolean = { runCatching { Prefs.wakeEnabled(ctx) }.getOrDefault(false) },
+    private val modelInWake: () -> Boolean = { runCatching { VoiceWakePrefsMain.mode(ctx).modelInWake }.getOrDefault(false) },
     private val wakeAlive: () -> Boolean = { VoiceWakeService.isProcessAlive(ctx) },
     private val dispatch: () -> Boolean = { VoiceWakeService.listenNow(ctx) },
     private val ui: Handler = Handler(Looper.getMainLooper()),
@@ -61,7 +61,7 @@ class VoiceEntry(
      * gửi hỏng — đã log).
      */
     fun tryWake(onFallback: () -> Unit): Boolean {
-        val plan = VoiceEntryRoute.decide(wakeEnabled(), wakeAlive())
+        val plan = VoiceEntryRoute.decide(modelInWake(), wakeAlive())
         if (plan.route != VoiceEntryRoute.Route.WAKE_PROCESS) return false
         val acked = AtomicBoolean(false)
         val registered = AtomicBoolean(false)

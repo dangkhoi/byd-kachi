@@ -75,8 +75,9 @@ internal class VoiceReadback(
      * (`sunroof` · `trunk` · `recirc` · `drl` · `anion` · `ac_auto` · 4 kính riêng… đều có [ControlDef.readKey]).
      * Hai chuyện sai cùng lúc: (a) hedge *"chưa kiểm"* nói về mức bằng chứng **tĩnh** trong mã, trong khi bằng
      * chứng **vừa được tạo ra trên chính chiếc xe này, giây vừa rồi** — mạnh hơn hẳn; (b) lệnh **không ăn** (xe
-     * nhận `rc=0` rồi chẳng làm gì — ca đã thấy thật với `sunroof`, và với `hood` trước khi nút ấy bị xoá ở
-     * 1.85) vẫn được báo ✓, tức người lái tưởng
+     * nhận `rc=0` rồi chẳng làm gì — **[ĐOÁN]** cho `sunroof`: không có nguồn đo nào; log giọng nói 17/09 trên xe owner
+     * cho thấy HAL **từ chối** `setMoonRoofState(1)` chứ không phải rc=0 (FIX286 SR7); với `hood` trước khi nút ấy
+     * bị xoá ở 1.85) vẫn được báo ✓, tức người lái tưởng
      * cốp đã mở.
      *
      * ⇒ Cùng khuôn ba nhánh của [step], chỉ khác **đơn vị so sánh**: STEP so *con số*, còn ở đây so **mức bật/tắt**

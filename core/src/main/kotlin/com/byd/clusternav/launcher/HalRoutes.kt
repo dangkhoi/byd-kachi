@@ -57,6 +57,30 @@ fun readPathOf(id: String): ReadPath? {
 fun applyInverted(raw: Int?, inverted: Boolean): Int? =
     if (raw == null || !inverted) raw else if (raw == 0) 1 else 0
 
+/**
+ * ═══ FIX286 · SR3 — số đọc của một NÚT qua datum **phần trăm** phải là phần trăm ════════════════════════════════
+ *
+ * `true` khi [raw] dùng được làm trạng thái nút: datum đích không có đơn vị `%`, hoặc có mà [raw] nằm trong `0..100`.
+ * Ngoài dải là **mã "không hợp lệ" của khung**, không phải một độ mở — [ĐO nguồn OEM] app Cài đặt BYD đọc nóc bằng
+ * `getWindowOpenPercent(5)` và tự chặn `< 0` / `> 100` (`SunRoofModel.java:113-122`); [ĐO 4 lượt quét xe owner]
+ * `getSunroofPosition` = **65535**. Không chặn thì ô bật/tắt hiểu `> 0` là *"đang mở"* (`ControlTileFactory`) và lần
+ * bấm sau gửi lệnh ĐÓNG cho một cái nóc chưa ai mở.
+ *
+ * Phạm vi CỐ Ý hẹp: chỉ đường đọc của **nút** (`HalBindingTable.readState`) — ô hiển thị datum và bộ đệm "vắng" của
+ * nhịp poll (`HalAbsentCache`) không đổi một byte, nên bốn ô kính đã PROVEN đi y như 2.85. Với nút kính, giá trị trong
+ * dải cũng y như cũ; chỉ một số rác (nếu ROM nào trả) mới thành `null` (⚠) thay vì *"đang mở"*.
+ */
+fun percentReadingValid(id: String, raw: Int): Boolean {
+    val datum = readPathOf(id)?.id?.let(TelemetryRegistry::byId) ?: return true
+    return datum.unit != PERCENT_UNIT || raw in PERCENT_RANGE
+}
+
+/** Đơn vị của datum phần trăm trong [TelemetryRegistry] (khai `"%"` ở cột `unit`). */
+const val PERCENT_UNIT = "%"
+
+/** Dải hợp lệ của một số đọc phần trăm. */
+val PERCENT_RANGE: IntRange = 0..100
+
 /** Đường nối HAL đã phân loại cho một `bindingKey`. */
 sealed class BindingRoute {
     /** named-method proven trên device BYDAuto ([fqn] = FQN đầy đủ). */

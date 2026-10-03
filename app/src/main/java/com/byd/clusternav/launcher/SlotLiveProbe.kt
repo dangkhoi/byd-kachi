@@ -68,6 +68,12 @@ object SlotLiveProbe {
      */
     fun seenAlive(key: String): Boolean = subs.firstOrNull { it.key == key }?.liveness?.seenAlive == true
 
+    /**
+     * FIX286 · R-SC2 — ô [key] đang được đo (lượt mở app đã xong, chưa kết luận chết). Vắng ⇒ lượt mở còn đang chạy, hoặc
+     * đã báo chết (khi đó ô có thẻ "đã đóng"). `VdAppHost.reviveInSlot` dùng để không mở lại chồng lên một lượt mở dở.
+     */
+    fun watching(key: String): Boolean = subs.any { it.key == key }
+
     /** Thôi theo dõi ô [key] (ô đóng / host nhả / đã báo chết). Không còn ô nào ⇒ ticker tự tắt. */
     fun unwatch(key: String) {
         subs.removeAll(subs.filter { it.key == key })

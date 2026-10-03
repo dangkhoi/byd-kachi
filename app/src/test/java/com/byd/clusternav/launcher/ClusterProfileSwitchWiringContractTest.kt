@@ -133,12 +133,23 @@ class ClusterProfileSwitchWiringContractTest {
         assertTrue(guard < diff.indexOf("savedConfig(target)"), "chốt phải đứng TRƯỚC lượt đọc ô nhớ của hồ sơ")
     }
 
-    /** Công tắc Cast hiện lựa chọn của hồ sơ + dòng "áp dụng từ lần nổ máy sau" + Áp ngay; tỉ lệ nói số của phiên. */
+    /**
+     * Công tắc Cast + dòng "áp dụng từ lần nổ máy sau" + Áp ngay; tỉ lệ nói số của phiên.
+     *
+     * ⚠ ĐẢO CHIỀU có chủ ý — FIX286 · PI4 (owner 03/10 *"2 theo đề xuất"*, spec `kachi-286-field-fixes.html` §3.3; VC-R9
+     * spec S4 §11.4.8 sửa cùng lượt): bản 2.84 khoá `on = bridge.castEnabledForProfile()` (= `pending ?: sống`) ⇒ cụm
+     * TẮT mà ô hiện ✓, chạm lật thành TẮT ⇒ phải chạm HAI lần (FIELD-285-0310 *"phải bật lại thủ công"*). Nay công tắc vẽ
+     * giá trị ĐANG CHẠY; hàm cũ bị gỡ hẳn (không còn đường nào vẽ ý của hồ sơ lên công tắc); dòng chờ + Áp ngay giữ nguyên.
+     */
     @Test
     fun `man chieu cum noi that ve cast_enabled va ti le`() {
         val cast = launcher("SettingsSectionsCast.kt")
         val master = SourceRoots.body(cast, "private fun rebuildMaster()")
-        assertTrue(master.contains("on = bridge.castEnabledForProfile()"), "công tắc = lựa chọn của HỒ SƠ")
+        assertTrue(master.contains("on = bridge.castEnabled(),"), "công tắc = giá trị ĐANG CHẠY (FIX286 · PI4)")
+        assertFalse(Regex("""castEnabledForProfile""").containsMatchIn(cast + launcher("ClusterNavBridgeCast.kt")),
+            "đường vẽ ý của hồ sơ lên công tắc phải gỡ hẳn — không để hàm chết, không để công tắc quay lại pending ?: sống")
+        val switchAt = master.indexOf("on = bridge.castEnabled(),")
+        assertTrue(switchAt < master.indexOf("bridge.castEnabledPending() ?: return"), "dòng chờ đứng SAU công tắc")
         assertTrue(master.contains("bridge.castEnabledPending() ?: return"), "dòng chờ + Áp ngay chỉ khi có bản chờ")
         assertTrue(master.contains("bridge.applyCastPendingNow()"))
         assertTrue(master.contains("R.string.kachi_cast_enabled_pending"))

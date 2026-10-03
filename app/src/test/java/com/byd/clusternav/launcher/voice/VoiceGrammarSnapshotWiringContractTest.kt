@@ -51,7 +51,7 @@ class VoiceGrammarSnapshotWiringContractTest {
         "WorkspacePrefsProfile.kt" to "internal fun WorkspacePrefs.duplicateActiveProfile(name: String)",
         "WorkspacePrefsProfile.kt" to "internal fun WorkspacePrefs.migrateScenesOnce()",
         "WorkspacePrefsProfile.kt" to "fun WorkspacePrefs.renameProfile(old: String, new: String): Boolean",
-        "WorkspacePrefsProfile.kt" to "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean",
+        "WorkspacePrefsProfile.kt" to "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): ProfileImportReport?",
     )
 
     @Test

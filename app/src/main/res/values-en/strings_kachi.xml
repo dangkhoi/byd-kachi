@@ -133,6 +133,18 @@
     <string name="kachi_profile_kind_share">shared</string>
     <string name="kachi_profile_kind_unknown">unreadable</string>
     <string name="kachi_profile_import_none">No profile files (.kachi) yet. Copy a file into this folder:\n%1$s</string>
+    <!-- FIX286 · PI3 — dialog after import: tell what the file really carries for cluster casting (counted from the file). -->
+    <string name="kachi_profile_import_no_cluster">The file has no cluster-casting part (exported before 2.84) — this profile keeps the casting setup already on this car. Export again from a newer version for a full backup.</string>
+    <string name="kachi_profile_import_cast_file">Cluster casting from the file: %1$s.</string>
+    <string name="kachi_profile_import_cast_kept">The file does not say whether cluster casting is on — keeping this car\'s: %1$s.</string>
+    <string name="kachi_profile_import_geom_file">The file carries %1$d cast frame(s) (one per app, full cluster or half) — replacing %2$d different one(s) on this car.</string>
+    <string name="kachi_profile_import_geom_file_new">The file carries %1$d cast frame(s) (one per app, full cluster or half) — none of this car\'s frames are replaced.</string>
+    <string name="kachi_profile_import_geom_kept">Keeping %1$d cast frame(s) on this car that the file does not have.</string>
+    <string name="kachi_profile_import_geom_none">No app has its own cast frame yet — default frames are used.</string>
+    <string name="kachi_profile_import_use_cast">This profile\'s cluster casting (%1$s) differs from what is running. Use now applies it right away if no app is on the cluster; otherwise from the next ignition.</string>
+    <string name="kachi_profile_import_use_now">Use this profile now</string>
+    <string name="kachi_profile_import_later">Later</string>
+    <string name="kachi_profile_import_cast_deferred">The cluster is casting or changing state — this profile\'s cluster casting applies from the next ignition (or Settings › Cluster cast › Apply now).</string>
     <string name="kachi_profiles_note">Each profile keeps its OWN copy of nearly everything: layout, slot contents, button bar, chips, wallpaper, theme, units, language, navigation settings, instrument cluster, cluster casting and camera. Tap a profile to switch to it — the profile chip on the top bar switches too, but creating and deleting happen only here. A full export contains your saved addresses and navigation schedule — use Export for sharing when sending it to someone else.</string>
     <string name="kachi_profiles_add">Add profile (a copy of %1$s)</string>
     <string name="kachi_profile_sub_active">In use · %1$s</string>
@@ -173,6 +185,8 @@
     <string name="kachi_wake_sub">Say the wake phrase to open voice commands, no tap needed. Listens in the background while the screen is on. Off by default (uses battery/CPU). Experimental — it may not recognise you well yet; please report problems.</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
     <string name="kachi_wake_notif_text">Listening for the wake phrase</string>
+    <string name="kachi_wake_hold_notif_title">Kachi ready for the steering-wheel key</string>
+    <string name="kachi_wake_hold_notif_text">Press the assigned key to talk — the mic opens only when you press</string>
     <string name="kachi_wake_auto_off">Hey Kachi turned off after too many false triggers. Re-enable in Settings.</string>
     <string name="kachi_home_result_no_shell">Needs the shell channel — see the \"Window control channel\" row above.</string>
     <string name="kachi_home_result_failed">The command ran but the system still isn\'t using Kachi: %1$s</string>
@@ -252,8 +266,9 @@
     <string name="kachi_doors_closed">All 4 doors closed</string>
     <string name="kachi_tyre_pressure_unit">Tyre pressure (%1$s)</string>
 
-    <!-- ── WorkspaceView — ô trống giữa màn ── -->
-    <string name="kachi_slot_open_app">Open an app</string>
+    <!-- ── WorkspaceView — nút ⇄ của ô (FIX286 · ES4: mô tả trợ năng; ô trống trong suốt nên đây là chữ duy nhất nói "chỗ đặt app") ── -->
+    <string name="kachi_slot_swap_empty">Choose an app for slot %1$d</string>
+    <string name="kachi_slot_swap">Change slot %1$d</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>
@@ -418,6 +433,39 @@
     <string name="kachi_nav_app_vietmap">VietMap</string>
     <string name="kachi_nav_app_waze">Waze</string>
     <string name="kachi_nav_reconnect">Reconnect the navigation source</string>
+    <string name="kachi_nav_hud_off">HUD — notification source: not checked (Navigation switch is off)</string>
+    <string name="kachi_nav_hud_no_access">HUD — notification source: notification access not granted</string>
+    <string name="kachi_nav_hud_live">HUD — notification source: bound (confirmed by the system at %1$s)</string>
+    <string name="kachi_nav_hud_not_live">HUD — notification source: NOT bound (system, at %1$s)</string>
+    <string name="kachi_nav_hud_bound">HUD — notification source: bound at %1$s</string>
+    <string name="kachi_nav_hud_unknown">HUD — notification source: not checked yet (the car\'s command channel is not ready, or another pass is running)</string>
+    <string name="kachi_nav_hud_unreadable">HUD — notification source: could not read the system state (at %1$s) — Kachi will not rebind on its own</string>
+    <string name="kachi_nav_hud_write">Written to the car at %1$s (%2$s) · accepted %3$d · rejected %4$d · skipped %5$d · app: %6$s</string>
+    <string name="kachi_nav_hud_write_nodev">Written to the car at %1$s: the cluster device could not be opened</string>
+    <string name="kachi_nav_hud_write_none">No navigation frame written to the car in this run yet</string>
+    <string name="kachi_nav_hud_app_none">—</string>
+    <string name="kachi_nav_hud_kind_guide">guidance</string>
+    <string name="kachi_nav_hud_kind_keepalive">keep-alive</string>
+    <string name="kachi_nav_hud_kind_clear">clear</string>
+    <string name="kachi_nav_hud_kind_mode_off">cluster mode Off</string>
+    <string name="kachi_nav_hud_last">Last re-bind at %1$s (%2$s): %3$s</string>
+    <string name="kachi_nav_hud_last_none">Last re-bind: none yet</string>
+    <string name="kachi_nav_hud_trig_auto">automatic</string>
+    <string name="kachi_nav_hud_trig_switch">switch</string>
+    <string name="kachi_nav_hud_trig_button">Reconnect button</string>
+    <string name="kachi_nav_hud_trig_read">status read</string>
+    <string name="kachi_nav_hud_o_live_already">already bound, nothing to fix</string>
+    <string name="kachi_nav_hud_o_bound">bound (no command needed)</string>
+    <string name="kachi_nav_hud_o_healed">re-bound</string>
+    <string name="kachi_nav_hud_o_still">command ran but still not bound</string>
+    <string name="kachi_nav_hud_o_not_live">not bound</string>
+    <string name="kachi_nav_hud_o_unreadable">could not read the system state</string>
+    <string name="kachi_nav_hud_o_skipped">skipped (switch or screen just changed)</string>
+    <string name="kachi_nav_hud_o_no_shell">could not run the command — tap Allow USB debugging on the car</string>
+    <string name="kachi_nav_hud_o_shell_failed">the car\'s command channel failed</string>
+    <string name="kachi_nav_hud_o_busy">another attempt is running</string>
+    <string name="kachi_nav_hud_note">The windscreen HUD only shows Google Maps guidance — VietMap and Waze do not reach the HUD.</string>
+    <string name="kachi_nav_hud_toast">Reconnect navigation source: %1$s</string>
     <string name="kachi_sub_badge">Speed limit badge</string>
     <string name="kachi_badge_enabled_title">Show the speed limit badge</string>
     <string name="kachi_badge_enabled_sub">Read from VietMap; turning it on starts VietMap once so there is a speed source.</string>
@@ -446,6 +494,8 @@
     <string name="kachi_cast_enabled_apply_now">Apply now</string>
     <string name="kachi_cast_state_on_short">ON</string>
     <string name="kachi_cast_state_off_short">OFF</string>
+    <!-- FIX286 · PI5 — durable mark of the start-up commit (the OFF→ON case was never measured on a car, OC-PI3). -->
+    <string name="kachi_cast_commit_mark">The start-up at %1$s applied the profile\'s cluster-casting choice: %2$s (version %3$s).</string>
     <string name="kachi_cast_bubble_title">Show the floating cast button</string>
     <string name="kachi_cast_bubble_sub">The Kachi blossom that floats over the screen; tap it to cast. Turning this off only hides the button — you can still cast with the four Cast-now buttons below, by voice, and on engine start.</string>
     <string name="kachi_cast_split">Split ratio</string>
@@ -483,7 +533,7 @@
     <string name="kachi_cast_deep_none">(no conflicting app was running)</string>
 
     <!-- ── IA v2 nhóm 7 — Phím vô-lăng (SettingsKeysSection) ── -->
-    <string name="kachi_sec_keys">Physical buttons → apps</string>
+    <string name="kachi_sec_keys">Physical buttons → apps · car controls</string>
     <string name="kachi_keys_enabled_title">Listen to physical buttons</string>
     <string name="kachi_keys_enabled_sub">Turning this on re-grants the accessibility service through the car\'s own channel.</string>
     <string name="kachi_keys_status_off">Voice key: off</string>
@@ -491,10 +541,13 @@
     <string name="kachi_keys_status_broken">Voice key: DISCONNECTED — tap Check / Fix now</string>
     <string name="kachi_keys_check">Check / Fix now</string>
     <string name="kachi_sub_keys_bindings">Button bindings</string>
-    <string name="kachi_keys_no_bindings">No buttons bound yet. Tap “Add binding…” to link a physical button to an app.</string>
+    <string name="kachi_keys_no_bindings">No buttons bound yet. Tap “Add binding…” to link a physical button to an app or a car control.</string>
     <string name="kachi_keys_add">Add binding…</string>
     <string name="kachi_keys_pick_button">Step 1 — choose a button</string>
-    <string name="kachi_keys_pick_target">Step 2 — choose what it opens</string>
+    <string name="kachi_keys_pick_target">Step 3 — choose the app / assistant</string>
+    <string name="kachi_keys_pick_kind">Step 2 — what this button does</string>
+    <string name="kachi_keys_kind_apps">Open an app · assistant</string>
+    <string name="kachi_keys_pick_action">Step 3 — %1$s: choose the action</string>
     <string name="kachi_keys_no_buttons">There is no button to bind yet.</string>
     <string name="kachi_keys_no_targets">No app on this device can be opened from a button yet.</string>
     <string name="kachi_sub_keys_custom">Self-learned buttons</string>
@@ -617,6 +670,7 @@
     <!-- ═══ V1 listening phase (R9–R14) — spoken session, on-device model, WAV probe ═══ -->
     <string name="kachi_voice_listening">Listening…</string>
     <string name="kachi_voice_preparing">Getting ready…</string>
+    <string name="kachi_voice_loading_model">Loading voice… the first time can take a few tens of seconds</string>
     <string name="kachi_voice_heard">Heard</string>
     <!-- V3 · R9 — overlay while the mic stays open for a follow-up command -->
     <string name="kachi_voice_follow_up">Go ahead…</string>
@@ -666,7 +720,7 @@
     <string name="kachi_top_strip_labels_sub">Off keeps just the icon and the number — more room on the bar</string>
     <!-- V3 · R7 — "Ask before running" + microphone source -->
     <string name="kachi_voice_confirm_sec">Ask before running</string>
-    <string name="kachi_voice_confirm_note">Kachi runs straight away by default. Tick anything you want it to ask about first.</string>
+    <string name="kachi_voice_confirm_note">Kachi runs straight away by default, except opening the sunroof, which it asks about. Tick anything you want it to ask about first.</string>
     <string name="kachi_voice_ask_aloud_title">Read confirmation questions aloud</string>
     <string name="kachi_voice_ask_aloud_sub">Speaks first, then opens the mic — only matters once something is ticked</string>
     <string name="kachi_voice_mic_source">Microphone source</string>
@@ -685,7 +739,7 @@
     <string name="kachi_drawer_hint_shortcuts">Tap to add or remove an app · tap Apply to save · tap the backdrop to close</string>
     <string name="kachi_sc_cap_note">Shortcuts hold at most %1$d apps — remove one to add another</string>
     <string name="kachi_sc_section">App shortcuts (%1$d)</string>
-    <string name="kachi_sc_note">Shown in the App shortcuts block on the button bar (add the block with the button picker above) and in the App shortcut grid widget. Slot n: placed in the slot for now, the old app moves behind the home screen; restarting the launcher brings back the saved layout.</string>
+    <string name="kachi_sc_note">Shown in the App shortcuts block on the button bar (add the block with the button picker above) and in the App shortcut grid widget. Slot n: placed in the slot for now (even over a widget), the old app moves behind the home screen; restarting the launcher brings back the saved layout.</string>
     <string name="kachi_sc_pick_n">Choose apps… (%1$d/%2$d)</string>
     <string name="kachi_sc_mode_slot">Slot %1$d</string>
     <string name="kachi_sc_mode_full">Full screen</string>
@@ -695,7 +749,6 @@
     <string name="kachi_sc_order_hint">▲/▼ moves an app in the bar block and the widget</string>
     <string name="kachi_sc_empty">No shortcuts yet — tap to choose apps</string>
     <string name="kachi_sc_reason_absent">This layout has %1$d slots — opening full screen</string>
-    <string name="kachi_sc_reason_widget">Slot %1$d holds a widget — opening full screen</string>
     <string name="kachi_sc_in_slot">%1$s is already in slot %2$d</string>
     <string name="kachi_sc_running">%1$s is already running</string>
     <string name="kachi_sc_no_stage">Running in the background needs at least one open app slot on the home screen</string>

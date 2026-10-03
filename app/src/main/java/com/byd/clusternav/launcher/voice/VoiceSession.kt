@@ -8,6 +8,7 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.VoiceDispatcher
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ═══ V1 pha NGHE · MỘT PHIÊN "BẤM ĐỂ NÓI" ════════════════════════════════════════════════════════════════════
@@ -55,6 +56,8 @@ class VoiceSession(
     internal val background: (() -> Unit) -> Unit = { block -> Thread(block, "KachiListen").start() },
     /** CLOSE-3 — lối vào có thể GIAO cho `:wake` (một mô hình cho cả máy); `null` = luôn in-process (phiên của chính `:wake`). */
     internal val entry: VoiceEntry? = null,
+    /** FIX286 · VK6 — mốc cho nhật ký phiên `:wake` (`WakeSessionLog.Marks`); `null` = phiên màn chính, không ghi. */
+    internal val marks: VoiceSessionMarks? = null,
 ) {
 
     internal val ui = Handler(Looper.getMainLooper())
@@ -171,6 +174,7 @@ class VoiceSession(
             Log.i(TAG, "đã có một phiên nghe đang chạy — bỏ qua")
             return
         }
+        live.incrementAndGet()   // [Pass 2 · P2] cặp với `close()` — chỉ phiên đã giành `running` mới được đếm
         cancelled.set(false)
         // ⚠ [SOÁT Pass 1 · P1 · 2026-09-16] Hai bộ đếm của V3 phải về 0 ở ĐÂY, không chỉ ở đường thành công.
         // [VoiceSession] sống theo TIẾN TRÌNH (một phiên cho cả launcher — xem KDoc lớp), còn [followUps] chỉ
@@ -180,10 +184,12 @@ class VoiceSession(
         clarifyRound = 0
         followUps = 0
         phase.set(VoiceTurnPhase.IDLE); go(VoiceTurnPhase.LISTENING)   // B1: IDLE → LISTENING
+        marks?.started()
         val ov = VoiceOverlay(ctx) { cancel() }
         overlay = ov
         ov.show()
-        ov.render(R.string.kachi_voice_preparing, "")
+        // FIX286 · VK5 — nói đúng việc đang chờ: mô hình chưa nằm sẵn (đo TẠI CHỖ, không cờ) ⇒ "Đang nạp giọng nói…".
+        ov.render(if (VoiceEngine.loaded()) R.string.kachi_voice_preparing else R.string.kachi_voice_loading_model, "")
         // Warm máy đọc NGAY khi mở voice (nền): câu trả lời đầu bỏ được ~500ms spin-up :tts (owner 2026-09-24).
         background { runCatching { speaker.warm() } }
         val my = generation.incrementAndGet()
@@ -382,8 +388,9 @@ class VoiceSession(
         confirmOpen.set(false)
         overlay?.dismiss()
         overlay = null
-        running.set(false)
+        if (running.getAndSet(false)) live.decrementAndGet()   // [Pass 2 · P2] close() gọi lặp không đếm lùi hai lần
         go(VoiceTurnPhase.IDLE)   // B1: CLOSING → IDLE (phiên đã đóng hẳn)
+        marks?.closed(cancelled.get())
     }
 
     internal fun post(block: () -> Unit) {
@@ -392,6 +399,10 @@ class VoiceSession(
 
     internal companion object {
         const val TAG = "KachiVoiceSession"
+
+        /** [Senior review FIX286 Pass 2 · P2] phiên ĐANG CHẠY của tiến trình này (start→close) — `VoiceWakePrefsMain.handOverToWake` không nhả mô hình dưới chân nó. */
+        private val live = AtomicInteger(0)
+        fun anyRunning(): Boolean = live.get() > 0
 
         /**
          * TRẦN CỨNG cho một phiên nghe.

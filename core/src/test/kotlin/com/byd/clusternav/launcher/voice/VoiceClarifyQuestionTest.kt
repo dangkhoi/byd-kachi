@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test
 /**
  * ═══ D1 · CÂU HỎI ĐI QUA **LƯỢT HỎI LẠI** VẪN KHÔNG ĐƯỢC THÀNH LỆNH GHI ══════════════════════════════════════
  *
- * Nguồn: log xe THẬT 2026-09-18 (`logs/20260918`, 53 phiên `VoiceWavProbe` dạng `.zip`), bản trên xe 1.76.
+ * Nguồn: log xe THẬT 2026-09-18 (`logs/20260918`, 53 phiên `VoiceWavProbe` dạng `.zip`). Bản trên xe: ⚠ đính chính
+ * 2026-10-02 (FIX286 SR7) — nhãn cũ *"1.76"* sai cho ca dưới: stamp `20260917-200206` có TRƯỚC lúc 1.76 phát hành
+ * (18/09 11:45, `ad35e1a`), json không ghi version ⇒ bản của ca này là **[CHƯA BIẾT]**.
  *
  * ## ⚠⚠ Vì sao phải có tệp này, khi đã có `VoiceLogCases0918Test`
  * Tệp kia canh **lượt phân tích ĐẦU**. Nhưng đọc lại chính tệp nhật ký của ca nặng nhất

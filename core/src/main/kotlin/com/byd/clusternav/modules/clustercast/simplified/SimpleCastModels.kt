@@ -353,4 +353,7 @@ interface SimpleCastPrefs {
      * ([CastEnableDeferral.AtStart.Commit.closeOrphan]).
      */
     fun commitCastEnabledPending(): CastEnableDeferral.AtStart = CastEnableDeferral.AtStart.NoPending
+
+    /** FIX286 · PI5 — mốc bền của lượt chốt gần nhất ([CastEnableDeferral.CommitMark]); `null` = chưa chốt lần nào (mốc giữ tới lượt chốt kế — là sự thật lịch sử, cú chạm tay sau đó không xoá nó). */
+    fun castCommitMark(): CastEnableDeferral.CommitMark? = null
 }

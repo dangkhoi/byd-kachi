@@ -148,7 +148,7 @@ class LauncherProfileTypesCoverageTest {
         assertFalse(Regex("""catch\s*\(\s*\w+\s*:\s*(Exception|Throwable|RuntimeException)\s*\)|runCatching""").containsMatchIn(helper),
             "chỉ bắt đúng thứ AOSP ném — lỗi khác phải nổi lên")
         assertFalse(Regex("""\.edit\(\)""").containsMatchIn(helper), "cửa đọc không ghi")
-        val imp = SourceRoots.body(code("WorkspacePrefsProfile.kt"), "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean")
+        val imp = SourceRoots.body(code("WorkspacePrefsProfile.kt"), "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): ProfileImportReport?")
         assertTrue(imp.contains("logDropped(\"import launcher\", plan.dropped)"), "hậu tố sai kiểu khi nhập phải để lại vết")
     }
 }

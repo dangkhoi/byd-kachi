@@ -9,6 +9,7 @@ import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import dadb.AdbKeyPair
 import com.byd.clusternav.modules.navaccess.NavAccessibilitySource
+import com.byd.clusternav.navigation.NlsHealPolicy
 import android.content.ComponentName
 import android.content.Context
 import android.os.Handler
@@ -21,23 +22,25 @@ import android.service.notification.NotificationListenerService
 import android.util.Log
 
 /**
- * BIND lại nav listener — cách DUY NHẤT ăn trên firmware BYD head-unit (firmware BỎ QUA requestRebind).
- * Dùng dadb (ADB local client, localhost:5555, uid=shell) chạy `cmd notification disallow/allow_listener`
+ * BIND lại nav listener qua dadb (ADB local client, localhost:5555, uid=shell) — `cmd notification disallow/allow_listener`
  * y như DashCast. Lần đầu có popup "Allow USB debugging" trên xe → bấm Allow 1 lần (key lưu ở filesDir).
  *
- * - [reconnect]  : ép disallow→allow ngay (nút tay + auto khi chưa bound).
- * - [ensureConnected] : gọi lúc mở app — chờ bind tự nhiên ~1.8s, CHƯA bound thì mới reconnect qua dadb
- *   (không disallow/allow khi đang chạy tốt → tránh ngắt nav đang chạy). Đây là "auto connect khi khởi động app".
+ * ĐÍNH CHÍNH FIX286 (03/10, [ĐO nguồn]): câu cũ "firmware BYD BỎ QUA requestRebind" quy nhầm cho BYD — đó là ngữ nghĩa
+ * AOSP: `requestRebind` chỉ gỡ "snooze" (r47 NMS `:3127-3139` → `ManagedServices.java:707-711`), không gắn lại một bộ
+ * nghe đã CẤP mà chưa GẮN. Đường gắn lại thật (disallow → 1,5 s → allow) nay nằm ở [NlsHeal] / [NlsHealShell].
+ *
+ * - [reconnect]  : nút *Kết nối lại* — ép disallow→allow ngay, phiên HỎI, báo kết quả THẬT.
+ * - [ensureConnected] : công tắc BẬT — chờ bind tự nhiên ≤4,5 s, CHƯA bound mới disallow→allow (không ngắt nav đang chạy).
  */
 object NavConnect {
     private const val TAG = "NavConnect"
     // This app's own installed package = BuildConfig.APPLICATION_ID (com.byd.clusternav2). Class FQNs keep the
     // internal namespace com.byd.clusternav.* (unchanged) → component = "<appId>/com.byd.clusternav.<Class>".
     // Fully isolated from the legacy com.byd.clusternav app.
-    private val COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.NavNotificationListener"
+    /** `internal` (FIX286): [NlsHeal] dùng CHUNG chuỗi này — một nguồn, không chép. */
+    internal val COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.NavNotificationListener"
     /** `internal` (2.83) cho đúng một người đọc nữa: bộ đo kẹt của [A11yLifecycleHeal] — cùng một chuỗi, không chép. */
     internal val ACC_COMP = "${BuildConfig.APPLICATION_ID}/com.byd.clusternav.modules.navaccess.NavAccessibilityService"
-    private val reconnecting = java.util.concurrent.atomic.AtomicBoolean(false)   // single-flight: tap dồn dập / ensure trùng → 1 chu kỳ disallow→allow
     private val grantingAcc = java.util.concurrent.atomic.AtomicBoolean(false)    // single-flight cho grantAccessibility (dadb read-modify-write)
     private val grantGen = java.util.concurrent.atomic.AtomicInteger(0)          // #6: dấu thế hệ chống session timed-out ghi chồng
 
@@ -88,11 +91,11 @@ object NavConnect {
             .any { it.resolveInfo?.serviceInfo?.let { s -> s.packageName == ctx.packageName && s.name.contains("NavAccessibilityService") } == true }
     }.getOrNull()
 
-    /** Reconnect NGAY qua dadb (chạy nền). An toàn gọi nhiều lần. */
-    fun reconnect(ctx: Context) {
-        val app = ctx.applicationContext
-        Thread { doReconnect(app) }.start()
-    }
+    /**
+     * Nút *Kết nối lại*: disallow→allow NGAY qua phiên HỎI (FIX286 S2 — 2.85 đi phiên NỀN nên bị cổng READY-AT-HOME
+     * chặn khi kênh chưa lên mà vẫn log "xong"). [onResult] trên luồng chính, kết quả THẬT (đọc lại dump).
+     */
+    fun reconnect(ctx: Context, onResult: (NlsHealPolicy.Outcome) -> Unit = {}) = NlsHeal.userReconnect(ctx, onResult)
 
     /**
      * CẤP QUYỀN notification-listener NGAY trong app qua dadb uid-shell (`cmd notification allow_listener`).
@@ -117,11 +120,13 @@ object NavConnect {
 
     /** Lõi blocking của [selfGrant]. Chạy trên thread nền của caller. Trả true nếu listener đã bound. */
     private fun doSelfGrant(app: Context): Boolean {
-        if (!reconnecting.compareAndSet(false, true)) { Log.i(TAG, "grant/reconnect đang chạy — bỏ lần trùng"); return NavNotificationListener.connected }
+        if (!NlsHeal.busy.compareAndSet(false, true)) { Log.i(TAG, "grant/reconnect đang chạy — bỏ lần trùng"); return NavNotificationListener.connected }
         try {
             return runCatching {
                 val keyPair = AdbKeys.ensure(app)
-                val allowed = LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
+                // FIX286 S2: chỉ hai chỗ gọi, cả hai là người dùng vừa bấm (công tắc / Kết nối lại) ⇒ phiên HỎI — phiên NỀN
+                // bị cổng READY-AT-HOME chặn khi kênh chưa lên (2.85) đúng lúc người dùng đang chờ kết quả.
+                val allowed = LocalDeviceShell.session(keyPair, LocalShellRetry.USER_READ_CAP) { sh ->
                     sh("cmd notification allow_listener $COMP").ok
                 }
                 if (allowed != true) {
@@ -134,7 +139,7 @@ object NavConnect {
                 Log.i(TAG, "selfGrant xong sau ${waited}ms: bound=${NavNotificationListener.connected}")
                 NavNotificationListener.connected
             }.getOrElse { Log.e(TAG, "selfGrant qua dadb LỖI (popup Allow chưa bấm?)", it); false }
-        } finally { reconnecting.set(false) }
+        } finally { NlsHeal.busy.set(false) }
     }
 
     /**
@@ -448,42 +453,8 @@ object NavConnect {
     }
 
     /**
-     * Auto-ensure lúc mở app: xin rebind, chờ ~1.8s cho hệ thống bind; nếu listener vẫn CHƯA bound
-     * ([NavNotificationListener.connected] == false) thì reconnect qua dadb. Không đụng gì nếu đã bound.
+     * Công tắc *Dẫn đường lên cụm đồng hồ* BẬT (FIX286 S2): xin rebind, chờ callback tự nhiên ≤4,5 s; CHƯA bound mới
+     * disallow→allow qua phiên HỎI. Không đụng gì nếu đã bound. [onResult] trên luồng chính, kết quả THẬT.
      */
-    fun ensureConnected(ctx: Context) {
-        val app = ctx.applicationContext
-        Thread {
-            runCatching {
-                NotificationListenerService.requestRebind(ComponentName(app, NavNotificationListener::class.java))
-                // R5: POLL ~300ms tới ~4.5s thay vì chờ cứng 1.8s — bind tự nhiên xong thì THOÁT SỚM (tránh dadb
-                // disallow/allow thừa làm rớt nav vừa mới lên, trễ frame đầu vài giây).
-                var waited = 0
-                while (waited < 4500) {
-                    if (NavNotificationListener.connected) { Log.i(TAG, "listener đã bound (${waited}ms) → khỏi dadb"); return@runCatching }
-                    Thread.sleep(300); waited += 300
-                }
-                Log.i(TAG, "listener chưa bound sau ${waited}ms → reconnect qua dadb")
-                doReconnect(app)
-            }.onFailure { Log.e(TAG, "ensureConnected failed", it) }
-        }.start()
-    }
-
-    /** Lõi blocking: dadb connect localhost:5555 → disallow → allow. Chạy trên thread nền của caller. */
-    private fun doReconnect(app: Context) {
-        if (!reconnecting.compareAndSet(false, true)) { Log.i(TAG, "reconnect đang chạy — bỏ lần trùng"); return }
-        try {
-            runCatching {
-                val keyPair = AdbKeys.ensure(app)   // key CHUNG, sinh nguyên tử + khoá chung (chống đua với các client dadb khác)
-                LocalDeviceShell.session(keyPair, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
-                    sh("cmd notification disallow_listener $COMP")
-                    Thread.sleep(1500)
-                    sh("cmd notification allow_listener $COMP")
-                }
-                // Fallback cho chắc.
-                NotificationListenerService.requestRebind(ComponentName(app, NavNotificationListener::class.java))
-                Log.i(TAG, "reconnect qua dadb xong")
-            }.onFailure { Log.e(TAG, "reconnect qua dadb LỖI (popup Allow chưa bấm?)", it) }
-        } finally { reconnecting.set(false) }
-    }
+    fun ensureConnected(ctx: Context, onResult: (NlsHealPolicy.Outcome) -> Unit = {}) = NlsHeal.userEnsure(ctx, onResult)
 }

@@ -151,7 +151,7 @@ internal object EarlyShellChannel {
         readyChain(app, KachiReadyLog.lastScreenOnAt())
     }
 
-    /** Một lượt mỗi lần màn bật: kiểm phím (2.83) rồi keep-alive + watchdog, rồi chuyến lên xe (luồng riêng). */
+    /** Một lượt mỗi lần màn bật: kiểm phím (2.83) rồi keep-alive + watchdog, nguồn HUD (FIX286), rồi chuyến lên xe. */
     private fun readyChain(app: Context, epoch: Long) {
         val prev = chainFor.get()
         if (prev == epoch || !chainFor.compareAndSet(prev, epoch)) return
@@ -166,6 +166,9 @@ internal object EarlyShellChannel {
         } catch (e: RuntimeException) {
             Log.w(TAG, "khởi keep-alive/watchdog sớm hỏng (đường HOME sẽ gọi lại): ${e.message}")
         }
+        // FIX286 R-HUD: nguồn thông báo (nguồn duy nhất của HUD) đã GẮN thật chưa — hẹn sang luồng `kachi-nls-heal`, trả
+        // ngay; công tắc Dẫn đường TẮT ⇒ lượt đó không đọc, không ghi gì (cổng `NlsHealPolicy.step`).
+        NlsHeal.onReady(app)
         TripStart.onReady(app)   // F2/F3 chuyến lên xe — đẩy sang luồng `kachi-trip`, trả ngay (spec shortcuts-autostart §4.5)
     }
 

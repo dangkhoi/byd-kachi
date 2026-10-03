@@ -313,8 +313,17 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
         val all = sp.all
         val decision = CastEnableDeferral.onProcessStart(all[CastEnableDeferral.LIVE_KEY], all[CastEnableDeferral.PENDING_KEY])
         when (decision) {
-            is CastEnableDeferral.AtStart.Commit ->
-                sp.edit().putBoolean("cast_enabled", decision.on).remove(CastEnableDeferral.PENDING_KEY).commit()
+            // FIX286 · PI5 — mốc bền (chốt gì · lúc nào · bản nào) trong CÙNG lượt `commit()`: màn Chiếu cụm nói được
+            // "lần khởi động lúc … đã áp lựa chọn của hồ sơ" kể cả khi log của tiến trình dựng lại sau tắt máy đã mất.
+            is CastEnableDeferral.AtStart.Commit -> sp.edit().putBoolean("cast_enabled", decision.on)
+                .putString(
+                    CastEnableDeferral.COMMIT_MARK_KEY,
+                    CastEnableDeferral.CommitMark(
+                        decision.on, System.currentTimeMillis(), com.byd.clusternav.BuildConfig.VERSION_CODE,
+                        com.byd.clusternav.BuildConfig.VERSION_NAME,
+                    ).encode(),
+                )
+                .remove(CastEnableDeferral.PENDING_KEY).commit()
             is CastEnableDeferral.AtStart.Discard -> {
                 android.util.Log.w("SimpleCast", "cast_enabled_pending: ${decision.reason} — xoá bản chờ")
                 sp.edit().remove(CastEnableDeferral.PENDING_KEY).commit()
@@ -324,6 +333,9 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
         if (decision != CastEnableDeferral.AtStart.NoPending) android.util.Log.i("SimpleCast", "cast_enabled chốt lúc khởi động: $decision")
         return decision
     }
+
+    override fun castCommitMark(): CastEnableDeferral.CommitMark? =
+        CastEnableDeferral.CommitMark.decode(sp.all[CastEnableDeferral.COMMIT_MARK_KEY])
 
     // WP6 · R6.1 — HIỆN nút nổi hay không. Mặc định TRUE, **ngược** với `cast_enabled` ngay trên, và có lý do:
     // `cast_enabled` mặc định TẮT vì bật nó là đi giành mặt cụm trước mặt người lái (một việc ngoài app), còn khoá

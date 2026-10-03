@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-03 05:21:07.945 27488 27649 I KachiShortcut: đo ô 2: com.google.android.deskclock vd=237 ⇒ GONE
+10-03 05:21:07.945 27488 27488 I KachiShortcut: tap com.google.android.deskclock F usable=true stages=0 presence=GONE -> OpenFull(reason=null)

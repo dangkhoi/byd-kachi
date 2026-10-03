@@ -4,8 +4,10 @@ import android.content.Context
 import com.byd.clusternav.launcher.voice.SherpaModelCatalog
 import com.byd.clusternav.launcher.voice.SherpaTtsCatalog
 import com.byd.clusternav.launcher.voice.VoiceEndpointer
+import com.byd.clusternav.launcher.voice.VoiceRiskTable
 import com.byd.clusternav.launcher.voice.VoiceSpeakerSelector
 import com.byd.clusternav.launcher.voice.VoiceVadTrim
+import com.byd.clusternav.launcher.voice.VoiceWakePrefsMain
 
 /**
  * ═══ V3 (1.66) — KHOÁ RIÊNG của đường giọng nói, tách khỏi [Prefs] ═══════════════════════════════════════════
@@ -29,6 +31,7 @@ private fun voicePrefs(ctx: Context) =
 
 private const val K_VOICE_MIC_SOURCE = "voice_mic_source"
 private const val K_VOICE_CONFIRM_IDS = "voice_confirm_ids"
+private const val K_VOICE_CONFIRM_CHOSEN = "voice_confirm_default_v286"
 private const val K_VOICE_FOLLOW_UP_MS = "voice_follow_up_ms"
 private const val K_VOICE_KEEP_LOG = "voice_keep_log"
 private const val K_VOICE_ENDPOINT_SILENCE_MS = "voice_endpoint_silence_ms"
@@ -55,17 +58,39 @@ fun Prefs.voiceMicSource(ctx: Context): Int = voicePrefs(ctx).getInt(K_VOICE_MIC
 fun Prefs.setVoiceMicSource(ctx: Context, v: Int) = voicePrefs(ctx).edit().putInt(K_VOICE_MIC_SOURCE, v).apply()
 
 /**
- * R7 — mã các việc **phải hỏi lại** trước khi chạy. **Mặc định RỖNG** (owner 2026-09-16: *"cái nào nguy hiểm
- * lái xe mới hỏi, chứ mở cửa hỏi làm gì? cần document lại cái nào cần đồng ý để tôi chọn"*).
+ * R7 — mã các việc **phải hỏi lại** trước khi chạy = **tập HIỆU LỰC** ([VoiceRiskTable.effectiveIds]).
+ *
+ * Mặc định owner 2026-09-16 là RỖNG (*"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì? cần document lại
+ * cái nào cần đồng ý để tôi chọn"*), với MỘT ngoại lệ từ 2.86 (owner 03/10, FIX286 · SR5): **mở cửa sổ trời** hỏi
+ * mặc định. Hàm đọc KHÔNG ghi gì (phép cộng mặc định làm lúc đọc — KDoc ở `:core`), nên đọc ở tiến trình nào cũng
+ * an toàn.
  *
  * Lưu bằng `StringSet` chứ không phải một chuỗi ghép: tập này do một lưới ô tích ghi (mỗi ô một mã), và mã
  * thì có dấu gạch dưới — mọi ký tự ngăn chọn tay đều là một chỗ để mã lẫn vào nhau (bài học `SlotCodec`).
  */
-fun Prefs.voiceConfirmIds(ctx: Context): Set<String> =
-    voicePrefs(ctx).getStringSet(K_VOICE_CONFIRM_IDS, emptySet())?.toSet().orEmpty()
+fun Prefs.voiceConfirmIds(ctx: Context): Set<String> {
+    val sp = voicePrefs(ctx)
+    val stored = if (sp.contains(K_VOICE_CONFIRM_IDS)) sp.getStringSet(K_VOICE_CONFIRM_IDS, emptySet())?.toSet().orEmpty() else null
+    return VoiceRiskTable.effectiveIds(stored, sp.getBoolean(K_VOICE_CONFIRM_CHOSEN, false))
+}
 
+/**
+ * Lưu tập người dùng vừa chọn **kèm mốc** `voice_confirm_default_v286` trong CÙNG một lượt `edit()`: màn Cài đặt
+ * luôn dựng ô tích từ tập HIỆU LỰC (đã gồm mặc định), nên mọi lượt ghi từ 2.86 là một lựa chọn đã nhìn thấy mặc định —
+ * bỏ tích nóc thì phải được tôn trọng, không bị cộng lại ở lượt đọc sau (ca 3 của [VoiceRiskTable.effectiveIds]).
+ */
 fun Prefs.setVoiceConfirmIds(ctx: Context, ids: Set<String>) =
-    voicePrefs(ctx).edit().putStringSet(K_VOICE_CONFIRM_IDS, ids).apply()
+    voicePrefs(ctx).edit().putStringSet(K_VOICE_CONFIRM_IDS, ids).putBoolean(K_VOICE_CONFIRM_CHOSEN, true).apply()
+        .also { VoiceWakePrefsMain.publish(ctx) }   // FIX286 · VK4 — `:wake` đọc tập hiệu lực từ ảnh chụp, không cache cũ
+
+/**
+ * Trả tập về **mặc định** (gỡ cả khoá lẫn mốc ⇒ ca 1 của [VoiceRiskTable.effectiveIds]). Chỗ gọi duy nhất: cầu
+ * kiểm thử `prefs_set` với giá trị rỗng — đường `trap` của harness dọn sau mỗi ca (CLAUDE.md §5: đổi state ngoài
+ * tiến trình thì phải có đường trả lại, và *"trả lại"* nghĩa là về đúng mặc định, không phải về một tập rỗng tự đặt).
+ */
+fun Prefs.resetVoiceConfirmIds(ctx: Context) =
+    voicePrefs(ctx).edit().remove(K_VOICE_CONFIRM_IDS).remove(K_VOICE_CONFIRM_CHOSEN).apply()
+        .also { VoiceWakePrefsMain.publish(ctx) }
 
 /** R9 — giữ micro mở bao lâu sau khi đã trả lời xong, cho câu tiếp. `0` = tắt hẳn hội thoại. */
 fun Prefs.voiceFollowUpMs(ctx: Context): Int = voicePrefs(ctx).getInt(K_VOICE_FOLLOW_UP_MS, VOICE_FOLLOW_UP_DEFAULT_MS)

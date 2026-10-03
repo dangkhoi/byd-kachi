@@ -4,8 +4,7 @@ import android.content.Context
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
-import java.io.File
-import java.io.IOException
+import com.byd.clusternav.launcher.DiagRingFile
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,7 +29,6 @@ import java.util.Locale
 object A11yBindJournalStore {
 
     private const val TAG = "A11yJournal"
-    private const val DIR = "diag"
     private const val NAME = "a11y-bind.log"
 
     /** Nhịp tim: không đổi trạng thái thì mỗi giờ vẫn ghi một dòng, để biết nhật ký còn sống. */
@@ -42,22 +40,13 @@ object A11yBindJournalStore {
      * HAI luồng ghi vào cùng tệp này: watchdog 30 s (luồng chính của FGS) và thân lượt grant
      * ([com.byd.clusternav.NavConnect] — luồng nền riêng, `escalateIfStuck`). Cả hai làm đọc-sửa-ghi trọn tệp,
      * nên không có khoá thì hai lượt đan nhau sẽ ghi đè mất dòng của nhau (hoặc ghi ra tệp cắt dở đúng lúc màn
-     * Chẩn đoán đang đọc). Khoá ở đây là đủ: tệp chỉ của riêng tiến trình này.
+     * Chẩn đoán đang đọc). Khoá + đọc/ghi/cắt nay ở [DiagRingFile] (FIX286 · SR-T7 — tách khi `ctl-writes.log` cần
+     * đúng phần ấy); đường dẫn, định dạng dòng và trần [A11yBindJournal.MAX_LINES] không đổi một byte.
      */
-    private val lock = Any()
-
-    private fun file(ctx: Context): File = File(File(ctx.filesDir, DIR).apply { mkdirs() }, NAME)
+    private val ring = DiagRingFile(NAME, A11yBindJournal.MAX_LINES, TAG)
 
     /** Toàn bộ nhật ký, mới nhất ở cuối. Rỗng nếu chưa có gì hoặc đọc lỗi. */
-    fun read(ctx: Context): List<String> = synchronized(lock) { readLocked(ctx) }
-
-    private fun readLocked(ctx: Context): List<String> = try {
-        val f = file(ctx)
-        if (f.isFile) f.readLines().filter { it.isNotBlank() } else emptyList()
-    } catch (e: IOException) {
-        Log.w(TAG, "đọc nhật ký lỗi: ${e.message}")
-        emptyList()
-    }
+    fun read(ctx: Context): List<String> = ring.read(ctx)
 
     /**
      * Ghi một dòng NẾU đáng ghi (đổi trạng thái, hoặc tới nhịp tim). Không ném ra ngoài: nhật ký hỏng thì
@@ -72,20 +61,14 @@ object A11yBindJournalStore {
         state: A11yBindJournal.State,
         note: String,
         binderOnly: Boolean = false,
-    ): Boolean = synchronized(lock) {
-        recordLocked(ctx, state, note, binderOnly)
-    }
-
-    private fun recordLocked(ctx: Context, state: A11yBindJournal.State, note: String, binderOnly: Boolean): Boolean = try {
-        val f = file(ctx)
-        val lines = readLocked(ctx)
+    ): Boolean = ring.appendIf(ctx) { lines, f ->
         val prev = A11yBindJournal.stateOf(lines.lastOrNull())
         val sinceLast = if (f.isFile) (System.currentTimeMillis() - f.lastModified()).coerceAtLeast(0L) else Long.MAX_VALUE
         if (!A11yBindJournal.shouldAppend(prev, state, sinceLast, HEARTBEAT_MS, binderOnly)) {
-            false
+            null
         } else {
             val line = A11yBindJournal.line(
-                wallIso = fmt.format(Date()),
+                wallIso = fmt.format(Date()),   // trong khoá của [ring] — `SimpleDateFormat` không an toàn luồng
                 elapsedMs = SystemClock.elapsedRealtime(),
                 uptimeMs = SystemClock.uptimeMillis(),
                 state = state,
@@ -96,12 +79,7 @@ object A11yBindJournalStore {
             // chứng (nhật ký còn sống lúc đó). Ghi tệp hỏng (thẻ đầy, IOException bên dưới) thì dòng này vẫn đã nằm
             // trong usage log — đường đọc duy nhất còn lại của bản phát hành (KDoc đối tượng này).
             Log.i(TAG, A11yBindJournal.logcatLine(prev, line))
-            val kept = A11yBindJournal.trim(lines + line)
-            f.writeText(kept.joinToString("\n", postfix = "\n"))
-            true
+            line
         }
-    } catch (e: IOException) {
-        Log.w(TAG, "ghi nhật ký lỗi: ${e.message}")
-        false
     }
 }

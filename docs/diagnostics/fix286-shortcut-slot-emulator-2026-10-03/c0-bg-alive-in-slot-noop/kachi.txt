@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-03 05:20:26.932 27488 27649 I KachiShortcut: đo ô 0: com.google.android.apps.maps vd=236 ⇒ IN_SLOT
+10-03 05:20:26.933 27488 27488 I KachiShortcut: tap com.google.android.apps.maps B usable=true stages=2 presence=IN_SLOT -> Noop(highlight=0, reason=RUNNING)

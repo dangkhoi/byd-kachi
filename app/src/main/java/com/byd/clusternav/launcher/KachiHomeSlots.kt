@@ -1,6 +1,8 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import com.byd.clusternav.AppContainer
@@ -89,6 +91,36 @@ internal class KachiHomeSlots(
     fun detachToFull(index: Int, done: (Boolean) -> Unit): Boolean = workspace().detachToFull(
         index, ClusterProfile.resolveCached(app).cameraSignature, DefaultHome.shownComponents(app), done,
     )
+
+    /**
+     * FIX286 · R-SC2 — [pkg] được xếp ở ô [index]: còn task trên màn ảo của ô không, đo bằng SỰ THẬT lúc chạm (MỘT
+     * `am stack list` trên luồng nền của màn) — không bằng bố cục, không bằng cờ RAM của host (CLAUDE.md §5). [done] chạy
+     * trên luồng chính. Ô không có màn ảo đang giữ [pkg] (chưa mở xong / đã nhả) · chưa có kênh · việc nền bị từ chối ⇒
+     * [SlotPresence.UNKNOWN] ⇒ bảng giữ hành vi trước FIX286 (không mở lại = không `force-stop`).
+     */
+    fun presence(index: Int, pkg: String, done: (SlotPresence) -> Unit) {
+        val stage = workspace().hostAt(index)?.stage()
+        val sh = shell()
+        if (stage == null || stage.pkg != pkg || sh == null) { done(SlotPresence.UNKNOWN); return }
+        val accepted = submitBg {
+            val out = runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault("")
+            val p = SlotPresence.of(out, pkg, stage.vd)
+            Log.i(KachiHomeShortcuts.TAG, "đo ô $index: $pkg vd=${stage.vd} ⇒ $p")
+            mainHandler.post { done(p) }
+        }
+        if (!accepted) done(SlotPresence.UNKNOWN)
+    }
+
+    /**
+     * FIX286 · R-SC2 — [pkg] được xếp ở ô [index] mà [presence] đo thấy KHÔNG còn task ⇒ mở lại vào đúng ô, CÙNG đường với
+     * chạm thẻ *"App đã đóng — chạm để mở lại"* (`VdAppHost.reopen` → mở ô golden: `am force-stop` + `am start --display`
+     * màn ảo của ô; app Kachi đẩy ra sau màn nhà ⇒ K8, không giết). Nhịp đo cũ thôi TRƯỚC (không dựng thẻ "đã đóng" giữa
+     * lượt mở lại), trạng thái "đang toàn màn" bỏ. `false` = 0 lệnh: ô không có host giữ [pkg] / đã nhả / lượt mở đang
+     * chạy dở (chưa vào nhịp đo, chưa có thẻ) ⇒ bên gọi chỉ nháy ô.
+     */
+    fun reviveInSlot(index: Int, pkg: String): Boolean = workspace().hostAt(index)?.reviveInSlot(pkg) ?: false
+
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     private fun appLabel(pkg: String): String = InstalledApps.labelOf(app, pkg) ?: pkg
 

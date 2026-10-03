@@ -76,6 +76,15 @@ object CastGeometryGuard {
     /** Trường của một khoá họ, theo tiền tố. `null` = không thuộc họ. */
     fun fieldOf(key: String): Field? = Field.values().firstOrNull { key.startsWith(it.prefix) }
 
+    /** Hậu tố biến thể một nửa của một bản ghi (`__L30`/`__R70`) — sinh từ [CastProfile.SPLIT_PERCENTS] như [FAMILY_KEY]. */
+    private val SPLIT_SUFFIX = Regex("__[LR](" + CastProfile.SPLIT_PERCENTS.joinToString("|") + ")$")
+
+    /**
+     * FIX286 · PI3 — tên GÓI của một bản ghi (khoá họ đã bỏ tiền tố trường): `vn.vietmap.live__L30` → `vn.vietmap.live`.
+     * Hộp thoại nhập đếm theo APP (người lái nghĩ "khung của VietMap"), không theo bản ghi toàn cụm/nửa trái/nửa phải.
+     */
+    fun appOfRecord(record: String): String = record.replace(SPLIT_SUFFIX, "")
+
     /** `"reset"` hoặc số nguyên trong [DENSITY_RANGE], dạng chuẩn; mọi thứ khác ⇒ `null`. */
     fun density(raw: String?): String? {
         if (raw == DENSITY_RESET) return raw

@@ -199,7 +199,8 @@ interface WorkspaceRepository {
 
     /**
      * IMPORT một hồ sơ từ chuỗi [data] (nội dung MỘT tệp người dùng chọn). Trả state mới (đã thêm hồ sơ, tên trùng ⇒
-     * hậu tố số) nếu nhập được, `null` nếu tệp không hợp lệ. Mặc định `null`.
+     * hậu tố số) + báo cáo lượt nhập (FIX286 · PI3: tên hồ sơ vừa tạo + phần chiếu cụm của tệp) nếu nhập được, `null`
+     * nếu tệp không hợp lệ. Mặc định `null`.
      */
-    fun importProfileData(data: String): HomeUiState? = null
+    fun importProfileData(data: String): ProfileImported? = null
 }

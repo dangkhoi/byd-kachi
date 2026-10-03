@@ -52,6 +52,7 @@ internal fun VoiceSession.runListen(my: Int) {
             // 1.70 [ĐO xe 2026-09-17] mốc "bấm phím → micro mở" từng mất **1,5 s** ở lượt đầu; in ra để lượt
             // xe sau biết phần nào (nhãn app · dựng recognizer · tấm chữ) ăn thời gian đó.
             Log.i(VoiceEngine.TIMING_TAG, "sẵn sàng nghe sau ${System.currentTimeMillis() - tStart} ms kể từ lúc bấm")
+            marks?.ready()   // FIX286 · VK6 — mốc "micro mở" của nhật ký phiên `:wake` (phiên màn chính: null)
             val heard = whileCapturing {
                 capture.listen(
                     it, VoiceSession.MAX_LISTEN_MS, cancelled::get, keepPcm = true,

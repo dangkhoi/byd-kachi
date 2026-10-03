@@ -242,8 +242,15 @@ object ProfileScope {
         put(
             "voice_confirm_ids",
             "V3 · R7 — danh sách việc phải hỏi lại trước khi chạy. Theo XE: đây là một quyết định AN TOÀN về " +
-                "chính chiếc xe (owner chốt mặc định RỖNG 2026-09-16), và một hồ sơ chép sang xe khác không được " +
+                "chính chiếc xe (owner chốt mặc định RỖNG 2026-09-16; 2.86 thêm mở-cửa-sổ-trời), và một hồ sơ chép sang xe khác không được " +
                 "mang theo lựa chọn 'không hỏi gì cả'. Cùng họ `keep_home_on_boot` — quyết định mức máy, không mức người",
+        )
+        put(
+            "voice_confirm_default_v286",
+            "FIX286 · SR5 — mốc *\"lựa chọn hỏi-xác-nhận đã được lưu khi màn Cài đặt bày mặc định 2.86 (mở cửa sổ " +
+                "trời)\"*. Đi CÙNG `voice_confirm_ids` (cùng hàm ghi, cùng lượt `edit()`) nên phải cùng phạm vi: " +
+                "tách ra thì đổi hồ sơ mang tập theo mà bỏ mốc lại (hoặc ngược lại) ⇒ nóc bị cộng/bớt khỏi tập hỏi " +
+                "mà không ai bấm gì",
         )
         put(
             "voice_follow_up_ms",

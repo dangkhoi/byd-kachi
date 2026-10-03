@@ -226,6 +226,10 @@ class VoiceGrammarCoverageTest {
      * bỏ → **huỷ, không nói gì**. Owner: *"cái nào nguy hiểm lái xe mới hỏi, chứ mở cửa hỏi làm gì"*.
      *
      * Thử làm nó ĐỎ: bỏ tham số `confirmIds` ở `VoiceRiskTable.of` (quay lại bảng cứng) ⇒ nửa đầu bài này đỏ.
+     *
+     * ⚠ 2.86 (FIX286 · SR5b): bài này canh **hàm thuần** với tập rỗng — vẫn đúng nguyên văn. Mặc định của **sản
+     * phẩm** nay có một ngoại lệ (mở cửa sổ trời), áp ở tầng đọc prefs qua `VoiceRiskTable.effectiveIds`; bài canh
+     * của ngoại lệ ấy ở `VoiceConfirmDefault286Test`.
      */
     @Test
     fun `mac dinh KHONG hoi gi ca — tap rong thi moi viec la NORMAL`() {
@@ -252,10 +256,18 @@ class VoiceGrammarCoverageTest {
         assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("trunk", 1), only))
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 1), only))
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Profile("Vợ"), only))
-        // Giá trị KHÔNG vào mã: tích là tích cả hai chiều (xem KDoc [VoiceRiskTable.confirmId]).
+        // Giá trị KHÔNG vào mã: một ô tích cho một nút (xem KDoc [VoiceRiskTable.confirmId]).
+        // ⚠⚠ 2.86 · FIX286 SR5(a) — vế ĐÓNG ĐẢO có chủ ý (owner 03/10: *"MỞ nóc phải hỏi xác nhận"*; spec OQ3):
+        // tới 2.85 dòng dưới khoá `Control(sunroof, 0)` ⇒ CONFIRM, tức tích "Cửa sổ trời" là câu *"đóng cửa sổ
+        // trời"* cũng bị hỏi lại — mà hộp hỏi không có lý do nào, vì `reason()` đã xét vế còn `of()` thì không
+        // [ĐO mã, đọc lại 02/10]. Nay MỘT hàm `Rule.matches` cho cả hai. Chặt hơn bài cũ: khoá cả vế hỏi (mở),
+        // vế không hỏi (đóng), lệnh không nói vế (hỏi — nghiêng về an toàn) và lý do khớp đúng vế.
         val sunroof = setOf(VoiceRiskTable.PREFIX_CONTROL + "sunroof")
         assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 1), sunroof))
-        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 0), sunroof))
+        assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("sunroof", 0), sunroof))
+        assertEquals(VoiceRisk.CONFIRM, VoiceRiskTable.of(VoiceIntent.Control("sunroof", null), sunroof))
+        assertEquals(null, VoiceRiskTable.reason(VoiceIntent.Control("sunroof", 0)))
+        assertTrue(VoiceRiskTable.reason(VoiceIntent.Control("sunroof", 1))!!.isNotBlank())
         // Nút KHÔNG nằm trong bảng lý do thì không có mã ⇒ không bao giờ hỏi được, kể cả khi ai đó nhét mã lạ.
         assertEquals(null, VoiceRiskTable.confirmId(VoiceIntent.Control("readl", 1)))
         assertEquals(VoiceRisk.NORMAL, VoiceRiskTable.of(VoiceIntent.Control("readl", 1), setOf("control:readl")))

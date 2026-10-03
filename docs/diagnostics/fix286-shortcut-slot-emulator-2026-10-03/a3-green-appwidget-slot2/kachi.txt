@@ -1,0 +1,5 @@
+--------- beginning of main
+10-03 05:12:55.531 23364 23364 I KachiShortcut: tap com.google.android.deskclock S2 usable=true stages=0 presence=UNKNOWN -> PlaceTemp(slot=1, evict=null)
+10-03 05:12:55.599 23364 23364 I VdAppHost: [slot-density] slot=1 short=395 dpi=200→200 (316,0dp→316,0dp)
+--------- beginning of system
+10-03 05:12:55.642 23364 23364 I KachiVd : tạo màn ảo kachi-slot-1-1790979175597 — ô 1 · display 233 · chủ ws@37466538 · đang sống 2

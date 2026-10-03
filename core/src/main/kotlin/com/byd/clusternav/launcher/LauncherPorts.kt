@@ -86,6 +86,13 @@ interface CarControlPort {
     fun wiredOnThisCar(id: String): Boolean = true
 
     /**
+     * FIX286 · SR4 — xe **tự báo** không có bộ phận của nút này (getter cấu hình trả mã "vắng" — [ControlDef.presence]),
+     * hẹp hơn [wiredOnThisCar]: nút feature-id vắng trong bảng thì "chưa điều khiển được", còn đây là "xe này không có
+     * bộ phận ấy" — hai câu khác nhau cho người lái. Mặc định `false` = không biết (cùng lẽ [wiredOnThisCar]).
+     */
+    fun partAbsentOnThisCar(id: String): Boolean = false
+
+    /**
      * Một cú GHI vừa trả `false` cho nút [id] — đó là **xe thật từ chối**, hay chỉ là *"máy này không có xe"*?
      *
      * ## Vì sao KHÔNG dùng [wiredOnThisCar] cho câu hỏi này (review Pass 2 · 2026-09-26)

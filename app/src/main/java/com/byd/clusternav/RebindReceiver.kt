@@ -26,6 +26,10 @@ import com.byd.clusternav.modules.navaccess.AccessibilityHealGates
  *  3. WATCHDOG định kỳ ([ACTION_WATCHDOG] qua AlarmManager ~60s) → rebind lại kể cả khi
  *     binding CHƯA TỪNG lên (case "sáng nay đi không lên") mà không cần thao tác tay.
  *
+ * ⚠ ĐÍNH CHÍNH FIX286 (03/10, [ĐO nguồn AOSP]): lớp 1–3 ở trên đều là `requestRebind` — chỉ gỡ "snooze", KHÔNG gắn lại
+ * một bộ nghe đã CẤP mà chưa GẮN (r47 NMS `:3127-3139` → `ManagedServices.java:707-711`). Ca đó chỉ chữa được bằng
+ * disallow → allow; nhịp watchdog nay gọi thêm [NlsHeal.onWatchdog] (hỏi dump Live của NMS, cổng công tắc Dẫn đường).
+ *
  * Đăng ký trong AndroidManifest (manifest-declared, để nhận được kể cả khi process đã chết).
  */
 class RebindReceiver : BroadcastReceiver() {
@@ -33,6 +37,10 @@ class RebindReceiver : BroadcastReceiver() {
         val action = intent?.action ?: return
         Log.i(TAG, "rebind trigger: $action")
         rebind(context)
+        // FIX286 R-HUD: `rebind()` ở trên là `requestRebind` — chỉ gỡ "snooze", KHÔNG gắn lại bộ nghe đã cấp mà chưa gắn
+        // (AOSP r47 NMS `:3127-3139` → `ManagedServices.java:707-711`). Nhịp watchdog nay hỏi sự thật NMS (dump Live) và
+        // chỉ chữa khi công tắc Dẫn đường BẬT + đã cấp quyền + màn sáng (cổng `NlsHealPolicy.step`, luồng riêng).
+        if (action == ACTION_WATCHDOG) NlsHeal.onWatchdog(context)
         // B2 · BIND-SELFHEAL (owner 2026-09-22): vòng NỀN định kỳ tự chữa binding PHÍM VÔ-LĂNG (accessibility)
         // khi enabled-nhưng-chưa-BOUND — ca "phím chết giữa lúc lái do CPU cao" mà người dùng KHÔNG mở app.
         // `rebind()` ở trên chỉ lo notification-listener; phím vô-lăng đi qua NavAccessibilityService, cần đường

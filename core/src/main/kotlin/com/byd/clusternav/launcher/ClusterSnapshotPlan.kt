@@ -68,8 +68,36 @@ object ClusterSnapshotPlan {
     /** Ảnh chụp (hoặc ảnh đã làm sạch) + các khoá đã bỏ vì hỏng — chỗ gọi GHI LOG, không ném. */
     data class Shot(val values: Map<String, Any?>, val dropped: List<String>)
 
-    /** Lượt ghi vào tệp sống: `writes[k] = null` ⇒ XOÁ `k`; còn lại ⇒ ghi đúng kiểu. [dropped] để ghi log. */
-    data class Edit(val writes: Map<String, Any?>, val dropped: List<String>)
+    /**
+     * Lượt ghi vào tệp sống: `writes[k] = null` ⇒ XOÁ `k`; còn lại ⇒ ghi đúng kiểu. [dropped] để ghi log.
+     *
+     * FIX286 · PI5 — [deferred] = quyết định của từng khoá hoãn (khoá sống → [CastEnableDeferral.OnApply]) để dòng log
+     * đổi hồ sơ nói được `cast=SetPending(…)|ClearPending` kể cả khi lượt áp KHÔNG ghi gì (ClearPending lúc không có bản chờ).
+     */
+    data class Edit(
+        val writes: Map<String, Any?>,
+        val dropped: List<String>,
+        val deferred: Map<String, CastEnableDeferral.OnApply> = emptyMap(),
+    )
+
+    /**
+     * FIX286 · PI1/PI2 — kết quả lượt **merge một lần lúc NHẬP** ([mergeImport]).
+     *
+     * Bản ghi = khoá họ bỏ tiền tố trường (`config_density_<gói>__L30` → `<gói>__L30`): một (gói, biến thể), bốn trường
+     * đi cùng nhau (spec K4). [fromFile] = bản ghi lấy từ TỆP · [fromCar] = bản ghi chép từ tệp sống của XE NHẬN ·
+     * [replacing] = bản ghi của tệp mà xe nhận đang có với giá trị KHÁC (đổi sang hồ sơ này sẽ thay khung đó) ·
+     * [deferredFromCar] = khoá hoãn mà tệp vắng/null nên lấy giá trị ĐANG CHẠY của xe. [fileHadFamily] = tệp có mốc họ
+     * (xuất từ ≥ 2.84). [dropped] = khoá của xe có giá trị hỏng — không chép, chỗ gọi ghi log.
+     */
+    data class ImportMerge(
+        val values: Map<String, Any?>,
+        val fileHadFamily: Boolean,
+        val fromFile: Set<String>,
+        val fromCar: Set<String>,
+        val replacing: Set<String>,
+        val deferredFromCar: Set<String>,
+        val dropped: List<String>,
+    )
 
     /** Khoá [key] có thuộc phạm vi ảnh chụp của một tệp không (khoá cố định · khoá họ · mốc họ). */
     fun inScope(key: String, fixedKeys: Collection<String>, families: Collection<SnapshotFamily>): Boolean =
@@ -120,11 +148,12 @@ object ClusterSnapshotPlan {
     ): Edit {
         val writes = LinkedHashMap<String, Any?>()
         val dropped = mutableListOf<String>()
+        val decisions = LinkedHashMap<String, CastEnableDeferral.OnApply>()
         shot.forEach { (k, v) ->
             if (k !in fixedKeys) return@forEach
             val pendingKey = deferred[k]
             if (pendingKey != null) {
-                deferPending(live, k, pendingKey, v, writes, dropped)
+                decisions[k] = deferPending(live, k, pendingKey, v, writes, dropped)
                 return@forEach
             }
             if (v == null) { writes[k] = null; return@forEach }
@@ -146,7 +175,80 @@ object ClusterSnapshotPlan {
             live.keys.filter { f.owns(it) && it !in want }.forEach { writes[it] = null }
             want.forEach { (k, v) -> if (live[k] != v) writes[k] = v }
         }
-        return Edit(writes, dropped)
+        return Edit(writes, dropped, decisions)
+    }
+
+    /**
+     * FIX286 · PI1/PI2 (owner 03/10 *"2 theo đề xuất"*) — **merge một lần lúc NHẬP**: ảnh chụp [shot] (đã [sanitize]) của
+     * tệp nhập + tệp sống [live] của xe nhận ⇒ ảnh chụp ghi cho hồ sơ MỚI.
+     *
+     *  1. Họ có bản ghi trong tệp ⇒ **tệp thắng** (cả bản ghi, không trộn trường của xe vào).
+     *  2. Bản ghi tệp KHÔNG có mà xe nhận có ⇒ chép của xe (từng giá trị qua `valueOk`; hỏng ⇒ [ImportMerge.dropped]).
+     *  3. Tệp không có mốc (≤ 2.83) ⇒ (2) cho mọi bản ghi ⇒ toàn họ của xe; ảnh kết quả LUÔN mang mốc.
+     *  4. Khoá hoãn ([deferred], phải là khoá cố định của tệp này) vắng hoặc `null` trong tệp ⇒ giá trị ĐANG CHẠY của xe
+     *     (khoá sống, KHÔNG phải bản chờ — đổi sang hồ sơ nhập không được tự đẻ ra một lượt bật/tắt chiếu). Có giá trị ⇒
+     *     tệp thắng, vẫn đi đường hoãn [CastEnableDeferral] lúc áp (VC-R5 không đổi).
+     *
+     * ⚠ Đây là nới refute C4 **có chủ ý, CHỈ ở lượt nhập**: khung của hồ sơ đang dùng lúc nhập được chép MỘT lần sang hồ
+     * sơ nhập. Cơ chế phân biệt với lượt đổi hồ sơ thường: hàm này chỉ có MỘT chỗ gọi (`WorkspacePrefs.importProfile`) và
+     * chỉ đổi ẢNH CHỤP ghi cho hồ sơ mới; [apply] (mọi lượt đổi hồ sơ) không đổi byte ⇒ đổi A ⇄ B sau đó vẫn hai chiều.
+     */
+    fun mergeImport(
+        shot: Map<String, Any?>,
+        live: Map<String, Any?>,
+        fixedKeys: Collection<String>,
+        families: Collection<SnapshotFamily>,
+        deferred: Map<String, String>,
+    ): ImportMerge {
+        val out = LinkedHashMap(shot)
+        val dropped = mutableListOf<String>()
+        val fromFile = LinkedHashSet<String>()
+        val fromCar = LinkedHashSet<String>()
+        val replacing = LinkedHashSet<String>()
+        var fileHadFamily = false
+        families.forEach { f ->
+            fileHadFamily = fileHadFamily || shot[f.marker] == true
+            val fileRecords = recordsOf(f, shot)
+            val carRecords = recordsOf(f, live)
+            fromFile += fileRecords.keys
+            fileRecords.forEach { (rec, fields) -> carRecords[rec]?.let { if (it != fields) replacing += rec } }
+            carRecords.filterKeys { it !in fileRecords }.forEach { (rec, fields) ->
+                fields.forEach { (k, v) -> if (v is String && f.valueOk(k, v)) out[k] = v else dropped += k }
+                if (fields.keys.any { out.containsKey(it) }) fromCar += rec
+            }
+            out[f.marker] = true
+        }
+        val deferredFromCar = LinkedHashSet<String>()
+        deferred.keys.filter { it in fixedKeys && shot[it] == null }.forEach { liveKey ->
+            // Giá trị ĐANG CHẠY; vắng / sai kiểu ⇒ `null` = mặc định — đúng thứ `CastEnableDeferral.onApply` coi là hiệu lực.
+            out[liveKey] = live[liveKey] as? Boolean
+            deferredFromCar += liveKey
+        }
+        return ImportMerge(out, fileHadFamily, fromFile, fromCar, replacing, deferredFromCar, dropped)
+    }
+
+    /** Bản ghi của họ [f] trong [values]: (khoá bỏ tiền tố trường) → các khoá thuộc bản ghi đó với giá trị thô. */
+    private fun recordsOf(f: SnapshotFamily, values: Map<String, Any?>): Map<String, Map<String, Any?>> {
+        val out = LinkedHashMap<String, MutableMap<String, Any?>>()
+        values.forEach { (k, v) ->
+            if (!f.owns(k)) return@forEach
+            val prefix = f.prefixes.firstOrNull { k.startsWith(it) } ?: return@forEach
+            out.getOrPut(k.removePrefix(prefix)) { LinkedHashMap() }[k] = v
+        }
+        return out
+    }
+
+    /**
+     * FIX286 · PI5 — một dòng tóm tắt lượt áp của MỘT tệp cho log đổi hồ sơ: `cast=<quyết định>` · khung ghi N · xoá M ·
+     * bỏ K. `null` = tệp không có họ lẫn khoá hoãn nào ⇒ không có gì đáng nói (bớt rác log ở các tệp khác).
+     */
+    fun describe(edit: Edit, families: Collection<SnapshotFamily>, deferred: Map<String, String>): String? {
+        if (families.isEmpty() && edit.deferred.isEmpty()) return null
+        val familyWrites = edit.writes.filterKeys { k -> families.any { it.owns(k) } }
+        val cast = if (edit.deferred.isEmpty()) "-" else edit.deferred.values.joinToString(",")
+        val pendingWrites = edit.writes.keys.count { it in deferred.values }
+        return "cast=$cast (ghi khoá chờ $pendingWrites) · khung ghi ${familyWrites.count { it.value != null }} · " +
+            "xoá ${familyWrites.count { it.value == null }} · bỏ ${edit.dropped.size}"
     }
 
     /**
@@ -181,11 +283,13 @@ object ClusterSnapshotPlan {
         desired: Any?,
         writes: MutableMap<String, Any?>,
         dropped: MutableList<String>,
-    ) {
-        when (val d = CastEnableDeferral.onApply(live[liveKey], desired)) {
+    ): CastEnableDeferral.OnApply {
+        val d = CastEnableDeferral.onApply(live[liveKey], desired)
+        when (d) {
             is CastEnableDeferral.OnApply.SetPending -> if (live[pendingKey] != d.on) writes[pendingKey] = d.on
             CastEnableDeferral.OnApply.ClearPending -> if (pendingKey in live) writes[pendingKey] = null
             is CastEnableDeferral.OnApply.Drop -> dropped += d.reason
         }
+        return d
     }
 }

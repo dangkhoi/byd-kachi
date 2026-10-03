@@ -171,7 +171,8 @@ object TelemetryReadout {
         // Cửa sổ trời: [ĐO 4 lượt quét xe owner — carlog-0916/sweep-1.64.json + perf-oncar-2026-09-26/kachi-logs]
         // `getSunroofState = 0` ⇒ trên xe ấy datum này ĐỌC ĐƯỢC và ra mã 0 (ĐÓNG), **không** phải `null`. Con số
         // 65535 của [ĐO 09-25] là của một getter KHÁC (`getSunroofPosition`) — datum `sunroof_pos` đã gỡ vì thế.
-        // *"Xe owner không có nóc mở"* chỉ là **[ĐOÁN]** (nóc kính liền cũng cho pos = sentinel mà state = 0); hình
+        // *"Xe owner không có nóc mở"* là **[SUY]** (pos = sentinel + HAL từ chối `setMoonRoofState(1)` trong log giọng
+        // nói 17/09; nóc kính liền cũng cho pos = sentinel mà state = 0 — FIX286 SR7 thống nhất ba chỗ); hình
         // MỞ vẫn [CHƯA BIẾT] trên xe này — 🚗 xem `chips-icons-close.md` §5.
         "door_lf" -> s.body.doorLfOpen
         "door_rf" -> s.body.doorRfOpen

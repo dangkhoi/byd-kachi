@@ -77,6 +77,8 @@ internal fun WorkspacePrefs.applyClusterNav(profile: String) {
             target.all, values, keys, families, ProfileScopeCluster.DECLARED_TYPES, ProfileScopeCluster.DEFERRED,
         )
         logDropped("apply $file/$profile", plan.dropped)
+        // FIX286 · PI5 — `cast=SetPending(…)|ClearPending` · khung ghi N · XOÁ M (refute: xoá khung của xe nhận phải lộ ra).
+        ClusterSnapshotPlan.describe(plan, families, ProfileScopeCluster.DEFERRED)?.let { Log.i(TAG, "áp «$profile» $file: $it") }
         if (plan.writes.isEmpty()) return@forEach
         val e = target.edit()
         plan.writes.forEach { (k, v) ->
@@ -120,6 +122,29 @@ internal fun cleanImportedSnapshot(suffix: String, value: Any?): Any? {
     )
     logDropped("import $file", clean.dropped)
     return PrefSnapshot.encode(clean.values)
+}
+
+/**
+ * FIX286 · PI1/PI2 — merge MỘT lần lúc nhập cho ảnh `simple_cast_prefs` ([ClusterSnapshotPlan.mergeImport]): [clean] =
+ * giá trị ĐÃ qua [cleanImportedSnapshot] (`null` = tệp không có ảnh này ⇒ coi như ảnh rỗng: mọi thứ lấy của xe nhận).
+ * Tệp sống của xe được đọc ĐÚNG một lần ở đây. Hậu tố khác ⇒ `null` (chỗ gọi giữ nguyên [clean]).
+ *
+ * ⚠ Hàm này là chỗ DUY NHẤT nới refute C4, và chỉ ghi vào ảnh chụp của hồ sơ VỪA TẠO — [applyClusterNav] không gọi nó.
+ */
+internal fun WorkspacePrefs.mergeImportedCast(suffix: String, clean: Any?): Pair<String, ClusterImportSummary>? {
+    val file = ProfileScopeCluster.SIMPLE_CAST_FILE
+    if (suffix != ProfileScope.snapshotSuffix(file)) return null
+    val merge = ClusterSnapshotPlan.mergeImport(
+        PrefSnapshot.decode(clean as? String), clusterNavPrefs(file).all, ProfileScope.CLUSTERNAV_KEYS.getValue(file),
+        ProfileScopeCluster.familiesOf(file), ProfileScopeCluster.DEFERRED,
+    )
+    logDropped("import merge $file (car values)", merge.dropped)
+    return PrefSnapshot.encode(merge.values) to ClusterImportSummary.of(merge)
+}
+
+/** FIX286 · PI5 — một dòng log lúc nhập: tệp có/không phần cụm, chiếu cụm theo tệp hay giữ của xe, khung tệp/giữ. */
+internal fun logImported(report: ProfileImportReport) {
+    Log.i(TAG, report.cluster.logLine(report.name, report.kind))
 }
 
 /**

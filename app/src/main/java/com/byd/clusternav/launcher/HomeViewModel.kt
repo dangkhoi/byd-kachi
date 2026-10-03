@@ -143,16 +143,15 @@ class HomeViewModel(
     fun exportActiveProfile(kind: ProfileTransfer.Kind): String? = repository.exportActiveProfile(kind)
 
     /**
-     * PROFILE-IO-0930 · IO-R1 — nhập MỘT tệp người dùng vừa chọn (wiring đọc đúng tệp đó). Trả **tên hồ sơ vừa tạo**
-     * (cho toast), `null` nếu tệp không hợp lệ. Thay `importProfiles(list)` của #4: nhập mọi tệp mỗi lần bấm ⇒ nhân bản,
-     * và toast đếm `list.size` chứ không phải số hồ sơ vào được.
+     * PROFILE-IO-0930 · IO-R1 — nhập MỘT tệp người dùng vừa chọn (wiring đọc đúng tệp đó). Trả **báo cáo lượt nhập**
+     * (tên hồ sơ vừa tạo + phần chiếu cụm của tệp — FIX286 · PI3, cho hộp thoại), `null` nếu tệp không hợp lệ. Thay
+     * `importProfiles(list)` của #4: nhập mọi tệp mỗi lần bấm ⇒ nhân bản, và toast đếm `list.size` chứ không phải số hồ
+     * sơ vào được. Tên lấy từ nơi lưu (tên THẬT sau khi khử trùng "X 2"), không đoán bằng hiệu hai danh sách.
      */
-    fun importProfile(data: String): String? {
-        val before = _uiState.value.profiles.toSet()
+    fun importProfile(data: String): ProfileImportReport? {
         val next = repository.importProfileData(data) ?: return null
-        reload { next }
-        // Hồ sơ nhập luôn được nối CUỐI danh sách (`importProfile` ở nơi lưu) — lùi về đó nếu state trước lượt nhập đã cũ.
-        return next.profiles.firstOrNull { it !in before } ?: next.profiles.lastOrNull()
+        reload { next.state }
+        return next.report
     }
 
     /**

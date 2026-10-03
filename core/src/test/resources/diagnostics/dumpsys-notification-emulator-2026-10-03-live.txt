@@ -1,0 +1,410 @@
+Current Notification Manager state (filtered to 'com.byd.launcher'):
+  Notification List:
+    NotificationRecord(0x06e56395: pkg=com.byd.launcher user=UserHandle{0} id=2147483647 tag=ranker_group importance=2 key=0|com.byd.launcher|2147483647|ranker_group|10163|ranker_groupappImportanceLocked=false: Notification(channel=cluster_cast_v2 pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x700 color=0x00000000 groupKey=ranker_group vis=PRIVATE))
+      uid=10163 userId=0
+      opPkg=com.byd.launcher
+      icon=Icon(typ=RESOURCE pkg=com.byd.launcher id=0x7f0400e6) / com.byd.launcher:drawable/ic_launcher
+      flags=0x700
+      pri=0
+      key=0|com.byd.launcher|2147483647|ranker_group|10163|ranker_group
+      seen=false
+      groupKey=0|com.byd.launcher|g:ranker_group
+      fullscreenIntent=null
+      contentIntent=PendingIntent{e40fcaa: PendingIntentRecord{5b44eb5 android startActivity}}
+      deleteIntent=null
+      number=0
+      groupAlertBehavior=2
+      tickerText=null
+      contentView=null
+      bigContentView=null
+      headsUpContentView=null
+      color=0x00000000      timeout=unknown
+      extras={
+          android.reduced.images=Boolean (true)
+          android.appInfo=ApplicationInfo (ApplicationInfo{1049da7 com.byd.launcher})
+      }
+      stats=SingleNotificationStats{posttimeElapsedMs=251083349, posttimeToFirstClickMs=-1, posttimeToDismissMs=-1, airtimeCount=0, airtimeMs=0, currentAirtimeStartElapsedMs=-1, airtimeExpandedMs=0, posttimeToFirstVisibleExpansionMs=-1, currentAirtimeExpandedStartElapsedMs=-1, requestedImportance=3, naturalImportance=2, isNoisy=true}
+      mContactAffinity=0.0
+      mRecentlyIntrusive=false
+      mPackagePriority=0
+      mPackageVisibility=-1000
+      mSystemImportance=UNSPECIFIED
+      mAsstImportance=UNSPECIFIED
+      mImportance=LOW
+      mImportanceExplanation=app
+      mIsAppImportanceLocked=false
+      mIntercept=false
+      mHidden==false
+      mGlobalSortKey=crtcl=0x0002:intrsv=1:grnk=0x0012:gsmry=0:nsk:rnk=0x0014
+      mRankingTimeMs=1790972496925
+      mCreationTimeMs=1790972496925
+      mVisibleSinceMs=0
+      mUpdateTimeMs=1790972496925
+      mInterruptionTimeMs=1790972496925
+      mSuppressedVisualEffects= 0
+      mSound= content://settings/system/notification_sound
+      mVibration= null
+      mAttributes= AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null
+      mLight= null
+      mShowBadge=true
+      mColorized=false
+      mIsInterruptive=false
+      effectiveNotificationChannel=NotificationChannel{mId='cluster_cast_v2', mName=Cluster Cast, mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      mAdjustments=[]
+    NotificationRecord(0x0423909b: pkg=com.byd.launcher user=UserHandle{0} id=1045 tag=null importance=2 key=0|com.byd.launcher|1045|null|10163appImportanceLocked=false: Notification(channel=clusternav_voicekey_keepalive pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+      uid=10163 userId=0
+      opPkg=com.byd.launcher
+      icon=Icon(typ=RESOURCE pkg=com.byd.launcher id=0x7f0400e6) / com.byd.launcher:drawable/ic_launcher
+      flags=0x62
+      pri=0
+      key=0|com.byd.launcher|1045|null|10163
+      seen=false
+      groupKey=0|com.byd.launcher|g:ranker_group
+      fullscreenIntent=null
+      contentIntent=null
+      deleteIntent=null
+      number=0
+      groupAlertBehavior=0
+      tickerText=null
+      contentView=null
+      bigContentView=null
+      headsUpContentView=null
+      color=0x00000000      timeout=unknown
+      extras={
+          android.title=String
+          android.reduced.images=Boolean (true)
+          android.text=String
+          android.appInfo=ApplicationInfo (ApplicationInfo{1049da7 com.byd.launcher})
+      }
+      stats=SingleNotificationStats{posttimeElapsedMs=251083167, posttimeToFirstClickMs=-1, posttimeToDismissMs=-1, airtimeCount=0, airtimeMs=0, currentAirtimeStartElapsedMs=-1, airtimeExpandedMs=0, posttimeToFirstVisibleExpansionMs=-1, currentAirtimeExpandedStartElapsedMs=-1, requestedImportance=3, naturalImportance=2, isNoisy=true}
+      mContactAffinity=0.0
+      mRecentlyIntrusive=false
+      mPackagePriority=0
+      mPackageVisibility=-1000
+      mSystemImportance=LOW
+      mAsstImportance=UNSPECIFIED
+      mImportance=LOW
+      mImportanceExplanation=system
+      mIsAppImportanceLocked=false
+      mIntercept=false
+      mHidden==false
+      mGlobalSortKey=crtcl=0x0002:intrsv=1:grnk=0x0012:gsmry=1:nsk:rnk=0x0012
+      mRankingTimeMs=1790972648263
+      mCreationTimeMs=1790972496750
+      mVisibleSinceMs=0
+      mUpdateTimeMs=1790972648267
+      mInterruptionTimeMs=1790972648267
+      mSuppressedVisualEffects= 0
+      mSound= content://settings/system/notification_sound
+      mVibration= null
+      mAttributes= AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null
+      mLight= null
+      mShowBadge=true
+      mColorized=false
+      mIsInterruptive=false
+      effectiveNotificationChannel=NotificationChannel{mId='clusternav_voicekey_keepalive', mName=Kachi phím-thoại, mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      mAdjustments=[]
+    NotificationRecord(0x0c15fc38: pkg=com.byd.launcher user=UserHandle{0} id=4801 tag=null importance=2 key=0|com.byd.launcher|4801|null|10163appImportanceLocked=false: Notification(channel=kachi_wake pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+      uid=10163 userId=0
+      opPkg=com.byd.launcher
+      icon=Icon(typ=RESOURCE pkg=com.byd.launcher id=0x7f0400f2) / com.byd.launcher:drawable/ic_mic
+      flags=0x62
+      pri=0
+      key=0|com.byd.launcher|4801|null|10163
+      seen=false
+      groupKey=0|com.byd.launcher|g:ranker_group
+      fullscreenIntent=null
+      contentIntent=null
+      deleteIntent=null
+      number=0
+      groupAlertBehavior=0
+      tickerText=null
+      contentView=null
+      bigContentView=null
+      headsUpContentView=null
+      color=0x00000000      timeout=unknown
+      extras={
+          android.title=String
+          android.reduced.images=Boolean (true)
+          android.text=String
+          android.appInfo=ApplicationInfo (ApplicationInfo{1049da7 com.byd.launcher})
+      }
+      stats=SingleNotificationStats{posttimeElapsedMs=251083755, posttimeToFirstClickMs=-1, posttimeToDismissMs=-1, airtimeCount=0, airtimeMs=0, currentAirtimeStartElapsedMs=-1, airtimeExpandedMs=0, posttimeToFirstVisibleExpansionMs=-1, currentAirtimeExpandedStartElapsedMs=-1, requestedImportance=3, naturalImportance=2, isNoisy=true}
+      mContactAffinity=0.0
+      mRecentlyIntrusive=false
+      mPackagePriority=0
+      mPackageVisibility=-1000
+      mSystemImportance=LOW
+      mAsstImportance=UNSPECIFIED
+      mImportance=LOW
+      mImportanceExplanation=system
+      mIsAppImportanceLocked=false
+      mIntercept=false
+      mHidden==false
+      mGlobalSortKey=crtcl=0x0002:intrsv=1:grnk=0x0012:gsmry=1:nsk:rnk=0x0013
+      mRankingTimeMs=1790972508692
+      mCreationTimeMs=1790972497436
+      mVisibleSinceMs=0
+      mUpdateTimeMs=1790972508694
+      mInterruptionTimeMs=1790972508694
+      mSuppressedVisualEffects= 0
+      mSound= content://settings/system/notification_sound
+      mVibration= null
+      mAttributes= AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null
+      mLight= null
+      mShowBadge=true
+      mColorized=false
+      mIsInterruptive=false
+      effectiveNotificationChannel=NotificationChannel{mId='kachi_wake', mName=Hey Kachi, mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      mAdjustments=[]
+    NotificationRecord(0x0385a411: pkg=com.byd.launcher user=UserHandle{0} id=1044 tag=null importance=2 key=0|com.byd.launcher|1044|null|10163appImportanceLocked=false: Notification(channel=kachi_automation pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+      uid=10163 userId=0
+      opPkg=com.byd.launcher
+      icon=Icon(typ=RESOURCE pkg=com.byd.launcher id=0x7f0400e6) / com.byd.launcher:drawable/ic_launcher
+      flags=0x62
+      pri=0
+      key=0|com.byd.launcher|1044|null|10163
+      seen=false
+      groupKey=0|com.byd.launcher|g:ranker_group
+      fullscreenIntent=null
+      contentIntent=null
+      deleteIntent=null
+      number=0
+      groupAlertBehavior=0
+      tickerText=null
+      contentView=null
+      bigContentView=null
+      headsUpContentView=null
+      color=0x00000000      timeout=unknown
+      extras={
+          android.title=String
+          android.reduced.images=Boolean (true)
+          android.text=String
+          android.appInfo=ApplicationInfo (ApplicationInfo{1049da7 com.byd.launcher})
+      }
+      stats=SingleNotificationStats{posttimeElapsedMs=251083235, posttimeToFirstClickMs=-1, posttimeToDismissMs=-1, airtimeCount=0, airtimeMs=0, currentAirtimeStartElapsedMs=-1, airtimeExpandedMs=0, posttimeToFirstVisibleExpansionMs=-1, currentAirtimeExpandedStartElapsedMs=-1, requestedImportance=3, naturalImportance=2, isNoisy=true}
+      mContactAffinity=0.0
+      mRecentlyIntrusive=false
+      mPackagePriority=0
+      mPackageVisibility=-1000
+      mSystemImportance=LOW
+      mAsstImportance=UNSPECIFIED
+      mImportance=LOW
+      mImportanceExplanation=system
+      mIsAppImportanceLocked=false
+      mIntercept=false
+      mHidden==false
+      mGlobalSortKey=crtcl=0x0002:intrsv=1:grnk=0x0012:gsmry=1:nsk:rnk=0x0015
+      mRankingTimeMs=1790972496842
+      mCreationTimeMs=1790972496849
+      mVisibleSinceMs=0
+      mUpdateTimeMs=1790972496849
+      mInterruptionTimeMs=1790972496849
+      mSuppressedVisualEffects= 0
+      mSound= content://settings/system/notification_sound
+      mVibration= null
+      mAttributes= AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null
+      mLight= null
+      mShowBadge=true
+      mColorized=false
+      mIsInterruptive=false
+      effectiveNotificationChannel=NotificationChannel{mId='kachi_automation', mName=Kachi automation, mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      mAdjustments=[]
+    NotificationRecord(0x0e0a3976: pkg=com.byd.launcher user=UserHandle{0} id=1042 tag=null importance=2 key=0|com.byd.launcher|1042|null|10163appImportanceLocked=false: Notification(channel=cluster_cast_v2 pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+      uid=10163 userId=0
+      opPkg=com.byd.launcher
+      icon=Icon(typ=RESOURCE pkg=com.byd.launcher id=0x7f0400e6) / com.byd.launcher:drawable/ic_launcher
+      flags=0x62
+      pri=0
+      key=0|com.byd.launcher|1042|null|10163
+      seen=false
+      groupKey=0|com.byd.launcher|g:ranker_group
+      fullscreenIntent=null
+      contentIntent=PendingIntent{f209b77: PendingIntentRecord{43b8820 com.byd.launcher startActivity (whitelist: ea5f348:+30s0ms)}}
+      deleteIntent=null
+      number=0
+      groupAlertBehavior=0
+      tickerText=null
+      contentView=null
+      bigContentView=null
+      headsUpContentView=null
+      color=0x00000000      timeout=unknown
+      extras={
+          android.title=String
+          android.reduced.images=Boolean (true)
+          android.text=String
+          android.appInfo=ApplicationInfo (ApplicationInfo{1049da7 com.byd.launcher})
+      }
+      stats=SingleNotificationStats{posttimeElapsedMs=251081787, posttimeToFirstClickMs=-1, posttimeToDismissMs=-1, airtimeCount=0, airtimeMs=0, currentAirtimeStartElapsedMs=-1, airtimeExpandedMs=0, posttimeToFirstVisibleExpansionMs=-1, currentAirtimeExpandedStartElapsedMs=-1, requestedImportance=3, naturalImportance=2, isNoisy=true}
+      mContactAffinity=0.0
+      mRecentlyIntrusive=false
+      mPackagePriority=0
+      mPackageVisibility=-1000
+      mSystemImportance=UNSPECIFIED
+      mAsstImportance=UNSPECIFIED
+      mImportance=LOW
+      mImportanceExplanation=app
+      mIsAppImportanceLocked=false
+      mIntercept=false
+      mHidden==false
+      mGlobalSortKey=crtcl=0x0002:intrsv=1:grnk=0x0012:gsmry=1:nsk:rnk=0x0016
+      mRankingTimeMs=1790972494951
+      mCreationTimeMs=1790972494952
+      mVisibleSinceMs=0
+      mUpdateTimeMs=1790972494952
+      mInterruptionTimeMs=1790972495472
+      mSuppressedVisualEffects= 0
+      mSound= content://settings/system/notification_sound
+      mVibration= null
+      mAttributes= AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null
+      mLight= null
+      mShowBadge=true
+      mColorized=false
+      mIsInterruptive=true
+      effectiveNotificationChannel=NotificationChannel{mId='cluster_cast_v2', mName=Cluster Cast, mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      mAdjustments=[]
+  
+  mArchive=Archive (100 notifications)
+    StatusBarNotification(pkg=com.byd.launcher user=UserHandle{0} id=1046 tag=null key=0|com.byd.launcher|1046|null|10163: Notification(channel=clusternav_vietmap_autostart pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+    StatusBarNotification(pkg=com.byd.launcher user=UserHandle{0} id=1047 tag=null key=0|com.byd.launcher|1047|null|10163: Notification(channel=clusternav_kachi_autostart pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+    StatusBarNotification(pkg=com.byd.launcher user=UserHandle{0} id=1043 tag=null key=0|com.byd.launcher|1043|null|10163: Notification(channel=clusternav_boot_setup pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+    StatusBarNotification(pkg=com.byd.launcher user=UserHandle{0} id=1045 tag=null key=0|com.byd.launcher|1045|null|10163: Notification(channel=clusternav_voicekey_keepalive pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+    StatusBarNotification(pkg=com.byd.launcher user=UserHandle{0} id=1042 tag=null key=0|com.byd.launcher|1042|null|10163: Notification(channel=cluster_cast_v2 pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x62 color=0x00000000 vis=PRIVATE))
+    ...
+
+  Snoozed notifications:
+
+  Ranking Config:
+    mSignalExtractors.length = 11
+      NotificationChannelExtractor
+      NotificationAdjustmentExtractor
+      BubbleExtractor
+      ValidateNotificationPeople
+      PriorityExtractor
+      ZenModeExtractor
+      ImportanceExtractor
+      NotificationIntrusivenessExtractor
+      VisibilityExtractor
+      BadgeExtractor
+      CriticalNotificationExtractor
+
+ Notification Preferences:
+    per-package config:
+PackagePreferences:
+      AppSettings: com.byd.launcher (10144)
+        NotificationChannel{mId='clusternav_vietmap_autostart', mName=Clu..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='clusternav_boot_setup', mName=Clu..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+      AppSettings: com.byd.launcher (10163)
+        NotificationChannel{mId='kachi_wake', mName=Hey..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='clusternav_voicekey_keepalive', mName=Kac..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='clusternav_vietmap_autostart', mName=Clu..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='cluster_cast_v2', mName=Clu..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='kachi_automation', mName=Kac..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='clusternav_boot_setup', mName=Clu..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+        NotificationChannel{mId='clusternav_kachi_autostart', mName=Kac..., mDescription=, mImportance=2, mBypassDnd=false, mLockscreenVisibility=-1000, mSound=content://settings/system/notification_sound, mLights=false, mLightColor=0, mVibration=null, mUserLockedFields=0, mFgServiceShown=true, mVibrationEnabled=false, mShowBadge=true, mDeleted=false, mGroup='null', mAudioAttributes=AudioAttributes: usage=USAGE_NOTIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null, mBlockableSystem=false, mAllowBubbles=true, mImportanceLockedByOEM=false, mImportanceLockedDefaultApp=false}
+Restored without uid:
+
+  Notification listeners:
+    Allowed notification listeners:
+      com.google.android.apps.nexuslauncher/com.android.launcher3.notification.NotificationListener:com.byd.launcher/com.byd.clusternav.NavNotificationListener:com.google.android.apps.restore/com.google.android.apps.pixelmigrate.component.NotificationConsolidatorService (user: 0 isPrimary: true)
+    All notification listeners (3) enabled for current profiles:
+      ComponentInfo{com.byd.launcher/com.byd.clusternav.NavNotificationListener}
+    Live notification listeners (4):
+      ComponentInfo{com.byd.launcher/com.byd.clusternav.NavNotificationListener} (user 0): android.service.notification.INotificationListener$Stub$Proxy@22d7cc3
+    Snoozed notification listeners (0):
+    mListenerHints: 0
+    mListenersDisablingEffects: ()
+
+  Notification assistant services:
+    Allowed notification assistants:
+      com.google.android.ext.services/android.ext.services.notification.Assistant (user: 0 isPrimary: true)
+    All notification assistants (1) enabled for current profiles:
+    Live notification assistants (1):
+    Snoozed notification assistants (0):
+    Has user set:
+      userId=0 value=false
+
+  Condition providers:
+    Allowed condition providers:
+      com.google.android.apps.safetyhub:com.google.intelligence.sense:com.google.android.apps.wellbeing:com.google.android.gms:com.google.android.settings.intelligence:com.google.android.GoogleCamera (user: 0 isPrimary: true)
+      com.google.android.ext.services:com.google.android.apps.nexuslauncher:com.byd.launcher:com.google.android.apps.restore (user: 0 isPrimary: false)
+    All condition providers (1) enabled for current profiles:
+    Live condition providers (3):
+    Snoozed condition providers (1):
+      com.google.android.gms/com.google.android.location.settings.DrivingConditionProvider
+    mRecords(2):
+    mSystemConditionProviders: {schedule, event, countdown}
+    ScheduleConditionProvider:
+      mConnected=true
+      mRegistered=true
+      mSubscriptions=
+        * condition://android/schedule?days=1.2.3.4.5.6.7&start=22.0&end=7.0&exitAtAlarm=true
+            ScheduleCalendar[mDays={1, 2, 3, 4, 5, 6, 7}, mSchedule=ScheduleInfo{days=[1, 2, 3, 4, 5, 6, 7], startHour=22, startMinute=0, endHour=7, endMinute=0, exitAtAlarm=true, nextAlarm=Thu Jan 01 08:00:00 GMT+07:00 1970 (0)}]
+      snoozed due to alarm: 
+      mNextAlarmTime=Sat Oct 03 07:00:00 GMT+07:00 2026 (1790985600000), in +3h23m8s291ms, now=Sat Oct 03 03:36:51 GMT+07:00 2026 (1790973411709)
+    CountdownConditionProvider:
+      mConnected=true
+      mTime=0
+    EventConditionProvider:
+      mConnected=true
+      mRegistered=true
+      mBootComplete=true
+      mNextAlarmTime=Sat Oct 03 07:01:55 GMT+07:00 2026 (1790985715241), in +3h25m3s532ms, now=Sat Oct 03 03:36:51 GMT+07:00 2026 (1790973411709)
+      mSubscriptions=
+        condition://android/event?userId=-10000&calendar=&reply=1
+      mTrackers=
+        user=0
+          mCallback=com.android.server.notification.EventConditionProvider$2@b9bc1ee
+          mRegistered=true
+          u=0
+
+  Group summaries:
+    0|com.google.android.gm|g:gig:000000000:CLASSIC_INBOX_ALL_MAIL -> 0|com.google.android.gm|0|gig:000000000:CLASSIC_INBOX_ALL_MAIL|10142
+    0|com.byd.launcher|g:ranker_group -> 0|com.byd.launcher|2147483647|ranker_group|10163|ranker_group
+
+  Usage Stats:
+    AggregatedStats{
+      key='com.byd.launcher',
+      numEnqueuedByApp=2534,
+      numPostedByApp=1401,
+      numUpdatedByApp=1164,
+      numRemovedByApp=1353,
+      numPeopleCacheHit=18289,
+      numWithStaredPeople=0,
+      numWithValidPeople=0,
+      numPeopleCacheMiss=0,
+      numBlocked=0,
+      numSuspendedByAdmin=0,
+      numWithActions=0,
+      numPrivate=2565,
+      numSecret=0,
+      numInterrupt=0,
+      numWithBigText=0,
+      numWithBigPicture=0
+      numForegroundService=2499
+      numOngoing=2499
+      numAutoCancel=0
+      numWithLargeIcon=0
+      numWithInbox=0
+      numWithMediaSession=0
+      numWithTitle=2499
+      numWithText=2499
+      numWithSubText=0
+      numWithInfoText=0
+      numRateViolations=0
+      numAlertViolations=0
+      numQuotaViolations=0
+      note_imp_noisy_: [0, 0, 0, 2565, 0, 0]
+      note_imp_quiet_: [0, 0, 0, 0, 0, 0]
+      note_importance_: [0, 0, 2565, 0, 0, 0]
+    }
+    mStatsArrays.size(): 1
+    mStats.size(): 8
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=0,count=708,muted=708/708,demoted=708}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=1,count=1619,muted=1619/1619,demoted=1619}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=2,count=238,muted=238/238,demoted=238}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=3,count=45,muted=45/45,demoted=45}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=4,count=327,muted=327/327,demoted=327}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=5,count=166,muted=166/166,demoted=166}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=6,count=393,muted=393/393,demoted=393}
+    post_frequency{user_id=0,pkg=com.byd.launcher,day=7,count=447,muted=447/447,demoted=447}

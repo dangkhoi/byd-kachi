@@ -28,8 +28,9 @@ class OverlayHeads(private val activity: Activity) {
     /**
      * 1 ô app đang hiện: khung ô (toạ độ MÀN HÌNH) + [appTop] = mép trên CỬA SỔ APP (đã thụt `CAPTION_INSET` so với
      * [top]) + callback ⇄. Cần [appTop] vì caption của hệ bắt đầu từ mép trên cửa sổ app, không phải mép trên ô.
+     * [slot] (0-based) chỉ để nói ra mô tả trợ năng của nút (FIX286 · ES4 — mọi ô, cả đường nổi này).
      */
-    data class Head(val left: Int, val top: Int, val width: Int, val height: Int, val appTop: Int, val onSwap: () -> Unit)
+    data class Head(val left: Int, val top: Int, val width: Int, val height: Int, val appTop: Int, val slot: Int, val onSwap: () -> Unit)
 
     private val wm = activity.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
@@ -47,7 +48,7 @@ class OverlayHeads(private val activity: Activity) {
             // owner 2026-09-25 (ảnh xe): "launcher KHÔNG cần thanh trắng đó cho bất cứ trường hợp nào" — thanh trắng
             // (strip che caption freeform) là bug: kẹt đè cả GMaps. Dùng [centered] TRONG SUỐT, chỉ nút ⇄, cao đúng
             // khung nút — không nền trắng, không phủ caption. Caption của hệ (nếu ROM vẽ) không phải việc của ta.
-            addOverlay(SlotSwapButton.centered(activity, hd.onSwap), hd.width, minH, hd.left, hd.top)
+            addOverlay(SlotSwapButton.centered(activity, SlotSwapButton.describe(activity, hd.slot, empty = false), onTap = hd.onSwap), hd.width, minH, hd.left, hd.top)
         }
     }
 

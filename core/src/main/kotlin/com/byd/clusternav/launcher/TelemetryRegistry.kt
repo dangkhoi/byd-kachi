@@ -171,7 +171,8 @@ object TelemetryRegistry {
         //   • `trip_kwh`        — feature-id 1246801976 rỗng;
         //   • `volt_12v_level`  — `getBatteryVoltageLevel` = 65535 (sentinel);
         //   • `tailgate_status` — `getHatchDoorStatus` rỗng với MỌI arg (cốp xe này không có cảm biến trạng thái);
-        //   • `sunroof_pos`     — `getSunroofPosition` = 65535 (xe owner **không có** cửa sổ trời).
+        //   • `sunroof_pos`     — `getSunroofPosition` = 65535 (xe owner nghi không có nóc mở — **[SUY]**: 65535 +
+        //                          HAL từ chối `setMoonRoofState`; nóc kính liền cũng cho pos = sentinel. FIX286 SR7).
         // Gỡ kéo theo: 5 trường `CarStatus.Energy` + 2 `CarStatus.Body` · 7 dòng `CarDataAdapter` · 7 case
         // `TelemetryReadout` · icon/diễn giải · thành viên 3 nhóm (`g_doors` · `g_battery` · `g_trip`) · bộ phận
         // CỐP của bảng cửa (`GroupBoard.DOOR_PARTS`) · dòng cốp của widget `w_car` · `readKey` của nút `trunk`.
@@ -338,7 +339,7 @@ object TelemetryRegistry {
         t("door_rf", "Cửa trước-phải", "Door front-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door FR"),
         t("door_lr", "Cửa sau-trái", "Door rear-left", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RL"),
         t("door_rr", "Cửa sau-phải", "Door rear-right", "", BODY, STRIP, OVERDRIVE, "BYDAutoBodyworkDevice.getDoorState", shortEn = "Door RR"),
-        // ⚠ 2026-09-25 · `tailgate_status` (cốp không có cảm biến) và `sunroof_pos` (xe không có cửa sổ trời) đã
+        // ⚠ 2026-09-25 · `tailgate_status` (cốp không có cảm biến) và `sunroof_pos` (getter = 65535) đã
         // gỡ — xem nhật ký ở cụm A1. `sunroof_state` GIỮ: nó vẫn đọc ra được, và nút `sunroof` vẫn tồn tại.
         t("sunroof_state", "Cửa sổ trời", "Sunroof", "", BODY, BADGE, OVERDRIVE, "BYDAutoBodyworkDevice.getSunroofState"),
         t("sunshade_pct", "Rèm che nắng", "Sunshade", "%", BODY, VALUE, OVERDRIVE, "1101004816"),

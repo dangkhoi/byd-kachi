@@ -143,6 +143,12 @@ object VoiceWiring {
          * số liệu / cổng tốc độ rơi về ảnh rỗng. `false` (mặc định) = y nguyên 2.85 cho bề mặt chung tiến trình với màn.
          */
         screenless: Boolean = false,
+        /**
+         * FIX286 · VK4 — bề mặt KHÁC tiến trình với Cài đặt (`:wake`) truyền: tập hỏi xác nhận + app dẫn đường/nhạc mặc
+         * định đọc từ ảnh chụp mà tiến trình chính ghi (cache `SharedPreferences` của `:wake` không bao giờ nạp lại —
+         * KDoc [VoiceWakePrefs]). Trường nào ảnh chụp không mang (`null`) ⇒ lùi về prefs như cũ. `null` = màn chính.
+         */
+        fresh: (() -> VoiceWakePrefs)? = null,
     ): VoiceDispatcher = VoiceDispatcher(
         control = { AppContainer.get(ctx).carControl },
         state = state,
@@ -155,9 +161,11 @@ object VoiceWiring {
         onListen = onListen,
         confirm = confirm,
         // V3 · R7 — đọc lại prefs ở MỖI vế (lambda, không phải giá trị): người dùng vừa tích một ô trong Cài đặt
-        // thì câu ngay sau đó đã đi luật mới. `runCatching` + rỗng: không đọc được prefs thì hành vi đúng là
-        // **mặc định của owner** (không hỏi gì), không phải hỏi mọi thứ.
-        confirmIds = { runCatching { Prefs.voiceConfirmIds(ctx) }.getOrDefault(emptySet()) },
+        // thì câu ngay sau đó đã đi luật mới. `runCatching`: không đọc được prefs thì hành vi đúng là **mặc định của
+        // owner**, không phải hỏi mọi thứ. [Senior review FIX286 Pass 1 · P3] Từ 2.86 mặc định KHÔNG còn rỗng (mở cửa
+        // sổ trời hỏi — SR5) ⇒ lùi về `defaultIds()`, không về tập rỗng: lỗi đọc prefs chỉ được nghiêng về phía hỏi
+        // thêm (KDoc `VoiceRiskTable.effectiveIds`), không bao giờ về phía mở nóc mà không hỏi.
+        confirmIds = { fresh?.invoke()?.confirmIds ?: runCatching { Prefs.voiceConfirmIds(ctx) }.getOrDefault(VoiceRiskTable.defaultIds()) },
         say = say,
         assignAppToSlot = assignAppToSlot,
         onLayout = onLayout,
@@ -180,9 +188,9 @@ object VoiceWiring {
             }.getOrNull()
         },
         // App dẫn đường mặc định (owner chọn trong Cài đặt › Dẫn đường) — đọc mỗi lượt để đổi là ăn ngay.
-        navDefault = { com.byd.clusternav.Prefs.voiceNavDefaultApp(ctx) },
+        navDefault = { fresh?.invoke()?.navDefault ?: com.byd.clusternav.Prefs.voiceNavDefaultApp(ctx) },
         // App nhạc mặc định (owner 2026-09-21) — "" nghĩa là tự chọn ⇒ trả null để pickMusic lùi về hành vi cũ.
-        musicDefault = { com.byd.clusternav.Prefs.voiceMusicDefaultApp(ctx).ifBlank { null } },
+        musicDefault = { (fresh?.invoke()?.musicDefault ?: com.byd.clusternav.Prefs.voiceMusicDefaultApp(ctx)).ifBlank { null } },
         // Giải video_id bài đầu (YouTube) để "phát luôn" — có thời hạn cứng, hỏng thì lùi search-play.
         resolveVideo = { q -> VoiceYoutubeResolver.firstVideoIdBounded(q) },
         placeInSlot = placeInSlot,

@@ -47,10 +47,18 @@ class ShortcutsWiringContractTest {
 
     // ── R1.5 · chạm ⇒ bảng ở :core ⇒ đường đã có ─────────────────────────────────────────────────────────────
 
+    /**
+     * FIX286 · R-SC2 đổi chân bài này (không nới): bảng thuần vẫn là chỗ quyết DUY NHẤT, nhưng nay nằm ở `decideAndAct` sau
+     * phép đo — `onShortcut` không được tự gọi `ShortcutPlan.decide` (quyết trước khi đo là đúng lỗi owner 03/10).
+     */
     @Test
     fun `cham loi tat di qua bang quyet dinh thuan o core, voi su that do duoc`() {
         val fn = SourceRoots.body(glue, "override fun onShortcut(sc: AppShortcut)")
-        order(fn, "ShellAccessUi.usableNow()", "ShortcutPlan.decide(input)", "act(sc, action")
+        order(fn, "ShellAccessUi.usableNow()", "ShortcutPlan.presenceSlot(input)",
+            "if (probe < 0) return decideAndAct(sc, input, count, stages)",
+            "slots().presence(probe, sc.pkg) { measured -> decideAndAct(sc, input.copy(presence = measured), count, stages) }")
+        assertFalse(fn.contains("ShortcutPlan.decide("), "onShortcut quyết TRƯỚC khi đo ⇒ dòng 4/9/12 lại quyết bằng bố cục")
+        order(SourceRoots.body(glue, "private fun decideAndAct("), "ShortcutPlan.decide(input)", "act(sc, action")
         assertTrue(fn.contains("workspace().stagingCandidates(shown, count)"), "ô dàn dựng đọc từ cây view thật (A5)")
         assertTrue(fn.contains("BehindHomePlan.stagingSlot(stages, sc.pkg) != null"), "CÙNG bộ chọn ô mà runner dùng")
         assertTrue(fn.contains("EffectiveLayout.slotCount("), "số ô ĐANG hiện, không đoán từ preset")
@@ -98,6 +106,45 @@ class ShortcutsWiringContractTest {
         val glue = SourceRoots.body(slots, "fun detachToFull(index: Int, done: (Boolean) -> Unit)")
         assertTrue(glue.contains("ClusterProfile.resolveCached(app).cameraSignature") && glue.contains("DefaultHome.shownComponents(app)"),
             "rào K7: dấu hiệu camera theo đời xe (ClusterProfile) + cả hai dạng màn nhà Kachi")
+    }
+
+    /**
+     * FIX286 · R-SC2 — lỗi xe owner 03/10 (*"tắt gmaps … bấm lại icon gmaps ở shortcut, chỉ hiện icon gmaps"*). Khoá ba mắt
+     * xích: đo bằng `am stack list` trên luồng nền (một lệnh, không ở lớp keo), không đo được ⇒ UNKNOWN (bảng giữ hành vi cũ,
+     * không force-stop); mở lại đi CHÍNH đường thẻ "App đã đóng" của host (nhịp đo cũ thôi trước, rồi `reopen()`), hỏi kênh
+     * trước; lượt mở đang chạy dở ⇒ không chồng lệnh.
+     */
+    @Test
+    fun `Reopen - do bang am stack list o luong nen, mo lai qua duong the da dong, hoi kenh truoc`() {
+        val slotsSrc = code("KachiHomeSlots.kt")
+        val presence = SourceRoots.body(slotsSrc, "fun presence(index: Int, pkg: String, done: (SlotPresence) -> Unit)")
+        order(presence, "workspace().hostAt(index)?.stage()", "stage.pkg != pkg", "done(SlotPresence.UNKNOWN); return",
+            "submitBg {", "sh(BehindHomePlan.LIST_CMD)", "SlotPresence.of(out, pkg, stage.vd)", "mainHandler.post { done(p) }",
+            "if (!accepted) done(SlotPresence.UNKNOWN)")
+        assertEquals(1, Regex("\\bsh\\(").findAll(presence).count(), "đúng MỘT lệnh đọc mỗi lần chạm, không lệnh ghi nào")
+        val fn = SourceRoots.body(act, "is ShortcutAction.Reopen -> {")
+        order(fn, "ShellAccessUi.allowOrPrompt(activity)", "return", "val ok = slots().reviveInSlot(action.slot, sc.pkg)",
+            "if (!ok) workspace().flashSlot(action.slot)")
+        listOf("placeTemporary", "openAppFullscreen", "startBehind", "detachToFull").forEach {
+            assertFalse(fn.contains(it), "'$it' ở nhánh mở-lại: app đã đóng TRONG ô thì mở lại vào chính ô đó")
+        }
+        assertTrue(SourceRoots.body(slotsSrc, "fun reviveInSlot(index: Int, pkg: String)").contains("workspace().hostAt(index)?.reviveInSlot(pkg) ?: false"))
+        val host = code("VdAppHost.kt")
+        val revive = SourceRoots.body(host, "fun reviveInSlot(expect: String)")
+        assertTrue(revive.contains("closedCard == null && !full.isDetached && !SlotLiveProbe.watching(probeKey)"),
+            "lượt mở đang chạy dở (chưa vào nhịp đo, chưa thẻ, không toàn màn) ⇒ không mở chồng — force-stop giữa lượt mở")
+        assertTrue(revive.contains("if (released || !launched || pkg != expect || busy) return false"))
+        order(revive, "SlotLiveProbe.unwatch(probeKey)", "full.reset()", "reopen()")
+    }
+
+    /** FIX286 · R-SC1 — ô widget không còn lý do "đang là widget ⇒ mở toàn màn" ở bất kỳ tầng nào (bảng · keo · chuỗi). */
+    @Test
+    fun `o widget khong con nhanh mo toan man`() {
+        assertFalse(glue.contains("SLOT_WIDGET") || glue.contains("kachi_sc_reason_widget"))
+        assertFalse(ShortcutPlan.Reason.entries.any { it.name == "SLOT_WIDGET" })
+        listOf("src/main/res/values/strings_kachi.xml", "src/main/res/values-en/strings_kachi.xml").forEach {
+            assertFalse(SourceRoots.text(it).contains("kachi_sc_reason_widget"), "$it còn chuỗi lý do cũ")
+        }
     }
 
     @Test
@@ -251,6 +298,13 @@ class ShortcutsWiringContractTest {
             "SlotReturn.markedBehind(" to "SlotReturn.kt",
             "SlotReturn.afterK8(" to "SlotReturn.kt",
             "BehindHomePlan.mainTasksOf(" to "BehindHomeSequence.kt",
+            // FIX286 · R-SC2 — đo sống/chết lúc chạm + mở lại qua đường thẻ "đã đóng".
+            "ShortcutPlan.presenceSlot(" to "KachiHomeShortcuts.kt",
+            "slots().presence(" to "KachiHomeShortcuts.kt",
+            "slots().reviveInSlot(" to "KachiHomeShortcuts.kt",
+            "SlotPresence.of(" to "KachiHomeSlots.kt",
+            "hostAt(index)?.reviveInSlot(" to "KachiHomeSlots.kt",
+            "SlotLiveProbe.watching(" to "VdAppHost.kt",
         ).forEach { (call, file) ->
             assertTrue(all.any { it.first == file && it.second.contains(call) }, "'$call' phải được gọi trong $file")
         }
@@ -266,7 +320,7 @@ class ShortcutsWiringContractTest {
             "kachi_drawer_title_shortcuts", "kachi_drawer_hint_shortcuts", "kachi_sc_cap_note", "kachi_sc_section",
             "kachi_sc_note", "kachi_sc_pick_n", "kachi_sc_mode_slot", "kachi_sc_mode_full", "kachi_sc_mode_bg",
             "kachi_sc_slot_outside", "kachi_sc_order_title", "kachi_sc_order_hint", "kachi_sc_empty",
-            "kachi_sc_reason_absent", "kachi_sc_reason_widget", "kachi_sc_in_slot", "kachi_sc_running", "kachi_sc_no_stage",
+            "kachi_sc_reason_absent", "kachi_sc_in_slot", "kachi_sc_running", "kachi_sc_no_stage",
             "kachi_sc_refuse_system", "kachi_sc_refuse_self", "kachi_sc_refuse_cast", "kachi_sc_not_installed",
             "kachi_sc_bg_failed", "kachi_sc_full_card", "kachi_sc_full_failed",
         )

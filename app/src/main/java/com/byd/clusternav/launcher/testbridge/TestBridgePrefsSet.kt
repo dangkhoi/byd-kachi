@@ -68,6 +68,7 @@ import com.byd.clusternav.setVoiceVadThreshold
 import com.byd.clusternav.setVoiceMicSource
 import com.byd.clusternav.voiceBeam
 import com.byd.clusternav.voiceConfirmIds
+import com.byd.clusternav.resetVoiceConfirmIds
 import com.byd.clusternav.voiceEndpointFloorCap
 import com.byd.clusternav.voiceEndpointMinSpeechMs
 import com.byd.clusternav.voiceEndpointSilenceMs
@@ -123,7 +124,7 @@ internal object TestBridgePrefsSet {
         val raw = cmd.text.trim()
         val applied: String? = when (cmd.key) {
             "voice_confirm_ids" -> {
-                // Ngăn PHẨY, khoảng trắng bỏ qua; chuỗi rỗng ⇒ tập rỗng = *"không hỏi gì cả"* (mặc định owner).
+                // Ngăn PHẨY, khoảng trắng bỏ qua; chuỗi rỗng ⇒ trả về mặc định (xem nhánh ghi ngay dưới).
                 val ids = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
                 // ⚠ Từ chối mã KHÔNG có trong bảng việc-hỏi-được. Hai lý do: (a) một mã lạ nằm lại trong tập mãi
                 // mãi (màn Cài đặt ghi lại cả tập, kể cả mã nó không hiểu); (b) quan trọng hơn — một ca E2E gõ sai
@@ -134,7 +135,10 @@ internal object TestBridgePrefsSet {
                     "key" to cmd.key,
                     "askable" to askable.sorted().joinToString(","),
                 )
-                Prefs.setVoiceConfirmIds(app, ids)
+                // FIX286 · SR5: rỗng = *"trả về MẶC ĐỊNH"* (gỡ khoá + mốc), không còn là *"tập rỗng"* — từ 2.86 mặc định
+                // có mở-cửa-sổ-trời, nên ghi một tập rỗng là đặt một lựa chọn mà chưa người dùng nào chọn, và `trap`
+                // của harness sẽ để máy ảo ở trạng thái khác mặc định sau mỗi lượt.
+                if (ids.isEmpty()) Prefs.resetVoiceConfirmIds(app) else Prefs.setVoiceConfirmIds(app, ids)
                 ids.joinToString(",")
             }
             "voice_ask_aloud" -> bool(raw)?.let { Prefs.setVoiceAskAloud(app, it); it.toString() }

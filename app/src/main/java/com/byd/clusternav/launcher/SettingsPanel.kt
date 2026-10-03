@@ -126,8 +126,11 @@ class SettingsDeps(
     val onExportProfile: (ProfileTransfer.Kind) -> String? = { null },
     /** PROFILE-IO-0930 · IO-R1 — các tệp hồ sơ trong thư mục, MỚI NHẤT TRƯỚC (cho hộp chọn tệp nhập). */
     val profileFiles: () -> List<ProfileFiles.Entry> = { emptyList() },
-    /** PROFILE-IO-0930 · IO-R1 — nhập ĐÚNG MỘT tệp (tên tệp trong thư mục). Trả tên hồ sơ vừa tạo, null nếu tệp hỏng. */
-    val onImportProfileFile: (String) -> String? = { null },
+    /**
+     * PROFILE-IO-0930 · IO-R1 — nhập ĐÚNG MỘT tệp (tên tệp trong thư mục). Trả báo cáo lượt nhập (tên hồ sơ vừa tạo +
+     * phần chiếu cụm — FIX286 · PI3), null nếu tệp hỏng.
+     */
+    val onImportProfileFile: (String) -> ProfileImportReport? = { null },
     /** #4 — đường dẫn thư mục file hồ sơ (hiện cho user biết chép vào/ra đâu). */
     val profileFolderPath: () -> String = { "" },
     /** V3 · R13 (owner E5) — đổi tên hồ sơ: `(tên cũ, tên mới)`. Phép kiểm ở `:core` ([ProfileRename]). */

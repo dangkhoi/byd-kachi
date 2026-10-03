@@ -7,6 +7,7 @@ import com.byd.clusternav.VmOverlayPosition
 import com.byd.clusternav.automation.AutomationService
 import com.byd.clusternav.comfort.Pm25FilterApplier
 import com.byd.clusternav.comfort.SeatComfortApplier
+import com.byd.clusternav.launcher.voice.VoiceWakeService
 
 /**
  * ═══ S4 · R5 — ÁP LẠI cấu hình ClusterNav cho dịch vụ ĐANG CHẠY, sau một lượt đổi hồ sơ ═══════════════════════
@@ -84,6 +85,12 @@ internal fun ClusterNavBridge.reapplyAll() {
     // engine của A chạy (và ngược lại: B bật mà FGS đang dừng thì camera câm tới lần khởi động kế). Đúng hàm mà
     // `setCameraSignal`/`setRainDefrost*` gọi sau khi ghi — idempotent, tự gác theo `anyEnabled`, không ném.
     step("automation.sync") { AutomationService.sync(app) }
+
+    // ── Giọng nói: chế độ `:wake` (FIX286 · VK2/VK4) ─────────────────────────────────────────────────
+    // `voicekey_bindings` · `voicekey_enabled` · `voice_music_default_app` theo HỒ SƠ ⇒ đổi hồ sơ đổi `keyHold` (hồ sơ B
+    // gán phím Kachi nghe, A thì không) và đổi prefs mà `:wake` đọc. `sync` công bố ảnh chụp tươi rồi bật/tắt FGS theo
+    // chế độ — đúng hàm mà công tắc/gán phím gọi; idempotent (đang chạy đúng chế độ ⇒ chỉ một lượt `onStartCommand`).
+    step("voice.wake") { VoiceWakeService.sync(app) }
 
     // ── ⚠ CỐ Ý KHÔNG gọi lại — mỗi dòng là một quyết định, không phải một chỗ quên ───────────────
     //

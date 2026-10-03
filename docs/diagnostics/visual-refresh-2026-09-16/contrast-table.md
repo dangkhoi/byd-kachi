@@ -25,7 +25,7 @@
 | `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **15.08** | ✅ |
 | `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **6.94** | ✅ |
 | `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **3.17** | ✅ |
-| `emptyFill ÷ bg` | ô trống tách nền bằng MÀU (gạch đứt đã gỡ) | 1.15 | **1.33** | ✅ |
+| `MUT (⇄ ô trống) trên đĩa kính, ảnh xấu nhất` | ô trống trong suốt: ⇄ là dấu duy nhất (OQ8 · B, L∈[0,1]) | 3.0 | **4.72** | ✅ |
 | `ON_ACCENT trên gradFrom` | mốc cũ phải giữ | 4.5 | **4.83** | ✅ |
 | `INK trên surfFromOverArt (ảnh sáng)` | P1b · chữ chính trên ảnh | 4.5 | **6.65** | ✅ |
 | `MUT trên surfFromOverArt (ảnh sáng)` | P1b · nhãn phụ — CẦN scrim ở P1b | 4.5 | **3.24** | ❌ |
@@ -65,7 +65,7 @@
 | `INK trên slot` | chữ ô nhóm, đỉnh khay | 4.5 | **14.80** | ✅ |
 | `MUT2 trên slotTo` | nhãn nhóm mờ nhất, đáy khay | 4.5 | **4.78** | ✅ |
 | `lineStrong trên bg` | mốc cũ phải giữ | 3.0 | **4.21** | ✅ |
-| `emptyFill ÷ bg` | ô trống tách nền bằng MÀU (gạch đứt đã gỡ) | 1.15 | **1.18** | ✅ |
+| `MUT (⇄ ô trống) trên đĩa kính, ảnh xấu nhất` | ô trống trong suốt: ⇄ là dấu duy nhất (OQ8 · B, L∈[0,1]) | 3.0 | **5.07** | ✅ |
 | `ON_ACCENT trên gradFrom` | mốc cũ phải giữ | 4.5 | **5.74** | ✅ |
 | `INK trên surfFromOverArt (ảnh sáng)` | P1b · chữ chính trên ảnh | 4.5 | **18.17** | ✅ |
 | `MUT trên surfFromOverArt (ảnh sáng)` | P1b · nhãn phụ — CẦN scrim ở P1b | 4.5 | **7.22** | ✅ |

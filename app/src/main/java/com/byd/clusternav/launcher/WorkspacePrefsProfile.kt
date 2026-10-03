@@ -244,23 +244,33 @@ private fun WorkspacePrefs.transferSource(): ProfileTransfer.Source {
 }
 
 /**
- * Nhập hồ sơ từ chuỗi [data] thành hồ sơ MỚI tên [name] (mặc định lấy tên trong header). Trả `true` nếu nhập được.
+ * Nhập hồ sơ từ chuỗi [data] thành hồ sơ MỚI tên [name] (mặc định lấy tên trong header). Trả báo cáo lượt nhập (tên hồ
+ * sơ vừa tạo + phần chiếu cụm — FIX286 · PI3) nếu nhập được, `null` nếu không.
  *
  * Tên TRÙNG ⇒ **sinh tên duy nhất** "<tên> 2", "<tên> 3"… (owner 2026-09-25) — KHÔNG đè hồ sơ đang có. Header sai /
- * rỗng / kiểu lạ ⇒ false. Chỉ ghi khoá mang tên hồ sơ MỚI ⇒ không chạm hồ sơ khác; bản chia sẻ ra hồ sơ không có địa
+ * rỗng / kiểu lạ ⇒ null. Chỉ ghi khoá mang tên hồ sơ MỚI ⇒ không chạm hồ sơ khác; bản chia sẻ ra hồ sơ không có địa
  * chỉ và lịch ([ProfileTransfer.planImport]).
+ *
+ * FIX286 · PI1/PI2 (owner 03/10): ảnh `simple_cast_prefs` của hồ sơ nhập được **merge MỘT lần** với tệp sống của xe nhận
+ * ([mergeImportedCast]) — app tệp không có khung ⇒ giữ khung đang có trên xe này; tệp không ghi bật/tắt chiếu ⇒ giữ
+ * giá trị đang chạy. Chỉ ở lượt nhập: lượt đổi hồ sơ sau đó ([applyClusterNav]) vẫn hai chiều như refute C4.
  */
-internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean {
-    val plan = ProfileTransfer.planImport(data, name, profiles()) ?: return false
+internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): ProfileImportReport? {
+    val plan = ProfileTransfer.planImport(data, name, profiles()) ?: return null
     // PROFILE-IMPORT-TYPES (lớp nhập): hậu tố launcher sai kiểu đã thành `null` trong kế hoạch — nói ra, không im lặng.
     logDropped("import launcher", plan.dropped)
     val list = profiles() + plan.target
     val e = sp.edit().putString(WorkspacePrefs.K_PROFILES, list.joinToString("\n"))
+    var cluster: ClusterImportSummary? = null
     // V-CLUSTER · VC-R8: ảnh chụp ClusterNav bên trong còn được LÀM SẠCH (phạm vi · kiểu · bộ kiểm hình học trước shell) —
     // tệp nhập là dữ liệu người khác gửi, và họ `config_*` đi thẳng vào `wm`/`am task resize`. Giá trị `null` (hậu tố
-    // vắng trong tệp) ⇒ `remove`.
-    plan.writes.forEach { (suffix, v) -> copyValue(e, keyOf(plan.target, suffix), cleanImportedSnapshot(suffix, v)) }
+    // vắng trong tệp) ⇒ `remove`. FIX286: ảnh chiếu cụm đi tiếp qua merge (SAU lớp làm sạch — giá trị của xe cũng qua bộ kiểm).
+    plan.writes.forEach { (suffix, v) ->
+        val clean = cleanImportedSnapshot(suffix, v)
+        val value = mergeImportedCast(suffix, clean)?.let { (encoded, summary) -> cluster = summary; encoded } ?: clean
+        copyValue(e, keyOf(plan.target, suffix), value)
+    }
     e.apply()
     VoiceGrammarSnapshotStore.write(this)
-    return true
+    return ProfileImportReport(plan.target, plan.kind, cluster ?: ClusterImportSummary.NONE).also(::logImported)
 }

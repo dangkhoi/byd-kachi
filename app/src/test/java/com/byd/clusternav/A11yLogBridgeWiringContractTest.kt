@@ -89,13 +89,24 @@ class A11yLogBridgeWiringContractTest {
 
     // ── (2) logcat ─────────────────────────────────────────────────────────────────────────────
 
+    /**
+     * ⚠ 2.86 · FIX286 SR-T7 — phần đọc/khoá/ghi tệp tách sang `DiagRingFile` (lớp vòng chung, khi `ctl-writes.log` cần
+     * đúng phần ấy), nên `recordLocked` không còn. Bất biến GIỮ NGUYÊN và nay canh qua HAI chặng thay vì một hàm:
+     * (1) thân `record` ra logcat rồi mới trả dòng cho lớp vòng; (2) lớp vòng chỉ `writeText` SAU khi đã nhận dòng
+     * (tức sau logcat). Chặt hơn bài cũ ở chặng (2): khoá luôn rằng không có dòng nào được ghi tệp mà không qua `next`.
+     */
     @Test
     fun `MOI dong ghi deu ra logcat, ke ca nhip tim, truoc khi ghi tep`() {
-        val record = SourceRoots.body(store, "private fun recordLocked(")
+        val record = SourceRoots.body(store, "fun record(")
         val logAt = record.indexOf("Log.i(TAG, A11yBindJournal.logcatLine(prev, line))")
-        val writeAt = record.indexOf("f.writeText(")
         assertTrue(logAt >= 0, "mỗi dòng vừa dựng phải ra logcat qua `A11yBindJournal.logcatLine` (nguyên văn dòng tệp)")
-        assertTrue(writeAt > logAt, "ra logcat TRƯỚC khi ghi tệp: ghi tệp hỏng thì usage log vẫn còn dòng này")
+        assertTrue(record.contains("ring.appendIf(ctx)"), "ghi tệp qua đúng lớp vòng chung (một chỗ đọc-sửa-ghi)")
+        assertTrue(record.indexOf("            line", logAt) > logAt, "dòng chỉ được trả cho lớp vòng SAU khi đã ra logcat")
+        val append = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/DiagRingFile.kt"), "fun appendIf(")
+        val nextAt = append.indexOf("next(lines, f)")
+        val writeAt = append.indexOf("f.writeText(")
+        assertTrue(nextAt >= 0 && writeAt > nextAt, "ra logcat TRƯỚC khi ghi tệp: ghi tệp hỏng thì usage log vẫn còn dòng này")
+        assertEquals(1, Regex("""writeText\(""").findAll(append).count(), "một chỗ ghi tệp duy nhất, sau `next`")
         assertFalse(
             Regex("""if\s*\(\s*prev\s*!=\s*state\s*\)""").containsMatchIn(record),
             "gác logcat theo đổi trạng thái là mất nhịp tim — đúng dạng log 29/09 (chỉ có dòng ĐỔI)",

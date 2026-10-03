@@ -37,6 +37,8 @@ ul{padding-left:22px}li{margin:3px 0}
 <h2>1. Changelog</h2>
 <table>
 <tr><th>Pass</th><th>Ngày</th><th>Nội dung</th></tr>
+<tr><td>3</td><td>2026-10-03</td><td><b>OQ5 — ⇄ của ô trống nay nằm trên ĐĨA KÍNH</b> (OQ8 của <a href="kachi-286-field-fixes.html"><code>kachi-286-field-fixes.html</code></a> chốt phương án B, phiên điều phối, owner có thể đổi): phương án A (⇄ không nền, tô theo độ chói ảnh) không đạt 3:1 trên ảnh nhiều chi tiết; đĩa đi qua cùng <code>KachiGlass</code> với thẻ nên ăn theo ảnh nền (ảnh mờ + lớp che theo độ chói). Lòng ô trống vẫn trong suốt.</td></tr>
+<tr><td>2</td><td>2026-10-03</td><td><b>Đóng OQ5 (ô trống thấy hình nền)</b> theo quyết định owner 03/10 — thực hiện ở spec <a href="kachi-286-field-fixes.html"><code>kachi-286-field-fixes.html</code></a> (FIX286 R-ES): khung trống trong suốt, vai <code>emptyFill</code> gỡ khỏi bảng màu. Mục "Ô trống che kín nền" ở §6 vì thế không còn đúng từ 2.86.</td></tr>
 <tr><td>1</td><td>2026-09-11</td><td><b>Phần (b) — widget trình chiếu đặt vào ô.</b> Chạy <b>độc lập</b> với hình nền (bật widget không cần bật nền). Nhịp <b>tự dọn</b> khi ô bị tháo. [ĐO] trên máy ảo: ảnh trong ô đổi <b>tím → cam → tím</b> qua ba khung <b>trong khi hình nền đang TẮT</b>. Một giả thuyết của tôi <b>bị số đo bác</b> (xem §7).</td></tr>
 <tr><td>0</td><td>2026-09-11</td><td>Logic thuần + kho ảnh + vẽ nền + điều khiển trong bảng Tuỳ biến. Đo trên máy ảo bằng <b>ba ảnh đơn sắc</b> (xác nhận đổi ảnh) rồi bằng <b>một ảnh vuông có hoa văn</b> (xác nhận cắt chứ không kéo méo). Tìm và sửa <b>một lỗi vòng-lặp-chết</b> khi dùng lần đầu.</td></tr>
 </table>
@@ -180,7 +182,7 @@ giảm. Nạp nguyên bản rồi mới thu nhỏ là cách chắc chắn để 
 <tr><th>#</th><th>Câu hỏi</th><th>Mặc định</th></tr>
 <tr><td>OQ1</td><td>Thanh trên có cần tăng độ đục khi bật hình nền không (§6)?</td><td>Chưa đổi. Cần owner xem với ảnh thật của họ.</td></tr>
 <tr><td>OQ2</td><td>Widget và nền nên dùng <b>chung</b> chu kỳ hay <b>tách riêng</b>?</td><td>Đang dùng chung (một lựa chọn). Tách được nhưng làm bảng Tuỳ biến rối hơn.</td></tr>
-<tr><td>OQ5</td><td><b>Ô trống có nên để thấy hình nền không?</b> [ĐO] hiện ô trống đục hoàn toàn nên giữa màn không thấy nền.</td><td>Giữ đục. Đổi được nếu owner muốn thấy nền ở giữa màn.</td></tr>
+<tr><td>OQ5</td><td><b>Ô trống có nên để thấy hình nền không?</b> [ĐO] hiện ô trống đục hoàn toàn nên giữa màn không thấy nền.</td><td><b>ĐÃ ĐÓNG 03/10 — owner: trong suốt</b> (đề xuất owner 03/10 + <i>"3 ok"</i>). 2.86: khung trống không nền/không kính, chỉ còn nút ⇄ tô màu theo độ chói ảnh nền đo được (≥ 3:1 trên ảnh đồng màu và khi không có ảnh [ĐO máy ảo 03/10]; ảnh tổng hợp nhiều chi tiết ở làm tối 0 %/45 % CHƯA đạt — senior review FIX286 Pass 2 sửa câu, bản trước ghi ≥ 3:1 không điều kiện), bố cục toàn ô trống giữ trống. Thiết kế + số đo: <a href="kachi-286-field-fixes.html"><code>kachi-286-field-fixes.html</code></a> §3.4 R-ES · §9 luồng R-ES; câu còn mở về đĩa kính dưới ⇄ ở đó là OQ8. <b>OQ8 đã chốt 2026-10-03 — phiên điều phối, owner có thể đổi: phương án B</b> — ⇄ ô trống luôn nằm trên một đĩa kính 36 dp (lòng ô vẫn trong suốt), [ĐO máy ảo] ≥ 4.86:1 trên mọi ảnh thử kể cả sọc/hoa văn/nhiều chi tiết ở làm tối 0 % (§3.6 R-OQ8 spec đó).</td></tr>
 <tr><td>OQ4</td><td>Widget và nền đang hiện <b>hai ảnh khác nhau</b> cùng lúc — thế có hợp không?</td><td>Giữ vậy: khung ảnh trong ô là thứ riêng. Đồng bộ được nếu owner thấy rối.</td></tr>
 <tr><td>OQ3</td><td>Mức làm tối mặc định <b>45%</b> có hợp không?</td><td>Giữ 45%; chọn được 0/25/45/65% trong bảng Tuỳ biến.</td></tr>
 </table>
@@ -223,7 +225,7 @@ Soát viên <b>chỉ báo cáo</b>, tôi tự vá và tự kiểm từng cái.</
 <p><b>Hai phát hiện có giá trị vượt ngoài danh sách lỗi:</b></p>
 <ul>
   <li><b>Tuyên bố của tôi ở §7 bị bác</b> — xem phần đính chính ở đó.</li>
-  <li><b>Ô trống che kín nền</b>: [ĐO] thẻ workspace và ô trống cho <b>0%</b> nền lọt qua ⇒ giữa màn hình gần như không thấy hình nền, chỉ thấy ở lề và mép dưới. Đây là <b>quyết định của owner</b> (ô trống nên trong suốt để thấy nền không) nên tôi không tự đổi ⇒ OQ5.</li>
+  <li><b>Ô trống che kín nền</b>: [ĐO] thẻ workspace và ô trống cho <b>0%</b> nền lọt qua ⇒ giữa màn hình gần như không thấy hình nền, chỉ thấy ở lề và mép dưới. Đây là <b>quyết định của owner</b> (ô trống nên trong suốt để thấy nền không) nên tôi không tự đổi ⇒ OQ5. <b>ĐÃ ĐÓNG 03/10</b>: owner chọn trong suốt — xem Changelog Pass 2.</li>
 </ul>
 <p class="muted">Cả hai lỗi P1 nặng nhất <b>không quan sát được off-car</b> vì cùng một lý do: không có xe thì trạng thái luôn
 rỗng, và ảnh đơn sắc che mất lỗi giải mã cỡ nhỏ. Cả hai chỗ tài liệu của tôi đều từng ghi "đã đo, đạt".</p>

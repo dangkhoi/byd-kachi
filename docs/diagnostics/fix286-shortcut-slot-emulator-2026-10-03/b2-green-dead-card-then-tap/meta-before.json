@@ -1,0 +1,10 @@
+{
+ "t0": "10-03 05:13:47.000",
+ "pids": {
+  "com.google.android.apps.maps": "",
+  "com.google.android.deskclock": "24340"
+ },
+ "prefs_sha": "834054152a8b008814072f04923231b75e3e67ec",
+ "slot_0": "widget:w_photos",
+ "slot_1": "aw:714@com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.player.widget.MusicWidgetProvider"
+}

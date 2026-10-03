@@ -1,0 +1,2 @@
+10-03 05:20:26.783 27771 27771 I am_on_top_resumed_lost_called: [0,com.android.deskclock.DeskClock,topStateChangedWhenResumed]
+10-03 05:20:26.836 27488 27488 I am_on_top_resumed_gained_called: [0,com.byd.clusternav.launcher.KachiHome,topStateChangedWhenResumed]

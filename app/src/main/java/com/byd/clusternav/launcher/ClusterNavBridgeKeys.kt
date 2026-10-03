@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.NavConnect
 import com.byd.clusternav.Prefs
+import com.byd.clusternav.launcher.voice.VoiceWakeService
 import com.byd.clusternav.modules.voicekey.AssistantLauncher
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.VoiceKeyBinding
@@ -40,6 +41,7 @@ fun ClusterNavBridge.voiceKeyEnabled(): Boolean = Prefs.voiceKeyEnabled(app)
 fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit = {}) {
     Prefs.setVoiceKeyEnabled(app, on)
     runCatching { com.byd.clusternav.VoiceKeyKeepAliveService.sync(app) }  // #3: bật→giữ tiến trình, tắt→đứng xuống
+    VoiceWakeService.sync(app)   // FIX286 · VK2 — công tắc đổi `keyHold` ⇒ `:wake` vào/ra HOLD (giữ/nhả mô hình cho phím)
     if (!on) {
         ui(Runnable { onDone(true) })
         return
@@ -121,6 +123,7 @@ fun ClusterNavBridge.bindings(): List<VoiceKeyBinding> = Prefs.voiceKeyBindings(
  */
 fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String? {
     val replaced = Prefs.addVoiceKeyBinding(app, keyCode, targetSpec)
+    VoiceWakeService.sync(app)   // FIX286 · VK2 — gán/đổi đích phím ⇒ `:wake` vào/ra HOLD theo `keyHold` mới
     if (replaced != targetSpec && AssistantLauncher.isGeminiVoiceSpec(targetSpec)) {
         toast(BridgeMsg.SETTING_GEMINI_ASSISTANT)
         Thread({
@@ -141,6 +144,7 @@ fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String? {
 /** Nút "Xoá" của một dòng gán — lặp lại `MainActivity.kt:795–799`. */
 fun ClusterNavBridge.removeBinding(keyCode: Int) {
     Prefs.removeVoiceKeyBinding(app, keyCode)
+    VoiceWakeService.sync(app)   // FIX286 · VK2 — gỡ dòng gán Kachi nghe cuối cùng (wake TẮT) ⇒ `:wake` đứng xuống, nhả mô hình
     toast(BridgeMsg.BINDING_REMOVED)
 }
 
@@ -345,7 +349,11 @@ internal fun ClusterNavBridge.setVoicePreferOffline(on: Boolean) = Prefs.setVoic
  */
 internal fun ClusterNavBridge.voiceConfirmIds(): Set<String> = Prefs.voiceConfirmIds(app)
 
-/** Xem [voiceConfirmIds]. Tập RỖNG = *"không hỏi gì cả"*, đúng mặc định owner chốt 2026-09-16. */
+/**
+ * Xem [voiceConfirmIds]. Tập RỖNG = *"không hỏi gì cả"* — lựa chọn thật của người dùng (lưu kèm mốc
+ * `voice_confirm_default_v286`). ⚠ Không còn là "mặc định": từ 2.86 mặc định có mở cửa sổ trời (FIX286 · SR5, owner 03/10);
+ * mặc định owner 2026-09-16 "không hỏi gì" vẫn là luật chung, nóc là ngoại lệ có tên (`VoiceRiskTable.effectiveIds`).
+ */
 internal fun ClusterNavBridge.setVoiceConfirmIds(ids: Set<String>) = Prefs.setVoiceConfirmIds(app, ids)
 
 /** OQ4 — đọc to câu hỏi xác nhận rồi mới mở micro. Mặc định TẮT. */

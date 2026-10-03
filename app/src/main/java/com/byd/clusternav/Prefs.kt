@@ -3,6 +3,7 @@ package com.byd.clusternav
 import android.content.Context
 import android.content.SharedPreferences
 import com.byd.clusternav.contracts.SpeedLimitSource
+import com.byd.clusternav.launcher.voice.VoiceWakePrefsMain
 import com.byd.clusternav.modules.voicekey.VoiceKeyBindingStore
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import com.byd.clusternav.voicekey.VoiceKeyBindings
@@ -218,7 +219,7 @@ object Prefs {
      * Dẫn đường. Giá trị = `VoiceAppTargets` key; `VoiceTargetDispatch` tự lùi về [VoiceAppTargets] nếu app chưa cài.
      */
     fun voiceNavDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_NAV_APP, "gmaps") ?: "gmaps"
-    fun setVoiceNavDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_NAV_APP, key).apply()
+    fun setVoiceNavDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_NAV_APP, key).apply().also { VoiceWakePrefsMain.publish(ctx) }
 
     // ─── APP NHẠC MẶC ĐỊNH (owner 2026-09-21) — nói "phát nhạc" không nêu app + không có nhạc đang phát thì dùng ───
     private const val K_VOICE_MUSIC_APP = "voice_music_default_app"
@@ -229,7 +230,7 @@ object Prefs {
      * (`ytmusic`/`spotify`/`zing`/…); `VoiceTargetDispatch` tự lùi nếu app chưa cài.
      */
     fun voiceMusicDefaultApp(ctx: Context): String = sp(ctx).getString(K_VOICE_MUSIC_APP, "") ?: ""
-    fun setVoiceMusicDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_MUSIC_APP, key).apply()
+    fun setVoiceMusicDefaultApp(ctx: Context, key: String) = sp(ctx).edit().putString(K_VOICE_MUSIC_APP, key).apply().also { VoiceWakePrefsMain.publish(ctx) }
 
     // "Hey Kachi" wake-word (W-WAKE) — theo XE (ProfileScope.DEVICE_KEYS), mặc định **TẮT** (nghe nền = rủi ro CPU
     // → opt-in). Câu gọi = preset id ([VoiceWakePhrase]). VoiceWakeService.sync() đọc cờ này để bật/tắt FGS.
@@ -256,11 +257,14 @@ object Prefs {
     /** BẬT-HIỆU-LỰC = owner bật (`clusternav_prefs`) **VÀ** service chưa tự-tắt (marker `kachi_wake_disabled`). */
     fun wakeEnabled(ctx: Context): Boolean =
         sp(ctx).getBoolean("voice_wake_enabled", false) && !wakeServiceDisabled(ctx)
+    /** Công tắc THÔ của owner (chưa gồm cầu chì) — FIX286 · VK4: ảnh chụp cho `:wake` mang bản thô, cầu chì `:wake` tự đọc. */
+    fun wakeSwitchOn(ctx: Context): Boolean = sp(ctx).getBoolean("voice_wake_enabled", false)
 
     /** CHỈ tiến trình LAUNCHER gọi (công tắc Cài đặt). Bật lại ⇒ xoá marker tự-tắt của `:wake` để service chạy lại. */
     fun setWakeEnabled(ctx: Context, on: Boolean) {
         sp(ctx).edit().putBoolean("voice_wake_enabled", on).apply()
         if (on) setWakeServiceDisabled(ctx, false)
+        VoiceWakePrefsMain.publish(ctx)   // FIX286 · VK4 — `:wake` quyết chế độ từ ảnh chụp, không từ cache cũ của nó
     }
     fun wakePhraseId(ctx: Context): String = sp(ctx).getString("voice_wake_phrase", "hey_kachi") ?: "hey_kachi"
     fun setWakePhraseId(ctx: Context, id: String) = sp(ctx).edit().putString("voice_wake_phrase", id).apply()
@@ -272,7 +276,7 @@ object Prefs {
     const val VK_TARGET_DEFAULT = "ai.zalo.kiki.car"           // mặc định Kiki (khớp default cũ 0=Kiki)
 
     fun voiceKeyEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_ENABLED, false)
-    fun setVoiceKeyEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VK_ENABLED, v).apply()
+    fun setVoiceKeyEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VK_ENABLED, v).apply().also { VoiceWakePrefsMain.publish(ctx) }
 
     /** CŨ (trước F3) — mã phím DUY NHẤT. Từ F3 chỉ còn dùng để **migrate** sang [voiceKeyBindings]. */
     fun voiceKeyCode(ctx: Context): Int = voiceKeyCode(sp(ctx))
@@ -341,7 +345,7 @@ object Prefs {
      * báo cho owner biết đã thay cái gì — cấm im lặng. Dòng mới ⇒ trả `null`.
      */
     fun addVoiceKeyBinding(ctx: Context, keyCode: Int, targetSpec: String): String? =
-        addVoiceKeyBinding(sp(ctx), keyCode, targetSpec)
+        addVoiceKeyBinding(sp(ctx), keyCode, targetSpec).also { VoiceWakePrefsMain.publish(ctx) }
 
     fun addVoiceKeyBinding(p: SharedPreferences, keyCode: Int, targetSpec: String): String? {
         val result = VoiceKeyBindings.put(voiceKeyBindings(p), keyCode, targetSpec)
@@ -350,7 +354,7 @@ object Prefs {
     }
 
     /** Xoá dòng gán của [keyCode] (nút xoá trên từng dòng). */
-    fun removeVoiceKeyBinding(ctx: Context, keyCode: Int) = removeVoiceKeyBinding(sp(ctx), keyCode)
+    fun removeVoiceKeyBinding(ctx: Context, keyCode: Int) = removeVoiceKeyBinding(sp(ctx), keyCode).also { VoiceWakePrefsMain.publish(ctx) }
 
     fun removeVoiceKeyBinding(p: SharedPreferences, keyCode: Int) =
         writeVoiceKeyBindings(p, VoiceKeyBindings.remove(voiceKeyBindings(p), keyCode))

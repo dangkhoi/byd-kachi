@@ -5,6 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.toList
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -103,11 +104,42 @@ class SurfaceMaterialContractTest {
             "nền ô làm việc phải là KachiTheme.surface(..., SurfaceTone.WELL, ...) — nếu không thì bề mặt lớn " +
                 "nhất màn hình đứng ngoài hệ chất liệu và cả lượt refresh 'nhìn không ra'",
         )
-        // Ô TRỐNG là ngoại lệ có chủ ý (gạch đứt + `emptyFill`), nên chỉ được còn ĐÚNG một `GradientDrawable`.
+        // ⚠ FIX286 · ES8 — bài này ĐẢO chiều có chủ ý, không nới. Trước: *"chỉ được còn ĐÚNG một `GradientDrawable`"* —
+        // cái của ô TRỐNG (nền `emptyFill`, WP1 R1.1), ngoại lệ có chủ ý duy nhất. Owner 03/10 (*"3 ok"*): khung trống
+        // TRONG SUỐT thấy hình nền ⇒ ngoại lệ đó biến mất, và bất biến chặt lại thành **0**: KHÔNG ô nào dựng nền tại
+        // chỗ nữa. Phần "ô trống" của bất biến cũ chuyển sang bài ngay dưới (khung trống không nền, không kính).
         assertEquals(
-            1, Regex("""GradientDrawable\(\)""").findAll(makeSlot).count(),
-            "chỉ ô TRỐNG được dựng nền tại chỗ (gạch đứt); mọi loại ô khác đi qua KachiTheme.surface()",
+            0, Regex("""GradientDrawable\(\)""").findAll(makeSlot).count(),
+            "không ô nào được dựng nền tại chỗ — ô có nội dung đi qua kính/KachiTheme.surface(), ô TRỐNG trong suốt (FIX286)",
         )
+    }
+
+    /**
+     * FIX286 · ES1/ES8 — khung ô TRỐNG trong suốt: không nền, không thẻ kính, không nhận chạm cả ô; vẫn là điểm thả.
+     *
+     * Bốn cách làm hỏng mà mắt thường khó thấy, mỗi cách một khẳng định:
+     *  1. đặt `fl.background` ⇒ ô lại đục (đúng thứ owner bỏ);
+     *  2. gắn kính cho ô trống ⇒ có tag kính ⇒ lượt `KachiGlass.refresh` khi ảnh đổi đắp kính lên (bẫy P1b);
+     *  3. `setOnClickListener` trên khung ⇒ một vùng TRONG SUỐT bấm được = nút vô hình, chạm nhầm hình nền mở bảng chọn;
+     *  4. mất drag listener chung ⇒ kéo ô App sang ô trống không thả được (AOSP r47 `ViewGroup.java:1813-1826` chọn
+     *     đích thả theo khung + `canAcceptDrag`, không theo nền — nên trong suốt KHÔNG làm mất điểm thả, chỉ bỏ listener mới).
+     */
+    @Test
+    fun `khung o trong trong suot, khong kinh, khong cham ca o, van la diem tha`() {
+        val src = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
+        val makeSlot = SourceRoots.body(src, "private fun makeSlot(")
+        val empty = Regex("""SlotContent\.Empty ->[^\n]*""").find(makeSlot)?.value
+            ?: error("không thấy nhánh `SlotContent.Empty ->` trong makeSlot")
+        assertTrue("slotHead(index, empty = true)" in empty, "ô trống phải có ⇄ (dạng ô trống — trên đĩa kính, OQ8 · B): $empty")
+        listOf("background", "setOnClickListener", "KachiGlass", "GradientDrawable", "{").forEach {
+            assertFalse(it in empty, "nhánh ô trống không được có `$it` (khung trong suốt, không chạm cả ô): $empty")
+        }
+        assertTrue(
+            "if (content !is SlotContent.Empty) KachiGlass.apply(" in makeSlot,
+            "kính chỉ gắn cho ô CÓ nội dung — khung trống không được mang tag kính",
+        )
+        assertFalse("fl.background" in makeSlot, "makeSlot không đặt nền tại chỗ cho bất kỳ ô nào")
+        assertTrue("fl.setOnDragListener" in makeSlot, "mọi ô (cả ô trống) vẫn là điểm THẢ")
     }
 
     /**

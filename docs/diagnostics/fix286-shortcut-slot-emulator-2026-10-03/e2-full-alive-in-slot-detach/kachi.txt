@@ -1,0 +1,4 @@
+--------- beginning of main
+--------- beginning of system
+10-03 05:22:17.189 27488 27649 I KachiShortcut: đo ô 2: com.google.android.deskclock vd=237 ⇒ IN_SLOT
+10-03 05:22:17.189 27488 27488 I KachiShortcut: tap com.google.android.deskclock F usable=true stages=0 presence=IN_SLOT -> DetachToFull(slot=2, byIntent=false)

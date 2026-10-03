@@ -290,6 +290,12 @@ object KachiSpace {
     const val SLOT_HEAD_CLEAR = XS + ICON_L + XS
 
     /**
+     * Đĩa kính dưới nút ⇄ của Ô TRỐNG (FIX286 · OQ8 phương án B, chốt 2026-10-03): `S` + `ICON_S` + `S` = 36dp —
+     * suy ra từ cỡ icon như [SLOT_HEAD_CLEAR], không tự chọn; nằm trong khung chạm `TOUCH × SLOT_HEAD_CLEAR`.
+     */
+    const val SWAP_DISC = S + ICON_S + S
+
+    /**
      * **KHE GIỮA CÁC Ô LÀM VIỆC** — và giữa vùng ô với thanh nút.
      *
      * ⚠⚠ **BỐN chỗ đọc con số này và chúng PHẢI bằng nhau**: [WorkspaceView] (vẽ khung ô) · [LauncherWindows]

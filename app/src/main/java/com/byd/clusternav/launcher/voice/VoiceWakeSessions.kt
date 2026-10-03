@@ -69,4 +69,7 @@ internal object VoiceWakeSessions {
 
     /** `stop()` + bỏ tham chiếu — đứng xuống BG-20 và `onDestroy` khi phiên IDLE (nhả TTS, xem KDoc `VoiceSession.stop`). */
     fun release(): Boolean = owner.release()
+
+    /** FIX286 · VK6 — đứng xuống cắt phiên KẸT: ghi kết cục "đứng xuống" TRƯỚC [release] (`stop()` ⇒ `close()` ⇒ "huỷ"). */
+    fun markStoodDown() { owner.current()?.marks?.abort(WakeSessionJournal.Outcome.STOOD_DOWN) }
 }

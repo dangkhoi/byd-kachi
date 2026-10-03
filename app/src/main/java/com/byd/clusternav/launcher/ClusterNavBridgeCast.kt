@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import com.byd.clusternav.modules.clustercast.FloatingBubbleService
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
+import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.BuildConfig
 import com.byd.clusternav.modules.clustercast.simplified.CastProfile
 import com.byd.clusternav.modules.clustercast.simplified.ClusterDisplayResolver
@@ -62,10 +63,10 @@ fun ClusterNavBridge.castEnabled(): Boolean = coordinator.prefs.castEnabled()
 fun ClusterNavBridge.castEnabledPending(): Boolean? = runCatching { coordinator.prefs.castEnabledPending() }.getOrNull()
 
 /**
- * Công tắc *"Bật Cluster Cast"* hiện lựa chọn của HỒ SƠ (bản chờ nếu có, không thì giá trị đang chạy) — giống mọi dòng
- * Cài đặt khác. Chạm công tắc vẫn là lượt TƯỜNG MINH [setCastEnabled] (xoá bản chờ, mở/đóng thật).
+ * FIX286 · PI5 — mốc bền của lượt chốt bản chờ gần nhất lúc khởi động (chốt gì · lúc nào · bản nào); `null` = chưa chốt
+ * lần nào. Màn Chiếu cụm đọc để nói thật — ca TẮT→BẬT chưa từng đo trên xe (OC-PI3).
  */
-fun ClusterNavBridge.castEnabledForProfile(): Boolean = castEnabledPending() ?: castEnabled()
+fun ClusterNavBridge.castCommitMark(): CastEnableDeferral.CommitMark? = coordinator.prefs.castCommitMark()
 
 /**
  * Nút *Áp ngay*: đưa lựa chọn đang chờ của hồ sơ vào hiệu lực bằng ĐÚNG đường thật [setCastEnabled] — mở/đóng
@@ -74,6 +75,17 @@ fun ClusterNavBridge.castEnabledForProfile(): Boolean = castEnabledPending() ?: 
  */
 fun ClusterNavBridge.applyCastPendingNow() {
     castEnabledPending()?.let { setCastEnabled(it) }
+}
+
+/**
+ * FIX286 · PI3 — nút *"Dùng hồ sơ này ngay"* sau khi nhập, SAU lượt đổi hồ sơ: áp bản chờ bằng ĐÚNG đường [setCastEnabled]
+ * của nút *Áp ngay* — chỉ khi cụm không đang chiếu app ([CastEnableDeferral.applyOnUse]). Trả `true` nếu đã áp; `false`
+ * = không có gì chờ, hoặc đang chiếu ⇒ bản chờ để dành cho lần nổ máy sau (chỗ gọi nói ra điều đó).
+ */
+fun ClusterNavBridge.applyCastPendingIfIdle(): Boolean {
+    val on = CastEnableDeferral.applyOnUse(castEnabledPending(), castState()) ?: return false
+    setCastEnabled(on)
+    return true
 }
 
 /**

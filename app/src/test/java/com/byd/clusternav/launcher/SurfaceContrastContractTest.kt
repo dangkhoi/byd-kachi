@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import com.byd.clusternav.testsupport.SwapDiscModel
 import com.byd.clusternav.testsupport.Wcag.fmt
 import com.byd.clusternav.testsupport.Wcag.luminance
 import com.byd.clusternav.testsupport.Wcag.over
@@ -429,10 +430,17 @@ class SurfaceContrastContractTest {
             row("INK trên slot", "chữ ô nhóm, đỉnh khay", 4.5, ratio(p.ink, wellTop))
             row("MUT2 trên slotTo", "nhãn nhóm mờ nhất, đáy khay", 4.5, ratio(p.mut2, over(p.slotTo, p.bg)))
             row("lineStrong trên bg", "mốc cũ phải giữ", 3.0, ratio(over(p.lineStrong, p.bg), p.bg))
-            // WP1 · R1.1 — hàng `emptyLine trên emptyFill` đã ĐỔI CHÂN: gạch đứt ô trống bị gỡ (và vai `emptyLine`
-            // xoá khỏi bảng màu), nên thứ phải đo nay là **bước sáng của NỀN ô trống** — xem
-            // `ThemePaletteContractTest.o trong tach duoc khoi nen bang mau`.
-            row("emptyFill ÷ bg", "ô trống tách nền bằng MÀU (gạch đứt đã gỡ)", 1.15, ratio(p.emptyFill, p.bg))
+            // WP1 · R1.1 — hàng `emptyLine trên emptyFill` đã ĐỔI CHÂN (gạch đứt gỡ ⇒ `emptyFill ÷ bg`); FIX286 · ES8 đổi
+            // chân lần hai (khung trống TRONG SUỐT, ⇄ không nền theo độ chói); OQ8 · B (chốt 03/10) lần ba: ⇄ nằm trên
+            // ĐĨA KÍNH ⇒ đo MUT trên đĩa ở ảnh XẤU NHẤT L ∈ [0, 1] — cùng mô hình `SwapDiscModel` với bài sàn của
+            // `ThemePaletteContractTest.o trong nhan ra duoc nho nut doi app…`.
+            val mutInk = ColorMath.parse(p.mut)
+            val discWorst = SwapDiscModel.worstOverArt(
+                mutInk, ColorMath.parse(p.bg),
+                intArrayOf(ColorMath.parse(p.surfFromOverArt), ColorMath.parse(p.surfToOverArt)),
+                intArrayOf(mutInk, ColorMath.parse(p.mut2), ColorMath.parse(p.ink)),
+            )
+            row("MUT (⇄ ô trống) trên đĩa kính, ảnh xấu nhất", "ô trống trong suốt: ⇄ là dấu duy nhất (OQ8 · B, L∈[0,1])", 3.0, discWorst)
             row("ON_ACCENT trên gradFrom", "mốc cũ phải giữ", 4.5, ratio(p.onAccent, p.gradFrom))
             // P1b — thẻ trên ẢNH NỀN: đo ở hai cực vì ảnh do người dùng chọn (xem bài `the tren anh nen...`).
             listOf("#ffffff" to "ảnh sáng", "#000000" to "ảnh tối").forEach { (art, why) ->

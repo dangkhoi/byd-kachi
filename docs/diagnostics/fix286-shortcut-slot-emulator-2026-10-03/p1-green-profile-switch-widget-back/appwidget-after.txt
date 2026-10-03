@@ -1,0 +1,6 @@
+
+  [0] id=714
+    host=HostId{user:0, app:10163, hostId:19265, pkg:com.byd.launcher}
+    provider=ProviderId{user:0, app:10147, cmp:ComponentInfo{com.google.android.apps.youtube.music/com.google.android.apps.youtube.music.player.widget.MusicWidgetProvider}}
+    host.callbacks=null
+    views=android.widget.RemoteViews@8b0a5d0

@@ -91,6 +91,34 @@ class SlotHeadParityContractTest {
         val panels = code("HomePanels.kt")
         assertTrue(panels.split("onPanelsChanged()").size - 1 >= 4, "openSettings/closeSettings/openLayoutEditor/closeLayoutEditor đều báo")
     }
+    /**
+     * FIX286 · ES2/ES4 — ca Ô TRỐNG: cùng MỘT bộ dựng ([SlotSwapButton.centered]), cùng chỗ (giữa mép trên, khung
+     * `headLp()`), cùng icon `MUT`, chỉ khác **đĩa kính** phía sau icon (`disc` — OQ8 phương án B, chốt 2026-10-03;
+     * bản A trước đó khác MÀU theo nền) và mô tả trợ năng. Ô trống mà tự vẽ ⇄ riêng là đúng bệnh "lúc 1 icon lúc 2 icon"
+     * (2026-09-13) quay lại ở loại ô thứ tư.
+     */
+    @Test
+    fun `o trong dung chung bo dung nut, chi khac dia kinh va mo ta`() {
+        val src = com.byd.clusternav.testsupport.SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WorkspaceView.kt")
+        val makeSlot = com.byd.clusternav.testsupport.SourceRoots.body(src, "private fun makeSlot(")
+        assertTrue(
+            Regex("""SlotContent\.Empty -> fl\.addView\(slotHead\(index, empty = true\), headLp\(\)\)""").containsMatchIn(makeSlot),
+            "ô trống phải gắn ⇄ qua slotHead (cùng khung headLp như mọi ô)",
+        )
+        val head = com.byd.clusternav.testsupport.SourceRoots.body(src, "private fun slotHead(")
+        assertTrue("SlotSwapButton.centered(" in head, "slotHead dựng qua SlotSwapButton.centered")
+        assertTrue("SlotSwapButton.describe(context, index, empty)" in head, "mọi ô có mô tả trợ năng theo loại ô")
+        assertTrue("disc = empty" in head, "chỉ ô TRỐNG (khung trong suốt) có đĩa kính; ô có nội dung nằm trên bề mặt ô")
+        val centered = com.byd.clusternav.testsupport.SourceRoots.body(button, "fun centered(")
+        assertTrue("contentDescription = description" in centered, "mô tả đặt trên khung CHẠM (thứ nhận cú bấm)")
+        assertTrue("if (disc) {" in centered, "disc ⇒ dựng đĩa kính sau icon")
+        assertFalse("setColorFilter" in centered, "icon giữ MUT của build() ở MỌI ô — đĩa lo tương phản, không tô lại màu")
+        assertTrue(
+            "SlotSwapButton.describe(activity, hd.slot, empty = false)" in overlay,
+            "đường nổi (OverlayHeads, chỉ ô App) cũng có mô tả — ES4 'mọi ô'",
+        )
+    }
+
     @Test
     fun `dich cham nut swap la TOUCH, hinh ve van ICON_L`() {
         val centered = button.substring(button.indexOf("fun centered("))

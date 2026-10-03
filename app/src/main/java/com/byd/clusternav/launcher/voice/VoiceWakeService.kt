@@ -1,9 +1,5 @@
 package com.byd.clusternav.launcher.voice
 
-import android.app.ActivityManager
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -28,7 +24,9 @@ import com.byd.clusternav.launcher.perf.KachiMem
  * [VoiceWakeListener] và quyết định **khi nào cho nghe**:
  *  • **Gate màn-sáng**: chỉ nghe khi màn hình SÁNG (xe đang dùng, xuyên mọi app); màn TẮT (xe ngủ/tắt) ⇒ luồng
  *    nghe **đỗ** (nhả mic, 0 % CPU — không huỷ luồng, xem KDoc [VoiceWakeListener]). Đăng ký `SCREEN_ON`/`SCREEN_OFF`.
- *  • **Công tắc**: chỉ chạy khi `Prefs.wakeEnabled` (mặc định TẮT). Owner tắt ⇒ [stopSelf].
+ *  • **Công tắc**: chạy khi chế độ ([VoiceWakeMode], đọc ảnh chụp tươi — [VoiceWakeHold.modeInWake]) là WAKE ("Hey
+ *    Kachi" bật, mặc định TẮT) hoặc — FIX286 · VK2 — HOLD (phím vô-lăng gán Kachi nghe: giữ mô hình, KHÔNG mic, KHÔNG
+ *    bộ nghe câu gọi; [VoiceWakeHold]). OFF ⇒ [stopSelf].
  *  • **Cầu chì false-accept** (từ [VoiceWakeController]): nghe nhầm quá nhiều ⇒ [onAutoDisable] TẮT công tắc +
  *    báo + dừng — không để vòng wake loạn xạ.
  *
@@ -113,18 +111,27 @@ class VoiceWakeService : Service() {
                 standDownSince = SystemClock.elapsedRealtime()
             }
             val waited = if (standDownSince == 0L) 0L else SystemClock.elapsedRealtime() - standDownSince
-            when (VoiceWakeStandDown.decide(enabled(), phase, waited)) {
+            // FIX286 · VK3 — `loading` đọc từ CHÍNH khoá dựng (không cờ ghi tay): đang nạp ⇒ WAIT, luồng chính không
+            // bao giờ chờ khoá ấy (2.85: chờ 9–34 s ⇒ lần bấm sau không hiện gì rồi nạp lại từ đầu).
+            val loading = VoiceEngine.loading()
+            when (VoiceWakeStandDown.decide(mode(), phase, waited, loading)) {
                 VoiceWakeStandDown.Decision.KEEP -> standDownSince = 0L
-                VoiceWakeStandDown.Decision.WAIT -> main.postDelayed(this, VoiceWakeStandDown.POLL_MS)
+                VoiceWakeStandDown.Decision.WAIT -> {
+                    if (loading) Log.i(TAG, "đứng xuống: mô hình đang nạp — chờ nhịp sau, không chặn luồng chính (VK3)")
+                    main.postDelayed(this, VoiceWakeStandDown.POLL_MS)
+                }
                 VoiceWakeStandDown.Decision.STAND_DOWN -> {
-                    if (phase != VoiceTurnPhase.IDLE) Log.w(TAG, "phiên headless kẹt ở $phase quá ${waited / 1000} s — vẫn đứng xuống")
-                    else Log.i(TAG, "phiên headless xong, wake OFF — nhả recognizer + đứng xuống (BG-20)")
-                    standDownSince = 0L
+                    if (phase != VoiceTurnPhase.IDLE) {
+                        Log.w(TAG, "phiên headless kẹt ở $phase quá ${waited / 1000} s — vẫn đứng xuống")
+                        VoiceWakeSessions.markStoodDown()   // VK6 — kết cục "đứng xuống", ghi TRƯỚC stop() (stop ⇒ "huỷ")
+                    } else Log.i(TAG, "phiên headless xong, wake OFF — nhả recognizer + đứng xuống (BG-20)")
                     // Phiên kẹt ⇒ `stop()` để nó thôi (overlay/loa). `stop()` là MỘT CHIỀU (nhả TTS + khoá `start`
                     // vĩnh viễn) ⇒ chủ sở hữu bỏ luôn tham chiếu: lượt LISTEN_NOW nào tới sau (kể cả khi nó huỷ được
                     // lượt `stopSelf` này và dùng lại instance service) phải dựng phiên MỚI, không gọi lên xác cũ.
                     VoiceWakeSessions.release()
-                    runCatching { VoiceEngine.release() }.onFailure { Log.w(TAG, "nhả recognizer lỗi", it) }
+                    // VK3 — nhả KHÔNG CHẶN + kiểm lại pha/epoch dưới khoá dựng ([VoiceWakeHold.releaseModel]); bận ⇒ nhịp sau.
+                    if (!VoiceWakeHold.releaseModel(epoch)) { main.postDelayed(this, VoiceWakeStandDown.POLL_MS); return }
+                    standDownSince = 0L
                     runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
                     stopSelf(lastStartId)
                 }
@@ -229,18 +236,23 @@ class VoiceWakeService : Service() {
         // HEADLESS (overlay TYPE_APPLICATION_OVERLAY nổi trên app đang xem), KHÔNG kéo KachiHomeActivity lên đè.
         // Chạy được cả khi "Hey Kachi" TẮT (đây là phiên nghe một-lượt, không cần bộ nghe câu gọi). Không bật
         // listener wake; wake OFF ⇒ sau khi phiên xong service ĐỨNG XUỐNG (BG-20, xem [standDownTask]).
+        // FIX286 · VK1 — chế độ đọc từ ảnh chụp TƯƠI mỗi lượt start (START_STICKY dựng lại cũng qua đây), không tin cờ cũ.
+        val mode = mode()
         if (intent?.action == ACTION_LISTEN_NOW) {
             Log.i(TAG, "LISTEN_NOW — mở phiên nghe headless (overlay, không kéo launcher)")
+            // VK6 — lối vào + chế độ + trạng thái mô hình lúc NHẬN lệnh (logcat `KachiWakeSession` + phiếu cho nhật ký bền).
+            WakeSessionLog.pending(WakeSessionJournal.Entry.of(intent.getStringExtra(EXTRA_ENTRY)), mode)
             // 2.69 — bấm phím = muốn nói NGAY: phiên cũ đang đọc/nán bị cắt (chủ sở hữu mức tiến trình, xem [voiceSession]).
             runCatching { main.post { VoiceWakeSessions.preempt { buildSession() }.start() } }.onFailure { Log.w(TAG, "LISTEN_NOW lỗi", it) }
             // CLOSE-3 — báo tiến trình chính "đã nhận": nó đang chờ ack để KHÔNG mở phiên in-process (`VoiceEntry.tryWake`).
             VoiceEntry.ack(this)
-            if (!enabled()) { scheduleStandDown(); return START_NOT_STICKY }
+            if (mode == VoiceWakeMode.OFF) { scheduleStandDown(); return START_NOT_STICKY }
         }
-        // Wake BẬT ⇒ vòng đời thường sở hữu service: một lượt chờ đứng xuống còn treo (LISTEN_NOW trước đó) phải bỏ.
+        // WAKE/HOLD ⇒ vòng đời thường sở hữu service: một lượt chờ đứng xuống còn treo (LISTEN_NOW trước đó) phải bỏ.
         main.removeCallbacks(standDownTask); standDownSince = 0L
-        // START_STICKY dựng lại (intent == null) cũng đi qua đây ⇒ công tắc được đọc lại mỗi lần, không tin cờ cũ.
-        if (!enabled()) { stopListening(); stopSelf(); return START_NOT_STICKY }
+        if (mode == VoiceWakeMode.OFF) { stopListening(); stopSelf(); return START_NOT_STICKY }
+        // VK2 — HOLD: không bộ nghe câu gọi (vừa đổi WAKE → HOLD thì dừng nó), giữ mô hình nạp sẵn ở `:wake`.
+        if (mode == VoiceWakeMode.HOLD) { stopListening(); VoiceWakeHold.holdModel(this); return START_STICKY }
         // Model KWS vừa tải xong ⇒ phải DỰNG LẠI bộ nghe: luồng cũ đã chốt "không có model" cho cả vòng đời của
         // nó (xem KDoc [EXTRA_RELOAD]). `stop()` join ≤ 700 ms — chấp nhận được trên luồng main của một tiến
         // trình nền không có UI.
@@ -263,7 +275,9 @@ class VoiceWakeService : Service() {
      * tồn tại (xem KDoc [VoiceWakeListener] — bật/tắt màn nhanh tay từng để lại luồng mồ côi giữ chốt micro).
      */
     private fun onScreen(on: Boolean) {
-        if (!enabled()) { stopListening(); stopSelf(); return }
+        val m = mode()
+        if (m == VoiceWakeMode.OFF) { stopListening(); stopSelf(); return }
+        if (m == VoiceWakeMode.HOLD) return   // VK2 — không bộ nghe: màn sáng/tắt không đổi gì, mô hình giữ nguyên
         ensureListener()
         // Màn TẮT luôn thi hành NGAY (nhả mic — không có lý do gì để chờ). Màn SÁNG thì phải tôn trọng lượt
         // nhường micro đang chạy: bật nghe lại ở đây là giành mic với phiên lệnh đang ghi (xem [handoffUntil]).
@@ -329,6 +343,7 @@ class VoiceWakeService : Service() {
         // (3) R7 — mở PHIÊN NGHE của chính `:wake` với overlay ĐỘC LẬP, KHÔNG kéo KachiHomeActivity lên đè app
         //     đang xem (owner 2026-09-23). Overlay `TYPE_APPLICATION_OVERLAY` nổi trên mọi thứ; điều khiển/nav/nhạc
         //     chạy thẳng từ service. Đường Activity (nút mic/"Nói với xe") KHÔNG đổi.
+        WakeSessionLog.pending(WakeSessionJournal.Entry.WAKE_WORD, VoiceWakeMode.WAKE)   // VK6 — phiếu cho nhật ký phiên
         runCatching { main.post { voiceSession.start() } }
             .onFailure { Log.w(TAG, "fireWake mở phiên nghe lỗi", it) }
         // (4) Hẹn nghe lại — vô điều kiện, kể cả khi overlay bị nền tảng chặn im lặng.
@@ -343,7 +358,8 @@ class VoiceWakeService : Service() {
     private fun autoDisable() {
         runCatching { Prefs.setWakeServiceDisabled(this, true) }
         runCatching { Toast.makeText(this, getString(R.string.kachi_wake_auto_off), Toast.LENGTH_LONG).show() }
-        stopListening(); stopSelf()
+        stopListening()   // VK2 — cầu chì chỉ tắt "Hey Kachi"; còn phím gán Kachi nghe ⇒ ở lại HOLD (giữ mô hình, đổi chữ thông báo)
+        if (mode() == VoiceWakeMode.HOLD) { startForegroundOnce(); Log.i(TAG, "cầu chì nổ — ở lại HOLD cho phím vô-lăng") } else stopSelf()
     }
 
     override fun onDestroy() {
@@ -360,7 +376,8 @@ class VoiceWakeService : Service() {
             VoiceWakeSessions.release()
             // `:wake` chỉ chứa service này: recognizer 74 MB còn nằm trong một tiến trình rỗng là RAM thừa tới khi LMK dọn.
             // Nhả ngay — CHỈ khi luồng nghe đã chết thật (khoá dùng/nhả `VoiceEngine` là lưới thứ hai); còn sống thì để cái chết của tiến trình lo, có log.
-            if (listenerDead) runCatching { VoiceEngine.release() }
+            // FIX286 · VK3 — nhả KHÔNG CHẶN (luồng chính); bận ⇒ nhịp đứng xuống nhả khi xong (hẹn trên `main` sống sau service).
+            if (listenerDead) { if (!VoiceWakeHold.releaseModel(VoiceWakeSessions.epoch()) && standDownSince == 0L) scheduleStandDown() }
             else Log.i(TAG, "onDestroy: luồng nghe chưa chết — không nhả recognizer")
         } else {
             // Phiên headless (R7/LISTEN_NOW) đang chạy — ca thật: phím-thoại ngoài Kachi rồi mở Kachi ⇒ `onResume` →
@@ -374,34 +391,17 @@ class VoiceWakeService : Service() {
         super.onDestroy()
     }
 
-    /** Cùng khuôn `VoiceKeyKeepAliveService.startForegroundOnce` (7 FGS khác) — `false` ⇒ chỗ gọi `stopSelf`. */
-    private fun startForegroundOnce(): Boolean = runCatching {
-        startForeground(NOTIF_ID, buildNotification())
-        true
-    }.getOrElse { Log.e(TAG, "startForeground bị từ chối", it); false }
-
-    private fun enabled(): Boolean = runCatching { Prefs.wakeEnabled(this) }.getOrDefault(false)
+    // `startForegroundOnce()` — cùng khuôn 7 FGS khác, chữ theo chế độ — ở `VoiceWakeHold.kt` (tách theo VAI, trần 500 dòng).
+    /** FIX286 · VK1 — chế độ đọc ẢNH CHỤP tươi ([VoiceWakeHold.modeInWake]); hỏng ⇒ OFF. [enabled] = bộ nghe câu gọi chạy = WAKE. */
+    private fun mode(): VoiceWakeMode = runCatching { VoiceWakeHold.modeInWake(this) }.getOrDefault(VoiceWakeMode.OFF)
+    private fun enabled(): Boolean = mode() == VoiceWakeMode.WAKE
     private fun screenOn(): Boolean = runCatching {
         (getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
     }.getOrDefault(true)
 
-    private fun buildNotification(): Notification {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, getString(R.string.kachi_wake_notif_title), NotificationManager.IMPORTANCE_MIN))
-        }
-        val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this)
-        return b.setContentTitle(getString(R.string.kachi_wake_notif_title))
-            .setContentText(getString(R.string.kachi_wake_notif_text))
-            .setSmallIcon(R.drawable.ic_mic)
-            .setOngoing(true)
-            .build()
-    }
-
     companion object {
         private const val TAG = "WakeSvc"
-        private const val CHANNEL = "kachi_wake"
-        private const val NOTIF_ID = 4801
+        internal const val NOTIF_ID = 4801
 
         /**
          * Hậu tố tiến trình của bộ nghe câu gọi — khai **MỘT CHỖ** cho cả `AndroidManifest.xml`
@@ -441,19 +441,29 @@ class VoiceWakeService : Service() {
          */
         fun sync(ctx: Context, reloadModel: Boolean = false) {
             val i = Intent(ctx, VoiceWakeService::class.java).putExtra(EXTRA_RELOAD, reloadModel)
-            if (runCatching { Prefs.wakeEnabled(ctx) }.getOrDefault(false)) {
+            // FIX286 · VK1/VK4 — công bố ảnh chụp TRƯỚC (`:wake` quyết chế độ từ nó, không từ cache prefs cũ của nó),
+            // rồi bật/tắt theo CHẾ ĐỘ (wake ∨ phím gán Kachi nghe), không còn theo riêng wake. Chỉ tiến trình chính gọi.
+            runCatching { VoiceWakePrefsMain.publish(ctx) }.onFailure { Log.w(TAG, "sync: không công bố được ảnh chụp", it) }
+            if (runCatching { VoiceWakePrefsMain.mode(ctx).modelInWake }.getOrDefault(false)) {
                 // P2#6: `startForegroundService` ném được (`IllegalStateException` khi bị coi là nền trên ROM lạ,
                 // `SecurityException`) — một công tắc trong Cài đặt không được làm sập launcher.
-                runCatching {
+                val started = runCatching {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i) else ctx.startService(i)
-                }.onFailure { Log.w(TAG, "sync: không start được VoiceWakeService", it) }
+                }.onFailure { Log.w(TAG, "sync: không start được VoiceWakeService", it) }.isSuccess
+                // [Senior review FIX286 Pass 2 · P2] `:wake` lên được ⇒ trả bản của chính (một bản cho cả máy); không lên ⇒ giữ.
+                if (started) VoiceWakePrefsMain.handOverToWake(ctx)
             } else {
+                val handOver = isProcessAlive(ctx)   // VK2 — `:wake` còn sống (vừa HOLD/WAKE) ⇒ mô hình về lại tiến trình chính
                 runCatching { ctx.stopService(i) }.onFailure { Log.w(TAG, "sync: stopService lỗi", it) }
+                if (handOver && !VoiceEngine.loaded()) VoiceEngine.preload(ctx)   // nạp sẵn ở chính như 2.85 (cổng RAM + chống chạy đôi)
             }
         }
 
         /** Action của [listenNow]. */
         const val ACTION_LISTEN_NOW = "com.byd.launcher.LISTEN_NOW"
+
+        /** FIX286 · VK6 — lối vào của [listenNow] (`WakeSessionJournal.Entry.code`) cho nhật ký phiên `:wake`. */
+        private const val EXTRA_ENTRY = "entry"
 
         /**
          * Mở PHIÊN NGHE HEADLESS (owner 2026-09-25) — overlay voice nổi lên TRÊN app đang xem, KHÔNG kéo
@@ -461,8 +471,8 @@ class VoiceWakeService : Service() {
          * "Hey Kachi" TẮT (service lên foreground, mở phiên, rồi nhàn nếu wake off). Overlay là
          * `TYPE_APPLICATION_OVERLAY` nên không cần Activity — điều khiển/nav/nhạc chạy thẳng từ service context.
          */
-        fun listenNow(ctx: Context): Boolean {
-            val i = Intent(ctx, VoiceWakeService::class.java).setAction(ACTION_LISTEN_NOW)
+        fun listenNow(ctx: Context, entry: WakeSessionJournal.Entry = WakeSessionJournal.Entry.MIC): Boolean {
+            val i = Intent(ctx, VoiceWakeService::class.java).setAction(ACTION_LISTEN_NOW).putExtra(EXTRA_ENTRY, entry.code)
             return runCatching {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(i) else ctx.startService(i)
                 true
@@ -482,11 +492,6 @@ class VoiceWakeService : Service() {
          * từ chối oan (xem [VoiceHomeRelay.ackTimeoutMs]).
          */
         fun isMainProcessAlive(ctx: Context): Boolean = processAlive(ctx, ctx.packageName)
-
-        /** Một chỗ đọc `runningAppProcesses` (từ API 21 chỉ trả tiến trình của CHÍNH gói). Lỗi ⇒ `false` = coi như lạnh. */
-        private fun processAlive(ctx: Context, name: String): Boolean = runCatching {
-            val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            am.runningAppProcesses?.any { it.processName == name } == true
-        }.getOrDefault(false)
+        // `processAlive(ctx, name)` — một chỗ đọc `runningAppProcesses` — ở `VoiceWakeHold.kt` (trần 500 dòng).
     }
 }

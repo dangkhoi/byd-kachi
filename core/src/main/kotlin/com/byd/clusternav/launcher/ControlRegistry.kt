@@ -178,11 +178,38 @@ object ControlRegistry {
         // Ô/thanh nút của ai đã đặt `hood` tự rụng khi nạp — `WorkspaceState.sanitized()` (đường đã dựng ở ADAS-PURGE
         // Pass 1 rồi dùng lại cho 19 mã của (V) FEATURE-FILTER); `WorkspaceStateTest` có ca duyệt riêng cho `hood`.
         // [ĐO nguồn] RE cũ cũng đã nghi đúng: `BODYWORK_CMD_HOOD` chỉ là **area ĐỌC**, không có lệnh mở.
-        // [ĐO] `setMoonRoofState(int)` BYDAutoBodyworkDevice.java:587; OpenBYD gọi thật với state chung enum kính
-        // (CarControlImpl.java:1503-1505, windowId=5 → mở=1/đóng=2). Cũ `setSunroofState` KHÔNG tồn tại.
+        // [ĐO nguồn stub] `setMoonRoofState(int)` BYDAutoBodyworkDevice.java:587 (cũ `setSunroofState` KHÔNG tồn tại).
+        // ═══ 2.86 · FIX286-SUNROOF (spec `kachi-286-field-fixes.html` R-SR) — ba thứ đổi, cả ba là DỮ LIỆU của dòng ═══
+        //  • GHI: [ĐO nguồn OEM, đọc lại 02/10] app Cài đặt BYD gửi `setMoonRoofState` **100 / 0** rồi **255** sau
+        //    200 ms (`SunRoofFragment.java:834-836,858-860,1109`) — tham số ở `HalWriteArgs` (nhánh `sunroof`), nhả ở
+        //    `release`. Nhãn cũ của dòng này *"[ĐO] OpenBYD CarControlImpl.java:1503-1505 mở=1/đóng=2"* là **[SUY] bị
+        //    ghi thành [ĐO]**: OpenBYD chỉ chuyển tiếp nguyên giá trị, `ko1` OPEN=1/CLOSE=2 là enum KÍNH chung.
+        //  • ĐỌC: app OEM KHÔNG dùng `getSunroofState` (enum [CHƯA BIẾT]: `BODYWORK_STATE` 0/1/255 hay `SUNROOF_*`
+        //    CLOSE=4 — nếu là cái sau, nóc đóng đọc 4 ⇒ ô coi "đang mở" ⇒ lần bấm nào cũng gửi ĐÓNG) mà đọc
+        //    `getWindowOpenPercent(5)` (`SunRoofModel.java:113`) — CÙNG getter PROVEN của bốn kính, khác `windowId`.
+        //    ⇒ mượn đường đọc của datum `window_lf` với `readArg` = 5, đúng cơ chế *"cùng getter, khác vùng"* của
+        //    `temp → inside_temp` (area 1). KHÔNG thêm datum mới: datum là một ô · chip · câu hỏi giọng nói, mà owner
+        //    đã gỡ hẳn ô vị-trí-nóc (`sunroof_pos`) khỏi giao diện 2026-09-25. `sunroof_state` GIỮ cho bảng Cửa &
+        //    khoang (OQ6 — đổi khi nhật ký chốt được enum). Số ngoài 0..100 ⇒ `null` (`percentReadingValid`).
+        //  • CỔNG: `getMoonRoofConfig()` = `CONFIG_NONE` 0 / `CONFIG_SUNSHADE_PANEL` 2 (stub :213-216) ⇒ xe không có
+        //    nóc mở ⇒ tầng ghi từ chối; 1 · 3 · đọc hỏng ⇒ cho qua (fail-open = hành vi 2.85).
+        // ⚠ Mọi phần HAL trên xe: **[CHƯA BIẾT]** — owner duyệt OTA cho anh em có nóc mở thử (OC-SR). Bảy getter
+        // `probe` chụp một lần mỗi tiến trình vào nhật ký `ctl` để lượt thử ấy chốt được cả enum lẫn cấu hình.
         ControlDef("sunroof", "Cửa sổ trời", "ic-car-top-sunroof", ControlKind.TOGGLE,
-            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setMoonRoofState", readKey = "sunroof_state",
-            labelEn = "Sunroof"),
+            domain = Domain.BODY, tier = EvidenceTier.OVERDRIVE, bindingKey = "BYDAutoBodyworkDevice.setMoonRoofState",
+            readKey = "window_lf", readArg = HalReadTables.SUNROOF_WINDOW_ID,
+            labelEn = "Sunroof",
+            release = WriteRelease(HalWriteArgs.MOONROOF_RELEASE, SUNROOF_RELEASE_MS),
+            presence = Presence("BYDAutoBodyworkDevice.getMoonRoofConfig", absentWhen = setOf(0, 2)),
+            probe = listOf(
+                HalProbe("BYDAutoBodyworkDevice.getMoonRoofConfig"),
+                HalProbe("BYDAutoBodyworkDevice.getSunroofInitState"),
+                HalProbe("BYDAutoBodyworkDevice.getWindowPermitState"),
+                HalProbe("BYDAutoBodyworkDevice.getSunroofCloseNotice"),
+                HalProbe("BYDAutoBodyworkDevice.getWindowOpenPercent", HalReadTables.SUNROOF_WINDOW_ID),
+                HalProbe("BYDAutoBodyworkDevice.getSunroofState"),
+                HalProbe("BYDAutoBodyworkDevice.getSunroofPosition"),
+            )),
         // NEEDS-ONCAR: headl. [ĐO] feature 1276153912 = INSTRUMENT_HEADLIGHT_CONTROL_SET thuộc INSTRUMENT(1007), và
         // `headlight_mode` (SELECT, phủ cả 4 trạng thái) đã giữ id đó. Enum on/off của id này chưa có nguồn nên KHÔNG
         // thể tách byte an toàn ⇒ gỡ id khỏi nút này (khoá UPPER_SNAKE → BindingRoute.None) để hai nút không còn gửi
@@ -385,6 +412,9 @@ object ControlRegistry {
             readKey = "seat_heat_state_r",   // UX5b — getSeatHeatingState(2); thang [SUY] 1/2/3/4 như `seath`
             labelEn = "Passenger seat heating"),
     )
+
+    /** FIX286 · SR2 — app OEM nhả nóc sau đúng 200 ms (`SunRoofFragment.java:836` `sendEmptyMessageDelayed(0, 200L)`). */
+    private const val SUNROOF_RELEASE_MS = 200L
 
     fun byId(id: String): ControlDef? = RegistryIndex.CONTROLS[id]   // [SOÁT P3] tra băm — xem KDoc RegistryIndex
     fun defaultEnabledIds(): List<String> = ALL.filter { it.enabledByDefault }.map { it.id }

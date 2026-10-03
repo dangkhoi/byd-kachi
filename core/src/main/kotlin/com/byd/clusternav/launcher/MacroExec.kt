@@ -39,7 +39,8 @@ import java.util.concurrent.TimeUnit
  * `:core`, và nhờ thế bài kiểm của nó chạy trong `:core:test` — đo được **thật** trần luồng và cờ daemon, thay
  * vì chỉ quét chuỗi trong mã nguồn. Nó **công khai** vì `internal` ở `:core` thì `:app` không thấy; thứ giữ nó
  * khỏi bị gọi bừa không phải từ khoá mà là vai của nó: [submit] có **một** chỗ gọi (`ControlTileFactory.macroTile`),
- * [submitSerial] có **một** chỗ gọi ([ControlTileWrite]).
+ * [submitSerial] có **hai** chỗ gọi: [ControlTileWrite] (làn ô đơn) và `CtlJournalStore` ở `:app` (FIX286 · SR6 — làn
+ * ghi tệp nhật ký lệnh xe; một lượt đọc-sửa-ghi ≤ 200 dòng, không dựng luồng riêng cho nó).
  *
  * ## LÀN TUẦN TỰ ([submitSerial], 2026-09-25 · P1-main · spec `kachi-closeout-hardening` R4(b))
  * Chạm một ô ĐƠN cũng là một lượt ghi HAL (binder, [ĐO xe 09-16] ≈23 ms/lượt) — tới bản này nó chạy **đồng bộ trên

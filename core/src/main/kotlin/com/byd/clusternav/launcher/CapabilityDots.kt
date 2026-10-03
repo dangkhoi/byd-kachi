@@ -46,8 +46,21 @@ object CapabilityDots {
      * Vd `seatc.readKey = "seat_vent_state"` ⇒ `controlOfState("seat_vent_state") = "seatc"`.
      */
     private val stateToControl: Map<String, String> by lazy {
-        ControlRegistry.ALL.mapNotNull { def -> def.readKey.takeIf { it.isNotEmpty() }?.let { it to def.id } }.toMap()
+        ControlRegistry.ALL
+            .filter { readsDatumItself(it) }
+            .mapNotNull { def -> def.readKey.takeIf { it.isNotEmpty() }?.let { it to def.id } }.toMap()
     }
+
+    /**
+     * FIX286 · SR3 — nút có đọc **đúng con số của datum** không (cùng getter, cùng tham số).
+     *
+     * Nút ghi đè [ControlDef.readArg] sang một vùng KHÁC (`sunroof` mượn getter của `window_lf` với `windowId` 5) thì
+     * đọc một bộ phận khác hẳn ⇒ nó không phải "nút của" datum ấy, và hình/chấm của chip *"Kính lái"* không được lấy
+     * từ nút cửa sổ trời. Ghi đè trùng tham số của chính datum (`temp` area 1 = `inside_temp` area 1) thì vẫn là cùng
+     * một con số ⇒ giữ quan hệ như trước.
+     */
+    internal fun readsDatumItself(def: ControlDef): Boolean =
+        def.readArg == null || def.readArg == HalBindingTable.readArg(def.readKey)
 
     private fun controlOfState(stateId: String): String? = stateToControl[stateId]
 }

@@ -23,7 +23,11 @@ import com.byd.clusternav.launcher.behind.BehindHomeSequence
  *  | `StartBehind` | [KachiHomeSlots.startBehind] qua ô sống ([stagingCandidates], A5) — mảnh chung R0.3 |
  *  | `Noop`/`Highlight` | nháy khung ô ([flashSlot]) + một dòng lý do |
  *  | `DetachToFull` | `allowOrPrompt` rồi [KachiHomeSlots.detachToFull] — K7 qua rào (T-M2 [ĐO]: Intent không tách được app khỏi màn ảo); về ô = K8 khi màn nhà hiện lại |
+ *  | `Reopen` | `allowOrPrompt` rồi [KachiHomeSlots.reviveInSlot] — đường của thẻ "App đã đóng" (FIX286 R-SC2); ô chưa sẵn ⇒ nháy ô |
  *  | `Refuse` | một dòng lý do — 0 lệnh |
+ *
+ * FIX286 · R-SC2: dòng 4/9/12 (B được XẾP ở một ô) quyết theo SỰ THẬT lúc chạm — [ShortcutPlan.presenceSlot] chỉ ra ô cần đo,
+ * [KachiHomeSlots.presence] đọc MỘT `am stack list` trên luồng nền rồi mới [decideAndAct]. Mọi dòng khác quyết ngay, 0 lệnh.
  *
  * Kiểu cần kênh (*Ô n* · *Chạy ngầm*) gọi `ShellAccessUi.allowOrPrompt` NGAY TRƯỚC khi thi hành (kênh có thể vừa mất giữa
  * lúc quyết và lúc làm); cổng thi hành READY-AT-HOME vẫn đứng sau (quên gọi thì chỉ mất lời nhắc, lệnh vẫn bị chặn).
@@ -64,8 +68,16 @@ internal class KachiHomeShortcuts(
             // T-M2 [ĐO máy ảo 02/10]: Intent từ HOME KHÔNG kéo được task ra khỏi màn ảo ô (4/4 app) ⇒ `false` (dòng 10 hỏi quyền).
             fullByIntent = false,
         )
+        // FIX286 · R-SC2 — B được xếp ở ô (dòng 4/9/12): bố cục KHÔNG nói B còn sống ⇒ đo trước, quyết sau (CLAUDE.md §5).
+        val probe = ShortcutPlan.presenceSlot(input)
+        if (probe < 0) return decideAndAct(sc, input, count, stages)
+        slots().presence(probe, sc.pkg) { measured -> decideAndAct(sc, input.copy(presence = measured), count, stages) }
+    }
+
+    /** Bảng thuần ⇒ một dòng log (kèm phép đo sống/chết nếu có) ⇒ đường thi hành. Luồng chính. */
+    private fun decideAndAct(sc: AppShortcut, input: ShortcutPlan.Input, count: Int, stages: List<BehindHomePlan.Stage>) {
         val action = ShortcutPlan.decide(input)
-        Log.i(TAG, "tap ${sc.pkg} ${AppShortcutCodec.modeCode(sc.mode)} usable=${input.usable} stages=${stages.size} -> $action")
+        Log.i(TAG, "tap ${sc.pkg} ${AppShortcutCodec.modeCode(sc.mode)} usable=${input.usable} stages=${stages.size} presence=${input.presence} -> $action")
         act(sc, action, count, stages)
     }
 
@@ -108,6 +120,14 @@ internal class KachiHomeShortcuts(
                 }
                 if (!started) { workspace().flashSlot(action.slot); say(reasonText(ShortcutPlan.Reason.IN_OTHER_SLOT, sc, count, action.slot)) }
             }
+            // FIX286 · R-SC2 (dòng 4a/12a): bố cục xếp B ở ô, `am stack list` lúc chạm nói B KHÔNG còn task ⇒ mở lại vào ô, cùng
+            // đường chạm thẻ "App đã đóng — chạm để mở lại". Ô chưa sẵn / lượt mở đang chạy dở ⇒ chỉ nháy ô, 0 lệnh.
+            is ShortcutAction.Reopen -> {
+                if (!ShellAccessUi.allowOrPrompt(activity)) return
+                val ok = slots().reviveInSlot(action.slot, sc.pkg)
+                Log.i(TAG, "mở lại ${sc.pkg} vào ô ${action.slot}: ${if (ok) "đã ra lệnh" else "ô đang mở dở / chưa sẵn ⇒ chỉ nháy ô"}")
+                if (!ok) workspace().flashSlot(action.slot)
+            }
             is ShortcutAction.Refuse -> say(reasonText(action.reason, sc, count, -1))
             ShortcutAction.StartBehind -> {
                 if (!ShellAccessUi.allowOrPrompt(activity)) return
@@ -129,7 +149,6 @@ internal class KachiHomeShortcuts(
     private fun reasonText(r: ShortcutPlan.Reason, sc: AppShortcut, count: Int, slot: Int): String = when (r) {
         ShortcutPlan.Reason.NOT_INSTALLED -> activity.getString(R.string.kachi_sc_not_installed, sc.pkg)
         ShortcutPlan.Reason.SLOT_ABSENT -> activity.getString(R.string.kachi_sc_reason_absent, count)
-        ShortcutPlan.Reason.SLOT_WIDGET -> activity.getString(R.string.kachi_sc_reason_widget, (sc.mode as? ShortcutMode.Slot)?.n ?: 0)
         ShortcutPlan.Reason.IN_OTHER_SLOT -> activity.getString(R.string.kachi_sc_in_slot, label(sc.pkg), slot + 1)
         ShortcutPlan.Reason.RUNNING -> activity.getString(R.string.kachi_sc_running, label(sc.pkg))
         ShortcutPlan.Reason.SYSTEM_APP -> activity.getString(R.string.kachi_sc_refuse_system)
@@ -160,7 +179,8 @@ internal class KachiHomeShortcuts(
     /** Màn chính là cửa sổ Activity (không phải lớp phủ) ⇒ toast hiện được (khác ngăn kéo — `PickerCapNoticeContractTest`). */
     private fun say(msg: String) = Toast.makeText(activity.applicationContext, msg, Toast.LENGTH_SHORT).show()
 
-    private companion object {
+    internal companion object {
+        /** Một thẻ log cho cả chuỗi chạm lối tắt — kể cả phép đo sống/chết ở `KachiHomeSlots.presence` (FIX286 R-SC2). */
         const val TAG = "KachiShortcut"
     }
 }

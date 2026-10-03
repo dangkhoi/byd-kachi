@@ -31,6 +31,8 @@ class NavNotificationListener : NotificationListenerService() {
         // TRẠNG THÁI BIND: true khi hệ thống đã bind service (onListenerConnected). Dùng để auto-reconnect lúc mở
         // app: chỉ chạy dadb disallow/allow khi CHƯA bound (tránh ngắt kết nối đang chạy tốt).
         @Volatile var connected = false
+        /** Mốc ĐƠN ĐIỆU của lần `onListenerConnected` gần nhất (FIX286 R-HUD — `NlsHeal` chờ callback MỚI sau lệnh gắn). */
+        @Volatile var connectedAtElapsed = 0L
         // Token cự ly (m/km/ft/mi) — dấu hiệu noti dẫn đường, dùng khi category không phải navigation.
         private val DIST_TOKEN = Regex("""\b\d+([.,]\d+)?\s?(m|km|ft|mi)\b""", RegexOption.IGNORE_CASE)
         // "Đã đến nơi" — phát hiện KẾT-THÚC-NAV dùng chung ở NavArrivalGuard.isArrivalText (R7/#2).
@@ -108,6 +110,7 @@ class NavNotificationListener : NotificationListenerService() {
     /** Khi (re)cấp quyền / service bind lại: clear cờ kẹt + QUÉT noti đang hiện (nav có thể đã chạy trước). */
     override fun onListenerConnected() {
         connected = true
+        connectedAtElapsed = android.os.SystemClock.elapsedRealtime()
         // D1 (closeout 1.28): entry point that always runs on (re)bind → refresh the in-memory verbose gate
         // (set BEFORE the enabled early-return so the gate is correct even while Nav+HUD is OFF).
         NavLog.init(applicationContext)
@@ -125,10 +128,13 @@ class NavNotificationListener : NotificationListenerService() {
             bridge.start(VietMapWidgetOwner.NAVIGATION)
             bridge.addListener(speedLimitPusher)
         }.onFailure { Log.e(TAG, "signal source start failed", it) }
-        if (!Prefs.enabled(applicationContext)) return
-        SourceArbiter.clear()
+        // FIX286 S10 (phản biện HUD H9): GRANTED đặt TRƯỚC cổng công tắc. Hệ thống đã gắn ⇒ quyền là sự thật, không phụ
+        // thuộc `enabled`. Trước đây đặt SAU cổng ⇒ coordinator dựng sẵn với UNKNOWN (BootSetupService) + NLS gắn lúc công
+        // tắc tắt ⇒ bật công tắc sau đó thì MỌI khung ném "notification permission is not granted" tới hết tiến trình.
         runCatching { NavRepository.setPermission(applicationContext, NavigationPermission.GRANTED) }
             .onFailure { Log.e(TAG, "coordinator connect failed", it) }
+        if (!Prefs.enabled(applicationContext)) return
+        SourceArbiter.clear()
         Log.i(TAG, "listener connected -> authoritative coordinator ready")
         // QUAN TRỌNG: nav có thể ĐÃ dẫn trước khi listener bind (cài/mở app sau khi đang dẫn, hoặc xe đỗ
         // -> noti đứng yên, onNotificationPosted không kích hoạt). Quét noti hiện tại + bơm ngay.
@@ -179,6 +185,7 @@ class NavNotificationListener : NotificationListenerService() {
     private fun ensureBridgeStarted() {
         if (connected) return
         connected = true
+        connectedAtElapsed = android.os.SystemClock.elapsedRealtime()
         // ★ Revive: an toàn khởi động nguồn tín hiệu nếu onListenerConnected chưa (re)fire sau khi process restart.
         runCatching {
             // ⚠ PHẢI sync TRƯỚC addListener — hồi quy F1 (owner 08-24: "trước đây lên ngon lành, giờ không lên").

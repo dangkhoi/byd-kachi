@@ -83,11 +83,15 @@ class TypeScaleContractTest {
      * Số dòng ĐANG được miễn — ghim lại, cùng lẽ với `SAME_ON_PURPOSE` (danh sách ngoại lệ phải là dữ liệu THẤY
      * ĐƯỢC, không phải thứ mọc thêm lặng lẽ).
      *
-     * 3 = 2 nhãn ô lưới mật độ cao ([AppDrawer] 11.5/10sp) + 1 glyph trang trí `＋` ([WorkspaceViewCards] 32sp). Thêm
-     * một ngoại lệ thứ tư thì phải sửa con số này ⇒ nó hiện ra trong diff và người review phải đồng ý, thay vì một
+     * 3 = 2 nhãn ô lưới mật độ cao (`AppDrawerTiles` 11.5/10sp) + 1 huy hiệu loại (`AppDrawerTiles` 8.5sp). Thêm
+     * một ngoại lệ thì phải sửa con số này ⇒ nó hiện ra trong diff và người review phải đồng ý, thay vì một
      * dòng comment lọt qua.
+     *
+     * Lịch sử: 4 → **3** ở FIX286 · ES7 (owner 03/10) — glyph trang trí `＋` 32sp của ô trống (`WorkspaceViewCards.emptyAdd`)
+     * GỠ cùng hàm của nó vì khung trống nay trong suốt, chỉ còn nút ⇄. Hạ con số là siết, không nới: một ngoại lệ
+     * mới chen vào chỗ trống ấy nay sẽ đỏ.
      */
-    private val EXEMPT_LINES = 4
+    private val EXEMPT_LINES = 3
 
     /**
      * BA cách đặt cỡ chữ bằng số TAY — phải chặn **cả ba**, không chỉ cách hay gặp nhất.

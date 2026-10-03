@@ -54,7 +54,7 @@ t02	toggle	tắt đèn đọc	Control	Tắt Đèn đọc	0	0	-	-
 t03	toggle	bật lọc bụi	Control	Bật Lọc bụi	0	0	-	-
 t04	toggle	tắt điều hoà	Control	Tắt Gió tự động	0	0	-	-
 t05	toggle	bật sưởi ghế	Control	Sưởi ghế lái: Mức 1	0	0	-	-
-t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-	-
+t06	toggle	mở cửa sổ trời	Control	Cửa sổ trời	1	0	-	voice_confirm_ids=
 t07	gone	khoá xe	Unknown	đã bỏ khỏi Kachi	0	0	-	-
 t09	gone	dừng chiếu cụm	Unknown	-	0	0	-	-
 # ── COVER (kính) ────────────────────────────────────────────────────────────────────────────────
@@ -200,10 +200,17 @@ t105	misspell	mở kim trước trái	Control	Kính lái	0	0	-	-
 t106	misspell	mở kín trước trái	Control	Kính lái	0	0	-	-
 t108	misspell	bật lọt bụi	Control	Lọc bụi	0	0	-	-
 # ── CLOSE-2 · CỔNG CONFIRM trên mã còn sống (2026-09-26) ─────────────────────────────────────────
-# Cùng cách đo với t13/t51/t57: bật đúng MỘT mã qua `prefs` ⇒ đúng ca đó hỏi lại; t06/t87 (cùng nút, không prefs)
+# Cùng cách đo với t13/t51/t57: bật đúng MỘT mã qua `prefs` ⇒ đúng ca đó hỏi lại; t87 (cùng nút cốp, không prefs)
 # là đối chứng "mặc định không hỏi". t111 thay vai t62 cũ: câu ghép có vế CONFIRM ⇒ hỏi, vế sau chờ.
+# ⚠⚠ 2.86 · FIX286 SR5 (owner 03/10 "MỞ nóc phải hỏi xác nhận") — t06 ĐẢO có chủ ý: `confirm=0` → **1**, và cột
+#   prefs `voice_confirm_ids=` (giá trị RỖNG = `prefs_set` trả khoá về MẶC ĐỊNH) — tức t06 nay đo đúng câu
+#   "mặc định 2.86 hỏi khi MỞ cửa sổ trời". Hai ca mới lớp `confirm-neg` khoá vế KHÔNG hỏi của cùng cổng:
+#   t114 "đóng cửa sổ trời" khi ĐÃ tích nóc (luật xét VẾ — `Rule.matches`) và t115 "mở cửa sổ trời" khi người dùng
+#   chỉ tích cốp (lựa chọn thật thay mặc định). Hàng có cột `voice_confirm_ids=` mà `confirm=0` CHỈ được ở lớp này.
 t109	confirm	mở cốp	Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
 t110	confirm	mở cửa sổ trời	Control	Bật Cửa sổ trời	1	0	-	voice_confirm_ids=control:sunroof
 t111	compound-confirm	mở cốp rồi bật đèn đọc	Control,Control	Mở Cốp sau	1	0	-	voice_confirm_ids=control:trunk
 t112	confirm	mở 4 kính	Control	Bật 4 kính	1	0	-	voice_confirm_ids=control:windows_all
 t113	toggle	hạ bốn kính	Control	Bật 4 kính	0	0	-	-
+t114	confirm-neg	đóng cửa sổ trời	Control	Cửa sổ trời	0	0	-	voice_confirm_ids=control:sunroof
+t115	confirm-neg	mở cửa sổ trời	Control	Cửa sổ trời	0	0	-	voice_confirm_ids=control:trunk

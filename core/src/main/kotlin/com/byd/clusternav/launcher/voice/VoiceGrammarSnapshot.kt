@@ -39,12 +39,16 @@ import com.byd.clusternav.launcher.SavedPlaces
  * @property activeProfile hồ sơ đang dùng (`""` khi chưa có ảnh chụp).
  * @property places sổ địa chỉ của hồ sơ đang dùng — cấu trúc y như `HomeUiState.savedPlaces`.
  * @property writtenAtMs mốc ghi (`System.currentTimeMillis()` của tiến trình chính), `0` = không rõ.
+ * @property wake FIX286 · VK4 — prefs tươi cho `:wake` ([VoiceWakePrefs]): năm bản ghi `wake` · `keyhold` · `confirm`
+ *   · `nav` · `music`, chỉ ghi khi có giá trị ⇒ tệp ≤ 2.85 (không có chúng) đọc ra [VoiceWakePrefs.EMPTY], và bản ghi
+ *   này không đổi một byte của ba loại bản ghi cũ.
  */
 data class VoiceGrammarSnapshot(
     val profiles: List<String> = emptyList(),
     val activeProfile: String = "",
     val places: List<SavedPlace> = emptyList(),
     val writtenAtMs: Long = 0L,
+    val wake: VoiceWakePrefs = VoiceWakePrefs.EMPTY,
 ) {
 
     /** Nhãn sổ địa chỉ cho hotword + parser — cùng hàm mà đường in-process dùng ([VoicePlaces.labelsOf]). */
@@ -75,6 +79,11 @@ data class VoiceGrammarSnapshot(
         append(REC_ACTIVE).append(SEP).append(cleanName(activeProfile)).append('\n')
         profiles.forEach { append(REC_PROFILE).append(SEP).append(cleanName(it)).append('\n') }
         places.forEach { append(REC_PLACE).append(SEP).append(SavedPlaces.encode(listOf(it))).append('\n') }
+        wake.wakeSwitch?.let { append(REC_WAKE).append(SEP).append(bit(it)).append('\n') }
+        wake.keyHold?.let { append(REC_KEYHOLD).append(SEP).append(bit(it)).append('\n') }
+        wake.confirmIds?.let { ids -> append(REC_CONFIRM).append(SEP).append(ids.sorted().joinToString(ID_SEP)).append('\n') }
+        wake.navDefault?.let { append(REC_NAV).append(SEP).append(cleanName(it)).append('\n') }
+        wake.musicDefault?.let { append(REC_MUSIC).append(SEP).append(cleanName(it)).append('\n') }
     }
 
     /** Kết quả [decode]: [snapshot] luôn dùng được; [problem] ≠ `null` khi có gì đó bị bỏ (để chỗ gọi ghi log). */
@@ -87,6 +96,16 @@ data class VoiceGrammarSnapshot(
         private const val REC_ACTIVE = "active"
         private const val REC_PROFILE = "profile"
         private const val REC_PLACE = "place"
+
+        // FIX286 · VK4 — prefs tươi của `:wake` ([VoiceWakePrefs]). Mã ASCII thường (cùng luật [safe]).
+        private const val REC_WAKE = "wake"
+        private const val REC_KEYHOLD = "keyhold"
+        private const val REC_CONFIRM = "confirm"
+        private const val REC_NAV = "nav"
+        private const val REC_MUSIC = "music"
+        private const val ID_SEP = ","
+
+        private fun bit(b: Boolean): String = if (b) "1" else "0"
 
         val EMPTY = VoiceGrammarSnapshot()
 
@@ -123,20 +142,33 @@ data class VoiceGrammarSnapshot(
             var active = ""
             val profiles = ArrayList<String>()
             val places = ArrayList<SavedPlace>()
+            var wake = VoiceWakePrefs.EMPTY
             var problem: String? = null
             fun note(msg: String) { if (problem == null) problem = msg }
+            // Bit hỏng ⇒ bỏ bản ghi (trường giữ `null` = chỗ đọc lùi về đường cũ), không đoán 0/1.
+            fun bitOf(v: String, row: Int): Boolean? = when (v.trim()) {
+                "1" -> true
+                "0" -> false
+                else -> null.also { note("dòng $row: cờ hỏng ${safe(v)}") }
+            }
             lines.drop(1).forEachIndexed { i, line ->
                 if (line.isBlank()) return@forEachIndexed
                 val kind = line.substringBefore(SEP)
                 val value = if (line.contains(SEP)) line.substringAfter(SEP) else ""
+                val row = i + 2
                 when (kind) {
                     REC_ACTIVE -> active = cleanName(value)
-                    REC_PROFILE -> cleanName(value).takeIf { it.isNotEmpty() }?.let { profiles += it } ?: note("dòng ${i + 2}: hồ sơ rỗng")
-                    REC_PLACE -> SavedPlaces.decode(value).firstOrNull()?.let { places += it } ?: note("dòng ${i + 2}: địa chỉ hỏng")
-                    else -> note("dòng ${i + 2}: bản ghi lạ ${safe(kind)}")
+                    REC_PROFILE -> cleanName(value).takeIf { it.isNotEmpty() }?.let { profiles += it } ?: note("dòng $row: hồ sơ rỗng")
+                    REC_PLACE -> SavedPlaces.decode(value).firstOrNull()?.let { places += it } ?: note("dòng $row: địa chỉ hỏng")
+                    REC_WAKE -> bitOf(value, row)?.let { wake = wake.copy(wakeSwitch = it) }
+                    REC_KEYHOLD -> bitOf(value, row)?.let { wake = wake.copy(keyHold = it) }
+                    REC_CONFIRM -> wake = wake.copy(confirmIds = value.split(ID_SEP).map { it.trim() }.filter { it.isNotEmpty() }.toSet())
+                    REC_NAV -> wake = wake.copy(navDefault = cleanName(value))
+                    REC_MUSIC -> wake = wake.copy(musicDefault = cleanName(value))
+                    else -> note("dòng $row: bản ghi lạ ${safe(kind)}")
                 }
             }
-            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at), problem)
+            return Decoded(VoiceGrammarSnapshot(profiles, active, places.take(SavedPlaces.MAX), at, wake), problem)
         }
     }
 }

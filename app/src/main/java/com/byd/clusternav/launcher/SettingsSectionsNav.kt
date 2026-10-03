@@ -50,6 +50,9 @@ class SettingsNavSection(
      */
     private lateinit var op39Row: SettingsRows.StatusRow
 
+    /** FIX286 R-HUD (S4) — ba dòng tình trạng HUD (tệp riêng: trần 500 dòng). */
+    private val hud = SettingsNavHudRows(context, rows) { bridge }
+
     /** Hai stepper vị trí biển báo + khung kéo-thả — giữ tham chiếu để ba bề mặt nói CÙNG một toạ độ. */
     private var badgeX: SettingsRows.Stepper? = null
     private var badgeY: SettingsRows.Stepper? = null
@@ -80,7 +83,10 @@ class SettingsNavSection(
             on = bridge.navEnabled(),
             title = context.getString(R.string.kachi_nav_enabled_title),
             sub = context.getString(R.string.kachi_nav_enabled_sub),
-        ) { on -> bridge.setNavEnabled(on) { refreshStatus() } })
+        ) { on ->
+            val t0 = System.currentTimeMillis()
+            bridge.setNavEnabled(on) { refreshStatus(); if (on) hud.toastUserResultSince(t0) }
+        })
 
         sourceRow = rows.statusRow(KachiTheme.MUT2, "")
         outputRow = rows.statusRow(KachiTheme.MUT2, "")
@@ -88,6 +94,8 @@ class SettingsNavSection(
         body.addView(sourceRow.view)
         body.addView(outputRow.view)
         body.addView(op39Row.view)
+        // FIX286 R-HUD (S4): ba dòng HUD; trang hiện lại ⇒ làm tươi MỌI dòng trạng thái + đọc sự thật NMS.
+        hud.build(body) { refreshStatus() }
         refreshStatus()
 
         body.addView(rows.chipRow(
@@ -110,7 +118,8 @@ class SettingsNavSection(
             current = bridge.navDefaultApp(),
         ) { key -> bridge.setNavDefaultApp(key) })
         body.addView(rows.button(context.getString(R.string.kachi_nav_reconnect)) {
-            bridge.reconnect { refreshStatus() }
+            val t0 = System.currentTimeMillis()
+            bridge.reconnect { refreshStatus(); hud.toastUserResultSince(t0) }
         })
     }
 
@@ -164,6 +173,7 @@ class SettingsNavSection(
         outputRow.update(outputColour(status), context.getString(R.string.kachi_nav_output, outputLabel(status)))
         val op39 = bridge.clusterOp39()
         op39Row.update(op39Colour(op39), context.getString(op39Label(op39)))
+        hud.refresh()
     }
 
     /**

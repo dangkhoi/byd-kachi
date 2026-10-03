@@ -409,6 +409,13 @@ class VdAppHost(
         maybeLaunch()
     }
 
+    /** FIX286 · R-SC2 — app đo là đã đóng ⇒ mở lại như chạm thẻ "đã đóng"; `false` = 0 lệnh (KDoc `KachiHomeSlots.reviveInSlot`). */
+    fun reviveInSlot(expect: String): Boolean {
+        val busy = closedCard == null && !full.isDetached && !SlotLiveProbe.watching(probeKey)   // lượt mở đang chạy, chưa đo
+        if (released || !launched || pkg != expect || busy) return false
+        SlotLiveProbe.unwatch(probeKey); full.reset(); reopen(); return true   // nhịp đo cũ thôi TRƯỚC: không dựng thẻ giữa lượt mở
+    }
+
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     /**

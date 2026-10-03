@@ -36,9 +36,36 @@ object VoiceRiskTable {
      *
      * `value == null` ⇒ mọi giá trị đều hỏi (nút BẤM một chiều).
      */
-    data class Rule(val controlId: String, val value: Int?, val whyVi: String, val whyEn: String) {
+    data class Rule(
+        val controlId: String,
+        val value: Int?,
+        val whyVi: String,
+        val whyEn: String,
+        /**
+         * FIX286 · SR5 — dòng này nằm trong tập hỏi **mặc định** ([defaultIds]). `false` cho mọi dòng trừ khi owner chốt
+         * riêng — quyết định 2026-09-16 *"mặc định không hỏi gì"* vẫn là luật chung; đây là ngoại lệ có tên.
+         */
+        val askByDefault: Boolean = false,
+    ) {
         /** Lý do theo ngôn ngữ đang dùng — nó HIỆN trong hộp xác nhận, nên phải dịch như mọi chữ khác. */
         fun why(): String = Strings.t(whyVi, whyEn)
+
+        /**
+         * ═══ FIX286 · SR5(a) — lệnh có rơi vào **vế** mà dòng này hỏi không ═══════════════════════════════════
+         *
+         * `value` của dòng là **vế** (> 0 = mở/bật), không phải một con số phải khớp từng chữ số: `windows_all` khai 1
+         * nhưng mức 2 (*"mở nửa"*) cũng hạ cả bốn kính — `HalWriteArgs.writeArgs` đổi mọi `primary > 0` về cùng một
+         * hướng — nên mức 2 cũng phải hỏi. Ba ca:
+         *  • dòng không khai vế (`null`) ⇒ mọi lệnh đều hỏi (nút bấm một chiều);
+         *  • lệnh không nói vế (`intent.value == null`) ⇒ **hỏi** — không biết hướng thì nghiêng về phía an toàn;
+         *  • còn lại ⇒ hỏi khi cùng vế.
+         *
+         * Tới 2.85 [VoiceRiskTable.of] **bỏ qua** trường `value` (chỉ tra mã) trong khi [VoiceRiskTable.reason] lại xét
+         * nó ⇒ tích *"Cửa sổ trời"* thì câu *"đóng cửa sổ trời"* cũng bị hỏi lại, mà hộp hỏi không có lý do nào
+         * [ĐO mã, đọc lại 02/10]. Một hàm cho cả hai chỗ ⇒ hai chỗ không thể lệch nhau nữa.
+         */
+        fun matches(intentValue: Int?): Boolean =
+            value == null || intentValue == null || (value > 0) == (intentValue > 0)
     }
 
     val CONTROL_RULES: List<Rule> = listOf(
@@ -53,9 +80,14 @@ object VoiceRiskTable {
         Rule("trunk", 1,
             "mở cốp khi xe đang đỗ nơi công cộng — đồ trong cốp phơi ra cho tới khi có người đóng lại",
             "opens the boot in a public car park — whatever is inside stays exposed until someone closes it"),
+        // FIX286 · SR5 (owner 03/10 *"1 ok, nên xác nhận"*): 2.86 làm nút nóc CHẠY THẬT (100/0 thay 1/2), nên một
+        // lần nghe nhầm thành *"mở cửa sổ trời"* nay mở nóc thật — kể cả lúc đang chạy (nóc cố ý không bị chặn theo tốc
+        // độ, `CtlSafetyPolicy.REQUIRES_STATIONARY`). ⇒ MỞ nóc hỏi **mặc định**; ĐÓNG không hỏi (vế 1, [Rule.matches]).
+        // Người dùng vẫn bỏ tích được ở Cài đặt › Giọng nói › Hỏi xác nhận.
         Rule("sunroof", 1,
             "mở cửa sổ trời — mưa và bụi vào thẳng khoang, đóng lại mất nhiều giây",
-            "opens the sunroof — rain and dust go straight in, and closing takes seconds"),
+            "opens the sunroof — rain and dust go straight in, and closing takes seconds",
+            askByDefault = true),
     )
 
     /** Gói lệnh cần hỏi lại — gói *"mở hết kính"* có đúng hậu quả với nút `windows_all`. */
@@ -118,7 +150,11 @@ object VoiceRiskTable {
      * ⇒ Cơ chế **giữ nguyên** (bảng lý do, hộp hỏi, cổng "không bao giờ tự đồng ý"); thứ đổi là **ai bật nó**.
      * Tập rỗng ⇒ mọi việc là [VoiceRisk.NORMAL]. Cầu kiểm thử (`--ez auto_confirm`) không đổi một dòng nào.
      *
-     * @param confirmIds tập mã đang bật, đọc từ prefs `voice_confirm_ids` (device-level). Mặc định **rỗng**.
+     * ⚠ 2.86 (FIX286 · SR5, owner 03/10): MỘT ngoại lệ có tên — **mở cửa sổ trời** nằm trong tập mặc định
+     * ([Rule.askByDefault] → [defaultIds] → [effectiveIds], áp ở tầng đọc prefs). Tham số mặc định của hàm này vẫn
+     * là tập RỖNG: hàm thuần không đoán prefs, chỗ gọi truyền tập hiệu lực.
+     *
+     * @param confirmIds tập mã đang bật = [effectiveIds] của prefs `voice_confirm_ids` (device-level).
      */
     fun of(intent: VoiceIntent, confirmIds: Set<String> = emptySet()): VoiceRisk = when (intent) {
         is VoiceIntent.Read -> VoiceRisk.SAFE
@@ -127,7 +163,45 @@ object VoiceRiskTable {
         // phải một chỗ bỏ sót: nhãn đến từ một tập ĐÓNG mà chính người dùng đã gõ trong Cài đặt, địa chỉ thì họ
         // đã đọc lại lúc lưu, và đi nhầm đường thì quay đầu được.
         is VoiceIntent.NavigateSaved -> VoiceRisk.NORMAL
+        // FIX286 · SR5(a): nút có dòng luật thì còn phải ĐÚNG VẾ ([Rule.matches]) — tích "Cửa sổ trời" là hỏi lúc MỞ,
+        // không hỏi lúc ĐÓNG. Mã (`control:sunroof`) vẫn một, đúng KDoc [confirmId]: một ô tích cho một nút.
+        is VoiceIntent.Control ->
+            if (confirmId(intent)?.let { it in confirmIds } == true && ruleFor(intent) != null) VoiceRisk.CONFIRM
+            else VoiceRisk.NORMAL
         else -> if (confirmId(intent)?.let { it in confirmIds } == true) VoiceRisk.CONFIRM else VoiceRisk.NORMAL
+    }
+
+    /** Dòng luật của [intent] ở đúng vế của nó, hoặc `null` — MỘT phép tra cho [of] và [reason] (xem [Rule.matches]). */
+    private fun ruleFor(intent: VoiceIntent.Control): Rule? =
+        CONTROL_RULES.firstOrNull { it.controlId == intent.id && it.matches(intent.value) }
+
+    // ── FIX286 · SR5(b) — tập hỏi **hiệu lực** (mặc định + lựa chọn của người dùng) ─────────────────────────
+
+    /** Mã hỏi-được nằm trong tập mặc định — sinh từ [Rule.askByDefault], không chép tay. */
+    fun defaultIds(): Set<String> =
+        CONTROL_RULES.filter { it.askByDefault }.map { PREFIX_CONTROL + it.controlId }.toSet()
+
+    /**
+     * ═══ Tập hỏi HIỆU LỰC từ hai thứ lưu bền: tập đã lưu và mốc *"người dùng đã chọn từ 2.86"* ═══════════════
+     *
+     * @param stored tập `voice_confirm_ids` đã lưu, `null` khi khoá **vắng** (chưa ai từng lưu).
+     * @param chosenSinceDefaults mốc `voice_confirm_default_v286`: lượt lưu gần nhất xảy ra khi màn Cài đặt ĐÃ bày
+     *   [defaultIds] (mọi lượt ghi từ 2.86 đặt mốc này).
+     *
+     * Ba ca, và ca giữa là lý do mốc tồn tại:
+     *  1. khoá vắng ⇒ đúng [defaultIds];
+     *  2. khoá có mà chưa có mốc ⇒ tập ấy được lưu **trước 2.86**, lúc mặc định còn là rỗng — người dùng chưa từng
+     *     được hỏi về nóc ⇒ cộng [defaultIds] vào (đúng *"khoá đã có ⇒ thêm một lần"* của spec SR5b);
+     *  3. có mốc ⇒ tập đã lưu là lựa chọn THẬT của người dùng, kể cả khi họ vừa bỏ tích nóc ⇒ dùng nguyên.
+     *
+     * THUẦN và KHÔNG ghi gì: phép cộng ở ca 2 làm lúc ĐỌC, mỗi lần — không có lượt di trú nào phải ghi ngược vào
+     * prefs. Nhờ vậy tiến trình `:wake` (đọc bản prefs có thể cũ — `VOICE-WAKE-PREFS-STALE`) cũng tính ra cùng một
+     * luật, và lỗi nếu có chỉ nghiêng về phía **hỏi thêm**, không bao giờ về phía mở nóc không hỏi.
+     */
+    fun effectiveIds(stored: Set<String>?, chosenSinceDefaults: Boolean): Set<String> = when {
+        stored == null -> defaultIds()
+        chosenSinceDefaults -> stored
+        else -> stored + defaultIds()
     }
 
     /**
@@ -183,8 +257,7 @@ object VoiceRiskTable {
             "đổi hồ sơ thay toàn bộ bố cục và cấu hình đang dùng",
             "switching profile replaces the whole layout and current settings",
         )
-        is VoiceIntent.Control -> CONTROL_RULES
-            .firstOrNull { it.controlId == intent.id && (it.value == null || it.value == intent.value) }?.why()
+        is VoiceIntent.Control -> ruleFor(intent)?.why()
         is VoiceIntent.Macro -> if (intent.id in MACRO_IDS) {
             Strings.t("hạ hết kính", "lowers every window")
         } else {

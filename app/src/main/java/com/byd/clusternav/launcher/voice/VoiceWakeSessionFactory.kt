@@ -21,7 +21,8 @@ import android.content.Intent
  *    no-op khi đang chạy): xin lại phiên đang giữ của tiến trình ([VoiceWakeSessions.acquire]) rồi `start()`.
  *
  * §8.2 (A) — hồ sơ + sổ địa chỉ đọc từ TỆP ảnh chụp (tiến trình chính ghi ở mỗi đường ghi), đọc lại MỖI lần gọi —
- * không cache trong `:wake` (cache theo tiến trình chính là cái bệnh của SharedPreferences ở đây).
+ * không cache trong `:wake` (cache theo tiến trình chính là cái bệnh của SharedPreferences ở đây). FIX286 · VK4: cùng
+ * tệp mang thêm tập hỏi xác nhận + app dẫn đường/nhạc mặc định (`fresh`); VK6: mốc phiên cho nhật ký bền (`marks`).
  */
 internal fun VoiceWakeService.buildSession(): VoiceSession {
     val app = applicationContext
@@ -60,8 +61,10 @@ internal fun VoiceWakeService.buildSession(): VoiceSession {
                 // VOICE-WAKE-SLOTCOUNT (dữ liệu xe) — `:wake` không có màn, không vòng poll: `state().carStatus` ở đây là
                 // `CarStatus()` rỗng của `homeState()` ⇒ câu hỏi số liệu + cổng tốc độ cốp/ca-pô phải đọc TƯƠI.
                 screenless = true,
+                fresh = { VoiceWakeHold.prefs(app) },
             )
         },
         openPermissions = { openHome(VoiceHomeAction.PERMISSIONS, null) },
+        marks = WakeSessionLog.Marks(app),
     )
 }

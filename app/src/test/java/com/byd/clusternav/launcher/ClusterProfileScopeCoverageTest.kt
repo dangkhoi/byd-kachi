@@ -116,7 +116,7 @@ class ClusterProfileScopeCoverageTest {
 
     @Test
     fun `nhap ho so lam sach anh chup truoc khi ghi`() {
-        val fn = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean")
+        val fn = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): ProfileImportReport?")
         assertTrue(fn.contains("cleanImportedSnapshot(suffix, v)"), "mọi hậu tố nhập phải qua lớp làm sạch")
         val clean = SourceRoots.body(snapshot, "internal fun cleanImportedSnapshot(suffix: String, value: Any?): Any?")
         assertTrue(clean.contains("ClusterSnapshotPlan.sanitize(") && clean.contains("ProfileScopeCluster.DECLARED_TYPES"))

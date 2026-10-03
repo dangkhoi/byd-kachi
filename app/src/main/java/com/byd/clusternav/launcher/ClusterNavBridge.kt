@@ -104,7 +104,7 @@ class ClusterNavBridge(
      * → cuối cùng `NavConnect.grantAccessibility` khi thiếu setting **HOẶC** service chưa bound;
      * (tắt) `NavRepository.stop`.
      *
-     * [onDone] báo kết quả đường cấp quyền (đồng bộ ⇒ `true` ngay; selfGrant ⇒ theo callback), luôn
+     * [onDone] báo kết quả đường cấp quyền (gắn lại ⇒ kết quả THẬT của `NlsHeal`, FIX286 S2; selfGrant ⇒ theo callback), luôn
      * được gọi trên luồng vẽ qua [ui]. Thất bại ⇒ toast câu hướng dẫn bật tay (lặp lại
      * `promptNotificationAccessFallback`, `MainActivity.kt:681–702` — bridge KHÔNG mở màn Settings vì
      * IVI khoá màn đó, đúng lý do màn cũ đã chọn đường dadb).
@@ -117,8 +117,8 @@ class ClusterNavBridge(
             NavRepository.setOutputEnabled(app, NavigationOutputTarget.CLUSTER_LANE, true)
             speedSign.onOutputEnabled(SpeedSignOutput.CLUSTER, true)
             if (notificationAccessGranted()) {
-                NavConnect.ensureConnected(app)
-                ui(Runnable { onDone(true) })
+                // FIX286 S2: [onDone] chờ kết quả THẬT của lượt gắn (đọc lại dump) — không còn `true` ngay lúc bấm.
+                NavConnect.ensureConnected(app) { r -> ui(Runnable { onDone(r.ok) }) }
             } else {
                 toast(BridgeMsg.GRANTING_NOTIFICATION)
                 NavConnect.selfGrant(app) { ok ->
@@ -178,9 +178,8 @@ class ClusterNavBridge(
      */
     fun reconnect(onDone: (Boolean) -> Unit = {}) {
         if (notificationAccessGranted()) {
-            NavConnect.reconnect(app)
             toast(BridgeMsg.RECONNECTING)
-            ui(Runnable { onDone(true) })
+            NavConnect.reconnect(app) { r -> ui(Runnable { onDone(r.ok) }) }
         } else {
             toast(BridgeMsg.GRANTING_NOTIFICATION)
             NavConnect.selfGrant(app) { ok ->

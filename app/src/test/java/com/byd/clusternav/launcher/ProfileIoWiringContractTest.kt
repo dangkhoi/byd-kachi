@@ -44,7 +44,8 @@ class ProfileIoWiringContractTest {
         assertTrue(io.contains("R.string.kachi_profile_import_none, deps.profileFolderPath()"), "rỗng ⇒ nói đường dẫn thư mục")
         val one = SourceRoots.body(section, "private fun importFile(entry: ProfileFiles.Entry)")
         assertTrue(one.contains("deps.onImportProfileFile(entry.fileName)"))
-        assertTrue(one.contains("R.string.kachi_profile_imported, ProfileNames.display(created)"), "toast nói TÊN hồ sơ vừa tạo")
+        // FIX286 · PI3: toast thành tiêu đề hộp thoại sau khi nhập — vẫn nói TÊN hồ sơ vừa tạo (tên thật từ nơi lưu).
+        assertTrue(one.contains("R.string.kachi_profile_imported, ProfileNames.display(created.name)"), "hộp thoại nói TÊN hồ sơ vừa tạo")
     }
 
     @Test
@@ -60,8 +61,9 @@ class ProfileIoWiringContractTest {
 
     @Test
     fun `ViewModel nhap mot chuoi va tra ten ho so vua tao`() {
-        val fn = SourceRoots.body(vm, "fun importProfile(data: String): String?")
+        val fn = SourceRoots.body(vm, "fun importProfile(data: String): ProfileImportReport?")
         assertTrue(fn.contains("repository.importProfileData(data)") && fn.contains("reload {"))
+        assertTrue(fn.contains("return next.report"), "FIX286 · PI3: tên hồ sơ lấy từ nơi lưu, không đoán bằng hiệu danh sách")
         assertFalse(vm.contains("fun importProfiles("), "API nhập-danh-sách của #4 phải gỡ")
         assertTrue(Regex("""onImportProfileData\s*=\s*\{\s*data\s*->\s*viewModel\.importProfile\(data\)\s*}""").containsMatchIn(wiring), "nút chết")
     }
@@ -99,7 +101,7 @@ class ProfileIoWiringContractTest {
 
     @Test
     fun `nhap di qua ke hoach thuan va null khong ghi log gia`() {
-        val imp = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): Boolean")
+        val imp = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): ProfileImportReport?")
         assertTrue(imp.contains("ProfileTransfer.planImport(data, name, profiles())"))
         assertTrue(imp.contains("keyOf(plan.target, suffix)"), "chỉ ghi khoá của hồ sơ MỚI")
         val clean = SourceRoots.body(snapshot, "internal fun cleanImportedSnapshot(suffix: String, value: Any?): Any?")

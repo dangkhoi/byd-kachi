@@ -61,7 +61,6 @@ package com.byd.clusternav.launcher
  * @property line viền mảnh trang trí.
  * @property lineStrong viền KẾT CẤU (thanh, thẻ ô làm việc) — vai duy nhất bắt buộc ≥ 3:1 ở CẢ hai bảng.
  * @property gridLine lưới của trình vẽ bố cục.
- * @property emptyFill nền ô trống — vai DUY NHẤT nói *"đặt được app"* sau WP1 ⇒ tách nền ≥ 1.15× ([ĐO] 1.33/1.18×).
  * @property wash lớp tô rất nhạt (thân xe trong sơ đồ).
  * @property overlay lớp tô nhạt (viền thân xe, nền thanh tiến độ nhạc).
  * @property accent màu nhấn NHẬN DIỆN (chấm, viền, lớp tô nhạt) — KHÔNG dùng làm nền của chữ.
@@ -183,8 +182,8 @@ data class KachiPalette(
     val line: String,
     val lineStrong: String,
     val gridLine: String,
-    val emptyFill: String,
-    // ⚠ WP1 — vai `emptyLine` XOÁ (nó LÀ một cái viền, 0 chỗ vẽ, không có vai trò thứ hai nào).
+    // ⚠ WP1 — vai `emptyLine` XOÁ (nó LÀ một cái viền, 0 chỗ vẽ, không có vai trò thứ hai nào). ⚠ FIX286 · ES7 — vai
+    // `emptyFill` XOÁ nốt: khung trống nay TRONG SUỐT (owner 03/10), dấu "đặt được app" là nút ⇄ trên đĩa kính (OQ8 · B).
     val wash: String,
     val overlay: String,
     val accent: String,
@@ -312,7 +311,7 @@ data class KachiPalette(
         val DARK = KachiPalette(
             // ── THANG BỀ MẶT: derive từ [KachiPaletteSeeds.DARK_RAMP] (2026-09-17). Số trong at(N) là ĐỘ CAO ngữ
             //    nghĩa (nền 0 · lõm âm · nổi dương), KHÔNG phải mã màu. Đổi mood = đổi recipe ở KachiPaletteSeeds.
-            //    Bậc chọn theo thứ tự nổi: fieldSunken(-2) < emptyFill(-1) < bg/slotTo(0) < surfTo/panel/slot/field(1)
+            //    Bậc chọn theo thứ tự nổi: fieldSunken(-2) < bg/slotTo(0) < surfTo/panel/slot/field(1)
             //    < chipOff/card/card2(2) < cell/tile/surfFrom(3) < dim(4) < track(5). surfFrom(3) > surfTo(1) ⇒ thẻ
             //    có chiều nổi; mọi bề mặt trong `textOn` ≤ độ cao 3 nên mut2 vẫn ≥ 4.5:1 (xem ràng buộc ở recipe).
             bg = KachiPaletteSeeds.DARK_RAMP.at(0),
@@ -342,8 +341,6 @@ data class KachiPalette(
             line = "#17ffffff",
             lineStrong = "#59ffffff",
             gridLine = "#22ffffff",
-            // WP1 — ô trống tách nền CHỈ bằng màu ⇒ bậc `-1`→`3`: [ĐO] at(-1) 1.012× (tàng hình) · at(3) 1.326×.
-            emptyFill = KachiPaletteSeeds.DARK_RAMP.at(3),
             wash = "#0dffffff",
             overlay = "#29ffffff",
             accent = "#4d86ff",
@@ -448,8 +445,6 @@ data class KachiPalette(
             line = "#788698",
             lineStrong = "#667487",
             gridLine = "#aab5c6",
-            // WP1 — cùng lẽ bảng TỐI nhưng NGƯỢC chiều (nâng lên là trắng): [ĐO] at(-1) 1.086× → at(-2) 1.184×.
-            emptyFill = KachiPaletteSeeds.LIGHT_RAMP.at(-2),
             wash = "#0a000000",
             overlay = "#14000000",
             accent = "#2f5ae0",

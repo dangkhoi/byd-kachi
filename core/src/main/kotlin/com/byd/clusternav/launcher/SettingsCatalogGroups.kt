@@ -66,8 +66,9 @@ enum class SettingsGroup(
         "Cluster cast", "Apps on the cluster, split view, autostart",
     ),
     KEYS(
-        "keys", "Phím vô-lăng", "Gán nút vật lý cho app hoặc trợ lý",
-        "Steering-wheel keys", "Bind physical buttons to apps",
+        // FIX286 · R-KC — phím nay gán được cả MỌI nút xe (KeyCtlTargets), không chỉ app/trợ lý.
+        "keys", "Phím vô-lăng", "Gán nút vật lý cho app, trợ lý hoặc nút xe",
+        "Steering-wheel keys", "Bind physical buttons to apps or car controls",
     ),
     CAR(
         "car", "Tiện nghi xe", "Lấy gió trong, ghế, lọc bụi mịn",

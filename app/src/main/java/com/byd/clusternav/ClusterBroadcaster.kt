@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.navigation.LaneSessionClock
 import com.byd.clusternav.navigation.NavFormat
 import com.byd.clusternav.navigation.NavParse
 import com.byd.clusternav.navigation.SourceArbiter
@@ -44,6 +45,9 @@ object ClusterBroadcaster {
     private var selectedSource: String? = null
     private var sessionSerial = 0L
     private var sessionSelectedAtEpochMs = 0L
+    // FIX286 S9: cùng khoảnh khắc với [sessionSelectedAtEpochMs] nhưng theo đồng hồ ĐƠN ĐIỆU — đồng hồ tường của xe lùi
+    // sau khi mở phiên thì phép bỏ "khung cũ" vẫn đúng (LaneSessionClock).
+    private var sessionSelectedAtElapsedMs = 0L
     private var sourceSequence = 0L
     private var lastCleanRoad = ""
     private var roadShownAtMs = 0L    // I2 (1.14): mốc thời gian đường hiện tại xuất hiện → offset marquee tính từ đây (đều, bắt đầu từ đầu tên)
@@ -68,11 +72,17 @@ object ClusterBroadcaster {
             if (selectedSource == sourceId) return
             selectedSource = sourceId
             sessionSerial++
-            sessionSelectedAtEpochMs = System.currentTimeMillis()
+            markSessionStart()
             sourceSequence = 0L
             "amap-$sessionSerial"
         }
         emissionArbiter.beginSession(sourceId, sessionId)
+    }
+
+    /** Gọi khi giữ [sourceLock]: mốc mở phiên theo CẢ hai đồng hồ, cùng một khoảnh khắc (FIX286 S9). */
+    private fun markSessionStart() {
+        sessionSelectedAtEpochMs = System.currentTimeMillis()
+        sessionSelectedAtElapsedMs = SystemClock.elapsedRealtime()
     }
 
     /** Deliver one fresh source frame to the canonical AmapService lane. */
@@ -82,9 +92,13 @@ object ClusterBroadcaster {
             if (selectedSource == null) {
                 selectedSource = "legacy-navigation"
                 sessionSerial++
-                sessionSelectedAtEpochMs = System.currentTimeMillis()
+                markSessionStart()
             }
-            if (s.updatedAt > 0L && s.updatedAt < sessionSelectedAtEpochMs) {
+            if (LaneSessionClock.isBeforeSession(
+                    s.updatedAt, sessionSelectedAtEpochMs, sessionSelectedAtElapsedMs,
+                    System.currentTimeMillis(), SystemClock.elapsedRealtime(),
+                )
+            ) {
                 Log.i(TAG, "drop old source frame updatedAt=${s.updatedAt} sessionStart=$sessionSelectedAtEpochMs")
                 return
             }

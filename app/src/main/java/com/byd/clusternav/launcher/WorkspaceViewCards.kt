@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.ImageView
@@ -12,12 +11,13 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
- * ═══ NỘI DUNG TĨNH của một ô: thẻ app · ô trống · widget chết · nền widget ════════════════════════════════════
+ * ═══ NỘI DUNG TĨNH của một ô: thẻ app · widget chết · nền widget (+ nhật ký ô trống) ════════════════════════════════════
  *
  * Tách khỏi `WorkspaceView.kt` ở lượt soát 1.66 (trần 500 dòng — CLAUDE.md §4.1) và tách **theo vai**, không theo
- * số dòng: tệp kia là một `ViewGroup` — nó đo, bố trí, dựng/huỷ màn ảo của ô và nghe inset. Năm hàm dưới đây
+ * số dòng: tệp kia là một `ViewGroup` — nó đo, bố trí, dựng/huỷ màn ảo của ô và nghe inset. Bốn hàm dựng thẻ dưới đây
  * không làm gì trong số đó; chúng chỉ **dựng một view con** từ dữ liệu đã có, không giữ trạng thái nào, và không
- * hàm nào gọi ngược lên vòng đời của sân khấu.
+ * hàm nào gọi ngược lên vòng đời của sân khấu. (FIX286: `emptyAdd` — "＋ Mở ứng dụng" của ô trống — đã gỡ vì khung
+ * trống nay trong suốt; [EmptySlotLog] cuối tệp là nhật ký, không dựng view.)
  *
  * ⚠ Không đổi một dòng hành vi nào lúc tách: cùng package, cùng tên, cùng chữ ký — là hàm mở rộng của chính
  * [WorkspaceView] (khuôn `WorkspacePrefsProfile.kt` / `ClusterNavBridgeKeys.kt`), nên chỗ gọi không đổi ký tự nào.
@@ -30,18 +30,35 @@ internal fun WorkspaceView.placeholder(text: String) = TextView(context).apply {
     gravity = Gravity.CENTER
 }
 
-/** Ô trống: viền đứt + dấu ＋ to + nhãn — rõ là "chỗ thêm app". */
-internal fun WorkspaceView.emptyAdd(): View = LinearLayout(context).apply {
-    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-    addView(TextView(context).apply {
-        // [type scale] ngoại lệ: `＋` là KÝ HIỆU trang trí (dấu "thêm vào đây"), không phải chữ — cỡ của nó là
-        // hình học của ô trống, không phải một bậc chữ. Trần 32f = DISPLAY(28) sẽ nhỏ đi thấy rõ.
-        text = "＋"; setTextColor(Color.parseColor(KachiTheme.MUT)); setTextSize(TypedValue.COMPLEX_UNIT_SP, 32f); gravity = Gravity.CENTER   // [type scale] glyph trang trí, ngoài 5 bậc
-    })
-    addView(TextView(context).apply {
-        text = context.getString(R.string.kachi_slot_open_app); setTextColor(Color.parseColor(KachiTheme.MUT)); KachiType.apply(this, KachiType.BODY)
-        gravity = Gravity.CENTER; setPadding(0, dp(Sp.XS), 0, 0)
-    })
+/**
+ * FIX286 · ES6 — dòng `[slot-empty]` cho `usage-*.log`: bản trên xe có khung trống trong suốt chưa, ⇄ của nó vẽ kiểu
+ * nào (OQ8 · phương án B: `⇄ trên đĩa kính` — owner đổi lại phương án thì dòng này phải đổi theo, để nhật ký chụp từ
+ * xe nói đúng bản đang chạy), đang có bao nhiêu ô trống, chủ đề nào (owner/anh em chụp màn hình gửi về — CLAUDE.md
+ * §9/§11). KHÔNG ghi trường ảnh nền: [ĐO máy ảo 02/10] ở lượt dựng đầu sau khi tiến trình bật, ảnh nền còn đang nạp
+ * trên luồng nền ⇒ một trường `ảnh=` ở dòng này sẽ báo `off` dù màn sắp hiện ảnh.
+ *
+ * Gọi ở MỌI lượt render theo state THẬT ([WorkspaceView] `renderInternal` — cả lượt không đổi cấu trúc: bố cục toàn ô
+ * trống giống hệt state rỗng của `init` nên lượt đầu không dựng lại gì) + `setCustomLayout` đổi số ô + `restyle`; không
+ * mỗi ô, và KHÔNG ở `rebuild()` trần — [ĐO máy ảo 03/10] `init` gọi nó với state rỗng trước lượt render đầu ⇒ dòng
+ * "3 ô trống" giả ở mỗi lần tiến trình bật. Nhịp render 1 Hz trên xe ⇒ khử trùng ở đây là bắt buộc. Chỉ ghi
+ * khi chữ ký (tập ô trống · chủ đề) ĐỔI so với dòng trước — `restyle` chạy ở mỗi lượt đổi chủ đề, ghi lặp cùng một
+ * dòng chỉ làm loãng nhật ký. Lượt đầu của tiến trình không có ô trống ⇒ không ghi (không có gì để nói).
+ */
+internal object EmptySlotLog {
+    private var last: String? = null
+
+    fun note(slots: List<SlotContent>, shown: Int) {
+        val empty = (0 until shown).filter { slots.getOrElse(it) { SlotContent.Empty } is SlotContent.Empty }
+        val sig = "${empty.joinToString(",")}|${KachiTheme.night}"
+        if (sig == last || (last == null && empty.isEmpty())) return
+        last = sig
+        android.util.Log.i(
+            "KachiWorkspace",
+            "[slot-empty] ${empty.size} ô trống" +
+                (if (empty.isEmpty()) "" else " (ô ${empty.joinToString(",") { "${it + 1}" }}) trong suốt · ⇄ trên đĩa kính") +
+                " · chủ đề=${if (KachiTheme.night) "tối" else "sáng"}",
+        )
+    }
 }
 
 /** Thẻ app trong ô: icon + tên thật (PackageManager). Trên xe app THẬT mở freeform vào ô; off-car hiện thẻ này. */

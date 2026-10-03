@@ -71,12 +71,25 @@ internal object SettingsDialogs {
         message: String,
         confirmLabel: String,
         onConfirm: () -> Unit,
+    ) = offer(context, title, message, confirmLabel, context.getString(android.R.string.cancel), onConfirm)
+
+    /**
+     * Như [confirm] nhưng nút từ chối cũng mang nhãn của chỗ gọi — FIX286 · PI3: sau khi nhập hồ sơ thì việc đã XONG,
+     * không có gì để "Huỷ"; hai lựa chọn thật là *"Dùng hồ sơ này ngay"* / *"Để sau"*.
+     */
+    fun offer(
+        context: Context,
+        title: String,
+        message: String,
+        confirmLabel: String,
+        dismissLabel: String,
+        onConfirm: () -> Unit,
     ) {
         AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(confirmLabel) { _, _ -> onConfirm() }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(dismissLabel, null)
             .show()
     }
 

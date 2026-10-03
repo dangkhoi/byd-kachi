@@ -26,6 +26,8 @@ class VoiceRelativeStepTest {
         private val reads: Map<String, Int?>,
         /** Mã nút mà "chiếc xe giả" này KHÔNG có (bảng feature-id thật thiếu id) — xem `wiredOnThisCar`. */
         private val absent: Set<String> = emptySet(),
+        /** FIX286 · SR4 — nút mà xe TỰ BÁO không có bộ phận (cổng có-mặt) — tập con của [absent]. */
+        private val parts: Set<String> = emptySet(),
     ) : CarControlPort {
         val fired = ArrayList<String>()
         val readIds = ArrayList<String>()
@@ -34,6 +36,8 @@ class VoiceRelativeStepTest {
         private fun ok(id: String): Boolean = id !in absent
 
         override fun wiredOnThisCar(id: String): Boolean = id !in absent
+
+        override fun partAbsentOnThisCar(id: String): Boolean = id in parts
 
         override fun toggle(id: String, on: Boolean): Boolean { fired += "toggle:$id:$on"; return ok(id) }
         override fun step(id: String, value: Int): Boolean { fired += "step:$id:$value"; return true }
@@ -54,6 +58,7 @@ class VoiceRelativeStepTest {
     private class Rig(
         reads: Map<String, Int?> = emptyMap(),
         absent: Set<String> = emptySet(),
+        parts: Set<String> = emptySet(),
         private val controls: Map<String, Int> = emptyMap(),
         /**
          * [SOÁT 2.74 · P2] `true` ⇒ việc bị đẩy xuống nền được **giữ lại** trong [lane] thay vì chạy ngay.
@@ -65,7 +70,7 @@ class VoiceRelativeStepTest {
          */
         private val holdBackground: Boolean = false,
     ) {
-        val port = Port(reads, absent)
+        val port = Port(reads, absent, parts)
         val said = ArrayList<String>()
 
         /** Những việc đã được đẩy xuống luồng nền và **chưa** chạy (chỉ khi `holdBackground`). */
@@ -199,6 +204,23 @@ class VoiceRelativeStepTest {
             !hong.said.single().contains("trên xe này"),
             "cổng nói 'có' mà lệnh vẫn hỏng ⇒ là lỗi LẦN NÀY, không được đổ cho chiếc xe: ${hong.said}",
         )
+    }
+
+    /**
+     * FIX286 · SR4 — xe TỰ BÁO không có bộ phận (cửa sổ trời trên xe `getMoonRoofConfig` = 0/2) ⇒ câu riêng *"xe này
+     * không có bộ phận này"*, KHÁC câu *"chưa điều khiển được trên xe này"* của nút feature-id vắng (Kachi chưa nối được).
+     * Hai chiều: có cổng ⇒ câu mới; vắng mà không phải cổng có-mặt ⇒ câu cũ y nguyên.
+     */
+    @Test
+    fun `xe tu bao khong co bo phan thi noi cau rieng, khong lan voi nut chua noi duoc`() {
+        val noRoof = Rig(absent = setOf("sunroof"), parts = setOf("sunroof"))
+        noRoof.dispatcher().execute(listOf(VoiceIntent.Control("sunroof", 0)))
+        assertTrue(noRoof.said.single().contains("xe này không có bộ phận này"), "${noRoof.said}")
+        assertTrue(!noRoof.said.single().contains("chưa điều khiển được"), "${noRoof.said}")
+        val vang = Rig(absent = setOf("ac_auto"))
+        vang.dispatcher().execute(listOf(VoiceIntent.Control("ac_auto", 1)))
+        assertTrue(!vang.said.single().contains("bộ phận"), "nút feature-id vắng giữ câu cũ: ${vang.said}")
+        assertTrue(!NoCar.partAbsentOnThisCar("sunroof"), "mặc định = không biết ⇒ không bao giờ nói 'xe không có'")
     }
 
     /**

@@ -29,6 +29,10 @@ import java.io.IOException
  * Bài canh quét source từng hàm ghi ấy phải gọi [write].
  *
  * Đọc: [read] đi **thẳng tệp** (không `SharedPreferences`, không `WorkspacePrefs`) — đó là toàn bộ lý do tồn tại.
+ *
+ * FIX286 · VK4 (2.86): tệp mang thêm prefs tươi cho `:wake` ([VoiceWakePrefs] — công tắc wake · phím gán Kachi nghe ·
+ * tập hỏi xác nhận · app dẫn đường/nhạc). Ngoài các đường ghi hồ sơ ở trên, setter của các khoá ấy và
+ * `VoiceWakeService.sync` gọi [write] qua `VoiceWakePrefsMain.publish`.
  */
 object VoiceGrammarSnapshotStore {
 
@@ -51,21 +55,30 @@ object VoiceGrammarSnapshotStore {
             Log.w(TAG, "bỏ ghi ảnh chụp ngữ pháp: không phải tiến trình chính (cache prefs của tiến trình này có thể cũ)")
             return
         }
-        val snap = VoiceGrammarSnapshot(
-            profiles = prefs.profiles(),
-            activeProfile = prefs.activeProfile(),
-            places = prefs.savedPlaces(),
-            writtenAtMs = System.currentTimeMillis(),
-        )
-        // `PrefsWorkspaceRepository.persist` gọi `setActiveProfile` ở MỌI lượt lưu (đổi ô, đổi chủ đề…) ⇒ nội dung
-        // thường không đổi. So với bản tiến trình này vừa ghi (bỏ mốc giờ) — chỉ tiến trình chính ghi, nên bản
-        // nhớ ấy là sự thật về tệp; trùng thì không chạm đĩa.
-        val body = snap.copy(writtenAtMs = 0L).encode()
         // [SOÁT 2.68 · Pass 2 · P3] Một tên tệp tạm dùng chung cho mọi lượt ghi ⇒ hai luồng của **cùng** tiến trình
         // chính (mọi đường hiện tại đi luồng vẽ, nhưng cầu kiểm thử `KachiTestBridge` gọi từ luồng binder) sẽ
         // `writeText` xen nhau vào một tệp rồi `renameTo` ⇒ công bố một tệp lẫn hai bản. Khoá ở đây là tuần tự hoá
         // đúng cặp "so–ghi": tệp ≤ 2 KB nên lượt chờ là vài ms, và đường ghi nào cũng đã nằm trên luồng vẽ.
+        // [Senior review FIX286 Pass 1 · P3] ĐỌC prefs cũng phải nằm TRONG khoá: từ 2.86 có thêm người ghi ở luồng nền
+        // (`VoiceEngine.preload` → `VoiceWakeService.sync` → publish). Đọc ngoài khoá thì luồng A đọc state CŨ, luồng B
+        // đọc state MỚI và ghi trước, rồi A ghi đè bản cũ lên (body khác `lastBody`) ⇒ `:wake` đọc ảnh chụp lỗi thời
+        // tới lượt ghi kế. Tệp ≤ 2 KB, đọc prefs là bộ nhớ ⇒ giữ khoá thêm vài µs.
         synchronized(lock) {
+            val snap = VoiceGrammarSnapshot(
+                profiles = prefs.profiles(),
+                activeProfile = prefs.activeProfile(),
+                places = prefs.savedPlaces(),
+                writtenAtMs = System.currentTimeMillis(),
+                // FIX286 · VK4 — prefs tươi cho `:wake` (chế độ HOLD/WAKE · tập hỏi · app dẫn đường/nhạc), chung tệp. Đọc
+                // hỏng ⇒ không mang (`:wake` lùi về đường cũ), không làm hỏng phần hồ sơ/sổ địa chỉ của ảnh chụp.
+                wake = runCatching { VoiceWakePrefsMain.collect(ctx) }
+                    .onFailure { Log.w(TAG, "không đọc được prefs cho `:wake` — ảnh chụp không mang phần ấy", it) }
+                    .getOrDefault(VoiceWakePrefs.EMPTY),
+            )
+            // `PrefsWorkspaceRepository.persist` gọi `setActiveProfile` ở MỌI lượt lưu (đổi ô, đổi chủ đề…) ⇒ nội dung
+            // thường không đổi. So với bản tiến trình này vừa ghi (bỏ mốc giờ) — chỉ tiến trình chính ghi, nên bản
+            // nhớ ấy là sự thật về tệp; trùng thì không chạm đĩa.
+            val body = snap.copy(writtenAtMs = 0L).encode()
             if (body == lastBody) return
             if (writeAtomic(ctx, snap.encode())) lastBody = body   // ghi hỏng ⇒ không nhớ, lượt sau thử lại
         }

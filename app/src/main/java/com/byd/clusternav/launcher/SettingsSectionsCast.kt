@@ -5,6 +5,9 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.byd.clusternav.R
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
@@ -84,23 +87,34 @@ class SettingsCastSection(
     }
 
     /**
-     * Công tắc chính — hiện lựa chọn của HỒ SƠ (`castEnabledForProfile`), như mọi dòng Cài đặt khác.
+     * Công tắc chính — vẽ trạng thái ĐANG CHẠY (`castEnabled`), không phải lựa chọn của hồ sơ.
      *
-     * V-CLUSTER · VC-R7/VC-R9: lượt đổi hồ sơ KHÔNG bật/tắt chiếu (cụm hai chủ — spec K1); lựa chọn của hồ sơ đợi tới lần
-     * nổ máy kế. Khi có bản chờ, màn nói thẳng *đang chạy gì · hồ sơ muốn gì · khi nào áp*, kèm nút *Áp ngay* đi đúng
-     * đường thật `setCastEnabled` (người lái đang đỗ muốn đổi luôn thì không phải tắt máy).
+     * FIX286 · PI4 (thay VC-R9 bản 2.84, spec S4 §11.4.8 sửa cùng lượt): bản 2.84 vẽ `pending ?: sống` ⇒ cụm đang TẮT mà ô
+     * hiện ✓, chạm thì `checkRow` lật thành TẮT (`SettingsRows.kt:145`) — người lái phải chạm HAI lần mới bật được, đúng
+     * triệu chứng *"phải bật lại thủ công"* (FIELD-285-0310). Nay một chạm là đúng ý; lựa chọn của hồ sơ (bản chờ) nằm ở
+     * dòng phụ *"Đang chạy … · hồ sơ này … — áp dụng từ lần nổ máy sau"* + nút *Áp ngay* như cũ.
+     *
+     * V-CLUSTER · VC-R7: lượt đổi hồ sơ KHÔNG bật/tắt chiếu (cụm hai chủ — spec K1); lựa chọn của hồ sơ đợi tới lần nổ máy
+     * kế. *Áp ngay* đi đúng đường thật `setCastEnabled`. FIX286 · PI5: lần khởi động trước có chốt bản chờ ⇒ một dòng nói
+     * chốt gì, lúc nào, bản nào (mốc bền — ca TẮT→BẬT chưa từng đo trên xe, OC-PI3).
      */
     private fun rebuildMaster() {
         val holder = masterHolder ?: return
         holder.removeAllViews()
         holder.addView(rows.checkRow(
-            on = bridge.castEnabledForProfile(),
+            on = bridge.castEnabled(),
             title = context.getString(R.string.kachi_cast_enabled_title),
             sub = context.getString(R.string.kachi_cast_enabled_sub),
         ) { on ->
             bridge.setCastEnabled(on)
             refreshStatus()
         })
+        bridge.castCommitMark()?.let { mark ->
+            holder.addView(rows.note(context.getString(
+                R.string.kachi_cast_commit_mark,
+                SimpleDateFormat(MARK_TIME, Locale.US).format(Date(mark.atMs)), onOff(mark.on), mark.versionName,
+            )))
+        }
         val pending = bridge.castEnabledPending() ?: return
         holder.addView(rows.note(context.getString(
             R.string.kachi_cast_enabled_pending, onOff(bridge.castEnabled()), onOff(pending),
@@ -420,5 +434,8 @@ class SettingsCastSection(
          * Không phải 0.5: một ô chia đôi cân đối trông như một trạng thái THẬT, còn lệch thì đọc ra là "mẫu".
          */
         const val IDLE_PREVIEW_FRACTION = 0.4f
+
+        /** Giờ của mốc chốt lúc khởi động (FIX286 · PI5): ISO như hộp chọn tệp hồ sơ — không nhập nhằng ngày/tháng vi/en. */
+        const val MARK_TIME = "yyyy-MM-dd HH:mm"
     }
 }

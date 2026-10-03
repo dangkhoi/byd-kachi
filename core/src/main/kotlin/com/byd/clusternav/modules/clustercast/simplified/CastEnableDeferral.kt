@@ -88,4 +88,41 @@ object CastEnableDeferral {
         val effective = live as? Boolean ?: DEFAULT
         return AtStart.Commit(on = want, closeOrphan = effective && !want)
     }
+
+    /**
+     * FIX286 · PI3 — nút **"Dùng hồ sơ này ngay"** sau khi nhập (người lái CHẠM, không bao giờ tự chạy): sau lượt đổi hồ
+     * sơ, bản chờ [pending] được áp NGAY bằng đúng đường của nút *Áp ngay* — nhưng CHỈ khi cụm không đang chiếu app
+     * ([SimpleCastState.Off] / [SimpleCastState.Idle]). Đang chiếu / đang chuyển trạng thái ⇒ `null` = để bản chờ cho lần
+     * nổ máy sau (bật/tắt chiếu lúc đang có app trên cụm là đổi mặt cụm trước mặt người lái — CLAUDE.md §4).
+     *
+     * Trả giá trị cần áp, `null` = không áp gì.
+     */
+    fun applyOnUse(pending: Boolean?, state: SimpleCastState): Boolean? =
+        pending.takeIf { state == SimpleCastState.Off || state == SimpleCastState.Idle }
+
+    /** Khoá theo XE: mốc bền của lượt chốt gần nhất lúc khởi động ([CommitMark]). */
+    const val COMMIT_MARK_KEY = "cast_enabled_committed"
+
+    /**
+     * FIX286 · PI5 — **mốc bền** của lượt chốt bản chờ lúc khởi động: chốt gì · lúc nào · bản nào. Ghi trong CÙNG lượt
+     * `commit()` với khoá sống; màn Cài đặt › Chiếu cụm đọc để nói thật *"lần khởi động lúc … đã áp lựa chọn của hồ
+     * sơ"* — màn Chẩn đoán không mở được trên bản phát hành, còn `usage-*.log` chỉ chụp pid của tiến trình hiện tại nên
+     * dòng log của lượt dựng lại 0,3 s sau khi tắt máy có thể đã mất (phản biện FIX286 BÁC BỎ 4).
+     *
+     * Định dạng `"<1|0>|<epoch ms>|<versionCode>|<versionName>"`; đọc hỏng ⇒ `null`, không ném.
+     */
+    data class CommitMark(val on: Boolean, val atMs: Long, val versionCode: Int, val versionName: String) {
+        fun encode(): String = "${if (on) 1 else 0}|$atMs|$versionCode|${versionName.filter { it != '|' && it >= ' ' }.take(24)}"
+
+        companion object {
+            fun decode(raw: Any?): CommitMark? {
+                val f = (raw as? String)?.split('|') ?: return null
+                if (f.size != 4) return null
+                val on = when (f[0]) { "1" -> true; "0" -> false; else -> return null }
+                val at = f[1].toLongOrNull()?.takeIf { it > 0 } ?: return null
+                val code = f[2].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+                return CommitMark(on, at, code, f[3])
+            }
+        }
+    }
 }

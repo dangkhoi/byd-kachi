@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.SourceRoots
+import com.byd.clusternav.testsupport.SwapDiscModel
 import com.byd.clusternav.testsupport.Wcag.fmt
 import com.byd.clusternav.testsupport.Wcag.over
 import com.byd.clusternav.testsupport.Wcag.ratio
@@ -166,7 +167,6 @@ class ThemePaletteContractTest {
         // cuối ô nằm trên `slotTo` ở đáy. Đo một đầu là đo một nửa sự thật — đúng lẽ đã ghi cho `surfFrom/surfTo`.
         "slotTo" to ALL_INKS,
         "chipOff" to ALL_INKS,
-        "emptyFill" to listOf("ink", "mut"),
         // Nền nút bước −/+ và vùng radar tắt. Chỉ chữ chính nằm trên nó; vùng radar không có chữ nào.
         "dim" to listOf("ink"),
         // ── VISUAL-REFRESH P1 · chất liệu bề mặt ──
@@ -280,29 +280,43 @@ class ThemePaletteContractTest {
     }
 
     /**
-     * Ô TRỐNG phải tách được khỏi nền màn **bằng MÀU NỀN** — bài này **đảo chiều** bài cũ.
+     * Ô TRỐNG phải NHẬN RA ĐƯỢC — nhờ **nút ⇄ ≥ 3:1 trên MỌI nền**, không nhờ màu nền ô.
      *
-     * ## ⚠⚠ WP1 · R1.1 — vì sao đảo, không phải nới
-     * Bài cũ đòi `emptyLine trên emptyFill ≥ 3:1`, tức là đòi **CÓ** một cái gạch đứt. Owner 2026-09-20: *"KHÔNG còn
-     * viền ở BẤT CỨ ĐÂU hết"* ⇒ gạch bị gỡ và vai `emptyLine` bị xoá khỏi bảng màu, nên bài cũ **không còn đo được
-     * gì**. Nhưng cái *tính chất* nó bảo vệ — *"người dùng thấy được chỗ này đặt được app"* — thì vẫn phải có, chỉ
-     * đổi chân: từ **viền** sang **bước sáng của nền**. Bỏ bài cũ mà không viết bài này là đánh mất một bất biến.
+     * ## ⚠⚠ Lịch sử: bài này đã đổi chân BA lần, tính chất nó bảo vệ thì không đổi
+     *  1. Bản đầu đòi `emptyLine trên emptyFill ≥ 3:1` — tức đòi một cái **gạch đứt**. Owner 2026-09-20: *"KHÔNG còn
+     *     viền ở BẤT CỨ ĐÂU hết"* ⇒ WP1 R1.1 đổi sang `emptyFill ÷ bg ≥ 1.15` (nền ô trống tách nền bằng bước sáng).
+     *  2. **FIX286 · ES8 (owner 03/10, *"3 ok"*)**: khung trống **TRONG SUỐT** ⇒ vai `emptyFill` xoá; dấu DUY NHẤT của
+     *     *"chỗ này đặt được app"* là nút ⇄ nằm thẳng trên ảnh ⇒ ≥ 3:1 (WCAG 1.4.11) trên **mọi** L ∈ [0, 1] bước 0,01
+     *     với hai mực `SwapTint` (phương án A — không nền, màu theo độ chói đo dưới nút); không ảnh ≥ 4.5:1.
+     *  3. **FIX286 · OQ8 phương án B (chốt 2026-10-03 — phiên điều phối, owner có thể đổi)**: [ĐO máy ảo 03/10] A KHÔNG
+     *     đạt trên ảnh nhiều chi tiết (μ 2.60:1) — không MỘT màu nào đạt trên cả điểm sáng lẫn tối của cùng vùng 30 px.
+     *     ⇄ nay nằm trên ĐĨA KÍNH NEUTRAL (`SlotSwapButton.centered(disc = true)`), icon giữ `MUT`. Cùng lượng từ (mọi L,
+     *     bước 0,01), cùng hai sàn (3:1 có ảnh · 4.5:1 không ảnh), nay đo trên ĐÚNG chồng lớp của đĩa ([SwapDiscModel]:
+     *     lớp che `GlassVeil` + nhuộm màu trội hai cực + bề mặt 80 %) — không còn giả định ảnh đồng màu dưới icon.
      *
-     * Sàn `1.15×` = mức mà dự án đã ĐO và chấp nhận cho *"tách một mảng lớn khỏi nền"* ở bài
-     * `the chat lieu tach duoc khoi nen o ca hai bang` (thẻ bảng sáng 1.13× là ca mong manh nhất, và ô trống không
-     * được mong manh hơn thẻ vì nó KHÔNG có chữ/số bên trong để bù).
+     * Bỏ bài cũ mà không viết bài này là đánh mất một bất biến — cùng lẽ lần đổi chân thứ nhất.
      */
     @Test
-    fun `o trong tach duoc khoi nen bang mau`() {
+    fun `o trong nhan ra duoc nho nut doi app tren moi nen`() {
         val bad = mutableListOf<String>()
         forEachPalette { name, p ->
-            val r = ratio(p.emptyFill, p.bg)
-            if (r < 1.15) bad += "$name emptyFill ÷ bg = ${fmt(r)}"
+            val ink = ColorMath.parse(p.mut)
+            // Có ảnh: đúng ba đối số `KachiGlass.paint` đưa cho lớp che ở tone NEUTRAL (veil = bg · `surfacePair(…, true)`
+            // · `veilInks(NEUTRAL)` = MUT, MUT2, INK).
+            val art = SwapDiscModel.worstOverArt(
+                ink, ColorMath.parse(p.bg),
+                intArrayOf(ColorMath.parse(p.surfFromOverArt), ColorMath.parse(p.surfToOverArt)),
+                intArrayOf(ink, ColorMath.parse(p.mut2), ColorMath.parse(p.ink)),
+            )
+            if (art < 3.0) bad += "$name có ảnh, L xấu nhất ⇒ ${fmt(art)}"
+            // Không ảnh: đĩa = `KachiTheme.surface(NEUTRAL)` trên nền chủ đề + hai vầng sáng. Nền biết trước ⇒ 4.5:1.
+            val grounds = listOf(p.bg, p.glow1, p.glow2).map { ColorMath.parse(it) }
+            val plain = SwapDiscModel.worstNoArt(ink, intArrayOf(ColorMath.parse(p.surfFrom), ColorMath.parse(p.surfTo)), grounds)
+            if (plain < 4.5) bad += "$name không ảnh (bg + glow) ⇒ ${fmt(plain)}"
         }
         assertEquals(
             emptyList<String>(), bad,
-            "ô trống không tách được khỏi nền: sau khi gỡ gạch đứt, NỀN là thứ duy nhất nói 'chỗ này đặt được app'. " +
-                "[ĐO] bậc cũ `at(-1)` cho 1.012× bảng tối = tàng hình. $bad",
+            "⇄ của ô trống không đọc được — khung trống trong suốt nên nút là dấu DUY NHẤT của 'chỗ đặt app'. $bad",
         )
     }
 
@@ -475,7 +489,7 @@ class ThemePaletteContractTest {
 
         /** Vai NỀN — thứ chữ nằm lên. */
         val SURFACE_ROLES = listOf(
-            "bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "slotTo", "chipOff", "emptyFill",
+            "bg", "card", "card2", "panel", "field", "cell", "tile", "slot", "slotTo", "chipOff",
             "dim", "surfFrom", "surfTo", "fieldSunken",
         )
 

@@ -203,10 +203,25 @@ class ControlWriteArgsTest {
     // ⚠ (V) FEATURE-FILTER 2026-09-17: bài `che do lai setOperationMode map index UI sang enum` đã gỡ cùng nút
     // `drive_mode` (owner chấm NO) — và cùng nhánh `writeArgs` của nó. Ô ĐỌC `op_mode` không đi qua writeArgs.
 
-    @Test fun `cua so troi setMoonRoofState mo=1 dong=2`() {
-        assertEquals("BYDAutoBodyworkDevice.setMoonRoofState", ControlRegistry.byId("sunroof")!!.bindingKey)
-        assertArrayEquals(intArrayOf(1), args("sunroof", 1))
-        assertArrayEquals(intArrayOf(2), args("sunroof", 0))
+    /**
+     * ⚠⚠ 2.86 · FIX286-SUNROOF — bài này ĐẢO chiều có chủ ý (spec `kachi-286-field-fixes.html` R-SR **SR1**).
+     *
+     * Tới 2.85 bài mang tên `cua so troi setMoonRoofState mo=1 dong=2` và khoá đúng **giá trị sai**: nhãn nguồn của
+     * nó (*"[ĐO] OpenBYD CarControlImpl.java:1503-1505"*) là [SUY] bị ghi thành [ĐO] — OpenBYD chỉ chuyển tiếp, enum
+     * `ko1` OPEN=1/CLOSE=2 là enum KÍNH chung. [ĐO nguồn OEM, đọc lại 02/10] app Cài đặt BYD gửi `setMoonRoofState`
+     * **100** (mở, `SunRoofFragment.java:859`) / **0** (đóng, `:835`) — stub `MOONROOF_OPEN=100 · MOONROOF_CLOSED=0`
+     * (`BYDAutoBodyworkDevice.java:338-344`). CapTest Sealion 6 16/09: `sunroof` ❌ đường 1/2, `sunshade` ✅ đường %.
+     *
+     * Chặt hơn bài cũ ở hai chỗ: (1) không nhận BẤT KỲ giá trị 1..20 nào cho mặt mở (thanh kéo OEM không bao giờ gửi
+     * dải dưới `MOONROOF_MIN = 21` — gửi 1 là "mở 1 %" hoặc bị bỏ qua) ; (2) lệnh nhả 255 phải là DỮ LIỆU của dòng.
+     */
+    @Test fun `cua so troi setMoonRoofState mo=100 dong=0 va nha 255 khai o registry`() {
+        val def = ControlRegistry.byId("sunroof")!!
+        assertEquals("BYDAutoBodyworkDevice.setMoonRoofState", def.bindingKey)
+        assertArrayEquals(intArrayOf(100), args("sunroof", 1), "mở = MOONROOF_OPEN 100 (OEM :859)")
+        assertArrayEquals(intArrayOf(0), args("sunroof", 0), "đóng = MOONROOF_CLOSED 0 (OEM :835)")
+        assertFalse(args("sunroof", 1)[0] in 1..20, "mở không được rơi vào dải dưới MOONROOF_MIN = 21")
+        assertEquals(WriteRelease(255, 200L), def.release, "nhả 255 sau 200 ms (OEM :836 + :1109) phải khai ở dòng registry")
     }
 
     // ⚠ (V) FEATURE-FILTER 2026-09-17: hai bài `sac ngay setChargingMode luon IMMEDIATELY=1` và

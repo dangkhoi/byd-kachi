@@ -179,6 +179,10 @@ internal object SettingsCatalogClusterNav {
                 "30 MB) như trước, chỉ hàng bấm là mất. Tắt ghi luôn thì buổi RE sau cắm máy vào sẽ không còn " +
                 "nhật ký của những lượt nói TRƯỚC đó — mất đúng thứ nhật ký sinh ra để giữ. Đọc/ghi qua cầu kiểm " +
                 "thử (`prefs_set --es key voice_keep_log --es text true|false`), lấy zip bằng `voice_dump`",
+        "voice_confirm_default_v286" to
+            "FIX286 · SR5 (2.86) — mốc ĐI KÈM `voice_confirm_ids`, không phải một lựa chọn: \"tập đã lưu là lựa " +
+                "chọn thật của người dùng kể từ khi mặc định có mở-cửa-sổ-trời\". Hàm ghi tập đặt nó trong cùng " +
+                "lượt `edit()`; không có ô nào để bấm vì người dùng chỉ thấy (và chỉ cần thấy) các ô tích của tập",
         "voice_follow_up_ms" to
             "V3 · R9 — quãng GIỮ MICRO sau khi trả lời xong, cho câu tiếp (owner D1: 5 giây). Không lên UI vì " +
                 "công tắc người dùng thật sự cần là *bật/tắt* hội thoại, còn con số thì là một hằng ĐO trên " +

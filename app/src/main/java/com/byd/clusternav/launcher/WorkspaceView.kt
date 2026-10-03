@@ -1,8 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
 import android.view.DragEvent
 import android.view.Gravity
@@ -175,7 +173,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             // làm bộ quyết định thấy 'số view lệch số ô' mọi lần render ⇒ dựng lại TẤT CẢ liên tục.
             slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout), swap = swap,
         )) {
-            WorkspaceRenderPlan.RebuildAll -> { rebuild(); return }
+            WorkspaceRenderPlan.RebuildAll -> { rebuild(); EmptySlotLog.note(displayed.slots, slotViews.size); return }
             is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap.filterNot { swapInPlace(it, s.slots) }).sorted().forEach { i ->
                 val nc = s.slots.getOrElse(i) { SlotContent.Empty }
                 val oc = old.slots.getOrElse(i) { SlotContent.Empty }
@@ -197,6 +195,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // ô). Lượt chỉ làm-mới-số (refreshRead in-place) KHÔNG gọi requestLayout — trước đây requestLayout mỗi nhịp
         // (1s) ép CẢ workspace đo lại ⇒ widget nhấp/giật liên tục dù số là thứ duy nhất đổi. Widget tự invalidate.
         if (structural) { requestLayout(); invalidate() }
+        EmptySlotLog.note(displayed.slots, slotViews.size)   // mọi lượt render (rẻ, tự khử trùng) — kể cả lượt ĐẦU không đổi ô nào
     }
 
     /** Gói dữ liệu render widget hiện tại (trạng thái xe + nhạc live + cổng ra lệnh cho ô hành động + đơn vị). */
@@ -233,7 +232,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         val before = EffectiveLayout.slotCount(displayed.preset, customLayout)
         customLayout = layout
         val after = EffectiveLayout.slotCount(displayed.preset, customLayout)
-        if (before != after) rebuild() else { requestLayout(); invalidate() }
+        if (before != after) rebuild() else { requestLayout(); invalidate() }   // [slot-empty]: lượt render kế tiếp ghi
     }
 
     /** Khung pixel đang hiệu lực — mọi chỗ trong view PHẢI đi qua đây (xem `EffectiveLayout`). */
@@ -265,7 +264,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val v = makeSlot(i, content)
             addView(v); slotViews.add(v)
         }
-        requestLayout(); invalidate()
+        requestLayout(); invalidate()   // ⚠ KHÔNG ghi [slot-empty] ở đây: `init` gọi hàm này với state RỖNG trước lượt render đầu
     }
 
     /**
@@ -281,7 +280,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             val v = makeSlot(i, content)
             addView(v); slotViews[i] = v
         }
-        requestLayout(); invalidate()
+        requestLayout(); invalidate(); EmptySlotLog.note(displayed.slots, slotViews.size)
     }
 
     /** Dựng lại CHỈ ô widget (đổi thứ chỉ widget đọc: đơn vị, ảnh) — ô App giữ view ⇒ bộ chiếu không bị nhả (C5). */
@@ -308,9 +307,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // sáng), cộng sắc lĩnh vực của chính nội dung trong ô ⇒ nhìn màu là biết ô nào là Khí hậu, không phải đọc chữ.
         // P1b · §4.10: có ảnh nền thì khay là CỬA SỔ kính nhìn xuống ảnh mờ (KachiGlass); không có ảnh thì đúng
         // KachiTheme.surface(..., SurfaceTone.WELL, ...) như trước — cùng cửa, cùng tone, không đổi một byte.
-        // Ô TRỐNG không đi qua kính: nó là ngoại lệ có chủ ý (nền `emptyFill` riêng, nhánh Empty bên dưới) — [ĐO] máy
-        // ảo: gắn kính rồi để nhánh Empty đè nền lên thì lượt `KachiGlass.refresh` khi ảnh đổi lại đè kính lên nền ô
-        // trống, ô mất dấu "chỗ này đặt được app".
+        // Ô TRỐNG không đi qua kính, và KHÔNG được mang tag kính: FIX286 · ES1 (owner 03/10) — khung trống TRONG SUỐT
+        // thấy hình nền; tag kính còn trên khung thì lượt `KachiGlass.refresh` khi ảnh đổi sẽ đắp kính lên (bẫy P1b).
         if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
         fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -371,18 +369,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 fl.setOnClickListener { onAppOpen?.invoke(index) }
                 fl.setOnLongClickListener { startSlotDrag(index, fl); true }
             }
-            SlotContent.Empty -> {
-                // ⚠⚠ WP1 · R1.1 — GẠCH ĐỨT ĐÃ GỠ (owner: *"KHÔNG còn viền ở BẤT CỨ ĐÂU hết"*). Ô trống trước đây
-                // thấy được **chỉ nhờ** gạch đứt: [ĐO] nền `emptyFill` cũ (`DARK_RAMP.at(-1)`) chênh nền màn đúng
-                // **1.012×** = tàng hình. Nên cùng lượt này `emptyFill` đổi bậc (tối: `at(3)` ⇒ **1.33×**; sáng:
-                // `at(-2)` ⇒ **1.18×**) để cái khay vẫn đọc ra là "chỗ này đặt được app" — xem KDoc
-                // [KachiPalette.emptyFill]. Vai `emptyLine` đã XOÁ khỏi bảng màu (nó chỉ là cái gạch đó).
-                fl.background = GradientDrawable().apply {
-                    cornerRadius = dp(Sp.RADIUS_L).toFloat(); setColor(Color.parseColor(KachiTheme.EMPTY_FILL))
-                }
-                fl.addView(emptyAdd(), mm)
-                fl.setOnClickListener { onSlotTap?.invoke(index) }
-            }
+            // FIX286 · ES1 — khung trống TRONG SUỐT: không nền/viền/kính, KHÔNG nhận chạm cả ô (vùng trong suốt bấm được =
+            // nút vô hình) — chỉ ⇄ trên đĩa kính nhỏ (OQ8 phương án B). Vẫn VISIBLE + giữ drag listener dưới ⇒ vẫn là điểm thả.
+            SlotContent.Empty -> fl.addView(slotHead(index, empty = true), headLp())
         }
         // Mọi ô là điểm THẢ: kéo 1 ô rồi thả lên ô khác → đổi chỗ nội dung.
         fl.setOnDragListener { _, e ->
@@ -427,8 +416,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * `appName` là một lượt `getApplicationInfo` + `getApplicationLabel` của `PackageManager` **cho mỗi ô App**
      * để rồi vứt đi. Đúng lối dọn mà chính tệp này vừa làm với `headBtnLp()`/`headBtn()` ở T5 (CLAUDE.md §8).
      */
-    private fun slotHead(index: Int): View =
-        SlotSwapButton.centered(context) { onSlotTap?.invoke(index) }
+    private fun slotHead(index: Int, empty: Boolean = false): View =
+        SlotSwapButton.centered(context, SlotSwapButton.describe(context, index, empty), disc = empty) { onSlotTap?.invoke(index) }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
@@ -492,7 +481,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         (0 until g.childCount).firstNotNullOfOrNull { g.getChildAt(it) as? VdAppHost }
     }
 
-    /** `internal` (không `private`) vì năm hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. */
+    /** `internal` (không `private`) vì các hàm dựng thẻ nay ở `WorkspaceViewCards.kt` — xem KDoc tệp ấy. */
     internal fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     /** Số nguyên tố trộn chữ ký inset — chỉ cần *khác nhau thì khác*, không cần phân phối đẹp. */

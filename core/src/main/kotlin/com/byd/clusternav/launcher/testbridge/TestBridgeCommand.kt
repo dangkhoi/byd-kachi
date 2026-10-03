@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher.testbridge
 
+import com.byd.clusternav.launcher.CtlWriteJournal
+import com.byd.clusternav.launcher.voice.WakeSessionJournal
 import com.byd.clusternav.modules.navaccess.A11yBindJournal
 
 /**
@@ -32,7 +34,7 @@ import com.byd.clusternav.modules.navaccess.A11yBindJournal
  *   [method]. `set` là lượt GHI thân xe nên đi qua đúng cổng CONFIRM như `ctl` (cần `--ez auto_confirm true`).
  * @property key tên khoá prefs cho lệnh `prefs_set`, đã kiểm nằm trong [TestBridgeCommands.WRITABLE_PREFS_KEYS].
  *   Giá trị đi trong [text] (một chuỗi cho MỌI kiểu — xem KDoc [TestBridgeCommands.PREFS_SET]).
- * @property tail số dòng cuối của nhật ký gắn Hỗ trợ cho lệnh `a11ylog`, **đã kẹp** ở [TestBridgeCommands.parse]
+ * @property tail số dòng cuối của nhật ký cho lệnh `a11ylog` / `ctllog`, **đã kẹp** ở [TestBridgeCommands.parse]
  *   (đọc từ `--ei n`, xem [TestBridgeCommands.a11yLogTail]); `0` với mọi lệnh khác. Trường riêng chứ không mượn
  *   [slot]: `slot` là số Ô 1-based, và một tầng thi hành đọc `cmd.slot` ra số dòng là chỗ đọc nhầm không ai thấy.
  */
@@ -295,6 +297,30 @@ object TestBridgeCommands {
     fun a11yLogTail(requested: Int): Int =
         if (requested <= 0) A11YLOG_DEFAULT_LINES else requested.coerceAtMost(A11yBindJournal.MAX_LINES)
 
+    /**
+     * FIX286 · SR6 — `am broadcast … --es cmd ctllog [--ei n <số dòng>]` ⇒ N dòng cuối của `filesDir/diag/ctl-writes.log`
+     * (mỗi lệnh ghi xe: rc thô · đọc trước/sau · lượt nhả · ảnh chụp getter — `CtlWriteJournal`). Cùng ranh giới với
+     * [A11YLOG]: **chỉ đọc**, không cần màn chính, không `auto_confirm` (không chạm xe, không đổi state). `n` kẹp ở
+     * [ctlLogTail] về `1..CtlWriteJournal.MAX_LINES`.
+     */
+    const val CTLLOG = "ctllog"
+
+    /** Kẹp `--ei n` của [CTLLOG] — cùng luật mặc định với [a11yLogTail], trần theo tệp `ctl-writes.log`. */
+    fun ctlLogTail(requested: Int): Int =
+        if (requested <= 0) A11YLOG_DEFAULT_LINES else requested.coerceAtMost(CtlWriteJournal.MAX_LINES)
+
+    /**
+     * FIX286 · VK6 — `… --es cmd wakelog [--ei n <số dòng>]` ⇒ N dòng cuối của `filesDir/diag/wake-sessions.log` (mỗi
+     * phiên nghe của `:wake`: lối vào · chế độ · mô hình sẵn · ms nạp · ms tới micro · kết cục — `WakeSessionJournal`).
+     * `usage-*.log` không có dòng nào của `:wake` (lọc pid chính). Cùng ranh giới [CTLLOG]: chỉ đọc, không cần màn
+     * chính, không `auto_confirm`; `n` kẹp ở [wakeLogTail].
+     */
+    const val WAKELOG = "wakelog"
+
+    /** Kẹp `--ei n` của [WAKELOG] — cùng luật mặc định, trần theo tệp `wake-sessions.log`. */
+    fun wakeLogTail(requested: Int): Int =
+        if (requested <= 0) A11YLOG_DEFAULT_LINES else requested.coerceAtMost(WakeSessionJournal.MAX_LINES)
+
     /** Op của [CAPTEST] — ASCII, script đọc. `list` là mặc định khi `--es op` vắng. */
     object CapTestOps {
         const val LIST = "list"
@@ -382,6 +408,9 @@ object TestBridgeCommands {
         Spec(CAPTEST, emptyList(), listOf(EXTRA_OP, EXTRA_ID, EXTRA_TEXT)),
         // 2.83 — chỉ đọc, `n` (số dòng) tuỳ chọn và được kẹp trong [parse] qua [a11yLogTail].
         Spec(A11YLOG, emptyList(), listOf(EXTRA_SLOT)),
+        // FIX286 · SR6 — cùng hình dạng `a11ylog`: chỉ đọc, `n` tuỳ chọn, kẹp qua [ctlLogTail].
+        Spec(CTLLOG, emptyList(), listOf(EXTRA_SLOT)),
+        Spec(WAKELOG, emptyList(), listOf(EXTRA_SLOT)),   // FIX286 · VK6 — cùng hình dạng `ctllog`
     )
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
@@ -454,7 +483,12 @@ object TestBridgeCommands {
                 // mặc định lần thứ hai — đúng luật một-chỗ-quyết-định của dự án). Lệnh khác: `cap == op`.
                 op = cap,
                 key = key,
-                tail = if (name == A11YLOG) a11yLogTail(slot) else 0,
+                tail = when (name) {
+                    A11YLOG -> a11yLogTail(slot)
+                    CTLLOG -> ctlLogTail(slot)
+                    WAKELOG -> wakeLogTail(slot)
+                    else -> 0
+                },
             ),
         )
     }

@@ -43,12 +43,55 @@ object VoicePreloadPolicy {
      *
      * [SUY, audit RAM 2026-09-25 §1.1] Khi "Hey Kachi" BẬT, `:wake` **cũng** nạp đúng mô hình int8 74 MB này
      * (`VoiceWakeAsr` → `VoiceEngine.recognizer` của tiến trình `:wake`) và phiên lệnh R7/LISTEN_NOW chạy ở
-     * đó ⇒ nạp sẵn ở chính là **bản thứ hai** (≈ 85–110 MB) trên một đầu xe còn 56–94 MB trống. Wake TẮT ⇒ chính là
-     * nơi duy nhất nghe ⇒ giữ nạp sẵn (spec V3 R4: 15 s lần bấm đầu).
+     * đó ⇒ nạp sẵn ở chính là **bản thứ hai** (≈ 85–110 MB) trên một đầu xe còn 56–94 MB trống.
      *
-     * Đây vẫn là quyết định **hoãn**: wake BẬT mà người lái bấm nút mic trên màn chính thì lần đầu vẫn nạp như cũ.
+     * ⚠ [FIX286 · VK7 — sửa KDoc sai, ĐO mã 02/10] Bản 2.66 viết tiếp *"Wake TẮT ⇒ chính là nơi duy nhất nghe ⇒ giữ
+     * nạp sẵn"* — sai NGAY khi viết: từ 2.62 phím vô-lăng gán Kachi nghe mở phiên ở `:wake` bất kể wake, nên người
+     * dùng phím (wake TẮT, mặc định) có mô hình nạp sẵn ở tiến trình chính mà phím thì nạp nguội ở `:wake` mỗi lần bấm.
+     * Từ 2.86 tham số là [VoiceWakeMode.modelInWake] (`wakeEnabled ∨ keyHold`): mô hình ở `:wake` (WAKE/HOLD) ⇒ chính
+     * KHÔNG nạp sẵn; không (OFF) ⇒ giữ nạp sẵn như V3 R4 (15 s lần bấm đầu) — tiến trình chính khi ấy là nơi nghe của
+     * nút mic màn.
+     *
+     * Đây vẫn là quyết định **hoãn**: mô hình ở `:wake` mà nút mic màn lùi in-process (`:wake` không ack) thì lần ấy
+     * vẫn nạp như cũ.
      */
-    fun shouldPreloadInMain(wakeEnabled: Boolean): Boolean = !wakeEnabled
+    fun shouldPreloadInMain(modelInWake: Boolean): Boolean = !modelInWake
+
+    /**
+     * ═══ [Senior review FIX286 Pass 2 · P2] — chiều NGƯỢC của [shouldPreloadInMain]: tiến trình chính có nên TRẢ bản
+     * mô hình nó đang giữ không ═══
+     *
+     * [ĐO mã 03/10] [shouldPreloadInMain] chỉ quyết lúc NẠP. Chế độ chuyển OFF → HOLD/WAKE **giữa đời tiến trình** (gán
+     * phím Kachi nghe · bật "Nhận nút vật lý" · bật "Hey Kachi" · đổi sang hồ sơ có phím) thì bản đã nạp sẵn ở chính
+     * nằm lại, còn `:wake` nạp bản của nó ⇒ HAI bản (≈ 2 × 85–110 MB) tới lần BYD giết Kachi khi tắt máy — trên đầu xe
+     * còn 56–94 MB trống, đúng thứ VK1 hứa tránh ("một bản mô hình cho cả máy"). Chiều HOLD/WAKE → OFF đã có (D-VK4).
+     *
+     * Nhả khi mô hình ĐÃ ở `:wake` **và** không có phiên nghe nào đang chạy trong tiến trình chính — nhả dưới chân một
+     * phiên đang mở là giải mã trả rỗng ⇒ người lái nói xong nhận *"không nghe thấy"* (KDoc `ModelHolder`). Bận ⇒ không
+     * nhả lượt này; hỏi lại theo [shouldRetryHandOver].
+     */
+    fun shouldHandOverToWake(modelInWake: Boolean, sessionRunning: Boolean): Boolean = modelInWake && !sessionRunning
+
+    /**
+     * ═══ [Senior review FIX286 Pass 3 · P2] — lượt trả bản KHÔNG xong thì có hỏi lại không ═══
+     *
+     * [ĐO mã 03/10] Bản Pass 2 thử MỘT lần rồi thôi (*"`sync` ở lượt `onResume` kế hỏi lại"*), để lọt hai ca thật:
+     *  (a) chế độ đổi đúng lúc tiến trình chính ĐANG NẠP (nạp sẵn 9–34 s trên xe, hoặc phiên in-process đang dựng) — cổng
+     *      vào chỉ xét "đã nạp" nên thoát ngay, bản vừa nạp xong nằm lại;
+     *  (b) nói *"đổi sang hồ sơ <có phím>"* từ phiên in-process của chính (chế độ OFF) ⇒ lượt trả bản chạy GIỮA phiên ⇒
+     *      [ModelHolder.Release.SKIPPED]. Tấm chữ là overlay, Activity không pause ⇒ không `onResume` nào tới khi người
+     *      lái rời rồi quay lại màn chính — cả chuyến ngồi trong app dẫn đường là hai bản cả chuyến.
+     *
+     * Hỏi lại khi lượt vừa rồi BẬN (đang nạp/giải mã) hoặc BỎ (phiên đang chạy), chế độ VẪN ở `:wake` (đổi ngược về OFF
+     * ⇒ thôi, chính giữ bản của nó), và chưa quá [maxWaitMs] — cùng trần [VoiceWakeStandDown.MAX_WAIT_MS]: một lượt nạp
+     * và một phiên nghe luôn kết thúc trước đó. RELEASED/EMPTY ⇒ xong.
+     */
+    fun shouldRetryHandOver(
+        last: ModelHolder.Release,
+        modelInWake: Boolean,
+        waitedMs: Long,
+        maxWaitMs: Long = VoiceWakeStandDown.MAX_WAIT_MS,
+    ): Boolean = (last == ModelHolder.Release.BUSY || last == ModelHolder.Release.SKIPPED) && modelInWake && waitedMs < maxWaitMs
 
     /** Câu GIẢI THÍCH cho log (owner đọc log trên xe) — nói rõ vì sao bỏ qua, không im lặng. */
     fun reason(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): String = when {
@@ -59,7 +102,8 @@ object VoicePreloadPolicy {
     }
 
     /** Lý do bỏ nạp sẵn khi [shouldPreloadInMain] = false — hiện ở ghi chú Cài đặt (`VoiceEngine.lastPreloadSkip`). */
-    const val REASON_WAKE_OWNS_MODEL = "\"Hey Kachi\" đang bật ⇒ mô hình sống ở tiến trình nghe câu gọi, không nạp bản thứ hai"
+    const val REASON_WAKE_OWNS_MODEL =
+        "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai"
 
     private const val MB = 1024L * 1024L
 

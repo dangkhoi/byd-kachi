@@ -106,7 +106,7 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // `.sanitized()`: chữa state cũ đã lưu cùng app ở hai ô (trước bản vá MỘT-APP-MỘT-Ô 2026-09-15) **và**
             // bỏ mã khả năng đã biến mất khỏi mọi bộ đăng ký (vd lượt ADAS-PURGE 2026-09-16) — nạp thẳng qua
             // constructor không đi qua withSlot nên phải ép bất biến ở đây, nếu không ô trùng / ô rác vẫn hiện.
-            workspace = defaultIfEmpty(prefs.load().let { raw ->
+            workspace = defaultIfNeverSaved(prefs.load().let { raw ->
                 // Nói ra thứ vừa bỏ: ô của người dùng biến mất mà không có một dòng nào là kênh im lặng.
                 raw.unknownWidgetIds().takeIf { it.isNotEmpty() }?.let {
                     android.util.Log.i(
@@ -228,9 +228,9 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     /** #4 · PROFILE-IO-0930 — xuất hồ sơ đang dùng ra chuỗi kiểu [kind] (WorkspacePrefsProfile.exportProfile). */
     override fun exportActiveProfile(kind: ProfileTransfer.Kind): String? = prefs.exportProfile(prefs.activeProfile(), kind)
 
-    /** #4 — nhập hồ sơ từ chuỗi; trả state mới nếu thêm được, null nếu tệp không hợp lệ. */
-    override fun importProfileData(data: String): HomeUiState? =
-        if (prefs.importProfile(data)) load() else null
+    /** #4 — nhập hồ sơ từ chuỗi; trả state mới + báo cáo lượt nhập (FIX286 · PI3) nếu thêm được, null nếu tệp hỏng. */
+    override fun importProfileData(data: String): ProfileImported? =
+        prefs.importProfile(data)?.let { report -> ProfileImported(load(), report) }
 
     override fun bootProfile(): String? = prefs.bootProfile()
 
@@ -306,14 +306,28 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
 
     override fun setLangMode(mode: LangMode) = prefs.setLangMode(mode)
 
-    /** Hồ sơ trống (mọi ô Empty) → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity). */
-    private fun defaultIfEmpty(ws: WorkspaceState): WorkspaceState =
-        if (ws.slots.all { it is SlotContent.Empty }) DEFAULT_WORKSPACE else ws
-
-    companion object {
-        // Bố cục mặc định nay ở :core (WorkspaceState.DEFAULT) để KIỂM ĐƯỢC off-car. Trước đây nó là danh sách
-        // CỨNG 4 phần tử ở đây, nên khi nới trần ô 4 → 6 nó ném lỗi NGAY LÚC NẠP LỚP ⇒ launcher sập ở lần chạy đầu
-        // (lúc chưa có cấu hình để nạp). Không test nào bắt được vì lớp này cần Android.
-        private val DEFAULT_WORKSPACE = WorkspaceState.DEFAULT
+    /**
+     * Hồ sơ **chưa từng lưu** bố cục → bố cục mặc định 3 widget (khớp `initialState()` cũ của KachiHomeActivity).
+     *
+     * ⚠ FIX286 · ES5 (owner 03/10, *"3 ok"*): bản ≤ 2.85 xét *"mọi ô Empty"* ⇒ bố cục toàn ô trống người dùng CHỦ ĐỘNG
+     * để lại (vẽ khung, chưa gán app — owner muốn nó trong suốt) bị thay bằng 3 widget ở mỗi `load()`: mỗi lần nổ
+     * máy, đổi hồ sơ, nhập hồ sơ. Luật nay ở `:core` ([WorkspaceDefault.resolve]); dấu "đã lưu" đọc ở [hasStoredSlots].
+     * Nhánh nạp mặc định nói ra một dòng — trước đây nó kích im lặng, không ai biết bố cục vừa bị thay.
+     */
+    private fun defaultIfNeverSaved(ws: WorkspaceState): WorkspaceState {
+        val out = WorkspaceDefault.resolve(ws, everSaved = hasStoredSlots())
+        if (out !== ws) {
+            android.util.Log.i("KachiWorkspace", "[ws-default] hồ sơ «${prefs.activeProfile()}»: chưa từng lưu ⇒ bố cục mặc định")
+        }
+        return out
     }
+
+    /**
+     * Hồ sơ đang dùng ĐÃ TỪNG LƯU bố cục chưa = có bất kỳ khoá `<hồ sơ>__slot_*` nào trên đĩa (không thêm khoá mốc mới —
+     * lý do ở KDoc [WorkspaceDefault]): [WorkspacePrefs.save] luôn ghi ĐỦ `slot_0..` (ô trống = chuỗi rỗng, khoá vẫn có
+     * mặt), còn [WorkspacePrefs.addProfile] dọn sạch khoá của hồ sơ mới. `contains` chứ không `stringOrNull`: hỏi *có
+     * khoá không*, không hỏi *giá trị gì* — khoá sai kiểu vẫn là dấu người dùng đã lưu, không phải lý do thay bố cục.
+     * Ở đây (không ở `WorkspacePrefs.kt` — 499 dòng, trần 500) vì `load()` là chỗ gọi DUY NHẤT.
+     */
+    private fun hasStoredSlots(): Boolean = (0 until WorkspaceState.SLOT_CAP).any { prefs.sp.contains(prefs.key("slot_$it")) }
 }

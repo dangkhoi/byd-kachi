@@ -1,0 +1,12 @@
+M1 dong3-cu-o-widget-toan-man: rc=1 compile_err=False red=1 ['ShortcutPlanTest.03 o n - o la widget thi dat TAM de len widget, khong day ai, khong bao gio mo toan man()']
+M2 dong4-bo-phep-do: rc=1 compile_err=False red=1 ['ShortcutPlanTest.04 o n - o da la B - song thi nhay vien, da dong thi mo lai vao o, song cho khac thi khong dung()']
+M3 dong12-bo-mo-lai: rc=1 compile_err=False red=1 ['ShortcutPlanTest.12 chay ngam - B o mot o con song hoac dang chay thi khong lam gi, B trong o da dong thi mo lai vao o do()']
+M4 khong-bao-gio-do: rc=1 compile_err=False red=1 ['ShortcutPlanTest.04 o n - o da la B - song thi nhay vien, da dong thi mo lai vao o, song cho khac thi khong dung()']
+M5 cho-khac-thanh-da-dong: rc=1 compile_err=False red=2 ['SlotPresenceTest.dinh dang A12 RootTask doc duoc - khong roi ve UNKNOWN()', 'SlotPresenceTest.app co task o display khac man ao cua o - ELSEWHERE, khong phai GONE()']
+M6 doc-rong-thanh-da-dong: rc=1 compile_err=False red=1 ['SlotPresenceTest.ban doc rong hoac la - UNKNOWN, khong bao gio GONE()']
+M7 bo-rao-dang-mo-do: rc=1 compile_err=False red=1 ['ShortcutsWiringContractTest.Reopen - do bang am stack list o luong nen, mo lai qua duong the da dong, hoi kenh truoc()']
+M8 bo-thoi-do-truoc: rc=1 compile_err=False red=1 ['ShortcutsWiringContractTest.Reopen - do bang am stack list o luong nen, mo lai qua duong the da dong, hoi kenh truoc()']
+M9 quyet-truoc-khi-do: rc=1 compile_err=False red=1 ['ShortcutsWiringContractTest.cham loi tat di qua bang quyet dinh thuan o core, voi su that do duoc()']
+M10 do-gia: rc=1 compile_err=False red=2 ['ShortcutsWiringContractTest.moi ham moi deu co call site()', 'ShortcutsWiringContractTest.Reopen - do bang am stack list o luong nen, mo lai qua duong the da dong, hoi kenh truoc()']
+M11 id-widget-theo-lop-tam: rc=1 compile_err=False red=1 ['SlotOverlayTest.dat tam de len o widget - id widget khong thanh rac, lop luu giu widget, bo lop tam thi widget ve()']
+EXIT=0

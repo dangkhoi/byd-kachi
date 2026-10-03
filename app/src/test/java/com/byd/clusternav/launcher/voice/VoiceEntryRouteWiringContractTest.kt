@@ -128,7 +128,11 @@ class VoiceEntryRouteWiringContractTest {
         listOf("VoiceHomeAction.APP_LIST", "VoiceHomeAction.SETTINGS", "VoiceHomeAction.PERMISSIONS", "VoiceHomeAction.SWITCH_PROFILE")
             .forEach { assertTrue(build.contains(it), "buildSession phải trả `$it` về Activity qua extra") }
         assertTrue(relay.contains("putExtra(EXTRA_VOICE_HOME_ACTION, action.id)"), "intent về Activity dựng ở relay, mang id của VoiceHomeAction")
-        assertTrue(service.contains("fun listenNow(ctx: Context): Boolean"), "listenNow phải trả Boolean để VoiceEntry biết gửi hỏng")
+        // FIX286 · VK6 — chữ ký mang thêm lối vào (mặc định nút mic) cho nhật ký phiên `:wake`; vẫn phải trả Boolean.
+        assertTrue(
+            service.contains("fun listenNow(ctx: Context, entry: WakeSessionJournal.Entry = WakeSessionJournal.Entry.MIC): Boolean"),
+            "listenNow phải trả Boolean để VoiceEntry biết gửi hỏng",
+        )
     }
 
     @Test

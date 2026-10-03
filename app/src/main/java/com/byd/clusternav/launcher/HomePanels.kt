@@ -72,10 +72,11 @@ class HomePanels(
     private val onDeleteProfile: (String) -> Unit,
     /**
      * #4 · PROFILE-IO-0930 — chuỗi export kiểu [ProfileTransfer.Kind] của hồ sơ đang dùng (ViewModel) + nhập nội dung
-     * MỘT tệp (trả tên hồ sơ vừa tạo, `null` = tệp hỏng) + tên hồ sơ đang dùng (đặt tên tệp).
+     * MỘT tệp (trả báo cáo lượt nhập — tên hồ sơ vừa tạo + phần chiếu cụm, FIX286 · PI3; `null` = tệp hỏng) + tên hồ sơ
+     * đang dùng (đặt tên tệp).
      */
     private val onExportProfileData: (ProfileTransfer.Kind) -> String? = { null },
-    private val onImportProfileData: (String) -> String? = { null },
+    private val onImportProfileData: (String) -> ProfileImportReport? = { null },
     private val activeProfileName: () -> String = { "profile" },
     private val onRenameProfile: (String, String) -> Unit = { _, _ -> },
     /** Tóm tắt bố cục của MỘT hồ sơ (theo tên) cho thẻ hồ sơ ở Cài đặt — đọc-để-vẽ, qua ViewModel. */
@@ -191,8 +192,8 @@ class HomePanels(
             onDuplicateProfile = { name -> onDuplicateProfile(name) },
             onDeleteProfile = { name -> onDeleteProfile(name) },
             // #4 · PROFILE-IO-0930 — Xuất: chuỗi kiểu [kind] từ ViewModel → tệp MỚI (ProfileIoStore, không ghi đè);
-            //          trả đường dẫn. Nhập: liệt kê tệp cho người dùng CHỌN → đọc đúng MỘT tệp → ViewModel; trả tên
-            //          hồ sơ vừa tạo. (Bản #4 đọc MỌI tệp mỗi lần bấm ⇒ nhân bản hồ sơ.)
+            //          trả đường dẫn. Nhập: liệt kê tệp cho người dùng CHỌN → đọc đúng MỘT tệp → ViewModel; trả báo
+            //          cáo lượt nhập (FIX286). (Bản #4 đọc MỌI tệp mỗi lần bấm ⇒ nhân bản hồ sơ.)
             onExportProfile = { kind ->
                 onExportProfileData(kind)?.let { data -> ProfileIoStore.write(activity, activeProfileName(), kind, data) }
             },

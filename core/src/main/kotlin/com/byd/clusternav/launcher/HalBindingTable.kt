@@ -26,7 +26,23 @@ package com.byd.clusternav.launcher
  * rc == [SENTINEL_NOT_PROVISIONED] / [SENTINEL_INVALID] (feature không có trên trim) cũng ⇒ unavailable.
  * KHÔNG gate an toàn (owner bỏ 2026-09-10): KHÔNG đọc tốc độ/số/permit để chặn ghi.
  */
-class HalBindingTable(private val gateway: HalGateway) {
+class HalBindingTable(
+    private val gateway: HalGateway,
+    /** FIX286 · SR2 — bộ hẹn lệnh nhả; mặc định không hẹn gì (xem KDoc [WriteReleaseScheduler]). */
+    releaser: WriteReleaseScheduler = WriteReleaseScheduler.NONE,
+    /** FIX286 · SR6 — nơi nhận dòng nhật ký `ctl`; mặc định không ghi, không đọc thêm lượt HAL nào. */
+    journal: CtlJournal = CtlJournal.NONE,
+) {
+
+    /** Nhịp quanh một lệnh ghi (cổng có-mặt · huỷ/hẹn nhả · nhật ký) — xem KDoc [ControlWriteFlow]. */
+    private val flow = ControlWriteFlow(
+        releaser = releaser,
+        journal = journal,
+        getterInt = ::getterInt,
+        readState = ::readState,
+        send = ::send,
+        readable = { id -> readPathOf(id) != null },
+    )
 
     // ── ĐỌC ──────────────────────────────────────────────────────────────────────────────────────────
 
@@ -83,7 +99,9 @@ class HalBindingTable(private val gateway: HalGateway) {
      */
     fun readState(id: String): Int? {
         val def = ControlRegistry.byId(id) ?: return null
-        val raw = readInt(id)
+        // FIX286 · SR3 — số đọc của một datum PHẦN TRĂM mà nằm ngoài 0..100 thì không phải phần trăm (255/65535/-1 =
+        // mã "không hợp lệ" của khung) ⇒ `null` (⚠), không phải "đang mở". Luật ở [percentReadingValid].
+        val raw = readInt(id)?.takeIf { percentReadingValid(id, it) }
         if (ControlLevels.levelCount(id) == 0) return applyInverted(raw, def.readInverted)
         val level = raw?.let { ControlLevels.levelOf(id, it) } ?: return null
         if (def.kind != ControlKind.TOGGLE) return level
@@ -117,27 +135,48 @@ class HalBindingTable(private val gateway: HalGateway) {
 
     /**
      * Ghi 1 control [id] với tham số chính [primary] (TOGGLE 0/1 · STEP giá trị · COVER 0/1 · SELECT index ·
-     * BUTTON 1). Trả rc (Long) hoặc null nếu unavailable/off-car. KHÔNG gate. Args cuối tính bởi [writeArgs]
-     * (named-method nhiều-arg như ghế/kính lấy đúng công thức proven).
+     * BUTTON 1). Trả rc (Long) hoặc null nếu unavailable/off-car. KHÔNG gate an toàn (tốc độ/số/permit). Args cuối
+     * tính bởi [writeArgs] (named-method nhiều-arg như ghế/kính lấy đúng công thức proven).
+     *
+     * FIX286: cổng **có-mặt** ([ControlDef.presence] — xe tự nói không có bộ phận ⇒ `null`, 0 lượt HAL), lệnh **nhả**
+     * ([ControlDef.release]) và nhật ký `ctl` đi qua [ControlWriteFlow]; nút không khai gì thì đúng một lượt [send].
      */
     fun write(id: String, primary: Int): Long? {
         val def = ControlRegistry.byId(id) ?: return null
-        val args = writeArgs(def, primary)
-        return when (val r = routeOf(def.bindingKey)) {
-            is BindingRoute.NamedMethod -> gateway.namedInt(r.fqn, r.method, args)
-            is BindingRoute.Feature ->
-                gateway.featureSet(deviceForFeature(r.id, def), r.id, args.firstOrNull() ?: primary)
-            is BindingRoute.FeatureName -> gateway.featureIdByName(r.constName)
-                ?.let { fid -> gateway.featureSet(deviceForFeature(fid, def), fid, args.firstOrNull() ?: primary) }
-            is BindingRoute.Setting -> gateway.settingSet(r.key, args.firstOrNull() ?: primary)
-            is BindingRoute.Local -> if (gateway.localSet(r.target, r.method, args)) 0L else null
-            BindingRoute.None -> null
-        }
+        return flow.write(def, primary, writeArgs(def, primary), describeWrite(def).first)
     }
 
-    /** Nút [id] có trỏ vào một feature-id mà xe này KHÔNG có không — luật thuần ở `featureAbsentOnCar`. */
-    fun featureAbsentOnCar(id: String): Boolean =
-        ControlRegistry.byId(id)?.let { featureAbsentOnCar(gateway, it.bindingKey) } ?: false
+    /** Gửi tham số cuối [args] xuống đúng đường ghi của [def] — MỘT bảng định tuyến cho lệnh lẫn lượt nhả. */
+    private fun send(def: ControlDef, args: IntArray, primary: Int): Long? = when (val r = routeOf(def.bindingKey)) {
+        is BindingRoute.NamedMethod -> gateway.namedInt(r.fqn, r.method, args)
+        is BindingRoute.Feature ->
+            gateway.featureSet(deviceForFeature(r.id, def), r.id, args.firstOrNull() ?: primary)
+        is BindingRoute.FeatureName -> gateway.featureIdByName(r.constName)
+            ?.let { fid -> gateway.featureSet(deviceForFeature(fid, def), fid, args.firstOrNull() ?: primary) }
+        is BindingRoute.Setting -> gateway.settingSet(r.key, args.firstOrNull() ?: primary)
+        is BindingRoute.Local -> if (gateway.localSet(r.target, r.method, args)) 0L else null
+        BindingRoute.None -> null
+    }
+
+    /**
+     * Một getter named-method ([Presence.getter] · [HalProbe.getter]) thành số; khoá không phải named-method, đọc
+     * hỏng, sentinel ⇒ `null`. Không qua [readRaw] vì đây KHÔNG phải một datum (không có ô, không vào nhịp poll).
+     */
+    private fun getterInt(key: String, arg: Int?): Int? {
+        val r = routeOf(key) as? BindingRoute.NamedMethod ?: return null
+        val raw = gateway.getter(r.fqn, r.method, arg) ?: return null
+        return if (rawIsSentinel(raw)) null else coerceInt(raw)
+    }
+
+    /**
+     * Nút [id] **không có trên xe này**: hoặc trỏ vào một feature-id mà bảng của xe không có (luật thuần ở
+     * `featureAbsentOnCar`), hoặc (FIX286 · SR4) getter cấu hình của nó trả một mã "vắng" ([ControlDef.presence]).
+     */
+    fun featureAbsentOnCar(id: String): Boolean = ControlRegistry.byId(id)
+        ?.let { featureAbsentOnCar(gateway, it.bindingKey) || flow.presenceAbsent(it) != null } ?: false
+
+    /** FIX286 · SR4 — riêng vế *"xe tự báo không có bộ phận"* của [featureAbsentOnCar] (câu nói khác cho người lái). */
+    fun partAbsentOnCar(id: String): Boolean = ControlRegistry.byId(id)?.let { flow.presenceAbsent(it) != null } ?: false
 
     /**
      * Máy này có **bảng feature-id THẬT** của xe không (uỷ quyền [HalGateway.featureMapAvailable]).
@@ -218,108 +257,10 @@ class HalBindingTable(private val gateway: HalGateway) {
         val LOCAL_TARGETS: Set<String> = setOf("AudioManager", "AutoContainer")
 
         /**
-         * Tham số cuối cho GHI named-method (proven, nhiều arg). Còn lại 1 arg = [primary].
-         *  • ghế mát/sưởi `setSeatVentilatingState/HeatingState(seatId,state)` → [1(lái), state 2/1] (bật→mức1/tắt);
-         *  • sưởi vô-lăng `setSteeringWheelHeatingState(state)` → [2/1];
-         *  • kính từng cửa `setBodyWindowCtrlState(window,state)` → [index, mở=1/đóng=2] (enum WINDOW_*); tất cả kính → 4× state;
-         *  • rèm che nắng feature 0x4F500028 (PERCENT_SET) → [mở=100/đóng=0]; đèn đọc 0x4F50003A → [ON=2/OFF=1];
-         *  • kính-nhị-phân "window" → cửa lái [1, state]; cốp `setHetchDoorStatus` → [open?1:close?2];
-         *  • **khoá cửa `setDoorLockState(state)` → [khoá?2:mở?1]** (xem ⚠ dưới);
-         *  • **mưa-tự-đóng-kính `setRainCloseWindow(state)` → [bật?1:tắt?2]**;
-         *  • lọc-ngay/gập-gương (BUTTON) → [1].
-         *
-         * ## ⚠ [SOÁT P0] Vì sao khoá cửa PHẢI có nhánh riêng
-         * [ĐO] 2026-09-11: `lock` ("Khoá xe") và `door` ("Mở cửa") khai **CÙNG** `bindingKey`
-         * `BYDAutoDoorlockDevice.setDoorLockState`, và trước bản vá này **cả hai** rơi vào nhánh `else` ⇒ gửi
-         * **ĐÚNG CÙNG một byte** cho cùng `primary`. Hai nhãn nghĩa ĐỐI NGHỊCH mà gửi byte y hệt ⇒ ít nhất một
-         * cái sai, **chứng minh được không cần xe**. Hệ quả nặng nhất: gói `mac_leave` ("Rời xe") kết bằng
-         * `MacroStep("lock", 1)` = đúng byte của `MacroStep("door", 1)` trong `mac_door_light` ⇒ bấm "Rời xe" thì
-         * kính đóng, đèn tắt, xe **KHÔNG khoá** — mà kết quả vẫn báo thành công (rc=0) và ô còn sáng như đã khoá.
-         *
-         * Giá trị lấy từ tài liệu dự án, KHÔNG tự nghĩ ra: `docs/diagnostics/launcher-hal-re-overdrive-2026-09-08.md`
-         * §7 (*"state_locked=\"2\", unlocked=\"1\""*) + `docs/diagnostics/kachi-capability-catalog-2026-09-10.md` §196
-         * (*"locked=2/unlocked=1"*). Mưa-tự-đóng lấy từ `bodywork-window-trunk-RE-2026-09-06.md` §14
-         * (*"setRainCloseWindow(int) (ON=1/OFF=2)"*) — trước bản vá này TẮT gửi `0`, một giá trị không có trong
-         * tài liệu nên gần như chắc chắn bị xe bỏ qua.
-         *
-         * ⚠ Cả hai mã vẫn ở mức **chưa kiểm trên xe** (`OVERDRIVE`/`NEEDS_CAR`): bản vá này sửa chỗ **tự mâu
-         * thuẫn nội bộ** (hai nhãn đối nghịch, một byte), KHÔNG hứa rằng xe sẽ nhận lệnh.
-         *
-         * THUẦN (không đọc gateway) ⇒ kiểm được off-car; [ControlWriteArgsTest] khoá cả họ "hai mã một lệnh".
+         * Tham số cuối cho GHI — bảng ở [HalWriteArgs.writeArgs] (uỷ quyền, giữ chữ ký cũ; tách 2026-10-02 vì trần
+         * 500 dòng). THUẦN (không đọc gateway) ⇒ kiểm được off-car; [ControlWriteArgsTest] khoá cả họ "hai mã một lệnh".
          */
-        fun writeArgs(def: ControlDef, primary: Int): IntArray = when (def.id) {
-            "seatc", "seath" -> intArrayOf(1, ControlLevels.rawForLevel(def.id, primary) ?: 1)
-            // B10: ghế PHỤ = seatID 2, cùng setter + cùng thang mức (ControlLevels khai seatc_r/seath_r).
-            "seatc_r", "seath_r" -> intArrayOf(2, ControlLevels.rawForLevel(def.id, primary) ?: 1)
-            // [ĐO xe 2026-09-15] kính MỞ được, ĐÓNG không. Gốc: state cũ = COVER primary (Đóng=0/Mở=1) — Mở gửi
-            // 1 (= WINDOW_OPEN_FULL, chạy), Đóng gửi 0 (= WINDOW_ENABLE/INVALID, KHÔNG phải đóng ⇒ no-op). Enum
-            // đúng của BYDAutoBodyworkDevice: WINDOW_OPEN_FULL=1 · WINDOW_CLOSE=2 · WINDOW_STOP=3 (jadx-tmap
-            // BYDAutoBodyworkDevice.java:367-381, DL3). ⇒ ánh xạ COVER: Mở(primary>0)→1, Đóng→2.
-            // T7 (owner 2026-09-15 "mở 50%"): mức 2 = WINDOW_OPEN_HALF=4 — enum THẬT cùng bảng CLOSE=2/OPEN_FULL=1 đã
-            // đo đúng cả 4 kính (jadx-tmap BYDAutoBodyworkDevice.java:378). 0/1 giữ nguyên. NEEDS-ONCAR (1 lệnh):
-            // `hal set setBodyWindowCtrlState 1,4` rồi `getWindowOpenPercent(1)` ≈ 50. `windows_all` mức 2 (Nửa) nay
-            // gửi `setAllWindowState(4,4,4,4)` — CÙNG enum WINDOW_OPEN_HALF=4 đã đo per-window; ca 4-kính-nửa CHƯA đo
-            // trên xe (AWAITING_CAR) nhưng enum đã proven ⇒ làm được, câu trả lời mang nhãn "chưa kiểm trên xe".
-            // ── 1.94 · KÍNH TƯỜNG MINH (owner 2026-09-22) — nút TOGGLE, không còn COVER 3-mức ──
-            // enum BYDAutoBodyworkDevice: WINDOW_OPEN_FULL=1 · WINDOW_CLOSE=2 · WINDOW_OPEN_HALF=4 (jadx-tmap :367-381).
-            // Full: primary 1 → mở HẾT(1) · 0 → đóng(2).   Half: primary 1 → mở 50%(4) · 0 → đóng(2).
-            "win_lf" -> intArrayOf(1, if (primary > 0) 1 else 2)
-            "win_rf" -> intArrayOf(2, if (primary > 0) 1 else 2)
-            "win_lr" -> intArrayOf(3, if (primary > 0) 1 else 2)
-            "win_rr" -> intArrayOf(4, if (primary > 0) 1 else 2)
-            "win_half_lf" -> intArrayOf(1, if (primary > 0) 4 else 2)
-            "win_half_rf" -> intArrayOf(2, if (primary > 0) 4 else 2)
-            "win_half_lr" -> intArrayOf(3, if (primary > 0) 4 else 2)
-            "win_half_rr" -> intArrayOf(4, if (primary > 0) 4 else 2)
-            // Tất cả kính: full = 4× state (mở=1/đóng=2). 50% = 4× WINDOW_OPEN_HALF=4 (ca 4-kính-nửa AWAITING_CAR,
-            // enum đã proven per-window). Nút Đóng-tất-cả (BUTTON) luôn gửi 2 (WINDOW_CLOSE) cho cả 4 — backup an toàn.
-            "windows_all" -> (if (primary > 0) 1 else 2).let { intArrayOf(it, it, it, it) }
-            "win_half_all" -> (if (primary > 0) 4 else 2).let { intArrayOf(it, it, it, it) }
-            "windows_close_all" -> intArrayOf(2, 2, 2, 2)
-            // [ĐO] RE 2026-09-14 §1/§5a: `setAcTemperature(type, value, tempSource, unit)` — lái=0, value=°C thô,
-            // tempSource=0, unit=1 (Celsius). Vd 22°C → setAcTemperature(0,22,0,1). Thay `setTemprature` (không tồn tại).
-            "temp" -> intArrayOf(0, primary, 0, 1)
-            // [ĐO xe 2026-09-17] cốp = `voiceCtlBackDoor(cmd)` ở Setting device: MỞ=1 · ĐÓNG=3 (đo 2 lần mỗi
-            // lệnh). Trước 1.70 gửi 1/2 cho `setHetchDoorStatus` (method KHÔNG tồn tại) ⇒ no-op. cmd 2 = dừng
-            // giữa hành trình ([ĐOÁN], chưa thử lúc cốp chạy) — không dùng cho TOGGLE mở/đóng.
-            "trunk" -> intArrayOf(if (primary > 0) 1 else 3)
-            // [ĐO xe 2026-09-15] rèm "bấm mở CHÚT XÍU". Gốc: feature 1330642984 = 0x4F500028
-            // BODYWORK_SUNSHADE_PANEL_PERCENT_SET — nhận PHẦN TRĂM 0..100, không phải 0/1. Gửi 1 = "mở 1%".
-            // ⇒ Mở=100%, Đóng=0% (carsettings Body.java:1653 · WINDOW_OPEN_PERCENT_MAX=100).
-            // T7: rèm đi đường PERCENT (0..100) nên mức 2 = 50 thẳng, không cần enum.
-            "sunshade" -> intArrayOf(when (primary) { 2 -> 50; else -> if (primary > 0) 100 else 0 })
-            // [ĐO xe 2026-09-15] đèn đọc on/off tay không ăn (chế-độ-theo-cửa thì ăn — feature KHÁC 0x4F500038).
-            // feature 1330643002 = 0x4F50003A SET_INSIDE_LIGHT_STATE_SET, enum INSIGHT_LIGHT_OFF=1 · ON=2
-            // (jadx-tmap BYDAutoSettingDevice.java:218-219, DL3). Cũ gửi 0/1 ⇒ không trúng ON=2. ⇒ ON=2, OFF=1.
-            "readl" -> intArrayOf(if (primary > 0) 2 else 1)
-            "pm25_clean_now" -> intArrayOf(1)
-            // ── Bản vá binding 2026-09-15 (`docs/diagnostics/hal-binding-remediation-2026-09-15.md`) — enum lấy từ stub
-            // `../jadx-tmap/sources/android/hardware/bydauto/`, KHÔNG phải 0/1:
-            // đèn ban ngày `setDayTimeLightState` — DAYTIME_LIGHT_OPEN=1 / CLOSE=2 (BYDAutoLightDevice.java:10/:8).
-            "drl" -> intArrayOf(if (primary > 0) 1 else 2)
-            // ⚠ 1.90 · nhánh `powertrain_mode` (EV→1 / HEV→3) gỡ cùng nút — owner 2026-09-21, xe thuần điện.
-            // cửa sổ trời `setMoonRoofState` — cùng enum kính mở=1/đóng=2 (OpenBYD CarControlImpl.java:1503-1505).
-            "sunroof" -> intArrayOf(if (primary > 0) 1 else 2)
-            // sạc không dây `setWirelessChargingSwitchState` — CHARGE_WIRELESS_CHARGING_ON=1 / OFF=2 (:61/:60).
-            "wireless_charge" -> intArrayOf(if (primary > 0) 1 else 2)
-            // camera 360 `setAVMSwitchState` — AVM_FUNCTION_ON=2 / OFF=1 (BYDAutoADASDevice.java:35/:34).
-            "cam" -> intArrayOf(if (primary > 0) 2 else 1)
-            // ═══ 1.85 · HAI BẪY GIÁ TRỊ **NGƯỢC**, cả hai [ĐO trên xe 2026-09-20 §3] ═════════════════════════════
-            //
-            // (a) **gió tự động** `AC_CTRL_MODE_SET`: [ĐO] **0 → AUTO** · **1 → chỉnh tay** (rc=0, thử cả hai chiều,
-            //     owner xác nhận màn AC đổi theo). Nút là TOGGLE nên `primary` 1 = *"bật gió auto"* ⇒ phải gửi **0**.
-            //     Không có nhánh này thì bật/tắt chạy **ngược hoàn toàn** mà rc vẫn 0 — im lặng, đúng loại lỗi chỉ
-            //     người ngồi trong xe phát hiện được. (`AC_CTRLMODE_AUTO=0`/`_MANUAL=1` ở `ac/BYDAutoAcDevice.java:20-21`
-            //     khớp con số đo được.)
-            "ac_auto" -> intArrayOf(if (primary > 0) 0 else 1)
-            // (b) **khoá trẻ em** `DOOR_LOCK_COMMAND_AREA_CHILDLOCK_{LEFT,RIGHT}_SET`: [ĐO] ghi **2 → BẬT** (state
-            //     đọc về 1) · ghi **1 → TẮT** (state 2) — owner xác nhận bằng cửa thật. Tức giá trị GHI và state
-            //     ĐỌC ngược nhau; ở đây chỉ lo vế GHI (bật→2). Cùng hình dạng `OFF=1/ON=2` của `lock`/`steer_heat`,
-            //     nhưng viết riêng để con số đo được có chỗ neo kèm bằng chứng thay vì lẫn vào nhánh `else`.
-            "child_lock", "child_lock_r" -> intArrayOf(if (primary > 0) 2 else 1)
-            // NEEDS-ONCAR: `camera_view` `setDisplayMode` — gửi index thô, map nhãn↔DISPLAY_MODE_* chưa chốt.
-            else -> intArrayOf(primary)
-        }
+        fun writeArgs(def: ControlDef, primary: Int): IntArray = HalWriteArgs.writeArgs(def, primary)
 
         // ⚠ (V) FEATURE-FILTER 2026-09-17: `CHARGE_STOP_MARKS` + `chargeStopCapacityEnum(%)` (% → enum
         // `CHARGE_STOP_CAPACITY_*` của `BYDAutoChargingDevice`) đã xoá cùng nút `target_soc_set` — chỗ gọi duy nhất.

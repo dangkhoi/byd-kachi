@@ -1,0 +1,3 @@
+--------- beginning of main
+--------- beginning of system
+10-03 05:08:40.408 21654 21654 I KachiShortcut: tap com.google.android.apps.maps S1 usable=true stages=0 -> OpenFull(reason=SLOT_WIDGET)
