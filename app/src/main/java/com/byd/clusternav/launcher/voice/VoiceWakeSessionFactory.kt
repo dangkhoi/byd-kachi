@@ -35,7 +35,9 @@ internal fun VoiceWakeService.buildSession(): VoiceSession {
     val grammar = { VoiceGrammarSnapshotStore.read(app) }
     val voiceLang = { grammar().voiceLang }
     return VoiceSession(
-        ctx = app,
+        // i18n R9 — tấm chữ (R.string của phiên + VoiceOverlay) theo tiếng NGƯỜI DÙNG từ cùng ảnh chụp, không theo locale
+        // máy. Chỉ tài nguyên đổi; mọi thứ khác vẫn qua `app` (KDoc VoiceWakeUiContext). Dispatcher dưới giữ `ctx = app`.
+        ctx = VoiceWakeUiContext(app, grammar().uiLang),
         profiles = { grammar().profiles },
         appsByLabel = { VoiceWiring.appsByLabel(app) },
         places = { grammar().placeLabels() },

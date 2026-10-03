@@ -100,7 +100,7 @@ internal fun readTileOf(
     val content = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
         val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
-        background = KachiTheme.surface(ctx, size.radius, domain = pick.domain)
+        background = KachiChrome.fade(KachiTheme.surface(ctx, size.radius, domain = pick.domain), size == TileSize.DOCK)   // 2.87 R-OP
     }
     val r = KachiTheme.iconRes(pick.icon)
     val iconName = CapabilityDots.iconOverride(pick.id) ?: pick.icon

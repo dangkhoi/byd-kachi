@@ -70,7 +70,7 @@ object SlotSwapButton {
             setOnClickListener { onTap() }
             if (disc) {
                 val d = View(context).apply { isClickable = false; isFocusable = false }
-                KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL)   // bán kính = nửa cạnh ⇒ đĩa tròn
+                KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)   // bán kính = nửa cạnh ⇒ đĩa tròn; NÚT, không mờ theo R-OP
                 addView(d, FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.SWAP_DISC), KachiTheme.dpi(context, Sp.SWAP_DISC), Gravity.CENTER))
             }
             addView(

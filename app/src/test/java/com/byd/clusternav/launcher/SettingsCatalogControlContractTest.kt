@@ -77,6 +77,8 @@ class SettingsCatalogControlContractTest {
             "home_preset" to ("SettingsSectionsHome" to "deps.onPreset("),
             "home_grid" to ("SettingsSectionsHome" to "EffectiveLayout.highlightedPreset("),
             "home_grid_editor" to ("SettingsSectionsHome" to "deps.onOpenLayoutEditor()"),
+            // 2.87 · R-AH3 — ô tích "Tự ẩn nút ⇄"; dấu vết là intent ghi (hành vi), không phải nhãn.
+            "home_swap_autohide" to ("SettingsSectionsHome" to "deps.onSlotHeadAutoHide("),
             "home_wallpaper" to ("SettingsSectionsHome" to "deps.onWallpaper("),
             // ── 2 · Thanh trạng thái & thanh nút ──
             "bars_top_strip" to ("SettingsSectionsBars" to "stripPicker.section("),

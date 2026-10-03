@@ -34,6 +34,8 @@ internal object SettingsCatalogEntries {
         SettingsEntry("home_grid", SettingsGroup.HOME, "Bố cục tự vẽ", "grid_layout", "Custom layout"),
         // Không lưu gì: đây là NÚT mở bảng vẽ. Bố cục vẽ ra thì lưu ở "home_grid" phía trên — một khoá, một chủ.
         SettingsEntry("home_grid_editor", SettingsGroup.HOME, "Vẽ bố cục riêng…", labelEn = "Draw your own layout…"),
+        // 2.87 · R-AH3 (owner 03/10) — nút ⇄ của KHUNG tự ẩn: nói về chính các khung vừa chọn ở trên, trước nội dung (hình nền).
+        SettingsEntry("home_swap_autohide", SettingsGroup.HOME, "Tự ẩn nút ⇄", "swap_button_autohide", "Auto-hide the ⇄ button"),
         SettingsEntry(
             "home_wallpaper", SettingsGroup.HOME, "Hình nền & trình chiếu",
             "wallpaper_prefs", "Wallpaper & slideshow",

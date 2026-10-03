@@ -107,7 +107,7 @@ class KachiTopStrip(
             // WP1 · R1.1 — thanh mờ bo góc, **KHÔNG viền**. [ĐO ảnh `after-home-dark.png`] viền cũ là vạch 1px
             // `rgb(100,106,121)` chạy từ x=45 tới x=1874 ở y=107 — một trong hai đường kẻ dễ thấy nhất màn chính
             // (owner: *"KHÔNG còn viền ở BẤT CỨ ĐÂU hết"*). Thanh vẫn tách khỏi nền bằng chính nền `BAR_TOP` của nó.
-            background = KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP)
+            KachiGlass.bar(this, KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP), KachiTheme.BAR_TOP)   // 2.87 R-OP
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
         stripRow = strip
@@ -208,7 +208,7 @@ class KachiTopStrip(
      */
     /** #10 (2026-09-23) — re-áp bảng màu theme MỚI lên các view đã dựng (thanh trên không giữ ô app). */
     fun restyle() {
-        stripRow.background = KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP)
+        KachiGlass.bar(stripRow, KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP), KachiTheme.BAR_TOP)
         clock.setTextColor(c(KachiTheme.INK)); dateText.setTextColor(c(KachiTheme.MUT))
         chipViews.forEach { it.tag = null }   // ép applyChipFace chạy lại (đổi màu icon/chữ) ở refreshChips kế
         refreshChips(lastStatus, lastUnits, chipConfig)

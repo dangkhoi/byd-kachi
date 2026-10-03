@@ -131,12 +131,21 @@ object VoiceClarify {
     /**
      * Câu **bỏ cuộc lịch sự** sau [MAX_ROUNDS] lượt. Nêu một câu mẫu có thật thay vì *"không hiểu"* lần thứ ba —
      * [ĐO] mẫu UX Kiki §5: sau hai lượt vật lộn thì thứ giúp được là **một ví dụ**, không phải một lời xin lỗi.
+     *
+     * spec `kachi-i18n-zh-th-ms.html` R4/R5 (owner 03/10 *"chỗ voice ghi rõ chỉ hỗ trợ tiếng việt"*): câu mẫu là câu
+     * để NÓI ⇒ tiếng Việt ở MỌI tiếng giao diện — bản EN cũ dạy *"turn on the reading light"*, câu ASR tiếng Việt không
+     * nghe ra (cùng họ NO_VERB của `VoiceReplyUnknown`). Câu mẫu là ĐỐI SỐ [GIVE_UP_EXAMPLE] của mẫu `{0}` ⇒ bản dịch
+     * zh/th/ms không phải mang dấu tiếng Việt (`I18nCoverageTest` cấm). Bản VI ghép ra y byte câu cũ (test khoá).
      */
-    fun giveUp(lang: Lang = Strings.current): String = Strings.t(
-        "Vẫn chưa rõ — thử nói \"bật đèn đọc\"",
-        "Still not sure — try saying \"turn on the reading light\"",
+    fun giveUp(lang: Lang = Strings.current): String = Strings.fIn(
         lang,
+        "Vẫn chưa rõ — thử nói \"{0}\"",
+        "Still not sure — try saying \"{0}\" in Vietnamese",
+        GIVE_UP_EXAMPLE,
     )
+
+    /** Câu mẫu của [giveUp] — một lệnh có thật mà bộ phân tích hiểu (`VoiceClarifyTest` khoá: ra `Control`). */
+    internal const val GIVE_UP_EXAMPLE = "bật đèn đọc"
 
     /**
      * Ghép câu trả lời của lượt hỏi với ngữ cảnh đã có: `["mở"] + "kính lái"` → `"mở kính lái"`.

@@ -31,6 +31,9 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     if (themeChanged && prev != null) applyThemeInPlace()
     // T4: thu hồi id ở ĐÚNG chỗ diff này ⇒ mọi đường đổi đều qua đây. CẢ state, vì "còn dùng" tính cả sổ cảnh.
     prev?.let { appWidgets.reclaim(it, state) }
+    // 2.87 · R-AH3 — công tắc "Tự ẩn nút ⇄" đổi (hoặc lượt đầu / đổi hồ sơ) ⇒ áp lại ⇄ TẠI CHỖ, không dựng lại ô. Đặt TRƯỚC
+    // `workspace.render` để ô dựng trong lượt này đăng ký với đúng cờ của hồ sơ.
+    if (prev?.slotHeadAutoHide != state.slotHeadAutoHide) workspace.setSlotHeadAutoHide(state.slotHeadAutoHide)
     // Màn vẽ bố cục ĐANG HIỆN (lớp lưu + lớp tạm — đính chính owner 01/10); ô có mốc đặt-tạm mới ⇒ đổi app tại chỗ.
     workspace.render(state.effectiveWorkspace, state.carStatus, WorkspaceRenderPlanner.swapCandidates(prev?.swapNonce, state.swapNonce))
     // R1/R2 (quality-review 2026-09-15): registry vị-trí-app là PROJECTION của state — reconcile MỖI render ở

@@ -159,8 +159,16 @@ class ActionMacroWiringContractTest {
         val state = SourceRoots.body(tileState, "class ControlTileState")
         val maps = Regex("""private val (\w+) = ([\w.]*Map)<""").findAll(state)
             .map { it.groupValues[1] to it.groupValues[2] }.toList()
-        assertTrue(maps.size >= 4, "phải có ít nhất 4 bảng (bật/tắt · giá trị · lựa chọn · chốt đang chạy): $maps")
-        maps.forEach { (name, type) ->
+        // 2.87 · R-FL2 (KEYCTL-FLIP-ALL): hai bảng bật/tắt + lựa chọn RỜI sang `ControlLastSent` (`:core`) — bảng lệnh
+        // cuối DÙNG CHUNG với phím Đảo + giọng nói (ô và phím không được giữ hai bản). Ở đây còn ≥ 3 (giá trị · mốc chạm ·
+        // chốt đang chạy); bảng đã rời được canh CÙNG luật ngay dưới — dời bảng không được là cửa thoát của bài này.
+        assertTrue(maps.size >= 3, "phải có ít nhất 3 bảng (giá trị · mốc chạm · chốt đang chạy): $maps")
+        assertTrue(state.contains("sent.index(id)") && state.contains("sent.record(id,"),
+            "bật/tắt + lựa chọn phải đọc/ghi QUA ControlLastSent, không giữ map riêng")
+        val lastSent = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/ControlLastSent.kt"), "class ControlLastSent")
+        val sentMaps = Regex("""private val (\w+) = ([\w.]*Map)<""").findAll(lastSent).map { it.groupValues[1] to it.groupValues[2] }.toList()
+        assertTrue(sentMaps.isNotEmpty(), "ControlLastSent phải giữ bảng của nó")
+        (maps + sentMaps).forEach { (name, type) ->
             assertTrue(
                 type.endsWith("ConcurrentHashMap"),
                 "bảng '$name' dùng $type — gói lệnh ghi từ THREAD NỀN trong khi thread chính đang đọc để vẽ ⇒ " +

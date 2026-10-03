@@ -128,4 +128,23 @@ class VoiceClarifyTest {
         assertTrue(VoiceClarify.vague().none { it in "àáảãạăâđêôơư" }, VoiceClarify.vague())
         assertTrue(VoiceClarify.giveUp().contains("try saying"), VoiceClarify.giveUp())
     }
+
+    /**
+     * spec `kachi-i18n-zh-th-ms.html` R4/R5 (owner 03/10 *"chỗ voice ghi rõ chỉ hỗ trợ tiếng việt"*): câu bỏ cuộc DẠY
+     * một câu để NÓI ⇒ câu ấy phải là tiếng Việt ở MỌI tiếng — bản EN cũ dạy *"turn on the reading light"* mà ASR tiếng
+     * Việt không nghe ra. Khoá: VI y byte câu cũ · EN nêu câu tiếng Việt · mọi [Lang] mang đúng câu mẫu · câu mẫu là
+     * lệnh có thật (bộ phân tích ra `Control`, không phải một ví dụ chết).
+     */
+    @Test
+    fun `cau bo cuoc day cau tieng Viet o moi tieng`() {
+        assertEquals("Vẫn chưa rõ — thử nói \"bật đèn đọc\"", VoiceClarify.giveUp(Lang.VI), "VI không đổi một byte")
+        assertEquals("Still not sure — try saying \"bật đèn đọc\" in Vietnamese", VoiceClarify.giveUp(Lang.EN))
+        Lang.entries.forEach { l ->
+            val s = VoiceClarify.giveUp(l)
+            assertTrue(Regex("""["“]bật đèn đọc["”]""").containsMatchIn(s), "$l phải dạy đúng câu tiếng Việt: $s")
+            assertTrue(!s.contains("{0}"), "$l: chỗ trống chưa điền: $s")
+        }
+        val parsed = VoiceIntentParser.parseOne(VoiceClarify.GIVE_UP_EXAMPLE)
+        assertTrue(parsed is VoiceIntent.Control, "câu mẫu phải là lệnh thật, ra: $parsed")
+    }
 }

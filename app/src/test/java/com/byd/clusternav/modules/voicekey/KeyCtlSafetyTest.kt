@@ -2,12 +2,19 @@ package com.byd.clusternav.modules.voicekey
 
 import com.byd.clusternav.launcher.CarControlPort
 import com.byd.clusternav.launcher.CarStatus
+import com.byd.clusternav.launcher.ControlLastSent
+import com.byd.clusternav.launcher.ControlRegistry
+import com.byd.clusternav.launcher.ControlTileLogic
+import com.byd.clusternav.launcher.ControlTileState
 import com.byd.clusternav.launcher.HomeUiState
 import com.byd.clusternav.launcher.KeyCtlTargets
 import com.byd.clusternav.launcher.KeyCtlThrottle
 import com.byd.clusternav.launcher.VoiceControlDispatch
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -88,11 +95,80 @@ class KeyCtlSafetyTest {
     fun `dao kinh lai doc trang thai that`() {
         Rig(reads = mapOf("win_lf" to 0)).also { it.press("ctl:win_lf:flip"); assertEquals(listOf("toggle:win_lf:true"), it.port.fired) }
         Rig(reads = mapOf("win_lf" to 60)).also { it.press("ctl:win_lf:flip"); assertEquals(listOf("toggle:win_lf:false"), it.port.fired) }
+        // 2.87 · R-FL2 (thay khẳng định 2.86 "đọc không được ⇒ không bắn"): owner 03/10 chấp nhận Đảo theo LỆNH CUỐI khi
+        // không đọc được xe (spec §4.3) ⇒ bảng chưa có gì = đóng ⇒ MỞ, và bảng ghi lại sau khi ghi thành công.
+        sent.record("win_lf", 0)
+        Rig(reads = mapOf("win_lf" to 60)).also { it.press("ctl:win_lf:flip"); assertEquals(0, sent.index("win_lf"), "đọc được ⇒ xe thắng bảng") }
         Rig().also {
             it.press("ctl:win_lf:flip")
-            assertEquals(emptyList<String>(), it.port.fired, "đọc không được ⇒ KHÔNG đoán bằng cờ RAM")
-            assertTrue(it.said.single().startsWith("Không đọc được Kính lái — gán Bật / Tắt riêng"), "${it.said}")
+            assertEquals(listOf("toggle:win_lf:true"), it.port.fired, "đọc không được ⇒ lệnh cuối (đóng) ⇒ MỞ")
+            assertEquals(1, sent.index("win_lf"), "ghi thành công ⇒ bảng nhớ MỞ")
+            it.press("ctl:win_lf:flip")
+            assertEquals(listOf("toggle:win_lf:true", "toggle:win_lf:false"), it.port.fired, "bấm lại ⇒ ĐÓNG")
         }
+    }
+
+    // ── 2.87 · R-FL1/R-FL2 — MỘT phím Đảo cho cốp (owner 03/10 "phải 2 nút à?"), dùng CHUNG bảng với ô trên màn ────
+
+    /** Bảng THẬT của tiến trình (`ControlLastSent.shared`) — mỗi bài bắt đầu và kết thúc ở trạng thái "vừa bật". */
+    private val sent = ControlLastSent.shared
+
+    private fun freshProcessMemory() = ControlRegistry.ALL.forEach { sent.record(it.id, ControlLastSent.startIndex(it.id)) }
+
+    @BeforeEach
+    fun before() = freshProcessMemory()
+
+    @AfterEach
+    fun after() = freshProcessMemory()
+
+    @Test
+    fun `phim dao cot khong readKey mo roi dong, chi ghi bang khi thanh cong`() {
+        val r = Rig(speedKmh = 0)
+        r.press("ctl:trunk:flip")
+        assertEquals(listOf("cover:trunk:true"), r.port.fired, "tiến trình vừa bật ⇒ coi cốp đóng ⇒ MỞ")
+        assertEquals(1, sent.index("trunk"))
+        r.press("ctl:trunk:flip")
+        assertEquals(listOf("cover:trunk:true", "cover:trunk:false"), r.port.fired, "Đảo lần hai ⇒ ĐÓNG — về như cũ")
+        assertEquals(0, sent.index("trunk"))
+        // Xe từ chối (ghi trả false) ⇒ bảng KHÔNG đổi ⇒ lần Đảo kế vẫn MỞ, không "nhảy" sang ĐÓNG một cốp chưa từng mở.
+        r.port.accept = false
+        r.press("ctl:trunk:flip")
+        assertEquals("cover:trunk:true", r.port.fired.last())
+        assertEquals(0, sent.index("trunk"), "chỉ ghi lệnh cuối khi lệnh THÀNH CÔNG")
+    }
+
+    /** Hợp đồng ô ↔ phím: ô mở cốp (đúng phép ghi của ô — `ControlTileState.setSel`) ⇒ phím Đảo ĐÓNG ⇒ cú chạm kế MỞ. */
+    @Test
+    fun `o va phim dung chung mot bang lenh cuoi`() {
+        val tile = ControlTileState.shared
+        tile.setSel("trunk", 1)                                  // cú chạm ô cốp: 0 → 1 (lạc quan; ghi thành công giữ nguyên)
+        Rig(speedKmh = 30).also {
+            it.press("ctl:trunk:flip")
+            assertEquals(listOf("cover:trunk:false"), it.port.fired, "ô đã mở ⇒ phím Đảo ĐÓNG (đóng lúc chạy luôn được)")
+        }
+        assertEquals(0, tile.sel("trunk"), "ô đọc CÙNG bảng ⇒ thấy cốp đã đóng")
+        assertEquals(1, ControlTileLogic.nextSelectIndex(tile.sel("trunk"), 2), "cú chạm ô kế tiếp ⇒ MỞ, không lặp ĐÓNG")
+        // TOGGLE không readKey (đèn đọc): ô bật ⇒ phím Đảo tắt ⇒ ô thấy tắt.
+        tile.setOn("readl", true)
+        Rig().also { it.press("ctl:readl:flip"); assertEquals(listOf("toggle:readl:false"), it.port.fired) }
+        assertFalse(tile.isOn("readl"))
+        // Lọc bụi (onByDefault): ô vẽ "bật" từ đầu ⇒ phím Đảo đầu tiên phải TẮT.
+        assertTrue(tile.isOn("pm25"))
+        Rig().also { it.press("ctl:pm25:flip"); assertEquals(listOf("toggle:pm25:false"), it.port.fired) }
+        // Giọng nói *"đóng rèm"* (COVER) nay cũng ghi bảng — trước 2.87 nhánh COVER của `finish` bỏ qua.
+        tile.setSel("sunshade", 1)
+        Rig().also { it.press("ctl:sunshade:close") }
+        assertEquals(0, tile.sel("sunshade"))
+    }
+
+    /** Cổng an toàn áp lên hành động ĐÃ GIẢI: Đảo ra MỞ cốp lúc xe chạy ⇒ từ chối, không bắn, bảng giữ "đóng". */
+    @Test
+    fun `dao ra mo cop luc xe chay thi bi cong toc do chan`() {
+        val r = Rig(speedKmh = 30)
+        r.press("ctl:trunk:flip")
+        assertEquals(emptyList<String>(), r.port.fired, "phím Đảo KHÔNG được là cửa sau của cổng tốc độ")
+        assertTrue(r.said.single().contains("chỉ mở được khi xe đang dừng"), "${r.said}")
+        assertEquals(0, sent.index("trunk"), "bị chặn = không gửi ⇒ bảng không đổi")
     }
 
     @Test

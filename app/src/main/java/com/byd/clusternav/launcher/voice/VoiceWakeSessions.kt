@@ -58,6 +58,11 @@ internal object VoiceWakeSessions {
     /** Phiên mới (không dùng lại) ⇒ tăng [epoch]. Một chỗ duy nhất để không có đường dựng phiên nào quên tăng. */
     private fun mark(a: VoiceSessionOwner.Acquired<VoiceSession>): VoiceSessionOwner.Acquired<VoiceSession> {
         if (!a.reused) epoch++
+        // i18n R9 — phiên DÙNG LẠI mang tài nguyên đọc lúc dựng; người dùng có thể vừa đổi tiếng ở màn chính ⇒ đọc lại
+        // ảnh chụp trước lượt này (phiên mới thì vừa đọc trong `buildSession`). Hỏng ⇒ giữ chữ cũ, KHÔNG chặn lượt nói.
+        if (a.reused) (a.session.ctx as? VoiceWakeUiContext)?.let { ui ->
+            runCatching { ui.refresh() }.onFailure { Log.w(TAG, "làm mới tiếng tấm chữ lỗi — giữ chữ cũ", it) }
+        }
         return a
     }
 

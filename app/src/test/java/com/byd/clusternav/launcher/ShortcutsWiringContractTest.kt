@@ -170,7 +170,10 @@ class ShortcutsWiringContractTest {
             .contains("ShortcutStrip.cells(n) * dpi(ctx, Bars.SHORTCUT_CELL) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)"))
         assertEquals(52, KachiBars.SHORTCUT_CELL, "owner 01/10: icon 52 dp")
         assertEquals(KachiSpace.XS, KachiBars.SHORTCUT_PAD)
-        assertTrue(KachiBars.SHORTCUT_CELL >= KachiSpace.TOUCH && KachiBars.SHORTCUT_GRID_CELL >= KachiSpace.TOUCH, "đích chạm ≥ 48 dp")
+        // 2.87 R-SI1 đổi chân (không nới): lưới widget KHÔNG còn khe cố định `SHORTCUT_GRID_CELL` (64 dp) để so — cỡ icon +
+        // khe nay khớp theo khung thật; đích chạm của lưới (icon + khe) khoá ở `ShortcutGridFitWiringContractTest`.
+        // Khe của khối thanh nút vẫn cố định nên vế của nó giữ nguyên.
+        assertTrue(KachiBars.SHORTCUT_CELL >= KachiSpace.TOUCH, "đích chạm ≥ 48 dp")
     }
 
     @Test

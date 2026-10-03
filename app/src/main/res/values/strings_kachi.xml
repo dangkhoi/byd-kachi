@@ -116,6 +116,9 @@
     <string name="kachi_sec_color">Màu sắc</string>
     <string name="kachi_row_accent">Màu nhấn</string>
     <string name="kachi_row_tone">Tông thẻ</string>
+    <!-- 2.87 · R-OP1 — độ đục nền chung (thanh trên · thanh nút xe · widget), lưu trong color_choice -->
+    <string name="kachi_row_bg_opacity">Độ trong suốt nền</string>
+    <string name="kachi_bg_opacity_note">Một mức chung cho nền thanh trên, thanh nút xe và widget — 0 % là như cũ, số càng lớn nền càng trong. Chữ và icon không mờ đi: chỗ nào nền phía sau làm chữ khó đọc (vd ảnh nền sáng), thanh và thẻ tự giữ lại độ đục cần thiết. Đóng Cài đặt để thấy kết quả.</string>
     <string name="kachi_sec_car_image">Hình xe</string>
     <string name="kachi_car_image_current">Đang dùng: %1$s</string>
     <string name="kachi_car_image_title">Hình xe</string>
@@ -281,6 +284,8 @@
     <!-- ── WorkspaceView — nút ⇄ của ô (FIX286 · ES4: mô tả trợ năng; ô trống trong suốt nên đây là chữ duy nhất nói "chỗ đặt app") ── -->
     <string name="kachi_slot_swap_empty">Chọn ứng dụng cho ô %1$d</string>
     <string name="kachi_slot_swap">Đổi ứng dụng ô %1$d</string>
+    <string name="kachi_slot_head_autohide_title">Tự ẩn nút ⇄</string>
+    <string name="kachi_slot_head_autohide_sub">Nút đổi app/widget của khung ẩn đi cho thoáng; chạm vào khung (hoặc chỗ trống trên màn) là hiện lại vài giây</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widget của app khác</string>
@@ -673,7 +678,7 @@
 
     <!-- ══ 2.74 · R3 — danh sách CÂU LỆNH NÓI ĐƯỢC ở cuối nhóm Giọng nói ═══════════════════════════════ -->
     <string name="kachi_voice_cmds_section">Câu lệnh nói được</string>
-    <string name="kachi_voice_cmds_sub">Danh sách này sinh từ chính ngữ pháp của Kachi, nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu bằng tiếng Việt — thứ tiếng duy nhất Kachi nghe hiểu — rồi nói đúng như chữ hiện ra.</string>
+    <string name="kachi_voice_cmds_sub">Danh sách này sinh từ chính ngữ pháp của Kachi, nên nó luôn khớp với thứ xe hiểu. Chạm một nhóm để xem câu mẫu.</string>
     <!-- kachi-i18n-zh-th-ms R4: giọng nói chỉ nhận dạng tiếng Việt (một gói ASR zipformer-vi), ở MỌI ngôn ngữ giao diện. -->
     <string name="kachi_voice_lang_only">Giọng nói hiện chỉ hiểu tiếng Việt — hãy nói đúng các câu tiếng Việt trong danh sách.</string>
     <!-- ⚠ `<plurals>` chứ không `<string>`: bản một-chuỗi in "1 phrases" ở tiếng Anh (cùng finding #18 của

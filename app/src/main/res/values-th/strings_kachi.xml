@@ -48,16 +48,16 @@
     <string name="kachi_perm_environment">ข้อจำกัดของสภาพแวดล้อม ไม่ใช่ความผิดพลาดของแอป</string>
     <string name="kachi_perm_core">%1$s — มีผลต่อฟีเจอร์หลัก</string>
     <string name="kachi_perm_loses">หากไม่มี: %1$s</string>
-    <string name="kachi_shell_approval_msg">ระบบกำลังถามว่า “อนุญาตการแก้ไขข้อบกพร่อง USB หรือไม่” — เลือก “อนุญาตเสมอ” แล้วกด ตกลง เพื่อให้ Kachi วางแอปในช่องได้</string>
+    <string name="kachi_shell_approval_msg">ระบบกำลังถามว่า “อนุญาตการแก้ไขข้อบกพร่อง USB หรือไม่” — เลือก “อนุญาตเสมอ” แล้วกด “ตกลง” เพื่อให้ Kachi วางแอปในช่องได้</string>
     <string name="kachi_shell_approval_retry">ลองอีกครั้ง</string>
     <string name="kachi_access_title">Kachi ต้องการสิทธิ์ควบคุมหน้าต่าง</string>
-    <string name="kachi_access_never_body">หากต้องการวางแอปในช่อง ฉายภาพขึ้นหน้าปัด และซ่อมปุ่มพวงมาลัย ให้อนุญาตการแก้ไขข้อบกพร่อง เมื่อหน้าต่าง “อนุญาตการแก้ไขข้อบกพร่อง USB หรือไม่” ปรากฏขึ้น ให้เลือก “อนุญาตจากคอมพิวเตอร์เครื่องนี้เสมอ” แล้วกด ตกลง</string>
+    <string name="kachi_access_never_body">หากต้องการวางแอปในช่อง ฉายภาพขึ้นหน้าปัด และแก้ไขปุ่มพวงมาลัยให้ใช้งานได้ ให้อนุญาตการแก้ไขข้อบกพร่อง เมื่อกล่องโต้ตอบ “อนุญาตการแก้ไขข้อบกพร่อง USB หรือไม่” ปรากฏขึ้น ให้เลือก “อนุญาตจากคอมพิวเตอร์เครื่องนี้เสมอ” แล้วกด “ตกลง”</string>
     <string name="kachi_access_lost_title">รถไม่ยอมรับสิทธิ์ของ Kachi แล้ว</string>
     <string name="kachi_access_lost_body">สิทธิ์อาจหมดอายุเพราะไม่ได้ใช้งานนาน ถูกเพิกถอน หรือครั้งก่อนอนุญาตเพียงครั้งเดียว แตะ “ถามอีกครั้ง” แล้วเลือก “อนุญาตเสมอ”</string>
     <string name="kachi_access_env_title">ช่องทางควบคุมหน้าต่างยังไม่พร้อมใช้งาน</string>
     <string name="kachi_access_env_body">พอร์ตแก้ไขข้อบกพร่องของรถยังไม่พร้อม แตะ “ลองอีกครั้ง” ในอีกสักครู่</string>
     <string name="kachi_access_ask_again">ถามอีกครั้ง</string>
-    <string name="kachi_access_later">ภายหลัง</string>
+    <string name="kachi_access_later">ไว้ภายหลัง</string>
     <string name="kachi_slot_connecting">กำลังเชื่อมต่อ…</string>
     <string name="kachi_slot_needs_access">ต้องการสิทธิ์</string>
     <string name="kachi_slot_no_channel">ไม่มีช่องทางควบคุม</string>
@@ -71,6 +71,8 @@
     <string name="kachi_sec_color">สี</string>
     <string name="kachi_row_accent">สีเน้น</string>
     <string name="kachi_row_tone">โทนการ์ด</string>
+    <string name="kachi_row_bg_opacity">ความโปร่งใสของพื้นหลัง</string>
+    <string name="kachi_bg_opacity_note">ใช้ระดับเดียวกันกับพื้นหลังของแถบสถานะ แถบปุ่มรถ และวิดเจ็ต 0% คือแบบเดิม ยิ่งตัวเลขมากยิ่งโปร่ง ข้อความและไอคอนจะไม่จางลง หากสิ่งที่อยู่ด้านหลังทำให้อ่านข้อความได้ยาก (เช่น ภาพพื้นหลังที่สว่าง) แถบและการ์ดจะคงความทึบไว้เท่าที่จำเป็น ปิดการตั้งค่าเพื่อดูผลลัพธ์</string>
     <string name="kachi_sec_car_image">ภาพรถ</string>
     <string name="kachi_car_image_current">ใช้งานอยู่: %1$s</string>
     <string name="kachi_car_image_title">ภาพรถ</string>
@@ -78,7 +80,7 @@
     <string name="kachi_car_image_steps">วิธีเปลี่ยนภาพรถ (มุมมองจากด้านบน พื้นหลังโปร่งใสจะดีที่สุด):\n1. เสียบแฟลชไดรฟ์ USB เข้ากับรถ หรือเปิดแอปไฟล์\n2. คัดลอกภาพไปยังโฟลเดอร์นี้: %1$s\n3. ระบบจะใช้ภาพใหม่ล่าสุดในโฟลเดอร์ เปิดหน้าจอหลักอีกครั้งเพื่อดูผล\nแตะปุ่มด้านล่างเพื่อคัดลอกพาธโฟลเดอร์</string>
     <string name="kachi_copy_path">คัดลอกพาธโฟลเดอร์</string>
     <string name="kachi_path_copied">คัดลอกพาธโฟลเดอร์แล้ว</string>
-    <string name="kachi_color_note">บันทึกตามโปรไฟล์ปัจจุบัน “ตามภาพพื้นหลัง” จะใช้สีหลักของรูปแรกในโฟลเดอร์ภาพพื้นหลัง ข้อความจะอ่านออกเสมอ: หากสีเน้นสว่างมาก ข้อความบนปุ่มจะเปลี่ยนเป็นสีเข้มเอง การเปลี่ยนสีจะสร้างหน้าจอใหม่หนึ่งครั้ง</string>
+    <string name="kachi_color_note">บันทึกไว้กับโปรไฟล์ปัจจุบัน “ตามภาพพื้นหลัง” จะใช้สีหลักของรูปแรกในโฟลเดอร์ภาพพื้นหลัง ข้อความจะอ่านออกเสมอ: หากสีเน้นสว่างมาก ข้อความบนปุ่มจะเปลี่ยนเป็นสีเข้มเอง การเปลี่ยนสีจะสร้างหน้าจอใหม่หนึ่งครั้ง</string>
     <string name="kachi_sec_lang">ภาษา</string>
     <string name="kachi_row_lang">ข้อความบนหน้าจอ</string>
     <string name="kachi_lang_note">“ตามระบบรถ” = ภาษาเวียดนามเมื่อรถตั้งเป็นภาษาเวียดนาม นอกนั้นเป็นภาษาอังกฤษ ภาษาจีน ไทย และมาเลย์จะใช้เมื่อคุณเลือกเองเท่านั้น คำสั่งเสียงเข้าใจเฉพาะภาษาเวียดนาม ไม่ว่าข้อความบนหน้าจอจะเป็นภาษาใด การเปลี่ยนภาษาจะสร้างหน้าจอใหม่หนึ่งครั้ง</string>
@@ -103,7 +105,7 @@
     <string name="kachi_profile_import_geom_none">ยังไม่มีแอปใดมีกรอบการฉายของตัวเอง — ใช้กรอบเริ่มต้น</string>
     <string name="kachi_profile_import_use_cast">การฉายภาพขึ้นหน้าปัดของโปรไฟล์นี้ (%1$s) ต่างจากที่กำลังทำงานอยู่ “ใช้โปรไฟล์นี้ทันที” จะมีผลทันทีหากไม่มีแอปบนหน้าปัด มิฉะนั้นจะมีผลตั้งแต่การสตาร์ทรถครั้งถัดไป</string>
     <string name="kachi_profile_import_use_now">ใช้โปรไฟล์นี้ทันที</string>
-    <string name="kachi_profile_import_later">ภายหลัง</string>
+    <string name="kachi_profile_import_later">ไว้ภายหลัง</string>
     <string name="kachi_profile_import_cast_deferred">หน้าปัดกำลังฉายหรือกำลังเปลี่ยนสถานะ — การฉายภาพขึ้นหน้าปัดของโปรไฟล์นี้จะมีผลตั้งแต่การสตาร์ทรถครั้งถัดไป (หรือ การตั้งค่า › ฉายภาพขึ้นหน้าปัด › ใช้ทันที)</string>
     <string name="kachi_profiles_note">แต่ละโปรไฟล์เก็บสำเนา “ของตัวเอง” ของแทบทุกอย่าง: เลย์เอาต์ เนื้อหาในช่อง แถบปุ่ม ชิป ภาพพื้นหลัง ธีม หน่วย ภาษา การตั้งค่าการนำทาง หน้าปัดเรือนไมล์ การฉายภาพขึ้นหน้าปัด และกล้อง แตะโปรไฟล์เพื่อสลับไปใช้ — ชิปโปรไฟล์บนแถบด้านบนก็สลับได้ แต่การสร้างและลบทำได้ที่นี่เท่านั้น ไฟล์ส่งออกแบบเต็มมีที่อยู่ที่บันทึกไว้และกำหนดการนำทาง — หากจะส่งให้ผู้อื่น ให้ใช้ “ส่งออกเพื่อแชร์”</string>
     <string name="kachi_profiles_add">เพิ่มโปรไฟล์ (สำเนาของ %1$s)</string>
@@ -142,13 +144,13 @@
     <string name="kachi_wake_sub">พูดคำปลุกเพื่อเปิดคำสั่งเสียงโดยไม่ต้องแตะ ฟังอยู่เบื้องหลังขณะหน้าจอเปิด ปิดไว้โดยค่าเริ่มต้น (ใช้แบตเตอรี่/CPU) อยู่ในขั้นทดลอง — อาจยังจดจำเสียงคุณได้ไม่ดี หากพบปัญหาโปรดแจ้ง</string>
     <string name="kachi_wake_notif_title">Hey Kachi</string>
     <string name="kachi_wake_notif_text">กำลังฟังคำปลุก</string>
-    <string name="kachi_wake_hold_notif_title">Kachi พร้อมรับปุ่มพวงมาลัย</string>
+    <string name="kachi_wake_hold_notif_title">Kachi พร้อมรับคำสั่งจากปุ่มพวงมาลัย</string>
     <string name="kachi_wake_hold_notif_text">กดปุ่มที่กำหนดไว้เพื่อพูด — ไมค์จะเปิดเฉพาะเมื่อกดเท่านั้น</string>
-    <string name="kachi_wake_auto_off">ปิด Hey Kachi แล้วเนื่องจากทำงานผิดพลาดหลายครั้ง เปิดใหม่ได้ใน การตั้งค่า</string>
+    <string name="kachi_wake_auto_off">ปิด Hey Kachi แล้วเนื่องจากตรวจจับคำปลุกผิดพลาดหลายครั้ง เปิดใหม่ได้ใน การตั้งค่า</string>
     <string name="kachi_home_result_no_shell">ต้องใช้ช่องทาง shell — ดูแถว “ช่องทางควบคุมหน้าต่าง” ด้านบน</string>
     <string name="kachi_home_result_failed">เรียกใช้คำสั่งแล้ว แต่ระบบยังไม่ใช้ Kachi: %1$s</string>
     <string name="kachi_keep_home_boot_title">คง Kachi เป็นหน้าจอหลักเมื่อสตาร์ทรถ</string>
-    <string name="kachi_keep_home_boot_sub">เมื่อสตาร์ทรถ จะตั้ง Kachi เป็นหน้าจอหลักอีกหนึ่งครั้งหากระบบเปลี่ยนไป ปิดไว้โดยค่าเริ่มต้น</string>
+    <string name="kachi_keep_home_boot_sub">เมื่อสตาร์ทรถ หากระบบเปลี่ยนหน้าจอหลักไป Kachi จะตั้งตัวเองกลับเป็นหน้าจอหลักหนึ่งครั้ง ปิดไว้โดยค่าเริ่มต้น</string>
     <string name="kachi_sec_boot">การเริ่มทำงาน</string>
     <string name="kachi_autostart_title">เปิดอัตโนมัติเมื่อสตาร์ทรถ</string>
     <string name="kachi_autostart_sub">เมื่อสตาร์ทรถ Kachi จะสร้างช่องต่างๆ ขึ้นใหม่ การตั้งเป็นหน้าจอหลักอยู่ในหัวข้อ “หน้าจอหลัก” ด้านบน หากปิดไว้ คุณต้องเปิดเอง</string>
@@ -158,7 +160,7 @@
     <string name="kachi_about_licence">สัญญาอนุญาต MIT โปรเจกต์ทดลองส่วนตัว ไม่ได้มีส่วนเกี่ยวข้องกับ BYD</string>
     <string name="kachi_sec_layout">เลย์เอาต์หน้าจอ</string>
     <string name="kachi_row_preset">เลย์เอาต์สำเร็จรูป</string>
-    <string name="kachi_layout_open_editor">วาดเลย์เอาต์ของคุณเอง…</string>
+    <string name="kachi_layout_open_editor">วาดเลย์เอาต์เอง…</string>
     <plurals name="kachi_layout_custom_in_use">
         <item quantity="other">กำลังใช้เลย์เอาต์ที่วาดเอง: %1$d กรอบ</item>
     </plurals>
@@ -168,7 +170,7 @@
     <string name="kachi_wall_title">ใช้รูปภาพเป็นภาพพื้นหลัง</string>
     <string name="kachi_wall_sub_nofolder">ใส่รูปภาพในโฟลเดอร์รูปภาพของ Kachi</string>
     <string name="kachi_wall_sub_folder">ใส่รูปภาพใน: %1$s</string>
-    <string name="kachi_wall_steps">วิธีเพิ่มรูปภาพสำหรับ “ภาพพื้นหลัง”:\n1. เสียบแฟลชไดรฟ์ USB เข้ากับรถ หรือเปิดแอปไฟล์\n2. คัดลอกรูปภาพไปยังโฟลเดอร์นี้: %1$s\n3. เปิดสวิตช์ด้านบน — รูปภาพจะเป็นภาพพื้นหลังและเปลี่ยนตามรอบเวลา\n(รูปภาพสำหรับวิดเจ็ต “สไลด์โชว์ภาพ” อยู่คนละโฟลเดอร์ — ดูหัวข้อ สไลด์โชว์ภาพ)\nแตะปุ่มด้านล่างเพื่อคัดลอกพาธโฟลเดอร์</string>
+    <string name="kachi_wall_steps">วิธีเพิ่มรูปภาพสำหรับ “ภาพพื้นหลัง”:\n1. เสียบแฟลชไดรฟ์ USB เข้ากับรถ หรือเปิดแอปไฟล์\n2. คัดลอกรูปภาพไปยังโฟลเดอร์นี้: %1$s\n3. เปิดสวิตช์ด้านบน — รูปภาพจะเป็นภาพพื้นหลังและเปลี่ยนตามรอบเวลา\n(รูปภาพสำหรับวิดเจ็ต “สไลด์โชว์ภาพ” อยู่คนละโฟลเดอร์ — ดูหัวข้อ “วิดเจ็ตสไลด์โชว์ภาพ”)\nแตะปุ่มด้านล่างเพื่อคัดลอกพาธโฟลเดอร์</string>
     <string name="kachi_photos_section">วิดเจ็ตสไลด์โชว์ภาพ</string>
     <string name="kachi_photos_steps">รูปภาพสำหรับวิดเจ็ต “สไลด์โชว์ภาพ” (คนละโฟลเดอร์กับภาพพื้นหลัง):\n1. เสียบแฟลชไดรฟ์ USB เข้ากับรถ หรือเปิดแอปไฟล์\n2. คัดลอกรูปภาพไปยังโฟลเดอร์นี้: %1$s\n3. วางวิดเจ็ต “สไลด์โชว์ภาพ” ในช่อง — รูปภาพจะเปลี่ยนวนไปในช่องนั้น\nแตะปุ่มด้านล่างเพื่อคัดลอกพาธโฟลเดอร์</string>
     <string name="kachi_wall_period">เปลี่ยนรูปทุก</string>
@@ -209,6 +211,8 @@
     <string name="kachi_tyre_pressure_unit">แรงดันลมยาง (%1$s)</string>
     <string name="kachi_slot_swap_empty">เลือกแอปสำหรับช่อง %1$d</string>
     <string name="kachi_slot_swap">เปลี่ยนแอปในช่อง %1$d</string>
+    <string name="kachi_slot_head_autohide_title">ซ่อนปุ่ม ⇄ อัตโนมัติ</string>
+    <string name="kachi_slot_head_autohide_sub">ปุ่มสลับแอป/วิดเจ็ตของกรอบจะซ่อนไว้ให้หน้าจอโล่ง แตะที่กรอบ (หรือที่ว่างบนหน้าจอ) เพื่อแสดงสักครู่</string>
     <string name="kachi_drawer_section_appwidgets">วิดเจ็ตจากแอปอื่น</string>
     <string name="kachi_drawer_note_appwidgets">วิดเจ็ต Android จากแอปอื่น (นาฬิกา ปฏิทิน เพลง…) แตะรายการใดรายการหนึ่งเพื่อวางในช่องนี้</string>
     <string name="kachi_drawer_note_appwidgets_none">ไม่มีแอปในเครื่องนี้ที่มีวิดเจ็ต</string>
@@ -223,16 +227,16 @@
     <string name="kachi_bridge_granting_notification">กำลังให้สิทธิ์เข้าถึงการแจ้งเตือน…</string>
     <string name="kachi_bridge_notification_granted">ได้รับสิทธิ์แล้ว — เชื่อมต่อการนำทางแล้ว</string>
     <string name="kachi_bridge_notification_fallback">เปิดการตั้งค่าไม่ได้ ไปที่ การตั้งค่า → แอป → สิทธิ์เข้าถึงพิเศษของแอป → การเข้าถึงการแจ้งเตือน → เปิด ClusterNav</string>
-    <string name="kachi_bridge_reconnecting">กำลังเชื่อมต่อแหล่งการนำทางอีกครั้ง…</string>
+    <string name="kachi_bridge_reconnecting">กำลังเชื่อมต่อแหล่งข้อมูลนำทางอีกครั้ง…</string>
     <string name="kachi_bridge_cast_on">เปิดการฉายภาพขึ้นหน้าปัดแล้ว</string>
     <string name="kachi_bridge_cast_off">ปิดการฉายภาพขึ้นหน้าปัดแล้ว · หน้าปัดกลับไปแสดงมาตรวัด</string>
-    <string name="kachi_bridge_cast_returning">กำลังส่งแอปกลับ…</string>
+    <string name="kachi_bridge_cast_returning">กำลังย้ายแอปกลับ…</string>
     <string name="kachi_bridge_cluster_reset">รีเซ็ตหน้าปัดแล้ว · กำลังเปิดใหม่…</string>
     <string name="kachi_bridge_deep_rescue_running">กำลังล้างหน้าปัดแบบเต็มรูปแบบ…</string>
     <string name="kachi_bridge_enabling_accessibility">กำลังเปิดบริการการช่วยเหลือพิเศษ…</string>
     <string name="kachi_bridge_accessibility_enabled">เปิดแล้ว กดปุ่มที่กำหนดไว้เพื่อเปิดแอป</string>
     <string name="kachi_bridge_accessibility_not_bound">ได้รับสิทธิ์การช่วยเหลือพิเศษแล้ว แต่บริการยังไม่ได้เชื่อมต่อ — ลองอีกครั้งในอีกไม่กี่วินาที หรือปิดแล้วเปิดใหม่ใน การตั้งค่าระบบ > การช่วยเหลือพิเศษ</string>
-    <string name="kachi_bridge_accessibility_restarting">การกำหนดปุ่มค้างอยู่ที่ระดับระบบ กำลังซ่อมแซม: อินเทอร์เฟซจะรีสตาร์ทหนึ่งครั้งแล้วปุ่มจะกลับมาทำงาน — แอปที่เปิดอยู่ในช่องจะต้องวาดใหม่ (แตะช่องเพื่อให้แสดงอีกครั้ง)</string>
+    <string name="kachi_bridge_accessibility_restarting">การกำหนดปุ่มค้างอยู่ที่ระดับระบบ กำลังแก้ไข: อินเทอร์เฟซจะรีสตาร์ทหนึ่งครั้งแล้วปุ่มจะกลับมาทำงาน — แอปที่เปิดอยู่ในช่องจะต้องวาดใหม่ (แตะช่องเพื่อให้แสดงอีกครั้ง)</string>
     <string name="kachi_bridge_accessibility_failed">เปิดการช่วยเหลือพิเศษไม่ได้ — แตะ “อนุญาตการแก้ไขข้อบกพร่อง USB” บนรถแล้วลองอีกครั้ง หรือเปิดเองใน การตั้งค่า > การช่วยเหลือพิเศษ</string>
     <string name="kachi_bridge_checking">กำลังตรวจสอบ…</string>
     <string name="kachi_bridge_voice_key_ready">ปุ่มสั่งเสียงพร้อมแล้ว</string>
@@ -253,7 +257,7 @@
     <string name="kachi_dock_pick_n">เลือกปุ่มบนแถบ… (เปิดอยู่ %1$d)</string>
     <string name="kachi_layout_custom_chip">กำหนดเอง</string>
     <string name="kachi_sec_places">สมุดที่อยู่</string>
-    <string name="kachi_places_note">บันทึกบ้าน ที่ทำงาน… แล้วพูดชื่อสถานที่เป็นภาษาเวียดนามเพื่อนำทางไปที่นั่น (คำสั่งเสียงเข้าใจเฉพาะภาษาเวียดนาม) สมุดที่อยู่เป็นไปตามโปรไฟล์ที่ใช้งานอยู่</string>
+    <string name="kachi_places_note">บันทึกบ้าน ที่ทำงาน… แล้วพูดเป็นภาษาเวียดนามว่า “về nhà” (กลับบ้าน) “đến công ty” (ไปที่ทำงาน) หรือ “đi &lt;tên&gt;” (ไปที่ &lt;ชื่อ&gt;) สมุดที่อยู่เป็นไปตามโปรไฟล์ที่ใช้งานอยู่</string>
     <string name="kachi_places_empty">ยังไม่ได้บันทึกที่อยู่</string>
     <string name="kachi_places_add">เพิ่มที่อยู่…</string>
     <string name="kachi_places_edit">แก้ไขที่อยู่</string>
@@ -286,10 +290,10 @@
     <string name="kachi_rain_st_car_off">รถแจ้ง: ปิด</string>
     <string name="kachi_rain_st_car_off_after_on">รถแจ้ง: ยังปิดอยู่หลังคำสั่งเปิดเมื่อ {t}</string>
     <string name="kachi_rain_st_car_error">รถแจ้ง: อ่านไม่ได้</string>
-    <string name="kachi_rain_st_turn_on_ok">Kachi เปิดแล้ว: ถึงรถ ✓</string>
-    <string name="kachi_rain_st_turn_on_fail">คำสั่งเปิด: ไม่ถึงรถ ✗</string>
-    <string name="kachi_rain_st_turn_off_ok">Kachi ปิดแล้ว: ถึงรถ ✓</string>
-    <string name="kachi_rain_st_turn_off_fail">คำสั่งปิด: ไม่ถึงรถ ✗</string>
+    <string name="kachi_rain_st_turn_on_ok">Kachi เปิดแล้ว: ส่งถึงรถ ✓</string>
+    <string name="kachi_rain_st_turn_on_fail">คำสั่งเปิด: ส่งไม่ถึงรถ ✗</string>
+    <string name="kachi_rain_st_turn_off_ok">Kachi ปิดแล้ว: ส่งถึงรถ ✓</string>
+    <string name="kachi_rain_st_turn_off_fail">คำสั่งปิด: ส่งไม่ถึงรถ ✗</string>
     <string name="kachi_rain_st_skipped">ยกเลิกคำสั่ง (เพิ่งเปลี่ยนตัวเลือก)</string>
     <string name="kachi_rain_st_keep_on">เปิดอยู่แล้ว ปล่อยไว้</string>
     <string name="kachi_rain_st_nothing">ไม่ต้องทำอะไร</string>
@@ -326,9 +330,9 @@
     <string name="kachi_sec_nav">การนำทาง + HUD</string>
     <string name="kachi_nav_enabled_title">การนำทางบนหน้าปัด</string>
     <string name="kachi_nav_enabled_sub">เมื่อเปิด จะให้สิทธิ์เข้าถึงการแจ้งเตือนผ่านช่องทางของรถเอง — ไม่ต้องเข้าการตั้งค่าระบบ</string>
-    <string name="kachi_nav_source_none">ใช้งานอยู่: —</string>
-    <string name="kachi_nav_source">ใช้งานอยู่: %1$s</string>
-    <string name="kachi_nav_source_stale">ใช้งานอยู่: %1$s (ข้อมูลเก่าแล้ว)</string>
+    <string name="kachi_nav_source_none">กำลังนำทาง: —</string>
+    <string name="kachi_nav_source">กำลังนำทาง: %1$s</string>
+    <string name="kachi_nav_source_stale">กำลังนำทาง: %1$s (ข้อมูลเก่าแล้ว)</string>
     <string name="kachi_nav_channel_notification">การแจ้งเตือน</string>
     <string name="kachi_nav_channel_screen">อ่านหน้าจอ</string>
     <string name="kachi_nav_output">หน้าปัด: %1$s</string>
@@ -348,7 +352,7 @@
     <string name="kachi_nav_app_gmaps">Google Maps</string>
     <string name="kachi_nav_app_vietmap">VietMap</string>
     <string name="kachi_nav_app_waze">Waze</string>
-    <string name="kachi_nav_reconnect">เชื่อมต่อแหล่งการนำทางอีกครั้ง</string>
+    <string name="kachi_nav_reconnect">เชื่อมต่อแหล่งข้อมูลนำทางอีกครั้ง</string>
     <string name="kachi_nav_hud_off">HUD — แหล่งการแจ้งเตือน: ไม่ได้ตรวจ (สวิตช์การนำทางปิดอยู่)</string>
     <string name="kachi_nav_hud_no_access">HUD — แหล่งการแจ้งเตือน: ยังไม่ได้ให้สิทธิ์เข้าถึงการแจ้งเตือน</string>
     <string name="kachi_nav_hud_live">HUD — แหล่งการแจ้งเตือน: เชื่อมต่อแล้ว (ระบบยืนยันเมื่อ %1$s)</string>
@@ -381,7 +385,7 @@
     <string name="kachi_nav_hud_o_shell_failed">ช่องทางคำสั่งของรถล้มเหลว</string>
     <string name="kachi_nav_hud_o_busy">มีอีกรอบกำลังทำงานอยู่</string>
     <string name="kachi_nav_hud_note">HUD บนกระจกบังลมแสดงเฉพาะการนำทางจาก Google Maps — VietMap และ Waze ไม่แสดงบน HUD</string>
-    <string name="kachi_nav_hud_toast">เชื่อมต่อแหล่งการนำทางอีกครั้ง: %1$s</string>
+    <string name="kachi_nav_hud_toast">เชื่อมต่อแหล่งข้อมูลนำทางอีกครั้ง: %1$s</string>
     <string name="kachi_sub_badge">ป้ายจำกัดความเร็ว</string>
     <string name="kachi_badge_enabled_title">แสดงป้ายจำกัดความเร็ว</string>
     <string name="kachi_badge_enabled_sub">อ่านจาก VietMap เมื่อเปิดจะเริ่ม VietMap หนึ่งครั้งเพื่อให้มีแหล่งข้อมูลความเร็ว</string>
@@ -409,10 +413,10 @@
     <string name="kachi_cast_state_on_short">เปิด</string>
     <string name="kachi_cast_state_off_short">ปิด</string>
     <string name="kachi_cast_commit_mark">การเริ่มทำงานเมื่อ %1$s ได้ใช้ตัวเลือกการฉายภาพขึ้นหน้าปัดของโปรไฟล์: %2$s (เวอร์ชัน %3$s)</string>
-    <string name="kachi_cast_bubble_title">แสดงปุ่มลอยสำหรับฉาย</string>
+    <string name="kachi_cast_bubble_title">แสดงปุ่มลอยสำหรับฉายภาพ</string>
     <string name="kachi_cast_bubble_sub">ปุ่มดอกไม้ Kachi ที่ลอยอยู่บนหน้าจอ แตะเพื่อฉาย การปิดจะซ่อนเฉพาะปุ่ม — คุณยังฉายได้ด้วยปุ่ม “ฉายทันที” สี่ปุ่มด้านล่าง ด้วยเสียง และเมื่อสตาร์ทรถ</string>
-    <string name="kachi_cast_split">อัตราส่วนการแบ่งจอ</string>
-    <string name="kachi_cast_split_session_differs">กำลังแบ่ง %1$s · โปรไฟล์นี้ %2$s — มีผลตั้งแต่การแบ่งจอครั้งถัดไป (แตะอัตราส่วนเพื่อใช้ทันที)</string>
+    <string name="kachi_cast_split">สัดส่วนการแบ่งจอ</string>
+    <string name="kachi_cast_split_session_differs">กำลังแบ่ง %1$s · โปรไฟล์นี้ %2$s — มีผลตั้งแต่การแบ่งจอครั้งถัดไป (แตะสัดส่วนเพื่อใช้ทันที)</string>
     <string name="kachi_sub_cast_autostart">ฉายเมื่อสตาร์ทรถ</string>
     <string name="kachi_cast_autostart_title">ฉายเต็มหน้าปัดอัตโนมัติ</string>
     <string name="kachi_cast_autostart_sub">เมื่อสตาร์ทรถ แอปหนึ่งจะแสดงเต็มหน้าปัด ใช้ร่วมกับการฉายแบ่งจออัตโนมัติไม่ได้</string>
@@ -430,7 +434,7 @@
     <string name="kachi_cast_state_idle">พร้อม · แตะปุ่มลอยเพื่อฉาย</string>
     <string name="kachi_cast_state_full">กำลังฉาย: %1$s</string>
     <string name="kachi_cast_state_split">แบ่งจอ: %1$s | %2$s</string>
-    <string name="kachi_cast_state_stopping">กำลังส่งแอปกลับ…</string>
+    <string name="kachi_cast_state_stopping">กำลังย้ายแอปกลับ…</string>
     <string name="kachi_cast_state_closing">กำลังปิดหน้าปัด…</string>
     <string name="kachi_cast_state_error">ข้อผิดพลาด: %1$s</string>
     <string name="kachi_cast_now_full">ฉายเต็มหน้าปัด…</string>
@@ -492,7 +496,7 @@
     <string name="kachi_pm25_title">กรองอากาศอัตโนมัติเมื่ออากาศไม่ดี</string>
     <string name="kachi_pm25_sub">รถจะเปิดระบบกรองอากาศเมื่อระดับฝุ่นสูงขึ้น ปิดเพื่อกรองเฉพาะเมื่อคุณสั่ง</string>
     <string name="kachi_pm25_clean_now">กรองอากาศทันที</string>
-    <string name="kachi_pm25_level">ฝุ่นละเอียดขณะนี้: %1$s</string>
+    <string name="kachi_pm25_level">ฝุ่น PM2.5 ขณะนี้: %1$s</string>
     <string name="kachi_pm25_unknown">ยังอ่านค่าไม่ได้</string>
     <string name="kachi_pm25_excellent">ดีมาก</string>
     <string name="kachi_pm25_good">ดี</string>
@@ -518,7 +522,7 @@
     <string name="kachi_disclaimer_ok">เข้าใจแล้ว</string>
     <string name="kachi_nav_op39_idle">กลาง + ETA: รอการนำทาง</string>
     <string name="kachi_nav_op39_asserted">กลาง + ETA: กำลังแสดงบนหน้าปัด</string>
-    <string name="kachi_nav_op39_gated">กลาง + ETA: การฉายเปิดอยู่ — การนำทางสละหน้าปัดให้</string>
+    <string name="kachi_nav_op39_gated">กลาง + ETA: การฉายเปิดอยู่ — การนำทางจึงไม่ใช้หน้าปัด</string>
     <string name="kachi_nav_op39_unreachable">กลาง + ETA: ส่งคำสั่งไม่ถึง (ตรวจสอบการเชื่อมต่อ 5555)</string>
     <string name="kachi_cast_preview_split">%1$s · %2$s (%3$d:%4$d)</string>
     <string name="kachi_sub_cast_geometry">กรอบและ DPI (ขณะฉาย)</string>
@@ -536,14 +540,14 @@
     <plurals name="kachi_picker_unverified_n">
         <item quantity="other">ยังไม่ได้ทดสอบบนรถ %1$d รายการ</item>
     </plurals>
-    <string name="kachi_voice_note">พิมพ์ประโยคตามที่คุณจะพูด เพื่อดูว่าตัวแยกวิเคราะห์เข้าใจอย่างไร — เช่น “turn on reading light” “set temperature 22” “close all” “show battery” “open Settings” หากต้องการพูดจริง ให้ใช้ไทล์ “คุยกับรถ” บนแถบปุ่ม หรือปุ่มไมค์บนแถบด้านบน</string>
+    <string name="kachi_voice_note">พิมพ์ประโยคภาษาเวียดนามให้ตรงกับที่คุณจะพูด เพื่อดูว่าตัวแยกวิเคราะห์เข้าใจอย่างไร — เช่น “bật đèn đọc” “đặt nhiệt độ 22” “đóng hết kính” “xem pin” “mở Cài đặt” หากต้องการพูดจริง ให้ใช้ไทล์ “คุยกับรถ” บนแถบปุ่ม หรือปุ่มไมค์บนแถบด้านบน</string>
     <string name="kachi_voice_cmds_section">คำสั่งเสียงที่ใช้ได้</string>
-    <string name="kachi_voice_cmds_sub">รายการนี้สร้างจากไวยากรณ์ที่ Kachi ใช้จริง จึงตรงกับสิ่งที่รถเข้าใจเสมอ แตะกลุ่มเพื่อดูประโยค ประโยคเป็นภาษาเวียดนาม ซึ่งเป็นภาษาเดียวที่ Kachi เข้าใจ จึงต้องพูดให้ตรงตามที่แสดง</string>
+    <string name="kachi_voice_cmds_sub">รายการนี้สร้างจากไวยากรณ์ที่ Kachi ใช้จริง จึงตรงกับสิ่งที่รถเข้าใจเสมอ แตะกลุ่มเพื่อดูประโยค</string>
     <string name="kachi_voice_lang_only">คำสั่งเสียงใช้ได้เฉพาะภาษาเวียดนาม — พูดประโยคภาษาเวียดนามให้ตรงตามรายการ</string>
     <plurals name="kachi_voice_cmds_count">
         <item quantity="other">%1$d ประโยค</item>
     </plurals>
-    <string name="kachi_voice_cmds_asks">%1$s · ถามก่อนทำงาน</string>
+    <string name="kachi_voice_cmds_asks">%1$s · ถามก่อนดำเนินการ</string>
     <string name="kachi_voice_hint">พูดอะไรสักอย่างกับรถ…</string>
     <string name="kachi_voice_run">เรียกใช้คำสั่ง</string>
     <string name="kachi_voice_idle">ยังไม่ได้เรียกใช้คำสั่งใด</string>
@@ -588,7 +592,7 @@
     <string name="kachi_voice_tts_sideload">รถไม่มีเครือข่าย: คัดลอกโฟลเดอร์แพ็กทั้งชุดไปที่ Android/data/%1$s/files/sherpa/import/%2$s/ แล้วกด “ดาวน์โหลด” — ทุกไฟล์ยังคงถูกตรวจสอบ sha256</string>
     <string name="kachi_voice_speak_title">อ่านคำตอบออกเสียง</string>
     <string name="kachi_voice_speak_sub">Kachi จะอ่านคำตอบออกเสียงแทนการแสดงเป็นข้อความเท่านั้น</string>
-    <string name="kachi_voice_offline_title">ใช้เสียงอ่านออฟไลน์ก่อน</string>
+    <string name="kachi_voice_offline_title">ใช้เสียงอ่านออฟไลน์เป็นหลัก</string>
     <string name="kachi_voice_offline_sub">มีผลเมื่อติดตั้งแพ็กเสียงแล้วเท่านั้น ก่อนหน้านั้นจะใช้เอนจินอ่านออกเสียงของระบบ</string>
     <string name="kachi_voice_wav_try">รู้จำไฟล์ WAV ทดสอบ</string>
     <string name="kachi_voice_wav_running">กำลังรู้จำไฟล์ทดสอบ…</string>
@@ -597,10 +601,10 @@
     <string name="kachi_voice_wav_failed">เรียกใช้ไม่ได้: %1$s</string>
     <string name="kachi_voice_wav_where">วางไฟล์ kachi-voice-test.wav (16 kHz · โมโน · PCM 16-bit) ไว้ในตำแหน่งใดตำแหน่งหนึ่งต่อไปนี้: %1$s</string>
     <string name="kachi_pill_voice">คุยกับรถ</string>
-    <string name="kachi_top_strip_labels_title">แสดงป้ายชื่อชิป</string>
+    <string name="kachi_top_strip_labels_title">แสดงชื่อบนชิป</string>
     <string name="kachi_top_strip_labels_sub">เมื่อปิด จะเหลือเพียงไอคอนและตัวเลข — แถบมีพื้นที่มากขึ้น</string>
-    <string name="kachi_voice_confirm_sec">ถามก่อนทำงาน</string>
-    <string name="kachi_voice_confirm_note">โดยค่าเริ่มต้น Kachi จะทำงานทันที ยกเว้นการเปิดซันรูฟซึ่งจะถามก่อน เลือกรายการที่ต้องการให้ถามก่อนทำงาน</string>
+    <string name="kachi_voice_confirm_sec">ถามก่อนดำเนินการ</string>
+    <string name="kachi_voice_confirm_note">โดยค่าเริ่มต้น Kachi จะดำเนินการทันที ยกเว้นการเปิดซันรูฟซึ่งจะถามก่อน เลือกรายการที่ต้องการให้ถามก่อนดำเนินการ</string>
     <string name="kachi_voice_ask_aloud_title">อ่านคำถามยืนยันออกเสียง</string>
     <string name="kachi_voice_ask_aloud_sub">พูดก่อนแล้วจึงเปิดไมค์ — มีผลเฉพาะเมื่อเลือกไว้อย่างน้อยหนึ่งรายการ</string>
     <string name="kachi_voice_mic_source">แหล่งไมโครโฟน</string>
@@ -637,7 +641,7 @@
     <string name="kachi_sc_full_card">กำลังแสดงเต็มหน้าจอ — แตะเพื่อนำกลับมาที่ช่อง</string>
     <string name="kachi_sc_full_failed">เปิด %1$s แบบเต็มหน้าจอไม่ได้</string>
     <string name="kachi_captest_title">ทดสอบฟังก์ชันรถทีละรายการ</string>
-    <string name="kachi_captest_note">ไล่ตรวจค่าที่อ่านได้และคำสั่งทั้งหมดของรถ สำหรับ “คำสั่ง”: แตะ “เรียกใช้” แล้วทำเครื่องหมาย ผ่าน หรือ ไม่ผ่าน สำหรับ “ค่าที่อ่าน”: ตรวจสอบค่าที่แสดง ผลลัพธ์จะถูกบันทึกไว้เพื่อให้คุณตรวจสอบทุกอย่างบนรถได้</string>
+    <string name="kachi_captest_note">ไล่ตรวจค่าที่อ่านได้และคำสั่งทั้งหมดของรถ สำหรับ “คำสั่ง”: แตะ “เรียกใช้” แล้วทำเครื่องหมาย “ผ่าน” หรือ “ไม่ผ่าน” สำหรับ “ข้อมูล”: ตรวจสอบค่าที่แสดง ผลลัพธ์จะถูกบันทึกไว้เพื่อให้คุณตรวจสอบทุกอย่างบนรถได้</string>
     <string name="kachi_captest_summary">ตรวจแล้ว %1$d/%2$d · ผ่าน %3$d · ไม่ผ่าน %4$d</string>
     <string name="kachi_captest_start">▶ เริ่ม / ทำต่อ</string>
     <string name="kachi_captest_export">ส่งออกรายงาน</string>

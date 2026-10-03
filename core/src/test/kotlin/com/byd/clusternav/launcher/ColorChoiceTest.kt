@@ -33,6 +33,59 @@ class ColorChoiceTest {
         assertEquals(ColorChoice(AccentChoice.KACHI_BLUE, CardTone.WARM), ColorChoice.decode("nope;WARM"))
     }
 
+    /** 2.87 · R-OP1 — độ đục nền đi vòng tròn ở MỌI bậc × mọi màu × mọi tông (xuất/nhập hồ sơ mang theo chuỗi này). */
+    @Test
+    fun `do duc nen di vong tron o moi bac`() {
+        ChromeOpacity.STEPS.forEach { pct ->
+            AccentChoice.values().forEach { a ->
+                CardTone.values().forEach { t ->
+                    val c = ColorChoice(a, t, pct)
+                    assertEquals(c, ColorChoice.decode(c.encode()), c.encode())
+                }
+            }
+        }
+    }
+
+    /**
+     * Mặc định giữ đúng từng byte chuỗi của ≤ 2.86 (người chưa chỉnh gì không đổi tệp cấu hình), và chuỗi MỚI đọc bằng
+     * bộ đọc CŨ (chỉ hai trường đầu) vẫn ra đúng màu — bản cũ nhập hồ sơ của bản mới không mất màu.
+     */
+    @Test
+    fun `mac dinh giu chuoi cu, ban cu doc chuoi moi van dung mau`() {
+        assertEquals("KACHI_BLUE;NEUTRAL", ColorChoice.DEFAULT.encode())
+        assertEquals("VIOLET;WARM", ColorChoice(AccentChoice.VIOLET, CardTone.WARM).encode())
+        val enc = ColorChoice(AccentChoice.TEAL, CardTone.COOL, 55).encode()
+        assertEquals("TEAL;COOL;o55", enc)
+        fun oldReader(s: String) = s.split(";").let { p -> p[0] to p[1] }   // đúng hai trường mà decode ≤ 2.86 đọc
+        assertEquals("TEAL" to "COOL", oldReader(enc))
+    }
+
+    /** Dạng cũ `ACCENT;TONE;paint;model` KHÔNG bao giờ đọc nhầm thành độ đục — trường 3/4 là chữ, không mang nhãn `o`. */
+    @Test
+    fun `chuoi cu paint model doc ra do duc mac dinh`() {
+        listOf("VIOLET;WARM;pearl;sealion6", "VIOLET;WARM;pearl", "VIOLET;WARM;ocean;o", "VIOLET;WARM;70;55").forEach {
+            assertEquals(ChromeOpacity.DEFAULT, ColorChoice.decode(it).surfaceOpacity, it)
+            assertEquals(AccentChoice.VIOLET, ColorChoice.decode(it).accent, it)
+        }
+        // Trường mang nhãn đứng SAU paint/model (một bản tương lai nối thêm) vẫn đọc được.
+        assertEquals(70, ColorChoice.decode("VIOLET;WARM;pearl;sealion6;o70").surfaceOpacity)
+    }
+
+    /** Rác trong trường độ đục ⇒ kẹp về bậc gần nhất hoặc mặc định, KHÔNG sập, không ra số ngoài [ChromeOpacity.STEPS]. */
+    @Test
+    fun `do duc rac thi kep ve bac hop le`() {
+        assertEquals(40, ColorChoice.decode("TEAL;NEUTRAL;o7").surfaceOpacity, "dưới dải ⇒ bậc thấp nhất")
+        assertEquals(100, ColorChoice.decode("TEAL;NEUTRAL;o250").surfaceOpacity, "trên dải ⇒ 100")
+        assertEquals(85, ColorChoice.decode("TEAL;NEUTRAL;o90").surfaceOpacity, "lệch bậc ⇒ bậc gần nhất")
+        listOf("o", "o-5", "o1234", "oo70", "O70", "o7x", "  ").forEach {
+            assertEquals(100, ColorChoice.decode("TEAL;NEUTRAL;$it").surfaceOpacity, it)
+        }
+        assertEquals(70, ColorChoice.decode("TEAL;NEUTRAL; o70 ").surfaceOpacity, "khoảng trắng quanh trường được bỏ")
+        listOf("o0", "o1", "o99", "o100", "o999").forEach {
+            assertTrue(ColorChoice.decode("TEAL;NEUTRAL;$it").surfaceOpacity in ChromeOpacity.STEPS, it)
+        }
+    }
+
     @Test
     fun `nhan tung lua chon khong rong va khong trung`() {
         listOf(Lang.VI, Lang.EN).forEach { lang ->

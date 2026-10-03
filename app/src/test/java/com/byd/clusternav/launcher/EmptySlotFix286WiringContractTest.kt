@@ -57,7 +57,10 @@ class EmptySlotFix286WiringContractTest {
     @Test
     fun `nut doi app o trong nam tren dia kinh`() {
         val centered = SourceRoots.body(code("SlotSwapButton.kt"), "fun centered(")
-        assertTrue("KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL)" in centered, "đĩa = kính NEUTRAL, tròn")
+        // ⚠ 2.87 · R-OP (2026-10-03) — ghim đổi từ `…SurfaceTone.NEUTRAL)` sang `…SurfaceTone.NEUTRAL, fade = false)`:
+        // đĩa là NÚT, không phải nền; 4.86:1 của SwapDiscModel đo ở 100 %. Độ đục nền chung (KachiChrome) làm mờ mọi
+        // kính NEUTRAL — thiếu `fade = false` thì đĩa mờ theo và hợp đồng tương phản của nó mất mà bài này vẫn xanh.
+        assertTrue("KachiGlass.apply(d, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in centered, "đĩa = kính NEUTRAL, tròn, KHÔNG mờ theo R-OP")
         val disc = centered.indexOf("addView(d, FrameLayout.LayoutParams(KachiTheme.dpi(context, Sp.SWAP_DISC), KachiTheme.dpi(context, Sp.SWAP_DISC), Gravity.CENTER))")
         val icon = centered.indexOf("visual,")
         assertTrue(disc in 0 until icon, "đĩa phải thêm TRƯỚC icon (nằm sau icon), canh giữa khung chạm")

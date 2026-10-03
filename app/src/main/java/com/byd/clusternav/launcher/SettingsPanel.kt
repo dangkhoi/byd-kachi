@@ -109,6 +109,8 @@ class SettingsDeps(
     val onColorChoice: (ColorChoice) -> Unit,
     val onLangMode: (LangMode) -> Unit,
     val onAutostart: (Boolean) -> Unit,
+    /** 2.87 · R-AH3 — công tắc "Tự ẩn nút ⇄" (theo hồ sơ); intent `HomeViewModel.setSlotHeadAutoHide`, đọc từ [state]. */
+    val onSlotHeadAutoHide: (Boolean) -> Unit,
     val onSwitchProfile: (String) -> Unit,
     /**
      * S4 · R8 — tạo hồ sơ mới **bằng cách nhân bản hồ sơ đang dùng**, nhận TÊN mới.

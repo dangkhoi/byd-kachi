@@ -113,10 +113,13 @@ internal class VoiceControlDispatch(
         // được ghi khi vế này đã nói xong (VOICE-WRITE-LANE).
         fun finish(ok: Boolean) {
             // Ghi lại trạng thái lạc quan y như cú chạm: hai bề mặt phải nói cùng một điều về MỘT cái xe.
+            // 2.87 · R-FL2: đây là chỗ ghi *"lệnh cuối Kachi đã gửi"* ([ControlLastSent]) cho giọng nói + phím của tiến
+            // trình chính — CHỈ khi `ok`. COVER nay cũng ghi (mức vừa gửi): thiếu nó thì *"đóng cốp"* bằng lời xong, phím
+            // Đảo cốp vẫn tưởng cốp đang mở theo cú chạm ô trước đó.
             if (ok) when (def.kind) {
                 ControlKind.TOGGLE -> st.setOn(def.id, arg > 0)
                 ControlKind.STEP -> st.setValue(def.id, arg)
-                ControlKind.SELECT -> st.setSel(def.id, arg)
+                ControlKind.SELECT, ControlKind.COVER -> st.setSel(def.id, arg)
                 else -> Unit
             }
             if (!ok) {

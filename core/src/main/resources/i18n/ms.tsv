@@ -32,7 +32,7 @@ tải thất bại	download failed	muat turun gagal
 Đang mở VietMap…	Starting VietMap…	Membuka VietMap…
 Kéo để đặt bong bóng	Drag to place the bubble	Seret untuk meletakkan gelembung
 Bong bóng	Bubble	Gelembung
-Phím-thoại đang bật	Voice key active	Kekunci suara aktif
+Phím-thoại đang bật	Voice key active	Butang suara aktif
 Tự động hoá đang chạy	Automation running	Automasi sedang berjalan
 Lái	Driver	Pemandu
 Phụ	Front R	Depan Kn
@@ -44,23 +44,23 @@ M	L	T
 Model câu gọi đã sẵn sàng	Wake model ready	Model panggilan sedia
 Chưa nạp model câu gọi (bật công tắc để chuẩn bị)	Wake model not loaded (turn on to prepare)	Model panggilan belum dimuatkan (hidupkan untuk menyediakan)
 side-load {0}: không đọc/chép được ({1})	side-load {0}: cannot read/copy ({1})	muat sisi {0}: tidak dapat membaca/menyalin ({1})
-side-load {0} không khớp bản ghim ({1}/{2} byte, sha {3}…) — chép lại tệp đúng	side-load {0} does not match pin ({1}/{2} bytes, sha {3}…) — copy the correct file	muat sisi {0} tidak sepadan dengan pin ({1}/{2} bait, sha {3}…) — salin fail yang betul
+side-load {0} không khớp bản ghim ({1}/{2} byte, sha {3}…) — chép lại tệp đúng	side-load {0} does not match pin ({1}/{2} bytes, sha {3}…) — copy the correct file	muat sisi {0} tidak sepadan dengan nilai tersemat ({1}/{2} bait, sha {3}…) — salin fail yang betul
 gói '{0}' chưa có nguồn tải (chờ mirror) — chép tệp vào thẻ hoặc chọn bản khác	'{0}' has no download source yet (awaiting mirror) — side-load it or pick another	'{0}' belum ada sumber muat turun (menunggu pelayan cermin) — muat sisi atau pilih yang lain
 đang cài rồi — đợi lượt này xong	an install is already running	pemasangan sedang berjalan
 tên tệp không hợp lệ: {0}	invalid file name: {0}	nama fail tidak sah: {0}
 thiếu tệp: {0}	missing {0}	tiada fail: {0}
 không ghi được .version (thẻ đầy?)	could not write .version (storage full?)	tidak dapat menulis .version (storan penuh?)
-không chuyển được thư mục gói	could not move the pack folder	tidak dapat memindahkan folder pek
+không chuyển được thư mục gói	could not move the pack folder	tidak dapat memindahkan folder pakej
 máy còn {0} MB, cần khoảng {1} MB — xoá bớt rồi thử lại	only {0} MB free, about {1} MB needed — free some space and retry	hanya {0} MB kosong, perlu kira-kira {1} MB — kosongkan ruang dan cuba lagi
-tệp {0} chưa ghim sha256/cỡ	{0} is not pinned	{0} belum dipin
+tệp {0} chưa ghim sha256/cỡ	{0} is not pinned	{0} belum disematkan
 tệp {0} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)	{0} has no download source — side-load it from a USB stick	{0} tiada sumber muat turun — muat sisi dari pemacu USB
 lỗi mạng {0}: {1}	network error {0}: {1}	ralat rangkaian {0}: {1}
 máy chủ từ chối {0}	server refused {0}	pelayan menolak {0}
-tệp {0} không khớp bản ghim ({1} byte, sha {2}…)	{0} does not match pin ({1} bytes, sha {2}…)	{0} tidak sepadan dengan pin ({1} bait, sha {2}…)
+tệp {0} không khớp bản ghim ({1} byte, sha {2}…)	{0} does not match pin ({1} bytes, sha {2}…)	{0} tidak sepadan dengan nilai tersemat ({1} bait, sha {2}…)
 chưa có lượt nói nào được ghi — bật công tắc rồi nói một câu	no utterances recorded yet — turn the switch on and say something	belum ada ucapan dirakam — hidupkan suis dan sebut sesuatu
 không thấy tệp {0}	no {0} found	tiada {0} ditemui
 mô hình chưa sẵn sàng	model not ready	model belum sedia
-Kéo để đặt biển báo	Drag to place the badge	Seret untuk meletakkan lencana
+Kéo để đặt biển báo	Drag to place the badge	Seret untuk meletakkan tanda
 Đang trả app về…	Returning app…	Mengembalikan apl…
 Đang chuẩn bị cụm…	Preparing cluster…	Menyediakan panel instrumen…
 Chiếu {0}…	Casting {0}…	Memancarkan {0}…
@@ -71,31 +71,31 @@ Khắc phục sự cố — đang mở	Troubleshooting — open	Penyelesaian mas
 Đóng nhóm hành động khắc phục sự cố	Close troubleshooting actions	Tutup tindakan penyelesaian masalah
 Mở nhóm hành động khắc phục sự cố	Open troubleshooting actions	Buka tindakan penyelesaian masalah
 ⬇ Kiểm tra cập nhật	⬇ Check update	⬇ Semak kemas kini
-Thử badge 50	TEST BADGE 50	UJI LENCANA 50
-Đã buộc badge 50 trên cụm (display 1)	Forced badge 50 on cluster (display 1)	Lencana 50 dipaksa pada panel instrumen (paparan 1)
-Ẩn badge	HIDE badge	SEMBUNYIKAN lencana
-Đã ẩn badge	Badge hidden	Lencana disembunyikan
-Chỉnh vị trí / cỡ badge	Badge position / size	Kedudukan / saiz lencana
+Thử badge 50	TEST BADGE 50	UJI TANDA 50
+Đã buộc badge 50 trên cụm (display 1)	Forced badge 50 on cluster (display 1)	Tanda 50 dipaksa pada panel instrumen (paparan 1)
+Ẩn badge	HIDE badge	SEMBUNYIKAN tanda
+Đã ẩn badge	Badge hidden	Tanda disembunyikan
+Chỉnh vị trí / cỡ badge	Badge position / size	Kedudukan / saiz tanda
 ↖ Trên-trái	↖ Top-left	↖ Atas-kiri
 ↗ Trên-phải	↗ Top-right	↗ Atas-kanan
 ↙ Dưới-trái	↙ Bottom-left	↙ Bawah-kiri
 ↘ Dưới-phải	↘ Bottom-right	↘ Bawah-kanan
 Cỡ −10	Size −10	Saiz −10
 Cỡ +10	Size +10	Saiz +10
-Tâm badge: X={0} Y={1} (px cụm) · cỡ {2}dp	Badge centre: X={0} Y={1} (cluster px) · size {2}dp	Pusat lencana: X={0} Y={1} (px instrumen) · saiz {2}dp
+Tâm badge: X={0} Y={1} (px cụm) · cỡ {2}dp	Badge centre: X={0} Y={1} (cluster px) · size {2}dp	Pusat tanda: X={0} Y={1} (px panel instrumen) · saiz {2}dp
 Đang xử lý thao tác trước…	Previous operation in progress…	Operasi sebelumnya sedang berjalan…
 Đang thử nối vào xe để mở trợ lý — chờ vài giây…	Still reaching the head unit to open the assistant — hang on…	Masih menghubungi unit kepala untuk membuka pembantu — sila tunggu…
-Đã gửi lệnh mở trợ lý nhưng xe không trả lời kịp — thử lại nếu chưa thấy trợ lý.	Sent the assistant key but the head unit did not answer in time — retry if nothing opened.	Kekunci pembantu dihantar tetapi unit kepala tidak menjawab tepat pada masanya — cuba lagi jika tiada apa-apa dibuka.
+Đã gửi lệnh mở trợ lý nhưng xe không trả lời kịp — thử lại nếu chưa thấy trợ lý.	Sent the assistant key but the head unit did not answer in time — retry if nothing opened.	Isyarat butang pembantu dihantar tetapi unit kepala tidak menjawab tepat pada masanya — cuba lagi jika tiada apa-apa dibuka.
 Bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB — app đang chờ…	Tap "Allow" (tick "always allow") on the USB-debugging dialog — waiting…	Ketik "Benarkan/Allow" (tandakan "sentiasa benarkan") pada dialog penyahpepijatan USB — menunggu…
 Chưa được cấp quyền gỡ lỗi USB. Bấm "Cho phép/Allow" (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Tap "Allow" (tick "always allow") then try again.	Penyahpepijatan USB belum dibenarkan. Ketik "Benarkan/Allow" (tandakan "sentiasa benarkan") kemudian cuba lagi.
 Cổng gỡ lỗi 5555 chưa bật trên xe — trợ lý giọng nói không chạy được.	Debug port 5555 is off on the head unit — the voice assistant cannot run.	Port penyahpepijatan 5555 dimatikan pada unit kepala — pembantu suara tidak dapat berjalan.
 Không nối được vào xe để mở trợ lý. Thử lại sau.	Could not reach the head unit to open the assistant. Try again later.	Tidak dapat menghubungi unit kepala untuk membuka pembantu. Cuba lagi nanti.
 Chưa được cấp quyền gỡ lỗi USB. Mở màn chính Kachi để cấp (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Open the Kachi home screen to grant it (tick "always allow") then try again.	Penyahpepijatan USB belum dibenarkan. Buka skrin utama Kachi untuk memberikannya (tandakan "sentiasa benarkan") kemudian cuba lagi.
 Công thức trợ lý mới chạy được một phần — bật lại công tắc để chạy đủ.	The assistant recipe was only partly applied — toggle it again to finish.	Resipi pembantu hanya digunakan sebahagian — togol sekali lagi untuk menyelesaikannya.
-Đang tự cấp quyền bind…	Granting bind permission…	Memberi kebenaran bind…
+Đang tự cấp quyền bind…	Granting bind permission…	Memberikan kebenaran pengikatan…
 xe không nhận lệnh nào	the car took no command	kereta tidak menerima sebarang arahan
 chưa làm được — 	not done — 	belum dilakukan — 
-gói rỗng	empty pack	pek kosong
+gói rỗng	empty pack	pakej kosong
 đủ {0} bước	all {0} steps	kesemua {0} langkah
 không bước nào ăn ({0} bước)	no step took ({0} steps)	tiada langkah berjaya ({0} langkah)
 {0}/{1} bước ăn; hỏng: {2}	{0}/{1} steps took; failed: {2}	{0}/{1} langkah berjaya; gagal: {2}
@@ -141,11 +141,7 @@ Tất cả đã đóng	All closed	Semua tertutup
 {0} cảnh báo	{0} alert	{0} amaran
 {0} cảnh báo	{0} alerts	{0} amaran
 {0} lưu ý	{0} to note	{0} perlu perhatian
-gán Mở / Đóng riêng	bind Open / Close separately	petakan Buka / Tutup berasingan
-gán từng mức	bind each level	petakan setiap tahap
-gán Bật / Tắt riêng	bind On / Off separately	petakan Hidupkan / Matikan berasingan
-Không đọc được {0} — {1}	Can't read {0} — {1}	Tidak dapat membaca {0} — {1}
-Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	Pemetaan kekunci ini tidak lagi sah ({0}) — petakan semula di Tetapan › Butang fizikal
+Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	Pemetaan butang ini tidak lagi sah ({0}) — petakan semula di Tetapan › Butang fizikal
 Bật 	Turn on 	Hidupkan 
 Tắt 	Turn off 	Matikan 
 Mở/đóng {0} (đảo)	Open/close {0} (toggle)	Buka/tutup {0} (togol)
@@ -181,7 +177,7 @@ Mở	Open	Terbuka
 Mức {0}	Level {0}	Tahap {0}
 Sáng	Light	Cerah
 Tối	Dark	Gelap
-Tự động	Auto	Auto
+Tự động	Auto	Automatik
 Tốt	Good	Baik
 TB	Fair	Sederhana
 Kém	Poor	Buruk
@@ -192,7 +188,6 @@ Pin {0} phần trăm, đi thêm {1} {2}	Battery {0} per cent, {1} {2} to go	Bate
 chưa đọc được	not read yet	belum dibaca
 Ghế lái	Driver seat	Tempat duduk pemandu
 Ghế phụ	Passenger seat	Tempat duduk penumpang
-Mức 	Level 	Tahap 
 non	low	rendah
 căng	high	tinggi
 lệch	uneven	tidak sekata
@@ -214,7 +209,7 @@ bố cục tự vẽ đang lỗi: 	the custom layout has a problem: 	susun atur 
 hồ sơ	profile	profil
 {0} gì?	{0} what?	{0} apa?
 Chưa rõ — nói lại giúp	Not sure — say that again	Kurang pasti — sila sebut sekali lagi
-Vẫn chưa rõ — thử nói "bật đèn đọc"	Still not sure — try saying "turn on the reading light"	Masih kurang pasti — cuba sebut "hidupkan lampu bacaan"
+Vẫn chưa rõ — thử nói "{0}"	Still not sure — try saying "{0}" in Vietnamese	Masih kurang pasti — cuba sebut "{0}" dalam bahasa Vietnam
 {0} hay {1}	{0} or {1}	{0} atau {1}
 {0}, hay {1}	{0}, or {1}	{0}, atau {1}
 {0} nào — {1}?	Which {2} — {1}?	Pilih {2} — {1}?
@@ -229,9 +224,9 @@ Kachi chưa điều khiển được {0} — dùng nút trên xe	Kachi cannot co
 Đã xong {0} việc	{0} things done	{0} tugas selesai
 Chưa 	Could not 	Tidak dapat 
 , {0} việc khác đã xong	, {0} other(s) done	, {0} lagi selesai
-Chạy gói 	Run pack 	Jalankan pek 
+Chạy gói 	Run pack 	Jalankan pakej 
 Đổi sang hồ sơ 	Switch to profile 	Tukar ke profil 
-Xem 	Show 	Tunjuk 
+Xem 	Show 	Tunjukkan 
 Dẫn đường tới 	Navigate to 	Navigasi ke 
 Mở ứng dụng 	Open app 	Buka apl 
 Bố cục 	Layout 	Susun atur 
@@ -361,7 +356,7 @@ Mức dầu	Oil level	Paras minyak enjin
 Âm lượng giải trí	Media volume	Kelantangan media
 Cốp sau	Tailgate	Pintu but
 Đèn đọc	Reading light	Lampu bacaan
-Lọc bụi	Air purifier	Pemurni udara
+Lọc bụi	Air purifier	Pemurnian udara
 Mát ghế lái	Driver seat ventilation	Pengudaraan tempat duduk pemandu
 Nhiệt độ	Temperature	Suhu
 Gió	Fan	Kipas
@@ -408,7 +403,7 @@ Thanh trạng thái & thanh nút	Status bar & button bar	Bar status & bar butang
 Hiển thị & đơn vị	Display & units	Paparan & unit
 Dẫn đường & cụm đồng hồ	Navigation & cluster	Navigasi & panel instrumen
 Chiếu màn lên cụm	Cluster cast	Pancar ke panel instrumen
-Phím vô-lăng	Steering-wheel keys	Kekunci stereng
+Phím vô-lăng	Steering-wheel keys	Butang stereng
 Tiện nghi xe	Car comfort	Keselesaan kereta
 Giọng nói	Voice	Suara
 Hệ thống & quyền	System & permissions	Sistem & kebenaran
@@ -416,12 +411,13 @@ Giới thiệu	About	Perihal
 Bố cục sẵn	Preset layout	Susun atur pratetap
 Bố cục tự vẽ	Custom layout	Susun atur tersuai
 Vẽ bố cục riêng…	Draw your own layout…	Lukis susun atur sendiri…
+Tự ẩn nút ⇄	Auto-hide the ⇄ button	Sembunyi butang ⇄ secara automatik
 Hình nền & trình chiếu	Wallpaper & slideshow	Kertas dinding & tayangan slaid
 Chip thanh trạng thái	Status-bar chips	Cip bar status
-Hiện nhãn trên thanh trên	Show chip labels	Tunjuk label cip
+Hiện nhãn trên thanh trên	Show chip labels	Tunjukkan label cip
 Vị trí trên thanh trên	Status-bar item order	Susunan item bar status
-Hiện thanh nút xe	Show the car bar	Tunjuk bar kereta
-Viền đặt thanh nút	Button bar edge	Tepi untuk bar butang
+Hiện thanh nút xe	Show the car bar	Tunjukkan bar kereta
+Viền đặt thanh nút	Button bar edge	Tepi bar butang
 Nút trên thanh nút xe	Buttons on the car bar	Butang pada bar kereta
 Vị trí trên thanh nút xe	Car-bar item order	Susunan item bar kereta
 Lối tắt ứng dụng	App shortcuts	Pintasan apl
@@ -442,15 +438,15 @@ Chạy chữ tên đường	Scroll long street names	Tatal nama jalan yang panja
 App dẫn đường mặc định	Default navigation app	Apl navigasi lalai
 Tự dẫn đường theo lịch	Scheduled navigation	Navigasi berjadual
 Kết nối lại nguồn dẫn đường	Reconnect the navigation source	Sambung semula sumber navigasi
-Biển báo tốc độ	Speed limit badge	Lencana had laju
+Biển báo tốc độ	Speed limit badge	Tanda had laju
 Giới hạn sắp tới	Upcoming limit	Had seterusnya
 Chip cảnh báo camera	Camera alert chip	Cip amaran kamera
-Cỡ biển báo	Badge size	Saiz lencana
-Vị trí biển báo	Badge position	Kedudukan lencana
+Cỡ biển báo	Badge size	Saiz tanda
+Vị trí biển báo	Badge position	Kedudukan tanda
 Bong bóng VietMap	VietMap bubble	Gelembung VietMap
 Vị trí bong bóng	Bubble position	Kedudukan gelembung
 Bật chiếu màn	Enable casting	Dayakan pancaran
-Hiện nút nổi chiếu cụm	Show the floating cast button	Tunjuk butang pancar terapung
+Hiện nút nổi chiếu cụm	Show the floating cast button	Tunjukkan butang pancar terapung
 Tỉ lệ chia đôi	Split ratio	Nisbah pisah
 Tự chiếu khi nổ máy	Autostart on engine start	Mula automatik semasa kereta dihidupkan
 App tự chiếu toàn màn	Full-screen autostart app	Apl mula automatik skrin penuh
@@ -461,27 +457,27 @@ Chiếu ngay: toàn màn, trái, phải, dừng	Cast now: full, left, right, sto
 Cứu hộ cụm	Cluster rescue	Pemulihan panel instrumen
 Nhận nút vật lý	Listen to physical buttons	Dengar butang fizikal
 Danh sách gán nút	Button bindings	Pemetaan butang
-Nút tự học thêm	Self-learned buttons	Butang dipelajari sendiri
-Học phím mới	Learn a new key	Pelajari kekunci baharu
+Nút tự học thêm	Self-learned buttons	Butang dipelajari
+Học phím mới	Learn a new key	Pelajari butang baharu
 Kiểm tra và sửa ngay	Check and fix now	Semak dan baiki sekarang
 Tự lấy gió trong khi nổ máy	Recirculation on engine start	Peredaran dalaman semasa kereta dihidupkan
-Ghế mát/sưởi tự động	Automatic seat cooling / heating	Penyejukan / pemanasan tempat duduk automatik
-Chế độ ghế: mát hay sưởi	Seat mode: cool or heat	Mod tempat duduk: sejuk atau panas
+Ghế mát/sưởi tự động	Automatic seat cooling / heating	Pengudaraan / pemanasan tempat duduk automatik
+Chế độ ghế: mát hay sưởi	Seat mode: cool or heat	Mod tempat duduk: pengudaraan atau pemanasan
 Mức từng ghế	Level per seat	Tahap setiap tempat duduk
-Tự lọc bụi mịn	Automatic air purifier	Pemurni udara automatik
+Tự lọc bụi mịn	Automatic air purifier	Pemurnian udara automatik
 Lọc ngay một lượt	Purify now	Murnikan sekarang
 Tự sấy kính khi mưa	Auto-defrost when it rains	Penyahbeku automatik semasa hujan
-"Hey Kachi" gọi bằng giọng	"Hey Kachi" wake word	Kata panggilan "Hey Kachi"
+"Hey Kachi" gọi bằng giọng	"Hey Kachi" wake word	Frasa panggilan "Hey Kachi"
 Đọc phản hồi bằng giọng	Speak replies out loud	Bacakan jawapan dengan kuat
 Ưu tiên giọng offline	Prefer the offline voice	Utamakan suara luar talian
 App nhạc mặc định	Default music app	Apl muzik lalai
 Tự mở nhạc khi lên xe	Play music when you get in	Mainkan muzik apabila masuk kereta
-Giọng đọc offline	Offline voice pack	Pek suara luar talian
+Giọng đọc offline	Offline voice pack	Pakej suara luar talian
 Câu lệnh nói được	Spoken commands	Arahan suara
 Hỏi xác nhận trước khi chạy	Ask before running	Tanya sebelum menjalankan
 Đọc to câu hỏi xác nhận	Read confirmation questions aloud	Bacakan soalan pengesahan dengan kuat
 Nguồn micro	Microphone source	Sumber mikrofon
-Quyền còn thiếu	Missing permissions	Kebenaran belum diberi
+Quyền còn thiếu	Missing permissions	Kebenaran belum diberikan
 Tự mở Kachi khi nổ máy	Auto-start Kachi on engine start	Mula Kachi secara automatik semasa kereta dihidupkan
 Chạy dịch vụ nền khi nổ máy	Run background service on engine start	Jalankan perkhidmatan latar semasa kereta dihidupkan
 Mở app khi nổ máy	Open apps at ignition	Buka apl semasa kereta dihidupkan
@@ -495,7 +491,7 @@ Năng lượng & sạc	Energy & charging	Tenaga & pengecasan
 Động lực & tốc độ	Drivetrain & speed	Pacuan & kelajuan
 Thân xe · cửa · kính	Body · doors · windows	Badan · pintu · tingkap
 Danh tính · khoá	Identity · keys	Identiti · kunci
-Giải trí · cụm · HUD	Media · cluster · HUD	Media · instrumen · HUD
+Giải trí · cụm · HUD	Media · cluster · HUD	Media · panel instrumen · HUD
 Áp suất	Pressure	Tekanan
 Khoảng cách	Distance	Jarak
 Tiêu thụ điện	Energy use	Penggunaan tenaga
@@ -536,8 +532,8 @@ Chế độ lấy gió	Air intake	Edaran udara
 Đơn vị nhiệt	Temp unit	Unit suhu
 Ghế mát	Seat vent	Kerusi sejuk
 Ghế sưởi	Seat heat	Kerusi panas
-Ghế mát phụ	Pass. vent	Pnpg sejuk
-Ghế sưởi phụ	Pass. heat	Pnpg panas
+Ghế mát phụ	Pass. vent	Penump. sejuk
+Ghế sưởi phụ	Pass. heat	Penump. panas
 Sấy trước	Front defrost	Nyahbeku depan
 Sấy sau	Rear defrost	Nyahbeku blkg
 Chế độ ĐH	A/C mode	Mod A/C
@@ -593,10 +589,10 @@ Bố cục và hình nền	Layout and wallpaper	Susun atur dan kertas dinding
 Chip trên đỉnh và thanh nút xe	Top chips and the car button bar	Cip atas dan bar butang kereta
 Đơn vị đo, sáng/tối và ngôn ngữ	Units, light/dark theme and language	Unit, tema cerah/gelap dan bahasa
 Mỗi hồ sơ giữ bố cục riêng	Each profile keeps its own layout	Setiap profil menyimpan susun aturnya sendiri
-Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	Arahan jalan, lencana had laju dan gelembung
+Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	Panduan arah, tanda had laju dan gelembung
 Đưa app lên cụm, chia đôi, tự chiếu	Apps on the cluster, split view, autostart	Apl pada panel instrumen, paparan pisah, mula automatik
 Gán nút vật lý cho app, trợ lý hoặc nút xe	Bind physical buttons to apps or car controls	Petakan butang fizikal kepada apl atau kawalan kereta
-Lấy gió trong, ghế, lọc bụi mịn	Recirculation, seats, air purifier	Peredaran dalaman, tempat duduk, pemurni udara
+Lấy gió trong, ghế, lọc bụi mịn	Recirculation, seats, air purifier	Peredaran dalaman, tempat duduk, pemurnian udara
 Nói với xe, giọng đọc, Hey Kachi	Talk to the car, reply voice, Hey Kachi	Cakap dengan kereta, suara jawapan, Hey Kachi
 Quyền, khởi động, bảo trì, nâng cao	Permissions, startup, maintenance	Kebenaran, permulaan, penyelenggaraan
 Phiên bản, giấy phép và miễn trừ	Version, licence and disclaimer	Versi, lesen dan penafian
@@ -606,7 +602,7 @@ bấm HOME không về Kachi	pressing HOME does not come back to Kachi	menekan H
 Vào Cài đặt › Hệ thống & quyền › Màn hình chính rồi bấm "Đặt Kachi làm màn hình chính"	Open Settings › System & permissions › Home screen, then tap "Set Kachi as home screen"	Buka Tetapan › Sistem & kebenaran › Skrin utama, kemudian ketik "Jadikan Kachi skrin utama"
 dải tiêu đề ô và ngăn kéo app không nổi lên được	slot title bars and the app drawer cannot float on top	bar tajuk petak dan laci apl tidak dapat terapung di atas
 dẫn đường trên cụm mất nguồn dữ liệu	cluster navigation loses its data source	navigasi panel instrumen kehilangan sumber data
-gán phím vô-lăng và đọc màn hình dẫn đường không chạy	steering-wheel key mapping and navigation screen reading stop working	pemetaan kekunci stereng dan pembacaan skrin navigasi berhenti berfungsi
+gán phím vô-lăng và đọc màn hình dẫn đường không chạy	steering-wheel key mapping and navigation screen reading stop working	pemetaan butang stereng dan pembacaan skrin navigasi berhenti berfungsi
 không nói được với xe (ô "Nói với xe" và nút mic)	you cannot talk to the car (the "Talk to car" tile and the mic button)	anda tidak dapat bercakap dengan kereta (jubin "Cakap dengan kereta" dan butang mikrofon)
 tự dẫn đường theo lịch không biết đã ra khỏi hầm chưa nên sẽ không dẫn	scheduled navigation cannot tell whether you have left the car park, so it never starts	navigasi berjadual tidak dapat mengesan sama ada anda telah keluar dari tempat letak kereta, jadi ia tidak akan bermula
 Phần trăm pin cao áp còn lại	High-voltage battery charge remaining (%)	Baki cas bateri voltan tinggi (%)
@@ -712,7 +708,7 @@ ACC	ACC	ACC
 Sẵn sàng	Ready	Sedia
 Sẵn sàng (giả)	Ready (fake)	Sedia (palsu)
 Không xác định	Invalid	Tidak sah
-Auto	Auto	Auto
+Auto	Auto	Automatik
 Đèn hông	Position	Lampu sisi
 Cốt	Low beam	Lampu rendah
 Không khí trong xe	Cabin air quality	Kualiti udara kabin
@@ -749,5 +745,5 @@ Trung bình	Moderate	Sederhana
 Nặng	Heavy	Teruk
 Nghiêm trọng	Serious	Sangat teruk
 Nhà	Home	Rumah
-Công ty	Work	Kerja
+Công ty	Work	Pejabat
 Mặc định	Default	Lalai

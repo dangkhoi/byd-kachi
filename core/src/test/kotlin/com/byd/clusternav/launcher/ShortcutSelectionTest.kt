@@ -84,13 +84,8 @@ class ShortcutSelectionTest {
         assertEquals(AppShortcutCodec.MAX, ShortcutStrip.cells(20), "không dài quá trần")
     }
 
-    @Test
-    fun `luoi widget - toi da bon cot, 8 app la hai hang bon`() {
-        assertEquals(1, ShortcutStrip.gridCols(1))
-        assertEquals(3, ShortcutStrip.gridCols(3))
-        assertEquals(4, ShortcutStrip.gridCols(8))
-        assertEquals(listOf(4, 4), (1..8).toList().chunked(ShortcutStrip.gridCols(8)).map { it.size })
-    }
+    // Bài "lưới widget tối đa bốn cột" (`ShortcutStrip.gridCols`) đã GỠ cùng hàm của nó — 2.87 R-SI1: số cột nay do
+    // phép khớp theo khung thật quyết (`ShortcutGridFit`); "8 app khung 2:1 = hai hàng bốn" sống tiếp ở ShortcutGridFitTest.
 
     @Test
     fun `kieu can kenh - O n va Chay ngam, Toan man thi khong`() {

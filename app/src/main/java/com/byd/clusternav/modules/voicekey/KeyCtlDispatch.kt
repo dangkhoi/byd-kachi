@@ -74,7 +74,10 @@ object KeyCtlDispatch {
     private fun submit(app: Context, f: KeyCtlThrottle.Step.Fire, why: String) {
         Log.i(TAG, "phím → ${f.target.spec} ×${f.count} ($why)")
         MacroExec.submitSerial(ControlTileWrite.LANE) {
-            runCatching { runner(app).run(f) }.onFailure { Log.w(TAG, "thi hành ${f.target.spec} hỏng", it) }
+            // 2.87 · R-FL2 — nhật ký ghi cả hành động ĐÃ GIẢI + nguồn trạng thái (CAR/MEMORY) của Đảo/Kế tiếp (§11).
+            runCatching { runner(app).run(f) }
+                .onSuccess { o -> o?.let { Log.i(TAG, "${f.target.spec} ⇒ $it") } }
+                .onFailure { Log.w(TAG, "thi hành ${f.target.spec} hỏng", it) }
         }
     }
 
@@ -119,7 +122,12 @@ object KeyCtlDispatch {
 
 /**
  * Phần thi hành của [KeyCtlDispatch], tách để bài kiểm `:app` dựng được bằng cổng xe giả (`KeyCtlSafetyTest`): một
- * lần bắn ⇒ [KeyCtlPlan] ⇒ [VoiceControlDispatch.run]. Lượt đọc HAL duy nhất ở đây là trạng thái cho Đảo / Kế tiếp.
+ * lần bắn ⇒ [KeyCtlPlan] ⇒ [VoiceControlDispatch.run]. Lượt đọc HAL duy nhất ở đây là trạng thái cho Đảo / Kế tiếp
+ * (chỉ nút có readKey). 2.87 · R-FL2: Đảo / Kế tiếp KHÔNG còn ca "đọc không được ⇒ không bắn" — [KeyCtlPlan] lùi về
+ * lệnh cuối Kachi đã gửi (`ControlLastSent.shared`, cùng bảng với ô trên màn) và giải ra hành động cụ thể trước khi
+ * giao [VoiceControlDispatch.run] (mọi cổng an toàn áp lên hành động đã giải; ghi bảng chỉ khi lệnh thành công).
+ *
+ * @return kết quả của [KeyCtlPlan] (cho nhật ký), `null` khi nút không còn trong registry.
  */
 internal class KeyCtlRunner(
     private val controls: VoiceControlDispatch,
@@ -127,11 +135,13 @@ internal class KeyCtlRunner(
     private val say: (String) -> Unit,
     private val resolve: (String) -> ControlDef? = ControlRegistry::byId,
 ) {
-    fun run(f: KeyCtlThrottle.Step.Fire) {
-        val def = resolve(f.target.controlId) ?: run { say(KeyCtlPlan.invalidReply(f.target.spec)); return }
-        when (val o = KeyCtlPlan.of(def, f.target, f.count) { runCatching { port().readState(def.id) }.getOrNull() }) {
+    fun run(f: KeyCtlThrottle.Step.Fire): KeyCtlPlan.Outcome? {
+        val def = resolve(f.target.controlId) ?: run { say(KeyCtlPlan.invalidReply(f.target.spec)); return null }
+        val o = KeyCtlPlan.of(def, f.target, f.count) { runCatching { port().readState(def.id) }.getOrNull() }
+        when (o) {
             is KeyCtlPlan.Outcome.Run -> controls.run(o.intent) {}
-            KeyCtlPlan.Outcome.Unreadable -> say(KeyCtlPlan.unreadableReply(def))
+            KeyCtlPlan.Outcome.Invalid -> say(KeyCtlPlan.invalidReply(f.target.spec))
         }
+        return o
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.TextUtils
 import android.view.DragEvent
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -91,6 +92,9 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      */
     private val hostOwner = "ws@${System.identityHashCode(this)}"
 
+    /** 2.87 · R-AH — nút ⇄ tự ẩn của mọi ô ([SlotHeadAutoHide]). Khai TRƯỚC `init`: `rebuild()` đăng ký nút ngay lượt đầu. */
+    private val heads = SlotHeadAutoHide(this)
+
     init { rebuild() }
 
     /**
@@ -120,11 +124,13 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         releaseAppHosts()
+        heads.release()   // R-AH: gỡ hẹn giờ ⇄ + người nghe TalkBack (khuôn `LauncherWindows.cancelPending`)
     }
 
     /** R-A4 (PROFILE-SWITCH-SLOTS): gắn lại cửa sổ mà ô App đã bị nhả ⇒ DỰNG LẠI ô, không đen câm — xem [SlotHostHeal]. */
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        heads.attach()
         post { if (isAttachedToWindow && SlotHostHeal.anyReleased(slotViews)) renderInternal(displayed, displayedStatus, embedChanged = true) }
     }
 
@@ -204,19 +210,14 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // mà hàm này được gọi **mỗi Ô** (tới 6 ô) và mỗi nhịp trạng thái xe (1 giây) ⇒ tới 6 lời gọi/giây trên thread
         // chính cho một dữ liệu y hệt nhau. Nay đọc MỘT LẦN cho mỗi lượt render và dùng lại trong lượt đó.
         val media = mediaCache ?: mediaProvider().also { mediaCache = it }
-        return WidgetData(carStatus, media, onMedia, control, unitPrefs, photoProvider(), photoIntervalSec)
+        return WidgetData(carStatus, media, onMedia, control, unitPrefs, photos.provider(), photos.intervalSec)
     }
 
     /** Ảnh chụp nhạc dùng cho LƯỢT render hiện tại (xoá ở đầu mỗi lượt) — xem KDoc widgetData. */
     private var mediaCache: MediaSnapshot? = null
 
-    /**
-     * U4(b) — nguồn ảnh cho widget trình chiếu. Là HÀM (không phải danh sách) để chỗ gọi quyết định khi nào đọc thư
-     * mục: đọc thư mục là I/O, không nên chạy mỗi lần dựng ô.
-     */
-    private var photoProvider: () -> List<String> = { emptyList() }
-    private var photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC
-    private var photoPathsShown: List<String>? = null
+    /** U4(b) — nguồn ảnh cho widget trình chiếu (tách sang [WorkspacePhotoSource], trần 500 dòng). */
+    private val photos = WorkspacePhotoSource()
 
     /**
      * Bố cục TỰ VẼ (P9 bước 2). Để ở kênh riêng, KHÔNG nhét vào `WorkspaceState`: bộ quyết-định-dựng-lại đang bị
@@ -246,12 +247,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * chiếu app (làm thế là ngắt kênh chạm — ràng buộc C5 của gói 2). Gọi lại với cùng nguồn thì không làm gì.
      */
     fun setPhotoSource(paths: List<String>, intervalSec: Int) {
-        // [SOÁT] So theo SỐ LƯỢNG là sai: xoá 1 ảnh rồi thêm 1 ảnh khác ⇒ số lượng y nguyên ⇒ coi như "không đổi"
-        // ⇒ widget giữ danh sách CŨ, ảnh vừa xoá vẫn hiện và ảnh mới không bao giờ tới. So theo NỘI DUNG.
-        val changed = paths != photoPathsShown || intervalSec != photoIntervalSec
-        photoProvider = { paths }
-        photoIntervalSec = intervalSec
-        photoPathsShown = paths
+        val changed = photos.set(paths, intervalSec)   // so theo NỘI DUNG, không theo số lượng — xem [WorkspacePhotoSource.set]
         if (changed) rebuildWidgetSlots()
     }
 
@@ -373,6 +369,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             // nút vô hình) — chỉ ⇄ trên đĩa kính nhỏ (OQ8 phương án B). Vẫn VISIBLE + giữ drag listener dưới ⇒ vẫn là điểm thả.
             SlotContent.Empty -> fl.addView(slotHead(index, empty = true), headLp())
         }
+        heads.register(index, fl, content)   // R-AH: MỘT chỗ đăng ký ⇄ cho cả bốn đường dựng lại (⇄ luôn là con cuối)
         // Mọi ô là điểm THẢ: kéo 1 ô rồi thả lên ô khác → đổi chỗ nội dung.
         fl.setOnDragListener { _, e ->
             when (e.action) {
@@ -418,6 +415,16 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      */
     private fun slotHead(index: Int, empty: Boolean = false): View =
         SlotSwapButton.centered(context, SlotSwapButton.describe(context, index, empty), disc = empty) { onSlotTap?.invoke(index) }
+
+    /** R-AH3 — công tắc "Tự ẩn nút ⇄" (theo hồ sơ): áp lại trạng thái nghỉ của mọi ⇄ tại chỗ, KHÔNG dựng lại ô. */
+    fun setSlotHeadAutoHide(on: Boolean) = heads.setEnabled(on)
+
+    /** R-AH2 — chỉ NHÌN cú chạm: `super` TRƯỚC (đích chạm chọn xong rồi ⇄ mới đổi), trả nguyên kết quả, không nuốt. */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val handled = super.dispatchTouchEvent(ev)
+        heads.observe(ev, slotViews, handled)
+        return handled
+    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)

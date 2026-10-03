@@ -118,8 +118,8 @@ class ControlTileFactory(
         // Đọc lại trạng thái THẬT của xe (0/1) — bỏ qua trong cửa sổ ân hạn, và chỉ đổi khi khác để không vẽ thừa.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val on = (car.controls[def.id] ?: return@refresh) > 0
-            if (on != state.isOn(def.id)) { state.setOn(def.id, on); look(def, tile, icon, label, on(def)) }
+            val on = (car.controls[def.id] ?: on(def)) > 0   // R-FL2: xe không cho số ⇒ bảng lệnh cuối (phím/giọng nói vừa đổi) — TileResync
+            if (on != state.isOn(def.id) || TileResync.stale(tile, if (on) 1 else 0) != null) { state.setOn(def.id, on); look(def, tile, icon, label, on(def)) }
         }
     }
 
@@ -230,7 +230,7 @@ class ControlTileFactory(
         var open = false
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val v = ControlVisuals.of(def, car.controls[def.id] ?: return@refresh)
+            val v = ControlVisuals.of(def, car.controls[def.id] ?: TileResync.stale(tile, state.sel(def.id).coerceIn(0, levels - 1))?.let { show(it); return@refresh } ?: return@refresh)
             if (v.active != open) { open = v.active; applyBg(tile, v.active); tint(icon, label, v.active) }
         }
     }
@@ -265,8 +265,8 @@ class ControlTileFactory(
         // Đọc lại chỉ số lựa chọn THẬT của xe — bỏ qua trong ân hạn, chỉ nhận chỉ số hợp lệ (trong phạm vi args).
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
-            val v = car.controls[def.id] ?: return@refresh
-            if (v != state.sel(def.id) && v >= 0 && v < def.args.size) { state.setSel(def.id, v); show(v) }
+            val v = car.controls[def.id] ?: state.sel(def.id)   // R-FL2: xe không cho số ⇒ bảng lệnh cuối — TileResync
+            if ((v != state.sel(def.id) || TileResync.stale(tile, v) != null) && v >= 0 && v < def.args.size) { state.setSel(def.id, v); show(v) }
         }
     }
 
@@ -404,7 +404,7 @@ class ControlTileFactory(
      * [ControlVisual] về lý do luật nằm ở `:core`.
      */
     private fun look(def: ControlDef, tile: LinearLayout, icon: ImageView, label: TextView, value: Int?, autoOn: Boolean? = null): ControlVisual {
-        val v = ControlVisuals.of(def, value, autoOn)
+        val v = ControlVisuals.of(def, value, autoOn).also { TileResync.drew(tile, value) }   // R-FL2: hình vừa vẽ ⇒ refresh so với bảng lệnh cuối
         applyBg(tile, v.active); tint(icon, label, v.active)
         KachiIcons.byLevel(icon, def.icon, v.lit, size.iconDp)   // L7: mức nằm trong hình (một/hai dấu), cùng nguồn với chip
         return v
@@ -445,7 +445,7 @@ class ControlTileFactory(
         // ⚠ Nhánh BẬT giữ [KachiTheme.gradientSoft] — KHÔNG đổi sang `surface(ACTIVE)`: chữ/icon của ô đang bật tô
         // bằng `INK_ON_ACCENT`, và bài canh `ThemePaletteContractTest` đo vai đó **trên nền `tileOn*`**. Đổi nền mà
         // giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
-        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiTheme.surface(ctx, size.radius)
+        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius), size == TileSize.DOCK)   // R-OP: chỉ TẮT
     }
 
     /**

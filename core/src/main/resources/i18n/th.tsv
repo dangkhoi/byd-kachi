@@ -12,14 +12,14 @@ lỗi mạng: {0}	network error: {0}	ข้อผิดพลาดเครื�
 đã cài — đang mở lại…	installed — reopening…	ติดตั้งแล้ว — กำลังเปิดใหม่…
 không có kênh shell tới xe ({0}) — {1}. APK đã tải ở: {2}	no shell channel to the head unit ({0}) — {1}. APK saved at: {2}	ไม่มีช่องทาง shell ไปยังระบบรถ ({0}) — {1} ไฟล์ APK บันทึกไว้ที่: {2}
 pm install từ chối: {0}. APK đã tải ở: {1}	pm install rejected: {0}. APK saved at: {1}	pm install ปฏิเสธ: {0} ไฟล์ APK บันทึกไว้ที่: {1}
-bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB rồi cài lại	tap "Allow" (tick "always allow") on the USB-debugging dialog, then install again	แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB แล้วติดตั้งอีกครั้ง
+bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB rồi cài lại	tap "Allow" (tick "always allow") on the USB-debugging dialog, then install again	แตะ “อนุญาต/Allow” (ติ๊ก “อนุญาตเสมอ”) ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB แล้วติดตั้งอีกครั้ง
 xem Cài đặt › Hệ thống & quyền	see Settings › System & permissions	ดูที่ การตั้งค่า › ระบบและสิทธิ์
 mở màn chính Kachi để cấp quyền điều khiển cửa sổ (Cho phép gỡ lỗi USB) rồi cài lại	open the Kachi home screen to grant window control (Allow USB debugging), then install again	เปิดหน้าจอหลัก Kachi เพื่อให้สิทธิ์ควบคุมหน้าต่าง (อนุญาตการแก้ไขข้อบกพร่อง USB) แล้วติดตั้งอีกครั้ง
 pm không in gì	pm printed nothing	pm ไม่แสดงผลลัพธ์ใดๆ
 đang kiểm tra…	checking…	กำลังตรวจสอบ…
 lỗi: {0}	error: {0}	ข้อผิดพลาด: {0}
 đang ở bản mới nhất (v{0})	up to date (v{0})	เป็นเวอร์ชันล่าสุดแล้ว (v{0})
-có bản mới nhưng kênh không có link tải — thử lại sau	a new version exists but the channel has no download link — try again later	มีเวอร์ชันใหม่ แต่ช่องทางนี้ยังไม่มีลิงก์ดาวน์โหลด — ลองใหม่ภายหลัง
+có bản mới nhưng kênh không có link tải — thử lại sau	a new version exists but the channel has no download link — try again later	มีเวอร์ชันใหม่ แต่ช่องทางนี้ยังไม่มีลิงก์ดาวน์โหลด — ลองอีกครั้งภายหลัง
 Có bản mới: v{0}	New version: v{0}	เวอร์ชันใหม่: v{0}
 Đang dùng v{0}. Tải v{1} và cài đè? App sẽ tự khởi động lại.	You have v{0}. Download v{1} and install? The app will restart.	ขณะนี้ใช้ v{0} ต้องการดาวน์โหลด v{1} และติดตั้งหรือไม่ แอปจะรีสตาร์ทเอง
 Tải & cài	Download & install	ดาวน์โหลดและติดตั้ง
@@ -32,7 +32,7 @@ tải thất bại	download failed	ดาวน์โหลดไม่สำเ
 Đang mở VietMap…	Starting VietMap…	กำลังเปิด VietMap…
 Kéo để đặt bong bóng	Drag to place the bubble	ลากเพื่อวางบับเบิล
 Bong bóng	Bubble	บับเบิล
-Phím-thoại đang bật	Voice key active	ปุ่มสั่งงานด้วยเสียงทำงานอยู่
+Phím-thoại đang bật	Voice key active	ปุ่มสั่งเสียงทำงานอยู่
 Tự động hoá đang chạy	Automation running	ระบบอัตโนมัติกำลังทำงาน
 Lái	Driver	คนขับ
 Phụ	Front R	ผู้โดยสาร
@@ -51,7 +51,7 @@ tên tệp không hợp lệ: {0}	invalid file name: {0}	ชื่อไฟล�
 thiếu tệp: {0}	missing {0}	ขาดไฟล์ {0}
 không ghi được .version (thẻ đầy?)	could not write .version (storage full?)	เขียน .version ไม่ได้ (พื้นที่เต็ม?)
 không chuyển được thư mục gói	could not move the pack folder	ย้ายโฟลเดอร์แพ็กไม่ได้
-máy còn {0} MB, cần khoảng {1} MB — xoá bớt rồi thử lại	only {0} MB free, about {1} MB needed — free some space and retry	เหลือพื้นที่ {0} MB ต้องใช้ประมาณ {1} MB — ลบข้อมูลบางส่วนแล้วลองใหม่
+máy còn {0} MB, cần khoảng {1} MB — xoá bớt rồi thử lại	only {0} MB free, about {1} MB needed — free some space and retry	เหลือพื้นที่ {0} MB ต้องใช้ประมาณ {1} MB — ลบข้อมูลบางส่วนแล้วลองอีกครั้ง
 tệp {0} chưa ghim sha256/cỡ	{0} is not pinned	ไฟล์ {0} ยังไม่ได้กำหนด sha256/ขนาด
 tệp {0} chưa có nguồn tải — chép qua thẻ/USB (xem Cài đặt › Giọng nói)	{0} has no download source — side-load it from a USB stick	{0} ไม่มีแหล่งดาวน์โหลด — ไซด์โหลดจากแฟลชไดรฟ์ USB
 lỗi mạng {0}: {1}	network error {0}: {1}	ข้อผิดพลาดเครือข่าย {0}: {1}
@@ -61,7 +61,7 @@ chưa có lượt nói nào được ghi — bật công tắc rồi nói một 
 không thấy tệp {0}	no {0} found	ไม่พบ {0}
 mô hình chưa sẵn sàng	model not ready	โมเดลยังไม่พร้อม
 Kéo để đặt biển báo	Drag to place the badge	ลากเพื่อวางป้าย
-Đang trả app về…	Returning app…	กำลังส่งแอปกลับ…
+Đang trả app về…	Returning app…	กำลังย้ายแอปกลับ…
 Đang chuẩn bị cụm…	Preparing cluster…	กำลังเตรียมหน้าปัด…
 Chiếu {0}…	Casting {0}…	กำลังฉาย {0}…
 Không cast màn hình chính	Won't cast the launcher/home screen	ไม่ฉายภาพหน้าจอหลัก (ลันเชอร์)
@@ -70,7 +70,7 @@ Khắc phục sự cố	Troubleshooting	การแก้ไขปัญหา
 Khắc phục sự cố — đang mở	Troubleshooting — open	การแก้ไขปัญหา — เปิดอยู่
 Đóng nhóm hành động khắc phục sự cố	Close troubleshooting actions	ปิดกลุ่มคำสั่งแก้ไขปัญหา
 Mở nhóm hành động khắc phục sự cố	Open troubleshooting actions	เปิดกลุ่มคำสั่งแก้ไขปัญหา
-⬇ Kiểm tra cập nhật	⬇ Check update	⬇ ตรวจสอบอัปเดต
+⬇ Kiểm tra cập nhật	⬇ Check update	⬇ ตรวจหาอัปเดต
 Thử badge 50	TEST BADGE 50	ทดสอบป้าย 50
 Đã buộc badge 50 trên cụm (display 1)	Forced badge 50 on cluster (display 1)	บังคับแสดงป้าย 50 บนหน้าปัด (display 1)
 Ẩn badge	HIDE badge	ซ่อนป้าย
@@ -85,12 +85,12 @@ Cỡ +10	Size +10	ขนาด +10
 Tâm badge: X={0} Y={1} (px cụm) · cỡ {2}dp	Badge centre: X={0} Y={1} (cluster px) · size {2}dp	จุดกึ่งกลางป้าย: X={0} Y={1} (px หน้าปัด) · ขนาด {2}dp
 Đang xử lý thao tác trước…	Previous operation in progress…	กำลังดำเนินการคำสั่งก่อนหน้า…
 Đang thử nối vào xe để mở trợ lý — chờ vài giây…	Still reaching the head unit to open the assistant — hang on…	กำลังเชื่อมต่อระบบรถเพื่อเปิดผู้ช่วย — รอสักครู่…
-Đã gửi lệnh mở trợ lý nhưng xe không trả lời kịp — thử lại nếu chưa thấy trợ lý.	Sent the assistant key but the head unit did not answer in time — retry if nothing opened.	ส่งคำสั่งเปิดผู้ช่วยแล้ว แต่ระบบรถไม่ตอบสนองทันเวลา — ลองใหม่หากผู้ช่วยยังไม่เปิด
-Bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB — app đang chờ…	Tap "Allow" (tick "always allow") on the USB-debugging dialog — waiting…	แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB — กำลังรอ…
-Chưa được cấp quyền gỡ lỗi USB. Bấm "Cho phép/Allow" (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Tap "Allow" (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB แตะ "อนุญาต/Allow" (ติ๊ก "อนุญาตเสมอ") แล้วลองใหม่
-Cổng gỡ lỗi 5555 chưa bật trên xe — trợ lý giọng nói không chạy được.	Debug port 5555 is off on the head unit — the voice assistant cannot run.	พอร์ตดีบัก 5555 ปิดอยู่บนระบบรถ — ผู้ช่วยเสียงทำงานไม่ได้
-Không nối được vào xe để mở trợ lý. Thử lại sau.	Could not reach the head unit to open the assistant. Try again later.	เชื่อมต่อระบบรถเพื่อเปิดผู้ช่วยไม่ได้ ลองใหม่ภายหลัง
-Chưa được cấp quyền gỡ lỗi USB. Mở màn chính Kachi để cấp (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Open the Kachi home screen to grant it (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB เปิดหน้าจอหลัก Kachi เพื่ออนุญาต (ติ๊ก "อนุญาตเสมอ") แล้วลองใหม่
+Đã gửi lệnh mở trợ lý nhưng xe không trả lời kịp — thử lại nếu chưa thấy trợ lý.	Sent the assistant key but the head unit did not answer in time — retry if nothing opened.	ส่งคำสั่งเปิดผู้ช่วยแล้ว แต่ระบบรถไม่ตอบสนองทันเวลา — ลองอีกครั้งหากผู้ช่วยยังไม่เปิด
+Bấm "Cho phép/Allow" (tích "luôn cho phép") trên hộp thoại gỡ lỗi USB — app đang chờ…	Tap "Allow" (tick "always allow") on the USB-debugging dialog — waiting…	แตะ “อนุญาต/Allow” (ติ๊ก “อนุญาตเสมอ”) ในกล่องโต้ตอบการแก้ไขข้อบกพร่อง USB — กำลังรอ…
+Chưa được cấp quyền gỡ lỗi USB. Bấm "Cho phép/Allow" (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Tap "Allow" (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB แตะ “อนุญาต/Allow” (ติ๊ก “อนุญาตเสมอ”) แล้วลองอีกครั้ง
+Cổng gỡ lỗi 5555 chưa bật trên xe — trợ lý giọng nói không chạy được.	Debug port 5555 is off on the head unit — the voice assistant cannot run.	พอร์ตแก้ไขข้อบกพร่อง 5555 ปิดอยู่บนระบบรถ — ผู้ช่วยเสียงทำงานไม่ได้
+Không nối được vào xe để mở trợ lý. Thử lại sau.	Could not reach the head unit to open the assistant. Try again later.	เชื่อมต่อระบบรถเพื่อเปิดผู้ช่วยไม่ได้ ลองอีกครั้งภายหลัง
+Chưa được cấp quyền gỡ lỗi USB. Mở màn chính Kachi để cấp (nhớ tích "luôn cho phép") rồi thử lại.	USB debugging not authorised yet. Open the Kachi home screen to grant it (tick "always allow") then try again.	ยังไม่ได้รับอนุญาตการแก้ไขข้อบกพร่อง USB เปิดหน้าจอหลัก Kachi เพื่ออนุญาต (ติ๊ก “อนุญาตเสมอ”) แล้วลองอีกครั้ง
 Công thức trợ lý mới chạy được một phần — bật lại công tắc để chạy đủ.	The assistant recipe was only partly applied — toggle it again to finish.	ตั้งค่าผู้ช่วยได้เพียงบางส่วน — สลับสวิตช์อีกครั้งเพื่อให้ครบ
 Đang tự cấp quyền bind…	Granting bind permission…	กำลังให้สิทธิ์ผูกวิดเจ็ต…
 xe không nhận lệnh nào	the car took no command	รถไม่รับคำสั่งใดเลย
@@ -104,7 +104,7 @@ không bước nào ăn ({0} bước)	no step took ({0} steps)	ไม่มี�
 {0} nút	{0} button	{0} ปุ่ม
 {0} nút	{0} buttons	{0} ปุ่ม
 Nhóm — xem cả cụm cùng lúc	Groups — see a whole set at once	กลุ่ม — ดูทั้งชุดในคราวเดียว
-Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái.	One tile for a whole set: all the tyres, all the windows, the whole light strip. Place one tile instead of placing each one.	ช่องเดียวสำหรับทั้งชุด: ยางทุกเส้น กระจกทุกบาน ไฟทั้งแถบ วางช่องเดียวแทนการวางทีละรายการ
+Một ô cho cả bộ: cả bộ lốp, cả bộ kính, cả dải đèn. Đặt một ô thay vì đặt từng cái.	One tile for a whole set: all the tyres, all the windows, the whole light strip. Place one tile instead of placing each one.	ไทล์เดียวสำหรับทั้งชุด: ยางทุกเส้น กระจกทุกบาน ไฟทั้งแถบ วางไทล์เดียวแทนการวางทีละรายการ
 Từng mục riêng	Individual items	รายการเดี่ยว
 Launcher — việc của chính màn hình này	Launcher — this screen's own actions	ลันเชอร์ — คำสั่งของหน้าจอนี้เอง
 Không gửi lệnh nào xuống xe: mở danh sách ứng dụng, mở Cài đặt, nói với xe, khối lối tắt ứng dụng.	These send nothing to the car: open the app list, open Settings, talk to the car, the app-shortcut block.	รายการเหล่านี้ไม่ส่งคำสั่งใดไปยังรถ: เปิดรายการแอป เปิดการตั้งค่า คุยกับรถ บล็อกทางลัดแอป
@@ -114,7 +114,7 @@ OK 	OK 	ผ่าน
  · Không OK 	 · Not OK 	 · ไม่ผ่าน 
  · Chưa soát 	 · Not checked 	 · ยังไม่ตรวจ 
 (tin)	(info)	(ข้อมูล)
-(nút)	(action)	(ปุ่ม)
+(nút)	(action)	(คำสั่ง)
   · ghi chú: 	  · note: 	  · หมายเหตุ: 
 Xanh Kachi	Kachi blue	ฟ้า Kachi
 Tím	Violet	ม่วง
@@ -141,10 +141,6 @@ Tất cả đã đóng	All closed	ปิดทั้งหมด
 {0} cảnh báo	{0} alert	แจ้งเตือน {0} รายการ
 {0} cảnh báo	{0} alerts	แจ้งเตือน {0} รายการ
 {0} lưu ý	{0} to note	ควรตรวจดู {0} รายการ
-gán Mở / Đóng riêng	bind Open / Close separately	กำหนดเปิด / ปิดแยกกัน
-gán từng mức	bind each level	กำหนดทีละระดับ
-gán Bật / Tắt riêng	bind On / Off separately	กำหนดเปิด / ปิดแยกกัน
-Không đọc được {0} — {1}	Can't read {0} — {1}	อ่าน {0} ไม่ได้ — {1}
 Phím gán nút xe không còn hợp lệ ({0}) — gán lại ở Cài đặt › Nút vật lý	This key binding is no longer valid ({0}) — rebind it in Settings › Physical buttons	การกำหนดปุ่มนี้ใช้ไม่ได้แล้ว ({0}) — กำหนดใหม่ที่ การตั้งค่า › ปุ่มกายภาพ
 Bật 	Turn on 	เปิด
 Tắt 	Turn off 	ปิด
@@ -172,8 +168,8 @@ mã {0}	code {0}	รหัส {0}
 Trong	Recirc	หมุนเวียนภายใน
 Ngoài	Fresh	อากาศภายนอก
 Chỉnh tay	Manual	ปรับเอง
-Có	Yes	ใช่
-Không	No	ไม่ใช่
+Có	Yes	มี
+Không	No	ไม่มี
 Bật	On	เปิด
 Tắt	Off	ปิด
 Mở	Open	เปิด
@@ -185,14 +181,13 @@ Tự động	Auto	อัตโนมัติ
 Tốt	Good	ดี
 TB	Fair	พอใช้
 Kém	Poor	แย่
-Bụi mịn trong xe: {0}	Fine dust in the car: {0}	ฝุ่นละอองในรถ: {0}
+Bụi mịn trong xe: {0}	Fine dust in the car: {0}	ฝุ่น PM2.5 ในรถ: {0}
 ngoài	outside	ภายนอก
 Nhiệt độ ngoài xe {0}{1}	Outside temperature {0}{1}	อุณหภูมิภายนอกรถ {0}{1}
 Pin {0} phần trăm, đi thêm {1} {2}	Battery {0} per cent, {1} {2} to go	แบตเตอรี่ {0} เปอร์เซ็นต์ วิ่งได้อีก {1} {2}
 chưa đọc được	not read yet	ยังอ่านค่าไม่ได้
 Ghế lái	Driver seat	ที่นั่งคนขับ
 Ghế phụ	Passenger seat	ที่นั่งผู้โดยสาร
-Mức 	Level 	ระดับ 
 non	low	ลมอ่อน
 căng	high	ลมเกิน
 lệch	uneven	ลมไม่เท่ากัน
@@ -214,7 +209,7 @@ bố cục tự vẽ đang lỗi: 	the custom layout has a problem: 	เลย�
 hồ sơ	profile	โปรไฟล์
 {0} gì?	{0} what?	{0} อะไร?
 Chưa rõ — nói lại giúp	Not sure — say that again	ไม่แน่ใจ — พูดอีกครั้ง
-Vẫn chưa rõ — thử nói "bật đèn đọc"	Still not sure — try saying "turn on the reading light"	ยังไม่แน่ใจ — ลองพูดว่า "เปิดไฟอ่านหนังสือ"
+Vẫn chưa rõ — thử nói "{0}"	Still not sure — try saying "{0}" in Vietnamese	ยังไม่แน่ใจ — ลองพูดเป็นภาษาเวียดนามว่า "{0}"
 {0} hay {1}	{0} or {1}	{0} หรือ {1}
 {0}, hay {1}	{0}, or {1}	{0} หรือ {1}
 {0} nào — {1}?	Which {2} — {1}?	{2}ไหน — {1}?
@@ -230,7 +225,7 @@ Kachi chưa điều khiển được {0} — dùng nút trên xe	Kachi cannot co
 Chưa 	Could not 	ไม่สามารถ
 , {0} việc khác đã xong	, {0} other(s) done	 อีก {0} อย่างเสร็จแล้ว
 Chạy gói 	Run pack 	เรียกใช้ชุดคำสั่ง 
-Đổi sang hồ sơ 	Switch to profile 	สลับไปโปรไฟล์ 
+Đổi sang hồ sơ 	Switch to profile 	สลับไปใช้โปรไฟล์ 
 Xem 	Show 	ดู
 Dẫn đường tới 	Navigate to 	นำทางไป 
 Mở ứng dụng 	Open app 	เปิดแอป 
@@ -308,7 +303,7 @@ Số	Gear	เกียร์
 Mức bụi mịn	Dust level	ระดับฝุ่น
 Bụi mịn PM2.5	Fine dust PM2.5	ฝุ่น PM2.5
 Cảm biến bụi mịn	Fine dust sensor	เซ็นเซอร์ฝุ่น
-Bụi mịn ngoài xe	Outside fine dust	ฝุ่นภายนอกรถ
+Bụi mịn ngoài xe	Outside fine dust	ฝุ่น PM2.5 ภายนอกรถ
 Nhiệt trong cabin	Cabin temp	อุณหภูมิในห้องโดยสาร
 Nhiệt cài đặt	Set temp	อุณหภูมิที่ตั้งไว้
 Nhiệt ngoài xe	Outside temp	อุณหภูมิภายนอก
@@ -416,8 +411,9 @@ Giới thiệu	About	เกี่ยวกับ
 Bố cục sẵn	Preset layout	เลย์เอาต์สำเร็จรูป
 Bố cục tự vẽ	Custom layout	เลย์เอาต์ที่วาดเอง
 Vẽ bố cục riêng…	Draw your own layout…	วาดเลย์เอาต์เอง…
+Tự ẩn nút ⇄	Auto-hide the ⇄ button	ซ่อนปุ่ม ⇄ อัตโนมัติ
 Hình nền & trình chiếu	Wallpaper & slideshow	ภาพพื้นหลังและสไลด์โชว์
-Chip thanh trạng thái	Status-bar chips	ชิปแถบสถานะ
+Chip thanh trạng thái	Status-bar chips	ชิปบนแถบสถานะ
 Hiện nhãn trên thanh trên	Show chip labels	แสดงชื่อบนชิป
 Vị trí trên thanh trên	Status-bar item order	ลำดับรายการบนแถบสถานะ
 Hiện thanh nút xe	Show the car bar	แสดงแถบปุ่มรถ
@@ -441,9 +437,9 @@ Chế độ hiện trên cụm	Cluster display mode	โหมดแสดงผ�
 Chạy chữ tên đường	Scroll long street names	เลื่อนชื่อถนนที่ยาว
 App dẫn đường mặc định	Default navigation app	แอปนำทางเริ่มต้น
 Tự dẫn đường theo lịch	Scheduled navigation	นำทางตามกำหนดเวลา
-Kết nối lại nguồn dẫn đường	Reconnect the navigation source	เชื่อมต่อแหล่งข้อมูลนำทางใหม่
+Kết nối lại nguồn dẫn đường	Reconnect the navigation source	เชื่อมต่อแหล่งข้อมูลนำทางอีกครั้ง
 Biển báo tốc độ	Speed limit badge	ป้ายจำกัดความเร็ว
-Giới hạn sắp tới	Upcoming limit	ความเร็วจำกัดข้างหน้า
+Giới hạn sắp tới	Upcoming limit	ขีดจำกัดความเร็วถัดไป
 Chip cảnh báo camera	Camera alert chip	ชิปแจ้งเตือนกล้อง
 Cỡ biển báo	Badge size	ขนาดป้าย
 Vị trí biển báo	Badge position	ตำแหน่งป้าย
@@ -453,11 +449,11 @@ Bật chiếu màn	Enable casting	เปิดการฉายภาพ
 Hiện nút nổi chiếu cụm	Show the floating cast button	แสดงปุ่มลอยสำหรับฉายภาพ
 Tỉ lệ chia đôi	Split ratio	สัดส่วนการแบ่งจอ
 Tự chiếu khi nổ máy	Autostart on engine start	ฉายอัตโนมัติเมื่อสตาร์ทรถ
-App tự chiếu toàn màn	Full-screen autostart app	แอปที่ฉายเต็มจออัตโนมัติ
+App tự chiếu toàn màn	Full-screen autostart app	แอปที่ฉายเต็มหน้าปัดอัตโนมัติ
 Tự chiếu chia đôi	Autostart split view	ฉายแบบแบ่งจออัตโนมัติ
 App bên trái	Left-hand app	แอปฝั่งซ้าย
 App bên phải	Right-hand app	แอปฝั่งขวา
-Chiếu ngay: toàn màn, trái, phải, dừng	Cast now: full, left, right, stop	ฉายทันที: เต็มจอ ซ้าย ขวา หยุด
+Chiếu ngay: toàn màn, trái, phải, dừng	Cast now: full, left, right, stop	ฉายทันที: เต็มหน้าปัด ซ้าย ขวา หยุด
 Cứu hộ cụm	Cluster rescue	กู้คืนหน้าปัด
 Nhận nút vật lý	Listen to physical buttons	รับคำสั่งจากปุ่มกายภาพ
 Danh sách gán nút	Button bindings	การกำหนดปุ่ม
@@ -469,15 +465,15 @@ Ghế mát/sưởi tự động	Automatic seat cooling / heating	ระบาย
 Chế độ ghế: mát hay sưởi	Seat mode: cool or heat	โหมดที่นั่ง: ระบายอากาศหรือทำความร้อน
 Mức từng ghế	Level per seat	ระดับของแต่ละที่นั่ง
 Tự lọc bụi mịn	Automatic air purifier	กรองอากาศอัตโนมัติ
-Lọc ngay một lượt	Purify now	กรองอากาศหนึ่งรอบทันที
+Lọc ngay một lượt	Purify now	กรองอากาศทันที
 Tự sấy kính khi mưa	Auto-defrost when it rains	ไล่ฝ้าอัตโนมัติเมื่อฝนตก
-"Hey Kachi" gọi bằng giọng	"Hey Kachi" wake word	คำปลุก "Hey Kachi"
+"Hey Kachi" gọi bằng giọng	"Hey Kachi" wake word	คำปลุก “Hey Kachi”
 Đọc phản hồi bằng giọng	Speak replies out loud	อ่านคำตอบออกเสียง
-Ưu tiên giọng offline	Prefer the offline voice	ใช้เสียงออฟไลน์เป็นหลัก
+Ưu tiên giọng offline	Prefer the offline voice	ใช้เสียงอ่านออฟไลน์เป็นหลัก
 App nhạc mặc định	Default music app	แอปเพลงเริ่มต้น
 Tự mở nhạc khi lên xe	Play music when you get in	เล่นเพลงเมื่อขึ้นรถ
 Giọng đọc offline	Offline voice pack	แพ็กเสียงอ่านออฟไลน์
-Câu lệnh nói được	Spoken commands	คำสั่งเสียง
+Câu lệnh nói được	Spoken commands	คำสั่งเสียงที่ใช้ได้
 Hỏi xác nhận trước khi chạy	Ask before running	ถามก่อนดำเนินการ
 Đọc to câu hỏi xác nhận	Read confirmation questions aloud	อ่านคำถามยืนยันออกเสียง
 Nguồn micro	Microphone source	แหล่งไมโครโฟน
@@ -486,7 +482,7 @@ Tự mở Kachi khi nổ máy	Auto-start Kachi on engine start	เปิด Kach
 Chạy dịch vụ nền khi nổ máy	Run background service on engine start	เรียกใช้บริการเบื้องหลังเมื่อสตาร์ทรถ
 Mở app khi nổ máy	Open apps at ignition	เปิดแอปเมื่อสตาร์ทรถ
 Giữ Kachi làm màn hình chính khi nổ máy	Keep Kachi as home screen on engine start	คง Kachi เป็นหน้าจอหลักเมื่อสตาร์ทรถ
-Kiểm tra cập nhật	Check for updates	ตรวจสอบอัปเดต
+Kiểm tra cập nhật	Check for updates	ตรวจหาอัปเดต
 Dừng toàn bộ dẫn đường	Stop all navigation	หยุดการนำทางทั้งหมด
 Chế độ kiểm thử qua adb	ADB test mode	โหมดทดสอบผ่าน ADB
 Phiên bản và giấy phép	Version and licence	เวอร์ชันและสัญญาอนุญาต
@@ -585,7 +581,7 @@ Nửa	Half	เปิดครึ่ง
 mở/đóng và mở nửa từng kính · đóng cả cụm	open/close and half-open each window · close all	เปิด/ปิด และเปิดครึ่งกระจกแต่ละบาน · ปิดทั้งหมด
 cửa, nóc, rèm	doors, sunroof, sunshade	ประตู ซันรูฟ ม่านบังแดด
 đèn ngoài, đèn pha, đèn đọc trong xe	exterior lights, headlights, interior reading light	ไฟภายนอก ไฟหน้า ไฟอ่านหนังสือในรถ
-nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	อุณหภูมิภายใน/ภายนอก ระบบปรับอากาศ ฝุ่นละออง
+nhiệt trong/ngoài, điều hoà, bụi mịn	inside/outside temperature, air conditioning, fine dust	อุณหภูมิภายใน/ภายนอก ระบบปรับอากาศ ฝุ่น PM2.5
 pin, tầm chạy, mức tiêu thụ	battery, range, consumption	แบตเตอรี่ ระยะทางคงเหลือ อัตราสิ้นเปลือง
 sức khoẻ pin, điện áp ắc-quy	battery health, auxiliary battery voltage	สุขภาพแบตเตอรี่ แรงดันไฟแบตเตอรี่เสริม
 quãng đường, thời gian, điện tiêu thụ, odo	distance, time, energy used, odometer	ระยะทาง เวลา พลังงานที่ใช้ ระยะทางสะสม
@@ -603,11 +599,11 @@ Phiên bản, giấy phép và miễn trừ	Version, licence and disclaimer	เ�
 app không vào được ô — đây là tính năng lõi của launcher	apps cannot go into a slot — this is the launcher's core feature	แอปเข้าไปอยู่ในช่องไม่ได้ — นี่คือฟังก์ชันหลักของลันเชอร์
 app không vào được ô theo đường cửa sổ tự do	apps cannot go into a slot over the freeform-window path	แอปเข้าไปอยู่ในช่องผ่านหน้าต่างแบบอิสระไม่ได้
 bấm HOME không về Kachi	pressing HOME does not come back to Kachi	กด HOME แล้วไม่กลับมาที่ Kachi
-Vào Cài đặt › Hệ thống & quyền › Màn hình chính rồi bấm "Đặt Kachi làm màn hình chính"	Open Settings › System & permissions › Home screen, then tap "Set Kachi as home screen"	เปิด การตั้งค่า › ระบบและสิทธิ์ › หน้าจอหลัก แล้วแตะ "ตั้ง Kachi เป็นหน้าจอหลัก"
+Vào Cài đặt › Hệ thống & quyền › Màn hình chính rồi bấm "Đặt Kachi làm màn hình chính"	Open Settings › System & permissions › Home screen, then tap "Set Kachi as home screen"	เปิด การตั้งค่า › ระบบและสิทธิ์ › หน้าจอหลัก แล้วแตะ “ตั้ง Kachi เป็นหน้าจอหลัก”
 dải tiêu đề ô và ngăn kéo app không nổi lên được	slot title bars and the app drawer cannot float on top	แถบชื่อช่องและลิ้นชักแอปแสดงทับด้านบนไม่ได้
 dẫn đường trên cụm mất nguồn dữ liệu	cluster navigation loses its data source	การนำทางบนหน้าปัดจะไม่มีแหล่งข้อมูล
 gán phím vô-lăng và đọc màn hình dẫn đường không chạy	steering-wheel key mapping and navigation screen reading stop working	การกำหนดปุ่มพวงมาลัยและการอ่านหน้าจอนำทางจะหยุดทำงาน
-không nói được với xe (ô "Nói với xe" và nút mic)	you cannot talk to the car (the "Talk to car" tile and the mic button)	คุยกับรถไม่ได้ (ช่อง "คุยกับรถ" และปุ่มไมค์)
+không nói được với xe (ô "Nói với xe" và nút mic)	you cannot talk to the car (the "Talk to car" tile and the mic button)	คุยกับรถไม่ได้ (ไทล์ “คุยกับรถ” และปุ่มไมค์)
 tự dẫn đường theo lịch không biết đã ra khỏi hầm chưa nên sẽ không dẫn	scheduled navigation cannot tell whether you have left the car park, so it never starts	การนำทางตามกำหนดเวลาไม่รู้ว่าออกจากที่จอดรถแล้วหรือยัง จึงไม่เริ่มนำทาง
 Phần trăm pin cao áp còn lại	High-voltage battery charge remaining (%)	ประจุแบตเตอรี่แรงดันสูงคงเหลือ (%)
 Quãng đường ước tính còn chạy bằng điện	Estimated remaining driving range on electric power (km)	ระยะทางที่ขับได้ด้วยไฟฟ้าโดยประมาณ (km)
@@ -623,7 +619,7 @@ Tình trạng sức khoẻ pin so với lúc mới	Battery health versus origina
 Bật/tắt sạc không dây cho điện thoại	Turn the wireless phone charger on/off	เปิด/ปิดแท่นชาร์จโทรศัพท์ไร้สาย
 Tốc độ di chuyển hiện tại của xe	Current vehicle road speed (km/h)	ความเร็วรถปัจจุบัน (km/h)
 Số hiện tại đang cài đặt (P/R/N/D)	Currently selected gear (P/R/N/D)	เกียร์ที่เลือกอยู่ (P/R/N/D)
-Mức đánh giá chất lượng không khí trong xe	Cabin air-quality rating based on fine dust	ระดับคุณภาพอากาศในห้องโดยสารตามปริมาณฝุ่นละออง
+Mức đánh giá chất lượng không khí trong xe	Cabin air-quality rating based on fine dust	ระดับคุณภาพอากาศในห้องโดยสารตามปริมาณฝุ่น PM2.5
 Nồng độ bụi mịn PM2.5 trong cabin	PM2.5 fine dust concentration in the cabin (µg/m³)	ความเข้มข้นฝุ่น PM2.5 ในห้องโดยสาร (µg/m³)
 Cảm biến bụi mịn có đang hoạt động không	Whether the PM2.5 sensor is online	เซ็นเซอร์ PM2.5 ทำงานอยู่หรือไม่
 Nồng độ bụi mịn PM2.5 NGOÀI xe — cùng getter với ô trong cabin, lấy ô thứ hai của mảng (chờ xác nhận trên xe)	Outside-cabin PM2.5 — same getter as the in-cabin value, second array slot (pending on-car confirmation)	PM2.5 ภายนอกรถ — ใช้ getter เดียวกับค่าในห้องโดยสาร ช่องที่สองของอาร์เรย์ (รอยืนยันบนรถจริง)
@@ -721,13 +717,13 @@ Pin và tầm chạy	Battery and range	แบตเตอรี่และร�
 Ghế lái (sưởi/mát)	Driver seat (heat/vent)	ที่นั่งคนขับ (ทำความร้อน/ระบายอากาศ)
 Ghế phụ (sưởi/mát)	Passenger seat (heat/vent)	ที่นั่งผู้โดยสาร (ทำความร้อน/ระบายอากาศ)
 hạ HẾT 4 kính — mưa, bụi, hoặc đồ để trên ghế; đóng lại mất nhiều giây	lowers ALL four windows — rain, dust, or belongings on the seats; closing takes seconds	เปิดกระจกลงทั้ง 4 บาน — ฝน ฝุ่น หรือของที่วางบนที่นั่ง การปิดกลับใช้เวลาหลายวินาที
-mở cốp khi xe đang đỗ nơi công cộng — đồ trong cốp phơi ra cho tới khi có người đóng lại	opens the boot in a public car park — whatever is inside stays exposed until someone closes it	เปิดท้ายรถในที่จอดรถสาธารณะ — ของในท้ายรถจะเปิดโล่งจนกว่าจะมีคนปิด
+mở cốp khi xe đang đỗ nơi công cộng — đồ trong cốp phơi ra cho tới khi có người đóng lại	opens the boot in a public car park — whatever is inside stays exposed until someone closes it	เปิดฝากระโปรงท้ายในที่จอดรถสาธารณะ — ของภายในจะเปิดโล่งจนกว่าจะมีคนปิด
 mở cửa sổ trời — mưa và bụi vào thẳng khoang, đóng lại mất nhiều giây	opens the sunroof — rain and dust go straight in, and closing takes seconds	เปิดซันรูฟ — ฝนและฝุ่นเข้ามาในห้องโดยสารโดยตรง และการปิดกลับใช้เวลาหลายวินาที
 đèn khẩn cấp	the hazard lights	ไฟฉุกเฉิน
 dây an toàn	the seat belts	เข็มขัดนิรภัย
 cảm biến đỗ	the parking sensors	เซ็นเซอร์ช่วยจอด
 độ sáng HUD	the HUD brightness	ความสว่าง HUD
-HUD kính lái	the windscreen HUD	HUD บนกระจกหน้า
+HUD kính lái	the windscreen HUD	HUD บนกระจกบังลม
 mức tái tạo	the regen level	ระดับการชาร์จพลังงานกลับ
 chế độ lái	the drive mode	โหมดการขับขี่
 chế độ phanh	the brake mode	โหมดเบรก

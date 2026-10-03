@@ -114,6 +114,12 @@ data class HomeUiState(
      */
     val autostart: Boolean = true,
     /**
+     * 2.87 · R-AH3 — **nút ⇄ của khung tự ẩn** (khoá `swap_button_autohide`, theo hồ sơ). Ở trong state vì màn chính
+     * RENDER nó (`KachiHomeRender` so `prev`/`state` rồi gọi `WorkspaceView.setSlotHeadAutoHide`) và màn Cài đặt vẽ ô
+     * tích của nó — cùng luật [autostart]. Mặc định BẬT, khớp nơi lưu bền (vắng khoá = bật): owner muốn nó là mặc định.
+     */
+    val slotHeadAutoHide: Boolean = true,
+    /**
      * **Sổ địa chỉ** của hồ sơ đang dùng (spec `docs/specs/kachi-voice-addresses.html` R1).
      *
      * ## Vì sao trong state chứ không là một lambda đọc riêng

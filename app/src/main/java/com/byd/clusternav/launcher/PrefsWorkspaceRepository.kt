@@ -145,6 +145,7 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
             // S1·T4: nạp cùng lượt với mọi thứ khác ⇒ mở lại màn Cài đặt là thấy đúng cờ đang lưu (bài học P1-1: nạp
             // bằng tay ở tầng UI thì sẽ có lần quên).
             autostart = prefs.launcherAutostart(),
+            slotHeadAutoHide = prefs.slotHeadAutoHide(),   // 2.87 · R-AH3 — theo hồ sơ, nạp cùng lượt ⇒ đổi hồ sơ là ⇄ đổi theo
             // U5·T3: nạp cùng lượt ⇒ bộ chọn ngôn ngữ mở ra là thấy đúng lựa chọn đang lưu. `LangHost` giải nghĩa ra
             // `Strings.current` từ giá trị này (nó cần locale của máy nên không giải được ở `:core`).
             langMode = prefs.langMode(),
@@ -301,6 +302,10 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
     override fun autostart(): Boolean = prefs.launcherAutostart()
 
     override fun setAutostart(on: Boolean) = prefs.setLauncherAutostart(on)
+
+    override fun slotHeadAutoHide(): Boolean = prefs.slotHeadAutoHide()
+
+    override fun setSlotHeadAutoHide(on: Boolean) = prefs.setSlotHeadAutoHide(on)
 
     override fun langMode(): LangMode = prefs.langMode()
 

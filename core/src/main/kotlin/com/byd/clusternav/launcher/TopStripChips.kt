@@ -191,13 +191,7 @@ object TopStripChips {
         // (hình ghế nói rõ là ghế rồi). Nay lấy thẳng [TelemetryView.level] chứ không bóc chuỗi đã dịch.
         // UX8 (owner 2026-09-27): chữ `AUTO` trên chip viết **thường** — phép hạ chữ sống đúng một bản ở
         // [ClimateAuto.narrowAuto] (cạnh chính hằng `AUTO`), và áp cho MỌI chip mang dấu ấy, không theo mã.
-        val chipValue = ClimateAuto.narrowAuto(when {
-            !hasLevel -> value.removePrefix(Strings.t("Mức ", "Level ")).trim()
-            view.level == null -> TelemetryView.PLACEHOLDER   // chưa đọc / mã ngoài thang ⇒ "—" + NEUTRAL
-            levelIcon != null -> ""                           // L7: mức đã nằm trong hình, không in số
-            view.level > 0 -> view.level.toString()
-            else -> ""                                        // mức 0 = TẮT: icon mờ nói hết, không in chữ "Tắt"
-        })
+        val chipValue = ClimateAuto.narrowAuto(chipValue(view, value, hasLevel, levelIcon))
         return ChipView(
             // U5 · T2: nhãn ngắn THEO NGÔN NGỮ. Chip là bề mặt hẹp nhất của launcher nên nó cần đúng bản ngắn, không
             // phải nhãn đầy — lý do `shortEn` tồn tại.
@@ -228,6 +222,22 @@ object TopStripChips {
             },
             desc = "${spec.displayLabel}: $value",
         )
+    }
+
+    /**
+     * Chữ GIÁ TRỊ của chip datum (trước phép hạ `AUTO`) — hàm riêng để khoá được ở MỌI [Lang] (`TopStripChipLevelLangTest`).
+     *
+     * Nhánh `!hasLevel` (datum không có thang mức): bản trước bóc `Strings.t("Mức ", "Level ")` khỏi chuỗi ĐÃ DỊCH —
+     * chỉ đúng khi bản dịch của mẫu `"Mức {0}"` cũng là TIỀN TỐ; zh `"{0}挡"` là HẬU TỐ ⇒ chip in `"2挡"` thay `"2"`.
+     * Nay lấy thẳng [TelemetryView.level] (cùng lối B9 ở nhánh thang mức): không phép mổ chuỗi nào phụ thuộc trật tự
+     * từ của một tiếng. Mức 0 / không phải datum mức ⇒ giữ nguyên chữ giá trị (VI/EN y byte như bản cũ — test khoá).
+     */
+    internal fun chipValue(view: TelemetryView, value: String, hasLevel: Boolean, levelIcon: String?): String = when {
+        !hasLevel -> view.level?.takeIf { it > 0 }?.toString() ?: value.trim()
+        view.level == null -> TelemetryView.PLACEHOLDER   // chưa đọc / mã ngoài thang ⇒ "—" + NEUTRAL
+        levelIcon != null -> ""                           // L7: mức đã nằm trong hình, không in số
+        view.level > 0 -> view.level.toString()
+        else -> ""                                        // mức 0 = TẮT: icon mờ nói hết, không in chữ "Tắt"
     }
 
     /** Đổi một số về đơn vị người dùng chọn, dùng CHUNG bộ chuyển của [Units] (không tự nhân chia tại chỗ). */

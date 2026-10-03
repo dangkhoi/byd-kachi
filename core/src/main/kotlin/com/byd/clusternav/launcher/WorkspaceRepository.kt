@@ -146,6 +146,15 @@ interface WorkspaceRepository {
     fun setAutostart(on: Boolean) {}
 
     /**
+     * 2.87 · R-AH3 — nút ⇄ của khung tự ẩn, theo HỒ SƠ ([ProfileScope.LAUNCHER_LAYOUT_SUFFIXES] `swap_button_autohide`).
+     * Mặc định `true` để KHỚP nơi lưu bền (vắng khoá = bật) — bài học cờ tự-mở: hai mặc định lệch nhau thì ô tích nói sai.
+     */
+    fun slotHeadAutoHide(): Boolean = true
+
+    /** Ghi bền cờ tự ẩn ⇄. Mặc định: không lưu (bản giả). */
+    fun setSlotHeadAutoHide(on: Boolean) {}
+
+    /**
      * U5 · T3 — NGÔN NGỮ launcher. S4 · R3a: **theo HỒ SƠ** — ngôn ngữ là thuộc tính của người **đọc màn hình**, và
      * từ S4 thì "người đọc" chính là hồ sơ đang dùng (nguồn `<hồ sơ>__lang`, bản phát ở `clusternav_lang`).
      *

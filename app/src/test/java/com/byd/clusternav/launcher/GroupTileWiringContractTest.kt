@@ -86,6 +86,9 @@ class GroupTileWiringContractTest {
                 "ô vẽ Canvas của nhóm *Cửa & khoang* (U9 pha 2) — đã quét riêng qua `door` (nó hỏi " +
                     "`GroupBoard.doorPlan` để biết bộ phận nào đang mở, thay vì tự đoán từ mã datum)",
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
+            // 2.87 · R-OP3 (2026-10-03): chỉ ĐỌC nền + mực ô cảnh báo qua `GroupTileView.fillOf/tintOf` để tính sàn
+            // đọc được khi khay dưới ô mờ đi — không dựng ô nào, không gắn nền nào (bài KachiChromeContractTest canh).
+            "KachiChrome.kt" to "đọc fillOf/tintOf để tính sàn độ đục nền — không dựng ô nhóm",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
             s.map { it.fileName.toString() }

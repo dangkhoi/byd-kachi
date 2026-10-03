@@ -139,7 +139,9 @@ class LangCoverageTest {
         // F1 lối tắt (2026-10-02): **76 → 77 (+1)** = `bars_app_shortcuts` *"Lối tắt ứng dụng"* / *"App shortcuts"*.
         // F2/F3 chuyến lên xe (2026-10-02, nhóm C): **77 → 79 (+2)** = `system_ignition_apps` *"Mở app khi nổ máy"* / *"Open
         // apps at ignition"* + `voice_ignition_music` *"Tự mở nhạc khi lên xe"* / *"Play music when you get in"*; EN tại chỗ khai.
-        assertEquals(79, SettingsCatalog.ENTRIES.size)
+        // 2.87 · R-AH3 (owner 03/10, spec kachi-287-look-and-keys): **79 → 80 (+1)** = `home_swap_autohide` *"Tự ẩn nút ⇄"* /
+        // *"Auto-hide the ⇄ button"* (khoá `swap_button_autohide`, theo hồ sơ).
+        assertEquals(80, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -234,7 +236,9 @@ class LangCoverageTest {
         // `LauncherActions.BLOCKS` (đặt được, không gọi bằng lời) đưa vào tầm quét ngay lượt này. Cả ba có EN tại chỗ khai.
         // F2/F3 chuyến lên xe (2026-10-02, nhóm C): **244 → 246 (+2)** = hai mục Cài đặt `system_ignition_apps` ·
         // `voice_ignition_music` (xem `tong so muc Cai dat…`), cả hai có EN tại chỗ khai.
-        assertEquals(246, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2.87 · R-AH3 (2026-10-03): **246 → 247 (+1)** = mục Cài đặt `home_swap_autohide` ("Tự ẩn nút ⇄" / "Auto-hide
+        // the ⇄ button"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
+        assertEquals(247, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

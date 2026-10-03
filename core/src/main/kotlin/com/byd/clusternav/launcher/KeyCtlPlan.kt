@@ -13,54 +13,70 @@ import com.byd.clusternav.launcher.voice.VoiceIntent
  * (cổng có-mặt, lượt nhả, nhật ký `ctl-writes.log`). Không có cổng xác nhận giọng nói ở đây: gán phím là thao tác
  * chủ ý trong Cài đặt, ngang một cú chạm ô — ô cũng không hỏi.
  *
+ * ## Đảo / Kế tiếp — nguồn trạng thái (2.87 · R-FL2, spec `kachi-287-look-and-keys.html` §4.3)
+ * Giải ra hành động CỤ THỂ ngay tại đây — Đảo ⇒ Bật/Tắt · Mở/Đóng, Kế tiếp ⇒ đặt mức n — nên [VoiceIntent.Control]
+ * giao xuống y hệt câu nói *"đóng cốp"* / *"bật lọc bụi"*, và MỌI cổng của đường thi hành (cốp chỉ MỞ khi đứng yên…)
+ * áp lên hành động ĐÃ GIẢI. Thứ tự hỏi trạng thái:
+ *  1. nút có [ControlDef.readKey] và đọc ra số hợp lệ ⇒ **xe** ([Basis.CAR], y như 2.86);
+ *  2. còn lại ⇒ **lệnh cuối Kachi đã gửi** ([ControlLastSent], [Basis.MEMORY]) — cùng bảng với ô trên màn.
+ * Ghi vào bảng KHÔNG ở đây: nó ở tầng thi hành, và CHỈ khi lệnh ghi thành công (`VoiceControlDispatch.finish(ok)`) —
+ * cổng tốc độ chặn MỞ cốp thì bảng giữ nguyên "đóng". Giới hạn của bảng (đổi bằng chìa/công tắc cửa, tiến trình `:wake`)
+ * ở KDoc [ControlLastSent].
+ *
  * Thuần (`:core`) ⇒ bài kiểm bảng chạy off-car (`KeyCtlPlanTest`).
  */
 object KeyCtlPlan {
 
-    sealed interface Outcome {
-        /** Giao [intent] cho đường thi hành của nút. */
-        data class Run(val intent: VoiceIntent.Control) : Outcome
+    /** Trạng thái mà Đảo / Kế tiếp đã dựa vào — vào nhật ký `KeyCtl` để soát trên xe (§11), không đổi hành vi. */
+    enum class Basis { DIRECT, CAR, MEMORY }
 
-        /** Hành động cần trạng thái THẬT (Đảo · Kế tiếp) mà đọc không được ⇒ báo, KHÔNG bắn, KHÔNG đoán (§5). */
-        data object Unreadable : Outcome
+    sealed interface Outcome {
+        /** Giao [intent] cho đường thi hành của nút. [basis] = nguồn trạng thái của Đảo / Kế tiếp ([Basis.DIRECT] cho việc khác). */
+        data class Run(val intent: VoiceIntent.Control, val basis: Basis = Basis.DIRECT) : Outcome
+
+        /**
+         * Kế tiếp trên nút < 2 lựa chọn — không có "kế tiếp" nào để chọn. Mã đích đã qua [KeyCtlTargets.decode] KHÔNG BAO
+         * GIỜ ra ca này ([KeyCtlTargets.actionsFor] không sinh NEXT cho nút ấy); chỉ để hàm thuần không chia cho 0.
+         */
+        data object Invalid : Outcome
     }
 
     /**
      * @param count số lần bấm đã gộp (≥ 1) — STEP: số nấc; SELECT Kế tiếp: số bước vòng; hành động khác bỏ qua.
+     * @param memory bảng lệnh cuối của tiến trình — mặc định [ControlLastSent.shared] (bài kiểm tiêm bảng riêng).
      * @param readState đọc trạng thái THẬT của nút (`CarControlPort.readState` — 0/1 cho TOGGLE, % cho kính, chỉ số mức
-     *   cho SELECT). Chỉ được gọi cho Đảo / Kế tiếp — mọi hành động khác KHÔNG tốn một lượt đọc HAL nào.
+     *   cho SELECT). Chỉ được gọi cho Đảo / Kế tiếp của nút CÓ readKey — mọi ca khác KHÔNG tốn một lượt đọc HAL nào.
      */
-    fun of(def: ControlDef, t: KeyCtlTarget, count: Int = 1, readState: () -> Int?): Outcome {
+    fun of(
+        def: ControlDef,
+        t: KeyCtlTarget,
+        count: Int = 1,
+        memory: ControlLastSent = ControlLastSent.shared,
+        readState: () -> Int?,
+    ): Outcome {
         val n = count.coerceAtLeast(1)
-        fun run(value: Int? = null, relative: Int = 0) = Outcome.Run(VoiceIntent.Control(def.id, value, relative))
+        fun run(value: Int? = null, relative: Int = 0, basis: Basis = Basis.DIRECT) =
+            Outcome.Run(VoiceIntent.Control(def.id, value, relative), basis)
+        // Xe trước (nếu có đường đọc VÀ số đọc hợp lệ), không thì lệnh cuối — luật ở KDoc lớp.
+        fun current(valid: (Int) -> Boolean): Pair<Int, Basis> =
+            (if (def.readKey.isNotBlank()) readState()?.takeIf(valid) else null)?.let { it to Basis.CAR }
+                ?: (memory.index(def.id) to Basis.MEMORY)
         return when (t.action) {
             KeyCtlAction.ON, KeyCtlAction.OPEN, KeyCtlAction.PRESS -> run(value = 1)
             KeyCtlAction.OFF, KeyCtlAction.CLOSE -> run(value = 0)
             KeyCtlAction.SET -> run(value = t.level)
             KeyCtlAction.UP -> run(relative = n)
             KeyCtlAction.DOWN -> run(relative = -n)
-            // `> 0` = đang bật/mở — CÙNG phép mà `VoiceReadback.act` dùng (kính đọc %, TOGGLE đọc 0/1).
-            KeyCtlAction.FLIP -> readState()?.let { run(value = if (it > 0) 0 else 1) } ?: Outcome.Unreadable
+            // `> 0` = đang bật/mở — CÙNG phép mà `VoiceReadback.act` dùng (kính đọc %, TOGGLE đọc 0/1, rèm mức 2 = Nửa).
+            KeyCtlAction.FLIP -> current { true }.let { (cur, b) -> run(value = if (cur > 0) 0 else 1, basis = b) }
             KeyCtlAction.NEXT -> {
                 val size = def.args.size
-                val cur = readState()?.takeIf { size > 0 && it in 0 until size } ?: return Outcome.Unreadable
-                run(value = (cur + n) % size)
+                if (size < 2) return Outcome.Invalid
+                // Mức đọc ngoài thang = không phải số hợp lệ ⇒ lùi về lệnh cuối (2.86: từ chối, không bắn).
+                val (cur, b) = current { it in 0 until size }
+                run(value = (cur.coerceIn(0, size - 1) + n) % size, basis = b)
             }
         }
-    }
-
-    /**
-     * Câu báo NGẮN (toast) cho [Outcome.Unreadable] — nói rõ cách chữa theo KIỂU nút (gán hành động đặt-thẳng), không
-     * đoán. [ĐO máy ảo 03/10] bản đầu một câu chung cho mọi kiểu dài hai dòng trên toast ⇒ tách theo kiểu.
-     */
-    fun unreadableReply(def: ControlDef, lang: Lang = Strings.current): String {
-        val n = def.labelIn(lang)
-        val fix = when (def.kind) {
-            ControlKind.COVER -> Strings.t("gán Mở / Đóng riêng", "bind Open / Close separately", lang)
-            ControlKind.SELECT -> Strings.t("gán từng mức", "bind each level", lang)
-            else -> Strings.t("gán Bật / Tắt riêng", "bind On / Off separately", lang)
-        }
-        return Strings.fIn(lang, "Không đọc được {0} — {1}", "Can't read {0} — {1}", n, fix)
     }
 
     /** Mã đích hỏng, hoặc nút/hành động không còn trên bản Kachi đang chạy (registry đổi) — gán lại. */

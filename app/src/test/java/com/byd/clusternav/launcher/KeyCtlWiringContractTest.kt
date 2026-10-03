@@ -100,6 +100,33 @@ class KeyCtlWiringContractTest {
         listOf("VoiceSpeaker", "TextToSpeech", "speak(").forEach { assertFalse(dispatch.contains(it), "phím không đọc thành tiếng: $it") }
     }
 
+    /**
+     * 2.87 · R-FL2 — ô trên màn, phím Đảo và giọng nói dùng CHUNG MỘT bảng lệnh cuối (`ControlLastSent.shared`). Hành vi
+     * có bài chạy thật (`KeyCtlSafetyTest.o va phim dung chung mot bang lenh cuoi`); ở đây khoá các mắt xích mà bài chạy
+     * không thấy: ô không có bản riêng, phím không tiêm bảng khác, ô VẼ LẠI khi bảng đổi bởi phím/giọng nói.
+     */
+    @Test
+    fun `R-FL2 - o, phim, giong noi dung chung mot bang lenh cuoi`() {
+        val state = code("$base/launcher/ControlTileState.kt")
+        assertTrue(state.contains("private val sent: ControlLastSent = ControlLastSent.shared"), "ô phải đọc bảng dùng chung của tiến trình")
+        listOf("fun isOn(id: String): Boolean = sent.index(id) > 0", "fun sel(id: String): Int = sent.index(id)",
+            "fun setOn(id: String, v: Boolean) { sent.record(id, if (v) 1 else 0) }", "fun setSel(id: String, i: Int) { sent.record(id, i) }",
+        ).forEach { assertTrue(state.contains(it), "ControlTileState phải đi QUA ControlLastSent: $it") }
+        val run = SourceRoots.body(dispatch, "fun run(f: KeyCtlThrottle.Step.Fire)")
+        assertFalse(run.contains("ControlLastSent("), "phím không được dựng bảng riêng — mặc định của KeyCtlPlan.of là bảng dùng chung")
+        val plan = code("src/main/java/com/byd/clusternav/launcher/KeyCtlPlan.kt")
+        assertTrue(plan.contains("memory: ControlLastSent = ControlLastSent.shared"))
+        // Giọng nói + phím ghi bảng ở tầng thi hành, CHỈ khi ok — kể cả COVER (trước 2.87 nhánh COVER bỏ qua).
+        val vcd = SourceRoots.body(code("$base/launcher/VoiceControlDispatch.kt"), "fun finish(ok: Boolean)")
+        assertTrue(vcd.contains("if (ok) when (def.kind)") && vcd.contains("ControlKind.SELECT, ControlKind.COVER -> st.setSel(def.id, arg)"))
+        // Ô vẽ lại khi bảng đổi bởi phím/giọng nói (nút không readKey: nhịp đọc xe không có số để so).
+        val factory = code("$base/launcher/ControlTileFactory.kt")
+        assertTrue(SourceRoots.body(factory, "private fun look(").contains("TileResync.drew(tile, value)"), "look là cửa DUY NHẤT ghi hình đã vẽ")
+        listOf("private fun tileToggle(", "private fun tileCover(", "private fun tileSelect(").forEach { sig ->
+            assertTrue(SourceRoots.body(factory, sig).contains("TileResync.stale(tile,"), "$sig: refresh phải so hình với bảng lệnh cuối")
+        }
+    }
+
     /** CLAUDE.md §8 — hàm mới phải có call site ngoài định nghĩa (đếm trên mã đã bỏ chú thích). */
     @Test
     fun `call site cua cac ham moi`() {
@@ -112,8 +139,11 @@ class KeyCtlWiringContractTest {
         }.joinToString("\n")
         mapOf(
             "KeyCtlDispatch.fire(" to 1, "KeyCtlTargets.groups(" to 1, "KeyCtlTargets.displayLabelOf(" to 1,
-            "KeyCtlPlan.of(" to 1, "KeyCtlPlan.unreadableReply(" to 1, "KeyCtlPlan.invalidReply(" to 2,
+            // 2.87 · R-FL2: `KeyCtlPlan.unreadableReply` GỠ cùng ca `Unreadable` (Đảo/Kế tiếp lùi về lệnh cuối) ⇒ bỏ khỏi
+            // danh sách; `invalidReply` nay thêm một chỗ gọi (`Outcome.Invalid`).
+            "KeyCtlPlan.of(" to 1, "KeyCtlPlan.invalidReply(" to 3,
             "throttle.press(" to 1, "throttle.flush(" to 1,
+            "ControlLastSent.shared" to 2, "TileResync.drew(" to 1, "TileResync.stale(" to 3,
         ).forEach { (token, min) ->
             assertTrue(Regex(Regex.escape(token)).findAll(all).count() >= min, "$token: thiếu call site (§8)")
         }

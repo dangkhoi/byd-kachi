@@ -16,23 +16,31 @@ package com.byd.clusternav.launcher
  * MỘT cái xe. Một bảng dùng chung cho cả tiến trình khớp với thực tế (chỉ có một cái xe) và không tốn gì.
  *
  * ⚠ Đây KHÔNG phải trạng thái đọc từ xe (phần lớn nút không có đường đọc lại) — nó chỉ là "tôi vừa bấm cái này".
+ *
+ * ═══ 2.87 · R-FL2 — bật/tắt + lựa chọn sống ở [ControlLastSent] (`:core`), KHÔNG còn map riêng ở đây ═══════════
+ * Owner 03/10 muốn MỘT phím Đảo cho cốp/kính/… như cú chạm ô. Phím quyết Đảo bằng lệnh cuối Kachi đã gửi khi không
+ * đọc được xe; nếu ô giữ một bảng riêng thì *"mở cốp bằng ô rồi bấm phím Đảo"* sẽ MỞ lần nữa thay vì ĐÓNG — ô và
+ * phím nói hai điều về một cái cốp. Nay [isOn]/[setOn]/[sel]/[setSel] đọc/ghi THẲNG bảng dùng chung đó (chỉ số theo
+ * nghĩa `actByKind`: TOGGLE 1/0 · COVER mức · SELECT chỉ số); API giữ nguyên nên mọi chỗ gọi cũ (ô · giọng nói · gói
+ * lệnh · đọc lại) tự ghi vào cùng một chỗ. Mặc định khi tiến trình bật: [ControlLastSent.startIndex].
  */
-class ControlTileState {
+class ControlTileState(
+    /** Bảng lệnh cuối của tiến trình — mặc định bảng dùng chung mà phím (`KeyCtlPlan`) đọc. */
+    private val sent: ControlLastSent = ControlLastSent.shared,
+) {
     // ConcurrentHashMap, KHÔNG phải HashMap: gói lệnh (W2) ghi trạng thái từ **thread nền** (xem `macroTile`) trong
     // khi thread chính đang đọc để vẽ ô ⇒ HashMap ở đây là tranh chấp dữ liệu thật. Đổi sang map đồng thời là cách
-    // rẻ nhất và không đổi API.
-    private val on = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    // rẻ nhất và không đổi API. (Bật/tắt + lựa chọn: map đồng thời của [ControlLastSent].)
     private val values = java.util.concurrent.ConcurrentHashMap<String, Int>()
-    private val selIndex = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
-    init { ControlRegistry.ALL.forEach { on[it.id] = it.onByDefault; values[it.id] = it.value } }
+    init { ControlRegistry.ALL.forEach { values[it.id] = it.value } }
 
-    fun isOn(id: String): Boolean = on[id] == true
-    fun setOn(id: String, v: Boolean) { on[id] = v }
+    fun isOn(id: String): Boolean = sent.index(id) > 0
+    fun setOn(id: String, v: Boolean) { sent.record(id, if (v) 1 else 0) }
     fun value(def: ControlDef): Int = values[def.id] ?: def.value
     fun setValue(id: String, v: Int) { values[id] = v }
-    fun sel(id: String): Int = selIndex[id] ?: 0
-    fun setSel(id: String, i: Int) { selIndex[id] = i }
+    fun sel(id: String): Int = sent.index(id)
+    fun setSel(id: String, i: Int) { sent.record(id, i) }
 
     /**
      * ═══ CỬA SỔ ÂN HẠN sau khi NGƯỜI DÙNG vừa bấm (2026-09-17 · đọc realtime) ══════════════════════════════

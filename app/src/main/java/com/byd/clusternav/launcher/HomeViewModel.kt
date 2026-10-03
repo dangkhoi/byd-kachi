@@ -291,6 +291,12 @@ class HomeViewModel(
         repository.setAutostart(on)
     }
 
+    /** 2.87 · R-AH3 — "Tự ẩn nút ⇄" (theo hồ sơ). State + lưu bền trong MỘT lượt, cùng khuôn [setAutostart]. */
+    fun setSlotHeadAutoHide(on: Boolean) {
+        _uiState.update { it.copy(slotHeadAutoHide = on) }
+        repository.setSlotHeadAutoHide(on)
+    }
+
     /**
      * S4 · R6 — **hồ sơ lúc nổ máy**; `null` = *"hồ sơ dùng gần nhất"*. State + lưu bền trong MỘT lượt, cùng khuôn
      * [setAutostart].

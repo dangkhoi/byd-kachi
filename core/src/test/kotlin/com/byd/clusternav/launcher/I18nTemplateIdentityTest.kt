@@ -133,12 +133,10 @@ class I18nTemplateIdentityTest {
                 else old(l, "Bật/tắt $n (đảo)", "Toggle $n")
                 assertEquals(flip, KeyCtlTargets.displayLabel(KeyCtlTarget(id, KeyCtlAction.FLIP), l))
             }
-            val fix = when (def.kind) {
-                ControlKind.COVER -> old(l, "gán Mở / Đóng riêng", "bind Open / Close separately")
-                ControlKind.SELECT -> old(l, "gán từng mức", "bind each level")
-                else -> old(l, "gán Bật / Tắt riêng", "bind On / Off separately")
-            }
-            assertEquals(old(l, "Không đọc được $n — ", "Can't read $n — ") + fix, KeyCtlPlan.unreadableReply(def, l))
+            // 2.87 · R-FL2: câu *"Không đọc được {0} — gán … riêng"* (`KeyCtlPlan.unreadableReply`) đã GỠ cùng ca
+            // `Unreadable` — Đảo/Kế tiếp đọc không được nay lùi về lệnh cuối Kachi đã gửi (`ControlLastSent`), không
+            // còn câu nào để so đồng nhất mẫu; bốn dòng dịch của nó (mỗi tiếng zh/th/ms) gỡ cùng lượt (bài mồ côi
+            // `I18nCoverageTest` canh).
         }
         val spec = "ctl:zzz:on"
         assertEquals(

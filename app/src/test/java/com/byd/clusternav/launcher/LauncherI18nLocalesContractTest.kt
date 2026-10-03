@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource
  *  • hạng plurals — zh/th/ms không chia số (CLDR chỉ có `other`); có `one` ⇒ lint `UnusedQuantity`;
  *  • tham số định dạng — lệch ⇒ `IllegalFormatException` LÚC CHẠY; bản cũ chỉ thấy `%1$s` có vị trí, nay thấy cả
  *    `%s`/`%d` trần (5 khoá `kachi_captest_*` dùng chúng);
- *  • dấu tiếng Việt ngoài `values/` — dán nhầm bản gốc;
+ *  • dấu tiếng Việt ngoài `values/` — dán nhầm bản gốc (trừ câu mẫu để NÓI trong “…”, khai từng câu ở [SPOKEN_VI_QUOTES]);
  *  • chữ viết — zh phải có chữ Hán, th phải có chữ Thái (trừ chuỗi chỉ gồm tên Latin, luật [I18nScripts.nameOnly]);
  *  • Mã Lai trùng nguyên văn tiếng Anh — Mã Lai dùng chữ Latin nên phép kiểm chữ viết mù, đây là lưới thay thế.
  */
@@ -84,12 +84,31 @@ class LauncherI18nLocalesContractTest {
     fun `khong con dau tieng Viet ngoai values`(folder: String) {
         val xx = resOrNull(folder)
         assertTrue(xx != null, "${rel(folder)}: CHƯA CÓ tệp")
-        val bad = xx!!.allTexts().filterValues { I18nScripts.VIETNAMESE_MARK.containsMatchIn(it) }.keys.sorted()
+        // Câu mẫu để NÓI ([SPOKEN_VI_QUOTES]) được miễn — chỉ đúng câu khai, chỉ khi nằm trong “…”; phần còn lại vẫn canh.
+        val bad = xx!!.allTexts().filter { (k, v) -> I18nScripts.VIETNAMESE_MARK.containsMatchIn(withoutSpokenQuotes(k, v)) }
+            .keys.sorted()
         assertEquals(
             emptyList<String>(), bad,
             "${rel(folder)}: câu tiếng Việt còn trong bản dịch ⇒ sai IM LẶNG: chỉ người dùng tiếng này gặp, và người soát " +
                 "bản Việt không có cách nào thấy",
         )
+    }
+
+    /**
+     * Owner 03/10 *"chỗ voice ghi rõ chỉ hỗ trợ tiếng việt"*: câu mẫu để NÓI là câu tiếng Việt ở MỌI tiếng — ASR chỉ
+     * hiểu tiếng Việt (spec R4/R5), nên bản dịch dạy *"go home"* hay *"回家"* là dạy một câu xe không nghe ra. Chạy cả cho
+     * `values/` để danh sách [SPOKEN_VI_QUOTES] không thể rữa khi câu gốc đổi.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = ["values", "values-en", "values-zh-rCN", "values-th", "values-ms"])
+    fun `cau mau de noi la cau tieng Viet o moi tieng`(folder: String) {
+        val xx = resOrNull(folder)
+        assertTrue(xx != null, "${rel(folder)}: CHƯA CÓ tệp")
+        val bad = SPOKEN_VI_QUOTES.flatMap { (key, phrases) ->
+            val v = xx!!.strings[key] ?: return@flatMap listOf("$key: KHÔNG có khoá")
+            phrases.filterNot { "“$it”" in v }.map { "$key thiếu “$it”: «$v»" }
+        }
+        assertEquals(emptyList<String>(), bad, "${rel(folder)}: câu mẫu để NÓI phải là đúng câu tiếng Việt, trong “…”")
     }
 
     @ParameterizedTest(name = "{0}")
@@ -150,11 +169,28 @@ class LauncherI18nLocalesContractTest {
         /** Khoá mà câu Mã Lai được PHÉP trùng nguyên văn câu Anh — mỗi mục một lý do (T3/T4 khai). */
         val MS_SAME_AS_EN: Map<String, String> = emptyMap()
 
+        /**
+         * Khoá được PHÉP mang câu tiếng Việt ngoài `values/` — CHỈ đúng các câu liệt kê, CHỈ trong “…”. Lý do chung: đó
+         * là câu mẫu người dùng phải NÓI, và nhận dạng chỉ hiểu tiếng Việt (spec `kachi-i18n-zh-th-ms.html` R4/R5, owner
+         * 03/10). Không phải miễn trừ cả khoá: “Nói với xe” (nhãn ô dock, phải dịch) trong cùng khoá vẫn bị canh.
+         * Chuỗi viết đúng như trong XML (`&lt;` chưa giải mã).
+         */
+        val SPOKEN_VI_QUOTES: Map<String, List<String>> = mapOf(
+            // ô gõ thử lệnh (VoiceTextConsole) — "gõ đúng như khi nói" ⇒ ví dụ là câu nói
+            "kachi_voice_note" to listOf("bật đèn đọc", "đặt nhiệt độ 22", "đóng hết kính", "xem pin", "mở Cài đặt"),
+            // Cài đặt › Sổ địa chỉ — câu dẫn đường tới địa chỉ đã lưu
+            "kachi_places_note" to listOf("về nhà", "đến công ty", "đi &lt;tên&gt;"),
+        )
+
         /** `%1$s` / `%s` / `%.1f` — KHÔNG nhận cờ dấu cách (`50 % của` không phải tham số). `%%` bị bỏ qua ở [args]. */
         val FORMAT = Regex("""%%|%(?:(\d+)\$)?[-#+0,(]*\d*(?:\.\d+)?([sdfxXc])""")
     }
 
     private fun rel(folder: String) = "src/main/res/$folder/strings_kachi.xml"
+
+    /** [v] bỏ đúng các câu “…” mà [SPOKEN_VI_QUOTES] cho phép ở khoá [key] — mọi chữ khác giữ nguyên để canh. */
+    private fun withoutSpokenQuotes(key: String, v: String): String =
+        SPOKEN_VI_QUOTES[key].orEmpty().fold(v) { acc, p -> acc.replace("“$p”", "“”") }
 
     private fun res(folder: String): Res = parse(SourceRoots.text(rel(folder)))
 

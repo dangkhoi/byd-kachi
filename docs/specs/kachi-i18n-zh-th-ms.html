@@ -52,7 +52,7 @@ ul{padding-left:22px}li{margin:3px 0}
 <p>Kachi đã có đa ngôn ngữ VI/EN (spec <code>kachi-i18n-and-light-theme.html</code>, U5) theo <b>hai đường</b>: tệp tài nguyên Android (<code>strings_kachi.xml</code>) và cặp Việt/Anh nằm trong mã (<code>Strings.t</code>/<code>pick</code> ở <code>:core</code>, <code>Lang.t</code> ở <code>:app</code>, <code>labelEn</code> của registry). Mọi chỗ rẽ nhánh đều chỉ có hai nhánh.</p>
 <table>
 <tr><th>Kiểm kê [ĐO 2026-10-03]</th><th>Số</th><th>Nguồn</th></tr>
-<tr><td>Tài nguyên <code>strings_kachi.xml</code></td><td>710 chuỗi + 5 plurals (VI = EN)</td><td><code>app/src/main/res/values{,-en}/</code></td></tr>
+<tr><td>Tài nguyên <code>strings_kachi.xml</code></td><td>710 chuỗi + 5 plurals (VI = EN) lúc kiểm kê; <b>711</b> sau T1b (+ <code>kachi_voice_lang_only</code>) ⇒ mỗi tiếng <b>721 khoá</b> = 711 chuỗi + 5 plurals + 5 khoá <code>strings.xml</code> [ĐO 2026-10-03]</td><td><code>app/src/main/res/values{,-en}/</code></td></tr>
 <tr><td><code>strings.xml</code> (niêm phong sha)</td><td>24 khoá VI · 5 khoá EN (5 khoá còn sống)</td><td><code>ExpansionTransportFenceFixtures.kt:475</code></td></tr>
 <tr><td>Lời gọi dịch trong mã</td><td>307 / 53 tệp: 216 cặp chữ thuần · 72 có biến <code>$x</code> · 22 đối số không phải chữ</td><td>app 87 · core 220</td></tr>
 <tr><td>Nhãn registry (Localized)</td><td>16 lớp hiện thực, 246 nhãn + shortEn/subEn/argsEn/desc</td><td><code>LangCoverageFixtures.kt:29-33</code></td></tr>
@@ -130,7 +130,7 @@ ul{padding-left:22px}li{margin:3px 0}
 
 <h3>4.3 Tài nguyên Android</h3>
 <ul>
-<li>Thư mục <code>values-zh-rCN</code> (locale <code>Locale.SIMPLIFIED_CHINESE</code>), <code>values-th</code> (<code>Locale("th")</code>, không quốc gia), <code>values-ms</code> (<code>Locale("ms")</code>). Mỗi thư mục: <code>strings_kachi.xml</code> đủ 710 khoá + 5 plurals chỉ hạng <code>other</code>; <code>strings.xml</code> mới chỉ 5 khoá còn sống (tệp niêm phong không đụng).</li>
+<li>Thư mục <code>values-zh-rCN</code> (locale <code>Locale.SIMPLIFIED_CHINESE</code>), <code>values-th</code> (<code>Locale("th")</code>, không quốc gia), <code>values-ms</code> (<code>Locale("ms")</code>). Mỗi thư mục: <code>strings_kachi.xml</code> đủ 711 khoá + 5 plurals chỉ hạng <code>other</code>; <code>strings.xml</code> mới chỉ 5 khoá còn sống (tệp niêm phong không đụng).</li>
 <li><code>LauncherI18nContractTest</code> lặp cả 5 tệp: cùng tập khoá, cùng tham số định dạng (kể cả <code>%s</code> trần), plurals đúng hạng, không dấu tiếng Việt ngoài <code>values/</code>, kiểm chữ viết (Hán/Thái), Mã Lai không trùng nguyên văn tiếng Anh trừ danh sách cho phép (HUD, ECO, km/h, tên app…).</li>
 </ul>
 
@@ -194,6 +194,48 @@ ul{padding-left:22px}li{margin:3px 0}
 <ul>
 <li><b>2026-10-03 · quyết định</b> — khoá bảng dịch theo cặp (vi, en) thay vì chỉ en (đề xuất ban đầu): kiểm kê thấy từ đồng hình và 41 mảnh câu; cặp có sẵn ở mọi call site.</li>
 <li><b>2026-10-03 · quyết định</b> — dịch cả chuỗi giọng nói vào bảng (dù đường nói chỉ dùng VI/EN) để bài canh không cần danh sách loại trừ theo thư mục; cột "Kachi làm gì" cần chúng.</li>
+</ul>
+
+<h3>T1a — cơ chế <code>:core</code></h3>
+<ul>
+<li><b>2026-10-03 · quyết định</b> — <code>Lang</code> 5 tiếng (<code>code</code> = tên bảng); <code>LangMode</code> + ZH/TH/MS, AUTO giữ <code>vi→VI, còn lại→EN</code> (OQ1). <code>Strings.t/pick</code>: VI→vi, EN→en, ZH/TH/MS→bảng (cặp → chỉ-en → en). <code>Strings.f/fIn</code> thay <code>{0}..{9}</code> một lượt. <code>I18nCatalog</code> nạp lười một lần/tiếng, <code>parse</code> không ném (dòng hỏng/trùng vào danh sách lỗi).</li>
+<li><b>2026-10-03 · quyết định</b> — câu có <code>$</code> → <code>Strings.f</code> (VI/EN y byte — <code>I18nTemplateIdentityTest</code> 7 bài dựng câu theo mã cũ rồi so). Hai mẫu dùng chỉ số khác nhau ở VI/EN (<code>VoiceFeatureGone</code>, câu hỏi chọn của <code>VoiceClarify</code>) ⇒ bài phủ so tập <code>{n}</code> với bản ANH.</li>
+<li><b>2026-10-03 · bài canh</b> — <code>I18nCallScanner</code> (testFixtures, lexer có trạng thái) · <code>I18nSourceGuardTest</code> (6) · <code>I18nPairs</code> (quét nguồn + duyệt registry lúc chạy) · <code>I18nCoverageTest</code> (7 phép soát + 1 bài thử-phá). Trần nhãn ngắn zh6/th14/ms14; viết tắt góc lốp zh3/th6/ms4 [SUY — chưa đo màn].</li>
+<li><b>2026-10-03 · lỗi tìm thấy</b> — [ĐO mã] <code>WorkspacePrefsLang.kt:71</code> <code>Choice.entries.first{…}</code> ném <code>NoSuchElementException</code> khi chọn zh/th/ms (mỗi lần đổi tiếng + đổi hồ sơ) — T1b sửa.</li>
+</ul>
+
+<h3>T1b — nối dây <code>:app</code> + bài canh tài nguyên</h3>
+<ul>
+<li><b>2026-10-03 · sửa P0</b> — <code>Lang.Choice</code> + ZH/TH/MS; <code>Choice.of(code)</code> tổng (lạ ⇒ AUTO); <code>broadcastLang</code> dùng <code>choiceFor(mode)</code>. Bài canh: ánh xạ LangMode→Choice tổng và khớp mã, cấm <code>first {}</code>.</li>
+<li><b>2026-10-03 · quyết định</b> — <code>LangHost</code>: <code>localeOf</code> vét cạn (TH = <code>Locale("th")</code> không quốc gia), <code>localized(base[, lang])</code> không ghi <code>Strings.current</code>; 4 màn phụ bọc <code>localized</code> (R9); <code>datePattern()</code> ZH <code>"M月d日 EEEE"</code>. 24 lời gọi <code>Lang.t("…$x…")</code> / 8 tệp → <code>Lang.f</code>.</li>
+<li><b>2026-10-03 · lệch có chủ ý</b> — <code>pmReason</code>/<code>channelRemedy</code> bỏ cờ <code>vi</code> (trả cặp <code>Lang.t</code>); giờ kết quả chuyến VI/EN đổi từ giờ-kiểu-máy sang <code>HH:mm</code> (R7); <code>Pm25GaugeView</code> EN nay "Good" (trước vẽ "Tốt" ở mọi tiếng).</li>
+<li><b>2026-10-03 · giao diện</b> — <code>ChipFlowLayout</code> (bộ chọn 6 mục xuống hàng, chỉ hàng ngôn ngữ dùng); <code>ellipsize END</code> 4 chỗ (R8). Khoá mới <code>kachi_voice_lang_only</code>; <code>kachi_lang_note</code>, <code>kachi_voice_cmds_sub</code> viết lại. [CHƯA BIẾT] ảnh máy ảo — T6.</li>
+<li><b>2026-10-03 · bài canh</b> — <code>LauncherI18nLocalesContractTest</code>: 5 thư mục × (tập khoá · hạng plurals · tham số kể cả <code>%s</code> trần · không dấu Việt · chữ Hán/Thái · Mã Lai ≠ EN · <code>strings.xml</code> ⊆ gốc).</li>
+</ul>
+
+<h3>T2 — giọng nói chỉ hiểu tiếng Việt</h3>
+<ul>
+<li><b>2026-10-03 · quyết định</b> — <code>VoiceReply</code> tách bằng UỶ QUYỀN (498 → 450 dòng: <code>VoiceReplyPreview</code>, <code>VoiceReplyUnknown</code>); mọi hàm dựng câu nhận <code>lang</code>, đường NÓI truyền <code>voiceLangOf(…)</code>; <code>VoiceWiring.dispatcher(lang)</code> không mặc định. <code>:wake</code>: <code>VoiceGrammarSnapshot.uiLang</code> (dòng <code>lang⇥&lt;code&gt;</code> cuối tệp, tiến trình chính ghi qua <code>LangHost.resolved</code>, cả lúc <code>setLangMode</code>). TTS + geocoder qua <code>LangHost.voiceLocale(lang)</code>.</li>
+<li><b>2026-10-03 · thay đổi EN có chủ ý</b> — danh sách câu lệnh: cột câu nói tiếng Việt ở mọi tiếng (OQ3); NO_VERB dạy câu tiếng Việt (mẫu <code>{0}</code>, ví dụ là đối số); người dùng EN qua <code>:wake</code> nay nghe tiếng Anh [SUY — chưa chạy trên xe]. Mọi câu khác VI/EN y byte [ĐO <code>VoiceSpokenLangTest</code>, <code>VoiceDispatcherLangTest</code>].</li>
+<li><b>2026-10-03 · test</b> — mới: <code>VoiceSpokenLangTest</code> 5 · <code>VoiceGrammarSnapshotLangTest</code> 4 · <code>VoiceDispatcherLangTest</code> 3 · <code>VoiceLangWiringContractTest</code> 7 (+1 <code>VoiceCommandCatalogTest</code>, +1 <code>LangHostTest</code>). Thử-phá [ĐO]: bỏ <code>lang</code> ở <code>VoiceReplyPreview.by</code> ⇒ 2/5 đỏ.</li>
+</ul>
+
+<h3>T4 — ráp bản dịch + kiểm toàn bộ</h3>
+<ul>
+<li><b>2026-10-03 · ráp</b> — <code>values-zh-rCN/-th/-ms</code>: mỗi thư mục <code>strings_kachi.xml</code> 711 chuỗi + 5 plurals (<code>other</code>) + <code>strings.xml</code> 5 khoá; 0 khoá thiếu/thừa. Bảng cặp 747 dòng/tiếng (T4 tự dịch 2 cặp T2 sinh thêm). <code>I18nScripts.NAME_WORDS</code> + <code>Hey</code>, <code>dp</code>, <code>px</code>. T4 sửa 16 chỗ bản dịch (R4 + nhất quán tên đang hiện trên màn).</li>
+<li><b>2026-10-03 · kết quả</b> [ĐO, đếm XML] — <code>clean assembleRelease lint</code>: 0 lỗi lint, 548 cảnh báo; bảng <code>i18n/*.tsv</code> vào APK y byte (2.86 / 187, chưa bump). Toàn bộ test 5 module: <b>5699 tests, 0 đỏ</b> (app 1823 · core 3675 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99). Thử-phá: xoá một dòng zh ⇒ đỏ; thêm khoá thừa vào values-th ⇒ đỏ.</li>
+<li><b>2026-10-03 · việc mở</b> — 64 chỗ lệch thuật ngữ bảng cặp ↔ tài nguyên (zh 34 · th 14 · ms 16) cho T5; ảnh máy ảo + <code>voice-e2e.sh</code> cho T6 [CHƯA BIẾT].</li>
+</ul>
+
+<h3>P2 — sửa sau T4 (owner 03/10: <i>"chỗ voice ghi rõ chỉ hỗ trợ tiếng việt"</i>)</h3>
+<ul>
+<li><b>2026-10-03 · thay đổi EN có chủ ý</b> — câu mẫu để NÓI là câu tiếng Việt ở cả 5 tiếng: <code>kachi_voice_note</code> (ví dụ “bật đèn đọc”…), <code>kachi_places_note</code> (“về nhà”, “đến công ty”, “đi &lt;tên&gt;”, kèm nghĩa trong ngoặc); câu bao quanh theo tiếng màn. Bài canh: <code>SPOKEN_VI_QUOTES</code> — miễn dấu Việt CHỈ cho đúng các câu khai, CHỈ trong “…” (“Nói với xe” chưa dịch vẫn đỏ) + bài mới mọi thư mục phải mang đúng các câu ấy. [ĐO] <code>VoiceTextConsole</code> không còn chỗ dựng nào từ 2026-09-21 (<code>DevSurfaceGateContractTest</code>) ⇒ <code>kachi_voice_note</code> hiện không hiện trên màn; chỗ R4 "ô gõ thử lệnh" chỉ có trong mã.</li>
+<li><b>2026-10-03 · thay đổi EN có chủ ý</b> — <code>VoiceClarify.giveUp</code> → mẫu <code>Strings.fIn("Vẫn chưa rõ — thử nói \"{0}\"", "Still not sure — try saying \"{0}\" in Vietnamese", GIVE_UP_EXAMPLE)</code>; VI y byte; 3 dòng bảng thay khoá. <code>kachi_voice_cmds_sub</code> rút gọn ở 5 tiếng (VI/EN đổi có chủ ý): câu "chỉ tiếng Việt" nay chỉ còn ở <code>kachi_voice_lang_only</code> đặt ngay trên.</li>
+<li><b>2026-10-03 · R9 <code>:wake</code></b> — tấm chữ phiên <code>:wake</code> (gợi ý trạng thái, nút Đồng ý/Mở Cài đặt) theo tiếng người dùng: <code>VoiceWakeUiContext</code> (<code>ContextWrapper</code> trên <code>applicationContext</code>, CHỈ đè <code>getResources()</code>, locale qua <code>LangHost.localized</code>, tiếng từ <code>uiLang</code> của ảnh chụp); phiên dùng lại được làm mới ở <code>VoiceWakeSessions.mark</code>. Dispatcher vẫn <code>ctx = app</code>. Bài canh <code>VoiceWakeUiLangContractTest</code> (5). [CHƯA BIẾT] hành vi trên DL3/DL5 — chưa chạy máy ảo/xe.</li>
+<li><b>2026-10-03 · sửa chip</b> — <code>TopStripChips.chipValue</code> lấy <code>TelemetryView.level</code> thay phép bóc <code>"Mức "/"Level "</code> khỏi chuỗi đã dịch (zh <code>"{0}挡"</code> là hậu tố). [ĐO] cả 4 datum mức có <code>maxLevel = 2</code> ⇒ nhánh <code>!hasLevel</code> hôm nay không gặp datum mức: lỗi tiềm ẩn, chưa từng hiện. VI/EN y byte (test so với phép cũ). Cặp mảnh <code>"Mức "/"Level "</code> bỏ khỏi 3 bảng ⇒ bảng cặp <b>746</b>.</li>
+<li><b>2026-10-03 · lỗi công cụ</b> — công cụ Edit cắt dấu TAB cuối <code>new_string</code> ⇒ 3 dòng <code>non⇥low⇥…</code> mất ô; <code>I18nCatalogTest</code> + <code>I18nCoverageTest</code> bắt ngay, sửa bằng script. Bài học: sửa TSV bằng script, không bằng Edit khi chuỗi kết thúc bằng khoảng trắng.</li>
+<li><b>2026-10-03 · thử-phá</b> [ĐO] — trả phép bóc tiền tố cũ ⇒ <code>TopStripChipLevelLangTest</code> đỏ ở ZH (<code>«1挡»</code>); EN “về nhà” → “go home” ⇒ đỏ; “Talk to car” → “Nói với xe” ⇒ đỏ (miễn trừ không phải cả khoá); phiên <code>:wake</code> về <code>ctx = app</code> ⇒ đỏ. Đã trả lại.</li>
+<li><b>2026-10-03 · kết quả</b> [ĐO, đếm XML, chạy TẬP TRUNG vì người soát dịch sửa song song] — <code>:core</code> 20 lớp · <b>189 tests, 0 đỏ</b> (I18n* · TopStrip* · VoiceClarify* · VoiceCommandCatalog* · VoiceSpokenLang* · VoiceGrammarSnapshot* · LangCoverage* · VoiceReply* · VoiceConversationGolden*); <code>:app</code> 25 lớp · <b>225 tests, 0 đỏ</b> (LauncherI18n* · LauncherLocale* · VoiceWake* · VoiceLang* · VoiceClarify* · VoiceFastNatural* · VoiceCommand* · LangHost* · …). Test mới: <code>TopStripChipLevelLangTest</code> 3 · <code>VoiceWakeUiLangContractTest</code> 5 · <code>VoiceClarifyTest</code> +1 · <code>LauncherI18nLocalesContractTest</code> +5 (một bài × 5 thư mục). Bộ đầy đủ: điều phối chạy sau.</li>
 </ul>
 
 <h2>10. Reviewer Log</h2>

@@ -33,7 +33,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  - **Khối thanh nút** ([grid] = `false`): một hàng icon dọc theo TRỤC của thanh ([vertical]); bề dài =
  *    [shortcutStripLength] (mỗi app một khe `KachiBars.SHORTCUT_CELL`, icon `SHORTCUT_ICON`). Không tự cuộn —
  *    tràn thì khung cuộn sẵn có của thanh (`DockAreaLayout.scrollWrap`) cuộn.
- *  - **Widget `w_apps`** ([grid] = `true`): lưới ≤ [ShortcutStrip.GRID_MAX_COLS] cột, khe ≥ [Sp.TOUCH] (đích chạm ≥ 48 dp).
+ *  - **Widget `w_apps`** ([grid] = `true`, cả ô to lẫn ô nén): R-SI1 (2.87) — icon đặt bởi [ShortcutGridLayout] theo
+ *    `ShortcutGridFit` (`:core`): cùng cỡ, cỡ lớn nhất vừa khung THẬT, khe đều mỗi trục, hàng cuối căn giữa. Icon app
+ *    đã gỡ (hình chung) được nạp lại đúng cỡ khớp khi cỡ đổi ([fitIcons]).
  *
  * Mỗi icon: `contentDescription` = tên app. Mờ khi (a) app đã gỡ, hoặc (b) kiểu cần kênh (*Ô n* · *Chạy ngầm*) mà kênh
  * điều khiển cửa sổ không dùng được ([ShellAccessUi.usableNow]) — tự sáng lại khi kênh lên. Ba bên nghe (danh sách ·
@@ -53,12 +55,18 @@ internal class ShortcutIconsView @JvmOverloads constructor(
 
     private class Cell(val sc: AppShortcut, val view: ImageView) {
         var installed = true
+
+        /** Ô đang vẽ HÌNH CHUNG (app đã gỡ) — hình này nạp theo cỡ dp nên phải nạp lại khi lưới đổi cỡ icon. */
+        var generic = false
     }
 
     private val cells = ArrayList<Cell>()
 
     /** Lượt dựng — icon bung xong của lượt CŨ không được gắn vào ô của lượt mới. */
     private var generation = 0
+
+    /** Cỡ icon (dp) lưới vừa khớp theo khung thật (R-SI1); 0 = chưa khớp lượt này ⇒ dùng [baseIconDp]. */
+    private var fittedDp = 0
 
     private val onList: () -> Unit = { MAIN.post { if (isAttachedToWindow) rebuild() } }
 
@@ -93,6 +101,7 @@ internal class ShortcutIconsView @JvmOverloads constructor(
     /** Dựng lại toàn bộ theo danh sách hiện tại (≤ 8 ô — rẻ; đổi danh sách là chuyện hiếm). */
     private fun rebuild() {
         generation++
+        fittedDp = 0
         removeAllViews()
         cells.clear()
         val items = ShortcutHub.items()
@@ -113,23 +122,42 @@ internal class ShortcutIconsView @JvmOverloads constructor(
         paintDim()
     }
 
+    /**
+     * R-SI1 — lưới widget (ô to + ô nén): MỘT [ShortcutGridLayout] lấp khung, đặt icon theo `ShortcutGridFit`. Báo cỡ
+     * của lượt CŨ (khung đã tháo) bị bỏ qua nhờ [generation].
+     */
     private fun buildGrid(items: List<AppShortcut>) {
-        items.chunked(ShortcutStrip.gridCols(items.size)).forEach { row ->
-            addView(LinearLayout(context).apply {
-                orientation = HORIZONTAL; gravity = Gravity.CENTER
-                row.forEach { addView(cell(it), cellLp()) }
-            }, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        }
+        val gen = generation
+        val box = ShortcutGridLayout(context) { px -> if (gen == generation) fitIcons(px) }
+        items.forEach { box.addView(cell(it)) }
+        addView(box, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-    private fun cellPx(): Int = if (grid && !compact) dpi(context, Bars.SHORTCUT_GRID_CELL) else dpi(context, Bars.SHORTCUT_CELL)
-    private fun iconSizeDp(): Int = if (grid && !compact) Bars.SHORTCUT_GRID_ICON else Bars.SHORTCUT_ICON
+    /** Lưới vừa khớp cỡ icon [iconPx] ⇒ hình chung (app đã gỡ) nạp lại đúng biến thể/tint của cỡ đó. */
+    private fun fitIcons(iconPx: Int) {
+        val dp = (iconPx / resources.displayMetrics.density).toInt()
+        if (dp <= 0 || dp == fittedDp) return
+        fittedDp = dp
+        cells.forEach { if (it.generic) genericIcon(it.view) }
+    }
+
+    /** Khe cố định — CHỈ khối thanh nút; lưới widget không có khe cố định (R-SI1). */
+    private fun cellPx(): Int = dpi(context, Bars.SHORTCUT_CELL)
+
+    /** Cỡ icon gốc: thanh nút + ô nén = [Bars.SHORTCUT_ICON], ô to = [Bars.SHORTCUT_GRID_ICON] (ô rỗng · trước lượt đo). */
+    private fun baseIconDp(): Int = if (grid && !compact) Bars.SHORTCUT_GRID_ICON else Bars.SHORTCUT_ICON
+
+    /** Cỡ icon đang vẽ: lưới đã khớp ⇒ cỡ khớp; khối thanh nút không bao giờ khớp ⇒ luôn [baseIconDp]. */
+    private fun iconSizeDp(): Int = if (fittedDp > 0) fittedDp else baseIconDp()
 
     private fun cellLp() = LayoutParams(cellPx(), cellPx())
 
     private fun cell(sc: AppShortcut): ImageView = ImageView(context).apply {
-        val pad = (cellPx() - dpi(context, iconSizeDp())) / 2
-        setPadding(pad, pad, pad, pad)
+        // Lưới: lề do ShortcutGridLayout đặt theo phép khớp (nửa khe) — khe cố định chỉ còn ở khối thanh nút.
+        if (!grid) {
+            val pad = (cellPx() - dpi(context, iconSizeDp())) / 2
+            setPadding(pad, pad, pad, pad)
+        }
         scaleType = ImageView.ScaleType.FIT_CENTER
         contentDescription = sc.pkg                 // tên app thay vào khi bung xong (luồng nền)
         isClickable = true
@@ -170,6 +198,7 @@ internal class ShortcutIconsView @JvmOverloads constructor(
                 MAIN.post {
                     if (gen != generation) return@post
                     cell.installed = icon != null || label != null
+                    cell.generic = icon == null
                     // [ĐO máy ảo 02/10 m8] app đã gỡ không có icon ⇒ ô TRỐNG, "mờ" không nhìn ra được — vẽ hình app chung
                     // (cùng hình ô "chưa có lối tắt") để R1.2 "icon mờ" có thứ để mờ.
                     if (icon != null) cell.view.setImageDrawable(icon) else genericIcon(cell.view)

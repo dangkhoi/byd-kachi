@@ -58,6 +58,8 @@ class HomePanels(
     private val onColorChoice: (ColorChoice) -> Unit,
     private val onLangMode: (LangMode) -> Unit,
     private val onAutostart: (Boolean) -> Unit,
+    /** 2.87 · R-AH3 — "Tự ẩn nút ⇄"; chuyển thẳng xuống [SettingsDeps.onSlotHeadAutoHide]. */
+    private val onSlotHeadAutoHide: (Boolean) -> Unit,
     private val onSwitchProfile: (String) -> Unit,
     /**
      * S4 · R8 — tạo hồ sơ mới là **bản sao** của hồ sơ đang dùng. Nối ở `KachiHomeWiring.homePanels(...)` →
@@ -186,6 +188,7 @@ class HomePanels(
             onColorChoice = { c -> onColorChoice(c) },
             onLangMode = { m -> onLangMode(m) },
             onAutostart = { on -> onAutostart(on) },
+            onSlotHeadAutoHide = { on -> onSlotHeadAutoHide(on) },
             onSwitchProfile = { name -> onSwitchProfile(name) },
             // S4 · R8 — "thêm hồ sơ" nay là NHÂN BẢN hồ sơ đang dùng; hộp thoại hỏi tên nằm trong màn Cài đặt
             // (`SettingsDialogs.askName`), lớp này chỉ nối hai đầu dây.

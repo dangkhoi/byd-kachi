@@ -64,6 +64,9 @@ object ProfileScope {
             // F1 (owner 01/10, spec shortcuts-autostart R1.1) — LỐI TẮT ỨNG DỤNG: app nào hiện trên khối thanh nút +
             // widget `w_apps`, mỗi app một kiểu mở. Cùng họ `dock_enabled`: *"thanh này bày gì"*, đi theo hồ sơ (S4).
             "app_shortcuts",
+            // 2.87 · R-AH3 (owner 03/10) — nút ⇄ của khung tự ẩn hay luôn hiện: một lựa chọn về KHUNG như `top_strip_labels`.
+            // ⚠ KHÔNG đặt tên `slot_…`: `slot_` là HỌ khoá nội dung ô ([PROFILE_KEY_PREFIXES], [SettingsCatalog.SLOT_KEY_PREFIX]).
+            "swap_button_autohide",
         )
 
     /**

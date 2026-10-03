@@ -108,6 +108,8 @@
     <string name="kachi_sec_color">Colours</string>
     <string name="kachi_row_accent">Accent colour</string>
     <string name="kachi_row_tone">Card tone</string>
+    <string name="kachi_row_bg_opacity">Background transparency</string>
+    <string name="kachi_bg_opacity_note">One level for the backgrounds of the status bar, the car button bar and widgets — 0% looks as before, the higher the number, the more see-through. Text and icons never fade: wherever what is behind would make text hard to read (e.g. a bright wallpaper), bars and cards keep the opacity they need. Close Settings to see the result.</string>
     <string name="kachi_sec_car_image">Car image</string>
     <string name="kachi_car_image_current">In use: %1$s</string>
     <string name="kachi_car_image_title">Car image</string>
@@ -269,6 +271,8 @@
     <!-- ── WorkspaceView — nút ⇄ của ô (FIX286 · ES4: mô tả trợ năng; ô trống trong suốt nên đây là chữ duy nhất nói "chỗ đặt app") ── -->
     <string name="kachi_slot_swap_empty">Choose an app for slot %1$d</string>
     <string name="kachi_slot_swap">Change slot %1$d</string>
+    <string name="kachi_slot_head_autohide_title">Auto-hide the ⇄ button</string>
+    <string name="kachi_slot_head_autohide_sub">The app/widget switch on each frame hides for a cleaner screen; tap a frame (or any empty spot) to show it for a few seconds</string>
 
     <!-- ── T4 · Widget của app khác (AppWidget bên thứ ba) ── -->
     <string name="kachi_drawer_section_appwidgets">Widgets from other apps</string>
@@ -329,7 +333,7 @@
 
     <!-- ── Sổ địa chỉ (SettingsPlacesSection) — docs/specs/kachi-voice-addresses.html ── -->
     <string name="kachi_sec_places">Address book</string>
-    <string name="kachi_places_note">Save home, work… then say “go home”, “to the office”, “go to &lt;name&gt;”. The book follows the active profile.</string>
+    <string name="kachi_places_note">Save home, work… then say, in Vietnamese, “về nhà” (go home), “đến công ty” (to the office) or “đi &lt;tên&gt;” (go to &lt;name&gt;). The book follows the active profile.</string>
     <string name="kachi_places_empty">No address saved yet.</string>
     <string name="kachi_places_add">Add an address…</string>
     <string name="kachi_places_edit">Edit address</string>
@@ -650,11 +654,11 @@
     </plurals>
 
     <!-- ══ V1 · text command trial (docs/specs/kachi-voice-command.html R6) ══════════════════════════ -->
-    <string name="kachi_voice_note">Type a sentence exactly as you would say it, to see what the parser understands — e.g. “turn on reading light”, “set temperature 22”, “close all”, “show battery”, “open Settings”. To actually speak, use the “Talk to car” tile on the control bar or the mic button on the top bar.</string>
+    <string name="kachi_voice_note">Type a sentence exactly as you would say it in Vietnamese, to see what the parser understands — e.g. “bật đèn đọc”, “đặt nhiệt độ 22”, “đóng hết kính”, “xem pin”, “mở Cài đặt”. To actually speak, use the “Talk to car” tile on the control bar or the mic button on the top bar.</string>
 
     <!-- ══ 2.74 · R3 — list of SPOKEN COMMANDS at the end of the Voice group ════════════════════════════ -->
     <string name="kachi_voice_cmds_section">Spoken commands</string>
-    <string name="kachi_voice_cmds_sub">This list is generated from the grammar Kachi itself uses, so it always matches what the car understands. Tap a group to see the phrases. They are in Vietnamese, the only language Kachi understands, so say them exactly as shown.</string>
+    <string name="kachi_voice_cmds_sub">This list is generated from the grammar Kachi itself uses, so it always matches what the car understands. Tap a group to see the phrases.</string>
     <!-- kachi-i18n-zh-th-ms R4: speech recognition is Vietnamese only (one zipformer-vi ASR pack), in EVERY UI language. -->
     <string name="kachi_voice_lang_only">Voice commands work in Vietnamese only — say the Vietnamese phrases exactly as listed.</string>
     <plurals name="kachi_voice_cmds_count">

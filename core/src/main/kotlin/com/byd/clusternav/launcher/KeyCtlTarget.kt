@@ -18,20 +18,29 @@ package com.byd.clusternav.launcher
  * [actionsFor] suy hành động từ [ControlDef.kind] + dữ liệu của chính dòng nút: thêm một nút vào registry ⇒ nút đó tự
  * có đích phím, không ai phải nhớ sửa tệp này (`KeyCtlTargetTest` canh). Luật suy là DỮ LIỆU (CLAUDE.md §7), không
  * một `if (id == …)` nào:
- *  - [ControlKind.TOGGLE] ⇒ Bật · Tắt · (Đảo — chỉ khi nút CÓ đường đọc [ControlDef.readKey]);
+ *  - [ControlKind.TOGGLE] ⇒ Bật · Tắt · Đảo;
  *  - [ControlKind.STEP] ⇒ +1 · −1 nấc (kẹp/AUTO theo [ClimateAuto] ở tầng thi hành, cùng đường cú chạm −/+);
- *  - [ControlKind.COVER] ⇒ Mở · Đóng · từng mức thêm trong [ControlDef.args] (rèm: Nửa) · (Đảo — chỉ khi có readKey);
- *  - [ControlKind.SELECT] ⇒ (Kế tiếp — chỉ khi có readKey) · từng lựa chọn trong [ControlDef.args];
+ *  - [ControlKind.COVER] ⇒ Mở · Đóng · từng mức thêm trong [ControlDef.args] (rèm: Nửa) · Đảo;
+ *  - [ControlKind.SELECT] ⇒ Kế tiếp (khi có ≥ 2 lựa chọn — vòng như cú chạm ô) · từng lựa chọn trong [ControlDef.args];
  *  - [ControlKind.BUTTON] ⇒ Bấm.
  *
- * ## Vì sao Đảo / Kế tiếp đòi đường ĐỌC (CLAUDE.md §5 — quyết bằng sự thật, không cờ RAM)
- * Hai hành động này cần biết xe ĐANG ở đâu. Cờ lạc quan của ô ([ControlTileState]) chỉ đổi khi chính Kachi bấm —
- * người lái kéo kính bằng công tắc cửa thì cờ ấy sai, và một phím "đảo" dựa trên nó sẽ ĐÓNG cái kính đang đóng. Nút
- * không có readKey ⇒ không sinh hai hành động này (lúc chạy, đọc hỏng ⇒ [KeyCtlPlan] trả `Unreadable`, báo, không bắn).
- * ⚠ **Cốp** (`trunk`): [ĐO mã] readKey RỖNG — `tailgate_status` (`getHatchDoorStatus`) đã gỡ 25/09 vì rỗng mọi arg
- * trên xe owner ([TelemetryRegistry] cụm A1) ⇒ cốp chỉ có Mở · Đóng riêng, **chưa có Đảo** ([CHƯA BIẾT] đường đọc —
- * ứng viên `getDoorState(6)` = `BODYWORK_CMD_DOOR_LUGGAGE_DOOR`, chưa đo). Ngày có datum cốp đo được trên xe, khai
- * readKey cho `trunk` là Đảo tự xuất hiện — không sửa tệp này.
+ * ## Đảo / Kế tiếp cho MỌI nút đảo được — luật 2.87 (R-FL1, owner 03/10 *"cái nào đảo đc phải làm đảo hết nhé, chứ hao
+ * phím lắm"*)
+ * Tới 2.86 hai hành động này chỉ sinh khi nút có đường ĐỌC [ControlDef.readKey] (*"quyết bằng sự thật, không cờ RAM"*)
+ * ⇒ cốp — readKey RỖNG từ 25/09 vì `getHatchDoorStatus` rỗng mọi arg trên xe owner — phải tốn HAI phím Mở + Đóng,
+ * trong khi chính ô cốp trên màn đảo được bằng một cú chạm. Từ 2.87 luật sinh đích KHÔNG còn hỏi readKey; nguồn trạng
+ * thái được quyết lúc CHẠY ở [KeyCtlPlan]:
+ *  1. nút có readKey **và** đọc ra số hợp lệ ⇒ quyết bằng XE (y như 2.86);
+ *  2. còn lại (không readKey · HAL hỏng · máy ảo) ⇒ quyết bằng **lệnh cuối Kachi đã gửi** ([ControlLastSent] — CÙNG
+ *     bảng mà ô trên màn đọc/ghi, nên mở bằng ô rồi bấm phím Đảo là ĐÓNG);
+ * rồi giải ra hành động CỤ THỂ (Bật/Tắt · Mở/Đóng · mức n) TRƯỚC khi thi hành ⇒ mọi cổng an toàn áp lên hành động đã
+ * giải (MỞ cốp chỉ khi đứng yên — `CtlSafetyPolicy`).
+ *
+ * ## Giới hạn (owner chấp nhận — spec §4.3)
+ * Nút đổi bằng đường khác (chìa, công tắc cửa, app BYD) mà KHÔNG đọc được ⇒ bảng lệnh cuối không biết ⇒ lần Đảo đầu có
+ * thể trùng trạng thái (không tác dụng), bấm lại là được. Trạng thái giả định khi tiến trình bật = tắt/đóng (BYD giết
+ * Kachi mỗi lần tắt máy) — chi tiết + giới hạn cấp tiến trình (`:wake`) ở KDoc [ControlLastSent]. Đích Mở / Đóng · Bật /
+ * Tắt riêng VẪN còn cho ai muốn chắc chắn một chiều; mã đích đã lưu ≤ 2.86 đọc lên nguyên vẹn (cú pháp không đổi).
  */
 enum class KeyCtlAction(val token: String) {
     ON("on"), OFF("off"), FLIP("flip"),
@@ -110,19 +119,19 @@ object KeyCtlTargets {
     /** Hành động của MỘT nút — luật ở KDoc tệp. Thứ tự = thứ tự hiện trong hộp chọn. */
     fun actionsFor(def: ControlDef): List<KeyCtlTarget> {
         val id = def.id
-        val readable = def.readKey.isNotBlank()
         fun t(a: KeyCtlAction, n: Int = 0) = KeyCtlTarget(id, a, n)
         return when (def.kind) {
-            ControlKind.TOGGLE -> listOfNotNull(t(KeyCtlAction.ON), t(KeyCtlAction.OFF), t(KeyCtlAction.FLIP).takeIf { readable })
+            ControlKind.TOGGLE -> listOf(t(KeyCtlAction.ON), t(KeyCtlAction.OFF), t(KeyCtlAction.FLIP))
             ControlKind.STEP -> listOf(t(KeyCtlAction.UP), t(KeyCtlAction.DOWN))
             ControlKind.COVER -> buildList {
                 add(t(KeyCtlAction.OPEN)); add(t(KeyCtlAction.CLOSE))
                 // Mức thêm (≥ 2) đọc từ chính `args` — cùng số mức mà ô COVER bấm vòng (`ControlTileFactory.tileCover`).
                 for (n in 2 until def.args.size) add(t(KeyCtlAction.SET, n))
-                if (readable) add(t(KeyCtlAction.FLIP))
+                add(t(KeyCtlAction.FLIP))
             }
             ControlKind.SELECT -> buildList {
-                if (readable && def.args.size >= 2) add(t(KeyCtlAction.NEXT))
+                // < 2 lựa chọn thì "kế tiếp" là chính nó — không sinh một đích vô nghĩa.
+                if (def.args.size >= 2) add(t(KeyCtlAction.NEXT))
                 def.args.indices.forEach { add(t(KeyCtlAction.SET, it)) }
             }
             ControlKind.BUTTON -> listOf(t(KeyCtlAction.PRESS))

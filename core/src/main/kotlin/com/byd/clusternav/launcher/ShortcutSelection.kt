@@ -54,20 +54,18 @@ object ShortcutSelection {
 }
 
 /**
- * Hình dạng (không đơn vị) của khối icon trên THANH NÚT và lưới widget `w_apps` (R1.2/R1.3). Số dp là việc của tầng vẽ
- * (`KachiBars.SHORTCUT_*` ở `:app` — `SpacingScaleContractTest.core khong giu so dp`); ở đây chỉ còn phép ĐẾM: khối có
- * mấy khe, lưới có mấy cột. Khối dài theo trục thanh — thanh ngang thì rộng ra, thanh dọc thì cao ra — và không tự cuộn:
- * tràn thì khung cuộn sẵn có của thanh (`DockAreaLayout.scrollWrap`) cuộn (không cuộn lồng).
+ * Hình dạng (không đơn vị) của khối icon trên THANH NÚT (R1.2). Số dp là việc của tầng vẽ (`KachiBars.SHORTCUT_*` ở
+ * `:app` — `SpacingScaleContractTest.core khong giu so dp`); ở đây chỉ còn phép ĐẾM: khối có mấy khe. Khối dài theo trục
+ * thanh — thanh ngang thì rộng ra, thanh dọc thì cao ra — và không tự cuộn: tràn thì khung cuộn sẵn có của thanh
+ * (`DockAreaLayout.scrollWrap`) cuộn (không cuộn lồng).
+ *
+ * Lưới widget `w_apps` KHÔNG còn ở đây: 2.87 R-SI1 thay số cột cố định `min(n, 4)` (`gridCols`, không biết khung to
+ * hay nhỏ) bằng phép khớp theo khung thật [ShortcutGridFit].
  */
 object ShortcutStrip {
 
     /** Số khe của khối cho [n] app. Rỗng vẫn chiếm MỘT khe (ô "chọn lối tắt" — chạm ⇒ Cài đặt); không quá trần. */
     fun cells(n: Int): Int = n.coerceIn(1, AppShortcutCodec.MAX)
-
-    /** Số cột của lưới icon trong widget `w_apps` (R1.3): ≤ [GRID_MAX_COLS] cột ⇒ 8 app = hai hàng bốn. */
-    fun gridCols(n: Int): Int = n.coerceIn(1, GRID_MAX_COLS)
-
-    const val GRID_MAX_COLS = 4
 }
 
 /** Kiểu cần kênh điều khiển cửa sổ (R1.5): *Ô n* và *Chạy ngầm*. *Toàn màn* mở bằng Intent, không cần kênh. */

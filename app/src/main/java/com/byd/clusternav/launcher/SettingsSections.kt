@@ -160,7 +160,15 @@ class SettingsSections(
             options = CardTone.values().map { it.name to it.label() },
             current = choice.tone.name,
         ) { code -> choice = choice.copy(tone = CardTone.valueOf(code)); deps.onColorChoice(choice) })
-        // Footnote màu đứng NGAY sau hai hàng màu (nhấn + tông) — nó nói về màu, không phải hình xe. Nếu để sau
+        // 2.87 · R-OP1 — độ đục nền CHUNG (thanh trên · thanh nút · widget), cùng `color_choice` ⇒ theo hồ sơ + xuất/nhập.
+        // Cùng intent `deps.onColorChoice` với hai hàng trên; ThemeHost áp, màn dựng lại nền tại chỗ (không recreate).
+        body.addView(rows.chipRow(
+            label = context.getString(R.string.kachi_row_bg_opacity),
+            options = ChromeOpacity.STEPS.map { it.toString() to "${ChromeOpacity.transparencyPct(it)}%" },
+            current = choice.surfaceOpacity.toString(),
+        ) { code -> choice = choice.copy(surfaceOpacity = code.toIntOrNull() ?: ChromeOpacity.DEFAULT); deps.onColorChoice(choice) })
+        body.addView(rows.note(context.getString(R.string.kachi_bg_opacity_note)))
+        // Footnote màu đứng sau các hàng màu (nhấn + tông + độ đục) — nó nói về màu, không phải hình xe. Nếu để sau
         // khối HÌNH XE thì nó đọc như đang giải thích hình xe (đúng họ lỗi U12/U13: cơ chế đúng, UI nói sai chỗ).
         body.addView(rows.note(context.getString(R.string.kachi_color_note)))
         // WP3-v5 + WP-C — HÌNH XE là ẢNH bitmap thả vào thư mục máy. Xe không có màn chọn tệp hệ thống (khoá),

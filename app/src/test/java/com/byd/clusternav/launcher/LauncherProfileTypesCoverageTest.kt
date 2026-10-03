@@ -31,6 +31,8 @@ class LauncherProfileTypesCoverageTest {
         "WorkspacePrefsShortcuts.kt",
         // F2/F3 (2026-10-02, nhóm C) — `ignition_apps` + `ignition_music` đọc/ghi ở tệp riêng (cùng lẽ).
         "WorkspacePrefsTrip.kt",
+        // 2.87 · R-AH3 (2026-10-03) — `swap_button_autohide` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
+        "WorkspacePrefsSlotHead.kt",
     )
 
     private fun code(file: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")

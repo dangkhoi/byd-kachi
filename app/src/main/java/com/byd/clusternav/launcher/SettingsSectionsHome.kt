@@ -36,7 +36,21 @@ class SettingsHomeSection(
         // ở nhóm khác là chung cho cả máy.
         body.addView(rows.note(context.getString(R.string.kachi_home_profile_note, ProfileNames.display(deps.state().activeProfile))))
         layout(body)
+        slotHeads(body)
         wallpaper(body)
+    }
+
+    /**
+     * 2.87 · R-AH3 — **"Tự ẩn nút ⇄"** (owner 03/10: *"cho ẩn đi đc ko, khi nào nhấn vô khung đó thì mới hiện ra"*).
+     * Đứng ngay SAU bố cục vì nó nói về chính các khung vừa chọn. Đọc từ state, ghi qua intent — cùng khuôn ô tích
+     * nhãn chip ở [SettingsBarsSection]. Tắt = ⇄ luôn hiện như ≤ 2.86 (lối thoát cho người chưa quen / kiểm thử).
+     */
+    private fun slotHeads(body: LinearLayout) {
+        body.addView(rows.checkRow(
+            on = deps.state().slotHeadAutoHide,
+            title = context.getString(R.string.kachi_slot_head_autohide_title),
+            sub = context.getString(R.string.kachi_slot_head_autohide_sub),
+        ) { on -> deps.onSlotHeadAutoHide(on) })
     }
 
     // ── Bố cục ───────────────────────────────────────────────────────────────────────────────────

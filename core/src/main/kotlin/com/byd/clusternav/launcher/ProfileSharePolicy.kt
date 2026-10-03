@@ -54,6 +54,8 @@ object ProfileSharePolicy {
             "top_strip_migrated_ux5b", "header_order",
             // F1 R1.1 — chuỗi `pkg|S2,pkg|F,…` (AppShortcutCodec): chỉ tên gói + kiểu mở, không vị trí.
             "app_shortcuts",
+            // 2.87 · R-AH3 — một cờ hiện/ẩn nút ⇄ của khung: lựa chọn hiển thị, không vị trí.
+            "swap_button_autohide",
         ).forEach { put(it, R_LAYOUT) }
         listOf("theme_mode", "unit_prefs", "launcher_autostart", "lang", "color_choice", "theme_choice")
             .forEach { put(it, R_LOOK) }
