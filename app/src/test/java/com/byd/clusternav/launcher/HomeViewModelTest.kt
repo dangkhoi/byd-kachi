@@ -465,24 +465,24 @@ class HomeViewModelTest {
         assertFalse(0 in vm.uiState.value.swapNonce, "dựng lại ô (nhả màn ảo), không đổi tại chỗ")
     }
 
-    /** L8 — ĐỔI GHIM có lý do: `APP_BACKGROUND` đến SAU KHI app đã ra sau màn nhà (lớp che) ⇒ dựng lại ô, KHÔNG mốc đổi-tại-chỗ. */
-    @Test fun `slotRevert - chay nen ve app LUU khac thi dung lai o, LUU chinh app thi trong suot`() {
+    /**
+     * L8 — `APP_BACKGROUND` đến SAU KHI app đã ra sau màn nhà ⇒ dựng lại ô, KHÔNG mốc đổi-tại-chỗ. Owner 04/10 (lỗi xe 2.87) —
+     * ĐỔI GHIM có lý do: LƯU là app KHÁC ⇒ trong suốt (trước: dựng lại ô với com.a = kéo app đang sau màn nhà vào khung).
+     */
+    @Test fun `slotRevert - chay nen app tam tren o LUU app khac thi trong suot, LUU chinh app cung trong suot`() {
         val r = repo(HomeUiState(workspace = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App("com.a"))))
         val vm = HomeViewModel(r)
         vm.placeTemporary(0, "com.b")
         val n = vm.uiState.value.swapNonce.getValue(0)
         val before = r.persistCount
         val next = vm.slotRevert(0, SlotRevertPlan.Event.APP_BACKGROUND, "com.b")
-        assertEquals(SlotRevertPlan.Next.ShowSaved, next)
+        assertEquals(SlotRevertPlan.Next.Clear, next, "owner 04/10: không kéo app LƯU khác vào khung")
         vm.applySlotRevert(0, next)
-        assertEquals(SlotContent.App("com.a"), vm.uiState.value.effectiveWorkspace.slots[0])
-        assertEquals(n, vm.uiState.value.swapNonce.getValue(0), "mốc đổi-tại-chỗ KHÔNG đổi ⇒ dựng lại ô (host đã thả com.b)")
-        assertTrue(vm.uiState.value.overlay.isEmpty)
-        val own = vm.slotRevert(0, SlotRevertPlan.Event.APP_BACKGROUND, "com.a")
-        assertEquals(SlotRevertPlan.Next.Clear, own, "owner 03/10: đẩy app LƯU ra nền ⇒ ô trong suốt thấy nền")
-        vm.applySlotRevert(0, own)
         assertEquals(SlotContent.Empty, vm.uiState.value.effectiveWorkspace.slots[0])
-        assertEquals(SlotContent.App("com.a"), vm.uiState.value.workspace.slots[0], "lớp LƯU giữ nguyên")
+        assertEquals(n, vm.uiState.value.swapNonce.getValue(0), "mốc đổi-tại-chỗ KHÔNG đổi ⇒ dựng lại ô (host đã thả com.b)")
+        assertEquals(SlotContent.App("com.a"), vm.uiState.value.workspace.slots[0], "lớp LƯU giữ nguyên ⇒ khởi động lại là com.a về")
+        val own = HomeViewModel(r).also { it.applySlotRevert(0, it.slotRevert(0, SlotRevertPlan.Event.APP_BACKGROUND, "com.a")) }
+        assertEquals(SlotContent.Empty, own.uiState.value.effectiveWorkspace.slots[0], "owner 03/10: đẩy app LƯU ra nền ⇒ trong suốt")
         assertEquals(before, r.persistCount, "không bao giờ persist()")
     }
 

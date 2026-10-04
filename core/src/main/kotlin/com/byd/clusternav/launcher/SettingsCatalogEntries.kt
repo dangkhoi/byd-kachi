@@ -221,7 +221,7 @@ internal object SettingsCatalogEntries {
         // ── Phím vô-lăng ──
         // switch_voicekey_enabled · Prefs.setVoiceKeyEnabled + NavConnect.grantAccessibility(reset=true)
         SettingsEntry("keys_enabled", SettingsGroup.KEYS, "Nhận nút vật lý", "voicekey_enabled", "Listen to physical buttons"),
-        // list_voicekey_bindings + btn_binding_remove · Prefs.add/removeVoiceKeyBinding (JSON [{k,t}])
+        // list_voicekey_bindings + btn_binding_remove · Prefs.add/removeVoiceKeyBinding (JSON [{k,t,s?}] — s 2.88)
         SettingsEntry("keys_bindings", SettingsGroup.KEYS, "Danh sách gán nút", "voicekey_bindings", "Button bindings"),
         // spinner_voicekey_button + btn_voicekey_add · Prefs.add/removeVoiceKeyCustomButton (MainActivity.kt:819)
         SettingsEntry(

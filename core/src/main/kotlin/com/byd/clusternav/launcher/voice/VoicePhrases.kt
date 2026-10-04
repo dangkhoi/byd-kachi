@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher.voice
 import com.byd.clusternav.launcher.ActionMacros
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
-import com.byd.clusternav.launcher.TelemetryRegistry
 
 /**
  * Kết quả dựng ngữ pháp — [entries] là thứ đem đi nhận dạng, phần còn lại là **số đo để nói ra**.
@@ -198,7 +197,7 @@ object VoicePhrases {
             out.addAll(c.args); out.addAll(c.argsEn)
             VoiceSynonyms.CONTROL[c.id]?.let(out::addAll)
         }
-        TelemetryRegistry.ALL.forEach { t ->
+        VoiceTelemetry.SPOKEN.forEach { t ->   // 2.88: trừ 13 mã lốp thô — KDoc [VoiceTelemetry]
             out.add(t.label); t.labelEn?.let(out::add); t.short?.let(out::add); t.shortEn?.let(out::add)
             VoiceSynonyms.TELEMETRY[t.id]?.let(out::addAll)
         }

@@ -80,11 +80,54 @@ object TelemetryEnums {
         ),
     )
 
+    // ═══ 2.88 · MÃ TRẠNG THÁI LỐP CỦA XE (spec `kachi-288-tyre-car-state.html`) ═══════════════════════════════════
+    // Chữ cho ô lớn / câu hỏi bằng giọng / cầu kiểm thử — phép PHÁN XÉT màu thì ở [TyreJudge], không đọc chữ này.
+    // Mỗi bánh một datum ⇒ một [Table] cho mỗi mã (bảng tra theo mã datum), CÙNG một bộ mục cho cả bốn bánh.
+
+    /** Màu cụm — [ĐO source] `instrument/BYDAutoInstrumentDevice.java:134-137` (`COLOR_INVALID = 0` đã lọc ở tầng đọc). */
+    private val TYRE_COLOUR_TEXT = mapOf(
+        TyreJudge.COLOUR_WHITE to ("Bình thường" to "Normal"),
+        TyreJudge.COLOUR_YELLOW to ("Vàng" to "Yellow"),
+        TyreJudge.COLOUR_RED to ("Đỏ" to "Red"),
+    )
+
+    /** `getTyrePressureState` — [ĐO source] `tyre/BYDAutoTyreDevice.java:36-38`. */
+    private val TYRE_PRESSURE_TEXT = mapOf(
+        TyreJudge.PRESSURE_NORMAL to ("Bình thường" to "Normal"),
+        TyreJudge.PRESSURE_OVER to ("Quá căng" to "Over-inflated"),
+        TyreJudge.PRESSURE_UNDER to ("Non hơi" to "Under-inflated"),
+    )
+
+    /** `getTyreAirLeakState` — [ĐO source] cùng tệp `:20-22`. */
+    private val TYRE_LEAK_TEXT = mapOf(
+        TyreJudge.LEAK_NONE to ("Không rò" to "No leak"),
+        TyreJudge.LEAK_FAST to ("Xì nhanh" to "Fast leak"),
+        TyreJudge.LEAK_SLOW to ("Xì chậm" to "Slow leak"),
+    )
+
+    /** `getTyreSystemState()` — [ĐO source] cùng tệp `:43-47`. */
+    val TYRE_SYSTEM = Table(
+        TyreIds.SYSTEM,
+        mapOf(
+            TyreJudge.SYS_NORMAL to ("Bình thường" to "Normal"),
+            TyreJudge.SYS_SELF_CHECK to ("Đang tự kiểm" to "Self-checking"),
+            TyreJudge.SYS_SIGNAL_ABNORMAL to ("Tín hiệu bất thường" to "Signal abnormal"),
+            TyreJudge.SYS_BREAKDOWN to ("Hỏng" to "Failed"),
+            TyreJudge.SYS_MASKED to ("Bị che" to "Masked"),
+        ),
+    )
+
+    /** Mười hai bảng theo bánh (màu · áp · rò khí × 4) — cùng thứ tự [TyreIds]. */
+    val TYRE_WHEELS: List<Table> =
+        TyreIds.COLOUR.map { Table(it, TYRE_COLOUR_TEXT) } +
+            TyreIds.PRESSURE_STATE.map { Table(it, TYRE_PRESSURE_TEXT) } +
+            TyreIds.AIR_LEAK.map { Table(it, TYRE_LEAK_TEXT) }
+
     /**
      * Mọi bảng. Thêm datum nhiều chế độ = thêm một [Table] và một dòng ở đây. Công khai để bài canh bảng dịch
      * (`I18nPairsFixture`) duyệt được MỌI cặp (VI, EN) lúc chạy — bảng thêm mới tự vào tầm quét.
      */
-    val ALL: List<Table> = listOf(POWER_LEVEL, HEADLIGHT_MODE)
+    val ALL: List<Table> = listOf(POWER_LEVEL, HEADLIGHT_MODE) + TYRE_WHEELS + TYRE_SYSTEM
 
     /** Mọi bảng, tra theo mã datum. */
     private val BY_ID: Map<String, Table> = ALL.associateBy { it.id }

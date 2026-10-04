@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.SharedPreferences
+import com.byd.clusternav.voicekey.KeySourceKind
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -204,5 +205,28 @@ class VoiceKeyBindingMigrationTest {
             listOf(VoiceKeyBinding(220, Prefs.VK_TARGET_ASSIST)),
             Prefs.voiceKeyBindings(p),
         )
+    }
+
+    // ── CA 5 — 2.88 · KEY-SOURCE-SPLIT tầng 2: gán theo NGUỒN đi qua đúng hàm mà nút bấm gọi ──────────────────────────
+
+    /**
+     * Máy đang chạy 2.87 có dòng gán 291 (không nguồn) → nâng cấp → owner gán thêm núm lên → quạt. Hai dòng cùng mã phải
+     * cùng sống qua khởi động lại; xoá dòng núm không đụng dòng cũ; chuỗi lưu của dòng cũ không đổi một byte.
+     */
+    @Test
+    fun `nang cap 2_87 roi gan them theo nguon — dong cu nguyen ven, xoa dung nguon`() {
+        val old = """[{"k":291,"t":"$KIKI"}]"""
+        val p = FakePrefs(mapOf(K_BINDINGS to old))
+        assertEquals(listOf(VoiceKeyBinding(291, KIKI)), Prefs.voiceKeyBindings(p), "JSON 2.87 ⇒ dòng không nguồn")
+
+        assertNull(Prefs.addVoiceKeyBinding(p, 291, VIETMAP, KeySourceKind.CONSOLE_KNOB), "khác nguồn ⇒ dòng mới, không ghi đè")
+        assertEquals(VIETMAP, Prefs.addVoiceKeyBinding(p, 291, KIKI, KeySourceKind.CONSOLE_KNOB), "cùng (mã, nguồn) ⇒ ghi đè + trả đích cũ")
+        val afterRestart = Prefs.voiceKeyBindings(FakePrefs(p.store))
+        assertEquals(listOf(VoiceKeyBinding(291, KIKI), VoiceKeyBinding(291, KIKI, KeySourceKind.CONSOLE_KNOB)), afterRestart)
+
+        Prefs.removeVoiceKeyBinding(p, 291, KeySourceKind.CONSOLE_KNOB)
+        assertEquals(listOf(VoiceKeyBinding(291, KIKI)), Prefs.voiceKeyBindings(p), "xoá dòng núm ⇒ còn đúng dòng cũ")
+        val oldEncoding = org.json.JSONArray().put(org.json.JSONObject().put("k", 291).put("t", KIKI)).toString()
+        assertEquals(oldEncoding, p.store[K_BINDINGS], "…và chuỗi lưu đúng như bộ mã hoá 2.87 ghi (không trường \"s\")")
     }
 }

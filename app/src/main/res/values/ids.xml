@@ -19,4 +19,7 @@
     <item name="kachi_fit_full_text" type="id" />
     <item name="kachi_fit_short_text" type="id" />
     <item name="kachi_fit_use_short" type="id" />
+    <!-- 2.88 (chip lốp): khoá "chữ đang hiện" của một chip thanh trên — chuỗi + MÀU của từng đoạn (TopStripChipInk
+         applyChipText), để đổi màu một con số mà chữ đứng yên vẫn vẽ lại. -->
+    <item name="kachi_chip_text_key" type="id" />
 </resources>

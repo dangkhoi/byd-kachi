@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import java.io.File
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -177,7 +178,9 @@ class CarDataDemandRendererContractTest {
         CarDataDemand.CURATED.forEach { (widgetId, declared) ->
             val rendered = renderedIds(widgetId)
             if (rendered.isNotEmpty()) covered++
-            (rendered - declared).forEach { missing += "$widgetId missing '$it'" }
+            // 2.88 — nhu cầu THẬT = bảng khai + bạn đồng hành của nó ([CarDataDemand.COMPANION], `CarDataDemand.of` áp
+            // trên tập đã gom): 13 mã trạng thái lốp vào nhu cầu qua `tyre_p_*`, không chép tay vào từng widget.
+            (rendered - withCompanions(declared)).forEach { missing += "$widgetId missing '$it'" }
         }
         assertTrue(
             missing.isEmpty(),
@@ -214,6 +217,10 @@ class CarDataDemandRendererContractTest {
         }
     }
 
+    /** [declared] + bạn đồng hành ([CarDataDemand.COMPANION]) — đúng phép `CarDataDemand.of` áp sau khi gom. */
+    private fun withCompanions(declared: Set<String>): Set<String> =
+        declared + declared.flatMap { CarDataDemand.COMPANION[it].orEmpty() }
+
     /**
      * Chip TỔNG HỢP cũng là bảng chép tay ([CarDataDemand.CHIPS]) — bốn cái từ UX5 (2026-09-26, thêm chip ghế) — cùng hiểm hoạ, nguồn thì ở `:core`
      * (`TopStripChips.chip`), nên soi bằng cùng một cách.
@@ -234,6 +241,7 @@ class CarDataDemandRendererContractTest {
                 TopStripConfig.ENERGY -> "ENERGY"
                 TopStripConfig.SEAT -> "SEAT"       // UX5 · chip GỘP ghế LÁI (sưởi + mát)
                 TopStripConfig.SEAT_R -> "SEAT_R"   // UX5b · chip GỘP ghế PHỤ
+                TopStripConfig.TYRES -> "TYRES"     // 2.88 · chip ÁP SUẤT LỐP (chuyền CẢ CỤM — xem `viaGroup` dưới)
                 else -> error("chip lạ $chipConst")
             }
             val start = lines.indexOfFirst { it.contains("TopStripConfig.$name ->") }
@@ -259,11 +267,22 @@ class CarDataDemandRendererContractTest {
             } else {
                 emptySet()
             }
+            // 2.88 — CÁCH THỨ TƯ: chuyền CẢ CỤM (`status.tyres` không kèm field) cho một lớp khác phán xét ⇒ coi như cần
+            // MỌI mã của cụm (cùng luật bài CURATED), TRỪ bốn mã NHIỆT: bộ dựng chip lốp không đọc `tempC` — điều đó
+            // được khoá bằng nguồn ngay dưới, nên bỏ chúng ra là một sự thật đo được chứ không phải nới bài.
+            val viaGroup = Regex("""\bstatus\.(\w+)\b(?!\s*\.)""").findAll(block)
+                .flatMap { idsByGroup[it.groupValues[1]].orEmpty() }
+                .filterNot { chipConst == TopStripConfig.TYRES && it.startsWith("tyre_t_") }.toSet()
+            if (chipConst == TopStripConfig.TYRES) {
+                val codeOnly = lines.filterNot { it.trimStart().startsWith("*") || it.trimStart().startsWith("/*") }
+                assertFalse(codeOnly.any { "tempC" in it }, "chip lốp không được đọc nhiệt — nếu đọc thì CHIPS phải khai `tyre_t_*`")
+            }
             val rendered = access.findAll(block).mapNotNull { fieldToId["${it.groupValues[1]}.${it.groupValues[2]}"] }
-                .toSet() + viaReadout + viaPairs
+                .toSet() + viaReadout + viaPairs + viaGroup
+            val effective = withCompanions(declared)
             assertTrue(
-                declared.containsAll(rendered),
-                "chip $name đọc ${rendered - declared} mà bảng CHIPS không khai ⇒ chip hiện \"—\" một nửa",
+                effective.containsAll(rendered),
+                "chip $name đọc ${rendered - effective} mà bảng CHIPS (+ bạn đồng hành) không khai ⇒ chip hiện \"—\" một nửa",
             )
             assertTrue(rendered.isNotEmpty(), "không suy ra được datum nào cho chip $name — phép đọc nguồn đã hụt")
         }

@@ -163,4 +163,20 @@ class KeySourceMeterTest {
         assertEquals("dev9", cache.get(9)?.name); cache.get(9)
         assertEquals(5, lookups.get())
     }
+
+    /**
+     * 2.88 · R-nf2 — đường gán ĐÃ đọc nguồn đồng bộ cho lần nhấn này ⇒ nhật ký tầng 1 dùng lại số đọc đó: gateway KHÔNG
+     * bị gọi lần hai (một lượt HAL mỗi lần nhấn), thiết bị vẫn được tra cho dòng `KachiKey`.
+     */
+    @Test
+    fun `co so doc san thi khong doc HAL lan hai, van tra thiet bi`() {
+        val gw = Gate().also { it.release.countDown() }
+        val ex = halThread()
+        val pre = KeySourceReading(spec, value = 1, readMs = 2, ageMs = 2)
+        val devices = KeyDeviceCache { id -> KeyDeviceInfo("simulate-keys", "d$id", isVirtual = true, vendorId = 0, productId = 0) }
+        val m = KeySourceMeter({ gw }, { ex }, System::currentTimeMillis).measure(sample(), devices, preRead = pre)
+        assertSame(pre, m.reading)
+        assertEquals("simulate-keys", m.device?.name)
+        assertEquals(0, gw.calls.get(), "R-nf2: một lượt đọc HAL mỗi lần nhấn")
+    }
 }

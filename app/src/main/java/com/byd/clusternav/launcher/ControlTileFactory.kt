@@ -43,8 +43,6 @@ class ControlTileFactory(
     private val ctx: Context,
     private val control: () -> CarControlPort,
     private val size: TileSize = TileSize.DOCK,
-    /** 2.87 · R-OP — ô nằm TRÊN thanh nút (sàn mờ của thanh) hay trong khay ô (sàn của khay): chỗ gọi nói thẳng (soát P3). */
-    private val onBar: Boolean,
     private val state: ControlTileState = ControlTileState.shared,
     /**
      * Có vẽ icon trong ô không. `false` chỉ khi icon **không mang thông tin** — hàng nút của ô nhóm mà ≥3 nút dùng
@@ -388,7 +386,7 @@ class ControlTileFactory(
      * Số KHÔNG được nhét vào lúc dựng: gọi [ReadTile.bind] để đổ giá trị và đổi giá trị VỀ SAU **tại chỗ** — nhờ
      * vậy nhịp trạng thái xe không phải dựng lại view (ràng buộc C5: dựng lại là nháy + mất trạng thái vừa bấm).
      */
-    fun readTile(pick: CapabilityPick): ReadTile = readTileOf(ctx, size, onBar, pick) { withBadge(it) }
+    fun readTile(pick: CapabilityPick): ReadTile = readTileOf(ctx, size, pick) { withBadge(it) }
 
     // ── Helper dùng chung ───────────────────────────────────────────────────────────────────────────────
     /** Hình của [def] ở cỡ vùng hiện tại — phép tra ở [controlIconRes] (`TileSize.kt`). */
@@ -444,7 +442,7 @@ class ControlTileFactory(
         // ⚠ Nhánh BẬT giữ [KachiTheme.gradientSoft] — KHÔNG đổi sang `surface(ACTIVE)`: chữ/icon của ô đang bật tô
         // bằng `INK_ON_ACCENT`, và bài canh `ThemePaletteContractTest` đo vai đó **trên nền `tileOn*`**. Đổi nền mà
         // giữ mực là làm số đo trong bài nói về một nền không còn tồn tại.
-        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius), onBar)   // R-OP: chỉ TẮT
+        v.background = if (active) KachiTheme.gradientSoft(ctx, size.radius) else KachiChrome.fade(KachiTheme.surface(ctx, size.radius))   // R-OP: chỉ TẮT
     }
 
     /**

@@ -219,8 +219,7 @@ object WidgetViews {
     private fun actionTile(ctx: Context, id: String, data: WidgetData, size: TileSize): View {
         // Gói lệnh (W2) cũng là HÀNH ĐỘNG ⇒ đặt được trong ô giữa màn như mọi nút khác. Đi qua CÙNG lớp đệm với ô nút
         // (bản đầu trả ô trần ⇒ ô gói lệnh dính sát mép khung trong khi ô nút bên cạnh có đệm 12dp).
-        // Cỡ DOCK ở ô nén chỉ là CỠ — ô nằm trong khay ô làm việc, không trên thanh nút (sàn mờ của khay, soát 2.87 P3).
-        val factory = ControlTileFactory(ctx, control = { data.control }, size = size, onBar = false)
+        val factory = ControlTileFactory(ctx, control = { data.control }, size = size)
         // Nút đơn có đường đọc ⇒ ActionTile (view + refresh); gói lệnh ⇒ View trần (không có số để đọc lại).
         var refresh: ((CarStatus) -> Unit)? = null
         val tile = ActionMacros.byId(id)?.let { factory.macroTile(it) }
@@ -248,8 +247,8 @@ object WidgetViews {
      * Ô lớn: [TyreBoardView] (hình xe + từng bánh một số).
      *
      * Bản cũ (`tire()`) vẽ 4 ô chữ với **ngưỡng cứng viết tại chỗ** `t[i] < 2.2` — ngưỡng THỨ BA của dự án, lệch với
-     * [TyreBoard]. Nay mọi phán xét về non/căng/lệch đến từ [TyreBoard.readings] (thuần, test off-car) và mọi con số
-     * đi qua [UnitFormat] ⇒ **một** nơi định nghĩa ngưỡng, **một** nơi đổi đơn vị.
+     * [TyreBoard]. Nay mọi phán xét màu/lý do đến từ [TyreBoard.readings] (thuần, test off-car — từ 2.88 là lời phán
+     * của CHÍNH XE, 0 số ngưỡng) và mọi con số đi qua [UnitFormat] ⇒ **một** nơi phán, **một** nơi đổi đơn vị.
      *
      * ## ⚠ 2026-09-21 — đây chính là ô owner báo GIẬT
      * [TyreBoardView] đã có sẵn đường đổ dữ liệu tại chỗ (`set` + `invalidate`) và nó **giữ ảnh xe đã nạp**
@@ -284,7 +283,8 @@ object WidgetViews {
     }
 
     /**
-     * Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo [TyreBoard.anyAlert].
+     * Ô nhỏ (lưới nhiều widget trong 1 ô): khoảng cao–thấp + màu theo bánh NẶNG NHẤT ([TyreBoard.worst] — 2.88: đỏ là
+     * đỏ, vàng là vàng; trước đó mọi cảnh báo cùng một màu hổ phách).
      *
      * ⚠ U7 — hình ở đây là **`ic-group-tyres` (khung xe + BỐN bánh tô)**, không phải `ic-tire` (MỘT bánh):
      * ô này gộp số của cả bốn bánh, nên hình một bánh nói sai nội dung. [ĐO] ảnh máy ảo 2026-09-13: ô
@@ -303,10 +303,16 @@ object WidgetViews {
             else {
                 val lo = formatPressure(known.min(), d.units)
                 val hi = formatPressure(known.max(), d.units)
-                val tone = if (readings.any { it.status.alert }) KachiTheme.AMBER else KachiTheme.INK
-                MiniValue(if (lo == hi) lo else "$lo–$hi", unit, tone)
+                MiniValue(if (lo == hi) lo else "$lo–$hi", unit, tyreInk(TyreBoard.worst(readings)))
             }
         }
+
+    /** 2.88 — mực của ô lốp THU NHỎ theo bánh nặng nhất: đỏ · hổ phách · mực thường (ô nhỏ không tô "bình thường"). */
+    private fun tyreInk(worst: TyreSeverity): String = when (worst) {
+        TyreSeverity.ALERT -> KachiTheme.RED
+        TyreSeverity.WARN -> KachiTheme.AMBER
+        TyreSeverity.OK, TyreSeverity.NONE -> KachiTheme.INK
+    }
 
     /**
      * kPa → chuỗi theo đơn vị người dùng chọn. Đi qua [UnitFormat] (KHÔNG tự chia 100 tại chỗ như bản cũ — đó chính
@@ -459,7 +465,7 @@ object WidgetViews {
             val lvl = d.car.climate.pm25Level; val ug = pm25Ug(d.car)
             energy.set(MiniValue(bat?.let { "$it%" } ?: "—", km?.let { "$it km" } ?: "", KachiTheme.GREEN))
             air.set(MiniValue(ug?.let { "${it}µg" } ?: "—", "PM2.5 " + (lvl?.let { pm(ctx, it) } ?: ""), KachiTheme.CYAN))
-            // Lốp: qua TyreBoard (ngưỡng TẬP TRUNG) + đơn vị người dùng — không tự chia 100 tại chỗ nữa.
+            // Lốp: qua TyreBoard (lời phán của xe — 2.88, 0 số ngưỡng) + đơn vị người dùng — không tự chia 100 tại chỗ.
             val tRead = TyreBoard.readings(d.car.tyres)
             val tKnown = tRead.mapNotNull { it.pressureKpa }
             val tUnit = d.units.unitFor(Quantity.PRESSURE)
@@ -467,8 +473,7 @@ object WidgetViews {
                 val lo = formatPressure(tKnown.min(), d.units); val hi = formatPressure(tKnown.max(), d.units)
                 if (lo == hi) lo else "$lo\u2013$hi"
             }
-            val tone = if (tRead.any { it.status.alert }) KachiTheme.AMBER else KachiTheme.INK
-            tyres.set(MiniValue(tText ?: "—", ctx.getString(R.string.kachi_tyre_pressure_unit, tUnit), tone))
+            tyres.set(MiniValue(tText ?: "—", ctx.getString(R.string.kachi_tyre_pressure_unit, tUnit), tyreInk(TyreBoard.worst(tRead))))
             music.set(MiniValue(d.media?.title ?: "—", d.media?.artist ?: "", KachiTheme.INK))
         }
         fillBoard(data)

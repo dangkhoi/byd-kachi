@@ -160,9 +160,11 @@ class CarDataDemandTest {
             )
         }
         assertEquals(
-            5, CarDataDemand.CHIPS.size,
-            "năm chip TỔNG HỢP (bụi · nhiệt ngoài · năng lượng · ghế lái · ghế phụ) — thêm chip thì khai nhu cầu",
+            6, CarDataDemand.CHIPS.size,
+            "sáu chip TỔNG HỢP (bụi · nhiệt ngoài · năng lượng · ghế lái · ghế phụ · áp suất lốp 2.88) — thêm chip thì khai nhu cầu",
         )
+        // 2.88 — bản chép tay bốn mã áp suất của chip lốp phải khớp nguồn DUY NHẤT `TyreIds.PRESSURE`.
+        assertEquals(TyreIds.PRESSURE.toSet(), CarDataDemand.CHIPS[TopStripConfig.TYRES])
     }
 
     @Test

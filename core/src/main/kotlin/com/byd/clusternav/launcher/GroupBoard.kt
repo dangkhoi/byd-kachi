@@ -13,9 +13,9 @@ import com.byd.clusternav.comfort.Pm25Filter
  * bộ bằng trí nhớ — có test canh cả hai đầu.
  *
  * ## Ngưỡng: chỉ dùng lại, gần như không đặt mới
- * Phán xét non/căng/lệch của lốp lấy **nguyên** từ [TyreBoard] (nếu viết lại ở đây thì thành ngưỡng **THỨ TƯ** của
- * dự án — lỗi đã xảy ra thật: widget lốp cũ có `t[i] < 2.2` viết tại chỗ, lệch với `:core`). Mức bụi lấy từ
- * [Pm25Filter.isDirty]. Không có ngưỡng nào tự nghĩ ra ở đây.
+ * Màu từng bánh lốp lấy **nguyên** từ [TyreBoard] (viết lại ở đây là bản sao thứ hai — lỗi đã xảy ra thật: widget lốp
+ * cũ có `t[i] < 2.2` viết tại chỗ, lệch với `:core`); từ 2.88 nó là lời phán của **chính xe** ([TyreJudge]), không còn
+ * số ngưỡng nào. Mức bụi lấy từ [Pm25Filter.isDirty]. Không có ngưỡng nào tự nghĩ ra ở đây.
  *
  * ⚠ **CỐ Ý KHÔNG gán sắc thái cho các số "sức khoẻ"** (nhiệt pin, điện áp cell, ắc-quy 12V, nhiệt lốp, µg/m³, SOC…):
  * tôi KHÔNG biết ngưỡng đúng cho đời xe owner, và tự nghĩ một con số rồi tô đỏ là **bịa cảnh báo** — nguy hơn là
@@ -220,7 +220,7 @@ object GroupBoard {
         id: String,
         s: CarStatus,
         units: UnitPrefs,
-        tyres: Map<String, TyreStatus>,
+        tyres: Map<String, TyreSeverity>,
     ): GroupCell {
         val spec = TelemetryRegistry.byId(id)
         // Mã không có trong registry là chuyện [CapabilityGroups.init] đã chặn; giữ lưới an toàn để ô hiện "—" thay
@@ -256,23 +256,23 @@ object GroupBoard {
     }
 
     /**
-     * Trạng thái 4 bánh theo **mã datum**, rỗng nếu nhóm không chứa áp suất lốp.
+     * MÀU 4 bánh theo **mã datum**, rỗng nếu nhóm không chứa áp suất lốp.
      *
-     * Gọi [TyreBoard.readings] đúng MỘT lần cho cả nhóm: độ chênh giữa các bánh chỉ tính được khi biết cả bốn, nên
-     * hỏi từng bánh riêng lẻ sẽ ra kết quả khác (và sai).
+     * Gọi [TyreBoard.readings] đúng MỘT lần cho cả nhóm: phép phán (luật M của [TyreJudge]) đọc cả mã hệ thống TPMS
+     * chung cho bốn bánh, nên một chỗ gọi là một lời phán — không có bánh nào được phán bằng dữ liệu khác bánh kia.
      */
-    private fun tyreStatuses(g: CapabilityGroup, s: CarStatus): Map<String, TyreStatus> {
+    private fun tyreStatuses(g: CapabilityGroup, s: CarStatus): Map<String, TyreSeverity> {
         if (g.reads.none { it in TYRE_PRESSURE_BY_CORNER.values }) return emptyMap()
         return TyreBoard.readings(s.tyres)
-            .mapNotNull { rd -> TYRE_PRESSURE_BY_CORNER[rd.corner]?.let { it to rd.status } }
+            .mapNotNull { rd -> TYRE_PRESSURE_BY_CORNER[rd.corner]?.let { it to rd.severity } }
             .toMap()
     }
 
-    /** Non/căng = cảnh báo; lệch = để ý (đúng thứ tự ưu tiên của [TyreStatus]). */
-    private fun tyreTone(st: TyreStatus): GroupTone = when (st) {
-        TyreStatus.LOW, TyreStatus.HIGH -> GroupTone.ALERT
-        TyreStatus.UNEVEN -> GroupTone.WARN
-        TyreStatus.OK, TyreStatus.UNKNOWN -> GroupTone.NEUTRAL
+    /** Đỏ = cảnh báo · vàng = để ý · xanh/xám = trung tính (ô nhóm không tô "bình thường"; chip mới tô xanh). */
+    private fun tyreTone(sev: TyreSeverity): GroupTone = when (sev) {
+        TyreSeverity.ALERT -> GroupTone.ALERT
+        TyreSeverity.WARN -> GroupTone.WARN
+        TyreSeverity.OK, TyreSeverity.NONE -> GroupTone.NEUTRAL
     }
 
     // ── Sắc thái ────────────────────────────────────────────────────────────────────────────────────────
@@ -284,7 +284,7 @@ object GroupBoard {
      *
      * Mã không có luật ⇒ [GroupTone.NEUTRAL]: xem KDoc lớp về việc **không bịa ngưỡng**.
      */
-    private fun toneOf(id: String, s: CarStatus, tyres: Map<String, TyreStatus>): GroupTone {
+    private fun toneOf(id: String, s: CarStatus, tyres: Map<String, TyreSeverity>): GroupTone {
         tyres[id]?.let { return tyreTone(it) }
         return when (id) {
             // ── ĐANG BẬT / ĐANG MỞ (sáng lên) ───────────────────────────────────────────────

@@ -44,7 +44,12 @@ class TopStripWiringContractTest {
         // Giữ bản vá [SOÁT P2-9]: dựng lại 3 TextView + tra + tint drawable mỗi nhịp trạng thái xe = mỗi giây trên xe.
         val fn = SourceRoots.body(strip, "fun refreshChips(")
         assertTrue(fn.contains("chipViews.size != chips.size"), "chỉ dựng lại khi DANH SÁCH đổi")
-        assertTrue(fn.contains("v.text = c.text"), "trường hợp thường phải là đổi chữ tại chỗ")
+        // 2.88 (chip lốp): đổi chữ TẠI CHỖ qua `applyChipText` — khoá so gồm cả MÀU từng đoạn (R6), vẫn `setText` một lần.
+        assertTrue(fn.contains("applyChipText(v, c)"), "trường hợp thường phải là đổi chữ tại chỗ")
+        val ink = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/TopStripChipInk.kt")
+        val apply = SourceRoots.body(ink, "internal fun applyChipText(")
+        assertTrue(apply.contains("v.text = chipText(chip)"), "đặt chữ tại chỗ trên CHÍNH view, không dựng lại")
+        assertTrue(apply.contains("if (v.getTag(R.id.kachi_chip_text_key) == key) return"), "H5: khoá không đổi ⇒ không setText")
         assertTrue(fn.contains("v.tag"), "icon/màu chỉ đặt lại khi đổi — tra drawable mỗi giây là việc P2-9 vừa dọn")
     }
 
@@ -243,8 +248,8 @@ class TopStripWiringContractTest {
      */
     @Test
     fun `moi ChipTone deu co vai mau rieng, khong co nhanh else`() {
-        // [soát 2.87 · R-OP3 P3] Bảng map dời ra `TopStripChipInk.kt` (`chipInk`) để sàn đọc được của thanh trên khi nền
-        // mờ (`ChromeRoles.chipTexts`) đọc CÙNG bảng — luật của bài không đổi, chỉ đổi chỗ đọc; thanh vẽ phải gọi nó.
+        // [soát 2.87 · R-OP3 P3] Bảng map dời ra `TopStripChipInk.kt` (`chipInk`) — luật của bài không đổi, chỉ đổi chỗ
+        // đọc; thanh vẽ phải gọi nó (2.88 gỡ bộ giải độ đục từng đọc chung bảng này).
         assertTrue(strip.contains("val color = chipInk(c.tone)"), "thanh trên vẽ chip bằng CHÍNH bảng map dùng chung")
         val ink = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/TopStripChipInk.kt")
         val map = SourceRoots.body(ink, "internal fun chipInk(tone: ChipTone): String = when (tone) {")

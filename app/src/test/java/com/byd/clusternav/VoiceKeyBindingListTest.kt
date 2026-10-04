@@ -201,11 +201,15 @@ class VoiceKeyBindingListTest {
         assertTrue(body.contains("writeVoiceKeyBindings("), "không ghi xuống ⇒ migrate chạy lại ⇒ dòng đã xoá sống lại")
     }
 
-    /** Thêm/xoá phải đi qua luật `:core` (put/remove), không tự viết lại luật ở tầng lưu trữ. */
+    /**
+     * Thêm/xoá phải đi qua luật `:core` (put/remove), không tự viết lại luật ở tầng lưu trữ.
+     * 2.88 (KEY-SOURCE-SPLIT tầng 2): khoá của một dòng là (mã, nguồn) ⇒ nguồn phải được chuyển NGUYÊN vào luật `:core`
+     * (bỏ rơi nó ở đây là nút núm ghi đè nút vô-lăng mà mọi bài `:core` vẫn xanh).
+     */
     @Test
     fun `Prefs them xoa deu di qua luat core`() {
-        assertTrue(prefsSrc.contains("VoiceKeyBindings.put(voiceKeyBindings(p), keyCode, targetSpec)"))
-        assertTrue(prefsSrc.contains("VoiceKeyBindings.remove(voiceKeyBindings(p), keyCode)"))
+        assertTrue(prefsSrc.contains("VoiceKeyBindings.put(voiceKeyBindings(p), keyCode, targetSpec, source)"))
+        assertTrue(prefsSrc.contains("VoiceKeyBindings.remove(voiceKeyBindings(p), keyCode, source)"))
         assertTrue(
             prefsSrc.substringAfter("fun addVoiceKeyBinding(").substringBefore("fun removeVoiceKeyBinding(")
                 .contains("return result.replaced"),
@@ -244,12 +248,18 @@ class VoiceKeyBindingListTest {
      * QA 2.87 [P3] — học phím phải nuốt TRỌN lần nhấn (luật ở `:core` `KeyLearnTail`, bảng `KeyLearnTailTest`). Ở đây khoá dây
      * nối: đuôi học chặn TRƯỚC cờ học (UP tới khi cờ đã tắt), dấu ghi đúng trong nhánh DOWN của lượt học, reset khi nối lại.
      * Thiếu một trong ba ⇒ [ĐO máy ảo `l7/learn88-orphan-up.log`] UP mồ côi của phím media bật YT Music.
+     *
+     * 2.88: `onKeyEvent` đọc cờ học MỘT lần (`val learning`) và tính kết quả đuôi học (`val tail`) trước khi rẽ — để biết
+     * đường nào được đọc nguồn đồng bộ (`kachi-288` §4.3). Thứ tự chặn KHÔNG đổi: `if (tail) return true` đứng trước nhánh học.
      */
     @Test
     fun `hoc phim nuot ca UP cua lan nhan da hoc`() {
         val body = serviceSrc.substringAfter("override fun onKeyEvent(").substringBefore("override fun onAccessibilityEvent(")
-        val tail = body.indexOf("if (learnTail.swallow(action, event.keyCode, event.downTime)) return true")
-        val learnBranch = body.indexOf("if (Prefs.voiceKeyLearn(app)) {")
+        assertTrue(body.contains("val learning = Prefs.voiceKeyLearn(app)"), "cờ học đọc từ prefs, một lần cho cả hàm")
+        val swallow = body.indexOf("val tail = learnTail.swallow(action, event.keyCode, event.downTime)")
+        val tail = body.indexOf("if (tail) return true")
+        val learnBranch = body.indexOf("if (learning) {")
+        assertTrue(swallow in 0 until tail, "đuôi học phải được tính trước khi chặn")
         assertTrue(tail in 0 until learnBranch, "đuôi học phải chặn TRƯỚC nhánh học (UP tới khi cờ đã tắt)")
         val learned = body.indexOf("learnTail.learned(event.keyCode, event.downTime)")
         assertTrue(learned > learnBranch && learned < body.indexOf("VoiceKeyLearnBus.publish(event.keyCode)"), "ghi dấu trong nhánh DOWN của lượt học")
@@ -284,8 +294,8 @@ class VoiceKeyBindingListTest {
     @Test
     fun `nut Them gan ghi vao danh sach va ve lai ngay`() {
         assertTrue(
-            "Prefs.addVoiceKeyBinding(app, keyCode, targetSpec)" in keysBridge,
-            "nút Thêm phải ghi vào danh sách (một nguồn chân lý: `voicekey_bindings`)",
+            "Prefs.addVoiceKeyBinding(app, keyCode, targetSpec, source)" in keysBridge,
+            "nút Thêm phải ghi vào danh sách (một nguồn chân lý: `voicekey_bindings`), kèm nguồn của nút đã chọn (2.88)",
         )
         assertTrue("replaced" in keysBridge, "phải báo cho owner khi ghi đè — cấm im lặng")
         assertTrue("isGeminiVoiceSpec" in keysBridge, "công thức đặt trợ lý hệ thống phải theo sang nút Thêm")
@@ -296,7 +306,7 @@ class VoiceKeyBindingListTest {
     @Test
     fun `danh sach tren man hinh ve tu dung nguon service nghe`() {
         assertTrue("Prefs.voiceKeyBindings(app)" in keysBridge, "vẽ từ nguồn khác = màn hình nói dối")
-        assertTrue("Prefs.removeVoiceKeyBinding(app, keyCode)" in keysBridge, "nút xoá trên dòng phải xoá thật")
+        assertTrue("Prefs.removeVoiceKeyBinding(app, keyCode, source)" in keysBridge, "nút xoá trên dòng phải xoá thật — đúng (mã, nguồn)")
         assertTrue(
             "kachi_keys_no_bindings" in keysSection,
             "danh sách rỗng phải nói rõ là KHÔNG có gì chạy (chuỗi qua tài nguyên, không chữ cứng)",

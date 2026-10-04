@@ -41,7 +41,7 @@ object ProfileSharePolicy {
     // FIX286 · R-KC — đích nay còn là mã nút xe `ctl:<mã nút registry>:<việc>` (KeyCtlTargets): chỉ mã nút + mã việc,
     // không vị trí ⇒ bản chia sẻ mang theo (owner 03/10). `KeyCtlTargetTest` canh dạng chuỗi.
     private const val R_KEYS =
-        "phím vô-lăng: mã phím + đích là gói app/mã việc (Prefs.VK_TARGET_*) / mã nút xe ctl:<nút>:<việc> — không vị trí"
+        "phím vô-lăng: mã phím (+ nguồn knob/wheel, 2.88) + đích là gói app/mã việc (Prefs.VK_TARGET_*) / mã nút xe ctl:<nút>:<việc> — không vị trí"
     private const val R_COMFORT = "tiện nghi xe theo người lái (ghế, lọc bụi, lấy gió) — không vị trí"
     private const val R_CAMERA = "sở thích hiển thị camera (ProfileScopeCluster.CAMERA_PROFILE_KEYS) — không vị trí"
     private const val R_CAST = "chiếu cụm: công tắc, gói app tự chiếu, tỉ lệ chia đôi — không vị trí"

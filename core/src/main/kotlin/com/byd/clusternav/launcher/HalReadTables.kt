@@ -46,6 +46,9 @@ object HalReadTables {
         "seat_vent_state_r" -> 2; "seat_heat_state_r" -> 2
         "defrost_front_state" -> 1; "defrost_rear_state" -> 2
         "tyre_p_fl" -> 1; "tyre_p_fr" -> 2; "tyre_p_rl" -> 3; "tyre_p_rr" -> 4
+        // 2.88 — `getTyrePressureState(area)` / `getTyreAirLeakState(area)`: CÙNG bộ `area` với áp suất (stub :27-30).
+        "tyre_ps_fl" -> 1; "tyre_ps_fr" -> 2; "tyre_ps_rl" -> 3; "tyre_ps_rr" -> 4
+        "tyre_lk_fl" -> 1; "tyre_lk_fr" -> 2; "tyre_lk_rl" -> 3; "tyre_lk_rr" -> 4
         "door_lf" -> 1; "door_rf" -> 2; "door_lr" -> 3; "door_rr" -> 4
         else -> null
     }
@@ -84,6 +87,16 @@ object HalReadTables {
      *  Khai TRƯỚC [INVALID_VALUES]: thân `object` khởi tạo theo thứ tự khai, dùng trước là đọc một `null`. */
     private val BODYWORK_UNDEFINED: Set<Int> = setOf(255)
 
+    /** 2.88 — `COLOR_INVALID = 0` của màu lốp cụm đồng hồ ([TyreJudge.COLOUR_INVALID]): cụm chưa có màu ⇒ `null`
+     *  ⇒ chip lùi sang mã TPMS; KHÔNG nguội (getter đã trả lời — [INVALID_IS_PENDING], soát Pass 2). Khai TRƯỚC [INVALID_VALUES]. */
+    private val TYRE_COLOUR_INVALID: Set<Int> = setOf(TyreJudge.COLOUR_INVALID)
+
+    /** 2.88 · bốn MÃ OEM trong dải số áp suất lốp (`TyreJudge.PRESSURE_BURST..PRESSURE_DEFAULT` — [ĐO source] L3
+     *  `TyreCardView.java:34-37`): lọc ở đây ⇒ chip · bảng · ô nhóm · ô nhỏ · giọng nói cùng một luật. Khai TRƯỚC [INVALID_VALUES]. */
+    private val TYRE_PRESSURE_CODES: Set<Int> = setOf(
+        TyreJudge.PRESSURE_BURST, TyreJudge.PRESSURE_ABNORMAL, TyreJudge.PRESSURE_NONE, TyreJudge.PRESSURE_DEFAULT,
+    )
+
     /**
      * Giá trị "không hợp lệ" riêng từng getter ⇒ unavailable: tầm điện `getElecDrivingRangeValue` trả
      * STATISTIC_ELEC_DRIVING_RANGE_INVALID=1000 / DEFAULT=1023 (BYDAutoStatisticDevice.java:56-57).
@@ -111,5 +124,22 @@ object HalReadTables {
         "door_lr" to BODYWORK_UNDEFINED,
         "door_rr" to BODYWORK_UNDEFINED,
         "sunroof_state" to BODYWORK_UNDEFINED,
-    )
+    ) + TyreIds.COLOUR.associateWith { TYRE_COLOUR_INVALID } + TyreIds.PRESSURE.associateWith { TYRE_PRESSURE_CODES }
+
+    /**
+     * ═══ 2.88 · soát Pass 2 — mã [INVALID_VALUES] nghĩa là *"CHƯA có số"*, không phải *"xe không có"* ═══════════════
+     *
+     * Datum ở đây: getter trả một mã không-có-số thì vẫn HIỆN "—" như mọi datum khác ([HalBindingTable.readRaw]), nhưng
+     * nhịp poll ([CarDataAdapter]) **không** cho [HalAbsentCache] nguội vì nó — getter đã TRẢ LỜI. Màu lốp cụm 0
+     * (`COLOR_INVALID`) và áp suất 4094/4095 = *chưa có số* (lúc vừa nổ máy, cảm biến TPMS chưa phát); 4092/4093 = mã
+     * BÁO của chính xe (nổ lốp / bất thường) — cũng là lời đáp của getter nên cũng không nguội [ĐO L3
+     * `TyreCardView.java:34-37,141-156`: BURST 4092 · ABNORMAL 4093 · NONE 4094; giá trị trên xe owner CHƯA đo, spec
+     * §6.1]. Màu (đỏ/vàng) của hai mã báo vẫn đến từ màu cụm (M1) — chỉ mất chữ lý do "nổ lốp" (backlog). Cho nguội
+     * thì giãn 60 s → … → 10 phút: lốp đã có số mà chip/bảng vẫn "—" / XÁM thêm vài phút, và trong lúc màu cụm nguội
+     * phép phán lùi sang mã TPMS (M2–M6) dù cụm đã có lời. Getter VẮNG thật (sentinel / không tra được tên) vẫn nguội.
+     *
+     * Không mở cho cửa/tầm điện: chúng giữ quyết định nguội của soát 09-27 (255 = chưa xác định). Ngân sách K1 đo lại
+     * ở `TyreChipTest` (R7 K1 — ca màu cụm 0: 144 lượt/phút).
+     */
+    val INVALID_IS_PENDING: Set<String> = (TyreIds.COLOUR + TyreIds.PRESSURE).toSet()
 }

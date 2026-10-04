@@ -232,9 +232,9 @@ class LayeringRulesTest {
         // một nửa của `VdAppHost.onTouchEvent` (View, chỉ một chỗ dùng), cùng lẽ `KachiSpaceBars.kt`/`WorkspacePrefsSlotHead.kt`.
         "VdTouchExec.kt" to "nửa tách ra của VdAppHost (View) — luồng chạm đường lùi của màn ảo ô, một chỗ dùng",
         // Soát 2.87 · R-OP3 P3 (2026-10-04): bảng map sắc thái chip → VAI MÀU `KachiTheme` (bảng màu chỉ ở `:app`), tách
-        // nguyên văn khỏi `KachiTopStrip.refreshChips` để `ChromeRoles` (sàn đọc được của thanh trên khi mờ) đọc CÙNG
-        // bảng. "Thuần" theo phép đo chỉ vì không nhắc chữ View — `:core` chỉ nói SẮC THÁI ([ChipTone]), không màu.
-        "TopStripChipInk.kt" to "bảng map ChipTone → vai màu KachiTheme (:app) — KachiTopStrip vẽ, ChromeRoles đo, một chỗ khai",
+        // nguyên văn khỏi `KachiTopStrip.refreshChips` (2.88 gỡ bộ giải độ đục từng đọc chung nó; bảng vẫn là chỗ khai duy
+        // nhất). "Thuần" theo phép đo chỉ vì không nhắc chữ View — `:core` chỉ nói SẮC THÁI ([ChipTone]), không màu.
+        "TopStripChipInk.kt" to "bảng map ChipTone → vai màu KachiTheme (:app) — KachiTopStrip vẽ, một chỗ khai",
     )
 
     @Test

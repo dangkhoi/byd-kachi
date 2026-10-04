@@ -124,7 +124,7 @@ internal object SlotReturnRun {
  *
  * @param current host chưa nhả và vẫn đang giữ app [String] (kết quả về muộn của một app cũ phải im).
  * @param onClosed app đã rời ô hẳn ⇒ host giấu mặt vẽ + báo lên luật hoàn ô (L6 `SlotRevertPlan.Event.APP_DIED`: trong suốt /
- *   về nội dung LƯU — thẻ "app đã đóng — chạm để mở lại" cũ đã gỡ) · @param reopen đường mở ô golden (force-stop + mở lại).
+ *   widget LƯU về — thẻ "app đã đóng — chạm để mở lại" cũ đã gỡ) · @param reopen đường mở ô golden (force-stop + mở lại).
  * @param onTap chạm thẻ "Đang mở toàn màn" ⇒ host gọi lại [bringBack] với màn ảo/kênh hiện tại.
  */
 internal class SlotFullscreen(

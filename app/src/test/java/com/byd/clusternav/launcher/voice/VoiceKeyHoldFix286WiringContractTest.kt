@@ -94,8 +94,8 @@ class VoiceKeyHoldFix286WiringContractTest {
     fun `VK2 - doi bang gan phim, cong tac nhan nut va doi ho so deu sync wake`() {
         listOf(
             "fun ClusterNavBridge.setVoiceKeyEnabled(on: Boolean, onDone: (Boolean) -> Unit = {})",
-            "fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String?",
-            "fun ClusterNavBridge.removeBinding(keyCode: Int)",
+            "fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String?",
+            "fun ClusterNavBridge.removeBinding(keyCode: Int, source: KeySourceKind? = null)",
         ).forEach { sig -> assertTrue(SourceRoots.body(keys, sig).contains("VoiceWakeService.sync(app)"), "`$sig` phải sync `:wake`") }
         assertTrue(SourceRoots.body(reapply, "internal fun ClusterNavBridge.reapplyAll()").contains("step(\"voice.wake\") { VoiceWakeService.sync(app) }"),
             "bảng gán phím theo HỒ SƠ ⇒ đổi hồ sơ phải sync")
@@ -169,8 +169,8 @@ class VoiceKeyHoldFix286WiringContractTest {
             prefs to "fun setVoiceMusicDefaultApp(ctx: Context, key: String)",
             prefs to "fun setWakeEnabled(ctx: Context, on: Boolean)",
             prefs to "fun setVoiceKeyEnabled(ctx: Context, v: Boolean)",
-            prefs to "fun addVoiceKeyBinding(ctx: Context, keyCode: Int, targetSpec: String): String?",
-            prefs to "fun removeVoiceKeyBinding(ctx: Context, keyCode: Int)",
+            prefs to "fun addVoiceKeyBinding(ctx: Context, keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String?",
+            prefs to "fun removeVoiceKeyBinding(ctx: Context, keyCode: Int, source: KeySourceKind? = null)",
             prefsV3 to "fun Prefs.setVoiceConfirmIds(ctx: Context, ids: Set<String>)",
             prefsV3 to "fun Prefs.resetVoiceConfirmIds(ctx: Context)",
         ).forEach { (src, sig) ->

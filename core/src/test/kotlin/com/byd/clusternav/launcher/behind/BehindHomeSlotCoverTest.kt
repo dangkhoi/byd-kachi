@@ -163,4 +163,38 @@ class BehindHomeSlotCoverTest {
         val blank = Rig(listOf("before", "covered", "covered", "covered", "anchor", "moved", "after").map(::l8) + "")
         assertEquals(Result.KEPT_UNDER, blank.seq.evictCovered(vd, ytm, blank.cover).result)
     }
+
+    /**
+     * Lỗi xe 2.87 (owner 04/10: *"bấm vào nó đen cái khung, xong rồi lại lòi lên lại"*; chưa có log xe) — khoá: MỌI đường dừng
+     * của chuỗi *chạy nền* ra một lý do NGẮN ([BehindReason.short]) chỉ đúng chỗ dừng, rút từ CHÍNH dòng chuỗi vừa in (không
+     * dựng song song). Câu báo trên màn mang lý do này ⇒ ảnh chụp anh em gửi về đủ để biết bước nào hỏng (CLAUDE.md §11).
+     * Mỗi ca chạy CHUỖI THẬT trên fixture nguyên văn / dẫn xuất ở các bài trên — dạng dòng đổi là bài này đỏ.
+     */
+    @Test
+    fun `ly do ngan cho anh chup - moi duong dung cua chuoi chay nen noi dung cho dung`() {
+        val noCover = Regex("(?ms)^Stack id=744 .*?(?=^Stack id=|\\z)").replace(l8("covered"), "")
+        val notHome = l8("before")
+            .replace("KachiHome bounds=[0,0][1920,1080] userId=0 visible=true", "KachiHome bounds=[0,0][1920,1080] userId=0 visible=false")
+            .replace("vn.vietmap.live.MainActivity bounds=[0,0][1920,1080] userId=0 visible=false", "vn.vietmap.live.MainActivity bounds=[0,0][1920,1080] userId=0 visible=true")
+        val stillThere = l8("after") + "\n" + Regex("(?ms)^Stack id=743 .*?(?=^Stack id=|\\z)").find(l8("before"))!!.value
+        val path = listOf("before", "covered", "covered", "covered", "anchor", "moved", "after").map(::l8)
+        fun why(reads: List<String>, a: String = ytm, v: Int = vd, system: Boolean = false, covers: Boolean = true): String {
+            val r = Rig(reads, system = system, covers = covers)
+            val out = r.seq.evictCovered(v, a, r.cover)
+            val short = BehindReason.short(out)
+            assertTrue(short.length <= BehindReason.MAX, short)
+            assertEquals(BehindReason.Report(out.outOfStage, short, out.line), BehindReason.report(out))
+            return short
+        }
+        assertEquals("KEPT_UNDER · lớp che không lên đỉnh màn ảo ô", why(listOf(l8("before"), noCover)))
+        assertEquals("KEPT_UNDER · lớp che không lên", why(listOf(l8("before")), covers = false))
+        assertEquals("KEPT_UNDER · màn nhà không ở đỉnh display 0", why(listOf(notHome)))
+        assertEquals("KEPT_UNDER · đọc lại: A còn task trên màn ảo ô ⇒ ô giữ app", why(path + stillThere))
+        assertEquals("KEPT_UNDER · đọc lại: không đọc được ⇒ ô giữ app", why(path + ""))
+        assertEquals("SYSTEM_APP · từ chối (app hệ thống, R0.6)", why(listOf(l8("before")), system = true))
+        assertEquals("KEPT_UNDER · từ chối (chính mình)", why(listOf(l8("before")), a = self))
+        assertEquals("X_NOT_STAGED · A không ở màn ảo ô", why(listOf(l8("before")), a = "vn.vietmap.live"))
+        assertEquals("X_NOT_STAGED · màn ảo không hợp lệ", why(listOf(l8("before")), v = 0))
+        assertEquals("MOVED · kiểm=OK", why(path + l8("after")), "đường thành công cũng đọc được (câu báo chỉ hiện khi hỏng)")
+    }
 }

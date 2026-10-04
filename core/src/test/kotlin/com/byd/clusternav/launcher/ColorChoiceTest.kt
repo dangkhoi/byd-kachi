@@ -33,10 +33,13 @@ class ColorChoiceTest {
         assertEquals(ColorChoice(AccentChoice.KACHI_BLUE, CardTone.WARM), ColorChoice.decode("nope;WARM"))
     }
 
-    /** 2.87 · R-OP1 — độ đục nền đi vòng tròn ở MỌI bậc × mọi màu × mọi tông (xuất/nhập hồ sơ mang theo chuỗi này). */
+    /**
+     * 2.87 · R-OP1 / 2.88 — độ đục nền đi vòng tròn ở MỌI vị trí thanh kéo (0..100 bước 5, kể cả `o0` = nền trong hẳn)
+     * × mọi màu × mọi tông (xuất/nhập hồ sơ mang theo chuỗi này). Khoá: hồ sơ xuất ra ở vị trí nào nhập lại ĐÚNG vị trí đó.
+     */
     @Test
-    fun `do duc nen di vong tron o moi bac`() {
-        ChromeOpacity.STEPS.forEach { pct ->
+    fun `do duc nen di vong tron o moi vi tri thanh keo`() {
+        (0..ChromeOpacity.POSITIONS).map(ChromeOpacity::ofPosition).forEach { pct ->
             AccentChoice.values().forEach { a ->
                 CardTone.values().forEach { t ->
                     val c = ColorChoice(a, t, pct)
@@ -71,19 +74,32 @@ class ColorChoiceTest {
         assertEquals(70, ColorChoice.decode("VIOLET;WARM;pearl;sealion6;o70").surfaceOpacity)
     }
 
-    /** Rác trong trường độ đục ⇒ kẹp về bậc gần nhất hoặc mặc định, KHÔNG sập, không ra số ngoài [ChromeOpacity.STEPS]. */
+    /**
+     * 2.88 — rác trong trường độ đục ⇒ bội của 5 gần nhất trong `[0, 100]` hoặc mặc định, KHÔNG sập. Khoá: (1) năm bậc
+     * 2.87 đọc ra ĐÚNG số cũ (hồ sơ 2.87 giữ dáng cũ từng byte); (2) `o0`/`o5`/`o100` là giá trị hợp lệ, không bị kéo
+     * về 40 như 2.87; (3) mọi chuỗi giải mã ra một vị trí có thật của thanh kéo.
+     */
     @Test
-    fun `do duc rac thi kep ve bac hop le`() {
-        assertEquals(40, ColorChoice.decode("TEAL;NEUTRAL;o7").surfaceOpacity, "dưới dải ⇒ bậc thấp nhất")
+    fun `do duc rac thi kep ve gia tri hop le`() {
+        listOf(100, 85, 70, 55, 40).forEach { assertEquals(it, ColorChoice.decode("TEAL;NEUTRAL;o$it").surfaceOpacity, "bậc 2.87 $it") }
+        assertEquals(0, ColorChoice.decode("TEAL;NEUTRAL;o0").surfaceOpacity, "o0 = nền trong hẳn (2.88), không còn kéo về 40")
+        assertEquals(5, ColorChoice.decode("TEAL;NEUTRAL;o5").surfaceOpacity)
+        assertEquals(100, ColorChoice.decode("TEAL;NEUTRAL;o100").surfaceOpacity)
+        assertEquals(5, ColorChoice.decode("TEAL;NEUTRAL;o7").surfaceOpacity, "lệch bước ⇒ bội của 5 gần nhất")
+        assertEquals(0, ColorChoice.decode("TEAL;NEUTRAL;o2").surfaceOpacity)
+        assertEquals(90, ColorChoice.decode("TEAL;NEUTRAL;o88").surfaceOpacity)
         assertEquals(100, ColorChoice.decode("TEAL;NEUTRAL;o250").surfaceOpacity, "trên dải ⇒ 100")
-        assertEquals(85, ColorChoice.decode("TEAL;NEUTRAL;o90").surfaceOpacity, "lệch bậc ⇒ bậc gần nhất")
         listOf("o", "o-5", "o1234", "oo70", "O70", "o7x", "  ").forEach {
             assertEquals(100, ColorChoice.decode("TEAL;NEUTRAL;$it").surfaceOpacity, it)
         }
         assertEquals(70, ColorChoice.decode("TEAL;NEUTRAL; o70 ").surfaceOpacity, "khoảng trắng quanh trường được bỏ")
-        listOf("o0", "o1", "o99", "o100", "o999").forEach {
-            assertTrue(ColorChoice.decode("TEAL;NEUTRAL;$it").surfaceOpacity in ChromeOpacity.STEPS, it)
+        val valid = (0..ChromeOpacity.POSITIONS).map(ChromeOpacity::ofPosition).toSet()
+        listOf("o0", "o1", "o3", "o42", "o99", "o100", "o999").forEach {
+            assertTrue(ColorChoice.decode("TEAL;NEUTRAL;$it").surfaceOpacity in valid, it)
         }
+        // Mặc định vẫn không ghi trường (chuỗi ≤ 2.86 từng byte); mọi giá trị khác ghi đúng số.
+        assertEquals("TEAL;NEUTRAL", ColorChoice(AccentChoice.TEAL, CardTone.NEUTRAL, 100).encode())
+        assertEquals("TEAL;NEUTRAL;o0", ColorChoice(AccentChoice.TEAL, CardTone.NEUTRAL, 0).encode())
     }
 
     @Test

@@ -48,9 +48,13 @@ class I18nTemplateIdentityTest {
             assertEquals(exp, at(l) { Slideshow.intervalLabel(sec) })
         }
         val low = old(l, "non", "low")
-        fun tyres(vararg kpa: Double) = CarStatus.Tyres(pFlKpa = kpa[0], pFrKpa = kpa[1], pRlKpa = kpa[2], pRrKpa = kpa[3])
-        for ((n, t) in listOf(1 to tyres(150.0, 250.0, 250.0, 250.0), 2 to tyres(150.0, 150.0, 250.0, 250.0))) {
-            val exp = old(l, "$n bánh $low", "$n ${if (n == 1) "wheel" else "wheels"} $low")
+        // 2.88: "non" = TPMS báo UNDER (mã 2) — không còn ngưỡng số; 0 = bình thường.
+        fun tyres(vararg ps: Int) = CarStatus.Tyres(
+            psFl = ps[0], psFr = ps[1], psRl = ps[2], psRr = ps[3], lkFl = 0, lkFr = 0, lkRl = 0, lkRr = 0, sys = 0,
+        )
+        for ((n, t) in listOf(1 to tyres(2, 0, 0, 0), 2 to tyres(2, 2, 0, 0))) {
+            // 2.88 soát ui-2: mẫu EN dạng liệt kê "{0} wheel: {1}" (lý do 2.88 là danh từ); khoá VI giữ nguyên.
+            val exp = old(l, "$n bánh $low", "$n ${if (n == 1) "wheel" else "wheels"}: $low")
             assertEquals(exp, at(l) { TyreBoard.verdict(TyreBoard.readings(t)) })
         }
     }
@@ -77,7 +81,8 @@ class I18nTemplateIdentityTest {
         listOf(
             CapabilityGroups.DOORS to shut.copy(body = shut.body.copy(doorLfOpen = true)),
             CapabilityGroups.DOORS to shut.copy(body = two),
-            CapabilityGroups.TYRES to CarStatus(tyres = CarStatus.Tyres(250.0, 250.0, 250.0, 210.0)),
+            // 2.88: lưu ý = xe báo lốp VÀNG (xì chậm) — không còn ngưỡng "lệch".
+            CapabilityGroups.TYRES to CarStatus(tyres = CarStatus.Tyres(250.0, 250.0, 250.0, 210.0, lkRr = TyreJudge.LEAK_SLOW)),
         ).forEach { (g, s) ->
             val m = at(l) { GroupBoard.of(g, s) }
             val alerts = m.cells.count { it.tone == GroupTone.ALERT }

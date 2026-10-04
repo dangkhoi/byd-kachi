@@ -94,15 +94,13 @@ class ReadTile internal constructor(
 internal fun readTileOf(
     ctx: Context,
     size: TileSize,
-    /** Ô nằm trên thanh nút (sàn mờ của thanh) — chỗ gọi nói thẳng, không suy từ [size] (soát 2.87 · R-OP P3). */
-    onBar: Boolean,
     pick: CapabilityPick,
     badge: (LinearLayout) -> View,
 ): ReadTile {
     val content = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
         val p = dpi(ctx, size.padDp); setPadding(p, p, p, p)
-        background = KachiChrome.fade(KachiTheme.surface(ctx, size.radius, domain = pick.domain), onBar)   // 2.87 R-OP
+        background = KachiChrome.fade(KachiTheme.surface(ctx, size.radius, domain = pick.domain))   // R-OP
     }
     val r = KachiTheme.iconRes(pick.icon)
     val iconName = CapabilityDots.iconOverride(pick.id) ?: pick.icon

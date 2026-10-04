@@ -20,8 +20,22 @@ import com.byd.clusternav.launcher.HalGateway
  * nên id phân giải theo TÊN trên chính xe đang chạy ([HalGateway.featureIdByName]). Bảng mã phím áp dụng, giá trị hợp
  * lệ và nghĩa của từng giá trị đều nằm trong [KeySourceProbeSpec] — xe đời khác có đầu dò khác thì THÊM một dòng vào
  * [KeySourceProbes.ALL], không sửa code đọc.
+ *
+ * ## Mã bền [code] (2.88 · KEY-SOURCE-SPLIT tầng 2, spec `kachi-288-key-source-split` §4.2)
+ * Dòng gán / nút tự học lưu nguồn bằng [code] (`"knob"` / `"wheel"`), KHÔNG bằng tên enum: đổi tên hằng trong code
+ * không được làm mất cấu hình đã lưu trên xe. [fromCode] trả `null` cho mã lạ (bản tương lai) — tầng lưu trữ BỎ dòng đó
+ * chứ không hạ thành dòng không nguồn (R5: hạ xuống thì nó bắt luôn nút còn lại).
  */
-enum class KeySourceKind { CONSOLE_KNOB, STEERING_WHEEL }
+enum class KeySourceKind(val code: String) {
+    CONSOLE_KNOB("knob"),
+    STEERING_WHEEL("wheel"),
+    ;
+
+    companion object {
+        /** Mã bền → nguồn; `null` khi [code] rỗng/lạ. */
+        fun fromCode(code: String?): KeySourceKind? = entries.firstOrNull { it.code == code }
+    }
+}
 
 /**
  * Một đầu dò nguồn phím.

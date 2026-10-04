@@ -190,11 +190,61 @@ Ghế lái	Driver seat	主驾座椅
 Ghế phụ	Passenger seat	副驾座椅
 non	low	偏低
 căng	high	偏高
-lệch	uneven	不均
 chưa đọc được áp suất	pressure not read yet	胎压未读取
 lốp ổn	tyres OK	轮胎正常
-{0} bánh {1}	{0} wheel {1}	{0}个轮胎{1}
-{0} bánh {1}	{0} wheels {1}	{0}个轮胎{1}
+{0} bánh {1}	{0} wheel: {1}	{0}个轮胎：{1}
+{0} bánh {1}	{0} wheels: {1}	{0}个轮胎：{1}
+# 2.88 — lốp theo phán xét của xe (spec docs/specs/kachi-288-tyre-car-state.html): chip · lý do · nhãn/diễn giải 13 mã thô · bảng mã.
+Áp suất lốp: {0}	Tyre pressure: {0}	胎压：{0}
+{0} {1}, bình thường	{0} {1}, normal	{0} {1}，正常
+{0} {1}, chưa rõ	{0} {1}, unknown	{0} {1}，状态未知
+{0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1}，注意：{2}
+{0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1}，警告：{2}
+xì nhanh	fast leak	快速漏气
+báo đỏ	red alert	红色警告
+xì chậm	slow leak	缓慢漏气
+lỗi cảm biến	sensor fault	传感器故障
+chú ý	caution	注意
+mã lạ	unknown code	未知代码
+chưa đọc được trạng thái lốp từ xe	tyre status not read from the car	未从车辆读取到轮胎状态
+Màu cảnh báo lốp trước-trái	Tyre warning colour front-left	左前轮胎警示颜色
+Màu cảnh báo lốp trước-phải	Tyre warning colour front-right	右前轮胎警示颜色
+Màu cảnh báo lốp sau-trái	Tyre warning colour rear-left	左后轮胎警示颜色
+Màu cảnh báo lốp sau-phải	Tyre warning colour rear-right	右后轮胎警示颜色
+Trạng thái áp lốp trước-trái	Tyre pressure state front-left	左前胎压状态
+Trạng thái áp lốp trước-phải	Tyre pressure state front-right	右前胎压状态
+Trạng thái áp lốp sau-trái	Tyre pressure state rear-left	左后胎压状态
+Trạng thái áp lốp sau-phải	Tyre pressure state rear-right	右后胎压状态
+Rò khí lốp trước-trái	Tyre air leak front-left	左前轮胎漏气
+Rò khí lốp trước-phải	Tyre air leak front-right	右前轮胎漏气
+Rò khí lốp sau-trái	Tyre air leak rear-left	左后轮胎漏气
+Rò khí lốp sau-phải	Tyre air leak rear-right	右后轮胎漏气
+Hệ thống giám sát lốp	Tyre monitoring system	胎压监测系统
+Màu cụm đồng hồ tô cho lốp trước bên trái	Colour the instrument cluster gives the front-left tyre	仪表盘为左前轮胎显示的颜色
+Màu cụm đồng hồ tô cho lốp trước bên phải	Colour the instrument cluster gives the front-right tyre	仪表盘为右前轮胎显示的颜色
+Màu cụm đồng hồ tô cho lốp sau bên trái	Colour the instrument cluster gives the rear-left tyre	仪表盘为左后轮胎显示的颜色
+Màu cụm đồng hồ tô cho lốp sau bên phải	Colour the instrument cluster gives the rear-right tyre	仪表盘为右后轮胎显示的颜色
+Xe đánh giá áp lốp trước bên trái: bình thường, căng hay non	Car's pressure verdict for the front-left tyre: normal, over or under	车辆对左前轮胎气压的判断：正常、过高或过低
+Xe đánh giá áp lốp trước bên phải: bình thường, căng hay non	Car's pressure verdict for the front-right tyre: normal, over or under	车辆对右前轮胎气压的判断：正常、过高或过低
+Xe đánh giá áp lốp sau bên trái: bình thường, căng hay non	Car's pressure verdict for the rear-left tyre: normal, over or under	车辆对左后轮胎气压的判断：正常、过高或过低
+Xe đánh giá áp lốp sau bên phải: bình thường, căng hay non	Car's pressure verdict for the rear-right tyre: normal, over or under	车辆对右后轮胎气压的判断：正常、过高或过低
+Lốp trước bên trái có đang xì hơi không	Whether the front-left tyre is leaking air	左前轮胎是否漏气
+Lốp trước bên phải có đang xì hơi không	Whether the front-right tyre is leaking air	右前轮胎是否漏气
+Lốp sau bên trái có đang xì hơi không	Whether the rear-left tyre is leaking air	左后轮胎是否漏气
+Lốp sau bên phải có đang xì hơi không	Whether the rear-right tyre is leaking air	右后轮胎是否漏气
+Tình trạng hệ thống giám sát áp suất lốp	Status of the tyre pressure monitoring system	胎压监测系统的状态
+Bình thường	Normal	正常
+Vàng	Yellow	黄色
+Đỏ	Red	红色
+Quá căng	Over-inflated	气压过高
+Non hơi	Under-inflated	气压过低
+Không rò	No leak	无漏气
+Xì nhanh	Fast leak	快速漏气
+Xì chậm	Slow leak	缓慢漏气
+Đang tự kiểm	Self-checking	自检中
+Tín hiệu bất thường	Signal abnormal	信号异常
+Hỏng	Failed	故障
+Bị che	Masked	已屏蔽
 bố cục rỗng: chưa vẽ khung nào	empty layout: no frame drawn yet	布局为空：尚未绘制任何框
 khung {0} nhỏ quá ({1}×{2}), tối thiểu {3}×{4}	frame {0} is too small ({1}×{2}), minimum {3}×{4}	框{0}太小（{1}×{2}），最小为{3}×{4}
 khung {0} ra ngoài lưới {1}×{2}	frame {0} falls outside the {1}×{2} grid	框{0}超出了{1}×{2}网格

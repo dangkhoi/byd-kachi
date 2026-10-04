@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.88 — chip áp suất lốp, màu theo phán xét của xe (TYRE-CHIP-CAR-STATE) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--red:#c4161c;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--red:#ff6961;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.red{color:var(--red)}.grey{color:var(--muted)}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node.new{background:var(--new)}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-family:"SF Mono",ui-monospace,monospace;font-size:15px;white-space:pre}
+.chip .ico{width:14px;height:14px;border-radius:3px;display:inline-block}
+@media(max-width:600px){.wrap{padding:28px 16px 80px}table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.88 — chip áp suất lốp, màu theo phán xét của chính xe</h1>
+<p class="muted">Slug: <code>kachi-288-tyre-car-state</code> · Branch <code>feat/key-source-split</code> · Backlog <code>TYRE-CHIP-CAR-STATE</code> · <span class="pill">Trạng thái: Current — đã đăng 2.88 (189) 04/10, lớp 1 trên xe chưa đo (TYRE-ONCAR-L1)</span></p>
+<p class="muted">Thay phần "ngưỡng" của <code>docs/specs/kachi-unified-capability-tile.html</code> §4.4 (W4 · OQ1 — ngưỡng agent tự chọn, owner chưa từng trả lời). Thiết kế + 4 báo cáo nghiên cứu chỉ-đọc ngày 04/10 là nguồn của spec này; bằng chứng dẫn <code>file:line</code> ở §8.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Review Pass 2 — 2026-10-04</b>: soát lại các vá Pass 1 (§10) — 2 phát hiện [P2] đã vá: mã TPMS giữ lại nay giới hạn theo <b>đồng hồ</b> (≤ 25 s, <code>TPMS_HOLD_MS</code>) thay vì đếm nhịp (bản đếm nhịp giữ được PS/LK/SYS cũ hàng giờ qua lúc màn khuất / lốp rời màn ⇒ XANH cũ) · mã "chưa có số" (màu cụm 0, áp 4092–4095) KHÔNG còn làm <code>HalAbsentCache</code> nguội getter (<code>HalReadTables.INVALID_IS_PENDING</code>) — ca màu cụm 0 trên màn mặc định nay 144 lượt/phút (§4.5).</li>
+<li><b>Review Pass 1 — 2026-10-04</b>: vá 8 phát hiện soát (§10) — mã áp OEM 4092–4095 lọc ở tầng đọc · kết luận xếp theo mức đã phán + mẫu EN dạng liệt kê · ngân sách đo trên màn MẶC ĐỊNH (SYS có điều kiện, mã TPMS mỗi 3 nhịp; §4.5) · 13 mã thô ra khỏi giọng nói (OQ4 đóng) · lời đáp <code>getid</code> rẽ theo từng mã sentinel.</li>
+<li><b>Pass 1 — 2026-10-04</b>: mã off-car + test xong (§9). Gỡ ba ngưỡng <code>LOW_BAR</code>/<code>HIGH_BAR</code>/<code>SPREAD_BAR</code> + <code>KPA_PER_BAR</code> + trạng thái <code>UNEVEN</code>; 13 mã trạng thái thô vào bộ đăng ký (<code>NEEDS_CAR</code>); chip <code>chip_tyres</code>; bảng/nhóm/ô nhỏ đọc cùng mức nặng. <b>Thay đổi thấy được</b>: xe không trả mã nào ⇒ số trên bảng lốp chuyển từ mực thường sang mực mờ (MUT2) = <i>"chưa phán được"</i>, không phải lỗi.</li>
+<li><b>Pass 0 — 2026-10-04</b>: Khởi tạo từ lệnh owner (§2) + thiết kế đã duyệt (mục A chip, B luật chung, C lớp 1, E bản đồ đổi, F test, G checklist xe). Owner <b>không</b> duyệt câu D2 (dòng mã thô hiện khi bật DevMode) ⇒ không làm.</li>
+</ul>
+
+<h2>2. Context</h2>
+<div class="card"><b>Lệnh owner 2026-10-04 (nguyên văn)</b>
+<ul>
+<li><i>"Vẽ icon bánh xe: 2.4 2.4 2.6 2.6 kiểu vậy, cho 4 bánh, cái nào cảnh báo thì vàng, đỏ, bình thường thì xanh lá như màu range lái"</i></li>
+<li><i>"Cảnh báo nó theo tùy loại xe đó nha, không hardcode số đâu"</i></li>
+<li>Miễn cổng đo-trước của CLAUDE.md §14 cho tính năng chỉ-đọc này: <i>"Cứ làm đi, lên xe test mà ko work thì kết nối adb máy tính vào soi sau, tin là work đi, làm kỹ tý là đc"</i></li>
+</ul></div>
+<p>Trước 2.88, <code>TyreBoard</code> phán non/căng/lệch bằng ba số agent tự chọn (2.0 / 3.2 / 0.3 bar). [SUY từ sweep 09-16/09-21] xe owner chạy trục sau cao hơn trục trước ≈ 0.2 bar (262/260/280/280 kPa) ⇒ luật "lệch" sai từ thiết kế, và mọi ngưỡng chung đều sai với ít nhất một đời xe. Xe đã có <b>hai lời phán của chính nó cho từng bánh</b>, hiệu chỉnh theo đời xe:</p>
+<ol>
+<li><b>Màu cụm đồng hồ</b> <code>INSTRUMENT_2IN1_{LF,RF,LB,RB}_TYRE_COLOR</code> (1 trắng · 2 vàng · 3 đỏ · 0 không hợp lệ). Launcher gốc BYD tô thẻ lốp <b>chỉ</b> bằng nguồn này.</li>
+<li><b>Mã trạng thái TPMS</b> của <code>BYDAutoTyreDevice</code>: áp suất (0 bình thường · 1 căng · 2 non), rò khí (0 · 1 nhanh · 2 chậm), hệ thống (0..4). SDK: <i>"exceeds / below normal range"</i> — người gọi không truyền giới hạn ⇒ "bình thường" là của xe.</li>
+</ol>
+<div class="card"><b>Cổng §14 — đã được owner miễn (trích trên).</b> Thay vì đo trước, 2.88 thiết kế để <b>lỗi thì về XÁM</b> (không bao giờ xanh khi chưa có mã hợp lệ), và mang hai kênh bằng chứng không cần adb (§4.4). Lệnh đo lớp 1 bằng cầu kiểm thử giữ ở §6 để chạy khi lên xe.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Không còn số ngưỡng.</b> <code>LOW_BAR</code>, <code>HIGH_BAR</code>, <code>SPREAD_BAR</code>, <code>KPA_PER_BAR</code>, <code>UNEVEN</code> không còn ở bất kỳ main nào. AC: một contract test cấm mọi hằng ngưỡng lốp (thay hai bài cũ cấm từng tên).</li>
+<li><b>R2 — Luật M nằm ở MỘT hàm thuần trong <code>:core</code></b> (<code>TyreJudge.judge</code>). AC: bảng chân trị phủ M1–M7, 4 sentinel, C = 0, mã lạ.</li>
+<li><b>R3 — Chip</b> <code>chip_tyres</code>: 4 số TT TP · ST SP, một dấu cách trong trục, hai dấu cách giữa trục; số theo <code>UnitPrefs</code> của hồ sơ (bar 1 chữ số · kPa 0 · psi 1), <b>không</b> in chữ đơn vị; bật nhãn ⇒ <code>"Lốp · a b  c d"</code>. Bánh không số ⇒ <code>"—"</code> vẫn tô màu xe phán; cả 4 không số và cả 4 xám ⇒ một <code>"—"</code>. Tuỳ chọn: có ở <code>BUILT_IN</code>, <b>không</b> ở <code>DEFAULT_IDS</code>. Icon <code>ic-group-tyres</code>; nhãn bộ chọn <i>"Áp suất lốp"</i> / <i>"Tyre pressure"</i> + zh/th/ms. AC: test bar/kPa/psi, nhãn bật/tắt, vị trí đoạn màu, một <code>"—"</code>.</li>
+<li><b>R4 — Màu từng con số</b>: xanh = cùng mực chip năng lượng (<code>ChipTone.ENERGY</code> → <code>KachiTheme.GREEN</code>), vàng = <code>WARN</code> → <code>AMBER</code>, đỏ = <code>ALERT</code> → <code>RED</code>, xám = <code>NEUTRAL</code> → <code>INK2</code>. Icon = màu nặng nhất; cả 4 xanh ⇒ xanh; còn lại trung tính. AC: <code>ChipView.runs</code> mang đúng sắc thái + đúng vị trí; chip cũ không đổi một byte (<code>runs</code> rỗng mặc định).</li>
+<li><b>R5 — Off-car không bao giờ xanh.</b> AC: <code>Tyres()</code> rỗng / toàn sentinel / toàn C = 0 / chỉ có số ⇒ không bánh nào xanh, chip không xanh.</li>
+<li><b>R6 — Đổi màu mà chữ giữ nguyên vẫn vẽ lại.</b> AC: khoá so của thanh trên gồm màu đã phân giải của từng đoạn.</li>
+<li><b>R7 — Ngân sách đọc K1 (&lt; 150 lượt/phút).</b> Luôn đọc áp suất ×4 + màu cụm ×4; PS/LK của bánh w chỉ đọc khi C(w) ≠ 1; SYS chỉ đọc khi có ít nhất một bánh mà C <b>không</b> phải 1/2/3 hợp lệ (M1 không bao giờ hỏi SYS); mã TPMS còn cần đọc mỗi 3 nhịp chậm, giữ số cũ ở giữa, chưa có số cũ ⇒ đọc ngay (soát Pass 1 · regress-2); số giữ lại không bao giờ già quá 25 s theo đồng hồ, màn khuất / lốp rời màn rồi quay lại ⇒ đọc ngay (soát Pass 2). Mã "chưa có số" (C = 0, áp 4092–4095) không làm nguội getter (soát Pass 2). AC: test adapter — C = 1 ⇒ 0 lượt PS/LK/SYS; C null/2 ⇒ có đọc; cả bốn C hợp lệ ⇒ 0 lượt SYS; <b>màn MẶC ĐỊNH</b> (<code>w_board</code> có lốp) &lt; 150 lượt/phút ở năm ca màu cụm (trắng · màu 0 · không kênh · đỏ · mã lạ); màn khuất 1 giờ / lốp rời màn 5 phút ⇒ nhịp đầu đọc lại; màu 0 / áp 4094 suốt 40 s rồi có số ⇒ nhịp kế thấy ngay.</li>
+<li><b>R8 — Sentinel.</b> <code>isSentinelRc</code> phủ cả dải FAILED · BUSY · TIMEOUT · INVALID; <code>tyre_c_*</code> coi 0 là không hợp lệ; cờ <code>sentinel</code> của <code>hal getid</code> dùng bộ parse chung. AC: test từng trường hợp.</li>
+<li><b>R9 — i18n.</b> Lý do mới + mẫu câu trình đọc màn hình đủ vi/en/zh/th/ms; xoá hàng "lệch". AC: <code>I18nCoverageTest</code> xanh, không hàng mồ côi.</li>
+<li><b>R10 — Kênh bằng chứng không cần adb.</b> Kênh 1 = chính màu chip/bảng (+ <i>"mã N"</i> trên bảng lốp). Kênh 2 = dòng log <code>TYRE raw … → màu src=…</code> chỉ ghi khi đổi. Kênh 3 (D2, dòng mã thô khi DevMode) <b>không làm</b>.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Chỉ đọc — không đường ghi nào mới (<code>setIndirectTyreConfirm</code> là lệnh GHI, không gọi). CLAUDE.md §4 không áp dụng.</li>
+<li>R-nf2. Generic: không <code>if</code> theo đời xe; khác biệt đời xe đến từ giá trị chính xe trả. Màu cụm bind theo <b>tên hằng</b> (feature-id gán lúc khởi tạo theo cấu hình xe).</li>
+<li>R-nf3. Tệp Kotlin ≤ 500 dòng; <code>:core</code> không import <code>android.*</code>.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng dữ liệu</h3>
+<div class="flow">
+  <div class="fnode new"><b>13 dòng đăng ký</b><span>tyre_c/ps/lk ×4 + tyre_sys · NEEDS_CAR</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>HalBindingTable</b><span>tên hằng / getter(area) · lọc sentinel + C=0 + mã áp 4092–4095</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>CarDataAdapter.readTyres</b><span>đọc có điều kiện (R7)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>CarStatus.Tyres</b><span>+13 trường Int? thô</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TyreJudge.judge</b><span>luật M1–M7 (một hàm)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>TyreBoard.readings</b><span>status · severity · source</span></div>
+</div>
+<div class="layers">
+  <div class="layer">
+    <div class="node new"><b>Chip áp suất lốp</b><span>TopStripChips.tyreChip → runs</span></div>
+    <div class="node"><b>Bảng lốp</b><span>TyreBoardView: màu theo severity, "mã N"</span></div>
+    <div class="node"><b>Nhóm Lốp</b><span>GroupBoard.tyreTone(severity)</span></div>
+    <div class="node"><b>Ô nhỏ / w_board</b><span>WidgetViews.tyreInk(worst)</span></div>
+    <div class="node new"><b>Kênh 2: log</b><span>TyreRawLog → TYRE raw … (chỉ khi đổi)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>:app</b><span>TopStripChipInk: span màu + khoá có màu (R6)</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có (sửa)</span>
+  <span class="sw"><span class="box" style="background:var(--new)"></span> khối mới</span>
+</div>
+
+<h3>4.2 Thứ tự nguồn màu + bảng chân trị M1–M7</h3>
+<p>Thứ tự nguồn: <b>màu cụm đồng hồ</b> <code>INSTRUMENT_2IN1_{LF,RF,LB,RB}_TYRE_COLOR</code> trước (LB = sau-trái, RB = sau-phải; gắn theo TÊN — tránh bẫy đánh số <code>getWheelColor</code> RF=1 · RR=2 · LF=3 · LR=4), rồi <b>mã TPMS</b> (PS · LK · SYS), không có ⇒ <b>XÁM</b>. Khớp luật đầu tiên thì dừng. Giá trị hợp lệ: C ∈ {1,2,3} (0 = INVALID) · PS ∈ {0,1,2} · LK ∈ {0,1,2} · SYS ∈ {0..4}; mọi giá trị khác (4 sentinel −2147482648..−2147482645, mã lạ) = không có.</p>
+<table>
+<tr><th>Luật</th><th>Điều kiện</th><th>Màu</th><th>Chữ lý do</th><th>Nguồn</th></tr>
+<tr><td>M1</td><td>C = 3 / 2 / 1</td><td><span class="red">ĐỎ</span> / <span class="warn">VÀNG</span> / <span class="ok">XANH</span></td><td>từ PS/LK nếu hợp lệ (xì nhanh ▸ non ▸ căng ▸ xì chậm), không thì "báo đỏ" / "chú ý"; C = 1 không chữ</td><td>cluster</td></tr>
+<tr><td>M2</td><td>C không hợp lệ, SYS ∈ {1 tự kiểm, 4 bị che}</td><td class="grey">XÁM</td><td>—</td><td>tyre</td></tr>
+<tr><td>M3</td><td>SYS ∈ {2 tín hiệu bất thường, 3 hỏng}</td><td class="warn">VÀNG (cả 4 bánh)</td><td>lỗi cảm biến</td><td>tyre</td></tr>
+<tr><td>M4</td><td>LK = 1 hoặc PS = 2 hoặc PS = 1</td><td class="red">ĐỎ</td><td>xì nhanh / non / căng</td><td>tyre</td></tr>
+<tr><td>M5</td><td>LK = 2</td><td class="warn">VÀNG</td><td>xì chậm</td><td>tyre</td></tr>
+<tr><td>M6</td><td>PS = 0 và LK = 0 và SYS = 0 (cả ba hợp lệ)</td><td class="ok">XANH</td><td>—</td><td>tyre</td></tr>
+<tr><td>M7</td><td>còn lại</td><td class="grey">XÁM</td><td>mã lạ (không phải sentinel) ⇒ "mã N"</td><td>none</td></tr>
+</table>
+<ul>
+<li>Một mã bất thường hợp lệ là đủ để cảnh báo (M4/M5 vẫn chạy khi SYS đọc hỏng). XANH cần ĐỦ mã hợp lệ và tất cả bình thường. Off-car rơi M7 ⇒ không bao giờ XANH.</li>
+<li><b>Màu ≠ chữ</b> ở M1: cụm vàng + TPMS "non" ⇒ VÀNG chữ "non" (<code>TyreJudgement.severity</code> tách khỏi <code>status</code>).</li>
+<li>Không dùng ở 2.88: tín hiệu từng bánh, <code>getTyreTemperatureState</code>, pin cảm biến, <code>getIndirectTyreSystemState</code> (trạng thái reset hiệu chuẩn, không phải cảnh báo).</li>
+<li>Áp suất: bốn <b>mã OEM</b> trong dải số — 4092 nổ lốp · 4093 bất thường · 4094 chưa có số · 4095 mặc định ([ĐO source] launcher gốc BYD L3 <code>TyreCardView.java:34-37</code>, xử ở :140-161: không bao giờ in thành số) ⇒ không có số, lọc ở <b>tầng đọc</b> (<code>HalReadTables.INVALID_VALUES</code>, cùng cơ chế <code>tyre_c_*</code> → {0}) ⇒ chip · bảng · ô nhóm · ô nhỏ · câu hỏi bằng giọng cùng một luật; số âm / không hữu hạn ⇒ lưới cuối ở <code>TyreBoard</code>. Mã, KHÔNG phải ngưỡng (~41 bar không thể là áp suất thật). ⚠ L3 đọc kênh cụm <code>INSTRUMENT_2IN1_*_TYRE_PRESSURE</code>; việc <code>getTyrePressureValue</code> của TyreDevice dùng cùng bộ mã là [SUY] — lớp 1 (§6.1) chốt.</li>
+</ul>
+
+<h3>4.3 Chip</h3>
+<p>Mẫu (bật nhãn, đơn vị bar):</p>
+<p><span class="chip"><span class="ico" style="background:var(--red)"></span><span class="red">Lốp · </span><span class="red">1.8</span> <span class="warn">2.3</span>  <span class="ok">2.6</span> <span class="grey">—</span></span>
+&nbsp; <span class="chip"><span class="ico" style="background:var(--ok)"></span><span class="ok">2.4 2.4  2.6 2.6</span></span></p>
+<p>Câu trình đọc màn hình (5 tiếng): <code>Áp suất lốp: Trước trái 2.4 bar, bình thường; … Sau phải 2.6 bar, cảnh báo: non</code>. Mẫu: <code>"{0} {1}, bình thường"</code> · <code>"{0} {1}, chưa rõ"</code> · <code>"{0} {1}, chú ý: {2}"</code> · <code>"{0} {1}, cảnh báo: {2}"</code>.</p>
+
+<h3>4.4 Lớp 1 theo §14 · đăng 2.88 an toàn · bằng chứng không cần adb</h3>
+<ul>
+<li><b>C1</b> — lệnh đo trên xe bằng cầu kiểm thử: §6 (chạy khi lên xe; owner đã miễn cổng đo-trước).</li>
+<li><b>C2</b> — dòng đăng ký mới mức <code>NEEDS_CAR</code> (mức bằng chứng không chặn đọc — <code>readPathOf</code> không xét tier); chỉ đọc; không mã hợp lệ ⇒ XÁM; getter vắng (sentinel / không tra được tên) ⇒ <code>HalAbsentCache</code> cho nguội — getter trả mã "chưa có số" (màu cụm 0, áp 4092–4095) thì KHÔNG nguội (soát Pass 2, <code>HalReadTables.INVALID_IS_PENDING</code>). ⚠ Chip là tuỳ chọn, <b>nhưng</b> ô <code>w_board</code> của bố cục MẶC ĐỊNH cũng bày lốp ⇒ MỌI người dùng bố cục mặc định đều đọc thêm mã trạng thái (ngân sách §4.5) và thấy bảng lốp tô màu theo xe — không chỉ người chọn chip (soát Pass 1 · regress-2 sửa câu cũ <i>"ai không chọn không thấy gì đổi"</i>). Rủi ro còn lại: xe trả mã sai nghĩa ⇒ báo đỏ oan [CHƯA BIẾT] — C1 đóng rủi ro này cho Seal DL3. Bump <code>versionCode</code> lúc đăng (CLAUDE.md §9 — <b>ngoài phạm vi lượt này</b>).</li>
+<li><b>C3 kênh 1</b> — màu chip/bảng: XANH chỉ xuất hiện khi xe trả mã hợp lệ và bình thường ⇒ ảnh chụp chip XANH chứng minh getter phục vụ trên đời xe đó; toàn XÁM = không nguồn nào phục vụ; bảng lốp in <i>"mã N"</i> khi gặp mã lạ.</li>
+<li><b>C3 kênh 2</b> — dòng log <code>KachiTyre</code>, chỉ ghi khi đổi (<code>LogLineThrottle(windowMs = 10 phút, maxKeys = 1)</code>), tự vào <code>usage-*.log</code>:
+<pre>TYRE raw p=4/4 c=1,1,1,3|ps=-,-,-,2|lk=-,-,-,-|sys=- → G,G,G,R src=cluster</pre>
+<code>-</code> = chưa đọc · màu <code>G</code> xanh · <code>Y</code> vàng · <code>R</code> đỏ · <code>N</code> xám · <code>src</code> = <code>cluster</code> / <code>tyre</code> / <code>cluster+tyre</code> / <code>none</code>. Không in con số áp suất (nhảy ±1 kPa/nhịp).</li>
+<li><b>C3 kênh 3 (D2)</b> — <b>không làm</b> (owner không duyệt).</li>
+</ul>
+
+<h3>4.5 Ngân sách đọc (R7)</h3>
+<p>[ĐO off-car 2026-10-04 — <code>TyreChipTest</code> <i>R7 K1</i>, đo lại ở soát Pass 2] Màn <b>MẶC ĐỊNH</b> (<code>WorkspaceState.DEFAULT</code> có <code>w_board</code> + chip mặc định; thanh nút đọc ở nhịp nhanh nên ngoài phép đo), gateway trả lời MỌI lượt đọc (trần trên), 1 phút làm nóng rồi đo 10 phút. Trước 2.88 = 102 lượt/phút (17 datum × 6).</p>
+<table>
+<tr><th>Ca màu cụm (cả 4 bánh)</th><th>Mã TPMS / phút</th><th>Màu cụm / phút</th><th>Tổng màn mặc định / phút</th></tr>
+<tr><td>Trắng (cụm nói bình thường)</td><td>0</td><td>24</td><td><b>126</b></td></tr>
+<tr><td>Cụm chưa có màu (0 = INVALID, getter CÓ trả lời ⇒ KHÔNG nguội — soát Pass 2)</td><td>18 (PS/LK ×8 + SYS, mỗi 3 nhịp)</td><td>24</td><td><b>144</b></td></tr>
+<tr><td>Không có kênh màu (FAILED / không tra được tên ⇒ nguội)</td><td>18</td><td>≤ 4 (thử lại của cache)</td><td><b>≈ 123</b></td></tr>
+<tr><td>Đỏ / vàng (sáng lạnh, TPMS chưa hiệu chuẩn)</td><td>16 (PS/LK ×8 mỗi 3 nhịp; KHÔNG SYS)</td><td>24</td><td><b>142</b></td></tr>
+<tr><td>Mã màu lạ (không nguội, không phán được)</td><td>18</td><td>24</td><td><b>144</b></td></tr>
+<tr><td>Trần K1</td><td colspan="3">&lt; 150 lượt/phút (<code>CarDataDemand</code>)</td></tr>
+</table>
+<p>Vì sao mỗi <b>3</b> nhịp (≈ 30 s): cùng phép đo — mỗi nhịp = 126 · 159 · 174 · 180; mỗi 2 nhịp = 126 · 132 · <b>150</b> · 153 (ca đỏ chạm đúng trần). Chữ lý do / lời phán dự phòng trễ tối đa 30 s; cụm đồng hồ của xe vẫn báo ngay. Bản Pass 0 của bảng này ghi <i>"nặng nhất 13 mục = 78 lượt/phút"</i> và chỉ đo màn chỉ-có-chip — sai cả hai (soát Pass 1 · regress-2).</p>
+<p>Một dòng <code>CarDataDemand.COMPANION</code> (<code>tyre_p_x</code> → <code>tyre_c_x, tyre_ps_x, tyre_lk_x, tyre_sys</code>) phủ mọi bề mặt bày lốp: <code>w_tire</code>, <code>w_board</code>, <code>g_tyres</code>, chip. Mã trạng thái KHÔNG vào <code>g_tyres.reads</code> (mỗi mã đọc sẽ thành một ô).</p>
+
+<h3>4.6 Bảng bằng chứng</h3>
+<table>
+<tr><th>Mức</th><th>Khẳng định</th></tr>
+<tr><td>[ĐO source]</td><td>Mã trạng thái, sentinel, dải áp suất: <code>../jadx-tmap/sources/android/hardware/bydauto/tyre/BYDAutoTyreDevice.java:20-22, 31-47, 39-40</code>; getter <code>:99, :111, :115, :123</code>.</td></tr>
+<tr><td>[ĐO source]</td><td>Màu cụm 0/1/2/3 + bẫy đánh số <code>getWheelColor</code>: <code>…/instrument/BYDAutoInstrumentDevice.java:134-137, 590-593</code>.</td></tr>
+<tr><td>[ĐO source]</td><td>Launcher BYD (L3, Seal EU DiLink3) tô thẻ lốp CHỈ bằng màu cụm, 0 ngưỡng: <code>TyreCardView.java:127-167</code>; LB/RB = sau-trái/sau-phải: <code>BydAutoTyrePressureInstrumentMonitor.java:144-158</code>.</td></tr>
+<tr><td>[ĐO source]</td><td>Cùng bộ sentinel ở device khác: <code>ac/BYDAutoAcDevice.java:11,15</code> · <code>bodywork/BYDAutoBodyworkDevice.java:185,189</code>.</td></tr>
+<tr><td>[ĐO mã]</td><td>Mức bằng chứng không chặn đọc: <code>HalRoutes.kt</code> <code>readPathOf</code>. Bản cũ <code>isSentinelRc</code> chỉ bắt 2 mã; cờ <code>sentinel</code> của <code>getid</code> luôn <code>false</code> (<code>toLongOrNull()</code> trên <code>"int=…"</code>).</td></tr>
+<tr><td>[ĐO off-car 04/10]</td><td>Bảng chân trị + đọc có điều kiện + chip: §9 (số test từ XML).</td></tr>
+<tr><td>[SUY]</td><td>Áp suất xe owner 262/260/280/280 kPa (sweep 09-16) — dữ liệu cũ ⇒ tối đa [SUY]. Tên hằng màu cụm có trong featmap xe 09-16 (cả dạng phẳng lẫn <code>Instrument.*</code>).</td></tr>
+<tr><td>[SUY]</td><td>Giới hạn "bình thường" do ECU TPMS/cụm hiệu chỉnh theo đời xe; SYS = 2 bao trùm lỗi tín hiệu từng bánh; màu cụm = 0 suốt = đời xe không dùng kênh này.</td></tr>
+<tr><td>[CHƯA BIẾT]</td><td>Giá trị thật trên xe owner của PS · LK · tín hiệu · SYS · <code>TYRE_COLOR</code> · <code>DIRECT_TYRE_PRES_DISPLAY_STATE</code> · <code>TYRE_PRESSURE_CAR_TYPE</code> · <code>UNIT_PRESSURE</code> (C1 chốt). Vàng/đỏ không kiểm được nếu không có lốp thật sự non. DiLink5: không có nguồn. Xe đo gián tiếp có trả màu cụm không.</td></tr>
+</table>
+
+<h3>4.7 Quyết định + Context7</h3>
+<ul>
+<li>Không thư viện mới — chỉ Android SDK (<code>SpannableString</code>/<code>ForegroundColorSpan</code>, API 1) và khối sẵn có ⇒ không cần Context7.</li>
+<li>Một hàm phán (<code>TyreJudge.judge</code>), một chỗ khai mã theo bánh (<code>TyreIds</code>), một bảng chữ (<code>TelemetryEnums</code> — 13 bảng dùng chung 4 bộ mục).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Luật M + mã OEM + bộ mã theo bánh</td><td><code>core/…/TyreJudge.kt</code> (mới)</td><td>DONE off-car</td></tr>
+<tr><td>T2</td><td>TyreStatus/TyreSeverity/TyreReading mới; gỡ ngưỡng; verdict; <code>rawLine</code></td><td><code>core/…/TyreBoard.kt</code></td><td>DONE off-car</td></tr>
+<tr><td>T3</td><td>13 dòng đăng ký + readArg + INVALID_VALUES + chữ enum + mô tả + icon + ẩn khỏi bộ chọn</td><td><code>TelemetryRegistry · HalReadTables · TelemetryEnums · TelemetryReadout · CapabilityDescriptions · CapabilityIcons · LauncherCatalog</code></td><td>DONE off-car</td></tr>
+<tr><td>T4</td><td>Đọc có điều kiện (R7) + bạn đồng hành + nhu cầu chip</td><td><code>CarDataAdapter · CarDataDemand · CarStatus</code></td><td>DONE off-car</td></tr>
+<tr><td>T5</td><td><code>isSentinelRc</code> phủ cả dải (R8)</td><td><code>HalBindingTable.kt</code></td><td>DONE off-car</td></tr>
+<tr><td>T6</td><td>Chip: <code>ChipRun</code>, <code>ChipTone.WARN/ALERT</code>, <code>chip_tyres</code>, <code>tyreChip</code></td><td><code>TopStrip.kt · TopStripChips.kt</code></td><td>DONE off-car</td></tr>
+<tr><td>T7</td><td>Nhóm/bảng/ô nhỏ theo severity</td><td><code>GroupBoard · TyreBoardView · WidgetViews</code></td><td>DONE off-car</td></tr>
+<tr><td>T8</td><td>Span màu + khoá có màu (R6)</td><td><code>TopStripChipInk.kt · KachiTopStrip.kt · res/values/ids.xml</code></td><td>DONE off-car</td></tr>
+<tr><td>T9</td><td>Kênh 2 log + sửa cờ sentinel <code>getid</code></td><td><code>TyreRawLog.kt</code> (mới) · <code>KachiHomeWiring.kt</code> · <code>testbridge/TestBridgeHal.kt</code></td><td>DONE off-car</td></tr>
+<tr><td>T10</td><td>i18n zh/th/ms (50 cặp) + xoá "lệch"</td><td><code>core/src/main/resources/i18n/*.tsv</code></td><td>DONE off-car</td></tr>
+<tr><td>T11</td><td>Test: bảng chân trị · off-car không xanh · chip · ngân sách · contract không ngưỡng; sửa bài cũ</td><td><code>TyreCarStateTest · TyreChipTest · TyreNoThresholdContractTest</code> + bài cũ</td><td>DONE off-car</td></tr>
+<tr><td>T12</td><td>Senior review + security scan + bump version + đăng</td><td>—</td><td>Review Pass 1 + Pass 2 vá xong (§10) · security scan + bump + đăng TODO</td></tr>
+<tr><td>T13</td><td>Lớp 1 trên xe (§6) + checklist sau khi cài</td><td><code>docs/diagnostics/oncar-tyre-state-2026-10-xx/</code></td><td>TODO 🚗</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: <code>:core:test</code> + <code>:app:testDebugUnitTest</code> + <code>:app:compileReleaseKotlin</code> + <code>:app:lintDebug</code> — số đo ở §9.</li>
+<li><b>V-mutation</b>: gỡ từng vá ⇒ đúng bài đỏ (§9).</li>
+</ul>
+<h3>6.1 Lớp 1 trên xe — cầu kiểm thử (chạy khi lên xe)</h3>
+<p>Xe đỗ, nổ máy, WiFi bật, adb qua cầu nc, bật <i>Cài đặt › Hệ thống › Nâng cao › Chế độ kiểm thử qua adb</i>. Lưu đầu ra vào <code>docs/diagnostics/oncar-tyre-state-2026-10-xx/</code> rồi cập nhật INDEX/BACKLOG/project-context. Với bản 2.88 đã cài, cờ <code>sentinel</code> của <code>getid</code> đúng; với bản cũ hãy đọc trường <code>value</code>.</p>
+<pre>BR='am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd hal'
+# TPMS từng bánh (area 1..4 = TT TP ST SP)
+for N in 1 2 3 4; do
+  adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyrePressureState --es args $N"
+  adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyreAirLeakState --es args $N"
+  adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyreSignalState --es args $N"
+  adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyrePressureValue --es args $N"
+done
+# Không tham số
+adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyreSystemState"
+adb shell "$BR --es op get --es dev BYDAutoTyreDevice --es m getTyreTemperatureState"
+# Màu cụm + ngữ cảnh (theo TÊN hằng)
+for W in LF RF LB RB; do
+  adb shell "$BR --es op getid --es dev BYDAutoInstrumentDevice --es m INSTRUMENT_2IN1_${W}_TYRE_COLOR"
+done
+for K in INSTRUMENT_DIRECT_TYRE_PRES_DISPLAY_STATE INSTRUMENT_2IN1_TYRE_PRESSURE_CAR_TYPE INSTRUMENT_UNIT_PRESSURE; do
+  adb shell "$BR --es op getid --es dev BYDAutoInstrumentDevice --es m $K"
+done
+# Bản 2.88: một lượt sweep đọc cả 13 mã mới qua đúng đường của chip
+adb shell "am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST --es cmd sweep"</pre>
+<p><b>Thêm (soát Pass 1 · truth-1):</b> ghi lại mọi lượt <code>getTyrePressureValue</code> trả <b>4092 / 4093 / 4094 / 4095</b> — đặc biệt chạy vòng TPMS ở trên NGAY sau khi nổ máy, trước khi cảm biến phát — để chốt [SUY] getter TyreDevice dùng cùng bộ mã OEM với kênh cụm của L3 (2.88 hiện các mã này thành "—"). Lời đáp <code>getid</code> của 2.88 nói đúng nghĩa từng sentinel (soát Pass 1 · regress-5): FAILED = trim không có (hoặc HAL từ chối) · BUSY/TIMEOUT = tạm thời, chạy lại, CHƯA kết luận được trim · INVALID_VALUE.</p>
+<p>Lớp 1 xanh khi mỗi getter trả mã nằm trong enum, hoặc trả sentinel và đã ghi lại rõ. Kiểm thêm giả thuyết [SUY]: khi tín hiệu một bánh = 1 thì SYS có thành 2 không — nếu KHÔNG, phải thêm tín hiệu từng bánh vào luật M (+4 lượt đọc/nhịp ở nhánh dự phòng).</p>
+<h3>6.2 Checklist sau khi cài 2.88 (design §G)</h3>
+<ol>
+<li>Đọc version thật: <code>adb shell dumpsys package com.byd.launcher | grep versionName</code> — không đoán.</li>
+<li>Chọn chip <i>Áp suất lốp</i>. So thứ tự với màn TPMS gốc: trục trước đọc khác nhau (vd 262 / 260) ⇒ chứng minh trái/phải; trục sau bằng nhau thì không chứng minh được.</li>
+<li>Lốp bình thường ⇒ 4 số XANH, cùng mực chip năng lượng. Chụp cả ngày lẫn đêm.</li>
+<li>Ngay sau khi nổ máy: chip XÁM rồi chuyển XANH — ghi lại mất bao nhiêu giây, tính từ lúc cụm đồng hồ hiện số/màu (soát Pass 2: mã "chưa có số" không còn làm nguội getter ⇒ kỳ vọng ≤ 1 nhịp 10 s; lâu hơn ⇒ soi <code>TYRE raw</code> + KachiPerf).</li>
+<li>Đổi đơn vị bar/kPa/psi trong hồ sơ; chip không bị cắt chữ.</li>
+<li>Bảng lốp, nhóm Lốp, ô nhỏ: cùng màu cảnh báo với chip.</li>
+<li>Tuỳ chọn, xe đỗ: xả một lốp tới khi cụm đồng hồ báo; chip đổi màu đúng bánh, đúng mức vàng/đỏ như cụm; bơm lại.</li>
+<li>KachiPerf: đếm lượt đọc HAL/phút khi chip đang hiện — trong ngân sách §4.5.</li>
+<li>Tester đời xe khác: chụp chip + bảng lốp (kênh 1); owner kéo <code>usage-*.log</code> tìm <code>TYRE raw</code> (kênh 2).</li>
+</ol>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. (D1) Đăng 2.88 trước khi chạy C1? — <span class="muted">Owner đã trả lời bằng lệnh miễn §14 (§2): làm, lên xe soi sau.</span></li>
+<li>OQ2. (D2) Dòng mã thô khi DevMode — <span class="muted">Owner KHÔNG duyệt ⇒ không làm.</span></li>
+<li>OQ3. Hằng <code>tyre_t_*</code> đang gắn feature-id SỐ — đổi sang tên hằng <code>INSTRUMENT_2IN1_*_TYRE_TEMPERATURE</code> (cùng tinh thần "không hardcode theo xe")? — <span class="muted">Ngoài phạm vi lượt này; đã vào backlog (P2).</span></li>
+<li>OQ4. Câu hỏi bằng giọng đọc được 13 mã thô? — <span class="muted">ĐÓNG ở soát Pass 1 (regress-3): 13 mã thô KHÔNG vào bộ từ vựng giọng nói nào (<code>VoiceTelemetry.NOT_SPOKEN</code>) ⇒ ngữ pháp về đúng 400 · 194 · 2028, không còn câu trả lời <i>"chưa đọc được"</i> giả. Câu hỏi áp suất lốp (<code>tyre_p_*</code>) không đổi.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec gốc bảng lốp: <code>docs/specs/kachi-unified-capability-tile.html</code> §4.4 (W4) · OQ1.</li>
+<li>Stub HAL: <code>../jadx-tmap/sources/android/hardware/bydauto/tyre/BYDAutoTyreDevice.java</code>, <code>…/instrument/BYDAutoInstrumentDevice.java</code>.</li>
+<li>Launcher gốc BYD: <code>../firmware/fw-2602-diff/jadx-l3-new/sources/com/android/launcher3/cardwindow/ui/view/customcard/TyreCardView.java</code>, <code>…/data/monitor/BydAutoTyrePressureInstrumentMonitor.java</code>.</li>
+<li>Featmap xe 09-16: <code>docs/diagnostics/oncar-trace-2026-09-16b/featmap-20260916.json</code>; sweep: <code>docs/diagnostics/carlog-0916/sweep-1.64.json</code>.</li>
+<li>Cầu kiểm thử: <code>docs/diagnostics/oncar-re-tasks-can-2026-09-20.md</code> (cú pháp <code>hal getid</code>).</li>
+<li>Mã: <code>core/…/TyreJudge.kt</code> · <code>TyreBoard.kt</code> · <code>TopStripChips.kt</code> (<code>tyreChip</code>) · <code>CarDataAdapter.kt</code> (<code>readTyres</code>) · <code>app/…/TopStripChipInk.kt</code> · <code>TyreRawLog.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-04 · Quyết định — MÀU tách khỏi CHỮ.</b> Thiết kế B cho mỗi <code>TyreStatus</code> một <code>severity</code>; nhánh M1 cần màu của <b>cụm</b> và chữ của <b>TPMS</b> (cụm vàng + TPMS "non"). Thực tế: <code>TyreStatus.severity</code> là màu MẶC ĐỊNH của chữ (dùng ở M2–M7), còn <code>TyreJudgement.severity</code> / <code>TyreReading.severity</code> là màu ĐÃ PHÁN — mọi bề mặt (chip · bảng · nhóm · ô nhỏ) chỉ đọc trường này (<code>TyreJudge.kt</code>, <code>TyreBoard.kt</code>).</li>
+<li><b>Sai lệch nhỏ — thứ tự khai <code>TyreStatus</code>.</b> Thiết kế liệt kê UNDER, OVER, LEAK_FAST, LEAK_SLOW, SENSOR, CAR_ALERT, CAR_WARN, CODE; làm: LEAK_FAST, UNDER, OVER, CAR_ALERT, LEAK_SLOW, SENSOR, CAR_WARN, CODE và <code>verdict</code> xếp ổn định theo mức nặng ⇒ "nêu thứ nguy trước" đúng tuyệt đối (đỏ ▸ vàng ▸ mã lạ). Kết luận thêm ca thứ tư: có số mà xe chưa phán ⇒ <i>"chưa đọc được trạng thái lốp từ xe"</i>.</li>
+<li><b>Quyết định — mã lạ.</b> <code>CODE</code> mang chữ chung <i>"mã lạ"</i> cho câu kết luận; ô bánh in đúng con số qua <code>TyreReading.reason</code> → <code>TelemetryEnums.unknown</code> (<i>"mã 7"</i>) — kênh 1. Xét mã lạ THEO TỪNG BẢNG (<code>ps = 3</code> là lạ dù 3 có nghĩa ở bảng SYS); <code>C = 0</code> và 4 sentinel là mã đã biết ⇒ không thành "mã N".</li>
+<li><b>Quyết định — 13 dòng đăng ký.</b> Nhãn: <i>Màu cảnh báo lốp …</i> ×4 · <i>Trạng thái áp lốp …</i> ×4 · <i>Rò khí lốp …</i> ×4 · <i>Hệ thống giám sát lốp</i>; hình dùng lại hình bánh-tô-đặc của từng bánh (<code>ic-group-tyres</code> cho hệ thống); mô tả 13 dòng; chữ giá trị qua 13 bảng <code>TelemetryEnums</code> dùng chung 4 bộ mục. Ẩn khỏi mọi bộ chọn bằng <code>TyreIds.HIDDEN_WHY</code> (một dòng ở <code>LauncherCatalog</code>, tệp đang 494 dòng).</li>
+<li><b>Hệ quả ngoài ý thiết kế — giọng nói.</b> Bộ ngữ pháp sinh từ bộ đăng ký ⇒ 13 mã thô nay hỏi được bằng lời. Ba con số ghim của <code>VoiceGrammarPhrasesTest</code> đo lại bằng máy: cụm giữ 400 → 413 · cụm loại 194 → 207 · mục 2028 → 2065. <code>scripts/emulator/voice-e2e.sh</code> CHƯA chạy ⇒ backlog <code>TYRE-VOICE-RAW-CODES</code> (spec OQ4). <b>→ Đã gỡ ở soát Pass 1 (§10): 13 mã thô ra khỏi giọng nói, ba con số ghim về 400 · 194 · 2028.</b></li>
+<li><b>R7 — mã bị bỏ qua vì màu trắng ⇒ <code>null</code>, không giữ số cũ</b> (<code>CarDataAdapter.readTyres</code>). Bài FULL WIRE của <code>TelemetryReadoutTest</code> mồi màu VÀNG (2) để mọi mã TPMS phải chảy qua. <b>→ Soát Pass 1 (§10): SYS chỉ khi có bánh cụm không phán; mã TPMS mỗi 3 nhịp; FULL WIRE mồi thêm một mã màu lạ ở TT để <code>tyre_sys</code> chảy.</b></li>
+<li><b>R6 — khoá chữ có màu</b> giữ trên view bằng id <code>kachi_chip_text_key</code> (<code>res/values/ids.xml</code>), so bằng <code>chipTextKey</code> (chuỗi + màu ĐÃ PHÂN GIẢI từng đoạn ⇒ đổi ngày/đêm cũng vẽ lại). Chọn tag thay vì danh sách song song để <code>KachiTopStrip.kt</code> giữ 495 dòng.</li>
+<li><b>Kênh 2.</b> <code>TyreRawLog</code> dùng <code>LogLineThrottle(windowMs = 10 phút, maxKeys = 1)</code> — nhớ một dòng ⇒ chỉ-khi-đổi (kể cả A → B → A) + một dòng nhắc lại mỗi 10 phút. Dòng thêm <code>p=n/4</code> (số bánh có số) và dùng <code>N</code> cho xám (thiết kế ghi <code>G,G,G,G</code>); trả <code>null</code> khi không có mã nào (màn không bày lốp / off-car). Chỗ gọi: luồng thu trạng thái xe của màn chính (<code>KachiHomeWiring.collectHome</code>).</li>
+<li><b>R8 — phạm vi.</b> <code>isSentinelRc</code> là hàm DÙNG CHUNG: lệnh GHI trả BUSY/TIMEOUT nay cũng tính là hỏng (<code>ControlWriteFlow</code>, <code>CarControlAdapter</code>) — đúng nghĩa của mã, nêu ra để soát viên thấy.</li>
+<li><b>Bài canh cũ đổi để giữ ý định.</b> <code>CapabilityCatalogTest.TyreBoardTest</code> dựng bằng mã trạng thái (ca "lệch" thành ca owner 2.4/2.4/2.6/2.6 không bị kêu); trần chữ lý do 6 → 12 (<i>"lỗi cảm biến"</i>; ô bánh co + cắt "…"). <code>GroupBoardTest</code>, <code>LangCoverageTest</code>, <code>I18nTemplateIdentityTest</code> đổi fixture sang mã. Đếm bộ đăng ký 66 → 79 ở <code>CapabilityGroupsTest</code>/<code>LangCoverageTest</code>/<code>CapabilityPickerTest</code> (13 mã cùng vào bảng ẩn ⇒ số mục HIỆN không đổi); nhãn EN 247 → 260; <code>CarDataDemandTest</code> 5 → 6 chip. <code>CarDataDemandRendererContractTest</code> tính bạn đồng hành (<code>COMPANION</code>) và ca chuyền CẢ CỤM <code>status.tyres</code> (trừ <code>tyre_t_*</code>, kèm khoá nguồn "chip lốp không đọc <code>tempC</code>"). <code>TopStripWiringContractTest</code> ghim <code>applyChipText(v, c)</code>. <code>GroupTileWiringContractTest</code> bỏ ba tên ngưỡng (đã không tồn tại) — phép cấm dời sang <code>TyreNoThresholdContractTest</code> (quét mọi tệp main cả ba module). <code>KachiChromeContractTest</code> ghim chuỗi <code>if (st.alert)</code> của thẻ bánh ⇒ biến mức nặng trong <code>drawCell</code> giữ tên <code>st</code>.</li>
+<li><b>i18n.</b> 50 cặp mới × zh/th/ms (<code>core/src/main/resources/i18n/*.tsv</code>), xoá hàng mồ côi <i>"lệch / uneven"</i>; ms tránh trùng nguyên văn EN (<i>"baik"</i>, <i>"Biasa"</i>).</li>
+<li><b>Số đo off-car [ĐO 2026-10-04, đếm từ XML]</b>: <code>./gradlew :core:test --rerun :app:testDebugUnitTest --rerun --continue</code> ⇒ <code>:core</code> <b>4006 / 0 hỏng</b> (423 tệp; mốc trước lượt này 3980 / 0) · <code>:app:testDebugUnitTest</code> <b>1978 / 0</b> (245 tệp; mốc 1972 / 0). <code>./gradlew :app:compileReleaseKotlin :app:lintDebug</code> ⇒ BUILD SUCCESSFUL, lint <b>0 lỗi</b> (562 cảnh báo, không cái nào ở dòng mới của lượt này). Không chạy <code>assembleRelease</code>, không chạy <code>:app:testVehicleTestUnitTest</code>.</li>
+<li><b>Thử làm đỏ [ĐO]</b>: (1) trả <code>isSentinelRc</code> về hai mã · (2) <code>need(c) = true</code> trong <code>readTyres</code> · (3) bỏ điều kiện SYS ở M6 ⇒ 6 bài <code>:core</code> đỏ (<code>TyreCarStateTest</code> ×4 · <code>TyreChipTest</code> R7 ×2). (4) thêm lại <code>const val LOW_BAR = 2.0</code> · (5) khoá chữ bỏ màu · (6) trả cờ <code>sentinel</code> của <code>getid</code> về <code>toLongOrNull()</code> ⇒ 4/6 bài <code>TyreNoThresholdContractTest</code> đỏ. Khôi phục ⇒ xanh.</li>
+<li><b>Ngoài phạm vi lượt này (đã vào backlog)</b>: bump <code>versionCode</code>/<code>versionName</code> + đăng (CLAUDE.md §9) · senior review + security scan (T12) · ảnh máy ảo chip toàn XÁM (AC của R5) · <code>voice-e2e.sh</code> · lớp 1 trên xe (<code>TYRE-ONCAR-L1</code>) · <code>tyre_t_*</code> theo tên (<code>TYRE-TEMP-BY-NAME</code>) · dựng lại <code>docs/kachi-feature-catalog.html</code> (13 mã mới chưa có trong bảng sinh bằng máy).</li>
+<li><b>Pass 3 — 2026-10-04</b> (soát hẹp hai vá Pass 2 — hold-1 · cool-1; chỉ đọc): <b>không lỗi đúng/sai, không [P0]–[P2]</b>. (a) không thể ra XANH từ mã cũ hơn 25 s hay từ giá trị "chưa có số" [ĐO mã]; (b) ngân sách tệ nhất vẫn 144/phút; (c) datum khác không đổi byte (cửa/tầm điện vẫn nguội); (d) <code>tpmsReadAt</code> chỉ chạm dưới <code>readLock</code>. Bốn [P3]: <b>vá</b> — thêm ca (4) vào bài giữ mã (rời màn 20 s rồi bày lại ⇒ đọc ngay; thử phá: bỏ <code>tpmsReadAt = null</code> ⇒ đỏ, trả lại ⇒ xanh) · bài khoá phạm vi <code>INVALID_IS_PENDING</code> = màu cụm + áp · <b>sửa nghĩa</b>: 4092/4093 là mã BÁO của xe (nổ lốp / bất thường), chỉ 4094/4095 là "chưa có số" — dòng cool-1 ở Pass 2 trên ghi gộp là "chưa có số", cơ chế (không nguội) vẫn đúng; màu của hai mã báo vẫn từ màu cụm (M1), chỉ mất chữ "nổ lốp" ⇒ backlog <code>TYRE-BURST-REASON</code>. <b>Hoãn</b> — <code>Gate.pending</code> lặp bước phân tích (bỏ qua <code>ARRAY_INDEX</code>, coi mọi chuỗi khác null là "đã trả lời"): chưa chạm tới được hôm nay (getter lốp trả int) ⇒ backlog <code>HAL-PENDING-PARSE-DRY</code>. Kết luận: <b>APPROVED</b> (off-car).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-04</h3>
+<p class="muted">Senior review (8 phát hiện đã xác minh) → một người vá. Mức bằng chứng theo CLAUDE.md §2: số test đếm từ XML; các khẳng định về xe giữ nguyên mức [SUY]/[CHƯA BIẾT].</p>
+<table>
+<tr><th>Phát hiện</th><th>Mức</th><th>Vá</th></tr>
+<tr><td><b>truth-1</b> — 4092 / 4093 / 4094 lọt qua như kPa (chip "40.9"); chỉ bảng lọc, ô nhóm / giọng nói in số thô</td><td>[P2→P3]</td><td><code>TyreJudge.PRESSURE_BURST/ABNORMAL/NONE/DEFAULT</code> = 4092..4095 ([ĐO source] L3 <code>TyreCardView.java:34-37</code>, :140-161) · <code>HalReadTables.INVALID_VALUES</code> += <code>tyre_p_*</code> → bốn mã (tầng đọc, mọi bề mặt chung luật) · <code>TyreBoard.reading</code> chỉ còn lưới hữu hạn / ≥ 0 · gỡ <code>PRESSURE_RAW_MAX</code>. Test: <code>TyreCarStateTest</code> <i>ma OEM 4092-4095…</i> (tầng đọc → adapter → bảng · chip · <code>TelemetryReadout</code> · ô nhóm <code>g_tyres</code>) thay ca cũ ghim 4094 là "hợp lệ". §6.1 thêm phép đo 4092–4095 lúc vừa nổ máy. Việc getter TyreDevice dùng cùng bộ mã với kênh cụm của L3 vẫn [SUY].</td></tr>
+<tr><td><b>truth-3 · ui-1 · regress-4</b> (cùng một lỗi) — <code>verdict</code> xếp theo màu MẶC ĐỊNH của chữ ⇒ cụm VÀNG + TPMS "non" được đọc trước bánh ĐỎ</td><td>[P3]</td><td>Gom theo <code>TyreStatus</code>, xếp theo mức ĐÃ PHÁN nặng nhất của nhóm rồi thứ tự khai (<code>TyreBoard.verdict</code>). Test <i>ket luan neu banh DO truoc banh VANG…</i>: <i>"1 bánh báo đỏ · 1 bánh non"</i>, và <i>"2 bánh non · 1 bánh xì chậm"</i> khi cùng lý do ở hai mức.</td></tr>
+<tr><td><b>ui-2</b> — mẫu EN/zh/th/ms <i>"{0} wheel {1}"</i> sai ngữ pháp với lý do danh từ (<i>"1 wheel caution"</i>)</td><td>[P3]</td><td>EN <i>"{0} wheel: {1}"</i> / <i>"{0} wheels: {1}"</i>; zh <i>"{0}个轮胎：{1}"</i> · th <i>"ยาง {0} เส้น: {1}"</i> · ms <i>"{0} roda: {1}"</i>; khoá VI giữ nguyên. <code>I18nTemplateIdentityTest</code> ghim EN mới. Phần tuỳ chọn (đổi <i>"chú ý"</i> → <i>"báo vàng"</i>) <b>không làm</b> — giữ phạm vi tối thiểu.</td></tr>
+<tr><td><b>regress-2</b> — <code>w_board</code> MẶC ĐỊNH kéo 13 mã thô cho mọi người dùng; "nặng nhất 13 mục / 78 lượt" sai; ngân sách chưa đo trên màn mặc định</td><td>[P2→P3]</td><td><code>CarDataAdapter.readTyres</code>: SYS chỉ khi có bánh mà màu cụm không phải 1/2/3 · mã TPMS còn cần đọc mỗi <code>TPMS_EVERY_TICKS</code> = 3 nhịp, giữ số cũ ở giữa, chưa có số cũ ⇒ đọc ngay. Lệch khỏi đề xuất "mỗi 2 nhịp": [ĐO] mỗi 2 nhịp ca cả-bốn-đỏ = <b>150</b> (không &lt; 150), ca mã-màu-lạ = 153. Test <i>R7 K1 man mac dinh…</i> trên <code>WorkspaceState.DEFAULT</code>: 126 · 123 · 142 · 144 lượt/phút (§4.5) + ba bài R7 viết lại (giữ số cũ · không SYS khi cụm phán cả bốn · đọc ngay khi vừa rời trắng). Sửa câu C2 và bảng §4.5, KDoc <code>CarDataDemand</code>. FULL WIRE mồi một mã màu lạ ở TT để <code>tyre_sys</code> còn chảy.</td></tr>
+<tr><td><b>regress-3</b> — 13 mã thô lọt vào năm bộ từ vựng giọng nói (ngữ pháp +13 cụm / +37 mục, <code>voice-e2e.sh</code> chưa chạy) và trả lời <i>"chưa đọc được"</i> giả</td><td>[P2]</td><td><code>voice/VoiceTelemetry.kt</code> (mới): <code>SPOKEN</code> = bộ đăng ký trừ <code>NOT_SPOKEN</code> = <code>TyreIds.RAW_STATES</code>; năm chỗ (<code>VoiceGrammar</code> · <code>VoicePhrases</code> · <code>SherpaPhraseHotwords</code> · <code>VoicePhoneticMatch</code> · <code>VoiceCommandCatalog</code>) đọc nó. Ba số ghim của <code>VoiceGrammarPhrasesTest</code> về <b>400 · 194 · 2028</b> (= trước lượt lốp ⇒ ngữ pháp không đổi vì lốp, không cần <code>voice-e2e.sh</code> cho phần này [SUY: suy từ ba con số khớp]). Bài phủ giọng nói chuyển sang <code>SPOKEN</code>; bài mới <code>VoiceTelemetryTest</code> (3 ca, gồm <i>"xem áp lốp trước trái"</i> vẫn ra <code>tyre_p_fl</code>). OQ4 + backlog <code>TYRE-VOICE-RAW-CODES</code> đóng.</td></tr>
+<tr><td><b>regress-5</b> — <code>getid</code> gán BUSY/TIMEOUT thành <i>"feature khong co tren trim nay"</i></td><td>[P3]</td><td><code>HalBindingTable.SENTINEL_BUSY/TIMEOUT</code> ([ĐO source] jadx-tmap <code>tyre/BYDAutoTyreDevice.java:31,35</code>) + <code>sentinelMeaning(rc)</code>: FAILED = trim không có (hoặc HAL từ chối) · BUSY/TIMEOUT = tạm thời, chạy lại · INVALID_VALUE; <code>TestBridgeHal.runGetId</code> dùng nó, cờ <code>sentinel</code> giữ <code>true</code> cho cả bốn. Test core + contract (<code>TyreNoThresholdContractTest</code>).</td></tr>
+</table>
+<p><b>Số đo [ĐO 2026-10-04, đếm từ XML]</b> — <code>./gradlew :core:test --rerun :app:testDebugUnitTest --rerun :app:testVehicleTestUnitTest --rerun :car-integration:test --rerun :vehicle-contracts:test --rerun :offcar-planner:test --rerun --continue</code>: <code>:core</code> <b>4013 / 0 hỏng</b> (424 tệp; Pass 0: 4006) · <code>:app:testDebugUnitTest</code> <b>1978 / 0</b> (245 tệp) · <code>:app:testVehicleTestUnitTest</code> <b>1990 / 0</b> (246 tệp) · <code>:car-integration</code> <b>80 / 0</b> · <code>:vehicle-contracts</code> <b>22 / 0</b> · <code>:offcar-planner</code> <b>99 / 0</b>. <code>:app:lintDebug</code> 0 lỗi (562 cảnh báo, không cái nào ở <code>TestBridgeHal.kt</code>). <code>:app:assembleRelease</code> BUILD SUCCESSFUL, chữ ký v2 xác minh; APK vẫn mang <code>versionCode 188 / 2.87</code> — bump version ngoài phạm vi lượt vá này (CLAUDE.md §9 phải làm trước khi báo APK cho ai).</p>
+<p><b>Kết luận Pass 1:</b> 8/8 phát hiện đã vá (6 vá riêng; truth-3 · ui-1 · regress-4 là một lỗi). Không phát hiện nào còn mở ở phạm vi off-car. Còn lại ngoài phạm vi: security scan + bump + đăng (T12), lớp 1 trên xe (T13 — nay gồm phép đo mã áp 4092–4095), ảnh máy ảo chip toàn XÁM. Verdict: <b>PATCHED — cần một lượt soát lại (Pass 2) trên các bản vá này theo luật vòng soát §5.</b></p>
+
+<h3>Pass 2 — 2026-10-04</h3>
+<p class="muted">Soát lại các vá Pass 1 và chỗ chúng chạm nhau (luật vòng soát §5 — Pass 1 có đổi mã). Chỉ đọc mã + test off-car; không chạm máy ảo (agent khác đang dùng), không <code>assembleRelease</code>, không commit. Mức bằng chứng theo CLAUDE.md §2: cơ chế [ĐO mã]; hành vi trên xe [SUY]/[CHƯA BIẾT].</p>
+<table>
+<tr><th>Phát hiện</th><th>Mức</th><th>Vá</th></tr>
+<tr><td><b>hold-1</b> — "giữ số cũ" của PS/LK/SYS đếm theo NHỊP (<code>tpmsTick++ % 3</code>), không theo tuổi. [ĐO mã] vòng poll dừng khi màn khuất (<code>KachiHomeWiring</code> <code>repeatOnLifecycle(STARTED)</code> → <code>stop()</code>) nhưng bộ đếm (adapter dùng chung) và <code>CarStatus</code> cũ (<code>CarStatusRepository._status</code>) còn ⇒ lượt đầu khi màn quay lại có 2/3 cơ hội không tới nhịp ⇒ giữ mã của TRƯỚC lúc khuất thêm 2 nhịp (~20 s). Cùng thế khi lốp rời màn (đổi hồ sơ / đổi bố cục) rồi bày lại: <code>Gate</code> trả <code>prev</code> cho mã không hiện, tuổi không giới hạn. Ca hỏng: xe không có kênh màu cụm (C null ⇒ phán bằng M2–M6), lái 1 giờ với app dẫn đường toàn màn, một lốp non trong lúc đó (PS 0 → 2) ⇒ về màn chính, chip + bảng lốp XANH (M6 từ PS = 0 cũ) tới ~20 s. Cũng phá hợp đồng của <code>forgetCarDemand</code> (<i>"lần mở sau bắt đầu bằng một lượt đọc ĐỦ"</i>). Xe có màu cụm hợp lệ không bị (C đọc tươi mỗi nhịp, M1 thắng).</td><td>[P2]</td><td><code>CarDataAdapter.tpmsDue</code>: giữ theo <b>đồng hồ</b> — mã giữ lại không bao giờ già quá <code>TPMS_HOLD_MS</code> = 25 s (= 2,5 nhịp 10 s ⇒ trên vòng poll thật vẫn đúng mỗi 3 nhịp, số K1 không đổi); nhịp mà màn không bày ĐỦ 13 mã ⇒ quên mốc (không ép đọc) ⇒ lần bày đủ kế đọc ngay; đồng hồ lùi ⇒ đọc. <code>Gate.wants</code> (hỏi nhu cầu không đếm <code>KachiPerf</code>), <code>Gate.now</code>. Test <i>R7 ma giu lai khong bao gio cu…</i> (màn khuất 1 giờ · lốp rời màn 5 phút · đồng hồ lùi). Thử làm đỏ: trả về đếm nhịp ⇒ bài này đỏ.</td></tr>
+<tr><td><b>cool-1</b> — mã "chưa có số" làm <code>HalAbsentCache</code> nguội getter. [ĐO mã] màu cụm 0 (Pass 0) và áp 4092–4095 (vá truth-1 của Pass 1) thành <code>null</code> ở <code>readRaw</code> ⇒ cache đếm là "trượt" ⇒ 3 nhịp là nguội, thử lại giãn 60 s → 120 → 240 → 480 → 600 s. Lúc vừa nổ máy (BYD giết Kachi khi tắt máy ⇒ cache trống mỗi chuyến) cảm biến TPMS chưa phát là trạng thái BÌNH THƯỜNG [SUY: L3 <code>TyreCardView.java:140-161</code> xử riêng 4094 "chưa có số"; xe owner chưa đo] ⇒ lốp đã có số mà chip/bảng vẫn "—"/XÁM thêm 1–4 phút, và trong lúc màu cụm nguội phép phán lùi sang M2–M6 dù cụm đã có lời (cụm VÀNG vì lý do TPMS không mã hoá — tín hiệu từng bánh, §6.1 — mà PS/LK/SYS = 0 ⇒ XANH). Với áp suất đây là thoái lui do Pass 1 (Pass 0 lọc ở bảng nên getter không nguội).</td><td>[P2]</td><td>Tách lời đáp khỏi phép lọc: <code>HalBindingTable.answerRaw</code> (đã lọc sentinel, CHƯA lọc <code>INVALID_VALUES</code>) + <code>isInvalidValue</code>; <code>readRaw</code> = hai bước ấy (mọi chỗ hiển thị không đổi một byte). <code>HalReadTables.INVALID_IS_PENDING</code> = <code>tyre_c_*</code> + <code>tyre_p_*</code> (dữ liệu, không <code>if</code> theo mã); <code>Gate.int/dbl</code> của các mã ấy đi <code>pending</code>: hiện "—" như cũ nhưng cache ghi "getter CÓ trả lời" ⇒ không nguội. Getter vắng thật (FAILED / không tra được tên) vẫn nguội. Cửa/tầm điện GIỮ quyết định nguội của soát 09-27. Ngân sách: ca màu cụm 0 = <b>144</b> lượt/phút (= ca mã màu lạ đã duyệt), ca không-kênh (FAILED) ≈ 123 — bảng §4.5, <code>TyreChipTest</code> R7 K1 nay 5 ca. Test <i>ma chua co so khong lam nguoi getter…</i> (40 s màu 0 + áp 4094 rồi có số ⇒ nhịp kế hiện; FAILED vẫn nguội). Thử làm đỏ: ghi "trượt" cho mã chưa-có-số ⇒ 2 bài đỏ.</td></tr>
+<tr><td><b>flaky-1</b> — nhánh <i>"chưa có số cũ ⇒ đọc ngay"</i> cũng chạy sau một lượt đọc HỎNG ⇒ getter trả <code>null</code> đúng ở nhịp đọc rồi có số ở nhịp kế (xen kẽ đều) đẩy mã TPMS lên 2 lượt / 3 nhịp: trần lý thuyết 102 + 24 + 36 = 162 lượt/phút.</td><td>[P3]</td><td>KHÔNG vá — cần cả 9 getter hỏng xen kẽ khớp pha; hỏng ngẫu nhiên chỉ thêm theo tỉ lệ hỏng, và <code>HalAbsentCache</code> vẫn chặn getter hỏng liên tiếp. Ghi để đo: KachiPerf trên xe (§6.2 mục 8).</td></tr>
+</table>
+<p><b>Đã kiểm, không có phát hiện:</b> (c) giọng nói — <code>VoiceTelemetry.SPOKEN</code> chỉ trừ 13 mã thô, <code>tyre_p_*</code> + từ đồng nghĩa (<code>VoiceSynonyms</code>) còn nguyên, <code>VoiceTelemetryTest</code> <i>"xem áp lốp trước trái"</i> → <code>tyre_p_fl</code>; câu trả lời đi <code>refreshForRead</code> → <code>readSlow</code> → <code>TelemetryReadout</code> (áp suất), không đọc mã thô · (d) <code>TyreJudge.judge</code> khớp bảng §4.2 M1–M7 từng luật (thứ tự khớp-đầu-tiên, C = 0 không phải mã lạ, mã lạ xét theo từng bảng) · (e) DL5 / Android 12: chỉ <code>SpannableString</code> / <code>ForegroundColorSpan</code> / <code>View.setTag(int, …)</code> (API 1/4) + HAL qua phản chiếu; vắng ⇒ <code>null</code> ⇒ XÁM · (f) không còn số ngưỡng lốp nào ở main (grep + <code>TyreNoThresholdContractTest</code>); không đường GHI lốp nào (<code>setIndirectTyreConfirm</code>/<code>setTyre*</code> 0 chỗ, <code>ControlRegistry</code> không có nút lốp) · (g) test là test hành vi: bảng chân trị thuần, adapter qua gateway giả đếm lượt HAL, chip qua <code>runs</code>, ngân sách đo trên <code>WorkspaceState.DEFAULT</code>; bài nguồn (<code>TyreNoThresholdContractTest</code>) chỉ làm rào chắn.</p>
+<p><b>Số đo [ĐO 2026-10-04, đếm từ XML]</b> — <code>./gradlew :core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest --continue</code>: <code>:core</code> <b>4015 / 0 hỏng</b> (424 tệp; Pass 1: 4013 — +2 bài mới) · <code>:app:testDebugUnitTest</code> <b>1978 / 0</b> (245 tệp) · <code>:app:testVehicleTestUnitTest</code> <b>1990 / 0</b> (246 tệp). <code>:app:lintDebug</code> 0 lỗi (562 cảnh báo — như Pass 1, không cái nào ở tệp vá). Thử làm đỏ [ĐO]: (1) ghi "trượt" cho mã chưa-có-số ⇒ <code>TyreChipTest</code> 2 bài đỏ (K1 ca màu 0 · bài cool-1); (2) trả "giữ số cũ" về đếm nhịp ⇒ bài hold-1 đỏ; khôi phục ⇒ xanh. Không chạy <code>assembleRelease</code>, không chạy <code>voice-e2e.sh</code> (ngữ pháp giọng nói không đổi ở lượt này).</p>
+<p><b>Kết luận Pass 2:</b> 2 [P2] đã vá (hold-1 · cool-1), 1 [P3] ghi lại không vá (flaky-1, có lý do). Tệp đổi: <code>CarDataAdapter.kt</code> · <code>HalBindingTable.kt</code> · <code>HalReadTables.kt</code> · <code>CarDataDemand.kt</code> (KDoc) · <code>TyreChipTest.kt</code> · <code>TyreCarStateTest.kt</code> (chữ assert). Bản vá Pass 2 đã tự soát lại một lượt (bỏ ép đọc ở nhịp chưa bày đủ lốp — tránh đếm thừa "bỏ (khuất)" và đọc thừa cho ô lốp lẻ cũ). Verdict: <b>APPROVED</b> cho phạm vi off-car; còn lại ngoài phạm vi như Pass 1: security scan + bump + đăng (T12), lớp 1 trên xe (T13 — thêm: đo số giây từ khi cụm hiện số/màu tới khi chip hiện, §6.2 mục 4).</p>
+
+</div></body>
+</html>

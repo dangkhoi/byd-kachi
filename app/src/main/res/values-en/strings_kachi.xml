@@ -109,7 +109,8 @@
     <string name="kachi_row_accent">Accent colour</string>
     <string name="kachi_row_tone">Card tone</string>
     <string name="kachi_row_bg_opacity">Background transparency</string>
-    <string name="kachi_bg_opacity_note">One level for the backgrounds of the status bar, the car button bar and widgets — 0% looks as before, the higher the number, the more see-through. Text and icons never fade: wherever what is behind would make text hard to read (e.g. a bright wallpaper), bars and cards keep the opacity they need. Close Settings to see the result.</string>
+    <string name="kachi_bg_opacity_note">One level for the backgrounds of the status bar, the car button bar and widgets — all the way left looks as before, dragging right makes them more see-through, and all the way right (100%) makes them fully transparent. Text and icons always stay as they are; on a bright wallpaper, high transparency can make text hard to read — your choice. It applies when you let go; close Settings to see the result.</string>
+    <string name="kachi_bg_opacity_a11y">Background transparency: %1$s</string>
     <string name="kachi_sec_car_image">Car image</string>
     <string name="kachi_car_image_current">In use: %1$s</string>
     <string name="kachi_car_image_title">Car image</string>
@@ -564,6 +565,7 @@
     <string name="kachi_keys_learn">Learn a new key…</string>
     <string name="kachi_keys_learn_name">Name the button you just pressed</string>
     <string name="kachi_key_custom_name">%1$s (code %2$d)</string>
+    <string name="kachi_key_custom_name_src">%1$s (code %2$d · %3$s)</string>
     <string name="kachi_key_code">key code %1$d</string>
     <string name="kachi_key_unknown">%1$s (%2$d)</string>
     <string name="kachi_key_mic_hold">Steering-wheel mic — hold (328)</string>
@@ -774,6 +776,7 @@
     <string name="kachi_sc_refuse_cast">%1$s is being cast to the cluster</string>
     <string name="kachi_sc_not_installed">%1$s is not installed</string>
     <string name="kachi_sc_bg_failed">%1$s couldn\'t start in the background</string>
+    <string name="kachi_sc_bg_failed_why">%1$s couldn\'t start in the background (%2$s)</string>
     <!-- F1 row 9 (spec shortcuts-autostart): the slot app is open full screen (K7); back to the slot on HOME (K8). -->
     <string name="kachi_sc_full_card">Showing full screen — tap to bring it back to the slot</string>
     <string name="kachi_sc_full_failed">Couldn\'t open %1$s full screen</string>

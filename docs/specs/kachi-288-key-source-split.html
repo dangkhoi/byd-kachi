@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.88 — gán riêng núm bệ giữa và nút vô-lăng (KEY-SOURCE-SPLIT tầng 2) — ClusterNav 2.0</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+@media(max-width:600px){.wrap{padding:28px 16px 80px}table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.88 — gán riêng núm bệ giữa và nút vô-lăng</h1>
+<p class="muted">Slug: <code>kachi-288-key-source-split</code> · Branch <code>feat/key-source-split</code> · Backlog <code>KEY-SOURCE-SPLIT</code> (tầng 2) · <span class="pill">Trạng thái: Current — đã đăng 2.88 (189) 04/10, chờ anh em thử trên xe</span></p>
+<p class="muted">Tầng 1 (chỉ đo) nằm ở <code>docs/specs/kachi-287-look-and-keys.html</code> §4.7, đã lên 2.87. Số đo trên xe: <code>docs/diagnostics/key-source-oncar-2026-10-04.md</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-04</b>: Khởi tạo sau khi owner gửi 4 ảnh hộp Học phím trên xe chạy 2.87 (<i>"Good news here em"</i>): núm ra <code>AUDIO_VOLUME_CTRL_MODE=1</code>, vô-lăng ra <code>=2</code>, đọc 1–3 ms, <code>KeyEvent</code> giống hệt. Đây là bước đã báo owner trong tin 2.87: <i>"Bản 2.88 sẽ … gán riêng núm bệ giữa và nút vô-lăng khi có ảnh dòng nguồn"</i>.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Owner 03/10: <i>"nó có 2 nút volumn, 1 trên tay lái, 1 trên yên ngựa, app mình đọc đều ra 291-292 (lên xuống) cả 2 nút như nhau … cần detect 2 nút khác nhau"</i>. Mục đích thực tế: gán núm bệ giữa cho việc khác (vd tốc độ quạt) mà nút âm lượng vô-lăng vẫn chỉnh âm lượng.</p>
+<div class="card"><b>Sự thật đã có</b>
+<ul>
+<li>[ĐO xe owner 04/10] hai nút cùng mã 291/292, cùng scancode 115/114, cùng thiết bị <code>simulate-keys</code> ⇒ <code>KeyEvent</code> không tách được.</li>
+<li>[ĐO xe owner 04/10] <code>BYDAutoAudioDevice</code> · <code>AUDIO_VOLUME_CTRL_MODE</code> đọc được từ uid app, 4/4 đúng nguồn (1 = núm bệ giữa, 2 = vô-lăng), mỗi lượt 1–3 ms.</li>
+<li>[ĐO tĩnh fw 2602030] HAL đặt giá trị này <b>trước</b> khi phát mỗi phím (<code>setIntValue(F+0x9a8, 1|2)</code> @0x2d300 / @0x2c8d4).</li>
+<li>[ĐO nguồn r47] <code>onKeyEvent</code> chạy trên main looper của tiến trình launcher; framework chờ tối đa 500 ms (<code>KeyEventDispatcher.java:51</code>) rồi cho phím đi tiếp.</li>
+<li>[ĐO mã] Gán hiện tại: <code>VoiceKeyBinding(keyCode, targetSpec)</code>, bất biến <b>một mã một đích</b> (<code>VoiceKeyBindings.kt</code>); nút tự học <code>(tên, mã)</code> lưu JSON <code>{"n","k"}</code> (<code>Prefs.voiceKeyCustomButtons</code>); khớp ở <code>VoiceKeyMatcher</code> (<code>:core</code>), gọi từ <code>NavAccessibilityService.onKeyEvent</code>. Cả hai khoá prefs nằm trong phạm vi hồ sơ (<code>ProfileScopeCluster.kt:177</code>, <code>ProfileSharePolicy.kt:68</code>).</li>
+</ul></div>
+<div class="card"><b>Chưa biết — không được cược vào</b> (CLAUDE.md §2/§14): bấm xen kẽ nhanh hai nút, xoay núm nhanh nhiều nấc, mã nhấn-giữ 307/308, đời xe khác; và (senior review Pass 1) <b>nuốt 291/292 ở <code>onKeyEvent</code> có chặn được việc chỉnh âm lượng của BYD không</b> — máy ảo chỉ đo được với phím chuẩn 24/25 (âm lượng 8 → 8 khi gán, <code>docs/diagnostics/fix286-keyctl-emulator-2026-10-03/</code> §3); nếu ROM chỉnh âm lượng 291/292 ở tầng TRƯỚC bộ lọc Hỗ trợ thì núm sẽ vừa đổi quạt vừa đổi âm lượng — V-oncar bước 2 chốt. Số đo mới có 1 xe × 1 lần mỗi chiều mỗi nút (luật §4.7.4 của spec 2.87 đòi ≥ 2 xe × ≥ 3 lần). Vì vậy thiết kế dưới đây <b>an toàn khi đọc hụt</b>: không biết nguồn ⇒ hành xử y như 2.87.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Học phím có nguồn.</b> Học một phím thuộc bảng đầu dò (291/292/307/308) mà lượt đọc ra nguồn rõ (núm / vô-lăng) ⇒ nút tự học được lưu <b>kèm nguồn</b>, tên hiện có hậu tố nguồn, vd <i>"Vặn núm lên (mã 291 · núm yên ngựa)"</i>. Đọc chưa xong / hụt / giá trị lạ lúc bấm Lưu ⇒ lưu như 2.87 (không nguồn). Học lại cùng (mã, nguồn) ⇒ ghi đè tên; cùng mã khác nguồn ⇒ hai nút riêng.</li>
+<li><b>R2 — Gán theo nguồn.</b> Hộp <i>Thêm gán</i> liệt kê nút có nguồn như một nút riêng; dòng gán lưu <code>(mã, nguồn?, đích)</code>. Bất biến mới: <b>một (mã, nguồn) một đích</b>; dòng không nguồn và dòng có nguồn cùng mã được phép cùng tồn tại.</li>
+<li><b>R3 — Khớp.</b> Với một lần nhấn mã K:
+  <ul>
+  <li>K <b>không</b> có dòng gán nào có nguồn ⇒ <b>y nguyên 2.87</b>: không đọc HAL, cùng quyết định bắn/nuốt.</li>
+  <li>K có dòng gán có nguồn ⇒ đọc nguồn <b>đồng bộ</b> trên DOWN đầu của lần nhấn, rồi chọn đích: dòng (K, nguồn) → nếu không có thì dòng (K, không nguồn) → nếu không có thì <b>để phím đi tiếp</b> (âm lượng chạy như xe gốc).</li>
+  <li>Đọc hụt / quá trần / giá trị lạ ⇒ nguồn = không biết ⇒ chỉ dùng dòng (K, không nguồn), không thì để phím đi tiếp.</li>
+  <li>DOWN lặp và UP của <b>cùng lần nhấn</b> dùng lại quyết định của DOWN đầu (không đọc lại, không để UP mồ côi lọt sang hệ thống khi DOWN đã bị nuốt, và ngược lại).</li>
+  </ul></li>
+<li><b>R4 — Danh sách gán / nút tự học</b> hiện đúng nhãn có nguồn; nút <i>Xoá</i> xoá đúng (mã, nguồn) đó, không đụng dòng cùng mã khác nguồn.</li>
+<li><b>R5 — Nâng cấp không mất cấu hình.</b> JSON cũ (không có trường nguồn) đọc ra dòng không nguồn, hành vi y như 2.87. Trường nguồn mang mã lạ (bản tương lai) ⇒ <b>bỏ dòng đó</b>, không hạ thành dòng không nguồn (hạ xuống thì nó bắt luôn nút còn lại).</li>
+<li><b>R6 — Nhật ký.</b> Dòng <code>voice-key fire</code>/<code>pass</code> ghi thêm nguồn đã dùng và lý do (vd <code>src=knob</code>, <code>src=?(timeout)</code>) để anh em gửi log là chốt được ca lỗi.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Luồng phím.</b> Đọc đồng bộ chỉ xảy ra khi R3 cần. Trần <b>100 ms tính từ lúc gửi</b> (≈ 30 lần mức đo được, ≪ 500 ms của framework). Lượt trước còn treo ⇒ <code>busy</code> ngay, không chặn, không chồng lượt (cùng luật <code>KeySourceMeter</code>). Lượt đọc chạy trên luồng HAL riêng của đường gán, không xếp hàng sau lượt đo của nhật ký tầng 1.</li>
+<li><b>R-nf2 — Một lượt đọc mỗi lần nhấn.</b> Khi đường gán đã đọc, nhật ký tầng 1 (hộp Học phím, <code>KachiKey</code>) dùng lại số đọc đó, không đọc HAL lần hai.</li>
+<li><b>R-nf3 — Generic (CLAUDE.md §7).</b> Không <code>if (keyCode == 291)</code> trong đường khớp: phím nào cần nguồn do bảng <code>KeySourceProbes.ALL</code> + danh sách gán quyết định.</li>
+<li><b>R-nf4 — Chỉ đọc HAL.</b> Không đăng ký listener HAL mới, không ghi gì xuống xe (CLAUDE.md §4/§5).</li>
+<li><b>R-nf5 — Test off-device</b> cho mọi luật (khớp, lưu, nâng cấp), fixture dựng từ số đo xe 04/10.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng một lần nhấn</h3>
+<div class="flow">
+  <div class="fnode"><b>onKeyEvent DOWN</b><span>main looper · hạn 500 ms</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>K cần nguồn?</b><span>VoiceKeyBindings.needsSource</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>KeySourceResolver</b><span>đọc HAL đồng bộ · trần 100 ms · busy</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>VoiceKeyMatcher</b><span>(K, nguồn) → (K, ∅) → đi tiếp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Bắn đích / nuốt</b><span>AssistantLauncher · KeyCtlDispatch</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>K không cần nguồn</b><span>(mọi phím hôm nay)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceKeyMatcher</b><span>đường 2.87 y nguyên · không HAL</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Nhật ký tầng 1</b><span>dùng lại số đọc nếu đã có</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có</span>
+  <span class="sw"><span class="box" style="background:var(--new)"></span> khối mới / đổi</span>
+</div>
+
+<h3>4.2 Mô hình dữ liệu (<code>:core</code>, thuần)</h3>
+<ul>
+<li><code>VoiceKeyBinding(keyCode, targetSpec, source: KeySourceKind? = null)</code> — tham số mặc định giữ mọi call site cũ.</li>
+<li><code>VoiceKeyBindings</code>: <code>put/remove</code> theo khoá <code>(keyCode, source)</code> (tham số <code>source</code> mặc định <code>null</code>); <code>targetFor(bindings, keyCode, source)</code> = dòng (K, nguồn) rồi tới dòng (K, ∅) — <code>source = null</code> ⇒ <b>chỉ</b> dòng (K, ∅); <code>needsSource(bindings, keyCode)</code>; <code>anySource(bindings)</code> (điều kiện đọc mồi); <code>sanitize</code> khử trùng theo <code>(keyCode, source)</code>, giữ dòng đầu.</li>
+<li>Nút tự học: <code>VoiceKeyCustomButton(name, keyCode, source?)</code> + luật <code>VoiceKeyCustomButtons.put/remove</code> theo khoá <code>(keyCode, source)</code> (thay nút ⇒ xuống cuối, đúng hành vi 2.87).</li>
+<li>Mã nguồn bền trong JSON (không dùng tên enum): <code>KeySourceKind.code</code> = <code>"knob"</code> / <code>"wheel"</code>; <code>KeySourceKind.fromCode</code> trả <code>null</code> cho mã lạ.</li>
+<li><code>VoiceKeyMatcher.onKey(cfg, action, keyCode, downTime, source: () -&gt; KeySourceLookup = { NO_LOOKUP })</code>: nhớ <b>quyết định từng lần nhấn</b> theo <code>(keyCode → downTime, consume, nguồn, lý do)</code>; hàm đọc nguồn chỉ được gọi trên DOWN đầu khi <code>needsSource</code>. Mặc định của tham số = "không tra được" ⇒ không biết nguồn ⇒ chỉ dòng (K, ∅) (chỗ gọi cũ an toàn). UP xoá dấu; UP không có DOWN đã thấy ⇒ nuốt khi và chỉ khi có dòng (K, ∅) (đúng hành vi 2.87 cho dòng không nguồn). <code>VoiceKeyDecision</code> mang thêm <code>source</code> và <code>reason</code> (<code>null</code> ⇔ lần nhấn không tra nguồn) để ghi nhật ký (R6).</li>
+</ul>
+
+<h3>4.3 Đọc nguồn đồng bộ</h3>
+<ul>
+<li><code>:core KeySourceResolver</code> bọc một <code>KeySourceMeter</code> <b>thứ hai</b> (dựng với bản sao đầu dò trần 100 ms — bảng gốc giữ 250 ms cho nhật ký; dùng lại luật busy / trần-tính-từ-lúc-gửi / map lỗi qua hàm mới <code>KeySourceMeter.read</code> = chỉ phần HAL), trả <code>KeySourceLookup(kind?, reason, reading)</code> — <code>reason</code> là chuỗi log R6 (<code>knob</code> · <code>wheel</code> · <code>?(timeout)</code> · <code>?(busy)</code> · <code>?(value=7)</code>…), dịch qua <b>cùng</b> <code>KeySourceProbes.verdict</code> mà hộp Học phím hiện. Gọi từ <b>một</b> luồng (main, trong <code>onKeyEvent</code> / <code>onServiceConnected</code>).</li>
+<li><code>:app KeySourceRecorder</code> giữ thêm một executor HAL thứ hai (<code>kachi-keysrc-sync</code>) cho resolver (<code>lookupSource(sample)</code>); <code>onDown(sample, learned, preRead)</code> nhận số đọc đã có để luồng nhật ký không đọc lại (R-nf2) — <code>KeySourceMeter.measure(…, preRead)</code> khi đó chỉ tra thiết bị. Lúc service nối, nếu danh sách gán có dòng có nguồn ⇒ <code>primeSource()</code> đọc mồi một lượt trên luồng sync (nạp <code>featureIdByName</code> + <code>getInstance</code>) để lần nhấn đầu không trả giá khởi tạo. Lượt mồi đi qua <b>chính</b> resolver (<code>KeySourceMeter.prime</code>) nên được tính là lượt đang chạy: lần nhấn rơi đúng lúc mồi ra <code>busy</code> ngay (không biết nguồn ⇒ như 2.87), không chờ trên main.</li>
+<li><code>NavAccessibilityService.onKeyEvent</code>: chữ ký chép trên mọi DOWN ở đầu hàm; đường KHÔNG khớp (đuôi học / đang học / công tắc tắt) ghi nhật ký tầng 1 ngay, trước bus học phím, y như 2.87; đường khớp ghi nhật ký <b>sau</b> matcher để mang số đọc (thứ tự đổi trong cùng một lần gọi, không đổi nội dung dòng nhật ký).</li>
+<li>Đọc trên main: bình thường 1–3 ms [ĐO]; xấu nhất 100 ms cho <b>một</b> lần nhấn khi HAL treo, sau đó <code>busy</code> không chặn tới khi lượt treo tự xong.</li>
+</ul>
+
+<h3>4.4 Lưu trữ + giao diện (<code>:app</code>)</h3>
+<ul>
+<li><code>VoiceKeyBindingStore</code>: JSON <code>{"k","t","s"?}</code>; thiếu <code>"s"</code> ⇒ không nguồn; <code>"s"</code> lạ ⇒ bỏ dòng (R5).</li>
+<li>Nút tự học: JSON <code>{"n","k","s"?}</code>, khử trùng theo <code>(k, s)</code>; <code>ButtonOption</code> mang <code>source</code>. Bộ mã hoá ở tệp riêng <code>modules/voicekey/VoiceKeyCustomButtonStore.kt</code> (<code>Prefs.kt</code> 490/500 dòng); khoá + lượt ghi <code>putString(K_VK_CUSTOM, …)</code> vẫn ở <code>Prefs.kt</code>. Giải mã chịu lỗi từng dòng (trước: một dòng hỏng mất cả danh sách). Không có nguồn ⇒ cả hai khoá mã hoá ra đúng từng byte như bộ mã hoá 2.87.</li>
+<li>Hộp Học phím: lúc Lưu đọc <code>bridge.learnedKeySource(code)</code> → <code>KeySourceProbes.verdict</code>; <code>Source(kind)</code> ⇒ lưu kèm nguồn, tên theo khuôn mới <code>kachi_key_custom_name_src</code> = <i>"%1$s (mã %2$d · %3$s)"</i> (nhãn nguồn dùng lại <code>kachi_key_src_knob</code>/<code>_wheel</code>, đủ 5 tiếng).</li>
+<li>Danh sách gán: nhãn tra theo <code>(mã, nguồn)</code>; xoá theo <code>(mã, nguồn)</code>. Dòng có nguồn mà nút tự học của nó đã bị xoá ⇒ nhãn dự phòng vẫn ghi nguồn (<code>kachi_key_custom_name_src</code> với tên hằng framework) để hai dòng núm / vô-lăng cùng mã không trông giống hệt nhau; dòng không nguồn giữ dự phòng <code>presetLabel</code> như 2.87.</li>
+<li>Hồ sơ: hai khoá prefs vẫn là chuỗi JSON nên chụp/xuất/nhập hồ sơ mang theo trường nguồn, không đổi luật hồ sơ. Nhập hồ sơ 2.88 vào bản cũ hơn ⇒ dòng có nguồn bị đọc thành không nguồn rồi khử trùng — chấp nhận (OTA không lùi bản).</li>
+</ul>
+
+<h3>4.5 Quyết định + Context7</h3>
+<ul>
+<li><b>Đọc đồng bộ thay vì listener HAL</b>: quyết định nuốt/đi tiếp phải có <b>ngay</b> trong <code>onKeyEvent</code>; listener cần đăng ký HAL mới và thứ tự callback so với phím là [CHƯA BIẾT]. Đọc đồng bộ đã có số đo 1–3 ms.</li>
+<li><b>Không "nuốt hết rồi phát lại"</b>: phát lại 291/292 qua <code>input keyevent</code> sẽ đi lại qua <code>onKeyEvent</code> mà HAL không đặt lại nguồn ⇒ đọc sai, có thể lặp vô hạn.</li>
+<li><b>Context7</b>: chỉ Android SDK + khối đã có, không thư viện mới ⇒ không cần Context7. Khẳng định framework trích nguồn AOSP r47 như trên.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>File</th></tr>
+<tr><td>T1</td><td>Mô hình + luật gán theo nguồn + test</td><td><code>core/…/voicekey/VoiceKeyBindings.kt</code>, <code>KeySourceProbe.kt</code> (mã bền), <code>VoiceKeyBindingsTest</code></td></tr>
+<tr><td>T2</td><td>Matcher nhớ quyết định từng lần nhấn + gọi đọc nguồn có điều kiện + test (gồm "không cần nguồn ⇒ không gọi đọc", UP/lặp dùng lại quyết định, fixture số đo xe 04/10)</td><td><code>VoiceKeyMatcher.kt</code>, <code>VoiceKeyMatcherTest</code></td></tr>
+<tr><td>T3</td><td><code>KeySourceResolver</code> (:core) + test hành vi (trần, busy, lỗi ⇒ không biết)</td><td><code>core/…/voicekey/KeySourceResolver.kt(+Test)</code></td></tr>
+<tr><td>T4</td><td>Lưu trữ JSON có nguồn + nâng cấp + test</td><td><code>VoiceKeyBindingStore.kt</code>, <code>Prefs.kt</code>, <code>VoiceKeyBindingListTest</code>/<code>MigrationTest</code></td></tr>
+<tr><td>T5</td><td>Nối dây: service đọc nguồn có điều kiện, nhật ký dùng lại số đọc, đọc mồi; cầu + UI học/gán/xoá theo (mã, nguồn); chuỗi 5 tiếng</td><td><code>NavAccessibilityService.kt</code>, <code>KeySourceRecorder.kt</code>, <code>ClusterNavBridgeKeys.kt</code>, <code>SettingsSectionsKeys.kt</code>, <code>values*/strings_kachi.xml</code></td></tr>
+<tr><td>T6</td><td>Bài canh dây (call site thật, CLAUDE.md §8) + cập nhật bài canh cũ</td><td><code>app/src/test/…</code></td></tr>
+<tr><td>T7</td><td>Build + test toàn bộ + lint; QA máy ảo đường gán thường (không nguồn) không đổi; senior review (Opus) vòng lặp; security scan</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: T1–T4, T6 xanh; toàn bộ <code>./gradlew test</code> + lint 0.</li>
+<li><b>V-emulator</b>: máy ảo không sinh được mã 291/292 và không có HAL ⇒ chỉ chứng minh được đường cũ không đổi (học + gán + bấm một phím thường, vd 88) và giao diện hiện đúng nhãn.</li>
+<li><b>Kết quả V-emulator — 2026-10-04 (QA, bản release của cây hiện tại cài đè 2.87, dữ liệu sao lưu rồi trả lại)</b> <span class="ok">ĐẠT</span> [ĐO máy ảo]: học phím 88 ⇒ dòng chi tiết <i>"nguồn: không đo cho phím này"</i>, lưu <code>{"n":…,"k":88}</code> KHÔNG có <code>"s"</code>, tên đúng khuôn 2.87 <i>"… (mã 88)"</i>; gán ⇒ <code>{"k":88,"t":…}</code>; bấm ⇒ <code>voice-key fire → target=… key=88 src=-</code>, app đích mở, phím bị nuốt (YT Music không lùi bài). Phím phải bơm bằng <code>sendevent</code> lên thiết bị thật của máy ảo — <code>input keyevent</code> là sự kiện tiêm (deviceId −1) đi thẳng tới MediaSession, không qua bộ lọc phím của Hỗ trợ (cùng phát hiện D-VK6 ở <code>docs/diagnostics/fix286-keyctl-emulator-2026-10-03</code>). Bẫy: mỗi lần <code>uiautomator dump</code> làm dịch vụ Hỗ trợ ngắt-nối lại một nhịp, phím bấm đúng lúc đó bị lỡ. Ghi nhận [P3] có từ trước (không phải 2.88): nút tự học trùng mã một nút preset (88) thì dòng gán hiện tên preset — backlog <code>KEY-LABEL-PRESET-SHADOW</code>.</li>
+<li><b>V-oncar 🚗</b> (anh em / owner, không cần máy tính):
+  <ol>
+  <li>Học <b>núm xoay lên</b> và <b>núm xoay xuống</b> (hộp phải ghi <i>núm yên ngựa</i>), lưu. Gán núm lên → <i>Gió +1</i>, núm xuống → <i>Gió −1</i> (hoặc việc khác).</li>
+  <li>Xoay núm: quạt đổi, <b>âm lượng không đổi</b>. Bấm âm lượng vô-lăng: <b>âm lượng đổi</b>, quạt không đổi.</li>
+  <li>Xen kẽ nhanh: xoay núm một nấc rồi bấm vô-lăng ngay (dưới 1 giây), lặp 5 lần — mỗi lần đúng việc của nút đó.</li>
+  <li>Xoay núm nhanh nhiều nấc — quạt đổi theo, âm lượng không nhảy.</li>
+  <li>Sai ở bước nào thì chụp màn hình + giờ; ai lấy được <code>kachi-logs/usage-*.log</code> thì gửi kèm (dòng <code>voice-key</code> có <code>src=…</code>).</li>
+  </ol></li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Có cần cho học một nút 291/292 <b>không nguồn</b> (bắt cả hai) không? — <span class="muted">Không làm ở bản này: muốn hai nút cùng làm một việc thì gán cả hai nút có nguồn vào cùng đích. Nút không nguồn học từ bản cũ vẫn chạy.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/key-source-oncar-2026-10-04.md</code> — số đo xe.</li>
+<li><code>docs/specs/kachi-287-look-and-keys.html</code> §4.7 — tầng 1, bảng bằng chứng firmware, luật quyết định §4.7.4.</li>
+<li><code>core/src/main/kotlin/com/byd/clusternav/voicekey/</code> — <code>VoiceKeyBindings</code>, <code>VoiceKeyMatcher</code>, <code>KeySourceProbe</code>, <code>KeySourceMeter</code>.</li>
+<li><code>app/src/main/java/com/byd/clusternav/modules/navaccess/NavAccessibilityService.kt</code> — <code>onKeyEvent</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-04 — triển khai T1–T6</b> (T7 build/test/lint xem dòng cuối; senior review + security scan còn chờ).</li>
+<li><b>T1</b> <code>KeySourceKind(code)</code> + <code>fromCode</code>; <code>VoiceKeyBinding.source</code>; <code>VoiceKeyBindings.put/remove/targetFor/sanitize</code> theo (mã, nguồn) + <code>needsSource</code> + <code>anySource</code>; mới <code>core/…/voicekey/VoiceKeyCustomButtons.kt</code> (dữ liệu + luật nút tự học). <code>migrateLegacy</code> không đổi.</li>
+<li><b>T2</b> <code>VoiceKeyMatcher</code> nhớ quyết định từng lần nhấn (một bản đồ <code>keyCode → Press</code> thay <code>firedDownTime</code>). Chứng minh "đường 2.87 không đổi" bằng bài so trùng khít với thuật toán 2.87 chép nguyên văn trên 20 000 sự kiện ngẫu nhiên, hàm tra ném nếu bị gọi (<code>VoiceKeyMatcherSourceTest</code>); phép thử làm-đỏ (luôn gọi hàm tra) ⇒ 4 bài đỏ. Khác 2.87 chỉ ở ca danh sách gán bị sửa GIỮA một lần nhấn: UP/lặp nay theo DOWN đầu (2.87 tra lại) — đúng luật R3 "không UP mồ côi".</li>
+<li><b>T3</b> mới <code>core/…/voicekey/KeySourceResolver.kt</code> (<code>KeySourceResolver</code> + <code>KeySourceLookup</code>); <code>KeySourceMeter</code> thêm <code>read</code> (chỉ HAL), <code>prime</code>, <code>measure(…, preRead)</code>. Bài chạy thật <code>KeySourceResolverTest</code> (bộ thi hành thật + gateway chặn bằng chốt): đọc được, quá trần ≈100 ms rồi <code>busy</code> không chặn, <code>read_error</code>, giá trị lạ, bộ dừng, phím ngoài bảng, đọc mồi.</li>
+<li><b>T4</b> <code>VoiceKeyBindingStore</code> trường <code>"s"</code>; mới <code>app/…/modules/voicekey/VoiceKeyCustomButtonStore.kt</code>; <code>Prefs.add/removeVoiceKeyBinding</code> + <code>add/removeVoiceKeyCustomButton</code> thêm <code>source</code> (mặc định <code>null</code>), <code>voiceKeyCustomButtons</code> trả <code>List&lt;VoiceKeyCustomButton&gt;</code>. Bài <code>VoiceKeySourceStoreTest</code> + một ca mới trong <code>VoiceKeyBindingMigrationTest</code>. Ghi chú đo: <code>org.json</code> của classpath test (JVM) không giữ thứ tự khoá như bản Android, nên "byte y 2.87" được so với bộ mã hoá 2.87 chép nguyên văn chạy trên cùng thư viện, không so với chuỗi viết tay.</li>
+<li><b>T5</b> <code>KeySourceRecorder</code> (luồng <code>kachi-keysrc-sync</code>, <code>lookupSource</code>, <code>primeSource</code>, <code>onDown(…, preRead)</code>); <code>NavAccessibilityService.onKeyEvent</code> (hàm tra = lambda của matcher, bọc <code>RuntimeException</code> ⇒ không biết nguồn; nhật ký tầng 1 nhận số đọc; dòng <code>voice-key fire … src=&lt;lý do|-&gt;</code> + <code>voice-key pass key=… src=…</code> một lần mỗi lần nhấn); cầu <code>ClusterNavBridgeKeys</code> (<code>addBinding/removeBinding/addCustomButton/removeCustomButton</code> thêm <code>source</code>, <code>buttonOptions</code> mang nguồn); <code>ButtonOption.source</code>; <code>SettingsSectionsKeys</code> (học kèm nguồn, thêm/xoá/nhãn theo (mã, nguồn)); <code>KeySourceDetailText.kindLabel</code> thành <code>internal</code> dùng chung; chuỗi <code>kachi_key_custom_name_src</code> ở cả 5 thư mục <code>values*</code>.</li>
+<li><b>T6</b> mới <code>KeySourceSplitWiringContractTest</code> (W1–W5: tra nguồn chỉ qua lambda matcher, luồng sync start/stop, đọc mồi, UI truyền nguồn, chuỗi 5 tiếng, nhật ký R6, call site §8). Bài canh cũ cập nhật CÓ CHỦ Ý (giữ ý định, đổi chữ ký): <code>KeySourceL7WiringContractTest</code> L1/L2/L6 + L5 thay "tầng 1 không đổi gán/khớp/JSON" bằng "tầng 2 khớp theo nguồn chỉ qua hàm tra"; <code>VoiceKeyBindingListTest</code>, <code>ClusterNavBridgeCastKeysWiringContractTest</code>, <code>VoiceKeyHoldFix286WiringContractTest</code> (chữ ký mới có <code>source</code>).</li>
+<li><b>T7 (một phần, senior review Pass 1 — 2026-10-04)</b>: bộ test đầy đủ 6 mô-đun + <code>:app:lintDebug</code> + <code>:app:assembleRelease</code> chạy trên cây vá Pass 1 — số đếm từ XML ở §10 Pass 1. Còn chờ: QA máy ảo đường gán thường (V-emulator) · security scan trước commit · 🚗 V-oncar.</li>
+<li><b>Lệch so với bản Design đầu</b> (đã sửa lại §4.2–§4.4 cho khớp): <code>KeySourceLookup</code> thêm <code>reason</code>; tham số hàm tra của matcher có mặc định; lượt mồi đi qua resolver (lần nhấn trong lúc mồi ⇒ <code>busy</code>); nhãn dự phòng có nguồn cho dòng gán mồ côi; bộ mã hoá nút tự học ở tệp riêng, chịu lỗi từng dòng. Không lệch yêu cầu R1–R6 / R-nf1–5.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li><b>Pass 1 — 2026-10-04</b> (senior review, một reviewer, đọc toàn bộ diff + 3 tệp mới của tầng 2; vá trực tiếp; không commit, không bump). <b>Phạm vi</b>: R1–R6 · R-nf1–5 · T1–T6 ✅ (mã có call site thật — <code>KeySourceSplitWiringContractTest</code> W5 + grep §8); T7 một phần (bộ test + lint + <code>assembleRelease</code> ✅; V-emulator, security scan, 🚗 V-oncar còn chờ). <b>Soát trọng tâm</b>: (a) mã KHÔNG có dòng gán theo nguồn ⇒ quyết định y 2.87, không HAL trên main — [ĐO] bài trùng khít 20 000 sự kiện với thuật toán 2.87 chép nguyên văn; phá thử “tra nguồn cho mọi mã đã gán” ⇒ bài đó đỏ, trả nguyên byte ⇒ xanh; (b) trần 100 ms tính từ lúc gửi, <code>busy</code> không chặn, không chồng lượt (luật <code>KeySourceMeter</code> dùng lại, không chép), luồng <code>kachi-keysrc-sync</code> dựng ở <code>start</code>/dừng ở <code>stop</code> (onUnbind/onDestroy/nối lại); <code>onKeyEvent</code> trước khi dựng / sau khi dừng ⇒ <code>keySource == null</code> ⇒ <code>?(no_lookup)</code> ⇒ chỉ dòng không nguồn; luồng sync bị treo vĩnh viễn ⇒ mọi lần nhấn <code>busy</code> ⇒ núm chạy âm lượng như xe gốc (an toàn khi hỏng); (c) nhớ quyết định theo mã → downTime: UP mồ côi, hai mã xen kẽ, downTime tái dùng sau UP, <code>reset()</code> ở <code>onServiceConnected</code>, đuôi học + nhánh học giữ thứ tự 2.87, nhật ký đường không khớp vẫn ghi TRƯỚC bus học phím; (d) JSON cũ / <code>"s"</code> lạ (bỏ dòng) / mã hoá y byte 2.87; hồ sơ: <code>PrefSnapshot</code> (esc), <code>ProfileScopeCluster</code>, <code>ProfileSharePolicy</code> mang nguyên chuỗi JSON — không đổi luật hồ sơ; (e) Lưu khi số đọc chưa xong ⇒ <code>verdict</code> Pending ⇒ lưu không nguồn; nhãn/xoá theo (mã, nguồn); dòng gán mồ côi có nguồn vẫn ghi nguồn; chuỗi 5 tiếng có đủ <code>%1$s %2$d %3$s</code>; (f) <code>:wake</code> chỉ nhận <code>keyHold</code> (theo ĐÍCH, không theo mã/nguồn) ⇒ không ảnh hưởng. Đời xe: mã mới không có API nhạy cấp (Android SDK chỉ dùng <code>KeyEvent</code>/<code>InputDevice</code> sẵn có); DL5 thiếu feature ⇒ <code>?(no_feature)</code> ⇒ như 2.87. <b>Phát hiện</b>: 0 × [P0]/[P1]/[P2]. 5 × [P3], đã vá: (1) <code>project-context.md</code> dòng tầng 1 còn “đọc được từ app [CHƯA BIẾT]” dù đã [ĐO] 04/10 ⇒ sửa; (2) lý do chia sẻ <code>ProfileSharePolicy.R_KEYS</code> chưa nhắc trường nguồn ⇒ thêm “+ nguồn knob/wheel”; (3) §2 thiếu [CHƯA BIẾT] “nuốt 291/292 có chặn được âm lượng của ROM BYD không” (máy ảo chỉ đo phím chuẩn 24/25) ⇒ thêm, V-oncar bước 2 chốt; (4) §9 hứa “T7 xem dòng cuối” mà không có dòng ⇒ thêm; (5) <code>KeySourceResolverTest</code> cảnh báo <code>!!</code> thừa ⇒ <code>lateinit</code>. Ghi nhận, không vá: DOWN LẶP của mã có dòng theo nguồn vẫn được nhật ký tầng 1 đo HAL trên luồng <code>kachi-keysrc-hal</code> (như 2.87; matcher không tra cho DOWN lặp nên không phải “lần đọc thứ hai” của cùng sự kiện — R-nf2 giữ). <b>Công nghệ</b>: không thư viện mới (Android SDK + Kotlin stdlib) ⇒ Context7 không áp dụng; không API Android deprecated mới trong diff (cảnh báo <code>recycle()</code> ở <code>NavAccessibilityService</code> là dòng cũ, ngoài diff). <b>Kiểm</b> [ĐO, đếm từ XML, <code>--rerun-tasks --continue</code>, cây vá Pass 1]: <code>:app:testDebugUnitTest</code> 1 973 / 0 · <code>:app:testVehicleTestUnitTest</code> 1 985 / 0 · <code>:core:test</code> 3 978 / 0 · <code>:car-integration:test</code> 80 / 0 · <code>:vehicle-contracts:test</code> 22 / 0 · <code>:offcar-planner:test</code> 99 / 0 — tổng 8 137 / 0 lỗi / 0 bỏ qua; <code>:app:lintDebug</code> 0 lỗi / 565 cảnh báo (không cảnh báo mới ở tệp tầng 2); <code>:app:assembleRelease</code> xanh (bản vẫn 2.87 / 188 — chưa bump). Vá Pass 1 chỉ là chữ tài liệu/lý do + một bài test ⇒ tự soát lại một lượt, không phát sinh mục mới. <b>Verdict: APPROVED (off-car)</b> — còn V-emulator, security scan trước commit, bump version, 🚗 V-oncar.</li>
+</ul>
+
+</div></body>
+</html>

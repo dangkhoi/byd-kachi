@@ -33,17 +33,14 @@ import com.byd.clusternav.R
  * **cục bộ** (mỗi view một RenderNode), nên không suy được vị trí trong cửa sổ từ canvas. [KachiGlass] gắn listener
  * layout + cuộn để gọi [relocate] với `getLocationInWindow`.
  *
- * ## 2.87 · R-OP — [veilMin]
- * Sàn của lớp che. Mặc định [GlassVeil.MIN] (hôm nay); độ đục nền chung < 100 % thì `KachiGlass.paint` hạ nó theo
- * cùng hệ số (`MIN × f`) và hạ alpha của [surfaces] — vì [setAlpha] của lớp này KHÔNG làm gì, kính trên ảnh chỉ trong
- * hơn được qua đúng hai đầu vào đó. Bộ giải vẫn nâng lớp che lên khi vùng ảnh sáng cần (R-OP3).
- * [veilMax] — trần lớp che: [GlassVeil.MAX] ở 100 % (thẻ không bao giờ đục hẳn); dưới 100 % là 1.0, vì bề mặt đã trong
- * hơn thì trên vùng ảnh cực đoan (bảng sáng trên ảnh đen tuyền) 90 % lớp che không còn đủ giữ chữ [ĐO bài quét].
- * [overlayFloor] — sàn thêm cho thứ bán trong suốt nằm TRÊN thẻ (khay chở ô nút/ô cảnh báo); `null` ở 100 %. Nhận bề mặt
- * ĐANG VẼ của vùng (soát vòng 2: có thể đục hơn [surfaces] — [surfaceAt]).
- * [surfaceAt] — soát vòng 2 [P3]: hệ số bề mặt theo độ chói vùng ảnh (`KachiChrome.glassSurface`); `null` = bề mặt cố định
- * [surfaces]. Có ⇒ bộ giải nhận [pair] ở hệ số đó và [onSurface] đặt CÙNG hệ số lên lớp bề mặt thật (lớp `top` của
- * `KachiGlass.paint`) — thứ đưa bộ giải và thứ được vẽ là một số. Hệ số trả bằng hệ số dựng ⇒ đúng như trước bản vá.
+ * ## R-OP (2.88) — [fade]
+ * Hệ số độ đục nền chung (`KachiChrome.fraction`; 1 = hôm nay). Cả BA lớp của cửa sổ — ảnh mờ, lớp che, lớp nhuộm — vẽ
+ * với alpha × [fade] theo đúng phép `modulateAlpha` mà `LayerDrawable.setAlpha` áp lên lớp bề mặt bên trên
+ * ([ChromeOpacity.drawnAlpha]) ⇒ thẻ kính mờ đều như mọi nền khác của màn chính, và ở 0 (trong suốt 100 %) không vẽ gì:
+ * chỉ còn ảnh nền sắc nét phía sau. Lớp che vẫn do bộ giải chữ chọn như hôm nay ([GlassVeil.alphaFor] trên bề mặt
+ * 100 %), rồi mới nhân [fade] — không còn sàn đọc được nâng lớp che theo vùng ảnh (2.87 R-OP3, gỡ theo owner 04/10
+ * *"tùy user chọn"*). [setAlpha] của lớp này vẫn KHÔNG làm gì (đường cũ từng byte): hệ số đi vào qua hàm dựng, tường minh.
+ * `fade = 1` ⇒ mọi alpha giữ nguyên, đúng 2.86/2.87 ở 0 % trong suốt.
  */
 class WallWindowDrawable(
     private val art: WallArt,
@@ -52,18 +49,18 @@ class WallWindowDrawable(
     tint: Int?,
     private val surfaces: IntArray,
     private val inks: IntArray,
-    private val veilMin: Double = GlassVeil.MIN,
-    private val veilMax: Double = GlassVeil.MAX,
-    private val overlayFloor: ((Double, IntArray) -> Double)? = null,
-    private val surfaceAt: ((Double) -> Double)? = null,
-    private val pair: IntArray = surfaces,
-    private val onSurface: ((Double) -> Unit)? = null,
+    private val fade: Double = 1.0,
 ) : Drawable() {
     private val veilOpaque = ColorMath.withAlpha(veil, 255)
     private val shader = BitmapShader(art.blurred, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-    private val photo = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply { shader = this@WallWindowDrawable.shader }
-    private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ColorMath.withAlpha(veilOpaque, (veilMin * 255).toInt()) }
-    private val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tint?.let { ColorMath.withAlpha(it, TINT_ALPHA) } ?: Color.TRANSPARENT }
+    private val photo = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+        shader = this@WallWindowDrawable.shader
+        if (fade < 1.0) alpha = ChromeOpacity.alphaByte(fade)
+    }
+    private val veilPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = veilColor(GlassVeil.MIN) }
+    private val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = tint?.let { ColorMath.withAlpha(it, ChromeOpacity.drawnAlpha(TINT_ALPHA, fade)) } ?: Color.TRANSPARENT
+    }
     private val matrix = Matrix()
     private val rect = RectF()
     private val loc = IntArray(2)
@@ -95,13 +92,12 @@ class WallWindowDrawable(
         matrix.postTranslate(-loc[0].toFloat(), -loc[1].toFloat())
         shader.setLocalMatrix(matrix)
         val lum = art.luminanceOf(loc[0], loc[1], loc[0] + w, loc[1] + h)
-        val s = surfaceAt?.invoke(lum)
-        val shown = if (s == null) surfaces else IntArray(pair.size) { ChromeStack.faded(pair[it], s) }
-        val alpha = maxOf(GlassVeil.alphaFor(lum, veilOpaque, shown, inks, min = veilMin, max = veilMax), overlayFloor?.invoke(lum, shown) ?: 0.0)
-        veilPaint.color = ColorMath.withAlpha(veilOpaque, (alpha * 255).toInt())
-        if (s != null) onSurface?.invoke(s)
+        veilPaint.color = veilColor(GlassVeil.alphaFor(lum, veilOpaque, surfaces, inks))
         invalidateSelf()
     }
+
+    /** Màu lớp che cho độ đục [alpha] (0..1) bộ giải chọn — đúng byte hôm nay, rồi nhân [fade] (R-OP, `f = 1` ⇒ y nguyên). */
+    private fun veilColor(alpha: Double): Int = ColorMath.withAlpha(veilOpaque, ChromeOpacity.drawnAlpha((alpha * 255).toInt(), fade))
 
     /**
      * Ba lớp của "kính": vùng ảnh mờ → lớp che → nhuộm màu trội.
@@ -111,8 +107,11 @@ class WallWindowDrawable(
      * mờ vừa bị `WallpaperController` nhả ⇒ `drawRoundRect` **ném** và launcher mất màn chính. Đây là đúng lá chắn
      * `WallView.onDraw` đã có cho ảnh gốc (`!p.isRecycled`); thiếu nó thì hai đường ảnh cùng một dự án lại khác luật.
      * Hỏng thì thẻ rơi về lớp che + bề mặt — nhìn như thẻ thường, không sập.
+     *
+     * R-OP: [fade] = 0 (trong suốt 100 %) ⇒ ba lớp đều alpha 0 ⇒ bỏ cả ba lượt vẽ (không tốn lượt shader ảnh vô hình).
      */
     override fun draw(canvas: Canvas) {
+        if (fade <= 0.0) return
         rect.set(bounds)
         if (!art.blurred.isRecycled) canvas.drawRoundRect(rect, radius, radius, photo)
         canvas.drawRoundRect(rect, radius, radius, veilPaint)
@@ -132,15 +131,8 @@ class WallWindowDrawable(
 /**
  * Tham số dựng nền của một view kính — giữ trong tag để [KachiGlass.refresh] dựng lại đúng thứ đó khi ảnh đổi.
  * [fade] = nền này theo độ đục chung [KachiChrome] (đã gộp điều kiện tone — xem [KachiChrome.fades]).
- * [extraInks] = màu chữ KHÁC bộ mực trung tính mà thẻ này vẽ ([KachiGlass.apply]) — sàn lớp che giữ chúng đọc được khi mờ.
  */
-internal class GlassSpec(val radius: Int, val tone: SurfaceTone, val domain: Domain?, val fade: Boolean, val extraInks: IntArray = IntArray(0))
-
-/**
- * 2.87 · R-OP — nền của một THANH (thanh trên · thanh nút xe): chính `Drawable` đã dựng ở chỗ gọi + vai màu của nó
- * (để biết alpha gốc). Cùng khoá tag với [GlassSpec] ⇒ [KachiGlass.refresh] tính lại sàn đọc được khi ảnh nền đổi.
- */
-internal class BarSpec(val fill: Drawable, val role: String, val tiles: Boolean)
+internal class GlassSpec(val radius: Int, val tone: SurfaceTone, val domain: Domain?, val fade: Boolean)
 
 /**
  * Cửa DUY NHẤT gắn nền **kính** cho một view (thẻ nội dung, khay ô làm việc, ô con của nhóm).
@@ -157,44 +149,14 @@ object KachiGlass {
     /**
      * @param fade 2.87 · R-OP — `false` cho bề mặt là NÚT chứ không là nền (đĩa ⇄: độ tương phản ≥ 4.86:1 đo ở 100 %).
      *   Tone BẬT/LÕM không bao giờ mờ dù cờ này là gì ([KachiChrome.fades]).
-     * @param extraInks màu chữ KHÁC mut/mut2/ink mà thẻ vẽ (ô nén `w_board` vẽ nhãn bằng ACCENT thuần). Bộ giải lớp che
-     *   chỉ biết bộ mực trung tính ([veilInks]) ⇒ [ĐO bài quét · soát 2.87 P2] ACCENT trên thẻ mờ tụt 4.5 → 3.86:1. Khai
-     *   ở đây thì khi mờ (< 100 %) lớp che giữ chúng đọc được ở chỗ hôm nay đạt; ở 100 % không đổi một byte.
      */
     fun apply(
         view: View, radius: Int = KachiSpace.RADIUS_XL, tone: SurfaceTone = SurfaceTone.NEUTRAL, domain: Domain? = null,
-        fade: Boolean = true, extraInks: IntArray = IntArray(0),
+        fade: Boolean = true,
     ) {
-        val spec = GlassSpec(radius, tone, domain, fade && KachiChrome.fades(tone), extraInks)
+        val spec = GlassSpec(radius, tone, domain, fade && KachiChrome.fades(tone))
         view.setTag(R.id.kachi_glass_spec, spec)
         paint(view, spec)
-    }
-
-    /**
-     * Thẻ kính đã dựng đổi màu chữ giữa chừng (ô lốp: thường → hổ phách) ⇒ khai thêm [ink] vào [GlassSpec.extraInks].
-     * Gọi mỗi nhịp được: mực đã khai (hoặc thuộc bộ trung tính) ⇒ một phép so. Chỉ vẽ lại nền khi mực mới ĐỔI thứ được
-     * vẽ (đang mờ, có ảnh nền); còn lại chỉ ghi tag để lượt [refresh] sau dùng.
-     */
-    fun addInk(view: View, ink: Int) {
-        val spec = view.getTag(R.id.kachi_glass_spec) as? GlassSpec ?: return
-        if (ink in spec.extraInks || ink in veilInks(spec.tone)) return
-        val next = GlassSpec(spec.radius, spec.tone, spec.domain, spec.fade, spec.extraInks + ink)
-        view.setTag(R.id.kachi_glass_spec, next)
-        if (next.fade && KachiChrome.fraction < 1.0 && WallArtStore.current != null) paint(view, next)
-    }
-
-    /**
-     * 2.87 · R-OP — nền của một THANH theo độ đục chung: [fill] (đã dựng ở chỗ gọi, màu vai [role]) được hạ alpha theo
-     * [KachiChrome.barAlpha]. Có ảnh nền ⇒ không xuống dưới sàn đọc được của vùng ảnh TỆ NHẤT dưới thanh
-     * ([WallArt.cellLuminances]), đo lại khi thanh đổi chỗ/cỡ (cùng [Binding] của thẻ kính) và khi ảnh đổi ([refresh]).
-     * Ở 100 % nền là đúng [fill], không chạm alpha. [tiles] = thanh CHỞ ô (thanh nút): sàn tính cả ô TẮT/ô BẬT nằm
-     * trên nó, không chỉ chữ.
-     */
-    fun bar(view: View, fill: Drawable, role: String, tiles: Boolean = false) {
-        val spec = BarSpec(fill, role, tiles)
-        view.setTag(R.id.kachi_glass_spec, spec)
-        view.background = fill
-        paintBar(view, spec)
     }
 
     /**
@@ -212,12 +174,12 @@ object KachiGlass {
         view.background = background
     }
 
-    /** Dựng lại nền của mọi view kính dưới [root] theo ảnh hiện tại — gọi khi ảnh nền đổi / bật / tắt. */
+    /**
+     * Dựng lại nền của mọi view kính dưới [root] theo ảnh hiện tại — gọi khi ảnh nền đổi / bật / tắt, và từ
+     * `applyThemeInPlace` (đổi màu / đổi độ đục nền chung: [paint] đọc [KachiChrome.fraction] lúc dựng).
+     */
     fun refresh(root: View) {
-        when (val spec = root.getTag(R.id.kachi_glass_spec)) {
-            is GlassSpec -> paint(root, spec)
-            is BarSpec -> paintBar(root, spec)
-        }
+        (root.getTag(R.id.kachi_glass_spec) as? GlassSpec)?.let { paint(root, it) }
         if (root is ViewGroup) for (i in 0 until root.childCount) refresh(root.getChildAt(i))
     }
 
@@ -230,54 +192,21 @@ object KachiGlass {
             if (spec.fade) view.background?.let { KachiChrome.fade(it) }   // R-OP: 100 % ⇒ không chạm gì
             return
         }
-        // R-OP — có ảnh: `WallWindowDrawable.setAlpha` không làm gì, nên kính trong hơn qua BỀ MẶT (alpha × f) + SÀN
-        // lớp che (MIN × f); bộ giải vẫn đậm lớp che lên khi vùng ảnh sáng cần (R-OP3). Bề mặt đưa bộ giải là đúng
-        // alpha ĐƯỢC VẼ (`ChromeStack.faded` = modulateAlpha của lớp `top`) — làm tròn khác 1/255 là hụt ở mép 4.5.
-        // f = 1 ⇒ đúng đường cũ.
-        // Khay (WELL) còn chở ô nút/ô cảnh báo bán trong suốt, thẻ có chữ MÀU ([GlassSpec.extraInks]) ⇒ sàn lớp che
-        // tính cả chúng (`KachiChrome.glassFloor`).
-        val f = if (spec.fade) KachiChrome.fraction else 1.0
-        val pair = KachiTheme.surfacePair(spec.tone, overArtwork = true)
-        val shown = if (f < 1.0) IntArray(pair.size) { ChromeStack.faded(pair[it], f) } else pair
-        val veil = KachiTheme.c(KachiTheme.BG)
-        val inks = veilInks(spec.tone)
-        val extra = spec.extraInks.filterNot { it in inks }.toIntArray()
-        val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)
-        if (spec.fade) KachiChrome.fade(top)
-        // Soát vòng 2 [P3]: thẻ có thứ phải giữ ngoài chữ trung tính (khay · mực màu KHAI) ⇒ bề mặt theo vùng ảnh, không chỉ lớp
-        // che — lớp che 100 % không cứu được chỗ hụt do chính bề mặt mờ (ACCENT theo ảnh). Hệ số trả = f ⇒ y như trước.
-        val fits = f < 1.0 && (spec.tone == SurfaceTone.WELL || extra.isNotEmpty())
-        val well = spec.tone == SurfaceTone.WELL
+        // R-OP (2.88) — có ảnh: cửa sổ (ảnh mờ + lớp che + nhuộm) và bề mặt cùng nhân MỘT hệ số [KachiChrome.fraction];
+        // lớp che vẫn do bộ giải chữ chọn trên bề mặt 100 % như hôm nay. f = 1 ⇒ đúng đường 2.86 từng byte.
         val window = WallWindowDrawable(
             art = art,
             radius = KachiSpace.dpf(ctx, spec.radius),
-            veil = veil,
+            veil = KachiTheme.c(KachiTheme.BG),
             tint = art.dominant.firstOrNull(),
-            surfaces = shown,
-            inks = inks,
-            veilMin = GlassVeil.MIN * f,
-            veilMax = if (f < 1.0) 1.0 else GlassVeil.MAX,
-            overlayFloor = if (fits) {
-                { l, s -> KachiChrome.glassFloor(l, veil, pair, s, inks, extra, well, GlassVeil.MIN * f) }
-            } else null,
-            surfaceAt = if (fits) { l -> KachiChrome.glassSurface(l, veil, pair, inks, extra, well, GlassVeil.MIN * f) } else null,
-            pair = pair,
-            onSurface = { s -> ChromeStack.byteOf(s).let { if (top.alpha != it) top.alpha = it } },
+            surfaces = KachiTheme.surfacePair(spec.tone, overArtwork = true),
+            inks = veilInks(spec.tone),
+            fade = if (spec.fade) KachiChrome.fraction else 1.0,
         )
+        val top = KachiTheme.surface(ctx, spec.radius, spec.tone, spec.domain, overArtwork = true)
+        if (spec.fade) KachiChrome.fade(top)
         view.background = LayerDrawable(arrayOf(window, top))
         bind(view, window::relocate)
-    }
-
-    /** Nền thanh: không ảnh / 100 % ⇒ alpha theo lựa chọn (255 ở 100 %); có ảnh ⇒ đo sàn theo chỗ đứng của thanh. */
-    private fun paintBar(view: View, spec: BarSpec) {
-        val art = WallArtStore.current
-        val role = KachiTheme.c(spec.role)
-        if (art == null || KachiChrome.fraction >= 1.0) {
-            unbind(view)
-            KachiChrome.barAlpha(role, null, spec.tiles).let { if (spec.fill.alpha != it) spec.fill.alpha = it }
-            return
-        }
-        bind(view, BarFloor(art, spec.fill, role, spec.tiles)::remeasure)
     }
 
     /**
@@ -291,10 +220,7 @@ object KachiGlass {
         else -> intArrayOf(KachiTheme.c(KachiTheme.MUT), KachiTheme.c(KachiTheme.MUT2), KachiTheme.c(KachiTheme.INK))
     }
 
-    /**
-     * Listener layout + cuộn — vị trí trong cửa sổ đổi thì cửa sổ nhìn xuống vùng khác của ảnh. MỘT bộ máy cho cả thẻ
-     * kính ([WallWindowDrawable.relocate]) lẫn thanh ([BarFloor.remeasure], 2.87 · R-OP) — không dựng bộ thứ hai.
-     */
+    /** Listener layout + cuộn — vị trí trong cửa sổ đổi thì cửa sổ nhìn xuống vùng khác của ảnh ([WallWindowDrawable.relocate]). */
     private class Binding(val view: View, val relocate: (View) -> Unit) :
         View.OnLayoutChangeListener, View.OnAttachStateChangeListener, ViewTreeObserver.OnScrollChangedListener {
         override fun onLayoutChange(v: View?, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int) = relocate(view)
@@ -318,29 +244,5 @@ object KachiGlass {
         view.removeOnAttachStateChangeListener(b)
         if (view.isAttachedToWindow) view.viewTreeObserver.removeOnScrollChangedListener(b)
         view.setTag(R.id.kachi_glass_binding, null)
-    }
-}
-
-/**
- * 2.87 · R-OP3 — sàn đọc được của một THANH trên ảnh nền: đo các ô lưới độ chói dưới thanh, hỏi
- * [KachiChrome.barAlpha] (vùng TỆ NHẤT), đặt alpha cho [fill]. Cùng cổng "không đổi chỗ/cỡ thì không làm gì" với
- * [WallWindowDrawable.relocate] (bài học SOÁT P1b: cổng phải xét CẢ cỡ). Trước lượt đo đầu, [fill] giữ alpha hiện có
- * (255 = hôm nay) — sai thì sai về phía đục, không về phía không đọc được.
- */
-private class BarFloor(private val art: WallArt, private val fill: Drawable, private val role: Int, private val tiles: Boolean) {
-    private val loc = IntArray(2)
-    private var lastX = Int.MIN_VALUE
-    private var lastY = Int.MIN_VALUE
-    private var lastW = -1
-    private var lastH = -1
-
-    fun remeasure(view: View) {
-        view.getLocationInWindow(loc)
-        val w = maxOf(1, view.width)
-        val h = maxOf(1, view.height)
-        if (loc[0] == lastX && loc[1] == lastY && w == lastW && h == lastH) return
-        lastX = loc[0]; lastY = loc[1]; lastW = w; lastH = h
-        val a = KachiChrome.barAlpha(role, art.cellLuminances(loc[0], loc[1], loc[0] + w, loc[1] + h), tiles)
-        if (fill.alpha != a) fill.alpha = a
     }
 }

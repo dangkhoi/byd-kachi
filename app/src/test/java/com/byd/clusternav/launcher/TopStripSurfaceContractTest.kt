@@ -403,7 +403,7 @@ class TopStripSurfaceContractTest {
      * sáng. Gốc: `restyle()` liệt kê tay (thanh · đồng hồ · chip) và quên các nút. Bài này khoá CÁCH LÀM, không khoá danh sách:
      * MỌI dòng mã của tệp đọc màu chủ đề (`c(KachiTheme.…)`, `KachiTheme.pill(`/`gradient(`) phải nằm trong `themed { … }`
      * (đăng ký để tô lại), và `restyle()` phải chạy lại mọi lượt đã đăng ký. Thêm một nút mới tô màu ngoài `themed` ⇒ đỏ.
-     * Ngoại lệ có tên: nền thanh (`KachiTheme.card` — `KachiGlass.bar` gọi ở CẢ build lẫn restyle, `KachiChromeContractTest`).
+     * Ngoại lệ có tên: nền thanh (`KachiTheme.card` — bọc `KachiChrome.fade` ở CẢ build lẫn restyle, `KachiChromeContractTest`).
      */
     @Test
     fun `doi chu de tai cho thi moi view thanh tren to lai - khong con danh sach tay`() {

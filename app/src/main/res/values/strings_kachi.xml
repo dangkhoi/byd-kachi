@@ -118,7 +118,8 @@
     <string name="kachi_row_tone">Tông thẻ</string>
     <!-- 2.87 · R-OP1 — độ đục nền chung (thanh trên · thanh nút xe · widget), lưu trong color_choice -->
     <string name="kachi_row_bg_opacity">Độ trong suốt nền</string>
-    <string name="kachi_bg_opacity_note">Một mức chung cho nền thanh trên, thanh nút xe và widget — 0 % là như cũ, số càng lớn nền càng trong. Chữ và icon không mờ đi: chỗ nào nền phía sau làm chữ khó đọc (vd ảnh nền sáng), thanh và thẻ tự giữ lại độ đục cần thiết. Đóng Cài đặt để thấy kết quả.</string>
+    <string name="kachi_bg_opacity_note">Một mức chung cho nền thanh trên, thanh nút xe và widget — kéo hết về trái là như cũ, kéo sang phải nền trong dần, kéo hết về phải (100 %) là nền trong hoàn toàn. Chữ và icon luôn giữ nguyên; trên ảnh nền sáng, mức trong cao có thể làm chữ khó đọc — tùy bạn chọn. Thả tay là áp; đóng Cài đặt để thấy kết quả.</string>
+    <string name="kachi_bg_opacity_a11y">Độ trong suốt nền: %1$s</string>
     <string name="kachi_sec_car_image">Hình xe</string>
     <string name="kachi_car_image_current">Đang dùng: %1$s</string>
     <string name="kachi_car_image_title">Hình xe</string>
@@ -580,6 +581,7 @@
     <string name="kachi_keys_learn">Học phím mới…</string>
     <string name="kachi_keys_learn_name">Đặt tên cho nút vừa bấm</string>
     <string name="kachi_key_custom_name">%1$s (mã %2$d)</string>
+    <string name="kachi_key_custom_name_src">%1$s (mã %2$d · %3$s)</string>
     <string name="kachi_key_code">mã phím %1$d</string>
     <string name="kachi_key_unknown">%1$s (%2$d)</string>
     <string name="kachi_key_mic_hold">Nút mic vô-lăng — giữ (328)</string>
@@ -798,6 +800,7 @@
     <string name="kachi_sc_refuse_cast">%1$s đang chiếu lên cụm</string>
     <string name="kachi_sc_not_installed">%1$s chưa cài</string>
     <string name="kachi_sc_bg_failed">%1$s chưa chạy ngầm được</string>
+    <string name="kachi_sc_bg_failed_why">%1$s chưa chạy ngầm được (%2$s)</string>
     <!-- F1 · R1.5 dòng 9 (spec shortcuts-autostart): app của ô đang mở toàn màn (K7); về ô khi màn nhà hiện lại (K8). -->
     <string name="kachi_sc_full_card">Đang mở toàn màn — chạm để đưa về ô</string>
     <string name="kachi_sc_full_failed">Không mở toàn màn được %1$s</string>

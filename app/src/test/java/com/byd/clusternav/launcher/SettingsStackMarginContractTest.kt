@@ -56,6 +56,8 @@ class SettingsStackMarginContractTest {
         "SettingsRows.kt" to Regex("""\n    fun (\w+)\("""),
         "SettingsRowsColor.kt" to Regex("""\ninternal fun SettingsRows\.(\w+)\("""),
         "SettingsRowsDisclosure.kt" to Regex("""\ninternal fun SettingsRows\.(\w+)\("""),
+        // 2.88 · R-OP — hàng thanh kéo (độ trong suốt nền 0–100 %).
+        "SettingsRowsSlider.kt" to Regex("""\ninternal fun SettingsRows\.(\w+)\("""),
     )
 
     /** Mọi hàm dựng đang có, theo tệp: `(tệp, chữ ký để cắt thân, tên hàm)`. */
@@ -110,6 +112,8 @@ class SettingsStackMarginContractTest {
             "subHeader", "statusRow", "stepperRow", "listRow", "embed",
             // tệp MỞ RỘNG (trần 500 dòng): ô màu (P1b · R8) + khối gập/mở (2.74 · R3)
             "swatchRow", "disclosureRow", "disclosureLine",
+            // 2.88 · R-OP — thanh kéo (owner 04/10: "có thay kéo từ 0-100%")
+            "sliderRow",
         )
         assertTrue(
             builders.containsAll(required),

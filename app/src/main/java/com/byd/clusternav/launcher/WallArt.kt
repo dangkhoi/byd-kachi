@@ -43,21 +43,15 @@ class WallArt(
     val screenH: Int,
 ) {
     /** Độ chói trung bình của vùng màn `[l, t, r, b]` (điểm ảnh màn) — trung bình các ô lưới bị vùng đó phủ. */
-    fun luminanceOf(l: Int, t: Int, r: Int, b: Int): Double = cellLuminances(l, t, r, b).average()
-
-    /**
-     * Độ chói của TỪNG ô lưới bị vùng `[l, t, r, b]` phủ (hàng-trước). [luminanceOf] là trung bình của chính mảng này;
-     * thanh trên/thanh nút (2.87 · R-OP3, [KachiGlass.bar]) cần ô TỆ NHẤT vì chúng chạy hết bề ngang màn — trung bình
-     * nửa trời sáng với nửa cây tối cho một độ đục mà chữ nằm ở nửa sáng không đọc được. Lưới hỏng ⇒ `[0.5]`.
-     */
-    fun cellLuminances(l: Int, t: Int, r: Int, b: Int): DoubleArray {
-        if (cols == 0 || rows == 0 || screenW <= 0 || screenH <= 0) return doubleArrayOf(0.5)
+    fun luminanceOf(l: Int, t: Int, r: Int, b: Int): Double {
+        if (cols == 0 || rows == 0 || screenW <= 0 || screenH <= 0) return 0.5
         val c0 = (l * cols / screenW).coerceIn(0, cols - 1)
         val c1 = ((r - 1) * cols / screenW).coerceIn(c0, cols - 1)
         val r0 = (t * rows / screenH).coerceIn(0, rows - 1)
         val r1 = ((b - 1) * rows / screenH).coerceIn(r0, rows - 1)
-        val w = c1 - c0 + 1
-        return DoubleArray((r1 - r0 + 1) * w) { i -> lum[(r0 + i / w) * cols + c0 + i % w].toDouble() }
+        var sum = 0.0; var n = 0
+        for (y in r0..r1) for (x in c0..c1) { sum += lum[y * cols + x]; n++ }
+        return if (n == 0) 0.5 else sum / n
     }
 }
 

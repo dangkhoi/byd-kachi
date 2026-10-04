@@ -230,7 +230,10 @@ internal object TestBridgeHal {
             return
         }
         val raw = BydHalGateway(app).featureGet(fqn, featureId)
-        val sentinel = HalBindingTable.isSentinelRc(raw?.toLongOrNull())
+        // 2.88 — `raw` là chuỗi EventValue (`"int=-2147482648 float=…"`), `toLongOrNull()` trên nó luôn `null` ⇒ cờ này
+        // từng LUÔN `false` (lời đáp 09-25 `perf-oncar-2026-09-26/kachi-logs/usage-1790325388671.log:4833`:
+        // `"value":"int=-2147482648…","sentinel":false`). Dùng bộ parse CHUNG của đường đọc: [HalBindingTable.rawIsSentinel].
+        val sentinel = raw?.let { HalBindingTable.rawIsSentinel(it) } ?: false
         reply.ok(
             listOf(
                 "op" to OP_GETID,
@@ -245,7 +248,9 @@ internal object TestBridgeHal {
                 "sentinel" to sentinel,
                 "reply" to when {
                     raw == null -> "unavailable: null (off-car / feature absent / no permission)"
-                    sentinel -> "unavailable: sentinel ($raw) — feature khong co tren trim nay"
+                    // Rẽ theo MÃ: BUSY/TIMEOUT là tạm thời, không phải "trim không có" (CLAUDE.md §2 · soát 2.88).
+                    sentinel -> "unavailable: sentinel ($raw) — " +
+                        (HalBindingTable.sentinelMeaning(HalBindingTable.coerceInt(raw)?.toLong()) ?: "sentinel")
                     else -> "ok: read"
                 },
             ),

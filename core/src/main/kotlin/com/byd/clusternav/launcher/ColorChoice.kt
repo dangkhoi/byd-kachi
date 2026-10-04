@@ -11,7 +11,8 @@ package com.byd.clusternav.launcher
  * vector car (owner: bỏ vector, dùng ảnh bitmap). Chúng chỉ tô/kéo dãn hình vector — với ẢNH thì vô nghĩa (nút
  * chết). `decode` vẫn tha thứ chuỗi cũ `ACCENT;TONE;paint;model` (bỏ qua trường dư) nên cấu hình đã lưu không sập.
  *
- * 2.87 · R-OP1 thêm trường thứ ba [ColorChoice.surfaceOpacity] (độ đục nền chung) — xem KDoc của nó và [ChromeOpacity].
+ * 2.87 · R-OP1 thêm trường thứ ba [ColorChoice.surfaceOpacity] (độ đục nền chung; 2.88 thành thanh kéo 0–100 %) — xem
+ * KDoc của nó và [ChromeOpacity].
  *
  * Cấu hình cũ không có khoá ⇒ [ColorChoice.DEFAULT] — **không hỏi** (AC8.4; owner 2026-09-16: không hỏi xác nhận
  * mặc định). Không bánh xe màu, không mã hex, không chỉnh từng thành phần (AC8.6): người lái chọn một ô.
@@ -51,9 +52,10 @@ enum class CardTone {
 }
 
 /**
- * @property surfaceOpacity 2.87 · R-OP1 — độ đục chung của nền thanh trên · thanh nút xe · widget, phần trăm, một
- *   trong [ChromeOpacity.STEPS]. Không phải màu nên phép suy bảng màu (`KachiPaletteDerive`) KHÔNG đọc nó — mặc định
- *   vẫn là bảng gốc cùng thực thể. Nằm ở đây (không mở khoá mới) để thừa hưởng nguyên đường theo-hồ-sơ + chia sẻ của
+ * @property surfaceOpacity 2.87 · R-OP1 — độ đục chung của nền thanh trên · thanh nút xe · widget, phần trăm, một bội
+ *   của [ChromeOpacity.STEP] trong `[0, 100]` (2.88 — thanh kéo; 2.87 chỉ có 100 · 85 · 70 · 55 · 40, đều là bội của 5
+ *   nên hồ sơ cũ giữ y số). Không phải màu nên phép suy bảng màu (`KachiPaletteDerive`) KHÔNG đọc nó — mặc định vẫn là
+ *   bảng gốc cùng thực thể. Nằm ở đây (không mở khoá mới) để thừa hưởng nguyên đường theo-hồ-sơ + chia sẻ của
  *   `color_choice`.
  */
 data class ColorChoice(
@@ -78,8 +80,10 @@ data class ColorChoice(
 
         /**
          * Giải mã; thiếu/rác ⇒ mặc định cho phần đó, KHÔNG sập. Chuỗi cũ `ACCENT;TONE;paint;model` ⇒ bỏ qua trường dư.
-         * Độ đục: trường ĐẦU TIÊN từ vị trí 3 trở đi khớp đúng `o<1–3 chữ số>` ⇒ [ChromeOpacity.snap]; không có ⇒ 100.
-         * Bản ≤ 2.86 đọc chuỗi mới vẫn đúng màu (chúng bỏ qua mọi trường từ vị trí 3).
+         * Độ đục: trường ĐẦU TIÊN từ vị trí 3 trở đi khớp đúng `o<1–3 chữ số>` ⇒ [ChromeOpacity.snap] (bội của 5 gần
+         * nhất, kẹp `[0, 100]`); không có ⇒ 100. Bản ≤ 2.86 đọc chuỗi mới vẫn đúng màu (chúng bỏ qua mọi trường từ vị trí 3).
+         * Hồ sơ 2.88 nhập vào 2.87 thì 2.87 kéo số về bậc gần nhất của nó (vd `o0`, `o30` ⇒ 40) — chấp nhận được: kênh OTA
+         * không bao giờ hạ bản, và chiều ngược (2.87 → 2.88) giữ đúng số.
          */
         fun decode(s: String?): ColorChoice {
             if (s.isNullOrBlank()) return DEFAULT

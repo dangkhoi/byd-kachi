@@ -10,6 +10,7 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.behind.BehindHomePlan
 import com.byd.clusternav.launcher.behind.BehindHomeRunner
 import com.byd.clusternav.launcher.behind.BehindHomeSequence
+import com.byd.clusternav.launcher.behind.BehindReason
 import com.byd.clusternav.modules.clustercast.ClusterProfile
 
 /**
@@ -97,12 +98,14 @@ internal class KachiHomeSlots(
 
     /**
      * L8 — nút *chạy nền* của ô [index]: lớp che của Kachi lên đỉnh màn ảo [vd] CỦA Ô → move-task app [pkg] ra sau màn nhà
-     * → gỡ che ([BehindHomeSequence.evictCovered] — bốn câu CLAUDE.md §4 ở KDoc đó). [done] (luồng chính): `true` = bản đọc
-     * cuối thấy app đã RỜI màn ảo ô và sống trên display 0 ⇒ bên gọi áp luật hoàn ô; `false` = ô giữ app (dòng `KachiBehind`).
-     * Lớp che dùng bộ phận Android của màn ảo ẩn (`StagingDisplay.cover/uncover` — không tạo / nhả màn ảo nào ở đây).
+     * → gỡ che ([BehindHomeSequence.evictCovered] — bốn câu CLAUDE.md §4 ở KDoc đó). [done] (luồng chính): `left = true` =
+     * bản đọc cuối thấy app đã RỜI màn ảo ô và sống trên display 0 ⇒ bên gọi áp luật hoàn ô; `false` = ô giữ app. Lỗi xe 2.87
+     * (04/10, CLAUDE.md §11): kèm lý do ngắn + dòng đầy đủ ([BehindReason.report]) để câu báo trên màn nói được chuỗi dừng ở
+     * đâu — anh em chỉ gửi ảnh chụp. Lớp che dùng bộ phận Android của màn ảo ẩn (`StagingDisplay.cover/uncover` — không tạo /
+     * nhả màn ảo nào ở đây).
      */
-    fun toBack(index: Int, vd: Int, pkg: String, done: (Boolean) -> Unit) =
-        behind.chain("slot-back slot=$index X=$pkg", { out -> done(out.outOfStage) }) { kit -> kit.seq.evictCovered(vd, pkg, kit.hidden) }
+    fun toBack(index: Int, vd: Int, pkg: String, done: (BehindReason.Report) -> Unit) =
+        behind.chain("slot-back slot=$index X=$pkg", { out -> done(BehindReason.report(out)) }) { kit -> kit.seq.evictCovered(vd, pkg, kit.hidden) }
 
     /**
      * Soát 2.87 · P3 — BEHIND-HOME còn dùng được trong tiến trình này: một PHÉP ĐO `ANCHOR_IN_FRONT` (giữ chỗ bị ROM đưa lên

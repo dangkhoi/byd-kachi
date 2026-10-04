@@ -414,7 +414,7 @@ xe mới biết. Vì vậy giao diện phải mang dấu chưa-kiểm (R10) và 
 <h2>7. Open Questions</h2>
 <table>
 <tr><th>#</th><th>Câu hỏi</th><th>Mặc định tôi chọn nếu anh không đổi</th></tr>
-<tr><td>OQ1</td><td>Ngưỡng cảnh báo lốp (§4.4) — anh biết số khuyến nghị cho đời xe mình không?</td><td>non &lt; 2.0 · căng &gt; 3.2 · lệch ≥ 0.3 bar; đặt một chỗ, đổi một dòng sau khi đo trên xe.</td></tr>
+<tr><td>OQ1</td><td>Ngưỡng cảnh báo lốp (§4.4) — anh biết số khuyến nghị cho đời xe mình không?</td><td><s>non &lt; 2.0 · căng &gt; 3.2 · lệch ≥ 0.3 bar</s> — <b>ĐÓNG 2026-10-04</b>: owner <i>"Cảnh báo nó theo tùy loại xe đó nha, không hardcode số đâu"</i> ⇒ ba ngưỡng đã gỡ; màu lốp = lời phán của chính xe (màu cụm đồng hồ → mã TPMS → xám). Xem <code>kachi-288-tyre-car-state.html</code>.</td></tr>
 <tr><td>OQ2</td><td><s>Đơn vị áp suất: bar hay kPa?</s></td><td><b>ĐÃ THAY 2026-09-10</b> — owner: <i>"cho user chọn đơn vị luôn, đừng ép"</i> ⇒ không chọn hộ nữa, xem R11–R13 + §4.6. Mặc định giữ bar để không ai thấy khác biệt.</td></tr>
 <tr><td>OQ3</td><td>Thanh trên có nên cho đặt ô khả năng luôn trong gói này, hay chỉ cần hai vùng kia trước?</td><td>Làm <b>đủ 3 vùng</b> vì yêu cầu owner ghi rõ 3 vùng; nếu thanh trên chật thì giới hạn số ô và nói rõ.</td></tr>
 <tr><td>OQ4</td><td>Ô tick lấy gió: chỉ bật lúc nổ máy, hay có thêm điều kiện (ví dụ chỉ khi ngoài trời bụi)?</td><td><b>Chỉ lúc nổ máy</b> — đúng nguyên văn yêu cầu; thêm điều kiện là mở phạm vi.</td></tr>
@@ -462,7 +462,7 @@ xe mới biết. Vì vậy giao diện phải mang dấu chưa-kiểm (R10) và 
   <li>Nút đổi-app ở đầu ô <b>đè lên đỉnh hình xe</b> trong bảng lốp (làm mờ ~35–40px viền). Là chrome chung của mọi ô, không phải lỗi riêng của bảng lốp ⇒ để lại, sửa chung khi làm P9.</li>
   <li>Bảng lốp cho biết <b>bánh nào</b> có vấn đề nhưng chưa nói <b>sai cái gì</b> (không mũi tên, không chữ "thấp", không hiện ngưỡng). Người xem phải tự so số. Cân nhắc thêm sau khi có số thật trên xe.</li>
   <li>Nhóm khả năng trong bảng Tuỳ biến dùng <b>một icon cho cả nhóm</b> ⇒ 10 ô cùng icon tia sét, phân biệt chỉ bằng chữ. Cần bộ icon riêng cho từng datum (nợ U1 — ~45 icon thiếu).</li>
-  <li>Ngưỡng lốp vẫn là <b>con số tôi tự chọn</b> (OQ1 chưa có câu trả lời của owner) — đặt một chỗ, đổi một dòng.</li>
+  <li>Ngưỡng lốp vẫn là <b>con số tôi tự chọn</b> (OQ1 chưa có câu trả lời của owner) — đặt một chỗ, đổi một dòng. <i>(2026-10-04: OQ1 đã đóng — ngưỡng gỡ ở 2.88, xem <code>kachi-288-tyre-car-state.html</code>.)</i></li>
 </ul>
 <p class="muted">Ghi NGAY khi code: quyết định · đánh đổi · chỗ lệch thiết kế · bug và cách xử.</p>
 

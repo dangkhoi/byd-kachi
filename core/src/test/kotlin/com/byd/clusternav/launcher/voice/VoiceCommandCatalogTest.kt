@@ -133,7 +133,7 @@ class VoiceCommandCatalogTest {
         val ids = groups().flatMap { g -> g.examples.map { it.intent } }.mapNotNull { keyOf(it) }.toSet()
         listOf(
             ControlRegistry.ALL.map { it.id },
-            TelemetryRegistry.ALL.map { it.id },
+            VoiceTelemetry.SPOKEN.map { it.id },   // 2.88: trừ 13 mã lốp thô — [VoiceTelemetry]
             ActionMacros.ALL.map { it.id },
             LauncherActions.ALL.map { it.id },
         ).flatten().let { want ->

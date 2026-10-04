@@ -84,13 +84,14 @@ class VoiceGrammarCoverageTest {
     @Test
     fun `moi datum trong TelemetryRegistry deu doc duoc bang mot cau xem`() {
         val misses = ArrayList<String>()
-        TelemetryRegistry.ALL.forEach { spec ->
+        // 2.88: 13 mã lốp THÔ cố ý không nói được — [VoiceTelemetry.NOT_SPOKEN] (bài `VoiceTelemetryTest` khoá).
+        VoiceTelemetry.SPOKEN.forEach { spec ->
             val s = VoiceCommandCatalog.coverageSentence(spec, Lang.VI)
             val got = VoiceIntentParser.parseOne(s)
             val gotLabel = (got as? VoiceIntent.Read)?.datumId?.let { TelemetryRegistry.byId(it)?.label }
             if (gotLabel != spec.label) misses.add("${spec.id} · \"$s\" → $got")
         }
-        assertTrue(misses.isEmpty(), "datum KHÔNG đọc được bằng lời (${misses.size}/${TelemetryRegistry.ALL.size}):\n" +
+        assertTrue(misses.isEmpty(), "datum KHÔNG đọc được bằng lời (${misses.size}/${VoiceTelemetry.SPOKEN.size}):\n" +
             misses.joinToString("\n"))
     }
 
@@ -169,7 +170,7 @@ class VoiceGrammarCoverageTest {
         val terms = VoiceGrammar.terms()
         listOf(
             VoiceTermKind.CONTROL to ControlRegistry.ALL.size,
-            VoiceTermKind.TELEMETRY to TelemetryRegistry.ALL.size,
+            VoiceTermKind.TELEMETRY to VoiceTelemetry.SPOKEN.size,   // 2.88: trừ 13 mã lốp thô
             VoiceTermKind.MACRO to ActionMacros.ALL.size,
             VoiceTermKind.LAUNCHER to LauncherActions.ALL.size,
         ).forEach { (kind, n) ->

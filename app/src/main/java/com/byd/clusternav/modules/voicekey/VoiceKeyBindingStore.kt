@@ -1,6 +1,7 @@
 package com.byd.clusternav.modules.voicekey
 
 import android.content.SharedPreferences
+import com.byd.clusternav.voicekey.KeySourceKind
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import com.byd.clusternav.voicekey.VoiceKeyBindings
 
@@ -24,12 +25,19 @@ import com.byd.clusternav.voicekey.VoiceKeyBindings
  * `android.jar` chỉ có bản stub ném "Stub!"); [encode]/[decode] không cần `SharedPreferences`.
  *
  * MỌI đường đọc đều đi qua [VoiceKeyBindings.sanitize]: file prefs có thể hỏng, bị sửa tay, hoặc đến từ
- * bản trước ⇒ không được tin nội dung của nó giữ bất biến "một mã phím một đích".
+ * bản trước ⇒ không được tin nội dung của nó giữ bất biến "một (mã phím, nguồn) một đích".
+ *
+ * ── 2.88 · trường nguồn `"s"` (spec `kachi-288-key-source-split` R5, §4.4) ─────────────────────────
+ * JSON mỗi dòng: `{"k":mã,"t":đích}` + `"s":"knob"|"wheel"` CHỈ khi dòng có nguồn ([KeySourceKind.code]).
+ *  - thiếu `"s"` ⇒ dòng không nguồn — JSON của mọi bản cũ đọc ra y như 2.87;
+ *  - `"s"` mang mã lạ (bản tương lai) ⇒ BỎ dòng, KHÔNG hạ thành dòng không nguồn (hạ xuống thì nó bắt cả nút kia);
+ *  - ghi: danh sách không có dòng nguồn nào mã hoá ra ĐÚNG từng byte như 2.87 (hồ sơ/so sánh không thấy đổi oan).
  */
 object VoiceKeyBindingStore {
 
     private const val K_KEYCODE = "k"
     private const val K_TARGET = "t"
+    private const val K_SOURCE = "s"
 
     /**
      * `null` ⇒ khoá CHƯA tồn tại (chưa migrate bao giờ) — khác hẳn `"[]"` (đã migrate, danh sách rỗng).
@@ -52,7 +60,9 @@ object VoiceKeyBindingStore {
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.optJSONObject(i) ?: return@mapNotNull null
                 if (!o.has(K_KEYCODE) || !o.has(K_TARGET)) return@mapNotNull null
-                VoiceKeyBinding(keyCode = o.optInt(K_KEYCODE), targetSpec = o.optString(K_TARGET))
+                // R5: có "s" mà mã lạ ⇒ bỏ cả dòng (không hạ thành dòng không nguồn).
+                val source = if (o.has(K_SOURCE)) KeySourceKind.fromCode(o.optString(K_SOURCE)) ?: return@mapNotNull null else null
+                VoiceKeyBinding(keyCode = o.optInt(K_KEYCODE), targetSpec = o.optString(K_TARGET), source = source)
             }
         }.getOrDefault(emptyList())
         return VoiceKeyBindings.sanitize(parsed)
@@ -61,7 +71,9 @@ object VoiceKeyBindingStore {
     fun encode(bindings: List<VoiceKeyBinding>): String {
         val arr = org.json.JSONArray()
         VoiceKeyBindings.sanitize(bindings).forEach {
-            arr.put(org.json.JSONObject().put(K_KEYCODE, it.keyCode).put(K_TARGET, it.targetSpec))
+            val o = org.json.JSONObject().put(K_KEYCODE, it.keyCode).put(K_TARGET, it.targetSpec)
+            it.source?.let { s -> o.put(K_SOURCE, s.code) }   // chỉ ghi khi có nguồn ⇒ dòng không nguồn y byte 2.87
+            arr.put(o)
         }
         return arr.toString()
     }

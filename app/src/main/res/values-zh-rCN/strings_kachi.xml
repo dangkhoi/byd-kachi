@@ -72,7 +72,8 @@
     <string name="kachi_row_accent">强调色</string>
     <string name="kachi_row_tone">卡片色调</string>
     <string name="kachi_row_bg_opacity">背景透明度</string>
-    <string name="kachi_bg_opacity_note">顶栏、车控栏和小组件的背景共用一个级别，0%即原样，数值越大越透明。文字和图标不会变淡：若背后的内容会让文字难以辨认（如明亮的壁纸），栏和卡片会自动保留所需的不透明度。关闭设置即可看到效果。</string>
+    <string name="kachi_bg_opacity_note">顶栏、车控栏和小组件的背景共用一个级别：拖到最左即原样，向右拖动背景逐渐透明，拖到最右（100%）背景完全透明。文字和图标始终保持不变；在明亮的壁纸上，透明度较高时文字可能难以辨认——由您决定。松手即生效；关闭设置即可看到效果。</string>
+    <string name="kachi_bg_opacity_a11y">背景透明度：%1$s</string>
     <string name="kachi_sec_car_image">车辆图片</string>
     <string name="kachi_car_image_current">使用中：%1$s</string>
     <string name="kachi_car_image_title">车辆图片</string>
@@ -475,6 +476,7 @@
     <string name="kachi_keys_learn">学习新按键…</string>
     <string name="kachi_keys_learn_name">为刚才按下的按键命名</string>
     <string name="kachi_key_custom_name">%1$s（键码%2$d）</string>
+    <string name="kachi_key_custom_name_src">%1$s（键码%2$d · %3$s）</string>
     <string name="kachi_key_code">键码%1$d</string>
     <string name="kachi_key_unknown">%1$s（%2$d）</string>
     <string name="kachi_key_mic_hold">方向盘麦克风键——长按（328）</string>
@@ -649,6 +651,7 @@
     <string name="kachi_sc_refuse_cast">%1$s正在投屏到仪表</string>
     <string name="kachi_sc_not_installed">未安装%1$s</string>
     <string name="kachi_sc_bg_failed">%1$s无法在后台启动</string>
+    <string name="kachi_sc_bg_failed_why">%1$s无法在后台启动（%2$s）</string>
     <string name="kachi_sc_full_card">正在全屏显示——点按可放回格位</string>
     <string name="kachi_sc_full_failed">无法全屏打开%1$s</string>
     <string name="kachi_captest_title">逐项测试车辆功能</string>

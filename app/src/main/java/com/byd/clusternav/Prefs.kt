@@ -5,8 +5,12 @@ import android.content.SharedPreferences
 import com.byd.clusternav.contracts.SpeedLimitSource
 import com.byd.clusternav.launcher.voice.VoiceWakePrefsMain
 import com.byd.clusternav.modules.voicekey.VoiceKeyBindingStore
+import com.byd.clusternav.modules.voicekey.VoiceKeyCustomButtonStore
+import com.byd.clusternav.voicekey.KeySourceKind
 import com.byd.clusternav.voicekey.VoiceKeyBinding
 import com.byd.clusternav.voicekey.VoiceKeyBindings
+import com.byd.clusternav.voicekey.VoiceKeyCustomButton
+import com.byd.clusternav.voicekey.VoiceKeyCustomButtons
 
 /** Lưu lựa chọn người dùng (bật/tắt đẩy cụm + chế độ chọn nguồn). Đọc trực tiếp trong listener. */
 object Prefs {
@@ -134,8 +138,8 @@ object Prefs {
     private const val K_VK_KEYCODE = "voicekey_keycode"
     private const val K_VK_TARGET = "voicekey_target"          // 1.19: STRING (package hoặc sentinel __ASSIST__/__RECOGNIZER__)
     private const val K_VK_LEARN = "voicekey_learn"
-    private const val K_VK_CUSTOM = "voicekey_custom_buttons"  // 1.19: JSON [{"n":name,"k":keycode}] nút tự học
-    private const val K_VK_BINDINGS = "voicekey_bindings"      // F3: JSON [{"k":keycode,"t":target}] danh sách gán
+    private const val K_VK_CUSTOM = "voicekey_custom_buttons"  // 1.19: JSON [{"n":name,"k":keycode}] nút tự học (+"s" 2.88)
+    private const val K_VK_BINDINGS = "voicekey_bindings"      // F3: JSON [{"k":keycode,"t":target}] danh sách gán (+"s" 2.88)
     const val VK_KEYCODE_DEFAULT = 328   // nút mic vô-lăng giữ trên xe này (đo on-car 2026-08-13). "Học phím mới" nếu xe khác.
     const val VK_TARGET_ASSIST = "__ASSIST__"
     const val VK_TARGET_RECOGNIZER = "__RECOGNIZER__"
@@ -341,23 +345,24 @@ object Prefs {
     }
 
     /**
-     * Thêm một dòng gán. Mã phím đã được gán ⇒ **GHI ĐÈ** (giữ nguyên vị trí dòng) và trả về đích CŨ để UI
-     * báo cho owner biết đã thay cái gì — cấm im lặng. Dòng mới ⇒ trả `null`.
+     * Thêm một dòng gán. (Mã phím, nguồn) đã được gán ⇒ **GHI ĐÈ** (giữ nguyên vị trí dòng) và trả về đích CŨ để UI
+     * báo cho owner biết đã thay cái gì — cấm im lặng. Dòng mới ⇒ trả `null`. [source] `null` = dòng không nguồn (2.87).
      */
-    fun addVoiceKeyBinding(ctx: Context, keyCode: Int, targetSpec: String): String? =
-        addVoiceKeyBinding(sp(ctx), keyCode, targetSpec).also { VoiceWakePrefsMain.publish(ctx) }
+    fun addVoiceKeyBinding(ctx: Context, keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String? =
+        addVoiceKeyBinding(sp(ctx), keyCode, targetSpec, source).also { VoiceWakePrefsMain.publish(ctx) }
 
-    fun addVoiceKeyBinding(p: SharedPreferences, keyCode: Int, targetSpec: String): String? {
-        val result = VoiceKeyBindings.put(voiceKeyBindings(p), keyCode, targetSpec)
+    fun addVoiceKeyBinding(p: SharedPreferences, keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String? {
+        val result = VoiceKeyBindings.put(voiceKeyBindings(p), keyCode, targetSpec, source)
         writeVoiceKeyBindings(p, result.bindings)
         return result.replaced
     }
 
-    /** Xoá dòng gán của [keyCode] (nút xoá trên từng dòng). */
-    fun removeVoiceKeyBinding(ctx: Context, keyCode: Int) = removeVoiceKeyBinding(sp(ctx), keyCode).also { VoiceWakePrefsMain.publish(ctx) }
+    /** Xoá dòng gán của đúng (mã, nguồn) (nút xoá trên từng dòng) — dòng cùng mã khác nguồn giữ nguyên. */
+    fun removeVoiceKeyBinding(ctx: Context, keyCode: Int, source: KeySourceKind? = null) =
+        removeVoiceKeyBinding(sp(ctx), keyCode, source).also { VoiceWakePrefsMain.publish(ctx) }
 
-    fun removeVoiceKeyBinding(p: SharedPreferences, keyCode: Int) =
-        writeVoiceKeyBindings(p, VoiceKeyBindings.remove(voiceKeyBindings(p), keyCode))
+    fun removeVoiceKeyBinding(p: SharedPreferences, keyCode: Int, source: KeySourceKind? = null) =
+        writeVoiceKeyBindings(p, VoiceKeyBindings.remove(voiceKeyBindings(p), keyCode, source))
 
     private fun writeVoiceKeyBindings(p: SharedPreferences, list: List<VoiceKeyBinding>) =
         VoiceKeyBindingStore.write(p, K_VK_BINDINGS, list)
@@ -366,20 +371,14 @@ object Prefs {
     fun voiceKeyLearn(ctx: Context): Boolean = sp(ctx).getBoolean(K_VK_LEARN, false)
     fun setVoiceKeyLearn(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VK_LEARN, v).apply()
 
-    /** Nút tự học (tên, keycode) — lưu JSON để dropdown dựng lại + xoá được. */
-    fun voiceKeyCustomButtons(ctx: Context): List<Pair<String, Int>> = runCatching {
-        val arr = org.json.JSONArray(sp(ctx).getString(K_VK_CUSTOM, "[]"))
-        (0 until arr.length()).map { val o = arr.getJSONObject(it); o.getString("n") to o.getInt("k") }
-    }.getOrDefault(emptyList())
-    fun addVoiceKeyCustomButton(ctx: Context, name: String, code: Int) =
-        writeCustomButtons(ctx, voiceKeyCustomButtons(ctx).filterNot { it.second == code } + (name to code))
-    fun removeVoiceKeyCustomButton(ctx: Context, code: Int) =
-        writeCustomButtons(ctx, voiceKeyCustomButtons(ctx).filterNot { it.second == code })
-    private fun writeCustomButtons(ctx: Context, items: List<Pair<String, Int>>) {
-        val arr = org.json.JSONArray()
-        items.forEach { arr.put(org.json.JSONObject().put("n", it.first).put("k", it.second)) }
-        sp(ctx).edit().putString(K_VK_CUSTOM, arr.toString()).apply()
-    }
+    /** Nút tự học (tên, mã, nguồn?) — lưu JSON để dropdown dựng lại + xoá được. Khoá một nút = (mã, nguồn) (2.88 R1). */
+    fun voiceKeyCustomButtons(ctx: Context): List<VoiceKeyCustomButton> = VoiceKeyCustomButtonStore.read(sp(ctx), K_VK_CUSTOM)
+    fun addVoiceKeyCustomButton(ctx: Context, name: String, code: Int, source: KeySourceKind? = null) =
+        writeCustomButtons(ctx, VoiceKeyCustomButtons.put(voiceKeyCustomButtons(ctx), VoiceKeyCustomButton(name, code, source)))
+    fun removeVoiceKeyCustomButton(ctx: Context, code: Int, source: KeySourceKind? = null) =
+        writeCustomButtons(ctx, VoiceKeyCustomButtons.remove(voiceKeyCustomButtons(ctx), code, source))
+    private fun writeCustomButtons(ctx: Context, items: List<VoiceKeyCustomButton>) =
+        sp(ctx).edit().putString(K_VK_CUSTOM, VoiceKeyCustomButtonStore.encode(items)).apply()
 
     // ─── Nhật ký chi tiết (verbose) + miễn trừ lần đầu (closeout 1.28) ──────────────────────────
     // Verbose-log gate for the app's OWN diagnostics (GMaps notification CSV [NavNotifLog]/[NavNotifRawLog],

@@ -243,13 +243,22 @@ class CapabilityCatalogTest {
 
 /**
  * Khoá phần QUYẾT ĐỊNH của bảng áp suất lốp (W4 — spec §4.4, R6–R8).
- * Ngưỡng là quyết định của agent (OQ1) — test dưới đây khoá HÀNH VI theo ngưỡng, nên đổi ngưỡng thì test đỏ đúng chỗ.
+ *
+ * ⚠ 2.88 (owner 04/10 *"cảnh báo theo tùy loại xe, không hardcode số"*): bản cũ khoá hành vi theo ba ngưỡng agent tự
+ * chọn (non < 2.0 · căng > 3.2 · lệch ≥ 0.3 bar). Ngưỡng đã gỡ; các bài dưới giữ NGUYÊN Ý ĐỊNH (bốn bánh cố định ·
+ * off-car không bịa · chỉ đúng bánh có vấn đề · kết luận nêu thứ nguy trước · chữ ngắn đến từ `:core`) nhưng dựng bằng
+ * MÃ TRẠNG THÁI của xe. Bảng chân trị đủ M1–M7 ở `TyreCarStateTest`.
  */
 class TyreBoardTest {
 
     private fun tyres(fl: Double? = null, fr: Double? = null, rl: Double? = null, rr: Double? = null,
                       tfl: Int? = null) =
         CarStatus.Tyres(pFlKpa = fl, pFrKpa = fr, pRlKpa = rl, pRrKpa = rr, tFlC = tfl)
+
+    /** Xe (TPMS) nói cả bốn bánh bình thường — không có màu cụm. */
+    private fun CarStatus.Tyres.normal() = copy(
+        psFl = 0, psFr = 0, psRl = 0, psRr = 0, lkFl = 0, lkFr = 0, lkRl = 0, lkRr = 0, sys = 0,
+    )
 
     @Test
     fun `luon tra ve dung bon banh theo thu tu co dinh`() {
@@ -265,50 +274,58 @@ class TyreBoardTest {
     fun `off-car khong doc duoc gi thi khong biet chu khong bia`() {
         val r = TyreBoard.readings(tyres())
         assertTrue(r.all { it.status == TyreStatus.UNKNOWN }, "chưa đọc được ⇒ UNKNOWN")
+        assertTrue(r.all { it.severity == TyreSeverity.NONE }, "chưa đọc được ⇒ XÁM, không bao giờ xanh")
         assertTrue(r.all { it.pressureKpa == null && it.tempC == null }, "KHÔNG được bịa số")
         assertFalse(TyreBoard.anyAlert(tyres()), "không biết gì thì KHÔNG được kêu cảnh báo")
     }
 
     @Test
-    fun `bon banh deu binh thuong thi khong canh bao`() {
-        val r = TyreBoard.readings(tyres(240.0, 240.0, 235.0, 235.0))
-        assertTrue(r.all { it.status == TyreStatus.OK }, "2.35–2.40 bar là bình thường, chênh 0.05 < 0.3")
-        assertFalse(TyreBoard.anyAlert(tyres(240.0, 240.0, 235.0, 235.0)))
+    fun `bon banh xe noi binh thuong thi khong canh bao`() {
+        val t = tyres(240.0, 240.0, 235.0, 235.0).normal()
+        val r = TyreBoard.readings(t)
+        assertTrue(r.all { it.status == TyreStatus.OK && it.severity == TyreSeverity.OK }, "xe nói bình thường ⇒ XANH")
+        assertFalse(TyreBoard.anyAlert(t))
     }
 
     @Test
     fun `banh non duoc chi ra dung banh do`() {
-        val r = TyreBoard.readings(tyres(240.0, 240.0, 240.0, 180.0))
-        assertEquals(TyreStatus.LOW, r[3].status, "1.8 bar < 2.0 ⇒ non")
+        val t = tyres(240.0, 240.0, 240.0, 180.0).normal().copy(psRr = TyreJudge.PRESSURE_UNDER)
+        val r = TyreBoard.readings(t)
+        assertEquals(TyreStatus.UNDER, r[3].status, "TPMS nói bánh SP dưới khoảng của xe ⇒ non")
+        assertEquals(TyreSeverity.ALERT, r[3].severity)
         assertTrue(r.take(3).all { it.status == TyreStatus.OK }, "ba bánh kia vẫn bình thường")
-        assertTrue(TyreBoard.anyAlert(tyres(240.0, 240.0, 240.0, 180.0)))
+        assertTrue(TyreBoard.anyAlert(t))
     }
 
     @Test
     fun `banh qua cang duoc chi ra`() {
-        val r = TyreBoard.readings(tyres(330.0, 240.0, 240.0, 240.0))
-        assertEquals(TyreStatus.HIGH, r[0].status, "3.3 bar > 3.2 ⇒ quá căng")
+        val r = TyreBoard.readings(tyres(330.0, 240.0, 240.0, 240.0).normal().copy(psFl = TyreJudge.PRESSURE_OVER))
+        assertEquals(TyreStatus.OVER, r[0].status, "TPMS nói bánh TT trên khoảng của xe ⇒ căng")
     }
 
     @Test
-    fun `lech thi chi danh dau banh THAP NHAT chu khong danh dau banh cao`() {
-        // 2.6 / 2.6 / 2.6 / 2.2 — tất cả trong khoảng bình thường, nhưng chênh 0.4 ≥ 0.3
-        val r = TyreBoard.readings(tyres(260.0, 260.0, 260.0, 220.0))
-        assertEquals(TyreStatus.UNEVEN, r[3].status, "bánh thấp nhất bị đánh dấu lệch")
-        assertTrue(r.take(3).all { it.status == TyreStatus.OK },
-            "KHÔNG gắn cảnh báo lên bánh đang đủ hơi — gây hiểu sai")
+    fun `truc sau cao hon truc truoc KHONG con la canh bao - mau cua owner 2_4 2_4 2_6 2_6`() {
+        // Thay bài "lệch chỉ đánh dấu bánh thấp nhất": [ĐO sweep 09-16/09-21] xe owner chạy trục sau cao hơn trục
+        // trước ~0.2 bar theo đúng khuyến nghị — luật "lệch" kêu oan trên chính xe này. Nay không số nào phán màu.
+        val r = TyreBoard.readings(tyres(240.0, 240.0, 260.0, 260.0).normal())
+        assertTrue(r.all { it.severity == TyreSeverity.OK }, "chênh trục ≠ lỗi; xe nói bình thường ⇒ cả bốn xanh")
+        val bare = TyreBoard.readings(tyres(240.0, 240.0, 260.0, 220.0))
+        assertTrue(bare.none { it.severity.alert }, "chỉ có số, xe chưa phán ⇒ không bánh nào bị kêu, dù chênh 0.4 bar")
     }
 
     @Test
-    fun `non uu tien hon lech khi ca hai cung dung`() {
-        val r = TyreBoard.readings(tyres(260.0, 260.0, 260.0, 190.0))
-        assertEquals(TyreStatus.LOW, r[3].status, "vừa non vừa lệch ⇒ báo NON (cụ thể hơn)")
+    fun `cum bao vang ma TPMS noi non thi MAU cua cum, CHU cua TPMS`() {
+        // Thay bài "non ưu tiên hơn lệch": cụm đồng hồ đã phán theo đời xe ⇒ màu theo cụm (M1), lý do lấy từ TPMS.
+        val r = TyreBoard.readings(tyres(fl = 190.0).copy(cFl = TyreJudge.COLOUR_YELLOW, psFl = TyreJudge.PRESSURE_UNDER))
+        assertEquals(TyreSeverity.WARN, r[0].severity, "cụm nói VÀNG thì là vàng")
+        assertEquals(TyreStatus.UNDER, r[0].status, "chữ vẫn nói đúng sai cái gì")
     }
 
     @Test
-    fun `mot banh duy nhat doc duoc thi khong the ket luan lech`() {
+    fun `banh chi co so ma xe chua phan thi KHONG ket luan tu con so`() {
         val r = TyreBoard.readings(tyres(fl = 240.0))
-        assertEquals(TyreStatus.OK, r[0].status, "một bánh thì không có gì để so ⇒ không kêu lệch")
+        assertEquals(TyreStatus.UNKNOWN, r[0].status, "có số mà không có mã ⇒ chưa phán, không suy từ số")
+        assertEquals(240.0, r[0].pressureKpa, "con số vẫn được HIỆN")
         assertTrue(r.drop(1).all { it.status == TyreStatus.UNKNOWN })
     }
 
@@ -323,28 +340,38 @@ class TyreBoardTest {
     }
 
     @Test
+    fun `co so ma xe chua phan thi noi CHUA DOC DUOC TRANG THAI, khong noi on`() {
+        assertEquals(
+            "chưa đọc được trạng thái lốp từ xe",
+            TyreBoard.verdict(TyreBoard.readings(tyres(240.0, 240.0, 235.0, 235.0))),
+        )
+    }
+
+    @Test
     fun `bon banh binh thuong thi ket luan on`() {
-        assertEquals("lốp ổn", TyreBoard.verdict(TyreBoard.readings(tyres(240.0, 240.0, 235.0, 235.0))))
+        assertEquals("lốp ổn", TyreBoard.verdict(TyreBoard.readings(tyres(240.0, 240.0, 235.0, 235.0).normal())))
     }
 
     @Test
     fun `ket luan dem tung loai sai va neu thu nguy truoc`() {
-        // 1.8 bar (non) + 3.3 bar (căng) ⇒ phải nêu CẢ HAI, non trước (thứ tự ưu tiên của TyreStatus).
-        val r = TyreBoard.readings(tyres(180.0, 330.0, 240.0, 240.0))
-        assertEquals("1 bánh non · 1 bánh căng", TyreBoard.verdict(r))
+        // non (ĐỎ) + căng (ĐỎ) ⇒ nêu CẢ HAI, non trước (thứ tự khai trong cùng mức) — và xì chậm (VÀNG) đứng sau.
+        val t = tyres(180.0, 330.0, 240.0, 240.0).normal()
+            .copy(psFl = TyreJudge.PRESSURE_UNDER, psFr = TyreJudge.PRESSURE_OVER, lkRr = TyreJudge.LEAK_SLOW)
+        assertEquals("1 bánh non · 1 bánh căng · 1 bánh xì chậm", TyreBoard.verdict(TyreBoard.readings(t)))
     }
 
     @Test
     fun `hai banh cung loi thi dem gop lai`() {
-        assertEquals("2 bánh non", TyreBoard.verdict(TyreBoard.readings(tyres(180.0, 190.0, 240.0, 240.0))))
+        val t = tyres(180.0, 190.0, 240.0, 240.0).normal()
+            .copy(psFl = TyreJudge.PRESSURE_UNDER, psFr = TyreJudge.PRESSURE_UNDER)
+        assertEquals("2 bánh non", TyreBoard.verdict(TyreBoard.readings(t)))
     }
 
     @Test
     fun `ket luan dung tu vung cua TyreStatus, khong co bang chu thu hai`() {
-        // Khoá giao kèo: chữ trong kết luận phải là chính [TyreStatus.reason]. Nếu ai thêm một bảng chữ riêng cho
-        // kết luận thì hai chỗ sẽ nói khác nhau về cùng một trạng thái.
-        val v = TyreBoard.verdict(TyreBoard.readings(tyres(260.0, 260.0, 260.0, 220.0)))
-        assertTrue(v.contains(TyreStatus.UNEVEN.reason!!), "phải dùng chữ 'lệch' của chính TyreStatus: $v")
+        // Khoá giao kèo: chữ trong kết luận phải là chính [TyreStatus.reason].
+        val v = TyreBoard.verdict(TyreBoard.readings(tyres(260.0).copy(lkFl = TyreJudge.LEAK_FAST)))
+        assertTrue(v.contains(TyreStatus.LEAK_FAST.reason!!), "phải dùng chữ 'xì nhanh' của chính TyreStatus: $v")
     }
 
     @Test
@@ -355,65 +382,19 @@ class TyreBoardTest {
         assertTrue(TyreBoard.tempTier.let { it == EvidenceTier.NEEDS_CAR }, "⇒ UI phải hiện dấu/mờ")
     }
 
-    @Test
-    fun `hai banh bang nhau o muc thap nhat thi CA HAI bi danh dau lech`() {
-        // Ca biên của luật "chỉ đánh dấu bánh THẤP NHẤT": khi hai bánh CÙNG thấp nhất thì cả hai ĐỀU là thấp nhất,
-        // bỏ một bánh ra sẽ là chọn bừa. Chênh 0.4 ≥ 0.3 ⇒ lệch.
-        val r = TyreBoard.readings(tyres(260.0, 260.0, 220.0, 220.0))
-        assertEquals(TyreStatus.UNEVEN, r[2].status, "bánh sau-trái cũng ở mức thấp nhất")
-        assertEquals(TyreStatus.UNEVEN, r[3].status, "bánh sau-phải cũng ở mức thấp nhất")
-        assertTrue(r.take(2).all { it.status == TyreStatus.OK }, "hai bánh cao KHÔNG bị đánh dấu")
-    }
-
-    @Test
-    fun `chenh dung bang nguong thi da tinh la lech`() {
-        // Khoá phía nào của ngưỡng: tài liệu ghi "chênh TỪ mức này" ⇒ phải là ≥, không phải >.
-        // ⚠ Phải gọi THẲNG statusOf: đi qua `readings` thì không tới được ca bằng nhau tuyệt đối — kPa chia 100 ra số
-        // nhị phân không chẵn nên 2.6−2.3 = 0.30000000000000004, tức đã LỚN HƠN ngưỡng, và phép thử biên hoá vô nghĩa
-        // (đã đo: bản đầu của test này KHÔNG bắt được phép thử phá `>=` → `>`).
-        assertEquals(
-            TyreStatus.UNEVEN,
-            TyreBoard.statusOf(bar = 2.3, spread = TyreBoard.SPREAD_BAR, minBar = 2.3),
-            "chênh ĐÚNG BẰNG ngưỡng đã là lệch (≥, không phải >)",
-        )
-        assertEquals(
-            TyreStatus.OK,
-            TyreBoard.statusOf(bar = 2.3, spread = TyreBoard.SPREAD_BAR - 0.01, minBar = 2.3),
-            "dưới ngưỡng một chút thì KHÔNG kêu lệch",
-        )
-    }
-
-    @Test
-    fun `chi hai banh doc duoc thi van ket luan duoc lech`() {
-        val r = TyreBoard.readings(tyres(fl = 260.0, rr = 220.0))
-        assertEquals(TyreStatus.UNEVEN, r[3].status, "hai bánh là đủ để so")
-        assertEquals(TyreStatus.OK, r[0].status, "bánh cao vẫn bình thường")
-        assertTrue(r.slice(1..2).all { it.status == TyreStatus.UNKNOWN }, "hai bánh chưa đọc vẫn UNKNOWN")
-    }
-
-    @Test
-    fun `nguong nam dung mot cho de doi mot dong`() {
-        // Khoá quan hệ giữa 3 ngưỡng, không khoá con số — owner sửa số thì test này vẫn đúng
-        assertTrue(TyreBoard.LOW_BAR < TyreBoard.HIGH_BAR, "ngưỡng non phải nhỏ hơn ngưỡng căng")
-        assertTrue(TyreBoard.SPREAD_BAR > 0.0, "ngưỡng lệch phải dương")
-        assertTrue(TyreBoard.HIGH_BAR - TyreBoard.LOW_BAR > TyreBoard.SPREAD_BAR,
-            "dải bình thường phải rộng hơn ngưỡng lệch, nếu không mọi xe đều bị kêu lệch")
-    }
-
     // ── R8 (nợ gói 2): bảng phải nói SAI CÁI GÌ ─────────────────────────────────────────────────────────
-    // [ĐO] senior review 2026-09-11: `TyreStatus.reason` ra đời cho R8 nhưng KHÔNG có phép kiểm thuần nào — chỉ có
-    // một test ở `:app` khoá điều NGƯỢC LẠI (chuỗi không được viết trong bộ vẽ). Tức nghiệm thu của R8 ("mỗi trạng
-    // thái ra một chữ ngắn; off-car không có số ⇒ không hiện chữ nào") chưa ai canh.
 
     @Test
     fun `moi trang thai co van de ra dung mot chu ngan`() {
-        assertEquals("non", TyreStatus.LOW.reason)
-        assertEquals("căng", TyreStatus.HIGH.reason)
-        assertEquals("lệch", TyreStatus.UNEVEN.reason)
-        TyreStatus.values().filter { it.alert }.forEach {
+        assertEquals("non", TyreStatus.UNDER.reason)
+        assertEquals("căng", TyreStatus.OVER.reason)
+        assertEquals("xì nhanh", TyreStatus.LEAK_FAST.reason)
+        assertEquals("xì chậm", TyreStatus.LEAK_SLOW.reason)
+        TyreStatus.values().filter { it.severity.alert }.forEach {
             val w = it.reason
             assertNotNull(w, "trạng thái cảnh báo $it phải nói được sai cái gì")
-            assertTrue(w!!.isNotBlank() && w.length <= 6,
+            // Trần 12 (gói 2 là 6): "lỗi cảm biến" là chữ dài nhất; ô bánh co chữ + cắt "…" ở sàn cỡ chữ (TyreBoardView).
+            assertTrue(w!!.isNotBlank() && w.length <= 12,
                 "chữ phải NGẮN — nó nằm cạnh con số trong ô nhỏ, dài là bị cắt (đang là '$w')")
         }
     }
@@ -422,20 +403,20 @@ class TyreBoardTest {
     fun `binh thuong va chua doc duoc thi KHONG noi gi`() {
         assertNull(TyreStatus.OK.reason, "bánh bình thường không có gì để nói ⇒ không chiếm chỗ")
         assertNull(TyreStatus.UNKNOWN.reason, "chưa đọc được thì KHÔNG được bịa lý do")
-        assertTrue(TyreStatus.values().none { !it.alert && it.reason != null },
-            "chỉ trạng thái cảnh báo mới có chữ")
+        assertTrue(TyreStatus.values().none { !it.severity.alert && it != TyreStatus.CODE && it.reason != null },
+            "chỉ trạng thái cảnh báo (và mã lạ) mới có chữ")
     }
 
     @Test
     fun `off-car khong co so thi khong banh nao co chu`() {
-        assertTrue(TyreBoard.readings(tyres()).all { it.status.reason == null },
+        assertTrue(TyreBoard.readings(tyres()).all { it.reason == null },
             "off-car là ca BÌNH THƯỜNG — bảng không được hiện chữ lỗi nào")
     }
 
     @Test
     fun `chu di kem dung banh dang co van de`() {
-        val r = TyreBoard.readings(tyres(240.0, 240.0, 240.0, 180.0))
-        assertEquals("non", r[3].status.reason, "bánh 1.8 bar phải nói 'non'")
-        assertTrue(r.take(3).all { it.status.reason == null }, "ba bánh kia không được mang chữ lỗi")
+        val r = TyreBoard.readings(tyres(240.0, 240.0, 240.0, 180.0).normal().copy(psRr = TyreJudge.PRESSURE_UNDER))
+        assertEquals("non", r[3].reason, "bánh SP phải nói 'non'")
+        assertTrue(r.take(3).all { it.reason == null }, "ba bánh kia không được mang chữ lỗi")
     }
 }

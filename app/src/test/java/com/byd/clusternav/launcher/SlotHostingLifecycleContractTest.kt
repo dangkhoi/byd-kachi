@@ -118,7 +118,7 @@ class SlotHostingLifecycleContractTest {
      * ⚠ L6 (owner 03/10, ảnh xe: ô Google Maps đã đóng hiện icon to + *"App đã đóng — chạm để mở lại"*): *"Khi app bị tắt
      * thì trả về transparent luôn, không cần giữ icon và yêu cầu mở app như này nhé"*. Ghim CŨ (thẻ `kachi_slot_app_closed`
      * + `setOnClickListener { reopen() }`) ĐẢO có chủ ý: giấu mặt vẽ vẫn bắt buộc (khung đóng băng), nhưng "NÓI ra" nay là
-     * BÁO LÊN màn chính ([onGone] → `SlotRevertPlan` `APP_DIED`: app LƯU ⇒ ô trong suốt · app đặt tạm ⇒ ô về nội dung LƯU).
+     * BÁO LÊN màn chính ([onGone] → `SlotRevertPlan` `APP_DIED`: ô LƯU widget ⇒ widget về · còn lại ⇒ trong suốt, 04/10).
      * Mở lại vẫn có đường: lối tắt *Ô n* (R-SC2 / đặt tạm vào khung trống) · ⇄ · khởi động lại.
      */
     @Test

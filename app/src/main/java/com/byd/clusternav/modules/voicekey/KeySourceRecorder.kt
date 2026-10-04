@@ -15,9 +15,11 @@ import com.byd.clusternav.voicekey.KeySample
 import com.byd.clusternav.voicekey.KeySourceFailure
 import com.byd.clusternav.voicekey.KeySourceJournal
 import com.byd.clusternav.voicekey.KeySourceLog
+import com.byd.clusternav.voicekey.KeySourceLookup
 import com.byd.clusternav.voicekey.KeySourceMeter
 import com.byd.clusternav.voicekey.KeySourceProbes
 import com.byd.clusternav.voicekey.KeySourceReading
+import com.byd.clusternav.voicekey.KeySourceResolver
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -43,6 +45,10 @@ import java.util.concurrent.Executors
  *     treo, nên quá hạn thì luồng đo bỏ chờ (ghi `timeout`) và các lần bấm sau ghi `busy` NGAY cho tới khi lượt treo
  *     tự xong — không bao giờ xếp chồng lượt đọc mới lên một HAL đang treo (không bão thử lại). Luật này nằm ở
  *     [KeySourceMeter] (2.87 · SOÁT vòng 1 · P2: trước đó chỉ được khoá bằng grep mã nguồn).
+ *  4. **Luồng HAL `kachi-keysrc-sync`** ([syncExec], 2.88 · KEY-SOURCE-SPLIT tầng 2): lượt đọc của ĐƯỜNG GÁN — luồng
+ *     nhận phím gọi [lookupSource] (qua hàm tra của `VoiceKeyMatcher`, chỉ khi mã có dòng gán theo nguồn) và CHỜ tối đa
+ *     [KeySourceResolver.SYNC_BUDGET_MS]. Luồng riêng để lượt đọc gán không xếp hàng sau lượt đo của nhật ký (R-nf1);
+ *     số đọc được chuyển cho [onDown] để nhật ký không đọc HAL lần hai (R-nf2).
  *
  * ## Phạm vi lệnh (CLAUDE.md §4/§5)
  * Chỉ ĐỌC: `BYDAutoAudioDevice.get(int[], Class)` — [ĐO fw src `AbsBYDAutoDevice.java:320-345`] không ghi gì xuống
@@ -57,10 +63,14 @@ class KeySourceRecorder(
     private val thread = HandlerThread(THREAD_NAME)
     @Volatile private var handler: Handler? = null
     @Volatile private var halExec: ExecutorService? = null
+    @Volatile private var syncExec: ExecutorService? = null
     private var started = false
 
     /** Phần đo thuần (`:core`) — chống chồng lượt + trần + thứ tự HAL-trước-thiết-bị; chỉ gọi từ luồng `kachi-keysrc`. */
     private val meter = KeySourceMeter(gateway = gateway, exec = { halExec }, clockMs = SystemClock::uptimeMillis)
+
+    /** 2.88 — tra nguồn ĐỒNG BỘ cho đường gán (`:core`, trần 100 ms, bận ⇒ busy); chỉ gọi từ luồng nhận phím (main). */
+    private val resolver = KeySourceResolver(gateway = gateway, exec = { syncExec }, clockMs = SystemClock::uptimeMillis)
 
     private val devices = KeyDeviceCache(::lookupDevice)
     private val deviceListener = object : InputManager.InputDeviceListener {
@@ -78,6 +88,7 @@ class KeySourceRecorder(
         val h = Handler(thread.looper)
         handler = h
         halExec = Executors.newSingleThreadExecutor { r -> Thread(r, HAL_THREAD_NAME).apply { isDaemon = true } }
+        syncExec = Executors.newSingleThreadExecutor { r -> Thread(r, SYNC_THREAD_NAME).apply { isDaemon = true } }
         // Listener chỉ để bỏ nhớ InputDevice khi thiết bị đổi; hỏng thì vẫn đo được (mất làm mới) — KHÔNG để một bộ ĐO
         // làm hỏng onServiceConnected của dịch vụ giữ phím gán.
         try {
@@ -98,25 +109,45 @@ class KeySourceRecorder(
         thread.quitSafely()
         halExec?.shutdownNow()
         halExec = null
+        syncExec?.shutdownNow()
+        syncExec = null
     }
+
+    /**
+     * 2.88 · LUỒNG NHẬN PHÍM — tra nguồn của lần nhấn [sample] cho đường gán, chặn tối đa
+     * [KeySourceResolver.SYNC_BUDGET_MS] (lượt trước còn treo ⇒ `busy` ngay). Chỉ được gọi từ hàm tra của
+     * `VoiceKeyMatcher` trong `onKeyEvent` — tức chỉ trên DOWN đầu của một mã có dòng gán theo nguồn. Bộ đã dừng ⇒
+     * `not_running` (không biết nguồn), không ném.
+     */
+    fun lookupSource(sample: KeySample): KeySourceLookup = resolver.lookup(sample)
+
+    /**
+     * 2.88 — đọc mồi MỘT lượt trên luồng `kachi-keysrc-sync` (nạp bảng feature-id + `getInstance`) để lần nhấn đầu không
+     * trả giá khởi tạo. KHÔNG chờ (main chỉ gửi việc). Gọi từ `onServiceConnected` sau [start], chỉ khi danh sách gán có
+     * dòng theo nguồn. Trả `true` ⇔ đã gửi.
+     */
+    fun primeSource(): Boolean = resolver.prime()
 
     /**
      * LUỒNG NHẬN PHÍM — ghi chữ ký vào [journal] rồi đẩy phần đo sang luồng `kachi-keysrc`. O(1), không I/O.
      *
      * @param learned lần bấm này đang được HỌC (hộp đặt tên sẽ tìm dòng này qua [KeySourceJournal.lastLearned]).
+     * @param preRead kết quả tra nguồn của đường gán cho đúng lần nhấn này ([lookupSource]) ⇒ luồng đo KHÔNG đọc HAL lần
+     *   hai (2.88 · R-nf2), chỉ tra thiết bị. Kể cả `busy`/`timeout`: dòng `KachiKey` ghi đúng thứ đường gán đã thấy (để
+     *   chốt ca "núm làm việc của vô-lăng"), và một lần nhấn không bao giờ tốn hai lượt HAL. `null` ⇒ đo đủ như 2.87.
      */
-    fun onDown(sample: KeySample, learned: Boolean) {
+    fun onDown(sample: KeySample, learned: Boolean, preRead: KeySourceReading? = null) {
         val seq = journal.begin(sample, learned)
         val h = handler
-        if (h == null || !h.post { settle(seq, sample) }) {
-            journal.complete(seq, null, notRunning(sample), sample)
+        if (h == null || !h.post { settle(seq, sample, preRead) }) {
+            journal.complete(seq, null, preRead ?: notRunning(sample), sample)
         }
     }
 
     /** LUỒNG ĐO. Không bao giờ ném ra ngoài: một lỗi đo không được làm chết tiến trình đang giữ dịch vụ phím. */
-    private fun settle(seq: Long, sample: KeySample) {
+    private fun settle(seq: Long, sample: KeySample, preRead: KeySourceReading?) {
         val entry = try {
-            val m = meter.measure(sample, devices)
+            val m = meter.measure(sample, devices, preRead)
             journal.complete(seq, m.device, m.reading, sample)
         } catch (e: RuntimeException) {
             Log.w(KeySourceLog.TAG, "đo nguồn phím seq=$seq hỏng", e)
@@ -142,6 +173,7 @@ class KeySourceRecorder(
     companion object {
         private const val THREAD_NAME = "kachi-keysrc"
         private const val HAL_THREAD_NAME = "kachi-keysrc-hal"
+        private const val SYNC_THREAD_NAME = "kachi-keysrc-sync"
 
         /**
          * Vòng đệm RAM của TIẾN TRÌNH (sống qua các lần dịch vụ Hỗ trợ bind lại) — cầu Cài đặt đọc dòng vừa học ở đây

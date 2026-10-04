@@ -69,6 +69,20 @@ object CapabilityDescriptions {
         "tyre_t_fr" to Desc("Nhiệt độ lốp trước bên phải", "Front-right tyre temperature (°C)"),
         "tyre_t_rl" to Desc("Nhiệt độ lốp sau bên trái", "Rear-left tyre temperature (°C)"),
         "tyre_t_rr" to Desc("Nhiệt độ lốp sau bên phải", "Rear-right tyre temperature (°C)"),
+        // 2.88 — mã trạng thái THÔ của xe (đầu vào của chip/bảng lốp; ẩn khỏi bộ chọn). Chữ nói đúng thứ getter trả.
+        "tyre_c_fl" to Desc("Màu cụm đồng hồ tô cho lốp trước bên trái", "Colour the instrument cluster gives the front-left tyre"),
+        "tyre_c_fr" to Desc("Màu cụm đồng hồ tô cho lốp trước bên phải", "Colour the instrument cluster gives the front-right tyre"),
+        "tyre_c_rl" to Desc("Màu cụm đồng hồ tô cho lốp sau bên trái", "Colour the instrument cluster gives the rear-left tyre"),
+        "tyre_c_rr" to Desc("Màu cụm đồng hồ tô cho lốp sau bên phải", "Colour the instrument cluster gives the rear-right tyre"),
+        "tyre_ps_fl" to Desc("Xe đánh giá áp lốp trước bên trái: bình thường, căng hay non", "Car's pressure verdict for the front-left tyre: normal, over or under"),
+        "tyre_ps_fr" to Desc("Xe đánh giá áp lốp trước bên phải: bình thường, căng hay non", "Car's pressure verdict for the front-right tyre: normal, over or under"),
+        "tyre_ps_rl" to Desc("Xe đánh giá áp lốp sau bên trái: bình thường, căng hay non", "Car's pressure verdict for the rear-left tyre: normal, over or under"),
+        "tyre_ps_rr" to Desc("Xe đánh giá áp lốp sau bên phải: bình thường, căng hay non", "Car's pressure verdict for the rear-right tyre: normal, over or under"),
+        "tyre_lk_fl" to Desc("Lốp trước bên trái có đang xì hơi không", "Whether the front-left tyre is leaking air"),
+        "tyre_lk_fr" to Desc("Lốp trước bên phải có đang xì hơi không", "Whether the front-right tyre is leaking air"),
+        "tyre_lk_rl" to Desc("Lốp sau bên trái có đang xì hơi không", "Whether the rear-left tyre is leaking air"),
+        "tyre_lk_rr" to Desc("Lốp sau bên phải có đang xì hơi không", "Whether the rear-right tyre is leaking air"),
+        "tyre_sys" to Desc("Tình trạng hệ thống giám sát áp suất lốp", "Status of the tyre pressure monitoring system"),
 
         // ── BODY (INFO) ──
         "window_lf" to Desc("Độ mở kính cửa trước bên trái", "Front-left window open percentage (%)"),

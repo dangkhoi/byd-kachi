@@ -47,6 +47,33 @@ class HomeViewModelSlotRevertTest {
         }
     }
 
+    /**
+     * LỖI XE 2.87 (owner 04/10) — khoá qua [HomeViewModel]: hồ sơ LƯU ChatGPT ở ô 1, YouTube đặt TẠM vào ô 1, YouTube rời ô
+     * (*tắt* / *chạy nền* / chết) ⇒ ô TRONG SUỐT. Bản 2.87 trả `ShowSaved` ⇒ ô dựng lại với ChatGPT ⇒ host mở / K8 kéo ChatGPT
+     * (đang sau màn nhà) vào khung *"thay vì trong suốt"*. Lớp LƯU không đổi, không persist; lớp tạm mất ⇒ ChatGPT về ô 1.
+     */
+    @Test
+    fun `loi xe 2_87 - YouTube dat tam tren o LUU ChatGPT roi o thi trong suot, khong keo ChatGPT vao`() {
+        val gpt = "com.openai.chatgpt"
+        val yt = "com.google.android.youtube"
+        val profile = WorkspaceState.of(LayoutPreset.QUAD, SlotContent.App(gpt), SlotContent.Widget("w_tyres"))
+        listOf(SlotRevertPlan.Event.APP_CLOSED, SlotRevertPlan.Event.APP_BACKGROUND, SlotRevertPlan.Event.APP_DIED).forEach { ev ->
+            val r = CountingRepo(HomeUiState(workspace = profile))
+            val vm = HomeViewModel(r)
+            assertTrue(vm.placeTemporary(0, yt))
+            val next = vm.slotRevert(0, ev, yt)
+            assertEquals(SlotRevertPlan.Next.Clear, next, "$ev")
+            vm.applySlotRevert(0, next)
+            val shown = vm.uiState.value.effectiveWorkspace.slots
+            assertEquals(listOf(SlotContent.Empty, SlotContent.Widget("w_tyres")), shown.take(2), "$ev: khung trong suốt, ô khác giữ")
+            assertFalse(SlotContent.App(gpt) in shown, "$ev: ChatGPT không được vào khung — $shown")
+            assertEquals(profile, vm.uiState.value.workspace, "$ev: lớp LƯU giữ nguyên")
+            assertEquals(0, r.persistCount, "$ev: không bao giờ persist()")
+            assertEquals(SlotContent.App(gpt), vm.uiState.value.copy(overlay = SlotOverlay.EMPTY).effectiveWorkspace.slots[0],
+                "$ev: khởi động lại ⇒ ChatGPT về ô 1 như hồ sơ")
+        }
+    }
+
     @Test
     fun `khoi dong lai (lop tam mat) thi app ve o LUU cua no`() {
         val vm = HomeViewModel(CountingRepo(HomeUiState(workspace = saved)))

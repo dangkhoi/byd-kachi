@@ -118,7 +118,7 @@ class KachiTopStrip(
             // WP1 · R1.1 — thanh mờ bo góc, **KHÔNG viền**. [ĐO ảnh `after-home-dark.png`] viền cũ là vạch 1px
             // `rgb(100,106,121)` chạy từ x=45 tới x=1874 ở y=107 — một trong hai đường kẻ dễ thấy nhất màn chính
             // (owner: *"KHÔNG còn viền ở BẤT CỨ ĐÂU hết"*). Thanh vẫn tách khỏi nền bằng chính nền `BAR_TOP` của nó.
-            KachiGlass.bar(this, KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP), KachiTheme.BAR_TOP)   // 2.87 R-OP
+            background = KachiChrome.fade(KachiTheme.card(context, Sp.RADIUS_L, KachiTheme.BAR_TOP))   // R-OP: độ đục nền chung
             setPadding(dp(Sp.L), dp(Sp.XS), dp(Sp.L), dp(Sp.XS))
         }
         stripRow = strip
@@ -219,7 +219,7 @@ class KachiTopStrip(
      */
     /** #10 (2026-09-23) — re-áp bảng màu theme MỚI lên các view đã dựng (thanh trên không giữ ô app). */
     fun restyle() {
-        KachiGlass.bar(stripRow, KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP), KachiTheme.BAR_TOP)
+        stripRow.background = KachiChrome.fade(KachiTheme.card(activity, Sp.RADIUS_L, KachiTheme.BAR_TOP))   // R-OP
         painters.forEach { it() }             // QA 2.87 [P2]: đồng hồ · ngày · 3 pill · chip hồ sơ — mọi lượt tô của [build]
         chipViews.forEach { it.tag = null }   // ép applyChipFace chạy lại (đổi màu icon/chữ) ở refreshChips kế
         refreshChips(lastStatus, lastUnits, chipConfig)
@@ -333,7 +333,7 @@ class KachiTopStrip(
         }
         chips.forEachIndexed { idx, c ->
             val v = chipViews[idx]
-            val color = chipInk(c.tone)   // bảng map MỘT chỗ — sàn đọc được của thanh khi mờ đọc CÙNG nó (ChromeRoles)
+            val color = chipInk(c.tone)   // bảng map MỘT chỗ (`TopStripChipInk.kt`)
             // Icon/màu chỉ đặt lại khi ĐỔI — tra drawable + tint mỗi giây là việc bản vá P2-9 vừa dọn. UX6: khoá
             // gồm CẢ *"có chữ hay không"* vì khe icon↔chữ bật/tắt theo đó, mà chữ đổi được khi icon/màu thì không.
             val face = c.icon.toString() + color + c.text.isNotEmpty()
@@ -342,7 +342,8 @@ class KachiTopStrip(
             // vẫn dựng lại `Layout` của TextView và gọi `requestLayout()`. Trên xe, trạng thái đổi kéo theo cả
             // dải chip vẽ lại dù phần lớn chip (bụi mịn · nhiệt độ ngoài) đứng yên hàng phút. So chuỗi rẻ hơn
             // nhiều lần so với đo-và-sắp lại một hàng 8 chip.
-            if (v.text?.toString() != c.text) v.text = c.text
+            // 2.88 (R6): so bằng khoá CÓ MÀU từng đoạn (`applyChipText`) — chip lốp đổi màu một số mà chữ đứng yên vẫn vẽ lại.
+            applyChipText(v, c)
             if (v.contentDescription?.toString() != c.desc) v.contentDescription = c.desc
         }
     }

@@ -190,11 +190,61 @@ Ghế lái	Driver seat	ที่นั่งคนขับ
 Ghế phụ	Passenger seat	ที่นั่งผู้โดยสาร
 non	low	ลมอ่อน
 căng	high	ลมเกิน
-lệch	uneven	ลมไม่เท่ากัน
 chưa đọc được áp suất	pressure not read yet	ยังอ่านแรงดันลมยางไม่ได้
 lốp ổn	tyres OK	ยางปกติ
-{0} bánh {1}	{0} wheel {1}	ยาง{1} {0} เส้น
-{0} bánh {1}	{0} wheels {1}	ยาง{1} {0} เส้น
+{0} bánh {1}	{0} wheel: {1}	ยาง {0} เส้น: {1}
+{0} bánh {1}	{0} wheels: {1}	ยาง {0} เส้น: {1}
+# 2.88 — lốp theo phán xét của xe (spec docs/specs/kachi-288-tyre-car-state.html): chip · lý do · nhãn/diễn giải 13 mã thô · bảng mã.
+Áp suất lốp: {0}	Tyre pressure: {0}	แรงดันลมยาง: {0}
+{0} {1}, bình thường	{0} {1}, normal	{0} {1} ปกติ
+{0} {1}, chưa rõ	{0} {1}, unknown	{0} {1} ยังไม่ทราบสถานะ
+{0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1} ระวัง: {2}
+{0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1} เตือน: {2}
+xì nhanh	fast leak	รั่วเร็ว
+báo đỏ	red alert	เตือนสีแดง
+xì chậm	slow leak	รั่วช้า
+lỗi cảm biến	sensor fault	เซนเซอร์ขัดข้อง
+chú ý	caution	ระวัง
+mã lạ	unknown code	รหัสไม่รู้จัก
+chưa đọc được trạng thái lốp từ xe	tyre status not read from the car	ยังอ่านสถานะยางจากรถไม่ได้
+Màu cảnh báo lốp trước-trái	Tyre warning colour front-left	สีเตือนยางหน้าซ้าย
+Màu cảnh báo lốp trước-phải	Tyre warning colour front-right	สีเตือนยางหน้าขวา
+Màu cảnh báo lốp sau-trái	Tyre warning colour rear-left	สีเตือนยางหลังซ้าย
+Màu cảnh báo lốp sau-phải	Tyre warning colour rear-right	สีเตือนยางหลังขวา
+Trạng thái áp lốp trước-trái	Tyre pressure state front-left	สถานะแรงดันยางหน้าซ้าย
+Trạng thái áp lốp trước-phải	Tyre pressure state front-right	สถานะแรงดันยางหน้าขวา
+Trạng thái áp lốp sau-trái	Tyre pressure state rear-left	สถานะแรงดันยางหลังซ้าย
+Trạng thái áp lốp sau-phải	Tyre pressure state rear-right	สถานะแรงดันยางหลังขวา
+Rò khí lốp trước-trái	Tyre air leak front-left	ลมรั่วยางหน้าซ้าย
+Rò khí lốp trước-phải	Tyre air leak front-right	ลมรั่วยางหน้าขวา
+Rò khí lốp sau-trái	Tyre air leak rear-left	ลมรั่วยางหลังซ้าย
+Rò khí lốp sau-phải	Tyre air leak rear-right	ลมรั่วยางหลังขวา
+Hệ thống giám sát lốp	Tyre monitoring system	ระบบตรวจสอบยาง
+Màu cụm đồng hồ tô cho lốp trước bên trái	Colour the instrument cluster gives the front-left tyre	สีที่หน้าปัดแสดงให้ยางหน้าซ้าย
+Màu cụm đồng hồ tô cho lốp trước bên phải	Colour the instrument cluster gives the front-right tyre	สีที่หน้าปัดแสดงให้ยางหน้าขวา
+Màu cụm đồng hồ tô cho lốp sau bên trái	Colour the instrument cluster gives the rear-left tyre	สีที่หน้าปัดแสดงให้ยางหลังซ้าย
+Màu cụm đồng hồ tô cho lốp sau bên phải	Colour the instrument cluster gives the rear-right tyre	สีที่หน้าปัดแสดงให้ยางหลังขวา
+Xe đánh giá áp lốp trước bên trái: bình thường, căng hay non	Car's pressure verdict for the front-left tyre: normal, over or under	ผลประเมินแรงดันยางหน้าซ้ายของรถ: ปกติ สูงเกิน หรือต่ำเกิน
+Xe đánh giá áp lốp trước bên phải: bình thường, căng hay non	Car's pressure verdict for the front-right tyre: normal, over or under	ผลประเมินแรงดันยางหน้าขวาของรถ: ปกติ สูงเกิน หรือต่ำเกิน
+Xe đánh giá áp lốp sau bên trái: bình thường, căng hay non	Car's pressure verdict for the rear-left tyre: normal, over or under	ผลประเมินแรงดันยางหลังซ้ายของรถ: ปกติ สูงเกิน หรือต่ำเกิน
+Xe đánh giá áp lốp sau bên phải: bình thường, căng hay non	Car's pressure verdict for the rear-right tyre: normal, over or under	ผลประเมินแรงดันยางหลังขวาของรถ: ปกติ สูงเกิน หรือต่ำเกิน
+Lốp trước bên trái có đang xì hơi không	Whether the front-left tyre is leaking air	ยางหน้าซ้ายมีลมรั่วหรือไม่
+Lốp trước bên phải có đang xì hơi không	Whether the front-right tyre is leaking air	ยางหน้าขวามีลมรั่วหรือไม่
+Lốp sau bên trái có đang xì hơi không	Whether the rear-left tyre is leaking air	ยางหลังซ้ายมีลมรั่วหรือไม่
+Lốp sau bên phải có đang xì hơi không	Whether the rear-right tyre is leaking air	ยางหลังขวามีลมรั่วหรือไม่
+Tình trạng hệ thống giám sát áp suất lốp	Status of the tyre pressure monitoring system	สถานะของระบบตรวจสอบแรงดันลมยาง
+Bình thường	Normal	ปกติ
+Vàng	Yellow	สีเหลือง
+Đỏ	Red	สีแดง
+Quá căng	Over-inflated	ลมยางเกิน
+Non hơi	Under-inflated	ลมยางอ่อน
+Không rò	No leak	ไม่รั่ว
+Xì nhanh	Fast leak	รั่วเร็ว
+Xì chậm	Slow leak	รั่วช้า
+Đang tự kiểm	Self-checking	กำลังตรวจสอบตัวเอง
+Tín hiệu bất thường	Signal abnormal	สัญญาณผิดปกติ
+Hỏng	Failed	ขัดข้อง
+Bị che	Masked	ถูกปิดกั้น
 bố cục rỗng: chưa vẽ khung nào	empty layout: no frame drawn yet	เลย์เอาต์ว่าง: ยังไม่ได้วาดกรอบ
 khung {0} nhỏ quá ({1}×{2}), tối thiểu {3}×{4}	frame {0} is too small ({1}×{2}), minimum {3}×{4}	กรอบ {0} เล็กเกินไป ({1}×{2}) ขั้นต่ำ {3}×{4}
 khung {0} ra ngoài lưới {1}×{2}	frame {0} falls outside the {1}×{2} grid	กรอบ {0} อยู่นอกตาราง {1}×{2}

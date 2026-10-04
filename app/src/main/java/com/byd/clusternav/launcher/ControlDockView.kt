@@ -46,17 +46,17 @@ class ControlDockView(context: Context) : LinearLayout(context) {
     private val readTiles = LinkedHashMap<String, ReadTile>()
     // Ô HÀNH ĐỘNG có đường đọc: giữ hàm refresh để đổ giá trị THẬT của xe (2026-09-17) mà KHÔNG dựng lại ô.
     private val actionRefreshers = LinkedHashMap<String, (CarStatus) -> Unit>()
-    private val tiles = ControlTileFactory(context, control = { control }, size = TileSize.DOCK, onBar = true)
+    private val tiles = ControlTileFactory(context, control = { control }, size = TileSize.DOCK)
 
     init {
         gravity = Gravity.CENTER
         // WP1 · R1.1 — thanh nút **KHÔNG viền**. [ĐO ảnh `after-home-dark.png`] viền cũ là vạch 1px
         // `rgb(99,103,117)` từ x=50 tới x=1868 ở y=882 = đường kẻ dễ thấy thứ hai của màn chính. Thanh tách khỏi
         // vùng ô bằng nền `BAR` + khe [Sp.SLOT_GAP] mà `DockAreaLayout` đặt.
-        // 2.87 · R-OP — nền đi qua [KachiGlass.bar]: độ đục chung + sàn đọc được trên ảnh nền (100 % ⇒ y như cũ).
-        KachiGlass.bar(this, GradientDrawable().apply {
+        // R-OP — nền theo độ đục nền chung ([KachiChrome.fade]; 0 % trong suốt ⇒ y như cũ, 100 % ⇒ không tô gì).
+        background = KachiChrome.fade(GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR))
-        }, KachiTheme.BAR, tiles = true)
+        })
         // WP5 · R5.1 — lề trong **[Bars.DOCK_PAD]** (trước WP5 là [Sp.S]): thanh mỏng lại 80 % mà ô chỉ nhỏ 85 %
         // nên phần khung phải nhường chỗ trước, nếu không ô 73/83dp không còn nằm trong thanh 93/99dp (số học ở
         // KDoc [Bars.DOCK_PAD]).
@@ -92,9 +92,9 @@ class ControlDockView(context: Context) : LinearLayout(context) {
 
     /** #10 (2026-09-23) — đổi màu theme MỚI: nền khay (BAR) + dựng lại nút (dock không giữ ô app nên an toàn). */
     fun restyle() {
-        KachiGlass.bar(this, GradientDrawable().apply {
+        background = KachiChrome.fade(GradientDrawable().apply {
             cornerRadius = dpi(context, Sp.RADIUS_XL).toFloat(); setColor(c(KachiTheme.BAR))
-        }, KachiTheme.BAR, tiles = true)
+        })
         rebuild()
     }
 

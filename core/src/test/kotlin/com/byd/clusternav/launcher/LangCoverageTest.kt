@@ -60,7 +60,8 @@ class LangCoverageTest {
         // 2026-09-25: 71 → 64 (owner gỡ 7 datum CHẾT — nhật ký ở TelemetryRegistry).
         // UX5b (2026-09-27): 64 → 66 (+2 datum ghế PHỤ — `seat_vent_state_r` · `seat_heat_state_r`; cả hai có nhãn
         // + nhãn ngắn ở CẢ hai thứ tiếng, chính bài này ép điều đó).
-        assertEquals(66, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
+        // 2.88 (04/10): 66 → 79 (+13 mã trạng thái THÔ của lốp — nhãn VI/EN + bản dịch zh/th/ms đủ cả 13).
+        assertEquals(79, TelemetryRegistry.ALL.size, "số datum đổi ⇒ xem lại bản dịch trước khi ghim số mới")
         val missing = TelemetryRegistry.ALL.filter { it.labelEn.isNullOrBlank() }.map { it.id }
         assertTrue(missing.isEmpty(), "datum thiếu nhãn tiếng Anh: $missing")
     }
@@ -238,7 +239,9 @@ class LangCoverageTest {
         // `voice_ignition_music` (xem `tong so muc Cai dat…`), cả hai có EN tại chỗ khai.
         // 2.87 · R-AH3 (2026-10-03): **246 → 247 (+1)** = mục Cài đặt `home_swap_autohide` ("Tự ẩn nút ⇄" / "Auto-hide
         // the ⇄ button"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
-        assertEquals(247, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2.88 (2026-10-04): **247 → 260 (+13)** = nhãn VI/EN của 13 mã trạng thái THÔ của lốp (màu cụm · trạng thái áp ·
+        // rò khí ×4 + hệ thống TPMS) — cả 13 có bản dịch zh/th/ms (`I18nCoverageTest`).
+        assertEquals(260, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }
@@ -420,7 +423,8 @@ class LangCoverageTest {
 
     @Test
     fun `o nhom, chip, ket luan lop va goi lenh deu doi theo ngon ngu`() {
-        val status = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 150.0))
+        // 2.88: "non" là lời phán của xe (TPMS `getTyrePressureState` = UNDER), không còn suy từ con số.
+        val status = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 150.0, psFl = TyreJudge.PRESSURE_UNDER))
 
         Strings.current = Lang.VI
         assertEquals("Lốp", GroupBoard.of("g_tyres", status)!!.label)

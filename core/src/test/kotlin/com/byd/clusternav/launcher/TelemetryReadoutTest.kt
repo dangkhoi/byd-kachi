@@ -134,7 +134,15 @@ class TelemetryReadoutTest {
                 is BindingRoute.FeatureName -> {
                     val fake = fakeId(r.constName)
                     names[r.constName] = fake
-                    features[fake] = "1"
+                    // 2.88 · R7 — màu lốp cụm = 1 (TRẮNG) nghĩa là xe đã phán bánh bình thường ⇒ adapter CỐ Ý không đọc mã
+                    // TPMS của bánh ấy (ngân sách K1). Mồi màu VÀNG (2) để mọi mã trạng thái lốp đều phải chảy qua; riêng
+                    // bánh TT mồi một mã màu LẠ (9): soát regress-2 chỉ đọc `tyre_sys` khi có bánh mà cụm KHÔNG phán được
+                    // (M1 không bao giờ hỏi SYS) — không có bánh như thế thì `tyre_sys` cố ý không chảy.
+                    features[fake] = when {
+                        r.constName == "INSTRUMENT_2IN1_LF_TYRE_COLOR" -> "9"
+                        r.constName.endsWith("_TYRE_COLOR") -> "2"
+                        else -> "1"
+                    }
                 }
                 BindingRoute.None -> {}              // GPS/target_soc → không đường đọc
             }

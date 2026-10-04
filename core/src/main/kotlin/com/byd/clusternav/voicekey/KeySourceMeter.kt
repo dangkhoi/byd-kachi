@@ -29,8 +29,9 @@ import java.util.concurrent.TimeoutException
  *  4. `BUSY`/`NOT_RUNNING` không đọc gì ⇒ `readMs = -1` (P3: hộp học phím từng hiện *"đọc 0 ms"* cho một lượt không có).
  *
  * ## Luồng
- * [measure] chỉ được gọi từ MỘT luồng (luồng đo `kachi-keysrc` của `KeySourceRecorder`) — phép kiểm-rồi-gán `inFlight`
- * vì thế không cần khoá. Lượt đọc (`gateway()` + [KeySourceProbes.read]) chạy trên luồng của [exec]; không ngắt được một
+ * [measure] / [read] / [prime] của MỘT thực thể chỉ được gọi từ MỘT luồng (thực thể của nhật ký: luồng đo `kachi-keysrc`
+ * của `KeySourceRecorder`; thực thể của [KeySourceResolver]: luồng nhận phím) — phép kiểm-rồi-gán `inFlight` vì thế
+ * không cần khoá. Lượt đọc (`gateway()` + [KeySourceProbes.read]) chạy trên luồng của [exec]; không ngắt được một
  * lời gọi binder treo, nên quá hạn chỉ là BỎ CHỜ.
  *
  * @param exec bộ thi hành HAL (một luồng) — `null` = bộ đo đã dừng ⇒ `NOT_RUNNING`.
@@ -48,13 +49,36 @@ class KeySourceMeter(
     /** Kết quả một lần đo: thiết bị (có thể `null` — tra hỏng/không có) + số đọc nguồn. */
     data class Measurement(val device: KeyDeviceInfo?, val reading: KeySourceReading)
 
-    /** Đo một lần bấm theo luật ở KDoc lớp. Không ném vì lỗi HAL (mọi lỗi đọc thành [KeySourceFailure]). */
-    fun measure(sample: KeySample, devices: KeyDeviceCache): Measurement {
+    /**
+     * Đo một lần bấm theo luật ở KDoc lớp. Không ném vì lỗi HAL (mọi lỗi đọc thành [KeySourceFailure]).
+     *
+     * @param preRead số đọc nguồn ĐÃ CÓ cho đúng lần bấm này (2.88 · R-nf2: đường gán đã đọc đồng bộ qua
+     *   [KeySourceResolver]) ⇒ KHÔNG đọc HAL lần hai, chỉ tra thiết bị. `null` ⇒ đo đủ như 2.87.
+     */
+    fun measure(sample: KeySample, devices: KeyDeviceCache, preRead: KeySourceReading? = null): Measurement {
+        if (preRead != null) return Measurement(devices.get(sample.deviceId), preRead)
         val spec = KeySourceProbes.forKey(sample.keyCode, probes)
         val started = spec?.let { start(it, sample.eventTime) }      // 1. HAL đi trước
         val device = devices.get(sample.deviceId)                      //    tra thiết bị trong lúc HAL chạy
         val reading = started?.let { await(it) } ?: KeySourceReading.NOT_MEASURED
         return Measurement(device, reading)
+    }
+
+    /**
+     * CHỈ phần HAL (không tra thiết bị) — đường gán đọc nguồn đồng bộ ([KeySourceResolver], 2.88). Cùng luật 2–4 của
+     * KDoc lớp; phím ngoài bảng ⇒ [KeySourceReading.NOT_MEASURED], không tốn lượt HAL nào.
+     */
+    fun read(sample: KeySample): KeySourceReading =
+        KeySourceProbes.forKey(sample.keyCode, probes)?.let { await(start(it, sample.eventTime)) } ?: KeySourceReading.NOT_MEASURED
+
+    /**
+     * Gửi MỘT lượt đọc mồi của đầu dò đầu bảng rồi trả về NGAY (không chờ) — nạp sẵn bảng feature-id + `getInstance`
+     * của device để lần bấm thật đầu tiên không trả giá khởi tạo (2.88 · spec §4.3). Lượt mồi là một lượt như mọi lượt:
+     * còn treo thì lần bấm kế ra `BUSY` ngay (luật 3) chứ không xếp hàng sau nó. `true` ⇔ đã gửi được.
+     */
+    fun prime(): Boolean {
+        val spec = probes.firstOrNull() ?: return false
+        return start(spec, clockMs()).future != null
     }
 
     /** Lượt đọc đã gửi ([future] đang chạy) hoặc đã có kết quả ngay ([immediate]: `BUSY` / `NOT_RUNNING`). */

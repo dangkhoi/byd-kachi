@@ -132,32 +132,35 @@ class GroupBoardTest {
         assertEquals("Áp lốp trước-trái", TelemetryRegistry.byId("tyre_p_fl")!!.label)
     }
 
-    // ── Sắc thái: dùng LẠI ngưỡng đang có, không đặt ngưỡng mới ──────────────────────────────────
+    // ── Sắc thái: dùng LẠI phán xét đang có, không đặt ngưỡng mới ───────────────────────────────
 
     @Test
-    fun `lop non hoac cang ra canh bao, lay tu TyreBoard chu khong phai nguong thu hai`() {
-        val low = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 190.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 240.0))
+    fun `xe bao lop do thi CANH BAO, lay tu TyreBoard chu khong phai nguong thu hai`() {
+        // 2.88: không còn số ngưỡng — màu là lời phán của xe (TPMS nói non / căng ⇒ đỏ).
+        val low = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 190.0, psFl = TyreJudge.PRESSURE_UNDER))
         val cells = GroupBoard.of(CapabilityGroups.TYRES, low).cells
-        assertEquals(GroupTone.ALERT, cells.first { it.id == "tyre_p_fl" }.tone, "1.9 bar < ngưỡng non")
-        // Phán xét phải TRÙNG với TyreBoard — nếu ai đặt ngưỡng riêng trong GroupBoard thì hai bên lệch và bài này đỏ.
+        assertEquals(GroupTone.ALERT, cells.first { it.id == "tyre_p_fl" }.tone, "TPMS nói non ⇒ đỏ")
+        // Phán xét phải TRÙNG với TyreBoard — nếu ai đặt luật riêng trong GroupBoard thì hai bên lệch và bài này đỏ.
         val fromTyreBoard = TyreBoard.readings(low.tyres).first { it.corner == TyreCorner.FRONT_LEFT }
-        assertEquals(TyreStatus.LOW, fromTyreBoard.status)
+        assertEquals(TyreStatus.UNDER, fromTyreBoard.status)
 
-        val high = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 330.0, pFrKpa = 330.0, pRlKpa = 330.0, pRrKpa = 330.0))
+        val high = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 330.0, cFl = TyreJudge.COLOUR_RED))
         assertEquals(
             GroupTone.ALERT,
             GroupBoard.of(CapabilityGroups.TYRES, high).cells.first { it.id == "tyre_p_fl" }.tone,
-            "3.3 bar > ngưỡng căng",
+            "cụm đồng hồ báo đỏ ⇒ đỏ",
         )
     }
 
     @Test
-    fun `lop lech thi la LUU Y chu khong phai canh bao, va chi banh thap nhat`() {
-        // 2.4/2.4/2.4/2.0 → chênh 0.4 ≥ ngưỡng lệch; chỉ bánh THẤP NHẤT bị đánh dấu (luật của TyreBoard).
-        val car = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 240.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 200.0))
+    fun `xe bao lop vang thi la LUU Y, va chi dung banh do`() {
+        // Thay bài "lệch": chênh số giữa các bánh KHÔNG còn là tín hiệu; xe báo vàng (xì chậm) mới là.
+        val car = CarStatus(
+            tyres = CarStatus.Tyres(pFlKpa = 240.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 200.0, lkRr = TyreJudge.LEAK_SLOW),
+        )
         val cells = GroupBoard.of(CapabilityGroups.TYRES, car).cells
         assertEquals(GroupTone.WARN, cells.first { it.id == "tyre_p_rr" }.tone)
-        assertEquals(GroupTone.NEUTRAL, cells.first { it.id == "tyre_p_fl" }.tone, "bánh đủ hơi không được tô cảnh báo")
+        assertEquals(GroupTone.NEUTRAL, cells.first { it.id == "tyre_p_fl" }.tone, "bánh xe không báo gì không được tô")
     }
 
     // Phần *"dây an toàn chưa thắt"* của bài này đã gỡ 2026-09-16 cùng nhóm `g_occupants` (owner gỡ ADAS/an toàn).
@@ -239,8 +242,10 @@ class GroupBoardTest {
     fun `tom tat noi CAI SAI truoc, khong noi so cua thanh vien dau tien`() {
         val alert = CarStatus(body = CarStatus.Body(doorLfOpen = true, doorRfOpen = true))
         assertEquals("2 cảnh báo", GroupBoard.of(CapabilityGroups.DOORS, alert).summary())
-        // Sắc thái LƯU Ý: lốp lệch (bánh thấp nhất) — ca WARN duy nhất còn lại sau lượt gỡ ADAS/an toàn.
-        val warn = CarStatus(tyres = CarStatus.Tyres(pFlKpa = 240.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 200.0))
+        // Sắc thái LƯU Ý: xe báo lốp VÀNG (2.88 — xì chậm; trước đó là "lệch" theo ngưỡng số, đã gỡ).
+        val warn = CarStatus(
+            tyres = CarStatus.Tyres(pFlKpa = 240.0, pFrKpa = 240.0, pRlKpa = 240.0, pRrKpa = 200.0, lkRr = TyreJudge.LEAK_SLOW),
+        )
         assertEquals("1 lưu ý", GroupBoard.of(CapabilityGroups.TYRES, warn).summary())
         // Không có gì sai ⇒ hiện số chính.
         val ok = CarStatus(energy = CarStatus.Energy(soc = 82))

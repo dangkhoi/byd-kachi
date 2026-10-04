@@ -82,6 +82,9 @@ class SlotLifecycleWiringContractTest {
             "heads.restyleAll()" to "WorkspaceView.kt",
             "heads.retain(slotViews.size)" to "WorkspaceView.kt",
             "workspace().heads.refreshAll()" to "KachiHomeSlotActions.kt",
+            // Lỗi xe 2.87 (04/10) — lý do ngắn của chuỗi chạy nền tới được câu báo trên màn (CLAUDE.md §11).
+            "done(BehindReason.report(out))" to "KachiHomeSlots.kt",
+            "R.string.kachi_sc_bg_failed_why" to "KachiHomeSlotActions.kt",
         ).forEach { (call, file) -> assertTrue(call in code(file), "'$call' phải được gọi trong $file") }
         assertTrue("StackReads.settle(" in core("FloatingOrphanSweep.kt") && "StackReads.settle(" in core("SlotClose.kt"),
             "một vòng đọc-lại cho cả hai lượt gỡ stack (DRY)")
@@ -92,6 +95,8 @@ class SlotLifecycleWiringContractTest {
         val fn = SourceRoots.body(actions, "private fun revert(")
         order(fn, "viewModel.slotRevert(index, event, pkg)", "if (next == Next.Keep) return",
             // L8 — ĐỔI GHIM có lý do: không còn ngoại lệ đổi-tại-chỗ (ShowSaved hết `swapInPlace`) ⇒ MỌI sự kiện app thả host.
+            // Owner 04/10: sự kiện app ra `ShowSaved` chỉ khi LƯU là widget, còn lại `Clear` ⇒ thả host rồi lượt render nhả màn
+            // ảo của ô — `release()` thấy host không còn giữ gói ⇒ 0 `force-stop` (bài `host tha app thi release khong force-stop`).
             "if (pkg != null) workspace().hostAt(index)?.relinquish(pkg)",
             "viewModel.applySlotRevert(index, next)")
         assertTrue("revert(index, Event.APP_DIED, pkg)" in SourceRoots.body(actions, "override fun onAppGone("))
@@ -147,12 +152,16 @@ class SlotLifecycleWiringContractTest {
         order(fn, "if (index in busy) return", "if (!behindUsable())", "workspace().heads.refreshAll(); return",
             "InstalledApps.isSystem(activity, pkg)", "R.string.kachi_sc_refuse_system", "return",
             "ShellAccessUi.allowOrPrompt(activity)", "val stage = workspace().hostAt(index)?.stage()", "stage.pkg != pkg", "return",
-            "busy += index", "toBack(index, stage.vd, pkg) { left ->", "busy -= index",
-            "if (left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed, pkg)",
+            // Lỗi xe 2.87 (04/10) — ĐỔI GHIM có lý do: kết quả mang lý do ngắn + dòng `KachiBehind` đầy đủ (sổ `KachiSlotLife`);
+            // câu báo "chưa chạy ngầm được (lý do)" vẫn CHỈ khi ô còn hiện app (sayIfStill) — anh em chụp màn hình gửi về (§11).
+            "busy += index", "toBack(index, stage.vd, pkg) { r ->", "busy -= index", "Log.i(TAG,", "\${r.line}",
+            "if (r.left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed_why, pkg, r.why)",
             "workspace().heads.refreshAll()")
+        assertTrue("Toast.LENGTH_LONG" in SourceRoots.body(actions, "private fun say(res: Int, pkg: String, why: String? = null)"),
+            "câu có lý do hiện LÂU — kịp chụp màn hình")
         val slotsSrc = code("KachiHomeSlots.kt")
         val toBack = SourceRoots.body(slotsSrc, "fun toBack(")
-        order(toBack, "behind.chain(", "done(out.outOfStage)", "kit.seq.evictCovered(vd, pkg, kit.hidden)")
+        order(toBack, "behind.chain(", "done(BehindReason.report(out))", "kit.seq.evictCovered(vd, pkg, kit.hidden)")
         assertFalse("swapNonce" in SourceRoots.body(code("HomeViewModel.kt"), "fun applySlotRevert("),
             "luật hoàn ô dựng lại ô (app đã rời màn ảo) — không mốc đổi-tại-chỗ")
         assertTrue("onAppSwapped = { i, vd, a, b -> slots.evictBehind(i, vd, a, b) }" in code("KachiHomeActivity.kt"),
@@ -322,7 +331,8 @@ class SlotLifecycleWiringContractTest {
 
     @Test
     fun `chuoi moi du nam tieng`() {
-        val keys = listOf("kachi_slot_to_back", "kachi_slot_close_app", "kachi_slot_close_widget", "kachi_slot_close_failed", "kachi_slot_close_confirm")
+        val keys = listOf("kachi_slot_to_back", "kachi_slot_close_app", "kachi_slot_close_widget", "kachi_slot_close_failed", "kachi_slot_close_confirm",
+            "kachi_sc_bg_failed_why")
         listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { f ->
             val xml = SourceRoots.text("src/main/res/$f/strings_kachi.xml")
             keys.forEach { k -> assertTrue("\"$k\"" in xml, "$f thiếu $k") }

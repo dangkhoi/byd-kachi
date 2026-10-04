@@ -26,6 +26,8 @@ class WallView(context: Context) : View(context) {
     private val bandTop = Paint()
     private val bandBottom = Paint()
     private var bandH = 0f
+    /** R-OP (2.88) — hệ số độ đục nền chung lúc dựng shader dải che ([onSizeChanged]); 0 ⇒ [drawBands] không vẽ. */
+    private var bandFade = 1.0
     /** Hai vầng sáng của nền mặc định — shader dựng ở [onSizeChanged] (và [restyle]), không mỗi khung (lint DrawAllocation). */
     private var glow1: Shader? = null
     private var glow2: Shader? = null
@@ -132,9 +134,12 @@ class WallView(context: Context) : View(context) {
      * P1b · §4.10 mục (3) — hai dải che (màu nền thanh trên → trong suốt) ở đỉnh và đáy màn, **chỉ khi có ảnh**:
      * thanh trạng thái trên và thanh nút xe luôn có nền đọc được, kể cả khi ảnh có vùng trắng đúng chỗ đó. Vai màu
      * [KachiTheme.BAR_TOP] đã là "nền của thanh trên" ở cả hai bảng nên dải này theo chủ đề mà không mở vai mới.
+     *
+     * R-OP (2.88, owner 04/10 *"trong suốt lên 100%"*): hai dải là nền SAU thanh trên/thanh nút ⇒ mờ CÙNG hệ số với hai
+     * thanh ([bandFade], dựng ở [onSizeChanged]); 100 % trong suốt ⇒ bỏ cả hai lượt vẽ.
      */
     private fun drawBands(canvas: Canvas, w: Float, h: Float) {
-        if (bandH <= 0f) return
+        if (bandH <= 0f || bandFade <= 0.0) return
         canvas.drawRect(0f, 0f, w, bandH, bandTop)
         canvas.drawRect(0f, h - bandH, w, h, bandBottom)
     }
@@ -144,7 +149,13 @@ class WallView(context: Context) : View(context) {
         if (w <= 0 || h <= 0) { bandH = 0f; glow1 = null; glow2 = null; return }
         buildGlow(w.toFloat(), h.toFloat())
         bandH = h * BAND_FRACTION
-        val bar = Color.parseColor(KachiTheme.BAR_TOP)
+        // R-OP (2.88): đầu đậm của dải = BAR_TOP với alpha × hệ số độ đục nền chung — cùng phép `modulateAlpha` mà hai thanh
+        // dùng ([ChromeOpacity.drawnAlpha]; f = 1 ⇒ trả đúng alpha cũ ⇒ đúng màu, đúng byte 2.87). Nhân vào MÀU của shader
+        // (không qua `Paint.alpha`) ⇒ không dựa vào cách Skia trộn alpha của Paint với shader. Dựng ở đây (đổi cỡ, và
+        // `restyle` ← `applyThemeInPlace` khi độ đục đổi), không mỗi khung.
+        bandFade = KachiChrome.fraction
+        val raw = Color.parseColor(KachiTheme.BAR_TOP)
+        val bar = ColorMath.withAlpha(raw, ChromeOpacity.drawnAlpha(ColorMath.alpha(raw), bandFade))
         bandTop.shader = LinearGradient(0f, 0f, 0f, bandH, bar, Color.TRANSPARENT, Shader.TileMode.CLAMP)
         bandBottom.shader = LinearGradient(0f, h - bandH, 0f, h.toFloat(), Color.TRANSPARENT, bar, Shader.TileMode.CLAMP)
     }

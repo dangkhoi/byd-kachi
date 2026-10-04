@@ -26,10 +26,10 @@ enum class GroupTone {
     /** Đang bật, đang mở, đang hoạt động — làm nổi bật, KHÔNG phải cảnh báo. */
     ACTIVE,
 
-    /** Đáng để ý nhưng không nguy (lốp lệch, bụi mức trung bình). */
+    /** Đáng để ý nhưng không nguy (xe báo lốp VÀNG — xì chậm / lỗi cảm biến; bụi mức trung bình). */
     WARN,
 
-    /** Đang cảnh báo (cửa mở, cốp mở, lốp non/căng). */
+    /** Đang cảnh báo (cửa mở, cốp mở, xe báo lốp ĐỎ — non/căng/xì nhanh). */
     ALERT,
     // ⚠ 2026-09-16 — thuộc tính `isLoud` (*"sắc thái này có đáng nhìn ngay không"*) đã XOÁ cùng
     // `GroupBoard.sidePlan`: chỗ gọi DUY NHẤT của nó là phép "ô hẹp thì ưu tiên ô đang cảnh báo" của bảng sơ đồ

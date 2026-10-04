@@ -9,6 +9,7 @@ import com.byd.clusternav.R
 import com.byd.clusternav.launcher.SlotHeadActions.Button
 import com.byd.clusternav.launcher.SlotRevertPlan.Event
 import com.byd.clusternav.launcher.SlotRevertPlan.Next
+import com.byd.clusternav.launcher.behind.BehindReason
 
 /**
  * ═══ L6 · VÒNG ĐỜI Ô — keo của màn chính cho (a) app chết · (b) hết lượt đặt tạm · (c) nút *chạy nền* / *tắt* ═══════════
@@ -36,8 +37,8 @@ internal class KachiHomeSlotActions(
     private val workspace: () -> WorkspaceView,
     /** Kênh shell (dadb) — `null` khi chưa dò ra; đọc MỖI LẦN (gán ở luồng nền sau khi màn mở). */
     private val shell: () -> ((String) -> String)?,
-    /** L8 — chuỗi *chạy nền* của ô (`KachiHomeSlots.toBack`: ô, màn ảo, gói, kết quả "đã rời ô" trên luồng chính). */
-    private val toBack: (Int, Int, String, (Boolean) -> Unit) -> Unit,
+    /** L8 — chuỗi *chạy nền* của ô (`KachiHomeSlots.toBack`: ô, màn ảo, gói, kết quả "đã rời ô" + lý do trên luồng chính). */
+    private val toBack: (Int, Int, String, (BehindReason.Report) -> Unit) -> Unit,
     /** Soát 2.87 · P3 — BEHIND-HOME còn dùng được trong tiến trình (`KachiHomeSlots.behindUsable`); `false` ⇒ không nút *chạy nền*. */
     private val behindUsable: () -> Boolean,
     /** Cửa duy nhất xuống luồng nền của màn chính (đã huỷ ⇒ tự bỏ) — `KachiHomeActivity.submitBg`. */
@@ -116,9 +117,11 @@ internal class KachiHomeSlotActions(
     /**
      * L8 — *chạy nền* app đang hiện ở ô [index], MỌI ô app (owner 03/10; D-L6-1 mở khoá): [toBack] chạy chuỗi lớp che trên
      * màn ảo CỦA Ô (`BehindHomeSequence.evictCovered` — display = màn ảo ô, app = đúng gói ô, stack `standard`, màn nhà phải ở
-     * đỉnh display 0); bản đọc cuối thấy app đã rời ô ⇒ luật hoàn ô (`APP_BACKGROUND`: LƯU là chính app ⇒ trong suốt, khác ⇒
-     * về nội dung LƯU); không ⇒ ô giữ app + một câu. App hệ thống ⇒ nói lý do, 0 lệnh (R0.6, cùng phép `InstalledApps.isSystem`
-     * với chip *Chạy nền* của Cài đặt). Host chưa sẵn ⇒ 0 lệnh.
+     * đỉnh display 0); bản đọc cuối thấy app đã rời ô ⇒ luật hoàn ô (`APP_BACKGROUND`: ô LƯU widget ⇒ widget về, còn lại ⇒
+     * trong suốt — owner 04/10); không ⇒ ô giữ app + một câu MANG LÝ DO NGẮN (lỗi xe 2.87: *"bấm vào nó đen cái khung, xong rồi
+     * lại lòi lên lại"* — chưa có log xe ⇒ CLAUDE.md §11: câu trên ảnh chụp phải nói chuỗi dừng ở đâu) + một dòng `KachiSlotLife`
+     * mang dòng `KachiBehind` đầy đủ. App hệ thống ⇒ nói lý do, 0 lệnh (R0.6, cùng phép `InstalledApps.isSystem` với chip
+     * *Chạy nền* của Cài đặt). Host chưa sẵn ⇒ 0 lệnh.
      */
     private fun background(index: Int) {
         val pkg = (shownAt(index) as? SlotContent.App)?.pkg ?: return
@@ -130,10 +133,10 @@ internal class KachiHomeSlotActions(
         val stage = workspace().hostAt(index)?.stage()
         if (stage == null || stage.pkg != pkg) { Log.i(TAG, "ô $index: chạy nền $pkg — ô chưa sẵn, 0 lệnh"); return }
         busy += index
-        toBack(index, stage.vd, pkg) { left ->
+        toBack(index, stage.vd, pkg) { r ->
             busy -= index
-            Log.i(TAG, "ô $index: chạy nền $pkg ⇒ ${if (left) "đã rời ô" else "ô giữ app"}")
-            if (left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed, pkg)
+            Log.i(TAG, "ô $index: chạy nền $pkg ⇒ ${if (r.left) "đã rời ô" else "ô giữ app"} · ${r.line}")
+            if (r.left) revert(index, Event.APP_BACKGROUND, pkg) else sayIfStill(index, R.string.kachi_sc_bg_failed_why, pkg, r.why)
             workspace().heads.refreshAll()   // P3: chuỗi có thể vừa TẮT BEHIND-HOME (`ANCHOR_IN_FRONT`) ⇒ hỏi lại nút mọi ô
         }
     }
@@ -147,14 +150,18 @@ internal class KachiHomeSlotActions(
         viewModel.applySlotRevert(index, next)
     }
 
-    private fun say(res: Int, pkg: String) = say(activity.getString(res, InstalledApps.labelOf(activity, pkg) ?: pkg))
-
-    /** Câu "chưa làm được" chỉ khi ô VẪN hiện [pkg] — ô đã đổi bằng đường khác (app chết, kéo-thả) thì câu đó sai (P3). */
-    private fun sayIfStill(index: Int, res: Int, pkg: String) {
-        if ((shownAt(index) as? SlotContent.App)?.pkg == pkg) say(res, pkg) else Log.i(TAG, "ô $index: $pkg đã rời ô — bỏ câu báo")
+    /** [why] khác `null` ⇒ chuỗi [res] có `%2$s` lý do (chẩn đoán, lỗi xe 2.87) ⇒ hiện LÂU để kịp chụp màn hình. */
+    private fun say(res: Int, pkg: String, why: String? = null) {
+        val label = InstalledApps.labelOf(activity, pkg) ?: pkg
+        if (why == null) say(activity.getString(res, label)) else say(activity.getString(res, label, why), Toast.LENGTH_LONG)
     }
 
-    private fun say(text: String) = Toast.makeText(activity.applicationContext, text, Toast.LENGTH_SHORT).show()
+    /** Câu "chưa làm được" chỉ khi ô VẪN hiện [pkg] — ô đã đổi bằng đường khác (app chết, kéo-thả) thì câu đó sai (P3). */
+    private fun sayIfStill(index: Int, res: Int, pkg: String, why: String? = null) {
+        if ((shownAt(index) as? SlotContent.App)?.pkg == pkg) say(res, pkg, why) else Log.i(TAG, "ô $index: $pkg đã rời ô — bỏ câu báo")
+    }
+
+    private fun say(text: String, length: Int = Toast.LENGTH_SHORT) = Toast.makeText(activity.applicationContext, text, length).show()
 
     private companion object {
         /** Một thẻ log cho cả vòng đời ô (đọc trên màn Chẩn đoán / logcat). */

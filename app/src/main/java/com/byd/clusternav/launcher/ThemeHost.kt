@@ -36,17 +36,15 @@ internal object ThemeHost {
      * Giờ lấy tại chỗ vì chỉ [ThemeMode.AUTO] cần nó, và AUTO cần giờ **lúc vẽ** chứ không phải lúc nạp cấu hình.
      * [now] mở ra để test off-car ép được ca 6h/18h mà không phải chờ đến giờ đó; [artDominant] mở ra cùng lý do.
      *
-     * 2.87 · R-OP — độ đục nền chung ([KachiChrome]) đi CÙNG chỗ áp: đổi bậc ⇒ `true` ⇒ dựng lại nền tại chỗ như đổi
-     * màu. `or` KHÔNG ngắn mạch (không phải `||`): đổi bảng màu không được nuốt mất một lượt đổi độ đục cùng nhịp, và
-     * `KachiChrome.apply` phải chạy SAU `applyTheme` (sàn đọc được tính trên bảng màu vừa áp). [hasArt] = có ảnh nền
-     * (sàn khác nhau khi có/không ảnh ⇒ bật/tắt ảnh ở bậc < 100 % cũng phải dựng lại ô) — mở ra cho test.
+     * 2.87 · R-OP — độ đục nền chung ([KachiChrome]) đi CÙNG chỗ áp: đổi độ đục ⇒ `true` ⇒ dựng lại nền tại chỗ như
+     * đổi màu. `or` KHÔNG ngắn mạch (không phải `||`): đổi bảng màu không được nuốt mất một lượt đổi độ đục cùng nhịp.
+     * 2.88 bỏ sàn đọc được ⇒ độ đục không còn phụ thuộc bảng màu hay ảnh nền (tham số `hasArt` của 2.87 đã gỡ).
      */
     fun sync(
         state: HomeUiState,
         now: Calendar = Calendar.getInstance(),
         artDominant: IntArray? = WallArtStore.accentDominant(),
-        hasArt: Boolean = WallArtStore.current != null,
     ): Boolean =
         KachiTheme.applyTheme(state.themeMode, now.get(Calendar.HOUR_OF_DAY), state.colorChoice, artDominant) or
-            KachiChrome.apply(state.colorChoice.surfaceOpacity, hasArt)
+            KachiChrome.apply(state.colorChoice.surfaceOpacity)
 }

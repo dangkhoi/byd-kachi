@@ -135,7 +135,14 @@ data class CarStatus(
         val acWindAutoRaw: Int? = null,
     )
 
-    /** A4 — lốp (áp suất kPa + nhiệt °C). */
+    /**
+     * A4 — lốp (áp suất kPa + nhiệt °C) + **2.88 · mã trạng thái THÔ của xe** (spec `kachi-288-tyre-car-state.html`).
+     *
+     * Mười ba mã giữ **thô** (cùng lẽ [Climate.seatVentRaw]): phép phán xét sống đúng MỘT chỗ ([TyreJudge]), và lượt
+     * đo trên xe sau còn có con số gốc để đối chiếu. `c*` = màu cụm đồng hồ (`INSTRUMENT_2IN1_*_TYRE_COLOR`) · `ps*` =
+     * `getTyrePressureState` · `lk*` = `getTyreAirLeakState` · [sys] = `getTyreSystemState()` (không tham số bánh).
+     * Hậu tố bánh theo TPMS: `Fl`/`Fr`/`Rl`/`Rr` (= cụm `LF`/`RF`/`LB`/`RB`).
+     */
     data class Tyres(
         val pFlKpa: Double? = null,
         val pFrKpa: Double? = null,
@@ -145,6 +152,19 @@ data class CarStatus(
         val tFrC: Int? = null,
         val tRlC: Int? = null,
         val tRrC: Int? = null,
+        val cFl: Int? = null,
+        val cFr: Int? = null,
+        val cRl: Int? = null,
+        val cRr: Int? = null,
+        val psFl: Int? = null,
+        val psFr: Int? = null,
+        val psRl: Int? = null,
+        val psRr: Int? = null,
+        val lkFl: Int? = null,
+        val lkFr: Int? = null,
+        val lkRl: Int? = null,
+        val lkRr: Int? = null,
+        val sys: Int? = null,
     )
 
     /**

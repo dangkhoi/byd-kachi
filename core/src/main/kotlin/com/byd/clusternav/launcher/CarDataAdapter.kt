@@ -49,8 +49,11 @@ class CarDataAdapter(
         private val table: HalBindingTable,
         private val want: Set<String>?,
         private val absent: HalAbsentCache,
-        private val now: Long,
+        val now: Long,
     ) {
+        /** Màn có bày [id] không — như [wanted] nhưng KHÔNG đếm [KachiPerf] (hỏi để quyết, không phải một lượt bỏ đọc). */
+        fun wants(id: String): Boolean = want?.contains(id) ?: true
+
         private fun wanted(id: String): Boolean {
             val w = want ?: return true
             if (id in w) return true
@@ -77,8 +80,26 @@ class CarDataAdapter(
             return v
         }
 
-        fun int(id: String, prev: Int?): Int? = read(id, prev) { table.readInt(id) }
-        fun dbl(id: String, prev: Double?): Double? = read(id, prev) { table.readDouble(id) }
+        fun int(id: String, prev: Int?): Int? =
+            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev, HalBindingTable::coerceInt)
+            else read(id, prev) { table.readInt(id) }
+        fun dbl(id: String, prev: Double?): Double? =
+            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev, HalBindingTable::coerceDouble)
+            else read(id, prev) { table.readDouble(id) }
+
+        /**
+         * Soát 2.88 Pass 2 — datum mà mã "không hợp lệ" nghĩa là *"chưa có số"* ([HalReadTables.INVALID_IS_PENDING]):
+         * hiện y như [read] (mã ⇒ `null` = "—"), nhưng cache vắng ghi *"getter CÓ trả lời"* nên KHÔNG nguội vì mã ấy —
+         * số thật đến là nhịp kế thấy ngay, không chờ một lượt thử lại 60 s … 10 phút. Getter vắng thật (sentinel /
+         * không tra được tên ⇒ [HalBindingTable.answerRaw] `null`) vẫn nguội như mọi datum.
+         */
+        private inline fun <T> pending(id: String, prev: T?, parse: (String?) -> T?): T? {
+            if (!wanted(id)) return prev
+            if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
+            val raw = table.answerRaw(id)
+            absent.record(id, raw != null, now)
+            return parse(raw?.takeUnless { HalBindingTable.isInvalidValue(id, it) })
+        }
 
         /**
          * Như [dbl] nhưng giá trị ĐỌC THẬT đi qua [via] (bộ làm mượt CÓ TRẠNG THÁI — [TripTimeSmoother]); lối *"không
@@ -251,16 +272,7 @@ class CarDataAdapter(
                 acModeRaw = g.int("ac_mode_auto", c.acModeRaw),
                 acWindAutoRaw = g.int("ac_wind_auto", c.acWindAutoRaw),   // 1.85 — chỉ báo gió auto (0 = AUTO)
             ),
-            tyres = CarStatus.Tyres(
-                pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),
-                pFrKpa = g.dbl("tyre_p_fr", t.pFrKpa),
-                pRlKpa = g.dbl("tyre_p_rl", t.pRlKpa),
-                pRrKpa = g.dbl("tyre_p_rr", t.pRrKpa),
-                tFlC = g.int("tyre_t_fl", t.tFlC),
-                tFrC = g.int("tyre_t_fr", t.tFrC),
-                tRlC = g.int("tyre_t_rl", t.tRlC),
-                tRrC = g.int("tyre_t_rr", t.tRrC),
-            ),
+            tyres = readTyres(g, t),
             body = CarStatus.Body(
                 windowLfPct = g.int("window_lf", b.windowLfPct),
                 windowRfPct = g.int("window_rf", b.windowRfPct),
@@ -300,6 +312,66 @@ class CarDataAdapter(
     }
 
     /**
+     * ═══ 2.88 · Lốp: áp suất + nhiệt + 13 mã trạng thái của xe, đọc CÓ ĐIỀU KIỆN (spec `kachi-288-tyre-car-state` R7) ═══
+     *
+     * Màu cụm của bánh x (`tyre_c_x`) luôn đọc cùng áp suất — đường phục hồi không bị gate bằng dữ liệu chỉ chính nó
+     * làm mới (CLAUDE.md §3): màu đổi khỏi *trắng* là nhịp kế đọc lại mã TPMS. Ba luật cắt lượt đọc:
+     *  1. Màu *trắng* ([TyreJudge.COLOUR_WHITE] = cụm đã phán bình thường ⇒ M1 dừng ngay) ⇒ KHÔNG đọc PS/LK của bánh ấy,
+     *     trả `null` (số cũ của một lượt phán đã hết hiệu lực không còn là sự thật — cùng lẽ *"đang nguội ⇒ null"*).
+     *  2. `tyre_sys` CHỈ đọc khi có ít nhất một bánh mà màu cụm **không** phải 1/2/3 hợp lệ: M1 không bao giờ hỏi SYS,
+     *     nên cụm đã tô vàng/đỏ thì SYS là lượt đọc vô ích (soát 2.88 regress-2).
+     *  3. Mã TPMS còn cần đọc (PS · LK · SYS) GIỮ số cũ tối đa [TPMS_HOLD_MS] (≈ mỗi 3 nhịp chậm 10 s), xem [tpmsDue];
+     *     chưa có số cũ (lần đầu · vừa rời *trắng*) ⇒ đọc NGAY, nên chữ lý do không trễ một nhịp nào khi cụm vừa đổi màu.
+     *
+     * Ngân sách K1 (< 150 lượt/phút) đo trên màn MẶC ĐỊNH (`w_board` có lốp ⇒ MỌI người dùng bố cục mặc định đều
+     * trả giá này, không chỉ người chọn chip) — [ĐO] `TyreChipTest` R7 K1, xem bảng §4.5 của spec.
+     */
+    private fun readTyres(g: Gate, t: CarStatus.Tyres): CarStatus.Tyres {
+        val cFl = g.int("tyre_c_fl", t.cFl); val cFr = g.int("tyre_c_fr", t.cFr)
+        val cRl = g.int("tyre_c_rl", t.cRl); val cRr = g.int("tyre_c_rr", t.cRr)
+        val due = tpmsDue(g.now, TyreIds.RAW_STATES.all(g::wants))
+        fun state(id: String, prev: Int?) = if (due || prev == null) g.int(id, prev) else prev
+        fun ifNeed(c: Int?, id: String, prev: Int?) = if (c != TyreJudge.COLOUR_WHITE) state(id, prev) else null
+        val clusterJudgedAll = listOf(cFl, cFr, cRl, cRr).all { it in CLUSTER_COLOURS }
+        return CarStatus.Tyres(
+            pFlKpa = g.dbl("tyre_p_fl", t.pFlKpa),
+            pFrKpa = g.dbl("tyre_p_fr", t.pFrKpa),
+            pRlKpa = g.dbl("tyre_p_rl", t.pRlKpa),
+            pRrKpa = g.dbl("tyre_p_rr", t.pRrKpa),
+            tFlC = g.int("tyre_t_fl", t.tFlC),
+            tFrC = g.int("tyre_t_fr", t.tFrC),
+            tRlC = g.int("tyre_t_rl", t.tRlC),
+            tRrC = g.int("tyre_t_rr", t.tRrC),
+            cFl = cFl, cFr = cFr, cRl = cRl, cRr = cRr,
+            psFl = ifNeed(cFl, "tyre_ps_fl", t.psFl), psFr = ifNeed(cFr, "tyre_ps_fr", t.psFr),
+            psRl = ifNeed(cRl, "tyre_ps_rl", t.psRl), psRr = ifNeed(cRr, "tyre_ps_rr", t.psRr),
+            lkFl = ifNeed(cFl, "tyre_lk_fl", t.lkFl), lkFr = ifNeed(cFr, "tyre_lk_fr", t.lkFr),
+            lkRl = ifNeed(cRl, "tyre_lk_rl", t.lkRl), lkRr = ifNeed(cRr, "tyre_lk_rr", t.lkRr),
+            sys = if (clusterJudgedAll) null else state("tyre_sys", t.sys),
+        )
+    }
+
+    /**
+     * Luật 3 của [readTyres]: nhịp này có đọc lại mã TPMS không. Theo **ĐỒNG HỒ**, không đếm nhịp (soát 2.88 Pass 2):
+     * mã giữ lại không bao giờ già quá [TPMS_HOLD_MS]. Bản đếm nhịp giữ được một mã cũ HÀNG GIỜ: vòng poll dừng khi màn
+     * khuất (`repeatOnLifecycle(STARTED)`) mà bộ đếm + [CarStatus] cũ vẫn còn, nên lượt đầu khi màn quay lại có thể giữ
+     * PS/LK/SYS của trước lúc khuất thêm 2 nhịp ⇒ xe không có kênh màu cụm mà lốp đã non trong lúc đó vẫn XANH (M6) tới
+     * ~20 s. Cùng lẽ khi lốp rời màn rồi bày lại (đổi hồ sơ / đổi bố cục): nhịp không bày ĐỦ 13 mã ⇒ quên mốc ⇒ lần bày
+     * đủ kế đọc NGAY. Nhịp ấy KHÔNG ép đọc: không bề mặt nào vẽ mã thô khi chưa bày đủ bốn bánh (ô lốp lẻ cũ chỉ in số),
+     * và mã chưa từng có vẫn đọc ngay qua nhánh `prev == null`. Đồng hồ lùi ⇒ đọc (không bao giờ khoá).
+     */
+    private fun tpmsDue(now: Long, showingAll: Boolean): Boolean {
+        if (!showingAll) { tpmsReadAt = null; return false }
+        val last = tpmsReadAt
+        if (last != null && now - last in 0 until TPMS_HOLD_MS) return false
+        tpmsReadAt = now
+        return true
+    }
+
+    /** Mốc lượt đọc mã TPMS gần nhất khi màn bày đủ lốp; `null` = chưa có / vừa không bày ⇒ nhịp kế đọc ngay. */
+    private var tpmsReadAt: Long? = null
+
+    /**
      * Giá trị THẬT của các nút đang hiện, giữ giá trị CŨ cho nút không còn trong [controlDemand] (một nhịp giao
      * thời không nên xoá về "—"). Nút đọc ra `null` (off-car / getter chưa provision) ⇒ **loại khỏi map** để ô lùi
      * về mức RAM thay vì hiện số bịa. Đọc qua [HalBindingTable.readState] — cùng đường mà nút ± dùng ở [ControlTileFactory].
@@ -327,5 +399,20 @@ class CarDataAdapter(
             if (v != null) out[id] = v   // đọc không ra ⇒ GIỮ giá trị cũ nếu có, không ghi đè bằng bịa
         }
         return out
+    }
+
+    private companion object {
+        /**
+         * Tuổi tối đa của một mã TPMS giữ lại (luật 3 của [readTyres], [tpmsDue]): 25 s = 2,5 nhịp chậm 10 s ⇒ trên vòng
+         * poll thật nó rơi đúng **mỗi 3 nhịp** (nhịp 20 s giữ, nhịp 30 s đọc — dư ±5 s cho trễ của chính lượt đọc).
+         * [ĐO off-car 2026-10-04, `TyreChipTest` R7 K1, màn mặc định, gateway trả lời mọi lượt đọc] tổng lượt đọc/phút
+         * cho các ca màu cụm (trắng · đỏ · mã lạ): mỗi nhịp = 126 · 174 · 180; mỗi 2 nhịp = 126 · **150** · 153; mỗi 3
+         * nhịp = 126 · 142 · 144 ⇒ chỉ 3 nhịp giữ mọi ca < 150 (K1). Chữ lý do / lời phán dự phòng trễ tối đa ~30 s —
+         * cụm đồng hồ của xe vẫn báo ngay.
+         */
+        const val TPMS_HOLD_MS = 25_000L
+
+        /** Màu cụm HỢP LỆ (1 trắng · 2 vàng · 3 đỏ) — luật M1 dừng ở đó, không hỏi SYS. */
+        val CLUSTER_COLOURS = setOf(TyreJudge.COLOUR_WHITE, TyreJudge.COLOUR_YELLOW, TyreJudge.COLOUR_RED)
     }
 }

@@ -83,8 +83,10 @@ class CapabilityPickerTest {
             // ⚠ 2026-09-25: **64** đọc (owner gỡ 7 datum chết) · nút giữ 33 · gói lệnh giữ 2.
             // ⚠ UX5b 2026-09-27: **66** đọc (+2 datum ghế PHỤ — cùng getter đã ĐO, khác `seatID` 2). Nút/gói không
             // đổi: hai nút ghế phụ đã có từ B10, lượt này chúng chỉ được nối `readKey`.
-            66 + 33 + 2 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
-            "mục rời theo lĩnh vực phải còn nguyên 66 đọc + 33 nút + 2 gói lệnh (trừ mã ẩn có lý do)",
+            // ⚠ 2.88 (04/10): **79** đọc (+13 mã trạng thái THÔ của lốp) — cả 13 cùng vào bảng ẩn ⇒ số mục rời HIỆN
+            // không đổi; phép trừ dưới đây nói đúng điều đó thay vì nới con số.
+            79 + 33 + 2 - CapabilityCatalog.HIDDEN_FROM_PICKER.size, after.size,
+            "mục rời theo lĩnh vực phải còn nguyên 79 đọc + 33 nút + 2 gói lệnh (trừ mã ẩn có lý do)",
         )
     }
 

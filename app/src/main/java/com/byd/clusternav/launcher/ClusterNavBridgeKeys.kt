@@ -7,7 +7,9 @@ import com.byd.clusternav.modules.voicekey.AssistantLauncher
 import com.byd.clusternav.modules.voicekey.KeySourceRecorder
 import com.byd.clusternav.modules.voicekey.VoiceKeyLearnBus
 import com.byd.clusternav.voicekey.KeySourceEntry
+import com.byd.clusternav.voicekey.KeySourceKind
 import com.byd.clusternav.voicekey.VoiceKeyBinding
+import com.byd.clusternav.voicekey.VoiceKeyCustomButton
 import com.byd.clusternav.setVoiceConfirmIds
 import com.byd.clusternav.setVoiceMicSource
 import com.byd.clusternav.voiceConfirmIds
@@ -116,15 +118,17 @@ fun ClusterNavBridge.bindings(): List<VoiceKeyBinding> = Prefs.voiceKeyBindings(
 
 /**
  * "Thêm gán" — lặp lại `MainActivity.kt:938–975` (NƠI DUY NHẤT ghi cấu hình gán):
- *  1. [Prefs.addVoiceKeyBinding] trả về spec CŨ của cùng mã phím (null = mới, = spec mới ⇒ đã có sẵn,
+ *  1. [Prefs.addVoiceKeyBinding] trả về spec CŨ của cùng (mã phím, nguồn) (null = mới, = spec mới ⇒ đã có sẵn,
  *     khác ⇒ vừa GHI ĐÈ) — bridge trả nguyên giá trị đó để tầng UI nói đúng việc đã xảy ra.
  *  2. Chỉ khi cấu hình **thật sự đổi** (`replaced != targetSpec`) và đích là Gemini
  *     ([AssistantLauncher.isGeminiVoiceSpec]) mới chạy công thức đặt trợ lý hệ thống = Google/Gemini
  *     trên thread nền — để `keyevent 231` route tới TRỢ LÝ chứ không mở app. Bấm lại đúng cặp đang có
  *     thì KHÔNG bung thread + phiên dadb + toast (đúng tác dụng phụ mà F3 đã dời khỏi listener).
+ *
+ * 2.88 · R2: [source] = nút vật lý của mục đã chọn ([ButtonOption.source]); `null` = dòng không nguồn như 2.87.
  */
-fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String? {
-    val replaced = Prefs.addVoiceKeyBinding(app, keyCode, targetSpec)
+fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String? {
+    val replaced = Prefs.addVoiceKeyBinding(app, keyCode, targetSpec, source)
     VoiceWakeService.sync(app)   // FIX286 · VK2 — gán/đổi đích phím ⇒ `:wake` vào/ra HOLD theo `keyHold` mới
     if (replaced != targetSpec && AssistantLauncher.isGeminiVoiceSpec(targetSpec)) {
         toast(BridgeMsg.SETTING_GEMINI_ASSISTANT)
@@ -143,9 +147,9 @@ fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String? {
     return replaced
 }
 
-/** Nút "Xoá" của một dòng gán — lặp lại `MainActivity.kt:795–799`. */
-fun ClusterNavBridge.removeBinding(keyCode: Int) {
-    Prefs.removeVoiceKeyBinding(app, keyCode)
+/** Nút "Xoá" của một dòng gán — lặp lại `MainActivity.kt:795–799`. 2.88 · R4: xoá đúng (mã, nguồn) của dòng đó. */
+fun ClusterNavBridge.removeBinding(keyCode: Int, source: KeySourceKind? = null) {
+    Prefs.removeVoiceKeyBinding(app, keyCode, source)
     VoiceWakeService.sync(app)   // FIX286 · VK2 — gỡ dòng gán Kachi nghe cuối cùng (wake TẮT) ⇒ `:wake` đứng xuống, nhả mô hình
     toast(BridgeMsg.BINDING_REMOVED)
 }
@@ -174,14 +178,15 @@ fun ClusterNavBridge.buttonPresetCodes(): List<Int> = listOf(328, 231, 219, 85, 
 /**
  * Danh sách NÚT đầy đủ = preset + nút tự học — lặp lại `MainActivity.kt:719` (`voiceKeyButtonList`),
  * đúng thứ tự đó. Mục preset có [ButtonOption.customName] = `null` (tầng Settings tra tên theo mã);
- * mục tự học mang tên **người dùng tự đặt**, không phải chữ của dự án.
+ * mục tự học mang tên **người dùng tự đặt**, không phải chữ của dự án — và (2.88 · R2) nguồn của nút, để hộp Thêm gán
+ * liệt kê nút núm / nút vô-lăng như hai nút riêng.
  */
 fun ClusterNavBridge.buttonOptions(): List<ButtonOption> =
     buttonPresetCodes().map { ButtonOption(it) } +
-        Prefs.voiceKeyCustomButtons(app).map { ButtonOption(it.second, it.first) }
+        Prefs.voiceKeyCustomButtons(app).map { ButtonOption(it.keyCode, it.name, it.source) }
 
-/** Chỉ các nút TỰ HỌC (preset không xoá được) — `MainActivity.kt:900`; cặp (tên người dùng đặt, mã). */
-fun ClusterNavBridge.customButtons(): List<Pair<String, Int>> = Prefs.voiceKeyCustomButtons(app)
+/** Chỉ các nút TỰ HỌC (preset không xoá được) — `MainActivity.kt:900`; (tên người dùng đặt, mã, nguồn?). */
+fun ClusterNavBridge.customButtons(): List<VoiceKeyCustomButton> = Prefs.voiceKeyCustomButtons(app)
 
 /**
  * "Học phím mới" — lặp lại `MainActivity.kt:909–914`: bật cờ `voicekey_learn`, cấp Hỗ trợ nếu còn
@@ -215,7 +220,8 @@ fun ClusterNavBridge.stopLearn() {
  * L7 · KEY-SOURCE-SPLIT tầng 1 — số đo của lần bấm vừa HỌC (chữ ký phím + nhãn nguồn HAL), cho dòng chi tiết dưới tên
  * nút trong hộp đặt tên. `null` = chưa có (dịch vụ Hỗ trợ chưa bind / bộ đo không chạy). `reading == null` = đang đo.
  *
- * Chỉ ĐỌC vòng đệm RAM của [KeySourceRecorder] — không đổi danh tính gán, cách khớp hay JSON (tầng 2 mới làm).
+ * Chỉ ĐỌC vòng đệm RAM của [KeySourceRecorder]. 2.88 (tầng 2): hộp Học phím đọc nguồn ở đây lúc bấm Lưu để lưu nút
+ * kèm nguồn ([addCustomButton]).
  */
 fun ClusterNavBridge.learnedKeySource(code: Int): KeySourceEntry? = KeySourceRecorder.journal.lastLearned(code)
 
@@ -229,9 +235,12 @@ fun ClusterNavBridge.learnedKeySource(code: Int): KeySourceEntry? = KeySourceRec
  * thì hai màn vẫn hiện cùng một nhãn cho cùng một nút.
  *
  * Học phím CHƯA gán gì — người dùng còn phải chọn app rồi [addBinding] (`MainActivity.kt:817–819`).
+ *
+ * 2.88 · R1: [source] = nguồn đọc được của lần học (tầng Settings quyết qua `KeySourceProbes.verdict`); `null` ⇒ lưu
+ * như 2.87. Học lại cùng (mã, nguồn) ⇒ thay tên; cùng mã khác nguồn ⇒ hai nút riêng.
  */
-fun ClusterNavBridge.addCustomButton(displayName: String, code: Int) {
-    Prefs.addVoiceKeyCustomButton(app, displayName, code)
+fun ClusterNavBridge.addCustomButton(displayName: String, code: Int, source: KeySourceKind? = null) {
+    Prefs.addVoiceKeyCustomButton(app, displayName, code, source)
     toast(BridgeMsg.BUTTON_SAVED)
 }
 
@@ -242,9 +251,11 @@ fun ClusterNavBridge.addCustomButton(displayName: String, code: Int) {
  * mà AOSP `android-10.0.0_r47` không bao giờ phát (`Spinner` không kế thừa `AbsListView`) ⇒ owner
  * chưa từng có đường xoá nút tự học (backlog F4). Bridge phơi hàm ra để Settings mới nối được nút
  * "Xoá" thật — đây là **sửa một lỗi đã biết**, không phải đổi hành vi đang chạy.
+ *
+ * 2.88 · R4: xoá đúng (mã, nguồn) — nút cùng mã khác nguồn giữ nguyên.
  */
-fun ClusterNavBridge.removeCustomButton(code: Int) {
-    Prefs.removeVoiceKeyCustomButton(app, code)
+fun ClusterNavBridge.removeCustomButton(code: Int, source: KeySourceKind? = null) {
+    Prefs.removeVoiceKeyCustomButton(app, code, source)
     toast(BridgeMsg.BUTTON_REMOVED)
 }
 

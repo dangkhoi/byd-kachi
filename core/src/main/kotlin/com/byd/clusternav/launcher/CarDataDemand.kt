@@ -69,10 +69,10 @@ object CarDataDemand {
         // ⚠ 2026-09-25: `tailgate_status` gỡ ⇒ widget này chỉ còn BỐN cửa (cốp không có đường đọc nào).
         "w_car" to setOf("door_lf", "door_rf", "door_lr", "door_rr"),
         // ⚠ [SOÁT P1-1] Bốn mã NHIỆT lốp có mặt dù ô tổng hợp chỉ *in ra* áp suất: bộ vẽ chuyền **cả cụm**
-        // `CarStatus.Tyres` cho `TyreBoard.readings(...)` rồi đọc `status.alert` của kết quả. Hôm nay phép xét
-        // ấy chỉ dùng áp suất — nhưng nó là quyết định của MỘT LỚP KHÁC, và ngày ai đó cho nhiệt vào ngưỡng thì
-        // ô này sẽ âm thầm xét bằng một con số đóng băng. Chép ranh giới theo **thứ được chuyền đi**, không
-        // theo thứ đang được in ra; giá là 4 lượt đọc mỗi nhịp chậm khi ô có trên màn.
+        // `CarStatus.Tyres` cho `TyreBoard.readings(...)` rồi đọc mức nặng của kết quả. Chép ranh giới theo **thứ
+        // được chuyền đi**, không theo thứ đang được in ra; giá là 4 lượt đọc mỗi nhịp chậm khi ô có trên màn.
+        // 2.88: phép xét màu KHÔNG còn ngưỡng nào — nó đọc 13 mã trạng thái của xe, và các mã ấy vào nhu cầu qua
+        // [COMPANION] (bạn đồng hành của từng `tyre_p_*`), nên không phải chép tay ở đây.
         "w_board" to setOf(
             "soc", "ev_range_km", "pm25_value", "pm25_level",
             "tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr",
@@ -101,6 +101,9 @@ object CarDataDemand {
         // ([ĐO] 27 bài đỏ, xem KDoc `TopStripConfig.BUILT_IN`). Hằng `const` thì được: nó được nội tuyến lúc biên dịch.
         TopStripConfig.SEAT to setOf("seat_heat_state", "seat_vent_state"),
         TopStripConfig.SEAT_R to setOf("seat_heat_state_r", "seat_vent_state_r"),
+        // 2.88 · chip ÁP SUẤT LỐP: bốn số áp suất; 13 mã trạng thái để phán màu đi theo qua [COMPANION]. Chép tay bốn
+        // mã (không `TyreIds.PRESSURE`) cùng lẽ hai dòng ghế ở trên; `CarDataDemandTest` đo bản chép này.
+        TopStripConfig.TYRES to setOf("tyre_p_fl", "tyre_p_fr", "tyre_p_rl", "tyre_p_rr"),
     )
 
     /**
@@ -120,7 +123,15 @@ object CarDataDemand {
      */
     val COMPANION: Map<String, Set<String>> = mapOf(
         "ac_wind" to setOf("ac_wind_auto"),
-    )
+    ) + TyreIds.COMPANIONS
+
+    // ⚠ 2.88 · R7 — bạn đồng hành của áp suất lốp (`tyre_p_x` → màu cụm + trạng thái áp + rò khí của bánh x +
+    // trạng thái hệ thống). MỘT dòng này phủ MỌI bề mặt bày lốp: `w_tire` · `w_board` · nhóm `g_tyres` · chip *Áp suất
+    // lốp*. ⚠ `w_board` nằm trong bố cục MẶC ĐỊNH ⇒ MỌI người dùng bố cục mặc định đều đọc thêm các mã này, không chỉ
+    // người chọn chip. Ngân sách K1 (< 150 lượt/phút) giữ ở [CarDataAdapter] (`readTyres`: màu cụm luôn đọc · PS/LK
+    // bỏ khi cụm nói trắng · SYS chỉ khi có bánh cụm không phán · mã TPMS giữ tối đa 25 s ≈ mỗi 3 nhịp) — [ĐO off-car]
+    // `TyreChipTest` R7 K1 trên màn mặc định: 102 lượt/phút trước 2.88 ⇒ 126 (cả bốn trắng) · 144 (màu cụm 0 — soát
+    // Pass 2: không nguội) · 123 (không kênh màu, FAILED ⇒ nguội) · 142 (cả bốn đỏ) · 144 (mã màu lạ).
 
     /**
      * Tập `id` datum mà [state] thật sự bày ra, hoặc `null` = *"không tính được ⇒ đọc hết"* (xem KDoc lớp).

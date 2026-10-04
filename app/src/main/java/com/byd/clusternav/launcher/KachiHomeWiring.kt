@@ -427,7 +427,8 @@ internal fun collectHome(
         owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             container.carStatusRepository.start()
             try {
-                container.carStatusRepository.status.collect { viewModel.setCarStatus(it) }
+                // 2.88 kênh 2: dòng `TYRE raw …` chỉ khi ĐỔI (`TyreRawLog`) — bằng chứng lốp từ đời xe khác không cần adb.
+                container.carStatusRepository.status.collect { TyreRawLog.note(it.tyres); viewModel.setCarStatus(it) }
             } finally {
                 container.carStatusRepository.stop()
             }

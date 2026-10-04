@@ -297,7 +297,7 @@ object CapabilityCatalog {
         // `CapabilityCatalog`/`pick`/`kindOf`. Nút nổi + nhóm Cài đặt › Chiếu màn lên cụm chạy độc lập.
         // Giữ một mục ẩn cho mã không còn tồn tại là ghim `HIDDEN_FROM_PICKER.size` vào một thứ hư — cùng lẽ đã
         // ghi cho `hood` ở 1.85. Ô của ai đã đặt `cast` rụng qua `WorkspaceState.sanitized()`.
-    ) + TYRE_SINGLES.associateWith { TYRE_SINGLE_WHY }
+    ) + TYRE_SINGLES.associateWith { TYRE_SINGLE_WHY } + TyreIds.RAW_STATES.associateWith { TyreIds.HIDDEN_WHY }
 
     /** [CapabilityKind] của [id], hoặc `null` nếu mã không thuộc bộ đăng ký nào (mã cũ đã xoá / rác trong prefs). */
     fun kindOf(id: String): CapabilityKind? = when {

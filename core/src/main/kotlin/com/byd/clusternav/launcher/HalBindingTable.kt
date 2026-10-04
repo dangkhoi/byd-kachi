@@ -50,7 +50,16 @@ class HalBindingTable(
      * Giá trị THÔ (chuỗi) của [id] hoặc null (unavailable/off-car/NEEDS_CAR/sentinel). Giá trị "không hợp lệ" riêng
      * của từng getter ([INVALID_VALUES], vd tầm điện 1000/1023) cũng ⇒ null, để KHÔNG hiện số vô nghĩa lên ô.
      */
-    fun readRaw(id: String): String? {
+    fun readRaw(id: String): String? = answerRaw(id)?.takeUnless { isInvalidValue(id, it) }
+
+    /**
+     * Lời đáp của getter **TRƯỚC** phép lọc [INVALID_VALUES] — sentinel / không đường đọc / off-car vẫn ⇒ `null`.
+     *
+     * Soát 2.88 Pass 2: chỉ tầng poll dùng, để tách *"getter CÓ, đang trả mã chưa-có-số"* (vd màu lốp cụm 0, áp suất
+     * 4094) khỏi *"getter vắng"* — [HalAbsentCache] chỉ được cho nguội cái sau ([HalReadTables.INVALID_IS_PENDING]).
+     * Mọi chỗ HIỂN THỊ đi [readRaw] (đã lọc).
+     */
+    fun answerRaw(id: String): String? {
         val p = readPathOf(id) ?: return null
         val raw = when (val r = routeOf(p.key)) {
             is BindingRoute.NamedMethod -> gateway.getter(r.fqn, r.method, p.arg)
@@ -62,9 +71,7 @@ class HalBindingTable(
             is BindingRoute.Local -> gateway.localGet(r.target, r.method, p.arg)
             BindingRoute.None -> null
         } ?: return null
-        if (rawIsSentinel(raw)) return null
-        val invalid = INVALID_VALUES[p.id] ?: return raw
-        return if (coerceInt(raw)?.let { it in invalid } == true) null else raw
+        return raw.takeUnless { rawIsSentinel(it) }
     }
 
     /**
@@ -236,6 +243,12 @@ class HalBindingTable(
         /** Giá trị "không hợp lệ" riêng từng getter ⇒ unavailable — xem [HalReadTables.INVALID_VALUES]. */
         val INVALID_VALUES: Map<String, Set<Int>> get() = HalReadTables.INVALID_VALUES
 
+        /** [raw] (lời đáp của [answerRaw]) là một mã [INVALID_VALUES] của datum [id] ⇒ không phải con số để hiện. */
+        fun isInvalidValue(id: String, raw: String): Boolean {
+            val invalid = readPathOf(id)?.id?.let { INVALID_VALUES[it] } ?: return false
+            return coerceInt(raw)?.let { it in invalid } == true
+        }
+
         /** FQN thiết bị feature-id cho một [spec] ĐỌC: ưu tiên [TelemetrySpec.halDevice], nếu không thì theo [Domain]. */
         fun featureDeviceFor(spec: TelemetrySpec): String =
             spec.halDevice?.let { deviceFqn(it) } ?: featureDeviceFqn(spec.domain)
@@ -246,8 +259,31 @@ class HalBindingTable(
         /** rc HAL "giá trị không hợp lệ" (khác NOT_PROVISIONED đúng 3). */
         const val SENTINEL_INVALID = -2147482645L
 
-        /** rc là sentinel không-provisioned/không-hợp-lệ ⇒ coi như unavailable. */
-        fun isSentinelRc(rc: Long?): Boolean = rc == SENTINEL_NOT_PROVISIONED || rc == SENTINEL_INVALID
+        /**
+         * rc là một mã lệnh HỎNG của khung ⇒ coi như unavailable. Phủ CẢ DẢI `FAILED -2147482648 · BUSY -2147482647 ·
+         * TIMEOUT -2147482646 · INVALID_VALUE -2147482645` (2.88 · R8 — [ĐO source] jadx-tmap
+         * `tyre/BYDAutoTyreDevice.java:31-35`; cùng bộ số ở `ac/BYDAutoAcDevice.java:11,15` ·
+         * `bodywork/BYDAutoBodyworkDevice.java:185,189`): bản trước chỉ bắt hai đầu dải, nên một
+         * getter trả BUSY/TIMEOUT lọt qua như một giá trị thật (vd *"mã -2147482647"*, hoặc tệ hơn: một lệnh ghi bị
+         * coi là đã nhận).
+         */
+        fun isSentinelRc(rc: Long?): Boolean = rc != null && rc in SENTINEL_NOT_PROVISIONED..SENTINEL_INVALID
+
+        /** `*_COMMAND_BUSY` / `*_COMMAND_TIMEOUT` — [ĐO source] jadx-tmap `tyre/BYDAutoTyreDevice.java:31,35`. */
+        const val SENTINEL_BUSY = -2147482647L
+        const val SENTINEL_TIMEOUT = -2147482646L
+
+        /**
+         * NGHĨA của một mã sentinel, ASCII, cho lời đáp `getid` của cầu kiểm thử (soát 2.88 regress-5). Tách CƠ CHẾ khỏi
+         * QUY KẾT (CLAUDE.md §2): chỉ `FAILED` mới được đọc thành *"trim này không có"*; BUSY/TIMEOUT là **tạm thời** —
+         * kết luận "không có" từ một lượt bận là ghi sai bằng chứng lớp 1. `null` = [rc] không phải sentinel.
+         */
+        fun sentinelMeaning(rc: Long?): String? = when (rc) {
+            SENTINEL_NOT_PROVISIONED -> "FAILED - feature khong co tren trim nay (hoac HAL tu choi)"
+            SENTINEL_BUSY, SENTINEL_TIMEOUT -> "BUSY/TIMEOUT tam thoi - chay lai, CHUA ket luan duoc trim"
+            SENTINEL_INVALID -> "INVALID_VALUE - gia tri khong hop le"
+            else -> null
+        }
 
         /**
          * Tiền tố `bindingKey` đi đường [BindingRoute.Local] (Android, không qua HAL BYDAuto). `LocationManager` (GPS)

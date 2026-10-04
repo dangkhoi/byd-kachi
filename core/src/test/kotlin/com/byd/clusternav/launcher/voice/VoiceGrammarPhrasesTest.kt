@@ -105,7 +105,7 @@ class VoiceGrammarPhrasesTest {
             val labels = listOfNotNull(c.label, c.labelEn, c.short, c.shortEn) + VoiceSynonyms.CONTROL[c.id].orEmpty()
             assertTrue(sayable(labels), "nút `${c.id}` (${c.label}) không có cụm nào nói được")
         }
-        TelemetryRegistry.ALL.forEach { t ->
+        VoiceTelemetry.SPOKEN.forEach { t ->   // 2.88: trừ 13 mã lốp thô — [VoiceTelemetry]
             val labels = listOfNotNull(t.label, t.labelEn, t.short, t.shortEn) + VoiceSynonyms.TELEMETRY[t.id].orEmpty()
             assertTrue(sayable(labels), "datum `${t.id}` (${t.label}) không có cụm nào nói được")
         }
@@ -326,6 +326,8 @@ class VoiceGrammarPhrasesTest {
         //     và `heat` = 1 (còn `vent` = 0 — đúng lý do người em song sinh `"Pass. vent"` của nó nằm ở vế LOẠI).
         //     Đây là lời nhắc rằng ranh giới giữa hai vế là **tệp từ điển**, không phải ngôn ngữ của nhãn.
         // Đọc từ **actual** của chính bài này, không chép tay.
+        // 2.88 LỐP THEO XE: 13 mã trạng thái THÔ của lốp vào `TelemetryRegistry` nhưng KHÔNG vào ngữ pháp
+        // ([VoiceTelemetry.NOT_SPOKEN], soát 2.88 regress-3) ⇒ con số này KHÔNG đổi (lượt trước từng đo 400 → 413).
         const val EXPECTED_PHRASES_KEPT = 400
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
@@ -393,6 +395,7 @@ class VoiceGrammarPhrasesTest {
         // `Passenger seat heating level` (hai `labelEn` của hai datum ghế phụ UX5b).
         // `Pass. heat` **không** nằm ở đây: cả `pass` lẫn `heat` đều CÓ trong từ điển nên nó sang vế GIỮ — xem
         // [EXPECTED_PHRASES_KEPT].
+        // 2.88 LỐP THEO XE: không đổi — 13 mã lốp thô ngoài ngữ pháp ([VoiceTelemetry.NOT_SPOKEN]; từng đo 194 → 207).
         const val EXPECTED_PHRASES_DROPPED = 194
 
         /**
@@ -477,6 +480,8 @@ class VoiceGrammarPhrasesTest {
         // điều kiểm được: mọi từ của năm cụm ấy (`mức` · `ghế` · `mát` · `sưởi` · `phụ` · `pass` · `heat`) đã có mặt
         // từ trước qua các nhãn sẵn có (*"Mức ghế mát"* · *"Mát ghế phụ"* · *"Seat heat"* · *"Passenger…"*), nên họ
         // thanh điệu của chúng đã nở xong từ lượt trước. Đọc từ **actual** của chính bài này.
+        // 2.88 LỐP THEO XE: không đổi — 13 mã lốp thô ngoài ngữ pháp ([VoiceTelemetry.NOT_SPOKEN]); lượt trước từng đo
+        // 2028 → 2065 (+37: 13 cụm + 24 từ đơn `màu` · `trạng` · `thái` · `rò` · `hệ` · `thống` · `giám` · `sát`…).
         const val EXPECTED_ENTRIES = 2028
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:

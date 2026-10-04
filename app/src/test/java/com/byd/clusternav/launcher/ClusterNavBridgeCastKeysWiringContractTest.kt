@@ -186,8 +186,8 @@ class ClusterNavBridgeCastKeysWiringContractTest {
      */
     @Test
     fun `cong thuc Gemini chi chay khi cau hinh that su doi`() {
-        val b = body(keys(), "fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String): String?")
-        assertTrue("Prefs.addVoiceKeyBinding(app, keyCode, targetSpec)" in b, "phải ghi đúng khoá voicekey_bindings")
+        val b = body(keys(), "fun ClusterNavBridge.addBinding(keyCode: Int, targetSpec: String, source: KeySourceKind? = null): String?")
+        assertTrue("Prefs.addVoiceKeyBinding(app, keyCode, targetSpec, source)" in b, "phải ghi đúng khoá voicekey_bindings (kèm nguồn — 2.88)")
         assertTrue(
             Regex("""replaced\s*!=\s*targetSpec\s*&&""").containsMatchIn(b),
             "phải gác bằng `replaced != targetSpec` — bấm lại đúng cặp đang có thì KHÔNG chạy recipe",
@@ -227,9 +227,9 @@ class ClusterNavBridgeCastKeysWiringContractTest {
      */
     @Test
     fun `nut tu hoc luu nguyen nhan nhan duoc`() {
-        val b = body(keys(), "fun ClusterNavBridge.addCustomButton(displayName: String, code: Int)")
+        val b = body(keys(), "fun ClusterNavBridge.addCustomButton(displayName: String, code: Int, source: KeySourceKind? = null)")
         assertTrue(
-            "Prefs.addVoiceKeyCustomButton(app, displayName, code)" in b,
+            "Prefs.addVoiceKeyCustomButton(app, displayName, code, source)" in b,
             "phải lưu nguyên chuỗi nhãn của tầng Settings, không tự ghép khuôn thứ hai",
         )
     }

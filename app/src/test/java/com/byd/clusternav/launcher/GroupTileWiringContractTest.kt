@@ -86,9 +86,6 @@ class GroupTileWiringContractTest {
                 "ô vẽ Canvas của nhóm *Cửa & khoang* (U9 pha 2) — đã quét riêng qua `door` (nó hỏi " +
                     "`GroupBoard.doorPlan` để biết bộ phận nào đang mở, thay vì tự đoán từ mã datum)",
             "ControlDockView.kt" to "thanh nút: chỉ hỏi tóm tắt — đã quét riêng trong GroupPickerWiringContractTest",
-            // 2.87 · R-OP3 (2026-10-03): chỉ ĐỌC nền + mực ô cảnh báo qua `GroupTileView.fillOf/tintOf` để tính sàn
-            // đọc được khi khay dưới ô mờ đi — không dựng ô nào, không gắn nền nào (bài KachiChromeContractTest canh).
-            "KachiChrome.kt" to "đọc fillOf/tintOf để tính sàn độ đục nền — không dựng ô nhóm",
             // 2.87 · L5 WIDGET-FIT-ALL (2026-10-03): khung khớp lưới widget chỉ NHẬN DIỆN ô nhóm (`is GroupTileView`)
             // để coi nó là ô TỰ lấp khung (không co bằng FitScale — co hai lần) — không dựng, không đọc GroupBoard.
             "FitGridLayout.kt" to "chỉ nhận diện GroupTileView là ô tự lấp khung (selfFitting) — không dựng ô nhóm",
@@ -233,9 +230,10 @@ class GroupTileWiringContractTest {
 
     @Test
     fun `tang ve nhom KHONG chua nguong nao`() {
-        // Ngưỡng non/căng/lệch (2.0 / 3.2 / 0.3 bar) và ngưỡng bụi thuộc :core. Số nào trong hai tệp vẽ cũng phải là
-        // số HÌNH HỌC/CỠ CHỮ, không được là số phán xét.
-        listOf("TyreBoard.LOW_BAR", "TyreBoard.HIGH_BAR", "TyreBoard.SPREAD_BAR", "Pm25Filter", "2.2").forEach {
+        // Ngưỡng bụi thuộc :core. Số nào trong hai tệp vẽ cũng phải là số HÌNH HỌC/CỠ CHỮ, không được là số phán xét.
+        // ⚠ 2.88: ba ngưỡng lốp cũ (`LOW_BAR`/`HIGH_BAR`/`SPREAD_BAR`) đã bị XOÁ khỏi `:core` (owner 04/10 "không hardcode
+        // số") — phép cấm chúng dời sang `TyreNoThresholdContractTest`, quét MỌI tệp main chứ không chỉ hai tệp này.
+        listOf("Pm25Filter", "2.2").forEach {
             assertFalse(tiles.contains(it), "tầng vẽ nhóm không được biết ngưỡng: $it")
             assertFalse(door.contains(it), "ô vẽ bảng cửa không được biết ngưỡng: $it")
         }

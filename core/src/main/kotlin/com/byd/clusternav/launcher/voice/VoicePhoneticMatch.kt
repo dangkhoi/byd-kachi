@@ -3,7 +3,6 @@ package com.byd.clusternav.launcher.voice
 import com.byd.clusternav.launcher.ActionMacros
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
-import com.byd.clusternav.launcher.TelemetryRegistry
 import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
 import com.byd.clusternav.launcher.voice.VoicePhoneticConfusions.Syl
 
@@ -265,7 +264,7 @@ internal object VoicePhoneticMatch {
             out.putIfAbsent(toks.joinToString(" ") { it.norm }, toks.map { VoicePhoneticConfusions.toneOf(it.raw) })
         }
         ControlRegistry.ALL.forEach { put(it.label); put(it.short) }
-        TelemetryRegistry.ALL.forEach { put(it.label); put(it.short) }
+        VoiceTelemetry.SPOKEN.forEach { put(it.label); put(it.short) }   // 2.88 — KDoc [VoiceTelemetry]
         ActionMacros.ALL.forEach { put(it.label) }
         LauncherActions.ALL.forEach { put(it.label) }
         out

@@ -64,8 +64,84 @@ object TopStripChips {
         // nhau sau lượt sửa thứ ba (CLAUDE.md §7).
         TopStripConfig.SEAT -> seatChip(id, Strings.t("Ghế lái", "Driver seat"), "ic-seat-left", status, labels)
         TopStripConfig.SEAT_R -> seatChip(id, Strings.t("Ghế phụ", "Passenger seat"), "ic-seat", status, labels)
+        // 2.88 · bốn số áp suất, mỗi số một màu theo lời phán của chính xe — xem [tyreChip].
+        TopStripConfig.TYRES -> tyreChip(status.tyres, units, labels)
         else -> datumChip(id, status, units, labels)
     }
+
+    /**
+     * ═══ 2.88 · CHIP ÁP SUẤT LỐP — `"2.4 2.4  2.6 2.6"`, mỗi số một màu (spec `kachi-288-tyre-car-state.html` R3/R4) ═══
+     *
+     * Thứ tự TT TP · ST SP: MỘT dấu cách trong cùng trục, HAI dấu cách giữa trục trước và trục sau (đọc như một hình
+     * xe nhìn từ trên). Số đi qua CHUNG bộ đổi đơn vị ([conv] → [UnitPrefs] của hồ sơ: bar 1 chữ số · kPa 0 · psi 1),
+     * KHÔNG in chữ đơn vị (chip là bề mặt hẹp nhất; đơn vị nằm ở câu trình đọc màn hình).
+     *
+     * Màu = [TyreBoard.readings] — nguồn phán DUY NHẤT (chip · bảng · nhóm · ô nhỏ cùng đọc): xanh = [ChipTone.ENERGY]
+     * (cùng mực chip năng lượng), vàng = [ChipTone.WARN], đỏ = [ChipTone.ALERT], xám = [ChipTone.NEUTRAL]. Bánh không có
+     * số in `"—"` mà VẪN tô màu xe phán (xe đo gián tiếp vẫn có thể có màu cụm). Cả bốn không số và cả bốn xám ⇒ MỘT
+     * dấu `"—"` (cùng kiểu mọi chip khác). Icon lấy màu nặng nhất; cả bốn xanh ⇒ xanh; còn lại trung tính.
+     *
+     * Chỉ đọc áp suất + mức nặng của [TyreReading] — KHÔNG đọc nhiệt (`tempC`), nên [CarDataDemand.CHIPS] chỉ khai bốn
+     * mã áp suất (bài `CarDataDemandRendererContractTest` canh đúng điều này).
+     */
+    private fun tyreChip(tyres: CarStatus.Tyres, units: UnitPrefs, labels: Boolean): ChipView {
+        val readings = TyreBoard.readings(tyres)
+        val label = Strings.t("Lốp", "Tyres")
+        val prefix = if (labels) "$label · " else ""
+        val unit = units.unitFor(Quantity.PRESSURE)
+        val nums = readings.map { rd -> rd.pressureKpa?.let { conv(it, Quantity.PRESSURE, units) } }
+        val icon = CapabilityGroups.TYRES.icon
+        if (nums.all { it == null } && readings.all { it.severity == TyreSeverity.NONE }) {
+            return ChipView(
+                prefix + TelemetryView.PLACEHOLDER, icon, ChipTone.NEUTRAL,
+                Strings.f("Áp suất lốp: {0}", "Tyre pressure: {0}", Strings.t("chưa đọc được", "not read yet")),
+            )
+        }
+        val sb = StringBuilder(prefix)
+        val runs = ArrayList<ChipRun>(4)
+        readings.forEachIndexed { i, rd ->
+            if (i > 0) sb.append(if (i == AXLE_SPLIT) AXLE_GAP else WHEEL_GAP)
+            val start = sb.length
+            sb.append(nums[i] ?: TelemetryView.PLACEHOLDER)
+            runs += ChipRun(start, sb.length, toneOf(rd.severity))
+        }
+        val worst = TyreBoard.worst(readings)
+        val tone = when {
+            worst.alert -> toneOf(worst)
+            readings.all { it.severity == TyreSeverity.OK } -> ChipTone.ENERGY
+            else -> ChipTone.NEUTRAL
+        }
+        val parts = readings.mapIndexed { i, rd ->
+            val value = nums[i]?.let { "$it $unit" } ?: Strings.t("chưa đọc được áp suất", "pressure not read yet")
+            val corner = rd.corner.displayLabel
+            when (rd.severity) {
+                TyreSeverity.OK -> Strings.f("{0} {1}, bình thường", "{0} {1}, normal", corner, value)
+                TyreSeverity.NONE -> Strings.f("{0} {1}, chưa rõ", "{0} {1}, unknown", corner, value)
+                TyreSeverity.WARN -> Strings.f("{0} {1}, chú ý: {2}", "{0} {1}, caution: {2}", corner, value, rd.reason)
+                TyreSeverity.ALERT -> Strings.f("{0} {1}, cảnh báo: {2}", "{0} {1}, alert: {2}", corner, value, rd.reason)
+            }
+        }
+        return ChipView(
+            sb.toString(), icon, tone,
+            Strings.f("Áp suất lốp: {0}", "Tyre pressure: {0}", parts.joinToString("; ")),
+            runs,
+        )
+    }
+
+    /** Mức nặng của một bánh → sắc thái chip. Một bảng, vét cạn (không `else`). */
+    private fun toneOf(sev: TyreSeverity): ChipTone = when (sev) {
+        TyreSeverity.OK -> ChipTone.ENERGY
+        TyreSeverity.WARN -> ChipTone.WARN
+        TyreSeverity.ALERT -> ChipTone.ALERT
+        TyreSeverity.NONE -> ChipTone.NEUTRAL
+    }
+
+    /** Khe giữa hai bánh CÙNG trục (một dấu cách) và giữa trục trước ↔ trục sau (hai dấu cách) — xem [tyreChip]. */
+    private const val WHEEL_GAP = " "
+    private const val AXLE_GAP = "  "
+
+    /** Chỉ số bánh đầu tiên của trục sau trong thứ tự [TyreCorner] (TT · TP · **ST** · SP). */
+    private const val AXLE_SPLIT = 2
 
     /**
      * MỘT chip cho cả ghế sưởi lẫn ghế mát của **một** ghế: hình nói **chế độ**, chữ nói **ghế nào + mức mấy**.

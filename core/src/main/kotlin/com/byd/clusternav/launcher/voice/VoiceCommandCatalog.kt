@@ -11,7 +11,6 @@ import com.byd.clusternav.launcher.LauncherActionDef
 import com.byd.clusternav.launcher.LauncherActions
 import com.byd.clusternav.launcher.Localized
 import com.byd.clusternav.launcher.Strings
-import com.byd.clusternav.launcher.TelemetryRegistry
 import com.byd.clusternav.launcher.TelemetrySpec
 
 /**
@@ -186,7 +185,7 @@ object VoiceCommandCatalog {
         ActionMacros.ALL.filter { it.domain == d }.forEach { m ->
             out.add(nounOf(m, VoiceTermKind.MACRO) to VoiceIntent.Macro(m.id))
         }
-        TelemetryRegistry.ALL.filter { it.domain == d }.forEach { out.add(readPair(it)) }
+        VoiceTelemetry.SPOKEN.filter { it.domain == d }.forEach { out.add(readPair(it)) }   // 2.88 — KDoc [VoiceTelemetry]
         return out.distinctBy { it.first }
     }
 

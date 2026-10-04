@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.navigation.NavReadChannel
+import com.byd.clusternav.voicekey.KeySourceKind
 
 /**
  * ═══ TỪ VỰNG của [ClusterNavBridge] — mã thông điệp, KHÔNG phải câu chữ ═════════════════════════
@@ -190,8 +191,15 @@ data class NavSourceView(
  * [customName] = tên **người dùng tự đặt** lúc học phím (`Prefs.voiceKeyCustomButtons`) — chuỗi của
  * chính họ, không phải chữ của dự án nên không dịch. `null` ⇒ đây là **preset**: tầng Settings tra
  * tên theo [code] trong tài nguyên (bảng preset gốc ở `MainActivity.kt:707–717`).
+ *
+ * [source] (2.88 · KEY-SOURCE-SPLIT tầng 2) = nút vật lý của nút tự học đã học kèm nguồn (núm bệ giữa / vô-lăng);
+ * gán từ mục này ra dòng gán theo nguồn. `null` = preset hoặc nút học không nguồn.
  */
-data class ButtonOption(val code: Int, val customName: String? = null) {
+data class ButtonOption(
+    val code: Int,
+    val customName: String? = null,
+    val source: KeySourceKind? = null,
+) {
     val isPreset: Boolean get() = customName == null
 }
 

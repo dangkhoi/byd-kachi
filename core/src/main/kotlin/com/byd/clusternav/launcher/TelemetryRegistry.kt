@@ -325,6 +325,42 @@ object TelemetryRegistry {
         t("tyre_t_fr", "Nhiệt lốp trước-phải", "Tyre temp front-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797860", short = "Nhiệt TP", shortEn = "Temp FR"),
         t("tyre_t_rl", "Nhiệt lốp sau-trái", "Tyre temp rear-left", "°C", TYRES, BOARD, NEEDS_CAR, "1246797872", short = "Nhiệt ST", shortEn = "Temp RL"),
         t("tyre_t_rr", "Nhiệt lốp sau-phải", "Tyre temp rear-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797884", short = "Nhiệt SP", shortEn = "Temp RR"),
+        // ═══ 2.88 · MÃ TRẠNG THÁI THÔ — lời phán CỦA XE cho từng bánh (spec `kachi-288-tyre-car-state.html`) ═══
+        // Owner 04/10: *"cảnh báo theo tùy loại xe, không hardcode số"*. Mười ba dòng chỉ là ĐẦU VÀO cho [TyreJudge]
+        // (chip/bảng/nhóm/ô nhỏ cùng đọc) — ẩn khỏi mọi bộ chọn ([TyreIds.HIDDEN_WHY]). NEEDS_CAR: nghĩa từng mã có
+        // nguồn [ĐO source], giá trị thật trên xe owner [CHƯA BIẾT] (spec §6 lớp 1). Mức bằng chứng KHÔNG chặn đọc.
+        // (a) Màu cụm đồng hồ — bind theo TÊN hằng (feature-id gán lúc khởi tạo theo cấu hình xe, `oncar-trace-
+        //     2026-09-16.md:55`); LB = sau-trái · RB = sau-phải [ĐO L3 `BydAutoTyrePressureInstrumentMonitor.java:144-158`].
+        //     Không dùng `getWheelColor(pos)`: nó đánh số RF=1 · RR=2 · LF=3 · LR=4 (`BYDAutoInstrumentDevice.java:590-593`).
+        //     Device: bảng feature→device của xe trước, không có thì TYRES ⇒ Instrument (`HalBindingTable.featureDeviceFqn`).
+        t("tyre_c_fl", "Màu cảnh báo lốp trước-trái", "Tyre warning colour front-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoFeatureIds.INSTRUMENT_2IN1_LF_TYRE_COLOR"),
+        t("tyre_c_fr", "Màu cảnh báo lốp trước-phải", "Tyre warning colour front-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoFeatureIds.INSTRUMENT_2IN1_RF_TYRE_COLOR"),
+        t("tyre_c_rl", "Màu cảnh báo lốp sau-trái", "Tyre warning colour rear-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoFeatureIds.INSTRUMENT_2IN1_LB_TYRE_COLOR"),
+        t("tyre_c_rr", "Màu cảnh báo lốp sau-phải", "Tyre warning colour rear-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoFeatureIds.INSTRUMENT_2IN1_RB_TYRE_COLOR"),
+        // (b) TPMS — `int getTyrePressureState(int area)` / `getTyreAirLeakState(int area)` (`tyre/BYDAutoTyreDevice.java`
+        //     :111/:99), area 1..4 cấp ở `HalReadTables.readArg` (cùng khuôn `tyre_p_*`); `getTyreSystemState()` 0-arg (:123).
+        t("tyre_ps_fl", "Trạng thái áp lốp trước-trái", "Tyre pressure state front-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyrePressureState"),
+        t("tyre_ps_fr", "Trạng thái áp lốp trước-phải", "Tyre pressure state front-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyrePressureState"),
+        t("tyre_ps_rl", "Trạng thái áp lốp sau-trái", "Tyre pressure state rear-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyrePressureState"),
+        t("tyre_ps_rr", "Trạng thái áp lốp sau-phải", "Tyre pressure state rear-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyrePressureState"),
+        t("tyre_lk_fl", "Rò khí lốp trước-trái", "Tyre air leak front-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyreAirLeakState"),
+        t("tyre_lk_fr", "Rò khí lốp trước-phải", "Tyre air leak front-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyreAirLeakState"),
+        t("tyre_lk_rl", "Rò khí lốp sau-trái", "Tyre air leak rear-left", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyreAirLeakState"),
+        t("tyre_lk_rr", "Rò khí lốp sau-phải", "Tyre air leak rear-right", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyreAirLeakState"),
+        t("tyre_sys", "Hệ thống giám sát lốp", "Tyre monitoring system", "", TYRES, BADGE, NEEDS_CAR,
+            "BYDAutoTyreDevice.getTyreSystemState"),
 
         // ── A5. Thân xe / cửa / kính / gương ─────────────────────────────────────────────────────
         // ⚠ Bốn dòng này có `short` (VI) từ 2026-09-12: trước đó chỉ có `shortEn`, nên ô con nhóm *Kính* hiện

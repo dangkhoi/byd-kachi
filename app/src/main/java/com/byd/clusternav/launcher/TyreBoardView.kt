@@ -24,7 +24,11 @@ import android.widget.FrameLayout
  *  • khối 2 dòng canh giữa ô bằng SỐ ĐO PHÔNG ([CellTextLayout.twoLineTopBaseline]) — hết hằng `0.10`/`0.60`;
  *  • con số nằm đúng trục ô, dòng phụ cùng trục, cả hai co cho vừa thẻ ([CellTextLayout.lineStartX]/`fitScale`).
  *
- * Ranh giới vẫn giữ: ô vẽ 0 ngưỡng (non/căng/lệch + số + đơn vị do [TyreBoard]/chỗ gọi), 0 viền/blur/shadow.
+ * Ranh giới vẫn giữ: ô vẽ 0 ngưỡng (màu + lý do + số + đơn vị do [TyreBoard]/chỗ gọi), 0 viền/blur/shadow.
+ *
+ * ## 2.88 — màu theo LỜI PHÁN CỦA XE ([TyreReading.severity], luật M của [TyreJudge]), không còn số ngưỡng nào
+ * Đỏ/vàng = xe báo; số thường = xe nói bình thường; xám mờ = chưa phán được (xe chưa trả mã nào — thay đổi thấy được:
+ * trước 2.88 bánh có số mà chưa ai phán vẫn in đậm như "bình thường").
  */
 class TyreBoardView(context: Context) : FrameLayout(context) {
 
@@ -129,11 +133,11 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
             if (!unchanged) invalidate()   // chỉ lớp SỐ vẽ lại; hình xe (view khác) đứng yên
         }
 
-        private fun colorFor(s: TyreStatus): Int = when (s) {
-            TyreStatus.LOW, TyreStatus.HIGH -> colRed
-            TyreStatus.UNEVEN -> colAmber
-            TyreStatus.OK -> colInk
-            TyreStatus.UNKNOWN -> colMut2
+        private fun colorFor(s: TyreSeverity): Int = when (s) {
+            TyreSeverity.ALERT -> colRed
+            TyreSeverity.WARN -> colAmber
+            TyreSeverity.OK -> colInk
+            TyreSeverity.NONE -> colMut2
         }
 
         override fun onDraw(canvas: Canvas) {
@@ -167,21 +171,26 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
                     cell.set(span.start, cardY - cellH / 2f, span.end, cardY + cellH / 2f)
                     drawCell(canvas, m, corner, rd, values.getOrNull(i), temps.getOrNull(i))
                 }
-                val st = rd?.status ?: TyreStatus.UNKNOWN
-                if (st.alert || st == TyreStatus.UNEVEN) {
+                val sev = rd?.severity ?: TyreSeverity.NONE
+                if (sev.alert) {
                     // Chấm vẫn ở neo bánh THẬT: chấm nói "bánh nào", thẻ chỉ cần nằm cạnh.
-                    dot.color = colorFor(st)
+                    dot.color = colorFor(sev)
                     canvas.drawCircle(wheelX, wheelY, minOf(content.width(), content.height()) * DOT_RATIO, dot)
                 }
             }
         }
 
         private fun drawCell(canvas: Canvas, m: Float, corner: TyreCorner, rd: TyreReading?, value: String?, temp: String?) {
-            val st = rd?.status ?: TyreStatus.UNKNOWN
+            val st = rd?.severity ?: TyreSeverity.NONE   // 2.88: MỨC NẶNG (lời phán của xe), không còn trạng thái theo ngưỡng
             val col = colorFor(st)
             val radius = m * 0.035f
-            cellFill.color = if (st.alert) ColorMath.mix(Color.parseColor(KachiTheme.CARD2), col, SEMANTIC_MIX)
-            else Color.parseColor(KachiTheme.CARD2)
+            // R-OP (2.88, soát Pass 10 [P3]): thẻ bánh THƯỜNG là nền trung tính như "ô con nhóm thường" ⇒ mờ cùng hệ số
+            // độ đục nền chung (cùng phép `modulateAlpha`, [ChromeOpacity.drawnAlpha]; f = 1 ⇒ đúng byte cũ). Thẻ CẢNH BÁO
+            // giữ đục — màu nền là thông tin (R-OP2). Đọc lúc vẽ, không cấp phát; đổi hệ số ⇒ `applyThemeInPlace` dựng
+            // lại ô widget ([WorkspaceView.restyle]) nên lượt vẽ kế đọc số mới.
+            val card2 = Color.parseColor(KachiTheme.CARD2)
+            cellFill.color = if (st.alert) ColorMath.mix(card2, col, SEMANTIC_MIX)
+            else ColorMath.withAlpha(card2, ChromeOpacity.drawnAlpha(ColorMath.alpha(card2), KachiChrome.fraction))
             canvas.drawRoundRect(cell, radius, radius, cellFill)
 
             val inset = m * TEXT_INSET_RATIO
@@ -212,7 +221,9 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
 
             // ── dòng PHỤ (viết tắt bánh · lý do · nhiệt) ────────────────────────────────────────────────────
             subP.textSize = baseSub
-            var sub = listOfNotNull(corner.displayShortLabel, st.reason, temp).joinToString(SEP)
+            // Lý do lấy từ `:core` (mã lạ ⇒ "mã N" đúng con số — kênh 1 của spec 2.88 §4.4: ảnh chụp mang mã thô).
+            val why = if (rd != null) rd.reason else null
+            var sub = listOfNotNull(corner.displayShortLabel, why, temp).joinToString(SEP)
             var subW = subP.measureText(sub)
             val subScale = CellTextLayout.fitScale(subW, room)
             if (subScale < 1f) {

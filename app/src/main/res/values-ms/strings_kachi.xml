@@ -72,7 +72,8 @@
     <string name="kachi_row_accent">Warna aksen</string>
     <string name="kachi_row_tone">Ton kad</string>
     <string name="kachi_row_bg_opacity">Ketelusan latar belakang</string>
-    <string name="kachi_bg_opacity_note">Satu tahap untuk latar bar status, bar butang kereta dan widget — 0% kekal seperti asal, lebih besar nombornya, lebih lut sinar. Teks dan ikon tidak pudar: di mana latar di belakang menyukarkan teks dibaca (cth. kertas dinding yang cerah), bar dan kad mengekalkan kelegapan yang diperlukan. Tutup Tetapan untuk melihat hasilnya.</string>
+    <string name="kachi_bg_opacity_note">Satu tahap untuk latar bar status, bar butang kereta dan widget — paling kiri kekal seperti asal, seret ke kanan untuk latar yang lebih lut sinar, dan paling kanan (100%) menjadikan latar lut sinar sepenuhnya. Teks dan ikon sentiasa kekal; pada kertas dinding yang cerah, ketelusan yang tinggi boleh menyukarkan teks dibaca — pilihan anda. Ia digunakan apabila anda melepaskan jari; tutup Tetapan untuk melihat hasilnya.</string>
+    <string name="kachi_bg_opacity_a11y">Ketelusan latar belakang: %1$s</string>
     <string name="kachi_sec_car_image">Imej kereta</string>
     <string name="kachi_car_image_current">Digunakan: %1$s</string>
     <string name="kachi_car_image_title">Imej kereta</string>
@@ -475,6 +476,7 @@
     <string name="kachi_keys_learn">Pelajari butang baharu…</string>
     <string name="kachi_keys_learn_name">Namakan butang yang baru anda tekan</string>
     <string name="kachi_key_custom_name">%1$s (kod %2$d)</string>
+    <string name="kachi_key_custom_name_src">%1$s (kod %2$d · %3$s)</string>
     <string name="kachi_key_code">kod kekunci %1$d</string>
     <string name="kachi_key_unknown">%1$s (%2$d)</string>
     <string name="kachi_key_mic_hold">Mikrofon stereng — tahan (328)</string>
@@ -649,6 +651,7 @@
     <string name="kachi_sc_refuse_cast">%1$s sedang dipancar ke panel instrumen</string>
     <string name="kachi_sc_not_installed">%1$s tidak dipasang</string>
     <string name="kachi_sc_bg_failed">%1$s tidak dapat dimulakan di latar belakang</string>
+    <string name="kachi_sc_bg_failed_why">%1$s tidak dapat dimulakan di latar belakang (%2$s)</string>
     <string name="kachi_sc_full_card">Dipaparkan dalam skrin penuh — ketik untuk kembalikan ke petak</string>
     <string name="kachi_sc_full_failed">Tidak dapat membuka %1$s dalam skrin penuh</string>
     <string name="kachi_captest_title">Uji setiap fungsi kereta</string>

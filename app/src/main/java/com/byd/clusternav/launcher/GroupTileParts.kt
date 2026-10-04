@@ -168,7 +168,7 @@ internal fun actionsRow(context: Context, m: GroupBoardModel, data: WidgetData):
     // bề cao cho chính hàng đó (xem KDoc [GroupBoardModel.actionIconsDistinguish]). Cùng luật G1 đã áp cho ô con
     // XEM — ở đây chỉ là áp nốt cho ô BẤM.
     val factory = ControlTileFactory(
-        context, control = { data.control }, size = TileSize.GROUP, onBar = false, icons = m.actionIconsDistinguish,
+        context, control = { data.control }, size = TileSize.GROUP, icons = m.actionIconsDistinguish,
     )
     return LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL

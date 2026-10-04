@@ -42,7 +42,7 @@ import com.byd.clusternav.launcher.behind.BehindHomePlan
  *  2. **Khung đóng băng.** App trên màn ảo chết thì `SurfaceView` giữ khung cuối ⇒ ô trông còn sống. Nay
  *     [SlotLiveProbe] đo 5 s/lần (một lệnh cho mọi ô); mất task ⇒ **giấu mặt vẽ** (khung cuối biến mất) rồi BÁO lên
  *     ([onGone]). L6 (owner 03/10, *"trả về transparent luôn, không cần giữ icon và yêu cầu mở app"*): thẻ "app đã đóng —
- *     chạm để mở lại" của H2 đã gỡ — ô đi theo luật hoàn ô `SlotRevertPlan` (trong suốt / về nội dung LƯU của hồ sơ).
+ *     chạm để mở lại" của H2 đã gỡ — ô đi theo luật hoàn ô `SlotRevertPlan` (trong suốt; ô LƯU widget ⇒ widget về — 04/10).
  */
 class VdAppHost(
     context: Context,
@@ -363,7 +363,7 @@ class VdAppHost(
      *  1. **Giấu mặt vẽ** — `SurfaceView` bị GONE ⇒ khung hình cuối (đóng băng) biến mất NGAY. KHÔNG giải phóng màn ảo ở
      *     đây: nhả là việc của lượt render sau luật hoàn ô (bất biến một-màn-ảo-mỗi-ô giữ nguyên).
      *  2. **Báo lên** ([onGone]) — L6 (owner 03/10): KHÔNG còn thẻ icon + *"chạm để mở lại"*; màn chính áp `SlotRevertPlan`
-     *     (`APP_DIED`): app LƯU của ô ⇒ ô trong suốt · app đặt tạm ⇒ ô về nội dung LƯU (widget / app LƯU mở lại).
+     *     (`APP_DIED`): ô LƯU widget ⇒ widget về · mọi ca khác ⇒ ô trong suốt (owner 04/10: không mở lại app LƯU khác).
      */
     private fun onAppClosed() {
         if (released || dead) return

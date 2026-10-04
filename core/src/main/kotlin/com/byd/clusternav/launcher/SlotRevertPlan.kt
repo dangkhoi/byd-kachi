@@ -7,10 +7,22 @@ package com.byd.clusternav.launcher
  *  - (a) *"Khi app bị tắt thì trả về transparent luôn, không cần giữ icon và yêu cầu mở app như này nhé"* — thẻ
  *    "App đã đóng — chạm để mở lại" bỏ; ô của app LƯU đã chết ⇒ trong suốt như khung trống.
  *  - (b) *"widget đang để lốp, xong shortcut mở 1 app vào, xong tắt app đi, thì nó nên về đâu? Hiện tại nó về đen thui 1
- *    mảng"* — luật (phiên điều phối chốt, generic): lượt đặt TẠM kết thúc ⇒ ô về nội dung LƯU của hồ sơ (widget lốp hiện
- *    lại; app LƯU khác ⇒ mở lại vào ô như lúc khởi động). Chỉ khi nội dung LƯU CHÍNH LÀ app đó, hoặc ô LƯU trống, ô mới
- *    trong suốt.
- *  - (c) hai nút cạnh ⇄ — *chạy nền* / *tắt* — đi qua đúng luật (b) sau khi làm xong việc của chúng (app đã rời màn ảo).
+ *    mảng"* — lượt đặt TẠM kết thúc trên ô LƯU là WIDGET ⇒ widget đó hiện lại (widget lốp về widget lốp).
+ *  - (c) hai nút cạnh ⇄ — *chạy nền* / *tắt* — đi qua đúng luật này sau khi làm xong việc của chúng (app đã rời màn ảo).
+ *
+ * ## Owner 04/10 (lỗi xe 2.87): app rời ô ⇒ TRONG SUỐT, không bao giờ một APP khác
+ * *"khi tắt mà có app khác chạy background, thì thay vì trong suốt lại mang app đấy vào khung, ví dụ đang mở youtube trên
+ * khung, có app chatgpt chạy background, không liên quan gì đến launcher, mà khi tắt youtube, thì lại mang chatgpt vào khung
+ * thay vì trong suốt"*. Bản 03/10 trả `ShowSaved` cả khi nội dung LƯU là một APP KHÁC [SUY: hồ sơ LƯU ChatGPT ở ô, YouTube
+ * đặt tạm bằng lối tắt / giọng nói đã đẩy ChatGPT ra sau màn nhà] ⇒ ô dựng lại với app LƯU ⇒ host mở lại nó (K8 kéo nó từ
+ * sau màn nhà vào ô): một app người dùng KHÔNG hề xin nhảy vào khung đúng lúc họ vừa đóng một app. Luật nay:
+ *
+ * | Nội dung LƯU của ô (app đang hiện khớp sự kiện `APP_*`) | Ô đi tiếp |
+ * |---|---|
+ * | widget (`Widget` · `AppWidget`) | [Next.ShowSaved] — widget LƯU hiện lại (giữ ca owner 03/10 "widget lốp") |
+ * | chính app đó · một app KHÁC · trống | [Next.Clear] — trong suốt; lớp LƯU giữ nguyên ⇒ khởi động lại là app LƯU về ô |
+ *
+ * Widget không "mở" app nào, không kéo task nào về ô ⇒ trả widget là an toàn; app LƯU khác thì có (mở lại / K8).
  *
  * ## Một nguồn sự thật cho "LƯU vs đang HIỆN"
  * Đầu vào là CHÍNH hai lớp của [HomeUiState]: `workspace` (LƯU, ghi bền) và `effectiveWorkspace` (đang HIỆN = LƯU +
@@ -20,10 +32,8 @@ package com.byd.clusternav.launcher
  * ## *Chạy nền* = cùng luật với *tắt* (L8, mở khoá D-L6-1)
  * Sự kiện [Event.APP_BACKGROUND] chỉ được báo SAU KHI app đã RỜI màn ảo của ô (bản đọc cuối của
  * `BehindHomeSequence.evictCovered`: lớp che của Kachi đứng trước app trong màn ảo ô ⇒ move-task ra sau màn nhà, A10 r47
- * `TaskRecord.java:736-737` `wasFront`). Lúc đó ô không còn gì để giữ trên màn ảo ⇒ ô đi đúng đường của app vừa đóng: LƯU
- * là chính app ⇒ trong suốt (owner: *"để UI trong suốt thấy nền background"*) · LƯU là app khác / widget / trống ⇒ về nội
- * dung LƯU. Bản L6 (đổi TẠI CHỖ về app LƯU khác rồi `evict(vd, A, B)`, chỉ khi ô có app LƯU khác) đã thay bằng MỘT đường
- * chung cho mọi ô app — không còn mốc đổi-tại-chỗ nào sinh ra từ bảng này.
+ * `TaskRecord.java:736-737` `wasFront`). Lúc đó ô không còn gì để giữ trên màn ảo ⇒ ô đi đúng đường của app vừa đóng (bảng
+ * trên; owner 03/10: *"để UI trong suốt thấy nền background"*). Không còn mốc đổi-tại-chỗ nào sinh ra từ bảng này.
  */
 object SlotRevertPlan {
 
@@ -49,7 +59,8 @@ object SlotRevertPlan {
 
         /**
          * Bỏ mục tạm ⇒ ô hiện nội dung LƯU (dựng lại ô: app đang hiện đã rời màn ảo — chết / bị tắt / đã ra sau màn nhà —
-         * nên không còn gì để giữ trên đó; app LƯU mở lại như lúc khởi động, K8 nếu nó đang sau màn nhà).
+         * nên không còn gì để giữ trên đó). Owner 04/10: sự kiện app chỉ ra mã này khi nội dung LƯU là WIDGET — không bao giờ
+         * để mở lại một app LƯU khác vào ô.
          */
         object ShowSaved : Next { override fun toString() = "ShowSaved" }
 
@@ -68,8 +79,8 @@ object SlotRevertPlan {
             val app = shown as? SlotContent.App
             when {
                 app == null || (pkg != null && pkg != app.pkg) -> Next.Keep
-                saved is SlotContent.App && saved.pkg == app.pkg -> Next.Clear
-                else -> Next.ShowSaved   // app LƯU khác ⇒ mở lại · widget về · LƯU trống = trong suốt
+                saved is SlotContent.Widget || saved is SlotContent.AppWidget -> Next.ShowSaved   // widget LƯU về (03/10)
+                else -> Next.Clear   // chính app · app LƯU KHÁC · trống ⇒ trong suốt (04/10: không kéo app khác vào khung)
             }
         }
     }

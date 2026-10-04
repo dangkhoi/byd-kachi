@@ -190,11 +190,61 @@ Ghế lái	Driver seat	Tempat duduk pemandu
 Ghế phụ	Passenger seat	Tempat duduk penumpang
 non	low	rendah
 căng	high	tinggi
-lệch	uneven	tidak sekata
 chưa đọc được áp suất	pressure not read yet	tekanan belum dibaca
 lốp ổn	tyres OK	tayar OK
-{0} bánh {1}	{0} wheel {1}	{0} roda {1}
-{0} bánh {1}	{0} wheels {1}	{0} roda {1}
+{0} bánh {1}	{0} wheel: {1}	{0} roda: {1}
+{0} bánh {1}	{0} wheels: {1}	{0} roda: {1}
+# 2.88 — lốp theo phán xét của xe (spec docs/specs/kachi-288-tyre-car-state.html): chip · lý do · nhãn/diễn giải 13 mã thô · bảng mã.
+Áp suất lốp: {0}	Tyre pressure: {0}	Tekanan tayar: {0}
+{0} {1}, bình thường	{0} {1}, normal	{0} {1}, baik
+{0} {1}, chưa rõ	{0} {1}, unknown	{0} {1}, belum diketahui
+{0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1}, awas: {2}
+{0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1}, amaran: {2}
+xì nhanh	fast leak	bocor cepat
+báo đỏ	red alert	amaran merah
+xì chậm	slow leak	bocor perlahan
+lỗi cảm biến	sensor fault	penderia rosak
+chú ý	caution	awas
+mã lạ	unknown code	kod tidak dikenali
+chưa đọc được trạng thái lốp từ xe	tyre status not read from the car	status tayar belum dibaca daripada kereta
+Màu cảnh báo lốp trước-trái	Tyre warning colour front-left	Warna amaran tayar depan kiri
+Màu cảnh báo lốp trước-phải	Tyre warning colour front-right	Warna amaran tayar depan kanan
+Màu cảnh báo lốp sau-trái	Tyre warning colour rear-left	Warna amaran tayar belakang kiri
+Màu cảnh báo lốp sau-phải	Tyre warning colour rear-right	Warna amaran tayar belakang kanan
+Trạng thái áp lốp trước-trái	Tyre pressure state front-left	Status tekanan tayar depan kiri
+Trạng thái áp lốp trước-phải	Tyre pressure state front-right	Status tekanan tayar depan kanan
+Trạng thái áp lốp sau-trái	Tyre pressure state rear-left	Status tekanan tayar belakang kiri
+Trạng thái áp lốp sau-phải	Tyre pressure state rear-right	Status tekanan tayar belakang kanan
+Rò khí lốp trước-trái	Tyre air leak front-left	Kebocoran udara tayar depan kiri
+Rò khí lốp trước-phải	Tyre air leak front-right	Kebocoran udara tayar depan kanan
+Rò khí lốp sau-trái	Tyre air leak rear-left	Kebocoran udara tayar belakang kiri
+Rò khí lốp sau-phải	Tyre air leak rear-right	Kebocoran udara tayar belakang kanan
+Hệ thống giám sát lốp	Tyre monitoring system	Sistem pemantauan tayar
+Màu cụm đồng hồ tô cho lốp trước bên trái	Colour the instrument cluster gives the front-left tyre	Warna yang diberi panel instrumen kepada tayar depan kiri
+Màu cụm đồng hồ tô cho lốp trước bên phải	Colour the instrument cluster gives the front-right tyre	Warna yang diberi panel instrumen kepada tayar depan kanan
+Màu cụm đồng hồ tô cho lốp sau bên trái	Colour the instrument cluster gives the rear-left tyre	Warna yang diberi panel instrumen kepada tayar belakang kiri
+Màu cụm đồng hồ tô cho lốp sau bên phải	Colour the instrument cluster gives the rear-right tyre	Warna yang diberi panel instrumen kepada tayar belakang kanan
+Xe đánh giá áp lốp trước bên trái: bình thường, căng hay non	Car's pressure verdict for the front-left tyre: normal, over or under	Penilaian kereta bagi tekanan tayar depan kiri: biasa, terlalu tinggi atau terlalu rendah
+Xe đánh giá áp lốp trước bên phải: bình thường, căng hay non	Car's pressure verdict for the front-right tyre: normal, over or under	Penilaian kereta bagi tekanan tayar depan kanan: biasa, terlalu tinggi atau terlalu rendah
+Xe đánh giá áp lốp sau bên trái: bình thường, căng hay non	Car's pressure verdict for the rear-left tyre: normal, over or under	Penilaian kereta bagi tekanan tayar belakang kiri: biasa, terlalu tinggi atau terlalu rendah
+Xe đánh giá áp lốp sau bên phải: bình thường, căng hay non	Car's pressure verdict for the rear-right tyre: normal, over or under	Penilaian kereta bagi tekanan tayar belakang kanan: biasa, terlalu tinggi atau terlalu rendah
+Lốp trước bên trái có đang xì hơi không	Whether the front-left tyre is leaking air	Sama ada tayar depan kiri bocor udara
+Lốp trước bên phải có đang xì hơi không	Whether the front-right tyre is leaking air	Sama ada tayar depan kanan bocor udara
+Lốp sau bên trái có đang xì hơi không	Whether the rear-left tyre is leaking air	Sama ada tayar belakang kiri bocor udara
+Lốp sau bên phải có đang xì hơi không	Whether the rear-right tyre is leaking air	Sama ada tayar belakang kanan bocor udara
+Tình trạng hệ thống giám sát áp suất lốp	Status of the tyre pressure monitoring system	Status sistem pemantauan tekanan tayar
+Bình thường	Normal	Biasa
+Vàng	Yellow	Kuning
+Đỏ	Red	Merah
+Quá căng	Over-inflated	Terlebih angin
+Non hơi	Under-inflated	Kurang angin
+Không rò	No leak	Tiada kebocoran
+Xì nhanh	Fast leak	Bocor cepat
+Xì chậm	Slow leak	Bocor perlahan
+Đang tự kiểm	Self-checking	Sedang semak sendiri
+Tín hiệu bất thường	Signal abnormal	Isyarat tidak normal
+Hỏng	Failed	Rosak
+Bị che	Masked	Disekat
 bố cục rỗng: chưa vẽ khung nào	empty layout: no frame drawn yet	susun atur kosong: belum ada bingkai dilukis
 khung {0} nhỏ quá ({1}×{2}), tối thiểu {3}×{4}	frame {0} is too small ({1}×{2}), minimum {3}×{4}	bingkai {0} terlalu kecil ({1}×{2}), minimum {3}×{4}
 khung {0} ra ngoài lưới {1}×{2}	frame {0} falls outside the {1}×{2} grid	bingkai {0} terkeluar dari grid {1}×{2}

@@ -15,7 +15,9 @@ import org.junit.jupiter.api.Test
  *    `AccessibilityService.java:1622,1873-1890` · `KeyEventDispatcher.java:51` r47);
  *  - L2 lượt đọc HAL chạy trên luồng riêng, có TRẦN thời gian, không xếp chồng khi HAL treo;
  *  - L3 bộ đo sống theo một lần bind và đọc qua gateway DUY NHẤT của tiến trình;
- *  - L4 hộp "Học phím mới" hiện dòng chi tiết; L5 gán/khớp/JSON KHÔNG đổi (tầng 2 mới làm);
+ *  - L4 hộp "Học phím mới" hiện dòng chi tiết;
+ *  - L5 (2.88 · tầng 2, thay bài "tầng 1 không đổi gán/khớp/JSON"): khớp theo nguồn CHỈ qua hàm tra của matcher — dây nối
+ *    chi tiết ở `KeySourceSplitWiringContractTest`;
  *  - L6 §8 — mọi hàm mới có lời gọi thật ngoài định nghĩa.
  */
 class KeySourceL7WiringContractTest {
@@ -32,19 +34,27 @@ class KeySourceL7WiringContractTest {
 
     private val onKey by lazy { SourceRoots.body(a11y, "override fun onKeyEvent(event: KeyEvent?): Boolean") }
 
+    /**
+     * 2.88: chữ ký chép trên MỌI DOWN (đầu hàm); đường KHÔNG khớp (đuôi học / đang học / tắt) ghi nhật ký ngay — trước bus
+     * học phím — còn đường khớp ghi SAU matcher để mang số đọc nguồn đồng bộ (R-nf2). Hai lời gọi phủ đúng hai đường đó.
+     */
     @Test
     fun `L1 - onKeyEvent chep chu ky tren DOWN roi day do di, truoc khi bus hoc phim bao ma`() {
-        val down = SourceRoots.body(onKey, "if (event.action == KeyEvent.ACTION_DOWN) {")
-        assertTrue(down.contains("keySource?.onDown(KeySourceRecorder.sampleOf(event), learned = Prefs.voiceKeyLearn(app))"),
-            "mỗi DOWN phải được đo, kèm cờ đang-học để hộp đặt tên tìm đúng dòng")
-        assertTrue(onKey.indexOf("keySource?.onDown(") in 0 until onKey.indexOf("VoiceKeyLearnBus.publish(event.keyCode)"),
+        val down = SourceRoots.body(onKey, "val sample = if (event.action == KeyEvent.ACTION_DOWN) {")
+        assertTrue(down.contains("KeySourceRecorder.sampleOf(event)"), "mỗi DOWN phải được chép chữ ký ngay")
+        val plain = "if (sample != null && !matching) keySource?.onDown(sample, learned = learning)"
+        assertTrue(onKey.contains(plain), "đường không khớp: đo y như 2.87, kèm cờ đang-học để hộp đặt tên tìm đúng dòng")
+        assertTrue(onKey.contains("val matching = !tail && !learning && Prefs.voiceKeyEnabled(app)"))
+        assertTrue(onKey.indexOf(plain) in 0 until onKey.indexOf("VoiceKeyLearnBus.publish(event.keyCode)"),
             "ghi nhật ký TRƯỚC khi bus báo mã ⇒ hộp đặt tên luôn thấy dòng của lần học")
+        assertTrue(onKey.contains("if (sample != null) keySource?.onDown(sample, learned = false, preRead = preRead)"),
+            "đường khớp: mỗi DOWN vẫn được ghi nhật ký, dùng lại số đọc của đường gán")
     }
 
     @Test
     fun `L1 - luong nhan phim KHONG I-O, KHONG HAL, KHONG tra InputDevice`() {
         val sampleOf = SourceRoots.body(recorder, "fun sampleOf(e: KeyEvent): KeySample")
-        val onDown = SourceRoots.body(recorder, "fun onDown(sample: KeySample, learned: Boolean)")
+        val onDown = SourceRoots.body(recorder, "fun onDown(sample: KeySample, learned: Boolean, preRead: KeySourceReading? = null)")
         val forbidden = listOf(
             "InputDevice", "InputManager", "getDevice(", "featureRead", "featureGet", "BydHal", "gateway(",
             "KeySourceProbes.read", ".get(", "Thread.sleep", "Log.", "File(", "Prefs.", "AppContainer",
@@ -56,7 +66,7 @@ class KeySourceL7WiringContractTest {
         }
         assertFalse(onKey.contains("InputDevice") || onKey.contains("featureRead") || onKey.contains("BydHal"))
         assertTrue(onDown.contains("journal.begin(sample, learned)"))
-        assertTrue(onDown.contains("h.post { settle(seq, sample) }"), "phần đo phải sang luồng `kachi-keysrc`")
+        assertTrue(onDown.contains("h.post { settle(seq, sample, preRead) }"), "phần đo phải sang luồng `kachi-keysrc`")
         // Event bị recycle sau onKeyEvent ⇒ chỉ được chép field, không giữ tham chiếu event.
         assertFalse(recorder.contains("KeyEvent.obtain") || Regex("""val\s+\w+\s*:\s*KeyEvent""").containsMatchIn(recorder))
     }
@@ -73,8 +83,8 @@ class KeySourceL7WiringContractTest {
         assertTrue(SourceRoots.body(recorder, "fun start()").contains("halExec = Executors.newSingleThreadExecutor"),
             "lượt đọc HAL chạy trên MỘT luồng riêng — không trên luồng đo, không trên luồng phím")
         assertFalse(recorder.contains("inFlight") || recorder.contains("f.get("), "luật chống chồng lượt chỉ sống ở KeySourceMeter (:core)")
-        val settle = SourceRoots.body(recorder, "private fun settle(seq: Long, sample: KeySample)")
-        assertTrue(settle.contains("meter.measure(sample, devices)"))
+        val settle = SourceRoots.body(recorder, "private fun settle(seq: Long, sample: KeySample, preRead: KeySourceReading?)")
+        assertTrue(settle.contains("meter.measure(sample, devices, preRead)"), "2.88 · R-nf2: số đọc sẵn đi vào bộ đo (không đọc lần hai)")
         assertTrue(settle.contains("Log.i(KeySourceLog.TAG, KeySourceLog.line(entry))"), "một dòng KachiKey mỗi DOWN ⇒ usage-*.log")
         assertTrue(settle.contains("catch (e: RuntimeException)"), "lỗi đo không được làm chết tiến trình giữ dịch vụ phím")
         assertTrue(recorder.contains("private val devices = KeyDeviceCache(::lookupDevice)"), "P3: nhớ cả ca 'không có thiết bị'")
@@ -126,18 +136,22 @@ class KeySourceL7WiringContractTest {
         assertTrue(vi.contains(">núm yên ngựa<") && vi.contains(">vô-lăng<"))
     }
 
+    /**
+     * Tầng 1 từng khoá "gán/khớp/JSON KHÔNG đổi". 2.88 (tầng 2, spec `kachi-288-key-source-split`) đổi CÓ CHỦ Ý ba thứ đó,
+     * nên bài này khoá phần thay thế: khớp vẫn theo keyCode + downTime và CHỈ thêm hàm tra nguồn (matcher quyết khi nào gọi —
+     * `VoiceKeyMatcherSourceTest`); bus học phím vẫn mang mã Int; tên nút không nguồn vẫn đúng khuôn 2.87; luồng phím không
+     * tự đọc HAL ngoài hàm tra.
+     */
     @Test
-    fun `L5 - tang 1 KHONG doi gan, khop, JSON`() {
-        assertTrue(onKey.contains("voiceKeyMatcher.onKey(cfg, action, event.keyCode, event.downTime)"), "khớp vẫn theo keyCode")
+    fun `L5 - tang 2 khop theo nguon chi qua ham tra cua matcher`() {
+        assertTrue(onKey.contains("voiceKeyMatcher.onKey(cfg, action, event.keyCode, event.downTime) {"), "khớp vẫn theo keyCode + downTime")
         assertTrue(onKey.contains("VoiceKeyLearnBus.publish(event.keyCode)"), "bus học phím vẫn mang mã Int")
         assertTrue(SourceRoots.body(section, "private fun learn()")
-            .contains("bridge.addCustomButton(context.getString(R.string.kachi_key_custom_name, name, code), code)"))
-        listOf(
-            "src/main/java/com/byd/clusternav/voicekey/VoiceKeyBindings.kt",
-            "src/main/java/com/byd/clusternav/voicekey/VoiceKeyMatcher.kt",
-            "$base/modules/voicekey/VoiceKeyBindingStore.kt",
-            "$base/modules/voicekey/VoiceKeyLearnBus.kt",
-        ).forEach { f -> assertFalse(code(f).contains("KeySource"), "$f: tầng 1 không được chạm danh tính/khớp/lưu") }
+            .contains("context.getString(R.string.kachi_key_custom_name, name, code)"), "nút học không nguồn giữ khuôn tên 2.87")
+        assertFalse(code("$base/modules/voicekey/VoiceKeyLearnBus.kt").contains("KeySource"), "bus học phím không mang nguồn")
+        listOf("KeySourceProbes.read", "KeySourceResolver(", "featureRead").forEach {
+            assertFalse(a11y.contains(it), "NavAccessibilityService không tự đọc HAL ($it) — chỉ qua bộ ghi")
+        }
     }
 
     @Test
@@ -147,13 +161,14 @@ class KeySourceL7WiringContractTest {
         }
         fun callers(token: String, defFile: String) = all.filter { (name, src) -> name != defFile && src.contains(token) }.map { it.first }.distinct()
         assertEquals(listOf("NavAccessibilityService.kt"), callers("KeySourceRecorder.sampleOf(", "KeySourceRecorder.kt"))
-        assertEquals(listOf("NavAccessibilityService.kt"), callers(".onDown(KeySourceRecorder", "KeySourceRecorder.kt"))
+        assertEquals(listOf("NavAccessibilityService.kt"), callers("keySource?.onDown(sample", "KeySourceRecorder.kt"))
         assertEquals(listOf("SettingsSectionsKeys.kt"), callers("bridge.learnedKeySource(", "ClusterNavBridgeKeys.kt"))
         assertEquals(listOf("SettingsSectionsKeys.kt"), callers("KeySourceDetailText.bind(", "SettingsKeySourceDetail.kt"))
         assertTrue("KeySourceProbe.kt" in callers("gateway.featureRead(", "HalRoutes.kt"))
         // SOÁT vòng 1 · P2: lượt đọc nay đi qua bộ đo thuần `:core`; bộ ghi gọi bộ đo.
         assertTrue("KeySourceMeter.kt" in callers("KeySourceProbes.read(", "KeySourceProbe.kt"))
-        assertEquals(listOf("KeySourceRecorder.kt"), callers("KeySourceMeter(", "KeySourceMeter.kt"))
+        // 2.88: KeySourceResolver dựng bản đo THỨ HAI (trần 100 ms) cho đường gán — dùng lại luật, không chép.
+        assertEquals(listOf("KeySourceRecorder.kt", "KeySourceResolver.kt"), callers("KeySourceMeter(", "KeySourceMeter.kt").sorted())
         assertEquals(listOf("KeySourceRecorder.kt"), callers("KeyDeviceCache(", "KeySourceMeter.kt"))
         assertTrue("KeySourceRecorder.kt" in callers(".halGateway", "AppContainer.kt") ||
             "NavAccessibilityService.kt" in callers(".halGateway", "AppContainer.kt"))

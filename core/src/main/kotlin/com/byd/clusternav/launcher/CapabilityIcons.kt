@@ -282,6 +282,15 @@ object CapabilityIcons {
         "tyre_p_rl" to "ic-car-top-tyre-rl", "tyre_p_rr" to "ic-car-top-tyre-rr",
         "tyre_t_fl" to "ic-car-top-tyre-temp-fl", "tyre_t_fr" to "ic-car-top-tyre-temp-fr",
         "tyre_t_rl" to "ic-car-top-tyre-temp-rl", "tyre_t_rr" to "ic-car-top-tyre-temp-rr",
+        // 2.88 — mã trạng thái THÔ của từng bánh: cùng hình bánh-tô-đặc của áp suất bánh đó (cùng một câu hỏi "bánh
+        // này thế nào"); ẩn khỏi mọi bộ chọn nên không vào phép đếm trần hình. Hệ thống TPMS nói về CẢ BỐN bánh.
+        "tyre_c_fl" to "ic-car-top-tyre-fl", "tyre_c_fr" to "ic-car-top-tyre-fr",
+        "tyre_c_rl" to "ic-car-top-tyre-rl", "tyre_c_rr" to "ic-car-top-tyre-rr",
+        "tyre_ps_fl" to "ic-car-top-tyre-fl", "tyre_ps_fr" to "ic-car-top-tyre-fr",
+        "tyre_ps_rl" to "ic-car-top-tyre-rl", "tyre_ps_rr" to "ic-car-top-tyre-rr",
+        "tyre_lk_fl" to "ic-car-top-tyre-fl", "tyre_lk_fr" to "ic-car-top-tyre-fr",
+        "tyre_lk_rl" to "ic-car-top-tyre-rl", "tyre_lk_rr" to "ic-car-top-tyre-rr",
+        "tyre_sys" to "ic-group-tyres",
         // ── Danh tính ──
         // U7: bốn mục GPS trước đây cùng một hình ghim vị trí. Chúng là bốn ĐẠI LƯỢNG khác nhau nên
         // tách theo đúng thứ chúng đo: vĩ tuyến (ngang) · kinh tuyến (dọc) · cao độ (núi + thước) ·

@@ -333,6 +333,21 @@ object TelemetryReadout {
         "tyre_t_fr" -> s.tyres.tFrC?.toString()
         "tyre_t_rl" -> s.tyres.tRlC?.toString()
         "tyre_t_rr" -> s.tyres.tRrC?.toString()
+        // 2.88 — mã trạng thái THÔ của xe → chữ qua bảng OEM ([TelemetryEnums]); mã lạ ⇒ "mã N". Giữ dạng
+        // `"id" -> s.<cụm>.<field>` (hợp đồng đọc-ngược của `CarDataDemandRendererContractTest`).
+        "tyre_c_fl" -> s.tyres.cFl?.let { TelemetryEnums.text("tyre_c_fl", it, lang) }
+        "tyre_c_fr" -> s.tyres.cFr?.let { TelemetryEnums.text("tyre_c_fr", it, lang) }
+        "tyre_c_rl" -> s.tyres.cRl?.let { TelemetryEnums.text("tyre_c_rl", it, lang) }
+        "tyre_c_rr" -> s.tyres.cRr?.let { TelemetryEnums.text("tyre_c_rr", it, lang) }
+        "tyre_ps_fl" -> s.tyres.psFl?.let { TelemetryEnums.text("tyre_ps_fl", it, lang) }
+        "tyre_ps_fr" -> s.tyres.psFr?.let { TelemetryEnums.text("tyre_ps_fr", it, lang) }
+        "tyre_ps_rl" -> s.tyres.psRl?.let { TelemetryEnums.text("tyre_ps_rl", it, lang) }
+        "tyre_ps_rr" -> s.tyres.psRr?.let { TelemetryEnums.text("tyre_ps_rr", it, lang) }
+        "tyre_lk_fl" -> s.tyres.lkFl?.let { TelemetryEnums.text("tyre_lk_fl", it, lang) }
+        "tyre_lk_fr" -> s.tyres.lkFr?.let { TelemetryEnums.text("tyre_lk_fr", it, lang) }
+        "tyre_lk_rl" -> s.tyres.lkRl?.let { TelemetryEnums.text("tyre_lk_rl", it, lang) }
+        "tyre_lk_rr" -> s.tyres.lkRr?.let { TelemetryEnums.text("tyre_lk_rr", it, lang) }
+        "tyre_sys" -> s.tyres.sys?.let { TelemetryEnums.text("tyre_sys", it, lang) }
 
         // ── A5. Thân xe ─────────────────────────────────────────────────────────────────
         "window_lf" -> s.body.windowLfPct?.toString()

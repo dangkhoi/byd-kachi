@@ -15,7 +15,8 @@ import com.byd.clusternav.voicekey.KeySourceVerdict
  * Một dòng để anh em CHỤP MÀN HÌNH gửi về (CLAUDE.md §11 — không bắt ai gõ adb), ví dụ:
  * *"mã 291 · scan 115 · thiết bị "simulate-keys"#7 · nguồn: núm yên ngựa (AUDIO_VOLUME_CTRL_MODE=1) · đọc 3 ms"*.
  *
- * Chỉ HIỆN — không đổi tên gợi ý, không đổi gì được lưu (tầng 2 mới tách gán theo nguồn, sau khi có ảnh chụp).
+ * Chỉ HIỆN — không đổi tên gợi ý. (2.88 · tầng 2: lúc bấm Lưu, `SettingsKeysSection.learn` đọc lại CÙNG dòng nhật ký
+ * để lưu nút kèm nguồn — xem `kachi-288-key-source-split` R1.)
  *
  * ## Vì sao làm mới vài nhịp
  * Hộp mở ngay khi bus học phím báo mã, còn lượt đọc HAL chạy ở luồng riêng với trần
@@ -66,7 +67,8 @@ internal object KeySourceDetailText {
         }
     }
 
-    private fun kindLabel(ctx: Context, kind: KeySourceKind): String = ctx.getString(
+    /** Nhãn người đọc của một nguồn — dùng chung cho dòng chi tiết và hậu tố tên nút học kèm nguồn (2.88 · R1/R4). */
+    fun kindLabel(ctx: Context, kind: KeySourceKind): String = ctx.getString(
         when (kind) {
             KeySourceKind.CONSOLE_KNOB -> R.string.kachi_key_src_knob
             KeySourceKind.STEERING_WHEEL -> R.string.kachi_key_src_wheel

@@ -36,7 +36,7 @@ class SherpaBiasingCoverageTest {
     /** Mọi nhãn tiếng Việt của 4 bộ đăng ký — đúng tập mà `VoicePhrases`/`VoiceGrammar` cũng phủ. */
     private fun allLabels(): List<String> =
         ControlRegistry.ALL.map { it.label } +
-            TelemetryRegistry.ALL.map { it.label } +
+            VoiceTelemetry.SPOKEN.map { it.label } +   // 2.88: trừ 13 mã lốp thô — [VoiceTelemetry]
             ActionMacros.ALL.map { it.label } +
             LauncherActions.ALL.map { it.label }
 

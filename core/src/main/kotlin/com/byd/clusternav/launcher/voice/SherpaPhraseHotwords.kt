@@ -4,7 +4,6 @@ import com.byd.clusternav.launcher.ActionMacros
 import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
-import com.byd.clusternav.launcher.TelemetryRegistry
 
 /**
  * ═══ V2 pha NGHE · HOTWORD THEO **CỤM LỆNH** (động từ + đối tượng) — KHÔNG TỪ RỜI ═══════════════════════════
@@ -80,7 +79,7 @@ object SherpaPhraseHotwords {
             }
         }
         val read = forms(VoiceVerb.READ)
-        TelemetryRegistry.ALL.forEach { t ->
+        VoiceTelemetry.SPOKEN.forEach { t ->   // 2.88: trừ 13 mã lốp thô — KDoc [VoiceTelemetry]
             nounsOf(t.label, t.short, VoiceSynonyms.TELEMETRY[t.id]).forEach { n ->
                 out.add(n)   // *"pin còn bao nhiêu"* / *"áp suất lốp trước trái"* — nhãn nhiều từ tự đứng được
                 if (!startsWithVerb(n)) read.forEach { out.add("$it $n") }

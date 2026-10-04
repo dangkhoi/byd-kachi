@@ -5,7 +5,6 @@ import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.LauncherActions
 import com.byd.clusternav.launcher.Localized
-import com.byd.clusternav.launcher.TelemetryRegistry
 
 /** Động từ mà bộ phân tích nhận ra. Bộ **nhỏ và đều** — đúng hình dạng đã đo ở Kiki (RE §7c). */
 enum class VoiceVerb { ON, OFF, OPEN, CLOSE, UP, DOWN, SET, READ, SWITCH, NAV, PLAY, PAUSE, NEXT, PREV }
@@ -229,7 +228,7 @@ object VoiceGrammar {
             addLocalized(c, c.id, VoiceTermKind.CONTROL, listOf(c.short, c.shortEn))
             VoiceSynonyms.CONTROL[c.id]?.forEach { add(it, VoiceTermKind.CONTROL, c.id) }
         }
-        TelemetryRegistry.ALL.forEach { t ->
+        VoiceTelemetry.SPOKEN.forEach { t ->   // 2.88: trừ 13 mã lốp thô — KDoc [VoiceTelemetry]
             addLocalized(t, t.id, VoiceTermKind.TELEMETRY, listOf(t.short, t.shortEn))
             VoiceSynonyms.TELEMETRY[t.id]?.forEach { add(it, VoiceTermKind.TELEMETRY, t.id) }
         }

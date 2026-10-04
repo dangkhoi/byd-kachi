@@ -44,6 +44,8 @@ class Goi2FeatureWiringContractTest {
     fun `bang lop dung phan quyet dinh o core chu KHONG tu tinh`() {
         assertTrue(widgets.contains("TyreBoard.readings("), "widget lốp phải lấy trạng thái từ TyreBoard (:core)")
         assertTrue(widgets.contains("TyreBoardView("), "ô lớn phải dùng ô vẽ bảng 4 bánh")
+        // ⚠ 2.88: không còn ngưỡng lốp nào ở `:core` (owner 04/10) — bài canh TOÀN CỤC là `TyreNoThresholdContractTest`;
+        // hai chuỗi dưới giữ lại như một chốt riêng cho ô vẽ (con số cũ hay quay lại nhất).
         // [SOÁT] bản cũ dùng `&&` ⇒ viết cứng MỘT ngưỡng vẫn qua. Chặn TỪNG ngưỡng.
         // ⚠ CHỈ hai ngưỡng áp suất là kiểm được bằng chuỗi: ngưỡng lệch `0.3` trùng với **tỉ lệ vẽ** (`0.34f`,
         // `0.30f`) nên quét chuỗi cho nó là dương tính giả — đã thử và nó báo sai ngay. Phần "không tự phán xét"

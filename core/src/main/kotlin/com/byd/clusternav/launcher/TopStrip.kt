@@ -9,8 +9,22 @@ package com.byd.clusternav.launcher
  *   có **hai bảng màu** và chúng sẽ lệch nhau: [ĐO] bản nháp đầu của tệp này viết `#37d67a` trong khi `KachiTheme.GREEN`
  *   là `#34d399` — đúng cái bẫy hai-bản-sao mà dự án đang dọn.
  * @property desc câu đọc cho trình đọc màn hình — chip rất ngắn nên chữ hiện ra thường không đủ nghĩa.
+ * @property runs 2.88 — đoạn chữ mang SẮC THÁI RIÊNG (chip lốp: mỗi con số một màu). Rỗng (mặc định) ⇒ cả chuỗi một
+ *   màu [tone] như mọi chip trước 2.88 — các chip cũ không đổi một byte nào.
  */
-data class ChipView(val text: String, val icon: String?, val tone: ChipTone, val desc: String)
+data class ChipView(
+    val text: String,
+    val icon: String?,
+    val tone: ChipTone,
+    val desc: String,
+    val runs: List<ChipRun> = emptyList(),
+)
+
+/**
+ * Một đoạn `[start, end)` của [ChipView.text] mang sắc thái [tone] riêng. Vị trí tính theo `Char` của chuỗi Kotlin —
+ * đúng đơn vị của `Spannable` ở `:app`, nên tầng vẽ đặt span thẳng, không tính lại.
+ */
+data class ChipRun(val start: Int, val end: Int, val tone: ChipTone)
 
 /**
  * Sắc thái chip. `:app` dịch sang mã màu — xem [ChipView.tone].
@@ -22,8 +36,11 @@ data class ChipView(val text: String, val icon: String?, val tone: ChipTone, val
  * ⚠ [NEUTRAL] vẫn là sắc thái của datum bật/tắt **chưa đọc được** (off-car / không có trên trim): lúc đó chip hiện
  * `"—"` như mọi datum khác. Tô nó thành [INACTIVE] là **bịa trạng thái** — nói *"đang tắt"* trong khi sự thật là
  * *"không biết"*, đúng điều dự án cấm (xem [TelemetryView.PLACEHOLDER]).
+ *
+ * [WARN]/[ALERT] (2.88) = xe báo VÀNG / ĐỎ cho một bánh lốp ([TyreSeverity]). Chip lốp tô bánh bình thường bằng
+ * [ENERGY] — *"xanh lá như màu range lái"* (owner 04/10) — và bánh chưa phán được bằng [NEUTRAL].
  */
-enum class ChipTone { NEUTRAL, ENERGY, ACTIVE, INACTIVE }
+enum class ChipTone { NEUTRAL, ENERGY, ACTIVE, INACTIVE, WARN, ALERT }
 
 /**
  * MỘT KHỐI của màn chọn chip — xem [TopStripConfig.picks].
@@ -162,6 +179,14 @@ data class TopStripConfig(
         const val SEAT_R = "chip_seat_r"
 
         /**
+         * 2.88 — chip **ÁP SUẤT LỐP** (owner 04/10: *"vẽ icon bánh xe: 2.4 2.4 2.6 2.6 kiểu vậy, cho 4 bánh, cái nào
+         * cảnh báo thì vàng, đỏ, bình thường thì xanh lá như màu range lái"*). Bốn số TT TP · ST SP, mỗi số một màu
+         * theo lời phán của chính xe ([TyreBoard] / [TyreJudge]) — xem [TopStripChips] ca này. TUỲ CHỌN: có ở
+         * [BUILT_IN], KHÔNG ở [DEFAULT_IDS] (không lặng lẽ mọc thêm chip cho người đang dùng — KDoc [DEFAULT_IDS]).
+         */
+        const val TYRES = "chip_tyres"
+
+        /**
          * MỖI chip ghế GỘP đọc HAI datum, và cặp ấy khai **đúng một chỗ** — đây.
          *
          * Vì sao là một bảng chứ không hai nhánh `when` chép tay: bộ dựng chip, bảng nhu cầu đọc
@@ -179,7 +204,7 @@ data class TopStripConfig(
          * hàm đó đọc [BUILT_IN] — [ĐO] khai sau thì việc dựng [DEFAULT] lúc nạp lớp đọc `BUILT_IN` còn null và cả
          * gói test nổ `ExceptionInInitializerError` (27 bài đỏ). Ba hằng `PM25`/`TEMP`/`ENERGY` là `const` nên an toàn.
          */
-        val BUILT_IN: Set<String> = setOf(PM25, TEMP, ENERGY, SEAT, SEAT_R)
+        val BUILT_IN: Set<String> = setOf(PM25, TEMP, ENERGY, SEAT, SEAT_R, TYRES)
 
         /**
          * MẶC ĐỊNH — *"ai không sửa gì thì thấy cái gì"*, **khác** câu hỏi của [BUILT_IN] (*"đặt được cái gì"*).
@@ -278,6 +303,9 @@ data class TopStripConfig(
                 Domain.CLIMATE, labelEn = "Driver seat (heat/vent)"))
             add(CapabilityPick(SEAT_R, "Ghế phụ (sưởi/mát)", "ic-seat", EvidenceTier.PROVEN, CapabilityKind.READ,
                 Domain.CLIMATE, labelEn = "Passenger seat (heat/vent)"))
+            // 2.88 · chip áp suất lốp — hình CẢ XE + 4 bánh (cùng hình nhóm Lốp `g_tyres`: một khái niệm, một hình).
+            add(CapabilityPick(TYRES, "Áp suất lốp", CapabilityGroups.TYRES.icon, EvidenceTier.PROVEN, CapabilityKind.READ,
+                Domain.TYRES, labelEn = "Tyre pressure"))
             // Lọc bằng CHÍNH [isChippable] thay vì viết lại điều kiện `kind == READ`: bản cũ lặp lại luật, nên khi
             // luật ở [isChippable] chặt thêm (G1 loại NHÓM) thì màn chọn vẫn bày ra thứ mà [setEnabled] sẽ từ chối —
             // người dùng bấm mà không có gì xảy ra. Một luật, một chỗ.

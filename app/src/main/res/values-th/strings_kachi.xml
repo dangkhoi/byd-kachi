@@ -72,7 +72,8 @@
     <string name="kachi_row_accent">สีเน้น</string>
     <string name="kachi_row_tone">โทนการ์ด</string>
     <string name="kachi_row_bg_opacity">ความโปร่งใสของพื้นหลัง</string>
-    <string name="kachi_bg_opacity_note">ใช้ระดับเดียวกันกับพื้นหลังของแถบสถานะ แถบปุ่มรถ และวิดเจ็ต 0% คือแบบเดิม ยิ่งตัวเลขมากยิ่งโปร่ง ข้อความและไอคอนจะไม่จางลง หากสิ่งที่อยู่ด้านหลังทำให้อ่านข้อความได้ยาก (เช่น ภาพพื้นหลังที่สว่าง) แถบและการ์ดจะคงความทึบไว้เท่าที่จำเป็น ปิดการตั้งค่าเพื่อดูผลลัพธ์</string>
+    <string name="kachi_bg_opacity_note">ใช้ระดับเดียวกันกับพื้นหลังของแถบสถานะ แถบปุ่มรถ และวิดเจ็ต ลากไปซ้ายสุดคือแบบเดิม ลากไปทางขวาพื้นหลังจะโปร่งขึ้น ลากไปขวาสุด (100%) คือพื้นหลังโปร่งใสทั้งหมด ข้อความและไอคอนคงเดิมเสมอ บนภาพพื้นหลังที่สว่าง ความโปร่งใสสูงอาจทำให้อ่านข้อความได้ยาก ขึ้นอยู่กับคุณเลือก ปล่อยนิ้วเพื่อใช้ค่า ปิดการตั้งค่าเพื่อดูผลลัพธ์</string>
+    <string name="kachi_bg_opacity_a11y">ความโปร่งใสของพื้นหลัง: %1$s</string>
     <string name="kachi_sec_car_image">ภาพรถ</string>
     <string name="kachi_car_image_current">ใช้งานอยู่: %1$s</string>
     <string name="kachi_car_image_title">ภาพรถ</string>
@@ -475,6 +476,7 @@
     <string name="kachi_keys_learn">เรียนรู้ปุ่มใหม่…</string>
     <string name="kachi_keys_learn_name">ตั้งชื่อปุ่มที่เพิ่งกด</string>
     <string name="kachi_key_custom_name">%1$s (รหัส %2$d)</string>
+    <string name="kachi_key_custom_name_src">%1$s (รหัส %2$d · %3$s)</string>
     <string name="kachi_key_code">รหัสปุ่ม %1$d</string>
     <string name="kachi_key_unknown">%1$s (%2$d)</string>
     <string name="kachi_key_mic_hold">ปุ่มไมค์บนพวงมาลัย — กดค้าง (328)</string>
@@ -649,6 +651,7 @@
     <string name="kachi_sc_refuse_cast">%1$s กำลังฉายบนหน้าปัด</string>
     <string name="kachi_sc_not_installed">ไม่ได้ติดตั้ง %1$s</string>
     <string name="kachi_sc_bg_failed">เริ่ม %1$s เบื้องหลังไม่ได้</string>
+    <string name="kachi_sc_bg_failed_why">เริ่ม %1$s เบื้องหลังไม่ได้ (%2$s)</string>
     <string name="kachi_sc_full_card">กำลังแสดงเต็มหน้าจอ — แตะเพื่อนำกลับมาที่ช่อง</string>
     <string name="kachi_sc_full_failed">เปิด %1$s แบบเต็มหน้าจอไม่ได้</string>
     <string name="kachi_captest_title">ทดสอบฟังก์ชันรถทีละรายการ</string>
