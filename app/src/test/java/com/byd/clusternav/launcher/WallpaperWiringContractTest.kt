@@ -191,9 +191,13 @@ class WallpaperWiringContractTest {
     @Test
     fun `doi nguon anh chi dung lai o widget, khong dung lai o dang chieu app`() {
         val fn = SourceRoots.body(ws, "fun setPhotoSource(")
-        assertTrue(fn.contains("rebuildWidgetSlots()"),
-            "phải dựng lại CHỈ ô widget — dựng lại ô đang chiếu app là ngắt kênh chạm (C5)")
+        // ĐỔI GHIM (J1, QA2 P3 — mỗi lần mở máy mọi lưới widget khớp HAI lần): chỉ ô widget ĐỌC ảnh
+        // ([WorkspacePhotoSource.consumes]) dựng lại; lưới nút kính/ô số không dính gì tới ảnh thì giữ nguyên view.
+        assertTrue(fn.contains("rebuildWidgetSlots(photos::consumes)"),
+            "phải dựng lại CHỈ ô widget đọc ảnh — dựng lại ô đang chiếu app là ngắt kênh chạm (C5)")
         assertTrue(fn.contains("if (changed)"), "gọi lại với cùng nguồn thì không được làm gì")
+        assertTrue(WorkspacePhotoSource().consumes(listOf("w_clock", "w_photos")))
+        assertFalse(WorkspacePhotoSource().consumes(listOf("win_lf", "win_rf", "w_clock")), "lưới không đọc ảnh không dựng lại")
     }
 
     // ── Mặc định không đổi gì ────────────────────────────────────────────────────────────────────

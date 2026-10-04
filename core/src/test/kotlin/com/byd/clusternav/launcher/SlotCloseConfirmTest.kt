@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import com.byd.clusternav.launcher.SlotCloseConfirm.Tap
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -88,5 +89,22 @@ class SlotCloseConfirmTest {
         assertEquals(SlotHeadRest.HIDE_AFTER_MS, SlotCloseConfirm.hideAfterMs(SlotCloseConfirm.WINDOW_MS), "cửa sổ gốc: byte như hôm nay")
         assertEquals(SlotHeadRest.HIDE_AFTER_MS, SlotCloseConfirm.hideAfterMs(500L))
         assertEquals(11_000L, SlotCloseConfirm.hideAfterMs(10_000L))
+    }
+
+    /**
+     * Soát vòng 5 [P3] — lần nhấn chỉ là XÁC NHẬN khi ngón nhấn xuống SAU khung vẽ đầu tiên của đĩa đỏ; cú chạm không đến từ
+     * ngón (trợ năng) không xét. Chưa thấy ⇒ một lần chạm hợp lệ về khoảng cách vẫn chỉ WAIT (ô vẫn chờ).
+     */
+    @Test
+    fun `chua thay dia do thi chua phai xac nhan`() {
+        assertTrue(SlotCloseConfirm.seen(pressDown = null, shownAt = null), "trợ năng: không có lần nhấn")
+        assertFalse(SlotCloseConfirm.seen(pressDown = 1_600, shownAt = null), "chưa vẽ lần nào")
+        assertFalse(SlotCloseConfirm.seen(pressDown = 1_600, shownAt = 2_516), "nhấn TRƯỚC khung vẽ")
+        assertTrue(SlotCloseConfirm.seen(pressDown = 2_516, shownAt = 2_516))
+        assertTrue(SlotCloseConfirm.seen(pressDown = 2_800, shownAt = 2_516))
+        assertEquals(Tap.WAIT, SlotCloseConfirm.onTap(1_000, 1_700, 600, 300, seen = false))
+        assertEquals(Tap.FIRE, SlotCloseConfirm.onTap(1_000, 1_700, 600, 300, seen = true))
+        assertEquals(Tap.ARM, SlotCloseConfirm.onTap(null, 1_700, null, 300, seen = false), "lượt đầu không cần thấy gì")
+        assertEquals(Tap.ARM, SlotCloseConfirm.onTap(1_000, 3_100, 600, 300, seen = false), "quá cửa sổ ⇒ lượt đầu mới")
     }
 }

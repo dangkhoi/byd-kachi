@@ -36,8 +36,16 @@ class WidgetFitH1ContractTest {
         val apply = SourceRoots.body(scale, "fun apply(k: Double, f: Form, n: Int, cw: Int = Int.MAX_VALUE, ch: Int = Int.MAX_VALUE)")
         assertTrue(apply.contains("params(b, iconK(b, k), rot)"), "LayoutParams của icon áp hệ số đã chặn theo ô")
         val iconK = SourceRoots.body(scale, "private fun iconK(b: Base, k: Double)")
-        assertTrue(iconK.contains("FitRules.iconScale(k, b.lpW, b.lpH, cellW - sc(b.insetX, k), cellH - sc(b.insetY, k))"))
-        assertTrue(iconK.contains("b.v !is ImageView"), "chỉ ICON — nút nhạc 48dp/thanh tiến trình không bị chặn theo ô")
+        // Soát vòng 6 — ĐỔI GHIM có lý do: lề của icon theo DẠNG (`room` — dạng ngang xoay lề "chỉ dọc" của con khối chính, như
+        // padding/params); bản cũ tính một lần theo dạng dọc ⇒ icon ô nút kính 26px thay vì 29px (QA3; FitRulesRound6Test).
+        assertTrue(iconK.contains("val own = room(b, form, k, cellW, cellH)"))
+        assertTrue(SourceRoots.body(scale, "private fun room(b: Base, f: Form, k: Double, cw: Int, ch: Int)")
+            .contains("FitRules.iconScale(k, b.lpW, b.lpH, cw - sc(x, k), ch - sc(y, k))"))
+        // ĐỔI GHIM (soát vòng 4 P3): bản H1 nói "nút nhạc 48dp không bị chặn" mà chỉ kiểm `!is ImageView` — nút nhạc LÀ
+        // ImageView (MediaWidgetView.mbtn) nên vẫn bị chặn dưới 48dp. Quyết theo R-WF4 ("nút nhạc 48dp không co dưới
+        // 48dp"): nút BẤM cỡ cố định được miễn — chặn theo ô chỉ cho icon không bấm được.
+        assertTrue(iconK.contains("b.v !is ImageView || b.v.isClickable"), "chỉ ICON không bấm được — nút nhạc 48dp không bị chặn theo ô")
+        assertTrue(code("MediaWidgetView.kt").contains("fun mbtn(icon: String) = ImageView(ctx)"), "nút nhạc là ImageView ⇒ cần miễn tường minh")
         // Lưới truyền cỡ ô; đo dò KHÔNG (hộp tự nhiên ở thang 1 phải đo không chặn).
         assertTrue(SourceRoots.body(layout, "private fun applyAll(").contains("apply(f.scale, opt.form, opt.lines, f.cellW, f.cellH)"))
         assertTrue(SourceRoots.body(probe, "private fun shape(").contains("fs.apply(1.0, opt.form, opt.lines)"))
@@ -46,14 +54,18 @@ class WidgetFitH1ContractTest {
 
     @Test
     fun `2 - dang nhan du phong toi duoc GridFit`() {
-        assertTrue(probe.contains("Option(Form.HORIZONTAL, 2, reserve = true), Option(Form.ICON_ONLY, 0)"), "dự phòng ngay trước chỉ-icon")
-        assertEquals(listOf(false, false, false, true, false), FitProbe.OPTIONS.map { it.reserve })
+        // ĐỔI GHIM (J1 + soát vòng 4 P3): giữa dự phòng và chỉ-icon nay có ba dạng nhãn NGẮN, và mọi dạng PHỤ (dự phòng ·
+        // nhãn ngắn · chỉ-icon) đo LƯỜI ([FitProbe.more]); phép dùng lại số đo của ô không nhãn dời sang `twin`/`fill`
+        // (bản H1 ghim chuỗi trong thân `need`). `WidgetFitJ1ContractTest` khoá phần mới.
+        assertEquals(listOf(false, false, false, true, false, false, false, false), FitProbe.OPTIONS.map { it.reserve })
+        assertEquals(FitProbe.OPTIONS.indexOfFirst { it.reserve } + 1, FitProbe.OPTIONS.indexOfFirst { it.short }, "dự phòng ngay trước nhãn ngắn")
+        assertEquals(GridFit.Form.ICON_ONLY, FitProbe.OPTIONS.last().form, "chỉ-icon là dạng cuối")
         assertTrue(SourceRoots.body(layout, "private fun combine(").contains("reserve = FitProbe.OPTIONS[i].reserve"))
         assertTrue(SourceRoots.body(probe, "private fun shape(").contains("reserve = opt.reserve"))
         // Ô không nhãn: ngang-2 ≡ ngang-1 — dùng lại số đo (không thêm lượt đo dò), cờ dùng được theo ĐÚNG chỉ số.
-        val need = SourceRoots.body(probe, "fun need(child: View, fs: FitScale, floors: Floors)")
-        assertTrue(need.contains("opt.form == Form.HORIZONTAL && opt.lines == 2 -> shapes.indexOfFirst { it.form == Form.HORIZONTAL }"))
-        assertTrue(need.contains("usable += usable[at]"))
+        val twin = SourceRoots.body(probe, "private fun twin(i: Int, fs: FitScale)")
+        assertTrue(twin.contains("opt.lines == 2 && opt.form == Form.HORIZONTAL -> at(opt.short, Form.HORIZONTAL, 1)"))
+        assertTrue(SourceRoots.body(probe, "private fun fill(").contains("usable[i] = usable[at]"))
     }
 
     @Test

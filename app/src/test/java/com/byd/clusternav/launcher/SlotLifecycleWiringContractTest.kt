@@ -69,7 +69,13 @@ class SlotLifecycleWiringContractTest {
             "SlotCloseConfirm.hideAfterMs(e.cluster?.armedLeftMs())" to "SlotHeadAutoHide.kt",
             "observe(it, cluster)" to "SlotActionsCluster.kt",
             // Soát vòng 3 [P3] — ghép click↔lần nhấn theo mốc sự kiện · QA 2.87 — đĩa sau ⇄ ô App + tô lại khi đổi chủ đề tại chỗ.
-            "presses.take(now)" to "SlotActionsCluster.kt",
+            // Soát vòng 4 [P3] — ĐỔI GHIM có lý do: `take()` không còn tham số giờ (không bỏ lần nhấn theo tuổi — bỏ theo tuổi lệch
+            // cặp ⇒ FIRE, `SlotCloseTouchTest`); mốc lượt `reached` dọn lần nhấn View không ra click (thay ngưỡng tuổi + trần hàng).
+            "presses.take()" to "SlotActionsCluster.kt",
+            "presses.reached(p)" to "SlotActionsCluster.kt",
+            // Soát vòng 5 [P3] — xác nhận chỉ sau khi đĩa đỏ đã được vẽ.
+            "SlotCloseConfirm.seen(press?.down, shownAt)" to "SlotActionsCluster.kt",
+            "markShown(cell, at)" to "SlotActionsCluster.kt",
             "SlotCloseTouch.inView(" to "SlotActionsCluster.kt",
             "swapDisc(ctx)" to "SlotActionsCluster.kt",
             "e.cluster?.restyle()" to "SlotHeadAutoHide.kt",
@@ -201,16 +207,23 @@ class SlotLifecycleWiringContractTest {
         // Soát vòng 3 [P3] — ĐỔI GHIM lần nữa, có lý do: cặp `touchDown/touchUp` "hiện tại" sai khi luồng chính trễ (click được
         // POST — r47 `View.java:14820-14825`; DOWN₂ tới trước click₁ ⇒ click₁ xoá D₂ ⇒ nhấp đúp thành "không phải ngón" ⇒ FIRE).
         // Nay mỗi click lấy ĐÚNG lần nhấn của nó ([SlotCloseTouch], bảng `SlotCloseTouchTest`) và mọi mốc là `eventTime`.
-        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "val press = presses.take(now)",
+        // Soát vòng 4 [P3] — ĐỔI GHIM có lý do: `take(now)` → `take()` (một lần nhấn mỗi click, không ngưỡng tuổi — lý do ở KDoc
+        // `SlotCloseTouch`; ca lệch cặp sau lần kẹt 1,0–1,25 s khoá ở `SlotCloseTouchTest`).
+        // Soát vòng 5 [P3] — ĐỔI GHIM có lý do: lần nhấn mà ngón xuống TRƯỚC khung vẽ đầu tiên của đĩa đỏ không thể là xác nhận
+        // (luồng chính kẹt ⇒ hai click chạy liền nhau trước mọi khung vẽ ⇒ bản vòng 4 FIRE ở mọi độ dài kẹt) ⇒ `seen` (bảng
+        // `SlotCloseConfirmTest`, mô phỏng `SlotCloseTouchTest` "luong chinh ket 2 s"); mốc vẽ ghi ở `markShown` (postOnAnimation).
+        order(tap, "if (b != Button.CLOSE) return port.onAction(index, b)", "val press = presses.take()",
             "val at = press?.up ?: now", "val gap = press?.let { p -> lastUp?.let { p.down - it } }",
-            "SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow)",
+            "val seen = SlotCloseConfirm.seen(press?.down, shownAt)",
+            "SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow, seen)",
             "SlotCloseConfirm.Tap.ARM -> arm(at, press?.up)", "SlotCloseConfirm.Tap.WAIT -> lastUp = press?.up",
             "SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }")
         assertEquals(1, Regex("""port\.onAction\(index, Button\.CLOSE\)""").findAll(cluster).count(), "đúng MỘT đường tới *tắt* thật")
         val track = SourceRoots.body(cluster, "private fun track(")
         order(track, "MotionEvent.ACTION_DOWN -> presses.down(ev.eventTime)",
             "if (!SlotCloseTouch.inView(ev.x, ev.y, v.width, v.height, slop)) presses.left()",
-            "MotionEvent.ACTION_UP -> presses.up(ev.eventTime)", "MotionEvent.ACTION_CANCEL -> presses.cancel()")
+            "MotionEvent.ACTION_UP -> presses.up(ev.eventTime)?.let { p -> buttons[Button.CLOSE]?.post { presses.reached(p) } }",
+            "MotionEvent.ACTION_CANCEL -> presses.cancel()")
         assertTrue("ViewConfiguration.get(slot.context).scaledTouchSlop" in cluster, "cùng ngưỡng trượt của View (`mTouchSlop`)")
         assertFalse("touchDown" in cluster || "touchUp" in cluster, "không còn cặp chạm 'hiện tại' (đọc lúc click chạy là đọc nhầm lần nhấn)")
         assertTrue("v.setOnTouchListener { _, ev -> cluster.track(ev); false }" in cluster,
@@ -219,14 +232,23 @@ class SlotLifecycleWiringContractTest {
         val arm = SourceRoots.body(cluster, "private fun arm(")
         // Soát vòng 3 — ĐỔI GHIM có lý do: mốc lượt đầu là `eventTime` của UP (không phải giờ handler) ⇒ hẹn hết giờ tính từ CÙNG
         // mốc đó, để đĩa đỏ tắt đúng lúc [SlotCloseConfirm.onTap] thôi nhận xác nhận (không còn "đỏ mà chạm lại thành ARM").
-        order(arm, "armedAt = at", "armedWindow = windowNow()", "lastUp = up", "paint(cell, confirm = true)", "R.string.kachi_slot_close_confirm",
+        order(arm, "armedAt = at", "armedWindow = windowNow()", "lastUp = up", "paint(cell, confirm = true)", "shownAt = null",
+            "markShown(cell, at)", "R.string.kachi_slot_close_confirm",
             "slot.postDelayed(disarmTask, (at + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L))", "onArmed(this)")
         val win = SourceRoots.body(cluster, "private fun windowNow(")
         assertTrue("getRecommendedTimeoutMillis(SlotCloseConfirm.WINDOW_MS.toInt(), flags)" in win &&
             "AccessibilityManager.FLAG_CONTENT_CONTROLS or AccessibilityManager.FLAG_CONTENT_ICONS" in win && "SlotCloseConfirm.window(" in win,
             "cửa sổ theo 'Thời gian thực hiện hành động' (API 29), gốc 2 s, không bao giờ ngắn hơn")
         val disarm = SourceRoots.body(cluster, "private fun disarm(")
-        order(disarm, "slot.removeCallbacks(disarmTask)", "lastUp = null", "armedAt = null", "paint(cell, confirm = false)", "describe(Button.CLOSE, kind), index + 1")
+        order(disarm, "slot.removeCallbacks(disarmTask)", "lastUp = null", "shownAt = null", "armedAt = null", "paint(cell, confirm = false)",
+            "describe(Button.CLOSE, kind), index + 1")
+        val shown = SourceRoots.body(cluster, "private fun markShown(")
+        // Soát vòng 6 [P3] — ĐỔI GHIM có lý do: mốc ghi ở pha animation thì traversal của CHÍNH khung đó (lượt WidgetFit nguội 0,5–0,7 s)
+        // chạy SAU mốc ⇒ cú chạm giữa khung (đĩa đỏ chưa lên màn) thành xác nhận ⇒ `am stack remove`. Nay `post` trong callback
+        // animation (message đồng bộ sau rào traversal — chạy khi khung xong); mô phỏng `SlotCloseTouchTest` "khung dai ngay sau ARM".
+        order(shown, "cell.postOnAnimation {", "if (armedAt != at || shownAt != null) return@postOnAnimation",
+            "if (cell.isShown) cell.post { if (armedAt == at && shownAt == null) shownAt = SystemClock.uptimeMillis() } else markShown(cell, at)")
+        assertFalse("if (cell.isShown) shownAt =" in shown, "không ghi mốc ngay ở pha animation")
         listOf("fun settle(", "fun hide()", "fun cancel()").forEach { assertTrue("disarm()" in SourceRoots.body(cluster, it), "$it phải gỡ lượt chờ") }
         assertTrue("if (Button.CLOSE !in now) disarm()" in SourceRoots.body(cluster, "fun refresh()"))
         val paint = SourceRoots.body(cluster, "private fun paint(")

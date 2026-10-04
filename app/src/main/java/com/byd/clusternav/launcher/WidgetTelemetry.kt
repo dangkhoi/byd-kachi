@@ -48,6 +48,8 @@ internal object WidgetTelemetry {
         val caption: String = "",
         val color: String? = null,
         val dim: Boolean = false,
+        /** J1 — dòng phụ là TÊN datum (không phải đơn vị): bản ngắn của tên đó ([FitScale.named]); `null` = không phải tên. */
+        val captionShort: String? = null,
     )
 
     /**
@@ -100,7 +102,7 @@ internal object WidgetTelemetry {
             bigView.text = v.big
             bigView.setTextColor(c(v.color ?: color))
             v.color?.let { KachiGlass.addInk(root, c(it)) }   // màu đổi theo nhịp (lốp ⇒ hổ phách) cũng được khai
-            subView.text = v.caption
+            FitScale.named(subView, v.caption, v.captionShort, name = v.captionShort != null)
             subView.visibility = if (v.caption.isEmpty()) View.GONE else View.VISIBLE
             root.alpha = if (v.dim) 0.5f else 1f
         }
@@ -208,9 +210,12 @@ internal object WidgetTelemetry {
             ctx, WidgetCatalog.pick(id)?.icon ?: "", KachiTheme.INK,
             first.needsBadge, TelemetryRegistry.byId(id)?.domain,
         )
+        val short = TelemetryRegistry.byId(id)?.displayShortLabel
         fun fillMini(now: CarStatus, unit: UnitPrefs) {
             val v = read(id, now, unit) ?: return
-            card.set(MiniValue(v.display, if (v.unit.isNotEmpty()) v.unit else v.label, dim = !v.available))
+            // J1: dòng phụ là TÊN datum khi không có đơn vị ⇒ khai bản ngắn (đổi khi tên đầy không hiện trọn — FitLabels).
+            val named = v.unit.isEmpty()
+            card.set(MiniValue(v.display, if (!named) v.unit else v.label, dim = !v.available, captionShort = if (named) short ?: v.label else null))
         }
         fillMini(car, units)
         return WidgetRefreshers.live(card.root) { d -> fillMini(d.car, d.units) }

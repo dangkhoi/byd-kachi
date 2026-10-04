@@ -2,7 +2,7 @@
 # ═══ Dựng gói + nghiệm thu, một lệnh — chạy SAU khi `synth-pack.py` xong (hoặc để xem gói giữa chừng) ══
 # Spec: docs/specs/kachi-voice-clone.html — T4 (đóng gói) · T5 (nghe thử chỗ ghép) · §6 (V-pack, V-nghe).
 #
-# Dùng:  SP=<scratchpad> REPO=<repo> bash scripts/voice/clone/finish-pack.sh [--allow-missing]
+# Dùng:  SP=<thư-mục-làm-việc-ngoài-repo> REPO=<repo> bash scripts/voice/clone/finish-pack.sh [--allow-missing]
 #
 # Ba bước, theo đúng thứ tự phụ thuộc — bước sau đọc kết quả bước trước, không bước nào đoán:
 #   1. build-pack.py     WAV → ADTS AAC + manifest.json + index.tsv/num.tsv + bảng ghim sha256
@@ -13,7 +13,7 @@
 #   `synth-pack.py` ở đây vì nó chiếm GPU hàng giờ và người chạy phải biết mình đang bật cái gì.
 set -euo pipefail
 
-: "${SP:?cần SP=<scratchpad>}"
+: "${SP:?cần SP=<thư mục làm việc ngoài repo>}"
 : "${REPO:?cần REPO=<đường dẫn repo>}"
 # Mặc định dùng venv CHỈ-NGHE (sherpa + soundfile + numpy), không dùng venv của F5.
 # Lý do: ba bước dưới đây **không cần GPU**, mà `synth-pack.py` thì có thể đang chạy hàng giờ trên MPS —

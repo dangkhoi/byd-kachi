@@ -36,8 +36,14 @@ object IconRepeat {
      * ([ĐO] máy ảo, ảnh `l5/icononly-zoom.png`): bốn nút kính mang bốn tên khác nhau nên luật theo tên cho bỏ nhãn,
      * nhưng ở 20–40dp bốn bóng xe chỉ khác một dấu kính cỡ 1–2px — người lái không phân biệt được kính nào. Ô nhóm vẫn
      * dùng [distinguishable] theo tên vì ở đó nhãn LUÔN hiện cạnh icon (icon chỉ là phụ).
+     *
+     * Soát vòng 4 (P3, quyết định điều phối J1): KHÔNG có trần [CAP] ở đây — HAI ô cùng một bóng hình cũng chặn. Lý do
+     * [CAP] = 3 ("một cặp trái/phải vẫn đọc được NHỜ NHÃN") không tồn tại khi nhãn bị ẩn: cặp kính lái/phụ
+     * (`ic_car_top_window_lf` ↔ `_rf` chỉ khác một hình chữ nhật ≈ 1×2px ở 24 đơn vị) bỏ nhãn là bấm nhầm kính. Giá phải
+     * trả: cặp ghế sưởi/mát trái-phải (hình đối xứng gương) cũng mất đường chỉ-icon — chúng vẫn có nhãn (đầy/ngắn).
      */
-    fun distinguishableWithoutLabels(icons: Iterable<String>): Boolean = distinguishable(icons.map(::silhouette))
+    fun distinguishableWithoutLabels(icons: Iterable<String>): Boolean =
+        icons.map(::silhouette).let { it.size == it.toSet().size }
 
     /**
      * Cùng luật cho một danh sách MÃ khả năng (ô widget): hình tra từ [CapabilityCatalog.pick] — nguồn hình duy nhất

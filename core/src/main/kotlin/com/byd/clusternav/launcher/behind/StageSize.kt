@@ -7,9 +7,11 @@ package com.byd.clusternav.launcher.behind
  * tức cỡ CỤM khi đang chiếu, KDoc `StagingDisplay.create`) có đúng là cỡ display 0 không.
  *
  * Luật cũ *"WxH ≠ PxQ ⇒ phải sửa"* báo động GIẢ ở hai ca có nguồn [ĐO nguồn]:
- *  - màn XOAY: cỡ logic hoán W/H khi rotation 90/270 (`DisplayContent.updateDisplayAndOrientation` — `rotated ? base H : base W`,
- *    bản AOSP trong scratchpad soát vòng 3 `:1590-1606`), còn `Display.Mode` là chế độ tấm nền, KHÔNG xoay
- *    (android-12.0.0_r34 `Display.java:1750-1761` `getPhysicalWidth` = `mWidth` của mode);
+ *  - màn XOAY: cỡ logic hoán W/H khi rotation 90/270 — DL5: android-12.0.0_r34
+ *    `services/core/java/com/android/server/wm/DisplayContent.java:1953-1971` (`updateDisplayAndOrientation`: `rotation =
+ *    getRotation()` :1955, `dw = rotated ? mBaseDisplayHeight : mBaseDisplayWidth` :1957-1958, `logicalWidth = dw` :1970-1971);
+ *    cùng luật ở android-10.0.0_r47 `DisplayContent.java:1591-1606` (đọc `mRotation`). Còn `Display.Mode` là chế độ tấm nền,
+ *    KHÔNG xoay (android-12.0.0_r34 `Display.java:1750-1761` `getPhysicalWidth` = `mWidth` của mode);
  *  - `wm size` / OEM co giãn UI: cỡ logic = cỡ ép (`mBaseDisplayWidth`), mode vẫn là tấm nền — chính tài liệu `getPhysicalWidth`
  *    nói số pixel app nhận "may differ from the mode's actual resolution".
  *

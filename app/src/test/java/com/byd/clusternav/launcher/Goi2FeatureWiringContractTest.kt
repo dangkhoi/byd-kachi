@@ -115,8 +115,10 @@ class Goi2FeatureWiringContractTest {
         val fn = SourceRoots.body(ws, "fun setUnitPrefs(")
         assertFalse(fn.contains("rebuild()"), "KHÔNG được dựng lại toàn bộ ô chỉ vì đổi đơn vị")
         assertTrue(fn.contains("rebuildWidgetSlots()"), "phải dựng lại đúng ô widget")
-        val only = SourceRoots.body(ws, "private fun rebuildWidgetSlots()")
-        assertTrue(only.contains("!is SlotContent.Widget) continue"), "phải BỎ QUA ô App và ô trống")
+        // ĐỔI GHIM (J1, QA2 P3 — khởi động khớp lưới hai lần): `rebuildWidgetSlots` nhận thêm bộ lọc theo mã widget
+        // (mặc định = mọi ô widget, đúng hành vi đổi đơn vị) để đổi nguồn ẢNH chỉ dựng lại ô đọc ảnh.
+        val only = SourceRoots.body(ws, "private fun rebuildWidgetSlots(")
+        assertTrue(only.contains("!is SlotContent.Widget || !only(content.ids)) continue"), "phải BỎ QUA ô App và ô trống")
         assertFalse(only.contains("removeAllViews()"), "không được xoá sạch con — đó là dựng lại tất cả")
     }
 

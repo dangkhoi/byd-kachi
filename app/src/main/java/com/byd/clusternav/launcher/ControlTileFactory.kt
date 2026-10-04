@@ -81,8 +81,9 @@ class ControlTileFactory(
             // ⚠ [KIỂM TOÁN 2026-09-12 mục 4] Hai dòng vẫn KHÔNG đủ cho ô hẹp: [ĐO] ô 82px của hàng nút nhóm cắt
             // `"Window front-right"` thành `"Window front-ri…"` và `"Kính trước-phải"` thành `"Kính trước-p…"` ⇒ hai
             // kính TRƯỚC đọc ra y hệt nhau, đúng lỗi mà `short` đã chữa cho ô ĐỌC. Ở vùng hẹp dùng bản NGẮN; vùng
-            // rộng giữ nhãn đầy (không thu chữ ở nơi không cần).
+            // rộng giữ nhãn đầy (không thu chữ ở nơi không cần) + KHAI bản ngắn cho lưới widget (J1 — FitLabels).
             text = if (size.narrow) def.displayShortLabel else def.displayLabel
+            if (!size.narrow) FitScale.named(this, def.displayLabel, def.displayShortLabel)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp); gravity = Gravity.CENTER
             maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }

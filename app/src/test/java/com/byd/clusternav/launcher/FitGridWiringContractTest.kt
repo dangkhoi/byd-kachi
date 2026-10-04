@@ -91,9 +91,11 @@ class FitGridWiringContractTest {
         }
         // ĐỔI GHIM (QA 04/10, làn H1): `apply` nhận thêm cỡ ô (cw, ch) để chặn icon theo ô ([FitRules.iconScale]) —
         // khoá no-op nay là bộ NĂM (k, dạng, số dòng, cỡ ô); đo dò gọi bản không cỡ ô (mặc định = không chặn).
+        // ĐỔI GHIM lần nữa (QA3, 04/10): bộ khoá thêm trần icon CHUNG của lưới (`iconCapPx` — icon cùng lưới cùng cỡ,
+        // FitRules.iconCap): đổi trần mà trả no-op thì icon giữ cỡ cũ.
         val apply = SourceRoots.body(scale, "fun apply(k: Double, f: Form, n: Int, cw: Int = Int.MAX_VALUE, ch: Int = Int.MAX_VALUE)")
         assertTrue(
-            apply.contains("if (k == scale && f == form && n == lines && cw == cellW && ch == cellH) return false"),
+            apply.contains("if (k == scale && f == form && n == lines && cw == cellW && ch == cellH && iconCapPx == appliedCap) return false"),
             "áp lại cùng bộ = no-op",
         )
         // `setTextSize` là no-op khi autosize bật (TextView.java:4271-4275 r47) ⇒ ô STEP "AUTO" phải co dải autosize.

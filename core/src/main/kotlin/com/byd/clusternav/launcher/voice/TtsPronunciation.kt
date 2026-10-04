@@ -47,7 +47,7 @@ object TtsPronunciation {
      * *"viết thế nào"* là một câu hỏi **đo được** — nhưng chỉ đo được khi đo nhiều lần: Piper VITS có **nhiễu lấy
      * mẫu** (`noise_scale` 0.667), mỗi lượt sinh ra một đoạn tiếng khác nhau ⇒ một lượt đo **n=1 không kết luận
      * được gì**. Lượt n=1 ngày 2026-09-17 từng chọn `"Ka chi"`; lượt **n=5** cùng ngày bác lại:
-     * [ĐO host 2026-09-17, n=5, vòng lặp Piper→ASR đang ship — `scratchpad/repeat/repeat.tsv`]
+     * [ĐO host 2026-09-17, n=5, vòng lặp Piper→ASR đang ship — bảng kết quả của công cụ ngoài repo]
      *  • `"Kachi"` (để nguyên) → ASR nghe **"AC HI"** 5/5 — đúng bệnh đánh vần;
      *  • `"Ka-chi"` → **"KACHI"** 2/5 và giữ được cả hai âm ở **5/5** lượt;
      *  • `"Ka chi"` → *"CÀI" / "CÁ TRI" / "CÀ CHI"* — **mất âm đầu**, không lượt nào đúng.
@@ -98,7 +98,7 @@ object TtsPronunciation {
         "nm" to "niu-tơn mét",
         "rpm" to "vòng trên phút",
         "µg/m³" to "mi-crô-gam trên mét khối",
-        // Owner đọc mẫu *"pê-em"*. [ĐO host 2026-09-17, n=5 — `scratchpad/repeat/repeat.tsv`]: viết *"pê-em"*
+        // Owner đọc mẫu *"pê-em"*. [ĐO host 2026-09-17, n=5 — bảng kết quả của công cụ ngoài repo]: viết *"pê-em"*
         // thì ASR nghe lại đúng **1/5** lượt (*"TEN"/"KEM"/"K"*) — **tệ hơn cả để nguyên** `PM2.5` (2/5).
         // Cùng bộ tên chữ cái tiếng Việt nhưng viết rời *"pê mờ"* thì đúng **3/5**. Giữ nguyên Ý của owner
         // (đọc bằng tên chữ cái Việt), lấy CÁCH VIẾT mà số đo chọn. Owner muốn đổi lại thì sửa đúng dòng này.
@@ -144,7 +144,7 @@ object TtsPronunciation {
      * Đây đúng là việc Piper đang làm sai: nó cũng đánh vần, nhưng đánh vần bằng **tên chữ cái tiếng Anh** đọc
      * qua bộ âm tiếng Việt (*"cê-hát"* cho `ch`). Bảng này nói ra tên chữ cái mà người Việt thật sự đọc.
      *
-     * ⚠ Nối bằng **dấu cách**, không bằng gạch nối — [ĐO host 2026-09-17, n=5 — `scratchpad/repeat/repeat.tsv`]:
+     * ⚠ Nối bằng **dấu cách**, không bằng gạch nối — [ĐO host 2026-09-17, n=5 — bảng kết quả của công cụ ngoài repo]:
      * *"Tầm hoạt động **e-vê**"* → ASR nghe *"ELI"/"ERICON"* **0/5**, còn *"Tầm hoạt động **e vê**"* → *"EV"*
      * **5/5**. Từng chữ cái là một **tiếng rời**, và espeak chỉ đọc đúng như thế khi chúng được viết rời.
      */

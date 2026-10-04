@@ -5,7 +5,7 @@ Spec: docs/specs/kachi-voice-clone.html — R1 (xưởng tại máy, cùng seed 
 §4.6 (số đo pha xưởng), §6 V-pack (đọc lại TỪNG clip bằng chính bộ nhận dạng đang ship).
 
 Chạy:
-  SP=<scratchpad> REPO=<repo> /tmp/tts-venv/bin/python scripts/voice/clone/synth-pack.py \
+  SP=<thư-mục-làm-việc-ngoài-repo> REPO=<repo> /tmp/tts-venv/bin/python scripts/voice/clone/synth-pack.py \
       --clips $SP/voice-clone/clips.tsv --out $SP/voice-clone/pack-wav [--only fixed,head] [--limit 10]
 
 ## Bốn thứ khiến script này KHÔNG phải một vòng for đơn giản

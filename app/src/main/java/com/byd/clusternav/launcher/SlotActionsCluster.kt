@@ -90,6 +90,12 @@ internal class SlotActionsCluster private constructor(
 
     /** Cửa sổ chờ của lượt đang chờ ([windowNow] đọc lúc vào chờ). */
     private var armedWindow = SlotCloseConfirm.WINDOW_MS
+
+    /**
+     * Soát vòng 5 [P3]: lúc (`SystemClock.uptimeMillis`) trạng thái chờ (đĩa đỏ) lên KHUNG VẼ đầu tiên ([markShown]); `null` =
+     * chưa vẽ ⇒ lần nhấn nào cũng chưa thể là xác nhận ([SlotCloseConfirm.seen]).
+     */
+    private var shownAt: Long? = null
     private val disarmTask = Runnable { disarm() }
 
     /** Các lần nhấn TRỌN của ngón trên nút *tắt* ([track]) chờ click của chúng ([tap]) — xem [SlotCloseTouch]. */
@@ -118,12 +124,16 @@ internal class SlotActionsCluster private constructor(
         // Soát vòng 3 [P3]: click được POST sau UP (r47 `View.java:14820-14825`) ⇒ lúc nó chạy, ngón có thể đã nhấn tiếp. Lấy lần
         // nhấn CỦA click này từ hàng đợi ([SlotCloseTouch]); mọi mốc là `eventTime` của nó. Không có ⇒ click không đến từ ngón
         // (trợ năng `ACTION_CLICK`, bàn phím) ⇒ không có khoảng nhấp đúp để đo, mốc = giờ hiện tại.
+        // Soát vòng 4 [P3]: ĐÚNG MỘT lần nhấn ở đầu hàng, không bỏ theo tuổi (bỏ theo tuổi lệch cặp ⇒ FIRE sau lần kẹt 1,0–1,25 s).
         val now = SystemClock.uptimeMillis()
-        val press = presses.take(now)
+        val press = presses.take()
         val at = press?.up ?: now
         val gap = press?.let { p -> lastUp?.let { p.down - it } }
         val tapGap = ViewConfiguration.getDoubleTapTimeout().toLong()
-        when (SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow)) {
+        // Soát vòng 5 [P3]: lần nhấn mà ngón xuống TRƯỚC khung vẽ đầu tiên của đĩa đỏ không thể là xác nhận (luồng chính kẹt ⇒
+        // hai click chạy liền nhau trước mọi khung vẽ) ⇒ WAIT, người lái thấy đỏ rồi chạm lại.
+        val seen = SlotCloseConfirm.seen(press?.down, shownAt)
+        when (SlotCloseConfirm.onTap(armedAt, at, gap, tapGap, armedWindow, seen)) {
             SlotCloseConfirm.Tap.ARM -> arm(at, press?.up)
             SlotCloseConfirm.Tap.WAIT -> lastUp = press?.up   // nhấp đúp: cú kế so với UP của cú NÀY (chuỗi nhấp nhanh vẫn là nhấp đúp)
             SlotCloseConfirm.Tap.FIRE -> { disarm(); port.onAction(index, Button.CLOSE) }
@@ -132,13 +142,15 @@ internal class SlotActionsCluster private constructor(
 
     /**
      * Chỉ NHÌN cú chạm trên nút *tắt* (lần nhấn cho [tap]) — không nuốt: trả `false`, `View.onTouchEvent` vẫn ra click. Trượt khỏi
-     * nút quá ngưỡng ⇒ View không ra click (r47 `View.java:14931-14941`) ⇒ lần nhấn ấy không vào hàng đợi.
+     * nút quá ngưỡng ⇒ View không ra click (r47 `View.java:14931-14941`) ⇒ lần nhấn ấy không vào hàng đợi. Soát vòng 4 [P3]: ở UP
+     * post mốc lượt [SlotCloseTouch.reached] qua CHÍNH `View.post` của nút — người nghe chạy trước `onTouchEvent` (r47
+     * `View.java:13424-13430`) ⇒ mốc vào hàng NGAY TRƯỚC `post(mPerformClick)` của cùng UP, dọn lần nhấn View không ra click.
      */
     private fun track(ev: MotionEvent) {
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> presses.down(ev.eventTime)
             MotionEvent.ACTION_MOVE -> buttons[Button.CLOSE]?.let { v -> if (!SlotCloseTouch.inView(ev.x, ev.y, v.width, v.height, slop)) presses.left() }
-            MotionEvent.ACTION_UP -> presses.up(ev.eventTime)
+            MotionEvent.ACTION_UP -> presses.up(ev.eventTime)?.let { p -> buttons[Button.CLOSE]?.post { presses.reached(p) } }
             MotionEvent.ACTION_CANCEL -> presses.cancel()
         }
     }
@@ -164,16 +176,41 @@ internal class SlotActionsCluster private constructor(
         armedWindow = windowNow()
         lastUp = up
         paint(cell, confirm = true)
+        shownAt = null
+        markShown(cell, at)
         cell.contentDescription = cell.context.getString(R.string.kachi_slot_close_confirm)
         slot.removeCallbacks(disarmTask)
         slot.postDelayed(disarmTask, (at + armedWindow - SystemClock.uptimeMillis()).coerceAtLeast(0L))
         onArmed(this)
     }
 
+    /**
+     * Soát vòng 5 [P3] — ghi [shownAt] ở KHUNG VẼ đầu tiên sau khi vào chờ. [ĐO nguồn] `postOnAnimation` = `CALLBACK_ANIMATION`
+     * của Choreographer (android-10.0.0_r47 `View.java:17902-17912`; 12.0.0_r34 `:19080`), mà một khung chạy input → animation →
+     * traversal (vẽ) → commit (r47 `Choreographer.java:718-727`; 12_r34 `:772-782`) ⇒ `paint` vừa đổi nền nên CHÍNH khung đó vẽ
+     * đĩa đỏ. Luồng chính còn kẹt ⇒ chưa có khung nào ⇒ chưa đánh dấu. Nút chưa hiện (hàng đang mờ vào) ⇒ đợi khung sau. Lượt
+     * chờ khác/đã gỡ ⇒ bỏ. View đã tháo ⇒ việc nằm hàng chờ của view tới khi gắn lại (`getRunQueue`), không rò.
+     *
+     * Soát vòng 6 [P3] — mốc ghi SAU khi khung ấy XONG (đo + bố cục + vẽ), không ở pha animation: traversal của CHÍNH khung đó có
+     * thể là một lượt WidgetFit nguội 0,5–0,7 s (`FitGridLayout` khớp trong `onMeasure`) ⇒ mốc ở pha animation cho phép một cú chạm
+     * trong lúc khung còn đang đo (đĩa đỏ CHƯA lên màn) thành xác nhận. [ĐO nguồn r47] `View.post` trong callback animation = message
+     * ĐỒNG BỘ, nằm sau rào của traversal (`ViewRootImpl.java:1689-1694` đặt rào lúc `paint` xin vẽ, `:1712-1715` gỡ ở `doTraversal`)
+     * ⇒ chỉ chạy khi `doFrame` đã xong. Chạm tới giữa khung được phát ở `nativePollOnce` (`MessageQueue.java:336`, trước khi lấy
+     * message; `ViewRootImpl.java:7630` + `:7434-7435` xử lý ngay) nên click của nó post SAU mốc này ⇒ DOWN < mốc ⇒ WAIT. [SUY] đường
+     * fd native của `InputEventReceiver` (chưa fetch `android_view_InputEventReceiver.cpp`).
+     */
+    private fun markShown(cell: View, at: Long) {
+        cell.postOnAnimation {
+            if (armedAt != at || shownAt != null) return@postOnAnimation
+            if (cell.isShown) cell.post { if (armedAt == at && shownAt == null) shownAt = SystemClock.uptimeMillis() } else markShown(cell, at)
+        }
+    }
+
     /** Về trạng thái thường (idempotent): màu, mô tả, hẹn giờ. */
     private fun disarm() {
         slot.removeCallbacks(disarmTask)
         lastUp = null
+        shownAt = null
         if (armedAt == null) return
         armedAt = null
         val cell = buttons[Button.CLOSE] as? ViewGroup ?: return

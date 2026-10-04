@@ -52,8 +52,8 @@ class VoicePreloadPolicyTest {
     }
 
     @Test
-    fun `reason noi dung so tho theo goi`() {
-        val r = VoicePreloadPolicy.reason(100 * mb, lowMemory = false, modelBytes = 74 * mb)
+    fun `ly do noi dung so tho theo goi`() {
+        val r = VoicePreloadPolicy.skip(100 * mb, lowMemory = false, modelBytes = 74 * mb).text(Lang.VI)
         assertTrue(r.contains("cần 185 MB"), r)
         assertTrue(r.contains("thở 111 MB"), r)
     }
@@ -134,11 +134,12 @@ class VoicePreloadPolicyTest {
             "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai",
             VoicePreloadPolicy.WAKE_OWNS_MODEL.text(Lang.VI),
         )
-        assertEquals("hệ thống báo thiếu bộ nhớ (lowMemory=true)", VoicePreloadPolicy.reason(500 * mb, lowMemory = true, modelBytes = 74 * mb))
-        assertEquals("chưa biết cỡ mô hình ⇒ nạp như cũ", VoicePreloadPolicy.reason(10 * mb, lowMemory = false, modelBytes = 0))
+        // Soát vòng 4 [P3]: ghim qua `skip(...).text(Lang.VI)` — đúng biểu thức dòng log `VoiceRecognizer.preload` dùng.
+        assertEquals("hệ thống báo thiếu bộ nhớ (lowMemory=true)", VoicePreloadPolicy.skip(500 * mb, lowMemory = true, modelBytes = 74 * mb).text(Lang.VI))
+        assertEquals("chưa biết cỡ mô hình ⇒ nạp như cũ", VoicePreloadPolicy.skip(10 * mb, lowMemory = false, modelBytes = 0).text(Lang.VI))
         assertEquals(
             "còn 100 MB, cần 185 MB (mô hình 74 MB + thở 111 MB)",
-            VoicePreloadPolicy.reason(100 * mb, lowMemory = false, modelBytes = 74 * mb),
+            VoicePreloadPolicy.skip(100 * mb, lowMemory = false, modelBytes = 74 * mb).text(Lang.VI),
         )
     }
 

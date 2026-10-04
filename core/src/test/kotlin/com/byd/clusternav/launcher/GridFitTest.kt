@@ -30,10 +30,19 @@ class GridFitTest {
     private val q = 1.0 / 32
     private val floorK = 10.0 / 11.5        // sàn 10sp trên nhãn 11.5sp
 
-    private fun tiles(line: Double = 1.0, icon: Boolean = true): List<Shape> = listOfNotNull(
+    /**
+     * Hộp fixture. [more] (soát vòng 4, P3: bài quét chưa bao giờ có dạng dự phòng) thêm dạng nhãn DỰ PHÒNG (ngang 2
+     * dòng) và ba dạng nhãn NGẮN (J1 — hộp hẹp hơn nhãn đầy, cùng chiều cao) để oracle độc lập phủ cả ba loại nhãn của
+     * tầng đọc được (KDoc [GridFit], bước 1–2a) trên mọi n/khung/đích chạm.
+     */
+    private fun tiles(line: Double = 1.0, icon: Boolean = true, more: Boolean = false): List<Shape> = listOfNotNull(
         Shape(Form.VERTICAL, 82.0, 48.0 + 46.0 * line, floorK, lines = 2),
         Shape(Form.VERTICAL, 142.0, 48.0 + 23.0 * line, floorK, lines = 1),
         Shape(Form.HORIZONTAL, 178.0, 12.0 + maxOf(30.0, 23.0 * line), floorK, lines = 1),
+        if (more) Shape(Form.HORIZONTAL, 128.0, 12.0 + maxOf(30.0, 46.0 * line), floorK, lines = 2, reserve = true) else null,
+        if (more) Shape(Form.VERTICAL, 64.0, 48.0 + 46.0 * line, floorK, lines = 2, short = true) else null,
+        if (more) Shape(Form.VERTICAL, 96.0, 48.0 + 23.0 * line, floorK, lines = 1, short = true) else null,
+        if (more) Shape(Form.HORIZONTAL, 132.0, 12.0 + maxOf(30.0, 23.0 * line), floorK, lines = 1, short = true) else null,
         if (icon) Shape(Form.ICON_ONLY, 42.0, 42.0, 0.8) else null,
     )
 
@@ -49,11 +58,15 @@ class GridFitTest {
     // chỉ-icon, (b) "gần đích chạm" — không ứng viên nào đạt 48dp thì cạnh ngắn của ô dài hơn (theo bậc 1/16 đích chạm)
     // đứng trước cỡ chữ (khung 301×123 từng ra 6×1 ô 36px = 24dp), (c) tầng KHÔNG đọc được: hộp ở sàn còn vừa CAO ô
     // đứng trước (tràn dọc = mất nửa dòng, bệnh ảnh 03/10). Oracle viết lại độc lập ba luật ấy.
+    // ĐỔI GHIM (J1, QA2 04/10 — quyết định điều phối): ô ≥ 48dp với nhãn NGẮN đứng trước ô < 48dp với nhãn đầy. Tầng
+    // nay là {có nhãn đọc được (chính · dự phòng · ngắn)} › {chỉ-icon đọc được} › {không đọc được}; trong tầng có nhãn,
+    // loại nhãn (chính › dự phòng › ngắn) xét SAU đích chạm. Bản H1 xếp dự phòng thành tầng riêng (tầng 1) TRƯỚC đích chạm.
     private data class O(
         val cols: Int, val rows: Int, val counts: List<Int>, val si: Int, val s: Shape, val k: Double,
         val legible: Boolean, val touch: Boolean, val empty: Int, val aspect: Double, val near: Int, val tall: Boolean,
     ) {
-        val tier get() = if (!legible) 3 else if (s.fallback) 2 else if (s.reserve) 1 else 0
+        val tier get() = if (!legible) 2 else if (s.fallback) 1 else 0
+        val kind get() = if (s.short) 2 else if (s.reserve) 1 else 0
     }
 
     private fun oracle(n: Int, w: Int, h: Int, shapes: List<Shape>, sp: GridFit.Spec): O {
@@ -86,6 +99,7 @@ class GridFitTest {
             when {
                 a.tier != b.tier -> a.tier.compareTo(b.tier)
                 a.touch != b.touch -> if (a.touch) -1 else 1
+                a.tier == 0 && a.kind != b.kind -> a.kind.compareTo(b.kind)
                 !a.touch && a.near != b.near -> b.near.compareTo(a.near)
                 a.tall != b.tall -> if (a.tall) -1 else 1
                 cmp(min(a.k, sp.maxScale), min(b.k, sp.maxScale), 1e-6) != 0 -> -cmp(min(a.k, sp.maxScale), min(b.k, sp.maxScale), 1e-6)
@@ -159,15 +173,28 @@ class GridFitTest {
     fun `luoi tham so - dung oracle, khong tran, khe deu, san va tran dung`() {
         var checked = 0
         for (line in listOf(1.0, 1.16, 1.23, 1.35)) for (icon in listOf(true, false)) for (minCell in listOf(0, 72))
-            for (n in 1..8) for (w in listOf(180, 301, 458, 615, 929, 1200, 1872)) for (h in listOf(90, 123, 148, 310, 471, 956)) {
-                check(n, w, h, tiles(line, icon), gridSpec(minCell)); checked++
-            }
-        assertEquals(4 * 2 * 2 * 8 * 7 * 6, checked)
+            for (more in listOf(false, true))
+                for (n in 1..8) for (w in listOf(180, 301, 458, 615, 929, 1200, 1872)) for (h in listOf(90, 123, 148, 310, 471, 956)) {
+                    check(n, w, h, tiles(line, icon, more), gridSpec(minCell)); checked++
+                }
+        assertEquals(4 * 2 * 2 * 2 * 8 * 7 * 6, checked)
     }
 
     @Test
     fun `quet day khung - tinh chat giu o moi co`() {
-        for (n in 1..8) for (w in 150..1900 step 89) for (h in 100..960 step 71) check(n, w, h, tiles(), gridSpec())
+        for (more in listOf(false, true))
+            for (n in 1..8) for (w in 150..1900 step 89) for (h in 100..960 step 71) check(n, w, h, tiles(more = more), gridSpec())
+    }
+
+    /** Bài quét có thật sự đi qua cả ba loại nhãn (không thì oracle phủ "rỗng nghĩa" — đúng lỗi soát vòng 4 bắt). */
+    @Test
+    fun `quet day khung - oracle cham ca nhan chinh, du phong, ngan`() {
+        val kinds = mutableSetOf<String>()
+        for (n in 1..8) for (w in 150..1900 step 89) for (h in 100..960 step 71) {
+            val f = GridFit.fit(n, w, h, tiles(more = true), gridSpec())
+            if (f.legible) f.shape?.let { kinds += if (it.short) "short" else if (it.reserve) "reserve" else if (it.fallback) "icon" else "primary" }
+        }
+        assertEquals(setOf("primary", "reserve", "short", "icon"), kinds)
     }
 
     // ── ca hồi quy dựng từ ảnh 03/10 ────────────────────────────────────────────────────────────────────────
@@ -240,16 +267,17 @@ class GridFitTest {
 
     @Test
     fun `dich cham 48dp - co ung vien dat thi ket qua dat`() {
-        for (n in 1..8) for (w in listOf(301, 458, 615, 929)) for (h in listOf(123, 148, 310)) {
-            val f = GridFit.fit(n, w, h, tiles(), gridSpec())
-            val o = oracle(n, w, h, tiles(), gridSpec())
+        // J1: kể cả khi ứng viên đạt chạm chỉ có nhãn NGẮN/dự phòng (`more`) — đích chạm đứng trước loại nhãn.
+        for (more in listOf(false, true)) for (n in 1..8) for (w in listOf(301, 458, 615, 929)) for (h in listOf(123, 148, 310)) {
+            val f = GridFit.fit(n, w, h, tiles(more = more), gridSpec())
+            val o = oracle(n, w, h, tiles(more = more), gridSpec())
             assertEquals(o.touch, f.touchOk)
             if (f.legible && !f.shape!!.fallback && !f.touchOk) {
                 // Không có ứng viên NHÃN đọc được nào đạt đích chạm (nếu có, thứ tự từ điển đã chọn nó).
                 for (r in 1..n) {
                     val c = (n + r - 1) / r
                     val pw = (w - (c + 1) * 12) / c; val ph = (h - (r + 1) * 12) / r
-                    if (pw >= 72 && ph >= 72) tiles().filterNot { it.fallback }.forEach { s ->
+                    if (pw >= 72 && ph >= 72) tiles(more = more).filterNot { it.fallback }.forEach { s ->
                         val k = floor(min((pw - 2) / s.widthPx, (ph - 2) / s.heightPx) * 32) / 32
                         assertTrue(k < s.minScale, "n=$n ${w}x$h: ${c}x$r ${s.form} đạt chạm + đọc được mà không được chọn")
                     }

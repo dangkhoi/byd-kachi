@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
  *  4. tầng không đọc được: hộp ở sàn còn vừa CAO ô đứng trước (tràn ngang ⇒ `…`, tràn dọc ⇒ mất nửa dòng).
  *
  * Hộp tự nhiên của ô `TileSize.DOCK` ở mật độ 1,5 là [SUY]: bề rộng chữ đo bằng Roboto-Regular 17,25px (11,5sp) trên
- * máy dev (PIL, `scratchpad/h1/m.py`) + hình học ô (đệm 4dp, icon 20dp, lề 4dp, dòng ≈ 20,2px + 2,7px đệm phông) — KHÔNG
+ * máy dev (PIL, công cụ đo ngoài repo) + hình học ô (đệm 4dp, icon 20dp, lề 4dp, dòng ≈ 20,2px + 2,7px đệm phông) — KHÔNG
  * phải số đo trên xe. Đối chiếu nhật ký QA tiếng Việt cùng khung: mô hình lệch ≤ 5 % (vd 301×259 ra đúng `3x2 VERTICAL/2
  * k=1.031`; 458×123 QA `HORIZONTAL/1 k=0.875`, mô hình 0,84 — mô hình hơi bi quan).
  */
@@ -71,8 +71,14 @@ class GridFitWindowWidgetTest {
         val distinct = listOf("readl", "pm25", "temp", "fan", "defrost", "seatc")
         assertEquals(6, distinct.mapNotNull { CapabilityCatalog.pick(it)?.icon }.size, "bài không được rỗng nghĩa")
         assertTrue(IconRepeat.ofIds(distinct))
-        // Một CẶP trái/phải (ghế sưởi lái/phụ) vẫn là cặp, không phải dãy — luật CAP = 3 giữ nguyên.
-        assertTrue(IconRepeat.distinguishableWithoutLabels(listOf("ic-seat-heat-left", "ic-seat-heat-right", "ic-fan")))
+        // ĐỔI GHIM (soát vòng 4 P3, quyết định điều phối J1): bản H1 ghim "một CẶP trái/phải vẫn là cặp — CAP = 3" cho
+        // cổng KHÔNG NHÃN. Lý do của CAP 3 ("cặp đọc được NHỜ NHÃN") không tồn tại khi nhãn bị ẩn: cặp kính lái/phụ chỉ
+        // khác một hình chữ nhật ≈ 1×2px ⇒ bỏ nhãn là bấm nhầm kính. Nay HAI ô cùng bóng hình cũng chặn chỉ-icon (cặp
+        // ghế sưởi trái/phải mất đường chỉ-icon — vẫn có nhãn). Ô nhóm (nhãn luôn hiện) giữ CAP = 3.
+        assertFalse(IconRepeat.distinguishableWithoutLabels(listOf("ic-seat-heat-left", "ic-seat-heat-right", "ic-fan")))
+        assertFalse(IconRepeat.ofIds(listOf("win_lf", "win_rf", "readl", "fan", "temp", "pm25")), "cặp kính lái/phụ — ca soát vòng 4")
+        assertTrue(IconRepeat.distinguishable(listOf("ic-seat-heat-left", "ic-seat-heat-right", "ic-fan")), "ô nhóm: CAP 3 giữ nguyên")
+        assertTrue(IconRepeat.distinguishable(listOf("a", "a", "b")) && !IconRepeat.distinguishable(listOf("a", "a", "a")))
     }
 
     // ── 2 · gần đích chạm ───────────────────────────────────────────────────────────────────────────────────
@@ -170,5 +176,125 @@ class GridFitWindowWidgetTest {
         assertEquals(6 to 1, owner.cols to owner.rows)
         assertEquals(Form.VERTICAL to 2, owner.shape!!.form to owner.shape!!.lines)
         assertTrue(owner.legible && owner.touchOk && owner.scale >= 1.0, label(owner))
+    }
+
+    // ── J1 · QA2 04/10 — hộp ĐO từ nhật ký, nhãn ngắn, đích chạm trước loại nhãn ──────────────────────────────────
+
+    /**
+     * Hộp tự nhiên (px ở thang 1) SUY NGƯỢC từ nhật ký `WidgetFit` của QA2 ([ĐO] `qa2/a/{vi,zh,th,ms}-{dock,nodock,quad-dock}
+     * -widgetfit.log`, công cụ ngoài repo `boxes.py`): mỗi dòng `cell + raw` cho một khoảng của hộp dạng được chọn (`raw·w ≤ ô−2`
+     * và bậc kế không vừa); giá trị dưới nằm trong GIAO mọi khoảng. Dạng chưa bao giờ được chọn (ZH/TH ngang-2) lấy từ mô
+     * hình phông [SUY]. Nhãn NGẮN: VI dọc-2 hẹp hơn 4px (`Kính ST`/`Kính SP` thay `Kính sau trái/phải`, gói lệnh vẫn
+     * `Đóng hết kính` — PIL); ZH/TH nhãn ngắn = nhãn đầy, MS `Kaca penumpang` ngắn = đầy ⇒ hộp nhãn ngắn = hộp đầy.
+     */
+    private fun measured(v2: Pair<Double, Double>, v1: Pair<Double, Double>, h1: Pair<Double, Double>, h2: Pair<Double, Double>, v2s: Double = v2.first) =
+        listOf(
+            Shape(Form.VERTICAL, v2.first, v2.second, floorK, lines = 2),
+            Shape(Form.VERTICAL, v1.first, v1.second, floorK, lines = 1),
+            Shape(Form.HORIZONTAL, h1.first, h1.second, floorK, lines = 1),
+            Shape(Form.HORIZONTAL, h2.first, h2.second, floorK, lines = 2, reserve = true),
+            Shape(Form.VERTICAL, v2s, v2.second, floorK, lines = 2, short = true),
+            Shape(Form.VERTICAL, v1.first, v1.second, floorK, lines = 1, short = true),
+            Shape(Form.HORIZONTAL, h1.first, h1.second, floorK, lines = 1, short = true),
+        )
+
+    private val measuredVi = measured(76.0 to 93.0, 114.0 to 72.0, 150.0 to 42.0, 112.0 to 55.0, v2s = 72.0)
+    private val measuredZh = measured(81.5 to 92.0, 111.0 to 72.0, 117.0 to 42.0, 119.0 to 55.0)
+    private val measuredTh = measured(141.0 to 92.0, 140.0 to 74.0, 168.0 to 42.0, 168.0 to 55.0)
+    private val measuredMs = measured(104.0 to 92.0, 144.5 to 74.0, 179.0 to 42.0, 135.0 to 56.5)
+
+    private fun brief(f: GridFit.Fit) =
+        "${f.cols}x${f.rows} ${f.cellW}x${f.cellH} ${f.shape!!.form}/${f.shape!!.lines} k=${"%.3f".format(java.util.Locale.US, f.scale)} " +
+            "legible=${f.legible} touch=${f.touchOk}"
+
+    /**
+     * Hộp đo tái tạo ĐÚNG 32 dòng nhật ký QA2 (4 tiếng × 8 khung) — và thứ tự mới (đích chạm trước loại nhãn, dạng nhãn
+     * ngắn) KHÔNG đổi một bố cục nào trong số đó: nhãn ngắn chỉ đổi CHỮ từng ô ([FitLabels]), không đổi lưới.
+     */
+    @Test
+    fun `J1 - hop do tai tao 32 dong nhat ky QA2, thu tu moi khong doi bo cuc nao`() {
+        val qa2 = mapOf(
+            measuredVi to listOf(
+                "6x1 88x99 VERTICAL/2 k=1.031 legible=true touch=true", "3x2 84x43 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "3x2 136x43 HORIZONTAL/1 k=0.875 legible=true touch=false", "3x2 84x111 VERTICAL/2 k=1.063 legible=true touch=true",
+                "6x1 88x124 VERTICAL/2 k=1.125 legible=true touch=true", "3x2 84x56 HORIZONTAL/2 k=0.870 legible=false touch=false",
+                "3x2 136x56 HORIZONTAL/1 k=0.875 legible=true touch=false", "2x3 132x87 VERTICAL/1 k=1.125 legible=true touch=true",
+            ),
+            measuredZh to listOf(
+                "6x1 88x99 VERTICAL/2 k=1.031 legible=true touch=true", "3x2 84x43 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "3x2 136x43 HORIZONTAL/1 k=0.969 legible=true touch=false", "3x2 84x111 VERTICAL/2 k=1.000 legible=true touch=true",
+                "6x1 88x124 VERTICAL/2 k=1.031 legible=true touch=true", "3x2 84x56 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "3x2 136x56 HORIZONTAL/1 k=1.125 legible=true touch=false", "2x3 132x87 VERTICAL/1 k=1.156 legible=true touch=true",
+            ),
+            measuredTh to listOf(
+                "3x2 189x43 HORIZONTAL/1 k=0.969 legible=true touch=false", "3x2 84x43 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "6x1 62x99 VERTICAL/2 k=0.870 legible=false touch=false", "2x3 132x70 VERTICAL/1 k=0.906 legible=true touch=false",
+                "3x2 189x56 HORIZONTAL/1 k=1.094 legible=true touch=false", "3x2 84x56 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "6x1 62x124 VERTICAL/2 k=0.870 legible=false touch=false", "2x3 132x87 VERTICAL/2 k=0.906 legible=true touch=true",
+            ),
+            measuredMs to listOf(
+                "3x2 189x43 HORIZONTAL/1 k=0.969 legible=true touch=false", "3x2 84x43 HORIZONTAL/1 k=0.870 legible=false touch=false",
+                "6x1 62x99 VERTICAL/2 k=0.870 legible=false touch=false", "2x3 132x70 VERTICAL/1 k=0.875 legible=true touch=false",
+                "3x2 189x56 HORIZONTAL/1 k=1.031 legible=true touch=false", "3x2 84x56 HORIZONTAL/2 k=0.870 legible=false touch=false",
+                "3x2 136x56 HORIZONTAL/2 k=0.938 legible=true touch=false", "2x3 132x87 VERTICAL/2 k=0.906 legible=true touch=true",
+            ),
+        )
+        for ((shapes, want) in qa2) (dock + noDock).forEachIndexed { i, (w, h) ->
+            val f = fit(w, h, shapes)
+            assertEquals(want[i], brief(f), "${w}x$h")
+            if (f.legible) assertFalse(f.shape!!.short, "khung đọc được bằng nhãn đầy không đổi sang nhãn ngắn — ${w}x$h")
+        }
+    }
+
+    /**
+     * Khung 2×1 / 3×1 (P2 QA2): không bố cục nào đọc được ⇒ lưới giữ sàn và LUẬT CHỮ TÊN ([FitLabels], `FitLabelsTest`)
+     * quyết từng ô. Bài này khoá đầu vào của luật đó: 2×1 có dock ⇒ dạng ngang MỘT dòng ở cả 4 tiếng (được cắt ĐẦU);
+     * 2×1 không dock VI/MS ⇒ ngang 2 dòng (nhãn ngắn `Kính ST`/`Kaca BKr` vừa); 3×1 TH/MS ⇒ dọc 2 dòng 62px.
+     */
+    @Test
+    fun `J1 - khung 2x1 va 3x1 - khong doc duoc, dang ma luat chu ten lam viec`() {
+        for (shapes in listOf(measuredVi, measuredZh, measuredTh, measuredMs)) {
+            val f = fit(301, 123, shapes)
+            assertFalse(f.legible, brief(f))
+            assertEquals(Form.HORIZONTAL to 1, f.shape!!.form to f.shape!!.lines, "một dòng ⇒ cắt đầu được — ${brief(f)}")
+            assertEquals(floorK, f.scale, 1e-9, "giữ sàn 10sp")
+        }
+        for (shapes in listOf(measuredVi, measuredMs)) assertEquals(2, fit(301, 148, shapes).shape!!.lines)
+        for (shapes in listOf(measuredZh, measuredTh)) assertEquals(1, fit(301, 148, shapes).shape!!.lines)
+        for (shapes in listOf(measuredTh, measuredMs)) {
+            val f = fit(458, 123, shapes)
+            assertEquals("6x1 62x99 VERTICAL/2", brief(f).substringBefore(" k="))
+            assertFalse(f.legible)
+        }
+    }
+
+    /**
+     * P3 QA2 (khung 4×1 TH/MS ra ô 43px = 28,7dp dù có bố cục ≥ 48dp với nhãn bị cắt) — QUYẾT ĐỊNH J1: trong tầng có nhãn
+     * đọc được, ĐÍCH CHẠM đứng trước loại nhãn ⇒ ô ≥ 48dp với nhãn NGẮN thắng ô < 48dp với nhãn đầy. Ghi nhận [ĐO hộp]: với
+     * nhãn ngắn hiện có, TH/MS 615×123 KHÔNG đổi (nhãn ngắn TH = nhãn đầy; MS `Kaca penumpang` ngắn = đầy ⇒ hộp dọc nhãn
+     * ngắn không hẹp hơn) — luật có hiệu lực ngay khi nhãn ngắn ngắn hơn, vd tiếng Anh (hộp mô hình PIL [SUY]).
+     */
+    @Test
+    fun `J1 - dich cham dung truoc loai nhan - o 48dp nhan ngan thang o 43px nhan day`() {
+        for (shapes in listOf(measuredTh, measuredMs)) {
+            val f = fit(615, 123, shapes)
+            assertEquals("3x2 189x43 HORIZONTAL/1", brief(f).substringBefore(" k="), "ghi nhận: nhãn ngắn TH/MS chưa ngắn hơn")
+            assertFalse(f.touchOk)
+        }
+        // Tiếng Anh (`Driver window` → `Driver win`, `Rear-left window` → `Win RL`): hộp nhãn ngắn hẹp hơn nhiều.
+        val en = listOf(
+            Shape(Form.VERTICAL, 95.0, 91.0, floorK, lines = 2), Shape(Form.VERTICAL, 159.0, 71.0, floorK, lines = 1),
+            Shape(Form.HORIZONTAL, 195.0, 42.0, floorK, lines = 1), Shape(Form.HORIZONTAL, 131.0, 55.0, floorK, lines = 2, reserve = true),
+            Shape(Form.VERTICAL, 59.0, 91.0, floorK, lines = 2, short = true), Shape(Form.VERTICAL, 90.0, 71.0, floorK, lines = 1, short = true),
+            Shape(Form.HORIZONTAL, 126.0, 42.0, floorK, lines = 1, short = true),
+        )
+        val before = fit(301, 259, en.filterNot { it.short })
+        assertEquals("2x3 132x70 HORIZONTAL/2", brief(before).substringBefore(" k="), "chỉ nhãn đầy: ô 46,7dp")
+        assertFalse(before.touchOk)
+        val after = fit(301, 259, en)
+        assertTrue(after.legible && after.touchOk && after.shape!!.short, "ô ≥ 48dp với nhãn ngắn — ${brief(after)}")
+        // Cùng đạt chạm ⇒ nhãn đầy vẫn thắng (khung 615×148: một hàng 6 ô dọc nhãn đầy, không đổi sang nhãn ngắn).
+        val roomy = fit(615, 148, en)
+        assertTrue(roomy.legible && roomy.touchOk && !roomy.shape!!.short, brief(roomy))
     }
 }

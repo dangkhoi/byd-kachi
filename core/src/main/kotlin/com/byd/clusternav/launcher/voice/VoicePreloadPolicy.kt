@@ -114,10 +114,6 @@ object VoicePreloadPolicy {
         )
     }
 
-    /** Câu GIẢI THÍCH cho log (owner đọc log trên xe) — nói rõ vì sao bỏ qua, không im lặng. Luôn tiếng Việt (byte như cũ). */
-    fun reason(availMemBytes: Long, lowMemory: Boolean, modelBytes: Long): String =
-        skip(availMemBytes, lowMemory, modelBytes).text(Lang.VI)
-
     /** Lý do bỏ nạp sẵn khi [shouldPreloadInMain] = false — hiện ở ghi chú Cài đặt (`VoiceEngine.lastPreloadSkip`). */
     val WAKE_OWNS_MODEL = PreloadSkip(PreloadSkip.Code.WAKE_OWNS_MODEL)
 
@@ -172,7 +168,12 @@ data class PreloadSkip(
         NOT_ENOUGH_RAM,
     }
 
-    /** Câu theo [lang] — VI/EN viết ở đây, ZH/TH/MS tra bảng dịch theo cặp (vi, en). */
+    /**
+     * Câu theo [lang] — VI/EN viết ở đây, ZH/TH/MS tra bảng dịch theo cặp (vi, en). MỘT nguồn cho cả hai nơi hiện: ghi chú Cài
+     * đặt (ngôn ngữ đang hiện) và dòng log `nạp sẵn: BỎ QUA — …` của `VoiceRecognizer.preload` (luôn `text(Lang.VI)` — owner đọc
+     * log trên xe; byte như câu cũ, `VoicePreloadPolicyTest`). Soát vòng 4 [P3]: bỏ `VoicePreloadPolicy.reason()` — chỉ còn test
+     * gọi, KDoc của nó nói là câu log trong khi log gọi thẳng hàm này (hai đường tới cùng một câu).
+     */
     fun text(lang: Lang = Strings.current): String = when (code) {
         Code.WAKE_OWNS_MODEL -> Strings.t(
             "\"Hey Kachi\" đang bật hoặc phím vô-lăng gán Kachi nghe ⇒ mô hình sống ở tiến trình :wake, không nạp bản thứ hai",

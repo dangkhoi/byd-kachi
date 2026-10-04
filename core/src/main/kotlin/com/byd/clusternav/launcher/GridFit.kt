@@ -26,11 +26,19 @@ import kotlin.math.roundToInt
  * đo ở thang 1 (tầng vẽ đo thật, không gõ số) + sàn đọc được [Shape.minScale]. Với MỌI cách chia `c` cột × `r` hàng
  * ([RowSplit]) và MỌI dạng, hệ số co `k` lớn nhất để hộp `k·w0 × k·h0` vừa ô ([Placement]). Chọn theo thứ tự TỪ ĐIỂN
  * (xác định, không ngẫu nhiên) — [better]:
- *  1. **tầng**: dạng có nhãn đọc được (`k ≥ minScale`) › dạng có nhãn DỰ PHÒNG ([Shape.reserve]) đọc được › dạng LÙI
- *     ([Shape.fallback], chỉ icon) đọc được › không dạng nào đọc được;
+ *  1. **tầng**: dạng CÓ NHÃN đọc được (`k ≥ minScale` — nhãn chính, nhãn DỰ PHÒNG [Shape.reserve], nhãn NGẮN
+ *     [Shape.short]) › dạng LÙI ([Shape.fallback], chỉ icon) đọc được › không dạng nào đọc được;
  *  2. **đích chạm**: ô ≥ [Spec.minCellPx] cả hai chiều (có mục bấm được ⇒ 48dp) đứng trước; KHÔNG ứng viên nào đạt
  *     thì ô có cạnh NGẮN dài hơn (gần đích chạm hơn — ít cột/nhiều hàng hơn khi khung dẹt) đứng trước, so theo bậc
  *     `minCellPx / `[TOUCH_STEPS] (QA 04/10: khung 301×123 ra 6×1 ô 36px = 24dp trong khi 3×2 cho ô 43px);
+ *  2a. **loại nhãn** (chỉ trong tầng có nhãn đọc được, SAU đích chạm): nhãn chính › dự phòng › ngắn. J1 (QA2 04/10,
+ *     quyết định điều phối): ô ≥ 48dp với nhãn NGẮN đứng trước ô 43px với nhãn đầy — trên xe đang chạy, đích chạm
+ *     quan trọng hơn chữ đầy đủ; cùng đạt chạm (hoặc cùng không) thì nhãn đầy thắng như trước;
+ *  2c. **giá trị TRỌN** (chỉ tầng KHÔNG đọc được, QA3 04/10 — xét NGAY sau "đạt chạm hay không", TRƯỚC "gần đích chạm"
+ *     và 2b; tầng khác nhau thì 2a/2c không bao giờ cùng xét): ứng viên mà ở `k = minScale` hộp "chỉ giá trị"
+ *     ([Shape.wholeWidthPx] — chú thích nhường, giá trị ở sàn 10sp, [FitValues]) vừa ô đứng trước. Giá trị (số/giờ/số đo)
+ *     không bao giờ bị cắt khi còn bố cục khác giữ được nó: khung 2×1 có dock, ô ngang 84×99 không đủ cho `06:57` ngay cả
+ *     ở sàn ⇒ xếp DỌC (số trên chú thích) thay vì `…` mọi giá trị. Dạng không khai hộp này ⇒ không phân biệt (thứ tự cũ);
  *  2b. **vừa CAO ở sàn**: ứng viên mà ở `k = minScale` hộp vẫn vừa chiều cao ô đứng trước. Chỉ phân biệt được ở tầng
  *     KHÔNG đọc được (tầng đọc được thì mọi hộp đã vừa): nội dung giữ sàn và tràn — tràn NGANG thì nhãn `…`, tràn DỌC
  *     thì mất nửa dòng dưới, đúng bệnh ảnh 03/10 ⇒ tràn ngang ít hại hơn;
@@ -88,8 +96,11 @@ object GridFit {
      * Một dạng vẽ của nội dung: hộp tự nhiên [widthPx]×[heightPx] ở thang 1, sàn [minScale] (chữ/icon/đích chạm nhỏ
      * nhất còn dùng được), số dòng nhãn [lines] dạng này giữ chỗ (0 = không có nhãn). [fallback] = chỉ được chọn khi
      * KHÔNG dạng có nhãn nào đọc được (chỉ icon ⇒ người lái mất chữ, bấm nhầm kính khi icon giống nhau).
-     * [reserve] = dạng CÓ NHÃN dự phòng (icon cạnh nhãn 2 dòng — QA 04/10, nhãn Mã Lai dài): chỉ được chọn khi không
-     * dạng có nhãn CHÍNH nào đọc được, nhưng luôn trước chỉ-icon — thêm nó không đổi bố cục nào đang đọc được.
+     * [reserve] = dạng CÓ NHÃN dự phòng (icon cạnh nhãn 2 dòng — QA 04/10, nhãn Mã Lai dài): đứng sau dạng có nhãn
+     * CHÍNH khi cùng đích chạm, luôn trước chỉ-icon. [short] = cùng dạng nhưng ô hiện NHÃN NGẮN (J1, QA2 04/10 — nhãn
+     * ngắn đã dịch đủ 5 tiếng của thanh nút): đứng sau nhãn chính + dự phòng khi cùng đích chạm (KDoc lớp, bước 2a).
+     * [wholeWidthPx]×[wholeHeightPx] = hộp "CHỈ GIÁ TRỊ" (QA3 — chú thích nhường, giá trị ở cỡ mà `k = minScale` đưa về sàn
+     * 10sp), cùng thang 1 với hộp chính; `null` = ô không có cặp giá trị/chú thích (KDoc lớp, bước 2c).
      */
     data class Shape(
         val form: Form,
@@ -99,6 +110,9 @@ object GridFit {
         val lines: Int = 0,
         val fallback: Boolean = form == Form.ICON_ONLY,
         val reserve: Boolean = false,
+        val short: Boolean = false,
+        val wholeWidthPx: Double? = null,
+        val wholeHeightPx: Double? = null,
     )
 
     /**
@@ -217,12 +231,19 @@ object GridFit {
     private class Cand(
         val counts: List<Int>, val shapeIndex: Int, val shape: Shape, val q: Double, val capped: Double,
         val legible: Boolean, val touchOk: Boolean, val empty: Int, val aspect: Double, val near: Int, val tall: Boolean,
+        val whole: Boolean,
     ) {
         val rows: Int get() = counts.size
         val cols: Int get() = counts.max()
         val tier: Int get() = when {
-            !legible -> 3
-            shape.fallback -> 2
+            !legible -> 2
+            shape.fallback -> 1
+            else -> 0
+        }
+
+        /** Loại nhãn trong tầng có nhãn đọc được: chính 0 · dự phòng 1 · ngắn 2 (KDoc lớp, bước 2a). */
+        val kind: Int get() = when {
+            shape.short -> 2
             shape.reserve -> 1
             else -> 0
         }
@@ -273,7 +294,23 @@ object GridFit {
         }
         val near = nearTouch(min(pitchW, pitchH), spec.minCellPx)
         val tall = tallLimit(r, s, h, spec) + EPS >= s.minScale
-        return Cand(counts, si, s, q, min(q, spec.maxScale), q + EPS >= s.minScale, touch, c * r - n, aspect, near, tall)
+        return Cand(
+            counts, si, s, q, min(q, spec.maxScale), q + EPS >= s.minScale, touch, c * r - n, aspect, near, tall,
+            whole(c, r, s, w, h, spec),
+        )
+    }
+
+    /**
+     * Hộp "chỉ giá trị" ([Shape.wholeWidthPx]) vừa ô ở `k = minScale` — đúng `k` mà tầng không đọc được áp (KDoc [fit]: kẹp
+     * sàn) — KDoc lớp, bước 2c. Dạng không khai hộp ⇒ `false` cho mọi ứng viên (không đổi thứ tự). Chỉ ô [Placement.FILL].
+     */
+    private fun whole(c: Int, r: Int, s: Shape, w: Int, h: Int, spec: Spec): Boolean {
+        val ww = s.wholeWidthPx ?: return false
+        val wh = s.wholeHeightPx ?: return false
+        if (spec.placement != Placement.FILL) return false
+        val cw = floor((w - (c + 1) * spec.gapPx).toDouble() / c) - spec.slackPx
+        val ch = floor((h - (r + 1) * spec.gapPx).toDouble() / r) - spec.slackPx
+        return s.minScale * ww <= cw + EPS && s.minScale * wh <= ch + EPS
     }
 
     /**
@@ -341,6 +378,8 @@ object GridFit {
     private fun better(a: Cand, b: Cand): Boolean {
         if (a.tier != b.tier) return a.tier < b.tier
         if (a.touchOk != b.touchOk) return a.touchOk
+        if (a.tier == 2 && a.whole != b.whole) return a.whole
+        if (a.tier == 0 && a.kind != b.kind) return a.kind < b.kind
         if (!a.touchOk && a.near != b.near) return a.near > b.near
         if (a.tall != b.tall) return a.tall
         if (abs(a.capped - b.capped) > EPS) return a.capped > b.capped

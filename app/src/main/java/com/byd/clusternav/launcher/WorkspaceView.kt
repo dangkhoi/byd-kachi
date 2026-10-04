@@ -248,7 +248,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      */
     fun setPhotoSource(paths: List<String>, intervalSec: Int) {
         val changed = photos.set(paths, intervalSec)   // so theo NỘI DUNG, không theo số lượng — xem [WorkspacePhotoSource.set]
-        if (changed) rebuildWidgetSlots()
+        if (changed) rebuildWidgetSlots(photos::consumes)   // QA2 P3: chỉ ô ĐỌC ảnh — ô khác không khớp lại lần hai
     }
 
     private fun rebuild() {
@@ -281,10 +281,10 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
     }
 
     /** Dựng lại CHỈ ô widget (đổi thứ chỉ widget đọc: đơn vị, ảnh) — ô App giữ view ⇒ bộ chiếu không bị nhả (C5). */
-    private fun rebuildWidgetSlots() {
+    private fun rebuildWidgetSlots(only: (List<String>) -> Boolean = { true }) {
         for (i in slotViews.indices) {
             val content = displayed.slots.getOrElse(i) { SlotContent.Empty }
-            if (content !is SlotContent.Widget) continue
+            if (content !is SlotContent.Widget || !only(content.ids)) continue
             removeView(slotViews[i])
             val v = makeSlot(i, content)
             addView(v); slotViews[i] = v

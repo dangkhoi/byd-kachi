@@ -78,7 +78,7 @@ phần cần giữ đã chép vào mục này; nếu cần WAV thật, lấy l�
 `scratchpad/voice-clone/pack-wav/`, `progress.tsv`). 1 282/1 493 = 85,9 % ASR đọc lại đúng tuyệt đối; 211 "lệch"
 phần lớn là lệch chính tả của bộ nhận dạng, cần nghe kiểm mẫu. **Chưa chạy `finish-pack.sh`** ⇒ thư mục repo
 `voice/tts/kachi-giong-be-v1/` vẫn là bản đóng gói thử 63 clip. ⚠ WAV nằm trong scratchpad của phiên
-(`/private/tmp/claude-501/.../scratchpad/voice-clone/pack-wav/`) — **chép ra chỗ bền trước khi làm gì khác**
+(`<scratchpad-phiên>/voice-clone/pack-wav/`) — **chép ra chỗ bền trước khi làm gì khác**
 (ví dụ `~/.kachi/voice-clone-0917/`), vì thư mục scratchpad có thể bị dọn.
 
 ---
@@ -147,7 +147,7 @@ visual trước.
 ## 5. Cách theo dõi / nối lại gói giọng bé
 
 ```bash
-S=<scratchpad-phiên>/voice-clone          # /private/tmp/claude-501/-Users-koi-.../98fe2032-.../scratchpad/voice-clone
+S=<scratchpad-phiên>/voice-clone          # <scratchpad-phiên>/voice-clone
 tail -3 $S/pack-synth.log                 # phải thấy dòng "[xong] 1493 clip …"
 find $S/pack-wav -name '*.wav' | wc -l    # 1 551 WAV [ĐO] trong 4 thư mục tầng fixed/ head/ unit/ num/ (+ progress.tsv)
 pgrep -fl synth-pack                      # phải RỖNG (đã xong); nếu còn ⇒ đang chạy, đừng chạy lại

@@ -21,6 +21,8 @@ package com.byd.clusternav.launcher
  *    chặn. (Tinh chỉnh của bên sửa, đề xuất ghi spec §4.6 D-L6-6 để owner bỏ nếu không muốn.)
  *  - Mốc thời gian lùi (đồng hồ bị đặt lại) ⇒ coi như lượt đầu — không bao giờ FIRE nhờ một hiệu âm; khoảng DOWN₂ − UP₁ âm
  *    (không thể có từ một ngón) ⇒ WAIT, không FIRE trên một số đo vô nghĩa.
+ *  - Chạm lần hai mà ngón nhấn xuống TRƯỚC lúc trạng thái chờ (đĩa đỏ) được VẼ ⇒ [Tap.WAIT] (soát vòng 5, [seen]): luồng
+ *    chính kẹt thì cả hai click chạy liền nhau trước mọi khung vẽ — người chạm chưa thể thấy nút đổi màu.
  *  - *Chạy nền* vẫn MỘT chạm (đảo được: app ra sau màn nhà, khởi động lại / ⇄ là về).
  */
 object SlotCloseConfirm {
@@ -61,12 +63,26 @@ object SlotCloseConfirm {
     }
 
     /**
+     * Soát vòng 5 [P3] — lần nhấn có thể là một XÁC NHẬN không: chỉ khi ngón nhấn xuống ([pressDown], `MotionEvent.eventTime`
+     * của DOWN) SAU lúc trạng thái chờ (đĩa đỏ) đã được VẼ ([shownAt], `SystemClock.uptimeMillis` ở lượt vẽ đầu tiên sau khi vào
+     * chờ; `null` = chưa vẽ lần nào). Cú chạm không đến từ ngón ([pressDown] `null` — trợ năng, bàn phím) ⇒ không xét (TalkBack
+     * đã đọc mô tả *"Chạm lần nữa để tắt"*).
+     *
+     * [ĐO mô phỏng, người soát vòng 5] luồng chính kẹt ~2 s sau UP₁ = 1000 (khung WidgetFit nguội), người lái chạm lại lúc
+     * 1600–1700 vì "không thấy gì xảy ra": hết kẹt, click₁ ARM (mốc 1000) và click₂ chạy CÙNG lượt dọn hàng, trước mọi khung vẽ ⇒
+     * khoảng DOWN₂ − UP₁ = 600 ms ≥ nhịp nhấp đúp, cách lượt đầu 700 ms < 2 s ⇒ bản vòng 4 FIRE = `am stack remove` (không hoàn
+     * tác) bởi một người CHƯA BAO GIỜ thấy nút đổi màu — trái tiền đề của luật hai bước (KDoc lớp).
+     */
+    fun seen(pressDown: Long?, shownAt: Long?): Boolean = pressDown == null || (shownAt != null && pressDown >= shownAt)
+
+    /**
      * [armedAt] = mốc lượt chạm đầu (`null` = không chờ) · [now] cùng đồng hồ đơn điệu · [downGapMs] = DOWN của cú chạm NÀY
      * trừ UP của cú chạm trước trong lượt chờ (`MotionEvent.eventTime`; `null` = cú chạm không đến từ ngón) · [minGapMs] = nhịp
      * nhấp đúp, kẹp vào `[0, WINDOW_MS / 2]` (máy đặt nhịp nhấp đúp dài bất thường thì nút vẫn xác nhận được, không thành nút
-     * chết) · [windowMs] = cửa sổ của lượt ([window]; ngắn hơn gốc ⇒ dùng gốc).
+     * chết) · [windowMs] = cửa sổ của lượt ([window]; ngắn hơn gốc ⇒ dùng gốc) · [seen] = người chạm ĐÃ có thể thấy trạng thái
+     * chờ ([seen] ở trên) — chưa ⇒ một lần "xác nhận" thành [Tap.WAIT]: ô vẫn chờ, người lái thấy đĩa đỏ rồi chạm lại.
      */
-    fun onTap(armedAt: Long?, now: Long, downGapMs: Long?, minGapMs: Long, windowMs: Long = WINDOW_MS): Tap {
+    fun onTap(armedAt: Long?, now: Long, downGapMs: Long?, minGapMs: Long, windowMs: Long = WINDOW_MS, seen: Boolean = true): Tap {
         if (armedAt == null) return Tap.ARM
         val dt = now - armedAt
         val gap = minGapMs.coerceIn(0L, WINDOW_MS / 2)
@@ -77,6 +93,7 @@ object SlotCloseConfirm {
             // chạm) không bao giờ tới trong < nhịp nhấp đúp sau lượt đầu ⇒ chặn thêm không mất gì, mà đỡ mọi ca số đo DOWN₂ − UP₁
             // vắng mặt (cú chạm không ghép được với lần nhấn của nó — [SlotCloseTouch]).
             dt < gap -> Tap.WAIT
+            !seen -> Tap.WAIT
             else -> Tap.FIRE
         }
     }

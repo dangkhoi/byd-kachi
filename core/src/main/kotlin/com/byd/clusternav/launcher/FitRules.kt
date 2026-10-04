@@ -19,6 +19,10 @@ import kotlin.math.roundToInt
  * lượt thưa không nuốt vết cắt thật), [splitsNumber] (số bị bẻ đôi qua hai dòng), [sigStep] (dấu chữ không phụ thuộc dạng),
  * [weight] (bộ áp chỉ ghi weight nó sở hữu), [freeText] + [cut] (ngân sách `…` chỉ cho chữ tự do được khai).
  * QA + soát vòng 3: [iconScale] (icon không bao giờ to hơn ô, giữ tỉ lệ), [Cell.fitted] chỉ chốt "kẹt" trên chữ đã đo dò.
+ * J1 (QA2 + soát vòng 4): [Cell.fitted] không xoá "kẹt" của ô khác. Chữ TÊN của ô (nhãn đầy · ngắn · cắt đầu) ở
+ * [FitLabels]; luật GIÁ TRỊ (co tới sàn, ưu tiên hơn chú thích — QA3) ở [FitValues].
+ * QA3 + soát vòng 5: [iconCap] (icon trong một lưới cùng cỡ), [Cell.keep] (dạng phụ đo lười cũng qua [settle]).
+ * Soát vòng 6: [insetOf] (lề icon theo DẠNG — dạng ngang xoay lề), [iconShared] (trần chung không kéo ô loại khác), [settleMore].
  *
  * Số dp KHÔNG sống ở đây (`SpacingScaleContractTest`): mọi đầu vào là px do tầng vẽ đo/đổi.
  */
@@ -162,6 +166,39 @@ object FitRules {
      */
     fun usable(candidates: List<Int>, ok: (Int) -> Boolean): List<Int> = candidates.filter(ok).ifEmpty { candidates }
 
+    /**
+     * QA3 (04/10) — trần CHUNG của icon cỡ cố định trong MỘT lưới (px cạnh). [icons] = với mỗi icon của mọi ô: (cạnh ở hệ số
+     * lưới `k`, cạnh sau khi chặn theo chỗ của nó trong ô — [iconScale]). Trả cạnh nhỏ nhất trong các icon BỊ CHẶN; `null` =
+     * không icon nào bị chặn (mọi icon theo `k`, vốn đã đồng cỡ).
+     *
+     * [ĐO máy ảo QA3, `a/th-dock.json`] ô kính 189×43: icon 4 nút kính 26px, icon 2 nút gói lệnh 29px — mỗi ô tự chặn theo
+     * chỗ của RIÊNG nó, mà lề trong của ô nút và ô gói lệnh khác nhau ⇒ cùng hàng hai cỡ icon. Chặn mọi icon bằng trần
+     * chung ⇒ "đồng size" (owner 03/10). Icon không bị chặn mà nhỏ hơn trần giữ nguyên (icon gốc nhỏ hơn không bị kéo lên).
+     */
+    fun iconCap(icons: List<Pair<Double, Double>>): Double? =
+        icons.filter { (atK, capped) -> capped < atK - 1e-6 }.minOfOrNull { it.second }
+
+    /** Icon to hơn trần chung quá tỉ lệ này thì KHÔNG bị kéo về trần ([iconShared] — lưới TRỘN nhiều loại ô). [ĐỀ XUẤT]. */
+    const val ICON_CAP_SPREAD = 0.15
+
+    /**
+     * Soát vòng 6 (P3) — cạnh icon (px) sau trần CHUNG [capPx] ([iconCap]; `null` = không trần): icon có cạnh [ownPx] (sau chặn
+     * theo chỗ của RIÊNG nó) không to hơn trần quá [ICON_CAP_SPREAD] ⇒ về trần (đồng cỡ — QA3); to hơn hẳn ⇒ giữ cạnh của nó.
+     * [SUY từ mã, người soát vòng 6] lưới trộn 4 nút kính + 2 ô nén (lề trong 8dp) trong khung 2×1 có dock: ô nén chặn icon còn
+     * 14–20px ⇒ trần chung kéo icon nút kính 29px xuống theo, dưới cả sàn 16dp.
+     */
+    fun iconShared(ownPx: Double, capPx: Double?): Double =
+        if (capPx == null || ownPx > capPx * (1 + ICON_CAP_SPREAD) + 1e-9) ownPx else minOf(ownPx, capPx)
+
+    /**
+     * Soát vòng 6 (P3) — phần (ngang, dọc) mà một lề [l],[t],[r],[b] (px gốc: lề trong của một khung bọc icon, hoặc lề ngoài của
+     * chính icon) lấy khỏi chỗ của icon. [rotated] = dạng NGANG xoay lề này (`FitScale.padding`/`params`: con TRỰC TIẾP của khối
+     * chính, lề "chỉ dọc" trái = phải = 0) ⇒ lề dọc thành ngang. [ĐO mã + QA3 `a/th-dock-widgetfit.log`] bản cũ tính lề một lần
+     * theo dạng DỌC ⇒ ô nút kính 189×43 NGANG k=0,969 thấy chỗ dọc 43 − 17 = 26px (icon 26) trong khi thật là 43 − 12 = 31px.
+     */
+    fun insetOf(l: Int, t: Int, r: Int, b: Int, rotated: Boolean): Pair<Int, Int> =
+        if (rotated && l == 0 && r == 0) (t + b) to 0 else (l + r) to (t + b)
+
     /** Chờ tối thiểu giữa hai lượt đo dò một ô khi chữ MỚI bị cắt (một nhịp trạng thái xe). */
     const val GROW_GAP_MS = 1_000L
 
@@ -197,6 +234,33 @@ object FitRules {
         val shrank = new.widthPx < old.widthPx * keep || new.heightPx < old.heightPx * keep
         return if (notBigger && shrank) new else old
     }
+
+    /** Hộp + cờ "dùng được" của MỌI dạng của một ô (cùng chỉ số với `FitProbe.OPTIONS`; hộp `null` = dạng phụ chưa đo). */
+    data class Forms(val shapes: List<GridFit.Shape?>, val usable: List<Boolean>)
+
+    /**
+     * Soát vòng 5 → 6 (P3, kéo từ `FitGridLayout.settledMore` về đây để test thuần) — dạng PHỤ vừa đo lười [got] trong lượt có đo
+     * dò lại ô gộp với số đo TRƯỚC lượt ấy [prev] bằng [settle] (cờ [grew] của lượt ấy). Dạng đã có số trước lượt đo lười
+     * ([had] — dạng chính, đã gộp ở `settled`) giữ nguyên số của [got]. So bằng GIÁ TRỊ: dạng phụ là bản sao số đo dạng chính
+     * (`FitProbe` twin) mà trùng số cũ thì không tính là giữ. Trả `null` = không dạng nào giữ số cũ (dùng [got]); khác `null` ⇒
+     * chỗ gọi đánh dấu [Cell.keep] + giữ số đo thật [primaryOnly]. Dạng giữ số cũ giữ cả cờ dùng được cũ.
+     */
+    fun settleMore(prev: Forms?, had: List<Boolean>, got: Forms, grew: Boolean): Forms? {
+        if (prev == null) return null
+        val shapes = got.shapes.indices.map { i ->
+            val g = got.shapes[i]; val o = prev.shapes[i]
+            if (had[i] || g == null || o == null) g else settle(o, g, grew).takeIf { it != g } ?: g
+        }
+        if (shapes.indices.all { shapes[it] === got.shapes[it] }) return null
+        return Forms(shapes, got.usable.indices.map { i -> if (shapes[i] === got.shapes[i]) got.usable[i] else prev.usable[i] })
+    }
+
+    /**
+     * Số đo thật để nhận khi ô còn cắt ([Cell.fitted]) sau khi dạng phụ giữ số cũ ([settleMore]): CHỈ dạng chính ([primary]),
+     * dạng phụ để trống ⇒ nhận rồi đo lười lại (không `settle` lần nữa).
+     */
+    fun primaryOnly(n: Forms, primary: List<Boolean>): Forms =
+        Forms(n.shapes.mapIndexed { i, s -> s.takeIf { primary[i] } }, n.usable.mapIndexed { i, u -> u && primary[i] })
 
     /** Trạng thái cắt chữ của một ô lúc xét đo dò lại. */
     enum class Clip {
@@ -291,15 +355,28 @@ object FitRules {
         }
 
         /**
+         * Soát vòng 5 (P3) — dạng PHỤ đo LƯỜI sau [probed] (cùng lượt khớp) mà [settle] giữ số cũ ⇒ cùng nghĩa [kept]: ô còn
+         * cắt thì [fitted] báo nhận số đo thật. Không đổi [probedAt] (vẫn là lượt đo dò đó).
+         */
+        fun keep() {
+            kept = true
+        }
+
+        /**
          * Sau lượt khớp (đã áp + kiểm lại): ô còn cắt/tràn ([clipped])? Trả `true` (một lần) khi phải nhận NGAY số đo
          * thật vì số đang dùng là số cũ [settle] giữ — hysteresis không được đổi lấy chữ bị cắt (R-WF2).
          *
          * [probedContent] = chữ đang hiện là chữ ô đã được ĐO DÒ (dấu chữ trùng lúc đo). Chỉ khi đó vết cắt mới nói
          * "lượt đo dò không chữa được" ([stuck]); chữ MỚI chưa đo dò mà bị cắt (lượt khớp do ô khác/đổi khung chạy trước
          * khi ô này đến lượt) thì không — chốt [stuck] lúc ấy biến nhịp nở 1 s thành chờ 30 s (soát vòng 3, P3).
+         *
+         * Soát vòng 4 (P3): lượt khớp KHÔNG đo dò chữ của ô này cũng không được XOÁ [stuck] của nó (chỉ được giữ hoặc
+         * xoá khi ô hết cắt). Bản vòng 3 ghi `stuck = clipped && probedContent` ⇒ hai ô cùng kẹt mà lệch nhịp thì lượt đo
+         * dò của ô này xoá cờ kẹt của ô kia, nhịp sau ô kia đo dò lại sau 1 s và xoá cờ của ô này — đo dò 1 Hz mãi mãi
+         * (R-WF6). Cờ kẹt chỉ đổi bởi lượt đo dò CỦA CHÍNH ô đó, hoặc khi ô đó hết cắt thật.
          */
         fun fitted(clipped: Boolean, probedContent: Boolean = true): Boolean {
-            stuck = clipped && probedContent
+            stuck = if (probedContent) clipped else stuck && clipped
             if (!clipped || !kept) return false
             kept = false
             return true

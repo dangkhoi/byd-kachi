@@ -75,7 +75,9 @@ class FitRulesRound2WiringContractTest {
     @Test
     fun `P2 - dau chu khong phu thuoc hien an cua nhan`() {
         val sig = SourceRoots.body(probe, "fun signature(fs: FitScale)")
-        assertTrue(sig.contains("FitRules.sigStep(h, tv.text.toString(), tv.visibility, fs.isLabel(tv))"))
+        // ĐỔI GHIM (J1): chữ băm theo bản ĐẦY ([FitScale.fullText]) — bản đang hiện (đầy/ngắn) do bộ áp sở hữu, cùng lẽ
+        // hiện/ẩn của nhãn; băm `tv.text` thì đo dò dạng nhãn ngắn để ô ở bản ngắn ⇒ dấu không bao giờ khớp.
+        assertTrue(sig.contains("FitRules.sigStep(h, fs.fullText(tv).toString(), tv.visibility, fs.isLabel(tv))"))
         assertFalse(sig.contains("+ tv.visibility"), "băm hiện/ẩn của mọi chữ = dấu dạng chỉ-icon ≠ dạng đang hiện")
         assertTrue(SourceRoots.body(scale, "fun isLabel(tv: TextView)").contains(".isLabel"))
         // Dấu chụp ở need() đi qua đúng hàm đó.

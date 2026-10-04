@@ -14,4 +14,9 @@
     <!-- L5 WIDGET-FIT-ALL · soát vòng 2 (P3): bộ dựng KHAI một TextView là chữ TỰ DO (tên bài, nghệ sĩ) ⇒ phép khớp cho
          nó "…" sau ngân sách FitRules.FREE_TEXT_EM. Giá trị/chú thích không khai ⇒ phải hiện trọn (R-WF2). -->
     <item name="kachi_fit_free_text" type="id" />
+    <!-- J1 (QA2 04/10): chữ TÊN của ô có hai bản — FitScale.named(tv, đầy, ngắn) ghi nhãn ĐẦY + nhãn NGẮN lên chính
+         TextView; phép khớp đổi sang nhãn ngắn (cờ kachi_fit_use_short) khi nhãn đầy không hiện trọn (FitLabels). -->
+    <item name="kachi_fit_full_text" type="id" />
+    <item name="kachi_fit_short_text" type="id" />
+    <item name="kachi_fit_use_short" type="id" />
 </resources>
