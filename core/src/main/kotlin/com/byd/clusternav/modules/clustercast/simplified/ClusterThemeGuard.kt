@@ -1,0 +1,332 @@
+package com.byd.clusternav.modules.clustercast.simplified
+
+import com.byd.clusternav.launcher.FloatingOrphanPlan
+import com.byd.clusternav.launcher.FloatingOrphanSweep
+import com.byd.clusternav.modules.clustercast.DisplayParse
+import com.byd.clusternav.modules.clustercast.StackEntry
+import com.byd.clusternav.modules.clustercast.StackParse
+import com.byd.clusternav.modules.clustercast.WmParse
+
+/**
+ * ═══ CLUSTER-THEME-SAFE (2.89, P0) — BỘ THI HÀNH cổng theme (đọc sự thật → [ClusterThemePlan.decide] → gỡ placeholder) ═══
+ *
+ * Một thực thể mỗi coordinator (tiến trình). Chạy TRÊN executor của coordinator (shell I/O chặn) — không bao giờ luồng vẽ.
+ *
+ *  • [admit] (gọi từ [ProjectionManager] ngay trước mỗi opcode theme): đọc `dumpsys display` (tập màn ảo cụm, cách dò SẴN
+ *    CÓ — [ClusterDisplayResolver.DETECT_CMD] + [WmParse.clusterDisplayIds] − màn ảo của chính Kachi) và sổ theme
+ *    ([ThemeLedger], khoảng 15 s); quyết bằng [ClusterThemePlan.decide]. B1a: có màn ảo cụm mà hồ sơ không bật
+ *    `themeOnVacantVd` (mặc định) ⇒ `VD_PRESENT` ngay, 0 lệnh đọc thêm; chưa có màn ảo ⇒ không đọc stack/cửa sổ (không có
+ *    lớp nào để đọc). Chỉ khi cờ bật (mức B, chờ đo V4b): đọc `am stack list` + `dumpsys window windows`; nếu chỉ còn
+ *    `ClusterBlack` của Kachi ⇒ gỡ đúng stack của nó, đọc lại tới khi trống (trần [SETTLE_READS] × [SETTLE_STEP_MS]) rồi
+ *    quyết LẦN HAI. Lời đáp [ThemeVerdict] qua [ClusterThemePlan.verdict]; quyết cuối ở [ClusterStylePlan].
+ *  • [inspect]: CÙNG các lượt đọc + quyết định, KHÔNG gỡ, KHÔNG ghi sổ — cho `ClusterDiag` "Cổng theme (chỉ đọc)".
+ *  • [sending] / [sent]: sổ theme bền `pending` TRƯỚC lệnh, `ok` sau khi shell nhận (CLAUDE.md §5). Pass 2 · cluster-r1-5:
+ *    ghi `pending` hỏng ⇒ [sending] trả `false` ⇒ KHÔNG gửi; khoảng 15 s lấy mốc muộn hơn giữa sổ và RAM ([remainingGapMs]).
+ *  • [sent] / [beginOpen] / [bindVd]: dấu RAM "đã gửi opcode X, màn ảo cụm sau đó là Y" — chỉ dùng để ĐỠ một lượt gửi
+ *    trùng ([ClusterThemePlan.Reason.SAME_THEME]); không bao giờ là lý do để gửi (CLAUDE.md §5).
+ *  • [removePlaceholder] (lượt TẮT chiếu, vệ sinh): gỡ `ClusterBlack` của Kachi khỏi màn ảo cụm. B1a: KHÔNG còn mở khoá
+ *    lượt gửi theme nào (màn ảo còn ⇒ `VD_PRESENT` dù trống).
+ *
+ * Bốn câu CLAUDE.md §4 cho lệnh gỡ: KDoc [ClusterThemePlan]. Lệnh gỡ dựng ở MỘT chỗ ([FloatingOrphanPlan.removeCmd]).
+ *
+ * ## Gỡ TRONG tiến trình trước, `am stack remove` chỉ cho mồ côi (review 2.89 Pass 1 · safety-5)
+ * [ĐO nguồn AOSP fetch 05/10] `am stack remove` → `removeTaskByIdLocked(…, killProcess = true …)` (đường trích ở KDoc
+ * `SlotClosePlan`) → `cleanUpRemovedTaskLocked` (A10 r47 `ActivityStackSupervisor.java:1806-1870`, A12 r34
+ * `ActivityTaskSupervisor.java:1574-1638`) duyệt MỌI tiến trình của gói: chỉ bỏ qua `mHomeProcess` (`:1839-1842`), rồi
+ * tiến trình nào không còn activity chưa dừng (`WindowProcessController.shouldKillProcessForRemovedTask` A10 `:694-709`) và
+ * không có dịch vụ tiền cảnh ⇒ vào danh sách giết. [SUY mạnh từ nguồn, chưa đo trên xe] Kachi là HOME ⇒ tiến trình chính được
+ * tha, nhưng `:tts` (PiperTtsService, không tiền cảnh, không activity) bị giết — trừ khi một tiến trình khác của gói chặn cả
+ * lượt (`return` ở `:1848-1857`: Kachi không là HOME mà còn activity chưa dừng, hoặc `:wake` tiền cảnh khi Hey Kachi bật).
+ * Bản KDoc cũ chỉ xét tiến trình chính — sai.
+ * Nên ClusterBlack của CHÍNH tiến trình này gỡ bằng [OwnPlaceholder] (`Activity.finishAndRemoveTask` ⇒ A10
+ * `ActivityTaskManagerService.java:1597-1607` / A12 `ActivityClientController.java:434` `removeTask…(killProcess = false)` ⇒
+ * dừng ở `if (!killProcess) return` `:1821-1823`, không giết gì). `am stack remove` chỉ còn cho ClusterBlack mồ côi của một pid
+ * đã chết (không có thực thể sống nào để gọi). Hai đường cùng gửi `cleanUpServices` (`:1817-1819` → `ActiveServices.java:3489-3521`
+ * ⇒ `onTaskRemoved` cho dịch vụ đã start của gói) — dịch vụ của Kachi không ghi đè `onTaskRemoved`, không `stopWithTask`
+ * [ĐO grep 05/10] ⇒ vô hại.
+ */
+class ClusterThemeGuard(
+    private val shell: SimpleCastShell,
+    private val selfPackage: String,
+    private val own: OwnPlaceholder = OwnPlaceholder.NONE,
+    private val sleepMs: (Long) -> Unit = { Thread.sleep(it) },
+    /** B1a — sổ theme bền (phạm vi XE). JVM/test: trong bộ nhớ. */
+    private val store: ThemeLedger.Store = ThemeLedger.InMemory(),
+    /** B1a — đồng hồ của sổ. JVM/test: [ThemeLedger.JVM_CLOCK]. */
+    private val clock: ThemeLedger.Clock = ThemeLedger.JVM_CLOCK,
+    /** B1a — cờ hồ sơ `themeOnVacantVd`, đọc lúc quyết (công thức có thể được dò lại ở lượt mở đầu). Mặc định TẮT. */
+    private val vacantVdAllowed: () -> Boolean = { false },
+    private val log: (String) -> Unit = {},
+) : ThemeGate {
+
+    /**
+     * Gỡ ClusterBlack của CHÍNH tiến trình này bằng API trong tiến trình (`:app` — `ClusterBlackActivity.finishOwn`:
+     * `Activity.finishAndRemoveTask`, không giết tiến trình nào — KDoc lớp). [finish] nhận task id của MỘT stack đã qua rào
+     * [ClusterThemePlan.admissible], trả những task id đã giao cho `finishAndRemoveTask`. Task không có trong kết quả ⇒ không
+     * có thực thể sống (mồ côi của pid đã chết) ⇒ bộ thi hành dùng `am stack remove`. Không được ném.
+     */
+    fun interface OwnPlaceholder {
+        fun finish(taskIds: Set<Int>): Set<Int>
+
+        companion object {
+            /** JVM / test: không có thực thể nào trong tiến trình ⇒ luôn đường shell (hành vi trước Pass 1). */
+            val NONE: OwnPlaceholder = OwnPlaceholder { emptySet() }
+        }
+    }
+
+    @Volatile private var marker: ClusterThemePlan.Marker? = null
+    @Volatile private var pendingOp: Int? = null
+
+    /** Mục `pending` vừa ghi ở [sending] — [sent] đổi ĐÚNG mục đó thành `ok` (giữ mốc giờ gửi cho khoảng 15 s). */
+    @Volatile private var lastPending: ThemeLedger.Entry? = null
+
+    /**
+     * Review 2.89 Pass 2 · cluster-r1-5 — lần gửi theme gần nhất của TIẾN TRÌNH này (RAM): khoảng 15 s lấy mốc MUỘN hơn giữa RAM
+     * và sổ ([remainingGapMs]) ⇒ sổ đọc hỏng / bị ghi đè sau khi gửi vẫn không phá được khoá 15 s trong tiến trình.
+     */
+    @Volatile private var lastSend: ThemeLedger.Entry? = null
+
+    /** Một dòng mô tả lượt quyết gần nhất (cho log/màn chẩn đoán). */
+    @Volatile var lastVerdict: String? = null
+        private set
+
+    /** Đầu một lượt mở chiếu: bỏ opcode "đã gửi" còn treo của lượt trước (lượt đó có thể đã hỏng trước khi [bindVd]). */
+    fun beginOpen() { pendingOp = null }
+
+    /** Sau khi dò được màn ảo cụm của lượt mở này: chốt dấu "đã gửi [pendingOp], màn ảo = [vd]". */
+    fun bindVd(vd: Int) {
+        val op = pendingOp
+        pendingOp = null
+        if (op != null && vd >= 1) marker = ClusterThemePlan.Marker(op, vd)
+    }
+
+    override fun ledger(): ThemeLedger.Entry? = ThemeLedger.decode(runCatching { store.read() }.getOrNull())
+
+    override fun now(): ThemeLedger.Now = clock.now()
+
+    override fun sending(op: Int): Boolean {
+        val n = clock.now()
+        val e = ThemeLedger.Entry(op, ThemeLedger.State.PENDING, n.elapsedMs, n.boot)
+        if (!write(e)) {
+            // Pass 2 · cluster-r1-5: dấu không chạm đĩa ⇒ KHÔNG gửi (sổ còn mục cũ — khoảng 15 s và kiểu suy ra đều sai).
+            lastPending = null
+            log("sổ theme: KHÔNG ghi được 'pending' cho $op ⇒ KHÔNG gửi opcode này (CLAUDE.md §5)")
+            return false
+        }
+        lastPending = e
+        lastSend = e
+        return true
+    }
+
+    /**
+     * Còn bao lâu mới được đổi theme lần nữa (`null` = được): mốc muộn hơn giữa sổ bền và [lastSend] (RAM) — cổng ([admit]) và
+     * lượt thử lại tự mở chiếu (`themeGapRetryMs`, whole-r1-5) cùng đọc ở đây.
+     */
+    fun remainingGapMs(): Long? {
+        val n = clock.now()
+        return listOfNotNull(ThemeLedger.remainingGapMs(ledger(), n), ThemeLedger.remainingGapMs(lastSend, n)).maxOrNull()
+    }
+
+    override fun sent(op: Int) {
+        pendingOp = op
+        val p = lastPending?.takeIf { it.op == op }
+        val n = clock.now()
+        val e = p?.copy(state = ThemeLedger.State.OK) ?: ThemeLedger.Entry(op, ThemeLedger.State.OK, n.elapsedMs, n.boot)
+        lastPending = null
+        if (!write(e)) log("sổ theme: KHÔNG ghi được 'ok' cho $op")
+    }
+
+    private fun write(e: ThemeLedger.Entry): Boolean = runCatching { store.write(ThemeLedger.encode(e)) }.getOrDefault(false)
+
+    /** Kết quả một lượt đọc + quyết của [inspect] (không gỡ, không ghi). */
+    class Inspection(
+        val op: Int,
+        val vds: Set<Int>?,
+        val decision: ClusterThemePlan.Decision,
+        val verdict: ThemeVerdict,
+        val line: String,
+    )
+
+    /**
+     * Đọc + quyết, KHÔNG một lệnh ghi (không gỡ placeholder, không ghi sổ, không đổi dấu RAM) — `ClusterDiag` "Cổng theme".
+     * [ClusterThemePlan.Decision.RemovePlaceholder] được báo nguyên văn (lượt thật sẽ gỡ rồi quyết lại).
+     */
+    fun inspect(op: Int): Inspection {
+        val r = readAndDecide(op)
+        val v = ClusterThemePlan.verdict(r.decision, r.vdBefore)
+        return Inspection(op, r.displays?.vds, r.decision, v, line(op, r.displays, r.decision, v))
+    }
+
+    /**
+     * B1b — LATCH của mức B (G4 nghiên cứu 05/10): `true` suốt lượt [admit] khi cờ `themeOnVacantVd` bật — lượt đó đọc
+     * `dumpsys window windows` trên màn ảo cụm, và mọi overlay của Kachi ở đó (số km/h — `ClusterSpeedReadoutOverlay`) sẽ bị
+     * đếm là lớp lạ (`FOREIGN`). Lớp km/h đọc cờ này qua `speedReadoutInputs()` và tự gỡ. Cờ mặc định TẮT ⇒ latch không bao giờ
+     * bật trên đường đang chạy. ⚠ Trước khi bật mức B (V4b): việc gỡ overlay phải ĐỒNG BỘ với lượt đọc cửa sổ (B1b-OQ3).
+     */
+    @Volatile var latched: Boolean = false
+        private set
+
+    override fun admit(op: Int): ThemeVerdict {
+        latched = vacantVdAllowed()
+        try {
+            return admitInner(op)
+        } finally {
+            latched = false
+        }
+    }
+
+    private fun admitInner(op: Int): ThemeVerdict {
+        val first = readAndDecide(op)
+        val vdBefore = first.vdBefore
+        val removal = when (val d = first.decision) {
+            ClusterThemePlan.Decision.Send, is ClusterThemePlan.Decision.Skip -> return verdict(op, first.displays, d, vdBefore)
+            is ClusterThemePlan.Decision.RemovePlaceholder -> d
+        }
+        // decide() chỉ ra RemovePlaceholder khi cả ba bản đọc có mặt (mức B — cờ hồ sơ bật).
+        val vds = first.displays?.vds ?: return ThemeVerdict.ABORT
+        val before = first.tasks ?: return ThemeVerdict.ABORT
+        val sentIds = removeStacks(removal.stackIds, before, vds)
+        if (sentIds.isEmpty()) {
+            val none = ClusterThemePlan.Decision.Skip(ClusterThemePlan.Reason.NOT_REMOVABLE, "lệnh gỡ ${removal.stackIds} không chạy được")
+            return verdict(op, first.displays, none, vdBefore)
+        }
+        log("theme $op: gỡ placeholder ClusterBlack stack=$sentIds trên ${vds.sorted()} rồi đọc lại")
+        var tasks: List<StackEntry>? = before
+        var windows: List<ClusterThemePlan.WindowOnDisplay>? = null
+        for (i in 0 until SETTLE_READS) {
+            sleepMs(SETTLE_STEP_MS)
+            tasks = readTasks()
+            windows = readWindows()
+            val t = tasks
+            val w = windows
+            if (t != null && w != null && ClusterThemePlan.vacant(t, w, vds)) break
+        }
+        val fresh = readDisplays()
+        val second = ClusterThemePlan.decide(
+            op, fresh?.vds, fresh?.primary ?: -1, null, tasks, windows, selfPackage, afterRemoval = true,
+            themeOnVacantVd = vacantVdAllowed(), gapRemainingMs = remainingGapMs(),
+        )
+        return verdict(op, fresh, second, vdBefore)
+    }
+
+    private class Read(
+        val displays: Displays?,
+        val tasks: List<StackEntry>?,
+        val decision: ClusterThemePlan.Decision,
+        val vdBefore: Boolean,
+    )
+
+    /**
+     * Bản đọc ĐẦU của một lượt: display + sổ; stack + cửa sổ CHỈ khi có màn ảo cụm VÀ cờ mức B bật (B1a — không đọc thứ luật
+     * không dùng: chưa có màn ảo ⇒ không lớp nào nằm trên nó; có màn ảo mà cờ tắt ⇒ đằng nào cũng bỏ).
+     */
+    private fun readAndDecide(op: Int): Read {
+        val displays = readDisplays()
+        val vacantOk = vacantVdAllowed()
+        val needLayers = displays != null && displays.vds.isNotEmpty() && vacantOk
+        val tasks = if (needLayers) readTasks() else null
+        val windows = if (needLayers) readWindows() else null
+        val gap = remainingGapMs()
+        // safety-1: màn ảo cụm có TỪ TRƯỚC lượt này (bản đọc ĐẦU) — quyết lời từ chối là "bỏ, đi tiếp" hay "chưa bảo đảm".
+        val vdBefore = displays?.vds?.isNotEmpty() == true
+        val d = ClusterThemePlan.decide(
+            op, displays?.vds, displays?.primary ?: -1, marker, tasks, windows, selfPackage,
+            themeOnVacantVd = vacantOk, gapRemainingMs = gap,
+        )
+        return Read(displays, tasks, d, vdBefore)
+    }
+
+    /**
+     * Lượt TẮT chiếu (bước 3, vệ sinh): gỡ `ClusterBlack` của Kachi khỏi MỌI màn ảo cụm (đọc tươi, phạm vi ở
+     * [ClusterThemePlan]). Không chờ đọc lại. Trả số stack đã gửi lệnh gỡ; 0 khi không đọc được / không có.
+     */
+    fun removePlaceholder(tag: String): Int {
+        val displays = readDisplays() ?: run { log("$tag: không đọc được dumpsys display — không gỡ ClusterBlack"); return 0 }
+        if (displays.vds.isEmpty()) return 0
+        val tasks = readTasks() ?: run { log("$tag: không đọc được am stack list — không gỡ ClusterBlack"); return 0 }
+        val ids = ClusterThemePlan.placeholderStacks(tasks, displays.vds, selfPackage)
+        if (ids.isEmpty()) return 0
+        val sentIds = removeStacks(ids, tasks, displays.vds)
+        log("$tag: gỡ ClusterBlack khỏi màn ảo cụm ${displays.vds.sorted()} stack=$sentIds")
+        return sentIds.size
+    }
+
+    /**
+     * Gỡ từng stack — kiểm LẠI rào trên CÙNG bản đọc ngay trước lệnh (guard tầng thi hành, CLAUDE.md §5). safety-5: mọi task
+     * của stack có thực thể sống trong tiến trình này ⇒ gỡ trong tiến trình ([own], không giết `:tts`); còn lại (mồ côi) ⇒
+     * `am stack remove`.
+     */
+    private fun removeStacks(ids: List<Int>, tasks: List<StackEntry>, vds: Set<Int>): List<Int> {
+        val sent = ArrayList<Int>()
+        for (id in ids) {
+            if (!ClusterThemePlan.admissible(id, tasks, vds, selfPackage)) continue
+            val taskIds = tasks.filter { it.stackId == id }.mapTo(HashSet()) { it.taskId }
+            if (taskIds.isNotEmpty() && own.finish(taskIds).containsAll(taskIds)) {
+                log("gỡ stack $id trong tiến trình (finishAndRemoveTask task=${taskIds.sorted()}, không giết tiến trình)")
+                sent += id
+                continue
+            }
+            val r = runCatching { shell.execute(FloatingOrphanPlan.removeCmd(id)) }.getOrNull()
+            if (r != null && r.success) sent += id else log("gỡ stack $id hỏng: ${r?.stderr ?: "shell ném"}")
+        }
+        return sent
+    }
+
+    private fun verdict(op: Int, displays: Displays?, d: ClusterThemePlan.Decision, vdBefore: Boolean): ThemeVerdict {
+        val v = ClusterThemePlan.verdict(d, vdBefore)
+        val text = line(op, displays, d, v)
+        lastVerdict = text
+        log(text)
+        return v
+    }
+
+    private fun line(op: Int, displays: Displays?, d: ClusterThemePlan.Decision, v: ThemeVerdict): String =
+        "theme $op cụm=${displays?.vds?.sorted() ?: "?"} → $d ⇒ $v"
+
+    private class Displays(val vds: Set<Int>, val primary: Int)
+
+    /**
+     * Tập màn ảo cụm từ CÙNG lệnh dò của đường đặt app ([ClusterDisplayResolver.DETECT_CMD]). Bản đọc lành luôn có tiêu đề
+     * `Display 0:` (grep giữ `Display [0-9]+:`) — thiếu nó = đọc hỏng (`null`), không phải "không có màn ảo nào".
+     */
+    private fun readDisplays(): Displays? {
+        val r = runCatching { shell.execute(ClusterDisplayResolver.DETECT_CMD) }.getOrNull() ?: return null
+        if (!r.success || !DISPLAY0.containsMatchIn(r.stdout)) return null
+        val owned = DisplayParse.ownedVirtualDisplayIds(r.stdout, selfPackage)
+        val vds = WmParse.clusterDisplayIds(r.stdout) - owned
+        return Displays(vds, ClusterDisplayResolver.resolve(r.stdout, selfPackage))
+    }
+
+    /** `am stack list` — rỗng trên máy đang chạy là đọc hỏng (display 0 luôn có stack home) ⇒ `null`. */
+    private fun readTasks(): List<StackEntry>? {
+        val r = runCatching { shell.execute(STACK_CMD) }.getOrNull() ?: return null
+        if (!r.success || r.stdout.isBlank()) return null
+        return StackParse.parse(r.stdout).takeIf { it.isNotEmpty() }
+    }
+
+    private fun readWindows(): List<ClusterThemePlan.WindowOnDisplay>? {
+        val r = runCatching { shell.execute(WINDOWS_CMD) }.getOrNull() ?: return null
+        if (!r.success) return null
+        return ClusterThemePlan.parseWindows(r.stdout)
+    }
+
+    companion object {
+        const val STACK_CMD: String = "am stack list"
+
+        /**
+         * Cửa sổ + display của chúng. `grep -E` (toybox trên xe không nhận `\|` — session-findings 14/09) giữ đúng hai loại
+         * dòng [ClusterThemePlan.parseWindows] cần.
+         */
+        const val WINDOWS_CMD: String = "dumpsys window windows | grep -E 'Window #|mDisplayId='"
+
+        /**
+         * Số lần đọc lại sau lệnh gỡ placeholder — bước 250 ms như `FloatingOrphanSweep`, nhưng 4 lần (≤ 1 s) thay vì 5: lượt
+         * mở chiếu chạy dưới trần cứng 15 s của executor. Hết lượt mà còn thấy ⇒ KHÔNG gửi theme (hướng an toàn).
+         * [CHƯA BIẾT] trên xe `am stack remove` một activity đen mất bao lâu ([ĐO 05/10] VietMap: > 1,25 s).
+         */
+        const val SETTLE_READS: Int = 4
+        const val SETTLE_STEP_MS: Long = FloatingOrphanSweep.SETTLE_STEP_MS
+
+        private val DISPLAY0 = Regex("Display 0:")
+    }
+}

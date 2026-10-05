@@ -111,6 +111,11 @@
     <string name="kachi_row_bg_opacity">Background transparency</string>
     <string name="kachi_bg_opacity_note">One level for the backgrounds of the status bar, the car button bar and widgets — all the way left looks as before, dragging right makes them more see-through, and all the way right (100%) makes them fully transparent. Text and icons always stay as they are; on a bright wallpaper, high transparency can make text hard to read — your choice. It applies when you let go; close Settings to see the result.</string>
     <string name="kachi_bg_opacity_a11y">Background transparency: %1$s</string>
+    <!-- 2.89 · B3 DOCK-SCALE -->
+    <string name="kachi_sec_bar_scale">Car button bar</string>
+    <string name="kachi_row_bar_scale">Size</string>
+    <string name="kachi_bar_scale_a11y">Car button bar size: %1$s</string>
+    <string name="kachi_bar_scale_note">Drag to shrink or enlarge the car button bar — 100% is as before. The tiles above are a true-size preview (view only). It applies when you let go: the tile area, widgets and shortcuts refit to the new space, and apps in tiles may redraw once. Buttons get smaller but their touch areas stay large enough to press while driving.</string>
     <string name="kachi_sec_car_image">Car image</string>
     <string name="kachi_car_image_current">In use: %1$s</string>
     <string name="kachi_car_image_title">Car image</string>
@@ -156,7 +161,7 @@
     <string name="kachi_row_boot_profile">Start up with</string>
     <string name="kachi_profile_boot_last">Last used</string>
     <string name="kachi_boot_profile_note">"Last used" starts with whichever profile was active when you switched the engine off. Pin a specific profile and every engine start returns to it, even if you switched profile on the previous trip.</string>
-    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start and Open apps at ignition do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
+    <string name="kachi_home_profile_note">Every setting in Settings — except System and permissions (though Auto-start Kachi on engine start, Run background service on engine start, Open apps at ignition and Play music when you get in do follow the profile), most of Voice, Default navigation app, Real glass (blur the backdrop), Auto-defrost when it rains, the per-car camera tuning (rotation, mirroring, view), and About — is saved for profile «%1$s», including cluster casting, each app\'s frame and DPI, the floating button and the camera. Switch to another profile in Driver profiles and the layout, slot contents, chips, button bar, theme and units change at once; casting frame and DPI change from the next cast, and casting on/off from the next ignition.</string>
     <string name="kachi_delete">Delete</string>
 
     <!-- ── SettingsSections — Tiện nghi xe · Quyền · Khởi động ── -->
@@ -509,6 +514,16 @@
     <string name="kachi_cast_bubble_title">Show the floating cast button</string>
     <string name="kachi_cast_bubble_sub">The Kachi blossom that floats over the screen; tap it to cast. Turning this off only hides the button — you can still cast with the four Cast-now buttons below, by voice, and on engine start.</string>
     <string name="kachi_cast_split">Split ratio</string>
+    <string name="kachi_cast_style_label">Cluster cast style</string>
+    <string name="kachi_cast_style_curved">Rounded</string>
+    <string name="kachi_cast_style_rect">Rectangle</string>
+    <string name="kachi_cast_style_rect_note">Rectangle: the white ADAS frame on the right is fixed cluster UI — the menu key only switches ADAS to small, the frame stays. The cluster loses its own km/h, so Kachi draws km/h in the lower-left corner (not while casting CarPlay/Android Auto).</string>
+    <string name="kachi_cast_style_rect_no_overlay">Missing the \"Display over other apps\" permission ⇒ Kachi cannot draw km/h ⇒ casting uses Rounded (the cluster keeps its own km/h) until the permission is granted.</string>
+    <string name="kachi_cast_style_apply_note">Applies at the next ignition, or when the cluster is empty (casting off and the cluster display gone). Nothing is sent to the cluster while casting.</string>
+    <string name="kachi_cast_style_session">Cluster now: %1$s. The new style applies at the next ignition or when the cluster is empty.</string>
+    <string name="kachi_cast_style_unknown">unknown style</string>
+    <string name="kachi_cast_style_apply_now">Apply now (stop and reopen casting)</string>
+    <string name="kachi_cast_style_apply_busy">An app is being cast — stop casting first, then tap Apply now.</string>
     <string name="kachi_cast_split_session_differs">Splitting %1$s now · this profile %2$s — applies from the next split (tap a ratio to apply now).</string>
     <string name="kachi_sub_cast_autostart">Cast on engine start</string>
     <string name="kachi_cast_autostart_title">Auto-cast full cluster</string>
@@ -907,4 +922,15 @@
     <string name="kachi_trip_now_running">This ignition: running…</string>
     <string name="kachi_trip_now_wait_channel">This ignition: not run yet — the window-control channel is not up</string>
     <string name="kachi_trip_now_wait_home">This ignition: not run yet — waiting for the home screen to be ready</string>
+    <!-- A2 · 2.89 (TRIP-MUSIC-IN-SLOT) -->
+    <string name="kachi_trip_expired_wait">Timed out waiting for %1$s — no apps opened this trip</string>
+    <string name="kachi_trip_wait_boot">the system to finish starting</string>
+    <string name="kachi_trip_wait_home_screen">the home screen and control channel</string>
+    <string name="kachi_trip_wait_slots">the apps in the slots to open</string>
+    <string name="kachi_trip_wait_home_steady">the home screen to stay in front</string>
+    <string name="kachi_trip_wait_slot_app">%1$s in slot %2$d</string>
+    <string name="kachi_trip_now_waiting">This ignition: running — waiting for %1$s…</string>
+    <string name="kachi_trip_step_music_slot">Music (%1$s in slot %2$d)</string>
+    <string name="kachi_trip_why_slot_wait">skipped — the app in the slot took too long to open, no play command sent</string>
+    <string name="kachi_trip_why_parked">running hidden (slot 7) — not covering the home screen</string>
 </resources>

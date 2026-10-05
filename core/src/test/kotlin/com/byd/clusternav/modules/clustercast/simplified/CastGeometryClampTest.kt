@@ -71,6 +71,51 @@ class CastGeometryClampTest {
         assertEquals(CastBounds(200, 0, 200, 0), out)
     }
 
+    // ── Review 2.89 Pass 3 · cluster-r2-1 — khung gốc của bộ chỉnh theo KIỂU KHUNG CỦA PHIÊN ─────────────────────────────
+
+    /** Phép kẹp `:app` dùng: dải X/Y của [ClusterRectLayout.editFrame] (cùng thân `ClusterNavBridgeGeometry.clampToBand`). */
+    private fun clampIn(style: CastStyle, side: ClusterSlotSide?, pct: Int, b: CastBounds): CastBounds {
+        val f = ClusterRectLayout.editFrame(style, side, pct, width, height)
+        return CastGeometryGuard.clampBounds(b, f.left, f.right, f.top, f.bottom)
+    }
+
+    /**
+     * Seal Chữ nhật, chia 50 %: nửa trái ghim (50,128)-(667,555). Bấm + mép phải 5 lần (5 × [GEOMETRY_STEP 20]) KHÔNG được vượt
+     * 667 (dải cũ 0..960 cho tới 767 ⇒ hai app chồng 100 px [ĐO mã]); mép trên/dưới không ra khỏi vùng trống. Thử ĐỎ: trả
+     * `editFrame` nhánh RECT về dải cả cụm.
+     */
+    @Test
+    fun `Pass 3 - Chu nhat chia 50 - cong mep phai nua trai khong qua 667, Y trong vung trong`() {
+        var b = ClusterRectLayout.slotFrame(ClusterSlotSide.LEFT, 50)
+        assertEquals(CastBounds(50, 128, 667, 555), b)
+        repeat(5) { b = clampIn(CastStyle.RECT, ClusterSlotSide.LEFT, 50, b.copy(right = b.right + 20)) }
+        assertEquals(667, b.right, "nửa trái không lấn nửa phải: $b")
+        val wild = clampIn(CastStyle.RECT, ClusterSlotSide.RIGHT, 50, CastBounds(0, 0, 1920, 720))
+        assertEquals(CastBounds(667, 128, 1285, 555), wild, "nửa phải kẹp trong nửa vùng trống — không dưới nền ADAS")
+        assertTrue(!ClusterRectLayout.intersects(wild, ClusterRectLayout.ADAS_PANEL))
+    }
+
+    /** "Đặt lại" ở Chữ nhật = đúng khung phiên ghim (slotFrame / FREE_AREA) — không bao giờ `0..W × 0..H` dưới nền ADAS. */
+    @Test
+    fun `Pass 3 - Dat lai o Chu nhat ve khung phien ghim`() {
+        assertEquals(ClusterRectLayout.FREE_AREA, ClusterRectLayout.editFrame(CastStyle.RECT, null, 50, width, height))
+        for (pct in CastProfile.SPLIT_PERCENTS) for (side in ClusterSlotSide.values()) {
+            assertEquals(ClusterRectLayout.slotFrame(side, pct), ClusterRectLayout.editFrame(CastStyle.RECT, side, pct, width, height))
+        }
+    }
+
+    /** Bo tròn = ĐÚNG số cũ của `ClusterNavBridgeGeometry` (dải theo tỉ lệ thô, `0..H`; kẹp 4 = kẹp 5 tham số) — CLAUDE.md §6. */
+    @Test
+    fun `Pass 3 - Bo tron giu nguyen tung so`() {
+        assertEquals(CastBounds(0, 0, 1920, 720), ClusterRectLayout.editFrame(CastStyle.CURVED, null, 30, width, height))
+        assertEquals(CastBounds(0, 0, 960, 720), ClusterRectLayout.editFrame(CastStyle.CURVED, ClusterSlotSide.LEFT, 50, width, height))
+        assertEquals(CastBounds(576, 0, 1920, 720), ClusterRectLayout.editFrame(CastStyle.CURVED, ClusterSlotSide.RIGHT, 30, width, height))
+        assertEquals(CastBounds(0, 0, 1, 0), ClusterRectLayout.editFrame(CastStyle.CURVED, ClusterSlotSide.LEFT, 0, 1, 0), "cụm 1 px: kẹp như cũ")
+        val b = CastBounds(-5, -9, 2000, 900)
+        assertEquals(CastGeometryGuard.clampBounds(b, 0, 960, 720), clampIn(CastStyle.CURVED, ClusterSlotSide.LEFT, 50, b))
+        assertEquals(CastBounds(0, 0, 960, 720), clampIn(CastStyle.CURVED, ClusterSlotSide.LEFT, 50, b))
+    }
+
     /** Chốt chống "bài xanh vì hằng đã đổi": dải chia thấp nhất phải vẫn là 10 (nguồn của ca hẹp ở trên). */
     @Test
     fun `ti le chia thap nhat van la 10 phan tram`() {

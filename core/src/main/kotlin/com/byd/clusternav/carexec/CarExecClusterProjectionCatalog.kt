@@ -84,7 +84,9 @@ internal object CarExecClusterProjectionCatalog {
             id = "open-projection",
             feature = CarFeature.CLUSTER_CAST,
             purpose = "Bảo OEM route bề mặt cụm ra màn hình vật lý",
-            precondition = "task đã ở trên display cụm",
+            // Review 2.89 Pass 2 · cluster-r1-8 (đóng B1a-OQ6): điều kiện CŨ "task đã ở trên display cụm" chính là chuỗi đã làm sập
+            // SurfaceFlinger + khởi động lại system_server [ĐO xe 05/10 ×2] — opcode theme 30 khi màn ảo cụm có lớp Android.
+            precondition = "$THEME_OP_PRECONDITION; theme 30 khi màn ảo có app đã khởi động lại hệ thống [ĐO 05/10 ×2]",
             candidates = listOf(
                 StepCandidate(
                     id = "open.seal-30-16-35",
@@ -96,7 +98,7 @@ internal object CarExecClusterProjectionCatalog {
                     ),
                     evidence = "CỤM VẬT LÝ hiện app — cần người nhìn, chưa có cách đo",
                     verdictSource = VerdictSource.HUMAN,
-                    risk = CandidateRisk.MAY_DISRUPT_DRIVER,
+                    risk = CandidateRisk.MAY_HANG_SYSTEM,
                     fieldNote = "Gõ tay 2026-07-27 09:58: cả ba trả Parcel(0,0), owner xác nhận 'lên rồi'",
                 ),
                 StepCandidate(
@@ -253,7 +255,8 @@ internal object CarExecClusterProjectionCatalog {
             id = "set-style",
             feature = CarFeature.CLUSTER_CAST,
             purpose = "Đổi kiểu cụm (cong giữ km/h ↔ phẳng) — HOẶC kích thước vật lý cụm, xem fieldNote xung đột",
-            precondition = "đời máy hỗ trợ đổi kiểu (styleOps khác null)",
+            precondition = "$THEME_OP_PRECONDITION; đời máy hỗ trợ đổi kiểu (styleOps khác null) — opcode theme lên màn ảo có lớp Android đã " +
+                "khởi động lại hệ thống [ĐO 05/10 ×2]",
             candidates = listOf(
                 StepCandidate(
                     id = "style.curved-30",
@@ -261,7 +264,7 @@ internal object CarExecClusterProjectionCatalog {
                     commands = listOf("service call {svc} 2 i32 1000 i32 30 s16 \"\""),
                     evidence = "cụm hiện kiểu cong và vẫn thấy km/h",
                     verdictSource = VerdictSource.HUMAN,
-                    risk = CandidateRisk.MAY_DISRUPT_DRIVER,
+                    risk = CandidateRisk.MAY_HANG_SYSTEM,
                     fieldNote = "Owner chấp nhận kiểu cong sau Stop; opcode 30 nằm trong castSeq DL3. XUNG ĐỘT chưa giải quyết " +
                         "(RE 2026-07-29, dashcast-src/data/prefs/ClusterPrefs.java + ui/settings/SettingsActivity.java + " +
                         "CHANGELOG.md:12): DashCast tự field-test và label 29/30/31 là KÍCH THƯỚC VẬT LÝ cụm theo TỪNG ĐỜI XE " +
@@ -276,7 +279,7 @@ internal object CarExecClusterProjectionCatalog {
                     commands = listOf("service call {svc} 2 i32 1000 i32 31 s16 \"\""),
                     evidence = "cụm đổi sang kiểu phẳng",
                     verdictSource = VerdictSource.HUMAN,
-                    risk = CandidateRisk.MAY_DISRUPT_DRIVER,
+                    risk = CandidateRisk.MAY_HANG_SYSTEM,
                     fieldNote = "styleOps DL3 = 30 to 31. Xem fieldNote của style.curved-30 về xung đột cong/phẳng vs kích thước.",
                 ),
                 StepCandidate(
@@ -286,7 +289,7 @@ internal object CarExecClusterProjectionCatalog {
                     evidence = "NHÌN kỹ: nếu hình dạng cong/phẳng đổi -> ủng hộ giả thuyết cũ (style). Nếu độ phân giải/kích thước " +
                         "vẽ đổi mà hình dạng giữ nguyên -> ủng hộ giả thuyết DashCast (screen size). Chụp ảnh cả hai lần so sánh.",
                     verdictSource = VerdictSource.HUMAN,
-                    risk = CandidateRisk.MAY_DISRUPT_DRIVER,
+                    risk = CandidateRisk.MAY_HANG_SYSTEM,
                     fieldNote = "RE 2026-07-29: opcode 29 = 8.8\" theo DashCast (Atto 3/Dolphin) — trên Seal DL3 (12.3\" mặc định " +
                         "theo cùng bảng) có thể không có hiệu ứng nhìn thấy được nếu đúng là size-per-model, vì DL3 vốn không " +
                         "phải máy 8.8\". Vẫn đáng thử để loại trừ.",

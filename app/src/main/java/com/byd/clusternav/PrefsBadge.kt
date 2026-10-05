@@ -51,17 +51,11 @@ private const val K_VM_BUBBLE_ENABLED = "vm_bubble_enabled"
 fun Prefs.vmBubbleEnabled(ctx: Context): Boolean = sp(ctx).getBoolean(K_VM_BUBBLE_ENABLED, false)
 fun Prefs.setVmBubbleEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VM_BUBBLE_ENABLED, v).apply()
 
-// One-time guard: the modded VietMap draws the cluster bubble, and the BYD IVI refuses an overlay from
-// any package NOT in the global CSV `byd_float_app_list` (the "Hệ thống IVI không hỗ trợ hoạt động này"
-// toast). [VietMapAutostart] appends VietMap to that list + grants SYSTEM_ALERT_WINDOW over the dadb
-// uid-shell ONCE — the same proven recipe [AssistantLauncher] uses for Google/Gemini (see
-// com.byd.clusternav.core.FloatAppList). This flag pins that it ran so the recipe is not re-applied every
-// autostart; it is set ONLY on success, so a failed attempt (e.g. no dadb loopback yet) retries next time.
-// Mirrors the doze one-time guard (SimpleCastRuntime.doze_whitelist_applied). MẶC ĐỊNH FALSE.
-private const val K_VM_FLOAT_WHITELIST_APPLIED = "vm_float_whitelist_applied"
-fun Prefs.vmFloatWhitelistApplied(ctx: Context): Boolean = sp(ctx).getBoolean(K_VM_FLOAT_WHITELIST_APPLIED, false)
-fun Prefs.setVmFloatWhitelistApplied(ctx: Context, v: Boolean) =
-    sp(ctx).edit().putBoolean(K_VM_FLOAT_WHITELIST_APPLIED, v).apply()
+// 2.89 · B2 VM-PREREQ-TRUTH: cờ một-lần `vm_float_whitelist_applied` đã BỎ (không còn đọc/ghi). Nó chặn lại công thức
+// "byd_float_app_list + appops SYSTEM_ALERT_WINDOW" sau lần đầu, kể cả khi VietMap đã gỡ-cài-lại (ROM xoá appop theo gói) —
+// owner phải cấp tay lại. Nay quyền vẽ nổi đọc sự thật mỗi lượt (`AppPrereqs` · `OverlayOpRead`); `byd_float_app_list` chỉ
+// ghi khi đọc thấy VẮNG và [ĐO nguồn ROM 2602030] không chỗ nào ở system/product đọc nó. Khoá cũ còn trên máy được xếp
+// loại ở `ProfileScopeCluster.DEVICE_KEYS` (đời cũ, không chép).
 // Legacy keys (4-corner model) — read once by [migrateBadgeIfNeeded] to seed the centre, never written.
 private const val K_BADGE_CORNER = "badge_corner"
 private const val K_BADGE_DX = "badge_dx"

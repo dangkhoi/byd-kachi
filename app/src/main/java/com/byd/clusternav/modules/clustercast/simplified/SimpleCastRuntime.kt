@@ -13,6 +13,9 @@ import com.byd.clusternav.modules.clustercast.simplified.DisplayConfigurator
 import com.byd.clusternav.modules.clustercast.simplified.AppMover
 import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
+import com.byd.clusternav.modules.clustercast.simplified.ThemeLedger
+import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.CastStyleApply
 
 /**
  * Android-side runtime for the simplified Cluster Cast coordinator.
@@ -45,7 +48,12 @@ object SimpleCastRuntime {
         // shell ⇒ an toàn cả khi luồng gọi đầu tiên là luồng chính. [ĐO 09-29] BYD giết Kachi mỗi lần tắt máy ⇒ trên thực
         // tế đây là lần nổ máy kế.
         val atStart = prefs.commitCastEnabledPending()
-        val projection = ProjectionManager(shell)
+        // CLUSTER-THEME-SAFE (2.89): chuỗi lệnh chiếu theo HỒ SƠ đời xe (CLAUDE.md §7), không ghi cứng ở `:core`. Seal DL3 =
+        // đúng 30→16→35 / 18→0 cũ. `resolveCached` không shell (prefs + getprop phản chiếu) ⇒ an toàn trên luồng gọi đầu.
+        // Đổi override hồ sơ giữa chừng chỉ áp từ tiến trình sau ([ĐO 29/09] BYD giết Kachi mỗi lần tắt máy).
+        val recipe = com.byd.clusternav.modules.clustercast.ClusterProfile.resolveCached(app).projectionRecipe()
+        android.util.Log.i("SimpleCast", "projection recipe: $recipe")
+        val projection = ProjectionManager(shell, recipe = recipe)
         val configurator = DisplayConfigurator(shell) { message -> android.util.Log.w("SimpleCast", "DisplayConfigurator: $message") }
         val mover = AppMover(
             shell = shell,
@@ -57,6 +65,7 @@ object SimpleCastRuntime {
         // KHÔNG lệnh đặt nào (`am start --display`, `wm … -d`, dọn VD) được dùng seed; coordinator chỉ đặt theo
         // id dò LIVE sau khi mở projection ([SimpleCastCoordinator.openProjection] → ClusterDisplayResolver), dò
         // hụt thì không đặt. [ĐO] 2026-09-15: seed 1 = kachi-slot-0 (VD của chính launcher), cụm thật = 2.
+        // B4 (2.89): seed cũng KHÔNG vào cổng sở hữu display của launcher — chỉ id dò live đi qua `onCastDisplay` bên dưới.
         val savedDisplayId = prefs.lastDisplayId()
         val displayId = savedDisplayId ?: 1
         val displaySource = if (savedDisplayId != null) "saved" else "seed(1)"
@@ -65,13 +74,87 @@ object SimpleCastRuntime {
             "Cluster display seed = $displayId (source=$displaySource) — NOT used for placement; " +
                 "live-resolved after projection open",
         )
-        val coordinator = SimpleCastCoordinator(projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID)
+        val coordinator = SimpleCastCoordinator(
+            projection, configurator, mover, prefs, shell, displayId, selfPackage = com.byd.clusternav.BuildConfig.APPLICATION_ID,
+            // Review 2.89 Pass 1 · safety-5: ClusterBlack của CHÍNH tiến trình gỡ bằng `finishAndRemoveTask` (không giết `:tts`);
+            // `am stack remove` chỉ cho mồ côi của pid đã chết (KDoc `ClusterThemeGuard`).
+            ownPlaceholder = { ids -> com.byd.clusternav.modules.clustercast.ClusterBlackActivity.finishOwn(ids) },
+            // CLUSTER-THEME-SAFE B1a: sổ theme BỀN phạm vi XE (ghi `pending` trước lệnh theme, `ok` sau) + đồng hồ thật — sổ chỉ
+            // để BỎ (khoảng 15 s, opcode gốc) hoặc SUY kiểu cụm, không bao giờ để cho phép gửi.
+            themeLedger = themeLedgerStore(app),
+            themeClock = themeClock(app),
+            // B1b · CLUSTER-RECT-OPTION — kiểu chiếu cụm của HỒ SƠ (`cast_style`), đọc MỘT lần đầu mỗi lượt mở chiếu
+            // (`desiredStyleOnce`); đổi giữa phiên chỉ đổi prefs — 0 lệnh. Mặc định Bo tròn (D3).
+            // Review 2.89 Pass 3 · cluster-r2-5: Chữ nhật chỉ khi Kachi vẽ được km/h ([canDrawReadout]); không ⇒ Bo tròn + log.
+            desiredStyle = { desiredStyleFor(app, prefs.castStyle()) },
+            // `car.type` không đọc được trong tiến trình ⇒ dò qua dadb ở lượt mở ĐẦU (executor, không luồng chính).
+            recipeProbe = { sh ->
+                com.byd.clusternav.modules.clustercast.ClusterProfile.refineByShell(app) { cmd ->
+                    sh.execute(cmd).takeIf { it.success }?.stdout
+                }?.projectionRecipe()
+            },
+            // 2.89 · B2 VM-PREREQ-TRUTH — miễn pin (…) của app Kachi tự mở: đọc → áp phần thiếu → đọc lại, qua CHÍNH shell của
+            // coordinator ở mỗi lượt mở chiếu. Thay cờ một-lần `doze_whitelist_applied` (CLAUDE.md §5).
+            appPrereqs = { sh -> com.byd.clusternav.AppPrereqs.ensureForCastOpen(app, prefs, sh) },
+            // 2.89 · B4 DISPLAY-OWNER-DYNAMIC — cổng sở hữu display của launcher (cùng tiến trình chính) theo id cụm DÒ LIVE thay
+            // hằng `1`: [ĐO xe 15/09 + máy ảo 05/10] sau khởi động nguội display 1 là ô `kachi-slot-0` ⇒ `REJECT LAUNCHER … @display=1`.
+            onCastDisplay = { id -> com.byd.clusternav.system.WindowCommandDispatcher.get(app).setCastDisplay(id) },
+        )
         // Chốt BẬT→TẮT ⇒ tiến trình trước có thể đã để projection mở trên cụm: không dọn là cụm HAI CHỦ (HUD thấy TẮT nên
         // ghi op 39 trong khi mặt chiếu cũ vẫn đứng). Xếp lên executor của coordinator (shell ở nền, không ở luồng gọi).
         // Chốt TẮT→BẬT thì không làm gì thêm: các đường khởi động sẵn có tự đọc BẬT và mở chiếu (RebindReceiver,
         // KachiHomeWiring.ensureCastBubble) như với một người đang bật Cast.
         if (atStart is CastEnableDeferral.AtStart.Commit && atStart.closeOrphan) coordinator.closeOrphanProjection()
         return coordinator
+    }
+
+    /**
+     * Review 2.89 Pass 3 · cluster-r2-5 — Kachi vẽ được số km/h của chính nó trên cụm không: lớp km/h là `TYPE_APPLICATION_OVERLAY`
+     * (cần quyền vẽ trên ứng dụng khác; `FloatingBubbleService.onCreate` dừng trước khi dựng lớp nếu thiếu). Đọc lỗi ⇒ `false`.
+     */
+    fun canDrawReadout(context: Context): Boolean =
+        runCatching { android.provider.Settings.canDrawOverlays(context.applicationContext) }.getOrDefault(false)
+
+    /** Kiểu đưa vào lượt mở ([CastStyleApply.withReadout]); hạ Chữ nhật ⇒ Bo tròn thì ghi log lý do. */
+    private fun desiredStyleFor(app: Context, chosen: CastStyle): CastStyle =
+        CastStyleApply.withReadout(chosen, canDrawReadout(app)).also {
+            if (it != chosen) android.util.Log.w("SimpleCast", "kiểu cụm: chọn $chosen nhưng chưa có quyền vẽ km/h ⇒ mở chiếu $it (cluster-r2-5)")
+        }
+
+    /**
+     * CLUSTER-THEME-SAFE — lượt quyết gần nhất của cổng theme, KHÔNG dựng coordinator nếu chưa có (đọc cho chẩn đoán
+     * không được kéo theo lượt chốt `cast_enabled` / dọn projection mồ côi của [create]).
+     */
+    fun themeVerdict(): String? = instance?.themeVerdict
+
+    /**
+     * CLUSTER-THEME-SAFE B1a — sổ theme bền: tệp `clustercast` (cùng `profileOverride`, phạm vi XE — không theo hồ sơ người
+     * lái: theme là trạng thái của CỤM). `commit()` đồng bộ: "ghi TRƯỚC khi gửi" phải chạm đĩa trước lệnh (gọi trên executor
+     * của coordinator, không luồng chính).
+     */
+    fun themeLedgerStore(context: Context): ThemeLedger.Store = object : ThemeLedger.Store {
+        private val sp = context.applicationContext
+            .getSharedPreferences(com.byd.clusternav.modules.clustercast.ClusterProfile.PREF, Context.MODE_PRIVATE)
+
+        override fun read(): String? = sp.all[ThemeLedger.KEY] as? String
+        override fun write(value: String): Boolean = sp.edit().putString(ThemeLedger.KEY, value).commit()
+    }
+
+    /**
+     * Đồng hồ của sổ: `elapsedRealtime` (gồm ngủ sâu, về 0 khi khởi động lại) · `Settings.Global.BOOT_COUNT` (đọc một lần —
+     * không đổi trong một tiến trình; không đọc được ⇒ [ThemeLedger.UNKNOWN_BOOT]) · mốc khởi động tiến trình
+     * (`Process.getStartElapsedRealtime`, API 24).
+     */
+    fun themeClock(context: Context): ThemeLedger.Clock {
+        val app = context.applicationContext
+        val boot by lazy {
+            runCatching {
+                android.provider.Settings.Global.getInt(app.contentResolver, android.provider.Settings.Global.BOOT_COUNT, ThemeLedger.UNKNOWN_BOOT)
+            }.getOrDefault(ThemeLedger.UNKNOWN_BOOT)
+        }
+        return ThemeLedger.Clock {
+            ThemeLedger.Now(android.os.SystemClock.elapsedRealtime(), boot, android.os.Process.getStartElapsedRealtime())
+        }
     }
 
     /** Shutdown the coordinator. Call from Application.onTerminate or process exit. */
@@ -227,9 +310,9 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
      * (`config_<field>_<pkg>`) so previously-saved full configs survive; every other profile
      * appends `__<profile.key>` (e.g. `config_size_<pkg>__L30`) — distinct, non-colliding, and
      * byte-identical to the predecessor's keys for the {50,30,70} set (R3/R4/R8 backward compat).
+     * B1b: khung của cụm Chữ nhật thêm `__RECT` ở cuối — dựng ở MỘT chỗ ([CastProfile.recordKey], `:core`).
      */
-    private fun profileKey(pkg: String, profile: CastProfile): String =
-        if (profile.isFull) pkg else "${pkg}__${profile.key}"
+    private fun profileKey(pkg: String, profile: CastProfile): String = profile.recordKey(pkg)
 
     override fun lastDisplayId(): Int? {
         val v = sp.getInt("last_display_id", -1)
@@ -258,13 +341,6 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
 
     override fun setSplitRatioLeftPercent(pct: Int) {
         sp.edit().putInt("split_ratio_left_pct", pct).apply()
-    }
-
-    // One-time setup flags
-    override fun dozeWhitelistApplied(): Boolean = sp.getBoolean("doze_whitelist_applied", false)
-
-    override fun setDozeWhitelistApplied(applied: Boolean) {
-        sp.edit().putBoolean("doze_whitelist_applied", applied).apply()
     }
 
     // Autostart split
@@ -345,5 +421,17 @@ private class SharedPrefsSimpleCastPrefs(context: Context) : SimpleCastPrefs {
 
     override fun setBubbleVisible(visible: Boolean) {
         sp.edit().putBoolean("cast_bubble_visible", visible).apply()
+    }
+
+    /**
+     * B1b · CLUSTER-RECT-OPTION — kiểu chiếu cụm (Bo tròn / Chữ nhật), theo HỒ SƠ (`ProfileScopeCluster.DECLARED_TYPES` =
+     * STRING). Đọc bằng `all[…] as? String` qua [CastStyle.parse]: một giá trị sai KIỂU trên đĩa (tệp nhập) là "vắng" ⇒ Bo tròn,
+     * không phải `ClassCastException` trong dịch vụ chiếu.
+     */
+    override fun castStyle(): CastStyle = CastStyle.parse(sp.all["cast_style"] as? String)
+
+    /** Chỉ ghi lựa chọn — không lệnh nào; áp ở lượt mở chiếu kế tiếp (lần nổ máy sau / khi cụm trống — D4). */
+    override fun setCastStyle(style: CastStyle) {
+        sp.edit().putString("cast_style", style.name).apply()
     }
 }

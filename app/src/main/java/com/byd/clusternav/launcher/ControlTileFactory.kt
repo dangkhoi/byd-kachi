@@ -349,7 +349,7 @@ class ControlTileFactory(
                     tile.post {
                         runCatching {
                             applyBg(tile, false); tint(icon, label, true)
-                            if (notice != null) Toast.makeText(ctx, notice, Toast.LENGTH_SHORT).show()
+                            if (notice != null) Toast.makeText(DockScaleContext.unscaled(ctx), notice, Toast.LENGTH_SHORT).show()   // B3 K7: chữ cỡ thật
                         }
                     }
                 }

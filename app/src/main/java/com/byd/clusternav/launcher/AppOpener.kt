@@ -40,8 +40,17 @@ class AppOpener(private val activity: Activity) {
         val intent = activity.packageManager.getLaunchIntentForPackage(pkg)?.apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         } ?: return false
-        val opts = ActivityOptions.makeBasic().setLaunchBounds(null)
+        // Ô 7 (2.89-thử1, spec 287 §4.6d): app đang ĐỖ có task trên một màn ảo ẩn. [ĐO nguồn A10 r47] không nêu display thì
+        // display ưu tiên = display của task tìm lại được (`TaskLaunchParamsModifier.java:313-317`, `ActivityStarter.java:1480-1485`)
+        // ⇒ [SUY] task chỉ lên đỉnh màn ảo ẩn, người dùng không thấy gì. Nêu display 0 ⇒ nhánh `reparentToDisplay` (`ActivityStarter
+        // .java:2164-2170`) đưa task ra màn chính — cùng kiểu `am start --display 0` (K7) [ĐO xe 05/10]: app relaunch, đúng ý "toàn màn".
+        // Pass 3 · whole-r2-1: MỘT cửa chung với giọng nói / dẫn theo lịch ([ParkedApps.launchOptions]).
+        val base = { ActivityOptions.makeBasic().setLaunchBounds(null) }
+        val parked = ParkedApps.launchOptions(pkg, base)
+        val opts = parked ?: base()
+        // PARK-2a: task đã dời ra display 0 ⇒ màn ảo đỗ TRỐNG ⇒ quên ngay (lượt mở vào ô kế đi đường thường, không khung đen).
         return runCatching { activity.startActivity(intent, opts.toBundle()); true }.getOrDefault(false)
+            .also { opened -> if (opened && parked != null) ParkedApps.launched(pkg) }
     }
 
     /**

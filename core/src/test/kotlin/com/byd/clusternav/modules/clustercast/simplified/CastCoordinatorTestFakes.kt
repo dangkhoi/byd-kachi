@@ -28,6 +28,36 @@ class FakeShell : SimpleCastShell {
     /** Output trả cho [ClusterDisplayResolver.DETECT_CMD]; null = dựng từ [clusterDisplayId] (dạng grep thật trên xe). */
     var clusterDetectOut: String? = null
 
+    /**
+     * CLUSTER-THEME-SAFE (2.89) — dòng `configuration=` của stack cụm (id 2). `null` (mặc định) = KHÔNG in, đúng hành vi
+     * cũ của fake ⇒ loại stack đọc ra trống ⇒ rào gỡ ([ClusterThemePlan.admissible], so CHỮ `standard`) từ chối gỡ.
+     * Bài theme đặt dòng có `mActivityType=standard` (dạng dump thật `carlog-kachi-20260914-2044/10-am-stack-list.txt`).
+     */
+    var clusterStackConfig: String? = null
+
+    /**
+     * CLUSTER-THEME-SAFE B1a — `true` = lần mở ĐẦU sau nổ máy: màn ảo cụm CHƯA có cho tới khi lệnh chiếu `16` đã gửi
+     * ([ĐO F2] sau reboot màn ảo cụm vắng, AutoContainer tạo nó khi mở projection). Mặc định `false` = hành vi lịch sử của
+     * fake (màn ảo luôn có).
+     */
+    var vdAbsentUntilCast = false
+
+    private fun vdExists(): Boolean = !vdAbsentUntilCast || history.any { it.contains(" i32 1000 i32 16 ") }
+
+    /**
+     * B1b — in `bounds=[l,t][r,b]` trên DÒNG TASK của app trên cụm (dạng dump thật, `CastStackParser.taskBoundsOn`): khung =
+     * lệnh `am task resize` gần nhất được "áp" cho task đó, chưa có ⇒ `[0,0][1920,720]`. `false` (mặc định) = hành vi cũ.
+     */
+    var reportTaskBounds = false
+
+    /**
+     * B1b — mỗi phần tử `"l t r b"` "nuốt" MỘT lệnh `am task resize <id> l t r b` khớp (exit 0 mà WM không áp) — giả lập khung
+     * lệch cho đường đọc-lại + thử-lại-một-lần.
+     */
+    val swallowResizeBounds = mutableListOf<String>()
+
+    private val taskBounds = mutableMapOf<Int, String>()
+
     init {
         // CP/AA are always already running when user requests cast (they're system apps)
         runningTasks["com.byd.autolink.carplay"] = 10
@@ -41,15 +71,46 @@ class FakeShell : SimpleCastShell {
         if (failCommands.any { command.contains(it) }) {
             return ShellResult(1, "", "fake failure for: $command")
         }
+        if (command.startsWith("am task resize ")) {
+            val p = command.removePrefix("am task resize ").trim().split(Regex("\\s+")).mapNotNull { it.toIntOrNull() }
+            if (p.size == 5) {
+                val b = "${p[1]} ${p[2]} ${p[3]} ${p[4]}"
+                if (!swallowResizeBounds.remove(b)) taskBounds[p[0]] = "[${p[1]},${p[2]}][${p[3]},${p[4]}]"
+            }
+            return ShellResult(0, "", "")
+        }
         // Simulate am stack list output for task/stack discovery
         if (command == "am stack list") {
             return ShellResult(0, fakeStackListOutput(), "")
         }
         // Simulate `dumpsys display | grep …` — cluster VD detection (R1: coordinator resolves LIVE before placing)
         if (command == ClusterDisplayResolver.DETECT_CMD) {
-            return ShellResult(0, clusterDetectOut ?: defaultDetectOut(), "")
+            return ShellResult(0, clusterDetectOut ?: if (vdExists()) defaultDetectOut() else "  Display 0:\n", "")
+        }
+        // CLUSTER-THEME-SAFE — mỗi task trong bản `am stack list` giả có một cửa sổ cùng display (+ bàn phím ở display 0).
+        if (command == ClusterThemeGuard.WINDOWS_CMD) {
+            return ShellResult(0, fakeWindowsOutput(), "")
         }
         return ShellResult(0, "", "")
+    }
+
+    /** `am stack remove 2` (stack cụm) gần hơn lần `am start` ClusterBlack gần nhất ⇒ placeholder đã bị gỡ. */
+    private fun placeholderRemoved(onCluster: String): Boolean {
+        val removed = history.indexOfLast { it == "am stack remove $CLUSTER_STACK" }
+        val started = history.indexOfLast { it.startsWith("am start") && it.contains(onCluster) && it.contains("ClusterBlackActivity") }
+        return removed > started
+    }
+
+    /** Dạng `dumpsys window windows | grep -E 'Window #|mDisplayId='` thật (dòng tiêu đề + dòng mDisplayId). */
+    private fun fakeWindowsOutput(): String {
+        val sb = StringBuilder()
+        sb.appendLine("  Window #0 Window{739f3cf u0 InputMethod}:")
+        sb.appendLine("    mDisplayId=0 stackId=0 mSession=Session{b250230 3982:u0a10062} mClient=android.os.BinderProxy@bbadc2e")
+        com.byd.clusternav.modules.clustercast.StackParse.parse(fakeStackListOutput()).forEachIndexed { i, e ->
+            sb.appendLine("  Window #${i + 1} Window{${(0xa000 + i).toString(16)} u0 ${e.comp}}:")
+            sb.appendLine("    mDisplayId=${e.displayId} stackId=${e.stackId} mSession=Session{0 0:u0a10138} mClient=android.os.BinderProxy@0")
+        }
+        return sb.toString()
     }
 
     /** Dạng grep thật trên xe 2026-09-15 (fission = cụm), id thay bằng [clusterDisplayId]. */
@@ -81,10 +142,12 @@ class FakeShell : SimpleCastShell {
             }
         }
         // Apps on the cluster: started with --display <cluster> OR moved there via move-task
+        val removed = placeholderRemoved(onCluster)
         if (blockAppOnDisplay1) {
             // Simulate: apps don't appear on the cluster (postcondition will fail)
-            if (history.any { it.contains(onCluster) }) {
-                sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=$d userId=0")
+            if (history.any { it.contains(onCluster) } && !removed) {
+                sb.appendLine("Stack id=$CLUSTER_STACK bounds=[0,0][1920,720] displayId=$d userId=0")
+                clusterStackConfig?.let { sb.appendLine(it) }
                 sb.appendLine("  taskId=99: $selfPackage/.modules.clustercast.ClusterBlackActivity visible=true")
             }
             return sb.toString()
@@ -101,9 +164,11 @@ class FakeShell : SimpleCastShell {
             runningTasks.entries.firstOrNull { it.value == tid }?.key
         }
         val allOnCluster = (startedOnCluster + movedToCluster).distinct()
-        if (allOnCluster.isNotEmpty() || history.any { it.contains(onCluster) }) {
-            sb.appendLine("Stack id=2 bounds=[0,0][1920,720] displayId=$d userId=0")
-            sb.appendLine("  taskId=99: $selfPackage/.modules.clustercast.ClusterBlackActivity visible=true")
+        val apps = allOnCluster.filter { it != selfPackage }
+        if (apps.isNotEmpty() || (history.any { it.contains(onCluster) } && !removed)) {
+            sb.appendLine("Stack id=$CLUSTER_STACK bounds=[0,0][1920,720] displayId=$d userId=0")
+            clusterStackConfig?.let { sb.appendLine(it) }
+            if (!removed) sb.appendLine("  taskId=99: $selfPackage/.modules.clustercast.ClusterBlackActivity visible=true")
             var tid = 100
             for (pkg in allOnCluster) {
                 // The ClusterNav projection placeholder is already emitted above as taskId=99
@@ -111,12 +176,17 @@ class FakeShell : SimpleCastShell {
                 // the cluster, so don't fabricate one — that stray would (correctly) be evicted by
                 // CastStackParser.tasksToClean and skew close/clean sequences (bug-b fix, 2026-08-12).
                 if (pkg == selfPackage) continue
-                sb.appendLine("  taskId=${tid++}: $pkg/.MainActivity visible=true")
+                val t = tid++
+                val b = if (reportTaskBounds) " bounds=${taskBounds[t] ?: "[0,0][1920,720]"}" else ""
+                sb.appendLine("  taskId=$t: $pkg/.MainActivity$b visible=true")
             }
         }
         return sb.toString()
     }
 }
+
+/** Id stack cụm trong bản `am stack list` giả của [FakeShell]. */
+private const val CLUSTER_STACK = 2
 
 class FakePrefs : SimpleCastPrefs {
     private val configs = mutableMapOf<String, DisplayConfig>()
@@ -124,7 +194,6 @@ class FakePrefs : SimpleCastPrefs {
     private var _autoStartPackage: String? = null
     private var _autoStartEnabled: Boolean = false
     private var _splitRatioLeftPercent: Int = 50
-    private var _dozeWhitelistApplied: Boolean = false
     private var _autoStartLeftPackage: String? = null
     private var _autoStartRightPackage: String? = null
     private var _autoStartSplitEnabled: Boolean = false
@@ -138,9 +207,11 @@ class FakePrefs : SimpleCastPrefs {
         configs[profileKey(pkg, profile)] = config
     }
 
-    /** Mirrors SharedPrefsSimpleCastPrefs: FULL = bare pkg key, others append `__<profile.key>`. */
-    private fun profileKey(pkg: String, profile: CastProfile): String =
-        if (profile.isFull) pkg else "${pkg}__${profile.key}"
+    /** Mirrors SharedPrefsSimpleCastPrefs: cùng một bộ dựng khoá [CastProfile.recordKey] (B1b — có hậu tố `__RECT`). */
+    private fun profileKey(pkg: String, profile: CastProfile): String = profile.recordKey(pkg)
+
+    /** B1b — các khoá bản ghi đã lưu (để test khẳng định khung Chữ nhật KHÔNG đè khoá Bo tròn). */
+    val savedRecordKeys: Set<String> get() = configs.keys.toSet()
     override fun lastDisplayId(): Int? = lastDisplay
     override fun saveLastDisplayId(id: Int) { lastDisplay = id }
 
@@ -151,9 +222,6 @@ class FakePrefs : SimpleCastPrefs {
 
     override fun splitRatioLeftPercent(): Int = _splitRatioLeftPercent
     override fun setSplitRatioLeftPercent(pct: Int) { _splitRatioLeftPercent = pct }
-
-    override fun dozeWhitelistApplied(): Boolean = _dozeWhitelistApplied
-    override fun setDozeWhitelistApplied(applied: Boolean) { _dozeWhitelistApplied = applied }
 
     override fun autoStartLeftPackage(): String? = _autoStartLeftPackage
     override fun setAutoStartLeftPackage(pkg: String?) { _autoStartLeftPackage = pkg }

@@ -99,10 +99,15 @@ class LauncherWindowingGuardTest {
             "VdAppHost inline am-start template must be gone (routed through FreeformLaunch)",
         )
         assertTrue(src.contains("am force-stop \$p"), "VdAppHost force-stop stays inline (touch/lifecycle moves in B4)")
-        assertTrue(
-            src.contains("cmd package resolve-activity --brief -a android.intent.action.MAIN" +
-                " -c android.intent.category.LAUNCHER \$pkg"),
-            "VdAppHost resolve-activity template unchanged",
+        // 2.89-thử1 (ô 7, spec 287 §4.6d) — ĐỔI GHIM có lý do: `VdAppHost.kt` chạm trần 500 dòng ⇒ thân phân giải component
+        // chuyển NGUYÊN sang `FreeformLaunch.resolveComponent`, dùng `FreeformLaunch.resolveCmd` — chuỗi lệnh byte-khớp bản inline
+        // cũ (khoá ngay dưới). Ý của ghim giữ nguyên: lệnh resolve-activity của đường mở app vào ô KHÔNG đổi một byte.
+        assertTrue(src.contains("FreeformLaunch.resolveComponent(p, sh)"), "VdAppHost resolves through FreeformLaunch")
+        assertFalse(src.contains("cmd package resolve-activity"), "no second inline copy of the resolve template")
+        assertEquals(
+            "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER \$pkg",
+            FreeformLaunch.resolveCmd("\$pkg"),
+            "VdAppHost resolve-activity template unchanged (byte-for-byte)",
         )
     }
 

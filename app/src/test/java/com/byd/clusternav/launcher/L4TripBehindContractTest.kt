@@ -45,11 +45,18 @@ class L4TripBehindContractTest {
         val create = SourceRoots.body(staging, "override fun create(): Int? {")
         // Chủ DUY NHẤT của mọi màn ảo Kachi là SlotVdOwner (luật `SlotHostingLifecycleContractTest`); "ô" ÂM riêng mỗi lượt
         // ⇒ không trùng ô thật, hai lượt dàn không nhả màn ảo của nhau (rào nhả D2).
+        // A2 · 2.89 — ĐỔI GHIM có lý do: tay cầm giữ lại trong lượt (`lease`) để `park` trao NGUYÊN cho ô 7; chủ vẫn SlotVdOwner.
         order(create, "createVirtualDisplay(", "registerLauncherVirtualDisplay(id)", "NEXT_KEY.getAndDecrement()",
-            "SlotVdOwner.adopt(OWNER, k, name, VdLease(v, id, dispatcher::unregisterLauncherVirtualDisplay))")
+            "VdLease(v, id, dispatcher::unregisterLauncherVirtualDisplay)", "SlotVdOwner.adopt(OWNER, k, name, l)")
+        // Trao cho ô 7: KHÔNG nhả (không SlotVdOwner.release, không đóng mặt vẽ), rời sổ LIVE (thu hồi không đụng tới nữa).
+        val park = SourceRoots.body(staging, "override fun park(vd: Int, pkg: String): Boolean {")
+        order(park, "if (vd != vdId) return false", "ParkedApps.adoptHidden(pkg, n, l, width, height, s)", "LIVE.remove(vd, this)")
+        assertFalse("SlotVdOwner.release(" in park || "close()" in park || "\"am " in park, "trao ≠ nhả, 0 lệnh shell: $park")
         assertTrue(staging.contains("val NEXT_KEY = AtomicInteger(-1)"), "khoá âm, giảm dần")
         val release = SourceRoots.body(staging, "fun release() {")
-        order(release, "SlotVdOwner.release(OWNER, k)", "r.close()", "quitSafely()")
+        // 2.89-thử1 — ĐỔI GHIM có lý do (DRY với ô 7): `ImageReader` + luồng nay ở `OffscreenSink` (đóng mặt vẽ rồi luồng — bài
+        // `SlotParkWiringContractTest.mot be mat an cho hai cho dung`); thứ tự giữ: nhả màn ảo TRƯỚC, đóng mặt vẽ SAU.
+        order(release, "SlotVdOwner.release(OWNER, k)", "sink?.close()")
     }
 
     @Test
@@ -119,12 +126,14 @@ class L4TripBehindContractTest {
 
     @Test
     fun `ben thi hanh - ma rieng cho khong kenh va da tat, dong log no-stage, mot Kit moi luot`() {
-        val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {")
+        val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome, needsAnchor: Boolean): BehindHomeSequence.Outcome {")
         assertTrue(once.contains("BehindHomeSequence.Result.DISABLED") && once.contains("BehindHomeSequence.Result.NO_CHANNEL"))
         // Soát vòng 2 — ĐỔI GHIM có lý do: lượt thu hồi màn ảo ẩn chạy TRƯỚC cổng DISABLED (bài dưới); hai mã 0-lệnh vẫn
-        // đứng trước khi dựng chuỗi, mỗi lượt vẫn một `StagingDisplay` mới.
+        // đứng trước khi dựng chuỗi, mỗi lượt vẫn một `StagingDisplay` mới. Review 2.89 Pass 1 · behaviour-5 — ĐỔI GHIM: chữ ký
+        // mang `needsAnchor` (cổng DISABLED chỉ cho chuỗi dựng giữ chỗ — bài `TripWiringContractTest`).
         order(once, "val sh = shell()", "val hidden = StagingDisplay(app)", "disabledReason?.let", "if (sh == null) return",
-            "BehindHomeSequence(", "Kit(seq, hidden, sh, app)")
+            // A2 · 2.89 — ĐỔI GHIM có lý do: Kit mang thêm cổng ô 7 = CHÍNH màn ảo ẩn của lượt (`HiddenPark.Port`).
+            "BehindHomeSequence(", "Kit(seq, hidden, sh, app, park = hidden)")
         val sb = SourceRoots.body(runner, "fun startBehind(x: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit = {}): BehindHomePlan.Stage? {")
         order(sb, "BehindHomePlan.stagingSlot(stages, x)", "Log.i(TAG, \"no-stage X=", "return null")
     }
@@ -140,9 +149,9 @@ class L4TripBehindContractTest {
      */
     @Test
     fun `man ao an bi giu - so LIVE ca tien trinh, moi luot thu hoi truoc than luot`() {
-        val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {")
+        val once = SourceRoots.body(runner, "private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome, needsAnchor: Boolean): BehindHomeSequence.Outcome {")
         order(once, "val sh = shell()", "val hidden = StagingDisplay(app)", "if (sh != null) HiddenStageReclaim.run(sh, hidden, app.packageName)",
-            "disabledReason?.let", "if (sh == null) return", "Kit(seq, hidden, sh, app)", "body(kit)")
+            "disabledReason?.let", "if (sh == null) return", "Kit(seq, hidden, sh, app, park = hidden)", "body(kit)")
         assertEquals(1, Regex("""HiddenStageReclaim\.run\(""").findAll(once).count(), "một lượt thu hồi mỗi lượt chạy")
         val create = SourceRoots.body(staging, "override fun create(): Int? {")
         order(create, "SlotVdOwner.adopt(", "vdId = id", "LIVE[id] = this")

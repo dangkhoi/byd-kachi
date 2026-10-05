@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dạy Kachi tên app bằng giọng người dùng (2.90) — ClusterNav 2.0</title>
+<!--
+  Spec Kiro-style (consolidated) dựng từ docs/specs/_template.html. Thứ tự section CHUẨN: Changelog · Context ·
+  Requirements · Design · Tasks · Verification · Open Questions · References · Nhật ký triển khai · Reviewer Log.
+  Approval gate out-of-band (KHÔNG lưu state trong HTML). Diagram = HTML visual (inline SVG / .layers / .flow).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--bad:#c9302c;--newfill:rgba(0,113,227,.12);--warnfill:rgba(191,95,0,.12);--badfill:rgba(201,48,44,.10);--okfill:rgba(26,127,55,.10)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--bad:#ff453a;--newfill:rgba(41,151,255,.18);--warnfill:rgba(255,159,10,.16);--badfill:rgba(255,69,58,.16);--okfill:rgba(48,209,88,.14)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+h4{font-size:15px;font-weight:650;margin:18px 0 6px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+.card.answer{border-color:var(--accent)}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+/* nhãn mức bằng chứng (conversation-protocol P1) */
+.ev{display:inline-block;font-size:11px;font-weight:700;padding:0 6px;border-radius:5px;margin-right:3px;white-space:nowrap;border:1px solid var(--line)}
+.ev.do{background:var(--okfill);color:var(--ok);border-color:transparent}
+.ev.suy{background:var(--newfill);color:var(--accent);border-color:transparent}
+.ev.doan{background:var(--warnfill);color:var(--warn);border-color:transparent}
+.ev.cb{background:var(--badfill);color:var(--bad);border-color:transparent}
+.car{font-size:12px;font-weight:700;color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1) ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node.new{background:var(--newfill);border-color:var(--accent)}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--newfill);border-color:var(--accent)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+/* SVG: màu đi theo CSS var ⇒ đúng cả sáng/tối */
+.s-node{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.s-new{fill:var(--newfill);stroke:var(--accent);stroke-width:1.4}
+.s-warn{fill:var(--warnfill);stroke:var(--warn);stroke-width:1.2}
+.s-bad{fill:var(--badfill);stroke:var(--bad);stroke-width:1.2}
+.s-ok{fill:var(--okfill);stroke:var(--ok);stroke-width:1.2}
+.s-lane{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:4 4}
+.s-t{fill:var(--fg);font:600 12.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.s-s{fill:var(--muted);font:11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.s-a{stroke:var(--accent);stroke-width:1.6;fill:none}
+.s-a.dash{stroke-dasharray:5 4;stroke:var(--warn)}
+.s-head{fill:var(--accent)}
+.s-head.w{fill:var(--warn)}
+/* mock giao diện */
+.mock{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;max-width:560px}
+.mock .mt{font-weight:650;font-size:15px;margin-bottom:6px}
+.mock .mn{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.mrow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
+.mrow:last-child{border-bottom:0}
+.mrow .ic{width:28px;height:28px;border-radius:7px;background:var(--card);border:1px solid var(--line);flex:0 0 28px}
+.mrow .lb{flex:1 1 auto;min-width:0}
+.mrow .lb small{display:block;color:var(--muted);font-size:12px}
+.chip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-left:4px;white-space:nowrap}
+.chip.a{color:var(--accent);border-color:var(--accent)}
+.chip.o{color:var(--ok);border-color:var(--ok)}
+.chip.w{color:var(--warn);border-color:var(--warn)}
+.chip.b{color:var(--bad);border-color:var(--bad)}
+.mbtn{display:inline-block;font-size:13px;font-weight:600;padding:5px 12px;border-radius:10px;border:1px solid var(--line);margin:6px 6px 0 0}
+.mbtn.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:600px){.wrap{padding:28px 16px 96px}h1{font-size:26px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Dạy Kachi tên app bằng chính giọng người dùng</h1>
+<p class="muted">Slug: <code>kachi-290-voice-app-names</code> · Branch đề xuất <code>feat/voice-app-names</code> (sau khi 2.89 đăng) · Chủ: dangkhoi · <span class="pill wait">Trạng thái: Draft — chờ duyệt Requirements</span></p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §1–§16 + <code>.kiro/steering/{project-context,documentation-and-backlog,product-team-workflow,trace-den-tan-cung,conversation-protocol}.md</code>. Context7 đã tra cho sherpa-onnx (hotword theo luồng) và Android (<code>createPackageContext</code>) — kết quả ở §4.13.</p>
+
+<div class="card">
+<b>Nhãn mức bằng chứng dùng trong tài liệu này</b> (conversation-protocol P1):
+<ul>
+<li><span class="ev do">ĐO mã</span> đọc trực tiếp mã nguồn trong phiên viết spec này, có <code>tệp:dòng</code> (nói <i>mã viết gì</i>, không nói mã chạy ra sao trên xe).</li>
+<li><span class="ev suy">SUY</span> suy luận từ mã đã đọc, hoặc từ dữ liệu/nhật ký của phiên CŨ (dữ liệu cũ tối đa là SUY — CLAUDE.md §14).</li>
+<li><span class="ev doan">ĐOÁN</span> mới chỉ hợp lý, kèm cách chốt.</li>
+<li><span class="ev cb">CHƯA BIẾT</span> chưa có dữ liệu; nêu đúng phép đo để chốt. <span class="car">🚗</span> = phép đo cần xe.</li>
+</ul>
+</div>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-05</b>: Khởi tạo spec từ yêu cầu owner 05/10 (<i>"lấy voice người dùng là ngon nhất, list hết app ra, … mỗi app 2-3 lần, cái nào họ nói thì lấy theo cái họ nói"</i>). Đọc toàn bộ đường voice (parser · lexicon · nhãn app · fuzzy · tiền tố · hotword · recognizer · phiên · <code>:wake</code> · hồ sơ · harness) trước khi đề xuất. Chưa có dòng mã nào.</li>
+<li><b>Pass 1 — 2026-10-05 (soát đủ-phạm-vi, chỉ đọc mã)</b>: đối chiếu lại từng trích dẫn với cây làm việc; vá: (1) lượt dạy đi <code>VoiceSession.start</code> sẽ bung tấm chữ phủ TOÀN MÀN ăn mọi chạm + đọc lỗi thành tiếng ⇒ thêm ràng buộc phiên TEACH không tấm chữ/không TTS (§4.4); (2) R-nf3 nói sai: đường <code>runListen</code> ghi nhật ký H2 (WAV+JSON, mặc định BẬT, vòng 30 mục) + in chữ nghe được ra logcat ⇒ sửa R-nf3, thêm OQ13; (3) luật đơn điệu hotword thiếu đường rụng thứ hai (<code>dropAppNameLeading</code> qua <code>appNames</code>) + bài canh <code>VoiceListenWiringContractTest</code> ghim nguyên văn lời gọi <code>hotwordsFile(places, profiles)</code> (§4.8); (4) bảng trần dòng thiếu 6 tệp sát trần sẽ bị chạm (§2); (5) bảng khai phạm vi thiếu <code>SettingsCatalogEntries</code> + i18n TSV + <code>LayeringRulesTest</code> (§4.5); (6) nhãn locale thứ hai phải nạp ở CẢ hai tiến trình + theo đúng thứ tự <code>loadLabel</code> (§4.9); (7) trích dẫn backlog đã xê dịch dòng. Chi tiết ở §10 Reviewer Log Pass 1.</li>
+</ul>
+
+<h2>2. Context</h2>
+
+<h3>2.1 Owner muốn gì</h3>
+<p>Owner 2026-10-05: <i>"Có nhiều ứng dụng kiểu netflix, spotify, quản lý tập tin, tiếng anh tiếng việt từa lưa, gọi bằng voice nó không hiểu"</i> → <i>"lấy voice người dùng là ngon nhất, list hết app ra, rồi cho user họ nói mỗi app 2-3 lần, cái nào họ nói thì lấy theo cái họ nói là đc hả?"</i></p>
+
+<div class="card answer">
+<b>Trả lời câu hỏi "là được hả?" — Được, với ba điều kiện.</b>
+<ol>
+<li><b>Lưu CHỮ mà mô hình in ra, không lưu tiếng.</b> Bộ hiểu lệnh của Kachi làm việc trên chuỗi chữ (<code>VoiceIntentParser.parse(text…)</code> <span class="ev do">ĐO mã</span> <code>VoiceIntentParser.kt:39-48</code>). Khi người dùng nói "mở Netflix", thứ cần nhớ là <i>chuỗi mô hình thật sự in ra cho giọng + mic của người đó</i> (vd <code>nep leag</code>), không phải cách đọc ta đoán. Dữ liệu xe 27/09: nói "mở netflix vào ô số 1" ⇒ mô hình in <i>"mở nep leag vào ô số một"</i> <span class="ev suy">SUY — log xe cũ, <code>docs/PROJECT-BACKLOG.md</code> mục PHASE-2 27/09 (dòng 286 @HEAD 8880d76 — cây làm việc 05/10 đã xê dịch)</span>, trong khi bảng phiên âm của Kachi đoán <code>nét phờ lích</code> <span class="ev do">ĐO mã</span> <code>VoiceAppPhonetics.kt:70,86</code>. Hai chuỗi lệch hẳn nhau — đó chính là lý do "lấy theo cái họ nói" tốt hơn mọi bảng đoán.</li>
+<li><b>Dạy bằng ĐÚNG bộ nghe + cấu hình của lệnh thật</b> (cùng <code>VoiceRecognizer.open</code>, cùng hotword, cùng cắt VAD, cùng tiến trình đang giữ mô hình). Mẫu thu bằng cấu hình khác sẽ in ra chữ khác lúc dùng thật.</li>
+<li><b>Có cổng an toàn</b>: một tên đã dạy là một từ mới trong từ vựng chung, nên nó có thể cướp câu lệnh xe (<i>"đèn"</i>, <i>"xem phim"</i>~<i>"xem pin"</i>). Mỗi mẫu phải qua kiểm trùng lệnh + kiểm hồi quy toàn bộ câu mẫu trước khi lưu (§4.7).</li>
+</ol>
+<p class="muted">Độ ổn định "cùng người nói 3 lần có ra cùng một chuỗi không" là <span class="ev cb">CHƯA BIẾT</span> — phép đo E1 (§5) chốt trước khi viết mã giao diện.</p>
+</div>
+
+<h3>2.2 Vì sao hôm nay gọi app tên ngoại không ăn — gốc ở mã</h3>
+<table>
+<tr><th>#</th><th>Sự thật</th><th>Bằng chứng</th></tr>
+<tr><td>G1</td><td>Mô hình nghe duy nhất là sherpa-onnx <code>zipformer-vi</code> (tiếng Việt). Nó in chữ HOA có dấu; tầng nghe hạ chữ thường rồi giao cho parser. Tên tiếng Anh không có token riêng ⇒ mô hình ghép âm Việt gần nhất.</td><td><span class="ev do">ĐO mã</span> <code>VoiceRecognizer.kt:160</code> (<code>getResult(stream).text.trim().lowercase()</code>) · KDoc <code>SherpaBiasing.kt:14-18</code> · <span class="ev suy">SUY</span> <code>voice-mishear-2026-09-16.md</code> §3: ý định <code>app</code> đúng 12,8 % (thấp nhất bảng, dữ liệu cũ)</td></tr>
+<tr><td>G2</td><td>Bảng gọi app viết tay chỉ có <b>7 mã đích</b> (ytmusic · youtube · spotify · zing · gmaps · waze · vietmap).</td><td><span class="ev do">ĐO mã</span> <code>VoiceAppTargets.kt:221-227</code> · <code>VoiceSynonyms.kt:339-372</code></td></tr>
+<tr><td>G3</td><td>Mọi app đã cài khác có <b>nhãn hệ thống</b> (một locale — locale máy) + <b>dạng đọc sinh tự động</b> từ một bảng âm tiết ĐÓNG ~45 mục; nhãn không phủ hết bảng ⇒ không có dạng đọc nào (<i>"phủ hết hoặc không gì cả"</i>).</td><td><span class="ev do">ĐO mã</span> <code>VoiceWiring.kt:49-60</code> (<code>ri.loadLabel(pm)</code>) · <code>VoiceWiring.kt:96-102</code> (<code>withPhonetics</code>) · <code>VoiceAppPhonetics.kt:47-104, 113-128</code></td></tr>
+<tr><td>G4</td><td><b>Hotword chỉ mang tên của 7 app đích</b>; nhãn + dạng đọc của app đã cài KHÔNG vào hotword. <code>VoiceRecognizer.open</code> nhận <code>apps</code>/<code>installed</code> nhưng bỏ qua (<code>@Suppress("UNUSED_PARAMETER")</code>).</td><td><span class="ev do">ĐO mã</span> <code>SherpaPhraseHotwords.kt:109-113, 146-149</code> · <code>SherpaBiasing.kt:35-36</code> · <code>VoiceRecognizer.kt:192-206</code></td></tr>
+<tr><td>G5</td><td>Khớp nhãn app đã cài đi ba nấc: khớp nguyên dãy từ (cụm <code>APP</code> của từ vựng) → khớp mờ (neo 4 ký tự đầu, lệch ≤ 2, cả hai ≥ 5 ký tự, duy nhất) → tiền tố ≥ 4 ký tự (chỉ khi câu có mệnh đề ô có số). <i>"nep leag"</i> so với <i>"netflix"</i>: neo <code>nepl</code> ≠ <code>netf</code> ⇒ trượt cả ba nấc.</td><td><span class="ev do">ĐO mã</span> <code>VoiceGrammar.kt:191-200</code> · <code>VoiceLastResort.kt:33-37</code> · <code>VoiceNameFuzzy.kt</code> (<code>PREFIX_ANCHOR=4</code>, <code>MAX_EDITS=2</code>, <code>MIN_LEN=5</code>) · <code>VoiceAppPrefix.kt</code> (<code>MIN_PREFIX=4</code>) · <span class="ev suy">SUY</span> phép so tự làm tay trên hai chuỗi</td></tr>
+<tr><td>G6</td><td>Câu đọc lại dùng nhãn thật (không đọc chuỗi phiên âm) nhờ <code>canonicalLabel</code>.</td><td><span class="ev do">ĐO mã</span> <code>VoiceDispatcher.kt:411-448</code> · <code>VoiceAppPhonetics.kt:202-206</code></td></tr>
+</table>
+
+<h3>2.3 Có sẵn để tái dùng (không dựng đường thứ hai)</h3>
+<table>
+<tr><th>Khối</th><th>Dùng cho</th><th>Bằng chứng</th></tr>
+<tr><td><code>VoiceSession.runListen</code> + <code>VoiceCapture.listen</code> + <code>VoiceRecognizer.open</code></td><td>Lượt thu mẫu = đúng đường của lệnh thật (VAD cắt hai đầu, hotword, lượt 2 tự do).</td><td><span class="ev do">ĐO mã</span> <code>VoiceSessionListen.kt:34-91</code></td></tr>
+<tr><td><code>VoiceEntryRoute</code> + <code>VoiceEntry</code> (ack nội gói)</td><td>Mô hình đang nằm ở <code>:wake</code> ⇒ lượt dạy chạy ở <code>:wake</code>, không nạp bản thứ hai (+74–110 MB, ~15 s).</td><td><span class="ev do">ĐO mã</span> <code>VoiceEntryRoute.kt:56-60</code> · <code>VoiceEntry.kt</code> (<code>ACTION_LISTEN_ACK</code>, <code>RECEIVER_NOT_EXPORTED</code>)</td></tr>
+<tr><td><code>VoiceGrammarSnapshot</code> + <code>VoiceGrammarSnapshotStore</code></td><td>Đưa tên đã dạy sang <code>:wake</code> (cache <code>SharedPreferences</code> của <code>:wake</code> không bao giờ nạp lại).</td><td><span class="ev do">ĐO mã</span> <code>VoiceGrammarSnapshot.kt:88-100, 150-190</code> · <code>VoiceGrammarSnapshotStore.kt</code></td></tr>
+<tr><td><code>ProfileScope</code> · <code>ProfileScopeLauncher.DECLARED_TYPES</code> · <code>ProfileSharePolicy</code></td><td>Khoá theo hồ sơ, kiểu khai sẵn, lọc bản chia sẻ (danh sách trắng, fail-closed).</td><td><span class="ev do">ĐO mã</span> <code>ProfileScope.kt:87-97</code> · <code>ProfileSharePolicy.kt:25-112</code></td></tr>
+<tr><td><code>VoiceCommandCatalog.groups</code></td><td>Bộ câu mẫu KÈM ý định mong đợi ⇒ làm "máy dò hồi quy" lúc lưu tên.</td><td><span class="ev do">ĐO mã</span> <code>VoiceCommandCatalog.kt:28-33, 104-110</code></td></tr>
+<tr><td><code>SherpaHotwords.phraseFile</code> (<code>dropAppNameLeading</code> → <code>dropPrefixes</code>) + <code>SherpaBiasingCoverageTest</code></td><td>Luật lọc hotword đã đo; bài canh mở rộng thêm.</td><td><span class="ev do">ĐO mã</span> <code>SherpaHotwords.kt:66-73, 98-109, 131-135</code></td></tr>
+<tr><td>Cầu kiểm thử <code>wav</code>/<code>say</code> + <code>scripts/emulator/voice-e2e.sh</code></td><td>E2E off-car: WAV TTS → đúng recognizer → ý định.</td><td><span class="ev do">ĐO mã</span> <code>TestBridgeCommand.kt</code> (<code>SAY</code>, <code>WAV</code>) · <code>voice-e2e.sh</code> 496 dòng</td></tr>
+<tr><td>Hộp "Học phím mới" (<code>SettingsSectionsKeys.learn</code> + <code>SettingsDialogs.askName</code>)</td><td>Khuôn UX "học bằng ví dụ": mở phiên học → người dùng làm → hiện kết quả + chi tiết → đặt tên → lưu; dọn phiên khi đóng bảng.</td><td><span class="ev do">ĐO mã</span> <code>SettingsSectionsKeys.kt:227-265</code> · <code>SettingsDialogs.kt:171-183</code></td></tr>
+<tr><td><code>VoiceHomeAction</code> relay</td><td>Tấm chữ ở <code>:wake</code> mở trang Cài đặt ở tiến trình chính.</td><td><span class="ev do">ĐO mã</span> <code>VoiceEntryRoute.kt</code> (enum <code>VoiceHomeAction</code>)</td></tr>
+</table>
+
+<div class="card"><b>Phạm vi (conversation-protocol P2)</b>
+<ul>
+<li><b>TRONG</b>: dạy tên app bằng giọng/gõ, lưu theo hồ sơ, khớp ở mọi dạng câu gọi app, cổng an toàn, hotword, nhãn hai locale, test + harness.</li>
+<li><b>NGOÀI, không làm ở đây</b>: (a) phần <i>"taskbar hơi to, cho chỉnh size … scale widget/shortcut"</i> trong cùng tin nhắn owner — spec riêng; (b) <b>đóng app thật</b> bằng giọng — cơ chế chưa có, câu <i>"đóng X"</i> vẫn trả <code>APP_CLOSE</code> <span class="ev do">ĐO mã</span> <code>VoiceIntent.kt:182-194</code>; (c) giao chuỗi tìm kiếm cho app KHÔNG thuộc bảng đích (Netflix…) — Kachi chỉ biết giao chuỗi cho 7 app đích <span class="ev do">ĐO mã</span> <code>VoiceAppTargets.kt:218-360</code>; (d) nhúng app tự mở activity thứ hai vào ô — đã có kết luận riêng <span class="ev suy">SUY</span> <code>PROJECT-BACKLOG.md</code> mục PHASE-2 27/09 (dòng 286 @HEAD 8880d76 — cây làm việc 05/10 đã xê dịch).</li>
+</ul></div>
+
+<div class="card"><b>Cổng / phụ thuộc</b>
+<ul>
+<li>Một workflow khác đang sửa mã và build 2.89 (<code>versionName "2.89-thử1"</code>, <code>versionCode 190</code> <span class="ev do">ĐO mã</span> <code>app/build.gradle.kts:93-94</code>) ⇒ bắt đầu code sau khi 2.89 đăng; đánh số bản theo CLAUDE.md §9 lúc giao APK.</li>
+<li><b>§14 tầng 1 trước</b>: E1 (độ ổn định chuỗi mô hình in ra cho tên app ngoại, giọng thật) quyết các ngưỡng của C2/C5/C6. Không có E1 thì ngưỡng là <span class="ev doan">ĐOÁN</span>.</li>
+<li><b>Trần 500 dòng</b> (CLAUDE.md §4.1 + bài canh <code>VoiceListenWiringContractTest</code>): <code>VoiceIntentParser.kt</code> 499 · <code>WorkspacePrefs.kt</code> 499 · <code>VoiceSession.kt</code> 498 · <code>VoiceWakeService.kt</code> 497 · <code>voice-e2e.sh</code> 496 dòng <span class="ev do">ĐO <code>wc -l</code> 05/10</span> ⇒ mọi thêm mới đi vào <b>tệp mới</b>, hoặc dời mã thuần (pure move) trước.<br><b>Pass 1 bổ sung</b> — tệp sát trần mà spec NÀY sẽ chạm, bản Pass 0 bỏ sót <span class="ev do">ĐO <code>wc -l</code> 05/10</span>: <code>VoiceRecognizer.kt</code> <b>496</b> (A2 đổi <code>open</code> → <code>hotwordsFile(…, taught)</code>) · <code>TestBridgeCommand.kt</code> (<code>:core</code>) <b>495</b> (A7 thêm 3 lệnh) · <code>VoiceAppTargets.kt</code> 490 · <code>VoiceCommandCatalog.kt</code> <b>485</b> (C4 thêm nhóm "Tên app đã dạy") · <code>VoiceLexicon.kt</code> 483 · <code>VoiceDispatcher.kt</code> 466 (A2 thêm nguồn aliases). Ba tệp in đậm phải có kế hoạch dời mã/tệp mới TRƯỚC khi viết (vd lệnh cầu mới khai ở tệp <code>TestBridgeTeachCommand.kt</code> riêng; nhóm catalog mới ở tệp riêng).</li>
+</ul></div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Danh sách mọi app.</b> Trang <i>Dạy tên app</i> liệt kê <b>mọi</b> app có màn khởi chạy (cùng truy vấn <code>ACTION_MAIN</code>+<code>CATEGORY_LAUNCHER</code> của ngăn kéo, trừ chính Kachi), mỗi hàng: icon · nhãn · số tên đã dạy · nút <b>Thử</b> · nút <b>Xoá</b>. Có ô tìm + bộ lọc <i>Tất cả / Đã dạy / Nên dạy</i> (nên dạy = nhãn không có dạng đọc âm Việt và không thuộc bảng đích). Có nhóm <i>App đã gỡ</i> cho tên mồ côi.<br><span class="muted">AC: số hàng = số gói của <code>AppDrawerApps.load()</code> − 1 (Kachi); app cài thêm hiện ngay lần mở trang kế tiếp.</span></li>
+<li><b>R2 — Dạy bằng giọng.</b> Chạm một app → hộp dạy: bấm 🎤, nói <i>"mở &lt;tên&gt;"</i> như lúc dùng thật; mỗi lượt hiện <b>chữ Kachi nghe được</b> + phán quyết (mới / trùng mẫu trước / Kachi đã hiểu sẵn / cảnh báo / bị chặn); xoá được từng mẫu; tối thiểu 2 lượt nói trước khi bật nút Lưu, tối đa 3 lượt mỗi lần dạy.<br><span class="muted">AC: lượt thu đi qua <code>VoiceRecognizer.open</code> với CÙNG tham số hotword của phiên lệnh (bài canh nguồn); chữ hiện ≤ 1 s sau khi giải mã xong; không lượt dạy nào thi hành lệnh.</span></li>
+<li><b>R3 — Gõ tên.</b> Ô <i>"Gõ tên gọi…"</i> trong hộp dạy (khuôn <code>SettingsDialogs.askName</code>); tên gõ qua cùng cổng an toàn R7.<br><span class="muted">AC: tên gõ khớp ở tầng chữ; không vào hotword trừ khi owner chốt khác (OQ3).</span></li>
+<li><b>R4 — Ba lối vào.</b> (a) Cài đặt › Giọng nói › <i>Tên app</i>; (b) nhấn giữ icon app trong <b>ngăn kéo</b> → <i>"Dạy tên gọi bằng giọng"</i>; (c) sau một câu <i>"mở …"</i> không hiểu: tấm chữ có nút <i>"Dạy tên «…»"</i> mở trang với mẫu đang chờ = phần đuôi vừa nghe.<br><span class="muted">AC: cả ba lối mở đúng một hộp dạy (một lớp UI); lối (c) chạy được cả khi phiên ở <code>:wake</code>.</span></li>
+<li><b>R5 — Lưu theo hồ sơ.</b> Khoá hồ sơ mới <code>voice_app_names</code> (chuỗi mã hoá có phiên bản, mỗi mục: gói · nguồn · dạng có dấu · dạng chuẩn hoá · nhãn lúc dạy). Nhân bản/xoá/xuất FULL/nhập hồ sơ mang theo; bản chia sẻ KHÔNG mang (OQ2). App gỡ ⇒ tên giữ lại, không dùng, hiện ở <i>App đã gỡ</i>; cài lại ⇒ dùng lại.<br><span class="muted">AC: đổi hồ sơ ⇒ câu kế tiếp dùng bộ tên của hồ sơ mới ở CẢ tiến trình chính lẫn <code>:wake</code>; phiên bản lạ ⇒ chỉ đọc, không ghi đè.</span></li>
+<li><b>R6 — Khớp.</b> Tên đã dạy là cụm từ vựng hạng nhất, thứ tự <b>nhãn thật &gt; tên đã dạy &gt; dạng suy từ nhãn (nhãn locale thứ hai · dạng đọc · bảng đích) &gt; khớp mờ</b>. Áp cho: <i>mở X</i> · <i>đưa X vào ô số N</i> · <i>X vào ô số N</i> (không động từ) · <i>mở ứng dụng X</i> · <i>đóng/tắt X</i> (ra <code>APP_CLOSE</code>) · <i>phát nhạc trên X</i> / <i>dẫn đường bằng X</i> (khi gói của X thuộc bảng đích) · câu trả lời cho câu hỏi lại <i>"Mở gì?"</i>. Câu đọc lại luôn là nhãn thật.<br><span class="muted">AC: bộ test §6 V-unit xanh; 0 câu mẫu của <code>VoiceCommandCatalog</code> đổi ý định khi có 30 tên đã dạy thực tế.</span></li>
+<li><b>R7 — An toàn.</b> Từ chối (CHẶN) hoặc cảnh báo (CẢNH BÁO, phải bấm <i>Vẫn lưu</i>) theo bảng §4.7: trùng/tiền tố của câu lệnh xe, động từ, từ ô, từ nối, từ kết thúc, có/không, tên hồ sơ, tên nơi, câu gọi Kachi, nhãn/tên đã dạy của app khác; tối thiểu 4 chữ cái; rỗng/rác bị loại. <b>Không bao giờ tự mở app bằng một phép khớp yếu</b>: không thêm phép so lỏng nào mới.<br><span class="muted">AC: mỗi dòng của bảng §4.7 có một test; máy dò hồi quy chạy ở mỗi lần Lưu.</span></li>
+<li><b>R8 — Hotword.</b> Mỗi tên đã dạy (nguồn giọng) sinh cụm <i>"MỞ/ĐƯA/BẬT &lt;TÊN&gt;"</i>; tệp mới phải là <b>tập cha</b> của tệp cũ (không làm rụng một dòng tĩnh nào); trần 120 tên/hồ sơ; Lưu <b>không</b> nạp lại mô hình.<br><span class="muted">AC: bài canh đơn điệu + không dòng một từ + không tiền tố; 🚗 <code>createStream(hotwords)</code> ≤ 150 ms với 120 tên.</span></li>
+<li><b>R9 — Nhãn hai locale.</b> Ngoài nhãn theo locale máy, nạp thêm nhãn <code>vi</code> và <code>en</code> của mỗi app (khi app có tài nguyên nhãn đa ngữ) vào tầng "dạng suy từ nhãn".<br><span class="muted">AC: máy locale <code>en</code> nói <i>"mở bản đồ"</i>/<i>"mở cài đặt"</i> khớp nhờ nhãn <code>vi</code>; lỗi nạp một app không làm hỏng các app khác.</span></li>
+<li><b>R10 — i18n.</b> Mọi chuỗi mới có đủ 5 tiếng <code>vi · en · zh-rCN · th · ms</code>; tên đã dạy KHÔNG dịch (là chữ tiếng Việt mô hình in ra).<br><span class="muted">AC: <code>I18nCoverageTest</code> + bài soát tài nguyên 5 locale xanh.</span></li>
+<li><b>R11 — Kiểm thử.</b> Test thuần <code>:core</code> (trùng, thứ tự tầng, chuẩn hoá, codec), bài canh hotword, test nối dây <code>:app</code>, harness máy ảo có WAV TTS cho tên đã dạy, và chạy lại TOÀN BỘ <code>voice-e2e.sh</code> (memory: mọi đổi voice phải chạy lại trước khi nói xong).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1 — Một mô hình cho cả máy.</b> Lượt dạy đi tiến trình đang giữ mô hình (<code>VoiceEntryRoute.decide</code>); không bao giờ nạp bản thứ hai chỉ để dạy.</li>
+<li><b>R-nf2 — Không ghi prefs từ <code>:wake</code>.</b> Chỉ tiến trình chính ghi <code>voice_app_names</code> + ảnh chụp (luật <code>VoiceGrammarSnapshotStore.isMainProcess</code>).</li>
+<li><b>R-nf3 — Riêng tư.</b> Mã MỚI không ghi chuỗi tên đã dạy vào logcat (chỉ đếm). <b>Sửa Pass 1 — sự thật của đường có sẵn</b>: (a) hai dòng log CÓ SẴN vẫn in chữ nghe được của mọi lượt đi qua <code>runListen</code>, kể cả lượt dạy — <code>sherpa ra: "…"</code> <span class="ev do">ĐO mã</span> <code>VoiceRecognizer.kt:160-162</code> và <code>lượt 1 (ngữ pháp) nghe được: "…"</code> <span class="ev do">ĐO mã</span> <code>VoiceSessionListen.kt:67</code> — spec này không đổi chúng; (b) <code>runListen</code> gọi <code>logHeard</code> (<code>VoiceSessionListen.kt:72</code>) ⇒ nhật ký H2 ghi <b>WAV + JSON ra đĩa</b> cho mỗi lượt, công tắc <code>voice_keep_log</code> <b>mặc định BẬT</b> <span class="ev do">ĐO mã</span> <code>PrefsVoiceV3.kt:119</code>, vòng đệm <b>30 mục</b> <span class="ev do">ĐO mã</span> <code>VoiceUtteranceLog.kt:67</code> ⇒ dạy 10 app × 3 lượt là đẩy sạch nhật ký chuyến đi thật. Mặc định đề xuất: nhánh TEACH <b>không</b> gọi <code>logHeard</code> (không thêm âm thanh ra đĩa, không xoá dữ liệu chẩn đoán), trừ khi test-mode bật — OQ13.</li>
+<li><b>R-nf4 — Generic (CLAUDE.md §7).</b> Không một tên gói/tên app nào viết cứng; mọi khác biệt đi qua đo (nhãn, gói đang cài, kết quả phân tích).</li>
+<li><b>R-nf5 — Degrade-safe.</b> Thiếu mô hình ⇒ chỉ còn gõ tên; codec hỏng ⇒ bỏ mục hỏng, không ném; nạp nhãn locale lỗi ⇒ bỏ app đó.</li>
+<li><b>R-nf6 — Chi phí phiên.</b> Dựng bảng gọi app có tên đã dạy ≤ 20 ms trên máy ảo <span class="ev doan">ĐOÁN ngân sách</span>; số đo thật ghi vào §9.</li>
+<li><b>R-nf7 — Trần dòng.</b> Không tệp nào vượt 500 dòng; tệp sát trần chỉ được thêm bằng tệp mới hoặc dời mã thuần.</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">§Design + §Tasks hoàn thiện song song với code. Mọi diagram là HTML/SVG.</p>
+
+<h3>4.1 Kiến trúc tổng</h3>
+<div class="layers">
+  <div class="layer-title">:app — giao diện + Android</div>
+  <div class="layer">
+    <div class="node new"><b>Trang "Dạy tên app"</b><span>danh sách mọi app · lọc · Thử · Xoá</span></div>
+    <div class="node new"><b>Hộp dạy</b><span>🎤 2–3 lượt · gõ tên · phán quyết từng mẫu</span></div>
+    <div class="node new"><b>Lối vào</b><span>Cài đặt · nhấn giữ ở ngăn kéo · nút trên tấm chữ</span></div>
+    <div class="node new"><b>AltLabels</b><span>nhãn vi/en qua createPackageContext</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>VoiceSession / VoiceCapture</b><span>+ chế độ TEACH (tệp mới)</span></div>
+    <div class="node"><b>VoiceRecognizer.open</b><span>hotword = tĩnh + hồ sơ + nơi + <b>tên đã dạy</b></span></div>
+    <div class="node"><b>VoiceWiring.appsByLabel</b><span>→ VoiceAppIndex</span></div>
+    <div class="node new"><b>WorkspacePrefsVoiceNames</b><span>khoá hồ sơ <code>voice_app_names</code></span></div>
+  </div>
+  <div class="layer-title">:wake — tiến trình giữ mô hình (khi wake/phím)</div>
+  <div class="layer">
+    <div class="node"><b>VoiceWakeService</b><span>ACTION_TEACH_LISTEN → phiên TEACH</span></div>
+    <div class="node"><b>Ảnh chụp ngữ pháp</b><span>+ bản ghi <code>alias</code></span></div>
+  </div>
+  <div class="layer-title">:core — thuần Kotlin, test off-car</div>
+  <div class="layer">
+    <div class="node new"><b>TaughtNamesCodec</b><span>v1 · gói · nguồn · có dấu · chuẩn hoá · nhãn</span></div>
+    <div class="node new"><b>TeachSample</b><span>chuẩn hoá mẫu: bỏ động từ/khách sáo/mệnh đề ô</span></div>
+    <div class="node new"><b>TeachGuard</b><span>CHẶN/CẢNH BÁO + máy dò hồi quy</span></div>
+    <div class="node new"><b>VoiceAppIndex</b><span>tầng: nhãn › đã dạy › suy từ nhãn</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>VoiceGrammar.terms</b><span>+ cụm APP từ tên đã dạy</span></div>
+    <div class="node"><b>VoiceIntentParser</b><span>+ aliases (một tham số)</span></div>
+    <div class="node"><b>VoiceTailClause.appAfterMarker</b><span>+ tên đã dạy của app đích</span></div>
+    <div class="node"><b>SherpaBiasing / SherpaHotwords</b><span>+ cụm tên đã dạy, lọc đơn điệu</span></div>
+  </div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có (sửa nhỏ)</span>
+  <span class="sw"><span class="box" style="background:var(--newfill);border-color:var(--accent)"></span> khối mới</span>
+</div>
+
+<h3>4.2 Đường dạy một mẫu</h3>
+<div class="flow">
+  <div class="fnode"><b>🎤 Bấm nói</b><span>"mở Netflix"</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Chọn tiến trình</b><span>VoiceEntryRoute.decide</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Phiên TEACH</b><span>capture + VAD + hotword như lệnh thật</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Chữ nghe được</b><span>"mở nep leag"</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TeachSample</b><span>→ "nep leag"</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TeachGuard</b><span>MỚI / ĐÃ HIỂU / CẢNH BÁO / CHẶN</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Hiện trong hộp</b><span>giữ / xoá từng mẫu</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Lưu</b><span>máy dò hồi quy → ViewModel → prefs + ảnh chụp</span></div>
+</div>
+
+<h4>Chuẩn hoá một mẫu (<code>TeachSample.normalize</code>, :core)</h4>
+<p>Người dùng được hướng dẫn nói <b>cả câu lệnh</b> (<i>"mở Netflix"</i>), không nói trần cái tên: cùng ngữ cảnh âm + cùng cụm hotword <i>"MỞ …"</i> như lúc dùng thật <span class="ev suy">SUY</span> — mô hình transducer giải mã có ngữ cảnh và đồ thị hotword bắt đầu từ động từ (<code>SherpaPhraseHotwords.kt:109-113</code>). Sau khi nghe, cắt về phần tên bằng đúng các bảng parser đang dùng (không bảng thứ hai):</p>
+<table>
+<tr><th>Bước</th><th>Nguồn dữ liệu (có sẵn)</th><th>Ví dụ</th></tr>
+<tr><td>1. tách từ, giữ <code>raw</code> (có dấu) + <code>norm</code></td><td><code>VoiceLexicon.tokenize</code></td><td><i>"ờ mở giúp anh nep leag vào ô số hai nhé"</i></td></tr>
+<tr><td>2. bỏ khách sáo đầu/cuối + tiếng đệm</td><td><code>VoiceLexicon.stripCourtesy</code> · <code>dropLeadingFillers</code> (<code>VoiceLexicon.kt:379, 415</code>)</td><td><i>"mở nep leag vào ô số hai"</i></td></tr>
+<tr><td>3. bỏ động từ MỞ/BẬT ở vị trí 0 (dài trước ngắn) + nhãn hành động launcher <i>"ứng dụng"</i> nếu đứng ngay sau</td><td><code>VoiceGrammar.VERBS</code> lọc <code>OPEN</code>/<code>ON</code> · <code>LauncherActions.ALL</code></td><td><i>"nep leag vào ô số hai"</i></td></tr>
+<tr><td>4. cắt từ mệnh đề ô trở đi</td><td><code>VoiceLexicon.SLOT_WORDS</code> + <code>VoiceTailClause.slotAt</code></td><td><i>"nep leag"</i></td></tr>
+<tr><td>5. kiểm hình dạng: 1–4 từ, ≥ 4 chữ cái, không rỗng</td><td>hằng mới ở <code>TeachSample</code></td><td>✓</td></tr>
+</table>
+<p>Kết quả mang hai dạng: <code>accented</code> = nối <code>raw</code> (chữ thường có dấu — đúng thứ mô hình in) và <code>norm</code> = nối <code>norm</code> (để khớp). Mẫu trùng <code>norm</code> với mẫu khác trong cùng lượt ⇒ gộp, đếm số lần (<i>"Kachi nghe ổn định 2/2"</i> — chỉ báo độ ổn định cho người dùng).</p>
+
+<h3>4.3 Giao diện</h3>
+<h4>Trang "Dạy tên app" (Cài đặt › Giọng nói › Tên app)</h4>
+<div class="mock">
+  <div class="mt">Dạy tên app</div>
+  <div class="mn">Giọng nói chỉ nghe tiếng Việt. App tên tiếng Anh/khó đọc: bấm vào app, nói "mở &lt;tên&gt;" 2–3 lần như bình thường.</div>
+  <div class="mn">🔍 Tìm app… &nbsp; <span class="chip a">Tất cả 64</span><span class="chip">Đã dạy 3</span><span class="chip w">Nên dạy 11</span></div>
+  <div class="mrow"><span class="ic"></span><span class="lb">Netflix<small>2 tên: nep leag · nét lích</small></span><span class="chip o">2</span><span class="mbtn">▶ Thử</span><span class="mbtn">Xoá</span></div>
+  <div class="mrow"><span class="ic"></span><span class="lb">Files<small>chưa dạy · Kachi chưa đọc được tên này</small></span><span class="chip w">Nên dạy</span></div>
+  <div class="mrow"><span class="ic"></span><span class="lb">YouTube<small>Kachi hiểu sẵn ("du túp", "youtube")</small></span></div>
+  <div class="mrow"><span class="ic"></span><span class="lb">App đã gỡ (1)<small>Spotify — 1 tên, không dùng tới khi cài lại</small></span><span class="mbtn">Xoá</span></div>
+</div>
+<ul>
+<li>Danh sách dựng bằng đúng <code>AppDrawerApps.load()</code> (nhãn đọc ngay, icon luồng nền — khuôn <span class="ev do">ĐO mã</span> <code>AppDrawerApps.kt:44-55, 82-117</code>), trừ gói của chính Kachi.</li>
+<li><b>Nên dạy</b> = nhãn (mọi locale đã nạp) không sinh dạng đọc (<code>VoiceAppPhonetics.spokenForms</code> rỗng), không thuộc bảng đích, và không phải chữ tiếng Việt <span class="ev suy">SUY — phép xếp loại gợi ý, không phải sự thật về mô hình</span>.</li>
+<li><b>▶ Thử</b> = một lượt nghe chế độ TEACH, rồi phân tích với từ vựng đầy đủ và hiện <i>"Kachi hiểu: Mở Netflix ✓"</i> hoặc <i>"Kachi hiểu: Mở Google Maps ✗"</i> — <b>không mở app</b>.</li>
+<li>Dòng ở Cài đặt › Giọng nói: <i>"Dạy Kachi tên app — 3 app đã dạy"</i>, đứng giữa khối <i>Nói với xe</i> và <i>Nhạc</i>. KDoc <code>SettingsVoiceSection</code> hiện ghi <i>"KHÔNG mang thêm khoá lưu bền mới"</i> <span class="ev do">ĐO mã</span> <code>SettingsVoiceSection.kt:24</code> ⇒ phải sửa KDoc cùng commit.</li>
+</ul>
+
+<h4>Hộp dạy</h4>
+<div class="mock">
+  <div class="mt">Dạy tên: Netflix</div>
+  <div class="mn">Bấm 🎤 rồi nói "mở Netflix" như lúc lái. Nói 2–3 lần.</div>
+  <div class="mrow"><span class="lb">Lần 1: «nep leag»<small>tên mới</small></span><span class="chip o">✓ Mới</span><span class="mbtn">✕</span></div>
+  <div class="mrow"><span class="lb">Lần 2: «nep leag»<small>giống lần 1 — Kachi nghe ổn định</small></span><span class="chip">= lần 1</span><span class="mbtn">✕</span></div>
+  <div class="mrow"><span class="lb">Lần 3: «xem phim»<small>dễ lẫn với lệnh "xem pin"</small></span><span class="chip w">⚠ Cảnh báo</span><span class="mbtn">✕</span></div>
+  <div class="mrow"><span class="lb">Đã lưu trước: «nét lích»</span><span class="mbtn">✕</span></div>
+  <div><span class="mbtn p">🎤 Nói</span><span class="mbtn">Gõ tên…</span><span class="mbtn">Huỷ</span><span class="mbtn p">Lưu</span></div>
+</div>
+<ul>
+<li>Phán quyết mỗi mẫu: <span class="chip o">✓ Mới</span> · <span class="chip">= lần trước</span> · <span class="chip a">Kachi đã hiểu sẵn</span> (không cần lưu; không lưu để tệp hotword gọn) · <span class="chip w">⚠ Cảnh báo</span> (chạm để xem lý do; giữ lại cần bấm <i>Vẫn lưu</i>) · <span class="chip b">⛔ Bị chặn</span> (lý do + gợi ý <i>"thêm một chữ"</i>) · <i>"Không nghe rõ"</i> (rỗng).</li>
+<li>Mô hình chưa tải ⇒ nút 🎤 tắt + dòng <i>"Tải mô hình nghe ở Giọng nói › Nói với xe"</i>; gõ tên vẫn dùng được (R-nf5).</li>
+<li>Đóng hộp giữa chừng ⇒ huỷ phiên TEACH đang mở (cùng bài học <code>SettingsSectionsKeys.dispose</code>: không để phiên treo).</li>
+<li>Mọi lượt ghi đi qua một cổng ViewModel (<code>VoiceNamesPort.save</code>), không ghi prefs trực tiếp từ UI — cùng luật <span class="ev do">ĐO mã</span> <code>SettingsSectionsShortcuts.kt</code> (<code>ShortcutSettingsPort.save</code> → ViewModel).</li>
+</ul>
+
+<h4>Ba lối vào</h4>
+<table>
+<tr><th>Lối</th><th>Thi hành</th><th>Bằng chứng / ràng buộc</th></tr>
+<tr><td>(a) Cài đặt › Giọng nói › Tên app</td><td>Dòng mở trang danh sách.</td><td><code>SettingsVoiceSection.build</code> <span class="ev do">ĐO mã</span> <code>SettingsVoiceSection.kt:32-89</code></td></tr>
+<tr><td>(b) Nhấn giữ icon ở <b>ngăn kéo</b></td><td>Menu nhỏ một mục → hộp dạy cho gói đó. Chỉ ở chế độ ngăn kéo thường, không ở chế độ chọn lối tắt.</td><td>Hôm nay ô app ở ngăn kéo chỉ có <code>setOnClickListener</code> <span class="ev do">ĐO mã</span> <code>AppDrawerApps.kt:88</code> ⇒ bề mặt MỚI. Ô trên màn chính: nhấn giữ = kéo đổi ô <span class="ev do">ĐO mã</span> <code>WorkspaceView.kt:323, 354, 368</code> ⇒ <b>không</b> đụng (OQ6).</td></tr>
+<tr><td>(c) Sau câu <i>"mở …"</i> không hiểu</td><td>Tấm chữ hiện nút <i>"Dạy tên «nep leag»"</i> 8 s. Chạm ⇒ <code>VoiceHomeAction.TEACH_APP</code> (arg = phần đuôi) ⇒ trang mở với <i>"Mẫu đang chờ: «nep leag» — chọn app"</i>; chọn app ⇒ hộp dạy có sẵn Lần 1.</td><td>Relay có sẵn cho <code>:wake</code> <span class="ev do">ĐO mã</span> <code>VoiceWakeSessionFactory.kt:35-80</code> (<code>openHome</code>). Điều kiện hiện: ý định cuối là <code>Unknown</code> (<code>NO_OBJECT</code>/<code>MISMATCH</code>), câu mở đầu bằng động từ MỞ/BẬT, đuôi 1–4 từ, ≥ 4 chữ cái.</td></tr>
+</table>
+
+<h3>4.4 Lượt dạy chạy ở tiến trình nào</h3>
+<div class="diagram">
+<svg viewBox="0 0 820 360" role="img" aria-label="Trình tự lượt dạy: tiến trình chính hỏi VoiceEntryRoute, gửi sang :wake hoặc chạy tại chỗ, nhận chữ nghe được rồi chạy TeachGuard">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-head" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-head w" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+  <rect class="s-new" x="20" y="14" width="170" height="40" rx="9"/><text class="s-t" x="105" y="38" text-anchor="middle">Hộp dạy (chính)</text>
+  <rect class="s-node" x="230" y="14" width="170" height="40" rx="9"/><text class="s-t" x="315" y="38" text-anchor="middle">VoiceEntryRoute</text>
+  <rect class="s-node" x="440" y="14" width="170" height="40" rx="9"/><text class="s-t" x="525" y="32" text-anchor="middle">:wake</text><text class="s-s" x="525" y="47" text-anchor="middle">VoiceSession · TEACH</text>
+  <rect class="s-node" x="650" y="14" width="150" height="40" rx="9"/><text class="s-t" x="725" y="38" text-anchor="middle">sherpa (đang nạp)</text>
+  <line class="s-lane" x1="105" y1="54" x2="105" y2="345"/><line class="s-lane" x1="315" y1="54" x2="315" y2="345"/>
+  <line class="s-lane" x1="525" y1="54" x2="525" y2="345"/><line class="s-lane" x1="725" y1="54" x2="725" y2="345"/>
+  <path class="s-a" d="M105,80 L313,80" marker-end="url(#ah)"/><text class="s-s" x="209" y="74" text-anchor="middle">decide(modelInWake, alive)</text>
+  <path class="s-a" d="M315,106 L107,106" marker-end="url(#ah)"/><text class="s-s" x="211" y="100" text-anchor="middle">WAKE_PROCESS · hạn ack 1,5–4 s</text>
+  <path class="s-a" d="M105,134 L523,134" marker-end="url(#ah)"/><text class="s-s" x="315" y="128" text-anchor="middle">ACTION_TEACH_LISTEN (nonce, gói)</text>
+  <path class="s-a" d="M525,160 L107,160" marker-end="url(#ah)"/><text class="s-s" x="315" y="154" text-anchor="middle">ack(nonce) — trong gói, RECEIVER_NOT_EXPORTED</text>
+  <path class="s-a" d="M525,188 L723,188" marker-end="url(#ah)"/><text class="s-s" x="624" y="182" text-anchor="middle">capture → VAD → createStream(hotwords)</text>
+  <path class="s-a" d="M725,214 L527,214" marker-end="url(#ah)"/><text class="s-s" x="624" y="208" text-anchor="middle">"mở nep leag"</text>
+  <path class="s-a" d="M525,242 L107,242" marker-end="url(#ah)"/><text class="s-s" x="315" y="236" text-anchor="middle">ACTION_TEACH_RESULT (nonce, chữ, lỗi)</text>
+  <rect class="s-new" x="30" y="258" width="150" height="34" rx="8"/><text class="s-t" x="105" y="279" text-anchor="middle">TeachSample + Guard</text>
+  <path class="s-a dash" d="M105,312 L723,312" marker-end="url(#ahw)"/><text class="s-s" x="414" y="306" text-anchor="middle">không ack trong hạn / mô hình không ở :wake ⇒ phiên TEACH tại tiến trình chính (cùng mã)</text>
+  <text class="s-s" x="410" y="340" text-anchor="middle">Không có kênh lệnh mới ngoài một cặp broadcast nội gói — cùng khuôn ACTION_LISTEN_ACK / HOME_ACTION_ACK</text>
+</svg>
+</div>
+<ul>
+<li>Phiên TEACH = <b>cùng</b> <code>VoiceSession.runListen</code> (capture · VAD · lượt 2 tự do · <code>openTurn=true</code> như lệnh thật) <i>ở phần NGHE</i> — phần vỏ (tấm chữ · TTS · nhật ký H2) KHÔNG dùng chung, xem ràng buộc Pass 1 ngay dưới; chỗ rẽ cuối: thay <code>execute(sentence)</code> bằng <code>teachSink(sentence)</code> và <b>không</b> đọc phản hồi <span class="ev do">ĐO mã</span> điểm rẽ <code>VoiceSessionListen.kt:83</code> (<code>post { … execute(sentence) }</code>). Mã mới ở tệp mới <code>VoiceTeachSession.kt</code> (VoiceSession.kt 498/500).</li>
+<li><b>Ràng buộc bổ sung Pass 1 — lượt dạy KHÔNG được đi qua <code>VoiceSession.start()</code></b> <span class="ev do">ĐO mã</span>: <code>start()</code> dựng <code>VoiceOverlay</code> rồi <code>show()</code> (<code>VoiceSession.kt:190-192</code>) — cửa sổ <code>TYPE_APPLICATION_OVERLAY</code> <code>MATCH_PARENT × MATCH_PARENT</code> (<code>VoiceOverlay.kt:135-139</code>; KDoc <code>VoiceSession.stop</code>: <i>"một cửa sổ phủ toàn màn ăn mọi cú chạm"</i>) và <code>speaker.warm()</code>; đường lỗi <code>fail()</code> vẽ lên tấm chữ + hẹn đóng (<code>VoiceSessionTurns.kt:417-424</code>) và đường "không nghe thấy" <b>đọc thành tiếng</b> (<code>VoiceSessionListen.kt:78-80</code>). Đi nguyên đường đó thì tấm chữ (của <code>:wake</code> hoặc của tiến trình chính) che hộp dạy, một chạm ra ngoài là huỷ lượt dạy, và loa nói câu lệnh-thất-bại giữa trang Cài đặt. ⇒ <code>VoiceTeachSession</code> có lối vào RIÊNG (<code>startTeach</code>) dùng lại <b>đúng</b> khúc <code>VoiceRecognizer.open</code> + <code>capture.listen(…)</code> + <code>VoiceFreeTail.decode</code> của <code>runListen</code> (tách khúc đó thành hàm chung — pure move, không chép), nhưng: không tấm chữ (tiến độ/mức micro hiện NGAY trong hộp dạy qua kết quả relay), không TTS, mọi đường lỗi (thiếu quyền mic · thiếu mô hình · engine hỏng · rỗng) trả mã lỗi về <code>teachSink</code>. Bài canh: thân <code>startTeach</code> không chứa <code>VoiceOverlay(</code> / <code>speak</code> / <code>execute(</code>.</li>
+<li><b>Micro</b>: chỉ qua <code>VoiceCapture</code> — bài canh có sẵn cho phép đúng hai chỗ mở micro (<code>VoiceCaptureDevice.kt</code>, <code>VoiceWakeListener.kt</code>) <span class="ev do">ĐO mã</span> <code>VoiceListenWiringContractTest.kt:195</code>; lượt dạy không được mở <code>AudioRecord</code> thứ ba.</li>
+<li><b>Mô hình đang nạp</b> (lần đầu ~15 s, KDoc <code>VoiceEntryRoute.kt</code>) ≠ <b>mô hình chưa tải</b>: hộp dạy phải có trạng thái <i>"Đang nạp giọng nói…"</i> riêng (cùng chuỗi <code>kachi_voice_loading_model</code> mà <code>start()</code> dùng — <code>VoiceSession.kt:194</code>), không tắt nút 🎤 như ca chưa tải.</li>
+<li>Đang có phiên lệnh chạy ⇒ từ chối lượt dạy, hộp nói <i>"Kachi đang nghe lệnh khác — thử lại"</i>.</li>
+<li>Kết quả qua broadcast nội gói mang chữ người dùng nói — dữ liệu không rời gói, không vào logcat (R-nf3).</li>
+<li><span class="ev cb">CHƯA BIẾT</span> thời gian khứ hồi <code>:wake</code> cho lượt dạy — đo ở V-emu (log tag <code>KachiVoiceEntry</code> + mốc mới).</li>
+</ul>
+
+<h3>4.5 Lưu trữ theo hồ sơ</h3>
+<h4>Định dạng (khoá <code>&lt;hồ sơ&gt;__voice_app_names</code>, kiểu STRING)</h4>
+<pre>kachi-names	v1
+com.netflix.mediaclient	S	nep leag	nep leag	Netflix
+com.netflix.mediaclient	S	nét lích	net lich	Netflix
+com.google.android.documentsui	T	quản lý tệp	quan ly tep	Files</pre>
+<ul>
+<li>Cột: <code>gói</code> · <code>nguồn</code> (<code>S</code> = giọng, <code>T</code> = gõ) · <code>dạng có dấu</code> (nguồn sự thật cho hotword) · <code>dạng chuẩn hoá</code> (<code>VoiceLexicon.deaccent</code> lúc dạy — để đọc/so khi nhập tệp; lúc nạp luôn <b>tính lại</b> từ dạng có dấu, lệch ⇒ dùng bản tính lại + đếm vào lý do) · <code>nhãn lúc dạy</code> (để hiện khi app đã gỡ). Ví dụ gói ở trên chỉ minh hoạ định dạng — mã không viết cứng gói nào.</li>
+<li>Khuôn TSV có header + phiên bản, giải mã <b>không ném</b>: header lạ / phiên bản lạ ⇒ rỗng + lý do; dòng hỏng ⇒ bỏ dòng đó (khuôn <span class="ev do">ĐO mã</span> <code>VoiceGrammarSnapshot.kt:150-190</code>). Khử <code>\t \r \n</code> ở cửa vào.</li>
+<li><b>Phiên bản lạ (từ bản Kachi mới hơn)</b> ⇒ trang ở chế độ chỉ đọc + dòng <i>"Dữ liệu từ bản mới hơn — cập nhật Kachi"</i>; không ghi đè chuỗi gốc (tránh mất dữ liệu khi hạ cấp/nhập chéo).</li>
+<li>Trần: <b>4 tên/app</b> (3 giọng + 1 gõ), <b>120 tên/hồ sơ</b> (tính cả tên mồ côi). Quá trần ⇒ từ chối lưu với câu <i>"Đầy — xoá bớt tên của app đã gỡ / app ít dùng"</i>; không tự xoá.</li>
+<li>Tệp mở rộng mới <code>WorkspacePrefsVoiceNames.kt</code> (khuôn <span class="ev do">ĐO mã</span> <code>WorkspacePrefsShortcuts.kt</code>: hàm mở rộng của <code>WorkspacePrefs</code>, một <code>SharedPreferences</code>, hằng khoá <code>const</code> cấp tệp cho bài canh kiểu). Hàm ghi gọi <code>VoiceGrammarSnapshotStore.write(this)</code> (khuôn <code>WorkspacePrefs.setSavedPlaces</code> <span class="ev do">ĐO mã</span> <code>WorkspacePrefs.kt:373-375</code>).</li>
+</ul>
+
+<h4>Khai phạm vi (bài canh đỏ nếu quên)</h4>
+<table>
+<tr><th>Bảng</th><th>Mục thêm</th><th>Lý do</th></tr>
+<tr><td><code>ProfileScope.LAUNCHER_PERSONAL_SUFFIXES</code></td><td><code>voice_app_names</code></td><td>Lựa chọn của MỘT người lái (owner: mọi cấu hình theo hồ sơ); tên dạy còn gắn với giọng của người đó.</td></tr>
+<tr><td><code>ProfileScopeLauncher.DECLARED_TYPES</code></td><td><code>voice_app_names → STRING</code></td><td>Chặn giá trị sai kiểu từ tệp nhập.</td></tr>
+<tr><td><code>ProfileSharePolicy.PRIVATE</code></td><td><code>voice_app_names</code></td><td>Chữ chép từ giọng của một người + biệt danh tự đặt (có thể là tên người); vô ích với giọng người khác. Bản FULL vẫn mang. (OQ2)</td></tr>
+<tr><td colspan="3"><b>Pass 1 bổ sung — bốn chỗ khai Pass 0 bỏ sót</b></td></tr>
+<tr><td><code>SettingsCatalogEntries</code> (nhóm <code>VOICE</code>)</td><td><code>SettingsEntry("voice_app_names_list", SettingsGroup.VOICE, "Tên app đã dạy", "voice_app_names", "Taught app names")</code> (nhóm <code>VOICE</code> có sẵn — <code>SettingsCatalogEntries.kt:274</code>)</td><td>Lệ của dự án: mọi khoá theo hồ sơ có một mục danh mục (<code>bars_app_shortcuts</code> → <code>app_shortcuts</code>, <code>places_list</code> → <code>saved_places</code>) <span class="ev do">ĐO mã</span> <code>SettingsCatalogEntries.kt:82,129</code> ⇒ tìm được trong ô tìm Cài đặt. Kéo theo: một hàng trong <code>SettingsCatalogControlContractTest</code> (mục → lời gọi thật, khuôn <code>:85-109</code>) và <b>bản dịch zh/th/ms</b> của cặp nhãn trong <code>core/src/main/resources/i18n/{zh,th,ms}.tsv</code> — <code>SettingsCatalog.ENTRIES</code> nằm trong bộ cặp mà <code>I18nCoverageTest</code> đòi phủ <span class="ev do">ĐO mã</span> <code>LangCoverageFixtures.kt:37</code> · <code>I18nPairs.kt:65</code>.</td></tr>
+<tr><td><code>LauncherProfileTypesCoverageTest.files</code></td><td><code>"WorkspacePrefsVoiceNames.kt"</code></td><td>Bài chỉ quét danh sách tệp tường minh <span class="ev do">ĐO mã</span> <code>LauncherProfileTypesCoverageTest.kt:27-36</code>; thiếu ⇒ bài "mọi hậu tố có lượt ghi + lượt đọc" đỏ.</td></tr>
+<tr><td><code>LayeringRulesTest.pureButMustStayInApp</code></td><td><code>WorkspacePrefsVoiceNames.kt</code> (+ <code>VoiceTeachSession.kt</code> nếu là hàm mở rộng không nhắc <code>Context</code>)</td><td>Tệp <code>:app</code> không <code>import android.*</code> và không nhắc <code>Context|View|Activity|Service|Bitmap|Canvas</code> bị đếm là "thuần sai chuồng" ⇒ bài <code>so file thuan con nam trong app chi duoc giam</code> đỏ <span class="ev do">ĐO mã</span> <code>LayeringRulesTest.kt</code> (chốt <code>pureFilesStillInApp = 0</code>); đúng khuôn các hàng <code>WorkspacePrefsSlotHead.kt</code> · <code>VoiceSessionTerms.kt</code> đã có, kèm lý do.</td></tr>
+<tr><td><code>VoiceWakeFakeStateContractTest</code></td><td>chỗ đọc mới của dispatcher <code>:wake</code></td><td>Bài liệt kê đúng những chỗ dispatcher đọc <code>state()</code> — thêm chỗ đọc/chuyển lambda là đỏ <span class="ev do">ĐO mã</span> KDoc <code>VoiceGrammarSnapshot.kt:79-80</code> ⇒ aliases ở <code>:wake</code> phải đến từ ảnh chụp qua tham số riêng, KHÔNG qua <code>state()</code>.</td></tr>
+</table>
+
+<h4>Sang <code>:wake</code>: bản ghi mới trong ảnh chụp ngữ pháp</h4>
+<pre>alias	com.netflix.mediaclient	nep leag</pre>
+<ul>
+<li><code>VoiceGrammarSnapshot</code> thêm trường <code>aliases</code> (gói + dạng có dấu); <code>encode</code>/<code>decode</code> thêm loại bản ghi <code>alias</code>. Bản giải mã cũ gặp loại lạ ⇒ bỏ dòng + ghi lý do <span class="ev do">ĐO mã</span> <code>VoiceGrammarSnapshot.kt:187</code> ⇒ tương thích hai chiều, giữ header <code>v1</code>. Lý do log chỉ đi qua <code>safe()</code> (không in chữ người dùng).</li>
+<li><code>VoiceGrammarSnapshotStore.write</code> đọc <code>prefs.voiceAppNames()</code> của hồ sơ đang dùng ⇒ đổi hồ sơ (đã gọi <code>write</code>) tự mang bộ tên mới sang <code>:wake</code>.</li>
+<li>Cỡ tệp: hôm nay ≤ 2 KB (KDoc store); 120 tên × ~45 B ≈ 5,4 KB <span class="ev suy">SUY ước lượng</span> — vẫn một <code>renameTo</code>.</li>
+</ul>
+
+<h4>Vòng đời</h4>
+<table>
+<tr><th>Sự kiện</th><th>Kết quả</th></tr>
+<tr><td>Đổi hồ sơ</td><td>Câu kế tiếp dùng bộ tên của hồ sơ mới (chính: đọc prefs mỗi phiên; <code>:wake</code>: đọc ảnh chụp mỗi phiên).</td></tr>
+<tr><td>Nhân bản / xoá hồ sơ</td><td>Mang theo / xoá theo — các đường đó lặp trên danh sách hậu tố <span class="ev suy">SUY từ KDoc</span> <code>WorkspacePrefsShortcuts.kt:9-11</code>; khoá bằng test lifecycle.</td></tr>
+<tr><td>Xuất FULL / CHIA SẺ</td><td>FULL mang; CHIA SẺ không mang (PRIVATE).</td></tr>
+<tr><td>Nhập sang xe khác</td><td>Tên của gói chưa cài ⇒ mồ côi (hiện ở <i>App đã gỡ</i>), không dùng.</td></tr>
+<tr><td>Gỡ app</td><td>Không cần receiver: bảng gọi app dựng mỗi phiên từ gói đang cài ⇒ tên mồ côi tự không vào từ vựng/hotword.</td></tr>
+<tr><td>Cài lại app</td><td>Tên dùng lại ngay phiên sau.</td></tr>
+<tr><td>App đổi nhãn sau cập nhật</td><td>Không ảnh hưởng (tên gắn với gói); cột <code>nhãn lúc dạy</code> chỉ để hiển thị.</td></tr>
+<tr><td>(Pass 1) App KHÁC cài sau có nhãn trùng một tên đã dạy</td><td>Tầng 1 thắng ⇒ tên đã dạy bị bỏ ở lúc dựng bảng (§4.6) — đúng luật nhưng IM LẶNG với người dùng. Trang <i>Dạy tên app</i> phải hiện cảnh báo trên hàng đó (<i>"«…» nay là tên của app X — dạy tên khác"</i>), tính bằng chính <code>VoiceAppIndex</code> (không phép so thứ hai).</td></tr>
+</table>
+
+<h3>4.6 Khớp: tên đã dạy thành cụm từ vựng hạng nhất</h3>
+<div class="diagram">
+<svg viewBox="0 0 760 330" role="img" aria-label="Bốn tầng khớp tên app: nhãn thật, tên đã dạy, dạng suy từ nhãn, khớp mờ">
+  <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <rect class="s-node" x="40" y="12" width="450" height="56" rx="10"/>
+  <text class="s-t" x="60" y="36">1 · Nhãn thật (locale máy)</text><text class="s-s" x="60" y="54">khớp nguyên dãy từ · chữ người dùng NHÌN THẤY · không gì đè được</text>
+  <rect class="s-new" x="40" y="88" width="450" height="56" rx="10"/>
+  <text class="s-t" x="60" y="112">2 · Tên đã dạy (hồ sơ đang dùng)</text><text class="s-s" x="60" y="130">khớp nguyên dãy từ · id = nhãn thật của gói ⇒ đọc lại đúng nhãn</text>
+  <rect class="s-node" x="40" y="164" width="450" height="56" rx="10"/>
+  <text class="s-t" x="60" y="188">3 · Suy từ nhãn</text><text class="s-s" x="60" y="206">nhãn locale thứ hai · dạng đọc VoiceAppPhonetics · bảng đích APP_TARGETS</text>
+  <rect class="s-warn" x="40" y="240" width="450" height="56" rx="10"/>
+  <text class="s-t" x="60" y="264">4 · Khớp mờ (chỉ khi 1–3 không ra nghĩa)</text><text class="s-s" x="60" y="282">VoiceNameFuzzy (neo 4 · lệch ≤ 2 · ≥ 5 ký tự · DUY NHẤT) · VoiceAppPrefix</text>
+  <path class="s-a" d="M265,68 L265,86" marker-end="url(#ah2)"/><path class="s-a" d="M265,144 L265,162" marker-end="url(#ah2)"/><path class="s-a" d="M265,220 L265,238" marker-end="url(#ah2)"/>
+  <rect class="s-ok" x="520" y="12" width="220" height="132" rx="10"/>
+  <text class="s-t" x="535" y="36">Xung đột 1↔2</text><text class="s-s" x="535" y="56">CHẶN lúc dạy (tên trùng nhãn</text><text class="s-s" x="535" y="72">app khác) + bỏ phòng thủ lúc</text><text class="s-s" x="535" y="88">dựng bảng ⇒ không thể có</text><text class="s-s" x="535" y="104">hoà ở runtime.</text>
+  <rect class="s-ok" x="520" y="164" width="220" height="132" rx="10"/>
+  <text class="s-t" x="535" y="188">Xung đột 2↔3</text><text class="s-s" x="535" y="208">VoiceAppIndex bỏ khoá tầng 3</text><text class="s-s" x="535" y="224">trùng norm với tên đã dạy;</text><text class="s-s" x="535" y="240">bảng đích chỉ thắng khi DÀI</text><text class="s-s" x="535" y="256">hơn hẳn (luật có sẵn).</text>
+</svg>
+</div>
+
+<h4>Cách cắm vào parser — một cơ chế, không nhánh mới</h4>
+<ul>
+<li><b>Bảng gọi app của phiên</b> (<code>VoiceAppIndex.build</code>, :core thuần, MỚI) nhận: nhãn đã khử trùng (<code>VoiceAppLabelPick.of</code>), tên đã dạy, nhãn locale thứ hai. Trả: (a) <code>keys: Map&lt;String, String&gt;</code> khoá → gói — đúng hợp đồng <code>appsByLabel()</code> hôm nay, nên mọi chỗ gọi cũ giữ nguyên; (b) <code>aliases: List&lt;VoiceAppAlias&gt;</code> = tên đã dạy còn sống, mỗi tên mang <code>words</code> (norm) · <code>accented</code> · <code>labelKey</code> (khoá nhãn thật của gói) · <code>pkg</code> · <code>targetKey</code> (mã bảng đích nếu gói thuộc bảng — tra <code>VoiceAppTarget.packages</code>, không viết cứng).</li>
+<li>Thứ tự dựng: nhãn thật (put) → tên đã dạy (bỏ nếu norm trùng nhãn thật của gói KHÁC) → nhãn locale thứ hai (putIfAbsent) → dạng đọc (putIfAbsent, <b>bỏ</b> nếu norm trùng một tên đã dạy). Đó là "tên đã dạy đè dạng ĐOÁN, không đè chữ NHÌN THẤY". Thay <code>withPhonetics</code> <span class="ev do">ĐO mã</span> <code>VoiceWiring.kt:96-102</code> (giữ hàm ấy làm một bước bên trong).</li>
+<li><b>Cụm từ vựng</b>: <code>VoiceGrammar.terms(profiles, apps, aliases)</code> thêm <code>VoiceTerm(alias.words, APP, id = alias.labelKey)</code>. Vì <code>id</code> là nhãn thật: <code>OpenApp(appName = "Netflix")</code> → <code>labels["Netflix"]</code> → gói <span class="ev do">ĐO mã</span> <code>VoiceDispatcher.kt:414</code>; câu đọc lại là <i>"Mở Netflix"</i>; danh tính khớp mờ (<code>VoiceLastResort.Named</code> so theo nhãn, <code>VoiceLastResort.kt:129-134</code>) coi tên đã dạy và nhãn là <b>một</b> app ⇒ không giả nhập nhằng.</li>
+<li><b>Ca biên — gói thua ở khử trùng nhãn</b> (hai app cùng nhãn; <code>VoiceAppLabelPick</code> chỉ giữ một <span class="ev do">ĐO mã</span> <code>VoiceAppLabelPick.kt</code>): gói thua không có khoá nhãn ⇒ <code>labelKey</code> = chính dạng có dấu của tên đã dạy và khoá ấy được thêm vào <code>keys</code>. Đây là đường DUY NHẤT để gọi được gói thua bằng giọng (điểm cộng).</li>
+<li><b>Mệnh đề <i>"bằng/trên/dùng X"</i></b> (nhạc, dẫn đường, sổ địa chỉ): <code>VoiceTailClause.appAfterMarker(after, kind, aliases)</code> — sau cụm đánh dấu, thử tên đã dạy có <code>targetKey</code> đúng loại (khớp nguyên dãy) <b>trước</b> các cách nói của bảng đích, rồi mới tới rụng-âm-cuối/mờ của bảng đích (thứ tự có sẵn <span class="ev do">ĐO mã</span> <code>VoiceTailClause.kt:119-141</code>). Tên đã dạy của app KHÔNG thuộc bảng đích sau <i>"bằng"</i> ⇒ không cắt (giữ nguyên điểm đến) — Kachi không giao chuỗi cho app ấy được.</li>
+<li><b>Nối dây tham số</b>: <code>VoiceIntentParser.parse/parseOne(…, aliases)</code> → <code>terms</code> + mọi chỗ gọi <code>appAfterMarker</code>/<code>withTarget</code>. Chỗ gọi hôm nay <span class="ev do">ĐO <code>grep</code></span>: <code>VoiceIntentParser.kt:341</code> (sổ địa chỉ), <code>:418</code> (PLAY không đối tượng), <code>VoiceMediaNavParse.kt:19, 55</code>. Gom <code>places</code> + <code>aliases</code> vào một giá trị <code>VoiceDynVocab</code> đi theo đúng đường mà <code>places</code> đang đi ⇒ số dòng của <code>VoiceIntentParser.kt</code> gần như không đổi; nếu vẫn chạm 500 ⇒ dời <code>droppedNote/openPayload</code> sang tệp riêng trước (pure move, commit riêng).</li>
+<li><b>Danh sách "Câu lệnh nói được"</b> phải dùng CÙNG ba nguồn động với parser <span class="ev do">ĐO mã</span> KDoc <code>SettingsVoiceSection.kt:95-101</code> ⇒ <code>VoiceCommandCatalog.groups(…, aliases)</code> thêm nhóm <i>"Tên app đã dạy"</i> (<i>"mở nep leag" → Mở Netflix</i>).</li>
+<li><b>Khe có sẵn, ghi rõ</b>: ghép vế sau quãng ngừng (<code>VoiceOpenTurn.refine</code>) dùng từ vựng TĨNH, không có nhãn app máy <span class="ev do">ĐO mã</span> <code>VoiceOpenTurn.kt:181-191</code> ⇒ <i>"mở nep leag … (ngừng) … vào ô số hai"</i> không ghép được, y như nhãn app máy hôm nay. Xử lý ở OQ10.</li>
+</ul>
+
+<h4>Các dạng câu phải chạy (bảng test R6)</h4>
+<table>
+<tr><th>Câu (chữ mô hình in)</th><th>Kết quả mong đợi</th><th>Đường trong parser</th></tr>
+<tr><td>mở nep leag</td><td><code>OpenApp("Netflix")</code></td><td>vòng quét (d) → <code>build</code> nhánh APP <span class="ev do">ĐO mã</span> <code>VoiceIntentParser.kt:466-468</code></td></tr>
+<tr><td>đưa nep leag vào ô số hai</td><td><code>OpenApp("Netflix", slot=2)</code></td><td>APP + <code>slotAt(after)</code></td></tr>
+<tr><td>nep leag vào ô số một</td><td><code>OpenApp("Netflix", slot=1)</code></td><td><code>VoiceSlotNoVerb</code> → <code>VoiceLastResort</code> (ứng viên gồm tên đã dạy, so <code>nearly</code> 0 lệch)</td></tr>
+<tr><td>mở ứng dụng nep leag</td><td><code>OpenApp("Netflix")</code></td><td>nhánh LAUNCHER → <code>appInTail</code></td></tr>
+<tr><td>đóng nep leag</td><td><code>Unknown(APP_CLOSE)</code></td><td><code>closesApp</code> — đóng thật NGOÀI phạm vi</td></tr>
+<tr><td>phát nhạc trên sờ pốt phai <i>(tên dạy cho gói thuộc mã spotify)</i></td><td><code>Media(PLAY, app="spotify")</code></td><td><code>appAfterMarker</code> + <code>targetKey</code></td></tr>
+<tr><td>dẫn đường đến nep leag</td><td><code>Nav(query="nep leag")</code> — KHÔNG đổi</td><td>NAV là từ vựng mở, không so với từ vựng <span class="ev do">ĐO mã</span> <code>VoiceIntentParser.kt:290</code></td></tr>
+<tr><td>(hỏi lại "Mở gì?") → nep leag</td><td><code>OpenApp("Netflix")</code></td><td><code>VoiceClarify.combine</code> rồi parse với cùng từ vựng phiên</td></tr>
+<tr><td>mở nep leog <i>(lệch 1)</i></td><td><code>OpenApp("Netflix")</code> chỉ khi duy nhất</td><td>tầng 4, cổng có sẵn</td></tr>
+<tr><td>mở nep <i>(3 chữ)</i></td><td><code>Unknown</code></td><td>dưới sàn <code>MIN_LEN</code>/<code>MIN_PREFIX</code></td></tr>
+<tr><td>bật đèn đọc · xem pin · mở cốp</td><td>KHÔNG đổi so với trước khi dạy</td><td>máy dò hồi quy + test vàng</td></tr>
+</table>
+
+<h3>4.7 Cổng an toàn (<code>TeachGuard</code>, :core)</h3>
+<div class="flow">
+  <div class="fnode new"><b>A · Từ vựng cấm</b><span>so chuỗi, vài µs</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>B · Phân tích thử</b><span>"mở &lt;tên&gt;" + "&lt;tên&gt;" với từ vựng HIỆN TẠI</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>C · Hotword thử</b><span>dòng tĩnh có rụng không?</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>D · Gần lệnh / gần tên khác</b><span>VoicePhoneticMatch · VoiceNameFuzzy</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>E · Máy dò hồi quy (lúc Lưu)</b><span>mọi câu mẫu, có/không tên mới</span></div>
+</div>
+<table>
+<tr><th>Luật</th><th>Mức</th><th>Nguồn dữ liệu (không bảng thứ hai)</th><th>Ví dụ</th></tr>
+<tr><td>Rỗng / chỉ tiếng đệm / sau chuẩn hoá còn &lt; 4 chữ cái / &gt; 4 từ</td><td class="bad">CHẶN</td><td><code>VoiceLexicon.isFillerOnly</code>, hằng <code>TeachSample</code></td><td><i>"ờ"</i>, <i>"ê"</i></td></tr>
+<tr><td>Trùng nguyên văn (norm) một cụm của 4 bộ đăng ký / từ nhạc / từ dẫn đường</td><td class="bad">CHẶN</td><td><code>VoiceGrammar.terms()</code> (tập tĩnh)</td><td><i>"đèn đọc"</i>, <i>"pin"</i>, <i>"cài đặt"</i></td></tr>
+<tr><td>Là <b>tiền tố theo từ</b> của một cụm lệnh (sẽ cướp câu lệnh dở)</td><td class="bad">CHẶN</td><td>như trên</td><td><i>"đèn"</i> ⊂ <i>"đèn đọc"</i></td></tr>
+<tr><td>Mở đầu bằng động từ / là từ nối / từ kết thúc / có-không / từ đệm / cụm đánh dấu app</td><td class="bad">CHẶN</td><td><code>VoiceGrammar.VERBS</code> · <code>VoiceIntentParser.CONNECTORS</code> · <code>VoiceEndWords</code> · <code>VoiceLexicon.CONFIRM_YES/NO, FILLERS, BY_APP_MARKERS</code></td><td><i>"tắt"</i>, <i>"và"</i>, <i>"thôi"</i>, <i>"có"</i></td></tr>
+<tr><td>Chứa mệnh đề ô / từ số đứng đầu</td><td class="bad">CHẶN</td><td><code>VoiceLexicon.SLOT_WORDS, NUMBER_WORDS</code></td><td><i>"ô số hai"</i></td></tr>
+<tr><td>Trùng tên hồ sơ / nhãn sổ địa chỉ của hồ sơ đang dùng</td><td class="bad">CHẶN</td><td><code>state().profiles</code> · <code>VoicePlaces.labelsOf</code></td><td><i>"nhà"</i>, <i>"mặc định"</i></td></tr>
+<tr><td>Chứa câu gọi Kachi đang đặt</td><td class="bad">CHẶN</td><td><code>VoiceWakePhrase</code> (preset/tuỳ chỉnh đang dùng)</td><td><i>"ka chi"</i></td></tr>
+<tr><td>Trùng nhãn thật / tên đã dạy / cách nói bảng đích của <b>app khác</b></td><td class="bad">CHẶN</td><td><code>VoiceAppIndex</code> · <code>VoiceSynonyms.APP_TARGETS</code></td><td><i>"maps"</i> cho VietMap khi có app nhãn "Maps"</td></tr>
+<tr><td>B: <i>"mở &lt;tên&gt;"</i> đã ra ý định KHÔNG phải mở app (nút, gói lệnh, đọc, hồ sơ, bố cục, nhạc, dẫn đường) — hoặc <i>"&lt;tên&gt;"</i> trần đã là một lệnh</td><td class="bad">CHẶN</td><td><code>VoiceIntentParser.parse</code></td><td><i>"hết kính"</i></td></tr>
+<tr><td>B: đã ra <code>OpenApp</code> ĐÚNG gói này</td><td>ĐÃ HIỂU SẴN (không lưu)</td><td>như trên</td><td><i>"youtube"</i> cho YouTube</td></tr>
+<tr><td>B: ra <code>OpenApp</code> gói KHÁC qua khớp mờ/tiền tố</td><td class="warn">CẢNH BÁO</td><td>như trên</td><td>tên đã dạy sẽ thắng tầng 4 — nói rõ app nào sẽ hết nhận câu này</td></tr>
+<tr><td>B: ra <code>Unknown(MISMATCH)</code> (tên chứa một từ của lệnh)</td><td class="warn">CẢNH BÁO</td><td>như trên</td><td><i>"số hai phim"</i></td></tr>
+<tr><td>C: thêm tên làm rụng một dòng hotword tĩnh, hoặc tên nối dài tên của app khác</td><td class="warn">CẢNH BÁO</td><td><code>SherpaHotwords.phraseFile</code> + luật <code>extendsAnotherApp</code> tổng quát hoá</td><td><i>"cốp xe đẹp"</i> sẽ giết dòng <code>MỞ CỐP XE</code> ⇒ tên vẫn khớp chữ, KHÔNG bias</td></tr>
+<tr><td>D: giá lẫn âm tới một cụm lệnh ≤ <code>VoicePhoneticMatch.ACCEPT</code></td><td class="warn">CẢNH BÁO</td><td><code>VoicePhoneticConfusions</code> (bảng lẫn âm đã đo)</td><td><i>"xem phim"</i> ~ <i>"xem pin"</i></td></tr>
+<tr><td>D: <code>VoiceNameFuzzy.nearly</code> với nhãn/tên đã dạy của app khác</td><td class="warn">CẢNH BÁO</td><td><code>VoiceNameFuzzy</code></td><td><i>"nep leog"</i> đã là tên của app khác</td></tr>
+<tr><td>Một từ duy nhất (≥ 4 chữ cái)</td><td class="warn">CẢNH BÁO</td><td>—</td><td>một từ đơn dễ trùng câu thường</td></tr>
+<tr><td>E: có tên mới thì một câu mẫu bất kỳ đổi ý định</td><td class="bad">CHẶN</td><td><code>VoiceCommandCatalog.groups(...).examples[].intent</code> + câu hồ sơ/sổ địa chỉ</td><td>nêu đúng câu bị cướp</td></tr>
+</table>
+<ul>
+<li><b>"Không tự mở bằng khớp yếu"</b>: tên đã dạy chỉ vào tầng 2 (khớp nguyên) và tầng 4 có sẵn (cổng duy nhất + neo + sàn). Không thêm phép so nào lỏng hơn <code>VoiceNameFuzzy</code>.</li>
+<li>Bước E là phép so hai lần phân tích trên mọi câu mẫu; chạy trên luồng nền lúc bấm Lưu, hộp hiện vòng chờ. Thời gian trên xe <span class="ev cb">CHƯA BIẾT</span> — đo ở V-emu (số câu mẫu × 2 lượt) rồi 🚗; quá 3 s ⇒ cache kết quả "không tên mới" theo phiên trang.</li>
+<li>Cùng cổng chạy cho tên GÕ và cho mẫu đang chờ của lối (c).</li>
+</ul>
+
+<h3>4.8 Hotword</h3>
+<ul>
+<li><b>Không nạp lại mô hình.</b> Hotword đi theo LUỒNG: mỗi lượt giải mã gọi <code>createStream(hotwords)</code> với chuỗi dựng lúc <code>VoiceRecognizer.open</code> <span class="ev do">ĐO mã</span> <code>VoiceRecognizer.kt:155, 206</code>; recognizer chỉ dựng lại khi đổi mã mô hình (<code>holder.get(model.id)</code>). Context7 sherpa-onnx xác nhận API <i>"per-stream hotwords"</i> (<code>SherpaOnnxCreateOfflineStreamWithHotwords</code>; <code>OfflineRecognizer.createStream(hotwords)</code>). ⇒ Lưu tên mới có hiệu lực từ phiên nghe kế tiếp, không có "bão nạp lại" nào để chống. Không có tệp hotword trên đĩa để ghi lại; <code>:wake</code> lấy tên qua ảnh chụp mỗi phiên.</li>
+<li><b>Dòng sinh ra</b>: với mỗi tên nguồn giọng: <code>MỞ &lt;TÊN&gt;</code> · <code>ĐƯA &lt;TÊN&gt;</code> · <code>BẬT &lt;TÊN&gt;</code> (động từ = <code>SherpaSpokenWords.VERBS[OPEN] + [ON]</code>, cùng nguồn với tên app đích <span class="ev do">ĐO mã</span> <code>SherpaPhraseHotwords.kt:109</code>). Tên trần đứng một mình bị <code>dropAppNameLeading</code> loại (đưa tên đã dạy vào danh sách <code>appNames</code>) — đúng luật "tên app không đứng đầu dòng" <span class="ev do">ĐO mã</span> <code>SherpaHotwords.kt:131-135</code>.</li>
+<li><b>Vì sao chữ mô hình in ra là dạng hotword tốt nhất</b>: hotword phải HOA có dấu thì BPE mới mã hoá được (<span class="ev suy">SUY</span> memory <code>kachi-voice-hotwords-accented</code> + KDoc <code>SherpaHotwords.kt:12-15</code>). Chuỗi do chính mô hình in ra được ghép từ token của nó ⇒ <span class="ev suy">SUY</span> luôn mã hoá được; viết hoa là đủ. Tên GÕ thì không có bảo đảm đó (thiếu dấu, chữ Latin) ⇒ mặc định không bias (OQ3).</li>
+<li><b>Luật đơn điệu (mới, bắt buộc)</b>: <code>tệp(tĩnh + tên đã dạy) ⊇ tệp(tĩnh)</code>. Dòng của tên đã dạy nào làm một dòng tĩnh thành tiền tố (vd <code>MỞ CỐP XE</code> ⊂ <code>MỞ CỐP XE ĐẸP</code>) hoặc nối dài tên của app khác (khuôn <code>extendsAnotherApp</code>, bẫy <code>w10</code> <span class="ev do">ĐO mã</span> KDoc <code>SherpaPhraseHotwords.kt:172-209</code>) thì bị <b>bỏ khỏi tệp</b> — tên vẫn khớp chữ, chỉ không được kéo. Cài đặt bằng một bộ lọc trước <code>phraseFile</code>, tra bằng tập đã sắp (<code>TreeSet</code>): O(số tên × số từ), không O(tên × 2 200 dòng).</li>
+<li><b>Pass 1 — luật đơn điệu phải tính CẢ HAI đường làm rụng dòng tĩnh</b> <span class="ev do">ĐO mã</span>: tệp đi qua <code>SherpaHotwords.phraseFile(phrases, appNames)</code> (<code>SherpaHotwords.kt:66</code>) với hai bộ lọc — <code>dropPrefixes</code> (<code>:98</code>) VÀ <code>dropAppNameLeading</code> (<code>:131</code>, xoá mọi dòng MỞ ĐẦU bằng một tên trong <code>appNames</code>). Đưa tên đã dạy vào <code>appNames</code> (như đoạn trên đề xuất) là mở đường rụng thứ hai: một tên trùng chữ mở đầu của một dòng tĩnh không bắt đầu bằng động từ sẽ xoá dòng đó — đúng bẫy <i>"quay"</i>/<code>QUAY LẠI BÀI</code> mà <code>SherpaPhraseHotwords.appNames</code> đã phải trừ bằng <code>clashesWithVerb</code> (<code>SherpaPhraseHotwords.kt:146-149</code>). ⇒ Phép kiểm đơn điệu so <b>tệp CUỐI</b> (<code>phraseFile</code> có tên đã dạy) với <b>tệp CUỐI</b> không có chúng; tên nào làm rụng ≥ 1 dòng thì bị loại khỏi <b>cả</b> dòng của nó <b>lẫn</b> <code>appNames</code> (vẫn khớp chữ, không bias), và TeachGuard C hiện CẢNH BÁO kèm đúng dòng bị rụng. Bộ tên đối kháng trong <code>SherpaTaughtHotwordsTest</code> phải có một ca trúng đường này.</li>
+<li><b>Pass 1 — bài canh sẽ đỏ CÓ CHỦ Ý</b>: <code>VoiceListenWiringContractTest</code> ghim nguyên văn <code>SherpaBiasing.hotwordsFile(places, profiles)</code> (có dấu ngoặc đóng) trong <code>VoiceRecognizer.kt</code> để khoá <i>"tên hồ sơ không được rụng khỏi lời gọi"</i> <span class="ev do">ĐO mã</span> <code>VoiceListenWiringContractTest.kt:134-135</code>. Thêm tham số <code>taught</code> làm needle trượt ⇒ sửa needle thành <code>hotwordsFile(places, profiles, taught)</code>, GIỮ nguyên tính chất canh (profiles có mặt) và thêm vế "taught có mặt", ghi lý do tại chỗ. Cùng tệp đó ghim danh sách tệp gọi <code>openFree(</code> (<code>:168</code>) — phiên TEACH không được gọi trực tiếp <code>openFree</code>, chỉ qua <code>VoiceFreeTail.decode</code>.</li>
+<li><b>Cỡ và chi phí</b>: tệp đang ship ~2 223 dòng <span class="ev suy">SUY</span> KDoc <code>VoiceSlotPhrases.kt:22</code>; 120 tên × 3 = tối đa +360 dòng (+16 %). <code>createStream</code> trên host 6,6 ms với 1 902 dòng <span class="ev suy">SUY — dữ liệu 09-16</span>; trên xe <span class="ev cb">CHƯA BIẾT</span> — đọc dòng log có sẵn <code>createStream(hotwords) N ms</code> <span class="ev do">ĐO mã</span> <code>VoiceRecognizer.kt:156</code> trước/sau, ngân sách 150 ms (spec <code>kachi-voice-hotword-phrases</code> R-nf1). <span class="car">🚗</span></li>
+<li><b>Điểm từng dòng</b>: định dạng <code>HOTWORD :score</code> có trong tài liệu sherpa-onnx (Context7). Mặc định KHÔNG dùng (giữ một điểm chung đã đo); E1 thử điểm thấp hơn cho dòng tên đã dạy nếu thấy kéo nhầm.</li>
+<li><code>SherpaBiasing.hotwordsFile(places, profiles, taught)</code> — <code>VoiceRecognizer.open</code> nhận thêm tên đã dạy (bỏ <code>@Suppress("UNUSED_PARAMETER")</code> khi tham số được dùng thật). Chỉ phiên LỆNH; câu gọi "Hey Kachi" không đổi <span class="ev suy">SUY — kiểm bằng grep lúc làm</span>.</li>
+</ul>
+
+<h3>4.9 Nhãn hai locale (vi + en)</h3>
+<ul>
+<li>Với mỗi app khởi chạy có nhãn từ tài nguyên (<code>labelRes ≠ 0</code>, không phải <code>nonLocalizedLabel</code>): <code>ctx.createPackageContext(pkg, 0).createConfigurationContext(conf{locale = vi | en}).resources.getString(labelRes)</code> cho locale khác locale máy. Bắt cụ thể <code>NameNotFoundException</code> · <code>Resources.NotFoundException</code> · <code>SecurityException</code> ⇒ bỏ app đó (CLAUDE.md §4.1, không <code>catch Exception</code> trần).</li>
+<li>Hiển thị gói: <code>QUERY_ALL_PACKAGES</code> đã khai <span class="ev do">ĐO mã</span> <code>AndroidManifest.xml:59</code>; <code>minSdk 29</code> <span class="ev do">ĐO mã</span> <code>app/build.gradle.kts:59</code> ⇒ không dùng <code>getResourcesForApplication(ai, Configuration)</code> (API mới hơn — <span class="ev cb">CHƯA BIẾT</span> qua Context7, không cần).</li>
+<li>Cache trong tiến trình theo <code>(gói, lastUpdateTime)</code>, nạp trên luồng nền ưu tiên thấp; phiên nghe chỉ đọc cache (thiếu = không có nhãn phụ, không chờ).</li>
+<li><b>Pass 1 — hai tiến trình, một kết quả</b>: <code>:wake</code> tự dựng bảng nhãn bằng <code>VoiceWiring.appsByLabel(app)</code> trong chính nó <span class="ev do">ĐO mã</span> <code>VoiceWakeSessionFactory.kt:45,51</code>. Cache chỉ được hâm ở tiến trình chính ⇒ phím vô-lăng (luôn đi <code>:wake</code>) và nút mic màn (in-process) hiểu KHÁC nhau cùng một câu. ⇒ A3 phải hâm cache ở CẢ <code>:wake</code> (lúc service dựng, luồng nền) hoặc đưa nhãn phụ sang <code>:wake</code> qua ảnh chụp; bài nối dây canh cả hai đường.</li>
+<li><b>Pass 1 — nhãn nào</b>: nhãn ngăn kéo/phiên là <code>ResolveInfo.loadLabel(pm)</code> <span class="ev do">ĐO mã</span> <code>VoiceWiring.kt:55</code> · <code>AppDrawerApps.kt:51</code> — tức nhãn của <i>activity khởi chạy</i> (rơi về nhãn app khi activity không khai). Nhãn locale thứ hai phải theo ĐÚNG thứ tự đó (<code>ri.labelRes</code> → <code>activityInfo.labelRes</code> → <code>applicationInfo.labelRes</code>), nếu không <i>"mở &lt;nhãn vi&gt;"</i> khớp một chữ người dùng không bao giờ thấy trên màn <span class="ev suy">SUY — thứ tự rơi của <code>ResolveInfo.loadLabel</code> theo trí nhớ AOSP, phải trích <code>ResolveInfo.java</code> r47 trước khi viết (CLAUDE.md §3)</span>.</li>
+<li>Vào tầng 3 (putIfAbsent) + sinh dạng đọc như nhãn thường. <b>Không</b> vào hotword ở 2.90 (OQ7) — đổi nội dung tệp hotword cho mọi người dùng thì phải đo host trước (luật R5 của spec hotword).</li>
+<li>Giá trị thật phụ thuộc locale của xe <span class="ev cb">CHƯA BIẾT</span> — một lệnh <span class="car">🚗</span>: <code>getprop persist.sys.locale; settings get system system_locales</code>. Máy ảo đã thấy nhãn tiếng Anh <i>"Maps"</i> <span class="ev suy">SUY</span> <code>emulator-voice-e2e-2026-09-15.md</code> §3 L6.</li>
+</ul>
+
+<h3>4.10 Gợi ý sau câu "mở …" không hiểu</h3>
+<ul>
+<li>Điều kiện ở 4.3 (c). Tấm chữ: thêm nút. Câu đọc: thêm đuôi ngắn <i>"— nếu là tên app, dạy Kachi trong Cài đặt, Giọng nói"</i> vào <code>VoiceReplyUnknown.head(NO_OBJECT)</code>, chỉ <b>3 lần đầu</b> mỗi hồ sơ (đếm ở prefs), sau đó chỉ hiện chữ (OQ5).</li>
+<li>Chuỗi qua <code>Strings.t(vi, en)</code> + bảng zh/th/ms của <code>I18nCatalog</code> (<code>I18nCoverageTest</code> canh).</li>
+<li>Kiểm trước khi làm: câu <i>"mở nep leag vào ô số một"</i> từng ra hỏi lại sai <i>"Số nào — Odo tổng hay Số VIN?"</i> <span class="ev suy">SUY — log 27/09</span>; đã sửa chưa <span class="ev cb">CHƯA BIẾT</span> — chạy <code>say</code> trên máy ảo một câu để chốt. Còn lỗi ⇒ nút gợi ý không hiện ở ca đó ⇒ ghi backlog, không vá lẫn vào spec này.</li>
+</ul>
+
+<h3>4.11 Cầu kiểm thử + harness</h3>
+<ul>
+<li>Lệnh cầu mới (chỉ khi bật test-mode, cùng cổng các lệnh hiện có): <code>teach</code> (<code>--es pkg &lt;gói&gt; --es path &lt;wav&gt; [--ez save true]</code>: chạy WAV qua ĐÚNG đường giải mã của <code>wav</code> rồi <code>TeachSample</code> + <code>TeachGuard</code>; trả <code>heard</code>, <code>name</code>, <code>verdict</code>; <code>save</code> đi cổng ViewModel như UI) · <code>teach_text</code> (tên gõ) · <code>teach_clear</code> (<code>--es pkg</code>). <code>state</code> thêm <i>số</i> tên đã dạy theo gói — không in chuỗi.</li>
+<li>Script mới <code>scripts/emulator/voice-teach-e2e.sh</code> (không nhét vào <code>voice-e2e.sh</code> — 496 dòng), dùng chung <code>shq</code>/<code>require_emulator</code>/<code>cleanup</code> (tách ra một tệp <code>voice-common.sh</code> nếu cần, pure move).</li>
+<li>WAV: <code>voice-wavgen.sh</code> thêm khối <code>n01…</code> giọng <code>say -v Linh</code> ở 3 tốc độ cho câu dạy + 1 tốc độ khác cho câu thử. ⚠ Giọng tổng hợp ⇒ bằng chứng nói về <b>đường ống</b> (thu → giải mã → lưu → hotword → hiểu → mở), không nói về độ chính xác giọng thật.</li>
+</ul>
+
+<h3>4.12 Tệp chạm tới</h3>
+<table>
+<tr><th>Tệp</th><th>Việc</th><th>Trần dòng</th></tr>
+<tr><td><code>core/…/voice/TaughtNames.kt</code> (mới)</td><td><code>TaughtName</code> + <code>TaughtNamesCodec</code></td><td>mới</td></tr>
+<tr><td><code>core/…/voice/TeachSample.kt</code> (mới)</td><td>chuẩn hoá mẫu</td><td>mới</td></tr>
+<tr><td><code>core/…/voice/TeachGuard.kt</code> (mới)</td><td>A–E</td><td>mới</td></tr>
+<tr><td><code>core/…/voice/VoiceAppIndex.kt</code> (mới)</td><td>tầng + <code>VoiceAppAlias</code></td><td>mới</td></tr>
+<tr><td><code>VoiceGrammar.kt</code> · <code>VoiceIntentParser.kt</code> · <code>VoiceTailClause.kt</code> · <code>VoiceMediaNavParse.kt</code> · <code>VoiceCommandCatalog.kt</code></td><td>tham số <code>aliases</code></td><td>Parser 499 ⇒ dời mã trước</td></tr>
+<tr><td><code>SherpaBiasing.kt</code> · <code>SherpaPhraseHotwords.kt</code> · <code>SherpaHotwords.kt</code></td><td>dòng tên đã dạy + lọc đơn điệu</td><td>ổn</td></tr>
+<tr><td><code>VoiceGrammarSnapshot.kt</code></td><td>bản ghi <code>alias</code></td><td>193</td></tr>
+<tr><td><code>ProfileScope.kt</code> · <code>ProfileScopeLauncher.kt</code> · <code>ProfileSharePolicy.kt</code></td><td>khai khoá</td><td>ProfileScope 492 ⇒ một dòng</td></tr>
+<tr><td><code>VoiceReplyUnknown.kt</code> · <code>VoiceEntryRoute.kt</code> (<code>VoiceHomeAction.TEACH_APP</code>) · <code>I18nCatalog</code></td><td>gợi ý + hành động</td><td>ổn</td></tr>
+<tr><td><code>app/…/WorkspacePrefsVoiceNames.kt</code> (mới)</td><td>đọc/ghi + ảnh chụp</td><td>mới</td></tr>
+<tr><td><code>VoiceWiring.kt</code> · <code>VoiceSessionTerms.kt</code> · <code>VoiceSessionListen.kt</code> · <code>VoiceWakeSessionFactory.kt</code> · <code>VoiceRecognizer.kt</code> · <code>VoiceDispatcher.kt</code></td><td>nối <code>VoiceAppIndex</code> + tên đã dạy</td><td>Session 498 ⇒ tệp mới</td></tr>
+<tr><td><code>app/…/voice/VoiceTeachSession.kt</code> · <code>VoiceTeachRelay.kt</code> · <code>AppAltLabels.kt</code> (mới)</td><td>phiên TEACH, relay <code>:wake</code>, nhãn locale</td><td>mới</td></tr>
+<tr><td><code>VoiceWakeService.kt</code></td><td>nhận <code>ACTION_TEACH_LISTEN</code></td><td>497 ⇒ chỉ 1–2 dòng gọi sang tệp mới</td></tr>
+<tr><td><code>SettingsVoiceSection.kt</code> · <code>SettingsVoiceNamesPage.kt</code> · <code>SettingsVoiceNamesDialog.kt</code> (mới) · <code>AppDrawerApps.kt</code> · <code>VoiceOverlay.kt</code></td><td>UI + lối vào</td><td>ổn</td></tr>
+<tr><td><code>res/values{,-en,-zh-rCN,-th,-ms}/strings_kachi.xml</code></td><td>chuỗi mới ×5</td><td>—</td></tr>
+<tr><td><code>testbridge/TestBridgeTeach.kt</code> (mới) · <code>TestBridgeCommand.kt</code></td><td>lệnh cầu</td><td>mới</td></tr>
+<tr><td><code>scripts/emulator/voice-teach-e2e.sh</code> (mới) · <code>voice-wavgen.sh</code></td><td>harness</td><td>mới</td></tr>
+</table>
+
+<h3>4.13 Quyết định + Context7</h3>
+<ul>
+<li><b>Lưu chữ, không lưu tiếng.</b> Khớp ở tầng chữ là kiến trúc có sẵn; lưu WAV tốn đĩa + là dữ liệu sinh trắc. Đổi lấy: đổi mô hình nghe sau này ⇒ chữ in ra có thể khác ⇒ phải dạy lại (ghi rõ trong trang: <i>"đổi mô hình nghe thì nên dạy lại"</i>; lưu kèm mã mô hình lúc dạy ở bản v2 nếu cần — OQ1).</li>
+<li><b>Tên đã dạy = cụm <code>APP</code> có <code>id</code> là nhãn thật</b>, thay vì một nhánh khớp riêng: mọi luật đang chạy (dãy dài nhất, động từ chọn ứng viên, mệnh đề ô, <code>APP_CLOSE</code>, hỏi lại, khớp mờ duy nhất) áp tự động, không một <code>if</code> mới cho từng dạng câu.</li>
+<li><b>Dạy bằng câu đầy đủ "mở …"</b> thay vì tên trần: cùng ngữ cảnh âm + hotword như lúc dùng.</li>
+<li><b>Máy dò hồi quy bằng chính danh sách câu mẫu</b> thay vì danh sách từ cấm viết tay: generic (CLAUDE.md §7), tự lớn theo bộ đăng ký.</li>
+<li><b>Context7</b>:
+  <ul>
+  <li>sherpa-onnx (<code>/websites/k2-fsa_github_io_sherpa_onnx</code>): hotword đặt theo luồng qua <code>createStream(hotwords)</code> / C API <code>SherpaOnnxCreateOfflineStreamWithHotwords</code>; chỉ cho transducer + <code>modified_beam_search</code>; cần <code>modeling-unit bpe</code> + <code>bpe-vocab</code>; mỗi dòng có thể mang <code>:score</code> riêng. Khớp với cấu hình đang ship <span class="ev do">ĐO mã</span> <code>VoiceRecognizer.kt</code> (<code>modelingUnit</code>, <code>bpeVocab</code>, <code>hotwordsScore</code>). Phiên bản AAR đang dùng v1.13.8 <span class="ev suy">SUY</span> KDoc <code>SherpaPhraseHotwords.kt:20</code> — không đổi phiên bản trong spec này.</li>
+  <li>Android (<code>/websites/developer_android_reference</code>): <code>createPackageContext</code> trả Context nhẹ của gói khác, ném <code>NameNotFoundException</code>/<code>SecurityException</code>. <code>getResourcesForApplication(ApplicationInfo, Configuration)</code>: Context7 không trả tài liệu <span class="ev cb">CHƯA BIẾT</span> — không dùng (minSdk 29).</li>
+  <li>Không thêm thư viện mới. <code>ContextCompat.registerReceiver(…, RECEIVER_NOT_EXPORTED)</code> dùng lại đúng mẫu đã verify ở <code>VoiceEntry</code> (androidx.core 1.19.0 <span class="ev suy">SUY</span> KDoc <code>VoiceEntry.kt</code>).</li>
+  </ul>
+</li>
+<li><b>Trade-off đã chấp nhận</b>: tên đã dạy là từ vựng CHUNG (giống nhãn app) nên một tên bài hát/điểm đến trùng tên đã dạy có thể bị đọc thành mở app ở câu không có từ nhạc/động từ dẫn đường (vd <i>"phát mùa thu"</i> khi có tên dạy <i>"mùa thu"</i>). Cùng rủi ro với nhãn app máy hôm nay; câu <i>"phát bài …"</i>/<i>"dẫn đường đến …"</i> không bị ảnh hưởng <span class="ev suy">SUY</span> <code>VoiceIntentParser.kt:288-291</code> + từ nhạc khớp trước.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<div class="diagram">
+<svg viewBox="0 0 860 430" role="img" aria-label="DAG công việc theo bốn tầng: đo trước, core, app, kiểm chứng">
+  <defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="s-head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+  <text class="s-s" x="80" y="16" text-anchor="middle">TẦNG 1 · ĐO TRƯỚC</text>
+  <text class="s-s" x="300" y="16" text-anchor="middle">TẦNG 3 · :core</text>
+  <text class="s-s" x="540" y="16" text-anchor="middle">TẦNG 4 · :app / UI</text>
+  <text class="s-s" x="770" y="16" text-anchor="middle">KIỂM CHỨNG</text>
+  <rect class="s-warn" x="10" y="30" width="140" height="44" rx="8"/><text class="s-t" x="80" y="50" text-anchor="middle">E1 độ ổn định</text><text class="s-s" x="80" y="65" text-anchor="middle">WAV xe cũ / 🚗</text>
+  <rect class="s-node" x="10" y="90" width="140" height="44" rx="8"/><text class="s-t" x="80" y="110" text-anchor="middle">E2 nhãn locale</text><text class="s-s" x="80" y="125" text-anchor="middle">máy ảo</text>
+  <rect class="s-warn" x="10" y="150" width="140" height="44" rx="8"/><text class="s-t" x="80" y="170" text-anchor="middle">E3 locale xe + ms</text><text class="s-s" x="80" y="185" text-anchor="middle">🚗 2 lệnh</text>
+  <rect class="s-new" x="230" y="30" width="140" height="34" rx="8"/><text class="s-t" x="300" y="52" text-anchor="middle">C1 codec</text>
+  <rect class="s-new" x="230" y="72" width="140" height="34" rx="8"/><text class="s-t" x="300" y="94" text-anchor="middle">C2 TeachSample</text>
+  <rect class="s-new" x="230" y="114" width="140" height="34" rx="8"/><text class="s-t" x="300" y="136" text-anchor="middle">C3 VoiceAppIndex</text>
+  <rect class="s-new" x="230" y="156" width="140" height="34" rx="8"/><text class="s-t" x="300" y="178" text-anchor="middle">C4 parser aliases</text>
+  <rect class="s-new" x="230" y="198" width="140" height="34" rx="8"/><text class="s-t" x="300" y="220" text-anchor="middle">C5 TeachGuard</text>
+  <rect class="s-new" x="230" y="240" width="140" height="34" rx="8"/><text class="s-t" x="300" y="262" text-anchor="middle">C6 hotword</text>
+  <rect class="s-new" x="230" y="282" width="140" height="34" rx="8"/><text class="s-t" x="300" y="304" text-anchor="middle">C7 ảnh chụp</text>
+  <rect class="s-new" x="230" y="324" width="140" height="34" rx="8"/><text class="s-t" x="300" y="346" text-anchor="middle">C8 phạm vi hồ sơ</text>
+  <rect class="s-new" x="230" y="366" width="140" height="34" rx="8"/><text class="s-t" x="300" y="388" text-anchor="middle">C9 gợi ý + i18n</text>
+  <rect class="s-new" x="470" y="30" width="140" height="34" rx="8"/><text class="s-t" x="540" y="52" text-anchor="middle">A1 prefs + port</text>
+  <rect class="s-new" x="470" y="80" width="140" height="34" rx="8"/><text class="s-t" x="540" y="102" text-anchor="middle">A2 nối phiên</text>
+  <rect class="s-new" x="470" y="130" width="140" height="34" rx="8"/><text class="s-t" x="540" y="152" text-anchor="middle">A3 nhãn locale</text>
+  <rect class="s-new" x="470" y="180" width="140" height="34" rx="8"/><text class="s-t" x="540" y="202" text-anchor="middle">A4 phiên TEACH</text>
+  <rect class="s-new" x="470" y="230" width="140" height="34" rx="8"/><text class="s-t" x="540" y="252" text-anchor="middle">A5 trang + hộp</text>
+  <rect class="s-new" x="470" y="280" width="140" height="34" rx="8"/><text class="s-t" x="540" y="302" text-anchor="middle">A6 lối vào b, c</text>
+  <rect class="s-new" x="470" y="330" width="140" height="34" rx="8"/><text class="s-t" x="540" y="352" text-anchor="middle">A7 cầu teach</text>
+  <rect class="s-node" x="700" y="30" width="140" height="34" rx="8"/><text class="s-t" x="770" y="52" text-anchor="middle">V1 harness dạy</text>
+  <rect class="s-node" x="700" y="80" width="140" height="34" rx="8"/><text class="s-t" x="770" y="102" text-anchor="middle">V2 voice-e2e lại</text>
+  <rect class="s-node" x="700" y="130" width="140" height="34" rx="8"/><text class="s-t" x="770" y="152" text-anchor="middle">V3 test 5 module</text>
+  <rect class="s-node" x="700" y="180" width="140" height="34" rx="8"/><text class="s-t" x="770" y="202" text-anchor="middle">V4 review + scan</text>
+  <rect class="s-warn" x="700" y="230" width="140" height="34" rx="8"/><text class="s-t" x="770" y="252" text-anchor="middle">V5 buổi xe 🚗</text>
+  <rect class="s-node" x="700" y="280" width="140" height="34" rx="8"/><text class="s-t" x="770" y="302" text-anchor="middle">V6 doc/backlog</text>
+  <path class="s-a" d="M150,52 L228,89" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M150,52 L228,215" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M150,52 L228,257" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M150,112 L468,147" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M150,172 L228,257" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M370,47 L468,47" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M370,173 L468,97" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M370,257 L468,97" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M370,215 L468,247" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M540,114 L540,178" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M540,214 L540,228" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M540,264 L540,278" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M610,347 L698,47" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M610,97 L698,97" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M770,64 L770,78" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M770,114 L770,128" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M770,164 L770,178" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M770,214 L770,228" marker-end="url(#ah3)"/>
+  <path class="s-a" d="M770,264 L770,278" marker-end="url(#ah3)"/>
+  <text class="s-s" x="430" y="420" text-anchor="middle">Mũi tên = phụ thuộc chính; bảng dưới là danh sách đầy đủ. Không có tầng car-integration: không lệnh shell/HAL mới.</text>
+</svg>
+</div>
+
+<table>
+<tr><th>#</th><th>Tầng</th><th>Việc + test</th><th>Phụ thuộc</th><th>Tệp</th><th>Xe?</th></tr>
+<tr><td>E1</td><td>1 · đo</td><td>Độ ổn định chuỗi mô hình in ra cho tên app ngoại, giọng THẬT: (a) tìm trong nhật ký lượt nói đã xuất (H2: WAV+JSON) các câu gọi app ngoại, phát lại off-car bằng <code>scripts/voice/replay-car-log.py</code>; (b) với mỗi app: đếm số chuỗi khác nhau / 3 lần, và khi thêm dòng <code>MỞ &lt;chuỗi&gt;</code> vào tệp hotword (<code>scripts/voice/hotword-matrix.py</code>) thì mấy lần ra đúng chuỗi đó. Không đủ WAV ⇒ E1b <span class="car">🚗</span>: owner nói 5 app × 5 lần trên xe (nhật ký tự lưu). Kết quả vào <code>docs/diagnostics/voice-app-names-e1-&lt;ngày&gt;.md</code>.</td><td>—</td><td>chỉ script có sẵn</td><td>(a) không · (b) 🚗</td></tr>
+<tr><td>E2</td><td>1 · đo</td><td>Máy ảo: đọc nhãn <code>vi</code>/<code>en</code> của mọi app qua <code>createPackageContext</code> (một đoạn mã thử trong cầu kiểm thử hoặc <code>app_process</code>), đo ms tổng + đúng/sai so với <code>loadLabel</code> khi đổi locale máy.</td><td>—</td><td>thử, không ship</td><td>không</td></tr>
+<tr><td>E3</td><td>1 · đo</td><td>Xe: <code>getprop persist.sys.locale</code> · <code>settings get system system_locales</code> · danh sách app khởi chạy (<code>cmd package query-activities -a android.intent.action.MAIN -c android.intent.category.LAUNCHER</code>) · số ms <code>createStream(hotwords)</code> hiện tại từ logcat. Qua cầu adb/ClusterDiag (CLAUDE.md §11).</td><td>—</td><td>—</td><td>🚗</td></tr>
+<tr><td>C1</td><td>3 · core</td><td><code>TaughtName</code> + <code>TaughtNamesCodec</code> v1 (TSV, header, khử ký tự ngăn, phiên bản lạ ⇒ chỉ đọc, trần 4/app · 120/hồ sơ, tính lại norm) + <code>TaughtNamesCodecTest</code>.</td><td>—</td><td><code>TaughtNames.kt(+Test)</code></td><td>không</td></tr>
+<tr><td>C2</td><td>3 · core</td><td><code>TeachSample.normalize</code> (5 bước §4.2, chỉ đọc bảng có sẵn) + test từng bước + câu nhiễu thật từ log.</td><td>E1 (ngưỡng)</td><td><code>TeachSample.kt(+Test)</code></td><td>không</td></tr>
+<tr><td>C3</td><td>3 · core</td><td><code>VoiceAppIndex.build</code> + <code>VoiceAppAlias</code>: thứ tự tầng, đè dạng đọc, bỏ mồ côi, gói thua nhãn trùng, <code>targetKey</code>, <code>displayLabel</code>. Test bảng.</td><td>C1</td><td><code>VoiceAppIndex.kt(+Test)</code></td><td>không</td></tr>
+<tr><td>C4</td><td>3 · core</td><td>Pure move để giải phóng dòng ở <code>VoiceIntentParser.kt</code> (commit riêng) → <code>aliases</code> qua <code>VoiceGrammar.terms</code> · <code>parse/parseOne</code> · <code>appAfterMarker</code> (mọi chỗ gọi ở §4.6) · <code>VoiceCommandCatalog.groups</code>. Test: bảng câu §4.6 + test vàng "30 tên thật ⇒ 0 câu mẫu đổi ý định". Grep call site (CLAUDE.md §8).</td><td>C3</td><td>parser + <code>VoiceTaughtAliasParseTest</code></td><td>không</td></tr>
+<tr><td>C5</td><td>3 · core</td><td><code>TeachGuard</code> A–E (§4.7), mỗi dòng bảng một test, thử làm ĐỎ (gỡ luật ⇒ đỏ) theo P5.3.</td><td>C2, C4, C6</td><td><code>TeachGuard.kt(+Test)</code></td><td>không</td></tr>
+<tr><td>C6</td><td>3 · core</td><td><code>hotwordsFile(…, taught)</code> + lọc đơn điệu + <code>extendsAnotherApp</code> tổng quát (theo gói) + <code>appNames</code> gồm tên đã dạy. Bài canh mới <code>SherpaTaughtHotwordsTest</code>: tập cha, không dòng một từ, không tiền tố, HOA không số, tên trần không đứng đầu dòng, bộ tên đối kháng (<i>"cốp xe đẹp"</i>). Dump tệp ra <code>core/build/hotwords/</code> cho E1.</td><td>C3, E1</td><td><code>SherpaBiasing.kt</code> · <code>SherpaPhraseHotwords.kt</code></td><td>không</td></tr>
+<tr><td>C7</td><td>3 · core</td><td><code>VoiceGrammarSnapshot</code> bản ghi <code>alias</code> + test vòng tròn, tệp cũ/lạ, Unicode, <code>safe()</code> không in chữ người dùng.</td><td>C1</td><td><code>VoiceGrammarSnapshot.kt(+Test)</code></td><td>không</td></tr>
+<tr><td>C8</td><td>3 · core</td><td>Khai <code>voice_app_names</code> ở <code>ProfileScope</code> · <code>DECLARED_TYPES</code> · <code>ProfileSharePolicy.PRIVATE</code>; các bài canh phạm vi/kiểu/chia sẻ có sẵn phải xanh. <b>Pass 1</b>: + <code>SettingsEntry</code> nhóm VOICE + hàng <code>SettingsCatalogControlContractTest</code> + cặp nhãn trong <code>i18n/{zh,th,ms}.tsv</code> (§4.5).</td><td>—</td><td>3 tệp + catalog + 3 TSV</td><td>không</td></tr>
+<tr><td>C9</td><td>3 · core</td><td>Gợi ý <code>NO_OBJECT</code> (3 lần/hồ sơ) + <code>VoiceHomeAction.TEACH_APP</code> + cặp zh/th/ms trong <code>I18nCatalog</code>.</td><td>—</td><td><code>VoiceReplyUnknown.kt</code> · <code>VoiceEntryRoute.kt</code></td><td>không</td></tr>
+<tr><td>A1</td><td>4 · app</td><td><code>WorkspacePrefsVoiceNames.kt</code> + <code>VoiceNamesPort</code> → ViewModel; ghi ảnh chụp ở mọi hàm ghi; mở rộng <code>VoiceGrammarSnapshotWiringContractTest</code>/<code>LauncherProfileTypesCoverageTest</code> quét tệp mới; <b>Pass 1</b>: khai <code>WorkspacePrefsVoiceNames.kt</code> ở <code>LayeringRulesTest.pureButMustStayInApp</code> kèm lý do (khuôn <code>WorkspacePrefsSlotHead.kt</code>).</td><td>C1, C7, C8</td><td>tệp mới + ViewModel</td><td>không</td></tr>
+<tr><td>A2</td><td>4 · app</td><td><code>VoiceWiring.appsByLabel</code> → <code>VoiceAppIndex</code>; <code>sessionTerms</code>/<code>VoiceSession</code>/<code>VoiceWakeSessionFactory</code> mang <code>aliases</code> (chính: prefs; <code>:wake</code>: ảnh chụp); <code>VoiceRecognizer.open</code> → <code>hotwordsFile(…, taught)</code>; <code>displayName</code> luôn nhãn thật. Test nối dây (quét nguồn) cho từng chỗ. <b>Pass 1</b>: sửa có chủ ý needle <code>VoiceListenWiringContractTest.kt:134</code> (§4.8); <code>:wake</code> lấy aliases từ ảnh chụp qua tham số riêng, không qua <code>state()</code> (<code>VoiceWakeFakeStateContractTest</code>); <code>VoiceRecognizer.kt</code> 496/500 — lấy chỗ bằng bỏ dòng <code>@Suppress("UNUSED_PARAMETER")</code> khi <code>apps</code>/<code>installed</code> được dùng thật, hoặc dời KDoc.</td><td>C3, C4, C6, A1</td><td>6 tệp §4.12</td><td>không</td></tr>
+<tr><td>A3</td><td>4 · app</td><td><code>AppAltLabels</code>: nạp nhãn vi/en, cache theo <code>lastUpdateTime</code>, luồng nền; vào <code>VoiceAppIndex</code> tầng 3.</td><td>E2</td><td><code>AppAltLabels.kt</code></td><td>không</td></tr>
+<tr><td>A4</td><td>4 · app</td><td>Phiên TEACH: <code>VoiceTeachSession.kt</code> (lối vào <code>startTeach</code> riêng — KHÔNG tấm chữ, KHÔNG TTS, KHÔNG <code>logHeard</code> mặc định; phần nghe tách chung với <code>runListen</code> bằng pure move — §4.4 Pass 1), <code>VoiceTeachRelay.kt</code> (<code>ACTION_TEACH_LISTEN/RESULT</code> + nonce + hạn ack theo <code>VoiceEntryRoute</code> + lùi in-process), <code>VoiceWakeService</code> 1–2 dòng gọi sang. Khai <code>LayeringRulesTest.pureButMustStayInApp</code> nếu tệp mới "thuần" theo phép đo.</td><td>A2</td><td>tệp mới</td><td>không</td></tr>
+<tr><td>A5</td><td>4 · app</td><td>Dòng ở Giọng nói + trang danh sách (lọc, tìm, Thử, Xoá, App đã gỡ, chỉ đọc khi phiên bản lạ) + hộp dạy (🎤 ≥2 ≤3 lượt, gõ tên, phán quyết, Vẫn lưu, máy dò hồi quy luồng nền) + chuỗi ×5 locale. Sửa KDoc <code>SettingsVoiceSection</code>.</td><td>A4, C5, A1</td><td>3 tệp UI + res ×5</td><td>không</td></tr>
+<tr><td>A6</td><td>4 · app</td><td>Nhấn giữ ở ngăn kéo (chỉ chế độ thường) + nút <i>Dạy tên «…»</i> trên tấm chữ + <code>TEACH_APP</code> mở trang với mẫu đang chờ.</td><td>A5, C9</td><td><code>AppDrawerApps.kt</code> · <code>VoiceOverlay.kt</code></td><td>không</td></tr>
+<tr><td>A7</td><td>4 · app</td><td>Lệnh cầu <code>teach</code>/<code>teach_text</code>/<code>teach_clear</code> + đếm trong <code>state</code>. <b>Pass 1</b>: <code>TestBridgeCommand.kt</code> (<code>:core</code>) đang 495/500 ⇒ khai ba lệnh ở tệp riêng hoặc dời mã trước (pure move, commit riêng).</td><td>A4, C5</td><td><code>TestBridgeTeach.kt</code></td><td>không</td></tr>
+<tr><td>V1</td><td>KC</td><td><code>voice-teach-e2e.sh</code> + WAV (§6 V-emu).</td><td>A7</td><td>script mới</td><td>không</td></tr>
+<tr><td>V2</td><td>KC</td><td>Chạy lại TOÀN BỘ <code>voice-e2e.sh</code> (say + wav) — số trước/sau, 0 ca xanh thành đỏ.</td><td>A2</td><td>—</td><td>không</td></tr>
+<tr><td>V3</td><td>KC</td><td><code>./gradlew clean assembleRelease test --rerun-tasks --continue</code> đủ 5 module (tuần tự, không song song với workflow khác — memory gradle song song).</td><td>mọi C/A</td><td>—</td><td>không</td></tr>
+<tr><td>V4</td><td>KC</td><td>Senior review (global §5, vòng lặp tới 0 finding) + security scan (global §6) trước commit.</td><td>V3</td><td>—</td><td>không</td></tr>
+<tr><td>V5</td><td>KC</td><td>Buổi xe: dạy 5 app ngoại × 3 lần, thử 5 câu/app (có/không ô), đổi hồ sơ, gỡ/cài lại một app; đọc <code>createStream</code> ms. ⚠ Pass 1: câu <i>"có ô"</i> chấm ở mức <b>ý định + lệnh gắn ô được gửi</b>, không phải "app nằm yên trong ô" — app tự mở activity thứ hai (Waze, Netflix) bị ROM kéo về display 0 dù hiểu đúng <span class="ev suy">SUY — log xe 27/09, backlog mục PHASE-2 (1)</span>; chọn app một-activity cho phép đo nằm-ô.</td><td>V1–V4</td><td>—</td><td>🚗</td></tr>
+<tr><td>V6</td><td>KC</td><td>Cập nhật <code>docs/README.md</code> (INDEX) + <code>docs/PROJECT-BACKLOG.md</code> + <code>.kiro/steering/project-context.md</code> + diagnostics trong CÙNG commit với mã (R2.1); bump version nếu đã giao APK (§9).</td><td>V3</td><td>doc</td><td>không</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> (<code>:core</code>): <code>TaughtNamesCodecTest</code> · <code>TeachSampleTest</code> · <code>TeachGuardTest</code> (mỗi luật một ca + thử làm đỏ) · <code>VoiceAppIndexTest</code> · <code>VoiceTaughtAliasParseTest</code> (bảng §4.6) · test vàng hồi quy · <code>SherpaTaughtHotwordsTest</code> · <code>VoiceGrammarSnapshotTest</code> mở rộng · bài canh phạm vi/kiểu/chia sẻ hồ sơ · <code>I18nCoverageTest</code>. <code>:app</code>: test nối dây quét nguồn (aliases tới cả hai tiến trình; <code>open</code> dùng tên đã dạy; hàm ghi gọi ảnh chụp; <code>displayName</code>; lượt dạy dùng cùng <code>VoiceRecognizer.open</code> với phiên lệnh; không lượt dạy nào gọi <code>execute</code>).</li>
+<li><b>V-hotword-host</b>: dump tệp có tên đã dạy → <code>hotword-matrix.py</code> trên bộ WAV 25 câu cũ + WAV E1: bộ cũ không tụt (so số trước/sau), WAV tên app ngoại tăng tỉ lệ ra đúng chuỗi.</li>
+<li><b>V-emu</b> (<code>voice-teach-e2e.sh</code>, máy ảo API 29, giọng TTS):
+  <ol>
+  <li>Chọn 2 app nhãn tiếng Anh KHÔNG thuộc bảng đích đang có trên AVD (đọc <code>pm list packages</code> + <code>state</code>; app nào có là <span class="ev cb">CHƯA BIẾT</span>, script tự chọn và in ra).</li>
+  <li>Trước khi dạy: <code>wav</code> câu thử ⇒ ghi <code>heard</code> + ý định (kỳ vọng <code>Unknown</code> hoặc sai app — mốc gốc).</li>
+  <li><code>teach</code> 3 WAV/app ⇒ <code>heard</code>, <code>name</code>, <code>verdict</code>; <code>save</code>.</li>
+  <li>Sau khi dạy: <code>wav</code> câu thử (tốc độ khác) ⇒ <code>OpenApp</code> đúng nhãn; <code>say</code> lại chuỗi <code>heard</code> có <i>"vào ô số hai"</i> ⇒ <code>slot:2:&lt;gói&gt;</code> thật (tác dụng phụ đo bằng <code>state</code>); <i>"đóng …"</i> ⇒ <code>APP_CLOSE</code>.</li>
+  <li>Va chạm: <code>teach_text "đèn đọc"</code> ⇒ CHẶN; <code>teach_text "đèn"</code> ⇒ CHẶN; ca <code>say "bật đèn đọc"</code> sau khi dạy vẫn ra <code>Control</code>.</li>
+  <li>Đổi hồ sơ ⇒ <code>wav</code> câu thử ra <code>Unknown</code> lại; đổi về ⇒ chạy lại.</li>
+  <li>Bật chế độ mô hình ở <code>:wake</code> (phím gán Kachi nghe / wake) ⇒ <code>teach</code> chạy ở <code>:wake</code> (log <code>KachiVoiceEntry</code>), RSS tiến trình chính không tăng thêm bản mô hình.</li>
+  <li><code>pm uninstall --user 0</code> một app đã dạy ⇒ tên ở <i>App đã gỡ</i>, câu thử ra <code>Unknown</code>; <code>cmd package install-existing</code> ⇒ chạy lại.</li>
+  <li>Dọn: <code>teach_clear</code> + trả hồ sơ + tắt test-mode (trap).</li>
+  </ol>
+  Mức bằng chứng: đường ống [ĐO máy ảo], KHÔNG phải độ chính xác giọng thật.</li>
+<li><b>V-regression</b>: <code>voice-e2e.sh</code> đầy đủ trước/sau trên cùng APK nền ⇒ không ca nào xanh thành đỏ.</li>
+<li><b>V-oncar</b> <span class="car">🚗</span>: kịch bản V5; bằng chứng bắt buộc: nhật ký lượt nói (WAV+JSON) của các lượt thử, dòng <code>createStream(hotwords) N ms</code>, ảnh chụp trang <i>Dạy tên app</i>. Tỉ lệ đạt đặt sau E1 (hiện <span class="ev cb">CHƯA BIẾT</span>).</li>
+<li><b>V-lifecycle</b>: dạy → dùng → sửa (xoá một tên) → đổi hồ sơ → xuất FULL (có) / CHIA SẺ (không) → nhập → gỡ app → cài lại → nâng cấp APK (prefs giữ) — mỗi bước một ca test hoặc một bước harness.</li>
+<li><b>V-scope</b> (global §2.1): đối chiếu R1–R11 từng mục ✅/❌ với mã + test + call site trước khi nói xong.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<p class="muted">Mỗi câu có đề xuất mặc định; owner im lặng/duyệt chung ⇒ làm theo mặc định (memory: "làm đi" = đã duyệt, tự chọn hướng generic).</p>
+<ul>
+<li><b>OQ1.</b> Có lưu âm thanh mẫu không? — <span class="muted">Đề xuất: <b>KHÔNG</b>. Chỉ lưu chữ; WAV chỉ ở RAM của hộp dạy. (Pass 1: câu cũ <i>"H2 giữ nguyên luật <code>voice_keep_log</code>"</i> mâu thuẫn với "không lưu âm thanh" vì H2 mặc định BẬT — xem OQ13.) Nếu sau này đổi mô hình nghe ⇒ trang nhắc dạy lại; bản v2 của codec có thể thêm mã mô hình lúc dạy.</span></li>
+<li><b>OQ2.</b> Bản CHIA SẺ hồ sơ có mang tên đã dạy? — <span class="muted">Đề xuất: <b>KHÔNG</b> (PRIVATE). Tên chép từ giọng một người, vô ích với giọng khác, có thể chứa tên người. Bản FULL vẫn mang.</span></li>
+<li><b>OQ3.</b> Tên GÕ có vào hotword? — <span class="muted">Đề xuất: <b>KHÔNG</b> (chỉ khớp chữ). Chuỗi gõ không bảo đảm mã hoá được/đúng dấu; bias sai dấu kéo câu về chữ khác. Muốn bias ⇒ nói tên đó một lần.</span></li>
+<li><b>OQ4.</b> Số lượt nói + trần? — <span class="muted">Đề xuất: tối thiểu <b>2</b>, tối đa <b>3</b> lượt mỗi lần dạy; lưu các dạng KHÁC nhau; trần <b>4 tên/app</b>, <b>120 tên/hồ sơ</b>. Chỉnh lại sau E1/V5.</span></li>
+<li><b>OQ5.</b> Gợi ý sau "mở …" không hiểu: đọc thành tiếng bao lâu? — <span class="muted">Đề xuất: nút trên tấm chữ luôn hiện 8 s; câu ĐỌC chỉ 3 lần đầu mỗi hồ sơ.</span></li>
+<li><b>OQ6.</b> Nhấn giữ icon ở đâu? — <span class="muted">Đề xuất: chỉ ở <b>ngăn kéo</b>. Ô màn chính: nhấn giữ đang là kéo đổi ô, không chồng thêm cử chỉ.</span></li>
+<li><b>OQ7.</b> Nhãn tiếng Việt (locale thứ hai) có vào hotword? — <span class="muted">Đề xuất: <b>chưa ở 2.90</b>; đo host matrix trước vì đổi tệp hotword của mọi người dùng. Mở backlog riêng.</span></li>
+<li><b>OQ8.</b> Tên dạy trùng nhãn của app khác? — <span class="muted">Đề xuất: <b>CHẶN</b> + gợi ý thêm một chữ. Không cho đè chữ người dùng nhìn thấy trên màn.</span></li>
+<li><b>OQ9.</b> CẢNH BÁO (gần một lệnh) có cho lưu? — <span class="muted">Đề xuất: cho, sau khi bấm <i>Vẫn lưu</i> và hộp đã nêu đúng lệnh có thể bị nhầm.</span></li>
+<li><b>OQ10.</b> Ghép vế sau quãng ngừng (<code>VoiceOpenTurn</code>) cho tên đã dạy + nhãn app máy? — <span class="muted">Đề xuất: làm cùng đợt NẾU chỗ gọi ở tầng nghe có sẵn từ vựng phiên (soát lúc làm A2); nếu không ⇒ backlog riêng (khe này đã tồn tại với nhãn app máy, không do spec này sinh ra).</span></li>
+<li><b>OQ11.</b> Điểm hotword riêng cho dòng tên đã dạy (<code>:score</code>)? — <span class="muted">Đề xuất: không, dùng điểm chung; chỉ đổi nếu E1 cho thấy kéo nhầm.</span></li>
+<li><b>OQ12.</b> Gộp vào lô nào? — <span class="muted">Đề xuất: lô 2.90 sau khi 2.89 đăng; phần taskbar của cùng tin nhắn đi spec riêng, có thể cùng lô.</span></li>
+<li><b>OQ13 (Pass 1).</b> Lượt DẠY có vào nhật ký lượt nói H2 (WAV + JSON ra đĩa) không? — <span class="muted">Đề xuất: <b>KHÔNG</b> khi test-mode tắt (nhánh TEACH bỏ <code>logHeard</code>): H2 mặc định BẬT và chỉ giữ 30 mục ⇒ một buổi dạy 10 app xoá sạch tiếng chuyến đi thật mà H2 sinh ra để giữ, và R-nf3/OQ1 hứa không thêm âm thanh ra đĩa. Test-mode bật ⇒ CÓ ghi (E1/V5 cần đúng các khúc đó để phát lại bằng <code>replay-car-log.py</code>).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Mã (đọc 2026-10-05): <code>core/…/voice/VoiceIntentParser.kt</code> · <code>VoiceGrammar.kt</code> · <code>VoiceLexicon.kt</code> · <code>VoiceSynonyms.kt</code> · <code>VoiceAppTargets.kt</code> · <code>VoiceAppPhonetics.kt</code> · <code>VoiceAppLabelPick.kt</code> · <code>VoiceLastResort.kt</code> · <code>VoiceNameFuzzy.kt</code> · <code>VoiceAppPrefix.kt</code> · <code>VoiceSlotNoVerb.kt</code> · <code>VoiceTailClause.kt</code> · <code>VoicePhoneticMatch.kt</code> · <code>VoicePhoneticConfusions.kt</code> · <code>VoiceProfileNames.kt</code> · <code>VoiceOpenTurn.kt</code> · <code>VoiceClarify.kt</code> · <code>VoiceReplyUnknown.kt</code> · <code>VoiceCommandCatalog.kt</code> · <code>VoiceGrammarSnapshot.kt</code> · <code>VoiceEntryRoute.kt</code> · <code>VoicePreloadPolicy.kt</code> · <code>SherpaBiasing.kt</code> · <code>SherpaHotwords.kt</code> · <code>SherpaPhraseHotwords.kt</code> · <code>SherpaSpokenWords.kt</code> · <code>launcher/ProfileScope.kt</code> · <code>ProfileSharePolicy.kt</code> · <code>ProfileFiles.kt</code>.</li>
+<li><code>app/…/voice/VoiceRecognizer.kt</code> · <code>VoiceWiring.kt</code> · <code>VoiceSessionTerms.kt</code> · <code>VoiceSessionListen.kt</code> · <code>VoiceWakeSessionFactory.kt</code> · <code>VoiceEntry.kt</code> · <code>VoiceGrammarSnapshotStore.kt</code> · <code>VoiceWavProbe.kt</code> · <code>launcher/VoiceDispatcher.kt</code> · <code>VoiceTargetDispatch.kt</code> · <code>SettingsVoiceSection.kt</code> · <code>SettingsSectionsKeys.kt</code> · <code>SettingsSectionsShortcuts.kt</code> · <code>AppDrawerApps.kt</code> · <code>WorkspaceView.kt</code> · <code>WorkspacePrefs.kt</code> · <code>WorkspacePrefsShortcuts.kt</code> · <code>InstalledApps.kt</code>.</li>
+<li>Test/bài canh: <code>SherpaBiasingCoverageTest.kt</code> · <code>I18nCoverageTest.kt</code> · <code>VoiceListenWiringContractTest</code> (trần 500) · <code>VoiceGrammarSnapshotWiringContractTest</code>.</li>
+<li>Harness: <code>scripts/emulator/voice-e2e.sh</code> · <code>voice-cases.tsv</code> · <code>voice-wavgen.sh</code> · <code>scripts/voice/hotword-matrix.py</code> · <code>replay-car-log.py</code>.</li>
+<li>Spec liên quan: <code>kachi-voice-command.html</code> · <code>kachi-voice-engine-v2.html</code> · <code>kachi-voice-hotword-phrases.html</code> · <code>kachi-voice-fast-natural.html</code> · <code>kachi-voice-addresses.html</code> · <code>kachi-profiles-are-everything.html</code> · <code>kachi-i18n-zh-th-ms.html</code> · <code>kachi-276-closing.html</code> (R7 tiền tố) · <code>kachi-wake-word.html</code>.</li>
+<li>Diagnostics/backlog (dữ liệu cũ ⇒ SUY): <code>docs/diagnostics/voice-mishear-2026-09-16.md</code> · <code>emulator-voice-e2e-2026-09-15.md</code> · <code>docs/PROJECT-BACKLOG.md</code> mục PHASE-2 27/09 (dòng 286 @HEAD 8880d76 — cây làm việc 05/10 đã xê dịch) (Netflix ⇒ "nep leag", 27/09).</li>
+<li>Context7: <code>/websites/k2-fsa_github_io_sherpa_onnx</code> (hotwords theo luồng, <code>:score</code>) · <code>/websites/developer_android_reference</code> (<code>createPackageContext</code>).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi NGAY khi code — R2.6 (<code>documentation-and-backlog.md</code>). Mỗi mục: ngày · loại (quyết định / trade-off / sai lệch-spec / bug / spec-không-work) · nội dung · file:line hoặc commit.</p>
+<p class="muted"><i>(Trống — chưa implement.)</i></p>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm <code>Pass N — YYYY-MM-DD</code>, tag <code>[P0]–[P3]</code>, patch đã áp, test cuối, verdict.</p>
+<h3>Pass 1 — 2026-10-05</h3>
+<p class="muted">Soát đủ-phạm-vi (completeness critic), CHỈ đọc mã ở cây làm việc 05/10 (có workflow khác đang sửa — số dòng có thể xê dịch); không gradle, không máy ảo, không xe. Vá thẳng vào spec, không chạm tệp nào khác.</p>
+<ul>
+<li><span class="tag p1">P1</span> <b>Lượt dạy đi <code>VoiceSession.start()</code> sẽ che chính hộp dạy</b>: <code>start()</code> bung <code>VoiceOverlay</code> <code>MATCH_PARENT</code> ăn mọi chạm (<code>VoiceSession.kt:190-192</code>, <code>VoiceOverlay.kt:135-139</code>), <code>fail()</code> + "không nghe thấy" vẽ/đọc thành tiếng (<code>VoiceSessionTurns.kt:417</code>, <code>VoiceSessionListen.kt:78-80</code>) <span class="ev do">ĐO mã</span>. → §4.4: lối vào <code>startTeach</code> riêng, chỉ dùng chung phần NGHE. <i>Đã vá spec.</i></li>
+<li><span class="tag p1">P1</span> <b>R-nf3/OQ1 hứa "không lưu âm thanh ra đĩa" nhưng đường được chọn (<code>runListen</code>) ghi H2 WAV+JSON mặc định BẬT, vòng 30 mục</b> (<code>VoiceSessionListen.kt:72</code>, <code>PrefsVoiceV3.kt:119</code>, <code>VoiceUtteranceLog.kt:67</code>) <span class="ev do">ĐO mã</span>; và chữ nghe được vẫn ra logcat qua <code>VoiceSessionListen.kt:67</code>. → R-nf3 sửa cho đúng sự thật + OQ13. <i>Đã vá spec.</i></li>
+<li><span class="tag p1">P1</span> <b>Luật đơn điệu hotword chỉ tính <code>dropPrefixes</code></b>; đưa tên đã dạy vào <code>appNames</code> mở đường rụng thứ hai qua <code>dropAppNameLeading</code> (<code>SherpaHotwords.kt:131</code>; tiền lệ <code>clashesWithVerb</code>, <code>SherpaPhraseHotwords.kt:146-157</code>) <span class="ev do">ĐO mã</span>. → §4.8: so tệp CUỐI, loại tên khỏi cả dòng lẫn <code>appNames</code>. <i>Đã vá spec.</i></li>
+<li><span class="tag p2">P2</span> Bài canh <code>VoiceListenWiringContractTest.kt:134</code> ghim nguyên văn <code>hotwordsFile(places, profiles)</code> ⇒ A2 làm đỏ — phải là thay đổi có chủ ý, giữ tính chất canh. <i>Đã ghi vào §4.8 + A2.</i></li>
+<li><span class="tag p2">P2</span> Bảng trần 500 dòng thiếu 6 tệp sẽ bị chạm: <code>VoiceRecognizer.kt</code> 496 · <code>TestBridgeCommand.kt</code> 495 · <code>VoiceAppTargets.kt</code> 490 · <code>VoiceCommandCatalog.kt</code> 485 · <code>VoiceLexicon.kt</code> 483 · <code>VoiceDispatcher.kt</code> 466 <span class="ev do">ĐO <code>wc -l</code></span>. <i>Đã vá §2 + A2/A7.</i></li>
+<li><span class="tag p2">P2</span> Khai phạm vi thiếu: <code>SettingsEntry</code> (lệ <code>SettingsCatalogEntries.kt:82,129</code>) + hàng <code>SettingsCatalogControlContractTest</code> + cặp zh/th/ms (<code>LangCoverageFixtures.kt:37</code> đưa <code>ENTRIES</code> vào <code>I18nCoverageTest</code>); <code>LayeringRulesTest.pureButMustStayInApp</code> cho tệp mở rộng "thuần"; <code>VoiceWakeFakeStateContractTest</code>. <i>Đã vá §4.5 + C8/A1/A4.</i></li>
+<li><span class="tag p2">P2</span> Nhãn locale thứ hai chỉ hâm ở tiến trình chính trong khi <code>:wake</code> tự dựng bảng nhãn (<code>VoiceWakeSessionFactory.kt:45,51</code>) ⇒ phím vô-lăng và nút mic hiểu khác nhau; và phải theo thứ tự nhãn của <code>ResolveInfo.loadLabel</code>. <i>Đã vá §4.9.</i></li>
+<li><span class="tag p2">P3</span> Thiếu trạng thái "mô hình đang nạp" (khác "chưa tải") trong hộp dạy; app khác cài sau trùng nhãn tên đã dạy ⇒ bỏ im lặng; V5 "có ô" với Netflix/Waze bị ROM kéo về display 0 dù hiểu đúng; trích dẫn <code>PROJECT-BACKLOG.md:293</code> đã xê dịch (HEAD: 286). <i>Đã vá §4.4, §4.5, V5, ba chỗ trích dẫn.</i></li>
+<li><b>Đã soát, đúng</b> <span class="ev do">ĐO mã</span>: hotword theo luồng <code>createStream(hotwords)</code> (<code>VoiceRecognizer.kt:155</code>) · <code>@Suppress("UNUSED_PARAMETER")</code> + <code>open</code> bỏ <code>apps/installed</code> (<code>:192-206</code>) · 7 mã đích (<code>VoiceAppTargets.kt:221-227</code>) · <code>"flix" → "phờ lích"</code> (<code>VoiceAppPhonetics.kt:70</code>) · hằng mờ/tiền tố · <code>Named(t.id, null)</code> so theo id (<code>VoiceLastResort.kt</code>) · <code>VoiceCommandExample.intent</code> có thật ⇒ máy dò hồi quy E làm được · ảnh chụp bỏ bản ghi lạ (<code>VoiceGrammarSnapshot.kt:187</code>) · <code>:wake</code> đọc ảnh chụp mỗi lần gọi · <code>LAUNCHER_PERSONAL_SUFFIXES</code>/<code>PRIVATE</code> có thật · <code>QUERY_ALL_PACKAGES</code> + <code>minSdk 29</code> · 2.89-thử1 (190).</li>
+<li><b>Còn mở (không vá được trong phạm vi tệp này)</b>: spec chưa có trong <code>docs/README.md</code> INDEX + <code>docs/PROJECT-BACKLOG.md</code> (R2.1 — mồ côi tới khi nhập); E1/E2/E3 chưa đo; thứ tự rơi nhãn của <code>ResolveInfo.loadLabel</code> phải trích AOSP r47 trước khi viết A3.</li>
+<li><b>Verdict</b>: Requirements đủ để duyệt sau OQ13; Design cần duyệt lại §4.4/§4.8 Pass 1 trước khi vào A4/C6.</li>
+</ul>
+
+</div></body>
+</html>

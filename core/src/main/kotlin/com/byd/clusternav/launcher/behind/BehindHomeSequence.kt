@@ -118,6 +118,9 @@ class BehindHomeSequence(
 
         /** Review 287 [P1] — đã ra lệnh rồi KHÔNG đọc lại được `am stack list` (kênh đứt giữa chuỗi): chưa rõ X ở đâu ⇒ GIỮ màn ảo. */
         UNREAD,
+
+        /** A2 · 2.89 — [HiddenPark]: X sống trên màn ảo ẨN của Kachi, đã trao cho sổ ô 7 — không giữ chỗ, không move-task. */
+        PARKED,
     }
 
     /** Kết quả một lượt + một dòng log `KachiBehind` đọc được trên màn Chẩn đoán. */

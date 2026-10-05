@@ -17,7 +17,7 @@ import com.byd.clusternav.launcher.voice.VoiceWiring
  *  1. **Hey Kachi** — công tắc nghe câu gọi rảnh tay (mặc định TẮT; nghe nền tốn CPU/pin).
  *  2. **Nói với xe / giọng đọc** — [voice.VoiceModelSettings]: tải mô hình NGHE, gói giọng ĐỌC Piper,
  *     công tắc đọc phản hồi, hỏi-xác-nhận, nguồn micro. (Nhật ký lượt nói bên trong nó vẫn gác sau test-mode.)
- *  3. **Nhạc** — app nhạc mặc định.
+ *  3. **Nhạc** — app nhạc mặc định (của giọng nói; *"Tự mở nhạc khi lên xe"* ở Hệ thống › Khởi động từ 2.89 — A5(a)).
  *  4. **Câu lệnh nói được** (2.74 · R3) — danh sách gập/mở, SINH từ [VoiceCommandCatalog]. Đứng **CUỐI** theo yêu
  *     cầu owner: nó là phần để ĐỌC, không phải để cài, nên nó không được chen giữa các công tắc.
  *
@@ -83,7 +83,8 @@ class SettingsVoiceSection(
             options = deps.bridge.musicAppChoices().map { it to musicAppLabel(it) },
             current = deps.bridge.musicDefaultApp(),
         ) { key -> deps.bridge.setMusicDefaultApp(key) })
-        SettingsTripMusicSection(context, rows, deps).section(body)   // F3 — nhạc khi lên xe (SettingsSectionsTrip.kt)
+        // A5(a) · 2.89 — *"Tự mở nhạc khi lên xe"* đã sang Hệ thống › Khởi động (ngay dưới *"Mở app khi nổ máy"*): cùng câu hỏi
+        // "nổ máy thì Kachi làm gì". Ở đây chỉ còn app nhạc của GIỌNG NÓI (khoá khác — §4.6 spec shortcuts-autostart).
 
         commandListRows(body)
     }

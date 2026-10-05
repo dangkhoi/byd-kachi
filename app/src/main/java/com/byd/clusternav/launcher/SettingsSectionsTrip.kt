@@ -124,10 +124,11 @@ class SettingsTripAppsSection(
 }
 
 /**
- * ═══ F3 · U6 — Cài đặt › Giọng nói › **Tự mở nhạc khi lên xe** ═════════════════════════════════════════════════════
+ * ═══ F3 · U6 — Cài đặt › Hệ thống & quyền › Khởi động › **Tự mở nhạc khi lên xe** ═════════════════════════════════════
  *
- * Spec R3.1. Đứng NGAY dưới *"App nhạc mặc định"* (cùng câu hỏi "app nhạc nào") nhưng KHÁC khoá: miền giá trị khác
- * (§4.6 — dùng chung thì đổi nhạc-lên-xe âm thầm đổi app nhạc của giọng nói). Chip *Tắt · Theo player của xe ·
+ * Spec R3.1. 2.89 · A5(a) (spec `kachi-289-field-fixes.html`): rời trang Giọng nói, đứng NGAY dưới *"Mở app khi nổ máy"* —
+ * cùng câu hỏi "nổ máy thì Kachi làm gì" (owner 05/10 hỏi về nhạc ở ô 1 khi đang đọc trang *Mở app khi nổ máy* — A2). KHÁC khoá với *"App nhạc
+ * mặc định"* (vẫn ở Giọng nói): miền giá trị khác (§4.6 — dùng chung thì đổi nhạc-lên-xe âm thầm đổi app nhạc của giọng nói). Chip *Tắt · Theo player của xe ·
  * <app đã cài>* (YouTube / YT Music lấy từ bảng DỮ LIỆU [VoiceAppTargets], nhãn = nhãn app thật, không dịch) + ô
  * *"Phát gì"* (từ khoá hoặc link YouTube; trống = tiếp tục phiên của app) + một câu nói thật về giới hạn.
  */
@@ -194,7 +195,11 @@ private fun statusRows(list: LinearLayout, context: Context, rows: SettingsRows)
     // nói ra, để dòng kết quả bên dưới không bị đọc nhầm là của lần này.
     when (TripStart.now(context)) {
         TripGate.Now.SHOWN -> Unit
-        TripGate.Now.RUNNING -> list.addView(rows.note(context.getString(R.string.kachi_trip_now_running)))
+        // A2 (4): đang chờ gì thì nói ra (*"đang chạy — chờ YouTube ở ô 1…"*) — cờ RAM chỉ để hiển thị (`TripStart.progress`).
+        TripGate.Now.RUNNING -> list.addView(rows.note(
+            TripStart.progress()?.let { context.getString(R.string.kachi_trip_now_waiting, tripWaitText(context, it)) }
+                ?: context.getString(R.string.kachi_trip_now_running),
+        ))
         TripGate.Now.NOT_RUN -> list.addView(rows.note(context.getString(
             if (ShellReadiness.isUp()) R.string.kachi_trip_now_wait_home else R.string.kachi_trip_now_wait_channel,
         )))

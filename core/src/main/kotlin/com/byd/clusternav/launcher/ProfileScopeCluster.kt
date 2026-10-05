@@ -121,8 +121,13 @@ object ProfileScopeCluster {
         put(CastEnableDeferral.PENDING_KEY, "dấu 'máy chưa khớp hồ sơ' — theo hồ sơ thì đổi hồ sơ lại đẻ ra bản chờ giả")
         put(CastEnableDeferral.COMMIT_MARK_KEY, "FIX286 — mốc bền lượt chốt bản chờ lúc khởi động của CHÍNH máy này (chẩn đoán)")
         put(MIGRATED_KEY, "dấu chạy-một-lần phải rộng hơn thứ nó bảo vệ (cùng lẽ migrated_nav_schedule_v1)")
-        put("vm_float_whitelist_applied", "đã ghi VietMap vào byd_float_app_list — trạng thái đã áp vào HỆ THỐNG")
+        put("vm_float_whitelist_applied", "cờ một-lần đời cũ (byd_float_app_list + appop VietMap) — 2.89 B2 không còn đọc/ghi; còn trên máy, không chép")
         put("profileOverride", "hồ sơ ĐỜI XE (kích cụm, tên service, chuỗi lệnh) — sự thật phần cứng, đã có parse chặt riêng")
+        put(
+            com.byd.clusternav.modules.clustercast.simplified.ThemeLedger.KEY,
+            "CLUSTER-THEME-SAFE B1a — sổ 'lần ép theme cụm gần nhất': trạng thái của CỤM chiếc xe này, không phải sở thích người lái",
+        )
+        put("car_type_dadb", "CLUSTER-THEME-SAFE B1a — mã persist.sys.car.type dò qua dadb: sự thật phần cứng của xe")
         put("camera_rotation", "khoá đời 2.67, chỉ đọc một lần để di trú sang camera_rot_*")
         listOf("badge_corner", "badge_dx", "badge_dy", "bubble_auto")
             .forEach { put(it, "đời cũ — chỉ đọc một lần để di trú, hoặc là mã chết") }
@@ -151,6 +156,8 @@ object ProfileScopeCluster {
         listOf("autostart_package", "autostart_left_package", "autostart_right_package")
             .forEach { put(it, PrefType.STRING) }
         put("split_ratio_left_pct", PrefType.INT)
+        // B1b · CLUSTER-RECT-OPTION — `SharedPrefsSimpleCastPrefs.castStyle/setCastStyle` (`putString`, tên `CastStyle`).
+        put("cast_style", PrefType.STRING)
         // clusternav_prefs — PrefsAutomation / PrefsCameraDewarp.
         listOf("camera_signal_enabled", "camera_on_cluster").forEach { put(it, PrefType.BOOLEAN) }
         listOf("camera_pos_left", "camera_pos_right", "camera_shape").forEach { put(it, PrefType.STRING) }

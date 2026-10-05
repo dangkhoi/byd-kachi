@@ -266,6 +266,33 @@ object CastStackParser {
             .filter { it.displayId == displayId && !it.isStandard }
             .mapTo(HashSet()) { it.taskId }
 
+    /**
+     * B1b — khung THẬT của task [pkg] trên [displayId], đọc từ `bounds=[l,t][r,b]` của DÒNG TASK (không phải dòng stack) —
+     * cách đọc lại sau `am task resize` ở cụm Chữ nhật. Định dạng [ĐO dump xe] `carlog-kachi-20260914-2044/10-am-stack-list.txt`
+     * (`taskId=10: vn.vietmap.live/… bounds=[0,0][1920,1080] … visible=false`) và [ĐO máy ảo 14/09] task freeform sau resize in
+     * đúng từng px (`waze-into-slot-research-2026-09-14.md` §3: `taskId=795 … bounds=[100,200][900,800]`). Khớp gói CHÍNH XÁC
+     * (không tiền tố); bỏ task trong stack `pinned`. `null` = không thấy task trên display đó, hoặc dòng task không có bounds.
+     */
+    fun taskBoundsOn(amOutput: String, pkg: String, displayId: Int): CastBounds? {
+        var currentDisplayId = -1
+        var pinned = false
+        for (line in amOutput.lines()) {
+            val sm = STACK_HEADER.find(line)
+            if (sm != null) { currentDisplayId = sm.groupValues[1].toIntOrNull() ?: -1; pinned = false; continue }
+            if (line.contains("mWindowingMode=pinned")) { pinned = true; continue }
+            if (currentDisplayId != displayId || pinned) continue
+            val tm = TASK_LINE.find(line) ?: continue
+            if (tm.groupValues[2].substringBefore("/") != pkg) continue
+            val b = TASK_BOUNDS.find(line) ?: return null
+            val (l, t, r, bt) = (1..4).map { b.groupValues[it].toInt() }
+            return CastBounds(l, t, r, bt)
+        }
+        return null
+    }
+
+    /** `bounds=[l,t][r,b]` trên dòng task (sau `taskId=N: comp`). */
+    private val TASK_BOUNDS = Regex("""taskId=\d+:\s*\S+.*?bounds=\[(-?\d{1,5}),(-?\d{1,5})]\[(-?\d{1,5}),(-?\d{1,5})]""")
+
     private val STACK_HEADER = Regex("""Stack id=\d+.*displayId=(\d+)""")
     /** Như [STACK_HEADER] nhưng CAPTURE cả stack id (group 1) lẫn display id (group 2). */
     private val STACK_HEADER_WITH_ID = Regex("""Stack id=(\d+).*displayId=(\d+)""")

@@ -45,14 +45,26 @@ internal object StackReads {
         maxReads: Int,
         stepMs: Long,
         done: (List<StackEntry>) -> Boolean,
+    ): Settled = settle(sh, sleep, LongArray(maxOf(0, maxReads - 1)) { stepMs }, done)
+
+    /**
+     * Cùng vòng đọc lại, nhịp nghỉ theo LỊCH [steps] (A3 · SLOT-CLOSE-SETTLE 2.89 — [SlotCloseSettle]): đọc 1 lần, rồi trước
+     * lần đọc thứ `k + 2` nghỉ `steps[k]` ⇒ tối đa `1 + steps.size` lần đọc. Bản nhịp đều ở trên là ca đặc biệt (giữ byte
+     * mọi chỗ gọi cũ — `FloatingOrphanSweepTest` khoá chuỗi lệnh + giấc ngủ). Luật đọc hỏng / bị ngắt y như trên.
+     */
+    fun settle(
+        sh: (String) -> String,
+        sleep: (Long) -> Unit,
+        steps: LongArray,
+        done: (List<StackEntry>) -> Boolean,
     ): Settled {
         var last = read(sh)
         var reads = 1
         while (true) {
             val e = last.entries ?: return Settled(last, reads)
-            if (reads >= maxReads || done(e)) return Settled(last, reads)
+            if (reads > steps.size || done(e)) return Settled(last, reads)
             try {
-                sleep(stepMs)
+                sleep(steps[reads - 1])
             } catch (ie: InterruptedException) {
                 Thread.currentThread().interrupt()
                 return Settled(last, reads)

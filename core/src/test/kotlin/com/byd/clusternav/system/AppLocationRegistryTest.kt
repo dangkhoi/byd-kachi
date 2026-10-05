@@ -13,7 +13,11 @@ import org.junit.jupiter.api.Test
 class AppLocationRegistryTest {
 
     private val main = DisplayOwnershipRegistry.MAIN_DISPLAY // 0
-    private val cast = DisplayOwnershipRegistry.CAST_DISPLAY // 1
+    /** Id cụm giả lập — B4: id cụm là sự thật dò được, không hằng (2 = cụm thật trên xe 15/09). */
+    private val cast = 2
+
+    /** Registry với [cast] là display cụm (đúng cách `WindowCommandDispatcher` nối: id dò live). */
+    private fun castAware() = AppLocationRegistry { it == cast }
 
     @Test
     fun `place then locationOf returns the placed location`() {
@@ -72,7 +76,7 @@ class AppLocationRegistryTest {
 
     @Test
     fun `isCastable is true in a slot or unknown, false once on the cast display`() {
-        val r = AppLocationRegistry()
+        val r = castAware()
         assertTrue(r.isCastable("com.unknown"), "app chưa đặt vẫn có thể cast")
         r.place("com.foo", main, slot = 0)
         assertTrue(r.isCastable("com.foo"), "app trong ô launcher là castable")
@@ -82,10 +86,36 @@ class AppLocationRegistryTest {
 
     @Test
     fun `a custom cast display id is honored by isCastable`() {
-        val r = AppLocationRegistry(castDisplayId = 5)
+        val r = AppLocationRegistry { it == 5 }
         r.place("com.foo", 5, null)
         assertFalse(r.isCastable("com.foo"))
         r.place("com.foo", 0, slot = 0)
         assertTrue(r.isCastable("com.foo"))
+    }
+
+    /**
+     * B4 · DISPLAY-OWNER-DYNAMIC — nguồn "cụm" đọc từ [DisplayOwnershipRegistry] (cách `WindowCommandDispatcher` nối): app ở
+     * VD launcher id 1 (ô sau khởi động nguội, [ĐO xe 15/09]) VẪN castable; app trên id cụm dò được thì không; id cụm bị xoá
+     * (đóng chiếu) ⇒ không còn coi là "đã trên cụm".
+     */
+    @Test
+    fun `isCastable follows the ownership registry - slot VD 1 stays castable, detected cast id does not`() {
+        val own = DisplayOwnershipRegistry()
+        val r = AppLocationRegistry(own::isCastDisplay)
+        own.registerVirtualDisplay(1)
+        own.setCastDisplay(2)
+        r.place("com.inslot", 1, null)
+        r.place("com.oncast", 2, null)
+        assertTrue(r.isCastable("com.inslot"), "display 1 là ô của launcher, không phải cụm")
+        assertFalse(r.isCastable("com.oncast"))
+        own.setCastDisplay(null)
+        assertTrue(r.isCastable("com.oncast"), "chiếu đã đóng ⇒ không còn display cụm nào")
+    }
+
+    @Test
+    fun `default registry knows no cast display - nothing is treated as already cast`() {
+        val r = AppLocationRegistry()
+        r.place("com.foo", 1, null)
+        assertTrue(r.isCastable("com.foo"), "chưa biết cụm ⇒ không được đoán display 1 là cụm")
     }
 }

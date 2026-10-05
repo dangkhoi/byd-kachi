@@ -59,10 +59,11 @@ object CastGeometryGuard {
     /**
      * Khoá hợp lệ của họ, neo hai đầu: `config_<trường>_<gói>` (FULL) hoặc `…__L<pct>`/`…__R<pct>` (một nửa).
      * Dải tỉ lệ **sinh từ** [CastProfile.SPLIT_PERCENTS] — nới dải ở đó là regex tự theo.
+     * B1b: thêm hậu tố tuỳ chọn [CastProfile.RECT_SUFFIX] ở CUỐI (khung của cụm Chữ nhật — `CastProfile.recordKey`).
      */
     val FAMILY_KEY: Regex = Regex(
         "^config_(size|overscan|density|bounds)_" + PACKAGE.pattern +
-            "(__[LR](" + CastProfile.SPLIT_PERCENTS.joinToString("|") + "))?$",
+            "(__[LR](" + CastProfile.SPLIT_PERCENTS.joinToString("|") + "))?(" + CastProfile.RECT_SUFFIX + ")?$",
     )
 
     private val SIZE_RE = Regex("^[0-9]{1,4}x[0-9]{1,4}$")
@@ -82,8 +83,9 @@ object CastGeometryGuard {
     /**
      * FIX286 · PI3 — tên GÓI của một bản ghi (khoá họ đã bỏ tiền tố trường): `vn.vietmap.live__L30` → `vn.vietmap.live`.
      * Hộp thoại nhập đếm theo APP (người lái nghĩ "khung của VietMap"), không theo bản ghi toàn cụm/nửa trái/nửa phải.
+     * B1b: bỏ cả hậu tố khung Chữ nhật (`…__L30__RECT`, `…__RECT`) — vẫn là MỘT app.
      */
-    fun appOfRecord(record: String): String = record.replace(SPLIT_SUFFIX, "")
+    fun appOfRecord(record: String): String = record.removeSuffix(CastProfile.RECT_SUFFIX).replace(SPLIT_SUFFIX, "")
 
     /** `"reset"` hoặc số nguyên trong [DENSITY_RANGE], dạng chuẩn; mọi thứ khác ⇒ `null`. */
     fun density(raw: String?): String? {
@@ -206,15 +208,23 @@ object CastGeometryGuard {
      * ([CastProfile.SPLIT_PERCENTS]) trên cụm < 800 px, hoặc một `wmSize` lạ đưa chiều cao về 0. Dải hẹp thì ô nhỏ
      * đi, chứ màn không được chết.
      */
-    fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, frameHeight: Int): CastBounds {
+    fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, frameHeight: Int): CastBounds =
+        clampBounds(bounds, bandMin, bandMax, 0, frameHeight)
+
+    /**
+     * Review 2.89 Pass 3 · cluster-r2-1 — như trên nhưng dải Y là `[bandTop, bandBottom]` (cụm Chữ nhật: khung app nằm trong
+     * `ClusterRectLayout.FREE_AREA`, không phải `0..H`). `bandTop = 0` ⇒ đúng phép 4 tham số từng số (Bo tròn không đổi).
+     */
+    fun clampBounds(bounds: CastBounds, bandMin: Int, bandMax: Int, bandTop: Int, bandBottom: Int): CastBounds {
         val hi = bandMax.coerceAtLeast(bandMin)
-        val height = frameHeight.coerceAtLeast(0)
+        val lo = bandTop.coerceAtLeast(0)
+        val bottomMax = bandBottom.coerceAtLeast(lo)
         val spanX = MIN_SPAN.coerceAtMost(hi - bandMin)
-        val spanY = MIN_SPAN.coerceAtMost(height)
+        val spanY = MIN_SPAN.coerceAtMost(bottomMax - lo)
         val left = bounds.left.coerceIn(bandMin, hi - spanX)
         val right = bounds.right.coerceIn(left + spanX, hi)
-        val top = bounds.top.coerceIn(0, height - spanY)
-        val bottom = bounds.bottom.coerceIn(top + spanY, height)
+        val top = bounds.top.coerceIn(lo, bottomMax - spanY)
+        val bottom = bounds.bottom.coerceIn(top + spanY, bottomMax)
         return CastBounds(left, top, right, bottom)
     }
 

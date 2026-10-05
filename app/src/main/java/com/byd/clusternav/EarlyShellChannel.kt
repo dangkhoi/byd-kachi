@@ -169,6 +169,9 @@ internal object EarlyShellChannel {
         // FIX286 R-HUD: nguồn thông báo (nguồn duy nhất của HUD) đã GẮN thật chưa — hẹn sang luồng `kachi-nls-heal`, trả
         // ngay; công tắc Dẫn đường TẮT ⇒ lượt đó không đọc, không ghi gì (cổng `NlsHealPolicy.step`).
         NlsHeal.onReady(app)
+        // 2.89 · B2 VM-PREREQ-TRUTH: miễn pin/vẽ nổi của app Kachi tự mở ở nền, theo SỰ THẬT (không cờ một-lần) — luồng
+        // `kachi-app-prereqs`, trả ngay. Chạy TRƯỚC chuyến lên xe để app được mở sau đó đã đủ điều kiện.
+        AppPrereqs.onReady(app)
         TripStart.onReady(app)   // F2/F3 chuyến lên xe — đẩy sang luồng `kachi-trip`, trả ngay (spec shortcuts-autostart §4.5)
     }
 

@@ -22,6 +22,30 @@ class SimpleCastCoordinator(
     internal val selfPackage: String = "com.byd.clusternav",
     /** Ngủ giữa các lần dò VD cụm sau khi mở projection ([ClusterDisplayResolver.awaitAndPersist]) — test truyền `{}`. */
     private val detectSleepMs: (Long) -> Unit = { Thread.sleep(it) },
+    /** Review 2.89 Pass 1 · safety-5 — gỡ ClusterBlack TRONG tiến trình (`:app` cấp); JVM/test: luôn đường shell. */
+    ownPlaceholder: ClusterThemeGuard.OwnPlaceholder = ClusterThemeGuard.OwnPlaceholder.NONE,
+    /** B1a — sổ theme bền (`:app`: prefs `clustercast`, phạm vi XE); JVM/test: trong bộ nhớ. */
+    themeLedger: ThemeLedger.Store = ThemeLedger.InMemory(),
+    /** B1a — đồng hồ của sổ (`:app`: elapsedRealtime · BOOT_COUNT · mốc khởi động tiến trình). */
+    themeClock: ThemeLedger.Clock = ThemeLedger.JVM_CLOCK,
+    /** B1a — kiểu người lái chọn, đọc MỘT lần đầu mỗi lượt mở. Chưa có lựa chọn (B1b) ⇒ Bo tròn (D3 — đường đang chạy). */
+    internal val desiredStyle: () -> CastStyle = { CastStyle.CURVED },
+    /**
+     * B1a — dò lại công thức bằng shell ở lượt mở ĐẦU của tiến trình (`:app`: `car.type` qua dadb khi tiến trình không đọc
+     * được). `null` = không dò. Trả công thức mới hoặc `null` (không có gì mới). Không được ném.
+     */
+    internal val recipeProbe: ((SimpleCastShell) -> ProjectionRecipe?)? = null,
+    /**
+     * 2.89 · B2 VM-PREREQ-TRUTH — điều kiện nền (miễn pin …) của các app Kachi tự mở, chạy ở mỗi lượt mở chiếu qua CHÍNH
+     * shell của coordinator (`:app`: `AppPrereqs.ensureForCastOpen` — đọc → áp phần thiếu → đọc lại). Thay cờ một-lần
+     * `doze_whitelist_applied`. Mặc định: không làm gì (JVM/test).
+     */
+    internal val appPrereqs: (SimpleCastShell) -> Unit = {},
+    /**
+     * 2.89 · B4 DISPLAY-OWNER-DYNAMIC — nhận id màn ảo cụm vừa dò LIVE (`null` = hụt / đã đóng chiếu) cho cổng sở hữu display
+     * của launcher (`:app`: `WindowCommandDispatcher.setCastDisplay`). Gọi qua [publishCastDisplay]. Mặc định: không làm gì.
+     */
+    internal val onCastDisplay: (Int?) -> Unit = {},
 ) {
     // ── Cluster display id — id SỐNG, dò động (X2) ────────────────────────────
     // Seed = giá trị dựng (prefs.lastDisplayId ?: fallback), nhưng KHÔNG tin nó: openProjection() dò lại thật
@@ -53,6 +77,30 @@ class SimpleCastCoordinator(
         println("[SimpleCast] $msg")
     }
 
+    /**
+     * CLUSTER-THEME-SAFE (2.89, P0) — cổng của MỌI opcode đổi theme cụm ([ProjectionManager.open]/[ProjectionManager.close])
+     * + lượt gỡ `ClusterBlack` lúc tắt chiếu. Luật ở [ClusterThemePlan]; ngủ qua [detectSleepMs] (test truyền `{}`).
+     */
+    internal val themeGuard = ClusterThemeGuard(
+        shell, selfPackage, ownPlaceholder, sleepMs = detectSleepMs,
+        store = themeLedger, clock = themeClock, vacantVdAllowed = { projection.recipe.themeOnVacantVd },
+    ) { msg -> log(msg) }
+
+    /** B1a — [recipeProbe] chạy tối đa MỘT lần mỗi tiến trình (`probeRecipeOnce`, `SimpleCastCoordinatorOps.kt`). */
+    internal val recipeProbed = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Lượt quyết gần nhất của cổng theme + kế hoạch kiểu cụm (một dòng) — cho `ClusterDiag` (CLAUDE.md §11); `null` = chưa có
+     * lượt nào.
+     */
+    val themeVerdict: String?
+        get() {
+            val gate = themeGuard.lastVerdict
+            val plan = projection.lastPlan ?: return gate
+            return "${gate ?: "cổng không được hỏi"} · kế hoạch: ${plan.why} · kiểu tin=${plan.believed}"
+        }
+
+
     /** Owns freeform task resize + per-app profile persistence/restore (R4/R5/R6). Đọc displayId SỐNG qua provider. */
     internal val geometry = CastGeometryController(shell, prefs, { displayId }) { msg -> log(msg) }
 
@@ -77,10 +125,12 @@ class SimpleCastCoordinator(
         if (resolved >= 1) {
             if (resolved != displayId) log("cluster display: $displayId → $resolved (dò fission/xdja)")
             displayId = resolved
+            projection.bindSessionDisplay(resolved)   // Pass 2 · cluster-r1-4: id của PHIÊN cho lớp km/h (không cho lệnh đặt)
         } else {
             log("cluster display: KHÔNG dò thấy fission/xdja (hoặc id là VD của $selfPackage) — không đặt gì (R1/R2)")
         }
         liveDisplayId = resolved
+        publishCastDisplay(resolved)   // B4: cổng sở hữu display của launcher theo id dò được, không hằng 1
         return resolved
     }
 
@@ -209,7 +259,11 @@ class SimpleCastCoordinator(
             // live (R2): dọn theo seed có thể bê app trong Ô của launcher về display 0.
             undoTargetDisplay("closeProjection.clean")?.let { cleanDisplay(it) }
             setState(SimpleCastState.Closing)
-            val ok = projection.close(displayId)
+            val ok = projection.close(displayId, themeGuard)
+            // CLUSTER-THEME-SAFE bước 3 — đường MỚI xuống CUỐI (CLAUDE.md §6): 18 → 0 giữ nguyên, rồi gỡ ClusterBlack của
+            // Kachi khỏi màn ảo cụm [ĐO 05/10: nó nằm lại sau khi tắt chiếu] để lần mở sau thấy màn ảo trống.
+            if (ok) themeGuard.removePlaceholder("closeProjection")
+            if (ok) publishCastDisplay(-1)   // B4: chiếu đã đóng ⇒ không display nào còn thuộc CAST
             // ⚠ [SOÁT 1.69 · P2] Qua [setError], không `setState(Error(...))` trần: sau bản vá CAS ở trên, chỉ lỗi
             // nào TỰ hẹn giờ mới có đường nhả (trước đây nó **ăn ké** lượt hẹn của một `setError` khác tình cờ còn
             // treo — một đường phục hồi không xác định). Bất biến: KHÔNG Error nào kẹt vĩnh viễn.
@@ -249,7 +303,7 @@ class SimpleCastCoordinator(
 
     /** Clear stale frame from cluster display after stop. */
     internal fun refreshCluster() {
-        shell.execute("service call AutoContainer 2 i32 1000 i32 0 s16 \"\"")
+        shell.execute(projection.recipe.command(0))
     }
 
     private fun returnAllApps() {
@@ -264,7 +318,7 @@ class SimpleCastCoordinator(
     }
 
     /** Dọn task lạ khỏi VD cụm [vd] — caller PHẢI truyền id đã xác minh live (không bao giờ seed). */
-    internal fun cleanDisplay(vd: Int) = CastDisplayCleaner.cleanDisplay(shell, vd)
+    internal fun cleanDisplay(vd: Int) = CastDisplayCleaner.cleanDisplay(shell, vd, command = projection.recipe::command)
 
     /**
      * V-CLUSTER · VC-R7 — dọn projection MỒ CÔI của tiến trình trước, sau khi lượt dựng coordinator vừa chốt
@@ -280,7 +334,9 @@ class SimpleCastCoordinator(
         // Reset display to defaults before closing — undo all wm changes (chỉ trên id đã xác minh live, R2)
         undoTargetDisplay("close.reset")?.let { configurator.reset(it) }
         setState(SimpleCastState.Closing)
-        val ok = projection.close(displayId)
+        val ok = projection.close(displayId, themeGuard)
+        if (ok) themeGuard.removePlaceholder("close")        // CLUSTER-THEME-SAFE bước 3 (xem closeProjection)
+        if (ok) publishCastDisplay(-1)                       // B4 (xem closeProjection)
         if (ok) setState(SimpleCastState.Off) else setError("Close failed")
     }
 

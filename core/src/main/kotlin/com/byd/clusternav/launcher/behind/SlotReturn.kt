@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.behind
 
+import com.byd.clusternav.launcher.FreeformLaunch
 import com.byd.clusternav.launcher.camera.CameraGuard
 import com.byd.clusternav.modules.clustercast.StackEntry
 import com.byd.clusternav.modules.clustercast.StackParse
@@ -113,7 +114,8 @@ class SlotReturnSequence(
      * ([SlotReturn.Back.IN_SLOT] về ô · [SlotReturn.Back.GONE] app đã đóng · còn lại ⇒ bên gọi đi đường golden).
      */
     data class Detached(val taskId: Int?, val line: String, val back: SlotReturn.Back? = null)
-    data class Returned(val result: SlotReturn.Back, val taskId: Int?, val line: String)
+    /** [from] = display task NẰM trước K8 (A4: màn ảo ô 7 ⇒ bên gọi quên bản đỗ đã rỗng); `null` = không K8 / không biết. */
+    data class Returned(val result: SlotReturn.Back, val taskId: Int?, val line: String, val from: Int? = null)
 
     private fun read(): List<StackEntry> = StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault(""))
 
@@ -200,6 +202,44 @@ class SlotReturnSequence(
             return Returned(SlotReturn.Back.GOLDEN, t.taskId, "$tag → màn nhà không ở đỉnh (camera / app khác) ⇒ golden, 0 lệnh K8")
         }
         return k8(tag, vd, t)
+    }
+
+    /**
+     * A4 · SLOT-PLACE-KEEPS-MUSIC — mở app [pkg] vào ô [vd] mà KHÔNG `am force-stop` khi app đang sống ([SlotOpenPlan]): một
+     * bản đọc → đã ở ô ⇒ [SlotReturn.Back.IN_SLOT] 0 lệnh · task đưa được ⇒ K8 + đọc lại (cùng [k8] của R1.8) · không task mà
+     * tiến trình sống (`pidof`) ⇒ [startCmd] (ĐÚNG lệnh mở của đường golden) không force-stop + đọc lại · còn lại ⇒
+     * [SlotReturn.Back.GOLDEN] 0 lệnh (bên gọi đi đường force-stop + mở như hôm nay). [marks]/[homeComps]: [SlotOpenPlan.pick].
+     */
+    fun openLive(vd: Int, pkg: String, marks: Map<Int, String>, homeComps: Collection<String>, startCmd: String): Returned {
+        val tag = "a4 vd=$vd $pkg"
+        val p = SlotOpenPlan.pick(read(), vd, pkg, marks, homeComps) { FreeformLaunch.appRunning(pkg, sh) }
+        return when (p.way) {
+            SlotOpenPlan.Way.GOLDEN -> Returned(SlotReturn.Back.GOLDEN, p.task?.taskId, "$tag → golden (${p.why})")
+            SlotOpenPlan.Way.IN_SLOT -> Returned(SlotReturn.Back.IN_SLOT, p.task?.taskId, "$tag → ${p.why}, 0 lệnh")
+            SlotOpenPlan.Way.START -> start(tag, vd, pkg, startCmd)
+            SlotOpenPlan.Way.BRING -> {
+                val t = p.task ?: return Returned(SlotReturn.Back.GOLDEN, null, "$tag → golden (no task)")
+                k8(tag, vd, t).copy(from = t.displayId)
+            }
+        }
+    }
+
+    /**
+     * A4 [SlotOpenPlan.Way.START] — tiến trình sống, không task: gửi [cmd] một lần (KHÔNG force-stop) rồi đọc lại tới khi task của
+     * [pkg] hiện: trên màn ảo [vd] ⇒ IN_SLOT; ở display khác (app tự nhảy ra) / không thấy sau [RETURN_READS] ⇒ GOLDEN (bên gọi
+     * force-stop + mở lại như hôm nay — đúng việc force-stop sinh ra để chữa). Không K12: task mới chưa từng ẩn sau màn nhà.
+     */
+    private fun start(tag: String, vd: Int, pkg: String, cmd: String): Returned {
+        sh(cmd)
+        for (i in 0 until RETURN_READS) {
+            sleep(STEP_MS)
+            val mine = read().filter { it.pkg == pkg }
+            mine.firstOrNull { it.displayId == vd }?.let {
+                return Returned(SlotReturn.Back.IN_SLOT, it.taskId, "$tag → START (no task, alive) → in slot task=${it.taskId} đọc=${i + 1}")
+            }
+            if (mine.isNotEmpty()) return Returned(SlotReturn.Back.GOLDEN, mine.first().taskId, "$tag → START lên display ${mine.first().displayId} ⇒ golden")
+        }
+        return Returned(SlotReturn.Back.GOLDEN, null, "$tag → START không thấy task ⇒ golden")
     }
 
     private fun k8(tag: String, vd: Int, t: StackEntry): Returned {

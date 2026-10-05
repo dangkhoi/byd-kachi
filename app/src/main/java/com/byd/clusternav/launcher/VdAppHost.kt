@@ -70,6 +70,8 @@ class VdAppHost(
     private var pkg: String? = null
     private var shell: ((String) -> String)? = null
     private var launched = false
+    // Ô 7 (2.89-thử1, spec 287 §4.6d): tên màn ảo (khoá [SlotVdOwner] khi đỗ) · cỡ màn ảo bị GHIM (nhận lại từ ô 7 khác cỡ ô).
+    private var vdName: String? = null; private var pinned = false
 
     /**
      * Đã nhả màn ảo chưa ⇒ mọi lời gọi [release] sau là no-op (một ô bị thay có thể gọi [release] rồi mới tháo
@@ -96,9 +98,7 @@ class VdAppHost(
         longPressTimeoutMs = ViewConfiguration.getLongPressTimeout().toLong(),
     )
 
-    private companion object {
-        const val TAG = "VdAppHost"
-    }
+    private companion object { const val TAG = "VdAppHost" }
 
     /** H2·2 · L6: nhịp đo đã báo app rời màn ảo ([onAppClosed]) — chỉ để KHÔNG báo hai lần / rào lượt mở dở. */
     private var dead = false
@@ -115,6 +115,9 @@ class VdAppHost(
                     // Đã nhả ⇒ host này là rác đang chờ tháo: KHÔNG được tạo màn ảo mới (đó đúng là cách một ô
                     // "đã đóng" lại mọc thêm một `kachi-slot-*` không ai cầm).
                     if (released) return
+                    // ô 7 · C · PARK-1: app ĐỖ ⇒ mặt vẽ về cỡ màn ảo đỗ TRƯỚC (chờ lượt sau), đúng cỡ mới lấy ra + gắn, không tạo mới
+                    val c = ParkedApps.claim(this@VdAppHost, surface, pkg, owner, slot, w, ht, pinned); pinned = c.pinned
+                    if (c.parked != null) unpark(c.parked); if (c.wait || c.parked != null) return
                     val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                     // 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 → hết "gương đệ quy")
                     // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được.
@@ -130,7 +133,7 @@ class VdAppHost(
                     @SuppressLint("WrongConstant")
                     val created = dm.createVirtualDisplay(name, w, ht, slotDensity(w, ht), h.surface, 8 or 256)
                     vd = created
-                    dispW = w; dispH = ht          // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
+                    dispW = w; dispH = ht; vdName = name   // B4: VD cỡ = surface cỡ → map toạ độ chạm đồng nhất
                     // B2b: đăng ký display của VD (thuộc LAUNCHER) TRƯỚC maybeLaunch — nếu không, cổng ownership
                     // của launcherSeam sẽ REJECT lệnh `am start --display <vdId>` (fail-safe deny display không chủ).
                     created?.display?.displayId?.let { id ->
@@ -170,7 +173,7 @@ class VdAppHost(
      * đổi cấu hình vào app đang chạy trong ô).
      */
     fun resize(w: Int, h: Int) {
-        if (w <= 0 || h <= 0) return
+        if (w <= 0 || h <= 0 || pinned) return   // ô 7: màn ảo nhận lại khác cỡ ô GIỮ cỡ (đổi cỡ = relaunch, §4.6d)
         if (w == dispW && h == dispH) return
         val v = vd ?: return
         Log.i(TAG, "[slot-resize] ô $slot ${dispW}x$dispH → ${w}x$h")
@@ -222,7 +225,7 @@ class VdAppHost(
      */
     private fun launchInto(displayId: Int, p: String, sh: (String) -> String) {
         // TẤT CẢ lệnh dadb (blocking) chạy TRONG thread nền — KHÔNG gọi trên UI thread (chặn dựng SurfaceView → ô đen).
-        val comp = resolveComponent(p, sh) ?: "$p/.MainActivity"
+        val comp = FreeformLaunch.resolveComponent(p, sh) ?: "$p/.MainActivity"
         // B1: built by the pure FreeformLaunch builder (byte-locked by LauncherCommandGoldenTest) instead of
         // an inline string. displayId = this host's OWN VirtualDisplay (a private secondary display for the
         // slot), NOT the cluster. Touch/force-stop lifecycle stays inline (moves to the input daemon in B4).
@@ -242,13 +245,14 @@ class VdAppHost(
         // TẠI — tức giết app của người dùng rồi mở lại nó ở một nơi không ai nhìn thấy. Kiểm ở ĐÚNG hai mốc:
         // trước khi giết app, và sau giấc ngủ 1 giây (cửa sổ rộng nhất).
         if (released) return
-        // R1.8 (spec shortcuts-autostart §4.2.6, T-M6 [ĐO máy ảo 02/10]): app do CHÍNH Kachi đẩy ra sau màn nhà (dấu bền)
-        // ⇒ K8 đưa đúng task đó về ô, KHÔNG giết. Không dấu ⇒ 0 lệnh, đường golden bên dưới giữ nguyên byte.
-        if (SlotReturnRun.bringBackMarked(context, displayId, p, sh)) {
+        // R1.8 (spec shortcuts-autostart §4.2.6, T-M6 [ĐO máy ảo 02/10]): app do CHÍNH Kachi đẩy ra sau màn nhà (dấu bền) ⇒ K8.
+        // A4 (spec 289 §A4): app ĐANG sống (task ở chỗ khác ⇒ K8 · chỉ tiến trình ⇒ [cmd] không giết) ⇒ nhạc sống. Nguội ⇒ golden y byte.
+        if (SlotReturnRun.bringBackMarked(context, displayId, p, sh) || SlotReturnRun.openLive(context, displayId, p, cmd, sh)) {
             runCatching { inputClient?.ensureStarted() }   // như đường golden: hâm nóng daemon bơm chạm (B4)
             post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
             return
         }
+        if (released) return   // A4: lượt đọc / K8 vừa rồi tốn thời gian — ô có thể đã bị tháo, KHÔNG giết app cho màn ảo đã nhả
         sh("am force-stop $p")
         Thread.sleep(1000)     // đợi force-stop XONG hẳn → am start mở task MỚI trên VD, không tái dùng task fullscreen ở display 0 (bug gmail nhảy fullscreen)
         if (released) return
@@ -264,7 +268,7 @@ class VdAppHost(
         // một cái giá trả cho mọi người để chữa một ca chỉ xảy ra lúc nổ máy. Lượt ĐO ô sống (`SlotLiveProbe`)
         // thì cố ý vẫn nằm sau: nó chỉ được bắt đầu đếm khi lượt thử-mở-lại đã xong.
         Thread.sleep(2000)
-        if (!released && !appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
+        if (!released && !FreeformLaunch.appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
         // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
         // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm.
         post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
@@ -344,15 +348,24 @@ class VdAppHost(
         return BehindHomePlan.Stage(slot, id, p, width.toLong() * height, SlotLiveProbe.seenAlive(probeKey))
     }
 
-    /** App đang có tiến trình chưa — `pidof` rỗng ⇒ chưa lên (dùng cho retry mở-lại trên cold boot, #12). */
-    private fun appRunning(pkg: String, sh: (String) -> String): Boolean =
-        runCatching { sh("pidof $pkg").trim().isNotEmpty() }.getOrDefault(false)
+    /** Ô 7 · A/B (2.89-thử1, §4.6d) — ĐỖ: màn ảo NGUYÊN, mặt vẽ → bề mặt ẩn ([ParkedApps.park]); host thôi giữ như đã nhả mà
+     *  KHÔNG `force-stop`, KHÔNG nhả màn ảo, 0 lệnh. `false` = không đỗ được ([SlotParkPlan.parkable]) ⇒ host giữ nguyên. */
+    fun park(protect: Set<String> = emptySet()): Boolean {
+        val v = vd; val id = vdDisplayId; val name = vdName; val p = pkg
+        if (v == null || id == null || name == null || p == null) return false
+        if (!SlotParkPlan.parkable(released, launched, true, p, dead, full.isDetached, SlotLiveProbe.watching(probeKey))) return false
+        if (!ParkedApps.park(p, name, VdLease(v, id, unregisterVd), dispW, dispH, protect)) return false
+        SlotLiveProbe.unwatch(probeKey); gesture.reset(); full.reset()
+        released = true; vd = null; vdDisplayId = null; pkg = null; launched = false
+        surface.visibility = INVISIBLE   // khung cuối không đứng lại trên ô trong lúc chờ lượt render dựng lại ô
+        return true
+    }
 
-    private fun resolveComponent(pkg: String, sh: (String) -> String): String? {
-        val out = runCatching {
-            sh("cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $pkg")
-        }.getOrDefault("")
-        return out.trim().lines().lastOrNull { it.contains("/") && it.contains(pkg) }
+    /** Ô 7 · C — màn ảo đỗ [p] ĐÃ gắn ([ParkedApps.claim]): KHÔNG `force-stop`/`am start`/đổi cỡ; app đã rời nó ⇒ mở như thường. */
+    private fun unpark(p: ParkedApps.Parked) {
+        vd = p.lease.vd; vdDisplayId = p.lease.displayId; vdName = p.name; dispW = p.width; dispH = p.height; launched = true
+        shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() } }
+        inputClient?.let { c -> Thread { runCatching { c.ensureStarted() } }.start() }   // như đường golden (B4)
     }
 
     // ── H2·2 · KÊNH IM LẶNG PHẢI NÓI ────────────────────────────────────────────────────────────────────────
@@ -401,6 +414,9 @@ class VdAppHost(
     /** L6 — host chưa nhả và đang giữ [p] (kể cả khi chưa mở xong vào màn ảo — [stage] khi đó còn `null`). Luồng chính. */
     fun holds(p: String): Boolean = !released && pkg == p
 
+    /** A3 · SLOT-CLOSE-SETTLE — lệnh *tắt* [expect] đã gửi ⇒ giấu mặt vẽ NGAY (không khung đứng); gỡ không xong ⇒ hiện lại. Luồng chính. */
+    fun closing(expect: String, on: Boolean) { if (!released && !dead && pkg == expect) surface.visibility = if (on) INVISIBLE else VISIBLE }
+
     /**
      * ═══ ĐƯA CHẠM VÀO MÀN ẢO CỦA Ô — hai đường, và đường lùi nay hiểu CỬ CHỈ (1.69) ══════════════════════════
      *
@@ -426,7 +442,7 @@ class VdAppHost(
         // View→display map. The VD is created at the surface size, so this is the identity today; it only scales
         // if the display size ever diverges from the view size. ⚠ CẢ HAI đường dùng chung toạ độ đã map — đường
         // lùi cũ dùng `e.x/e.y` thô, và đó là nửa thứ hai của triệu chứng "tap lệch".
-        val m = SlotTouchMapper.toDisplay(e.x.toInt(), e.y.toInt(), width, height, dispW, dispH)
+        val m = SlotTouchMapper.toDisplay((e.x - surface.left).toInt(), (e.y - surface.top).toInt(), surface.width, surface.height, dispW, dispH)
         val dx = m[0]; val dy = m[1]
         val action = e.actionMasked
         val routed = when (action) {

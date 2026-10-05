@@ -62,16 +62,6 @@ class DisplayConfigurator(
         return r1.success && r2.success && r3.success
     }
 
-    /**
-     * Resolves the effective DisplayConfig for a package:
-     * - CP/AA → fixed config from constants
-     * - Normal → user-saved config or default
-     */
-    fun resolveConfig(pkg: String, appType: AppType, prefs: SimpleCastPrefs): DisplayConfig {
-        return when (appType) {
-            AppType.CARPLAY -> DisplayConfig.CARPLAY
-            AppType.ANDROID_AUTO -> DisplayConfig.ANDROID_AUTO
-            AppType.NORMAL -> prefs.displayConfigFor(pkg) ?: DisplayConfig.NORMAL_DEFAULT
-        }
-    }
+    // Review 2.89 Pass 2 · cluster-r1-2: `resolveConfig` (đọc thẳng khoá Bo tròn, không biết kiểu khung của phiên) đã gỡ — lượt chia
+    // đôi đọc qua `slotDisplayConfig` (`CastSessionPin.kt`), lượt FULL qua `pinFull`. Không để hai đường đọc song song.
 }

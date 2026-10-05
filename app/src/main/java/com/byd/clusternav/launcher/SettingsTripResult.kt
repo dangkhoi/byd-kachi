@@ -4,9 +4,11 @@ import android.content.Context
 import android.widget.LinearLayout
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.trip.TripGate
+import com.byd.clusternav.launcher.trip.TripPlan
 import com.byd.clusternav.launcher.trip.TripStep
 import com.byd.clusternav.launcher.trip.TripStepCode
 import com.byd.clusternav.launcher.trip.TripStepKind
+import com.byd.clusternav.launcher.trip.TripWaitMark
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -29,7 +31,9 @@ internal fun tripResultRows(list: LinearLayout, context: Context, rows: Settings
     val text = when (r.code) {
         TripGate.Code.RAN -> context.getString(R.string.kachi_trip_res_ran, at)
         TripGate.Code.NOTHING -> context.getString(R.string.kachi_trip_res_nothing, at)
-        TripGate.Code.EXPIRED -> context.getString(R.string.kachi_trip_expired)
+        // A2 (4) · 2.89: sổ có mốc chờ (`w=`) ⇒ gọi tên thứ đã chờ; bản ghi cũ ⇒ câu chung như trước.
+        TripGate.Code.EXPIRED -> r.wait?.let { context.getString(R.string.kachi_trip_expired_wait, tripWaitText(context, it)) }
+            ?: context.getString(R.string.kachi_trip_expired)
         TripGate.Code.GAVE_UP -> context.getString(R.string.kachi_trip_res_gave_up, at)
         TripGate.Code.NOOP -> context.getString(R.string.kachi_trip_res_noop, at)
         TripGate.Code.PARTIAL -> context.getString(R.string.kachi_trip_res_partial, at)
@@ -38,10 +42,28 @@ internal fun tripResultRows(list: LinearLayout, context: Context, rows: Settings
     r.steps.forEach { s -> list.addView(rows.note(context.getString(R.string.kachi_trip_step, stepLabel(context, s), context.getString(reasonRes(s.code))))) }
 }
 
-/** Tên hiện cho một bước: tên app thật (đã gỡ ⇒ tên gói); bước nhạc ⇒ *"Nhạc (YouTube)"*. */
+/** Tên hiện cho một bước: tên app thật (đã gỡ ⇒ tên gói); bước nhạc ⇒ *"Nhạc (YouTube)"*, app ở ô ⇒ *"Nhạc (YouTube ở ô 1)"* (A2). */
 private fun stepLabel(context: Context, s: TripStep): String {
     val app = InstalledApps.labelOf(context, s.pkg) ?: s.pkg
-    return if (s.kind == TripStepKind.MUSIC) context.getString(R.string.kachi_trip_step_music, app) else app
+    val slot = s.slot
+    return when {
+        s.kind != TripStepKind.MUSIC -> app
+        slot != null -> context.getString(R.string.kachi_trip_step_music_slot, app, slot + 1)
+        else -> context.getString(R.string.kachi_trip_step_music, app)
+    }
+}
+
+/**
+ * A2 (4) · 2.89 — tên thứ chuyến chờ (dùng cho *"Hết hạn chờ …"* và *"đang chạy — chờ …"*). Một mã một câu (`when` đủ nhánh:
+ * thêm cổng chờ mới mà quên câu là KHÔNG biên dịch được); ô hiện 1-based như nút đầu ô (*"Đổi ứng dụng ô 1"*).
+ */
+internal fun tripWaitText(context: Context, m: TripWaitMark): String = when (m.wait) {
+    TripPlan.Wait.BOOT -> context.getString(R.string.kachi_trip_wait_boot)
+    TripPlan.Wait.HOME_SCREEN -> context.getString(R.string.kachi_trip_wait_home_screen)
+    TripPlan.Wait.SLOTS -> context.getString(R.string.kachi_trip_wait_slots)
+    TripPlan.Wait.HOME_STEADY -> context.getString(R.string.kachi_trip_wait_home_steady)
+    TripPlan.Wait.SLOT_APP ->
+        context.getString(R.string.kachi_trip_wait_slot_app, InstalledApps.labelOf(context, m.pkg) ?: m.pkg, m.slot + 1)
 }
 
 internal fun reasonRes(code: TripStepCode): Int = when (code) {
@@ -71,4 +93,6 @@ internal fun reasonRes(code: TripStepCode): Int = when (code) {
     TripStepCode.ANCHOR_IN_FRONT -> R.string.kachi_trip_why_anchor_in_front
     TripStepCode.UNREAD -> R.string.kachi_trip_why_unread
     TripStepCode.SLOT_NOT_READY -> R.string.kachi_trip_why_slot_not_ready
+    TripStepCode.SLOT_WAIT -> R.string.kachi_trip_why_slot_wait
+    TripStepCode.PARKED -> R.string.kachi_trip_why_parked
 }

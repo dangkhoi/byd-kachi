@@ -22,7 +22,7 @@ import com.byd.clusternav.launcher.behind.BehindReason
  * |---|---|---|
  * | nhịp đo thấy app rời màn ảo ([onAppGone]) | host thôi giữ app (không `force-stop`) | `APP_DIED` |
  * | *tắt* ô app | `am stack remove` ĐÚNG stack của app trên màn ảo ô ([SlotCloseRun], luồng nền) → đọc lại → host thôi giữ | `APP_CLOSED` |
- * | *chạy nền* ô app | lớp che của Kachi trên màn ảo ô → move-task ra sau màn nhà ([toBack] = `KachiHomeSlots.toBack`, luồng `kachi-behind`) → bản đọc cuối thấy app đã rời ô → host thôi giữ | `APP_BACKGROUND` |
+ * | *chạy nền* ô app | 2.89-thử1 (ô 7, spec 287 §4.6d): host ĐỖ app trong chính màn ảo của nó ([VdAppHost.park], 0 lệnh shell) — đường lớp che + BEHIND-HOME ([toBack]) giữ biên dịch, không gọi | `APP_BACKGROUND` |
  * | *tắt* ô widget | — (chỉ lớp tạm; id widget bên thứ ba ở lớp LƯU nên không bị thu hồi) | `WIDGET_CLOSED` |
  *
  * Vì sao "host thôi giữ app" phải đi TRƯỚC `applySlotRevert`: lượt render nhả host của ô, mà `VdAppHost.release` còn giữ
@@ -58,12 +58,13 @@ internal class KachiHomeSlotActions(
     override fun buttons(index: Int, kind: SlotHeadRest.Kind, projector: SlotHeadRest.Projector, hostLive: Boolean): List<Button> =
         // Kênh dùng được NGAY + khung có bộ chiếu màn ảo chưa nhả. Lượt mở app chưa bắt đầu ⇒ *tắt* vẫn làm được (thả host, 0
         // lệnh); *chạy nền* lúc app chưa mở xong ⇒ 0 lệnh + log (hiếm) — thà vậy còn hơn nút kẹt ẩn ở chế độ "luôn hiện".
-        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, behindUsable())
+        // 2.89-thử1 (ô 7): *chạy nền* = ĐỖ trong màn ảo của ô — không đi qua BEHIND-HOME ⇒ không phụ thuộc [behindUsable].
+        SlotHeadActions.of(kind, projector, ShellAccessUi.usableNow() && hostLive, behind = true)
 
     override fun onAction(index: Int, button: Button) {
         when (button) {
             Button.CLOSE -> close(index)
-            Button.BACKGROUND -> background(index)
+            Button.BACKGROUND -> park(index)
             Button.SWAP -> Unit   // ⇄ có đường riêng (`WorkspaceView.slotHead` → ngăn kéo)
         }
     }
@@ -89,6 +90,11 @@ internal class KachiHomeSlotActions(
      * quét) · app = đúng gói ô đang giữ · stack `standard` bằng chữ, không ghim · không hoàn tác được (≈ vuốt khỏi Gần đây;
      * mở lại bằng ⇄ / lối tắt / khởi động lại). Gỡ xong (hoặc app đã không còn ở màn ảo) ⇒ luật hoàn ô; chưa gỡ được ⇒ ô
      * giữ nguyên + một câu báo. Không `am force-stop`.
+     *
+     * A3 · SLOT-CLOSE-SETTLE (2.89, [ĐO xe 05/10]: lệnh gỡ trên xe chậm hơn cửa sổ đọc lại 5 × 250 ms ⇒ báo nhầm *"chưa tắt
+     * được"*, ô chỉ trống ~27 s sau ở nhịp đo ô): lệnh đã GỬI = ĐANG TẮT ⇒ giấu mặt vẽ ngay ([VdAppHost.closing], không khung
+     * đứng); bản đọc xác nhận rời ô (lịch ~4 s, `SlotCloseSettle`) ⇒ luật hoàn ô; hết lịch mà app còn ⇒ hiện lại
+     * mặt vẽ + câu báo (chỉ khi ô vẫn hiện app).
      */
     private fun closeApp(index: Int, pkg: String) {
         if (!ShellAccessUi.allowOrPrompt(activity)) return
@@ -101,20 +107,43 @@ internal class KachiHomeSlotActions(
             return revert(index, Event.APP_CLOSED, pkg)
         }
         val sh = shell()
-        if (stage == null || stage.pkg != pkg || sh == null) { Log.i(TAG, "ô $index: tắt $pkg — ô chưa sẵn, 0 lệnh"); return }
+        if (host == null || stage == null || stage.pkg != pkg || sh == null) { Log.i(TAG, "ô $index: tắt $pkg — ô chưa sẵn, 0 lệnh"); return }
         busy += index
         val accepted = submitBg {
-            val r = closer.run(sh, stage.vd, pkg)
+            val r = closer.run(sh, stage.vd, pkg) { main.post { host.closing(pkg, on = true) } }
             Log.i(TAG, "ô $index: ${r.line()}")
             main.post {
                 busy -= index
-                if (r.slotFree) revert(index, Event.APP_CLOSED, pkg) else sayIfStill(index, R.string.kachi_slot_close_failed, pkg)
+                if (r.slotFree) revert(index, Event.APP_CLOSED, pkg)
+                else { host.closing(pkg, on = false); sayIfStill(index, R.string.kachi_slot_close_failed, pkg) }
             }
         }
         if (!accepted) { busy -= index; say(R.string.kachi_slot_close_failed, pkg) }
     }
 
     /**
+     * ═══ Ô 7 · A (2.89-thử1 · bản THỬ, spec 287 §4.6d) — *chạy nền* = ĐỖ ẨN ═══
+     *
+     * Owner 05/10 trên xe: *"sao ko giả lập 1 ô số 7 gì đó, để nhét các app chạy nền vào đó"*. [ĐO xe 05/10] chuỗi lớp che +
+     * BEHIND-HOME ([backgroundCovered]) hỏng ở bước giữ chỗ (NPE trong system_server), còn dời app sang display 0 thì app
+     * relaunch (nhạc dừng). Nay: host ĐỖ app trong CHÍNH màn ảo của ô ([VdAppHost.park] — 0 lệnh shell, không `force-stop`,
+     * không đổi cỡ, không dời task) rồi luật hoàn ô `APP_BACKGROUND` (khung trong suốt; ô LƯU widget ⇒ widget về). Mở lại app
+     * vào ô bằng mọi đường (⇄ · lối tắt · giọng nói) ⇒ nhận lại đúng màn ảo đó. Không đỗ được (lượt mở dở · app đã chết ·
+     * đang toàn màn) ⇒ một câu MANG LÝ DO, ô giữ app. Không kênh shell nào được chạm ⇒ không cổng kênh; app hệ thống đỗ được
+     * (R0.6 chặn `move-task` app hệ thống — đường này không dời task nào).
+     */
+    private fun park(index: Int) {
+        val pkg = (shownAt(index) as? SlotContent.App)?.pkg ?: return
+        if (index in busy) return
+        val parked = workspace().hostAt(index)?.park() == true
+        Log.i(TAG, "ô $index: chạy nền $pkg ⇒ ${if (parked) "đỗ ô 7 ${ParkedApps.summary()}" else "không đỗ được (ô chưa sẵn) · 0 lệnh"}")
+        if (parked) revert(index, Event.APP_BACKGROUND, pkg) else say(R.string.kachi_sc_bg_failed_why, pkg, PARK_NOT_READY)
+        workspace().heads.refreshAll()
+    }
+
+    /**
+     * ⚠ 2.89-thử1: KHÔNG còn chỗ gọi (nút *chạy nền* đi [park]) — giữ biên dịch để bản sau quyết khi BEHIND-HOME được chữa.
+     *
      * L8 — *chạy nền* app đang hiện ở ô [index], MỌI ô app (owner 03/10; D-L6-1 mở khoá): [toBack] chạy chuỗi lớp che trên
      * màn ảo CỦA Ô (`BehindHomeSequence.evictCovered` — display = màn ảo ô, app = đúng gói ô, stack `standard`, màn nhà phải ở
      * đỉnh display 0); bản đọc cuối thấy app đã rời ô ⇒ luật hoàn ô (`APP_BACKGROUND`: ô LƯU widget ⇒ widget về, còn lại ⇒
@@ -123,7 +152,8 @@ internal class KachiHomeSlotActions(
      * mang dòng `KachiBehind` đầy đủ. App hệ thống ⇒ nói lý do, 0 lệnh (R0.6, cùng phép `InstalledApps.isSystem` với chip
      * *Chạy nền* của Cài đặt). Host chưa sẵn ⇒ 0 lệnh.
      */
-    private fun background(index: Int) {
+    @Suppress("unused")
+    private fun backgroundCovered(index: Int) {
         val pkg = (shownAt(index) as? SlotContent.App)?.pkg ?: return
         if (index in busy) return
         // P3: BEHIND-HOME đã tắt cả tiến trình (sau `ANCHOR_IN_FRONT`) ⇒ hỏi lại nút (nút chạy nền biến mất), 0 lệnh, không toast.
@@ -166,5 +196,8 @@ internal class KachiHomeSlotActions(
     private companion object {
         /** Một thẻ log cho cả vòng đời ô (đọc trên màn Chẩn đoán / logcat). */
         const val TAG = "KachiSlotLife"
+
+        /** Lý do ngắn trên câu báo khi ô 7 không đỗ được — mã nhật ký ASCII (không dịch, cùng lẽ `BehindReason`). */
+        const val PARK_NOT_READY = "park: not-ready"
     }
 }

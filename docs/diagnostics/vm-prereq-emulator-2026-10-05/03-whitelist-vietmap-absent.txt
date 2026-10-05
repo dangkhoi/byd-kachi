@@ -1,0 +1,14 @@
+system-excidle,com.android.providers.calendar,10055
+system-excidle,com.android.providers.downloads,10062
+system-excidle,com.android.vending,10091
+system-excidle,com.android.cellbroadcastreceiver,10059
+system-excidle,com.google.android.gms,10119
+system-excidle,com.google.android.ims,10108
+system-excidle,com.android.proxyhandler,10057
+system-excidle,com.android.shell,2000
+system-excidle,com.android.providers.contacts,10058
+system,com.android.providers.downloads,10062
+system,com.android.cellbroadcastreceiver,10059
+system,com.google.android.gms,10119
+system,com.google.android.ims,10108
+system,com.android.shell,2000

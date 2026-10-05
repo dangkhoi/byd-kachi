@@ -17,11 +17,19 @@ internal object CastDensityControl {
      * Set or reset cluster display density. Saves per-app ONLY if shell succeeds.
      * @param dpi density value, or null to reset.
      * @param activePkg the currently casting full-mode package (for per-app save), or null.
+     * @param style B1b — kiểu khung của PHIÊN: Chữ nhật lưu vào khoá `__RECT`, Bo tròn = khoá FULL cũ.
      * @return chuỗi DPI đã áp khi shell OK (kể cả khi không có [activePkg] để lưu), `null` khi hỏng.
      */
-    fun set(shell: SimpleCastShell, prefs: SimpleCastPrefs, displayId: Int, dpi: Int?, activePkg: String?): String? {
+    fun set(
+        shell: SimpleCastShell,
+        prefs: SimpleCastPrefs,
+        displayId: Int,
+        dpi: Int?,
+        activePkg: String?,
+        style: CastStyle = CastStyle.CURVED,
+    ): String? {
         val applied = applyDensity(shell, displayId, dpi) ?: return null
-        if (activePkg != null) saveForPkg(prefs, activePkg, dpi)
+        if (activePkg != null) saveForProfile(prefs, activePkg, CastProfile.FULL.inStyle(style), dpi)
         return applied
     }
 
@@ -46,12 +54,13 @@ internal object CastDensityControl {
         displayId: Int,
         dpi: Int?,
         state: SimpleCastState,
+        style: CastStyle = CastStyle.CURVED,
     ): String? {
         val split = state as? SimpleCastState.CastingSplit ?: return null
         val applied = applyDensity(shell, displayId, dpi) ?: return null
         val leftPercent = split.leftPercent
-        split.left?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.LEFT, leftPercent), dpi) }
-        split.right?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.RIGHT, leftPercent), dpi) }
+        split.left?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.LEFT, leftPercent, style), dpi) }
+        split.right?.let { saveForProfile(prefs, it.pkg, CastProfile.of(ClusterSlotSide.RIGHT, leftPercent, style), dpi) }
         return applied
     }
 
@@ -66,18 +75,15 @@ internal object CastDensityControl {
         return if (dpi != null && dpi in CastGeometryGuard.DENSITY_RANGE) dpi.toString() else CastGeometryGuard.DENSITY_RESET
     }
 
-    private fun saveForPkg(prefs: SimpleCastPrefs, pkg: String, dpi: Int?) {
-        // Seed bounds-less: a DPI-only change must never STAMP a size onto an app that was never
-        // resized (NORMAL_DEFAULT.bounds is full-cluster). Otherwise the next cast would resize it.
-        val existing = prefs.displayConfigFor(pkg) ?: DisplayConfig.NORMAL_DEFAULT.copy(bounds = null)
-        prefs.saveDisplayConfig(pkg, existing.copy(density = dpi?.toString() ?: "reset"))
-    }
-
-    /** Persist [dpi] under the exact ([pkg], [profile]) geometry key — same key bounds use (R4/#5). */
+    /**
+     * Persist [dpi] under the exact ([pkg], [profile]) geometry key — same key bounds use (R4/#5). B1b: FULL đi cùng đường
+     * (trước là `saveForPkg` với hai hàm không hồ sơ — cùng khoá FULL từng byte, `SimpleCastPrefs.displayConfigFor(pkg)` =
+     * hồ sơ FULL), để khoá `__RECT` của cụm Chữ nhật không phải viết một đường thứ hai.
+     */
     private fun saveForProfile(prefs: SimpleCastPrefs, pkg: String, profile: CastProfile, dpi: Int?) {
-        // Seed bounds-less (see [saveForPkg]): a split slot whose DPI is changed before it is resized
-        // must NOT inherit NORMAL_DEFAULT's full-cluster bounds, or applyPinned would blow the
-        // slot up to the whole display on re-cast and destroy the split layout.
+        // Seed bounds-less: a DPI-only change must never STAMP a size onto an app that was never
+        // resized (NORMAL_DEFAULT.bounds is full-cluster). Otherwise the next cast would resize it —
+        // and a split slot would blow up to the whole display on re-cast and destroy the split layout.
         val existing = prefs.displayConfigFor(pkg, profile) ?: DisplayConfig.NORMAL_DEFAULT.copy(bounds = null)
         prefs.saveDisplayConfig(pkg, profile, existing.copy(density = dpi?.toString() ?: "reset"))
     }

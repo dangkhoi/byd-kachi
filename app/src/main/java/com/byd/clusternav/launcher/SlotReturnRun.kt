@@ -2,6 +2,8 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -95,6 +97,32 @@ internal object SlotReturnRun {
         out.taskId?.let { store.remove(it) }
         return true
     }
+
+    /**
+     * A4 · SLOT-PLACE-KEEPS-MUSIC (spec `kachi-289-field-fixes.html` §A4) — CHẶN, gọi trên luồng mở app của ô NGAY SAU R1.8
+     * ([bringBackMarked]) và TRƯỚC `am force-stop`. App đã có task (display 0 · màn ảo ô 7 · màn ảo khác) ⇒ K8 sang ô; không task
+     * mà tiến trình sống ⇒ [cmd] (lệnh mở của đường golden) KHÔNG force-stop — thay cho giết + mở lại ([ĐO máy ảo QA 04/10]:
+     * force-stop tắt YT Music đang phát); quyết định + chuỗi ở `:core`
+     * (`SlotOpenPlan` · `SlotReturnSequence.openLive`). `true` = app ĐÃ ở ô (0 lệnh hoặc K8 ăn) ⇒ bên gọi không force-stop;
+     * `false` = không task / đọc hỏng / K8 không ăn ⇒ đường golden y như cũ. Task vừa rời màn ảo ĐỖ của ô 7 ⇒ quên bản đỗ đã
+     * rỗng ([ParkedApps.forget], luồng chính) để màn ảo ẩn không treo.
+     */
+    fun openLive(ctx: Context, vd: Int, pkg: String, cmd: String, sh: (String) -> String): Boolean {
+        val parkedVd = ParkedApps.vdOf(pkg)
+        val out = try {
+            seq(sh).openLive(vd, pkg, BehindMarksStore(ctx).read(), DefaultHome.shownComponents(ctx), cmd)
+        } catch (e: IOException) {
+            SlotReturnSequence.Returned(SlotReturn.Back.GOLDEN, null, "a4 $pkg -> ${e.javaClass.simpleName}")
+        } catch (e: RuntimeException) {
+            SlotReturnSequence.Returned(SlotReturn.Back.GOLDEN, null, "a4 $pkg -> ${e.javaClass.simpleName}")
+        }
+        Log.i(TAG, out.line)
+        if (out.result != SlotReturn.Back.IN_SLOT) return false
+        if (parkedVd != null && out.from == parkedVd) main.post { if (ParkedApps.vdOf(pkg) == parkedVd) ParkedApps.forget(pkg) }
+        return true
+    }
+
+    private val main by lazy { Handler(Looper.getMainLooper()) }
 
     /**
      * Thẻ "Đang mở toàn màn — chạm để đưa về ô" phủ ô [host] (chữ ở ĐÁY ô — thẻ icon + tên của `WorkspaceView.appCard`

@@ -57,8 +57,9 @@ object SlotClosePlan {
  * ═══ L6 · (c) *TẮT* app trong ô — MỘT LƯỢT (thuần JVM, nhận kênh shell; khuôn [FloatingOrphanSweep]) ══════════════════
  *
  * `am stack list` → [SlotClosePlan.targets] → `am stack remove <id>` từng stack (guard [SlotClosePlan.admissible] trên
- * CÙNG bản đọc) → đọc lại tới khi app rời màn ảo ô (trần [SETTLE_READS] × [SETTLE_STEP_MS], [StackReads.settle]). Kết
- * luận bằng bản đọc LẦN HAI (sự thật), không theo chữ in ra của lệnh gỡ. Không `am force-stop`.
+ * CÙNG bản đọc) → báo "đã gửi" ([run] `onSent` — màn chính giấu mặt vẽ NGAY, A3) → đọc lại tới khi app rời màn ảo ô (lịch
+ * [SETTLE_STEPS_MS] ≈ 4 s, [StackReads.settle]). Kết luận bằng bản đọc LẦN HAI (sự thật), không theo chữ in ra của lệnh gỡ.
+ * Không `am force-stop`.
  *
  * ⚠ CHẶN (dadb) — chỉ gọi trên luồng nền.
  */
@@ -82,15 +83,22 @@ class SlotCloseRun(
         val sent: List<Int> = emptyList(),
         val reads: Int = 0,
         val error: String? = null,
+        /** A3 — tổng thời gian đã NGHỈ giữa các lần đọc lại (ms) — nhật ký: lệnh gỡ trên xe chậm bao lâu (OQ A1-OQ2). */
+        val waitedMs: Long = 0,
     ) {
         /** Ô đã không còn app trên màn ảo ⇒ áp luật hoàn ô ([SlotRevertPlan], `APP_CLOSED`). */
         val slotFree: Boolean get() = outcome == Outcome.CLOSED || outcome == Outcome.NOT_ON_VD
 
         /** Một dòng nhật ký `KachiSlotLife` (không dịch — nhật ký). */
-        fun line(): String = "tắt $pkg vd=$vd → $outcome gửi=$sent đọc-lại=$reads" + (error?.let { " lỗi=$it" } ?: "")
+        fun line(): String = "tắt $pkg vd=$vd → $outcome gửi=$sent đọc-lại=$reads chờ=${waitedMs}ms" + (error?.let { " lỗi=$it" } ?: "")
     }
 
-    fun run(sh: (String) -> String, vd: Int, pkg: String): Report {
+    /**
+     * Một lượt *tắt*. [onSent] chạy (trên luồng NÀY) đúng một lần, ngay khi ít nhất một lệnh gỡ đã được gửi mà không ném —
+     * TRƯỚC vòng đọc lại: bên gọi coi "đã gửi lệnh + app đang rời" là ĐANG TẮT (A3: giấu mặt vẽ ngay, không để khung đứng
+     * suốt lượt chờ). Không gửi được lệnh nào ⇒ không gọi.
+     */
+    fun run(sh: (String) -> String, vd: Int, pkg: String, onSent: () -> Unit = {}): Report {
         if (vd < 1 || pkg.isBlank() || pkg == selfPkg) return Report(vd, pkg, Outcome.REFUSED)
         val first = StackReads.read(sh)
         val before = first.entries ?: return Report(vd, pkg, Outcome.READ_FAILED, error = first.error)
@@ -109,18 +117,63 @@ class SlotCloseRun(
             }
         }
         if (sent.isEmpty()) return Report(vd, pkg, if (error != null) Outcome.STILL_THERE else Outcome.REFUSED, error = error)
-        val settled = StackReads.settle(sh, sleep, SETTLE_READS, SETTLE_STEP_MS) { e -> !SlotClosePlan.onVd(e, vd, pkg) }
+        onSent()
+        val settled = StackReads.settle(sh, sleep, SETTLE_STEPS_MS) { e -> !SlotClosePlan.onVd(e, vd, pkg) }
+        val waited = SlotCloseSettle.waited(SETTLE_STEPS_MS, settled.reads)
         val after = settled.read.entries
-            ?: return Report(vd, pkg, Outcome.READ_FAILED, sent, settled.reads, settled.read.error ?: error)
+            ?: return Report(vd, pkg, Outcome.READ_FAILED, sent, settled.reads, settled.read.error ?: error, waited)
         val outcome = if (SlotClosePlan.onVd(after, vd, pkg)) Outcome.STILL_THERE else Outcome.CLOSED
-        return Report(vd, pkg, outcome, sent, settled.reads, error)
+        return Report(vd, pkg, outcome, sent, settled.reads, error, waited)
     }
 
     companion object {
-        /** Trần số lần đọc lại sau lệnh gỡ — cùng số của `FloatingOrphanSweep` (đo máy ảo E2E 3b: một nhịp thường là đủ). */
-        const val SETTLE_READS = FloatingOrphanSweep.SETTLE_READS
-
-        /** Nghỉ giữa hai lần đọc lại. */
-        const val SETTLE_STEP_MS = FloatingOrphanSweep.SETTLE_STEP_MS
+        /**
+         * A3 · SLOT-CLOSE-SETTLE (2.89) — lịch nghỉ giữa các lần đọc lại sau lệnh gỡ: 250 → 400 → 640 → 1000 → 1000 → 710 ms
+         * (tổng 4 s, 7 lần đọc). Nhịp đầu giữ 250 ms của `FloatingOrphanSweep` ([ĐO máy ảo E2E 3b]: một nhịp thường đủ ⇒ ca
+         * nhanh vẫn kết luận sau ~250 ms); giãn dần vì [ĐO xe 05/10] `am stack remove` trên màn ảo ô chậm hơn cửa sổ cũ
+         * 5 × 250 ms (`STILL_THERE … đọc-lại=5`, app chỉ rời ô ~27 s sau ở nhịp đo ô) ⇒ báo nhầm "chưa tắt được".
+         */
+        internal val SETTLE_STEPS_MS: LongArray = SlotCloseSettle.steps()   // internal: mảng — không phơi cho ai sửa
     }
+}
+
+/**
+ * ═══ A3 · SLOT-CLOSE-SETTLE — lịch đọc lại sau lệnh *tắt* (thuần) ══════════════════════════════════════════════════════
+ *
+ * Lũy thừa có trần: bước `k` = `first × factor^k`, kẹp ≤ [CAP_MS]; cộng dồn tới khi chạm [BUDGET_MS], phần dư cuối (≥ bước
+ * đầu) thành bước chót ⇒ tổng nghỉ đúng bằng ngân sách. Tổng ngân sách là trần THỜI GIAN luồng nền của màn chính bị chặn bởi
+ * một lượt *tắt* — không phải nhịp: lệnh xong sớm ⇒ vòng dừng ở lần đọc đầu thấy app rời ô.
+ */
+object SlotCloseSettle {
+
+    /** Nhịp đầu — cùng `FloatingOrphanSweep.SETTLE_STEP_MS`. */
+    const val FIRST_MS = FloatingOrphanSweep.SETTLE_STEP_MS
+
+    /** Hệ số giãn giữa hai nhịp. */
+    const val FACTOR = 1.6
+
+    /** Trần một nhịp — đọc dày hơn 1 s/lần không cần, thưa hơn thì ô chờ lâu sau khi app đã rời. */
+    const val CAP_MS = 1_000L
+
+    /** Tổng thời gian nghỉ tối đa (~4 s, brief 2.89 A3). */
+    const val BUDGET_MS = 4_000L
+
+    fun steps(first: Long = FIRST_MS, factor: Double = FACTOR, cap: Long = CAP_MS, budget: Long = BUDGET_MS): LongArray {
+        require(first > 0 && factor >= 1.0 && cap >= first && budget >= first) { "lịch hỏng: $first/$factor/$cap/$budget" }
+        val out = ArrayList<Long>()
+        var step = first.toDouble()
+        var total = 0L
+        while (true) {
+            val s = minOf(cap, step.toLong())
+            if (total + s > budget) break
+            out += s; total += s
+            step *= factor
+        }
+        val rest = budget - total
+        if (rest >= first) out += rest
+        return out.toLongArray()
+    }
+
+    /** Tổng đã nghỉ khi vòng dừng ở lần đọc thứ [reads] (1 = chưa nghỉ lần nào). */
+    fun waited(steps: LongArray, reads: Int): Long = steps.take((reads - 1).coerceIn(0, steps.size)).sum()
 }

@@ -49,8 +49,18 @@ data class DockConfig(
      * ([ProfileScope] `dock_visible`) như [edge].
      */
     val visible: Boolean = true,
+    /**
+     * 2.89 · B3 DOCK-SCALE (owner 05/10 *"50-150% đi"*) — cỡ thanh nút theo %, [BarScale.MIN]..[BarScale.MAX] bước
+     * [BarScale.STEP]; [BarScale.DEFAULT] = hôm nay từng pixel. Tham số CUỐI ⇒ mọi lời gọi vị trí cũ biên dịch nguyên, và
+     * mọi `copy` sẵn có ([withEdge] · [withVisible] · [setEnabled] · [moveEnabled] · `DockSelection.apply`) tự giữ số này.
+     * Theo hồ sơ ([ProfileScope] `dock_scale`).
+     */
+    val scalePct: Int = BarScale.DEFAULT,
 ) {
     fun withEdge(e: DockEdge): DockConfig = copy(edge = e)
+
+    /** B3 — đổi cỡ thanh (đã [BarScale.snap]); giữ nguyên viền, nút, ẩn/hiện. */
+    fun withScale(pct: Int): DockConfig = copy(scalePct = BarScale.snap(pct))
 
     /** Ẩn/hiện thanh nút — giữ nguyên [edge] và [enabled] để hiện lại đúng chỗ cũ. */
     fun withVisible(v: Boolean): DockConfig = copy(visible = v)

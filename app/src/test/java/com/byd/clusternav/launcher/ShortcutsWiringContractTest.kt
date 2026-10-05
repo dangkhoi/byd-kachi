@@ -172,14 +172,20 @@ class ShortcutsWiringContractTest {
         val rebuild = SourceRoots.body(dock, "private fun rebuild()")
         assertTrue(rebuild.contains("if (id == LauncherActions.SHORTCUTS) addView(shortcutStrip())"))
         val strip = SourceRoots.body(dock, "private fun shortcutStrip()")
-        assertTrue(strip.contains("ShortcutIconsView(context, grid = false)"))
-        assertTrue(strip.contains("shortcutStripLength(context, ShortcutHub.items().size)"), "bề dài theo số app (R1.2)")
+        // 2.89 · B3 DOCK-SCALE — đổi chân CÓ CHỦ Ý (không nới): khối dựng bằng `ui` (Context co/giãn của thanh; ở 100 % `ui`
+        // LÀ `context` ⇒ y hệt 2.88) để icon + khe co theo cỡ thanh như mọi ô khác.
+        assertTrue(strip.contains("ShortcutIconsView(ui, grid = false)"))
+        assertTrue(strip.contains("shortcutStripLength(ui, ShortcutHub.items().size)"), "bề dài theo số app (R1.2)")
         assertTrue(strip.contains("vertical = v"), "thanh dọc ⇒ khối cao ra")
         val viewRebuild = SourceRoots.body(view, "private fun rebuild()")
         assertTrue(viewRebuild.contains("shortcutStripLength(context, items.size)"), "đổi danh sách ⇒ đặt lại bề dài")
         // MỘT phép bề dài: số khe từ `:core`, số dp từ thang (`KachiBars`) — E7: 1/4/8 app = 1/4/8 × 52 dp + 2 × 4 dp.
+        // B3 — khe = `shortcutSlotPx` = max(SHORTCUT_CELL, 48 dp THẬT): ở 100 % đúng 52 dp như cũ; thanh co ⇒ khe không dưới
+        // đích chạm. Vẫn MỘT phép cho cả `cellPx()` lẫn bề dài (bài `ShortcutGridFitWiringContractTest` canh `cellPx`).
         assertTrue(SourceRoots.body(view, "internal fun shortcutStripLength(ctx: Context, n: Int)")
-            .contains("ShortcutStrip.cells(n) * dpi(ctx, Bars.SHORTCUT_CELL) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)"))
+            .contains("ShortcutStrip.cells(n) * shortcutSlotPx(ctx) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)"))
+        assertTrue(SourceRoots.body(view, "internal fun shortcutSlotPx(ctx: Context)")
+            .contains("maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))"))
         assertEquals(52, KachiBars.SHORTCUT_CELL, "owner 01/10: icon 52 dp")
         assertEquals(KachiSpace.XS, KachiBars.SHORTCUT_PAD)
         // 2.87 R-SI1 đổi chân (không nới): lưới widget KHÔNG còn khe cố định `SHORTCUT_GRID_CELL` (64 dp) để so — cỡ icon +

@@ -89,6 +89,8 @@ internal object SettingsCatalogEntries {
         SettingsEntry("display_theme", SettingsGroup.DISPLAY, "Giao diện sáng/tối", "theme_mode", "Light / dark theme"),
         // VISUAL-REFRESH P1b · R8 — màu nhấn (8 ô + theo ảnh nền) và tông thẻ, theo hồ sơ; mã hoá ở `ColorChoice`.
         SettingsEntry("display_color", SettingsGroup.DISPLAY, "Màu sắc", "color_choice", "Colours"),
+        // 2.89 · B3 DOCK-SCALE (owner 05/10 *"50-150% đi"*) — cỡ thanh nút theo %, theo hồ sơ (`dock_scale`, mã hoá `BarScale`).
+        SettingsEntry("display_bar_scale", SettingsGroup.DISPLAY, "Cỡ thanh nút xe", "dock_scale", "Car bar size"),
         // U5·T3 — NGÔN NGỮ. ⚠ Khoá `lang` KHÔNG nằm trong tệp `kachi_workspace` mà trong tệp lưu ngôn ngữ đã có của
         // ClusterNav (`clusternav_lang`, `com.byd.clusternav.Lang`) — cố ý, để một APK chỉ có MỘT công tắc ngôn ngữ
         // thay vì hai cái lệch nhau; lập luận đầy đủ ở KDoc `WorkspacePrefs.langMode`.
@@ -191,6 +193,9 @@ internal object SettingsCatalogEntries {
         ),
         // split_ratio_buttons (9 nút 1:9…9:1) · prefs.setSplitRatioLeftPercent + applySplitRatioLive
         SettingsEntry("cast_split", SettingsGroup.CAST, "Tỉ lệ chia đôi", "split_ratio_left_pct", "Split ratio"),
+        // B1b · CLUSTER-RECT-OPTION (owner 05/10, spec `kachi-289-field-fixes.html` B1b) — Bo tròn / Chữ nhật · prefs.setCastStyle.
+        // Khoá `cast_style` theo HỒ SƠ; hàng chỉ HIỆN khi đời xe cho Chữ nhật (Seal car.type 138 — `ClusterProfile.supportsStyle`).
+        SettingsEntry("cast_style", SettingsGroup.CAST, "Kiểu chiếu cụm", "cast_style", "Cluster cast style"),
         // cb_autostart · prefs.setAutoStartEnabled — loại trừ nhau với tự-chiếu chia đôi (CastAutostart.kt:32–61)
         SettingsEntry(
             "cast_autostart", SettingsGroup.CAST, "Tự chiếu khi nổ máy",
@@ -285,9 +290,7 @@ internal object SettingsCatalogEntries {
             "voice_music_default_app", SettingsGroup.VOICE, "App nhạc mặc định",
             "voice_music_default_app", "Default music app",
         ),
-        // F3 (owner 01/10, spec shortcuts-autostart R3.1) — nhạc khi lên xe, đứng NGAY dưới "App nhạc mặc định": cùng một
-        // câu hỏi "app nhạc nào", nhưng KHÔNG dùng chung khoá (miền giá trị khác — §4.6). Khoá `ignition_music` theo hồ sơ.
-        SettingsEntry("voice_ignition_music", SettingsGroup.VOICE, "Tự mở nhạc khi lên xe", "ignition_music", "Play music when you get in"),
+        // F3 "Tự mở nhạc khi lên xe" — 2.89 · A5(a): đã sang nhóm SYSTEM (`system_ignition_music`, ngay dưới `system_ignition_apps`).
         // Không lưu khoá: đây là NÚT tải/gỡ gói giọng (cùng lối `profiles_add` / `system_default_home`). Gói nằm
         // trên đĩa của chính xe này, trạng thái đọc từ đĩa (`VoiceModelStore.isReady`) — không có pref nào để nhớ.
         SettingsEntry("voice_tts_pack", SettingsGroup.VOICE, "Giọng đọc offline", labelEn = "Offline voice pack"),
@@ -353,6 +356,10 @@ internal object SettingsCatalogEntries {
         // F2 (owner 01/10, spec shortcuts-autostart R2.1) — app mở khi nổ máy, đứng cạnh hai công tắc khởi động: cả ba trả
         // lời "nổ máy thì Kachi làm gì". Khoá `ignition_apps` theo hồ sơ (S4).
         SettingsEntry("system_ignition_apps", SettingsGroup.SYSTEM, "Mở app khi nổ máy", "ignition_apps", "Open apps at ignition"),
+        // F3 (owner 01/10, spec shortcuts-autostart R3.1) — nhạc khi lên xe. 2.89 · A5(a) (spec `kachi-289-field-fixes.html`): rời
+        // nhóm Giọng nói (id cũ `voice_ignition_music`, chỉ là id danh mục — không lưu ở đâu), đứng NGAY dưới "Mở app khi nổ máy":
+        // cùng câu hỏi "nổ máy thì Kachi làm gì". KHÔNG dùng chung khoá với "App nhạc mặc định" (miền giá trị khác — §4.6).
+        SettingsEntry("system_ignition_music", SettingsGroup.SYSTEM, "Tự mở nhạc khi lên xe", "ignition_music", "Play music when you get in"),
         // ── Màn hình chính (S5) ──
         // btn_set_home · ClusterNavBridge.setDefaultHome — VIỆC LÀM (không lưu khoá): ROM BYD KHÔNG hiện hộp chọn
         // HOME khi bấm nút Home, nên đây là đường đặt được duy nhất. Nút gọi `cmd package set-home-activity` qua

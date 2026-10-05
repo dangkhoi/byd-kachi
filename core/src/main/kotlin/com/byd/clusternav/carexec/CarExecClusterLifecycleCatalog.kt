@@ -6,7 +6,8 @@ internal object CarExecClusterLifecycleCatalog {
             id = "bootstrap-cold",
             feature = CarFeature.CLUSTER_CAST,
             purpose = "Lần chiếu đầu từ đồng hồ: tạo/đánh thức display cụm trước khi đặt app",
-            precondition = "cụm đang hiện đồng hồ; chưa có phiên nào",
+            precondition = "$THEME_OP_PRECONDITION; cụm đang hiện đồng hồ; chưa có phiên nào — theme 30 khi màn ảo có app đã khởi động " +
+                "lại hệ thống [ĐO 05/10 ×2] (review 2.89 Pass 2 · cluster-r1-8)",
             candidates = listOf(
                 StepCandidate(
                     id = "bootstrap.seal-cold",
@@ -18,7 +19,7 @@ internal object CarExecClusterLifecycleCatalog {
                     ),
                     evidence = "display cụm 1920x720 tồn tại và ở trạng thái ON",
                     verdictSource = VerdictSource.MEASURED,
-                    risk = CandidateRisk.MAY_DISRUPT_DRIVER,
+                    risk = CandidateRisk.MAY_HANG_SYSTEM,
                 ),
             ),
         ),

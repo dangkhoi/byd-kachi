@@ -1,5 +1,7 @@
 package com.byd.clusternav.modules.clustercast
 
+import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -13,7 +15,10 @@ class ClusterProfileTest {
         val p = ClusterProfile.SEAL_DL3
         assertEquals("seal_dl3", p.id)
         assertEquals(3, p.diLink)
-        assertEquals(listOf(30, 16, 35), p.castSeq)      // 30->16->35 (hành vi cũ)
+        // B1a: 30 tách khỏi chuỗi chiếu sang styleOps[CURVED] — chuỗi dây + chuỗi gửi lần mở đầu vẫn 30->16->35 (hành vi cũ)
+        assertEquals(listOf(16, 35), p.castSeq)
+        assertEquals(30, p.styleOps[CastStyle.CURVED])
+        assertTrue(p.export().contains(";30-16-35;"))
         assertEquals(listOf(18, 0), p.teardownSeq)       // 18->0
         assertEquals(1920, p.clusterW)
         assertEquals(720, p.clusterH)
@@ -22,7 +27,8 @@ class ClusterProfileTest {
 
     @Test fun `generic fallback dùng recipe seal-like + dò fission`() {
         val p = ClusterProfile.GENERIC_FALLBACK
-        assertEquals(listOf(30, 16, 35), p.castSeq)
+        assertEquals(listOf(16, 35), p.castSeq)
+        assertEquals(30, p.styleOps[CastStyle.CURVED])
         assertEquals(listOf(18, 0), p.teardownSeq)
         assertTrue(p.vdNameHint.contains("xdja") || p.vdNameHint.contains("fission"))
     }
@@ -45,12 +51,13 @@ class ClusterProfileTest {
         val p = ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja")
         assertEquals("AutoContainer", p?.svcName)
         assertEquals("seal_dl3", p?.id)
-        // chuỗi cũ không có styleOps → suy từ castSeq (có 30 ⇒ đổi kiểu được)
-        assertEquals(30 to 31, p?.styleOps)
+        // chuỗi cũ: opcode theme đầu tiên của trường cast BÓC thành CURVED; có 30 ⇒ RECT 31 như suy luận trước v0.44
+        assertEquals(mapOf(CastStyle.CURVED to 30, CastStyle.RECT to 31), p?.styleOps)
+        assertEquals(listOf(16, 35), p?.castSeq)
     }
 
     @Test fun `chuoi cu khong co opcode 30 thi khong doi kieu duoc`() {
-        assertNull(ClusterProfile.parse("dl5;5;1920;720;16;18-0;fission;auto_container")?.styleOps)
+        assertEquals(emptyMap<CastStyle, Int>(), ClusterProfile.parse("dl5;5;1920;720;16;18-0;fission;auto_container")?.styleOps)
     }
 
     @Test fun `parse chuoi 8 phan lay dung ten service`() {
@@ -158,11 +165,13 @@ class ClusterProfileTest {
 
     // ── W2-6: opcode kiểu cụm phải do HỒ SƠ khai, không đoán từ ngoài ──
 
-    @Test fun `Seal doi duoc kieu, DiLink5 thi khong`() {
-        assertTrue(ClusterProfile.SEAL_DL3.supportsStyle)
-        assertEquals(30 to 31, ClusterProfile.SEAL_DL3.styleOps)
-        assertFalse(ClusterProfile.DL5.supportsStyle)   // castSeq=[16], không có opcode kiểu → UI phải ẨN nút
-        assertNull(ClusterProfile.DL5.styleOps)
+    /** B1a (ĐỔI GHIM có lý do): Chữ nhật chỉ HIỆN khi kiểu gốc đã biết là chữ nhật (Seal car.type 138) — bảng B.2. */
+    @Test fun `Seal 138 doi duoc kieu, Seal chua biet car type va DiLink5 thi khong`() {
+        assertFalse(ClusterProfile.SEAL_DL3.supportsStyle, "car.type chưa biết ⇒ RECT ẩn")
+        assertTrue(ClusterProfile.SEAL_DL3.forCarType("138").supportsStyle)
+        assertEquals(mapOf(CastStyle.CURVED to 30, CastStyle.RECT to 31), ClusterProfile.SEAL_DL3.styleOps)
+        assertFalse(ClusterProfile.DL5.forCarType("138").supportsStyle)   // không có opcode kiểu → UI phải ẨN
+        assertEquals(emptyMap<CastStyle, Int>(), ClusterProfile.DL5.styleOps)
     }
 
     // ── W2-1: lệnh opcode chỉ dựng được từ hồ sơ đã resolve ──
@@ -174,5 +183,87 @@ class ClusterProfileTest {
 
     @Test fun `svcCall giu nguyen dinh dang lenh cu`() {
         assertEquals("service call AutoContainer 2 i32 1000 i32 16 s16 \"\"", ClusterProfile.SEAL_DL3.svcCall(16))
+    }
+
+    // ── CLUSTER-THEME-SAFE (2.89): hồ sơ → công thức lệnh của đường SimpleCast (trước đây là trường chết) ──
+
+    @Test fun `projectionRecipe - Seal ra dung chuoi cu, DL5 ra auto_container + chi 16`() {
+        val seal = ClusterProfile.SEAL_DL3.projectionRecipe()
+        assertEquals(ProjectionRecipe.SEAL_DL3, seal)
+        assertEquals(ClusterProfile.GENERIC_FALLBACK.projectionRecipe().castSeq, listOf(16, 35))
+        assertEquals(30, ClusterProfile.GENERIC_FALLBACK.projectionRecipe().styleOps[CastStyle.CURVED])
+        val dl5 = ClusterProfile.DL5.projectionRecipe()
+        assertEquals("auto_container", dl5.svcName)
+        assertEquals(listOf(16), dl5.castSeq)
+        assertEquals(ClusterProfile.DL5.svcCall(18), dl5.command(18))
+    }
+
+    @Test fun `projectionRecipe - chuoi share co opcode cam 17 thi 17 khong bao gio di ra, opcode theme roi chuoi chieu`() {
+        val p = ClusterProfile.parse("x;3;1920;720;17-31-16-35;18-0;xdja;AutoContainer;30-31")!!
+        val r = p.projectionRecipe()
+        assertEquals(listOf(16, 35), r.castSeq)
+        assertEquals(31, r.styleOps[CastStyle.CURVED], "chuỗi cũ gửi 31 lúc mở ⇒ 31 là kiểu của lượt mở")
+        assertTrue(r.isTheme(31) && r.isTheme(30))
+        assertFalse(r.castSeq.contains(17))
+    }
+
+    // ── CLUSTER-THEME-SAFE B1a: car.type · trường 10 · chuỗi cũ ──
+
+    @Test fun `car type 138 - Seal goc chu nhat, RECT hien - ma khac hoac khong doc duoc - RECT an`() {
+        val seal138 = ClusterProfile.detectSeed("BYD AUTO", "byd", "BYD", "", "138")
+        assertEquals("seal_dl3", seal138.id)
+        assertEquals(CastStyle.RECT, seal138.nativeStyle)
+        assertTrue(seal138.projectionRecipe().offers(CastStyle.RECT))
+        for (t in listOf("162", "1", null)) {
+            val p = ClusterProfile.detectSeed("BYD AUTO", "byd", "BYD", "", t)
+            assertEquals(null, p.nativeStyle, "car.type=$t")
+            assertFalse(p.projectionRecipe().offers(CastStyle.RECT), "car.type=$t")
+            assertTrue(p.projectionRecipe().offers(CastStyle.CURVED))
+        }
+        assertEquals(ClusterProfile.SEAL_DL3, ClusterProfile.detectSeed("BYD AUTO", "", "", ""), "mặc định = không biết car.type")
+    }
+
+    @Test fun `car type ap ca cho override - kieu goc la cua chiec xe, khong phai cua chuoi share`() {
+        val shared = ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT")!!
+        assertEquals(CastStyle.RECT, shared.nativeStyle, "trường 10 round-trip")
+        assertEquals(null, shared.forCarType(null).nativeStyle, "xe không đọc được car.type ⇒ RECT ẩn dù chuỗi nói RECT")
+        assertEquals(null, shared.forCarType("162").nativeStyle)
+        assertEquals(CastStyle.RECT, ClusterProfile.parse("x;3;1920;720;30-16-35;18-0;xdja")!!.forCarType("138").nativeStyle)
+        assertEquals(null, ClusterProfile.DL5.forCarType("138").nativeStyle, "không có opcode ép RECT ⇒ không RECT")
+    }
+
+    @Test fun `export truong 10 - chi khi kieu goc da biet, round-trip, chuoi day giu 30-16-35`() {
+        val s138 = ClusterProfile.SEAL_DL3.forCarType("138")
+        assertEquals("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT", s138.export())
+        assertEquals(s138, ClusterProfile.parse(s138.export()))
+        assertEquals(9, ClusterProfile.SEAL_DL3.export().split(";").size, "kiểu gốc chưa biết ⇒ 9 trường (bản cũ nhập được)")
+        assertEquals("dilink5;5;1920;720;16;18-0;fission;auto_container;", ClusterProfile.DL5.export())
+    }
+
+    @Test fun `chuoi cu 7-9 truong van khop - boc opcode theme dau tien thanh CURVED`() {
+        val p7 = ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja")!!
+        val p9 = ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31")!!
+        for (p in listOf(p7, p9)) {
+            assertEquals(ClusterProfile.SEAL_DL3, p)
+            assertEquals(ProjectionRecipe.SEAL_DL3, p.projectionRecipe())
+        }
+        // Chuỗi custom không có opcode theme ⇒ không bao giờ gửi theme (đúng như trước: castSeq [16,35] không có 30).
+        val custom = ClusterProfile.parse("sl6_dl3;3;1600;600;16-35;;fission")!!
+        assertEquals(emptyMap<CastStyle, Int>(), custom.styleOps)
+        // Trường 9 khai kiểu lạ (42-43) ⇒ 42 rời chuỗi chiếu, không bao giờ gửi (ngoài cổng hay như theme).
+        val odd = ClusterProfile.parse("x;3;1920;720;42-16-35;18-0;xdja;AutoContainer;42-43")!!.projectionRecipe()
+        assertEquals(listOf(16, 35), odd.castSeq)
+        assertTrue(odd.styleOps.isEmpty())
+    }
+
+    @Test fun `sanitize nhan 10 truong, themeOnVacantVd khong bao gio tu chuoi share`() {
+        val withLabel = "Hồ sơ hiện tại:\nseal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT"
+        assertEquals(CastStyle.RECT, ClusterProfile.parse(withLabel)?.nativeStyle)
+        assertNull(ClusterProfile.parse("seal_dl3;3;1920;720;30-16-35;18-0;xdja;AutoContainer;30-31;RECT;true"), "11 trường ⇒ hỏng")
+        assertFalse(ClusterProfile.SEAL_DL3.themeOnVacantVd)
+        assertFalse(ClusterProfile.parse(ClusterProfile.SEAL_DL3.forCarType("138").export())!!.themeOnVacantVd)
+        listOf(ClusterProfile.SEAL_DL3, ClusterProfile.DL5, ClusterProfile.GENERIC_FALLBACK).forEach {
+            assertFalse(it.projectionRecipe().themeOnVacantVd, "${it.id}: mặc định TẮT cho mọi hồ sơ")
+        }
     }
 }

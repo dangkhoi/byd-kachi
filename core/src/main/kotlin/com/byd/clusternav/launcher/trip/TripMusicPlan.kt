@@ -237,6 +237,8 @@ object TripMusicPlan {
         object Stage : ViewRoute { override fun toString() = "Stage" }
         /** App ở ô mà ô CHƯA có màn ảo (chưa mở xong) ⇒ 0 lệnh. */
         object SlotNotReady : ViewRoute { override fun toString() = "SlotNotReady" }
+        /** A2 · 2.89 — app ngoài ô đang ĐỖ ở ô 7 (màn ảo ẩn [vd] của Kachi) ⇒ link vào CHÍNH màn ảo đó, như ô thật. */
+        data class Parked(val vd: Int) : ViewRoute
     }
 
     /**
@@ -245,10 +247,14 @@ object TripMusicPlan {
      * dàn qua chỗ khác — K4-VIEW lên màn ảo khác kéo task của app ra khỏi ô của nó (`reparentToDisplay`, A10 r47
      * `ActivityStarter.java:2096-2170`, cùng cơ chế D4) rồi ô đi luật hoàn ô (mở lại = `force-stop`, cắt bài vừa phát).
      */
-    fun viewRoute(inSlot: Boolean, slotVd: Int?): ViewRoute = when {
-        !inSlot -> ViewRoute.Stage
-        slotVd != null && slotVd >= 1 -> ViewRoute.Slot(slotVd)
-        else -> ViewRoute.SlotNotReady
+    fun viewRoute(inSlot: Boolean, slotVd: Int?, parkedVd: Int? = null): ViewRoute = when {
+        inSlot && slotVd != null && slotVd >= 1 -> ViewRoute.Slot(slotVd)
+        inSlot -> ViewRoute.SlotNotReady
+        // A2 · 2.89: app ngoài ô mà đang ở ô 7 ⇒ CHÍNH màn ảo đỗ của nó. K4-VIEW lên một màn ảo KHÁC (chỗ dàn dựng) là kéo
+        // task sang display khác (`reparentToDisplay`, [ĐO nguồn] A10 r47 `ActivityStarter.java:2104-2114` + `:2164-2171`) = dựng
+        // lại activity = mất nhạc ([ĐO xe 05/10] YouTube); cùng display thì `moveTaskToFrontLocked` (`:2139-2144`), không dời.
+        parkedVd != null && parkedVd >= 1 -> ViewRoute.Parked(parkedVd)
+        else -> ViewRoute.Stage
     }
 
     /**

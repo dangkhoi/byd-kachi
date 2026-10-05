@@ -75,28 +75,53 @@ enum class ClusterSlotSide { LEFT, RIGHT }
  * token and is backward-compatible with keys the predecessor saved (which only used {50,30,70}).
  *
  * Pure Kotlin (no Android import) so it lives in :core (LayeringRulesTest Q1).
+ *
+ * ## B1b (2.89) — chiều thứ ba: KIỂU CỤM ([style])
+ * Cùng một app ở cụm Bo tròn và cụm Chữ nhật là HAI khung khác nhau: lỗ thấu kính theme1 (195,174)-(1738,509) khác vùng
+ * trống theme2 FULL (50,128)-(1285,555) [ĐO QML + PNG, `cluster-rect-seal-2026-10-05.md` §2]. Khung lưu ở Chữ nhật mang
+ * hậu tố [RECT_SUFFIX] (`config_bounds_<gói>__RECT`, `…__L30__RECT`) — khoá Bo tròn GIỮ NGUYÊN từng byte (CLAUDE.md §6).
+ * Tên khoá dựng ở MỘT chỗ ([recordKey]) cho cả prefs thật lẫn bản giả của test.
  */
 class CastProfile private constructor(
     /** LEFT/RIGHT for a split profile; null (together with [percent]) means [FULL]. */
     val side: ClusterSlotSide?,
     /** leftPercent bucket (one of [SPLIT_PERCENTS]) for a split profile; null means [FULL]. */
     val percent: Int?,
+    /** B1b — kiểu cụm của khung ([CastStyle.CURVED] = khoá cũ, không hậu tố). */
+    val style: CastStyle = CastStyle.CURVED,
 ) {
     /** True for the full-cluster profile (legacy no-suffix prefs keys). */
     val isFull: Boolean get() = side == null || percent == null
+
+    /** B1b — khung của cụm Chữ nhật (khoá có hậu tố [RECT_SUFFIX]). */
+    val isRect: Boolean get() = style == CastStyle.RECT
 
     /**
      * Round-trippable prefs token: `"FULL"` for the full profile, else `"L<percent>"` /
      * `"R<percent>"` (e.g. `L30`, `R70`). Stable across releases — used verbatim as the prefs
      * key suffix, so it must never change format for an existing percent (backward compat, R3).
+     * B1b: khung Chữ nhật thêm [RECT_SUFFIX] (`FULL__RECT`, `L30__RECT`).
      */
     val key: String
-        get() = if (isFull) FULL_KEY else (if (side == ClusterSlotSide.LEFT) "L" else "R") + percent
+        get() = (if (isFull) FULL_KEY else (if (side == ClusterSlotSide.LEFT) "L" else "R") + percent) +
+            (if (isRect) RECT_SUFFIX else "")
+
+    /**
+     * B1b — phần sau tiền tố trường của khoá prefs (`config_<trường>_<recordKey>`): Bo tròn FULL = đúng [pkg] (khoá cũ),
+     * một nửa = `<pkg>__L30`; Chữ nhật thêm [RECT_SUFFIX]. Chỗ dựng DUY NHẤT — `SharedPrefsSimpleCastPrefs` và `FakePrefs`
+     * gọi hàm này, không ghép tay.
+     */
+    fun recordKey(pkg: String): String =
+        pkg + (if (isFull) "" else "__" + (if (side == ClusterSlotSide.LEFT) "L" else "R") + percent) +
+            (if (isRect) RECT_SUFFIX else "")
+
+    /** Cùng ô (toàn cụm / nửa + tỉ lệ) ở kiểu cụm [style]. */
+    fun inStyle(style: CastStyle): CastProfile = if (style == this.style) this else CastProfile(side, percent, style)
 
     override fun toString(): String = key
     override fun equals(other: Any?): Boolean =
-        other is CastProfile && other.side == side && other.percent == percent
-    override fun hashCode(): Int = 31 * (side?.ordinal ?: -1) + (percent ?: -1)
+        other is CastProfile && other.side == side && other.percent == percent && other.style == style
+    override fun hashCode(): Int = (31 * (side?.ordinal ?: -1) + (percent ?: -1)) * 31 + style.ordinal
 
     companion object {
         /** All supported split ratios as leftPercent, step 10 → {10,20,…,90} (R3). */
@@ -107,15 +132,19 @@ class CastProfile private constructor(
 
         private const val FULL_KEY = "FULL"
 
+        /** B1b — hậu tố khung của cụm Chữ nhật (đứng CUỐI khoá, sau hậu tố nửa nếu có). */
+        const val RECT_SUFFIX: String = "__RECT"
+
         /** The full-cluster profile (legacy no-suffix prefs keys). */
         val FULL: CastProfile = CastProfile(null, null)
 
         /**
          * Profile for a split ([side], [leftPercent]). A [leftPercent] outside [SPLIT_PERCENTS]
          * falls back to [DEFAULT_PERCENT] (R3: "unknown/legacy percent → nearest default (50)").
+         * B1b: [style] mặc định Bo tròn = khoá cũ.
          */
-        fun of(side: ClusterSlotSide, leftPercent: Int): CastProfile =
-            CastProfile(side, normalizePercent(leftPercent))
+        fun of(side: ClusterSlotSide, leftPercent: Int, style: CastStyle = CastStyle.CURVED): CastProfile =
+            CastProfile(side, normalizePercent(leftPercent), style)
 
         /** Clamp an arbitrary percent to a valid [SPLIT_PERCENTS] bucket (unknown → [DEFAULT_PERCENT]). */
         fun normalizePercent(percent: Int): Int =
@@ -127,6 +156,7 @@ class CastProfile private constructor(
          * [DEFAULT_PERCENT]); anything malformed → null.
          */
         fun fromKey(key: String): CastProfile? {
+            if (key.endsWith(RECT_SUFFIX)) return fromKey(key.removeSuffix(RECT_SUFFIX))?.takeIf { !it.isRect }?.inStyle(CastStyle.RECT)
             if (key == FULL_KEY) return FULL
             if (key.length < 2) return null
             val side = when (key[0]) {
@@ -305,9 +335,7 @@ interface SimpleCastPrefs {
     fun splitRatioLeftPercent(): Int
     fun setSplitRatioLeftPercent(pct: Int)
 
-    // One-time setup flags
-    fun dozeWhitelistApplied(): Boolean
-    fun setDozeWhitelistApplied(applied: Boolean)
+    // 2.89 · B2: cờ một-lần `doze_whitelist_applied` đã bỏ — miễn pin quyết bằng sự thật (`SimpleCastCoordinator.appPrereqs`).
 
     // Autostart split
     fun autoStartLeftPackage(): String?
@@ -356,4 +384,13 @@ interface SimpleCastPrefs {
 
     /** FIX286 · PI5 — mốc bền của lượt chốt gần nhất ([CastEnableDeferral.CommitMark]); `null` = chưa chốt lần nào (mốc giữ tới lượt chốt kế — là sự thật lịch sử, cú chạm tay sau đó không xoá nó). */
     fun castCommitMark(): CastEnableDeferral.CommitMark? = null
+
+    /**
+     * B1b · CLUSTER-RECT-OPTION — kiểu chiếu cụm người lái chọn (khoá `cast_style`, theo HỒ SƠ). Chỉ là LỰA CHỌN: coordinator
+     * đọc MỘT lần đầu mỗi lượt mở chiếu (`desiredStyle`), đổi giữa phiên là 0 lệnh. Mặc định Bo tròn (D3 — đường đang chạy).
+     */
+    fun castStyle(): CastStyle = CastStyle.CURVED
+
+    /** Ghi lựa chọn — CHỈ prefs, không lệnh nào ([castStyle]). Bản giả của test mặc định bỏ qua. */
+    fun setCastStyle(style: CastStyle) {}
 }

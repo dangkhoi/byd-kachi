@@ -46,6 +46,11 @@ internal fun SettingsRows.sliderRow(
     current: Int,
     valueText: (Int) -> String,
     describe: (String) -> String,
+    /**
+     * 2.89 · B3 — mỗi nấc NGƯỜI DÙNG đổi (kéo · phím · trợ năng), TRƯỚC luật áp-khi-thả: chỉ để vẽ lại thứ RẺ ngay trong
+     * Cài đặt (dải ô mẫu của cỡ thanh nút). Không được ghi gì — ghi đi [onCommit]. Mặc định không làm gì ⇒ hàng cũ y nguyên.
+     */
+    onPreview: (Int) -> Unit = {},
     onCommit: (Int) -> Unit,
 ): View {
     val value = TextView(context).apply {
@@ -79,6 +84,7 @@ internal fun SettingsRows.sliderRow(
     bar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
         override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
             show(progress)
+            if (fromUser) onPreview(progress)
             gate.onChange(progress, fromUser)?.let(onCommit)   // phím / trợ năng: không có lượt chạm để chờ thả
         }
 

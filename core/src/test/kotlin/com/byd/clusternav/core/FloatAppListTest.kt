@@ -1,11 +1,14 @@
 package com.byd.clusternav.core
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * The BYD IVI float/overlay allow-list merge. A package absent from the global CSV `byd_float_app_list` is
- * refused an overlay with the "Hệ thống IVI không hỗ trợ hoạt động này" toast, so both the assistant path
+ * The BYD global `byd_float_app_list` merge. ⚠ 2.89 · B2: the old claim that an absent package "is refused an overlay
+ * with the 'Hệ thống IVI không hỗ trợ hoạt động này' toast" is contradicted by ROM 2602030 (nothing in system/product reads
+ * the key; the dialog is CarSetting's UnsupportActivity — KDoc [FloatAppList]). Both the assistant path
  * ([com.byd.clusternav.modules.voicekey.AssistantLauncher]) and the VietMap-bubble path
  * ([com.byd.clusternav.VietMapAutostart]) APPEND to it without clobbering OEM / other entries. These lock
  * that shared merge reproduces the proven inline recipe exactly: trim, drop blanks + literal "null",
@@ -84,6 +87,19 @@ class FloatAppListTest {
         // And it stays idempotent when the three are already present (re-open case).
         val full = "com.oem.launcher,$gsa,$bard,$self"
         assertEquals(full, FloatAppList.merge(full, listOf(gsa, bard, self)))
+    }
+
+    /**
+     * 2.89 · B2: VietMapAutostart đọc danh sách TRƯỚC rồi chỉ ghi khi VẮNG (không còn cờ một-lần) — `contains` phải đọc đúng
+     * cùng cách tách/trim/bỏ "null" của [FloatAppList.merge], và không khớp theo tiền tố.
+     */
+    @Test
+    fun `contains doc dung cach tach cua merge, khong khop tien to`() {
+        assertTrue(FloatAppList.contains("com.a, $VIETMAP ,com.b", VIETMAP))
+        assertFalse(FloatAppList.contains("null", VIETMAP))
+        assertFalse(FloatAppList.contains("", VIETMAP))
+        assertFalse(FloatAppList.contains("vn.vietmap.live2,vn.vietmap", VIETMAP))
+        assertTrue(FloatAppList.contains(FloatAppList.merge("null", listOf(VIETMAP)), VIETMAP))
     }
 
     companion object {

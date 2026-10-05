@@ -24,6 +24,20 @@ object FreeformLaunch {
         "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $pkg"
 
     /**
+     * Component LAUNCHER của [pkg] qua kênh [sh] ([resolveCmd]: dòng CUỐI có `/` và tên gói) — `null` = không phân giải
+     * được (kênh ném · gói không có activity LAUNCHER). Chuyển nguyên thân từ `VdAppHost.resolveComponent` (2.89-thử1, trần
+     * 500 dòng của tệp đó), cùng chuỗi lệnh byte-khớp. CHẶN (dadb) — chỉ luồng nền.
+     */
+    fun resolveComponent(pkg: String, sh: (String) -> String): String? {
+        val out = runCatching { sh(resolveCmd(pkg)) }.getOrDefault("")
+        return out.trim().lines().lastOrNull { it.contains("/") && it.contains(pkg) }
+    }
+
+    /** App có tiến trình chưa — `pidof` rỗng ⇒ chưa lên (retry mở-lại trên cold boot, #12). Chuyển nguyên thân từ `VdAppHost`. */
+    fun appRunning(pkg: String, sh: (String) -> String): Boolean =
+        runCatching { sh("pidof $pkg").trim().isNotEmpty() }.getOrDefault(false)
+
+    /**
      * force-stop [pkg] (process death). KHÔNG nhắm display nào. Byte-KHỚP chuỗi inline mà VdAppHost
      * (`am force-stop $p`) và KachiHomeActivity (`am force-stop $pkg`) đang dùng — nay tập trung tại đây để
      * B2 [com.byd.clusternav.system.WindowMutation.ForceStop] / B4 gọi lại một chuỗi DUY NHẤT (DRY).

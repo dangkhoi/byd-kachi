@@ -43,6 +43,8 @@ class SlotLifecycleWiringContractTest {
         mapOf(
             "SlotRevertPlan.next(" to "HomeViewModel.kt",
             "SlotRevertPlan.overlayAfter(" to "HomeViewModel.kt",
+            // 2.89-thử1 (ô 7, spec 287 §4.6d): ba mắt xích chuỗi lớp che dưới đây GIỮ biên dịch nhưng nút *chạy nền* đi `park` —
+            // "không chỗ gọi" của chúng do `SlotParkWiringContractTest.duong cu giu bien dich…` canh.
             "toBack(index, stage.vd, pkg)" to "KachiHomeSlotActions.kt",
             "slots::toBack" to "KachiHomeActivity.kt",
             "kit.seq.evictCovered(vd, pkg, kit.hidden)" to "KachiHomeSlots.kt",
@@ -122,9 +124,15 @@ class SlotLifecycleWiringContractTest {
             // Chưa mở vào màn ảo (chưa có task của nó ở đó) ⇒ 0 lệnh, chỉ thả host + luật hoàn ô — nút không chết lúc đang mở.
             "if (stage == null && host?.holds(pkg) == true)", "return revert(index, Event.APP_CLOSED, pkg)",
             // Soát 2.87 · P3 — ĐỔI GHIM có lý do: ô bận suốt lượt gỡ stack (xếp hàng với chuỗi chạy nền của CÙNG ô).
-            "stage.pkg != pkg", "busy += index", "submitBg {", "closer.run(sh, stage.vd, pkg)", "main.post {", "busy -= index",
-            "if (r.slotFree) revert(index, Event.APP_CLOSED, pkg) else sayIfStill(index, R.string.kachi_slot_close_failed, pkg)",
+            "stage.pkg != pkg", "busy += index", "submitBg {", "closer.run(sh, stage.vd, pkg)",
+            // A3 · SLOT-CLOSE-SETTLE — ĐỔI GHIM có lý do ([ĐO xe 05/10] lệnh gỡ chậm hơn cửa sổ đọc lại ⇒ khung đứng + báo nhầm):
+            // lệnh đã gửi ⇒ giấu mặt vẽ NGAY (luồng chính); xác nhận rời ô ⇒ luật hoàn ô; hết lịch mà còn ⇒ hiện lại + câu báo.
+            "main.post { host.closing(pkg, on = true) }", "main.post {", "busy -= index",
+            "if (r.slotFree) revert(index, Event.APP_CLOSED, pkg)",
+            "else { host.closing(pkg, on = false); sayIfStill(index, R.string.kachi_slot_close_failed, pkg) }",
             "if (!accepted) { busy -= index;")
+        assertTrue("fun closing(expect: String, on: Boolean) { if (!released && !dead && pkg == expect) surface.visibility = if (on) INVISIBLE else VISIBLE }" in host,
+            "giấu/hiện CHỈ mặt vẽ của đúng app ô đang giữ — host đã nhả / đã báo chết / đã đổi app ⇒ không chạm")
         assertTrue("fun holds(p: String): Boolean = !released && pkg == p" in host, "host đã nhả / giữ gói khác ⇒ không phải ô của app này")
         listOf(actions, cluster).forEach { src ->
             listOf("force-stop", "stack remove", "\"am ", "move-task", "BehindHome").forEach {
@@ -132,9 +140,11 @@ class SlotLifecycleWiringContractTest {
             }
         }
         val close = core("SlotClose.kt")
-        order(SourceRoots.body(close, "fun run(sh: (String) -> String, vd: Int, pkg: String): Report"),
+        // A3 — ĐỔI GHIM có lý do: `onSent` (đang tắt) chạy SAU lệnh gỡ, TRƯỚC vòng đọc lại; vòng đọc theo LỊCH ~4 s.
+        order(SourceRoots.body(close, "fun run(sh: (String) -> String, vd: Int, pkg: String, onSent: () -> Unit = {}): Report"),
             "if (vd < 1 || pkg.isBlank() || pkg == selfPkg)", "StackReads.read(sh)", "SlotClosePlan.targets(before, vd, pkg, selfPkg)",
-            "if (!SlotClosePlan.admissible(id, before, vd, pkg, selfPkg)) continue", "sh(FloatingOrphanPlan.removeCmd(id))", "StackReads.settle(")
+            "if (!SlotClosePlan.admissible(id, before, vd, pkg, selfPkg)) continue", "sh(FloatingOrphanPlan.removeCmd(id))",
+            "if (sent.isEmpty()) return", "onSent()", "StackReads.settle(sh, sleep, SETTLE_STEPS_MS)")
         assertFalse("force-stop" in close)
     }
 
@@ -146,7 +156,10 @@ class SlotLifecycleWiringContractTest {
      */
     @Test
     fun `chay nen - lop che tren man ao o, roi ra sau man nha, roi moi luat hoan o`() {
-        val fn = SourceRoots.body(actions, "private fun background(")
+        // 2.89-thử1 — ĐỔI GHIM có lý do ([ĐO xe 05/10] giữ chỗ BEHIND-HOME ném NPE trong system_server): nút *chạy nền* nay ĐỖ ô 7
+        // (`SlotParkWiringContractTest`); thân chuỗi lớp che giữ NGUYÊN dưới tên `backgroundCovered` (không chỗ gọi) — bài này
+        // vẫn khoá hình dạng của nó để bản sau bật lại không phải viết lại.
+        val fn = SourceRoots.body(actions, "private fun backgroundCovered(")
         // Soát 2.87 · P3 — ĐỔI GHIM có lý do: `backing` → `busy` (một việc đầu ô một ô một lúc, chung với *tắt*); BEHIND-HOME đã
         // tắt ⇒ hỏi lại nút, 0 lệnh; câu "không chạy nền được" chỉ khi ô VẪN hiện app; xong chuỗi ⇒ hỏi lại nút mọi ô.
         order(fn, "if (index in busy) return", "if (!behindUsable())", "workspace().heads.refreshAll(); return",
@@ -165,7 +178,7 @@ class SlotLifecycleWiringContractTest {
         assertFalse("swapNonce" in SourceRoots.body(code("HomeViewModel.kt"), "fun applySlotRevert("),
             "luật hoàn ô dựng lại ô (app đã rời màn ảo) — không mốc đổi-tại-chỗ")
         assertTrue("onAppSwapped = { i, vd, a, b -> slots.evictBehind(i, vd, a, b) }" in code("KachiHomeActivity.kt"),
-            "đặt TẠM (lối tắt / giọng nói) vẫn đi đường đổi-tại-chỗ R0.1 sẵn có — L8 không đụng")
+            "dây đổi-tại-chỗ R0.1 giữ biên dịch — 2.89-thử1: không còn ai phát `onAppSwapped` (WorkspaceView thôi gọi swapInPlace, ô 7)")
     }
 
     @Test
@@ -184,8 +197,9 @@ class SlotLifecycleWiringContractTest {
         val refresh = SourceRoots.body(cluster, "fun refresh()")
         order(refresh, "slot.getChildAt(it) as? VdAppHost", "hostLive = host != null && !host.isReleased")
         assertFalse("hostAt(" in refresh)
-        assertTrue("ShellAccessUi.usableNow() && hostLive, behindUsable()" in SourceRoots.body(actions, "override fun buttons("),
-            "không kênh / không bộ chiếu ⇒ ô app chỉ còn ⇄; BEHIND-HOME đã tắt ⇒ không nút chạy nền (không nút chết — P3)")
+        // 2.89-thử1 — ĐỔI GHIM có lý do: *chạy nền* = ĐỖ ô 7 (không đi qua BEHIND-HOME) ⇒ không phụ thuộc cờ tắt BEHIND-HOME nữa.
+        assertTrue("ShellAccessUi.usableNow() && hostLive, behind = true" in SourceRoots.body(actions, "override fun buttons("),
+            "không kênh / không bộ chiếu ⇒ ô app chỉ còn ⇄ (không nút chết)")
         assertTrue("fun behindUsable(): Boolean = BehindHomeRunner.disabledReason == null" in code("KachiHomeSlots.kt"),
             "cờ đọc từ đúng bên thi hành (một phép đo `ANCHOR_IN_FRONT` đặt nó)")
     }

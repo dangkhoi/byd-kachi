@@ -17,6 +17,8 @@ internal object CastDisplayCleaner {
         shell: SimpleCastShell,
         displayId: Int,
         sleepMs: (Long) -> Unit = { Thread.sleep(it) },
+        /** Dựng lệnh AutoContainer theo hồ sơ đời xe (2.89 · CLUSTER-THEME-SAFE: đúng tên service, luôn kèm `s16 ""`). */
+        command: (Int) -> String = ProjectionRecipe.SEAL_DL3::command,
     ) {
         // Guard tầng thi hành (CLAUDE §4/§5): không bao giờ quét display 0 hay id chưa dò được. Caller phải truyền
         // id cụm đã xác minh live (R1/R2 spec kachi-hal187-cast-remediation) — dọn nhầm VD ô của launcher = bê
@@ -61,10 +63,10 @@ internal object CastDisplayCleaner {
             sleepMs(300)
         }
 
-        // Close stale projection
-        shell.execute("service call AutoContainer 2 i32 1000 i32 18 s16 \"\"")
+        // Close stale projection — opcode 18 → 0 giữ nguyên (đường đã chạy); chỉ tên service đi theo hồ sơ.
+        shell.execute(command(18))
         sleepMs(300)
-        shell.execute("service call AutoContainer 2 i32 1000 i32 0 s16 \"\"")
+        shell.execute(command(0))
         sleepMs(500)
     }
 }

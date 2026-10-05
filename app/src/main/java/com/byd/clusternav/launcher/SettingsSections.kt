@@ -134,6 +134,7 @@ class SettingsSections(
             sub = context.getString(R.string.kachi_glass_real_sub),
         ) { on -> deps.bridge.setGlassReal(on) })
         color(body)
+        SettingsBarScaleSection(context, rows, deps).build(body)   // 2.89 · B3 — cỡ thanh nút xe 50–150 %
         lang(body)
     }
 
@@ -275,6 +276,7 @@ class SettingsSections(
             sub = context.getString(R.string.kachi_headless_sub),
         ) { on -> deps.bridge.setHeadlessAutostart(on) })
         SettingsTripAppsSection(context, rows, deps).section(body)   // F2 — app mở khi nổ máy (SettingsSectionsTrip.kt)
+        SettingsTripMusicSection(context, rows, deps).section(body)  // F3 · A5(a) 2.89 — nhạc khi lên xe, NGAY dưới (cùng "nổ máy thì làm gì")
 
         // ── Bảo trì ──
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_maint)))

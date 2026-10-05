@@ -36,7 +36,7 @@ object ProfileScopeLauncher {
     /** Hậu tố → kiểu mà `WorkspacePrefs` ghi và đọc. Kiểu chỉ có hai: chuỗi mã hoá hoặc cờ. */
     val DECLARED_TYPES: Map<String, PrefType> = buildMap {
         // Bố cục — `WorkspacePrefs.save/saveDock/setTopStrip/setHeaderLayout/setGridLayout` + `writeRecord` của lượt chuyển cảnh.
-        listOf("preset", "dock_edge", "dock_enabled", "top_strip", "grid_layout", "header_order", "app_shortcuts")
+        listOf("preset", "dock_edge", "dock_enabled", "top_strip", "grid_layout", "header_order", "app_shortcuts", "dock_scale")
             .forEach { put(it, PrefType.STRING) }
         listOf("dock_visible", "top_strip_labels", "top_strip_migrated_ux5b", "swap_button_autohide").forEach { put(it, PrefType.BOOLEAN) }
         // Cá nhân — chuỗi mã hoá của `:core` (`UnitPrefs`, `WallpaperPrefs`, `SavedPlaces`, `ColorChoice`, `LangMode`…).

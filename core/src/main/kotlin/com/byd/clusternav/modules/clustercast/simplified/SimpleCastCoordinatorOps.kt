@@ -9,6 +9,34 @@ package com.byd.clusternav.modules.clustercast.simplified
  * R6 chỉ persist khi shell OK) ở KDoc từng hàm bên dưới và ở `SimpleCastCoordinator` — không có luật mới ở đây.
  */
 
+/**
+ * 2.89 · B4 DISPLAY-OWNER-DYNAMIC — báo id màn ảo cụm cho cổng sở hữu display của launcher ([SimpleCastCoordinator.onCastDisplay]):
+ * [id] ≥ 1 = vừa dò LIVE (cùng lượt dò `ClusterDisplayResolver` mà cổng theme dùng); `< 1` = dò hụt hoặc đã đóng chiếu ⇒ `null`.
+ * Gọi ở MỌI lượt [SimpleCastCoordinator.detectClusterDisplay] + sau mỗi lượt đóng chiếu thành công. Không bao giờ ném: hỏng ở
+ * bên nhận chỉ log — đường chiếu đang chạy trên xe không được gãy vì sổ sở hữu (CLAUDE.md §6).
+ */
+internal fun SimpleCastCoordinator.publishCastDisplay(id: Int) {
+    try {
+        onCastDisplay(id.takeIf { it >= 1 })
+    } catch (e: RuntimeException) {
+        log("B4: báo id cụm $id cho cổng sở hữu display lỗi (${e.javaClass.simpleName}: ${e.message}) — chiếu đi tiếp")
+    }
+}
+
+/** B1a — kiểu người lái chọn cho lượt mở (MỘT lần đọc; lỗi ⇒ Bo tròn, đường đang chạy). */
+internal fun SimpleCastCoordinator.desiredStyleOnce(): CastStyle = runCatching(desiredStyle).getOrDefault(CastStyle.CURVED)
+
+/**
+ * B1a — dò lại công thức một lần mỗi tiến trình (trên executor; shell đang dùng vì người lái vừa bật chiếu): `:app` đọc
+ * `car.type` qua dadb khi tiến trình không đọc được prop. Chỉ thay khi projection CHƯA mở ([ProjectionManager.refreshRecipe]).
+ */
+internal fun SimpleCastCoordinator.probeRecipeOnce() {
+    val probe = recipeProbe ?: return
+    if (!recipeProbed.compareAndSet(false, true)) return
+    val next = runCatching { probe(shell) }.getOrNull() ?: return
+    if (next != projection.recipe && projection.refreshRecipe(next)) log("công thức chiếu dò lại: $next")
+}
+
 /** Thân của [openProjection] — tách ra để mọi `return` sớm vẫn nằm trong `try` bắt-mọi-lối-thoát ở trên. */
 internal fun SimpleCastCoordinator.openProjectionBody() {
     run {
@@ -16,11 +44,6 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         //     VD cụm chưa tồn tại (AutoContainer tạo khi mở projection) ⇒ hụt là bình thường ⇒ KHÔNG dọn, KHÔNG
         //     đặt gì theo seed. [ĐO] 2026-09-15: bản cũ dọn + đặt theo seed 1 = `kachi-slot-0` của launcher.
         val preOpenId = detectClusterDisplay()
-
-        if (!prefs.dozeWhitelistApplied()) {
-            shell.execute("cmd deviceidle whitelist +vn.vietmap.live")
-            prefs.setDozeWhitelistApplied(true)
-        }
 
         // Enable freeform boot flags so per-app bounds (resize + split) work after next power-cycle.
         // These settings are read ONLY at boot by ActivityTaskManagerService.retrieveSettings()
@@ -31,8 +54,33 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         if (preOpenId >= 1) cleanDisplay(preOpenId)
 
         projection.resetState(false)
-        val ok = projection.open(preOpenId)
-        if (!ok) { setError("Projection open failed"); return@run }
+        probeRecipeOnce()
+        // CLUSTER-THEME-SAFE (2.89, P0): opcode theme chỉ đi qua cổng [ClusterThemeGuard] + kế hoạch [ClusterStylePlan] —
+        // B1a: chỉ gửi khi CHƯA có màn ảo cụm (mức A), cách lần trước ≥ 15 s (sổ bền); còn lại bỏ theme, 16/35 đi tiếp
+        // hoặc DỪNG khi không chứng minh được kiểu cụm (KDoc [ClusterStylePlan]).
+        themeGuard.beginOpen()
+        val ok = projection.open(preOpenId, themeGuard, desiredStyleOnce())
+        if (!ok) {
+            // Review 2.89 Pass 1 · safety-1: kế hoạch DỪNG lượt mở ⇒ 0 lệnh 16/35; câu lỗi mang lý do. Trạng thái Error ⇒ người
+            // lái bật lại / `BubbleAutostart` thử lại (Error ⇒ openProjection).
+            val gate = projection.abortedOn?.let { op ->
+                " — theme $op: ${themeGuard.lastVerdict ?: "?"} · ${projection.lastPlan?.why ?: ""}"
+            }.orEmpty()
+            setError("Projection open failed$gate")
+            return@run
+        }
+
+        // 2.89 · B2 VM-PREREQ-TRUTH: cờ một-lần `doze_whitelist_applied` (đặt cả khi lệnh hỏng, không bao giờ đọc lại) để VietMap
+        // cài lại mất miễn pin mãi ⇒ hộp thoại "IVI không hỗ trợ" mỗi lần khởi động. Nay: đọc sự thật → áp phần thiếu → đọc lại
+        // (CLAUDE.md §5), cùng MỘT hàm với móc kênh sẵn sàng + `VietMapAutostart`. Hỏng ⇒ log, lượt mở chiếu đi tiếp.
+        // Review 2.89 Pass 3 · vietmap-dock-r2-6: SAU khi projection mở thành công (30/16/35 không còn đứng chờ khoá 2 s của lượt
+        // nền lúc nổ máy) — trùng khoảng AutoContainer đang dựng màn ảo cụm (bước dò ngay dưới vốn phải chờ), cùng executor, cùng
+        // tổng thời gian của lượt mở như trước (chỉ đổi thứ tự). Bên `:app` không chờ khoá (lượt nền đang đọc CÙNG sự thật).
+        try {
+            appPrereqs(shell)
+        } catch (e: RuntimeException) {
+            log("điều kiện nền app (B2): lỗi ${e.message} — mở chiếu đi tiếp")
+        }
 
         // (2) Dò SAU khi mở — nguồn sự thật cho MỌI lệnh đặt bên dưới (R1). Đúng thứ tự đường proven cũ
         //     (`ClusterCast.cast()` git HEAD:471-478: castSeq → lặp dò 16×500 ms → đặt app). Hụt ⇒ trả đồng hồ,
@@ -40,10 +88,12 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
         val vd = detectClusterDisplay(awaitAfterOpen = true)
         if (vd < 1) {
             log("openProjection: không dò thấy VD cụm sau khi mở → đóng projection, không đặt ClusterBlack")
-            projection.close(displayId)
+            projection.close(displayId, themeGuard)
             setError("Cluster display not found / Không dò thấy màn cụm")
             return@run
         }
+        // Dấu "đã gửi theme X, màn ảo cụm = vd" — chỉ để ĐỠ lượt gửi trùng lần sau (không bao giờ là lý do để gửi).
+        themeGuard.bindVd(vd)
         configurator.apply(vd, DisplayConfig.NORMAL_DEFAULT)
 
         // Launch + resize black placeholder to keep projection alive.
@@ -79,6 +129,9 @@ internal fun SimpleCastCoordinator.openProjectionBody() {
                 val pinned = if (appType == AppType.NORMAL) pinFull(ext.pkg, appType).pinned else null
                 setState(SimpleCastState.CastingFull(ext.pkg, appType, DisplayConfig.forAppType(appType), pinned = pinned))
                 adopted = true
+                // B1b — đường MỚI chỉ cho phiên Chữ nhật (Bo tròn giữ nguyên: nhận lại, không resize — CLAUDE.md §6): app nhận lại
+                // có thể đang trọn cụm, nằm dưới nền ADAS lớn luôn hiện ⇒ đặt vào khung phiên + đọc lại.
+                if (appType == AppType.NORMAL && frameStyle == CastStyle.RECT) applySessionPin(ext.pkg, pinned)
             }
         }
         if (!adopted) setState(SimpleCastState.Idle)
@@ -143,7 +196,7 @@ internal fun SimpleCastCoordinator.doRepinEscapedCastApps() {
         repinCooldownUntil[pkg] = now + SimpleCastCoordinator.REPIN_COOLDOWN_MS
         repinMissStreak.remove(pkg)
         if (ok != null) {
-            geometry.applyPinned(pkg, target.pinned)
+            applySessionPin(pkg, target.pinned)   // B1b: Chữ nhật ⇒ + đọc lại khung
             log("repin: $pkg re-cast issued (slot=$side)")
         } else {
             log("repin: $pkg re-cast FAILED")
@@ -199,5 +252,11 @@ internal fun SimpleCastCoordinator.closeOrphanProjectionBody() {
     configurator.reset(vd)
     cleanDisplay(vd)
     projection.resetState(true)
-    if (!projection.close(vd)) log("closeOrphan: đóng projection HỎNG — giữ isOpen=true (sự thật), lượt BẬT/TẮT sau đi đường thường")
+    if (!projection.close(vd, themeGuard)) {
+        log("closeOrphan: đóng projection HỎNG — giữ isOpen=true (sự thật), lượt BẬT/TẮT sau đi đường thường")
+        return
+    }
+    // CLUSTER-THEME-SAFE bước 3 — đường mới xuống CUỐI: ClusterBlack của tiến trình trước không được nằm lại trên màn ảo cụm.
+    themeGuard.removePlaceholder("closeOrphan")
+    publishCastDisplay(-1)   // B4: projection mồ côi đã đóng ⇒ không display nào còn thuộc CAST
 }

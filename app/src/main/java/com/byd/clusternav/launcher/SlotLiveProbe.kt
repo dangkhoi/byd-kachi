@@ -41,8 +41,10 @@ object SlotLiveProbe {
         val displayId: Int,
         val shell: (String) -> String,
         val onDead: () -> Unit,
+        /** Ô 7 (2.89-thử1): màn ảo NHẬN LẠI từ chỗ đỗ — app không còn trên đó ⇒ gọi cái này thay [onDead] (luồng UI). */
+        val onMissing: (() -> Unit)? = null,
     ) {
-        val liveness = SlotLiveness()
+        val liveness = SlotLiveness(adopted = onMissing != null)
     }
 
     private val subs = CopyOnWriteArrayList<Sub>()
@@ -55,11 +57,28 @@ object SlotLiveProbe {
     /** Màn chính đang khuất ⇒ không nhịp nào chạy. Xem khối ⚠ ở KDoc lớp. */
     @Volatile private var paused = false
 
-    /** Theo dõi ô [key] (gói [pkg] trên màn ảo [displayId]). Gọi lại cùng [key] ⇒ thay bản cũ (idempotent). */
-    fun watch(key: String, pkg: String, displayId: Int, shell: (String) -> String, onDead: () -> Unit) {
+    /**
+     * Theo dõi ô [key] (gói [pkg] trên màn ảo [displayId]). Gọi lại cùng [key] ⇒ thay bản cũ (idempotent). [onMissing] khác
+     * `null` = màn ảo nhận lại từ ô 7 (`SlotLiveness.adopted`): chưa từng thấy app sau đủ nhịp hụt ⇒ [onMissing], không [onDead].
+     */
+    fun watch(key: String, pkg: String, displayId: Int, shell: (String) -> String, onMissing: (() -> Unit)? = null, onDead: () -> Unit) {
         unwatch(key)
-        subs.add(Sub(key, pkg, displayId, shell, onDead))
+        subs.add(Sub(key, pkg, displayId, shell, onDead, onMissing))
         start()
+        if (onMissing != null) kick()
+    }
+
+    /**
+     * PARK-2b — màn ảo vừa nhận lại từ ô 7: đo NGAY một nhịp thay vì chờ nhịp đang lùi (tới [SlotLiveness.PROBE_PERIOD_MAX_MS]),
+     * và nhịp kế về sàn 5 s — app đã rời màn ảo lúc đỗ thì ô đen ≈ một lượt `am stack list`, không 10–20 s. Vẫn MỘT chuỗi nhịp
+     * (gỡ nhịp đang hẹn rồi hẹn lại ngay). Luồng chính. Màn khuất ⇒ không làm gì (`resume` hẹn lại).
+     */
+    private fun kick() {
+        unchangedSweeps = 0
+        if (paused) return
+        ui.removeCallbacks(tick)
+        ticking = true
+        ui.post(tick)
     }
 
     /**
@@ -146,12 +165,15 @@ object SlotLiveProbe {
             val picture = snapshot.map { it.key to (FreeformLaunch.parseTaskIdOnDisplay(out, it.pkg, it.displayId) != null) }
             unchangedSweeps = if (picture == lastPicture) unchangedSweeps + 1 else 0
             lastPicture = picture
+            val readable = "Stack id=" in out                  // ô 7: màn ảo nhận lại chỉ kết luận "trống" trên bản đọc có tiêu đề stack
             snapshot.forEach { sub ->
+                if (sub.onMissing != null && !readable) return@forEach
                 val alive = picture.first { it.first == sub.key }.second
                 if (sub.liveness.observe(alive)) {
                     Log.i(TAG, "ô ${sub.key}: ${sub.pkg} không còn task trên display ${sub.displayId} ⇒ app đã đóng")
                     unwatch(sub.key)                            // đã kết luận ⇒ thôi đo (mở lại sẽ đăng ký lượt mới)
-                    ui.post { sub.onDead() }
+                    val missing = sub.onMissing?.takeIf { sub.liveness.missing }
+                    ui.post { if (missing != null) missing() else sub.onDead() }
                 }
             }
         }

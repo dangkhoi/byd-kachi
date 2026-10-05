@@ -37,7 +37,7 @@ class LauncherWindows(
     /**
      * B2b: ghi vị trí ban đầu của các ô App vào registry → bất biến MỘT-VỊ-TRÍ có mặt ngay khi mở app.
      * B6 (cast coordination): dùng quyết định THUẦN [LauncherBootPlan] + [AppLocationRegistry.isCastable] để
-     * BỎ QUA app mà cluster-cast đang sở hữu trên cụm (display 1) — KHÔNG ghi đè vị trí cast (không "giành" app
+     * BỎ QUA app mà cluster-cast đang sở hữu trên cụm (màn ảo cụm dò LIVE — B4, không phải hằng display 1) — KHÔNG ghi đè vị trí cast (không "giành" app
      * khỏi cụm). App chưa ở cụm ⇒ launcher sở hữu ô như cũ. Registry rỗng lúc boot ⇒ mọi app castable ⇒ y hệt cũ.
      */
     fun seedLocations() {

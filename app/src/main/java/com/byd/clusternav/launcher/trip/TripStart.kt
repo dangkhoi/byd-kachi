@@ -9,13 +9,16 @@ import com.byd.clusternav.Prefs
 import com.byd.clusternav.a11yTatMayAt
 import com.byd.clusternav.launcher.DefaultHome
 import com.byd.clusternav.launcher.InstalledApps
+import com.byd.clusternav.launcher.ParkedApps
 import com.byd.clusternav.launcher.WorkspacePrefs
 import com.byd.clusternav.launcher.behind.BehindHomePlan
 import com.byd.clusternav.launcher.behind.BehindHomeRunner
 import com.byd.clusternav.launcher.behind.BehindHomeSequence
 import com.byd.clusternav.launcher.behind.BehindMarksStore
+import com.byd.clusternav.launcher.behind.HiddenPark
 import com.byd.clusternav.launcher.tripConfig
 import com.byd.clusternav.modules.clustercast.ClusterProfile
+import com.byd.clusternav.modules.clustercast.StackEntry
 import com.byd.clusternav.modules.clustercast.StackParse
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import java.io.IOException
@@ -94,6 +97,16 @@ object TripStart {
     /** Kết quả chuyến gần nhất (Cài đặt › Mở app khi nổ máy — R2.7). Chỉ đọc. */
     fun last(ctx: Context): TripGate.Result? = TripLedgerStore(ctx).last()
 
+    /**
+     * A2 (4) · 2.89 — thứ chuyến ĐANG chờ (`null` = không chờ gì / không chạy). Cờ RAM CHỈ để HIỂN THỊ (CLAUDE.md §5): Cài đặt
+     * ghi *"Lần nổ máy này: đang chạy — chờ YouTube ở ô 1…"*; không lệnh nào quyết theo nó. Luồng `kachi-trip` ghi.
+     */
+    @Volatile private var waiting: TripWaitMark? = null
+
+    fun progress(): TripWaitMark? = waiting
+
+    internal fun setProgress(m: TripWaitMark?) { waiting = m }
+
     /** L4 · D1 — kết quả đang hiện có phải của lần nổ máy NÀY ([TripGate.now]). Chỉ đọc (sổ bền + claim tắt-máy bền). */
     fun now(ctx: Context): TripGate.Now {
         val s = TripLedgerStore(ctx)
@@ -123,6 +136,9 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
 
     private val store = TripLedgerStore(app)
     private val notes = ArrayList<String>()
+
+    /** A2 (4) — cổng chờ đang chặn lúc chuyến hết hạn (ghi vào `w=` của sổ kết quả). */
+    private var expiredOn: TripWaitMark? = null
     private val steps = ArrayList<TripStep>()
     private val now: Long get() = SystemClock.elapsedRealtime()
 
@@ -143,9 +159,11 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
                 // Sổ CLAIMED TRƯỚC mọi việc (CLAUDE.md §5). Ghi hỏng ⇒ KHÔNG chạy: thà mất một chuyến còn hơn chạy hai lần.
                 if (!store.write(d.claim)) { Log.e(TripStart.TAG, "claim write failed trip=$trip -> no trip"); return }
                 val t0 = now
-                val code = body(boot, firstWake)
-                // `d=` giữ ghi chú KHÔNG phải bước (chờ bao lâu / hết hạn); mã từng bước đi trường `s=` riêng (L4 · D1).
-                val result = TripGate.Result(trip, code, System.currentTimeMillis(), notes.firstOrNull().orEmpty(), steps.toList())
+                val code = try { body(boot, firstWake) } finally { TripStart.setProgress(null) }
+                // `d=` giữ ghi chú KHÔNG phải bước (chờ bao lâu / hết hạn); mã từng bước đi trường `s=` riêng (L4 · D1). A2 (4):
+                // hết hạn khi đang chờ ⇒ `w=` gọi tên cổng chờ cuối (Cài đặt: "Hết hạn chờ màn nhà đứng yên…").
+                val wait = if (code == TripGate.Code.EXPIRED) expiredOn else null
+                val result = TripGate.Result(trip, code, System.currentTimeMillis(), notes.firstOrNull().orEmpty(), steps.toList(), wait)
                 val ok = store.close(d.claim.copy(phase = TripGate.Phase.FIRED), result)
                 Log.i(TripStart.TAG, "run trip=$trip tries=${d.claim.tries} -> $code in=${now - t0}ms saved=$ok " +
                     "s=${TripOutcome.encode(steps)} :: ${notes.joinToString(" | ")}")
@@ -156,7 +174,7 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
     private fun body(boot: String, firstWake: Long): TripGate.Code {
         val cfg = WorkspacePrefs(app).tripConfig()
         if (cfg.empty) { notes += "config empty"; return TripGate.Code.NOTHING }
-        val host = awaitReady(boot, firstWake) ?: return TripGate.Code.EXPIRED
+        val host = awaitReady(boot, firstWake, cfg) ?: return TripGate.Code.EXPIRED
         val view = TripHub.onMain(VIEW_TIMEOUT_MS) { host.view() } ?: run { notes += "home view lost"; return TripGate.Code.EXPIRED }
         val installed = InstalledApps.launchable(app).mapTo(HashSet()) { it.pkg }
         val facts = TripPlan.Facts(
@@ -176,7 +194,8 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
                 is TripPlan.Step.Background -> behind(host, step.pkg).let { out ->
                     record(step.pkg, TripStepKind.BACKGROUND, TripOutcome.ofBehind(out.result), "bg-${out.result}")
                 }
-                is TripPlan.Step.Music -> TripMusicRun(app, sleep, musicPorts(host)).run(step.music, installed, view).let { r ->
+                is TripPlan.Step.Music -> TripMusicRun(app, sleep, musicPorts(host))
+                    .run(step.music, installed, firstWake + TripGate.TRIP_DEADLINE_MS, TripStart::setProgress, view.slots).let { r ->
                     steps += r.step
                     notes += r.note
                 }
@@ -206,22 +225,41 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
      * R2.3 — chờ bằng SỰ THẬT, hỏi lại mỗi [TripPlan.HOME_READ_GAP_MS]: (a) khởi động xong, (b) màn chính + kênh, (c) có ô app
      * thì ít nhất một ô đã thấy app sống, (d) HOME của Kachi đứng yên ở đỉnh display 0 qua [TripPlan.HOME_STEADY_READS] lần
      * đọc liền (KachiAutostart ≈ +11,7 s và VietMap tự mở ≤ 25 s có thể đè app mở sớm — [ĐO mã + log xe 29/09]).
-     * Hết hạn chuyến ⇒ `null`.
+     * Hết hạn chuyến ⇒ `null` (cổng chờ cuối ghi vào [expiredOn]).
+     *
+     * A2 (3) · 2.89: (c) chỉ khi chuyến CẦN ô dàn dựng ([TripPlan.needsStage]: có app *Chạy nền* ngoài ô) và tối đa
+     * [TripPlan.SLOTS_GIVE_UP_MS] từ lần thức — [ĐO xe 05/10] cấu hình chỉ có nhạc (YouTube ở ô 1) chờ (c) tới hết hạn. Mỗi lần
+     * đổi cổng: một dòng log kèm ảnh chụp ô (gói · màn ảo · sống) để lần sau biết vì sao ô chưa "sống".
      */
-    private fun awaitReady(boot: String, firstWake: Long): TripHub.Host? {
+    private fun awaitReady(boot: String, firstWake: Long, cfg: TripConfig): TripHub.Host? {
         var streak = 0
         var lastWait: TripPlan.Wait? = null
+        // App nền bị loại sẵn (hệ thống / chưa cài) không cần chỗ dàn dựng — đo MỘT lần (PackageManager), không mỗi nhịp.
+        val installed = InstalledApps.launchable(app).mapTo(HashSet()) { it.pkg }
+        val noStage = cfg.apps.map { it.pkg }.filterTo(HashSet()) { it !in installed || isSystem(it) }
         while (true) {
-            if (!TripGate.withinDeadline(firstWake, now)) { notes += "expired waiting $lastWait"; return null }
+            if (!TripGate.withinDeadline(firstWake, now)) {
+                notes += "expired waiting $lastWait"
+                expiredOn = lastWait?.let { TripWaitMark(it) }
+                return null
+            }
             val host = TripHub.current()
             val sh = host?.shell()
             val view = host?.let { h -> TripHub.onMain(VIEW_TIMEOUT_MS) { h.view() } }
             val bootReady = TripGate.bootReady(store.bootSeen(), boot, firstWake, now)
             val entries = if (sh != null && view != null) StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault("")) else emptyList()
             streak = if (TripPlan.homeTopVisible(entries, homeComps)) streak + 1 else 0
-            val wait = TripPlan.waitFor(bootReady, sh != null && view != null, view?.appSlots?.size ?: 0, view?.stages?.count { it.alive } ?: 0, streak)
-            if (wait == null) { notes += "ready after ${now - firstWake}ms"; return host }
-            if (wait != lastWait) Log.i(TripStart.TAG, "wait $wait (streak=$streak home=$homeComps)")
+            val needsStage = TripPlan.needsStage(cfg, view?.appSlots?.toSet().orEmpty(), noStage)
+            val wait = TripPlan.waitFor(
+                bootReady, sh != null && view != null, view?.appSlots?.size ?: 0, view?.stages?.count { it.alive } ?: 0, streak,
+                needsStage = needsStage, sinceWakeMs = now - firstWake,
+            )
+            if (wait == null) { notes += "ready after ${now - firstWake}ms"; TripStart.setProgress(null); return host }
+            if (wait != lastWait) {
+                Log.i(TripStart.TAG, "wait $wait (streak=$streak home=$homeComps needsStage=$needsStage " +
+                    "stages=${view?.stages?.joinToString(",", "[", "]") { "${it.slot}:${it.pkg}@${it.vd}:${if (it.alive) "alive" else "unseen"}" }})")
+                TripStart.setProgress(TripWaitMark(wait))
+            }
             lastWait = wait
             sleep(TripPlan.HOME_READ_GAP_MS)
         }
@@ -256,30 +294,65 @@ internal class TripRun(private val app: Context, private val sleep: (Long) -> Un
         return out.get() ?: BehindHomeSequence.Outcome(BehindHomeSequence.Result.TIMEOUT, "timeout")
     }
 
-    /** Phần màn chính mà bước nhạc cần (L4 · D2/D3) — đều chặn, đều qua mutex `kachi-behind`. */
+    /**
+     * Phần màn chính mà bước nhạc cần (L4 · D2/D3 · A2) — đều chặn, mọi lệnh đổi cửa sổ qua mutex `kachi-behind`.
+     * Review 2.89 Pass 1 · behaviour-2: MỖI lượt gọi lấy màn chính ĐANG SỐNG ([live] — như `awaitReady` đọc lại
+     * `TripHub.current()` mỗi nhịp). Bước nhạc chờ ô tới 90 s; màn bị dựng lại giữa chừng (đổi ngày/đêm `uiMode`, ngôn ngữ ⇒
+     * `recreate()`) thì [host] bắt từ `awaitReady` là Activity ĐÃ CHẾT (host ô đã nhả ⇒ `stage()` = `null`) ⇒ ô không bao giờ
+     * "sống" ⇒ `SLOT_WAIT` dù app đang chạy trong ô của màn mới.
+     */
     private fun musicPorts(host: TripHub.Host) = object : TripMusicRun.Ports {
-        override fun behind(pkg: String) = behind(host, pkg)
+        /** Màn chính đang sống; chưa có màn nào đăng ký lại ⇒ [host] (đường cũ). */
+        private fun live(): TripHub.Host = TripHub.current() ?: host
+
+        override fun behind(pkg: String) = behind(live(), pkg)
+
+        // A2 (2) — ô 7: CÙNG bên thi hành/mutex `kachi-behind`, màn ảo ẩn MỚI của lượt (`Kit.park`), dấu bền trước K12.
+        override fun park(pkg: String): BehindHomeSequence.Outcome = await(pkg) { done ->
+            live().behindChain("park X=$pkg", { kit ->
+                val marks = BehindMarksStore(kit.app)
+                HiddenPark(kit.sh, kit.app.packageName, AccessibilityRebind.GO_HOME_UNLESS_CAMERA, homeComps, ::isSystem, { id, p -> marks.add(id, p) }, sleep)
+                    .park(pkg, kit.park)
+            }, done, needsAnchor = false)
+            true
+        } ?: BehindHomeSequence.Outcome(BehindHomeSequence.Result.NO_STAGE, "not accepted")
+
+        // A2 (1) — ảnh chụp ô MỚI mỗi nhịp chờ (luồng chính, trần VIEW_TIMEOUT_MS); quyết ở `:core` (`TripMusicPlace`).
+        override fun where(pkg: String): TripMusicPlace.Where? {
+            val h = live()
+            return TripHub.onMain(VIEW_TIMEOUT_MS) { h.view() }?.let { v -> TripMusicPlace.where(pkg, v.slots, v.stages) }
+        }
+
+        override fun stacks(): List<StackEntry>? {
+            val sh = live().shell() ?: return null
+            return StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault("")).takeIf { it.isNotEmpty() }
+        }
 
         override fun view(pkg: String, url: String, inSlot: Boolean): BehindHomeSequence.Outcome? {
             // Ảnh chụp ô MỚI lúc giao link (review 287 [P2]): ảnh đầu chuyến có thể chụp TRƯỚC khi ô của app nhạc mở xong ⇒
             // app ở ô KHÔNG BAO GIỜ dàn qua chỗ khác (kéo task khỏi ô của nó); ô chưa có màn ảo ⇒ 0 lệnh.
-            val stages = TripHub.onMain(VIEW_TIMEOUT_MS) { host.view() }?.stages.orEmpty()
-            val route = TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd)
+            val h = live()
+            val stages = TripHub.onMain(VIEW_TIMEOUT_MS) { h.view() }?.stages.orEmpty()
+            // A2: app ngoài ô mà đang ở ô 7 ⇒ CHÍNH màn ảo đỗ (`ViewRoute.Parked`) — K4-VIEW lên màn ảo khác là dời task = mất nhạc.
+            val route = TripMusicPlan.viewRoute(inSlot, stages.firstOrNull { it.pkg == pkg }?.vd, ParkedApps.vdOf(pkg))
             if (route == TripMusicPlan.ViewRoute.SlotNotReady) return null
             val k4: (Int) -> String = { vd -> TripMusicPlan.viewCmd(vd, url, pkg) }
+            // behaviour-5: K4-VIEW vào ô / ô 7 (`TripMusicView`) không dựng giữ chỗ ⇒ không chịu công tắc tắt BEHIND-HOME.
+            val anchor = route !is TripMusicPlan.ViewRoute.Slot && route !is TripMusicPlan.ViewRoute.Parked
             return await(pkg) { done ->
-                host.behindChain("view X=$pkg", { kit ->
+                h.behindChain("view X=$pkg", { kit ->
                     if (route is TripMusicPlan.ViewRoute.Slot) viewInSlot(kit, pkg, route.vd, url)
+                    else if (route is TripMusicPlan.ViewRoute.Parked) viewInSlot(kit, pkg, route.vd, url)
                     else BehindHomePlan.stageFor(stages, pkg).let { st ->
                         if (st.hidden) kit.seq.startBehindHidden(pkg, kit.hidden, view = k4) else kit.seq.startBehind(pkg, st, view = k4)
                     }
-                }, done)
+                }, done, needsAnchor = anchor)
                 true
             }
         }
 
         override fun facts(pkg: String): String {
-            val sh = host.shell() ?: return "task=? pid=? (no channel)"
+            val sh = live().shell() ?: return "task=? pid=? (no channel)"
             val tasks = StackParse.parse(runCatching { sh(BehindHomePlan.LIST_CMD) }.getOrDefault("")).filter { it.pkg == pkg }
             val pid = runCatching { sh(BehindHomePlan.pidCmd(pkg)).trim() }.getOrDefault("?")
             return "task=${tasks.joinToString("/") { "${it.taskId}@d${it.displayId}" }.ifEmpty { "-" }} pid=${pid.ifEmpty { "-" }}"

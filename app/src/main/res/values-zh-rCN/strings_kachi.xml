@@ -74,6 +74,11 @@
     <string name="kachi_row_bg_opacity">背景透明度</string>
     <string name="kachi_bg_opacity_note">顶栏、车控栏和小组件的背景共用一个级别：拖到最左即原样，向右拖动背景逐渐透明，拖到最右（100%）背景完全透明。文字和图标始终保持不变；在明亮的壁纸上，透明度较高时文字可能难以辨认——由您决定。松手即生效；关闭设置即可看到效果。</string>
     <string name="kachi_bg_opacity_a11y">背景透明度：%1$s</string>
+    <!-- 2.89 · B3 DOCK-SCALE -->
+    <string name="kachi_sec_bar_scale">车控栏</string>
+    <string name="kachi_row_bar_scale">大小</string>
+    <string name="kachi_bar_scale_a11y">车控栏大小：%1$s</string>
+    <string name="kachi_bar_scale_note">拖动以缩小或放大车控栏——100% 即原样。上方的格子是实际大小的预览（仅供查看）。松手即生效：格子区域、小组件和快捷方式会按新空间自动调整，格子中的应用可能会重新绘制一次。按钮变小，但触控区域仍足够大，驾驶时也便于按下。</string>
     <string name="kachi_sec_car_image">车辆图片</string>
     <string name="kachi_car_image_current">使用中：%1$s</string>
     <string name="kachi_car_image_title">车辆图片</string>
@@ -116,7 +121,7 @@
     <string name="kachi_row_boot_profile">上电时使用</string>
     <string name="kachi_profile_boot_last">上次使用</string>
     <string name="kachi_boot_profile_note">“上次使用”会以下电时正在使用的档案启动。固定某个档案后，每次上电都会回到该档案，即使上一趟行程中切换过档案。</string>
-    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”和“上电时打开应用”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
+    <string name="kachi_home_profile_note">设置中的所有项目——除了“系统与权限”（但“上电自动打开Kachi”“上电运行后台服务”“上电时打开应用”和“上车自动播放音乐”仍跟随档案）、“语音”的大部分、“默认导航应用”、“真实玻璃效果（背景模糊）”、“雨天自动除霜”、按车辆调校的摄像头（旋转、镜像、视角）以及“关于”——都保存到档案“%1$s”，包括仪表投屏、每个应用的框和DPI、悬浮按钮和摄像头。在“驾驶员档案”中切换到其他档案后，布局、格位内容、顶栏标签、车控栏、主题和单位会立即改变；投屏框和DPI从下次投屏起改变，投屏开启/关闭从下次上电起改变。</string>
     <string name="kachi_delete">删除</string>
     <string name="kachi_sec_recirc">内循环</string>
     <string name="kachi_recirc_title">上电时自动开启内循环</string>
@@ -422,6 +427,16 @@
     <string name="kachi_cast_bubble_title">显示悬浮投屏按钮</string>
     <string name="kachi_cast_bubble_sub">悬浮在屏幕上的Kachi花朵按钮，点按即可投屏。关闭只会隐藏按钮——仍可通过下方四个“立即投屏”按钮、语音或上电时自动投屏。</string>
     <string name="kachi_cast_split">分屏比例</string>
+    <string name="kachi_cast_style_label">仪表投屏样式</string>
+    <string name="kachi_cast_style_curved">圆角</string>
+    <string name="kachi_cast_style_rect">矩形</string>
+    <string name="kachi_cast_style_rect_note">矩形：右侧白色ADAS框是仪表的固定界面——菜单键只能把ADAS切换为小窗，框仍然在。仪表会失去原车km/h，因此由Kachi在左下角绘制km/h（投屏CarPlay/Android Auto时不绘制）。</string>
+    <string name="kachi_cast_style_rect_no_overlay">缺少“显示在其他应用上层”权限 ⇒ Kachi 无法绘制 km/h ⇒ 投屏将使用圆角样式（仪表保留原车 km/h），直到授予权限。</string>
+    <string name="kachi_cast_style_apply_note">下次上电时生效，或在仪表空闲时生效（已关闭投屏且仪表投屏画面已消失）。投屏期间不会向仪表发送任何指令。</string>
+    <string name="kachi_cast_style_session">仪表当前：%1$s。新样式将在下次上电或仪表空闲时生效。</string>
+    <string name="kachi_cast_style_unknown">样式未知</string>
+    <string name="kachi_cast_style_apply_now">立即应用（关闭后重新投屏）</string>
+    <string name="kachi_cast_style_apply_busy">正在投屏应用——请先停止投屏，再点“立即应用”。</string>
     <string name="kachi_cast_split_session_differs">当前分屏%1$s · 此档案%2$s——从下次分屏起生效（点按某个比例即可立即应用）。</string>
     <string name="kachi_sub_cast_autostart">上电自动投屏</string>
     <string name="kachi_cast_autostart_title">自动整屏投屏</string>
@@ -780,4 +795,15 @@
     <string name="kachi_trip_now_running">本次上电：正在运行…</string>
     <string name="kachi_trip_now_wait_channel">本次上电：尚未运行——窗口控制通道尚未连接</string>
     <string name="kachi_trip_now_wait_home">本次上电：尚未运行——正在等待主屏幕就绪</string>
+    <!-- A2 · 2.89 (TRIP-MUSIC-IN-SLOT) -->
+    <string name="kachi_trip_expired_wait">等待%1$s超时——本次行程未打开应用</string>
+    <string name="kachi_trip_wait_boot">系统启动完成</string>
+    <string name="kachi_trip_wait_home_screen">主屏幕和控制通道</string>
+    <string name="kachi_trip_wait_slots">格位中的应用打开</string>
+    <string name="kachi_trip_wait_home_steady">主屏幕保持在前台</string>
+    <string name="kachi_trip_wait_slot_app">格位 %2$d 中的 %1$s</string>
+    <string name="kachi_trip_now_waiting">本次上电：正在运行——等待%1$s…</string>
+    <string name="kachi_trip_step_music_slot">音乐（格位 %2$d 中的 %1$s）</string>
+    <string name="kachi_trip_why_slot_wait">已跳过——格位中的应用打开太久，未发送播放命令</string>
+    <string name="kachi_trip_why_parked">正在隐藏运行（格位 7）——不遮挡主屏幕</string>
 </resources>

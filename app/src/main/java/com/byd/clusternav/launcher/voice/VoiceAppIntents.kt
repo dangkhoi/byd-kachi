@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import com.byd.clusternav.launcher.ParkedApps
 
 /**
  * ═══ V1.1 · DỊCH [VoiceLaunch] (dữ liệu, `:core`) THÀNH MỘT `Intent` VÀ BẮN ═══════════════════════════════════
@@ -164,8 +165,16 @@ object VoiceAppIntents {
             Log.i(TAG, "gói ${intent.`package`} không nhận ${intent.action} ${intent.data ?: ""}")
             return false
         }
-        return runCatching { ctx.startActivity(intent); true }
+        // Review 2.89 Pass 3 · whole-r2-1: app đang ĐỖ ở ô 7 ⇒ nêu display 0 (không thì task tìm lại được ở yên trên màn ảo đỗ ẩn —
+        // dẫn đường bắt đầu trên một mặt không ai thấy). Không đỗ ⇒ `startActivity(intent)` trơn như cũ từng byte.
+        val pkg = intent.`package`
+        val parked = ParkedApps.launchOptions(pkg)
+        return runCatching {
+            if (parked != null) ctx.startActivity(intent, parked.toBundle()) else ctx.startActivity(intent)
+            true
+        }
             .onFailure { Log.w(TAG, "không bắn được ý-định ${intent.action}", it) }
             .getOrDefault(false)
+            .also { ok -> if (ok && parked != null && pkg != null) ParkedApps.launched(pkg) }
     }
 }

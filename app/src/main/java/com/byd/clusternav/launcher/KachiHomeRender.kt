@@ -47,7 +47,9 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     // `workspace.render` để ô dựng trong lượt này đăng ký với đúng cờ của hồ sơ.
     if (prev?.slotHeadAutoHide != state.slotHeadAutoHide) workspace.setSlotHeadAutoHide(state.slotHeadAutoHide)
     // Màn vẽ bố cục ĐANG HIỆN (lớp lưu + lớp tạm — đính chính owner 01/10); ô có mốc đặt-tạm mới ⇒ đổi app tại chỗ.
-    workspace.render(state.effectiveWorkspace, state.carStatus, WorkspaceRenderPlanner.swapCandidates(prev?.swapNonce, state.swapNonce))
+    // Pass 3 · whole-r2-2: lượt dựng lại do ĐỔI HỒ SƠ nhả app rời ô như 2.88 (không đỗ ô 7) — `SlotParkPlan.leave`.
+    workspace.render(state.effectiveWorkspace, state.carStatus, WorkspaceRenderPlanner.swapCandidates(prev?.swapNonce, state.swapNonce),
+        profileSwitch = prev != null && prev.activeProfile != state.activeProfile)
     // R1/R2 (quality-review 2026-09-15): registry vị-trí-app là PROJECTION của state — reconcile MỖI render ở
     // ĐÚNG MỘT chỗ, thay các lệnh d.place/d.remove sửa tay ở handler (nguồn drift "3 nguồn sự-thật"). Đọc-vẽ,
     // không đổi state. `WorkspaceView.render` phía trên đã lo VdAppHost theo-ô; đây lo registry + evict app rời ô.
@@ -73,8 +75,9 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
         // Thiếu nhánh `visible` thì bật/tắt "Hiện thanh nút" không có tác dụng tới khi đổi viền/dựng lại màn.
         // ⚠ R-A1 (PROFILE-SWITCH-SLOTS): chạy SAU `workspace.render` ở trên ⇒ vùng ô phải ở yên trong cây view, nếu
         // không ô app vừa dựng bị nhả ngay (đen mãi). `DockAreaLayout.apply` chỉ tháo/gắn thanh nút — [DockAreaPlan].
+        // 2.89 · B3 — đổi CỠ thanh (thả tay ở Cài đặt / đổi hồ sơ) đổi bề dày ⇒ cùng đường đặt lại như đổi viền.
         val layoutChanged = prev != null &&
-            (prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
+            (prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible || prev.dock.scalePct != state.dock.scalePct)
         dock.setConfig(state.dock)
         if (layoutChanged) DockAreaLayout.apply(mainArea, workspace, dock, state.dock, resources.displayMetrics.density)
     }
@@ -98,7 +101,8 @@ internal fun KachiHomeActivity.render(state: HomeUiState) {
     // Ẩn/hiện thanh (S1b) cũng đổi KÍCH THƯỚC vùng ô (ẩn ⇒ ô lấp trọn màn), nên cửa sổ app đặt trong ô phải đặt
     // lại theo khung mới — cùng lý do đổi viền/bố cục.
     if (prev != null &&
-        (prev.preset != state.preset || prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible)
+        (prev.preset != state.preset || prev.dock.edge != state.dock.edge || prev.dock.visible != state.dock.visible ||
+            prev.dock.scalePct != state.dock.scalePct)
     ) {
         windows.reflow()
     }

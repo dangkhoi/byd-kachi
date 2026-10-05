@@ -9,6 +9,8 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.modules.clustercast.simplified.ThemeGapReopen
+import com.byd.clusternav.modules.clustercast.simplified.themeGapRetryMs
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -54,11 +56,24 @@ internal class BubbleAutostart(
      * (`localhost:5555`) có thể chưa sẵn ngay lúc máy vừa nổ.
      */
     @Volatile private var openAttempts = 0
+
+    /** Số lần đã hoãn vì khoảng 15 s của cổng theme (không tính vào [openAttempts]; có trần [OPEN_MAX_GAP_WAITS]). */
+    @Volatile private var gapWaits = 0
     private val open = object : Runnable {
         override fun run() {
             if (isDestroyed() || dispatched.get()) return
             val coordinator = SimpleCastRuntime.coordinator(app)
-            when (coordinator.state) {
+            val st = coordinator.state
+            // Review 2.89 Pass 2 · whole-r1-5: lượt trước bị cổng theme DỪNG mà khoảng 15 s giữa hai lần đổi theme còn chạy ⇒ thử
+            // ngay là chắc chắn `TOO_SOON` lần nữa (5 lượt × 3 s ≈ đúng khoảng đó [SUY]) ⇒ chờ hết khoảng, KHÔNG tính lượt thử.
+            val gap = if (st is SimpleCastState.Off || st is SimpleCastState.Error) coordinator.themeGapRetryMs() else null
+            if (gap != null && gapWaits < OPEN_MAX_GAP_WAITS) {
+                gapWaits++
+                Log.i(TAG, "boot auto-open: cổng theme còn khoảng $gap ms — chờ rồi mới thử lại (không tính lượt ${openAttempts + 1})")
+                handler.postDelayed(this, gap + GAP_MARGIN_MS)
+                return
+            }
+            when (st) {
                 is SimpleCastState.Off, is SimpleCastState.Error -> coordinator.openProjection()
                 else -> Unit // đang mở / đã Idle / đang chiếu — cò ở [dispatch] sẽ nổ
             }
@@ -92,6 +107,7 @@ internal class BubbleAutostart(
         coordinator.addStateListener(listener)
 
         openAttempts = 0
+        gapWaits = 0
         handler.post(open)
     }
 
@@ -150,5 +166,11 @@ internal class BubbleAutostart(
         const val TAG = "ClusterCastBubble"
         const val OPEN_MAX_ATTEMPTS = 5
         const val OPEN_RETRY_MS = 3_000L
+
+        /** Trần số lần hoãn vì khoảng 15 s (whole-r1-5) — mỗi lần ≤ khoảng + lề, nên tổng ≤ ~47 s; không bao giờ vòng vô hạn. */
+        const val OPEN_MAX_GAP_WAITS = 3
+
+        /** Lề sau khi khoảng 15 s hết (đồng hồ của sổ và của `Handler` lệch nhau vài ms) — một hằng với "Áp ngay" (cluster-r2-6). */
+        const val GAP_MARGIN_MS = ThemeGapReopen.MARGIN_MS
     }
 }

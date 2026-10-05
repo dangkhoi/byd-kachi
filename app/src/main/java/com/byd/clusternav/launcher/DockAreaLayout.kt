@@ -24,7 +24,11 @@ object DockAreaLayout {
 
     /** Áp bố cục: [mainArea] chứa [workspace] (giãn) + [dock] (cố định) theo [cfg]. [density] = displayMetrics.density. */
     fun apply(mainArea: LinearLayout, workspace: View, dock: View, cfg: DockConfig, density: Float) {
-        fun dp(v: Int): Int = (v * density).toInt()
+        fun dp(v: Int, d: Float = density): Int = (v * d).toInt()
+        // 2.89 · B3 DOCK-SCALE — bề dày thanh theo CÙNG mật độ mà cây view của thanh dựng bằng (`DockScaleContext`):
+        // `BarScale.scaledDensity` = phép `ResourcesImpl` ⇒ thanh và ô ra cùng px. 100 % ⇒ chính [density] (đường cũ).
+        // Khe [Sp.SLOT_GAP] KHÔNG co: nó phải bằng khe giữa các ô ở BỐN chỗ (`KachiSpace.SLOT_GAP`).
+        val barDensity = BarScale.scaledDensity(density, cfg.scalePct)
         val target = DockAreaPlan.target(cfg)
         // Thanh nút rời khung cuộn cũ (khung cũ cuộn theo trục cũ; viền mới có thể khác trục) — như bản trước.
         (dock.parent as? ViewGroup)?.removeView(dock)
@@ -38,7 +42,7 @@ object DockAreaLayout {
             target.vertical -> LinearLayout.LayoutParams(MATCH, 0, 1f)
             else -> LinearLayout.LayoutParams(0, MATCH, 1f)
         }
-        val dockLp = if (target.vertical) LinearLayout.LayoutParams(MATCH, dp(Bars.DOCK_THICK)) else LinearLayout.LayoutParams(dp(Bars.DOCK_WIDE), MATCH)
+        val dockLp = if (target.vertical) LinearLayout.LayoutParams(MATCH, dp(Bars.DOCK_THICK, barDensity)) else LinearLayout.LayoutParams(dp(Bars.DOCK_WIDE, barDensity), MATCH)
         val gap = dp(Sp.SLOT_GAP)
         when (cfg.edge) {
             DockEdge.BOTTOM -> dockLp.topMargin = gap

@@ -14,6 +14,8 @@ import com.byd.clusternav.modules.clustercast.simplified.SimpleCastCoordinator
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastIntent
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
+import com.byd.clusternav.modules.clustercast.simplified.ThemeGapReopen
+import com.byd.clusternav.modules.clustercast.simplified.themeGapRetryMs
 import com.byd.clusternav.system.PackageQueries
 
 /**
@@ -239,8 +241,35 @@ fun ClusterNavBridge.restoreCluster() {
     toast(BridgeMsg.CLUSTER_RESET_REOPENING)
     // Audit F14: giữ token + huỷ được ở [setCastEnabled] OFF, và đọc lại công tắc NGAY TRƯỚC khi mở (CLAUDE.md §5:
     // sự thật lúc chạy, không phải cờ lúc hẹn). Người dùng tắt cast trong 2 s ⇒ không giành lại cụm.
-    clusterReopen.schedule(2_000, gate = { castEnabled() }) { coordinator.openProjection() }
+    clusterReopen.schedule(2_000, gate = { castEnabled() }) { reopenRetryingThemeGap() }
 }
+
+/**
+ * Review 2.89 Pass 3 · cluster-r2-6 — lượt mở lại của [restoreCluster] ("Áp ngay"): bị cổng theme DỪNG vì khoảng 15 s ⇒ hẹn ĐÚNG MỘT
+ * lượt mở nữa sau khoảng + lề ([ThemeGapReopen], luật thuần ở `:core`), qua CHÍNH [clusterReopen] (huỷ được ở [setCastEnabled]
+ * OFF / [deepRescue]) và gác công tắc Cast lúc chạy. Lượt thử lại chỉ `openProjection()` — không gắn bộ xem mới ⇒ không vòng.
+ */
+private fun ClusterNavBridge.reopenRetryingThemeGap() {
+    val c = coordinator
+    gapWatch?.let(c::removeStateListener)
+    val watch = ThemeGapReopen(gapMs = { c.themeGapRetryMs() }) { delay ->
+        android.util.Log.i(CAST_TAG, "Áp ngay: cổng theme dừng vì khoảng 15 s ⇒ mở lại MỘT lần sau $delay ms")
+        clusterReopen.schedule(delay, gate = { castEnabled() }) { c.openProjection() }
+    }
+    val listener = object : (SimpleCastState) -> Unit {
+        override fun invoke(s: SimpleCastState) {
+            if (!watch.onState(s)) return
+            c.removeStateListener(this)
+            if (gapWatch === this) gapWatch = null
+        }
+    }
+    gapWatch = listener
+    c.addStateListener(listener)
+    c.openProjection()
+}
+
+/** Bộ xem của lượt "Áp ngay" gần nhất — gỡ khi lượt mới gắn (một bộ xem cho cả tiến trình, như [clusterReopen]). */
+@Volatile private var gapWatch: ((SimpleCastState) -> Unit)? = null
 
 /**
  * App chiếu cụm dùng CHUNG API với ClusterNav — nguồn xung đột đã biết (findings + navopen spoof

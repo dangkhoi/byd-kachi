@@ -229,14 +229,14 @@ class WorkspacePrefs(context: Context) {
             ?.let { DockSelection.sanitize(it) }
             ?: ControlRegistry.defaultEnabledIds()
         val visible = sp.booleanOrNull(key("dock_visible")) ?: true   // S1b — vắng = hiện (giữ hành vi cũ)
-        return DockConfig(edge, enabled, visible)
+        return DockConfig(edge, enabled, visible, dockScalePct())   // B3 — `WorkspacePrefsDockScale.kt`
     }
 
     fun saveDock(c: DockConfig) {
         sp.edit()
             .putString(key("dock_edge"), c.edge.name)
             .putString(key("dock_enabled"), c.enabled.joinToString(","))
-            .putBoolean(key("dock_visible"), c.visible)
+            .putBoolean(key("dock_visible"), c.visible).let { putDockScale(it, c.scalePct) }
             .apply()
     }
 

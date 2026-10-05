@@ -150,19 +150,30 @@ object TripGate {
      * Kết quả chuyến gần nhất ([Code] + giờ tường + một dòng ASCII ngắn cho màn Chẩn đoán + L4 · D1: MÃ từng bước [steps]
      * — trường `s=` riêng, không cắt, Cài đặt dịch từng mã thành câu). Bản ghi cũ (không `s=`) ⇒ [steps] rỗng.
      */
-    data class Result(val trip: String, val code: Code, val atWall: Long, val detail: String, val steps: List<TripStep> = emptyList())
+    /**
+     * A2 (4) · 2.89 — [wait] = thứ chuyến chờ CUỐI CÙNG trước khi hết hạn (Cài đặt nói *"Hết hạn chờ màn nhà đứng yên…"* thay
+     * cho câu chung). Trường `w=` riêng; bản ghi cũ (không `w=`) ⇒ `null` ⇒ câu chung như trước.
+     */
+    data class Result(
+        val trip: String,
+        val code: Code,
+        val atWall: Long,
+        val detail: String,
+        val steps: List<TripStep> = emptyList(),
+        val wait: TripWaitMark? = null,
+    )
 
     fun encodeResult(r: Result): String {
         val s = TripOutcome.encode(r.steps)
         return "v=1;trip=${r.trip};code=${r.code};at=${r.atWall};d=${r.detail.filter { it in SAFE_DETAIL }.take(DETAIL_MAX)}" +
-            if (s.isEmpty()) "" else ";s=$s"
+            (if (s.isEmpty()) "" else ";s=$s") + (r.wait?.let { ";w=${TripWaitMark.encode(it)}" } ?: "")
     }
 
     fun decodeResult(raw: String?): Result? {
         val f = fields(raw) ?: return null
         val trip = f["trip"]?.takeIf { it.matches(ID) } ?: return null
         val code = Code.values().firstOrNull { it.name == f["code"] } ?: return null
-        return Result(trip, code, f["at"]?.toLongOrNull() ?: 0L, f["d"].orEmpty(), TripOutcome.decode(f["s"]))
+        return Result(trip, code, f["at"]?.toLongOrNull() ?: 0L, f["d"].orEmpty(), TripOutcome.decode(f["s"]), TripWaitMark.decode(f["w"]))
     }
 
     private fun fields(raw: String?): Map<String, String>? {
@@ -175,4 +186,37 @@ object TripGate {
     private val ID = Regex("[A-Za-z0-9.\\-]{1,64}")
     private const val DETAIL_MAX = 160
     private val SAFE_DETAIL: Set<Char> = (('a'..'z') + ('A'..'Z') + ('0'..'9') + listOf(' ', '.', ',', '_', '-', ':', '/', '+', '(', ')', '|')).toSet()
+}
+
+/**
+ * ═══ A2 (4) · 2.89 — chuyến ĐANG / ĐÃ chờ GÌ: một mã bền, Cài đặt gọi tên được (thuần) ═════════════════════════════════
+ *
+ * Owner 05/10 trên xe 2.88 thấy Cài đặt ghi *"hết hạn chờ – chuyến này không mở app"* mà không biết chuyến chờ cái gì
+ * (chỉ màn Chẩn đoán có `d=expired waiting …`). [wait] = cổng [TripPlan.waitFor] đang chặn; với [TripPlan.Wait.SLOT_APP]
+ * thêm [pkg] (app nhạc) + [slot] (ô 0-based của bố cục đang hiện) ⇒ *"chờ YouTube ở ô 1"*.
+ *
+ * Mã hoá (trường `w=` của sổ kết quả + hiển thị lúc đang chạy): `WAIT` hoặc `SLOT_APP:<pkg>:<slot>` — không `;`/`=` (dấu ngăn
+ * của sổ), gói qua [com.byd.clusternav.launcher.ShellAppLauncher.PKG]. Đọc dễ dãi: chuỗi lạ ⇒ `null`, không ném.
+ */
+data class TripWaitMark(val wait: TripPlan.Wait, val pkg: String = "", val slot: Int = -1) {
+    companion object {
+        /** Ô hợp lệ của một mốc [TripPlan.Wait.SLOT_APP] (bố cục có tối đa 6 ô; dư chỗ để bản sau thêm ô không vỡ sổ). */
+        private const val SLOT_MAX = 15
+
+        fun encode(m: TripWaitMark): String =
+            if (m.wait == TripPlan.Wait.SLOT_APP) "${m.wait.name}:${m.pkg}:${m.slot}" else m.wait.name
+
+        /** Mốc chờ ô của app [pkg] ở ô [slot]; gói lạ / ô ngoài dải ⇒ `null` (không ghi mốc sai vào sổ). */
+        fun slotApp(pkg: String, slot: Int): TripWaitMark? =
+            if (pkg.matches(com.byd.clusternav.launcher.ShellAppLauncher.PKG) && slot in 0..SLOT_MAX) TripWaitMark(TripPlan.Wait.SLOT_APP, pkg, slot) else null
+
+        fun decode(raw: String?): TripWaitMark? {
+            if (raw.isNullOrBlank()) return null
+            val p = raw.trim().split(':')
+            val w = TripPlan.Wait.values().firstOrNull { it.name == p[0] } ?: return null
+            if (w != TripPlan.Wait.SLOT_APP) return if (p.size == 1) TripWaitMark(w) else null
+            if (p.size != 3) return null
+            return slotApp(p[1], p[2].toIntOrNull() ?: return null)
+        }
+    }
 }

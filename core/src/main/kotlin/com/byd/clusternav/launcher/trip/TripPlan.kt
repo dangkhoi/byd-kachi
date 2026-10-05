@@ -119,20 +119,51 @@ object TripPlan {
 
     // ── R2.3 — chờ bằng sự thật ────────────────────────────────────────────────────────────────────────────────
 
-    enum class Wait { BOOT, HOME_SCREEN, SLOTS, HOME_STEADY }
+    /**
+     * Thứ chuyến đang chờ. [SLOT_APP] (A2 · 2.89) KHÔNG phải cổng chung của [waitFor]: là bước nhạc chờ CHÍNH ô của app nhạc
+     * ([TripMusicPlace.await]) — có ở đây để sổ / Cài đặt gọi tên mọi thứ chuyến chờ bằng MỘT bảng ([TripWaitMark]).
+     */
+    enum class Wait { BOOT, HOME_SCREEN, SLOTS, HOME_STEADY, SLOT_APP }
+
+    /**
+     * A2 (3) — trần chờ "có ô app sống" tính từ lần THỨC đầu: quá chừng này mà chưa ô nào được đo thấy sống ⇒ thôi chờ, các
+     * bước chạy nền đi đường cuối của chúng (màn ảo ẩn). [SUY] 90 s = nửa hạn chuyến ([TripGate.TRIP_DEADLINE_MS]), dư chỗ cho
+     * các bước — chờ tới hết hạn là chuyến `EXPIRED` không làm gì ([ĐO xe 05/10] owner: *"hết hạn chờ – chuyến này không mở app"*).
+     */
+    const val SLOTS_GIVE_UP_MS = 90_000L
 
     /**
      * Còn phải chờ gì (theo thứ tự), `null` = đủ. [homeBound] = màn chính đã dựng và có kênh; [appSlots] = số ô app của
      * bố cục đang hiện; [liveStages] = số ô app đã thấy app sống (`SlotLiveProbe`); [homeStreak] = số lần đọc liên tiếp
      * thấy HOME của Kachi ở đỉnh display 0 ([homeTopVisible]).
+     *
+     * A2 (3) — [Wait.SLOTS] chỉ khi chuyến CẦN một ô dàn dựng ([needsStage]: có app *Chạy nền* ngoài ô) và chưa quá
+     * [SLOTS_GIVE_UP_MS] từ lần thức ([sinceWakeMs]). Nhạc KHÔNG cần: app nhạc ở ô thì chờ CHÍNH ô đó ([TripMusicPlace]), ngoài ô
+     * thì vào ô 7 (màn ảo ẩn của Kachi) — trước 2.89 cấu hình chỉ có nhạc vẫn chờ ô sống tới hết hạn chuyến.
      */
-    fun waitFor(bootReady: Boolean, homeBound: Boolean, appSlots: Int, liveStages: Int, homeStreak: Int): Wait? = when {
+    fun waitFor(
+        bootReady: Boolean,
+        homeBound: Boolean,
+        appSlots: Int,
+        liveStages: Int,
+        homeStreak: Int,
+        needsStage: Boolean = true,
+        sinceWakeMs: Long = 0L,
+    ): Wait? = when {
         !bootReady -> Wait.BOOT
         !homeBound -> Wait.HOME_SCREEN
-        appSlots > 0 && liveStages == 0 -> Wait.SLOTS
+        needsStage && appSlots > 0 && liveStages == 0 && sinceWakeMs < SLOTS_GIVE_UP_MS -> Wait.SLOTS
         homeStreak < HOME_STEADY_READS -> Wait.HOME_STEADY
         else -> null
     }
+
+    /**
+     * A2 (3) — chuyến có cần một ô app SỐNG làm chỗ dàn dựng không: có app *Chạy nền* KHÔNG nằm trong ô đang hiện ([inSlots])
+     * và không bị loại sẵn ([skip] = app hệ thống / chưa cài — bước của chúng là `SYSTEM_APP` / `NOT_INSTALLED`, 0 lệnh). App ở
+     * ô ⇒ bước của nó là `IN_SLOT` (ô tự mở); nhạc ⇒ không bao giờ cần (KDoc [waitFor]).
+     */
+    fun needsStage(cfg: TripConfig, inSlots: Set<String>, skip: Set<String> = emptySet()): Boolean =
+        cfg.apps.any { it.background && it.pkg !in inSlots && it.pkg !in skip }
 
     /**
      * Stack ĐANG HIỆN trên cùng của display 0 chứa HOME của Kachi — một trong [homeComps] (`pkg/cls` như `am stack list`

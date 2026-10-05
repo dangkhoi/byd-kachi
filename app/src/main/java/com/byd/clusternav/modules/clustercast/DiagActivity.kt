@@ -33,6 +33,8 @@ class DiagActivity : Activity() {
     private lateinit var report: TextView
     private lateinit var status: TextView
     private lateinit var badgeInfo: TextView
+    /** 2.89 · B2 — điều kiện nền app (miễn pin · vẽ nổi): SỰ THẬT đọc từ máy, không phải cờ. */
+    private lateinit var prereqInfo: TextView
 
     override fun attachBaseContext(newBase: Context) {
         // Locale của NGƯỜI DÙNG (không phải của máy) cho tài nguyên — spec kachi-i18n-zh-th-ms R9.
@@ -64,6 +66,14 @@ class DiagActivity : Activity() {
             isAllCaps = false
             minimumHeight = dp(48)
             setOnClickListener { copyReport() }
+        })
+        // CLUSTER-THEME-SAFE B1a (CLAUDE.md §11): chạy các lượt ĐỌC của cổng theme + quyết định NGAY BÂY GIỜ, in kết quả — 0 lệnh
+        // ghi (kênh chỉ đọc ở `ThemeGatePreview`). Shell dadb ⇒ luồng nền, không luồng chính.
+        root.addView(Button(this).apply {
+            text = Lang.t("Cổng theme (chỉ đọc)", "Theme gate (read-only)")
+            isAllCaps = false
+            minimumHeight = dp(48)
+            setOnClickListener { runThemeGate() }
         })
         root.addView(Button(this).apply {
             text = Lang.t("⬇ Kiểm tra cập nhật", "⬇ Check update")
@@ -142,6 +152,13 @@ class DiagActivity : Activity() {
             setTextIsSelectable(true)
             setPadding(0, dp(12), 0, 0)
         }
+        prereqInfo = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Color.rgb(26, 31, 36))
+            setTextIsSelectable(true)
+            setPadding(0, dp(12), 0, 0)
+        }
+        root.addView(prereqInfo)
         root.addView(report)
         setContentView(ScrollView(this).apply { addView(root) })
         refresh()
@@ -192,7 +209,8 @@ class DiagActivity : Activity() {
             appendLine("autoStartPkg=${prefs.autoStartPackage() ?: "(none)"}")
             appendLine("autoStartSplit=${prefs.autoStartSplitEnabled()}")
             appendLine("splitRatioLeft=${prefs.splitRatioLeftPercent()}%")
-            appendLine("dozeWhitelist=${prefs.dozeWhitelistApplied()}")
+            // 2.89 · B2: dòng `dozeWhitelist=` (in CỜ một-lần — lý do màn này không bắt được lỗi hộp "IVI không hỗ trợ") đã bỏ;
+            // sự thật miễn pin / appop đọc từ máy nằm ở khối "điều kiện nền app" phía trên ([refreshPrereqs]).
             // V-CLUSTER (OC-5): giá trị HIỆU LỰC + bản chờ của hồ sơ (chốt lần nổ máy kế). Bản ghim hình học + tỉ lệ của
             // phiên nằm sẵn trong dòng `state=` ở trên (`pinned=…`, `leftPercent=…`) — chụp màn này là đủ, không gõ adb.
             appendLine("castEnabled=${prefs.castEnabled()} pending=${prefs.castEnabledPending() ?: "-"}")
@@ -222,11 +240,41 @@ class DiagActivity : Activity() {
             }
         }
         report.text = value
+        refreshPrereqs()
+    }
+
+    /**
+     * 2.89 · B2 VM-PREREQ-TRUTH (CLAUDE.md §5 · §11): đọc NGAY `cmd deviceidle whitelist` + `appops get … SYSTEM_ALERT_WINDOW`
+     * (0 lệnh ghi) cho VietMap + app trong phạm vi, kèm lượt chữa gần nhất và lượt chờ bóng gần nhất. Shell ⇒ luồng nền.
+     */
+    private fun refreshPrereqs() {
+        prereqInfo.text = "── điều kiện nền app ── đang đọc…"   // cùng kiểu các tiêu đề khối kỹ thuật khác của màn này
+        Thread({
+            val text = buildString {
+                appendLine("── điều kiện nền app (sự thật, không cờ) ──")
+                appendLine(com.byd.clusternav.AppPrereqs.diagnose(applicationContext))
+                append("chờ bóng VietMap gần nhất: ").append(com.byd.clusternav.VietMapAutostart.lastBubbleWait ?: "chưa có trong tiến trình này")
+            }
+            runOnUiThread { if (!isFinishing && !isDestroyed) prereqInfo.text = text }
+        }, "KachiPrereqDiag").start()
+    }
+
+    /** B1a — "Cổng theme (chỉ đọc)": nền → `ClusterDiag.themeGate` (0 lệnh ghi) → đầu báo cáo, chụp màn hình gửi về. */
+    private fun runThemeGate() {
+        setStatus(Lang.t("Đang đọc cổng theme…", "Reading theme gate…"))
+        Thread({
+            val text = ClusterDiag.themeGate(applicationContext)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                report.text = text + "\n\n" + report.text
+                setStatus(Lang.t("Cổng theme: đã đọc (không gửi lệnh nào)", "Theme gate: read (no command sent)"))
+            }
+        }, "KachiThemeGateDiag").start()
     }
 
     private fun copyReport() {
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
-            .setPrimaryClip(ClipData.newPlainText("Cluster Cast diagnostics", report.text))
+            .setPrimaryClip(ClipData.newPlainText("Cluster Cast diagnostics", "${prereqInfo.text}\n\n${report.text}"))
         android.widget.Toast.makeText(this, "Đã sao chép", android.widget.Toast.LENGTH_SHORT).show()
     }
 

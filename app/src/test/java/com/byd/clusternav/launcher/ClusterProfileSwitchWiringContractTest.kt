@@ -40,6 +40,20 @@ class ClusterProfileSwitchWiringContractTest {
         assertTrue(body.contains("AutomationService.sync(app)"), "A3: camera_signal_enabled + luật dẫn đường theo hồ sơ cần đồng bộ FGS")
     }
 
+    /**
+     * Review 2.89 Pass 3 · vietmap-dock-r2-2 — đổi hồ sơ giữa phiên phải chạy lại lượt điều kiện nền (lượt SẴN của hồ sơ trước có thể
+     * đã TRẢ appop vẽ nổi của VietMap; hồ sơ mới bật bóng thì cần nó lại) — đúng lượt nền `AppPrereqs.onReady` (luồng riêng, không mở
+     * app), không phải `VietMapAutostartService` (mở app — cố ý bỏ). Thử ĐỎ: xoá dòng `step("app.prereqs")`.
+     */
+    @Test
+    fun `Pass 3 - doi ho so chay lai luot dieu kien nen, khong mo app`() {
+        val body = SourceRoots.body(launcher("ClusterNavBridgeReapply.kt"), "internal fun ClusterNavBridge.reapplyAll()")
+        assertTrue(body.contains("step(\"app.prereqs\") { AppPrereqs.onReady(app) }"), body)
+        listOf("VietMapAutostartService", "AppPrereqs.ensure(", "startForAppOpen").forEach {
+            assertFalse(body.contains(it), "đổi hồ sơ không được mở app (`$it`)")
+        }
+    }
+
     /** Lượt đổi hồ sơ ở tầng dữ liệu: chụp → trỏ → áp → reapplyAll, và KHÔNG một đường nào vào coordinator. */
     @Test
     fun `switchProfile khong cham coordinator`() {
@@ -95,11 +109,39 @@ class ClusterProfileSwitchWiringContractTest {
         val session = SourceRoots.body(geo, "private fun ClusterNavBridge.sessionConfig(target: CastGeometryTarget): DisplayConfig?")
         assertTrue(session.contains(".pinned"), "cấu hình phiên = bản ghim")
         assertFalse(session.contains("prefs."))
-        assertTrue(SourceRoots.body(geo, "fun ClusterNavBridge.geometryBand(target: CastGeometryTarget)").contains("bandPct()"))
+        // Review 2.89 Pass 3 · cluster-r2-1 — ĐỔI GHIM có lý do: dải đi qua MỘT khung gốc theo kiểu khung của PHIÊN
+        // (`ClusterRectLayout.editFrame`), vẫn theo tỉ lệ PHIÊN.
+        assertTrue(SourceRoots.body(geo, "fun ClusterNavBridge.geometryBand(target: CastGeometryTarget)").contains("editFrame(target)"))
+        val frame = SourceRoots.body(geo, "private fun ClusterNavBridge.editFrame(target: CastGeometryTarget): CastBounds {")
+        assertTrue(frame.contains("ClusterRectLayout.editFrame(frameStyle(), target.side, bandPct(), width, height)"), frame)
         // Mốc tự kết bằng `{` của khối `runCatching` — thân biểu thức nhiều dòng thụt 4 khoảng thì phép cắt theo `=` dừng ở dòng đầu.
         val saved = SourceRoots.body(geo, "private fun ClusterNavBridge.savedConfig(target: CastGeometryTarget): DisplayConfig? = runCatching {")
-        assertTrue(saved.contains("CastProfile.of(it, bandPct())"), "ô nhớ của hồ sơ theo tỉ lệ PHIÊN (đúng chỗ lượt chỉnh tay ghi)")
+        // 2.89 · B1b — ĐỔI GHIM có lý do: ô nhớ còn theo KIỂU KHUNG của phiên (cụm Chữ nhật ⇒ khoá `__RECT`), đúng chỗ lượt chỉnh
+        // tay ghi (`CastSessionPin.resizeSlotBody` dùng `CastProfile.of(side, current.leftPercent, frameStyle)`).
+        assertTrue(saved.contains("CastProfile.of(it, bandPct(), style)"), "ô nhớ của hồ sơ theo tỉ lệ PHIÊN (đúng chỗ lượt chỉnh tay ghi)")
+        assertTrue(saved.contains("frameStyle()"), "kiểu khung lấy từ PHIÊN, không từ lựa chọn của hồ sơ")
+        assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.frameStyle(): CastStyle").contains("castStyleSession()?.frame"))
         assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.bandPct(): Int").contains("sessionSplitPct()"))
+    }
+
+    /**
+     * Review 2.89 Pass 3 · cluster-r2-1 — ba chỗ của bộ chỉnh (dải kẹp X/Y, "Đặt lại", mặc định khi chưa ghim) và dòng phụ hồ sơ
+     * đều đi qua khung gốc của PHIÊN: phiên Chữ nhật không bao giờ kẹp/đặt lại theo cả cụm (hai nửa chồng nhau · app dưới nền ADAS
+     * lưu vào `__RECT`). Thử ĐỎ: trả `resetGeometry` về `CastBounds(bandMin, 0, bandMax, height)`. Phép số thuần ở `:core`
+     * (`CastGeometryClampTest` · Pass 3).
+     */
+    @Test
+    fun `Pass 3 - bo chinh khung theo khung goc cua phien (Chu nhat khong theo ca cum)`() {
+        val geo = launcher("ClusterNavBridgeGeometry.kt")
+        assertTrue(SourceRoots.body(geo, "fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget)")
+            .contains("setGeometryBounds(target, editFrame(target))"))
+        assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.boundsOf(target: CastGeometryTarget, config: DisplayConfig?): CastBounds")
+            .contains("config?.bounds ?: editFrame(target)"))
+        assertTrue(SourceRoots.body(geo, "private fun ClusterNavBridge.clampToBand(target: CastGeometryTarget, bounds: CastBounds): CastBounds {")
+            .contains("CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom)"))
+        val diff = SourceRoots.body(geo, "fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue?")
+        assertTrue(diff.contains("if (frameStyle() == CastStyle.RECT) ClusterRectLayout.pin(savedConfig(target), editFrame(target))"), diff)
+        assertFalse(Regex("""CastBounds\(bandMin, 0, bandMax""").containsMatchIn(geo), "không còn khung gõ theo cả cụm")
     }
 
     /** Dòng phụ "Hồ sơ này: …" chỉ vẽ khi `geometryProfileDiffers` trả khác `null` — không có dòng phụ luôn hiện. */

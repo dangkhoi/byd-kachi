@@ -98,6 +98,8 @@ class SettingsCatalogControlContractTest {
             "display_theme" to ("SettingsSections" to "deps.onThemeMode("),
             // VISUAL-REFRESH P1b · R8 — hàng ô màu nhấn + chip tông thẻ, cùng intent.
             "display_color" to ("SettingsSections" to "deps.onColorChoice("),
+            // 2.89 · B3 DOCK-SCALE — thanh kéo cỡ thanh nút (tệp riêng, `display()` gọi một dòng); dấu vết là phép GHI.
+            "display_bar_scale" to ("SettingsBarScaleSection" to "deps.onDockConfig(deps.state().dock.withScale("),
             "display_lang" to ("SettingsSections" to "deps.onLangMode("),
             // UX-OVERHAUL WP1 · R1.3 — công tắc glass thật/giả, đi qua bridge (khoá theo XE).
             "display_glass_real" to ("SettingsSections" to "deps.bridge.setGlassReal("),
@@ -134,6 +136,8 @@ class SettingsCatalogControlContractTest {
             // UX-OVERHAUL WP6 · R6.1 — công tắc HIỆN nút nổi; dấu vết là lời gọi ghi cờ (hành vi), không phải nhãn.
             "cast_bubble" to ("SettingsSectionsCast" to "bridge.setCastBubbleVisible("),
             "cast_split" to ("SettingsSectionsCast" to "bridge.setSplitPct("),
+            // 2.89 · B1b — Bo tròn / Chữ nhật; tệp RIÊNG (trần 500 dòng của `SettingsSectionsCast`), dựng trong nhóm Chiếu cụm.
+            "cast_style" to ("SettingsSectionsCastStyle" to "bridge.setCastStyle("),
             "cast_autostart" to ("SettingsSectionsCast" to "bridge.setAutostartFull("),
             "cast_autostart_pkg" to ("SettingsSectionsCast" to "bridge.setAutostartPkg("),
             "cast_autostart_split" to ("SettingsSectionsCast" to "bridge.setAutostartSplit("),
@@ -163,12 +167,12 @@ class SettingsCatalogControlContractTest {
             "system_headless_autostart" to ("SettingsSections" to "deps.bridge.setHeadlessAutostart("),
             // F2 · U6 — trang app mở khi nổ máy dựng NGAY trong nhóm Hệ thống (thân ở `SettingsSectionsTrip.kt`).
             "system_ignition_apps" to ("SettingsSections" to "SettingsTripAppsSection(context, rows, deps).section(body)"),
+            // F3 · U6 — nhạc khi lên xe. 2.89 · A5(a) — ĐỔI GHIM có lý do: rời nhóm Giọng nói, dựng NGAY dưới app mở khi nổ máy.
+            "system_ignition_music" to ("SettingsSections" to "SettingsTripMusicSection(context, rows, deps).section(body)"),
             // ── Giọng nói (owner 2026-09-21 tách nhóm riêng) ──
             // "Hey Kachi" — công tắc bridge, dựng ở SettingsVoiceSection (đầu nhóm Voice).
             "voice_wake" to ("SettingsVoiceSection" to "deps.bridge.setWakeEnabled("),
             "voice_music_default_app" to ("SettingsVoiceSection" to "deps.bridge.setMusicDefaultApp("),
-            // F3 · U6 — nhạc khi lên xe dựng ngay dưới app nhạc mặc định (thân ở `SettingsSectionsTrip.kt`).
-            "voice_ignition_music" to ("SettingsVoiceSection" to "SettingsTripMusicSection(context, rows, deps).section(body)"),
             // 2.74 · R3 — danh sách câu nói được. Dấu vết là **lời gọi bộ sinh** (hành vi), không phải nhãn: đổi
             // chữ tiêu đề thì bài này vẫn xanh, còn gỡ danh sách đi thì đỏ ngay.
             "voice_commands" to ("SettingsVoiceSection" to "VoiceCommandCatalog.groups("),
@@ -213,6 +217,8 @@ class SettingsCatalogControlContractTest {
             "SettingsSectionsBars" to bars,
             "SettingsSectionsNav" to nav,
             "SettingsSectionsCast" to cast,
+            "SettingsSectionsCastStyle" to code("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCastStyle.kt"),
+            "SettingsBarScaleSection" to code("src/main/java/com/byd/clusternav/launcher/SettingsBarScaleSection.kt"),
             "SettingsSectionsKeys" to keys,
             "SettingsSectionsCar" to car,
             "SettingsSectionsPlaces" to places,

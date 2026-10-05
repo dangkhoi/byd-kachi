@@ -140,8 +140,8 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
      * giữ nguyên View (và VdAppHost) của các ô khác → thêm app vào ô mới KHÔNG relaunch/nháy app đang chạy ở ô khác,
      * launcher đứng yên. Đổi preset/số ô → dựng lại cả. Nguồn sự thật do HomeViewModel giữ; đây chỉ phản chiếu.
      */
-    fun render(s: WorkspaceState, status: CarStatus = carStatus, swap: Set<Int> = emptySet()) =
-        renderInternal(s, status, embedChanged = false, swap = swap)
+    fun render(s: WorkspaceState, status: CarStatus = carStatus, swap: Set<Int> = emptySet(), profileSwitch: Boolean = false) =
+        renderInternal(s, status, embedChanged = false, swap = swap, profileSwitch = profileSwitch)
 
     /**
      * Gắn NGUYÊN KHỐI kênh nhúng (dadb shell + kênh chạm + đăng ký/gỡ màn ảo) rồi tự áp [state] lại MỘT LẦN.
@@ -167,7 +167,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         renderInternal(state, status, embedChanged = !had)
     }
 
-    private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean, swap: Set<Int> = emptySet()) {
+    private fun renderInternal(s: WorkspaceState, status: CarStatus, embedChanged: Boolean, swap: Set<Int> = emptySet(), profileSwitch: Boolean = false) {
         mediaCache = null      // lượt mới ⇒ đọc lại nhạc đúng MỘT lần cho cả lượt
         val old = displayed
         val oldStatus = displayedStatus
@@ -180,7 +180,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
             slotCount = EffectiveLayout.slotCount(displayed.preset, customLayout), swap = swap,
         )) {
             WorkspaceRenderPlan.RebuildAll -> { rebuild(); EmptySlotLog.note(displayed.slots, slotViews.size); return }
-            is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap.filterNot { swapInPlace(it, s.slots) }).sorted().forEach { i ->
+            is WorkspaceRenderPlan.PerSlot -> (plan.rebuild + plan.swap).sorted().forEach { i ->   // 2.89-thử1: đặt tạm cũng dựng lại ô (ô 7 đỗ app cũ)
                 val nc = s.slots.getOrElse(i) { SlotContent.Empty }
                 val oc = old.slots.getOrElse(i) { SlotContent.Empty }
                 // [SOÁT P1-1] Ô chỉ cần LÀM MỚI SỐ (nội dung không đổi, năng lực nhúng không đổi) ⇒ đổi tại chỗ
@@ -190,6 +190,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
                 if (onlyValues && nc is SlotContent.Widget &&
                     WidgetViews.refreshRead(slotViews[i], widgetData()) > 0
                 ) return@forEach          // refresh SỐ tại chỗ — widget tự invalidate, KHÔNG relayout workspace
+                parkLeaving(i, oc, nc, s.slots, profileSwitch)   // ô 7 (§4.6d): app rời ô còn dùng ⇒ ĐỖ; đổi hồ sơ ⇒ nhả (whole-r2-2)
                 releaseSlotHost(i)          // ô đổi nội dung ⇒ nhả màn ảo của ô TRƯỚC khi tháo view
                 removeView(slotViews[i])
                 val v = makeSlot(i, nc)
@@ -307,7 +308,7 @@ class WorkspaceView(context: Context) : ViewGroup(context) {
         // Ô TRỐNG không đi qua kính, và KHÔNG được mang tag kính: FIX286 · ES1 (owner 03/10) — khung trống TRONG SUỐT
         // thấy hình nền; tag kính còn trên khung thì lượt `KachiGlass.refresh` khi ảnh đổi sẽ đắp kính lên (bẫy P1b).
         if (content !is SlotContent.Empty) KachiGlass.apply(fl, Sp.RADIUS_L, SurfaceTone.WELL, slotDomain(content))
-        fl.clipToOutline = true                                    // clip nội dung theo góc bo (như overflow:hidden của prototype)
+        SlotFrameClip.apply(fl, Sp.dpf(context, Sp.RADIUS_L))   // cắt nội dung theo góc bo (overflow:hidden) — A5(b): viền RIÊNG, không mượn nền
         val mm = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
         when (content) {
             is SlotContent.Widget -> {

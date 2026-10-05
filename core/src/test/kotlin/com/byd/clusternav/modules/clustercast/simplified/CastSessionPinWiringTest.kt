@@ -21,7 +21,12 @@ class CastSessionPinWiringTest {
     fun `repin chi dung ban ghim, khong doc prefs`() {
         val body = SourceRoots.body(code("SimpleCastCoordinatorOps.kt"), "internal fun SimpleCastCoordinator.doRepinEscapedCastApps()")
         assertFalse(body.contains("prefs."), "repin đọc prefs = hình học của hồ sơ MỚI tự nổ lên cụm (refute B6)")
-        assertTrue(body.contains("geometry.applyPinned(pkg, target.pinned)"), "repin phải áp bản ghim của ô")
+        // B1b: lượt áp đi qua `applySessionPin` (= `geometry.applyPinned` + đọc lại khung ở cụm Chữ nhật) — hàm đó cũng không
+        // đọc prefs (bài dưới).
+        assertTrue(body.contains("applySessionPin(pkg, target.pinned)"), "repin phải áp bản ghim của ô")
+        val apply = SourceRoots.body(code("CastStyleSessionOps.kt"), "internal fun SimpleCastCoordinator.applySessionPin(")
+        assertFalse(apply.contains("prefs."), "applySessionPin không được đọc prefs")
+        assertTrue(apply.contains("geometry.applyPinned(pkg, pinned)"), "applySessionPin = đúng hàm áp của đường cũ")
         assertTrue(body.contains(".leftPercent"), "tỉ lệ của repin lấy từ phiên (CastingSplit.leftPercent)")
     }
 
@@ -58,7 +63,8 @@ class CastSessionPinWiringTest {
     fun `chinh tay luu theo ti le phien`() {
         val pin = code("CastSessionPin.kt")
         val resizeSlot = SourceRoots.body(pin, "internal fun SimpleCastCoordinator.resizeSlotBody(")
-        assertTrue(resizeSlot.contains("CastProfile.of(side, current.leftPercent)"))
+        // B1b: ô nhớ còn theo kiểu khung của PHIÊN (`frameStyle`) — Chữ nhật lưu khoá `__RECT`.
+        assertTrue(resizeSlot.contains("CastProfile.of(side, current.leftPercent, frameStyle)"))
         assertFalse(resizeSlot.contains("splitRatioLeftPercent"))
         val density = SourceRoots.body(code("CastDensityControl.kt"), "fun setForSplit(")
         assertTrue(density.contains("split.leftPercent"))

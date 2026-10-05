@@ -57,6 +57,14 @@ enum class CandidateRisk {
 }
 
 /**
+ * Review 2.89 Pass 2 · cluster-r1-8 (đóng B1a-OQ6) — điều kiện chung của MỌI bước gửi opcode theme cụm (29/30/31): xe đỗ và CHƯA
+ * có màn ảo cụm. [ĐO xe 05/10 ×2] opcode theme 30 khi màn ảo cụm có lớp Android ⇒ SurfaceFlinger `DEAD_OBJECT` ⇒ system_server
+ * khởi động lại (`docs/diagnostics/oncar-2026-10-05-slot-cluster.md`). Bài `CandidateRiskLabelTest` khoá: lệnh có opcode theme
+ * ⇒ [CandidateRisk.MAY_HANG_SYSTEM] + điều kiện này.
+ */
+internal const val THEME_OP_PRECONDITION = "XE ĐỖ · dumpsys display | grep -E fission|xdja trống (chưa có màn ảo cụm)"
+
+/**
  * Ai kết luận một candidate là đạt.
  *
  * [MEASURED] — máy tự kết luận từ output đọc được, nên chạy lại được vô số lần và không cần người.

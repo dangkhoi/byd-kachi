@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -16,6 +17,10 @@ import com.byd.clusternav.launcher.behind.BehindHomePlan
  *
  * `false` (không có host / host chưa mở app / đã nhả) ⇒ `renderInternal` dựng lại ô như đường hôm nay — an toàn, chỉ
  * mất tính "giữ app cũ sống" của lượt đó.
+ *
+ * ⚠ 2.89-thử1 (ô 7, spec 287 §4.6d): KHÔNG còn chỗ gọi — [ĐO xe 05/10] giữ chỗ BEHIND-HOME ném NPE trong system_server ⇒
+ * app cũ ở lại DƯỚI app mới trong cùng màn ảo. Đặt tạm nay dựng lại ô như mọi lượt khác, app cũ được ĐỖ ([parkLeaving]).
+ * Giữ biên dịch (không xoá) để bản sau quyết khi BEHIND-HOME được chữa.
  */
 internal fun WorkspaceView.swapInPlace(i: Int, slots: List<SlotContent>): Boolean {
     val pkg = (slots.getOrNull(i) as? SlotContent.App)?.pkg ?: return false
@@ -35,6 +40,25 @@ internal fun WorkspaceView.swapInPlace(i: Int, slots: List<SlotContent>): Boolea
     }
     return true
 }
+
+/**
+ * ═══ Ô 7 · B (2.89-thử1 · bản THỬ, spec `kachi-287-look-and-keys.html` §4.6d) — app RỜI ô ở lượt dựng lại: ĐỖ hay NHẢ ═══
+ *
+ * Gọi NGAY TRƯỚC `releaseSlotHost(i)` của [WorkspaceView.render]. [SlotParkPlan.leave] (thuần, `:core`): app cũ [old] còn
+ * được dùng tiếp — một app KHÁC vào ô (đặt tạm · lối tắt · giọng nói · ⇄ · ngăn kéo) hoặc chính nó sang ô khác (kéo-thả) —
+ * ⇒ host ĐỖ nó ([VdAppHost.park]: 0 lệnh shell, không `force-stop`, màn ảo giữ nguyên). Host đã nhả rồi `releaseSlotHost` là
+ * no-op; app mới mở vào màn ảo MỚI của ô (đường thường) hoặc nhận lại màn ảo đỗ của chính nó (`VdAppHost.unpark`). Không đỗ
+ * được (lượt mở dở · app đã chết · đang toàn màn) ⇒ nhả như hôm nay. Ô bị xoá / thành widget ⇒ nhả như hôm nay. Lượt dựng lại do
+ * ĐỔI HỒ SƠ ([profileSwitch], review 2.89 Pass 3 · whole-r2-2) ⇒ nhả như 2.88 — không phải lối đỗ của §4.6d dòng B.
+ */
+internal fun WorkspaceView.parkLeaving(i: Int, old: SlotContent, new: SlotContent, next: List<SlotContent>, profileSwitch: Boolean = false) {
+    if (SlotParkPlan.leave(old, new, next, i, profileSwitch) != SlotParkPlan.Leave.PARK) return
+    val host = hostAt(i)?.takeIf { !it.isReleased } ?: return
+    val parked = host.park(protect = SlotParkPlan.shown(next))   // app sắp nhận lại ở lượt này không bị trần ô 7 nhả
+    Log.i(PARK_TAG, "ô $i: ${(old as? SlotContent.App)?.pkg} rời ô ⇒ ${if (parked) "đỗ ô 7 ${ParkedApps.summary()}" else "không đỗ được — nhả như cũ"}")
+}
+
+private const val PARK_TAG = "KachiPark"
 
 /**
  * F1 · R1.5 dòng 4/5/12 — NHÁY khung ô [i] (app của lối tắt đã ở ô đó): không dời, không mở lại — chỉ chỉ cho người dùng

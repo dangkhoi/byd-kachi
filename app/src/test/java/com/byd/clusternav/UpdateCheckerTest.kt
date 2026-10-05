@@ -25,6 +25,44 @@ class UpdateCheckerTest {
         assertTrue(UpdateChecker.cmp("0.55", "0.56") < 0)
     }
 
+    /**
+     * 2.89 · B4 OTA-SUFFIX-COMPARE — [ĐO máy ảo 05/10] hộp "Có bản mới: v2.88 … Đang dùng v2.89-thử1. Tải v2.88 và cài đè?".
+     * Bản cũ đọc `2.89-thử1` thành 2.0 (khúc `"89-thử1"` → 0) ⇒ mời HẠ cấp. Khoá: so PHẦN SỐ, không bao giờ mời số thấp hơn.
+     */
+    @Test fun `ban thu co duoi so bang phan so - 2_88 khong bao gio duoc moi de len 2_89-thu1`() {
+        assertTrue(UpdateChecker.cmp("2.88", "2.89-thử1") < 0, "2.88 < 2.89 (đuôi bỏ qua khi so số)")
+        assertEquals(0, UpdateChecker.cmp("2.89", "2.89-thử1"))
+        assertFalse(UpdateChecker.offers("2.88", "2.89-thử1"), "đúng ca đo được 05/10 — không mời hạ cấp")
+        assertFalse(UpdateChecker.offers("2.88", "2.88"), "bằng nhau, không đuôi ⇒ đã mới nhất")
+        assertFalse(UpdateChecker.offers("2.87", "2.88"))
+        assertTrue(UpdateChecker.offers("2.90", "2.89-thử1"), "số kênh lớn hơn ⇒ mời")
+        assertTrue(UpdateChecker.offers("2.89", "2.89-thử1"), "bản chính thức cùng số đi SAU bản thử của nó ⇒ mời")
+        assertFalse(UpdateChecker.offers("2.89", "2.89.0"), "bằng số, không đuôi ⇒ không mời")
+        assertTrue(UpdateChecker.offers("2.89.1", "2.89-thử1"))
+    }
+
+    @Test fun `phan so dau va duoi`() {
+        assertEquals(listOf(2, 89), UpdateChecker.numericPrefix("2.89-thử1"))
+        assertEquals(listOf(1, 2, 3), UpdateChecker.numericPrefix("1.2.3"))
+        assertEquals(listOf(2, 89), UpdateChecker.numericPrefix("2.89.thu"), "khúc không phải số kết thúc phần số")
+        assertEquals(emptyList<Int>(), UpdateChecker.numericPrefix("?"))
+        assertTrue(UpdateChecker.hasSuffix("2.89-thử1"))
+        assertTrue(UpdateChecker.hasSuffix("2.89 beta"))
+        assertFalse(UpdateChecker.hasSuffix("2.89"))
+        assertFalse(UpdateChecker.hasSuffix("?"), "không đọc được phiên bản ≠ bản thử")
+        // Đọc phiên bản hỏng (`currentVersion` = "?") ⇒ giữ hành vi cũ: kênh nào cũng mới hơn.
+        assertTrue(UpdateChecker.offers("2.88", "?"))
+    }
+
+    @Test fun `check dung offers - khong con so cmp tran o cho quyet hasUpdate`() {
+        val src = java.nio.file.Path.of(System.getProperty("user.dir")).let { d ->
+            val f = d.resolve("src/main/java/com/byd/clusternav/UpdateChecker.kt")
+            (if (java.nio.file.Files.exists(f)) f else d.resolve("app").resolve("src/main/java/com/byd/clusternav/UpdateChecker.kt")).toFile().readText()
+        }
+        assertTrue(src.contains("Result(cur, bestVer, bestUrl, offers(bestVer!!, cur), null)"), "hasUpdate phải đi qua offers()")
+        assertFalse(src.contains("cmp(bestVer!!, cur) > 0"), "đường cũ so trần (đọc 2.89-thử1 thành 2.0) đã bỏ")
+    }
+
     /** L2 — kênh riêng: repo byd-kachi, tên Kachi-<ver>-release.apk, vẫn nhận tên cũ; tên lạ thì bỏ qua. */
     @Test fun `ten tep phat hanh Kachi va ten cu deu doc ra phien ban`() {
         assertEquals("1.41", UpdateChecker.apkVersion("Kachi-1.41-release.apk"))

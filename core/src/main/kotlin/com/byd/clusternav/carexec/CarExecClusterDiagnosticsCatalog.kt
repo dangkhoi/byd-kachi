@@ -119,7 +119,9 @@ internal object CarExecClusterDiagnosticsCatalog {
                     evidence = "cụm vẫn hiện app và máy không treo, HOẶC treo — cả hai đều là kết quả cần biết",
                     verdictSource = VerdictSource.HUMAN,
                     risk = CandidateRisk.MAY_HANG_SYSTEM,
-                    fieldNote = "Nếu treo: đây là bằng chứng cho luật của V1. Nếu không: V2 được phép phát lại vô điều kiện, và đường app đơn giản hẳn",
+                    fieldNote = "ĐÃ CÓ KẾT QUẢ [ĐO xe 05/10 ×2]: 30 khi màn ảo cụm có lớp Android ⇒ SurfaceFlinger DEAD_OBJECT ⇒ " +
+                        "system_server khởi động lại — luật của V1 đúng, Kachi 2.89 chỉ gửi theme khi CHƯA có màn ảo cụm " +
+                        "(ClusterThemeGuard). Chỉ chạy lại để TÁI HIỆN có chủ đích, xe đỗ, sẵn sàng khởi động lại đầu xe.",
                 ),
                 StepCandidate(
                     id = "reissue.16-only-while-warm",
@@ -143,9 +145,10 @@ internal object CarExecClusterDiagnosticsCatalog {
                     purpose = "Đường an toàn giả định: trả task về màn giữa cho cụm rỗng, rồi chiếu lại từ đầu",
                     commands = listOf(
                         "am start --display 0 -n {comp}",
-                        "am start --display 1 --windowingMode 5 -n {comp}",
+                        // Pass 2 · cluster-r1-8: id màn ảo cụm DÒ được ({display}), không gõ cứng 1 (thường là ô kachi-slot-0 — B4);
+                        // bỏ opcode theme 30 — gửi 30 khi app đã nằm trên màn ảo là đúng chuỗi sập [ĐO 05/10 ×2]; 16/35 an toàn [ĐO].
+                        "am start --display {display} --windowingMode 5 -n {comp}",
                         "am task resize {taskId} {left} {top} {right} {bottom}",
-                        "service call {svc} 2 i32 1000 i32 30 s16 \"\"",
                         "service call {svc} 2 i32 1000 i32 16 s16 \"\"",
                         "service call {svc} 2 i32 1000 i32 35 s16 \"\"",
                     ),

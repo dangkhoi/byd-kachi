@@ -70,7 +70,9 @@ object StepTouchTarget {
      * vì ô thanh nút đổi cỡ theo viền thanh (ngang 84 / dọc 100) và theo vùng (thanh nút vs ô nhóm).
      */
     fun attach(host: View, minus: View, plus: View) {
-        val min = dpi(host.context, Sp.TOUCH)
+        // 2.89 · B3 — ô thanh nút dựng trên `Context` co/giãn (`DockScaleContext`): `dpi(host.context, …)` co theo %, nên
+        // sàn là 48 dp THẬT. Ngoài thanh co/giãn (100 %, ô nhóm, widget) hai số bằng nhau ⇒ y như trước.
+        val min = dpi(host.context, Sp.TOUCH).coerceAtLeast(DockScaleContext.touchFloorPx(host.context))
         fun apply() {
             if (host.width <= 0 || minus.width <= 0 || plus.width <= 0) return
             val mid = (centreX(minus, host) + centreX(plus, host)) / 2

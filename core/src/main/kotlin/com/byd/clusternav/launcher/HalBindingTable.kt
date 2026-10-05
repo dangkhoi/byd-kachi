@@ -290,7 +290,11 @@ class HalBindingTable(
          * CỐ Ý không có ở đây — BLOCKED-BY-DESIGN: quyền location đã retire (`DeadReckonRetirementTest` ở :app ghim
          * manifest không xin quyền location), mở lại = quyết định owner.
          */
-        val LOCAL_TARGETS: Set<String> = setOf("AudioManager", "AutoContainer")
+        val LOCAL_TARGETS: Set<String> = setOf(
+            "AudioManager",
+            // Tên service chỉ viết chữ ở `ProjectionRecipe` (CLUSTER-THEME-SAFE B1a — `ThemeOpcodeLiteralContractTest`).
+            com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe.SVC_DILINK3,
+        )
 
         /**
          * Tham số cuối cho GHI — bảng ở [HalWriteArgs.writeArgs] (uỷ quyền, giữ chữ ký cũ; tách 2026-10-02 vì trần

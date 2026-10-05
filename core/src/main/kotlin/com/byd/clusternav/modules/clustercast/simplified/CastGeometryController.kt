@@ -33,15 +33,25 @@ internal class CastGeometryController(
      * (V0.36 approach) when freeform resize is rejected.
      *
      * R6: persists to the [CastProfile.FULL] profile ONLY on shell success.
+     * B1b: [style] = kiểu khung của PHIÊN — Chữ nhật lưu vào khoá `__RECT` ([CastProfile.inStyle]), Bo tròn = khoá cũ.
+     * Pass 2 · cluster-r1-3: Chữ nhật KHÔNG có tầng 2 (`wm size` phá toạ độ 1:1) — chỉ `am task resize`.
      *
      * @return true khi một trong hai tầng áp được (V-CLUSTER · VC-R6: chỗ gọi cập nhật bản ghim của phiên CHỈ khi true).
      */
-    fun resizeFull(pkg: String, left: Int, top: Int, right: Int, bottom: Int): Boolean {
+    fun resizeFull(pkg: String, left: Int, top: Int, right: Int, bottom: Int, style: CastStyle = CastStyle.CURVED): Boolean {
+        val profile = CastProfile.FULL.inStyle(style)
         val taskId = findTaskIdForPkg(pkg) ?: return false
         val result = shell.execute("am task resize $taskId $left $top $right $bottom")
         if (result.success) {
-            persistBounds(pkg, CastProfile.FULL, left, top, right, bottom)
+            persistBounds(pkg, profile, left, top, right, bottom)
             return true
+        }
+        // Review 2.89 Pass 2 · cluster-r1-3: Chữ nhật cần toạ độ cụm 1:1 (khung vùng trống + hộp km/h) ⇒ KHÔNG đường lùi `wm size`
+        // (cùng lẽ [resizeSlot]): `wm size` co cả VD, khung trượt dưới nền ADAS, và lưu `wmSize` vào khoá `__RECT` là mọi phiên Chữ
+        // nhật sau của app mất km/h. Hỏng ⇒ không lưu gì, người lái thử lại sau khi freeform sống (sau một lần tắt/mở nguồn).
+        if (style == CastStyle.RECT) {
+            log("resizeActiveTarget (Chữ nhật): am task resize bị từ chối cho $pkg — KHÔNG lùi wm size, không lưu")
+            return false
         }
         // Fallback: change logical display size, keeping height to avoid letterbox.
         val (physW, physH) = queryDisplaySize(preferOverride = false) ?: (1920 to 720)
@@ -50,10 +60,10 @@ internal class CastGeometryController(
         val sizeResult = shell.execute("wm size ${scaleW}x${scaleH} -d $displayId")
         if (sizeResult.success) {
             log("resizeActiveTarget FALLBACK wm size ${scaleW}x${scaleH} OK")
-            val existing = prefs.displayConfigFor(pkg, CastProfile.FULL) ?: DisplayConfig.NORMAL_DEFAULT
+            val existing = prefs.displayConfigFor(pkg, profile) ?: DisplayConfig.NORMAL_DEFAULT
             prefs.saveDisplayConfig(
                 pkg,
-                CastProfile.FULL,
+                profile,
                 existing.copy(wmSize = "${scaleW}x${scaleH}", bounds = CastBounds(left, top, right, bottom)),
             )
             return true
@@ -96,13 +106,17 @@ internal class CastGeometryController(
      *     đo hụt ⇒ 1920×720. Một khung lưu cho cụm khác kích thước (tệp nhập từ xe khác) không đẩy task ra ngoài màn.
      *
      * Bounds are per-task (safe per-app). Density is display-global on Android 10 — "last edit wins" for the display.
+     *
+     * @return B1b — khung (đã kẹp) vừa gửi `am task resize`; `null` = không gửi lệnh khung nào. Chỗ gọi ở cụm Chữ nhật đọc lại
+     *   đúng khung này ([verifyFrame]); chỗ gọi cũ bỏ qua giá trị trả.
      */
-    fun applyPinned(pkg: String, pinned: DisplayConfig?) {
-        if (pinned == null) return
+    fun applyPinned(pkg: String, pinned: DisplayConfig?): CastBounds? {
+        if (pinned == null) return null
         if (!CastGeometryGuard.isShellSafe(pinned)) {
             log("applyPinned: TỪ CHỐI cấu hình không sạch của $pkg — 0 lệnh")
-            return
+            return null
         }
+        var asked: CastBounds? = null
         val bounds = pinned.bounds
         if (bounds != null) {
             val taskId = findTaskIdForPkg(pkg)
@@ -110,12 +124,48 @@ internal class CastGeometryController(
                 val (w, h) = queryDisplaySize(preferOverride = true) ?: (1920 to 720)
                 val b = CastGeometryGuard.clampBounds(bounds, 0, w, h)
                 shell.execute("am task resize $taskId ${b.left} ${b.top} ${b.right} ${b.bottom}")
+                asked = b
             }
         }
         if (pinned.density != CastGeometryGuard.DENSITY_RESET) {
             shell.execute("wm density ${pinned.density} -d $displayId")
         }
+        return asked
     }
+
+    /**
+     * B1b · F4b — sau một lượt đặt ở cụm Chữ nhật: ĐỌC LẠI khung thật của task [pkg] trên cụm từ `am stack list`
+     * ([CastStackParser.taskBoundsOn]); lệch [want] ⇒ `am task resize` LẠI đúng MỘT lần rồi đọc lại; vẫn lệch ⇒ chỉ log (không
+     * vòng lặp, không lệnh khác). [ĐO-gv 05/10] app mở freeform lên màn ảo cụm ra cửa sổ dọc [825,0][1155,720] nếu không
+     * resize — sự thật là bản đọc, không phải mã thoát của lệnh (CLAUDE.md §5).
+     *
+     * Bốn câu CLAUDE.md §4: display = [displayId] SỐNG của coordinator (đã xác minh trước lượt đặt); app = đúng [pkg] (khớp gói
+     * chính xác, bỏ pinned); loại = task freeform vừa đặt — chỉ `am task resize` (không bê stack); hoàn tác = lượt đặt/repin
+     * sau áp lại bản ghim, tắt chiếu trả app về display 0.
+     *
+     * @return true khi bản đọc khớp (sai số [SLOP_PX]).
+     */
+    fun verifyFrame(pkg: String, want: CastBounds): Boolean {
+        for (attempt in 0..1) {
+            val out = shell.execute("am stack list")
+            val got = if (out.success) CastStackParser.taskBoundsOn(out.stdout, pkg, displayId) else null
+            if (got != null && near(got, want)) {
+                log("khung Chữ nhật $pkg = $got (khớp ${if (attempt == 0) "ngay" else "sau một lần thử lại"})")
+                return true
+            }
+            if (attempt == 1) break
+            val taskId = if (out.success) CastStackParser.findTaskId(out.stdout, pkg, displayId) else null
+            if (taskId == null) { log("khung Chữ nhật $pkg: không đọc được task trên cụm $displayId — không thử lại"); return false }
+            log("khung Chữ nhật $pkg lệch: muốn $want, đọc được ${got ?: "?"} ⇒ resize lại MỘT lần")
+            shell.execute("am task resize $taskId ${want.left} ${want.top} ${want.right} ${want.bottom}")
+        }
+        log("khung Chữ nhật $pkg VẪN lệch $want sau một lần thử lại — để nguyên, người lái chỉnh bằng −/+ trong Cài đặt")
+        return false
+    }
+
+    private fun near(a: CastBounds, b: CastBounds): Boolean =
+        kotlin.math.abs(a.left - b.left) <= SLOP_PX && kotlin.math.abs(a.top - b.top) <= SLOP_PX &&
+            kotlin.math.abs(a.right - b.right) <= SLOP_PX && kotlin.math.abs(a.bottom - b.bottom) <= SLOP_PX
 
     /**
      * Set freeform boot flags. Read only at boot by ATMS.retrieveSettings (no ContentObserver),
@@ -162,6 +212,11 @@ internal class CastGeometryController(
         }
         if (freeformOnly) { log("CP/AA REJECTED: only freeform stack on display $displayId"); return false }
         return true
+    }
+
+    private companion object {
+        /** Sai số đọc lại khung — cùng 2 px của `AppMover.isWindowedOnMain` (làm tròn của WM). */
+        const val SLOP_PX = 2
     }
 
     private fun persistBounds(pkg: String, profile: CastProfile, left: Int, top: Int, right: Int, bottom: Int) {

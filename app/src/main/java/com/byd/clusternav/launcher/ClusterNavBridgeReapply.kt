@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.util.Log
+import com.byd.clusternav.AppPrereqs
 import com.byd.clusternav.NavRepository
 import com.byd.clusternav.Prefs
 import com.byd.clusternav.VmOverlayPosition
@@ -70,6 +71,11 @@ internal fun ClusterNavBridge.reapplyAll() {
     // `vm_bubble_x/y`: `VmOverlayPosition` vừa lưu vừa **bắn broadcast** cho mod VietMap trong cùng một hàm, nên
     // `applyOnOpen` (`VmOverlayPosition.kt:86`) là đúng đường phát lại — nó tự no-op khi Cast chưa live.
     step("bubble.pos") { VmOverlayPosition.applyOnOpen(app) }
+    // Review 2.89 Pass 3 · vietmap-dock-r2-2 — điều kiện nền (miễn pin · appop vẽ nổi) theo HỒ SƠ MỚI: `vm_bubble_enabled` /
+    // biển tốc độ / app tự chiếu theo hồ sơ, và lượt SẴN của hồ sơ trước có thể đã TRẢ appop vẽ nổi của VietMap (r1-2). Không
+    // gọi lại thì hồ sơ bật bóng mất bóng tới lần màn sáng / nổ máy / mở chiếu kế. `onReady` = lượt nền (luồng riêng, KHÔNG mở
+    // app nào — khác `VietMapAutostartService` bị cố ý bỏ ở trên): đọc → áp phần thiếu cho phạm vi mới → trả dấu đã rời phạm vi.
+    step("app.prereqs") { AppPrereqs.onReady(app) }
 
     // ── Tiện nghi xe ────────────────────────────────────────────────────────────────────────────
     // `seat_comfort_mode` + `seat_level_*`: applier của `setSeatMode` (`ClusterNavBridge.kt:380`). Nó **tự gate**

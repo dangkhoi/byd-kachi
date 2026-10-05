@@ -56,7 +56,7 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
     if (geometry.isAppOnDisplay(intent.pkg, vd)) {
         setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, pin.config, pinned = pin.pinned))
         if (intent.appType == AppType.NORMAL) {
-            geometry.applyPinned(intent.pkg, pin.pinned)
+            applySessionPin(intent.pkg, pin.pinned)   // B1b: Chữ nhật ⇒ + đọc lại khung (CastStyleSessionOps.kt)
         }
         return
     }
@@ -81,8 +81,9 @@ internal fun SimpleCastCoordinator.handleCastFull(intent: SimpleCastIntent.CastF
                 val savedTaskId = if (castTaskId > 0) castTaskId else outcome.taskId
                 setState(SimpleCastState.CastingFull(intent.pkg, intent.appType, config, savedTaskId, pin.pinned))
                 // R6: Apply the PINNED FULL-profile bounds + density ONLY after verified landing
+                // B1b: Chữ nhật ⇒ + đọc lại khung từ `am stack list`, lệch thì thử lại MỘT lần rồi log.
                 if (intent.appType == AppType.NORMAL) {
-                    geometry.applyPinned(intent.pkg, pin.pinned)
+                    applySessionPin(intent.pkg, pin.pinned)
                 }
             }
             else -> {
@@ -134,7 +135,8 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
     // sơ giữa hai lượt chiếu ô là hai nửa chồng nhau/hở), chưa chia thì đọc hồ sơ đang dùng MỘT lần. Bản ghi của ô ghim
     // theo đúng tỉ lệ đó.
     val leftPercent = sessionLeftPercent(afterWait)
-    val config = configurator.resolveConfig(intent.pkg, AppType.NORMAL, prefs)
+    // Review 2.89 Pass 2 · cluster-r1-2: khoá theo kiểu khung của PHIÊN (Chữ nhật không đọc khoá Bo tròn) — `CastSessionPin.kt`.
+    val config = slotDisplayConfig(intent.pkg)
     val slot = SlotState(intent.pkg, config, pinned = pinSlot(intent.pkg, intent.side, leftPercent))
 
     // Split mode: display config (wm size/overscan) is DISPLAY-GLOBAL on Android.
@@ -177,7 +179,8 @@ internal fun SimpleCastCoordinator.handleCastSlot(intent: SimpleCastIntent.CastS
             setState(newState)
             // R6: Restore the PINNED profile geometry (bounds + DPI) ONLY after verified landing.
             // If no profile is saved (pinned null), the ratio-default bounds from AppMover.fitToCluster stand.
-            geometry.applyPinned(intent.pkg, slot.pinned)
+            // B1b: Chữ nhật luôn có bản ghim (nửa vùng trống) + đọc lại khung.
+            applySessionPin(intent.pkg, slot.pinned)
         }
         else -> {
             log("CastSlot postcondition FAIL: $outcome")
@@ -194,6 +197,13 @@ internal fun SimpleCastCoordinator.handleStop(intent: SimpleCastIntent.Stop) {
             returnApp(current.targetPkg, current.appType, current.taskId)
             if (current.appType.isProtected) {
                 undoTargetDisplay("stop.densityReset")?.let { shell.execute("wm density reset -d $it") }
+                // Review 2.89 Pass 3 · cluster-r2-2 — đường MỚI xuống CUỐI, CHỈ phiên Chữ nhật (CLAUDE.md §6; Bo tròn y nguyên từng
+                // byte): CarPlay/AA để lại `wm size`/overscan riêng của chúng trên màn ảo cụm ⇒ Idle không còn 1:1 ⇒ lớp km/h đo
+                // kích ≠ 1920×720 và không gắn, trong khi theme2 FULL không có km/h gốc [ĐO 05/10] ⇒ cụm mất tốc độ tới hết phiên.
+                // Trả cấu hình lúc mở chiếu (`openProjectionBody` áp đúng NORMAL_DEFAULT) — chỉ trên id dò live (R2).
+                if (frameStyle == CastStyle.RECT) {
+                    undoTargetDisplay("stop.rect1to1")?.let { configurator.apply(it, DisplayConfig.NORMAL_DEFAULT) }
+                }
             } else {
                 refreshCluster()
             }

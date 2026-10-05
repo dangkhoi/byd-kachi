@@ -91,7 +91,7 @@ class VietMapAutostartGateTest {
     }
 
     // ── isResumedActivity (B3, on-car 2026-09-07): poll chờ VietMap thật sự VÀO MAP (resumed) trước khi hạ ──
-    // nền, thay Thread.sleep(1500) cứng. Foreground guard + vòng poll cùng dùng hàm PURE này.
+    // nền, thay Thread.sleep(1500) cứng. 2.89: chỉ còn guard foreground dùng hàm này (vòng chờ đọc dòng TỔNG — `:core`).
 
     @Test fun `isResumedActivity is false on blank input`() {
         assertFalse(VietMapAutostart.isResumedActivity("", VietMapAutostart.PKG))
@@ -132,31 +132,19 @@ class VietMapAutostartGateTest {
         assertFalse(VietMapAutostart.isResumedActivity("mResumedActivity: ActivityRecord{x u0 other.pkg/.Main t1}"))
     }
 
-    // ── isInMapActivity (bug owner 2026-09-21): CHỜ VÀO MAP thật, KHÔNG tính màn flash/splash ──────────────
+    // ── ĐỔI GHIM 2.89 · B2 (owner 05/10: "mạng chậm nó đứng ở đó, hạ xuống thì bóng không lên") ─────────────────
+    // Ba bài `isInMapActivity` + bài hằng số poll đã GỠ cùng hàm/hằng số của chúng, có lý do:
+    //  • [ĐO manifest VietMap 3.4.3 + mod 3.4.0] màn chờ nằm TRONG `MainActivity` (MAIN/LAUNCHER duy nhất, meta-data
+    //    `SplashScreenDrawable`) — giả định "màn flash mang tên `.SplashActivity`" của bài cũ là sai, nên bài cũ khoá một
+    //    hành vi không tồn tại trên app thật.
+    //  • luật chờ + hằng số (trần 60 s thay 25 s, không hạ nền khi chưa chứng minh qua màn chờ, người dùng chuyển app thì
+    //    dừng) chuyển sang `:core` `VietMapBubbleWait` và khoá ở `VietMapBubbleWaitTest` (12 bài, fixture máy ảo);
+    //    đường nối khoá ở `AppPrereqsWiringContractTest`.
 
-    @Test fun `isInMapActivity true khi resumed la MainActivity (da vao map)`() {
-        val dump = "  mResumedActivity: ActivityRecord{7f3a u0 vn.vietmap.live/.MainActivity t88}"
-        assertTrue(VietMapAutostart.isInMapActivity(dump, VietMapAutostart.PKG))
-    }
-
-    @Test fun `isInMapActivity FALSE khi con o man flash-splash cua VietMap`() {
-        // Đây là bug: màn flash cũng là activity của gói ⇒ isResumedActivity=true (hạ sớm), nhưng CHƯA vào map.
-        val splash = "  mResumedActivity: ActivityRecord{7f3a u0 vn.vietmap.live/.SplashActivity t88}"
-        assertTrue(VietMapAutostart.isResumedActivity(splash, VietMapAutostart.PKG))   // hàm cũ tưởng đã vào
-        assertFalse(VietMapAutostart.isInMapActivity(splash, VietMapAutostart.PKG))    // hàm mới: CHƯA — chờ tiếp
-    }
-
-    @Test fun `isInMapActivity false khi app khac resumed hoac input rong`() {
-        assertFalse(VietMapAutostart.isInMapActivity("", VietMapAutostart.PKG))
-        assertFalse(VietMapAutostart.isInMapActivity(
-            "  mResumedActivity: ActivityRecord{9c8d u0 com.byd.launcher/.MainActivity t3}", VietMapAutostart.PKG,
-        ))
-    }
-
-    @Test fun `poll constants are sane (settle within timeout, positive interval)`() {
-        assertTrue(VietMapAutostart.POLL_INTERVAL_MS > 0L)
-        assertTrue(VietMapAutostart.SETTLE_MS > 0L)
-        assertTrue(VietMapAutostart.POLL_TIMEOUT_MS > VietMapAutostart.SETTLE_MS, "timeout phải đủ chỗ cho ít nhất một lần settle")
+    @Test fun `isResumedActivity van tinh man cho (MainActivity) la foreground - dung cho guard bo launch`() {
+        // Guard (b) "đã foreground ⇒ không mở lại" phải coi VietMap đang ở màn chờ là ĐANG foreground (mở lại = giật).
+        val splashInMain = "  mResumedActivity: ActivityRecord{7f3a u0 vn.vietmap.live/.MainActivity t88}"
+        assertTrue(VietMapAutostart.isResumedActivity(splashInMain, VietMapAutostart.PKG))
     }
 
     @Test fun `hasBubbleService nhan dien service dung bong`() {

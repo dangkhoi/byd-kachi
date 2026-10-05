@@ -85,9 +85,16 @@ internal class KachiHomeSlots(
     fun startBehind(pkg: String, stages: List<BehindHomePlan.Stage>, done: (BehindHomeSequence.Outcome) -> Unit): BehindHomePlan.Stage? =
         behind.startBehind(pkg, stages, done)
 
-    /** L4 — chuỗi tuỳ ý của chuyến lên xe (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG runner/mutex `kachi-behind`. */
-    fun behindChain(what: String, body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome, done: (BehindHomeSequence.Outcome) -> Unit) =
-        behind.chain(what, done, body)
+    /**
+     * L4 — chuỗi tuỳ ý của chuyến lên xe (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG runner/mutex `kachi-behind`. [needsAnchor]:
+     * KDoc `BehindHomeRunner.chain` (behaviour-5).
+     */
+    fun behindChain(
+        what: String,
+        body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome,
+        done: (BehindHomeSequence.Outcome) -> Unit,
+        needsAnchor: Boolean = true,
+    ) = behind.chain(what, done, needsAnchor, body)
 
     /**
      * L8 — lối tắt *Chạy ngầm* khi KHÔNG có ô app sống (`ShortcutAction.StartBehindHidden`): màn ảo ẨN của Kachi, CÙNG chuỗi

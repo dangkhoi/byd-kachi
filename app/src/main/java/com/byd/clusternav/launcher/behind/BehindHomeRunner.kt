@@ -63,24 +63,52 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
      * L4 — một chuỗi tuỳ ý trên CÙNG mutex `kachi-behind` (chuyến lên xe: màn ảo ẩn D2(a), K4-VIEW D3(ii)). [body] nhận
      * [Kit] dựng mới mỗi lượt (kênh đọc lại, `StagingDisplay` riêng của lượt). Mọi cổng của [submit] giữ nguyên: không kênh /
      * đã tắt ⇒ 0 lệnh; ném giữa chừng ⇒ gỡ giữ chỗ, lùi O1; một dòng `KachiBehind`.
+     *
+     * [needsAnchor] (review 2.89 Pass 1 · behaviour-5): công tắc tắt [disabledReason] do GIỮ CHỖ tự đặt (`anchor-ran` /
+     * `ANCHOR_IN_FRONT`) ⇒ chỉ chặn chuỗi DỰNG giữ chỗ (`startBehind` / `startBehindHidden` / `evictCovered` / `evict`).
+     * Chuỗi không dùng giữ chỗ — ô 7 (`HiddenPark`), K4-VIEW vào ô / ô 7 (`TripMusicView`) — truyền `false`: trước đây một
+     * bước *Chạy nền* làm hỏng giữ chỗ ở đầu chuyến khiến bước nhạc sau đó ra `DISABLED`, 0 lệnh, không nhạc.
+     * Mặc định `true` = hành vi cũ (an toàn).
      */
-    fun chain(what: String, done: (BehindHomeSequence.Outcome) -> Unit, body: (Kit) -> BehindHomeSequence.Outcome) = submit(what, done, body)
+    fun chain(
+        what: String,
+        done: (BehindHomeSequence.Outcome) -> Unit,
+        needsAnchor: Boolean = true,
+        body: (Kit) -> BehindHomeSequence.Outcome,
+    ) = submit(what, done, needsAnchor, body)
 
-    /** Bộ thi hành của MỘT lượt: chuỗi BEHIND-HOME + chỗ dàn dựng ẩn + kênh (để `:core` dựng chuỗi khác như `TripMusicView`). */
-    class Kit(val seq: BehindHomeSequence, val hidden: BehindHomeSequence.HiddenStagePort, val sh: (String) -> String, val app: Context)
+    /**
+     * Bộ thi hành của MỘT lượt: chuỗi BEHIND-HOME + chỗ dàn dựng ẩn + kênh (để `:core` dựng chuỗi khác như `TripMusicView`).
+     * A2 · 2.89: [park] = CHÍNH màn ảo ẩn của lượt nhìn qua cổng ô 7 ([HiddenPark.Port] — tạo · trao cho `ParkedApps` · nhả).
+     */
+    class Kit(
+        val seq: BehindHomeSequence,
+        val hidden: BehindHomeSequence.HiddenStagePort,
+        val sh: (String) -> String,
+        val app: Context,
+        val park: HiddenPark.Port,
+    )
 
-    private fun submit(what: String, done: (BehindHomeSequence.Outcome) -> Unit, body: (Kit) -> BehindHomeSequence.Outcome) {
+    private fun submit(
+        what: String,
+        done: (BehindHomeSequence.Outcome) -> Unit,
+        needsAnchor: Boolean = true,
+        body: (Kit) -> BehindHomeSequence.Outcome,
+    ) {
         execute(what) {
             val out = try {
-                runOnce(what, body)
+                runOnce(what, body, needsAnchor)
             } catch (e: IOException) {
                 failed(what, e)
             } catch (e: RuntimeException) {
                 failed(what, e)
             }
             Log.i(TAG, out.line)
-            // ALREADY_RUNNING không phải hỏng (app đang sống ⇒ cố ý 0 lệnh) — không đếm vào bộ đếm lùi O1.
-            if (!out.moved && out.result != BehindHomeSequence.Result.ALREADY_RUNNING) KachiPerf.add(KachiPerf.Counter.BEHIND_FAIL)
+            // ALREADY_RUNNING không phải hỏng (app đang sống ⇒ cố ý 0 lệnh) — không đếm vào bộ đếm lùi O1. A2: PARKED (ô 7) cũng
+            // không phải lùi — app sống ẩn đúng như được xin, không đi chuỗi đẩy ra sau màn nhà.
+            if (!out.moved && out.result != BehindHomeSequence.Result.ALREADY_RUNNING && out.result != BehindHomeSequence.Result.PARKED) {
+                KachiPerf.add(KachiPerf.Counter.BEHIND_FAIL)
+            }
             ui.post { done(out) }
         }
     }
@@ -100,7 +128,7 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
         return BehindHomeSequence.Outcome(r, "$what -> $r (${e.javaClass.simpleName}) anchors=$gone")
     }
 
-    private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome): BehindHomeSequence.Outcome {
+    private fun runOnce(what: String, body: (Kit) -> BehindHomeSequence.Outcome, needsAnchor: Boolean): BehindHomeSequence.Outcome {
         // Dòng kết quả là NHẬT KÝ (in qua `Log.i` ở [submit]) — viết không dấu để bài canh i18n không coi là chữ trên màn.
         val sh = shell()
         val hidden = StagingDisplay(app)
@@ -109,14 +137,15 @@ class BehindHomeRunner(ctx: Context, private val shell: () -> ((String) -> Strin
         // sau trả DISABLED và màn ảo + luồng `kachi-stage` + `ImageReader` sống tới khi Kachi chết. Thu hồi không cần cổng đó:
         // một lệnh CHỈ ĐỌC + `VirtualDisplay.release` trong tiến trình, không đổi cửa sổ nào (KDoc [HiddenStageReclaim]).
         if (sh != null) HiddenStageReclaim.run(sh, hidden, app.packageName)?.let { Log.i(TAG, it) }
-        disabledReason?.let { return BehindHomeSequence.Outcome(BehindHomeSequence.Result.DISABLED, "$what -> disabled ($it), 0 cmd") }
+        // behaviour-5: công tắc tắt là của GIỮ CHỖ ⇒ chỉ chặn chuỗi dựng giữ chỗ (KDoc [chain]).
+        if (needsAnchor) disabledReason?.let { return BehindHomeSequence.Outcome(BehindHomeSequence.Result.DISABLED, "$what -> disabled ($it), 0 cmd") }
         if (sh == null) return BehindHomeSequence.Outcome(BehindHomeSequence.Result.NO_CHANNEL, "$what -> no channel, 0 cmd")
         val seq = BehindHomeSequence(
             sh, AndroidAnchor(app), app.packageName, AccessibilityRebind.GO_HOME_UNLESS_CAMERA,
             homeComps = DefaultHome.shownComponents(app),
             cameraSig = ClusterProfile.resolveCached(app).cameraSignature,
         )
-        val kit = Kit(seq, hidden, sh, app)
+        val kit = Kit(seq, hidden, sh, app, park = hidden)
         val out = body(kit)
         if (out.result == BehindHomeSequence.Result.ANCHOR_IN_FRONT) disable("anchor-in-front")
         return out

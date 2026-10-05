@@ -53,6 +53,13 @@ internal class ShortcutIconsView @JvmOverloads constructor(
     var vertical: Boolean = false
         set(v) { field = v; if (isAttachedToWindow) rebuild() }
 
+    /**
+     * 2.89 · B3 DOCK-SCALE — khối thanh nút ở cỡ ≠ 100 %: mỗi khe lấp TRỌN bề dày thanh (ngang trục) để vùng chạm của icon
+     * = khe ≥ 48 dp thật × bề dày thanh, dù icon vẽ nhỏ theo %. `false` (100 % · lưới widget) ⇒ khe vuông như 2.88.
+     */
+    var fillAcross: Boolean = false
+        set(v) { field = v; if (isAttachedToWindow) rebuild() }
+
     private class Cell(val sc: AppShortcut, val view: ImageView) {
         var installed = true
 
@@ -116,7 +123,7 @@ internal class ShortcutIconsView @JvmOverloads constructor(
                 layoutParams = lp
             }
         }
-        if (items.isEmpty()) { addView(emptyCell()); return }
+        if (items.isEmpty()) { if (fillAcross) addView(emptyCell(), cellLp()) else addView(emptyCell()); return }
         if (grid) buildGrid(items) else items.forEach { addView(cell(it), cellLp()) }
         load(generation)
         paintDim()
@@ -141,8 +148,8 @@ internal class ShortcutIconsView @JvmOverloads constructor(
         cells.forEach { if (it.generic) genericIcon(it.view) }
     }
 
-    /** Khe cố định — CHỈ khối thanh nút; lưới widget không có khe cố định (R-SI1). */
-    private fun cellPx(): Int = dpi(context, Bars.SHORTCUT_CELL)
+    /** Khe cố định — CHỈ khối thanh nút; lưới widget không có khe cố định (R-SI1). B3: cùng phép với [shortcutStripLength]. */
+    private fun cellPx(): Int = shortcutSlotPx(context)
 
     /** Cỡ icon gốc: thanh nút + ô nén = [Bars.SHORTCUT_ICON], ô to = [Bars.SHORTCUT_GRID_ICON] (ô rỗng · trước lượt đo). */
     private fun baseIconDp(): Int = if (grid && !compact) Bars.SHORTCUT_GRID_ICON else Bars.SHORTCUT_ICON
@@ -150,13 +157,25 @@ internal class ShortcutIconsView @JvmOverloads constructor(
     /** Cỡ icon đang vẽ: lưới đã khớp ⇒ cỡ khớp; khối thanh nút không bao giờ khớp ⇒ luôn [baseIconDp]. */
     private fun iconSizeDp(): Int = if (fittedDp > 0) fittedDp else baseIconDp()
 
-    private fun cellLp() = LayoutParams(cellPx(), cellPx())
+    /** Khe vuông; B3 [fillAcross] ⇒ ngang trục lấp trọn bề dày thanh (icon vẫn đúng cỡ: lề dọc trục + FIT_CENTER). */
+    private fun cellLp() = when {
+        !fillAcross -> LayoutParams(cellPx(), cellPx())
+        vertical -> LayoutParams(LayoutParams.MATCH_PARENT, cellPx())
+        else -> LayoutParams(cellPx(), LayoutParams.MATCH_PARENT)
+    }
 
     private fun cell(sc: AppShortcut): ImageView = ImageView(context).apply {
         // Lưới: lề do ShortcutGridLayout đặt theo phép khớp (nửa khe) — khe cố định chỉ còn ở khối thanh nút.
         if (!grid) {
             val pad = (cellPx() - dpi(context, iconSizeDp())) / 2
-            setPadding(pad, pad, pad, pad)
+            // Review 2.89 Pass 2 · vietmap-dock-r1-8: [fillAcross] ⇒ ngang trục là TRỌN bề dày thanh, không phải khe vuông —
+            // lề vuông ở đó cắt hộp hình (50 % ngang @240 dpi: 69 − 2·19 = 31 px < icon 33 px). Lề chỉ dọc trục; FIT_CENTER canh
+            // giữa ngang trục.
+            when {
+                !fillAcross -> setPadding(pad, pad, pad, pad)
+                vertical -> setPadding(0, pad, 0, pad)
+                else -> setPadding(pad, 0, pad, 0)
+            }
         }
         scaleType = ImageView.ScaleType.FIT_CENTER
         contentDescription = sc.pkg                 // tên app thay vào khi bung xong (luồng nền)
@@ -269,8 +288,15 @@ internal class ShortcutIconsView @JvmOverloads constructor(
 }
 
 /**
- * Bề dài (px) của khối lối tắt trên thanh nút cho [n] app: `cells(n) × SHORTCUT_CELL + 2 × SHORTCUT_PAD` (R1.2). MỘT
+ * Bề dài (px) của khối lối tắt trên thanh nút cho [n] app: `cells(n) × khe + 2 × SHORTCUT_PAD` (R1.2). MỘT
  * phép cho cả `ControlDockView` (lúc dựng) và chính khối (lúc danh sách đổi) — hai bản sao là hai chỗ để lệch.
  */
 internal fun shortcutStripLength(ctx: Context, n: Int): Int =
-    ShortcutStrip.cells(n) * dpi(ctx, Bars.SHORTCUT_CELL) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)
+    ShortcutStrip.cells(n) * shortcutSlotPx(ctx) + 2 * dpi(ctx, Bars.SHORTCUT_PAD)
+
+/**
+ * KHE một app của khối thanh nút (px) = `max(SHORTCUT_CELL, 48 dp THẬT)`. 2.89 · B3: [ctx] là `Context` co/giãn của thanh
+ * ⇒ khe co theo % nhưng không dưới đích chạm thật (`DockScaleContext.touchFloorPx`); ở 100 % đúng `SHORTCUT_CELL` (52 ≥ 48)
+ * như 2.88. MỘT phép cho [ShortcutIconsView.cellPx] và [shortcutStripLength] (luật "MỘT phép bề dài" ở trên).
+ */
+internal fun shortcutSlotPx(ctx: Context): Int = maxOf(dpi(ctx, Bars.SHORTCUT_CELL), DockScaleContext.touchFloorPx(ctx))

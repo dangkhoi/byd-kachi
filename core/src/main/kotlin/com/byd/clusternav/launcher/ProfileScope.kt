@@ -67,6 +67,8 @@ object ProfileScope {
             // 2.87 · R-AH3 (owner 03/10) — nút ⇄ của khung tự ẩn hay luôn hiện: một lựa chọn về KHUNG như `top_strip_labels`.
             // ⚠ KHÔNG đặt tên `slot_…`: `slot_` là HỌ khoá nội dung ô ([PROFILE_KEY_PREFIXES], [SettingsCatalog.SLOT_KEY_PREFIX]).
             "swap_button_autohide",
+            // 2.89 · B3 DOCK-SCALE (owner 05/10) — cỡ thanh nút theo %: một lựa chọn về THANH như `dock_edge` (`BarScale`).
+            "dock_scale",
         )
 
     /**
@@ -160,7 +162,11 @@ object ProfileScope {
             "last_display_id",
             "R4 — số hiệu màn cụm ĐO ĐƯỢC của chính chiếc xe này (`SimpleCastRuntime`), không phải lựa chọn",
         )
-        put("doze_whitelist_applied", "trạng thái máy: đã xin miễn doze cho tiến trình chưa — thuộc máy, không thuộc người")
+        put(
+            "doze_whitelist_applied",
+            "cờ một-lần đời cũ (miễn doze VietMap) — 2.89 B2 không còn đọc/ghi (quyết bằng sự thật `AppPrereqs`); " +
+                "còn trên máy, thuộc máy, không chép",
+        )
         put(
             "ui_glass_real",
             "UX-OVERHAUL WP1 · R1.3 — 'Kính thật (làm mờ nền)'. Theo XE: glass-thật là RenderEffect blur, một tính " +

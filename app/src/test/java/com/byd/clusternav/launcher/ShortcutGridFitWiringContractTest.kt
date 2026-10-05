@@ -56,7 +56,9 @@ class ShortcutGridFitWiringContractTest {
     fun `khoi thanh nut khong dung phep khop - khe co dinh nhu 2_86`() {
         val rebuild = SourceRoots.body(view, "private fun rebuild()")
         assertTrue(rebuild.contains("if (grid) buildGrid(items) else items.forEach { addView(cell(it), cellLp()) }"))
-        assertTrue(SourceRoots.body(view, "private fun cellPx()").contains("dpi(context, Bars.SHORTCUT_CELL)"))
+        // 2.89 · B3 — đổi chân có chủ ý: khe đi qua `shortcutSlotPx` (= `SHORTCUT_CELL`, sàn 48 dp THẬT khi thanh co) —
+        // CÙNG hàm với `shortcutStripLength`; vẫn KHÔNG qua lưới khớp (vế dưới).
+        assertTrue(SourceRoots.body(view, "private fun cellPx()").contains("shortcutSlotPx(context)"))
         assertTrue(SourceRoots.body(view, "private fun baseIconDp()")
             .contains("if (grid && !compact) Bars.SHORTCUT_GRID_ICON else Bars.SHORTCUT_ICON"))
         val cell = SourceRoots.body(view, "private fun cell(sc: AppShortcut)")

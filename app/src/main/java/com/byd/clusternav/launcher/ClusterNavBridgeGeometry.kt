@@ -3,6 +3,8 @@ package com.byd.clusternav.launcher
 import com.byd.clusternav.modules.clustercast.simplified.CastBounds
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 import com.byd.clusternav.modules.clustercast.simplified.CastProfile
+import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.ClusterRectLayout
 import com.byd.clusternav.modules.clustercast.simplified.ClusterSlotSide
 import com.byd.clusternav.modules.clustercast.simplified.DisplayConfig
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastState
@@ -85,21 +87,29 @@ fun ClusterNavBridge.geometryFrame(): Pair<Int, Int> {
 }
 
 /**
- * Dải X mà ô [target] được phép chiếm: FULL ⇒ cả khung; split ⇒ đúng nửa của nó theo tỉ lệ đang chạy.
+ * Dải X mà ô [target] được phép chiếm: FULL ⇒ cả khung; split ⇒ đúng nửa của nó theo tỉ lệ đang chạy. Phiên Chữ nhật ⇒ dải của
+ * vùng trống / nửa vùng trống (Pass 3 · cluster-r2-1, [editFrame]).
  *
  * Lặp lại `CastGeometryEditor.setupSplitResizeControls` (`resizeView.setSlotBand(bandMinX, bandMaxX)`):
  * kéo ô trái sang phần của ô phải thì hai app chồng nhau trên cụm — lỗi hình mà người lái phải dừng xe
  * mới sửa được.
  */
-fun ClusterNavBridge.geometryBand(target: CastGeometryTarget): Pair<Int, Int> {
-    val (width, _) = geometryFrame()
-    val split = (width * bandPct() / 100).coerceIn(1, (width - 1).coerceAtLeast(1))
-    return when (target.side) {
-        null -> 0 to width
-        ClusterSlotSide.LEFT -> 0 to split
-        ClusterSlotSide.RIGHT -> split to width
-    }
+fun ClusterNavBridge.geometryBand(target: CastGeometryTarget): Pair<Int, Int> =
+    editFrame(target).let { it.left to it.right }
+
+/**
+ * Review 2.89 Pass 3 · cluster-r2-1 — khung gốc của ô theo KIỂU KHUNG CỦA PHIÊN ([ClusterRectLayout.editFrame]): Bo tròn = cả dải
+ * (đúng phép cũ từng số), Chữ nhật = đúng khung phiên ghim (vùng trống / nửa vùng trống). Một nguồn cho dải kẹp X/Y, "Đặt lại"
+ * và mặc định khi chưa ghim — trước đây ba chỗ đều theo cả cụm nên ở Chữ nhật hai nửa chồng nhau và "Đặt lại" đặt app dưới nền
+ * ADAS rồi lưu vào khoá `__RECT` [ĐO mã].
+ */
+private fun ClusterNavBridge.editFrame(target: CastGeometryTarget): CastBounds {
+    val (width, height) = geometryFrame()
+    return ClusterRectLayout.editFrame(frameStyle(), target.side, bandPct(), width, height)
 }
+
+/** Kiểu khung của PHIÊN (không phải lựa chọn của hồ sơ); không có phiên ⇒ Bo tròn (đường cũ). */
+private fun ClusterNavBridge.frameStyle(): CastStyle = castStyleSession()?.frame ?: CastStyle.CURVED
 
 /**
  * Khung hiện tại của ô — **bản GHIM của phiên thắng khung mặc định** (R6 của bản gốc: mở lại đúng chỗ người dùng đã
@@ -123,11 +133,12 @@ fun ClusterNavBridge.setGeometryBounds(target: CastGeometryTarget, bounds: CastB
     }
 }
 
-/** Đưa ô về khung mặc định của nó (cả dải, cao hết cụm) — nút "Đặt lại" của màn cũ. */
+/**
+ * Đưa ô về khung mặc định của nó — nút "Đặt lại" của màn cũ. Bo tròn: cả dải, cao hết cụm (như cũ); Chữ nhật: đúng khung phiên
+ * ghim (Pass 3 · cluster-r2-1 — không bao giờ dưới nền ADAS).
+ */
 fun ClusterNavBridge.resetGeometry(target: CastGeometryTarget) {
-    val (_, height) = geometryFrame()
-    val (bandMin, bandMax) = geometryBand(target)
-    setGeometryBounds(target, CastBounds(bandMin, 0, bandMax, height))
+    setGeometryBounds(target, editFrame(target))
 }
 
 /**
@@ -158,7 +169,10 @@ data class CastGeometryProfileValue(val density: Int, val bounds: CastBounds)
 fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue? {
     if (target.side != null && sessionSplitPct() != splitPct()) return null
     val fullDefault = DisplayConfig.NORMAL_DEFAULT.takeIf { target.side == null }
-    val profile = savedConfig(target) ?: fullDefault
+    // Pass 3 · cluster-r2-1: phiên Chữ nhật ⇒ "lần chiếu sau" ghim ĐÚNG phép `ClusterRectLayout.pin` (bản `__RECT`, thiếu khung ⇒
+    // khung phiên) — so với NORMAL_DEFAULT trọn cụm là in một dòng "Hồ sơ này: … 1920×720" giả.
+    val profile = if (frameStyle() == CastStyle.RECT) ClusterRectLayout.pin(savedConfig(target), editFrame(target))
+    else savedConfig(target) ?: fullDefault
     val session = sessionConfig(target)
     val want = CastGeometryProfileValue(densityOf(profile), boundsOf(target, profile))
     return want.takeIf { it != CastGeometryProfileValue(densityOf(session), boundsOf(target, session)) }
@@ -183,10 +197,12 @@ private fun ClusterNavBridge.bandPct(): Int = sessionSplitPct() ?: splitPct()
 
 /**
  * Bản ghi HỒ SƠ đang dùng lưu cho ô: FULL dùng khoá không hậu tố, split dùng khoá (nửa, tỉ lệ PHIÊN) — đúng ô nhớ mà
- * lượt chỉnh tay đang ghi vào (`CastSessionPin.resizeSlotBody`).
+ * lượt chỉnh tay đang ghi vào (`CastSessionPin.resizeSlotBody`). B1b: cộng kiểu khung của PHIÊN (cụm Chữ nhật ⇒ khoá `__RECT`)
+ * — cùng ô nhớ lượt chỉnh tay ghi vào.
  */
 private fun ClusterNavBridge.savedConfig(target: CastGeometryTarget): DisplayConfig? = runCatching {
-    val profile = target.side?.let { CastProfile.of(it, bandPct()) } ?: CastProfile.FULL
+    val style = frameStyle()
+    val profile = target.side?.let { CastProfile.of(it, bandPct(), style) } ?: CastProfile.FULL.inStyle(style)
     coordinator.prefs.displayConfigFor(target.pkg, profile)
 }.getOrNull()
 
@@ -202,11 +218,8 @@ private fun ClusterNavBridge.sessionConfig(target: CastGeometryTarget): DisplayC
     else -> null
 }
 
-private fun ClusterNavBridge.boundsOf(target: CastGeometryTarget, config: DisplayConfig?): CastBounds {
-    val (_, height) = geometryFrame()
-    val (bandMin, bandMax) = geometryBand(target)
-    return config?.bounds ?: CastBounds(bandMin, 0, bandMax, height)
-}
+private fun ClusterNavBridge.boundsOf(target: CastGeometryTarget, config: DisplayConfig?): CastBounds =
+    config?.bounds ?: editFrame(target)
 
 private fun ClusterNavBridge.densityOf(config: DisplayConfig?): Int {
     val dpi = config?.density?.toIntOrNull() ?: return DEFAULT_DENSITY
@@ -214,9 +227,8 @@ private fun ClusterNavBridge.densityOf(config: DisplayConfig?): Int {
 }
 
 private fun ClusterNavBridge.clampToBand(target: CastGeometryTarget, bounds: CastBounds): CastBounds {
-    val (_, height) = geometryFrame()
-    val (bandMin, bandMax) = geometryBand(target)
-    return CastGeometryGuard.clampBounds(bounds, bandMin, bandMax, height)
+    val f = editFrame(target)   // Pass 3 · cluster-r2-1: Bo tròn f.top = 0, f.bottom = H ⇒ đúng phép kẹp cũ từng số
+    return CastGeometryGuard.clampBounds(bounds, f.left, f.right, f.top, f.bottom)
 }
 
 // V-CLUSTER (2026-09-30) — phép kẹp DỜI sang `:core` `CastGeometryGuard.clampBounds` (thân + bài test dời nguyên): tầng

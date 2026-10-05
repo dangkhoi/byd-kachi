@@ -52,6 +52,16 @@ object SlotVdOwner {
         stale.forEach { free(it, WHY_SLOT_TAKEN) }
     }
 
+    /**
+     * Ô 7 (2.89-thử1, `ParkedApps`) — CHUYỂN màn ảo [name] đang sống sang khoá [owner]/[slot] mà KHÔNG giải phóng nó
+     * ([SlotVdLedger.adopt] cùng tên chỉ đổi khoá). Màn ảo khác đang giữ CÙNG ô bị giải phóng như [adopt] (bất biến giữ).
+     */
+    fun move(owner: String, slot: Int, name: String, lease: VdLease) {
+        val stale = ledger.adopt(owner, slot, name, lease)
+        Log.i(TAG, "chuyển màn ảo $name — display ${lease.displayId} → $owner#$slot · đang sống ${ledger.live().size}")
+        stale.forEach { free(it, WHY_SLOT_TAKEN) }
+    }
+
     /** Nhả màn ảo của [owner] ở [slot] (ô bị thay nội dung / dựng lại / đóng). Gọi lại lần hai ⇒ không làm gì. */
     fun release(owner: String, slot: Int) {
         ledger.release(owner, slot)?.let { free(it, WHY_SLOT_RELEASED) }

@@ -1,6 +1,7 @@
 # RUNBOOK — Mod VietMap: dời bong bóng dẫn đường ra CỤM
 
-> **Trạng thái**: Runbook (thủ tục lặp lại) · **Cập nhật**: 2026-08-28 · **Mục đích**: hướng dẫn vá (mod) APK
+> **Trạng thái**: Runbook (thủ tục lặp lại) · **Cập nhật**: 2026-10-05 (§11 VietMap 3.4.3 — port smali, APK chưa dựng;
+> backlog `VIETMAP-343-MOD`) · trước đó 2026-08-28 · **Mục đích**: hướng dẫn vá (mod) APK
 > VietMap để bong bóng nav render THẲNG trên cụm (chỉ-cụm, không phải copy 2 màn). Lặp lại mỗi khi VietMap ra bản
 > mới. Chốt của owner 2026-08-28: đi đường **mod** (bỏ hướng no-mod mirror 2-màn vì không có value).
 
@@ -14,6 +15,9 @@
 - ⇒ Runbook đủ để **re-mod nhanh** mỗi bản VietMap mới: §2 decode · §3 tìm target · §4 redirect display · §10
   receiver vị trí + **fix mapping** · §5–7 build/ký/gộp/cài. Bước từng-mò-lâu = **§3 tìm target** (obfuscation) +
   **§10 fix mapping** (gravity/flags) — đã ghi đủ smali thật bên dưới.
+- **Từ 3.4.3 (05/10) đọc §11 TRƯỚC**: cách chọn màn cụm của §4 (`getDisplay(1)/(2)`) không còn tin được trên xe có ô Kachi
+  (ô là màn private, có thể chiếm id 1 — cơ chế ở §11.4) ⇒ 3.4.3 chọn theo TÊN; `classes.dex` đã đầy 65 536 method; không
+  dùng APK của Aurora bản BYD.
 
 ## 1. Công cụ (đã có trên máy)
 - `apktool` (brew, 3.0.3) — decode/build smali
@@ -130,6 +134,8 @@ adb shell dumpsys window windows | grep -A1 "u0 vn.vietmap.live}"   # mong mDisp
 ## 9. Mỗi bản VietMap mới → lặp
 1. Tải xapk arm64 mới (APKCombo). 2. Decode (§2). 3. **Tìm lại target** (§3 — tên obfuscated đổi!). 4. Patch (§4).
 5. Build/ký/gộp/cài (§5–7). 6. Verify display (§7). Giữ cùng `mod.keystore` để cài đè không mất login.
+Từ 3.4.3 thêm: nguồn APK Google ký (§11.1) · đếm method id mỗi dex TRƯỚC khi chèn (§11.3) · đối chiếu bảng đổi tên (§11.2)
+· chọn màn theo tên + listener (§11.4–11.5) · các bước dựng §11.7.
 
 ## Giới hạn
 Thử nghiệm sở thích, KHÔNG cam kết an toàn lái xe. Mod phá chữ ký gốc VietMap (cài như app tự-ký, cạnh app gốc
@@ -224,3 +230,116 @@ $ADB $E install -r /tmp/vmbuild/universal-mod3-al.apk        # -r + cùng key = 
   `setAbsoluteTopLeft()`, preset `presetRightHalf()`), UI kéo-thả `VmBubblePlacementView.kt`, prefs `vm_bubble_x/y`
   (px góc-trên-trái tuyệt đối). Áp lại vị trí 3 nơi: `MainActivity.onResume`, nút "Áp dụng", vòng refresh
   `FloatingBubbleService` (mỗi chu kỳ khi Cast ON).
+
+## 11. VietMap 3.4.3 (2026-10-05) — port mod
+
+> **Trạng thái**: smali đã port + soát (thư mục làm việc ngoài repo); **APK CHƯA dựng** — bước `apktool b` của workflow bị
+> bộ phân loại quyền từ chối ⇒ **owner tự dựng** theo §11.7. Mod chưa chạy trên máy ảo hay xe [CHƯA BIẾT]. Mod KHÔNG nằm
+> trong APK Kachi: Kachi chỉ gửi broadcast `com.byd.clusternav.VM_BUBBLE_POS` (hợp đồng §10 không đổi). Backlog
+> `VIETMAP-343-MOD`. Mức bằng chứng theo CLAUDE.md §2; số dòng `tệp:dòng` của framework xe là của bản dịch ngược (jadx).
+
+Ký hiệu chỗ giữ (không ghi đường dẫn máy): `<XAPK>` thư mục giải nén xapk Google · `<AURORA>` thư mục split Aurora ·
+`<MOD>` cây apktool đã sửa smali · `<OUT>` thư mục ra · `<BT>` Android build-tools 34 · `<KS>` keystore mod (alias `vmmod`,
+cùng khoá các bản mod trước — §6) · `<APKEDITOR>` tệp jar APKEditor.
+
+### 11.1 Nguồn APK — dùng bản Google ký, KHÔNG dùng Aurora bản BYD
+- **[ĐO]** xapk APKPure 3.4.3 = `base` + `config.arm64_v8a` + `config.en` + `config.mdpi`; cả 4 cùng chữ ký Google
+  (`684cedb4…`); split arm64 có 13 thư viện (`libapp.so`, `libflutter.so`…). Cài 4 split trên AVD Android 10 arm64 ⇒ mở
+  được, không crash, giao diện tiếng Việt, tới màn onboarding. (Ghi chú §1 "APKPure chỉ có armeabi-v7a" là của 3.4.0.)
+- **[ĐO]** Aurora Store bản BYD (`com.aurora.store.byd`): `base.apk` bị **đóng gói lại kèm bộ giả chữ ký** (`com.kangrio`),
+  ký CN=AuroraStore (`c908e973…`) ⇒ KHÔNG lấy base hay split có mã của Aurora.
+- xapk Google KHÔNG có split `vi` (base mặc định "Navigate home") ⇒ mượn **split chỉ-tài-nguyên** của Aurora:
+  `split_config.vi.apk` (có "Chỉ đường về nhà") + `split_config.hdpi.apk`. **[ĐO]** cả hai chỉ có manifest +
+  `resources.arsc` (+ `res/`), `hasCode=false`, không `.dex`/`.so`. APKEditor gộp rồi ký lại bằng `<KS>` ⇒ chữ ký Aurora
+  không còn trong APK ra. Không có split `vi` ⇒ chữ phía Android (lối tắt, thông báo) ra tiếng Anh.
+- Hệ quả cài: mod (CN=vmmod) khác khoá bản đang cài (Google/Aurora) ⇒ phải **gỡ** trước ⇒ đăng nhập lại [SUY] + ROM xoá
+  miễn tối ưu pin của gói [ĐO nguồn — spec `kachi-289-field-fixes.html` B2-E5]; Kachi 2.89 tự miễn lại + cấp
+  `SYSTEM_ALERT_WINDOW` theo sự thật (`VM-PREREQ-TRUTH`).
+
+### 11.2 Bảng đổi tên 3.4.0 → 3.4.3 [ĐO decode base Google]
+| Thành phần | 3.4.0 | 3.4.3 | Vai |
+|---|---|---|---|
+| lớp bóng dẫn đường | `Lvn/vietmap/live/b;` | không đổi | — |
+| cửa sổ áp suất lốp · MiMi · view MiMi | `Lta/c;` · `Lc/o;` · `Lb/b;` | không đổi (`Lb/b;` lệch một id tài nguyên) | — |
+| field bóng của service · getter | `VMBluetoothService->s` · `g()` | không đổi | `g()` NÉM khi `s` null |
+| đặt vị trí | `E(II)V` | `L(II)V` | gán x/y + `updateViewLayout` |
+| getter LayoutParams | `q()` | `u()` | §10 fix mapping |
+| hiện bóng | `G()` | `O()` | `addView` + cờ đang hiện |
+| khởi tạo | `i()` | `m()` | inflate + dựng LayoutParams — KHÔNG `addView` (không phải "hiện") |
+| ẩn bóng | `t()` | `x()` | gỡ qua `WindowManagerGlobal` |
+| làm mới | `h()` | `l()` | — |
+| getter WindowManager | `s()` | `w()` | — |
+| (đổi theo cùng lượt, mod không dùng) | `j()` · `I()` | `n()` · `Q()` | — |
+
+### 11.3 Giới hạn 65 536 method id của một dex
+- **[ĐO `dexdump`]** `classes.dex` của 3.4.3 gốc đã đủ **65 536 / 65 536** method id (`classes2.dex` 52 982). Thêm MỘT tham
+  chiếu vào lớp nằm ở `classes.dex` (lời gọi `ModClusterDisplay.find` trong `Lc/o;`) ⇒ 65 537 ⇒ `apktool b` không dựng được.
+  So sánh: 3.4.0 gốc 65 531, mod 3.4.0 65 531 / 52 731.
+- **Cách**: dời nguyên tệp `smali/c.1/o.smali` (`Lc/o;`) sang một thư mục dưới `smali_classes2/` (apktool dựng mỗi thư mục
+  `smali_classesN` thành `classesN.dex`; đường dẫn tệp trong thư mục không đổi tên lớp) ⇒ 65 528 / 53 021 [ĐO đếm bằng
+  script, khớp `dexdump` trên 4 dex thật]. Mọi lớp mod MỚI đặt ở `smali_classes2/`. Chạy được sau khi dời: [SUY — chưa dựng].
+- Bản sau: đếm `method_ids_size` từng dex TRƯỚC khi chèn (`dexdump -f classes.dex | grep method_ids_size`).
+
+### 11.4 Chọn màn cụm theo TÊN, không theo id
+- **[ĐO nguồn framework xe, dịch ngược]** `DisplayManager` chỉ trả / liệt kê màn PRIVATE cho app sở hữu hoặc đã có cửa sổ
+  trên đó (`DisplayManagerService.java:446-451, 460-469`; `Display.java:521-522`). **[ĐO mã Kachi]** ô Kachi là màn ảo
+  private (cờ `8 | 256`, không PUBLIC — `VdAppHost.kt:134`, `StagingDisplay` cùng cờ). **[ĐO log xe 26/09]** màn cụm
+  `fission_bg_xdjaVirtualSurface` (chủ `com.xdja.containerservice`) là PUBLIC: `FLAG_PRESENTATION, FLAG_OWN_CONTENT_ONLY`,
+  không `FLAG_PRIVATE`.
+- **[ĐO xe 15/09]** sau khởi động nguội display 1 = `kachi-slot-0`, cụm = display 2 (id cụm từng thấy 1 / 2 / 8) ⇒
+  `getDisplay(1)/(2)` của mod 3.4.0 (§4) trả null với VietMap ⇒ bóng về màn chính; hoặc VietMap đang ở trong ô ⇒ trúng ô
+  Kachi [SUY từ cơ chế trên].
+- Mod 3.4.3: lớp mới `Lvn/vietmap/live/ModClusterDisplay;` — `find(Context)` duyệt `DisplayManager.getDisplays()`, lấy
+  display id ≠ 0 có tên (chữ thường, `Locale.ROOT`) chứa `xdja` hoặc `fission` — CÙNG từ khoá Kachi
+  `DisplayParse.clusterDisplayId`; không khớp ⇒ `null` ⇒ giữ WindowManager mặc định (màn chính, như gốc). Tên màn Kachi
+  (`kachi-slot-*`, `kachi-stage-*`) không bao giờ khớp. Không còn `getDisplay(<số>)` nào trong mã mod.
+- [SUY] DiLink 5 có hai màn `shared_fission_bg_XDJAScreenProjection_0/_1` ⇒ `find` lấy màn Android liệt kê trước.
+- [SUY từ log xe cũ] màn cụm có từ lúc khởi động ⇒ bóng lên cụm kể cả khi Cluster Cast TẮT (giống 3.4.0). Chốt bằng
+  `dumpsys display | grep -E "Display [0-9]+:|xdja|mState"` lúc Cast TẮT rồi BẬT.
+
+### 11.5 Chỗ chèn trong service + DisplayListener + rào try/catch
+- `VMBluetoothService.onCreate` (`.locals 3 → 6`): WindowManager = `createDisplayContext(find(this)).getSystemService("window")`;
+  `null` / không phải `WindowManager` / ném ⇒ WindowManager mặc định (đường gốc). Khối bọc `catch Throwable` (kể cả
+  `VerifyError`/`NoClassDefFoundError` của lớp mod) ⇒ hỏng thì về đường gốc, không giết service. Cửa sổ lốp `Lta/c;` nhận
+  CÙNG WindowManager đầu tiên như bóng (như 3.4.0); listener không dời nó.
+- Hai field mới `modRx` (bộ nhận vị trí) + `modDl` (`ModClusterDisplay`) để `onDestroy` gỡ được. Sau khi bóng dựng xong:
+  `registerDisplayListener(modDl, Handler(Looper.getMainLooper()))` rồi `sync()` một lần (đóng khe giữa `find` và lúc đăng
+  ký). `onDisplayAdded/Changed/Removed` ⇒ `sync()`: id màn đích khác id màn hiện của bóng (`w().getDefaultDisplay()`) ⇒
+  `b.modMove(wm)`; mất cụm mà bóng không ở display 0 ⇒ về màn mặc định.
+- `sync()` = vỏ bắt `RuntimeException` quanh `syncImpl()` — callback chạy luồng chính, ném ở đó là chết cả app đang dẫn đường.
+- Method mới `b.modMove(WindowManager)`: ẩn bằng `x()` gốc (bắt `IllegalArgumentException`/`IllegalStateException`) → đổi
+  field `b` (WindowManager riêng của bóng) → hiện lại bằng `O()` CHỈ khi trước đó đang hiện; màn mới từ chối
+  (`BadTokenException`/`InvalidDisplayException`/`IllegalStateException`) ⇒ về WindowManager mặc định, thử `O()` một lần.
+  Chỉ bắt ngoại lệ WindowManager, mọi thứ khác ném tiếp. [ĐO nguồn xe] `addView` lại view đang gỡ dở được Android xử lý
+  (`WindowManagerGlobal.java:266-267`); `createDisplayContext` chỉ ném khi display null (`ContextImpl.java:1880-1889`).
+- `onDestroy`: gỡ listener + receiver TRƯỚC phần dọn gốc, bọc `catch Throwable` (hỏng không được bỏ qua phần dọn gốc).
+- MiMi (`Lc/o;->c()`): cửa sổ MiMi cũng đi qua `find()` — quyết MỘT lần lúc tạo, không dời sau. [SUY] cụm mất sau đó ⇒ hiện
+  MiMi / cửa sổ lốp có thể ném `InvalidDisplayException` không bắt (3.4.0 cũng vậy).
+
+### 11.6 Bộ nhận vị trí (`posrx`) — cờ 0x2
+- Cùng hợp đồng §10: action `com.byd.clusternav.VM_BUBBLE_POS`, extra int `x`/`y` = góc trên-trái tuyệt đối; trên `u()` ép
+  `gravity = 0x33` + `flags |= 0x200` rồi `L(x, y)`.
+- Đọc thẳng field `s` có kiểm null (KHÔNG gọi `g()` — ném khi `s` null); thân `onReceive` bọc catch (receiver chạy luồng chính).
+- `registerReceiver(rx, filter, 0x2)` — `0x2` = `RECEIVER_EXPORTED`. **[ĐO nguồn AMS xe, dịch ngược]** Android 10 chỉ đọc bit
+  `0x1` (`flags & 1`) ⇒ trên xe không đổi gì. Bắt buộc từ Android 14 khi `targetSdk ≥ 34` (VietMap 3.4.3 target 36) — thiếu là
+  ném lúc đăng ký trên máy ảo API 34+. Không khai receiver trong manifest (cả 3.4.0 lẫn 3.4.3 đăng ký trong mã).
+- Cửa sổ chạm vô hình mới của 3.4.3 không nhận cờ `0x200` ⇒ trên cụm có thể lệch so với bóng; cụm không có chạm ⇒ [SUY] vô hại.
+
+### 11.7 Dựng + kiểm + cài (owner chạy)
+1. Đóng gói base: `apktool b <MOD> -o <OUT>/base-mod.apk` (lỗi cú pháp / verifier của smali chỉ lộ ở bước này — chưa từng chạy).
+2. Thư mục gộp `<OUT>/merge`: `base.apk` (= base-mod) + `config.arm64_v8a.apk`, `config.en.apk`, `config.mdpi.apk` từ
+   `<XAPK>` + `config.vi.apk`, `config.hdpi.apk` chép từ split Aurora chỉ-tài-nguyên. DỪNG nếu split Aurora có mã:
+   `unzip -l <AURORA>/split_config.<x>.apk | grep -E '\.dex$|\.so$'` phải rỗng.
+3. Gộp: `java -jar <APKEDITOR> m -i <OUT>/merge -o <OUT>/universal.apk -f` (APKEditor — bản phát hành chính thức của
+   REAndroid trên GitHub).
+4. Căn + ký: `<BT>/zipalign -p -f 4 <OUT>/universal.apk <OUT>/universal-al.apk` rồi
+   `<BT>/apksigner sign --ks <KS> --ks-pass pass:<mật-khẩu-khoá-mod> --ks-key-alias vmmod --out <OUT>/VietMap-3.4.3-mod-cluster.apk <OUT>/universal-al.apk`.
+5. Kiểm: `apksigner verify --print-certs` (CN=vmmod) · `aapt2 dump badging` (package `vn.vietmap.live`, native-code
+   `arm64-v8a`) · `unzip -l … | grep kangrio` phải RỖNG · `aapt2 dump strings … | grep "Chỉ đường về nhà"` phải có ·
+   ghi sha256 + kích thước.
+6. Máy ảo TRƯỚC xe: `VMBluetoothService` chạy ngay khi mở app (trước đăng nhập) ⇒ đường `onCreate` của mod thử được không
+   cần tài khoản; bóng chỉ hiện khi đang dẫn đường (cần đăng nhập). [CHƯA BIẾT] tên màn phụ của máy ảo có chứa
+   `xdja`/`fission` không — nếu không, bóng ở màn chính là ĐÚNG hành vi; xem tên bằng `dumpsys display` trước khi kết luận.
+7. Xe: gỡ VietMap đang cài (khác khoá) → cài APK mod → đăng nhập → mở Cast cụm → dẫn đường. Kiểm
+   `dumpsys window windows | grep -A1 "u0 vn.vietmap.live}"` (mDisplayId = id màn `fission`/`xdja`), rồi kéo vị trí từ Kachi
+   (broadcast §10) xem bóng theo đúng pixel.

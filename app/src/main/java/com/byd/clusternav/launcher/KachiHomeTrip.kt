@@ -42,9 +42,11 @@ internal class KachiHomeTrip(
         val st = viewModel.uiState.value
         val count = EffectiveLayout.slotCount(st.preset, st.customLayout)
         val shown = st.effectiveWorkspace.slots
+        val apps = shown.take(count).withIndex().mapNotNull { (i, c) -> (c as? SlotContent.App)?.let { it.pkg to i } }
         return TripHub.HomeView(
-            appSlots = shown.take(count).filterIsInstance<SlotContent.App>().map { it.pkg },
+            appSlots = apps.map { it.first },
             stages = workspace().stagingCandidates(shown, count),
+            slots = apps.distinctBy { it.first }.toMap(),   // A2: gói → ô 0-based (ô đầu thắng — luật một-app-một-ô)
         )
     }
 
@@ -58,7 +60,8 @@ internal class KachiHomeTrip(
         what: String,
         body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome,
         done: (BehindHomeSequence.Outcome) -> Unit,
-    ) = slots().behindChain(what, body, done)
+        needsAnchor: Boolean,
+    ) = slots().behindChain(what, body, done, needsAnchor)
 
     // ── TripSettingsPort ────────────────────────────────────────────────────────────────────────────────────────
 

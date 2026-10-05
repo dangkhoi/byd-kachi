@@ -67,4 +67,8 @@ tasks.withType<Test>().configureEach {
     )
         .withPropertyName("vehicleSessionPlanForT10SessionSafetyTest")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // 2.89 · B2 VM-PREREQ-TRUTH — đầu ra nguyên văn máy ảo (`AppPrereqReadTest` · `VietMapBubbleWaitTest` đọc qua clusternav.root).
+    inputs.dir(rootProject.layout.projectDirectory.dir("docs/diagnostics/vm-prereq-emulator-2026-10-05"))
+        .withPropertyName("vmPrereqEmulatorFixtures")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }

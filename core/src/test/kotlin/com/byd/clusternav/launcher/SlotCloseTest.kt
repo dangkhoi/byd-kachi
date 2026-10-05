@@ -134,17 +134,75 @@ class SlotCloseTest {
         assertEquals(Outcome.READ_FAILED, thrower.outcome)
     }
 
+    /**
+     * A3 · SLOT-CLOSE-SETTLE — ĐỔI GHIM có lý do ([ĐO xe 05/10]: `tắt vn.vietmap.live vd=4 → STILL_THERE gửi=[17] đọc-lại=5`,
+     * app chỉ rời ô ~27 s sau): cửa sổ 5 × 250 ms cũ ngắn hơn lệnh gỡ trên xe ⇒ nay đọc lại theo lịch giãn dần ~4 s rồi mới
+     * kết luận STILL_THERE.
+     */
     @Test
-    fun `gui lenh ma doc lai van con - doc lai toi tran roi bao STILL_THERE`() {
+    fun `gui lenh ma doc lai van con - doc lai het lich ~4 s roi moi bao STILL_THERE`() {
         val inSlot = fx("emulator-2026-10-03-sc-maps-in-slot")
         val rec = Rec(listOf(inSlot))
         noSleep.clear()
         val r = run(rec, vd = 231)
         assertEquals(Outcome.STILL_THERE, r.outcome)
         assertFalse(r.slotFree)
-        assertEquals(SlotCloseRun.SETTLE_READS, r.reads)
-        assertEquals(List(SlotCloseRun.SETTLE_READS - 1) { SlotCloseRun.SETTLE_STEP_MS }, noSleep)
-        assertEquals(listOf("am stack list", "am stack remove 572") + List(SlotCloseRun.SETTLE_READS) { "am stack list" }, rec.calls)
+        val steps = SlotCloseRun.SETTLE_STEPS_MS
+        assertEquals(1 + steps.size, r.reads)
+        assertEquals(steps.toList(), noSleep, "nghỉ đúng lịch, không nhịp đều")
+        assertEquals(SlotCloseSettle.BUDGET_MS, r.waitedMs)
+        assertEquals(listOf("am stack list", "am stack remove 572") + List(1 + steps.size) { "am stack list" }, rec.calls)
+        assertTrue("chờ=4000ms" in r.line(), r.line())
+    }
+
+    /**
+     * A3 — ca xe: lệnh gỡ chậm hơn 5 × 250 ms (cửa sổ cũ) nhưng xong trong lịch mới ⇒ CLOSED (ô áp luật hoàn ô ngay, không
+     * câu "chưa tắt được", không chờ nhịp đo ô ~27 s). Lần đọc lại thứ 6 mới thấy app rời ô (đã nghỉ 250+400+640+1000+1000 ms).
+     */
+    @Test
+    fun `lenh go cham hon cua so cu - lich moi doi duoc, ket luan CLOSED`() {
+        val inSlot = fx("emulator-2026-10-03-sc-maps-in-slot")
+        val gone = fx("emulator-2026-10-03-sc-maps-force-stopped")
+        val rec = Rec(listOf(inSlot) + List(5) { inSlot } + gone)
+        noSleep.clear()
+        val r = run(rec, vd = 231)
+        assertEquals(Outcome.CLOSED, r.outcome, r.line())
+        assertTrue(r.slotFree)
+        assertEquals(6, r.reads, "đọc lại: 5 lần còn thấy (đủ cửa sổ cũ) + lần thứ 6 thấy rời")
+        assertEquals(3_290L, r.waitedMs)
+        assertTrue(r.reads > FloatingOrphanSweep.SETTLE_READS, "cửa sổ cũ (5 lần đọc) đã kết luận nhầm STILL_THERE ở ca này")
+    }
+
+    @Test
+    fun `bao DA GUI dung mot lan, TRUOC vong doc lai, chi khi co lenh go`() {
+        val events = ArrayList<String>()
+        val rec = Rec(listOf(fx("emulator-2026-10-03-sc-maps-in-slot"), fx("emulator-2026-10-03-sc-maps-force-stopped")))
+        val sh: (String) -> String = { cmd -> events += cmd; rec.sh(cmd) }
+        val r = SlotCloseRun(self) {}.run(sh, 231, maps) { events += "SENT" }
+        assertEquals(Outcome.CLOSED, r.outcome)
+        assertEquals(listOf("am stack list", "am stack remove 572", "SENT", "am stack list"), events)
+        // Không gửi được lệnh nào (đã rời ô · bị rào · đọc hỏng · lệnh ném) ⇒ KHÔNG báo đang tắt (mặt vẽ giữ nguyên).
+        var sent = 0
+        SlotCloseRun(self) {}.run(Rec(listOf(fx("emulator-2026-10-03-sc-maps-force-stopped"))).sh, 231, maps) { sent++ }
+        SlotCloseRun(self) {}.run(Rec(listOf("")).sh, 231, maps) { sent++ }
+        SlotCloseRun(self) {}.run(Rec(listOf(fx("emulator-2026-10-02-behind-06-after-3"))).sh, 44, "vn.vietmap.live") { sent++ }
+        SlotCloseRun(self) {}.run({ cmd -> if (cmd.startsWith("am stack remove")) error("x") else fx("emulator-2026-10-03-sc-maps-in-slot") }, 231, maps) { sent++ }
+        assertEquals(0, sent)
+    }
+
+    @Test
+    fun `lich doc lai - nhip dau 250 ms, gian dan, tran 1 s, tong dung ngan sach`() {
+        val s = SlotCloseSettle.steps()
+        assertEquals(listOf(250L, 400L, 640L, 1_000L, 1_000L, 710L), s.toList())
+        assertEquals(SlotCloseSettle.BUDGET_MS, s.sum())
+        assertEquals(FloatingOrphanSweep.SETTLE_STEP_MS, s.first(), "ca nhanh kết luận như cũ (một nhịp 250 ms)")
+        assertTrue(s.all { it <= SlotCloseSettle.CAP_MS })
+        assertTrue(s.dropLast(1).zipWithNext().all { (a, b) -> b >= a }, "không giảm (trừ phần dư cuối)")
+        assertEquals(listOf(250L, 250L, 250L, 250L), SlotCloseSettle.steps(250, 1.0, 250, 1_000).toList(), "hệ số 1 = nhịp đều")
+        assertEquals(listOf(250L), SlotCloseSettle.steps(250, 2.0, 1_000, 400).toList(), "phần dư < nhịp đầu ⇒ bỏ")
+        assertEquals(0L, SlotCloseSettle.waited(s, 1))
+        assertEquals(650L, SlotCloseSettle.waited(s, 3))
+        assertEquals(4_000L, SlotCloseSettle.waited(s, 99), "kẹp trong lịch")
     }
 
     @Test

@@ -498,6 +498,7 @@ Vị trí bong bóng	Bubble position	Kedudukan gelembung
 Bật chiếu màn	Enable casting	Dayakan pancaran
 Hiện nút nổi chiếu cụm	Show the floating cast button	Tunjukkan butang pancar terapung
 Tỉ lệ chia đôi	Split ratio	Nisbah pisah
+Kiểu chiếu cụm	Cluster cast style	Gaya pancaran kluster
 Tự chiếu khi nổ máy	Autostart on engine start	Mula automatik semasa kereta dihidupkan
 App tự chiếu toàn màn	Full-screen autostart app	Apl mula automatik skrin penuh
 Tự chiếu chia đôi	Autostart split view	Paparan pisah mula automatik
@@ -802,3 +803,9 @@ Mặc định	Default	Lalai
 hệ thống báo thiếu bộ nhớ (lowMemory=true)	the system reports low memory (lowMemory=true)	sistem melaporkan memori rendah (lowMemory=true)
 chưa biết cỡ mô hình ⇒ nạp như cũ	model size unknown ⇒ loads as before	saiz model tidak diketahui ⇒ dimuatkan seperti biasa
 còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB needed (model {2} MB + headroom {3} MB)	{0} MB bebas, {1} MB diperlukan (model {2} MB + ruang lebihan {3} MB)
+# CLUSTER-THEME-SAFE B1a (2.89) — màn Chẩn đoán › Cổng theme (chỉ đọc).
+Cổng theme (chỉ đọc)	Theme gate (read-only)	Get tema kluster (baca sahaja)
+Đang đọc cổng theme…	Reading theme gate…	Membaca get tema kluster…
+Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no command sent)	Get tema kluster: dibaca (tiada arahan dihantar)
+# B3 DOCK-SCALE (2.89) — mục Cài đặt › Hiển thị "Cỡ thanh nút xe" (khoá dock_scale).
+Cỡ thanh nút xe	Car bar size	Saiz bar kereta

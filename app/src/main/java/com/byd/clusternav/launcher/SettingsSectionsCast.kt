@@ -48,6 +48,12 @@ class SettingsCastSection(
     private val geometryBlock = SettingsCastGeometryBlock(context, rows, deps)
 
     /**
+     * B1b · CLUSTER-RECT-OPTION — hàng "Kiểu chiếu cụm: Bo tròn / Chữ nhật" (tệp riêng `SettingsSectionsCastStyle.kt`, trần 500
+     * dòng). Phụ thuộc phiên đang chạy ("cụm đang …", nút *Áp ngay*) ⇒ [refreshStatus] dựng lại nó.
+     */
+    private val styleBlock = SettingsCastStyleBlock(context, rows, deps)
+
+    /**
      * V-CLUSTER · VC-R9 — hai hộp dựng lại được của phần đầu trang: công tắc Cast (+ dòng *"áp dụng từ lần nổ máy sau"*
      * + nút *Áp ngay*) và tỉ lệ chia (+ dòng *"đang chia … · hồ sơ này …"*). [SettingsRows.checkRow]/`chipRow` giữ trạng
      * thái trong closure, nên nói thật sau một lượt áp = dựng lại hộp, không phải đặt lại dấu tích từ ngoài.
@@ -63,6 +69,7 @@ class SettingsCastSection(
 
     fun build(body: LinearLayout) {
         master(body)
+        styleBlock.build(body)
         autostart(body)
         castNow(body)
         geometryBlock.build(body)
@@ -340,6 +347,7 @@ class SettingsCastSection(
         refreshPreview(state)
         rebuildMaster()
         rebuildSplit()
+        styleBlock.rebuild()
         geometryBlock.rebuild()
     }
 

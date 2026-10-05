@@ -2,8 +2,16 @@ package com.byd.clusternav.modules.clustercast
 
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellRetry
+import com.byd.clusternav.carexec.LocalShellText
 import android.content.Context
 import com.byd.clusternav.AdbKeys
+import com.byd.clusternav.launcher.ProfileScopeCluster
+import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.ClusterCarType
+import com.byd.clusternav.modules.clustercast.simplified.ShellResult
+import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
+import com.byd.clusternav.modules.clustercast.simplified.SimpleCastShell
+import com.byd.clusternav.modules.clustercast.simplified.ThemeGatePreview
 
 /**
  * ★ CHỤP CHẨN ĐOÁN TỪ TRONG XE (v0.39).
@@ -42,6 +50,15 @@ object ClusterDiag {
         //   `&& !mForceResizableActivities`). Trước đây diag không chụp → phải SUY RA cờ tắt từ việc có
         //   size-compat. Đọc thẳng thì chốt được ngay: AA size-compat trên cụm ⇔ force_resizable đang tắt.
         "CỜ FREEFORM/RESIZABLE" to "echo force_resizable=$(settings get global force_resizable_activities) enable_freeform=$(settings get global enable_freeform_support)",
+        // ★ 2.89 · B2 VM-PREREQ-TRUTH (chỉ ĐỌC): miễn pin THẬT (`system,`/`user,` mới tính — KDoc `DozeWhitelistRead`) + dấu vết
+        //   hộp "IVI không hỗ trợ" (`UnsupportActivity` của CarSetting, ý-định REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) — chụp
+        //   NGAY sau khi hộp hiện là chốt [SUY]→[ĐO] (spec `kachi-289-field-fixes.html` §B2 · B2-V1). Lọc theo chuỗi, không quét mù.
+        "MIỄN PIN (deviceidle)" to com.byd.clusternav.system.DozeWhitelistRead.READ,
+        // Review 2.89 Pass 3 · vietmap-dock-r2-5: + bộ đệm `system` — dòng `START u0 {act=… cmp=…} from uid …` in bằng `Slog.i` ⇒
+        //   LOG_ID_SYSTEM [ĐO nguồn r47 `ActivityStarter.java:643-644` + `Slog.java:51-52`]; thiếu nó thì chỉ còn `am_create_activity`
+        //   (events, không uid, vắng khi activity được dùng lại).
+        "HỘP 'IVI KHÔNG HỖ TRỢ' (logcat)" to
+            "logcat -d -b main -b system -b events | grep -E 'REQUEST_IGNORE_BATTERY_OPTIMIZATIONS|UnsupportActivity' | tail -20",
     )
 
     /**
@@ -92,6 +109,17 @@ object ClusterDiag {
                 val real = DisplayParse.realSizeOrNull(capturedDisplay ?: sh("dumpsys display"), vdUse)
                 val osc = DisplayParse.overscan(disp, vdUse)
                 summary.append("cụm: display ").append(if (measured.isEmpty()) "KHÔNG THẤY" else measured.joinToString(",")).append("\n")
+                // CLUSTER-THEME-SAFE (2.89): lượt gửi / bỏ opcode đổi theme gần nhất và vì sao (SEND · VD_PRESENT · TOO_SOON …).
+                summary.append("cổng theme: ")
+                    .append(SimpleCastRuntime.themeVerdict() ?: "chưa có lượt nào trong tiến trình này").append("\n")
+                // 2.89 · B4 DISPLAY-OWNER-DYNAMIC: cổng sở hữu display đang coi id nào là màn ảo Kachi / cụm (id dò live, không hằng 1).
+                val own = com.byd.clusternav.system.WindowCommandDispatcher.get(app).ownership
+                summary.append("cổng sở hữu: VD Kachi=").append(own.registeredVirtualDisplays().sorted())
+                    .append(" · cụm=").append(own.castDisplay() ?: "chưa dò").append("\n")
+                // B1a — "Cổng theme (chỉ đọc)": chạy lại các lượt đọc + quyết NGAY BÂY GIỜ, 0 lệnh ghi (kênh chỉ đọc).
+                val gateNow = themeGateWith(app, shell)
+                sb.append("---------- CỔNG THEME (chỉ đọc) ----------\n").append(gateNow).append("\n\n")
+                summary.append(gateNow.lineSequence().firstOrNull { it.startsWith("kế hoạch:") } ?: "").append("\n")
                 summary.append("cửa sổ $pkg: ").append(frame?.let { "[${it[0]},${it[1]}][${it[2]},${it[3]}]" } ?: "KHÔNG THẤY")
                     .append(winDisp?.let { " trên display $it" } ?: "").append("\n")
                 summary.append("VD: size ").append(size?.let { "${it.first}x${it.second}" } ?: "?")
@@ -147,6 +175,59 @@ object ClusterDiag {
         val path = write(app, stamp, "=== TÓM TẮT ===\n" + summary.toString().trim() + "\n\n" + sb.toString())
         return path to summary.toString().trim()
     }
+
+    /**
+     * CLUSTER-THEME-SAFE B1a — mục "Cổng theme (chỉ đọc)" (màn Chẩn đoán, CLAUDE.md §11): mở MỘT phiên dadb, chạy đúng các
+     * lượt đọc của cổng (`dumpsys display`, — chỉ khi mức B bật — `am stack list` + cửa sổ) + `getprop persist.sys.car.type`,
+     * quyết bằng chính `ClusterStylePlan` của lượt mở chiếu, in kết quả. KHÔNG gửi gì: kênh bọc
+     * [ThemeGatePreview.ReadOnlyShell] (lệnh ngoài danh sách đọc bị từ chối ở tầng thi hành), sổ theme chỉ đọc. Chạy trên
+     * luồng gọi (nền) — KHÔNG gọi trên main thread.
+     */
+    fun themeGate(ctx: Context): String {
+        val app = ctx.applicationContext
+        return runCatching {
+            LocalDeviceShell.session(AdbKeys.ensure(app), LocalShellRetry.BACKGROUND_READ_CAP) { shell -> themeGateWith(app, shell) }
+                ?: "❌ không nối được dadb — không đọc được gì"
+        }.getOrElse { "❌ ${it.javaClass.simpleName}: ${it.message}" }
+    }
+
+    private fun themeGateWith(app: Context, run: (String) -> LocalShellText): String {
+        val raw = object : SimpleCastShell {
+            override fun execute(command: String): ShellResult = run(command).let { ShellResult(it.exitCode, it.output, it.errorOutput) }
+        }
+        val ro = ThemeGatePreview.ReadOnlyShell(raw)
+        val inProc = ClusterCarType.parse(com.byd.clusternav.SysProps.get(ClusterCarType.PROP))
+        val saved = ClusterProfile.carType(app)
+        val viaDadb = ClusterCarType.parse(ro.execute(ClusterCarType.CMD).takeIf { it.success }?.stdout)
+        val resolved = ClusterProfile.resolve(app)
+        // Tiến trình chưa đọc được mã mà dadb đọc được ⇒ quyết theo mã THẬT (lượt mở chiếu đầu sẽ tự lưu nó — `refineByShell`).
+        val profile = if (saved == null && viaDadb != null) resolved.forCarType(viaDadb) else resolved
+        // Review 2.89 Pass 2 · cluster-r1-6 / whole-r1-3: kiểu muốn = ĐÚNG lựa chọn mà lượt mở thật đọc (`cast_style` của hồ sơ —
+        // `SimpleCastRuntime` › `desiredStyle`), đọc thẳng prefs, KHÔNG dựng coordinator. Trước đây gõ cứng Bo tròn (bản B1a) ⇒
+        // người lái chọn Chữ nhật chụp màn được opcode/kế hoạch SAI so với thứ xe vừa làm.
+        val desired = desiredStyle(app)
+        val header = listOf(
+            "car.type: trong tiến trình=${inProc ?: "không đọc được"} · dùng=${saved ?: "chưa có"} · dadb=${viaDadb ?: "không đọc được"}",
+            "hồ sơ: ${profile.summary()}",
+            "kiểu muốn: $desired (lựa chọn Bo tròn / Chữ nhật của hồ sơ, khoá cast_style — lượt mở chiếu kế đọc đúng giá trị này)",
+        )
+        val body = ThemeGatePreview.report(
+            ro, com.byd.clusternav.BuildConfig.APPLICATION_ID, profile.projectionRecipe(),
+            SimpleCastRuntime.themeLedgerStore(app), SimpleCastRuntime.themeClock(app), desired, header,
+        )
+        return if (ro.refused.isEmpty()) body else "$body\n⛔ kênh chỉ đọc đã chặn: ${ro.refused}"
+    }
+
+    /**
+     * Lựa chọn kiểu chiếu cụm của HỒ SƠ đang dùng (`simple_cast_prefs` › `cast_style`) — cùng tệp + khoá + phép parse với
+     * `SharedPrefsSimpleCastPrefs.castStyle()` (vắng / lạ ⇒ Bo tròn, D3). Chỉ đọc.
+     */
+    private fun desiredStyle(app: Context): CastStyle = CastStyle.parse(
+        app.getSharedPreferences(ProfileScopeCluster.SIMPLE_CAST_FILE, Context.MODE_PRIVATE).all[CAST_STYLE_KEY] as? String,
+    )
+
+    /** Khoá lựa chọn kiểu chiếu cụm — trùng `SharedPrefsSimpleCastPrefs` (bài canh `ClusterThemeB1aWiringContractTest`). */
+    private const val CAST_STYLE_KEY = "cast_style"
 
     private fun write(ctx: Context, stamp: String, body: String): String = runCatching {
         val dir = java.io.File(ctx.getExternalFilesDir(null), "diag").apply { mkdirs() }

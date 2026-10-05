@@ -25,8 +25,11 @@ import java.util.concurrent.atomic.AtomicReference
  */
 internal object TripHub {
 
-    /** Ảnh chụp màn chính cho chuyến: gói của ô app ĐANG HIỆN (lớp lưu + lớp tạm) + ứng viên dàn dựng (A5). */
-    data class HomeView(val appSlots: List<String>, val stages: List<BehindHomePlan.Stage>)
+    /**
+     * Ảnh chụp màn chính cho chuyến: gói của ô app ĐANG HIỆN (lớp lưu + lớp tạm) + ứng viên dàn dựng (A5). A2 · 2.89: [slots] =
+     * gói → ô (0-based, ô đầu thắng) — bước nhạc chờ CHÍNH ô của app nhạc và Cài đặt gọi tên ô đó (`TripMusicPlace.where`).
+     */
+    data class HomeView(val appSlots: List<String>, val stages: List<BehindHomePlan.Stage>, val slots: Map<String, Int> = emptyMap())
 
     interface Host {
         /** Activity còn sống (chưa finish/destroy). */
@@ -44,8 +47,15 @@ internal object TripHub {
         /**
          * L4 — một chuỗi tuỳ ý (màn ảo ẩn D2(a), K4-VIEW D3(ii)) trên CÙNG bên thi hành/mutex `kachi-behind` của màn. [done]
          * chạy trên luồng chính, đúng một lần (kể cả khi không kênh / đã tắt: kết quả `NO_CHANNEL` / `DISABLED`).
+         * [needsAnchor] = `false` ⇒ chuỗi KHÔNG dựng giữ chỗ (ô 7, K4-VIEW vào ô) ⇒ không chịu công tắc tắt BEHIND-HOME
+         * (review 2.89 Pass 1 · behaviour-5 — KDoc `BehindHomeRunner.chain`).
          */
-        fun behindChain(what: String, body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome, done: (BehindHomeSequence.Outcome) -> Unit)
+        fun behindChain(
+            what: String,
+            body: (BehindHomeRunner.Kit) -> BehindHomeSequence.Outcome,
+            done: (BehindHomeSequence.Outcome) -> Unit,
+            needsAnchor: Boolean = true,
+        )
     }
 
     @Volatile private var last: WeakReference<Host>? = null

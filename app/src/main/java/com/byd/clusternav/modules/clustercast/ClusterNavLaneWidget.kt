@@ -3,6 +3,7 @@ package com.byd.clusternav.modules.clustercast
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe
 import com.byd.clusternav.modules.clustercast.simplified.SimpleCastRuntime
 import java.util.concurrent.Executors
 
@@ -46,8 +47,16 @@ object ClusterNavLaneWidget {
     /** clusterDebug opcode: 39 = "simple navigation" (raise the OEM nav overlay on the cluster). */
     const val OP_SIMPLE_NAV = 39
 
-    /** Exact proven command (matches nav-mode-probe.sh). Kept in one place so tests/D4 agree. */
-    private const val CMD = "service call AutoContainer 2 i32 1000 i32 $OP_SIMPLE_NAV s16 \"\""
+    /**
+     * Exact proven command (matches nav-mode-probe.sh on Seal: `service call AutoContainer 2 i32 1000 i32 39 s16 ""`) — ĐÚNG TỪNG
+     * BYTE trên MỌI đời xe. Tên service chỉ viết chữ ở `ProjectionRecipe` (hằng [ProjectionRecipe.SVC_DILINK3], bài canh literal).
+     *
+     * Review 2.89 Pass 2 · whole-r1-4 (CLAUDE.md §14 · §6): bản B1a dựng lệnh từ hồ sơ ⇒ DiLink 5 bắt đầu gửi op 39 tới
+     * `auto_container` — một opcode CHƯA từng gửi tới service đó (Kachi lẫn DashCast), tác dụng trên DL5 [CHƯA BIẾT], và đổi chỉ để
+     * qua bài canh literal. Hành vi mới không đo ⇒ giữ đúng đường cũ (`AutoContainer`, trên DL5 không có service ⇒ không tác dụng)
+     * tới khi đo trên DL5 (backlog `DL5-CAST-LIVE` · spec R2-V4).
+     */
+    private fun cmd(): String = ProjectionRecipe.svcCall(ProjectionRecipe.SVC_DILINK3, OP_SIMPLE_NAV)
 
     /** Runtime outcome, published for the Nav card status line (D3). */
     enum class Op39Status { IDLE, ASSERTED, GATED_CAST, SHELL_UNREACHABLE }
@@ -144,7 +153,7 @@ object ClusterNavLaneWidget {
      */
     private fun issue(appCtx: Context, now: Long): Op39Status {
         lastAttemptAtMs = now
-        val result = runCatching { SimpleCastRuntime.coordinator(appCtx).executeShell(CMD) }.getOrNull()
+        val result = runCatching { SimpleCastRuntime.coordinator(appCtx).executeShell(cmd()) }.getOrNull()
         return if (result != null && result.success) {
             lastOkAtMs = now
             setStatus(Op39Status.ASSERTED, "exit=0")

@@ -39,9 +39,28 @@ internal class FullPin(val config: DisplayConfig, val pinned: DisplayConfig?)
  */
 internal fun SimpleCastCoordinator.pinFull(pkg: String, appType: AppType): FullPin {
     if (appType != AppType.NORMAL) return FullPin(DisplayConfig.forAppType(appType), null)
-    val saved = prefs.displayConfigFor(pkg, CastProfile.FULL)
-    logPin(pkg, CastProfile.FULL, saved)
-    return FullPin(saved ?: DisplayConfig.NORMAL_DEFAULT, saved)
+    // B1b — ô nhớ theo kiểu khung của PHIÊN (Bo tròn = khoá cũ, từng byte). Chữ nhật: bản ghim LUÔN có khung (vùng trống, D2)
+    // — nền ADAS lớn luôn hiện ở theme2 FULL [ĐO QML], để app trọn cụm là để nó che nửa bản đồ.
+    val style = frameStyle
+    val profile = CastProfile.FULL.inStyle(style)
+    val saved = prefs.displayConfigFor(pkg, profile)
+    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.FREE_AREA) else saved
+    logPin(pkg, profile, pinned)
+    // Pass 2 · cluster-r1-3: Chữ nhật áp `wm size`/overscan 1:1 dù bản `__RECT` có bị làm bẩn (Bo tròn: đúng phép cũ từng byte).
+    val config = saved ?: DisplayConfig.NORMAL_DEFAULT
+    return FullPin(if (style == CastStyle.RECT) ClusterRectLayout.oneToOne(config) else config, pinned)
+}
+
+/**
+ * Review 2.89 Pass 2 · cluster-r1-2 — cấu hình MÀN (wm size/overscan/DPI, của cả VD) cho lượt chia đôi đầu tiên từ Idle: bản FULL
+ * theo kiểu khung của PHIÊN (Bo tròn = khoá cũ — đúng phép `DisplayConfigurator.resolveConfig` cũ từng byte; Chữ nhật = khoá
+ * `__RECT`, `wm size`/overscan ép 1:1 — [ClusterRectLayout.oneToOne]). Trước đây đọc thẳng khoá Bo tròn ở cả phiên Chữ nhật ⇒
+ * `wmSize` của Bo tròn lên cụm Chữ nhật, nửa khung trượt dưới nền ADAS, số km/h tắt cả phiên.
+ */
+internal fun SimpleCastCoordinator.slotDisplayConfig(pkg: String): DisplayConfig {
+    val style = frameStyle
+    val saved = prefs.displayConfigFor(pkg, CastProfile.FULL.inStyle(style)) ?: DisplayConfig.NORMAL_DEFAULT
+    return if (style == CastStyle.RECT) ClusterRectLayout.oneToOne(saved) else saved
 }
 
 /**
@@ -52,10 +71,16 @@ internal fun SimpleCastCoordinator.sessionLeftPercent(current: SimpleCastState):
     (current as? SimpleCastState.CastingSplit)?.leftPercent
         ?: CastProfile.normalizePercent(prefs.splitRatioLeftPercent())
 
-/** Bản ghi đã lưu của ô ([side] × [leftPercent] của phiên) — đọc **một lần** lúc ô bắt đầu. */
+/**
+ * Bản ghi đã lưu của ô ([side] × [leftPercent] của phiên) — đọc **một lần** lúc ô bắt đầu. B1b: ô nhớ theo kiểu khung của
+ * PHIÊN; Chữ nhật luôn có khung (nửa vùng trống theo tỉ lệ — [ClusterRectLayout.slotFrame]).
+ */
 internal fun SimpleCastCoordinator.pinSlot(pkg: String, side: ClusterSlotSide, leftPercent: Int): DisplayConfig? {
-    val profile = CastProfile.of(side, leftPercent)
-    return prefs.displayConfigFor(pkg, profile).also { logPin(pkg, profile, it) }
+    val style = frameStyle
+    val profile = CastProfile.of(side, leftPercent, style)
+    val saved = prefs.displayConfigFor(pkg, profile)
+    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.slotFrame(side, leftPercent)) else saved
+    return pinned.also { logPin(pkg, profile, it) }
 }
 
 /**
@@ -89,7 +114,7 @@ internal fun SimpleCastCoordinator.resizeFullBody(left: Int, top: Int, right: In
         log("resizeActiveTarget: skip (state/bounds invalid) [$left,$top,$right,$bottom]")
         return
     }
-    if (!geometry.resizeFull(current.targetPkg, left, top, right, bottom)) return
+    if (!geometry.resizeFull(current.targetPkg, left, top, right, bottom, frameStyle)) return
     val bounds = CastBounds(left, top, right, bottom)
     replaceState(current, current.copy(pinned = basePin(current.pinned, current.displayConfig).copy(bounds = bounds)))
 }
@@ -102,7 +127,7 @@ internal fun SimpleCastCoordinator.resizeSlotBody(side: ClusterSlotSide, left: I
         log("resizeActiveSlot: skip (bounds invalid) [$left,$top,$right,$bottom]")
         return
     }
-    if (!geometry.resizeSlot(slot.pkg, CastProfile.of(side, current.leftPercent), left, top, right, bottom)) return
+    if (!geometry.resizeSlot(slot.pkg, CastProfile.of(side, current.leftPercent, frameStyle), left, top, right, bottom)) return
     val updated = slot.copy(pinned = slotBase(slot).copy(bounds = CastBounds(left, top, right, bottom)))
     replaceState(current, if (side == ClusterSlotSide.LEFT) current.copy(left = updated) else current.copy(right = updated))
 }
@@ -125,15 +150,17 @@ internal fun SimpleCastCoordinator.applySplitRatioLiveBody(leftPercent: Int) {
     prefs.setSplitRatioLeftPercent(pct)
     val current = state as? SimpleCastState.CastingSplit ?: return
     val (width, height) = mover.queryDisplaySize(displayId) ?: (1920 to 720)
-    val boundary = width * pct / 100
+    // B1b — Bo tròn: đúng phép cũ (0..W); Chữ nhật: chia vùng trống (ADAS lớn luôn hiện) — [ClusterRectLayout.splitFrames].
+    val style = frameStyle
+    val (leftFrame, rightFrame) = ClusterRectLayout.splitFrames(style, pct, width, height)
     fun reslot(slot: SlotState, side: ClusterSlotSide, b: CastBounds): SlotState =
-        if (geometry.resizeSlot(slot.pkg, CastProfile.of(side, pct), b.left, b.top, b.right, b.bottom)) {
+        if (geometry.resizeSlot(slot.pkg, CastProfile.of(side, pct, style), b.left, b.top, b.right, b.bottom)) {
             slot.copy(pinned = slotBase(slot).copy(bounds = b))
         } else {
             slot.copy(pinned = slot.pinned?.copy(bounds = null))
         }
-    val left = current.left?.let { reslot(it, ClusterSlotSide.LEFT, CastBounds(0, 0, boundary, height)) }
-    val right = current.right?.let { reslot(it, ClusterSlotSide.RIGHT, CastBounds(boundary, 0, width, height)) }
+    val left = current.left?.let { reslot(it, ClusterSlotSide.LEFT, leftFrame) }
+    val right = current.right?.let { reslot(it, ClusterSlotSide.RIGHT, rightFrame) }
     replaceState(current, current.copy(left = left, right = right, leftPercent = pct))
 }
 
@@ -141,14 +168,14 @@ internal fun SimpleCastCoordinator.applySplitRatioLiveBody(leftPercent: Int) {
 internal fun SimpleCastCoordinator.setDensityBody(vd: Int, dpi: Int?) {
     val current = state
     val full = current as? SimpleCastState.CastingFull
-    val applied = CastDensityControl.set(shell, prefs, vd, dpi, full?.targetPkg) ?: return
+    val applied = CastDensityControl.set(shell, prefs, vd, dpi, full?.targetPkg, frameStyle) ?: return
     if (full != null) replaceState(full, full.copy(pinned = basePin(full.pinned, full.displayConfig).copy(density = applied)))
 }
 
 /** Thân của `setDensitySplit` (chip DPI khi chia đôi) — DPI là của cả VD ⇒ cả hai ô nhận cùng giá trị vừa áp. */
 internal fun SimpleCastCoordinator.setDensitySplitBody(vd: Int, dpi: Int?) {
     val split = state as? SimpleCastState.CastingSplit ?: return
-    val applied = CastDensityControl.setForSplit(shell, prefs, vd, dpi, split) ?: return
+    val applied = CastDensityControl.setForSplit(shell, prefs, vd, dpi, split, frameStyle) ?: return
     replaceState(
         split,
         split.copy(

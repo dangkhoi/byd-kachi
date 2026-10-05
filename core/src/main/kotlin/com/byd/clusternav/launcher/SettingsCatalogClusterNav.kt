@@ -101,6 +101,8 @@ internal object SettingsCatalogClusterNav {
             // cạnh, và cùng một bộ đọc (`SimpleCastPrefs` → `FloatingBubbleService`), nên "cấu hình chiếu cụm nằm
             // ở đâu" vẫn có đúng MỘT câu trả lời.
             "cast_bubble_visible",
+            // B1b · CLUSTER-RECT-OPTION — kiểu chiếu cụm (Bo tròn / Chữ nhật), cùng bộ đọc `SimpleCastPrefs.castStyle`.
+            "cast_style",
             "autostart_enabled", "autostart_package",
             "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
         ).forEach { put(it, "simple_cast_prefs") }

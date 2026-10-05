@@ -84,7 +84,7 @@ object UpdateChecker {
                 }
             }
             if (bestVer == null) Result(cur, null, null, false, Lang.f("không thấy APK trên nhánh {0}", "no APK found on branch {0}", BRANCH))
-            else Result(cur, bestVer, bestUrl, cmp(bestVer!!, cur) > 0, null)
+            else Result(cur, bestVer, bestUrl, offers(bestVer!!, cur), null)
         }.getOrElse { Result(cur, null, null, false, Lang.f("lỗi mạng: {0}", "network error: {0}", it.message)) }
     }
 
@@ -289,14 +289,49 @@ object UpdateChecker {
         } finally { conn.disconnect() }
     }
 
-    /** So sánh hai chuỗi version dạng "0.56" / "1.2.3". >0 nếu a mới hơn b. */
+    /**
+     * So sánh PHẦN SỐ của hai phiên bản ("0.56" / "1.2.3" / "2.89-thử1" → 2.89). >0 nếu a mới hơn b; đuôi sau phần số bị
+     * bỏ qua (xét đuôi ở [offers]).
+     *
+     * ## 2.89 · B4 OTA-SUFFIX-COMPARE — [ĐO máy ảo 05/10] hộp "Có bản mới: v2.88 … Đang dùng v2.89-thử1. Tải v2.88 và cài đè?"
+     * Bản cũ `split('.')` rồi `toIntOrNull() ?: 0` từng khúc ⇒ khúc `"89-thử1"` thành `0` ⇒ bản đang dùng đọc ra **2.0** < 2.88
+     * ⇒ mời HẠ cấp (tải ~40 MB rồi `pm` vẫn từ chối vì versionCode 190 > 189). Nay mỗi khúc lấy SỐ ĐẦU ([numericPrefix]).
+     */
     fun cmp(a: String, b: String): Int {
-        val pa = a.split('.').map { it.toIntOrNull() ?: 0 }
-        val pb = b.split('.').map { it.toIntOrNull() ?: 0 }
+        val pa = numericPrefix(a)
+        val pb = numericPrefix(b)
         for (i in 0 until maxOf(pa.size, pb.size)) {
             val d = (pa.getOrElse(i) { 0 }) - (pb.getOrElse(i) { 0 })
             if (d != 0) return d
         }
         return 0
     }
+
+    /** Phần số đầu phiên bản: "2.89-thử1" → [2, 89] · "1.2.3" → [1, 2, 3] · không bắt đầu bằng số ("?") → rỗng (= 0). */
+    internal fun numericPrefix(v: String): List<Int> =
+        NUMERIC_PREFIX.find(v.trim())?.value?.split('.')?.map { it.toIntOrNull() ?: 0 } ?: emptyList()
+
+    /** `true` nếu phiên bản có đuôi sau phần số — bản THỬ cài tay (vd `2.89-thử1`, CLAUDE.md §9), không phải bản kênh. */
+    internal fun hasSuffix(v: String): Boolean {
+        val t = v.trim()
+        val head = NUMERIC_PREFIX.find(t)?.value ?: return false
+        return t.length > head.length
+    }
+
+    /**
+     * Kênh có bản [channel] ĐÁNG mời cài đè lên bản đang dùng [installed] không. Kênh chỉ lộ TÊN tệp (`Kachi-<ver>-release.apk`,
+     * không versionCode) ⇒ quyết bằng phần số:
+     *  • số kênh > số đang dùng ⇒ mời;
+     *  • số BẰNG nhau ⇒ chỉ mời khi đang dùng bản THỬ có đuôi (`2.89-thử1`) mà kênh là bản chính thức cùng số (`2.89`) — bản thử
+     *    đi TRƯỚC bản chính thức của chính số đó (`app/build.gradle.kts`: "bản chính thức kế tiếp phải ≥ 191 (xe đã mang 190)");
+     *  • số kênh < số đang dùng ⇒ KHÔNG BAO GIỜ mời (lỗi [ĐO máy ảo 05/10] ở KDoc [cmp]).
+     * Đang dùng đọc không ra (`"?"`) ⇒ phần số rỗng ⇒ kênh nào cũng "mới hơn" — giữ nguyên hành vi cũ.
+     */
+    internal fun offers(channel: String, installed: String): Boolean {
+        val d = cmp(channel, installed)
+        return d > 0 || (d == 0 && hasSuffix(installed) && !hasSuffix(channel))
+    }
+
+    /** Phần số đầu chuỗi phiên bản (một hay nhiều khúc số cách bằng dấu chấm). */
+    private val NUMERIC_PREFIX = Regex("""^[0-9]+(?:\.[0-9]+)*""")
 }

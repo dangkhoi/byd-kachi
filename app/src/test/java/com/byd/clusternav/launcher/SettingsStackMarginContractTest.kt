@@ -39,6 +39,8 @@ class SettingsStackMarginContractTest {
         "SettingsSectionsCastGeometry.kt",
         // 2.74 · R3 — nhóm Giọng nói cũng dựng bằng `rows.*` (và nay có cả khối gập/mở).
         "SettingsVoiceSection.kt",
+        // 2.89 · B3 — hàng cỡ thanh nút (thanh kéo + dải mẫu + ghi chú) dựng bằng `rows.*`.
+        "SettingsBarScaleSection.kt",
     )
 
     /**

@@ -44,7 +44,7 @@ object ProfileSharePolicy {
         "phím vô-lăng: mã phím (+ nguồn knob/wheel, 2.88) + đích là gói app/mã việc (Prefs.VK_TARGET_*) / mã nút xe ctl:<nút>:<việc> — không vị trí"
     private const val R_COMFORT = "tiện nghi xe theo người lái (ghế, lọc bụi, lấy gió) — không vị trí"
     private const val R_CAMERA = "sở thích hiển thị camera (ProfileScopeCluster.CAMERA_PROFILE_KEYS) — không vị trí"
-    private const val R_CAST = "chiếu cụm: công tắc, gói app tự chiếu, tỉ lệ chia đôi — không vị trí"
+    private const val R_CAST = "chiếu cụm: công tắc, gói app tự chiếu, tỉ lệ chia đôi, kiểu Bo tròn/Chữ nhật — không vị trí"
     private const val R_APPS = "gói app mặc định / dịch vụ nền lúc nổ máy — không vị trí"
 
     /** Khoá theo hồ sơ ĐÃ SOÁT, không mang vị trí/riêng tư → lý do. Bản chia sẻ mang nguyên. */
@@ -56,6 +56,8 @@ object ProfileSharePolicy {
             "app_shortcuts",
             // 2.87 · R-AH3 — một cờ hiện/ẩn nút ⇄ của khung: lựa chọn hiển thị, không vị trí.
             "swap_button_autohide",
+            // 2.89 · B3 — cỡ thanh nút theo % ("85"): lựa chọn hiển thị, không vị trí.
+            "dock_scale",
         ).forEach { put(it, R_LAYOUT) }
         listOf("theme_mode", "unit_prefs", "launcher_autostart", "lang", "color_choice", "theme_choice")
             .forEach { put(it, R_LOOK) }
@@ -76,7 +78,7 @@ object ProfileSharePolicy {
         ).forEach { put(it, R_CAMERA) }
         listOf(
             "cast_enabled", "cast_bubble_visible", "split_ratio_left_pct", "autostart_enabled", "autostart_package",
-            "autostart_split_enabled", "autostart_left_package", "autostart_right_package",
+            "autostart_split_enabled", "autostart_left_package", "autostart_right_package", "cast_style",
         ).forEach { put(it, R_CAST) }
         listOf("voice_music_default_app", "headless_autostart").forEach { put(it, R_APPS) }
         // F2/F3 — `pkg|B,pkg|N` (tên gói + kiểu) và `ytmusic|<từ khoá/link mã hoá>`: lựa chọn app/nhạc, không vị trí.

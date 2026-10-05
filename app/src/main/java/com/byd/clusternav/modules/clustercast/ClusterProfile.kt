@@ -5,18 +5,24 @@ import com.byd.clusternav.launcher.camera.CameraProfileDefaults
 import com.byd.clusternav.launcher.camera.ClusterBandSpec
 import com.byd.clusternav.modules.navaccess.AccessibilityRebind
 import com.byd.clusternav.SysProps
+import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.ClusterCarType
+import com.byd.clusternav.modules.clustercast.simplified.ProjectionRecipe
 
 /**
  * HỒ SƠ CỤM THEO MODEL XE (R8) — tách phần phụ-thuộc-xe ra sau 1 lớp, resolve = auto-detect trước, override sau.
  * Đa-model BYD (Seal · SL6 · Han · Tang…) cùng DiLink3 + XDJA container → recipe Seal-like, biến thiên chính = kích cụm.
  *
- *  • [castSeq]     = chuỗi lệnh AutoContainer bật chiếu. Seal DL3 = [30,16,35] (30=cong giữ km/h, 16=chiếu, 35=DI40).
+ *  • [castSeq]     = chuỗi lệnh AutoContainer bật chiếu, KHÔNG có opcode theme (B1a 2.89). Seal DL3 = [16,35] (16=chiếu,
+ *                    35=DI40); opcode ép kiểu (30=cong giữ km/h) nằm ở [styleOps].
  *  • [teardownSeq] = chuỗi lệnh tắt chiếu. Seal = [18,0] (18=đóng chiếu, 0=refresh video).
  *  • [vdNameHint]  = tên VD cụm để dò (chứa "xdja"/"fission").
  *
- * Serialize (export/import share nhóm): "id;diLink;W;H;cast(-nối);tear(-nối);vdNameHint;svcName;styleOps".
- * Chuỗi 7 hoặc 8 phần (bản cũ) VẪN NHẬP ĐƯỢC — anh em đã share nhau trong nhóm; thiếu trường nào thì suy ra
- * theo mặc định an toàn (svcName=AutoContainer; styleOps suy từ việc castSeq có chứa opcode 30 hay không).
+ * Serialize (export/import share nhóm): "id;diLink;W;H;cast(-nối);tear(-nối);vdNameHint;svcName;styleOps[;nativeStyle]".
+ * DẠNG DÂY GIỮ NGUYÊN cho bản cũ: trường cast xuất `<opcode CURVED>-<castSeq>` (Seal vẫn `30-16-35`), trường 9 = `C-R`
+ * (opcode cong-chữ nhật); trường 10 (`RECT`/`CURVED`) chỉ xuất khi kiểu gốc đã biết. Chuỗi 7–9 phần (bản cũ) VẪN NHẬP ĐƯỢC:
+ * opcode theme đầu tiên trong trường cast được BÓC ra làm `styleOps[CURVED]` ([ProjectionRecipe.peelTheme]) — đúng thứ chuỗi
+ * cũ gửi lúc mở chiếu; svcName vắng = AutoContainer.
  * Phần companion PURE (parse/export/detectSeed) không đụng Context → unit-test off-device được; [resolve] mới cần ctx.
  *
  * ## [camera] — mặc định CAMERA theo đời xe (2.76 · spec `kachi-276-closing.html` R2)
@@ -39,14 +45,19 @@ data class ClusterProfile(
      * `Platform.get().isDiLink5(this) ? "auto_container" : ClusterManager.SERVICE_NAME`.
      * Trước đây ClusterNav hardcode "AutoContainer" → trên DiLink5 mọi lệnh chiếu đều rơi vào hư không.
      */
-    val svcName: String = "AutoContainer",
+    val svcName: String = ProjectionRecipe.SVC_DILINK3,
     /**
-     * ★★ W2-6 (senior review): opcode ĐỔI KIỂU CỤM (cong ↔ thẳng), do CHÍNH HỒ SƠ khai — không đoán từ ngoài.
-     * Trước đây `ClusterCast` tự suy: "phần tử nào trong castSeq bằng 30 thì đó là opcode kiểu". DiLink5 có
-     * `castSeq = [16]`, không chứa 30 → nút ◠/▭ lưu được, nhãn đổi được, mà **cụm không bao giờ đổi hình**:
-     * một nút nói dối. null = đời xe này KHÔNG đổi kiểu được → UI phải ẨN nút đi, không được hiện rồi im lặng.
+     * ★★ W2-6 (senior review): opcode ĐỔI KIỂU CỤM, do CHÍNH HỒ SƠ khai — không đoán từ ngoài. DiLink5 không có opcode kiểu
+     * ⇒ rỗng ⇒ UI phải ẨN lựa chọn, không được hiện rồi im lặng.
+     * B1a (2.89): `Map<CastStyle, Int>` thay `Pair`; CURVED = opcode gửi trước chuỗi chiếu (Seal 30, đường đã chạy từ 08/02),
+     * RECT = opcode ép chữ nhật (31 [ĐO xe 05/10]) — chỉ HIỆN khi [nativeStyle] = RECT ([ProjectionRecipe.offers]).
      */
-    val styleOps: Pair<Int, Int>? = 30 to 31,
+    val styleOps: Map<CastStyle, Int> = DEFAULT_STYLE_OPS,
+    /**
+     * Kiểu GỐC của cụm sau nổ máy — sự thật phần cứng, [resolve] đặt theo `persist.sys.car.type` ([forCarType]); `null` =
+     * chưa biết ⇒ RECT ẩn. Trường export thứ 10 chỉ để chuỗi share mang theo thông tin (round-trip), không đè được dò thật.
+     */
+    val nativeStyle: CastStyle? = null,
     /**
      * Mặc định camera của đời xe này — pref VẮNG mới lấy ở đây, pref đã đặt tường minh luôn thắng
      * (`Prefs.camera*`). Seal DL3 = bộ [ĐO 27/09] owner duyệt; mọi đời khác = [CameraProfileDefaults.NEUTRAL].
@@ -71,15 +82,45 @@ data class ClusterProfile(
      * tính năng mới KHÔNG mở gì lên trước display 0 (CLAUDE.md §7 — khác biệt đời xe nằm ở đây, không rải trong mã).
      */
     val cameraSignature: String? = null,
+    /**
+     * CLUSTER-THEME-SAFE B1a: cho phép gửi theme khi màn ảo cụm CÒN mà trống (mức B). MẶC ĐỊNH `false` cho MỌI hồ sơ —
+     * [CHƯA ĐO] (bước đo V4b); không vào [export]/[parse]: một chuỗi share (dữ liệu không tin cậy) không được bật đường chưa
+     * đo có thể làm sập framework [ĐO 05/10].
+     */
+    val themeOnVacantVd: Boolean = false,
 ) {
-    /** Đời xe này có đổi được kiểu cong/thẳng không — UI dựa vào đây để hiện hay ẩn nút. */
-    val supportsStyle: Boolean get() = styleOps != null
-    /** Chuỗi text để XUẤT (share nhóm) / lưu override. Round-trip qua [parse]. */
-    fun export(): String = listOf(
-        id, diLink.toString(), clusterW.toString(), clusterH.toString(),
-        castSeq.joinToString("-"), teardownSeq.joinToString("-"), vdNameHint, svcName,
-        styleOps?.let { "${it.first}-${it.second}" } ?: ""      // rỗng = đời xe không đổi kiểu được
-    ).joinToString(";")
+    /** Đời xe này cho chọn Bo tròn / Chữ nhật không — UI dựa vào đây để hiện hay ẩn lựa chọn (B1b). */
+    val supportsStyle: Boolean get() = projectionRecipe().let { it.offers(CastStyle.CURVED) && it.offers(CastStyle.RECT) }
+
+    /**
+     * Chuỗi text để XUẤT (share nhóm) / lưu override. Round-trip qua [parse]. Dạng dây giữ cho bản cũ: trường cast có opcode
+     * CURVED đứng đầu (bản cũ gửi nguyên chuỗi đó), trường 9 `C-R`; trường 10 chỉ khi kiểu gốc đã biết.
+     */
+    fun export(): String {
+        val curved = styleOps[CastStyle.CURVED]
+        val rect = styleOps[CastStyle.RECT]
+        val wireCast = listOfNotNull(curved) + castSeq
+        val style = if (curved == null) "" else listOfNotNull(curved, rect).joinToString("-")   // rỗng = không đổi kiểu
+        val fields = listOf(
+            id, diLink.toString(), clusterW.toString(), clusterH.toString(),
+            wireCast.joinToString("-"), teardownSeq.joinToString("-"), vdNameHint, svcName, style,
+        ) + listOfNotNull(nativeStyle?.name)
+        return fields.joinToString(";")
+    }
+
+    /**
+     * B1a — hồ sơ cho ĐÚNG đời xe [carType] (`persist.sys.car.type`; `null` = không đọc được ⇒ xe lạ): kiểu gốc RECT chỉ
+     * khi mã nằm trong [RECT_NATIVE_CAR_TYPES] và hồ sơ có opcode ép RECT; mọi trường hợp khác `null` (RECT ẩn — bảng B.2).
+     * Áp cho cả override: kiểu gốc là sự thật phần cứng của CHIẾC xe này, không phải của chuỗi share.
+     */
+    fun forCarType(carType: String?): ClusterProfile {
+        val native = if (carType != null && carType in RECT_NATIVE_CAR_TYPES && styleOps[CastStyle.RECT] != null) {
+            CastStyle.RECT
+        } else {
+            null
+        }
+        return if (native == nativeStyle) this else copy(nativeStyle = native)
+    }
 
     /**
      * ★★ W2-1 (senior review): lệnh opcode chỉ dựng được TỪ MỘT PROFILE ĐÃ RESOLVE.
@@ -88,11 +129,20 @@ data class ClusterProfile(
      * `auto_container`) toàn bộ đường trả đồng hồ gửi tới một service KHÔNG TỒN TẠI, im lặng.
      * Đặt hàm dựng lệnh ở đây thì không còn cách nào gọi nhầm: muốn có lệnh phải có profile.
      */
-    fun svcCall(n: Int) = "service call $svcName 2 i32 1000 i32 $n s16 \"\""
+    fun svcCall(n: Int) = ProjectionRecipe.svcCall(svcName, n)
+
+    /**
+     * CLUSTER-THEME-SAFE (2.89): công thức lệnh chiếu cho đường SimpleCast ở `:core` — `castSeq`/`teardownSeq`/`svcName`/
+     * `styleOps` trước đây là trường CHẾT với đường đó (`ProjectionManager` ghi cứng 30-16-35). Seal DL3 ra đúng chuỗi cũ;
+     * opcode cấm (17, 41 — ghi bền) bị lọc; opcode theme chỉ đi qua cổng `ClusterThemeGuard` + `ClusterStylePlan`.
+     */
+    fun projectionRecipe(): ProjectionRecipe =
+        ProjectionRecipe.of(svcName, castSeq, teardownSeq, styleOps, nativeStyle, themeOnVacantVd)
 
     /** Mô tả ngắn cho UI. */
     fun summary(): String =
-        "$id · DL$diLink · ${clusterW}×$clusterH · chiếu[${castSeq.joinToString(",")}] · tắt[${teardownSeq.joinToString(",")}]"
+        "$id · DL$diLink · ${clusterW}×$clusterH · chiếu[${(listOfNotNull(styleOps[CastStyle.CURVED]) + castSeq).joinToString(",")}]" +
+            " · tắt[${teardownSeq.joinToString(",")}] · kiểu gốc ${nativeStyle ?: "?"}"
 
     companion object {
         /**
@@ -124,11 +174,25 @@ data class ClusterProfile(
             rotRight = com.byd.clusternav.launcher.camera.CameraSignalPolicy.ROTATE_NONE,
         )
 
+        /**
+         * Mặc định opcode kiểu (DiLink 3): 30 = cong 12.3" (đường đã chạy từ 08/02), 31 = chữ nhật 10.25" [ĐO xe 05/10]. Khai
+         * TRƯỚC các seed (companion khởi tạo theo thứ tự khai).
+         */
+        val DEFAULT_STYLE_OPS: Map<CastStyle, Int> = mapOf(CastStyle.CURVED to 30, CastStyle.RECT to 31)
+
+        /**
+         * Mã `persist.sys.car.type` có cụm GỐC chữ nhật (theme2 10.25"): 138 = Seal [ĐO getprop 14/09 + 29/09; ĐO-gv 05/10 tắt/
+         * mở máy ⇒ cụm về theme2]. Mã khác (SL6 162 gốc cong [ĐO-RE], cụm 8.8"…) ⇒ RECT ẩn: 31 trên cụm 8.8" đẩy cụm về
+         * "simple mode" [ĐO DashCast INC-20260625]. Thêm mã CHỈ sau khi đo trên xe đó (CLAUDE.md §7, §14).
+         */
+        val RECT_NATIVE_CAR_TYPES: Set<String> = setOf("138")
+
         // ★ SEED đã VERIFY trên xe (2026-07-19): Seal DL3, VD XDJA/fission, chiếu 30→16→35, tắt 18→0.
-        //   Tái tạo CHÍNH XÁC sequence hiện tại (behavior-preserving). clusterW/H fallback 1920×720 (auto-detect đè khi có VD thật).
+        //   Tái tạo CHÍNH XÁC sequence hiện tại (behavior-preserving): 30 nằm ở styleOps[CURVED] (B1a), chuỗi dây vẫn 30-16-35.
+        //   clusterW/H fallback 1920×720 (auto-detect đè khi có VD thật).
         val SEAL_DL3 = ClusterProfile(
             id = "seal_dl3", diLink = 3, clusterW = 1920, clusterH = 720,
-            castSeq = listOf(30, 16, 35), teardownSeq = listOf(18, 0), vdNameHint = "xdja",
+            castSeq = listOf(16, 35), teardownSeq = listOf(18, 0), vdNameHint = "xdja",
             camera = SEAL_DL3_CAMERA,
             // ĐỜI DUY NHẤT đã đo đường cong kính (2.77) ⇒ đời duy nhất được mang bảng `leftEdge`.
             band = ClusterBandSpec.SEAL_DL3,
@@ -157,28 +221,29 @@ data class ClusterProfile(
          */
         val DL5 = ClusterProfile(
             id = "dilink5", diLink = 5, clusterW = 1920, clusterH = 720,
-            castSeq = listOf(16), teardownSeq = listOf(18, 0), vdNameHint = "fission", svcName = "auto_container",
-            styleOps = null      // DL5 castSeq không có opcode kiểu → KHÔNG đổi cong/thẳng được
+            castSeq = listOf(16), teardownSeq = listOf(18, 0), vdNameHint = "fission", svcName = ProjectionRecipe.SVC_DILINK5,
+            styleOps = emptyMap()      // DL5 không có opcode kiểu (30 là no-op trên DL5 — DashCast CHANGELOG:591) → KHÔNG đổi kiểu
         )
 
-        // Model BYD lạ chưa verify: cùng DiLink3 + XDJA (de-risk Q5) → recipe Seal-like, dò xdja/fission.
+        // Model BYD lạ chưa verify: cùng DiLink3 + XDJA (de-risk Q5) → recipe Seal-like (30 → 16 → 35), dò xdja/fission.
         val GENERIC_FALLBACK = ClusterProfile(
             id = "generic_dl3", diLink = 3, clusterW = 1920, clusterH = 720,
-            castSeq = listOf(30, 16, 35), teardownSeq = listOf(18, 0), vdNameHint = "fission"
+            castSeq = listOf(16, 35), teardownSeq = listOf(18, 0), vdNameHint = "fission"
         )
 
-        /** tên service chỉ được là chữ/số/_ — chuỗi hồ sơ là dữ liệu KHÔNG TIN CẬY, nó đi thẳng vào lệnh shell. */
-        private val SVC_OK = Regex("^[A-Za-z0-9_]{1,32}$")
-
-        private const val PREF = "clustercast"
+        /** Tệp prefs của hồ sơ đời xe — phạm vi XE (`ProfileScopeCluster.DEVICE_KEYS`). Cũng giữ sổ theme ([ThemeLedger.KEY]). */
+        const val PREF = "clustercast"
         private const val KEY_OVERRIDE = "profileOverride"
+
+        /** B1a — mã `car.type` đọc được qua dadb (khi tiến trình không đọc được prop) — sự thật phần cứng, phạm vi XE. */
+        const val KEY_CAR_TYPE = "car_type_dadb"
 
         /** parse chuỗi export → ClusterProfile. null nếu hỏng (dùng cho import + load override).
          *  VALIDATE (R-hardening): chuỗi share trong nhóm là UNTRUSTED → ép W/H trong (0,8192], diLink 1..9,
          *  mã cast/teardown trong [0,255] (chống nạp mã `service call AutoContainer` tùy ý/âm + bounds suy biến vỡ resize). */
         /**
          * Làm sạch chuỗi DÁN TỪ CHAT trước khi parse: bỏ NBSP/zero-width/BOM, đổi en/em-dash và dấu full-width về
-         * ASCII, và LẤY DÒNG CUỐI có 6 HOẶC 7 dấu ';' (6 = định dạng cũ 7 phần, 7 = có thêm tên service).
+         * ASCII, và LẤY DÒNG CUỐI có 6..9 dấu ';' (6 = định dạng cũ 7 phần … 9 = có thêm kiểu gốc, B1a).
          * Người dùng hay copy kèm dòng nhãn "Hồ sơ hiện tại (…):" nên phải bỏ dòng nhãn đó đi.
          */
         fun sanitize(s: String): String {
@@ -187,14 +252,14 @@ data class ClusterProfile(
                 .replace('–', '-').replace('—', '-').replace('−', '-')
                 .replace('；', ';').replace('－', '-')
             return cleaned.lineSequence().map { it.trim() }
-                .lastOrNull { it.count { c -> c == ';' } in 6..8 } ?: cleaned.trim()
+                .lastOrNull { it.count { c -> c == ';' } in 6..9 } ?: cleaned.trim()
         }
 
         fun parse(raw: String): ClusterProfile? {
             val f = sanitize(raw).split(";")
             // Tương thích NGƯỢC với chuỗi anh em đã chia sẻ trong nhóm:
-            //   7 phần = bản gốc · 8 phần = + svcName · 9 phần = + styleOps.
-            if (f.size !in 7..9) return null
+            //   7 phần = bản gốc · 8 phần = + svcName · 9 phần = + styleOps · 10 phần = + kiểu gốc (B1a).
+            if (f.size !in 7..10) return null
             val id = f[0].trim()
             if (id.isEmpty() || id.length > 32) return null
             val diLink = f[1].trim().toIntOrNull() ?: return null
@@ -202,21 +267,37 @@ data class ClusterProfile(
             val w = f[2].trim().toIntOrNull() ?: return null
             val h = f[3].trim().toIntOrNull() ?: return null
             if (w !in 1..8192 || h !in 1..8192) return null
-            val cast = parseSeq(f[4]) ?: return null
+            val wireCast = parseSeq(f[4]) ?: return null
             val tear = parseSeq(f[5]) ?: return null
             val hint = f[6].trim()
-            val svc = f.getOrNull(7)?.trim()?.takeIf { it.isNotEmpty() && SVC_OK.matches(it) } ?: "AutoContainer"
-            // styleOps: có trường thứ 9 thì dùng; chuỗi CŨ (7-8 phần) thì SUY từ castSeq — hồ sơ nào có opcode
-            // 30 trong chuỗi chiếu thì đời xe đó đổi được kiểu (đúng như mọi hồ sơ đang lưu hành trước v0.44).
-            val style = when (val raw9 = f.getOrNull(8)?.trim()) {
-                null -> if (cast.contains(30)) 30 to 31 else null
-                "" -> null
-                else -> parseSeq(raw9)?.takeIf { it.size == 2 }?.let { it[0] to it[1] }
+            val svc = f.getOrNull(7)?.trim()?.takeIf { it.isNotEmpty() && ProjectionRecipe.svcOk(it) } ?: ProjectionRecipe.SVC_DILINK3
+            // B1a: opcode theme đầu tiên của trường cast = styleOps[CURVED] (thứ chuỗi cũ thật sự gửi lúc mở chiếu); phần còn
+            // lại là castSeq. Opcode cấm KHÔNG bị lọc ở đây (lọc ở tầng dựng lệnh — ProjectionRecipe.of — để tệp nhập thấy được).
+            // Opcode trường 9 khai cũng tính là opcode theme khi bóc (chuỗi khai kiểu lạ ⇒ không bao giờ gửi ngoài cổng).
+            val raw9 = f.getOrNull(8)?.trim()
+            val declared9 = raw9?.takeIf { it.isNotEmpty() }?.let(::parseSeq).orEmpty()
+            val (curved, castLeft) = peelLegacy(wireCast, declared9.toSet())
+            // RECT: trường 9 dạng `C-R` thì lấy R; chuỗi 7–8 phần thì suy như trước v0.44 (có 30 ⇒ đổi được sang 31).
+            val rect = if (raw9 == null) (if (curved == 30) 31 else null) else declared9.getOrNull(1)
+            val style = buildMap {
+                if (curved != null) put(CastStyle.CURVED, curved)
+                if (curved != null && rect != null) put(CastStyle.RECT, rect)
             }
+            val native = f.getOrNull(9)?.trim()?.let { raw -> CastStyle.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) } }
             return ClusterProfile(
-                id, diLink, w, h, cast, tear, hint, svc, style,
+                id, diLink, w, h, castLeft, tear, hint, svc, style, native,
                 camera = cameraFor(id), band = bandFor(id), cameraSignature = cameraSignatureFor(id),
             )
+        }
+
+        /**
+         * Bóc opcode theme ĐẦU TIÊN (29/30/31 ∪ [declared]) khỏi trường cast của chuỗi dây; mọi opcode theme khác cũng rời
+         * chuỗi chiếu; opcode thường (kể cả opcode cấm, để tầng dựng lệnh lọc và tệp nhập vẫn thấy) giữ nguyên thứ tự.
+         */
+        private fun peelLegacy(wire: List<Int>, declared: Set<Int>): Pair<Int?, List<Int>> {
+            val theme = ProjectionRecipe.KNOWN_THEME_OPS + declared
+            val first = wire.firstOrNull { it in theme }
+            return first to wire.filter { it !in theme }
         }
 
         /** "30-16-35" → [30,16,35]. Rỗng → []. null nếu có phần không phải số / ngoài dải [0,255] / quá dài (>16). */
@@ -235,26 +316,59 @@ data class ClusterProfile(
 
         /**
          * Detect SEED từ Build + getprop (PURE, offline). Fleet nhóm = BYD DL3 XDJA → [SEAL_DL3]; khác → [GENERIC_FALLBACK].
-         * (Mọi head-unit BYD báo Build.MODEL = "BYD AUTO" → nhận diện bằng chuỗi "byd".)
+         * (Mọi head-unit BYD báo Build.MODEL = "BYD AUTO" → nhận diện bằng chuỗi "byd".) B1a: [carType] (`persist.sys.car.type`,
+         * `null` = không đọc được) đặt kiểu gốc qua [forCarType] — Seal 138 ⇒ RECT, còn lại ⇒ RECT ẩn.
          */
-        fun detectSeed(model: String, brand: String, manufacturer: String, extraProps: String): ClusterProfile {
+        fun detectSeed(
+            model: String, brand: String, manufacturer: String, extraProps: String, carType: String? = null,
+        ): ClusterProfile {
             val hay = "$model $brand $manufacturer $extraProps".lowercase()
             // ★ DiLink5 phải nhận ra TRƯỚC: nó dùng tên service khác hẳn, đi nhầm nhánh là không chiếu được gì.
             //   Chuỗi nhận diện lấy theo DashCast Platform.java:82.
-            if (listOf("dilink5", "dilink_5", "dilink 5").any { hay.contains(it) }) return DL5
-            return if (hay.contains("byd")) SEAL_DL3 else GENERIC_FALLBACK
+            if (listOf("dilink5", "dilink_5", "dilink 5").any { hay.contains(it) }) return DL5.forCarType(carType)
+            return (if (hay.contains("byd")) SEAL_DL3 else GENERIC_FALLBACK).forCarType(carType)
         }
 
-        /** resolve profile: user-override (prefs) ưu tiên; else detect từ Build.MODEL + getprop; else GENERIC_FALLBACK. */
+        /**
+         * resolve profile: user-override (prefs) ưu tiên; else detect từ Build.MODEL + getprop; else GENERIC_FALLBACK. Kiểu gốc
+         * LUÔN theo `car.type` của chính xe ([carType]) — kể cả với override.
+         */
         fun resolve(ctx: Context): ClusterProfile {
-            loadOverride(ctx)?.let { return it }
+            val carType = carType(ctx)
+            loadOverride(ctx)?.let { return it.forCarType(carType) }
             return detectSeed(
                 android.os.Build.MODEL ?: "",
                 android.os.Build.BRAND ?: "",
                 android.os.Build.MANUFACTURER ?: "",
-                getProp("ro.product.model") + " " + getProp("ro.product.name")
+                getProp("ro.product.model") + " " + getProp("ro.product.name"),
+                carType,
             )
         }
+
+        /**
+         * B1a — `persist.sys.car.type` của xe: đọc TRONG tiến trình ([SysProps], không shell — an toàn trên luồng chính); không
+         * được ⇒ mã đã dò qua dadb lần trước ([KEY_CAR_TYPE], [refineByShell]); không có ⇒ `null` = xe lạ. [CHƯA BIẾT d] uid app
+         * có đọc được prop này không.
+         */
+        fun carType(ctx: Context): String? =
+            ClusterCarType.parse(getProp(ClusterCarType.PROP))
+                ?: ClusterCarType.parse(prefs(ctx).all[KEY_CAR_TYPE] as? String)
+
+        /**
+         * B1a — đường lùi dadb cho [carType]: chỉ chạy khi tiến trình KHÔNG đọc được prop và chưa có mã đã dò. [read] chạy MỘT
+         * lệnh ĐỌC ([ClusterCarType.CMD]) trên kênh shell của bên gọi (không bao giờ luồng chính). Đọc được ⇒ ghi mã (phạm vi
+         * XE), xoá đệm, trả hồ sơ MỚI; không có gì mới ⇒ `null`. Không ném.
+         */
+        fun refineByShell(ctx: Context, read: (String) -> String?): ClusterProfile? {
+            if (ClusterCarType.parse(getProp(ClusterCarType.PROP)) != null) return null
+            if (ClusterCarType.parse(prefs(ctx).all[KEY_CAR_TYPE] as? String) != null) return null
+            val type = ClusterCarType.parse(runCatching { read(ClusterCarType.CMD) }.getOrNull()) ?: return null
+            prefs(ctx).edit().putString(KEY_CAR_TYPE, type).apply()
+            cached = null
+            return resolve(ctx)
+        }
+
+        private fun prefs(ctx: Context) = ctx.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
         /**
          * [resolve] có nhớ đệm — cho tầng prefs camera hỏi *"mặc định của xe này"* ở **mỗi** lượt đọc khoá vắng

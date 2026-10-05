@@ -1,0 +1,4 @@
+  * ServiceRecord{50efb86 u0 vn.vietmap.live/com.google.firebase.sessions.SessionLifecycleService}
+  * ServiceRecord{f09cb1c u0 vn.vietmap.live/.VMBluetoothService}
+  * ServiceRecord{adf0d91 u0 vn.vietmap.live/com.baseflow.geolocator.GeolocatorLocationService}
+  * ServiceRecord{254badf u0 vn.vietmap.live/vn.vietmap.lib_location_engine.LocationEngineService}

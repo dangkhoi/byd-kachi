@@ -115,7 +115,10 @@ class ClusterNavBridgeCastKeysWiringContractTest {
     @Test
     fun `hai duong cuu ho khac nhau o cho mo lai chieu`() {
         val restore = body(cast(), "fun ClusterNavBridge.restoreCluster()")
-        assertTrue("coordinator.openProjection()" in restore, "cứu hộ thường PHẢI mở lại chiếu sau 2 s")
+        // Review 2.89 Pass 3 · cluster-r2-6 — ĐỔI GHIM có lý do: lượt mở lại đi qua `reopenRetryingThemeGap` (bộ xem "khoảng 15 s ⇒
+        // thử lại MỘT lần"), vẫn là `openProjection()` của coordinator sau 2 s.
+        assertTrue("reopenRetryingThemeGap()" in restore, "cứu hộ thường PHẢI mở lại chiếu sau 2 s")
+        assertTrue("c.openProjection()" in body(cast(), "private fun ClusterNavBridge.reopenRetryingThemeGap()"))
 
         val deep = body(cast(), "fun ClusterNavBridge.deepRescue(")
         assertTrue("openProjection" !in deep, "dọn sạch cụm TUYỆT ĐỐI không mở lại chiếu — mở lại là giành cụm tiếp")

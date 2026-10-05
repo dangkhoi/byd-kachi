@@ -498,6 +498,7 @@ Vị trí bong bóng	Bubble position	气泡位置
 Bật chiếu màn	Enable casting	启用投屏
 Hiện nút nổi chiếu cụm	Show the floating cast button	显示悬浮投屏按钮
 Tỉ lệ chia đôi	Split ratio	分屏比例
+Kiểu chiếu cụm	Cluster cast style	仪表投屏样式
 Tự chiếu khi nổ máy	Autostart on engine start	上电自动投屏
 App tự chiếu toàn màn	Full-screen autostart app	自动整屏投屏的应用
 Tự chiếu chia đôi	Autostart split view	自动分屏投屏
@@ -802,3 +803,9 @@ Mặc định	Default	默认
 hệ thống báo thiếu bộ nhớ (lowMemory=true)	the system reports low memory (lowMemory=true)	系统报告内存不足（lowMemory=true）
 chưa biết cỡ mô hình ⇒ nạp như cũ	model size unknown ⇒ loads as before	模型大小未知 ⇒ 照常加载
 còn {0} MB, cần {1} MB (mô hình {2} MB + thở {3} MB)	{0} MB free, {1} MB needed (model {2} MB + headroom {3} MB)	剩余{0} MB，需要{1} MB（模型{2} MB + 余量{3} MB）
+# CLUSTER-THEME-SAFE B1a (2.89) — màn Chẩn đoán › Cổng theme (chỉ đọc).
+Cổng theme (chỉ đọc)	Theme gate (read-only)	仪表主题闸门（只读）
+Đang đọc cổng theme…	Reading theme gate…	正在读取仪表主题闸门…
+Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no command sent)	仪表主题闸门：已读取（未发送任何命令）
+# B3 DOCK-SCALE (2.89) — mục Cài đặt › Hiển thị "Cỡ thanh nút xe" (khoá dock_scale).
+Cỡ thanh nút xe	Car bar size	车控栏大小

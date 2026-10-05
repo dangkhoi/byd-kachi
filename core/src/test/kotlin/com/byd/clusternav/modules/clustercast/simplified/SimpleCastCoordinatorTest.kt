@@ -43,8 +43,14 @@ class SimpleCastCoordinatorTest : SimpleCastCoordinatorHarness() {
         assertTrue(coordinator.state is SimpleCastState.Error)
     }
 
+    /**
+     * Lần mở ĐẦU sau nổ máy (CHƯA có màn ảo cụm — [ĐO F2]) ⇒ chuỗi Seal cũ không đổi. 2.89 · CLUSTER-THEME-SAFE: opcode 30 nay
+     * đi qua cổng; B1a: chỉ gửi khi chưa có màn ảo cụm — các ca màn ảo còn / app lạ / mở lại / đọc hỏng khoá ở
+     * `CastThemeSafeCoordinatorTest`.
+     */
     @Test
     fun `openProjection issues seal commands 30, 16, 35`() {
+        shell.vdAbsentUntilCast = true
         coordinator.openProjection()
         awaitState<SimpleCastState.Idle>()
         val cmds = shell.history.filter { it.contains("AutoContainer") }

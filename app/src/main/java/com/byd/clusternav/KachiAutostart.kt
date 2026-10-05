@@ -158,7 +158,7 @@ object KachiAutostart {
     /**
      * Compute + log the cast-coordination boot plan for the active profile: from the persisted workspace slots,
      * which apps the launcher owns (mount) vs which cluster-cast owns/will-cast onto the cluster (skip). The
-     * launcher must NOT fight cast — `castOwns(pkg)` = `!AppLocationRegistry.isCastable(pkg)` (already on display 1).
+     * launcher must NOT fight cast — `castOwns(pkg)` = `!AppLocationRegistry.isCastable(pkg)` (already on the cluster VD the cast path detected live — B4, not a fixed display 1).
      */
     private fun logBootPlan(container: AppContainer) {
         val slots = runCatching { container.workspaceRepository.load().slots }.getOrDefault(emptyList())

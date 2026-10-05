@@ -59,6 +59,30 @@ class CandidateRiskLabelTest {
         assertTrue(missing.isEmpty(), "step có lệnh có thể treo máy mà precondition không yêu cầu xe đỗ: $missing")
     }
 
+    /**
+     * Review 2.89 Pass 2 · cluster-r1-8 (đóng B1a-OQ6) — opcode theme cụm (29/30/31) gửi lên màn ảo cụm có lớp Android đã làm
+     * SurfaceFlinger `DEAD_OBJECT` + system_server khởi động lại [ĐO xe 05/10 ×2]. Mọi candidate gửi nó ⇒ nhãn treo máy + điều
+     * kiện "xe đỗ, chưa có màn ảo cụm"; không candidate nào gõ cứng `--display 1` (thường là ô `kachi-slot-0` — B4). Thử ĐỎ: trả
+     * `style.curved-30` về `MAY_DISRUPT_DRIVER`, hoặc đổi điều kiện `open-projection` về "task đã ở trên display cụm".
+     */
+    @Test
+    fun `opcode theme 29 30 31 - nhan treo may va dieu kien chua co man ao cum`() {
+        val themeOp = Regex(""" i32 (29|30|31) """)
+        val theme = allCandidates.filter { (_, c) -> c.commands.any { themeOp.containsMatchIn(it) } }
+        assertTrue(theme.size >= 6, "tiền đề: catalog có các candidate gửi opcode theme: ${theme.map { it.second.id }}")
+        // Ngoại lệ DUY NHẤT: bước TÁI HIỆN sập có chủ đích (`reissue.full-while-warm` — gửi 30 khi màn ảo có app là chính câu
+        // hỏi của nó) — điều kiện bước phải nói thẳng "XE ĐỖ" + "sẵn sàng khởi động lại".
+        fun crashRepro(step: CarStep) = "ĐỖ" in step.precondition && "sẵn sàng khởi động lại" in step.precondition
+        val wrong = theme.filter { (step, c) ->
+            c.risk != CandidateRisk.MAY_HANG_SYSTEM || (THEME_OP_PRECONDITION !in step.precondition && !crashRepro(step))
+        }.map { (step, c) -> "${step.id}/${c.id}: ${c.risk} · '${step.precondition.take(60)}'" }
+        assertTrue(wrong.isEmpty(), "opcode theme phải MAY_HANG_SYSTEM + điều kiện màn ảo cụm trống: $wrong")
+        val hardDisplay = allCandidates.filter { (_, c) -> c.commands.any { "--display 1 " in it } }.map { it.second.id }
+        assertTrue(hardDisplay.isEmpty(), "gõ cứng --display 1: $hardDisplay")
+        val recast = CarExecCatalog.candidate("reissue.return-then-recast")!!.second
+        assertTrue(recast.commands.none { themeOp.containsMatchIn(it) }, "chiếu lại khi app đã trên màn ảo KHÔNG gửi opcode theme")
+    }
+
     @Test
     fun `moi step deu co it nhat mot candidate`() {
         val empty = CarExecCatalog.steps.filter { it.candidates.isEmpty() }.map { it.id }

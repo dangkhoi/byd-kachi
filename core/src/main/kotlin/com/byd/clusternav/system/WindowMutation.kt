@@ -6,8 +6,10 @@ import com.byd.clusternav.launcher.SlotRect
 /**
  * Mô hình HÓA (typed) một thay đổi cửa sổ/display sắp gửi xuống head unit. Thuần JVM (:core) — KHÔNG
  * android.*, KHÔNG dadb. Mỗi biến thể mang:
- *  - [targetDisplayId]: display mà mutation nhắm tới. `0` = màn chính launcher, `1` = cụm tài xế (cast),
- *    `≥2` = VirtualDisplay của ô (host tạo). [NO_DISPLAY] = KHÔNG nhắm display nào (vd force-stop).
+ *  - [targetDisplayId]: display mà mutation nhắm tới. `0` = màn chính launcher; `≥1` = màn phụ — VirtualDisplay của ô
+ *    (launcher tạo, đã đăng ký) HOẶC màn ảo cụm (đường cast dò live). Id nào thuộc ai do [DisplayOwnershipRegistry] quyết
+ *    (B4 · DISPLAY-OWNER-DYNAMIC 2.89: KHÔNG còn "1 = cụm" — [ĐO xe 15/09] display 1 = ô `kachi-slot-0`).
+ *    [NO_DISPLAY] = KHÔNG nhắm display nào (vd force-stop).
  *  - [priority]: ưu tiên rút trong hàng đợi cửa sổ hợp nhất ([MutationPriority]).
  *  - [render]: chuỗi lệnh shell BYTE-ỔN ĐỊNH. Các biến thể CÓ KIỂU TÁI DÙNG [FreeformLaunch] (công thức đã
  *    proven on-car, byte-locked bởi `LauncherCommandGoldenTest`) — KHÔNG tự bịa chuỗi mới.

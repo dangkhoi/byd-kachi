@@ -10,16 +10,19 @@ data class AppLocation(val pkg: String, val displayId: Int, val slot: Int?)
  * Registry VỊ TRÍ APP (thuần JVM :core — KHÔNG android.*, KHÔNG dadb).
  *
  * Bất biến MỘT-VỊ-TRÍ: mỗi app tồn tại ở đúng MỘT nơi tại một thời điểm — KHÔNG thể vừa nằm trong ô launcher
- * vừa nằm trên cụm ([castDisplayId]) và ngược lại. [place] tự thực thi bất biến bằng cách GHI ĐÈ vị trí cũ
+ * vừa nằm trên cụm ([isCastDisplay]) và ngược lại. [place] tự thực thi bất biến bằng cách GHI ĐÈ vị trí cũ
  * (bản đồ khóa theo `pkg`): đặt một app lên cụm sẽ tự XÓA nó khỏi ô launcher cũ.
  *
  * Thread-safe: bản đồ vị trí giữ dưới SNAPSHOT bất biến `@Volatile`, cập nhật copy-on-write dưới lock; đọc
  * không cần khoá.
  *
- * @param castDisplayId display coi là "cụm" cho [isCastable] (mặc định [DisplayOwnershipRegistry.CAST_DISPLAY]).
+ * @param isCastDisplay display nào ĐANG là "cụm" cho [isCastable]. B4 · DISPLAY-OWNER-DYNAMIC (2.89): không còn hằng `1` —
+ *   `WindowCommandDispatcher` truyền [DisplayOwnershipRegistry.isCastDisplay] (id cụm đường cast dò LIVE; VD launcher luôn
+ *   thắng). Mặc định: không display nào là cụm (chưa biết ⇒ không coi app nào "đã trên cụm") [ĐO xe 15/09: display 1 có thể là
+ *   ô `kachi-slot-0` của chính launcher — KDoc [DisplayOwnershipRegistry]].
  */
 class AppLocationRegistry(
-    private val castDisplayId: Int = DisplayOwnershipRegistry.CAST_DISPLAY,
+    private val isCastDisplay: (Int) -> Boolean = { false },
 ) {
     private val lock = Any()
 
@@ -53,9 +56,9 @@ class AppLocationRegistry(
     fun all(): List<AppLocation> = locations.values.toList()
 
     /**
-     * true nếu [pkg] CÓ THỂ được chiếu lên cụm — tức nó CHƯA nằm sẵn trên [castDisplayId]. App đang ở ô
+     * true nếu [pkg] CÓ THỂ được chiếu lên cụm — tức nó CHƯA nằm sẵn trên display cụm ([isCastDisplay]). App đang ở ô
      * launcher (hoặc chưa đặt) là castable; app đã trên cụm thì KHÔNG (đã chiếu rồi). Đây là hệ quả trực tiếp
      * của bất biến MỘT-VỊ-TRÍ: không app nào vừa ở ô vừa trên cụm.
      */
-    fun isCastable(pkg: String): Boolean = locationOf(pkg)?.displayId != castDisplayId
+    fun isCastable(pkg: String): Boolean = locationOf(pkg)?.displayId?.let { !isCastDisplay(it) } ?: true
 }

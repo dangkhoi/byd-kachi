@@ -125,8 +125,11 @@ class CarExecCatalogTest {
         val bytes = (CarExecCommands.steps() + "\n").toByteArray(StandardCharsets.UTF_8)
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
             .joinToString("") { "%02x".format(it.toInt() and 0xff) }
-        assertEquals(54_053, bytes.size)
-        assertEquals(569, bytes.count { it == '\n'.code.toByte() })
-        assertEquals("48ac1d2309a7f21cc7cd91677e9a638b4253b69cab6c3fcb102cf386e7a83500", digest)
+        // ĐỔI GHIM có lý do (review 2.89 Pass 2 · cluster-r1-8, đóng B1a-OQ6): mọi candidate gửi opcode theme 29/30/31 nâng lên
+        // MAY_HANG_SYSTEM + điều kiện "xe đỗ, chưa có màn ảo cụm"; `reissue.return-then-recast` bỏ lệnh 30 (−1 dòng) và dùng
+        // `{display}` thay `--display 1`; ghi chú kết quả đo của `reissue.full-while-warm`. Bộ id step/candidate KHÔNG đổi (bên trên).
+        assertEquals(54_750, bytes.size)
+        assertEquals(568, bytes.count { it == '\n'.code.toByte() })
+        assertEquals("2e346fba31e26c9036825c64eb1265c673b30cdd341f22a17bf5351991bfad7d", digest)
     }
 }

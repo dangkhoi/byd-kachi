@@ -24,30 +24,49 @@ package com.byd.clusternav.launcher
  * trong mã sản phẩm gọi chúng** (đường mở lại dựng một `Sub` mới ⇒ một `SlotLiveness` mới). Hai hàm chỉ-test-gọi
  * cộng một câu KDoc mô tả cơ chế không tồn tại là đúng cái bẫy CLAUDE.md §8 nói tới, nên chúng đã bị gỡ.
  */
-class SlotLiveness(private val missesToDie: Int = DEFAULT_MISSES) {
+class SlotLiveness(
+    private val missesToDie: Int = DEFAULT_MISSES,
+    /**
+     * Ô 7 (2.89-thử1, spec 287 §4.6d) — màn ảo NHẬN LẠI từ chỗ đỗ: app đã ở sẵn trên đó (không có lượt `am start` nào
+     * đang chạy) ⇒ luật 1 không áp: [ADOPTED_MISSES] nhịp hụt (PARK-2b: MỘT nhịp — bên gọi chỉ nạp nhịp ĐỌC ĐƯỢC, và không
+     * lượt mở nào đang dở trên màn ảo đã lấy ra ⇒ một lần vắng là kết luận) mà CHƯA từng thấy sống = app đã rời màn ảo lúc
+     * đang đỗ (mở toàn màn ở display 0 · chết · bị dừng) ⇒ kết luận với [missing] = `true` để bên gọi mở app như đường thường
+     * thay vì để khung đen. Đã thấy sống ⇒ cái chết sau đó vẫn cần [missesToDie] nhịp như mọi ô. Mặc định `false` = hôm nay.
+     */
+    private val adopted: Boolean = false,
+) {
 
     /** Đã thấy app sống ít nhất một nhịp — ĐỌC được cho chỗ dàn dựng BEHIND-HOME (A5: chỉ ô đã sống mới được dùng). */
     var seenAlive = false
+        private set
+
+    /** Kết luận vừa trả của [observe] là "màn ảo nhận lại KHÔNG có app" (chỉ khi [adopted]), không phải "app vừa chết". */
+    var missing = false
         private set
     private var misses = 0
     private var reported = false
 
     /**
-     * Nạp một nhịp đo. Trả `true` **đúng một lần**, tại nhịp mà ô chuyển từ sống sang chết.
+     * Nạp một nhịp đo. Trả `true` **đúng một lần**, tại nhịp mà ô chuyển từ sống sang chết (hoặc, với [adopted], tại nhịp
+     * kết luận màn ảo nhận lại không có app — [missing]).
      */
     fun observe(alive: Boolean): Boolean {
         if (reported) return false
         if (alive) { seenAlive = true; misses = 0; return false }
-        if (!seenAlive) return false
+        if (!seenAlive && !adopted) return false
         misses++
-        if (misses < missesToDie) return false
+        if (misses < (if (seenAlive) missesToDie else ADOPTED_MISSES)) return false
         reported = true
+        missing = !seenAlive
         return true
     }
 
     companion object {
         /** Số nhịp hụt liên tiếp để kết luận chết (nhịp đo = [PROBE_PERIOD_MS]). */
         const val DEFAULT_MISSES = 2
+
+        /** PARK-2b — màn ảo nhận lại từ ô 7, chưa thấy app: một nhịp ĐỌC ĐƯỢC vắng app là đủ kết luận "trống" ([missing]). */
+        const val ADOPTED_MISSES = 1
 
         /** Chu kỳ đo: 5 giây — trần "không poll dày" của H2; 1 lệnh `am stack list` cho TẤT CẢ ô mỗi nhịp. */
         const val PROBE_PERIOD_MS = 5_000L

@@ -1,6 +1,7 @@
 package com.byd.clusternav
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellResult
@@ -8,7 +9,14 @@ import com.byd.clusternav.carexec.LocalShellRetry
 import com.byd.clusternav.carexec.LocalShellText
 import com.byd.clusternav.core.FloatAppList
 import com.byd.clusternav.launcher.HomeActivityCmd
+import com.byd.clusternav.launcher.WorkspacePrefs
+import com.byd.clusternav.launcher.trip.TripGate
+import com.byd.clusternav.launcher.trip.TripStart
+import com.byd.clusternav.launcher.tripConfig
 import com.byd.clusternav.navigation.NavApps
+import com.byd.clusternav.navigation.VietMapBubbleWait
+import com.byd.clusternav.system.AppPrereqPlan
+import com.byd.clusternav.system.Truth
 
 /**
  * Auto-start VietMap để widget/notification có nguồn speed-limit (badge cụm mirror). Dùng chung cho 2 case:
@@ -35,21 +43,15 @@ object VietMapAutostart {
     private val inFlight = java.util.concurrent.atomic.AtomicBoolean(false)
     @Volatile private var lastRunAtMs = 0L
 
-    // ── B3 (on-car 2026-09-07): CHỜ-ĐỘNG thay sleep(1500) cứng ở nhánh bóng silent-bg ────────────
-    // Bug owner báo trên xe (v1.36): bật bóng nhưng chạy silent thì bóng KHÔNG lên — phải mở VietMap bằng
-    // tay, đợi nó boot VÀO MAP, rồi hạ xuống thì bóng mới lên. [SUY] gốc: cũ = `launch → Thread.sleep(1500)
-    // → hạ nền`. 1.5s là delay CỨNG, quá ngắn cho cold start Flutter + map SDK + `VMBluetoothService` (service
-    // dựng bóng, runbook §10) — nhất là khi mạng chậm (owner: "tuỳ network, có khi nhanh có khi lâu"). Hạ nền
-    // TRƯỚC khi VietMap vào map xong ⇒ service chưa dựng bóng ⇒ không có bóng để hiện. Sửa: POLL tới khi VietMap
-    // thật sự resumed (đã vào map) và GIỮ foreground liên tục ≥ [SETTLE_MS], RỒI mới hạ nền — mô phỏng đúng thao
-    // tác tay của owner. Thoát SỚM khi ready (mạng nhanh); [POLL_TIMEOUT_MS] chỉ là chặn trên khi VietMap không
-    // vào map (chưa login / lỗi) để không treo service vô hạn.
-    /** Nhịp poll trạng thái resumed giữa 2 lần đọc dumpsys. */
-    const val POLL_INTERVAL_MS = 500L
-    /** Chặn trên tổng thời gian chờ VietMap vào map (rộng vì tuỳ network); thoát sớm khi đã settle. */
-    const val POLL_TIMEOUT_MS = 25_000L
-    /** VietMap phải GIỮ foreground liên tục bấy nhiêu để chắc đã vào map ổn định (splash→map đã xong) + service bóng kịp dựng. */
-    const val SETTLE_MS = 2_500L
+    // ── B3 (on-car 2026-09-07) → 2.89 · B2: CHỜ-ĐỘNG trước khi hạ VietMap xuống nền ──────────────────────────
+    // 1.37 thay `sleep(1500)` cứng bằng poll "resumed + giữ ≥ 2,5 s" (trần 25 s); 2026-09-21 thêm "đã vào map (không
+    // tính màn chờ) + service bóng chạy". Owner 05/10 (2.88): mạng chậm ⇒ VietMap đứng ở màn chờ quá 25 s ⇒ poll hết giờ
+    // nhưng bên gọi VẪN hạ nền ⇒ bóng không lên. 2.89: luật + hằng số chuyển sang `:core` [VietMapBubbleWait] (trần 60 s,
+    // còn ở màn chờ thì KHÔNG hạ, người dùng chuyển app thì dừng không gửi HOME, hạ xong đọc lại service bóng một lần).
+
+    /** Lượt chờ bóng gần nhất — CHỈ để hiển thị ở màn Chẩn đoán (không bao giờ là căn cứ quyết định). */
+    @Volatile var lastBubbleWait: String? = null
+        private set
 
     /** PURE (device-free, unit-tested): [nowMs] đã ra ngoài cooldown so với [lastRunAtMs] chưa (0 = chưa từng chạy). */
     internal fun outsideCooldown(nowMs: Long, lastRunAtMs: Long, cooldownMs: Long = COOLDOWN_MS): Boolean =
@@ -81,7 +83,9 @@ object VietMapAutostart {
     /**
      * PURE (device-free, unit-tested) — từ output của `dumpsys activity activities | grep -E
      * 'mResumedActivity|topResumedActivity|ResumedActivity'`, activity ĐANG resumed (foreground) có thuộc
-     * [pkg] không. Dùng để (a) guard "đã foreground → bỏ launch" và (b) poll chờ VietMap vào map.
+     * [pkg] không. Chỉ dùng cho guard "đã foreground → bỏ launch" (BẤT KỲ dòng resumed — kể cả trong ô Kachi). Vòng chờ
+     * bóng (2.89) KHÔNG dùng hàm này: nó đọc activity resumed của DISPLAY 0 ([VietMapBubbleWait.topOnDefaultDisplay] — Pass 2 ·
+     * vietmap-dock-r1-1; dòng tổng là display giữ tiêu điểm, Pass 3 · r2-7).
      *
      * Dòng resumed điển hình: `mResumedActivity: ActivityRecord{… u0 vn.vietmap.live/.MainActivity t123}` —
      * nên match theo component `pkg/` (chắc chắn là activity của gói) VÀ dòng là loại *ResumedActivity (grep
@@ -91,28 +95,6 @@ object VietMapAutostart {
         if (dumpsysResumedGrep.isBlank()) return false
         return dumpsysResumedGrep.lineSequence().any { line ->
             line.contains("ResumedActivity") && line.contains("$pkg/")
-        }
-    }
-
-    /**
-     * PURE — activity đang resumed có phải **MÀN CHÍNH (đã vào map)** của VietMap không, KHÔNG tính màn splash/flash.
-     *
-     * ## Bug owner báo 2026-09-21 (vì sao cần hàm này TÁCH khỏi [isResumedActivity])
-     * VietMap cold-start chậm dừng ở **màn flash** vài giây. Màn flash cũng là một activity của `vn.vietmap.live`,
-     * nên nó khớp [isResumedActivity] ("bất kỳ activity của gói") ⇒ poll tưởng "đã vào map", hạ VietMap xuống nền
-     * **trong khi còn ở flash** ⇒ `VMBluetoothService` chưa kịp dựng bóng ⇒ bóng không lên. Owner phải bấm vào
-     * VietMap cho nó chạy xong rồi hạ tay thì bóng mới lên.
-     *
-     * VietMap là Flutter: activity host map là `.MainActivity` (cũng là dòng resumed điển hình trong KDoc trên).
-     * Màn flash mang tên KHÁC (`.SplashActivity`/`.LaunchActivity`/…). Nên "đã vào map" = resumed activity là
-     * `pkg/` **và** tên activity chứa `MainActivity`. Không có `MainActivity` (đang splash) ⇒ CHƯA vào map ⇒ poll
-     * tiếp. Nếu bản VietMap nào đặt tên khác thì poll sẽ hết giờ (POLL_TIMEOUT_MS) rồi vẫn hạ nền — an toàn hơn
-     * hạ sớm, và đó là ca hiếm; giữ khớp `MainActivity` vì đó là tên [ĐO] thấy ở dòng resumed thực tế.
-     */
-    internal fun isInMapActivity(dumpsysResumedGrep: String, pkg: String = PKG): Boolean {
-        if (dumpsysResumedGrep.isBlank()) return false
-        return dumpsysResumedGrep.lineSequence().any { line ->
-            line.contains("ResumedActivity") && line.contains("$pkg/") && line.contains("MainActivity")
         }
     }
 
@@ -143,25 +125,38 @@ object VietMapAutostart {
     }
 
     /**
+     * Tín hiệu CAST-MẶC-ĐỊNH: VietMap có phải app tự-chiếu-lên-cụm (khoá V1) không. Đọc THẲNG pref "clustercast/autoCast"
+     * (KHÔNG phụ thuộc singleton ClusterCast đã load chưa — chạy từ boot/nền). Cặp file/khoá PHẢI khớp producer
+     * [ClusterCast.save] / [ClusterCast.loadPrefs] (PREF="clustercast", key "autoCast", String). Dùng chung với
+     * [AppPrereqs.facts] (một chỗ đọc — DRY).
+     */
+    internal fun castDefault(app: Context): Boolean = runCatching {
+        app.getSharedPreferences("clustercast", Context.MODE_PRIVATE).getString("autoCast", "") == PKG
+    }.getOrDefault(false)
+
+    /**
      * ĐỒNG BỘ (block thread gọi) — được [VietMapAutostartService] gọi trên thread nền của nó (FGS giữ tiến
-     * trình sống tới khi poll-vào-map xong; một thread rời có thể bị kill sau finish()). Không tự spawn thread
-     * ở đây — vòng đời do service quản. No-op nếu CẢ badge tốc độ LẪN toggle bong bóng VietMap đều tắt (và
-     * không phải cast-default) / VietMap chưa cài. Chống-loop (in-flight + cooldown) nằm ngay trong hàm.
+     * trình sống tới khi chờ-bóng xong; một thread rời có thể bị kill sau finish()). Không tự spawn thread
+     * ở đây — vòng đời do service quản. VietMap chưa cài ⇒ no-op. Đã cài ⇒ LUÔN chữa điều kiện nền trước (B2), rồi
+     * no-op nếu CẢ badge tốc độ LẪN bong bóng VietMap đều tắt (và không phải cast-default). Chống-loop (in-flight +
+     * cooldown) nằm ngay trong hàm.
      *
      * @param returnToSelfPkg  package đưa lại foreground sau khi VietMap vào map; null = về HOME (boot headless).
      */
     fun runNow(ctx: Context, returnToSelfPkg: String?) {
         val app = ctx.applicationContext
-        // Tín hiệu CAST-MẶC-ĐỊNH: VietMap có phải app tự-chiếu-lên-cụm không. Đọc THẲNG pref "clustercast/autoCast"
-        // (KHÔNG phụ thuộc singleton ClusterCast đã load chưa — runNow chạy từ boot/nền). Cặp file/khoá PHẢI khớp
-        // producer [ClusterCast.save] / [ClusterCast.loadPrefs] (PREF="clustercast", key "autoCast", String) — đổi
-        // một bên phải đổi bên kia.
-        val castDefault = runCatching {
-            app.getSharedPreferences("clustercast", Context.MODE_PRIVATE).getString("autoCast", "") == PKG
-        }.getOrDefault(false)
+        if (runCatching { app.packageManager.getLaunchIntentForPackage(PKG) }.getOrNull() == null) return  // chưa cài
+        // 2.89 · B2 VM-PREREQ-TRUTH — TRƯỚC cổng sớm bên dưới: VietMap không được miễn pin thì CHÍNH nó bung hộp "IVI không
+        // hỗ trợ" ở mỗi lần khởi động nguội (spec `kachi-289-field-fixes.html` §B2). Chữa cả khi người dùng đã tắt
+        // bóng/biển mà vẫn tự mở VietMap (lượt nổ máy luôn gọi tới đây). Đọc sự thật → áp phần thiếu → đọc lại; phiên
+        // hỏng ⇒ giữ nguyên, đi tiếp.
+        // Pass 3 · vietmap-dock-r2-1: GIỮ kết quả — miễn pin chưa được chứng minh CÓ ⇒ hộp "IVI không hỗ trợ" là CHUYỆN ĐÃ BIẾT, vòng
+        // chờ bên dưới không được đọc nó thành "người dùng đã rời" lúc nổ máy (KDoc [VietMapBubbleWait.mayGoHome]).
+        val prereq = AppPrereqs.ensure(app, PKG, AppPrereqPlan.Role.AUTOSTART_PASS)
+        val dialogExpected = (prereq?.after?.dozeExempt ?: Truth.UNKNOWN) != Truth.YES
+        val castDefault = castDefault(app)
         val silentReason = Prefs.badgeEnabled(app) || Prefs.vmBubbleEnabled(app)   // badge tốc độ / bong bóng
         if (!castDefault && !silentReason) return                                  // không lý do nào ⇒ thôi
-        if (runCatching { app.packageManager.getLaunchIntentForPackage(PKG) }.getOrNull() == null) return  // chưa cài
         // Log QUYẾT ĐỊNH (TRƯỚC dadb) — verify được cả khi dadb fail (vd emulator): nhánh nào + vì tín hiệu nào.
         Log.i(TAG, "autostart quyết định: castDefault=$castDefault badge=${Prefs.badgeEnabled(app)} bubble=${Prefs.vmBubbleEnabled(app)} → ${if (castDefault) "ACTIVE" else "silent-bg"}")
         // (a) CHỐNG LOOP (B2, on-car 2026-09-06): chỉ MỘT phiên chạy tại một thời điểm + cooldown giữa hai lần.
@@ -181,32 +176,32 @@ object VietMapAutostart {
             // IO_ERROR…). KHÔNG đổi hành vi thực thi: session() vốn gọi cùng sessionResult() rồi vứt Failed.
             val result = LocalDeviceShell.sessionResult(keys, LocalShellRetry.BACKGROUND_READ_CAP) { sh ->
                 val running = sh("pidof $PKG").output.trim().isNotEmpty()
-                // FLOAT/OVERLAY WHITELIST (một lần): bản mod VietMap vẽ BÓNG lên cụm, nhưng BYD IVI TỪ CHỐI
-                // overlay của gói KHÔNG có trong CSV toàn cục `byd_float_app_list` (toast "Hệ thống IVI không hỗ
-                // trợ hoạt động này"). Thêm VietMap vào list đó + cấp SYSTEM_ALERT_WINDOW — CÙNG công thức đã
-                // proven mà AssistantLauncher dùng cho Google/Gemini (merge dùng chung com.byd.clusternav.core.
-                // FloatAppList, KHÔNG clobber gói khác). Cổng: bóng BẬT + cờ một-lần chưa set. Degrade-safe: bọc
-                // runCatching để hỏng (vd dadb rớt giữa chừng) KHÔNG chặn launch phía dưới; và cờ chỉ set khi
-                // THÀNH CÔNG (nằm cuối runCatching) ⇒ hỏng thì lần autostart sau thử lại. Chạy trên dadb uid-shell
-                // (cùng phiên) nên có quyền ghi Settings.Global + appops.
-                if (Prefs.vmBubbleEnabled(app) && !Prefs.vmFloatWhitelistApplied(app)) {
+                // `byd_float_app_list`: vẫn ghi khi bóng BẬT (vô hại) nhưng [ĐO nguồn ROM 2602030] system/product KHÔNG chỗ
+                // nào đọc khoá này (vendor [CHƯA BIẾT]) — hộp "IVI không hỗ trợ" là lời xin miễn pin của VietMap (B2), quyền
+                // vẽ nổi là appop `SYSTEM_ALERT_WINDOW` (cả hai: [AppPrereqs], theo sự thật). 2.89: đọc trước, chỉ ghi khi
+                // VẮNG (không còn cờ một-lần `vm_float_whitelist_applied`). Hỏng ⇒ log, launch phía dưới vẫn chạy.
+                if (Prefs.vmBubbleEnabled(app)) {
                     runCatching {
-                        val curFloat = sh("settings get global byd_float_app_list").output.trim()
-                        val mergedFloat = FloatAppList.merge(curFloat, listOf(PKG))
-                        sh("settings put global byd_float_app_list $mergedFloat")
-                        sh("appops set $PKG SYSTEM_ALERT_WINDOW allow")
-                        Prefs.setVmFloatWhitelistApplied(app, true)   // CHỈ set khi cả 2 lệnh trên không ném
-                        Log.i(TAG, "float-whitelist: thêm VietMap vào byd_float_app_list + SYSTEM_ALERT_WINDOW allow (list=$mergedFloat)")
-                    }.onFailure {
-                        // KHÔNG set cờ ⇒ lần autostart kế thử lại; KHÔNG rethrow ⇒ launch phía dưới vẫn chạy.
-                        Log.w(TAG, "float-whitelist: áp dụng thất bại, sẽ thử lại lần sau: ${it.message}")
-                    }
+                        // Review 2.89 Pass 2 · vietmap-dock-r1-6: đọc HỎNG (exit ≠ 0, settings provider chưa sẵn lúc nổ máy) KHÔNG
+                        // phải "danh sách rỗng" — ghi đè lúc đó là xoá mục Google/Gemini mà AssistantLauncher đã gộp vào ⇒ bỏ ghi.
+                        val read = sh("settings get global byd_float_app_list")
+                        if (!read.ok) {
+                            Log.w(TAG, "byd_float_app_list: đọc hỏng (exit=${read.exitCode}) — KHÔNG ghi (giữ danh sách hiện có)")
+                            return@runCatching
+                        }
+                        val curFloat = read.output.trim()
+                        if (!FloatAppList.contains(curFloat, PKG)) {
+                            val mergedFloat = FloatAppList.merge(curFloat, listOf(PKG))
+                            sh("settings put global byd_float_app_list $mergedFloat")
+                            Log.i(TAG, "byd_float_app_list: thêm VietMap (list=$mergedFloat) — không tác dụng trên 2602030 system/product")
+                        }
+                    }.onFailure { Log.w(TAG, "byd_float_app_list: đọc/ghi hỏng (bỏ qua): ${it.message}") }
                 }
                 // (b) VietMap ĐÃ ở foreground rồi → launch lại chỉ gây "giật" (flash), không cần. Đọc activity
                 // đang resumed/focus; degrade-safe (đọc lỗi / grep vắng ⇒ coi như KHÔNG-foreground ⇒ giữ hành vi
                 // cũ = vẫn launch). Chỉ có ý nghĩa khi process đang sống (running).
                 val foreground = running && runCatching {
-                    isResumedActivity(sh("dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity'").output)
+                    isResumedActivity(sh(RESUMED_GREP).output)
                 }.getOrDefault(false)
                 if (foreground) {
                     Log.i(TAG, "autostart: VietMap đã ở foreground (running=$running) — bỏ launch (khỏi giật)")
@@ -235,15 +230,30 @@ object VietMapAutostart {
                     if (bubbleOn && hasActivity) {
                         Log.i(TAG, "autostart silent-bg (bóng): VietMap đã có bản ghi activity trong stack (running=$running) — bỏ launch, bóng đã init (chống relaunch/flash on-car v1.33)")
                     } else if (bubbleOn || !running) {
-                        // BẬT BÓNG (chưa có activity record) HOẶC process chưa sống: launch activity, CHỜ VietMap
-                        // thật sự VÀO MAP (poll resumed + giữ liên tục ≥ SETTLE_MS — thay Thread.sleep(1500) cứng,
-                        // xem B3) rồi ĐƯA VỀ NỀN (returnToSelfPkg=app-open ClusterNav / HOME=boot) — để bóng đã
-                        // init chắc chắn hiện khi VietMap ở nền. Poll thoát sớm khi mạng nhanh.
+                        // BẬT BÓNG (chưa có activity record) HOẶC process chưa sống: launch MỘT lần, CHỜ theo luật
+                        // [VietMapBubbleWait] (map + service bóng, trần 60 s) rồi chỉ hạ nền khi luật cho phép.
+                        // Pass 3 · vietmap-dock-r2-3: service bóng ĐÃ chạy trước lượt mở (FGS sống lâu hơn activity) thì sự có mặt của nó
+                        // không chứng minh gì cho lượt Dart MỚI — đọc MỘT lần trước `monkey` (đọc hỏng ⇒ `null` = coi như đã chạy).
+                        val bubbleBefore = if (!bubbleOn || !running) false
+                        else runCatching { hasBubbleService(sh(SERVICES_DUMP).output) }.getOrNull()
                         sh("monkey -p $PKG -c android.intent.category.LAUNCHER 1")
-                        val ready = pollUntilInMap(sh)
-                        if (returnToSelfPkg != null) sh("monkey -p $returnToSelfPkg -c android.intent.category.LAUNCHER 1")
-                        else sh(HomeActivityCmd.GO_HOME)   // byte y hệt chuỗi cũ — gom về một chỗ (DRY)
-                        Log.i(TAG, "autostart silent-bg → launch VietMap + chờ-vào-map(ready=$ready) + trả nền (${returnToSelfPkg ?: "HOME"}) [bubbleOn=$bubbleOn running=$running hasActivity=$hasActivity] ⇒ VietMap ở nền để bóng hiện")
+                        val wait = awaitBubble(sh, needBubble = bubbleOn, bubbleBefore = bubbleBefore)
+                        // Pass 2 · whole-r1-1: lượt nổ máy còn ở màn chờ mà chuyến lên xe còn chờ màn nhà ⇒ vẫn về HOME (KDoc
+                        // [VietMapBubbleWait.backgroundAfter]); sổ chuyến chỉ đọc khi cần. Pass 3 · vietmap-dock-r2-1: + USER_LEFT /
+                        // NEVER_FOREGROUND khi miễn pin chưa chứng minh (hộp "IVI không hỗ trợ" đè display 0 — HOME cũng đóng nó).
+                        val bootPath = returnToSelfPkg == null
+                        val tripPending = bootPath && VietMapBubbleWait.mayGoHome(wait.outcome, dialogExpected) && tripPendingThisIgnition(app)
+                        val goBack = VietMapBubbleWait.backgroundAfter(wait.outcome, bootPath, tripPending, dialogExpected)
+                        val back = if (goBack) {
+                            if (returnToSelfPkg != null) sh("monkey -p $returnToSelfPkg -c android.intent.category.LAUNCHER 1")
+                            else sh(HomeActivityCmd.GO_HOME)   // byte y hệt chuỗi cũ — gom về một chỗ (DRY)
+                            (returnToSelfPkg ?: "HOME") + if (tripPending) " (chuyến lên xe còn chờ màn nhà${if (dialogExpected) ", miễn pin chưa chứng minh" else ""})" else ""
+                        } else {
+                            "KHÔNG hạ"
+                        }
+                        // Hạ xong: đọc service bóng MỘT lần sau ~3 s để biết bóng còn sống ở nền (không vòng, không mở lại).
+                        val after = if (goBack && bubbleOn) bubbleAfterBackground(sh) else null
+                        record(wait, back, after, bubbleOn, running, hasActivity, goBack)
                     } else {
                         Log.i(TAG, "autostart silent-bg (badge-only) → VietMap process đã sống, giữ nguyên")
                     }
@@ -262,43 +272,80 @@ object VietMapAutostart {
     }
 
     /**
-     * Poll tới khi VietMap resumed (đã VÀO MAP) và GIỮ foreground liên tục ≥ [SETTLE_MS] ⇒ `true`; hết
-     * [POLL_TIMEOUT_MS] mà chưa settle ⇒ `false` (caller vẫn hạ nền — chặn trên, tránh treo service khi VietMap
-     * không vào map: chưa login / lỗi). Đọc dumpsys mỗi [POLL_INTERVAL_MS]; lỗi đọc / không nối được ⇒ coi như
-     * chưa resumed (degrade-safe). `resumedSinceMs` reset khi rớt foreground (splash→map chuyển màn) nên chỉ
-     * `true` khi VietMap đã Ở YÊN trong map đủ lâu. Chạy TRONG phiên dadb (dùng lại [sh]); mỗi lệnh ngắn nên
-     * KHÔNG chạm hạn đọc per-read 30s của [LocalShellRetry.BACKGROUND_READ_CAP] (sleep giữa 2 lệnh không phải
-     * lần read()).
+     * Lệnh đọc activity resumed — một chuỗi cho cả guard foreground lẫn vòng chờ. Pass 2 · vietmap-dock-r1-1: thêm dòng
+     * `Display #N` để vòng chờ quyết theo DISPLAY 0 ([VietMapBubbleWait.topOnDefaultDisplay]); tập trên của lệnh cũ ⇒ guard
+     * [isResumedActivity] đọc cùng đầu ra không đổi nghĩa.
      */
-    private fun pollUntilInMap(sh: (String) -> LocalShellText): Boolean {
-        val deadline = System.currentTimeMillis() + POLL_TIMEOUT_MS
-        var readySinceMs = 0L
-        while (System.currentTimeMillis() < deadline) {
-            Thread.sleep(POLL_INTERVAL_MS)
-            val resumed = runCatching {
-                isInMapActivity(sh("dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity|ResumedActivity'").output)
-            }.getOrDefault(false)
-            // [ĐO xe 2026-09-21] MainActivity resumed ≠ bóng đã dựng: VMBluetoothService (service dựng bóng nổi)
-            // khởi CHẬM hơn map ⇒ hạ nền chỉ theo "resumed" thì bóng chưa kịp lên. Chờ THÊM: service dựng bóng đã
-            // chạy. Đọc lỗi service (rỗng) ⇒ coi như CHƯA sẵn (an toàn: chờ tiếp tới timeout).
-            //
-            // ⚠ [SOÁT 2026-09-21 · P2] Chỉ đọc service KHI ĐÃ resumed — bóng không thể dựng trước khi app lên, nên
-            // một lượt `dumpsys` khi `resumed == false` không bao giờ đổi được kết quả. Vòng này chạy ĐÚNG lúc nổ
-            // máy, nơi [ĐO xe] load đã tới 14; hỏi vô điều kiện là nhân đôi số lệnh dumpsys (tới 2×50 lượt) trên
-            // chính giây phút hệ đang đói CPU.
-            val bubbleUp = resumed && runCatching {
-                hasBubbleService(sh("dumpsys activity services vn.vietmap.live").output)
-            }.getOrDefault(false)
-            val nowMs = System.currentTimeMillis()
-            if (resumed && bubbleUp) {
-                if (readySinceMs == 0L) readySinceMs = nowMs
-                if (nowMs - readySinceMs >= SETTLE_MS) return true
-            } else {
-                readySinceMs = 0L   // chưa vào map thật HOẶC bóng chưa dựng ⇒ chờ tiếp
+    private const val RESUMED_GREP = VietMapBubbleWait.PER_DISPLAY_GREP
+
+    /**
+     * Pass 2 · whole-r1-1 — chuyến lên xe của LẦN NỔ MÁY NÀY có việc và chưa có kết quả (sổ chuyến bền `TripLedgerStore` qua
+     * [TripStart.now]: chưa chạy / đang chạy). Chỉ đọc (prefs + `Settings.Global.BOOT_COUNT`), không lệnh nào.
+     */
+    private fun tripPendingThisIgnition(app: Context): Boolean =
+        !WorkspacePrefs(app).tripConfig().empty && TripStart.now(app) != TripGate.Now.SHOWN
+
+    /** Kết quả vòng chờ: luật đã quyết gì, sau bao lâu, activity trên cùng lúc chốt. */
+    private data class Wait(val outcome: VietMapBubbleWait.Outcome, val elapsedMs: Long, val top: VietMapBubbleWait.Top?)
+
+    /**
+     * Vòng chờ theo [VietMapBubbleWait.next] (luật thuần ở `:core`). Đọc activity resumed của DISPLAY 0
+     * ([VietMapBubbleWait.topOnDefaultDisplay]) mỗi [VietMapBubbleWait.POLL_INTERVAL_MS]; service bóng CHỈ đọc khi `MainActivity` của
+     * VietMap đã ở trên cùng ([SOÁT
+     * 2026-09-21 · P2]: vòng này chạy đúng lúc nổ máy, [ĐO xe] load tới 14 — không nhân đôi lệnh dumpsys vô ích).
+     * [needBubble] = false (chỉ biển tốc độ) ⇒ không đòi service bóng, chỉ cần `MainActivity` trên cùng. Đọc hỏng ⇒
+     * `top = null` (chưa biết — không phải "người dùng đã rời").
+     * Chạy TRONG phiên dadb (dùng lại [sh]); mỗi lệnh ngắn nên không chạm hạn đọc 30 s của
+     * [LocalShellRetry.BACKGROUND_READ_CAP] (ngủ giữa hai lệnh không phải lượt read()).
+     */
+    private fun awaitBubble(sh: (String) -> LocalShellText, needBubble: Boolean, bubbleBefore: Boolean?): Wait {
+        // Pass 2 · vietmap-dock-r1-3: đồng hồ ĐƠN ĐIỆU — đầu xe chỉnh giờ (GPS/mạng) ngay sau nổ máy, đúng lúc vòng này chạy; giờ
+        // tường lùi thì trần 60 s giãn ra, tiến thì hết hạn ngay [SUY — hành vi đồng hồ ROM chưa đo]. Giờ tường chỉ cho Chẩn đoán.
+        val startMs = SystemClock.elapsedRealtime()
+        var state = VietMapBubbleWait.State()
+        while (true) {
+            Thread.sleep(VietMapBubbleWait.POLL_INTERVAL_MS)
+            // Pass 2 · vietmap-dock-r1-1: activity trước mặt người lái (display 0), không phải display đang giữ tiêu điểm.
+            val top = runCatching { VietMapBubbleWait.topOnDefaultDisplay(sh(RESUMED_GREP).output) }.getOrNull()
+            // Màn chờ nằm TRONG MainActivity [ĐO manifest] ⇒ chỉ service bóng (Dart bật) mới là dấu "đã đi tiếp" (KDoc lớp luật).
+            val nowMs = SystemClock.elapsedRealtime()
+            // Pass 3 · vietmap-dock-r2-3: service đã chạy từ trước lượt mở ⇒ chỉ nhận khi `lastActivity` MỚI hơn lượt mở.
+            val bubble = !needBubble || (VietMapBubbleWait.mainOnTop(top, PKG) && runCatching {
+                val dump = sh(SERVICES_DUMP).output
+                VietMapBubbleWait.freshBubble(hasBubbleService(dump), bubbleBefore,
+                    VietMapBubbleWait.serviceLastActivityAgoMs(dump, BUBBLE_SERVICE), nowMs - startMs)
+            }.getOrDefault(false))
+            when (val step = VietMapBubbleWait.next(state, VietMapBubbleWait.Tick(top, bubble), nowMs, nowMs - startMs, PKG)) {
+                is VietMapBubbleWait.Step.Wait -> state = step.state
+                is VietMapBubbleWait.Step.Done -> return Wait(step.outcome, nowMs - startMs, step.state.lastTop)
             }
         }
-        return false
     }
+
+    /** Sau khi hạ nền: chờ [VietMapBubbleWait.RECHECK_AFTER_MS] rồi đọc service bóng MỘT lần (`null` = đọc hỏng). */
+    private fun bubbleAfterBackground(sh: (String) -> LocalShellText): Boolean? {
+        Thread.sleep(VietMapBubbleWait.RECHECK_AFTER_MS)
+        return runCatching { hasBubbleService(sh(SERVICES_DUMP).output) }.getOrNull()
+    }
+
+    /** Một dòng log + bản ghi cho màn Chẩn đoán (CLAUDE.md §11 — chụp màn hình gửi về, không gõ adb). */
+    private fun record(
+        wait: Wait, back: String, after: Boolean?, bubbleOn: Boolean, running: Boolean, hasActivity: Boolean, wentBack: Boolean,
+    ) {
+        val top = wait.top?.let { "${it.pkg}/${it.activity}" } ?: "?"
+        val afterText = when (after) {
+            null -> if (wentBack && bubbleOn) "đọc hỏng" else "-"
+            true -> "CÒN chạy"
+            false -> "KHÔNG chạy"
+        }
+        val line = "${wait.outcome} sau ${wait.elapsedMs / 1000} s (${wait.outcome.why}) · trên cùng=$top · hạ nền=$back · " +
+            "service bóng sau ${VietMapBubbleWait.RECHECK_AFTER_MS / 1000} s: $afterText [bubbleOn=$bubbleOn running=$running hasActivity=$hasActivity]"
+        lastBubbleWait = "${android.text.format.DateFormat.format("HH:mm:ss", System.currentTimeMillis())} $line"
+        Log.i(TAG, "autostart silent-bg → $line")
+    }
+
+    /** Dump service của VietMap (lọc theo gói — không quét mù). */
+    private const val SERVICES_DUMP = "dumpsys activity services $PKG"
 
     /**
      * PURE — từ `dumpsys activity services vn.vietmap.live`, service dựng BÓNG nổi (`VMBluetoothService`) đã chạy

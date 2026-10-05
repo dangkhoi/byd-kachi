@@ -1,0 +1,7 @@
+Display #3 (activities from top to bottom):
+    mResumedActivity: ActivityRecord{bd12e53 u0 vn.vietmap.live/.MainActivity t4879}
+ ResumedActivity:ActivityRecord{bd12e53 u0 vn.vietmap.live/.MainActivity t4879}
+Display #0 (activities from top to bottom):
+    mResumedActivity: ActivityRecord{5b5d6ea u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t4881}
+ ResumedActivity:ActivityRecord{5b5d6ea u0 com.byd.launcher/com.byd.clusternav.launcher.KachiHome t4881}
+  ResumedActivity: ActivityRecord{bd12e53 u0 vn.vietmap.live/.MainActivity t4879}

@@ -24,6 +24,25 @@ class ClusterReopenWiringTest {
         assertTrue(rescue.contains("clusterReopen.cancel()"), "deepRescue 'KHÔNG mở lại chiếu' phải rút hẹn còn treo")
     }
 
+    /**
+     * Review 2.89 Pass 3 · cluster-r2-6 — "Áp ngay" bị cổng theme dừng vì khoảng 15 s ⇒ thử lại ĐÚNG MỘT lần: bộ xem
+     * `ThemeGapReopen` (luật thuần, `ThemeGapReopenTest`) gắn TRƯỚC `openProjection()`, lượt thử lại đi qua CHÍNH `clusterReopen`
+     * (huỷ được, gác công tắc) và chỉ `openProjection()` — không gắn bộ xem mới (không vòng). Thử ĐỎ: lượt thử lại gọi lại
+     * `reopenRetryingThemeGap()`.
+     */
+    @Test fun `Ap ngay - dung vi khoang 15 s thi mo lai mot lan`() {
+        val src = source("app/src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeCast.kt")
+        val restore = src.substringAfter("fun ClusterNavBridge.restoreCluster()").substringBefore("private fun ClusterNavBridge.reopenRetryingThemeGap()")
+        assertTrue(restore.contains("clusterReopen.schedule(2_000, gate = { castEnabled() }) { reopenRetryingThemeGap() }"))
+        val fn = src.substringAfter("private fun ClusterNavBridge.reopenRetryingThemeGap()").substringBefore("@Volatile private var gapWatch")
+        val add = fn.indexOf("c.addStateListener(listener)")
+        assertTrue(add in 0 until fn.indexOf("c.openProjection()\n"), "bộ xem gắn TRƯỚC lượt mở: $fn")
+        assertTrue(fn.contains("ThemeGapReopen(gapMs = { c.themeGapRetryMs() })"))
+        assertTrue(fn.contains("clusterReopen.schedule(delay, gate = { castEnabled() }) { c.openProjection() }"), "thử lại = chỉ mở chiếu")
+        assertFalse(Regex("""schedule\([^)]*\)[^\n]*reopenRetryingThemeGap""").containsMatchIn(fn), "lượt thử lại không gắn bộ xem mới")
+        assertTrue(fn.contains("c.removeStateListener(this)"), "bộ xem gỡ khi xong")
+    }
+
     /** Mã nguồn ĐÃ BỎ comment `//` — để một dòng bị comment-out không còn làm bài canh xanh giả (thử-làm-đỏ 2026-09-25). */
     private fun source(rel: String): String {
         val cwd = File(System.getProperty("user.dir"))

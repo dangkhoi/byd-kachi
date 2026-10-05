@@ -16,10 +16,12 @@ sealed class DispatchResult {
  * ([DisplayOwnershipRegistry]) TRƯỚC khi dispatch, rồi cập nhật VỊ TRÍ APP ([AppLocationRegistry]).
  *
  * ── Vì sao (Stage B2b) ──────────────────────────────────────────────────────────────────────────────────────
- * Two-track split: launcher sở hữu display 0 + các VirtualDisplay của ô; cast sở hữu cụm (display 1). B2a đã
- * dựng policy THUẦN (:core). B2b wire nó vào runtime: MỌI lệnh cửa sổ của launcher đi qua đây → nếu nhắm display
- * mà launcher KHÔNG sở hữu (vd cụm) → [DispatchResult.Rejected] + log, KHÔNG chạm transport. Nhờ vậy về mặt CẤU
- * TRÚC không một op launcher nào chạm được display ≥ 1 (trừ VD của chính nó đã đăng ký).
+ * Two-track split: launcher sở hữu display 0 + các VirtualDisplay của ô; cast sở hữu màn ảo cụm mà đường cast DÒ LIVE
+ * ([setCastDisplay], B4 · DISPLAY-OWNER-DYNAMIC — không còn hằng "cụm = display 1": [ĐO xe 15/09] display 1 có thể là ô
+ * `kachi-slot-0` của chính launcher, KDoc [DisplayOwnershipRegistry]). B2a đã dựng policy THUẦN (:core). B2b wire nó vào
+ * runtime: MỌI lệnh cửa sổ của launcher đi qua đây → nếu nhắm display mà launcher KHÔNG sở hữu (cụm, hay display không chủ)
+ * → [DispatchResult.Rejected] + log, KHÔNG chạm transport. Nhờ vậy về mặt CẤU TRÚC không một op launcher nào chạm được
+ * display ≥ 1 trừ VD của chính nó đã đăng ký.
  *
  * ── one connection ──────────────────────────────────────────────────────────────────────────────────────────
  * Dispatch qua [runCommand] = `ShellTransport.run(cmd, priority)` (owner thread duy nhất, B1). Priority lấy từ
@@ -31,7 +33,8 @@ sealed class DispatchResult {
 class WindowCommandDispatcher internal constructor(
     private val runCommand: (String, MutationPriority) -> String,
     val ownership: DisplayOwnershipRegistry = DisplayOwnershipRegistry(),
-    val locations: AppLocationRegistry = AppLocationRegistry(),
+    // B4: "app đã trên cụm" đọc CÙNG nguồn sở hữu (id cụm dò live), không hằng 1.
+    val locations: AppLocationRegistry = AppLocationRegistry(ownership::isCastDisplay),
     private val log: (String) -> Unit = {},
 ) {
 
@@ -73,6 +76,13 @@ class WindowCommandDispatcher internal constructor(
     /** Gỡ đăng ký VirtualDisplay [id] (ô đóng / host release). */
     fun unregisterLauncherVirtualDisplay(id: Int) = ownership.unregisterVirtualDisplay(id)
 
+    /**
+     * B4 · DISPLAY-OWNER-DYNAMIC — id màn ảo cụm đường cast vừa dò LIVE ([id] ≥ 1) → thuộc [DisplayOwner.CAST]; `null` = dò
+     * hụt / đã đóng chiếu ⇒ không display nào thuộc CAST (display lạ vẫn bị từ chối). Gọi từ `SimpleCastRuntime`
+     * (`onCastDisplay` của coordinator).
+     */
+    fun setCastDisplay(id: Int?) = ownership.setCastDisplay(id)
+
     /** Đặt [pkg] vào display [displayId] (+ ô [slot] nếu ở màn launcher) — dùng ở biên openInSlot của launcher. */
     fun place(pkg: String, displayId: Int, slot: Int?) = locations.place(pkg, displayId, slot)
 
@@ -111,6 +121,7 @@ class WindowCommandDispatcher internal constructor(
         internal fun createOwned(transport: ShellTransport): WindowCommandDispatcher =
             WindowCommandDispatcher(
                 runCommand = { cmd, priority -> transport.run(cmd, priority) },
+                ownership = DisplayOwnershipRegistry(log = { msg -> android.util.Log.w("Kachi/WinDispatch", msg) }),
                 log = { msg -> android.util.Log.i("Kachi/WinDispatch", msg) },
             )
 

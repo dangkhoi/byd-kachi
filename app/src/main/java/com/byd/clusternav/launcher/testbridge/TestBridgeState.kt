@@ -75,6 +75,7 @@ internal object TestBridgeState {
                     TestBridgeJson.obj(
                         "dock_edge" to s.dock.edge.name,
                         "dock_visible" to s.dock.visible,
+                        "dock_scale" to s.dock.scalePct,   // 2.89 · B3 — % cỡ thanh nút (E2E máy ảo đọc lại)
                         "dock" to TestBridgeJson.Raw(TestBridgeJson.arr(s.dock.enabled)),
                         "chips" to TestBridgeJson.Raw(TestBridgeJson.arr(s.topStrip.ids)),
                         // V3 · R14 — công tắc nhãn chip. Phơi ra để E2E máy ảo chốt được *"tắt rồi thì chip còn

@@ -33,6 +33,8 @@ class LauncherProfileTypesCoverageTest {
         "WorkspacePrefsTrip.kt",
         // 2.87 · R-AH3 (2026-10-03) — `swap_button_autohide` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
         "WorkspacePrefsSlotHead.kt",
+        // 2.89 · B3 DOCK-SCALE — `dock_scale` đọc/ghi ở tệp riêng (cùng lẽ: WorkspacePrefs.kt 499/500 dòng).
+        "WorkspacePrefsDockScale.kt",
     )
 
     private fun code(file: String) = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")
