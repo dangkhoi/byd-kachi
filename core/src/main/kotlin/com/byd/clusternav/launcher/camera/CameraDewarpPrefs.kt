@@ -104,6 +104,23 @@ object CameraDewarpPrefs {
     /** `camera_dewarp_pan_x` · `_pan_y` đọc lên có dùng được không. */
     fun isPanPct(v: Int): Boolean = v in PAN_MIN..PAN_MAX
 
+    // ── κ họ phép chiếu khung ra (2.92 · `camera_wide_kappa`) — phần trăm TUYỆT ĐỐI, `100` = phối cảnh thẳng ─────
+
+    /** `100 %` = κ 1 = phối cảnh thẳng — [DewarpParams.MIN_KAPPA]. */
+    const val KAPPA_MIN = 100
+
+    /** `800 %` = κ 8 — [DewarpParams.MAX_KAPPA]. */
+    const val KAPPA_MAX = 800
+
+    /** κ mặc định của MỌI phép nắn = 1 (Nắn thẳng hôm nay). Kiểu *Thẳng rộng* có mặc định riêng ở [CameraViewMode]. */
+    const val KAPPA_DEFAULT = 100
+
+    /** Bước `25 %`: κ 1 → 1,25 đã đổi rõ mép khung (research §4.3 quét 1 · 1,5 · 2). */
+    const val KAPPA_STEP = 25
+
+    /** `camera_wide_kappa` đọc lên có dùng được không. */
+    fun isKappaPct(v: Int): Boolean = v in KAPPA_MIN..KAPPA_MAX
+
     /**
      * ═══ Dấu của `camera_dewarp_pan_x` theo **BÊN** đang xem — một núm, một nghĩa vật lý ở cả hai gương ═══════
      *
@@ -179,6 +196,7 @@ object CameraDewarpPrefs {
         centerYPct: Int = CENTER_DEFAULT,
         panXPct: Int = PAN_DEFAULT,
         panYPct: Int = PAN_DEFAULT,
+        kappaPct: Int = KAPPA_DEFAULT,
     ): DewarpParams = DewarpParams(
         amount = pct(amountPct, isAmountPct(amountPct), AMOUNT_DEFAULT),
         focal = base.focal * pct(focalPct, isPct(focalPct), PCT_DEFAULT),
@@ -188,6 +206,7 @@ object CameraDewarpPrefs {
         centerY = centerY + pct(centerYPct, isCenterPct(centerYPct), CENTER_DEFAULT),
         panX = pct(panXPct, isPanPct(panXPct), PAN_DEFAULT),
         panY = pct(panYPct, isPanPct(panYPct), PAN_DEFAULT),
+        kappa = pct(kappaPct, isKappaPct(kappaPct), KAPPA_DEFAULT),
     ).clamped()
 
     /** `%` → tỉ lệ; giá trị ngoài miền ⇒ [fallback] (xem KDoc [apply] về *"mặc định biết trước"*). */

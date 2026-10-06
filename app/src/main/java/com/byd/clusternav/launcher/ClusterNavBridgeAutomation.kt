@@ -39,6 +39,10 @@ import com.byd.clusternav.setCameraShape
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraStrip
 import com.byd.clusternav.cameraDewarpAmount
+import com.byd.clusternav.cameraProjection
+import com.byd.clusternav.setCameraProjection
+import com.byd.clusternav.cameraZoom
+import com.byd.clusternav.setCameraZoom
 import com.byd.clusternav.cameraDewarpCx
 import com.byd.clusternav.cameraDewarpPanX
 import com.byd.clusternav.cameraDewarpPanY
@@ -291,6 +295,39 @@ fun ClusterNavBridge.cameraDewarpPanY(): Int = Prefs.cameraDewarpPanY(app)
 fun ClusterNavBridge.setCameraDewarpPanY(v: Int) = Prefs.setCameraDewarpPanY(app, v)
 fun ClusterNavBridge.cameraGlTexMatrix(): Boolean = Prefs.cameraGlTexMatrix(app)
 fun ClusterNavBridge.setCameraGlTexMatrix(v: Boolean) = Prefs.setCameraGlTexMatrix(app, v)
+
+/**
+ * 2.92 · CAMERA-FULL-VIEW — **kiểu hình** (hàng chip) + **thu phóng** (thanh kéo), spec `kachi-292-camera-full-view.html`.
+ *
+ * Ghi rồi **áp ngay nếu khung đang hiện** ([com.byd.clusternav.launcher.camera.CameraSignalController.reapplyIfShowing]);
+ * không hiện ⇒ lượt xi-nhan sau tự đọc. Cổng `cameraSignalCreated`: chưa ai dựng controller ⇒ chắc chắn không có khung
+ * nào treo, và chạm `.cameraSignal` ở đây sẽ DỰNG nó — một lượt chỉnh Cài đặt không được tạo ra thứ nó chỉnh.
+ *
+ * Chọn *Nắn thẳng* khi ô tích *Nắn hình* đời 2.91 đang TẮT (amount 0) ⇒ đặt lại nắn đủ: nếu không, chip nói "Nắn
+ * thẳng" mà ảnh vẫn thô (khoá amount không còn hàng nào để người lái tự bật lại).
+ */
+fun ClusterNavBridge.cameraProjection(): String = Prefs.cameraProjection(app)
+fun ClusterNavBridge.setCameraProjection(v: String) {
+    Prefs.setCameraProjection(app, v)
+    if (v == com.byd.clusternav.launcher.camera.CameraViewMode.STRAIGHT &&
+        Prefs.cameraDewarpAmount(app) == com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MIN
+    ) {
+        Prefs.setCameraDewarpAmount(app, com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MAX)
+    }
+    reapplyCamera()
+}
+fun ClusterNavBridge.cameraZoom(): Int = Prefs.cameraZoom(app)
+fun ClusterNavBridge.setCameraZoom(v: Int) {
+    Prefs.setCameraZoom(app, v)
+    reapplyCamera()
+}
+
+private fun ClusterNavBridge.reapplyCamera() {
+    runCatching {
+        val c = com.byd.clusternav.AppContainer.get(app)
+        if (c.cameraSignalCreated) c.cameraSignal.reapplyIfShowing()
+    }.onFailure { android.util.Log.w("KachiBridge", "áp lại camera lỗi: ${it.message}") }
+}
 
 /** AUTOMATION #2 — sổ luật dẫn-đường-theo-lịch, đã giải mã (rỗng = chưa có luật nào). */
 fun ClusterNavBridge.navRules(): List<ScheduledNavRule> =

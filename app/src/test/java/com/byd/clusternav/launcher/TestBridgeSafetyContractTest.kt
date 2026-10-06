@@ -429,8 +429,11 @@ class TestBridgeSafetyContractTest {
     fun `camera_frame chup tren main, ghi PNG vao kachi-logs, va nha bitmap`() {
         val src = code("TestBridgeCameraFrame.kt")
         assertTrue(src.contains("Looper.getMainLooper()"), "lượt chụp phải `post` về main thread")
-        assertTrue(src.contains("CompressFormat.PNG"), "phải nén PNG (không mất mát), không JPEG")
-        assertTrue(src.contains("KachiLog.dir(app)"), "phải ghi vào `kachi-logs/` — chỗ `adb pull` lấy được")
+        // 2.92: nén + đặt tên + dọn tách sang `CameraFrameFiles` (dùng chung với nút *Khung thô* của Chẩn đoán — DRY).
+        assertTrue(src.contains("CameraFrameFiles.savePng(app, bmp)"), "lệnh phải ghi qua MỘT cửa chung")
+        val files = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraFrameFiles.kt")
+        assertTrue(files.contains("CompressFormat.PNG"), "phải nén PNG (không mất mát), không JPEG")
+        assertTrue(files.contains("KachiLog.dir(app)"), "phải ghi vào `kachi-logs/` — chỗ `adb pull` lấy được")
         assertTrue(src.contains("recycle()"), "phải nhả bitmap sau khi ghi (kể cả nhánh hỏng — `finally`)")
     }
 

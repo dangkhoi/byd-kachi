@@ -189,6 +189,13 @@ class ClusterProfileScopeCoverageTest {
                 "PrefsCameraDewarp.kt" to "private fun Prefs.put(ctx: Context, key: String, v: Int) = autoPrefs(ctx).edit().putInt(key, v)",
             )
         ),
+        // 2.92 · CAMERA-FULL-VIEW — thu phóng ghi qua cùng hàm `put` riêng của PrefsCameraDewarp (Int).
+        "camera_zoom" to (
+            PrefType.INT to listOf(
+                "PrefsCameraDewarp.kt" to "put(ctx, K_ZOOM, v)",
+                "PrefsCameraDewarp.kt" to "private fun Prefs.put(ctx: Context, key: String, v: Int) = autoPrefs(ctx).edit().putInt(key, v)",
+            )
+        ),
         "voicekey_bindings" to (
             PrefType.STRING to listOf(
                 "Prefs.kt" to "VoiceKeyBindingStore.write(p, K_VK_BINDINGS",

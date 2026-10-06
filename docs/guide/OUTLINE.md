@@ -94,7 +94,7 @@
 
 - **Mục tiêu**: mọi hàng của nhóm "Tiện nghi xe" bản **2.77**.
 - **8.1 Camera theo xi-nhan** (đúng 10 hàng của 2.77, KHÔNG có "Nâng cao (kỹ thuật)", KHÔNG có hàng "Nguồn"):
-  Bật camera khi xi-nhan · Hiện camera lên màn cụm · Xi-nhan trái hiện ở · Xi-nhan phải hiện ở · Xi-nhan trái: xoay video · Xi-nhan phải: xoay video · Xi-nhan trái: lật gương · Xi-nhan phải: lật gương · Hình khung camera (Chữ nhật / Tròn / Theo cụm) · Nắn hình (bớt cong ống kính).
+  Bật camera khi xi-nhan · Hiện camera lên màn cụm · Xi-nhan trái hiện ở · Xi-nhan phải hiện ở · Xi-nhan trái: xoay video · Xi-nhan phải: xoay video · Xi-nhan trái: lật gương · Xi-nhan phải: lật gương · Hình khung camera (Chữ nhật / Tròn / Theo cụm) · Nắn hình (bớt cong ống kính) — **2.92**: *Nắn hình* thay bằng *Kiểu hình camera* (Nắn thẳng / Thẳng rộng (thấy xa) / Gương cầu (thấy hết)) + thanh *Thu phóng* 50–150 % (spec `kachi-292-camera-full-view.html`).
   Phải nói: mặc định TẮT — không bật thì xi-nhan không thấy gì · mỗi bên đặt độc lập · chip có tác dụng ở LƯỢT XI-NHAN TIẾP THEO · "Theo cụm" chỉ khác khi đang hiện trên cụm · tay gương của ảnh CHƯA đo được trên xe nên "Lật gương" để người lái tự bật khi thấy ngược.
   Diagram **D7**: (a) hai ô camera ↔ bốn lựa chọn góc màn, mũi tên chéo cho thấy trái-có-thể-hiện-phải; (b) chuỗi xử lý ảnh: khung thô → lật gương → xoay → nắn → hình khung.
   shot: `cai-dat-camera-xi-nhan.png` · 🚗 `car-camera-tron-xi-nhan.png` (bắt buộc — máy ảo không lên hình) · 🚗 `car-khung-anh-camera-tho.png` (giải thích vì sao phải chỉnh).

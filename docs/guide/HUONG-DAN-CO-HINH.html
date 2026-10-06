@@ -1208,7 +1208,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
 
   <figure>
     <img src="img/cai-dat-camera-xi-nhan.png" alt="Mục Camera theo xi-nhan với mười hàng">
-    <figcaption>Mục <strong>Camera theo xi-nhan</strong> của bản 2.79: đúng <strong>mười hàng</strong> dành cho người lái. <b>Bản phát hành 2.81 có mười bốn hàng</b> — bốn hàng mới (11–14 trong bảng dưới) chưa có trong ảnh này. Không còn khối “Nâng cao (kỹ thuật)”, không còn hàng “Nguồn” — những núm tinh chỉnh đó đã chốt sẵn theo đời xe.</figcaption>
+    <figcaption>Mục <strong>Camera theo xi-nhan</strong> của bản 2.79: đúng <strong>mười hàng</strong> dành cho người lái. <b>Bản phát hành 2.81 có mười bốn hàng</b> — bốn hàng mới (11–14 trong bảng dưới) chưa có trong ảnh này. <b>Bản 2.92 có mười lăm hàng</b>: hàng 10 <em>Nắn hình</em> đổi thành <em>Kiểu hình camera</em>, thêm hàng 15 <em>Thu phóng</em> (cũng chưa có trong ảnh). Không còn khối “Nâng cao (kỹ thuật)”, không còn hàng “Nguồn” — những núm tinh chỉnh đó đã chốt sẵn theo đời xe.</figcaption>
   </figure>
 
   <table>
@@ -1223,11 +1223,12 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
       <tr><td>7</td><td><strong>Xi-nhan trái: lật gương</strong></td><td>Bật / tắt</td></tr>
       <tr><td>8</td><td><strong>Xi-nhan phải: lật gương</strong></td><td>Bật / tắt</td></tr>
       <tr><td>9</td><td><strong>Hình khung camera</strong></td><td>Chữ nhật / Tròn / Theo cụm</td></tr>
-      <tr><td>10</td><td><strong>Nắn hình (bớt cong ống kính)</strong></td><td>Bật / tắt</td></tr>
+      <tr><td>10</td><td><strong>Kiểu hình camera</strong> (2.92 — trước là ô <em>Nắn hình</em>)</td><td>Nắn thẳng (mặc định) / Thẳng rộng (thấy xa) / Gương cầu (thấy hết)</td></tr>
       <tr><td>11</td><td><strong>Xi-nhan trái: thử camera số</strong></td><td>1 … 8. <em>Chưa ai biết số nào là camera nào</em> — thử lần lượt, bấm là hình bật lên ngay.</td></tr>
       <tr><td>12</td><td><strong>Xi-nhan phải: thử camera số</strong></td><td>1 … 8</td></tr>
       <tr><td>13</td><td><strong>Xi-nhan trái: dải hình</strong></td><td>Tự động / Nguyên khung / 1 … 4</td></tr>
       <tr><td>14</td><td><strong>Xi-nhan phải: dải hình</strong></td><td>Tự động / Nguyên khung / 1 … 4</td></tr>
+      <tr><td>15</td><td><strong>Thu phóng</strong> (2.92)</td><td>50 – 150 % (mặc định 100 %), cho cả ba kiểu hình</td></tr>
     </tbody>
   </table>
 
@@ -1245,7 +1246,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
 
   <div class="dg">
     <p class="dgt">Hình 7 · Khung ảnh đi qua bốn bước, theo đúng thứ tự này</p>
-    <svg viewBox="0 0 880 190" role="img" aria-label="Chuỗi xử lý khung camera: khung thô, lật gương (hàng 7-8), xoay (hàng 5-6), nắn hình (hàng 10), cắt theo hình khung (hàng 9)">
+    <svg viewBox="0 0 880 190" role="img" aria-label="Chuỗi xử lý khung camera: khung thô, lật gương (hàng 7-8), xoay (hàng 5-6), kiểu hình (hàng 10), cắt theo hình khung (hàng 9)">
       <g>
         <rect class="bx" x="6" y="20" width="140" height="80" rx="10"/>
         <text class="tb" x="76" y="60" text-anchor="middle" style="font-size:30px" fill="var(--muted)">F</text>
@@ -1271,7 +1272,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
         <rect class="bx" x="522" y="20" width="140" height="80" rx="10"/>
         <path d="M542 34 C 592 26 622 26 642 34 M542 86 C 592 94 622 94 642 86" fill="none" stroke="var(--muted)" stroke-width="1.6"/>
         <text class="ts" x="592" y="66" text-anchor="middle">bớt cong</text>
-        <text class="tb" x="592" y="120" text-anchor="middle">Nắn hình</text>
+        <text class="tb" x="592" y="120" text-anchor="middle">Kiểu hình</text>
         <text class="ts" x="592" y="135" text-anchor="middle">hàng 10</text>
       </g>
       <path class="ar" d="M666 60 H 690" marker-end="url(#ah)"/>
@@ -1290,7 +1291,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
     <li>Hình <strong>nằm ngang hoặc lộn đầu</strong> → dùng <em>xoay video</em> của đúng bên đó.</li>
     <li>Hình <strong>ngược tay</strong> so với gương kính (nhìn vào thấy trái phải đảo nhau) → bật <em>lật gương</em> của bên đó. Ngắm đúng: thân xe phải nằm ở mép <strong>trong</strong>, phía giữa màn, y như nhìn gương thật.</li>
     <li><em>Lật gương</em> mặc định <strong>tắt</strong> cả hai bên, vì tay của ảnh do xe đưa ra chưa đo được chắc chắn. Đây là hàng để người lái tự bật khi thấy ngược, không phải hàng để mặc định đúng.</li>
-    <li><em>Nắn hình</em> bật là bớt độ cong của ống kính góc rộng. Tắt là ảnh thô như camera đưa ra. Bộ tham số nắn đã chốt sẵn theo đời xe, không có núm nào để mò thêm.</li>
+    <li><em>Kiểu hình camera</em> (2.92, thay ô <em>Nắn hình</em>): <strong>Nắn thẳng</strong> (mặc định) là y như trước — bớt cong, nhưng chỉ thấy đoạn thân xe sát gương. <strong>Thẳng rộng (thấy xa)</strong> gần thẳng mà thấy tới phía sau xa (mép phía đuôi hơi kéo giãn). <strong>Gương cầu (thấy hết)</strong> là trọn ảnh mắt cá như camera đưa ra, không cắt gì, thu cho vừa khung — khung tròn sẽ có viền đen. Chung cho hai bên; chạm lúc khung đang hiện là đổi ngay. Thanh <em>Thu phóng</em> (hàng 15) phóng to/thu nhỏ quanh tâm khung. Bộ tham số nắn vẫn chốt sẵn theo đời xe.</li>
   </ul>
 
   <h4>Ba hình trên cụm — được cái này thì mất cái kia</h4>
@@ -1360,7 +1361,7 @@ footer{margin-top:64px; padding-top:28px; border-top:1px solid var(--line); font
 
   <p>Chiều cao thì cả ba hình <strong>luôn dùng trọn dải</strong> của cụm, kể cả khi có xoay.</p>
 
-  <p>Lưu ý: hình <strong>Theo cụm</strong> chỉ khác hình <strong>Chữ nhật</strong> khi đang hiện trên cụm (hàng 2 bật). Trên màn chính thì hai hình ấy như nhau, vì màn chính không có đường cong nào để bám.</p>
+  <p>Lưu ý: hình <strong>Theo cụm</strong> chỉ khác hình <strong>Chữ nhật</strong> khi đang hiện trên cụm (hàng 2 bật). Trên màn chính thì hai hình ấy như nhau, vì màn chính không có đường cong nào để bám. Với kiểu hình <strong>Thẳng rộng</strong> hoặc <strong>Gương cầu</strong> (2.92), <strong>Theo cụm</strong> hiện thành khung chữ nhật — bám cong là phải phóng và cắt, trái với "thấy hết".</p>
 
   <h4>Giới hạn của phần camera, nói thật</h4>
   <ul>

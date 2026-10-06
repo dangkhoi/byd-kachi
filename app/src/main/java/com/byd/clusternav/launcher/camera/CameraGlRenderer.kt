@@ -63,19 +63,9 @@ internal class CameraGlRenderer(
 
     private var program = 0
     private var oesTex = 0
-    private var aPosition = -1
-    private var aTexCoord = -1
-    private var uTex = -1
-    private var uTexMatrix = -1
-    private var uSrcRect = -1
-    private var uRotation = -1
-    private var uAmount = -1
-    private var uFocal = -1
-    private var uK = -1
-    private var uScale = -1
-    private var uAspect = -1
-    private var uPan = -1
-    private var uCenter = -1
+
+    /** Vị trí + gán uniform/attribute (tách 2.92 — trần 500 dòng). Chỉ dùng trên luồng vẽ. */
+    private val bindings = CameraGlBindings()
 
     private var input: SurfaceTexture? = null
     private var inputSurface: Surface? = null
@@ -241,7 +231,7 @@ internal class CameraGlRenderer(
     private fun setup(output: SurfaceTexture): Boolean {
         if (!egl.create(output)) return false
         program = CameraGlProgram.build() ?: return false
-        locate()
+        bindings.locate(program)
         oesTex = CameraGlProgram.oesTexture()
         return createInput()
     }
@@ -353,53 +343,14 @@ internal class CameraGlRenderer(
         GLES20.glUseProgram(program)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTex)
-        GLES20.glUniform1i(uTex, 0)
-        // `transpose = false`: [ĐO] AOSP `SurfaceTexture.java:308-309` — *"The matrix is stored in column-major order
-        // so that it may be passed directly to OpenGL ES via … glUniformMatrix4fv"*. Chuyển vị ở đây là xoay/lật
-        // khung theo một cách trông "gần đúng" trên ma trận đơn vị và sai hẳn trên ma trận thật của xe.
-        GLES20.glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)
-        val u = active
-        val r = u.srcRect
-        GLES20.glUniform4f(uSrcRect, r[0], r[1], r[2], r[3])
-        GLES20.glUniform1f(uRotation, u.rotationDeg)
-        val d = u.dewarp
-        GLES20.glUniform1f(uAmount, d.amount)
-        GLES20.glUniform1f(uFocal, d.focal)
-        GLES20.glUniform1f(uK, d.k)
-        GLES20.glUniform1f(uScale, d.scale)
-        GLES20.glUniform1f(uAspect, u.aspect)
-        GLES20.glUniform2f(uCenter, d.centerX, d.centerY)
-        GLES20.glUniform2f(uPan, d.panX, d.panY)
+        bindings.bind(active, texMatrix)   // trọn bộ uniform theo TÊN — [CameraGlBindings.bind]
+        val aPosition = bindings.aPosition
+        val aTexCoord = bindings.aTexCoord
         GLES20.glVertexAttribPointer(aPosition, 2, GLES20.GL_FLOAT, false, 0, posBuf)
         GLES20.glEnableVertexAttribArray(aPosition)
         GLES20.glVertexAttribPointer(aTexCoord, 2, GLES20.GL_FLOAT, false, 0, texBuf)
         GLES20.glEnableVertexAttribArray(aTexCoord)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-    }
-
-    /**
-     * Vị trí uniform/attribute, lấy **theo TÊN** ngay sau khi liên kết program.
-     *
-     * Lượt kiểm cuối đọc danh sách từ `:core` ([CameraDewarpShader.UNIFORMS]) chứ không từ mấy dòng ngay trên: thêm
-     * một `uniform` vào GLSL mà quên gán ở đây thì nó nhận `0` và khung ra sai **im lặng** — đúng loại lỗi mà
-     * `declaredUniforms()` sinh ra để chặn ở tầng test, và dòng dưới đây chặn nốt ở tầng chạy.
-     */
-    private fun locate() {
-        aPosition = GLES20.glGetAttribLocation(program, "aPosition")
-        aTexCoord = GLES20.glGetAttribLocation(program, "aTexCoord")
-        uTex = GLES20.glGetUniformLocation(program, "uTex")
-        uTexMatrix = GLES20.glGetUniformLocation(program, "uTexMatrix")
-        uSrcRect = GLES20.glGetUniformLocation(program, "uSrcRect")
-        uRotation = GLES20.glGetUniformLocation(program, "uRotation")
-        uAmount = GLES20.glGetUniformLocation(program, "uAmount")
-        uFocal = GLES20.glGetUniformLocation(program, "uFocal")
-        uK = GLES20.glGetUniformLocation(program, "uK")
-        uScale = GLES20.glGetUniformLocation(program, "uScale")
-        uAspect = GLES20.glGetUniformLocation(program, "uAspect")
-        uPan = GLES20.glGetUniformLocation(program, "uPan")
-        uCenter = GLES20.glGetUniformLocation(program, "uCenter")
-        val missing = CameraDewarpShader.UNIFORMS.filter { GLES20.glGetUniformLocation(program, it) < 0 }
-        if (missing.isNotEmpty()) Log.w(PanoramaHal.TAG, "GL uniform KHÔNG tìm thấy: $missing (khung sẽ sai)")
     }
 
     /**

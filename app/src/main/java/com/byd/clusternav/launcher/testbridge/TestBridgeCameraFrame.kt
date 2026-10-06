@@ -4,12 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
-import com.byd.clusternav.launcher.KachiLog
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * ═══ T-BRIDGE · `camera_frame` — CHỤP KHUNG CAMERA GỐC RA PNG ════════════════════════════════════════════════
@@ -54,19 +48,8 @@ import java.util.Locale
  */
 internal object TestBridgeCameraFrame {
 
-    /** Tiền tố tệp ảnh trong `kachi-logs/` — một tên, một chỗ khai (script `adb pull` grep theo chuỗi này). */
-    private const val PREFIX = "camera-frame-"
-
-    private const val EXT = ".png"
-
-    /** Số ảnh giữ lại trong `kachi-logs/` — xem KDoc [prune]. Mười khung đủ cho một buổi xe, và là ~10–60 MB. */
-    private const val KEEP_PNG = 10
-
-    /** Mốc thời gian tới GIÂY: một lượt chụp/giây là nhiều hơn mọi nhịp xi-nhan thật. */
-    private const val STAMP = "yyyyMMdd-HHmmss"
-
-    /** Chất lượng PNG — `compress` bỏ qua tham số này với PNG (không mất mát), ghi 100 cho rõ ý định. */
-    private const val QUALITY = 100
+    // 2.92: tiền tố tệp / trần 10 ảnh / mốc giờ / chất lượng PNG chuyển sang `CameraFrameFiles` (một chỗ cho cả nút
+    // *Khung thô* ở Chẩn đoán — CLAUDE.md §4.1 DRY). Hành vi của lệnh này không đổi một byte.
 
     /** Overlay chưa hiện ⇒ không có gì để chụp. Mã ASCII cho script; câu cho người đọc đi trong `reason`. */
     private const val ERR_NO_OVERLAY = "overlay_not_showing"
@@ -155,19 +138,10 @@ internal object TestBridgeCameraFrame {
                 return@post
             }
             Thread({
-                // ═══ [P1 · SOÁT Opus 2026-09-27] BỀ RỘNG phải suy bằng ĐÚNG phép kẹp của `grabRaw` ═══════════════
-                //
-                // `CameraGlRenderer.grabRaw` kẹp **CẢ HAI** cạnh theo `GL_MAX_TEXTURE_SIZE` (`CameraGlInfo.cap`).
-                // Bản trước tin `size.w` rồi suy `h = px.size / w` — và một bề rộng **không** suy ra được từ số
-                // pixel. Trên đầu máy có trần 4096 mà xin 5120×960: `grabRaw` trả 4096×960 = 3 932 160 px, dòng cũ
-                // dựng bitmap **5120×768** ⇒ mỗi hàng lệch 1024 px ⇒ ảnh fisheye **xiên chéo**. `createBitmap`
-                // KHÔNG ném (`w*h ≤ px.size`), không một dòng log nào, và người đo lấy tâm/bán kính vòng ảnh trên
-                // một ảnh đã bị xé. Đúng loại *"câu trả lời sai trông y như câu trả lời đúng"* mà CLAUDE.md §2 cấm.
-                val cap = com.byd.clusternav.launcher.camera.CameraGlInfo.cap(size.w)
-                val w = size.w.coerceIn(1, cap)
-                val h = if (w > 0) px.size / w else 0
-                val bmp = runCatching { Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888) }.getOrNull()
-                if (bmp == null) reply.fail(ERR_WRITE, "reason" to "createBitmap ${w}x$h failed", "pixels" to px.size)
+                // Bề rộng suy bằng ĐÚNG phép kẹp của `grabRaw` ([P1 · SOÁT Opus 2026-09-27]) — một chỗ, ở
+                // `CameraFrameFiles.rawBitmap` (dùng chung với nút *Khung thô* của Chẩn đoán, 2.92).
+                val bmp = com.byd.clusternav.launcher.camera.CameraFrameFiles.rawBitmap(px, size.w)
+                if (bmp == null) reply.fail(ERR_WRITE, "reason" to "createBitmap failed", "pixels" to px.size)
                 else save(app, bmp, shot, size, reply, CONTENT_RAW_FBO)
             }, THREAD).apply { isDaemon = true }.start()
         }
@@ -200,26 +174,8 @@ internal object TestBridgeCameraFrame {
         }
 
     /**
-     * ═══ [P2 · SOÁT Opus 2026-09-27] Trần số ảnh giữ lại — `kachi-logs/` KHÔNG có ai dọn ảnh ══════════════════
-     *
-     * `TestBridgeReply.prune` chỉ dọn tệp `.json` trong `files/test` ([ĐO] `TestBridgeReply.kt` `KEEP = 50`), còn ảnh đi vào
-     * `files/kachi-logs/` — cùng thư mục với nhật ký phiên, nhưng một khung fisheye `5120×960` nén ra **hàng MB**,
-     * tức lớn hơn một tệp log 100–1000 lần. Chỉ riêng CAM-A4 của runbook đã chụp 4+ lượt mỗi buổi. Không có trần thì
-     * bộ nhớ đầu máy là thứ trả giá, và nó im lặng.
-     *
-     * Chỉ chạm tệp của **chính lệnh này** (`camera-frame-*.png`) — nhật ký phiên và mọi tệp khác trong thư mục là
-     * của chủ khác, không được xoá hộ.
-     */
-    private fun prune(dir: File) {
-        val files = dir.listFiles()
-            ?.filter { it.isFile && it.name.startsWith(PREFIX) && it.name.endsWith(EXT) }
-            ?: return
-        if (files.size <= KEEP_PNG) return
-        files.sortedBy { it.lastModified() }.take(files.size - KEEP_PNG).forEach { runCatching { it.delete() } }
-    }
-
-    /**
-     * Nén [bmp] ra PNG rồi chốt lời đáp. Chạy ở LUỒNG NỀN.
+     * Nén [bmp] ra PNG rồi chốt lời đáp. Chạy ở LUỒNG NỀN. Nén + đặt tên + dọn (≤ 10 ảnh, [P2 · SOÁT Opus 2026-09-27]:
+     * `kachi-logs/` không có ai dọn ảnh) nằm ở `CameraFrameFiles.savePng` — dùng chung với nút *Khung thô* (2.92).
      *
      * `recycle` trong `finally`: một khung cỡ luồng gốc ARGB_8888 là hàng chục MB, và đường hỏng (đĩa đầy) cũng phải
      * nhả nó — bỏ sót ở đúng nhánh lỗi là cách một lệnh chẩn đoán làm hết bộ nhớ của launcher sau vài lượt gọi.
@@ -235,21 +191,13 @@ internal object TestBridgeCameraFrame {
         val w = bmp.width
         val h = bmp.height
         try {
-            val dir = KachiLog.dir(app)
-            if (dir == null) {
-                reply.fail(ERR_WRITE, "reason" to "no external files dir")
+            val saved = com.byd.clusternav.launcher.camera.CameraFrameFiles.savePng(app, bmp)
+            if (saved !is com.byd.clusternav.launcher.camera.CameraFrameFiles.Saved.Ok) {
+                val f = saved as com.byd.clusternav.launcher.camera.CameraFrameFiles.Saved.Failed
+                reply.fail(ERR_WRITE, "path" to (f.path ?: ""), "reason" to f.reason)
                 return
             }
-            prune(dir)
-            val stamp = SimpleDateFormat(STAMP, Locale.US).format(Date())
-            val out = File(dir, "$PREFIX$stamp$EXT")
-            val wrote = runCatching {
-                out.outputStream().buffered().use { bmp.compress(Bitmap.CompressFormat.PNG, QUALITY, it) }
-            }.onFailure { Log.w(TAG, "write ${out.name} failed: ${it.javaClass.simpleName}") }.isSuccess
-            if (!wrote) {
-                reply.fail(ERR_WRITE, "path" to out.absolutePath, "reason" to "compress/write threw")
-                return
-            }
+            val out = saved.file
             reply.ok(
                 "path" to out.absolutePath,
                 "width" to w,
@@ -274,8 +222,6 @@ internal object TestBridgeCameraFrame {
             runCatching { bmp.recycle() }
         }
     }
-
-    private const val TAG = TestBridgeReply.TAG
 
     private const val THREAD = "kachi-camframe"
 }

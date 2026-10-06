@@ -3,12 +3,12 @@ package com.byd.clusternav.launcher
 import android.content.Context
 import android.widget.LinearLayout
 import com.byd.clusternav.R
-import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
+import com.byd.clusternav.launcher.camera.CameraViewMode
 
 /**
- * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng, đúng 14 hàng người lái (2.81) ══════════════════════════════
+ * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng, đúng 15 hàng người lái (2.92) ══════════════════════════════
  *
  * Tách khỏi [SettingsCarSection] ở 2.76. Danh sách hàng là hợp đồng THUẦN ở `:core` `CameraSettingsIa` — tệp này chỉ
  * **dựng hàng theo đúng danh sách ấy**, và bài canh so hai bên.
@@ -32,7 +32,7 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
  *
  * Hai khoá **bị XOÁ hẳn** (không phải ẩn): `camera_source` và `camera_hal_mode` — lý do ĐO ở KDoc
  * `CameraSettingsIa`. 2.83 xoá hẳn thêm hai hàng *vạch chuẩn khoảng cách* mà 2.82 vừa thêm (owner: *"dẹp vạch
- * đi"*) ⇒ màn về lại đúng 14 hàng của 2.81.
+ * đi"*) ⇒ màn về lại đúng 14 hàng của 2.81. 2.92: ô tích *Nắn hình* ⇒ hàng chip *Kiểu hình* + thanh *Thu phóng* ⇒ 15.
  *
  * ## Vì sao mặc định KHÔNG viết vào nhãn
  * Mặc định theo **hồ sơ xe**; một nhãn *"(mặc định)"* đúng cho xe này và sai cho xe kia ⇒ chip đang chọn đã tự nói.
@@ -153,15 +153,33 @@ class SettingsCameraSection(
             CameraSignalPolicy.SHAPES.map { it to shapeLabel(it) },
             bridge.cameraShape(),
         ) { v -> bridge.setCameraShape(v) })
-        // NẮN HÌNH — một ô tích: `camera_dewarp_amount` AMOUNT_MAX (nắn đủ) / AMOUNT_MIN (ảnh thô). Tám núm tinh
-        // chỉnh KHÔNG còn hàng nào (2.77): bộ số của Seal đã là mặc định hồ sơ và owner đã duyệt bằng mắt trên xe,
-        // nên người lái chỉ còn quyết "có nắn hay không"; muốn dò lại thì qua `prefs_set` của cầu kiểm thử.
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_dewarp_on_sub_header)))
-        body.addView(rows.checkRow(
-            on = bridge.cameraDewarpAmount() > CameraDewarpPrefs.AMOUNT_MIN,
-            title = context.getString(R.string.kachi_camera_dewarp_on_title),
-            sub = context.getString(R.string.kachi_camera_dewarp_on_sub),
-        ) { on -> bridge.setCameraDewarpAmount(if (on) CameraDewarpPrefs.AMOUNT_MAX else CameraDewarpPrefs.AMOUNT_MIN) })
+        // KIỂU HÌNH + THU PHÓNG (2.92 · CAMERA-FULL-VIEW, owner 06/10 *"cắt hơi lố"* · *"lấy hết được không?"*): thay ô
+        // tích *Nắn hình* (amount 100/0) bằng MỘT hàng chip sinh từ `:core` [CameraViewMode.MODES] + MỘT thanh kéo. Chạm
+        // là ghi + áp ngay nếu khung đang hiện (cầu → `reapplyIfShowing`). Tám núm nắn + ba núm *Thẳng rộng* vẫn KHÔNG
+        // có hàng nào (bộ số theo xe, chỉnh qua `prefs_set`). Spec `kachi-292-camera-full-view.html` §4.7.
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_projection_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_projection_row),
+            CameraViewMode.MODES.map { it to projectionLabel(it) },
+            bridge.cameraProjection(),
+            wrap = true,
+        ) { v -> bridge.setCameraProjection(v) })
+        body.addView(rows.note(context.getString(R.string.kachi_camera_projection_note)))
+        body.addView(rows.sliderRow(
+            label = context.getString(R.string.kachi_camera_zoom_row),
+            positions = CameraViewMode.ZOOM_POSITIONS,
+            current = CameraViewMode.zoomPosition(bridge.cameraZoom()),
+            valueText = { pos -> "${CameraViewMode.zoomAt(pos)}%" },
+            describe = { text -> context.getString(R.string.kachi_camera_zoom_desc, text) },
+        ) { pos -> bridge.setCameraZoom(CameraViewMode.zoomAt(pos)) })
+    }
+
+    /** Nhãn chip kiểu hình theo mã `:core`; mã chưa có chữ ⇒ hiện mã (lộ ra để sửa, không im lặng bỏ chip). */
+    private fun projectionLabel(code: String): String = when (code) {
+        CameraViewMode.STRAIGHT -> context.getString(R.string.kachi_camera_projection_straight)
+        CameraViewMode.WIDE -> context.getString(R.string.kachi_camera_projection_wide)
+        CameraViewMode.FISHEYE -> context.getString(R.string.kachi_camera_projection_fisheye)
+        else -> code
     }
 
     /** Nhãn chip hình khung theo mã `:core`; mã chưa có chữ ⇒ hiện mã (lộ ra để sửa, không im lặng bỏ chip). */

@@ -28,6 +28,8 @@ class CameraGlWiringContractTest {
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val renderer by lazy { app("launcher/camera/CameraGlRenderer.kt") }
+    /** 2.92 — vị trí + gán uniform tách khỏi renderer (trần 500 dòng); vẫn là đường khung hình. */
+    private val bindings by lazy { app("launcher/camera/CameraGlBindings.kt") }
     private val eglSurface by lazy { app("launcher/camera/CameraGlSurface.kt") }
     private val glProgram by lazy { app("launcher/camera/CameraGlProgram.kt") }
     private val synth by lazy { app("launcher/camera/CameraSynthFeeder.kt") }
@@ -120,7 +122,9 @@ class CameraGlWiringContractTest {
     @Test fun `duong khung hinh GL khong cap phat khong log khong shell`() {
         val draw = SourceRoots.body(renderer, "private fun drawFrame(")
         val paint = SourceRoots.body(renderer, "private fun paint(")
-        listOf("draw" to draw, "paint" to paint).forEach { (name, body) ->
+        val bind = SourceRoots.body(bindings, "fun bind(")
+        assertTrue("bindings.bind(active, texMatrix)" in paint, "paint gán uniform qua MỘT cửa (CameraGlBindings.bind)")
+        listOf("draw" to draw, "paint" to paint, "bind" to bind).forEach { (name, body) ->
             listOf("FloatArray(", "IntArray(", "ByteArray(", "ByteBuffer.allocate", "arrayOf(", "mutableListOf").forEach {
                 assertFalse(it in body, "$name cấp phát `$it` mỗi khung")
             }
@@ -277,19 +281,20 @@ class CameraGlWiringContractTest {
     /** Nguồn GLSL **chỉ** đến từ `:core` — không một dòng shader nào viết ở `:app` (điều kiện để `:core` ghim công thức). */
     @Test fun `khong co dong shader nao viet o app`() {
         assertTrue("CameraDewarpShader.program()" in glProgram, "cặp shader lấy từ `:core`")
-        listOf(renderer, glProgram, eglSurface, layer).forEach { src ->
+        listOf(renderer, glProgram, eglSurface, layer, bindings).forEach { src ->
             listOf("gl_FragColor", "samplerExternalOES", "varying ", "precision highp", "void main()").forEach {
                 assertFalse(it in src, "GLSL `$it` viết ở `:app` ⇒ hai bản công thức sẽ trôi khỏi nhau")
             }
         }
         // Mười uniform gán theo TÊN, và lượt kiểm cuối đọc danh sách từ `:core`.
-        val locate = SourceRoots.body(renderer, "private fun locate(")
+        val locate = SourceRoots.body(bindings, "fun locate(")
         CameraDewarpShader.UNIFORMS.forEach {
             assertTrue("\"$it\"" in locate, "uniform `$it` chưa được lấy vị trí ⇒ nhận 0 và khung sai IM LẶNG")
         }
         assertTrue("CameraDewarpShader.UNIFORMS.filter" in locate, "lượt kiểm cuối phải đọc danh sách từ `:core`")
         // `transpose = false` — ma trận của SurfaceTexture đã là column-major (AOSP SurfaceTexture.java:308-309).
-        assertTrue("glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)" in renderer, "KHÔNG chuyển vị")
+        assertTrue("glUniformMatrix4fv(uTexMatrix, 1, false, texMatrix, 0)" in bindings, "KHÔNG chuyển vị")
+        assertTrue("bindings.locate(program)" in SourceRoots.body(renderer, "private fun setup("), "locate phải có call site")
     }
 
     /** Cỡ ảnh nguồn không hardcode ở `:app` — và `setDefaultBufferSize` phải kẹp theo trần texture đã đo (Q13). */
@@ -371,14 +376,11 @@ class CameraGlWiringContractTest {
         listOf("private fun cameraDewarp(", "private fun knob(", "rows.stepperRow(", "CameraDewarpPrefs.PAN_STEP",
             "CameraDewarpPrefs.PCT_STEP", "CameraDewarpPrefs.CENTER_STEP", "bridge.cameraGlTexMatrix()")
             .forEach { assertFalse(it in settings, "`$it` đã gỡ ở 2.77") }
-        // Ô tích DUY NHẤT còn lại — và nó vẫn ghi đúng hai đầu miền của `:core`.
+        // 2.92 · CAMERA-FULL-VIEW: ô tích *Nắn hình* nhường chỗ hàng chip *Kiểu hình* + thanh *Thu phóng* (hàng mới + chữ
+        // canh ở `CameraSettingsIaWiringContractTest`); ở đây chỉ canh ô tích KHÔNG sống lại.
         val user = SourceRoots.body(settings, "private fun cameraUser(")
-        assertTrue("if (on) CameraDewarpPrefs.AMOUNT_MAX else CameraDewarpPrefs.AMOUNT_MIN" in user,
-            "người lái còn đúng một quyết định: có nắn hay không")
-        listOf("kachi_camera_dewarp_on_sub_header", "kachi_camera_dewarp_on_title", "kachi_camera_dewarp_on_sub").forEach {
-            assertTrue("R.string.$it" in settings, "ô tích Nắn hình phải còn chữ $it")
-            assertTrue("\"$it\"" in vi && "\"$it\"" in en, "chữ $it phải có ở CẢ hai ngôn ngữ")
-        }
+        assertFalse("CameraDewarpPrefs.AMOUNT_MAX" in user, "ô tích Nắn hình đã gỡ ở 2.92 — thấy lại là hai hàng chồng nghĩa")
+        assertTrue("bridge.setCameraProjection(v)" in user && "bridge.setCameraZoom(" in user, "chip kiểu hình + thanh thu phóng")
         // Chín khoá vẫn ghi được qua cầu kiểm thử — gỡ UI KHÔNG được biến thành gỡ đường chẩn đoán.
         listOf("camera_dewarp_cx", "camera_dewarp_cy", "camera_dewarp_k", "camera_dewarp_focal", "camera_dewarp_scale",
             "camera_dewarp_pan_x", "camera_dewarp_pan_y", "camera_gl_texmatrix").forEach {

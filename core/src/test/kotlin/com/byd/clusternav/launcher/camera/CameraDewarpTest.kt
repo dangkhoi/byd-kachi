@@ -339,7 +339,12 @@ class CameraDewarpTest {
         assertEquals(CameraDewarpShader.FRAGMENT, fs)
         assertTrue(fs.contains("#extension GL_OES_EGL_image_external : require"))
         assertTrue(fs.contains("uniform samplerExternalOES uTex;"))
-        assertTrue(fs.contains("atan(pLen, uFocal)"), "atan 2 doi so = atan2, dung nguyen van Electro")
+        // 2.92: θ = κ·atan(r, κ·F) — κ = 1 là đúng `atan(pLen, uFocal)` của Electro (nhân 1.0 chính xác IEEE).
+        assertTrue(fs.contains("float theta = uKappa * atan(pLen, uKappa * uFocal);"), "atan 2 doi so = atan2, ho kappa")
+        // 2.92: bước vừa khung TÁCH khỏi phép dịch — nhánh cũ (uFit.x <= 0) đi đúng `local = local + uPan;` của 2.75.
+        assertTrue(fs.contains("if (uFit.x > 0.0) {"), "vua khung phai co cong uFit.x > 0")
+        assertTrue(fs.contains("local = vec2(0.5, 0.5) + ((local - vec2(0.5, 0.5)) * uFit);"))
+        assertTrue(fs.contains("local = local + uPan;"), "dich cua so cua 2.75 giu nguyen van")
         assertTrue(fs.contains("mix(local, projected, amount)"), "phep TRON, RE §3.3")
         assertTrue(fs.contains("clamp(uAmount, 0.0, 1.0)"))
         assertTrue(fs.contains("gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);"), "ngoai o ⇒ den dac, khong clamp")

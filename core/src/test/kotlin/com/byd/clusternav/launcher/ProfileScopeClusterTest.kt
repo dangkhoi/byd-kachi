@@ -18,10 +18,12 @@ class ProfileScopeClusterTest {
     private val cameraAll = CameraSettingsIa.USER_KEYS + CameraSettingsIa.NO_UI_KEYS
 
     @Test
-    fun `29 khoa camera = 6 theo ho so + 23 theo xe, khong khoa nao UNKNOWN`() {
-        assertEquals(29, cameraAll.size, "CameraSettingsIa đổi số khoá ⇒ xếp loại lại ở ProfileScopeCluster")
-        assertEquals(6, ProfileScopeCluster.CAMERA_PROFILE_KEYS.size)
-        assertEquals(23, ProfileScopeCluster.CAMERA_DEVICE_KEYS.size)
+    fun `34 khoa camera = 8 theo ho so + 26 theo xe, khong khoa nao UNKNOWN`() {
+        // 2.92 · CAMERA-FULL-VIEW: +`camera_projection` +`camera_zoom` (HỒ SƠ — cách trình bày, owner 30/09 "phần cụm
+        // lưu hết thành profile") · +`camera_wide_kappa/_focal/_pan_x` (XE — quang học, cùng họ tám núm nắn).
+        assertEquals(34, cameraAll.size, "CameraSettingsIa đổi số khoá ⇒ xếp loại lại ở ProfileScopeCluster")
+        assertEquals(8, ProfileScopeCluster.CAMERA_PROFILE_KEYS.size)
+        assertEquals(26, ProfileScopeCluster.CAMERA_DEVICE_KEYS.size)
         assertEquals(
             cameraAll.toSet(), ProfileScopeCluster.CAMERA_PROFILE_KEYS.keys + ProfileScopeCluster.CAMERA_DEVICE_KEYS.keys,
             "hợp hai bảng phải ĐÚNG bằng tập khoá camera — thêm khoá mà quên xếp loại là đỏ ở đây",

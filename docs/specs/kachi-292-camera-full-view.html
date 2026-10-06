@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.92 kiểu hình camera</title>
+<!--
+  Spec Kiro-style (consolidated) dựng từ docs/specs/_template.html.
+  Thứ tự: Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Approval gate out-of-band (owner 06/10 "ok làm luôn đi") — KHÔNG lưu state ở đây.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:40px 16px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram .t{fill:var(--fg);font:13px -apple-system,BlinkMacSystemFont,sans-serif}
+.diagram .s{fill:var(--muted);font:11.5px -apple-system,BlinkMacSystemFont,sans-serif}
+.diagram .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.diagram .newbox{fill:var(--new);stroke:var(--accent);stroke-width:1.2}
+.diagram .ln{stroke:var(--accent);stroke-width:1.6;fill:none}
+.diagram .dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 4}
+.diagram .img{fill:var(--line);stroke:var(--muted);stroke-width:1}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new);border-color:var(--accent)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.92 — Camera xi-nhan: <i>Kiểu hình</i> (Nắn thẳng · Thẳng rộng · Gương cầu) + <i>Thu phóng</i> + chụp khung thô trong Chẩn đoán</h1>
+<p class="muted">Slug: <code>kachi-292-camera-full-view</code> · Branch <code>feat/292-camera-full-view</code> (từ 2.91 (193) <code>d320ece</code>) · Chủ: dangkhoi · Backlog <code>CAMERA-FULL-VIEW</code> · <span class="pill wait">Trạng thái: mã + test off-car + máy ảo; 🚗 chưa thử xe; KHÔNG bump phiên bản ở nhánh này (bản gom 2.92 quyết)</span></p>
+<p class="muted">Duyệt: owner 06/10 <i>"ok làm luôn đi, xong thì OTA 2.92 luôn"</i> (cổng duyệt ngoài tài liệu). Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§3/§5/§6/§7/§8/§10/§11/§14. Nhãn mức bằng chứng: <b>[ĐO]</b> lần chạy này · <b>[ĐO mã]</b> đọc mã HEAD · <b>[ĐO tính]</b> số tính từ đúng công thức của mã · <b>[SUY]</b> · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-06</b>: khởi tạo spec từ ba lời owner (*"cắt hơi lố"* · *"ko dịch, mà lấy hết được không?"* · *"ủa mà sao phải gương cầu? không thẳng và lấy hết được hay sao"*) + nghiên cứu <code>diagnostics/camera-rear-coverage-2026-10-06.md</code>. Chốt: ba kiểu hình (Nắn thẳng giữ nguyên từng bit · Thẳng rộng = họ phép chiếu κ · Gương cầu = ảnh thô vừa khung) + một thanh Thu phóng + hai nút *Khung thô trái/phải* trong Chẩn đoán.</li>
+<li><b>Pass 1 — 2026-10-06</b>: mã T0–T9 xong + máy ảo T10 (<code>diagnostics/camera-full-view-emu-2026-10-06.md</code>): Nắn thẳng trước = sau <b>0 điểm ảnh khác</b> ở 4/4 tổ hợp; ba kiểu × tròn/chữ nhật × trái/phải đúng bảng §4.5. Hai sửa phạm vi: (1) <b>R8</b> — màn Chẩn đoán <b>không có lối vào</b> trên bản phát hành (owner 21/09) ⇒ nút chỉ dùng được ở bản <code>vehicleTest</code>; mở cho bản phát hành = OQ4; (2) tiêu đề hàng <i>Hình khung camera</i> hứa "tròn = chưa nắn méo" (sai từ khi GL nắn cả khung tròn) ⇒ đổi, 5 thứ tiếng (§4.7). Thêm OQ5 (chỏm đen Thẳng rộng + Tròn). Hướng dẫn người dùng (<code>HUONG-DAN-KACHI.md</code> · <code>guide/HUONG-DAN-CO-HINH.html</code> · <code>guide/OUTLINE.md</code>) đổi theo hàng mới.</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>2.1 Owner nói gì (06/10)</h3>
+<ul>
+<li>Camera điểm mù khi xi-nhan chỉ thấy <b>thân xe giữa hai bánh</b>; ảnh mắt cá thô (*"gương cầu"* lúc demo) nhìn <b>ra sau rất xa</b> ⇒ *"mình cắt hơi lố"*.</li>
+<li>*"ko dịch, mà lấy hết được không?"* rồi *"ủa mà sao phải gương cầu? không thẳng và lấy hết được hay sao"* ⇒ muốn một ảnh <b>thẳng</b> mà vẫn thấy <b>gần hết</b>.</li>
+</ul>
+<h3>2.2 Đường ảnh hôm nay — vì sao mất phần sau xa</h3>
+<p class="muted">Số dòng trích dẫn ở mục này và §8 là của <code>d320ece</code> (2.91, trước nhánh này).</p>
+<table>
+<tr><th>Sự thật</th><th>Mức</th><th>Nguồn</th></tr>
+<tr><td>Hồ sơ Seal: <code>span STRIP</code> (trọn dải 1280×960 của gương) · <code>render GL</code> · nắn 100 % · F 55 % · K 100 % · S 130 % · xoay 0/0</td><td>[ĐO mã]</td><td><code>ClusterProfile.kt:171-178</code></td></tr>
+<tr><td>Khung HAL 5120×960 = 4 dải đứng 1280×960, thứ tự <b>sau · trái · phải · trước</b>; hai gương đối xứng gương; phía đuôi = −x ở dải trái, +x ở dải phải</td><td>[SUY — số đo 27–28/09]</td><td><code>CameraPanoCrop.kt:37-60,86</code>; research §2.1</td></tr>
+<tr><td>Phần sau xa <b>nằm trong</b> dải đang lấy (141 px đầu phía đuôi); thủ phạm là <b>phối cảnh thẳng</b> <code>r = F·tan θ</code>: F 55 % ⇒ mép khung dừng ở θ 76°, mép phóng 7,2×, pixel cách tâm &gt; 499 px không bao giờ được lấy</td><td>[ĐO tính]</td><td>research K1–K2, <code>CameraDewarp.kt:301-317</code></td></tr>
+<tr><td>Dịch/phóng/tiêu cự không chữa được trong mô hình thẳng (dịch dồn 15 % khung vào dải phóng 7×; <code>scale 150</code> ⇒ 9,7 % đen)</td><td>[ĐO tính] + [SUY cũ G7]</td><td>research K4</td></tr>
+<tr><td>Ô tích *Nắn hình* TẮT (<code>camera_dewarp_amount 0</code>) đã cho ảnh thô — nhưng hình <i>Tròn</i> cắt ô vuông giữa dải (x 160–1120) ⇒ mất chính đầu phía đuôi; hình <i>Theo cụm</i> phóng 11–18 % ⇒ cắt mép</td><td>[ĐO mã]</td><td><code>CameraPanoCrop.kt:164,194-199</code>, <code>CameraClusterBand.kt:287-291</code></td></tr>
+<tr><td><code>scale 130</code> là phóng <b>RA</b> (với sâu hơn vào vòng ảnh), không phải phóng vào — K·S = 0,588 nửa-bề-ngang/rad ≈ 376 px/rad, tức đúng f-θ thật theo giả thuyết H1 của research</td><td>[ĐO mã] + [SUY]</td><td><code>CameraDewarp.kt:90</code>, research §2.2</td></tr>
+</table>
+<div class="card"><b>Không có cổng chặn.</b> Toàn bộ là phép chiếu trong shader + prefs + Cài đặt; không lệnh <code>am</code>/<code>wm</code>/<code>service call</code> nào mới, không đổi state hệ thống (CLAUDE.md §4/§5 không áp). Đo trên xe chỉ để <b>chốt bộ số</b> [ĐOÁN] và mắt owner (§6 🚗).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Kiểu hình camera</b> (một hàng chip, chung cho hai bên — lý do §4.6): <b>Nắn thẳng</b> · <b>Thẳng rộng (thấy xa)</b> · <b>Gương cầu (thấy hết)</b>. AC: chip đổi ⇒ lượt xi-nhan sau dùng kiểu mới; nếu khung đang hiện thì <b>dựng lại ngay</b> cùng bên.</li>
+<li><b>R2 — Nắn thẳng = hôm nay TỪNG BIT và là MẶC ĐỊNH.</b> AC: cùng prefs ⇒ mười uniform cũ bằng hệt bản 2.91 (bài <code>CameraViewPlanTest</code> so với <code>CameraGlUniforms.of</code> cũ); shader đi nhánh cũ (<code>uFit = 0</code>, <code>uKappa = 1</code> ⇒ phép tính y hệt); Thu phóng 100 % ⇒ không thêm phép nào.</li>
+<li><b>R3 — Gương cầu</b> = ảnh thô (không nắn) của <b>trọn dải</b> camera bên ấy, <b>vừa</b> khung (chữ nhật: khớp tỉ lệ; tròn: chữ nhật nội tiếp đường tròn — viền đen chứ không cắt), mọi góc xoay. AC: bài <code>:core</code> dựng từ hình học thật (5120×960, dải 1280×960, sau·trái·phải·trước) chứng minh bốn góc dải nằm trong khung ở cả chữ nhật/tròn × 0/±90/180 × trái/phải.</li>
+<li><b>R4 — Thẳng rộng</b>: ảnh <b>gần thẳng</b> mà vẫn tới phía sau xa — họ phép chiếu κ <code>r = κF·tan(θ/κ)</code> (κ = 1 là hôm nay) + dịch khung về phía đuôi theo bên. AC [ĐO tính, bộ số [ĐOÁN]]: hàng giữa khung chữ nhật tới ≥ 93° phía đuôi, toàn khung đen ≤ 2 %, tâm không méo; ba núm chỉnh trên xe qua cầu kiểm thử (không build lại).</li>
+<li><b>R5 — Thu phóng</b> 50–150 % (bước 5), mặc định 100 % = khung tự nhiên của kiểu đang chọn; áp cho cả ba kiểu (phóng quanh tâm khung).</li>
+<li><b>R6 — Hai đường vẽ</b>: GL làm đủ ba kiểu. TextureView (TV, mặc định đời xe chưa đo): Nắn thẳng = hôm nay; Gương cầu = ảnh thô vừa khung bằng ma trận; Thẳng rộng <b>không làm được</b> (không shader) ⇒ hiện như Gương cầu + ghi log. SurfaceView (đường đo phụ, không UI): không ma trận/không shader ⇒ giữ đúng hôm nay, bỏ qua kiểu + thu phóng, ghi log.</li>
+<li><b>R7 — Vị trí/chạm của khung không đổi</b>: cùng góc TL/TR, cùng dải cụm, cửa sổ vẫn <code>FLAG_NOT_TOUCHABLE</code>; chỉ <i>nội dung</i> đổi. Ngoại lệ có chủ đích: <i>Theo cụm</i> + Gương cầu/Thẳng rộng ⇒ khung chữ nhật cao trọn dải (bám cong = phải phóng = phải cắt, trái với "thấy hết").</li>
+<li><b>R8 — Chụp khung thô không cần lệnh adb</b> (CLAUDE.md §11): màn <b>Chẩn đoán</b> (<code>DiagActivity</code>) có hai nút <b>📷 Khung thô trái / phải</b> <span class="warn">(⚠ Pass 1 [ĐO mã]: màn này không có lối vào trên bản phát hành từ owner 21/09 — chỉ <code>am start</code> ở bản <code>vehicleTest</code>/debuggable; xem OQ4)</span>: mở đúng bên như lượt xem thử, chờ khung đầu, chụp khung <b>THÔ</b> (GL: FBO; TV: layer), ghi PNG vào <code>kachi-logs/</code> <b>và</b> chép một bản vào <code>Pictures/Kachi/</code> qua MediaStore (ngoài cây bị <code>DiagStorageCap</code> dọn), in đường dẫn + bộ uniform đang treo; đóng lượt xem thử nếu chính nút đã mở. Tắt <i>Bật camera khi xi-nhan</i> ⇒ báo chữ, không tự bật.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Toán ở <code>:core</code> thuần, có test bằng số; GLSL là bản dịch từng dòng của Kotlin và bị ghim bằng bài token (cùng khuôn <code>CameraDewarpTest</code>).</li>
+<li><b>R-nf2</b> — Đường khung hình không cấp phát, không log (bài <code>duong khung hinh GL khong cap phat</code> mở rộng sang tệp gán uniform mới).</li>
+<li><b>R-nf3</b> — Tệp ≤ 500 dòng: tách <code>CameraDewarp.kt</code> (489) và <code>CameraGlRenderer.kt</code> (490) <b>trước</b> khi thêm.</li>
+<li><b>R-nf4</b> — Phạm vi lưu: kiểu + thu phóng theo <b>HỒ SƠ</b> (sở thích trình bày, cùng họ <code>camera_shape</code>/<code>camera_dewarp_amount</code>); ba núm Thẳng rộng theo <b>XE</b> (quang học). Xếp loại ở <code>ProfileScopeCluster</code> có bài canh.</li>
+<li><b>R-nf5</b> — Năm thứ tiếng vi/en/zh/th/ms cho mọi chữ mới (tài nguyên Android + bảng <code>core/src/main/resources/i18n/*.tsv</code> cho <code>Lang.t</code>).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng — một shader, ba bộ giá trị uniform</h3>
+<div class="diagram">
+<svg viewBox="0 0 880 330" role="img" aria-label="Luồng dựng phiên camera với ba kiểu hình">
+  <rect class="box" x="10" y="20" width="150" height="56" rx="10"/><text class="t" x="85" y="44" text-anchor="middle">Prefs (hồ sơ/xe)</text><text class="s" x="85" y="62" text-anchor="middle">kiểu · thu phóng · núm</text>
+  <rect class="newbox" x="200" y="20" width="200" height="56" rx="10"/><text class="t" x="300" y="44" text-anchor="middle">CameraViewPlan (:core)</text><text class="s" x="300" y="62" text-anchor="middle">crop khung · crop nội dung · uFit</text>
+  <rect class="box" x="440" y="20" width="190" height="56" rx="10"/><text class="t" x="535" y="44" text-anchor="middle">CameraGlUniforms</text><text class="s" x="535" y="62" text-anchor="middle">+ uFit · uKappa</text>
+  <rect class="box" x="670" y="20" width="200" height="56" rx="10"/><text class="t" x="770" y="44" text-anchor="middle">Shader (:core GLSL)</text><text class="s" x="770" y="62" text-anchor="middle">nhánh cũ / nhánh vừa khung</text>
+  <path class="ln" d="M160 48 H196"/><path class="ln" d="M400 48 H436"/><path class="ln" d="M630 48 H666"/>
+  <rect class="box" x="200" y="120" width="200" height="56" rx="10"/><text class="t" x="300" y="144" text-anchor="middle">CameraOverlayView</text><text class="s" x="300" y="162" text-anchor="middle">cửa sổ theo crop KHUNG (không đổi chỗ)</text>
+  <rect class="box" x="440" y="120" width="190" height="56" rx="10"/><text class="t" x="535" y="144" text-anchor="middle">CameraVideoLayer</text><text class="s" x="535" y="162" text-anchor="middle">TV: ma trận + tỉ lệ vừa khung</text>
+  <path class="ln" d="M300 76 V116"/><path class="ln" d="M400 148 H436"/>
+  <rect class="box" x="10" y="230" width="270" height="80" rx="10"/><text class="t" x="145" y="254" text-anchor="middle">Nắn thẳng (mặc định)</text><text class="s" x="145" y="272" text-anchor="middle">uFit = (0,0) ⇒ nhánh 2.74–2.91 nguyên văn</text><text class="s" x="145" y="290" text-anchor="middle">κ = 1 ⇒ θ = atan(r, F) từng bit</text>
+  <rect class="newbox" x="300" y="230" width="270" height="80" rx="10"/><text class="t" x="435" y="254" text-anchor="middle">Thẳng rộng (thấy xa)</text><text class="s" x="435" y="272" text-anchor="middle">trọn dải · κ 1,5 · F 100 % · dịch −20 % về đuôi</text><text class="s" x="435" y="290" text-anchor="middle">uFit vừa khung ÷ thu phóng</text>
+  <rect class="newbox" x="590" y="230" width="280" height="80" rx="10"/><text class="t" x="730" y="254" text-anchor="middle">Gương cầu (thấy hết)</text><text class="s" x="730" y="272" text-anchor="middle">trọn dải · độ nắn 0 · dịch 0</text><text class="s" x="730" y="290" text-anchor="middle">uFit vừa khung ÷ thu phóng</text>
+  <path class="dash" d="M770 76 V226"/><path class="dash" d="M770 200 H145 V226"/><path class="dash" d="M435 200 V226"/>
+</svg>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--bg)"></span> khối hiện có</span><span class="sw"><span class="box" style="background:var(--new)"></span> khối mới</span></div>
+
+<h3>4.2 Shader — một nhánh mới cho mặt phẳng ra, một hệ số κ</h3>
+<pre>local = rot(dst)                                   // y hệt
+if (uFit.x &lt;= 0)  local = local + uPan             // NHÁNH CŨ (Nắn thẳng, thu phóng 100 %) — nguyên văn
+else              local = 0.5 + (local − 0.5)·uFit + uPan   // VỪA KHUNG: ô ra ↔ ô NỘI DUNG (khác tỉ lệ được)
+p      = ((a − cx)·2, (b − cy)·2/aspect)
+theta  = κ·atan(|p|, κ·F)                          // κ = 1 ⇒ atan(|p|, F) từng bit (x·1.0 là phép chính xác IEEE)
+r_src  = (K·S)·theta ;  out = mix(local, proj, amount) ;  ngoài [0,1]² ⇒ đen</pre>
+<p><code>κ·atan(r, κF)</code> là phép đảo của <code>r_dst = κF·tan(θ/κ)</code>: κ = 1 phối cảnh thẳng · κ = 2 stereographic (bảo giác) · κ → ∞ đẳng khoảng (ảnh thô). Vẫn <b>đúng một</b> <code>atan(</code> trong GLSL (bài ghim cũ giữ nguyên ý).</p>
+
+<h3>4.3 Vừa khung (<code>CameraViewFit</code>, :core) — hình học thật</h3>
+<p>Cửa sổ luôn mang tỉ lệ <b>crop KHUNG</b> sau xoay (không đổi so với hôm nay); nội dung là <b>crop NỘI DUNG</b> (trọn dải). Theo trục của ô (chưa xoay), cửa sổ ∝ <code>(Fw, Fh)</code>, nội dung ∝ <code>(Cw, Ch)</code> px nguồn:</p>
+<pre>chữ nhật: σ = min(Fw/Cw, Fh/Ch)           tròn: σ = 1/√((Cw/Fw)² + (Ch/Fh)²)   // góc chữ nhật nội dung nằm TRÊN đường tròn
+σ' = σ·zoom ;  uFit = (Fw/(Cw·σ'), Fh/(Ch·σ'))            // TV: tỉ lệ màn = 1/uFit (đổi trục khi xoay ±90)</pre>
+<div class="diagram">
+<svg viewBox="0 0 700 200" role="img" aria-label="Vừa khung: chữ nhật khớp tỉ lệ, tròn chứa trọn chữ nhật nội dung">
+  <rect class="box" x="30" y="30" width="200" height="150" rx="8"/><rect class="img" x="30" y="30" width="200" height="150"/>
+  <text class="t" x="130" y="110" text-anchor="middle">dải 4:3 = cửa sổ 4:3</text><text class="s" x="130" y="22" text-anchor="middle">Chữ nhật: uFit = (1, 1)</text>
+  <circle class="box" cx="430" cy="105" r="80"/><rect class="img" x="366" y="57" width="128" height="96"/>
+  <text class="t" x="430" y="110" text-anchor="middle">0,8 D × 0,6 D</text><text class="s" x="430" y="22" text-anchor="middle">Tròn: uFit = (1,25 ; 1,667) — viền đen, không cắt</text>
+  <rect class="box" x="560" y="40" width="112" height="150" rx="8"/><rect class="img" x="560" y="40" width="112" height="150"/>
+  <text class="t" x="616" y="120" text-anchor="middle">3:4</text><text class="s" x="616" y="32" text-anchor="middle">xoay ±90</text>
+</svg>
+</div>
+<table>
+<tr><th>Khung (Seal, dải 1280×960)</th><th>Cửa sổ</th><th>Gương cầu ở 100 %</th><th>Mức</th></tr>
+<tr><td>màn chính · chữ nhật · 0°</td><td>495×371</td><td>trọn dải, khớp đúng, 0 viền</td><td>[ĐO tính]</td></tr>
+<tr><td>màn chính · tròn</td><td>Ø 495</td><td>396×297 nội tiếp, góc dải chạm đường tròn</td><td>[ĐO tính]</td></tr>
+<tr><td>cụm · chữ nhật · 0° / ±90°</td><td>571×428 / 321×428</td><td>trọn dải, khớp đúng</td><td>[ĐO tính]</td></tr>
+<tr><td>cụm · tròn</td><td>Ø 428</td><td>342×257 nội tiếp</td><td>[ĐO tính]</td></tr>
+<tr><td>cụm · <i>Theo cụm</i></td><td>như chữ nhật</td><td>không bám cong (R7)</td><td>[ĐO mã]</td></tr>
+</table>
+<p>Nội dung rộng hơn nửa dải cụm (nguyên khung 5120×960 khi chọn <i>Nguyên khung</i>) ⇒ <code>CameraClusterBand.place(fitInside = true)</code> dùng <code>fit</code> thay <code>tall</code>: cửa sổ = lớp video, không phóng-cắt.</p>
+
+<h3>4.4 Chọn phép chiếu cho "Thẳng rộng": họ κ, không phải trụ đứng — bằng số</h3>
+<p>Mô hình: ống đẳng khoảng K·S = 0,588 (Seal S 130 %), khung cụm 571×428, cột đứng 5 m sau gương cách 2,5 m, vạch làn 1,8 m từ 2→30 m; góc chúc δ [ĐOÁN] 0/30/60°. Tái lập: script ở §9 (bản tóm) — [ĐO tính].</p>
+<table>
+<tr><th>Phép chiếu</th><th>Mép đuôi</th><th>Mép trước</th><th>Đen toàn khung</th><th>Hàng giữa cho θ ≥ 76° phía đuôi</th><th>Cột đứng võng (px / dài) δ 0 · 30 · 60°</th></tr>
+<tr><td>Hôm nay (κ 1, F 55 %)</td><td>76,0°</td><td>76,0°</td><td>0 %</td><td>0,1 %</td><td>0 · 0 · 0 (nhưng ngoài khung khi xa)</td></tr>
+<tr><td><b>κ 1,5 · F 100 % · dịch −20 %</b></td><td><b>96,2°</b></td><td>62,2°</td><td><b>1,8 %</b></td><td><b>28,6 %</b></td><td>3,5/103 · 3,6/125 · 2,9/197</td></tr>
+<tr><td>κ 2 · F 140 % · dịch −20 %</td><td>95,7°</td><td>50,7°</td><td>2,1 %</td><td>20,5 %</td><td>5,3/130 · 5,3/140 · 4,3/166</td></tr>
+<tr><td>Trụ đứng Braun (vừa khung θmax 95°)</td><td>113° (đen)</td><td>113° (đen)</td><td>23,7 %</td><td>16,4 %</td><td>0/76 · 1,1/78 · 2,4/82</td></tr>
+</table>
+<ul>
+<li>Trụ đứng chỉ giữ thẳng tuyệt đối đường <b>song song trục ảnh</b>; camera AVM chúc xuống δ [CHƯA BIẾT] ⇒ cột đứng của thế giới hội tụ về điểm thiên đế ⇒ trụ cũng võng (2,4 px ở δ 60°). Đổi lại nó phí <b>23,7 %</b> khung cho đen và chỉ cho 16,4 % hàng giữa vào vùng sau xa.</li>
+<li>κ 1,5: võng 3–4 px trên cột dài 100–200 px (vật hiện TO hơn trụ 1,3–2,4 lần), 28,6 % hàng giữa cho sau xa, 1,8 % đen — đúng bộ khởi điểm research §4.3. Thêm <b>một</b> uniform, giữ <b>một</b> <code>atan</code>, κ = 1 khoá từng bit bằng test ⇒ rủi ro thấp nhất.</li>
+<li>Trụ quanh trục ĐỨNG thế giới (gương ảo, research PA 2) cần δ thật ⇒ để 2.93 sau khi có khung thô (R8 chính là công cụ lấy nó).</li>
+</ul>
+<p><b>Chọn κ.</b> Bộ mặc định <code>κ 150 % · F 100 % · dịch x −20 %</code> [ĐOÁN — research §4.3]; ba khoá chỉnh trên xe theo XE: <code>camera_wide_kappa</code> (100–800 %), <code>camera_wide_focal</code> (25–400 % bộ suy ra), <code>camera_wide_pan_x</code> (−50…50 %, dấu theo bên như <code>camera_dewarp_pan_x</code>). K/S/tâm dùng chung với Nắn thẳng (đó là mô hình ống kính owner đã dò).</p>
+
+<h3>4.5 Bảng giá trị theo kiểu</h3>
+<table>
+<tr><th>Uniform</th><th>Nắn thẳng</th><th>Thẳng rộng</th><th>Gương cầu</th></tr>
+<tr><td>vùng cắt (<code>uSrcRect</code>)</td><td>hôm nay (span/hình)</td><td>trọn dải</td><td>trọn dải</td></tr>
+<tr><td><code>uAmount</code></td><td>pref (100)</td><td>1</td><td>0</td></tr>
+<tr><td><code>uFocal</code> / <code>uKappa</code></td><td>pref (55 %) / 1</td><td>wide_focal (100 %) / wide_kappa (1,5)</td><td>(không dùng) / 1</td></tr>
+<tr><td><code>uK·uScale</code> · <code>uCenter</code></td><td colspan="3">chung — mô hình ống kính của xe</td></tr>
+<tr><td><code>uPan</code></td><td>pref (0)</td><td>(wide_pan_x × dấu bên, 0)</td><td>(0, 0)</td></tr>
+<tr><td><code>uFit</code></td><td>(0,0) ở 100 % · (1/z, 1/z) khi khác</td><td>vừa khung ÷ z</td><td>vừa khung ÷ z</td></tr>
+</table>
+
+<h3>4.6 Phạm vi + chung/riêng bên + áp ngay</h3>
+<ul>
+<li><b>Chung cho hai bên</b>: hai gương là ảnh soi gương của nhau (cùng ống, cùng lắp) ⇒ cùng kiểu + cùng thu phóng cho cùng một tầm nhìn vật lý; dấu dịch đã theo bên (<code>panXSign</code>). Thêm hàng theo bên là thêm lựa chọn không mang thông tin (owner 27/09: *"nhiều option quá rối"*).</li>
+<li><b>Theo HỒ SƠ</b> (<code>camera_projection</code>, <code>camera_zoom</code>): owner 30/09 *"Phần cụm lưu hết thành profile"* — sở thích trình bày; cùng họ với <code>camera_dewarp_amount</code>/<code>camera_shape</code> đã theo hồ sơ. Ba khoá <code>camera_wide_*</code> là quang học ⇒ theo XE (cùng <code>R_OPTICS</code>). ⚠ Điều phối gợi ý *"theo xe như các núm nắn"*; luật owner nghiêm hơn ⇒ theo hồ sơ (CLAUDE.md §16: mâu thuẫn lấy cái nghiêm hơn, ghi lại).</li>
+<li><b>Đời cũ</b>: chưa có <code>camera_projection</code> mà <code>camera_dewarp_amount = 0</code> (người lái đã tắt *Nắn hình*) ⇒ đọc thành <b>Gương cầu</b> (người thừa kế đúng ý "ảnh thô"); ô tích *Nắn hình* gỡ khỏi màn (hàng chip thay), khoá vẫn ghi/đọc qua cầu. Chạm *Nắn thẳng* mà amount đang 0 ⇒ đặt lại 100.</li>
+<li><b>Áp ngay</b>: cầu Cài đặt ghi pref rồi <code>CameraSignalController.reapplyIfShowing()</code> — đang hiện thì dỡ + dựng lại đúng bên (đường đổi bên đã chạy hiện trường: <code>closeSession(keepPano = true)</code> → <code>openSession</code>), không chạm HOLD.</li>
+</ul>
+
+<h3>4.7 Cài đặt</h3>
+<p>Hàng ô tích *Nắn hình* ⇒ <b>hàng chip</b> <i>Kiểu hình camera</i> [Nắn thẳng] [Thẳng rộng (thấy xa)] [Gương cầu (thấy hết)] + <b>thanh kéo</b> <i>Thu phóng</i> 50–150 % (áp khi thả tay, <code>sliderRow</code> có sẵn). Màn camera: 14 → <b>15</b> hàng.</p>
+<p>Pass 1: tiêu đề hàng ngay trên (<code>kachi_camera_shape_sub</code>) ghi <i>"tròn = thấy trọn vòng ảnh, chưa nắn méo"</i> — sai từ khi GL nắn cả khung tròn [ĐO máy ảo: bản 2.91 in <code>hình=ROUND … amount=1,000</code>] và nay giẫm lên hàng <i>Kiểu hình</i> ⇒ đổi thành <i>"chỉ đổi viền — muốn thấy trọn ảnh, chưa nắn méo, thì chọn kiểu «Gương cầu» bên dưới"</i> (5 thứ tiếng; bài <code>CameraSpanShapeWiringContractTest</code> ghim ý mới).</p>
+
+<h3>4.8 Chụp khung thô (R8)</h3>
+<div class="flow">
+  <div class="fnode new"><b>Nút 📷</b><span>Chẩn đoán</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>previewSide(bên)</b><span>đường xem thử có sẵn</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>chờ khung đầu</b><span>≤ 3 s, đọc trên main</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>GL: grabRawFrame · TV: getBitmap</b><span>đường camera_frame</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>PNG kachi-logs + Pictures/Kachi</b><span>CameraFrameFiles (dùng chung)</span></div>
+</div>
+<p>Phạm vi đổi state (CLAUDE.md §4): chỉ mở đúng luồng AVMCamera mà một lượt xi-nhan vẫn mở, của chính Kachi; hoàn tác = đường dỡ có sẵn; không đọc/ghi pref camera. Phần nén + ghi + dọn ≤ 10 tệp tách khỏi <code>TestBridgeCameraFrame</code> thành <code>CameraFrameFiles</code> (DRY §4.1).</p>
+<div class="card"><b>⚠ Lối vào (Pass 1, [ĐO mã]).</b> <code>DiagActivity</code> khai <code>exported="false"</code>; nút mở nó trong Cài đặt đã gỡ (owner 21/09, <code>SettingsSectionsCast.kt:467-470</code>); <code>ClusterNavBridge.openDiagnostics()</code> 0 chỗ gọi; bài <code>DevSurfaceGateContractTest</code> cấm dựng lại bề mặt dev trong Cài đặt, <i>gác hay không gác</i>; <code>am start</code> bị từ chối trên bản phát hành [ĐO xe 29/09]. ⇒ Trên bản OTA hai nút <b>không tới được</b>. Không tự mở lối (đảo quyết định owner — CLAUDE.md §16: lấy luật nghiêm hơn, ghi backlog). <code>CameraRawCapture.capture(ctx, left, onDone)</code> độc lập với màn, nối được vào bất kỳ lối vào nào owner chọn (OQ4).</div>
+
+<h3>4.9 Context7</h3>
+<p>Không thư viện/phụ thuộc mới: GLSL ES 1.00 (<code>atan</code> hai đối số đã dùng), Android SDK (MediaStore <code>RELATIVE_PATH</code> API 29+, cùng khuôn <code>VoiceUtteranceLog.exportZip</code>). Máy chủ Context7 <b>không kết nối được</b> trong phiên này (ENOTFOUND) — không có quyết định nào phụ thuộc phiên bản thư viện.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T0</td><td>Tách trước khi thêm: nghịch đảo/mô hình chụp → <code>CameraDewarpInverse.kt</code>; gán uniform → <code>CameraGlBindings.kt</code></td><td><code>core/…/CameraDewarp*.kt</code>, <code>app/…/CameraGl*.kt</code></td></tr>
+<tr><td>T1</td><td>κ trong <code>DewarpParams</code> + <code>mapDstToSrc</code>/nghịch đảo + FORMULA + nhánh vừa khung trong <code>sample</code>; test κ1 từng bit · κ2 stereographic · preset tới ≥ 93°</td><td><code>core/…/CameraDewarp.kt</code>, <code>CameraDewarpKappaTest</code></td></tr>
+<tr><td>T2</td><td>GLSL: <code>uFit</code> + <code>uKappa</code>, nhánh cũ nguyên văn; ghim token</td><td><code>CameraDewarpShader.kt</code>, <code>CameraDewarpTest</code></td></tr>
+<tr><td>T3</td><td><code>CameraViewMode</code> + <code>CameraViewFit</code> + <code>CameraViewPlan</code> (crop khung/nội dung, uniform theo kiểu, tỉ lệ TV) + test hình học thật</td><td><code>core/…/camera/CameraView*.kt(+Test)</code></td></tr>
+<tr><td>T4</td><td><code>CameraGlUniforms</code> (+fit, κ, kiểu, describe) · <code>CameraOverlayTransform.matrix(scale)</code> · <code>CameraClusterBand.place(fitInside)</code></td><td><code>core/…</code></td></tr>
+<tr><td>T5</td><td>Prefs (5 khoá) + cầu Cài đặt + <code>prefs_set</code> + xếp loại hồ sơ/xe + chia sẻ + IA</td><td><code>PrefsCameraDewarp.kt</code>, <code>ClusterNavBridgeAutomation.kt</code>, <code>TestBridge*.kt</code>, <code>ProfileScopeCluster.kt</code>, <code>ProfileSharePolicy.kt</code>, <code>CameraSettingsIa.kt</code></td></tr>
+<tr><td>T6</td><td>Controller: kế hoạch theo kiểu + <code>reapplyIfShowing</code> + ghi chú phiên; overlay/lớp video nhận crop nội dung + tỉ lệ TV</td><td><code>CameraSignalController.kt</code>, <code>CameraOverlayView.kt</code>, <code>CameraVideoLayer.kt</code></td></tr>
+<tr><td>T7</td><td>Cài đặt: chip + thanh kéo; chữ 5 thứ tiếng</td><td><code>SettingsSectionsCamera.kt</code>, <code>values*/strings_kachi.xml</code></td></tr>
+<tr><td>T8</td><td>Chẩn đoán: 2 nút + <code>CameraRawCapture</code> + <code>CameraFrameFiles</code> + bảng dịch</td><td><code>DiagActivity.kt</code>, <code>launcher/camera/CameraRawCapture.kt</code>, <code>CameraFrameFiles.kt</code>, <code>i18n/*.tsv</code></td></tr>
+<tr><td>T9</td><td>Bài dây nối <code>:app</code> + sửa bài đếm khoá</td><td><code>app/src/test/…</code>, <code>core/src/test/…</code></td></tr>
+<tr><td>T10</td><td>Máy ảo: ảnh tổng hợp × 3 kiểu × tròn/chữ nhật × trái/phải; Nắn thẳng trước = sau</td><td><code>docs/diagnostics/camera-full-view-emu-2026-10-06.md</code></td></tr>
+<tr><td>T11</td><td>Doc: INDEX · BACKLOG · project-context · danh mục chức năng; bộ đủ + lint + release; quét bảo mật; commit</td><td>—</td></tr>
+<tr><td>T12</td><td>(Pass 1) Tiêu đề hàng hình khung 5 thứ tiếng + bài ghim; hướng dẫn người dùng đổi hàng <i>Nắn hình</i> → <i>Kiểu hình</i> + <i>Thu phóng</i>; đính chính nghiên cứu §5.3</td><td><code>values*/strings_kachi.xml</code>, <code>CameraSpanShapeWiringContractTest</code>, <code>HUONG-DAN-KACHI.md</code>, <code>guide/*</code></td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: <code>:core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest :car-integration:test :offcar-planner:test</code> + <code>:app:lintDebug</code> + <code>:app:assembleRelease</code>; đếm từ XML. <span class="ok">Pass 1 [ĐO, <code>--rerun-tasks</code>]: <b>8 831 test / 0 hỏng / 0 lỗi / 0 bỏ qua</b> (1 021 tệp XML, <code>scripts/count-tests.py</code>) · lint 0 lỗi · <code>assembleRelease</code> xanh.</span></li>
+<li><b>V-emu</b> (GL, <code>camera_synth</code>): ảnh chụp ba kiểu × tròn/chữ nhật × trái/phải; Nắn thẳng chụp trước/sau đổi mã phải trùng điểm ảnh. <span class="ok">Pass 1 [ĐO máy ảo]: 0 điểm khác ở 4/4 tổ hợp; 12 tổ hợp + 2 mức thu phóng đúng bảng §4.5; chạm chip khi khung đang hiện ⇒ dựng lại ngay; nút Khung thô ⇒ 2 PNG 5120×960 + MediaStore <code>Pictures/Kachi/</code> — <code>diagnostics/camera-full-view-emu-2026-10-06.md</code>.</span> Chưa đo được ở máy ảo: đường TV, trên cụm, xoay ≠ 0 (doc §7).</li>
+<li><b>V-oncar 🚗</b> (chưa làm — cần xe):
+  <ol>
+  <li>Xi-nhan trái rồi phải với <b>Gương cầu</b> ⇒ thấy tới phía sau xa (xe làn bên ≥ 10–20 m)? Chụp màn + <code>logcat -s KachiCamera | grep "kiểu="</code>.</li>
+  <li><b>Thẳng rộng</b>: cột/đường thẳng có "đủ thẳng" không; thấy bánh trước + xe phía sau xa cùng lúc? Chỉnh <code>camera_wide_kappa/_focal/_pan_x</code> bằng <code>prefs_set</code> tới khi vừa mắt, ghi <code>read_back</code>.</li>
+  <li><b>Thu phóng</b>: chốt mức mặc định dễ nhìn nhất cho từng kiểu (nếu khác 100 % ⇒ đưa vào hồ sơ xe ở bản sau).</li>
+  <li><b>📷 Khung thô</b> trái/phải ⇒ PNG có ở <code>kachi-logs/</code> và Thư viện ảnh › Kachi (để đo f-θ, tâm, δ cho 2.93). Bản phát hành: chờ OQ4; trong lúc chờ — bản <code>vehicleTest</code> + <code>am start</code> màn Chẩn đoán, hoặc cầu <code>camera_frame raw</code>.</li>
+  <li>Hồi quy: Nắn thẳng nhìn y như 2.91; vào số R khi khung đang hiện ⇒ camera lùi zin bình thường.</li>
+  </ol></li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Bộ số Thẳng rộng (κ 1,5 · F 100 % · dịch −20 %) có vừa mắt owner không? <span class="muted">[ĐOÁN] tới V-oncar 2; chỉnh được không build.</span></li>
+<li><b>OQ2</b> — f-θ thật / tâm vòng ảnh / góc chúc δ của camera gương Seal. <span class="muted">[CHƯA BIẾT] — nút 📷 Khung thô (R8) là công cụ lấy; chốt rồi mới làm gương ảo (2.93).</span></li>
+<li><b>OQ3</b> — Phạm vi theo hồ sơ (thay vì theo xe như gợi ý điều phối). <span class="muted">Chọn theo luật owner 30/09; owner muốn theo xe thì đổi hai dòng bảng <code>ProfileScopeCluster</code>.</span></li>
+<li><b>OQ4</b> — Nút <b>📷 Khung thô</b> trên bản phát hành: màn Chẩn đoán không có lối vào (owner 21/09) ⇒ chọn một: (a) một lối vào gác bằng <code>DevMode</code> (cửa sổ <i>Chế độ kiểm thử</i> — bật tay trong Cài đặt, không cần adb; đảo luật 21/09 + sửa <code>DevSurfaceGateContractTest</code>); (b) tự chụp một khung thô mỗi bên trong lượt xi-nhan đầu tiên khi cửa sổ kiểm thử đang mở (không thêm bề mặt; tốn một nhịp GL lúc đang chạy); (c) giữ nguyên — chỉ bản <code>vehicleTest</code> hoặc cầu <code>camera_frame raw</code> (cần adb). <span class="muted">Quyết định của owner (đề xuất (a)); mã chụp đã sẵn, nối thêm ≈ 10 dòng + một bài.</span></li>
+<li><b>OQ5</b> — <i>Thẳng rộng</i> + hình <i>Tròn</i>: ≈ 20 % đĩa là chỏm đen trên/dưới [ĐO máy ảo] (mặt phẳng nắn cần nguồn cao hơn dải). Giữ (người lái tự kéo Thu phóng), hay để Thẳng rộng luôn lấy khung chữ nhật như <i>Theo cụm</i>? <span class="muted">Chờ mắt owner (V-oncar 2); chữ nhật không bị (0,3 %).</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/diagnostics/camera-rear-coverage-2026-10-06.md</code> (research K1–K8, §4.3 bộ ứng viên, §5.3 nút chụp — có đính chính lối vào).</li>
+<li><code>docs/diagnostics/camera-full-view-emu-2026-10-06.md</code> (Pass 1: đo máy ảo — A/B Nắn thẳng, ba kiểu × hai hình × hai bên, nút Khung thô, vòng ảnh trên khung 27/09).</li>
+<li><code>docs/diagnostics/offcar-2026-09-26/camera-dewarp-math.md</code> · <code>camera-dewarp-gl.md</code> (§B dịch khung, §D khung thật qua máy ảo).</li>
+<li><code>docs/diagnostics/research-side-camera-orientation-2026-09-27.md</code> (dải đứng, đối xứng gương).</li>
+<li><code>docs/specs/kachi-camera-source-picker.html</code> (xem thử bằng <code>previewSide</code>) · <code>docs/specs/kachi-profiles-are-everything.html</code> §11 (V-CLUSTER).</li>
+<li>Mã (dòng theo <code>d320ece</code>): <code>CameraDewarp.kt:301-317</code> · <code>CameraDewarpShader.kt:102-148</code> · <code>CameraGlUniforms.kt:173-224</code> · <code>CameraPanoCrop.kt:132-199</code> · <code>CameraClusterBand.kt:315-368</code> · <code>CameraSignalController.kt:174-294,404-410</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — "Thẳng rộng" = họ κ (§4.4), không phải trụ đứng: số [ĐO tính] ở bảng §4.4; script tái lập nằm ở scratchpad phiên (công thức = §4.2 + mô hình cột/vạch làn ở §4.4), không đưa vào repo vì chỉ dùng một lần.</li>
+<li><b>2026-10-06 · quyết định</b> — một khoá thu phóng chung cho ba kiểu, KHÔNG đặt lại khi đổi kiểu: thanh kéo luôn nói đúng thứ đang áp (đổi kiểu mà tự về 100 % thì thanh phải dựng lại + mất mức người lái đã chọn).</li>
+<li><b>2026-10-06 · mã T0–T9</b> — <code>:core</code>: <code>CameraViewMode</code> · <code>CameraViewFit</code> · <code>CameraViewPlan</code> (mới), <code>CameraDewarpInverse</code> (tách khỏi <code>CameraDewarp</code>, 489 → 450 dòng), κ trong <code>DewarpParams</code>/<code>mapDstToSrc</code>/GLSL, <code>uFit</code> + <code>uKappa</code>, <code>CameraOverlayTransform.matrix(scale)</code>, <code>CameraClusterBand.place(fitInside)</code>, xếp loại hồ sơ/xe + chia sẻ + IA + danh sách trắng (44 → 49). <code>:app</code>: <code>CameraGlBindings</code> (tách khỏi renderer, 490 → 441), controller (kế hoạch theo kiểu, <code>reapplyIfShowing</code>, <code>endPreview</code>, <code>sessionNote</code>; log nói cả kiểu chọn khi đường vẽ ép kiểu khác), overlay/lớp video (crop nội dung + tỉ lệ TV), prefs + cầu Cài đặt + <code>prefs_set</code>, Cài đặt (chip + thanh kéo), Chẩn đoán (<code>CameraRawCapture</code> + <code>CameraFrameFiles</code> dùng chung với <code>camera_frame</code>), 5 thứ tiếng (tài nguyên + <code>i18n/*.tsv</code>). Mọi tệp đụng tới ≤ 500 dòng.</li>
+<li><b>2026-10-06 · bài</b> — <code>CameraDewarpKappaTest</code> (κ 1 từng bit · κ 2 stereographic · nghịch đảo · bộ Thẳng rộng ≥ 93° đuôi, ≤ 2 % đen · tâm đẳng hướng + đơn điệu) · <code>CameraViewModeTest</code> · <code>CameraViewPlanTest</code> (Nắn thẳng = 2.91 trên 288 tổ hợp · góc nội dung trong khung mọi hình × xoay × bên × lật · tỉ lệ TV · CLUSTER → RECT · <code>fitInside</code>) · bài token shader · <code>CameraFullViewWiringContractTest</code> (quy kiểu theo đường vẽ · áp ngay không chạm HOLD · nút Khung thô xem thử → ghi → đóng, chỉ đọc · MediaStore) + sửa các bài đếm khoá/dây nối cũ.</li>
+<li><b>2026-10-06 · quyết định (lệch gợi ý điều phối)</b> — <code>camera_projection</code>/<code>camera_zoom</code> theo HỒ SƠ, không theo XE (OQ3): owner 30/09 <i>"Phần cụm lưu hết thành profile"</i>; CLAUDE.md §16 — mâu thuẫn lấy luật nghiêm hơn và ghi lại.</li>
+<li><b>2026-10-06 · máy ảo T10</b> — <code>diagnostics/camera-full-view-emu-2026-10-06.md</code>: Nắn thẳng NỀN 2.91 vs MỚI <b>0 điểm ảnh khác</b> 4/4; 12 tổ hợp + thu phóng 80/125 % đúng §4.3/§4.5; chạm chip khi khung đang hiện ⇒ dựng lại ngay; Khung thô ⇒ 2 PNG 5120×960 + 2 hàng MediaStore. Dữ liệu Kachi trên máy ảo trả nguyên trạng (sha <code>shared_prefs</code> trùng, trừ một mốc thời gian app tự ghi khi khởi động).</li>
+<li><b>2026-10-06 · phát hiện</b> — (1) <b>R8 không tới được trên bản phát hành</b> (§4.8 thẻ ⚠, OQ4) — nghiên cứu §5.3 đã đính chính; (2) tiêu đề hàng hình khung hứa sai → sửa (§4.7); (3) [ĐO khung 27/09] ở giữa cao, 141 px đầu phía đuôi LÀ ảnh, mép vòng ảnh 0–20 px trong mép dải ⇒ H1 của nghiên cứu, vùng Thẳng rộng kéo vào có ảnh thật; vòng ảnh lớn hơn bề cao khung (giả định Ø 960 hụt — KDoc <code>DewarpParams</code> ghi lại); bản đủ phân giải của khung 27/09 còn trong máy ảo.</li>
+<li><b>2026-10-06 · Context7</b> — máy chủ không kết nối được (ENOTFOUND) cả phiên; không thêm thư viện/phụ thuộc nào (GLSL ES 1.00 sẵn có, <code>MediaStore.RELATIVE_PATH</code> API 29 cùng khuôn mã đã ship).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review)</li>
+</ul>
+
+</div></body>
+</html>

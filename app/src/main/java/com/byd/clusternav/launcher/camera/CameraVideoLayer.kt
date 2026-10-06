@@ -103,6 +103,7 @@ internal class CameraVideoLayer private constructor(
             synthOn: Boolean,
             synthFile: String = "",
             mirror: Boolean = false,   // 2.76 L7 — chỉ đường TV (và đường RƠI của GL) cần: GL lật bằng `uSrcRect.z < 0`
+            scale: FloatArray? = null, // 2.92 — vừa khung/thu phóng của ma trận TV (và đường RƠI); GL làm bằng `uFit`
             onSurfaceReady: (Surface) -> Unit,
         ): CameraVideoLayer {
             if (!CameraSignalPolicy.usesTextureView(render)) {
@@ -112,9 +113,9 @@ internal class CameraVideoLayer private constructor(
                 if (gl == null && CameraSignalPolicy.rotatesInShader(render)) {
                     Log.w(PanoramaHal.TAG, "GL thiếu bộ uniform ⇒ chạy như TextureView thường (không nắn)")
                 }
-                return CameraVideoLayer(textureVideo(ctx, crop, rotationDeg, mirror, onSurfaceReady), null, null)
+                return CameraVideoLayer(textureVideo(ctx, crop, rotationDeg, mirror, scale, onSurfaceReady), null, null)
             }
-            return glVideo(ctx, gl, crop, rotationDeg, mirror, streamW, streamH, synthOn, synthFile, onSurfaceReady)
+            return glVideo(ctx, gl, crop, rotationDeg, mirror, scale, streamW, streamH, synthOn, synthFile, onSurfaceReady)
         }
 
         /**
@@ -128,18 +129,19 @@ internal class CameraVideoLayer private constructor(
             crop: FloatArray?,
             rotationDeg: Int,
             mirror: Boolean,
+            scale: FloatArray?,
             onSurfaceReady: (Surface) -> Unit,
         ): View {
             return TextureView(ctx).apply {
                 isOpaque = true
                 surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                     override fun onSurfaceTextureAvailable(st: SurfaceTexture, w2: Int, h2: Int) {
-                        applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror)
+                        applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror, scale)
                         runCatching { onSurfaceReady(Surface(st)) }
                             .onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                     }
                     override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w2: Int, h2: Int) {
-                        applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror)
+                        applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror, scale)
                     }
                     override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean = true
                     override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
@@ -202,6 +204,7 @@ internal class CameraVideoLayer private constructor(
             crop: FloatArray?,
             rotationDeg: Int,
             mirror: Boolean,
+            scale: FloatArray?,
             streamW: Int,
             streamH: Int,
             synthOn: Boolean,
@@ -221,7 +224,7 @@ internal class CameraVideoLayer private constructor(
                         if (input == null) {
                             fellBack[0] = true
                             Log.w(PanoramaHal.TAG, "GL không dựng được ⇒ RƠI về TextureView 2.73 (xem dòng eglGetError)")
-                            applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror)
+                            applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror, scale)
                             runCatching { onSurfaceReady(Surface(st)) }
                                 .onFailure { Log.w(PanoramaHal.TAG, "onSurfaceReady: ${it.message}") }
                             return
@@ -233,7 +236,7 @@ internal class CameraVideoLayer private constructor(
                     override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w2: Int, h2: Int) {
                         // Đã rơi ⇒ cư xử y đường `TV` (áp lại ma trận theo cỡ mới — `onStreamMeasured` đổi cỡ ô video
                         // sau khi HAL trả cỡ ảnh thật). Chưa rơi ⇒ shader lo cắt-xoay, chỉ cần đổi viewport.
-                        if (fellBack[0]) applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror) else renderer.resize(w2, h2)
+                        if (fellBack[0]) applyTransform(this@apply, w2, h2, crop, rotationDeg, mirror, scale) else renderer.resize(w2, h2)
                     }
                     override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
                         holder[0]?.release()
@@ -258,8 +261,10 @@ internal class CameraVideoLayer private constructor(
          * ⚠ Chỉ chạy ở hai callback ĐỔI CỠ (available / size-changed), **không** mỗi khung ⇒ `Matrix` cấp phát ở đây
          * là vài lần một lượt xi-nhan, không phải 15 lần/giây (CLOSE-14).
          */
-        private fun applyTransform(tv: TextureView, vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int, mirror: Boolean) {
-            val values = CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror) ?: return
+        private fun applyTransform(
+            tv: TextureView, vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int, mirror: Boolean, scale: FloatArray?,
+        ) {
+            val values = CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror, scale) ?: return
             tv.setTransform(android.graphics.Matrix().apply { setValues(values) })
         }
     }

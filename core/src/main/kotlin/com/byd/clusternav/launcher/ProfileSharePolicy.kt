@@ -77,7 +77,7 @@ object ProfileSharePolicy {
         ).forEach { put(it, R_COMFORT) }
         listOf(
             "camera_signal_enabled", "camera_on_cluster", "camera_pos_left", "camera_pos_right", "camera_shape",
-            "camera_dewarp_amount",
+            "camera_dewarp_amount", "camera_projection", "camera_zoom",
         ).forEach { put(it, R_CAMERA) }
         listOf(
             "cast_enabled", "cast_bubble_visible", "split_ratio_left_pct", "autostart_enabled", "autostart_package",

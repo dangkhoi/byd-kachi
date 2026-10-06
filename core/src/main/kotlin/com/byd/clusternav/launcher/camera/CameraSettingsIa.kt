@@ -9,13 +9,14 @@ package com.byd.clusternav.launcher.camera
  * bỏ luôn ở phần kỹ thuật"*.
  *
  * ## Hai danh sách, một khác biệt: có hàng trên màn hay không
- *  • [USER_KEYS] — **14 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra. (10 khoá tới 2.79;
+ *  • [USER_KEYS] — **15 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra. (10 khoá tới 2.79;
  *    +2 *thử camera số* và +2 *dải hình* ở 2.80/2.81 — xem `specs/kachi-camera-source-picker.html`; 2.82 thêm +2
- *    *vạch chuẩn khoảng cách* rồi 2.83 **gỡ hẳn** theo owner, *"dẹp vạch đi"* ⇒ về lại 14. Con số này
+ *    *vạch chuẩn khoảng cách* rồi 2.83 **gỡ hẳn** theo owner, *"dẹp vạch đi"* ⇒ về lại 14; 2.92 ô tích *Nắn hình*
+ *    nhường chỗ hàng chip *Kiểu hình* + thanh *Thu phóng* ⇒ 15 — `specs/kachi-292-camera-full-view.html`). Con số này
  *    do `CameraSettingsIaTest` khoá: sửa danh sách mà quên sửa đây là test ĐỎ. Chú thích đi trước mã chính là
  *    cái đã sinh ra CAM-SL6-RIGHT — `CameraSignalController` từng viết "SL6 chọn id 0 trong Cài đặt" trong khi
  *    hàng đó chưa bao giờ tồn tại.)
- *  • [NO_UI_KEYS] — **15 khoá còn lại**: không còn một hàng nào trên màn, nhưng **vẫn ghi/đọc được qua `prefs_set`**
+ *  • [NO_UI_KEYS] — **19 khoá còn lại**: không còn một hàng nào trên màn, nhưng **vẫn ghi/đọc được qua `prefs_set`**
  *    của cầu kiểm thử và giá trị đã đặt trên xe **vẫn có hiệu lực**. Mặc định của chúng nay là bộ owner đã DUYỆT
  *    trên xe, khai trong hồ sơ xe ([CameraProfileDefaults] — Seal DL3: `STRIP · GL · F 55 · K 100 · S 130 · tâm 0,0
  *    · dịch 0,0`, dải trái 1 / phải 2, cameraId 1). Xoá hẳn chúng là mất đường chẩn đoán trên xe (CLAUDE.md §15
@@ -28,9 +29,11 @@ package com.byd.clusternav.launcher.camera
  * lệnh `prefs_set` báo `ok` rồi không làm gì — đúng thứ tệ hơn một lệnh lỗi. Cùng lẽ với `camera_hal_mode`: không
  * còn nguồn một kênh thì không còn kênh nào để chọn, `AvmCamera` chỉ còn đường dò `0..3` của 2.73.
  *
- * ## Vì sao "nắn" là MỘT ô tích ở tầng người lái, còn tám núm thì không có hàng
- * Bộ `F/K/S/tâm/dịch` đã được owner **duyệt bằng mắt trên xe** và nay là mặc định của hồ sơ Seal; thứ người lái còn
- * muốn quyết chỉ là *"có nắn hay không"* — `camera_dewarp_amount` `100`/`0`.
+ * ## Vì sao "nắn" là MỘT hàng chip *Kiểu hình* ở tầng người lái, còn tám núm thì không có hàng
+ * Bộ `F/K/S/tâm/dịch` đã được owner **duyệt bằng mắt trên xe** và nay là mặc định của hồ sơ Seal. Tới 2.91 thứ người
+ * lái còn quyết là *"có nắn hay không"* (`camera_dewarp_amount` `100`/`0`); 2.92 thay bằng *"nhìn kiểu nào"* —
+ * [CameraViewMode] (Nắn thẳng · Thẳng rộng · Gương cầu) + một thanh thu phóng. Ba núm *Thẳng rộng* (`camera_wide_*`)
+ * là quang học theo xe, không có hàng — cùng lẽ tám núm nắn.
  *
  * Danh sách là **chuỗi khoá prefs** (không phải mã UI) để bài canh so được với danh sách trắng của `prefs_set`:
  * hợp của hai danh sách phải bằng **đúng** tập `camera_*` mà cầu kiểm thử ghi được — một khoá mới sinh ra mà không
@@ -54,7 +57,11 @@ object CameraSettingsIa {
         "camera_mirror_left",
         "camera_mirror_right",
         "camera_shape",
-        "camera_dewarp_amount",
+        // 2.92 · CAMERA-FULL-VIEW (owner 06/10 *"mình cắt hơi lố"* · *"lấy hết được không?"*): ô tích *Nắn hình*
+        // (`camera_dewarp_amount` 100/0) nhường chỗ cho MỘT hàng chip *Kiểu hình* (Nắn thẳng · Thẳng rộng · Gương cầu)
+        // + MỘT thanh kéo *Thu phóng* ⇒ 14 → 15 hàng. Khoá amount sang danh sách không-UI (vẫn ghi/đọc, vẫn theo hồ sơ).
+        "camera_projection",
+        "camera_zoom",
         // 2026-09-28 — owner trên SL6: *"không mở được cam phải (cam trái ok)… nên đề xuất cho chọn lại cam
         // trong setting để user chọn cam nếu cam không hiện"*. Hai khoá này là khối *Nếu camera không hiện*:
         // chọn GÓC NHÌN từng bên (mang theo cả outputState lẫn cameraId). Trước đó chỉ có đường cầu kiểm thử
@@ -90,5 +97,13 @@ object CameraSettingsIa {
         "camera_dewarp_scale",
         "camera_dewarp_pan_x",
         "camera_dewarp_pan_y",
+        // 2.92 — ô tích *Nắn hình* đã gỡ (hàng chip *Kiểu hình* thay); khoá còn đọc: `0` + chưa chọn kiểu ⇒ *Gương cầu*
+        // ([CameraViewMode.resolve]), và *Nắn thẳng* vẫn trộn theo nó như hôm nay.
+        "camera_dewarp_amount",
+        // 2.92 — bộ số *Thẳng rộng* (κ · F · dịch về đuôi) [ĐOÁN — research §4.3] ⇒ chỉnh trên xe giữa hai lượt
+        // xi-nhan rồi nhìn, không build lại (CLAUDE.md §15 bước 2).
+        "camera_wide_kappa",
+        "camera_wide_focal",
+        "camera_wide_pan_x",
     )
 }

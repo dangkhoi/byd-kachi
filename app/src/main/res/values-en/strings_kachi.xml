@@ -854,7 +854,7 @@
     <string name="kachi_camera_mirror_row_left">Left signal: mirror video</string>
     <string name="kachi_camera_mirror_row_right">Right signal: mirror video</string>
     <string name="kachi_camera_mirror_row_sub">Flips the camera picture horizontally before rotation — the car body should sit on the inner edge, as in a real mirror</string>
-    <string name="kachi_camera_shape_sub">Camera window shape (round = whole image circle, not dewarped yet)</string>
+    <string name="kachi_camera_shape_sub">Camera window shape (outline only — for the whole picture, not dewarped, pick «Convex mirror» below)</string>
     <string name="kachi_camera_shape_row">Camera window shape</string>
     <string name="kachi_camera_shape_rect">Rectangle</string>
     <string name="kachi_camera_shape_round">Round</string>
@@ -862,9 +862,14 @@
     <string name="kachi_camera_left">Left camera</string>
     <string name="kachi_camera_right">Right camera</string>
     <string name="kachi_camera_shape_cluster">Cluster band</string>
-    <string name="kachi_camera_dewarp_on_sub_header">Dewarp</string>
-    <string name="kachi_camera_dewarp_on_title">Dewarp (straighten the lens)</string>
-    <string name="kachi_camera_dewarp_on_sub">Off = the raw picture as the camera delivers it. The dewarp numbers are preset per car.</string>
+    <string name="kachi_camera_projection_sub">Camera view style</string>
+    <string name="kachi_camera_projection_row">View style</string>
+    <string name="kachi_camera_projection_straight">Straight</string>
+    <string name="kachi_camera_projection_wide">Wide straight (see far)</string>
+    <string name="kachi_camera_projection_fisheye">Convex mirror (see all)</string>
+    <string name="kachi_camera_projection_note">Straight: as before, close to the car body. Wide straight: nearly straight, reaches far behind. Convex mirror: the whole fisheye picture, nothing cropped.</string>
+    <string name="kachi_camera_zoom_row">Zoom</string>
+    <string name="kachi_camera_zoom_desc">Camera zoom: %1$s</string>
     <!-- F2/F3 — trip at ignition (spec shortcuts-autostart §4.14, group C 2026-10-02) -->
     <string name="kachi_drawer_title_trip">Pick apps to open at ignition</string>
     <string name="kachi_drawer_hint_trip">Tap to add or remove an app · tap Apply to save · choose how each opens in Settings</string>

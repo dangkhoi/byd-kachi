@@ -290,7 +290,8 @@ fun Prefs.setCameraSpan(ctx: Context, v: String) =
 
 /**
  * Hình cửa sổ camera — mã trong [CameraSignalPolicy.SHAPES] (`"RECT"` = chữ nhật bo góc của 2.73, `"ROUND"` = vòng
- * tròn hiện trọn vòng ảnh fisheye như app Electro, **không** nắn méo).
+ * tròn). Nắn hay không là việc của kiểu hình ([cameraProjection], 2.92): *Nắn thẳng* + tròn = ô vuông giữa dải, nắn
+ * như hôm nay; *Gương cầu* + tròn = trọn dải chưa nắn, vừa đường tròn (`CameraViewPlan.crops`).
  */
 fun Prefs.cameraShape(ctx: Context): String {
     val fallback = CameraSignalPolicy.defaultShape()

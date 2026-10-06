@@ -64,6 +64,13 @@ data class CameraGlUniforms(
     val dewarp: DewarpParams,
     /** `false` ⇒ `:app` truyền **ma trận đơn vị** cho `uTexMatrix` (RE §7 Q17 — xem [CameraDewarpPrefs]). */
     val texMatrix: Boolean,
+    /**
+     * `uFit` (2.92) — vừa khung ô ra ↔ ô nội dung ([CameraDewarp.fitLocal], hệ số từ [CameraViewFit]). [NO_FIT]
+     * `(0, 0)` ⇒ shader **bỏ hẳn** bước này: *Nắn thẳng* ở thu phóng 100 % đi đúng đường 2.74–2.91.
+     */
+    val fit: FloatArray = NO_FIT,
+    /** Kiểu hình đang vẽ ([CameraViewMode.MODES]) — chỉ để ghi nhật ký ([describe]); shader chỉ biết số. */
+    val mode: String = CameraViewMode.STRAIGHT,
 ) {
 
     /** `uCenter.x`. */
@@ -99,17 +106,18 @@ data class CameraGlUniforms(
      * Một dòng nhật ký đọc được bằng mắt trên xe (`logcat -s KachiCamera`). Không gọi trong đường khung hình —
      * nó cấp phát chuỗi; chỗ gọi duy nhất là lượt dựng overlay.
      */
-    fun describe(): String = ("srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f lật=%b aspect=%.4f amount=%.3f F=%.4f K=%.4f S=%.3f" +
-        " tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) texMatrix=%b")
-        .format(srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, mirror, aspect,
-            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, centerX, centerY, panX, panY, texMatrix)
+    fun describe(): String = ("kiểu=%s srcRect=[%.4f,%.4f,%.4f,%.4f] rot=%.0f lật=%b aspect=%.4f amount=%.3f F=%.4f K=%.4f" +
+        " S=%.3f κ=%.2f tâm=(%.4f,%.4f) dịch=(%.3f,%.3f) vừa=(%.3f,%.3f) texMatrix=%b")
+        .format(mode, srcRect[0], srcRect[1], srcRect[2], srcRect[3], rotationDeg, mirror, aspect,
+            dewarp.amount, dewarp.focal, dewarp.k, dewarp.scale, dewarp.kappa, centerX, centerY, panX, panY,
+            fit[0], fit[1], texMatrix)
 
-    /** `data class` với một `FloatArray` ⇒ phải tự so nội dung, nếu không hai bộ giống nhau vẫn báo khác. */
+    /** `data class` với hai `FloatArray` ⇒ phải tự so nội dung, nếu không hai bộ giống nhau vẫn báo khác. */
     override fun equals(other: Any?): Boolean = this === other || (other is CameraGlUniforms &&
         srcRect.contentEquals(other.srcRect) && rotationDeg == other.rotationDeg && aspect == other.aspect &&
-        dewarp == other.dewarp && texMatrix == other.texMatrix)
+        dewarp == other.dewarp && texMatrix == other.texMatrix && fit.contentEquals(other.fit) && mode == other.mode)
 
-    override fun hashCode(): Int = srcRect.contentHashCode() * 31 + dewarp.hashCode()
+    override fun hashCode(): Int = (srcRect.contentHashCode() * 31 + dewarp.hashCode()) * 31 + fit.contentHashCode()
 
     companion object {
 
@@ -122,8 +130,11 @@ data class CameraGlUniforms(
          */
         val VALUE_UNIFORMS: List<String> = listOf(
             "uTexMatrix", "uSrcRect", "uRotation", "uAmount", "uFocal", "uK", "uScale", "uAspect", "uCenter",
-            "uPan",
+            "uPan", "uFit", "uKappa",
         )
+
+        /** `uFit = (0, 0)` ⇒ shader bỏ hẳn bước vừa khung (KDoc [fit]). Mảng dùng chung — KHÔNG được ghi vào. */
+        val NO_FIT: FloatArray = floatArrayOf(0f, 0f)
 
         /** Sampler của texture OES — gán bằng texture unit, không bằng một giá trị hình học (xem [VALUE_UNIFORMS]). */
         const val SAMPLER_UNIFORM = "uTex"
@@ -169,6 +180,9 @@ data class CameraGlUniforms(
          * @param flipH,flipV soi gương — đi bằng bề rộng/cao **ÂM** của `uSrcRect`, không bằng uniform mới (RE §6.2).
          * @param panXSign dấu của [panXPct] theo BÊN đang xem ([CameraDewarpPrefs.panXSign]) — `−1` lật trục x để
          *   một giá trị pref mang **cùng một nghĩa vật lý** ở cả hai gương. Trị đã nhân dấu là thứ [describe] in ra.
+         * @param kappaPct κ họ phép chiếu, `%` tuyệt đối ([CameraDewarpPrefs.isKappaPct]); `100` = phối cảnh thẳng.
+         * @param fit `uFit` đã tính ([CameraViewFit]); [NO_FIT] = bỏ bước vừa khung (đường cũ).
+         * @param mode kiểu hình để ghi nhật ký — giá trị uniform KHÔNG phụ thuộc trường này ([CameraViewPlan] dựng số).
          */
         fun of(
             crop: FloatArray?,
@@ -189,6 +203,9 @@ data class CameraGlUniforms(
             panYPct: Int = CameraDewarpPrefs.PAN_DEFAULT,
             panXSign: Int = 1,
             texMatrix: Boolean = CameraDewarpPrefs.TEX_MATRIX_DEFAULT,
+            kappaPct: Int = CameraDewarpPrefs.KAPPA_DEFAULT,
+            fit: FloatArray = NO_FIT,
+            mode: String = CameraViewMode.STRAIGHT,
         ): CameraGlUniforms {
             // Trục t của texture đi LÊN ⇒ đổi trục SAU khi dựng rect theo trục y của ảnh. Xem ⚠ ở KDoc lớp.
             val rect = textureT(CameraDewarp.srcRect(crop, flipH, flipV))
@@ -218,8 +235,11 @@ data class CameraGlUniforms(
                     // trục `+x` của ô trỏ ngược chiều ở hai bên — xem KDoc [CameraDewarpPrefs.panXSign].
                     panXPct = if (panXSign < 0) -panXPct else panXPct,
                     panYPct = panYPct,
+                    kappaPct = kappaPct,
                 ),
                 texMatrix = texMatrix,
+                fit = fit,
+                mode = mode,
             )
         }
 

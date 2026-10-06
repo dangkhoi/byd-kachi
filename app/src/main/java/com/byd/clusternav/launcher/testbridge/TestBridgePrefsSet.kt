@@ -44,6 +44,17 @@ import com.byd.clusternav.setCameraDewarpFocal
 import com.byd.clusternav.setCameraDewarpK
 import com.byd.clusternav.setCameraDewarpScale
 import com.byd.clusternav.setCameraGlTexMatrix
+import com.byd.clusternav.cameraProjection
+import com.byd.clusternav.setCameraProjection
+import com.byd.clusternav.cameraZoom
+import com.byd.clusternav.setCameraZoom
+import com.byd.clusternav.cameraWideKappa
+import com.byd.clusternav.setCameraWideKappa
+import com.byd.clusternav.cameraWideFocal
+import com.byd.clusternav.setCameraWideFocal
+import com.byd.clusternav.cameraWidePanX
+import com.byd.clusternav.setCameraWidePanX
+import com.byd.clusternav.launcher.camera.CameraViewMode
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
@@ -256,6 +267,18 @@ internal object TestBridgePrefsSet {
                 ?.let { Prefs.setCameraDewarpPanY(app, v = it); it.toString() }
             // Công tắc, không phải núm — nó là một PHÉP ĐO cho RE §7 Q17 (xem KDoc `Prefs.cameraGlTexMatrix`).
             "camera_gl_texmatrix" -> bool(raw)?.let { Prefs.setCameraGlTexMatrix(app, it); it.toString() }
+            // 2.92 · CAMERA-FULL-VIEW: kiểu hình (mã `:core`) + thu phóng + ba núm *Thẳng rộng* — miền ở `:core`, ngoài
+            // miền ⇒ `bad_prefs_value:` (không kẹp im lặng), cùng lẽ sáu núm nắn ngay trên.
+            "camera_projection" -> raw.trim().uppercase().takeIf { CameraViewMode.isMode(it) }
+                ?.let { Prefs.setCameraProjection(app, v = it); it }
+            "camera_zoom" -> int(raw)?.takeIf { CameraViewMode.isZoomPct(it) }
+                ?.let { Prefs.setCameraZoom(app, v = it); it.toString() }
+            "camera_wide_kappa" -> int(raw)?.takeIf { CameraDewarpPrefs.isKappaPct(it) }
+                ?.let { Prefs.setCameraWideKappa(app, v = it); it.toString() }
+            "camera_wide_focal" -> int(raw)?.takeIf { CameraDewarpPrefs.isPct(it) }
+                ?.let { Prefs.setCameraWideFocal(app, v = it); it.toString() }
+            "camera_wide_pan_x" -> int(raw)?.takeIf { CameraDewarpPrefs.isPanPct(it) }
+                ?.let { Prefs.setCameraWidePanX(app, v = it); it.toString() }
             KEY_TOP_STRIP_LABELS -> {
                 val on = bool(raw) ?: return reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
                 val h = hooks ?: return reply.fail(KachiTestBridge.ERR_NO_HOME, "key" to cmd.key)
@@ -325,6 +348,11 @@ internal object TestBridgePrefsSet {
             "camera_dewarp_pan_x" -> Prefs.cameraDewarpPanX(app).toString()
             "camera_dewarp_pan_y" -> Prefs.cameraDewarpPanY(app).toString()
             "camera_gl_texmatrix" -> Prefs.cameraGlTexMatrix(app).toString()
+            "camera_projection" -> Prefs.cameraProjection(app)
+            "camera_zoom" -> Prefs.cameraZoom(app).toString()
+            "camera_wide_kappa" -> Prefs.cameraWideKappa(app).toString()
+            "camera_wide_focal" -> Prefs.cameraWideFocal(app).toString()
+            "camera_wide_pan_x" -> Prefs.cameraWidePanX(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
             else -> ""

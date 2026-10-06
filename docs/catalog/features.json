@@ -1742,13 +1742,33 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Màn Camera MỘT tầng — 14 hàng người lái (10 ở 2.77 + 4 ở 2.81); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
-  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. Bản phát hành 2.81 có **14** `USER_KEYS` (2.77 chốt **10**: bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt; rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2). 2.82 từng thêm 2 hàng *vạch chuẩn* (16), nhưng owner dẹp trên xe 29/09 (*«ò, dẹp vạch đi»*) và 2.82 không đăng OTA ⇒ mã 2.83 (việc D, cây làm việc 29/09, chưa commit) gỡ lại về **14** hàng = TOÀN BỘ màn (`HEAD` 2.82 đếm 16 cho tới commit đó), và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì.",
+  "name": "Màn Camera MỘT tầng — 15 hàng người lái (10 ở 2.77 + 4 ở 2.81; 2.92: ô «Nắn hình» → «Kiểu hình camera» + «Thu phóng»); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
+  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. Bản phát hành 2.81 có **14** `USER_KEYS` (2.77 chốt **10**: bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt; rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2). 2.82 từng thêm 2 hàng *vạch chuẩn* (16), nhưng owner dẹp trên xe 29/09 (*«ò, dẹp vạch đi»*) và 2.82 không đăng OTA ⇒ mã 2.83 (việc D, cây làm việc 29/09, chưa commit) gỡ lại về **14** hàng = TOÀN BỘ màn (`HEAD` 2.82 đếm 16 cho tới commit đó), và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì. **2.92** (`CAMERA-FULL-VIEW`): ô tích *Nắn hình* (`camera_dewarp_amount`) rời màn, thay bằng hàng chip *Kiểu hình camera* (`camera_projection`) + thanh *Thu phóng* (`camera_zoom`) ⇒ **15** `USER_KEYS`; `camera_dewarp_amount` + ba núm *Thẳng rộng* (`camera_wide_kappa/_focal/_pan_x`) vào `NO_UI_KEYS` (**19**).",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá danh sách + thứ tự — mã `HEAD` 2.82 = 16 khoá, về 14 khi 2.83 gỡ vạch; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 đếm hàng trên xe chưa làm (CAM-G1; CAM-F16 buổi xe 29/09 không đo) — không còn khối gập kể cả khi BẬT chế độ kiểm thử",
   "evidence": "docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md §8 (§8.2 phép đo 686 vs 351 · §8.5 15 khoá ẩn-UI · §8.7 CAM-G1…G5) · core/.../camera/CameraSettingsIa.kt · app/.../SettingsSectionsCamera.kt",
   "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "Kiểu hình camera — Nắn thẳng · Thẳng rộng (thấy xa) · Gương cầu (thấy hết) + Thu phóng 50–150 % (2.92)",
+  "desc": "Owner 06/10: *«mình cắt hơi lố»* · *«ko dịch, mà lấy hết được không?»* · *«ủa mà sao phải gương cầu? không thẳng và lấy hết được hay sao»*. Cài đặt › Tiện nghi xe › hàng chip *Kiểu hình* (chung hai bên, theo HỒ SƠ): **Nắn thẳng** (mặc định) = 2.91 từng bit (κ = 1, `uFit = 0`); **Thẳng rộng** = họ phép chiếu κ `r = κF·tan(θ/κ)` (κ 1,5 · F 100 % · dịch −20 % về đuôi — ba núm theo XE chỉnh bằng `prefs_set`, không UI) ⇒ hàng giữa tới ≥ 93° phía đuôi, đen ≤ 2 %; **Gương cầu** = trọn dải thô, vừa khung (chữ nhật khớp tỉ lệ; tròn: chữ nhật nội tiếp, viền đen). Thanh *Thu phóng* phóng quanh tâm khung cho cả ba kiểu. Chạm khi khung đang hiện ⇒ dựng lại ngay. Đường TV: Thẳng rộng hiện như Gương cầu (không shader); SV giữ nguyên. *Theo cụm* + hai kiểu trọn dải ⇒ khung chữ nhật.",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car + máy ảo (Nắn thẳng trước = sau 0 điểm ảnh khác 4/4; ba kiểu × tròn/chữ nhật × trái/phải) · 🚗 V-oncar 1–5 chưa (đường TV, trên cụm, xoay ≠ 0 chưa đo được ở máy ảo)",
+  "evidence": "docs/diagnostics/camera-full-view-emu-2026-10-06.md §2–§4 · docs/diagnostics/camera-rear-coverage-2026-10-06.md · core/.../camera/CameraViewPlan.kt · CameraViewFit.kt · CameraViewMode.kt · CameraDewarpShader.kt · app/.../SettingsSectionsCamera.kt",
+  "spec": "docs/specs/kachi-292-camera-full-view.html"
+ },
+ {
+  "group": "Camera xi-nhan",
+  "name": "📷 Khung thô trái / phải — màn Chẩn đoán chụp khung HAL 5120×960 ra kachi-logs + Thư viện ảnh (2.92)",
+  "desc": "Hai nút ở màn Chẩn đoán: mở đúng bên như lượt xem thử, chờ khung đầu (≤ 3 s), chụp khung THÔ (GL: FBO · TV: layer), ghi PNG vào `kachi-logs/` và chép một bản qua MediaStore vào `Pictures/Kachi/` (ngoài cây `DiagStorageCap` dọn), in đường dẫn + dòng uniform của phiên; đóng lượt xem thử. Tắt *Bật camera khi xi-nhan* ⇒ báo chữ, không tự bật. ⚠ Màn Chẩn đoán không có lối vào trên bản phát hành (owner 21/09) ⇒ chỉ dùng được ở bản `vehicleTest` (`am start`) — mở cho bản phát hành chờ owner (OQ4).",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ máy ảo (bản vehicleTest: 2 PNG + 2 hàng MediaStore) · ⛔ bản phát hành: chưa có lối vào (CAM-RAW-DIAG-REACH) · 🚗 chưa",
+  "evidence": "docs/diagnostics/camera-full-view-emu-2026-10-06.md §5 · app/.../launcher/camera/CameraRawCapture.kt · CameraFrameFiles.kt · app/.../modules/clustercast/DiagActivity.kt",
+  "spec": "docs/specs/kachi-292-camera-full-view.html"
  },
  {
   "group": "Camera xi-nhan",

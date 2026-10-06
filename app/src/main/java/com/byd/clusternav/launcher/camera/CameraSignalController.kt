@@ -17,6 +17,8 @@ import com.byd.clusternav.cameraShape
 import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.cameraCirclePct
 import com.byd.clusternav.cameraGlUniforms
+import com.byd.clusternav.cameraProjection
+import com.byd.clusternav.cameraZoom
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Turn
 import com.byd.clusternav.launcher.testbridge.TestBridgeStore
 
@@ -208,7 +210,12 @@ class CameraSignalController(private val appCtx: Context) {
         val streamW = CameraPanoCrop.streamW(view, panoStrip)
         val streamH = CameraPanoCrop.streamH(view, panoStrip)
         val effStrip = panoStrip ?: Prefs.cameraStrip(appCtx, left = isLeft)
-        val crop = CameraPanoCrop.cropFor(
+        val render = Prefs.cameraRender(appCtx)   // CLOSE-14: mã lưu bền, đọc mỗi lượt dựng (theo hồ sơ xe)
+        // 2.92 KIỂU HÌNH: quy theo đường vẽ + vùng KHUNG/NỘI DUNG suy ở `:core`; Nắn thẳng ⇒ đúng `cropFor` cũ.
+        val asked = Prefs.cameraProjection(appCtx)   // R6: TV không có shader ⇒ Thẳng rộng hiện như Gương cầu — log nói cả hai
+        val mode = CameraViewMode.effective(asked, render)
+        val crops = CameraViewPlan.crops(
+            mode = mode,
             view = view,
             left = isLeft,
             strip = effStrip,
@@ -217,6 +224,7 @@ class CameraSignalController(private val appCtx: Context) {
             shape = shape,
             circlePct = Prefs.cameraCirclePct(appCtx),
         )
+        val crop = crops.frame
         // R7 (owner 2026-09-26): vùng gương crop từ fisheye là dải DỌC ⇒ căng vào ô vuông thì NGANG; xoay
         // theo pref TỪNG BÊN `camera_rot_left/right` (2.71; mặc định theo hồ sơ xe — Seal 0, xe chưa đo trái ↺ −90 /
         // phải ↻ +90). Tính ở `:core`, overlay chỉ nhận số độ.
@@ -224,15 +232,12 @@ class CameraSignalController(private val appCtx: Context) {
         // 2.76 L7 — LẬT GƯƠNG từng bên (`camera_mirror_*`, research §6.2; tay gương HAL [CHƯA BIẾT] tới CAM-M1). Lật ở
         // không gian NGUỒN, trước xoay, ở CẢ hai đường: GL qua `flipH` (`uSrcRect.z < 0`), TV qua ma trận (bước 1b).
         val mirror = Prefs.cameraMirror(appCtx, left = turn == Turn.LEFT)
-        // CLOSE-14 (CAM-LAG): đường kết xuất là một LỰA CHỌN có mã lưu bền (`camera_render`), mặc định theo hồ sơ
-        // xe. Đọc mỗi lượt dựng overlay ⇒ đổi chip trong Cài đặt là lượt xi-nhan sau đã theo.
-        val render = Prefs.cameraRender(appCtx)
         // R8-B: đường `GL` cần TRỌN bộ uniform. Dựng ở đây — cùng nhịp đã quyết crop/xoay/dải — chứ không để
         // tầng vẽ tự tra prefs: bộ số phải thuộc về ĐÚNG cái crop vừa suy (hai lượt tra là hai kết quả lệch
         // được, và lệch thì không ai thấy vì ảnh vẫn ra hình). `null` ở hai đường kia ⇒ không đọc một khoá nào.
         val gl = if (CameraSignalPolicy.rotatesInShader(render)) {
             Prefs.cameraGlUniforms(
-                appCtx, view = view, crop = crop,
+                appCtx, mode = mode, crops = crops,
                 strip = effStrip,
                 rotationDeg = rot, streamW = streamW, streamH = streamH,
                 // Dấu của `camera_dewarp_pan_x` theo BÊN: hai camera gương soi gương nhau ([ĐO khung thô
@@ -244,13 +249,15 @@ class CameraSignalController(private val appCtx: Context) {
         } else {
             null
         }
-        Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop?.joinToString() ?: "-"} vùng=$span hình=$shape ảnh-tổng-hợp=$synth overlay $side góc=$corner kết xuất=$render rot=$rot lật=$mirror")
+        // 2.92: tỉ lệ MÀN cho ma trận TextureView (đường TV + đường RƠI của GL) — `null` ở *Nắn thẳng* 100 % ⇒ y hệt.
+        val videoScale = CameraViewPlan.tvScale(mode, Prefs.cameraZoom(appCtx), crops, streamW, streamH, rot)
+        Log.i(PanoramaHal.TAG, "xi-nhan $turn → camera ${view.name} camId=$camId (def=$defId) crop=${crop?.joinToString() ?: "-"} kiểu=$mode${if (asked != mode) " (chọn $asked)" else ""} nội-dung=${crops.content?.joinToString() ?: "-"} vùng=$span hình=$shape ảnh-tổng-hợp=$synth overlay $side góc=$corner kết xuất=$render rot=$rot lật=$mirror")
         // Bật panorama HAL (best-effort — vài ROM cần WORK_ON để camera stack sống) rồi ĐỔ frame AVMCamera
         // vào Surface của overlay (RE kinex `b1/RunnableC0170d`: đây mới là đường có HÌNH, LVDS thụ động ra đen).
         // Ghi lại NGỮ CẢNH của khung đang hiện cho lệnh chẩn đoán `camera_frame` (chỉ ĐỌC). Ghi ở đây —
         // đúng chỗ đã quyết — chứ không để cầu kiểm thử tự tra lại prefs: bản tra thứ hai sẽ nói theo
         // prefs HIỆN TẠI, không theo cái khung đang treo trên màn (owner đổi chip giữa hai lượt xi-nhan).
-        shown = Shown(view.name, camId, crop?.joinToString(",") ?: "", rot)
+        shown = Shown(view.name, camId, crops.content?.joinToString(",") ?: "", rot, gl?.describe() ?: "mode=$mode render=$render")
         hal.open(view)
         // CAM-ROT-2 (owner 2026-09-26 "không muốn có viền đen … đúng tỷ lệ camera"): cửa sổ overlay lấy tỉ lệ
         // vùng crop SAU xoay ⇒ cần cỡ ảnh nguồn. `view.hintW/hintH` chỉ là **gợi ý** cho lượt dựng đầu;
@@ -263,7 +270,8 @@ class CameraSignalController(private val appCtx: Context) {
             rotationDeg = rot,
             mirror = mirror,
             render = render,
-            shape = shape,
+            // 2.92: hình KHUNG thật sự dùng (*Theo cụm* + kiểu trọn dải ⇒ chữ nhật — spec R7); *Nắn thẳng* = pref y nguyên.
+            shape = crops.frameShape,
             streamW = streamW,
             streamH = streamH,
             gl = gl,
@@ -271,6 +279,8 @@ class CameraSignalController(private val appCtx: Context) {
             synthFile = synthFile,
             // L7 (nợ chéo L2): số đo dải cụm đến từ HỒ SƠ XE qua cửa duy nhất [CameraDefaults], không phải hằng `:core`.
             band = CameraDefaults.band(appCtx),
+            // 2.92: TV/đường rơi lấy mẫu vùng NỘI DUNG + tỉ lệ vừa khung; cụm đặt cửa sổ VỪA (không phóng-cắt).
+            video = CameraVideoContent(crops.content, videoScale, letterbox = CameraViewMode.fullView(mode)),
         ) { surface ->
             runCatching {
                 // `camera_synth`: producer đã là ảnh tổng hợp ([CameraSynthFeeder]) ⇒ KHÔNG mở HAL. Mở cả hai
@@ -335,7 +345,10 @@ class CameraSignalController(private val appCtx: Context) {
     private val expiry = Runnable { tickMain(null, null) }
 
     /** Ngữ cảnh của khung ĐANG hiện — đặt ở [tickMain] lúc dựng overlay, xoá ở [stop]. `null` = không hiện gì. */
-    private class Shown(val view: String, val camId: Int, val crop: String, val rot: Int)
+    private class Shown(val view: String, val camId: Int, val crop: String, val rot: Int, val note: String = "")
+
+    /** Một dòng ngữ cảnh của phiên đang treo (kiểu + bộ uniform) — cho nút *Khung thô* ở Chẩn đoán. Chỉ ĐỌC. */
+    fun sessionNote(): String = shown?.note.orEmpty()
 
     @Volatile
     private var shown: Shown? = null
@@ -407,6 +420,25 @@ class CameraSignalController(private val appCtx: Context) {
         }
         stop()
         tickMain(left = left, right = !left)
+    }
+
+    /**
+     * 2.92 — áp NGAY kiểu hình/thu phóng nếu khung đang hiện: dựng lại đúng bên theo đường *đổi bên* (không chạm HOLD).
+     * Không hiện ⇒ không làm gì (lượt xi-nhan sau tự đọc pref; không bật khung bất ngờ).
+     */
+    fun reapplyIfShowing() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            main.post { reapplyIfShowing() }; return
+        }
+        val turn = current
+        if (turn == Turn.NONE) return
+        closeSession(keepPano = true)
+        openSession(turn)
+    }
+
+    /** 2.92 — đóng lượt xem thử do nút *Khung thô* (Chẩn đoán) mở. Gọi trên main. */
+    fun endPreview() {
+        if (current != Turn.NONE) stop()
     }
 
     private fun stop() {

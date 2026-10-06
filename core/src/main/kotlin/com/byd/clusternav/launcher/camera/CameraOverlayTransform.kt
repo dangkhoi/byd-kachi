@@ -62,8 +62,20 @@ object CameraOverlayTransform {
      * `CameraMirrorTest` ghim. Không dùng `scaleX = −1` trên lớp video: lật SAU xoay là `mirror(rot(src))`, mà với
      * ±90 thì `rot∘mirror = mirror∘rot⁻¹` ⇒ hai đường cho hai ảnh khác nhau, và `View.scaleX` không test được off-car.
      * Mặc định `false` ⇒ ma trận **y hệt** trước L7 (CLAUDE.md §6: đường mới nằm sau một cờ tắt).
+     *
+     * ## 2.92 · bước **4 — VỪA KHUNG / THU PHÓNG** ([scale], [CameraViewPlan.tvScale]), đứng CUỐI
+     * Sau bước 3 vùng crop lấp đúng khung; co `(sx, sy)` quanh tâm khung ⇒ nội dung chiếm `sx·vw × sy·vh` (kiểu *Gương
+     * cầu*: viền đen, không cắt; thu phóng: đều hai trục). Tỉ lệ đã được [CameraViewFit] chọn để ảnh **đẳng hướng**.
+     * `null` ⇒ không thêm phép nào: ma trận y hệt 2.91.
      */
-    fun matrix(vw: Int, vh: Int, crop: FloatArray?, rotationDeg: Int, mirror: Boolean = false): FloatArray? {
+    fun matrix(
+        vw: Int,
+        vh: Int,
+        crop: FloatArray?,
+        rotationDeg: Int,
+        mirror: Boolean = false,
+        scale: FloatArray? = null,
+    ): FloatArray? {
         if (vw <= 0 || vh <= 0) return null
         var m = IDENTITY.copyOf()
         if (crop != null && crop.size >= 4) {
@@ -86,6 +98,9 @@ object CameraOverlayTransform {
             if (deg == 90 || deg == 270) {
                 m = mul(scaleAbout(vw.toFloat() / vh, vh.toFloat() / vw, cx, cy), m)
             }
+        }
+        if (scale != null && scale.size >= 2 && scale[0] > 0f && scale[1] > 0f) {
+            m = mul(scaleAbout(scale[0], scale[1], vw / 2f, vh / 2f), m)   // 4 — vừa khung / thu phóng (2.92)
         }
         return if (m.contentEquals(IDENTITY)) null else m
     }

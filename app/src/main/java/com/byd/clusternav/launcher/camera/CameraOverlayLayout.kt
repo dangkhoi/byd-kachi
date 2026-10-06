@@ -13,6 +13,14 @@ import android.view.WindowManager
  */
 
 /**
+ * 2.92 · CAMERA-FULL-VIEW — thứ LỚP VIDEO lấy mẫu khi khác cửa sổ: vùng NỘI DUNG ([crop], `null` = nguyên khung) + tỉ lệ
+ * vừa khung của ma trận TV ([scale], `null` = không thêm phép nào) + [letterbox] (đặt cửa sổ VỪA trên cụm, không
+ * phóng-cắt). Toán ở `:core` [CameraViewPlan]; vắng ở `CameraOverlayView.show` ⇒ hành vi 2.91 (lớp video lấy đúng vùng
+ * cắt của cửa sổ). Đặt ở tệp này (không trong `CameraOverlayView`) vì tệp kia sát trần 500 dòng (CLAUDE.md §4.1).
+ */
+class CameraVideoContent(val crop: FloatArray?, val scale: FloatArray?, val letterbox: Boolean)
+
+/**
  * Cửa sổ cỡ [f] ở góc TRÊN [corner], **căn giữa** vùng cho phép (`areaW`×`areaH` tại `x0`,`y0`).
  *
  * Cửa sổ của [WindowManager] không có lề (`margin`) — [WindowManager.LayoutParams.x]/`y` là **độ lệch kể từ góc

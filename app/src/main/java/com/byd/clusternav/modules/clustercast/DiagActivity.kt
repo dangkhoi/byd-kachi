@@ -75,6 +75,12 @@ class DiagActivity : Activity() {
             minimumHeight = dp(48)
             setOnClickListener { runThemeGate() }
         })
+        // 2.92 · R8 (spec kachi-292-camera-full-view, CLAUDE.md §11): chụp khung camera THÔ không cần adb — PNG vào
+        // kachi-logs/ + bản sao Pictures/Kachi/ (sống qua lượt dọn log). Mở/đóng đúng lượt xem thử của Cài đặt.
+        root.addView(buttonRow(
+            controlButton(Lang.t("📷 Khung thô trái", "📷 Raw frame left")) { captureRaw(left = true) },
+            controlButton(Lang.t("📷 Khung thô phải", "📷 Raw frame right")) { captureRaw(left = false) },
+        ))
         root.addView(Button(this).apply {
             text = Lang.t("⬇ Kiểm tra cập nhật", "⬇ Check update")
             isAllCaps = false
@@ -270,6 +276,20 @@ class DiagActivity : Activity() {
                 setStatus(Lang.t("Cổng theme: đã đọc (không gửi lệnh nào)", "Theme gate: read (no command sent)"))
             }
         }, "KachiThemeGateDiag").start()
+    }
+
+    /** 2.92 · R8 — một lượt chụp khung thô bên [left]; kết quả (đường dẫn + bộ uniform của phiên) lên dòng trạng thái. */
+    private fun captureRaw(left: Boolean) {
+        setStatus(Lang.t("Đang chụp khung thô…", "Capturing raw frame…"))
+        com.byd.clusternav.launcher.camera.CameraRawCapture.capture(this, left) { text, warn ->
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                setStatus(text, warn)
+                // Dòng trạng thái nằm dưới khối badge (ngoài màn khi vừa chạm) ⇒ nói thêm bằng Toast: một ảnh chụp màn
+                // ngay sau lượt chụp là đủ biết tệp ở đâu (CLAUDE.md §11).
+                android.widget.Toast.makeText(this, text, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun copyReport() {

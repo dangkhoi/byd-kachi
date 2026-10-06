@@ -65,14 +65,18 @@ object ProfileScopeCluster {
                 "không có đường đọc sống nên theo xe. Không có mục Cài đặt nào (vị trí đặt bằng kéo-thả nút)",
     )
 
-    /** Sáu khoá camera là SỞ THÍCH người lái → lý do. Cùng tệp `clusternav_prefs` (`autoPrefs`). */
+    /** Tám khoá camera là SỞ THÍCH người lái → lý do. Cùng tệp `clusternav_prefs` (`autoPrefs`). */
     val CAMERA_PROFILE_KEYS: Map<String, String> = mapOf(
         "camera_signal_enabled" to "có muốn camera bật theo xi-nhan không — lựa chọn hiển thị, không điều khiển phần cứng",
         "camera_on_cluster" to "hình camera hiện trên cụm hay màn chính",
         "camera_pos_left" to "góc hiện hình bên trái — theo cách ngồi (vành lái/cột A che, PrefsAutomation)",
         "camera_pos_right" to "góc hiện hình bên phải — cùng lý do camera_pos_left",
         "camera_shape" to "khung RECT/ROUND/CLUSTER là cách TRÌNH BÀY, có chip ở tầng người lái",
-        "camera_dewarp_amount" to "'có nắn hay không' (100/0) — thứ duy nhất người lái còn quyết về nắn; vắng ⇒ mặc định đời xe",
+        "camera_dewarp_amount" to "'có nắn hay không' (100/0) đời 2.91 — 2.92 không còn hàng; 0 + chưa chọn kiểu ⇒ Gương cầu; giữ theo hồ sơ để hồ sơ cũ giữ nghĩa",
+        // 2.92 · CAMERA-FULL-VIEW — owner 30/09 "Phần cụm lưu hết thành profile": cách TRÌNH BÀY hình camera, có hàng ở
+        // tầng người lái (cùng họ camera_shape). Spec kachi-292-camera-full-view §4.6.
+        "camera_projection" to "kiểu hình Nắn thẳng / Thẳng rộng / Gương cầu — sở thích trình bày, có chip ở tầng người lái",
+        "camera_zoom" to "thu phóng 50–150 % của khung camera — sở thích trình bày, có thanh kéo ở tầng người lái",
     )
 
     private const val R_MOUNT = "chiều ghép/tay gương của cam trong ảnh 4-in-1 — sự thật LẮP ĐẶT của chiếc xe này"
@@ -82,8 +86,8 @@ object ProfileScopeCluster {
     private const val R_OPTICS = "tham số QUANG HỌC của ống kính — hai người lái cùng xe nhìn cùng một ống kính"
 
     /**
-     * 23 khoá camera theo XE → lý do. Hợp với [CAMERA_PROFILE_KEYS] phải bằng ĐÚNG `CameraSettingsIa.USER_KEYS ∪
-     * NO_UI_KEYS` (29) — `ProfileScopeClusterTest` đỏ khi `CameraSettingsIa` thêm khoá mà quên xếp loại ở đây.
+     * 26 khoá camera theo XE → lý do. Hợp với [CAMERA_PROFILE_KEYS] phải bằng ĐÚNG `CameraSettingsIa.USER_KEYS ∪
+     * NO_UI_KEYS` (34) — `ProfileScopeClusterTest` đỏ khi `CameraSettingsIa` thêm khoá mà quên xếp loại ở đây.
      */
     val CAMERA_DEVICE_KEYS: Map<String, String> = buildMap {
         listOf("camera_rot_left", "camera_rot_right", "camera_mirror_left", "camera_mirror_right")
@@ -99,6 +103,8 @@ object ProfileScopeCluster {
             "camera_dewarp_cx", "camera_dewarp_cy", "camera_dewarp_k", "camera_dewarp_focal", "camera_dewarp_scale",
             "camera_dewarp_pan_x", "camera_dewarp_pan_y",
         ).forEach { put(it, R_OPTICS) }
+        // 2.92 — bộ số phép chiếu *Thẳng rộng* (κ · F · dịch về đuôi): chỉnh theo ống kính + cách lắp của chiếc xe.
+        listOf("camera_wide_kappa", "camera_wide_focal", "camera_wide_pan_x").forEach { put(it, R_OPTICS) }
     }
 
     /**
@@ -160,8 +166,8 @@ object ProfileScopeCluster {
         put("cast_style", PrefType.STRING)
         // clusternav_prefs — PrefsAutomation / PrefsCameraDewarp.
         listOf("camera_signal_enabled", "camera_on_cluster").forEach { put(it, PrefType.BOOLEAN) }
-        listOf("camera_pos_left", "camera_pos_right", "camera_shape").forEach { put(it, PrefType.STRING) }
-        put("camera_dewarp_amount", PrefType.INT)
+        listOf("camera_pos_left", "camera_pos_right", "camera_shape", "camera_projection").forEach { put(it, PrefType.STRING) }
+        listOf("camera_dewarp_amount", "camera_zoom").forEach { put(it, PrefType.INT) }
         // cast-v2-app-catalog — CastAppCatalog.bubblePosition (`getInt`).
         listOf("bubbleX", "bubbleY").forEach { put(it, PrefType.INT) }
         // clusternav_prefs — nhóm "lên cụm" đã theo hồ sơ từ S4 (senior review V-CLUSTER Pass 1). Chỗ đọc là DỊCH VỤ đang

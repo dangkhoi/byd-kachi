@@ -879,7 +879,7 @@
     <string name="kachi_camera_mirror_row_left">Xi-nhan trái: lật gương</string>
     <string name="kachi_camera_mirror_row_right">Xi-nhan phải: lật gương</string>
     <string name="kachi_camera_mirror_row_sub">Lật ngang ảnh camera trước khi xoay — thân xe phải ở mép trong như gương thật</string>
-    <string name="kachi_camera_shape_sub">Hình khung camera (tròn = thấy trọn vòng ảnh, chưa nắn méo)</string>
+    <string name="kachi_camera_shape_sub">Hình khung camera (chỉ đổi viền — muốn thấy trọn ảnh, chưa nắn méo, thì chọn kiểu «Gương cầu» bên dưới)</string>
     <string name="kachi_camera_shape_row">Hình khung camera</string>
     <string name="kachi_camera_shape_rect">Chữ nhật</string>
     <string name="kachi_camera_shape_round">Tròn</string>
@@ -887,9 +887,14 @@
     <string name="kachi_camera_left">Camera trái</string>
     <string name="kachi_camera_right">Camera phải</string>
     <string name="kachi_camera_shape_cluster">Theo cụm</string>
-    <string name="kachi_camera_dewarp_on_sub_header">Nắn hình</string>
-    <string name="kachi_camera_dewarp_on_title">Nắn hình (bớt cong ống kính)</string>
-    <string name="kachi_camera_dewarp_on_sub">Tắt = ảnh thô như camera đưa ra. Bộ tham số nắn đã chốt sẵn theo xe.</string>
+    <string name="kachi_camera_projection_sub">Kiểu hình camera</string>
+    <string name="kachi_camera_projection_row">Kiểu hình</string>
+    <string name="kachi_camera_projection_straight">Nắn thẳng</string>
+    <string name="kachi_camera_projection_wide">Thẳng rộng (thấy xa)</string>
+    <string name="kachi_camera_projection_fisheye">Gương cầu (thấy hết)</string>
+    <string name="kachi_camera_projection_note">Nắn thẳng: như cũ, sát thân xe. Thẳng rộng: gần thẳng, thấy tới phía sau xa. Gương cầu: trọn ảnh mắt cá, không cắt gì.</string>
+    <string name="kachi_camera_zoom_row">Thu phóng</string>
+    <string name="kachi_camera_zoom_desc">Thu phóng camera: %1$s</string>
     <!-- F2/F3 — chuyến lên xe (spec shortcuts-autostart §4.14, nhóm C 02/10) -->
     <string name="kachi_drawer_title_trip">Chọn app mở khi nổ máy</string>
     <string name="kachi_drawer_hint_trip">Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · kiểu mở chọn trong Cài đặt</string>

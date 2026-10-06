@@ -60,10 +60,10 @@ import kotlin.math.tan
  *
  * ## Công thức (bản gốc — [FORMULA])
  * ```
- * a,b    = rot(dst) + (panX, panY)                  // dịch cửa sổ, trong ô CHƯA XOAY
+ * a,b    = fit(rot(dst)) + (panX, panY)             // vừa khung (2.92, 0 ⇒ bỏ) rồi dịch cửa sổ, trong ô CHƯA XOAY
  * p      = ((a − cx)·2, (b − cy)·2/aspect)          // p-space, đẳng hướng
  * r_dst  = |p| ;  dir = p/r_dst
- * theta  = atan(r_dst / F)                          // đích là phối cảnh thẳng ⇒ r_dst = F·tan θ
+ * theta  = κ·atan(r_dst / (κ·F))                    // đích: r_dst = κF·tan(θ/κ); κ = 1 ⇒ phối cảnh thẳng (hôm nay)
  * r_src  = (K·SCALE) · theta                        // nguồn là fisheye đẳng khoảng ⇒ r_src = f·θ
  * proj   = (cx + dir.x·r_src·0.5, cy + dir.y·r_src·0.5·aspect)
  * out    = mix(local, proj, clamp(amount, 0, 1))
@@ -74,9 +74,12 @@ import kotlin.math.tan
  *
  * ## Mức bằng chứng (CLAUDE.md §2)
  *  • Công thức + thứ tự phép toán: **[ĐO]** (đọc nguyên văn `.rodata` của Electro, RE §3.2).
- *  • Bộ số mặc định: **[ĐOÁN]** — suy từ giả định "ống kính đẳng khoảng ~190°, vòng ảnh ≈ bề cao khung". Chưa có một
- *    khung 5120×960 nào chụp từ xe để kiểm (RE §7 Q1/Q6). Chốt bằng: chụp một khung qua `ClusterDiag` (§11) rồi đo
- *    bán kính vòng ảnh thật + xem mắt.
+ *  • Bộ số mặc định: **[ĐOÁN]** — suy từ giả định "ống kính đẳng khoảng ~190°, vòng ảnh ≈ bề cao khung". Khung thô
+ *    5120×960 chụp từ xe 27/09 còn một bản trong máy ảo (`files/e2e-car-frame.png`); đo thô 06/10: hàng giữa chạm
+ *    hai mép dải gương, mép tối cách tâm dải 544–641 px ⇒ vòng ảnh LỚN hơn bề cao khung (giả định trên hụt — khớp
+ *    K·S ≈ 376 px/rad ⇒ r(95°) ≈ 623 px) [SUY, `camera-full-view-emu-2026-10-06.md` §6]. Chốt bằng khung thô mới (nút *📷 Khung thô* màn Chẩn đoán 2.92
+ *    hoặc cầu `camera_frame raw`) rồi đo tâm + bán kính vòng ảnh. Owner duyệt `S 130 %` ⇒ K·S ≈ 376 px/rad — [SUY]
+ *    chính là f-θ thật (research §2.2).
  *  • BYD AVM ~190° rất có thể là **equisolid**, không phải equidistant ⇒ mô hình này sai nhẹ ở vùng biên dù số có
  *    đúng (RE §3.3 cảnh báo). Đó là lý do `K` phải chỉnh được, không phải hằng.
  */
@@ -102,6 +105,13 @@ data class DewarpParams(
     val panX: Float = DEFAULT_PAN,
     /** Dịch cửa sổ theo trục y của ô CHƯA XOAY, đơn vị = bề cao ô. Xem [panX]. */
     val panY: Float = DEFAULT_PAN,
+    /**
+     * **κ — họ phép chiếu của khung RA** (2.92 · "Thẳng rộng"): `r_dst = κ·F·tan(θ/κ)` ⇔ `θ = κ·atan(r_dst, κ·F)`.
+     * `1` = phối cảnh thẳng (**đúng từng bit** hôm nay) · `2` = stereographic (bảo giác) · lớn dần ⇒ tiến về đẳng
+     * khoảng (ảnh thô). Phối cảnh thẳng không vẽ được θ ≥ 90° (`tan` nổ) — κ > 1 đẩy giới hạn ấy ra `κ·90°` nên phần
+     * sau xa của vòng ảnh (76–97° ở Seal) lọt vào khung. Research `camera-rear-coverage-2026-10-06.md` §4.3.
+     */
+    val kappa: Float = DEFAULT_KAPPA,
 ) {
     /** `K·SCALE` — hệ số f-theta hiệu dụng, đúng một tham số tỉ lệ như RE §3.3 đã gộp. */
     val gain: Float get() = k * scale
@@ -112,8 +122,8 @@ data class DewarpParams(
      */
     val enabled: Boolean get() = amount > AMOUNT_EPS && focal > 0f && gain > 0f
 
-    /** Bán kính nguồn lớn nhất còn với tới được khi `amount == 1` — `K·SCALE·π/2`, tức đúng tia 90°. */
-    val reachableSrcRadius: Float get() = (gain * PI / 2.0).toFloat()
+    /** Bán kính nguồn lớn nhất còn với tới được khi `amount == 1` — `K·SCALE·κ·π/2` (κ = 1 ⇒ đúng tia 90°). */
+    val reachableSrcRadius: Float get() = (gain * kappa * PI / 2.0).toFloat()
 
     /** Nửa-FOV ngang của khung ra (độ) — nhãn cho chip **Tiêu cự**. */
     val outputHalfFovDeg: Float get() = if (focal > 0f) Math.toDegrees(atan(1.0 / focal)).toFloat() else 0f
@@ -133,6 +143,7 @@ data class DewarpParams(
         centerY = centerY.sane(DEFAULT_CENTER).coerceIn(MIN_CENTER, MAX_CENTER),
         panX = panX.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
         panY = panY.sane(DEFAULT_PAN).coerceIn(MIN_PAN, MAX_PAN),
+        kappa = kappa.sane(DEFAULT_KAPPA).coerceIn(MIN_KAPPA, MAX_KAPPA),
     )
 
     private fun Float.sane(fallback: Float): Float = if (isNaN() || isInfinite()) fallback else this
@@ -189,6 +200,15 @@ data class DewarpParams(
         const val MIN_PAN = -0.5f
         const val MAX_PAN = 0.5f
 
+        /** κ mặc định = phối cảnh thẳng — đường 2.74–2.91 không đổi một bit (KDoc [kappa]). */
+        const val DEFAULT_KAPPA = 1f
+
+        /** Sàn κ: dưới 1 là "hơn cả phối cảnh thẳng" — khung còn hẹp hơn hôm nay, không có ai cần. */
+        const val MIN_KAPPA = 1f
+
+        /** Trần κ: 8 đã gần đẳng khoảng (θ 97° chỉ còn lệch ~1 % so với ảnh thô) — lớn hơn không thêm gì. */
+        const val MAX_KAPPA = 8f
+
         /**
          * Bộ tham số suy từ **hình học**, không phải từ số của Electro — dùng cho mặc định và cho test.
          *
@@ -241,11 +261,12 @@ object CameraDewarp {
 
     /** Bản gốc của công thức — [CameraDewarpShader.FORMULA] trả **cùng** chuỗi này (bài test ghim). */
     const val FORMULA =
-        "local=rot(dst)+pan; p=((a-cx)*2,(b-cy)*2/aspect); theta=atan(|p|,F); r_src=(K*SCALE)*theta; " +
+        "local=rot(dst); if(fit.x>0) local=0.5+(local-0.5)*fit; local=local+pan; p=((a-cx)*2,(b-cy)*2/aspect); " +
+            "theta=kappa*atan(|p|,kappa*F); r_src=(K*SCALE)*theta; " +
             "proj=(cx+dir.x*r_src*0.5, cy+dir.y*r_src*0.5*aspect); out=mix(local,proj,clamp(amount,0,1))"
 
     /** Dưới ngưỡng này coi như đang đứng đúng tâm quang ⇒ trả về chính nó (giới hạn đúng của công thức). */
-    private const val CENTER_EPS = 1e-6f
+    internal const val CENTER_EPS = 1e-6f
 
     /**
      * **dst → local**: xoay [rotationDeg] quanh tâm ô, **trong không gian ô đã chuẩn hoá**.
@@ -291,6 +312,20 @@ object CameraDewarp {
     fun panLocal(u: Float, v: Float, p: DewarpParams): Pair<Float, Float> = (u + p.panX) to (v + p.panY)
 
     /**
+     * **Vừa khung** (2.92): ô RA (cửa sổ, sau [rotateDstToLocal]) ↔ ô NỘI DUNG (vùng cắt) khác tỉ lệ được — co/giãn
+     * quanh tâm theo từng trục, đặt TRƯỚC [panLocal] (shader: `if (uFit.x > 0.0) local = 0.5 + (local − 0.5)·uFit;`).
+     *
+     * [fit] `null` hoặc `fit[0] <= 0` ⇒ **không làm gì** — đó là nhánh *Nắn thẳng* ở thu phóng 100 %, và nó phải đi
+     * ĐÚNG đường cũ (không phép tính nào thêm, kể cả `0.5 + (u − 0.5)·1`, vốn có thể lệch 1 ulp). Hệ số do
+     * [CameraViewFit] tính từ hình học thật của khung; ý nghĩa: `> 1` ⇒ cửa sổ phủ NHIỀU hơn một ô nội dung (viền đen),
+     * `< 1` ⇒ phóng vào.
+     */
+    fun fitLocal(u: Float, v: Float, fit: FloatArray?): Pair<Float, Float> {
+        if (fit == null || fit.size < 2 || fit[0] <= 0f) return u to v
+        return (0.5f + (u - 0.5f) * fit[0]) to (0.5f + (v - 0.5f) * fit[1])
+    }
+
+    /**
      * **local(đích) → local(nguồn)**: phép nắn, đúng công thức [FORMULA] — bản gốc của shader.
      *
      * @param u,v toạ độ local (đã qua [rotateDstToLocal]), `[0,1]²` trong ca thường.
@@ -308,92 +343,15 @@ object CameraDewarp {
         val dirX = px / rDst
         val dirY = py / rDst
         // atan 2 đối số = atan2; `focal > 0` đã được [DewarpParams.enabled] canh (RE §3.3 ràng buộc 4).
-        val theta = atan2(rDst.toDouble(), p.focal.toDouble())
+        // κ (2.92): `θ = κ·atan(r, κ·F)`; κ = 1 ⇒ `1.0·atan2(r, 1.0·F)` — nhân với 1.0 là phép CHÍNH XÁC ⇒ từng bit cũ.
+        val kappa = p.kappa.toDouble()
+        val theta = kappa * atan2(rDst.toDouble(), kappa * p.focal.toDouble())
         val rSrc = (p.gain.toDouble() * theta).toFloat()
         val projX = p.centerX + dirX * rSrc * 0.5f
         val projY = p.centerY + dirY * rSrc * 0.5f * asp
         val a = p.amount.coerceIn(0f, 1f)
         return (u + (projX - u) * a) to (v + (projY - v) * a)
     }
-
-    /**
-     * Nghịch đảo của [mapDstToSrc]: **local(nguồn) → local(đích)** — điểm nào của ảnh fisheye hiện ra ở đâu trên
-     * khung đã nắn. Dùng để dựng ảnh kiểm tra và để chứng minh "đường thẳng vẫn thẳng".
-     *
-     * Bán kính hiệu dụng `r_eff(r_dst) = (1−a)·r_dst + a·K·SCALE·atan(r_dst/F)` **tăng đơn điệu** nên nghịch đảo là
-     * duy nhất; giải bằng công thức đóng khi `a == 1` (`r_dst = F·tan(r_src/(K·SCALE))`), còn lại chia đôi.
-     *
-     * @return `null` khi bán kính nguồn **không với tới được**: với `a == 1` phép nắn chỉ chạm tới
-     *   [DewarpParams.reachableSrcRadius] (`K·SCALE·π/2`, ứng với tia 90°) — vành ngoài của vòng ảnh nằm sau 90°
-     *   nên **không có** điểm đích nào chiếu tới, đó là tính chất của phối cảnh thẳng chứ không phải lỗi.
-     */
-    fun forwardSrcToDst(u: Float, v: Float, p: DewarpParams, aspect: Float): Pair<Float, Float>? {
-        if (!p.enabled) return u to v
-        val asp = if (aspect > 0f && !aspect.isNaN() && !aspect.isInfinite()) aspect else 1f
-        val px = (u - p.centerX) * 2f
-        val py = (v - p.centerY) * 2f / asp
-        val rSrc = hypot(px.toDouble(), py.toDouble())
-        if (rSrc <= CENTER_EPS) return u to v
-        val rDst = solveDstRadius(rSrc, p) ?: return null
-        val dirX = px / rSrc.toFloat()
-        val dirY = py / rSrc.toFloat()
-        return (p.centerX + dirX * rDst * 0.5f) to (p.centerY + dirY * rDst * 0.5f * asp)
-    }
-
-    /** `r_eff` của [forwardSrcToDst] — tách ra để test đơn điệu trực tiếp trên nó. */
-    fun effectiveSrcRadius(rDst: Float, p: DewarpParams): Float {
-        val a = p.amount.coerceIn(0f, 1f)
-        val bent = p.gain.toDouble() * atan2(rDst.toDouble(), p.focal.toDouble())
-        return ((1.0 - a) * rDst + a * bent).toFloat()
-    }
-
-    private fun solveDstRadius(rSrc: Double, p: DewarpParams): Float? {
-        val a = p.amount.coerceIn(0f, 1f)
-        val gain = p.gain.toDouble()
-        if (a >= 1f - 1e-6f) {
-            val theta = rSrc / gain
-            if (theta >= PI / 2.0 - 1e-9) return null
-            return (p.focal.toDouble() * tan(theta)).toFloat()
-        }
-        var hi = 1.0
-        var guard = 0
-        while (effectiveSrcRadius(hi.toFloat(), p) < rSrc) {
-            hi *= 2.0
-            if (++guard > 200) return null
-        }
-        var lo = 0.0
-        repeat(80) {
-            val mid = 0.5 * (lo + hi)
-            if (effectiveSrcRadius(mid.toFloat(), p) < rSrc) lo = mid else hi = mid
-        }
-        return (0.5 * (lo + hi)).toFloat()
-    }
-
-    /**
-     * Ống kính đẳng khoảng "lý tưởng" **mô tả đúng bởi [p]**: một điểm của khung phối cảnh thẳng cách quang tâm
-     * `(sceneX, sceneY)` (đơn vị: mặt phẳng ở khoảng cách 1, tức `tan` của góc tia) rơi vào đâu trên ảnh nguồn.
-     *
-     * Đây là **mô hình chụp**, đối xứng với [mapDstToSrc] là **mô hình lấy mẫu**. Vì `K·SCALE` dùng chung, nắn với
-     * `amount = 1` sẽ khôi phục mặt phẳng **chính xác** (tỉ lệ `F/2`, xem bài `duong thang van thang`) ⇒ bài test
-     * dùng nó làm chuẩn, và [CameraDewarpTestPattern] dùng nó để vẽ ảnh fisheye tổng hợp.
-     */
-    fun idealEquidistantSource(sceneX: Float, sceneY: Float, p: DewarpParams, aspect: Float): Pair<Float, Float> {
-        val asp = if (aspect > 0f) aspect else 1f
-        val rho = hypot(sceneX.toDouble(), sceneY.toDouble())
-        if (rho <= CENTER_EPS) return p.centerX to p.centerY
-        val theta = atan(rho)
-        val rSrc = p.gain.toDouble() * theta
-        val dirX = sceneX / rho
-        val dirY = sceneY / rho
-        return (p.centerX + (dirX * rSrc * 0.5).toFloat()) to
-            (p.centerY + (dirY * rSrc * 0.5 * asp).toFloat())
-    }
-
-    /** Bán kính nguồn (đơn vị nửa-bề-ngang ô) của tia [thetaRad] trên ống kính đẳng khoảng của [p]. */
-    fun equidistantSrcRadius(thetaRad: Float, p: DewarpParams): Float = p.gain * thetaRad
-
-    /** Góc tia (rad) ứng với bán kính nguồn [rSrc] — nghịch đảo của [equidistantSrcRadius]. */
-    fun equidistantTheta(rSrc: Float, p: DewarpParams): Float = if (p.gain > 0f) rSrc / p.gain else 0f
 
     /**
      * `uSrcRect` = `(x, y, w, h)` từ `crop` kiểu `(x0, y0, x1, y1)` của [CameraSignalPolicy.CamView].
@@ -462,7 +420,8 @@ object CameraDewarp {
     }
 
     /**
-     * Cả chuỗi của một pixel, **đúng thứ tự shader**: xoay → dịch cửa sổ → nắn → `uSrcRect` → toạ độ texture chuẩn hoá.
+     * Cả chuỗi của một pixel, **đúng thứ tự shader**: xoay → vừa khung ([fitLocal], 2.92) → dịch cửa sổ → nắn →
+     * `uSrcRect` → toạ độ texture chuẩn hoá.
      *
      * ⚠ Thứ tự **xoay TRƯỚC nắn** là thứ làm cho một góc ±90 đúng bằng *"ảnh rot 0 đã xoay"*: [rotateDstToLocal] là
      * một phép **affine** trong toạ độ chuẩn hoá, nên nó giao hoán với tính thẳng của khung ra, và [aspect] vẫn là
@@ -479,9 +438,11 @@ object CameraDewarp {
         p: DewarpParams,
         aspect: Float,
         srcRect: FloatArray,
+        fit: FloatArray? = null,
     ): Pair<Float, Float>? {
         val (ra, rb) = rotateDstToLocal(u, v, rotationDeg)
-        val (a, b) = panLocal(ra, rb, p)
+        val (fa, fb) = fitLocal(ra, rb, fit)
+        val (a, b) = panLocal(fa, fb, p)
         val (ca, cb) = mapDstToSrc(a, b, p, aspect)
         if (ca < 0f || ca > 1f || cb < 0f || cb > 1f) return null
         return applySrcRect(ca, cb, srcRect)

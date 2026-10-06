@@ -36,7 +36,9 @@ class CameraSettingsIaWiringContractTest {
         "camera_mirror_left" to "bridge.cameraMirrorLeft()",     // 2.76 L7 — ô tích lật gương từng bên
         "camera_mirror_right" to "bridge.cameraMirrorRight()",
         "camera_shape" to "bridge.cameraShape()",
-        "camera_dewarp_amount" to "bridge.cameraDewarpAmount() > CameraDewarpPrefs.AMOUNT_MIN",
+        // 2.92 · CAMERA-FULL-VIEW — ô tích Nắn hình ⇒ hàng chip Kiểu hình + thanh kéo Thu phóng.
+        "camera_projection" to "bridge.cameraProjection()",
+        "camera_zoom" to "bridge.cameraZoom()",
         // +2 (2026-09-28) — khối *Nếu camera không hiện* (CAM-SL6-RIGHT). Owner trên SL6 không mở được cam
         // phải; mỗi góc nhìn mang cả lệnh xuất hình lẫn camera id nên đây là núm dò đúng cho người lái.
         "camera_view_left" to "bridge.cameraViewLeft()",
@@ -61,14 +63,17 @@ class CameraSettingsIaWiringContractTest {
         "camera_dewarp_scale" to "bridge.cameraDewarpScale()",
         "camera_dewarp_pan_x" to "bridge.cameraDewarpPanX()",
         "camera_dewarp_pan_y" to "bridge.cameraDewarpPanY()",
+        // 2.92 — ô tích Nắn hình đã gỡ: khoá amount còn ghi/đọc qua prefs_set nhưng KHÔNG còn hàng nào.
+        "camera_dewarp_amount" to "bridge.cameraDewarpAmount()",
     )
 
     @Test fun `man nguoi lai co dung cac hang cua USER_KEYS`() {
         val user = SourceRoots.body(settings, "private fun cameraUser(")
         assertEquals(CameraSettingsIa.USER_KEYS.toSet(), userRows.keys, "bảng canh phải khớp hợp đồng `:core`")
         userRows.forEach { (key, needle) -> assertTrue(needle in user, "khoá người lái $key không có hàng: thiếu `$needle`") }
-        // Nắn = MỘT ô tích 100/0, không núm.
-        assertTrue("if (on) CameraDewarpPrefs.AMOUNT_MAX else CameraDewarpPrefs.AMOUNT_MIN" in user, "ô tích nắn ghi AMOUNT_MAX/AMOUNT_MIN")
+        // 2.92: "nhìn kiểu nào" = MỘT hàng chip sinh từ `:core` + MỘT thanh kéo; không núm −/+ nào.
+        assertTrue("CameraViewMode.MODES.map" in user, "chip kiểu hình sinh từ `:core`, không gõ tay danh sách")
+        assertTrue("rows.sliderRow(" in user && "CameraViewMode.ZOOM_POSITIONS" in user, "thanh kéo thu phóng, miền ở `:core`")
         assertFalse("knob(" in settings, "không một núm −/+ nào còn trong tệp Cài đặt camera")
     }
 
@@ -111,8 +116,9 @@ class CameraSettingsIaWiringContractTest {
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
         listOf(
-            "kachi_camera_shape_cluster", "kachi_camera_dewarp_on_sub_header", "kachi_camera_dewarp_on_title",
-            "kachi_camera_dewarp_on_sub",
+            "kachi_camera_shape_cluster", "kachi_camera_projection_sub", "kachi_camera_projection_row",
+            "kachi_camera_projection_straight", "kachi_camera_projection_wide", "kachi_camera_projection_fisheye",
+            "kachi_camera_projection_note", "kachi_camera_zoom_row", "kachi_camera_zoom_desc",
         ).forEach { k ->
             assertTrue("\"$k\"" in vi, "thiếu VI $k"); assertTrue("\"$k\"" in en, "thiếu EN $k")
             assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ mồ côi")
@@ -133,6 +139,8 @@ class CameraSettingsIaWiringContractTest {
             "kachi_camera_dewarp_cx", "kachi_camera_dewarp_cy", "kachi_camera_dewarp_k", "kachi_camera_dewarp_focal",
             "kachi_camera_dewarp_scale", "kachi_camera_dewarp_amount", "kachi_camera_dewarp_pan_x",
             "kachi_camera_dewarp_pan_y",
+            // 2.92 — ba chữ của ô tích *Nắn hình* (hàng chip Kiểu hình thay).
+            "kachi_camera_dewarp_on_sub_header", "kachi_camera_dewarp_on_title", "kachi_camera_dewarp_on_sub",
         ).forEach { k ->
             assertFalse("\"$k\"" in vi, "chữ VI $k mồ côi — hàng của nó đã gỡ ở 2.77")
             assertFalse("\"$k\"" in en, "chữ EN $k mồ côi — hàng của nó đã gỡ ở 2.77")

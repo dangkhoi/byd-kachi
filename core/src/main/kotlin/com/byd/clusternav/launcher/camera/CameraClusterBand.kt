@@ -311,6 +311,10 @@ object CameraClusterBand {
      * thoả bởi chính phép đặt này: gương trái ở đầu trái ⇒ mép phải (thân xe) hướng vào giữa; gương phải đối xứng.
      *
      * @param shape hình user chọn; **chỉ** [SHAPE_CLUSTER] mới nới ra kính + mang bảng mép cong đi tiếp.
+     * @param fitInside 2.92 (kiểu trọn dải *Gương cầu* · *Thẳng rộng*): cửa sổ **vừa** trong vùng ([CameraOverlayFrame.fit])
+     *   thay vì cao trọn dải ([CameraOverlayFrame.tall]) — nội dung rộng hơn nửa dải (nguyên khung 5,33:1) sẽ hạ chiều
+     *   cao thay vì để [CameraOverlayFrame.cover] phóng rồi cắt hai mép. Với dải gương 4:3 / 3:4 hai phép trùng nhau
+     *   từng pixel (tỉ lệ ≤ nửa dải), nên Seal không đổi chỗ đứng. Mặc định `false` ⇒ y hệt 2.79–2.91.
      */
     fun place(
         band: Rect,
@@ -324,13 +328,18 @@ object CameraClusterBand {
         shape: String = SHAPE_CLUSTER,
         leftEdge: List<Int> = emptyList(),
         rightEdge: List<Int> = emptyList(),
+        fitInside: Boolean = false,
     ): Placement {
         val cluster = isCluster(shape)
         val areaH = band.h.coerceAtLeast(1)
         // TRÒN: vùng VUÔNG cạnh = trọn chiều cao dải ⇒ đường kính đúng bằng chiều cao dải (owner: *"đường kính bằng
         // chìu cao tối đa chiếu lên cụm"*). Hai hình kia: nửa dải, để hai bên không bao giờ chạm nhau.
         val areaW = (if (shape == CameraSignalPolicy.SHAPE_ROUND) areaH else band.w / 2).coerceAtLeast(1)
-        val f = CameraOverlayFrame.tall(streamW, streamH, crop, rotationDeg, areaW, areaH)
+        val f = if (fitInside) {
+            CameraOverlayFrame.fit(streamW, streamH, crop, rotationDeg, areaW, areaH)
+        } else {
+            CameraOverlayFrame.tall(streamW, streamH, crop, rotationDeg, areaW, areaH)
+        }
         val h = f.h.coerceIn(1, areaH)
         // TRÒN: cửa sổ **luôn VUÔNG** — `Outline.setOval` trên một cửa sổ chữ nhật vẽ ra hình ELIP, và một nguồn cao
         // (vd nguyên khung pano xoay 90 ⇒ 0,19:1) sẽ cho cạnh 80 px thay vì 428. Phần ảnh dư do [cover] cắt.

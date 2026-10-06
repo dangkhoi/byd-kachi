@@ -42,8 +42,9 @@ class CameraRotationWiringContractTest {
     fun `overlay lay ma tran tu core va ap o ca hai callback`() {
         val body = SourceRoots.body(layer, "private fun applyTransform(")
         assertTrue(
-            // 2.76 L7: thêm `mirror` (lật gương ở `:core`, bước 1b) — vẫn MỘT nguồn sự thật cho ma trận.
-            "CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror)" in body,
+            // 2.76 L7: thêm `mirror` (lật gương ở `:core`, bước 1b); 2.92: thêm `scale` (bước 4 vừa khung) — vẫn MỘT
+            // nguồn sự thật cho ma trận.
+            "CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror, scale)" in body,
             "ma trận phải do `:core` dựng (một nguồn sự thật, có test bằng số) — không nhân tay trong `:app`",
         )
         assertTrue("?: return" in body, "`null` từ `:core` ⇒ KHÔNG đụng setTransform (y hành vi trước R7)")
@@ -51,7 +52,7 @@ class CameraRotationWiringContractTest {
         // Cả hai callback: lượt đầu (Available) và lượt đổi cỡ (SizeChanged) — thiếu một là xoay mất khi view đổi cỡ.
         assertEquals(
             2,
-            Regex("""override fun onSurfaceTexture(?:Available|SizeChanged)\([^)]*\)\s*\{?\s*applyTransform\(this@apply, w2, h2, crop, rotationDeg, mirror\)""")
+            Regex("""override fun onSurfaceTexture(?:Available|SizeChanged)\([^)]*\)\s*\{?\s*applyTransform\(this@apply, w2, h2, crop, rotationDeg, mirror, scale\)""")
                 .findAll(layer).count(),
             "applyTransform(…, rotationDeg) phải gọi ở CẢ onSurfaceTextureAvailable và onSurfaceTextureSizeChanged",
         )

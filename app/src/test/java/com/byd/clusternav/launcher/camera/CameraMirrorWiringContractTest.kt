@@ -52,7 +52,11 @@ class CameraMirrorWiringContractTest {
         val sig = prefsGl.substring(prefsGl.indexOf("fun Prefs.cameraGlUniforms("), prefsGl.indexOf("): CameraGlUniforms"))
         assertTrue(Regex("""\n\s*mirror: Boolean,\n""").containsMatchIn(sig), "`mirror` là tham số bắt buộc, cùng lẽ `left`")
         val body = SourceRoots.body(prefsGl, "fun Prefs.cameraGlUniforms(")
-        assertTrue("flipH = mirror," in body, "vào `flipH` — cơ chế đã có test ở `:core` (srcRect w < 0)")
+        // 2.92: phép quyết theo kiểu hình nằm ở `:core` CameraViewPlan.gl — `mirror` đi qua nguyên vẹn rồi vào `flipH`
+        // ở CẢ ba nhánh (Nắn thẳng · Thẳng rộng · Gương cầu), cơ chế đã có test ở `:core` (srcRect w < 0).
+        assertTrue("mirror = mirror," in body, "cameraGlUniforms phải chuyển `mirror` xuống kế hoạch `:core`")
+        val plan = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraViewPlan.kt")
+        assertEquals(3, Regex("""flipH = mirror,""").findAll(plan).count(), "ba kiểu hình đều lật bằng flipH")
     }
 
     /** TV: `show(mirror)` → `CameraVideoLayer.create(mirror)` → `applyTransform(…, mirror)` → `matrix(…, mirror)` ở CẢ ba chỗ áp ma trận. */
@@ -63,12 +67,13 @@ class CameraMirrorWiringContractTest {
         // mặc định chỉ khẳng định được trên văn bản cả tệp; chuỗi này xuất hiện đúng một lần ở đó (`glVideo` nhận
         // `mirror: Boolean` KHÔNG mặc định — nó là đường trong, bắt buộc truyền).
         assertTrue("mirror: Boolean = false" in layer, "create() mặc định không lật = hành vi trước L7")
-        assertTrue("textureVideo(ctx, crop, rotationDeg, mirror, onSurfaceReady)" in layer)
-        assertTrue("glVideo(ctx, gl, crop, rotationDeg, mirror, streamW, streamH, synthOn, synthFile, onSurfaceReady)" in layer,
+        // 2.92: thêm `scale` (vừa khung / thu phóng của ma trận TV, `:core` CameraViewPlan.tvScale) — đi CÙNG mirror.
+        assertTrue("textureVideo(ctx, crop, rotationDeg, mirror, scale, onSurfaceReady)" in layer)
+        assertTrue("glVideo(ctx, gl, crop, rotationDeg, mirror, scale, streamW, streamH, synthOn, synthFile, onSurfaceReady)" in layer,
             "đường RƠI của GL (TextureView 2.73) cũng phải lật — nếu không, GL hỏng là ảnh đổi tay")
-        assertEquals(4, Regex("""applyTransform\(this@apply, w2, h2, crop, rotationDeg, mirror\)""").findAll(layer).count(),
-            "bốn chỗ áp ma trận (TV available/size-changed + GL rơi available/size-changed) đều mang mirror")
-        assertTrue("CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror)" in SourceRoots.body(layer, "private fun applyTransform("))
+        assertEquals(4, Regex("""applyTransform\(this@apply, w2, h2, crop, rotationDeg, mirror, scale\)""").findAll(layer).count(),
+            "bốn chỗ áp ma trận (TV available/size-changed + GL rơi available/size-changed) đều mang mirror (+ scale 2.92)")
+        assertTrue("CameraOverlayTransform.matrix(vw, vh, crop, rotationDeg, mirror, scale)" in SourceRoots.body(layer, "private fun applyTransform("))
         assertFalse("scaleX" in layer || "scaleX" in overlay, "KHÔNG lật bằng View.scaleX — lật sau xoay khác lật nguồn ở ±90 (CameraMirrorTest)")
     }
 

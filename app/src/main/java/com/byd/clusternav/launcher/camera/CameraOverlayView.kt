@@ -93,6 +93,8 @@ class CameraOverlayView(private val appCtx: Context) {
         var streamW: Int,
         var streamH: Int,
         var rotationEffective: Boolean,
+        /** 2.92 — kiểu trọn dải: cửa sổ cụm VỪA trong vùng ([CameraClusterBand.place] `fitInside`), không phóng-cắt. */
+        val letterbox: Boolean = false,
     )
 
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
@@ -156,6 +158,7 @@ class CameraOverlayView(private val appCtx: Context) {
         synthOn: Boolean = false,
         synthFile: String = "",
         band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
+        video: CameraVideoContent? = null,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -174,15 +177,16 @@ class CameraOverlayView(private val appCtx: Context) {
             // "Theo cụm" chỉ có nghĩa trên display cụm THẬT (không phải theo pref) — quy về hình thật sự vẽ TRƯỚC.
             val shape = CameraClusterBand.effectiveShape(shape, cluster)
             val round = shape == CameraSignalPolicy.SHAPE_ROUND
-            val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH, rotationEffective = rotDone)
+            val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH,
+                rotationEffective = rotDone, letterbox = video?.letterbox == true)
             val g = geometry(st)
             val f = g.f
             // Bo góc: dải cụm mang bán kính của hồ sơ; còn lại = bán kính khung launcher (2.73).
             val radius = (g.radiusPx ?: KachiSpace.dp(ctx, KachiSpace.RADIUS_XL)).toFloat()
             val vl = CameraVideoLayer.create(
-                ctx = ctx, render = render, crop = crop, rotationDeg = rotationDeg, mirror = mirror,
-                gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn, synthFile = synthFile,
-                onSurfaceReady = onSurfaceReady,
+                ctx = ctx, render = render, crop = if (video != null) video.crop else crop, rotationDeg = rotationDeg,
+                mirror = mirror, gl = gl, streamW = streamW, streamH = streamH, synthOn = synthOn, synthFile = synthFile,
+                scale = video?.scale, onSurfaceReady = onSurfaceReady,
             )
             val child = vl.view
             // Nhãn nhỏ ở góc: off-car (chưa có video) vẫn NHÌN THẤY overlay hiện đúng bên/đúng lúc ⇒ verify wiring
@@ -392,7 +396,7 @@ class CameraOverlayView(private val appCtx: Context) {
                 band = bandRect, atLeft = st.corner == CameraSignalPolicy.CORNER_TOP_LEFT,
                 streamW = st.streamW, streamH = st.streamH, crop = st.crop,
                 rotationDeg = if (st.rotationEffective) st.rotationDeg else 0, spec = st.band, displayH = dm.heightPixels,
-                shape = st.shape, leftEdge = edge, rightEdge = edgeRight,
+                shape = st.shape, leftEdge = edge, rightEdge = edgeRight, fitInside = st.letterbox,
             )
             // `cong=` = mép có mực ở phía NGOÀI (trái/phải theo bên cửa sổ đứng — [outerInkAt]) ở ba hàng đỉnh/giữa/
             // đáy. ⚠ 2.78 ba số BẰNG NHAU (cửa sổ đứng ở điểm trong cùng ⇒ mép thẳng); 2.79 *theo cụm* phải ra ba số

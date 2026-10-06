@@ -728,7 +728,7 @@
     <string name="kachi_camera_mirror_row_left">Isyarat kiri: cerminkan video</string>
     <string name="kachi_camera_mirror_row_right">Isyarat kanan: cerminkan video</string>
     <string name="kachi_camera_mirror_row_sub">Menterbalikkan gambar kamera secara mendatar sebelum putaran — badan kereta sepatutnya berada di tepi dalam, seperti dalam cermin sebenar</string>
-    <string name="kachi_camera_shape_sub">Bentuk tetingkap kamera (bulat = seluruh bulatan imej, herotan belum dibetulkan)</string>
+    <string name="kachi_camera_shape_sub">Bentuk tetingkap kamera (bingkai sahaja — untuk seluruh gambar yang herotannya belum dibetulkan, pilih «Cermin cembung» di bawah)</string>
     <string name="kachi_camera_shape_row">Bentuk tetingkap kamera</string>
     <string name="kachi_camera_shape_rect">Segi empat</string>
     <string name="kachi_camera_shape_round">Bulat</string>
@@ -736,9 +736,14 @@
     <string name="kachi_camera_left">Kamera kiri</string>
     <string name="kachi_camera_right">Kamera kanan</string>
     <string name="kachi_camera_shape_cluster">Jalur panel</string>
-    <string name="kachi_camera_dewarp_on_sub_header">Betulkan herotan</string>
-    <string name="kachi_camera_dewarp_on_title">Betulkan herotan (luruskan lengkung kanta)</string>
-    <string name="kachi_camera_dewarp_on_sub">Mati = gambar mentah seperti yang diberikan kamera. Nilai pembetulan herotan sudah ditetapkan bagi setiap kereta.</string>
+    <string name="kachi_camera_projection_sub">Gaya paparan kamera</string>
+    <string name="kachi_camera_projection_row">Gaya paparan</string>
+    <string name="kachi_camera_projection_straight">Lurus</string>
+    <string name="kachi_camera_projection_wide">Lurus lebar (nampak jauh)</string>
+    <string name="kachi_camera_projection_fisheye">Cermin cembung (nampak semua)</string>
+    <string name="kachi_camera_projection_note">Lurus: seperti dahulu, dekat badan kereta. Lurus lebar: hampir lurus, nampak jauh ke belakang. Cermin cembung: seluruh gambar mata ikan, tiada yang dipotong.</string>
+    <string name="kachi_camera_zoom_row">Zum</string>
+    <string name="kachi_camera_zoom_desc">Zum kamera: %1$s</string>
     <string name="kachi_drawer_title_trip">Pilih apl untuk dibuka semasa kereta dihidupkan</string>
     <string name="kachi_drawer_hint_trip">Ketik untuk tambah atau buang apl · ketik Guna untuk simpan · pilih cara setiap apl dibuka dalam Tetapan</string>
     <string name="kachi_trip_cap_note">Senarai apl semasa kereta dihidupkan memuatkan maksimum %1$d apl — buang satu untuk tambah yang lain</string>

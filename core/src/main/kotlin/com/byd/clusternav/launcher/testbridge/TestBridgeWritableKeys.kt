@@ -120,5 +120,14 @@ object TestBridgeWritableKeys {
         "camera_dewarp_pan_x",
         "camera_dewarp_pan_y",
         "camera_gl_texmatrix",
+        // ── 2.92 · CAMERA-FULL-VIEW (spec `kachi-292-camera-full-view.html`) ─────────────────────────────────────
+        // Kiểu hình + thu phóng có chip/thanh kéo đảo lại được ở Cài đặt › Tiện nghi xe ⇒ ràng buộc (3) giữ. Ba núm
+        // *Thẳng rộng* là bộ số [ĐOÁN] chỉ chốt được bằng mắt trên xe giữa hai lượt xi-nhan (cùng lý do sáu núm nắn);
+        // tác dụng của chúng đảo được bằng một cú chạm chip *Nắn thẳng*, và `prefs_set … 150/100/-20` trả mặc định.
+        "camera_projection",
+        "camera_zoom",
+        "camera_wide_kappa",
+        "camera_wide_focal",
+        "camera_wide_pan_x",
     )
 }

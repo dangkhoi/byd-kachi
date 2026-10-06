@@ -1,6 +1,6 @@
 # Camera 2.76 — IA hai tầng · mặc định theo hồ sơ xe · lùi CHANNEL → PANO (làn L1, off-car 2026-09-27)
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-29 (ghi chú RÚT vạch chuẩn ở §10) · trước đó 2026-09-27 · **Mục đích**: đóng ba yêu cầu R1/R2/R3 của spec
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-06 (§11 — 2.92 *Kiểu hình* + *Thu phóng*, 14 → 15 hàng) · 2026-09-29 (ghi chú RÚT vạch chuẩn ở §10) · trước đó 2026-09-27 · **Mục đích**: đóng ba yêu cầu R1/R2/R3 của spec
 > `docs/specs/kachi-276-closing.html` sau buổi xe 27/09 — (1) màn *Tiện nghi xe › Camera* chỉ còn thứ người lái cần,
 > móc đo ẩn sau cổng chế độ kiểm thử; (2) mặc định camera đi theo **hồ sơ xe** (`ClusterProfile`), bộ Seal DL3 là
 > bộ owner đã duyệt trên xe, bỏ hằng kênh ghim trên `CamView` ([P3] review Pass 2); (3) nguồn *Một camera* mà đầu máy
@@ -378,3 +378,19 @@ nào** (CLAUDE.md §2). Spec đầy đủ: `docs/specs/kachi-camera-distance-gui
 `CameraSettingsIa.USER_KEYS.size == 16`, tổng khoá camera ghi được qua `prefs_set` = **31** (16 hàng + 15 khoá không-UI).
 Ba bài canh số đếm: `CameraSettingsIaTest` (`:core`), `CameraSettingsIaWiringContractTest` (`:app`),
 `TestBridgeCommandTest` (danh sách trắng **46**). Đổi danh sách ⇒ phải đổi **cả ba** + mục này + dòng CAM-F1 của runbook.
+
+## 11. 2.92 (2026-10-06, `CAMERA-FULL-VIEW`): ô *Nắn hình* → *Kiểu hình camera* + *Thu phóng* — 14 → **15 hàng**
+
+Spec `docs/specs/kachi-292-camera-full-view.html`; đo máy ảo `../camera-full-view-emu-2026-10-06.md`. [ĐO test] sau khi 2.83 gỡ vạch
+(14 / 15 / 44), 2.92 đổi:
+
+| Danh sách | Trước | Sau | Thay đổi |
+|---|---|---|---|
+| `USER_KEYS` (hàng người lái) | 14 | **15** | − `camera_dewarp_amount` (ô tích) · + `camera_projection` (chip *Kiểu hình*) · + `camera_zoom` (thanh *Thu phóng*) |
+| `NO_UI_KEYS` | 15 | **19** | + `camera_dewarp_amount` (vẫn ghi/đọc qua cầu; chưa có `camera_projection` mà amount = 0 ⇒ đọc thành *Gương cầu*) · + `camera_wide_kappa` · `camera_wide_focal` · `camera_wide_pan_x` (núm *Thẳng rộng*, theo XE) |
+| Khoá camera ghi được qua `prefs_set` | 29 | **34** | |
+| Danh sách trắng `prefs_set` | 44 | **49** | |
+
+Phạm vi lưu: `camera_projection` + `camera_zoom` theo **HỒ SƠ** (cùng họ `camera_shape`/`camera_dewarp_amount`), ba khoá
+`camera_wide_*` theo **XE** (`R_OPTICS`) — `ProfileScopeCluster` (8 + 26 = 34). Runbook 2.76 CAM-F1 đã hết hiệu lực từ 2.77 (xem đầu
+runbook) nên không sửa; phép đếm trên xe nay là 🚗 V-oncar của spec 2.92.

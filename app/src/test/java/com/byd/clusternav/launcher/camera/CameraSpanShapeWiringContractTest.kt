@@ -44,7 +44,11 @@ class CameraSpanShapeWiringContractTest {
      * còn `val crop = view.crop` thì bốn hàng chip là bốn nút không làm gì, mà không test nào đỏ.
      */
     @Test fun `controller suy ra crop tu core voi ca bon pref`() {
-        assertTrue("CameraPanoCrop.cropFor(" in controller, "crop phải do `:core` suy ra (có test bằng số)")
+        // 2.92: vùng cắt KHUNG + NỘI DUNG suy ở `:core` CameraViewPlan.crops (gọi đúng CameraPanoCrop.cropFor của hôm nay
+        // cho *Nắn thẳng*) — controller chỉ đọc pref và chuyển xuống.
+        assertTrue("CameraViewPlan.crops(" in controller, "crop phải do `:core` suy ra (có test bằng số)")
+        val plan = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraViewPlan.kt")
+        assertTrue("CameraPanoCrop.cropFor(" in plan, "kế hoạch `:core` phải đi qua đúng phép cắt của hôm nay")
         assertTrue("val crop = view.crop" !in controller, "hằng crop của enum không được đọc thẳng nữa (chip sẽ vô tác dụng)")
         listOf(
             "Prefs.cameraSpan(appCtx)",
@@ -94,7 +98,10 @@ class CameraSpanShapeWiringContractTest {
         assertTrue("left = turn == Turn.LEFT," in controller,
             "controller phải nói BÊN cho bộ uniform — hai camera gương soi gương nhau")
         val body = SourceRoots.body(prefsDewarp, "fun Prefs.cameraGlUniforms(")
-        assertTrue("panXSign = CameraDewarpPrefs.panXSign(left)" in body,
+        // 2.92: dấu suy trong kế hoạch `:core` (CameraViewPlan.gl) — cameraGlUniforms chỉ chuyển BÊN xuống.
+        assertTrue("left = left," in body, "cameraGlUniforms phải chuyển BÊN xuống kế hoạch `:core`")
+        val plan = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraViewPlan.kt")
+        assertTrue("val sign = CameraDewarpPrefs.panXSign(left)" in plan && "panXSign = sign," in plan,
             "dấu phải suy ở `:core` (có test bằng số), không phải một `if` ở `:app`")
         // Tham số nằm ở CHỮ KÝ (ngoài thân hàm) ⇒ đọc trên nguyên tệp. `left` KHÔNG có `=` ⇒ không quên được.
         assertTrue("    left: Boolean,\n" in prefsDewarp, "`left` phải là tham số BẮT BUỘC của cameraGlUniforms")
@@ -222,7 +229,11 @@ class CameraSpanShapeWiringContractTest {
         }
     }
 
-    /** Chữ của hàng còn lại có ở CẢ hai ngôn ngữ, và nhãn hình tròn nói THẲNG là **chưa nắn méo**. */
+    /**
+     * Chữ của hàng còn lại có ở CẢ hai ngôn ngữ. 2.92 (spec `kachi-292-camera-full-view` §4.7): nhãn KHÔNG còn hứa
+     * "tròn = trọn vòng ảnh, chưa nắn méo" — điều đó sai từ khi GL nắn cả khung tròn, và nay việc nắn/không nắn là của
+     * hàng *Kiểu hình* — nên nhãn phải chỉ thẳng sang kiểu *Gương cầu* (owner không được hiểu nhầm, CLAUDE.md §2).
+     */
     @Test fun `chu cua hang hinh khung co o ca hai ngon ngu`() {
         val keys = listOf(
             "kachi_camera_shape_sub", "kachi_camera_shape_row", "kachi_camera_shape_rect", "kachi_camera_shape_round",
@@ -232,8 +243,9 @@ class CameraSpanShapeWiringContractTest {
             assertTrue("\"$k\"" in en, "thiếu chữ tiếng Anh cho $k")
             assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ tài nguyên mồ côi")
         }
-        assertTrue("méo" in vi.substringAfter("kachi_camera_shape_sub").take(160),
-            "nhãn hình tròn phải nói rõ là CHƯA nắn méo — owner không được hiểu là đã nắn (CLAUDE.md §2)")
+        val head = vi.substringAfter("\"kachi_camera_shape_sub\">").substringBefore("</string>")
+        assertTrue("Gương cầu" in head, "nhãn hình khung phải chỉ sang kiểu «Gương cầu» cho ảnh trọn chưa nắn: $head")
+        assertTrue("tròn =" !in head, "nhãn không được hứa hình tròn = chưa nắn (GL nắn cả khung tròn): $head")
     }
 
     /** Bốn pref: mặc định + phép kiểm lấy từ `:core`, device-scope, và cả năm khoá `prefs_set` có `read_back`. */

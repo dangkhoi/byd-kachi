@@ -38,7 +38,10 @@ class CameraSettingsIaTest {
                 "camera_pos_left", "camera_pos_right",
                 "camera_rot_left", "camera_rot_right",
                 "camera_mirror_left", "camera_mirror_right",
-                "camera_shape", "camera_dewarp_amount",
+                "camera_shape",
+                // 2.92 (owner 06/10 *"cắt hơi lố"* · *"lấy hết được không?"*): ô tích *Nắn hình* (`camera_dewarp_amount`)
+                // ⇒ hàng chip *Kiểu hình* + thanh *Thu phóng* — một QUYẾT ĐỊNH về IA, spec kachi-292-camera-full-view R1/R5.
+                "camera_projection", "camera_zoom",
                 // +2 (2026-09-28): khối *Nếu camera không hiện*. Owner trên SL6 không mở được cam phải và
                 // yêu cầu tự chọn được góc nhìn — đây là một QUYẾT ĐỊNH về IA, không phải lỡ tay thêm hàng.
                 "camera_view_left", "camera_view_right",
@@ -49,7 +52,7 @@ class CameraSettingsIaTest {
             CameraSettingsIa.USER_KEYS,
             "đổi danh sách ⇒ đổi doc camera-ia-profile.md §IA + dòng CAM-F1 của runbook (owner đếm hàng trên xe)",
         )
-        assertEquals(14, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
+        assertEquals(15, CameraSettingsIa.USER_KEYS.size, "owner ĐẾM hàng trên xe — thêm hàng phải là một quyết định")
         CameraSettingsIa.NO_UI_KEYS.forEach {
             assertFalse(it in CameraSettingsIa.USER_KEYS, "khoá không-UI $it lại lộ ra ở màn người lái")
         }
@@ -102,9 +105,13 @@ class CameraSettingsIaTest {
     }
 
     /** 15 khoá còn lại: không hàng nào trên màn, nhưng `prefs_set` vẫn ghi/đọc (đường chẩn đoán CLAUDE.md §15). */
-    @Test fun `15 khoa khong co UI van ghi doc duoc qua cau kiem thu`() {
-        assertEquals(15, CameraSettingsIa.NO_UI_KEYS.size, "đổi số ⇒ đổi doc camera-ia-profile.md §IA")
-        listOf("camera_render", "camera_span", "camera_gl_texmatrix", "camera_dewarp_k", "camera_cam_left").forEach {
+    @Test fun `19 khoa khong co UI van ghi doc duoc qua cau kiem thu`() {
+        // 15 → 19 (2.92): +`camera_dewarp_amount` (ô tích gỡ, khoá vẫn đọc) + ba núm `camera_wide_*` của *Thẳng rộng*.
+        assertEquals(19, CameraSettingsIa.NO_UI_KEYS.size, "đổi số ⇒ đổi doc camera-ia-profile.md §IA")
+        listOf(
+            "camera_render", "camera_span", "camera_gl_texmatrix", "camera_dewarp_k", "camera_cam_left",
+            "camera_dewarp_amount", "camera_wide_kappa", "camera_wide_focal", "camera_wide_pan_x",
+        ).forEach {
             assertTrue(it in CameraSettingsIa.NO_UI_KEYS, "$it không còn hàng ⇒ phải ở danh sách không-UI")
             assertTrue(it in TestBridgeCommands.WRITABLE_PREFS_KEYS, "$it phải còn ghi được để dò trên xe")
         }
@@ -120,7 +127,8 @@ class CameraSettingsIaTest {
         assertEquals(emptySet<String>(), (user + noUi) - writable, "danh sách nhắc một khoá không còn ghi được qua prefs_set (bài canh rữa)")
         assertEquals(CameraSettingsIa.USER_KEYS.size, user.size, "không trùng trong USER_KEYS")
         assertEquals(CameraSettingsIa.NO_UI_KEYS.size, noUi.size, "không trùng trong NO_UI_KEYS")
-        // 31 → 29 (2.83): −2 vạch chuẩn khoảng cách (2.82), gỡ hẳn theo owner.
-        assertEquals(29, writable.size, "14 hàng + 15 khoá không-UI (+2 góc nhìn +2 dải hình, 2026-09-28)")
+        // 31 → 29 (2.83): −2 vạch chuẩn khoảng cách (2.82), gỡ hẳn theo owner. 29 → 34 (2.92): +kiểu hình, +thu phóng,
+        // +3 núm Thẳng rộng.
+        assertEquals(34, writable.size, "15 hàng + 19 khoá không-UI (2.92 · CAMERA-FULL-VIEW)")
     }
 }

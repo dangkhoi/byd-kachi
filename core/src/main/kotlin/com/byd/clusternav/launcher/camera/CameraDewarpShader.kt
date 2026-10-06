@@ -28,6 +28,8 @@ package com.byd.clusternav.launcher.camera
  * | `uAspect` | `float` | bề ngang/bề cao của ô **theo pixel NGUỒN** = `uSrcRect.z·texW / (uSrcRect.w·texH)` (dùng trị **tuyệt đối** khi soi gương). Đây là chỗ Electro thiếu ⇒ đồng-θ của nó là ellipse (RE §3.3) |
  * | `uCenter` | `vec2` | tâm quang trong toạ độ ô, **được phép ngoài `[0,1]`** ([CameraDewarp.centerInCrop]) |
  * | `uPan` | `vec2` | **dịch cửa sổ** ra, đơn vị bề ô, trong ô **CHƯA XOAY** ([CameraDewarp.panLocal]). Tâm quang KHÔNG đổi ⇒ ảnh vẫn thẳng; đây là đường duy nhất để *"dịch khung ra sau"* mà không làm cong (2.75) |
+ * | `uFit` | `vec2` | **vừa khung** (2.92): ô ra ↔ ô nội dung khác tỉ lệ ([CameraDewarp.fitLocal], hệ số từ [CameraViewFit]). `x ≤ 0` ⇒ **bỏ hẳn** bước này — nhánh *Nắn thẳng* 100 % đi đúng đường cũ |
+ * | `uKappa` | `float` | **κ** họ phép chiếu khung ra (2.92, [DewarpParams.kappa]): `θ = κ·atan(r, κ·F)`; `1` ⇒ phối cảnh thẳng **từng bit** cũ |
  *
  * `:app` còn phải khớp **cửa sổ**: [CameraOverlayFrame.fit] đã cho khung đúng tỉ lệ vùng crop sau xoay, và phép nắn
  * dựa vào đúng điều đó — nếu khung lệch tỉ lệ thì ảnh vẫn nắn đúng *trong không gian nguồn* nhưng bị giãn không
@@ -60,6 +62,8 @@ object CameraDewarpShader {
         "uAspect",
         "uCenter",
         "uPan",
+        "uFit",
+        "uKappa",
     )
 
     /** Tên attribute của [VERTEX]. */
@@ -98,6 +102,8 @@ object CameraDewarpShader {
         uniform float uAspect;
         uniform vec2 uCenter;
         uniform vec2 uPan;
+        uniform vec2 uFit;
+        uniform float uKappa;
         varying vec2 vTexCoord;
         void main() {
             // 1. xoay quanh tam o, TRONG KHONG GIAN O DA CHUAN HOA (khop CameraOverlayTransform:
@@ -109,6 +115,12 @@ object CameraDewarpShader {
             vec2 local = vec2(0.5, 0.5) + vec2(
                 (rotationCos * q.x) + (rotationSin * q.y),
                 (rotationCos * q.y) - (rotationSin * q.x));
+
+            // 1a. VUA KHUNG (2.92): o ra <-> o noi dung khac ti le (khop CameraDewarp.fitLocal). uFit.x <= 0 => BO
+            //     HAN buoc nay: nhanh Nan thang 100 % di DUNG duong cu, khong mot phep tinh nao them.
+            if (uFit.x > 0.0) {
+                local = vec2(0.5, 0.5) + ((local - vec2(0.5, 0.5)) * uFit);
+            }
 
             // 1b. dich CUA SO ra, trong o CHUA XOAY (tinh tien hang => p van affine => duong thang VAN THANG;
             //     tam quang uCenter KHONG doi — do la cho khac han voi viec doi uCenter). Ngoai khoi `if` duoi:
@@ -126,7 +138,9 @@ object CameraDewarpShader {
                 float pLen = length(p);
                 if (pLen > 0.000001) {
                     vec2 radialDir = p / pLen;
-                    float theta = atan(pLen, uFocal);
+                    // kappa (2.92): ho phep chieu khung ra; k = 1 => phoi canh thang, dung phep cu tung bit;
+                    //   k = 2 => stereographic (khop CameraDewarp.mapDstToSrc).
+                    float theta = uKappa * atan(pLen, uKappa * uFocal);
                     float rSrc = gain * theta;
                     vec2 projected = vec2(uCenter.x + (radialDir.x * rSrc * 0.5),
                                           uCenter.y + (radialDir.y * rSrc * 0.5 * uAspect));

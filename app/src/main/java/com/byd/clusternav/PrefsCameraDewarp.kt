@@ -4,7 +4,8 @@ import android.content.Context
 import com.byd.clusternav.launcher.camera.CameraDefaults
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
 import com.byd.clusternav.launcher.camera.CameraGlUniforms
-import com.byd.clusternav.launcher.camera.CameraSignalPolicy.CamView
+import com.byd.clusternav.launcher.camera.CameraViewMode
+import com.byd.clusternav.launcher.camera.CameraViewPlan
 
 /**
  * ═══ SÁU NÚM NẮN MÉO + công tắc `uTexMatrix` của đường kết xuất `GL` (R8-B · 2.74) ═════════════════════════════
@@ -39,6 +40,50 @@ private const val K_DEWARP_CY = "camera_dewarp_cy"
 private const val K_DEWARP_PAN_X = "camera_dewarp_pan_x"
 private const val K_DEWARP_PAN_Y = "camera_dewarp_pan_y"
 private const val K_GL_TEX_MATRIX = "camera_gl_texmatrix"
+
+// 2.92 · CAMERA-FULL-VIEW (spec `kachi-292-camera-full-view.html`): kiểu hình + thu phóng theo HỒ SƠ (sở thích trình bày,
+// `ProfileScopeCluster.CAMERA_PROFILE_KEYS`); ba núm *Thẳng rộng* theo XE (quang học, `CAMERA_DEVICE_KEYS`).
+private const val K_PROJECTION = "camera_projection"
+private const val K_ZOOM = "camera_zoom"
+private const val K_WIDE_KAPPA = "camera_wide_kappa"
+private const val K_WIDE_FOCAL = "camera_wide_focal"
+private const val K_WIDE_PAN_X = "camera_wide_pan_x"
+
+/**
+ * **Kiểu hình camera** — mã trong [CameraViewMode.MODES]. Khoá vắng/lạ ⇒ [CameraViewMode.resolve]: *Nắn thẳng*, trừ khi
+ * người lái đã tắt *Nắn hình* (amount 0) trước 2.92 ⇒ *Gương cầu* (người thừa kế đúng ý "ảnh thô").
+ */
+fun Prefs.cameraProjection(ctx: Context): String =
+    CameraViewMode.resolve(autoPrefs(ctx).getString(K_PROJECTION, null), cameraDewarpAmount(ctx))
+
+/** Xem [cameraProjection]. Nhận mã trong [CameraViewMode.MODES]; chuỗi khác ghi được nhưng lượt đọc bỏ qua. */
+fun Prefs.setCameraProjection(ctx: Context, v: String) = autoPrefs(ctx).edit().putString(K_PROJECTION, v).apply()
+
+/** **Thu phóng** `%` (50–150, mặc định 100 = khung tự nhiên của kiểu đang chọn). Một khoá cho cả ba kiểu. */
+fun Prefs.cameraZoom(ctx: Context): Int =
+    pct(ctx, K_ZOOM, CameraViewMode.ZOOM_DEFAULT) { CameraViewMode.isZoomPct(it) }
+
+/** Xem [cameraZoom]. */
+fun Prefs.setCameraZoom(ctx: Context, v: Int) = put(ctx, K_ZOOM, v)
+
+/** **κ** của *Thẳng rộng*, `%` tuyệt đối (100–800; mặc định [CameraViewMode.WIDE_KAPPA_PCT_DEFAULT] [ĐOÁN]). */
+fun Prefs.cameraWideKappa(ctx: Context): Int =
+    pct(ctx, K_WIDE_KAPPA, CameraViewMode.WIDE_KAPPA_PCT_DEFAULT) { CameraDewarpPrefs.isKappaPct(it) }
+
+/** Xem [cameraWideKappa]. */
+fun Prefs.setCameraWideKappa(ctx: Context, v: Int) = put(ctx, K_WIDE_KAPPA, v)
+
+/** **F** của *Thẳng rộng*, `%` của bộ suy ra (cùng nghĩa [cameraDewarpFocal]). */
+fun Prefs.cameraWideFocal(ctx: Context): Int = pctOf(ctx, K_WIDE_FOCAL, CameraViewMode.WIDE_FOCAL_PCT_DEFAULT)
+
+/** Xem [cameraWideFocal]. */
+fun Prefs.setCameraWideFocal(ctx: Context, v: Int) = put(ctx, K_WIDE_FOCAL, v)
+
+/** **Dịch về đuôi** của *Thẳng rộng*, `%` bề ô (âm = về phía đuôi; dấu theo bên như [cameraDewarpPanX]). */
+fun Prefs.cameraWidePanX(ctx: Context): Int = pan(ctx, K_WIDE_PAN_X, CameraViewMode.WIDE_PAN_X_PCT_DEFAULT)
+
+/** Xem [cameraWidePanX]. */
+fun Prefs.setCameraWidePanX(ctx: Context, v: Int) = put(ctx, K_WIDE_PAN_X, v)
 
 /**
  * **Độ nắn** `%` — `0` = y ảnh thô 2.73, `100` = nắn đủ (mặc định).
@@ -157,8 +202,12 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  * thuộc một lượt chỉnh), và bảy dòng `Prefs.…` ở chỗ gọi là bảy chỗ quên được khi thêm núm thứ tám. Phép hợp thì nằm
  * ở `:core` ([CameraGlUniforms.of]) và test được off-car; hàm này chỉ **đọc đĩa**.
  *
- * @param crop vùng cắt đã suy ([com.byd.clusternav.launcher.camera.CameraPanoCrop.cropFor]) — cùng giá trị truyền cho
- *   overlay, KHÔNG tính lại (hai lượt tính là hai kết quả lệch được).
+ * 2.92: phép quyết theo KIỂU HÌNH nằm ở `:core` [CameraViewPlan.gl] (có test hình học thật); hàm này chỉ đọc mười một
+ * khoá + thu phóng. *Nắn thẳng* ở 100 % ⇒ đúng bộ uniform của 2.91 (bài `CameraViewPlanTest` ghim từng trường).
+ *
+ * @param mode kiểu đã quy theo đường vẽ ([CameraViewMode.effective]).
+ * @param crops vùng cắt khung + nội dung đã suy ([CameraViewPlan.crops]) — cùng giá trị truyền cho overlay, KHÔNG tính
+ *   lại (hai lượt tính là hai kết quả lệch được).
  * @param strip chỉ số dải đang xem — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
  * @param streamW bề ngang ảnh nguồn (px), ĐO bằng `AVMCamera.getPreviewWidth` ở chỗ gọi. Từ 2.77 chỉ còn **một**
  *   nguồn — khung GHÉP 4-in-1 — nên bề ngang buffer **chính là** bề ngang nội dung; phép chia `/STRIPS` của nguồn
@@ -170,37 +219,45 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  */
 fun Prefs.cameraGlUniforms(
     ctx: Context,
-    view: CamView,
-    crop: FloatArray?,
+    mode: String,
+    crops: CameraViewPlan.Crops,
     strip: Int,
     rotationDeg: Int,
     streamW: Int,
     streamH: Int,
     left: Boolean,
     mirror: Boolean,
-): CameraGlUniforms {
-    // 2026-09-28: bám vào `crop` ĐANG dùng, không bám rect dựng sẵn của góc — xem KDoc `sourceCentre`.
-    val centre = CameraGlUniforms.sourceCentre(crop, strip)
-    return CameraGlUniforms.of(
-        crop = crop,
-        srcCentreX = centre[0],
-        srcCentreY = centre[1],
-        streamW = streamW,
-        streamH = streamH,
-        rotationDeg = rotationDeg,
-        flipH = mirror,
-        amountPct = cameraDewarpAmount(ctx),
-        focalPct = cameraDewarpFocal(ctx),
-        kPct = cameraDewarpK(ctx),
-        scalePct = cameraDewarpScale(ctx),
-        centerXPct = cameraDewarpCx(ctx),
-        centerYPct = cameraDewarpCy(ctx),
-        panXPct = cameraDewarpPanX(ctx),
-        panYPct = cameraDewarpPanY(ctx),
-        panXSign = CameraDewarpPrefs.panXSign(left),
-        texMatrix = cameraGlTexMatrix(ctx),
-    )
-}
+): CameraGlUniforms = CameraViewPlan.gl(
+    mode = mode,
+    zoomPct = cameraZoom(ctx),
+    crops = crops,
+    strip = strip,
+    streamW = streamW,
+    streamH = streamH,
+    rotationDeg = rotationDeg,
+    mirror = mirror,
+    left = left,
+    knobs = cameraViewKnobs(ctx),
+    texMatrix = cameraGlTexMatrix(ctx),
+)
+
+/**
+ * Mười một núm của một lượt dựng — tám núm *Nắn thẳng* (mặc định của HỒ SƠ XE) + ba núm *Thẳng rộng* (mặc định
+ * `:core`). Một lượt đọc, một giá trị: bộ số phải thuộc về CÙNG một lượt chỉnh (xem KDoc [cameraGlUniforms]).
+ */
+fun Prefs.cameraViewKnobs(ctx: Context): CameraViewPlan.Knobs = CameraViewPlan.Knobs(
+    amountPct = cameraDewarpAmount(ctx),
+    focalPct = cameraDewarpFocal(ctx),
+    kPct = cameraDewarpK(ctx),
+    scalePct = cameraDewarpScale(ctx),
+    centerXPct = cameraDewarpCx(ctx),
+    centerYPct = cameraDewarpCy(ctx),
+    panXPct = cameraDewarpPanX(ctx),
+    panYPct = cameraDewarpPanY(ctx),
+    wideKappaPct = cameraWideKappa(ctx),
+    wideFocalPct = cameraWideFocal(ctx),
+    widePanXPct = cameraWidePanX(ctx),
+)
 
 // Ba hàm dưới nhận `fallback` = trường tương ứng của hồ sơ xe (đã `sane()`, tức đã nằm trong đúng miền của
 // [CameraDewarpPrefs.PCT_DEFAULT]/[CameraDewarpPrefs.PAN_DEFAULT]/[CameraDewarpPrefs.CENTER_DEFAULT] và các `is*`).
