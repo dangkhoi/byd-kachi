@@ -96,8 +96,11 @@ android {
         // + VM_BUBBLE_VIS · Chữ nhật trọn 1920×720 · bỏ km/h Kachi vẽ · ô biển tốc độ theo màn cụm sống.
         // 2.91 (193) — dạy tên app bằng giọng (spec kachi-290-voice-app-names) + sửa nhỏ (spec kachi-291-small-fixes):
         // công tắc bóng nói thật · ô 7 nhận lại vào ô khác cỡ giữ mật độ · kiểm VietMap mỗi lần thức · ghi chú ADAS Chữ nhật.
-        versionCode = 193
-        versionName = "2.91"
+        // 2.92 (194) — widget lối tắt icon to/lề nhỏ/bỏ trần 8 (spec kachi-292-shortcut-widget) · camera Nắn thẳng /
+        // Thẳng rộng / Gương cầu + thu phóng (spec kachi-292-camera-full-view) · DiagStorageCap chỉ tỉa thư mục chẩn đoán
+        // (spec kachi-292-diag-cap, P1 mất ảnh người dùng).
+        versionCode = 194
+        versionName = "2.92"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

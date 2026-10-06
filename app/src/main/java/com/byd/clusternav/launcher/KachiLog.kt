@@ -15,7 +15,8 @@ import java.io.File
  * `/sdcard/Android/data/com.byd.launcher/files/kachi-logs/`. Vì sao chỗ này:
  *  - **Trên thẻ (external)**, KHÔNG phải bộ nhớ trong app ⇒ nhẹ đầu xe.
  *  - Đọc qua `adb pull` **KHÔNG cần root** (thư mục external của chính app).
- *  - Tự xoá khi gỡ app; [DiagStorageCap] quét cả cây external nên không phình vô hạn.
+ *  - Tự xoá khi gỡ app; [DiagStorageCap] dọn `kachi-logs/` (có trong danh sách cho phép `DiagFiles` — 2.92 bộ
+ *    dọn CHỈ chạm danh sách ấy, không chạm ảnh/hồ sơ/gói giọng của người dùng) nên không phình vô hạn.
  *
  * Ba tệp:
  *  - `captest-report.txt` — kết quả kiểm tra từng nút (tự lưu mỗi lần chấm + khi bấm Xuất báo cáo).

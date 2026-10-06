@@ -16,7 +16,7 @@ object ClusterRectLayout {
     const val WIDTH: Int = 1920
     const val HEIGHT: Int = 720
 
-    /** Khung trọn cụm — mặc định của Chữ nhật và của phiên chưa rõ kiểu ([CastSessionStyle.fullFrame]). */
+    /** Khung trọn cụm — mặc định của Chữ nhật (bản lưu chưa có khung). */
     val FULL: CastBounds = CastBounds(0, 0, WIDTH, HEIGHT)
 
     /**
@@ -85,25 +85,26 @@ object ClusterRectLayout {
  * @param believed kiểu Kachi tin cụm đang hiện sau lượt mở ([ClusterStylePlan.Plan.believed]) — 2.90 · R2: CHỈ là kiểu Kachi đã
  *   gửi và thấy thành công trong đời tiến trình này; còn lại UNKNOWN.
  * @param frame kiểu dùng cho KHUNG app và khoá lưu (`__RECT`): kiểu tin nếu biết (cụm là sự thật, không phải lựa chọn);
- *   UNKNOWN ⇒ Bo tròn (khoá cũ) — cùng với [fullFrame] = `true` (khung trọn cụm, bỏ khung đã lưu).
- * @param fullFrame 2.90 · R2 — đời xe cho chọn Bo tròn/Chữ nhật mà kiểu cụm CHƯA xác nhận ⇒ khung trọn cụm 0,0,1920,720 (một
- *   nửa = nửa của trọn cụm), Cài đặt nói "chưa rõ kiểu". Đời xe chỉ có một kiểu (DL3 khác, DiLink 5) ⇒ `false`: đường cũ y nguyên.
+ *   UNKNOWN ⇒ kiểu người lái CHỌN ([ClusterStylePlan.effective]; đời xe không cho chọn ⇒ Bo tròn, đường cũ y nguyên). 2.92 ·
+ *   CLUSTER-FRAME-CHOSEN thay luật "trọn cụm + khoá Bo tròn" của 2.90 · R2: [ĐO log xe 06/10] BYD giết Kachi mỗi lần tắt máy và
+ *   cổng hay phải bỏ opcode (bóng nổi, chưa đủ 15 s) ⇒ phần lớn phiên là UNKNOWN ⇒ khung đã lưu không bao giờ dùng, chỉnh tay lưu
+ *   nhầm ô Bo tròn. Cài đặt vẫn nói "chưa rõ kiểu" + mời "Áp ngay" ([CastStyleApply.offer]).
  */
 data class CastSessionStyle(
     val desired: CastStyle,
     val believed: BelievedStyle,
     val frame: CastStyle,
-    val fullFrame: Boolean = false,
 ) {
     companion object {
         fun of(recipe: ProjectionRecipe, desired: CastStyle, plan: ClusterStylePlan.Plan?): CastSessionStyle {
             val believed = plan?.believed ?: BelievedStyle.UNKNOWN
-            // Chỉ đời xe CHO CHỌN hai kiểu (Seal 138) mới thật sự mơ hồ: đời xe chỉ có Bo tròn giữ đường cũ (khoá + khung đã lưu).
-            val styled = recipe.offers(CastStyle.CURVED) && recipe.offers(CastStyle.RECT)
             return when (believed) {
                 BelievedStyle.CURVED -> CastSessionStyle(desired, believed, CastStyle.CURVED)
                 BelievedStyle.RECT -> CastSessionStyle(desired, believed, CastStyle.RECT)
-                BelievedStyle.UNKNOWN -> CastSessionStyle(desired, believed, CastStyle.CURVED, fullFrame = styled)
+                // 2.92 · CLUSTER-FRAME-CHOSEN — chưa xác nhận ⇒ kiểu người lái chọn: ĐÚNG đường của phiên đã xác nhận kiểu ấy (khung
+                // Chữ nhật đã lưu chạy trên xe 14:18 06/10 [ĐO]). Đời xe chỉ có Bo tròn / DiLink 5 ⇒ `effective` ra Bo tròn / `null`.
+                BelievedStyle.UNKNOWN ->
+                    CastSessionStyle(desired, believed, ClusterStylePlan.effective(recipe, desired) ?: CastStyle.CURVED)
             }
         }
     }

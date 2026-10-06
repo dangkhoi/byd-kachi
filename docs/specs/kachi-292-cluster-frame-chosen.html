@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.92 khung cụm theo lựa chọn</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.92 — Cụm chưa xác nhận kiểu: khung app theo kiểu người lái CHỌN, không ép trọn cụm</h1>
+<p class="muted">Slug: <code>kachi-292-cluster-frame-chosen</code> · Branch <code>feat/key-source-split</code> · Backlog <code>CLUSTER-FRAME-CHOSEN</code> (P1 — khung đã lưu không được dùng, chỉnh tay lưu nhầm ô) · Nguồn: owner 06/10 tối trên xe *"gmaps trên cụm chữ nhật không lưu vị trí, kích thước, cast qua lại bị loạn"* + *"lỗi gmaps lên cụm không theo cấu hình size, kích thước đã lưu thì sao?"* · <span class="pill wait">Trạng thái: Draft — mã + test + senior review Pass 1 (APPROVED) xong; chờ bộ đủ + quét bảo mật · 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§4/§5/§6/§7/§10/§14. Không thêm lệnh shell nào, không gửi thêm opcode nào: chỉ đổi luật CHỌN khung giữa hai đường đã có. Không thư viện mới ⇒ không cần Context7 (máy chủ Context7 cũng không kết nối được phiên này). Thay luật khung của 2.90 · R2 (<code>kachi-290-cluster-rect-fix.html</code>), giữ nguyên luật KIỂU TIN.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2 — 2026-10-06</b>: (a) Cùng lượt: <code>CLUSTER-FORBIDDEN-OPS</code> — <code>ProjectionRecipe.FORBIDDEN_OPS</code> thêm 211 (xoá kho cấu hình bền cụm) · 6–9 (ghi bền ngày/đêm, kiểu đồng hồ) · 34 (huỷ màn ảo cụm) [ĐO disasm, <code>docs/diagnostics/cluster-rect-navitype-layouts-2026-10-06.md</code>]; không chuỗi dựng sẵn nào dùng chúng; 42 chưa cấm (có thể là chuỗi trả đồng hồ — chờ đo xe). (b) OQ1 có dữ liệu mới: [ĐO log xe 06/10] <code>BOOT_COUNT</code> đọc được và tăng qua một lần đầu xe khởi động lại (<code>KachiTrip … boot=n177</code>, trước đó <code>n176</code>) — nhưng VẪN KHÔNG nới luật kiểu tin (xem OQ1). (c) OQ4: owner 06/10 — khung đang đặt 1920×600 "đẹp, trọn ô", dùng số đó để đo; owner nghi lệch phải do nhầm gì đó.</li>
+<li><b>Pass 1 — 2026-10-06</b>: Mã + test (T1–T3); senior review độc lập (Opus) APPROVED — thêm test R2 trên phiên UNKNOWN (chỉnh tay lưu vào khoá <code>__RECT</code>, chiếu lại dùng đúng khung + DPI), test câu ghi chú gọi đúng nhãn nút "Áp ngay" ở 5 thứ tiếng, sửa KDoc cũ (§10).</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo từ log xe 06/10 tối (xe chạy 2.91) + đọc mã. Gốc: luật 2.90 · R2 "kiểu chưa xác nhận ⇒ khung trọn cụm + khoá Bo tròn" gặp sự thật hiện trường "BYD giết Kachi mỗi lần tắt máy" ⇒ phần lớn phiên là "chưa xác nhận".</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>2.1 Bằng chứng log xe 06/10 (xe 2.91, Seal 138, đồng hồ log của xe)</h3>
+<table>
+<tr><th>Phiên</th><th>Cổng theme</th><th>Kiểu tin</th><th>Bản ghim (log <code>pin:</code>)</th></tr>
+<tr><td>14:18 · pid A</td><td><code>theme 31 cụm=[] → SEND</code></td><td>RECT</td><td><code>profile=FULL__RECT density=240 bounds=0,28,1920,595</code> · <code>khung Chữ nhật … (khớp ngay)</code> — khung người lái đã lưu ✓</td></tr>
+<tr><td>15:13 · pid B</td><td><code>Skip(reason=BUBBLE …)</code> — bóng VietMap mod v1 không ẩn được</td><td>UNKNOWN</td><td><code>profile=FULL density=240 bounds=0,0,1920,720</code> — trọn cụm, khoá Bo tròn ✗</td></tr>
+<tr><td>15:17:25 · pid C</td><td><code>SEND</code> 31 → 16 …</td><td>—</td><td>tiến trình tự khởi động lại 15:17:31 (<code>KachiReady keys=STUCK(tat-may)->RESTARTING</code>) trước khi xong</td></tr>
+<tr><td>15:17:32 · pid D</td><td><code>Skip(reason=TOO_SOON, … còn 8468 ms)</code></td><td>UNKNOWN</td><td><code>profile=FULL density=240 bounds=0,0,1920,720</code> ✗</td></tr>
+</table>
+<ul>
+<li><b>[ĐO mã]</b> <code>ThemeLedger.believed</code> chỉ tin mục <code>ok</code> do CHÍNH tiến trình này ghi (<code>ThemeLedger.kt</code> <code>sameProcess</code>); <code>CastSessionStyle.of</code> nhánh UNKNOWN ⇒ <code>frame = CURVED</code> + <code>fullFrame = true</code> trên đời xe hai kiểu (<code>ClusterRectLayout.kt</code>); <code>pinFull</code>/<code>pinSlot</code> phiên <code>fullFrameSession</code> ⇒ bỏ khung đã lưu, khung trọn cụm / nửa của trọn cụm (<code>CastSessionPin.kt</code>).</li>
+<li><b>[ĐO 29/09]</b> BYD giết Kachi mỗi lần tắt máy ⇒ mỗi lần nổ máy là tiến trình mới. Cổng theme bỏ opcode khi màn ảo cụm có cửa sổ lạ / bóng nổi / chưa đủ 15 s ⇒ kiểu tin UNKNOWN ⇒ khung đã lưu không dùng; chỉnh tay trong phiên ấy lưu vào khoá Bo tròn (<code>FULL</code>), phiên Chữ nhật sau (<code>FULL__RECT</code>) không thấy ⇒ đúng triệu chứng owner tả: "không lưu", "qua lại bị loạn".</li>
+<li><b>Vì sao 2.90 chọn trọn cụm</b>: F3 sáng 06/10 — 2.89 áp khung Chữ nhật <code>FREE_AREA</code> (50,128,1285,555, né nền ADAS) lên cụm đang CONG ⇒ app lệch, lộ nền đen. Từ 2.90 · R4 khung Chữ nhật mặc định = trọn cụm, không còn vùng né; khung đã lưu là khung NGƯỜI LÁI tự đặt ⇒ lý do cũ không còn đứng.</li>
+<li><b>"Lệch phải"</b> (owner): [ĐO log] hai phiên đều trải ngang 0→1920, Kachi không dịch ngang; chỉ khác chiều cao 567 / 720 px. [SUY] GMaps tự đổi bố cục dẫn đường theo kích cửa sổ — đang đo trên máy ảo (OQ4).</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Đời xe có HAI kiểu (Seal 138) mà kiểu cụm chưa xác nhận ⇒ khung app + khoá lưu theo kiểu người lái CHỌN (<code>ClusterStylePlan.effective(recipe, desired)</code>), đi ĐÚNG đường của phiên đã xác nhận kiểu ấy: Chữ nhật ⇒ <code>ClusterRectLayout.pin(saved __RECT, FULL)</code> + <code>oneToOne</code>; Bo tròn ⇒ bản lưu khoá cũ.</li>
+<li><b>R2</b> — Chỉnh tay (−/+, chip DPI, tỉ lệ) trong phiên chưa xác nhận lưu vào khoá của kiểu đã chọn.</li>
+<li><b>R3</b> — Phiên ĐÃ xác nhận kiểu (SEND trong tiến trình này, hoặc sổ cùng tiến trình): không đổi một byte.</li>
+<li><b>R4</b> — Đời xe không cho chọn kiểu (một kiểu, hoặc DiLink 5 không opcode): không đổi.</li>
+<li><b>R5</b> — Cài đặt › Chiếu cụm vẫn nói thật: "Cụm đang: chưa rõ kiểu" + nút <i>Áp ngay</i>; dòng ghi chú "dùng trọn cụm 1920×720" thay bằng "chưa xác nhận ⇒ dùng khung đã lưu của kiểu bạn chọn; cụm hiện sai kiểu thì bấm Áp ngay" (5 thứ tiếng).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>N1</b> — 0 lệnh shell mới, 0 opcode mới; không đổi cổng theme, sổ theme, luật DỪNG (CLAUDE.md §4/§6). Đường áp khung Chữ nhật đã chạy trên xe (14:18 [ĐO]).</li>
+<li><b>N2</b> — Không còn cờ <code>fullFrame</code> chết: gỡ cờ + nhánh + chuỗi, không để mã không ai gọi (CLAUDE.md §8).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Chọn khung của một phiên</h3>
+<div class="flow">
+  <div class="fnode"><b>Cổng theme</b><span>SEND / SKIP / ABORT</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>Kiểu tin</b><span>CURVED · RECT · UNKNOWN</span></div><div class="arrow">→</div>
+  <div class="fnode new"><b>Kiểu khung</b><span>đã tin ⇒ kiểu tin · UNKNOWN ⇒ kiểu CHỌN</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>pinFull / pinSlot</b><span>khoá + khung đã lưu của kiểu khung</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span>luật đổi ở bản này</span><span class="sw"><span class="box"></span>giữ nguyên</span></div>
+<h3>4.2 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td>D1</td><td>UNKNOWN ⇒ <code>frame = effective(desired) ?: CURVED</code>, gỡ <code>fullFrame</code></td><td>Khung đã lưu là lựa chọn của người lái cho kiểu ấy; cụm GIỮ theme qua nổ máy [ĐO 06/10] và Kachi gửi opcode kiểu đã chọn mỗi khi cổng cho ⇒ kiểu cụm thật thường = kiểu chọn. Ca lệch (vừa đổi lựa chọn mà cổng chưa cho gửi) có <i>Áp ngay</i>.</td></tr>
+<tr><td>D2</td><td>KHÔNG nới luật kiểu tin (sổ cùng lần bật đầu xe) ở bản này</td><td>Cần BOOT_COUNT đọc được trên xe — chưa đo (CLAUDE.md §14) ⇒ 2.93 (OQ1). D1 tự đứng được, không phụ thuộc.</td></tr>
+<tr><td>D3</td><td>Giữ luật DỪNG (ABORT) và mọi cổng</td><td>Ngoài phạm vi; an toàn cụm (km/h) đã có lý do riêng.</td></tr>
+</table>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td><code>:core</code> — <code>CastSessionStyle.of</code> nhánh UNKNOWN; gỡ <code>fullFrame</code> (<code>ClusterRectLayout.kt</code>), <code>fullFrameSession</code> (<code>CastStyleSessionOps.kt</code>), hai nhánh ở <code>CastSessionPin.kt</code>; KDoc <code>ClusterStylePlan</code> luật 5</td><td>—</td><td>✅</td></tr>
+<tr><td>T2</td><td><code>:app</code> — <code>SettingsSectionsCastStyle</code> ghi chú UNKNOWN mới; <code>ClusterNavBridgeGeometry.geometryProfileDiffers</code> bỏ nhánh <code>fullFrame</code>; chuỗi <code>kachi_cast_style_unconfirmed</code> thay <code>kachi_cast_style_full_frame</code> (5 thứ tiếng)</td><td>T1</td><td>✅</td></tr>
+<tr><td>T3</td><td>Test: <code>CastRectFrameKeyTest</code> (UNKNOWN ⇒ khoá/khung kiểu chọn, ca log 15:13/15:17 dựng lại) · <code>CastRectSessionCoordinatorTest</code> · <code>ClusterRectOptionWiringContractTest</code></td><td>T1–T2</td><td>✅</td></tr>
+<tr><td>T4</td><td>Bộ đủ + lint + APK · senior review · quét bảo mật</td><td>T3</td><td>review ✅ · test chọn lọc 336 / 0 ✅ · bộ đủ + quét: đang chạy</td></tr>
+<tr><td>T5</td><td><code>CLUSTER-FORBIDDEN-OPS</code>: <code>FORBIDDEN_OPS</code> + 211 · 6–9 · 34; test <code>ProjectionRecipeTest</code> (bóc khỏi chuỗi chia sẻ, chuỗi dựng sẵn không đổi) · <code>ThemeOpcodeLiteralContractTest</code></td><td>—</td><td>✅</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>Chờ T1–T4. 🚗 Trên xe: cụm Chữ nhật, tắt máy rồi nổ lại (tiến trình mới) ⇒ GMaps lên đúng khung đã lưu; chỉnh khung trong phiên đó ⇒ lần chiếu sau còn.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Tin sổ theme trong CÙNG lần bật đầu xe (<code>BOOT_COUNT</code> bằng nhau) để bớt "chưa rõ kiểu". [ĐO log xe 06/10] <code>BOOT_COUNT</code> đọc được trên xe và tăng qua lần đầu xe khởi động lại (n176 → n177) ⇒ điều kiện đo đã có. <b>Quyết định: CHƯA nới</b> — F3 sáng 06/10 chính là sổ ghi <code>31;ok</code> trong khi cụm đang Bo tròn: kiểu cụm bị đổi bởi thứ KHÔNG ghi sổ (bản Kachi ≤ 2.88 cài tay, lệnh adb khi gỡ lỗi trên xe, catalog chẩn đoán CarExec) trong cùng lần bật [SUY: ghép từ uptime 15 h + lịch cài bản]. Tin sổ cùng lần bật sẽ lặp lại đúng lỗi đó mà không có nút "Áp ngay" để gỡ (kiểu tin = kiểu chọn ⇒ không mời). D1 đã lo phần người lái thấy. Mở lại khi mọi đường đổi theme đều ghi sổ (kể cả quy trình gỡ lỗi trên xe) hoặc có cách ĐỌC thẳng theme cụm ⇒ backlog <code>CLUSTER-THEME-SAME-BOOT</code>.</li>
+<li><b>OQ2</b> — <code>KachiReady</code> khởi động lại tiến trình (phím kẹt sau tắt máy) giữa lượt mở chiếu (15:17:31 [ĐO]) ⇒ lượt sau dính <code>TOO_SOON</code>. Cân nhắc chờ lượt mở xong / mở chiếu sau kiểm phím ⇒ 2.93.</li>
+<li><b>OQ3</b> — <code>TIMEOUT: openProjection</code> (13:49, 15:13 [ĐO]) khi chờ bóng ẩn ~5 s cộng chuỗi đóng–mở vượt hạn 15 s ⇒ 2.93.</li>
+<li><b>OQ4</b> — "Lệch phải": [ĐO log] hai phiên đều trải ngang 0→1920, chỉ khác cao (567 / 720 px). Owner 06/10: khung đang đặt <b>1920×600</b> ("đẹp, trọn ô"), nghi do nhầm gì đó. <b>Đo máy ảo 06/10</b> (GMaps 10.16.7, 240 dpi = dp của cụm): (1) chiều cao KHÔNG đổi bố cục — 480…1044 px đều bảng trái 408 dp, chấm vị trí ở giữa; (2) vị trí chấm phụ thuộc HÌNH cửa sổ lúc GMaps đặt camera lần cuối: từ cửa sổ RỘNG thu về 1920×600 ⇒ chấm ở <b>66 %</b> bề ngang (lệch phải), từ cửa sổ HẸP mặc định trên cụm (330×720) ⇒ <b>50 %</b>; đi thẳng hay qua 1920×720 như nhau ⇒ không phải thứ tự resize của Kachi [ĐO máy ảo]. Chế độ DẪN ĐƯỜNG chưa chốt — GMaps máy ảo crash khi vào dẫn đường [CHƯA BIẾT]. 🚗 Chốt: (a) mở dẫn đường ở màn chính rồi chiếu lên cụm ⇒ lệch? (b) chiếu trước rồi mới mở dẫn đường ⇒ giữa? Nếu đúng ⇒ backlog <code>GMAPS-CAMERA-HISTORY</code>: mở mới app trên cụm thay vì kéo cửa sổ cũ (2.93).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-290-cluster-rect-fix.html</code> R2 (luật khung cũ) · R4 (khung trọn, không chừa) · <code>docs/specs/kachi-289-field-fixes.html</code> B1a/B1b.</li>
+<li><code>docs/diagnostics/oncar-2026-10-06-cluster-rect.md</code> · memory phiên xe 06/10 tối (log ở scratchpad, không vào repo — có dữ liệu riêng tư).</li>
+<li>Mã: <code>ClusterRectLayout.kt</code> (<code>CastSessionStyle</code>) · <code>CastSessionPin.kt</code> · <code>CastStyleSessionOps.kt</code> · <code>ClusterStylePlan.kt</code> · <code>ThemeLedger.kt</code> · <code>SettingsSectionsCastStyle.kt</code> · <code>ClusterNavBridgeGeometry.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li>2026-10-06 — Spec Pass 0.</li>
+<li>2026-10-06 — OQ4 đo máy ảo: chiều cao không đổi bố cục; lệch phải do hình cửa sổ lúc GMaps đặt camera (66 % vs 50 %); dẫn đường chưa đo được.</li>
+<li>2026-10-06 — T1–T3 xong; test chọn lọc 336 / 0 [ĐO XML]; senior review Pass 1 APPROVED (+2 test, KDoc). T5 <code>FORBIDDEN_OPS</code>. Bộ đủ + lint + APK: đang chạy.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Đọc: <code>git diff</code> của 15 tệp trong phạm vi (chỉ các khối <code>fullFrame</code> / CLUSTER-FRAME-CHOSEN / <code>kachi_cast_style_unconfirmed</code> / dòng <code>Log.i</code>) + ngữ cảnh <code>ProjectionManager</code> · <code>ClusterStylePlan</code> · <code>ProjectionRecipe.offers</code> · <code>ClusterProfile.supportsStyle</code> · <code>CastGeometryController</code> (<code>resizeFull</code>/<code>applyPinned</code>/<code>verifyFrame</code>) · <code>CastDensityControl</code> · <code>SimpleCastCoordinatorOps</code>/<code>Intents</code> (nhận lại lúc mở, dừng CP/AA, repin) · <code>ClusterNavBridgeCastStyle</code> · <code>FakeShell</code>/<code>FakePrefs</code>. Quét <code>fullFrame</code> / <code>fullFrameSession</code> / <code>kachi_cast_style_full_frame</code> ở <code>main</code> · <code>test</code> · <code>vehicleTest</code> · <code>testVehicleTest</code> · <code>testFixtures</code> + tài liệu: chỉ còn bài canh khẳng định ĐÃ gỡ và spec 2.90 (lịch sử). Hai worktree tác tử cũ dưới <code>.claude/worktrees/</code> còn bản cũ — không thuộc cây này.</p>
+<table>
+<tr><th>Mục</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>R1</td><td class="ok">✅</td><td>Nhánh UNKNOWN của <code>CastSessionStyle.of</code> = <code>effective(recipe, desired) ?: CURVED</code> (<code>ClusterRectLayout.kt:106-107</code>); <code>pinFull</code>/<code>pinSlot</code> chỉ còn hai nhánh theo <code>frameStyle</code> (<code>CastSessionPin.kt:48,83</code>) ⇒ Chữ nhật = <code>ClusterRectLayout.pin(__RECT, FULL/slotFrame)</code> + <code>oneToOne</code>, Bo tròn = bản lưu khoá cũ. Test: <code>CastRectFrameKeyTest</code> (luật thuần) + <code>CastRectSessionCoordinatorTest</code> "292 - so 31 ok…" (ghim + áp khung đã lưu).</td></tr>
+<tr><td>R2</td><td class="ok">✅ (test thêm ở lượt này)</td><td>−/+ (<code>resizeFullBody</code>/<code>resizeSlotBody</code>), chip DPI (<code>setDensityBody</code>/<code>setDensitySplitBody</code>), tỉ lệ (<code>applySplitRatioLiveBody</code>) đều lưu theo <code>frameStyle</code> = <code>session.frame</code>. Trước lượt này KHÔNG có bài chạy thật cho phiên UNKNOWN — F1.</td></tr>
+<tr><td>R3</td><td class="ok">✅</td><td>Nhánh CURVED/RECT của <code>of</code> không đổi; cờ cũ chỉ bật ở UNKNOWN ⇒ gỡ nó không chạm phiên đã tin. Cài đặt: câu mới chỉ khi <code>believed == UNKNOWN</code>; <code>geometryProfileDiffers</code> của phiên đã tin y nguyên. Các bài phiên đã tin trong <code>CastRectSessionCoordinatorTest</code> không đổi một dòng.</td></tr>
+<tr><td>R4</td><td class="ok">✅</td><td><code>SEAL_DL3</code> (kiểu gốc chưa biết ⇒ RECT ẩn) ⇒ <code>effective</code> = CURVED với mọi lựa chọn; DL5 (không opcode kiểu) ⇒ <code>null</code> ⇒ CURVED — đúng như cũ (<code>fullFrame = false</code>). Hàng Cài đặt ẩn theo <code>supportsStyle</code> = <code>offers(CURVED) ∧ offers(RECT)</code> (<code>ClusterProfile.kt:94</code>) — CÙNG vị từ với <code>styled</code> đã gỡ. Ngoại lệ lý thuyết: I3.</td></tr>
+<tr><td>R5</td><td class="ok">✅</td><td><code>SettingsSectionsCastStyle.kt:71-73</code>; <code>sessionNote</code> vẫn "Cụm đang: chưa rõ kiểu"; "Áp ngay" vẫn mời khi UNKNOWN (<code>CastStyleApply.offer</code>, có test). 5 thứ tiếng có khoá mới, khoá cũ gỡ hết; câu gọi đúng nhãn nút của từng ngôn ngữ (F3).</td></tr>
+<tr><td>N1</td><td class="ok">✅</td><td>Diff không thêm chuỗi lệnh nào. Phiên UNKNOWN chọn Chữ nhật nay ĐI TỚI các đường Chữ nhật CÓ SẴN (đọc lại khung, nhận lại lúc mở, trả 1:1 khi dừng CP/AA) — câu 2 dưới. Cổng / sổ / luật DỪNG không đổi (<code>ClusterStylePlan.decide</code>, <code>ProjectionManager</code> không có trong diff).</td></tr>
+<tr><td>N2</td><td class="ok">✅</td><td>Không còn cờ, nhánh, chuỗi, mục call-site của <code>fullFrame*</code>; bài canh "292 - Cai dat…" khoá "không còn <code>fullFrame</code>".</td></tr>
+<tr><td>D1–D3</td><td class="ok">✅</td><td>Khớp mã. D1 ghi đúng mức bằng chứng ([ĐO] theme giữ qua nổ máy; "kiểu thật thường = kiểu chọn" là [SUY] — trade-off I2).</td></tr>
+</table>
+
+<p><b>Phát hiện</b></p>
+<ul>
+<li><b>[P2] F1 — R2 thiếu bài chạy thật ở phiên UNKNOWN</b> — đúng vế owner phàn nàn ("không lưu vị trí, kích thước"). Ghép hai bài cũ (khoá <code>__RECT</code> ở phiên đã tin + <code>of</code> ra RECT) thì suy ra đúng, nhưng không bài nào đỏ nếu một bản sau lại tách khoá lưu khỏi <code>session.frame</code> ở phiên UNKNOWN. <b>Vá</b>: <code>CastRectSessionCoordinatorTest</code> "292 - chinh tay trong phien CHUA RO luu vao khoa kieu chon, chieu lai van dung khung" — phiên dựng lại từ log 15:13/15:17; −/+ và DPI lưu vào <code>__RECT</code>, khoá Bo tròn trống; dừng rồi chiếu lại trong CÙNG phiên ⇒ ghim + áp đúng khung và <code>wm density 160</code>. Phần dựng phiên UNKNOWN gom vào <code>openUnknownRect()</code>, bài 292 cũ dùng lại (DRY, cùng trình tự lệnh).</li>
+<li><b>[P3] F2 — chú thích cũ</b>: KDoc đầu <code>SettingsSectionsCastStyle.kt</code> mục 4 còn "cụm chưa rõ kiểu ⇒ khung trọn cụm"; KDoc lớp <code>ClusterRectOptionWiringContractTest</code> mục (5) còn "khung trọn cụm". Vá cả hai (chỉ chú thích, không xê dịch dòng mã).</li>
+<li><b>[P3] F3 — câu "chưa xác nhận" chưa có bài canh 5 thứ tiếng</b>. [ĐO đọc tệp] cả 5 đều gọi đúng nhãn nút của chính ngôn ngữ (Áp ngay · Apply now · 立即应用 · ใช้ทันที · Guna sekarang), dùng đúng từ "khung" sẵn có (khung · frame · 画面 · กรอบ · bingkai), không nháy đơn, không <code>%</code>, kiểu ngoặc khớp tệp (vi đã dùng «…» cho tên nút/lựa chọn, vd «Gương cầu»; zh/th dùng “…” như <code>apply_busy</code>). <b>Vá</b>: bài "292 - cau chua xac nhan goi dung nhan nut Ap ngay, du 5 ngon ngu" (khuôn bài F4 của 2.91); hàm đọc chuỗi nâng thành <code>stringRes</code> dùng chung với bài F4.</li>
+</ul>
+<p><b>Ghi nhận, không vá</b></p>
+<ul>
+<li><b>I1</b> — Câu bảo "bấm «Áp ngay»" nhưng nút chỉ hiện khi không có app đang chiếu (<code>CastStyleApply.stateAllows</code>). Cùng khuôn với <code>kachi_cast_style_blocked</code>; <code>kachi_cast_style_session</code> ("áp … khi cụm trống") và toast <code>apply_busy</code> đã nói phần còn lại. Đổi chữ 5 thứ tiếng = việc UX của owner.</li>
+<li><b>I2</b> — Trade-off D1, chiều ngược: phiên UNKNOWN mà cụm THẬT đang ở kiểu kia (vừa đổi lựa chọn, cổng chưa cho gửi) ⇒ khung của kiểu chọn đặt lên cụm kiểu kia, và chỉnh tay lúc ấy lưu vào khoá kiểu chọn một khung chỉnh cho cụm sai. Hệ quả chỉ là hình (câu 2); câu mới mời "Áp ngay". Khép hẳn cần kiểu tin tốt hơn — OQ1 (<code>CLUSTER-THEME-SAME-BOOT</code>).</li>
+<li><b>I3</b> — R4 lý thuyết: công thức CHỈ có opcode Chữ nhật (không opcode Bo tròn) — chỉ dựng được bằng hồ sơ cụm sửa tay cho <code>car.type=138</code> + <code>cast_style=RECT</code> nhập từ tệp (hàng Cài đặt ẩn) — nay ra khung Chữ nhật ở phiên UNKNOWN thay vì Bo tròn. Nhất quán với D1 (cổng cũng xin 31 cho nó); không đường UI nào tới.</li>
+<li><b>I4</b> — Đổi lựa chọn GIỮA phiên: câu nói "khung đã lưu của kiểu bạn chọn" trong khi khung là của kiểu chọn LÚC MỞ (ghim theo phiên, VC-R6); <code>sessionNote</code> đã nói kiểu mới áp khi cụm trống. Nhỏ.</li>
+<li><b>I5</b> — Spec 2.90 (<code>kachi-290-cluster-rect-fix.html</code> R2) giữ nguyên làm lịch sử; spec này ghi rõ "thay luật khung của 2.90 · R2" — cùng khuôn 2.90 ghi đè 2.89.</li>
+</ul>
+
+<p><b>Trả lời câu hỏi của điều phối</b></p>
+<ol>
+<li><b>Mọi chỗ đọc kiểu khung</b> [ĐO grep] — <code>:core</code>: <code>pinFull</code>/<code>slotDisplayConfig</code>/<code>pinSlot</code> (<code>CastSessionPin.kt:45-52, 61-65, 79-85</code>), −/+ (<code>:118, :131</code>), tỉ lệ sống (<code>:155</code>), DPI (<code>:172, :179</code>), đọc lại khung (<code>CastStyleSessionOps.kt:27</code>), nhận lại app lúc mở (<code>SimpleCastCoordinatorOps.kt:151</code>), dừng CP/AA trả 1:1 (<code>SimpleCastCoordinatorIntents.kt:204-205</code>), <code>CastStyleApply.offer</code> (<code>ClusterRectLayout.kt:129-131</code>). <code>:app</code>: <code>frameStyle()</code> → dải kẹp / "Đặt lại" / khung mặc định (<code>ClusterNavBridgeGeometry.kt:105-111, 138-140, 227-230</code>), <code>geometryProfileDiffers</code> (<code>:167-177</code>), <code>savedConfig</code> (<code>:201-205</code>), Cài đặt (<code>SettingsSectionsCastStyle.kt:68-73, 90-98</code>), <code>castStyleApplyOffered</code>. Mọi quyết định hình học / khoá chỉ đọc <code>frame</code> ⇒ phiên UNKNOWN-Chữ nhật đi ĐÚNG đường phiên đã tin Chữ nhật; chỉ chữ Cài đặt và nút "Áp ngay" xem <code>believed</code> (đúng ý). Không chỗ nào còn dựa "UNKNOWN ⇒ Bo tròn" ngoài nhánh đã gỡ; KHÔNG có phiên (vd <code>resetState(true)</code> của <code>closeOrphan</code>) vẫn ⇒ Bo tròn (<code>CastStyleSessionOps.kt:15</code>) — không đổi. <code>geometryProfileDiffers</code> nay in dòng phụ ở phiên UNKNOWN: so cùng khoá mà lượt chiếu kế trong phiên sẽ ghim ⇒ đúng.</li>
+<li><b>Khung Chữ nhật trên cụm thật đang CONG</b> — khác 2.90 đúng sáu điểm, đều là đường Chữ nhật có sẵn: (a) khung ghim = khung <code>__RECT</code> người lái lưu hoặc trọn cụm; (b) <code>wm size 1920x720</code> / <code>overscan 0,0,0,0</code> = đúng <code>NORMAL_DEFAULT</code> mà MỌI lượt mở đã áp (<code>SimpleCastCoordinatorOps.kt:114</code>), DPI = DPI của <code>__RECT</code>; (c) −/+ không có đường lùi <code>wm size</code>; (d) đọc lại khung: ≤ 2 <code>am stack list</code> + ≤ 1 <code>am task resize</code>, đúng gói, đúng VD sống; (e) nhận lại app NORMAL lúc mở ⇒ resize theo bản ghim (gói cụ thể, VD sống, kẹp theo kích VD); (f) dừng CP/AA ⇒ <code>configurator.apply(NORMAL_DEFAULT)</code> trên id dò live = trạng thái lúc mở. Không lệnh nào đổi theme. Số km/h: Bo tròn (30) giữ km/h gốc (<code>ClusterProfile.kt:17</code>) và app chỉ lộ qua lỗ thấu kính của cụm cong [SUY từ ĐO QML+PNG ghi ở <code>CastRectFrameKeyTest.kt:16</code>] ⇒ khung không che được đồng hồ; Chữ nhật mất km/h bất kể khung. ClusterBlack vẫn trọn cụm dưới app ⇒ khung nhỏ hơn cụm lộ nền đen quanh app — CÙNG triệu chứng hình của F3, nhưng là khung người lái tự đặt (không phải <code>FREE_AREA</code> tính sẵn), sửa bằng "Áp ngay" hoặc −/+. ⇒ Không thấy hệ quả mất an toàn, chỉ hình. Watchdog repin chỉ chạy khi app rời cụm (2 lần dò + thời gian nguội) ⇒ không có vòng resize theo nhịp.</li>
+<li><b>Đời xe không cho chọn kiểu</b> — byte-identical (dòng R4); <code>CastRectFrameKeyTest</code> khoá <code>SEAL_DL3</code> + DL5; các bài cũ trên <code>SEAL_DL3</code> mặc định (<code>CastSessionPinTest</code>, <code>CastProfileDensityTest</code>, <code>CastDisplayTargetingRegressionTest</code>, <code>CastThemeSafeCoordinatorTest</code>) không đổi kết quả. <code>ClusterThemeLayerPauseTest</code> (Seal mức B, chọn Chữ nhật) có phiên UNKNOWN (bóng mod cũ) nhưng không chiếu app ⇒ không chạm khung.</li>
+<li><b>Bản dịch</b> — F3: tự nhiên, đúng thuật ngữ sẵn có, không nháy đơn chưa thoát, không placeholder.</li>
+<li><b>Dòng <code>Log.i</code></b> (<code>WorkspacePrefsMigrations.kt:166</code>) — tag <code>KachiProfile</code> là tag sẵn có (<code>WorkspacePrefsSnapshot.kt:20</code>); chạy sau <code>apply()</code>, chỉ khi có khoá chờ (sổ đủ ⇒ <code>return</code> sớm) ⇒ một dòng mỗi bộ khoá mới, không phun log; <code>pendingKeys</code> trả <code>Map&lt;String, List&lt;String&gt;&gt;</code> ⇒ <code>values.sumOf { it.size }</code> = số khoá, <code>filled</code> = số ảnh ghi; vào log theo pid (<code>usage-*.log</code>). <code>:app</code> không Robolectric, bài canh chỉ đọc mã ⇒ không bài JVM nào chạy tới <code>android.util.Log</code>; bài canh <code>ClusterProfileScopeCoverageTest</code> không vướng.</li>
+</ol>
+<p><b>Công nghệ</b>: Context7 không kết nối được phiên này (ENOTFOUND) ⇒ chưa kiểm bằng Context7. Bản vá không thêm thư viện — chỉ Kotlin stdlib, <code>android.util.Log</code> và tài nguyên chuỗi.</p>
+<p><b>Test</b>: [CHƯA CHẠY] — theo yêu cầu, lượt review không chạy <code>./gradlew</code>. Đã mô phỏng logic hai bài 5 thứ tiếng trên tệp XML thật (đều đạt). Điều phối chạy lại: <code>:core</code> <code>CastRectSessionCoordinatorTest</code> · <code>CastRectFrameKeyTest</code> · <code>ClusterRectStaleDisplayTest</code> · <code>ClusterThemeLayerPauseTest</code> · <code>CastSessionPinTest</code>; <code>:app</code> <code>ClusterRectOptionWiringContractTest</code> · <code>ClusterProfileScopeCoverageTest</code> · <code>ClusterProfileSwitchWiringContractTest</code>; rồi bộ đủ (T4), đếm từ JUnit XML.</p>
+<p><b>Kết luận</b>: APPROVED (mã) — không [P0]/[P1]; F1 [P2] + F2/F3 [P3] đã vá trong lượt này (hai bài test, hai chú thích — không đổi mã chạy); I1–I5 ghi nhận. Điều kiện: các bài trên xanh. Còn lại cho điều phối: cập nhật §5 (T1–T4), §6, §9 khi chốt; 🚗 vẫn cần thử trên xe (§6).</p>
+
+</div></body>
+</html>

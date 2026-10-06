@@ -249,12 +249,44 @@ class AppWidgetSlotHost(
         private var toldW = 0
         private var toldH = 0
 
+        /**
+         * 2.92 OQ3 (APPWIDGET-PADDING-UNIFORM, quyết định điều phối 06/10): lề ĐỀU [KachiSpace.S] (8 dp) bốn phía — cùng lề
+         * khối dọc widget dựng sẵn (`WidgetViews.col`) — thay lề mặc định framework `default_app_widget_padding_*`
+         * (sw720dp: 12/4/12/20 dp = 18/6/18/30 px ở mật độ 1,5 — [ĐO framework.jar + framework-res máy ảo API 29]).
+         * `setAppWidget` đặt lại lề mặc định MỖI lần gọi (`AppWidgetHost.createView` và `resetAppWidget` khi nhà cung cấp
+         * đổi) ⇒ ghi đè đúng sau `super`, không chỗ nào khác phải nhớ. [ĐO nguồn AOSP `AppWidgetHostView.java`]
+         * android-10.0.0_r47 L142-148 (đặt lề mặc định; KDoc nền tảng: "can be overridden in order to add custom padding")
+         * · L378-380 (`resetAppWidget` → `setAppWidget`); Android 12 (DL5) 12.1.0_r27 L163-169 · L497-499 — cùng đường.
+         */
+        override fun setAppWidget(appWidgetId: Int, info: AppWidgetProviderInfo?) {
+            super.setAppWidget(appWidgetId, info)
+            val p = KachiTheme.dpi(context, KachiSpace.S)
+            setPadding(p, p, p, p)
+        }
+
+        /**
+         * Lề mặc định (dp) mà `updateAppWidgetSize` bản công khai TỰ TRỪ khỏi cỡ khai: `xPaddingDips = (int)((trái +
+         * phải) / density)`, cùng `getDefaultPaddingForWidget` ([ĐO decompile `AppWidgetHostView` máy ảo A10: lề mặc định
+         * KHÔNG phụ thuộc nhà cung cấp — đối số component bị bỏ qua]). Chưa có provider (`resetAppWidget(null)` khi nhà
+         * cung cấp bị gỡ) ⇒ vẫn trừ đúng lề ấy, nên vẫn bù — đưa component của chính host cho đủ chữ ký. [ĐO nguồn AOSP]
+         * r47 L178-181 (component bỏ qua) · L296-304 (trừ `(int)(lề/density)`); 12.1.0_r27 L199-201 · L413-419 — bản 5 tham
+         * số `@Deprecated` từ API 31 (L344) nhưng vẫn trừ y vậy; `onLayout` A12 tính cỡ RemoteViews theo lề THẬT (L286-298).
+         */
+        private fun defaultPaddingDips(d: Float): Pair<Int, Int> {
+            val provider = appWidgetInfo?.provider ?: ComponentName(context, AppWidgetSlotHost::class.java)
+            val r = AppWidgetHostView.getDefaultPaddingForWidget(context, provider, null)
+            return ((r.left + r.right) / d).toInt() to ((r.top + r.bottom) / d).toInt()
+        }
+
         override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
             super.onSizeChanged(w, h, oldw, oldh)
             if (w <= 0 || h <= 0) return
             val d = resources.displayMetrics.density
-            val wDp = (w / d).toInt()
-            val hDp = (h / d).toInt()
+            // Cỡ khai = vùng NỘI DUNG thật (khung − lề đều của ta) + đúng phần lề mặc định framework sẽ trừ ⇒ nhà cung cấp
+            // nhận đúng chỗ nó được vẽ (trước 2.92: khai khung, framework trừ lề mặc định = đúng lề mặc định đang đặt).
+            val (padXDp, padYDp) = defaultPaddingDips(d)
+            val wDp = ((w - paddingLeft - paddingRight).coerceAtLeast(0) / d).toInt() + padXDp
+            val hDp = ((h - paddingTop - paddingBottom).coerceAtLeast(0) / d).toInt() + padYDp
             // Cỡ chưa đổi ⇒ không khai lại. `updateAppWidgetSize` là lời gọi LIÊN-TIẾN-TRÌNH và nó làm nhà cung cấp
             // dựng lại RemoteViews; `onSizeChanged` còn bắn khi chỉ lệch vài pixel do đo lại, nên thiếu chốt này là
             // mỗi lượt đo một lượt cập nhật — loại lãng phí mà nhịp 1 giây trên xe sẽ nhân lên.

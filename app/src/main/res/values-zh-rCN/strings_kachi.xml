@@ -438,7 +438,7 @@
     <string name="kachi_cast_style_unknown">样式未知</string>
     <string name="kachi_cast_style_apply_now">立即应用（关闭后重新投屏）</string>
     <string name="kachi_cast_style_apply_busy">正在投屏应用——请先停止投屏，再点“立即应用”。</string>
-    <string name="kachi_cast_style_full_frame">仪表当前样式未知（Kachi本次运行尚未更改仪表样式）⇒ 应用画面使用整个仪表 1920×720。</string>
+    <string name="kachi_cast_style_unconfirmed">尚未确认仪表当前样式（Kachi本次运行未能更改仪表样式）⇒ 应用画面使用您所选样式已保存的画面。若仪表样式不对，请点按“立即应用”。</string>
     <string name="kachi_cast_style_blocked">无法更改仪表样式：%1$s 的悬浮球正停留在仪表上。请关闭 %1$s 悬浮球后点“立即应用”。</string>
     <string name="kachi_cast_style_bubble_old_mod">无法更改仪表样式：旧版 %1$s 修改版不支持隐藏悬浮球——请关闭 %1$s 后点“立即应用”。</string>
     <string name="kachi_cast_split_session_differs">当前分屏%1$s · 此档案%2$s——从下次分屏起生效（点按某个比例即可立即应用）。</string>
@@ -653,7 +653,7 @@
     <string name="kachi_sc_cap_note">快捷方式最多%1$d个应用——移除一个才能再添加</string>
     <string name="kachi_sc_section">应用快捷方式（%1$d）</string>
     <string name="kachi_sc_note">显示在车控栏的“应用快捷方式”区块（用上方的按钮选择器添加该区块）以及“应用快捷方式网格”小组件中。格位n：暂时放入该格位（即使该格位是小组件），原应用移到主屏幕后方；重启启动器即可恢复已保存的布局。</string>
-    <string name="kachi_sc_pick_n">选择应用…（%1$d/%2$d）</string>
+    <string name="kachi_sc_pick_n">选择应用…（%1$d）</string>
     <string name="kachi_sc_mode_slot">格位%1$d</string>
     <string name="kachi_sc_mode_full">全屏</string>
     <string name="kachi_sc_mode_bg">后台</string>

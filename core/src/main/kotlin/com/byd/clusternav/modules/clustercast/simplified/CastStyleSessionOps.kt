@@ -28,12 +28,6 @@ internal fun SimpleCastCoordinator.applySessionPin(pkg: String, pinned: DisplayC
 }
 
 /**
- * 2.90 · R2 — phiên đang mở có kiểu cụm CHƯA xác nhận trên đời xe có opcode kiểu ([CastSessionStyle.fullFrame]) ⇒ khung trọn cụm.
- */
-internal val SimpleCastCoordinator.fullFrameSession: Boolean
-    get() = projection.session?.fullFrame == true
-
-/**
  * 2.90 · R1 — nhãn app bóng nổi đã chặn lượt đổi theme GẦN NHẤT ([ClusterThemeGuard.lastBlockers]); rỗng = không bị chặn. Cho
  * Cài đặt / Chẩn đoán ở `:app` nói "tắt bóng … rồi Áp ngay" (chỉ đọc).
  */

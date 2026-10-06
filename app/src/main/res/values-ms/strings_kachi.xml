@@ -438,7 +438,7 @@
     <string name="kachi_cast_style_unknown">gaya tidak diketahui</string>
     <string name="kachi_cast_style_apply_now">Guna sekarang (tutup dan buka semula pancaran)</string>
     <string name="kachi_cast_style_apply_busy">Apl sedang dipancar — hentikan pancaran dahulu, kemudian ketik Guna sekarang.</string>
-    <string name="kachi_cast_style_full_frame">Gaya kluster tidak diketahui (Kachi belum menukar gaya kluster dalam larian ini) ⇒ bingkai apl menggunakan seluruh kluster 1920×720.</string>
+    <string name="kachi_cast_style_unconfirmed">Gaya kluster belum disahkan (Kachi tidak dapat menukar gaya kluster dalam larian ini) ⇒ apl menggunakan bingkai yang disimpan untuk gaya pilihan anda. Jika kluster menunjukkan gaya yang salah, ketik “Guna sekarang”.</string>
     <string name="kachi_cast_style_blocked">Tidak dapat menukar gaya kluster: gelembung %1$s berada pada kluster. Matikan gelembung %1$s, kemudian ketik Guna sekarang.</string>
     <string name="kachi_cast_style_bubble_old_mod">Tidak dapat menukar gaya kluster: mod %1$s versi lama belum boleh menyembunyikan gelembung — tutup %1$s, kemudian ketik Guna sekarang.</string>
     <string name="kachi_cast_split_session_differs">Nisbah pisah semasa %1$s · profil ini %2$s — berkuat kuasa mulai paparan pisah seterusnya (ketik nisbah untuk guna sekarang).</string>
@@ -653,7 +653,7 @@
     <string name="kachi_sc_cap_note">Pintasan memuatkan maksimum %1$d apl — buang satu untuk tambah yang lain</string>
     <string name="kachi_sc_section">Pintasan apl (%1$d)</string>
     <string name="kachi_sc_note">Dipaparkan dalam blok Pintasan apl pada bar butang (tambah blok dengan pemilih butang di atas) dan dalam widget Grid pintasan apl. Petak n: diletakkan dalam petak buat sementara (walaupun di atas widget), apl lama beralih ke belakang skrin utama; memulakan semula pelancar akan memulihkan susun atur yang disimpan.</string>
-    <string name="kachi_sc_pick_n">Pilih apl… (%1$d/%2$d)</string>
+    <string name="kachi_sc_pick_n">Pilih apl… (%1$d)</string>
     <string name="kachi_sc_mode_slot">Petak %1$d</string>
     <string name="kachi_sc_mode_full">Skrin penuh</string>
     <string name="kachi_sc_mode_bg">Latar belakang</string>

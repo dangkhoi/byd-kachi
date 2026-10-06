@@ -1,0 +1,19 @@
+step	action	observation	evidence
+S0	khung 2×1 (301×123), 8 app, thanh nút DƯỚI	lưới = HorizontalScrollView (lớp trợ năng), scrollable=true; 3 icon trọn + nửa icon thứ 4 lộ ở mép phải (khe 22,8 px)	uiautomator: Kiki/Máy ảnh/Chrome 82×90, Danh bạ 41×90 tại [284..325]; logcat WidgetFit: n=8 frame=301x123 -> 8x1 icon=60 gap=22.8x31.5 scroll=HORIZONTAL content=685x123
+S1	input swipe 300,161 → 80,161 (600 ms)	nội dung dời ≈ 230 px; hiện Chrome (một phần) · Danh bạ · Điện thoại · Tệp · Cài đặt (một phần)	uiautomator sau vuốt: Tệp [220,117][302,207]
+S2	input tap 261,162 (icon Tệp đã cuộn vào)	mở đúng Tệp toàn màn (kiểu F)	mResumedActivity = com.android.documentsui/.files.FilesActivity; KachiShortcut: tap com.android.documentsui F … -> OpenFull(reason=null)
+S3	HOME	vị trí cuộn giữ nguyên (view không dựng lại)	uiautomator: Chrome [24..53] như S1
+S4	input swipe 100,162 → 290,162 BẮT ĐẦU trên icon Danh bạ	cuộn ngược về đầu, KHÔNG mở app (icon nhận CANCEL)	mResumedActivity vẫn KachiHome; 0 dòng KachiShortcut "tap" trong khung thời gian
+S5	input tap 175,108 (lề trên ô, ngoài mọi icon)	ô vẫn nhận chạm như trước: mở ngăn kéo "Đặt widget hoặc mở app vào ô này"	uiautomator text "Đặt widget hoặc mở app vào ô này"
+V0	khung 262×956, 40 app (22 thật + 18 gói giả vn.qa.fake*)	lưới = ScrollView, scrollable=true; 3 cột icon 60 px, hàng 13 lộ một nửa ở mép dưới	logcat WidgetFit: n=40 frame=262x956 -> 3x14 icon=60 gap=20.5x15.8 scroll=VERTICAL content=262x1078
+V1	input swipe 390,900 → 390,400 (120 ms, vuốt nhanh)	trôi tới cuối: hàng cuối 1 icon (vn.qa.fake18) căn giữa, trọn trong khung	uiautomator: vn.qa.fake18 [350,973][430,1047] (khung tới 1056)
+P0	hồ sơ thử 0 lối tắt, ô 2×6 widget lối tắt	ô hiện "Chưa có lối tắt — chạm để chọn ứng dụng"	uiautomator text
+P1	chạm ô rỗng ⇒ Cài đặt › Thanh trạng thái & thanh nút	nút "Chọn ứng dụng… (0)" (hết dạng "(n/8)")	uiautomator text "Chọn ứng dụng… (0)"
+P2	chạm nút ⇒ ngăn kéo "Chọn ứng dụng cho lối tắt"; chạm 12 app	thanh đáy "Áp dụng (12)", KHÔNG có câu nhắc trần	uiautomator text "Áp dụng (12)"; không có "Lối tắt có tối đa"
+P3	Áp dụng ⇒ Xong ⇒ màn nhà	Cài đặt "Lối tắt ứng dụng (12)" · "Chọn ứng dụng… (12)"; widget 12 icon 2×6 icon 113 px; prefs Test__app_shortcuts = 12 mục	logcat WidgetFit: n=12 frame=262x956 -> 2x6 icon=113 gap=12.0x39.7 scroll=NONE; run-as cat prefs: 12 mục
+D0	thanh nút DƯỚI có khối lối tắt, 20 app	khối lối tắt 20 icon nằm trong khung cuộn sẵn có của thanh (HorizontalScrollView, scrollable=true); các ô nút xe sau khối cuộn tới được	uiautomator: 20 ImageView lối tắt trong [24,917][1896,1056]
+R1	(bản sau senior review, vehicleTest sha256 20fc2948…) ô 2×1, 8 app, tối	mép mờ phải vẽ thật: độ sáng nửa icon lộ x 305→325 = 108 → 94 → 71 → 49 → 33 (nền 30); bản trước review phẳng 108 → 109 → 108 → 107 (mép mờ không bao giờ vẽ — review F1)	ảnh chụp cục bộ r-small8.png so a-small8.png, cột y=161
+R2	cùng ca, sáng	nửa icon mờ dần về nền sáng: 108 → 133 → 165 → 199 → 235	r-small8-day.png
+R3	40 app khung 262×956	hàng dưới cùng mờ dần ở mép dưới (mép mờ dọc)	r-photo40.png
+R4	input swipe 300,161 → 200,161 trong 4 000 ms (≈ 0,4 px/khung)	nội dung dời 87 px cho 100 px ngón đi (= 100 − ngưỡng chạm ≈ 13 px), không mất phần lẻ (review F2); không mở app	uiautomator: Chrome [201..283] → [114..196]; mResumedActivity = KachiHome
+R5	chạm icon Danh bạ sau khi kéo	mở đúng Danh bạ	mResumedActivity = com.android.contacts/.activities.PeopleActivity

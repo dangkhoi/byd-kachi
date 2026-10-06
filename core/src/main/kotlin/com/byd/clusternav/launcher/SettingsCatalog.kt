@@ -113,6 +113,11 @@ object SettingsCatalog {
                 "HỒ SƠ), không phải cấu hình — cùng họ `migrated_nav_schedule_v1`. Lên UI thì tắt nó đi là rót lại, đè " +
                 "lên DPI/khung/camera người lái vừa chỉnh theo hồ sơ",
         )
+        put(
+            "profile_keys_filled_v1",
+            "sổ đã-rót của lượt di trú khoá MỚI vào phạm vi hồ sơ (2.92 PROFILE-NEW-KEYS), không phải cấu hình — cùng họ " +
+                "`migrated_cluster_profile_v1`. Lên UI chỉ là một ô không có gì để chọn (lượt rót chỉ điền chỗ trống)",
+        )
         // 2026-09-15 (HOME-alias): marker "người dùng ĐÃ bấm Đặt-làm-màn-hình-chính thành công" — lối vào HOME là
         // activity-alias tắt sẵn (để BYD GUI-install không chặn), KachiAutostart đọc marker để bật alias + set-home
         // lại sau nâng cấp. Là lựa chọn ĐÃ BÀY TỎ được ghi lại, không phải một công tắc để bật/tắt trong Cài đặt

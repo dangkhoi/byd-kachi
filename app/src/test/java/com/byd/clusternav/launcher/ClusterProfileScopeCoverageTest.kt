@@ -101,6 +101,48 @@ class ClusterProfileScopeCoverageTest {
         assertTrue(migrations.contains("K_MIGRATED_CLUSTER = \"${ProfileScopeCluster.MIGRATED_KEY}\""), "literal phải BẰNG hằng :core")
     }
 
+    /**
+     * 2.92 · PROFILE-NEW-KEYS — khoá vào phạm vi hồ sơ ở bản SAU (QA máy ảo 2.92 [ĐO]: kiểu hình/thu phóng camera của hồ
+     * sơ vừa rời rò sang hồ sơ lưu bằng 2.91). Lượt rót theo sổ phải chạy ở `init`, SAU lượt cụm, TRƯỚC `load()`.
+     */
+    @Test
+    fun `khoa moi vao pham vi ho so duoc rot theo so, o init, mot Editor`() {
+        val init = SourceRoots.body(repo, "    init {")
+        val cluster = init.indexOf("prefs.migrateClusterProfileOnce()")
+        val fill = init.indexOf("prefs.fillNewProfileKeysOnce()")
+        assertTrue(cluster in 0 until fill, "thứ tự init: cụm → khoá mới ($cluster/$fill)")
+        val fn = SourceRoots.body(migrations, "internal fun WorkspacePrefs.fillNewProfileKeysOnce()")
+        assertEquals(1, Regex("""\bsp\.edit\(\)""").findAll(fn).count(), "một Editor duy nhất")
+        assertTrue(fn.contains("ProfileScopeMigration.pendingKeys(ProfileScope.CLUSTERNAV_KEYS, done)"), "sổ duyệt ĐÚNG bảng ảnh chụp")
+        assertTrue(fn.contains(".fillNewKeys(") && fn.contains("ProfileScopeCluster.DEFERRED"), "phép rót ở :core (có test chạy thật)")
+        assertTrue(fn.contains("storedSnapshot(stored,"), "ảnh sai kiểu không được làm init ném")
+        assertFalse(fn.contains("getStringSet("), "đọc sổ bằng ép kiểu an toàn, không getStringSet (ném ClassCastException ở init)")
+        assertTrue(
+            fn.contains("e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS)).apply()"),
+            "sổ ghi trên CHÍNH Editor đã ghi dữ liệu",
+        )
+        assertTrue(
+            migrations.contains("K_PROFILE_KEYS_FILLED = \"${ProfileScopeMigration.FILLED_LEDGER_KEY}\""),
+            "literal phải BẰNG hằng :core",
+        )
+    }
+
+    /**
+     * 2.92 · PROFILE-IMPORT-GAP-KEYS — NHẬP tệp xuất từ bản cũ (thiếu khoá theo hồ sơ mới): mọi ảnh ClusterNav của hồ sơ nhập đi qua
+     * CÙNG phép điền chỗ trống của lượt nâng cấp, SAU lớp làm sạch + merge (giá trị của xe cũng đã qua bộ kiểm). Thử ĐỎ: ghi `merged`.
+     */
+    @Test
+    fun `nhap tep cu - anh ClusterNav dien cho trong bang gia tri song, sau lam sach va merge`() {
+        val importFn = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null)")
+        val clean = importFn.indexOf("cleanImportedSnapshot(suffix, v)")
+        val merge = importFn.indexOf("mergeImportedCast(suffix, clean)")
+        val fill = importFn.indexOf("val value = fillImportedSnapshot(suffix, merged)")
+        assertTrue(clean in 0 until merge && merge < fill, "thứ tự: làm sạch → merge → điền ($clean/$merge/$fill)")
+        val fn = SourceRoots.body(snapshot, "internal fun WorkspacePrefs.fillImportedSnapshot(suffix: String, value: Any?)")
+        assertTrue(fn.contains("ProfileScopeMigration.fillNewKeys(") && fn.contains("ProfileScope.CLUSTERNAV_KEYS"), "cùng phép :core")
+        assertTrue(fn.contains("ProfileScopeCluster.DEFERRED"), "khoá hoãn đi đúng đường bản chờ")
+    }
+
     // ── VC-R2/R7/R8 · chụp–áp–nhập đi qua phép thuần ──────────────────────────────────────────
 
     @Test

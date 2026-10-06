@@ -108,27 +108,27 @@ class CastRectFrameKeyTest {
     }
 
     /**
-     * 2.90 · R2 — kiểu tin thắng lựa chọn; CHƯA RÕ (cổng bỏ theme, tiến trình chưa gửi gì) ⇒ khung Bo tròn (khoá cũ) + `fullFrame`
-     * (trọn cụm) trên đời xe có opcode kiểu — KHÔNG theo lựa chọn nữa (F3 06/10: khung Chữ nhật trên cụm cong ⇒ đen quanh Maps).
-     * DL5 (không opcode kiểu) không đổi: không fullFrame. Thử ĐỎ: trả nhánh UNKNOWN về `effective(desired)`.
+     * 2.92 · CLUSTER-FRAME-CHOSEN (thay 2.90 · R2) — kiểu tin thắng lựa chọn; CHƯA RÕ (cổng bỏ theme, tiến trình chưa gửi gì) ⇒
+     * khung + khoá theo kiểu NGƯỜI LÁI CHỌN. [ĐO log xe 06/10]: BYD giết Kachi mỗi lần tắt máy, cổng bỏ opcode (bóng nổi 15:13,
+     * chưa đủ 15 s 15:17) ⇒ UNKNOWN ⇒ luật cũ "trọn cụm + khoá Bo tròn" bỏ khung Chữ nhật đã lưu và lưu chỉnh tay nhầm ô.
+     * Đời xe chỉ có Bo tròn / DL5 (không opcode kiểu): Bo tròn như cũ. Thử ĐỎ: trả nhánh UNKNOWN về `CastStyle.CURVED`.
      */
     @Test
-    fun `290 - kieu khung cua phien - chua ro thi tron cum, khong theo lua chon`() {
+    fun `292 - kieu khung cua phien - chua ro thi theo kieu nguoi lai chon`() {
         val seal = ProjectionRecipe.SEAL_DL3.copy(nativeStyle = CastStyle.RECT)
         fun plan(b: BelievedStyle) = ClusterStylePlan.Plan(null, b, abort = false, why = "")
         assertEquals(CastSessionStyle(CastStyle.RECT, BelievedStyle.RECT, CastStyle.RECT), CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.RECT)))
         assertEquals(CastStyle.CURVED, CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.CURVED)).frame,
             "chọn Chữ nhật mà cụm vẫn Bo tròn ⇒ khung theo CỤM")
-        val unknown = CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.UNKNOWN))
-        assertEquals(CastStyle.CURVED, unknown.frame)
-        assertTrue(unknown.fullFrame, "chưa rõ kiểu ⇒ trọn cụm")
+        assertEquals(CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.RECT),
+            CastSessionStyle.of(seal, CastStyle.RECT, plan(BelievedStyle.UNKNOWN)), "chưa rõ ⇒ kiểu người lái chọn")
+        assertEquals(CastStyle.CURVED, CastSessionStyle.of(seal, CastStyle.CURVED, plan(BelievedStyle.UNKNOWN)).frame)
         assertEquals(CastStyle.RECT, CastSessionStyle.of(seal, CastStyle.CURVED, plan(BelievedStyle.RECT)).frame,
             "chọn Bo tròn mà cụm đang Chữ nhật ⇒ khung theo CỤM")
-        assertFalse(CastSessionStyle.of(seal, CastStyle.CURVED, plan(BelievedStyle.CURVED)).fullFrame)
+        assertEquals(CastStyle.CURVED, CastSessionStyle.of(ProjectionRecipe.SEAL_DL3, CastStyle.RECT, plan(BelievedStyle.UNKNOWN)).frame,
+            "đời xe ẩn Chữ nhật ⇒ Bo tròn như cũ")
         val dl5 = ProjectionRecipe(ProjectionRecipe.SVC_DILINK5, listOf(16), listOf(18, 0))
-        val d = CastSessionStyle.of(dl5, CastStyle.RECT, null)
-        assertEquals(CastStyle.CURVED, d.frame)
-        assertFalse(d.fullFrame, "DL5 không có opcode kiểu ⇒ đường cũ y nguyên")
+        assertEquals(CastStyle.CURVED, CastSessionStyle.of(dl5, CastStyle.RECT, null).frame, "DL5 không có opcode kiểu ⇒ đường cũ y nguyên")
     }
 
     /** "Áp ngay" mời khi phiên chưa rõ kiểu (cụm có thể đang khác lựa chọn) — 2.90 không còn điều kiện quyền vẽ km/h. */
@@ -137,7 +137,9 @@ class CastRectFrameKeyTest {
         val curvedSession = CastSessionStyle(CastStyle.CURVED, BelievedStyle.CURVED, CastStyle.CURVED)
         assertFalse(CastStyleApply.offer(CastStyle.CURVED, curvedSession, SimpleCastState.Idle, castEnabled = true))
         assertTrue(CastStyleApply.offer(CastStyle.RECT, curvedSession, SimpleCastState.Idle, castEnabled = true))
-        val unknown = CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.CURVED, fullFrame = true)
+        val unknown = CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.RECT)
         assertTrue(CastStyleApply.offer(CastStyle.CURVED, unknown, SimpleCastState.Idle, castEnabled = true))
+        assertTrue(CastStyleApply.offer(CastStyle.RECT, unknown, SimpleCastState.Idle, castEnabled = true),
+            "khung theo lựa chọn nhưng cụm CHƯA xác nhận ⇒ vẫn mời Áp ngay")
     }
 }

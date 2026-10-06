@@ -177,7 +177,7 @@
  {
   "group": "Thanh nút",
   "name": "Khối «Lối tắt ứng dụng» trên thanh nút (F1)",
-  "desc": "Mã thanh nút `launcher_shortcuts` (chọn ở bộ chọn nút, khối Launcher): một hàng icon app — chỉ icon, tên app là contentDescription — dài theo trục thanh (n × 52 dp + 2 × 4 dp; thanh dọc thì cao ra), tràn thì khung cuộn sẵn của thanh cuộn. Chạm một icon đi qua bảng quyết định `ShortcutPlan` (:core): *Ô n* = đặt TẠM vào ô n (không ghi bố cục hồ sơ; app cũ ra SAU màn nhà, không bị giết) · *Toàn màn* = mở bằng Intent (không cần kênh) · *Chạy ngầm* = mở qua một ô app đang sống rồi đưa ra sau màn nhà. Icon kiểu *Ô n*/*Chạy ngầm* mờ 40 % khi chưa có kênh điều khiển cửa sổ, chạm ⇒ thẻ READY-AT-HOME; app đã gỡ ⇒ hình app chung mờ, chạm báo «chưa cài». Danh sách rỗng ⇒ một ô «chạm để chọn» mở Cài đặt › Thanh trạng thái & thanh nút. KHÔNG gọi bằng lời (khối, không phải việc).",
+  "desc": "Mã thanh nút `launcher_shortcuts` (chọn ở bộ chọn nút, khối Launcher): một hàng icon app — chỉ icon, tên app là contentDescription — dài theo trục thanh (n × 52 dp + 2 × 4 dp; thanh dọc thì cao ra), tràn thì khung cuộn sẵn của thanh cuộn; 2.92: không trần 8 app (chỉ trần kỹ thuật 256). Chạm một icon đi qua bảng quyết định `ShortcutPlan` (:core): *Ô n* = đặt TẠM vào ô n (không ghi bố cục hồ sơ; app cũ ra SAU màn nhà, không bị giết) · *Toàn màn* = mở bằng Intent (không cần kênh) · *Chạy ngầm* = mở qua một ô app đang sống rồi đưa ra sau màn nhà. Icon kiểu *Ô n*/*Chạy ngầm* mờ 40 % khi chưa có kênh điều khiển cửa sổ, chạm ⇒ thẻ READY-AT-HOME; app đã gỡ ⇒ hình app chung mờ, chạm báo «chưa cài». Danh sách rỗng ⇒ một ô «chạm để chọn» mở Cài đặt › Thanh trạng thái & thanh nút. KHÔNG gọi bằng lời (khối, không phải việc).",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car + E2E máy ảo 02/10 (đường chạm THẬT: E1/E3/E5/E6/E7) · 🚗 chưa đo trên xe — OC-1 (move-task trên ROM BYD) · OC-2 (khoá avoidMoveToFront) [CHƯA BIẾT]",
@@ -1248,7 +1248,7 @@
  {
   "group": "Cài đặt",
   "name": "Cài đặt › Thanh trạng thái & thanh nút › «Lối tắt ứng dụng» (F1)",
-  "desc": "Theo HỒ SƠ (khoá `app_shortcuts`, đi theo bản chia sẻ — chỉ tên gói + kiểu). Nút «Chọn ứng dụng… (n/8)» mở ngăn kéo chế độ chọn nhiều (trần 8, nói ra khi đủ trần); mỗi app một hàng chip *Ô 1…Ô N* (N = số ô bố cục đang dùng; ô đã chọn mà nằm ngoài bố cục hiện mờ + «bố cục hiện có k ô») · *Toàn màn* · *Chạy ngầm*; danh sách ▲/▼ sắp thứ tự; cảnh báo khi có app *Chạy ngầm* mà bố cục không có ô app. Mọi lượt ghi qua ViewModel.",
+  "desc": "Theo HỒ SƠ (khoá `app_shortcuts`, đi theo bản chia sẻ — chỉ tên gói + kiểu). Nút «Chọn ứng dụng… (n)» mở ngăn kéo chế độ chọn nhiều (2.92: hết trần 8 — chỉ trần kỹ thuật 256, nói ra nếu chạm tới); mỗi app một hàng chip *Ô 1…Ô N* (N = số ô bố cục đang dùng; ô đã chọn mà nằm ngoài bố cục hiện mờ + «bố cục hiện có k ô») · *Toàn màn* · *Chạy ngầm*; danh sách ▲/▼ sắp thứ tự; cảnh báo khi có app *Chạy ngầm* mà bố cục không có ô app. Mọi lượt ghi qua ViewModel.",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car + E2E máy ảo 02/10 (m9 · m10: chip đổi kiểu, ▲/▼, ngăn kéo Áp dụng ⇒ prefs đổi đúng) · 🚗 chưa đo trên xe",
@@ -1860,7 +1860,7 @@
  {
   "group": "Widget Kachi",
   "name": "Widget «Lưới lối tắt app» `w_apps` (F1)",
-  "desc": "Widget dựng tay đặt vào ô giữa màn qua ngăn kéo (mục Thẻ dựng tay): lưới ≤ 4 cột icon app (khe 64 dp ở ô to, 52 dp ở ô nén), CÙNG danh sách + cùng đường chạm với khối trên thanh nút. Tự lo nội dung (không bị dựng lại theo nhịp trạng thái xe 1 Hz), không đọc dữ liệu xe, không lọt vào bộ chọn chip thanh trên hay bộ chọn nút thanh xe. Lối tắt kiểu *Ô n* trỏ đúng ô đang chứa widget ⇒ mở toàn màn (không đè widget). Nhãn EN «App shortcut grid».",
+  "desc": "Widget dựng tay đặt vào ô giữa màn qua ngăn kéo (mục Thẻ dựng tay): lưới icon app khớp theo khung thật (2.87 R-SI1 → 2.92: icon cùng cỡ, khe cố định 8 dp giữa icon và tới mép, sàn 40 dp; nhiều app ⇒ cuộn theo trục dài, lộ nửa icon kế), CÙNG danh sách + cùng đường chạm với khối trên thanh nút. Tự lo nội dung (không bị dựng lại theo nhịp trạng thái xe 1 Hz), không đọc dữ liệu xe, không lọt vào bộ chọn chip thanh trên hay bộ chọn nút thanh xe. Lối tắt kiểu *Ô n* trỏ đúng ô đang chứa widget ⇒ mở toàn màn (không đè widget). Nhãn EN «App shortcut grid».",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car + E2E máy ảo 02/10 (đường chạm THẬT: E1/E3/E5/E6/E7) · 🚗 chưa đo trên xe — OC-1 (move-task trên ROM BYD) · OC-2 (khoá avoidMoveToFront) [CHƯA BIẾT]",

@@ -28,6 +28,8 @@ Bằng chứng (`docs/_handoff/stage-logging-off-done.md`; backlog **A8**, commi
 
 Accepted — đã implement (commit `11751ba`, A8, gate GREEN). Đổi cap/hành vi phải qua ADR mới (hoặc §Nhật ký triển khai của spec nếu chỉ tinh chỉnh nội bộ 1 feature).
 
+**2026-10-06 — phạm vi mục 2 sửa bởi [ADR-0004](0004-storage-cap-allowlist.md)**: cap chỉ chạm danh sách đường chẩn đoán (`DiagFiles`), không còn cả thư mục ngoài — thư mục ấy nay chứa dữ liệu người dùng (ảnh, hình nền, ảnh xe, hồ sơ, gói giọng side-load) mà bản cũ xoá trước log.
+
 ## Date
 
 2026-08-19

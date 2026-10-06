@@ -40,13 +40,32 @@ class ProjectionRecipeTest {
 
     @Test
     fun `opcode cam 17 va 41 bi loc o moi cho, chuoi rong sau loc thi ve chuoi Seal, service la thi ve AutoContainer`() {
-        assertEquals(setOf(17, 41), ProjectionRecipe.FORBIDDEN_OPS)
+        assertTrue(ProjectionRecipe.FORBIDDEN_OPS.containsAll(setOf(17, 41)))
         val r = ProjectionRecipe.of("Auto;rm -rf", listOf(17, 41), listOf(17, 41, 18, 0), mapOf(CastStyle.CURVED to 41), null)
         assertEquals(listOf(16, 35), r.castSeq)
         assertEquals(listOf(18, 0), r.teardownSeq)
         assertEquals("AutoContainer", r.svcName)
         assertTrue(r.styleOps.isEmpty(), "41 khai làm kiểu cũng bị bỏ")
         assertFalse(listOf(r.castSeq, r.teardownSeq, r.styleOps.values.toList()).flatten().any { it in ProjectionRecipe.FORBIDDEN_OPS })
+    }
+
+    /**
+     * 2.92 · CLUSTER-FORBIDDEN-OPS — [ĐO disasm 06/10] 211 xoá kho cấu hình BỀN của cụm · 6–9 ghi BỀN ngày/đêm + kiểu đồng hồ · 34 huỷ màn
+     * ảo cụm: chuỗi hồ sơ CHIA SẺ (không tin cậy) mang chúng ⇒ bị bóc ở mọi chỗ, chuỗi rỗng sau lọc ⇒ chuỗi Seal. Chuỗi dựng sẵn không
+     * đổi một số nào. Thử ĐỎ: bỏ 211 khỏi `FORBIDDEN_OPS`.
+     */
+    @Test
+    fun `292 - opcode ghi ben hoac huy man ao (211, 6-9, 34) bi boc khoi chuoi chia se`() {
+        val danger = listOf(211, 6, 7, 8, 9, 34)
+        val r = ProjectionRecipe.of("AutoContainer", danger + listOf(16, 35), danger + listOf(18, 0), mapOf(CastStyle.CURVED to 30), null)
+        assertEquals(listOf(16, 35), r.castSeq)
+        assertEquals(listOf(18, 0), r.teardownSeq)
+        assertEquals(mapOf(CastStyle.CURVED to 30), r.styleOps)
+        val only = ProjectionRecipe.of("AutoContainer", danger, danger, emptyMap(), null)
+        assertEquals(listOf(16, 35), only.castSeq, "rỗng sau lọc ⇒ chuỗi Seal")
+        assertEquals(listOf(18, 0), only.teardownSeq)
+        val seal = ProjectionRecipe.SEAL_DL3
+        assertTrue((seal.castSeq + seal.teardownSeq + seal.styleOps.values).none { it in ProjectionRecipe.FORBIDDEN_OPS }, "chuỗi dựng sẵn không đổi")
     }
 
     @Test

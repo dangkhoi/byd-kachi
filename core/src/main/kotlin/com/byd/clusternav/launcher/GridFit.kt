@@ -48,12 +48,20 @@ import kotlin.math.roundToInt
  *     [ShortcutGridFit]: không để bố cục lật sang hình khác chỉ vì mọi ứng viên đều chạm trần);
  *  6. ít ô trống hơn → 7. ô vuông hơn (`|ln(rộng/cao)|`) → 8. ít hàng hơn.
  *
+ * **Lấp bề ngang** ([Spec.fillWidth] > 0, chỉ [Placement.EVEN_GAPS], chỉ khung ĐỨNG — cao ≥ rộng; 2.92 OQ2, điều phối
+ * 06/10): sau thứ tự trên, trong các ứng viên CÙNG tầng/đích chạm với người thắng mà cỡ đã kẹp ≥ `(1 − fillWidth)` × cỡ
+ * của người thắng, chọn ứng viên có khe NGANG (= lề hai bên) NHỎ nhất; hoà (lệch ≤ 1 px làm tròn — [SIDE_TIE_PX]) ⇒
+ * thứ tự trên. Ô dọc hẹp 262×956 với 7 app: một cột 122 px lề 70 px ⇒ hai cột 113 px lề 12 px. Khung NẰM không áp: đọc
+ * "trục ngang" thành chiều cao ở đó làm icon TO RA khi thêm app ([ĐO mô hình vét cạn 06/10] 213 khung, vd 585×552: 4 app
+ * 168 px → 5 app 180 px) và nới lề hai bên ô 4 (929×395, 4 app: 41,8 → 190 px) — spec `kachi-292-shortcut-widget.html`
+ * §4.3a.
+ *
  * Sau khi chọn: `k` kẹp vào `[minScale, maxScale]` — **không bao giờ dưới sàn** (đổi dạng/bớt mục mới là cách đúng,
  * không phải bóp chữ). Phần dư chia ĐỀU thành khe ([Grid]): mọi ô cùng cỡ, khe giữa = khe tới mép (± 1px làm tròn),
  * hàng thiếu căn giữa với cùng khe.
  *
- * [ShortcutGridFit] (R-SI1, icon vuông, khe tỉ lệ cỡ icon) là MỘT cấu hình của phép này ([Placement.EVEN_GAPS] +
- * [RowSplit.FULL_FIRST] + `quantum = 1`) — một bộ giải, hai chỗ dùng.
+ * [ShortcutGridFit] (R-SI1, icon vuông; 2.92: khe CỐ ĐỊNH [Spec.gapPx] thay cho khe tỉ lệ cỡ icon) là MỘT cấu hình của
+ * phép này ([Placement.EVEN_GAPS] + [RowSplit.FULL_FIRST] + `quantum = 1`) — một bộ giải, hai chỗ dùng.
  *
  * Số dp KHÔNG sống ở đây (`SpacingScaleContractTest.core khong giu so dp`): tầng vẽ đổi dp/sp ra px rồi mới gọi.
  */
@@ -118,23 +126,25 @@ object GridFit {
     /**
      * Tham số của một lần khớp.
      *
-     * @property gapPx khe TỐI THIỂU giữa các ô và tới mép.
-     * @property gapRatio khe cộng thêm tỉ lệ theo cạnh hộp đã co (chỉ [Placement.EVEN_GAPS] — R-SI1 dùng 0,3).
+     * @property gapPx khe TỐI THIỂU giữa các ô và tới mép. (2.92 gỡ `gapRatio` — khe tỉ lệ cỡ hộp chỉ R-SI1 dùng, và
+     *   chính nó làm icon lối tắt bé + lề to: owner 06/10, spec `kachi-292-shortcut-widget.html`.)
      * @property slackPx chừa trong mỗi ô ([Placement.FILL]) cho sai số làm tròn px/hinting chữ.
      * @property maxScale trần `k` — khung khổng lồ không làm chữ/icon khổng lồ.
      * @property minCellPx đích chạm: ô nhỏ hơn số này ở một chiều ⇒ ứng viên tụt hạng (0 = không xét).
      * @property quantum bước của `k` (0 = liên tục). Lưới lối tắt: 1 (px nguyên). Lưới widget: bậc nhỏ để đổi khung
      *   một chút không áp lại cỡ chữ (không giật bố cục).
+     * @property fillWidth dung sai LẤP BỀ NGANG (KDoc lớp; 0 = tắt): khung đứng ⇒ đổi tối đa phần này của cỡ icon lấy lề
+     *   hai bên nhỏ nhất. Chỉ [Placement.EVEN_GAPS] (ô [Placement.FILL] luôn lấp khung, không có lề để đổi).
      */
     data class Spec(
         val gapPx: Int = 0,
-        val gapRatio: Double = 0.0,
         val slackPx: Int = 0,
         val maxScale: Double = Double.POSITIVE_INFINITY,
         val minCellPx: Int = 0,
         val quantum: Double = 0.0,
         val rowSplit: RowSplit = RowSplit.BALANCED,
         val placement: Placement = Placement.FILL,
+        val fillWidth: Double = 0.0,
     )
 
     /**
@@ -256,13 +266,15 @@ object GridFit {
         if (n <= 0) return Fit(0, Grid(emptyList(), 0, 0, 0f, 0f, w, h), null, 0.0, 0.0, legible = true, touchOk = true)
         val pool = shapes.ifEmpty { listOf(NEUTRAL) }
         var best: Cand? = null
+        val all = ArrayList<Cand>()
         pool.forEachIndexed { si, s ->
             layouts(n, spec.rowSplit).forEach { counts ->
                 val c = candidate(n, counts, si, s, w, h, spec)
+                all.add(c)
                 if (best == null || better(c, best!!)) best = c
             }
         }
-        val b = best!!
+        val b = fillWidth(best!!, all, w, h, spec)
         val lo = b.shape.minScale.coerceAtLeast(0.0)
         val scale = b.q.coerceIn(lo, max(spec.maxScale, lo))
         return Fit(n, grid(b, scale, w, h, spec), b.shape, scale, b.q, b.legible, b.touchOk)
@@ -354,8 +366,8 @@ object GridFit {
             min(axis(cw, s.widthPx), axis(ch, s.heightPx))
         }
         Placement.EVEN_GAPS -> min(
-            axis((w - (c + 1) * spec.gapPx).toDouble(), (c + (c + 1) * spec.gapRatio) * s.widthPx),
-            axis((h - (r + 1) * spec.gapPx).toDouble(), (r + (r + 1) * spec.gapRatio) * s.heightPx),
+            axis((w - (c + 1) * spec.gapPx).toDouble(), c * s.widthPx),
+            axis((h - (r + 1) * spec.gapPx).toDouble(), r * s.heightPx),
         )
     }
 
@@ -369,10 +381,38 @@ object GridFit {
                 k * s.widthPx <= cw + EPS && k * s.heightPx <= ch + EPS
             }
             Placement.EVEN_GAPS ->
-                k * (c + (c + 1) * spec.gapRatio) * s.widthPx <= w - (c + 1) * spec.gapPx + EPS &&
-                    k * (r + (r + 1) * spec.gapRatio) * s.heightPx <= h - (r + 1) * spec.gapPx + EPS
+                k * c * s.widthPx <= w - (c + 1) * spec.gapPx + EPS && k * r * s.heightPx <= h - (r + 1) * spec.gapPx + EPS
         }
     }
+
+    /**
+     * LẤP BỀ NGANG (KDoc lớp, [Spec.fillWidth]): khung đứng, người thắng [best] đọc được ⇒ trong các ứng viên cùng tầng + đích
+     * chạm có cỡ đã kẹp ≥ `(1 − fillWidth)·best`: lề ngang nhỏ nhất `m` (khe tính đúng như [grid]), rồi trong các ứng viên có
+     * lề ≤ `m + `[SIDE_TIE_PX] chọn theo [better] (thứ tự R1). Không áp ⇒ [best].
+     */
+    private fun fillWidth(best: Cand, all: List<Cand>, w: Int, h: Int, spec: Spec): Cand {
+        if (spec.fillWidth <= 0.0 || spec.placement != Placement.EVEN_GAPS || h < w || !best.legible) return best
+        val floor = (1.0 - spec.fillWidth) * best.capped - EPS
+        fun side(c: Cand): Double = (w - c.cols * (c.capped * c.shape.widthPx).roundToInt()).toDouble() / (c.cols + 1)
+        val pool = all.filter { it.tier == best.tier && it.touchOk == best.touchOk && it.capped >= floor }
+        val least = pool.minOfOrNull { side(it) } ?: return best   // best ∈ pool; chốt để onMeasure không bao giờ ném
+        var pick = best
+        var found = false
+        for (c in pool) {
+            if (side(c) > least + SIDE_TIE_PX + EPS) continue
+            if (!found || better(c, pick)) pick = c
+            found = true
+        }
+        return pick
+    }
+
+    /**
+     * Lề ngang lệch ≤ 1 px = HOÀ khi lấp bề ngang (senior review 2.92 Pass 3 [P3]). Lề của cách xếp bị bề ngang chặn là `g`
+     * cộng phần dư làm tròn icon về px nguyên — luôn < 1 px — nên so lề tới 1e-6 thì cách xếp nhiều cột hơn "thắng" nhờ phần
+     * lẻ ấy và đổi tới 10 % cỡ icon lấy < 1 px lề [ĐO bài dò vét cạn: 842×920, 101 app ⇒ 11 cột 63 px lề 12,42 thay 10 cột
+     * 70 px lề 12,91; mọi khung ≤ 960 px rộng với ≤ 60 app: 0 ca đổi]. Cùng sai số ± 1 px "khe giữa = khe tới mép" của [Grid].
+     */
+    private const val SIDE_TIE_PX = 1.0
 
     /** `true` nếu [a] xếp TRƯỚC [b] theo thứ tự từ điển ở KDoc lớp. Hoà hẳn ⇒ giữ ứng viên đến trước (xác định). */
     private fun better(a: Cand, b: Cand): Boolean {

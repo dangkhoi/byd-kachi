@@ -100,8 +100,15 @@ data class ProjectionRecipe(
          *    2.91 · F5 — [ĐO disasm `libBydDataSource.so`, nghiên cứu 06/10 `docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md`]:
          *    41 là đường THỬ ĐÈN (lamp-test) — đặt CỨNG mục dữ liệu 466 (`adasInterfaceDisplay`) = 2, ghi BỀN cấu hình cụm 49 và 53,
          *    và gửi CAN `0x40C03032` = 3; opcode 42 KHÔNG hoàn tác cấu hình 49/53. ⇒ không phải cần gạt thu nhỏ khung ADAS, và cấm.
+         *  • 2.92 · CLUSTER-FORBIDDEN-OPS — [ĐO disasm `clusterDebug`, nghiên cứu 06/10
+         *    `docs/diagnostics/cluster-rect-navitype-layouts-2026-10-06.md` §phụ]: **211** chạy `rm -f` kho cấu hình BỀN của cụm
+         *    (`/collect2/byd_datasource_config.xml`) · **6/7** ghi BỀN cấu hình 48 (ngày/đêm) · **8/9** ghi BỀN cấu hình 49 (kiểu đồng
+         *    hồ) — trạng thái sống qua tắt máy, không đường trả lại (CLAUDE.md §5) · **34** đặt `dilinkName` = 1 ⇒ gỡ lớp chiếu, HUỶ màn
+         *    ảo cụm (stack mồ côi — bài học đơ launcher, CLAUDE.md §4). Không chuỗi dựng sẵn nào dùng các số này ([ĐO mã]: Seal/DL3
+         *    16·35 / 18·0 + kiểu 29·30·31, DL5 16 / 18·0) ⇒ cấm chỉ chặn chuỗi CHIA SẺ qua nhóm. **42** (cũng trả naviType 0 — có thể là
+         *    chuỗi trả đồng hồ của ai đó; cuối hàm bật `fpsTestMode`) CHƯA cấm: chờ đo trên xe (backlog `CLUSTER-FORBIDDEN-OPS`).
          */
-        val FORBIDDEN_OPS: Set<Int> = setOf(17, 41)
+        val FORBIDDEN_OPS: Set<Int> = setOf(6, 7, 8, 9, 17, 34, 41, 211)
 
         /** Tên service DiLink 2/3/4 (RE DashCast v1.5.4 `ClusterManager.SERVICE_NAME`). */
         const val SVC_DILINK3: String = "AutoContainer"

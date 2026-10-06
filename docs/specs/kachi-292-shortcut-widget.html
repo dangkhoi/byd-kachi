@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.92 widget lối tắt</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--icon:#0071e3;--icon2:#34c759;--frame:#d1d1d6}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--icon:#2997ff;--icon2:#30d158;--frame:#3a3a3c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .fr{fill:none;stroke:var(--frame);stroke-width:2}
+svg .ic{fill:var(--icon)}
+svg .ic2{fill:var(--icon2)}
+svg .lb{fill:var(--muted);font-size:11px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .gap{stroke:var(--warn);stroke-width:1.5}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.92 — widget Lối tắt ứng dụng: icon to, lề nhỏ, không trần 8 app</h1>
+<p class="muted">Slug: <code>kachi-292-shortcut-widget</code> · Branch <code>feat/key-source-split</code> (từ 2.91 (193) <code>d320ece</code>) · Backlog <code>SHORTCUT-WIDGET-292</code> · <span class="pill wait">Trạng thái: Draft — mã + test off-car + QA máy ảo 3 lượt + senior review Pass 1 (APPROVED sau 3 vá, §10) + Pass 3 OQ1–OQ3 (quyết định điều phối; tự soát §10 Pass 2) + senior review độc lập Pass 3 (APPROVED sau 1 vá [P3] luật hoà lề ≤ 1 px + 1 chỉnh chữ, §10) xong; bộ đủ 8 857 / 0 · lint · <code>assembleRelease</code>: §10 Pass 3; chờ owner duyệt · chưa quét bảo mật / commit · 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§7/§8/§10/§15. Không thư viện mới (Android SDK <code>OverScroller</code>/<code>VelocityTracker</code> + khối đã có) ⇒ không cần Context7 (máy chủ Context7 cũng không kết nối được phiên này). Không bump phiên bản, không đụng <code>apk/</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Senior review Pass 3 — 2026-10-06 (độc lập, Opus)</b>: R1.3 nói rõ "hoà" = lề hai bên lệch ≤ 1 px (phần lẻ làm tròn icon về px nguyên) ⇒ thứ tự R1 — bản trước so lề tới 1e-6 nên có thể bớt tới 10 % cỡ icon để đổi &lt; 1 px lề (chỉ ở ≥ 10 cột, &gt; 100 app; 0 ca ở khung xe ≤ 960 px với ≤ 60 app [ĐO bài dò]); AC thêm ca 842×920 · 101 app. §4.4 R4.1: Android 12 (DL5) [SUY] → [ĐO nguồn AOSP]. §10 Pass 3. Yêu cầu khác không đổi.</li>
+<li><b>Pass 3 — 2026-10-06 (quyết định điều phối OQ1–OQ3)</b>: OQ1 — GIỮ trần kỹ thuật 256 (chống treo; ghi rõ ở R2.2). OQ2 — thêm <b>R1.3 lấp bề ngang</b>: khung đứng, trong các cách xếp có icon ≥ 90 % icon lớn nhất, lề hai bên nhỏ nhất thắng (ô 262×956, 7 app: một cột 122 px lề 70 ⇒ hai cột 113 px lề 12, hàng cuối căn giữa); KHÔNG áp khung nằm (lý do + số ở §4.3). OQ3 — widget app khác lề ĐỀU 8 dp + bù cỡ báo nhà cung cấp (R4.1, §4.4). Bảng §4.3/§5.2 cập nhật; QA máy ảo lượt 3 (§9).</li>
+<li><b>Pass 2 — 2026-10-06 (sau review)</b>: lint — thao tác trợ năng cuộn theo HƯỚNG (<code>ACTION_SCROLL_LEFT/RIGHT/UP/DOWN</code>, <code>AccessibilityScrollActions</code>) + <code>@SuppressLint("ClickableViewAccessibility")</code> có lý do tại chỗ (khung không bao giờ là cú bấm); QA máy ảo lượt 2 trên bản đã vá: mép mờ vẽ thật, kéo chậm không mất phần lẻ (§9); bộ đủ chạy lại.</li>
+<li><b>Senior review Pass 1 — 2026-10-06</b>: 3 vá tầng vẽ <code>ShortcutGridLayout</code> (mép mờ chưa từng vẽ · kéo vứt phần lẻ · khung cuộn chưa là nút trợ năng quan trọng) + trỏ 2.92 ở R1.1 spec shortcuts-autostart; thêm backlog <code>SHORTCUT-GRID-SCROLL-KEEP</code> (§9, §10). Yêu cầu không đổi.</li>
+<li><b>Pass 1 — 2026-10-06</b>: Mã + test off-car + QA máy ảo (§9). Thêm vào R3 sau đo máy ảo: chế độ cuộn LỘ NỬA icon kế ở mép khung (bản đầu: ô 2×1 hiện đúng 4 icon trọn, icon thứ 5 khuất sau mép ⇒ không thấy là cuộn được). §5.2 điền bảng soát widget (vá khối dọc <code>WidgetViews.col</code> 16 → 8 dp; widget app khác giữ lề mặc định nền tảng — OQ3). Thêm OQ3.</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo spec từ lời owner 06/10 kèm ảnh xe (ô dọc hẹp, widget <i>Lối tắt ứng dụng</i> một cột 8 icon tròn, lề hai bên trống lớn): <i>"icon hơi bé so với thanh, margin 2 bên nhiều quá phí, nên làm margin nhỏ lại, check thêm các widget khác nữa nhé, với không nên giới hạn 8 app trong shortcut app đâu, bao nhiêu kệ người ta thôi em"</i>. Kèm hai chỉnh chữ tài liệu do lượt quét bảo mật 2.91 nêu.</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>2.1 Vì sao icon bé và lề to [ĐO mã + ĐO máy ảo]</h3>
+<ul>
+<li>Lưới widget <code>w_apps</code> (R-SI1, spec <code>kachi-287-look-and-keys.html</code> §4.4) = <code>:core ShortcutGridFit</code> → <code>GridFit</code> (<code>EVEN_GAPS</code>, <code>FULL_FIRST</code>): khe TỐI THIỂU = <b>0,3 × cỡ icon</b> giữa hai icon VÀ tới mép, rồi phần dư chia đều. Một cột 8 icon ⇒ 9 khe dọc = 2,7 × icon ⇒ icon bị CHIỀU CAO chặn ở <code>H / 10,7</code>; bề ngang còn lại thành lề trái/phải.</li>
+<li>Ảnh owner không kèm số khung ⇒ khung thật trên xe [CHƯA BIẾT]. Máy ảo <code>clusternav10</code> (1920×1080, 240 dpi = màn xe [ĐO log xe 24/09 <code>wm size -d 0</code>]) dựng được khung hẹp nhất có thể: lưới 12×6, khung 2 cột × 6 dòng, thanh nút TRÁI cỡ 150 % ⇒ khung 262×956 px. Bản 2.89 cài sẵn (cùng mã widget với HEAD — <code>git diff c558450..HEAD</code> rỗng ở mọi tệp widget) cho <b>7 app ⇒ một cột icon 101 px, lề 80 px mỗi bên</b> (đúng dáng ảnh), 8 app ⇒ hai cột (khung 262 px vừa qua ngưỡng 1 px). Với 8 app, phép cũ ra MỘT cột khi khung ≤ 258 px (vét cạn, §6) ⇒ ca ảnh: <b>258×956, icon 89 px, lề 84,5 px mỗi bên</b>.</li>
+<li>Trần 8 app [ĐO mã]: <code>AppShortcutCodec.MAX = 8</code> (giải mã <code>take(MAX)</code> + ghi <code>sanitize</code>) · <code>AppDrawer.cap</code> ở chế độ <code>PICK_SHORTCUTS</code> = <code>MAX</code> (8) · <code>ShortcutStrip.cells</code> kẹp trần · nút Cài đặt <i>"Chọn ứng dụng… (n/8)"</i>. [ĐO máy ảo 2.89] ghi 12/20/30 app vào hồ sơ ⇒ <code>KachiShortcut: app_shortcuts: bỏ 4/12/22 mục quá trần 8</code>, widget chỉ hiện 8.</li>
+<li>Không phải trần lối tắt: <code>AppDrawer.MAX</code> ở chế độ gán ô · <code>WidgetViews.buildGrid take(8)</code> · <code>FitGridLayout.MAX_ITEMS</code> = số <b>WIDGET</b> trong MỘT ô (ô giữa màn nhiều thẻ có nhãn/giá trị), không phải số app trong widget lối tắt — xem R2.4.</li>
+</ul>
+<div class="card"><b>Cổng / phụ thuộc:</b> không cần xe để làm — hình học thuần (<code>:core</code>, test vét cạn) + máy ảo cùng mật độ màn xe. Xác nhận cảm nhận trên xe (🚗 OC-292-1) sau OTA. Không thư viện mới.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 (icon to, lề nhỏ)</b>. Lưới <code>w_apps</code> (ô to + ô nén): mọi icon CÙNG cỡ, cỡ lớn nhất vừa khung với khe CỐ ĐỊNH <code>g</code> = 8 dp (cùng nhịp khối lối tắt trên thanh nút: khe 52 − icon 44 = 8 dp) giữa hai icon và tới mép; trục còn dư chia đều (khe giữa = khe tới mép), hàng cuối thiếu căn giữa; icon ≤ 120 dp. Một cột/một hàng bị BỀ NGANG chặn ⇒ icon = khung − 2 × 8 dp. <b>AC</b>: ca ảnh 258×956, 8 app: icon 89 → <b>111 px</b>, lề hai bên 84,5 → <b>12 px</b>; ca máy ảo 262×956, 7 app: 101 → <b>113 px</b> hai cột, lề 80,5 → <b>12 px</b> (R1.3); bài vét cạn độc lập (không gọi phép của <code>:core</code>) trên lưới n × khung.</li>
+<li><b>R1.2 (đích chạm)</b>. Ô chạm của mỗi icon = icon + khe (lề trong nửa khe mỗi bên, như 2.87) ≥ 48 dp ⇒ sàn icon khi còn khớp vừa khung = 48 − 8 = <b>40 dp</b>. <b>AC</b>: mọi ca khớp: <code>icon + khe ≥ sàn + g</code> cả hai trục.</li>
+<li><b>R1.3 (lấp bề ngang — OQ2, quyết định điều phối 06/10)</b>. Khung ĐỨNG (cao ≥ rộng): trong các cách xếp có icon (đã kẹp trần) ≥ <b>90 %</b> icon lớn nhất, chọn cách có lề hai bên (khe ngang) NHỎ nhất; hoà (lệch ≤ 1 px — phần lẻ làm tròn icon về px nguyên, không phải lề nhỏ hơn; senior review Pass 3) ⇒ thứ tự R1. Khung NẰM giữ thứ tự R1 (§4.3: đọc "trục ngang" thành chiều cao ở khung nằm làm icon TO RA khi thêm app và nới lề hai bên). <b>AC</b>: 262×956: 7 app ⇒ 2×4, 113 px, lề 12 (hàng cuối một icon căn giữa) · 8 app 2×4 113 · 9 app 2×5 113; ranh 10 %: 162×260, 3 app ⇒ hai cột (63 = 0,9 × 70), 160×258 ⇒ giữ một cột (62 &lt; 63); dải 1872×123 + ô 4 929×395 không đổi; đơn điệu giữ (vét cạn, tới trần kỹ thuật 256 app); 842×920, 101 app ⇒ 10×11 icon 70 px (không phải 11 cột 63 px chỉ để bớt 0,49 px lề).</li>
+<li><b>R2 (không trần 8)</b>. Bỏ trần 8 app của lối tắt ở mọi tầng: bảng chọn (<code>PICK_SHORTCUTS</code>), giải mã/ghi (<code>AppShortcutCodec</code>), bề dài khối thanh nút (<code>ShortcutStrip</code>), chữ Cài đặt (<i>"Chọn ứng dụng… (n)"</i>, 5 ngôn ngữ). Danh sách đi theo hồ sơ như cũ (khoá <code>app_shortcuts</code>, bản chia sẻ mang theo). <b>AC</b>: 12/20/30 app qua <code>apply → encode → decode</code> giữ đủ, đúng thứ tự; bảng chọn chọn được &gt; 8 không câu nhắc trần.</li>
+<li><b>R2.2 (trần kỹ thuật)</b>. Giữ MỘT trần an toàn <code>AppShortcutCodec.MAX</code> = <b>256</b> (≫ số app có màn khởi chạy: máy ảo 23 [ĐO]) chống tệp hồ sơ hỏng/độc: tệp nhập tới 1 MB (<code>ProfileFiles.MAX_READ_BYTES</code>) chứa được ~170 000 mục ⇒ dựng chừng ấy view trên HOME = treo màn chính. Bảng chọn dùng ĐÚNG trần này qua đường nói-ra sẵn có (<code>toggleSelection</code> → câu nhắc <code>kachi_sc_cap_note</code>) — không chặn im lặng. <b>OQ1 đã chốt (điều phối 06/10)</b>: GIỮ 256 làm trần an toàn chống treo — lời owner <i>"bao nhiêu kệ người ta"</i> được đáp ứng trên thực tế (256 ≫ số app có trên xe/máy ảo).</li>
+<li><b>R2.4 (trần widget mỗi ô giữ nguyên)</b>. Trần 8 WIDGET/ô (<code>AppDrawer.MAX</code> ở chế độ gán ô, <code>buildGrid take(8)</code>, <code>FitGridLayout.MAX_ITEMS</code>) là trần hình học của ô nhiều thẻ có chữ (sàn chữ 10 sp + ô chạm 48 dp + nhãn đọc được) — owner không nói tới, KHÔNG đổi.</li>
+<li><b>R3 (nhiều app ⇒ cuộn)</b>. Khi không cách xếp nào giữ mọi icon ≥ 40 dp trong khung, widget CUỘN theo TRỤC DÀI của khung (cao ≥ rộng ⇒ dọc, ngược lại ngang): icon = 40 dp, số dòng ngang trục = nhiều nhất vừa, phần dư ngang trục chia đều, dọc trục khe ≥ 8 dp nới để mép khung cắt GIỮA icon kế (lộ nửa icon = dấu "còn nữa"); không icon nào bị cắt/chồng ngoài nửa icon lộ chủ ý. Kéo để cuộn, vuốt nhanh để trôi; chạm icon vẫn mở app; chạm/nhấn giữ vào lề (ngoài icon) vẫn tới ô (chọn nội dung/kéo ô) như cũ; trợ năng có thao tác cuộn; mép mờ báo "còn nữa". <b>AC</b>: 40 app ở 262×956 ⇒ cuộn dọc 3 cột; 30 app ở 1872×123 ⇒ cuộn ngang; 8 app ở 301×123 ⇒ cuộn ngang (2.89: 4×2 icon 42 px, ô chạm 37 dp); cỡ icon KHÔNG tăng khi thêm app (đơn điệu).</li>
+<li><b>R4 (widget khác)</b>. Soát mọi widget dựng sẵn ở ba dáng khung (hẹp cao · rộng thấp · to) + widget bên thứ ba; widget nào phí lề cùng kiểu (lề cố định ăn chỗ của nội dung) thì vá; liệt kê trước/sau từng widget (§5.2).</li>
+<li><b>R4.1 (widget app khác — OQ3, quyết định điều phối 06/10)</b>. Khung widget Android của app khác lề ĐỀU 8 dp bốn phía (cùng lề khối dọc widget Kachi), thay lề mặc định framework 12/4/12/20 dp; cỡ báo cho nhà cung cấp = vùng nội dung THẬT (không để nhà cung cấp tưởng ô hẹp/rộng hơn chỗ được vẽ). <b>AC</b>: [ĐO máy ảo] đồng hồ số + lịch biểu: lề 18/6/18/30 ⇒ 12/12/12/12 px; cỡ báo 595×512 ⇒ 603×520 dp (= nội dung 905×780 px ÷ 1,5); không chữ nào bị cắt ở ba dáng khung (to · dải 1872×123 · hẹp 301×804).</li>
+<li><b>R5 (chữ tài liệu)</b>. <code>docs/diagnostics/voice-app-names-emu-2026-10-06.md</code>: bỏ câu khẳng định ảnh có tên tài khoản Google (chưa kiểm). <code>docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md</code> Q2: viết lại bằng lời, giữ sự thật (x 1256, y 225, ảnh nền ngày/đêm PNG 658×396, <code>cluster.qml:2022-2028</code>).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Hình học thuần ở <code>:core</code> (không số dp — <code>SpacingScaleContractTest</code>); tầng vẽ đổi dp ra px. Một bộ giải (<code>GridFit</code>) cho lưới lối tắt + lưới widget.</li>
+<li>R-nf2. Khớp trong <code>onMeasure</code> theo khoá (rộng, cao, số icon) như 2.87 — không đo dò, không lượt bố cục thừa; cuộn = <code>scrollTo</code> của chính khung (không cây view mới).</li>
+<li>R-nf3. Mỗi lượt khớp đổi bố cục ghi MỘT dòng <code>adb logcat -s WidgetFit</code> (<code>shortcuts n=… frame=… -> c×r icon=… gap=… scroll=…</code>) — đo được trên xe không cần đoán (CLAUDE.md §15).</li>
+<li>R-nf4. Tệp ≤ 500 dòng; chữ đổi đủ 5 ngôn ngữ (vi/en/zh/th/ms); bài hồi quy dựng từ số đo máy ảo; mỗi hàm mới có chỗ gọi (§8).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng</h3>
+<div class="flow">
+  <div class="fnode"><b>ShortcutGridLayout.onMeasure</b><span>khung W×H · n icon</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>ShortcutGridFit.fit</b><span>:core · khe cố định g</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>GridFit.fit</b><span>EVEN_GAPS · gapPx = g · sàn 40 dp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>đọc được?</b><span>icon ≥ sàn</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>có ⇒ KHỚP</b><span>mọi icon vừa khung</span></div>
+  <div class="fnode new"><b>không ⇒ CUỘN</b><span>trục dài · icon = sàn · dòng tối đa</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>onLayout + cuộn</b><span>toạ độ nội dung · scrollTo · OverScroller</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối hiện có</span>
+  <span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span> mới / đổi</span>
+</div>
+
+<h3>4.2 Ca ảnh — trước / sau (tỉ lệ 1 : 4, px màn xe)</h3>
+<div class="diagram">
+<svg viewBox="0 0 420 280" width="420" height="280" role="img" aria-label="Khung 258×956: trước một cột icon 89 px lề 84,5 px; sau hai cột icon 111 px lề 12 px">
+  <text class="lb" x="40" y="14">2.91 — 1 cột · icon 89 · lề 84,5</text>
+  <rect class="fr" x="70" y="22" width="64.5" height="239" rx="4"/>
+  <g class="ic">
+    <circle cx="102.25" cy="40.0" r="11.1"/><circle cx="102.25" cy="69.0" r="11.1"/><circle cx="102.25" cy="98.0" r="11.1"/><circle cx="102.25" cy="127.0" r="11.1"/>
+    <circle cx="102.25" cy="156.0" r="11.1"/><circle cx="102.25" cy="185.0" r="11.1"/><circle cx="102.25" cy="214.0" r="11.1"/><circle cx="102.25" cy="243.0" r="11.1"/>
+  </g>
+  <line class="gap" x1="70" y1="40" x2="91" y2="40"/><line class="gap" x1="113.4" y1="40" x2="134.5" y2="40"/>
+  <text class="lb" x="250" y="14">2.92 — 2 cột · icon 111 · lề 12</text>
+  <rect class="fr" x="280" y="22" width="64.5" height="239" rx="4"/>
+  <g class="ic2">
+    <circle cx="296.9" cy="61.5" r="13.9"/><circle cx="327.6" cy="61.5" r="13.9"/>
+    <circle cx="296.9" cy="114.8" r="13.9"/><circle cx="327.6" cy="114.8" r="13.9"/>
+    <circle cx="296.9" cy="168.2" r="13.9"/><circle cx="327.6" cy="168.2" r="13.9"/>
+    <circle cx="296.9" cy="221.5" r="13.9"/><circle cx="327.6" cy="221.5" r="13.9"/>
+  </g>
+  <line class="gap" x1="280" y1="61.5" x2="283" y2="61.5"/>
+</svg>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--icon)"></span> icon trước</span><span class="sw"><span class="box" style="background:var(--icon2)"></span> icon sau</span><span class="sw"><span class="box" style="background:var(--warn)"></span> lề hai bên</span></div>
+</div>
+
+<h3>4.3 Phép khớp (thuần, <code>:core ShortcutGridFit</code>)</h3>
+<ul>
+<li><b>Khớp</b>: <code>GridFit.fit</code> với hộp 1×1, sàn = <code>minIconPx</code>, <code>Spec(gapPx = g, maxScale = maxIconPx, quantum = 1, FULL_FIRST, EVEN_GAPS)</code> ⇒ thử mọi số cột <code>c</code>, <code>s(c) = ⌊min((W − (c+1)g)/c, (H − (r+1)g)/r)⌋</code>; chọn <code>s</code> lớn nhất (CHƯA kẹp trần, hoà ⇒ ít ô trống rồi ít hàng — giữ thứ tự R-SI1) rồi <b>lấp bề ngang</b> (R1.3, <code>GridFit.Spec.fillWidth = ShortcutGridFit.FILL_WIDTH = 0,10</code>, chỉ <code>EVEN_GAPS</code>, chỉ khung đứng); kẹp <code>[sàn, trần]</code>; khe = phần dư chia đều mỗi trục (trục bị chặn: đúng <code>g</code>). Tham số <code>gapRatio</code> của <code>GridFit.Spec</code> gỡ (chỉ R-SI1 dùng).</li>
+<li><b>Cuộn</b> (không ứng viên nào ≥ sàn): trục dài <code>dọc ⇔ H ≥ W</code>; ngang trục <code>C</code>, số dòng <code>k = max(1, ⌊(C − g)/(sàn + g)⌋)</code>, icon <code>s = min(sàn, C)</code>, khe dọc trục tối thiểu <code>max(s, sàn) + g − s</code>, nới để lộ nửa icon kế (<code>peekGap</code>: <code>j</code> = số icon trọn còn chỗ cho nửa icon kế, khe = <code>(F − (j + ½)s)/(j + 1)</code>; <code>j &lt; 1</code> ⇒ giữ khe sàn), bề dài nội dung <code>⌈m·s + (m+1)·khe⌉</code> với <code>m = ⌈n/k⌉</code>. Ngang: xếp theo CỘT (icon 1, 2 ở cột đầu…) ⇒ mấy app đầu luôn ở đầu dải. Chứng minh có ở KDoc: chế độ cuộn ⇒ nội dung &gt; khung (ứng viên <code>c = k</code> đã bị loại); ca suy biến (ngang trục &lt; sàn) mà nội dung vừa ⇒ trả KHỚP.</li>
+<li><b>Đơn điệu</b>: thêm app thì icon không bao giờ to ra (cuộn: icon = sàn ≤ mọi icon chế độ khớp; khớp: từ R1.3 không còn là hệ quả hiển nhiên ⇒ khoá bằng vét cạn — bài <code>don dieu</code> 8 khung × n 1–80 + quét mô hình 06/10: 51 × 34 = 1 734 khung × n 1–40, 0 vi phạm; senior review Pass 3: bài <code>don dieu - toi tran ky thuat 256 app</code> 47 khung × n 1–256 + bài dò 2 031 khung đứng 60–1 300 px và khung nằm × n 1–256, 0 vi phạm, trước và sau luật hoà lề ≤ 1 px).</li>
+</ul>
+<h3>4.3a Lấp bề ngang (R1.3 / OQ2) — bảng ca [ĐO bài <code>ShortcutGridFitTest</code> · máy ảo dòng <code>WidgetFit</code>]</h3>
+<div class="diagram">
+<svg viewBox="0 0 420 280" width="420" height="280" role="img" aria-label="Khung 262×956 bảy app: trước một cột icon 122 px lề 70 px; sau hai cột icon 113 px lề 12 px, hàng cuối căn giữa">
+  <text class="lb" x="30" y="14">2.92 trước OQ2 — 1 cột · icon 122 · lề 70</text>
+  <rect class="fr" x="70" y="22" width="65.5" height="239" rx="4"/>
+  <g class="ic">
+    <circle cx="102.75" cy="40.45" r="15.25"/><circle cx="102.75" cy="74.15" r="15.25"/><circle cx="102.75" cy="107.85" r="15.25"/><circle cx="102.75" cy="141.55" r="15.25"/>
+    <circle cx="102.75" cy="175.25" r="15.25"/><circle cx="102.75" cy="208.95" r="15.25"/><circle cx="102.75" cy="242.65" r="15.25"/>
+  </g>
+  <line class="gap" x1="70" y1="40.45" x2="87.5" y2="40.45"/><line class="gap" x1="118" y1="40.45" x2="135.5" y2="40.45"/>
+  <text class="lb" x="236" y="14">sau OQ2 — 2 cột · icon 113 · lề 12</text>
+  <rect class="fr" x="280" y="22" width="65.5" height="239" rx="4"/>
+  <g class="ic2">
+    <circle cx="297.13" cy="61.33" r="14.13"/><circle cx="328.38" cy="61.33" r="14.13"/>
+    <circle cx="297.13" cy="114.78" r="14.13"/><circle cx="328.38" cy="114.78" r="14.13"/>
+    <circle cx="297.13" cy="168.23" r="14.13"/><circle cx="328.38" cy="168.23" r="14.13"/>
+    <circle cx="312.75" cy="221.68" r="14.13"/>
+  </g>
+  <line class="gap" x1="280" y1="61.33" x2="283" y2="61.33"/><line class="gap" x1="342.5" y1="61.33" x2="345.5" y2="61.33"/>
+</svg>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--icon)"></span> trước</span><span class="sw"><span class="box" style="background:var(--icon2)"></span> sau</span><span class="sw"><span class="box" style="background:var(--warn)"></span> lề hai bên</span><span class="sw">tỉ lệ 1 : 4</span></div>
+</div>
+<table>
+<tr><th>Khung (px)</th><th>n</th><th>Trước OQ2 (cột×hàng · icon · lề ngang)</th><th>Sau OQ2</th><th>Ghi chú</th></tr>
+<tr><td>262×956 (ô hẹp, thanh nút trái 150 %)</td><td>7</td><td>1×7 · 122 · 70</td><td><b>2×4 · 113 · 12</b> (hàng cuối 1 icon căn giữa)</td><td>113 ≥ 0,9 × 122 · [ĐO máy ảo] <code>WidgetFit … 262x956 -&gt; 2x4 icon=113 gap=12.0x100.8</code>; mực hai bên 12/11 px</td></tr>
+<tr><td>262×956</td><td>8 · 9</td><td>2×4 · 113 · 12 · 2×5 · 113 · 12</td><td>giữ</td><td>đã là icon lớn nhất</td></tr>
+<tr><td>262×956</td><td>5 · 6</td><td>1×5 · 176 · 43 · 1×6 · 145 · 58,5</td><td>giữ</td><td>hai cột 113 px &lt; 90 % (−36 % / −22 %)</td></tr>
+<tr><td>258×956 (ca ảnh)</td><td>7 · 8</td><td>1×7 · 122 · 68 · 2×4 · 111 · 12</td><td><b>2×4 · 111 · 12</b> · giữ</td><td></td></tr>
+<tr><td>301×804 (ô hẹp, thanh nút dưới)</td><td>5</td><td>1×5 · 146 · 77,5</td><td><b>2×3 · 132 · 12,3</b></td><td></td></tr>
+<tr><td>400×956 (đứng, icon chạm trần)</td><td>4</td><td>1×4 · 180 · 110</td><td><b>2×2 · 180 · 13,3</b></td><td>cùng cỡ ⇒ lề nhỏ thắng</td></tr>
+<tr><td>162×260 · 160×258 (ranh, dựng bằng vét cạn)</td><td>3</td><td>1×3 · 70</td><td>2×2 · 63 · giữ 1×3</td><td>63 = 0,9 × 70 đổi; 62 không</td></tr>
+<tr><td>1872×123 (dải rộng thấp)</td><td>4 · 8</td><td>4×1 · 99 · 8×1 · 99</td><td>giữ</td><td>khung nằm</td></tr>
+<tr><td>929×395 (bố cục 4 ô)</td><td>3 · 4 · 8</td><td>3×1 · 180 · 4×1 · 180 (lề 41,8) · 4×2 · 179</td><td>giữ</td><td>khung nằm — đọc trục ngang = chiều cao sẽ ra 2×2, lề hai bên <b>190 px</b></td></tr>
+</table>
+<p class="muted"><b>Vì sao không áp khung nằm</b> [ĐO mô hình vét cạn 06/10, script ngoài repo]: đọc "trục ngang" theo nghĩa đen (chiều cao khi khung nằm) thì ở 213 trên 1 734 khung (lưới 51 × 34, n 1–40) thêm một app làm icon TO RA (vd 585×552: 4 app 168 px → 5 app 180 px) — phá tính chất đơn điệu đã khoá — và ô 4 (929×395) với 3–4 app chuyển sang 2 hàng, lề hai bên 41,8 → 190 px: đúng bệnh owner phàn nàn, xoay 90°. Áp cho khung đứng: 0 vi phạm. Đọc khác (luôn tối thiểu lề hai bên, mọi khung) đổi khung to 1558×668 sang một hàng 8 icon (lề trên/dưới 244 px) ⇒ không chọn; nêu ở OQ4.</p>
+<h3>4.4 Tầng vẽ (<code>:app ShortcutGridLayout</code>)</h3>
+<ul>
+<li>Đo con = icon + khe (lề trong nửa khe) như 2.87; đặt theo toạ độ NỘI DUNG; cuộn bằng <code>scrollTo</code> của khung (vẽ + chạm tự dời theo <code>mScrollX/Y</code> của ViewGroup).</li>
+<li>Kéo: chặn ở <code>onInterceptTouchEvent</code> khi dọc trục vượt <code>scaledTouchSlop</code> (con nhận <code>CANCEL</code> ⇒ không mở nhầm app), xin cha không chặn; thả ⇒ <code>OverScroller.fling</code> theo <code>VelocityTracker</code>. Không tiêu <code>DOWN</code> rơi vào lề ⇒ chạm/nhấn giữ lề vẫn tới ô (đường chọn nội dung + kéo đổi ô của <code>WorkspaceView</code>). Chạm khi đang trôi ⇒ dừng trôi, không mở app (như <code>ScrollView</code>).</li>
+<li><code>compute*Scroll*</code> ⇒ <code>canScroll*</code> + mép mờ đúng hướng; trợ năng: <code>isScrollable</code> + <code>ACTION_SCROLL_FORWARD/BACKWARD</code> một trang.</li>
+<li>Nhật ký <code>WidgetFit</code> một dòng mỗi lượt khớp đổi bố cục.</li>
+<li><b>R4.1 — widget app khác</b> (<code>AppWidgetSlotHost.SlotHostView</code>): <code>setAppWidget</code> gọi <code>super</code> (framework đặt lề mặc định — mỗi lần, cả <code>resetAppWidget</code> khi nhà cung cấp đổi [ĐO decompile <code>AppWidgetHostView</code> máy ảo + nguồn AOSP android-10.0.0_r47 <code>AppWidgetHostView.java</code> L142–148 · L378–379; KDoc nền tảng: <i>"can be overridden in order to add custom padding"</i>]) rồi <code>setPadding(8 dp)</code> bốn phía. Cỡ báo (<code>onSizeChanged</code> → <code>updateAppWidgetSize</code> 5 tham số — bản này TỰ TRỪ lề mặc định: <code>xPaddingDips = (int)((trái + phải)/density)</code>) = <code>(int)(nội dung / density)</code> + đúng phần lề mặc định ấy (<code>AppWidgetHostView.getDefaultPaddingForWidget</code>, cùng phép) ⇒ nhà cung cấp nhận đúng vùng nội dung. Không dùng bản 6 tham số <code>ignorePadding</code> (ẩn, <code>@UnsupportedAppUsage</code>). Android 12 (DL5): cùng đường [ĐO nguồn AOSP 12.0.0_r34 + 12.1.0_r27 (senior review Pass 3): <code>setAppWidget</code> đặt lề mặc định L163–169, đối số component bỏ qua L199–201, bản 5 tham số <code>@Deprecated</code> từ API 31 (L344) vẫn trừ <code>(int)(lề/density)</code> L413–419, <code>resetAppWidget</code> → <code>setAppWidget</code> L497–498, <code>onLayout</code> tính cỡ RemoteViews theo lề THẬT L286–298 — số dòng của 12.1.0_r27; r47: L178–181 · L296–304]. Số đo máy ảo vẫn chỉ A10; trên xe DL5 [CHƯA ĐO].</li>
+</ul>
+<h3>4.5 Trần 8 → trần kỹ thuật</h3>
+<ul>
+<li><code>AppShortcutCodec.MAX</code> 8 → 256 (KDoc: trần chống tệp hỏng/độc, không phải trần người dùng). <code>AppDrawer.cap</code>: <code>PICK_SHORTCUTS -&gt; AppShortcutCodec.MAX</code>; câu nhắc trần đọc <code>cap</code>. <code>kachi_sc_pick_n</code> bỏ <code>/%2$d</code> (5 ngôn ngữ). Khối thanh nút đã cuộn sẵn (<code>DockAreaLayout.scrollWrap</code>).</li>
+</ul>
+<h3>4.6 Context7</h3>
+<ul><li>Chỉ Android SDK (API 29: <code>OverScroller</code>, <code>VelocityTracker</code>, <code>ViewConfiguration</code>, <code>AccessibilityNodeInfo.AccessibilityAction</code>) + Kotlin stdlib — không thư viện mới ⇒ không cần Context7.</li></ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Phép khớp khe cố định + chế độ cuộn; gỡ <code>gapRatio</code></td><td><code>core/…/ShortcutGridFit.kt</code> · <code>GridFit.kt</code></td><td>DONE</td></tr>
+<tr><td>T2</td><td>Bài vét cạn + ca ảnh + nhiều app + đơn điệu</td><td><code>core/…/ShortcutGridFitTest.kt</code> (+ tệp mới nếu &gt; 500)</td><td>DONE</td></tr>
+<tr><td>T3</td><td>Trần lối tắt 8 → 256 (codec, bảng chọn, khối thanh nút, chữ Cài đặt 5 ngôn ngữ)</td><td><code>AppShortcut.kt</code> · <code>ShortcutSelection.kt</code> · <code>AppDrawer.kt</code> · <code>SettingsSectionsShortcuts.kt</code> · <code>strings_kachi.xml</code> ×5</td><td>DONE</td></tr>
+<tr><td>T4</td><td>Khung đặt + cuộn + nhật ký</td><td><code>app/…/ShortcutGridLayout.kt</code> · <code>KachiSpaceBars.kt</code></td><td>DONE</td></tr>
+<tr><td>T5</td><td>Soát widget khác + vá lề (§5.2)</td><td><code>WidgetViews.kt</code></td><td>DONE</td></tr>
+<tr><td>T6</td><td>Bài canh nối dây + đổi ghim có lý do</td><td><code>ShortcutGridFitWiringContractTest</code> · <code>ShortcutsWiringContractTest</code> · <code>PickerCapNoticeContractTest</code></td><td>DONE</td></tr>
+<tr><td>T7</td><td>Máy ảo trước/sau (ca ảnh, 12/20/30/40 app, khung rộng/thấp, widget khác, sáng/tối)</td><td><code>docs/diagnostics/shortcut-widget-2026-10-06/</code></td><td>DONE</td></tr>
+<tr><td>T8</td><td>Bộ đủ test + lint + <code>assembleRelease</code>; backlog · index · project-context; 2 chỉnh chữ R5</td><td>—</td><td>DONE</td></tr>
+<tr><td>T9</td><td>OQ2 — lấp bề ngang: tuỳ chọn <code>GridFit.Spec.fillWidth</code> + <code>ShortcutGridFit.FILL_WIDTH</code>; vét cạn độc lập cập nhật + ca 7/8/9 app ô hẹp, ranh 10 %, icon chạm trần, khung nằm giữ</td><td><code>GridFit.kt</code> · <code>ShortcutGridFit.kt</code> · <code>ShortcutGridFitTest.kt</code></td><td>DONE</td></tr>
+<tr><td>T10</td><td>OQ3 — widget app khác lề đều 8 dp + bù cỡ báo</td><td><code>AppWidgetSlotHost.kt</code> · <code>WidgetMargin292ContractTest.kt</code></td><td>DONE</td></tr>
+<tr><td>T11</td><td>OQ1 ghi chốt; máy ảo lượt 3 (7 app ô hẹp · 2 widget app khác trước/sau ở 3 dáng khung); tài liệu</td><td><code>docs/diagnostics/shortcut-widget-2026-10-06/</code></td><td>DONE</td></tr>
+<tr><td>T12</td><td>Senior review độc lập Pass 3: luật hoà lề ≤ 1 px (<code>GridFit.SIDE_TIE_PX</code>, chọn hai bước) + mô hình vét cạn độc lập theo luật + ca 842×920 + đơn điệu tới 256 app; KDoc nguồn AOSP A10/A12 ở <code>SlotHostView</code>; dàn lại 2 KDoc dài</td><td><code>GridFit.kt</code> · <code>ShortcutGridFit.kt</code> · <code>ShortcutGridFitTest.kt</code> · <code>ShortcutGridScrollTest.kt</code> · <code>AppWidgetSlotHost.kt</code> · <code>HomeUiState.kt</code> · <code>SettingsSectionsShortcuts.kt</code></td><td>DONE</td></tr>
+</table>
+<h3>5.2 Soát widget khác (đo máy ảo 06/10 — chi tiết <code>docs/diagnostics/shortcut-widget-2026-10-06/widget-ink.tsv</code>)</h3>
+<p class="muted">Ba khung: hẹp cao 301×804 · rộng thấp 1558×123 · to 1558×668 px. "Mực" = hộp điểm khác nền.</p>
+<table>
+<tr><th>Widget</th><th>Trước → sau</th><th>Quyết</th></tr>
+<tr><td>Năng lượng · PM2.5 (vòng)</td><td>vòng ô hẹp 209 → 229 px · dải rộng thấp 63/66 → 81/88 px cao</td><td>VÁ — khối dọc <code>WidgetViews.col</code> lề 16 → 8 dp</td></tr>
+<tr><td>Trạng thái xe</td><td>hẹp 213×619 → 233×652 · dải: hình xe 31 → 52 px cao</td><td>VÁ (cùng hàm); dáng ngang cho dải thấp ⇒ backlog <code>WIDGET-CAR-STRIP-LAYOUT</code></td></tr>
+<tr><td>Nhạc · đồng hồ · tốc độ · thẻ đọc chung · thẻ chữ</td><td>nhạc dải 75 → 99 px cao · đồng hồ hẹp 234×172 → 260×193 · khung to: không đổi (trần cỡ 1,5)</td><td>VÁ (cùng hàm); ☀ đồng hồ tách xa chữ (có từ trước) ⇒ backlog <code>CLOCK-SUN-DETACHED</code></td></tr>
+<tr><td>Lốp · bảng tổng hợp · ảnh · nhóm (khí hậu/lốp/kính) · nút/ô đọc</td><td>không đổi (lề 8–27 px, tự vẽ/thẻ có nền)</td><td>GIỮ — không phí lề cùng kiểu; nhóm khung một hàng = backlog sẵn <code>GROUPBOARD-1ROW</code></td></tr>
+<tr><td>Widget app khác (đồng hồ số · lịch biểu đo; VietMap, YT Music… cùng đường)</td><td>lề 18/6/18/30 px (mặc định nền tảng <code>sw720dp</code> 12/4/12/20 dp [ĐO decompile + <code>framework-res</code>]) → <b>12/12/12/12 px</b> [ĐO máy ảo]; nội dung 893×768 → 905×780 px; cỡ báo 595×512 → 603×520 dp</td><td>VÁ (OQ3 chốt 06/10) — <code>SlotHostView.setAppWidget</code> + bù cỡ báo; backlog <code>APPWIDGET-PADDING-UNIFORM</code> đóng</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>:core</code> <code>ShortcutGridFitTest</code> (vét cạn độc lập n × khung; ca ảnh 258×956 n=8 · 262×956 n=7/8; 12/20/30/40 app; khung rộng thấp; cuộn: nội dung &gt; khung, không chồng, icon = sàn, đơn điệu) · <code>AppShortcutCodecTest</code>/<code>ShortcutSelectionTest</code> (12/20/30 app giữ đủ; trần kỹ thuật); <code>:app</code> bài canh nối dây + đổi ghim. Bộ đủ <code>:core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest :car-integration:test :offcar-planner:test</code> + <code>:app:lintDebug</code> + <code>:app:assembleRelease</code>; đếm từ XML.</li>
+<li>V-emu: máy ảo <code>clusternav10</code> bản <code>vehicleTest</code>: trước (2.89 cài sẵn = cùng mã widget) / sau, cùng prefs; đo khung + ô con bằng <code>uiautomator dump</code>, icon + khe từ dòng <code>WidgetFit</code>; cuộn bằng <code>input swipe</code>; chạm icon sau cuộn mở đúng app; sáng/tối. Ảnh lưu cục bộ (PNG bị <code>.gitignore</code> chặn), số ở TSV.</li>
+<li><b>Kết quả [ĐO 06/10]</b>: bộ đủ 6 tác vụ test 8 836 / 0 (1 021 XML: <code>:core</code> 4 445 · <code>:app</code> debug 2 089 · vehicleTest 2 101 · <code>:car-integration</code> 80 · <code>:offcar-planner</code> 99 · <code>:vehicle-contracts</code> 22) · <code>lintDebug</code> 0 lỗi (577 cảnh báo; tệp đổi chỉ còn <code>ViewConstructor</code> có từ 2.87) · <code>assembleRelease</code> ✓ · 8/8 đột biến đỏ (+3 của review) · máy ảo: §9 + <code>docs/diagnostics/shortcut-widget-2026-10-06/</code>.</li>
+<li><b>Pass 3 (OQ1–OQ3)</b> [ĐO 06/10]: <code>ShortcutGridFitTest</code> 16 ca (vét cạn độc lập theo luật mới + ca 7/8/9 app 262×956 · 400×956 · 301×804 · ranh 10 % · khung nằm giữ) · <code>ShortcutGridScrollTest</code> đơn điệu giữ · <code>WidgetMargin292ContractTest</code> 2 ca (lề đều + bù cỡ). Bài mới <code>don dieu - quet day khung dung va nam</code> (651 khung × n 1–40). Đột biến: tắt lấp ngang · áp cả khung nằm (lề ngang) · áp khung nằm theo NGHĨA ĐEN (lề trục ngang = chiều cao) · dung sai 0,09 · 0,12 · bỏ lề đều · bỏ bù cỡ ⇒ 7/7 ĐỎ (tệp trả đúng sha). Máy ảo lượt 3: §9. Bộ đủ: §9 (dòng cuối).</li>
+<li><b>Senior review Pass 3</b> [ĐO 06/10, đếm từ JUnit XML]: bộ đủ 6 tác vụ <code>--rerun-tasks</code> 8 857 / 0 (1 024 XML: <code>:core</code> 4 458 · <code>:app</code> debug 2 093 · vehicleTest 2 105 · <code>:car-integration</code> 80 · <code>:offcar-planner</code> 99 · <code>:vehicle-contracts</code> 22) · <code>lintDebug</code> 0 lỗi / 577 cảnh báo (không mã cảnh báo mới ở tệp đổi) · <code>assembleRelease</code> ✓ (2.91 (193), không bump) · đột biến gỡ luật hoà (<code>SIDE_TIE_PX = 0</code>) ⇒ 2 bài ĐỎ, tệp trả đúng sha (§10 Pass 3).</li>
+<li>V-oncar 🚗 OC-292-1: ô hẹp như ảnh owner ⇒ chụp màn + dòng <code>WidgetFit</code> (ghi khung thật để khoá ca ảnh bằng số xe).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><s>OQ1. Trần kỹ thuật 256 lối tắt — gỡ hẳn không?</s> <b>ĐÃ CHỐT 06/10 (điều phối)</b>: giữ 256 làm trần chống treo (R2.2).</li>
+<li><s>OQ2. Ô dọc hẹp, số app lẻ: icon to nhất hay lấp ngang?</s> <b>ĐÃ CHỐT 06/10 (điều phối)</b>: trong 10 % cỡ icon, lề ngang nhỏ nhất thắng — R1.3, §4.3a. Áp khung ĐỨNG; khung nằm giữ (lý do + số §4.3a).</li>
+<li><s>OQ3. Widget app khác: lề mặc định hay 8 dp đều?</s> <b>ĐÃ CHỐT 06/10 (điều phối)</b>: 8 dp đều + bù cỡ báo — R4.1, §4.4.</li>
+<li>OQ4 (mới, từ OQ2). Khung NẰM có cần một luật "lấp" riêng không? Đọc nghĩa đen "trục ngang = chiều cao" phá đơn điệu (213/1 734 khung) và nới lề hai bên ô 4 (41,8 → 190 px); đọc "luôn tối thiểu lề hai bên" đổi khung to 1558×668 sang một hàng (lề trên/dưới 244 px). <span class="muted">Mặc định: khung nằm giữ thứ tự R1 (như 2.92 trước OQ2) tới khi owner thấy ca cụ thể trên xe.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec <code>kachi-287-look-and-keys.html</code> §4.4 (R-SI1) · §4.5 (WIDGET-FIT-ALL); <code>kachi-launcher-shortcuts-autostart.html</code> R1.1–R1.4.</li>
+<li><code>core/…/GridFit.kt</code> · <code>ShortcutGridFit.kt</code> · <code>AppShortcut.kt</code> · <code>ShortcutSelection.kt</code>; <code>app/…/ShortcutGridLayout.kt</code> · <code>ShortcutIconsView.kt</code> · <code>AppDrawer.kt</code> · <code>WidgetViews.kt</code>.</li>
+<li>Bằng chứng máy ảo: <code>docs/diagnostics/shortcut-widget-2026-10-06/</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<p class="muted">Ghi khi code (R2.6).</p>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — khe CỐ ĐỊNH 8 dp = mép (khe giữa = khe tới mép ⇒ dùng lại nguyên <code>GridFit.Placement.EVEN_GAPS</code> với <code>gapPx</code>, chỉ bỏ <code>gapRatio</code>): trục bị chặn có đúng 8 dp, trục dư chia đều như owner duyệt 03/10. Không thêm "lấp ngang trước" (OQ2).</li>
+<li><b>2026-10-06 · quyết định</b> — sàn icon 40 dp (= ô chạm 48 − khe 8) thay 28 dp; cuộn ở cỡ SÀN (dày đặc), không phải cỡ lấp ngang trục: [ĐO mô hình] lấp ngang trục làm icon NHẢY TO khi thêm app (ô 2×1: 4 app 60 px → 5 app 99 px) và giảm số icon thấy được; cỡ sàn giữ ĐƠN ĐIỆU (bài <code>don dieu - them app thi icon khong to ra</code>).</li>
+<li><b>2026-10-06 · sai lệch-spec</b> — Pass 0 không có "lộ nửa icon": [ĐO máy ảo bản <code>cb2c98f8…</code>] ô 2×1 + 8 app hiện đúng 4 icon trọn, icon thứ 5 bắt đầu ĐÚNG ở mép (x 324 / khung tới 325) ⇒ trông như dải đủ 4 app. Thêm <code>ShortcutGridFit.peekGap</code> + bài <code>mep khung phai cat GIUA icon ke</code> trong vét cạn cuộn.</li>
+<li><b>2026-10-06 · quyết định</b> — trần 8 → trần kỹ thuật 256 (không phải "không trần"): tệp hồ sơ nhập ≤ 1 MB chứa được ~170 000 mục ⇒ dựng chừng ấy icon trên HOME; 256 ≫ 23 app khởi chạy của máy ảo. Bảng chọn dùng đúng trần ấy qua đường nói-ra sẵn có; owner muốn gỡ hẳn ⇒ OQ1.</li>
+<li><b>2026-10-06 · quyết định</b> — trần 8 WIDGET mỗi ô (<code>AppDrawer.MAX</code> chế độ gán ô · <code>WidgetViews.buildGrid take(8)</code> · <code>FitGridLayout.MAX_ITEMS</code>) KHÔNG đổi: đó là số thẻ widget có chữ trong MỘT ô, không phải số app của widget lối tắt (R2.4).</li>
+<li><b>2026-10-06 · quyết định</b> — cuộn tự làm trong <code>ShortcutGridLayout</code> (<code>scrollTo</code> + <code>OverScroller</code>), không bọc <code>ScrollView</code>/<code>HorizontalScrollView</code>: khung chỉ biết trục cuộn SAU khi đo khung thật, và bọc thì lưới bị đo <code>UNSPECIFIED</code> (mất khung để khớp). <code>DOWN</code> rơi vào lề không bị nuốt ⇒ chạm/nhấn giữ lề vẫn tới ô [ĐO S5].</li>
+<li><b>2026-10-06 · soát widget</b> — xem §5.2; vá MỘT chỗ (<code>WidgetViews.col</code>) cho 10 bộ vẽ một cột; widget app khác: [ĐO decompile <code>framework.jar</code> máy ảo] <code>AppWidgetHostView.setAppWidget</code> luôn đặt lề mặc định, <code>updateAppWidgetSize</code> 5 tham số trừ lề MẶC ĐỊNH khỏi cỡ báo ⇒ không đổi trong lượt này (OQ3).</li>
+<li><b>2026-10-06 · đổi ghim test (có lý do tại chỗ)</b> — <code>ShortcutGridFitTest</code> viết lại cho khe cố định (vét cạn độc lập, n 1–30); mới <code>ShortcutGridScrollTest</code>; <code>AppShortcutCodecTest</code> / <code>ShortcutSelectionTest</code> (hết trần 8); <code>ShortcutGridFitWiringContractTest</code> (khe cố định, sàn 40, bài cuộn); <code>ShortcutsWiringContractTest</code> + <code>PickerCapNoticeContractTest</code> (vế <code>PICK_SHORTCUTS</code>); mới <code>WidgetMargin292ContractTest</code>. 8/8 đột biến (gỡ từng vá) ĐỎ, tệp trả đúng sha.</li>
+<li><b>2026-10-06 · QA máy ảo</b> — số đo đầy đủ <code>docs/diagnostics/shortcut-widget-2026-10-06/</code> (README + 4 TSV); máy ảo trả nguyên trạng.</li>
+<li><b>2026-10-06 · senior review Pass 1 — vá tầng vẽ (đổi hành vi, §10)</b> — <code>ShortcutGridLayout</code>: (a) <code>setWillNotDraw(false)</code> ở <code>init</code> — mép mờ "còn nữa" (R3, §4.4) trước đó KHÔNG BAO GIỜ vẽ: ViewGroup không nền mặc định WILL_NOT_DRAW ⇒ hệ thống chỉ gọi <code>dispatchDraw</code>, bỏ <code>View.draw(Canvas)</code> nơi vẽ mép mờ [ĐO decompile <code>framework.jar</code> máy ảo A10]; (b) kéo dời phần NGUYÊN, dồn phần lẻ sang lượt sau (bản đầu làm tròn từng khung rồi vứt phần lẻ ⇒ toạ độ chạm lẻ + kéo chậm &lt; 0,5 px/khung không dời nội dung) [SUY đọc mã]; (c) <code>importantForAccessibility</code> = YES khi cuộn, AUTO khi không (khung không bấm/không focus ở AUTO không phải nút trợ năng quan trọng ⇒ dịch vụ không xin cả cây không thấy thao tác cuộn) [ĐO decompile]. Ghim mới trong <code>ShortcutGridFitWiringContractTest</code>; 3/3 đột biến (gỡ từng vá) ĐỎ, tệp trả đúng sha. Mép mờ và kéo chậm chưa nhìn/đo trên máy ảo hay xe [CHƯA ĐO] — lượt review không dùng máy ảo theo lệnh điều phối.</li>
+<li><b>2026-10-06 · sau review — lint + QA máy ảo lượt 2</b> — lint báo 2 cảnh báo MỚI ở <code>ShortcutGridLayout</code>: <code>AccessibilityScrollActions</code> (thêm thao tác cuộn theo hướng; bộ dò không đọc được đối số dạng biểu thức <code>if</code> ⇒ gọi <code>addAction</code> trực tiếp mỗi nhánh) · <code>ClickableViewAccessibility</code> (chặn có lý do: khung không bao giờ là một cú bấm). [ĐO máy ảo, bản <code>20fc2948…</code>] mép mờ vẽ thật (nửa icon lộ sáng 108 → 33 về nền 30 trong 18 px; bản trước review phẳng 108 → 107 — xác nhận phát hiện F1 của review); kéo chậm 100 px/4 s ⇒ nội dung dời 87 px = 100 − ngưỡng chạm (F2); chạm icon sau kéo mở đúng app. Máy ảo trả nguyên trạng lần 2 (<code>emulator-restore.tsv</code>).</li>
+<li><b>2026-10-06 · quyết định điều phối OQ1–OQ3</b> — OQ1 giữ 256 · OQ2 lấp bề ngang trong 10 % · OQ3 widget app khác lề đều 8 dp. <b>Sai lệch có lý do</b> (OQ2): lời điều phối "lề TRỤC NGANG nhỏ nhất" — áp nguyên văn cho khung nằm (trục ngang = chiều cao) thì [ĐO mô hình vét cạn] 213/1 734 khung có icon TO RA khi thêm app và ô 4 929×395 với 3–4 app ra 2×2 lề hai bên 190 px ⇒ chỉ áp khung đứng (đúng ví dụ điều phối + lời owner "margin 2 bên"); khung nằm giữ thứ tự R1, nêu OQ4. Luật đặt ở <code>:core GridFit</code> (tuỳ chọn <code>Spec.fillWidth</code>, mặc định 0 ⇒ lưới widget không đổi) để lưới lối tắt vẫn là MỘT cấu hình của <code>GridFit</code> (<code>FitGridWiringContractTest</code>).</li>
+<li><b>2026-10-06 · QA máy ảo lượt 3</b> (bản <code>vehicleTest</code> của cây hiện tại; trước = 2.89 cài sẵn, cùng mã widget cũ) — [ĐO] (a) OQ2: ô 262×956 + 7 app ⇒ <code>WidgetFit … 262x956 -&gt; 2x4 icon=113 gap=12.0x100.8</code>, mực hai bên 12/11 px, hàng cuối căn giữa (ô 125×213 tâm x 390,5 = tâm khung). (b) OQ3: ràng buộc đồng hồ số + lịch biểu qua bảng chọn của chính Kachi (đã có bind-grant) ⇒ 2.89: lề con gốc 18/6/18/30 px, cỡ báo 595×512 dp; cài bản mới đè (giữ dữ liệu) ⇒ 12/12/12/12 px, 603×520 dp (= nội dung ÷ 1,5); dải 1872×123 và ô hẹp 301×804: lề 12, cỡ báo 184×520 dp, không chữ nào ra ngoài khung (uiautomator + ảnh). Thu hồi 2 id widget bằng đường của app (<code>sweep</code> lúc nạp) ⇒ <code>dumpsys appwidget</code> host/grant/danh sách widget trùng bản đầu phiên. Một cú chạm lỡ vào widget lịch (đầu ô ⇄ đã tự ẩn) mở Lịch Google ⇒ gỡ đúng stack <code>standard</code> QA tạo (#52) + <code>force-stop</code> Lịch. Máy ảo trả nguyên trạng lần 3 (<code>emulator-restore.tsv</code>).</li>
+<li><b>2026-10-06 · bộ đủ Pass 3</b> [ĐO, đếm từ JUnit XML, cùng lượt với <code>DIAG-CAP-USERDATA</code>] — 8 855 / 0 (1 024 XML: <code>:core</code> 4 456 · <code>:app</code> debug 2 093 · vehicleTest 2 105 · <code>:car-integration</code> 80 · <code>:offcar-planner</code> 99 · <code>:vehicle-contracts</code> 22) · <code>lintDebug</code> 0 lỗi (577 cảnh báo — không cảnh báo mới ở tệp đổi) · <code>assembleRelease</code> ✓ · mọi hàm mới có chỗ gọi (grep §8).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-10-06</h3>
+<p class="muted">Senior review + vá + soát phạm vi + soát độ mới công nghệ, trên cây làm việc chưa commit (gốc <code>d320ece</code>). Không dùng máy ảo/xe (lệnh điều phối). Context7 không kết nối được (DNS) và phiên không có mạng tới nguồn AOSP ⇒ mọi khẳng định về framework dưới đây dựa trên decompile <code>framework.jar</code> lấy từ máy ảo <code>clusternav10</code> (Android 10 — cùng đời với xe).</p>
+<table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>F1</td><td>[P2]</td><td>Mép mờ "còn nữa" (R3, §4.4) KHÔNG BAO GIỜ vẽ: <code>ShortcutGridLayout</code> là ViewGroup không nền ⇒ WILL_NOT_DRAW (<code>ViewGroup.initViewGroup</code>) ⇒ PFLAG_SKIP_DRAW ⇒ <code>View.updateDisplayListIfDirty</code> chỉ gọi <code>dispatchDraw</code>, bỏ <code>View.draw(Canvas)</code> — nơi duy nhất vẽ mép mờ [ĐO decompile]. README QA không có số đo/mô tả mép mờ.</td><td>VÁ — <code>setWillNotDraw(false)</code> ở <code>init</code> (cùng lẽ <code>ScrollView.initScrollView</code> [ĐO decompile]); không cuộn ⇒ mép mờ tắt ⇒ <code>View.draw</code> nhánh nhanh, không đổi hình.</td></tr>
+<tr><td>F2</td><td>[P2]</td><td>Kéo: <code>scrollAlongTo(position() + (lastAlong − a).roundToInt())</code> rồi <code>lastAlong = a</code> vứt phần lẻ mỗi khung ⇒ toạ độ chạm lẻ + kéo chậm &lt; 0,5 px/khung: nội dung đứng yên dù ngón đi; 0,5–1 px/khung: dời 1 px (vượt ngón tới gấp đôi) [SUY đọc mã]. Màn xe có cho toạ độ lẻ không [CHƯA BIẾT]. <code>ScrollView</code> dùng toạ độ int (<code>mLastMotionY</code>) [ĐO decompile].</td><td>VÁ — dời phần NGUYÊN, dồn phần lẻ (<code>val d = (lastAlong − a).toInt()</code> · <code>lastAlong −= d</code>): tổng dời = tổng ngón đi, lệch &lt; 1 px.</td></tr>
+<tr><td>F3</td><td>[P3]</td><td>Khung cuộn ở <code>importantForAccessibility</code> AUTO, không bấm/không focus ⇒ không "quan trọng" (<code>View.isImportantForAccessibility</code> [ĐO decompile]) ⇒ dịch vụ trợ năng không xin cả nút không quan trọng không thấy thao tác cuộn (R3). <code>uiautomator dump</code> của QA lấy cả nút không quan trọng nên không lộ [SUY].</td><td>VÁ — YES khi cuộn, AUTO khi không (như 2.91), ở <code>settleScroll</code>; setter không xin lượt bố cục [ĐO decompile <code>setImportantForAccessibility</code>].</td></tr>
+<tr><td>F4</td><td>[P3]</td><td>Vị trí cuộn về 0 và cú kéo đang dở bị cắt mỗi lần <code>ShortcutIconsView.rebuild</code> — chạy ở MỌI phát tin cài/gỡ/đổi gói của hệ thống [SUY đọc mã]. Có từ F1 (2.86), chỉ lộ ra khi lưới cuộn được.</td><td>KHÔNG vá (ngoài phạm vi 292) ⇒ backlog <code>SHORTCUT-GRID-SCROLL-KEEP</code>.</td></tr>
+<tr><td>F5</td><td>[P3]</td><td><code>kachi-launcher-shortcuts-autostart.html</code> R1.1 vẫn ghi "tối đa 8 app" (chỉ R1.4 có trỏ 2.92) — hai câu mâu thuẫn.</td><td>VÁ — trỏ 2.92 ở R1.1.</td></tr>
+</table>
+<p><b>Soát phạm vi</b> (mã có · nối dây · có test · hành vi người dùng): R1 ✅ (<code>ShortcutGridFit.fit</code> → <code>ShortcutGridLayout.refit</code>; vét cạn + ca ảnh 258×956 icon 111 px/lề 12 px) · R1.2 ✅ (sàn 40 = 48 − 8 dp; ô chạm ≥ sàn + khe) · R2 ✅ (codec 256 · <code>PICK_SHORTCUTS</code> · <code>ShortcutStrip</code> · chữ 5 tiếng) · R2.2 ✅ (trần 256 qua <code>toggleSelection</code>) · R2.4 ✅ (trần 8 widget/ô giữ) · R3 ✅ sau F1 + F3 (hình học, kéo, trôi, chạm lề tới ô, trợ năng, mép mờ) · R4 ✅ (<code>WidgetViews.col</code> 8 dp; widget app khác ⇒ OQ3) · R5 ✅ · R-nf1 ✅ · R-nf2 ✅ (vá không thêm lượt bố cục) · R-nf3 ✅ · R-nf4 ✅ (<code>ShortcutGridLayout</code> 346 dòng; mọi hàm mới có chỗ gọi — grep).</p>
+<p><b>Độ mới công nghệ</b> (Context7 không dùng được — đánh giá theo decompile A10 + hiểu biết, CHƯA tra tài liệu mới nhất): <code>OverScroller</code> · <code>VelocityTracker.getX/YVelocity(id)</code> · <code>ViewConfiguration.scaled*</code> · <code>AccessibilityAction.ACTION_SCROLL_UP/DOWN/LEFT/RIGHT</code> (API 23) · mép mờ <code>View</code> — đều hiện hành, không deprecated, đúng cách <code>ScrollView</code> A10 làm. Chỉ nêu, không vá: API 34 <code>ACTION_SCROLL_IN_DIRECTION</code>, API 35 <code>setFrameContentVelocity</code> (gợi ý tần số khung khi trôi) — không áp cho xe A10 (minSdk 29).</p>
+<p><b>Test</b> [ĐO, đếm từ JUnit XML]: <code>./gradlew :core:test --tests "*ShortcutGrid*" --tests "*AppShortcutCodec*" --tests "*ShortcutSelection*" --tests "*GridFit*" :app:testDebugUnitTest --tests "*Shortcut*" --tests "*PickerCap*" --tests "*WidgetMargin292*" --tests "*FitGridWiring*" --tests "*BarScaleWiring*"</code> ⇒ <code>:core</code> 61 / 0 lỗi · <code>:app</code> 49 / 0 lỗi. Đột biến 3/3 ĐỎ (gỡ từng vá ⇒ <code>ShortcutGridFitWiringContractTest</code> đỏ đúng câu), tệp trả đúng sha. Bài dò tạm (đã xoá) quét 158 400 ca (n 1–300 × 528 khung): đơn điệu, không chồng/tràn, nội dung cuộn dài hơn khung, khe mép = khe giữa ± 1,5 px, ô chạm ≥ sàn + khe − 1 px — 0 vi phạm. Chưa chạy bộ đủ + lint (việc của bên triển khai).</p>
+<p><b>Kết luận: APPROVED</b> (sau 3 vá; 0 phát hiện [P0]–[P3] còn mở trong phạm vi — F4 đã vào backlog). Điều kiện ngoài review: chạy lại bộ đủ + <code>lintDebug</code> + <code>assembleRelease</code>; mép mờ và kéo chậm chưa nhìn/đo trên máy ảo hay xe [CHƯA ĐO] ⇒ gộp vào lượt QA kế / 🚗 OC-292-1; backlog <code>SHORTCUT-WIDGET-292</code> · index · project-context vẫn ghi "chưa senior review" và số test 8 836 ⇒ cập nhật sau lượt chạy bộ đủ.</p>
+
+<h3>Pass 2 — 2026-10-06 (tự soát Pass 3 của bên triển khai — lệnh điều phối "self-review the new code once"; senior review độc lập chưa chạy)</h3>
+<table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>S1</td><td>[P1]</td><td>Đọc nguyên văn luật OQ2 ("lề TRỤC NGANG nhỏ nhất") cho khung nằm phá tính chất đơn điệu (icon to ra khi thêm app — 213/1 734 khung mô hình) và nới lề hai bên ô 4 (41,8 → 190 px).</td><td>Chỉ áp khung đứng; khung nằm giữ R1; OQ4 + backlog <code>SHORTCUT-FILL-WIDE</code>. Bài mới <code>don dieu - quet day khung dung va nam</code> (651 khung × n 1–40) ĐỎ với đột biến "đọc nguyên văn" (cùng <code>khung nam giu nguyen</code> + 2 bài vét cạn).</td></tr>
+<tr><td>S2</td><td>[P3]</td><td><code>SlotHostView.defaultPaddingDips</code> bản đầu trả 0 khi chưa có provider — nhưng framework A10 vẫn trừ lề mặc định (không phụ thuộc provider [ĐO decompile]) ⇒ <code>resetAppWidget(null)</code> sẽ khai thiếu 24 dp.</td><td>VÁ: luôn bù, component của host làm đủ chữ ký.</td></tr>
+<tr><td>S3</td><td>[P3]</td><td>Tuỳ chọn <code>fillWidth</code> trong <code>GridFit</code> chung: với nhiều dạng (lưới widget) "cùng tầng" có thể vượt thứ tự dạng ưu tiên.</td><td>Ghi KDoc: chỉ <code>EVEN_GAPS</code>; mặc định 0 ⇒ lưới widget không đổi (bộ <code>FitRules*</code>/<code>GridFit*</code> xanh). Không vá thêm.</td></tr>
+<tr><td>—</td><td>—</td><td>Đã soát: luật ở <code>:core</code> (không số dp) · <code>FitGridWiringContractTest</code> ("một cấu hình của GridFit") xanh · mọi hàm mới có chỗ gọi (<code>GridFit.fillWidth</code> ← <code>fit</code>; <code>SlotHostView.setAppWidget</code>/<code>defaultPaddingDips</code> ← framework/<code>onSizeChanged</code>) · tệp ≤ 500 dòng (<code>GridFit</code> 439 · <code>ShortcutGridFit</code> 173 · <code>AppWidgetSlotHost</code> 376) · Android 12 (DL5) cho phần bù cỡ: [SUY], chưa đọc nguồn A12.</td><td>—</td></tr>
+</table>
+<p><b>Kết luận tự soát</b>: không còn phát hiện mở trong phạm vi Pass 3. Còn: senior review độc lập (Opus) cho Pass 3 + quét bảo mật trước commit (rule global §5/§6).</p>
+
+<h3>Pass 3 — 2026-10-06 (senior review độc lập — Opus; lệnh điều phối gọi là "Pass 2" của vòng review độc lập, đánh số 3 để sổ chỉ thêm và không trùng Pass 2 tự soát)</h3>
+<p class="muted">Senior review + vá + soát phạm vi + soát độ mới công nghệ cho phần MỚI từ Pass 1 (OQ2 lấp bề ngang · OQ3 lề widget app khác) và soát lại toàn diff widget tìm hồi quy, trên cây làm việc chưa commit (gốc <code>d320ece</code>). Không dùng máy ảo/xe (máy ảo đang bị dừng bởi luồng khác — không đụng). Context7 không kết nối được (DNS) ⇒ khẳng định framework dựa trên nguồn AOSP tải trong phiên (<code>core/java/android/appwidget/AppWidgetHostView.java</code> tại android-10.0.0_r47 · 12.0.0_r34 · 12.1.0_r27); mạng tới nguồn AOSP rớt giữa phiên nên <code>AppWidgetHost.createView → setAppWidget</code> vẫn ở mức decompile máy ảo của bên triển khai.</p>
+<table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>R1</td><td>[P3]</td><td>OQ2 so lề hai bên tới 1e-6. Lề của cách xếp bị bề ngang chặn = <code>g</code> + phần dư làm tròn icon về px nguyên (luôn &lt; 1 px) ⇒ cách xếp nhiều cột hơn "thắng" nhờ phần lẻ ấy và bớt tới 10 % cỡ icon để đổi &lt; 1 px lề — ngược ý R1.3 (lề phí) và mô hình §4.3 "trục bị chặn: đúng <code>g</code>". [ĐO bài dò vét cạn tạm (đã xoá); mô hình độc lập khớp mã ở 100 % ca] 11 859 ca ở khung đứng 60–1 300 px × n 1–256, vd 842×920 · 101 app: 11 cột 63 px lề 12,42 thay 10 cột 70 px lề 12,91; 0 ca ở khung ≤ 960 px rộng với ≤ 60 app.</td><td>VÁ — <code>GridFit.fillWidth</code> chọn HAI bước: lề nhỏ nhất <code>m</code>, rồi trong các ứng viên lề ≤ <code>m + SIDE_TIE_PX</code> (1 px) chọn theo <code>better</code> (thứ tự R1). Mô hình độc lập <code>ShortcutGridFitTest.expected</code>/<code>ranh</code> theo đúng luật; bài mới <code>le lech duoi 1 px la hoa…</code> (842×920 · 101 app ⇒ 10×11 · 70 px) + <code>don dieu - toi tran ky thuat 256 app</code>. [ĐO mô hình] luật mới: 0 ca đổi ở khung xe; 0 vi phạm đơn điệu (khung tới 1 300 px × n tới 256). Đột biến <code>SIDE_TIE_PX = 0</code> ⇒ 2 bài ĐỎ (bài mới + vét cạn độc lập ở 4000×4000 · 22 app), tệp trả đúng sha.</td></tr>
+<tr><td>R2</td><td>[P3]</td><td>Hai dòng KDoc 159–162 ký tự do lượt sửa trước (<code>HomeUiState.shortcuts</code>, <code>SettingsShortcutsSection</code>).</td><td>VÁ — dàn lại dòng, không đổi chữ.</td></tr>
+<tr><td>—</td><td>—</td><td>§4.4 R4.1 "Android 12 (DL5): cùng đường [SUY]" — không phải lỗi, nâng mức bằng chứng: <code>setAppWidget</code> đặt lề mặc định MỖI lần (r47 L142–148 · 12.1 L163–169), <code>resetAppWidget</code> → <code>setAppWidget</code> (r47 L378–379 · 12.1 L497–498) ⇒ lề 8 dp ghi đè sau <code>super</code> không bị trả về; lớp nền không gọi <code>setPadding</code> ở chỗ nào khác; phép bù = đúng phép trừ của bản 5 tham số (r47 L296–304 · 12.1 L413–419) ⇒ nhà cung cấp nhận <code>(int)(nội dung/density)</code>, khớp số máy ảo 595×512 → 603×520 dp; A12 <code>onLayout</code> tính cỡ RemoteViews theo lề THẬT (12.1 L286–298) ⇒ nhất quán với cỡ khai.</td><td>Cập nhật §4.4 + KDoc <code>SlotHostView</code> (trích <code>tệp:dòng</code>). Trên xe DL5 [CHƯA ĐO].</td></tr>
+<tr><td>—</td><td>—</td><td>Đã soát, không phát hiện: đơn điệu [ĐO bài dò] 0 vi phạm (2 031 khung đứng + khung nằm × n 1–256, trước và sau vá); luật chỉ khung đứng (<code>h &lt; w ⇒ best</code>) và chỉ <code>EVEN_GAPS</code> (chỉ <code>ShortcutGridFit</code> dùng — grep) · chạm: chặn kéo chỉ sau <code>scaledTouchSlop</code> dọc trục (icon nhận <code>CANCEL</code>), DOWN rơi vào lề trả <code>false</code> ⇒ ô cha nhận chạm/nhấn giữ (máy ảo S5 của bên triển khai — với review này [SUY]), DOWN khi đang trôi bị nuốt (luật <code>ScrollView</code>), đổi ngón dẫn ở <code>POINTER_DOWN/UP</code>, dấu fling đúng, <code>computeScroll</code> chạy cả nhánh không vẽ · trợ năng: <code>isScrollable</code> + 4 thao tác theo hướng + FORWARD/BACKWARD, <code>TYPE_VIEW_SCROLLED</code> do <code>View.onScrollChanged</code> tự gửi · trần 256 nhất quán (<code>decodeReport</code>/<code>sanitize</code> <code>take(MAX)</code> · <code>AppDrawer.cap</code> · <code>capNote(cap)</code> · <code>ShortcutStrip.cells</code>), <code>kachi_sc_pick_n</code> "(%1$d)" đủ 5 tiếng · tệp ≤ 500 dòng (lớn nhất <code>WidgetViews</code> 490 · <code>AppDrawer</code> 487 · <code>GridFit</code> 453) · mọi hàm mới có chỗ gọi (grep).</td><td>—</td></tr>
+</table>
+<p><b>Soát phạm vi</b>: R1 ✅ · R1.2 ✅ · R1.3 ✅ (sau R1) · R2 ✅ · R2.2 ✅ · R2.4 ✅ · R3 ✅ · R4 ✅ · R4.1 ✅ · R5 ✅ · R-nf1 ✅ (<code>SIDE_TIE_PX</code> là sai số px, không phải dp — <code>SpacingScaleContractTest</code> xanh) · R-nf2 ✅ · R-nf3 ✅ · R-nf4 ✅.</p>
+<p><b>Độ mới công nghệ</b> (Context7 không dùng được — đối chiếu nguồn AOSP): <code>AppWidgetHostView.updateAppWidgetSize(Bundle, int×4)</code> <code>@Deprecated</code> từ API 31 (12.1 L344), bản thay <code>updateAppWidgetSize(Bundle, List&lt;SizeF&gt;)</code> chỉ có từ API 31 — FLAG, không vá: <code>minSdk</code> 29, xe A10; lời gọi có từ trước 2.92 và vẫn trừ lề y vậy trên A12; đổi đường trên DL5 cần đo xe trước (CLAUDE.md §14) ⇒ backlog <code>APPWIDGET-SIZE-API31</code>. <code>getDefaultPaddingForWidget</code> không deprecated (12.1 L199). <code>OverScroller</code> · <code>VelocityTracker</code> · <code>ViewConfiguration.scaled*</code> · <code>AccessibilityAction</code> (API 23): hiện hành (Pass 1, không đổi). Không thư viện mới.</p>
+<p><b>Test</b> [ĐO, đếm từ JUnit XML ghi trong lượt]: <code>./gradlew :core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest :car-integration:test :vehicle-contracts:test :offcar-planner:test --rerun-tasks --continue</code> ⇒ 8 857 / 0 (1 024 XML; <code>:core</code> 4 458 = 4 456 + 2 bài mới) · <code>:app:lintDebug</code> 0 lỗi / 577 cảnh báo (bằng mốc trước; cảnh báo ở tệp đổi đều là mã có từ trước) · <code>:app:assembleRelease</code> ✓ (2.91 (193), không bump, không đụng <code>apk/</code>).</p>
+<p><b>Kết luận: APPROVED</b> — 0 phát hiện [P0]–[P3] còn mở trong phạm vi sau vá R1 + R2 (vòng soát lại bản vá: mô hình + đột biến + bộ đủ xanh). Còn ngoài review: quét bảo mật trước commit (rule global §6) · 🚗 OC-292-1 · FLAG <code>APPWIDGET-SIZE-API31</code>.</p>
+
+</div></body>
+</html>

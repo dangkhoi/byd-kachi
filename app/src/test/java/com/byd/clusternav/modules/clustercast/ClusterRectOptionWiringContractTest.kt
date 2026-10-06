@@ -22,7 +22,8 @@ import java.nio.file.Files
  * Khoá: (1) lựa chọn `cast_style` đi từ prefs theo hồ sơ vào `desiredStyle` của coordinator — quên dòng này là màn Cài đặt ghi
  * mà cụm không bao giờ đổi (CLAUDE.md §8: compile xanh ≠ chạy); (2) 2.90 · R3: lớp km/h ĐÃ GỠ hẳn (owner 06/10) — không quay lại;
  * (3) màn Cài đặt chỉ ghi prefs — theme không bao giờ gửi từ Cài đặt; "Áp ngay" kiểm lại trạng thái rồi mới đi `restoreCluster`;
- * (4) khoá mới xếp loại đủ ba bảng; (5) 2.90 · R1/R2/R6: Cài đặt nói lý do bóng nổi + khung trọn cụm, trang sống theo trạng thái.
+ * (4) khoá mới xếp loại đủ ba bảng; (5) 2.90 · R1/R6 + 2.92 · CLUSTER-FRAME-CHOSEN: Cài đặt nói lý do bóng nổi + khung đã lưu của
+ * kiểu chọn khi cụm chưa rõ kiểu (gọi đúng nút "Áp ngay" ở cả 5 ngôn ngữ), trang sống theo trạng thái.
  */
 class ClusterRectOptionWiringContractTest {
 
@@ -58,12 +59,16 @@ class ClusterRectOptionWiringContractTest {
         }
     }
 
-    /** 2.90 · R1/R2 — Cài đặt nói: bóng nổi chặn đổi kiểu (tên app + "Áp ngay"), phiên chưa rõ kiểu ⇒ trọn cụm. */
+    /**
+     * 2.90 · R1 — Cài đặt nói: bóng nổi chặn đổi kiểu (tên app + "Áp ngay"). 2.92 · CLUSTER-FRAME-CHOSEN — phiên chưa rõ kiểu ⇒ nói
+     * "dùng khung đã lưu của kiểu bạn chọn" (không còn "trọn cụm"; cờ `fullFrame` đã gỡ).
+     */
     @Test
-    fun `290 - Cai dat noi ly do bong noi va khung tron cum`() {
+    fun `292 - Cai dat noi ly do bong noi va khung theo kieu chon khi chua ro`() {
         val rebuild = SourceRoots.body(section, "fun rebuild()")
         assertTrue(rebuild.contains("bridge.castThemeBlockers()") && rebuild.contains("R.string.kachi_cast_style_blocked"), rebuild)
-        assertTrue(rebuild.contains("fullFrame == true") && rebuild.contains("R.string.kachi_cast_style_full_frame"), rebuild)
+        assertTrue(rebuild.contains("believed == BelievedStyle.UNKNOWN") && rebuild.contains("R.string.kachi_cast_style_unconfirmed"), rebuild)
+        assertFalse(rebuild.contains("fullFrame"), "cờ trọn cụm đã gỡ")
         assertTrue(SourceRoots.body(bridge, "fun ClusterNavBridge.castThemeBlockers(): List<String>").contains("coordinator.themeBlockers"))
     }
 
@@ -139,7 +144,6 @@ class ClusterRectOptionWiringContractTest {
             "observeCastState" to "fun ClusterNavBridge.observeCastState(",
             "liveStatus(" to "private fun liveStatus(",
             "themeBlockers" to "val SimpleCastCoordinator.themeBlockers",
-            "fullFrameSession" to "val SimpleCastCoordinator.fullFrameSession",
             "newestSameName(" to "fun newestSameName(",
             "displayGone(" to "fun displayGone(",
             "ClusterBubbleApps::labelOf" to "",
@@ -161,14 +165,34 @@ class ClusterRectOptionWiringContractTest {
     fun `cau nhac Chu nhat noi khung ADAS co dinh va chi sang Bo tron, du 5 ngon ngu`() {
         assertTrue("if (chosen == CastStyle.RECT) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_note)))" in
             SourceRoots.body(section, "fun rebuild()"), "SettingsCastStyleBlock: câu nhắc chỉ ở lựa chọn Chữ nhật")
-        fun string(xml: String, name: String): String =
-            Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1) ?: error("thiếu $name")
-        listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { d ->
+        locales.forEach { d ->
             val xml = SourceRoots.text("src/main/res/$d/strings_kachi.xml")
-            val note = string(xml, "kachi_cast_style_rect_note")
-            val curved = string(xml, "kachi_cast_style_curved")
+            val note = stringRes(xml, "kachi_cast_style_rect_note")
+            val curved = stringRes(xml, "kachi_cast_style_curved")
             assertTrue("ADAS" in note, "$d: câu nhắc phải nói về khung ADAS")
             assertTrue(curved in note, "$d: câu nhắc phải chỉ sang '$curved' (đường thật để có ô ADAS nhỏ): $note")
         }
     }
+
+    /**
+     * 2.92 · CLUSTER-FRAME-CHOSEN · R5 — câu "chưa xác nhận" bảo người lái bấm "Áp ngay": ở cả 5 ngôn ngữ nó phải gọi ĐÚNG nhãn nút
+     * của chính ngôn ngữ đó (phần trước ngoặc của `kachi_cast_style_apply_now`; zh dùng ngoặc toàn khổ `（`) — người đọc tìm được nút
+     * để bấm. Thử ĐỎ: đổi nhãn nút ở một ngôn ngữ mà quên câu nhắc.
+     */
+    @Test
+    fun `292 - cau chua xac nhan goi dung nhan nut Ap ngay, du 5 ngon ngu`() {
+        locales.forEach { d ->
+            val xml = SourceRoots.text("src/main/res/$d/strings_kachi.xml")
+            val button = stringRes(xml, "kachi_cast_style_apply_now").substringBefore("(").substringBefore("（").trim()
+            val note = stringRes(xml, "kachi_cast_style_unconfirmed")
+            assertTrue(button.isNotEmpty() && button in note, "$d: câu nhắc phải gọi đúng nút '$button': $note")
+        }
+    }
+
+    /** Năm bộ chuỗi của app (vi mặc định + en · zh-rCN · th · ms). */
+    private val locales = listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms")
+
+    /** Nội dung THÔ (chưa bỏ escape) của `<string name="[name]">` trong [xml]; thiếu ⇒ đỏ kèm tên khoá. */
+    private fun stringRes(xml: String, name: String): String =
+        Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1) ?: error("thiếu $name")
 }

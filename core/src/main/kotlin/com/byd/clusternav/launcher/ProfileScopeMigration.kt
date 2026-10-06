@@ -55,4 +55,47 @@ object ProfileScopeMigration {
         }
         return out
     }
+
+    // ── 2.92 · PROFILE-NEW-KEYS — khoá vào phạm vi hồ sơ ở bản SAU lượt rót của nó ─────────────────────────────────
+
+    /**
+     * Khoá `kachi_workspace` (theo XE) giữ **sổ đã-rót**: mỗi mục `tệp/khoá` là một khoá ClusterNav theo hồ sơ đã được
+     * [fillNewKeys] rót xuống ảnh của mọi hồ sơ. Literal ở `:app` (`WorkspacePrefsMigrations.kt`) phải BẰNG hằng này.
+     */
+    const val FILLED_LEDGER_KEY = "profile_keys_filled_v1"
+
+    /** Mục sổ đã-rót của khoá [key] trong tệp prefs [file] (`/` không có trong tên tệp prefs lẫn khoá ClusterNav). */
+    fun ledgerEntry(file: String, key: String): String = "$file/$key"
+
+    /** Sổ đã-rót ĐỦ cho bảng [scope] (`tệp → khoá`) — thứ chỗ gọi ghi lại sau lượt rót. */
+    fun ledgerOf(scope: Map<String, List<String>>): Set<String> =
+        scope.flatMap { (file, keys) -> keys.map { ledgerEntry(file, it) } }.toSet()
+
+    /** Khoá của [scope] mà sổ [done] chưa có, theo tệp; tệp không còn khoá nào ⇒ vắng khỏi kết quả. */
+    fun pendingKeys(scope: Map<String, List<String>>, done: Set<String>): Map<String, List<String>> =
+        scope.mapValues { (file, keys) -> keys.filter { ledgerEntry(file, it) !in done } }.filterValues { it.isNotEmpty() }
+
+    /**
+     * Rót khoá MỚI vào phạm vi hồ sơ xuống ảnh **đã có** của mọi hồ sơ, chỉ điền chỗ trống.
+     *
+     * ## Bệnh nó chữa (QA máy ảo 2.92, [ĐO])
+     * [rotDown] chạy MỘT lần cho một bảng khoá cố định. Khoá vào phạm vi hồ sơ ở bản SAU (2.89 `cast_style`, 2.90
+     * `vm_bubble_hidden`, 2.92 `camera_projection`/`camera_zoom`) không bao giờ được rót ⇒ ảnh lưu bằng bản cũ không có
+     * khoá ⇒ lượt áp không chạm ⇒ giá trị của hồ sơ vừa rời đi theo sang, rồi lượt rời hồ sơ đó chụp luôn giá trị lạc.
+     *
+     * Khác [rotDown] ở hai chỗ, đều có chủ ý:
+     *  • hồ sơ CHƯA có ảnh (map rỗng) ⇒ không chạm: chưa có ảnh = *"bản sao của hiện tại"* (S4 · R5) — lượt áp không ghi
+     *    gì nên không có gì rò; đẻ ảnh cho nó là đổi nghĩa R5;
+     *  • không chạm họ tiền tố: họ có mốc có mặt riêng (lượt V-CLUSTER + [ClusterSnapshotPlan.mergeImport] đã lo).
+     *
+     * Khoá đang VẮNG ở tệp sống ⇒ `null` tường minh (lượt áp XOÁ ⇒ về mặc định của hồ sơ đó — với khoá mới tinh đây đúng
+     * là giá trị hồ sơ cũ đang có, vì lúc nó được chụp khoá chưa tồn tại).
+     */
+    fun fillNewKeys(
+        shots: Map<String, Map<String, Any?>>,
+        live: Map<String, Any?>,
+        newKeys: Collection<String>,
+        deferred: Map<String, String> = emptyMap(),
+    ): Map<String, Map<String, Any?>> =
+        rotDown(shots.filterValues { it.isNotEmpty() }, live, newKeys, emptyList(), deferred)
 }

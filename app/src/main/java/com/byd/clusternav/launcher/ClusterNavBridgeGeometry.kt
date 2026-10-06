@@ -166,8 +166,6 @@ data class CastGeometryProfileValue(val density: Int, val bounds: CastBounds)
  */
 fun ClusterNavBridge.geometryProfileDiffers(target: CastGeometryTarget): CastGeometryProfileValue? {
     if (target.side != null && sessionSplitPct() != splitPct()) return null
-    // 2.90 · R2: phiên chưa rõ kiểu dùng trọn cụm bất kể bản lưu ⇒ "áp dụng từ lần chiếu sau" không đúng — không in dòng phụ.
-    if (castStyleSession()?.fullFrame == true) return null
     val fullDefault = DisplayConfig.NORMAL_DEFAULT.takeIf { target.side == null }
     // Pass 3 · cluster-r2-1: phiên Chữ nhật ⇒ "lần chiếu sau" ghim ĐÚNG phép `ClusterRectLayout.pin` (bản `__RECT`, thiếu khung ⇒
     // khung phiên) — so với NORMAL_DEFAULT trọn cụm là in một dòng "Hồ sơ này: … 1920×720" giả.

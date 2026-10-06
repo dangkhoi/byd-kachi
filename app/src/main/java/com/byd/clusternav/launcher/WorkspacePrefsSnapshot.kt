@@ -125,6 +125,22 @@ internal fun cleanImportedSnapshot(suffix: String, value: Any?): Any? {
 }
 
 /**
+ * 2.92 · PROFILE-IMPORT-GAP-KEYS — ảnh ClusterNav của tệp NHẬP thiếu khoá (tệp xuất từ bản cũ hơn) ⇒ điền chỗ trống bằng giá
+ * trị ĐANG SỐNG của xe nhận (vắng ⇒ `null` tường minh = mặc định lúc áp) — CÙNG phép [ProfileScopeMigration.fillNewKeys] của lượt
+ * nâng cấp (`fillNewProfileKeysOnce`). Không thì lượt đổi đầu tiên sang hồ sơ nhập giữ giá trị của hồ sơ vừa rời rồi chụp luôn
+ * vào ảnh của nó (cùng bệnh PROFILE-NEW-KEYS, kích hoạt khác). Ảnh vắng/rỗng ⇒ không chạm ("chưa có ảnh", R5); khoá có mặt (kể
+ * cả `null` tường minh của bản chia sẻ) ⇒ của tệp; họ tiền tố ⇒ việc của [mergeImportedCast]. Hậu tố khác ⇒ trả nguyên [value].
+ */
+internal fun WorkspacePrefs.fillImportedSnapshot(suffix: String, value: Any?): Any? {
+    val file = ProfileScope.CLUSTERNAV_KEYS.keys.firstOrNull { ProfileScope.snapshotSuffix(it) == suffix } ?: return value
+    val shot = PrefSnapshot.decode(value as? String ?: return value)
+    val filled = ProfileScopeMigration.fillNewKeys(
+        mapOf(file to shot), clusterNavPrefs(file).all, ProfileScope.CLUSTERNAV_KEYS.getValue(file), ProfileScopeCluster.DEFERRED,
+    )[file] ?: return value
+    return PrefSnapshot.encode(filled)
+}
+
+/**
  * FIX286 · PI1/PI2 — merge MỘT lần lúc nhập cho ảnh `simple_cast_prefs` ([ClusterSnapshotPlan.mergeImport]): [clean] =
  * giá trị ĐÃ qua [cleanImportedSnapshot] (`null` = tệp không có ảnh này ⇒ coi như ảnh rỗng: mọi thứ lấy của xe nhận).
  * Tệp sống của xe được đọc ĐÚNG một lần ở đây. Hậu tố khác ⇒ `null` (chỗ gọi giữ nguyên [clean]).

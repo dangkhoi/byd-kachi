@@ -438,7 +438,7 @@
     <string name="kachi_cast_style_unknown">ยังไม่ทราบรูปแบบ</string>
     <string name="kachi_cast_style_apply_now">ใช้ทันที (ปิดแล้วเปิดการฉายใหม่)</string>
     <string name="kachi_cast_style_apply_busy">กำลังฉายแอปอยู่ — หยุดการฉายก่อน แล้วแตะ “ใช้ทันที”</string>
-    <string name="kachi_cast_style_full_frame">ยังไม่ทราบรูปแบบหน้าปัด (Kachi ยังไม่ได้เปลี่ยนรูปแบบหน้าปัดในรอบนี้) ⇒ กรอบแอปใช้เต็มหน้าปัด 1920×720</string>
+    <string name="kachi_cast_style_unconfirmed">ยังยืนยันรูปแบบหน้าปัดไม่ได้ (รอบนี้ Kachi ยังเปลี่ยนรูปแบบหน้าปัดไม่ได้) ⇒ กรอบแอปใช้กรอบที่บันทึกไว้ของรูปแบบที่คุณเลือก หากหน้าปัดแสดงรูปแบบผิด ให้แตะ “ใช้ทันที”</string>
     <string name="kachi_cast_style_blocked">เปลี่ยนรูปแบบหน้าปัดไม่ได้: บับเบิลของ %1$s อยู่บนหน้าปัด ปิดบับเบิล %1$s แล้วแตะ “ใช้ทันที”</string>
     <string name="kachi_cast_style_bubble_old_mod">เปลี่ยนรูปแบบหน้าปัดไม่ได้: %1$s ฉบับดัดแปลงรุ่นเก่ายังซ่อนบับเบิลไม่ได้ — ปิด %1$s แล้วแตะ “ใช้ทันที”</string>
     <string name="kachi_cast_split_session_differs">กำลังแบ่ง %1$s · โปรไฟล์นี้ %2$s — มีผลตั้งแต่การแบ่งจอครั้งถัดไป (แตะสัดส่วนเพื่อใช้ทันที)</string>
@@ -653,7 +653,7 @@
     <string name="kachi_sc_cap_note">ทางลัดมีได้สูงสุด %1$d แอป — นำออกหนึ่งแอปก่อนจึงจะเพิ่มได้</string>
     <string name="kachi_sc_section">ทางลัดแอป (%1$d)</string>
     <string name="kachi_sc_note">แสดงในบล็อก “ทางลัดแอป” บนแถบปุ่ม (เพิ่มบล็อกด้วยตัวเลือกปุ่มด้านบน) และในวิดเจ็ต “ตารางทางลัดแอป” ช่อง n: วางในช่องชั่วคราว (แม้ช่องนั้นจะเป็นวิดเจ็ต) แอปเดิมจะย้ายไปอยู่หลังหน้าจอหลัก การรีสตาร์ทลันเชอร์จะคืนเลย์เอาต์ที่บันทึกไว้</string>
-    <string name="kachi_sc_pick_n">เลือกแอป… (%1$d/%2$d)</string>
+    <string name="kachi_sc_pick_n">เลือกแอป… (%1$d)</string>
     <string name="kachi_sc_mode_slot">ช่อง %1$d</string>
     <string name="kachi_sc_mode_full">เต็มหน้าจอ</string>
     <string name="kachi_sc_mode_bg">เบื้องหลัง</string>

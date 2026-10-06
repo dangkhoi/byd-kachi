@@ -8,8 +8,8 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *
  * Spec `docs/specs/kachi-launcher-shortcuts-autostart.html` R1.4. Tách khỏi `AppDrawer.kt` (trần 500 dòng) theo đúng
  * khuôn `AppDrawerTiles.kt`: hàm mở rộng `internal` của [AppDrawer], trạng thái chọn vẫn là của [AppDrawer]
- * (`selected` · `cap`), đường bật/tắt DUY NHẤT vẫn là [AppDrawer.toggleSelection] (trần 8 = `MAX` = [AppShortcutCodec.MAX]
- * ⇒ quá trần thì NÓI ra ở thanh đáy, không chặn im lặng — `PickerCapNoticeContractTest`).
+ * (`selected` · `cap`), đường bật/tắt DUY NHẤT vẫn là [AppDrawer.toggleSelection] (2.92: hết trần 8 — `cap` = trần KỸ
+ * THUẬT [AppShortcutCodec.MAX]; chạm tới thì NÓI ra ở thanh đáy, không chặn im lặng — `PickerCapNoticeContractTest`).
  *
  * Mẫu là `DrawerController.openDockPicker` (một bộ chọn, bấm **Áp dụng (N)** ⇒ `onApply` nhận tập đã chốt). Khác: lưới
  * là lưới APP (nguồn = danh sách app có màn khởi chạy, CHÍNH [AppDrawerApps.load] mà ngăn kéo "Ứng dụng" dùng) và ô là

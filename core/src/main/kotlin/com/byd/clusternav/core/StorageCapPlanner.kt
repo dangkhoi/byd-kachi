@@ -6,10 +6,14 @@ package com.byd.clusternav.core
  * enumeration + deletion (off-thread + degrade-safe) live in the app-side `com.byd.clusternav.DiagStorageCap`.
  *
  * WHY oldest-first: the diagnostic logs / per-frame arrow PNGs / segment screenshots are only useful for the
- * drive that produced them, so when the app-external files dir exceeds the cap the OLDEST data is the least
+ * drive that produced them, so when the diagnostic files exceed the cap the OLDEST data is the least
  * valuable — evict it first, keep the freshest capture. This is a defensive backstop that runs even while
  * verbose data-collection is ON, so a single long drive can never fill the car's storage (the 7 GB+
  * nav_arrow_pngs / diag / CSV incident that motivated the cap).
+ *
+ * 2.92 (DIAG-CAP-USERDATA): "diagnostic files" means the [DiagFiles] allow-list ONLY — the same external dir
+ * also holds user data (photos, wallpapers, car images, profile exports, side-loaded voice packs) that the cap
+ * must never touch; see [selectDiagForDeletion].
  */
 object StorageCapPlanner {
 
@@ -18,6 +22,16 @@ object StorageCapPlanner {
 
     /** One prunable entry: a stable [id] (e.g. absolute path), its [sizeBytes], and [lastModifiedMs] (epoch). */
     data class Entry(val id: String, val sizeBytes: Long, val lastModifiedMs: Long)
+
+    /**
+     * 2.92 (DIAG-CAP-USERDATA) — the ONLY entry point `DiagStorageCap` may use: [entries] carry ids RELATIVE to
+     * the app-external root (`/`-separated); anything [DiagFiles.isDiagnostic] does not recognise (user photos,
+     * wallpapers, car images, profile exports, side-loaded voice packs, unknown files, absolute/odd ids) is dropped
+     * BEFORE the arithmetic, so it is never selected and never counted. The cap therefore applies to the
+     * diagnostic set alone: user data, however old or large, neither gets deleted nor pushes logs out early.
+     */
+    fun selectDiagForDeletion(entries: List<Entry>, capBytes: Long = DEFAULT_CAP_BYTES): List<String> =
+        selectForDeletion(entries.filter { DiagFiles.isDiagnostic(it.id) }, capBytes)
 
     /**
      * Given [entries] and a [capBytes], return the ids to delete — OLDEST ([lastModifiedMs]) first — so the

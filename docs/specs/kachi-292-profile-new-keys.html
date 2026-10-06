@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.92 khoá mới theo hồ sơ</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.92 — Khoá mới vào phạm vi hồ sơ không được rò sang hồ sơ lưu bằng bản cũ</h1>
+<p class="muted">Slug: <code>kachi-292-profile-new-keys</code> · Branch <code>feat/key-source-split</code> · Backlog <code>PROFILE-NEW-KEYS</code> (P2, cấu hình người lái rò giữa hồ sơ) · Nguồn: QA máy ảo 2.92 ca P (06/10) · <span class="pill wait">Trạng thái: Draft — mã + test off-car + senior review Pass 1/2 + QA máy ảo lại xong; chờ quét bảo mật/commit · 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §5/§7/§8/§10. Chỉ Kotlin stdlib + <code>SharedPreferences</code> sẵn có ⇒ không có thư viện mới cần Context7 (máy chủ Context7 cũng không kết nối được phiên này). Không bump phiên bản: APK 2.92 chưa từng báo cho owner (CLAUDE.md §9).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 2 — 2026-10-06</b>: Vá lượt NHẬP tệp hồ sơ cũ (<code>PROFILE-IMPORT-GAP-KEYS</code>, D5/T7) + một dòng log <code>KachiProfile</code> khi rót (review Pass 1 F4). Senior review Pass 2 APPROVED (0 vá mã; G1 spec lệch mã — đã sửa ở lượt này).</li>
+<li><b>Pass 1 — 2026-10-06</b>: Senior review Pass 1 APPROVED — bài canh khoá bảng tệp + họ của ảnh chụp (F1), chú thích; QA máy ảo lại ca P đạt (nâng cấp thật 2.89 → 2.91 → 2.92).</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo từ phát hiện [P2] của QA máy ảo 2.92 trước khi đăng: kiểu hình camera + thu phóng (khoá mới của 2.92, theo hồ sơ) rò sang hồ sơ lưu bằng 2.91. Truy gốc tới hợp đồng ảnh chụp S4 (§2) ⇒ cùng bệnh với mọi khoá vào phạm vi hồ sơ SAU lượt rót V-CLUSTER (2.84). Vá generic bằng sổ đã-rót.</li>
+</ul>
+
+<h2>2. Context</h2>
+<ul>
+<li><b>[ĐO máy ảo 06/10, QA 2.92 ca P]</b> Hồ sơ «QA 291» (lưu bằng 2.91) chọn <i>Thẳng rộng</i> + thu phóng 120 %, đổi sang «Mặc định» (lưu bằng 2.9x, <i>Nắn hình</i> tắt) ⇒ «Mặc định» hiện <i>Thẳng rộng</i> 120 %. Đúng phải là <i>Gương cầu</i> 100 % (khoá kiểu vắng + Nắn hình 0 ⇒ Gương cầu, <code>CameraViewMode.resolve</code>).</li>
+<li><b>[ĐO mã] Cơ chế</b>: ảnh chụp ClusterNav của một hồ sơ chụp MỌI khoá của <code>ProfileScope.CLUSTERNAV_KEYS</code> (khoá vắng ⇒ <code>null</code> tường minh — <code>WorkspacePrefsSnapshot.kt</code> <code>snapshotClusterNav</code>). Lượt áp <code>ClusterSnapshotPlan.apply</code> chỉ duyệt khoá CÓ trong ảnh. Ảnh lưu bằng bản chưa biết khoá ⇒ khoá vắng khỏi ảnh ⇒ lượt áp không chạm ⇒ giá trị đang sống (của hồ sơ vừa rời) ở lại; lượt rời hồ sơ đó chụp luôn giá trị lạc vào ảnh của nó (rò vĩnh viễn).</li>
+<li><b>[ĐO mã] Vì sao lượt di trú cũ không đỡ</b>: <code>migrateClusterProfileOnce</code> (V-CLUSTER 2.84) rót đúng chỗ trống này nhưng chạy MỘT lần (cờ <code>migrated_cluster_profile_v1</code>). 2.92 thêm <code>camera_projection</code>/<code>camera_zoom</code> vào <code>CAMERA_PROFILE_KEYS</code> (tức cả <code>MOVED_TO_PROFILE</code>), nhưng trên mọi xe ≥ 2.84 cờ đã bật ⇒ không bao giờ rót.</li>
+<li><b>[ĐO git] Cùng bệnh</b>: so <code>SettingsCatalogClusterNav.KEYS</code> + <code>CAMERA_PROFILE_KEYS</code> ở 2.84 (<code>4811431</code>) với cây hiện tại ⇒ đúng 4 khoá thêm sau lượt rót: <code>cast_style</code> (2.89) · <code>vm_bubble_hidden</code> (2.90) · <code>camera_projection</code> · <code>camera_zoom</code> (2.92).</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1</b> — Nâng cấp lên 2.92: mọi ảnh hồ sơ ĐÃ CÓ mà thiếu một khoá theo hồ sơ được điền giá trị đang sống lúc nâng cấp (vắng ⇒ <code>null</code> = về mặc định khi áp). Ca QA: «Mặc định» phải ra <i>Gương cầu</i> 100 % sau khi đổi từ hồ sơ đã chọn <i>Thẳng rộng</i> 120 %.</li>
+<li><b>R2</b> — Chỉ điền chỗ trống: khoá đã có trong ảnh (kể cả <code>null</code> tường minh) không bị đụng.</li>
+<li><b>R3</b> — Hồ sơ CHƯA có ảnh (S4 · R5 "bản sao của hiện tại") không bị đẻ ảnh; họ tiền tố (<code>cast_geometry</code>) không bị đụng.</li>
+<li><b>R4</b> — Generic: bản sau thêm khoá vào <code>ProfileScope.CLUSTERNAV_KEYS</code> thì khoá đó TỰ được rót đúng một lần, không phải viết thêm lượt di trú, không liệt kê tay.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>N1</b> — Không được làm <code>init</code> của <code>PrefsWorkspaceRepository</code> ném (ném ở đó = HOME sập mỗi lần mở): đọc ảnh qua <code>storedSnapshot</code>, đọc sổ bằng ép kiểu an toàn.</li>
+<li><b>N2</b> — Sổ ghi CÙNG một <code>Editor</code> với dữ liệu (chết máy giữa chừng không để lượt sau chạy trên dữ liệu nửa vời).</li>
+<li><b>N3</b> — Chạy TRƯỚC lượt <code>load()</code> đầu tiên (trước khi người lái kịp chọn giá trị cho khoá mới); mở máy lần sau: sổ đủ ⇒ không đọc ảnh nào.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng ở <code>init</code></h3>
+<div class="flow">
+  <div class="fnode"><b>migrateScenesOnce</b><span>cảnh → hồ sơ</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>migrateNavScheduleOnce</b><span>lịch dẫn đường</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>migrateClusterProfileOnce</b><span>V-CLUSTER, một lần</span></div><div class="arrow">→</div>
+  <div class="fnode new"><b>fillNewProfileKeysOnce</b><span>sổ đã-rót (mới)</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>load()</b><span>áp hồ sơ</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span>bước mới</span><span class="sw"><span class="box"></span>bước có sẵn, không đổi</span></div>
+<h3>4.2 Một lượt rót theo sổ</h3>
+<div class="flow">
+  <div class="fnode"><b>Sổ <code>profile_keys_filled_v1</code></b><span>tập <code>tệp/khoá</code>, theo XE</span></div><div class="arrow">→</div>
+  <div class="fnode new"><b>pendingKeys</b><span>CLUSTERNAV_KEYS − sổ</span></div><div class="arrow">→</div>
+  <div class="fnode new"><b>fillNewKeys</b><span>ảnh đã có, chỉ chỗ trống, giá trị sống</span></div><div class="arrow">→</div>
+  <div class="fnode"><b>Một Editor</b><span>ảnh mới + sổ đủ</span></div>
+</div>
+<h3>4.3 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do</th></tr>
+<tr><td>D1</td><td>Sổ <code>tệp/khoá</code> (StringSet) thay cờ boolean</td><td>R4 — cờ một-lần là gốc bệnh; sổ cho biết đúng khoá nào chưa rót. Lần đầu (sổ rỗng) duyệt mọi khoá: chỉ điền chỗ trống nên ảnh đủ khoá không đổi byte.</td></tr>
+<tr><td>D2</td><td>Giá trị rót = giá trị ĐANG SỐNG (vắng ⇒ <code>null</code>)</td><td>Cùng hợp đồng <code>rotDown</code>. Khoá mới tinh lúc nâng cấp vắng ⇒ <code>null</code> ⇒ hồ sơ cũ về mặc định (đúng giá trị hồ sơ đó đang có lúc chụp). Khoá đã sống từ bản trước (<code>cast_style</code>, <code>vm_bubble_hidden</code>) ⇒ hồ sơ thiếu khoá được ghim đúng giá trị nó đang hiển thị (hôm nay nó ăn theo giá trị sống) — không đổi gì người lái thấy lúc nâng cấp.</td></tr>
+<tr><td>D3</td><td>Bỏ qua hồ sơ chưa có ảnh + không chạm họ</td><td>R3. Khác <code>rotDown</code> có chủ ý (V-CLUSTER cần đẻ ảnh + đặt mốc; lượt này thì không).</td></tr>
+<tr><td>D4</td><td>Phép thuần ở <code>:core</code> (<code>ProfileScopeMigration.pendingKeys/ledgerOf/fillNewKeys</code>), <code>:app</code> chỉ đọc–ghi</td><td>Kiểm off-car bằng test chạy thật, đúng khuôn <code>rotDown</code>; <code>fillNewKeys</code> dùng lại <code>rotDown</code> (DRY).</td></tr>
+<tr><td>D5</td><td>VÁ lượt NHẬP tệp hồ sơ cũ (Pass 2): <code>WorkspacePrefs.fillImportedSnapshot</code> — mỗi ảnh ClusterNav của hồ sơ nhập đi qua CÙNG <code>fillNewKeys</code>, giá trị đang sống của XE NHẬN, SAU làm sạch + merge</td><td>Cùng bệnh, kích hoạt khác (lỗ có từ 2.84). Đánh đổi chấp nhận (review Pass 2 G2): tệp ≤ 2.91 nhập vào xe đang dùng <i>Thẳng rộng</i> ⇒ hồ sơ nhập bắt đầu bằng <i>Thẳng rộng</i> (thay vì kiểu suy từ Nắn hình của tệp) — không tệ hơn trước vá, và với <code>cast_style</code> thì giá trị sống AN TOÀN hơn <code>null</code> (không tự đổi theme cụm). Bản chia sẻ: <code>null</code> tường minh giữ nguyên. Cả ẢNH vắng (tệp ≤ 2.83 thiếu hẳn một tệp prefs) chưa phủ ⇒ <code>PROFILE-NEW-FILE-FILL</code>.</td></tr>
+</table>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td><code>:core</code> — <code>ProfileScopeMigration.FILLED_LEDGER_KEY</code> · <code>ledgerEntry</code> · <code>ledgerOf</code> · <code>pendingKeys</code> · <code>fillNewKeys</code></td><td>—</td><td>✅</td></tr>
+<tr><td>T2</td><td>Xếp loại sổ: <code>ProfileScopeCluster.DEVICE_KEYS</code> (theo XE) + <code>SettingsCatalog</code> NOT_SETTINGS (lý do)</td><td>T1</td><td>✅</td></tr>
+<tr><td>T3</td><td><code>:app</code> — <code>WorkspacePrefs.fillNewProfileKeysOnce()</code> (<code>WorkspacePrefsMigrations.kt</code>) + gọi ở <code>init</code> SAU lượt cụm (<code>PrefsWorkspaceRepository.kt</code>)</td><td>T1</td><td>✅</td></tr>
+<tr><td>T4</td><td>Test: <code>ProfileScopeMigrationTest</code> +5 (ca QA dựng lại qua <code>ClusterSnapshotPlan.apply</code>, chưa-có-ảnh/họ, chỉ chỗ trống + hai lần, sổ, 4 khoá thuộc phạm vi) · <code>ClusterProfileScopeCoverageTest</code> +1 (dây nối <code>init</code>, một Editor, literal = hằng)</td><td>T1–T3</td><td>✅</td></tr>
+<tr><td>T5</td><td>Bộ đủ + lint + APK 2.92 dựng lại · QA máy ảo lại ca P (nâng cấp thật 2.91 → 2.92)</td><td>T4</td><td>đang chạy</td></tr>
+<tr><td>T6</td><td>Senior review (Opus) · quét bảo mật trước commit</td><td>T5</td><td>review Pass 1 + Pass 2 ✅ · quét: khi commit</td></tr>
+<tr><td>T7</td><td>Lượt NHẬP: <code>fillImportedSnapshot</code> (<code>WorkspacePrefsSnapshot.kt</code>) nối trong <code>importProfile</code> sau làm sạch + merge; bài dây nối <code>ClusterProfileScopeCoverageTest</code> (thứ tự làm sạch → merge → điền, cùng phép <code>:core</code>)</td><td>T1</td><td>✅</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>Test chọn lọc</b> [ĐO 06/10, đếm JUnit XML]: 104 / 0 (ProfileScope* · SettingsCatalog* · ClusterSnapshotPlan* · SettingsCoverage* · NavScheduleProfileScope*), gồm 6 test mới.</li>
+<li><b>Ca bệnh khoá bằng test</b>: <code>ca QA 2_92 — kieu hinh va thu phong khong ro sang ho so luu bang ban cu</code> chạy THẬT <code>ClusterSnapshotPlan.apply</code> trên ảnh cũ: trước vá không có lượt ghi cho hai khoá (mô tả bệnh); sau <code>fillNewKeys</code> lượt áp XOÁ cả hai ⇒ <code>CameraViewMode.resolve(null, 0)</code> = <code>FISHEYE</code>.</li>
+<li><b>QA máy ảo ca P</b> [ĐO 06/10, APK <code>fc364ad6…78c6</code>]: «Mặc định» (lưu bằng 2.9x) ra <i>Gương cầu</i> 100 % sau khi đổi từ hồ sơ <i>Thẳng rộng</i> 120 %; đổi về giữ nguyên; 5 ảnh chỉ THÊM khoá (0 xoá, 0 đổi); sổ 48 mục; khởi động lần hai không ghi lại tệp; 0 crash/ANR.</li>
+<li><b>Bộ đủ</b> [ĐO XML, cùng lượt với <code>kachi-292-cluster-frame-chosen</code>]: 8 906 / 0 (core 4 491 · app debug 2 101 · vehicleTest 2 113 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99) · lint 0 lỗi · <code>assembleRelease</code> ✓.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — ĐÓNG (Pass 2): nhập tệp hồ sơ từ bản cũ đã vá — xem D5.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec gốc hồ sơ: <code>docs/specs/kachi-profiles-are-everything.html</code> §11.4.2 (hợp đồng ảnh chụp) · §11.4.5 (rót xuống).</li>
+<li>Spec 2.92 camera: <code>docs/specs/kachi-292-camera-full-view.html</code> §4.6 (kiểu + thu phóng theo hồ sơ).</li>
+<li>Mã: <code>core/…/ProfileScopeMigration.kt</code> · <code>core/…/ClusterSnapshotPlan.kt</code> · <code>app/…/WorkspacePrefsMigrations.kt</code> · <code>app/…/WorkspacePrefsSnapshot.kt</code> · <code>app/…/PrefsWorkspaceRepository.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li>2026-10-06 — T1–T4 xong, test chọn lọc 104 / 0. Chạy bộ đủ + lint + APK.</li>
+<li>2026-10-06 — Review Pass 1 (+1 bài canh), QA lại ca P đạt; T7 lượt nhập + dòng log; review Pass 2 APPROVED; bộ đủ 8 906 / 0.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Đọc: 7 tệp của bản vá (<code>git diff</code>) + ngữ cảnh <code>ClusterSnapshotPlan</code> · <code>ProfileScope</code>/<code>ProfileScopeCluster</code> · <code>WorkspacePrefsSnapshot</code>/<code>WorkspacePrefsProfile</code> · <code>PrefsWorkspaceRepository</code> · <code>PrefSnapshot</code> · <code>CastEnableDeferral</code> · <code>CameraViewMode</code> · <code>ProfileTransfer.forShare</code> · <code>ClusterNavBridgeReapply</code> · <code>SimpleCastRuntime</code> (<code>castStyle</code>) · <code>TestBridgeState</code> (lệnh <code>prefs</code>) · manifest (<code>allowBackup</code>).</p>
+<table>
+<tr><th>Mục</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>R1</td><td class="ok">✅</td><td>[ĐO grep] đúng một lời gọi <code>prefs.fillNewProfileKeysOnce()</code> ngoài định nghĩa, ở <code>init</code> (<code>PrefsWorkspaceRepository.kt:58</code>), sau <code>migrateClusterProfileOnce</code>. Test ca QA chạy thật <code>ClusterSnapshotPlan.apply</code> ⇒ <code>FISHEYE</code>.</td></tr>
+<tr><td>R2</td><td class="ok">✅</td><td><code>rotDown</code> chỉ ghi khi <code>k !in next</code> — <code>null</code> tường minh là khoá CÓ mặt nên không bị đụng. Test "chỉ điền chỗ trống, chạy hai lần".</td></tr>
+<tr><td>R3</td><td class="ok">✅</td><td><code>filterValues { it.isNotEmpty() }</code> + <code>families = emptyList()</code>. Test "hồ sơ CHƯA có ảnh…".</td></tr>
+<tr><td>R4</td><td class="ok">✅ khoá ở tệp đã có ảnh</td><td>Việc chờ = bảng hiện tại − sổ; ghi lại sổ ĐỦ của bảng hiện tại (không hợp với sổ cũ) ⇒ khoá rời phạm vi rồi quay lại cũng được rót lại. ⚠ Khoá ở TỆP prefs MỚI / họ MỚI: F1.</td></tr>
+<tr><td>N1</td><td class="ok">✅</td><td>Câu 1 dưới.</td></tr>
+<tr><td>N2</td><td class="ok">✅</td><td>Một <code>sp.edit()</code>; sổ ghi trên chính <code>e</code> rồi <code>apply()</code> (bài canh <code>:app</code>).</td></tr>
+<tr><td>N3</td><td class="ok">✅</td><td>Thứ tự <code>init</code> có bài canh; sổ đủ ⇒ <code>return</code> trước mọi <code>decode</code> và trước khi mở tệp ClusterNav.</td></tr>
+<tr><td>D1–D5</td><td class="ok">✅</td><td>Khớp mã. [ĐO git] <code>4811431</code> → cây hiện tại: đúng 4 khoá vào phạm vi hồ sơ, không tệp/họ mới, không khoá nào rời DEVICE (§2 đúng).</td></tr>
+</table>
+
+<p><b>Phát hiện</b></p>
+<ul>
+<li><b>[P2] F1 — R4 chưa generic cho khoá ở TỆP prefs MỚI (và họ MỚI)</b> [ĐO code]. "Chưa có ảnh" xét THEO TỆP (<code>fillNewKeys</code> lọc ảnh rỗng của đúng tệp đang rót). Bản sau thêm khoá ở một tệp chưa có trong bảng ⇒ ảnh của tệp đó vắng ở MỌI hồ sơ ⇒ không hồ sơ nào được rót mà sổ vẫn ghi đã rót ⇒ rò y ca QA, im lặng, không có lần rót thứ hai. Họ tiền tố mới cũng không đi qua sổ. Hôm nay KHÔNG tác động (4 khoá đều ở tệp đã có ảnh). <b>Vá</b>: bài canh <code>bang anh chup chua co tep hay ho moi — so da rot khong lo hai ca do</code> (<code>ProfileScopeMigrationTest</code>) khoá bộ tệp ảnh chụp {<code>cast-v2-app-catalog</code>, <code>clusternav_prefs</code>, <code>clusternav_theme</code>, <code>simple_cast_prefs</code>} và bộ họ {<code>cast_geometry</code>} — thêm tệp/họ ⇒ đỏ kèm lời dặn. Cố ý KHÔNG đổi mã chạy trong RC (APK đang QA). Hướng khi có tệp mới: "hồ sơ đã từng chụp" = có ảnh không rỗng ở ≥ 1 hậu tố <code>SNAPSHOT_SUFFIXES</code>; <code>fillNewKeys</code> nhận tập đó thay cho phép lọc theo tệp. Đề xuất backlog <code>PROFILE-NEW-FILE-FILL</code>.</li>
+<li><b>[P3] F2 — KDoc đầu <code>WorkspacePrefsMigrations.kt</code></b> còn ghi "hai dấu di trú" — nay là ba. Vá tại chỗ, cùng dòng (chỉ chú thích ⇒ không xê dịch số dòng của mã).</li>
+<li><b>[P3] F3 — cầu kiểm thử che giá trị sổ</b> [ĐO code]: <code>TestBridgeState.isSensitive</code> tách tên theo <code>_</code>, đoạn <code>keys</code> nằm trong danh sách nhạy cảm ⇒ lệnh <code>prefs kachi_workspace</code> in <code>profile_keys_filled_v1 = [redacted]</code>. Không sai: khoá có mặt là đủ chứng minh lượt rót đã chạy; nội dung thì soi ảnh <code>&lt;hồ sơ&gt;__cn__*</code> (không bị che). Không vá — đổi tên là đổi mã chạy + spec. QA ca P lưu ý.</li>
+<li><b>[P3] F4 — lượt rót không ghi log</b> (cùng khuôn <code>migrateClusterProfileOnce</code>). Ghi nhận cho bản sau: một dòng <code>Log.i</code> "rót N khoá vào M ảnh" giúp chẩn đoán hiện trường (CLAUDE.md §11). Không vá trong RC.</li>
+</ul>
+
+<p><b>Trả lời câu hỏi của điều phối</b></p>
+<ol>
+<li><b>Có gì ném trong <code>init</code>?</b> [ĐO code] Không thêm bề mặt mới. <code>sp.all</code> (XML hỏng ⇒ Android coi rỗng); sổ đọc bằng <code>as? Set&lt;*&gt;</code> + <code>filterIsInstance</code> (sai kiểu ⇒ coi sổ rỗng ⇒ rót lại, chỉ điền chỗ trống ⇒ vô hại, rồi ghi đè bằng tập đúng kiểu); <code>getAll</code> trả bản sao NÔNG — tập trong RAM không bị sửa, <code>putStringSet</code> tự chép; <code>storedSnapshot</code> (sai kiểu ⇒ <code>null</code>); <code>PrefSnapshot.decode</code> không bao giờ ném; <code>desiredForSnapshot</code> ép <code>as? Boolean</code>; <code>encode</code> bỏ kiểu lạ. Danh sách hồ sơ rỗng ⇒ <code>profiles()</code> trả hồ sơ mặc định. Lỗ CÓ SẴN: <code>profiles()</code> dùng <code>getString</code> (sai kiểu ⇒ ném) — <code>load()</code> gọi nó ngay sau nên bản vá không thêm rủi ro; ngoài phạm vi.</li>
+<li><b>Ghim giá trị sống cho <code>cast_style</code>/<code>vm_bubble_hidden</code></b> — đúng (D2). [ĐO code] <code>cast_style</code> chỉ được đọc MỘT lần đầu mỗi lượt mở chiếu, "đổi giữa phiên chỉ đổi prefs — 0 lệnh" (<code>SimpleCastRuntime.kt:85–88</code>) ⇒ ghim không đẻ lệnh theme nào lúc đổi hồ sơ; lượt mở chiếu kế đi đúng đường + cổng mà hai hồ sơ ≥ 2.89 có <code>cast_style</code> tường minh vẫn đi. <code>vm_bubble_hidden</code>: <code>reapplyAll</code> gọi <code>VmBubbleVisibility.apply(force = true)</code> ở MỌI lượt đổi (bước <code>bubble.vis</code>, <code>ClusterNavBridgeReapply.kt</code>) ⇒ không thêm loại lệnh. Ngược lại, rót <code>null</code> sẽ đổi thứ người lái đang thấy (kiểu cụm về Bo tròn ở lượt chiếu kế) ⇒ D2 an toàn hơn. Xe lên từ ≤ 2.88: khoá vắng ở tệp sống ⇒ <code>null</code> ⇒ mặc định — không đổi gì. [SUY] chưa đọc <code>ClusterThemeGuard</code>; kết luận chỉ dựa "cùng đường đã có".</li>
+<li><b><code>cast_enabled</code> hoãn</b> [ĐO code]: giá trị rót = bản chờ, không có thì giá trị sống (<code>ClusterSnapshotPlan.kt:121–123</code>, <code>CastEnableDeferral.kt:39</code>); lượt áp không bao giờ ghi khoá sống (<code>deferPending</code>). Mọi ảnh ≥ 2.84 đã có khoá này (V-CLUSTER + <code>mergeImport</code>) ⇒ nhánh này gần như không chạy.</li>
+<li><b>Ai khác đọc <code>kachi_workspace</code> chung?</b> [ĐO code] Xuất hồ sơ chỉ đọc <code>LAUNCHER_SUFFIXES</code> theo hồ sơ; nhập/xoá/đổi tên chỉ chạm khoá theo hồ sơ; <code>allowBackup="false"</code>; các <code>require</code> trong <code>SettingsCatalog.init</code> (lý do không rỗng, không vừa có chủ) đều qua; cầu kiểm thử: F3. Bản SHARE ghi khoá riêng tư là <code>null</code> TƯỜNG MINH (<code>ProfileTransfer.forShare</code>) và chỉ xuất hồ sơ đang dùng (ảnh sống đủ khoá) ⇒ lượt rót không lấp lịch/địa chỉ vào hồ sơ nhập.</li>
+<li><b>Hiệu năng khi sổ đủ</b>: <code>sp.all</code> (sao nông) + dựng ~|<code>CLUSTERNAV_KEYS</code>| chuỗi + tra tập ⇒ O(khoá); không giải mã ảnh, không mở tệp ClusterNav.</li>
+</ol>
+<p><b>Lưu ý QA ca P</b>: máy đã từng chạy bản 2.92 TRƯỚC vá (chưa có sổ, có thể đã đặt <code>camera_projection</code> sống) thì lượt rót đầu tiên ghim đúng giá trị sống đó vào hồ sơ cũ — đúng D2, nhưng không tái hiện ca nâng cấp thật. Ca P phải đi từ trạng thái 2.91 thật (đúng kế hoạch T5).</p>
+<p><b>Công nghệ</b>: Context7 không kết nối được phiên này (ENOTFOUND) ⇒ chưa kiểm bằng Context7. Bản vá chỉ dùng Kotlin stdlib + <code>SharedPreferences</code> sẵn có; <code>getAll</code>/<code>putStringSet</code>/<code>Editor.apply</code> không bị <code>@Deprecated</code> [theo hiểu biết, chưa kiểm lại]. <code>apply()</code> thay <code>commit()</code> là cố ý (RAM đồng bộ, đĩa nền — cùng khuôn hai lượt di trú trước). Jetpack DataStore là hướng khuyến nghị cho mã mới — ngoài phạm vi (cả app trên <code>SharedPreferences</code>).</p>
+<p><b>Test</b>: [CHƯA CHẠY] — bộ phân loại auto-mode chặn <code>./gradlew</code> trong lượt review (cây đang có việc của điều phối). Phải chạy lại bộ chọn lọc (gồm bài canh F1 mới) và đếm từ JUnit XML trước khi chốt.</p>
+<p><b>Kết luận</b>: APPROVED (mã) — không [P0]/[P1]; F1 khoá bằng bài canh, F2 đã vá, F3/F4 ghi nhận. Lượt này không chạm mã chạy (một bài test + một chữ trong chú thích, cùng dòng) ⇒ [SUY] APK 2.92 đang QA vẫn khớp mã chạy; vẫn dựng APK từ cây cuối trước khi đăng. Điều kiện: test chọn lọc xanh.</p>
+
+<h3>Pass 2 — 2026-10-06 (senior review — Opus · PROFILE-IMPORT-GAP-KEYS + dòng log F4)</h3>
+<p class="muted">Đọc: <code>fillImportedSnapshot</code> (<code>WorkspacePrefsSnapshot.kt</code>) · dây nối trong <code>importProfile</code> (<code>WorkspacePrefsProfile.kt</code>) · bài dây nối mới (<code>ClusterProfileScopeCoverageTest</code>) · <code>ProfileImportFix286WiringContractTest</code> · <code>SettingsCoverageContractTest</code> (luật quét) · dòng log trong <code>fillNewProfileKeysOnce</code>. Không chạy gradle (điều phối đang chạy bộ đủ).</p>
+<ul>
+<li><b>Ngữ nghĩa</b> [ĐO code] — ✅. Thứ tự làm sạch → merge → điền (bài canh mới khoá). Điền = giá trị SỐNG của xe nhận, chỉ chỗ trống, không chạm họ — cùng triết lý <code>mergeImport</code>. <code>null</code> tường minh của bản SHARE (giữ qua <code>sanitize</code>) không bị đụng. Ảnh vắng (<code>null</code>) / rỗng (<code>""</code>) / không đổi gì ⇒ trả NGUYÊN giá trị, không mã hoá lại.</li>
+<li><b><code>cast_enabled</code> hoãn</b> — ✅. Sau <code>mergeImportedCast</code> khoá này LUÔN có mặt (giá trị tệp, hoặc giá trị SỐNG của xe khi tệp vắng/<code>null</code> — FIX286 PI2) ⇒ phép điền không chạm ⇒ nhánh "bản chờ ?: sống" của <code>fillNewKeys</code> không bao giờ chạy ở lượt nhập. Phụ thuộc thứ tự merge → điền, đã có bài canh.</li>
+<li><b>Đường ghi khác</b> [ĐO grep] — ✅. Chỉ một lối nhập: UI → <code>HomeViewModel.importProfile</code> → <code>importProfileData</code> → <code>WorkspacePrefs.importProfile</code>. Nhân bản/đổi tên chép ảnh của hồ sơ có sẵn, không phải ảnh nhập.</li>
+<li><b>Ném</b> — ✅ không. Ép kiểu <code>as?</code>, <code>getValue</code> trên khoá lấy từ chính bảng, <code>decode</code>/<code>encode</code>/<code>fillNewKeys</code> không ném.</li>
+<li><b>Bài canh cũ</b> — ✅. FIX286: <code>val clean = cleanImportedSnapshot(suffix, v)</code>, <code>copyValue(e, keyOf(plan.target, suffix), value)</code> còn nguyên; <code>mergeImportedCast(</code> vẫn đúng định nghĩa + một chỗ gọi (chú thích bị lột trước khi đếm). <code>SettingsCoverageContractTest</code> chỉ quét đối số đầu của <code>put(String|Boolean|Int|Long|Float)(</code> ⇒ literal <code>"KachiProfile"</code> của dòng log không bị quét.</li>
+<li><b>Dòng log F4</b> — ✅. Chỉ chạy khi có việc chờ (sau <code>return</code> sớm), sau <code>apply()</code>; <code>import android.util.Log</code> có; <code>KachiLog</code> chụp <code>logcat --pid</code> mọi tag ⇒ dòng vào log phiên khi bật ghi.</li>
+<li><b>[P2] G1 — spec lệch mã</b>: §4.3 D5 còn ghi "Không vá lượt NHẬP", §7 OQ1 còn "chưa làm", §1/§5/§6 chưa có lượt này — nay mã đã vá (backlog <code>PROFILE-IMPORT-GAP-KEYS</code> IN PROGRESS). Chủ spec cần sửa D5 (→ vá, giá trị sống của xe nhận) · đóng OQ1 · thêm dòng Changelog + việc T7 + kiểm chứng. Không sửa ở đây (lượt review chỉ ghi §10).</li>
+<li><b>[P3] G2 — đánh đổi đã ghi nhận</b>: tệp ≤ 2.91 nhập vào xe đang dùng <i>Thẳng rộng</i> ⇒ hồ sơ nhập nhận <i>Thẳng rộng</i> thay vì kiểu suy từ Nắn hình của tệp (<code>null</code> sẽ trung thành hơn). Không tệ hơn trước vá (lượt đổi đầu tiên cũng ăn theo giá trị sống), nay xác định được. Với <code>cast_style</code> giá trị sống lại an toàn hơn (không tự đổi theme cụm). Đúng đề xuất OQ1 — nên ghi vào D5 khi sửa.</li>
+<li><b>[P3] G3</b>: ảnh của TỆP vắng trong tệp nhập (vd <code>cast-v2-app-catalog</code> từ tệp xuất ≤ 2.83) vẫn không được điền ⇒ vị trí nút nổi ăn theo lượt đổi đầu tiên. Lối xuất luôn chụp ĐỦ 4 ảnh của hồ sơ đang dùng ⇒ ở lượt nhập, ảnh vắng chỉ có nghĩa "bản xuất cũ hơn" — gộp vào <code>PROFILE-NEW-FILE-FILL</code>.</li>
+<li><b>[P3] G4</b>: bộ quét <code>SettingsCoverageContractTest</code> bỏ qua <code>putStringSet(</code> (lỗ có sẵn) ⇒ khoá sổ thật ra không bị bài đó đòi; KDoc của <code>K_PROFILE_KEYS_FILLED</code> nói hơi quá. Phân loại vẫn được giữ (<code>DEVICE_KEYS</code> + <code>NOT_SETTINGS</code> + bài so literal). Không vá trong RC (mở bộ quét có thể làm lộ khoá tập khác ⇒ đỏ).</li>
+</ul>
+<p><b>Kết luận Pass 2</b>: APPROVED (mã) — không [P0]/[P1], không vá mã. Còn G1 (sửa spec trước commit). Test cần xanh (đếm XML): <code>ProfileScopeMigrationTest</code> · <code>ClusterProfileScopeCoverageTest</code> · <code>ProfileImportFix286WiringContractTest</code> · <code>SettingsCoverageContractTest</code> · <code>ProfileScope*</code>/<code>ClusterSnapshotPlan*</code>/<code>SettingsCatalog*</code> (<code>:core</code>).</p>
+
+</div></body>
+</html>

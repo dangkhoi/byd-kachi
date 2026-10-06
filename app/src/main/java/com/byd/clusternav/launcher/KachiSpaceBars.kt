@@ -227,11 +227,21 @@ object KachiBars {
     const val SHORTCUT_GRID_ICON = 52
 
     /**
-     * R-SI1 (spec 2.87 §4.4) — icon lưới lối tắt KHÔNG nhỏ hơn 28 dp dù khung bé: ≤ 8 app nên hiếm khi chạm; khung bé hơn
-     * nữa thì giữ 28 dp và để khung cắt mép (icon không nhìn/bấm được còn tệ hơn icon bị cắt). Vùng chạm nới thêm nửa
-     * khe mỗi bên (`ShortcutGridLayout`), nên đích chạm vẫn ≥ cỡ icon + khe.
+     * 2.92 (spec `kachi-292-shortcut-widget.html` R1) — khe CỐ ĐỊNH giữa hai icon của lưới `w_apps` VÀ tới mép khung, thay
+     * cho khe tỉ lệ 0,3 × icon của R-SI1 (owner 06/10: *"icon hơi bé so với thanh, margin 2 bên nhiều quá phí"* — một cột
+     * 8 icon mất 2,7 × icon cho khe dọc nên bề ngang thừa thành lề). = [KachiSpace.S]: đúng khe giữa hai icon của khối
+     * lối tắt trên thanh nút ([SHORTCUT_CELL] − [SHORTCUT_ICON] = 8) ⇒ một nhịp cho hai bề mặt của cùng danh sách.
+     * Mép 8 dp nằm trong góc bo [KachiSpace.RADIUS_L] của khung (điểm (8, 8) cách tâm cung (16, 16) 11,3 < 16).
      */
-    const val SHORTCUT_GRID_MIN_ICON = 28
+    const val SHORTCUT_GRID_GAP = KachiSpace.S
+
+    /**
+     * Sàn icon lưới lối tắt = [KachiSpace.TOUCH] − [SHORTCUT_GRID_GAP] = 40 dp (2.92; R-SI1 cũ: 28 dp rồi để khối TRÀN
+     * khung khi bé hơn). Ô chạm của icon = icon + khe (lề trong nửa khe mỗi bên, `ShortcutGridLayout`) ⇒ ≥ 48 dp ở chế độ
+     * khớp. Khung không xếp nổi mọi icon ở cỡ này (nhiều app — owner 06/10 bỏ trần 8) ⇒ lưới CUỘN theo trục dài, icon
+     * đúng cỡ sàn, không icon nào bị cắt (`ShortcutGridFit`).
+     */
+    const val SHORTCUT_GRID_MIN_ICON = KachiSpace.TOUCH - SHORTCUT_GRID_GAP
 
     /** R-SI1 — icon lưới lối tắt không lớn hơn 120 dp: khung to với 1 app không thành một icon khổng lồ; phần dư chia đều. */
     const val SHORTCUT_GRID_MAX_ICON = 120

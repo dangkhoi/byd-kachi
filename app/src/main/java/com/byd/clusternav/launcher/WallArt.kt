@@ -27,7 +27,8 @@ import java.io.File
  * ## Bộ đệm đĩa
  * `<thư mục ảnh>/.kachi-art/<tên>-<mtime>-<cỡ>-<WxH>-<phủ>-<tối>.png` + `.txt` (lưới + màu trội). Khoá mang mtime +
  * cỡ tệp ⇒ đổi ảnh cùng tên là tính lại; mang cỡ màn + cách phủ + mức làm tối ⇒ đổi lựa chọn là tính lại. Tệp
- * cũ không ai xoá **cố ý** (vài chục KB một ảnh); dọn theo `DiagStorageCap` là việc của lượt sau nếu cần.
+ * cũ không ai xoá **cố ý** (vài chục KB một ảnh). `DiagStorageCap` KHÔNG BAO GIỜ chạm thư mục này (ảnh nền là dữ
+ * liệu người dùng — DIAG-CAP-USERDATA 2.92) ⇒ nếu cần dọn thì phải là luật riêng của bộ đệm này.
  */
 class WallArt(
     /** Ảnh mờ, `ARGB_8888`, cỡ = màn ÷ [scale], ĐÃ làm tối theo lựa chọn người dùng. */

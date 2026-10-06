@@ -27,7 +27,7 @@ private const val K_APP_SHORTCUTS = "app_shortcuts"
  */
 fun WorkspacePrefs.appShortcuts(): List<AppShortcut> {
     val out = AppShortcutCodec.decodeReport(sp.stringOrNull(key(K_APP_SHORTCUTS)))
-    if (out.truncated > 0) Log.i("KachiShortcut", "app_shortcuts: bỏ ${out.truncated} mục quá trần ${AppShortcutCodec.MAX}")
+    if (out.truncated > 0) Log.i("KachiShortcut", "app_shortcuts: bỏ ${out.truncated} mục quá trần kỹ thuật ${AppShortcutCodec.MAX}")
     return out.items
 }
 

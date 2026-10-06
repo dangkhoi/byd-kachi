@@ -335,9 +335,17 @@ object WidgetViews {
     private fun trimNumber(v: Double): String =
         if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
 
+    /**
+     * Khối dọc căn giữa của widget một cột (đồng hồ · tốc độ · trạng thái xe · nhạc · vòng năng lượng/PM2.5 · thẻ đọc
+     * chung). 2.92 (spec `kachi-292-shortcut-widget.html` R4 — owner 06/10 *"margin 2 bên nhiều quá phí … check thêm các
+     * widget khác"*): lề trong [Sp.L] 16 dp → [Sp.S] 8 dp, cùng mép 8 dp của lưới lối tắt. [ĐO máy ảo 06/10, trước → sau]
+     * dải rộng thấp 1558×123 px (lề 16 dp ăn 48 px của 123 px chiều cao): vòng năng lượng 63 → 81 px, hình xe 31 → 52 px,
+     * ảnh bìa nhạc 75 → 99 px; ô hẹp 301×804: vòng 209 → 229 px. Lề này nằm TRONG khung kính của ô (khe giữa hai ô vẫn
+     * [Sp.SLOT_GAP]).
+     */
     internal fun col(ctx: Context): LinearLayout = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-        val p = dpi(ctx, Sp.L); setPadding(p, p, p, p)
+        val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)
     }
     internal fun tv(ctx: Context, s: String, sp: Float, color: String, bold: Boolean = false) = TextView(ctx).apply {
         // [type scale] ngoại lệ: cỡ đã là THAM SỐ của hàm — bậc do chỗ GỌI quyết. Các chỗ gọi trong tệp này còn

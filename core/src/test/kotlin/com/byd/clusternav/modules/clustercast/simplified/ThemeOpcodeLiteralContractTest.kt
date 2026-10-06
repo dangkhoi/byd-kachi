@@ -71,7 +71,7 @@ class ThemeOpcodeLiteralContractTest {
     }
 
     @Test
-    fun `opcode cam 17 va 41 nam trong FORBIDDEN_OPS`() {
-        assertEquals(setOf(17, 41), ProjectionRecipe.FORBIDDEN_OPS)
+    fun `opcode cam 17 41 va 6-9 34 211 nam trong FORBIDDEN_OPS`() {
+        assertEquals(setOf(6, 7, 8, 9, 17, 34, 41, 211), ProjectionRecipe.FORBIDDEN_OPS)
     }
 }

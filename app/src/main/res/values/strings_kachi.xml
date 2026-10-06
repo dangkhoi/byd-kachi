@@ -542,7 +542,7 @@
     <string name="kachi_cast_style_unknown">chưa rõ kiểu</string>
     <string name="kachi_cast_style_apply_now">Áp ngay (tắt rồi mở lại chiếu)</string>
     <string name="kachi_cast_style_apply_busy">Đang chiếu app — dừng chiếu trước rồi bấm Áp ngay.</string>
-    <string name="kachi_cast_style_full_frame">Chưa rõ cụm đang ở kiểu nào (Kachi chưa đổi kiểu cụm trong lần chạy này) ⇒ khung app dùng trọn cụm 1920×720.</string>
+    <string name="kachi_cast_style_unconfirmed">Chưa xác nhận được cụm đang ở kiểu nào (lần chạy này Kachi chưa đổi được kiểu cụm) ⇒ khung app dùng khung đã lưu của kiểu bạn chọn. Cụm hiện sai kiểu thì bấm «Áp ngay».</string>
     <string name="kachi_cast_style_blocked">Chưa đổi được kiểu cụm: bóng nổi của %1$s đang nằm trên cụm. Tắt bóng %1$s rồi bấm Áp ngay.</string>
     <string name="kachi_cast_style_bubble_old_mod">Chưa đổi được kiểu cụm: bản mod %1$s cũ chưa hỗ trợ ẩn bóng — tắt %1$s rồi bấm Áp ngay.</string>
     <string name="kachi_cast_split_session_differs">Đang chia %1$s · hồ sơ này %2$s — áp dụng lần chia đôi sau (chạm một tỉ lệ để áp ngay).</string>
@@ -803,7 +803,7 @@
     <string name="kachi_sc_cap_note">Lối tắt có tối đa %1$d ứng dụng — bỏ một app để thêm</string>
     <string name="kachi_sc_section">Lối tắt ứng dụng (%1$d)</string>
     <string name="kachi_sc_note">Hiện trên khối Lối tắt ứng dụng của thanh nút (đặt khối bằng nút chọn ở trên) và trong widget Lưới lối tắt app. Ô n: đặt tạm vào ô (kể cả ô đang là widget), app cũ ra sau màn nhà; khởi động lại launcher là về bố cục đã lưu.</string>
-    <string name="kachi_sc_pick_n">Chọn ứng dụng… (%1$d/%2$d)</string>
+    <string name="kachi_sc_pick_n">Chọn ứng dụng… (%1$d)</string>
     <string name="kachi_sc_mode_slot">Ô %1$d</string>
     <string name="kachi_sc_mode_full">Toàn màn</string>
     <string name="kachi_sc_mode_bg">Chạy ngầm</string>

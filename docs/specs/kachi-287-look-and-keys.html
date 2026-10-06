@@ -195,6 +195,7 @@ ul{padding-left:22px}li{margin:3px 0}
 </ul>
 
 <h3>4.4 Lưới lối tắt tự co giãn (R-SI)</h3>
+<p class="muted"><b>2.92 thay phần khe/sàn dưới đây</b> (owner 06/10: icon bé, lề hai bên to): khe CỐ ĐỊNH 8 dp thay <code>0,3 × icon</code>, sàn 40 dp, nhiều app ⇒ cuộn theo trục dài — <code>docs/specs/kachi-292-shortcut-widget.html</code>. Phần dưới giữ làm lịch sử R-SI1.</p>
 <ul>
 <li><code>:core ShortcutGridFit.fit(n, w, h, gapRatio, minIcon, maxIcon)</code> — thuần, đơn vị px: thử mọi số cột <code>c = 1…n</code>, hàng <code>r = ⌈n/c⌉</code>; cỡ icon <code>s</code> lớn nhất sao cho <code>c·s + (c+1)·g ≤ w</code> và <code>r·s + (r+1)·g ≤ h</code> với khe <code>g = gapRatio·s</code>; chọn <code>c</code> cho <code>s</code> lớn nhất (hoà thì ít hàng trống hơn). Trả về cột, hàng, cỡ icon, khe X/Y (khe chia ĐỀU phần dư mỗi trục: <code>(w − c·s)/(c+1)</code>).</li>
 <li><code>ShortcutIconsView</code> chế độ lưới: đo lại khi <code>onSizeChanged</code>, đặt vị trí icon theo kết quả (một <code>onLayout</code> riêng, không lồng LinearLayout có khe cứng); hàng cuối căn giữa cùng khe. Khối trên taskbar không đổi (đã đúng: dài theo số app).</li>

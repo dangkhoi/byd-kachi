@@ -1,0 +1,14 @@
+case	build	frame_px	n	result	source
+OQ2 narrow 7 apps	2.92 trước OQ2 (lượt 1)	262x956	7	1x7 icon 122 gap 70.0x12.8	WidgetFit (shortcut-grid.tsv)
+OQ2 narrow 7 apps	vehicleTest cây hiện tại (lượt 3)	262x956	7	2x4 icon 113 gap 12.0x100.8 scroll NONE	logcat WidgetFit: "shortcuts n=7 frame=262x956 -> 2x4 icon=113 gap=12.0x100.8 scroll=NONE content=262x956"
+OQ2 narrow 7 apps — ô con	vehicleTest lượt 3	262x956	7	7 ô 125x213; hàng 1-3 hai ô (x 265/390); hàng 4 một ô x 328-453 (tâm 390.5 = tâm khung 390)	uiautomator dump
+OQ2 narrow 7 apps — mực	vehicleTest lượt 3	262x956	7	hộp mực 239x755, lề trái 12 phải 11, trên 100 dưới 101 (fillW 0.91)	ảnh chụp, analyze.py ink
+OQ2 khung phụ cùng lượt	vehicleTest lượt 3	301x956	7	2x4 icon 132 gap 12.3x85.6	logcat WidgetFit (khung lúc dựng lại bố cục)
+OQ3 đồng hồ số (deskclock)	2.89 (lề mặc định)	host 929x804	—	con gốc 893x768, lề L18 T6 R18 B30; cỡ báo 0x253x0x200 = 595x512 dp	uiautomator + /data/system/users/0/appwidgets.xml (min_width/min_height, hệ 16)
+OQ3 lịch biểu (calendar)	2.89 (lề mặc định)	host 930x804	—	con gốc 894x768, lề L18 T6 R18 B30; cỡ báo 596x512 dp	như trên
+OQ3 đồng hồ số	vehicleTest lượt 3 (cài đè, giữ dữ liệu)	host 929x804	—	con gốc 905x780, lề L12 T12 R12 B12; cỡ báo 0x25b x 0x208 = 603x520 dp	như trên
+OQ3 lịch biểu	vehicleTest lượt 3	host 930x804	—	con gốc 906x780, lề 12/12/12/12; cỡ báo 604x520 dp	như trên
+OQ3 đồng hồ số — dải	vehicleTest lượt 3	host 1872x123	—	con gốc 1848x99, lề 12; chữ giờ 184x88 + ngày 95x11 trong khung	uiautomator + ảnh
+OQ3 lịch biểu — dải còn lại	vehicleTest lượt 3	host 1872x668	—	con gốc 1848x644, lề 12; không chữ nào ra ngoài khung	uiautomator
+OQ3 đồng hồ số — ô hẹp	vehicleTest lượt 3	host 301x804	—	con gốc 277x780, lề 12; chữ giờ 276x134 nằm trong vùng nội dung (36..312 / 36..313); cỡ báo 0xb8 = 184 dp	uiautomator + appwidgets.xml
+OQ3 lịch biểu — ô to	vehicleTest lượt 3	host 1558x804	—	con gốc 1534x780, lề 12; cỡ báo 0x3fe = 1022 dp	như trên

@@ -61,7 +61,9 @@ class PickerCapNoticeContractTest {
             // F2 · U6 (02/10, nhóm C): + chế độ PICK_TRIP (app mở khi nổ máy) có trần RIÊNG của nó (`TripAppCodec.MAX` = 6,
             // `:core`). Ghim đổi dạng `if` → `when` nhưng vẫn khoá cả ba vế: thanh nút không trần · chuyến = trần :core ·
             // mọi chế độ còn lại (gán ô) = MAX.
-            Regex("""val cap: Int = when \(mode\) \{\s*Mode\.PICK_DOCK -> NO_CAP\s*Mode\.PICK_TRIP -> TripAppCodec\.MAX[^\n]*\s*else -> MAX\s*\}""")
+            // 2.92 (owner 06/10, spec 292 R2) — ĐỔI GHIM có lý do: + vế PICK_SHORTCUTS = trần KỸ THUẬT của danh sách lối
+            // tắt (`AppShortcutCodec.MAX`, `:core`) thay cho 8; gán ô vẫn đúng MAX.
+            Regex("""val cap: Int = when \(mode\) \{\s*Mode\.PICK_DOCK -> NO_CAP\s*Mode\.PICK_TRIP -> TripAppCodec\.MAX[^\n]*\s*Mode\.PICK_SHORTCUTS -> AppShortcutCodec\.MAX[^\n]*\s*else -> MAX\s*\}""")
                 .containsMatchIn(drawer),
             "trần phải tính theo CHẾ ĐỘ: thanh nút xe không trần, ô giữa màn vẫn đúng MAX",
         )

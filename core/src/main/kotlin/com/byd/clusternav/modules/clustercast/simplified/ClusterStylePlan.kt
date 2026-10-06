@@ -30,7 +30,8 @@ enum class BelievedStyle {
  *     RAM ([ClusterThemePlan.Reason.SAME_THEME]).
  *  4. Cổng [ThemeVerdict.SEND] ⇒ gửi; kiểu tin = kiểu đã ép.
  *  5. Cổng [ThemeVerdict.SKIP_KNOWN] (màn ảo cụm có từ trước) ⇒ bỏ opcode, đi tiếp 16/35; kiểu tin = [ThemeLedger.believed]
- *     (chỉ cùng tiến trình — 2.90 · R2; không thì UNKNOWN ⇒ khung trọn cụm, `CastSessionStyle.fullFrame`).
+ *     (chỉ cùng tiến trình — 2.90 · R2; không thì UNKNOWN ⇒ khung theo kiểu người lái chọn — 2.92 · CLUSTER-FRAME-CHOSEN,
+ *     `CastSessionStyle.of`).
  *  6. Cổng [ThemeVerdict.ABORT] ⇒ bỏ opcode; đi tiếp CHỈ KHI sổ (cùng tiến trình) chứng minh cụm đã ở đúng kiểu cần — không thì
  *     DỪNG lượt mở.
  *

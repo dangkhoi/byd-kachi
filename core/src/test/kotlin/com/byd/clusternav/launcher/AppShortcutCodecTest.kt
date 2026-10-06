@@ -36,13 +36,31 @@ class AppShortcutCodecTest {
         assertEquals(listOf(AppShortcut(yt, ShortcutMode.Slot(1)), AppShortcut(vm, ShortcutMode.Background)), d)
     }
 
+    /**
+     * 2.92 (spec `kachi-292-shortcut-widget.html` R2) — ĐỔI GHIM có lý do: bài cũ "quá trần 8 thì cắt" khoá đúng trần owner
+     * 06/10 bảo gỡ (*"không nên giới hạn 8 app"*). [ĐO máy ảo 2.89] 12/20/30 app ghi vào hồ sơ ⇒ log `bỏ 4/12/22 mục quá
+     * trần 8`, widget chỉ hiện 8. Nay 12/20/30 app khứ hồi đủ + đúng thứ tự.
+     */
     @Test
-    fun `qua tran 8 thi cat va bao so muc bi cat`() {
-        val raw = (1..11).joinToString(",") { "com.app$it|F" }
+    fun `12, 20, 30 app khu hoi du va dung thu tu - khong con tran 8`() {
+        listOf(12, 20, 30).forEach { n ->
+            val list = (1..n).map { AppShortcut("com.app$it", if (it % 3 == 0) ShortcutMode.Background else ShortcutMode.Full) }
+            val r = AppShortcutCodec.decodeReport(AppShortcutCodec.encode(list))
+            assertEquals(list, r.items, "$n app")
+            assertEquals(0, r.truncated, "$n app không bị cắt")
+        }
+    }
+
+    /** Trần KỸ THUẬT (chống tệp hồ sơ hỏng/độc dựng hàng trăm nghìn icon trên màn nhà) vẫn cắt + báo số mục bị cắt. */
+    @Test
+    fun `qua tran ky thuat thi cat va bao so muc bi cat`() {
+        assertTrue(AppShortcutCodec.MAX >= 200, "trần kỹ thuật phải ≫ số app có màn khởi chạy (máy ảo: 23)")
+        val raw = (1..AppShortcutCodec.MAX + 3).joinToString(",") { "com.app$it|F" }
         val r = AppShortcutCodec.decodeReport(raw)
         assertEquals(AppShortcutCodec.MAX, r.items.size)
         assertEquals(3, r.truncated)
         assertEquals("com.app1", r.items.first().pkg)
+        assertEquals(AppShortcutCodec.MAX, AppShortcutCodec.sanitize(r.items + AppShortcut("com.more", ShortcutMode.Full)).size)
     }
 
     @Test

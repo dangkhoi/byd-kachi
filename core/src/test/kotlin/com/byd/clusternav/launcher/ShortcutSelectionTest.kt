@@ -31,12 +31,15 @@ class ShortcutSelectionTest {
         assertFalse(ShortcutSelection.DEFAULT_MODE.needsChannel, "chạm thử ngay sau khi chọn không được cần kênh")
     }
 
+    /** 2.92 — ĐỔI GHIM có lý do: owner 06/10 gỡ trần 8 ⇒ 11 app chọn giữ đủ; chỉ trần KỸ THUẬT cắt phần cuối. */
     @Test
-    fun `chot qua tran 8 - cat phan cuoi, khong bao gio qua tran`() {
+    fun `chot 11 app giu du, qua tran ky thuat moi cat phan cuoi`() {
         val picked = (1..11).map { "com.p$it" }
-        val out = ShortcutSelection.apply(emptyList(), picked)
+        assertEquals(picked, ShortcutSelection.apply(emptyList(), picked).map { it.pkg }, "hết trần 8")
+        val many = (1..AppShortcutCodec.MAX + 5).map { "com.q$it" }
+        val out = ShortcutSelection.apply(emptyList(), many)
         assertEquals(AppShortcutCodec.MAX, out.size)
-        assertEquals(picked.take(AppShortcutCodec.MAX), out.map { it.pkg })
+        assertEquals(many.take(AppShortcutCodec.MAX), out.map { it.pkg })
     }
 
     @Test
@@ -81,7 +84,9 @@ class ShortcutSelectionTest {
     fun `so khe cua khoi thanh nut - dong theo so app, ron mot khe, khong qua tran`() {
         mapOf(1 to 1, 4 to 4, 8 to 8).forEach { (n, cells) -> assertEquals(cells, ShortcutStrip.cells(n), "$n app") }
         assertEquals(1, ShortcutStrip.cells(0), "rỗng = một khe (ô chọn lối tắt)")
-        assertEquals(AppShortcutCodec.MAX, ShortcutStrip.cells(20), "không dài quá trần")
+        // 2.92 — ĐỔI GHIM có lý do: trần 8 gỡ (owner 06/10) ⇒ 20 app = 20 khe; chỉ trần KỸ THUẬT còn kẹp.
+        assertEquals(20, ShortcutStrip.cells(20), "20 app = 20 khe (hết trần 8)")
+        assertEquals(AppShortcutCodec.MAX, ShortcutStrip.cells(AppShortcutCodec.MAX + 50), "không dài quá trần kỹ thuật")
     }
 
     // Bài "lưới widget tối đa bốn cột" (`ShortcutStrip.gridCols`) đã GỠ cùng hàm của nó — 2.87 R-SI1: số cột nay do

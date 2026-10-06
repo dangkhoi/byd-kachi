@@ -525,7 +525,7 @@
     <string name="kachi_cast_style_unknown">unknown style</string>
     <string name="kachi_cast_style_apply_now">Apply now (stop and reopen casting)</string>
     <string name="kachi_cast_style_apply_busy">An app is being cast — stop casting first, then tap Apply now.</string>
-    <string name="kachi_cast_style_full_frame">Cluster style unknown (Kachi has not changed the cluster style in this run) ⇒ the app frame uses the whole cluster 1920×720.</string>
+    <string name="kachi_cast_style_unconfirmed">Cluster style not confirmed (Kachi could not change the cluster style in this run) ⇒ the app uses the frame saved for the style you chose. If the cluster shows the wrong style, tap “Apply now”.</string>
     <string name="kachi_cast_style_blocked">Could not change the cluster style: the %1$s bubble is on the cluster. Turn off the %1$s bubble, then tap Apply now.</string>
     <string name="kachi_cast_style_bubble_old_mod">Could not change the cluster style: this older %1$s mod cannot hide its bubble — close %1$s, then tap Apply now.</string>
     <string name="kachi_cast_split_session_differs">Splitting %1$s now · this profile %2$s — applies from the next split (tap a ratio to apply now).</string>
@@ -778,7 +778,7 @@
     <string name="kachi_sc_cap_note">Shortcuts hold at most %1$d apps — remove one to add another</string>
     <string name="kachi_sc_section">App shortcuts (%1$d)</string>
     <string name="kachi_sc_note">Shown in the App shortcuts block on the button bar (add the block with the button picker above) and in the App shortcut grid widget. Slot n: placed in the slot for now (even over a widget), the old app moves behind the home screen; restarting the launcher brings back the saved layout.</string>
-    <string name="kachi_sc_pick_n">Choose apps… (%1$d/%2$d)</string>
+    <string name="kachi_sc_pick_n">Choose apps… (%1$d)</string>
     <string name="kachi_sc_mode_slot">Slot %1$d</string>
     <string name="kachi_sc_mode_full">Full screen</string>
     <string name="kachi_sc_mode_bg">Background</string>

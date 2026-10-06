@@ -133,10 +133,11 @@ data class HomeUiState(
      */
     val savedPlaces: List<SavedPlace> = emptyList(),
     /**
-     * F1 — **lối tắt ứng dụng** của hồ sơ đang dùng (khoá `app_shortcuts`, spec shortcuts-autostart R1.1): tối đa
-     * [AppShortcutCodec.MAX] app, mỗi app một [ShortcutMode]. Ở trong state vì HAI bề mặt vẽ nó (khối trên thanh nút +
-     * widget `w_apps`) và màn Cài đặt vẽ nó — cùng luật [savedPlaces]: đường ghi một chiều `HomeViewModel.setAppShortcuts`
-     * → repository, không qua `persist()`; `load()` nạp cùng lượt ⇒ đổi hồ sơ là danh sách đổi theo.
+     * F1 — **lối tắt ứng dụng** của hồ sơ đang dùng (khoá `app_shortcuts`, spec shortcuts-autostart R1.1): bao
+     * nhiêu app cũng được (2.92 — chỉ trần kỹ thuật [AppShortcutCodec.MAX]), mỗi app một [ShortcutMode]. Ở trong state
+     * vì HAI bề mặt vẽ nó (khối trên thanh nút + widget `w_apps`) và màn Cài đặt vẽ nó — cùng luật [savedPlaces]: đường
+     * ghi một chiều `HomeViewModel.setAppShortcuts` → repository, không qua `persist()`; `load()` nạp cùng lượt ⇒ đổi hồ
+     * sơ là danh sách đổi theo.
      */
     val shortcuts: List<AppShortcut> = emptyList(),
     /**

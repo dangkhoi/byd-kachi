@@ -96,7 +96,7 @@ không ca nào do thay đổi này. Báo cáo: [`voice-e2e-before.md`](voice-app
 | Thời gian | dựng lạnh lần đầu **2 935 ms** (luồng nền ưu tiên thấp — phiên nghe không chờ) · tiến trình sau **33–166 ms** · hâm lại không đổi **8 ms** | [ĐO] |
 | Chưa đo | đổi locale máy sang `en` rồi so nhãn `vi` với `loadLabel` ở `vi` | [CHƯA BIẾT] |
 
-Giao diện (ảnh chụp máy ảo chỉ lưu cục bộ, **không đăng** — `.gitignore` chặn `docs/diagnostics/**/*.png` vì ảnh có tên tài khoản Google của máy ảo; mô tả dưới đây thay cho ảnh):
+Giao diện (ảnh chụp máy ảo chỉ lưu cục bộ (`.gitignore` chặn `docs/diagnostics/**/*.png`); mô tả dưới đây thay cho ảnh):
 - `page-pending.png` — `TEACH_APP s:<mẫu>` qua intent ⇒ Cài đặt › Giọng nói › trang *Dạy tên app* với dòng *Mẫu đang chờ* · lọc
   *Tất cả 22 / Đã dạy 0 / Nên dạy 4* · Drive hiện *"Kachi hiểu sẵn: đờ rai, drive"* (dạng đọc sinh từ nhãn).
 - `dialog-pending.png` — chạm Chrome ⇒ hộp dạy có sẵn *Lần 1: «nep leag» ✓ Mới*.

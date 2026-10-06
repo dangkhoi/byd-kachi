@@ -26,8 +26,8 @@ interface ShortcutSettingsPort {
  * *"Chọn nút trên thanh…"*), và vì nhóm Màn hình chính đã dài (bố cục + hình nền + chủ đề). Widget `w_apps` dùng CÙNG
  * danh sách nên một chỗ cấu hình đủ cho cả hai bề mặt.
  *
- * Trang có: nút mở ngăn kéo chọn app (đa chọn, trần 8) · mỗi app MỘT hàng chip kiểu mở *Ô 1…Ô N* (N = số ô của bố cục
- * ĐANG dùng; ô đã chọn mà nằm ngoài bố cục thì vẫn hiện, mờ, kèm câu "bố cục hiện có k ô") · *Toàn màn* · *Chạy ngầm* ·
+ * Trang có: nút mở ngăn kéo chọn app (đa chọn — 2.92: không trần 8, chữ nút chỉ còn số đã chọn) · mỗi app MỘT hàng
+ * chip kiểu mở *Ô 1…Ô N* (N = số ô của bố cục ĐANG dùng; ô đã chọn mà nằm ngoài bố cục thì vẫn hiện, mờ, kèm câu "bố cục hiện có k ô") · *Toàn màn* · *Chạy ngầm* ·
  * danh sách sắp thứ tự ([SettingsBarOrderRows], cùng bộ của hai thanh) · cảnh báo khi có app *Chạy ngầm* mà bố cục không
  * có ô app (§4.2.4). Mọi lượt ghi đi qua [ShortcutSettingsPort.save] → ViewModel (`SettingsScreenWiringContractTest`);
  * phép sửa là hàm thuần [ShortcutSelection] ở `:core`.
@@ -103,7 +103,7 @@ class SettingsShortcutsSection(
     }
 
     private fun titleText() = context.getString(R.string.kachi_sc_section, items.size)
-    private fun pickText() = context.getString(R.string.kachi_sc_pick_n, items.size, AppShortcutCodec.MAX)
+    private fun pickText() = context.getString(R.string.kachi_sc_pick_n, items.size)
 
     /** Nhãn app; đã gỡ ⇒ tên gói + "chưa cài" (vẫn hiện để người dùng thấy và bỏ được nó). */
     private fun appLabel(pkg: String): String =

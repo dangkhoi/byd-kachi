@@ -246,7 +246,7 @@ class ShortcutsWiringContractTest {
     }
 
     @Test
-    fun `ngan keo chon loi tat - che do rieng, dung CHUNG duong chon, tran = AppShortcutCodec MAX`() {
+    fun `ngan keo chon loi tat - che do rieng, dung CHUNG duong chon, tran = tran ky thuat AppShortcutCodec MAX`() {
         val open = SourceRoots.body(drawerCtl, "fun openShortcutPicker(")
         // F2 · U6 (02/10, nhóm C): CÙNG bộ chọn phục vụ thêm chế độ PICK_TRIP (app mở khi nổ máy) qua tham số `mode` — ghim
         // đổi từ "thân đặt PICK_SHORTCUTS" sang "mặc định của tham số = PICK_SHORTCUTS + thân chuyển đúng tham số đó";
@@ -254,7 +254,15 @@ class ShortcutsWiringContractTest {
         assertTrue(drawerCtl.contains("mode: AppDrawer.Mode = AppDrawer.Mode.PICK_SHORTCUTS,"))
         assertTrue(open.contains("mode = mode,"))
         assertTrue(open.contains("onApply(ids.toList()); close()"))
-        assertTrue(drawer.contains("const val MAX = 8") && AppShortcutCodec.MAX == 8, "trần bảng = trần danh sách lối tắt")
+        // 2.92 — ĐỔI GHIM có lý do (owner 06/10 *"không nên giới hạn 8 app trong shortcut app đâu"*, spec 292 R2): bảng
+        // chọn lối tắt KHÔNG còn dùng `AppDrawer.MAX` (8 — trần WIDGET mỗi ô giữ nguyên) mà trần KỸ THUẬT của danh sách.
+        assertTrue(drawer.contains("Mode.PICK_SHORTCUTS -> AppShortcutCodec.MAX"), "trần bảng = trần danh sách lối tắt")
+        assertTrue(drawer.contains("const val MAX = 8"), "trần 8 WIDGET mỗi ô (gán ô) giữ nguyên — không phải lối tắt")
+        assertTrue(AppShortcutCodec.MAX >= 200, "trần kỹ thuật ≫ số app có màn khởi chạy (máy ảo 23)")
+        assertTrue(drawer.contains("Mode.PICK_SHORTCUTS -> context.getString(R.string.kachi_sc_cap_note, cap)"),
+            "câu nhắc trần đọc CHÍNH trần của bảng")
+        assertTrue(SourceRoots.body(code("SettingsSectionsShortcuts.kt"), "private fun pickText()")
+            .contains("getString(R.string.kachi_sc_pick_n, items.size)"), "nút Cài đặt chỉ còn số đã chọn — hết '(n/8)'")
         assertTrue(SourceRoots.body(drawer, "private fun placeBar()").contains("mode == Mode.PICK_SHORTCUTS) onApply(selected.toSet())"))
         val pick = code("AppDrawerShortcutPick.kt")
         assertTrue(SourceRoots.body(pick, "internal fun AppDrawer.shortcutPickSection(").contains("toggleSelection("),

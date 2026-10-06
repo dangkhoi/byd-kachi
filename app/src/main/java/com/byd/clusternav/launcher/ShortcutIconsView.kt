@@ -33,8 +33,9 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  *  - **Khối thanh nút** ([grid] = `false`): một hàng icon dọc theo TRỤC của thanh ([vertical]); bề dài =
  *    [shortcutStripLength] (mỗi app một khe `KachiBars.SHORTCUT_CELL`, icon `SHORTCUT_ICON`). Không tự cuộn —
  *    tràn thì khung cuộn sẵn có của thanh (`DockAreaLayout.scrollWrap`) cuộn.
- *  - **Widget `w_apps`** ([grid] = `true`, cả ô to lẫn ô nén): R-SI1 (2.87) — icon đặt bởi [ShortcutGridLayout] theo
- *    `ShortcutGridFit` (`:core`): cùng cỡ, cỡ lớn nhất vừa khung THẬT, khe đều mỗi trục, hàng cuối căn giữa. Icon app
+ *  - **Widget `w_apps`** ([grid] = `true`, cả ô to lẫn ô nén): R-SI1 (2.87) → 2.92 — icon đặt bởi [ShortcutGridLayout]
+ *    theo `ShortcutGridFit` (`:core`): cùng cỡ, cỡ lớn nhất vừa khung THẬT với khe CỐ ĐỊNH 8 dp (icon to, lề nhỏ — owner
+ *    06/10), phần dư chia đều, hàng cuối căn giữa; nhiều app tới mức icon chạm sàn 40 dp ⇒ cuộn theo trục dài. Icon app
  *    đã gỡ (hình chung) được nạp lại đúng cỡ khớp khi cỡ đổi ([fitIcons]).
  *
  * Mỗi icon: `contentDescription` = tên app. Mờ khi (a) app đã gỡ, hoặc (b) kiểu cần kênh (*Ô n* · *Chạy ngầm*) mà kênh
@@ -105,7 +106,11 @@ internal class ShortcutIconsView @JvmOverloads constructor(
         super.onDetachedFromWindow()
     }
 
-    /** Dựng lại toàn bộ theo danh sách hiện tại (≤ 8 ô — rẻ; đổi danh sách là chuyện hiếm). */
+    /**
+     * Dựng lại toàn bộ theo danh sách hiện tại (đổi danh sách là chuyện hiếm). 2.92: không còn trần 8 — tối đa trần kỹ
+     * thuật `AppShortcutCodec.MAX` ô; lưới widget cuộn khi icon chạm sàn ([ShortcutGridLayout]), khối thanh nút trong
+     * khung cuộn của thanh.
+     */
     private fun rebuild() {
         generation++
         fittedDp = 0

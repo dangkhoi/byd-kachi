@@ -51,7 +51,8 @@ class AppDrawer(
 
     /**
      * Ngăn kéo dùng để GÁN VÀO Ô (như cũ), MỞ APP toàn màn (U3), CHỌN NÚT cho thanh nút xe (T6), hay CHỌN APP cho lối tắt
-     * (F1 · U1 — đa chọn trên danh sách app, trần [MAX] = `AppShortcutCodec.MAX`, phần dựng ở `AppDrawerShortcutPick.kt`).
+     * (F1 · U1 — đa chọn trên danh sách app, phần dựng ở `AppDrawerShortcutPick.kt`; 2.92: hết trần 8 — trần của bảng =
+     * trần KỸ THUẬT `AppShortcutCodec.MAX`, xem [cap]).
      */
     enum class Mode { ASSIGN_SLOT, OPEN_APP, PICK_DOCK, PICK_SHORTCUTS, PICK_TRIP }
 
@@ -61,14 +62,20 @@ class AppDrawer(
     /**
      * Trần số mục **của bảng này** — không phải một hằng toàn cục.
      *
-     * Ô giữa màn chứa tối đa [MAX] = 8 mục (giới hạn hình học của ô). **Thanh nút xe KHÔNG có trần**: `DockConfig`
-     * lưu `List<String>` dài tuỳ ý và `ControlRegistry.defaultEnabledIds()` đã 8 mục — mở bảng chọn với trần 8 cho
-     * một cấu hình đang có 10 nút sẽ **cắt mất 2 nút mà không nói gì**, đúng họ lỗi "chặn im lặng" mà
+     * Ô giữa màn chứa tối đa [MAX] = 8 WIDGET (giới hạn hình học của ô nhiều thẻ có chữ). **Thanh nút xe KHÔNG có
+     * trần**: `DockConfig` lưu `List<String>` dài tuỳ ý và `ControlRegistry.defaultEnabledIds()` đã 8 mục — mở bảng chọn
+     * với trần 8 cho một cấu hình đang có 10 nút sẽ **cắt mất 2 nút mà không nói gì**, đúng họ lỗi "chặn im lặng" mà
      * [toggleSelection] sinh ra để chống.
+     *
+     * 2.92 (owner 06/10 *"không nên giới hạn 8 app trong shortcut app đâu, bao nhiêu kệ người ta thôi"*, spec
+     * `kachi-292-shortcut-widget.html` R2): LỐI TẮT không còn dùng [MAX] — trần của bảng là trần KỸ THUẬT của chính danh
+     * sách (`AppShortcutCodec.MAX`, chống tệp hồ sơ hỏng/độc; ≫ số app có màn khởi chạy), vẫn đi đường nói-ra
+     * ([toggleSelection]) nếu có ai chạm tới.
      */
     internal val cap: Int = when (mode) {
         Mode.PICK_DOCK -> NO_CAP
         Mode.PICK_TRIP -> TripAppCodec.MAX   // F2 R2.1 — tối đa 6 app khi nổ máy (`:core`, một nguồn)
+        Mode.PICK_SHORTCUTS -> AppShortcutCodec.MAX   // 2.92 — hết trần 8; trần kỹ thuật của danh sách (`:core`)
         else -> MAX
     }
 
@@ -292,7 +299,7 @@ class AppDrawer(
      */
     private fun capNote(): String =
         when (mode) {
-            Mode.PICK_SHORTCUTS -> context.getString(R.string.kachi_sc_cap_note, MAX)
+            Mode.PICK_SHORTCUTS -> context.getString(R.string.kachi_sc_cap_note, cap)
             Mode.PICK_TRIP -> context.getString(R.string.kachi_trip_cap_note, cap)
             else -> context.getString(R.string.kachi_drawer_cap_note, MAX)
         }
@@ -447,7 +454,10 @@ class AppDrawer(
     }
 
     private companion object {
-        /** Trần mục của MỘT Ô GIỮA MÀN (giới hạn hình học của ô) — xem [cap] về vì sao thanh nút xe không dùng nó. */
+        /**
+         * Trần WIDGET của MỘT Ô GIỮA MÀN (giới hạn hình học của ô nhiều thẻ có chữ) — xem [cap] về vì sao thanh nút xe và
+         * (từ 2.92) lối tắt không dùng nó.
+         */
         const val MAX = 8
 
         /**

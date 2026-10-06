@@ -7,8 +7,9 @@ package com.byd.clusternav.launcher
  * shortcut, chỉ hiện icon. Với mỗi ứng dụng, cho chọn cách hiển thị: 1, đặt vào ô số n, 2, mở full màn hình"* +
  * *"thêm option mở chạy ngầm nữa"*.
  *
- * Một danh sách theo hồ sơ (khoá `app_shortcuts`, ghi/đọc ở tầng `:app` — C9), tối đa [MAX] app, mỗi app một
- * [ShortcutMode]. Danh sách đi theo bản chia sẻ hồ sơ ⇒ chuỗi mã hoá chỉ chứa tên gói + kiểu, không vị trí.
+ * Một danh sách theo hồ sơ (khoá `app_shortcuts`, ghi/đọc ở tầng `:app` — C9), mỗi app một [ShortcutMode]; KHÔNG có
+ * trần người dùng từ 2.92 (owner 06/10 *"không nên giới hạn 8 app … bao nhiêu kệ người ta thôi"*) — chỉ còn trần kỹ
+ * thuật [MAX]. Danh sách đi theo bản chia sẻ hồ sơ ⇒ chuỗi mã hoá chỉ chứa tên gói + kiểu, không vị trí.
  */
 data class AppShortcut(val pkg: String, val mode: ShortcutMode)
 
@@ -31,7 +32,7 @@ sealed interface ShortcutMode {
  *  - gói không khớp [ShellAppLauncher.PKG] ⇒ bỏ mục (tên gói còn đi vào lệnh shell ở tầng sau — chuỗi lạ dừng ở đây);
  *  - kiểu lạ, hoặc `S<n>` với n ngoài 1…[MAX_SLOT] ⇒ [ShortcutMode.Full] (mở toàn màn là kiểu duy nhất không đụng
  *    cửa sổ nào khác, nên là chỗ lùi an toàn);
- *  - gói trùng ⇒ giữ lần đầu; quá [MAX] mục ⇒ cắt (bên gọi biết nhờ [decodeReport]).
+ *  - gói trùng ⇒ giữ lần đầu; quá trần kỹ thuật [MAX] ⇒ cắt (bên gọi biết nhờ [decodeReport]).
  *
  * ## Chặt khi GHI
  * Chỉ ghi mục hợp lệ. Chuỗi kết quả không bao giờ chứa tab hay xuống dòng (dấu ngăn của `ProfileTransfer`) vì mọi
@@ -39,8 +40,15 @@ sealed interface ShortcutMode {
  */
 object AppShortcutCodec {
 
-    /** Trần số lối tắt (một thanh nút 8 × 52 dp vẫn vừa một cạnh màn 1920 px). */
-    const val MAX = 8
+    /**
+     * Trần KỸ THUẬT số lối tắt — không phải trần người dùng (2.92, spec `kachi-292-shortcut-widget.html` R2.2; trần cũ 8
+     * gỡ theo owner 06/10). Vì sao vẫn có một con số: chuỗi này còn đến từ TỆP hồ sơ nhập (≤ 1 MB —
+     * `ProfileFiles.MAX_READ_BYTES` ⇒ tới ~170 000 mục `a.b|F`), mà mỗi mục là một icon dựng trên MÀN NHÀ ⇒ tệp hỏng/độc
+     * không được treo HOME. 256 ≫ số app có màn khởi chạy (máy ảo `clusternav10`: 23 [ĐO 06/10]) ⇒ chọn bằng tay không
+     * bao giờ chạm; bảng chọn vẫn dùng ĐÚNG trần này qua đường nói-ra (`AppDrawer.toggleSelection`), không chặn im lặng.
+     * Khối thanh nút cuộn sẵn (`DockAreaLayout.scrollWrap`), widget `w_apps` cuộn khi icon chạm sàn ([ShortcutGridFit]).
+     */
+    const val MAX = 256
 
     /** Ô lớn nhất người dùng chọn được — bằng trần số ô [WorkspaceState.SLOT_CAP]. */
     const val MAX_SLOT = WorkspaceState.SLOT_CAP
@@ -67,7 +75,7 @@ object AppShortcutCodec {
         return Decoded(parsed.take(MAX), (parsed.size - MAX).coerceAtLeast(0))
     }
 
-    /** Danh sách hợp lệ để GHI: gói hợp lệ, không trùng, ô trong tầm, tối đa [MAX]. */
+    /** Danh sách hợp lệ để GHI: gói hợp lệ, không trùng, ô trong tầm, tối đa [MAX] (trần kỹ thuật). */
     fun sanitize(items: List<AppShortcut>): List<AppShortcut> =
         items.filter { validPkg(it.pkg) }
             .map { if (it.mode is ShortcutMode.Slot && it.mode.n !in 1..MAX_SLOT) it.copy(mode = ShortcutMode.Full) else it }

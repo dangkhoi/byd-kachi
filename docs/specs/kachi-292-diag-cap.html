@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.92 bộ dọn chẩn đoán</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.92 — Bộ dọn chẩn đoán chỉ chạm log, không bao giờ chạm dữ liệu người dùng</h1>
+<p class="muted">Slug: <code>kachi-292-diag-cap</code> · Branch <code>feat/key-source-split</code> (từ 2.91 (193) <code>d320ece</code>) · Backlog <code>DIAG-CAP-USERDATA</code> (P1, mất dữ liệu) · ADR <a href="../decisions/0004-storage-cap-allowlist.md"><code>0004</code></a> · <span class="pill wait">Trạng thái: Draft — mã + test off-car + đột biến + máy ảo trước/sau + senior review độc lập Pass 2 (APPROVED sau 3 vá [P3], §10) xong; chờ owner duyệt · chưa quét bảo mật / commit · 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §4/§5/§8/§10/§15. Chỉ Kotlin stdlib + <code>java.io</code>/<code>java.nio.file.Files</code> (API 26+, minSdk 29) ⇒ không cần Context7 (máy chủ Context7 cũng không kết nối được phiên này). Không bump phiên bản, không đụng <code>apk/</code>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Senior review Pass 2 — 2026-10-06 (độc lập, Opus)</b>: R1 — mốc tệp gốc phải có ít nhất MỘT chữ số (<code>kachi-voice--.zip</code> không còn khớp). R3 — ở gốc lọc TÊN trước <code>stat</code> (đúng chữ "không cả <code>stat</code>"). R4 — bài canh xếp loại theo LỜI GỌI (đếm số lời gọi mỗi tệp) và quét cả nguồn riêng của biến thể <code>vehicleTest</code>. §10 Pass 2. Ngữ nghĩa trần không đổi.</li>
+<li><b>Pass 1 — 2026-10-06</b>: Mã + test + đột biến + máy ảo (§9). Thêm R3.2 (không dọn thư mục rỗng ngoài danh sách — đo máy ảo thấy bản cũ xoá cả <code>car/</code> rỗng app tạo sẵn).</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo từ phát hiện của điều phối [ĐO mã]: <code>DiagStorageCap.enforceLocked</code> dọn CẢ <code>getExternalFilesDir(null)</code> cũ-nhất-trước xuống ~150 MB, mà cây ấy còn chứa dữ liệu người dùng. Lệnh: đổi sang DANH SÁCH CHO PHÉP đường chẩn đoán, giữ ngữ nghĩa trần 150 MB cho tập ấy, thêm bài canh mọi bộ ghi phải được xếp loại.</li>
+</ul>
+
+<h2>2. Context</h2>
+<ul>
+<li>ADR-0003 (2026-08-19) đặt cap ~150 MB luôn-bật trên cả thư mục ngoài — lúc ấy chỉ có log. Từ đó cùng thư mục chứa: <code>photos/</code> (trình chiếu), <code>wallpapers/</code> (+ bộ đệm <code>.kachi-art/</code>), <code>car/</code> (ảnh xe), <code>profiles/</code> (hồ sơ xuất), <code>sherpa/import/&lt;gói&gt;/</code> (gói giọng side-load — xe không mạng, chép qua USB) [ĐO mã, bảng §4.3].</li>
+<li>Bản 2.91 liệt kê mọi tệp → <code>StorageCapPlanner.selectForDeletion</code> (cũ nhất trước) → xoá → xoá mọi thư mục rỗng. Gọi ở MỖI lần dựng HOME (<code>force = true</code>). Dữ liệu người dùng thường cũ nhất ⇒ đi trước log; một gói giọng side-load có thể tự vượt 150 MB ⇒ cap xoá dần chính gói ấy [SUY từ mã].</li>
+<li>[ĐO máy ảo 2.89, cùng mã cap] ảnh 21 KB (2001) + tệp gói 2 MB (2001) + log 110 MB (2002) ⇒ mở HOME ⇒ <code>pruned 3 file(s) ~112 MB</code>: mất ảnh, mất tệp gói, mất thư mục <code>car/</code> rỗng (<code>docs/diagnostics/diag-cap-userdata-2026-10-06.md</code>).</li>
+</ul>
+<div class="card"><b>Cổng / phụ thuộc:</b> không cần xe — luật thuần <code>:core</code> + bài canh nguồn + máy ảo. Xe đang chạy bản ≤ 2.91 vẫn có lỗi tới khi OTA 2.92.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 (danh sách cho phép)</b>. Bộ dọn chỉ được LIỆT KÊ và XOÁ: mọi tệp dưới <code>kachi-logs/</code> · <code>diag/</code> · <code>test/</code> · <code>castlog/</code>; ở gốc: <code>nav_notif_log_&lt;mốc&gt;.csv</code> · <code>nav_notif_raw_&lt;mốc&gt;.csv</code> · <code>kachi-voice-&lt;mốc&gt;.zip</code> (mốc chỉ chữ số và <code>-</code>, có ít nhất một chữ số) · <code>kachi-voice-test.wav</code>. <b>AC</b>: <code>DiagFiles.isDiagnostic</code> đúng cho mọi đường mẫu của từng bộ ghi chẩn đoán; sai cho mọi đường người dùng, tệp lạ ở gốc, đường mơ hồ (rỗng, tuyệt đối, <code>..</code>, <code>\</code>, khác hoa thường, tiền tố trùng mà mốc không phải số).</li>
+<li><b>R2 (giữ ngữ nghĩa trần)</b>. Trên tập cho phép: tổng ≤ 150 MB, cũ nhất trước, ít lần xoá nhất (đúng <code>selectForDeletion</code> cũ). Dữ liệu người dùng KHÔNG tính vào tổng. <b>AC</b>: người dùng 1,2 GB cũ hơn mọi log + log 200 MB ⇒ chỉ xoá log cũ nhất; chỉ người dùng vượt trần ⇒ không xoá gì.</li>
+<li><b>R3 (không chạm gì khác)</b>. Không liệt kê (không cả <code>stat</code>) thư mục người dùng; không theo liên kết tượng trưng. <b>R3.2</b> dọn thư mục rỗng CHỈ bên trong thư mục cho phép (bản cũ xoá <code>photos/</code> <code>wallpapers/</code> <code>car/</code> rỗng app tạo sẵn để người dùng thấy chỗ bỏ ảnh).</li>
+<li><b>R4 (bộ ghi mới không lặng lẽ lọt)</b>. Mọi lời gọi <code>getExternalFilesDir(s)</code> trong mã (<code>:app</code> — cả nguồn riêng của biến thể <code>vehicleTest</code> —, <code>:core</code>, <code>:car-integration</code>) phải có trong bảng xếp loại của bài canh (chẩn đoán / người dùng / chỉ đọc / chính bộ dọn), xếp theo LỜI GỌI (số lời gọi mỗi tệp được ghim — thêm lời gọi thứ hai vào một tệp đã xếp loại cũng phải xếp lại); đường bộ ghi tạo ra (hằng thật hoặc chuỗi trong mã) phải khớp luật R1 theo đúng loại.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Luật thuần ở <code>:core</code> (<code>DiagFiles</code> + <code>StorageCapPlanner.selectDiagForDeletion</code>), test off-device.</li>
+<li>R-nf2. Giữ nguyên vỏ an toàn của bộ dọn: luồng nền riêng, chặn nhịp 60 s trừ <code>force</code>, mọi bước bọc <code>runCatching</code> (không bao giờ ném vào nav), nhật ký <code>DiagStorageCap: pruned …</code>.</li>
+<li>R-nf3. Hỏng ở hướng an toàn: id lạ/tuyệt đối/không khớp ⇒ không xoá (thà log sống lâu hơn còn hơn mất ảnh).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Cây thư mục ngoài — ai được chạm</h3>
+<div class="diagram">
+<svg viewBox="0 0 640 250" width="640" height="250" role="img" aria-label="Thư mục ngoài của app: nhánh chẩn đoán bộ dọn được chạm, nhánh người dùng không bao giờ">
+  <rect class="root" x="230" y="10" width="180" height="34" rx="8"/>
+  <text class="tx" x="320" y="32" text-anchor="middle">getExternalFilesDir(null)</text>
+  <line class="wire" x1="320" y1="44" x2="160" y2="78"/><line class="wire" x1="320" y1="44" x2="480" y2="78"/>
+  <rect class="dg" x="20" y="78" width="280" height="160" rx="10"/>
+  <text class="tx" x="160" y="98" text-anchor="middle">DiagFiles — bộ dọn ĐƯỢC chạm</text>
+  <text class="sm" x="36" y="122">kachi-logs/ · diag/ · test/ · castlog/</text>
+  <text class="sm" x="36" y="142">nav_notif_log_&lt;mốc&gt;.csv · nav_notif_raw_&lt;mốc&gt;.csv</text>
+  <text class="sm" x="36" y="162">kachi-voice-&lt;mốc&gt;.zip · kachi-voice-test.wav</text>
+  <text class="sm" x="36" y="190">tổng ≤ 150 MB · cũ nhất trước · ít lần xoá nhất</text>
+  <text class="sm" x="36" y="210">thư mục rỗng: chỉ dọn BÊN TRONG nhánh này</text>
+  <rect class="us" x="340" y="78" width="280" height="160" rx="10"/>
+  <text class="tx" x="480" y="98" text-anchor="middle">mọi thứ khác — KHÔNG BAO GIỜ</text>
+  <text class="sm" x="356" y="122">photos/ · wallpapers/ (+ .kachi-art/) · car/</text>
+  <text class="sm" x="356" y="142">profiles/ · sherpa/import/&lt;gói&gt;/</text>
+  <text class="sm" x="356" y="162">tệp thử đẩy từ ngoài (e2e-*.png, wavin/) · thư mục mới</text>
+  <text class="sm" x="356" y="190">không liệt kê, không stat, không xoá thư mục rỗng</text>
+  <line class="x" x1="356" y1="204" x2="372" y2="220"/><line class="x" x1="372" y1="204" x2="356" y2="220"/>
+  <text class="sm" x="380" y="216">bộ dọn 2.91 xoá cả nhánh này (cũ nhất trước)</text>
+</svg>
+<div class="legend"><span class="sw"><span class="box" style="border-color:var(--diag);border-width:2px"></span> chẩn đoán (danh sách cho phép)</span><span class="sw"><span class="box" style="border-color:var(--user);border-width:2px"></span> người dùng / lạ (mặc định từ chối)</span></div>
+</div>
+<h3>4.2 Luồng</h3>
+<div class="flow">
+  <div class="fnode"><b>enforce(force?)</b><span>HOME · listener · verbose · luồng nền</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>diagnosticFiles(base)</b><span>chỉ DIRS + tệp gốc khớp · bỏ liên kết</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>selectDiagForDeletion</b><span>:core · id tương đối · lọc lại DiagFiles</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>xoá</b><span>byId[id] — không ghép đường từ id</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>pruneEmptyDirs</b><span>chỉ trong DiagFiles.DIRS</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span> giữ nguyên</span><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span> mới / đổi</span></div>
+<h3>4.3 Bảng xếp loại bộ ghi (= bảng của bài canh <code>DiagStorageCapWiringContractTest</code>)</h3>
+<table>
+<tr><th>Tệp gọi <code>getExternalFilesDir</code></th><th>Đường tạo ra</th><th>Loại</th></tr>
+<tr><td><code>KachiLog</code></td><td><code>kachi-logs/…</code> (cả bộ ghi gián tiếp qua <code>KachiLog.dir</code>: cầu kiểm thử camera/featmap/sweep, log inputd)</td><td>chẩn đoán</td></tr>
+<tr><td><code>ClusterDiag</code></td><td><code>diag/diag-&lt;mốc&gt;.txt</code></td><td>chẩn đoán</td></tr>
+<tr><td><code>TestBridgeReply</code></td><td><code>test/&lt;mốc&gt;-&lt;lệnh&gt;.json</code></td><td>chẩn đoán</td></tr>
+<tr><td><code>NavNotifLog</code> · <code>NavNotifRawLog</code></td><td><code>nav_notif_log_&lt;ms&gt;.csv</code> · <code>nav_notif_raw_&lt;ms&gt;.csv</code></td><td>chẩn đoán</td></tr>
+<tr><td><code>VoiceUtteranceLog</code></td><td><code>kachi-voice-&lt;yyyyMMdd-HHmmss-SSS&gt;.zip</code> (đường lùi)</td><td>chẩn đoán</td></tr>
+<tr><td><code>TestBridgeWav</code> · <code>TestBridgeKws</code></td><td><code>kachi-voice-test.wav</code></td><td>chẩn đoán</td></tr>
+<tr><td><code>PhotoStore</code> · <code>WallpaperStore</code> · <code>CarImageStore</code> · <code>ProfileIoStore</code> · <code>VoiceModelStore</code></td><td><code>photos/</code> · <code>wallpapers/</code> (+ <code>.kachi-art/</code>) · <code>car/</code> · <code>profiles/</code> · <code>sherpa/import/</code></td><td>NGƯỜI DÙNG</td></tr>
+<tr><td><code>VoiceWavProbe</code> · <code>CameraSignalController</code></td><td>chỉ đọc</td><td>chỉ đọc</td></tr>
+<tr><td><code>DiagStorageCap</code></td><td>—</td><td>bộ dọn</td></tr>
+</table>
+<h3>4.4 Quyết định</h3>
+<ul>
+<li>Danh sách CHO PHÉP (mặc định từ chối), không danh sách cấm: thư mục người dùng mới sau này không thể bị xoá mặc định.</li>
+<li>Luật ở <code>:core DiagFiles</code>; bộ dọn chỉ liệt kê đường cho phép VÀ planner lọc lại theo cùng luật (hai lớp). Id = đường tương đối <code>/</code>; xoá đúng đối tượng <code>File</code> đã liệt kê (không ghép đường từ id).</li>
+<li>Bộ ghi giữ nguyên hằng/chuỗi của mình (không đụng 9 tệp bộ ghi); bài canh buộc chuỗi ấy khớp luật — đổi tên ở bộ ghi mà quên luật ⇒ đỏ.</li>
+<li><code>castlog/</code> vào danh sách dù không còn bộ ghi: máy từng chạy ≤ 1.62 còn tàn dư (ADR-0003 đã tính nó là tệp chẩn đoán).</li>
+<li><b>Context7</b>: không dùng thư viện mới (stdlib + <code>java.nio.file.Files.isSymbolicLink</code>, API 26).</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>Luật danh sách cho phép + planner lọc</td><td><code>core/…/core/DiagFiles.kt</code> (mới) · <code>StorageCapPlanner.kt</code></td><td>DONE</td></tr>
+<tr><td>T2</td><td>Bộ dọn chỉ liệt kê/xoá đường cho phép; thư mục rỗng chỉ trong danh sách; bỏ liên kết</td><td><code>app/…/DiagStorageCap.kt</code></td><td>DONE</td></tr>
+<tr><td>T3</td><td>Test thuần (7 ca) + bài canh xếp loại bộ ghi (3 ca)</td><td><code>DiagFilesTest.kt</code> · <code>DiagStorageCapWiringContractTest.kt</code></td><td>DONE</td></tr>
+<tr><td>T4</td><td>KDoc hai chỗ nói "quét cả cây" (<code>KachiLog</code>, <code>WallArt</code>)</td><td>—</td><td>DONE</td></tr>
+<tr><td>T5</td><td>Máy ảo trước (2.89) / sau; ADR-0004; backlog · index · project-context</td><td><code>docs/…</code></td><td>DONE</td></tr>
+<tr><td>T6</td><td>Senior review + quét bảo mật trước commit</td><td>—</td><td>review tự soát Pass 1 + senior review độc lập Pass 2 xong (§10; 3 vá [P3] ở <code>DiagFiles.kt</code> · <code>DiagStorageCap.kt</code> · <code>DiagFilesTest.kt</code> · <code>DiagStorageCapWiringContractTest.kt</code>); quét bảo mật: khi commit</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit [ĐO 06/10]: <code>DiagFilesTest</code> 7/7 (đường từng bộ ghi · 24 đường không được khớp · người dùng cũ nhất + to nhất không bao giờ bị chọn · chỉ người dùng vượt trần ⇒ 0 · trần chỉ tính phần chẩn đoán · cũ trước qua mọi thư mục cho phép · id tuyệt đối ⇒ 0) · <code>StorageCapPlannerTest</code> 10/10 (không đổi) · <code>DiagStorageCapWiringContractTest</code> 3/3.</li>
+<li>Đột biến 7/7 ĐỎ (tệp trả đúng sha): bộ dọn gọi planner không lọc · luật nhận mọi thư mục · planner bỏ lọc · thêm một bộ ghi <code>getExternalFilesDir</code> không xếp loại · dọn thư mục rỗng từ gốc · mốc gốc nhận mọi ký tự · bỏ chốt liên kết khi dọn thư mục rỗng.</li>
+<li>V-emu [ĐO]: §9 + <code>docs/diagnostics/diag-cap-userdata-2026-10-06.md</code> — 2.89 <code>pruned 3 file(s) ~112 MB</code> (mất ảnh + tệp gói + <code>car/</code>) · bản mới <code>pruned 1 file(s) ~110 MB</code> (chỉ log; ảnh, tệp gói, <code>car/</code> rỗng còn; thư mục rỗng trong <code>kachi-logs/</code> được dọn).</li>
+<li>Bộ đủ: cùng lượt với spec <code>kachi-292-shortcut-widget.html</code> (§9 dòng cuối của spec này).</li>
+<li><b>Senior review Pass 2</b> [ĐO 06/10]: <code>DiagFilesTest</code> 7/7 (thêm 2 đường không được khớp: <code>kachi-voice--.zip</code> · <code>nav_notif_log_---.csv</code>) · <code>DiagStorageCapWiringContractTest</code> 3/3 (thêm ghim lọc tên trước <code>stat</code>, đếm lời gọi mỗi tệp, quét <code>vehicleTest</code>). Đột biến của review 5/5 ĐỎ (tệp trả đúng sha): mốc không cần chữ số · gốc <code>it.isFile &amp;&amp; …</code> (stat trước) · lời gọi thứ hai trong <code>PhotoStore.kt</code> · bộ ghi mới chỉ ở <code>app/src/vehicleTest</code> · bộ ghi mới không xếp loại ở mã chính. Bộ đủ 6 tác vụ <code>--rerun-tasks</code> 8 857 / 0 (1 024 XML) · <code>lintDebug</code> 0 lỗi · <code>assembleRelease</code> ✓.</li>
+<li>V-oncar 🚗: không bắt buộc (luật thuần + đo máy ảo); khi lên xe: <code>adb logcat -s DiagStorageCap</code> sau mở HOME + <code>ls</code> thư mục <code>photos/</code> <code>sherpa/import/</code>.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Bộ đệm ảnh mờ <code>wallpapers/.kachi-art/</code> (vài chục KB/ảnh, không ai xoá cố ý) nay không còn được cap bao — cần luật dọn riêng (vd giữ N bản mới nhất) không? <span class="muted">Mặc định: chưa (nhỏ, nằm trong thư mục người dùng).</span></li>
+<li>OQ2. Xe đã chạy ≤ 2.91 có thể đã mất ảnh/tệp gói giọng side-load — cần câu nhắc trong app (vd "gói giọng thiếu tệp, chép lại")? <span class="muted">Mặc định: không — đường cài gói đã báo thiếu tệp khi bấm cài.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>ADR <code>docs/decisions/0003-datacollection-logging-default-off.md</code> (cap gốc) · <code>0004-storage-cap-allowlist.md</code> (sửa phạm vi).</li>
+<li><code>core/…/core/DiagFiles.kt</code> · <code>StorageCapPlanner.kt</code>(+<code>Test</code>) · <code>DiagFilesTest.kt</code>; <code>app/…/DiagStorageCap.kt</code> · <code>DiagStorageCapWiringContractTest.kt</code>.</li>
+<li>Bằng chứng: <code>docs/diagnostics/diag-cap-userdata-2026-10-06.md</code> · khôi phục máy ảo <code>docs/diagnostics/shortcut-widget-2026-10-06/emulator-restore.tsv</code> (lượt 3).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — đọc TỪNG bộ ghi (grep <code>getExternalFilesDir</code> + mọi chỗ ghi tệp, cả gián tiếp qua <code>KachiLog.dir</code>/<code>WallpaperStore.folder</code>): <code>NavNotifLog</code> ghi <code>nav_notif_log_</code> (không phải <code>nav_notif_*</code> chung chung) ⇒ luật dùng đúng hai tiền tố; nhật ký lượt nói <code>voice-log/</code> nằm ở <code>filesDir</code> (bộ nhớ TRONG) — trong thư mục ngoài chỉ có zip xuất lùi <code>kachi-voice-*.zip</code> và tệp tiếng thử <code>kachi-voice-test.wav</code>; <code>castlog/</code> không còn bộ ghi từ 1.63 (git <code>ad33a52</code>) nhưng giữ trong danh sách để dọn tàn dư.</li>
+<li><b>2026-10-06 · quyết định</b> — mốc tệp gốc chỉ nhận chữ số và <code>-</code> (khớp <code>currentTimeMillis</code> và <code>yyyyMMdd-HHmmss-SSS</code>) ⇒ <code>kachi-voice-backup.zip</code> do người dùng đặt KHÔNG bị dọn. Không dùng <code>Char.isDigit</code> (nhận chữ số Unicode khác).</li>
+<li><b>2026-10-06 · bug phụ lộ ra khi đo</b> — bản cũ <code>pruneEmptyDirs(base)</code> xoá thư mục rỗng ở MỌI nơi ⇒ [ĐO máy ảo] <code>car/</code> (app tạo sẵn để người dùng thấy chỗ bỏ ảnh) biến mất sau lượt dọn ⇒ R3.2: chỉ dọn trong <code>DiagFiles.DIRS</code>.</li>
+<li><b>2026-10-06 · QA máy ảo</b> — 2.89 (cùng mã cap 2.91) rồi bản <code>vehicleTest</code> cây hiện tại; số đo ở <code>docs/diagnostics/diag-cap-userdata-2026-10-06.md</code>; thư mục ngoài trả nguyên bản sao lưu (1 527/1 527 tệp trùng sha256).</li>
+<li><b>2026-10-06 · bộ đủ</b> [ĐO, đếm từ JUnit XML] — 8 855 / 0 (1 024 XML: <code>:core</code> 4 456 · <code>:app</code> debug 2 093 · vehicleTest 2 105 · <code>:car-integration</code> 80 · <code>:offcar-planner</code> 99 · <code>:vehicle-contracts</code> 22) · <code>lintDebug</code> 0 lỗi (577 cảnh báo, không cảnh báo mới ở tệp đổi) · <code>assembleRelease</code> ✓ (lượt cuối sau tự soát).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-06 (tự soát của bên triển khai, theo lệnh điều phối "self-review the new code once")</h3>
+<table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>S1</td><td>[P2]</td><td><code>pruneEmptyDirs(base)</code> cũ xoá thư mục rỗng của người dùng (đo được <code>car/</code>).</td><td>VÁ trong lượt (R3.2) + đột biến D5 đỏ.</td></tr>
+<tr><td>S2</td><td>[P3]</td><td>Liên kết tượng trưng trong thư mục cho phép có thể dẫn bộ dọn ra ngoài (sdcardfs/FUSE gần như không cho tạo [SUY]).</td><td>VÁ phòng thủ: <code>Files.isSymbolicLink</code> ⇒ bỏ qua khi liệt kê VÀ khi dọn thư mục rỗng (chốt đầu <code>pruneEmptyDirs</code> — bản đầu chỉ chốt ở thư mục con, đột biến D7 lọt ⇒ thêm ghim); lỗi đọc ⇒ coi là liên kết (bỏ qua).</td></tr>
+<tr><td>S3</td><td>[P3]</td><td><code>Char.isDigit</code> nhận chữ số toàn hình/Unicode ⇒ mốc lạ khớp.</td><td>VÁ: chỉ <code>'0'..'9'</code> + bài canh chữ số toàn hình.</td></tr>
+<tr><td>—</td><td>—</td><td>Đã soát: vỏ an toàn giữ nguyên (luồng nền, chặn nhịp, <code>runCatching</code> không ném vào nav — nhánh hỏng ghi <code>Log.w</code>) · id tương đối hỏng ⇒ không xoá · mọi hàm mới có chỗ gọi (<code>diagnosticFiles</code>, <code>isLink</code>, <code>selectDiagForDeletion</code>, <code>DiagFiles.isDiagnostic</code> — grep) · tệp ≤ 500 dòng (<code>DiagStorageCap</code> 127).</td><td>—</td></tr>
+</table>
+<p><b>Kết luận tự soát</b>: không còn phát hiện mở trong phạm vi. Senior review độc lập (Opus) + quét bảo mật: chưa — làm trước commit theo rule global §5/§6.</p>
+
+<h3>Pass 2 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Senior review + vá + soát phạm vi + soát độ mới công nghệ cho <code>DiagFiles</code> · <code>StorageCapPlanner.selectDiagForDeletion</code> · <code>DiagStorageCap</code> · hai bài test, trên cây làm việc chưa commit (gốc <code>d320ece</code>). Không dùng máy ảo/xe. Nguồn bộ ghi đọc lại TỪNG tệp: mọi lời gọi <code>getExternalFilesDir</code> (16 tệp, 17 lời gọi — <code>TestBridgeKws</code> 2) + mọi người dùng <code>KachiLog.dir</code> (<code>AppContainer.logDir</code> · <code>TestBridgeFeatMap</code>/<code>Sweep</code>/<code>CameraFrame</code>) + mọi chỗ ghi tệp khác (<code>DiagRingFile</code> · <code>VoiceGrammarSnapshotStore</code> · <code>ClusterNavBridgeWake</code> · <code>HalHelperLauncher</code> · <code>VoiceRecognizer</code> ghi vào <code>filesDir</code> — bộ nhớ TRONG, ngoài phạm vi bộ dọn) [ĐO grep].</p>
+<table>
+<tr><th>#</th><th>Mức</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>D1</td><td>[P3]</td><td>Ở gốc, <code>diagnosticFiles</code> lọc <code>it.isFile &amp;&amp; DiagFiles.isDiagnostic(it.name)</code> ⇒ <code>stat</code> MỌI mục ở gốc kể cả <code>photos/</code> · <code>sherpa/</code> — trái KDoc ("not even stat-ed") và R3 ("không cả <code>stat</code>"). Không mất dữ liệu (chỉ <code>stat</code> mục gốc, không vào trong).</td><td>VÁ — lọc tên trước: <code>DiagFiles.isDiagnostic(it.name) &amp;&amp; it.isFile</code>; ghim trong <code>DiagStorageCapWiringContractTest</code>; đột biến (đảo lại) ⇒ ĐỎ.</td></tr>
+<tr><td>D2</td><td>[P3]</td><td>Bài canh R4 xếp loại theo TỆP: lời gọi <code>getExternalFilesDir</code> THỨ HAI thêm vào một tệp đã có trong bảng (vd một log mới trong <code>PhotoStore</code>) lọt qua im lặng; nguồn riêng của biến thể <code>vehicleTest</code> (<code>app/src/vehicleTest/java</code> — thuộc <code>:app</code>, cùng bộ dọn chạy trong bản ấy) không được quét.</td><td>VÁ — <code>Writer.calls</code> ghim số lời gọi mỗi tệp (<code>TestBridgeKws</code> = 2: đọc lại + chép, cùng tệp <code>kachi-voice-test.wav</code>); quét thêm <code>vehicleTest</code> (+ chốt "phải quét được"). Đột biến: lời gọi thứ hai trong <code>PhotoStore.kt</code> ⇒ ĐỎ; bộ ghi mới chỉ ở <code>vehicleTest</code> ⇒ ĐỎ; bộ ghi mới không xếp loại ở mã chính ⇒ ĐỎ (xác nhận lại khẳng định của Pass 1).</td></tr>
+<tr><td>D3</td><td>[P3]</td><td>Mốc tệp gốc chỉ cần "chữ số và <code>-</code>" ⇒ mốc toàn <code>-</code> khớp (<code>kachi-voice--.zip</code>, <code>nav_notif_log_---.csv</code>) — không bộ ghi nào tạo ra dạng ấy.</td><td>VÁ — thêm "có ít nhất một chữ số" (hỏng ở hướng an toàn: ít khớp hơn); 2 đường mới trong <code>DiagFilesTest</code>; đột biến (gỡ điều kiện) ⇒ ĐỎ.</td></tr>
+<tr><td>—</td><td>—</td><td>Đã soát, không phát hiện: danh sách cho phép = đúng đường bộ ghi tạo ra (bảng §4.3, hằng/chuỗi thật được ghim) · không đường người dùng nào khớp (<code>photos/</code> · <code>wallpapers/</code> + <code>.kachi-art/</code> · <code>car/</code> · <code>profiles/</code> · <code>sherpa/import/</code> có đoạn đầu ngoài <code>DIRS</code>; tên thư mục chẩn đoán lồng trong thư mục người dùng không khớp) · đi ngược đường: id có đoạn rỗng/<code>.</code>/<code>..</code>/<code>\</code>/tuyệt đối ⇒ <code>false</code>; id dựng từ chính <code>File</code> đã liệt kê (<code>relativeTo</code>) và xoá đúng <code>File</code> đó — không ghép đường từ id · liên kết: thư mục cho phép là liên kết ⇒ không vào (liệt kê + dọn rỗng, chốt đầu hàm); thư mục con là liên kết ⇒ không vào; tệp là liên kết ⇒ <code>delete</code> chỉ gỡ chính liên kết, không bao giờ đích (cỡ/mtime đọc theo đích — chỉ ảnh hưởng phép cộng của tập chẩn đoán; sdcardfs/FUSE không cho tạo liên kết [SUY]) · dọn thư mục rỗng chỉ thư mục CON trong <code>DIRS</code>, chính thư mục cho phép không bị xoá · ngữ nghĩa trần: <code>selectForDeletion</code> không đổi một dòng, lọc trước khi cộng (<code>StorageCapPlannerTest</code> 10/10 + <code>DiagFilesTest</code>) · vỏ an toàn (luồng nền, chặn nhịp 60 s, <code>runCatching</code> + <code>Log.w</code>) giữ nguyên · tệp ≤ 500 dòng (<code>DiagStorageCap</code> 131) · mọi hàm mới có chỗ gọi (grep).</td><td>—</td></tr>
+</table>
+<p><b>Soát phạm vi</b>: R1 ✅ (sau D3) · R2 ✅ · R3 ✅ (sau D1) · R3.2 ✅ · R4 ✅ (sau D2) · R-nf1 ✅ · R-nf2 ✅ · R-nf3 ✅.</p>
+<p><b>Độ mới công nghệ</b> (Context7 không kết nối được): chỉ Kotlin stdlib + <code>java.io.File</code> + <code>java.nio.file.Files.isSymbolicLink</code> (API 26, <code>minSdk</code> 29) — hiện hành, không deprecated; không thư viện mới.</p>
+<p><b>Test</b> [ĐO, đếm từ JUnit XML ghi trong lượt]: bộ đủ 6 tác vụ <code>--rerun-tasks</code> 8 857 / 0 (1 024 XML) · <code>:app:lintDebug</code> 0 lỗi / 577 cảnh báo · <code>:app:assembleRelease</code> ✓ (cùng lượt với spec <code>kachi-292-shortcut-widget.html</code> §10 Pass 3). Đột biến của review 5/5 ĐỎ, tệp trả đúng sha.</p>
+<p><b>Kết luận: APPROVED</b> — 0 phát hiện [P0]–[P3] còn mở trong phạm vi sau vá D1–D3 (vòng soát lại bản vá: đột biến + bộ đủ xanh). Còn ngoài review: quét bảo mật trước commit (rule global §6).</p>
+
+</div></body>
+</html>

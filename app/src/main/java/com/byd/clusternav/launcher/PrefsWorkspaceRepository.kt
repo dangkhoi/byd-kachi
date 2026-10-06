@@ -54,6 +54,8 @@ class PrefsWorkspaceRepository(context: Context) : WorkspaceRepository {
         // V-CLUSTER (owner 2026-09-30): cùng lẽ — cụm/chiếu/camera/nút nổi vừa đổi phạm vi XE → HỒ SƠ; rót giá trị đang
         // sống xuống mọi hồ sơ TRƯỚC lượt áp đầu tiên (spec §11.4.5). Sau lịch dẫn đường: hai lượt độc lập, thứ tự cố định.
         prefs.migrateClusterProfileOnce()
+        // 2.92 PROFILE-NEW-KEYS: khoá vào phạm vi hồ sơ ở bản SAU hai lượt trên (sổ đã-rót) — cùng lẽ, cùng thời điểm.
+        prefs.fillNewProfileKeysOnce()
     }
 
     /**

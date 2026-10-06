@@ -40,17 +40,12 @@ internal class FullPin(val config: DisplayConfig, val pinned: DisplayConfig?)
 internal fun SimpleCastCoordinator.pinFull(pkg: String, appType: AppType): FullPin {
     if (appType != AppType.NORMAL) return FullPin(DisplayConfig.forAppType(appType), null)
     // B1b — ô nhớ theo kiểu khung của PHIÊN (Bo tròn = khoá cũ, từng byte). Chữ nhật: bản ghim LUÔN có khung — 2.90 · R4 mặc định
-    // trọn cụm (owner 06/10: "cứ để full resolution", người lái tự chỉnh). 2.90 · R2: kiểu chưa xác nhận ([fullFrameSession]) ⇒
-    // trọn cụm, bỏ khung đã lưu (khung lưu cho một kiểu cụm khác là khung sai — F3 06/10: khung Chữ nhật trên cụm cong).
+    // trọn cụm (owner 06/10: "cứ để full resolution", người lái tự chỉnh). 2.92 · CLUSTER-FRAME-CHOSEN: phiên chưa xác nhận kiểu đi
+    // CHÍNH đường này với kiểu người lái chọn (`CastSessionStyle.of`) — gỡ nhánh "trọn cụm, bỏ khung đã lưu" của 2.90 · R2.
     val style = frameStyle
     val profile = CastProfile.FULL.inStyle(style)
     val saved = prefs.displayConfigFor(pkg, profile)
-    val pinned = when {
-        fullFrameSession -> (saved ?: DisplayConfig.NORMAL_DEFAULT.copy(density = CastGeometryGuard.DENSITY_RESET))
-            .copy(bounds = ClusterRectLayout.FULL)
-        style == CastStyle.RECT -> ClusterRectLayout.pin(saved, ClusterRectLayout.FULL)
-        else -> saved
-    }
+    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.FULL) else saved
     logPin(pkg, profile, pinned)
     // Pass 2 · cluster-r1-3: Chữ nhật áp `wm size`/overscan 1:1 dù bản `__RECT` có bị làm bẩn (Bo tròn: đúng phép cũ từng byte).
     val config = saved ?: DisplayConfig.NORMAL_DEFAULT
@@ -85,11 +80,7 @@ internal fun SimpleCastCoordinator.pinSlot(pkg: String, side: ClusterSlotSide, l
     val style = frameStyle
     val profile = CastProfile.of(side, leftPercent, style)
     val saved = prefs.displayConfigFor(pkg, profile)
-    val pinned = when {
-        fullFrameSession -> saved?.copy(bounds = null)   // 2.90 · R2: kiểu chưa rõ ⇒ nửa của trọn cụm (fitToCluster), giữ DPI
-        style == CastStyle.RECT -> ClusterRectLayout.pin(saved, ClusterRectLayout.slotFrame(side, leftPercent))
-        else -> saved
-    }
+    val pinned = if (style == CastStyle.RECT) ClusterRectLayout.pin(saved, ClusterRectLayout.slotFrame(side, leftPercent)) else saved
     return pinned.also { logPin(pkg, profile, it) }
 }
 

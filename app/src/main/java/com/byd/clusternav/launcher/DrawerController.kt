@@ -106,8 +106,8 @@ class DrawerController(
 
     /**
      * F1 · U1 (spec shortcuts-autostart R1.4) — bộ chọn APP cho lối tắt: [AppDrawer.Mode.PICK_SHORTCUTS], cùng hình dạng
-     * [openDockPicker] (đa chọn, tô sẵn theo [selected], **Áp dụng (N)** ⇒ [onApply] rồi tự đóng). Trần 8 = trần của
-     * bảng (`AppDrawer.cap` = `MAX`) = [AppShortcutCodec.MAX].
+     * [openDockPicker] (đa chọn, tô sẵn theo [selected], **Áp dụng (N)** ⇒ [onApply] rồi tự đóng). 2.92: hết trần 8 —
+     * trần của bảng (`AppDrawer.cap`) = trần KỸ THUẬT [AppShortcutCodec.MAX] của danh sách.
      *
      * Hợp đồng với chỗ gọi (trang Cài đặt lối tắt): [selected] đọc lại MỖI lần mở; [onApply] nhận danh sách gói THEO
      * THỨ TỰ CHẠM (tập của bảng là `LinkedHashSet` — `selected.toSet()`), gấp bằng [ShortcutSelection.apply] rồi đẩy qua

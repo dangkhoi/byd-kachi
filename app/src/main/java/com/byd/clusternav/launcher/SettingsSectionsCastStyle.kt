@@ -24,8 +24,8 @@ import com.byd.clusternav.modules.clustercast.simplified.CastStyle
  *     không có opcode/HAL nào đặt về 0. ⇒ 2.91 · F4: câu nhắc nói thẳng "không thu nhỏ được" và chỉ đường thật: muốn ô ADAS
  *     nhỏ thì chọn Bo tròn (phím menu thu nhỏ được ở đó). Số km/h gốc mất — 2.90 · R3: Kachi KHÔNG vẽ thay (HUD, bản đồ, bóng
  *     VietMap đều có tốc độ — owner 06/10). Khung app mặc định trọn cụm, người lái tự chỉnh (R4).
- *  4. 2.90 — **vì sao chưa đổi được kiểu** (bóng nổi VietMap trên cụm ⇒ "tắt bóng VietMap rồi Áp ngay") và **cụm chưa rõ kiểu ⇒
- *     khung trọn cụm**.
+ *  4. 2.90 — **vì sao chưa đổi được kiểu** (bóng nổi VietMap trên cụm ⇒ "tắt bóng VietMap rồi Áp ngay"); 2.92 · CLUSTER-FRAME-CHOSEN
+ *     — **cụm chưa rõ kiểu ⇒ khung đã lưu của kiểu người lái chọn** (không còn "trọn cụm"), cụm hiện sai kiểu thì "Áp ngay".
  *
  * ## Ẩn hẳn khi đời xe không cho Chữ nhật
  * `bridge.castStyleOffered()` — chỉ Seal `car.type=138` (bảng B.2). Xe khác: không hàng nào, không "hiện mà bấm không ăn".
@@ -66,8 +66,11 @@ class SettingsCastStyleBlock(
         if (chosen == CastStyle.RECT) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_note)))
         box.addView(rows.note(context.getString(R.string.kachi_cast_style_apply_note)))
         sessionNote(chosen)?.let { box.addView(rows.note(it)) }
-        // 2.90 · R2 — phiên chưa rõ kiểu ⇒ khung trọn cụm; R1 — bóng nổi chặn đổi theme ⇒ nói đúng app + việc cần làm.
-        if (bridge.castStyleSession()?.fullFrame == true) box.addView(rows.note(context.getString(R.string.kachi_cast_style_full_frame)))
+        // 2.92 · CLUSTER-FRAME-CHOSEN — phiên chưa rõ kiểu ⇒ khung đã lưu của kiểu đã chọn (nói rõ, cụm sai kiểu thì "Áp ngay");
+        // 2.90 · R1 — bóng nổi chặn đổi theme ⇒ nói đúng app + việc cần làm.
+        if (bridge.castStyleSession()?.believed == BelievedStyle.UNKNOWN) {
+            box.addView(rows.note(context.getString(R.string.kachi_cast_style_unconfirmed)))
+        }
         bridge.castThemeBlockers().takeIf { it.isNotEmpty() }?.let { apps ->
             // R9 — đã dọn cụm (`VM_BUBBLE_VIS show=false`) mà bóng vẫn còn ⇒ bản mod cũ: nói đúng việc cần làm (tắt VietMap).
             val res = if (bridge.castThemeBubbleOldMod()) R.string.kachi_cast_style_bubble_old_mod else R.string.kachi_cast_style_blocked

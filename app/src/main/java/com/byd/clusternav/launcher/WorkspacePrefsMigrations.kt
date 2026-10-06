@@ -2,6 +2,7 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 
 /**
  * ═══ DI TRÚ MỘT LẦN khi khoá ClusterNav đổi phạm vi XE → HỒ SƠ — phần của [WorkspacePrefs] ════════════════════════
@@ -10,15 +11,17 @@ import android.content.SharedPreferences
  * trần 500 dòng (CLAUDE.md §4.1). Cùng khuôn hàm mở rộng của CHÍNH [WorkspacePrefs] (dùng lại `sp`, không mở cửa thứ
  * hai vào `kachi_workspace`).
  *
- * Hai lượt, cùng một hợp đồng *"rót xuống, chỉ điền chỗ trống, dấu ghi CÙNG một Editor với dữ liệu"*:
+ * Ba lượt, cùng một hợp đồng *"rót xuống, chỉ điền chỗ trống, dấu ghi CÙNG một Editor với dữ liệu"*:
  *  • [migrateNavScheduleOnce] — lịch tự dẫn đường (2026-09-28), dời NGUYÊN VĂN (bài canh
  *    `NavScheduleProfileScopeWiringTest` khoá thân hàm; CLAUDE.md §6: không viết lại đường đang chạy tốt) — trừ đúng MỘT
  *    lượt đọc ảnh đổi sang [storedSnapshot] (senior review 2.84: ảnh sai kiểu không được làm `init` ném);
  *  • [migrateClusterProfileOnce] — cụm/chiếu/camera/nút nổi (V-CLUSTER), phép tính thuần ở `:core`
- *    [ProfileScopeMigration.rotDown] (có test chạy thật, không chỉ đọc chữ).
+ *    [ProfileScopeMigration.rotDown] (có test chạy thật, không chỉ đọc chữ);
+ *  • [fillNewProfileKeysOnce] — 2.92 PROFILE-NEW-KEYS: khoá vào phạm vi hồ sơ ở bản SAU, theo sổ đã-rót.
  *
  * Lối mở tệp prefs ClusterNav ([clusterNavPrefs]) cũng nằm ở đây: tệp có lời gọi mở prefs là tệp mà
- * `SettingsCoverageContractTest` quét hằng khoá, nên hai dấu di trú bên dưới vẫn bị đòi lý do ở `NOT_SETTINGS`.
+ * `SettingsCoverageContractTest` quét hằng khoá, nên hai dấu boolean bên dưới vẫn bị đòi lý do ở `NOT_SETTINGS`; sổ đã-rót
+ * (StringSet — bộ quét chưa đọc `putStringSet`) có lý do ở đó và ở `ProfileScopeCluster.DEVICE_KEYS` bằng tay.
  */
 
 /**
@@ -127,6 +130,48 @@ internal fun WorkspacePrefs.migrateClusterProfileOnce() {
  * `ClusterProfileScopeCoverageTest` khoá nó BẰNG [ProfileScopeCluster.MIGRATED_KEY].
  */
 private const val K_MIGRATED_CLUSTER = "migrated_cluster_profile_v1"
+
+/**
+ * 2.92 · PROFILE-NEW-KEYS — rót mọi khoá ClusterNav theo hồ sơ CHƯA có trong sổ đã-rót xuống ảnh đã có của mọi hồ sơ.
+ *
+ * Hai lượt trên chạy MỘT lần cho một bảng khoá cố định, nên khoá vào phạm vi hồ sơ ở bản sau (2.89 `cast_style`, 2.90
+ * `vm_bubble_hidden`, 2.92 `camera_projection`/`camera_zoom`) chưa từng được rót: [ĐO máy ảo 2.92] chọn *Thẳng rộng*
+ * 120 % ở hồ sơ A rồi đổi sang hồ sơ lưu bằng 2.91 ⇒ hồ sơ đó cũng *Thẳng rộng* 120 %, và lượt rời nó chụp luôn giá trị
+ * lạc. Sổ `tệp/khoá` thay cho cờ boolean ⇒ bản sau thêm khoá là tự rót, không phải nhớ viết thêm một lượt di trú.
+ *
+ * Phép tính ở [ProfileScopeMigration.fillNewKeys] (thuần, `ProfileScopeMigrationTest`): chỉ điền chỗ trống, chỉ vào ảnh
+ * ĐÃ có, giá trị = đang sống (vắng ⇒ `null` tường minh ⇒ lượt áp trả về mặc định). Lần đầu (sổ rỗng) duyệt mọi khoá —
+ * ảnh đủ khoá không đổi byte.
+ *
+ * ⚠ Sổ ghi CÙNG một `Editor` với mọi ảnh (bài học [migrateScenesOnce]); chạy SAU [migrateClusterProfileOnce] ở `init`
+ * của `PrefsWorkspaceRepository`, TRƯỚC lượt `load()` đầu tiên — tức trước khi người lái kịp chọn giá trị cho khoá mới.
+ */
+internal fun WorkspacePrefs.fillNewProfileKeysOnce() {
+    // Đọc qua `sp.all` + ép kiểu an toàn, KHÔNG `getStringSet`: giá trị sai kiểu mà ném ở `init` là HOME sập mỗi lần mở.
+    val stored = sp.all
+    val done = (stored[K_PROFILE_KEYS_FILLED] as? Set<*>)?.filterIsInstance<String>()?.toSet().orEmpty()
+    val pending = ProfileScopeMigration.pendingKeys(ProfileScope.CLUSTERNAV_KEYS, done)
+    if (pending.isEmpty()) return
+    val e = sp.edit()
+    val names = profiles()
+    var filled = 0
+    pending.forEach { (file, newKeys) ->
+        val suffix = ProfileScope.snapshotSuffix(file)
+        val shots = names.associateWith { PrefSnapshot.decode(storedSnapshot(stored, keyOf(it, suffix))) }
+        ProfileScopeMigration
+            .fillNewKeys(shots, clusterNavPrefs(file).all, newKeys, ProfileScopeCluster.DEFERRED)
+            .forEach { (p, shot) -> e.putString(keyOf(p, suffix), PrefSnapshot.encode(shot)); filled++ }
+    }
+    e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS)).apply()
+    // Một dòng cho log phiên / `ClusterDiag` (CLAUDE.md §11): xe ngoài đường không có adb — đọc log là biết lượt rót đã chạy.
+    Log.i("KachiProfile", "rót khoá mới theo hồ sơ: ${pending.values.sumOf { it.size }} khoá · $filled ảnh")
+}
+
+/**
+ * Sổ đã-rót của [fillNewProfileKeysOnce]. Literal (không trỏ hằng `:core`), cùng khuôn hai dấu trên; `ClusterProfileScopeCoverageTest`
+ * khoá nó BẰNG [ProfileScopeMigration.FILLED_LEDGER_KEY]. Xếp loại theo XE: `ProfileScopeCluster.DEVICE_KEYS` + `SettingsCatalog.NOT_SETTINGS`.
+ */
+private const val K_PROFILE_KEYS_FILLED = "profile_keys_filled_v1"
 
 /**
  * Tệp prefs của phía ClusterNav theo tên. Mở qua `Context` (mỗi tên là một `SharedPreferences` riêng) — Android

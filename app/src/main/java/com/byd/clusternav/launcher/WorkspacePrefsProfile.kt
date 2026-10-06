@@ -267,7 +267,9 @@ internal fun WorkspacePrefs.importProfile(data: String, name: String? = null): P
     // vắng trong tệp) ⇒ `remove`. FIX286: ảnh chiếu cụm đi tiếp qua merge (SAU lớp làm sạch — giá trị của xe cũng qua bộ kiểm).
     plan.writes.forEach { (suffix, v) ->
         val clean = cleanImportedSnapshot(suffix, v)
-        val value = mergeImportedCast(suffix, clean)?.let { (encoded, summary) -> cluster = summary; encoded } ?: clean
+        val merged = mergeImportedCast(suffix, clean)?.let { (encoded, summary) -> cluster = summary; encoded } ?: clean
+        // 2.92 · PROFILE-IMPORT-GAP-KEYS: tệp từ bản cũ thiếu khoá theo hồ sơ mới ⇒ điền chỗ trống bằng giá trị đang sống của xe này.
+        val value = fillImportedSnapshot(suffix, merged)
         copyValue(e, keyOf(plan.target, suffix), value)
     }
     e.apply()

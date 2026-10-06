@@ -5,8 +5,8 @@ package com.byd.clusternav.launcher
  *
  * Spec `docs/specs/kachi-launcher-shortcuts-autostart.html` R1.1 · R1.2 · R1.4 (U2/U3). Tầng UI (ngăn kéo chế độ
  * `PICK_SHORTCUTS`, trang Cài đặt, khối trên thanh nút, widget `w_apps`) chỉ gọi vào đây — không tự gấp danh sách, không
- * tự tính bề dài khối. Mọi kết quả đi qua [AppShortcutCodec.sanitize] ⇒ không bao giờ quá [AppShortcutCodec.MAX] mục,
- * không gói trùng, không ô ngoài tầm.
+ * tự tính bề dài khối. Mọi kết quả đi qua [AppShortcutCodec.sanitize] ⇒ không gói trùng, không ô ngoài tầm, không quá
+ * trần KỸ THUẬT [AppShortcutCodec.MAX] (2.92: không còn trần 8 của người dùng).
  */
 object ShortcutSelection {
 
@@ -19,7 +19,8 @@ object ShortcutSelection {
     /**
      * Danh sách sau khi người dùng chốt [picked] ở ngăn kéo (cùng hình dạng `DockSelection.apply`): mục CŨ còn được chọn
      * giữ nguyên CHỖ và KIỂU; mục MỚI nối vào cuối theo thứ tự [picked] (thứ tự người dùng chạm) với [DEFAULT_MODE]; mục
-     * bỏ tích rời danh sách. Quá trần ⇒ cắt phần cuối ([AppShortcutCodec.sanitize]).
+     * bỏ tích rời danh sách. Quá trần kỹ thuật ⇒ cắt phần cuối ([AppShortcutCodec.sanitize]; bảng chọn nói ra trước khi
+     * tới đó — `AppDrawer.toggleSelection`).
      */
     fun apply(current: List<AppShortcut>, picked: List<String>): List<AppShortcut> {
         val keep = current.filter { it.pkg in picked }
@@ -64,7 +65,10 @@ object ShortcutSelection {
  */
 object ShortcutStrip {
 
-    /** Số khe của khối cho [n] app. Rỗng vẫn chiếm MỘT khe (ô "chọn lối tắt" — chạm ⇒ Cài đặt); không quá trần. */
+    /**
+     * Số khe của khối cho [n] app. Rỗng vẫn chiếm MỘT khe (ô "chọn lối tắt" — chạm ⇒ Cài đặt); không quá trần kỹ thuật
+     * [AppShortcutCodec.MAX] (2.92: hết trần 8 — khối dài theo số app, tràn thì khung cuộn của thanh cuộn).
+     */
     fun cells(n: Int): Int = n.coerceIn(1, AppShortcutCodec.MAX)
 }
 

@@ -108,4 +108,96 @@ class ProfileScopeMigrationTest {
         assertFalse(a.containsKey("camera_rot_left"), "khoá camera theo XE không được rót vào hồ sơ")
         assertEquals(cam.toSet(), a.keys)
     }
+
+    // ── 2.92 · PROFILE-NEW-KEYS — khoá vào phạm vi hồ sơ ở bản SAU lượt rót của nó ────────────────────────────────
+
+    private val cn = ProfileScopeCluster.CLUSTERNAV_FILE
+    private val cnKeys = ProfileScope.CLUSTERNAV_KEYS.getValue(cn)
+    private val newCam = listOf("camera_projection", "camera_zoom")
+
+    /**
+     * Khoá ca QA máy ảo 2.92 [ĐO]: hồ sơ «Mặc định» lưu bằng 2.9x (Nắn hình 0, chưa có khoá kiểu/thu phóng); ở hồ sơ
+     * A chọn *Thẳng rộng* 120 % rồi đổi sang ⇒ «Mặc định» cũng *Thẳng rộng* 120 % (phải là *Gương cầu* 100 %).
+     */
+    @Test
+    fun `ca QA 2_92 — kieu hinh va thu phong khong ro sang ho so luu bang ban cu`() {
+        val old = mapOf<String, Any?>("camera_dewarp_amount" to 0, "camera_shape" to "RECT")
+        val types = ProfileScopeCluster.DECLARED_TYPES
+        val liveAfterChoice = mapOf<String, Any?>("camera_projection" to "WIDE", "camera_zoom" to 120, "camera_dewarp_amount" to 100)
+
+        // Trước bản vá: lượt áp không chạm khoá vắng khỏi ảnh ⇒ giá trị của hồ sơ vừa rời ở lại (đúng bệnh đo được).
+        val leak = ClusterSnapshotPlan.apply(liveAfterChoice, old, cnKeys, emptyList(), types, emptyMap())
+        assertFalse("camera_projection" in leak.writes || "camera_zoom" in leak.writes, "mô tả bệnh: $leak")
+
+        // Bản vá: lúc nâng cấp (khoá mới VẮNG ở tệp sống) rót `null` vào ảnh cũ ⇒ lượt áp XOÁ ⇒ về kiểu suy từ Nắn hình 0.
+        val filled = ProfileScopeMigration.fillNewKeys(mapOf("Mặc định" to old), emptyMap(), newCam).getValue("Mặc định")
+        assertTrue(filled.containsKey("camera_projection") && filled["camera_projection"] == null)
+        assertTrue(filled.containsKey("camera_zoom") && filled["camera_zoom"] == null)
+        assertEquals(0, filled["camera_dewarp_amount"], "khoá có sẵn trong ảnh không bị đụng")
+        val edit = ClusterSnapshotPlan.apply(liveAfterChoice, filled, cnKeys, emptyList(), types, emptyMap())
+        assertTrue(edit.writes.containsKey("camera_projection") && edit.writes["camera_projection"] == null)
+        assertTrue(edit.writes.containsKey("camera_zoom") && edit.writes["camera_zoom"] == null)
+        assertEquals(0, edit.writes["camera_dewarp_amount"])
+        assertEquals("FISHEYE", com.byd.clusternav.launcher.camera.CameraViewMode.resolve(null, 0), "vắng + Nắn hình 0 ⇒ Gương cầu")
+    }
+
+    @Test
+    fun `ho so CHUA co anh khong bi de anh, khong cham ho tien to`() {
+        val shots = mapOf("A" to emptyMap(), "B" to mapOf<String, Any?>("cast_bubble_visible" to true))
+        val out = ProfileScopeMigration.fillNewKeys(shots, live, listOf("cast_style"), ProfileScopeCluster.DEFERRED)
+        assertEquals(setOf("B"), out.keys, "chưa có ảnh = bản sao của hiện tại (S4 · R5) — không đẻ ảnh cho nó")
+        assertFalse(out.getValue("B").containsKey(marker), "họ có mốc riêng — lượt này không chạm")
+        assertFalse(out.getValue("B").keys.any { it.startsWith("config_") }, "không rót họ")
+    }
+
+    @Test
+    fun `khoa moi rot gia tri DANG SONG, chi dien cho trong, chay hai lan khong doi`() {
+        val shots = mapOf(
+            "A" to mapOf<String, Any?>("enabled" to true),
+            "B" to mapOf<String, Any?>("vm_bubble_hidden" to false),
+        )
+        val live = mapOf<String, Any?>("vm_bubble_hidden" to true)
+        val out = ProfileScopeMigration.fillNewKeys(shots, live, listOf("vm_bubble_hidden"))
+        assertEquals(true, out.getValue("A")["vm_bubble_hidden"], "khoá đã có giá trị sống ⇒ ai cũng bắt đầu từ cái đang dùng")
+        assertFalse("B" in out, "B đã có khoá (kể cả khác giá trị sống) ⇒ của B, không chạm")
+        assertTrue(ProfileScopeMigration.fillNewKeys(shots + out, live + ("vm_bubble_hidden" to false), listOf("vm_bubble_hidden")).isEmpty())
+    }
+
+    @Test
+    fun `so da rot — chi khoa chua co trong so, so day thi khong con gi`() {
+        val scope = ProfileScope.CLUSTERNAV_KEYS
+        val all = ProfileScopeMigration.ledgerOf(scope)
+        assertTrue(ProfileScopeMigration.pendingKeys(scope, all).isEmpty())
+        assertEquals(scope, ProfileScopeMigration.pendingKeys(scope, emptySet()), "sổ rỗng (lần đầu) ⇒ duyệt mọi khoá")
+        val older = all - newCam.map { ProfileScopeMigration.ledgerEntry(cn, it) }.toSet()
+        assertEquals(mapOf(cn to newCam), ProfileScopeMigration.pendingKeys(scope, older))
+        assertTrue(all.none { it.count { c -> c == '/' } != 1 }, "mỗi mục đúng một dấu tách tệp/khoá")
+    }
+
+    /** Bốn khoá vào phạm vi hồ sơ SAU lượt rót V-CLUSTER (2.84) — phải nằm trong bảng mà sổ đã-rót duyệt. */
+    @Test
+    fun `bon khoa them sau 2_84 nam trong pham vi so da rot`() {
+        val scope = ProfileScope.CLUSTERNAV_KEYS
+        assertTrue(scope.getValue(cn).containsAll(newCam + "vm_bubble_hidden"), "${scope[cn]}")
+        assertTrue("cast_style" in scope.getValue(ProfileScopeCluster.SIMPLE_CAST_FILE))
+        assertEquals(ProfileScope.Scope.DEVICE, ProfileScope.scopeOf(ProfileScopeMigration.FILLED_LEDGER_KEY), "sổ theo XE")
+    }
+
+    /**
+     * Senior review 06/10 (Pass 1, [P2] tiềm ẩn) — sổ đã-rót CHỈ lo khoá cố định ở TỆP mà ảnh chụp đã có:
+     *  • "chưa có ảnh" của [ProfileScopeMigration.fillNewKeys] xét THEO TỆP. Khoá mới nằm ở một tệp prefs MỚI ⇒ ảnh của
+     *    tệp đó vắng ở MỌI hồ sơ ⇒ không hồ sơ nào được rót mà sổ vẫn ghi đã rót ⇒ R4 gãy im lặng (rò y ca QA 2.92).
+     *    Thêm tệp ⇒ đổi phép rót sang "hồ sơ ĐÃ TỪNG chụp ở bất kỳ tệp nào" trước, rồi mới sửa danh sách dưới;
+     *  • họ tiền tố không đi qua sổ: họ MỚI cần lượt rót có mốc riêng (khuôn [ProfileScopeMigration.rotDown] V-CLUSTER).
+     * Spec `kachi-292-profile-new-keys` §10 Pass 1.
+     */
+    @Test
+    fun `bang anh chup chua co tep hay ho moi — so da rot khong lo hai ca do`() {
+        assertEquals(
+            setOf(ProfileScopeCluster.CAST_CATALOG_FILE, cn, "clusternav_theme", ProfileScopeCluster.SIMPLE_CAST_FILE),
+            ProfileScope.CLUSTERNAV_KEYS.keys,
+            "tệp MỚI trong bảng ảnh chụp: sổ đã-rót bỏ qua nó ở mọi hồ sơ — đọc KDoc bài này trước khi sửa",
+        )
+        assertEquals(listOf("cast_geometry"), ProfileScopeCluster.FAMILIES.map { it.id }, "họ MỚI cần lượt rót có mốc riêng")
+    }
 }

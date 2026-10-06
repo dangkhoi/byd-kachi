@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test
 
 /**
  * B1b · CLUSTER-RECT-OPTION — đường nối coordinator: kiểu GHIM theo phiên (R5) · khung `__RECT` + đọc lại (R7, F4b). 2.90: khung
- * mặc định = trọn cụm (R4), không còn lớp km/h (R3), sổ của tiến trình trước không suy được kiểu (R2).
+ * mặc định = trọn cụm (R4), không còn lớp km/h (R3), sổ của tiến trình trước không suy được kiểu (R2). 2.92 · CLUSTER-FRAME-CHOSEN:
+ * kiểu chưa rõ ⇒ khung + khoá lưu theo kiểu người lái CHỌN (khung đã lưu được ghim, chỉnh tay lưu đúng ô).
  *
  * Xe giả = Seal 10.25" (`car.type=138` ⇒ kiểu gốc Chữ nhật — [ĐO 14/09 + 29/09] getprop; [ĐO-gv 05/10] nổ máy ⇒ theme2 gốc).
  * FakeShell in khung THẬT của task (`reportTaskBounds`, dạng dump `carlog-kachi-20260914-2044/10-am-stack-list.txt`) và có thể
@@ -255,15 +256,54 @@ class CastRectSessionCoordinatorTest {
     }
 
     /**
-     * 2.90 · R2 (gỡ cluster-r2-3 của 2.89) — sổ `31;ok` từ tiến trình TRƯỚC, màn ảo cụm còn: [ĐO xe 06/10] theme GIỮ qua nổ máy và
-     * 2.89 tin RECT trên cụm đang CONG ⇒ khung Chữ nhật, đen quanh Maps. Nay: kiểu UNKNOWN, khung trọn cụm (khoá Bo tròn), không ghim
-     * khung Chữ nhật đã lưu. Thử ĐỎ: trả lại ngoại lệ `<opcode gốc>;ok` trong `ThemeLedger.believed`.
+     * 2.90 · R2 (gỡ cluster-r2-3 của 2.89) — sổ `31;ok` từ tiến trình TRƯỚC, màn ảo cụm còn: kiểu tin vẫn UNKNOWN (sổ của tiến trình
+     * trước không chứng minh được kiểu cụm). 2.92 · CLUSTER-FRAME-CHOSEN — khung thì theo kiểu người lái CHỌN: ghim ĐÚNG khung Chữ
+     * nhật đã lưu ([ĐO log xe 06/10 15:13/15:17]: luật cũ "trọn cụm" bỏ khung đã lưu mỗi lần nổ máy). Thử ĐỎ: trả nhánh UNKNOWN của
+     * `CastSessionStyle.of` về Bo tròn.
      */
     @Test
-    fun `290 - so 31 ok tu tien trinh truoc, man ao con - kieu CHUA RO, khung tron cum`() {
+    fun `292 - so 31 ok tu tien trinh truoc, man ao con - kieu CHUA RO, khung DA LUU cua kieu chon`() {
+        saveCustom()
+        openUnknownRect()
+        assertEquals(listOf(16, 35), ops(), "màn ảo còn ⇒ 0 lệnh theme")
+        assertEquals(CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.RECT), coordinator.castSession)
+        val mark = castFull(custom)
+        assertEquals(CastBounds(60, 140, 1270, 540), (coordinator.state as SimpleCastState.CastingFull).pinned?.bounds,
+            "chưa rõ ⇒ khung Chữ nhật ĐÃ LƯU")
+        assertTrue(resizesTo(custom, mark) >= 1, "khung đã lưu được áp: ${shell.history.drop(mark)}")
+    }
+
+    /**
+     * 2.92 · CLUSTER-FRAME-CHOSEN · R2 — chỉnh tay (−/+, chip DPI) trong phiên CHƯA RÕ kiểu lưu vào khoá của kiểu người lái chọn
+     * (`__RECT`), không đụng khoá Bo tròn; chiếu lại trong CÙNG phiên ghim đúng khung + DPI vừa chỉnh — vế "không lưu vị trí, kích
+     * thước, chiếu qua lại bị loạn" owner tả 06/10 (luật 2.90 lưu vào khoá Bo tròn, lượt Chữ nhật sau không thấy). Thử ĐỎ: trả nhánh
+     * UNKNOWN của `CastSessionStyle.of` về Bo tròn.
+     */
+    @Test
+    fun `292 - chinh tay trong phien CHUA RO luu vao khoa kieu chon, chieu lai van dung khung`() {
+        openUnknownRect()
+        castFull()
+        coordinator.resizeActiveTarget(60, 140, 1270, 540)
+        awaitTrue { prefs.displayConfigFor(app, CastProfile.FULL.inStyle(CastStyle.RECT))?.bounds == CastBounds(60, 140, 1270, 540) }
+        coordinator.setDensity(160)
+        awaitTrue { prefs.displayConfigFor(app, CastProfile.FULL.inStyle(CastStyle.RECT))?.density == "160" }
+        assertNull(prefs.displayConfigFor(app, CastProfile.FULL), "khoá Bo tròn không bị đè: ${prefs.savedRecordKeys}")
+        coordinator.dispatch(SimpleCastIntent.Stop())
+        awaitState<SimpleCastState.Idle>()
+        val mark = castFull(custom)
+        val pinned = (coordinator.state as SimpleCastState.CastingFull).pinned
+        assertEquals(CastBounds(60, 140, 1270, 540), pinned?.bounds, "chiếu lại ⇒ khung vừa chỉnh")
+        assertEquals("160", pinned?.density, "chiếu lại ⇒ DPI vừa chỉnh")
+        assertTrue(shell.history.drop(mark).any { it.startsWith("wm density 160 -d ") }, "DPI vừa chỉnh được áp: ${shell.history.drop(mark)}")
+    }
+
+    /**
+     * Phiên CHƯA RÕ kiểu, dựng lại từ log xe 06/10 15:13/15:17: sổ `31;ok` của tiến trình TRƯỚC (BYD giết Kachi mỗi lần tắt máy),
+     * màn ảo cụm còn ⇒ cổng bỏ theme (VD_PRESENT, SKIP_KNOWN), sổ khác tiến trình không chứng minh được kiểu ⇒ UNKNOWN.
+     */
+    private fun openUnknownRect() {
         val prev = ThemeLedger.InMemory(ThemeLedger.encode(ThemeLedger.Entry(31, ThemeLedger.State.OK, 100_000, 4)))
         val clock = ThemeLedger.Clock { ThemeLedger.Now(elapsedMs = 500_000, boot = 4, processStartMs = 400_000) }
-        saveCustom()
         coordinator = SimpleCastCoordinator(
             ProjectionManager(shell, sleepMs = {}, recipe = seal138),
             DisplayConfigurator(shell), AppMover(shell, sleepMs = {}), prefs, shell,
@@ -271,11 +311,6 @@ class CastRectSessionCoordinatorTest {
         )
         shell.vdAbsentUntilCast = false                    // màn ảo cụm còn từ tiến trình trước ⇒ VD_PRESENT
         openRect()
-        assertEquals(listOf(16, 35), ops(), "màn ảo còn ⇒ 0 lệnh theme")
-        assertEquals(CastSessionStyle(CastStyle.RECT, BelievedStyle.UNKNOWN, CastStyle.CURVED, fullFrame = true), coordinator.castSession)
-        val mark = castFull()
-        assertEquals(ClusterRectLayout.FULL, (coordinator.state as SimpleCastState.CastingFull).pinned?.bounds, "chưa rõ ⇒ trọn cụm")
-        assertEquals(0, resizesTo(custom, mark), "không áp khung Chữ nhật đã lưu lên một cụm chưa rõ kiểu")
     }
 
     private inline fun <reified T : SimpleCastState> awaitState(timeoutMs: Long = 6000) {

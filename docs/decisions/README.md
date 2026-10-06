@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — ClusterNav 2.0
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-08-19 · **Mục đích**: Index + hướng dẫn định dạng cho các quyết định KIẾN TRÚC xuyên suốt (`docs/decisions/NNNN-*.md`).
+> **Trạng thái**: Current · **Cập nhật**: 2026-10-06 · **Mục đích**: Index + hướng dẫn định dạng cho các quyết định KIẾN TRÚC xuyên suốt (`docs/decisions/NNNN-*.md`).
 
 ADR ghi lại **quyết định kiến trúc + lý do** — loại doc #8 trong taxonomy 9-loại (`.kiro/steering/documentation-and-backlog.md` R4). Ranh giới với các loại khác:
 
@@ -57,4 +57,5 @@ Quy ước:
 |-----|---------|--------|------|
 | [0001](0001-nav-source-strategy.md) | Chiến lược nguồn dẫn đường per-app (GMaps notif · VietMap widget+a11y · Waze screen-capture) | Accepted | 2026-08-19 |
 | [0002](0002-hud-nav-coding-locked.md) | HUD kính ZIN nav = gate firmware (nghi phạm `0x38B00030`, CHƯA bác), không phải app · xe anh em là HUD **Taobao** (đường độc lập, không bác được cờ zin) · sửa 2 lần 2026-08-19 | Accepted (sửa ×2) | 2026-08-19 |
-| [0003](0003-datacollection-logging-default-off.md) | Thu thập dữ liệu (log + ảnh) mặc định OFF + storage cap ~150 MB | Accepted | 2026-08-19 |
+| [0003](0003-datacollection-logging-default-off.md) | Thu thập dữ liệu (log + ảnh) mặc định OFF + storage cap ~150 MB (phạm vi cap sửa bởi 0004) | Accepted | 2026-08-19 |
+| [0004](0004-storage-cap-allowlist.md) | Storage cap chỉ chạm DANH SÁCH tệp chẩn đoán, không bao giờ chạm dữ liệu người dùng (DIAG-CAP-USERDATA) | Accepted | 2026-10-06 |
