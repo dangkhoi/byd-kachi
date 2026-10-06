@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">
+  <!-- CAMERA TRƯỚC (`launcher_cam_front`, 2.93) — thân xe nhìn từ trên (nét, kính chắn gió mờ ở ĐẦU) + quạt tầm nhìn tô chuyển sắc mở ra phía TRƯỚC. -->
+  <style>:root{--ink:#ffffff;--main:#f59e0b;--light:#ffc75a;--deep:#b06f05}</style>
+  <path d="M11.2,9.6 L12.8,9.6 A2.2,2.2 0 0 1 15,11.8 L15,18.8 A2.2,2.2 0 0 1 12.8,21 L11.2,21 A2.2,2.2 0 0 1 9,18.8 L9,11.8 A2.2,2.2 0 0 1 11.2,9.6 Z" data-layer="main" fill="none" stroke="var(--main)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12,8.2 L7.6,2.4 L16.4,2.4 Z" data-layer="main" fill="var(--light)" stroke="none" data-fx="grad"/>
+  <path d="M10.4,13 L13.6,13" data-layer="sub" fill="none" stroke="var(--ink)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+</svg>

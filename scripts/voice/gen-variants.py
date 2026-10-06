@@ -26,8 +26,12 @@ câu ngay trên máy, lặp lại y hệt sau mỗi lần sửa tệp hotword �
    xuất hiện, thay vì tiêu hết hạn mức vào 2–3 khuôn đầu.
  • Khuôn có ĐỘNG TỪ đứng ngay trước `{n}` bị bỏ nếu cách gọi đã mang sẵn động từ — cùng luật với
    `SherpaPhraseHotwords.startsWithVerb` (*"mở mở khoá cửa"* là rác).
+ • 2.93 · NÚT 50% RIÊNG ([`half_buttons`]): nút có nút 50% (kính, từ 1.94) thì câu "nửa" (khuôn `HALF`) mang mã NÚT 50%,
+   không mang mã nút gốc — bản 09-17 sinh lúc kính còn là COVER nên *"mở nửa kính ghế lái"* mang `win_lf`; nút 50% tự nó
+   không nở từ nhãn (bỏ chữ số thì *"50% kính lái"* thành *"kính lái"* = trùng hệt nút gốc ⇒ *"bật kính lái"* mang nhầm mã 50%).
 
 Dùng:  python3 scripts/voice/gen-variants.py [--registry …] [--out …] [--max-per-id 20]
+       python3 scripts/voice/gen-variants.py --relabel-half      # chỉ áp luật NÚT 50% lên corpus đang có (xem `relabel_half`)
 """
 from __future__ import annotations
 
@@ -104,6 +108,28 @@ def starts_with_verb(noun: str) -> bool:
     return noun.split(" ", 1)[0].lower() in VERB_HEADS
 
 
+HALF_MARK = "nửa"
+HALF_PREFIX = "50% "
+
+
+def half_buttons(controls: list[dict]) -> dict[str, str]:
+    """
+    Mã nút gốc → mã nút 50% RIÊNG của nó: nút có nhãn đúng bằng `"50% " + nhãn gốc`, cùng hàm ghi (`bindingKey`) và cùng nhóm
+    (`domain`) — quy ước nhãn của bộ đăng ký từ 1.94 (5 nút 50% của kính); cùng quan hệ mà `VoiceHalfButton` (Kotlin) suy từ từ
+    vựng. Có hơn một ứng viên ⇒ bỏ (không đoán).
+    """
+    by_label: dict[str, list[dict]] = {}
+    for c in controls:
+        by_label.setdefault(unicodedata.normalize("NFC", c["label"]).lower(), []).append(c)
+    out: dict[str, str] = {}
+    for c in controls:
+        key = HALF_PREFIX + unicodedata.normalize("NFC", c["label"]).lower()
+        hs = [h for h in by_label.get(key, []) if h["bindingKey"] == c["bindingKey"] and h["domain"] == c["domain"]]
+        if len(hs) == 1:
+            out[c["id"]] = hs[0]["id"]
+    return out
+
+
 def expand(kind_tmpls, nouns, args, values, max_per_id):
     """Ghép luân phiên khuôn × cách gọi (× lựa chọn / trị số). Giữ thứ tự, khử trùng."""
     out: list[tuple[str, str, str]] = []
@@ -141,11 +167,42 @@ def expand(kind_tmpls, nouns, args, values, max_per_id):
     return out
 
 
+def relabel_half(path: str, half_of: dict[str, str], half_tmpls: list[str]) -> int:
+    """
+    Áp ĐÚNG luật nút 50% lên corpus ĐANG CÓ: dòng mang mã nút gốc C (có nút 50% H) mà câu là một khuôn `HALF` ⇒ đổi cột mã
+    thành H; mọi byte khác giữ nguyên.
+
+    Vì sao không sinh lại cả tệp [ĐO 2026-10-07]: `variants.tsv` là bản sinh 2026-09-17 (bộ đăng ký lúc ấy: kính còn là COVER,
+    còn `lock`/`door`/`window`…). Sinh lại theo bộ đăng ký hôm nay đổi 2 221 dòng (60 mã đã gỡ ra, 30 mã mới vào) và coverage
+    `VoiceGoldenCoverageTest` của bộ ĐÚNG rơi 87 % → 77 % (< sàn 85 %) — đó là một lượt LÀM MỚI corpus (cần việc riêng ở bộ phân
+    tích/sàn), không phải sửa nhãn. Chế độ này chỉ sửa đúng chỗ nhãn cũ trái luật mới.
+    """
+    pats = [re.compile("^" + re.escape(t).replace(re.escape("{n}"), "(.+)") + "$", re.IGNORECASE) for t in half_tmpls]
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    changed = []
+    for i, line in enumerate(lines):
+        if not line.strip() or line.startswith("#"):
+            continue
+        cols = line.split("\t")
+        if len(cols) == 5 and cols[0] in half_of and any(p.match(cols[4].strip()) for p in pats):
+            changed.append(f"  {cols[0]} → {half_of[cols[0]]}: {cols[4]}")
+            cols[0] = half_of[cols[0]]
+            lines[i] = "\t".join(cols)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    print(f"== đổi mã {len(changed)} dòng (luật nút 50%) trong {path}")
+    print("\n".join(changed))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--registry", default=os.path.join(REPO, "core/build/catalog/registry.json"))
     ap.add_argument("--out", default=os.path.join(DATA, "variants.tsv"))
     ap.add_argument("--max-per-id", type=int, default=20)
+    ap.add_argument("--relabel-half", action="store_true",
+                    help="chỉ áp luật nút 50% lên tệp --out đang có (không sinh lại) — xem relabel_half")
     a = ap.parse_args()
 
     reg = json.load(open(a.registry, encoding="utf-8"))
@@ -153,6 +210,9 @@ def main() -> int:
     tmpls: dict[str, list[tuple[str, str, str]]] = {}
     for kind, region, style, tmpl in rows(os.path.join(DATA, "templates.tsv"), 4):
         tmpls.setdefault(kind, []).append((region, style, tmpl))
+
+    if a.relabel_half:
+        return relabel_half(a.out, half_buttons(reg["controls"]), [t for _, _, t in tmpls.get("HALF", [])])
 
     extra_nouns: dict[str, list[tuple[str, str]]] = {}
     drop_base: set[str] = set()
@@ -193,20 +253,30 @@ def main() -> int:
                      f"(đang có: {', '.join(sorted(tmpls))})")
         return tmpls[tkind]
 
-    def run(rid, ikind, tkind, label, short, args=None):
+    def run(rid, ikind, tkind, label, short, args=None, noun_id=None, no_half=False):
+        # `noun_id`: cách gọi lấy theo mã KHÁC mã gắn nhãn (câu "nửa" của nút 50% dùng cách gọi của nút gốc).
+        kind_tmpls = [t for t in templates_for(tkind) if not (no_half and HALF_MARK in t[2])]
         for region, style, text in expand(
-            templates_for(tkind), nouns_for(rid, label, short), args or [], units.get(rid, []), a.max_per_id
+            kind_tmpls, nouns_for(noun_id or rid, label, short), args or [], units.get(rid, []), a.max_per_id
         ):
             emit(rid, ikind, region, style, text)
 
+    half_of = half_buttons(reg["controls"])
+    half_ids = set(half_of.values())
+    kind_by_id = {c["id"]: c["kind"] for c in reg["controls"]}
     for c in reg["controls"]:
         # Registry sinh bằng máy từ ControlRegistry: thêm một ControlKind mới mà quên bảng này thì
         # trước đây script chết bằng KeyError trần, không nói là kind nào.
         if c["kind"] not in KIND_OF_CONTROL:
             sys.exit(f"ControlKind {c['kind']!r} (nút {c['id']!r}) chưa có trong KIND_OF_CONTROL — "
                      f"thêm vào bảng ở đầu tệp rồi chạy lại")
+        if c["id"] in half_ids:
+            continue  # nút 50%: chỉ có câu "nửa" của nút gốc (ngay dưới) — xem KDoc đầu tệp
         tkind, ikind = KIND_OF_CONTROL[c["kind"]]
-        run(c["id"], ikind, tkind, c["label"], c.get("short"), c.get("args") or [])
+        half = half_of.get(c["id"])
+        run(c["id"], ikind, tkind, c["label"], c.get("short"), c.get("args") or [], no_half=half is not None)
+        if half is not None:
+            run(half, KIND_OF_CONTROL[kind_by_id[half]][1], "HALF", c["label"], c.get("short"), noun_id=c["id"])
     for t in reg["telemetry"]:
         run(t["id"], "telemetry_read", "READ", t["label"], t.get("short"))
     for m in reg["macros"]:

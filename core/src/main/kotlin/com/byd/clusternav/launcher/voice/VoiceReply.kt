@@ -51,7 +51,8 @@ object VoiceReply {
     fun preview(i: VoiceIntent, lang: Lang = Strings.current): String = when (i) {
         is VoiceIntent.Control -> VoiceReplyPreview.control(i, lang)
         is VoiceIntent.Macro -> Strings.t("Chạy gói ", "Run pack ", lang) + labelOf(i.id, lang)
-        is VoiceIntent.Launcher -> Strings.t("Mở ", "Open ", lang) + labelOf(i.id, lang)
+        // 2.93 — camera theo yêu cầu: câu nói đúng việc (KDoc [VoiceReplyPreview.launcher]).
+        is VoiceIntent.Launcher -> VoiceReplyPreview.launcher(i, lang)
         is VoiceIntent.Profile -> Strings.t("Đổi sang hồ sơ ", "Switch to profile ", lang) + ProfileNames.display(i.name, lang)
         is VoiceIntent.Read -> Strings.t("Xem ", "Show ", lang) + labelOf(i.datumId, lang)
         is VoiceIntent.Nav -> Strings.t("Dẫn đường tới ", "Navigate to ", lang) + i.query + VoiceReplyPreview.by(i.app, lang)

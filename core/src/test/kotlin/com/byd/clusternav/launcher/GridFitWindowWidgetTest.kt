@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * ═══ QA 04/10 (làn H1) — widget 6 nút kính: chỉ-icon méo + nút 24dp, tiếng Mã Lai mất hết nhãn ═══════════════════
  *
- * Bằng chứng QA ([ĐO] máy ảo, bản 149dcab, nhật ký `l5/ms-dock-apps1-widgetfit.log` và các tệp cùng họ): khung 301×123 ⇒ `6x1 cell=36x99
+ * Bằng chứng QA ([ĐO] máy ảo, bản 149dcab, nhật ký `ms-dock-apps1-widgetfit.log` (bằng chứng phiên, ngoài repo) và các tệp cùng họ): khung 301×123 ⇒ `6x1 cell=36x99
  * ICON_ONLY k=2.000 touch=false`; tiếng Mã Lai ⇒ `ICON_ONLY` ở MỌI khung kể cả 615×123.
  *
  * Bốn bài khoá:
@@ -86,7 +86,7 @@ class GridFitWindowWidgetTest {
     @Test
     fun `khong ung vien nao dat 48dp - o gan dich cham hon dung truoc co chu`() {
         // Hộp chỉ-icon HẸP (như bản 149dcab đo nhầm 17px): 6×1 cho k chạm trần 2,0 nhưng ô rộng 36px = 24dp; 3×2 cho ô
-        // 84×43px (cạnh ngắn 43px). Bản cũ chọn 6×1 vì cỡ lớn hơn — đúng ảnh `l5/icononly-zoom.png`.
+        // 84×43px (cạnh ngắn 43px). Bản cũ chọn 6×1 vì cỡ lớn hơn — đúng ảnh `icononly-zoom.png` (bằng chứng phiên, ngoài repo).
         val narrow = listOf(Shape(Form.ICON_ONLY, 16.0, 48.0, 0.8))
         val f = GridFit.fit(6, 301, 123, narrow, spec)
         assertEquals(3 to 2, f.cols to f.rows, label(f))
@@ -181,8 +181,8 @@ class GridFitWindowWidgetTest {
     // ── J1 · QA2 04/10 — hộp ĐO từ nhật ký, nhãn ngắn, đích chạm trước loại nhãn ──────────────────────────────────
 
     /**
-     * Hộp tự nhiên (px ở thang 1) SUY NGƯỢC từ nhật ký `WidgetFit` của QA2 ([ĐO] `qa2/a/{vi,zh,th,ms}-{dock,nodock,quad-dock}
-     * -widgetfit.log`, công cụ ngoài repo `boxes.py`): mỗi dòng `cell + raw` cho một khoảng của hộp dạng được chọn (`raw·w ≤ ô−2`
+     * Hộp tự nhiên (px ở thang 1) SUY NGƯỢC từ nhật ký `WidgetFit` của QA2 ([ĐO] `{vi,zh,th,ms}-{dock,nodock,quad-dock}
+     * -widgetfit.log` — bằng chứng phiên, ngoài repo; công cụ ngoài repo `boxes.py`): mỗi dòng `cell + raw` cho một khoảng của hộp dạng được chọn (`raw·w ≤ ô−2`
      * và bậc kế không vừa); giá trị dưới nằm trong GIAO mọi khoảng. Dạng chưa bao giờ được chọn (ZH/TH ngang-2) lấy từ mô
      * hình phông [SUY]. Nhãn NGẮN: VI dọc-2 hẹp hơn 4px (`Kính ST`/`Kính SP` thay `Kính sau trái/phải`, gói lệnh vẫn
      * `Đóng hết kính` — PIL); ZH/TH nhãn ngắn = nhãn đầy, MS `Kaca penumpang` ngắn = đầy ⇒ hộp nhãn ngắn = hộp đầy.

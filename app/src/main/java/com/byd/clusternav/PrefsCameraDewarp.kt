@@ -218,7 +218,10 @@ fun Prefs.setCameraGlTexMatrix(ctx: Context, v: Boolean) =
  *   `camera_dewarp_pan_x` phải theo bên ([CameraDewarpPrefs.panXSign]), và một mặc định ở đây là đúng chỗ để quên.
  * @param mirror LẬT GƯƠNG bên này (2.76 L7, [Prefs.cameraMirror]) — đi vào `flipH` = `uSrcRect.z < 0`, tức lật ở
  *   không gian NGUỒN trước xoay/dịch/nắn. Cũng **không** có mặc định, cùng lẽ với [left]: đây là pref theo bên.
+ * @param panXSign 2.93 — dấu dịch x của CAMERA đang xem (`CameraWhich.panXSign`: trái +1 · phải −1 · sau/trước 0 ⇒ hai
+ *   núm dịch theo bên không áp). KHÔNG mặc định: chỗ gọi duy nhất (`CameraSignalController.openSession`) nói từ camera.
  */
+@Suppress("LongParameterList")
 fun Prefs.cameraGlUniforms(
     ctx: Context,
     mode: String,
@@ -230,6 +233,7 @@ fun Prefs.cameraGlUniforms(
     streamH: Int,
     left: Boolean,
     mirror: Boolean,
+    panXSign: Int,
 ): CameraGlUniforms = CameraViewPlan.gl(
     mode = mode,
     zoomPct = zoomPct,
@@ -242,6 +246,7 @@ fun Prefs.cameraGlUniforms(
     left = left,
     knobs = cameraViewKnobs(ctx),
     texMatrix = cameraGlTexMatrix(ctx),
+    panXSign = panXSign,
 )
 
 /**

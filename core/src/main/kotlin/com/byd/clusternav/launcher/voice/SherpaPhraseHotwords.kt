@@ -89,6 +89,10 @@ object SherpaPhraseHotwords {
         ActionMacros.ALL.forEach { out.add(it.label) }
         // Hành động launcher: *"mở ứng dụng"* · *"mở cài đặt"* — nhãn rời (*"Ứng dụng"*) là một từ, sẽ rụng.
         LauncherActions.ALL.forEach { a -> out.add(a.label); forms(VoiceVerb.OPEN).forEach { out.add("$it ${a.label}") } }
+        // 2.93 — việc có trạng thái (camera theo yêu cầu) còn được TẮT bằng lời: *"tắt camera sau"* cũng là một cụm.
+        LauncherActions.ALL.filter { it.switchable }.forEach { a -> forms(VoiceVerb.OFF).forEach { out.add("$it ${a.label}") } }
+        // 2.93 — nhiều cách gọi camera (*"CAM TRÁI"* · *"MỞ CAM BÊN TRÁI"* · *"TẮT CAMERA LÙI"*) — bảng ở [VoiceCameraPhrases].
+        out.addAll(VoiceCameraPhrases.hotwordPhrases())
         // Nhạc: *"phát nhạc"* · *"dừng nhạc"* · *"bài tiếp theo"*; động từ NEXT/PREV đã là cụm, từ rời (*"tiếp"*) rụng.
         val media = accented(VoiceSynonyms.MEDIA_WORDS)
         (forms(VoiceVerb.PLAY) + forms(VoiceVerb.PAUSE)).forEach { v -> media.forEach { out.add("$v $it") } }

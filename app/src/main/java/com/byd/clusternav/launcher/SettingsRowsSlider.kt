@@ -63,15 +63,20 @@ internal fun SettingsRows.sliderRow(
         max = positions
         progress = current.coerceIn(0, positions)
         keyProgressIncrement = 1
-        // Màu theo bảng của Kachi (không phải màu nhấn của theme hệ thống): đoạn đã kéo + núm = ACCENT, rãnh = MUT.
+        // Màu theo bảng của Kachi (không phải màu nhấn của theme hệ thống): đoạn đã kéo + núm = ACCENT, rãnh = MUT (2.88 —
+        // lịch sử dưới; 2.93 thay bằng drawable riêng, rãnh MUT2 ≥ 3:1).
         // Soát Pass 10 [P2]: rãnh KHÔNG dùng FIELD_SUNKEN — hàng nằm thẳng trên thẻ PANEL, mà FIELD_SUNKEN/PANEL chỉ ≈ 1.11:1
         // (tối) / 1.34:1 (sáng) ngay cả khi đục; rãnh Material còn vẽ ở `?attr/disabledAlpha` (0.30, `seekbar_track_
         // material.xml` [ĐO tài nguyên android-34; r47 [SUY] giống]) ⇒ ≈ 1.03–1.09:1, ở vị trí 0 chỉ còn một chấm núm.
         // MUT (vai Material dùng cho rãnh là `colorControlNormal` — mực phụ) ở 30 % ≈ 1.80:1 tối · 1.60:1 sáng [SUY tính
         // tay từ bảng] — trên ngưỡng nhìn-ra-được ~1.15× của `SettingsRows.checkRow`.
-        progressTintList = ColorStateList.valueOf(c(KachiTheme.ACCENT))
+        // 2.93 SLIDER-RAIL-CONTRAST — [ĐO máy ảo QA 04/10, ảnh `t3-slider-row-*`] cách tô rãnh trên (MUT ở disabledAlpha của
+        // theme ROM) chỉ ra 1,6:1 (sáng) / 1,81:1 (tối), dưới 3:1 của điều khiển. Nay rãnh + đoạn đã kéo là drawable RIÊNG
+        // ([sliderRail]) — không còn phụ thuộc alpha của theme ROM; độ đục rãnh = mức nhạt nhất vẫn ≥ 3:1 trên PANEL.
+        progressDrawable = sliderRail(context)
+        val rail = dpi(context, Sp.XS)
+        minHeight = rail; maxHeight = rail
         thumbTintList = ColorStateList.valueOf(c(KachiTheme.ACCENT))
-        progressBackgroundTintList = ColorStateList.valueOf(c(KachiTheme.MUT))
     }
     fun show(pos: Int) {
         val text = valueText(pos)
@@ -104,3 +109,25 @@ internal fun SettingsRows.sliderRow(
         addView(value, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
     }
 }
+
+/**
+ * 2.93 `SLIDER-RAIL-CONTRAST` — `progressDrawable` riêng của thanh kéo Cài đặt: RÃNH (lớp `background`) = MUT2 ở độ đục nhạt
+ * NHẤT mà vẫn ≥ [RAIL_FLOOR] trên thẻ PANEL ([IconFade.offAlpha] — cùng phép dò "mờ nhất còn đạt sàn", `:core`), ĐOẠN ĐÃ KÉO
+ * (lớp `progress`, `ClipDrawable` theo mức) = ACCENT đục. Cả hai bo tròn, cao bằng `min/maxHeight` của thanh (4 dp). Không
+ * còn đi qua `progressBackgroundTintList` (theme ROM vẽ nó ở `disabledAlpha` 0,30 ⇒ 1,6:1 sáng / 1,81:1 tối [ĐO QA 04/10]).
+ */
+internal fun sliderRail(context: android.content.Context): android.graphics.drawable.Drawable {
+    val r = dpi(context, Sp.RADIUS_PILL).toFloat()
+    val alpha = IconFade.offAlpha(c(KachiTheme.MUT2), intArrayOf(c(KachiTheme.PANEL)), 0.0, floor = RAIL_FLOOR)
+    val rail = android.graphics.drawable.GradientDrawable().apply {
+        cornerRadius = r; setColor(ColorMath.scaleAlpha(ColorMath.withAlpha(c(KachiTheme.MUT2), 255), alpha))
+    }
+    val done = android.graphics.drawable.GradientDrawable().apply { cornerRadius = r; setColor(c(KachiTheme.ACCENT)) }
+    val clip = android.graphics.drawable.ClipDrawable(done, Gravity.START, android.graphics.drawable.ClipDrawable.HORIZONTAL)
+    return android.graphics.drawable.LayerDrawable(arrayOf(rail, clip)).apply {
+        setId(0, android.R.id.background); setId(1, android.R.id.progress)
+    }
+}
+
+/** Sàn tương phản của rãnh thanh kéo — WCAG 1.4.11 (thành phần điều khiển) 3:1. */
+internal const val RAIL_FLOOR = 3.0

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 /**
  * ═══ J1 (2.87, QA2 04/10) — chữ TÊN của từng ô: nhãn đầy · nhãn ngắn · cắt đầu, và luật PHÂN BIỆT ([FitLabels]) ════════
  *
- * Khoá hai lỗi P2 của QA2 ([ĐO] máy ảo, `qa2/a/fit-2x1-dock-4lang.png`, `qa2/a/fit-3x1-th-ms.png`): widget 6 nút kính
+ * Khoá hai lỗi P2 của QA2 ([ĐO] máy ảo, `fit-2x1-dock-4lang.png`, `fit-3x1-th-ms.png` (bằng chứng phiên, ngoài repo)): widget 6 nút kính
  * (4 kính + mở/đóng hết) trong khung 2×1 / 3×1 không bố cục nào đọc được ⇒ nhãn bị `…` tới mức các nút hiện Y HỆT nhau.
  *
  * Chữ thấy được trong các ca dưới:

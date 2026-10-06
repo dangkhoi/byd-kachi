@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher.behind
 
 import com.byd.clusternav.launcher.ShellAppLauncher
+import com.byd.clusternav.launcher.trip.TripGate
 import com.byd.clusternav.modules.clustercast.StackEntry
 
 /**
@@ -15,20 +16,40 @@ import com.byd.clusternav.modules.clustercast.StackEntry
  * Dấu = `taskId:gói` (khoá `kachi_behind_marks`, tệp theo xe `clusternav_state`, ghi `commit()` TRƯỚC `move-task`).
  * Lúc thức (chuỗi SẴN), bản đọc thấy stack ĐỈNH display 0 đang hiện mà chỉ chứa task có dấu ([surfaced]) ⇒ đưa HOME lên
  * qua rào camera (K12). Dấu của task không còn trên display 0 bị tỉa ([prune]).
+ *
+ * ## 2.93 · BEHIND-MARKS-BOOT — dấu kèm khoá LẦN KHỞI ĐỘNG máy (spec `docs/specs/kachi-293-slot.html` R5)
+ * Dấu chỉ có nghĩa trong lần khởi động đã ghi nó: khởi động lại THẬT giết mọi tiến trình, task Kachi đẩy ra sau màn nhà không
+ * còn là "của Kachi" ở đời máy mới (task khôi phục từ Gần đây là người lái tự mở lại) [SUY mô hình task Android]. Id task trên
+ * xe bắt đầu lại từ số nhỏ ([ĐO dump xe 14/09: taskId 4–10]; máy ảo giữ id liên tục 2 000+ qua 39 lần khởi động [ĐO]) ⇒ một dấu
+ * cũ có thể trùng đúng id + gói của app vừa mở ⇒ K12 đè lên nó một lần. Nay mục đầu chuỗi là `@<khoá>` ([encode]) — khoá
+ * `TripGate.bootKey` (`n<BOOT_COUNT>`, [ĐO nguồn] tăng đúng một lần mỗi lần khởi động); [forBoot] chỉ trả dấu của ĐÚNG lần
+ * khởi động hiện tại. Bỏ dấu khi CẢ HAI khoá đều là dạng BOOT_COUNT (ổn định cả lần khởi động); khoá lùi theo giờ tường (`w…`,
+ * giờ tường bị chỉnh giữa phiên — [ĐO xe 14/09]) hoặc chuỗi của bản ≤ 2.92 (không khoá) ⇒ giữ như cũ: không biết thì không
+ * bỏ. Bản cũ đọc chuỗi mới vẫn đúng: mục `@…` không có `:` ⇒ rơi vào nhánh rác của [decode] (hạ cấp an toàn).
  */
 object BehindMarks {
 
     /** Trần số dấu — mỗi lượt đặt tạm thêm tối đa một; quá trần ⇒ bỏ dấu cũ nhất (task cũ nhất ít khả năng còn sống). */
     const val MAX = 16
 
-    fun encode(marks: Map<Int, String>): String =
-        marks.entries.toList().takeLast(MAX).joinToString(",") { "${it.key}:${it.value}" }
+    /** Tiền tố mục khoá lần khởi động trong chuỗi dấu (R5). */
+    private const val BOOT_MARK = "@"
 
-    /** Chuỗi lạ ⇒ bỏ mục (không ném): đến từ đĩa. Thứ tự giữ nguyên (cũ → mới). */
+    /** Khoá lần khởi động hợp lệ để ghi kèm (dạng `TripGate.bootKey`: `n39` · `w29012345`) — không `,`/`:` lọt vào chuỗi dấu. */
+    private val BOOT = Regex("[A-Za-z0-9.]{1,32}")
+
+    /** Mã hoá dấu; [boot] (khoá lần khởi động — R5) hợp lệ ⇒ mục đầu `@<boot>`. Khoá lạ (ký tự ngoài [BOOT]) ⇒ không ghi khoá. */
+    fun encode(marks: Map<Int, String>, boot: String? = null): String {
+        val items = marks.entries.toList().takeLast(MAX).joinToString(",") { "${it.key}:${it.value}" }
+        return if (boot == null || !boot.matches(BOOT)) items else "$BOOT_MARK$boot,$items"
+    }
+
+    /** Chuỗi lạ ⇒ bỏ mục (không ném): đến từ đĩa. Thứ tự giữ nguyên (cũ → mới). Mục khoá lần khởi động (`@…`) không phải dấu. */
     fun decode(raw: String?): Map<Int, String> {
         if (raw.isNullOrBlank()) return emptyMap()
         val out = LinkedHashMap<Int, String>()
         for (item in raw.split(',')) {
+            if (item.trim().startsWith(BOOT_MARK)) continue
             val cut = item.indexOf(':')
             if (cut <= 0) continue
             val id = item.substring(0, cut).trim().toIntOrNull() ?: continue
@@ -36,6 +57,20 @@ object BehindMarks {
             if (id > 0 && pkg.matches(ShellAppLauncher.PKG)) out[id] = pkg
         }
         return out
+    }
+
+    /** Khoá lần khởi động ghi kèm chuỗi [raw] (`null` = chuỗi của bản ≤ 2.92 / không khoá / khoá lạ). */
+    fun bootOf(raw: String?): String? = raw?.split(',')?.firstOrNull()?.trim()
+        ?.takeIf { it.startsWith(BOOT_MARK) }?.substring(BOOT_MARK.length)?.takeIf { it.matches(BOOT) }
+
+    /**
+     * R5 — dấu dùng được ở lần khởi động [boot] (KDoc lớp): chuỗi ghi ở lần khởi động KHÁC (cả hai khoá dạng BOOT_COUNT —
+     * [TripGate.stableBoot]) ⇒ rỗng; còn lại ⇒ [decode] như bản ≤ 2.92.
+     */
+    fun forBoot(raw: String?, boot: String?): Map<Int, String> {
+        val written = bootOf(raw)
+        val stale = written != null && boot != null && TripGate.stableBoot(written) && TripGate.stableBoot(boot) && written != boot
+        return if (stale) emptyMap() else decode(raw)
     }
 
     fun add(marks: Map<Int, String>, taskId: Int, pkg: String): Map<Int, String> =

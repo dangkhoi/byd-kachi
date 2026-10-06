@@ -207,7 +207,8 @@ class SettingsCatalogControlContractTest {
             // ⚠ `system_vietmap_data` + `system_diagnostics` đã rời cả DANH MỤC lẫn bảng này (owner 2026-09-21, bản
             // release production): hai nút ấy gỡ khỏi Cài đặt cùng mọi bề mặt dev. Giữ dòng canh cho một mã đã bỏ
             // là để bài này canh một thứ không còn — chính ca "bài canh rữa" mà hai phép `assertEquals` dưới đây
-            // sinh ra để bắt. `ClusterNavBridge.openVietMapData()/openDiagnostics()` ở lại cho đường adb.
+            // sinh ra để bắt. (2.93: `openVietMapData()/openDiagnostics()` 0 chỗ gọi ⇒ gỡ ở wave 2C; `am start` KHÔNG mở được hai màn ấy —
+            // `exported=false`; wave 2B: lối duy nhất là lệnh cầu `diag_screen` — xem chú thích `DiagActivity` ở AndroidManifest.)
             // T-BRIDGE — công tắc "Chế độ kiểm thử qua adb" (docs/specs/kachi-test-bridge.html). Control là ô tick
             // ghi thẳng vào `TestBridgeStore`: khoá này là trạng thái PHIÊN (tự hết hạn), không đi qua ViewModel.
             "system_test_bridge" to ("SettingsSections" to "TestBridgeStore.enable("),

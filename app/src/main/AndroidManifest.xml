@@ -86,7 +86,13 @@
 
         <!-- Màn điều khiển: bật/tắt, trạng thái, chọn nguồn, cấp quyền -->
         <!-- Màn CHẨN ĐOÁN: gom mọi thứ kỹ thuật về 1 chỗ để anh em chụp màn gửi dev.
-             exported=false — mở từ nút trong app; adb vẫn 'am start' được activity non-exported. -->
+             exported=false. ⚠ 2.93 CODE-FIX-AFTER-283: trên bản PHÁT HÀNH màn này KHÔNG mở được — nút trong Cài đặt đã
+             gỡ (21/09) và adb 'am start' một activity non-exported bị từ chối ("Permission Denial … not exported from
+             uid" — AOSP 10 r47 ActivityStackSupervisor.checkStartAnyActivityPermission; shell không có
+             START_ANY_ACTIVITY; [ĐO xe 29/09] am start ném ngoại lệ). Đồ đo trên xe đi qua cầu kiểm thử (KachiTestBridge:
+             a11ylog · diag · …) sau công tắc Chế độ kiểm thử. 2.93 wave 2B · DIAG-SCREENS-UNREACHABLE: hai màn chẩn đoán
+             (màn này + VietMapWidgetDiagActivity) mở được CHỈ bằng lệnh cầu `diag_screen` (name = diag | vietmap; cùng
+             cổng Chế độ kiểm thử; app tự startActivity trong tiến trình của mình) — vẫn KHÔNG có lối vào UI nào. -->
         <activity
             android:name=".modules.clustercast.DiagActivity"
             android:exported="false"
@@ -324,8 +330,9 @@
              exported=true BẮT BUỘC — [ĐO] uid shell (2000) KHÔNG gửi được vào receiver non-exported
              (SecurityException), cùng họ với ca `am start` ở `.ClusterNavActivity` đã ghi 2026-07-20.
              ⚠ Vì exported nên mọi app trên xe bắn vào được; cổng thật là công tắc "Chế độ kiểm thử qua adb"
-             (Cài đặt › Hệ thống & quyền › Nâng cao) — tự tắt sau 60 phút, chết theo lần nổ máy, KHÔNG bật được
-             bằng broadcast. Tắt ⇒ mọi lệnh trả `test_mode_off` và không nhánh nào chạy (KachiTestBridge).
+             (Cài đặt › Hệ thống & quyền › Nâng cao) — tự tắt sau 60 phút HOẶC khi tắt máy (2.93 TEST-MODE-ACC-OFF:
+             claim tắt-máy của lớp 1, vì tắt máy BYD không đổi boot_id), KHÔNG bật được bằng broadcast.
+             Tắt ⇒ mọi lệnh trả `test_mode_off` và không nhánh nào chạy (KachiTestBridge).
              Action dùng ${applicationId} để tên gói là MỘT nguồn cho cả manifest lẫn KachiTestBridge.action().
              lint ExportedReceiver: KHÔNG thêm android:permission — uid shell (2000) không giữ được permission tự
              khai ⇒ chặn luôn adb, mất mục đích cầu; cổng thật là công tắc test-mode ở trên. -->

@@ -80,7 +80,9 @@ class ControlStateUxContractTest {
     @Test
     fun `trang thai TAT ha do duc cua ICON chu khong ha ca o`() {
         val tint = SourceRoots.body(factory, "private fun tint(")
-        assertTrue(tint.contains("icon.alpha ="), "R2.1 'icon active/mờ' — trạng thái tắt phải hạ độ đục của icon")
+        // 2.93 WIDGET-ICON-OFF-FAINT (đổi ghim có lý do): độ đục TẮT nay đặt qua `KachiIcons.fadeOff` — vẫn hạ độ đục của
+        // ICON (tới ICON_OFF_ALPHA) nhưng giữ lớp chính ≥ 4,5:1 trên nền ô tắt (IconFade, :core — IconFadeTest).
+        assertTrue(tint.contains("KachiIcons.fadeOff(icon, size.iconDp, active, ICON_OFF_ALPHA)"), "R2.1 'icon active/mờ' — trạng thái tắt phải hạ độ đục của icon")
         assertFalse(
             tint.contains("label.alpha ="),
             "NHÃN phải giữ độ đục: nó trả lời 'ô này là cái gì', câu đó không phụ thuộc bật/tắt " +

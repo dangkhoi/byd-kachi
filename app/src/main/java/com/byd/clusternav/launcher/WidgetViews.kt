@@ -24,45 +24,6 @@ import com.byd.clusternav.launcher.WidgetTelemetry.telemetryMini
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
- * Dữ liệu xe MẪU (emulator/demo) — GIỮ cho tương thích; **KHÔNG còn nằm trên đường wire** (OQ1: off-car "—", KHÔNG
- * demo). Đường thật = [CarStatus] LIVE bơm qua [HomeUiState.carStatus]; off-car mọi field null ⇒ widget "—".
- */
-object DemoCarData : CarDataPort {
-    override fun batteryPercent() = 82
-    override fun rangeKm() = 418
-    override fun tirePressuresBar() = listOf(2.4, 2.4, 2.3, 2.1)
-    override fun pm25Level() = 2
-    override fun speedKmh() = 56
-    override fun outsideTempC() = 26
-}
-
-/**
- * Gói dữ liệu render cho widget: trạng thái xe [car] (nguồn sự thật state) + nhạc [media] (đọc live) + transport
- * [onMedia] + cổng ra lệnh [control].
- *
- * [control] có mặt từ RW0: ô giữa màn nay nhận được **cả hành động** (R2), và hành động thì phải có đường ra xe.
- * Mặc định [NoCar] ⇒ off-car/emulator bấm không làm gì, không sập.
- */
-class WidgetData(
-    val car: CarStatus = CarStatus(),
-    val media: MediaSnapshot? = null,
-    val onMedia: (String) -> Unit = {},
-    val control: CarControlPort = NoCar,
-    /**
-     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13). Mặc định = [UnitPrefs.DEFAULT] ⇒ mọi chỗ gọi cũ và test cũ giữ
-     * nguyên hành vi (R12: không đổi gì thì không thấy khác biệt).
-     */
-    val units: UnitPrefs = UnitPrefs.DEFAULT,
-    /**
-     * U4(b) — nguồn ảnh cho widget trình chiếu. Chỗ gọi đọc thư mục MỘT LẦN rồi truyền vào; để mỗi ô tự đọc thư mục
-     * là I/O lặp lại trên thread chính mỗi lần dựng ô.
-     */
-    val photos: List<String> = emptyList(),
-    /** U4(b) — chu kỳ đổi ảnh của widget trình chiếu. */
-    val photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC,
-)
-
-/**
  * Dựng View cho 1 widget. Ba họ:
  *  • **curated** (`w_*` trong [WidgetRegistry]) — thẻ dựng tay bám prototype, đọc từ [CarStatus].
  *  • **generic telemetry** (mọi `id` ĐỌC khác trong [TelemetryRegistry]) — render THEO [WidgetShape] qua
@@ -83,7 +44,7 @@ class WidgetData(
 object WidgetViews {
 
 
-    fun build(ctx: Context, id: String, data: WidgetData): View = when (id) {
+    fun build(ctx: Context, id: String, data: WidgetData, scrollKey: String? = null): View = when (id) {
         "w_clock" -> clock(ctx, data)
         "w_energy" -> energyRing(ctx, data)
         "w_pm25" -> pm25Ring(ctx, data)
@@ -93,26 +54,28 @@ object WidgetViews {
         "w_car" -> carState(ctx, data)
         "w_board" -> board(ctx, data)
         "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
-        "w_apps" -> ShortcutIconsView(ctx, grid = true)   // F1 R1.3 — tự nghe danh sách lối tắt (ShortcutHub)
+        "w_apps" -> ShortcutIconsView(ctx, grid = true, scrollKey = scrollKey)   // F1 R1.3 — tự nghe danh sách lối tắt (ShortcutHub)
         // G1·T3: NHÓM khả năng → ba bộ vẽ dùng chung. Đặt TRƯỚC nhánh hành động (thứ tự y như
         // [CapabilityCatalog.kindOf]); bảng 4 bánh truyền vào bằng lambda để KHÔNG có bản dựng thứ hai.
         else -> if (CapabilityGroups.byId(id) != null) GroupTiles.build(ctx, id, data) { c, d -> tyreBoard(c, d) }
         // Hành động → ô bấm được; còn lại (đọc) → đường telemetry cũ, KHÔNG đổi một dòng.
         else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.BIG)
+        else if (LauncherActions.isCamera(id)) cameraDemandTile(ctx, id, TileSize.BIG)   // 2.93 CAMERA-WIDGET-TILE (ô tự lo)
         else telemetry(ctx, id, data.car, data.units)
     }
 
     /**
      * Nội dung ô widget: **1** widget → to, lấp ô; **2..8** → lưới ô đều nhau. L5 WIDGET-FIT-ALL (2.87): số cột/hàng,
      * dạng ô (dọc/ngang/chỉ-icon) và cỡ chữ/icon khớp theo khung THẬT qua [FitGridLayout] + `GridFit` (`:core`) —
-     * không còn chia hàng theo số mục (6 ⇒ 3+3 bất kể khung, ảnh 03/10 nhãn bị cắt nửa dưới).
+     * không còn chia hàng theo số mục (6 ⇒ 3+3 bất kể khung, ảnh 03/10 nhãn bị cắt nửa dưới). [scrollKey] — wave 2A ·
+     * SHORTCUT-SCROLL-REBUILD: khoá nhớ vị trí cuộn của `w_apps` theo ô ([ShortcutScrollMemory.slotKey]).
      */
-    fun buildGrid(ctx: Context, ids: List<String>, data: WidgetData): View {
+    fun buildGrid(ctx: Context, ids: List<String>, data: WidgetData, scrollKey: String? = null): View {
         val list = ids.take(8)
         if (list.isEmpty()) return FitGridLayout.single(ctx, labelCard(ctx, ctx.getString(R.string.kachi_widget_none), "—", ""))
-        if (list.size == 1) return FitGridLayout.single(ctx, build(ctx, list[0], data).also { it.tag = WidgetTag(list[0], compact = false) })
+        if (list.size == 1) return FitGridLayout.single(ctx, build(ctx, list[0], data, scrollKey).also { it.tag = WidgetTag(list[0], compact = false) })
         return FitGridLayout.grid(ctx, IconRepeat.ofIds(list)).apply {
-            list.forEach { id -> addView(mini(ctx, id, data).also { it.tag = WidgetTag(id, compact = true) }) }
+            list.forEach { id -> addView(mini(ctx, id, data, scrollKey).also { it.tag = WidgetTag(id, compact = true) }) }
         }
     }
 
@@ -189,7 +152,7 @@ object WidgetViews {
      * Ô NÉN. Mỗi nhánh truyền một **hàm sinh giá trị** cho [miniCard]: khung dựng một lần, hàm ấy chạy lại mỗi nhịp.
      * Nhờ vậy ô nén cũng hết giật — cùng một cơ chế với ô to, không phải hai đường.
      */
-    private fun mini(ctx: Context, id: String, data: WidgetData): View {
+    private fun mini(ctx: Context, id: String, data: WidgetData, scrollKey: String? = null): View {
         val car = data.car
         return when (id) {
             "w_energy" -> miniCard(ctx, data, "ic-bolt", KachiTheme.GREEN) { d -> MiniValue(d.car.energy.soc?.let { "$it%" } ?: "—", d.car.energy.evRangeKm?.let { "$it km" } ?: "") }
@@ -201,10 +164,11 @@ object WidgetViews {
             "w_car"    -> miniCard(ctx, data, "ic-lock", KachiTheme.GREEN) { MiniValue(ctx.getString(R.string.kachi_widget_car)) }
             "w_board"  -> miniCard(ctx, data, "ic-grid", KachiTheme.ACCENT) { MiniValue(ctx.getString(R.string.kachi_widget_board)) }
             "w_photos" -> PhotoWidgetView(ctx).apply { bind(data.photos, data.photoIntervalSec) }
-            "w_apps"   -> ShortcutIconsView(ctx, grid = true, compact = true)
+            "w_apps"   -> ShortcutIconsView(ctx, grid = true, compact = true, scrollKey = scrollKey)
             // G1·T3: nhóm trong ô nén ⇒ TÓM TẮT (xem KDoc GroupTiles.mini), không vẽ dải/bảng thu nhỏ.
             else       -> if (CapabilityGroups.byId(id) != null) GroupTiles.mini(ctx, id, data)
             else if (CapabilityCatalog.isWrite(id)) actionTile(ctx, id, data, TileSize.DOCK)
+            else if (LauncherActions.isCamera(id)) cameraDemandTile(ctx, id, TileSize.DOCK)   // 2.93 CAMERA-WIDGET-TILE (ô tự lo)
             else telemetryMini(ctx, id, car, data.units)
         }
     }
@@ -307,11 +271,16 @@ object WidgetViews {
             }
         }
 
-    /** 2.88 — mực của ô lốp THU NHỎ theo bánh nặng nhất: đỏ · hổ phách · mực thường (ô nhỏ không tô "bình thường"). */
-    private fun tyreInk(worst: TyreSeverity): String = when (worst) {
+    /**
+     * 2.88 — mực của ô lốp THU NHỎ theo bánh nặng nhất: đỏ · hổ phách · mực thường (ô nhỏ không tô "bình thường").
+     * 2.93 `BOARD-TYRE-MINI-GREY`: chưa phán được ([TyreSeverity.NONE] — chưa có số / xe chưa trả mã) ⇒ MUT2, cùng mực
+     * "chưa phán" của [TyreBoardView] và `g_tyres` ([ĐO máy ảo QA 04/10] ô lốp của `w_board` hiện "—" màu INK).
+     */
+    internal fun tyreInk(worst: TyreSeverity): String = when (worst) {
         TyreSeverity.ALERT -> KachiTheme.RED
         TyreSeverity.WARN -> KachiTheme.AMBER
-        TyreSeverity.OK, TyreSeverity.NONE -> KachiTheme.INK
+        TyreSeverity.OK -> KachiTheme.INK
+        TyreSeverity.NONE -> KachiTheme.MUT2
     }
 
     /**
@@ -378,18 +347,18 @@ object WidgetViews {
         return WidgetRefreshers.live(card.root, ::fillAir)
     }
 
+    /** ☀ dòng nhiệt ngoài xe: cạnh [Sp.ICON_XS] + khe [Sp.S] cạnh chữ 13 sp như 2.92 — theo em để co/giãn cùng chữ. */
+    private const val OUTSIDE_SP = 13f
+    private const val SUN_EM = Sp.ICON_XS / OUTSIDE_SP
+    private const val SUN_GAP_EM = Sp.S / OUTSIDE_SP
+
     private fun clock(ctx: Context, data: WidgetData): View {
         val time = tv(ctx, "", 50f, KachiTheme.INK, true)
         val date = tv(ctx, "", 14f, KachiTheme.MUT)
-        val outside = tv(ctx, "", 13f, KachiTheme.MUT).apply {
-            setPadding(0, dpi(ctx, Sp.S), 0, 0)
-            val r = KachiTheme.iconRes("ic-sun")
-            if (r != 0) {
-                val glyph = resources.getDrawable(r, ctx.theme).apply {
-                    setBounds(0, 0, dpi(ctx, Sp.ICON_XS), dpi(ctx, Sp.ICON_XS)); setTint(c(KachiTheme.AMBER))
-                }
-                setCompoundDrawablesRelative(glyph, null, null, null); compoundDrawablePadding = dpi(ctx, Sp.S)
-            }
+        val outside = tv(ctx, "", OUTSIDE_SP, KachiTheme.MUT).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) }
+        // 2.93 CLOCK-SUN-DETACHED: ☀ là một ký tự của dòng (GlyphSpan) ⇒ cả cụm căn giữa, icon không dạt về mép trái ô.
+        val sun = KachiTheme.iconRes("ic-sun").takeIf { it != 0 }?.let { r ->
+            GlyphSpan(ctx.resources.getDrawable(r, ctx.theme).apply { setTint(c(KachiTheme.AMBER)) }, SUN_EM, SUN_GAP_EM)
         }
         val root = col(ctx).apply { addView(time); addView(date); addView(outside) }
         var last = data
@@ -398,7 +367,11 @@ object WidgetViews {
             val temp = d.car.climate.outsideTempC?.let { "$it°C" } ?: "—"
             time.text = SimpleDateFormat("HH:mm", LangHost.locale()).format(Date())
             date.text = SimpleDateFormat(LangHost.datePattern(), LangHost.locale()).format(Date())
-            outside.text = ctx.getString(R.string.kachi_outside_temp, temp)
+            val line = ctx.getString(R.string.kachi_outside_temp, temp)
+            // Chỉ đặt khi chữ ĐỔI (nhịp 10 s cùng nhiệt độ không dựng lại span); dấu chữ của ô vẫn tính trên chữ này.
+            if (outside.text.toString() != GlyphSpan.HOLDER.takeIf { sun != null }.orEmpty() + line) {
+                outside.text = sun?.let { GlyphSpan.lead(it, line) } ?: line
+            }
         }
         fillClock(data)
         // QA 04/10: giờ theo NHỊP ĐỒNG HỒ (10 s), không chỉ khi trạng thái xe đổi — xem WidgetRefreshers.liveTick.
@@ -429,11 +402,11 @@ object WidgetViews {
 
     private fun carState(ctx: Context, data: WidgetData): View {
         val art = CarMiniView(ctx)      // P3: cửa tô trên hình xe
-        val doorLine = tv(ctx, "", 13f, KachiTheme.GREEN).apply { setPadding(0, dpi(ctx, Sp.S), 0, 0) }
-        val root = col(ctx).apply {
-            addView(art, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
-            addView(doorLine)
-        }
+        val doorLine = tv(ctx, "", 13f, KachiTheme.GREEN)
+        // 2.93 WIDGET-CAR-STRIP-LAYOUT: khung rộng thấp ⇒ hình CẠNH chú thích (CarStripFit, :core); còn lại y dáng 2.92
+        // (hình trên, chú thích dưới, lề trong + khe Sp.S như khối dọc `col`). Chú thích đo theo chữ dài nhất có thể hiện.
+        val doorTexts = listOf(R.string.kachi_doors_unknown, R.string.kachi_doors_open, R.string.kachi_doors_closed).map(ctx::getString)
+        val root = CarStateLayout(ctx, art, doorLine, pad = dpi(ctx, Sp.S), gap = dpi(ctx, Sp.S), captions = doorTexts)
         // ⚠ 2026-09-25 — dòng CỐP đã gỡ cùng datum `tailgate_status` ([ĐO xe] `getHatchDoorStatus` rỗng với mọi
         // arg). Widget này trước luôn hiện *"Cốp sau —"* ở mọi lần chạy, tức một dòng chỉ nói "chưa đọc được".
         fun fillCarState(d: WidgetData) {

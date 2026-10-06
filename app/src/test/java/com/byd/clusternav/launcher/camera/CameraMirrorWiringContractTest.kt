@@ -19,6 +19,11 @@ class CameraMirrorWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
+    // 2.93: lượt đọc phiên (`CameraSessionSpec`) + cửa theo CAMERA (`PrefsCameraPerCam`) + bộ chỉnh *Từng camera*.
+    private val spec by lazy { app("launcher/camera/CameraSessionSpec.kt") }
+    private val perCam by lazy { app("PrefsCameraPerCam.kt") }
+    private val perCamBridge by lazy { app("launcher/ClusterNavBridgeCameraPerCam.kt") }
+    private val perCamSettings by lazy { app("launcher/SettingsSectionsCameraPerCam.kt") }
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val prefsGl by lazy { app("PrefsCameraDewarp.kt") }
@@ -38,7 +43,12 @@ class CameraMirrorWiringContractTest {
     /** Controller đọc pref đúng bên, MỘT lần mỗi phiên, rồi đưa vào CẢ uniforms (GL) lẫn `overlay.show` (TV) + nhật ký. */
     @Test fun `controller doc pref dung ben va dua vao ca hai duong`() {
         val body = SourceRoots.body(controller, "private fun openSession(")
-        assertTrue("val mirror = Prefs.cameraMirror(appCtx, left = turn == Turn.LEFT)" in body, "đọc theo BÊN đang xi-nhan")
+        // 2.93: đọc MỘT lần ở lượt đọc phiên, theo CAMERA đang mở; camera gương đi qua ĐÚNG khoá theo bên của 2.76.
+        assertTrue("val mirror = s.mirror" in body, "controller dùng giá trị của lượt đọc phiên (một lần mỗi phiên)")
+        val read = SourceRoots.body(spec, "fun read(ctx: Context, which: CameraWhich): CameraSessionSpec?")
+        assertTrue("mirror = Prefs.cameraMirrorOf(ctx, which)," in read, "đọc theo CAMERA đang mở")
+        assertTrue("if (w.side) cameraMirror(ctx, left = w == CameraWhich.LEFT)" in SourceRoots.body(perCam, "fun Prefs.cameraMirrorOf("),
+            "camera gương: đúng khoá `camera_mirror_left/right` của 2.76 (cấu hình đã chỉnh trên xe giữ nguyên)")
         assertEquals(2, Regex("""\bmirror = mirror,""").findAll(body).count(), "đi vào Prefs.cameraGlUniforms(…) VÀ overlay.show(…)")
         val gl = body.substring(body.indexOf("Prefs.cameraGlUniforms("), body.indexOf("} else {"))
         assertTrue("mirror = mirror," in gl, "đường GL: vào bộ uniform")
@@ -81,29 +91,47 @@ class CameraMirrorWiringContractTest {
     @Test fun `prefs_set ghi va read_back hai khoa lat guong`() {
         listOf("camera_mirror_left", "camera_mirror_right").forEach { k ->
             assertTrue(k in TestBridgeWritableKeys.ALL, "$k phải nằm trong danh sách trắng")
-            assertTrue(k in CameraSettingsIa.USER_KEYS, "$k là khoá NGƯỜI LÁI (có ô tích đảo lại được)")
+            // 2.93: ô tích dời vào bộ chỉnh *Từng camera* (một khoá, một hàng) — vẫn là khoá NGƯỜI LÁI có UI.
+            assertTrue(k in CameraSettingsIa.PER_CAMERA_KEYS, "$k là khoá NGƯỜI LÁI (có ô tích đảo lại được)")
         }
         assertTrue("\"camera_mirror_left\" -> bool(raw)?.let { Prefs.setCameraMirror(app, left = true, v = it); it.toString() }" in prefsSet)
         assertTrue("\"camera_mirror_right\" -> bool(raw)?.let { Prefs.setCameraMirror(app, left = false, v = it); it.toString() }" in prefsSet)
         val rb = SourceRoots.body(prefsSet, "private fun readBack(")
         assertTrue("\"camera_mirror_left\" -> Prefs.cameraMirror(app, left = true).toString()" in rb, "read_back không được rỗng")
         assertTrue("\"camera_mirror_right\" -> Prefs.cameraMirror(app, left = false).toString()" in rb)
+        // 2.93: hai camera GIỮA ghi/đọc qua nhánh THEO LOẠI (`TestBridgePerCam`), tên khoá ở `:core`.
+        listOf(CameraWhich.REAR, CameraWhich.FRONT).forEach { w ->
+            val k = CameraCamConfig.mirrorKey(w)
+            assertTrue(k in TestBridgeWritableKeys.ALL, "$k phải nằm trong danh sách trắng")
+            assertTrue(k in CameraSettingsIa.PER_CAMERA_KEYS, "$k là khoá của bộ chỉnh *Từng camera*")
+        }
+        val perCamSet = app("launcher/testbridge/TestBridgePerCam.kt")
+        assertTrue("Field.MIRROR -> TestBridgePrefsSet.bool(v)?.also { Prefs.setCameraMirrorOf(app, w, it) }?.toString()" in perCamSet)
+        assertTrue("Field.MIRROR -> Prefs.cameraMirrorOf(app, w).toString()" in perCamSet, "read_back đọc lại từ nơi lưu bền")
     }
 
-    /** Cài đặt: hai ô tích ở tầng NGƯỜI LÁI qua cầu, ngay sau hai hàng xoay; chữ ở CẢ hai ngôn ngữ, không mồ côi. */
-    @Test fun `hai o tich o tang nguoi lai, sau hang xoay, chu VI va EN`() {
-        assertTrue("fun ClusterNavBridge.cameraMirrorLeft(): Boolean = Prefs.cameraMirror(app, left = true)" in bridge)
-        assertTrue("fun ClusterNavBridge.cameraMirrorRight(): Boolean = Prefs.cameraMirror(app, left = false)" in bridge)
-        assertTrue("fun ClusterNavBridge.setCameraMirror(left: Boolean, v: Boolean) = Prefs.setCameraMirror(app, left, v)" in bridge)
-        val user = SourceRoots.body(settings, "private fun cameraUser(")
-        assertTrue("bridge.setCameraMirror(left = true, v = on)" in user && "bridge.setCameraMirror(left = false, v = on)" in user)
-        assertTrue(user.indexOf("bridge.cameraRotRight()") < user.indexOf("bridge.cameraMirrorLeft()"), "đường mới xuống SAU hàng xoay (CLAUDE.md §6)")
-        assertTrue(user.indexOf("bridge.cameraMirrorRight()") < user.indexOf("bridge.cameraShape()"), "…và trước hàng hình khung (thứ tự = USER_KEYS)")
+    /**
+     * Cài đặt (2.93): MỘT ô tích ở bộ chỉnh *Từng camera* qua cầu, ngay sau hàng xoay của cùng camera; chữ ở CẢ hai ngôn ngữ,
+     * không mồ côi. Hai ô trái/phải của 2.76 gộp vào ô này (chọn camera ở hàng chip đầu bộ chỉnh) — cùng hai khoá.
+     */
+    @Test fun `o tich lat guong o bo chinh tung camera, sau hang xoay, chu VI va EN`() {
+        assertTrue("fun ClusterNavBridge.cameraMirrorOf(w: CameraWhich): Boolean = Prefs.cameraMirrorOf(app, w)" in perCamBridge)
+        val set = SourceRoots.body(perCamBridge, "fun ClusterNavBridge.setCameraMirrorOf(")
+        assertTrue("Prefs.setCameraMirrorOf(app, w, v)" in set && "reapplyIf(w)" in set, "ghi xong áp ngay nếu đúng camera ấy đang hiện")
+        val ed = SourceRoots.body(perCamSettings, "private fun rebuild(")
+        assertTrue("bridge.cameraMirrorOf(w)" in ed && "bridge.setCameraMirrorOf(w, on)" in ed)
+        assertTrue(ed.indexOf("bridge.cameraRotationOf(w)") in 0 until ed.indexOf("bridge.cameraMirrorOf(w)"),
+            "ô lật xuống SAU hàng xoay (CLAUDE.md §6 — đường mới xuống cuối)")
+        // Hai ô theo bên của 2.76 + cửa cầu theo bên đã gỡ (không còn ai gọi — CLAUDE.md §8).
+        listOf("cameraMirrorLeft()", "cameraMirrorRight()", "setCameraMirror(left").forEach {
+            assertFalse(it in settings, "hàng theo bên `$it` đã dời vào bộ chỉnh *Từng camera*")
+            assertFalse("fun ClusterNavBridge.$it" in bridge, "cửa cầu theo bên `$it` đã gỡ")
+        }
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
-        listOf("kachi_camera_mirror_sub", "kachi_camera_mirror_row_left", "kachi_camera_mirror_row_right", "kachi_camera_mirror_row_sub").forEach { k ->
+        listOf("kachi_camera_mirror_own_title", "kachi_camera_mirror_row_sub").forEach { k ->
             assertTrue("\"$k\"" in vi, "thiếu VI $k"); assertTrue("\"$k\"" in en, "thiếu EN $k")
-            assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ mồ côi")
+            assertTrue("R.string.$k" in perCamSettings, "chữ $k không được dùng ⇒ mồ côi")
         }
     }
 }

@@ -25,6 +25,23 @@ object GridEditorLogic {
         row = row.coerceIn(0, (WorkspaceGrid.ROWS - f.rows).coerceAtLeast(0)),
     )
 
+    /** Hộp vẽ của bảng lưới trong view (px): góc trái-trên [x],[y] + cỡ [w]×[h]. */
+    data class Box(val x: Float, val y: Float, val w: Float, val h: Float)
+
+    /**
+     * 2.93 `GRID-EDITOR-ASPECT` — hộp vẽ lưới 12×6 trong view [viewW]×[viewH] (lề [pad] mỗi phía), giữ tỉ lệ của VÙNG Ô THẬT
+     * [areaW]×[areaH] (khung `WorkspaceView` đã đo — màn trừ thanh trên + thanh nút theo cạnh/cỡ %), căn giữa. Vùng chưa đo
+     * (≤ 0) ⇒ tỉ lệ [fallbackAspect] (màn). [ĐO mã] bản cũ co theo tỉ lệ CẢ MÀN ⇒ hình vẽ khác vùng ô thật (thanh nút cỡ
+     * theo % lệch thêm tới ±9 % chiều cao — `DOCK-SCALE`).
+     */
+    fun drawBox(viewW: Int, viewH: Int, areaW: Int, areaH: Int, pad: Float, fallbackAspect: Float): Box {
+        val aspect = if (areaW > 0 && areaH > 0) areaW.toFloat() / areaH else fallbackAspect.takeIf { it > 0f } ?: (16f / 9f)
+        var bw = (viewW - pad * 2).coerceAtLeast(0f)
+        var bh = bw / aspect
+        if (bh > viewH - pad * 2) { bh = (viewH - pad * 2).coerceAtLeast(0f); bw = bh * aspect }
+        return Box((viewW - bw) / 2f, (viewH - bh) / 2f, bw, bh)
+    }
+
     /**
      * Đổi cỡ khung [f] thành [cols]×[rows] — kẹp trong lưới và **không nhỏ hơn khung tối thiểu**.
      *

@@ -22,6 +22,11 @@ data class VoiceTerm(
     val id: String,
     /** 2.91 — chỉ cụm của một TÊN ĐÃ DẠY mang: mã bảng đích của gói ([VoiceAppAlias.targetKey]) — xem `appAfterMarker`. */
     val target: String? = null,
+    /**
+     * 2.93 wave 2A · VOICE-TAUGHT-ACCENT-MATCH — chỉ cụm của tên GIỌNG một âm tiết mang: cách viết có dấu đã dạy
+     * ([VoiceHomograph.taughtSpelling]); [VoiceGrammar.matchAt] chỉ nhận token mang dấu khi đúng cách viết này.
+     */
+    val spelled: String? = null,
 )
 
 /**
@@ -172,8 +177,9 @@ object VoiceGrammar {
      * hơn thì ba họ câu ấy chết theo; siết hẹp hơn thì ba câu đo được ở trên vẫn bắn lệnh.
      */
     fun readsTail(term: VoiceTerm): Boolean = when (term.kind) {
-        // *"Mở ứng dụng VTV Go"* — đuôi quyết định app nào (nhánh LAUNCHER của `build`).
-        VoiceTermKind.LAUNCHER -> true
+        // *"Mở ứng dụng VTV Go"* — đuôi quyết định app nào (nhánh LAUNCHER của `build`). 2.93: việc có trạng thái
+        // (camera theo yêu cầu) KHÔNG đọc đuôi — *"camera sau bẩn quá"* không được mở camera (cùng họ *"cốp xe bẩn quá"*).
+        VoiceTermKind.LAUNCHER -> !LauncherActions.switchable(term.id)
         VoiceTermKind.CONTROL -> when (ControlRegistry.byId(term.id)?.kind) {
             // SELECT tra nhãn lựa chọn trong đuôi; STEP tra con số. Cả hai tự trả MISMATCH khi đuôi không cho
             // gì dùng được, nên chúng không bao giờ lặng lẽ bắn một hành động.
@@ -207,7 +213,9 @@ object VoiceGrammar {
         val dyn = ArrayList<VoiceTerm>(profiles.size + apps.size + aliases.size)
         profiles.forEach { p -> term(p, VoiceTermKind.PROFILE, p)?.let { dyn.add(it) } }
         apps.forEach { a -> term(a, VoiceTermKind.APP, a)?.let { dyn.add(it) } }
-        aliases.forEach { a -> if (a.words.isNotEmpty()) dyn.add(VoiceTerm(a.words, VoiceTermKind.APP, a.labelKey, a.targetKey)) }
+        aliases.forEach { a ->
+            if (a.words.isNotEmpty()) dyn.add(VoiceTerm(a.words, VoiceTermKind.APP, a.labelKey, a.targetKey, VoiceHomograph.taughtSpelling(a)))
+        }
         // Thứ tự ghép giữ NGUYÊN như bản dựng-mỗi-lần: …registry → hồ sơ → app → từ khoá nhạc/dẫn đường. Nó là
         // thứ tự phân xử khi hai cụm **bằng nhau về độ dài** (`VoiceIntentParser.choose` lấy phần tử đầu), nên
         // đảo nó là lặng lẽ đổi cách hiểu của một câu.
@@ -277,7 +285,7 @@ object VoiceGrammar {
      * là nút đóng/mở). Ai chọn trong số đó là việc của [VoiceIntentParser], vì chỉ nó mới biết động từ.
      */
     fun matchAt(t: List<VoiceLexicon.Token>, i: Int, terms: List<VoiceTerm>): List<VoiceTerm> =
-        terms.filter { VoiceLexicon.phraseAt(t, i, it.words) }
+        terms.filter { VoiceLexicon.phraseAt(t, i, it.words) && VoiceHomograph.spelledOk(t[i], it.spelled) }   // 2.93 wave 2A — OQ2
 
     /** Động từ (hoặc từ mở đầu một cụm lệnh) đi cùng multi-command split — xem [ACTION_VERB_HEADS]. */
     private val ACTION_VERBS = setOf(
@@ -287,8 +295,14 @@ object VoiceGrammar {
     /**
      * Từ MỞ ĐẦU một cụm lệnh mà [VERBS] không khai (chúng resolve qua luật scoped / synonym): "hạ"/"kéo"/"nâng"
      * (hướng kính) · "lấy" ("lấy gió ngoài/trong"). Dùng cho [actionVerbAt] để tách câu MIX không liên từ.
+     *
+     * 2.93 senior review wave 2 — khai bằng cách viết CÓ DẤU ([ACTION_HEAD_WORDS], nguồn duy nhất; tập bỏ dấu suy ra, KHÔNG đổi
+     * ⇒ [actionVerbAt] y nguyên) để [VoiceVerbSpelling] đọc luật dấu [VoiceHomograph]: bỏ dấu thì *"hả"* (hả?) · *"Hà"* (Hà Nội) ·
+     * *"nắng"* (rèm che nắng) trùng *"hạ"* · *"nâng"* — [ĐO off-car 07/10] trả lời *"hả"* cho câu hỏi *"Mở hay đóng Kính lái?"* từng
+     * ghép thành *"hả kính lái"* = MỞ kính.
      */
-    private val ACTION_VERB_HEADS = setOf("ha", "keo", "nang", "lay", "chuyen")
+    internal val ACTION_HEAD_WORDS = VoiceHomograph.Words("hạ", "kéo", "nâng", "lấy", "chuyển")
+    private val ACTION_VERB_HEADS: Set<String> = ACTION_HEAD_WORDS.norms
 
     /**
      * Vị trí [i] có phải ĐẦU một cụm lệnh HÀNH ĐỘNG không — cho `VoiceIntentParser.multiVerbSplit` tách câu MIX

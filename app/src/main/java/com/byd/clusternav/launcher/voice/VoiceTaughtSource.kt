@@ -30,7 +30,9 @@ object VoiceTaughtSource {
      * Tên được BIAS cho phiên lệnh (R8): nguồn giọng (OQ3), CÙNG luật sống của từ vựng parser — hàm thuần
      * [VoiceAppIndex.hotwordNames] (`:core`, có test): gói có mặt ([installed]), một chủ duy nhất, không trùng khoá của
      * app khác ([apps]), kể cả tên của gói thua khử trùng nhãn. Luật đơn điệu + nối dài ở [SherpaTaughtHotwords].
+     * [names] là kết quả [VoiceTaughtSource.names] của CHÍNH phiên (đúng tiến trình) — đọc một lần, dùng chung với lọc nhãn
+     * (soát 2.93 P3: trước đây đọc hai lần mỗi phiên).
      */
-    fun forHotwords(ctx: Context, apps: List<String>, installed: Set<String>): List<TaughtName> =
-        VoiceAppIndex.hotwordNames(apps, installed, names(ctx))
+    fun forHotwords(apps: List<String>, installed: Set<String>, names: List<TaughtName>): List<TaughtName> =
+        VoiceAppIndex.hotwordNames(apps, installed, names)
 }

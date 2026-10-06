@@ -260,7 +260,7 @@ class ClusterNavBridge(
         runCatching { ClusterNavLaneWidget.status }.getOrDefault(ClusterNavLaneWidget.Op39Status.IDLE)
 
     // Quyền hệ thống (`notificationAccessGranted` · `accessibilityBoosterGranted` · `accessibilityBound`) + nhóm *Hệ thống*
-    // (`checkUpdate` · `openVietMapData` · `openDiagnostics` · `applyRecircNow`) → `ClusterNavBridgeSystem.kt` (tách THUẦN
+    // (`checkUpdate` · `applyRecircNow`; hai cửa chẩn đoán 0 chỗ gọi gỡ ở 2.93 wave 2C) → `ClusterNavBridgeSystem.kt` (tách THUẦN
     // theo trần 500 dòng, L6-debt 2026-09-27; cùng khuôn `ClusterNavBridgeCast.kt` / `ClusterNavBridgeKeys.kt`).
 
     // ── Biển báo tốc độ (badge trên cụm) — lặp lại BadgePlacementController.kt:44–112 ─────────────

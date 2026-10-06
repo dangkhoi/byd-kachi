@@ -72,4 +72,18 @@ class CameraViewModeTest {
         assertTrue(CameraDewarpPrefs.isPanPct(CameraViewMode.WIDE_PAN_X_PCT_DEFAULT))
         assertTrue(CameraViewMode.WIDE_PAN_X_PCT_DEFAULT < 0, "âm = về phía đuôi (cùng nghĩa camera_dewarp_pan_x)")
     }
+
+    /**
+     * 2.93 wave 2C · PREFS-SET-CAM-GLOBAL-REAPPLY — luật *"chọn Nắn thẳng khi Nắn hình đời cũ đang TẮT ⇒ nắn đủ"* ở MỘT chỗ
+     * (`:core`), dùng chung cho chip Cài đặt và `prefs_set camera_projection` (bản trước nằm trong cầu Cài đặt, cầu kiểm thử
+     * không có ⇒ `prefs_set camera_projection STRAIGHT` lúc amount 0 báo "Nắn thẳng" mà ảnh vẫn thô).
+     */
+    @Test fun `chon Nan thang luc amount 0 thi nan du, moi ca khac giu nguyen`() {
+        assertEquals(CameraDewarpPrefs.AMOUNT_MAX, CameraViewMode.amountOnPick(CameraViewMode.STRAIGHT, CameraDewarpPrefs.AMOUNT_MIN))
+        assertEquals(null, CameraViewMode.amountOnPick(CameraViewMode.STRAIGHT, 50), "nắn dở dang là lựa chọn của người lái — giữ")
+        assertEquals(null, CameraViewMode.amountOnPick(CameraViewMode.STRAIGHT, CameraDewarpPrefs.AMOUNT_DEFAULT))
+        listOf(CameraViewMode.WIDE, CameraViewMode.FISHEYE).forEach {
+            assertEquals(null, CameraViewMode.amountOnPick(it, CameraDewarpPrefs.AMOUNT_MIN), "$it: luật 2.92 chỉ áp cho Nắn thẳng")
+        }
+    }
 }

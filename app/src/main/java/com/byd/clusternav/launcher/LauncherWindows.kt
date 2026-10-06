@@ -58,8 +58,8 @@ class LauncherWindows(
      *    display cụm nên KHÔNG lọt vào tập display-0 ⇒ KHÔNG bị evict.
      *
      * ⚠ ĐÍNH CHÍNH (PROFILE-SWITCH-SLOTS R-B5, [ĐO mã + máy ảo 2026-10-01]): bản trước ghi `closeApp` "đóng cửa sổ
-     *   freeform off-car" — SAI. `closeApp` là no-op ở MỌI đường: chưa có kênh thì bộ mở là `IntentAppLauncher` mà
-     *   `closeSlot` của nó rỗng (không có API công khai đóng cửa sổ app khác); có kênh thì `closeApp` thoát sớm vì
+     *   freeform off-car" — SAI. `closeApp` là no-op ở MỌI đường: chưa có kênh thì bộ mở là [NoCar] (2.93 · OQ6 — trước đó
+     *   `IntentAppLauncher`) mà `closeSlot` của nó rỗng (không có API công khai đóng cửa sổ app khác); có kênh thì `closeApp` thoát sớm vì
      *   `embedding = true`. Hệ quả đo được: đổi hồ sơ A→B→A lúc chưa có kênh thì app ô của B nổi lại trên nhà (fixture
      *   `am-stack-list-emulator-2026-10-01-noshell-A-back.txt`). Đóng thật là việc của [sweepFloating] — chỉ khi có
      *   kênh, chỉ cửa sổ nổi do CHÍNH Kachi mở (dấu bền), quyết bằng `am stack list` (không bằng sổ RAM này: sổ RAM
@@ -181,7 +181,7 @@ class LauncherWindows(
 
     /**
      * Đưa [pkg] ra khỏi ô trên thread nền. Nhúng → no-op (ActivityView/màn ảo tự lo).
-     * ⚠ Không nhúng thì bộ mở là `IntentAppLauncher` có `closeSlot` RỖNG ⇒ hàm này thực tế không đóng gì ở đường nào
+     * ⚠ Không nhúng thì bộ mở là [NoCar] (2.93 · OQ6, trước đó `IntentAppLauncher`) có `closeSlot` RỖNG ⇒ hàm này thực tế không đóng gì ở đường nào
      * (PROFILE-SWITCH-SLOTS E10/R-B5). Đóng cửa sổ nổi thật: [sweepFloating]. Giữ hàm (OQ-6, backlog).
      */
     fun closeApp(pkg: String) {

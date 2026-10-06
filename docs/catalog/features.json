@@ -1367,12 +1367,12 @@
  },
  {
   "group": "Bảo mật / an toàn",
-  "name": "Chế độ kiểm thử qua adb — TỰ TẮT sau 60 phút (tắt máy xe KHÔNG tắt nó)",
-  "desc": "Cầu T-BRIDGE là receiver EXPORTED nên cổng thật KHÔNG phải là cờ exported (uid shell không gửi được vào receiver non-exported, mà `onReceive` cũng không có `getCallingUid`). Cổng là một CÔNG TẮC ở Cài đặt › Hệ thống & quyền › Nâng cao: chỉ bật được BẰNG TAY TRONG XE và tự tắt sau 60 phút. ⚠ [ĐO xe 29/09] cửa sổ SỐNG QUA tắt/bật máy và qua cài đè: đầu xe BYD tắt máy không khởi động lại nên `boot_id` giữ nguyên — chỉ khởi động lại hẳn đầu xe mới đóng sớm; câu UI \"sau khi tắt máy\" đang sai (backlog TEST-MODE-ACC-OFF). Lưu một chuỗi duy nhất `<bootId>:<hạn dùng>` — danh tính là `/proc/sys/kernel/random/boot_id` chứ KHÔNG phải đồng hồ tường, vì [ĐO DiLink3 2026-09-14] đầu xe chỉnh giờ lệch > 5 s sau khi bật làm mốc cũ trôi và cầu trả `test_mode_off`. Đọc không được bootId ⇒ cửa sổ luôn ĐÓNG. Giá trị sửa tay quá 60 phút cũng bị từ chối. Công tắc cố ý là CHECKBOX (không phải nút «Mở 60 phút») để người dùng THẤY nó đang bật và tắt được ngay.",
+  "name": "Chế độ kiểm thử qua adb — TỰ TẮT sau 60 phút, hoặc khi tắt máy xe nếu Kachi là màn hình chính (từ 2.93)",
+  "desc": "Cầu T-BRIDGE là receiver EXPORTED nên cổng thật KHÔNG phải là cờ exported (uid shell không gửi được vào receiver non-exported, mà `onReceive` cũng không có `getCallingUid`). Cổng là một CÔNG TẮC ở Cài đặt › Hệ thống & quyền › Nâng cao: chỉ bật được BẰNG TAY TRONG XE, tự tắt sau 60 phút hoặc khi tắt máy (khi Kachi là màn hình chính). [ĐO xe 29/09] đầu xe BYD tắt máy không khởi động lại nên `boot_id` giữ nguyên ⇒ tới 2.92 cửa sổ SỐNG QUA tắt/bật máy; 2.93 (TEST-MODE-ACC-OFF) đóng cửa sổ khi có dấu tắt máy (`a11y_tat_may_elapsed`, lớp 1 của 2.83 ghi mỗi lần BYD giết Kachi và Android dựng lại lúc màn tắt) mới hơn lúc mở [SUY đọc mã — chưa đo trên xe]. Dấu ấy CHỈ có khi Kachi là màn hình chính (Android dựng lại HOME lúc màn tắt sau lượt BYD giết); cài như app thường thì không có lần dựng lại ⇒ cửa sổ vẫn sống tới 60 phút qua tắt máy (`TEST-MODE-NONHOME` 🚗). Tiến trình bật lúc màn tắt mà cửa sổ đã quá dấu ⇒ xoá khoá bền (review F1). QA máy ảo: giữ màn sáng (`svc power stayon true`) trước khi bật, không thì lượt khởi động lại lúc màn tắt bị tính như tắt máy. Lưu một chuỗi duy nhất `<bootId>:<hạn dùng>` — danh tính là `/proc/sys/kernel/random/boot_id` chứ KHÔNG phải đồng hồ tường, vì [ĐO DiLink3 2026-09-14] đầu xe chỉnh giờ lệch > 5 s sau khi bật làm mốc cũ trôi và cầu trả `test_mode_off`. Đọc không được bootId ⇒ cửa sổ luôn ĐÓNG. Giá trị sửa tay quá 60 phút cũng bị từ chối. Công tắc cố ý là CHECKBOX (không phải nút «Mở 60 phút») để người dùng THẤY nó đang bật và tắt được ngay.",
   "voice": [],
   "voice_reply": "",
-  "status": "🚗 code xong chờ xe",
-  "evidence": "core/.../testbridge/TestBridgeWindow.kt:28-57 · app/.../testbridge/TestBridgeStore.kt:12-58 · app/.../SettingsSections.kt:427-455 · app/.../testbridge/KachiTestBridge.kt:59,468",
+  "status": "✅ off-car (`TestBridgeIgnitionOffTest` · `TestBridgeIgnitionOffWiringContractTest`) · 🚗 tắt máy lúc test-mode đang mở ⇒ `state` trả `test_mode_off` sau khi nổ lại",
+  "evidence": "core/.../testbridge/TestBridgeWindow.kt (remainingMs · closedByIgnitionOff) · app/.../testbridge/TestBridgeStore.kt (tatMayAt) · app/.../SettingsSections.kt (testBridge) · app/.../testbridge/KachiTestBridge.kt · test TestBridgeIgnitionOffTest",
   "spec": "docs/specs/kachi-test-bridge.html"
  },
  {
@@ -1742,8 +1742,8 @@
  },
  {
   "group": "Camera xi-nhan",
-  "name": "Màn Camera MỘT tầng — 15 hàng người lái (10 ở 2.77 + 4 ở 2.81; 2.92: ô «Nắn hình» → «Kiểu hình camera» + «Thu phóng»); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ",
-  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. Bản phát hành 2.81 có **14** `USER_KEYS` (2.77 chốt **10**: bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt; rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2). 2.82 từng thêm 2 hàng *vạch chuẩn* (16), nhưng owner dẹp trên xe 29/09 (*«ò, dẹp vạch đi»*) và 2.82 không đăng OTA ⇒ mã 2.83 (việc D, cây làm việc 29/09, chưa commit) gỡ lại về **14** hàng = TOÀN BỘ màn (`HEAD` 2.82 đếm 16 cho tới commit đó), và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì. **2.92** (`CAMERA-FULL-VIEW`): ô tích *Nắn hình* (`camera_dewarp_amount`) rời màn, thay bằng hàng chip *Kiểu hình camera* (`camera_projection`) + thanh *Thu phóng* (`camera_zoom`) ⇒ **15** `USER_KEYS`; `camera_dewarp_amount` + ba núm *Thẳng rộng* (`camera_wide_kappa/_focal/_pan_x`) vào `NO_UI_KEYS` (**19**).",
+  "name": "Màn Camera MỘT tầng — 15 hàng người lái (10 ở 2.77 + 4 ở 2.81; 2.92: ô «Nắn hình» → «Kiểu hình camera» + «Thu phóng»); khối «Nâng cao (kỹ thuật)» và hàng «Nguồn» đã GỠ; 2.93: 9 hàng chung + bộ chỉnh «Từng camera»",
+  "desc": "2.76 dựng hai tầng (11 hàng người lái + khối gập 16 mục kỹ thuật sau cổng kiểm thử) và một hàng *Nguồn*. Owner ngồi trong xe 27/09 chiều: *«không biết chỉnh đâu, nên chốt theo cái nào best là được, bỏ hết phần nâng cao đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi»* · *«bỏ cái 1 cam ra, nhiều option quá rối cho người dùng, bỏ luôn ở phần kỹ thuật»*. ⇒ 2.77 gỡ CẢ khối gập LẪN hàng Nguồn. Bản phát hành 2.81 có **14** `USER_KEYS` (2.77 chốt **10**: bật khi xi-nhan · hiện lên cụm · góc trái/phải · xoay trái/phải · lật gương trái/phải · hình khung · nắn bật-tắt; rồi 2.81 thêm 4 — thử camera số ×2, dải hình ×2). 2.82 từng thêm 2 hàng *vạch chuẩn* (16), nhưng owner dẹp trên xe 29/09 (*«ò, dẹp vạch đi»*) và 2.82 không đăng OTA ⇒ mã 2.83 (việc D, cây làm việc 29/09, chưa commit) gỡ lại về **14** hàng = TOÀN BỘ màn (`HEAD` 2.82 đếm 16 cho tới commit đó), và **15** `NO_UI_KEYS` (kết xuất · bề rộng · dải ×2 · cỡ tròn · cameraId ×2 · ma trận texture · 8 núm nắn) **không còn hàng nào** nhưng vẫn ghi được bằng `prefs_set` và đọc bằng `prefs --es file clusternav_prefs` — mặc định của chúng là bộ hồ sơ Seal owner đã duyệt, và pref đã đặt trên xe vẫn THẮNG mặc định ([ĐO B0 27/09] prefs giữ nguyên qua nâng cấp) ⇒ gỡ UI không đổi một pixel trên xe owner. Hai khoá `camera_source` + `camera_hal_mode` bị **XOÁ HẲN** (kể cả khỏi danh sách trắng `prefs_set`: 42 → 40 khoá): một khoá không còn ai đọc mà vẫn ghi được là `ok` rồi không làm gì. **2.92** (`CAMERA-FULL-VIEW`): ô tích *Nắn hình* (`camera_dewarp_amount`) rời màn, thay bằng hàng chip *Kiểu hình camera* (`camera_projection`) + thanh *Thu phóng* (`camera_zoom`) ⇒ **15** `USER_KEYS`; `camera_dewarp_amount` + ba núm *Thẳng rộng* (`camera_wide_kappa/_focal/_pan_x`) vào `NO_UI_KEYS` (**19**). **2.93** (`CAMERA-PER-CAM-CONFIG`): sáu hàng góc/xoay/lật theo bên rời `USER_KEYS` sang bộ chỉnh «Từng camera» (cùng khoá, không khoá mới) ⇒ màn còn **9** hàng chung + một hàng chip camera + MỘT bộ hàng riêng (`PER_CAMERA_KEYS` = 28 khoá); `NO_UI_KEYS` giữ **19**.",
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car — bài canh đổi từ *«hàng phải CÓ»* sang *«hàng phải VẮNG mà `prefs_set` phải CÒN»* (`CameraSettingsIaTest` khoá danh sách + thứ tự — mã `HEAD` 2.82 = 16 khoá, về 14 khi 2.83 gỡ vạch; `CameraSettingsIaWiringContractTest` khẳng định sự VẮNG MẶT) · 🚗 đếm hàng trên xe chưa làm (CAM-G1; CAM-F16 buổi xe 29/09 không đo) — không còn khối gập kể cả khi BẬT chế độ kiểm thử",
@@ -1763,10 +1763,10 @@
  {
   "group": "Camera xi-nhan",
   "name": "📷 Khung thô trái / phải — màn Chẩn đoán chụp khung HAL 5120×960 ra kachi-logs + Thư viện ảnh (2.92)",
-  "desc": "Hai nút ở màn Chẩn đoán: mở đúng bên như lượt xem thử, chờ khung đầu (≤ 3 s), chụp khung THÔ (GL: FBO · TV: layer), ghi PNG vào `kachi-logs/` và chép một bản qua MediaStore vào `Pictures/Kachi/` (ngoài cây `DiagStorageCap` dọn), in đường dẫn + dòng uniform của phiên; đóng lượt xem thử. Tắt *Bật camera khi xi-nhan* ⇒ báo chữ, không tự bật. ⚠ Màn Chẩn đoán không có lối vào trên bản phát hành (owner 21/09) ⇒ chỉ dùng được ở bản `vehicleTest` (`am start`) — mở cho bản phát hành chờ owner (OQ4).",
+  "desc": "Hai nút ở màn Chẩn đoán: mở đúng bên như lượt xem thử, chờ khung đầu (≤ 3 s), chụp khung THÔ (GL: FBO · TV: layer), ghi PNG vào `kachi-logs/` và chép một bản qua MediaStore vào `Pictures/Kachi/` (ngoài cây `DiagStorageCap` dọn), in đường dẫn + dòng uniform của phiên; đóng lượt xem thử. Tắt *Bật camera khi xi-nhan* ⇒ báo chữ, không tự bật. Màn Chẩn đoán không có nút trên bản phát hành (owner 21/09); từ 2.93 mở được bằng lệnh cầu kiểm thử `diag_screen` (tên `diag`, sau Chế độ kiểm thử) — `CAM-RAW-DIAG-REACH` đóng theo (c), không thêm lối vào UI.",
   "voice": [],
   "voice_reply": "",
-  "status": "✅ máy ảo (bản vehicleTest: 2 PNG + 2 hàng MediaStore) · ⛔ bản phát hành: chưa có lối vào (CAM-RAW-DIAG-REACH) · 🚗 chưa",
+  "status": "✅ máy ảo (bản vehicleTest: 2 PNG + 2 hàng MediaStore) · bản phát hành: qua lệnh cầu `diag_screen` (2.93 wave 2B) · 🚗 chưa",
   "evidence": "docs/diagnostics/camera-full-view-emu-2026-10-06.md §5 · app/.../launcher/camera/CameraRawCapture.kt · CameraFrameFiles.kt · app/.../modules/clustercast/DiagActivity.kt",
   "spec": "docs/specs/kachi-292-camera-full-view.html"
  },
@@ -1834,7 +1834,7 @@
   "voice": [],
   "voice_reply": "",
   "status": "✅ off-car (test `TopStripStateIcon276Test` · `TelemetryReadout276Test`; `gen-icons.py --check` 119/119 · `gen-car.py --check` 41/41) · 🚗 4 phép §5: Nguồn xe/đèn pha đúng chữ · cửa trước-trái xoè/sát thân · Chế độ ĐH (kèm `hal get` chốt OQ3) · ghế lái ↔ ghế phụ phân biệt ở 20dp · cửa sổ trời **đo được**: `hal get getSunroofState` = 0 ⇒ chip hình đóng + SÁNG ([ĐO] 4 lượt quét; 65535 là của `getSunroofPosition` đã gỡ) · mức ghế: sưởi lái 1→2 và mát phụ 1→2 đổi số dấu trong hình, phân biệt ở 20 dp",
-  "evidence": "docs/diagnostics/offcar-2026-09-27/chips-icons-close.md §2 · §4 · §5 · core/.../TelemetryEnums.kt · core/.../CapabilityIcons.kt · core/.../TopStrip.kt (`CHIP_HIDDEN`) · design/glyph/mode_auto.svg · design/glyph/seat_left.svg · docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §1 · core/.../CapabilityIcons.kt (`LEVEL`/`forLevel`) · app/.../KachiIcons.kt (`byLevel`) · scratchpad/icons-276-seat/sheet2.png",
+  "evidence": "docs/diagnostics/offcar-2026-09-27/chips-icons-close.md §2 · §4 · §5 · core/.../TelemetryEnums.kt · core/.../CapabilityIcons.kt · core/.../TopStrip.kt (`CHIP_HIDDEN`) · design/glyph/mode_auto.svg · design/glyph/seat_left.svg · docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §1 · core/.../CapabilityIcons.kt (`LEVEL`/`forLevel`) · app/.../KachiIcons.kt (`byLevel`) · ảnh `sheet2.png` (bằng chứng phiên, ngoài repo)",
   "spec": "docs/specs/kachi-276-closing.html"
  },
  {
@@ -1876,6 +1876,50 @@
   "status": "✅ off-car (test `CameraMirrorTest` :core — lật là ảnh SOI của bản không lật ở cả `amount 0` lẫn `amount 100`, hợp với xoay/pan, GL ↔ TV nghịch đảo; `CameraMirrorWiringContractTest` :app — pref → controller → uniforms/TV) · 🚗 CAM-M1: người đứng sau-trái ~3 m, ảnh trái (xoay 0) cùng tay gương kính ⇒ giữ TẮT, ngược ⇒ bật cả hai bên và ghi lại làm mặc định hồ sơ",
   "evidence": "docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md §2 · docs/diagnostics/research-side-camera-orientation-2026-09-27.md §6.2 · core/.../CameraGlUniforms.kt · core/.../CameraDewarp.kt (`centerInCrop` nhận `flipH`) · core/.../CameraOverlayTransform.kt · app/.../PrefsCameraDewarp.kt · app/.../camera/CameraSignalController.kt",
   "spec": "docs/specs/kachi-276-closing.html"
+ },
+ {
+  "group": "Camera theo yêu cầu",
+  "name": "Camera theo yêu cầu — 4 camera sau · trái · phải · trước, bật/tắt bằng nút thanh nút · phím vô-lăng · ô widget · giọng nói (2.93)",
+  "desc": "Owner 06/10: *«lấy 4 cam, bẻ lại theo đúng 3 options này, đưa vào widget action, hoặc voice … mở overlay lên như là xinhan»* · *«không nên timeout, các nút đều là toggle on/off là được»*. Bốn camera = bốn dải của cùng khung ghép camera 360, vẽ bằng đúng ba kiểu hình của camera xi-nhan, hiện ở chỗ đã đặt cho camera xi-nhan (màn chính hoặc cụm theo «Hiện camera lên màn cụm») với cấu hình riêng từng camera. Lối vào: (1) thanh nút — Cài đặt › Thanh trạng thái & thanh nút › «Chọn nút trên thanh…» › khối «Camera theo yêu cầu» (Camera sau · Camera trái · Camera phải · Camera trước · Tắt camera); ô camera SÁNG khi camera ấy đang mở; (2) phím vô-lăng — Cài đặt › Phím vô-lăng › «Thêm gán…» › loại đích «Camera theo yêu cầu» › «Bước 3 — camera nào» (… — bật/tắt · Tắt camera); (3) ô widget — chạm một ô trống › khối «Camera theo yêu cầu» (lưới giữ nhãn, ô đang mở sáng); (4) giọng nói — động từ mở (mở · bật · xem · coi · hiện …) hoặc không động từ × cam/camera/máy quay × (bên/phía) × sau/lùi · trái · phải · trước/đầu; nói lại câu mở ⇒ tắt; «tắt cam sau» chỉ tắt camera ấy; «tắt cam» trần ⇒ tắt camera đang mở. Một camera một lúc: camera khác ⇒ THAY, đúng camera đang hiện ⇒ TẮT. KHÔNG tự tắt theo giờ. Xi-nhan bật (sự kiện mới nhất) ⇒ camera xi-nhan hiện; hết xi-nhan ⇒ camera đang mở quay lại; số R không có nhánh riêng (overlay đè được camera 360 của xe — owner đã thử). Phím/giọng ở tiến trình `:wake` lúc màn hình chính chưa lên (vừa nổ máy) ⇒ gửi lại một lần trong 2 s; không tới ⇒ nói thật «chưa liên lạc được màn hình chính».",
+  "voice": [
+   "mở cam trái",
+   "bật cam sau",
+   "xem cam lùi",
+   "cam bên phải",
+   "mở camera trước",
+   "tắt cam sau",
+   "tắt cam"
+  ],
+  "voice_reply": "✓ Mở Camera trái (nói lại ⇒ ✓ Tắt Camera trái) · «tắt cam» ⇒ ✓ Tắt camera · camera chưa mở ⇒ «Camera sau đang không mở» · không với tới màn hình chính ⇒ ✗ … chưa liên lạc được màn hình chính",
+  "status": "✅ off-car — mã + test + senior review (CAM Pass 1–2, wave 2C) · 🖥 QA máy ảo bằng khung tổng hợp (`camera_synth`) · 🚗 chưa thử xe (`ONCAR-293-CAM` · `ONCAR-CAM-2B`)",
+  "evidence": "core/.../camera/CameraDemand.kt · CameraDemandState.kt · CameraWakeAsk.kt · core/.../voice/VoiceCameraPhrases.kt · VoiceCameraTurn.kt · app/.../camera/CameraDemandDispatch.kt · CameraSignalController.kt · CameraReapply.kt · test CameraDemandTest · CameraDemandStateTest · CameraDemandVoiceTest · CameraWakeAskTest · CameraWidgetTileTest · VoiceCameraFallbackDispatchTest",
+  "spec": "docs/specs/kachi-293-cam.html"
+ },
+ {
+  "group": "Camera theo yêu cầu",
+  "name": "Chỉnh từng camera — góc · vị trí kéo-thả · cỡ 50–150 % · hình khung · kiểu hình · xoay · lật gương (2.93)",
+  "desc": "Owner 06/10: *«cho chỉnh size và vị trí từng camera không nhỉ?»*. Cài đặt › Tiện nghi xe › mục «Từng camera — chỗ hiện, cỡ, kiểu hình (sau · trái · phải · trước)»: MỘT hàng chip camera (Sau · Trái · Phải · Trước) + MỘT bộ hàng — «▶ Xem thử camera này» (cùng đường nút thanh nút) · «Góc mặc định» · ô «Kéo khung để đặt chỗ» + «Về góc mặc định» · «Cỡ» 50–150 % (bước 5) · «Hình khung» / «Kiểu hình» («Theo chung» hoặc riêng) · «Xoay» · «Lật gương». Áp cho camera ấy cả khi xi-nhan lẫn khi mở theo yêu cầu; chỉnh lúc camera ấy đang hiện ⇒ khung đổi ngay. Góc · vị trí · cỡ · hình · kiểu theo HỒ SƠ; xoay · lật theo XE (sự thật lắp đặt). Hai camera gương dùng lại đúng 6 khoá cũ (góc/xoay/lật) ⇒ xe không chạm Cài đặt thì không đổi một pixel; sáu hàng góc/xoay/lật theo bên của 2.92 gộp vào bộ chỉnh này. Vùng cho phép không bao giờ bị vượt (dưới thanh trên ở màn chính, trong dải cụm theo hồ sơ xe). 28 khoá ghi/đọc được qua `prefs_set` (chế độ kiểm thử) và áp ngay. Mặc định camera sau/trước: góc trên-phải, không xoay, không lật — hướng ảnh thật [CHƯA BIẾT 🚗].",
+  "voice": [],
+  "voice_reply": "",
+  "status": "✅ off-car (`CameraPlacementTest` · `CameraCamConfigTest` · dây nối) · 🚗 hướng ảnh camera sau/trước + kéo-thả/cỡ trên màn chính và cụm chưa đo",
+  "evidence": "core/.../camera/CameraCamConfig.kt · CameraPlacement.kt · CameraSettingsIa.kt (PER_CAMERA_KEYS) · app/.../PrefsCameraPerCam.kt · app/.../launcher/SettingsSectionsCameraPerCam.kt · CameraPlacementView.kt · ClusterNavBridgeCameraPerCam.kt",
+  "spec": "docs/specs/kachi-293-cam.html"
+ },
+ {
+  "group": "Camera theo yêu cầu",
+  "name": "Giọng nói «tắt camera» trần — tắt camera theo yêu cầu; không gì mở thì tắt Camera 360 (2.93)",
+  "desc": "⚠ Đổi nghĩa có chủ đích: tới 2.92 «tắt camera» trần là nút Camera 360 của xe. Từ 2.93: có camera theo yêu cầu đang mở ⇒ tắt nó; KHÔNG camera nào mở ⇒ Kachi chạy lại câu ấy thành lệnh TẮT Camera 360 (qua đúng cổng hỏi lại + làn ghi của nút xe, như ≤ 2.92); không liên lạc được màn hình chính ⇒ nói thật, không đoán. Camera 360 vẫn gọi được: «mở camera» (không phía) · «… camera 360» · «… camera toàn cảnh» · «… camera quanh xe» — câu mẫu của nút Camera 360 nay là «bật/tắt camera 360». Tên camera trần không động từ («camera», «camera 360») ⇒ hỏi lại (mất chữ «tắt» trong tiếng nhạc từng làm BẬT ngược). Chỉ camera xi-nhan đang hiện mà nói «tắt camera» ⇒ lệnh Camera 360 TẮT như ≤ 2.92 — overlay xi-nhan có giữ hình tới hết HOLD không: 🚗.",
+  "voice": [
+   "tắt camera",
+   "tắt cam",
+   "bật camera 360",
+   "tắt camera 360",
+   "mở camera"
+  ],
+  "voice_reply": "camera theo yêu cầu đang mở ⇒ ✓ Tắt camera · không gì mở ⇒ ✓ Tắt Camera 360… (câu của nút xe) · không với tới ⇒ ✗ … chưa liên lạc được màn hình chính",
+  "status": "✅ off-car (`VoiceCameraFallbackDispatchTest` — cầu thật + cổng xe giả · `VoiceCameraTurnTest` · `VoiceCameraBareNameTest`) · 🚗 phím vô-lăng «tắt camera» khi Camera 360 của xe đang bật (`ONCAR-CAM-2B`)",
+  "evidence": "core/.../voice/VoiceCameraTurn.kt · core/.../LauncherActions.kt (offFallback = \"cam\") · core/.../camera/CameraDemand.kt (Outcome) · app/.../launcher/VoiceDispatcher.kt (runFrom) · docs/specs/kachi-293-voice.html §7 OQ5",
+  "spec": "docs/specs/kachi-293-cam.html"
  },
  {
   "group": "Hồ sơ",

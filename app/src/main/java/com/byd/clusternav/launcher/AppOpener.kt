@@ -33,7 +33,7 @@ class AppOpener(private val activity: Activity) {
 
     /**
      * Đường CHÍNH — API chuẩn: ý-định khởi chạy + **khung `null`** (tài liệu Android: `null` = *toàn màn*), KHÔNG
-     * đặt chế độ cửa-sổ-nhỏ như [IntentAppLauncher]. Gọi trên thread CHÍNH. Trả false nếu app không có ý-định
+     * đặt chế độ cửa-sổ-nhỏ như `IntentAppLauncher` cũ (đã gỡ ở 2.93 · OQ6). Gọi trên thread CHÍNH. Trả false nếu app không có ý-định
      * khởi chạy (⇒ caller thử [openByShell]).
      */
     fun openByIntent(pkg: String): Boolean {

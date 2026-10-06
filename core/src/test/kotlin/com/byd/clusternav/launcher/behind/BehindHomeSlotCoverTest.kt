@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
  *
  * Owner 03/10: *"đẩy app ra chạy nền … để UI trong suốt thấy nền background"* — nút phải làm được ở MỌI ô app (D-L6-1 cũ:
  * chỉ khi ô có app LƯU khác, vì A ở ĐỈNH màn ảo lúc `move-task` ⇒ stack đích lên che màn nhà, A10 r47
- * `TaskRecord.java:736-737` `wasFront`). Bài này khoá đường đã ĐO trên máy ảo (A10 `clusternav10`, `p4/e2e-L8/e2b-ytm-saved-playing`:
+ * `TaskRecord.java:736-737` `wasFront`). Bài này khoá đường đã ĐO trên máy ảo (A10 `clusternav10`, `e2e-L8 · e2b-ytm-saved-playing` (bằng chứng phiên, ngoài repo):
  * YT Music ĐANG PHÁT ở ô 0, màn ảo 295; HOME đỉnh display 0 ở 235/235 mẫu, 30 mẫu trong cửa sổ chuỗi 4 s; YT Music pid giữ,
  * `state=3`) bằng 5 bản `am stack list` NGUYÊN VĂN (`l8-slotback-*`):
  *  1. thứ tự: đọc → lớp che lên màn ảo Ô (CHỜ nó đứng đỉnh) → giữ chỗ → dấu → `move-task` → gỡ giữ chỗ → GỠ CHE → đọc lại;

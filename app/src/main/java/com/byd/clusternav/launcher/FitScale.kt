@@ -327,6 +327,9 @@ internal class FitScale(private val root: View) {
     fun <T> whole(valuePx: Float, measure: () -> T): T? =
         row?.whole(valuePx, form == Form.HORIZONTAL, { rowParams(form == Form.HORIZONTAL) }, measure)
 
+    /** 2.93 FIT-REGROW lớn MỘT PHẦN: mọi chữ (trừ autosize, kể cả chữ đang ẩn) ở cỡ LƯỚI gốc × k + hàng ngang không ai nhường ([FitValueRow.roomy]). */
+    fun full(): Boolean = row?.roomy() != false && texts().all { autoSized(it) || abs(it.textSize - basePx(it) * scale.toFloat()) <= 0.01f }
+
     /** Lề trong × k. Con của khối chính khi lật ngang: lề "chỉ dọc" (trái = phải = 0, không nền) xoay thành ngang. */
     private fun padding(b: Base, k: Double, rot: Boolean): Boolean {
         var (l, t, r, bt) = b.pad.let { listOf(it[0], it[1], it[2], it[3]) }
@@ -362,6 +365,7 @@ internal class FitScale(private val root: View) {
             var (l, t, r, bt) = listOf(m[0], m[1], m[2], m[3])
             if (rot && !b.relative && l == 0 && r == 0) { l = t; r = bt; t = 0; bt = 0 }
             val want = intArrayOf(sc(l, k), sc(t, k), sc(r, k), sc(bt, k))
+            row?.gapMargin(b.v, rot)?.let { (s, e) -> want[0] += s; want[2] += e }   // 2.93 FIT-GRAVITY: khe = lề có chủ
             if (lp.leftMargin != want[0] || lp.topMargin != want[1] || lp.rightMargin != want[2] || lp.bottomMargin != want[3]) {
                 lp.setMargins(want[0], want[1], want[2], want[3]); changed = true
             }
@@ -468,8 +472,7 @@ internal class FitScale(private val root: View) {
     fun baseIconSides(): List<Int> = bases.filter { it.v is ImageView && it.lpW > 0 && it.lpH > 0 }.map { minOf(it.lpW, it.lpH) }
 
     /** Cạnh nhỏ của các nút bấm cỡ cố định bên trong ô (px gốc) — sàn đích chạm (nút nhạc 48dp không được co). */
-    fun baseTouchSides(): List<Int> =
-        bases.filter { it.v !== root && it.v.isClickable && it.lpW > 0 && it.lpH > 0 }.map { minOf(it.lpW, it.lpH) }
+    fun baseTouchSides(): List<Int> = bases.filter { it.v !== root && it.v.isClickable && it.lpW > 0 && it.lpH > 0 }.map { minOf(it.lpW, it.lpH) }
 
     companion object {
         /**

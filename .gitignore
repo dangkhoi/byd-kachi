@@ -154,7 +154,7 @@ docs/diagnostics/**/*.png
 # ─── CHẶN ĐỘC LẬP ĐƯỜNG DẪN cho ảnh chụp từ xe (thêm 2026-09-27 tối, SAU khi 7 ảnh LỌT lên repo public) ──
 # Vì sao phải có: lưới thêm lúc chiều bị ghim vào `docs/diagnostics/**`. Tối cùng ngày, 7 ảnh xe được chép
 # sang `docs/guide/img/` — ngoài tiền tố ấy đúng một mức — nên `git check-ignore` cho qua và `git add -A`
-# cuốn hết vào commit 491e169 đã push lên repo CÔNG KHAI. Trong đó có **biển số xe của người khác**, 3 ảnh
+# cuốn hết vào một commit đã push lên repo CÔNG KHAI. Trong đó có **biển số xe của người khác**, 3 ảnh
 # cụm hiện bản đồ sống chỉ đúng vị trí + giờ, một ảnh framebuffer đọc được số nhà, và 2 ảnh màn hình mang
 # avatar tài khoản cá nhân. Lưới chặn phải độc lập đường dẫn, nếu không nó chỉ chặn đúng thư mục mình nhớ.
 # Muốn commit một ảnh xe thì phải khai tên nó vào whitelist bên dưới — bắt người viết nói rõ ý định.

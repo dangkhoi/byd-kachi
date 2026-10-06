@@ -14,7 +14,7 @@
 - Ghế lái giữ **chấm vô-lăng** (L4) nên vẫn phân biệt được với ghế phụ khi hai chip đứng cạnh nhau.
 - `KachiIcons.byLevel` chỉ gọi `setImageResource` **khi id đổi thật** (ghi vào `tag`): ô nút được vẽ lại theo nhịp trạng thái xe 1 Hz, mà `setImageResource` luôn giải mã lại drawable.
 
-**[ĐO mắt, ảnh dựng từ chính tệp sinh]** `scratchpad/icons-276-seat/*-{24,48}-dark.png` (48 tệp, nền tối như chip thật): ở **24 px** một làn nhiệt ↔ hai làn, một bông tuyết ↔ hai bông tuyết phân biệt được ngay, không cần phóng to. Ảnh dán cạnh nhau: `icons-276-seat/sheet2.png`.
+**[ĐO mắt, ảnh dựng từ chính tệp sinh]** `*-{24,48}-dark.png` (48 tệp của bộ `icons-276-seat`, ngoài repo; nền tối như chip thật): ở **24 px** một làn nhiệt ↔ hai làn, một bông tuyết ↔ hai bông tuyết phân biệt được ngay, không cần phóng to. Ảnh dán cạnh nhau: `icons-276-seat/sheet2.png`.
 
 ## 2. Lật gương (`camera_mirror_left/right`)
 

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 wave 2C</title>
+<!--
+  Spec Kiro-style (consolidated) theo docs/specs/_template.html. Thứ tự section: Changelog · Context · Requirements · Design ·
+  Tasks · Verification · Open Questions · References · Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (.flow/.layers).
+  Approval gate out-of-band — KHÔNG lưu trạng thái duyệt trong tệp này.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--bad:#c9341f}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--bad:#ff6b5b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.12)}
+.layer .node.gone{background:rgba(201,52,31,.10);text-decoration:line-through}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode.bad{background:rgba(201,52,31,.10)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+@media(max-width:600px){.wrap{padding:28px 16px 80px}h1{font-size:24px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Wave 2C: bảy việc tồn cuối (test · mã chết · camera)</h1>
+<p class="muted">Slug: <code>kachi-293-wave2c</code> · Branch <code>feat/key-source-split</code> (cây chính, chưa commit, gốc 2.92 <code>8fbdf96</code>) · Kế hoạch tổng <code>kachi-293-plan.html</code> · Owner 06/10: <i>"làm hết mọi thứ, ko để lại"</i> · <i>"autonomus làm cho đến khi xong, đăng OTA luôn"</i> · <span class="pill wait">Trạng thái: mã + test off-car xong — chờ bộ đủ của điều phối · senior review · QA máy ảo · 🚗</span> · Cập nhật 2026-10-07 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> (repo + global) + <code>.kiro/steering/*</code>. Nhãn: <b>[ĐO]</b> output thật của lượt này · <b>[SUY]</b> suy từ nguồn đã đọc · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b> · 🚗 cần xe · 🖥 cần máy ảo. Không thư viện mới (Kotlin stdlib · Android SDK · <code>androidx.core</code> đã dùng) ⇒ Context7 không cần — và máy chủ Context7 KHÔNG kết nối được phiên này (ENOTFOUND). Khẳng định framework trích nguồn AOSP <code>android-10.0.0_r47</code> tải từ googlesource trong phiên (CLAUDE.md §3). Không bump phiên bản (điều phối bump ở T5 của kế hoạch tổng).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-07</b>: Khởi tạo + làm mã + test off-car cùng lượt (owner đã duyệt hướng "làm hết"): 7 việc điều phối giao sau wave 2A/2B — TEST-STRIP-COPIES · SLOT-DEAD-FREEFORM-REST · DIAG-BRIDGE-DEAD-OPENERS · PREFS-SET-CAM-GLOBAL-REAPPLY · CAM-D6-SAME-CAMERA-EDGE · CAM-WAKE-COLD-MAIN · CAM-RAW-DIAG-REACH (chạm tài liệu). Kết quả từng việc ở §5–§6.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Wave 2A (spec <code>kachi-293-wave2a.html</code>) và wave 2B (spec <code>kachi-293-cam.html</code> Pass 2) để lại bảy việc có ghi tên + lý do; owner không muốn còn nợ. Bằng chứng gốc của từng việc:</p>
+<table>
+<tr><th>#</th><th>Việc</th><th>Nguồn</th><th>Bằng chứng</th></tr>
+<tr><td>1</td><td>TEST-STRIP-COPIES [P3]</td><td>spec 293-misc D11</td><td>[ĐO grep 07/10] 67 tệp test mang bộ bỏ chú thích CHÉP TAY (59 lần <code>substringBefore("//")</code> · 59 lần regex khối <code>.*?</code> · 9 lần regex dòng <code>//…</code> · 2 bản đếm dấu nháy · 3 bộ lọc dòng); 9 tệp chỉ cắt <code>//</code> (KDoc nhiều dòng còn nguyên trong "mã")</td></tr>
+<tr><td>2</td><td>SLOT-DEAD-FREEFORM-REST</td><td>spec 293-wave2a OQ3</td><td>[ĐO grep main · vehicleTest · testVehicleTest 07/10] <code>AppLauncher.isFreeformAvailable</code>, <code>FloatingWindowLedger.markOpened</code>: 0 chỗ gọi sản phẩm</td></tr>
+<tr><td>3</td><td>DIAG-BRIDGE-DEAD-OPENERS</td><td>spec 293-cam §9 Pass 2</td><td>[ĐO grep 07/10] <code>ClusterNavBridge.openDiagnostics()</code> / <code>openVietMapData()</code>: 0 chỗ gọi; <code>BridgeMsg.SCREEN_OPEN_FAILED</code> chỉ hàm phụ <code>launch</code> của hai cửa ấy dùng</td></tr>
+<tr><td>4</td><td>PREFS-SET-CAM-GLOBAL-REAPPLY</td><td>spec 293-cam §9 "Phạm vi D2"</td><td>[ĐO mã] <code>prefs_set camera_projection|camera_zoom</code> chỉ GHI pref (khung đang hiện giữ kiểu cũ) trong khi chip/thanh kéo Cài đặt ghi + nắn đủ + dựng lại</td></tr>
+<tr><td>5</td><td>CAM-D6-SAME-CAMERA-EDGE</td><td>spec 293-cam §9 Pass 2 (giới hạn đã biết)</td><td>[SUY đọc mã] demand trái + xi-nhan trái lúc đổi hồ sơ ⇒ hết xi-nhan <code>show</code> thấy CÙNG camera ⇒ không dựng lại ⇒ khung giữ cấu hình hồ sơ cũ tới lượt mở kế (không hẹn giờ tắt ⇒ có thể cả chuyến)</td></tr>
+<tr><td>6</td><td>CAM-WAKE-COLD-MAIN</td><td>spec 293-cam §10 Pass 2 (giới hạn đã biết)</td><td>[SUY đọc mã + ĐO nguồn r47] tiến trình chính đang khởi động (sống, receiver chưa đăng ký) ⇒ broadcast có thứ tự hết receiver ⇒ <code>resultTo</code> nhận mã khởi đầu (<code>BroadcastQueue.java:1093-1133</code>) ⇒ UNREACHABLE ngay</td></tr>
+<tr><td>7</td><td>CAM-RAW-DIAG-REACH (chạm tài liệu)</td><td>spec 293-misc OQ3</td><td>OQ3 còn ghi "không tự quyết" dù wave 2B đã đóng bằng lệnh <code>diag_screen</code></td></tr>
+</table>
+<div class="card"><b>Cổng §14:</b> wave 2C KHÔNG thêm lệnh <code>am</code>/<code>wm</code>/<code>service call</code>, opcode, HAL hay cơ chế xe mới. #4 và #5 chỉ gọi lại CỬA ÁP LẠI đã có của controller (<code>reapplyIfShowing</code> — dỡ + dựng theo đường <i>đổi camera</i>, chuỗi dỡ có bài canh); #6 gửi lại ĐÚNG broadcast trong gói của wave 2B (một lượt nữa, cùng hạn). #1–#3 không đổi hành vi sản phẩm (test hạ tầng · gỡ mã 0 chỗ gọi). Mọi điều có hệ quả trên xe đánh dấu 🚗 ở §6.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<table>
+<tr><th>R</th><th>Việc</th><th>Tiêu chí nghiệm thu</th></tr>
+<tr><td>R1</td><td>TEST-STRIP-COPIES</td><td>0 bộ bỏ chú thích chép tay trong mọi gốc test (<code>substringBefore("//")</code> · regex khối/dòng · đếm dấu nháy · lọc dòng); mọi chỗ dùng <code>KotlinSource.stripComments</code> / <code>SourceRoots.codeOf</code>. Không nới assertion nào; bài báo <code>tệp:dòng</code> giữ ĐÚNG số dòng (cờ <code>keepLines</code> mới của bộ quét dùng chung, mặc định không đổi một byte). Mọi bài đổi xanh như trước (trừ hỏng có sẵn ngoài phạm vi).</td></tr>
+<tr><td>R2</td><td>SLOT-DEAD-FREEFORM-REST</td><td>Gỡ <code>AppLauncher.isFreeformAvailable</code> (hợp đồng + <code>NoCar</code> + <code>ShellAppLauncher</code>) và <code>FloatingWindowLedger.markOpened</code> + hàm phụ chết <code>add</code>; giữ <code>opened</code>/<code>forget</code>/<code>decode</code> (lượt dọn cửa sổ nổi của bản ≤ 2.92 vẫn chạy). Bài đi theo, một bài khoá việc gỡ.</td></tr>
+<tr><td>R3</td><td>DIAG-BRIDGE-DEAD-OPENERS</td><td>Gỡ <code>openDiagnostics</code>/<code>openVietMapData</code> + hàm phụ <code>launch</code> + <code>BridgeMsg.SCREEN_OPEN_FAILED</code> + chuỗi <code>kachi_bridge_screen_open_failed</code> ở 5 thứ tiếng; bài khoá mồ côi/khoá thiếu theo thứ tiếng nhất quán; bài "chỉ lệnh cầu mở hai màn" siết thành 0 lần xuất hiện của hai tên.</td></tr>
+<tr><td>R4</td><td>PREFS-SET-CAM-GLOBAL-REAPPLY</td><td><code>prefs_set camera_projection|camera_zoom</code> làm ĐÚNG như chip/thanh kéo Cài đặt: ghi · (<i>Nắn thẳng</i> lúc amount 0 ⇒ nắn đủ) · dựng lại khung đang hiện CHỈ khi thứ đang áp đổi. Một hàm cho cả hai lối. <code>scripts/emulator/camera-dewarp-e2e.sh</code> chạy y như cũ.</td></tr>
+<tr><td>R5</td><td>CAM-D6-SAME-CAMERA-EDGE</td><td>Đổi hồ sơ khi xi-nhan giữ ĐÚNG camera theo yêu cầu đang hiện ⇒ không dỡ camera ấy giữa lúc rẽ; xi-nhan nhả ⇒ dựng lại theo cấu hình hồ sơ mới đúng MỘT lần. Mọi ca khác giữ đúng luật D6 wave 2B.</td></tr>
+<tr><td>R6</td><td>CAM-WAKE-COLD-MAIN</td><td><code>:wake</code>: lượt đầu không receiver nào trả lời ⇒ gửi lại MỘT lần sau khi chờ chính lên, trong trần tổng ≤ 3 s (chọn: giữ 2 s cũ); vẫn không tới ⇒ UNREACHABLE; <i>"tắt camera"</i> sau lượt gửi lại giữ đúng luật Camera 360 của <code>VoiceCameraTurn</code>. Test cho cả hai.</td></tr>
+<tr><td>R7</td><td>CAM-RAW-DIAG-REACH (tài liệu)</td><td>OQ3 của <code>kachi-293-misc.html</code> ghi "ĐÓNG bởi wave 2B — lệnh <code>diag_screen</code>" (một dòng).</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Không tệp Kotlin nào &gt; 500 dòng [ĐO <code>wc -l</code>: <code>CameraSignalController.kt</code> 499 (498 + 1) · <code>ClusterNavBridge.kt</code> 498 (không đổi số dòng)].</li>
+<li>R-nf2. Không thư viện mới; không đổi đường đang chạy tốt ngoài phạm vi (CLAUDE.md §6); generic, không tên gói cứng mới (§7).</li>
+<li>R-nf3. Mỗi thay đổi hành vi có test hồi quy ĐÃ thử đỏ (conversation-protocol P5.3) — §6.</li>
+<li>R-nf4. Chữ UI: chỉ GỠ một chuỗi (5 thứ tiếng cùng lúc); không thêm chuỗi mới.</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">Phản ánh mã THỰC TẾ (R2.6). Diagram là HTML visual.</p>
+
+<h3>4.1 R1 · TEST-STRIP-COPIES — một bộ quét có trạng thái cho mọi bài canh mã</h3>
+<div class="layers">
+  <div class="layer"><div class="node gone"><b>67 bản chép tay</b><span>regex khối <code>.*?</code> + cắt <code>//</code> mỗi dòng · đếm dấu nháy · lọc dòng <code>//</code>/<code>*</code></span></div></div>
+  <div class="layer"><div class="node"><b>SourceRoots.codeOf(rel)</b><span>tệp theo đường dẫn module (đã dùng bộ quét từ TEST-CODEOF-STRIP)</span></div><div class="node new"><b>KotlinSource.stripComments(src, keepLines)</b><span>giữ string literal · khối lồng nhau · <code>keepLines</code> giữ số dòng</span></div></div>
+  <div class="layer"><div class="node"><b>bài canh</b><span>contains / assertFalse / tệp:dòng / đếm ngoặc</span></div></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> đổi ở wave 2C</span><span class="sw"><span class="box" style="background:rgba(201,52,31,.12)"></span> gỡ</span></div>
+<ul>
+<li>Bản chép tay FAIL-OPEN theo cùng một cách [SUY đọc mã bản cũ; KDoc <code>KotlinSource</code> ghi phép đo 08-23]: <code>"https://…"</code> trong chuỗi cắt mất phần mã phía sau trên cùng dòng; một chuỗi chứa cặp mở-khối nuốt mã tới dấu đóng thật. Bản mới BẮT đúng ca ấy [ĐO thử đỏ §6]. 9 tệp chỉ cắt <code>//</code> còn để KDoc nhiều dòng lọt vào "mã" (báo sai kiểu ngược lại).</li>
+<li><code>keepLines</code> (mặc định <code>false</code> = từng byte như cũ cho ~100 chỗ gọi sẵn có): xuống dòng TRONG comment khối được giữ ⇒ dòng N đầu ra = dòng N nguồn. Dùng ở 7 bài soi từng dòng/báo số dòng (<code>ControlHeight</code> · <code>SpacingScale.codeLines</code> · <code>TypeScale</code> · <code>DeadReckonRetirement</code> ×2 · <code>CarDataDemandRenderer</code> ×2 · <code>ThemeOpcodeLiteral</code>).</li>
+<li>Ca riêng: <code>TypeScaleContractTest</code> — marker miễn <code>[type scale]</code> nằm ở chú thích DÒNG cuối dòng mã ⇒ <code>codeLines</code> trả cặp (mã đã bỏ chú thích, dòng thô cùng số); marker đọc từ dòng thô. <code>CarDataDemandRendererContractTest</code> — bộ lọc dòng <code>*</code>/mở-khối thừa (mã đã sạch) gỡ. <code>CameraSettingsIaWiringContractTest</code> — lọc <code>//</code> thừa trên văn bản đã qua <code>codeOf</code> gỡ.</li>
+<li>Không đổi (cố ý ĐỌC chú thích, không phải bộ bỏ chú thích): <code>SpacingScaleContractTest</code> (đòi dòng chú thích lý do đứng trước khai báo) · <code>VoiceTurnPhaseWiringContractTest</code> (đọc cạnh <code>// B1: X → Y</code>) · <code>VoiceKeyGeminiReapplyWiringTest</code>/<code>CastDeepRescueContractTest</code> (đã gọi <code>KotlinSource</code> bằng tên đầy đủ).</li>
+</ul>
+
+<h3>4.2 R2 · SLOT-DEAD-FREEFORM-REST · R3 · DIAG-BRIDGE-DEAD-OPENERS — gỡ mã 0 chỗ gọi</h3>
+<div class="layers">
+  <div class="layer"><div class="node"><b>AppLauncher</b><span><code>closeSlot</code></span></div><div class="node gone"><b>isFreeformAvailable</b><span>NoCar · ShellAppLauncher (<code>settings get global enable_freeform_support</code>)</span></div></div>
+  <div class="layer"><div class="node"><b>FloatingWindowLedger</b><span><code>opened</code> · <code>forget</code> · <code>decode</code>/<code>encode</code> (dọn dấu bản ≤ 2.92)</span></div><div class="node gone"><b>markOpened · add</b><span>lượt GHI dấu mới</span></div></div>
+  <div class="layer"><div class="node"><b>TestBridgeScreens</b><span>lối DUY NHẤT tới hai màn chẩn đoán (<code>diag_screen</code>, sau cổng test-mode)</span></div><div class="node gone"><b>openDiagnostics · openVietMapData · launch</b><span>+ <code>BridgeMsg.SCREEN_OPEN_FAILED</code> + 5 chuỗi</span></div></div>
+</div>
+<ul>
+<li>[ĐO grep 07/10, <code>app/src/main</code> · <code>app/src/vehicleTest</code> · <code>app/src/testVehicleTest</code> · <code>core/src/main</code> · <code>car-integration</code> · <code>vehicle-contracts</code> · <code>offcar-planner</code> · <code>hal-helper</code>] 0 chỗ gọi cho cả năm tên trước khi gỡ.</li>
+<li>KDoc treo cùng họ sửa theo: <code>LauncherPorts</code> · <code>ShellAppLauncher</code> · <code>FloatingWindowLedger</code> · <code>ClusterNavBridge.kt</code>:263 · <code>SettingsSectionsCast.kt</code>:471 · <code>TestBridgeScreenCommands.kt</code>:8 · <code>PersistentWindowStateWriterGuardTest</code> · <code>SettingsCatalogControlContractTest</code>.</li>
+</ul>
+
+<h3>4.3 R4 · PREFS-SET-CAM-GLOBAL-REAPPLY — một hàm cho chip Cài đặt và <code>prefs_set</code></h3>
+<div class="flow">
+  <div class="fnode"><b>chip Kiểu hình · thanh Thu phóng</b><span><code>ClusterNavBridge.setCameraProjection/Zoom</code></span></div>
+  <div class="fnode new"><b>prefs_set camera_projection|zoom</b><span><code>TestBridgePrefsSet</code> (giá trị đã qua <code>takeIf</code>)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>CameraReapply.setProjection / setZoom</b><span>so kiểu ĐÃ QUY · ghi · <code>CameraViewMode.amountOnPick</code> (<code>:core</code>)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>anyShowing</b><span>chỉ khi đổi · chỉ khi controller đã dựng</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>reapplyIfShowing</b><span>dỡ + dựng khung đang hiện (không chạm HOLD)</span></div>
+</div>
+<ul>
+<li>Luật <i>"chọn Nắn thẳng lúc amount 0 ⇒ nắn đủ"</i> dời từ cầu Cài đặt sang <code>:core</code> <code>CameraViewMode.amountOnPick</code> (có bài); <code>ClusterNavBridge.reapplyCamera</code> (cửa riêng của cầu) gỡ — thay bằng <code>CameraReapply.anyShowing</code>.</li>
+<li>Khoá chung áp cho MỌI camera đang "theo chung" ⇒ khung nào đang hiện cũng dựng lại (y như Cài đặt 2.92). Camera đặt kiểu riêng (không AUTO) chớp một lần vô hại — đúng hành vi Cài đặt.</li>
+<li><code>camera-dewarp-e2e.sh</code>: [ĐO grep] không đặt <code>camera_projection</code>/<code>camera_zoom</code> (chỉ <code>camera_dewarp_*</code> · <code>camera_rot_left</code> · <code>camera_shape</code>…, tự <code>retrigger</code>) ⇒ không đổi; <code>camera-cluster-e2e.sh</code> cũng không dùng hai khoá.</li>
+</ul>
+
+<h3>4.4 R5 · CAM-D6-SAME-CAMERA-EDGE — hẹn dựng lại lúc xi-nhan nhả</h3>
+<div class="flow">
+  <div class="fnode"><b>đổi hồ sơ</b><span><code>reapplyAll</code> → <code>CameraReapply.ifDemandShowing</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>CameraDemand.profileReapply</b><span>(xi-nhan, theo yêu cầu, khung đang hiện)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>NOW</b><span>khung = theo yêu cầu ≠ camera xi-nhan ⇒ dựng lại ngay (D6)</span></div>
+  <div class="fnode new"><b>AT_RELEASE</b><span>khung = theo yêu cầu = camera xi-nhan ⇒ <code>od.reapplyAtRelease</code></span></div>
+  <div class="fnode"><b>NONE</b><span>không gì hiện · không demand · demand bị che</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>xi-nhan nhả</b><span><code>endBlinker</code> (hết HOLD · tắt công tắc · <code>endPreview</code>)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>takeReapplyAtRelease()</b><span>đọc + xoá (một lần)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>want() == showing</b><span>⇒ <code>reapplyIfShowing()</code> (cấu hình hồ sơ mới)</span></div>
+  <div class="fnode"><b>khác</b><span>⇒ <code>show(want())</code> như cũ (camera khác tự mở phiên mới)</span></div>
+</div>
+<ul>
+<li>Lời hẹn XOÁ ở mọi phiên mới (<code>openSession</code> → <code>od.sessionOpened()</code>): đổi bên xi-nhan · xem thử · áp lại Cài đặt · <code>camera_synth</code> đã đọc cấu hình tươi ⇒ không dựng lại lần hai vô cớ.</li>
+<li>Không hẹn giờ nào (bài canh: <code>main.postDelayed</code> vẫn đúng MỘT chỗ — mốc HOLD).</li>
+</ul>
+
+<h3>4.5 R6 · CAM-WAKE-COLD-MAIN — gửi lại một lần, trong hạn cũ</h3>
+<p class="muted"><b>Review 07/10 F2 [P2]:</b> mỗi lượt gửi từ <code>:wake</code> mang <code>EXTRA_DEADLINE</code> (hạn tổng, đồng hồ <code>elapsedRealtime</code> — cùng một đồng hồ cho mọi tiến trình [ĐO nguồn r47 <code>SystemClock.cpp:49-61</code> CLOCK_BOOTTIME]); receiver ở tiến trình chính tới SAU hạn ⇒ BỎ lệnh, giữ mã ban đầu (<code>CameraWakeAsk.expired</code>) — lệnh mở tới trễ lúc nổ máy không được đè camera xi-nhan vừa bật sau khi giọng đã báo ✗.</p>
+<div class="flow">
+  <div class="fnode"><b>:wake gửi lượt 1</b><span>broadcast có thứ tự, mã khởi đầu 0</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode bad"><b>mã 0 về NGAY</b><span>chưa receiver nào (chính đang <code>onCreate</code>)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>chờ 1 s</b><span><code>CameraWakeAsk.RETRY_DELAY_MS</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>chính còn sống?</b><span>không ⇒ <code>withoutMain</code> (TẮT = không gì để tắt)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>gửi lượt 2</b><span>trả lời ⇒ kết quả · lại 0 ⇒ UNREACHABLE</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VoiceCameraTurn</b><span>NOTHING_TO_CLOSE ⇒ Camera 360 · UNREACHABLE ⇒ "✗ …"</span></div>
+</div>
+<ul>
+<li>[ĐO nguồn r47] <code>services/core/java/com/android/server/am/BroadcastQueue.java:1093-1133</code>: hết receiver (<code>r.receivers == null || r.nextReceiver &gt;= numReceivers</code>) ⇒ <code>performReceiveLocked(…, r.resultTo, …, r.resultCode, …)</code> — <code>resultTo</code> nhận mã của bản ghi, tức mã khởi đầu nếu không ai đặt.</li>
+<li>An toàn không áp đôi: receiver luôn đặt mã ≠ 0 sau khi áp (<code>CameraDemand.outcome</code> không ra UNREACHABLE) ⇒ mã 0 = chắc chắn chưa áp; lượt 2 chỉ bắn SAU khi lượt 1 đã về như vậy. Hết hạn ⇒ KHÔNG gửi lại (lượt 1 có thể còn bay).</li>
+<li>Luật thuần ở <code>:core</code> <code>CameraWakeAsk.run</code> (đồng hồ + hẹn giờ tiêm vào); <code>CameraDemandDispatch.sendForResult</code> chỉ nối <code>Handler</code>/<code>SystemClock</code>/<code>sendOrderedBroadcast</code> (<code>sendOnce</code>).</li>
+</ul>
+
+<h3>4.6 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do / trade-off</th></tr>
+<tr><td>D1</td><td>R1: thêm cờ <code>keepLines</code> vào bộ quét dùng chung, mặc định tắt</td><td>Bảy bài cần số dòng thật; nhét newline mặc định sẽ đổi đầu ra của ~100 chỗ gọi <code>codeOf</code> (rủi ro không cần).</td></tr>
+<tr><td>D2</td><td>R1 TypeScale: marker đọc từ dòng THÔ</td><td>Marker là chú thích; bộ quét bỏ nó. Hệ quả nhỏ: marker trong chú thích KHỐI trên cùng dòng mã cũng được nhận — repo luôn đặt ở chú thích dòng, 0 dòng đổi kết quả [ĐO bài xanh, EXEMPT_LINES = 3 giữ].</td></tr>
+<tr><td>D3</td><td>R4: <code>prefs_set</code> làm TRỌN như Cài đặt (kể cả nắn đủ)</td><td>Lời giao "exactly like Settings". Không làm thì <code>prefs_set camera_projection STRAIGHT</code> lúc amount 0 báo "Nắn thẳng" mà ảnh vẫn thô — bẫy QA. Giá: một lượt ghi phụ <code>camera_dewarp_amount</code> không hiện trong lời đáp (OQ2).</td></tr>
+<tr><td>D4</td><td>R5: TRÙNG camera ⇒ hẹn, KỂ CẢ khi lệnh theo yêu cầu mới hơn xi-nhan</td><td>D6 wave 2B dựng lại ngay ca "mới hơn" — tức dỡ (chớp đen) đúng camera điểm mù giữa lúc rẽ. Siết theo lời giao "never tear down a blinker camera mid-turn" (OQ3).</td></tr>
+<tr><td>D5</td><td>R6: trần tổng giữ 2 s (không lên 3 s)</td><td>Bài canh "hạn × 2 ≤ <code>TURN_SETTLE_MS</code> 4 s" giữ chỗ cho đường Camera 360 chạy SAU kết quả; 2 s thỏa "≤ 3 s" của lời giao mà không ăn vào chỗ ấy.</td></tr>
+<tr><td>D6</td><td>R6: chỉ gửi lại khi mã 0 về (không khi hết hạn / gửi hỏng)</td><td>Hết hạn = lượt 1 có thể còn bay ⇒ gửi lại có thể áp đôi; gửi hỏng = lỗi hệ thống, lặp không giúp.</td></tr>
+<tr><td>D7</td><td>R6: sau lượt gửi lại vẫn UNREACHABLE ⇒ KHÔNG rơi về Camera 360</td><td>Đúng luật <code>VoiceCameraTurn</code>: không biết camera theo yêu cầu có mở không (receiver có thể hỏng đăng ký trên một tiến trình đang chạy). Chính tắt trong lúc chờ ⇒ <code>withoutMain</code> như lượt hỏi đầu.</td></tr>
+<tr><td>D8</td><td>R6: chính KHÔNG sống ngay lượt hỏi đầu ⇒ vẫn trả <code>withoutMain</code> ngay (không chờ)</td><td>Receiver đăng ký động không khởi động được tiến trình; <code>:wake</code> chờ chỉ làm chậm một thất bại chắc chắn [SUY].</td></tr>
+</table>
+
+<h2>5. Tasks (DAG) — một dòng mỗi việc</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Tệp chính</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R1 bộ quét dùng chung <code>keepLines</code> + bài</td><td><code>core/src/testFixtures/…/KotlinSource.kt</code> · <code>KotlinSourceTest</code></td><td>✅</td></tr>
+<tr><td>T2</td><td>R1 đổi 67 tệp test sang bộ quét dùng chung (65 bằng thay chuỗi chính xác có kiểm số lần · 2 tay)</td><td>66 tệp <code>app/src/test</code> + <code>ThemeOpcodeLiteralContractTest</code> (<code>:core</code>)</td><td>✅</td></tr>
+<tr><td>T3</td><td>R2 gỡ <code>isFreeformAvailable</code> · <code>markOpened</code> · <code>add</code> + KDoc</td><td><code>LauncherPorts.kt</code> · <code>ShellAppLauncher.kt</code> · <code>FloatingWindowLedger.kt</code> · 5 tệp test</td><td>✅</td></tr>
+<tr><td>T4</td><td>R3 gỡ hai cửa + <code>launch</code> + mã + 5 chuỗi + KDoc</td><td><code>ClusterNavBridgeSystem.kt</code> · <code>ClusterNavBridgeMsg.kt</code> · <code>KachiHomeWiring.kt</code> · 5 × <code>strings_kachi.xml</code> · <code>DevSurfaceGateContractTest</code></td><td>✅</td></tr>
+<tr><td>T5</td><td>R4 cửa chung + luật <code>:core</code> + nối <code>prefs_set</code> + bài</td><td><code>CameraViewMode.kt</code> · <code>CameraReapply.kt</code> · <code>ClusterNavBridgeAutomation.kt</code> · <code>TestBridgePrefsSet.kt</code> · <code>CameraWave2CWiringContractTest</code> (mới) · <code>CameraFullViewWiringContractTest</code></td><td>✅ · 🖥</td></tr>
+<tr><td>T6</td><td>R5 luật <code>:core</code> + lời hẹn + nối controller + bài</td><td><code>CameraDemand.kt</code> · <code>CameraDemandState.kt</code> · <code>CameraSignalController.kt</code> · <code>CameraDemandProfileReapplyTest</code> (mới) · <code>CameraWave2BWiringContractTest</code></td><td>✅ · 🖥 · 🚗</td></tr>
+<tr><td>T7</td><td>R6 luật <code>:core</code> gửi lại + nối <code>:app</code> + bài (gồm chuỗi <code>VoiceCameraTurn</code>)</td><td><code>CameraWakeAsk.kt</code> (mới) · <code>CameraDemandDispatch.kt</code> · <code>CameraWakeAskTest</code> (mới) · <code>CameraDemandWiringContractTest</code></td><td>✅ · 🚗</td></tr>
+<tr><td>T8</td><td>R7 OQ3 spec misc</td><td><code>docs/specs/kachi-293-misc.html</code></td><td>✅</td></tr>
+<tr><td>T9</td><td>Bộ đủ · senior review · QA máy ảo · quét bảo mật · INDEX/BACKLOG/project-context · commit/OTA</td><td>— (điều phối)</td><td>chờ</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 2026-10-07, JUnit XML đếm theo mốc giờ chạy, <code>JAVA_HOME=openjdk@17</code>, cây chính có sửa đồng thời của bên khác]:
+<table>
+<tr><th>Lượt</th><th>Tệp XML</th><th>Bài</th><th>Hỏng</th></tr>
+<tr><td><code>./gradlew :core:test --continue</code> (bộ ĐỦ)</td><td>522</td><td>4 738</td><td>0</td></tr>
+<tr><td><code>./gradlew :app:testDebugUnitTest --continue</code> (bộ ĐỦ)</td><td>281</td><td>2 188</td><td>2 — có sẵn, ngoài phạm vi (dưới)</td></tr>
+<tr><td><code>./gradlew :app:testVehicleTestUnitTest --continue</code></td><td>282</td><td>2 200</td><td>2 — cùng hai bài</td></tr>
+<tr><td><code>:car-integration:test</code> · <code>:offcar-planner:test</code></td><td>10 · 19</td><td>80 · 99</td><td>0 · 0</td></tr>
+<tr><td><code>:vehicle-contracts:test</code></td><td colspan="3">UP-TO-DATE (đầu vào không đổi — wave 2C không chạm)</td></tr>
+</table>
+Hai bài hỏng: <code>ShortcutsWiringContractTest › widget w_apps dung CUNG view, o to va o nen</code> và <code>FitGridWiringContractTest › o widget di qua FitGridLayout…</code> — cả hai ghim chuỗi gọi <code>ShortcutIconsView(ctx, grid = true)</code> / <code>build(ctx, list[0], data)</code> mà wave 2A SHORTCUT-SCROLL-REBUILD đã thêm tham số <code>scrollKey</code> (<code>WidgetViews.kt</code> sửa lúc 00:43, TRƯỚC lượt này; wave 2C không chạm <code>WidgetViews.kt</code> lẫn hai bài ấy). [ĐO] bài thứ nhất hỏng y nguyên ở lượt NỀN trước mọi sửa của wave 2C. Thuộc vùng của bên rà soát wave 2A — báo điều phối, không sửa ở đây.</li>
+<li><b>Thử đỏ</b> [ĐO 2026-10-07, bộ đột biến tự khôi phục + so sha256 ⇒ 11/11 RESTORED-IDENTICAL]:
+<table>
+<tr><th>Đột biến</th><th>Bài đỏ</th></tr>
+<tr><td>R1 · tệp dò (tạm) <code>val u = "https://x/" + "service call AutoContainer 2"</code> ở <code>:core</code></td><td><code>ThemeOpcodeLiteralContractTest › khong chuoi AutoContainer…</code> (báo đúng <code>W2cStripProbe.kt:4</code> nhờ <code>keepLines</code>) — bản chép tay cắt ở <code>https:</code> nên không thấy [SUY]</td></tr>
+<tr><td>R1 · tệp dò (tạm) <code>"https://x/" + "requestLocationUpdates"</code> ở <code>:app</code></td><td><code>DeadReckonRetirementTest › the app never writes or subscribes to location</code> (<code>…:4</code>)</td></tr>
+<tr><td>R2 · thêm lại <code>markOpened</code> + <code>isFreeformAvailable</code></td><td><code>FloatingWindowLedgerTest › so chi con doc va quen…</code> · <code>ShellAppLauncherTest › hop dong AppLauncher…</code></td></tr>
+<tr><td>R3 · thêm lại <code>openDiagnostics()</code></td><td><code>DevSurfaceGateContractTest › hai man chan doan…</code></td></tr>
+<tr><td>R3 · thêm lại chuỗi ở <code>values/</code></td><td><code>LauncherI18nContractTest › khong co khoa tai nguyen mo coi</code> + 4 × <code>LauncherI18nLocalesContractTest</code></td></tr>
+<tr><td>R4 · <code>amountOnPick</code> luôn <code>null</code></td><td><code>CameraViewModeTest › chon Nan thang luc amount 0…</code></td></tr>
+<tr><td>R4 · <code>prefs_set</code> ghi thẳng pref</td><td>2 × <code>CameraWave2CWiringContractTest</code></td></tr>
+<tr><td>R5 · ca trùng trả <code>NONE</code> (hành vi wave 2B)</td><td>3 × <code>CameraDemandProfileReapplyTest</code></td></tr>
+<tr><td>R5 · <code>endBlinker</code> bỏ lời hẹn</td><td><code>CameraWave2CWiringContractTest › loi hen…</code></td></tr>
+<tr><td>R6 · không gửi lại</td><td>5 × <code>CameraWakeAskTest</code> (kể cả hai bài chuỗi <code>VoiceCameraTurn</code>)</td></tr>
+<tr><td>R6 · gửi lại không hỏi chính còn sống</td><td>2 × <code>CameraWakeAskTest</code></td></tr>
+</table></li>
+<li><b>🖥 QA máy ảo</b> (điều phối; lượt này KHÔNG chạm máy ảo):
+<pre>BR="adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST"
+$BR --es cmd camera_synth --es name on
+$BR --es cmd camera --es name demand:rear                                   # khung camera sau
+$BR --es cmd prefs_set --es key camera_projection --es text FISHEYE         # R4: khung ĐỔI NGAY — logcat -s KachiCamera: dòng "camera REAR … kiểu=FISHEYE" mới
+$BR --es cmd prefs_set --es key camera_projection --es text FISHEYE         # lặp đúng giá trị ⇒ KHÔNG có dòng mới (không chớp)
+$BR --es cmd prefs_set --es key camera_zoom --es text 130                   # R4: khung đổi ngay (thu-phóng=130%)
+$BR --es cmd prefs_set --es key camera_dewarp_amount --es text 0
+$BR --es cmd prefs_set --es key camera_projection --es text STRAIGHT        # R4: như chip Cài đặt ⇒ nắn đủ (GL describe amount=1.000)
+$BR --es cmd camera --es name demand:left ; $BR --es cmd camera --es name left   # R5: demand trái + xi-nhan giả trái (cùng camera)
+$BR --es cmd profile --es name &lt;hồ sơ khác&gt;                                  # R5: KHÔNG dựng lại lúc này (không dòng "camera LEFT" mới)
+# … hết HOLD (CameraHold.HOLD_MS 1,2 s) ⇒ đúng MỘT dòng "camera LEFT (xi-nhan=NONE theo-yêu-cầu=LEFT)" — cấu hình hồ sơ mới
+$BR --es cmd diag_screen --es name diag                                     # R3: lối duy nhất vẫn mở màn Chẩn đoán</pre></li>
+<li><b>🚗 V-oncar</b>: R5 — demand trái + xi-nhan trái + đổi hồ sơ (phím/giọng) ⇒ không chớp đen camera trái giữa lúc rẽ; nhả xi-nhan ⇒ khung theo hồ sơ mới. R6 — ngay sau nổ máy (BYD dựng lại Kachi) nói "tắt camera" qua phím vô-lăng: <code>logcat -s KachiCamDemand</code> có thể thấy <i>"chưa receiver nào trả lời … gửi lại sau 1000 ms"</i> rồi <i>"kết quả NOTHING_TO_CLOSE sau N ms (receiver trả lời ở lượt gửi lại)"</i> và Camera 360 tắt; ghi N + thời điểm đăng ký receiver để chỉnh <code>RETRY_DELAY_MS</code> (OQ1).</li>
+<li><b>V-lifecycle</b>: R5 lời hẹn sống trong RAM (chết theo tiến trình cùng camera theo yêu cầu — không state ngoài hệ thống, CLAUDE.md §5). R2 sổ cửa sổ nổi bền của bản ≤ 2.92 vẫn được đọc + dọn sau nâng cấp (<code>FloatingOrphanSweepTest</code> xanh).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <code>CameraWakeAsk.RETRY_DELAY_MS</code> = 1 s là số chọn [ĐOÁN] — 🚗 đo khoảng "tiến trình chính bật → receiver đăng ký" trên xe rồi chỉnh. Mặc định an toàn đang chạy (trong hạn 2 s cũ).</li>
+<li>OQ2. <code>prefs_set camera_projection STRAIGHT</code> lúc amount 0 ghi kèm <code>camera_dewarp_amount = 100</code> (như Cài đặt) nhưng lời đáp chỉ đọc lại <code>camera_projection</code>. Nếu QA cần thấy lượt ghi phụ ⇒ đề xuất backlog <code>PREFS-SET-SIDE-EFFECT-ECHO</code> (thêm trường vào lời đáp). Không chặn.</li>
+<li>OQ3. R5 siết D6: ca TRÙNG camera mà lệnh theo yêu cầu MỚI hơn xi-nhan, wave 2B dựng lại ngay (chớp đen camera điểm mù), nay hẹn tới lúc nhả. Hướng an toàn đã chọn; owner muốn ngược lại thì đổi một nhánh <code>CameraDemand.profileReapply</code>.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec: <code>kachi-293-plan.html</code> · <code>kachi-293-wave2a.html</code> (OQ3) · <code>kachi-293-cam.html</code> (§4.9, §9 Pass 2, §10 Pass 2) · <code>kachi-293-misc.html</code> (D11, OQ3) · <code>kachi-293-slot.html</code> (OQ4).</li>
+<li>AOSP <code>android-10.0.0_r47</code> (tải trong phiên): <code>services/core/java/com/android/server/am/BroadcastQueue.java:1093-1133</code>.</li>
+<li>Mã: <code>core/src/testFixtures/…/KotlinSource.kt</code> · <code>core/…/camera/CameraWakeAsk.kt</code> · <code>CameraDemand.profileReapply</code> · <code>CameraDemandState</code> · <code>CameraViewMode.amountOnPick</code> · <code>app/…/camera/CameraReapply.kt</code> · <code>CameraDemandDispatch.sendForResult/sendOnce</code> · <code>CameraSignalController.endBlinker/reapplyIfDemandShowing</code> · <code>TestBridgePrefsSet</code>.</li>
+<li>Kịch bản máy ảo: <code>scripts/emulator/camera-dewarp-e2e.sh</code> · <code>camera-cluster-e2e.sh</code> (không dùng <code>camera_projection</code>/<code>camera_zoom</code> — [ĐO grep]).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-07 · nền</b> — [ĐO] lượt chạy TRƯỚC mọi sửa: 66 lớp test <code>:app</code> mang bộ chép tay = 534 bài · 1 hỏng (<code>ShortcutsWiringContractTest › widget w_apps…</code>, của wave 2A); 18 lớp <code>:core</code> liên quan = 110 bài · 0 hỏng.</li>
+<li><b>2026-10-07 · quyết định</b> — R1 làm bằng script thay chuỗi CHÍNH XÁC (mỗi chỗ phải khớp đúng một lần, không khớp ⇒ bỏ cả tệp và báo) trên 65 tệp; hai tệp soi từng dòng (<code>TypeScale</code>, <code>CarDataDemandRenderer</code>) sửa tay. Bản gốc lưu ngoài repo để soát diff.</li>
+<li><b>2026-10-07 · soát không-nới</b> — với 9 tệp trước chỉ cắt <code>//</code> (nay bỏ cả KDoc), [ĐO] mọi mốc cắt vùng <code>substringAfter/Before</code>/<code>indexOf</code> của các bài ấy đều có trong MÃ đã bỏ chú thích đúng một lần (23 mốc, bản Python sao từng bước bộ quét) ⇒ không bài nào thành quét-cả-tệp vô nghĩa.</li>
+<li><b>2026-10-07 · mở rộng nhỏ có lý do</b> — <code>ThemeOpcodeLiteralContractTest</code> dùng <code>keepLines</code>: lời báo <code>tệp:dòng</code> nay đúng dòng thật (bản regex cũ gộp comment khối thành một khoảng trắng ⇒ số dòng trôi).</li>
+<li><b>2026-10-07 · bug &amp; xử</b> — bài mới <code>mot cho ghi duy nhat…</code> đỏ oan ở lượt đầu: regex khớp cả ĐỊNH NGHĨA <code>fun Prefs.setCameraProjection(</code> ở <code>PrefsCameraDewarp.kt</code> ⇒ thêm <code>(?&lt;!fun )</code>.</li>
+<li><b>2026-10-07 · sai lệch lời giao (có lý do)</b> — R6 "≤ 3 s": giữ trần 2 s cũ (D5). R5: siết cả ca "mới hơn" (D4).</li>
+<li><b>2026-10-07 · ghi cho điều phối</b> — <code>CameraSignalController.kt</code> nay 499 dòng (gộp <code>od.sessionOpened()</code> vào dòng <code>openedSessions++</code> để giữ trần); <code>ClusterNavBridge.kt</code> 498 không đổi số dòng.</li>
+<li><b>2026-10-07 · số đo cuối</b> — bộ ĐỦ <code>:core</code> 522 tệp · 4 738 bài · 0 hỏng; <code>:app</code> debug 281 · 2 188 · 2 hỏng có sẵn; vehicleTest 282 · 2 200 · cùng 2; <code>:car-integration</code> 80 · <code>:offcar-planner</code> 99 · 0 hỏng (§6). Hai bài hỏng thuộc wave 2A (<code>scrollKey</code>) — báo điều phối.</li>
+<li><b>2026-10-07 · công cụ</b> — thử đỏ bằng bộ đột biến ngoài repo (sao lưu → đột biến → chạy bài chỉ định → trả nguyên chỉ khi nội dung còn đúng bản đột biến, so sha256) ⇒ 11/11 khôi phục y hệt; hai tệp dò tạm (<code>W2cStripProbe*.kt</code>) đã xoá.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm mục <code>Pass N — YYYY-MM-DD</code>.</p>
+<h3>Pass 0 — 2026-10-07 (tự soát của bên làm — chưa phải senior review độc lập)</h3>
+<ul>
+<li>§8 chỗ gọi [ĐO grep]: <code>CameraReapply.setProjection/setZoom</code> ← <code>ClusterNavBridgeAutomation</code> + <code>TestBridgePrefsSet</code> · <code>anyShowing</code> ← hai hàm ấy · <code>CameraViewMode.amountOnPick</code> ← <code>CameraReapply.setProjection</code> · <code>CameraDemand.profileReapply</code> ← <code>CameraDemandState.onProfileSwitched</code> ← <code>CameraSignalController.reapplyIfDemandShowing</code> · <code>takeReapplyAtRelease</code> ← <code>endBlinker</code> · <code>sessionOpened</code> ← <code>openSession</code> · <code>CameraWakeAsk.run</code> ← <code>CameraDemandDispatch.sendForResult</code> · <code>sendOnce</code> ← <code>sendForResult</code>.</li>
+<li>Bảo mật: 0 đường dẫn máy tuyệt đối · 0 IP · 0 email/tên thật trong tệp đổi [ĐO grep 108 tệp]; danh tính chỉ dangkhoi.</li>
+<li>Trần 500 dòng [ĐO <code>wc -l</code>]: tệp đổi lớn nhất <code>CameraSignalController.kt</code> 499 · <code>ClusterNavBridge.kt</code> 498 · <code>ThemePaletteContractTest.kt</code> 498.</li>
+<li>Soát diff một lượt: (a) bài mới <code>mot cho ghi duy nhat…</code> khớp nhầm ĐỊNH NGHĨA ⇒ đã vá (§9); (b) <code>CameraDemand.profileReapply</code> bản đầu nhận tham số <code>demandNewer</code> không dùng ⇒ gỡ (luật chỉ cần sự thật của cửa sổ); (c) <code>CameraDemandProfileReapplyTest</code> dựng trạng thái bằng hàm thành viên <code>apply(op)</code> bên trong <code>apply { }</code> của stdlib ⇒ viết lại tường minh cho khỏi nhầm. Còn lại không phát hiện.</li>
+<li>Để lại có lý do: hai bài <code>:app</code> hỏng có sẵn của wave 2A (§6) — vùng của bên rà soát wave 2A; OQ1–OQ3.</li>
+<li>Verdict: chờ senior review (Opus) + bộ đủ của điều phối.</li>
+</ul>
+
+<h3>Pass 1 — 2026-10-07 (senior review độc lập — Opus)</h3>
+<p>Soát mã + vá TRONG tệp wave 2C, kèm FIT-REGROW lớn một phần (spec <code>kachi-293-wave2a.html</code> §9/§10 Pass 2) và bốn ghim điều phối đổi cho <code>scrollKey</code> của wave 2A. KHÔNG chạy gradle/máy ảo/xe (điều phối chạy). Context7 không kết nối được (ENOTFOUND) — không thư viện mới. Nguồn AOSP <code>android-10.0.0_r47</code> tải trong lượt (googlesource): <code>LoadedApk.java</code> · <code>BroadcastQueue.java</code> · <code>ActivityManagerService.java</code> · <code>android_os_SystemClock.cpp</code> · <code>libutils/SystemClock.cpp</code>.</p>
+<table>
+<tr><th>R</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>R1 TEST-STRIP-COPIES — không nới assertion nào</td><td class="ok">✅</td><td>[ĐO] đọc <code>git diff -U0</code> của toàn bộ 112 tệp test đổi chưa stage (gồm 67 tệp R1) + đủ ngữ cảnh 15 tệp: <code>ThemeOpcodeLiteral</code> (luật theo dòng giữ nguyên, <code>keepLines</code> chỉ làm số dòng đúng) · <code>TestBridgeSafety</code> (chỉ THÊM danh sách trắng import chặt) · <code>DevSurfaceGate</code> (siết: 0 lần xuất hiện hai tên) · <code>PersistentWindowStateWriterGuard</code> (chỉ KDoc) · <code>TypeScale</code> (marker đọc từ dòng THÔ — tương đương với marker ở chú thích dòng; <code>zip</code> an toàn vì <code>keepLines</code> giữ số dòng; <code>EXEMPT_LINES = 3</code> giữ) · <code>CarDataDemandRenderer</code> (soi <code>tempC</code> trên mã đã bỏ MỌI chú thích ≥ bản lọc tay) · <code>SpacingScale</code> · <code>ControlHeight</code> · <code>DeadReckonRetirement</code> · <code>LauncherI18n</code>/<code>LauncherLocale</code> · <code>SpeedSignSourceLifecycle</code> · <code>CameraSettingsIaWiring</code> · <code>KotlinSourceTest</code> · <code>FloatingWindowLedgerTest</code> · <code>ShellAppLauncherTest</code>. Bộ quét: mặc định từng byte như cũ, <code>keepLines</code> chỉ chèn <code>\n</code> nằm TRONG comment khối. [ĐO grep 7 gốc test] 0 bản chép tay còn lại ngoài chỗ CỐ Ý đọc chú thích <code>SpacingScaleContractTest:197</code> (đúng §4.1 "Không đổi").</td></tr>
+<tr><td>R2 SLOT-DEAD-FREEFORM-REST</td><td class="ok">✅</td><td>[ĐO grep] <code>isFreeformAvailable</code> · <code>markOpened</code> chỉ còn trong bài canh PHỦ ĐỊNH ở mọi source set (main · test · vehicleTest · car-integration · offcar-planner · vehicle-contracts · hal-helper · scripts); <code>opened/forget/decode</code> giữ cho lượt dọn bản ≤ 2.92.</td></tr>
+<tr><td>R3 DIAG-BRIDGE-DEAD-OPENERS</td><td class="ok">✅</td><td>[ĐO] <code>kachi_bridge_screen_open_failed</code> 0 lần ở cả 5 <code>values*/strings_kachi.xml</code>; 5 tệp cùng 892 khoá; <code>bridgeMsgRes</code> hết nhánh <code>SCREEN_OPEN_FAILED</code>.</td></tr>
+<tr><td>R4 PREFS-SET-CAM-GLOBAL-REAPPLY</td><td class="ok">✅</td><td>[ĐO mã] <code>CameraReapply.setProjection/setZoom</code> tương đương từng nhánh với thân cũ của cầu Cài đặt (so kiểu ĐÃ QUY trước khi ghi · <code>amountOnPick</code> = luật <code>STRAIGHT ∧ amount 0 ⇒ 100</code> cũ · <code>anyShowing</code> giữ lớp chắn <code>runCatching</code>); <code>prefs_set</code> chỉ gọi sau <code>takeIf</code> miền; [ĐO grep] <code>scripts/</code> không dùng <code>camera_projection</code>/<code>camera_zoom</code>.</td></tr>
+<tr><td>R5 CAM-D6-SAME-CAMERA-EDGE</td><td class="ok">✅</td><td>[ĐO mã] đủ ba mắt xích: đặt (<code>reapplyIfDemandShowing</code> trên <code>main.post</code>, đọc trạng thái tươi) · thi hành ĐÚNG một lần ở <code>endBlinker</code> SAU <code>dropBlinker</code>, chỉ khi <code>want() == showing</code> · xoá ở mọi <code>openSession</code>. Soát tay các chuỗi: đổi bên giữa lúc hẹn · tắt camera theo yêu cầu giữa lúc hẹn (nhả ⇒ <code>show(null)</code>, không dựng lại thừa) · bấm camera khác · tắt công tắc xi-nhan — không chuỗi nào dỡ camera xi-nhan đang giữ; không thêm <code>postDelayed</code>.</td></tr>
+<tr><td>R6 CAM-WAKE-COLD-MAIN</td><td class="ok">✅ (sau vá F2)</td><td>[ĐO mã + nguồn r47] lượt gửi lại chỉ khi mã khởi đầu về sớm (≤ 700 ms) và chính còn sống; mọi gọi lại trên Handler luồng chính <code>:wake</code> ⇒ không đua. Lỗ còn lại: lượt gửi lại tới receiver khi luồng chính đang dựng HOME ⇒ áp SAU câu ✗ — vá F2 (dưới).</td></tr>
+<tr><td>R7 OQ3 spec misc</td><td class="ok">✅</td><td>[ĐO] <code>kachi-293-misc.html:192</code> "→ ĐÓNG bởi wave 2B".</td></tr>
+<tr><td>R-nf1 trần 500 dòng</td><td class="ok">✅ (sau vá F3)</td><td>[ĐO <code>wc -l</code>] <code>TestBridgeCommandTest.kt</code> 503 (wave 2B +3) → 500; <code>CameraSignalController.kt</code> 499 · <code>FitScale.kt</code> 499 · <code>FitGridLayout.kt</code> 498 · <code>KachiTestBridge.kt</code> 499.</td></tr>
+<tr><td>FIT-REGROW lớn một phần (wave 2A Pass 2)</td><td class="ok">✅</td><td>[ĐO mã] <code>FitScale.full()</code>/<code>FitValueRow.roomy()</code> CHỈ ĐỌC (Paint + số đo đã có, không setter, không đo view) ⇒ nhịp 1 Hz không thêm <code>requestLayout</code>; <code>full()</code> hỏi SAU luật giá trị ở cả <code>refit</code> lẫn <code>regrowOrShrink</code>; mọi <code>TextView</code> của ô đều có <code>TextBase</code> (<code>Base.text</code>) ⇒ <code>full()</code> không kẹt <code>false</code> vì thiếu cỡ gốc; chú thích nhường bằng <code>LayoutParams</code> 0×0 (vẫn <code>VISIBLE</code>) ⇒ <code>roomy()</code> vẫn tính nhu cầu của nó; lượt lớn lại không đổi gì ⇒ không đổi view, không vòng <code>refit</code>.</td></tr>
+<tr><td>Bốn ghim điều phối (<code>scrollKey</code>)</td><td class="ok">✅</td><td>[ĐO grep] <code>ShortcutsWiringContractTest</code> ×2 · <code>FitGridWiringContractTest</code> ×2 khớp NGUYÊN VĂN <code>WidgetViews.kt:57,76,78,167</code>; ý bài giữ: ô to/ô nền cùng <code>ShortcutIconsView(grid = true)</code>; một mục ⇒ <code>FitGridLayout.single(build…)</code>, nhiều mục ⇒ lưới <code>mini</code> mang <code>WidgetTag</code>.</td></tr>
+</table>
+<p><b>Đã vá</b></p>
+<ul>
+<li>[P2] <b>F2</b> (chung với spec <code>kachi-293-cam.html</code> §10 Pass 2) — lệnh <code>:wake</code> tới receiver sau hạn tổng vẫn được áp (runnable của receiver xếp sau lượt dựng HOME — [ĐO nguồn r47] <code>LoadedApk.java:1628-1648</code>) ⇒ lệnh MỞ muộn (= <i>"mới nhất"</i>) đè camera xi-nhan bật trong lúc chờ, sau khi câu ✗ đã nói; lượt gửi lại của R6 mở rộng đúng cửa sổ ấy. Vá: hạn tổng đi kèm lệnh (<code>EXTRA_DEADLINE</code>, đồng hồ <code>CLOCK_BOOTTIME</code> chung mọi tiến trình — <code>android_os_SystemClock.cpp:89</code> → <code>libutils/SystemClock.cpp:49-61</code>), receiver tới sau hạn ⇒ bỏ, giữ mã khởi đầu (bất biến <i>"mã khởi đầu = chưa áp"</i> của R6 vẫn đúng). Tệp: <code>core/…/camera/CameraWakeAsk.kt</code> (<code>expired</code>) · <code>app/…/camera/CameraDemandDispatch.kt</code>. Bài: <code>CameraWakeAskTest › lenh toi receiver sau han cua ben gui thi bo…</code> · <code>CameraDemandWiringContractTest</code> (ghim chữ ký <code>sendOnce</code> mới + kiểm hạn TRƯỚC <code>applyHere</code>).</li>
+<li>[P3] <b>F3</b> — <code>TestBridgeCommandTest.kt</code> 503 dòng &gt; trần 500: gộp hai dòng định dạng (thân <code>parse</code> một-biểu-thức · chú thích chung cho nhánh <code>EXTRA_KEY</code>/<code>EXTRA_ARG</code>) ⇒ 500; 0 assertion đổi.</li>
+<li>(Vá ở phạm vi wave 2B, ghi ở spec cam: [P2] <b>F1</b> <code>CameraReapply.ifShowing</code> mất lớp chắn lỗi.)</li>
+</ul>
+<p><b>Ghi nhận, không vá</b>: [INFO] R4 — <code>prefs_set camera_projection|camera_zoom</code> nay dỡ + dựng CẢ camera xi-nhan đang hiện (đúng như chip Cài đặt 2.92; chỉ chế độ kiểm thử). [P3] ANR qua broadcast có thứ tự (hàng tiền cảnh 10 s — <code>BroadcastQueue.java:1692-1801</code>) — chi tiết + đề xuất backlog ở spec cam §10 Pass 2. OQ1–OQ3 giữ nguyên.</p>
+<p><b>Bài cần chạy lại</b>: <code>:core</code> — <code>CameraWakeAskTest</code> · <code>CameraDemandProfileReapplyTest</code> · <code>CameraViewModeTest</code> · <code>KotlinSourceTest</code> · <code>TestBridgeCommandTest</code> · <code>FloatingWindowLedgerTest</code> · <code>ShellAppLauncherTest</code> · <code>LauncherCommandGoldenTest</code> · <code>LauncherWindowingGuardTest</code> · <code>ThemeOpcodeLiteralContractTest</code> · <code>FitRegrowRearmTest</code>; <code>:app</code> — <code>CameraDemandWiringContractTest</code> · <code>CameraWave2BWiringContractTest</code> · <code>CameraWave2CWiringContractTest</code> · <code>CameraFullViewWiringContractTest</code> · <code>DevSurfaceGateContractTest</code> · <code>LauncherI18nContractTest</code> · <code>LauncherI18nLocalesContractTest</code> · <code>ShortcutsWiringContractTest</code> · <code>FitGridWiringContractTest</code> · <code>FitRegrowWiringContractTest</code> · <code>TypeScaleContractTest</code> · <code>CarDataDemandRendererContractTest</code>; rồi bộ đủ <code>./gradlew test --rerun-tasks --continue</code> 5 module (đếm từ XML). Thử đỏ đề xuất: <code>expired</code> luôn <code>false</code> · bỏ khối kiểm hạn ở receiver (hai bài trên đỏ).</p>
+<p><b>Kết luận</b>: phạm vi wave 2C (R1–R7, R-nf1–4) + FIT-REGROW một phần + bốn ghim — 100 % ✅ sau F2 + F3 — <b>APPROVED</b> có điều kiện: bộ đủ xanh + thử đỏ trên đỏ đúng bài. 🚗/🖥 giữ nguyên §6.</p>
+
+</div></body>
+</html>

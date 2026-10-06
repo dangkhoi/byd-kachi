@@ -129,5 +129,14 @@ object TestBridgeWritableKeys {
         "camera_wide_kappa",
         "camera_wide_focal",
         "camera_wide_pan_x",
-    )
+    ) + PER_CAMERA
+
+    /**
+     * 2.93 · CAMERA-PER-CAM-CONFIG (spec `kachi-293-cam.html` R2) — khoá MỚI của bộ chỉnh *Từng camera* (sáu khoá góc/xoay/lật
+     * của hai camera gương đã có ở trên). Vào đây vì đúng hai câu hỏi chỉ trả lời được TRÊN XE: dải sau/trước có cần
+     * xoay/lật không ([CHƯA BIẾT] 🚗) và cửa sổ đặt chỗ nào thì vừa mắt. Mọi khoá có hàng đảo lại được ở Cài đặt › Tiện
+     * nghi xe › Từng camera ⇒ ràng buộc (3) giữ; danh sách SINH từ `CameraCamConfig` (một chỗ khai tên khoá).
+     */
+    private val PER_CAMERA: Set<String>
+        get() = com.byd.clusternav.launcher.camera.CameraCamConfig.NEW_KEYS.toSet()
 }

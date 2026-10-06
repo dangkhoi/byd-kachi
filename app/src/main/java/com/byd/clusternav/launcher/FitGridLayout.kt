@@ -83,6 +83,9 @@ internal class FitGridLayout private constructor(
 
         /** Soát vòng 6 (P3) — dấu chữ ([FitProbe.signature]) lúc luật giá trị chạy gần nhất ([valuesStale]); `null` = chưa chạy. */
         var valuesSig: Int? = null
+
+        /** 2.93 `FIT-REGROW` — lúc ô bắt đầu chờ lớn lại ([FitValues.regrowDue]): nhịp CO giá trị / lượt để ô chưa ĐẦY ([FitScale.full]). */
+        var shrunkAt: Long? = null
     }
 
     private val items = IdentityHashMap<View, Item>()
@@ -200,8 +203,12 @@ internal class FitGridLayout private constructor(
             adopt.forEach { v -> val it = item(v); it.fresh?.let { n -> it.need = n }; it.fresh = null; it.prev = null }
         }
         kids.forEach { v -> item(v).prev = null }
-        // Soát vòng 6 (P3): dấu chữ lúc luật giá trị vừa chạy — nhịp đổ cùng chữ không chạy lại ([valuesStale]).
-        kids.forEach { v -> item(v).let { it.valuesSig = it.fs?.let(FitProbe::signature) } }
+        // Soát vòng 6 (P3): dấu chữ lúc luật giá trị vừa chạy ([valuesStale]). FIT-REGROW wave 2A (b): lượt khớp đủ = một lượt lớn lại ⇒ ô
+        // chưa ĐẦY GIỮ dấu (lượt do ô KHÁC chạy lúc chữ rộng 100 rồi chữ về 99 trùng dấu đã dò ⇒ không dò lại: xoá dấu = đứng mãi).
+        val now = SystemClock.elapsedRealtime()
+        kids.forEach { v ->
+            item(v).let { it.valuesSig = it.fs?.let(FitProbe::signature); it.shrunkAt = it.fs?.let { fs -> FitValues.regrowNext(fs.full(), now) } }
+        }
         val same = f == shown && keyW == w && keyH == h && keyN == kids.size
         fit = f; shown = f; legible = f.legible; keyW = w; keyH = h; keyN = kids.size; refits++
         val ms = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
@@ -360,11 +367,32 @@ internal class FitGridLayout private constructor(
         // J1 — lưới không đọc được: giá trị mới (09:59 → 10:00, 99 → 100) tự co ngay theo luật giá trị, không chờ lượt
         // đo dò thưa 30 s mà hiện `10…` (FitScale.fitValues — chỉ đổi cỡ khi bậc 1/32 đổi, không mỗi nhịp). QA3: hàng ngang
         // giá trị/chú thích chỉ chia lại khi giá trị mới SẼ bị cắt (FitValues.wouldClip — 99 → 100), ở mọi tầng.
-        if (valuesStale(child)) items[child]?.fs?.fitValues(FitProbe.Floors.of(context).textPx, legible, tick = true)
+        regrowOrShrink(child)
         when (due(child, measured = false)) {
             FitRules.Verdict.DUE -> requestLayout()
             FitRules.Verdict.WAIT -> if (!isLayoutRequested) requestLayout()
             FitRules.Verdict.NONE -> Unit
+        }
+    }
+
+    /**
+     * Luật giá trị ở nhịp đổ tại chỗ: chữ đổi ⇒ chỉ CO (tick); 2.93 `FIT-REGROW` — ô đã bị co ở một nhịp mà quá
+     * [FitRules.RECHECK_MS] ⇒ MỘT lượt không-phải-nhịp (tick = false) trên chữ đang hiện để giá trị lớn lại (99 → 100 → 99
+     * không còn đứng mãi ở cỡ của 100). Không hẹn giờ: hỏi ở chính nhịp đổ 1 Hz. Wave 2A: lượt lớn lại chưa đưa ô về ĐẦY
+     * ([FitScale.full] — gặp số rộng: không đổi gì, hoặc lớn MỘT PHẦN 1000 → 100) GIỮ dấu, hẹn lại ([FitValues.regrowNext]);
+     * lượt khớp đủ ([refit]) đặt dấu cùng luật.
+     */
+    private fun regrowOrShrink(child: View) {
+        val it = items[child] ?: return
+        val fs = it.fs ?: return
+        val now = SystemClock.elapsedRealtime()
+        val floor = FitProbe.Floors.of(context).textPx
+        if (FitValues.regrowDue(it.shrunkAt, now)) {
+            fs.fitValues(floor, legible, tick = false)
+            it.shrunkAt = FitValues.regrowNext(fs.full(), now)
+            it.valuesSig = FitProbe.signature(fs)
+        } else if (valuesStale(child) && fs.fitValues(floor, legible, tick = true)) {
+            if (it.shrunkAt == null) it.shrunkAt = now
         }
     }
 
@@ -399,6 +427,19 @@ internal class FitGridLayout private constructor(
                 steps, refits, ms, names,
             ),
         )
+    }
+
+    /**
+     * 2.93 `WIDGET-CAPACITY-HINT` — đo lưới (KHÔNG gắn cửa sổ — bộ chọn widget dựng bản nháp) ở khung [w]×[h] bằng đúng lượt
+     * khớp thật, rồi trả (lưới đọc được + đạt chạm + có nhãn?, sức chứa [GridFit.capacity] trên hộp đo được của chính các
+     * mục ấy). `null` = ô đơn / chưa có hộp nào. Dạng phụ được đo lười đúng khi lưới KHÔNG đọc được ⇒ sức chứa đủ tin ở ca cần nói.
+     */
+    internal fun measureFit(w: Int, h: Int): Pair<Boolean, Int>? {
+        measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY))
+        val f = fit ?: return null
+        if (single || shapes.isEmpty()) return null
+        val ok = f.legible && f.touchOk && f.shape?.fallback == false
+        return ok to GridFit.capacity(keyW, keyH, shapes, spec(kids()), MAX_ITEMS)
     }
 
     companion object {
@@ -449,7 +490,7 @@ internal class FitGridLayout private constructor(
          */
         fun selfFitting(v: View): Boolean = when (v) {
             is RingView, is TyreBoardView, is PhotoWidgetView, is CarMiniView, is DoorBoardView,
-            is ShortcutIconsView, is ShortcutGridLayout, is GroupTileView, is FitGridLayout -> true
+            is ShortcutIconsView, is ShortcutGridLayout, is GroupTileView, is FitGridLayout, is MediaFitLayout -> true
             is ViewGroup -> (0 until v.childCount).any { selfFitting(v.getChildAt(it)) }
             else -> false
         }

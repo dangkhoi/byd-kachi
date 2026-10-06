@@ -174,6 +174,24 @@ class TestBridgeSafetyContractTest {
         }
     }
 
+    /**
+     * 2.93 wave 2B · DIAG-SCREENS-UNREACHABLE — `modules.clustercast` trong cầu chỉ được nhắc ở HAI chỗ có tên: `ClusterDiag`
+     * (chỉ đọc, lệnh `diag`) và `DiagActivity` (lệnh `diag_screen` chỉ MỞ màn — mọi nút trong màn vẫn cần người trong xe
+     * chạm; cầu không bấm gì thay). Tên màn qua danh sách TRẮNG ở `:core` trước khi tới tầng mở (không chuỗi tự do nào).
+     */
+    @Test
+    fun `cau chi cham modules clustercast o hai cho co ten`() {
+        val allowed = mapOf("KachiTestBridge.kt" to setOf("ClusterDiag"), "TestBridgeScreens.kt" to setOf("DiagActivity"))
+        val imp = Regex("""import com\.byd\.clusternav\.modules\.clustercast\.(\w+)""")
+        sources().forEach { f ->
+            val got = imp.findAll(SourceRoots.text("$dir/${f.fileName}")).map { it.groupValues[1] }.toSet()
+            assertEquals(allowed[f.fileName.toString()] ?: emptySet<String>(), got, "${f.fileName}: chỉ ClusterDiag (đọc) · DiagActivity (mở màn)")
+        }
+        val screens = code("TestBridgeScreens.kt")
+        assertTrue(screens.contains("TestBridgeScreenCommands.targetOf(cmd.arg)"), "tên màn qua danh sách trắng `:core`")
+        assertTrue(!screens.contains("cmd.text") && !screens.contains("cmd.pkg"), "không nhận chuỗi tự do nào làm đích")
+    }
+
     /** Cầu không tự chạy lệnh shell: mọi việc phải đi qua đường mà một cú chạm đi (CLAUDE.md §4). */
     @Test
     fun `khong nhanh nao tu chay lenh am hay wm`() {

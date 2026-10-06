@@ -66,7 +66,7 @@ class A11yLifecycleHealWiringContractTest {
         assertTrue(rx.contains("onScreenOn(app, at)"), "lớp 2 phải có call site")
         assertTrue(rx.contains("submit("), "việc nặng đẩy sang luồng nền")
         listOf("healIfStuck(", "Prefs.", "LocalDeviceShell", "Thread.sleep").forEach { t ->
-            assertFalse(rx.contains(t), "'$t' trong onReceive = chặn broadcast ORDERED của hệ (Notifier.java:748-754)")
+            assertFalse(rx.contains(t), "'$t' trong onReceive = chặn broadcast ORDERED của hệ (Notifier.java:748-755)")
         }
     }
 

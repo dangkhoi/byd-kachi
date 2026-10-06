@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.Lang
+
 /**
  * Mọi thứ cổng an toàn cần biết về máy + hồ sơ lúc dạy. Chỗ gọi (`:app`) dựng từ ĐÚNG các nguồn của phiên nghe (bảng
  * gọi app [VoiceAppIndex.keys], tên hồ sơ, nhãn sổ địa chỉ, tên đã dạy của hồ sơ đang dùng, câu gọi Kachi đang đặt).
@@ -32,7 +34,8 @@ data class TeachContext(
  *      tên hồ sơ · nhãn sổ địa chỉ · câu gọi Kachi · nhãn/tên đã dạy/cách nói bảng đích của app KHÁC;
  *  B · phân tích thử *"mở &lt;tên&gt;"* + *"&lt;tên&gt;"* trần với từ vựng HIỆN TẠI;
  *  C · hotword thử ([SherpaTaughtHotwords.killedBy]);
- *  D · gần lệnh (phép chữa chính tả của B) / gần tên app khác ([VoiceNameFuzzy]) / một từ.
+ *  D · gần lệnh (phép chữa chính tả của B) / gần tên app khác ([VoiceNameFuzzy]) / một từ / một từ trùng (bỏ dấu) chữ của
+ *      câu lệnh ([homograph], 2.93 — CẢNH BÁO, không chặn).
  * Tầng E (máy dò hồi quy trên mọi câu mẫu) đắt hơn ⇒ hàm riêng [regression], chạy lúc LƯU trên luồng nền.
  *
  * **Không tự mở app bằng một phép khớp yếu**: cổng này không thêm phép so nào lỏng hơn [VoiceNameFuzzy] (R7).
@@ -48,7 +51,7 @@ object TeachGuard {
         IS_COMMAND(Level.BLOCK), REGRESSION(Level.BLOCK), UNREACHABLE(Level.BLOCK), SHORT_ONE_TAKE(Level.BLOCK),
         ALREADY_KNOWN(Level.ALREADY), DUPLICATE(Level.ALREADY),
         STEALS_FUZZY(Level.WARN), MISMATCH_WORD(Level.WARN), NO_BIAS(Level.WARN), NEAR_COMMAND(Level.WARN),
-        NEAR_OTHER_APP(Level.WARN), ONE_WORD(Level.WARN),
+        NEAR_OTHER_APP(Level.WARN), ONE_WORD(Level.WARN), HOMOGRAPH(Level.WARN),
     }
 
     /**
@@ -82,6 +85,7 @@ object TeachGuard {
         // Cổng va chạm chạy ĐỦ ngay ở lượt đầu (kể cả tên ngắn mới nghe một lần) ⇒ người dùng thấy ngay mọi lý do chặn.
         if (out.none { it.code.level == Level.BLOCK }) probe(ctx, pkg, sample, source).let { out.addAll(it) }
         if (words.size == 1) out += Reason(Code.ONE_WORD)
+        if (words.size == 1 && out.none { it.code.level == Level.BLOCK }) homograph(words.single())?.let { out += it }
         // Đã lưu / Kachi đã hiểu sẵn ⇒ không có gì để lưu, không đòi thêm lượt.
         if (source == TaughtSource.SPEECH && sample.short && takes < MIN_TAKES_SHORT && out.none { it.code.level == Level.ALREADY }) {
             out += Reason(Code.SHORT_ONE_TAKE, sample.letters.toString())
@@ -177,7 +181,9 @@ object TeachGuard {
             out += Reason(if (repaired == null) Code.IS_COMMAND else Code.NEAR_COMMAND, describe(bare))
         }
         if (source == TaughtSource.SPEECH) {
-            val base = SherpaBiasing.hotwordsFile(ctx.places, ctx.profiles)
+            // Dựng thẳng, KHÔNG qua ô nhớ MỘT tệp của [SherpaBiasing.hotwordsFile] (soát 2.93 Pass 4): bộ đầu vào ở đây khác
+            // phiên lệnh (không tên đã dạy, không nhãn) ⇒ đi qua ô nhớ là đẩy tệp của phiên ra, mỗi 🎤 kế ở hộp dạy dựng lại.
+            val base = SherpaBiasing.build(ctx.places, ctx.profiles, emptyList(), emptyList())
             val kept = base.split('\n').filterTo(HashSet()) { it.isNotBlank() }
             val killed = SherpaTaughtHotwords.killedBy(s.accented, kept)
             if (killed.isNotEmpty()) out += Reason(Code.NO_BIAS, killed.joinToString(" · "))
@@ -191,6 +197,34 @@ object TeachGuard {
     }
 
     private fun describe(i: List<VoiceIntent>): String = i.joinToString(",") { it::class.simpleName.orEmpty() }
+
+    /**
+     * ═══ D′ · 2.93 VOICE-TEACH-SHORT-HOMOGRAPH — tên MỘT âm tiết trùng (bỏ dấu) một chữ của câu lệnh ⇒ CẢNH BÁO ═══
+     *
+     * [ĐO off-car 06/10, spec voice-app-names §9 F6] dạy «nay» cho Drive ⇒ *"mở cái này"* (trước: không hiểu) thành mở Drive
+     * — tên đã dạy là từ vựng CHUNG, khớp trên chữ bỏ dấu, nên một từ đồng hình (*"này"*) trong câu nói thường bị đọc thành
+     * tên app. Quyết định điều phối 2.93: CẢNH BÁO, không CHẶN (người dùng vẫn lưu được sau *Vẫn lưu*, OQ9) — nhưng nói ĐÚNG
+     * chữ va chạm thay vì chỉ "một từ đơn". Nguồn (backlog: *"bảng của bộ phân tích / câu mẫu"*, không bảng thứ hai):
+     * [VoicePhrases.commandWords] + chữ của câu mẫu TĨNH ([VoiceCommandCatalog]). [Reason.detail] = câu mẫu đầu tiên có chữ ấy
+     * (CÓ DẤU, người dùng nhận ra), không có ⇒ chính chữ bỏ dấu.
+     */
+    private fun homograph(word: String): Reason? {
+        val example = exampleByWord[word]
+        if (example == null && word !in VoicePhrases.commandWords) return null
+        return Reason(Code.HOMOGRAPH, example ?: word)
+    }
+
+    /**
+     * Chữ (bỏ dấu) → câu mẫu TĨNH đầu tiên chứa nó. Tĩnh = không hồ sơ/app/nơi/tên đã dạy (tên của chính app không được tự
+     * báo va chạm); câu mẫu luôn tiếng Việt. `by lazy`: dựng một lần (vài trăm câu).
+     */
+    private val exampleByWord: Map<String, String> by lazy {
+        val out = HashMap<String, String>()
+        VoiceCommandCatalog.groups(lang = Lang.VI).forEach { g ->
+            g.examples.forEach { ex -> VoiceLexicon.tokenize(ex.phrase).forEach { out.putIfAbsent(it.norm, ex.phrase) } }
+        }
+        out
+    }
 
     // ── E · máy dò hồi quy (lúc LƯU) ─────────────────────────────────────────────────────────────────────────────
 

@@ -16,9 +16,7 @@ import org.junit.jupiter.api.Test
 class TopStripWiringContractTest {
 
     /** Đọc mã và BỎ chú thích — cùng cách với các bài canh khác (chú thích trích dẫn mã cũ sẽ làm bài xanh giả). */
-    private fun code(relative: String): String = SourceRoots.text(relative)
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        .replace(Regex("""//[^\n]*"""), "")
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val strip by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiTopStrip.kt") }
     private val activity by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }

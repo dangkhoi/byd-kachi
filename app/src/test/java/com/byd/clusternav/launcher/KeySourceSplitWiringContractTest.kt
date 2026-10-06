@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -114,8 +115,6 @@ class KeySourceSplitWiringContractTest {
         assertTrue("SettingsSectionsKeys.kt" in callers("KeySourceKind", "KeySourceProbe.kt"))
     }
 
-    /** Bỏ chú thích (cùng phép của `SourceRoots.codeOf`) — một KDoc nhắc tên hàm KHÔNG phải lời gọi thật. */
-    private fun stripComments(t: String): String = t
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    /** Bỏ chú thích (ĐÚNG phép của `SourceRoots.codeOf` — [KotlinSource.stripComments]) — một KDoc nhắc tên hàm KHÔNG phải lời gọi thật. */
+    private fun stripComments(t: String): String = KotlinSource.stripComments(t)
 }

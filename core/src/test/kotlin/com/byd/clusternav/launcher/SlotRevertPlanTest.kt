@@ -50,8 +50,9 @@ class SlotRevertPlanTest {
         }
     }
 
+    /** 2.93 · SLOT-APP-ESCAPE — ĐỔI GHIM có lý do: + sự kiện `APP_ELSEWHERE` (app ra khỏi ô, còn mở) ⇒ 240 → 300 ô; bảng tay KHÔNG đổi. */
     @Test
-    fun `du bang 240 o`() {
+    fun `du bang 300 o`() {
         val saveds = listOf(SlotContent.Empty, tyres, clock, SlotContent.App(maps), SlotContent.App(yt))
         val showns = listOf(SlotContent.Empty, tyres, clock, SlotContent.App(maps))
         val pkgs = listOf(null, maps, "com.other")
@@ -60,7 +61,7 @@ class SlotRevertPlanTest {
             assertEquals(expected(saved, shown, event, pkg), SlotRevertPlan.next(saved, shown, event, pkg), "$saved · $shown · $event · $pkg")
             cells++
         }
-        assertEquals(5 * 4 * 4 * 3, cells, "thêm sự kiện / loại ô ⇒ sửa bảng tay ở trên")
+        assertEquals(5 * 4 * 5 * 3, cells, "thêm sự kiện / loại ô ⇒ sửa bảng tay ở trên")
     }
 
     @Test

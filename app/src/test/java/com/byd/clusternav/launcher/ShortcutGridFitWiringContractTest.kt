@@ -22,9 +22,14 @@ class ShortcutGridFitWiringContractTest {
 
     @Test
     fun `luoi widget dat icon bang ShortcutGridFit qua ShortcutGridLayout`() {
-        val grid = SourceRoots.body(view, "private fun buildGrid(items: List<AppShortcut>)")
-        assertTrue(grid.contains("ShortcutGridLayout(context) { px -> if (gen == generation) fitIcons(px) }"),
-            "lưới dựng MỘT khung khớp, báo cỡ của lượt cũ bị bỏ")
+        // 2.93 · R1 — ĐỔI GHIM có lý do (spec `kachi-293-slot.html`, SHORTCUT-GRID-SCROLL-KEEP): khung mới nhận vị trí cuộn người
+        // lái đã chọn ở khung cũ (`keep`) — lượt dựng lại không còn đưa lưới về đầu.
+        val grid = SourceRoots.body(view, "private fun buildGrid(items: List<AppShortcut>, keep: ShortcutScrollKeep.Wanted)")
+        // 2.93 wave 2A · SHORTCUT-SCROLL-REBUILD — ĐỔI GHIM có lý do (spec `kachi-293-wave2a.html` §4.3): khung báo thêm mỗi cú cuộn
+        // của người lái để NHỚ theo ô (view mới của ô sau restyle/dựng lại tiếp tục từ đó — `ShortcutScrollRebuildWiringContractTest`).
+        assertTrue(grid.contains("ShortcutGridLayout(context, keep, { w -> scrollKey?.let { ShortcutScrollMemory.remember(it, w) } }) { px ->") &&
+            grid.contains("if (gen == generation) fitIcons(px)"),
+            "lưới dựng MỘT khung khớp, báo cỡ của lượt cũ bị bỏ, mang vị trí cuộn của khung cũ")
         assertTrue(grid.contains("items.forEach { box.addView(cell(it)) }"))
         assertTrue(grid.contains("LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)"), "khung lấp ô widget")
         listOf("LinearLayout(", "cellLp()", "chunked(", "gridCols").forEach {
@@ -59,7 +64,8 @@ class ShortcutGridFitWiringContractTest {
     @Test
     fun `khoi thanh nut khong dung phep khop - khe co dinh nhu 2_86`() {
         val rebuild = SourceRoots.body(view, "private fun rebuild()")
-        assertTrue(rebuild.contains("if (grid) buildGrid(items) else items.forEach { addView(cell(it), cellLp()) }"))
+        // 2.93 · R1 — ĐỔI GHIM có lý do: lưới nhận thêm vị trí cuộn của khung cũ; nhánh khối thanh nút KHÔNG đổi.
+        assertTrue(rebuild.contains("if (grid) buildGrid(items, keep) else items.forEach { addView(cell(it), cellLp()) }"))
         // 2.89 · B3 — đổi chân có chủ ý: khe đi qua `shortcutSlotPx` (= `SHORTCUT_CELL`, sàn 48 dp THẬT khi thanh co) —
         // CÙNG hàm với `shortcutStripLength`; vẫn KHÔNG qua lưới khớp (vế dưới).
         assertTrue(SourceRoots.body(view, "private fun cellPx()").contains("shortcutSlotPx(context)"))
@@ -121,7 +127,12 @@ class ShortcutGridFitWiringContractTest {
         val refit = SourceRoots.body(layout, "private fun refit(w: Int, h: Int, gap: Int, minIcon: Int)")
         assertTrue(refit.contains("settleScroll(f)") && refit.contains("report(f)"))
         val settle = SourceRoots.body(layout, "private fun settleScroll(f: ShortcutGridFit.Fit)")
-        assertTrue(settle.contains("f.maxScrollPx") && settle.contains("scrollTo(x, y)"), "vị trí cuộn kẹp vào quãng mới")
+        // 2.93 · R2 — ĐỔI GHIM có lý do (SHORTCUT-SCROLL-DOCK-RELAYOUT, QA 2.92 264 → 43): kẹp vị trí NGƯỜI LÁI CHỌN theo quãng
+        // mới (`ShortcutScrollKeep.applied` — kẹp `f.maxScrollPx`, bài `ShortcutScrollKeepTest`), không kẹp chính vị trí đang áp.
+        assertTrue(settle.contains("ShortcutScrollKeep.applied(wanted, f)") && settle.contains("scrollTo(x, y)"),
+            "vị trí cuộn = lựa chọn của người lái kẹp vào quãng mới")
+        assertFalse(settle.contains("scrollX.coerceIn") || settle.contains("scrollY.coerceIn"),
+            "kẹp chính vị trí đang áp ⇒ một lượt đo ở khung lạ xoá vĩnh viễn lựa chọn của người lái")
         assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int)").contains("p.coerceIn(0, fit?.maxScrollPx ?: 0)"))
         assertTrue(SourceRoots.body(layout, "private fun fling()").contains("scroller.fling("))
         assertTrue(SourceRoots.body(layout, "override fun computeScroll()").contains("scroller.computeScrollOffset()"))
@@ -147,5 +158,37 @@ class ShortcutGridFitWiringContractTest {
         listOf("settleScroll(", "scrollAlongTo(", "fling(", "secondaryUp(", "endDrag(", "track(").forEach {
             assertTrue(Regex(Regex.escape(it)).findAll(layout).count() >= 2, "'$it' khai mà không gọi")
         }
+    }
+
+    /**
+     * 2.93 · SHORTCUT-GRID-SCROLL-KEEP + SHORTCUT-SCROLL-DOCK-RELAYOUT (spec `kachi-293-slot.html` R1/R2) — đường NỐI của luật
+     * `ShortcutScrollKeep` (luật thuần khoá ở `ShortcutScrollKeepTest`, gồm đúng số QA 264/43):
+     *  - phát tin cài/gỡ/đổi gói: gói ngoài danh sách không chạm lưới; gói trong danh sách chỉ nạp lại icon TẠI CHỖ;
+     *  - gắn lại view cùng danh sách ⇒ chỉ làm mới; danh sách đổi ⇒ dựng lại và đem vị trí cuộn sang khung mới;
+     *  - vị trí người lái chọn chỉ có MỘT chỗ ghi (cuộn do người lái), lượt khớp chỉ đọc nó;
+     *  - nhật ký `WidgetFit` mang `pos=áp/chọn` + `view=` để chốt lượt đo lạ từ đâu (CLAUDE.md §11).
+     */
+    @Test
+    fun `vi tri cuon song qua phat tin goi, gan lai, dung lai va luot do khung la`() {
+        val packages = SourceRoots.body(view, "private val onPackages = object : BroadcastReceiver()")
+        assertTrue(packages.contains("ShortcutScrollKeep.touches(pkg, cells.map { it.sc.pkg })") && packages.contains("refresh()"))
+        assertFalse(packages.contains("rebuild()"), "phát tin gói KHÔNG dựng lại cả lưới (2.92: mọi phát tin ⇒ cuộn về 0)")
+        assertTrue(SourceRoots.body(view, "override fun onAttachedToWindow()")
+            .contains("if (ShortcutScrollKeep.needsRebuild(built, ShortcutHub.items())) rebuild() else refresh()"))
+        assertTrue(view.contains("ShortcutScrollKeep.needsRebuild(built, ShortcutHub.items())) rebuild() }"), "bên nghe danh sách")
+        val rebuild = SourceRoots.body(view, "private fun rebuild()")
+        // wave 2A — ĐỔI GHIM có lý do: không có khung cũ (view MỚI của ô) ⇒ bản nhớ theo ô trước khi về ORIGIN.
+        assertTrue(rebuild.contains("(getChildAt(0) as? ShortcutGridLayout)?.keep ?: scrollKey?.let(ShortcutScrollMemory::recall) ?: " +
+            "ShortcutScrollKeep.Wanted.ORIGIN") && rebuild.contains("built = items"), "lượt dựng lại lấy vị trí của khung CŨ trước khi tháo nó")
+        val refresh = SourceRoots.body(view, "private fun refresh()")
+        assertTrue(refresh.contains("load(generation)") && refresh.contains("paintDim()"))
+        assertFalse(refresh.contains("removeAllViews") || refresh.contains("rebuild"), "làm mới không đổi cây view")
+        // Một chỗ GHI vị trí người lái chọn (khai báo là `wanted: Wanted = start`, không khớp mẫu): cuộn do người lái.
+        assertEquals(1, Regex("""\bwanted = """).findAll(layout).count(), "chỉ cuộn do người lái được ghi 'wanted'")
+        assertTrue(SourceRoots.body(layout, "private fun scrollAlongTo(p: Int)")
+            .contains("wanted = ShortcutScrollKeep.userScrolled(axis, c)"))
+        val report = SourceRoots.body(layout, "private fun report(f: ShortcutGridFit.Fit)")
+        assertTrue(report.contains("pos=%d/%d view=%x") && report.contains("System.identityHashCode(this)"))
+        assertTrue(report.contains("frame=%dx%d"), "dạng `frame=W×H` của OC-292-1 giữ nguyên")
     }
 }

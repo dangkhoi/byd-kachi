@@ -310,7 +310,9 @@ class SettingsSections(
         // (`VoiceModelSettings.logRows`).
         //
         // ⚠ KHẢ NĂNG không mất, chỉ BỀ MẶT mất — cầu kiểm thử vẫn nhận `say` / `captest` / `prefs_set` /
-        // `voice_dump`, và hai màn chẩn đoán vẫn mở bằng `am start -n <gói>/<lớp>`. Đó là lý do công tắc dưới đây
+        // `voice_dump` / `a11ylog`. Hai màn chẩn đoán (`DiagActivity`, `VietMapWidgetDiagActivity`): `am start` từ adb bị từ
+        // chối (`exported=false` — AOSP 10 r47 `ActivityStackSupervisor.checkStartAnyActivityPermission`; [ĐO xe 29/09]) ⇒
+        // 2.93 wave 2B mở chúng CHỈ qua lệnh cầu `diag_screen` (`TestBridgeScreens`), không hàng nào ở đây. Đó là lý do công tắc dưới đây
         // PHẢI ở lại: nó là cửa duy nhất mở cầu, và từ lượt này nó cũng là cửa duy nhất tới mọi đồ đo.
         // Bài canh hai chiều: `DevSurfaceGateContractTest`.
         //

@@ -137,7 +137,7 @@
 - **Quyền còn thiếu + tự cấp** — cấp quyền notification / floating qua dadb, không cần laptop
 - **Khởi động lại launcher · Dừng toàn bộ dẫn đường · Cứu hộ cụm** — gỡ rối không phải khởi động lại đầu xe
 - **Chẩn đoán & log** — màn Chẩn đoán cụm, log ghi ra thẻ, báo cáo kiểm-từng-chức-năng; anh em chỉ cần chụp màn gửi về
-- **Chế độ kiểm thử qua adb** — chỉ bật được bằng tay trong xe, tự tắt sau 60 phút; ⚠ tắt máy xe **không** tắt nó (đầu xe BYD không khởi động lại khi tắt máy) — dùng xong thì tự gạt tắt
+- **Chế độ kiểm thử qua adb** — chỉ bật được bằng tay trong xe, tự tắt sau 60 phút **hoặc khi tắt máy xe** (từ 2.93, khi Kachi đang là màn hình chính; tới 2.92 tắt máy không tắt nó vì đầu xe BYD không khởi động lại khi tắt máy) — dùng xong vẫn nên tự gạt tắt
 
 *10 · Hiệu năng & an toàn*
 - **Chỉ đọc HAL khi màn hình đang bày** — vòng poll đọc theo nhu cầu, datum đọc ra `null` thì nguội dần rồi thử lại giãn cách
@@ -204,7 +204,7 @@
 - **Missing permissions + self-grant** — notification / floating-window grants over dadb, no laptop
 - **Restart launcher · Stop all navigation · Cluster rescue** — recover without rebooting the head unit
 - **Diagnostics & logs** — a cluster diagnostics screen, logs written to the SD card, a capability-test report; testers only need to send a screenshot
-- **ADB test mode** — can only be switched on by hand in the car, self-expires after 60 min; ⚠ switching the car off does **not** end it (the BYD head unit does not reboot on engine off) — switch it off yourself when done
+- **ADB test mode** — can only be switched on by hand in the car, self-expires after 60 min **or when the car is switched off** (from 2.93, while Kachi is the home screen; up to 2.92 switching the car off did not end it because the BYD head unit does not reboot on engine off) — still switch it off yourself when done
 
 *10 · Performance & safety*
 - **HAL is read only for what the screen shows** — demand-gated polling; a datum that reads `null` goes cold and is retried with backoff
@@ -396,7 +396,7 @@ See the [project closeout (1.30)](docs/CLOSEOUT-2026-08-16.md) for the final eva
 - **Cập nhật** — **Kiểm tra cập nhật** + **Tự động cập nhật** (mở Kachi thì tự dò; có bản mới sẽ **hỏi trước** khi tải và cài đè; không có bản mới thì im lặng).
 - **Bảo trì** — **Khởi động lại launcher** · **Dừng toàn bộ dẫn đường** · **Cứu hộ cụm**.
 - **Nâng cao** — màn ClusterNav cũ (chỉ còn là "màn nâng cao"), **Chẩn đoán cụm** (`DiagActivity` tự chụp dữ liệu, anh em chỉ cần gửi ảnh màn), **Kiểm tra từng chức năng xe** (chạy → OK/Không OK → ghi báo cáo), **Gõ lệnh chữ** (thử bộ hiểu ý không cần nói), **Nhận dạng tệp WAV thử**.
-- **Chế độ kiểm thử qua adb** — cho máy tính gửi lệnh thử vào Kachi (nói một câu, đổi hồ sơ, gắn app vào ô, đọc trạng thái). Chỉ bật được **bằng tay trong xe** và **tự tắt sau 60 phút**; ⚠ **tắt máy xe không tắt nó** (đầu xe BYD không khởi động lại khi tắt máy — đo trên xe 29/09), nên dùng xong thì tự gạt tắt; mọi lệnh đều được ghi nhật ký.
+- **Chế độ kiểm thử qua adb** — cho máy tính gửi lệnh thử vào Kachi (nói một câu, đổi hồ sơ, gắn app vào ô, đọc trạng thái). Chỉ bật được **bằng tay trong xe** và **tự tắt sau 60 phút hoặc khi tắt máy xe** (từ 2.93, khi Kachi đang là màn hình chính — Kachi đọc dấu tắt máy của chính nó; tới 2.92 tắt máy không tắt được vì đầu xe BYD không khởi động lại khi tắt máy — đo trên xe 29/09); dùng xong vẫn nên tự gạt tắt; mọi lệnh đều được ghi nhật ký.
 - **Giới thiệu** — **Phiên bản và giấy phép** · **Miễn trừ trách nhiệm**. Số hiệu bản hiện cả ở đây, trong log phiên và trong tên tệp log.
 
 *10 · Hiệu năng & ranh giới an toàn*
@@ -460,7 +460,7 @@ See the [project closeout (1.30)](docs/CLOSEOUT-2026-08-16.md) for the final eva
 - **Update** — **Check for updates** + **Auto update** (checks when you open Kachi; **asks first** before downloading and installing over the top; stays silent when there is nothing new).
 - **Maintenance** — **Restart launcher** · **Stop all navigation** · **Cluster rescue**.
 - **Advanced** — the old ClusterNav screen (now just an "advanced screen"), **Cluster diagnostics** (`DiagActivity` captures the data itself — testers only send a screenshot), **Per-feature car capability test** (run → OK / not OK → write a report), **Type a command** (test the intent parser without speaking), **Recognise a test WAV**.
-- **ADB test mode** — lets a computer send test commands into Kachi (say a sentence, switch profile, pin an app into a slot, read state). It can only be switched on **by hand in the car** and **self-expires after 60 min**; ⚠ **switching the car off does not end it** (the BYD head unit does not reboot on engine off — measured on the car 29/09), so switch it off yourself when done; every command is journalled.
+- **ADB test mode** — lets a computer send test commands into Kachi (say a sentence, switch profile, pin an app into a slot, read state). It can only be switched on **by hand in the car** and **self-expires after 60 min or when the car is switched off** (from 2.93, while Kachi is the home screen — Kachi reads its own engine-off mark; up to 2.92 engine off did not end it because the BYD head unit does not reboot on engine off — measured on the car 29/09); still switch it off yourself when done; every command is journalled.
 - **About** — **Version and licence** · **Disclaimer**. The version appears here, in the session log, and in the log file name.
 
 *10 · Performance & safety boundaries*

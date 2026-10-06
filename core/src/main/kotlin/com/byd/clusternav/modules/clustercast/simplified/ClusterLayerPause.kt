@@ -88,6 +88,18 @@ interface ClusterLayerPort {
     /** Gửi `VM_BUBBLE_VIS` với [show]. */
     fun sendBubble(show: Boolean)
 
+    /**
+     * 2.93 wave 2A · VM-BUBBLE-OLDMOD-MEMO — dấu cài đặt của app bóng nổi ([BubbleOldModMemo.token]: mã phiên bản + lần cài);
+     * `null` = không cài / không đọc được ⇒ không dùng sổ. Mặc định `null` (JVM/test cũ: hành vi 2.90).
+     */
+    fun bubbleInstallToken(): String? = null
+
+    /** Sổ "mod cũ đã chứng minh" thô ([BubbleOldModMemo.KEY], phạm vi XE); `null` = chưa có. */
+    fun oldModMemo(): String? = null
+
+    /** Ghi sổ ([value] `null` = xoá). `true` = đã chạm đĩa. Mặc định không có nơi lưu ⇒ `false`. */
+    fun writeOldModMemo(value: String?): Boolean = false
+
     companion object {
         val NONE: ClusterLayerPort = object : ClusterLayerPort {
             override fun pauseOwn() = Unit

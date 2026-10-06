@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * QA 2.87 [P3] — học một phím media làm YT Music bật lên ([ĐO máy ảo `l7/learn88-orphan-up.log`]: `learned voice keycode=88`
+ * QA 2.87 [P3] — học một phím media làm YT Music bật lên ([ĐO máy ảo `learn88-orphan-up.log` (bằng chứng phiên, ngoài repo)]: `learned voice keycode=88`
  * rồi 192 ms sau `MediaSessionService Sending KeyEvent { action=ACTION_UP, keyCode=KEYCODE_MEDIA_PREVIOUS … } to … youtube.music`).
  * Khoá: phần còn lại của CHÍNH lần nhấn đã học (cùng mã + cùng `downTime`) bị nuốt; lần nhấn khác không bị đụng.
  */

@@ -143,6 +143,7 @@ class ControlTileFactory(
         val valueH = StepValueFit.apply(vtext, def, size.valueSp)
         look(def, tile, icon, label, state.value(def))
         val minus = stepBtn("−"); val plus = stepBtn("+")
+        fun say(v: Int, a: Boolean?) = StepA11y.speak(def.displayLabel, ControlVisuals.stepText(def, v, a), vtext, minus, plus)   // 2.93 A11Y-STEPPER-NAME
         // ⚠ H1 — mốc để cộng/trừ là mức THẬT của xe, không phải mức lạc quan trong [ControlTileState]: người lái chỉnh
         // gió ở màn BYD gốc thì bảng kia không biết, nên nó vẫn giữ mặc định (gió 4 · nhiệt 22) và một cú bấm "+" nhảy
         // mấy nấc cùng lúc — đúng lỗi tester 1.66 báo. Đọc `null` (off-car · nút chưa có đường đọc) ⇒ lùi về hành vi
@@ -152,7 +153,7 @@ class ControlTileFactory(
         fun nudge(delta: Int) {
             state.touch(def.id)
             val old = state.value(def); val oldAuto = auto; var nv = old
-            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v, auto); look(def, tile, icon, label, v, auto) }
+            fun draw(v: Int) { vtext.text = ControlVisuals.stepText(def, v, auto); look(def, tile, icon, label, v, auto); say(v, auto) }
             fun show(v: Int, a: Boolean?) { nv = v; auto = a; state.setValue(def.id, v); tile.post { draw(v) } }
             writer.submit(def.id, act = {
                 val base = runCatching { control().readState(def.id) }.getOrNull() ?: state.value(def)
@@ -181,7 +182,7 @@ class ControlTileFactory(
         }, LinearLayout.LayoutParams(MATCH, WRAP))
         // [R7] Đích chạm: nới VÙNG NHẬN CHẠM ra nửa ô (≥ Sp.TOUCH bề dọc), KHÔNG nới cái nút — nới nút thì
         // 2×48 > 68dp dùng được của ô và chữ giá trị xuống hai dòng ([ĐO] ghi ở KDoc Sp.TOUCH_TIGHT).
-        StepTouchTarget.attach(tile, minus, plus)
+        StepTouchTarget.attach(tile, minus, plus); say(state.value(def), auto)
         // Đọc lại con số THẬT của xe (nhiệt/gió/âm lượng) — bỏ qua trong ân hạn, chỉ đổi chữ khi khác.
         return refresh@{ car ->
             if (state.touchedWithin(def.id)) return@refresh
@@ -190,7 +191,7 @@ class ControlTileFactory(
             val v = car.controls[def.id] ?: state.value(def)
             if (v != state.value(def) || a != auto) {
                 state.setValue(def.id, v); auto = a
-                vtext.text = ControlVisuals.stepText(def, v, a); look(def, tile, icon, label, v, a)
+                vtext.text = ControlVisuals.stepText(def, v, a); look(def, tile, icon, label, v, a); say(v, a)
             }
         }
     }
@@ -300,11 +301,12 @@ class ControlTileFactory(
         // Cùng hàng thì cùng luật: hàng nút nào bỏ icon thì ô gói lệnh cũng bỏ, không thì một hàng có hai kiểu ô.
         if (icons) tile.addView(icon, LinearLayout.LayoutParams(dpi(ctx, size.iconDp), dpi(ctx, size.iconDp)))
         val label = TextView(ctx).apply {
-            text = macro.displayLabel; setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp)
-            gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+            text = if (size.narrow) macro.displayShortLabel else macro.displayLabel   // 2.93: như nút ([actionTile])
+            if (!size.narrow) FitScale.named(this, macro.displayLabel, macro.displayShortLabel)   // ACTIONMACRO-SHORT-LABEL
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, size.labelSp); gravity = Gravity.CENTER; maxLines = 2; ellipsize = TextUtils.TruncateAt.END
         }
         tile.addView(label)
-        applyBg(tile, false); tint(icon, label, true)
+        applyBg(tile, false); tint(icon, label, false)   // 2.93: lúc nghỉ như nút bấm-một-phát (trước: mực "bật" trên nền tắt)
 
         tile.setOnClickListener {
             // Chốt theo MÃ GÓI ở bảng dùng chung — không theo View (xem ControlTileState.beginRun).
@@ -348,7 +350,7 @@ class ControlTileFactory(
                     val notice = res?.notice(macro.displayLabel)
                     tile.post {
                         runCatching {
-                            applyBg(tile, false); tint(icon, label, true)
+                            applyBg(tile, false); tint(icon, label, false)
                             if (notice != null) Toast.makeText(DockScaleContext.unscaled(ctx), notice, Toast.LENGTH_SHORT).show()   // B3 K7: chữ cỡ thật
                         }
                     }
@@ -419,7 +421,7 @@ class ControlTileFactory(
         // WP2 · R2.1 *"icon active/mờ"* — trạng thái TẮT hạ độ đục của ICON. NHÃN giữ nguyên độ đục: nó trả lời
         // *"ô này là cái gì"*, câu đó không phụ thuộc bật/tắt (cùng lẽ [ReadTile.bind]/[CellBinder] chỉ làm mờ GIÁ
         // TRỊ chứ không làm mờ cả ô — [ĐO] 2.33:1 của lượt kiểm toán UX).
-        icon.alpha = if (active) 1f else ICON_OFF_ALPHA
+        KachiIcons.fadeOff(icon, size.iconDp, active, ICON_OFF_ALPHA)   // 2.93 WIDGET-ICON-OFF-FAINT: mờ theo tương phản đo được
     }
 
     /**
@@ -472,8 +474,8 @@ class ControlTileFactory(
         const val TAG_WRITE = "ControlWrite"
 
         /**
-         * WP2 · R2.1 — độ đục của ICON khi ô đang TẮT. **0.72** lấy đúng con số [KachiIcons] đang dùng cho ô
-         * *chưa chọn* ở mặt lớn, để hai bề mặt nói *"chưa bật"* bằng cùng một cường độ.
+         * WP2 · R2.1 — độ đục TỐI ĐA của ICON khi ô đang TẮT (0.72 = ô *chưa chọn* mặt lớn của [KachiIcons]). 2.93: mức
+         * thật do [KachiIcons.fadeOff] chọn — mờ tới đây nhưng lớp chính giữ ≥ 4,5:1 (sáng mờ ít hơn hẳn, tối ≈ 0.72).
          */
         const val ICON_OFF_ALPHA = 0.72f
 

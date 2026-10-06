@@ -85,7 +85,31 @@ object CapabilityPicker {
      * [CapabilityCatalog.byDomain] vốn đã không bày chúng.
      */
     fun launcherPicks(): List<CapabilityPick> =
-        CapabilityCatalog.all().filter { it.kind == CapabilityKind.LAUNCHER }
+        CapabilityCatalog.all().filter { it.kind == CapabilityKind.LAUNCHER && !LauncherActions.isCamera(it.id) }
+
+    /** 2.93 · Tiêu đề khối **Camera theo yêu cầu** — xem [cameraPicks]. */
+    val CAMERA_TITLE: String get() = Strings.t("Camera theo yêu cầu", "Camera on demand")
+
+    /** Câu phụ khối camera: nói đúng nghĩa nút bật/tắt (owner *"các nút đều là toggle"*), không hẹn giờ tắt. */
+    val CAMERA_NOTE: String
+        get() = Strings.t(
+            "Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang mở. Không tự tắt.",
+            "Tap to turn that camera on/off; opening another camera replaces the one showing. It never times out.",
+        )
+
+    /**
+     * ═══ 2.93 · CAMERA-ON-DEMAND — năm ô (bốn camera + *Tắt camera*) cho bộ chọn nút thanh xe, khối RIÊNG ═════════════
+     *
+     * Vẫn là loại [CapabilityKind.LAUNCHER] (không chạm `CarControlPort`), nhưng tách khỏi [launcherPicks] vì khối kia phải
+     * vừa MỘT hàng [COLS] ô (nó đứng trước cả trăm ô — bài `ShortcutPlacementTest`); năm ô camera là một CÂU HỎI khác của
+     * người lái (*"nút xem camera"*), nên có tiêu đề + câu phụ riêng. Lọc theo bảng của [LauncherActions], không kê tay mã.
+     *
+     * 2.93 wave 2B · CAMERA-WIDGET-TILE (spec OQ3) — khối này bày ở CẢ ngăn kéo gán-ô (widget lưới ô giữa màn), khác ba việc
+     * của [launcherPicks]: lý do *"ô giữa màn chỉ để mở ngăn kéo là đổi chỗ đắt lấy việc rẻ"* không áp cho camera — ô camera
+     * là một nút BẬT/TẮT có trạng thái, đúng *"widget action button"* owner nói (06/10).
+     */
+    fun cameraPicks(): List<CapabilityPick> =
+        CapabilityCatalog.all().filter { it.kind == CapabilityKind.LAUNCHER && LauncherActions.isCamera(it.id) }
 
     /** Câu mở đầu của phép GỢI Ý nhóm ở từng lĩnh vực — xem [groupHint]. */
     val HINT_PREFIX: String get() = Strings.t("Đã có trong nhóm: ", "Already in a group: ")

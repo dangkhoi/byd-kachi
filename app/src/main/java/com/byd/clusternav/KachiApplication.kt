@@ -58,6 +58,9 @@ class KachiApplication : Application() {
         // trình NÀY (chỉ tiến trình chính — sau cổng nền ở trên). Chỉ đăng ký receiver, không I/O, không phụ thuộc gì ở
         // trên/dưới; đứng TRƯỚC `EarlyShellChannel.start` vì dòng đó được chốt là lời gọi cuối (ReadyAtHomeWiringContractTest).
         ControlSentRelay.receiveInMain(this)
+        // 2.93 · CAMERA-ON-DEMAND — nhận lệnh camera của phiên giọng nói `:wake` (*"mở camera sau"* qua phím vô-lăng): cùng
+        // khuôn receiver trong gói ngay trên; chỉ đăng ký, không I/O. Đứng TRƯỚC dòng chốt cuối `EarlyShellChannel.start`.
+        com.byd.clusternav.launcher.camera.CameraDemandDispatch.receiveInMain(this)
         // READY-AT-HOME R2.1 — nối kênh shell NGAY khi tiến trình bật (cả lượt BYD dựng lại Kachi lúc màn tắt), CHỈ khi
         // xe đã duyệt khoá này (dấu bền còn tươi); không thì để F4 hỏi đúng lúc. Đường MỚI ⇒ dòng CUỐI (CLAUDE.md §6).
         EarlyShellChannel.start(this)

@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * trong ô ≈ thời gian chuỗi chạy: nền đen của theme). Bị gỡ bằng `AppTask.finishAndRemoveTask` ngay sau lượt đẩy. Không
  * dùng `Theme.NoDisplay` (theme đó đòi `finish()` trước `onResume` — lớp che phải SỐNG tới lúc đẩy xong).
  *
- * ## Vì sao bên mở phải CHỜ [onResume] [ĐO máy ảo 03/10, `p3/e2e-L4/e6-hidden` lượt 1]
+ * ## Vì sao bên mở phải CHỜ [onResume] [ĐO máy ảo 03/10, `e2e-L4 · e6-hidden` (bằng chứng phiên, ngoài repo) lượt 1]
  * Lớp che `onResume` muộn ≈ 0,5 s sau lúc tạo; giữ chỗ (anchor, `excludeFromRecents`) dựng TRONG khoảng đó ⇒ lượt resume
  * của lớp che đưa task của nó lên đầu danh sách gần đây ⇒ giữ chỗ không còn là task mới nhất ⇒ hệ TỈA nó
  * (`am_finish_activity … BehindAnchorActivity,recent-task-trimmed`; A10 r47 `RecentTasks.isInVisibleRange`: task

@@ -75,6 +75,21 @@ class VoiceAppNamesWiringContractTest {
         assertTrue("ui.removeCallbacks(p.watchdog)" in SourceRoots.body(relay, "private fun finish("), "xong ⇒ gỡ hạn")
     }
 
+    /**
+     * 2.93 VOICE-TEACH-CONTEXT (R2) + VOICE-TEACH-SHORT-HOMOGRAPH (R7) — hộp dạy nói ĐÚNG câu cho lượt kế (lượt câu có ô) và
+     * hiện cảnh báo đồng hình (senior review VOICE Pass 1 (c): hai dây này chưa có ghim). Thử ĐỎ: bỏ nhánh SLOT trong `paintPrompt`.
+     */
+    @Test
+    fun `hop day noi cau goi y cho luot ke va hien canh bao dong hinh`() {
+        val dlg = code("SettingsVoiceNamesDialog.kt")
+        val paint = SourceRoots.body(dlg, "private fun paintPrompt(")
+        assertTrue("TeachSample.promptFor(next) == TeachSample.Prompt.SLOT" in paint, "lượt kế là lượt câu có ô ⇒ câu gợi ý riêng")
+        assertTrue("R.string.kachi_vn_take_slot" in paint && "R.string.kachi_vn_take_plain" in paint)
+        assertTrue(Regex("""\bpaintPrompt\(\)""").findAll(dlg).count() >= 2, "gọi ngay khi số lượt đổi (cả đường điền sẵn)")
+        assertTrue("TeachGuard.Code.HOMOGRAPH -> context.getString(R.string.kachi_vn_r_homograph, r.detail)" in dlg,
+            "cảnh báo đồng hình phải hiện câu ví dụ cho người lái")
+    }
+
     @Test
     fun `hop day gop luot theo chuoi chuan hoa va ghi tren du lieu doc lai`() {
         val dlg = code("SettingsVoiceNamesDialog.kt")
@@ -113,9 +128,12 @@ class VoiceAppNamesWiringContractTest {
     @Test
     fun `hotword phien lenh mang ten da day nguon giong`() {
         val rec = code("voice/VoiceRecognizer.kt")
-        assertTrue("VoiceTaughtSource.forHotwords(ctx, apps, installed)" in rec)
+        // ĐỔI GHIM có lý do (2.93 soát giọng Pass 2 · P3 a): tên đã dạy đọc MỘT lần mỗi phiên (đúng tiến trình) rồi dùng
+        // chung cho tên bias lẫn lọc nhãn — tính chất cũ (nguồn là VoiceTaughtSource, chọn bằng hàm thuần :core) giữ nguyên.
+        assertTrue("val names = VoiceTaughtSource.names(ctx)" in rec)
+        assertTrue("VoiceTaughtSource.forHotwords(apps, installed, names)" in rec)
         // Senior review Pass 1 (P3) — chọn tên bias là hàm THUẦN ở :core (cùng luật sống của từ vựng, có test hành vi).
-        assertTrue("VoiceAppIndex.hotwordNames(apps, installed, names(ctx))" in code("voice/VoiceTaughtSource.kt"))
+        assertTrue("VoiceAppIndex.hotwordNames(apps, installed, names)" in code("voice/VoiceTaughtSource.kt"))
         val pick = SourceRoots.body(
             SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/voice/VoiceAppIndex.kt"), "fun hotwordNames(",
         )

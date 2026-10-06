@@ -26,9 +26,9 @@ import java.io.File
  *
  * ## Bộ đệm đĩa
  * `<thư mục ảnh>/.kachi-art/<tên>-<mtime>-<cỡ>-<WxH>-<phủ>-<tối>.png` + `.txt` (lưới + màu trội). Khoá mang mtime +
- * cỡ tệp ⇒ đổi ảnh cùng tên là tính lại; mang cỡ màn + cách phủ + mức làm tối ⇒ đổi lựa chọn là tính lại. Tệp
- * cũ không ai xoá **cố ý** (vài chục KB một ảnh). `DiagStorageCap` KHÔNG BAO GIỜ chạm thư mục này (ảnh nền là dữ
- * liệu người dùng — DIAG-CAP-USERDATA 2.92) ⇒ nếu cần dọn thì phải là luật riêng của bộ đệm này.
+ * cỡ tệp ⇒ đổi ảnh cùng tên là tính lại; mang cỡ màn + cách phủ + mức làm tối ⇒ đổi lựa chọn là tính lại. `DiagStorageCap`
+ * KHÔNG BAO GIỜ chạm thư mục này (ảnh nền là dữ liệu người dùng — DIAG-CAP-USERDATA 2.92) ⇒ trần là luật RIÊNG của bộ đệm
+ * (2.93 `WALLART-CACHE-BOUND`, [WallArtCachePolicy]): mỗi lần nấu khoá mới thì dọn đệm mồ côi + đệm cũ quá trần.
  */
 class WallArt(
     /** Ảnh mờ, `ARGB_8888`, cỡ = màn ÷ [scale], ĐÃ làm tối theo lựa chọn người dùng. */
@@ -167,7 +167,29 @@ object WallArtBuilder {
         bmp.setPixels(px, 0, w, 0, 0, w, h)
         val art = WallArt(bmp, SCALE, COLS, ROWS, lum, dominant, screenW, screenH)
         saveCached(dir, key, art)
+        prune(dir, keep = key)   // 2.93 WALLART-CACHE-BOUND — chỉ khi vừa ghi khoá MỚI (đệm chỉ lớn lên ở đây)
         return art
+    }
+
+    /**
+     * 2.93 `WALLART-CACHE-BOUND` — bộ đệm có trần ([WallArtCachePolicy], `:core`): đệm mồ côi (ảnh nguồn đã gỡ) · quá
+     * [WallArtCachePolicy.KEEP_PER_SOURCE] khoá mỗi ảnh · quá [WallArtCachePolicy.MAX_KEYS] khoá ⇒ xoá cặp `.png` + `.txt`.
+     * Chỉ đụng tệp TRONG [dir] (`.kachi-art/`, tên lấy từ chính danh sách thư mục ⇒ không ra ngoài); khoá [keep] vừa nấu
+     * không bao giờ bị xoá. Thread nền (cùng lượt nấu). Không đọc được thư mục ⇒ thôi, lần nấu sau dọn.
+     */
+    private fun prune(dir: File?, keep: String) {
+        if (dir == null) return
+        try {
+            val files = dir.listFiles()?.filter { it.isFile && (it.name.endsWith(".png") || it.name.endsWith(".txt")) } ?: return
+            val sources = dir.parentFile?.list()?.toSet() ?: return
+            val entries = files.groupBy { it.name.substringBeforeLast('.') }
+                .map { (k, fs) -> WallArtCachePolicy.Entry(k, fs.maxOf { it.lastModified() }) }
+            val gone = WallArtCachePolicy.victims(entries, sources, protect = keep)
+            gone.forEach { k -> File(dir, "$k.png").delete(); File(dir, "$k.txt").delete() }
+            if (gone.isNotEmpty()) Log.i(TAG, "dọn bộ đệm ảnh mờ: ${gone.size} khoá (còn ${entries.size - gone.size})")
+        } catch (e: SecurityException) {
+            Log.w(TAG, "không dọn được bộ đệm ảnh mờ: ${e.javaClass.simpleName}")
+        }
     }
 
     /** Lưới độ chói COLS×ROWS: trung bình độ chói WCAG của các điểm trong ô. */

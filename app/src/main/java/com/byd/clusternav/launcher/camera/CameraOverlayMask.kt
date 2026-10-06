@@ -12,7 +12,6 @@ import android.graphics.Shader
 import android.widget.FrameLayout
 import com.byd.clusternav.launcher.KachiSpace
 import com.byd.clusternav.launcher.LangHost
-import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
 
 /**
  * ═══ MẶT NẠ CỬA SỔ CAMERA — mép NGOÀI ôm kính cụm, mép TRONG mờ dần (2.77 + 2.78) ════════════════════════════════
@@ -144,10 +143,11 @@ private fun halfPlane(p: CameraClusterBand.Placement, edge: List<Int>, atLeft: B
 }
 
 /**
- * Nhãn ngắn *Camera trái/phải* ở góc, hoặc `null` khi chỗ gọi không nói bên nào. (Tách khỏi `CameraOverlayView` ở
- * 2.77 để tệp ấy ở dưới trần 500 dòng của CLAUDE.md §4.1 — không đổi một hành vi nào.)
+ * Nhãn ngắn *Camera trái/phải/sau/trước* ở góc, hoặc `null` khi chỗ gọi không nói camera nào. (Tách khỏi
+ * `CameraOverlayView` ở 2.77 để tệp ấy ở dưới trần 500 dòng của CLAUDE.md §4.1 — không đổi một hành vi nào; 2.93 nhận
+ * [CameraWhich] thay `Side` — hai camera gương ra ĐÚNG hai chuỗi cũ.)
  *
- * Chữ đi qua tài nguyên (`R.string.kachi_camera_left/right`) như mọi chữ của tầng `launcher/` —
+ * Chữ đi qua tài nguyên (`R.string.kachi_camera_left/right/rear/front`) như mọi chữ của tầng `launcher/` —
  * `LauncherI18nContractTest` quét chính điều đó.
  *
  * ⚠ [kachi-i18n-zh-th-ms R9 · soát 2.87] [ctx] ở đây là Context ỨNG DỤNG (`CameraSignalController(app)`), tức tài
@@ -155,10 +155,12 @@ private fun halfPlane(p: CameraClusterBand.Placement, edge: List<Int>, atLeft: B
  * "左侧摄像头". Chữ đọc qua [LangHost.localized] (ngôn ngữ người dùng, tiến trình chính); TextView vẫn dựng bằng
  * [ctx] — chỉ lượt TRA CHUỖI đổi, cửa sổ/WindowManager/GL không đụng (`LauncherLocaleContractTest` canh).
  */
-internal fun labelFor(ctx: Context, side: Side?): android.widget.TextView? {
-    val res = when (side) {
-        Side.LEFT -> com.byd.clusternav.R.string.kachi_camera_left
-        Side.RIGHT -> com.byd.clusternav.R.string.kachi_camera_right
+internal fun labelFor(ctx: Context, which: CameraWhich?): android.widget.TextView? {
+    val res = when (which) {
+        CameraWhich.LEFT -> com.byd.clusternav.R.string.kachi_camera_left
+        CameraWhich.RIGHT -> com.byd.clusternav.R.string.kachi_camera_right
+        CameraWhich.REAR -> com.byd.clusternav.R.string.kachi_camera_rear
+        CameraWhich.FRONT -> com.byd.clusternav.R.string.kachi_camera_front
         null -> return null
     }
     val pad = KachiSpace.dp(ctx, KachiSpace.S)

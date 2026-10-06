@@ -186,8 +186,8 @@ class VoiceRecognizer private constructor(
          * Biasing lấy từ **tập CỤM LỆNH tĩnh** ([SherpaBiasing], spec `kachi-voice-hotword-phrases.html`: cụm
          * ≥ 2 từ sinh từ 4 bộ đăng ký, không dòng một từ) + nhãn **sổ địa chỉ** + **tên hồ sơ** ở dạng cụm
          * *"hồ sơ &lt;tên&gt;"* (VOICE-PROFILE-NAME-PHONETIC 2026-09-26 — [ĐO xe] 8/8 lượt rụng đúng cái tên; tên
-         * tiếng Anh vào bằng dạng đọc tiếng Việt). Tên **app** vẫn chỉ vào qua cách gọi đã khai, không vào bằng
-         * nhãn máy. Chỉ bias khi engine có bpe vocab.
+         * tiếng Anh vào bằng dạng đọc tiếng Việt). Tên **app**: cách gọi đã khai + tên đã dạy (2.91) + nhãn app VIẾT
+         * CHỮ VIỆT của bảng gọi app (2.93, [SherpaLabelHotwords] — nhãn chữ Anh không). Chỉ bias khi engine có bpe vocab.
          */
         fun open(
             ctx: Context,
@@ -202,9 +202,12 @@ class VoiceRecognizer private constructor(
             places: List<String> = emptyList(),
         ): VoiceRecognizer? {
             val rec = VoiceEngine.recognizer(ctx) ?: return null
-            val taught = VoiceTaughtSource.forHotwords(ctx, apps, installed)   // 2.91 R8 — tên đã dạy (nguồn giọng) của hồ sơ
-            val hot = if (VoiceEngine.biasingReady()) SherpaBiasing.hotwordsFile(places, profiles, taught) else ""
-            return VoiceRecognizer(rec, hot)
+            if (!VoiceEngine.biasingReady()) return VoiceRecognizer(rec, "")   // không bpe vocab ⇒ không đọc/dựng gì (soát 2.93 P3)
+            val names = VoiceTaughtSource.names(ctx)   // đọc MỘT lần mỗi phiên — cho cả tên đã dạy lẫn lọc nhãn
+            val taught = VoiceTaughtSource.forHotwords(apps, installed, names)   // 2.91 R8 — tên đã dạy (nguồn giọng) của hồ sơ
+            val labels = SherpaLabelHotwords.labels(apps, names)   // 2.93 — nhãn app chữ Việt
+                .also { Log.i(TAG, "hotword: ${it.size} nhãn app chữ Việt ứng viên") }   // chỉ ĐẾM (🚗 đối chiếu createStream)
+            return VoiceRecognizer(rec, SherpaBiasing.hotwordsFile(places, profiles, taught, labels))
         }
 
         /**

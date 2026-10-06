@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -100,9 +101,8 @@ class FitRulesRound2WiringContractTest {
         val free = mini.lines().filter { "free = true" in it }
         assertEquals(1, free.size, "chỉ ô nén nhạc khai chữ tự do: $free")
         assertTrue(free.single().contains("\"w_media\""))
-        // Bỏ chú thích (như `SourceRoots.codeOf`): nhắc tên hàm trong KDoc không phải chỗ gọi.
-        fun strip(t: String) = t.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        // Bỏ chú thích bằng ĐÚNG bộ quét của `SourceRoots.codeOf`: nhắc tên hàm trong KDoc không phải chỗ gọi.
+        fun strip(t: String) = KotlinSource.stripComments(t)
         val app = SourceRoots.moduleSourceRoots().filter { it.toString().contains("app") }
         val callers = app.flatMap { root ->
             java.nio.file.Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }

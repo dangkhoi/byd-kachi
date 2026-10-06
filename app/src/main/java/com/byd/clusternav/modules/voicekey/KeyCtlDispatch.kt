@@ -105,8 +105,7 @@ object KeyCtlDispatch {
      * một con số cũ. Khi ấy đọc ĐÚNG MỘT datum qua `CarDataDemand.Holder.withSoloIfIdle` (luật + bài kiểm ở `:core`).
      */
     private fun fresh(app: Context, id: String): CarStatus? = runCatching {
-        val c = AppContainer.get(app)
-        c.refreshForRead(id) ?: c.carDemand.withSoloIfIdle(setOf(id)) { c.carStatusRepository.refreshNow() }
+        AppContainer.get(app).readFresh(id)   // 2.93: luật dời nguyên sang `AppContainer.readFresh` (dùng chung với giọng nói)
     }.getOrNull()
 
     /** Một toast tại một thời điểm: núm vặn sinh nhiều câu liền nhau — xếp hàng thì câu cuối hiện sau cả chục giây. */

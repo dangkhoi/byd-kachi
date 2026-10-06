@@ -72,6 +72,21 @@ class KotlinSourceTest {
         assertTrue(out.contains("""a\"//b"""), "nội dung string giữ nguyên")
     }
 
+    /**
+     * 2.93 wave 2C · TEST-STRIP-COPIES — `keepLines` giữ SỐ DÒNG qua comment khối (lồng nhau, nhiều dòng) để bài canh soi
+     * từng dòng / báo `tệp:dòng` dùng chung bộ quét này thay bản chép tay. Mặc định (không cờ) không đổi một byte.
+     */
+    @Test
+    fun `keepLines giu so dong qua comment khoi, mac dinh khong doi`() {
+        val src = "val a = 1\n/* khối\n /* lồng\n */ vẫn khối\n */ val b = \"x//y\" // c\nval c = 3"
+        val kept = KotlinSource.stripComments(src, keepLines = true)
+        assertEquals(src.lines().size, kept.lines().size, "số dòng phải giữ nguyên")
+        assertEquals(" val b = \"x//y\" ", kept.lines()[4], "dòng 5 của đầu ra là dòng 5 của nguồn (đã bỏ comment)")
+        assertEquals("val c = 3", kept.lines()[5])
+        assertFalse(kept.contains("khối") || kept.contains("lồng"), "comment khối vẫn bị bỏ")
+        assertEquals("val a = 1\n val b = \"x//y\" \nval c = 3", KotlinSource.stripComments(src), "mặc định = hành vi cũ")
+    }
+
     /** Degrade-safe: chuỗi rỗng / comment không đóng không được ném. */
     @Test
     fun `khong nem voi input khuyet`() {

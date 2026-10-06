@@ -185,6 +185,9 @@ class LauncherI18nLocalesContractTest {
             "kachi_vn_dialog_hint" to listOf("mở %1\$s"),
             "kachi_vn_r_slot" to listOf("vào ô số …"),
             "kachi_vn_r_is_command" to listOf("mở …"),
+            // 2.93 VOICE-TEACH-CONTEXT — câu gợi ý TỪNG lượt nói của hộp dạy (lượt thường · lượt CÓ Ô): người dùng NÓI chúng
+            "kachi_vn_take_plain" to listOf("mở %2\$s"),
+            "kachi_vn_take_slot" to listOf("đưa %2\$s vào ô số hai"),
         )
 
         /** `%1$s` / `%s` / `%.1f` — KHÔNG nhận cờ dấu cách (`50 % của` không phải tham số). `%%` bị bỏ qua ở [args]. */

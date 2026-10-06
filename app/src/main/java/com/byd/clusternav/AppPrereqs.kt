@@ -1,7 +1,11 @@
 package com.byd.clusternav
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.byd.clusternav.carexec.LocalDeviceShell
 import com.byd.clusternav.carexec.LocalShellResult
 import com.byd.clusternav.carexec.LocalShellRetry
@@ -17,6 +21,7 @@ import com.byd.clusternav.system.Prereq
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -34,6 +39,8 @@ import kotlin.concurrent.withLock
  *    vietmap-dock-r1-2: + TRẢ LẠI điều kiện mà chính Kachi đã thêm cho gói nay đã rời phạm vi (dấu bền [PrefsMarks]).
  *  • [ensure] — `VietMapAutostart.runNow`, TRƯỚC cổng sớm (người đã tắt bóng/biển mà tự mở VietMap cũng được chữa).
  *  • [ensureForCastOpen] — lượt mở chiếu cụm, chạy trên executor + shell của coordinator.
+ *  • 2.93 · VM-PREREQ-PKG-ADDED — [onPackageAdded]: gói trong phạm vi vừa cài lại lúc Kachi đang sống (bộ thu động đăng ký ở lượt
+ *    SẴN đầu tiên) ⇒ chữa NGAY thay vì chờ lượt kế (hộp "IVI không hỗ trợ" ở lần mở đầu tiên sau khi cài lại — B2-OQ5).
  *
  * Kênh shell chưa lên / chưa duyệt ⇒ phiên bị cổng thi hành chặn (`LocalShellAdmission`) ⇒ không làm gì, giữ nguyên hiện
  * trạng (hộp thoại vẫn có thể hiện; bấm OK là xong) — lượt kế tự đọc lại.
@@ -46,6 +53,9 @@ internal object AppPrereqs {
     private val lock = ReentrantLock()
 
     private val exec = Executors.newSingleThreadExecutor { r -> Thread(r, "kachi-app-prereqs").apply { isDaemon = true } }
+
+    /** 2.93 · VM-PREREQ-PKG-ADDED — bộ thu `ACTION_PACKAGE_ADDED` đã đăng ký trong tiến trình này (một lần; hỏng ⇒ lượt SẴN sau thử lại). */
+    private val addedListening = AtomicBoolean(false)
 
     /** Lượt gần nhất — CHỈ để hiển thị ở màn Chẩn đoán (không bao giờ là căn cứ quyết định). Giờ tường. */
     data class Last(
@@ -110,11 +120,58 @@ internal object AppPrereqs {
     /** Chuỗi SẴN — đẩy sang luồng `kachi-app-prereqs`, trả ngay (không chặn kiểm phím / chuyến lên xe). */
     fun onReady(ctx: Context) {
         val app = ctx.applicationContext
+        listenPackageAdded(app)
         try {
             exec.execute { guarded("ready") { runScope(app, "ready", emptyList()) } }
         } catch (e: RejectedExecutionException) {
             Log.e(TAG, "không xếp được lượt ready", e)
         }
+    }
+
+    /**
+     * 2.93 · VM-PREREQ-PKG-ADDED — nghe `ACTION_PACKAGE_ADDED` (`package:`) suốt đời tiến trình launcher, đăng ký ở lượt SẴN đầu tiên:
+     * trước đó kênh shell chưa dùng được ⇒ có nghe cũng không chữa được gì (cổng thi hành chặn phiên nền). Cài mới lẫn cập nhật đều
+     * phát tin này [ĐO nguồn r47 `PackageManagerService.java:1919-1935` · `:13192-13206`]. `RECEIVER_NOT_EXPORTED` (cùng mẫu
+     * `ShortcutIconsView.registerPackages`): API 26–32 [ĐO javap `core-1.19.0`] `ContextCompat` đăng ký kèm quyền
+     * `<gói>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, mà người phát là `system_server` ⇒ luôn qua [ĐO nguồn r47
+     * `BroadcastQueue.java:635-643` → `ActivityManager.checkComponentPermission` `:3732-3738` "system server get to do everything"].
+     * `QUERY_ALL_PACKAGES` ⇒ thấy mọi gói trên A11+ (DL5).
+     */
+    private fun listenPackageAdded(app: Context) {
+        if (!addedListening.compareAndSet(false, true)) return
+        val f = IntentFilter(Intent.ACTION_PACKAGE_ADDED).apply { addDataScheme("package") }
+        runCatching { ContextCompat.registerReceiver(app, PackageAddedReceiver(), f, ContextCompat.RECEIVER_NOT_EXPORTED) }
+            .onFailure { addedListening.set(false); Log.w(TAG, "không nghe được PACKAGE_ADDED: ${it.javaClass.simpleName} — lượt SẴN sau thử lại") }
+    }
+
+    /** `onReceive` trên luồng chính: chỉ lấy tên gói rồi đẩy sang `kachi-app-prereqs` (không shell, không PackageManager ở đây). */
+    private class PackageAddedReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != Intent.ACTION_PACKAGE_ADDED) return
+            val pkg = intent.data?.schemeSpecificPart?.takeIf { it.isNotBlank() } ?: return
+            onPackageAdded(context.applicationContext, pkg, intent.getBooleanExtra(Intent.EXTRA_REPLACING, false))
+        }
+    }
+
+    /**
+     * 2.93 · VM-PREREQ-PKG-ADDED — gói [pkg] vừa cài (lúc Kachi sống): phạm vi của RIÊNG gói đó theo [AppPrereqPlan.forAddedPackage]
+     * (đúng thứ lượt kế sẽ chữa) ⇒ đọc → áp phần thiếu → đọc lại qua CÙNG [runScope]. Ngoài phạm vi ⇒ một dòng log, 0 shell. Cập
+     * nhật ([replacing]) vẫn đọc (rẻ, chỉ ghi khi thiếu) — [ĐO nguồn r47] cập nhật KHÔNG làm mất miễn pin, nên thường `ghi=-`.
+     */
+    fun onPackageAdded(ctx: Context, pkg: String, replacing: Boolean) {
+        val app = ctx.applicationContext
+        try {
+            exec.execute { guarded("package-added($pkg)") { runAdded(app, pkg, replacing) } }
+        } catch (e: RejectedExecutionException) {
+            Log.e(TAG, "không xếp được lượt package-added($pkg)", e)
+        }
+    }
+
+    private fun runAdded(app: Context, pkg: String, replacing: Boolean) {
+        val trigger = if (replacing) "package-added(cập nhật)" else "package-added"
+        val scope = AppPrereqPlan.forAddedPackage(facts(app, castPrefs(app)), pkg)
+        if (scope.isEmpty()) { Log.i(TAG, "$trigger $pkg: ngoài phạm vi điều kiện nền — không đọc, không ghi"); return }
+        runScope(app, trigger, scope.flatMap { t -> t.roles.map { t.pkg to it } })
     }
 
     /**
@@ -137,7 +194,8 @@ internal object AppPrereqs {
         guarded("cast-open") {
             val targets = AppPrereqPlan.targets(facts(app, castPrefs), listOf(VietMapAutostart.PKG to Role.CAST_OPEN))
             if (targets.isEmpty()) return@guarded
-            // Không để lượt mở chiếu (executor có hạn 15 s) đứng chờ một phiên nền đang giữ khoá: lượt kia đang đọc CÙNG sự thật.
+            // Không để lượt mở chiếu (hạn cứng `BoundedCastExecutor.OPEN_TIMEOUT_MS`, 2.93: 25 s) đứng chờ một phiên nền đang giữ khoá:
+            // lượt kia đang đọc CÙNG sự thật.
             // Review 2.89 Pass 3 · vietmap-dock-r2-6: KHÔNG chờ chút nào (trước: tới 2 s mỗi lượt mở lúc nổ máy ⇒ cụm lên muộn) — lượt
             // SẴN / autostart cùng lần nổ máy phủ đúng phạm vi này.
             if (!lock.tryLock()) {

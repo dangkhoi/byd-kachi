@@ -1,6 +1,7 @@
 package com.byd.clusternav.modules.clustercast.simplified
 
 import java.util.concurrent.*
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -12,6 +13,10 @@ import java.util.concurrent.atomic.AtomicReference
  * - [submitStop] is PRIORITY: cancels active + clears pending, then executes stop immediately.
  * - Every operation has a hard deadline. On timeout: [Future.cancel(true)] + callback.
  * - Dedicated thread (daemon) — does not block the main/UI thread.
+ *
+ * 2.93 · CAST-OPEN-TIMEOUT — hạn của MỖI thao tác đi kèm thao tác đó: [submit] nhận hạn riêng (lượt mở chiếu dùng
+ * [OPEN_TIMEOUT_MS]), và thân đang chạy hỏi được phần hạn còn lại qua [remainingMs] (cổng theme dùng nó để không chờ bóng
+ * nổi ẩn lâu tới mức lượt mở chạm hạn cứng — `ClusterThemeGuard`).
  *
  * Not a generic executor — purpose-built for cast safety.
  */
@@ -32,8 +37,35 @@ class BoundedCastExecutor(
         ThreadPoolExecutor.DiscardOldestPolicy(), // drop oldest pending on overflow
     )
 
-    /** Handle to the currently executing future (for cancellation by stop). */
+    /** Handle to the most recently SUBMITTED future — may still be PENDING in the queue (cancelled by stop with the rest). */
     private val activeFuture = AtomicReference<Future<*>?>(null)
+
+    /**
+     * 2.93 · review CAST Pass 1 F2 — thao tác ĐANG CHẠY trên luồng. Khác [activeFuture] (thao tác gửi GẦN NHẤT): có thao tác chờ
+     * thì [activeFuture] là thao tác chờ, và [submitStop] bản cũ chỉ huỷ nó — lượt mở đang chạy không bị ngắt.
+     */
+    private val runningFuture = AtomicReference<Future<*>?>(null)
+
+    /**
+     * Xếp [body] vào hàng; trong lúc chạy, [runningFuture] trỏ đúng thao tác này. [started] (nếu có) bật lên khi thân BẮT ĐẦU
+     * chạy — thao tác bị bỏ khỏi hàng (DiscardOldest / Dừng dọn hàng) không bao giờ bật nó.
+     */
+    private fun enqueue(started: AtomicBoolean? = null, body: () -> Unit): FutureTask<Unit> {
+        val self = AtomicReference<FutureTask<Unit>>()
+        val task = FutureTask(Callable {
+            val me = self.get()
+            runningFuture.set(me)
+            started?.set(true)
+            try {
+                body()
+            } finally {
+                runningFuture.compareAndSet(me, null)
+            }
+        })
+        self.set(task)
+        executor.execute(task)
+        return task
+    }
 
     /** Whether shutdown has been called. */
     @Volatile
@@ -43,17 +75,24 @@ class BoundedCastExecutor(
      * Submit a normal cast operation (cast-full, cast-slot, resize, etc).
      * Bounded: if queue is full, oldest pending is dropped.
      * Returns false if executor is shutdown.
+     *
+     * @param timeoutMs hạn cứng của RIÊNG thao tác này, tính từ lúc gửi (bộ hẹn giờ bắt đầu ở đây, không phải lúc thao tác
+     *   bắt đầu chạy). Mặc định = hạn chung `castTimeoutMs`.
      */
-    fun submit(tag: String, block: () -> Unit): Boolean {
+    fun submit(tag: String, timeoutMs: Long = castTimeoutMs, block: () -> Unit): Boolean {
         if (isShutdown) return false
-        val future = executor.submit { runGuarded(tag, block) }
+        val deadline = nowMs() + timeoutMs
+        val started = AtomicBoolean(false)
+        val future = enqueue(started) { runGuarded(tag, deadline, block) }
         activeFuture.set(future)
         TIMEOUT_SCHEDULER.schedule({
             if (!future.isDone) {
                 future.cancel(true)
-                onTimeout?.invoke(tag)
+                // Review CAST Pass 1 F4: thao tác bị bỏ khỏi hàng (chưa từng chạy) không được báo `TIMEOUT` giả — log hiện trường
+                // chỉ được có `TIMEOUT: <tag>` khi thao tác ấy THẬT SỰ chạy quá hạn.
+                if (started.get()) onTimeout?.invoke(tag)
             }
-        }, castTimeoutMs, TimeUnit.MILLISECONDS)
+        }, timeoutMs, TimeUnit.MILLISECONDS)
         return true
     }
 
@@ -67,27 +106,35 @@ class BoundedCastExecutor(
      */
     fun submitStop(tag: String, block: () -> Unit): Boolean {
         if (isShutdown) return false
-        // 1. Cancel active
+        // 1. Ngắt thao tác ĐANG CHẠY + huỷ thao tác gửi gần nhất (có thể đang chờ). Review CAST Pass 1 F2: bản cũ chỉ huỷ
+        //    [activeFuture] — có thao tác chờ thì đó là thao tác CHỜ, lượt mở đang chạy không bị ngắt.
+        runningFuture.get()?.cancel(true)
         activeFuture.getAndSet(null)?.cancel(true)
         // 2. Purge pending
         executor.queue.clear()
-        // 3. Execute stop — goes to front since queue is now empty
-        val future = executor.submit { runGuarded(tag, block) }
+        // 3. Dừng: hạn tính từ lúc nó BẮT ĐẦU CHẠY (review CAST Pass 1 F2) — nó có thể phải đợi lệnh shell không ngắt được của
+        //    thao tác trước chạy nốt (mỗi lệnh có hạn đọc riêng); tính từ lúc gửi (bản cũ) thì Dừng bị huỷ trước khi kịp chạy.
+        val future = enqueue {
+            val me = runningFuture.get()
+            TIMEOUT_SCHEDULER.schedule({
+                if (me != null && !me.isDone) {
+                    me.cancel(true)
+                    onTimeout?.invoke(tag)
+                }
+            }, stopTimeoutMs, TimeUnit.MILLISECONDS)
+            runGuarded(tag, nowMs() + stopTimeoutMs, block)
+        }
         activeFuture.set(future)
-        TIMEOUT_SCHEDULER.schedule({
-            if (!future.isDone) {
-                future.cancel(true)
-                onTimeout?.invoke(tag)
-            }
-        }, stopTimeoutMs, TimeUnit.MILLISECONDS)
         return true
     }
 
     /**
      * Chạy [block] và KHÔNG để exception biến mất vào `Future` mà không ai `get()`.
      * `InterruptedException` (do timeout/stop `cancel(true)`) là đường bình thường ⇒ chỉ đặt lại cờ interrupt.
+     * [deadline] (`null` = việc hẹn giờ, không có hạn thao tác) được treo trên luồng trong lúc [block] chạy — [remainingMs].
      */
-    private fun runGuarded(tag: String, block: () -> Unit) {
+    private fun runGuarded(tag: String, deadline: Long?, block: () -> Unit) {
+        OP_DEADLINE.set(deadline)
         try {
             block()
         } catch (interrupted: InterruptedException) {
@@ -95,6 +142,8 @@ class BoundedCastExecutor(
         } catch (t: Throwable) {
             if (onFailure != null) onFailure.invoke(tag, t) else t.printStackTrace()
             if (t is Error) throw t
+        } finally {
+            OP_DEADLINE.remove()
         }
     }
 
@@ -106,7 +155,7 @@ class BoundedCastExecutor(
     fun schedule(delayMs: Long, block: () -> Unit) {
         if (isShutdown) return
         TIMEOUT_SCHEDULER.schedule({
-            if (!isShutdown) runGuarded("scheduled", block)
+            if (!isShutdown) runGuarded("scheduled", null, block)
         }, delayMs, TimeUnit.MILLISECONDS)
     }
 
@@ -118,7 +167,10 @@ class BoundedCastExecutor(
         executor.awaitTermination(2, TimeUnit.SECONDS)
     }
 
-    /** True if no operation is active and queue is empty. */
+    /**
+     * True if no operation is active and queue is empty. 2.93 · READY-RESTART-MID-CAST: thao tác đã bị `cancel(true)` (quá hạn)
+     * mà thân còn chạy nốt (lệnh shell không ngắt được) vẫn tính là BẬN — đúng sự thật: luồng còn đang gửi lệnh tới cụm.
+     */
     val isIdle: Boolean
         get() = executor.queue.isEmpty() && executor.activeCount == 0
 
@@ -127,5 +179,30 @@ class BoundedCastExecutor(
         private val TIMEOUT_SCHEDULER = Executors.newSingleThreadScheduledExecutor { r ->
             Thread(r, "CastTimeout").apply { isDaemon = true }
         }
+
+        /**
+         * 2.93 · CAST-OPEN-TIMEOUT — hạn cứng RIÊNG của lượt mở chiếu (các thao tác khác giữ hạn chung 15 s).
+         *
+         * [ĐO log xe 06/10 13:49 · 15:13] `TIMEOUT: openProjection` hai lần. [SUY từ log xe cùng ngày: lệnh shell ≈ 0,27 s/lệnh —
+         * 12 lần đọc của lượt "dọn cụm" mất ~3,3 s ngoài 1,5 s ngủ; khoảng `theme 31 → SEND` ↔ `16` = 2,1 s] chuỗi mở ở mức B
+         * (màn ảo cụm có sẵn) khi phải dọn bóng nổi + gỡ ClusterBlack mồ côi rồi gửi theme, MỖI lượt chờ chỉ MỘT lần đọc lại:
+         * ~5 lệnh trước cổng + 12 lệnh của cổng + ~13 lệnh đuôi ≈ 30 lệnh + 6,5 s ngủ cố định (2 + 2 + 1 sau opcode, 1 sau
+         * ClusterBlack, 2 × 0,25 s) ≈ 14,6 s ở 0,27 s/lệnh — sát 15 s ngay cả khi mọi thứ thuận; ≈ 21,5 s ở 0,5 s/lệnh (lúc nổ máy,
+         * [ĐO usage-cycle2 29/09] 0,2–0,5 s). 25 s phủ ca đó. Hạn này chỉ chặn một thao tác treo VĨNH VIỄN (mỗi lệnh shell đã có
+         * hạn đọc 10 s của `ShellTransport`). Dừng ([submitStop]) ngắt thao tác ĐANG CHẠY (kể cả khi có thao tác chờ sau nó) và
+         * tính hạn của chính nó từ lúc nó bắt đầu chạy — review 2.93 CAST Pass 1 F2 (lỗi có từ trước, hạn 25 s làm nặng thêm).
+         */
+        const val OPEN_TIMEOUT_MS: Long = 25_000L
+
+        /** Hạn tuyệt đối (đồng hồ đơn điệu, ms) của thao tác đang chạy trên luồng NÀY; `null` = không trong thao tác nào. */
+        private val OP_DEADLINE = ThreadLocal<Long?>()
+
+        private fun nowMs(): Long = System.nanoTime() / 1_000_000L
+
+        /**
+         * Phần hạn còn lại (ms, có thể âm) của thao tác executor đang chạy trên luồng gọi; `null` khi luồng gọi không ở trong
+         * thao tác nào của một [BoundedCastExecutor] (test gọi thẳng, luồng chẩn đoán) ⇒ bên gọi coi như không giới hạn.
+         */
+        fun remainingMs(): Long? = OP_DEADLINE.get()?.let { it - nowMs() }
     }
 }

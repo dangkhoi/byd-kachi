@@ -46,10 +46,15 @@ object SourceRoots {
      *
      * Hai lý do: (a) câu giải thích thường nhắc chính tên hàm đang bị cấm gọi ⇒ quét thô sẽ báo sai; (b) chặn kiểu
      * "đạt test" bằng cách viết token vào chú thích thay vì nối dây thật.
+     *
+     * ⚠ 2.93 · TEST-CODEOF-STRIP — bỏ chú thích bằng bộ quét THEO TRẠNG THÁI [KotlinSource.stripComments] (giữ string literal,
+     * comment khối lồng nhau). Bản cũ (regex khối `.*?` + cắt mỗi dòng ở `//` đầu tiên) FAIL-OPEN: [ĐO phá thử 02/10] một
+     * chuỗi `"https://x"` nuốt phần MÃ phía sau trên cùng dòng, và chuỗi MIME `audio/` + sao (cặp ký tự mở comment khối —
+     * không viết thẳng được trong KDoc này) mở một comment khối giả nuốt tới dấu đóng thật ở tận dưới — bài canh
+     * `contains`/`assertFalse` im lặng thôi gác. [ĐO quét tĩnh 06/10] 16 tệp mã chính khác kết quả giữa hai bản (vd
+     * `VoiceAppTargets` · `VoiceSynonyms` · `HttpConn` · chuỗi GLSL của `CameraDewarpShader`).
      */
-    fun codeOf(relative: String): String = text(relative)
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    fun codeOf(relative: String): String = KotlinSource.stripComments(text(relative))
 
     /**
      * Cắt đúng THÂN của một hàm/khối theo **đếm ngoặc**, và **NỔ nếu mốc không tồn tại**.

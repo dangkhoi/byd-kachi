@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -93,10 +94,8 @@ class FloatingWiringContractTest {
         assertEquals(emptyList<String>(), offenders, "lệnh gỡ chỉ được dựng ở :core FloatingOrphanPlan.removeCmd")
     }
 
-    /** Cùng cách bỏ chú thích của [SourceRoots.codeOf] — KDoc được phép NHẮC lệnh, mã thì không được VIẾT nó. */
-    private fun stripComments(src: String): String = src
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { line -> line.split("//", limit = 2)[0] }
+    /** ĐÚNG bộ bỏ chú thích của [SourceRoots.codeOf] ([KotlinSource.stripComments]) — KDoc được phép NHẮC lệnh, mã thì không được VIẾT nó. */
+    private fun stripComments(src: String): String = KotlinSource.stripComments(src)
 
     @Test
     fun `R-B4 dau theo XE - tep clusternav_state, commit dong bo, khai ly do o danh muc`() {

@@ -36,6 +36,11 @@ package com.byd.clusternav.launcher.voice
  * VAD chỉ làm **cái đồng hồ**; thứ quyết định độ chính xác là **cắt ở đâu**, và đó là ba dòng số học. Tách ra thì
  * chúng kiểm được off-car bằng vài con số giả — kể cả ca hai đoạn (người ta ngắt giữa câu) mà một phép thử trên
  * xe gần như không bao giờ dựng lại được đúng lúc. Phần chạm ONNX nằm ở `:app` (`VoiceVad`).
+ *
+ * ⚠ 2.93: `scripts/voice/hotword-matrix.py --trim vad` (mặc định) chép tay [THRESHOLD] · [MIN_SPEECH_MS] ·
+ * [MIN_SILENCE_MS] · [PRE_ROLL_MS] · [HEAD_SILENCE_CUT_MS] để đo hotword ĐÚNG đường app — đổi số ở đây thì đổi cả ở đó.
+ * [ĐO host 2026-10-07] qua phép cắt này: 208 WAV có đuôi (im lặng / ồn máy · đường · nhạc 2 s) ⇒ 0 ca làm-nhầm do đuôi;
+ * giải mã nguyên cửa sổ (đường lùi RMS) ⇒ 8 ca không hotword · 2 ca tệp tĩnh (spec `kachi-293-voice.html` §4.11).
  */
 object VoiceVadTrim {
 

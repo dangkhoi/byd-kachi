@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.launcher.LauncherActions
 import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
 
 /**
@@ -23,8 +24,12 @@ object VoiceIntentParser {
      * Liên từ nối hai lệnh trong một câu ([ĐO] RE Kiki §7c #42: *"… và …"* là tính năng hạng nhất).
      * `internal` từ pha NGHE: [VoicePhrases] phải khai bốn từ này với bộ nhận dạng, nếu không thì câu ghép
      * **nghe** được từng vế mà mất đúng cái từ nối chúng. Đọc lại ở đây thay vì chép sang đó — chép là để lệch.
+     *
+     * 2.93 VOICE-ROI-CONNECTOR: khai bằng cách viết CÓ DẤU ([CONNECTOR_WORDS]) — tách câu chỉ nhận *"rồi"*, không nhận
+     * *"rơi"* hay *"rời"* (cùng bỏ dấu ra `roi`) khi chữ mang dấu; luật ở [VoiceHomograph].
      */
-    internal val CONNECTORS = setOf("va", "roi", "and", "then")
+    internal val CONNECTOR_WORDS = VoiceHomograph.Words("và", "rồi", "and", "then")
+    internal val CONNECTORS: Set<String> = CONNECTOR_WORDS.norms
 
     /**
      * Phân tích một câu, trả về **danh sách** ý định theo đúng thứ tự nói (R3).
@@ -71,8 +76,10 @@ object VoiceIntentParser {
 
         val parts = splitOnConnectors(all)
         if (parts.size > 1) {
-            val each = parts.map { seg(it) }
+            // 2.93 — vế chỉ là TÊN một nút (*"tắt điều hòa và đèn đọc"* · *"… và cốp"*) mượn động từ của vế trước — [VoiceClauseEllipsis].
+            val each = VoiceClauseEllipsis.inherit(parts, terms) { seg(it) }
             if (each.none { it is VoiceIntent.Unknown }) return each
+            VoiceClauseEllipsis.dropBare(parts, each, terms)?.let { return it }
             val whole = fuzzy(parseTokens(all, terms, places, text), all, terms, places, text)
             return listOf(whole) + VoiceDroppedNote.droppedNote(parts, each, whole)
         }
@@ -135,7 +142,7 @@ object VoiceIntentParser {
         val out = ArrayList<List<Token>>()
         var start = 0
         t.forEachIndexed { i, tok ->
-            if (tok.norm in CONNECTORS) {
+            if (CONNECTOR_WORDS.matches(tok)) {
                 if (i > start) out.add(t.subList(start, i))
                 start = i + 1
             }
@@ -157,6 +164,9 @@ object VoiceIntentParser {
         if (t.isEmpty()) return VoiceIntent.Unknown(VoiceUnknownReason.EMPTY, original)
         // WP8 · [VoiceFeatureGone.HARD_BLOCK] — từ chặn cứng, xét TRƯỚC mọi phép khớp (lý do ở KDoc bên đó).
         if (VoiceFeatureGone.blocked(t)) return VoiceIntent.Unknown(VoiceUnknownReason.FEATURE_GONE, original)
+        // 2.93 · CAMERA-ON-DEMAND — nhiều cách nói (*"cam trái"* · *"tắt máy quay sau"* · *"tắt cam"*): chỉ khi CẢ vế là câu
+        // camera, không thì `null` ⇒ vế đi tiếp y như cũ (KDoc [VoiceCameraPhrases]).
+        VoiceCameraPhrases.parse(t)?.let { return it }
         // «mở … một nửa / 50%» ⇒ cờ NỬA cho kính (COVER). Dò cả câu vì «một nửa» đứng TRƯỚC object («một nửa kính»).
         val half = VoiceControlParse.mentionsHalf(t)
 
@@ -212,6 +222,13 @@ object VoiceIntentParser {
             val after = dropFillers(t.subList(head.words.size, t.size))
             // ⚠ [SOÁT 1.69 · P1] Không động từ + cụm không đọc đuôi ⇒ KHÔNG phải lệnh (*"cốp xe bẩn quá"* từng ra **mở cốp**) — KDoc [VoiceGrammar.readsTail].
             if (verbHit == null && after.isNotEmpty() && !VoiceGrammar.readsTail(head)) return@let
+            // 2.93 — tên-việc KHÔNG đọc đuôi mà đuôi nói NỬA (*"mở hết kính một nửa"*) ⇒ để đường động từ hiểu ⇒ nút nửa ([VoiceHalfButton]).
+            if ((verbHit?.second == VoiceVerb.OPEN || verbHit?.second == VoiceVerb.ON) && VoiceHalfButton.markedNear(emptyList(), after) && !VoiceGrammar.readsTail(head)) return@let
+            // 2.93 OQ5 — tên camera trần (không động từ, không phía) KHÔNG nhận động từ ngầm "mở": động từ có thể đã mất
+            // trong ồn (*"tắt camera"* + nhạc ⇒ *"camera"* từng BẬT camera) ⇒ hỏi lại — [VoiceCameraPhrases.bareName].
+            if (verbHit == null && VoiceCameraPhrases.bareName(head.words)) return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
+            // 2.93 VOICE-BARE-NOUN-IMPLICIT-VERB — bộ phận CHUYỂN ĐỘNG (kính·nóc·rèm·cốp) nói trần ⇒ hỏi lại — [VoiceBareCover].
+            if (VoiceBareCover.bare(t, head, verbHit?.first?.size ?: 0)) return VoiceIntent.Unknown(VoiceUnknownReason.NO_VERB, original)
             return build(head, implicitVerb(head), aloud = false, after, terms, places, original, half)
         }
         // (b½) L7 — *"bố cục 2 cột"* / *"đổi sang bố cục 4 ô"* / *"về bố cục hai hàng"*.
@@ -277,7 +294,8 @@ object VoiceIntentParser {
                     VoiceTailClause.appByTargetName(rest, i, term.words.size)?.let { return it }
                 }
                 val after = dropFillers(rest.subList(i + term.words.size, rest.size))
-                val built = build(term, verb, aloud, after, terms, places, original, half)
+                val near = VoiceHalfButton.markedNear(rest.subList(0, i), after)   // 2.93 — dấu nửa NGAY cạnh tên nút
+                val built = build(term, verb, aloud, after, terms, places, original, half, near)
                 if (built !is VoiceIntent.Unknown) return built
                 if (firstMiss == null) firstMiss = built
             }
@@ -312,9 +330,9 @@ object VoiceIntentParser {
      *
      * Chỉ nhận MACRO/CONTROL/LAUNCHER: chúng là những thứ **được đặt tên như một việc**. Một datum hay một app
      * đứng trần thì không phải câu lệnh (*"pin"* một mình không nói lên là xem hay làm gì), nên chúng vẫn phải đi
-     * qua đường động từ.
+     * qua đường động từ. `internal`: [VoiceBareCover] hỏi đúng phép khớp này (không chép một bản thứ hai).
      */
-    private fun headMatch(t: List<Token>, terms: List<VoiceTerm>, verbWords: Int): VoiceTerm? {
+    internal fun headMatch(t: List<Token>, terms: List<VoiceTerm>, verbWords: Int): VoiceTerm? {
         val cands = VoiceGrammar.matchAt(t, 0, terms).filter {
             it.kind == VoiceTermKind.MACRO || it.kind == VoiceTermKind.CONTROL || it.kind == VoiceTermKind.LAUNCHER
         }
@@ -395,6 +413,7 @@ object VoiceIntentParser {
         places: List<String>,
         original: String,
         half: Boolean = false,
+        near: Boolean = false,
     ): VoiceIntent =
         when (term.kind) {
             VoiceTermKind.TELEMETRY ->
@@ -402,7 +421,7 @@ object VoiceIntentParser {
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.CONTROL ->
-                if (VoiceGrammar.isAction(verb)) VoiceControlParse.control(term.id, verb, after, original, half)
+                if (VoiceGrammar.isAction(verb)) VoiceControlParse.control(term.id, verb, after, original, half, near)
                 else VoiceIntent.Unknown(VoiceUnknownReason.MISMATCH, original)
 
             VoiceTermKind.MACRO ->
@@ -416,7 +435,11 @@ object VoiceIntentParser {
                 else -> VoiceTailClause.appInTail(after, terms)?.let { (app, tail) ->
                     if (VoiceTailClause.closesApp(verb)) VoiceIntent.Unknown(VoiceUnknownReason.APP_CLOSE, original)
                     else VoiceIntent.OpenApp(app, VoiceTailClause.slotAt(tail))
-                } ?: VoiceIntent.Launcher(term.id)
+                    // 2.93 — việc có trạng thái (camera theo yêu cầu): TẮT/ĐÓNG ⇒ `off`; việc khác giữ nguyên nghĩa ≤ 2.92.
+                } ?: VoiceIntent.Launcher(
+                    term.id,
+                    off = (verb == VoiceVerb.OFF || verb == VoiceVerb.CLOSE) && LauncherActions.switchable(term.id),
+                )
             }
 
             VoiceTermKind.PROFILE -> VoiceIntent.Profile(term.id)

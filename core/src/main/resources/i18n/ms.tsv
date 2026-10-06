@@ -200,6 +200,8 @@ lốp ổn	tyres OK	tayar OK
 {0} {1}, chưa rõ	{0} {1}, unknown	{0} {1}, belum diketahui
 {0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1}, awas: {2}
 {0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1}, amaran: {2}
+nổ lốp	burst	pecah
+bất thường	abnormal	tidak normal
 xì nhanh	fast leak	bocor cepat
 báo đỏ	red alert	amaran merah
 xì chậm	slow leak	bocor perlahan
@@ -263,6 +265,7 @@ Vẫn chưa rõ — thử nói "{0}"	Still not sure — try saying "{0}" in Viet
 {0} hay {1}	{0} or {1}	{0} atau {1}
 {0}, hay {1}	{0}, or {1}	{0}, atau {1}
 {0} nào — {1}?	Which {2} — {1}?	Pilih {2} — {1}?
+Mở hay đóng {0}?	Open or close {0}?	Buka atau tutup {0}?
 Nhạc	Music	Muzik
 Dẫn đường	Navigation	Navigasi
 Ứng dụng · ô · bố cục	Apps · slots · layout	Apl · petak · susun atur
@@ -446,6 +449,8 @@ Trạng thái xe	Car status	Status kereta
 Bảng tổng hợp	Overview board	Papan ringkasan
 Trình chiếu ảnh	Photo slideshow	Tayangan slaid foto
 Lưới lối tắt app	App shortcut grid	Grid pintasan apl
+Mở hết	Open all	Buka semua
+Đóng hết	Close all	Tutup semua
 Mở hết kính	Open all	Buka semua
 Đóng hết kính	Close all	Tutup semua
 Màn hình chính	Home screen	Skrin utama
@@ -638,7 +643,7 @@ sức khoẻ pin, điện áp ắc-quy	battery health, auxiliary battery voltage
 quãng đường, thời gian, điện tiêu thụ, odo	distance, time, energy used, odometer	jarak, masa, tenaga digunakan, odometer
 Bố cục và hình nền	Layout and wallpaper	Susun atur dan kertas dinding
 Chip trên đỉnh và thanh nút xe	Top chips and the car button bar	Cip atas dan bar butang kereta
-Đơn vị đo, sáng/tối và ngôn ngữ	Units, light/dark theme and language	Unit, tema cerah/gelap dan bahasa
+Đơn vị, sáng/tối, màu, độ trong suốt, cỡ thanh nút, ngôn ngữ	Units, light/dark, colours, transparency, bar size, language	Unit, cerah/gelap, warna, ketelusan, saiz bar kereta, bahasa
 Mỗi hồ sơ giữ bố cục riêng	Each profile keeps its own layout	Setiap profil menyimpan susun aturnya sendiri
 Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	Panduan arah, tanda had laju dan gelembung
 Đưa app lên cụm, chia đôi, tự chiếu	Apps on the cluster, split view, autostart	Apl pada panel instrumen, paparan pisah, mula automatik
@@ -826,3 +831,14 @@ Thư viện ảnh: {0}	Gallery: {0}	Galeri: {0}
 📷 Khung thô trái	📷 Raw frame left	📷 Bingkai mentah kiri
 📷 Khung thô phải	📷 Raw frame right	📷 Bingkai mentah kanan
 Đang chụp khung thô…	Capturing raw frame…	Sedang menangkap bingkai mentah…
+# 2.93 · CAMERA-ON-DEMAND (spec docs/specs/kachi-293-cam.html) — bốn camera theo yêu cầu + Tắt camera (LauncherActions)
+Camera sau	Rear camera	Kamera belakang
+Camera trái	Left camera	Kamera kiri
+Camera phải	Right camera	Kamera kanan
+Camera trước	Front camera	Kamera hadapan
+Tắt camera	Camera off	Matikan kamera
+Camera theo yêu cầu	Camera on demand	Kamera atas permintaan
+Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang mở. Không tự tắt.	Tap to turn that camera on/off; opening another camera replaces the one showing. It never times out.	Ketik untuk menghidupkan/mematikan kamera itu; membuka kamera lain akan menggantikan kamera yang sedang dipaparkan. Ia tidak tamat masa.
+Không có camera nào đang mở	No camera is open	Tiada kamera yang dibuka
+{0} đang không mở	{0} is not open	{0} tidak dibuka
+chưa liên lạc được màn hình chính	couldn't reach the home screen	tidak dapat menghubungi skrin utama

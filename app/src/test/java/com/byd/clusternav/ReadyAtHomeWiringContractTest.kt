@@ -233,6 +233,25 @@ class ReadyAtHomeWiringContractTest {
         order(fn, "if (embedding()) return", "ShellAccessUi.slotTap { embedding() }")
     }
 
+    /**
+     * 2.93 · READY-AT-HOME-OQ6 (spec `docs/specs/kachi-293-slot.html` R7) — đường cửa sổ nổi của bộ mở chưa-có-kênh GỠ HẲN:
+     * `IntentAppLauncher` (startActivity + khung khởi chạy + freeform qua phản chiếu) không còn trong cây nguồn; màn nhà chưa có
+     * kênh dùng [com.byd.clusternav.launcher.NoCar] (cùng hành vi: `closeSlot` rỗng, không mở gì). KHÔNG tệp nguồn nào của sản
+     * phẩm gọi `openInSlot`/`moveToSlot` (gỡ an toàn — không đổi hành vi). Đỏ khi ai đó nối lại đường nổi.
+     */
+    @Test
+    fun `OQ6 bo mo chua co kenh khong con duong cua so noi, khong ai goi openInSlot moveToSlot`() {
+        val files = mainFiles()
+        assertTrue(files.size > 100, "quét được quá ít tệp (${files.size}) — đường dẫn sai thì bài này là test giả")
+        assertFalse(files.any { it.first == "IntentAppLauncher.kt" }, "IntentAppLauncher phải gỡ hẳn (OQ6)")
+        assertFalse(files.any { (_, src) -> Regex("""\bIntentAppLauncher\b""").containsMatchIn(src) }, "không ai còn dựng IntentAppLauncher")
+        assertTrue(home.contains("@Volatile private var appLauncher: AppLauncher = NoCar"), "chưa có kênh ⇒ bộ mở no-op")
+        val callers = files.filter { (_, src) -> Regex("""\.(openInSlot|moveToSlot)\(""").containsMatchIn(src) }.map { it.first }
+        // 2.93 wave 2A · SLOT-DEAD-OPENSLOT: hai hàm ấy đã GỠ khỏi AppLauncher/ShellAppLauncher (ShellAppLauncherTest khoá việc gỡ);
+        // bài này vẫn giữ — ai nối lại đường nổi dưới tên đó thì đỏ.
+        assertEquals(emptyList<String>(), callers, "không mã sản phẩm nào được gọi openInSlot/moveToSlot (READY-AT-HOME R1.3)")
+    }
+
     // ── §8 · hàm mới phải có call site ngoài định nghĩa ────────────────────────────────────────────────────
 
     @Test

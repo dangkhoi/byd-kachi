@@ -141,7 +141,7 @@ object VoicePreloadPolicy {
 /**
  * ═══ QA 2.87 [P2] — lý do bỏ nạp sẵn là MỘT MÃ, câu dịch lúc HIỆN ═══════════════════════════════════════════════════
  *
- * [ĐO máy ảo QA 2.87 `l1/{en,zh,th,ms}/g09-p00.xml`] ghi chú *"Lần khởi động vừa rồi Kachi bỏ qua bước nạp sẵn mô hình (%1$s)…"*
+ * [ĐO máy ảo QA 2.87 `{en,zh,th,ms} · g09-p00.xml` (bằng chứng phiên, ngoài repo)] ghi chú *"Lần khởi động vừa rồi Kachi bỏ qua bước nạp sẵn mô hình (%1$s)…"*
  * đã dịch đủ 5 tiếng, nhưng `%1$s` là một câu tiếng Việt viết cứng ở `:core` ⇒ máy tiếng Anh/Trung/Thái/Mã Lai thấy nửa câu tiếng
  * Việt — đúng ở cấu hình thường ngày của owner ("Hey Kachi" bật / phím vô-lăng gán Kachi nghe). Nay `VoiceEngine.lastPreloadSkip`
  * giữ MÃ + số; [text] chọn câu theo ngôn ngữ ĐANG HIỆN (đổi ngôn ngữ sau lượt bỏ qua vẫn ra đúng tiếng). Bản tiếng Việt giữ đúng

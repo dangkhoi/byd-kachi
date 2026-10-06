@@ -15,6 +15,8 @@ import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.modules.clustercast.simplified.CastGeometryGuard
 import com.byd.clusternav.modules.clustercast.simplified.ThemeLedger
 import com.byd.clusternav.modules.clustercast.simplified.CastStyle
+import com.byd.clusternav.modules.clustercast.simplified.CastRestartHazard
+import com.byd.clusternav.modules.clustercast.simplified.restartHazard
 
 /**
  * Android-side runtime for the simplified Cluster Cast coordinator.
@@ -120,6 +122,13 @@ object SimpleCastRuntime {
      * không được kéo theo lượt chốt `cast_enabled` / dọn projection mồ côi của [create]).
      */
     fun themeVerdict(): String? = instance?.themeVerdict
+
+    /**
+     * 2.93 · READY-RESTART-MID-CAST — mối nguy chiếu cụm nếu tiến trình bị khởi động lại NGAY BÂY GIỜ ([restartHazard] — KDoc
+     * `CastRestartHazard`), cho lượt chữa phím (`HealCastWait`). KHÔNG dựng coordinator nếu chưa có (cùng lẽ [themeVerdict]):
+     * tiến trình chưa có coordinator thì không có thao tác chiếu nào đang bay. Không shell, không ghi; gọi từ mọi luồng.
+     */
+    fun restartHazard(): CastRestartHazard? = instance?.restartHazard()
 
     /**
      * CLUSTER-THEME-SAFE B1a — sổ theme bền: tệp `clustercast` (cùng `profileOverride`, phạm vi XE — không theo hồ sơ người

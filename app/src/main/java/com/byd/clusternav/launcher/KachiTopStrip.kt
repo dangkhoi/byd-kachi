@@ -100,7 +100,7 @@ class KachiTopStrip(
 
     /**
      * QA 2.87 [P2] — MỌI lượt tô màu chủ đề của view thanh này dựng ([themed]); [restyle] chạy lại hết. [ĐO máy ảo QA
-     * `l2/topright-light.png`] đổi Tối→Sáng tại chỗ (`applyThemeInPlace`, cũng là đường *Tự động* 06:00/18:00): nút mic + ứng
+     * `topright-light.png` (bằng chứng phiên, ngoài repo)] đổi Tối→Sáng tại chỗ (`applyThemeInPlace`, cũng là đường *Tự động* 06:00/18:00): nút mic + ứng
      * dụng giữ filter/nền lúc DỰNG ⇒ 1,13:1 tới lần khởi động lại. [restyle] cũ liệt kê tay từng view và quên bốn nút; nay không
      * còn danh sách tay (`TopStripSurfaceContractTest`: mọi dòng đọc màu chủ đề trong tệp đều qua [themed]).
      */

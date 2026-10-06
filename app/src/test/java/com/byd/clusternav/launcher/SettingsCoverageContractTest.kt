@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -71,9 +72,7 @@ class SettingsCoverageContractTest {
      * Đọc THẲNG từ [Path] thay vì qua `SourceRoots.codeOf`: hàm đó nhận đường dẫn **tương đối theo module** rồi tự dò
      * gốc, nên đưa một đường đã dò rồi vào lại là dò hai lần — chạy được nhưng phụ thuộc thứ tự ứng viên.
      */
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 
     /** Hằng chuỗi khai trong CHÍNH tệp đó: `const val K_X = "x"` / `private val PREF = "y"`. */
     private fun consts(src: String): Map<String, String> =

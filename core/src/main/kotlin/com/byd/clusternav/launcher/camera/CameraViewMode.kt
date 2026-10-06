@@ -52,6 +52,15 @@ object CameraViewMode {
         else -> STRAIGHT
     }
 
+    /**
+     * Lượt CHỌN kiểu [pick] khi `camera_dewarp_amount` đang là [amountPct]: độ nắn phải ghi KÈM, `null` = giữ nguyên. Chọn
+     * [STRAIGHT] lúc ô tích *Nắn hình* đời 2.91 đang TẮT (amount 0) ⇒ nắn đủ — không thì chip nói "Nắn thẳng" mà ảnh vẫn thô
+     * (khoá amount không còn hàng nào để người lái tự bật lại). 2.93 wave 2C · PREFS-SET-CAM-GLOBAL-REAPPLY: MỘT luật cho chip
+     * Cài đặt lẫn `prefs_set camera_projection` (cửa chung `CameraReapply.setProjection` ở `:app`).
+     */
+    fun amountOnPick(pick: String, amountPct: Int): Int? =
+        if (pick == STRAIGHT && amountPct == CameraDewarpPrefs.AMOUNT_MIN) CameraDewarpPrefs.AMOUNT_MAX else null
+
     /** Kiểu THẬT SỰ vẽ được trên đường [render] — xem KDoc lớp. Mã lạ ⇒ [defaultMode]. */
     fun effective(mode: String, render: String): String {
         val m = if (isMode(mode)) mode else defaultMode()

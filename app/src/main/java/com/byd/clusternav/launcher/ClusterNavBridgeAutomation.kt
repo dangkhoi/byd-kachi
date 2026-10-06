@@ -21,10 +21,6 @@ import com.byd.clusternav.cameraSignalEnabled
 import com.byd.clusternav.setCameraSignalEnabled
 import com.byd.clusternav.cameraOnCluster
 import com.byd.clusternav.setCameraOnCluster
-import com.byd.clusternav.cameraPos
-import com.byd.clusternav.setCameraPos
-import com.byd.clusternav.cameraRotation
-import com.byd.clusternav.setCameraRotation
 import com.byd.clusternav.cameraCamId
 import com.byd.clusternav.cameraPano
 import com.byd.clusternav.setCameraPano
@@ -40,9 +36,7 @@ import com.byd.clusternav.cameraStrip
 import com.byd.clusternav.setCameraStrip
 import com.byd.clusternav.cameraDewarpAmount
 import com.byd.clusternav.cameraProjection
-import com.byd.clusternav.setCameraProjection
 import com.byd.clusternav.cameraZoom
-import com.byd.clusternav.setCameraZoom
 import com.byd.clusternav.cameraDewarpCx
 import com.byd.clusternav.cameraDewarpPanX
 import com.byd.clusternav.cameraDewarpPanY
@@ -62,8 +56,6 @@ import com.byd.clusternav.setCameraDewarpScale
 import com.byd.clusternav.setCameraGlTexMatrix
 import com.byd.clusternav.setCameraCamId
 import com.byd.clusternav.setCameraSignalEnabled
-import com.byd.clusternav.cameraMirror
-import com.byd.clusternav.setCameraMirror
 
 /**
  * ═══ AUTOMATION trên cầu Settings (hàm mở rộng của [ClusterNavBridge]) ═══════════════════════════════════════
@@ -182,36 +174,9 @@ fun ClusterNavBridge.setCameraSignal(on: Boolean) {
 fun ClusterNavBridge.cameraOnCluster(): Boolean = Prefs.cameraOnCluster(app)
 fun ClusterNavBridge.setCameraOnCluster(on: Boolean) = Prefs.setCameraOnCluster(app, on)
 
-/**
- * Góc hiện overlay camera cho từng bên xi-nhan (spec `camera-turn-signal-hal-socket.html` R3 · R4) — `"TL"`/`"TR"`.
- *
- * Hai hàm đọc RIÊNG (không một hàm nhận `left: Boolean`) vì chipRow trong Cài đặt cần **một biểu thức cho một
- * hàng**, đúng khuôn `cameraCamLeft`/`cameraCamRight` ngay trên. Lượt GHI thì dùng chung [setCameraPos] — ghi là
- * một việc có tham số, đọc là hai hàng trên màn.
- *
- * KHÔNG kèm `AutomationService.sync`: đây là *chỗ hiện*, không phải công tắc bật/tắt động cơ nền. Lượt rẽ sau đọc
- * lại pref (vòng nhịp gọi `Prefs.cameraPos` mỗi lần dựng overlay) nên giá trị mới ăn ngay mà không cần đánh thức
- * gì — khác `setCameraSignal`, nơi thiếu `sync` là tính năng không lên.
- */
-fun ClusterNavBridge.cameraPosLeft(): String = Prefs.cameraPos(app, left = true)
-fun ClusterNavBridge.cameraPosRight(): String = Prefs.cameraPos(app, left = false)
-fun ClusterNavBridge.setCameraPos(left: Boolean, v: String) = Prefs.setCameraPos(app, left, v)
-/**
- * Góc XOAY video camera TỪNG BÊN (spec R7 · 2.71, owner trên xe 2026-09-26: *"2 line setting độc lập cho camera
- * trái và phải"*) — mã trong `CameraSignalPolicy.ROTATIONS`. Hai hàm đọc riêng cho hai hàng chip, một hàm ghi có
- * tham số — y khuôn [cameraPosLeft]/[setCameraPos]. KHÔNG kèm `AutomationService.sync`, cùng lẽ ở đó: lượt rẽ sau
- * đọc lại pref khi dựng overlay.
- */
-fun ClusterNavBridge.cameraRotLeft(): String = Prefs.cameraRotation(app, left = true)
-fun ClusterNavBridge.cameraRotRight(): String = Prefs.cameraRotation(app, left = false)
-fun ClusterNavBridge.setCameraRotation(left: Boolean, v: String) = Prefs.setCameraRotation(app, left, v)
-/**
- * LẬT GƯƠNG video TỪNG BÊN (2.76 L7, research §6.2 — tay gương của ảnh HAL [CHƯA BIẾT] tới CAM-M1) — hai ô tích, một
- * hàm ghi có tham số bên, y khuôn [cameraRotLeft]/[setCameraRotation]. Không `AutomationService.sync`, cùng lẽ.
- */
-fun ClusterNavBridge.cameraMirrorLeft(): Boolean = Prefs.cameraMirror(app, left = true)
-fun ClusterNavBridge.cameraMirrorRight(): Boolean = Prefs.cameraMirror(app, left = false)
-fun ClusterNavBridge.setCameraMirror(left: Boolean, v: Boolean) = Prefs.setCameraMirror(app, left, v)
+// 2.93 · CAMERA-PER-CAM-CONFIG — sáu hàm đọc/ghi góc · xoay · lật THEO BÊN đã nhường chỗ cho cầu *Từng camera*
+// (`ClusterNavBridgeCameraPerCam.kt`: CÙNG sáu khoá cho hai camera gương, cộng hai camera giữa, và ÁP NGAY khi camera ấy
+// đang hiện). Giữ lại thì là sáu cửa không ai gọi (CLAUDE.md §8).
 /**
  * Đường KẾT XUẤT overlay camera (CLOSE-14 · CAM-LAG) — mã trong `CameraSignalPolicy.RENDERS`. Một hàng chip, một
  * khoá cho cả hai bên (cách vẽ không phụ thuộc bên). KHÔNG kèm `AutomationService.sync`, cùng lẽ [cameraPosLeft]:
@@ -308,31 +273,18 @@ fun ClusterNavBridge.setCameraGlTexMatrix(v: Boolean) = Prefs.setCameraGlTexMatr
  *
  * Chỉ dựng lại khi thứ ĐANG ÁP thật sự đổi (spec R1 *"chip đổi"*; soát 06/10 [P3]): `chipRow` gọi `onPick` cả khi chạm lại
  * đúng chip đang sáng, và mỗi lượt dựng lại là một vòng dỡ/mở `AVMCamera` vô ích (màn đen chớp).
+ *
+ * 2.93 wave 2C · PREFS-SET-CAM-GLOBAL-REAPPLY — ba luật trên (ghi · nắn đủ · chỉ dựng lại khi đổi) nay sống ở MỘT hàm
+ * [com.byd.clusternav.launcher.camera.CameraReapply.setProjection] / `setZoom`, dùng chung với `prefs_set` của cầu kiểm thử
+ * (trước đây cầu chỉ ghi, khung đang hiện giữ kiểu cũ). Hàm `reapplyCamera` (cửa riêng của cầu) gỡ — thay bằng `anyShowing`.
  */
 fun ClusterNavBridge.cameraProjection(): String = Prefs.cameraProjection(app)
 fun ClusterNavBridge.setCameraProjection(v: String) {
-    var changed = Prefs.cameraProjection(app) != v   // so với kiểu ĐÃ QUY (đời cũ amount 0 ⇒ Gương cầu)
-    Prefs.setCameraProjection(app, v)
-    if (v == com.byd.clusternav.launcher.camera.CameraViewMode.STRAIGHT &&
-        Prefs.cameraDewarpAmount(app) == com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MIN
-    ) {
-        Prefs.setCameraDewarpAmount(app, com.byd.clusternav.launcher.camera.CameraDewarpPrefs.AMOUNT_MAX)
-        changed = true
-    }
-    if (changed) reapplyCamera()
+    com.byd.clusternav.launcher.camera.CameraReapply.setProjection(app, v)
 }
 fun ClusterNavBridge.cameraZoom(): Int = Prefs.cameraZoom(app)
 fun ClusterNavBridge.setCameraZoom(v: Int) {
-    val changed = Prefs.cameraZoom(app) != v
-    Prefs.setCameraZoom(app, v)
-    if (changed) reapplyCamera()
-}
-
-private fun ClusterNavBridge.reapplyCamera() {
-    runCatching {
-        val c = com.byd.clusternav.AppContainer.get(app)
-        if (c.cameraSignalCreated) c.cameraSignal.reapplyIfShowing()
-    }.onFailure { android.util.Log.w("KachiBridge", "áp lại camera lỗi: ${it.message}") }
+    com.byd.clusternav.launcher.camera.CameraReapply.setZoom(app, v)
 }
 
 /** AUTOMATION #2 — sổ luật dẫn-đường-theo-lịch, đã giải mã (rỗng = chưa có luật nào). */

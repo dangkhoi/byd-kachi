@@ -158,8 +158,8 @@ enum class BridgeMsg {
      */
     UPDATE_NEEDS_SCREEN,
 
-    /** Không mở được một màn nội bộ. VI "Không mở được màn hình." · EN "Couldn't open the screen." */
-    SCREEN_OPEN_FAILED,
+    // 2.93 wave 2C · DIAG-BRIDGE-DEAD-OPENERS: `SCREEN_OPEN_FAILED` (chỉ hàm `launch` của hai cửa chẩn đoán 0 chỗ gọi dùng) đã
+    // gỡ cùng chuỗi `kachi_bridge_screen_open_failed` ở 5 thứ tiếng — xem `ClusterNavBridgeSystem.kt`.
 }
 
 /**
@@ -201,6 +201,20 @@ data class ButtonOption(
     val source: KeySourceKind? = null,
 ) {
     val isPreset: Boolean get() = customName == null
+}
+
+/**
+ * 2.93 · KEY-LABEL-PRESET-SHADOW — mục NÚT mang nhãn cho một dòng gán `(mã, nguồn)`, `null` = không mục nào khớp.
+ *
+ * [ĐO máy ảo QA 04/10] học phím 88 đặt tên *"MEDIA PREVIOUS"* ⇒ dòng gán hiện *"Bài trước (PREVIOUS · 88)"*: danh sách là
+ * preset TRƯỚC + nút tự học SAU ([buttonOptions]) và phép tra cũ lấy mục khớp ĐẦU TIÊN ⇒ preset cùng mã che tên người dùng
+ * tự đặt. Luật: trong các mục khớp, nút TỰ HỌC thắng preset (tên người dùng đặt là thứ họ nhận ra); nhiều nút tự học cùng
+ * `(mã, nguồn)` ⇒ mục học trước (thứ tự danh sách giữ nguyên). Không ẩn preset khỏi hộp chọn — chọn bản nào cũng ra CÙNG
+ * một dòng gán `(mã, nguồn)`, nên chỉ phép tra nhãn phải đổi. Bài: `ButtonOptionLabelTest`.
+ */
+fun List<ButtonOption>.labelOwner(code: Int, source: KeySourceKind?): ButtonOption? {
+    val hits = filter { it.code == code && it.source == source }
+    return hits.firstOrNull { !it.isPreset } ?: hits.firstOrNull()
 }
 
 /**

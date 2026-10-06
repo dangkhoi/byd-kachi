@@ -32,6 +32,8 @@ class LayoutEditorPanel(
     private val onClose: () -> Unit,
     /** Trần khung của bản hiện tại — bước sau sẽ nới. */
     private val cap: Int = WorkspaceState.SLOT_CAP,
+    /** 2.93 `GRID-EDITOR-ASPECT` — cỡ px vùng ô thật (`WorkspaceView` đã đo); `null` ⇒ tỉ lệ màn như trước. */
+    private val area: Pair<Int, Int>? = null,
 ) : FrameLayout(context) {
 
     private val editor = GridEditorView(context)
@@ -81,6 +83,7 @@ class LayoutEditorPanel(
         // ── Trình vẽ ──
         editor.layout = current
         editor.selected = 0
+        editor.area = area
         editor.onChanged = { l -> current = l; refresh() }
         editor.onSelected = { refresh() }
         root.addView(editor, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))

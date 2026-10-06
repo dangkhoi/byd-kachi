@@ -4,6 +4,7 @@ import com.byd.clusternav.launcher.voice.TeachGuard.Code
 import com.byd.clusternav.launcher.voice.TeachGuard.Level
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -160,7 +161,61 @@ class TeachGuardTest {
 
     @Test fun `gan ten da day cua app khac canh bao`() = warned("nep leog", Code.NEAR_OTHER_APP, pkg = maps)
 
+    /**
+     * Soát 2.93 Pass 4 (P3): phán quyết dựng tệp tĩnh THẲNG ([SherpaBiasing.build]) — không qua ô nhớ MỘT chỗ của
+     * [SherpaBiasing.hotwordsFile] ⇒ 🎤 kế ở hộp dạy (cùng bộ đầu vào phiên lệnh) trúng nhớ, không dựng lại. Thử ĐỎ: đưa lời
+     * gọi ở `probe` về `hotwordsFile(ctx.places, ctx.profiles)`. Ô nhớ là trạng thái TOÀN CỤC ⇒ cùng giả định chạy tuần tự
+     * như [SherpaBiasingMemoTest] (bật chạy song song của Jupiter thì lớp này cũng cần `@Isolated`).
+     */
+    @Test fun `phan quyet khong day tep cua phien lenh ra khoi o nho`() {
+        val session = SherpaBiasing.hotwordsFile(ctx.places, ctx.profiles, taught, listOf("Ghi âm"))
+        val got = v("nep leog", pkg = maps)
+        assertTrue(got.level != Level.BLOCK, "phải qua tầng A thì bước hotword mới chạy: $got")
+        assertSame(session, SherpaBiasing.hotwordsFile(ctx.places, ctx.profiles, taught, listOf("Ghi âm")))
+    }
+
     @Test fun `mot tu duy nhat canh bao`() = warned("phimhay", Code.ONE_WORD)
+
+    // ── 2.93 VOICE-TEACH-SHORT-HOMOGRAPH — quyết định điều phối: CẢNH BÁO, KHÔNG chặn ──────────────────────────────────
+
+    /**
+     * [ĐO off-car 06/10, spec voice-app-names §9 F6] dạy «nay» cho Drive ⇒ *"mở cái này"* (trước: không hiểu) mở Drive —
+     * *"này"* là chữ của cụm hỏi *"thế này"* (`VoiceLexicon.READ_TAILS`), bỏ dấu cùng `nay`. Tên vẫn LƯU được (sau *Vẫn
+     * lưu*); lý do nói đúng chữ va chạm thay vì chỉ "một từ đơn".
+     */
+    @Test fun `ten mot am tiet trung chu cua cau lenh canh bao dong hinh, khong chan`() {
+        val got = TeachGuard.check(ctx, maps, "nay", TaughtSource.SPEECH, takes = TeachGuard.MIN_TAKES_SHORT)
+        assertEquals(Level.WARN, got.level, "quyết định 2.93: CẢNH BÁO, không CHẶN: $got")
+        assertTrue(got.has(Code.HOMOGRAPH) && got.has(Code.ONE_WORD), "$got")
+        assertTrue(got.reasons.first { it.code == Code.HOMOGRAPH }.detail.isNotBlank())
+        // Một lượt (tên ngắn) vẫn CHẶN vì SHORT_ONE_TAKE — cảnh báo đồng hình không mở hay đóng cổng nào khác.
+        assertEquals(Level.BLOCK, TeachGuard.check(ctx, maps, "nay", TaughtSource.SPEECH, takes = 1).level)
+    }
+
+    /**
+     * Dữ liệu sẵn có, không bảng thứ hai: MỌI chữ của câu mẫu tĩnh mà tự nó không bị chặn (không trùng lệnh/tiền tố/động
+     * từ/từ đệm…) đều phải ra CẢNH BÁO đồng hình — và lý do chỉ ra một câu mẫu CÓ chữ ấy (có dấu, người dùng nhận ra).
+     */
+    @Test fun `moi chu cua cau mau tinh khong bi chan deu canh bao dong hinh kem cau mau`() {
+        val examples = VoiceCommandCatalog.groups(lang = com.byd.clusternav.launcher.Lang.VI).flatMap { g -> g.examples.map { it.phrase } }
+        val words = examples.flatMap { VoiceLexicon.tokenize(it) }.map { it.raw.lowercase() }.distinct()
+            .filter { TeachSample.shape(it) is TeachSample.Sample }
+        var checked = 0
+        words.forEach { w ->
+            val got = TeachGuard.check(ctx, maps, w, TaughtSource.TYPED)
+            if (got.level == Level.BLOCK || got.level == Level.ALREADY) return@forEach
+            checked++
+            val r = got.reasons.firstOrNull { it.code == Code.HOMOGRAPH }
+            assertTrue(r != null, "«$w» là chữ của câu mẫu mà không cảnh báo đồng hình: $got")
+            assertTrue(VoiceLexicon.tokenize(r!!.detail).any { it.norm == VoiceLexicon.deaccent(w) }, "lý do phải chỉ câu có «$w»: ${r.detail}")
+        }
+        assertTrue(checked > 0, "bài phải soát được ít nhất một chữ không bị chặn (soát ${words.size})")
+    }
+
+    @Test fun `ten nhieu tu hoac chu ngoai cau lenh khong canh bao dong hinh`() {
+        assertFalse(v("phimhay").has(Code.HOMOGRAPH), "chữ không có trong câu lệnh nào")
+        assertFalse(v("tóp tóp", pkg = maps).has(Code.HOMOGRAPH), "tên nhiều từ chỉ khớp NGUYÊN dãy — không đồng hình một chữ")
+    }
 
     @Test fun `ten moi sach la MOI`() {
         val got = v("tóp tóp", pkg = maps)

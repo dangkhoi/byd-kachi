@@ -191,7 +191,7 @@ private fun statusRows(list: LinearLayout, context: Context, rows: SettingsRows)
     if (!ShellAccessUi.usableNow()) {
         list.addView(rows.button(context.getString(R.string.kachi_trip_wait_channel)) { ShellAccessUi.allowOrPrompt(context) })
     }
-    // L4 · D1 — lần nổ máy NÀY chưa có kết quả (kênh không lên ⇒ chuyến không chạy — [ĐO `p3/e2e-L4/e12-channel-down`]) ⇒
+    // L4 · D1 — lần nổ máy NÀY chưa có kết quả (kênh không lên ⇒ chuyến không chạy — [ĐO `e2e-L4 · e12-channel-down` (bằng chứng phiên, ngoài repo)]) ⇒
     // nói ra, để dòng kết quả bên dưới không bị đọc nhầm là của lần này.
     when (TripStart.now(context)) {
         TripGate.Now.SHOWN -> Unit

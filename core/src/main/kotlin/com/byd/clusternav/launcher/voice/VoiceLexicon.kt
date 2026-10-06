@@ -25,9 +25,19 @@ object VoiceLexicon {
     /** Ký tự được coi là ngắt từ (mọi thứ không phải chữ/số). Dấu `%` giữ lại vì nó là ĐƠN VỊ, không phải dấu câu. */
     private val SPLIT = Regex("[^\\p{L}\\p{N}%]+")
 
-    /** Cắt câu thành từ, giữ song song bản gốc và bản chuẩn hoá. Từ rỗng bị loại. */
-    fun tokenize(text: String): List<Token> =
-        text.split(SPLIT).filter { it.isNotBlank() }.map { Token(it, deaccent(it)) }
+    /**
+     * Cắt câu thành từ, giữ song song bản gốc và bản chuẩn hoá. Từ rỗng bị loại.
+     *
+     * 2.93 wave 2A · VOICE-TOKENIZE-NFD — chuẩn hoá NFC TRƯỚC khi cắt: [ĐO test 06/10, spec `kachi-293-voice.html` §9] chuỗi dạng
+     * tổ hợp (NFD — dấu là ký tự `\p{M}` riêng) bị [SPLIT] coi dấu là ký tự ngắt ⇒ *"phát"* NFD ⇒ `pha` + `t`. Bộ nghe trả NFC
+     * [SUY], nhưng chữ gõ / dán / tệp nhập không bảo đảm. NFC là phép tương đương CHUẨN (cùng chữ) ⇒ [Token.raw] vẫn là chữ người
+     * dùng, chỉ đổi dạng mã; chuỗi đã NFC đi đường cũ từng byte (không cấp phát thêm).
+     */
+    fun tokenize(text: String): List<Token> {
+        val nfc = if (java.text.Normalizer.isNormalized(text, java.text.Normalizer.Form.NFC)) text
+        else java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC)
+        return nfc.split(SPLIT).filter { it.isNotBlank() }.map { Token(it, deaccent(it)) }
+    }
 
     /**
      * Bỏ dấu + chữ thường: `"Nhiệt độ"` → `"nhiet do"`.
@@ -376,6 +386,9 @@ object VoiceLexicon {
     /** Từ CHUYỂN ĐỘNG đứng ngay trước nơi đến — chặn cắt đuôi 'nha'(nhà)/'di'(đi) nhầm là đệm. */
     private val MOVEMENT_BEFORE_PLACE = setOf("ve", "den", "toi", "ra", "vao", "len", "xuong", "di")
 
+    /** Đệm «lại» viết có dấu — bỏ dấu thì «lái» (kính/ghế lái) cũng ra `lai`; luật đồng hình [VoiceHomograph] (2.93). */
+    private val LAI by lazy { VoiceHomograph.Words("lại") }
+
     fun stripCourtesy(t: List<Token>): List<Token> {
         var out = t
         // Đầu câu — LẶP: "làm ơn cho tôi" = "lam on" + "cho toi" là HAI cụm lịch sự nối nhau ([ĐO harness
@@ -390,6 +403,8 @@ object VoiceLexicon {
                 out.size > p.size && phraseAt(out, out.size - p.size, p) &&
                     !((p == listOf("lai") || p == listOf("cai")) &&
                         (out.size - p.size <= 3 || out.getOrNull(out.size - p.size - 1)?.norm == "ghe")) &&
+                    // 2.93 VOICE-COURTESY-LAI-HOMOGRAPH: chữ MANG dấu chỉ là đệm «lại» khi đúng cách viết («kính lái» giữ) — [LAI].
+                    !(p == listOf("lai") && !LAI.matches(out[out.size - 1])) &&
                     // ⚠ [P0 fix 2026-09-24] "nha" bỏ dấu = «nhé» (đệm) LẪN «nhà» (nơi ở, nhãn HOME); "di" = «đi» đệm
                     // LẪN động từ. KHÔNG cắt khi ngay TRƯỚC là từ CHUYỂN ĐỘNG (về/đến/tới/ra/vào/lên/xuống) ⇒ giữ
                     // "về nhà"/"đến nhà"/"đi về nhà" (trước đây bị cắt thành "về"/rỗng ⇒ mất điểm đến — LIVE 2.23).

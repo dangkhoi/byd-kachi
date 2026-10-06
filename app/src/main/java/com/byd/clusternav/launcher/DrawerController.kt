@@ -28,6 +28,8 @@ class DrawerController(
      * sách nhà cung cấp (app có thể vừa được cài/gỡ) và vì việc chạm phải biết đặt vào ô nào.
      */
     private val appWidgetPicks: (Int) -> List<AppWidgetPick> = { emptyList() },
+    /** 2.93 `WIDGET-CAPACITY-HINT` — cỡ px THẬT của ô [Int] (đã đo); `null` ⇒ bộ chọn không nói sức chứa. */
+    private val slotFrame: (Int) -> Pair<Int, Int>? = { null },
 ) {
     private var drawer: AppDrawer? = null
     private var asOverlay = false
@@ -51,6 +53,7 @@ class DrawerController(
                 onPickWidgets = { ids -> onPickWidgets(index, ids) },
                 onClose = { close() },
                 appWidgetPicks = appWidgetPicks(index),
+                fitOf = slotFrame(index)?.let { (w, h) -> { ids: List<String> -> WidgetCapacity.of(activity, ids, w, h) } },
             ),
         )
     }

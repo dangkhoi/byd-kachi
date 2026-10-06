@@ -120,8 +120,9 @@ class PersistentWindowStateWriterGuardTest {
      * STAGE 3 TIGHTENING — the LAUNCHER may write these ONLY via [com.byd.clusternav.system.FreeformSeedPolicy]
      * (which lives in the `/system/` package, NOT `/launcher/`). This makes "the launcher has no rogue persistent-
      * state writer" a TRUE, greppable structural invariant: no file under any `/launcher/` package (in :core or
-     * :app) may emit a freeform-flag / `wm size` / `wm density` VALUE write. A `settings get` READ (e.g.
-     * ShellAppLauncher.isFreeformAvailable) is not a write and does not trip this.
+     * :app) may emit a freeform-flag / `wm size` / `wm density` VALUE write. A `settings get` READ is not a write and
+     * does not trip this (the launcher's only such read, `ShellAppLauncher.isFreeformAvailable`, was removed in 2.93
+     * wave 2C · SLOT-DEAD-FREEFORM-REST — 0 product call sites).
      */
     @Test
     fun `launcher writes persistent window-state ONLY via FreeformSeedPolicy`() {

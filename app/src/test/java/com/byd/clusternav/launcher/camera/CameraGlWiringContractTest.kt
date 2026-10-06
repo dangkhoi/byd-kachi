@@ -446,16 +446,19 @@ class CameraGlWiringContractTest {
      * abandoned` **16 dòng/giây, không bao giờ dứt** ([ĐO] 55 004 dòng trong một buổi, bắt đầu đúng 87 ms sau lượt
      * rẽ). Bài này ghim cả ba điều kiện để nó không quay lại:
      *
-     *  1. [tickMain] gọi `closeSession()` khi đổi từ một bên **khác NONE** sang một bên khác NONE;
-     *  2. lượt đổi bên **không** đi qua `stop()` (nó `hold.reset()` ⇒ overlay sẽ chớp giữa chuyến);
+     *  1. (2.93: một cửa `show(next)` cho MỌI lượt đổi camera, kể cả theo yêu cầu) `closeSession()` khi đổi camera ≠ null;
+     *  2. lượt đổi camera **không** chạm máy trạng thái (`hold.reset()` ⇒ overlay sẽ chớp giữa chuyến);
      *  3. trong `closeSession()`, `avm.close()` đứng **TRƯỚC** `overlay.hide()` — đảo lại là dựng lại đúng con bọ.
      */
     @Test fun `do phien cu TRUOC khi mo phien moi`() {
-        val tick = SourceRoots.body(controller, "private fun tickMain(")
+        val show = SourceRoots.body(controller, "private fun show(")
         assertTrue(
-            "if (current != Turn.NONE && turn != Turn.NONE) closeSession(keepPano = true)" in tick,
-            "đổi bên LEFT ⇄ RIGHT phải dỡ phiên cũ — nếu không, HAL giữ một BufferQueue đã bị bỏ và dequeue mãi",
+            "if (prev != null && next != null) closeSession(keepPano = true)" in show,
+            "đổi camera phải dỡ phiên cũ — nếu không, HAL giữ một BufferQueue đã bị bỏ và dequeue mãi",
         )
+        assertTrue(show.indexOf("closeSession(keepPano = true)") < show.indexOf("openSession(next)"), "dỡ TRƯỚC rồi mới dựng")
+        assertTrue("openSession(" !in SourceRoots.body(controller, "private fun tickMain("), "xi-nhan đi qua cửa show() chung")
+        assertFalse("hold." in show || "if (next == prev) return" !in show, "show(): không đụng HOLD; cùng camera ⇒ không dựng lại")
         val close = SourceRoots.body(controller, "private fun closeSession(")
         val iAvm = close.indexOf("avm.close()")
         val iHal = close.indexOf("hal.close()")
@@ -465,12 +468,10 @@ class CameraGlWiringContractTest {
         // Đổi bên KHÔNG được tắt thiết bị panorama: một vòng WORK_OFF → WORK_ON giữa hai lượt rẽ là hành vi chưa
         // ai đo trên xe, mà con bọ nằm ở AVMCamera chứ không ở thiết bị panorama.
         assertTrue("if (!keepPano) hal.close()" in close, "đổi bên chỉ dỡ AVMCamera, giữ panorama đang bật")
-        // `stop()` dùng lại đúng đường ấy — hai bản sao của chuỗi dỡ là hai chỗ để lệch.
-        val stopBody = SourceRoots.body(controller, "private fun stop(")
-        assertTrue("closeSession()" in stopBody, "stop() phải dùng lại closeSession(), không chép lại chuỗi dỡ")
-        assertFalse("avm.close()" in stopBody, "chuỗi dỡ chỉ được có MỘT bản")
-        // Và lượt đổi bên KHÔNG được chạm máy trạng thái của HOLD.
-        assertFalse("hold.reset()" in close, "closeSession() không được đụng HOLD — đó là việc của stop()")
+        assertTrue("closeSession()" in show, "show(null) dùng lại closeSession() — chuỗi dỡ chỉ một bản")
+        assertEquals(1, Regex("""avm\.close\(\)""").findAll(controller).count(), "chuỗi dỡ chỉ được có MỘT bản")
+        assertFalse("hold.reset()" in close, "closeSession() không được đụng HOLD — đó là việc của dropBlinker()")
+        assertTrue("hold.reset()" in SourceRoots.body(controller, "private fun dropBlinker("), "hạ xi-nhan mới xoá nền HOLD")
 
         // `rmPreviewSurface` (móc đo) phải nằm GIỮA stopPreview và close: gọi sau close thì HAL từ chối
         // ([ĐO] `rc=false` bốn lượt trên xe 27/09) ⇒ lời gọi ấy không đo được gì.

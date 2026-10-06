@@ -511,8 +511,8 @@ win_lf	control_cover	nam	than_mat	mở kính ghế lái giùm
 win_lf	control_cover	nam	than_mat	hạ kính trước trái dùm cái
 win_lf	control_cover	bac	lich_su	làm ơn đóng kính bên lái
 win_lf	control_cover	nam	lich_su	mở kiếng trước trái hộ tôi
-win_lf	control_cover	chung	ngan	mở nửa kính ghế lái
-win_lf	control_cover	chung	dai	mở kính trước trái một nửa thôi
+win_half_lf	control_cover	chung	ngan	mở nửa kính ghế lái
+win_half_lf	control_cover	chung	dai	mở kính trước trái một nửa thôi
 win_lf	control_cover	chung	than_mat	ê Kachi mở kính bên lái
 win_lf	control_cover	nam	dai	đóng kiếng trước trái giúp mình nhé
 win_lf	control_cover	trung	than_mat	mở kính ghế lái hí
@@ -531,8 +531,8 @@ win_rf	control_cover	nam	than_mat	mở kính ghế phụ giùm
 win_rf	control_cover	nam	than_mat	hạ kính trước phải dùm cái
 win_rf	control_cover	bac	lich_su	làm ơn đóng kính bên phụ
 win_rf	control_cover	nam	lich_su	mở kiếng trước phải hộ tôi
-win_rf	control_cover	chung	ngan	mở nửa kính ghế phụ
-win_rf	control_cover	chung	dai	mở kính trước phải một nửa thôi
+win_half_rf	control_cover	chung	ngan	mở nửa kính ghế phụ
+win_half_rf	control_cover	chung	dai	mở kính trước phải một nửa thôi
 win_rf	control_cover	chung	than_mat	ê Kachi mở kính bên phụ
 win_rf	control_cover	nam	dai	đóng kiếng trước phải giúp mình nhé
 win_rf	control_cover	trung	than_mat	mở kính ghế phụ hí
@@ -551,8 +551,8 @@ win_lr	control_cover	nam	than_mat	mở kiếng sau trái giùm
 win_lr	control_cover	nam	than_mat	hạ kính sau bên trái dùm cái
 win_lr	control_cover	bac	lich_su	làm ơn đóng kính sau trái
 win_lr	control_cover	nam	lich_su	mở kiếng sau trái hộ tôi
-win_lr	control_cover	chung	ngan	mở nửa kính sau bên trái
-win_lr	control_cover	chung	dai	mở kính sau trái một nửa thôi
+win_half_lr	control_cover	chung	ngan	mở nửa kính sau bên trái
+win_half_lr	control_cover	chung	dai	mở kính sau trái một nửa thôi
 win_lr	control_cover	nam	than_mat	ê Kachi mở kiếng sau trái
 win_lr	control_cover	chung	dai	đóng kính sau bên trái giúp mình nhé
 win_lr	control_cover	trung	than_mat	mở kính sau trái hí
@@ -571,8 +571,8 @@ win_rr	control_cover	nam	than_mat	mở kiếng sau phải giùm
 win_rr	control_cover	nam	than_mat	hạ kính sau bên phải dùm cái
 win_rr	control_cover	bac	lich_su	làm ơn đóng kính sau phải
 win_rr	control_cover	nam	lich_su	mở kiếng sau phải hộ tôi
-win_rr	control_cover	chung	ngan	mở nửa kính sau bên phải
-win_rr	control_cover	chung	dai	mở kính sau phải một nửa thôi
+win_half_rr	control_cover	chung	ngan	mở nửa kính sau bên phải
+win_half_rr	control_cover	chung	dai	mở kính sau phải một nửa thôi
 win_rr	control_cover	nam	than_mat	ê Kachi mở kiếng sau phải
 win_rr	control_cover	chung	dai	đóng kính sau bên phải giúp mình nhé
 win_rr	control_cover	trung	than_mat	mở kính sau phải hí
@@ -591,8 +591,8 @@ windows_all	control_cover	nam	than_mat	mở hết kính giùm
 windows_all	control_cover	nam	than_mat	hạ toàn bộ kính dùm cái
 windows_all	control_cover	nam	lich_su	làm ơn đóng hết kiếng
 windows_all	control_cover	bac	lich_su	mở bốn kính hộ tôi
-windows_all	control_cover	chung	ngan	mở nửa cửa sổ
-windows_all	control_cover	chung	dai	mở tất cả kính một nửa thôi
+win_half_all	control_cover	chung	ngan	mở nửa cửa sổ
+win_half_all	control_cover	chung	dai	mở tất cả kính một nửa thôi
 windows_all	control_cover	chung	than_mat	ê Kachi mở hết kính
 windows_all	control_cover	chung	dai	đóng toàn bộ kính giúp mình nhé
 windows_all	control_cover	nam	than_mat	mở hết kiếng hí

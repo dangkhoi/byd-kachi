@@ -25,7 +25,7 @@ object ThemeLedger {
 
     /**
      * Hai lần đổi theme phải cách nhau ≥ 15 s — [ĐO source] `cluster-rect-seal-2026-10-05.md` §4 ("khoá 15 s giữa hai lần
-     * đổi theme"). KHÔNG ngủ chờ: executor có hạn cứng 15 s, ngắt giữa `sleep` là lỗi (`SimpleCastCoordinator.openProjection`).
+     * đổi theme"). KHÔNG ngủ chờ: lượt mở có hạn cứng (`BoundedCastExecutor.OPEN_TIMEOUT_MS`), ngắt giữa `sleep` là lỗi.
      */
     const val MIN_GAP_MS: Long = 15_000L
 

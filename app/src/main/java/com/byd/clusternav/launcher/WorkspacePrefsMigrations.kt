@@ -139,9 +139,13 @@ private const val K_MIGRATED_CLUSTER = "migrated_cluster_profile_v1"
  * 120 % ở hồ sơ A rồi đổi sang hồ sơ lưu bằng 2.91 ⇒ hồ sơ đó cũng *Thẳng rộng* 120 %, và lượt rời nó chụp luôn giá trị
  * lạc. Sổ `tệp/khoá` thay cho cờ boolean ⇒ bản sau thêm khoá là tự rót, không phải nhớ viết thêm một lượt di trú.
  *
- * Phép tính ở [ProfileScopeMigration.fillNewKeys] (thuần, `ProfileScopeMigrationTest`): chỉ điền chỗ trống, chỉ vào ảnh
- * ĐÃ có, giá trị = đang sống (vắng ⇒ `null` tường minh ⇒ lượt áp trả về mặc định). Lần đầu (sổ rỗng) duyệt mọi khoá —
+ * Phép tính ở [ProfileScopeMigration.fillNewKeys] (thuần, `ProfileScopeMigrationTest`): chỉ điền chỗ trống, chỉ vào hồ sơ
+ * ĐÃ CHỤP, giá trị = đang sống (vắng ⇒ `null` tường minh ⇒ lượt áp trả về mặc định). Lần đầu (sổ rỗng) duyệt mọi khoá —
  * ảnh đủ khoá không đổi byte.
+ *
+ * 2.93 · PROFILE-NEW-FILE-FILL — *"đã chụp"* xét trên MỌI tệp ảnh chụp ([ProfileScopeMigration.captured]), và sổ duyệt cả
+ * MỐC họ tiền tố ([ProfileScopeMigration.ledgerScope]) ⇒ khoá ở một tệp prefs MỚI hoặc một họ MỚI cũng được rót, không
+ * còn ca *"sổ ghi xong mà không hồ sơ nào được rót"* (senior review 2.92 F1).
  *
  * ⚠ Sổ ghi CÙNG một `Editor` với mọi ảnh (bài học [migrateScenesOnce]); chạy SAU [migrateClusterProfileOnce] ở `init`
  * của `PrefsWorkspaceRepository`, TRƯỚC lượt `load()` đầu tiên — tức trước khi người lái kịp chọn giá trị cho khoá mới.
@@ -150,21 +154,29 @@ internal fun WorkspacePrefs.fillNewProfileKeysOnce() {
     // Đọc qua `sp.all` + ép kiểu an toàn, KHÔNG `getStringSet`: giá trị sai kiểu mà ném ở `init` là HOME sập mỗi lần mở.
     val stored = sp.all
     val done = (stored[K_PROFILE_KEYS_FILLED] as? Set<*>)?.filterIsInstance<String>()?.toSet().orEmpty()
-    val pending = ProfileScopeMigration.pendingKeys(ProfileScope.CLUSTERNAV_KEYS, done)
+    val scope = ProfileScopeMigration.ledgerScope(ProfileScope.CLUSTERNAV_KEYS, ProfileScopeCluster.FAMILIES)
+    val pending = ProfileScopeMigration.pendingKeys(scope, done)
     if (pending.isEmpty()) return
     val e = sp.edit()
     val names = profiles()
+    // Ảnh của MỌI tệp (không riêng tệp đang rót) — để biết hồ sơ nào đã chụp ở bất kỳ đâu.
+    val shots = scope.keys.associateWith { file ->
+        names.associateWith { PrefSnapshot.decode(storedSnapshot(stored, keyOf(it, ProfileScope.snapshotSuffix(file)))) }
+    }
+    val captured = ProfileScopeMigration.captured(shots)
     var filled = 0
     pending.forEach { (file, newKeys) ->
         val suffix = ProfileScope.snapshotSuffix(file)
-        val shots = names.associateWith { PrefSnapshot.decode(storedSnapshot(stored, keyOf(it, suffix))) }
         ProfileScopeMigration
-            .fillNewKeys(shots, clusterNavPrefs(file).all, newKeys, ProfileScopeCluster.DEFERRED)
+            .fillNewKeys(
+                shots.getValue(file), clusterNavPrefs(file).all, newKeys, ProfileScopeCluster.DEFERRED,
+                captured, ProfileScopeCluster.familiesOf(file),
+            )
             .forEach { (p, shot) -> e.putString(keyOf(p, suffix), PrefSnapshot.encode(shot)); filled++ }
     }
-    e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS)).apply()
+    e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(scope)).apply()
     // Một dòng cho log phiên / `ClusterDiag` (CLAUDE.md §11): xe ngoài đường không có adb — đọc log là biết lượt rót đã chạy.
-    Log.i("KachiProfile", "rót khoá mới theo hồ sơ: ${pending.values.sumOf { it.size }} khoá · $filled ảnh")
+    Log.i("KachiProfile", "rót khoá mới theo hồ sơ: ${pending.values.sumOf { it.size }} mục sổ · ${captured.size} hồ sơ đã chụp · $filled ảnh")
 }
 
 /**

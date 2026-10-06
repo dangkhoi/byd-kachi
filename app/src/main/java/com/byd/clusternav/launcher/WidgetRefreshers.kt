@@ -4,6 +4,36 @@ import android.view.View
 import android.view.ViewGroup
 import com.byd.clusternav.R
 
+// 2.93 (nhóm WIDGET) — [WidgetData] dời THUẦN từ `WidgetViews.kt` (trần 500 dòng) về đây, cạnh sổ hàm đổ nhận chính nó
+// (`live`/`refresh`). Không sang tệp riêng: tệp không chạm `android.*` ở :app là tệp "thuần" mới (`LayeringRulesTest`),
+// mà [WidgetData] lại cần `MediaSnapshot` (:app) nên không xuống được :core. Thân giữ nguyên byte.
+
+/**
+ * Gói dữ liệu render cho widget: trạng thái xe [car] (nguồn sự thật state) + nhạc [media] (đọc live) + transport
+ * [onMedia] + cổng ra lệnh [control].
+ *
+ * [control] có mặt từ RW0: ô giữa màn nay nhận được **cả hành động** (R2), và hành động thì phải có đường ra xe.
+ * Mặc định [NoCar] ⇒ off-car/emulator bấm không làm gì, không sập.
+ */
+class WidgetData(
+    val car: CarStatus = CarStatus(),
+    val media: MediaSnapshot? = null,
+    val onMedia: (String) -> Unit = {},
+    val control: CarControlPort = NoCar,
+    /**
+     * Lựa chọn ĐƠN VỊ của người dùng (R11–R13). Mặc định = [UnitPrefs.DEFAULT] ⇒ mọi chỗ gọi cũ và test cũ giữ
+     * nguyên hành vi (R12: không đổi gì thì không thấy khác biệt).
+     */
+    val units: UnitPrefs = UnitPrefs.DEFAULT,
+    /**
+     * U4(b) — nguồn ảnh cho widget trình chiếu. Chỗ gọi đọc thư mục MỘT LẦN rồi truyền vào; để mỗi ô tự đọc thư mục
+     * là I/O lặp lại trên thread chính mỗi lần dựng ô.
+     */
+    val photos: List<String> = emptyList(),
+    /** U4(b) — chu kỳ đổi ảnh của widget trình chiếu. */
+    val photoIntervalSec: Int = Slideshow.DEFAULT_INTERVAL_SEC,
+)
+
 /**
  * ═══ SỔ ĐĂNG KÝ "ĐỔ GIÁ TRỊ TẠI CHỖ" CHO Ô GIỮA MÀN ═════════════════════════════════════════════════════════
  *
@@ -91,7 +121,7 @@ internal object WidgetRefreshers {
 
     /**
      * Ô có nội dung theo GIỜ (đồng hồ) đăng ký thêm một hàm đổ theo nhịp đồng hồ — chạy ở [tickAll], không cần trạng
-     * thái xe đổi. QA 04/10 ([ĐO] máy ảo `l3/clock-check-1/2.png`: widget đứng 02:05 suốt 02:30–02:31): đồng hồ chỉ đổ
+     * thái xe đổi. QA 04/10 ([ĐO] máy ảo `clock-check-1.png` · `clock-check-2.png` (bằng chứng phiên, ngoài repo): widget đứng 02:05 suốt 02:30–02:31): đồng hồ chỉ đổ
      * lại khi `CarStatus` đổi, mà máy ảo/xe đỗ thì trạng thái không đổi. [fill] chỉ được đổi CHỮ trên view có sẵn
      * (bất biến 1 ở KDoc lớp) và tự dùng dữ liệu lần đổ gần nhất của nó.
      */

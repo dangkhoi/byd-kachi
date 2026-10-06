@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -196,8 +197,9 @@ class ShortcutsWiringContractTest {
 
     @Test
     fun `widget w_apps dung CUNG view, o to va o nen`() {
-        assertTrue(SourceRoots.body(widgets, "fun build(").contains("\"w_apps\" -> ShortcutIconsView(ctx, grid = true)"))
-        assertTrue(SourceRoots.body(widgets, "private fun mini(").contains("\"w_apps\"   -> ShortcutIconsView(ctx, grid = true, compact = true)"))
+        // ĐỔI GHIM 2.93 wave 2A (SHORTCUT-SCROLL-REBUILD): ô to và ô nền đều mang `scrollKey` để giữ cuộn qua lượt dựng view MỚI.
+        assertTrue(SourceRoots.body(widgets, "fun build(").contains("\"w_apps\" -> ShortcutIconsView(ctx, grid = true, scrollKey = scrollKey)"))
+        assertTrue(SourceRoots.body(widgets, "private fun mini(").contains("\"w_apps\"   -> ShortcutIconsView(ctx, grid = true, compact = true, scrollKey = scrollKey)"))
     }
 
     @Test
@@ -219,6 +221,21 @@ class ShortcutsWiringContractTest {
         assertTrue(dim.contains("!cell.installed ->"))
         assertTrue(SourceRoots.body(view, "private fun cell(sc: AppShortcut)").contains("ShortcutHub.tap(context, sc)"))
         assertTrue(SourceRoots.body(view, "private fun load(gen: Int)").contains("cell.view.contentDescription = it"))
+    }
+
+    /**
+     * 2.93 QA máy ảo F1 [ĐO 07/10]: R1 nạp lại TẠI CHỖ ⇒ app trong dải bị gỡ (hình chung, đã [KachiIcons.tint]) rồi cài lại
+     * nhận icon thật trên CÙNG view — bộ lọc màu còn ⇒ icon xám (trắng đọc 184 = 0,72 × 255) tới lần dựng lại. Khoá: gỡ tint
+     * NGAY TRƯỚC khi gắn icon thật; `untint` xoá cả bộ lọc (gốc F1: `ImageView` áp lại bộ lọc lên drawable mới) lẫn cờ (cờ còn
+     * thì một lượt `refit` sau này tô lại — dải hôm nay không qua `FitScale`, cờ là vệ sinh hợp đồng).
+     */
+    @Test
+    fun `app cai lai nhan icon that - go tint cua hinh chung truoc khi gan`() {
+        val load = SourceRoots.body(view, "private fun load(gen: Int)")
+        order(load, "if (icon != null) {", "KachiIcons.untint(cell.view)", "cell.view.setImageDrawable(icon)", "else genericIcon(cell.view)")
+        val untint = SourceRoots.body(code("KachiIcons.kt"), "fun untint(img: ImageView)")
+        assertTrue(untint.contains("drawnBy[img]?.tinted = false"), "cờ tint phải rơi — không thì refit tô lại")
+        assertTrue(untint.contains("img.colorFilter = null"), "bộ lọc màu phải gỡ")
     }
 
     @Test
@@ -285,8 +302,7 @@ class ShortcutsWiringContractTest {
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
         }.map { p ->
-            p.fileName.toString() to p.toFile().readText().replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                .lines().joinToString("\n") { it.substringBefore("//") }
+            p.fileName.toString() to KotlinSource.stripComments(p.toFile().readText())
         }
         assertTrue(all.size > 300, "quét được quá ít tệp (${all.size}) — đường dẫn sai thì bài này là test giả")
         mapOf(

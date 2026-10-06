@@ -223,6 +223,20 @@ object VoicePhrases {
     }
 
     /**
+     * 2.93 VOICE-TEACH-SHORT-HOMOGRAPH — MỌI từ (bỏ dấu) mà câu lệnh TĨNH của Kachi dùng: [deaccentedVocabulary] (động từ ·
+     * liên từ · số · từ đệm · cụm hỏi · ô · cụm đánh dấu app · bố cục · xác nhận) + từng từ của nhãn tĩnh ([labelPhrases]
+     * không nguồn động). Cổng dạy tên (`TeachGuard`) hỏi: tên MỘT âm tiết có trùng một chữ của câu lệnh không — dữ liệu
+     * sẵn có, không bảng thứ hai. `by lazy`: tập tĩnh, dựng một lần.
+     */
+    val commandWords: Set<String> by lazy {
+        val out = HashSet<String>(deaccentedVocabulary())
+        labelPhrases(emptyList(), emptyList(), emptySet(), emptyList()).forEach { p ->
+            VoiceLexicon.tokenize(p).forEach { out.add(it.norm) }
+        }
+        out
+    }
+
+    /**
      * Toàn bộ từ vựng **không dấu** mà tầng chữ đang dùng — động từ · liên từ · số · từ đệm · cụm hỏi · xác nhận.
      *
      * Mỗi nguồn ở đây đã có **đúng một** nơi khai (xem từng hằng); lớp này chỉ gom lại, không khai thêm từ nào.

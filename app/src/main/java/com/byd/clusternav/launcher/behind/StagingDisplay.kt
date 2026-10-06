@@ -127,7 +127,7 @@ internal class StagingDisplay(ctx: Context) : BehindHomeSequence.HiddenStagePort
 
     /**
      * Mở lớp che rồi CHỜ nó `onResume` trên đúng màn ảo (≤ [COVER_RESUME_MS]) — KDoc [StageCoverActivity]: giữ chỗ dựng
-     * trước lượt resume đó bị hệ tỉa khỏi danh sách gần đây ([ĐO máy ảo `p3/e2e-L4/e6-hidden` lượt 1]).
+     * trước lượt resume đó bị hệ tỉa khỏi danh sách gần đây ([ĐO máy ảo `e2e-L4 · e6-hidden` (bằng chứng phiên, ngoài repo) lượt 1]).
      */
     override fun cover(vd: Int): Boolean = try {
         StageCoverActivity.arm(vd)

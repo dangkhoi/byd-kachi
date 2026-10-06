@@ -34,7 +34,9 @@ class CapabilityReachabilityTest {
             // S4 · R12: hành động của chính launcher khai `domain = null` ⇒ `byDomain()` KHÔNG bày chúng (cố ý).
             // Đường tới chúng là khối riêng của bộ chọn nút thanh xe — kể nguồn đó ra ở đây, đúng cùng lý do đã
             // phải kể `groupPicks()` khi G1 lọc nhóm khỏi lĩnh vực: nếu không, bài đỏ ĐÚNG nhưng vì lý do SAI.
-            CapabilityPicker.launcherPicks().map { it.id }.toSet()
+            CapabilityPicker.launcherPicks().map { it.id }.toSet() +
+            // 2.93: khối *Camera theo yêu cầu* (AppDrawer chế độ thanh nút bày ngay sau khối Launcher).
+            CapabilityPicker.cameraPicks().map { it.id }.toSet()
 
     @Test
     fun `moi kha nang deu co duong dat vao o`() {
@@ -84,7 +86,9 @@ class CapabilityReachabilityTest {
     @Test
     fun `hai hanh dong launcher deu dat duoc va chi o khoi Launcher`() {
         val reach = reachable()
-        val section = CapabilityPicker.launcherPicks().map { it.id }
+        // 2.93: năm việc camera theo yêu cầu đứng ở khối RIÊNG ngay sau khối Launcher (`cameraPicks` — khối kia phải
+        // vừa một hàng). Hai khối cùng là "việc của launcher", nên phép canh "đúng một chỗ" tính cả hai.
+        val section = (CapabilityPicker.launcherPicks() + CapabilityPicker.cameraPicks()).map { it.id }
         // F1 (2026-10-02): `placeable` = ba việc gọi bằng lời + khối lối tắt (`LauncherActions.BLOCKS`).
         LauncherActions.placeable.forEach { a ->
             assertTrue(a.id in reach, "hành động '${a.label}' (${a.id}) không có đường đặt vào thanh nút")

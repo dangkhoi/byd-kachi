@@ -26,6 +26,11 @@ class CameraRotationWiringContractTest {
     /** Ba hàm dựng lớp video + `applyTransform` sang tệp riêng ở 2.74 (R8-B) — xem KDoc `CameraVideoLayer`. */
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
+    // 2.93: lượt đọc phiên + cửa theo CAMERA + bộ chỉnh *Từng camera* + bảng nhãn chung.
+    private val spec by lazy { app("launcher/camera/CameraSessionSpec.kt") }
+    private val perCam by lazy { app("PrefsCameraPerCam.kt") }
+    private val perCamSettings by lazy { app("launcher/SettingsSectionsCameraPerCam.kt") }
+    private val labels by lazy { app("launcher/CameraSettingsLabels.kt") }
     private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
     private val prefsSet by lazy { app("launcher/testbridge/TestBridgePrefsSet.kt") }
@@ -81,39 +86,56 @@ class CameraRotationWiringContractTest {
         assertEquals(0f, m[android.graphics.Matrix.MTRANS_Y], 1e-3f)
     }
 
-    /** (b) Controller: số độ đến từ `:core` (`rotationDegrees(Prefs.cameraRotation(…, left), left)`) và đi vào `overlay.show`. */
+    /**
+     * (b) Controller: số độ đến từ `:core` và đi vào `overlay.show`. 2.93: đọc theo CAMERA ở lượt đọc phiên
+     * (`Prefs.cameraRotationDegOf`); camera gương đi qua ĐÚNG `Prefs.cameraRotation(…, left)` của 2.71 (di trú + mặc định
+     * hồ sơ xe) rồi `rotationDegrees(…, left)` — cùng hai mắt xích của R7, chỉ dời tệp.
+     */
     @Test
     fun `controller truyen rotationDegrees theo BEN tu pref vao overlay`() {
-        assertTrue(
-            "CameraSignalPolicy.rotationDegrees(Prefs.cameraRotation(appCtx, left = turn == Turn.LEFT), left = turn == Turn.LEFT)" in controller,
-            "controller phải đọc pref của ĐÚNG BÊN xi-nhan (2.71: camera_rot_left/right) rồi tính độ ở `:core` cho bên đó",
-        )
-        assertTrue("Prefs.cameraRotation(appCtx)" !in controller, "khoá đơn cũ (một chế độ cho cả hai bên) không còn được đọc")
+        assertTrue("rot = Prefs.cameraRotationDegOf(ctx, which)," in spec, "lượt đọc phiên phải đọc xoay của ĐÚNG camera")
+        assertTrue("val rot = s.rot" in controller, "controller dùng số độ của lượt đọc phiên")
+        val deg = SourceRoots.body(perCam, "fun Prefs.cameraRotationDegOf(")
+        assertTrue("CameraSignalPolicy.rotationDegrees(cameraRotationOf(ctx, w), left = w == CameraWhich.LEFT)" in deg,
+            "độ tính ở `:core` cho đúng bên")
+        val of = SourceRoots.body(perCam, "fun Prefs.cameraRotationOf(")
+        assertTrue("if (w.side) return cameraRotation(ctx, left = w == CameraWhich.LEFT)" in of,
+            "camera gương: đúng pref theo bên của 2.71 (camera_rot_left/right — di trú + mặc định hồ sơ xe)")
+        listOf(controller, spec, perCam).forEach {
+            assertTrue("Prefs.cameraRotation(appCtx)" !in it && "cameraRotation(ctx)" !in it,
+                "khoá đơn cũ (một chế độ cho cả hai bên) không còn được đọc")
+        }
         assertTrue("rotationDeg = rot," in controller, "số độ phải đi vào overlay.show(rotationDeg = …)")
         assertTrue("rot=\$rot lật=\$mirror\")" in controller, "log 1 dòng của controller phải kết bằng rot= rồi lật= (L7)")
     }
 
     /**
-     * (c) Cài đặt: HAI hàng chip (trái / phải — owner trên xe 2026-09-26: *"2 line setting độc lập cho camera trái và
-     * phải"*), mỗi hàng ĐÚNG 4 mã = hằng `:core` (không chép chuỗi), nối bridge getter riêng bên + setter có `left =`.
+     * (c) Cài đặt (2.93): MỘT hàng chip xoay ở bộ chỉnh *Từng camera* (chọn camera ở hàng chip đầu — hai hàng trái/phải
+     * của 2.71 gộp vào đây, cùng hai khoá), ĐÚNG 4 mã = hằng `:core` (bảng nhãn chung, không chép chuỗi), nối cầu theo
+     * camera.
      */
     @Test
-    fun `cai dat co HAI hang chip, moi hang 4 ma dung hang core`() {
-        val body = SourceRoots.body(settings, "private fun cameraUser(")   // 2.76 · R1: xoay là tầng NGƯỜI LÁI
+    fun `cai dat co hang chip xoay theo camera, 4 ma dung hang core`() {
+        val rotations = SourceRoots.body(labels, "fun rotations(")
         val codes = listOf("ROTATE_NONE", "ROTATE_LEFT", "ROTATE_RIGHT", "ROTATE_180")
-        codes.forEach { assertTrue("CameraSignalPolicy.$it to " in body, "chip $it phải lấy mã từ hằng `:core`") }
+        codes.forEach { assertTrue("CameraSignalPolicy.$it to " in rotations, "chip $it phải lấy mã từ hằng `:core`") }
         assertEquals(codes.size, CameraSignalPolicy.ROTATIONS.size, "mỗi góc `:core` phải có ĐÚNG một chip trong danh sách dùng chung")
         // Hai mã CŨ không còn là chip: chúng chỉ sống trong migrate.
-        listOf("ROTATE_BY_SIDE to", "ROTATE_BY_SIDE_INV to").forEach { assertTrue(it !in body, "$it là mã cũ, không được thành chip") }
-        // Không chép chuỗi: mã "SIDE"/"L90"/"R90"/"180" không được xuất hiện trần trong tệp Cài đặt.
+        listOf("ROTATE_BY_SIDE to", "ROTATE_BY_SIDE_INV to").forEach { assertTrue(it !in rotations, "$it là mã cũ, không được thành chip") }
+        // Không chép chuỗi: mã "SIDE"/"L90"/"R90"/"180" không được xuất hiện trần trong các tệp Cài đặt camera.
         listOf("\"SIDE\"", "\"SIDEINV\"", "\"L90\"", "\"R90\"", "\"180\"").forEach {
-            assertTrue(it !in settings, "mã $it bị chép trần vào Cài đặt — dùng hằng CameraSignalPolicy")
+            listOf(settings, perCamSettings, labels).forEach { src ->
+                assertTrue(it !in src, "mã $it bị chép trần vào Cài đặt — dùng hằng CameraSignalPolicy")
+            }
         }
-        // Hai hàng, hai getter riêng bên, một setter có tham số bên — y khuôn camera_pos_left/right ngay trên.
-        assertTrue("R.string.kachi_camera_rot_row_left), rotations, bridge.cameraRotLeft()" in body, "hàng TRÁI: tiêu đề + 4 chip + getter trái")
-        assertTrue("R.string.kachi_camera_rot_row_right), rotations, bridge.cameraRotRight()" in body, "hàng PHẢI: tiêu đề + 4 chip + getter phải")
-        assertTrue("bridge.setCameraRotation(left = true, v = v)" in body && "bridge.setCameraRotation(left = false, v = v)" in body, "setter phải nói rõ bên")
-        assertTrue("R.string.kachi_camera_rot_sub" in body)
+        val ed = SourceRoots.body(perCamSettings, "private fun rebuild(")
+        assertTrue("CameraSettingsLabels.rotations(context)" in ed && "bridge.cameraRotationOf(w)" in ed, "hàng xoay: 4 chip + getter theo camera")
+        assertTrue("bridge.setCameraRotationOf(w, v)" in ed, "setter phải nói rõ camera")
+        assertTrue("R.string.kachi_camera_rot_own_row" in ed)
+        // Hai hàng theo bên của 2.71 đã dời vào bộ chỉnh — không còn ở khối chung.
+        listOf("bridge.cameraRotLeft()", "bridge.cameraRotRight()", "bridge.setCameraRotation(").forEach {
+            assertTrue(it !in settings, "hàng theo bên `$it` đã dời vào bộ chỉnh *Từng camera*")
+        }
         assertTrue("kachi_camera_rot_title" !in settings && "kachi_camera_rot_side" !in settings, "tài nguyên của hàng đơn cũ phải gỡ (i18n mồ côi)")
     }
 

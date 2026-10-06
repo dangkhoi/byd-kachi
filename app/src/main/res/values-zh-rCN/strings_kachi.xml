@@ -16,6 +16,8 @@
         <item quantity="other">放置%1$d个小组件</item>
     </plurals>
     <string name="kachi_drawer_cap_note">一个格位最多放%1$d项——移除一项才能再添加</string>
+    <string name="kachi_drawer_fit_hint">此格位只能清晰显示%1$d项（已选%2$d项）——请减少项目或把格位拉大</string>
+    <string name="kachi_drawer_fit_none">此格位太小，文字无法看清——请把格位拉大</string>
     <string name="kachi_layout_title">绘制布局</string>
     <string name="kachi_layout_close">关闭</string>
     <string name="kachi_layout_hint">拖动框的中部可移动 · 拖动右下角可调整大小。框始终对齐网格。</string>
@@ -260,7 +262,6 @@
     <string name="kachi_bridge_gemini_failed">无法设置系统助手。</string>
     <string name="kachi_bridge_cleaning_air">正在净化空气…</string>
     <string name="kachi_bridge_update_needs_screen">请打开屏幕以检查更新。</string>
-    <string name="kachi_bridge_screen_open_failed">无法打开屏幕。</string>
     <string name="kachi_save">保存</string>
     <string name="kachi_dp_value">%1$d dp</string>
     <string name="kachi_px_value">%1$d px</string>
@@ -648,6 +649,7 @@
     <string name="kachi_voice_pill_title">顶栏麦克风按钮</string>
     <string name="kachi_voice_pill_sub">位于“应用”和“设置”旁，可快速说出指令</string>
     <string name="kachi_sc_place_failed">%1$s无法在格位中打开</string>
+    <string name="kachi_slot_app_elsewhere">%1$s已离开格位，仍在格位外打开</string>
     <string name="kachi_drawer_title_shortcuts">选择快捷方式应用</string>
     <string name="kachi_drawer_hint_shortcuts">点按即可添加或移除应用 · 点按“确定”保存 · 点按背景关闭</string>
     <string name="kachi_sc_cap_note">快捷方式最多%1$d个应用——移除一个才能再添加</string>
@@ -670,7 +672,7 @@
     <string name="kachi_sc_refuse_cast">%1$s正在投屏到仪表</string>
     <string name="kachi_sc_not_installed">未安装%1$s</string>
     <string name="kachi_sc_bg_failed">%1$s无法在后台启动</string>
-    <string name="kachi_sc_bg_failed_why">%1$s无法在后台启动（%2$s）</string>
+    <string name="kachi_sc_bg_failed_why">[%2$s] %1$s无法在后台启动</string>
     <string name="kachi_sc_full_card">正在全屏显示——点按可放回格位</string>
     <string name="kachi_sc_full_failed">无法全屏打开%1$s</string>
     <string name="kachi_captest_title">逐项测试车辆功能</string>
@@ -704,14 +706,8 @@
     <string name="kachi_captest_snapshot_done">日志快照已保存：%s</string>
     <string name="kachi_captest_report_saved">报告已保存到存储卡：%s</string>
     <string name="kachi_camera_cluster_title">在仪表上显示摄像头画面</string>
-    <string name="kachi_camera_pos_sub">摄像头画面在屏幕上的位置（上方两角）</string>
-    <string name="kachi_camera_pos_left">左转向灯显示于</string>
-    <string name="kachi_camera_pos_right">右转向灯显示于</string>
     <string name="kachi_pos_tl">左侧</string>
     <string name="kachi_pos_tr">右侧</string>
-    <string name="kachi_camera_rot_sub">按左右侧分别旋转摄像头画面（画面横置或倒置时使用）</string>
-    <string name="kachi_camera_rot_row_left">左转向灯：旋转画面</string>
-    <string name="kachi_camera_rot_row_right">右转向灯：旋转画面</string>
     <string name="kachi_camera_rot_none">不旋转</string>
     <string name="kachi_camera_rot_left">↺ 左旋90°</string>
     <string name="kachi_camera_rot_right">↻ 右旋90°</string>
@@ -724,9 +720,6 @@
     <string name="kachi_camera_pano_row_right">右转向灯：条带</string>
     <string name="kachi_camera_pano_auto">自动</string>
     <string name="kachi_camera_pano_none">整个画面</string>
-    <string name="kachi_camera_mirror_sub">按左右侧分别镜像摄像头画面（画面方向与玻璃后视镜相反时使用）</string>
-    <string name="kachi_camera_mirror_row_left">左转向灯：镜像画面</string>
-    <string name="kachi_camera_mirror_row_right">右转向灯：镜像画面</string>
     <string name="kachi_camera_mirror_row_sub">在旋转前水平翻转摄像头画面——车身应位于内侧边缘，与真实后视镜一致</string>
     <string name="kachi_camera_shape_sub">摄像头窗口形状（只改外框——要看未校正的完整画面，请在下方选「凸面镜」）</string>
     <string name="kachi_camera_shape_row">摄像头窗口形状</string>
@@ -820,7 +813,7 @@
     <string name="kachi_vn_row_title">教 Kachi 应用名称</string>
     <string name="kachi_vn_row_sub">已教应用：%1$d · 英文或难读的应用名称在这里教</string>
     <string name="kachi_vn_page_title">教应用名称</string>
-    <string name="kachi_vn_page_note">语音只听懂越南语。英文或难读的应用名称：点按应用，像开车时一样说 2–3 次“mở &lt;tên&gt;”。Kachi 只保存它从你的声音听到的文字（不保存录音）。更换识别模型后请重新教。</string>
+    <string name="kachi_vn_page_note">语音只听懂越南语。英文或难读的应用名称：点按应用，像开车时一样按每次的提示说（第 1 次“mở &lt;tên&gt;”，第 2 次带格位说）。Kachi 只保存它从你的声音听到的文字（不保存录音）。更换识别模型后请重新教。</string>
     <string name="kachi_vn_search_hint">搜索应用…</string>
     <string name="kachi_vn_filter_all">全部 %1$d</string>
     <string name="kachi_vn_filter_taught">已教 %1$d</string>
@@ -837,7 +830,9 @@
     <string name="kachi_vn_readonly">数据来自更新版本的 Kachi——仅可查看；请更新 Kachi 后再修改</string>
     <string name="kachi_vn_pending">待处理样本：“%1$s”——请选择应用</string>
     <string name="kachi_vn_dialog_title">教名称：%1$s</string>
-    <string name="kachi_vn_dialog_hint">点按 🎤，然后像开车时一样说“mở %1$s”。说 2–3 次。</string>
+    <string name="kachi_vn_dialog_hint">点按 🎤，像开车时一样按每次的提示说：第 1 次说“mở %1$s”，第 2 次带格位说。至少说 2 次。</string>
+    <string name="kachi_vn_take_plain">第 %1$d 次：说“mở %2$s”</string>
+    <string name="kachi_vn_take_slot">第 %1$d 次：带格位说——“đưa %2$s vào ô số hai”。带格位的句子会让 Kachi 听到的名称略有不同；Kachi 会一并保存这种说法，带格位的指令也能听懂。</string>
     <string name="kachi_vn_speak">🎤 说话</string>
     <string name="kachi_vn_type">输入名称…</string>
     <string name="kachi_vn_type_title">为 %1$s 输入叫法</string>
@@ -874,6 +869,7 @@
     <string name="kachi_vn_r_near_command">容易与车辆命令混淆</string>
     <string name="kachi_vn_r_near_app">接近应用名称 %1$s</string>
     <string name="kachi_vn_r_one_word">单个词容易与日常说话冲突</string>
+    <string name="kachi_vn_r_homograph">去掉声调后与指令“%1$s”中的一个词相同——说出含该词的句子可能会打开此应用</string>
     <string name="kachi_vn_still_save">仍然保存</string>
     <string name="kachi_vn_warn_title">带警告的名称</string>
     <string name="kachi_vn_checking">正在检查 %1$d 条命令…</string>
@@ -891,4 +887,30 @@
     <string name="kachi_vn_heard">听到：“%1$s”</string>
     <string name="kachi_vn_heard_bad">“%1$s”——名称须为 1–4 个词，至少 3 个字母</string>
     <string name="kachi_vn_named_reason">名称“%1$s”：%2$s</string>
+    <!-- 2.93 · CAMERA-ON-DEMAND + CAMERA-PER-CAM-CONFIG (spec docs/specs/kachi-293-cam.html) -->
+    <string name="kachi_camera_rear">后摄像头</string>
+    <string name="kachi_camera_front">前摄像头</string>
+    <string name="kachi_cam_chip_rear">后</string>
+    <string name="kachi_cam_chip_left">左</string>
+    <string name="kachi_cam_chip_right">右</string>
+    <string name="kachi_cam_chip_front">前</string>
+    <string name="kachi_camera_percam_sub">单个摄像头——显示位置、大小、画面样式（后·左·右·前）</string>
+    <string name="kachi_camera_percam_note">同时适用于转向灯联动和按需打开该摄像头。打开/关闭：车辆按钮栏上的后/左/右/前摄像头按钮、方向盘按键（方向盘按键 › 按需摄像头），或用语音（打开/关闭某个摄像头）。一次只显示一个摄像头，不会自动关闭。</string>
+    <string name="kachi_camera_percam_row">摄像头</string>
+    <string name="kachi_camera_preview_on">▶ 预览此摄像头</string>
+    <string name="kachi_camera_preview_off">■ 正在显示——点按关闭</string>
+    <string name="kachi_camera_corner_row">默认角落</string>
+    <string name="kachi_camera_place_hint">拖动画框以放置</string>
+    <string name="kachi_camera_place_reset">回到默认角落</string>
+    <string name="kachi_camera_size_row">大小</string>
+    <string name="kachi_camera_size_desc">摄像头大小：%1$s</string>
+    <string name="kachi_camera_follow">同通用设置</string>
+    <string name="kachi_camera_shape_own_row">窗口形状</string>
+    <string name="kachi_camera_projection_own_row">画面样式</string>
+    <string name="kachi_camera_rot_own_row">旋转</string>
+    <string name="kachi_camera_mirror_own_title">镜像画面</string>
+    <string name="kachi_keys_kind_camera">按需摄像头</string>
+    <string name="kachi_keys_pick_camera">第3步——哪个摄像头</string>
+    <string name="kachi_key_cam_toggle">%1$s——开/关</string>
+    <string name="kachi_key_cam_off">关闭摄像头</string>
 </resources>

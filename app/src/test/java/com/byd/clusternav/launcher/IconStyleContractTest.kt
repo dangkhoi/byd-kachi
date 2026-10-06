@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -356,9 +357,7 @@ class IconStyleContractTest {
             root.toFile().walkTopDown()
                 .filter { it.isFile && it.name.endsWith(".kt") && it.name != "KachiTheme.kt" }
                 .forEach { file ->
-                    val code = file.readText()
-                        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                        .lines().joinToString("\n") { it.substringBefore("//") }
+                    val code = KotlinSource.stripComments(file.readText())
                     Regex("\"(ic-[a-z0-9-]+)\"").findAll(code).forEach { m -> used.getOrPut(m.groupValues[1]) { mutableListOf() } += file.name }
                 }
         }

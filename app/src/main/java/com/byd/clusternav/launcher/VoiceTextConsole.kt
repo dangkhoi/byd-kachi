@@ -13,9 +13,11 @@ import android.widget.TextView
 import com.byd.clusternav.R
 import com.byd.clusternav.launcher.KachiTheme.c
 import com.byd.clusternav.launcher.KachiTheme.dpi
+import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceReply
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
 import com.byd.clusternav.launcher.voice.VoiceWiring
+import com.byd.clusternav.launcher.voice.dynVocabOf
 import com.byd.clusternav.launcher.KachiSpace as Sp
 
 /**
@@ -111,8 +113,11 @@ class VoiceTextConsole(
         body.addView(rows.button(context.getString(R.string.kachi_voice_wav_try)) {
             log.add(context.getString(R.string.kachi_voice_wav_running))
             Thread({
+                // 2.93 VOICE-OPEN-TURN-DYNVOCAB (review VOICE (b)): CÙNG từ vựng động phiên thật dùng — tên đã dạy + địa điểm đã lưu.
+                val st = deps.state()
+                val vocab = dynVocabOf(context, st.profiles, appsByLabel, VoicePlaces.labelsOf(st.savedPlaces))
                 val r = VoiceWavProbe.run(
-                    context, deps.state().profiles, appsByLabel.keys.toList(), appsByLabel.values.toSet(),
+                    context, st.profiles, appsByLabel.keys.toList(), appsByLabel.values.toSet(), vocab,
                 )
                 out.post {
                     when {

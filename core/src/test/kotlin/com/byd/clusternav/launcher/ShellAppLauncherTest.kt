@@ -6,87 +6,50 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Kiểm bộ adapter freeform ON-CAR [ShellAppLauncher] hoàn toàn off-car: cắm một `sh` giả trả output
- * `am stack list` / resolve / resize tuỳ lệnh, khẳng định openInSlot phát ĐÚNG chuỗi lệnh proven và
- * chọn ĐÚNG task theo display. Đặt cửa sổ thật vẫn verify trên xe — đây khoá phần logic thuần.
+ * Kiểm bộ adapter ON-CAR [ShellAppLauncher] hoàn toàn off-car: cắm một `sh` giả trả output resolve tuỳ lệnh.
+ *
+ * 2.93 · SLOT-DEAD-OPENSLOT (spec `kachi-293-wave2a.html` §4.4): năm bài của `openInSlot` (chọn task theo display · một lượt
+ * đọc stack · không lên · resize bị từ chối · không phân giải được) GỠ cùng hàm — đường ấy 0 chỗ gọi sản phẩm. Bài cuối khoá
+ * việc gỡ: hợp đồng [AppLauncher] không còn hai hàm mở nổi (thêm lại = cần spec + chỗ gọi, không phải khối chết).
+ *
+ * 2.93 wave 2C · SLOT-DEAD-FREEFORM-REST (spec `kachi-293-wave2c.html` R2): bài `isFreeformAvailable reads the global flag` GỠ
+ * cùng hàm (0 chỗ gọi sản phẩm [ĐO grep 07/10]); bài khoá hợp đồng nay đòi ĐÚNG một hàm `closeSlot`.
  */
 class ShellAppLauncherTest {
 
-    private val slot = SlotRect(0, 0, 90, 1920, 630)
-
     private fun fakeShell(
-        stack: String,
-        resizeOut: String = "",
         component: String = "com.foo/.Main",
         calls: MutableList<String> = mutableListOf(),
     ): (String) -> String = { cmd ->
         calls += cmd
-        when {
-            cmd.startsWith("cmd package resolve-activity") -> "priority=0\n$component"
-            cmd == "am stack list" -> stack
-            cmd.startsWith("am task resize") -> resizeOut
-            else -> ""
-        }
-    }
-
-    @Test
-    fun `openInSlot resizes the display-0 task, not a same-package task on the cluster`() {
-        val stack = """
-            Stack id=1 bounds=[0,0][1920,720] displayId=1 userId=0
-              taskId=88: com.foo/.Main bounds=[0,0][1920,720]
-            Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0
-              taskId=42: com.foo/.Main bounds=[0,0][1920,720]
-        """.trimIndent()
-        val calls = mutableListOf<String>()
-        val launcher = ShellAppLauncher(fakeShell(stack, calls = calls), sleep = {})
-
-        assertTrue(launcher.openInSlot("com.foo", slot))
-        // Task on the MAIN display (42) must be the one resized — never the cluster task (88).
-        assertTrue(
-            calls.contains("am task resize 42 0 90 1920 630"),
-            "expected resize of task 42; resize calls = ${calls.filter { it.startsWith("am task resize") }}",
-        )
-        assertFalse(calls.any { it.startsWith("am task resize 88") })
-    }
-
-    @Test
-    fun `openInSlot only queries the stack once`() {
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.foo/.Main"
-        val calls = mutableListOf<String>()
-        ShellAppLauncher(fakeShell(stack, calls = calls), sleep = {}).openInSlot("com.foo", slot)
-        assertEquals(1, calls.count { it == "am stack list" })
-    }
-
-    @Test
-    fun `openInSlot returns false when the app never lands`() {
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.other/.X"
-        assertFalse(ShellAppLauncher(fakeShell(stack), sleep = {}).openInSlot("com.foo", slot))
-    }
-
-    @Test
-    fun `openInSlot returns false when the resize is rejected`() {
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.foo/.Main"
-        val launcher = ShellAppLauncher(fakeShell(stack, resizeOut = "Error: not allowed"), sleep = {})
-        assertFalse(launcher.openInSlot("com.foo", slot))
-    }
-
-    @Test
-    fun `openInSlot returns false when the component cannot be resolved`() {
-        val sh: (String) -> String = { cmd -> if (cmd.startsWith("cmd package")) "no component here" else "" }
-        assertFalse(ShellAppLauncher(sh, sleep = {}).openInSlot("com.foo", slot))
-    }
-
-    @Test
-    fun `isFreeformAvailable reads the global flag`() {
-        assertTrue(ShellAppLauncher({ "1" }, sleep = {}).isFreeformAvailable())
-        assertFalse(ShellAppLauncher({ "0" }, sleep = {}).isFreeformAvailable())
-        assertFalse(ShellAppLauncher({ "" }, sleep = {}).isFreeformAvailable())
+        if (cmd.startsWith("cmd package resolve-activity")) "priority=0\n$component" else ""
     }
 
     @Test
     fun `closeSlot sends the fullscreen return recipe for the resolved component`() {
         val calls = mutableListOf<String>()
-        ShellAppLauncher(fakeShell("", calls = calls), sleep = {}).closeSlot("com.foo")
+        ShellAppLauncher(fakeShell(calls = calls)).closeSlot("com.foo")
         assertTrue(calls.any { it.contains("--windowingMode 1") && it.contains("0x20000000") && it.contains("com.foo/.Main") })
+    }
+
+    @Test
+    fun `closeSlot voi ten goi la - 0 lenh shell (chuoi tu dia khong vao shell)`() {
+        val calls = mutableListOf<String>()
+        ShellAppLauncher(fakeShell(calls = calls)).closeSlot("com.foo; reboot")
+        assertEquals(emptyList<String>(), calls, "tên gói lạ phải dừng trước shell (CLAUDE.md §4.1)")
+    }
+
+    @Test
+    fun `hop dong AppLauncher khong con duong mo cua so noi - SLOT-DEAD-OPENSLOT + FREEFORM-REST`() {
+        val names = AppLauncher::class.java.methods.map { it.name }.toSet()
+        assertEquals(setOf("closeSlot"), names - Any::class.java.methods.map { it.name }.toSet(),
+            "hợp đồng chỉ còn closeSlot — isFreeformAvailable (0 chỗ gọi) đã gỡ ở wave 2C")
+        // Bộ mở có kênh không còn hỏi cờ freeform: lượt đóng duy nhất KHÔNG chạm `settings … enable_freeform_support`.
+        val calls = mutableListOf<String>()
+        ShellAppLauncher(fakeShell(calls = calls)).closeSlot("com.foo")
+        assertFalse(calls.any { "enable_freeform_support" in it }, "không còn lệnh đọc cờ freeform: $calls")
+        val builders = FreeformLaunch::class.java.methods.map { it.name }.toSet()
+        listOf("launchCmd", "parseTaskId").forEach { assertFalse(it in builders, "FreeformLaunch.$it là khối chết đã gỡ") }
+        assertTrue("parseTaskIdOnDisplay" in builders, "bộ đo ô (SlotLiveProbe) còn dùng parseTaskIdOnDisplay")
     }
 }

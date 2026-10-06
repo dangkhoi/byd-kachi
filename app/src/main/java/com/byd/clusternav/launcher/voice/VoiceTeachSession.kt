@@ -81,6 +81,8 @@ internal class VoiceTeachSession(
                     label = LABEL,
                     onLevel = { rms -> ui.post { listener.onLevel(rms) } },
                     openTurn = true,
+                    // 2.93 VOICE-OPEN-TURN-DYNVOCAB — CÙNG phép ghép vế sau với lượt chính (lười, chỉ khi có vế sau).
+                    openVocab = { dynVocabOf(ctx, profiles(), appsByLabel(), places()) },
                 ) { }
                 if (cancelled.get()) { done(Result("", Error.CANCELLED)); return }
                 ui.post { listener.onState(State.DECODING) }

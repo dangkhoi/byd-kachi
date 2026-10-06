@@ -124,7 +124,7 @@ class VoicePreloadPolicyTest {
 
     /**
      * QA 2.87 [P2] — ghi chú Cài đặt *"Kachi bỏ qua bước nạp sẵn mô hình (%1$s)"* đã dịch đủ 5 tiếng nhưng `%1$s` là CÂU tiếng
-     * Việt từ `:core` ⇒ máy EN/ZH/TH/MS thấy nửa câu tiếng Việt ([ĐO máy ảo `l1/{en,zh,th,ms}/g09-p00.xml`]). Nay lý do là MÃ
+     * Việt từ `:core` ⇒ máy EN/ZH/TH/MS thấy nửa câu tiếng Việt ([ĐO máy ảo `{en,zh,th,ms} · g09-p00.xml` (bằng chứng phiên, ngoài repo)]). Nay lý do là MÃ
      * ([PreloadSkip]) dịch lúc hiện. Bản tiếng Việt PHẢI giữ đúng từng byte câu cũ (log xe đọc như trước) — chuỗi cũ chép tay
      * ở đây, không suy ra từ mã.
      */

@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import android.view.ViewGroup
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -113,9 +114,8 @@ class FitRulesWiringContractTest {
     @Test
     fun `ham moi co cho goi that va tep duoi 500 dong`() {
         val app = SourceRoots.moduleSourceRoots().filter { it.toString().contains("app") }
-        // Bỏ chú thích (như `SourceRoots.codeOf`): tên hàm nhắc trong KDoc không được tính là chỗ gọi.
-        fun strip(t: String) = t.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        // Bỏ chú thích bằng ĐÚNG bộ quét của `SourceRoots.codeOf`: tên hàm nhắc trong KDoc không được tính là chỗ gọi.
+        fun strip(t: String) = KotlinSource.stripComments(t)
         fun uses(token: String, except: String): Boolean = app.any { root ->
             java.nio.file.Files.walk(root).use { s ->
                 s.filter { it.toString().endsWith(".kt") && it.fileName.toString() != except }

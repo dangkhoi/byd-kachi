@@ -57,6 +57,7 @@ internal fun VoiceSession.runListen(my: Int) {
                     it, VoiceSession.MAX_LISTEN_MS, cancelled::get, keepPcm = true,
                     onLevel = { rms -> post { if (!stale(my)) overlay?.level(rms) } },
                     openTurn = true,
+                    openVocab = { sessionVocab() },   // 2.93 VOICE-OPEN-TURN-DYNVOCAB — lười, chỉ khi có vế sau
                 ) { partial ->
                     post { if (!stale(my)) overlay?.render(R.string.kachi_voice_listening, partial) }
                 }

@@ -7,15 +7,18 @@ package com.byd.clusternav.launcher
  *
  * ## Bệnh nó chữa
  * [ĐO máy ảo 2026-10-01, fixture `am-stack-list-emulator-2026-10-01-noshell-A-back.txt`] chưa có kênh shell thì
- * Kachi mở app khách thành cửa sổ nổi (`IntentAppLauncher.openInSlot`) nhưng KHÔNG đóng được nó khi gỡ khỏi ô
- * (`closeSlot` rỗng). Kênh lên sau đó thì `am stack remove <id>` đóng được ([FloatingOrphanPlan]) — nhưng phải biết
+ * Kachi (bản ≤ 2.92) mở app khách thành cửa sổ nổi (`IntentAppLauncher.openInSlot`) nhưng KHÔNG đóng được nó khi gỡ
+ * khỏi ô (`closeSlot` rỗng). 2.93 · READY-AT-HOME-OQ6 gỡ hẳn đường mở nổi ấy; 2.93 wave 2C · SLOT-DEAD-FREEFORM-REST gỡ
+ * luôn lượt GHI `markOpened` (+ hàm phụ `add`) — [ĐO grep 07/10] 0 chỗ gọi sản phẩm (main · vehicleTest). Sổ nay CHỈ ĐỌC +
+ * QUÊN: để DỌN cửa sổ nổi do bản cũ để lại sau nâng cấp ([FloatingOrphanSweep]). Kênh lên sau đó thì
+ * `am stack remove <id>` đóng được ([FloatingOrphanPlan]) — nhưng phải biết
  * cửa sổ nổi NÀO là của Kachi. Không được đoán "mọi cửa sổ nổi trừ…": cửa sổ nổi do người dùng tự mở (hoặc của
  * app khác) không phải việc của ta (CLAUDE.md §4 — allow-list, không phải "mọi thứ trừ…").
  *
- * ## Vì sao là dấu BỀN, ghi TRƯỚC khi mở (CLAUDE.md §5)
+ * ## Vì sao là dấu BỀN (CLAUDE.md §5) — bản ≤ 2.92 ghi TRƯỚC khi mở
  * Cửa sổ nổi là state ngoài hệ thống, sống dai hơn tiến trình Kachi. Cờ RAM chết theo tiến trình ⇒ lần sau không ai
- * biết cửa sổ đó do ai mở. Ghi đồng bộ (`commit()` ở [Store]) TRƯỚC lệnh mở ⇒ tiến trình chết ngay sau lệnh mở thì
- * dấu vẫn còn.
+ * biết cửa sổ đó do ai mở. Bản ≤ 2.92 ghi đồng bộ (`commit()` ở [Store]) TRƯỚC lệnh mở ⇒ tiến trình chết ngay sau lệnh
+ * mở thì dấu vẫn còn; dấu ấy sống qua nâng cấp, nên bản 2.93+ vẫn đọc được để dọn rồi [forget] dần.
  *
  * ## Theo XE, không theo hồ sơ
  * Cửa sổ nổi nằm trên màn của CHIẾC XE này. Dấu theo hồ sơ thì đổi hồ sơ — đúng lúc cần dọn — là mất dấu. Không đi
@@ -37,15 +40,6 @@ class FloatingWindowLedger(private val store: Store) {
 
     /** Các gói trong dấu, cũ trước mới sau. */
     fun opened(): List<String> = synchronized(LOCK) { decode(store.read()) }
-
-    /**
-     * Ghi [pkg] vào dấu (mới nhất ở cuối, vượt [CAP] thì bỏ gói cũ nhất). Tên gói sai ⇒ không ghi, trả `false`.
-     * Trả `false` cả khi lưu bền hỏng — chỗ gọi vẫn mở app (người dùng vừa yêu cầu) nhưng ghi log.
-     */
-    fun markOpened(pkg: String): Boolean {
-        if (!isValid(pkg)) return false
-        return synchronized(LOCK) { store.write(encode(add(decode(store.read()), pkg))) }
-    }
 
     /** Bỏ [pkgs] khỏi dấu. Không có gì để bỏ ⇒ không ghi. */
     fun forget(pkgs: Set<String>) {
@@ -79,8 +73,5 @@ class FloatingWindowLedger(private val store: Store) {
         }
 
         fun encode(pkgs: List<String>): String = pkgs.joinToString(SEP)
-
-        /** [pkg] lên cuối (mới nhất), bỏ bản cũ của chính nó, vượt [CAP] thì bỏ đầu (cũ nhất). */
-        fun add(cur: List<String>, pkg: String): List<String> = (cur.filterNot { it == pkg } + pkg).takeLast(CAP)
     }
 }

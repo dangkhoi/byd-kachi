@@ -70,6 +70,10 @@ internal object I18nPairs {
         ControlRegistry.ALL.filter { it.short != null || it.shortEn != null }.forEach {
             add(it.shortLabel, it.shortEn?.takeIf(String::isNotBlank) ?: it.labelEn, Kind.SHORT, "control:${it.id}.short", SHORT_CAPS)
         }
+        // 2.93 ACTIONMACRO-SHORT-LABEL — nhãn ngắn của gói lệnh: cùng bậc lùi + cùng trần với nút.
+        ActionMacros.ALL.filter { it.short != null || it.shortEn != null }.forEach {
+            add(it.shortLabel, it.shortEn?.takeIf(String::isNotBlank) ?: it.labelEn, Kind.SHORT, "macro:${it.id}.short", SHORT_CAPS)
+        }
         TyreCorner.values().forEach { add(it.shortLabel, it.shortLabelEn, Kind.SHORT, "TyreCorner.${it.name}.short", TYRE_CAPS) }
         ControlRegistry.ALL.filter { it.argsEn.size == it.args.size }.forEach { c ->
             c.args.indices.forEach { add(c.args[it], c.argsEn[it], Kind.ARGS, "control:${c.id}.args[$it]") }

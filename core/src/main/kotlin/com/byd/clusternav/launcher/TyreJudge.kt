@@ -19,7 +19,8 @@ package com.byd.clusternav.launcher
  * Mỗi hằng chép đúng một giá trị enum của stub (dẫn `file:line`). Không hằng nào là một con số áp suất.
  *
  * ## Luật (khớp luật ĐẦU TIÊN thì dừng)
- *  M1 C hợp lệ ⇒ C quyết MÀU (3 đỏ · 2 vàng · 1 xanh); chữ lý do lấy từ PS/LK nếu hợp lệ, không thì "báo đỏ"/"chú ý".
+ *  M1 C hợp lệ ⇒ C quyết MÀU (3 đỏ · 2 vàng · 1 xanh); chữ lý do (2.93 `TYRE-BURST-REASON`, mã báo CHỈ khi màu cụm CÙNG
+ *     CHIỀU): ĐỎ ⇒ 4092 "nổ lốp" › PS/LK › 4093 "bất thường" › "báo đỏ"; VÀNG ⇒ PS/LK › 4093 › "chú ý"; TRẮNG ⇒ không chữ.
  *  M2 SYS ∈ {1 tự kiểm, 4 bị che} ⇒ XÁM.
  *  M3 SYS ∈ {2 tín hiệu bất thường, 3 hỏng} ⇒ VÀNG "lỗi cảm biến".
  *  M4 LK = 1 hoặc PS = 2 hoặc PS = 1 ⇒ ĐỎ.
@@ -91,16 +92,20 @@ object TyreJudge {
      * Luật M cho MỘT bánh. Mọi tham số là mã THÔ đã đọc (hoặc `null` = chưa đọc / đọc hỏng). Mã ngoài tập hợp lệ —
      * kể cả bốn sentinel `-2147482648..-2147482645` lỡ lọt qua tầng đọc — bị coi như không có.
      */
-    fun judge(c: Int?, ps: Int?, lk: Int?, sys: Int?): TyreJudgement {
+    fun judge(c: Int?, ps: Int?, lk: Int?, sys: Int?, pc: Int? = null): TyreJudgement {
         val cv = c?.takeIf { it in COLOURS }
         val psv = ps?.takeIf { it in PRESSURE_STATES }
         val lkv = lk?.takeIf { it in LEAK_STATES }
         val sysv = sys?.takeIf { it in SYS_STATES }
-        // M1 — cụm đã phán theo đời xe của nó: MÀU là của cụm, chữ là của TPMS (nếu có).
+        // M1 — cụm đã phán theo đời xe của nó: MÀU là của cụm, chữ là của TPMS (nếu có). 2.93 `TYRE-BURST-REASON`: mã báo
+        // trong dải áp suất ([pc]) chỉ thành CHỮ khi màu cụm CÙNG CHIỀU với nó ([burstUnder]/[abnormalUnder] — KDoc ở đó).
+        // Không màu cụm ⇒ mã này không nói gì (M2–M7 như cũ; [ĐO source] L3 `TyreCardView.java:133-138` cũng "--" rồi dừng).
         when (cv) {
-            COLOUR_RED -> return cluster(reasonOf(psv, lkv) ?: TyreStatus.CAR_ALERT, TyreSeverity.ALERT)
-            COLOUR_YELLOW -> return cluster(reasonOf(psv, lkv) ?: TyreStatus.CAR_WARN, TyreSeverity.WARN)
-            COLOUR_WHITE -> return cluster(TyreStatus.OK, TyreSeverity.OK)
+            COLOUR_RED -> return cluster(
+                burstUnder(cv, pc) ?: reasonOf(psv, lkv) ?: abnormalUnder(cv, pc) ?: TyreStatus.CAR_ALERT, TyreSeverity.ALERT,
+            )
+            COLOUR_YELLOW -> return cluster(reasonOf(psv, lkv) ?: abnormalUnder(cv, pc) ?: TyreStatus.CAR_WARN, TyreSeverity.WARN)
+            COLOUR_WHITE -> return cluster(TyreStatus.OK, TyreSeverity.OK)   // cụm nói bình thường ⇒ không chữ báo (KDoc [burstUnder])
         }
         // M2 — hệ TPMS đang tự kiểm / bị che: số và mã lúc này chưa phải lời phán.
         if (sysv == SYS_SELF_CHECK || sysv == SYS_MASKED) return tyre(TyreStatus.UNKNOWN, TyreSeverity.NONE)
@@ -126,6 +131,33 @@ object TyreJudge {
     /** [v] nếu nó là mã LẠ của chính bảng [known] (không phải sentinel) — xét theo TỪNG bảng: `ps = 3` là lạ dù 3 có nghĩa ở bảng SYS. */
     private fun odd(v: Int?, known: Set<Int>): Int? =
         v?.takeIf { it !in known && !HalBindingTable.isSentinelRc(it.toLong()) }
+
+    /**
+     * 2.93 `TYRE-BURST-REASON` — chữ "nổ lốp" từ MÃ BÁO 4092 trong dải số áp suất ([pc] = lời đáp thô của getter áp suất,
+     * `CarStatus.Tyres.pcFl`…) — CHỈ khi cụm ĐỎ.
+     *
+     * ## Vì sao cổng là màu CÙNG CHIỀU, không phải "màu hợp lệ bất kỳ" như L3 (senior review 2.93 Pass 1 — chặn báo động giả)
+     *  - L3 đọc mã VÀ màu từ CÙNG kênh cụm (`INSTRUMENT_2IN1_*_TYRE_PRESSURE`/`_COLOR` — [ĐO source] `BydAutoHelper.java:25-54`)
+     *    nên `:140-158` không cần xét màu. Kachi đọc mã từ getter TPMS KHÁC (`BYDAutoTyreDevice.getTyrePressureValue`, stub
+     *    khai dải hợp lệ 0..4094 — jadx-tmap `:39-40`); hai getter cùng bộ mã mới chỉ là [SUY] 🚗. Một nguồn [SUY] không được
+     *    nói "nổ lốp" với người đang lái khi lời phán [ĐO] của cụm là TRẮNG (bình thường) — đó là báo động giả.
+     *  - Chính L3 ghép cặp màu ↔ mã: màu 3 ⇒ icon `card_tyre_pressure_tyre_burst_icon`, màu 2 ⇒ `…_abnormal_icon`
+     *    ([ĐO source] `TyreCardView.java:210-216`) ⇒ nổ lốp đi với ĐỎ, bất thường đi với VÀNG (hoặc ĐỎ).
+     *  - Cụm TRẮNG ⇒ 2.88 tin cụm hoàn toàn (không đọc cả PS/LK — `CarDataAdapter.readTyres` `ifNeed`) ⇒ mã cũng im lặng.
+     *  Mã vẫn vào dòng `TYRE raw … pc=` ở MỌI màu (bằng chứng 🚗), chỉ không thành chữ.
+     *
+     * ⚠ L3 trên xe vùng ROW (`VehicleUtils.isRow`: `ro.build.region = ROW` hoặc `ro.build.car.region = oversea`) KHÔNG in chữ
+     * "nổ lốp" mà in "--" + icon cảnh báo nổ lốp (`TyreCardView.java:140-150`); Kachi không có icon riêng ⇒ nói bằng chữ ở mọi vùng.
+     */
+    private fun burstUnder(cv: Int?, pc: Int?): TyreStatus? = TyreStatus.BURST.takeIf { pc == PRESSURE_BURST && cv == COLOUR_RED }
+
+    /**
+     * Chữ "bất thường" từ MÃ BÁO 4093 — khi cụm VÀNG hoặc ĐỎ (cổng cùng chiều: KDoc [burstUnder]). Đứng SAU chữ TPMS
+     * ([reasonOf] — mã trạng thái [ĐO source] của SDK, cụ thể hơn): "bất thường" chỉ thay chữ CHUNG "báo đỏ"/"chú ý", không
+     * che "xì nhanh"/"non" mà 2.92 đã nói đúng.
+     */
+    private fun abnormalUnder(cv: Int?, pc: Int?): TyreStatus? =
+        TyreStatus.ABNORMAL.takeIf { pc == PRESSURE_ABNORMAL && (cv == COLOUR_YELLOW || cv == COLOUR_RED) }
 
     /** Chữ lý do từ TPMS cho nhánh M1 — thứ tự = thứ nguy trước (rò nhanh ▸ non ▸ căng ▸ rò chậm). */
     private fun reasonOf(ps: Int?, lk: Int?): TyreStatus? = when {

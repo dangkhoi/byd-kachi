@@ -82,6 +82,27 @@ class TeachSampleTest {
         assertEquals("abc", (TeachSample.shape("abc") as TeachSample.Sample).accented)
     }
 
+    /**
+     * 2.93 VOICE-TEACH-CONTEXT — [ĐO máy ảo 06/10, spec voice-app-names §9 F3] câu CÓ Ô đổi chuỗi tên (`google đy` ·
+     * `cờ rôm`, trong khi câu *"mở …"* ra `google đ` · `cửa rôm`). Hộp dạy cho lượt [TeachSample.SLOT_TAKE] nói câu có ô;
+     * bài này khoá: (1) lượt ấy nằm TRONG số lượt bắt buộc (không ai lưu mà bỏ sót nó), (2) cắt câu có ô ra đúng chuỗi
+     * mô hình in cho TÊN ở ngữ cảnh ấy — khác chuỗi của câu *"mở …"* ⇒ thành một tên nữa.
+     */
+    @Test
+    fun `luot thu hai la cau co o va cat ra dung chuoi ten cua ngu canh ay`() {
+        assertEquals(TeachSample.Prompt.PLAIN, TeachSample.promptFor(1))
+        assertEquals(TeachSample.Prompt.SLOT, TeachSample.promptFor(TeachSample.SLOT_TAKE))
+        assertEquals(TeachSample.Prompt.PLAIN, TeachSample.promptFor(TeachSample.SLOT_TAKE + 1))
+        assertTrue(TeachSample.SLOT_TAKE in 1..TeachSample.MIN_SPOKEN_TAKES, "lượt câu có ô phải nằm trong số lượt BẮT BUỘC")
+        // Chuỗi THẬT máy ảo 06/10 (diagnostics voice-app-names §9 / spec §9 F3).
+        assertEquals("google đy", name("đưa google đy vào ô số hai"))
+        assertEquals("cờ rôm", name("đưa cờ rôm vào ô số hai"))
+        assertEquals("google đ", name("mở google đ"))
+        val plain = TeachSample.normalize("mở google đ") as TeachSample.Sample
+        val slot = TeachSample.normalize("đưa google đy vào ô số hai") as TeachSample.Sample
+        assertTrue(plain.norm != slot.norm, "hai ngữ cảnh ra hai chuỗi ⇒ hộp dạy giữ HAI mẫu (gộp theo norm)")
+    }
+
     @Test
     fun `chuoi qua dai bi loai du chi mot den bon tu`() {
         // Trần ký tự chặn chuỗi rác/khổng lồ đi vào qua ô gõ · tệp hồ sơ nhập · intent TEACH_APP (dữ liệu ngoài).

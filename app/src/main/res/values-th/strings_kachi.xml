@@ -16,6 +16,8 @@
         <item quantity="other">วางวิดเจ็ต %1$d รายการ</item>
     </plurals>
     <string name="kachi_drawer_cap_note">ช่องหนึ่งใส่ได้สูงสุด %1$d รายการ — นำออกหนึ่งรายการก่อนจึงจะเพิ่มได้</string>
+    <string name="kachi_drawer_fit_hint">ช่องนี้แสดงข้อความได้ชัดเพียง %1$d รายการ (เลือกไว้ %2$d) — ลดรายการหรือขยายช่องให้ใหญ่ขึ้น</string>
+    <string name="kachi_drawer_fit_none">ช่องนี้เล็กเกินไปจนอ่านข้อความไม่ได้ — ขยายช่องให้ใหญ่ขึ้น</string>
     <string name="kachi_layout_title">วาดเลย์เอาต์</string>
     <string name="kachi_layout_close">ปิด</string>
     <string name="kachi_layout_hint">ลากตรงกลางกรอบเพื่อย้าย · ลากมุมขวาล่างเพื่อปรับขนาด กรอบจะยึดตามเส้นตารางเสมอ</string>
@@ -260,7 +262,6 @@
     <string name="kachi_bridge_gemini_failed">ตั้งผู้ช่วยของระบบไม่ได้</string>
     <string name="kachi_bridge_cleaning_air">กำลังกรองอากาศ…</string>
     <string name="kachi_bridge_update_needs_screen">เปิดหน้าจอเพื่อตรวจหาอัปเดต</string>
-    <string name="kachi_bridge_screen_open_failed">เปิดหน้าจอไม่ได้</string>
     <string name="kachi_save">บันทึก</string>
     <string name="kachi_dp_value">%1$d dp</string>
     <string name="kachi_px_value">%1$d px</string>
@@ -648,6 +649,7 @@
     <string name="kachi_voice_pill_title">ปุ่มไมค์บนแถบสถานะ</string>
     <string name="kachi_voice_pill_sub">พูดคำสั่งได้อย่างรวดเร็ว อยู่ข้าง “แอป” และ “การตั้งค่า”</string>
     <string name="kachi_sc_place_failed">เปิด %1$s ในช่องไม่ได้</string>
+    <string name="kachi_slot_app_elsewhere">%1$s ออกจากช่องแล้ว แต่ยังเปิดอยู่นอกช่อง</string>
     <string name="kachi_drawer_title_shortcuts">เลือกแอปสำหรับทางลัด</string>
     <string name="kachi_drawer_hint_shortcuts">แตะเพื่อเพิ่มหรือนำแอปออก · แตะ “ใช้” เพื่อบันทึก · แตะพื้นหลังเพื่อปิด</string>
     <string name="kachi_sc_cap_note">ทางลัดมีได้สูงสุด %1$d แอป — นำออกหนึ่งแอปก่อนจึงจะเพิ่มได้</string>
@@ -670,7 +672,7 @@
     <string name="kachi_sc_refuse_cast">%1$s กำลังฉายบนหน้าปัด</string>
     <string name="kachi_sc_not_installed">ไม่ได้ติดตั้ง %1$s</string>
     <string name="kachi_sc_bg_failed">เริ่ม %1$s เบื้องหลังไม่ได้</string>
-    <string name="kachi_sc_bg_failed_why">เริ่ม %1$s เบื้องหลังไม่ได้ (%2$s)</string>
+    <string name="kachi_sc_bg_failed_why">[%2$s] เริ่ม %1$s เบื้องหลังไม่ได้</string>
     <string name="kachi_sc_full_card">กำลังแสดงเต็มหน้าจอ — แตะเพื่อนำกลับมาที่ช่อง</string>
     <string name="kachi_sc_full_failed">เปิด %1$s แบบเต็มหน้าจอไม่ได้</string>
     <string name="kachi_captest_title">ทดสอบฟังก์ชันรถทีละรายการ</string>
@@ -704,14 +706,8 @@
     <string name="kachi_captest_snapshot_done">บันทึกสแนปช็อตล็อกแล้ว: %s</string>
     <string name="kachi_captest_report_saved">บันทึกรายงานลงการ์ดหน่วยความจำแล้ว: %s</string>
     <string name="kachi_camera_cluster_title">แสดงกล้องบนหน้าปัด</string>
-    <string name="kachi_camera_pos_sub">ตำแหน่งกล้องบนหน้าจอ (มุมบน)</string>
-    <string name="kachi_camera_pos_left">ไฟเลี้ยวซ้ายแสดงที่</string>
-    <string name="kachi_camera_pos_right">ไฟเลี้ยวขวาแสดงที่</string>
     <string name="kachi_pos_tl">ซ้าย</string>
     <string name="kachi_pos_tr">ขวา</string>
-    <string name="kachi_camera_rot_sub">หมุนวิดีโอกล้องแต่ละข้าง (หากภาพตะแคงหรือกลับหัว)</string>
-    <string name="kachi_camera_rot_row_left">ไฟเลี้ยวซ้าย: หมุนวิดีโอ</string>
-    <string name="kachi_camera_rot_row_right">ไฟเลี้ยวขวา: หมุนวิดีโอ</string>
     <string name="kachi_camera_rot_none">ไม่หมุน</string>
     <string name="kachi_camera_rot_left">↺ 90° ทวนเข็ม</string>
     <string name="kachi_camera_rot_right">↻ 90° ตามเข็ม</string>
@@ -724,9 +720,6 @@
     <string name="kachi_camera_pano_row_right">ไฟเลี้ยวขวา: แถบภาพ</string>
     <string name="kachi_camera_pano_auto">อัตโนมัติ</string>
     <string name="kachi_camera_pano_none">ทั้งเฟรม</string>
-    <string name="kachi_camera_mirror_sub">กลับด้านวิดีโอกล้องแต่ละข้าง (หากภาพกลับซ้ายขวาเมื่อเทียบกับกระจกมองข้างจริง)</string>
-    <string name="kachi_camera_mirror_row_left">ไฟเลี้ยวซ้าย: กลับด้านวิดีโอ</string>
-    <string name="kachi_camera_mirror_row_right">ไฟเลี้ยวขวา: กลับด้านวิดีโอ</string>
     <string name="kachi_camera_mirror_row_sub">พลิกภาพกล้องในแนวนอนก่อนหมุน — ตัวรถควรอยู่ที่ขอบด้านใน เหมือนในกระจกจริง</string>
     <string name="kachi_camera_shape_sub">รูปทรงหน้าต่างกล้อง (เปลี่ยนเฉพาะกรอบ — หากต้องการเห็นภาพทั้งหมดที่ยังไม่แก้ความโค้ง ให้เลือก «กระจกโค้ง» ด้านล่าง)</string>
     <string name="kachi_camera_shape_row">รูปทรงหน้าต่างกล้อง</string>
@@ -820,7 +813,7 @@
     <string name="kachi_vn_row_title">สอนชื่อแอปให้ Kachi</string>
     <string name="kachi_vn_row_sub">สอนแล้ว: %1$d แอป · แอปชื่ออังกฤษหรืออ่านยากให้สอนที่นี่</string>
     <string name="kachi_vn_page_title">สอนชื่อแอป</string>
-    <string name="kachi_vn_page_note">เสียงเข้าใจเฉพาะภาษาเวียดนาม แอปชื่ออังกฤษหรืออ่านยาก: แตะแอปแล้วพูด “mở &lt;tên&gt;” 2–3 ครั้งเหมือนตอนขับ Kachi เก็บเฉพาะข้อความที่ได้ยินจากเสียงคุณ (ไม่เก็บเสียง) เปลี่ยนโมเดลฟังแล้วควรสอนใหม่</string>
+    <string name="kachi_vn_page_note">เสียงเข้าใจเฉพาะภาษาเวียดนาม แอปชื่ออังกฤษหรืออ่านยาก: แตะแอปแล้วพูดตามคำแนะนำของแต่ละครั้งเหมือนตอนขับ (ครั้งที่ 1 “mở &lt;tên&gt;” ครั้งที่ 2 พูดพร้อมช่อง) Kachi เก็บเฉพาะข้อความที่ได้ยินจากเสียงคุณ (ไม่เก็บเสียง) เปลี่ยนโมเดลฟังแล้วควรสอนใหม่</string>
     <string name="kachi_vn_search_hint">ค้นหาแอป…</string>
     <string name="kachi_vn_filter_all">ทั้งหมด %1$d</string>
     <string name="kachi_vn_filter_taught">สอนแล้ว %1$d</string>
@@ -837,7 +830,9 @@
     <string name="kachi_vn_readonly">ข้อมูลจาก Kachi รุ่นใหม่กว่า — ดูได้อย่างเดียว อัปเดต Kachi เพื่อแก้ไข</string>
     <string name="kachi_vn_pending">ตัวอย่างที่รอ: «%1$s» — เลือกแอป</string>
     <string name="kachi_vn_dialog_title">สอนชื่อ: %1$s</string>
-    <string name="kachi_vn_dialog_hint">แตะ 🎤 แล้วพูด “mở %1$s” เหมือนตอนขับ พูด 2–3 ครั้ง</string>
+    <string name="kachi_vn_dialog_hint">แตะ 🎤 แล้วพูดตามคำแนะนำของแต่ละครั้งเหมือนตอนขับ: ครั้งที่ 1 พูด “mở %1$s” ครั้งที่ 2 พูดพร้อมช่อง ต้องพูดอย่างน้อย 2 ครั้ง</string>
+    <string name="kachi_vn_take_plain">ครั้งที่ %1$d: พูด “mở %2$s”</string>
+    <string name="kachi_vn_take_slot">ครั้งที่ %1$d: พูดพร้อมช่อง — “đưa %2$s vào ô số hai” ประโยคที่มีช่องอาจทำให้ Kachi ได้ยินชื่อต่างไปเล็กน้อย Kachi จะบันทึกรูปแบบนั้นไว้ด้วย เพื่อให้เข้าใจคำสั่งที่มีช่อง</string>
     <string name="kachi_vn_speak">🎤 พูด</string>
     <string name="kachi_vn_type">พิมพ์ชื่อ…</string>
     <string name="kachi_vn_type_title">พิมพ์ชื่อเรียกสำหรับ %1$s</string>
@@ -874,6 +869,7 @@
     <string name="kachi_vn_r_near_command">สับสนกับคำสั่งรถได้ง่าย</string>
     <string name="kachi_vn_r_near_app">ใกล้กับชื่อแอป %1$s</string>
     <string name="kachi_vn_r_one_word">คำเดียวอาจชนกับคำพูดทั่วไป</string>
+    <string name="kachi_vn_r_homograph">เมื่อตัดเครื่องหมายวรรณยุกต์แล้วตรงกับคำในคำสั่ง “%1$s” — ประโยคที่มีคำนั้นอาจเปิดแอปนี้</string>
     <string name="kachi_vn_still_save">บันทึกต่อไป</string>
     <string name="kachi_vn_warn_title">ชื่อที่มีคำเตือน</string>
     <string name="kachi_vn_checking">กำลังตรวจ %1$d คำสั่ง…</string>
@@ -891,4 +887,30 @@
     <string name="kachi_vn_heard">ได้ยิน: «%1$s»</string>
     <string name="kachi_vn_heard_bad">«%1$s» — ชื่อต้องมี 1–4 คำ อย่างน้อย 3 ตัวอักษร</string>
     <string name="kachi_vn_named_reason">ชื่อ «%1$s»: %2$s</string>
+    <!-- 2.93 · CAMERA-ON-DEMAND + CAMERA-PER-CAM-CONFIG (spec docs/specs/kachi-293-cam.html) -->
+    <string name="kachi_camera_rear">กล้องหลัง</string>
+    <string name="kachi_camera_front">กล้องหน้า</string>
+    <string name="kachi_cam_chip_rear">หลัง</string>
+    <string name="kachi_cam_chip_left">ซ้าย</string>
+    <string name="kachi_cam_chip_right">ขวา</string>
+    <string name="kachi_cam_chip_front">หน้า</string>
+    <string name="kachi_camera_percam_sub">กล้องแต่ละตัว — ตำแหน่งที่แสดง ขนาด รูปแบบภาพ (หลัง · ซ้าย · ขวา · หน้า)</string>
+    <string name="kachi_camera_percam_note">ใช้กับกล้องนั้นทั้งตอนเปิดไฟเลี้ยวและตอนเปิดตามสั่ง เปิด/ปิด: ปุ่มกล้องหลัง/ซ้าย/ขวา/หน้าบนแถบปุ่มรถ ปุ่มบนพวงมาลัย (ปุ่มพวงมาลัย › กล้องตามสั่ง) หรือสั่งด้วยเสียง (เปิด/ปิดกล้องตัวนั้น) แสดงทีละหนึ่งกล้อง ไม่ปิดเองอัตโนมัติ</string>
+    <string name="kachi_camera_percam_row">กล้อง</string>
+    <string name="kachi_camera_preview_on">▶ ดูตัวอย่างกล้องนี้</string>
+    <string name="kachi_camera_preview_off">■ กำลังแสดง — แตะเพื่อปิด</string>
+    <string name="kachi_camera_corner_row">มุมเริ่มต้น</string>
+    <string name="kachi_camera_place_hint">ลากกรอบเพื่อวาง</string>
+    <string name="kachi_camera_place_reset">กลับไปที่มุมเริ่มต้น</string>
+    <string name="kachi_camera_size_row">ขนาด</string>
+    <string name="kachi_camera_size_desc">ขนาดกล้อง: %1$s</string>
+    <string name="kachi_camera_follow">ตามค่าทั่วไป</string>
+    <string name="kachi_camera_shape_own_row">รูปทรงหน้าต่าง</string>
+    <string name="kachi_camera_projection_own_row">รูปแบบภาพ</string>
+    <string name="kachi_camera_rot_own_row">หมุน</string>
+    <string name="kachi_camera_mirror_own_title">กลับด้านวิดีโอ</string>
+    <string name="kachi_keys_kind_camera">กล้องตามสั่ง</string>
+    <string name="kachi_keys_pick_camera">ขั้นที่ 3 — กล้องตัวไหน</string>
+    <string name="kachi_key_cam_toggle">%1$s — เปิด/ปิด</string>
+    <string name="kachi_key_cam_off">ปิดกล้อง</string>
 </resources>

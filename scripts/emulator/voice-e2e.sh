@@ -23,6 +23,7 @@ WAVDIR="/tmp/kachi-voice-wav"
 MODELDIR=""
 OUT="/tmp/kachi-voice-e2e"
 PKG="com.byd.launcher"
+# shellcheck disable=SC2034  # đọc trong voice-common.sh (start_home)
 HOME_ACT="$PKG/com.byd.clusternav.launcher.KachiHomeActivity"
 MODEL_ID="zipformer-vi-2025-04-20"
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
@@ -48,45 +49,13 @@ mkdir -p "$OUT"
 chmod 700 "$OUT" 2>/dev/null || true
 T1_TSV="$OUT/t1-results.tsv"
 T2_TSV="$OUT/t2-results.tsv"
-adbs() { "$ADB" -s "$SERIAL" "$@" </dev/null; }
-# Biến thể DUY NHẤT được phép đọc stdin (ghi tệp qua `run-as sh -c cat`).
-adbs_stdin() { "$ADB" -s "$SERIAL" "$@"; }
 
-# ── Tiện ích ────────────────────────────────────────────────────────────────────────────────────
-die() { echo "✗ $*" >&2; exit 1; }
-note() { echo "── $*"; }
-
-# Bọc một chuỗi cho shell của **THIẾT BỊ**.
-#
-# [SOÁT 2026-09-15 · P2] Cột `text` của bộ ca và `$PROFILE` (tên hồ sơ **do người dùng đặt trên máy**, đọc về
-# qua `pick_profile`) đi thẳng vào `adbs shell "am broadcast … $*"`. Bọc tay bằng một cặp nháy đơn là đủ cho
-# khoảng trắng, nhưng MỘT dấu `'` trong tên hồ sơ thì thoát ra khỏi cặp ấy ⇒ chạy lệnh tuỳ ý trên thiết bị.
-shq() {
-  local s=$1 q="'"
-  s=${s//$q/$q\\$q$q}
-  printf '%s' "$q$s$q"
-}
-
-# ═══ CHỐT: KHÔNG chạy bộ ca này trên XE THẬT ═════════════════════════════════════════════════════
-#
-# [SOÁT 2026-09-15 · P0] Bộ ca `voice-cases.tsv` có những ca **thi hành thật, không hỏi lại**
-# (`auto_confirm=1`): t109 *"mở cốp"*, t111 gói *"mở cốp + đèn đọc"*, các ca mở app / dẫn đường / đổi hồ sơ.
-# Trên máy ảo chúng vô hại (không có HAL nên `Control` chỉ trả *"xe không nhận lệnh"* — xem đầu tệp). Trên xe
-# thì đúng những ca ấy **mở khoá cửa một chiếc xe đang đỗ**, không một cú xác nhận nào — đúng thứ CLAUDE.md §4
-# cấm: một lệnh đổi state hệ thống mà không nêu tường minh nó nhắm cái gì.
-#
-# Cùng khuôn `require_emulator` của `scripts/emulator/e2e-smoke.sh` (*"refusing to touch a real head unit"*).
-require_emulator() {
-  case "$SERIAL" in
-    emulator-*) ;;
-    *)
-      [ "${ALLOW_NON_EMULATOR:-}" = "YES" ] || die \
-        "«${SERIAL}» không phải máy ảo — từ chối chạy bộ ca có lệnh thi hành thật (t109 mở cốp…) trên đầu xe.
-   Đặt ALLOW_NON_EMULATOR=YES nếu thật sự có chủ ý, và đọc lại voice-cases.tsv cột auto trước đã."
-      echo "⚠ ALLOW_NON_EMULATOR=YES — đang chạy trên thiết bị THẬT «${SERIAL}»"
-      ;;
-  esac
-}
+# ── Tiện ích dùng chung (2.93 DEBT-VOICE-COMMON-SH — pure move) ──────────────────────────────────────────────────
+# adbs · adbs_stdin · die · note · shq · require_emulator · bridge · state_json · start_home · detect_data_mode ·
+# put_app_file · enable_test_mode · require_voice_vi: MỘT bản ở voice-common.sh (lý do + lịch sử soát đi cùng hàm ở đó).
+# Tệp này chỉ còn phần RIÊNG của bộ ca T1/T2: dọn (cleanup) · trả hồ sơ · prefs của từng ca · poll `resumed:` · chạy T1/T2.
+# shellcheck source=voice-common.sh
+. "$HERE/voice-common.sh"
 
 # ═══ DỌN: đóng lại cửa cầu kiểm thử ══════════════════════════════════════════════════════════════
 #
@@ -120,15 +89,6 @@ cleanup() {
   return $rc
 }
 trap cleanup EXIT
-
-# Bắn một lệnh cầu kiểm thử; in JSON thuần ra stdout (rỗng nếu không lấy được).
-bridge() {
-  local raw
-  raw="$(adbs shell "am broadcast -a $PKG.TEST -p $PKG $*" 2>&1)"
-  printf '%s' "$raw" | python3 "$HERE/voice_e2e_json.py" extract
-}
-
-state_json() { bridge "--es cmd state"; }
 
 # ═══ restore_profile — trả hồ sơ đang dùng về lúc bắt đầu lượt chạy ═════════════════════════════════════
 #
@@ -212,7 +172,7 @@ reset_case_prefs() {
 }
 
 # ── 0. Máy ảo + gói ─────────────────────────────────────────────────────────────────────────────
-require_emulator
+require_emulator "bộ ca có lệnh thi hành thật (t109 mở cốp…) trên đầu xe — đọc lại voice-cases.tsv cột auto trước đã"
 adbs get-state >/dev/null 2>&1 || die "không thấy thiết bị $SERIAL"
 if [ -n "$APK" ]; then
   note "cài $APK"
@@ -220,63 +180,9 @@ if [ -n "$APK" ]; then
 fi
 adbs shell pm path "$PKG" >/dev/null 2>&1 || die "$PKG chưa cài (truyền --apk)"
 
-# ── Cách ghi vào vùng dữ liệu của app: `run-as` (bản debuggable) HOẶC root (máy ảo eng/userdebug) ──
-# Hai đường vì hai ca thật: bản `vehicleTest` debuggable ⇒ `run-as` chạy trên CẢ xe lẫn máy ảo; bản `release`
-# đang cài sẵn trên máy ảo thì KHÔNG debuggable, nhưng máy ảo cho `adb root` ⇒ vẫn đo được mà không phải cài lại.
-# Trên XE THẬT chỉ có đường `run-as` (không root) — đó là lý do không bỏ nhánh nào.
-DATA="/data/data/$PKG"
-MODE=""
-if adbs shell run-as "$PKG" true 2>/dev/null; then
-  MODE="runas"
-elif adbs root >/dev/null 2>&1 && sleep 2 && [ "$(adbs shell id -u | tr -d '\r')" = "0" ]; then
-  MODE="root"
-  APPUID="$(adbs shell dumpsys package "$PKG" | grep -m1 userId= | tr -d '\r' | sed 's/.*userId=\([0-9]*\).*/\1/')"
-  [ -n "$APPUID" ] || die "không đọc được uid của $PKG"
-else
-  die "bản đang cài KHÔNG debuggable và máy không cho adb root ⇒ không bật được chế độ kiểm thử. Cài bản vehicleTest."
-fi
+# Đường ghi dữ liệu app (`run-as` | root) — `detect_data_mode`; bật chế độ kiểm thử — `enable_test_mode` (voice-common.sh).
+detect_data_mode
 note "đường ghi dữ liệu app: $MODE"
-
-# Chép một tệp local vào <data>/<đích tương đối> với đúng chủ sở hữu + nhãn SELinux.
-put_app_file() {
-  local src="$1" rel="$2" dir
-  dir="$(dirname "$rel")"
-  if [ "$MODE" = "runas" ]; then
-    adbs shell "run-as $PKG mkdir -p $dir"
-    adbs_stdin shell "run-as $PKG sh -c 'cat > $rel'" < "$src"
-  else
-    adbs shell "mkdir -p $DATA/$dir"
-    adbs push "$src" "/data/local/tmp/.kachi-put" >/dev/null || return 1
-    adbs shell "cp /data/local/tmp/.kachi-put $DATA/$rel && rm -f /data/local/tmp/.kachi-put"
-    adbs shell "chown $APPUID:$APPUID $DATA/$rel; chmod 660 $DATA/$rel; restorecon -R $DATA/$dir" >/dev/null 2>&1
-  fi
-}
-
-# ── 1. Bật chế độ kiểm thử (TestBridgeStore: prefs `kachi_test_bridge`, khoá `test_bridge_until`) ──
-# Giá trị = "<boot_id>:<elapsedRealtime lúc bật + 60 phút>" (TestBridgeWindow.encode). Đọc boot_id + uptime
-# THẬT trên máy rồi dựng lại đúng khuôn đó; trừ bớt 2 phút để `left > WINDOW_MS` không bao giờ đúng (bị coi là
-# giá trị sửa tay ⇒ cửa đóng). KHÔNG có đường bật bằng broadcast — có chủ ý, xem KDoc TestBridgeStore.
-enable_test_mode() {
-  local boot up until_ms tmp
-  boot="$(adbs shell cat /proc/sys/kernel/random/boot_id | tr -d '\r\n')"
-  up="$(adbs shell cat /proc/uptime | tr -d '\r' | cut -d' ' -f1)"
-  until_ms="$(python3 -c "import sys;print(int(float(sys.argv[1])*1000)+3600000-120000)" "$up")"
-  tmp="$OUT/kachi_test_bridge.xml"
-  cat > "$tmp" <<XML
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="test_bridge_until">$boot:$until_ms</string>
-</map>
-XML
-  # force-stop TRƯỚC khi ghi: SharedPreferences giữ bản trong RAM, ghi đè tệp dưới chân một tiến trình đang chạy
-  # thì bản RAM thắng (và có thể ghi đè ngược lại lúc app thoát) — tức công tắc "đã bật" mà cầu vẫn báo tắt.
-  adbs shell am force-stop "$PKG"
-  put_app_file "$tmp" "shared_prefs/kachi_test_bridge.xml" || die "ghi prefs hỏng"
-  adbs shell am start -n "$HOME_ACT" >/dev/null
-  sleep 4
-}
-
-start_home() { adbs shell am start -n "$HOME_ACT" >/dev/null; sleep 3; }
 
 # ═══ Tác dụng phụ `resumed:<pkg>` — đọc `mResumedActivity` bằng POLL, không đọc một lần ═══════════
 #
@@ -332,6 +238,7 @@ settle_before_side() {
   esac
 }
 
+# ── 1. Bật chế độ kiểm thử — `enable_test_mode` (voice-common.sh; cửa ~58 phút, `cleanup` đóng lại) ────────────────
 note "bật chế độ kiểm thử"
 TEST_MODE_ON=1
 enable_test_mode
@@ -379,41 +286,9 @@ if [ "$ONLY" = "all" ] || [ "$ONLY" = "wav" ]; then ensure_model && MODEL_OK=1; 
 PROFILE="$(state_json | python3 "$HERE/voice_e2e_json.py" pick_profile)"
 note "hồ sơ dùng cho ca đổi hồ sơ: ${PROFILE:-<không có>}"
 
-# ═══ Tiếng GIỌNG NÓI phải là tiếng Việt — kiểm TRƯỚC khi so preview (soát 2.87 · voice P3) ══════════════════
-#
-# Cột 5 của voice-cases.tsv là chuỗi preview TIẾNG VIỆT, còn `previewOf` (KachiTestBridge) dựng preview theo tiếng
-# GIỌNG NÓI (`Strings.current.voice`: English ⇒ English, mọi tiếng khác — kể cả 简体中文/ไทย/Melayu — ⇒ tiếng Việt;
-# spec kachi-i18n-zh-th-ms R6). Kachi để English, hoặc "Theo xe" (AUTO) trên máy ảo locale en-US mặc định ⇒ MỌI ca
-# FAIL "preview thiếu …" hàng loạt, không một dòng nào nói gốc là ngôn ngữ. Cầu KHÔNG có lệnh đổi ngôn ngữ (thêm là
-# quyết định của owner) và harness KHÔNG tự ghi prefs ngôn ngữ ⇒ KIỂM rồi DỪNG với lời nhắc đúng địa chỉ.
-# Ngôn ngữ theo HỒ SƠ ⇒ kiểm lại sau mỗi ca đổi hồ sơ (`profile:*`) — hồ sơ kia có thể đang dùng English.
-require_voice_vi() {
-  local why=$1 json vl mode loc prof where
-  json="$(state_json)"
-  vl="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.voice_lang)"
-  mode="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get look.lang)"
-  # [soát 2.87 vòng 2 · P3] Nêu ĐÚNG TÊN hồ sơ đang mang ngôn ngữ sai (đọc cùng bản state). Sau ca đổi hồ sơ, `cleanup`
-  # (trap EXIT của `die`) trả máy về hồ sơ lúc bắt đầu ⇒ câu "hồ sơ đang dùng" chỉ QA sửa nhầm hồ sơ (đang đúng tiếng Việt).
-  prof="$(printf '%s' "$json" | python3 "$HERE/voice_e2e_json.py" get profile.active)"
-  where="cho hồ sơ «${prof:-?}»"
-  if [ -n "$prof" ] && [ -n "$ORIG_PROFILE" ] && [ "$prof" != "$ORIG_PROFILE" ]; then
-    where="$where (KHÔNG phải hồ sơ lúc bắt đầu «${ORIG_PROFILE}» — lúc dọn, harness đã trả máy về «${ORIG_PROFILE}»; mở hồ sơ «${prof}» để sửa)"
-  fi
-  if [ -z "$vl" ]; then
-    # APK cũ chưa phơi `look.voice_lang` ⇒ suy như LangMode.resolve: AUTO = locale máy vi* ⇒ VI, còn lại ⇒ EN.
-    case "$mode" in
-      EN) vl="en";;
-      AUTO)
-        loc="$(adbs shell getprop persist.sys.locale | tr -d '\r')"
-        [ -n "$loc" ] || loc="$(adbs shell getprop ro.product.locale | tr -d '\r')"
-        case "$loc" in vi*) vl="vi";; *) vl="en";; esac;;
-      VI|ZH|TH|MS) vl="vi";;
-      *) die "$why: không đọc được ngôn ngữ của Kachi (look.lang='${mode}') ${where} — xem reply: $(printf '%s' "$json" | head -c 300)";;
-    esac
-  fi
-  [ "$vl" = "vi" ] || die "$why: Kachi đang nói tiếng '$vl' (look.lang=${mode:-?}) nhưng voice-cases.tsv mong preview TIẾNG VIỆT. Đặt Cài đặt › Hiển thị › Ngôn ngữ = Tiếng Việt (hoặc 简体中文/ไทย/Melayu — giọng nói vẫn là tiếng Việt) ${where} rồi chạy lại."
-  note "tiếng giọng nói: $vl (look.lang=${mode:-?}) — $why"
-}
+# ═══ Tiếng GIỌNG NÓI phải là tiếng Việt — `require_voice_vi` (voice-common.sh; soát 2.87 · voice P3) ══════════════
+# Cột 5 của voice-cases.tsv là chuỗi preview TIẾNG VIỆT ⇒ kiểm trước lượt chạy, và lại sau mỗi ca đổi hồ sơ (`profile:*`)
+# — ngôn ngữ theo HỒ SƠ, hồ sơ kia có thể đang dùng English.
 
 # ── 3. T1 ───────────────────────────────────────────────────────────────────────────────────────
 run_t1() {

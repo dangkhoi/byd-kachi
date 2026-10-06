@@ -129,8 +129,12 @@ object WorkspaceRenderPlanner {
      * ⚠ Ca này **KHÔNG quan sát được off-car**: không có xe thì trạng thái luôn rỗng nên "trạng thái đổi" luôn là
      * `false`. Phép đo off-car của tôi từng kết luận sai rằng chuyện này không xảy ra — nó chỉ chứng minh được
      * *off-car không xảy ra*.
+     *
+     * 2.93 wave 2B · CAMERA-WIDGET-TILE — việc của CHÍNH launcher ([CapabilityKind.LAUNCHER], vd ô camera theo yêu cầu) cũng
+     * tự lo: không đọc gì từ xe (`CarDataDemand.expand` đã bỏ qua chúng), trạng thái sáng nghe controller camera. Dựng lại
+     * mỗi nhịp 1 Hz là tháo/gắn ô giữa cú chạm ⇒ mất cú bấm (đúng họ lỗi [SOÁT P1-1] ở trên) + gỡ/gắn lại người nghe.
      */
-    private fun isSelfDriven(id: String): Boolean = id in SELF_DRIVEN
+    private fun isSelfDriven(id: String): Boolean = id in SELF_DRIVEN || CapabilityCatalog.kindOf(id) == CapabilityKind.LAUNCHER
 
     /**
      * Mã này **tự lo nội dung** ⇒ tầng vẽ KHÔNG được thay view của nó khi làm mới số liệu (thay là đặt lại trạng thái

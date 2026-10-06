@@ -37,30 +37,25 @@ class LauncherWindowingGuardTest {
 
     @Test
     fun `FreeformLaunch defaults to and only ever names the main display 0`() {
+        // 2.93 · SLOT-DEAD-OPENSLOT: `launchCmd` (freeform open on display 0) removed — 0 product call sites. The remaining
+        // display-0 builder is the fullscreen return.
         assertEquals(0, FreeformLaunch.MAIN_DISPLAY)
-        assertTrue(FreeformLaunch.launchCmd("com.foo/.Main").contains("--display 0"))
         assertTrue(FreeformLaunch.fullscreenCmd("com.foo/.Main").contains("--display 0"))
-        assertFalse(displayGe1.containsMatchIn(FreeformLaunch.launchCmd("com.foo/.Main")))
         assertFalse(displayGe1.containsMatchIn(FreeformLaunch.fullscreenCmd("com.foo/.Main")))
     }
 
     @Test
     fun `ShellAppLauncher never emits a command targeting display greater than or equal to 1`() {
         val calls = mutableListOf<String>()
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.foo/.Main"
         val sh: (String) -> String = { c ->
             calls += c
-            when {
-                c.startsWith("cmd package resolve-activity") -> "priority=0\ncom.foo/.Main"
-                c == "am stack list" -> stack
-                else -> ""
-            }
+            if (c.startsWith("cmd package resolve-activity")) "priority=0\ncom.foo/.Main" else ""
         }
-        val launcher = ShellAppLauncher(sh, sleep = {})
-        val bounds = SlotRect(index = 0, left = 0, top = 90, right = 1920, bottom = 630)
-        launcher.openInSlot("com.foo", bounds)
-        launcher.moveToSlot("com.foo", bounds)
+        // 2.93 · SLOT-DEAD-OPENSLOT: openInSlot/moveToSlot removed; 2.93 wave 2C · SLOT-DEAD-FREEFORM-REST: isFreeformAvailable
+        // removed — `closeSlot` is the ONLY thing the adapter can still emit, so it is fully covered here.
+        val launcher = ShellAppLauncher(sh)
         launcher.closeSlot("com.foo")
+        assertTrue(calls.isNotEmpty(), "closeSlot must have emitted its sequence — an empty scan proves nothing")
         val leaks = calls.filter { displayGe1.containsMatchIn(it) }
         assertTrue(leaks.isEmpty(), "launcher adapter leaked a cluster/secondary-display command: $leaks")
     }

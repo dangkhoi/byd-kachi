@@ -16,6 +16,8 @@ import com.byd.clusternav.launcher.voice.VoiceRiskTable
 import com.byd.clusternav.launcher.voice.SlotPlaceOutcome
 import com.byd.clusternav.launcher.voice.VoiceSlotPlace
 import com.byd.clusternav.launcher.voice.VoiceWriteLane
+import com.byd.clusternav.launcher.voice.VoiceCameraTurn
+import com.byd.clusternav.launcher.camera.CameraDemand
 
 /**
  * ═══ V1 · TỪ Ý ĐỊNH TỚI **ĐƯỜNG ĐÃ CÓ** ═══════════════════════════════════════════════════════════════════════
@@ -161,6 +163,8 @@ class VoiceDispatcher(
      * ngữ pháp (`Strings.current` ở đó luôn là VI mặc định).
      */
     private val lang: Lang = voiceLangOf(Strings.current),
+    /** 2.93 — lệnh camera theo yêu cầu, gọi lại ĐÚNG một lần với điều đã xảy ra (wave 2B · `VoiceCameraTurn`). Mặc định = không tới được. */
+    private val onCamera: (CameraDemand.Op, (CameraDemand.Outcome) -> Unit) -> Unit = { _, done -> done(CameraDemand.Outcome.UNREACHABLE) },
 ) {
 
     /** Xem tham số `placeInSlot`. Đây là chỗ DUY NHẤT của lớp này đọc bố cục từ [state]. */
@@ -259,17 +263,20 @@ class VoiceDispatcher(
         if (from >= intents.size) { settled(); done(); return }
         val intent = intents[from]
         val next = { runFrom(intents, from + 1, labels, done, settled) }
+        // 2.93 wave 2B — chạy lại CHÍNH vế này thành ý định khác qua ĐÚNG cổng dưới đây (hỏi lại + làn ghi): *"tắt camera"* trần
+        // mà không có gì để tắt ⇒ nút Camera 360 như ≤ 2.92 (`VoiceCameraTurn`). Vế thay thế tự gọi tiếp.
+        val rerun = { sub: VoiceIntent -> runFrom(intents.toMutableList().also { it[from] = sub }, from, labels, done, settled) }
         if (VoiceRiskTable.of(intent, confirmIds()) == VoiceRisk.CONFIRM) {
             val remaining = intents.size - (from + 1)
             confirm(
                 VoiceReply.confirmQuestion(intent, lang),
-                { run(intent, labels, next) },
+                { run(intent, labels, next, rerun) },
                 { say(VoiceReply.cancelled(intent, remaining, lang)); done() },
             )
             settled()
             return
         }
-        run(intent, labels, next)
+        run(intent, labels, next, rerun)
     }
 
     /** Phân tích **không thi hành** — để màn thử hiện "đã hiểu là…" trước khi người dùng bấm chạy. */
@@ -298,17 +305,18 @@ class VoiceDispatcher(
     /**
      * Thi hành MỘT vế rồi gọi [next] **đúng một lần** khi vế ấy đã ghi xong (VOICE-WRITE-LANE).
      *
-     * Chỉ hai nhánh ghi HAL **có thể** bất đồng bộ giữ [next] lại: nút xe ([VoiceControlDispatch] — nhánh rời-AUTO)
-     * và gói lệnh ([runMacro] — cả gói chạy nền). Mọi nhánh còn lại không ghi HAL (mở app · nhạc · hồ sơ · đọc số
+     * Ba nhánh **có thể** bất đồng bộ giữ [next] lại: nút xe ([VoiceControlDispatch] — nhánh rời-AUTO) · gói lệnh ([runMacro]
+     * — cả gói chạy nền) · camera theo yêu cầu (2.93 — chờ KẾT QUẢ controller, `VoiceCameraTurn`; [rerun] = vế thay thế, tự gọi
+     * tiếp). Mọi nhánh còn lại không ghi HAL (mở app · nhạc · hồ sơ · đọc số
      * · bố cục…) nên gọi [next] ngay sau khi làm — y nguyên thứ tự 2.75. Đường dẫn đường có tra toạ độ + hộp hỏi
      * ([VoiceTargetDispatch.runNav]) cũng vậy: nó không ghi gì xuống xe, và bắt vế sau chờ một lượt mạng là đổi
      * hành vi đã chạy hiện trường ngoài phạm vi phép đo (CLAUDE.md §6).
      */
-    private fun run(intent: VoiceIntent, labels: Map<String, String>, next: () -> Unit) {
+    private fun run(intent: VoiceIntent, labels: Map<String, String>, next: () -> Unit, rerun: (VoiceIntent) -> Unit) {
         when (intent) {
             is VoiceIntent.Control -> { runControl(intent, next); return }
             is VoiceIntent.Macro -> { runMacro(intent, next); return }
-            is VoiceIntent.Launcher -> runLauncher(intent)
+            is VoiceIntent.Launcher -> { runLauncher(intent, next, rerun); return }
             is VoiceIntent.Profile -> { onSwitchProfile(intent.name); say(VoiceReply.done(intent, lang)) }
             is VoiceIntent.Read -> runRead(intent)
             is VoiceIntent.Nav -> targets.runNav(intent, labels)
@@ -377,15 +385,17 @@ class VoiceDispatcher(
         }
     }
 
-    private fun runLauncher(i: VoiceIntent.Launcher) {
+    private fun runLauncher(i: VoiceIntent.Launcher, next: () -> Unit, rerun: (VoiceIntent) -> Unit) {
         when (i.id) {
             LauncherActions.APPS -> openAppList()
             LauncherActions.SETTINGS -> openSettings()
             LauncherActions.VOICE -> onListen()
-            // Mã launcher tương lai mà bản này chưa biết: im lặng mở nhầm một màn còn tệ hơn nói thẳng là chưa có.
-            else -> { say(VoiceReply.failed(i, lang = lang)); return }
+            // 2.93 — camera theo yêu cầu (mã lạ ⇒ *"chưa làm được"*): giữ `next` tới khi controller báo điều ĐÃ xảy ra; câu
+            // trả lời + đường Camera 360 khi không có gì để tắt nằm ở `:core` (wave 2B · D1 — `VoiceCameraTurn`).
+            else -> { VoiceCameraTurn.run(i, lang, onCamera, onUi, say, next, rerun); return }
         }
         say(VoiceReply.done(i, lang))
+        next()
     }
 
     private fun runRead(i: VoiceIntent.Read) {

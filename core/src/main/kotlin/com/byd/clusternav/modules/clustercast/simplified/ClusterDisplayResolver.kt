@@ -32,7 +32,7 @@ object ClusterDisplayResolver {
      */
     const val DETECT_CMD: String = "dumpsys display | grep -iE 'Display [0-9]+:|fission|xdja|virtual:'"
 
-    /** Số lần dò sau khi mở projection (đường cũ 16×500 ms; giữ tổng < castTimeout 15 s − 5 s mở = 6 s). */
+    /** Số lần dò sau khi mở projection (đường cũ 16×500 ms; tổng ngủ 6 s — hạn lượt mở: `BoundedCastExecutor.OPEN_TIMEOUT_MS`). */
     const val AWAIT_ATTEMPTS: Int = 12
     /** Nghỉ giữa hai lần dò. */
     const val AWAIT_SLEEP_MS: Long = 500L

@@ -33,11 +33,19 @@ enum class TyreSeverity {
 enum class TyreStatus(val severity: TyreSeverity) {
     /** Chưa phán được ⇒ không chữ, không bịa (R7 gói 2). */ UNKNOWN(TyreSeverity.NONE),
     /** Xe nói bình thường. */ OK(TyreSeverity.OK),
+    /**
+     * 2.93 `TYRE-BURST-REASON` — getter áp suất trả MÃ 4092 ([TyreJudge.PRESSURE_BURST]): NỔ LỐP. Chỉ đặt ở nhánh M1 khi cụm
+     * ĐỎ (cổng màu CÙNG CHIỀU — senior review 2.93 Pass 1, KDoc `TyreJudge.burstUnder`: cụm trắng/vàng ⇒ không bao giờ "nổ
+     * lốp") ⇒ màu luôn là màu cụm; mức mặc định chỉ để xếp thứ tự câu kết luận.
+     */
+    BURST(TyreSeverity.ALERT),
     /** Rò khí NHANH. */ LEAK_FAST(TyreSeverity.ALERT),
     /** Non — TPMS: dưới khoảng bình thường của xe. */ UNDER(TyreSeverity.ALERT),
     /** Căng — TPMS: trên khoảng bình thường của xe. */ OVER(TyreSeverity.ALERT),
     /** Cụm báo ĐỎ mà TPMS không nói vì sao. */ CAR_ALERT(TyreSeverity.ALERT),
     /** Rò khí CHẬM. */ LEAK_SLOW(TyreSeverity.WARN),
+    /** 2.93 — getter áp suất trả MÃ 4093 ([TyreJudge.PRESSURE_ABNORMAL]): áp suất BẤT THƯỜNG. Nhánh M1 khi cụm VÀNG/ĐỎ, sau chữ TPMS. */
+    ABNORMAL(TyreSeverity.WARN),
     /** Hệ TPMS báo tín hiệu bất thường / hỏng. */ SENSOR(TyreSeverity.WARN),
     /** Cụm báo VÀNG mà TPMS không nói vì sao. */ CAR_WARN(TyreSeverity.WARN),
     /** Mã lạ (không phải sentinel) — bánh vẫn XÁM; chữ cụ thể "mã N" ở [TyreReading.reason]. */ CODE(TyreSeverity.NONE);
@@ -49,6 +57,8 @@ enum class TyreStatus(val severity: TyreSeverity) {
      */
     val reason: String?
         get() = when (this) {
+            BURST -> Strings.t("nổ lốp", "burst")
+            ABNORMAL -> Strings.t("bất thường", "abnormal")
             LEAK_FAST -> Strings.t("xì nhanh", "fast leak")
             UNDER -> Strings.t("non", "low")
             OVER -> Strings.t("căng", "high")
@@ -85,7 +95,8 @@ enum class TyreCorner(
 /**
  * Một bánh sau khi quyết định.
  * @property pressureKpa số THÔ từ xe (kPa) — `null` = chưa đọc / mã OEM 4092..4095 (đã lọc ở tầng đọc — xem
- *   [TyreJudge.PRESSURE_BURST]) / số âm. Bộ vẽ tự đổi đơn vị.
+ *   [TyreJudge.PRESSURE_BURST]; 2.93: mã 4092/4093 thành CHỮ lý do qua [status] khi màu cụm cùng chiều) / số âm. Bộ vẽ tự
+ *   đổi đơn vị.
  * @property tempC nhiệt độ (°C) — `null` = chưa đọc (mức bằng chứng chưa kiểm trên xe).
  * @property severity MÀU đã phán (xem [TyreJudgement.severity] — có thể khác màu mặc định của [status] ở nhánh M1).
  */
@@ -113,14 +124,14 @@ object TyreBoard {
      * (bộ vẽ hiện "—"), KHÔNG bỏ bớt phần tử để bố cục không bị nhảy.
      */
     fun readings(t: CarStatus.Tyres): List<TyreReading> = listOf(
-        reading(TyreCorner.FRONT_LEFT, t.pFlKpa, t.tFlC, t.cFl, t.psFl, t.lkFl, t.sys),
-        reading(TyreCorner.FRONT_RIGHT, t.pFrKpa, t.tFrC, t.cFr, t.psFr, t.lkFr, t.sys),
-        reading(TyreCorner.REAR_LEFT, t.pRlKpa, t.tRlC, t.cRl, t.psRl, t.lkRl, t.sys),
-        reading(TyreCorner.REAR_RIGHT, t.pRrKpa, t.tRrC, t.cRr, t.psRr, t.lkRr, t.sys),
+        reading(TyreCorner.FRONT_LEFT, t.pFlKpa, t.tFlC, t.cFl, t.psFl, t.lkFl, t.sys, t.pcFl),
+        reading(TyreCorner.FRONT_RIGHT, t.pFrKpa, t.tFrC, t.cFr, t.psFr, t.lkFr, t.sys, t.pcFr),
+        reading(TyreCorner.REAR_LEFT, t.pRlKpa, t.tRlC, t.cRl, t.psRl, t.lkRl, t.sys, t.pcRl),
+        reading(TyreCorner.REAR_RIGHT, t.pRrKpa, t.tRrC, t.cRr, t.psRr, t.lkRr, t.sys, t.pcRr),
     )
 
-    private fun reading(corner: TyreCorner, kpa: Double?, temp: Int?, c: Int?, ps: Int?, lk: Int?, sys: Int?): TyreReading {
-        val j = TyreJudge.judge(c, ps, lk, sys)
+    private fun reading(corner: TyreCorner, kpa: Double?, temp: Int?, c: Int?, ps: Int?, lk: Int?, sys: Int?, pc: Int?): TyreReading {
+        val j = TyreJudge.judge(c, ps, lk, sys, pc)
         // Bốn mã OEM trong dải số (4092..4095 — [TyreJudge.PRESSURE_BURST]) đã thành `null` ở TẦNG ĐỌC
         // (`HalReadTables.INVALID_VALUES`) để mọi bề mặt chung một luật; ở đây chỉ còn lưới hữu hạn/không âm.
         val shown = kpa?.takeIf { it.isFinite() && it >= 0 }
@@ -188,7 +199,7 @@ object TyreBoard {
         val c = listOf(t.cFl, t.cFr, t.cRl, t.cRr)
         val ps = listOf(t.psFl, t.psFr, t.psRl, t.psRr)
         val lk = listOf(t.lkFl, t.lkFr, t.lkRl, t.lkRr)
-        if ((pressures + c + ps + lk + t.sys).all { it == null }) return null
+        if ((pressures + c + ps + lk + t.sys + listOf(t.pcFl, t.pcFr, t.pcRl, t.pcRr)).all { it == null }) return null
         fun codes(xs: List<Int?>) = xs.joinToString(",") { it?.toString() ?: "-" }
         val r = readings(t)
         val colours = r.joinToString(",") {
@@ -201,8 +212,12 @@ object TyreBoard {
         }
         val src = r.map { it.source }.filter { it != TyreSource.NONE }.distinct()
             .joinToString("+") { it.name.lowercase() }.ifEmpty { "none" }
+        // 2.93 TYRE-BURST-REASON — mã báo trong dải áp suất (4092/4093) CHỈ in khi có (dòng cũ giữ nguyên byte khi không có):
+        // ảnh chụp/nhật ký từ xe chốt được [SUY] "getter TPMS dùng cùng bộ mã với kênh cụm của launcher gốc".
+        val pc = listOf(t.pcFl, t.pcFr, t.pcRl, t.pcRr)
+        val tail = if (pc.any { it != null }) " pc=${codes(pc)}" else ""
         return "TYRE raw p=${pressures.count { it != null }}/4 c=${codes(c)}|ps=${codes(ps)}|lk=${codes(lk)}|" +
-            "sys=${t.sys ?: "-"} → $colours src=$src"
+            "sys=${t.sys ?: "-"} → $colours src=$src$tail"
     }
 
     /** Mức bằng chứng của phần NHIỆT ĐỘ (chưa kiểm trên xe) ⇒ bộ vẽ gắn dấu "chưa kiểm". */

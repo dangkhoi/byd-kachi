@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong
  * Executor MỘT-WORKER chạy từng body ĐÚNG MỘT-TẠI-MỘT-THỜI-ĐIỂM (serialize), NHƯNG rút backlog theo
  * [MutationPriority]: một body [MutationPriority.STOP]/[MutationPriority.RESCUE] nạp vào KHI worker đang bận sẽ
  * VƯỢT LÊN TRƯỚC mọi body [MutationPriority.NORMAL] đang chờ. Trong CÙNG một mức ưu tiên → giữ FIFO (đúng thứ
- * tự nạp), nên một chuỗi lệnh cùng mức (vd reflow: closeSlot → openInSlot…) KHÔNG bao giờ bị đảo.
+ * tự nạp), nên một chuỗi lệnh cùng mức (vd gỡ ô rồi dọn cửa sổ nổi: closeSlot → `am stack remove`…) KHÔNG bao giờ bị đảo.
  *
  * ── VÌ SAO (Stage B2b) ─────────────────────────────────────────────────────────────────────────────────────
  * B1 gộp MỌI lệnh cửa sổ (launcher + cast) về MỘT `ShellTransport` (một owner thread). Nếu owner đó rút theo

@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -399,7 +400,7 @@ class TopStripSurfaceContractTest {
 
     /**
      * QA 2.87 [P2] (lỗi cũ từ 2.19) — đổi chủ đề TẠI CHỖ (`applyThemeInPlace`: Cài đặt › Bảng màu, và chủ đề *Tự động* lúc
-     * 06:00/18:00) để nút mic + nút ứng dụng giữ filter/nền của lúc dựng ⇒ [ĐO máy ảo `l2/topright-light.png`] 1,13:1 trên bảng
+     * 06:00/18:00) để nút mic + nút ứng dụng giữ filter/nền của lúc dựng ⇒ [ĐO máy ảo `topright-light.png` (bằng chứng phiên, ngoài repo)] 1,13:1 trên bảng
      * sáng. Gốc: `restyle()` liệt kê tay (thanh · đồng hồ · chip) và quên các nút. Bài này khoá CÁCH LÀM, không khoá danh sách:
      * MỌI dòng mã của tệp đọc màu chủ đề (`c(KachiTheme.…)`, `KachiTheme.pill(`/`gradient(`) phải nằm trong `themed { … }`
      * (đăng ký để tô lại), và `restyle()` phải chạy lại mọi lượt đã đăng ký. Thêm một nút mới tô màu ngoài `themed` ⇒ đỏ.
@@ -427,10 +428,7 @@ class TopStripSurfaceContractTest {
         return Files.walk(root).use { p ->
             p.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .filter { f ->
-                    f.toFile().readText()
-                        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-                        .lines().joinToString("\n") { line -> line.substringBefore("//") }
-                        .contains(token)
+                    KotlinSource.stripComments(f.toFile().readText()).contains(token)
                 }
                 .map { it.fileName.toString() }.sorted().toList()
         }

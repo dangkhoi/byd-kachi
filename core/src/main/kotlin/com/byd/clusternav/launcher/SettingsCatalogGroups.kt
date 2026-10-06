@@ -50,8 +50,10 @@ enum class SettingsGroup(
         "Status bar & button bar", "Top chips and the car button bar",
     ),
     DISPLAY(
-        "display", "Hiển thị & đơn vị", "Đơn vị đo, sáng/tối và ngôn ngữ",
-        "Display & units", "Units, light/dark theme and language",
+        // 2.93 · SETTINGS-DISPLAY-SUBTITLE — câu phụ kể ĐỦ năm mục của trang (màu · độ trong suốt nền · cỡ thanh nút
+        // vào nhóm này từ 2.87–2.89 mà câu cũ chỉ nói đơn vị, sáng/tối, ngôn ngữ). Bài: `SettingsDisplaySubtitleTest`.
+        "display", "Hiển thị & đơn vị", "Đơn vị, sáng/tối, màu, độ trong suốt, cỡ thanh nút, ngôn ngữ",
+        "Display & units", "Units, light/dark, colours, transparency, bar size, language",
     ),
     PROFILES(
         "profiles", "Hồ sơ tài xế", "Mỗi hồ sơ giữ bố cục riêng",

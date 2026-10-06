@@ -13,7 +13,7 @@ import kotlin.math.roundToInt
  *  - [P3 soát 3] [FitRules.Cell.fitted] chốt "kẹt" cả khi vết cắt đến từ chữ MỚI chưa đo dò (lượt khớp do ô khác /
  *    đổi khung chạy trước khi ô này đến lượt) ⇒ nhịp nở 1 s thành chờ 30 s;
  *  - [QA P2] icon cỡ cố định không bao giờ to hơn ô, giữ tỉ lệ ([FitRules.iconScale]) — icon 60px trong ô 36px bị khung
- *    lề cắt thành dải 12px (`l5/icononly-zoom.png`).
+ *    lề cắt thành dải 12px (`icononly-zoom.png` (bằng chứng phiên, ngoài repo)).
  */
 class FitRulesRound3Test {
 

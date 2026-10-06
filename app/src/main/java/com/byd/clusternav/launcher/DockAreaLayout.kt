@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
@@ -22,6 +23,9 @@ object DockAreaLayout {
 
     private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
 
+    /** Cùng thẻ với `ControlDockView` (`[bar-scale]`) — một lệnh `logcat -s KachiBar` đọc cả cỡ lẫn chỗ đặt thanh. */
+    private const val TAG = "KachiBar"
+
     /** Áp bố cục: [mainArea] chứa [workspace] (giãn) + [dock] (cố định) theo [cfg]. [density] = displayMetrics.density. */
     fun apply(mainArea: LinearLayout, workspace: View, dock: View, cfg: DockConfig, density: Float) {
         fun dp(v: Int, d: Float = density): Int = (v * d).toInt()
@@ -30,6 +34,10 @@ object DockAreaLayout {
         // Khe [Sp.SLOT_GAP] KHÔNG co: nó phải bằng khe giữa các ô ở BỐN chỗ (`KachiSpace.SLOT_GAP`).
         val barDensity = BarScale.scaledDensity(density, cfg.scalePct)
         val target = DockAreaPlan.target(cfg)
+        // 2.93 · SHORTCUT-SCROLL-DOCK-RELAYOUT (spec `kachi-293-slot.html` R2): một dòng mỗi lượt đặt thanh — QA 2.92 thấy một lượt
+        // đo ở hình học của cấu hình MẶC ĐỊNH (dưới, 100 %) xen giữa hai lượt đúng [CHƯA BIẾT nguồn]; dòng này + `view=` của
+        // `WidgetFit` chốt được lượt đó có đi qua đây không mà không cần đoán (CLAUDE.md §11/§15).
+        Log.i(TAG, "[dock-area] edge=${cfg.edge} scale=${cfg.scalePct} shown=${target.dockShown} area=${System.identityHashCode(mainArea).toString(16)}")
         // Thanh nút rời khung cuộn cũ (khung cũ cuộn theo trục cũ; viền mới có thể khác trục) — như bản trước.
         (dock.parent as? ViewGroup)?.removeView(dock)
         val current = (0 until mainArea.childCount).map {

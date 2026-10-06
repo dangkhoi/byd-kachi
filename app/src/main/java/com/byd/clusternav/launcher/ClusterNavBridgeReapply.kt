@@ -8,6 +8,7 @@ import com.byd.clusternav.VmOverlayPosition
 import com.byd.clusternav.automation.AutomationService
 import com.byd.clusternav.comfort.Pm25FilterApplier
 import com.byd.clusternav.comfort.SeatComfortApplier
+import com.byd.clusternav.launcher.camera.CameraReapply
 import com.byd.clusternav.launcher.voice.VoiceWakeService
 
 /**
@@ -32,7 +33,8 @@ import com.byd.clusternav.launcher.voice.VoiceWakeService
  *     (`modules/navaccess/NavAccessibilityService.kt:91,95`, mỗi phím),
  *     `cast_bubble_visible` (vòng 2 s `FloatingBubbleService.syncBubbleWindow` — ẩn/hiện cửa sổ, KHÔNG dựng lại dịch
  *     vụ), 6 khoá camera sở thích (`CameraSignalController.openSession` đọc lại ở MỖI lượt xi-nhan; riêng
- *     `camera_signal_enabled` còn cần [AutomationService.sync], xem thân hàm).
+ *     `camera_signal_enabled` còn cần [AutomationService.sync], xem thân hàm). ⚠ 2.93: camera THEO YÊU CẦU không có lượt
+ *     mở kế theo nhịp xi-nhan (không hẹn giờ tắt) ⇒ khung đang hiện của nó cần gọi lại — bước `camera.demand` (D6).
  *     ⚠ V-CLUSTER (2026-09-30): `split_ratio_left_pct` + họ `config_*` (DPI/khung từng app) KHÔNG còn "tự áp giữa
  *     phiên" — phiên chiếu GHIM chúng lúc bắt đầu (`CastSessionPin.kt`), nên giá trị của hồ sơ mới có hiệu lực ở
  *     **lượt chiếu kế** (sửa refute C2/B6: trước đây repin + ô thứ hai đọc lại prefs ⇒ hình học của hồ sơ mới tự nổ
@@ -93,6 +95,10 @@ internal fun ClusterNavBridge.reapplyAll() {
     // engine của A chạy (và ngược lại: B bật mà FGS đang dừng thì camera câm tới lần khởi động kế). Đúng hàm mà
     // `setCameraSignal`/`setRainDefrost*` gọi sau khi ghi — idempotent, tự gác theo `anyEnabled`, không ném.
     step("automation.sync") { AutomationService.sync(app) }
+    // 2.93 wave 2B · D6 — camera THEO YÊU CẦU không hẹn giờ tắt (có thể treo cả chuyến) ⇒ khung đang hiện nhận cấu hình của
+    // hồ sơ mới NGAY (góc · chỗ · cỡ · hình · kiểu theo hồ sơ). Camera xi-nhan đang giữ ⇒ để yên — không dỡ camera điểm mù
+    // giữa lúc rẽ; lượt mở sau tự đọc (loại 1 ở KDoc đầu tệp). Overlay là cửa sổ của chính Kachi, không phải phiên chiếu cụm.
+    step("camera.demand") { CameraReapply.ifDemandShowing(app) }
 
     // ── Giọng nói: chế độ `:wake` (FIX286 · VK2/VK4) ─────────────────────────────────────────────────
     // `voicekey_bindings` · `voicekey_enabled` · `voice_music_default_app` theo HỒ SƠ ⇒ đổi hồ sơ đổi `keyHold` (hồ sơ B

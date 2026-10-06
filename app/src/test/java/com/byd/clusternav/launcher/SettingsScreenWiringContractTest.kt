@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -338,9 +339,7 @@ class SettingsScreenWiringContractTest {
         return Files.walk(root).use { p ->
             p.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .filter { f ->
-                    val body = f.toFile().readText()
-                        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-                        .lines().joinToString("\n") { line -> line.substringBefore("//") }
+                    val body = KotlinSource.stripComments(f.toFile().readText())
                     match(body)
                 }
                 .map { it.fileName.toString() }.sorted().toList()

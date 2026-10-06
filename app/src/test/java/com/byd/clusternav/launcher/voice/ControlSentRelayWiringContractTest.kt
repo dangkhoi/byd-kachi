@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -78,8 +79,7 @@ class ControlSentRelayWiringContractTest {
     fun `moi dau cau dung mot cho goi`() {
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             root.toFile().walkTopDown().filter { it.isFile && it.extension == "kt" }.map { f ->
-                f.name to f.readText().replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .replace(Regex("(?m)//.*$"), "")
+                f.name to KotlinSource.stripComments(f.readText())
             }.toList()
         }
         fun callers(token: String) = all.filter { (name, src) -> name != "ControlSentRelay.kt" && src.contains(token) }.map { it.first }

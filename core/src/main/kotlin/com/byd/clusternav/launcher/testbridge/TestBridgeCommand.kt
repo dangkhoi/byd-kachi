@@ -411,7 +411,7 @@ object TestBridgeCommands {
         // FIX286 · SR6 — cùng hình dạng `a11ylog`: chỉ đọc, `n` tuỳ chọn, kẹp qua [ctlLogTail].
         Spec(CTLLOG, emptyList(), listOf(EXTRA_SLOT)),
         Spec(WAKELOG, emptyList(), listOf(EXTRA_SLOT)),   // FIX286 · VK6 — cùng hình dạng `ctllog`
-    ) + TestBridgeTeachCommands.SPECS   // 2.91 VOICE-APP-NAMES · A7 — tệp riêng (trần 500 dòng)
+    ) + TestBridgeTeachCommands.SPECS + TestBridgeScreenCommands.SPECS   // 2.91 A7 · 2.93 DIAG-SCREENS — tệp riêng (trần 500)
 
     /** Tên mọi lệnh — cho tài liệu và cho bài canh "mã lệnh không trùng nhau". */
     val NAMES: List<String> = SPECS.map { it.name }
@@ -458,6 +458,7 @@ object TestBridgeCommands {
         // `--es op mark` mà lệnh vẫn trả `ok:true` thì script đọc thành "đã đóng dấu" trong khi không có gì được ghi.
         val cap = if (name == CAPTEST) op.ifEmpty { CapTestOps.LIST } else op
         if (!TestBridgeTeachCommands.validOp(name, op)) return TestBridgeParse.Err(ERR_BAD_OP + op)
+        TestBridgeScreenCommands.check(name, extras)?.let { return TestBridgeParse.Err(it) }   // 2.93 · tên màn lạ ⇒ chặn tại đây
         if (name == CAPTEST) {
             if (cap !in CapTestOps.ALL) return TestBridgeParse.Err(ERR_BAD_OP + cap)
             val id = (extras[EXTRA_ID] as? String)?.trim().orEmpty()

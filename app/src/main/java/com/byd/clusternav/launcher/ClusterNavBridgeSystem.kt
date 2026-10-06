@@ -1,7 +1,6 @@
 package com.byd.clusternav.launcher
 
 import android.content.ComponentName
-import android.content.Intent
 import android.provider.Settings
 import com.byd.clusternav.UpdateFlow
 
@@ -63,18 +62,11 @@ fun ClusterNavBridge.checkUpdate(onText: (String) -> Unit) {
 // ⚠ `openLegacyScreen()` đã XOÁ 2026-09-13 cùng màn ClusterNav cũ (S3 · R1). Mục catalog
 // `system_advanced_screen` và nút "Màn nâng cao" ở nhóm *Hệ thống* biến mất theo — mọi cấu hình của màn đó
 // nay ở nhóm *Dẫn đường* / *Chiếu cụm* / *Phím vô-lăng* / *Tiện nghi xe*, ghi cùng khoá qua chính cầu này.
-
-/** "Dữ liệu VietMap" — lặp lại `MainActivity.kt:281–283`. */
-fun ClusterNavBridge.openVietMapData() = launch(com.byd.clusternav.vietmapwidget.VietMapWidgetDiagActivity::class.java)
-
-/** "Chẩn đoán" — lặp lại `MainActivityCastController.kt:69`. */
-fun ClusterNavBridge.openDiagnostics() = launch(com.byd.clusternav.modules.clustercast.DiagActivity::class.java)
-
-internal fun ClusterNavBridge.launch(target: Class<*>) {
-    runCatching {
-        app.startActivity(Intent(app, target).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    }.onFailure { toast(BridgeMsg.SCREEN_OPEN_FAILED) }
-}
+//
+// ⚠ 2.93 wave 2C · DIAG-BRIDGE-DEAD-OPENERS — `openVietMapData()` / `openDiagnostics()` (+ hàm phụ `launch` và mã
+// `BridgeMsg.SCREEN_OPEN_FAILED` cùng chuỗi ở 5 thứ tiếng) đã XOÁ: [ĐO grep 07/10] 0 chỗ gọi từ khi owner 21/09 gỡ lối vào
+// trong Cài đặt; hai màn chẩn đoán mở được CHỈ qua lệnh cầu `diag_screen` (`TestBridgeScreens`, sau cổng test-mode —
+// wave 2B). Bài `DevSurfaceGateContractTest.hai man chan doan chi mo qua lenh cau sau cong test-mode` khoá việc này.
 
 // ── Lấy gió trong: đường "áp ngay" (HomePanels cũ: bật ⇒ áp NGAY, không chờ lần nổ máy sau) ─────────
 /** Áp chế độ lấy gió trong NGAY (bất đồng bộ) — lặp lại `HomePanels.onRecircOnStart` trước IA v2. */

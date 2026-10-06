@@ -232,9 +232,9 @@ Xanh = cửa sổ hiện <code>mAppOpVisibility=false</code> trên N, pid không
 <ul>
 <li>OQ1. Gửi 30 khi cụm ĐÃ cong (cùng kiểu) — màn ảo có dựng lại không? [CHƯA BIẾT] — mã chịu được cả hai (hết lượt chờ thì nhận id cũ).</li>
 <li>OQ2. Bảng "app bóng nổi" chỉ có VietMap — app khác (vd bản đồ khác có bóng) thêm khi đo được.</li>
-<li>OQ3. Ở ca BUBBLE có nên đề xuất nút "tắt bóng VietMap" (force-stop có xác nhận) không? — owner quyết; hiện chỉ báo, không tự dừng app.</li>
+<li>OQ3. Ở ca BUBBLE có nên đề xuất nút "tắt bóng VietMap" (force-stop có xác nhận) không? — owner quyết; hiện chỉ báo, không tự dừng app. <b>Chốt 2.93 (06/10): KHÔNG</b> — CLAUDE.md cấm Kachi tự force-stop app bên thứ ba; mod VietMap v2 tự ẩn bóng khi nhận <code>VM_BUBBLE_VIS</code> [ĐO owner 06/10] ⇒ <code>CLUSTER-BUBBLE-STOP-OFFER</code> đóng (spec <code>kachi-293-cast.html</code> R5).</li>
 <li>OQ5. Bản mod có nhớ trạng thái ẩn qua lần VietMap tự khởi động lại không? [CHƯA BIẾT] — Kachi gửi lại ở nhịp 2 s (cổng 15 s) khi nút nổi chạy và sau mỗi lượt tự mở; VietMap tự khởi động khi Kachi không chạy nhịp nào ⇒ bóng có thể hiện tới lượt gửi kế.</li>
-<li>OQ6. Mod gỡ bóng mất bao lâu sau broadcast? [CHƯA BIẾT] — trần đọc lại 1,5 s; đo ở 🚗 (e).</li>
+<li>OQ6. Mod gỡ bóng mất bao lâu sau broadcast? [CHƯA BIẾT] — trần đọc lại 1,5 s; đo ở 🚗 (e). <b>2.93</b>: "1,5 s" chỉ là phần ngủ — [ĐO log xe 06/10 13:49 · 15:13] 6 lượt đọc lại thật mất ~4,5–5 s (mod v1) và góp phần làm <code>TIMEOUT: openProjection</code>; nay lượt đọc lại thứ hai trở đi chỉ chạy khi lượt mở còn đủ hạn, và dòng log "dọn cụm: SẠCH/chưa sạch sau N ms" đo đúng câu hỏi này (spec <code>kachi-293-cast.html</code> R2).</li>
 <li>OQ7. Vì sao widget VietMap mất liên kết trước 07:05 06/10 (gỡ-rồi-cài bản mod?) [ĐOÁN] — xem <code>dumpsys appwidget</code> + lịch sử cài ở buổi xe kế; mã mới tự bind lại khi đã có quyền bind.</li>
 <li>OQ4. Nguồn chính xác của id 4 ở F7 — xem §4.2 R5, cần log buổi xe kế.</li>
 </ul>

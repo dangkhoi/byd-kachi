@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 nhóm MISC — ClusterNav 2.0</title>
+<!--
+  Spec nhóm MISC của 2.93 (kế hoạch tổng docs/specs/kachi-293-plan.html §4). Khuôn docs/specs/_template.html.
+  Diagram = HTML visual (.flow / .layers) — không mermaid/ascii. Approval out-of-band, không lưu trạng thái duyệt ở đây.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.13)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.20)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13px;min-width:110px;max-width:220px}
+.fnode.new{background:var(--new)}
+.fnode b{display:block;font-size:13.5px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13px}
+.layer .node.new{background:var(--new)}
+.layer .node b{display:block;font-size:13.5px}.layer .node span{color:var(--muted);font-size:12px}
+.layer-title{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+@media(max-width:600px){.wrap{padding:24px 16px 80px}h1{font-size:24px}.fnode{max-width:none;flex:1 1 100%}.flow .arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Nhóm MISC: hồ sơ · Cài đặt · test · tài liệu · bảo mật</h1>
+<p class="muted">Slug: <code>kachi-293-misc</code> · Kế hoạch tổng <code>docs/specs/kachi-293-plan.html</code> §4 (nhóm MISC) · Nhánh làm việc riêng tách từ 2.92 (194) <code>8fbdf96</code> · Owner 06/10: <i>"làm hết mọi thứ luôn đi"</i> · <span class="pill wait">Trạng thái: Draft — mã + test off-car xong, CHƯA gộp / senior review / quét bảo mật; 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> (repo + global) và <code>.kiro/steering/*</code>. Không thư viện mới ⇒ không cần Context7 (máy chủ Context7 cũng không kết nối được phiên này — ENOTFOUND). Mọi khẳng định về framework trích nguồn <b>AOSP <code>android-10.0.0_r47</code> tải về từ googlesource ngày 06/10</b> (<code>ActiveServices</code> · <code>AccessibilityManagerService</code> · <code>Notifier</code> · <code>ActivityStackSupervisor</code> · <code>packages/Shell/AndroidManifest.xml</code>) — CLAUDE.md §3. Không bump phiên bản (điều phối bump ở T5 của kế hoạch tổng).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo spec nhóm MISC cùng lượt làm mã (owner đã duyệt hướng "làm hết" — kế hoạch tổng §7). 16 việc: 14 DONE trọn; 2 DONE trừ phần con hoãn có lý do + điều kiện mở khoá (CODE-FIX-AFTER-283 mục 5 🚗 — §7 OQ2; DOCS-SCRATCH-PATHS phần TUỲ CHỌN trong mã + 3 dòng của <code>PROJECT-BACKLOG.md</code> — §9).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Kế hoạch tổng 2.93 gom MỌI việc mở off-car vào sáu nhóm làm song song. Nhóm MISC nhận các dòng backlog lẻ về hồ sơ, Cài đặt, hạ tầng test, tài liệu và một việc bảo mật. Mỗi dòng có bằng chứng gốc ở <code>docs/PROJECT-BACKLOG.md</code>; spec này ghi cách làm thực tế, quyết định cho việc "chờ owner", và bằng chứng kiểm.</p>
+<div class="card"><b>Quyết định đã có trước (kế hoạch tổng §4):</b> <code>TEST-MODE-ACC-OFF</code> — cửa sổ Chế độ kiểm thử <b>TỰ ĐÓNG khi tắt máy</b> (hướng an toàn), làm generic + test. Việc cần xe không làm mò (CLAUDE.md §14) — chỉ chuẩn bị + đánh dấu 🚗.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng (một dòng backlog = một R)</h3>
+<table>
+<tr><th>R</th><th>Backlog</th><th>Tiêu chí nghiệm thu</th></tr>
+<tr><td>R1</td><td><code>PROFILE-NEW-FILE-FILL</code> [P3]</td><td>Hồ sơ "đã chụp" = có ảnh KHÁC RỖNG ở BẤT KỲ hậu tố <code>SNAPSHOT_SUFFIXES</code> ⇒ khoá ở một tệp prefs MỚI được rót cho mọi hồ sơ đã chụp; hồ sơ chưa chụp ở tệp nào vẫn không bị đẻ ảnh (S4 · R5). Họ tiền tố MỚI cũng thành mục sổ đã-rót. Lượt NHẬP tệp cũ thiếu hẳn một ảnh tệp (vd <code>cast-v2-app-catalog</code>) được điền khi tệp có ảnh khác. Bài canh tạm của review 2.92 F1 được thay bằng bài chạy thật.</td></tr>
+<tr><td>R2</td><td><code>SETTINGS-DISPLAY-SUBTITLE</code> [P3]</td><td>Câu phụ rail nhóm Hiển thị kể màu · độ trong suốt · cỡ thanh nút (VI + EN ≤ 60 ký tự) + 3 bảng zh/th/ms.</td></tr>
+<tr><td>R3</td><td><code>SETTINGS-RETHEME-INPLACE</code> [P3]</td><td>Đổi Sáng/Tối (và màu/độ đục/ảnh nền "theo ảnh") khi Cài đặt đang mở ⇒ bảng đổi màu tại chỗ, giữ nhóm + chỗ cuộn.</td></tr>
+<tr><td>R4</td><td><code>EDGE-H-DEAD</code> [P3]</td><td><code>KachiSpace.EDGE_H</code> xoá; bài canh: mọi hằng của thang có ≥ 1 chỗ đọc.</td></tr>
+<tr><td>R5</td><td><code>FIT-TEXT-MIN-DOC</code> [P3]</td><td>KDoc <code>FIT_TEXT_MIN</code> nói đúng: 10sp = NHÃN nhỏ nhất; chữ vi mô 9,5sp (đơn vị ô đọc, dấu "chưa kiểm") dưới sàn và sàn không giữ chúng. Bài khoá KDoc vào cỡ thật trong mã.</td></tr>
+<tr><td>R6</td><td><code>KEY-LABEL-PRESET-SHADOW</code> [P3]</td><td>Nút tự học trùng mã preset ⇒ dòng gán hiện tên người dùng đặt.</td></tr>
+<tr><td>R7</td><td><code>HAL-PENDING-PARSE-DRY</code> [P3]</td><td>Một phép parse Int <code>HalBindingTable.parseInt(id, raw)</code> (tôn trọng <code>ARRAY_INDEX</code>) dùng chung; "getter đã trả lời" = mã chưa-có-số HOẶC số đọc được.</td></tr>
+<tr><td>R8</td><td><code>TYRE-TEMP-BY-NAME</code> [P2]</td><td><code>tyre_t_*</code> bind theo tên <code>BYDAutoFeatureIds.INSTRUMENT_2IN1_{LF,RF,LB,RB}_TYRE_TEMPERATURE</code>; miền lốp không còn datum bind số.</td></tr>
+<tr><td>R9</td><td><code>TEST-CODEOF-STRIP</code></td><td><code>SourceRoots.codeOf</code> = <code>KotlinSource.stripComments</code>; chạy lại TOÀN BỘ test, đọc từng bài đổi kết quả, không nới bài nào.</td></tr>
+<tr><td>R10</td><td><code>CODE-FIX-AFTER-283</code></td><td>(1) 3 chú thích sai về màn Chẩn đoán · (2) 5 chỗ "tự tắt khi tắt máy" (đi cùng R14) · (3) trích <code>ActiveServices</code> đúng dòng · (4) <code>Notifier :176-183</code>, <code>:400-403</code> · (5) cân nhắc ghi lại danh sách trước <code>am force-stop</code> · (6) rào camera theo <code>ClusterProfile</code>.</td></tr>
+<tr><td>R11</td><td><code>DOCS-SCRATCH-PATHS</code></td><td>Tài liệu cũ không còn dạng đường dẫn thư mục nháp; bảng <code>DOCS_LEGACY</code> rút theo số đo mới.</td></tr>
+<tr><td>R12</td><td><code>DOC-SYNC-0929-REST</code></td><td><code>CLOSEOUT-2026-09-27.md</code> + handoff 27/09 trỏ trạng thái 29/09 và sau đó; đính chính lối "đọc nhật ký trong app".</td></tr>
+<tr><td>R13</td><td><code>CATALOG-REGEN</code> [P3]</td><td><code>docs/kachi-feature-catalog.html</code> sinh lại bằng <code>scripts/docs/feature-catalog.py</code> từ registry hiện tại.</td></tr>
+<tr><td>R14</td><td><code>TEST-MODE-ACC-OFF</code> ⚠ bảo mật</td><td>Cửa sổ test-mode ĐÓNG ở lần tắt máy đầu tiên sau khi mở (receiver exported + màn Cài đặt cùng thấy); không khe "claim chưa kịp ghi"; tài liệu người dùng nói đúng.</td></tr>
+<tr><td>R15</td><td><code>QA-CONTRAST-METHOD</code></td><td>Một phương pháp đo tương phản chữ từ ảnh chụp, có mã tham chiếu đã kiểm.</td></tr>
+<tr><td>R16</td><td><code>A11Y-BIND-GATE-OD</code></td><td>Đối chiếu ghi chú Overdrive về cổng bind với thang chữa của Kachi trước khi đổi gì.</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Tệp Kotlin ≤ 500 dòng; tệp sát trần (<code>KachiTestBridge.kt</code> 499 · <code>VoiceWakeService.kt</code> 498 · <code>A11yLifecycleHeal.kt</code> 495 · <code>AccessibilityRebind.kt</code> 496) không dài thêm quá mức cần.</li>
+<li>R-nf2. Không thư viện mới; không đổi đường đang chạy tốt ngoài phạm vi (CLAUDE.md §6) — lệnh tách rời của lượt chữa phím giữ từng byte ở mặc định.</li>
+<li>R-nf3. Mỗi sửa có test hồi quy và ĐÃ thử đỏ (conversation-protocol P5.3).</li>
+<li>R-nf4. Chữ UI: không thêm/đổi chuỗi <code>strings_kachi.xml</code> (câu test-mode nay ĐÚNG sự thật nên giữ nguyên ở cả 5 tiếng); chuỗi <code>:core</code> đổi kèm 3 bảng TSV.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 TEST-MODE-ACC-OFF — cửa sổ đọc dấu tắt máy THẬT</h3>
+<div class="flow">
+  <div class="fnode"><b>Tắt máy</b><span>BYD giết Kachi (không reboot ⇒ <code>boot_id</code> giữ nguyên)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>HOME dựng lại lúc màn TẮT</b><span><code>A11yLifecycleHeal.install</code> (2.83 lớp 1)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Claim bền</b><span><code>a11y_tat_may_elapsed</code> (<code>commit()</code>, luồng nền)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TestBridgeStore.tatMayAt</b><span>max(claim bền, mốc bật tiến trình nếu màn tắt — lấp khe)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>TestBridgeWindow</b><span><code>closedByIgnitionOff(openedAt, now, tatMayAt)</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Receiver exported</b><span>trả <code>test_mode_off</code> · Cài đặt hiện TẮT</span></div>
+</div>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:var(--card)"></span> khối có sẵn (2.83 / T-BRIDGE)</span>
+  <span class="sw"><span class="box" style="background:var(--new)"></span> mới ở 2.93</span>
+</div>
+
+<h3>4.2 PROFILE-NEW-FILE-FILL — sổ đã-rót generic cho tệp mới + họ mới</h3>
+<div class="flow">
+  <div class="fnode new"><b>ledgerScope</b><span>khoá cố định + MỐC họ, theo tệp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>pendingKeys</b><span>bảng − sổ đọc được</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>captured</b><span>ảnh khác rỗng ở BẤT KỲ tệp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>fillNewKeys</b><span>chỉ chỗ trống · hồ sơ đã chụp · họ có mốc chờ</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>Một Editor</b><span>ảnh mới + sổ đủ (cũ: chỉ khoá)</span></div>
+</div>
+<p class="muted">Lượt NHẬP: <code>importedCaptured(plan.writes)</code> (cùng phép làm sạch thuần, không log) tính TRƯỚC vòng ghi ⇒ <code>fillImportedSnapshot(suffix, merged, captured)</code> dựng ảnh cho tệp VẮNG khi tệp nhập có ảnh ClusterNav khác.</p>
+
+<h3>4.3 SETTINGS-RETHEME-INPLACE — bảng Cài đặt đi CÙNG đường tô lại tại chỗ</h3>
+<div class="layers">
+  <div class="layer-title">state đổi bảng màu → render → tô lại tại chỗ (không recreate)</div>
+  <div class="layer">
+    <div class="node"><b>ThemeHost.sync</b><span>bảng màu đổi ⇒ true</span></div>
+    <div class="node"><b>applyThemeInPlace</b><span>nền · thanh trên · thanh nút · ô</span></div>
+    <div class="node new"><b>panels.restyleSettings()</b><span><code>post</code> sang khung kế · bảng còn mở</span></div>
+  </div>
+  <div class="layer">
+    <div class="node new"><b>SettingsPanel.restyle</b><span>dispose trang · <code>buildChrome()</code> · <code>show(current)</code> · trả chỗ cuộn trang + rail</span></div>
+    <div class="node"><b>buildChrome = đường dựng ĐẦU</b><span>init và restyle cùng một hàm — mọi chỗ đọc <code>KachiTheme</code> của vỏ nằm trên đường này (bài canh)</span></div>
+  </div>
+</div>
+
+<h3>4.4 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do / bằng chứng</th></tr>
+<tr><td>D1</td><td>Test-mode đóng theo <b>claim tắt-máy bền</b> của lớp 1 (2.83), không theo <code>SCREEN_OFF</code> hay "tiến trình chết bất kỳ"</td><td>Claim đã là nguồn đếm lần nổ máy của <code>TripGate</code>; [ĐO xe 29/09] mỗi lần tắt máy BYD giết Kachi + HOME dựng lại lúc màn tắt. Đóng theo tiến trình chết bất kỳ sẽ đóng cả khi QA tự force-stop Kachi (harness E2E) — quá rộng. Dựng lại lúc màn tắt mà không phải tắt máy (D-10 của 2.83) cũng đóng — hướng an toàn.</td></tr>
+<tr><td>D2</td><td>Lấp khe "claim chưa kịp ghi" bằng mốc bật tiến trình (RAM, đặt ĐỒNG BỘ trong <code>install</code>)</td><td>Claim ghi ở luồng nền; receiver có thể chạy trước. Cờ RAM ở đây chỉ dùng để ĐÓNG một cửa của chính tiến trình đó (không quyết đổi gì trên hệ thống — CLAUDE.md §5); claim bền lo các tiến trình sau.</td></tr>
+<tr><td>D3</td><td>Giữ nguyên câu UI test-mode ở 5 tiếng</td><td>"Tự tắt sau 60 phút và sau khi tắt máy" nay ĐÚNG; đổi chữ = 5 tệp xung đột với nhóm khác mà không thêm sự thật nào. Tài liệu người dùng (README · HUONG-DAN · hướng dẫn có hình · danh mục) sửa theo phiên bản ("từ 2.93").</td></tr>
+<tr><td>D4</td><td>R1: "đã chụp" = ảnh khác rỗng ở ≥ 1 tệp; tham số mới mặc định rỗng ⇒ hành vi 2.92 nguyên vẹn cho chỗ gọi cũ</td><td>Đúng hướng backlog. Trade-off: hồ sơ "chụp một phần" (sinh từ lượt V-CLUSTER) mà chưa có ảnh <code>clusternav_theme</code> sẽ được ghim giá trị sống lúc nâng cấp thay vì "bản sao lúc đổi" — cùng lớp khác biệt, xác định hơn.</td></tr>
+<tr><td>D5</td><td>R1: họ tiền tố vào sổ bằng MỐC (<code>tệp/@family:id</code>)</td><td>Xe đã chạy 2.92 chỉ có đúng một mục chờ (mốc <code>cast_geometry</code>); mọi ảnh ≥ 2.84 có mốc ⇒ lượt đầu 2.93 không ghi byte nào (bài <code>nang cap tu so 2_92</code>).</td></tr>
+<tr><td>D6</td><td>R4: xoá thêm <code>DASH_ON</code>/<code>DASH_OFF</code>/<code>CAPTION_COVER</code></td><td>NGOÀI dòng backlog nhưng cùng bệnh; bài canh generic (R4) đỏ nếu để lại [ĐO quét 06/10: đúng 4 hằng 0 chỗ đọc].</td></tr>
+<tr><td>D7</td><td>R7: chuỗi lạ không parse được ở lối chờ-có-số nay cho cache vắng nguội</td><td>Cùng luật lối đọc thường (<code>fresh</code>); mã chưa-có-số vẫn không nguội (soát 2.88 Pass 2 giữ nguyên — bài <code>TyreChipTest</code> xanh).</td></tr>
+<tr><td>D8</td><td>R10(3): KDoc nói đúng cả hai đường sập</td><td>[ĐO AOSP r47] quá hạn 10 s (<code>:132</code>) ⇒ <code>serviceForegroundTimeout</code> (<code>:3884-3909</code>) gọi <code>stopServiceLocked</code> ⇒ <code>bringDownServiceLocked</code> thấy <code>fgRequired</code> ⇒ <code>SERVICE_FOREGROUND_CRASH_MSG</code> (<code>:2941-2963</code> → <code>:3927-3931</code>) + ANR. Gợi ý của backlog ("quá hạn chỉ là ANR") thiếu nhánh này.</td></tr>
+<tr><td>D9</td><td>R10(5): KHÔNG đổi lệnh tách rời ở 2.93</td><td>[ĐO AOSP] <code>onHandleForceStop</code> chỉ gỡ <code>Binding</code> cho component đang enabled (<code>:464-474</code>) ⇒ lỗ có thật nhưng tự lành ở lượt leo kế; lệnh là đường đã đo trên xe (§6) ⇒ đề xuất <code>A11Y-PREWRITE-FORCESTOP</code> 🚗 (§7 OQ2).</td></tr>
+<tr><td>D10</td><td>R10(6): dấu camera là THAM SỐ của lệnh; NavConnect truyền <code>ClusterProfile.cameraSignature</code>, đời chưa đo ⇒ dấu 2.83</td><td>Mặc định trùng từng byte bản 2.83 (bài <code>A11yCameraSignatureTest</code> + <code>ForceStopReturnHomeTest</code>); dấu hỏng ⇒ không dựng lệnh (fail-closed).</td></tr>
+<tr><td>D11</td><td>R9: chỉ đổi fixture dùng chung; ~50 bản chép tay <code>substringBefore("//")</code> trong từng bài test để lại</td><td>Phạm vi backlog là <code>SourceRoots.codeOf</code>; các bản chép nằm rải trong vùng của nhóm khác ⇒ đề xuất backlog riêng <code>TEST-STRIP-COPIES</code>.</td></tr>
+</table>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Tệp chính</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R1 :core <code>ledgerScope</code> · <code>captured</code> · <code>fillNewKeys(captured, families)</code></td><td><code>core/…/ProfileScopeMigration.kt</code> (+Test)</td><td class="ok">DONE</td></tr>
+<tr><td>T2</td><td>R1 :app lượt nâng cấp + lượt nhập</td><td><code>WorkspacePrefsMigrations.kt</code> · <code>WorkspacePrefsSnapshot.kt</code> · <code>WorkspacePrefsProfile.kt</code> · <code>ClusterProfileScopeCoverageTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T3</td><td>R2 câu phụ + 3 TSV</td><td><code>SettingsCatalogGroups.kt</code> · <code>i18n/{zh,th,ms}.tsv</code> · <code>SettingsDisplaySubtitleTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T4</td><td>R3 tô lại bảng Cài đặt</td><td><code>SettingsPanel.kt</code> · <code>HomePanels.kt</code> · <code>KachiHomeRender.kt</code> · <code>SettingsRethemeInPlaceContractTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T5</td><td>R4 + R5 thang</td><td><code>KachiSpace.kt</code> · <code>KachiSpaceBars.kt</code> · <code>ScaleConstantsUsedContractTest</code> · <code>FitTextFloorDocContractTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T6</td><td>R6 nhãn nút tự học</td><td><code>ClusterNavBridgeMsg.kt</code> · <code>SettingsSectionsKeys.kt</code> · <code>ButtonOptionLabelTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T7</td><td>R7 + R8 HAL</td><td><code>HalBindingTable.kt</code> · <code>CarDataAdapter.kt</code> · <code>TelemetryRegistry.kt</code> · <code>HalPendingParseTest</code> · <code>TyreTempByNameTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T8</td><td>R9 fixture + mẫu dò + chạy lại toàn bộ</td><td><code>core/src/testFixtures/…/SourceRoots.kt</code> · <code>SourceRootsCodeOfTest</code> · <code>resources/codeof/fail-open-probe.kt.txt</code></td><td class="ok">DONE</td></tr>
+<tr><td>T9</td><td>R14 + R10(2)</td><td><code>TestBridgeWindow.kt</code> · <code>TestBridgeStore.kt</code> · <code>A11yLifecycleHeal.kt</code> · <code>KachiTestBridge.kt</code> · manifest · <code>TestBridgeIgnitionOffTest</code> · <code>TestBridgeIgnitionOffWiringContractTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T10</td><td>R10 (1)(3)(4)(6)</td><td>manifest · <code>SettingsSections*.kt</code> · <code>VoiceWake*.kt</code> · <code>NavConnect.kt</code> · <code>AccessibilityRebind.kt</code> · <code>A11yCameraSignatureTest</code> · <code>A11yBindStuckWiringContractTest</code></td><td class="ok">DONE</td></tr>
+<tr><td>T11</td><td>R11 tài liệu + bảng <code>DOCS_LEGACY</code></td><td>18 tệp <code>docs/</code> · <code>SourcePathHygieneTest</code></td><td class="ok">DONE (trừ <code>PROJECT-BACKLOG.md</code>, xem §7)</td></tr>
+<tr><td>T12</td><td>R12 · R13 · R15 · R16 tài liệu</td><td><code>CLOSEOUT-2026-09-27.md</code> · <code>_handoff/session-2026-09-27-closing.md</code> · <code>kachi-feature-catalog.html</code> · <code>diagnostics/qa-contrast-method-2026-10-06.md</code> · <code>diagnostics/a11y-bind-gate-od-compare-2026-10-06.md</code></td><td class="ok">DONE</td></tr>
+<tr><td>T13</td><td>Tài liệu người dùng test-mode</td><td><code>README.md</code> · <code>HUONG-DAN-KACHI.md</code> · <code>guide/HUONG-DAN-CO-HINH.html</code> · <code>catalog/features.json</code></td><td class="ok">DONE</td></tr>
+<tr><td>T14</td><td>Gộp · senior review (Opus) · quét bảo mật · INDEX/BACKLOG/project-context</td><td>— (điều phối, kế hoạch tổng T2–T5)</td><td class="warn">TODO</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO, đếm JUnit XML, cây làm việc nhóm MISC 06/10, <code>./gradlew :core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest --continue</code>]: <b>:core 4 516 / 0</b> (481 XML) · <b>:app debug 2 116 / 0</b> (266 XML) · <b>:app vehicleTest 2 128 / 0</b> (267 XML) = <b>8 760 / 0</b>. So 2.92 (core 4 491 · app 2 101): +25 bài :core, +15 bài :app — đúng số bài mới của nhóm. Chưa chạy <code>:car-integration</code>/<code>:vehicle-contracts</code>/<code>:offcar-planner</code> (không đụng) và lint — điều phối chạy bộ đủ sau gộp.</li>
+<li><b>Thử đỏ</b> [ĐO 06/10 — gỡ dòng vá rồi chạy lại]: :core 15 bài đỏ đúng chỗ (<code>SourceRootsCodeOfTest</code> ×4 · <code>TestBridgeIgnitionOffTest</code> · <code>A11yCameraSignatureTest</code> ×2 · <code>TyreTempByNameTest</code> ×3 · <code>SettingsDisplaySubtitleTest</code> ×2 · <code>HalPendingParseTest</code> · <code>ProfileScopeMigrationTest</code> ×2); :app 7 bài đỏ (<code>ButtonOptionLabelTest</code> ×2 · <code>ClusterProfileScopeCoverageTest</code> · <code>ScaleConstantsUsedContractTest</code> ×2 · <code>SettingsRethemeInPlaceContractTest</code> · <code>TestBridgeIgnitionOffWiringContractTest</code>) + <code>FitTextFloorDocContractTest</code> đỏ khi trả câu KDoc cũ. Khôi phục ⇒ xanh.</li>
+<li><b>R9 quét tĩnh</b> [ĐO]: so <code>codeOf</code> cũ/mới trên mọi <code>.kt/.xml</code> — 16 tệp mã chính khác ngoài khoảng trắng (chuỗi URL, chuỗi MIME mở comment khối giả, GLSL trong chuỗi thô). Chạy đủ :core + :app debug sau khi đổi: <b>0 bài đổi kết quả</b> (4 512 / 0 · 2 116 / 0) ⇒ không bài nào đang dựa vào lỗi cũ, không phát hiện mới.</li>
+<li><b>R13</b> [ĐO]: <code>python3 -I scripts/docs/feature-catalog.py</code> — 33 nút · 79 thông tin · 173 chức năng ngoài registry; diff = test-mode + 4 nhiệt lốp + đường dẫn nháp.</li>
+<li><b>R15</b> [ĐO]: khối mã trong tài liệu chạy trên ảnh tổng hợp: nét mảnh 9/920 điểm ⇒ 14,63 : 1 (p98 ⇒ 1,00 : 1; trung bình 2 % ⇒ 3,86 : 1).</li>
+<li><b>V-oncar</b> 🚗: R14 (tắt máy với test-mode đang mở ⇒ <code>state</code> trả <code>test_mode_off</code> sau khi nổ máy lại) · R8 (nhiệt lốp đọc được theo tên khi TPMS phát) · R16 (§5 tài liệu đối chiếu). Chưa đo — không chặn gộp.</li>
+<li><b>V-lifecycle</b>: R1 lượt nâng cấp chạy ở <code>init</code> trước <code>load()</code>, sổ đủ ⇒ không đọc ảnh lần nào; R3 bảng đóng trước khung kế ⇒ bỏ lượt tô.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <code>A11Y-REBIND-EXPLICIT-START</code> 🚗 — Kachi KHÔNG làm HOME thì lệnh tách rời thiếu bước "có tiến trình" của Overdrive ⇒ có thể vẫn kẹt. <span class="muted">Đề xuất backlog; cần đo trên xe trước khi chạm lệnh (D9, tài liệu đối chiếu §4 L1).</span></li>
+<li>OQ2. <code>A11Y-PREWRITE-FORCESTOP</code> 🚗 — ghi lại danh sách CÓ mình trước <code>am force-stop</code> (CODE-FIX-AFTER-283 mục 5). <span class="muted">Hoãn có lý do (D9).</span></li>
+<li>OQ3. <code>DiagActivity</code> / <code>VietMapWidgetDiagActivity</code> không mở được trên bản phát hành (0 chỗ gọi <code>openDiagnostics</code>/<code>openVietMapData</code>, adb bị từ chối). <span class="muted">Owner chọn: gỡ hẳn hai màn, hay mở qua một lệnh cầu kiểm thử (sau công tắc test-mode). Không tự quyết — đề xuất <code>DIAG-SCREENS-UNREACHABLE</code>.</span> <b>→ ĐÓNG bởi wave 2B — lệnh <code>diag_screen</code></b> (cầu kiểm thử, sau công tắc test-mode; <code>kachi-293-cam.html</code> §4.9 d); hai cửa cũ 0 chỗ gọi gỡ ở wave 2C (<code>kachi-293-wave2c.html</code> R3).</li>
+<li>OQ4. Lời giao owner 20/09 "lề ngang header/taskbar còn 80 %" chưa từng vào mã ([ĐO git f56c508] <code>EDGE_H</code> khai mà không đọc). <span class="muted">R4 chỉ xoá hằng chết; áp lời giao hay bỏ là quyết định owner — đề xuất <code>HOME-EDGE-80</code>.</span></li>
+<li>OQ5. Harness E2E bật test-mode bằng cách ghi tệp rồi force-stop + mở HOME: nếu máy ảo đang TẮT MÀN lúc đó, tiến trình bật lúc màn tắt ⇒ claim ⇒ cửa sổ đóng ngay. <span class="muted">QA máy ảo giữ màn sáng (<code>svc power stayon true</code> / <code>KEYCODE_WAKEUP</code>) trước <code>enable_test_mode</code>; sửa <code>scripts/emulator/voice-common.sh</code> thuộc nhóm VOICE (DEBT-VOICE-COMMON-SH) — điều phối gộp.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Kế hoạch tổng <code>docs/specs/kachi-293-plan.html</code> · backlog các dòng ở §3.</li>
+<li>Spec gốc: <code>kachi-292-profile-new-keys.html</code> (§10 Pass 1 F1, Pass 2 G3) · <code>kachi-283-key-heal-acc-off.html</code> (§2.6, §2.10, OQ11) · <code>kachi-test-bridge.html</code> · <code>kachi-287-look-and-keys.html</code> (bảng QA §6).</li>
+<li>Diagnostics mới: <code>docs/diagnostics/a11y-bind-gate-od-compare-2026-10-06.md</code> · <code>docs/diagnostics/qa-contrast-method-2026-10-06.md</code>.</li>
+<li>AOSP <code>android-10.0.0_r47</code>: <code>ActiveServices.java</code> <code>:125</code> <code>:132</code> <code>:2941-2963</code> <code>:3884-3909</code> <code>:3927-3931</code> · <code>AccessibilityManagerService.java</code> <code>:400-403</code> <code>:453-484</code> <code>:1630-1645</code> <code>:4114-4117</code> · <code>Notifier.java</code> <code>:176-183</code> <code>:748-755</code> · <code>ActivityStackSupervisor.java</code> <code>:999-1040</code> · <code>packages/Shell/AndroidManifest.xml</code> (không có <code>START_ANY_ACTIVITY</code>).</li>
+<li>Featmap xe 09-16 (ngoài repo, chỉ đọc): tên <code>INSTRUMENT_2IN1_*_TYRE_TEMPERATURE</code> ↔ 1246797848/860/872/884.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — R14 theo D1/D2; câu UI giữ (D3). Mốc <code>closedByIgnitionOff</code> là khoảng nửa mở <code>(openedAt, now]</code>: claim TRÙNG mốc bật không đóng; claim "tương lai" (đời máy trước) bỏ qua.</li>
+<li><b>2026-10-06 · sai lệch-spec</b> — R1: backlog chỉ nói "tệp mới"; điều phối thêm "họ mới" ⇒ làm qua mốc trong sổ (D5). Bài canh tạm 2.92 (khoá bảng tệp/họ) THAY bằng 4 bài chạy thật (tệp MỚI · họ MỚI · nâng cấp từ sổ 2.92 · ảnh VẮNG ca nhập) + bài "mọi họ nằm ở tệp có ảnh chụp".</li>
+<li><b>2026-10-06 · bug &amp; cách xử</b> — R15: bản đầu của phương pháp dùng "trung bình 2 % điểm xa nhất" — [ĐO ảnh tổng hợp] ra 3,86 : 1 cho nét 9/920 điểm (sai như p98). Đổi sang trung vị của k điểm, k ≤ ½ số điểm lõi ⇒ 14,63 : 1.</li>
+<li><b>2026-10-06 · bug &amp; cách xử</b> — <code>FitTextFloorDocContractTest</code> bản đầu không đỏ với câu KDoc cũ vì câu vắt qua hai dòng — nối dòng KDoc trước khi so; thử đỏ lại ⇒ đỏ.</li>
+<li><b>2026-10-06 · trade-off</b> — R1 lượt NHẬP: bản SHARE của một hồ sơ chưa từng chụp vẫn mang ảnh chỉ gồm <code>null</code> tường minh cho khoá riêng tư (<code>ProfileTransfer.forShare</code>) ⇒ tính là "đã chụp" ⇒ ảnh vắng của tệp khác được điền bằng giá trị sống của xe nhận. Cùng triết lý D5 của 2.92 (giá trị sống của xe nhận), không tệ hơn trước (trước: lượt đổi đầu tiên ăn theo hồ sơ vừa rời).</li>
+<li><b>2026-10-06 · trade-off</b> — R7 (D7): lời đáp rác ở lối chờ-có-số nay nguội (đọc thưa 60 s…10 phút) thay vì đọc lại mỗi nhịp; số thật tới chậm tối đa một mốc thử lại — chỉ với chuỗi KHÔNG parse được, mã chưa-có-số không đổi.</li>
+<li><b>2026-10-06 · ngoài phạm vi đã làm</b> — D6 (ba hằng chết khác); câu sai thứ tư cùng họ R10(1) trong chú thích bài <code>SettingsCatalogControlContractTest</code>; banner CLOSEOUT/handoff đính chính lối "đọc nhật ký trong app".</li>
+<li><b>2026-10-06 · ngoài phạm vi KHÔNG làm</b> — ~50 bản chép tay bộ bỏ chú thích trong bài test (D11 → <code>TEST-STRIP-COPIES</code>); 8 tệp mã/test còn ghi tên tệp bằng chứng QA tương đối (<code>qa2/…</code>, <code>l4/…</code>, <code>l5/…</code> — phần TUỲ CHỌN của DOCS-SCRATCH-PATHS, nằm trong vùng nhóm WIDGET/SLOT: <code>FitRules.kt</code> · <code>IconRepeat.kt</code> · <code>KachiTopStrip.kt</code> · <code>SlotActionsCluster.kt</code> · <code>FitRulesRound3Test</code> · <code>GridFitWindowWidgetTest</code> · <code>SlotLifecycleWiringContractTest</code> · <code>TopStripSurfaceContractTest</code>) — điều phối làm sau gộp; 3 dòng đường dẫn nháp trong <code>PROJECT-BACKLOG.md</code> (tệp điều phối).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review — senior review Opus do điều phối chạy sau khi gộp, kế hoạch tổng T3.)</li>
+</ul>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p>Phạm vi: <code>git diff 8fbdf96</code> của mọi tệp nhóm MISC trên cây CHÍNH (đã gộp, các nhóm khác đang gộp song song — chỉ sửa tệp MISC, sửa bằng chuỗi khớp chính xác). <b>Không chạy gradle</b> (điều phối chạy sau khi gộp đủ). Context7 không kết nối (ENOTFOUND) — không thư viện mới. Trích dẫn AOSP đối chiếu lại trên bản <code>android-10.0.0_r47</code> tải 06/10.</p>
+
+<p><b>Bảng phạm vi</b> (✅ = mã có · nối dây · có bài chạy thật/bài canh; 🚗 = phần còn lại chỉ xe trả lời được):</p>
+<table>
+<tr><th>Việc</th><th>Kết quả</th><th>Ghi chú soát</th></tr>
+<tr><td>R1 PROFILE-NEW-FILE-FILL</td><td>✅</td><td>Hồ sơ không có ảnh khác rỗng ở tệp nào vẫn không bị đẻ ảnh (R5). Họ <code>cast_geometry</code> chỉ rót cho hồ sơ ĐÃ chụp mà THIẾU mốc: V-CLUSTER (2.84) đã rót mốc cho mọi hồ sơ có lúc đó, <code>mergeImport</code> luôn đặt mốc ⇒ lối nhập không bao giờ rót họ. Sổ 2.92 → 2.93: chỉ mốc chờ, ảnh có mốc không đổi byte; 2.93 → 2.92: sổ là tập lớn hơn ⇒ <code>pendingKeys</code> rỗng ⇒ tương thích hai chiều.</td></tr>
+<tr><td>R2 SETTINGS-DISPLAY-SUBTITLE</td><td>✅</td><td>VI = EN = 60 đơn vị UTF-16 (NFC) — đúng trần <code>GROUP_SUB_MAX</code>, không còn chỗ thêm chữ. KDoc trỏ sai tên bài (F6, đã vá).</td></tr>
+<tr><td>R3 SETTINGS-RETHEME-INPLACE</td><td>✅</td><td>Mọi tài nguyên ngoài cây view của các trang (Cast/Nav/Voice) gắn theo attach/detach ⇒ tháo trang là gỡ; <code>dispose</code> gọi nhiều lần an toàn; <code>init</code> gắn <code>setOnClickListener</code> một lần, <code>buildChrome</code> không gắn lại; thanh độ đục áp khi THẢ tay ⇒ không dựng lại bảng giữa lượt kéo.</td></tr>
+<tr><td>R4 EDGE-H-DEAD · R5 FIT-TEXT-MIN-DOC</td><td>✅</td><td>0 chỗ đọc còn lại của 4 hằng (grep app+core+car-integration); bài canh đọc cỡ thật trong mã.</td></tr>
+<tr><td>R6 KEY-LABEL-PRESET-SHADOW</td><td>✅</td><td>Không còn phép tra "khớp đầu tiên" nào khác cho nhãn nút.</td></tr>
+<tr><td>R7 HAL-PENDING-PARSE-DRY</td><td>✅</td><td><code>ARRAY_INDEX</code> = {<code>pm25_outside</code>} ∩ <code>INVALID_IS_PENDING</code> = ∅ ⇒ không con số nào đổi. D7 chỉ chạm chuỗi <code>int=- float=- buf=N</code>: [ĐO] 0 lần trong mọi dump <code>docs/diagnostics</code> (chỉ thấy dạng <code>buf=-</code>, vốn đã thành <code>null</code> ở <code>BydHalRead.readFeature</code>). Phép soi mã còn tự parse (F4, đã vá).</td></tr>
+<tr><td>R8 TYRE-TEMP-BY-NAME</td><td>✅ · 🚗</td><td>[ĐO nguồn OEM] firmware 2602 L3 <code>Instrument.java:133-148</code>: LF/RF/LB/RB = <code>0x4A50A018/024/030/03C</code> = 1246797848/860/872/884 — đúng bộ số cũ, đúng góc bánh (F7). Đọc trên xe khi TPMS phát: 🚗.</td></tr>
+<tr><td>R9 TEST-CODEOF-STRIP</td><td>✅</td><td>Quét mã chính: không chuỗi template lồng nào chứa <code>//</code> hay <code>/*</code>; ngoặc nhọn trong các chuỗi nay được giữ (URL template, regex <code>{11}</code>) đều cân ⇒ <code>SourceRoots.body</code> không bị cắt ngắn ⇒ không bài <code>assertFalse</code> nào thành rỗng nghĩa.</td></tr>
+<tr><td>R10 CODE-FIX-AFTER-283 (1)(2)(3)(4)(6)</td><td>✅</td><td>Trích dẫn khớp từng dòng: <code>ActiveServices</code> :125 :132 :2941-2963 :3884-3909 :3927-3931 · <code>Notifier</code> :176-183 :748-755 · <code>ActivityStackSupervisor</code> :999 · Shell manifest 0 <code>START_ANY_ACTIVITY</code>. D8 đúng: <code>serviceForegroundTimeout</code> chỉ hạ <code>fgWaiting</code>, giữ <code>fgRequired</code> ⇒ <code>bringDownServiceLocked</code> gửi <code>SERVICE_FOREGROUND_CRASH_MSG</code>. (6): dấu camera <code>SEAL_DL3</code> = hằng 2.83, đời khác <code>null</code> ⇒ lùi về 2.83 ⇒ lệnh trùng từng byte mọi seed; hồ sơ ghi đè không mang dấu (<code>cameraSignatureFor(id)</code>). Một trích dẫn cũ còn sót (F5, đã vá). Mục (5) hoãn có lý do (D9/OQ2).</td></tr>
+<tr><td>R11 DOCS-SCRATCH-PATHS · R12 DOC-SYNC-0929-REST · R13 CATALOG-REGEN</td><td>✅</td><td>[ĐO] chỉ <code>PROJECT-BACKLOG.md</code> còn 3 lần (= bảng <code>DOCS_LEGACY</code>, tệp điều phối). Mọi dòng thêm vào <code>docs/</code> + README: 0 đường dẫn tuyệt đối · 0 IP · 0 email/điện thoại.</td></tr>
+<tr><td>R14 TEST-MODE-ACC-OFF ⚠</td><td>✅ (sau vá) · 🚗</td><td>Đồng hồ: cả hai mốc là <code>elapsedRealtime</code> của CÙNG lần khởi động (boot_id kiểm trước), claim "tương lai" bỏ qua, khoảng nửa mở. Receiver chạy ở tiến trình chính (không <code>android:process</code>) ⇒ cùng bộ đệm prefs với lớp 1; <code>isOn</code> đứng trước mọi nhánh; <code>prefs_set</code> không ghi được khoá cổng (<code>WRITABLE_PREFS_KEYS</code> không có <code>test_bridge_*</code>/<code>a11y_*</code>); <code>a11y_tat_may_elapsed</code> không thuộc phạm vi hồ sơ (đổi hồ sơ không khôi phục claim cũ). Hai lỗ + một câu tài liệu (F1–F3, đã vá).</td></tr>
+<tr><td>R15 QA-CONTRAST-METHOD</td><td>✅</td><td>[ĐO] chạy lại khối mã trong tài liệu trên hai ảnh PNG tổng hợp (cảnh báo deprecation nâng thành lỗi): nét mảnh 14,63 : 1 k = 5 · nét dày 14,63 : 1 k = 18 — khớp. API deprecated (F8, đã vá).</td></tr>
+<tr><td>R16 A11Y-BIND-GATE-OD</td><td>✅ · 🚗</td><td>Đối chiếu đủ, không đổi mã (đúng §6/§14). Lỗ L1 (Kachi không làm HOME) cùng gốc với F3.</td></tr>
+</table>
+
+<p><b>Phát hiện + vá</b> (tất cả đã vá trên cây chính, bài canh tương ứng đã cập nhật — điều phối chạy lại):</p>
+<table>
+<tr><th>#</th><th>Mức</th><th>Chỗ</th><th>Phát hiện</th><th>Vá</th></tr>
+<tr><td>F1</td><td>[P2]</td><td><code>A11yLifecycleHeal.kt</code> <code>install</code> · <code>TestBridgeStore.kt</code></td><td>D2 giả định "claim bền lo các tiến trình sau" — sai một ca: claim lớp 1 có cổng <i>cùng một lần tắt máy</i> (<code>AccessibilityHealGates.tatMayMayRun</code>: chưa có lượt mở-xe + &lt; 10 phút ⇒ KHÔNG ghi claim mới). Khi lượt mở-xe bị lỡ (tiến trình chết trước <code>SCREEN_ON</code>), lần tắt máy kế chỉ được đóng bằng mốc RAM ⇒ tiến trình SAU bật lúc màn sáng trong 60 phút thấy cửa sổ MỞ lại. Hướng lỗi: fail-open trên cổng duy nhất của receiver exported.</td><td><code>install</code> xếp CUỐI hàng luồng nền (§6) <code>TestBridgeStore.closeAfterScreenOffStart(app)</code> khi bật lúc màn tắt: còn khoá mà <code>isOn</code> đã nói đóng ⇒ xoá khoá <code>commit()</code> + một dòng log <code>KachiTest</code>. Không đổi luật đóng (mở TRƯỚC lúc bật ⇒ đóng), chỉ làm nó BỀN. Bài: <code>TestBridgeIgnitionOffWiringContractTest</code> (bài mới: một chỗ gọi, xếp cuối, xoá bằng <code>commit()</code> chỉ khi cổng đã đóng).</td></tr>
+<tr><td>F2</td><td>[P3]</td><td><code>A11yLifecycleHeal.kt</code> <code>install</code></td><td><code>isInteractive</code> không hỏi được (<code>null</code>) ⇒ không mốc RAM, không claim ⇒ cửa sổ không có đầu vào tắt máy (fail-open, hiếm: chỉ khi binder PowerManager ném).</td><td><code>interactive != true</code> cho mốc RAM và cho F1 (fail-closed — CLAUDE.md §4.1). Mốc chỉ <code>TestBridgeStore</code> đọc ⇒ luồng chữa phím không đổi.</td></tr>
+<tr><td>F3</td><td>[P3]</td><td><code>README.md</code> (VI/EN ×2) · <code>HUONG-DAN-KACHI.md</code> (VI/EN) · <code>guide/HUONG-DAN-CO-HINH.html</code> (×2)</td><td>Tài liệu người dùng hứa "tự tắt khi tắt máy" vô điều kiện, trong khi cơ chế cần Android DỰNG LẠI Kachi lúc màn tắt — tức Kachi là màn hình chính (HOME). Cài như app thường thì không có lần bật lúc màn tắt ⇒ cửa sổ có thể sống tới 60 phút qua tắt máy (cùng gốc lỗ L1 của tài liệu A11Y-BIND-GATE-OD).</td><td>Thêm điều kiện "khi Kachi đang là màn hình chính" (HUONG-DAN kèm lý do). <code>catalog/features.json</code> giữ nguyên (đã [SUY] + tả đúng cơ chế "Android dựng lại lúc màn tắt") ⇒ không phải sinh lại danh mục.</td></tr>
+<tr><td>F4</td><td>[P3]</td><td><code>HalBindingTable.kt</code> <code>isInvalidValue</code></td><td>KDoc <code>parseInt</code> nói "phép parse DUY NHẤT" mà phép soi mã không hợp lệ vẫn tự gọi <code>coerceInt</code> (đọc ô [0] của mảng, lệch phần tử con số sẽ hiện).</td><td>Đọc qua <code>parseInt(id, raw)</code> — 0 đổi hành vi hôm nay (giao rỗng, xem R7). Bài <code>HalPendingParseTest</code> khoá thêm.</td></tr>
+<tr><td>F5</td><td>[P3]</td><td><code>A11yLifecycleHeal.kt</code> KDoc <code>ScreenOnReceiver</code></td><td>Còn <code>Notifier.java:748-754</code> (R10(4) đã sửa chỗ khác thành <code>:748-755</code>).</td><td>Sửa thành <code>:748-755</code>. (Chuỗi thông báo trong <code>A11yLifecycleHealWiringContractTest</code> còn số cũ — tệp ngoài MISC, chỉ là chữ thông báo.)</td></tr>
+<tr><td>F6</td><td>[P3]</td><td><code>SettingsCatalogGroups.kt</code></td><td>Chú thích trỏ bài <code>SettingsCatalogTest</code>; bài thật là <code>SettingsDisplaySubtitleTest</code>.</td><td>Sửa tên bài.</td></tr>
+<tr><td>F7</td><td>[P3]</td><td><code>TelemetryRegistry.kt</code></td><td>Chú thích ghi [SUY] cho tương đương tên ↔ số, trong khi nguồn OEM có sẵn trong workspace (CLAUDE.md §12).</td><td>Nâng lên [ĐO nguồn OEM] kèm <code>Instrument.java:133-148</code> + bốn mã hex.</td></tr>
+<tr><td>F8</td><td>[P3]</td><td><code>diagnostics/qa-contrast-method-2026-10-06.md</code> §3</td><td>Mã tham chiếu gọi <code>Image.getdata</code> — [ĐO Pillow 12.3.0] <code>DeprecationWarning</code>, bỏ ở Pillow 14 (luật toàn cục §5.2: không ship API deprecated).</td><td>Gọi <code>get_flattened_data</code> (đã so: cùng kết quả từng điểm), lùi về <code>getdata</code> trên Pillow &lt; 12; chạy lại ra đúng hai số đã ghi.</td></tr>
+</table>
+
+<p><b>Ghi chú cho nhóm khác / điều phối</b> (không vá — ngoài vùng MISC hoặc cần owner/xe):</p>
+<ul>
+<li>[P3 · nhóm TYRE-BURST-REASON] <code>CarDataAdapter.Gate.pending</code> — dòng <code>codes[id] = HalBindingTable.coerceInt(raw)</code> (thêm khi gộp) nên là <code>HalBindingTable.parseInt(id, raw)</code> cho đúng luật một-phép-parse (hôm nay cùng kết quả: datum lốp không có chỉ số mảng). Không sửa vì tệp đang được nhóm đó gộp song song.</li>
+<li>Đề xuất backlog <code>TEST-MODE-NONHOME</code> 🚗 — Kachi KHÔNG làm HOME ⇒ không có lần bật lúc màn tắt ⇒ cửa sổ test-mode sống tới 60 phút qua tắt máy (F3 chỉ sửa lời hứa). Hướng chờ đo (CLAUDE.md §14): thời gian ngủ sâu <code>elapsedRealtime − uptimeMillis</code> có tăng qua một lần tắt máy BYD không [CHƯA BIẾT]; nếu có ⇒ một dấu tắt máy generic không cần HOME.</li>
+<li>[INFO cho quét bảo mật] <code>a11y-bind-gate-od-compare-2026-10-06.md</code> nêu URL repo GitHub công khai (MIT) của Overdrive, trong đó có tên người dùng GitHub của tác giả — trích dẫn nguồn công khai, không phải dữ liệu riêng tư.</li>
+<li>Trần dòng: <code>A11yLifecycleHeal.kt</code> 498 · <code>KachiTestBridge.kt</code> 499 · <code>VoiceWakeService.kt</code> 498 · <code>AccessibilityRebind.kt</code> 496 — mọi tệp Kotlin MISC ≤ 500.</li>
+</ul>
+
+<p><b>Bài cần chạy lại</b> (không chạy ở lượt soát này): <code>:core</code> — <code>TestBridgeIgnitionOffTest</code> · <code>HalPendingParseTest</code> · <code>TyreTempByNameTest</code> · <code>TyreChipTest</code> · <code>SettingsDisplaySubtitleTest</code> · <code>SettingsCatalogTest</code> · <code>ProfileScopeMigrationTest</code> · <code>SourceRootsCodeOfTest</code> · <code>SourcePathHygieneTest</code> · <code>A11yCameraSignatureTest</code> · <code>ForceStopReturnHomeTest</code>; <code>:app</code> — <code>TestBridgeIgnitionOffWiringContractTest</code> · <code>TestBridgeSafetyContractTest</code> · <code>A11yLifecycleHealWiringContractTest</code> · <code>A11yBootGraceWiringContractTest</code> · <code>A11yBindStuckWiringContractTest</code> · <code>HealCastWaitWiringContractTest</code> · <code>DevSurfaceGateContractTest</code>; rồi đủ bộ <code>./gradlew :core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest --continue</code> + lint (đếm JUnit XML).</p>
+
+<p><b>Kết luận Pass 1</b>: <span class="pill ok">APPROVED</span> sau vá — 1 × [P2] + 7 × [P3] đã vá, 0 phát hiện còn mở trong vùng MISC; 🚗 R8/R14/R16 chưa đo trên xe (không chặn gộp). Lượt soát lại (1b) trên chính các bản vá: không phát hiện mới.</p>
+
+</div></body>
+</html>

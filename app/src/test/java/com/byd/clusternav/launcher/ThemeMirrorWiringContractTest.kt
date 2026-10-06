@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -21,9 +22,7 @@ class ThemeMirrorWiringContractTest {
     }
 
     private val repo by lazy {
-        app("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt").toFile().readText()
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        KotlinSource.stripComments(app("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt").toFile().readText())
     }
 
     @Test

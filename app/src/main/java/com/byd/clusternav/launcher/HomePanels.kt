@@ -126,6 +126,7 @@ class HomePanels(
             onSave = { l -> onApplyLayout(l) },
             onClear = { onApplyLayout(null) },
             onClose = { closeLayoutEditor() },
+            area = workspaceArea(rootFrame),   // 2.93 GRID-EDITOR-ASPECT — vẽ theo tỉ lệ vùng ô THẬT
         )
         layoutPanel = panel
         rootFrame.addView(
@@ -134,6 +135,20 @@ class HomePanels(
         )
         goImmersive()
         onPanelsChanged()
+    }
+
+    /**
+     * 2.93 `GRID-EDITOR-ASPECT` — cỡ px của vùng ô thật: `WorkspaceView` đầu tiên (duyệt theo bề rộng) trong cây màn chính
+     * đã được đo. Đo, không suy (cạnh/cỡ % thanh nút, thanh trên ẩn/hiện đều đã nằm trong số đo); chưa đo ⇒ `null`.
+     */
+    private fun workspaceArea(root: android.view.View): Pair<Int, Int>? {
+        val queue = ArrayDeque<android.view.View>().apply { add(root) }
+        while (queue.isNotEmpty()) {
+            val v = queue.removeFirst()
+            if (v is WorkspaceView) return (v.width to v.height).takeIf { it.first > 0 && it.second > 0 }
+            if (v is android.view.ViewGroup) for (i in 0 until v.childCount) queue.add(v.getChildAt(i))
+        }
+        return null
     }
 
     fun closeLayoutEditor() {
@@ -251,6 +266,17 @@ class HomePanels(
      * bảng tự đi thu thay đổi.
      */
     fun invalidateSettings() = settingsPanel?.invalidateAll()
+
+    /**
+     * 2.93 · SETTINGS-RETHEME-INPLACE — bảng màu đổi khi màn Cài đặt đang mở ⇒ tô lại bảng TẠI CHỖ ([SettingsPanel.restyle]).
+     * Gọi từ `applyThemeInPlace` (cùng nhịp tô lại nền · thanh trên · thanh nút · ô). Đẩy sang khung kế (`post`): lượt đổi
+     * màu thường bắt đầu từ một cú chạm TRONG chính bảng (chip Sáng/Tối, ô màu, thả thanh độ đục) — không tháo/dựng lại cây
+     * view của bảng ngay giữa lượt phát sự kiện chạm. Bảng đã đóng/thay trước khung kế ⇒ bỏ.
+     */
+    fun restyleSettings() {
+        val panel = settingsPanel ?: return
+        panel.post { if (settingsPanel === panel && panel.isAttachedToWindow) panel.restyle() }
+    }
 
     /** Đóng mọi lớp phủ — gọi lúc huỷ màn (lớp phủ giữ view là giữ activity). */
     fun closeAll() {

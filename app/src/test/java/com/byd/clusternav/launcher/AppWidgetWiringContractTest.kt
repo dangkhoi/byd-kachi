@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -35,9 +36,7 @@ class AppWidgetWiringContractTest {
      *
      * ⇒ Luật: tài liệu-trong-mã được phép nói về thứ mã KHÔNG làm. Bài canh phải soi mã, không soi văn.
      */
-    private fun code(src: String): String = src
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .replace(Regex("""//[^\n]*"""), " ")
+    private fun code(src: String): String = KotlinSource.stripComments(src)
 
     // ── Vòng đời nghe cập nhật ────────────────────────────────────────────────────
 

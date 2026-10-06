@@ -16,9 +16,9 @@ class SimpleCastCoordinator(
     displayId: Int,
     private val castTimeoutMs: Long = 15_000L,
     private val stopTimeoutMs: Long = 5_000L,
-    // This app's own installed package, injected from :app (BuildConfig.APPLICATION_ID). Default keeps the
-    // legacy value for JVM tests; production passes com.byd.clusternav2 so cast self-exclusion + the black
-    // placeholder launch target the correct isolated app.
+    private val openTimeoutMs: Long = BoundedCastExecutor.OPEN_TIMEOUT_MS, // 2.93 · CAST-OPEN-TIMEOUT — hạn riêng của lượt mở chiếu
+    // This app's own installed package, injected from :app (BuildConfig.APPLICATION_ID). Default keeps the legacy value
+    // for JVM tests; production passes the real id so cast self-exclusion + the black placeholder target the right app.
     internal val selfPackage: String = "com.byd.clusternav",
     /** Ngủ giữa các lần dò VD cụm sau khi mở projection ([ClusterDisplayResolver.awaitAndPersist]) — test truyền `{}`. */
     private val detectSleepMs: (Long) -> Unit = { Thread.sleep(it) },
@@ -62,7 +62,7 @@ class SimpleCastCoordinator(
      */
     @Volatile internal var liveDisplayId: Int = -1
 
-    private val executor = BoundedCastExecutor(
+    internal val executor = BoundedCastExecutor(
         castTimeoutMs = castTimeoutMs,
         stopTimeoutMs = stopTimeoutMs,
         onTimeout = { tag -> log("TIMEOUT: $tag") },
@@ -234,14 +234,14 @@ class SimpleCastCoordinator(
      * R10: idempotent — opens only from Off/Error; opening/idle/casting is a no-op (both callers safe).
      */
     fun openProjection() {
-        executor.submit("openProjection") {
+        executor.submit("openProjection", openTimeoutMs) {
             when (state) {
                 is SimpleCastState.Off, is SimpleCastState.Error -> Unit // proceed
                 else -> return@submit // already open/opening/casting/stopping/closing
             }
             setState(SimpleCastState.Opening)
-            // ⚠ [SOÁT 2026-09-15 · P2] MỌI lối thoát bất thường phải rời khỏi `Opening`. Chuỗi mở nay dài hơn (5 s
-            // profile + tối đa 6 s dò lặp VD cụm) nên có thể chạm hạn cứng `castTimeoutMs` của
+            // ⚠ [SOÁT 2026-09-15 · P2] MỌI lối thoát bất thường phải rời khỏi `Opening`. Chuỗi mở dài (5 s profile + dò lặp VD
+            // cụm + cổng theme) nên có thể chạm hạn cứng `openTimeoutMs` (2.93: hạn RIÊNG 25 s, các thao tác khác 15 s) của
             // [BoundedCastExecutor] ⇒ `future.cancel(true)` NGẮT thread giữa một `Thread.sleep` ⇒
             // `InterruptedException` thoát khỏi block. Không bắt thì state kẹt `Opening` VĨNH VIỄN, mà
             // `openProjection` chỉ chạy lại từ `Off`/`Error` ⇒ cast chết tới khi tiến trình khởi động lại.

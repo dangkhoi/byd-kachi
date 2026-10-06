@@ -291,7 +291,7 @@ object NavConnect {
      * `bindLocked()` (`:1642`) lẫn `unbindLocked()` (`:1645`) ⇒ vừa không gắn lại được vừa không gỡ được bằng
      * bất kỳ lệnh ghi settings nào. Vào trạng thái này khi một dịch vụ ĐANG GẮN bị đứt: `binderDied()` →
      * `serviceDisconnectedLocked` (`:4114-4117`) **đẩy ngược component vào `mBindingServices`**, mà chú thích
-     * `:398` cho thấy ý đồ chỉ tính cho ca THAY GÓI — đứt vì lý do khác thì không ai dọn. Owner [ĐO nhiều lần]:
+     * `:400-403` cho thấy ý đồ chỉ tính cho ca THAY GÓI — đứt vì lý do khác thì không ai dọn. Owner [ĐO nhiều lần]:
      * cài mới thì chạy tốt, để xe qua đêm standby rồi sáng bật lên mới kẹt.
      *
      * Đường thoát DUY NHẤT chứng minh được: `am force-stop` gói mình → `onHandleForceStop` (`:453-484`) gỡ khỏi
@@ -355,7 +355,12 @@ object NavConnect {
         }
         val cur = sh("settings get secure enabled_accessibility_services").output.trim()
         // Bấm tay ⇒ LUÔN về màn nhà; lớp 1/2 ⇒ chỉ khi có cửa sổ mồ côi (KDoc `AccessibilityRebind.HomeTail`).
-        val cmd = AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP, homeTail = AccessibilityRebind.homeTailFor(userAsked))
+        // 2.93 CODE-FIX-AFTER-283 (6) — rào camera theo dấu của ĐỜI XE (ClusterProfile, CLAUDE.md §7); đời chưa đo ⇒ dấu 2.83.
+        val camSig = com.byd.clusternav.modules.clustercast.ClusterProfile.resolveCached(app).cameraSignature
+        val cmd = AccessibilityRebind.forceStopRebindCommand(
+            cur, app.packageName, ACC_COMP, homeTail = AccessibilityRebind.homeTailFor(userAsked),
+            cameraSig = camSig ?: AccessibilityRebind.CAMERA_SCREEN_SIGNATURE,
+        )
         if (cmd.isBlank()) {
             Log.e(TAG, "a11y KẸT nhưng không dựng được lệnh (gói lệch component?) → không leo")
             return GrantResult.NOT_BOUND

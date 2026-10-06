@@ -2,6 +2,10 @@ package com.byd.clusternav.launcher.testbridge
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
+import com.byd.clusternav.A11yLifecycleHeal
+import com.byd.clusternav.Prefs
+import com.byd.clusternav.a11yTatMayAt
 
 /**
  * ═══ T-BRIDGE · CÔNG TẮC "CHẾ ĐỘ KIỂM THỬ QUA ADB" ═══════════════════════════════════════════════════════════
@@ -34,13 +38,21 @@ object TestBridgeStore {
 
     private fun stored(ctx: Context): String? = sp(ctx).getString(KEY_UNTIL, null)
 
+    /**
+     * 2.93 · TEST-MODE-ACC-OFF — mốc tắt máy gần nhất: claim bền của lớp 1 (`Prefs.a11yTatMayAt`, ghi mỗi lần BYD giết +
+     * Android dựng lại launcher lúc màn TẮT) hoặc — chưa kịp ghi ở luồng nền — mốc bật của CHÍNH tiến trình này nếu nó bật
+     * lúc màn tắt ([A11yLifecycleHeal.pendingTatMayAt]): lệnh tới ngay sau lượt dựng lại không lọt qua khe đó. Cửa sổ mở
+     * TRƯỚC mốc này ⇒ đóng ([TestBridgeWindow.closedByIgnitionOff]).
+     */
+    private fun tatMayAt(ctx: Context): Long = maxOf(Prefs.a11yTatMayAt(ctx), A11yLifecycleHeal.pendingTatMayAt())
+
     /** Cầu kiểm thử có đang mở không. Mọi nhánh lệnh đều hỏi hàm này TRƯỚC. */
     fun isOn(ctx: Context): Boolean =
-        TestBridgeWindow.isOn(stored(ctx), bootId(), SystemClock.elapsedRealtime())
+        TestBridgeWindow.isOn(stored(ctx), bootId(), SystemClock.elapsedRealtime(), tatMayAt(ctx))
 
     /** Số phút còn lại (0 = đang tắt) — màn Cài đặt và JSON trả về cùng đọc con số này. */
     fun remainingMinutes(ctx: Context): Int =
-        TestBridgeWindow.remainingMinutes(stored(ctx), bootId(), SystemClock.elapsedRealtime())
+        TestBridgeWindow.remainingMinutes(stored(ctx), bootId(), SystemClock.elapsedRealtime(), tatMayAt(ctx))
 
     /** Mở một cửa sổ mới **tính từ bây giờ** (bật lại khi đang bật = gia hạn, đúng thứ người test muốn). */
     fun enable(ctx: Context) {
@@ -48,14 +60,32 @@ object TestBridgeStore {
         sp(ctx).edit().putString(KEY_UNTIL, value).apply()
     }
 
-    /** Đóng ngay. XOÁ khoá chứ không ghi một giá trị "đã tắt": đọc lại không phải phân biệt hai cách nói "không". */
     /**
      * Danh tính lần nổ máy — `/proc/sys/kernel/random/boot_id` (đổi mỗi lần boot, app thường đọc được). Không đọc được
-     * ⇒ chuỗi rỗng ⇒ cửa sổ luôn ĐÓNG (an toàn về phía tắt). [ĐO] xe DiLink3 14/09: đọc được, dạng UUID.
+     * ⇒ chuỗi rỗng ⇒ cửa sổ luôn ĐÓNG (an toàn về phía tắt). [ĐO] xe DiLink3 14/09: đọc được, dạng UUID. ⚠ Tắt máy BYD
+     * KHÔNG khởi động lại máy ⇒ chuỗi này không đổi qua lần tắt máy — phần đó do [tatMayAt] lo.
      */
     private fun bootId(): String = runCatching { java.io.File("/proc/sys/kernel/random/boot_id").readText().trim() }.getOrDefault("")
 
+    /** Đóng ngay. XOÁ khoá chứ không ghi một giá trị "đã tắt": đọc lại không phải phân biệt hai cách nói "không". */
     fun disable(ctx: Context) {
         sp(ctx).edit().remove(KEY_UNTIL).apply()
+    }
+
+    /**
+     * 2.93 · TEST-MODE-ACC-OFF (senior review Pass 1, [P2]) — tiến trình NÀY bật lúc màn TẮT (hoặc không hỏi được màn) ⇒ làm
+     * lần đóng thành BỀN: còn khoá mà [isOn] đã nói ĐÓNG (cửa sổ mở TRƯỚC lúc bật — [tatMayAt] đã gồm mốc bật này) ⇒ XOÁ khoá,
+     * `commit()` (luồng nền).
+     *
+     * Vì sao [tatMayAt] một mình chưa đủ: claim bền của lớp 1 có cổng *"cùng một lần tắt máy"*
+     * (`AccessibilityHealGates.tatMayMayRun` — trong 10 phút mà chưa có lượt mở-xe nào ⇒ KHÔNG ghi claim mới), còn mốc RAM
+     * [A11yLifecycleHeal.pendingTatMayAt] chết theo tiến trình ⇒ một tiến trình SAU bật lúc màn SÁNG (nổ máy lại trong 60
+     * phút) sẽ thấy cửa sổ MỞ lại. Chỗ gọi DUY NHẤT: luồng nền của [A11yLifecycleHeal.install] (không đọc prefs trên luồng
+     * chính); bài canh `TestBridgeIgnitionOffWiringContractTest`.
+     */
+    fun closeAfterScreenOffStart(ctx: Context) {
+        if (stored(ctx) == null || isOn(ctx)) return
+        val ok = sp(ctx).edit().remove(KEY_UNTIL).commit()
+        Log.i(TestBridgeReply.TAG, "test-mode: tiến trình bật lúc màn tắt ⇒ đóng bền cửa sổ cũ (ghi=${if (ok) "ok" else "HỎNG"})")
     }
 }

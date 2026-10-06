@@ -86,7 +86,8 @@ class WidgetFitH1ContractTest {
         // Bộ dựng = lời gọi ĐẦU nhánh (sau `->`, `else`, hoặc điều kiện `if (…)`), không phải trợ giúp trong lambda giá trị.
         val builders = Regex("""(?:->|else|\))\s+([A-Za-z_][\w.]*)\(ctx[,)]""").findAll(body).map { it.groupValues[1] }.toSet()
         assertEquals(
-            setOf("miniCard", "tyreMini", "PhotoWidgetView", "ShortcutIconsView", "GroupTiles.mini", "actionTile", "telemetryMini"),
+            setOf("miniCard", "tyreMini", "PhotoWidgetView", "ShortcutIconsView", "GroupTiles.mini", "actionTile", "telemetryMini",
+                "cameraDemandTile"),   // 2.93 wave 2B · CAMERA-WIDGET-TILE — nhóm (b): tự lo nội dung (nghe controller camera)
             builders, "nhánh mới của mini() — xếp nó vào một trong ba nhóm dưới đây",
         )
         // (a) có hàm đổ tại chỗ
@@ -95,6 +96,7 @@ class WidgetFitH1ContractTest {
         assertTrue(SourceRoots.body(tele, "internal fun telemetryMini(").contains("WidgetRefreshers.live("))
         // (b) tự lo nội dung — refreshRead giữ nguyên view của chúng
         assertTrue(WorkspaceRenderPlanner.selfDriven("w_photos") && WorkspaceRenderPlanner.selfDriven("w_apps"))
+        assertTrue(CapabilityPicker.cameraPicks().all { WorkspaceRenderPlanner.selfDriven(it.id) }, "ô camera theo yêu cầu (wave 2B)")
         // (c) nút: đường đọc-lại riêng, xét TRƯỚC mọi đường thay view
         val refresh = SourceRoots.body(widgets, "fun refreshRead(")
         assertTrue(refresh.indexOf("CapabilityCatalog.isWrite(tag.id)") in 0 until refresh.indexOf("removeViewAt"))

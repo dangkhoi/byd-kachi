@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -219,8 +220,11 @@ class KachiChromeContractTest {
         assertTrue("gate.onStop(seekBar.progress)?.let(onCommit)" in SourceRoots.body(rowSrc, "override fun onStopTrackingTouch("), "thả tay ⇒ áp")
         assertEquals(3, Regex("""\bgate\.on""").findAll(rowSrc).count(), "không cửa nào khác gọi cổng")
         assertFalse(Regex("""\btracking\b""").containsMatchIn(rowSrc), "không giữ bản sao thứ hai của trạng thái kéo ở :app")
-        assertTrue("progressBackgroundTintList = ColorStateList.valueOf(c(KachiTheme.MUT))" in rowSrc,
-            "rãnh = MUT (soát Pass 10 [P2]: FIELD_SUNKEN trên PANEL ≈ 1.03–1.11:1, ở vị trí 0 không thấy thanh kéo)")
+        // 2.93 SLIDER-RAIL-CONTRAST (đổi ghim có lý do): rãnh MUT ở disabledAlpha của theme ROM chỉ 1,6:1 / 1,81:1 [ĐO QA 04/10]
+        // ⇒ drawable riêng, rãnh MUT2 ≥ 3:1 trên PANEL (Widget293ContrastTest đo trên bảng màu thật). Vẫn không FIELD_SUNKEN.
+        assertTrue("progressDrawable = sliderRail(context)" in rowSrc && "floor = RAIL_FLOOR" in rowSrc,
+            "rãnh riêng, sàn 3:1 (soát Pass 10 [P2]: FIELD_SUNKEN trên PANEL ≈ 1.03–1.11:1, ở vị trí 0 không thấy thanh kéo)")
+        assertFalse("FIELD_SUNKEN" in SourceRoots.body(rowSrc, "internal fun sliderRail("), "rãnh không dùng FIELD_SUNKEN")
         assertTrue("bar.contentDescription = describe(text)" in rowSrc, "mô tả trợ năng đổi theo từng nấc")
         assertTrue("addView(bar, LinearLayout.LayoutParams(0, dpi(context, Sp.TOUCH), 1f))" in rowSrc, "đích chạm 48 dp")
     }
@@ -322,7 +326,5 @@ class KachiChromeContractTest {
         }
     }
 
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 }

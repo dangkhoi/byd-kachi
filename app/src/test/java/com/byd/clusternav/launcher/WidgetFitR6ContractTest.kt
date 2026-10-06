@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -32,11 +33,17 @@ class WidgetFitR6ContractTest {
         val fit = SourceRoots.body(row, "fun fit(rot: Boolean, fitPx: Float, legible: Boolean, floorPx: Float, tick: Boolean)")
         assertTrue(fit.contains("val r = reserve(shown)"))
         assertTrue(fit.contains("shown.maxOfOrNull { FitValues.captionMinPx(it.textSize) } ?: 0, r,"), "share nhận khe")
-        assertTrue(fit.indexOf("FitValues.share(") < fit.indexOf("gap = if (share.captions) r else 0"), "khe chỉ giữ khi chú thích hiện")
+        assertTrue(fit.indexOf("FitValues.share(") < fit.indexOf("val g = if (share.captions) r else 0"), "khe chỉ giữ khi chú thích hiện")
         assertTrue(fit.contains("gap = 0"), "khối dọc: không bề rộng tĩnh ⇒ không khe")
+        // 2.93 FIT-GRAVITY (đổi ghim có lý do): khe là LỀ NGOÀI có chủ của giá trị (gapMargin ← FitScale.params), không còn
+        // cộng vào valueW; đo dò vẫn gồm khe (lề nằm trong LayoutParams lúc đo) ⇒ lưới 'đọc được' không `…` chú thích.
         val probe = SourceRoots.body(row, "fun probe(rot: Boolean)")
-        assertTrue(probe.indexOf("gap = if (rot) reserve(") < probe.indexOf("valueW = if (rot) needAt(value.textSize) + gap else -1"),
-            "đo dò gồm cả khe ⇒ lưới 'đọc được' không `…` chú thích ở bề rộng nhỏ nhất")
+        assertTrue(probe.indexOf("gap = if (rot) reserve(") < probe.indexOf("valueW = if (rot) needAt(value.textSize) else -1"),
+            "khe đặt trước khi đo dò; valueW = đúng nhu cầu")
+        val margin = SourceRoots.body(row, "fun gapMargin(v: View, rot: Boolean): Pair<Int, Int>")
+        assertTrue("val g = if (rot && !yielded) gap else 0" in margin && "applied = g" in margin, "chỉ hàng ngang có chú thích hiện")
+        assertTrue("row?.gapMargin(b.v, rot)?.let { (s, e) -> want[0] += s; want[2] += e }" in SourceRoots.body(scale, "private fun params("))
+        assertTrue("used += horizontalMargins(c) - applied" in SourceRoots.body(row, "private fun flex()"), "lề có chủ không tính hai lần")
         assertTrue(SourceRoots.body(row, "private fun reserve(shown: List<TextView>)").contains("FitValues.gapPx(it.textSize)"))
     }
 
@@ -80,7 +87,12 @@ class WidgetFitR6ContractTest {
     @Test
     fun `5 - nhip do cung chu khong chay lai luat gia tri`() {
         val hook = SourceRoots.body(layout, "private fun onContentChanged(")
-        assertTrue(hook.contains("if (valuesStale(child)) items[child]?.fs?.fitValues(FitProbe.Floors.of(context).textPx, legible, tick = true)"))
+        // 2.93 FIT-REGROW (đổi ghim có lý do): luật giá trị ở nhịp dời vào `regrowOrShrink` — vẫn "chữ đổi mới chạy, chỉ CO";
+        // thêm nhánh lớn lại sau RECHECK_MS khi ô đã bị co (FitValues.regrowDue — FitValuesMemoTest).
+        assertTrue(hook.contains("regrowOrShrink(child)"))
+        val rs = SourceRoots.body(layout, "private fun regrowOrShrink(child: View)")
+        assertTrue(rs.contains("valuesStale(child) && fs.fitValues(floor, legible, tick = true)"))
+        assertTrue(rs.contains("FitValues.regrowDue(it.shrunkAt, now)") && rs.contains("fs.fitValues(floor, legible, tick = false)"))
         val stale = SourceRoots.body(layout, "private fun valuesStale(v: View)")
         assertTrue(stale.contains("val sig = it.fs?.let(FitProbe::signature) ?: return false"))
         assertTrue(stale.contains("return (sig != it.valuesSig).also { _ -> it.valuesSig = sig }"))
@@ -101,8 +113,7 @@ class WidgetFitR6ContractTest {
     @Test
     fun `ham moi co cho goi that`() {
         val app = SourceRoots.moduleSourceRoots().filter { it.toString().contains("app") }
-        fun strip(t: String) = t.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        fun strip(t: String) = KotlinSource.stripComments(t)
         fun uses(token: String): Boolean = app.any { root ->
             java.nio.file.Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.anyMatch { strip(it.toFile().readText()).contains(token) } }
         }

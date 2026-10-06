@@ -21,8 +21,9 @@ import kotlin.math.roundToInt
  * ## Hai quyết định về trải nghiệm
  *  1. **Cho phép đè nhau rồi tô ĐỎ**, không chặn tay người dùng lúc đang kéo. Chặn giữa lúc kéo làm khung "dính"
  *     vào nhau khó hiểu; tô đỏ thì thấy ngay sai ở đâu, và nút Lưu bị chặn kèm lý do.
- *  2. **Vẽ theo đúng tỉ lệ màn hình** (khung chứa được co về tỉ lệ màn) ⇒ hình vẽ ở đây giống hình thật ở màn chính.
- *     Nếu vẽ vào khung vuông thì bố cục nhìn cân ở trình vẽ mà ra màn hình lại dẹt.
+ *  2. **Vẽ theo đúng tỉ lệ VÙNG Ô** (2.93 `GRID-EDITOR-ASPECT`: tỉ lệ khung `WorkspaceView` thật — [area]; trước là tỉ lệ
+ *     cả màn, bỏ qua thanh trên + thanh nút) ⇒ hình vẽ ở đây giống hình thật ở màn chính. Nếu vẽ vào khung vuông thì bố
+ *     cục nhìn cân ở trình vẽ mà ra màn hình lại dẹt.
  */
 class GridEditorView(context: Context) : View(context) {
 
@@ -56,6 +57,9 @@ class GridEditorView(context: Context) : View(context) {
 
         /** Cỡ số thứ tự khung theo cạnh NGẮN của khung — giữ đúng số của bản trước. */
         const val LABEL_RATIO = 0.32f
+
+        /** Lề (px) quanh bảng lưới — số của bản trước. */
+        const val PAD = 8f
     }
 
     /** Bố cục đang vẽ. Đặt vào là vẽ lại. */
@@ -85,16 +89,25 @@ class GridEditorView(context: Context) : View(context) {
     private var grabCol = 0f     // lệch giữa điểm chạm và góc khung, tính bằng ĐƠN VỊ Ô (kéo mới mượt)
     private var grabRow = 0f
 
+    /**
+     * 2.93 `GRID-EDITOR-ASPECT` — cỡ (px) của VÙNG Ô THẬT (`WorkspaceView` đã đo: màn trừ thanh trên + thanh nút theo cạnh
+     * và cỡ %), để hình vẽ ở đây cùng tỉ lệ với các ô ngoài màn chính. `null`/chưa đo ⇒ lùi về tỉ lệ màn như trước.
+     */
+    var area: Pair<Int, Int>? = null
+        set(value) { field = value; place(width, height); invalidate() }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        // Co về tỉ lệ MÀN HÌNH để hình vẽ giống hình thật.
+        place(w, h)
+    }
+
+    /** Hộp vẽ lưới theo tỉ lệ vùng ô thật ([area]) — phép tính thuần ở [GridEditorLogic.drawBox] (`:core`, có test). */
+    private fun place(w: Int, h: Int) {
         val screenW = resources.displayMetrics.widthPixels.toFloat()
         val screenH = resources.displayMetrics.heightPixels.toFloat()
-        val aspect = if (screenH > 0f) screenW / screenH else 16f / 9f
-        val pad = 8f
-        var bw = w - pad * 2; var bh = bw / aspect
-        if (bh > h - pad * 2) { bh = h - pad * 2; bw = bh * aspect }
-        gw = bw; gh = bh; gx = (w - bw) / 2f; gy = (h - bh) / 2f
+        val fallback = if (screenH > 0f) screenW / screenH else 0f
+        val b = GridEditorLogic.drawBox(w, h, area?.first ?: 0, area?.second ?: 0, PAD, fallback)
+        gw = b.w; gh = b.h; gx = b.x; gy = b.y
     }
 
     // ── Chạm ─────────────────────────────────────────────────────────────────────────────────────

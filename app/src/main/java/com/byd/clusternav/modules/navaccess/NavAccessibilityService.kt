@@ -117,7 +117,7 @@ class NavAccessibilityService : AccessibilityService() {
             else -> VoiceKeyAction.OTHER
         }
         // QA 2.87 [P3] — DOWN lặp / UP của CHÍNH lần nhấn vừa học (cờ học đã tắt trên DOWN) ⇒ nuốt nốt. Trước: UP đi đường
-        // thường, phím chưa gán ⇒ tới hệ thống ⇒ [ĐO máy ảo `l7/learn88-orphan-up.log`] UP mồ côi bật YT Music.
+        // thường, phím chưa gán ⇒ tới hệ thống ⇒ [ĐO máy ảo `learn88-orphan-up.log` (bằng chứng phiên, ngoài repo)] UP mồ côi bật YT Music.
         val tail = learnTail.swallow(action, event.keyCode, event.downTime)
         // 2.88 · KEY-SOURCE-SPLIT tầng 2 — chỉ đường KHỚP (không đuôi học, không đang học, công tắc bật) mới có thể đọc
         // nguồn đồng bộ. Mọi đường khác ghi nhật ký tầng 1 NGAY, y như 2.87 — TRƯỚC khi bus học phím báo mã (hộp đặt tên

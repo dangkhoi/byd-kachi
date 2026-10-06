@@ -3,6 +3,7 @@ package com.byd.clusternav.launcher.voice
 import com.byd.clusternav.launcher.ControlKind
 import com.byd.clusternav.launcher.ControlRegistry
 import com.byd.clusternav.launcher.Lang
+import com.byd.clusternav.launcher.LauncherActions
 import com.byd.clusternav.launcher.Strings
 
 /**
@@ -20,6 +21,21 @@ import com.byd.clusternav.launcher.Strings
  * cũ (`labelIn`/`argsIn` là chính phép đọc mà hai thuộc tính kia uỷ quyền).
  */
 internal object VoiceReplyPreview {
+
+    /**
+     * 2.93 — câu xem-trước của một việc launcher. Camera theo yêu cầu: câu MỞ là BẬT/TẮT theo thứ đang hiện (nói lại lần
+     * hai thì tắt — `CameraDemand.spoken`), mà phiên `:wake` không biết camera nào đang hiện ⇒ chỉ nói TÊN camera, không
+     * hứa *"Mở"* cho một lượt có thể là tắt; câu TẮT nói *"Tắt …"*; *Tắt camera* — nhãn đã là câu lệnh. Việc khác: *"Mở …"*.
+     */
+    fun launcher(i: VoiceIntent.Launcher, lang: Lang): String {
+        val name = VoiceReply.labelOf(i.id, lang)
+        return when {
+            i.id == LauncherActions.CAM_OFF -> name
+            i.off -> Strings.t("Tắt ", "Turn off ", lang) + name
+            LauncherActions.switchable(i.id) -> name
+            else -> Strings.t("Mở ", "Open ", lang) + name
+        }
+    }
 
     /** Câu xem-trước của một nút xe — xem KDoc [VoiceReply.preview]. */
     fun control(i: VoiceIntent.Control, lang: Lang): String {

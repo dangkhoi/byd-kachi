@@ -4,8 +4,8 @@
 > *"header top và bottom là của hệ thống, không vẽ vào được, chỉ vẽ được khúc giữa như gmaps đang hiện"* ⇒ đo **dải giữa**
 > bằng số từ framebuffer + ảnh chụp, đưa vào một hồ sơ (`ClusterBandSpec`), thêm hình khung `CLUSTER` ("theo cụm") để
 > overlay camera trên cụm nằm **trọn** trong dải ấy. Spec `docs/specs/kachi-276-closing.html` R4 · OQ2.
-> Bằng chứng cục bộ (gitignored): `scratchpad/car-0927/cum/cum-{0,1,2}.png` (1600×1200), `scratchpad/car-0927/cluster-fb-d1.png`
-> (1920×720), `scratchpad/car-0927/logcat-274-0956.txt`; ảnh máy ảo `scratchpad/cluster-276/`.
+> Bằng chứng cục bộ (thư mục nháp của phiên, ngoài repo): `cum-{0,1,2}.png` (1600×1200), `cluster-fb-d1.png`
+> (1920×720), `logcat-274-0956.txt` (bộ `car-0927`); ảnh máy ảo bộ `cluster-276`.
 
 ---
 
@@ -28,7 +28,7 @@
 
 **Phương pháp.** Không có framebuffer của thanh trên/dưới (chúng không nằm trong display 1), nên mép của chúng phải suy
 từ ảnh chụp. Với mỗi ảnh, dựng **homography** ảnh → framebuffer (DLT bình phương tối thiểu, 7–12 điểm neo, pure python
-`scratchpad/cluster-276/band_fit.py`): điểm neo là các chi tiết gmaps có toạ độ fb đọc bằng PIL (mic thanh tìm `830,172`,
+`band_fit.py` — công cụ ngoài repo): điểm neo là các chi tiết gmaps có toạ độ fb đọc bằng PIL (mic thanh tìm `830,172`,
 chip *Trạm xăng* `1750,172`, pin *Melbourne* `1366,412`, chip 31° `845,422`, viên *Khám phá* `215,494`, logo *Google Maps*
 `948,532`…) **và** hai góc dưới của cửa sổ camera (toạ độ fb biết chính xác từ F2/F3: trái `119,554`–`490,554`, phải
 `1430,554`–`1801,554`). Sau đó chiếu các điểm biên nhìn thấy trên ảnh (mép trên của cửa sổ camera nơi nó *ló ra* dưới
@@ -110,11 +110,11 @@ thanh trên; đỉnh chữ *0 kW* / *0 km/h*; viền kính; mép cột icon) v�
 | xi-nhan phải | `… corner=TR side=RIGHT cluster=true … khung=565x424 … tại=1215,136 …` · khung `[1215,136]-[1780,560]` | **TRONG DẢI** |
 | thoái màn chính (`camera_on_cluster 0`, vẫn `camera_shape CLUSTER`) | `overlay show corner=TL side=LEFT cluster=false rot=0 hình=RECT … khung=540x405 vùng=540x540` | thoái đúng RECT, display 0 |
 
-Ảnh (cục bộ, không vào repo — `scratchpad/cluster-276/e2e/`): `cluster-left.png`, `cluster-right.png` = cửa sổ soi của overlay
+Ảnh (cục bộ, không vào repo — bộ E2E `cluster-276` ở thư mục nháp của phiên): `cluster-left.png`, `cluster-right.png` = cửa sổ soi của overlay
 display phóng ×2 về 1920×720, kẻ **đỏ** = thanh trên/dưới + cột icon phải đo từ xe, **xanh** = dải `[140,136)-(1780,560)`, **vàng** =
 khung cửa sổ đọc từ `dumpsys`; ảnh tổng hợp (lưới cầu fisheye) nằm trọn trong khung vàng, khung vàng nằm trọn trong xanh, không
 chạm đỏ. `screen-main.png` = lượt thoái trên màn chính. Kèm `windows-left/right/main.txt`, `overlay-show-*.txt`.
-Ảnh đo xe: `scratchpad/cluster-276/zoom-*.png` (cắt phóng 3 ảnh cụm), `band_fit.py` (homography).
+Ảnh đo xe: `zoom-*.png` (cắt phóng 3 ảnh cụm, thư mục nháp của phiên — ngoài repo), `band_fit.py` (homography).
 
 ## 9. Nợ còn lại
 
@@ -161,7 +161,7 @@ chạy máy ảo bằng tay.
 
 | # | Sự thật | Mức | Nguồn |
 |---|---|---|---|
-| G1 | Bộ đệm cụm là **chữ nhật phẳng 1920×720**, không có mặt nạ cong nào trong đó (ảnh chụp màn display 1 lúc camera đang hiện) | [ĐO] | `scratchpad/car-0927pm/cum-d1.png` |
+| G1 | Bộ đệm cụm là **chữ nhật phẳng 1920×720**, không có mặt nạ cong nào trong đó (ảnh chụp màn display 1 lúc camera đang hiện) | [ĐO] | ảnh `cum-d1.png` (bộ `car-0927pm`, ngoài repo) |
 | G2 | ⇒ đường cong owner thấy là **vùng sáng vật lý** của kính/viền cụm ⇒ `screencap` **không** đo được nó; chỉ ẢNH CHỤP cụm mới đo được | [SUY từ G1, chắc] | — |
 | G3 | Biên vùng sáng là hình **thấu kính**: cạnh trên/dưới cong, hai đầu trái/phải xiên + bo | [ĐO] | `car-0927/cum/cum-{0,1,2}.png` |
 
@@ -179,7 +179,7 @@ Hai cái bẫy đã gặp và cách vượt:
 - **Quét từ giữa ra thì vấp nội dung tối** (ảnh camera, chữ đen trong bản đồ) ⇒ quét **từ ngoài vào** + đòi 12 điểm
   liên tiếp.
 
-Kiểm bằng mắt: vẽ lại các điểm biên dò được lên chính ảnh chụp (`scratchpad/mask-277/check-cum0*.png`) — bám sát.
+Kiểm bằng mắt: vẽ lại các điểm biên dò được lên chính ảnh chụp (`check-cum0*.png`, ngoài repo) — bám sát.
 
 ### 11.3 Kết quả — mép trái là một đường **"<"**, không phải cung tròn
 
@@ -275,7 +275,7 @@ dải giữa, mép trái **ôm đúng đường cong của kính** thay vì dừ
 - **Phép cắt được chứng minh bằng điểm ảnh** (không chỉ bằng số cửa sổ): nhãn *"Left camera"* nằm ở góc trên-trái
   cửa sổ nên chữ **L** bị chính mặt nạ xén. Đo điểm sáng trái nhất từng hàng trên ảnh máy ảo: `y=156 ⇒ x=32`
   (mô hình 32,9) · `y=160 ⇒ 30` (31,1) · `y=164 ⇒ 30` (29,2) ⇒ lệch ≤ **1,9 px**. Ảnh:
-  `scratchpad/car-0927pm/mask-277/mask-clip-proof.png` (xanh = mô hình, đỏ = đo được). Đây là bằng chứng THẬT rằng
+  `mask-clip-proof.png` (bộ `mask-277`, ngoài repo; xanh = mô hình, đỏ = đo được). Đây là bằng chứng THẬT rằng
   `Canvas.clipPath` ăn vào nội dung của cây view trên display cụm — không phải suy luận.
 
 ### 11.8 🚗 Kiểm trên xe (runbook 2.77)
@@ -348,9 +348,9 @@ tường thẳng `band.x1 − w`. Cái §11.4 bỏ qua: cột icon **không ch�
 
 ### 12.2 Phương pháp — **đúng** phép của §11.2, đổi mỗi hướng gộp
 
-Chạy lại `scratchpad/mask-277/edge2.py` (homography DLT thuần python + Pillow, quét từng hàng fb từ ngoài vào,
+Chạy lại `edge2.py` (công cụ ngoài repo — homography DLT thuần python + Pillow, quét từng hàng fb từ ngoài vào,
 ngưỡng `110`, đòi 12 điểm liên tiếp) nhưng lấy cột `R` thay cột `L`, rồi lấy 9 mẫu ở **cùng** các hàng của bảng
-trái (`y = 136, 189, …, 560`) — script `scratchpad/mask-277/rightedge.py`.
+trái (`y = 136, 189, …, 560`) — script `rightedge.py` (công cụ ngoài repo).
 
 | Ảnh | Neo · sai số lớn nhất | Dùng cho mép phải? |
 |---|---|---|
@@ -369,7 +369,7 @@ trái (`y = 136, 189, …, 560`) — script `scratchpad/mask-277/rightedge.py`.
 - **Sai số nội suy tuyến tính 9 mẫu vs phép dò từng hàng: 7,7 px** (bảng trái: 5,5 px).
 - **Lệch giữa hai ảnh: tới 44 px**, và lại là xu hướng tuyến tính theo `y` (`cum-0` lệch **+43** ở đỉnh, **−17** ở
   đáy) — cùng dấu hiệu méo xuyên tâm ống kính điện thoại như §11.3, không phải kính cụm khác nhau.
-- Kiểm bằng mắt: `scratchpad/mask-277/checkright-cum-{0,2}.png` (vẽ bảng lên chính ảnh chụp) — bám sát mép sáng ở
+- Kiểm bằng mắt: `checkright-cum-{0,2}.png` (ngoài repo; vẽ bảng lên chính ảnh chụp) — bám sát mép sáng ở
   `cum-2`, và nằm **hơi vào trong** ở `cum-0` (đúng hướng an toàn đã chọn).
 
 ### 12.4 ⚠ Hướng làm tròn NGƯỢC với mép trái — cùng một lý do
@@ -479,7 +479,7 @@ nhìn mất = `phần lấn / bề rộng cửa sổ` (một trục phóng khít
 
 `136` của §2 là một **mốc nội dung** (*"hàng đầu tiên chắc chắn nhìn thấy trọn"* — mép trên thanh tìm kiếm gmaps),
 **không phải** mép của thanh hệ thống. Owner thấy đúng chỗ đó còn dư. Phép đo mới, cùng homography của §11.2 nhưng
-**nắn cả vùng ảnh về không gian framebuffer** (`scratchpad/toprect.py`, `topedge2.py`) rồi đọc **đường kẻ phân cách**
+**nắn cả vùng ảnh về không gian framebuffer** (`toprect.py`, `topedge2.py` — công cụ ngoài repo) rồi đọc **đường kẻ phân cách**
 chạy hết bề ngang:
 
 | Ảnh | Neo · sai số | Đáy đường kẻ (fb `y`) | Ghi chú |

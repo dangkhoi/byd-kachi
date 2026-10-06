@@ -147,8 +147,16 @@ object VoiceWavProbe {
      * Chạy một lượt. **CHẶN** (nạp mô hình + giải mã) ⇒ luồng nền.
      *
      * @param profiles · [apps] cùng danh sách động mà phiên nghe thật dùng ⇒ phép đo nói về đúng ngữ pháp thật.
+     * @param vocab 2.93 VOICE-OPEN-TURN-DYNVOCAB — từ vựng động cho phép ghép vế sau, CÙNG thứ phiên thật dùng
+     *   (`sessionVocab`); mặc định = hồ sơ + khoá app đã truyền (chỗ gọi có sổ địa chỉ/bảng gói thì truyền đủ).
      */
-    fun run(ctx: Context, profiles: List<String>, apps: List<String>, installed: Set<String> = emptySet()): Result {
+    fun run(
+        ctx: Context,
+        profiles: List<String>,
+        apps: List<String>,
+        installed: Set<String> = emptySet(),
+        vocab: VoiceDynVocab = VoiceDynVocab(profiles, apps),
+    ): Result {
         val file = findFile(ctx)
             ?: return Result("", "", Lang.f("không thấy tệp {0}", "no {0} found", FILE_NAME))
         val rec = VoiceRecognizer.open(ctx, profiles, apps, installed)
@@ -170,7 +178,7 @@ object VoiceWavProbe {
             // ═══ VOICE-OPEN-TURN — đường đo đi qua **đúng hai pha** mà phiên thật đi ═══════════════════
             // Phiên thật giải mã vế TRƯỚC tại điểm ngắt đầu tiên rồi hỏi [VoiceOpenTurn.isOpen]; dở thì giữ micro,
             // giải mã vế sau RIÊNG và ghép. Tệp một đoạn ⇒ `headTrim == trimmed` ⇒ y hệt đường cũ (KDoc [trimSamples]).
-            val split = openTurn(rec, pcm.first, headStart, if (headTrim > 0) headTrim else trimmed, tail)
+            val split = openTurn(rec, pcm.first, headStart, if (headTrim > 0) headTrim else trimmed, tail, vocab)
             val grammarText = split.first
             // ĐÚNG hai lượt như phiên nghe thật (R16) — phép đo phải đi qua cùng con đường, không phải một
             // đường rút gọn; nếu không thì nó không nói gì về phiên thật (xem KDoc lớp).
@@ -202,6 +210,7 @@ object VoiceWavProbe {
         headStart: Int,
         headTrim: Int,
         tail: IntRange?,
+        vocab: VoiceDynVocab,
     ): Triple<String, String, String> = rec.use { r ->
         // `headStart == 0` ở gần như mọi tệp ⇒ **đúng** lời gọi cũ, không một mảng nào bị chép thêm.
         val head = if (headStart <= 0) r.decodeAll(pcm, headTrim)
@@ -210,7 +219,7 @@ object VoiceWavProbe {
         // R6 (2.76): có vế sau ⇒ giải mã + hỏi `attach` như phiên thật (`VoiceOpenTurnArm.result`), kể cả vế đủ.
         val part = pcm.copyOfRange(tail.first, minOf(tail.last + 1, pcm.size))
         val tailText = r.decodeAll(part, part.size)
-        val joined = VoiceOpenTurn.attach(head, tailText) ?: return@use Triple(head, head, tailText)
+        val joined = VoiceOpenTurn.attach(head, tailText, vocab) ?: return@use Triple(head, head, tailText)
         Log.i(TAG, "noi-tiep (WAV): \"$head\" + \"$tailText\" ⇒ \"$joined\"")
         Triple(joined, head, tailText)
     }

@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -256,7 +257,5 @@ class SurfaceMaterialContractTest {
         .let { dir -> Files.walk(dir).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() } }
         .sortedBy { it.fileName.toString() }
 
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 }

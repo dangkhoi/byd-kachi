@@ -27,6 +27,10 @@ class CameraSpanShapeWiringContractTest {
 
     private val overlay by lazy { app("launcher/camera/CameraOverlayView.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
+    // 2.93: mọi lượt đọc pref của MỘT phiên dời sang `CameraSessionSpec` (bốn camera, một cửa đọc — spec kachi-293-cam §4.2).
+    private val spec by lazy { app("launcher/camera/CameraSessionSpec.kt") }
+    // 2.93: bảng nhãn chip camera dùng chung (khối chung + bộ chỉnh *Từng camera*).
+    private val labels by lazy { app("launcher/CameraSettingsLabels.kt") }
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
     // 2.76 · R1: camera tách khỏi `SettingsSectionsCar` sang tệp riêng, hai tầng (người lái / kỹ thuật).
     private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
@@ -45,44 +49,59 @@ class CameraSpanShapeWiringContractTest {
      */
     @Test fun `controller suy ra crop tu core voi ca bon pref`() {
         // 2.92: vùng cắt KHUNG + NỘI DUNG suy ở `:core` CameraViewPlan.crops (gọi đúng CameraPanoCrop.cropFor của hôm nay
-        // cho *Nắn thẳng*) — controller chỉ đọc pref và chuyển xuống.
-        assertTrue("CameraViewPlan.crops(" in controller, "crop phải do `:core` suy ra (có test bằng số)")
+        // cho *Nắn thẳng*) — controller chỉ đọc pref và chuyển xuống. 2.93: lượt đọc + lượt suy nằm ở `CameraSessionSpec`
+        // (một cửa cho cả bốn camera), controller nhận đúng bộ crop ấy (`s.crops`).
+        assertTrue("CameraViewPlan.crops(" in spec, "crop phải do `:core` suy ra (có test bằng số)")
+        assertTrue("val crops = s.crops" in controller, "controller dùng ĐÚNG bộ crop của lượt đọc phiên, không tự suy lần hai")
         val plan = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraViewPlan.kt")
         assertTrue("CameraPanoCrop.cropFor(" in plan, "kế hoạch `:core` phải đi qua đúng phép cắt của hôm nay")
-        assertTrue("val crop = view.crop" !in controller, "hằng crop của enum không được đọc thẳng nữa (chip sẽ vô tác dụng)")
+        listOf(controller, spec).forEach {
+            assertTrue("val crop = view.crop" !in it, "hằng crop của enum không được đọc thẳng nữa (chip sẽ vô tác dụng)")
+        }
         listOf(
-            "Prefs.cameraSpan(appCtx)",
-            "Prefs.cameraShape(appCtx)",
-            "Prefs.cameraStrip(appCtx, left = isLeft)",
-            "Prefs.cameraCirclePct(appCtx)",
-        ).forEach { assertTrue(it in controller, "thiếu lượt đọc pref: $it") }
+            "Prefs.cameraSpan(ctx)",
+            // 2.93: hình khung HIỆU LỰC của camera (riêng camera → chung `Prefs.cameraShape`) — `PrefsCameraPerCam`.
+            "Prefs.cameraShapeOf(ctx, which)",
+            "Prefs.cameraStrip(ctx, left = left)",
+            "Prefs.cameraCirclePct(ctx)",
+        ).forEach { assertTrue(it in spec, "thiếu lượt đọc pref: $it") }
+        val perCam = app("PrefsCameraPerCam.kt")
+        assertTrue(", cameraShape(ctx))" in SourceRoots.body(perCam, "fun Prefs.cameraShapeOf("),
+            "*Theo chung* của hình khung riêng phải lùi về ĐÚNG pref chung `camera_shape`")
         // Chỉ số dải đọc theo ĐÚNG BÊN xi-nhan (hai khoá độc lập, y khuôn camera_rot_left/right).
         // 2026-09-28: dải hiệu lực nay là `effStrip` = dải ảnh ghép người lái chọn, lùi về pref dải cũ.
-        assertTrue("strip = effStrip" in controller, "cropFor phải nhận DẢI HIỆU LỰC, không phải pref thô")
+        // 2.93: camera GIỮA (sau/trước) ép dải của chính nó ([CameraWhich.strip]) — không đọc pref dải theo bên.
+        assertTrue("strip = effStrip" in spec, "cropFor phải nhận DẢI HIỆU LỰC, không phải pref thô")
         assertTrue(
-            "val effStrip = panoStrip ?: Prefs.cameraStrip(appCtx, left = isLeft)" in controller,
-            "dải hiệu lực phải ưu tiên lựa chọn ảnh ghép rồi mới lùi về pref cũ",
+            "val effStrip = if (which.side) panoStrip ?: Prefs.cameraStrip(ctx, left = left) else which.strip" in spec,
+            "dải hiệu lực phải ưu tiên lựa chọn ảnh ghép rồi mới lùi về pref cũ (camera gương); camera giữa = dải của nó",
         )
         assertTrue(
-            "CameraPanoCrop.panoStripFor(view, Prefs.cameraPano(appCtx, left = isLeft), left = isLeft)" in controller,
+            "CameraPanoCrop.panoStripFor(view, Prefs.cameraPano(ctx, left = left), left = left)" in spec,
             "quyết định 'nguồn có phải ảnh ghép không' phải nằm ở `:core`, không rẽ nhánh trong app",
         )
-        // Hình khung đi tiếp xuống tầng vẽ; kênh HAL đi tiếp xuống tầng mở camera.
-        assertTrue("shape = shape," in controller, "hình khung phải vào overlay.show(shape = …)")
+        // Hình khung đi tiếp xuống tầng vẽ (qua phép quy của kế hoạch `:core`); kênh HAL đi tiếp xuống tầng mở camera.
+        assertTrue("shape = shape," in spec, "hình khung hiệu lực phải vào kế hoạch crop (`CameraViewPlan.crops(shape = …)`)")
+        assertTrue("shape = crops.frameShape," in controller, "hình khung phải vào overlay.show(shape = …)")
         // 2.77: **MỘT** nguồn (khung ghép) ⇒ `AvmCamera.open` không còn tham số kênh, và mọi mảnh của nguồn một-kênh
         // phải VẮNG khỏi controller. Thấy lại một trong số chúng = nguồn đã bị dựng lại mà không ai đo lại
         // ([ĐO xe 27/09] một kênh KHÔNG nét hơn: năng lượng cạnh 686 vs 351, chi tiết ngang/dọc 0,30 vs 0,19).
-        assertTrue("avm.open(camId, surface)" in controller, "lượt mở camera chỉ còn (camId, surface)")
+        assertTrue("avm.open(s.camId, surface)" in controller, "lượt mở camera chỉ còn (camId, surface)")
         listOf(
-            "CameraSignalPolicy.channelFor(", "Prefs.cameraHalMode(appCtx)", "Prefs.cameraSource(appCtx)",
+            "CameraSignalPolicy.channelFor(", "Prefs.cameraHalMode(", "Prefs.cameraSource(",
             "CameraSignalPolicy.channelActive(", "CameraPanoCrop.contentWidth(", "CameraChannelFallback",
-            "fallbackToPano", "channel = channel,", "CameraDefaults.of(appCtx).channel(", "view.channel",
-        ).forEach { assertTrue(it !in controller, "`$it` đã gỡ ở 2.77 cùng nguồn *Một camera* — không được đọc lại") }
+            "fallbackToPano", "channel = channel,", ".channel(", "view.channel",
+        ).forEach { needle ->
+            listOf(controller, spec).forEach {
+                assertTrue(needle !in it, "`$needle` đã gỡ ở 2.77 cùng nguồn *Một camera* — không được đọc lại")
+            }
+        }
         // Một dòng log đủ để đọc lại quyết định trên xe (CLAUDE.md §11: app tự chụp, owner không gõ adb).
-        assertTrue("vùng=\$span" in controller && "hình=\$shape" in controller,
+        assertTrue("vùng=\${s.span}" in controller && "hình=\${s.shape}" in controller,
             "dòng log của controller phải nói vùng/hình — đó là thứ owner đọc lại khi chốt dải")
-        assertTrue("halMode" !in controller.substringAfter("Log.i(PanoramaHal.TAG, \"xi-nhan"),
-            "dòng log không còn nói kênh HAL (không còn kênh nào để chọn)")
+        val log = controller.substringAfter("Log.i(PanoramaHal.TAG, \"camera \$which", "")
+        assertTrue(log.isNotEmpty(), "dòng log mở phiên phải bắt đầu bằng camera nào (2.93: bốn camera)")
+        assertTrue("halMode" !in log, "dòng log không còn nói kênh HAL (không còn kênh nào để chọn)")
         assertTrue("rot=\$rot lật=\$mirror\")" in controller, "dòng log vẫn kết bằng rot= (hợp đồng của bài R7)")
     }
 
@@ -95,17 +114,25 @@ class CameraSpanShapeWiringContractTest {
      * [CameraDewarpPrefs.panXSign] vẫn đúng, chỉ là không ai gọi) — đúng khuôn bẫy CLAUDE.md §8.
      */
     @Test fun `pan_x mang dau theo ben, tu controller xuong core`() {
-        assertTrue("left = turn == Turn.LEFT," in controller,
+        // 2.93: BÊN đến từ CAMERA đang mở (không còn từ `turn` — camera theo yêu cầu không có xi-nhan), và dấu dịch-x đi
+        // kèm theo camera (`CameraWhich.panXSign`: trái +1 · phải −1 · sau/trước 0).
+        assertTrue("left = which == CameraWhich.LEFT," in controller,
             "controller phải nói BÊN cho bộ uniform — hai camera gương soi gương nhau")
+        assertTrue("panXSign = which.panXSign," in controller, "dấu dịch-x phải đi theo CAMERA đang mở")
         val body = SourceRoots.body(prefsDewarp, "fun Prefs.cameraGlUniforms(")
-        // 2.92: dấu suy trong kế hoạch `:core` (CameraViewPlan.gl) — cameraGlUniforms chỉ chuyển BÊN xuống.
+        // 2.92: dấu suy trong kế hoạch `:core` (CameraViewPlan.gl) — cameraGlUniforms chỉ chuyển BÊN + dấu xuống.
         assertTrue("left = left," in body, "cameraGlUniforms phải chuyển BÊN xuống kế hoạch `:core`")
+        assertTrue("panXSign = panXSign," in body, "cameraGlUniforms phải chuyển DẤU của camera xuống kế hoạch `:core`")
         val plan = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraViewPlan.kt")
-        assertTrue("val sign = CameraDewarpPrefs.panXSign(left)" in plan && "panXSign = sign," in plan,
+        assertTrue("panXSign: Int = CameraDewarpPrefs.panXSign(left)" in plan,
+            "mặc định của dấu (người gọi cũ) phải là phép suy theo bên ở `:core`")
+        assertTrue("val sign = if (centreCam) 1 else panXSign" in plan && "panXSign = sign," in plan,
             "dấu phải suy ở `:core` (có test bằng số), không phải một `if` ở `:app`")
         // Tham số nằm ở CHỮ KÝ (ngoài thân hàm) ⇒ đọc trên nguyên tệp. `left` KHÔNG có `=` ⇒ không quên được.
         assertTrue("    left: Boolean,\n" in prefsDewarp, "`left` phải là tham số BẮT BUỘC của cameraGlUniforms")
         assertTrue("left: Boolean =" !in prefsDewarp, "`left` KHÔNG được có mặc định — mặc định là chỗ để quên")
+        assertTrue("    panXSign: Int,\n" in prefsDewarp, "`panXSign` phải là tham số BẮT BUỘC của cameraGlUniforms")
+        assertTrue("panXSign: Int =" !in prefsDewarp, "`panXSign` KHÔNG được có mặc định ở `:app`")
         // `pan_y` KHÔNG lật: hai camera soi gương quanh trục DỌC, nên lên/xuống giống nhau ở hai bên.
         assertTrue("panYSign" !in body && "panYSign" !in controller, "pan_y không có dấu theo bên")
     }
@@ -205,8 +232,10 @@ class CameraSpanShapeWiringContractTest {
         val user = SourceRoots.body(settings, "private fun cameraUser(")
         assertTrue("CameraSignalPolicy.SHAPES.map { it to shapeLabel(it) }" in user,
             "chip hình khung SINH từ `:core` SHAPES ⇒ ô CLUSTER của làn L2 tự có chip")
+        // 2.93: bảng nhãn dùng chung với bộ chỉnh *Từng camera* (`CameraSettingsLabels`) — vẫn tra theo hằng `:core`.
+        assertTrue("CameraSettingsLabels.shape(context, code)" in settings, "nhãn chip hình khung đi qua bảng chung")
         listOf("SHAPE_RECT", "SHAPE_ROUND", "SHAPE_CLUSTER").forEach {
-            assertTrue("CameraSignalPolicy.$it ->" in settings, "nhãn chip $it phải tra theo hằng `:core`")
+            assertTrue("CameraSignalPolicy.$it ->" in labels, "nhãn chip $it phải tra theo hằng `:core`")
         }
         assertTrue("bridge.cameraShape()" in user && "bridge.setCameraShape(v)" in user, "hàng chip nối qua cầu")
         // Ba hàng dò + hai hàng cameraId đã gỡ — chúng chỉ còn đường `prefs_set`.
@@ -216,8 +245,8 @@ class CameraSpanShapeWiringContractTest {
             assertTrue(it !in settings, "`$it` đã gỡ khỏi Cài đặt ở 2.77")
         }
         // Mã lưu bền không được chép trần vào Cài đặt (bẫy hai-bản-sao mà `ProfileNames` đã trả giá).
-        listOf("\"NARROW\"", "\"STRIP\"", "\"RECT\"", "\"ROUND\"", "\"CLUSTER\"").forEach {
-            assertTrue(it !in settings, "mã $it bị chép trần — dùng hằng CameraSignalPolicy")
+        listOf("\"NARROW\"", "\"STRIP\"", "\"RECT\"", "\"ROUND\"", "\"CLUSTER\"", "\"AUTO\"").forEach {
+            assertTrue(it !in settings && it !in labels, "mã $it bị chép trần — dùng hằng CameraSignalPolicy/CameraCamConfig")
         }
         // Cầu vẫn còn cửa cho các khoá không-UI (cầu kiểm thử ghi qua `prefs_set`, không qua cầu Cài đặt) —
         // nhưng hai cửa của nguồn một-kênh phải XOÁ.
@@ -241,7 +270,7 @@ class CameraSpanShapeWiringContractTest {
         keys.forEach { k ->
             assertTrue("\"$k\"" in vi, "thiếu chữ tiếng Việt cho $k")
             assertTrue("\"$k\"" in en, "thiếu chữ tiếng Anh cho $k")
-            assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ tài nguyên mồ côi")
+            assertTrue("R.string.$k" in settings || "R.string.$k" in labels, "chữ $k không được dùng ⇒ tài nguyên mồ côi")
         }
         val head = vi.substringAfter("\"kachi_camera_shape_sub\">").substringBefore("</string>")
         assertTrue("Gương cầu" in head, "nhãn hình khung phải chỉ sang kiểu «Gương cầu» cho ảnh trọn chưa nắn: $head")

@@ -89,6 +89,9 @@ class GroupTileWiringContractTest {
             // 2.87 · L5 WIDGET-FIT-ALL (2026-10-03): khung khớp lưới widget chỉ NHẬN DIỆN ô nhóm (`is GroupTileView`)
             // để coi nó là ô TỰ lấp khung (không co bằng FitScale — co hai lần) — không dựng, không đọc GroupBoard.
             "FitGridLayout.kt" to "chỉ nhận diện GroupTileView là ô tự lấp khung (selfFitting) — không dựng ô nhóm",
+            // 2.93 GROUPBOARD-1ROW: khung chọn dạng (bảng đầy đủ / tóm tắt) theo phép đo tràn — nhận GroupTileView ĐÃ dựng
+            // từ GroupTiles.build, không dựng nội dung nhóm, không đọc GroupBoard.
+            "GroupFitFrame.kt" to "chỉ đo bảng nhóm đã dựng rồi chọn hiện bảng đầy đủ hay ô tóm tắt — không dựng ô nhóm",
         )
         val builders = java.nio.file.Files.list(dir).use { s ->
             s.map { it.fileName.toString() }

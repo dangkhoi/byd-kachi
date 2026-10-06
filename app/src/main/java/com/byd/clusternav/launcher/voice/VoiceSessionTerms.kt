@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher.voice
 
+import android.content.Context
+
 /**
  * ═══ TỪ VỰNG **CỦA PHIÊN** — một chỗ dựng, cho mọi thứ trong phiên hỏi tới ═══════════════════════════════════
  *
@@ -25,3 +27,16 @@ internal fun VoiceSession.sessionTerms(): List<VoiceTerm> {
     // 2.91 VOICE-APP-NAMES — cùng nguồn tên đã dạy với `VoiceDispatcher` (VoiceWiring.aliases): câu hỏi lại cũng biết chúng.
     return VoiceGrammar.terms(profiles(), labels.keys.toList(), VoiceWiring.aliases(ctx, labels))
 }
+
+/**
+ * 2.93 VOICE-OPEN-TURN-DYNVOCAB — từ vựng ĐỘNG cho TẦNG NGHE (phép ghép vế sau quãng ngừng, [VoiceOpenTurn.refine]): CÙNG
+ * bốn nguồn mà `VoiceDispatcher.parse` phân tích câu (hồ sơ · khoá bảng gọi app · sổ địa chỉ · tên đã dạy) — ghép ở tầng
+ * nghe và hiểu ở tầng chữ không được dùng hai từ vựng khác nhau. [labels] truyền vào khi chỗ gọi đã có sẵn (tránh lượt hỏi
+ * `PackageManager` thứ hai). CHẶN (bảng gọi app) ⇒ chỉ gọi từ luồng nghe, và chỉ khi lượt có vế sau (KDoc [VoiceOpenTurnArm]).
+ */
+internal fun VoiceSession.sessionVocab(labels: Map<String, String> = appsByLabel()): VoiceDynVocab =
+    dynVocabOf(ctx, profiles(), labels, places())
+
+/** Một chỗ dựng [VoiceDynVocab] từ bốn nguồn — phiên lệnh, lượt dạy, đường đo WAV dùng chung (không bản sao thứ hai). */
+internal fun dynVocabOf(ctx: Context, profiles: List<String>, labels: Map<String, String>, places: List<String>): VoiceDynVocab =
+    VoiceDynVocab(profiles, labels.keys.toList(), places, VoiceWiring.aliases(ctx, labels))

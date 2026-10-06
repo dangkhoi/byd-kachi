@@ -198,6 +198,23 @@ for n in 1 2; do
   # ĐO độ ổn định (KHÔNG tính PASS/FAIL): câu KHÁC ("đưa … vào ô số hai") có ra CÙNG chuỗi tên như lúc dạy không.
   echo "  ℹ WS$n câu có mệnh đề ô: nghe «$(printf '%s' "$J" | json_get heard)» ⇒ $(printf '%s' "$J" | previews) (tên đã dạy «${NAME}»)"
   printf 'INFO\tWS%s\t%s\n' "$n" "$J" >> "$OUT/raw.tsv"
+  # 2.93 VOICE-TEACH-CONTEXT — hộp dạy cho LƯỢT 2 nói câu CÓ Ô (`TeachSample.SLOT_TAKE`): dạy thêm bằng đúng câu ấy (khác
+  # chuỗi ⇒ một tên nữa; cùng chuỗi ⇒ ĐÃ HIỂU SẴN) rồi đo lại chính câu có ô ⇒ phải mở đúng app vào ô 2.
+  if [ "${KNOWN[$n]}" != "1" ]; then
+    J="$(bridge "--es cmd teach --es pkg $(shq "$P") --es path $(shq "$DST/teach-$n-s.wav") --es op save")"
+    printf 'teach_slot\tteach-%s-s\t%s\n' "$n" "$J" >> "$OUT/raw.tsv"
+    VD="$(printf '%s' "$J" | json_get verdict)"; SV="$(printf '%s' "$J" | json_get saved)"
+    echo "  [${n}s] câu có ô: nghe «$(printf '%s' "$J" | json_get heard)» ⇒ tên «$(printf '%s' "$J" | json_get name)» · $VD $(printf '%s' "$J" | json_get reasons) · lưu $SV"
+    # Senior review 2.93 Pass 1 · [P3]: chỉ đo khi dạng câu có ô THẬT SỰ gọi được — ĐÃ HIỂU SẴN, hoặc đã LƯU. NEW/WARN mà máy dò
+    # hồi quy chặn / bảng tên đầy (`saved` = False) thì câu có ô chưa thể mở app ⇒ ℹ kèm lý do, không thành một FAIL oan.
+    if [ "$VD" != "ALREADY" ] && [ "$SV" != "True" ]; then
+      echo "  ℹ WSC$n dạng câu có ô không lưu được (verdict ${VD:-?} · regression $(printf '%s' "$J" | json_get regression_changed) · refused $(printf '%s' "$J" | json_get refused)) — không tính PASS/FAIL"
+    else
+      J="$(wav_intents "teach-$n-s")"
+      check "WSC$n" "dạy thêm câu có ô ⇒ WAV «đưa … vào ô số hai» mở «${L}» ô 2" "$(has "$(printf '%s' "$J" | previews)" "$L" "2")" \
+        "nghe «$(printf '%s' "$J" | json_get heard)» ⇒ $(printf '%s' "$J" | previews)"
+    fi
+  fi
   J="$(bridge "--es cmd say --es text $(shq "đóng $NAME")")"
   check "C$n" "say «đóng ${NAME}» ⇒ Unknown (APP_CLOSE, không mở app)" "$( [ "$(printf '%s' "$J" | kinds)" = "Unknown" ] && echo 1 || echo 0)" "$(printf '%s' "$J" | previews)"
   start_home

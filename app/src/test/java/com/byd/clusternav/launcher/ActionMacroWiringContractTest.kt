@@ -13,10 +13,7 @@ import org.junit.jupiter.api.Test
  */
 class ActionMacroWiringContractTest {
 
-    private fun code(relative: String): String =
-        SourceRoots.text(relative)
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     /**
      * Thân hàm [signature] — cắt bằng **đếm ngoặc**, KHÔNG bằng mốc comment.

@@ -81,7 +81,7 @@ class CarDataAdapter(
         }
 
         fun int(id: String, prev: Int?): Int? =
-            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev, HalBindingTable::coerceInt)
+            if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev) { HalBindingTable.parseInt(id, it) }
             else read(id, prev) { table.readInt(id) }
         fun dbl(id: String, prev: Double?): Double? =
             if (id in HalReadTables.INVALID_IS_PENDING) pending(id, prev, HalBindingTable::coerceDouble)
@@ -92,14 +92,35 @@ class CarDataAdapter(
          * hiện y như [read] (mã ⇒ `null` = "—"), nhưng cache vắng ghi *"getter CÓ trả lời"* nên KHÔNG nguội vì mã ấy —
          * số thật đến là nhịp kế thấy ngay, không chờ một lượt thử lại 60 s … 10 phút. Getter vắng thật (sentinel /
          * không tra được tên ⇒ [HalBindingTable.answerRaw] `null`) vẫn nguội như mọi datum.
+         *
+         * 2.93 · HAL-PENDING-PARSE-DRY — *"getter đã trả lời"* = MÃ chưa-có-số HOẶC một con số [parse] đọc được; chuỗi lạ
+         * không parse nổi (vd `int=- float=- buf=4`) nay nguội như [fresh] (bản trước coi MỌI chuỗi khác `null` là đã trả
+         * lời ⇒ đọc lại mỗi nhịp mãi). Phép parse Int là [HalBindingTable.parseInt] — chung với [HalBindingTable.readInt].
          */
         private inline fun <T> pending(id: String, prev: T?, parse: (String?) -> T?): T? {
             if (!wanted(id)) return prev
             if (!absent.shouldRead(id, now)) { KachiPerf.add(KachiPerf.Counter.HAL_SKIP_ABSENT); return null }
             val raw = table.answerRaw(id)
-            absent.record(id, raw != null, now)
-            return parse(raw?.takeUnless { HalBindingTable.isInvalidValue(id, it) })
+            val code = raw != null && HalBindingTable.isInvalidValue(id, raw)
+            val v = if (code) null else parse(raw)
+            // HAL-PENDING-PARSE-DRY (2.93 MISC): "đã đáp" = mã không hợp lệ HOẶC số đọc được — chuỗi rác ⇒ nguội như vắng.
+            absent.record(id, code || v != null, now)
+            asked += id
+            // 2.93 TYRE-BURST-REASON: mã "không hợp lệ" vẫn là LỜI ĐÁP của xe — giữ lại cho [code] (cùng lượt đọc, 0 HAL thêm).
+            // Soát senior WIDGET Pass 1 [P3]: đọc mã bằng CÙNG `parseInt` mà `isInvalidValue` vừa dùng để quyết [code] — một phép parse.
+            if (code) codes[id] = HalBindingTable.parseInt(id, raw)
+            return v
         }
+
+        /** Datum [pending] đã HỎI xe ở nhịp này + mã "không hợp lệ" nó trả (2.93 `TYRE-BURST-REASON`). */
+        private val asked = HashSet<String>()
+        private val codes = HashMap<String, Int?>()
+
+        /**
+         * Mã [HalReadTables.INVALID_VALUES] mà getter của [id] trả ở nhịp này (`null` = số thường / không đọc được); nhịp
+         * KHÔNG hỏi [id] (không hiện) ⇒ [prev] — cùng luật hai lối bỏ qua của [read]. Không gọi HAL nào.
+         */
+        fun code(id: String, prev: Int?): Int? = if (id in asked) codes[id] else if (!wants(id)) prev else null
 
         /**
          * Như [dbl] nhưng giá trị ĐỌC THẬT đi qua [via] (bộ làm mượt CÓ TRẠNG THÁI — [TripTimeSmoother]); lối *"không
@@ -348,6 +369,9 @@ class CarDataAdapter(
             lkFl = ifNeed(cFl, "tyre_lk_fl", t.lkFl), lkFr = ifNeed(cFr, "tyre_lk_fr", t.lkFr),
             lkRl = ifNeed(cRl, "tyre_lk_rl", t.lkRl), lkRr = ifNeed(cRr, "tyre_lk_rr", t.lkRr),
             sys = if (clusterJudgedAll) null else state("tyre_sys", t.sys),
+            // 2.93 TYRE-BURST-REASON — mã báo 4092/4093 của CHÍNH lượt đọc áp suất ở trên (không thêm lượt HAL nào).
+            pcFl = g.code("tyre_p_fl", t.pcFl), pcFr = g.code("tyre_p_fr", t.pcFr),
+            pcRl = g.code("tyre_p_rl", t.pcRl), pcRr = g.code("tyre_p_rr", t.pcRr),
         )
     }
 

@@ -220,8 +220,22 @@ object AppPrereqPlan {
      * [Role.CAST_OPEN] của VietMap (hai lối vào đó luôn kéo VietMap đã cài vào miễn pin) ⇒ không bao giờ gỡ thứ lượt sau sẽ
      * thêm lại (không lật qua lật lại mỗi lần nổ máy).
      */
-    fun keep(f: Facts): Map<String, Set<Prereq>> =
-        targets(f, listOf(f.vietMapPkg to Role.AUTOSTART_PASS, f.vietMapPkg to Role.CAST_OPEN)).associate { it.pkg to it.needs }
+    fun keep(f: Facts): Map<String, Set<Prereq>> = everyEntryTargets(f).associate { it.pkg to it.needs }
+
+    /** Mọi gói × lý do mà BẤT KỲ lối vào nào đòi: chuẩn + hai lối luôn kéo VietMap đã cài (lượt autostart, lượt mở chiếu). */
+    private fun everyEntryTargets(f: Facts): List<Target> =
+        targets(f, listOf(f.vietMapPkg to Role.AUTOSTART_PASS, f.vietMapPkg to Role.CAST_OPEN))
+
+    /**
+     * 2.93 · VM-PREREQ-PKG-ADDED — gói [pkg] vừa CÀI trong lúc Kachi sống (`ACTION_PACKAGE_ADDED`) ⇒ phạm vi của RIÊNG gói đó, đúng
+     * thứ mà lượt kế tiếp (SẴN · autostart · mở chiếu) sẽ chữa — chỉ làm SỚM hơn, không thêm phạm vi mới. Cùng tập với [keep] ⇒
+     * lượt ready sau KHÔNG bao giờ trả lại thứ lượt này vừa thêm (không lật qua lật lại).
+     *
+     * Vì sao cần [ĐO nguồn r47]: gỡ hẳn một gói (không phải cập nhật) ⇒ `DeviceIdleController` xoá nó khỏi danh sách miễn pin
+     * (`DeviceIdleController.java:585-592`, `ACTION_PACKAGE_REMOVED` không `EXTRA_REPLACING`); cài lại ⇒ `ACTION_PACKAGE_ADDED`
+     * (`PackageManagerService.java:1919-1935` · `:13192-13206`). Gói ngoài phạm vi / chưa cài / tên lạ ⇒ rỗng (không đọc, không ghi).
+     */
+    fun forAddedPackage(f: Facts, pkg: String): List<Target> = everyEntryTargets(f).filter { it.pkg == pkg }
 
     /** Dấu đã RỜI phạm vi (thuần — lượt sẵn sàng biết có việc trả mà không mở phiên shell vô ích). */
     fun stale(f: Facts, marks: Marks): List<Pair<Prereq, String>> {

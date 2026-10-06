@@ -131,7 +131,25 @@ object SherpaHotwords {
     fun dropAppNameLeading(lines: Collection<String>, appNames: Iterable<String>): List<String> {
         val names = appNames.flatMap { phrasesOf(it) }.toSet()
         if (names.isEmpty()) return lines.toList()
-        return lines.filterNot { line -> names.any { line == it || line.startsWith("$it ") } }
+        return lines.filterNot { line -> leadsWith(line, names) }
+    }
+
+    /**
+     * [line] BẰNG một phần tử của [heads] hoặc MỞ ĐẦU bằng nó + dấu cách — tức `heads.any { line == it ||
+     * line.startsWith("$it ") }`, nhưng tra băm ở từng ranh giới từ của [line] (O(số từ)) thay vì duyệt [heads].
+     * Tương đương vì [heads] đã qua [normalize] (không cách đầu/cuối, một dấu cách giữa hai từ).
+     *
+     * 2.93 (VOICE-ALT-LABEL-HOTWORD): bản duyệt cũ dựng một chuỗi `"$it "` mới cho MỖI cặp (dòng × tên) — 2 600 dòng × ~210
+     * tên khi có 100 nhãn app, trên đường *bấm → micro mở*. Số đo trước/sau ở KDoc [SherpaTaughtHotwords] (mục 2.93).
+     */
+    internal fun leadsWith(line: String, heads: Set<String>): Boolean {
+        if (line in heads) return true
+        var i = line.indexOf(' ')
+        while (i > 0) {
+            if (line.substring(0, i) in heads) return true
+            i = line.indexOf(' ', i + 1)
+        }
+        return false
     }
 
     /**

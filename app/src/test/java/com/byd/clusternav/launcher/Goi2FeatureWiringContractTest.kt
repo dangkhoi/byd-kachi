@@ -14,10 +14,7 @@ import org.junit.jupiter.api.Test
  */
 class Goi2FeatureWiringContractTest {
 
-    private fun code(relative: String): String =
-        SourceRoots.text(relative)
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val widgets by lazy { code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt") }
     private val board by lazy { code("src/main/java/com/byd/clusternav/launcher/TyreBoardView.kt") }

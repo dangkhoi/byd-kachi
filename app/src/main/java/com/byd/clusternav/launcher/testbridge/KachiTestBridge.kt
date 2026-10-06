@@ -35,8 +35,8 @@ import java.util.Locale
  * `getCallingUid`. Nghĩa là "exported" ở đây thật sự là *"mọi app trên xe đều bắn vào được"*, và bốn lớp dưới
  * đây là toàn bộ thứ đứng giữa:
  *
- *  1. **Công tắc do NGƯỜI trong xe bật**, tự tắt sau 60 phút và chết theo lần nổ máy ([TestBridgeStore]). Tắt ⇒
- *     mọi lệnh trả `test_mode_off` và **không nhánh nào chạy**. Không có đường bật bằng broadcast — có chủ ý.
+ *  1. **Công tắc do NGƯỜI trong xe bật**, tự tắt sau 60 phút HOẶC khi tắt máy ([TestBridgeStore], 2.93 TEST-MODE-ACC-OFF). Tắt
+ *     ⇒ mọi lệnh trả `test_mode_off` và **không nhánh nào chạy**. Không có đường bật bằng broadcast — có chủ ý.
  *  2. **Không mở đường thứ hai tới bất cứ thứ gì**: mọi lệnh đi qua đúng đường mà một cú chạm đi
  *     ([TestBridgeHooks]). Cầu này không tự gọi `am`/`wm`, không tự dựng `VirtualDisplay`, không chạm màn cụm.
  *  3. **Cổng xác nhận không tự mở**: việc mức `CONFIRM` (mở khoá cửa, hạ kính, đổi hồ sơ…) bị **từ chối** và báo
@@ -152,7 +152,7 @@ class KachiTestBridge : BroadcastReceiver() {
             TestBridgeCommands.WAV -> TestBridgeWav.run(app, cmd, hooks, reply)
             TestBridgeCommands.TTS -> TestBridgeTts.run(app, cmd, reply)
             TestBridgeCommands.KWS -> TestBridgeKws.run(app, cmd, reply)
-            TestBridgeCommands.CAMERA -> TestBridgeCamera.run(cmd, hooks, reply)
+            TestBridgeCommands.CAMERA -> TestBridgeCamera.run(app, cmd, hooks, reply)
             TestBridgeCommands.CAMERA_FRAME -> TestBridgeCameraFrame.run(app, cmd, hooks, reply)
             TestBridgeCommands.CAMERA_SYNTH -> TestBridgeSynth.run(cmd, hooks, reply)
             TestBridgeCommands.LISTEN -> runListen(hooks, reply)

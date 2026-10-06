@@ -26,9 +26,15 @@ class WidgetMargin292ContractTest {
         // Mọi widget một cột đi qua CÙNG hàm (đồng hồ · tốc độ · xe ở WidgetViews; vòng/thẻ ở WidgetTelemetry; nhạc).
         val telemetry = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/WidgetTelemetry.kt")
         val media = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/MediaWidgetView.kt")
-        assertTrue(Regex("""\bcol\(ctx\)""").findAll(views).count() >= 3, "đồng hồ · tốc độ · trạng thái xe")
+        // 2.93 WIDGET-CAR-STRIP-LAYOUT (đổi ghim có lý do): trạng thái xe nay dựng bằng `CarStateLayout` (hình trên/cạnh chú
+        // thích theo `:core CarStripFit`) với CÙNG lề trong Sp.S — không còn đi qua `col`.
+        assertTrue(Regex("""\bcol\(ctx\)""").findAll(views).count() >= 2, "đồng hồ · tốc độ")
+        assertTrue("CarStateLayout(ctx, art, doorLine, pad = dpi(ctx, Sp.S)" in views, "trạng thái xe: cùng lề 8 dp")
         assertTrue(Regex("""WidgetViews\.col\(ctx\)""").findAll(telemetry).count() >= 5, "vòng · số · huy hiệu · dải · thẻ chữ")
-        assertTrue(media.contains("WidgetViews.col(ctx)"), "widget nhạc")
+        // 2.93 WF-MEDIA-SMALL (đổi ghim có lý do): widget nhạc tự xếp bằng `MediaFitLayout` (bỏ phần phụ trước, giữ nút) với
+        // CÙNG lề trong Sp.S — lề nằm ở `MediaFitLayout.box` (pad = dp(KachiSpace.S)).
+        assertTrue(media.contains("MediaFitLayout(ctx, art, title, artist, prog, prev, play, next, MediaFitLayout.box("), "widget nhạc")
+        assertTrue("pad = dp(KachiSpace.S)" in SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/MediaFitLayout.kt"))
     }
 
     /**
@@ -45,13 +51,16 @@ class WidgetMargin292ContractTest {
         assertTrue(set.indexOf("super.setAppWidget(appWidgetId, info)") in 0 until set.indexOf("setPadding(p, p, p, p)"), "lề ta đặt SAU lề mặc định")
         assertTrue("val p = KachiTheme.dpi(context, KachiSpace.S)" in set, "cùng 8 dp với khối dọc widget dựng sẵn")
         val size = SourceRoots.body(host, "override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int)")
-        assertTrue("val (padXDp, padYDp) = defaultPaddingDips(d)" in size)
-        assertTrue("((w - paddingLeft - paddingRight).coerceAtLeast(0) / d).toInt() + padXDp" in size, "bề ngang khai = nội dung + bù")
-        assertTrue("((h - paddingTop - paddingBottom).coerceAtLeast(0) / d).toInt() + padYDp" in size, "bề cao khai = nội dung + bù")
+        // 2.93 APPWIDGET-SIZE-API31 (đổi ghim có lý do): phép bù dời về `:core AppWidgetSize` (bài vét cạn hai đường API cho
+        // nhà cung cấp CÙNG số MIN/MAX) + nhánh API 31+ `List<SizeF>`; đường < 31 vẫn bản 5 tham số, cùng số.
+        assertTrue("val (padXPx, padYPx) = defaultPaddingPx()" in size)
+        assertTrue("val cw = (w - paddingLeft - paddingRight).coerceAtLeast(0)" in size && "AppWidgetSize.legacyDp(cw, padXPx, d)" in size, "bề ngang khai = nội dung + bù")
+        assertTrue("val ch = (h - paddingTop - paddingBottom).coerceAtLeast(0)" in size && "AppWidgetSize.legacyDp(ch, padYPx, d)" in size, "bề cao khai = nội dung + bù")
         assertTrue("runCatching { updateAppWidgetSize(Bundle(), wDp, hDp, wDp, hDp) }" in size)
-        val def = SourceRoots.body(host, "private fun defaultPaddingDips(d: Float): Pair<Int, Int>")
+        assertTrue("Build.VERSION.SDK_INT >= Build.VERSION_CODES.S" in size && "updateAppWidgetSize(Bundle(), listOf(size))" in size, "API 31+")
+        val def = SourceRoots.body(host, "private fun defaultPaddingPx(): Pair<Int, Int>")
         assertTrue("AppWidgetHostView.getDefaultPaddingForWidget(context, provider, null)" in def, "bù đúng lề framework tự trừ")
-        assertTrue("((r.left + r.right) / d).toInt() to ((r.top + r.bottom) / d).toInt()" in def, "cùng phép (int)(px/density) của framework")
+        assertTrue("(r.left + r.right) to (r.top + r.bottom)" in def, "tổng px hai phía — phép chia/làm tròn ở AppWidgetSize")
         // Một lề cho mọi widget: khối dọc dựng sẵn cũng Sp.S (= KachiSpace.S).
         assertTrue("val p = dpi(ctx, Sp.S); setPadding(p, p, p, p)" in SourceRoots.body(views, "internal fun col(ctx: Context): LinearLayout"))
     }

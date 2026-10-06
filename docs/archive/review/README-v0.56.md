@@ -40,7 +40,7 @@ Trong file, ba chữ đáng tìm: `[MÀN HÌNH]` · `[BROADCAST]` · `[MEDIA]`.
 ## Lấy APK Android Auto (cần adb, xe cùng WiFi/hotspot)
 
 ```
-scratchpad/pull-projection.sh
+pull-projection.sh   # công cụ ngoài repo (thư mục nháp của phiên)
 ```
 Chạy khi **KHÔNG cắm CP/AA** — cắm vào là đầu xe tắt WiFi, adb không vào được (§11).
 APK là file tĩnh nên không cần app đang chạy. Có APK rồi thì mổ offline được cả đêm.

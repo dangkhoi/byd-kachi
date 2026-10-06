@@ -44,11 +44,10 @@ class OpenAppWiringContractTest {
      * Đọc source rồi **bỏ mọi chú thích** trước khi quét: test này canh **CODE**, không canh văn xuôi.
      * Hai lý do: (a) câu giải thích thường nhắc chính tên hàm đang bị cấm gọi ⇒ quét thô sẽ báo sai;
      * (b) chặn kiểu "đạt test" bằng cách viết token vào comment thay vì nối dây thật.
-     * (Hạn chế đã biết: chuỗi ký tự chứa `//` cũng bị cắt — các file ở đây không có.)
+     * (2.93 wave 2C · TEST-STRIP-COPIES: hạn chế cũ — chuỗi chứa `//` bị cắt — hết, nhờ bộ quét có trạng thái của
+     * [SourceRoots.codeOf].)
      */
-    private fun code(relative: String): String = SourceRoots.text(relative)
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        .replace(Regex("""//[^\n]*"""), "")
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     // ── P-bug2 ───────────────────────────────────────────────────────────────────────────────────
 

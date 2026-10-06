@@ -328,7 +328,10 @@ class VoiceGrammarPhrasesTest {
         // Đọc từ **actual** của chính bài này, không chép tay.
         // 2.88 LỐP THEO XE: 13 mã trạng thái THÔ của lốp vào `TelemetryRegistry` nhưng KHÔNG vào ngữ pháp
         // ([VoiceTelemetry.NOT_SPOKEN], soát 2.88 regress-3) ⇒ con số này KHÔNG đổi (lượt trước từng đo 400 → 413).
-        const val EXPECTED_PHRASES_KEPT = 400
+        // [ĐO off-car 2026-10-06 · 2.93 CAMERA-ON-DEMAND] **400 → 406 (+6)** = bốn nhãn VI *"camera sau/trái/phải/trước"*
+        // + hai nhãn EN *"rear camera"* · *"right camera"* (cả hai từ CÓ trong từ điển VN; *"Front/Left camera"* thì không
+        // ⇒ sang vế LOẠI). In bằng máy (`set.entries.filter { " " in it && "camera" in it }`), không chép tay.
+        const val EXPECTED_PHRASES_KEPT = 406
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **359 → 361 (+2)** = hai cách nói NHIỀU TỪ mới cho nhiên liệu
         // (`fuel_pct ← "nhien lieu"` · `"muc nhien lieu"`). Cách nói thứ ba (`"xang"`) là MỘT từ nên không vào con
         // số này — nó chỉ nở thêm ở [EXPECTED_ENTRIES]. Thêm để «chỉ số xăng» / «xăng còn bao nhiêu» (cả hai ra
@@ -396,7 +399,9 @@ class VoiceGrammarPhrasesTest {
         // `Pass. heat` **không** nằm ở đây: cả `pass` lẫn `heat` đều CÓ trong từ điển nên nó sang vế GIỮ — xem
         // [EXPECTED_PHRASES_KEPT].
         // 2.88 LỐP THEO XE: không đổi — 13 mã lốp thô ngoài ngữ pháp ([VoiceTelemetry.NOT_SPOKEN]; từng đo 194 → 207).
-        const val EXPECTED_PHRASES_DROPPED = 194
+        // [ĐO off-car 2026-10-06 · 2.93] **194 → 196 (+2)** = *"Front camera"* · *"Left camera"* (`front`/`left` vắng khỏi
+        // từ điển VN — bản VI *"camera trước/trái"* vẫn GIỮ). Đọc từ **actual** (`set.phrasesDropped`).
+        const val EXPECTED_PHRASES_DROPPED = 196
 
         /**
          * [ĐO] tổng mục ngữ pháp = 330 cụm + từ đơn (mọi cách viết thanh điệu) + `[unk]`.
@@ -482,7 +487,9 @@ class VoiceGrammarPhrasesTest {
         // thanh điệu của chúng đã nở xong từ lượt trước. Đọc từ **actual** của chính bài này.
         // 2.88 LỐP THEO XE: không đổi — 13 mã lốp thô ngoài ngữ pháp ([VoiceTelemetry.NOT_SPOKEN]); lượt trước từng đo
         // 2028 → 2065 (+37: 13 cụm + 24 từ đơn `màu` · `trạng` · `thái` · `rò` · `hệ` · `thống` · `giám` · `sát`…).
-        const val EXPECTED_ENTRIES = 2028
+        // [ĐO off-car 2026-10-06 · 2.93 CAMERA-ON-DEMAND] **2028 → 2034 (+6)** = đúng sáu cụm mới của [EXPECTED_PHRASES_KEPT],
+        // 0 từ đơn (`camera` · `sau` · `trái` · `phải` · `trước` · `rear` · `right` đã nở từ nhãn sẵn có). Đọc từ **actual**.
+        const val EXPECTED_ENTRIES = 2034
         // [ĐO off-car 2026-09-18 · log xe 53 phiên] **2099 → 2109 (+10)** = 2 cụm nhiều từ của nhiên liệu
         // ([EXPECTED_PHRASES_KEPT] 359 → 361) **cộng** các từ ĐƠN lần đầu xuất hiện, nở theo họ thanh điệu:
         // `xăng` đứng một mình (cách nói mới của `fuel_pct`) và `nhiên` · `liệu`. Số đọc từ **actual** của chính

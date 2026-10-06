@@ -320,11 +320,16 @@ object TelemetryRegistry {
         t("tyre_p_fr", "Áp lốp trước-phải", "Tyre pressure front-right", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureValue", short = "Lốp TP", shortEn = "Tyre FR"),
         t("tyre_p_rl", "Áp lốp sau-trái", "Tyre pressure rear-left", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureValue", short = "Lốp ST", shortEn = "Tyre RL"),
         t("tyre_p_rr", "Áp lốp sau-phải", "Tyre pressure rear-right", "kPa", TYRES, BOARD, PROVEN, "BYDAutoTyreDevice.getTyrePressureValue", short = "Lốp SP", shortEn = "Tyre RR"),
-        // NEEDS-ONCAR: tyre_t_* — HAL chỉ có `getTyreTemperatureState` enum 0-arg, không có value per-corner.
-        t("tyre_t_fl", "Nhiệt lốp trước-trái", "Tyre temp front-left", "°C", TYRES, BOARD, NEEDS_CAR, "1246797848", short = "Nhiệt TT", shortEn = "Temp FL"),
-        t("tyre_t_fr", "Nhiệt lốp trước-phải", "Tyre temp front-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797860", short = "Nhiệt TP", shortEn = "Temp FR"),
-        t("tyre_t_rl", "Nhiệt lốp sau-trái", "Tyre temp rear-left", "°C", TYRES, BOARD, NEEDS_CAR, "1246797872", short = "Nhiệt ST", shortEn = "Temp RL"),
-        t("tyre_t_rr", "Nhiệt lốp sau-phải", "Tyre temp rear-right", "°C", TYRES, BOARD, NEEDS_CAR, "1246797884", short = "Nhiệt SP", shortEn = "Temp RR"),
+        // NEEDS-ONCAR: tyre_t_* — `getTyreTemperatureState` chỉ là enum 0-arg; số °C từng bánh là feature của cụm đồng hồ.
+        // 2.93 · TYRE-TEMP-BY-NAME — bind theo TÊN hằng như màu cụm (feature-id gán lúc khởi tạo theo cấu hình xe —
+        // `HalRoutes` KDoc; bản trước gắn số 1246797848/860/872/884 của featmap xe 09-16). [ĐO nguồn OEM, review 2.93 Pass 1]
+        // firmware 2602 L3 `../firmware/fw-2602-diff/jadx-l3-new/…/instrument/Instrument.java:133-148`: LF 0x4A50A018 · RF
+        // 0x4A50A024 · LB 0x4A50A030 · RB 0x4A50A03C = đúng 1246797848/860/872/884 ⇒ bind theo tên không đổi số trên xe đó.
+        // LB = sau-trái · RB = sau-phải (cùng quy ước `tyre_c_*` bên dưới). Bài: `TyreTempByNameTest`.
+        t("tyre_t_fl", "Nhiệt lốp trước-trái", "Tyre temp front-left", "°C", TYRES, BOARD, NEEDS_CAR, "BYDAutoFeatureIds.INSTRUMENT_2IN1_LF_TYRE_TEMPERATURE", short = "Nhiệt TT", shortEn = "Temp FL"),
+        t("tyre_t_fr", "Nhiệt lốp trước-phải", "Tyre temp front-right", "°C", TYRES, BOARD, NEEDS_CAR, "BYDAutoFeatureIds.INSTRUMENT_2IN1_RF_TYRE_TEMPERATURE", short = "Nhiệt TP", shortEn = "Temp FR"),
+        t("tyre_t_rl", "Nhiệt lốp sau-trái", "Tyre temp rear-left", "°C", TYRES, BOARD, NEEDS_CAR, "BYDAutoFeatureIds.INSTRUMENT_2IN1_LB_TYRE_TEMPERATURE", short = "Nhiệt ST", shortEn = "Temp RL"),
+        t("tyre_t_rr", "Nhiệt lốp sau-phải", "Tyre temp rear-right", "°C", TYRES, BOARD, NEEDS_CAR, "BYDAutoFeatureIds.INSTRUMENT_2IN1_RB_TYRE_TEMPERATURE", short = "Nhiệt SP", shortEn = "Temp RR"),
         // ═══ 2.88 · MÃ TRẠNG THÁI THÔ — lời phán CỦA XE cho từng bánh (spec `kachi-288-tyre-car-state.html`) ═══
         // Owner 04/10: *"cảnh báo theo tùy loại xe, không hardcode số"*. Mười ba dòng chỉ là ĐẦU VÀO cho [TyreJudge]
         // (chip/bảng/nhóm/ô nhỏ cùng đọc) — ẩn khỏi mọi bộ chọn ([TyreIds.HIDDEN_WHY]). NEEDS_CAR: nghĩa từng mã có

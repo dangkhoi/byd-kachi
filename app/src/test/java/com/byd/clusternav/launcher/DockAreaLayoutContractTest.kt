@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -80,7 +81,5 @@ class DockAreaLayoutContractTest {
         }.also { assertTrue(it.size > 10, "quét được quá ít tệp — đường dẫn sai thì bài này là test giả") }
 
     /** MÃ đã bỏ chú thích (KDoc nhắc chính chuỗi bị cấm). */
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { line -> Regex("//.*$").replace(line, "") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 }

@@ -1,5 +1,7 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.modules.clustercast.StackParse
+
 /**
  * ═══ LUẬT "APP TRONG Ô CÒN SỐNG KHÔNG" (thuần JVM :core) ══════════════════════════════════════════════════════
  *
@@ -15,6 +17,24 @@ package com.byd.clusternav.launcher
  *     trong suốt (luật hoàn ô L6) ngay ở lần dùng đầu tiên, tức là sai ở chỗ tệ nhất.
  *  2. **Phải trượt [missesToDie] nhịp liên tiếp.** Một nhịp hụt đơn lẻ (shell timeout, app đang đổi task, dump
  *     bị cắt) không phải cái chết. Mặc định 2 nhịp × 5 s = 10 s im lặng mới kết luận.
+ *
+ * 2.93 · SLOT-APP-ESCAPE + SHORTCUTS-B-ESCAPE (spec `docs/specs/kachi-293-slot.html` R3): nhịp vắng màn ảo ô mà task của
+ * gói còn ở display KHÁC ([observe] `away` — `SlotPresence.ELSEWHERE`, cùng bản đọc, 0 lệnh thêm) là bằng chứng DƯƠNG "app ra
+ * khỏi ô, vẫn mở" — không phải "chưa kịp vào". [ĐO máy ảo 02/10 `finish/esc-after-chain`, QA 04/10] Waze tự `launchToSide` ra
+ * display 0 ~1 s sau khi vào ô (cơ chế [ĐO nguồn A10/A12]: activity thứ hai do CHÍNH app mở, không `allowEmbedded` ⇒ cả task về
+ * display 0 — `waze-into-slot-research-2026-09-14.md` §1) ⇒ bộ đo CHƯA từng thấy app trong ô ⇒ luật 1 cấm kết luận ⇒ ô đen
+ * mãi. Nay: [ELSEWHERE_SWEEPS] nhịp ĐỌC ĐƯỢC liên tiếp thấy app ở chỗ khác ⇒ kết luận cả khi chưa từng thấy sống, cờ
+ * [elsewhere] (bên gọi báo đúng *"đã rời ô, vẫn mở ngoài ô"* thay vì coi là chết). Màn ảo nhận lại từ ô 7 ([adopted]) giữ luật
+ * cũ (mở lại app — PARK-2b).
+ *
+ * Senior review 2.93 Pass 2 [P3] — nhịp "ở chỗ khác" chỉ ĐẾM cho kết luận chưa-từng-thấy-sống khi màn ảo ô KHÔNG còn task của
+ * app nào khác ([observe] `othersInSlot`, [othersInSlot] — cùng bản đọc, 0 lệnh). Lý do: kết luận dẫn tới luật hoàn ô ⇒ host nhả
+ * màn ảo ⇒ cờ 256 kết thúc MỌI activity còn trên đó — một quyết định về app B không được kết thúc app khác còn ở ô (ô chưa trống,
+ * không phải "app rời ô"). Ca đã thấy khi đọc mã [SUY]: đặt tạm tại chỗ (`VdAppHost.swapApp` → `KachiHomeSlots.evictBehind`) — B
+ * rơi thẳng về display 0, A còn ở ĐỈNH màn ảo, chuỗi trả `B_NOT_IN_SLOT` ⇒ host nhận lại A; bộ đo của B đăng ký TRƯỚC chuỗi nên
+ * chuỗi chậm hơn hai nhịp (trên xe mọi lệnh xếp một hàng `ShellTransport`) là kết luận "B ở chỗ khác" tới trước và kết thúc A.
+ * Đường đó KHÔNG còn chỗ gọi từ 2.89-thử1 (`swapInPlace` — [ĐO grep 06/10]) ⇒ ẩn, không phải lỗi đang chạy; cổng giữ cho ngày nó
+ * được nối lại. Đã thấy sống thì giữ luật 2 như 2.92 (không đổi).
  *
  * Sau khi đã báo chết, bộ đếm **không tự bật lại**: ô đi luật hoàn ô (L6 `SlotRevertPlan`). Một chu kỳ đo mới chỉ
  * bắt đầu khi ô đăng ký lại với `SlotLiveProbe.watch` (người dùng bấm mở lại) — và lần ấy là **một bản mới** của
@@ -43,21 +63,35 @@ class SlotLiveness(
     /** Kết luận vừa trả của [observe] là "màn ảo nhận lại KHÔNG có app" (chỉ khi [adopted]), không phải "app vừa chết". */
     var missing = false
         private set
+
+    /** 2.93 · R3 — kết luận vừa trả của [observe] là "app RA KHỎI ô, task còn ở display khác" (không phải đã đóng). */
+    var elsewhere = false
+        private set
     private var misses = 0
+    private var aways = 0
     private var reported = false
 
     /**
-     * Nạp một nhịp đo. Trả `true` **đúng một lần**, tại nhịp mà ô chuyển từ sống sang chết (hoặc, với [adopted], tại nhịp
-     * kết luận màn ảo nhận lại không có app — [missing]).
+     * Nạp một nhịp đo ([away] = vắng màn ảo ô NHƯNG task còn ở display khác — chỉ có nghĩa khi `alive = false`; [othersInSlot] =
+     * màn ảo ô còn task của app KHÁC — KDoc lớp, Pass 2). Trả `true` **đúng một lần**, tại nhịp mà ô chuyển từ sống sang chết
+     * (hoặc, với [adopted], tại nhịp kết luận màn ảo nhận lại không có app — [missing]; hoặc tại nhịp thứ [ELSEWHERE_SWEEPS] liên
+     * tiếp thấy app ở chỗ khác mà màn ảo ô không còn app nào khác, khi chưa từng thấy nó trong ô — [elsewhere]).
      */
-    fun observe(alive: Boolean): Boolean {
+    fun observe(alive: Boolean, away: Boolean = false, othersInSlot: Boolean = false): Boolean {
         if (reported) return false
-        if (alive) { seenAlive = true; misses = 0; return false }
-        if (!seenAlive && !adopted) return false
+        if (alive) { seenAlive = true; misses = 0; aways = 0; return false }
+        aways = if (away && !othersInSlot) aways + 1 else 0
+        if (!seenAlive && !adopted) {
+            if (aways < ELSEWHERE_SWEEPS) return false
+            reported = true
+            elsewhere = true
+            return true
+        }
         misses++
         if (misses < (if (seenAlive) missesToDie else ADOPTED_MISSES)) return false
         reported = true
         missing = !seenAlive
+        elsewhere = away
         return true
     }
 
@@ -67,6 +101,20 @@ class SlotLiveness(
 
         /** PARK-2b — màn ảo nhận lại từ ô 7, chưa thấy app: một nhịp ĐỌC ĐƯỢC vắng app là đủ kết luận "trống" ([missing]). */
         const val ADOPTED_MISSES = 1
+
+        /**
+         * 2.93 · R3 — số nhịp ĐỌC ĐƯỢC liên tiếp thấy app ở display khác (chưa từng thấy nó trong ô) để kết luận [elsewhere]: cùng
+         * độ chắc của luật 2 ([DEFAULT_MISSES] nhịp × 5 s) — một nhịp đơn lẻ có thể rơi giữa lúc hệ dời task.
+         */
+        const val ELSEWHERE_SWEEPS = 2
+
+        /**
+         * Senior review 2.93 Pass 2 [P3] — bản đọc [stackList] (nguyên văn `am stack list`) có task của app KHÁC [pkg] trên màn ảo
+         * ô [vd] không. Cùng bộ đọc A10 `Stack id=` / A12 `RootTask id=` ([StackParse]) với `SlotPresence` — đọc rỗng ⇒ `false`
+         * (bên gọi chỉ hỏi khi `SlotPresence` đã đọc được ra `ELSEWHERE`). Đầu vào `othersInSlot` của [observe].
+         */
+        fun othersInSlot(stackList: String, pkg: String, vd: Int): Boolean =
+            vd >= 1 && StackParse.parse(stackList).any { it.displayId == vd && it.pkg != pkg }
 
         /** Chu kỳ đo: 5 giây — trần "không poll dày" của H2; 1 lệnh `am stack list` cho TẤT CẢ ô mỗi nhịp. */
         const val PROBE_PERIOD_MS = 5_000L

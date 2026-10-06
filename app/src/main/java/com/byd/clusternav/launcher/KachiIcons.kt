@@ -78,6 +78,17 @@ internal object KachiIcons {
     }
 
     /**
+     * 2.93 QA F1 — gỡ hợp đồng [tint] khỏi [img] khi icon MÀU RIÊNG của app thay hình chung đã tint trên CÙNG view (dải lối
+     * tắt nạp lại tại chỗ khi app cài lại). `ImageView` áp lại bộ lọc của chính nó lên MỌI drawable mới (`updateDrawable` →
+     * `applyColorFilter`, AOSP 10/12) ⇒ không gỡ thì icon xám như app đã gỡ. Cờ rơi cùng để không lượt [refit] nào tô lại
+     * (dải lối tắt hiện không qua `FitScale` — `FitGridLayout.selfFitting` ⇒ cờ là vệ sinh hợp đồng; gốc F1 là bộ lọc).
+     */
+    fun untint(img: ImageView) {
+        drawnBy[img]?.tinted = false
+        img.colorFilter = null
+    }
+
+    /**
      * 2.76 L7 — ô NÚT đổi hình theo MỨC: họ có hình theo mức ([CapabilityIcons.forLevel]) thì mức ≥ 1 vẽ đúng hình
      * của mức ấy (một/hai làn nhiệt · một/hai bông tuyết); mức 0 / họ không khai ⇒ hình khái niệm [concept] như cũ.
      * Cùng nguồn hình với chip ([TopStripChips]) và [DatumIconView] ⇒ ba bề mặt không bao giờ nói ba mức khác nhau.
@@ -104,6 +115,9 @@ internal object KachiIcons {
         var selected = false
         var ink = KachiTheme.INK
         var fittedDp = 0
+
+        /** 2.93 — mức mờ TẮT đang xin ([fadeOff]); `null` = icon không qua đường mờ TẮT / đang BẬT. */
+        var offDim: Float? = null
     }
 
     /** CHỈ luồng chính chạm (bộ dựng ô, `look`, lượt đo của `FitGridLayout`). */
@@ -127,7 +141,29 @@ internal object KachiIcons {
         d.fittedDp = dp
         d.concept?.let { byLevel(img, it, d.level, dp) }
         if (d.tinted) tint(img, dp, d.selected, d.ink)
+        d.offDim?.let { fadeOff(img, dp, active = false, dim = it) }   // 2.93: qua ngưỡng mặt lớn ⇒ bộ lọc đổi ⇒ tính lại
     }
+
+    /**
+     * 2.93 `WIDGET-ICON-OFF-FAINT` — độ đục của icon ô điều khiển: BẬT ⇒ 1; TẮT ⇒ [IconFade.offAlpha] (mờ tới [dim] nhưng
+     * lớp chính giữ ≥ 4,5:1 trên nền ô tắt — mực [KachiTheme.ICON], nền [KachiTheme.SURF_FROM]/[KachiTheme.SURF_TO]). Mặt
+     * lớn chủ đề tối đã mờ [UNSELECTED_ALPHA] trong bộ lọc ⇒ `inner` (bản cũ nhân hai lần: 0,72 × 0,72 = 0,52). Ghi nhớ
+     * [dim] để [refit] tính lại khi cỡ đã khớp đổi; nhớ kết quả theo (mực, nền, inner, dim) — nhịp vẽ 1 Hz không tính lại.
+     */
+    fun fadeOff(img: ImageView, sizeDp: Int, active: Boolean, dim: Float) {
+        drawn(img).offDim = if (active) null else dim
+        if (active) { img.alpha = 1f; return }
+        val inner = if (KachiTheme.night && sized(img, sizeDp) >= Sp.ICON_L) UNSELECTED_ALPHA else 1f
+        val key = FadeKey(KachiTheme.ICON, KachiTheme.SURF_FROM, KachiTheme.SURF_TO, inner, dim)
+        img.alpha = fades.getOrPut(key) {
+            IconFade.offAlpha(c(key.ink), intArrayOf(c(key.from), c(key.to)), dim.toDouble(), inner.toDouble()).toFloat()
+        }
+    }
+
+    private data class FadeKey(val ink: String, val from: String, val to: String, val inner: Float, val dim: Float)
+
+    /** CHỈ luồng chính; vài khoá (chủ đề × màu × hai mức cỡ) — không cần trần. */
+    private val fades = HashMap<FadeKey, Float>()
 
     /**
      * Ô chưa chọn ở chủ đề tối: bão hoà 35 % + độ mờ 72 % — [ĐO] Δ độ sáng so với ô đang chọn ≥ 20 % (AC2.6) mà hình
@@ -140,8 +176,11 @@ internal object KachiIcons {
                 1f, 0f, 0f, 0f, 0f,
                 0f, 1f, 0f, 0f, 0f,
                 0f, 0f, 1f, 0f, 0f,
-                0f, 0f, 0f, 0.72f, 0f,
+                0f, 0f, 0f, UNSELECTED_ALPHA, 0f,
             )))
         },
     )
+
+    /** Độ mờ trong bộ lọc [UNSELECTED] — một hằng cho bộ lọc và cho phép tính `inner` của [fadeOff]. */
+    private const val UNSELECTED_ALPHA = 0.72f
 }

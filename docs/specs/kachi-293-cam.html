@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 camera theo yêu cầu</title>
+<!--
+  Spec Kiro-style (consolidated) dựng từ docs/specs/_template.html.
+  Thứ tự: Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Approval gate out-of-band (owner 06/10 "làm hết mọi thứ luôn đi") — KHÔNG lưu state ở đây.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:40px 16px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram .t{fill:var(--fg);font:13px -apple-system,BlinkMacSystemFont,sans-serif}
+.diagram .s{fill:var(--muted);font:11.5px -apple-system,BlinkMacSystemFont,sans-serif}
+.diagram .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.diagram .newbox{fill:var(--new);stroke:var(--accent);stroke-width:1.2}
+.diagram .ln{stroke:var(--accent);stroke-width:1.6;fill:none}
+.diagram .dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 4}
+.diagram .img{fill:var(--line);stroke:var(--muted);stroke-width:1}
+.diagram .win{fill:var(--new);stroke:var(--accent);stroke-width:1.4}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:var(--new);border-color:var(--accent)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Camera theo yêu cầu (phím · thanh nút · giọng nói) + chỉnh từng camera + đo bộ <i>Thẳng rộng</i></h1>
+<p class="muted">Slug: <code>kachi-293-cam</code> · Nhánh làm việc từ 2.92 (194) <code>8fbdf96</code> (nhóm CAM của lô 2.93) · Chủ: dangkhoi · Backlog <code>CAMERA-ON-DEMAND</code> · <code>CAMERA-PER-CAM-CONFIG</code> · <code>CAM-WIDE-TUNE</code> · <code>CAM-RAW-DIAG-REACH</code> · <span class="pill wait">Trạng thái: mã + test off-car xanh; 🚗 chưa thử xe; KHÔNG bump phiên bản ở nhánh này (bản gom 2.93 quyết)</span></p>
+<p class="muted">Duyệt: owner 06/10 <i>"làm hết mọi thứ luôn đi"</i> + hỏi đáp cùng ngày (trích §2.1) — cổng duyệt ngoài tài liệu. Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§3/§4/§5/§6/§7/§8/§10/§11/§14. Nhãn mức bằng chứng: <b>[ĐO]</b> lần chạy này · <b>[ĐO mã]</b> đọc mã · <b>[ĐO tính]</b> số tính bằng đúng công thức của mã · <b>[SUY]</b> · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b>.</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-06</b>: khởi tạo spec + triển khai cùng lúc (nhóm CAM, lô 2.93): R1 camera theo yêu cầu (bốn lối vào, một đường thi hành), R2 cấu hình riêng từng camera (góc · vị trí kéo-thả · cỡ · hình · kiểu · xoay · lật), R3 đo bộ <i>Thẳng rộng</i> trên khung thật, R4 đóng <code>CAM-RAW-DIAG-REACH</code> theo quyết định (c).</li>
+<li><b>Pass 1 — 2026-10-06</b>: owner (qua điều phối) <i>"voice: mở cam trái, mở cam phải … nhiều option nhé"</i> ⇒ bảng cách nói camera riêng (<code>VoiceCameraPhrases</code>, §4.4): động từ mở/tắt × <i>cam · camera · máy quay · ca-me-ra</i> × <i>bên/phía</i> × phía + đồng nghĩa; <i>"tắt cam"</i>/<i>"tắt camera"</i> trần ⇒ tắt camera đang mở; câu mở nói lại lần hai ⇒ tắt. Tự soát (§10 Pass 1): nút là toggle theo thứ <b>đang hiện</b> (camera bị xi-nhan che ⇒ bấm là đưa lên), xem thử khi công tắc xi-nhan tắt, giữ khoá log <code>side=</code> cho bài máy ảo.</li>
+<li><b>Pass 2 — 2026-10-07 (wave 2B)</b>: đóng các việc senior review Pass 1 để lại + ba OQ (owner 06/10 <i>"làm hết mọi thứ, ko để lại"</i>; §4.9): <b>D1/OQ6</b> <code>VOICE-CAM-OFF-360-FALLBACK</code> — controller trả KẾT QUẢ (mở · đã tắt · không có gì để tắt · không tới được), <code>:wake</code> đọc <code>resultCode</code> của broadcast CÓ THỨ TỰ; <i>"tắt camera"</i> trần mà không camera theo yêu cầu nào mở ⇒ nút Camera 360 TẮT như ≤ 2.92, chạy lại qua cổng của làn ghi; câu MỞ nói đúng chiều (<i>"Đã mở / Đã tắt Camera sau"</i>) · <b>OQ4</b> <code>CAMERA-DOCK-ACTIVE-STATE</code> — ô camera sáng theo trạng thái thật (nghe, không hỏi vòng) · <b>OQ3</b> <code>CAMERA-WIDGET-TILE</code> — năm ô camera đặt được vào widget lưới ô giữa màn · <b>D4</b> hình <code>ic-cam-off</code> riêng · <b>D2</b> <code>prefs_set</code> khoá camera áp ngay nếu đang hiện · <b>D6</b> đổi hồ sơ áp cho camera theo yêu cầu đang hiện · <code>DIAG-SCREENS-UNREACHABLE</code> (spec misc OQ3) — hai màn chẩn đoán mở CHỈ bằng lệnh cầu <code>diag_screen</code>. Để lại 🚗: D3 · D5 · hướng dải sau/trước (OQ1).</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>2.1 Owner nói gì (06/10)</h3>
+<ul>
+<li><i>"cái camera, mình có thể lấy 4 cam, bẻ lại theo đúng 3 options này, đưa vào widget action, hoặc voice, để có thể mở lên được không nhỉ? mở overlay lên như là xinhan, nhưng mà không trigger từ xinhan mà trigger từ bind phím vật lý, hoặc widget action button, hoặc voice?"</i></li>
+<li><i>"tắt bằng cách bấm nút vật lý, voice, nút bấm trên widget cũng OK mà hả? không nên timeout, các nút đều là toggle on/off là được"</i></li>
+<li><i>"R không sao, mình đã test overlay nó đè lên cam360 rồi, nên cứ thoải mái em"</i> ⇒ số R không có nhánh riêng.</li>
+<li><i>"cho chỉnh size và vị trí từng camera không nhỉ?"</i> · <i>"(a) đi, (b) rối lắm"</i> ⇒ MỘT camera theo yêu cầu tại một lúc: camera khác THAY, cùng camera TẮT.</li>
+<li><i>"voice: mở cam trái, mở cam phải, chứ không phải ai cũng đọc là mở camera trái đâu nhé, nhiều option nhé"</i> · <i>"làm hết mọi thứ, ko để lại"</i>.</li>
+</ul>
+<h3>2.2 Đã có gì (2.92) — đọc mã</h3>
+<table>
+<tr><th>Sự thật</th><th>Mức</th><th>Nguồn</th></tr>
+<tr><td>Camera xi-nhan: MỘT <code>CameraSignalController</code> cho cả tiến trình chính (<code>AppContainer.cameraSignal</code>), MỘT cửa sổ overlay (<code>TYPE_APPLICATION_OVERLAY</code>, không nhận chạm) + MỘT luồng <code>AVMCamera</code></td><td>[ĐO mã]</td><td><code>CameraSignalController.kt</code>, <code>CameraOverlayView.kt</code></td></tr>
+<tr><td>Khung HAL 5120×960 = 4 dải đứng 1280×960, thứ tự <b>sau · trái · phải · trước</b></td><td>[SUY — số đo 27/09 Seal + 28/09 SL6, dữ liệu cũ]</td><td><code>CameraPanoCrop.kt</code>; <code>camera-rear-coverage-2026-10-06.md</code> §1.1</td></tr>
+<tr><td>Đổi camera phải dỡ phiên cũ TRƯỚC (avm.close → hal.close → overlay.hide); thiếu là <code>BufferQueue has been abandoned</code> 55 004 dòng</td><td>[ĐO xe 27/09, dữ liệu cũ] + [ĐO mã]</td><td><code>CameraGlWiringContractTest</code></td></tr>
+<tr><td>Phím vật lý: bảng <code>voicekey_bindings</code> → <code>AssistantLauncher.launch</code> (tên gói · <code>__X__</code> · <code>ctl:&lt;nút&gt;:&lt;việc&gt;</code>)</td><td>[ĐO mã]</td><td><code>AssistantLauncher.kt</code>, <code>KeyCtlTargets</code></td></tr>
+<tr><td>Thanh nút: ô loại LAUNCHER → <code>KachiHomeWiring.controlDock</code> (Ứng dụng · Cài đặt · Nói với xe)</td><td>[ĐO mã]</td><td><code>KachiHomeWiring.kt</code></td></tr>
+<tr><td>Giọng nói: từ vựng SINH từ nhãn bộ đăng ký; <i>"camera"</i> là từ đồng nghĩa của nút Camera 360 (<code>VoiceSynonyms.CONTROL["cam"]</code>); phiên phím vô-lăng chạy ở tiến trình <code>:wake</code></td><td>[ĐO mã]</td><td><code>VoiceGrammar.kt</code>, <code>VoiceSynonyms.kt</code>, <code>VoiceWakeService</code></td></tr>
+<tr><td>Cài đặt camera 2.92: 15 hàng, trong đó góc/xoay/lật <b>theo bên</b> (6 hàng)</td><td>[ĐO mã]</td><td><code>CameraSettingsIa.USER_KEYS</code></td></tr>
+</table>
+<div class="card"><b>Không có cổng chặn · không cơ chế xe mới.</b> Camera theo yêu cầu dùng ĐÚNG đường <code>PanoramaHal.open</code> + <code>AVMCamera</code> + overlay của camera xi-nhan (đã chạy trên xe 27/09); khác biệt duy nhất là DẢI (sau/trước = dải 0/3 của cùng khung). Không lệnh <code>am</code>/<code>wm</code>/<code>service call</code> nào; trạng thái <i>"đang mở camera nào"</i> chỉ ở RAM, chết theo tiến trình (CLAUDE.md §4/§5). Phần cần mắt trên xe (hướng dải sau/trước, vừa mắt) đánh dấu 🚗 ở §6.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 — Camera theo yêu cầu (CAMERA-ON-DEMAND).</b>
+  <ul>
+  <li>R1.1 Bốn camera <b>sau · trái · phải · trước</b> = bốn dải của khung ghép, cùng đường vẽ ba kiểu hình (Nắn thẳng · Thẳng rộng · Gương cầu) của 2.92.</li>
+  <li>R1.2 Bốn lối vào, MỘT đường thi hành: <b>phím vật lý</b> (đích <code>cam:&lt;camera&gt;</code> = bật/tắt · <code>cam:off</code> = tắt) · <b>nút thanh nút</b> (bốn nút camera + <i>Tắt camera</i>) · <b>giọng nói</b> (§4.4) · <b>cầu kiểm thử</b> (<code>camera --es name demand:&lt;camera&gt;</code>).</li>
+  <li>R1.3 Một camera một lúc: nút/phím = toggle — camera khác ⇒ THAY; đúng camera đang hiện ⇒ TẮT; <i>Tắt camera</i> ⇒ tắt. Giọng nói: câu MỞ = toggle (nói lại lần hai ⇒ tắt), câu TẮT chỉ tắt đúng camera ấy, <i>"tắt cam"</i> trần ⇒ tắt camera đang mở.</li>
+  <li>R1.4 <b>Không hẹn giờ tắt.</b></li>
+  <li>R1.5 Camera xi-nhan chạy y như cũ, độc lập: <i>sự kiện mới nhất thắng</i> (xi-nhan bật/đổi bên ⇒ camera xi-nhan; bấm/nói ⇒ camera vừa gọi); hết xi-nhan ⇒ camera theo yêu cầu (nếu đang bật) quay lại; tắt công tắc xi-nhan không tắt camera theo yêu cầu.</li>
+  <li>R1.6 Hiện ở cùng chỗ camera xi-nhan được cấu hình (màn chính / cụm theo <code>camera_on_cluster</code>) + cấu hình riêng camera (R2).</li>
+  <li>R1.7 Số R: không nhánh riêng (owner). R1.8 Phiên <code>:wake</code> tới controller qua broadcast trong gói, receiver không export; tiến trình chính không sống ⇒ giọng nói báo <i>chưa làm được</i>, không ✓ giả.</li>
+  </ul></li>
+<li><b>R2 — Chỉnh từng camera (CAMERA-PER-CAM-CONFIG).</b> Mỗi camera: góc mặc định (TL/TR) · vị trí kéo-thả (phần nghìn vùng cho phép) · cỡ 50–150 % (bước 5) · hình khung riêng (<i>Theo chung</i>/Chữ nhật/Tròn/Theo cụm) · kiểu hình riêng (<i>Theo chung</i>/ba kiểu) · xoay (0/↺90/↻90/180) · lật gương. AC: áp cho camera ấy dù xi-nhan hay theo yêu cầu mở; hai camera gương dùng lại đúng 6 khoá cũ (góc/xoay/lật) ⇒ xe không chạm Cài đặt thì <b>không đổi một pixel</b> (đường đặt chỗ riêng chỉ chạy khi đã kéo hoặc cỡ ≠ 100 %); vùng cho phép không bao giờ bị vượt (dưới thanh trên ở màn chính, trong dải cụm theo hồ sơ xe); Cài đặt có MỘT hàng chip chọn camera + MỘT bộ hàng (không nhân bốn), nút <i>Xem thử</i> = cùng đường của nút thanh nút, chỉnh xong áp ngay nếu đúng camera ấy đang hiện; 22 khoá mới ghi/đọc được qua <code>prefs_set</code>.</li>
+<li><b>R3 — CAM-WIDE-TUNE.</b> Đo bộ <i>Thẳng rộng</i> (κ 1,5 · F 100 % · dịch −20 %) trên khung thô thật (thư mục riêng tư ngoài repo, CHỈ ĐỌC, không chép ảnh/ảnh dẫn xuất nào vào repo); chỉ đổi mặc định khi có [ĐO] — không thì ghi lại và giữ.</li>
+<li><b>R4 — CAM-RAW-DIAG-REACH: đóng theo (c).</b> Chụp khung thô giữ ở adb / bản <code>vehicleTest</code> / cầu kiểm thử; không thêm lối vào UI nào.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>R-nf1</b> — Generic: không rẽ nhánh theo tên gói/đời xe; khác biệt giữa camera đi qua <code>CameraWhich</code> (dải · dấu dịch · bên).</li>
+<li><b>R-nf2</b> — Luật thuần ở <code>:core</code> có test bằng số; <code>:app</code> chỉ nối dây, có bài canh dây (CLAUDE.md §8).</li>
+<li><b>R-nf3</b> — Tệp ≤ 500 dòng; chữ 5 thứ tiếng (tài nguyên Android + <code>i18n/*.tsv</code>); không phụ thuộc mới.</li>
+<li><b>R-nf4</b> — Phạm vi lưu: góc · vị trí · cỡ · hình · kiểu = <b>hồ sơ</b>; xoay · lật = <b>xe</b> (sự thật lắp đặt); khoá mới tự rót vào hồ sơ cũ qua sổ <code>ProfileScopeMigration.fillNewKeys</code>.</li>
+<li><b>R-nf5</b> — Hotword giọng nói viết HOA có dấu, không dòng một từ, không dòng là tiền tố của dòng khác (luật của <code>SherpaHotwords</code>).</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Luồng — bốn lối vào, một cửa <code>show()</code></h3>
+<div class="diagram">
+<svg viewBox="0 0 900 360" role="img" aria-label="Bốn lối vào camera theo yêu cầu đi qua CameraDemandDispatch tới controller rồi một cửa show">
+  <rect class="box" x="10" y="14" width="190" height="52" rx="10"/><text class="t" x="105" y="36" text-anchor="middle">Phím vật lý</text><text class="s" x="105" y="54" text-anchor="middle">AssistantLauncher · cam:&lt;camera&gt;</text>
+  <rect class="box" x="10" y="78" width="190" height="52" rx="10"/><text class="t" x="105" y="100" text-anchor="middle">Nút thanh nút</text><text class="s" x="105" y="118" text-anchor="middle">controlDock · launcher_cam_*</text>
+  <rect class="box" x="10" y="142" width="190" height="52" rx="10"/><text class="t" x="105" y="164" text-anchor="middle">Giọng nói (chính · :wake)</text><text class="s" x="105" y="182" text-anchor="middle">VoiceDispatcher · cameraOp</text>
+  <rect class="box" x="10" y="206" width="190" height="52" rx="10"/><text class="t" x="105" y="228" text-anchor="middle">Cầu kiểm thử</text><text class="s" x="105" y="246" text-anchor="middle">camera --es name demand:rear</text>
+  <rect class="newbox" x="250" y="100" width="200" height="72" rx="10"/><text class="t" x="350" y="126" text-anchor="middle">CameraDemandDispatch</text><text class="s" x="350" y="144" text-anchor="middle">chính ⇒ gọi thẳng</text><text class="s" x="350" y="160" text-anchor="middle">:wake ⇒ broadcast trong gói</text>
+  <path class="ln" d="M200 40 H226 V136 H246"/><path class="ln" d="M200 104 H226"/><path class="ln" d="M200 168 H226 V136"/><path class="ln" d="M200 232 H226 V168"/>
+  <rect class="newbox" x="500" y="20" width="190" height="60" rx="10"/><text class="t" x="595" y="44" text-anchor="middle">CameraDemandState (:core)</text><text class="s" x="595" y="62" text-anchor="middle">toggle theo thứ đang hiện</text>
+  <rect class="box" x="500" y="106" width="190" height="60" rx="10"/><text class="t" x="595" y="130" text-anchor="middle">CameraSignalController</text><text class="s" x="595" y="148" text-anchor="middle">demand(op) · về main</text>
+  <rect class="box" x="500" y="192" width="190" height="60" rx="10"/><text class="t" x="595" y="216" text-anchor="middle">Xi-nhan (HAL socket)</text><text class="s" x="595" y="234" text-anchor="middle">tickMain · CameraHold</text>
+  <path class="ln" d="M450 136 H496"/><path class="dash" d="M595 106 V84"/><path class="ln" d="M595 192 V170"/>
+  <rect class="newbox" x="730" y="100" width="160" height="72" rx="10"/><text class="t" x="810" y="124" text-anchor="middle">show(want())</text><text class="s" x="810" y="142" text-anchor="middle">CameraDemand.shown</text><text class="s" x="810" y="158" text-anchor="middle">mới nhất thắng</text>
+  <path class="ln" d="M690 136 H726"/>
+  <rect class="box" x="500" y="282" width="190" height="60" rx="10"/><text class="t" x="595" y="306" text-anchor="middle">closeSession (dỡ cũ)</text><text class="s" x="595" y="324" text-anchor="middle">avm → hal → overlay</text>
+  <rect class="newbox" x="720" y="282" width="170" height="60" rx="10"/><text class="t" x="805" y="306" text-anchor="middle">openSession(which)</text><text class="s" x="805" y="324" text-anchor="middle">CameraSessionSpec.read</text>
+  <path class="dash" d="M810 172 V278"/><path class="dash" d="M780 230 H595 V278"/><path class="ln" d="M690 312 H716"/>
+</svg>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--bg)"></span> khối có sẵn (2.73–2.92)</span><span class="sw"><span class="box" style="background:var(--new)"></span> khối mới 2.93</span></div>
+
+<h3>4.2 Ai được hiện — luật <i>sự kiện mới nhất thắng</i> + toggle theo thứ ĐANG HIỆN</h3>
+<div class="diagram">
+<svg viewBox="0 0 880 210" role="img" aria-label="Dòng thời gian: bấm camera sau, xi-nhan trái chen, hết xi-nhan camera sau quay lại, bấm lại thì tắt">
+  <path class="dash" d="M20 150 H860"/>
+  <rect class="win" x="40" y="70" width="170" height="44" rx="8"/><text class="t" x="125" y="97" text-anchor="middle">Camera sau</text>
+  <rect class="box" x="210" y="70" width="210" height="44" rx="8"/><text class="t" x="315" y="97" text-anchor="middle">Camera trái (xi-nhan)</text>
+  <rect class="win" x="420" y="70" width="190" height="44" rx="8"/><text class="t" x="515" y="97" text-anchor="middle">Camera sau (quay lại)</text>
+  <rect class="box" x="610" y="70" width="230" height="44" rx="8"/><text class="t" x="725" y="97" text-anchor="middle">— (đã tắt)</text>
+  <text class="s" x="40" y="172">bấm «Camera sau»</text><text class="s" x="210" y="172">xi-nhan trái bật</text><text class="s" x="420" y="172">hết xi-nhan (sau HOLD)</text><text class="s" x="610" y="172">bấm lại «Camera sau»</text>
+  <text class="s" x="230" y="52">bấm «Camera sau» lúc này ⇒ ĐƯA LÊN (không tắt thứ đang bị che)</text>
+  <path class="ln" d="M40 150 V118"/><path class="ln" d="M210 150 V118"/><path class="ln" d="M420 150 V118"/><path class="ln" d="M610 150 V118"/>
+</svg>
+</div>
+<pre>shown(blinker, demand, demandNewer) = if (demandNewer) demand ?: blinker else blinker ?: demand
+next(current, Toggle(w), visible)   = if (current == w &amp;&amp; visible == w) null else w      // nút · câu MỞ
+next(current, Close(w))             = if (current == w) null else current             // câu TẮT
+next(current, CloseAll)             = null                                            // «Tắt camera» · «tắt cam»</pre>
+<p>Bảng ở <code>:core</code> <code>CameraDemand</code> + <code>CameraDemandState</code> (bài <code>CameraDemandTest</code> · <code>CameraDemandStateTest</code>). Controller giữ <code>showing</code> = camera của phiên đang treo (sự thật của cửa sổ) và truyền nó làm <code>visible</code>; MỌI lượt đổi camera (xi-nhan đổi bên · bấm camera khác · xi-nhan chen) đi qua <code>show(next)</code>, nơi phiên cũ được dỡ TRƯỚC khi mở phiên mới (cùng chuỗi dỡ có bài canh của 2.75). Hẹn giờ duy nhất vẫn là mốc HOLD của xi-nhan.</p>
+
+<h3>4.3 Cấu hình riêng từng camera + đặt chỗ</h3>
+<table>
+<tr><th>Loại khoá</th><th>Tên khoá (<code>CameraCamConfig</code>)</th><th>Phạm vi</th><th>Mặc định</th><th>Kiểm</th></tr>
+<tr><td>Góc mặc định</td><td><code>camera_pos_&lt;camera&gt;</code> (trái/phải = khoá 2.35)</td><td>hồ sơ</td><td>trái TL · phải TR · sau/trước TR [ĐOÁN]</td><td><code>isCorner</code></td></tr>
+<tr><td>Vị trí kéo-thả</td><td><code>camera_xy_&lt;camera&gt;</code> = <code>"x,y"</code> phần nghìn</td><td>hồ sơ</td><td>vắng = theo góc</td><td><code>parsePlace</code> (ngoài thang ⇒ vắng)</td></tr>
+<tr><td>Cỡ</td><td><code>camera_size_&lt;camera&gt;</code></td><td>hồ sơ</td><td>100 %</td><td>50–150</td></tr>
+<tr><td>Hình khung / kiểu hình riêng</td><td><code>camera_shape_&lt;camera&gt;</code> · <code>camera_projection_&lt;camera&gt;</code></td><td>hồ sơ</td><td><code>AUTO</code> = theo khoá chung</td><td><code>isShapeChoice</code> · <code>isProjectionChoice</code></td></tr>
+<tr><td>Xoay · lật</td><td><code>camera_rot_&lt;camera&gt;</code> · <code>camera_mirror_&lt;camera&gt;</code> (trái/phải = khoá 2.71/2.76)</td><td>xe</td><td>sau/trước: 0 · tắt [CHƯA BIẾT 🚗]</td><td><code>isRotation</code> · bool</td></tr>
+</table>
+<div class="diagram">
+<svg viewBox="0 0 880 250" role="img" aria-label="Vùng cho phép trên màn chính và trên cụm, vị trí lưu theo phần nghìn của vùng">
+  <rect class="box" x="20" y="20" width="400" height="206" rx="8"/><text class="s" x="220" y="40" text-anchor="middle">Màn chính 1920×990</text>
+  <rect class="img" x="20" y="49" width="400" height="177"/><text class="s" x="220" y="66" text-anchor="middle">vùng cho phép: trọn ngang × từ 14 % cao (dưới thanh trên)</text>
+  <rect class="win" x="32" y="70" width="103" height="77" rx="6"/><text class="t" x="83" y="113" text-anchor="middle">TL 100 %</text>
+  <rect class="win" x="190" y="120" width="140" height="105" rx="6"/><text class="t" x="260" y="170" text-anchor="middle">kéo (500,700)</text><text class="s" x="260" y="188" text-anchor="middle">cỡ 130 %</text>
+  <rect class="box" x="460" y="20" width="400" height="150" rx="40"/><text class="s" x="660" y="40" text-anchor="middle">Cụm 1920×720</text>
+  <rect class="img" x="490" y="58" width="340" height="88"/><text class="s" x="660" y="160" text-anchor="middle">vùng cho phép = DẢI GIỮA theo hồ sơ xe</text>
+  <rect class="win" x="490" y="58" width="118" height="88" rx="6"/><text class="t" x="549" y="106" text-anchor="middle">TL</text>
+  <rect class="win" x="700" y="70" width="90" height="66" rx="6"/><text class="t" x="745" y="108" text-anchor="middle">kéo</text>
+  <text class="s" x="660" y="200" text-anchor="middle">tâm cửa sổ lưu theo phần nghìn của vùng ⇒ đổi màn chính ⇄ cụm vẫn "cùng chỗ tương đối"</text>
+  <text class="s" x="660" y="218" text-anchor="middle">chưa kéo + 100 % ⇒ đường đặt chỗ 2.73–2.92 nguyên văn (CameraPlacement.custom)</text>
+</svg>
+</div>
+<ul>
+<li>Toán ở <code>:core</code> <code>CameraPlacement</code> (bài <code>CameraPlacementTest</code>, số Seal: TL 57,200 · 495×371; 150 % ⇒ 743×557; 50 % TR dính lề phải): cạnh vùng vuông = <code>0,5 × cao màn × cỡ</code> (màn chính) hoặc nửa dải × trọn cao dải × cỡ (cụm; tròn ⇒ vuông), khung đúng tỉ lệ ảnh nằm VỪA trong đó (<code>CameraOverlayFrame.fit</code>), rồi kẹp trong vùng. Mặc định 100 % trùng phép 2.73 ±1 px làm tròn — và mặc định KHÔNG đi đường này.</li>
+<li><code>:app</code>: <code>CameraOverlayPlace.of(place, size)</code> (null khi không riêng) → <code>CameraOverlayView.geometry()</code> rẽ sớm sang <code>customOverlayGeo</code> (cùng loại cửa sổ + <code>FLAG_NOT_TOUCHABLE</code>). Trên cụm, <i>Theo cụm</i> ở đường riêng vẽ như chữ nhật (mép cong chỉ có nghĩa khi dính kính ở đầu dải — đúng chỗ đường cũ đặt; <i>Về góc mặc định</i> trả về đường cũ).</li>
+<li>Mọi pref của MỘT phiên đọc một lượt ở <code>CameraSessionSpec.read(ctx, which)</code> — controller và ô kéo-thả ở Cài đặt dùng chung (tỉ lệ khung đúng thứ overlay sẽ dựng).</li>
+<li><b>Camera giữa (sau/trước)</b> dùng NGUỒN của bên trái (góc nhìn + camera số của khối <i>Nếu camera không hiện</i>) — bốn dải cùng một luồng ghép; ép DẢI của chính nó, lấy trọn dải (<code>SPAN_STRIP</code>), hai núm dịch-x theo bên không áp (<code>panXSign = 0</code>). ⚠ Bên trái đặt <i>Nguyên khung</i> (camera đơn) thì camera giữa vẫn cắt dải — [CHƯA BIẾT] đời xe nào như vậy (OQ2).</li>
+</ul>
+
+<h3>4.4 Giọng nói — động từ × tên × từ nối × phía (<code>VoiceCameraPhrases</code>)</h3>
+<table>
+<tr><th>Trục</th><th>Bảng (có dấu — nguồn của phép khớp lẫn hotword)</th></tr>
+<tr><td>Động từ MỞ</td><td>mở · bật · xem · hiện · cho xem · coi · hiển thị · cho coi · mở xem · bật xem · xem thử · coi thử · open · show · view · display · turn on · <i>(không động từ)</i></td></tr>
+<tr><td>Động từ TẮT</td><td>tắt · đóng · ẩn · thôi · thôi xem · thôi coi · tắt xem · dẹp · close · hide · turn off</td></tr>
+<tr><td>Tên</td><td>camera · cam · máy quay · ca-me-ra · ca mê ra</td></tr>
+<tr><td>Từ nối (tuỳ chọn)</td><td>bên · phía · đằng · tay · ở · bên tay · bên phía · ở phía · ở bên</td></tr>
+<tr><td>Phía</td><td>sau = <b>lùi · đuôi · hậu</b> · rear · back · reverse · trái · left · phải · right · trước = <b>đầu</b> · front</td></tr>
+<tr><td>Đệm</td><td>sau động từ: cái · giúp · hộ · giùm · dùm · hết · tất cả · mọi · the — cuối câu: xe · lên · ra · lại · đi · nhé · nha · giúp · với · nào · thử · luôn · ngay</td></tr>
+</table>
+<ul>
+<li><b>Chỉ khi CẢ vế là câu camera</b> (đứng ngay sau chặn cứng của <code>VoiceIntentParser.parseTokens</code>) — thiếu/thừa từ ⇒ <code>null</code> ⇒ vế đi tiếp đường cũ. Không có động từ đứng sau (<i>"camera sau mờ"</i> là câu kể). <i>"ẩn"</i>/<i>"thôi"</i> chỉ là động từ TẮT trong bảng này (đưa vào <code>VoiceGrammar.VERBS</code> sẽ đổi nghĩa <i>"thôi lấy gió ngoài"</i>).</li>
+<li>Ý định: có phía + MỞ/không động từ ⇒ <code>Launcher(camera)</code> → <code>CameraDemand.spoken</code> = <b>Toggle</b> (nói lại lần hai thì tắt); có phía + TẮT ⇒ <code>Launcher(camera, off)</code> → <b>Close</b>; KHÔNG phía + TẮT ⇒ <code>Launcher(CAM_OFF)</code> → <b>CloseAll</b>. Một phép dịch: <code>LauncherActions.cameraOp(id, off)</code>.</li>
+<li><span class="warn">⚠ Đổi nghĩa có chủ đích</span>: <i>"tắt camera"</i> trần ≤ 2.92 là nút Camera 360; từ 2.93 là tắt camera theo yêu cầu (chỉ dẫn owner qua điều phối). Camera 360 vẫn gọi được: <i>"mở camera"</i> (không phía) · <i>"…camera 360"</i> · <i>"…camera toàn cảnh"</i> · <i>"…camera quanh xe"</i>; câu mẫu Cài đặt của nút Camera 360 nay là <i>"bật/tắt camera 360"</i>.</li>
+<li>Câu trả lời: câu MỞ chỉ nói TÊN camera (<i>"✓ Camera sau"</i>) — phiên <code>:wake</code> không biết camera đang hiện nên không được hứa <i>"Mở"</i> cho một lượt có thể là tắt; câu TẮT nói <i>"Tắt Camera sau"</i>; <i>"tắt cam"</i> nói <i>"Tắt camera"</i>.</li>
+<li>Hotword: 2 tên phổ biến (cam · camera) × 7 phía VI (+ <i>bên</i> cho trái/phải, <i>phía</i> cho sau/trước) × (cụm trần + 5 động từ) = 132 cụm có dấu, viết HOA ở <code>SherpaHotwords.normalize</code>; <i>"tắt cam"</i>/<i>"tắt camera"</i> trần là tiền tố nên rụng theo luật tiền tố (vẫn HIỂU ở tầng chữ). Tệp hotword vẫn trong dải 300–3000 dòng.</li>
+<li><code>:wake</code> ⇒ broadcast <code>com.byd.launcher.CAMERA_DEMAND</code> (<code>setPackage</code>, receiver <code>RECEIVER_NOT_EXPORTED</code> đăng ký ở <code>KachiApplication.onCreate</code> sau <code>ControlSentRelay</code>) — cùng khuôn đã chạy.</li>
+</ul>
+
+<h3>4.5 Phím vật lý · thanh nút · Cài đặt</h3>
+<div class="flow">
+  <div class="fnode"><b>Phím vô-lăng › Thêm</b><span>bấm phím cần gán</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Loại đích</b><span>Ứng dụng · <u>Camera theo yêu cầu</u> · nhóm xe</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Camera nào</b><span>Sau/Trái/Phải/Trước — bật/tắt · Tắt camera</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>voicekey_bindings</b><span>cam:rear · cam:off</span></div>
+</div>
+<ul>
+<li>Đích phím sinh từ <code>CameraDemand.KEY_OPS</code>/<code>keySpec</code> (không chép tay <code>cam:</code>); <code>AssistantLauncher.launch</code> rẽ <code>cam:</code> ngay sau <code>ctl:</code>, TRƯỚC mọi nhánh mở app.</li>
+<li>Bộ chọn nút thanh xe: khối RIÊNG <b>Camera theo yêu cầu</b> (5 ô) ngay sau khối Launcher (khối Launcher vẫn đúng 3 việc gọi bằng lời, một hàng); hình mang VỊ TRÍ (<code>ic-cam-view-rear/lf/rf/front</code>, luật U7). <i>"Widget action"</i> của owner = nút trên thanh nút (widget trên lưới ô là việc sau — OQ3; <b>Pass 2 đã làm</b> — §4.9 c).</li>
+<li>Cài đặt › Tiện nghi xe › Camera: 9 hàng chung (bật khi xi-nhan · hiện lên cụm · hình khung · kiểu hình · thu phóng · góc nhìn/dải hai bên) + bộ chỉnh <b>Từng camera</b>: chip camera → ▶ Xem thử · Góc mặc định · ô kéo-thả + <i>Về góc mặc định</i> · Cỡ · Hình khung · Kiểu hình · Xoay · Lật gương. Sáu hàng góc/xoay/lật theo bên của 2.92 gộp vào đây (cùng khoá).</li>
+</ul>
+
+<h3>4.6 CAM-WIDE-TUNE — đo trên khung thật (R3)</h3>
+<p><b>Dữ liệu</b>: thư mục riêng tư <code>~/.kachi/camraw-0927/</code> (ngoài repo, chỉ đọc; không ảnh/ảnh dẫn xuất nào vào repo). <b>Không có khung ghép 4-in-1 nào</b> [ĐO]: cả 7 tệp 5120×960 có mép bốn "dải" <b>liền mạch</b> ở cả ba ranh giới (độ sáng góc chạm nhau lệch ≤ 7/255) — bốn camera rời thì không thể; xem trực tiếp 4/7 tệp: 3 tệp <b>một kênh</b> (11:18–11:19 — MỘT camera kéo ngang ×4, đường nguồn <i>Một camera</i> đã gỡ ở 2.77) và 1 tệp <b>nhìn từ trên</b> (ảnh 360 ghép, 18:44); 3 tệp còn lại cùng buổi cùng cỡ [SUY cùng loại]. Ba tệp 1280×960 (10:26–10:31): tệp xem trực tiếp là khung ĐÃ NẮN (hai "nơ" đen trên/dưới giữa khung) [ĐO 1/3, SUY 2/3]; một tệp 960×960 (11:12). Khung ghép 27/09 09:58 (đo ở 2.92) chỉ còn trong máy ảo — không được chạm ở lượt này.</p>
+<p><b>Cách đo</b>: hai khung một kênh của camera gương (11:19:07 ⇒ trái, 11:19:23 ⇒ phải [SUY: thứ tự kênh 1 = sau · 2 = trái · 3 = phải · 4 = trước của buổi 27/09 + thân xe ở góc dưới đúng phía]) gộp 4 điểm ngang ⇒ ảnh tương đương DẢI 1280×960 [SUY: 2.77 đo <i>"một kênh chỉ bị kéo ngang"</i>]. Biên vòng ảnh = điểm sáng (&gt; 24/255, 4 điểm liền) đầu tiên quét từ MÉP KHUNG vào theo từng hàng (cảnh tối bên trong vòng không ảnh hưởng). Rồi chạy đúng mã sản xuất (<code>CameraViewPlan.crops/gl</code> + <code>CameraDewarp.sample</code>, hồ sơ Seal K 100 · S 130) trên lưới 160×120 điểm ra; đếm điểm rơi ngoài ô (đen hình học) và điểm rơi ngoài vòng ảnh. Một bài JVM tạm, đã xoá; không ghi ảnh nào.</p>
+<table>
+<tr><th>κ · F · dịch</th><th>Mép đuôi</th><th>Mép trước</th><th>θ ≥ 76° (toàn khung)</th><th>Đen hình học</th><th>Ngoài vòng ảnh (trái / phải)</th></tr>
+<tr><td><b>1,5 · 100 · −20 (mặc định)</b></td><td><b>96,2°</b></td><td>61,8°</td><td>36,7 %</td><td>0 %</td><td><b>0,08 % / 0,96 %</b></td></tr>
+<tr><td>1,5 · 100 · −15</td><td>93,6°</td><td>68,5°</td><td>33,4 %</td><td>0 %</td><td>0,11 % / 0,07 %</td></tr>
+<tr><td>1,5 · 110 · −20</td><td>92,8°</td><td>57,8°</td><td>30,6 %</td><td>0 %</td><td>0 / 0</td></tr>
+<tr><td>1,5 · 120 · −30</td><td>94,5°</td><td>38,8°</td><td>35,7 %</td><td>0 %</td><td>0 / 0,09 %</td></tr>
+<tr><td>2,0 · 140 · −20</td><td>95,6°</td><td>50,3°</td><td>25,9 %</td><td>0 %</td><td>0,01 % / 1,04 %</td></tr>
+<tr><td>1,5 · 100 · −25</td><td>97,3°</td><td>54,1°</td><td>40,3 %</td><td>0,58 %</td><td>0,38 % / 2,66 %</td></tr>
+<tr><td>1,5 · 90 · −20</td><td>97,5°</td><td>66,4°</td><td>42,7 %</td><td>3,05 %</td><td>0,71 % / 3,50 %</td></tr>
+<tr><td>1,25 · 90 · −20</td><td>87,5°</td><td>61,8°</td><td>30,7 %</td><td>0 %</td><td>0 / 0</td></tr>
+<tr><td><i>so: Nắn thẳng F 55 (2.92)</i></td><td>76,0°</td><td>76,0°</td><td>11,2 %</td><td>0 %</td><td>0 / 0</td></tr>
+</table>
+<ul>
+<li>[ĐO] Ở giữa chiều cao, ảnh chạm cả hai mép dải (hàng 480 sáng từ x 0 tới 1279) ở cả hai camera ⇒ mẫu tới 96,2° (631 px) của bộ mặc định rơi lên <b>ảnh</b>, không lên viền tối — khớp đo 2.92 trên khung ghép 09:58.</li>
+<li>[ĐO] Biên tối theo hàng (x tương đương dải, hàng 0 · 120 · 240 · 480 · 720 · 840 · 959) — camera TRÁI (đuôi −x): phía đuôi sáng tới mép ở mọi hàng trừ hàng đáy (74 px); phía trước tối từ x 987 · 1112 · 1199 · 1276 · 1241 · 1110 · 1016. Camera PHẢI (đuôi +x): phía đuôi sáng tới mép từ hàng 0 tới 480 rồi tối từ x 1229 · 1171 · 1068 ở nửa dưới; phía trước tối ở góc trên (139 · 129 px) và góc dưới (216 px). ⇒ phần ngoài vòng mà bộ mặc định chạm chỉ là <b>mẩu góc</b> ở hàng mép khung ra (trái: hàng trên · phải: hàng đáy, phía đuôi), 0,08 % / 0,96 % — dưới ngưỡng 2 % của spec 2.92 R4.</li>
+<li><b>Quyết định: GIỮ</b> κ 150 % · F 100 % · dịch −20 %. Bộ duy nhất sạch hẳn (F 110) mất 3,4° phía đuôi (92,8° &lt; ngưỡng 93° của 2.92 R4); bộ dịch −15 đổi 2,6° phía đuôi lấy 6,7° phía trước — đánh đổi cho MẮT owner, không phải cải thiện đo được (CLAUDE.md §2). Cảnh báo: biên đo bằng ngưỡng sáng, lóa ở phía đuôi (góc trên "sáng tới góc" — 2.92 §6) có thể làm vòng trông rộng hơn thật ⇒ số "ngoài vòng" phía đuôi có thể thấp hơn thật [CHƯA BIẾT]; chốt bằng một khung ghép mới (OQ5).</li>
+</ul>
+
+<h3>4.7 CAM-RAW-DIAG-REACH — đóng theo (c)</h3>
+<p>Chụp khung thô giữ đúng ba lối đã có, không thêm bề mặt UI: (1) cầu kiểm thử <code>camera_frame --es name raw</code> (cần <i>Chế độ kiểm thử qua adb</i>); (2) bản <code>vehicleTest</code>/debuggable: <code>am start</code> màn <code>DiagActivity</code> → hai nút 📷 Khung thô (2.92 R8); (3) <code>adb pull</code> thư mục <code>kachi-logs</code>. Luật owner 21/09 (không bề mặt dev trong bản phát hành — <code>DevSurfaceGateContractTest</code>) giữ nguyên. Mã chụp <code>CameraRawCapture</code> vẫn độc lập với màn nếu sau này owner đổi ý.</p>
+
+<h3>4.8 Context7</h3>
+<p>Không thư viện/phụ thuộc mới: Android SDK + <code>androidx.core</code> <code>ContextCompat.registerReceiver(…, RECEIVER_NOT_EXPORTED)</code> (đã dùng ở <code>ControlSentRelay</code>) + Kotlin chuẩn. Máy chủ Context7 <b>không kết nối được</b> trong phiên này (<code>ENOTFOUND</code>) — không quyết định nào phụ thuộc phiên bản thư viện.</p>
+
+<h3>4.9 Pass 2 — wave 2B (2026-10-07)</h3>
+<p class="muted"><b>Review 07/10 F2 [P2]:</b> mỗi lượt gửi từ <code>:wake</code> mang <code>EXTRA_DEADLINE</code> (hạn tổng, đồng hồ <code>elapsedRealtime</code> — cùng một đồng hồ cho mọi tiến trình [ĐO nguồn r47 <code>SystemClock.cpp:49-61</code> CLOCK_BOOTTIME]); receiver ở tiến trình chính tới SAU hạn ⇒ BỎ lệnh, giữ mã ban đầu (<code>CameraWakeAsk.expired</code>) — lệnh mở tới trễ lúc nổ máy không được đè camera xi-nhan vừa bật sau khi giọng đã báo ✗.</p>
+<p><b>(a) D1/OQ6 — câu trả lời đọc KẾT QUẢ thật; <i>"tắt camera"</i> trần không có gì để tắt ⇒ Camera 360.</b> Bốn kết quả ở <code>:core</code> (<code>CameraDemand.Outcome</code>, tính bằng <code>outcome(op, trước, sau)</code> trên đúng một lượt áp): <b>OPENED</b> · <b>CLOSED</b> · <b>NOTHING_TO_CLOSE</b> · <b>UNREACHABLE</b> (= mã 0 = mã khởi đầu bên gửi ⇒ không receiver nào trả lời tự đọc ra "không tới được"). Tiến trình chính chết ⇒ <code>withoutMain</code>: lệnh TẮT = không có gì để tắt (camera theo yêu cầu chỉ sống trong RAM ở đó — [SUY] theo mã <code>CameraDemandState</code>), lệnh MỞ = không tới được.</p>
+<div class="flow">
+  <div class="fnode"><b>"tắt camera"</b><span>Launcher(CAM_OFF) · <code>:wake</code> hay chính</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>VoiceCameraTurn.run</b><span>giữ <code>next</code> của làn ghi</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>fireForResult</b><span>chính: áp thẳng · <code>:wake</code>: ordered broadcast, hạn 2 s</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>receiver (chính)</b><span>áp → <code>resultCode</code> = Outcome.code</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>answer</b><span>CLOSED ⇒ "✓ Tắt camera" · NOTHING ⇒ Rerun · UNREACHABLE ⇒ "✗ …"</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>runFrom (vế thay thế)</b><span>Control("cam", 0): cổng hỏi lại · làn ghi · đọc lại · "✓ Tắt Camera 360"</span></div>
+</div>
+<ul>
+<li>Lệnh nút xe KHÔNG bắn từ đường camera (receiver chỉ áp lệnh camera) — vế thay thế đi lại TỪ ĐẦU cổng của chính vị trí ấy trong câu (<code>VoiceDispatcher.runFrom</code> · <code>rerun</code>), nên câu ghép <i>"tắt camera và bật đèn đọc"</i> giữ đúng thứ tự (bài <code>VoiceCameraFallbackDispatchTest</code>).</li>
+<li>Đích thay thế là DỮ LIỆU của dòng <code>LauncherActionDef.offFallback = "cam"</code> (CLAUDE.md §7), bài <code>VoiceCameraTurnTest</code> ghim nó BẰNG bộ phân tích thật (= ý định của <i>"tắt camera 360"</i>). Câu nêu một camera cụ thể (<i>"tắt cam sau"</i>) không bao giờ chạm Camera 360: không mở ⇒ nói <i>"Camera sau đang không mở"</i>.</li>
+<li>Không tới được ⇒ <i>"✗ … — chưa liên lạc được màn hình chính"</i>, KHÔNG rơi về Camera 360 (không biết camera theo yêu cầu có đang mở không). Hạn chờ 2 s ≤ ½ lưới an toàn lượt nói (<code>TURN_SETTLE_MS</code> 4 s — bài canh so hai hằng); kết quả về muộn bị bỏ (một lần).</li>
+</ul>
+<p><b>(b) OQ4 — ô camera SÁNG theo trạng thái thật.</b> Luật một chỗ: <code>CameraDemand.isOn(w, demanded, showing)</code> ≡ <code>next(…, Toggle(w), showing) == null</code> (sáng ⇔ chạm là TẮT; bị xi-nhan che ⇒ không sáng) — dùng chung cho ô thanh nút, ô widget và chữ nút <i>Xem thử</i>. <code>launcherTileOf</code> tô nền NGHỈ theo luật ấy và nghe <code>onDemandChanged</code> theo vòng đời cửa sổ (<code>CameraDemandDispatch.watchWhileAttached</code>: gắn khi vào cửa sổ + vẽ lại ngay, gỡ khi rời) — không vòng hỏi; ô launcher khác giữ đúng hành vi bấm-một-phát.</p>
+<p><b>(c) OQ3 — ô camera trong widget lưới ô giữa màn.</b> Ngăn kéo gán-ô bày khối <b>Camera theo yêu cầu</b> (cùng hàm <code>cameraSection</code> với bộ chọn thanh nút); lưới vẽ bằng CÙNG bộ dựng ô launcher + CÙNG đường thi hành (<code>cameraDemandTile</code> → <code>CameraDemandDispatch.tap</code>). Luật widget sẵn có giữ nguyên: <code>FitGridLayout</code>/<code>GridFit</code> khớp khung; bốn hình camera cùng một bóng ⇒ dạng chỉ-icon bị chặn (<code>IconRepeat.ofIds</code>, nhãn luôn còn); ô camera là ô TỰ LO (<code>WorkspaceRenderPlanner.selfDriven</code> cho mọi việc LAUNCHER) ⇒ nhịp trạng thái xe 1 Hz không dựng lại ô (không mất cú bấm, không gỡ/gắn lại người nghe); cổng nhu cầu dữ liệu xe (H1) không rơi về đọc-hết.</p>
+<p><b>(d) D4 · D2 · D6 · DIAG-SCREENS.</b> D4: <code>ic-cam-off</code> = thân máy + thấu kính của <code>ic_cam</code> + gạch chéo một nét chính (khuôn <code>ic-sensor-off</code>), sinh qua <code>gen-icons.py</code>. D2: <code>prefs_set</code> một trong 28 khoá camera ⇒ <code>CameraReapply.ifShowing</code> — CÙNG cửa với Cài đặt (dựng lại nếu đúng camera ấy đang hiện). D6: <code>reapplyAll</code> bước <code>camera.demand</code> ⇒ <code>reapplyIfDemandShowing</code>: CHỈ khi khung đang hiện là camera THEO YÊU CẦU (<code>od.current ≠ null ∧ (od.newer ∨ không xi-nhan)</code>) — camera xi-nhan đang giữ thì để yên (không dỡ camera điểm mù giữa lúc rẽ). DIAG-SCREENS: lệnh cầu <code>diag_screen --es name diag|vietmap</code> qua <code>TestBridgeNoHome</code> (sau cổng test-mode), tên màn chặn ở tầng phân tích (<code>TestBridgeScreenCommands</code>); không lối vào UI nào.</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td><code>CameraWhich</code> · <code>CameraDemand</code> (toggle theo thứ đang hiện, mã phím, cú pháp cầu) · <code>CameraDemandState</code> + test</td><td><code>core/…/camera/CameraWhich.kt</code>, <code>CameraDemand.kt</code>, <code>CameraDemandState.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T2</td><td><code>CameraCamConfig</code> (28 khoá, miền, theo chung) · <code>CameraPlacement</code> (đặt chỗ + mô hình ô kéo-thả) + test số Seal</td><td><code>core/…/camera/CameraCamConfig.kt</code>, <code>CameraPlacement.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T3</td><td>Xếp loại hồ sơ/xe + kiểu khai + chia sẻ + IA + <code>prefs_set</code> danh sách trắng</td><td><code>ProfileScopeCluster.kt</code>, <code>ProfileSharePolicy.kt</code>, <code>CameraSettingsIa.kt</code>, <code>TestBridgeWritableKeys.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T4</td><td>Việc launcher: 4 camera (gọi bằng lời) + <i>Tắt camera</i> (khối) + bộ chọn riêng + 4 icon vị trí</td><td><code>LauncherActions.kt</code>, <code>CapabilityPicker.kt</code>, <code>design/glyph/cam_view_*.svg</code>, <code>ic_cam_view_*.xml</code></td><td class="ok">✅</td></tr>
+<tr><td>T5</td><td>Controller: <code>demand()</code> · một cửa <code>show()</code> · <code>CameraSessionSpec</code> · dấu dịch theo camera (<code>CameraViewPlan.gl(panXSign)</code>)</td><td><code>CameraSignalController.kt</code>, <code>CameraSessionSpec.kt</code>, <code>PrefsCameraDewarp.kt</code>, <code>CameraViewPlan.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T6</td><td>Đường thi hành chung + cầu <code>:wake</code>: <code>CameraDemandDispatch</code>; nối phím · thanh nút · giọng nói · cầu kiểm thử (+ <code>state.camera</code>)</td><td><code>CameraDemandDispatch.kt</code>, <code>AssistantLauncher.kt</code>, <code>KachiHomeWiring.kt</code>, <code>VoiceDispatcher.kt</code>, <code>VoiceWiring.kt</code>, <code>KachiApplication.kt</code>, <code>TestBridge*.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T7</td><td>Overlay: đường đặt chỗ riêng + nhãn bốn camera</td><td><code>CameraOverlayLayout.kt</code>, <code>CameraOverlayView.kt</code>, <code>CameraOverlayMask.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T8</td><td>Prefs theo camera + cầu Cài đặt + bộ chỉnh <i>Từng camera</i> + ô kéo-thả + <code>prefs_set</code> 22 khoá</td><td><code>PrefsCameraPerCam.kt</code>, <code>ClusterNavBridgeCameraPerCam.kt</code>, <code>SettingsSectionsCameraPerCam.kt</code>, <code>CameraPlacementView.kt</code>, <code>CameraSettingsLabels.kt</code>, <code>TestBridgePerCam.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T9</td><td>Phím vật lý: loại đích <i>Camera theo yêu cầu</i></td><td><code>SettingsSectionsKeys.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T10</td><td>Giọng nói: <code>Launcher(off)</code> · bảng nhiều cách nói <code>VoiceCameraPhrases</code> · hotword · câu trả lời · câu mẫu</td><td><code>core/…/voice/*</code>, <code>LauncherActions.cameraOp</code></td><td class="ok">✅</td></tr>
+<tr><td>T11</td><td>Chữ 5 thứ tiếng (+25, −9 mồ côi) + <code>i18n/*.tsv</code></td><td><code>values*/strings_kachi.xml</code>, <code>core/src/main/resources/i18n/*.tsv</code></td><td class="ok">✅</td></tr>
+<tr><td>T12</td><td>Bài dây nối <code>:app</code> mới + cập nhật bài canh cũ giữ đúng ý</td><td><code>CameraDemandWiringContractTest</code>, <code>CameraPerCamPrefsWiringContractTest</code>, 11 bài cũ</td><td class="ok">✅</td></tr>
+<tr><td>T13</td><td>CAM-WIDE-TUNE đo + quyết định (§4.6) · CAM-RAW-DIAG-REACH đóng (§4.7)</td><td>—</td><td class="ok">✅</td></tr>
+<tr><td>T14</td><td>Hướng dẫn người dùng (hàng camera đổi chỗ + mục camera theo yêu cầu)</td><td><code>docs/HUONG-DAN-KACHI.md</code> (VI + EN), <code>docs/guide/OUTLINE.md</code>, <code>docs/guide/HUONG-DAN-CO-HINH.html</code> (bảng hàng + hai mẹo + hai dòng gỡ rối; ảnh chụp màn chưa thay)</td><td class="ok">✅</td></tr>
+<tr><td>T15</td><td>Máy ảo QA (<code>camera_synth</code>) · INDEX/BACKLOG/project-context · danh mục chức năng · senior review · quét bảo mật · commit</td><td>—</td><td class="warn">điều phối (gộp lô)</td></tr>
+<tr><td>T16</td><td>2B · D1/OQ6 — kết quả bốn trạng thái + <code>withoutMain</code> + mã <code>resultCode</code> (<code>:core</code>); vế giọng nói camera chờ kết quả, câu trả lời đúng việc, vế thay thế Camera 360 (<code>VoiceCameraTurn</code>, <code>offFallback</code>); cầu <code>:wake</code> có thứ tự + hạn 2 s; <code>runFrom</code> · <code>rerun</code>; cầu kiểm thử trả <code>outcome</code>; chữ zh/th/ms</td><td><code>CameraDemand.kt</code> · <code>LauncherActions.kt</code> · <code>voice/VoiceCameraTurn.kt</code> (mới) · <code>CameraDemandDispatch.kt</code> · <code>VoiceDispatcher.kt</code> · <code>VoiceWiring.kt</code> · <code>TestBridgeCamera.kt</code> · <code>i18n/*.tsv</code></td><td class="ok">✅</td></tr>
+<tr><td>T17</td><td>2B · OQ4 — ô camera sáng theo <code>CameraDemand.isOn</code>, nghe theo vòng đời cửa sổ; nút <i>Xem thử</i> dùng chung luật</td><td><code>LauncherTile.kt</code> · <code>CameraDemandDispatch.kt</code> · <code>SettingsSectionsCameraPerCam.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T18</td><td>2B · OQ3 — khối camera ở ngăn kéo gán-ô; ô camera trong widget lưới (đơn + nén); việc LAUNCHER là ô tự lo</td><td><code>AppDrawer.kt</code> · <code>WidgetViews.kt</code> · <code>LauncherTile.kt</code> (<code>cameraDemandTile</code>) · <code>WorkspaceRenderPlan.kt</code> · <code>CapabilityPicker.kt</code> (KDoc)</td><td class="ok">✅</td></tr>
+<tr><td>T19</td><td>2B · D4 — glyph <code>cam_off</code> + mục ngữ pháp + drawable sinh + bảng tra (không thêm dòng ở <code>KachiTheme.kt</code>)</td><td><code>design/glyph/cam_off.svg</code> · <code>design/icon-grammar.json</code> · <code>res/drawable/ic_cam_off.xml</code> · <code>KachiTheme.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T20</td><td>2B · D2/D6 — cửa áp lại dùng chung (<code>CameraReapply</code>); <code>prefs_set</code> 28 khoá camera; bước <code>camera.demand</code> của lượt đổi hồ sơ + <code>reapplyIfDemandShowing</code></td><td><code>camera/CameraReapply.kt</code> (mới) · <code>CameraCamConfig.cameraOf</code> · <code>TestBridgePrefsSet.kt</code> · <code>ClusterNavBridgeCameraPerCam.kt</code> · <code>ClusterNavBridgeReapply.kt</code> · <code>CameraSignalController.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T21</td><td>2B · DIAG-SCREENS-UNREACHABLE — lệnh <code>diag_screen</code> (danh sách trắng ở tầng phân tích) qua <code>TestBridgeNoHome</code>; <code>KachiTestBridge.kt</code> không đổi (499 dòng); chú thích manifest/Cài đặt đính chính</td><td><code>testbridge/TestBridgeScreenCommands.kt</code> (mới, <code>:core</code>) · <code>TestBridgeCommand.kt</code> · <code>TestBridgeScreens.kt</code> (mới) · <code>TestBridgeNoHome.kt</code> · <code>AndroidManifest.xml</code></td><td class="ok">✅</td></tr>
+<tr><td>T22</td><td>2B · bài: <code>CameraDemandOutcomeTest</code> · <code>CameraWidgetTileTest</code> · <code>VoiceCameraTurnTest</code> · <code>TestBridgeScreenCommandsTest</code> · <code>CameraCamConfigTest</code>+ (<code>:core</code>); <code>VoiceCameraFallbackDispatchTest</code> · <code>CameraWave2BWiringContractTest</code> (<code>:app</code>); cập nhật giữ ý: <code>CameraDemandWiring</code> · <code>CameraPerCamPrefsWiring</code> · <code>VoiceCommandWiring</code> · <code>LauncherActionTileWiring</code> · <code>DevSurfaceGate</code> · <code>TestBridgeSafety</code> · <code>WidgetFitH1</code> · <code>TestBridgeCommandTest</code> · hướng dẫn người dùng (hàng camera VI+EN)</td><td>—</td><td class="ok">✅</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b>: <code>./gradlew :core:test :app:testDebugUnitTest --continue</code>, đếm từ XML. <span class="ok">[ĐO 2026-10-06, sau Pass 1] <code>:core</code> <b>4 530</b> test (480 tệp XML) · <code>:app</code> <b>2 113</b> test (263 tệp) — <b>6 643 / 0 hỏng / 0 lỗi / 0 bỏ qua</b>.</span> Lint/release/<code>vehicleTest</code>: để lượt gộp của điều phối.</li>
+<li><b>V-emu</b> (chưa chạy ở nhánh này — máy ảo thuộc điều phối): cầu kiểm thử + ảnh tổng hợp.
+<pre>BR="adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST"
+$BR --es cmd camera_synth --es name on
+$BR --es cmd camera --es name demand:rear       # như bấm nút ⇒ camera sau hiện
+$BR --es cmd state                               # "camera":{"demand":"rear","showing":"rear"}
+$BR --es cmd camera --es name demand:left       # thay bằng camera trái
+$BR --es cmd camera --es name demand:left       # bấm lại ⇒ tắt (demand="" showing="")
+$BR --es cmd camera --es name open:front        # như nói "mở camera trước" chắc chắn mở
+$BR --es cmd camera --es name close:front       # như nói "tắt camera trước"
+$BR --es cmd camera --es name demand:rear ; $BR --es cmd camera --es name left   # xi-nhan giả chen ⇒ showing=left
+#   … hết HOLD ⇒ showing=rear (camera theo yêu cầu quay lại); demand:rear lúc showing=left ⇒ ĐƯA LÊN, không tắt
+$BR --es cmd camera --es name demand:off
+$BR --es cmd prefs_set --es key camera_size_rear --es text 130        # read_back 130; áp ngay nếu đang hiện
+$BR --es cmd prefs_set --es key camera_xy_rear --es text 500,500      # tâm giữa vùng
+$BR --es cmd prefs_set --es key camera_xy_rear --es text AUTO         # về góc mặc định
+$BR --es cmd prefs_set --es key camera_projection_front --es text FISHEYE
+$BR --es cmd prefs_set --es key camera_rot_rear --es text R90 ; $BR --es cmd prefs_set --es key camera_mirror_front --es text 1</pre>
+Giọng nói: <code>say</code> các câu ở bài <code>CameraDemandVoiceTest</code> (<i>"mở cam trái"</i> · <i>"tắt máy quay sau"</i> · <i>"tắt cam"</i>) trên phiên chính và phiên <code>:wake</code>. Chụp màn ở mỗi bước; nhãn góc overlay nói đúng camera.</li>
+<li><b>V-oncar 🚗</b>:
+  <ol>
+  <li>Bốn camera theo yêu cầu bằng nút/phím/giọng ⇒ đúng camera, không giật, không treo; đổi camera liên tiếp không có <code>BufferQueue has been abandoned</code> trong log.</li>
+  <li><b>Dải sau/trước</b>: hướng ảnh (cần xoay? lật?) — chỉnh ở <i>Từng camera</i> hoặc <code>prefs_set camera_rot_rear/front</code> · <code>camera_mirror_rear/front</code>; ghi lại để đặt mặc định hồ sơ xe ở bản sau.</li>
+  <li>Xi-nhan chen khi camera theo yêu cầu đang mở ⇒ camera xi-nhan, hết xi-nhan ⇒ quay lại; vào số R khi đang mở ⇒ camera lùi zin bình thường (owner đã thử overlay đè cam360).</li>
+  <li>Kéo-thả + cỡ trên màn chính và trên cụm (dải theo hồ sơ) — vừa mắt, không đè thanh hệ thống.</li>
+  <li>Giọng nói trên xe: <i>"cam trái"</i>, <i>"tắt cam"</i>, phím vô-lăng <i>Kachi nghe</i> (đường <code>:wake</code>).</li>
+  <li><b>2B</b> — phím vô-lăng <i>Kachi nghe</i>: <i>"tắt camera"</i> khi KHÔNG camera theo yêu cầu nào mở và Camera 360 của xe đang bật ⇒ Camera 360 tắt + câu <i>"Đã tắt Camera 360…"</i>; có camera đang mở ⇒ chỉ nó tắt. Đo độ trễ cầu có thứ tự: <code>logcat -s KachiCamDemand</code> — dòng <code>… kết quả &lt;OUTCOME&gt; sau N ms</code> (<code>:wake</code>, đo từ lúc gửi) + dòng <code>nhận từ `:wake`: … → …</code> (chính) [CHƯA BIẾT trên xe; hạn 2 s].</li>
+  <li><b>2B</b> — ô camera trên thanh nút + ô widget sáng đúng camera đang mở (kể cả khi mở bằng phím/giọng); đổi hồ sơ lúc camera theo yêu cầu đang hiện ⇒ khung đổi theo hồ sơ mới; đang xi-nhan thì KHÔNG chớp camera điểm mù.</li>
+  </ol></li>
+<li><b>V-unit · Pass 2 (wave 2B)</b> — chỉ bài TẬP TRUNG (bộ đủ là việc gộp lô của điều phối), đếm từ XML: <span class="ok">[ĐO 2026-10-07] <code>:core</code> 1 727 test (202 tệp: <code>*Voice*</code> · <code>*Capability*</code> · <code>*TestBridge*</code> · <code>*Workspace*</code> · <code>*Camera*</code> · <code>*Slot*</code> · <code>*Dock*</code> · <code>*TopStrip*</code> · <code>*ControlRegistry*</code> · <code>*HalWire*</code> · <code>*I18n*</code> · <code>*Lang*</code> · <code>*Profile*</code>) + 134 test (20 tệp: <code>*Hygiene*</code> · <code>*Doc*</code> · <code>*Catalog*</code> · <code>*Feature*</code>) · <code>:app</code> 570 test (61 tệp, một lượt sau bản vá cuối: mọi bài canh camera · giọng nói (cầu thật) · thanh nút/ngăn kéo · widget · cầu kiểm thử · icon · layering · hồ sơ) — <b>0 hỏng / 0 lỗi</b>.</span> Thử ĐỎ (P5.3): gỡ đường thay thế ở <code>VoiceCameraTurn.answer</code> ⇒ 4 bài đỏ (<code>VoiceCameraTurnTest</code> ×2 · <code>VoiceCameraFallbackDispatchTest</code> ×2); gỡ nhánh LAUNCHER ở <code>WorkspaceRenderPlanner.isSelfDriven</code> ⇒ <code>CameraWidgetTileTest</code> đỏ; khôi phục ⇒ xanh. <code>gen-icons.py --check</code> 129 tệp khớp byte · <code>icon-audit.py</code> exit 0.</li>
+<li><b>V-emu · Pass 2</b> (máy ảo thuộc điều phối — chưa chạy ở lượt này):
+<pre>BR="adb shell am broadcast -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge -a com.byd.launcher.TEST"
+$BR --es cmd camera_synth --es name on
+$BR --es cmd camera --es name demand:rear        # "outcome":"opened" · thanh nút: ô Camera sau SÁNG
+$BR --es cmd camera --es name close:front        # "outcome":"nothing_to_close" (camera trước không mở)
+$BR --es cmd say --es text "tắt camera"          # có camera sau đang mở ⇒ replies ["✓ Tắt camera"], ô tắt sáng
+$BR --es cmd say --es text "tắt camera"          # không còn gì ⇒ dòng của NÚT XE Camera 360 (`cam` TẮT, như ≤ 2.92): máy ảo
+                                                 #   không HAL ⇒ "✗ Tắt Camera 360 — …"; xe ⇒ "✓ Tắt Camera 360…" — KHÔNG "✓ Tắt camera"
+$BR --es cmd say --es text "mở cam trái"         # ["✓ Mở Camera trái"]; nói lại ⇒ ["✓ Tắt Camera trái"]
+$BR --es cmd say --es text "tắt cam sau"         # không mở ⇒ ["Camera sau đang không mở"]
+$BR --es cmd camera --es name demand:left ; $BR --es cmd prefs_set --es key camera_size_left --es text 130   # khung ĐỔI NGAY (D2)
+$BR --es cmd profile --es name &lt;hồ sơ khác&gt;     # camera trái đang mở theo yêu cầu ⇒ dựng lại theo hồ sơ mới (D6)
+$BR --es cmd diag_screen --es name diag          # {"screen":"diag","requested":true} — màn Chẩn đoán lên
+$BR --es cmd diag_screen --es name vietmap       # màn Dữ liệu VietMap
+$BR --es cmd diag_screen --es name settings      # bad_screen:settings (chặn ở tầng phân tích)</pre>
+Ô widget: chạm một ô trống › khối <b>Camera theo yêu cầu</b> › chọn 4 camera + <i>Tắt camera</i> › Đặt ⇒ lưới giữ nhãn (không dạng chỉ-icon), chạm ô = bật/tắt, ô đang mở sáng; <code>logcat -s WidgetFit</code> một dòng khớp mỗi lần đổi khung (không dựng lại theo nhịp trạng thái xe). Giọng nói <code>:wake</code>: phím vô-lăng / Hey Kachi trên máy ảo + <code>logcat -s KachiCamDemand</code>.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — Hướng ảnh dải sau/trước (xoay/lật) và góc mặc định của chúng (TR [ĐOÁN]). <span class="muted">[CHƯA BIẾT] 🚗 — chỉnh được không build.</span></li>
+<li><b>OQ2</b> — Camera giữa lấy nguồn của bên trái; đời xe mà bên trái là <i>Nguyên khung</i> (camera đơn)? <span class="muted">[CHƯA BIẾT] — chưa thấy đời nào như vậy.</span></li>
+<li><b>OQ3</b> — Widget nút camera trên LƯỚI ô (ngoài thanh nút): nhóm WIDGET sửa song song ⇒ để lô sau. <span class="muted">Đề xuất backlog <code>CAMERA-WIDGET-TILE</code>.</span> <span class="ok">→ ĐÓNG ở Pass 2 (wave 2B, §4.9 c).</span></li>
+<li><b>OQ4</b> — Ô camera trên thanh nút chưa sáng theo trạng thái (đang mở). <span class="muted">Giới hạn đã biết; cần một luồng trạng thái thanh nút ← controller.</span> <span class="ok">→ ĐÓNG ở Pass 2 (wave 2B, §4.9 b).</span></li>
+<li><b>OQ5</b> — Một khung ghép 4-in-1 MỚI (để chốt vòng ảnh phía đuôi không lẫn lóa) — thư mục riêng tư hiện không có khung nào như vậy. <span class="muted">Lấy bằng <code>camera_frame --es name raw</code> buổi xe tới.</span></li>
+<li><b>OQ6</b> — <i>"tắt camera"</i> trần nay là tắt camera theo yêu cầu (§4.4). Owner có muốn khi KHÔNG có camera theo yêu cầu nào đang mở thì câu ấy rơi về Camera 360 như ≤ 2.92 không? <span class="muted">Cần biết trạng thái ở phiên <code>:wake</code> (hỏi tiến trình chính) — chưa làm.</span> <span class="ok">→ ĐÓNG ở Pass 2 (wave 2B, §4.9 a): CÓ — điều phối chọn mặc định thay owner (<i>"làm hết mọi thứ"</i>); không camera theo yêu cầu nào mở ⇒ Camera 360 TẮT như ≤ 2.92.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-292-camera-full-view.html</code> (ba kiểu hình, R4 ngưỡng Thẳng rộng, R8 Khung thô, OQ4 lối vào).</li>
+<li><code>docs/diagnostics/camera-rear-coverage-2026-10-06.md</code> (§4.3 bộ ứng viên Thẳng rộng) · <code>docs/diagnostics/camera-full-view-emu-2026-10-06.md</code> §6 (vòng ảnh trên khung 09:58).</li>
+<li><code>docs/diagnostics/offcar-2026-09-27/camera-ia-profile.md</code> §7–8 (bản đồ kênh, nguồn một kênh đã gỡ).</li>
+<li>Mã: <code>CameraSignalController.kt</code> (<code>show</code> · <code>demand</code> · <code>openSession</code>) · <code>CameraDemandDispatch.kt</code> · <code>core/…/camera/CameraDemand.kt</code> · <code>CameraPlacement.kt</code> · <code>CameraCamConfig.kt</code> · <code>core/…/voice/VoiceCameraPhrases.kt</code> · <code>LauncherActions.kt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>Quyết định — "widget action" = nút thanh nút.</b> Owner nói <i>"widget action button"</i>; lưới ô (group board) chỉ nhận nút xe + gói lệnh, và nhóm WIDGET đang sửa song song ⇒ bốn camera + <i>Tắt camera</i> là việc LAUNCHER đặt được lên thanh nút (cùng bộ chọn của Cài đặt). Widget lưới ⇒ OQ3.</li>
+<li><b>Quyết định — giọng nói toggle theo điều phối.</b> Pass 0 làm giọng nói theo động từ (mở luôn mở); Pass 1 đổi theo điều phối (owner 06/10): câu MỞ = toggle, câu TẮT = tắt, <i>"tắt cam"</i> = tắt hết. Câu trả lời của câu MỞ chỉ nói tên camera (§4.4) để không hứa sai.</li>
+<li><b>Sai lệch so với hành vi cũ — "tắt camera".</b> Đổi nghĩa có chủ đích (§4.4 ⚠, OQ6); câu mẫu Cài đặt của Camera 360 tự đổi sang <i>"camera 360"</i> (<code>VoiceCommandCatalog.nounOf</code> bỏ tên camera trần).</li>
+<li><b>Trade-off — cấu hình riêng áp cả cho camera xi-nhan.</b> Một camera một cấu hình (owner <i>"từng camera"</i>); mặc định trùng 2.92 từng pixel nên xe không chạm Cài đặt không đổi gì.</li>
+<li><b>Trade-off — <i>Theo cụm</i> ở đường đặt chỗ riêng vẽ như chữ nhật</b> (§4.3).</li>
+<li><b>Bug &amp; cách xử (tự soát)</b>: (1) nút của camera đang bị xi-nhan che từng TẮT nó (tắt thứ không thấy) ⇒ toggle theo <code>visible</code> (<code>CameraDemand.next</code>, controller truyền <code>showing</code>; nhãn nút <i>Xem thử</i> theo cùng luật); (2) <code>previewSide</code> khi công tắc xi-nhan TẮT đóng luôn camera theo yêu cầu mà không mở lại ⇒ <code>if (showing == null) show(want())</code>; (3) dòng log <code>overlay show … side=</code> suýt đổi thành <code>camera=</code> — bài máy ảo <code>scripts/emulator/camera-cluster-e2e.sh</code> so nguyên dòng ⇒ giữ <code>side=</code> (in tên camera, LEFT/RIGHT y như cũ).</li>
+<li><b>Tách tệp vì trần 500 dòng</b>: <code>CameraSessionSpec</code> (đọc pref một phiên) · <code>CameraDemandState</code> (dời sang <code>:core</code> — <code>LayeringRulesTest</code>: tệp thuần không được nằm ở <code>:app</code>) · <code>CameraSettingsLabels</code> · <code>TestBridgePerCam</code>; <code>ClusterNavBridgeCameraPerCam</code> có lý do trong danh sách trắng của <code>LayeringRulesTest</code> (hàm mở rộng cầu, giữ Context).</li>
+<li><b>Bài canh cũ cập nhật giữ ý</b>: <code>CameraSpanShape</code> · <code>CameraFrameAndRender</code> · <code>CameraFullView</code> · <code>CameraMirror</code> · <code>CameraRotation</code> · <code>CameraGl</code> · <code>CameraViewRow</code> · <code>CameraSettingsIa</code> · <code>ClusterProfileScopeCoverage</code> · <code>LauncherActionTile</code> · <code>KeyCtl</code> — mỗi chỗ trỏ sang tệp mới của cùng mắt xích, không nới điều kiện nào.</li>
+<li><b>Kết quả bộ đủ</b> [ĐO XML]: 6 643 test (<code>:core</code> 4 530 · <code>:app</code> 2 113), 0 hỏng — §6 V-unit.</li>
+</ul>
+<h3>Pass 2 — wave 2B (2026-10-07)</h3>
+<ul>
+<li><b>Sai lệch so với đề xuất D1 — BỐN kết quả, không ba.</b> Review đề xuất <i>đã tắt · không có gì để tắt · không tới được</i>; thêm <b>OPENED</b> vì cùng kênh kết quả ấy cho câu MỞ nói đúng chiều (<i>"Đã mở / Đã tắt Camera sau"</i>) — Pass 1 chỉ nói tên (đọc lên thành <i>"Đã camera sau"</i>, không phải câu tiếng Việt). Câu xem-trước (<i>"đã hiểu là…"</i>, hộp hỏi lại) giữ nguyên tên trần (bài <code>CameraDemandVoiceTest</code> không đổi).</li>
+<li><b>Quyết định — tiến trình chính chết ⇒ lệnh TẮT = <i>không có gì để tắt</i></b> (<code>CameraDemand.withoutMain</code>), không phải <i>không tới được</i>: camera theo yêu cầu chỉ sống trong RAM của tiến trình chính [SUY — <code>CameraDemandState</code> + overlay là cửa sổ của tiến trình ấy] ⇒ <i>"tắt camera"</i> lúc Kachi chính chưa lên (vừa nổ máy, <code>:wake</code> đã chạy) vẫn tắt Camera 360 như ≤ 2.92. Đánh đổi đã biết: <code>runningAppProcesses</code> đọc hỏng ⇒ <code>false</code> ⇒ coi như chết — ca hiếm ấy tắt Camera 360 (vô hại nếu nó không bật) và câu trả lời nói đúng việc đó.</li>
+<li><b>Quyết định — vế thay thế đi lại qua <code>runFrom</code></b> (<code>rerun</code> thay vị trí <code>from</code> trong danh sách vế) chứ không gọi thẳng <code>runControl</code>: cổng hỏi lại (<code>VoiceRiskTable</code>) + làn ghi + đọc lại + câu trả lời của nút xe y nguyên ≤ 2.92; <code>next</code> chỉ còn một chủ (vế thay thế) — bài <code>VoiceCameraTurnTest.run…</code> canh <i>"không gọi tiếp hai lần"</i>.</li>
+<li><b>Quyết định — hạn chờ 2 s</b> (<code>CameraDemandDispatch.RESULT_TIMEOUT_MS</code>), cờ một-lần; kết quả về muộn ⇒ log + bỏ. [SUY] đường một chiều cùng khuôn 52 ms trên máy ảo; receiver áp đồng bộ trên luồng chính (≤ 3 lệnh HAL panorama + <code>addView</code>). 🚗 số đo thật trên xe chưa có.</li>
+<li><b>Trade-off — ô camera DỰNG controller khi vào cửa sổ</b> (<code>watchWhileAttached</code>): khác <code>ClusterNavBridge.onCameraDemandChanged</code> (Cài đặt không dựng). Lý do: không có controller thì không có người nghe nào để gắn, và HOME vốn dựng nó ở lượt vẽ đầu (<code>KachiHomeRender</code> → <code>cameraSignal.tick()</code> [ĐO mã]); controller rỗng không mở luồng/HAL. Bản nháp đo sức chứa (<code>WidgetCapacity</code>) không vào cửa sổ ⇒ không dựng gì.</li>
+<li><b>Quyết định — D6 chỉ áp cho camera THEO YÊU CẦU</b>, camera xi-nhan đang giữ để yên (CLAUDE.md: không làm yếu camera điểm mù). Giới hạn đã biết: camera theo yêu cầu TRÙNG camera xi-nhan đang giữ (vd demand trái + xi-nhan trái) lúc đổi hồ sơ ⇒ hết xi-nhan không dựng lại (cùng camera) ⇒ khung giữ cấu hình cũ tới lượt mở kế. Hiếm; ghi ở đây, không vá (vá = dỡ camera điểm mù giữa lúc rẽ).</li>
+<li><b>Phạm vi D2</b>: chỉ 28 khoá của bộ chỉnh <i>Từng camera</i> (kể cả sáu khoá cũ của hai camera gương) — đúng câu §6 V-emu hứa. <code>prefs_set camera_projection/camera_zoom</code> (khoá CHUNG — Cài đặt có áp ngay) vẫn KHÔNG áp ngay qua cầu: đổi hành vi của hai khoá 2.92 mà kịch bản <code>camera-dewarp-e2e.sh</code> đang dùng là ngoài phạm vi (CLAUDE.md §6) — đề xuất backlog nếu QA cần.</li>
+<li><b>DIAG-SCREENS — đi <code>TestBridgeNoHome</code></b>, không thêm dòng nào vào <code>KachiTestBridge.kt</code> (499); bảng lệnh tách <code>TestBridgeScreenCommands</code> (cùng khuôn <code>TestBridgeTeachCommands</code>), tên màn chặn ở tầng phân tích (+1 dòng ở <code>TestBridgeCommand.kt</code> = 497). Lời đáp <code>requested</code>, không <i>"đã mở"</i> (luật BAL Android 10+ có thể chặn im lặng). Hai cửa cũ <code>openDiagnostics()</code>/<code>openVietMapData()</code> vẫn 0 chỗ gọi (giữ — gỡ kéo theo chuỗi <code>SCREEN_OPEN_FAILED</code> ×5 thứ tiếng; đề xuất dọn ở backlog), bài <code>DevSurfaceGateContractTest</code> khoá <i>"0 chỗ gọi"</i>.</li>
+<li><b>Bài canh cũ cập nhật giữ ý</b>: <code>CameraDemandWiring</code> (cầu có thứ tự + <code>resultCode</code> thay <code>sendBroadcast</code>) · <code>CameraPerCamPrefsWiring</code> (cửa áp lại dùng chung · luật sáng ở <code>:core</code>) · <code>VoiceCommandWiring</code> (<code>runLauncher(intent, next, rerun)</code>) · <code>LauncherActionTileWiring</code> (khối camera = một hàm, bày ở cả hai bộ chọn) · <code>DevSurfaceGate</code> (đính chính câu <i>"am start mở được"</i> SAI; luật không-bề-mặt-UI giữ nguyên) · <code>TestBridgeSafety</code> (ngoại lệ <code>modules.clustercast</code> có tên) · <code>WidgetFitH1</code> (bộ dựng mới xếp nhóm <i>tự lo</i>) · <code>TestBridgeCommandTest</code> (đối số hợp lệ cho lệnh có danh sách trắng) — không nới điều kiện nào.</li>
+<li><b>Trần 500 dòng</b>: <code>VoiceDispatcher</code> 497 · <code>CameraSignalController</code> 498 · <code>AppDrawer</code> 498 · <code>KachiTheme</code> 500 (sửa tại dòng, không thêm) · <code>KachiTestBridge</code> 499 (không chạm).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-06 (tự soát của người viết, chưa phải senior review)</h3>
+<ul>
+<li>[P1] Nút camera đang bị xi-nhan che bấm là TẮT camera không nhìn thấy ⇒ vá (toggle theo <code>visible</code>) + 2 bài <code>:core</code>.</li>
+<li>[P1] <code>previewSide</code> khi công tắc xi-nhan TẮT làm camera theo yêu cầu thành "bật mà không hiện" ⇒ vá + bài canh.</li>
+<li>[P2] Khoá log <code>side=</code> đổi tên làm hỏng bài máy ảo cluster ⇒ giữ tên khoá.</li>
+<li>[P3] KDoc <code>CameraDemand</code> trỏ tên lớp cũ <code>CameraDemandRelay</code> ⇒ sửa; chú thích <code>VoiceWiring</code> tách khỏi tham số nó tả ⇒ sửa thứ tự.</li>
+<li>Còn lại cho senior review của điều phối: soát toàn diff, quét bảo mật, máy ảo.</li>
+</ul>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Đọc toàn bộ phần CAM của <code>git diff 8fbdf96</code> (<code>:core</code> camera/giọng nói/hồ sơ, <code>:app</code> controller · overlay · cầu · Cài đặt · phím · cầu kiểm thử, chuỗi ×5, i18n), so từng nhánh với 2.92. KHÔNG chạy gradle/máy ảo/xe (điều phối chạy). Context7: không kết nối được (ENOTFOUND <code>mcp.context7.com</code>) — không thư viện mới; <code>ContextCompat.registerReceiver(…, RECEIVER_NOT_EXPORTED)</code> là đường đã chạy của <code>ControlSentRelay</code>. Bản vá của lượt này nằm ở cây làm việc (chưa stage), chỉ chạm tệp CAM.</p>
+<table>
+<tr><th>Hạng mục</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>CAMERA-ON-DEMAND — 4 camera = dải 0..3, một camera một lúc, toggle theo thứ ĐANG HIỆN, xi-nhan mới nhất thắng + quay lại, không hẹn giờ, số R không nhánh riêng</td><td class="ok">✅ (sau vá F1)</td><td>[ĐO mã] <code>CameraDemand</code> · <code>CameraDemandState</code> · <code>CameraSignalController.show/demand/endBlinker</code>; một <code>postDelayed</code> duy nhất (HOLD)</td></tr>
+<tr><td>Bốn lối vào một đường: phím <code>cam:</code> · thanh nút · giọng nói (chính + <code>:wake</code>) · cầu kiểm thử</td><td class="ok">✅</td><td>[ĐO mã] grep call site: <code>AssistantLauncher.launch</code> (rẽ trước mọi nhánh mở app) · <code>KachiHomeWiring.controlDock</code> ← <code>ControlDockView</code> · <code>VoiceWiring.onCamera</code> · <code>TestBridgeCamera</code> · nút Xem thử — tất cả tới <code>CameraDemandDispatch.fire</code></td></tr>
+<tr><td>Giọng nói nhiều cách nói (động từ × tên × từ nối × phía + đồng nghĩa), nói lại = tắt, "tắt cam" trần = tắt camera đang mở</td><td class="ok">✅ (sau vá F3)</td><td>[ĐO mã] <code>VoiceCameraPhrases</code> chạy sau chặn cứng, CHỈ khi cả vế là câu camera; soát tay: "tắt máy" · "tắt máy lạnh" · "mở camera 360" · "tắt camera quanh xe" · "xem bản đồ" · "cảm biến lùi" · "cảm ơn" · "màu cam" · "cầm lái" · "tất cả camera" ⇒ không thành lệnh camera</td></tr>
+<tr><td>CAMERA-PER-CAM-CONFIG — góc · vị trí phần nghìn · cỡ 50–150 · hình · kiểu · xoay · lật từng camera; hai camera gương mặc định trùng 2.92</td><td class="ok">✅</td><td>[ĐO mã] so từng pref <code>openSession</code> 2.92 với <code>CameraSessionSpec.read</code> cho LEFT/RIGHT: cùng hàm cũ (<code>cameraPos/cameraRotation/cameraMirror</code>), <code>FOLLOW</code> ⇒ khoá chung, <code>place</code> vắng + 100 % ⇒ <code>CameraOverlayPlace.of</code> = null ⇒ đường đặt chỗ 2.73; <code>panXSign</code> gương = <code>CameraDewarpPrefs.panXSign(left)</code></td></tr>
+<tr><td>Xếp loại hồ sơ/xe · kiểu khai · chia sẻ · prefs_set 22 khoá · chuỗi 5 thứ tiếng · i18n</td><td class="ok">✅</td><td>[ĐO mã] 18 khoá hồ sơ (STRING/INT khai đúng lượt <code>put*</code>) + 4 khoá xe; 25 chuỗi camera mới có ở cả 5 <code>values*</code>, placeholder khớp; 7 dòng camera ở zh/th/ms.tsv</td></tr>
+<tr><td>CAM-WIDE-TUNE (giữ mặc định) · CAM-RAW-DIAG-REACH (c)</td><td class="ok">✅</td><td>Chỉ tài liệu; không bề mặt UI mới</td></tr>
+<tr><td>Trần 500 dòng</td><td class="ok">✅</td><td><code>CameraSignalController</code> 495 · <code>CameraOverlayView</code> 498 · <code>KachiTestBridge</code> 499 · <code>KachiTheme</code> 500 (không chạm)</td></tr>
+</table>
+<p><b>Đã vá</b></p>
+<ul>
+<li><b>[P1] F1</b> — <code>CameraDemandState.apply</code> dựng <code>newer = true</code> cả khi lệnh TẮT TRƯỢT (<code>Close(X)</code> mà X không mở). Hậu quả: camera theo yêu cầu KHÁC đang bị xi-nhan che nhảy lên ĐÈ camera xi-nhan — vd camera trái theo yêu cầu đang mở, xi-nhan phải bật (camera phải hiện), nói <i>"tắt cam sau"</i> ⇒ camera trái che mất camera điểm mù bên phải giữa lúc rẽ. Đường tới: giọng nói (<code>LauncherActions.cameraOp</code> → <code>CameraDemand.spoken(off = true)</code>) + cầu <code>close:</code>. Vá: chỉ dựng cờ khi <code>Toggle</code>/<code>Open</code> hoặc trạng thái đổi (<code>core/…/camera/CameraDemandState.kt</code> <code>apply</code>). Bài mới <code>CameraDemandStateTest.lenh tat truot khong dua camera theo yeu cau len de camera xi nhan</code>; bài cũ giữ nguyên ý (đã soát từng bước).</li>
+<li><b>[P3] F2</b> — Nút <i>Xem thử</i> vẽ theo <code>demanded() == w &amp;&amp; showing == w</code> nhưng người nghe chỉ được báo trong <code>demand()</code> ⇒ xi-nhan chen/hết làm chữ nút sai tới lượt chạm sau. Vá: <code>od.notifyChanged()</code> cuối <code>show()</code> khi camera đang hiện đổi (<code>CameraSignalController.kt</code> <code>show</code>) + KDoc <code>onDemandChanged</code>. Không đụng chuỗi dỡ (bài <code>CameraGlWiringContractTest.do phien cu TRUOC…</code> vẫn đúng).</li>
+<li><b>[P3] F3</b> — Nhánh <i>phía rồi tên</i> (cho tiếng Anh <i>"rear camera"</i>) nhận cả phía tiếng Việt ⇒ <i>"trái cam"</i> (quả cam) · <i>"trước camera"</i> · <i>"sau camera"</i> · <i>"đầu cam"</i> thành lệnh camera. Vá: chỉ phía tiếng Anh (<code>VoiceCameraPhrases.SIDE_FIRST</code>); mọi câu tiếng Anh trong bài vẫn qua (đã đối từng câu); bài thêm ở <code>CameraDemandVoiceTest.khong phai lenh camera…</code>.</li>
+<li><b>[P3] F4</b> — KDoc lệch sự thật: <code>LauncherActions.ALL</code> nói <i>"tắt camera"</i> trần vẫn là Camera 360 (sai từ Pass 1) ⇒ sửa; <code>CameraWhich</code> ghi [ĐO] cho dải sau/trước trong khi §2.2 ghi [SUY — dữ liệu cũ] (CLAUDE.md §14) ⇒ hạ nhãn; <code>CameraDemand.BRIDGE_OPEN</code> + KDoc bài <code>CameraDemandTest</code> nói <code>open:</code> = "như nói mở camera" (câu mở nay là Toggle) ⇒ sửa.</li>
+</ul>
+<p><b>Để lại (không vá ở lượt này — lý do)</b></p>
+<ul>
+<li><b>[P1] D1 — OQ6, chặn phát hành nếu owner chưa chấp nhận.</b> Không camera theo yêu cầu nào mở mà nói <i>"tắt camera"</i> ⇒ <code>CloseAll</code> không làm gì, lời đáp vẫn <i>"✓ Tắt camera"</i>, Camera 360 của xe (mở bằng <i>"mở camera"</i>) vẫn bật — ✓ giả theo mắt người lái (R1.8). Không "trivial &amp; safe": phiên <code>:wake</code> không biết trạng thái đồng bộ. Đề xuất cho điều phối: <code>CameraDemandDispatch.fire</code> trả ba trạng thái (đã tắt · không có gì để tắt · không tới được); <code>:wake</code> dùng <code>sendOrderedBroadcast</code> + <code>resultCode</code> do receiver đặt; <code>VoiceDispatcher.runLauncher</code> gặp <i>"không có gì để tắt"</i> ⇒ chạy lại thành <code>Control("cam", 0)</code> qua đường control sẵn có (cổng an toàn + làn ghi), không bắn lệnh xe từ receiver camera.</li>
+<li><b>[P3] D2</b> — <code>prefs_set</code> 22 khoá mới KHÔNG áp lại overlay đang hiện (giống mọi khoá camera 2.92); câu <i>"áp ngay nếu đang hiện"</i> ở §6 V-emu chỉ đúng cho Cài đặt. QA máy ảo: <code>demand:&lt;cam&gt;</code> hai lần (tắt/mở) sau mỗi <code>prefs_set</code>.</li>
+<li><b>[P3] D3</b> — Không hẹn giờ ⇒ overlay theo yêu cầu có thể treo trên display cụm cả chuyến. Nếu display ấy bị dỡ (dừng chiếu/đổi theme cụm) thì cửa sổ bị hệ thống gỡ trong khi <code>AVMCamera</code> vẫn đổ vào Surface cũ ⇒ có thể dựng lại con bọ <code>BufferQueue has been abandoned</code> 27/09 tới khi người lái tắt camera. Đường này có từ 2.73 nhưng camera xi-nhan chỉ sống vài giây [SUY, chưa đo]. Thêm V-oncar: mở camera theo yêu cầu trên cụm → dừng chiếu / đổi theme → đếm dòng <code>BufferQueue has been abandoned</code>; có thật thì vá (đóng AVM khi cửa sổ bị gỡ ngoài <code>hide()</code>) — đường mới cần bằng chứng xe (CLAUDE.md §14).</li>
+<li><b>[P3] D4</b> — Ô <i>Tắt camera</i> dùng chung hình <code>ic-cam</code> với nút Camera 360 ⇒ hai ô giống hệt trên thanh nút. Cần glyph riêng qua <code>scripts/design/gen-icons.py</code>.</li>
+<li><b>[P3] D5</b> — Hotword +132 cụm (≈ +7 % tệp ~1,9–2 k dòng, vẫn trong dải 300–3000) ⇒ <code>createStream</code> [SUY] chậm thêm tương ứng; ngân sách 100 ms của spec hotword vốn [SUY] đã vượt trên xe — đo lại cùng lượt xe (cùng nhóm VOICE đang thêm lớp nhãn app).</li>
+<li><b>[P3] D6</b> — Đổi hồ sơ lúc camera theo yêu cầu đang hiện: cấu hình riêng của hồ sơ mới chỉ áp ở lượt mở sau (không hẹn giờ ⇒ khung cũ có thể ở lâu). Giới hạn đã biết.</li>
+</ul>
+<p><b>Hồi quy camera xi-nhan 2.92</b> (không camera theo yêu cầu + cấu hình mặc định) — [ĐO mã]: <code>tickMain</code> → <code>show(want())</code> với <code>want() = blinker</code> cho ĐÚNG chuỗi 2.92 (đổi bên: <code>closeSession(keepPano = true)</code> rồi mở; hết xi-nhan: <code>dropBlinker</code> + <code>closeSession()</code>); <code>reapplyIfShowing</code>/<code>endPreview</code>/<code>setSynth</code> tương đương khi <code>showing</code> = bên xi-nhan; nhãn overlay + dòng log <code>side=LEFT/RIGHT</code> y nguyên. Khác biệt duy nhất: <code>show(null)</code> khi không có phiên không gọi lại <code>hal.close()</code> (2.92 <code>stop()</code> gọi thừa, vô hại) — không phải hồi quy. Mọi chuyển trạng thái chạy trên main (tick/demand/preview/reapply đều <code>post</code> về main) ⇒ không đua giữa xi-nhan và lệnh. Một controller/tiến trình chính; <code>overlay.show()</code> luôn <code>hide()</code> trước ⇒ không hai overlay.</p>
+<p><b>An ninh cầu <code>:wake</code></b> — receiver đăng ký động <code>RECEIVER_NOT_EXPORTED</code> qua <code>androidx.core:core:1.19.0</code> (API &lt; 33: androidx gắn quyền chữ ký <code>DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</code> — [SUY theo nguồn androidx đọc từ trước, Context7 không vào được; cùng khuôn <code>ControlSentRelay</code> đã [ĐO] 52 ms trên máy ảo]), chỉ ở tiến trình chính (sau cổng tiến trình nền); intent <code>setPackage</code>; mã lạ ⇒ bỏ + log; manifest KHÔNG thêm component exported. Lệnh <code>camera demand:/open:/close:</code> + <code>prefs_set</code> khoá mới nằm sau cổng Chế độ kiểm thử.</p>
+<p><b>Bài cần chạy lại</b> (điều phối): <code>./gradlew :core:test :app:testDebugUnitTest --continue</code> (đếm từ XML) — trọng tâm <code>CameraDemandStateTest</code> · <code>CameraDemandTest</code> · <code>CameraDemandVoiceTest</code> · <code>CameraDemandWiringContractTest</code> · <code>CameraGlWiringContractTest</code> · <code>VoiceIntentParser*</code>/<code>VoiceCommandCatalog*</code> (bộ phân tích đổi nhánh phía-trước-tên).</p>
+<p><b>Kết luận</b>: phạm vi 100 % ✅ — <b>APPROVED</b> cho phần mã CAM, kèm điều kiện phát hành: D1 [P1] (OQ6 — điều phối đã nhận vá tiếp) và bộ test trên xanh. 🚗 còn nguyên: hướng ảnh dải sau/trước (OQ1), D3.</p>
+
+<h3>Pass 2 — 2026-10-07 (wave 2B — tự soát của người viết, chưa phải senior review)</h3>
+<table>
+<tr><th>Việc</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>D1/OQ6 [P1 chặn phát hành] — <i>"tắt camera"</i> trần: đang mở ⇒ tắt nó; không gì mở ⇒ Camera 360 TẮT như ≤ 2.92; không tới được ⇒ nói thật</td><td class="ok">✅</td><td>[ĐO] <code>VoiceCameraFallbackDispatchTest</code> (cầu THẬT + cổng xe giả: <code>toggle:cam:false</code> đúng một lần; câu ghép giữ thứ tự; kết quả về hai lần không chạy đôi) · <code>VoiceCameraTurnTest</code> · <code>CameraDemandOutcomeTest</code>; thử ĐỎ: gỡ đường thay thế ⇒ 4 bài đỏ</td></tr>
+<tr><td>OQ4 — ô camera sáng theo trạng thái thật, nghe không hỏi vòng</td><td class="ok">✅</td><td>[ĐO mã + bài] <code>CameraWave2BWiringContractTest</code> · luật <code>CameraDemand.isOn</code> ≡ toggle (bài quét mọi tổ hợp)</td></tr>
+<tr><td>OQ3 — ô camera trong widget lưới (ngăn kéo gán-ô + bộ vẽ đơn/nén), luật khớp widget giữ nguyên</td><td class="ok">✅ (🖥 máy ảo chưa chạy)</td><td>[ĐO] <code>CameraWidgetTileTest</code> (tự lo · H1 · không chỉ-icon · qua lượt dọn) — thử ĐỎ: gỡ nhánh LAUNCHER ⇒ đỏ · <code>LauncherActionTileWiring</code> · <code>WidgetFitH1</code></td></tr>
+<tr><td>D4 · D2 · D6 · DIAG-SCREENS</td><td class="ok">✅</td><td>[ĐO] <code>gen-icons --check</code> 129 khớp · <code>IconStyleContractTest</code> · <code>CameraCamConfigTest</code> · <code>CameraWave2BWiring</code> · <code>TestBridgeScreenCommandsTest</code> · <code>DevSurfaceGate</code> · <code>TestBridgeSafety</code></td></tr>
+</table>
+<ul>
+<li>[P2] <code>watchWhileAttached</code> gắn người nghe CHỈ ở sự kiện vào cửa sổ ⇒ một ô đã ở trong cửa sổ lúc gọi sẽ không bao giờ nghe ⇒ vá: gắn ngay nếu <code>isAttachedToWindow</code> (hôm nay mọi chỗ gọi đều gọi lúc dựng, trước khi gắn — vá phòng lượt dùng lại).</li>
+<li>[P3] Nhánh <code>cameraDemandTile(…) ?: telemetryMini(…)</code> ở <code>WidgetViews.mini</code> giấu <code>telemetryMini</code> khỏi bài phân loại bộ dựng (<code>WidgetFitH1</code> bắt được) ⇒ đổi thành nhánh <code>isCamera</code> tường minh; bộ dựng mới xếp nhóm <i>tự lo</i> có bài.</li>
+<li>Giới hạn đã biết (không vá, lý do ở §9): D6 khi camera theo yêu cầu TRÙNG camera xi-nhan đang giữ · D2 chỉ 28 khoá camera (khoá chung <code>camera_projection/zoom</code> qua cầu vẫn không áp ngay) · tiến trình chính vừa khởi động (receiver chưa đăng ký) ⇒ <i>không tới được</i>, không rơi về Camera 360 · D3 · D5 · OQ1 🚗.</li>
+<li><b>Còn cho điều phối</b>: bộ đủ <code>--rerun-tasks</code> 5 module · máy ảo §6 V-emu Pass 2 · senior review độc lập · quét bảo mật · INDEX/BACKLOG/project-context.</li>
+</ul>
+
+<h3>Pass 2 — 2026-10-07 (senior review độc lập — Opus)</h3>
+<p>Soát mã + vá TRONG tệp wave 2B (cây chính, chưa commit). KHÔNG chạy gradle/máy ảo/xe (điều phối chạy). Context7 không kết nối được (ENOTFOUND) — không thư viện mới; <code>androidx.core:core:1.19.0</code> <code>ContextCompat.registerReceiver(…, RECEIVER_NOT_EXPORTED)</code> là khuôn đã chạy của <code>ControlSentRelay</code> [SUY]. Nguồn AOSP <code>android-10.0.0_r47</code> tải từ googlesource trong lượt này (CLAUDE.md §3): <code>core/java/android/app/LoadedApk.java</code> · <code>services/core/java/com/android/server/am/BroadcastQueue.java</code> · <code>ActivityManagerService.java</code> · <code>core/jni/android_os_SystemClock.cpp</code> · <code>system/core/libutils/SystemClock.cpp</code>.</p>
+<table>
+<tr><th>Hạng mục</th><th>Kết luận</th><th>Bằng chứng</th></tr>
+<tr><td>VOICE-CAM-OFF-360-FALLBACK — bốn kết quả · <code>:wake</code> → chính có thứ tự, trong gói, receiver không export, hạn 2 s · <code>VoiceCameraTurn</code> · <code>runFrom</code>/<code>rerun</code> → <code>Control("cam", 0)</code> qua cổng sẵn có · không bắn lệnh xe từ receiver</td><td class="ok">✅ (sau vá F2)</td><td>[ĐO mã] receiver chỉ áp lệnh camera (bài canh cấm <code>carControl</code>/<code>actByKind</code> trong tệp cầu); kết quả về đúng một lần (<code>CameraWakeAsk.done</code> + <code>VoiceCameraTurn.once</code>), trên Handler luồng chính <code>:wake</code>; <code>rerun</code> thay đúng vị trí <code>from</code> rồi đi lại cổng <code>VoiceRiskTable</code> + làn ghi, <code>settled</code> một-lần; receiver chỉ đăng ký ở tiến trình chính (<code>KachiApplication.onCreate</code> sau cổng tiến trình nền). [ĐO nguồn r47] <code>BroadcastQueue.java:1094-1133</code> hết receiver ⇒ <code>performReceiveLocked(…, r.resultTo, …, r.resultCode, …)</code> = mã khởi đầu.</td></tr>
+<tr><td>CAMERA-DOCK-ACTIVE-STATE — <code>CameraDemand.isOn</code> một luật · <code>watchWhileAttached</code></td><td class="ok">✅</td><td>[ĐO mã] gắn khi vào cửa sổ (gỡ lượt cũ trước), gỡ khi rời; <code>notifyChanged</code> chỉ chạy trên luồng chính của controller; bản nháp <code>WidgetCapacity</code> không vào cửa sổ ⇒ không nghe, đọc trạng thái không dựng controller.</td></tr>
+<tr><td>CAMERA-WIDGET-TILE — <code>cameraDemandTile</code> ở <code>build</code>/<code>mini</code> · <code>cameraSection</code> ở hai bộ chọn · việc LAUNCHER tự lo</td><td class="ok">✅</td><td>[ĐO mã] <code>WorkspaceRenderPlanner.isSelfDriven</code> ⇒ ô chỉ-camera không dựng lại ở nhịp 1 Hz; ô trộn đi <code>refreshRead</code> nhánh <i>giữ</i> và <code>WidgetRefreshers.refreshAction</code> trả <code>false</code> khi không có thẻ <code>ActionFill</code> ⇒ không vòng dựng lại, không gỡ/gắn người nghe.</td></tr>
+<tr><td>D4 <code>ic_cam_off</code> · D2 <code>CameraReapply.ifShowing</code> (28 khoá) · D6 bước <code>camera.demand</code></td><td class="ok">✅ (D2 sau vá F1)</td><td>[ĐO mã] bảng tra <code>KachiTheme</code> + drawable sinh; D6 chỉ dựng lại NGAY khi khung là camera theo yêu cầu không phải camera xi-nhan đang giữ (wave 2C thêm hẹn lúc nhả cho ca trùng — soát ở spec wave 2C §10).</td></tr>
+<tr><td>DIAG-SCREENS-UNREACHABLE — <code>diag_screen</code> qua <code>TestBridgeNoHome</code></td><td class="ok">✅</td><td>[ĐO mã] <code>KachiTestBridge.onReceive</code> hỏi <code>TestBridgeStore.isOn</code> TRƯỚC phân tích ⇒ công tắc tắt thì lệnh không tới; tên màn chặn ở tầng phân tích (<code>TestBridgeScreenCommands.check</code>); hai Activity giữ <code>exported=false</code>; [ĐO grep] 0 chỗ khác chạm <code>DiagActivity::class</code>.</td></tr>
+</table>
+<p><b>Đã vá</b></p>
+<ul>
+<li>[P2] <b>F1</b> — lượt gộp D2 làm rơi lớp chắn lỗi: bộ chỉnh <i>Từng camera</i> trước đi qua <code>reapplyCamera()</code> (có <code>runCatching</code>), nay <code>CameraReapply.ifShowing</code> gọi thẳng <code>reapplyIfShowing()</code> — Cài đặt gọi trên luồng chính nên lượt dỡ + dựng chạy ĐỒNG BỘ, lỗi ném vào trình nghe chạm (7 setter). Vá: <code>ifShowing</code> bọc <code>runCatching { … }.onFailure { Log.w(TAG, …) }</code> như <code>anyShowing</code> (<code>app/…/camera/CameraReapply.kt</code>); bài: <code>CameraWave2BWiringContractTest › prefs_set khoa camera ap ngay…</code> đòi lớp chắn.</li>
+<li>[P2] <b>F2</b> — lệnh <code>:wake</code> tới receiver SAU hạn 2 s vẫn được ÁP, sau khi câu <i>"✗ … chưa liên lạc được màn hình chính"</i> đã nói. [ĐO nguồn r47] receiver đăng ký động chạy bằng runnable đẩy vào Handler của nó (<code>LoadedApk.java:1628-1648</code> — luồng chính) ⇒ luồng chính bận (vừa nổ máy: dựng HOME) thì lệnh áp muộn. Lệnh MỞ là <i>"sự kiện mới nhất"</i> ⇒ một lệnh muộn ĐÈ camera xi-nhan bật trong lúc chờ (nói <i>"mở camera sau"</i> lúc nổ máy → nghe ✗ → bật xi-nhan ra khỏi chỗ đỗ → camera sau che camera điểm mù). Lượt gửi lại của wave 2C (CAM-WAKE-COLD-MAIN) mở rộng đúng cửa sổ ấy. Vá: mỗi lượt gửi mang hạn tổng (<code>EXTRA_DEADLINE</code>, <code>SystemClock.elapsedRealtime</code> — [ĐO nguồn r47] <code>android_os_SystemClock.cpp:89</code> → <code>libutils/SystemClock.cpp:49-61</code> <code>CLOCK_BOOTTIME</code>, chung mọi tiến trình); receiver tới sau hạn ⇒ bỏ, giữ mã khởi đầu (luật thuần <code>:core</code> <code>CameraWakeAsk.expired</code>). Bài: <code>CameraWakeAskTest › lenh toi receiver sau han cua ben gui thi bo…</code> + ghim <code>CameraDemandWiringContractTest</code> (kiểm hạn TRƯỚC <code>applyHere</code>). Cửa sổ còn lại [SUY]: receiver áp sát mốc hạn mà kết quả về sau mốc (độ trễ một chặng binder) — chỉ vài chục ms.</li>
+</ul>
+<p><b>Ghi nhận, không vá</b></p>
+<ul>
+<li>[P3] <b>ANR qua broadcast có thứ tự</b> — [ĐO nguồn r47] hàng tiền cảnh hết hạn 10 s (<code>ActivityManagerService.java:479</code>); receiver động của tiến trình khác quá hạn ⇒ <code>AppNotResponding(app, "Broadcast of …")</code> (<code>BroadcastQueue.java:1692-1801</code>). Luồng chính HOME treo ≥ 10 s lúc đang có lệnh camera ⇒ thêm một ngả ANR (trước wave 2B cầu camera đi <code>sendBroadcast</code> không thứ tự, không hạn). Treo 10 s tự nó đã là lỗi; đổi sang hàng nền (60 s) là đánh đổi độ trễ lúc nổ máy ⇒ quyết của owner — đề xuất backlog <code>CAM-WAKE-ORDERED-ANR</code>. 🚗 <code>logcat | grep "Timeout of broadcast"</code> cùng <code>CAMERA_DEMAND</code>.</li>
+<li>[P3] 🚗 [CHƯA BIẾT] <i>"tắt camera"</i> trần lúc chỉ camera XI-NHAN đang hiện ⇒ <code>NOTHING_TO_CLOSE</code> ⇒ <code>setAVMSwitchState(1)</code> (Camera 360 TẮT) — y hành vi ≤ 2.92 (không hồi quy so bản đã phát), nhưng tác động lên luồng <code>PanoramaHal</code>/<code>AVMCamera</code> của overlay chưa ai đo. V-oncar: xi-nhan bật → nói "tắt camera" → overlay xi-nhan phải còn hình tới hết HOLD.</li>
+<li>[INFO] D2 <code>prefs_set</code> dựng lại cả khi giá trị không đổi (chỉ chế độ kiểm thử); <code>watchWhileAttached</code> dựng controller khi ô vào cửa sổ (đánh đổi đã ghi §9).</li>
+</ul>
+<p><b>Thử đỏ đề xuất</b> (điều phối chạy, P5.3): bỏ khối <code>if (CameraWakeAsk.expired(…)) { …; return }</code> ở receiver ⇒ <code>CameraDemandWiringContractTest › cau wake sang tien trinh chinh…</code> đỏ · <code>expired</code> luôn <code>false</code> ⇒ <code>CameraWakeAskTest › lenh toi receiver sau han…</code> đỏ · gỡ <code>runCatching</code> ở <code>CameraReapply.ifShowing</code> ⇒ <code>CameraWave2BWiringContractTest › prefs_set khoa camera…</code> đỏ.</p>
+<p><b>Bài cần chạy lại</b>: <code>:core</code> — <code>CameraWakeAskTest</code> · <code>CameraDemand*Test</code> · <code>VoiceCameraTurnTest</code> · <code>CameraWidgetTileTest</code> · <code>TestBridgeScreenCommandsTest</code> · <code>TestBridgeCommandTest</code>; <code>:app</code> — <code>CameraDemandWiringContractTest</code> · <code>CameraWave2BWiringContractTest</code> · <code>CameraWave2CWiringContractTest</code> · <code>CameraPerCamPrefsWiringContractTest</code> · <code>CameraFullViewWiringContractTest</code> · <code>VoiceCameraFallbackDispatchTest</code> · <code>LauncherActionTileWiringContractTest</code> · <code>WidgetFitH1ContractTest</code> · <code>DevSurfaceGateContractTest</code> · <code>TestBridgeSafetyContractTest</code>; rồi bộ đủ <code>--rerun-tasks</code>.</p>
+<p><b>Kết luận</b>: phạm vi wave 2B 100 % ✅ sau F1 + F2 — <b>APPROVED</b> có điều kiện: bộ đủ xanh + ba thử đỏ trên đỏ đúng bài. 🚗 giữ nguyên: OQ1 · D3 · D5 + hai mục ghi nhận trên.</p>
+
+</div></body>
+</html>

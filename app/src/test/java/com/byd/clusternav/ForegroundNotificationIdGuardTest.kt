@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,9 +23,7 @@ class ForegroundNotificationIdGuardTest {
 
     private val idRegex = Regex("""(?:NOTIFICATION_ID|NOTIF_ID|\bID)\s*=\s*(\d+)""")
 
-    private fun strip(src: String): String = src
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun strip(src: String): String = KotlinSource.stripComments(src)
 
     private fun appMainKotlin(): List<Path> {
         val root = SourceRoots.moduleSourceRoots().first { it.toString().contains("app/src/main") }

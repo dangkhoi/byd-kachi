@@ -6,6 +6,7 @@ import android.util.Log
 import com.byd.clusternav.launcher.InstalledPackageGate
 import com.byd.clusternav.launcher.ResendGate
 import com.byd.clusternav.modules.clustercast.ClusterOverlayDisplays
+import com.byd.clusternav.modules.clustercast.simplified.BubbleOldModMemo
 import com.byd.clusternav.modules.clustercast.simplified.ClusterLayerPause
 import com.byd.clusternav.system.PackageQueries
 
@@ -46,6 +47,14 @@ object VmBubbleVisibility {
             )
         }
     }
+
+    /**
+     * 2.93 wave 2A · VM-BUBBLE-OLDMOD-MEMO — dấu cài đặt của bản mod ([BubbleOldModMemo.token]: `longVersionCode` + `lastUpdateTime`,
+     * đổi ở MỌI lần cài/cập nhật — KDoc đó); `null` = không cài. Đọc PackageManager MỘT lần mỗi lượt cổng theme (luồng executor).
+     */
+    fun installToken(ctx: Context): String? =
+        PackageQueries.packageInfo(ctx.applicationContext.packageManager, VIETMAP_PKG)
+            ?.let { BubbleOldModMemo.token(it.longVersionCode, it.lastUpdateTime) }
 
     /** Gửi giá trị đang muốn ([ClusterLayerPause.bubbleWanted]). [force] = bỏ cổng gửi lặp. [why] chỉ để log. */
     fun apply(ctx: Context, why: String, force: Boolean = false) {

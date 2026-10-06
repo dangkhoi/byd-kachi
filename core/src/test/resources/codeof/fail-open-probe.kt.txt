@@ -1,0 +1,11 @@
+// Mẫu dò cho SourceRootsCodeOfTest (2.93 · TEST-CODEOF-STRIP) — KHÔNG phải mã chạy. Mỗi dòng là một ca bộ bỏ-chú-thích cũ làm hỏng.
+private val mutUrl = "https://x"; private val mutPhase = HealPhase.KHOI_DONG
+const val FOCUS_ANY_AUDIO = "audio/*"
+val afterMime = TokenAfterMime()
+/* chú thích khối thật nhắc CommentOnlyToken */
+val real = RealCodeToken // chú thích cuối dòng nhắc LineCommentToken
+val glsl = """
+    void main() { // GLSL trong chuỗi thô vẫn là DỮ LIỆU: GlslInsideString
+    }
+"""
+/* khối /* lồng */ vẫn là chú thích NestedCommentToken */ val afterNested = AfterNestedToken

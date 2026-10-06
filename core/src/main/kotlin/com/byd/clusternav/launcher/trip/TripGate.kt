@@ -91,6 +91,12 @@ object TripGate {
     fun bootKey(bootCount: Int?, wallNow: Long, elapsedNow: Long): String =
         if (bootCount != null && bootCount >= 0) "n$bootCount" else "w${(wallNow - elapsedNow) / 60_000L}"
 
+    /**
+     * Khoá [key] ỔN ĐỊNH suốt một lần khởi động: dạng `BOOT_COUNT` (`n…`). Khoá lùi theo giờ tường (`w…`) có thể đổi giữa phiên
+     * (giờ tường bị chỉnh — KDoc lớp) ⇒ không đủ để kết luận "khác lần khởi động" (2.93 · BEHIND-MARKS-BOOT, `BehindMarks.forBoot`).
+     */
+    fun stableBoot(key: String): Boolean = key.length > 1 && key[0] == 'n' && key.substring(1).all { it.isDigit() }
+
     /** Id chuyến — xem KDoc lớp. [tatMayAt] = `Prefs.a11yTatMayAt` (`< 0` = chưa từng). */
     fun tripId(bootKey: String, tatMayAt: Long, elapsedNow: Long): String =
         if (AccessibilityHealGates.escalatedThisBoot(tatMayAt, elapsedNow)) "$bootKey.t$tatMayAt" else "$bootKey.b"
@@ -112,7 +118,7 @@ object TripGate {
     }
 
     /**
-     * L4 · D1 — kết quả đang hiện ở Cài đặt có phải của LẦN NỔ MÁY NÀY không. [ĐO máy ảo 03/10 `p3/e2e-L4/e12-channel-down`]
+     * L4 · D1 — kết quả đang hiện ở Cài đặt có phải của LẦN NỔ MÁY NÀY không. [ĐO máy ảo 03/10 `e2e-L4 · e12-channel-down` (bằng chứng phiên, ngoài repo)]
      * kênh không lên (`PORT_CLOSED`) ⇒ chuỗi SẴN không chạy ⇒ chuyến không chạy, sổ không đổi ⇒ Cài đặt vẫn hiện kết quả chuyến
      * TRƯỚC như thể là của lần này. [current] = [tripId] của lúc hỏi.
      */

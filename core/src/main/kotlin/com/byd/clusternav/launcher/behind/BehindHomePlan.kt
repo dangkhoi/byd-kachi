@@ -275,7 +275,7 @@ object BehindHomePlan {
      *  - task KHÔNG tiến trình (`e2e/e2b-bg-ytmusic-dead-proc`): app bị giết mà task còn (BYD giết tiến trình lúc tắt máy)
      *    ⇒ bản cũ chỉ nhìn task coi là "đang chạy" ⇒ 0 lệnh, chuyến ghi đã chạy mà app không chạy. Nay coi là NGUỘI: K4
      *    (`am start --display <vd> -n X`) tìm thấy task cũ trên display 0 và KÉO nó vào màn ảo (`reparentToDisplay`, tiêu
-     *    điểm chỉ trên màn ảo — [ĐO `p3/e2e-L4/m1-stale-task-k4`]; nguồn A10 r47 `ActivityStarter.java:2096-2170`:
+     *    điểm chỉ trên màn ảo — [ĐO `e2e-L4 · m1-stale-task-k4` (bằng chứng phiên, ngoài repo)]; nguồn A10 r47 `ActivityStarter.java:2096-2170`:
      *    `mPreferredDisplayId != mTargetStack.mDisplayId` ⇒ `reparent(launchStack, ON_TOP, REPARENT_MOVE_STACK_TO_FRONT)`).
      *  - tiến trình KHÔNG task (widget bật tiến trình bằng broadcast, `e2e/r2-alias-trip`) ⇒ vẫn nguội (luật Pass 6 giữ).
      */

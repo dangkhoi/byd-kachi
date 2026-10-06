@@ -217,10 +217,10 @@ class VoiceWakeService : Service() {
     /**
      * ⚠ **[startForeground] phải gọi TRƯỚC mọi đường thoát sớm.**
      *
-     * `sync()` gọi `startForegroundService()`; nền tảng cho service một khoảng ân hạn để lên foreground, quá hạn là
-     * `RemoteServiceException` — tức **sập app**. [ĐO AOSP android-10.0.0_r47
-     * `services/core/java/com/android/server/am/ActiveServices.java:102-109`:
-     * `static final int SERVICE_START_FOREGROUND_TIMEOUT = 10*1000;`] — **10 giây**, không phải 5 giây như tài liệu
+     * `sync()` gọi `startForegroundService()`; nền tảng cho service một khoảng ân hạn để lên foreground. [ĐO AOSP 10 r47
+     * `am/ActiveServices.java`] dừng service khi còn chờ foreground (`stopSelf` sớm, HOẶC quá hạn ⇒ `stopServiceLocked`
+     * `:3884-3909` kèm ANR) ⇒ `bringDownServiceLocked` gửi `SERVICE_FOREGROUND_CRASH_MSG` (`:2941-2963` → `:3927-3931`) =
+     * **sập app**; hạn `SERVICE_START_FOREGROUND_TIMEOUT = 10*1000` (`:132`) — **10 giây**, không phải 5 giây như tài liệu
      * Google viết (bản KDoc trước ghi 5 s theo tài liệu; sửa theo source vì CLAUDE.md §3). Bản đầu `return` khi công
      * tắc đã tắt *trước khi* lên foreground:
      * ca ấy có thật (công tắc bị tắt trong khe giữa `sync()` và `onStartCommand`, hoặc một lượt `START_STICKY`

@@ -79,8 +79,8 @@ data class VoiceGrammarSnapshot(
      * 6 khung mà `:wake` trả *"bố cục hiện chỉ có 3 ô"*. Quyết định nào cần chúng thì `:wake` KHÔNG được quyết bằng
      * state này: gắn ô ⇒ giao Activity (`VoiceDispatcher.placeInSlot` → `VoiceWakeHomeRelay.performSlot`); số liệu xe
      * ⇒ đọc tươi (`freshCar`, nhu cầu màn của `:wake` = rỗng) — TRỪ `carStatus.controls` (gió đang AUTO?): ở `:wake` nó
-     * luôn rỗng ⇒ `null` = "chưa biết", hàng thiết kế của `ClimateAuto.stepIntent`, chưa đọc tươi (backlog
-     * `VOICE-WAKE-AUTOON`). Bài canh `VoiceWakeFakeStateContractTest` liệt kê đúng những chỗ dispatcher đọc `state()` —
+     * luôn rỗng — 2.93 `VOICE-WAKE-AUTOON`: cờ AUTO nay đọc TƯƠI ở `VoiceControlDispatch.autoState` (`readState(autoId)` trước,
+     * snapshot này chỉ là đường lùi). Bài canh `VoiceWakeFakeStateContractTest` liệt kê đúng những chỗ dispatcher đọc `state()` —
      * thêm một chỗ đọc trường khác (hoặc chuyển nguyên lambda sang lớp mới) là ĐỎ.
      */
     fun homeState(): HomeUiState = HomeUiState(

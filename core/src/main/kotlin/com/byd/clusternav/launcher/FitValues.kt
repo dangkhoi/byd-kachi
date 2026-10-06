@@ -82,10 +82,12 @@ object FitValues {
     const val GAP_EM = 0.25f
 
     /**
-     * Phần dành THÊM trong bề rộng giá trị cho khe [GAP_EM] (px) của chú thích cỡ [captionPx]: chữ giá trị căn GIỮA ô của nó
-     * (`WidgetViews.tv` — `Gravity.CENTER`) ⇒ chỉ NỬA phần dành nằm phía chú thích ⇒ dành gấp đôi khe.
+     * Khe [GAP_EM] (px) giữa giá trị và chú thích cỡ [captionPx]. 2.93 `FIT-GRAVITY`: khe là LỀ NGOÀI có chủ của giá trị (phía
+     * chú thích — `FitValueRow.gapMargin`), KHÔNG còn dành trong bề rộng giá trị. Bản QA4 dành ⌈2 × 0,25 em⌉ trong bề rộng
+     * vì chữ giá trị căn GIỮA ⇒ nửa phần dành nằm phía NGOÀI (phí ≈ 0,25 em mỗi hàng ở khung chật) và khe nhìn thấy phụ thuộc
+     * cách căn của bộ dựng (căn trái/phải ⇒ 0…2 × khe). Lề ngoài ⇒ khe nhìn thấy ≥ một khe với mọi cách căn.
      */
-    fun gapPx(captionPx: Float): Int = ceil((2 * GAP_EM * captionPx).toDouble()).toInt()
+    fun gapPx(captionPx: Float): Int = ceil((GAP_EM * captionPx).toDouble()).toInt()
 
     /** Chia một hàng NGANG — [share]. [valueW] = bề rộng TĨNH của giá trị (px); [captions] = chú thích còn hiện không. */
     data class Share(val valueW: Int, val captions: Boolean)
@@ -93,19 +95,20 @@ object FitValues {
     /**
      * Chia phần hàng co giãn [flexPx] (hàng trừ lề + icon + con cỡ cố định) giữa GIÁ TRỊ (cần [valueNeed]) và chú thích (cần
      * tổng [captionNeed]; [captionMin] = ít nhất để còn hiện — [captionMinPx]; ô không có chú thích đang hiện ⇒ cả hai = 0).
-     * Soát QA4: khe [gapPx] (= `gapPx(cỡ chú thích)`) được giữ TRONG bề rộng giá trị TRƯỚC khi chú thích nhận chỗ — không bao giờ
-     * đặt chú thích sát giá trị (chú thích không có chữ ⇒ không giữ khe):
-     *  - đủ chỗ cho cả hai + khe ⇒ giá trị = nhu cầu + khe + NỬA phần dư (chữ cách mép đều như bản chia đôi cũ khi ô rộng);
-     *  - chú thích còn ≥ [captionMin] sau khe ⇒ giá trị = nhu cầu + khe, chú thích nhận phần còn lại (`…`);
-     *  - còn lại (kể cả giá trị cần hơn cả hàng) ⇒ chú thích ẨN, giá trị nhận cả hàng.
+     * Soát QA4: khe [gapPx] (= `gapPx(cỡ chú thích)`) được giữ TRƯỚC khi chú thích nhận chỗ — không bao giờ đặt chú thích sát giá
+     * trị (chú thích không có chữ ⇒ không giữ khe). 2.93 `FIT-GRAVITY`: khe nằm NGOÀI [Share.valueW] (lề ngoài có chủ, giữa giá
+     * trị và chú thích) ⇒ chú thích nhận `flex − valueW − khe`:
+     *  - đủ chỗ cho cả hai + khe ⇒ giá trị = nhu cầu + NỬA phần dư (chữ cách mép đều như bản chia đôi cũ khi ô rộng);
+     *  - chú thích còn ≥ [captionMin] sau khe ⇒ giá trị = đúng nhu cầu, chú thích nhận phần còn lại (`…`);
+     *  - còn lại (kể cả giá trị cần hơn cả hàng) ⇒ chú thích ẨN (không khe), giá trị nhận cả hàng.
      */
     fun share(flexPx: Int, valueNeed: Int, captionNeed: Int, captionMin: Int, gapPx: Int): Share {
         val flex = flexPx.coerceAtLeast(0)
         val gap = if (captionNeed > 0) gapPx.coerceAtLeast(0) else 0
         val rest = flex - valueNeed - gap
         return when {
-            rest >= 0 && rest >= captionNeed -> Share(valueNeed + gap + (rest - captionNeed) / 2, captions = true)
-            rest >= 0 && rest >= captionMin -> Share(valueNeed + gap, captions = true)
+            rest >= 0 && rest >= captionNeed -> Share(valueNeed + (rest - captionNeed) / 2, captions = true)
+            rest >= 0 && rest >= captionMin -> Share(valueNeed, captions = true)
             else -> Share(flex, captions = false)
         }
     }
@@ -139,4 +142,68 @@ object FitValues {
      * như mọi phép kiểm tràn ([FitRules.spills]).
      */
     fun stackYields(contentPx: Int, boxPx: Int): Boolean = contentPx > boxPx + 1
+
+    /**
+     * 2.93 `FIT-REGROW` — đường LỚN LẠI của luật "nhịp chỉ co" ([holds] · [wouldClip]): ô bị CO ở một nhịp đổ tại chỗ lúc
+     * [shrunkAtMs] (`null` = không) ⇒ sau [waitMs] ([FitRules.RECHECK_MS]) chạy MỘT lượt luật giá trị không-phải-nhịp (tick =
+     * false) trên chữ đang hiện. [ĐO mã, soát 7] tốc độ dò ở `99` → nhịp `100` co cỡ → về `99` (dấu chữ trùng dấu đã dò ⇒
+     * không lượt dò lại) ⇒ `99` đứng mãi ở cỡ của `100`. Không cần hẹn giờ: chỗ gọi hỏi ở nhịp đổ 1 Hz sẵn có; lượt khớp đầy
+     * đủ cũng là một lượt lớn lại ⇒ đặt dấu theo [regrowNext]. Chỉ mỹ quan — giá trị không bao giờ bị cắt ở cả hai nhánh.
+     */
+    fun regrowDue(shrunkAtMs: Long?, nowMs: Long, waitMs: Long = FitRules.RECHECK_MS): Boolean =
+        shrunkAtMs != null && nowMs - shrunkAtMs >= waitMs
+
+    /**
+     * 2.93 wave 2A · FIT-REGROW — dấu "đã co ở nhịp" SAU một lượt luật giá trị KHÔNG-phải-nhịp (lượt lớn lại [regrowDue], hoặc
+     * lượt khớp đủ): ô đã về ĐẦY ([full] — `FitScale.full`: mọi chữ ở cỡ LƯỚI gốc × k, hàng ngang không chú thích nào nhường —
+     * [roomy]) ⇒ `null` (xong); CHƯA ⇒ hẹn lại từ [nowMs]. Nhịp đổ tại chỗ chỉ CO ([holds] · [wouldClip]) ⇒ ô chưa đầy mà xoá dấu
+     * là chữ hẹp đến sau đứng mãi ở cỡ của chữ rộng.
+     *  - review WIDGET Pass 1 [P3]: tới hạn đúng lúc chữ lại là `100` ⇒ lượt ấy không đổi gì — bản đầu XOÁ dấu;
+     *  - review wave 2A Pass 1 ghi chú (b) [P3]: lượt ấy lớn MỘT PHẦN (co ở `1000`, tới hạn gặp `100`) — bản "đổi ⇒ xong" vẫn
+     *    XOÁ dấu ⇒ `99` đến sau đứng ở cỡ của `100`. Nay hỏi "đã về cỡ ĐẦY chưa", không hỏi "có đổi không".
+     * Giá: ô không bao giờ đầy (khung chật, lưới không đọc được) ⇒ một lượt luật giá trị (không lượt đo view; không đổi gì ⇒
+     * không `requestLayout`) mỗi [FitRules.RECHECK_MS] ở nhịp 1 Hz sẵn có — không hẹn giờ mới. Chỉ mỹ quan.
+     */
+    fun regrowNext(full: Boolean, nowMs: Long): Long? = if (full) null else nowMs
+
+    /**
+     * 2.93 wave 2A · FIT-REGROW lớn MỘT PHẦN — phân chia [s] của một hàng NGANG (kết quả [share], hoặc chỗ đang GIỮ sau nhịp —
+     * [wouldClip]) để chú thích đang hiện nhận TRỌN nhu cầu [captionNeed] sau giá trị + khe [gapPx] (= nhánh 1 của [share]); không
+     * chú thích có nhu cầu ⇒ `true`. `false` = chú thích đang nhường (ẩn, hoặc chỉ còn chỗ cho `…`) ⇒ giá trị hẹp hơn đến sau còn
+     * trả chỗ lại được, mà nhịp không chia lại khi chữ ngắn đi ⇒ dấu lớn lại phải giữ ([regrowNext]).
+     */
+    fun roomy(s: Share, flexPx: Int, captionNeed: Int, gapPx: Int): Boolean =
+        captionNeed <= 0 || (s.captions && flexPx.coerceAtLeast(0) - s.valueW - gapPx.coerceAtLeast(0) >= captionNeed)
+
+    /**
+     * 2.93 `FIT-WIDEST-CACHE` — nhớ CHỮ SỐ RỘNG NHẤT ([widestDigit]) theo khoá bút [K] (phông · cỡ · giãn chữ · ngôn ngữ…):
+     * [ĐO mã, soát 6] mỗi lần đo bề rộng một giá trị tốn 10 `measureText` một ký tự + 10 chuỗi chỉ để biết chữ số nào rộng
+     * nhất — kết quả CHỈ phụ thuộc bút, không phụ thuộc chữ. LRU [capacity] khoá (cỡ chữ của một lưới chỉ có vài bậc 1/32).
+     * Không đa luồng (tầng vẽ gọi trên luồng chính). [misses] = số lần thật sự phải đo — bài kiểm đếm.
+     */
+    class WidestMemo<K>(private val capacity: Int = 64) {
+        private val map = object : LinkedHashMap<K, Char>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, Char>?): Boolean = size > capacity
+        }
+        var misses = 0
+            private set
+
+        fun get(key: K, width: (Char) -> Float): Char = map[key] ?: widestDigit(width).also { map[key] = it; misses++ }
+    }
+
+    /**
+     * 2.93 `FIT-WIDEST-CACHE` — chuỗi đệm [headroom] của lần gọi GẦN NHẤT: một lượt [valuePx] đo cùng chữ ở ≤ 5 cỡ thử ⇒ dựng
+     * chuỗi đệm một lần (chữ số rộng nhất thường trùng giữa các bậc cỡ của cùng phông). So nội dung, không so tham chiếu.
+     */
+    class HeadroomMemo {
+        private var text: String? = null
+        private var widest = ' '
+        private var out = ""
+
+        fun of(t: CharSequence, w: Char): String {
+            val s = t.toString()
+            if (s != text || w != widest) { text = s; widest = w; out = headroom(s, w) }
+            return out
+        }
+    }
 }

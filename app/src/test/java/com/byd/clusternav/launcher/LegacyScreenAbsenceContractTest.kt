@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -69,9 +70,7 @@ class LegacyScreenAbsenceContractTest {
             Files.walk(root).use { paths ->
                 paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }.toList()
             }.mapNotNull { file ->
-                val code = file.toFile().readText()
-                    .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .lines().joinToString("\n") { it.substringBefore("//") }
+                val code = KotlinSource.stripComments(file.toFile().readText())
                 val hit = listOf("MainActivity::class", "R.layout.activity_main", "\"com.byd.clusternav.MainActivity\"")
                     .firstOrNull { it in code }
                 hit?.let { "${file.fileName}: $it" }

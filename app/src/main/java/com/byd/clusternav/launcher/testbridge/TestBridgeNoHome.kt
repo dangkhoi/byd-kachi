@@ -16,6 +16,8 @@ import android.content.Context
  *  • 2.83 thêm `a11ylog` ([TestBridgeA11yLog]): tắt máy là AccModeManagerService giết cả ba tiến trình Kachi
  *    [ĐO xe 29/09], nên lúc cần đọc nhật ký gắn Hỗ trợ nhất cũng là lúc màn chính có thể chưa lên.
  *  • 2.86 thêm `ctllog` ([TestBridgeCtlLog]) — cùng lẽ: nhật ký lệnh ghi xe (FIX286 · SR6) đọc được khi launcher chưa lên.
+ *  • 2.93 wave 2B thêm `diag_screen` ([TestBridgeScreens]) — lối DUY NHẤT tới hai màn chẩn đoán (DIAG-SCREENS-UNREACHABLE):
+ *    chúng tự đứng được, và lúc cần chẩn đoán *"launcher không lên"* thì màn chính có thể chưa có.
  *
  * ⚠ `prefs_set` nhận móc **nullable** (một khoá của nó phải đi qua màn chính — xem KDoc [TestBridgePrefsSet]), nên
  * nó vẫn thuộc đây: nó tự quyết định, không cần người gọi chặn trước.
@@ -37,6 +39,7 @@ internal object TestBridgeNoHome {
             TestBridgeCommands.A11YLOG -> TestBridgeA11yLog.run(app, cmd, reply)
             TestBridgeCommands.CTLLOG -> TestBridgeCtlLog.run(app, cmd, reply)
             TestBridgeCommands.WAKELOG -> TestBridgeWakeLog.run(app, cmd, reply)
+            TestBridgeScreenCommands.DIAG_SCREEN -> TestBridgeScreens.run(app, cmd, reply)
             else -> return false
         }
         return true

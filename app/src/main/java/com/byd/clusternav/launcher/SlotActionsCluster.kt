@@ -35,8 +35,11 @@ internal interface SlotActionsPort {
     /** Người dùng chạm [button] của ô [index]. */
     fun onAction(index: Int, button: Button)
 
-    /** App [pkg] của ô [index] đã rời màn ảo (nhịp đo `SlotLiveProbe`) — (a)/(b), `SlotRevertPlan.Event.APP_DIED`. */
-    fun onAppGone(index: Int, pkg: String)
+    /**
+     * App [pkg] của ô [index] đã rời màn ảo (nhịp đo `SlotLiveProbe`) — (a)/(b), `SlotRevertPlan.Event.APP_DIED`; [elsewhere] =
+     * 2.93 · R3 task của nó còn ở display khác (`APP_ELSEWHERE` — ra khỏi ô, vẫn mở; không phải đã đóng).
+     */
+    fun onAppGone(index: Int, pkg: String, elsewhere: Boolean = false)
 }
 
 /**
@@ -59,7 +62,7 @@ internal interface SlotActionsPort {
  *     để lại một `INVISIBLE` muộn — cùng luật `SlotHeadAutoHide`, bài canh riêng soi tệp này.
  *  5. **Icon trên ĐĨA KÍNH** (L8 · D-L6-3): icon [Sp.ICON_S] tô [KachiTheme.MUT] đặt trên đĩa [Sp.SWAP_DISC] ([KachiGlass]
  *     NEUTRAL, `fade = false` — CÙNG đĩa của ⇄ ô trống, hợp đồng `MUT ≥ 4.5:1` trên mọi độ chói ảnh). [ĐO máy ảo 03/10,
- *     `p4/e2e-L8`] icon trần (bản L6, như ⇄ ô có nội dung) trên nội dung APP: bảng sáng trên bản đồ tối VietMap 1.73:1, bảng
+ *     `e2e-L8` (bằng chứng phiên, ngoài repo)] icon trần (bản L6, như ⇄ ô có nội dung) trên nội dung APP: bảng sáng trên bản đồ tối VietMap 1.73:1, bảng
  *     tối trên Cài đặt nền trắng 2.35:1 (100 % điểm nền dưới 3:1) — app không theo chủ đề của Kachi nên không màu đơn nào
  *     đủ. Tâm đĩa = tâm icon = ngang tâm icon ⇄. Mô tả trợ năng theo loại ô, đủ 5 tiếng (tài nguyên).
  *
@@ -268,7 +271,12 @@ internal class SlotActionsCluster private constructor(
     companion object {
         /**
          * Dựng cụm cho khung [slot] (ô [index]) rồi chèn NGAY DƯỚI ⇄ (⇄ vẫn là con cuối — `SlotHeadAutoHide.register`
-         * đọc nó như thế). Loại ô không có nút nào ngoài ⇄ ⇒ `null`, không dựng view nào.
+         * đọc nó như thế). Loại ô không có nút nào ngoài ⇄ ⇒ `null`, không dựng view nào — TRỪ ô App CÓ bộ chiếu: 2.93 ·
+         * SLOT-HEAD-OVERLAY-DISC (spec `kachi-293-slot.html` R6) ⇒ đường ActivityView (nội dung app bên thứ ba ngay dưới ⇄, không
+         * nút cụm nào làm được) vẫn có hàng chỉ mang ĐĨA sau ⇄ ([swapDisc]) — cùng hợp đồng tương phản D-L8-1, cùng nhịp ẩn/hiện
+         * của ⇄ (cụm không nút: [refresh] / [hits] không có gì để làm). Ô App KHÔNG máy chiếu giữ ⇄ trần: dưới ⇄ là THẺ của Kachi
+         * (cùng luật ô widget — ⇄ trần trên thẻ), và ⇄ nổi của `OverlayHeads` nằm đè lệch `Sp.XS` ngay trên nó ⇒ thêm đĩa ở đây
+         * là hai đĩa chồng lệch.
          */
         fun attach(
             slot: ViewGroup,
@@ -279,7 +287,7 @@ internal class SlotActionsCluster private constructor(
             onArmed: (SlotActionsCluster) -> Unit,
         ): SlotActionsCluster? {
             val possible = SlotHeadActions.possible(kind, projector)
-            if (possible.isEmpty()) return null
+            if (possible.isEmpty() && (kind != SlotHeadRest.Kind.APP || projector == SlotHeadRest.Projector.NONE)) return null
             val ctx = slot.context
             val touch = KachiTheme.dpi(ctx, Sp.TOUCH)
             val made = LinkedHashMap<Button, View>()
@@ -339,7 +347,7 @@ internal class SlotActionsCluster private constructor(
 
         /**
          * QA 2.87 [P3] (D-L8-1) — ĐĨA KÍNH sau ⇄ của ô App, ở ô giữa của hàng (đúng dưới ⇄ — ⇄ là con cuối của khung, vẽ trên hàng).
-         * [ĐO máy ảo QA `l4/s7-chrome-bg-toast.png`] ⇄ trần trên trang trắng của Chrome gần như vô hình, trong khi hai nút cụm có
+         * [ĐO máy ảo QA `s7-chrome-bg-toast.png` (bằng chứng phiên, ngoài repo)] ⇄ trần trên trang trắng của Chrome gần như vô hình, trong khi hai nút cụm có
          * đĩa thì đọc được — app không theo chủ đề của Kachi nên không màu đơn nào đủ (lý lẽ luật 5). Đĩa ở ĐÂY (không trong
          * `SlotSwapButton` — bộ dựng ⇄ bị ghim byte): chỉ ô App mới có cụm hiện cùng ⇄; nó ẩn/hiện CÙNG hàng (cùng nhịp nghỉ của
          * ⇄), không bấm được, không vào cây trợ năng — cú chạm vẫn tới khung chạm của ⇄ nằm trên.

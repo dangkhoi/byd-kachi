@@ -35,6 +35,8 @@
         <item quantity="other">Place %1$d widgets</item>
     </plurals>
     <string name="kachi_drawer_cap_note">A slot holds at most %1$d items — remove one to add another</string>
+    <string name="kachi_drawer_fit_hint">Room for readable labels: only %1$d of the %2$d selected items — remove some or make the slot bigger</string>
+    <string name="kachi_drawer_fit_none">This slot is too small for readable labels — make it bigger</string>
 
     <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
     <string name="kachi_layout_title">Draw a layout</string>
@@ -328,7 +330,6 @@
     <string name="kachi_bridge_gemini_failed">Couldn\'t set the system assistant.</string>
     <string name="kachi_bridge_cleaning_air">Cleaning the air…</string>
     <string name="kachi_bridge_update_needs_screen">Open the screen to check for updates.</string>
-    <string name="kachi_bridge_screen_open_failed">Couldn\'t open the screen.</string>
 
     <!-- ── Dùng chung (hộp thoại của Cài đặt · SettingsDialogs) ── -->
     <string name="kachi_save">Save</string>
@@ -772,6 +773,7 @@
     <string name="kachi_voice_pill_sub">Speak a command quickly, next to Apps and Settings</string>
     <!-- shortcuts-autostart §4.14 — a temporary placement failed: the new app could not open in the slot. -->
     <string name="kachi_sc_place_failed">%1$s couldn\'t open in the slot</string>
+    <string name="kachi_slot_app_elsewhere">%1$s left the slot — it\'s still open outside it</string>
     <!-- shortcuts-autostart §4.14 · group B — app shortcuts (app picker · Settings · bar block · widget · tap reasons) -->
     <string name="kachi_drawer_title_shortcuts">Pick apps for shortcuts</string>
     <string name="kachi_drawer_hint_shortcuts">Tap to add or remove an app · tap Apply to save · tap the backdrop to close</string>
@@ -795,7 +797,7 @@
     <string name="kachi_sc_refuse_cast">%1$s is being cast to the cluster</string>
     <string name="kachi_sc_not_installed">%1$s is not installed</string>
     <string name="kachi_sc_bg_failed">%1$s couldn\'t start in the background</string>
-    <string name="kachi_sc_bg_failed_why">%1$s couldn\'t start in the background (%2$s)</string>
+    <string name="kachi_sc_bg_failed_why">[%2$s] %1$s couldn\'t start in the background</string>
     <!-- F1 row 9 (spec shortcuts-autostart): the slot app is open full screen (K7); back to the slot on HOME (K8). -->
     <string name="kachi_sc_full_card">Showing full screen — tap to bring it back to the slot</string>
     <string name="kachi_sc_full_failed">Couldn\'t open %1$s full screen</string>
@@ -830,14 +832,8 @@
     <string name="kachi_captest_snapshot_done">Log snapshot saved: %s</string>
     <string name="kachi_captest_report_saved">Report saved to the card: %s</string>
     <string name="kachi_camera_cluster_title">Show camera on cluster</string>
-    <string name="kachi_camera_pos_sub">Camera position on screen (top corners)</string>
-    <string name="kachi_camera_pos_left">Left signal shows at</string>
-    <string name="kachi_camera_pos_right">Right signal shows at</string>
     <string name="kachi_pos_tl">Left</string>
     <string name="kachi_pos_tr">Right</string>
-    <string name="kachi_camera_rot_sub">Rotate camera video per side (if the picture is sideways or upside down)</string>
-    <string name="kachi_camera_rot_row_left">Left signal: rotate video</string>
-    <string name="kachi_camera_rot_row_right">Right signal: rotate video</string>
     <string name="kachi_camera_rot_none">No rotation</string>
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
@@ -850,9 +846,6 @@
     <string name="kachi_camera_pano_row_right">Right signal: strip</string>
     <string name="kachi_camera_pano_auto">Auto</string>
     <string name="kachi_camera_pano_none">Whole frame</string>
-    <string name="kachi_camera_mirror_sub">Mirror camera video per side (if the picture is the wrong way round compared with the glass mirror)</string>
-    <string name="kachi_camera_mirror_row_left">Left signal: mirror video</string>
-    <string name="kachi_camera_mirror_row_right">Right signal: mirror video</string>
     <string name="kachi_camera_mirror_row_sub">Flips the camera picture horizontally before rotation — the car body should sit on the inner edge, as in a real mirror</string>
     <string name="kachi_camera_shape_sub">Camera window shape (outline only — for the whole picture, not dewarped, pick «Convex mirror» below)</string>
     <string name="kachi_camera_shape_row">Camera window shape</string>
@@ -947,7 +940,7 @@
     <string name="kachi_vn_row_title">Teach Kachi app names</string>
     <string name="kachi_vn_row_sub">Apps taught: %1$d · teach English or hard-to-say app names here</string>
     <string name="kachi_vn_page_title">Teach app names</string>
-    <string name="kachi_vn_page_note">Voice understands Vietnamese only. For English or hard-to-say app names: tap the app and say “mở &lt;tên&gt;” 2–3 times as you would while driving. Kachi keeps the exact text it heard from your voice (no audio is stored). Teach again after changing the speech model.</string>
+    <string name="kachi_vn_page_note">Voice understands Vietnamese only. For English or hard-to-say app names: tap the app and follow the prompt for each take, as you would while driving (take 1 “mở &lt;tên&gt;”, take 2 with a slot). Kachi keeps the exact text it heard from your voice (no audio is stored). Teach again after changing the speech model.</string>
     <string name="kachi_vn_search_hint">Search apps…</string>
     <string name="kachi_vn_filter_all">All %1$d</string>
     <string name="kachi_vn_filter_taught">Taught %1$d</string>
@@ -964,7 +957,9 @@
     <string name="kachi_vn_readonly">Data from a newer Kachi — view only; update Kachi to edit</string>
     <string name="kachi_vn_pending">Pending sample: «%1$s» — pick the app</string>
     <string name="kachi_vn_dialog_title">Teach a name: %1$s</string>
-    <string name="kachi_vn_dialog_hint">Tap 🎤 and say “mở %1$s” as you would while driving. Say it 2–3 times.</string>
+    <string name="kachi_vn_dialog_hint">Tap 🎤 and follow the prompt for each take, as you would while driving: take 1 “mở %1$s”, take 2 with a slot. At least 2 takes.</string>
+    <string name="kachi_vn_take_plain">Take %1$d: say “mở %2$s”</string>
+    <string name="kachi_vn_take_slot">Take %1$d: say it with a slot — “đưa %2$s vào ô số hai”. A sentence with a slot can change how Kachi hears the name; Kachi saves that form too, so slot commands are understood.</string>
     <string name="kachi_vn_speak">🎤 Speak</string>
     <string name="kachi_vn_type">Type a name…</string>
     <string name="kachi_vn_type_title">Type a spoken name for %1$s</string>
@@ -1001,6 +996,7 @@
     <string name="kachi_vn_r_near_command">Easy to confuse with a car command</string>
     <string name="kachi_vn_r_near_app">Close to the app name %1$s</string>
     <string name="kachi_vn_r_one_word">A single word can clash with everyday speech</string>
+    <string name="kachi_vn_r_homograph">Without accents it matches a word of the command “%1$s” — a sentence with that word may open this app</string>
     <string name="kachi_vn_still_save">Save anyway</string>
     <string name="kachi_vn_warn_title">Names with warnings</string>
     <string name="kachi_vn_checking">Checking %1$d commands…</string>
@@ -1018,4 +1014,30 @@
     <string name="kachi_vn_heard">Heard: «%1$s»</string>
     <string name="kachi_vn_heard_bad">«%1$s» — a name must be 1–4 words with at least 3 letters</string>
     <string name="kachi_vn_named_reason">Name «%1$s»: %2$s</string>
+    <!-- 2.93 · CAMERA-ON-DEMAND + CAMERA-PER-CAM-CONFIG (spec docs/specs/kachi-293-cam.html) -->
+    <string name="kachi_camera_rear">Rear camera</string>
+    <string name="kachi_camera_front">Front camera</string>
+    <string name="kachi_cam_chip_rear">Rear</string>
+    <string name="kachi_cam_chip_left">Left</string>
+    <string name="kachi_cam_chip_right">Right</string>
+    <string name="kachi_cam_chip_front">Front</string>
+    <string name="kachi_camera_percam_sub">Each camera — where it shows, size, look (rear · left · right · front)</string>
+    <string name="kachi_camera_percam_note">Applies to that camera both on the turn signal and when opened on demand. Open/close: the Rear/Left/Right/Front camera buttons on the car bar, a steering-wheel key (Steering keys › Camera on demand) or by voice («open rear camera» / «turn off rear camera»). One camera at a time; it never times out.</string>
+    <string name="kachi_camera_percam_row">Camera</string>
+    <string name="kachi_camera_preview_on">▶ Preview this camera</string>
+    <string name="kachi_camera_preview_off">■ Showing — tap to turn off</string>
+    <string name="kachi_camera_corner_row">Default corner</string>
+    <string name="kachi_camera_place_hint">Drag the frame to place it</string>
+    <string name="kachi_camera_place_reset">Back to the default corner</string>
+    <string name="kachi_camera_size_row">Size</string>
+    <string name="kachi_camera_size_desc">Camera size: %1$s</string>
+    <string name="kachi_camera_follow">Use shared</string>
+    <string name="kachi_camera_shape_own_row">Window shape</string>
+    <string name="kachi_camera_projection_own_row">View style</string>
+    <string name="kachi_camera_rot_own_row">Rotate</string>
+    <string name="kachi_camera_mirror_own_title">Mirror video</string>
+    <string name="kachi_keys_kind_camera">Camera on demand</string>
+    <string name="kachi_keys_pick_camera">Step 3 — which camera</string>
+    <string name="kachi_key_cam_toggle">%1$s — on/off</string>
+    <string name="kachi_key_cam_off">Camera off</string>
 </resources>

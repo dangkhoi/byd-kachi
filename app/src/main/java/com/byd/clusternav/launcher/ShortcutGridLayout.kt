@@ -19,6 +19,7 @@ import kotlin.math.roundToInt
 import com.byd.clusternav.launcher.KachiBars as Bars
 import com.byd.clusternav.launcher.KachiSpace as Sp
 import com.byd.clusternav.launcher.ShortcutGridFit.Scroll
+import com.byd.clusternav.launcher.ShortcutScrollKeep.Wanted
 
 /**
  * ═══ Khung đặt icon của lưới lối tắt `w_apps` theo [ShortcutGridFit] — R-SI1 (2.87) → 2.92 (khe cố định + cuộn) ═══════
@@ -38,14 +39,33 @@ import com.byd.clusternav.launcher.ShortcutGridFit.Scroll
  *
  * Mỗi lượt khớp ĐỔI bố cục ghi một dòng `adb logcat -s WidgetFit` (`shortcuts n=… frame=… -> c×r icon=…`) — khung thật trên
  * xe đọc được không cần đoán (CLAUDE.md §15; ca ảnh owner 06/10 không kèm số khung).
+ *
+ * 2.93 · R1/R2 (spec `kachi-293-slot.html`, `ShortcutScrollKeep`): vị trí cuộn NGƯỜI LÁI CHỌN ([wanted] — chỉ kéo / trôi /
+ * trợ năng ghi) tách khỏi vị trí ĐANG ÁP (`scrollX/Y` = [wanted] kẹp theo khung hiện tại, [settleScroll]). Lượt đo ở một khung
+ * lạ (QA 2.92: 1558×123 giữa hai lượt 1362×148 ⇒ 264 → 43) chỉ áp, không ghi ⇒ lượt kế ở khung thật trả lại đúng chỗ. Lượt
+ * dựng lại của [ShortcutIconsView] chuyển [keep] của khung cũ sang khung mới qua `start`. Dòng nhật ký mang `view=` (mã khung)
+ * + `pos=áp/chọn` để chốt lượt đo lạ là cùng khung hay một màn khác ([CHƯA BIẾT] — CLAUDE.md §11).
  */
-internal class ShortcutGridLayout(context: Context, private val onIconPx: (Int) -> Unit) : ViewGroup(context) {
+internal class ShortcutGridLayout(
+    context: Context,
+    /** 2.93 · R1 — vị trí người lái đã chọn ở khung CŨ (lượt dựng lại của [ShortcutIconsView]); khung mới: [Wanted.ORIGIN]. */
+    start: Wanted = Wanted.ORIGIN,
+    /** 2.93 wave 2A · SHORTCUT-SCROLL-REBUILD — báo mỗi lựa chọn MỚI của người lái (để nhớ qua lượt dựng view mới của ô). */
+    private val onUserScroll: (Wanted) -> Unit = {},
+    private val onIconPx: (Int) -> Unit,
+) : ViewGroup(context) {
 
     private var fit: ShortcutGridFit.Fit? = null
     private var reportedIconPx = -1
 
     /** Bố cục của dòng nhật ký gần nhất — chỉ ghi khi bố cục ĐỔI thật (không theo lượt đo). */
     private var shown: ShortcutGridFit.Fit? = null
+
+    /** 2.93 · R1/R2 — vị trí người lái ĐÃ CHỌN (KDoc lớp); chỉ [scrollAlongTo] ghi. */
+    private var wanted: Wanted = start
+
+    /** Vị trí người lái đã chọn — lượt dựng lại của [ShortcutIconsView] đem sang khung mới (R1). */
+    val keep: Wanted get() = wanted
 
     private val touchSlop: Int
     private val minFling: Int
@@ -137,9 +157,11 @@ internal class ShortcutGridLayout(context: Context, private val onIconPx: (Int) 
         importantForAccessibility =
             if (f.scroll == Scroll.NONE) IMPORTANT_FOR_ACCESSIBILITY_AUTO else IMPORTANT_FOR_ACCESSIBILITY_YES
         if (f.scroll == Scroll.NONE && !scroller.isFinished) scroller.abortAnimation()
-        val max = f.maxScrollPx
-        val x = if (f.scroll == Scroll.HORIZONTAL) scrollX.coerceIn(0, max) else 0
-        val y = if (f.scroll == Scroll.VERTICAL) scrollY.coerceIn(0, max) else 0
+        // 2.93 · R2 — áp [wanted] kẹp theo `f.maxScrollPx` (`ShortcutScrollKeep.applied`), KHÔNG kẹp chính vị trí đang áp: lượt
+        // đo ở khung lạ chỉ dời hình, lựa chọn của người lái còn nguyên cho lượt sau (QA 2.92: 264 → 43 vĩnh viễn).
+        val at = ShortcutScrollKeep.applied(wanted, f)
+        val x = if (f.scroll == Scroll.HORIZONTAL) at else 0
+        val y = if (f.scroll == Scroll.VERTICAL) at else 0
         if (x != scrollX || y != scrollY) scrollTo(x, y)
     }
 
@@ -149,9 +171,9 @@ internal class ShortcutGridLayout(context: Context, private val onIconPx: (Int) 
         Log.i(
             TAG,
             String.format(
-                Locale.US, "shortcuts n=%d frame=%dx%d -> %dx%d icon=%d gap=%.1fx%.1f scroll=%s content=%dx%d",
+                Locale.US, "shortcuts n=%d frame=%dx%d -> %dx%d icon=%d gap=%.1fx%.1f scroll=%s content=%dx%d pos=%d/%d view=%x",
                 f.count, f.widthPx, f.heightPx, f.cols, f.rows, f.iconPx, f.gapXPx, f.gapYPx, f.scroll,
-                f.contentWidthPx, f.contentHeightPx,
+                f.contentWidthPx, f.contentHeightPx, position(), wanted.px, System.identityHashCode(this),
             ),
         )
     }
@@ -164,9 +186,12 @@ internal class ShortcutGridLayout(context: Context, private val onIconPx: (Int) 
 
     private fun position(): Int = if (axis == Scroll.HORIZONTAL) scrollX else scrollY
 
+    /** Cuộn do NGƯỜI LÁI (kéo · trôi · trợ năng) — chỗ DUY NHẤT ghi [wanted] (2.93 · R2). */
     private fun scrollAlongTo(p: Int) {
         val c = p.coerceIn(0, fit?.maxScrollPx ?: 0)
         if (axis == Scroll.HORIZONTAL) scrollTo(c, 0) else scrollTo(0, c)
+        wanted = ShortcutScrollKeep.userScrolled(axis, c)
+        onUserScroll(wanted)
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {

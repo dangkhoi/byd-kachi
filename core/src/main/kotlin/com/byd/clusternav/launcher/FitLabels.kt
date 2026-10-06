@@ -3,7 +3,7 @@ package com.byd.clusternav.launcher
 /**
  * ═══ J1 (2.87, QA2 04/10) — CHỮ TÊN của từng ô trong lưới widget: nhãn đầy · nhãn ngắn · cắt đầu ════════════════════
  *
- * Bệnh [ĐO máy ảo QA2, `qa2/a/fit-2x1-dock-4lang.png`, `fit-3x1-th-ms.png`]: khung 2×1 / 3×1 không bố cục nào đọc được
+ * Bệnh [ĐO máy ảo QA2, `fit-2x1-dock-4lang.png`, `fit-3x1-th-ms.png` — bằng chứng phiên, ngoài repo]: khung 2×1 / 3×1 không bố cục nào đọc được
  * ⇒ lưới giữ sàn 10sp và nhãn bị `…` tới mức các nút hiện Y HỆT nhau — `Kính …` ×4, `กระจ…` ×4, `Kaca…` ×4, `全部…` ×2,
  * `Kaca blkg k…` ×2 — trong khi icon kính cũng không phân biệt được ([IconRepeat]) ⇒ người lái không biết nút nào là kính
  * nào.

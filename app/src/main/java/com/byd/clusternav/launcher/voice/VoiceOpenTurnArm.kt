@@ -49,6 +49,13 @@ import java.util.concurrent.FutureTask
 internal class VoiceOpenTurnArm(
     private val rec: VoiceRecognizer,
     private val ep: VoiceTurnEndpoint,
+    /**
+     * 2.93 VOICE-OPEN-TURN-DYNVOCAB — từ vựng ĐỘNG của phiên (hồ sơ · app máy · sổ địa chỉ · tên đã dạy) cho phép hỏi
+     * *"ghép được không"* ([VoiceOpenTurn.mayAttach] / [VoiceOpenTurn.attach]). LƯỜI: chỉ dựng khi lượt CÓ vế sau
+     * (`tailRange ≠ null`) VÀ vế trước đủ nghĩa (vế dở ghép bằng `join`, không hỏi từ vựng) — dựng nó là một lượt hỏi
+     * `PackageManager`, không được rơi vào lượt đủ nghĩa thường ngày.
+     */
+    private val vocab: () -> VoiceDynVocab,
     /** Chữ vế trước để tấm chữ hiện **trong lúc chờ** — đi qua đúng đường `onPartial` đã có, không thêm UI/TTS. */
     private val onPartial: (String) -> Unit,
 ) {
@@ -163,12 +170,17 @@ internal class VoiceOpenTurnArm(
         // ấy chắc chắn bị vứt — mà nó nằm trên đường tới hành động (*"bật đèn đọc"* + một tiếng trong cabin ⇒ đèn lên
         // muộn hơn 2.75 đúng một lượt). Phép hỏi ở `:core` ([VoiceOpenTurn.mayAttach]) nên không đổi kết quả một lượt
         // nào, chỉ bỏ công vô ích — và không mở một ngữ pháp thứ hai ở `:app` (CLAUDE.md §7).
-        if (!VoiceOpenTurn.mayAttach(head)) {
+        // 2.93 VOICE-OPEN-TURN-DYNVOCAB: hai phép hỏi dưới dùng CÙNG từ vựng động của phiên (dựng ở đây, sau `tailRange`).
+        // Senior review 2.93 Pass 1 · [P3]: vế trước DỞ đi `join` — `mayAttach`/`attach` không hỏi từ vựng ở nhánh ấy ⇒ KHÔNG
+        // dựng (một lượt hỏi `PackageManager` trên đường tới hành động của chính ca nói-tiếp chính: "mở vietmap vào ô" ⟨ngừng⟩
+        // "số hai"). Kết quả hai phép hỏi không đổi một ký tự: cả hai mở đầu bằng `isOpen(head)` tĩnh.
+        val dyn = if (VoiceOpenTurn.isOpen(head)) VoiceDynVocab.STATIC else dynVocab()
+        if (!VoiceOpenTurn.mayAttach(head, dyn)) {
             Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: có vế sau nhưng \"$head\" không còn chỗ ghép ⇒ bỏ lượt giải mã vế sau")
             return Outcome(head, head, "")
         }
         val tail = rec.rangeResult(range.first, range.last + 1)
-        val joined = VoiceOpenTurn.attach(head, tail)
+        val joined = VoiceOpenTurn.attach(head, tail, dyn)
             ?: return Outcome(head, head, tail).also {
                 Log.i(VoiceEngine.TIMING_TAG, "noi-tiep: vế sau \"$tail\" không nối được vào \"$head\" ⇒ giữ vế trước")
             }
@@ -184,6 +196,11 @@ internal class VoiceOpenTurnArm(
     }
 
     private fun sinceArm(): Long = System.currentTimeMillis() - armedAt
+
+    /** Từ vựng động của phiên; dựng hỏng ⇒ [VoiceDynVocab.STATIC] = đúng hành vi 2.92 (mất ghép tên động, không mất lượt). */
+    private fun dynVocab(): VoiceDynVocab = runCatching(vocab)
+        .onFailure { Log.w(VoiceEngine.TIMING_TAG, "noi-tiep: dựng từ vựng phiên hỏng — ghép bằng từ vựng tĩnh", it) }
+        .getOrDefault(VoiceDynVocab.STATIC)
 
     /**
      * Kết quả một lượt có giữ.

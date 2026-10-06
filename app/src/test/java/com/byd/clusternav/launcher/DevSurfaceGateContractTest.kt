@@ -23,9 +23,13 @@ import org.junit.jupiter.api.Test
  *  3. **Đường thoát THẬT của người dùng ở lại** — hai nút cứu-hộ cast KHÔNG bị gỡ và cũng KHÔNG bị gác (cụm đang
  *     tối là việc của người lái, không phải của người viết code).
  *
- * ⚠ KHẢ NĂNG thì không mất, chỉ BỀ MẶT mất: `KachiTestBridge` vẫn nhận `say`/`captest`/`prefs_set`/`voice_dump`, và
- * hai màn chẩn đoán vẫn mở được bằng `am start -n <gói>/<lớp>`. Bài [duong adb khong bi cat theo] ở dưới ghim điều
- * đó — dọn UI mà dọn luôn đường adb thì lượt lên xe sau mất sạch công cụ.
+ * ⚠ KHẢ NĂNG thì không mất, chỉ BỀ MẶT mất: `KachiTestBridge` vẫn nhận `say`/`captest`/`prefs_set`/`voice_dump`. Bài
+ * [duong adb khong bi cat theo] ở dưới ghim điều đó — dọn UI mà dọn luôn đường adb thì lượt lên xe sau mất sạch công cụ.
+ *
+ * ⚠ Đính chính (2.93 wave 2B · DIAG-SCREENS-UNREACHABLE): câu cũ *"hai màn chẩn đoán vẫn mở được bằng `am start -n`"* SAI —
+ * `exported=false` ⇒ uid shell bị từ chối (AOSP 10 r47 `checkStartAnyActivityPermission`; [ĐO xe 29/09]). Nay hai màn mở
+ * được CHỈ bằng lệnh cầu `diag_screen` (sau công tắc test-mode) — một LỆNH, không phải bề mặt UI; luật *"không dựng lại lối
+ * vào trong Cài đặt"* giữ nguyên ([hai man chan doan chi mo qua lenh cau sau cong test-mode]).
  */
 class DevSurfaceGateContractTest {
 
@@ -118,6 +122,55 @@ class DevSurfaceGateContractTest {
                 noHome.contains("TestBridgeCommands.$it ->"),
                 "mất nhánh `$it` ⇒ lượt lên xe sau không còn công cụ, mà không bài nào khác thấy",
             )
+        }
+    }
+
+    /**
+     * ═══ 2.93 wave 2B · DIAG-SCREENS-UNREACHABLE — hai màn chẩn đoán: GIỮ, mở CHỈ qua lệnh cầu sau cổng test-mode ═══
+     *
+     * Ba điều, đúng thứ tự quyết định (điều phối thay owner, mặc định đã chọn — spec `kachi-293-misc.html` OQ3):
+     *  1. lối DUY NHẤT là lệnh `diag_screen` của cầu, và nó đứng SAU cổng `TestBridgeStore.isOn` (cùng cổng mọi lệnh);
+     *  2. KHÔNG một mã sản phẩm nào khác mở hai màn ấy — lớp Activity chỉ được nhắc ở tệp ánh xạ của cầu. 2.93 wave 2C ·
+     *     DIAG-BRIDGE-DEAD-OPENERS: hai cửa cũ `ClusterNavBridge.openDiagnostics()`/`openVietMapData()` (0 chỗ gọi) đã GỠ cả
+     *     định nghĩa ⇒ bài nay đòi 0 lần xuất hiện của hai tên ấy (định nghĩa HAY chỗ gọi) — siết, không nới;
+     *  3. hai màn vẫn `exported=false` — một lệnh của CHÍNH app, không mở cửa cho app khác.
+     * Luật *"không bề mặt dev nào trong Cài đặt"* (bài trên) KHÔNG đổi: lệnh cầu không phải bề mặt UI.
+     */
+    @Test
+    fun `hai man chan doan chi mo qua lenh cau sau cong test-mode`() {
+        val bridge = code("src/main/java/com/byd/clusternav/launcher/testbridge/KachiTestBridge.kt")
+        val noHome = code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeNoHome.kt")
+        val screens = code("src/main/java/com/byd/clusternav/launcher/testbridge/TestBridgeScreens.kt")
+        assertTrue(noHome.contains("TestBridgeScreenCommands.DIAG_SCREEN -> TestBridgeScreens.run(app, cmd, reply)"), "lối duy nhất")
+        val gate = bridge.indexOf("TestBridgeStore.isOn(")
+        assertTrue(gate in 0 until bridge.indexOf("TestBridgeCommands.parse("), "cổng test-mode đứng TRƯỚC phân tích")
+        assertTrue(SourceRoots.body(bridge, "private fun dispatch(").contains("TestBridgeNoHome.handle(app, cmd, reply)"),
+            "lệnh không cần màn chính đi qua `dispatch` — tức SAU cổng")
+        listOf("DiagActivity::class.java", "VietMapWidgetDiagActivity::class.java").forEach {
+            assertTrue(screens.contains(it), "ánh xạ tên → $it")
+        }
+        assertTrue(screens.contains("app.startActivity(Intent(app, cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))"),
+            "mở bằng Context của CHÍNH app (cùng tiến trình ⇒ exported=false không cản)")
+        // (2) Không mã sản phẩm nào khác chạm hai lớp ấy / gọi hai cửa cũ.
+        val main = SourceRoots.path("src/main/java")
+        val touching = java.nio.file.Files.walk(main).use { s ->
+            s.filter { it.toString().endsWith(".kt") }.filter { f ->
+                val src = SourceRoots.codeOf("src/main/java/" + main.relativize(f).toString().replace('\\', '/'))
+                src.contains("DiagActivity::class") || src.contains("VietMapWidgetDiagActivity::class")
+            }.map { it.fileName.toString() }.toList()
+        }.toSet()
+        assertEquals(setOf("TestBridgeScreens.kt"), touching, "chỉ tệp ánh xạ của cầu nhắc hai lớp (hai cửa cũ đã gỡ ở wave 2C)")
+        val mentions = java.nio.file.Files.walk(main).use { s ->
+            s.filter { it.toString().endsWith(".kt") }.map { f ->
+                Regex("""\b(openDiagnostics|openVietMapData)\(""")
+                    .findAll(SourceRoots.codeOf("src/main/java/" + main.relativize(f).toString().replace('\\', '/'))).count()
+            }.toList().sum()
+        }
+        assertEquals(0, mentions, "hai cửa cũ của cầu Cài đặt đã gỡ — mọc lại định nghĩa hay chỗ gọi là mọc lại bề mặt")
+        val manifest = SourceRoots.text("src/main/AndroidManifest.xml")
+        listOf(".modules.clustercast.DiagActivity", ".vietmapwidget.VietMapWidgetDiagActivity").forEach { name ->
+            val block = manifest.substringAfter("android:name=\"$name\"").substringBefore("/>")
+            assertTrue(block.contains("android:exported=\"false\""), "$name phải giữ exported=false")
         }
     }
 }

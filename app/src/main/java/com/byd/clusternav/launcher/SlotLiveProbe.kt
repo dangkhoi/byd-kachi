@@ -34,13 +34,16 @@ object SlotLiveProbe {
 
     private const val TAG = "KachiVd"
 
-    /** Một ô đang được theo dõi. [onDead] gọi trên luồng UI, đúng MỘT lần cho mỗi chu kỳ sống. */
+    /**
+     * Một ô đang được theo dõi. [onDead] gọi trên luồng UI, đúng MỘT lần cho mỗi chu kỳ sống; đối số = 2.93 · R3 app RA KHỎI ô
+     * mà task còn ở display khác ([SlotLiveness.elsewhere]) — `false` = đã đóng như trước.
+     */
     private class Sub(
         val key: String,
         val pkg: String,
         val displayId: Int,
         val shell: (String) -> String,
-        val onDead: () -> Unit,
+        val onDead: (Boolean) -> Unit,
         /** Ô 7 (2.89-thử1): màn ảo NHẬN LẠI từ chỗ đỗ — app không còn trên đó ⇒ gọi cái này thay [onDead] (luồng UI). */
         val onMissing: (() -> Unit)? = null,
     ) {
@@ -61,7 +64,7 @@ object SlotLiveProbe {
      * Theo dõi ô [key] (gói [pkg] trên màn ảo [displayId]). Gọi lại cùng [key] ⇒ thay bản cũ (idempotent). [onMissing] khác
      * `null` = màn ảo nhận lại từ ô 7 (`SlotLiveness.adopted`): chưa từng thấy app sau đủ nhịp hụt ⇒ [onMissing], không [onDead].
      */
-    fun watch(key: String, pkg: String, displayId: Int, shell: (String) -> String, onMissing: (() -> Unit)? = null, onDead: () -> Unit) {
+    fun watch(key: String, pkg: String, displayId: Int, shell: (String) -> String, onMissing: (() -> Unit)? = null, onDead: (Boolean) -> Unit) {
         unwatch(key)
         subs.add(Sub(key, pkg, displayId, shell, onDead, onMissing))
         start()
@@ -93,7 +96,10 @@ object SlotLiveProbe {
      */
     fun watching(key: String): Boolean = subs.any { it.key == key }
 
-    /** Thôi theo dõi ô [key] (ô đóng / host nhả / đã báo chết). Không còn ô nào ⇒ ticker tự tắt. */
+    /**
+     * Thôi theo dõi ô [key] (ô đóng / host nhả / đã báo chết). Không còn ô nào ⇒ ticker tự tắt. Kết luận đang chờ luồng chính của
+     * bản bị gỡ ở đây sẽ tự bỏ (`sweep` — Senior review Pass 2).
+     */
     fun unwatch(key: String) {
         subs.removeAll(subs.filter { it.key == key })
     }
@@ -169,11 +175,25 @@ object SlotLiveProbe {
             snapshot.forEach { sub ->
                 if (sub.onMissing != null && !readable) return@forEach
                 val alive = picture.first { it.first == sub.key }.second
-                if (sub.liveness.observe(alive)) {
-                    Log.i(TAG, "ô ${sub.key}: ${sub.pkg} không còn task trên display ${sub.displayId} ⇒ app đã đóng")
-                    unwatch(sub.key)                            // đã kết luận ⇒ thôi đo (mở lại sẽ đăng ký lượt mới)
+                // 2.93 · R3 (SLOT-APP-ESCAPE): vắng màn ảo ô mà gói còn task ở display khác ⇒ "ở chỗ khác" — CÙNG bản đọc, cùng phép
+                // FIX286 (`SlotPresence`), 0 lệnh thêm. Đọc rỗng/lạ ⇒ UNKNOWN ⇒ không phải "ở chỗ khác".
+                val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId) == SlotPresence.ELSEWHERE
+                // Senior review Pass 2 [P3] — màn ảo ô còn app KHÁC ⇒ ô chưa trống (luật hoàn ô nhả màn ảo ⇒ cờ 256 kết thúc app đó)
+                // ⇒ không tính cho kết luận chưa-từng-thấy-sống (KDoc `SlotLiveness`). Cùng bản đọc, 0 lệnh.
+                val othersInSlot = away && SlotLiveness.othersInSlot(out, sub.pkg, sub.displayId)
+                if (sub.liveness.observe(alive, away, othersInSlot)) {
+                    val elsewhere = sub.liveness.elsewhere
+                    Log.i(TAG, "ô ${sub.key}: ${sub.pkg} không còn task trên display ${sub.displayId} ⇒ ${if (elsewhere) "app RA KHỎI ô, task còn ở display khác" else "app đã đóng"}")
                     val missing = sub.onMissing?.takeIf { sub.liveness.missing }
-                    ui.post { if (missing != null) missing() else sub.onDead() }
+                    // Senior review Pass 2 [P3] — thôi đo ĐÚNG bản này, trên luồng chính, và chỉ báo khi nó CÒN đăng ký. Bản cũ
+                    // `unwatch(sub.key)` ở luồng nền: một bản bị gỡ/thay TRONG lúc nhịp đang bay (⇱ `SlotFullscreen.detach` gỡ trước K7 ·
+                    // `reviveInSlot` · `watch` cùng khoá) vẫn kết luận ⇒ gỡ nhầm bản MỚI cùng khoá (ô thôi được đo) và gọi `onAppClosed`
+                    // của host — host đọc `pkg`/`dead` LÚC báo ⇒ ô đang ra toàn màn / vừa mở lại bị áp luật hoàn ô. Đã kết luận ⇒ `observe`
+                    // không báo lại ở nhịp kế.
+                    ui.post {
+                        if (!subs.remove(sub)) { Log.i(TAG, "ô ${sub.key}: kết luận của lượt đo đã bị thay/gỡ khi nhịp đang chạy — bỏ"); return@post }
+                        if (missing != null) missing() else sub.onDead(elsewhere)
+                    }
                 }
             }
         }

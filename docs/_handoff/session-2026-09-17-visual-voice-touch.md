@@ -74,8 +74,8 @@ phần cần giữ đã chép vào mục này; nếu cần WAV thật, lấy l�
 
 ### 1.3 Gói giọng bé (VOICE-CLONE T4) — **tổng hợp XONG**
 
-`[xong] 1493 clip · đúng 1282 · lệch 211 · 378,6 phút` (`scratchpad/voice-clone/pack-synth.log`, WAV ở
-`scratchpad/voice-clone/pack-wav/`, `progress.tsv`). 1 282/1 493 = 85,9 % ASR đọc lại đúng tuyệt đối; 211 "lệch"
+`[xong] 1493 clip · đúng 1282 · lệch 211 · 378,6 phút` (`pack-synth.log` — bằng chứng phiên, ngoài repo; WAV ở
+`pack-wav/` cùng thư mục nháp đó, `progress.tsv`). 1 282/1 493 = 85,9 % ASR đọc lại đúng tuyệt đối; 211 "lệch"
 phần lớn là lệch chính tả của bộ nhận dạng, cần nghe kiểm mẫu. **Chưa chạy `finish-pack.sh`** ⇒ thư mục repo
 `voice/tts/kachi-giong-be-v1/` vẫn là bản đóng gói thử 63 clip. ⚠ WAV nằm trong scratchpad của phiên
 (`<scratchpad-phiên>/voice-clone/pack-wav/`) — **chép ra chỗ bền trước khi làm gì khác**
@@ -157,7 +157,7 @@ pgrep -fl synth-pack                      # phải RỖNG (đã xong); nếu cò
 # (2) đóng gói vào repo (AAC ADTS 32 kbps, manifest, index, sha256):
 SP=$S REPO=$(pwd) bash scripts/voice/clone/finish-pack.sh
 python3 scripts/voice/clone/validate-pack.py voice/tts/kachi-giong-be-v1   # kiểm sha + manifest
-# (3) chọn 10 cặp cho owner nghe (T5) — đã có ở scratchpad/voice-clone/t5-compose/ (cũng sẽ mất, sinh lại bằng compose-check.py)
+# (3) chọn 10 cặp cho owner nghe (T5) — đã có ở thư mục nháp của phiên (ngoài repo, t5-compose) (cũng sẽ mất, sinh lại bằng compose-check.py)
 ```
 Sau đó mới tới T3 `VoiceClipInventory` (:core) · T6 `VoicePack` catalog · T7 `ClipSpeaker` (tra chuỗi chính xác →
 Piper dự phòng) · T8 Cài đặt › Giọng nói (Piper mặc định, giọng bé là lựa chọn) · T9 đăng gói OTA · 🚗 T10 độ trễ

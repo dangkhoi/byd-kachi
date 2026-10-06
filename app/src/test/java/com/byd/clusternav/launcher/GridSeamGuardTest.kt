@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -23,9 +24,7 @@ import org.junit.jupiter.api.Test
  */
 class GridSeamGuardTest {
 
-    private fun strip(src: String): String = src
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun strip(src: String): String = KotlinSource.stripComments(src)
 
     private fun code(relative: String): String = strip(SourceRoots.text(relative))
 

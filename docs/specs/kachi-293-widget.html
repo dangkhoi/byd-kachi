@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 — nhóm WIDGET: co giãn, chữ, tương phản — ClusterNav 2.0</title>
+<!--
+  Spec nhóm WIDGET của kế hoạch 2.93 (docs/specs/kachi-293-plan.html §4). Thứ tự section CHUẨN:
+  Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (inline SVG / .flow / .layers).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.15)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.22)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.diagram svg text{fill:var(--fg);font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+.diagram svg .mut{fill:var(--muted)}
+.diagram svg .box{fill:var(--bg);stroke:var(--line)}
+.diagram svg .new{fill:var(--new);stroke:var(--accent)}
+.diagram svg .acc{fill:var(--accent)}
+.diagram svg .warnf{fill:var(--warn)}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;text-align:center;font-size:13px}
+.layer .node.new{background:var(--new);border-color:var(--accent)}
+.layer .node b{display:block;font-size:13.5px}.layer .node span{color:var(--muted);font-size:12px}
+.layer-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 13px;text-align:center;font-size:13px;min-width:110px}
+.fnode.new{background:var(--new);border-color:var(--accent)}
+.fnode b{display:block;font-size:13.5px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+@media(max-width:600px){.wrap{padding:24px 16px 80px}h1{font-size:25px}table{font-size:12.5px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — nhóm WIDGET: co giãn theo khung, chữ, tương phản</h1>
+<p class="muted">Slug: <code>kachi-293-widget</code> · Branch làm việc của nhóm WIDGET (từ 2.92 (194) <code>8fbdf96</code>) · Kế hoạch tổng <code>kachi-293-plan.html</code> §4 · <span class="pill wait">Trạng thái: Draft — mã + test off-car xong; chờ gộp · senior review · QA máy ảo · quét bảo mật</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§3/§6/§7/§8/§10/§14. Owner 06/10: <i>"làm hết mọi thứ luôn đi"</i> — việc nào làm được off-car thì làm; việc chờ quyết thì bên làm chọn mặc định generic, an toàn, ghi lý do. Không thư viện mới (Android SDK + khối đã có). Context7 không kết nối được phiên này — mọi khẳng định framework dựa trên nguồn AOSP tải trong phiên hoặc stub SDK cục bộ (§4.6).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Senior review Pass 1 — 2026-10-06 (Opus, độc lập)</b>: 1 × [P1] + 1 × [P2] + 7 × [P3] vá ngay trong cây chính, 4 × [P3] ghi nhận không vá (§10): cổng chữ "nổ lốp"/"bất thường" siết thành màu cụm CÙNG CHIỀU (R-W17) · "bất thường" xếp sau chữ TPMS · cỡ khai API 31 làm tròn nội dung trước (R-W3, mọi dpi nguyên) · chú thích xe đo cao thật · bộ chọn bỏ đo khi đã đóng · chữ EN số ít/nhiều · 7 tham chiếu KDoc treo. Không chạy gradle (điều phối chạy sau gộp).</li>
+<li><b>Pass 1 — 2026-10-06</b>: 20 việc của nhóm (§5): 17 việc có mã + test off-car (trong đó TYRE-BURST-REASON và APPWIDGET-SIZE-API31 nhánh Android 12 còn chờ nghiệm thu trên xe — 🚗); 3 việc là quyết định có bằng chứng, không đổi mã: SHORTCUT-FILL-WIDE (có bài khoá) · FIT-TINY-FRAME-NAMES (giải bằng hai việc có mã R-W12 + R-W15) · FIT-TINY-MIXED (giữ mặc định, VẪN MỞ chờ owner). Tự soát một lượt (§10 Pass 1).</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo từ kế hoạch tổng 2.93 §4 (nhóm WIDGET, 20 dòng backlog).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>20 dòng backlog còn mở quanh widget ô giữa màn (phần lớn tách ra từ <code>WIDGET-FIT-ALL</code> 2.87 và soát widget 2.92). Mọi bằng chứng gốc ở cột ghi chú từng dòng của <code>docs/PROJECT-BACKLOG.md</code>; lỗi ở đây đều đã [ĐO] trên máy ảo (QA1–QA5 04/10, soát 2.92 06/10) hoặc [ĐO mã]. Không việc nào đòi cơ chế xe MỚI (CLAUDE.md §14): <code>TYRE-BURST-REASON</code> chỉ GIỮ lại mã mà lượt đọc áp suất ĐÃ có; nhánh API 31 của widget app khác chỉ chạy trên máy SDK ≥ 31 (xe A10 không vào).</p>
+<div class="card"><b>Cổng / phụ thuộc:</b> không cần xe để làm. Cần xe để NGHIỆM THU: (a) getter TPMS của Kachi có trả 4092/4093 không — dòng <code>TYRE raw … pc=</code>; (b) xe DL5 (Android 12) cho nhánh <code>updateAppWidgetSize(Bundle, List&lt;SizeF&gt;)</code>. Ảnh/cảm nhận hình học → QA máy ảo điều phối (§6.2).</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng (mỗi dòng = một ID backlog)</h3>
+<table>
+<tr><th>R</th><th>ID</th><th>Yêu cầu + tiêu chí nghiệm thu (AC)</th></tr>
+<tr><td>R-W1</td><td><code>CLOCK-SUN-DETACHED</code></td><td>☀ của dòng "— · ngoài xe" đứng sát chữ, cả cụm căn giữa ở mọi khung; không <code>WRAP</code> (không <code>requestLayout</code> mỗi nhịp); icon co/giãn cùng chữ. AC: dòng dùng <code>GlyphSpan</code>, không còn drawable đầu dòng.</td></tr>
+<tr><td>R-W2</td><td><code>WIDGET-CAR-STRIP-LAYOUT</code></td><td>Khung rộng thấp ⇒ hình xe CẠNH chú thích, cao trọn khung. AC: 1558×123 px ⇒ hình 99 px cao (trước 64 px hộp / ~52 px vẽ); khung đứng/vuông/to giữ đúng dáng 2.92.</td></tr>
+<tr><td>R-W3</td><td><code>APPWIDGET-SIZE-API31</code></td><td>SDK ≥ 31 dùng <code>updateAppWidgetSize(Bundle, List&lt;SizeF&gt;)</code>; &lt; 31 giữ nguyên đường 2.92. AC: nhà cung cấp nhận CÙNG số MIN/MAX ở hai đường (vét cạn 168 056 ca = 7 mật độ × 8 lề × 0–3 000 px).</td></tr>
+<tr><td>R-W4</td><td><code>WALLART-CACHE-BOUND</code></td><td>Bộ đệm <code>.kachi-art/</code> có trần: đệm mồ côi xoá, mỗi ảnh ≤ 2 khoá mới nhất, tổng ≤ 128 khoá, khoá vừa nấu không bao giờ xoá; chỉ đụng tệp đệm đúng khuôn.</td></tr>
+<tr><td>R-W5</td><td><code>SHORTCUT-FILL-WIDE</code></td><td>Chọn luật generic cho khung NẰM, có bằng chứng. AC: luật = đo hướng khung (lấp bề ngang chỉ khi trục dài đứng); hai luật thay thế bị bác bằng mô hình (§4.4); bài vét cạn khoá khung nằm = thứ tự R1.</td></tr>
+<tr><td>R-W6</td><td><code>FIT-TINY-FRAME-NAMES</code></td><td>Khung 2×1 có 6 nút: giải bằng (b) gợi ý sức chứa + (c) nhãn ngắn gói lệnh; (a) cắt-đầu giữ làm đường lùi CUỐI (§4.4).</td></tr>
+<tr><td>R-W7</td><td><code>FIT-WIDEST-CACHE</code></td><td>Chữ số rộng nhất nhớ theo bút, chuỗi đệm nhớ một lần. AC: kết quả y hệt; lần đo thứ hai cùng bút 0 lượt đo chữ số (thay 10).</td></tr>
+<tr><td>R-W8</td><td><code>FIT-GRAVITY</code></td><td>Khe giá trị–chú thích là LỀ NGOÀI có chủ (một khe), không dành ⌈2 × 0,25 em⌉ trong bề rộng giá trị. AC: khe nhìn thấy ≥ 0,25 em ở mọi ca chú thích hiện; không vòng lặp (<code>flex</code> trừ lề có chủ).</td></tr>
+<tr><td>R-W9</td><td><code>FIT-REGROW</code></td><td>Khối dọc bị co ở nhịp ⇒ sau <code>RECHECK_MS</code> (30 s) một lượt luật giá trị không-phải-nhịp ⇒ lớn lại. AC: <code>99 → 100 → 99</code> về đúng cỡ lưới.</td></tr>
+<tr><td>R-W10</td><td><code>FIT-TINY-MIXED</code></td><td>Quyết định mặc định khi owner chưa chốt đánh đổi + giảm nhẹ: giữ luật icon vòng 6, bộ chọn nói sức chứa (R-W12) (§4.4).</td></tr>
+<tr><td>R-W11</td><td><code>GROUPBOARD-1ROW</code></td><td>Bảng nhóm đơn ở khung thấp ⇒ dạng tóm tắt GIÃN theo khung khi bảng đầy đủ tràn hoặc ô vẽ Canvas dưới cao tối thiểu nó tự khai. AC: khung đủ ⇒ y bảng 2.92; nút không bị tháo/gắn.</td></tr>
+<tr><td>R-W12</td><td><code>WIDGET-CAPACITY-HINT</code></td><td>Bộ chọn widget (gán ô) báo "Ô này chỉ vừa N mục còn đọc được chữ (đang chọn M)" khi lựa chọn không vừa ô thật; 0 ⇒ câu "quá nhỏ"; vừa ⇒ im lặng. 5 tiếng.</td></tr>
+<tr><td>R-W13</td><td><code>WF-MEDIA-SMALL</code></td><td>Widget nhạc đơn: khung nhỏ bỏ ẢNH → nghệ sĩ → tiến trình → tên trước, GIỮ ba nút ≥ 48 dp; khung một hàng xếp NGANG. AC: 4×1 có thanh nút ⇒ ba nút + chữ; 2×1 ⇒ tên + ba nút; 2×2 ⇒ đủ trừ ảnh; QUAD ⇒ đủ, k 1,5.</td></tr>
+<tr><td>R-W14</td><td><code>A11Y-STEPPER-NAME</code></td><td>Nút −/+ và chữ giá trị của ô bước mang chữ trợ năng "tên + giá trị" (5 tiếng), cập nhật mỗi lần ô vẽ giá trị.</td></tr>
+<tr><td>R-W15</td><td><code>ACTIONMACRO-SHORT-LABEL</code></td><td>Gói lệnh có nhãn ngắn (VI <code>Mở hết</code>/<code>Đóng hết</code>, ZH <code>全开</code>/<code>全关</code>, TH/MS ở bảng dịch); widget khai bản ngắn cho lưới (J1).</td></tr>
+<tr><td>R-W16</td><td><code>BOARD-TYRE-MINI-GREY</code></td><td>Ô lốp nén chưa phán được (<code>NONE</code>) dùng MUT2 như bảng lốp/<code>g_tyres</code>.</td></tr>
+<tr><td>R-W17</td><td><code>TYRE-BURST-REASON</code></td><td>Mã 4092/4093 của getter áp suất ⇒ chữ "nổ lốp"/"bất thường" — CHỈ khi màu cụm CÙNG CHIỀU (siết ở senior review Pass 1, §10): 4092 "nổ lốp" chỉ khi cụm ĐỎ; 4093 "bất thường" khi cụm VÀNG/ĐỎ, đứng sau chữ TPMS cụ thể; cụm TRẮNG ⇒ không chữ (mã vẫn vào dòng <code>TYRE raw … pc=</code>); màu vẫn của cụm; không lượt HAL thêm.</td></tr>
+<tr><td>R-W18</td><td><code>SLIDER-RAIL-CONTRAST</code></td><td>Rãnh thanh kéo Cài đặt ≥ 3:1 trên PANEL ở cả hai chủ đề, không phụ thuộc theme ROM.</td></tr>
+<tr><td>R-W19</td><td><code>WIDGET-ICON-OFF-FAINT</code></td><td>Icon ô TẮT: lớp chính giữ ≥ 4,5:1 trên nền ô tắt (mờ tối đa 0,72); gói lệnh lúc nghỉ không tô mực "đang bật".</td></tr>
+<tr><td>R-W20</td><td><code>GRID-EDITOR-ASPECT</code></td><td>Bảng vẽ bố cục theo tỉ lệ VÙNG Ô THẬT (khung <code>WorkspaceView</code> đã đo), không tỉ lệ cả màn.</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Luật thuần ở <code>:core</code> (px, không số dp — <code>SpacingScaleContractTest</code>); tầng vẽ chỉ đo + áp. Tệp ≤ 500 dòng.</li>
+<li>R-nf2. Không dựng lại view theo nhịp; mọi thứ mới đổ tại chỗ (bất biến <code>WidgetRefreshers</code>); không cờ RAM quyết định trạng thái hệ thống.</li>
+<li>R-nf3. Generic theo ĐO (CLAUDE.md §7): không rẽ nhánh theo mã widget/tên gói.</li>
+<li>R-nf4. Mỗi sửa có bài hồi quy; mỗi hàm mới có chỗ gọi (§8 — <code>Widget293WiringContractTest</code>); chữ người dùng thấy đủ 5 tiếng.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 Tổng quan — luật thuần (:core) ⇄ tầng vẽ (:app)</h3>
+<div class="layers">
+  <div class="layer-title">:core — luật thuần, test off-car</div>
+  <div class="layer">
+    <div class="node new"><b>CarStripFit</b><span>xếp trên/cạnh (R-W2)</span></div>
+    <div class="node new"><b>MediaFit</b><span>mức nội dung × cách xếp × k (R-W13)</span></div>
+    <div class="node new"><b>IconFade</b><span>mờ theo tương phản (R-W18/19)</span></div>
+    <div class="node new"><b>AppWidgetSize</b><span>hai đường API (R-W3)</span></div>
+    <div class="node new"><b>WallArtCachePolicy</b><span>trần đệm (R-W4)</span></div>
+    <div class="node new"><b>StepSpoken</b><span>chữ trợ năng (R-W14)</span></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>FitValues</b><span>+ regrowDue · WidestMemo · khe ngoài (R-W7/8/9)</span></div>
+    <div class="node"><b>TyreJudge / TyreBoard</b><span>+ BURST · ABNORMAL (R-W17)</span></div>
+    <div class="node"><b>ActionMacros</b><span>+ short (R-W15)</span></div>
+    <div class="node"><b>GridEditorLogic</b><span>+ drawBox (R-W20)</span></div>
+    <div class="node"><b>GridFit.capacity</b><span>có sẵn (R-W12)</span></div>
+    <div class="node"><b>CarDataAdapter</b><span>+ giữ mã của lượt đọc áp</span></div>
+  </div>
+  <div class="layer-title">:app — đo + áp, không quyết</div>
+  <div class="layer">
+    <div class="node new"><b>CarStateLayout</b></div><div class="node new"><b>MediaFitLayout</b></div><div class="node new"><b>GroupFitFrame</b></div>
+    <div class="node new"><b>GlyphSpan</b></div><div class="node new"><b>WidgetCapacity</b></div><div class="node new"><b>StepA11y</b></div>
+  </div>
+  <div class="layer">
+    <div class="node"><b>FitGridLayout</b><span>regrowOrShrink · measureFit</span></div><div class="node"><b>FitValueRow</b><span>gapMargin · PenKey</span></div>
+    <div class="node"><b>KachiIcons</b><span>fadeOff</span></div><div class="node"><b>SlotHostView</b><span>nhánh API 31</span></div>
+    <div class="node"><b>WallArtBuilder</b><span>prune</span></div><div class="node"><b>GridEditorView</b><span>area</span></div>
+  </div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--new)"></span> khối mới</span><span class="sw"><span class="box" style="background:var(--bg)"></span> khối có sẵn, mở rộng</span></div>
+
+<h3>4.2 R-W13 — widget nhạc: bỏ phần phụ trước, giữ ba nút</h3>
+<div class="flow">
+  <div class="fnode"><b>Mức 0</b><span>ảnh · tên · nghệ sĩ · tiến trình · ⏮⏯⏭</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Mức 1</b><span>− ảnh</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Mức 2</b><span>− nghệ sĩ</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Mức 3</b><span>− tiến trình (tên + ba nút)</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Mức 4</b><span>ba nút</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Mức 5</b><span>chỉ ⏯</span></div>
+</div>
+<p class="muted">Mỗi mức thử STACK (dọc, dáng 2.92) và ROW (ảnh │ cột chữ │ hàng nút); chọn MỨC đầu tiên có cách xếp đạt <code>k ≥ 1</code> (nút ≥ 48 dp), cùng mức thì <code>k</code> lớn hơn, hoà ⇒ STACK. Lề trong chỉ nhận phần dư. [ĐO bài <code>MediaFitTest</code>, mật độ 1,5]: 615×123 ⇒ ROW đủ phần · 615×97 (4×1 có thanh nút) ⇒ ROW − ảnh · 301×123 ⇒ STACK tên + ba nút · 301×148 ⇒ + tiến trình · 301×260 ⇒ đủ − ảnh, k = 301/240 ≈ 1,254 · 615×520 ⇒ đủ, k 1,5 (trần) · 150×123 ⇒ chỉ ⏯ · 60×60 ⇒ báo không vừa. Bài tính chất quét lưới khung: không tràn, k ∈ [1; 1,5], mức chọn là mức nhiều nội dung nhất đạt k ≥ 1.</p>
+
+<h3>4.3 R-W2 · R-W11 · R-W17 · R-W12 — hình học + luồng dữ liệu</h3>
+<div class="diagram">
+<svg viewBox="0 0 760 210" role="img" aria-label="Khung rộng thấp: trước hình xe dưới chú thích, sau hình xe cạnh chú thích">
+  <text x="10" y="18" font-size="13" font-weight="600">Trạng thái xe ở khung 1558×123 (tỉ lệ 1 : 2,4)</text>
+  <rect class="box" x="10" y="30" width="650" height="52" rx="8"/>
+  <rect class="new" x="300" y="35" width="13" height="27" rx="4"/>
+  <text x="333" y="76" font-size="11" class="mut">Cửa đóng</text>
+  <text x="670" y="60" font-size="12" class="mut">trước: STACK</text>
+  <text x="670" y="76" font-size="11" class="mut">hình 64 px hộp</text>
+  <rect class="box" x="10" y="100" width="650" height="52" rx="8"/>
+  <rect class="new" x="298" y="105" width="19" height="42" rx="5"/>
+  <text x="325" y="131" font-size="11" class="mut">Cửa đóng</text>
+  <text x="670" y="130" font-size="12" class="mut">sau: SIDE</text>
+  <text x="670" y="146" font-size="11" class="mut">hình 99 px</text>
+  <text x="10" y="186" font-size="12" class="mut">SIDE chỉ khi hình cao hơn ≥ 25 % (CarStripFit.GAIN); khung 301×804 · 1558×668 · 929×395 · 400×400 giữ STACK.</text>
+</svg>
+</div>
+<div class="flow">
+  <div class="fnode"><b>getTyrePressureValue</b><span>lượt đọc áp (có sẵn)</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Gate.code</b><span>giữ 4092/4093, 0 HAL thêm</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Tyres.pc*</b><span>CarStatus</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>TyreJudge M1</b><span>màu cụm 1/2/3? ⇒ BURST / ABNORMAL</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Bảng · nhóm · kết luận</b><span>"TT · nổ lốp" · log <code>pc=</code></span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>Bộ chọn (gán ô)</b><span>chạm chọn mục</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>hoãn 180 ms</b><span>AppDrawerFitHint</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Bản nháp lưới</b><span>WidgetViews.buildGrid · không gắn cửa sổ</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>FitGridLayout.measureFit</b><span>khung THẬT của ô</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>GridFit.capacity</b><span>"chỉ vừa N mục"</span></div>
+</div>
+<p class="muted">R-W11: <code>GroupFitFrame</code> đo bảng đầy đủ ở đúng cỡ khung; các con xếp dọc TRÀN (<code>FitRules.spills</code>) hoặc ô vẽ Canvas thấp hơn <code>MinUsefulHeight</code> của chính nó (bảng lốp: (13 sp + 8 sp × 1,35) ÷ 0,24 ≈ 149 px ở mật độ 1,5) ⇒ hiện ô tóm tắt (<code>GroupTiles.mini</code>, dạng owner duyệt 09-23) bọc <code>FitGridLayout</code> để giãn theo khung. Cả hai dựng một lần, nhịp xe đổ tại chỗ vào cả hai.</p>
+
+<h3>4.4 Quyết định có bằng chứng (việc "chờ quyết" — kế hoạch §4)</h3>
+<table>
+<tr><th>Việc</th><th>Quyết định mặc định</th><th>Bằng chứng / lý do</th></tr>
+<tr><td><code>SHORTCUT-FILL-WIDE</code></td><td>Luật generic = ĐO hướng khung: lấp bề ngang chỉ khi trục DÀI là trục đứng (ca owner phàn nàn: cột hẹp, lề hai bên to); khung nằm giữ R1. Không đổi mã; khoá bằng <code>ShortcutFillWideTest</code>.</td><td>[ĐO mô hình độc lập, lưới khung nằm 60–1 960 × 60–1 100 px × n 1–40] luật ĐỐI XỨNG (lấp lề trục ngắn — cách đọc <i>"trục ngang = chiều cao"</i> trong dòng backlog; bài gọi <code>SYM</code>): 800 ca icon TO RA khi thêm app / 334 khung (vd 578×543: 3 app 165 → 4 app 180 px; lưới mô hình khác lưới của dòng backlog nên số ca khác 213/1 734, cùng kết luận); luật "LUÔN tối thiểu lề hai bên" (mọi khung — bài gọi <code>LIT</code>): đơn điệu giữ nhưng đổi 44 % ca và sinh 12 671 bố cục hàng cuối lẻ loi (1558×668, 9 app: 5+4 → 8+1); ba biến thể chặn hàng lẻ loi phá đơn điệu (≥ 879 ca) hoặc đổi ca khung đứng OQ2 đã chốt.</td></tr>
+<tr><td><code>FIT-TINY-FRAME-NAMES</code></td><td>(b) + (c) làm; (a) cắt-đầu giữ làm đường lùi CUỐI (chỉ khi không cách nào khác cho các ô khác chữ).</td><td>Khung 2×1 không vừa 6 nhãn đọc được ở MỌI tiếng [ĐO QA1–QA3] ⇒ không cách hiện chữ nào chữa được; đường đúng là nói sức chứa (b) và rút nhãn gói lệnh (c). Bỏ (a) = 4 ô kính cùng hiện <code>Kính…</code> (chính lỗi QA2). Owner bỏ được: xoá hai biến thể <code>*_START</code> của <code>FitLabels.Variant</code>.</td></tr>
+<tr><td><code>FIT-TINY-MIXED</code></td><td>Giữ luật icon vòng 6 (<code>FitRules.iconShared</code>: icon to hơn trần chung QUÁ 15 % — <code>ICON_CAP_SPREAD</code> — thì giữ cạnh của nó); giảm nhẹ bằng R-W12 (bộ chọn nói khung chỉ vừa N mục). Không đổi mã.</td><td>Backlog: "khung cả hai bản đã báo không đọc được ⇒ owner chốt đánh đổi". Hai hướng đều có giá [ĐO máy ảo QA5 trong dòng backlog]: icon kính giữ 29 px (bản mini 20 px) thì nhãn hẹp (TextView 55 → 37 px, <code>Dri…</code>); kéo icon về trần chung thì nhãn rộng lại nhưng icon nút kính xuống dưới cả sàn 16 dp (lý do có luật vòng 6). Phương án giữa (kéo về max(trần chung, sàn icon); nhãn 2 dòng chỉ khi 2 dòng vừa cao nhãn) chưa có số máy ảo ⇒ không đoán (CLAUDE.md §2) — đề xuất cho QA đo (§6.2).</td></tr>
+<tr><td><code>ACTIONMACRO-SHORT-LABEL</code></td><td>VI/ZH theo đề xuất J1; TH <code>เปิดทั้งหมด</code>/<code>ปิดทั้งหมด</code>; MS giữ <code>Buka semua</code>/<code>Tutup semua</code> (đã ngắn).</td><td>Chữ TH/MS mới chờ người dịch (gộp <code>I18N-TH-MS-TOUCH</code>).</td></tr>
+<tr><td><code>TYRE-BURST-REASON</code></td><td>In chữ ở MỌI vùng (kể cả ROW). Senior review Pass 1: cổng = màu cụm CÙNG CHIỀU (đỏ ⇒ nổ lốp · vàng/đỏ ⇒ bất thường · trắng ⇒ im), không "màu hợp lệ bất kỳ" như L3.</td><td>[ĐO source L3 <code>TyreCardView.java:133-158</code>] cổng màu cụm 1/2/3; vùng ROW (<code>ro.build.region=ROW</code> / <code>ro.build.car.region=oversea</code>) L3 in "--" + icon nổ lốp thay chữ (:140-150) — Kachi không có icon riêng ⇒ chữ. Getter TPMS dùng cùng bộ mã với kênh cụm = [SUY] 🚗.</td></tr>
+</table>
+
+<h3>4.5 Chi tiết từng việc có mã</h3>
+<ul>
+<li><b>R-W1</b> <code>GlyphSpan</code> (ReplacementSpan): icon = 1 ký tự khoảng trắng không ngắt; cạnh 16/13 em + khe 8/13 em (đúng tỉ lệ 2.92 ở 13 sp); dòng nới khi icon cao hơn phông. Đặt chữ chỉ khi đổi (nhịp 10 s).</li>
+<li><b>R-W3</b> <code>AppWidgetSize</code>: cũ <code>(int)(c/d) + (int)(p/d)</code>; mới <code>(int)(c/d) + p/d + 1e-3</code> (nội dung làm tròn xuống TRƯỚC — senior review Pass 1; lề số thực vì framework trừ số thực L371-372 rồi <code>(int)</code> L395-398). Nhánh <code>SDK_INT ≥ S</code>; <code>@Suppress("DEPRECATION")</code> có lý do.</li>
+<li><b>R-W4</b> <code>WallArtCachePolicy.victims</code> + <code>WallArtBuilder.prune</code> sau mỗi lần ghi khoá mới (thread nền); khoá được phân tích từ đuôi (tên ảnh chứa <code>-</code> vẫn đúng); bắt <code>SecurityException</code>, không nuốt mọi lỗi.</li>
+<li><b>R-W7</b> <code>FitValues.WidestMemo</code> (LRU 64) theo <code>PenKey</code> (phông · cỡ · giãn · nghiêng · cờ · tính năng · ngôn ngữ); <code>HeadroomMemo</code> một mục.</li>
+<li><b>R-W8</b> <code>FitValues.gapPx</code> = ⌈0,25 em⌉ (một khe); <code>share</code> trả <code>valueW</code> KHÔNG gồm khe; <code>FitValueRow.gapMargin</code> → <code>FitScale.params</code> cộng khe vào lề phía chú thích; <code>flex()</code> trừ phần lề đã áp (<code>applied</code>).</li>
+<li><b>R-W9</b> <code>FitGridLayout.regrowOrShrink</code>: nhịp co ⇒ ghi <code>shrunkAt</code>; <code>FitValues.regrowDue</code> ⇒ một lượt <code>fitValues(tick = false)</code>; lượt khớp đủ xoá mốc.</li>
+<li><b>R-W14</b> <code>StepSpoken</code> dùng lại cặp đã dịch "Tăng "/"Giảm " (zh 调高/调低 · th เพิ่ม/ลด · ms Naikkan/Turunkan) — không dòng dịch mới.</li>
+<li><b>R-W18</b> <code>sliderRail</code>: <code>LayerDrawable</code>(rãnh MUT2 ở alpha nhạt nhất ≥ 3:1 trên PANEL · <code>ClipDrawable</code> ACCENT), cao 4 dp. [ĐO bảng thật, <code>Widget293ContrastTest</code>] alpha rãnh: tối 0,58 · sáng 0,67; ACCENT/PANEL 4,63:1 · 5,74:1.</li>
+<li><b>R-W19</b> <code>IconFade.offAlpha</code> + <code>KachiIcons.fadeOff</code>: [ĐO bảng thật] alpha TẮT: tối 0,72 → 0,73 · sáng 0,72 → 0,85; mặt lớn chủ đề tối tính cả 0,72 của bộ lọc "chưa chọn" (bản cũ nhân hai lần = 0,52). Gói lệnh lúc nghỉ tô như nút bấm-một-phát lúc nghỉ.</li>
+<li><b>R-W20</b> <code>GridEditorLogic.drawBox</code>; <code>HomePanels.workspaceArea</code> đọc cỡ <code>WorkspaceView</code> đã đo (thanh trên ẩn/hiện, cạnh + cỡ % thanh nút đều nằm sẵn trong số đo).</li>
+</ul>
+
+<h3>4.6 Độ mới công nghệ (Context7 không dùng được)</h3>
+<ul>
+<li>[ĐO nguồn AOSP tải trong phiên] <code>android-12.1.0_r27 core/java/android/appwidget/AppWidgetHostView.java</code>: L344-348 bản 5 tham số <code>@Deprecated</code> → L407 bản ẩn trừ <code>(int)</code> lề (L416-422), ghi <code>OPTION_APPWIDGET_SIZES</code> rỗng (L441-442); L365-401 bản <code>List&lt;SizeF&gt;</code> trừ lề số thực, ghi đúng danh sách cỡ, <code>deepCopy</code>.</li>
+<li>[ĐO stub SDK cục bộ <code>platforms/android-37.0/android-stubs-src.jar</code>] cả hai bản còn công khai; bản 5 tham số mang <code>@Deprecated</code>. <code>compileSdk = 37</code>, <code>minSdk = 29</code>.</li>
+<li>Mọi API khác: Android SDK sẵn có (ReplacementSpan · LayerDrawable/ClipDrawable · ProgressBar.min/maxHeight API 29) — không thư viện mới.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Tệp chính</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R-W16 · R-W17 lốp</td><td><code>WidgetViews</code> · <code>TyreJudge</code> · <code>TyreBoard</code> · <code>CarStatus</code> · <code>CarDataAdapter</code> · i18n tsv ×3</td><td>DONE off-car · 🚗 nghiệm thu mã 4092/4093</td></tr>
+<tr><td>T2</td><td>R-W15 · R-W14 · R-W19 ô điều khiển</td><td><code>ActionMacros</code> · <code>StepSpoken</code>/<code>StepA11y</code> · <code>IconFade</code>/<code>KachiIcons</code> · <code>ControlTileFactory</code></td><td>DONE off-car</td></tr>
+<tr><td>T3</td><td>R-W18 thanh kéo · R-W20 bảng vẽ</td><td><code>SettingsRowsSlider</code> · <code>GridEditorLogic</code>/<code>GridEditorView</code>/<code>LayoutEditorPanel</code>/<code>HomePanels</code></td><td>DONE off-car</td></tr>
+<tr><td>T4</td><td>R-W1 · R-W2 · R-W13 · R-W11 bố cục widget</td><td><code>GlyphSpan</code> · <code>CarStripFit</code>/<code>CarStateLayout</code> · <code>MediaFit</code>/<code>MediaFitLayout</code> · <code>GroupFitFrame</code>/<code>GroupTiles</code>/<code>TyreBoardView</code></td><td>DONE off-car · QA máy ảo</td></tr>
+<tr><td>T5</td><td>R-W7 · R-W8 · R-W9 luật giá trị</td><td><code>FitValues</code> · <code>FitValueRow</code> · <code>FitScale</code> · <code>FitGridLayout</code></td><td>DONE off-car · QA máy ảo</td></tr>
+<tr><td>T6</td><td>R-W12 sức chứa</td><td><code>WidgetCapacity</code> · <code>AppDrawerFitHint</code> · <code>AppDrawer</code> · <code>DrawerController</code> · <code>KachiHomeActivity</code> · <code>WorkspaceView*</code> · strings ×5</td><td>DONE off-car · QA máy ảo</td></tr>
+<tr><td>T7</td><td>R-W3 · R-W4</td><td><code>AppWidgetSize</code>/<code>AppWidgetSlotHost</code> · <code>WallArtCachePolicy</code>/<code>WallArt</code></td><td>DONE off-car · 🚗 DL5</td></tr>
+<tr><td>T8</td><td>R-W5 · R-W6 · R-W10 quyết định + bài khoá</td><td><code>ShortcutFillWideTest</code> · spec §4.4</td><td>DONE (R-W10 = mặc định tạm; việc VẪN MỞ chờ owner chốt đánh đổi)</td></tr>
+<tr><td>T9</td><td>Bài canh nối dây + đổi ghim có lý do; tách tệp vì trần 500</td><td><code>Widget293WiringContractTest</code> · <code>Widget293ContrastTest</code> · 8 bài cũ (§9)</td><td>DONE</td></tr>
+<tr><td>T10</td><td>Gộp · senior review · QA máy ảo · quét bảo mật · backlog/index</td><td>— (điều phối)</td><td>TODO</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<h3>6.1 Off-car</h3>
+<ul>
+<li>Bài mới <code>:core</code>: TyreBurstReasonTest · ActionMacroShortLabelTest · StepSpokenTest · IconFadeTest · CarStripFitTest · WallArtCachePolicyTest · AppWidgetSizeTest · GridEditorAspectTest · ShortcutFillWideTest · FitValuesMemoTest · MediaFitTest. <code>:app</code>: Widget293ContrastTest · Widget293WiringContractTest.</li>
+<li>Bộ chạy theo lệnh điều phối <code>./gradlew :core:test :app:testDebugUnitTest --continue</code>, đếm từ JUnit XML — số ở §9 (dòng cuối).</li>
+</ul>
+<h3>6.2 QA máy ảo điều phối cần nhìn (không chạy ở nhóm này)</h3>
+<ul>
+<li>Đồng hồ ở khung to/rộng/hẹp: ☀ sát chữ, cả cụm căn giữa; chế độ sáng/tối.</li>
+<li>Trạng thái xe 1558×123 (hình cạnh chữ, cao trọn) · 301×804 · 1558×668 (y 2.92). <code>logcat</code> không có <code>requestLayout</code> mỗi nhịp.</li>
+<li>Nhạc đơn ở 4×1 có/không thanh nút · 2×1 · 2×2 · QUAD: dòng <code>WidgetFit media frame=… -&gt; ROW/STACK k=… parts=…</code>; ba nút bấm được, ≥ 48 dp.</li>
+<li>Nhóm Khí hậu / Lốp / Kính ở khung một hàng ⇒ ô tóm tắt giãn; khung to ⇒ bảng đầy đủ như 2.92.</li>
+<li>Bộ chọn widget gán ô 2×1 chọn 6 nút kính + gói lệnh ⇒ câu sức chứa ở thanh đáy (5 tiếng); chọn ít ⇒ im lặng.</li>
+<li>Lưới 2×1 có 6 nút: gói lệnh hiện <code>Mở hết</code>/<code>Đóng hết</code> (ZH <code>全开</code>/<code>全关</code>).</li>
+<li>Ô kính TẮT ở thanh nút chủ đề SÁNG: icon thấy rõ (đo tương phản pixel); ô gói lệnh lúc nghỉ cùng dáng ô tắt.</li>
+<li>Thanh kéo "Độ trong suốt nền": rãnh thấy ở vị trí 0, đo ≥ 3:1 cả hai chủ đề.</li>
+<li>TalkBack/<code>uiautomator</code>: nút −/+ của ô bước (gió/nhiệt…) có <code>content-desc</code> dạng "Giảm &lt;tên ô&gt; (&lt;giá trị&gt;)"/"Tăng &lt;tên ô&gt; (&lt;giá trị&gt;)", đổi theo giá trị sau mỗi lần bấm; EN "Decrease …"/"Increase …".</li>
+<li>Bảng vẽ bố cục với thanh nút trái/dưới/cỡ 50–150 %: tỉ lệ bảng = tỉ lệ vùng ô.</li>
+<li>Widget app khác (đồng hồ số · lịch) trên máy ảo SDK ≥ 31 nếu có: cỡ báo bằng 2.92 (<code>dumpsys appwidget</code>).</li>
+<li>FIT-GRAVITY · FIT-REGROW: khung 3×1 có dock [tốc độ, lốp, đồng hồ] — khe giá trị–chú thích nhìn thấy ≥ 0,25 em; tốc độ 99 → 100 → 99 lớn lại sau ≤ 31 s.</li>
+<li>FIT-TINY-MIXED (đề xuất đo): lưới trộn <code>win_*×4, w_speed, w_energy</code> ở 2×1 có dock — chụp hiện trạng để owner chốt đánh đổi.</li>
+</ul>
+<h3>6.3 Trên xe 🚗</h3>
+<ul>
+<li>TYRE-BURST-REASON: dòng <code>TYRE raw … pc=</code> lúc vừa nổ máy (chốt [SUY] bộ mã getter TPMS).</li>
+<li>APPWIDGET-SIZE-API31: xe DL5 — widget app khác hiện đúng cỡ.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Khung NẰM có cần luật lấp riêng? — <span class="muted">mặc định §4.4 (giữ R1, có bằng chứng); owner đổi được ở <code>GridFit.fillWidth</code>.</span></li>
+<li>OQ2. Bỏ cắt-đầu (<code>*_START</code>) không? — <span class="muted">mặc định giữ làm đường lùi cuối (§4.4).</span></li>
+<li>OQ3. Lưới trộn khung không đọc được: icon kính 29 px hay nhãn rộng hơn? — <span class="muted">chờ owner + ảnh QA (§6.2).</span></li>
+<li>OQ4. Chữ TH/MS nhãn ngắn gói lệnh · câu sức chứa — <span class="muted">chờ người dịch.</span></li>
+<li>OQ5. Hằng mới [ĐỀ XUẤT]: <code>CarStripFit.GAIN</code> 25 % · <code>WallArtCachePolicy</code> 2 khoá/ảnh, 128 khoá · <code>IconFade.FLOOR</code> 4,5:1 · <code>RAIL_FLOOR</code> 3:1 · hoãn sức chứa 180 ms.</li>
+<li>OQ6. (senior review Pass 1) Cổng chữ lốp: giữ "màu cụm CÙNG CHIỀU" (mặc định — chặn báo động giả khi getter TPMS của Kachi khác kênh cụm của L3) hay nới về đúng L3 ("màu hợp lệ bất kỳ") SAU KHI 🚗 chốt bộ mã getter bằng dòng <code>TYRE raw … pc=</code>? — <span class="muted">mặc định siết; nới = một chỗ ở <code>TyreJudge.burstUnder</code>/<code>abnormalUnder</code> + bài <code>TyreBurstReasonTest</code> đỏ.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-293-plan.html</code> §4 · <code>kachi-292-shortcut-widget.html</code> (OQ2/OQ4, §5.2) · <code>kachi-287-look-and-keys.html</code> §4.5 (R-WF2c/R-WF3/R-WF4, OQ-WF4/7/8) · <code>kachi-288-tyre-car-state.html</code> §6.1 · <code>kachi-292-diag-cap.html</code> OQ1.</li>
+<li>Nguồn L3 (decompile, thư mục RE ngoài repo — CLAUDE.md §12: <code>firmware/fw-2602-diff/jadx-l3-new/</code>): <code>launcher3/cardwindow/ui/view/customcard/TyreCardView.java</code> :34-37, :133-159 · <code>launcher3/framework/utils/VehicleUtils.java</code> :570-574.</li>
+<li>AOSP <code>android-12.1.0_r27 AppWidgetHostView.java</code> (tải trong phiên) · stub SDK 37.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — TYRE-BURST-REASON: giữ mã ở CHÍNH lượt đọc áp suất (<code>Gate.pending</code> đã có lời đáp thô) thay vì đọc thêm; cổng màu cụm chép đúng L3; dòng log thô chỉ thêm <code>pc=</code> khi có mã (bài 2.88 giữ nguyên byte).</li>
+<li><b>2026-10-06 · quyết định</b> — WIDGET-ICON-OFF-FAINT: sửa ở luật mờ (tương phản đo được) chứ không qua nguồn SVG + script sinh icon như hướng cũ của backlog: đổi thang alpha 0,16/0,38 của 43 icon là thay đổi thẩm mỹ toàn bộ bề mặt, cần mắt owner; luật mờ chữa đúng chỗ owner thấy (icon TẮT) mà không chạm icon BẬT. Thang icon nhỏ vẫn có thể làm sau (đề xuất ở §7).</li>
+<li><b>2026-10-06 · sai lệch-spec</b> — R-W19 "tối giữ 0,72": bảng THẬT cho 0,73 (0,72 thiếu sàn rất ít ở một đầu chuyển sắc) — chấp nhận, ghi đúng số.</li>
+<li><b>2026-10-06 · quyết định</b> — GROUPBOARD-1ROW: tự chuyển dạng tóm tắt (hướng 2 của backlog) thay vì đưa bảng nhóm vào <code>GridFit</code>: <code>GroupTileView</code> đã 500 dòng, hàng nút không được dựng lại; khung bọc ngoài đo + chọn hiện là đường an toàn nhất. Bảng Canvas khai cao tối thiểu (<code>MinUsefulHeight</code>) vì phép tràn không thấy ô vẽ <code>MATCH_PARENT</code> bị bóp.</li>
+<li><b>2026-10-06 · quyết định</b> — WF-MEDIA-SMALL: widget nhạc thành ô TỰ XẾP (<code>MediaFitLayout</code>, selfFitting) thay vì đi qua <code>FitScale</code>: <code>FitScale</code> co mọi thứ chung một <code>k</code>, không có khái niệm "bỏ phần phụ"; thêm khái niệm đó vào bộ áp chung (496 dòng) rủi ro hơn nhiều so với một khung riêng có luật thuần.</li>
+<li><b>2026-10-06 · bug &amp; xử</b> — <code>CarStateLayout</code>: <code>addView</code> trần cho chú thích LayoutParams WRAP ⇒ đổi chữ mỗi nhịp sẽ <code>requestLayout</code> — sửa: khai MATCH (nhánh bề ngang tĩnh của <code>TextView</code>), đo vẫn do layout.</li>
+<li><b>2026-10-06 · bug &amp; xử</b> — tách <code>WidgetData</code> ra tệp riêng làm đỏ <code>LayeringRulesTest</code> (tệp thuần mới ở :app); nay <code>WidgetData</code> nằm trong <code>WidgetRefreshers.kt</code> (cạnh sổ hàm đổ nhận nó), <code>DemoCarData</code> xuống <code>:core</code>.</li>
+<li><b>2026-10-06 · bug &amp; xử</b> — <code>WidgetCapacity</code> internal nằm trong chữ ký hàm dựng public của <code>AppDrawer</code> ⇒ lỗi biên dịch "exposes internal" — đổi thành public.</li>
+<li><b>2026-10-06 · kiểm</b> — <code>./gradlew :core:test :app:testDebugUnitTest --continue</code>, đếm từ JUnit XML: 749 tệp · 6 635 ca · 0 hỏng · 0 lỗi · 0 bỏ qua (13 lớp bài mới của nhóm = 43 ca). Lượt trước đó đỏ đúng 1 ca (<code>LayeringRulesTest</code> — tệp thuần mới ở :app) → đã sửa (dòng dưới).</li>
+<li><b>2026-10-06 · đổi ghim test (có lý do tại chỗ)</b> — ControlStateUxContractTest (fadeOff) · KachiChromeContractTest (rãnh riêng) · WidgetMargin292ContractTest (CarStateLayout · MediaFitLayout · API 31) · WidgetFitR5/R6/J1ContractTest (memo · khe ngoài · regrow) · GroupTileWiringContractTest (GroupFitFrame) · FitValuesTest (khe ngoài: hai số của bài "du cho…" bớt đúng 8 px khe) · I18nPairs (nhãn ngắn gói lệnh) · nonliteral-allow.tsv.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-06 (tự soát của bên làm — chưa phải senior review độc lập)</h3>
+<ul>
+<li>Soát phạm vi: 17/20 việc có mã + test; 2/20 là quyết định có bằng chứng đóng được (R-W5, R-W6); R-W10 giữ mặc định + giảm nhẹ, VẪN MỞ chờ owner. Nghiệm thu xe 🚗 (R-W3 nhánh Android 12, R-W17) và QA máy ảo (§6.2) là điều kiện ngoài nhóm.</li>
+<li>Soát số liệu trong spec: mọi con số đều có nguồn (bài test, bảng màu thật, nguồn AOSP/L3 đọc lại trong phiên); bỏ ba số k của MediaFit không có bài khẳng định; số ca vét cạn sửa lại 168 056.</li>
+<li>Soát bảo mật: không đường dẫn máy tuyệt đối, không IP/VIN/biển số/email/tên thật trong các tệp đổi + tệp mới; danh tính chỉ <code>dangkhoi</code>.</li>
+<li>Soát §8: mọi hàm mới có chỗ gọi (<code>Widget293WiringContractTest</code>); tệp ≤ 500 dòng (lớn nhất <code>WorkspaceView</code> 498 · <code>FitScale</code> 497 · <code>KachiHomeActivity</code> 496 · <code>ControlTileFactory</code> 496).</li>
+<li>Còn ngoài nhóm: senior review độc lập (Opus) · quét bảo mật trước commit · cập nhật BACKLOG/INDEX/project-context (điều phối — nhóm không sửa tài liệu chung).</li>
+</ul>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Phạm vi: mọi tệp nhóm WIDGET trong cây chính sau gộp (<code>git diff 8fbdf96</code>). Không chạy gradle (điều phối chạy sau khi gộp đủ nhóm) ⇒ mọi kết luận về test ở đây là [SUY đọc mã] cho tới lượt chạy của điều phối. Context7 KHÔNG kết nối được (ENOTFOUND) ⇒ độ mới công nghệ soát bằng nguồn AOSP 12.1.0_r27 tải trong phiên + stub SDK.</p>
+<table>
+<tr><th>Việc</th><th>Kết quả</th><th>Bằng chứng (đọc mã / đo)</th></tr>
+<tr><td>R-W1 CLOCK-SUN-DETACHED</td><td>✅</td><td><code>GlyphSpan.lead</code> ở <code>WidgetViews.clock</code>; giữ chỗ = U+00A0 [ĐO hexdump]; đặt chữ chỉ khi đổi.</td></tr>
+<tr><td>R-W2 WIDGET-CAR-STRIP-LAYOUT</td><td>✅ + vá [P3]</td><td><code>CarStateLayout</code> → <code>CarStripFit.plan</code>; chú thích MATCH (không requestLayout mỗi nhịp).</td></tr>
+<tr><td>R-W3 APPWIDGET-SIZE-API31</td><td>✅ off-car + vá [P3] · 🚗 DL5</td><td>&lt; 31 giữ nguyên số 2.92 [SUY đọc mã]; A12 <code>getDefaultPadding()</code> L222-224 không phụ thuộc nhà cung cấp ⇒ khớp <code>defaultPaddingPx</code>.</td></tr>
+<tr><td>R-W4 WALLART-CACHE-BOUND</td><td>✅</td><td>Chỉ xoá trong <code>.kachi-art/</code>, tên lấy từ danh sách thư mục, đúng khuôn khoá; ảnh gốc ở thư mục cha không bao giờ là ứng viên; khoá vừa nấu được bảo vệ; ảnh đang hiện nằm trong RAM (xoá tệp đệm chỉ tốn một lần nấu lại); chỉ <code>SecurityException</code> ném được.</td></tr>
+<tr><td>R-W5/R-W6 quyết định</td><td>✅</td><td><code>ShortcutFillWideTest</code> · §4.4.</td></tr>
+<tr><td>R-W7/R-W8/R-W9 luật giá trị</td><td>✅</td><td><code>PenKey</code> đủ phông·cỡ·giãn·nghiêng·cờ·tính năng·ngôn ngữ (đổi chủ đề/ngôn ngữ/cỡ ⇒ khoá khác); khe = lề có chủ, <code>flex</code> trừ <code>applied</code> (không vòng lặp); regrow không hẹn giờ (hỏi ở nhịp 1 Hz, lượt khớp đủ xoá mốc).</td></tr>
+<tr><td>R-W10 FIT-TINY-MIXED</td><td>⏸ MỞ (đúng thiết kế)</td><td>Chờ owner + ảnh QA §6.2.</td></tr>
+<tr><td>R-W11 GROUPBOARD-1ROW</td><td>✅</td><td><code>GroupFitFrame</code> qua đường đổ chung <code>WidgetRefreshers</code>; nút không tháo/gắn.</td></tr>
+<tr><td>R-W12 WIDGET-CAPACITY-HINT</td><td>✅ + vá [P3] ×2</td><td><code>DrawerController</code> → <code>WidgetCapacity.of</code> → <code>FitGridLayout.measureFit</code>; bản nháp không gắn cửa sổ, làn ghi dùng chung (không luồng mới).</td></tr>
+<tr><td>R-W13 WF-MEDIA-SMALL</td><td>✅</td><td><code>MediaFitLayout</code> ∈ <code>selfFitting</code>; kế hoạch chỉ tính lại khi khung đổi (khoá w×h).</td></tr>
+<tr><td>R-W14…R-W16, R-W18, R-W20</td><td>✅</td><td>Chỗ gọi: <code>Widget293WiringContractTest</code>.</td></tr>
+<tr><td>R-W17 TYRE-BURST-REASON</td><td>✅ off-car SAU vá [P1]/[P2] · 🚗 bộ mã</td><td>Xem phát hiện 1–2.</td></tr>
+<tr><td>R-W19 WIDGET-ICON-OFF-FAINT</td><td>✅ một phần (đúng khai báo)</td><td>[ĐO bản chép Java của <code>ColorMath</code>/<code>SurfaceRamp</code> trên bảng mặc định] tối 0,73 (4,53:1 / 5,32:1) · sáng 0,85 (4,80:1 / 4,58:1) · rãnh tối 0,58 (3,04:1) · sáng 0,67 (3,07:1) · ACCENT/PANEL 4,63:1 · 5,74:1 — khớp §4.5.</td></tr>
+</table>
+<h4>Phát hiện + vá (đã sửa trong cây chính)</h4>
+<ol>
+<li><b>[P1] báo động "nổ lốp" giả</b> — <code>TyreJudge.kt:105-108</code> (bản Pass 0): cụm TRẮNG + getter trả 4092 ⇒ chữ "nổ lốp" màu thường, câu kết luận "N bánh nổ lốp" (cũng là câu trả lời giọng nói). L3 đọc mã VÀ màu từ CÙNG kênh cụm (<code>BydAutoHelper.java:25-54</code> [ĐO source]) nên không cần xét màu; Kachi đọc mã từ getter TPMS KHÁC (<code>BYDAutoTyreDevice.getTyrePressureValue</code>, stub khai dải hợp lệ 0..4094 — jadx-tmap <code>:39-40</code>) ⇒ cùng bộ mã chỉ là [SUY]. L3 tự ghép cặp màu 3 ↔ icon nổ lốp, màu 2 ↔ icon bất thường (<code>TyreCardView.java:210-216</code>). <b>Vá</b>: cổng CÙNG CHIỀU — 4092 chỉ khi ĐỎ, 4093 khi VÀNG/ĐỎ, TRẮNG ⇒ im (mã vẫn vào <code>pc=</code>). Bài: <code>TyreBurstReasonTest</code> (ca mới "mau cum KHONG cung chieu" — đỏ với mã Pass 0; adapter: bánh trắng <code>OK</code>, <code>pcFr</code> vẫn 4092).</li>
+<li><b>[P2]</b> <code>TyreJudge.kt:106-107</code>: 4093 "bất thường" ([SUY]) đứng TRƯỚC chữ TPMS cụ thể ([ĐO source] SDK) ⇒ cụm đỏ + rò nhanh hiện "bất thường" thay "xì nhanh" (2.92 nói đúng hơn). <b>Vá</b>: "bất thường" chỉ thay chữ chung "báo đỏ"/"chú ý"; "nổ lốp" (cụm đỏ) vẫn đứng đầu.</li>
+<li><b>[P3]</b> <code>AppWidgetSize.kt:30-31</code>: <code>c/d + p/d + EPS</code> báo HƠN đường cũ 1 dp ở mật độ lẻ — [ĐO mô phỏng Java 17 <code>float</code> đúng phép trừ L371-372/L395] 2 427 / 5 590 863 ca (dpi nguyên 100–720 × c 0–3 000 × lề {0, 36, 48}; vd 232 dpi, 87 px ⇒ 59,999996f); mật độ chuẩn (120…640, cả 213) 0 ca. <b>Vá</b>: làm tròn nội dung trước <code>(int)(c/d) + p/d + EPS</code> ⇒ 0 / 27 330 831 ca (dpi 100–720 × c 0–4 000 × 11 lề). Bài mới quét mọi dpi nguyên trong <code>AppWidgetSizeTest</code>.</li>
+<li><b>[P3]</b> <code>CarStateLayout.kt:56-57</code>: chú thích đo MỘT dòng (UNSPECIFIED) rồi ép EXACTLY ⇒ khung hẹp + chữ dài (ms "Semua 4 pintu tertutup") xuống 2 dòng bị cắt nửa. <b>Vá</b>: đo AT_MOST bề ngang khối dọc (như <code>col</code> 2.92); quyết định SIDE/STACK không đổi (SIDE ⇒ capW &lt; iw ⇒ một dòng). Ghim: <code>Widget293WiringContractTest</code> ca "soat senior".</li>
+<li><b>[P3]</b> <code>AppDrawerFitHint.kt:19</code>: bộ chọn đóng trong 180 ms ⇒ lượt hoãn vẫn dựng bản nháp lưới trên luồng chính. <b>Vá</b>: bỏ khi <code>!isAttachedToWindow</code> (cùng ca ghim trên).</li>
+<li><b>[P3]</b> <code>values-en/strings_kachi.xml:38</code>: "fits only 1 items" ⇒ viết lại không phụ thuộc số ít/nhiều (giữ <code>%1$d</code>/<code>%2$d</code>).</li>
+<li><b>[P3]</b> <code>CarStatus.kt:168-173</code>: KDoc nói <code>pc*</code> = <code>null</code> với 4094/4095 nhưng mã giữ MỌI mã <code>INVALID_VALUES</code> — giữ hành vi (chính 4094/4095 lúc nổ máy là bằng chứng 🚗 §6.3), sửa KDoc.</li>
+<li><b>[P3]</b> <code>CarDataAdapter.kt:110</code>: mã giữ lại parse bằng <code>coerceInt</code> trong khi <code>isInvalidValue</code> (soát MISC) nay dùng <code>parseInt</code> ⇒ đổi sang <code>parseInt(id, raw)</code> — một phép parse (không đổi số với datum lốp). Gộp xung đột <code>pending()</code> GIỮ ĐỦ hai ý: "đã đáp = mã HOẶC số đọc được" (MISC) + giữ mã cùng lượt, nhịp không hỏi ⇒ <code>prev</code>, đang nguội ⇒ <code>null</code> (WIDGET).</li>
+<li><b>[P3]</b> 7 tham chiếu KDoc treo: <code>WidgetCapacityHintTest</code> · <code>IconFadeWiringTest</code> · <code>SliderRailContrastTest</code> · <code>FitRegrowTest</code> (không tồn tại) · R-W9→R-W13 (<code>MediaFit</code>) · R-W7→R-W15 · R-T1→R-W17.</li>
+</ol>
+<h4>Ghi nhận, không vá (lý do)</h4>
+<ul>
+<li>[P3] <code>IconFade</code> dùng mực <code>ICON</code> làm đại diện: mặt lớn chủ đề tối vẽ màu riêng của drawable (bộ lọc "chưa chọn"), và nền ô tắt trong suốt theo % người dùng ⇒ 4,5:1 chỉ bảo đảm ở độ đục 100 % + icon tô mực. Đo pixel QA §6.2 là chỗ chốt. Mặt lớn tối: không mức nào đạt sàn ⇒ view không mờ thêm (hiệu dụng 0,72 thay 0,52 cũ).</li>
+<li>[P3] Bản nháp sức chứa ghi dòng <code>WidgetFit …</code> như ô thật (QA đọc log cần biết); không chặn vì gác log theo trạng thái gắn cửa sổ có thể nuốt dòng khớp đầu của ô thật (<code>FitGridLayout</code> 492 dòng).</li>
+<li>[P3] FIT-REGROW: tới mốc 30 s mà chữ lại là số rộng ⇒ lượt lớn lại không lớn và xoá mốc; hội tụ tiếp nhờ lượt đo dò thưa (dấu chữ ≠ dấu đã dò). Chỉ mỹ quan.</li>
+<li>[P3] <code>DemoCarData</code> 0 chỗ gọi (chết từ khi bỏ demo) — dời, không xoá; điều phối/owner quyết.</li>
+<li>Soát <code>when</code> vét cạn toàn cây sau gộp (cả nhóm khác, chỉ báo): <code>TyreStatus.BURST/ABNORMAL</code> (<code>reason</code> đủ nhánh, không <code>when</code> nào khác) · <code>SlotRevertPlan.Event.APP_ELSEWHERE</code> (<code>next</code> đủ) · <code>TeachGuard.Code.HOMOGRAPH</code> (<code>reasonText</code> đủ, không <code>else</code>) · <code>TeachSample.Prompt</code> · <code>CastRestartHazard</code> · <code>HealCastDeferral.Outcome</code> (chỉ so bằng) ⇒ không lỗ.</li>
+</ul>
+<h4>Bài phải chạy lại (điều phối)</h4>
+<p><code>:core</code> — TyreBurstReasonTest · AppWidgetSizeTest · TyreCarStateTest · TyreChipTest · GroupBoardTest · HalPendingParseTest · IconFadeTest · MediaFitTest · ActionMacroShortLabelTest · CarStripFitTest · LangCoverageTest · I18nCoverageTest. <code>:app</code> — Widget293WiringContractTest · Widget293ContrastTest · TyreNoThresholdContractTest (quét số thập phân TyreJudge/TyreBoard) · KachiChromeContractTest · WidgetFitR6ContractTest · LauncherI18nLocalesContractTest · WidgetMargin292ContractTest. Rồi trọn bộ <code>./gradlew :core:test :app:testDebugUnitTest --rerun-tasks --continue</code>, đếm từ JUnit XML.</p>
+<p><b>Kết luận Pass này:</b> APPROVED về mã + phạm vi (19/20 việc có mã hoặc quyết định đóng được; R-W10 mở đúng thiết kế; 0 [P0]–[P2] còn lại sau vá) — <b>có điều kiện</b>: lượt gradle của điều phối xanh; 🚗 R-W3 (DL5) + bộ mã getter TPMS (R-W17, OQ6) vẫn chờ xe; QA máy ảo §6.2 chưa chạy.</p>
+
+</div></body>
+</html>

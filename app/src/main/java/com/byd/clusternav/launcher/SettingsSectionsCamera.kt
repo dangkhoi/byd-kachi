@@ -8,7 +8,11 @@ import com.byd.clusternav.launcher.camera.CameraSignalPolicy
 import com.byd.clusternav.launcher.camera.CameraViewMode
 
 /**
- * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng, đúng 15 hàng người lái (2.92) ══════════════════════════════
+ * ═══ *Tiện nghi xe › Camera theo xi-nhan* — MỘT tầng: 9 hàng chung + bộ chỉnh *Từng camera* (2.93) ═════════════════
+ *
+ * 2.93 · CAMERA-PER-CAM-CONFIG (spec `kachi-293-cam.html` §4.5): sáu hàng góc · xoay · lật trái/phải dời vào bộ chỉnh
+ * *Từng camera* ([SettingsCameraPerCamSection] — một hàng chip chọn camera + một bộ hàng), khối *Nếu camera không hiện*
+ * xuống cuối. Đoạn lịch sử dưới giữ nguyên để đọc vì sao từng hàng có mặt.
  *
  * Tách khỏi [SettingsCarSection] ở 2.76. Danh sách hàng là hợp đồng THUẦN ở `:core` `CameraSettingsIa` — tệp này chỉ
  * **dựng hàng theo đúng danh sách ấy**, và bài canh so hai bên.
@@ -52,7 +56,10 @@ class SettingsCameraSection(
         cameraUser(body)
     }
 
-    // ── TẦNG NGƯỜI LÁI — đúng thứ tự `CameraSettingsIa.USER_KEYS`, và là TOÀN BỘ màn ────────────────────────
+    // ── TẦNG NGƯỜI LÁI — đúng thứ tự `CameraSettingsIa.USER_KEYS`, rồi bộ chỉnh *Từng camera* (`PER_CAMERA_KEYS`) ─────
+    //
+    // 2.93 · CAMERA-PER-CAM-CONFIG: sáu hàng góc/xoay/lật trái-phải RỜI khối chung sang bộ chỉnh *Từng camera* (cùng sáu
+    // khoá — một khoá một hàng); khối *Nếu camera không hiện* (dò nguồn) xuống CUỐI, sau phần người lái chỉnh hằng ngày.
 
     private fun cameraUser(body: LinearLayout) {
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_camera_signal)))
@@ -66,87 +73,9 @@ class SettingsCameraSection(
             title = context.getString(R.string.kachi_camera_cluster_title),
             sub = context.getString(R.string.kachi_camera_cluster_sub),
         ) { on -> bridge.setCameraOnCluster(on) })
-        // VỊ TRÍ GÓC từng bên (spec `camera-turn-signal-hal-socket.html` R3 · R4). Hai hàng RIÊNG vì owner chốt
-        // "trái vẫn có thể hiện bên phải". Mã chip = đúng giá trị lưu bền ("TL"/"TR", hằng ở `:core`).
-        val corners = listOf(
-            CameraSignalPolicy.CORNER_TOP_LEFT to context.getString(R.string.kachi_pos_tl),
-            CameraSignalPolicy.CORNER_TOP_RIGHT to context.getString(R.string.kachi_pos_tr),
-        )
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pos_sub)))
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_pos_left), corners, bridge.cameraPosLeft(),
-        ) { v -> bridge.setCameraPos(left = true, v = v) })
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_pos_right), corners, bridge.cameraPosRight(),
-        ) { v -> bridge.setCameraPos(left = false, v = v) })
-        // XOAY video TỪNG BÊN (spec R7 · 2.71; owner 2026-09-26: "2 line setting độc lập"). Mặc định theo hồ sơ xe
-        // (Seal 0/0 — research `research-side-camera-orientation-2026-09-27.md` §6.1), pref đã chọn trên xe thắng.
-        val rotations = listOf(
-            CameraSignalPolicy.ROTATE_NONE to context.getString(R.string.kachi_camera_rot_none),
-            CameraSignalPolicy.ROTATE_LEFT to context.getString(R.string.kachi_camera_rot_left),
-            CameraSignalPolicy.ROTATE_RIGHT to context.getString(R.string.kachi_camera_rot_right),
-            CameraSignalPolicy.ROTATE_180 to context.getString(R.string.kachi_camera_rot_180),
-        )
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_rot_sub)))
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_rot_row_left), rotations, bridge.cameraRotLeft(),
-        ) { v -> bridge.setCameraRotation(left = true, v = v) })
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_rot_row_right), rotations, bridge.cameraRotRight(),
-        ) { v -> bridge.setCameraRotation(left = false, v = v) })
-        // GÓC NHÌN từng bên — khối *Nếu camera không hiện* (owner 2026-09-28, trên SL6: *"không mở được cam
-        // phải (cam trái ok)… cho chọn lại cam trong setting để user chọn cam nếu cam không hiện"*). Mỗi góc
-        // mang cả lệnh xuất hình lẫn camera id, mà cặp đúng khác nhau theo đời xe và chưa đo hết ⇒ để người lái
-        // dò (CLAUDE.md §7: không rải `if` theo tên dòng xe). Chọn chip là hình bật lên ngay, không phải ra
-        // đường bật xi-nhan mới biết.
-        // NHÃN = SỐ THỨ TỰ, CỐ Ý KHÔNG ĐẶT TÊN CAMERA. Owner 2026-09-28: *"các label mình để nó cũng ko
-        // chuẩn đâu, nên để ID 0-1-2-3-4-5 gì đi, vì mình cũng đâu có biết là nó cam nào đâu mà phán cho
-        // người ta"*. Đúng CLAUDE.md §2: chưa đo thì KHÔNG được nói như đã chứng minh. Tên cũ (Trước-trái,
-        // Sau-phải…) là suy từ tên hằng trong enum, chưa một lần nào được đối chiếu với camera thật trên xe
-        // ⇒ đặt tên như thế là chỉ đường SAI cho người đang dò.
-        //
-        // Số hiển thị lấy theo VỊ TRÍ trong [CameraSignalPolicy.VIEWS_ALL] (1-based cho dễ đọc), còn giá trị
-        // LƯU vẫn là tên hằng ⇒ prefs/log vẫn tra được. `CameraViewRowContractTest` khoá THỨ TỰ enum để con số
-        // người lái báo về không bao giờ trỏ sang góc khác sau một lần sửa mã.
-        val views = CameraSignalPolicy.VIEWS_ALL.mapIndexed { i, v -> v.name to (i + 1).toString() }
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_view_sub)))
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_view_row_left), views, bridge.cameraViewLeft(),
-        ) { v -> bridge.setCameraView(left = true, v = v) })
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_view_row_right), views, bridge.cameraViewRight(),
-        ) { v -> bridge.setCameraView(left = false, v = v) })
-        // DẢI HÌNH từng bên. Khung ghép 4 dải; nhãn 1–4 là THỨ TỰ ĐỌC, ánh xạ sang chỉ số dải 0–3.
-        // [ĐO owner 2026-09-28, ảnh khung thô SL6] thứ tự là `sau · trái · phải · trước`; [ĐO Seal 27/09] dải
-        // trái/phải nằm đúng vị trí 2 và 3 ⇒ hai đời xe cùng bố cục, nhãn này nói được sự thật chứ không phán.
-        // *Tự động* = theo bên (trái lấy dải 2, phải lấy dải 3). *Nguyên khung* = đường thoát nếu một số camera
-        // hoá ra là camera ĐƠN — cắt vào là hỏng hình đang đúng.
-        val panos = listOf(
-            CameraPanoCrop.PANO_AUTO to context.getString(R.string.kachi_camera_pano_auto),
-            CameraPanoCrop.PANO_NONE to context.getString(R.string.kachi_camera_pano_none),
-        ) + (CameraPanoCrop.STRIP_MIN..CameraPanoCrop.STRIP_MAX).map { it.toString() to (it + 1).toString() }
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pano_sub)))
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_pano_row_left), panos, bridge.cameraPanoLeft(),
-        ) { v -> bridge.setCameraPano(left = true, v = v) })
-        body.addView(rows.chipRow(
-            context.getString(R.string.kachi_camera_pano_row_right), panos, bridge.cameraPanoRight(),
-        ) { v -> bridge.setCameraPano(left = false, v = v) })
-        // LẬT GƯƠNG từng bên (2.76 L7, research §6.2): tay gương của ảnh HAL [CHƯA BIẾT] tới CAM-M1 ⇒ mặc định TẮT,
-        // người lái bật khi ảnh ngược tay so với gương kính. Hai ô tích, cùng khuôn hai hàng xoay ở trên.
-        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_mirror_sub)))
-        body.addView(rows.checkRow(
-            on = bridge.cameraMirrorLeft(),
-            title = context.getString(R.string.kachi_camera_mirror_row_left),
-            sub = context.getString(R.string.kachi_camera_mirror_row_sub),
-        ) { on -> bridge.setCameraMirror(left = true, v = on) })
-        body.addView(rows.checkRow(
-            on = bridge.cameraMirrorRight(),
-            title = context.getString(R.string.kachi_camera_mirror_row_right),
-            sub = context.getString(R.string.kachi_camera_mirror_row_sub),
-        ) { on -> bridge.setCameraMirror(left = false, v = on) })
         // HÌNH KHUNG — chip SINH từ `:core` [CameraSignalPolicy.SHAPES] ⇒ mã `CLUSTER` ("theo cụm", làn L2) tự có chip
-        // mà tệp này không phải sửa; nhãn tra theo mã, mã lạ hiện chính mã (không ném, không im).
+        // mà tệp này không phải sửa; nhãn tra theo mã, mã lạ hiện chính mã (không ném, không im). 2.93: đây là hình CHUNG —
+        // camera nào để *Theo chung* ở bộ chỉnh *Từng camera* thì theo hàng này.
         body.addView(rows.subHeader(context.getString(R.string.kachi_camera_shape_sub)))
         body.addView(rows.chipRow(
             context.getString(R.string.kachi_camera_shape_row),
@@ -172,21 +101,50 @@ class SettingsCameraSection(
             valueText = { pos -> "${CameraViewMode.zoomAt(pos)}%" },
             describe = { text -> context.getString(R.string.kachi_camera_zoom_desc, text) },
         ) { pos -> bridge.setCameraZoom(CameraViewMode.zoomAt(pos)) })
+        // 2.93 · TỪNG CAMERA (owner 06/10 *"cho chỉnh size và vị trí từng camera"*) + nút *Xem thử* (camera theo yêu cầu).
+        SettingsCameraPerCamSection(context, rows, deps).build(body)
+        // GÓC NHÌN từng bên — khối *Nếu camera không hiện* (owner 2026-09-28, trên SL6: *"không mở được cam
+        // phải (cam trái ok)… cho chọn lại cam trong setting để user chọn cam nếu cam không hiện"*). Mỗi góc
+        // mang cả lệnh xuất hình lẫn camera id, mà cặp đúng khác nhau theo đời xe và chưa đo hết ⇒ để người lái
+        // dò (CLAUDE.md §7: không rải `if` theo tên dòng xe). Chọn chip là hình bật lên ngay, không phải ra
+        // đường bật xi-nhan mới biết.
+        // NHÃN = SỐ THỨ TỰ, CỐ Ý KHÔNG ĐẶT TÊN CAMERA. Owner 2026-09-28: *"các label mình để nó cũng ko
+        // chuẩn đâu, nên để ID 0-1-2-3-4-5 gì đi, vì mình cũng đâu có biết là nó cam nào đâu mà phán cho
+        // người ta"*. Đúng CLAUDE.md §2: chưa đo thì KHÔNG được nói như đã chứng minh.
+        //
+        // Số hiển thị lấy theo VỊ TRÍ trong [CameraSignalPolicy.VIEWS_ALL] (1-based cho dễ đọc), còn giá trị
+        // LƯU vẫn là tên hằng ⇒ prefs/log vẫn tra được. `CameraViewRowContractTest` khoá THỨ TỰ enum để con số
+        // người lái báo về không bao giờ trỏ sang góc khác sau một lần sửa mã. (2.93: camera sau/trước dùng NGUỒN của
+        // bên trái — hàng trái ở đây cũng là chỗ dò cho chúng; spec `kachi-293-cam.html` §4.2.)
+        val views = CameraSignalPolicy.VIEWS_ALL.mapIndexed { i, v -> v.name to (i + 1).toString() }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_view_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_view_row_left), views, bridge.cameraViewLeft(),
+        ) { v -> bridge.setCameraView(left = true, v = v) })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_view_row_right), views, bridge.cameraViewRight(),
+        ) { v -> bridge.setCameraView(left = false, v = v) })
+        // DẢI HÌNH từng bên. Khung ghép 4 dải; nhãn 1–4 là THỨ TỰ ĐỌC, ánh xạ sang chỉ số dải 0–3.
+        // [ĐO owner 2026-09-28, ảnh khung thô SL6] thứ tự là `sau · trái · phải · trước`; [ĐO Seal 27/09] dải
+        // trái/phải nằm đúng vị trí 2 và 3 ⇒ hai đời xe cùng bố cục, nhãn này nói được sự thật chứ không phán.
+        // *Tự động* = theo bên (trái lấy dải 2, phải lấy dải 3). *Nguyên khung* = đường thoát nếu một số camera
+        // hoá ra là camera ĐƠN — cắt vào là hỏng hình đang đúng.
+        val panos = listOf(
+            CameraPanoCrop.PANO_AUTO to context.getString(R.string.kachi_camera_pano_auto),
+            CameraPanoCrop.PANO_NONE to context.getString(R.string.kachi_camera_pano_none),
+        ) + (CameraPanoCrop.STRIP_MIN..CameraPanoCrop.STRIP_MAX).map { it.toString() to (it + 1).toString() }
+        body.addView(rows.subHeader(context.getString(R.string.kachi_camera_pano_sub)))
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_pano_row_left), panos, bridge.cameraPanoLeft(),
+        ) { v -> bridge.setCameraPano(left = true, v = v) })
+        body.addView(rows.chipRow(
+            context.getString(R.string.kachi_camera_pano_row_right), panos, bridge.cameraPanoRight(),
+        ) { v -> bridge.setCameraPano(left = false, v = v) })
     }
 
-    /** Nhãn chip kiểu hình theo mã `:core`; mã chưa có chữ ⇒ hiện mã (lộ ra để sửa, không im lặng bỏ chip). */
-    private fun projectionLabel(code: String): String = when (code) {
-        CameraViewMode.STRAIGHT -> context.getString(R.string.kachi_camera_projection_straight)
-        CameraViewMode.WIDE -> context.getString(R.string.kachi_camera_projection_wide)
-        CameraViewMode.FISHEYE -> context.getString(R.string.kachi_camera_projection_fisheye)
-        else -> code
-    }
+    /** Nhãn chip kiểu hình theo mã `:core` — bảng chung với bộ chỉnh *Từng camera* ([CameraSettingsLabels]). */
+    private fun projectionLabel(code: String): String = CameraSettingsLabels.projection(context, code)
 
-    /** Nhãn chip hình khung theo mã `:core`; mã chưa có chữ ⇒ hiện mã (lộ ra để sửa, không im lặng bỏ chip). */
-    private fun shapeLabel(code: String): String = when (code) {
-        CameraSignalPolicy.SHAPE_RECT -> context.getString(R.string.kachi_camera_shape_rect)
-        CameraSignalPolicy.SHAPE_ROUND -> context.getString(R.string.kachi_camera_shape_round)
-        CameraSignalPolicy.SHAPE_CLUSTER -> context.getString(R.string.kachi_camera_shape_cluster)
-        else -> code
-    }
+    /** Nhãn chip hình khung theo mã `:core` — bảng chung với bộ chỉnh *Từng camera* ([CameraSettingsLabels]). */
+    private fun shapeLabel(code: String): String = CameraSettingsLabels.shape(context, code)
 }

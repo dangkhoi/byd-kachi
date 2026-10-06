@@ -244,7 +244,7 @@ Quy trình lấy từ `kachi-276-closing.html` §3 R12 và §5 T7→T11, `kachi-
 | Hai cách đếm test (6 277 có vehicleTest, 4 730 không có) | Luôn ghi rõ đang dùng cách nào | [ĐO XML] |
 | Báo cáo lint cũ trong `app/build/reports/` trông như số hiện hành: `lint-results-release.xml` là của 27/09, trước 2.81/2.82 | Ghi rõ biến thể + mtime; chạy cả lintDebug lẫn lintRelease trước khi đăng | [ĐO mtime] |
 | XML test app/core chạy **trước** commit dọn 88 tệp docs; 7 tệp test app đọc `docs/` | Sửa docs xong phải chạy `--rerun-tasks` trước khi nói xanh | [ĐO mtime]; ảnh hưởng [SUY] |
-| Đường dẫn `scratchpad/gradle-locked.sh` trong luật đã chết | §2a: đưa script vào `scripts/` | [ĐO `find` = 0] |
+| Đường dẫn tới `gradle-locked.sh` (thư mục nháp của phiên, ngoài repo) trong luật đã chết | §2a: đưa script vào `scripts/` | [ĐO `find` = 0] |
 | Luật B4 cũ "chế độ kiểm thử tắt mỗi lần launcher khởi động lại" mâu thuẫn với mã (cửa sổ theo `boot_id` + `elapsedRealtime`, sống qua `install -r`) | Hỏi `br --es cmd state` rồi mới tin | [SUY `TestBridgeWindow.kt:29-52`]; xe [CHƯA BIẾT] |
 
 ---

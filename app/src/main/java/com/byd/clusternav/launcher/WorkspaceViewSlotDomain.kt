@@ -23,3 +23,10 @@ internal fun WorkspaceView.slotDomain(content: SlotContent): Domain? = (content 
 internal fun WorkspaceView.startSlotDrag(index: Int, v: View) {
     v.startDragAndDrop(null, View.DragShadowBuilder(v), index, 0)
 }
+
+/**
+ * 2.93 `WIDGET-CAPACITY-HINT` — cỡ px THẬT của ô [i] (view ô đã đo; `null` = chưa đo / không có ô) cho câu sức chứa của bộ
+ * chọn widget. `slotViews` mở `internal` cho đúng phép đọc này (không ghi).
+ */
+internal fun WorkspaceView.slotFrame(i: Int): Pair<Int, Int>? =
+    slotViews.getOrNull(i)?.let { v -> (v.width to v.height).takeIf { it.first > 0 && it.second > 0 } }

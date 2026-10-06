@@ -21,10 +21,7 @@ import org.junit.jupiter.api.Test
  */
 class LauncherActionTileWiringContractTest {
 
-    private fun code(relative: String): String =
-        SourceRoots.text(relative)
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val dock by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlDockView.kt") }
     private val factory by lazy { code("src/main/java/com/byd/clusternav/launcher/ControlTileFactory.kt") }
@@ -91,7 +88,13 @@ class LauncherActionTileWiringContractTest {
         // `controlDock` — thanh nút là view thuần, nó biết "ô này loại LAUNCHER" nhưng không được biết
         // "launcher_voice nghĩa là mở micro".
         assertTrue(fn.contains("LauncherActions.VOICE -> onVoice()"), "mã Nói với xe phải mở phiên nghe")
-        assertTrue(fn.contains("else -> Unit"), "mã launcher lạ ⇒ không làm gì; mở nhầm một màn còn khó hiểu hơn")
+        // 2.93 · CAMERA-ON-DEMAND: nhánh còn lại đi về MỘT đường camera (cùng đường của phím vật lý · giọng nói) — và
+        // đường ấy tự bỏ qua mã không phải camera ⇒ mã launcher lạ vẫn KHÔNG làm gì (mở nhầm một màn còn khó hiểu hơn).
+        assertTrue(fn.contains("else -> com.byd.clusternav.launcher.camera.CameraDemandDispatch.tap(this@controlDock, id)"),
+            "ô camera phải đi về đường camera chung, không dựng đường thứ hai")
+        val tap = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/camera/CameraDemandDispatch.kt"), "fun tap(")
+        assertTrue(tap.contains("if (!LauncherActions.isCamera(launcherId)) return false"),
+            "mã launcher lạ ⇒ không làm gì; mở nhầm một màn còn khó hiểu hơn")
 
         // Và Activity truyền vào ĐÚNG ba biểu thức mà thanh trên đang dùng — so từng chữ, vì đây chính là chỗ một
         // "đường thứ hai" (vd `startActivity(...)` riêng cho Cài đặt) sẽ len vào mà không ai thấy.
@@ -143,11 +146,45 @@ class LauncherActionTileWiringContractTest {
         val init = SourceRoots.body(drawer, "    init {")
         val dockBranch = init.substringAfter("if (dock) {").substringBefore("} else if (assign) {")
         val launcherAt = dockBranch.indexOf("CapabilityPicker.launcherPicks()")
+        // 2.93 wave 2B: khối camera dựng ở MỘT hàm (`cameraSection`) cho cả hai bộ chọn — bài dưới canh thân hàm ấy.
+        val cameraAt = dockBranch.indexOf("cameraSection(body)")
         val groupAt = dockBranch.indexOf("groupSection(body)")
         assertTrue(launcherAt in 0 until groupAt, "để nó ở cuối thì phải cuộn qua trọn 187 ô mới đặt được nút Ứng dụng")
         // V1 pha NGHE: 2 → 3 (`launcher_voice`). Con số ghim ở đây là một lời nhắc *"khối này cố ý NHỎ"*: nó đứng
         // TRƯỚC 187 ô khả năng trong bộ chọn, nên mỗi mục thêm vào là một hàng đẩy lưới xuống. Ba mục vẫn là một
         // hàng; mục thứ tư thì phải xét lại chỗ đứng của cả khối, không được lặng lẽ nâng số.
-        assertEquals(3, LauncherActions.ALL.size, "khối này cố ý NHỎ — thêm mục thì phải xét lại chỗ đứng của nó")
+        // 2.93 — ĐÃ XÉT LẠI khi bốn camera theo yêu cầu vào [LauncherActions.ALL] (nguồn từ vựng giọng nói): chúng KHÔNG
+        // vào khối Launcher mà đứng ở khối RIÊNG (`cameraPicks`, năm ô gồm *Tắt camera*) ngay SAU khối Launcher và TRƯỚC
+        // 187 ô — khối Launcher vẫn đúng ba việc gọi bằng lời, một hàng.
+        assertEquals(3, LauncherActions.ALL.count { !LauncherActions.isCamera(it.id) },
+            "khối này cố ý NHỎ — thêm mục thì phải xét lại chỗ đứng của nó")
+        assertTrue(CapabilityPicker.launcherPicks().none { LauncherActions.isCamera(it.id) }, "camera không lẫn vào khối Launcher")
+        assertEquals(5, CapabilityPicker.cameraPicks().size, "khối camera: bốn camera + Tắt camera")
+        assertTrue(launcherAt in 0 until cameraAt && cameraAt < groupAt, "khối camera đứng giữa khối Launcher và 187 ô")
+    }
+
+    /**
+     * 2.93 wave 2B · CAMERA-WIDGET-TILE (OQ3) — ngăn kéo GÁN-Ô (widget lưới ô giữa màn) bày khối camera theo yêu cầu, CÙNG
+     * hàm dựng khối với bộ chọn nút thanh xe (một nguồn `:core` `cameraPicks` + chữ song ngữ), và lưới vẽ ô ấy bằng CÙNG bộ
+     * dựng ô launcher của thanh nút + CÙNG đường thi hành (`CameraDemandDispatch.tap`). Ba việc Launcher khác vẫn KHÔNG bày.
+     */
+    @Test
+    fun `ngan keo gan o bay khoi camera, luoi ve bang bo dung o chung`() {
+        val init = SourceRoots.body(drawer, "    init {")
+        val assignBranch = init.substringAfter("} else if (assign) {").substringBefore("} else if (pick) {")
+        assertTrue(assignBranch.indexOf("groupSection(body)") in 0 until assignBranch.indexOf("cameraSection(body)"),
+            "khối camera ở phần *Thông tin khác*, sau mục Nhóm")
+        assertFalse(assignBranch.contains("launcherPicks()"), "ba việc Launcher (ngăn kéo · Cài đặt · phiên nghe) vẫn không bày ở gán-ô")
+        val section = SourceRoots.body(drawer, "private fun cameraSection(body: LinearLayout)")
+        listOf("CapabilityPicker.CAMERA_TITLE", "CapabilityPicker.CAMERA_NOTE", "CapabilityPicker.cameraPicks()").forEach {
+            assertTrue(section.contains(it), "khối camera lấy mã + chữ từ `:core`: $it")
+        }
+        val widgets = code("src/main/java/com/byd/clusternav/launcher/WidgetViews.kt")
+        assertTrue(SourceRoots.body(widgets, "fun build(").contains("cameraDemandTile(ctx, id, TileSize.BIG)"), "ô widget đơn")
+        assertTrue(SourceRoots.body(widgets, "private fun mini(").contains("cameraDemandTile(ctx, id, TileSize.DOCK)"), "ô lưới nén")
+        val tile = SourceRoots.body(code("src/main/java/com/byd/clusternav/launcher/LauncherTile.kt"), "internal fun cameraDemandTile(")
+        assertTrue(tile.contains(".launcherTile(pick) { CameraDemandDispatch.tap(ctx, id) }"),
+            "CÙNG bộ dựng ô launcher + CÙNG đường thi hành của nút thanh nút / phím vật lý")
+        assertTrue(tile.contains("LauncherActions.isCamera(id)"), "chỉ mã camera — mã launcher khác đi đường cũ")
     }
 }

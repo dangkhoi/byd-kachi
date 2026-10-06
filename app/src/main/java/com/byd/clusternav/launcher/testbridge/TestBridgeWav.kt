@@ -2,9 +2,11 @@ package com.byd.clusternav.launcher.testbridge
 
 import android.content.Context
 import android.util.Log
+import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
 import com.byd.clusternav.launcher.voice.WakeAsrMatcher
 import com.byd.clusternav.launcher.voice.VoiceWiring
+import com.byd.clusternav.launcher.voice.dynVocabOf
 import java.io.File
 
 /**
@@ -29,7 +31,10 @@ internal object TestBridgeWav {
                 return@Thread
             }
             val apps = VoiceWiring.appsByLabel(app)
-            val probe = VoiceWavProbe.run(app, hooks.state().profiles, apps.keys.toList(), apps.values.toSet())
+            val st = hooks.state()
+            // 2.93 VOICE-OPEN-TURN-DYNVOCAB — ghép vế sau bằng CÙNG từ vựng động mà phiên thật dùng (`sessionVocab`).
+            val vocab = dynVocabOf(app, st.profiles, apps, VoicePlaces.labelsOf(st.savedPlaces))
+            val probe = VoiceWavProbe.run(app, st.profiles, apps.keys.toList(), apps.values.toSet(), vocab)
             val intents = if (probe.heard.isBlank()) {
                 emptyList()
             } else {

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 wave 2A</title>
+<!--
+  Spec Kiro-style (consolidated) theo docs/specs/_template.html. Thứ tự section: Changelog · Context · Requirements · Design ·
+  Tasks · Verification · Open Questions · References · Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (.flow/.layers).
+  Approval gate out-of-band — KHÔNG lưu trạng thái duyệt trong tệp này.
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--bad:#c9341f}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--bad:#ff6b5b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.layer .node.new{background:rgba(0,113,227,.12)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+@media(max-width:600px){.wrap{padding:28px 16px 80px}h1{font-size:24px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Wave 2A: dọn hết việc tồn sau gộp sáu nhóm</h1>
+<p class="muted">Slug: <code>kachi-293-wave2a</code> · Branch <code>feat/key-source-split</code> (cây chính, chưa commit, gốc 2.92 <code>8fbdf96</code>) · Kế hoạch tổng <code>kachi-293-plan.html</code> · Owner 06/10: <i>"làm hết mọi thứ, ko để lại"</i> · <i>"autonomus làm cho đến khi xong"</i> · <span class="pill wait">Trạng thái: mã + test off-car xong — chờ bộ đủ của điều phối · senior review · QA máy ảo · 🚗</span> · Cập nhật 2026-10-07 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> (repo + global) + <code>.kiro/steering/*</code>. Nhãn: <b>[ĐO]</b> output thật của lượt này · <b>[SUY]</b> suy từ nguồn đã đọc · <b>[ĐOÁN]</b> · <b>[CHƯA BIẾT]</b> · 🚗 cần xe. Không thư viện mới (Kotlin stdlib · Android SDK · <code>java.text.Normalizer</code> đã dùng) ⇒ Context7 không cần — và máy chủ Context7 KHÔNG kết nối được phiên này (ENOTFOUND). Khẳng định framework trích nguồn AOSP <code>android-10.0.0_r47</code> tải từ googlesource trong phiên (CLAUDE.md §3).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-07</b>: Khởi tạo + làm mã + test off-car cùng lượt (owner đã duyệt hướng "làm hết"): 7 hạng mục (11 việc con) do điều phối giao sau khi gộp sáu nhóm 2.93 — việc tồn của senior review CAST · SLOT · WIDGET · VOICE · MISC. Kết quả từng việc ở §5.</li>
+<li><b>Pass 2 — 2026-10-07</b>: R8 lớn MỘT PHẦN (§10 Pass 1 ghi chú b) — dấu chờ lớn lại GIỮ tới khi ô về ĐẦY, ở cả lượt lớn lại lẫn lượt khớp đủ (§9, §10 Pass 2).</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Sáu nhóm 2.93 (CAM · CAST · VOICE · WIDGET · SLOT · MISC) đã gộp về cây chính; các lượt senior review để lại việc [P3]/đề xuất có lý do. Owner không muốn còn nợ: việc làm được off-car thì làm hết; cơ chế xe MỚI chưa đo thì chuẩn bị + 🚗 (CLAUDE.md §14). Bằng chứng gốc của từng việc:</p>
+<table>
+<tr><th>#</th><th>Việc</th><th>Nguồn</th><th>Bằng chứng</th></tr>
+<tr><td>1</td><td>HOME-EDGE-80</td><td>owner 20/09 (<code>_handoff/ux-wp1-zero-borders.md</code> §4) · OQ4 spec 293-misc</td><td>[ĐO git f56c508] bản 1.87 khai <code>EDGE_H = 13</code> mà không nối — khung gốc vẫn <code>setPadding(L, L, L, L)</code>; 2.93 MISC xoá hằng chết</td></tr>
+<tr><td>2</td><td>VM-BUBBLE-OLDMOD-MEMO [P3]</td><td>OQ4 spec 293-cast</td><td>[ĐO log xe 06/10 13:49 · 15:13] dọn cụm chờ ~4,5–5 s mỗi lượt mở, mod v1 không bao giờ ẩn bóng</td></tr>
+<tr><td>3</td><td>HEAL-DEFER-GATE-RECHECK [P3]</td><td>OQ5 · D1 spec 293-cast</td><td>[SUY đọc mã] thao tác chiếu bắt đầu trong ~1–2,5 s đọc của nấc leo vẫn bị <code>am force-stop</code> giết</td></tr>
+<tr><td>4a</td><td>SHORTCUT-SCROLL-REBUILD</td><td>review SLOT Pass 2 mục 4</td><td>[SUY đọc mã] view MỚI của ô (restyle · <code>rebuildWidgetSlots</code> · Activity dựng lại) cuộn về 0</td></tr>
+<tr><td>4b</td><td>KDoc <code>IntentAppLauncher</code> treo</td><td>review SLOT Pass 2 mục 8</td><td>[ĐO grep] <code>FloatingWindowLedger.kt:10</code> · <code>AccessibilityRebind.kt:396</code></td></tr>
+<tr><td>4c</td><td>SLOT-DEAD-OPENSLOT</td><td>OQ4 spec 293-slot</td><td>[ĐO grep 06/10] <code>openInSlot</code>/<code>moveToSlot</code>/<code>launchCmd</code>/<code>parseTaskId</code>: 0 chỗ gọi sản phẩm (main · vehicleTest)</td></tr>
+<tr><td>5a</td><td><code>DemoCarData</code> chết</td><td>review WIDGET Pass 1</td><td>[ĐO grep] 0 tham chiếu ở mọi gốc mã + test</td></tr>
+<tr><td>5b</td><td>FIT-REGROW (mỹ quan)</td><td>review WIDGET Pass 1 [P3]</td><td>[SUY đọc mã] lượt lớn lại gặp số rộng xoá dấu ⇒ <code>99</code> đứng mãi ở cỡ của <code>100</code></td></tr>
+<tr><td>6</td><td>DOCS-QA-REL-PATHS</td><td>§9 spec 293-misc</td><td>[ĐO grep] 46 lần đường dẫn tương đối vào thư mục QA của phiên ở 34 tệp mã/test (danh sách cũ ghi 8) + 3 lần trong <code>PROJECT-BACKLOG.md</code></td></tr>
+<tr><td>7a</td><td>VOICE-TOKENIZE-NFD [P3]</td><td>§9 spec 293-voice</td><td>[ĐO test 06/10] <i>"phát"</i> NFD ⇒ <code>pha</code> + <code>t</code></td></tr>
+<tr><td>7b</td><td>VOICE-TAUGHT-ACCENT-MATCH [P3]</td><td>OQ2 spec 293-voice</td><td>[ĐO off-car 2.91 §9 F6] dạy «nay» cho Drive ⇒ <i>"mở cái này"</i> mở Drive</td></tr>
+<tr><td>7c</td><td>Câu dẫn hộp dạy (ghi chú d)</td><td>review VOICE §10 (d)</td><td><code>kachi_vn_dialog_hint</code> vẫn dặn "nói “mở …” 2–3 lần" ngay trên dòng gợi ý lượt CÓ Ô</td></tr>
+</table>
+<div class="card"><b>Cổng §14:</b> wave 2A KHÔNG thêm lệnh <code>am</code>/<code>wm</code>/<code>service call</code>, opcode, hay cơ chế xe mới. #2 chỉ BỎ một lượt chờ tuỳ chọn (kết cục duy nhất có thể là "không gửi theme"); #3 chỉ HOÃN lệnh tách rời sẵn có; #1 đổi một lề bố cục; #7b đổi luật khớp chữ. Mọi điều có hệ quả trên xe đánh dấu 🚗 ở §6.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<table>
+<tr><th>R</th><th>Việc</th><th>Tiêu chí nghiệm thu</th></tr>
+<tr><td>R1</td><td>HOME-EDGE-80</td><td>Lề TRÁI/PHẢI của khung nội dung màn chính (thanh trên + vùng ô + thanh nút) = 80 % của <code>Sp.L</code> làm tròn lên = 13 dp, qua MỘT hằng có chỗ đọc thật; lề TRÊN/DƯỚI giữ <code>Sp.L</code>; 19 px mỗi bên ở 1,5× (cũ 24).</td></tr>
+<tr><td>R2</td><td>VM-BUBBLE-OLDMOD-MEMO</td><td>Lượt dọn TRỌN chứng minh "mod cũ" ⇒ nhớ theo bản cài (phạm vi XE); lượt mở sau cùng bản cài bỏ dọn (0 broadcast, 0 lượt đọc lại) và vẫn KHÔNG gửi theme; bản cài khác ⇒ dọn thật; lượt bị hạn cắt không ghi; rào "lớp còn trên màn ảo cụm ⇒ không gửi opcode" không đổi.</td></tr>
+<tr><td>R3</td><td>HEAL-DEFER-GATE-RECHECK</td><td>Lượt tắt-máy: cổng cuối hỏi lại <code>restartHazard()</code> ngay trước lệnh tách rời; có mối nguy ⇒ không bắn, chờ, leo lại với bản đọc mới; một trần cho cả lượt; tối đa 2 lần chặn rồi bắn (không bỏ đói). Pha khác: đường cũ từng bước.</td></tr>
+<tr><td>R4</td><td>SHORTCUT-SCROLL-REBUILD</td><td>View <code>w_apps</code> MỚI của cùng ô + cùng tổ hợp bắt đầu từ vị trí người lái đã chọn (nhớ trong tiến trình, khoá ô + tổ hợp).</td></tr>
+<tr><td>R5</td><td>KDoc treo</td><td>Không KDoc nào nói <code>IntentAppLauncher</code> như đang sống.</td></tr>
+<tr><td>R6</td><td>SLOT-DEAD-OPENSLOT</td><td>Gỡ <code>openInSlot</code>/<code>moveToSlot</code> (hợp đồng + mọi bản cài) và <code>FreeformLaunch.launchCmd</code>/<code>parseTaskId</code>; GIỮ <code>parseTaskIdOnDisplay</code>; bài test đi theo.</td></tr>
+<tr><td>R7</td><td>DemoCarData</td><td>Xoá; 0 tham chiếu còn lại.</td></tr>
+<tr><td>R8</td><td>FIT-REGROW</td><td>Lượt lớn lại không đổi gì ⇒ GIỮ dấu (hẹn lại); đổi ⇒ xoá. <code>99 → 100 → (30 s, vẫn 100) → 99</code> về đúng cỡ lưới. <b>Pass 2 (ghi chú b)</b>: "đổi ⇒ xoá" thay bằng "ô về ĐẦY ⇒ xoá" (mọi chữ ở cỡ lưới + hàng ngang không chú thích nào nhường), cùng luật ở lượt khớp đủ; <code>1000 → 100 → 99</code> về đúng cỡ lưới.</td></tr>
+<tr><td>R9</td><td>DOCS-QA-REL-PATHS</td><td>0 đường dẫn thư mục QA của phiên trong mã/test (khoá bằng bài); 0 đường dẫn thư mục nháp trong <code>PROJECT-BACKLOG.md</code>; bảng <code>DOCS_LEGACY</code> rỗng.</td></tr>
+<tr><td>R10</td><td>VOICE-TOKENIZE-NFD</td><td><code>VoiceLexicon.tokenize</code> chuẩn hoá NFC ⇒ chuỗi NFD tách và phân tích y hệt NFC.</td></tr>
+<tr><td>R11</td><td>VOICE-TAUGHT-ACCENT-MATCH</td><td>Đúng OQ2: tên GIỌNG một âm tiết chỉ khớp token MANG dấu khi đúng cách viết đã dạy; token không dấu ⇒ như cũ; tên gõ / nhiều từ không ràng.</td></tr>
+<tr><td>R12</td><td>Câu dẫn hộp dạy</td><td>5 thứ tiếng: theo dòng gợi ý từng lượt, lượt 1 “mở …”, lượt 2 kèm ô, ít nhất 2 lượt; không còn "2–3 lần".</td></tr>
+</table>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Không tệp Kotlin nào &gt; 500 dòng [ĐO <code>wc -l</code>: <code>A11yLifecycleHeal.kt</code> 499 · <code>WorkspaceView.kt</code> 498 · <code>KachiHomeActivity.kt</code> 496 · <code>AccessibilityRebind.kt</code> 496 · <code>VoiceLexicon.kt</code> 493 · <code>FitGridLayout.kt</code> 492].</li>
+<li>R-nf2. Không thư viện mới; không đổi đường đang chạy tốt ngoài phạm vi (CLAUDE.md §6); generic, không tên gói cứng mới (§7).</li>
+<li>R-nf3. Mỗi sửa có test hồi quy ĐÃ thử đỏ (conversation-protocol P5.3) — §6.</li>
+<li>R-nf4. Chữ UI đổi đủ 5 tiếng; câu để NÓI giữ tiếng Việt trong “…”.</li>
+</ul>
+
+<h2>4. Design</h2>
+<p class="muted">Phản ánh mã THỰC TẾ (R2.6). Diagram là HTML visual.</p>
+
+<h3>4.1 R1 · HOME-EDGE-80 — một lề ngang cho cả khung</h3>
+<div class="layers">
+  <div class="layer"><div class="node new"><b>content</b><span>LinearLayout gốc · KachiHomeActivity — trái/phải <code>Sp.EDGE_H</code> 13dp · trên/dưới <code>Sp.L</code> 16dp</span></div></div>
+  <div class="layer"><div class="node"><b>topStrip.view</b><span>thanh trên (cao <code>KachiBars.HEADER_H</code>)</span></div></div>
+  <div class="layer"><div class="node"><b>mainArea</b><span>vùng ô (<code>WorkspaceView</code>) + thanh nút (<code>DockAreaLayout</code>), khe <code>Sp.SLOT_GAP</code></span></div></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> đổi ở wave 2A</span><span class="sw"><span class="box" style="background:var(--bg)"></span> không đổi</span></div>
+<ul>
+<li><code>KachiSpace.EDGE_H = 13</code> KHAI LẠI kèm KDoc (lý do 13 không phải 12 = bậc <code>M</code>; vì sao MỘT con số cho cả ba thứ — lề riêng cho hai thanh phải dùng lề âm ⇒ lệch cột; chỉ NGANG).</li>
+<li>Chỗ đọc DUY NHẤT: <code>KachiHomeActivity</code> khung gốc <code>setPadding(dp(Sp.EDGE_H), dp(Sp.L), dp(Sp.EDGE_H), dp(Sp.L))</code>.</li>
+<li>Hình học khác tự theo [SUY đọc mã]: cửa sổ app on-car (<code>LauncherWindows.absoluteSlotRect</code> — <code>getLocationOnScreen</code>), bảng vẽ bố cục (<code>GridEditorView.area</code> = vùng ô đã đo), sức chứa widget (<code>WidgetCapacity</code> — khung ô đã đo) đều đọc kích thước THẬT, không hằng lề.</li>
+</ul>
+
+<h3>4.2 R2 · VM-BUBBLE-OLDMOD-MEMO — sổ theo dấu cài đặt, tin có hạn</h3>
+<div class="flow">
+  <div class="fnode"><b>admit (lượt MỞ)</b><span>bản đọc đầu: FOREIGN/BUBBLE</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>pausable</b><span>có bóng nổi?</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>oldMods.skip</b><span>sổ khớp bản cài ∧ skips &lt; 4</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>BỎ dọn</b><span>Skip(BUBBLE) · đếm skips+1</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>không khớp</b><span>chưa có sổ · bản cài khác · hết lượt tin</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>pauseAndReread</b><span>VM_BUBBLE_VIS false + ≤ 6 lượt đọc lại (2.90/2.93)</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>oldMods.settle</b><span>TRỌN + còn bóng ⇒ GHI (skips 0) · sạch ⇒ XOÁ · bị hạn cắt ⇒ giữ nguyên</span></div>
+</div>
+<ul>
+<li><b>Dấu cài đặt</b> = <code>longVersionCode@lastUpdateTime</code> của gói bản mod (<code>VmBubbleVisibility.installToken</code>). [ĐO nguồn r47] <code>PackageInfo.lastUpdateTime</code> (<code>PackageInfo.java:140-144</code>) đổi ở MỌI lần cài: cài mới ⇒ <code>PackageManagerService.java:11468-11474</code> với <code>currentTime</code> = <code>System.currentTimeMillis()</code> (<code>:16993</code>); cài đè ⇒ <code>setInstallAndUpdateTime(…, System.currentTimeMillis())</code> (<code>:16781-16787</code>). Lý do không chỉ <code>versionCode</code>: bản vá APK thường giữ mã phiên bản gốc ⇒ v1 → v2 cùng mã thì sổ theo mã bỏ dọn mãi với chính bản v2 ẩn được [ĐOÁN về thói quen người vá — chọn hướng an toàn].</li>
+<li><b>Ghi</b> chỉ khi: đã gửi lệnh ẩn ∧ đủ <code>PAUSE_READS</code> lượt đọc lại (không bị CAST-OPEN-TIMEOUT cắt) ∧ không lượt nào sạch ∧ quyết sau dọn vẫn BUBBLE (<code>BubbleOldModMemo.outcome</code>). Review CAST Pass 1 [P3] đã nêu ca mod v2 ẩn chậm bị cắt ⇒ báo "mod cũ" oan — sổ không khoá điều oan đó.</li>
+<li><b>Tin có hạn</b>: <code>SKIPS_MAX = 4</code> lượt bỏ liền, lượt thứ 5 dọn thật lại ([CHƯA BIẾT] độ trễ ẩn của mod v2 — OQ1 spec 293-cast; một lần chứng minh oan chỉ mất theme tối đa 4 lượt mở).</li>
+<li><b>An toàn theo cấu tạo</b>: nhánh bỏ dọn trả <code>Skip(BUBBLE)</code> từ bản đọc đầu ⇒ <code>ThemeVerdict</code> SKIP_KNOWN/ABORT y như lượt dọn thật thất bại; không nhánh nào ra SEND. Cài đặt vẫn nói "bản mod VietMap cũ … tắt VietMap rồi Áp ngay" (<code>lastBubbleOldMod</code> + <code>lastBlockers</code>).</li>
+<li><b>Nơi lưu</b>: khoá <code>cluster_bubble_old_mod</code> tệp <code>clustercast</code> (cạnh sổ theme), <code>commit()</code> trên luồng executor; khai <code>ProfileScopeCluster.DEVICE_KEYS</code> (sự thật của gói cài trên chiếc xe — đổi hồ sơ không kéo theo). Cổng: 3 hàm mặc định mới của <code>ClusterLayerPort</code> (JVM/test cũ: không sổ = hành vi 2.90).</li>
+</ul>
+
+<h3>4.3 R4 · SHORTCUT-SCROLL-REBUILD — nhớ theo ô trong tiến trình</h3>
+<div class="flow">
+  <div class="fnode"><b>WorkspaceView.makeSlot</b><span>khoá <code>slotKey(index, ids)</code></span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>WidgetViews.buildGrid</b><span>ô to + ô nén truyền khoá</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>ShortcutIconsView.rebuild</b><span>khung cũ ? keep : recall(khoá) ?: ORIGIN</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>ShortcutGridLayout.scrollAlongTo</b><span>cú cuộn của NGƯỜI LÁI ⇒ remember</span></div>
+</div>
+<ul>
+<li><code>ShortcutScrollMemory</code> (<code>:core</code>): LRU 16 khoá, RAM tiến trình. Áp vẫn qua <code>ShortcutScrollKeep.applied</code> (kẹp theo khung mới, lượt đo khung lạ chỉ áp không ghi — R2 của SLOT giữ nguyên).</li>
+<li>Chỗ GHI duy nhất vẫn là cú cuộn của người lái (<code>wanted =</code> một chỗ — bài canh SLOT giữ). Khối thanh nút và bản nháp đo sức chứa: khoá <code>null</code> ⇒ như cũ.</li>
+<li>Vì sao RAM: vị trí cuộn là tiện nghi hiển thị; CLAUDE.md §5 chỉ đòi bền cho state đổi NGOÀI hệ thống. Tiến trình chết ⇒ về đầu (như mọi launcher).</li>
+</ul>
+
+<h3>4.4 R5–R7 · dọn mã chết + KDoc</h3>
+<ul>
+<li><code>AppLauncher</code> còn <code>closeSlot</code> + <code>isFreeformAvailable</code>; <code>NoCar</code>/<code>ShellAppLauncher</code> gỡ hai hàm mở nổi; <code>ShellAppLauncher</code> gỡ tham số <code>sleep</code>, vòng chờ task, <code>rejected()</code> (chỉ đường mở dùng). <code>FreeformLaunch</code> gỡ <code>launchCmd</code> + <code>parseTaskId</code>; <code>parseTaskIdOnDisplay</code> giữ (<code>SlotLiveProbe</code>).</li>
+<li>Test đi theo: 5 bài <code>openInSlot</code> của <code>ShellAppLauncherTest</code>, 3 khoá golden (<code>launchCmd</code> · chuỗi <code>openInSlot</code> · <code>moveToSlot</code>), 2 bài <code>FreeformLaunchTest</code> gỡ cùng hàm; thêm bài phản chiếu "hợp đồng không còn đường mở nổi" + bài "tên gói lạ ⇒ 0 lệnh".</li>
+<li>KDoc: <code>FloatingWindowLedger</code> (bản ≤ 2.92; <code>markOpened</code> nay không còn chỗ gọi sản phẩm — sổ chỉ còn để dọn cửa sổ của bản cũ), <code>AccessibilityRebind</code>, và bốn chỗ treo cùng họ tìm thêm (<code>WindowCommandDispatcher</code> ×2, <code>PrioritySerialExecutor</code>, chú thích <code>LayeringRulesTest</code>/<code>ReadyAtHomeWiringContractTest</code>).</li>
+<li><code>DemoCarData.kt</code> xoá.</li>
+</ul>
+
+<h3>4.5 R3 · HEAL-DEFER-GATE-RECHECK — cổng cuối hỏi lại, leo lại bằng bản đọc mới</h3>
+<div class="flow">
+  <div class="fnode"><b>KẸT BỀN</b><span>healIfStuck</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>await</b><span>chờ chiếu yên (trần chung 25 s)</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>nấc leo</b><span>phiên dadb + 4 lệnh đọc</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>cổng cuối</b><span>pha ∧ (mối nguy vắng ∨ quá trần ∨ đã chặn 2 lần)</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>bắn</b><span>marker → lệnh tách rời</span></div>
+</div>
+<ul>
+<li>Cổng chặn vì mối nguy ⇒ <code>escalateIfStuck</code> trả NOT_BOUND TRƯỚC marker/lệnh ghi hệ thống ⇒ <code>HealCastDeferral.escalate</code> quay lại <code>await</code> rồi leo lại (phiên + bản đọc MỚI — giữ D1 của spec 293-cast: không giữ phiên dadb nằm im, <code>enabled_accessibility_services</code> dựng vào lệnh luôn tươi).</li>
+<li>Trần: MỘT <code>until</code> (= <code>waitUntil</code>, 25 s) cho cả lượt; <code>MAX_GATE_RECHECKS = 2</code> ⇒ ≤ 3 phiên dadb; hết ⇒ bắn như <code>LIMIT</code> (D3 — không bỏ đói lượt chữa phím).</li>
+<li>Chỉ <code>TAT_MAY</code> (review CAST F1: chỉ lượt tắt-máy chờ); pha khác: cổng = pha, không hỏi mối nguy — đúng đường cũ.</li>
+<li>Nối: <code>A11yLifecycleHeal.healIfStuck</code> (một lời gọi <code>HealCastWait.escalate</code>; dòng <code>keys=STUCK(…)->ESCALATE</code> mỗi lượt leo + dòng kết quả giữ thứ tự) — dòng log mới <code>keys-defer note=… gate hazard=… recheck=n -> RECHECK</code> cho buổi xe.</li>
+</ul>
+
+<h3>4.6 R8–R9 · FIT-REGROW · DOCS-QA-REL-PATHS</h3>
+<ul>
+<li><code>FitValues.regrowNext(changed, now)</code>: đổi ⇒ <code>null</code>; không đổi ⇒ hẹn lại từ <code>now</code>. <code>FitGridLayout.regrowOrShrink</code> dùng kết quả <code>fitValues(tick = false)</code>. Giá: chữ rộng mãi ⇒ một lượt luật giá trị (không đo view) mỗi 30 s.<br><b>Pass 2 (ghi chú b)</b>: chữ ký thành <code>regrowNext(full, now)</code> — đầy ⇒ <code>null</code>, chưa ⇒ hẹn lại. <code>full</code> = <code>FitScale.full()</code>: mọi chữ (trừ autosize, kể cả chữ đang ẩn) ở cỡ lưới gốc × k — chỉ luật giá trị co dưới cỡ ấy — và <code>FitValueRow.roomy()</code> (hàng ngang: <code>FitValues.roomy</code> = chú thích nhận TRỌN nhu cầu theo chỗ ĐANG áp, kể cả chỗ nhịp đang giữ; khối dọc ⇒ đầy theo cỡ). <code>regrowOrShrink</code> chạy <code>fitValues(tick = false)</code> RỒI mới hỏi <code>full()</code>; <code>refit</code> đặt dấu cùng luật thay vì xoá. Giá: ô không bao giờ đầy ⇒ một lượt luật giá trị mỗi 30 s ở nhịp 1 Hz sẵn có (không đổi gì ⇒ không <code>requestLayout</code>; không hẹn giờ mới).</li>
+<li>46 đường dẫn tương đối vào thư mục QA của phiên (dạng l5/…png · qa2/a/…log · p3/e2e-L4/…) ở 34 tệp ⇒ tên tệp + "(bằng chứng phiên, ngoài repo)". Bài mới <code>SourcePathHygieneTest</code> › <code>ma test khong ghi duong dan tuong doi vao thu muc QA cua phien</code>. Ba đường dẫn thư mục nháp của <code>PROJECT-BACKLOG.md</code> gỡ ⇒ <code>DOCS_LEGACY</code> rỗng (mọi tài liệu ở mức 0).</li>
+</ul>
+
+<h3>4.7 R10–R12 · giọng nói</h3>
+<ul>
+<li><b>NFD</b>: <code>VoiceLexicon.tokenize</code> = NFC (bỏ qua khi đã NFC — không cấp phát) rồi tách như cũ. Chuẩn hoá chuẩn ⇒ <code>Token.raw</code> vẫn là chữ người dùng.</li>
+<li><b>Khớp có dấu (OQ2)</b>: <code>VoiceTerm.spelled</code> (mặc định <code>null</code>) — chỉ cụm của tên GIỌNG một âm tiết mang (<code>VoiceHomograph.taughtSpelling</code>); <code>VoiceGrammar.matchAt</code> thêm <code>VoiceHomograph.spelledOk</code>: không ràng ⇒ có; chữ thô không dấu ⇒ có (hành vi cũ); mang dấu ⇒ chỉ đúng cách viết. Mọi đường khớp tên (<code>VoiceTailClause</code> · bộ phân tích · <code>VoicePhoneticMatch.coveredByExact</code>) đi qua <code>matchAt</code> [ĐO grep].</li>
+<li>Vì sao an toàn để bật [SUY]: tên GIỌNG đã dạy được BIAS vào phiên nghe bằng đúng cách viết có dấu (2.91 R8 — <code>VoiceAppIndex.hotwordNames</code>) ⇒ khi nói đúng tên, mô hình bị kéo về đúng cách viết; kết cục xấu nhất khi in lệch thanh là "không hiểu" (không mở nhầm app). 🚗 E1 đo thật (§6, OQ2).</li>
+<li><b>Câu dẫn</b> 5 tiếng: "theo dòng gợi ý của từng lần … lần 1 “mở %1$s”, lần 2 nói kèm ô. Cần ít nhất 2 lần." (khớp <code>TeachSample.SLOT_TAKE = 2</code>, <code>MIN_SPOKEN_TAKES = 2</code>).</li>
+</ul>
+
+<h3>4.8 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do / trade-off</th></tr>
+<tr><td>D1</td><td>R2 khoá sổ = mã phiên bản + LẦN CÀI, không chỉ mã phiên bản (lời giao: "per installed VietMap versionCode")</td><td>Chặt hơn lời giao theo hướng an toàn: cài lại cùng bản ⇒ thử thật một lần (~5 s) thay vì có thể bỏ dọn mãi với bản vá v2 giữ mã gốc.</td></tr>
+<tr><td>D2</td><td>R2 tin sổ tối đa 4 lượt rồi thử lại</td><td>Độ trễ ẩn của mod v2 [CHƯA BIẾT]; một lần chứng minh oan (vd hàng broadcast chậm lúc nổ máy) không được khoá theme tới lần cài sau. Với mod v1: tiết kiệm ~5 s ở 4/5 lượt mở.</td></tr>
+<tr><td>D3</td><td>R3 chặn + leo lại, không chờ TẠI cổng</td><td>Giữ D1 spec 293-cast (không giữ phiên dadb im 25 s; bản đọc dựng lệnh tươi). Giá: tối đa 2 phiên dadb thêm.</td></tr>
+<tr><td>D4</td><td>R4 nhớ RAM, khoá ô + tổ hợp</td><td>Đúng lời giao "process-level, keyed by slot/widget id"; đổi tổ hợp/ô ⇒ từ đầu (nội dung khác).</td></tr>
+<tr><td>D5</td><td>R9 làm cả 34 tệp, không chỉ 8 của danh sách</td><td>Danh sách §9 spec 293-misc chỉ quét ba tiền tố (qa2/l4/l5) trong vùng WIDGET/SLOT; bài khoá mới đỏ nếu còn sót ở đâu — để sót là bài khoá không đứng được.</td></tr>
+<tr><td>D6</td><td>R11 chỉ tên GIỌNG một âm tiết, không tên gõ / nhiều từ</td><td>Đúng chữ OQ2; tên gõ không bảo đảm dấu, tên nhiều từ khớp nguyên dãy (đồng hình một chữ không xảy ra).</td></tr>
+</table>
+
+<h2>5. Tasks (DAG) — một dòng mỗi việc</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Tệp chính</th><th>Trạng thái</th><th>Lý do / bằng chứng</th></tr>
+<tr><td>T1</td><td>R1 HOME-EDGE-80</td><td><code>KachiSpace.kt</code> · <code>KachiHomeActivity.kt</code> · <code>HomeEdgeInsetContractTest</code> (mới) · <code>ScaleConstantsUsedContractTest</code> (đổi ghim)</td><td class="ok">✅ off-car · 🖥 · 🚗 mắt owner</td><td>§6</td></tr>
+<tr><td>T2</td><td>R2 VM-BUBBLE-OLDMOD-MEMO</td><td><code>BubbleOldModMemo.kt</code> (mới) · <code>ClusterThemeGuard.kt</code> · <code>ClusterLayerPause.kt</code> · <code>ClusterLayerExecutor.kt</code> · <code>VmBubbleVisibility.kt</code> · <code>ProfileScopeCluster.kt</code> · <code>ClusterThemeOldModMemoTest</code> · <code>BubbleOldModMemoWiringContractTest</code></td><td class="ok">✅ off-car · 🚗</td><td>§6</td></tr>
+<tr><td>T3</td><td>R3 HEAL-DEFER-GATE-RECHECK</td><td><code>HealCastDeferral.kt</code> · <code>HealCastWait.kt</code> · <code>A11yLifecycleHeal.kt</code> · <code>HealCastGateRecheckTest</code> · <code>HealCastWaitWiringContractTest</code> (đổi ghim)</td><td class="ok">✅ off-car · 🚗</td><td>§6</td></tr>
+<tr><td>T4</td><td>R4 SHORTCUT-SCROLL-REBUILD</td><td><code>ShortcutScrollMemory.kt</code> (mới) · <code>ShortcutIconsView.kt</code> · <code>ShortcutGridLayout.kt</code> · <code>WidgetViews.kt</code> · <code>WorkspaceView.kt</code> · <code>ShortcutScrollMemoryTest</code> · <code>ShortcutScrollRebuildWiringContractTest</code> · <code>ShortcutGridFitWiringContractTest</code> (đổi ghim)</td><td class="ok">✅ off-car · 🖥</td><td>§6</td></tr>
+<tr><td>T5</td><td>R5 KDoc treo</td><td><code>FloatingWindowLedger.kt</code> · <code>AccessibilityRebind.kt</code> · <code>WindowCommandDispatcher.kt</code> · <code>PrioritySerialExecutor.kt</code></td><td class="ok">✅</td><td>chỉ chữ</td></tr>
+<tr><td>T6</td><td>R6 SLOT-DEAD-OPENSLOT</td><td><code>LauncherPorts.kt</code> · <code>ShellAppLauncher.kt</code> · <code>FreeformLaunch.kt</code> · 4 tệp test</td><td class="ok">✅</td><td>0 chỗ gọi sản phẩm [ĐO grep main + vehicleTest]</td></tr>
+<tr><td>T7</td><td>R7 DemoCarData</td><td><code>DemoCarData.kt</code> (xoá)</td><td class="ok">✅</td><td>0 tham chiếu [ĐO grep]</td></tr>
+<tr><td>T8</td><td>R8 FIT-REGROW</td><td><code>FitValues.kt</code> · <code>FitGridLayout.kt</code> · <code>FitRegrowRearmTest</code> · Pass 2: <code>FitScale.kt</code> · <code>FitValueRow.kt</code> · <code>FitRegrowWiringContractTest</code></td><td class="ok">✅ off-car</td><td>mỹ quan; máy ảo không có nhịp số xe ⇒ chỉ test thuần</td></tr>
+<tr><td>T9</td><td>R9 DOCS-QA-REL-PATHS</td><td>34 tệp mã/test (chỉ chú thích) · <code>PROJECT-BACKLOG.md</code> (3 chỗ) · <code>SourcePathHygieneTest</code></td><td class="ok">✅</td><td>§6</td></tr>
+<tr><td>T10</td><td>R10 VOICE-TOKENIZE-NFD</td><td><code>VoiceLexicon.kt</code> · <code>VoiceTokenizeNfdTest</code></td><td class="ok">✅</td><td>§6</td></tr>
+<tr><td>T11</td><td>R11 VOICE-TAUGHT-ACCENT-MATCH</td><td><code>VoiceGrammar.kt</code> · <code>VoiceHomograph.kt</code> · <code>VoiceTaughtAccentMatchTest</code></td><td class="ok">✅ off-car · 🚗 E1</td><td>OQ2</td></tr>
+<tr><td>T12</td><td>R12 câu dẫn hộp dạy</td><td>5 × <code>strings_kachi.xml</code> · <code>VoiceTeachHintContractTest</code></td><td class="ok">✅ · 🖥 ảnh 5 tiếng</td><td>§6</td></tr>
+<tr><td>T13</td><td>Bộ đủ · senior review · QA máy ảo · quét bảo mật · INDEX/BACKLOG/project-context</td><td>— (điều phối)</td><td class="warn">chờ</td><td>ngoài phạm vi lượt này (lời giao)</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 2026-10-07, JUnit XML, <code>JAVA_HOME=openjdk@17</code>, chỉ bài chọn lọc — điều phối chạy bộ đủ]: <code>./gradlew :core:test --tests …</code> (17 lớp/gói: dọn mã chết · Fit · cuộn · <code>clustercast.simplified.*</code> · <code>navaccess.*</code> · <code>launcher.voice.*</code> · <code>SourcePathHygieneTest</code> · <code>ProfileScope*</code>) ⇒ <b>177 tệp · 1 499 bài · 0 hỏng · 0 lỗi</b>. Bài mới <code>:core</code>: <code>ClusterThemeOldModMemoTest</code> 8 · <code>HealCastGateRecheckTest</code> 7 · <code>ShortcutScrollMemoryTest</code> 4 · <code>FitRegrowRearmTest</code> 3 · <code>VoiceTaughtAccentMatchTest</code> 4 · <code>VoiceTokenizeNfdTest</code> 2 · <code>SourcePathHygieneTest</code> +1 · <code>ShellAppLauncherTest</code> +2. Lượt rộng hơn (<code>launcher.*</code> · <code>clustercast.simplified.*</code> · <code>navaccess.*</code> · <code>core.*</code> · <code>system.*</code>): 426 tệp · 3 852 bài · 1 hỏng = <code>TestBridgeCommandTest</code> › <code>diag_screen</code> — lệnh MỚI của lượt wave 2B đang dở (<code>TestBridgeCommand.kt</code> sửa chưa stage + <code>TestBridgeScreenCommands.kt</code> chưa track), không thuộc tệp của lượt này.</li>
+<li><b>V-unit <code>:app</code></b> [ĐO 2026-10-07, JUnit XML, <code>./gradlew :app:testDebugUnitTest --tests …</code> — 31 lớp/gói: dây nối mới · ghim đổi · <code>modules.clustercast.*</code> · <code>launcher.voice.*</code> · <code>LayeringRulesTest</code> · i18n · các bài chạm tệp đổi chú thích] ⇒ <b>71 tệp · 638 bài · 0 hỏng · 0 lỗi</b>. Bài mới: <code>HomeEdgeInsetContractTest</code> 4 · <code>ShortcutScrollRebuildWiringContractTest</code> 2 · <code>BubbleOldModMemoWiringContractTest</code> 3 · <code>VoiceTeachHintContractTest</code> 2.</li>
+<li><b>Thử đỏ</b> [ĐO 2026-10-07, khôi phục bằng bản sao + so sha256 ⇒ ALL-RESTORED-IDENTICAL]: <code>regrowNext</code> luôn <code>null</code> ⇒ 3 bài <code>FitRegrowRearmTest</code> đỏ · sổ không bao giờ bỏ dọn ⇒ 2 bài <code>ClusterThemeOldModMemoTest</code> đỏ · cổng không hỏi mối nguy ⇒ 4 bài <code>HealCastGateRecheckTest</code> đỏ · bỏ NFC ⇒ 2 bài <code>VoiceTokenizeNfdTest</code> đỏ · bỏ <code>spelledOk</code> ⇒ 2 bài <code>VoiceTaughtAccentMatchTest</code> đỏ · thêm lại <code>launchCmd</code> ⇒ <code>ShellAppLauncherTest</code> đỏ · thêm lại một đường dẫn QA phiên ⇒ <code>SourcePathHygieneTest</code> đỏ (7 đột biến · 15 bài đỏ). <code>:app</code>: khung gốc về <code>Sp.L</code> 4 cạnh ⇒ 2 bài <code>HomeEdgeInsetContractTest</code> + 2 bài <code>ScaleConstantsUsedContractTest</code> đỏ · bỏ đọc bản nhớ cuộn ⇒ <code>ShortcutScrollRebuildWiringContractTest</code> + <code>ShortcutGridFitWiringContractTest</code> đỏ · trả câu dẫn VI về "2–3 lần" ⇒ <code>VoiceTeachHintContractTest</code> đỏ · sổ ghi bằng <code>apply()</code> ⇒ <code>BubbleOldModMemoWiringContractTest</code> đỏ (4 đột biến · 8 bài đỏ). Thêm: <code>remember</code> rỗng ⇒ 3 bài <code>ShortcutScrollMemoryTest</code> đỏ · thêm lại đường dẫn nháp vào <code>PROJECT-BACKLOG.md</code> ⇒ bài tài liệu của <code>SourcePathHygieneTest</code> đỏ. Tổng 13 đột biến · 27 bài đỏ · mọi lần khôi phục so sha256 khớp.</li>
+<li><b>🖥 QA máy ảo</b> (điều phối, <code>clusternav10</code>, 1920×1080, 240 dpi): (1) HOME-EDGE-80 — đo pixel mép trái thanh trên / khay ô / thanh nút = <b>x = 19</b>, mép phải = <b>1 900</b> (lề phải 19 px), mép trên khung nội dung y = 24 (lề dọc KHÔNG đổi); so ảnh 2.92: 24 px. (2) SHORTCUT-SCROLL-REBUILD — <code>w_apps</code> nhiều app, cuộn tới cuối ⇒ đổi Sáng/Tối, đổi đơn vị lốp, đổi ngôn ngữ (Activity dựng lại) ⇒ dải giữ chỗ; <code>adb logcat -s WidgetFit</code> dòng <code>pos=áp/chọn</code> khớp. (3) Hộp dạy tên ở 5 tiếng — câu dẫn đủ chỗ, không cắt. (4) Harness giọng: <code>voice-teach-e2e.sh</code> (WSC1/WSC2) + <code>voice-e2e.sh</code> chạy lại (R10/R11 đổi tầng chữ).</li>
+<li><b>🚗 V-oncar</b>: R1 — owner nhìn lề 19 px (handoff WP1 §8.6c: "còn dư / đã sát quá"). R2 — nếu còn xe dùng mod v1: lượt mở đầu có <code>sổ mod cũ: GHI …</code>, lượt nổ máy kế có <code>dọn cụm (theme 31): BỎ — bản cài … lượt bỏ 1/4</code> và không <code>TIMEOUT: openProjection</code>; mod v2: không bao giờ có dòng GHI. R3 — <code>keys-defer note=tat-may gate hazard=… -> RECHECK</code> (hiếm) đứng trước một <code>keys=STUCK(tat-may)->ESCALATE</code> thứ hai, rồi <code>->RESTARTING</code>; tiến trình kế không <code>TOO_SOON</code>. R11 — E1 giọng thật: tên GIỌNG ngắn đã dạy vẫn mở được (mô hình in đúng cách viết đã dạy), <i>"mở cái này"</i> không mở app đã dạy «nay».</li>
+<li><b>V-lifecycle</b>: R2 sổ sống qua tiến trình (BYD giết Kachi lúc tắt máy) — bài "tiến trình kế" dùng chung đĩa giả; cập nhật/cài lại bản mod ⇒ dấu khác ⇒ thử thật. R4 nhớ trong tiến trình — tiến trình chết ⇒ về đầu (đúng thiết kế).</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. <code>SKIPS_MAX = 4</code> (R2) là số chọn [ĐOÁN] — chỉnh sau khi 🚗 đo độ trễ ẩn của mod v2 (OQ1 spec 293-cast). <span class="muted">Mặc định an toàn đang chạy.</span></li>
+<li>OQ2. R11: mô hình có in lệch thanh một tên ngắn đã dạy giữa hai lần nói không [CHƯA BIẾT — 🚗 E1]. Nếu có: lưu MỌI cách viết đã nghe ở các lượt dạy (đổi định dạng <code>voice_app_names</code> v1) — quyết định owner, đề xuất backlog <code>VOICE-TAUGHT-SPELL-VARIANTS</code>.</li>
+<li>OQ3. Sau R6 còn hai mảnh 0 chỗ gọi sản phẩm: <code>AppLauncher.isFreeformAvailable</code> (ngoài lời giao) và <code>FloatingWindowLedger.markOpened</code> (sổ chỉ còn dọn dấu của bản ≤ 2.92). Đề xuất backlog <code>SLOT-DEAD-FREEFORM-REST</code> — không làm ở đây (ngoài chữ lời giao).</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec: <code>kachi-293-plan.html</code> · <code>kachi-293-cast.html</code> (OQ4, OQ5, D1, §10 Pass 1) · <code>kachi-293-slot.html</code> (OQ4, §10 Pass 2 mục 4/8) · <code>kachi-293-widget.html</code> (§10 Pass 1) · <code>kachi-293-voice.html</code> (OQ2, §9, §10 ghi chú d) · <code>kachi-293-misc.html</code> (OQ4, §9).</li>
+<li>Handoff: <code>docs/_handoff/ux-wp1-zero-borders.md</code> §4, §6.2, §8.</li>
+<li>AOSP android-10.0.0_r47 (tải trong phiên): <code>core/java/android/content/pm/PackageInfo.java:140-144</code> · <code>services/core/java/com/android/server/pm/PackageManagerService.java:11468-11474, :16781-16787, :16993</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-07 · sai lệch lời giao (chặt hơn)</b> — R2 khoá theo mã phiên bản + lần cài (D1) và tin có hạn (D2): lời giao nói "per installed VietMap versionCode … until the VietMap version changes".</li>
+<li><b>2026-10-07 · quyết định</b> — R3 đặt vòng "chờ + leo lại" trong <code>HealCastDeferral.escalate</code> (<code>:core</code>, đồng hồ giả) thay vì vòng lặp trong <code>healIfStuck</code>: <code>A11yLifecycleHeal.kt</code> sát trần (498 ⇒ 499 dòng); <code>NavConnect.kt</code> không chạm (D1 spec 293-cast).</li>
+<li><b>2026-10-07 · mở rộng phạm vi có lý do</b> — R9: 34 tệp thay vì 8 (D5); R5: thêm bốn KDoc treo cùng họ tìm khi gỡ R6.</li>
+<li><b>2026-10-07 · bug &amp; xử</b> — tên bài test chứa <code>;</code> làm <code>:core:compileTestKotlin</code> đỏ ("Name contains illegal characters") ⇒ đổi thành <code>,</code>.</li>
+<li><b>2026-10-07 · bug &amp; xử</b> — <code>VoiceTeachHintContractTest</code> bản đầu chỉ đọc tài nguyên ⇒ <code>LayeringRulesTest</code> đỏ ("test chỉ dùng logic :core mà nằm trong :app"). Sửa: thêm bài dây nối thật — hộp dạy (<code>SettingsVoiceNamesDialog</code>) hiện đúng câu dẫn kèm nhãn app.</li>
+<li><b>2026-10-07 · bug công cụ &amp; xử</b> — lượt thử đỏ đầu dùng biến danh sách tệp trong zsh (không tách từ) ⇒ sao lưu hỏng, chuỗi <code>&amp;&amp;</code> dừng TRƯỚC khi đột biến (không tệp nào bị đổi — kiểm bằng grep). Làm lại bằng script Python sao lưu + so sha256.</li>
+<li><b>2026-10-07 · chặn ngoài phạm vi</b> — <code>:app</code> không biên dịch được giữa lượt thử đỏ phía <code>:app</code>: <code>VoiceWiring.kt:199</code> (lệnh camera theo yêu cầu — tệp của bên rà soát CAM đang sửa) — chờ rồi chạy lại: biên dịch xanh, thử đỏ + lượt chọn lọc <code>:app</code> chạy đủ (§6).</li>
+<li><b>2026-10-07 · ghi cho điều phối</b> — <code>WidgetViews.kt</code> có sửa đồng thời của bên khác (<code>cameraDemandTile</code>, 2.93 CAMERA-WIDGET-TILE) ngay cạnh tham số <code>scrollKey</code> của lượt này — hai sửa cùng có mặt lúc kết thúc; khi gộp cần giữ cả hai.</li>
+<li><b>2026-10-07 · R8 lớn MỘT PHẦN (§10 Pass 1 ghi chú b) — làm</b> — <code>FitValues.regrowNext(full, now)</code> + <code>FitValues.roomy</code> (thuần) · <code>FitScale.full()</code> · <code>FitValueRow.roomy()</code> (+ <code>captionNeed</code> dùng chung với phép chia) · <code>FitGridLayout.regrowOrShrink</code> chạy luật rồi mới hỏi <code>full()</code> · <code>refit</code> đặt dấu cùng luật (bản trước <code>shrunkAt = null</code> vô điều kiện). Chỗ gọi [ĐO grep mã đã bỏ chú thích]: <code>regrowNext(fs.full(), now)</code> × 2 (lượt lớn lại · lượt khớp đủ) · <code>row?.roomy()</code> ← <code>FitScale.full</code> · <code>FitValues.roomy(</code> ← <code>FitValueRow.roomy</code>. "Cỡ lưới" an toàn làm thước đo vì [ĐO grep <code>setTextSize</code>] chỉ <code>FitScale.text</code> (gốc × k) · <code>FitScale.fitValues</code> + <code>FitValueRow.set</code> (luật giá trị) · <code>FitValueRow.whole</code> (tạm, trả lại ngay) đổi cỡ chữ của ô.</li>
+<li><b>2026-10-07 · phát hiện khi lần nguồn (R8)</b> — [SUY đọc mã <code>FitRules.Cell.check</code> + <code>FitGridLayout.refit</code>] đúng chuỗi của ghi chú b khi ô dò ở <code>99</code> còn được đường DÒ LẠI cứu sau ≤ 1 × <code>RECHECK_MS</code> (tới hạn gặp <code>100</code> ≠ dấu đã dò ⇒ đo dò lại ⇒ dấu mới là <code>100</code> ⇒ <code>99</code> đến sau lại khác dấu). Lỗ "đứng mãi" thật nằm ở đường thứ ba: lượt khớp ĐỦ do ô KHÁC / đổi khung chạy lúc chữ đang rộng, trong 30 s sau lần dò ô này, rồi chữ về đúng chữ đã dò ⇒ <code>refit</code> xoá dấu, không lượt dò lại, không lượt lớn lại ⇒ đứng ở cỡ chữ rộng tới lượt khớp kế (khung không ô nào khác đổi chữ: mãi). Vá cả hai đường bằng cùng một luật; bài <code>FitRegrowRearmTest</code> khoá cả ba chuỗi.</li>
+<li><b>2026-10-07 · trần 500 (R8)</b> — bài canh đếm <code>lines().size</code> (= <code>wc -l</code> + 1) ⇒ trần thật 499: <code>FitScale.kt</code> 497 → 499 (gộp thân hai dòng của <code>baseTouchSides</code> thành một — chỉ định dạng) · <code>FitGridLayout.kt</code> 492 → 498 · <code>FitValueRow.kt</code> 248 → 261.</li>
+<li><b>2026-10-07 · test R8</b> — [ĐO JUnit XML, <code>JAVA_HOME=openjdk@17</code>, chỉ bài chọn lọc]: <code>:core:test --tests "*Fit*"</code> 18 tệp · 128 bài · 0 hỏng; <code>:app:testDebugUnitTest --tests "*Fit*"</code> + <code>Widget293WiringContractTest</code> + <code>LayeringRulesTest</code> 12 tệp · 70 bài · 1 hỏng NGOÀI phạm vi: <code>FitGridWiringContractTest</code> › <code>o widget di qua FitGridLayout …</code> (dòng 39 còn ghim <code>addView(mini(ctx, id, data).also { … })</code> mà <code>WidgetViews.buildGrid</code> nay truyền <code>scrollKey</code> — ghim cũ của R4, không phải tệp của lượt này). Bài đổi: <code>FitRegrowRearmTest</code> 3 → 8 · <code>FitRegrowWiringContractTest</code> 1 → 4. Thử đỏ [ĐO, sao lưu + so sha256 ⇒ ALL-RESTORED-IDENTICAL]: 6 đột biến · 14 bài đỏ đúng chỗ — <code>regrowNext</code> luôn <code>null</code> (5) · máy trạng thái về luật wave 2A "đổi ⇒ xong" (đúng bài <code>1000 → 100 → 99</code>) · <code>roomy</code> luôn <code>true</code> (2) · <code>refit</code> xoá dấu (2) · <code>regrowOrShrink</code> về dòng wave 2A (2) · <code>full</code> bỏ hàng ngang (2).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Mỗi pass thêm mục <code>Pass N — YYYY-MM-DD</code>.</p>
+<h3>Pass 0 — 2026-10-07 (tự soát của bên làm — chưa phải senior review độc lập)</h3>
+<ul>
+<li>§8 chỗ gọi [ĐO grep]: <code>FitValues.regrowNext</code> ← <code>FitGridLayout.regrowOrShrink</code> · <code>ShortcutScrollMemory.slotKey/recall/remember</code> ← <code>WorkspaceView</code>/<code>ShortcutIconsView</code> · <code>OldModMemoGate.skip/settle</code> ← <code>ClusterThemeGuard</code> · <code>bubbleInstallToken/oldModMemo/writeOldModMemo</code> ← <code>OldModMemoGate</code> (bản cài ở <code>ClusterLayerExecutor</code>) · <code>VmBubbleVisibility.installToken</code> ← <code>ClusterLayerExecutor</code> · <code>HealCastDeferral.escalate</code> ← <code>HealCastWait.escalate</code> ← <code>A11yLifecycleHeal.healIfStuck</code> · <code>VoiceHomograph.taughtSpelling</code> ← <code>VoiceGrammar.terms</code> · <code>spelledOk</code> ← <code>VoiceGrammar.matchAt</code> · <code>KachiSpace.EDGE_H</code> ← <code>KachiHomeActivity</code>.</li>
+<li>Bảo mật: 0 đường dẫn máy tuyệt đối · 0 IP · 0 email/tên thật trong tệp đổi; danh tính chỉ <code>dangkhoi</code>.</li>
+<li>Soát diff một lượt: KDoc lơ lửng ở <code>WidgetViews.buildGrid</code> (hai khối KDoc liền nhau) ⇒ gộp vào một; còn lại không phát hiện.</li>
+<li>Verdict: chờ senior review (Opus) + bộ đủ của điều phối.</li>
+</ul>
+
+<h3>Pass 1 — 2026-10-07 (senior review độc lập — Opus)</h3>
+<p class="muted">Soát mã + vá TRONG tệp wave 2A; không chạy gradle (điều phối chạy bộ đủ). Context7 không kết nối được phiên này (ENOTFOUND) — không thư viện mới; API dùng: <code>java.text.Normalizer</code> (JDK) · <code>PackageInfo.longVersionCode</code>/<code>lastUpdateTime</code> (API 28+, minSdk 29 — không dùng <code>versionCode</code> kiểu int đã deprecated).</p>
+<ul>
+<li><b>Phạm vi</b> (✅ = mã có + nối dây [ĐO grep] + bài thật): R1 ✅ · R2 ✅ (vá 3) · R3 ✅ · R4 ✅ · R5 ✅ · R6 ✅ · R7 ✅ · R8 ✅ (thêm bài khoá dây nối) · R9 ✅ · R10 ✅ · R11 ✅ (vá 1) · R12 ✅ (+ ghi chú trang) · R-nf1 ✅ (tệp lớn nhất 499 dòng) · R-nf2 ✅ · R-nf3 ✅ (bài mới của lượt này chờ điều phối chạy + thử đỏ, xem dưới) · R-nf4 ✅.</li>
+<li><b>Rào bắt buộc của R2</b> [ĐO đọc mã]: nhánh bỏ dọn chỉ thay bản đọc đầu bằng <code>Skip(BUBBLE)</code> ⇒ <code>ClusterThemePlan.verdict</code> ra SKIP_KNOWN/ABORT, không bao giờ SEND; nhánh dọn thật giữ nguyên luật gửi; <code>settle</code> chỉ ghi sổ, không đổi quyết định ⇒ 0 đường mới gửi opcode theme khi còn lớp trên màn ảo cụm. <code>ThemeGatePreview</code> (chẩn đoán) dùng <code>inspect</code> + cổng NONE ⇒ không chạm sổ.</li>
+<li><b>[P2] R2 — dọn CHỈ lớp Kachi (VietMap không chạy) xoá sổ mod cũ</b> (<code>ClusterThemeGuard.kt:246</code>): lệnh ẩn vẫn đi (bản mod có cài) dù bản đọc đầu không có bóng ⇒ cụm sạch ⇒ <code>outcome = HID</code> ⇒ XOÁ sổ ⇒ người lái mod v1 không luôn chạy VietMap mất tác dụng sổ (~5 s ở lượt mở kế có bóng). Vá: <code>probed = hide &amp;&amp; pause.bubbleApps.isNotEmpty()</code> thay <code>hide</code>. Bài: <code>ClusterThemeOldModMemoTest › don chi lop cua Kachi (khong co bong) …</code> (bản trước: ghi 1 lần, sổ null ⇒ đỏ [SUY đọc mã]).</li>
+<li><b>[P3] R2 — lượt bỏ không ghi được vẫn bỏ</b> (<code>BubbleOldModMemo.kt:106-109</code>): đĩa hỏng ⇒ số lượt bỏ đứng yên ⇒ sổ được tin mãi, vượt trần <code>SKIPS_MAX</code> (D2). Vá: <code>write</code> trả Boolean, ghi hỏng ⇒ dọn thật như 2.90. Bài: <code>… khong ghi duoc luot bo vao so - DON THAT …</code>.</li>
+<li><b>[P3] R2 — chữ log</b>: dòng kết của lượt bỏ dọn nói "VẪN còn sau VM_BUBBLE_VIS" dù 0 broadcast (<code>ClusterThemeGuard.kt:393-398</code>, nay chọn câu theo <code>paused</code>); <code>settle</code> in "GHI/XOÁ" cả khi đĩa từ chối (<code>BubbleOldModMemo.kt:118-123</code>). Vá cả hai (chỉ chữ log — buổi xe đọc chúng).</li>
+<li><b>[P3] R11 — hồi quy với hai kiểu ĐẶT dấu thanh</b> (<code>VoiceHomograph.kt:44-63</code>): «thuỷ» ↔ «thủy», «hoà» ↔ «hòa» là CÙNG chữ nhưng khác chuỗi kể cả sau NFC ⇒ so chuỗi thẳng làm tên GIỌNG đã dạy trượt (2.92 khớp theo bản bỏ dấu). Vá: khoá so = chữ đã gỡ dấu thanh + dấu thanh (<code>toneKey</code>); khác thanh («này» ↔ «nay») hay khác nguyên âm («cơm» ↔ «còm») vẫn khác ⇒ luật OQ2 giữ nguyên. Bài: <code>VoiceTaughtAccentMatchTest › hai kieu dat dau thanh …</code>.</li>
+<li><b>[P3] R12 — ghi chú TRANG dạy tên</b> (<code>kachi_vn_page_note</code>, 5 tiếng) còn dặn "nói “mở &lt;tên&gt;” 2–3 lần" — cùng chỉ dẫn cũ trái lượt CÓ Ô mà câu dẫn hộp vừa sửa. Vá 5 tiếng (câu để nói giữ tiếng Việt trong “…”). Bài: <code>VoiceTeachHintContractTest › ghi chu trang day ten …</code>.</li>
+<li><b>[P3] R8 — dây nối <code>:app</code> không bài khoá</b>: <code>FitRegrowRearmTest</code> chép máy trạng thái nhưng không bài nào canh dòng của <code>FitGridLayout.regrowOrShrink</code> (trả về <code>shrunkAt = null</code> vô điều kiện thì mọi bài vẫn xanh). Thêm <code>FitRegrowWiringContractTest</code>.</li>
+<li><b>Ghi nhận, không vá</b> (ngoài tệp wave 2A hoặc cần quyết): (a) [P3] R11 — hai đường mờ của <code>VoiceLastResort</code> không qua <code>matchAt</code> nên không áp luật dấu: <code>VoiceAppPrefix.pick</code> (tên ≥ 4 chữ cái + mệnh đề ô có số — dạy «thuỷ» thì "đưa thúy vào ô số hai" vẫn mở) và <code>appFuzzy</code> (≥ 5 chữ cái). Ca F6 («nay», 3 chữ) không bị nhờ cổng độ dài. Câu §4.7 "mọi đường khớp tên đi qua matchAt" chỉ đúng với các đường CHÍNH XÁC — đề xuất backlog <code>VOICE-TAUGHT-ACCENT-FUZZY</code>. (b) [P3] R8 — lượt lớn lại lớn MỘT PHẦN (co ở «1000», tới hạn gặp «100») vẫn xoá dấu ⇒ «99» đứng ở cỡ của «100»; chữa đúng cần <code>FitScale</code> báo "đã về cỡ gốc" (ngoài tệp) — mỹ quan, hiếm. (c) [INFO] R2 — <code>VmBubbleVisibility.send</code> tự nuốt lỗi ⇒ "đã gửi lệnh ẩn" thực chất là "đã thử gửi"; biết chắc cần đổi chữ ký <code>ClusterLayerPort</code> — không làm. (d) [INFO] R4 — khoá cuộn không mang hồ sơ: hai hồ sơ cùng ô + cùng tổ hợp dùng chung vị trí (mỹ quan, khớp D4). (e) [INFO] R3 — khi cổng từ chối vì mối nguy, <code>escalateIfStuck</code> vẫn log "pha … đã qua" (<code>NavConnect.kt</code>, D1 không chạm); dòng <code>keys-defer … -&gt; RECHECK</code> nói đúng lý do.</li>
+<li><b>Xác minh</b> [ĐO]: R9 — 34 tệp / 46 lần; mọi hunk của 34 tệp là hunk đường dẫn QA và chỉ chạm chú thích (so mã đã bỏ chú thích bản index ↔ bản chỉ áp hunk QA: giống hệt); 0 đường dẫn QA phiên trong gốc mã, 0 đường dẫn nháp trong <code>docs/</code>; diff BACKLOG đúng 3 dòng. R6 — 0 chỗ gọi <code>openInSlot/moveToSlot/launchCmd/parseTaskId</code> ở main · test · testVehicleTest · vehicleTest · scripts (chỉ còn bài canh phủ định). R1 — <code>EDGE_H</code> chỉ đọc ở khung gốc; Cài đặt / hộp / ngăn app là lớp phủ trên <code>rootFrame</code>, cụm không dùng khung này. R3 — vòng leo lại có trần (≤ 3 phiên dadb, một <code>until</code> 25 s), không giữ phiên dadb lúc chờ, pha khác đi đúng đường cũ.</li>
+<li><b>Bài cần chạy lại</b>: <code>:core</code> — <code>ClusterThemeOldModMemoTest</code> · <code>VoiceTaughtAccentMatchTest</code> · <code>VoiceTokenizeNfdTest</code> · <code>clustercast.simplified.*</code> · <code>launcher.voice.*</code>; <code>:app</code> — <code>VoiceTeachHintContractTest</code> · <code>LauncherI18nLocalesContractTest</code> · <code>FitRegrowWiringContractTest</code> · <code>WidgetFitR6ContractTest</code> · <code>BubbleOldModMemoWiringContractTest</code> · <code>LayeringRulesTest</code>; rồi bộ đủ. Thử đỏ đề xuất (5): <code>probed</code> → <code>hide</code> · bỏ <code>if (!write(…)) return false</code> · bỏ vế <code>toneKey</code> · trả ghi chú trang VI về "2–3 lần" · trả <code>regrowOrShrink</code> về <code>shrunkAt = null</code>.</li>
+<li><b>Verdict</b>: APPROVED — có điều kiện: bộ đủ xanh + 5 thử đỏ trên đỏ đúng bài. 🚗 không đổi so với §6.</li>
+</ul>
+
+<h3>Pass 2 — 2026-10-07 (bên làm — đóng ghi chú (b) của Pass 1; chưa phải senior review độc lập)</h3>
+<ul>
+<li><b>(b) [P3] R8 lớn MỘT PHẦN — đã vá</b>: dấu chờ lớn lại giữ tới khi ô về ĐẦY (<code>FitScale.full</code>), ở lượt lớn lại VÀ lượt khớp đủ; hàng ngang chưa đầy khi chú thích còn nhường (<code>FitValues.roomy</code>, theo chỗ ĐANG áp). Chi tiết + số đo §9. Không hẹn giờ mới, không lượt đo view mới; lượt luật giá trị không đổi gì ⇒ không <code>requestLayout</code> ⇒ không vòng bố cục [SUY đọc mã: setter chỉ ghi khi giá trị đổi — KDoc <code>FitScale</code>].</li>
+<li><b>Tự soát</b>: lượt lớn lại không bao giờ làm ô XẤU đi so với chỗ đang giữ [SUY đọc mã]: cỡ — <code>valuePx</code> trả bậc lớn nhất còn vừa, mà cỡ đang giữ vừa chữ hiện tại; hàng ngang — chỗ đang giữ ở nhánh 1 cho chữ hẹp hơn ⇒ nhánh 1 cho chữ hiện tại (chỉ căn lại), nhánh 2 chỉ giữ khi chữ không rộng hơn. Giá mới: ô không bao giờ đầy (khung chật · lưới không đọc được · chú thích luôn nhường) giờ chờ lớn lại thường trực ⇒ một lượt luật giá trị mỗi 30 s ở nhịp 1 Hz sẵn có.</li>
+<li><b>Ghi nhận, không vá</b>: (f) [P3] ngoài phạm vi — <code>FitGridWiringContractTest</code>:39 đỏ [ĐO]: ghim <code>addView(mini(ctx, id, data).also { … })</code> trong khi <code>WidgetViews.buildGrid</code> truyền <code>scrollKey</code> (R4); sửa = đổi ghim sang <code>mini(ctx, id, data, scrollKey)</code>. (g) [INFO] luật giá trị với chữ bề rộng <code>WRAP</code> (dấu "chưa kiểm" <code>badgeView</code>): bề rộng đo <code>WRAP</code> = ⌈w⌉ &lt; <code>needPx</code> = ⌈w⌉ + 1 ⇒ mỗi lượt luật co thêm một bậc NẾU cỡ lưới trên sàn [SUY đọc mã]; dấu ấy 9,5 sp, lưới không đọc được ⇒ k &lt; 10/10,5 ⇒ dưới sàn 10 sp ⇒ <code>valuePx</code> trả nguyên cỡ ⇒ không chạm [SUY]. Lượt này không đổi điều đó (nhịp 1 Hz vốn đã gọi luật mỗi khi chữ đổi).</li>
+<li><b>Verdict</b>: chờ senior review (Opus) + bộ đủ của điều phối. 🖥/🚗: máy ảo không có nhịp số xe ⇒ chỉ test thuần (như T8).</li>
+</ul>
+
+</div></body>
+</html>

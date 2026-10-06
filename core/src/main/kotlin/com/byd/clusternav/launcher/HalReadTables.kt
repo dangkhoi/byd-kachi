@@ -134,7 +134,8 @@ object HalReadTables {
      * (`COLOR_INVALID`) và áp suất 4094/4095 = *chưa có số* (lúc vừa nổ máy, cảm biến TPMS chưa phát); 4092/4093 = mã
      * BÁO của chính xe (nổ lốp / bất thường) — cũng là lời đáp của getter nên cũng không nguội [ĐO L3
      * `TyreCardView.java:34-37,141-156`: BURST 4092 · ABNORMAL 4093 · NONE 4094; giá trị trên xe owner CHƯA đo, spec
-     * §6.1]. Màu (đỏ/vàng) của hai mã báo vẫn đến từ màu cụm (M1) — chỉ mất chữ lý do "nổ lốp" (backlog). Cho nguội
+     * §6.1]. Màu (đỏ/vàng) của hai mã báo vẫn đến từ màu cụm (M1); chữ lý do "nổ lốp"/"bất thường" (2.93
+     * `TYRE-BURST-REASON`) đọc mã từ CHÍNH lượt đọc này (`CarDataAdapter` cổng `code`, `CarStatus.Tyres.pcFl`…). Cho nguội
      * thì giãn 60 s → … → 10 phút: lốp đã có số mà chip/bảng vẫn "—" / XÁM thêm vài phút, và trong lúc màu cụm nguội
      * phép phán lùi sang mã TPMS (M2–M6) dù cụm đã có lời. Getter VẮNG thật (sentinel / không tra được tên) vẫn nguội.
      *

@@ -61,7 +61,9 @@ class VoiceCommandWiringContractTest {
             // VOICE-WRITE-LANE (2.76): hai nhánh ghi HAL nhận `next` — vế sau chỉ chạy khi chúng báo xong.
             "is VoiceIntent.Control ->" to "runControl(intent, next)",
             "is VoiceIntent.Macro ->" to "runMacro(intent, next)",
-            "is VoiceIntent.Launcher ->" to "runLauncher(intent)",
+            // 2.93 wave 2B · D1: nhánh thứ BA giữ `next` — vế camera theo yêu cầu chờ KẾT QUẢ controller; `rerun` = vế thay thế
+            // (*"tắt camera"* trần không có gì để tắt ⇒ nút Camera 360) đi lại qua cổng của `runFrom`.
+            "is VoiceIntent.Launcher ->" to "runLauncher(intent, next, rerun)",
             "is VoiceIntent.Profile ->" to "onSwitchProfile(intent.name)",
             "is VoiceIntent.Read ->" to "runRead(intent)",
             "is VoiceIntent.Nav ->" to "runNav(intent, labels)",
@@ -205,11 +207,18 @@ class VoiceCommandWiringContractTest {
         // `autoOnFromRaw` đọc số THÔ của datum (`0` = AUTO) còn `autoOnFromControl` đọc giá trị đã qua
         // `applyInverted` của nút (`1` = AUTO). Đổi cửa ở đây là đảo cực lần thứ hai ⇒ câu nói *"tăng gió"* đi nhầm
         // nhánh, `rc` vẫn 0, xe vẫn nhận một lệnh — sai IM LẶNG, đúng họ lỗi CLAUDE.md §2 nói tới.
+        // 2.93 VOICE-WAKE-AUTOON (đổi chốt có lý do, KHÔNG nới): số cờ nay đến từ `autoState` — `readState(autoId)` đọc tươi,
+        // ảnh chụp `controls` là đường lùi. CẢ HAI nguồn đều là cửa của NÚT (đã applyInverted) ⇒ vẫn đúng `autoOnFromControl`.
         assertTrue(
-            fn.contains("ClimateAuto.autoOnFromControl(state().carStatus.controls[def.autoId])"),
+            fn.contains("ClimateAuto.autoOnFromControl(autoState(def))"),
             "cờ auto của đường giọng nói phải đọc qua cửa của NÚT (đã applyInverted), không phải cửa của datum",
         )
-        assertFalse(fn.contains("ClimateAuto.autoOnFromRaw("), "cửa của DATUM không được dùng ở đường nút")
+        val auto = SourceRoots.body(dispatcher, "private fun autoState(def: ControlDef): Int?")
+        assertTrue(
+            auto.contains("runCatching { control().readState(def.autoId) }.getOrNull() ?: state().carStatus.controls[def.autoId]"),
+            "hai nguồn của cờ (readState · ảnh chụp controls) đều là số của NÚT — không datum nào lọt vào",
+        )
+        assertFalse(fn.contains("ClimateAuto.autoOnFromRaw(") || auto.contains("autoOnFromRaw"), "cửa của DATUM không được dùng ở đường nút")
     }
 
     /**

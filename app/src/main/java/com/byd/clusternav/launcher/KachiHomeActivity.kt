@@ -178,8 +178,8 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
      */
     internal val unitPrefs: UnitPrefs get() = viewModel.uiState.value.unitPrefs
     internal val customLayout: GridLayout? get() = viewModel.uiState.value.customLayout
-    // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher (am --windowingMode 5 + am task resize); chưa có dadb → IntentAppLauncher.
-    @Volatile private var appLauncher: AppLauncher = IntentAppLauncher(this)
+    // Cửa sổ app: dadb (xe+emulator) → ShellAppLauncher; chưa có dadb → NoCar (2.93 · READY-AT-HOME-OQ6: IntentAppLauncher đã gỡ).
+    @Volatile private var appLauncher: AppLauncher = NoCar
     // @Volatile (cùng lý do `appLauncher` ngay trên): GHI ở thread nền `winExec` (dò dadb), ĐỌC ở thread CHÍNH
     // (openAppFullscreen · reflow · placeApp). Không có nó thì main có thể thấy mãi `null` ⇒ đường shell im lặng mất.
     @Volatile private var shell: ((String) -> String)? = null
@@ -253,9 +253,9 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            // S1b — owner 2026-09-14: lề ngoài **bằng nhau ở cả 4 cạnh màn** (trước: trái/phải 16, trên 4, dưới 12 —
-            // lệch nhau). Một giá trị [Sp.L] cho cả bốn cạnh ⇒ khung nội dung cách đều mọi mép.
-            setPadding(dp(Sp.L), dp(Sp.L), dp(Sp.L), dp(Sp.L))
+            // S1b (09-14) trên/dưới [Sp.L]; 2.93 HOME-EDGE-80 (owner 20/09 "trái phải bé lại còn 80%") trái/phải [Sp.EDGE_H] —
+            // MỘT lề ngang cho thanh trên + vùng ô + thanh nút (cùng khung này, không lệch cột). Vì sao: KDoc [Sp.EDGE_H].
+            setPadding(dp(Sp.EDGE_H), dp(Sp.L), dp(Sp.EDGE_H), dp(Sp.L))
         }
         // WP5 · R5.2 — bề cao thanh trên khai TƯỜNG MINH (75 % của 56dp); vì sao không `WRAP_CONTENT`: KDoc [KachiBars.HEADER_H].
         content.addView(topStrip.view, LinearLayout.LayoutParams(MATCH, dp(KachiBars.HEADER_H)))
@@ -313,6 +313,7 @@ class KachiHomeActivity : Activity(), LifecycleOwner, ViewModelStoreOwner {
             appWidgetPicks = { idx ->        // T4: ràng buộc xong mới ghi vào ô; thất bại ⇒ bảng tự nói, ô không đổi
                 appWidgets.picks { i -> appWidgets.bind(i) { c -> c?.let { drawerController.close(); viewModel.assignAppWidget(idx, it) } } }
             },
+            slotFrame = { workspace.slotFrame(it) },   // 2.93 WIDGET-CAPACITY-HINT
         )
 
         // Hai vòng thu (state của VM + trạng thái xe LIVE) — thân ở [collectHome] (trần 500 dòng).

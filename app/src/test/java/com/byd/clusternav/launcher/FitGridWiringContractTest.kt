@@ -33,9 +33,10 @@ class FitGridWiringContractTest {
     @Test
     fun `o widget di qua FitGridLayout - khong con chia hang theo so muc`() {
         val grid = SourceRoots.body(widgets, "fun buildGrid(")
-        assertTrue(grid.contains("FitGridLayout.single(ctx, build(ctx, list[0], data)"), "một mục cũng co/giãn theo khung")
+        // ĐỔI GHIM 2.93 wave 2A (SHORTCUT-SCROLL-REBUILD): build nhận thêm `scrollKey` — cùng đường co/giãn theo khung.
+        assertTrue(grid.contains("FitGridLayout.single(ctx, build(ctx, list[0], data, scrollKey)"), "một mục cũng co/giãn theo khung")
         assertTrue(grid.contains("FitGridLayout.grid(ctx, IconRepeat.ofIds(list))"), "lưới 2..8 mục + luật chỉ-icon từ :core")
-        assertTrue(grid.contains("addView(mini(ctx, id, data).also { it.tag = WidgetTag(id, compact = true) })"))
+        assertTrue(grid.contains("addView(mini(ctx, id, data, scrollKey).also { it.tag = WidgetTag(id, compact = true) })"))  // ĐỔI GHIM 2.93 wave 2A: scrollKey
         listOf("LinearLayout(", "topN", "n / 2", "subList(", "setMargins(").forEach {
             assertFalse(grid.contains(it), "buildGrid còn '$it' ⇒ quay lại hàng chia theo số mục / ô cố định (ảnh 03/10)")
         }

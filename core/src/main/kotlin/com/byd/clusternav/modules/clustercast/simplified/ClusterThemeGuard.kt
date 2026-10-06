@@ -58,6 +58,11 @@ class ClusterThemeGuard(
     private val vacantVdAllowed: () -> Boolean = { false },
     /** 2.90 · R9 — bộ thi hành "dọn cụm / trả cụm" ([ClusterLayerPause]); mặc định không có lớp nào (hành vi trước Pass 3). */
     private val layers: ClusterLayerPort = ClusterLayerPort.NONE,
+    /**
+     * 2.93 · CAST-OPEN-TIMEOUT — phần hạn còn lại (ms) của thao tác executor đang chạy cổng này; `null` = không giới hạn. Mặc định
+     * đọc hạn của chính thao tác trên luồng gọi ([BoundedCastExecutor.remainingMs]) — test truyền đồng hồ giả.
+     */
+    private val budgetLeftMs: () -> Long? = { BoundedCastExecutor.remainingMs() },
     private val log: (String) -> Unit = {},
 ) : ThemeGate {
 
@@ -186,6 +191,9 @@ class ClusterThemeGuard(
     /** Nhãn app bóng nổi của lượt DỌN đang chạy — [verdict] quyết [lastBubbleOldMod] từ quyết định CUỐI (kể cả sau gỡ ClusterBlack). */
     @Volatile private var pausedBubbles: List<String> = emptyList()
 
+    /** 2.93 wave 2A · VM-BUBBLE-OLDMOD-MEMO — sổ "bản mod đang cài đã chứng minh không ẩn bóng" ([BubbleOldModMemo]). */
+    private val oldMods = OldModMemoGate(layers, log)
+
     override fun admit(op: Int): ThemeVerdict = admitInner(op)
 
     /**
@@ -207,6 +215,10 @@ class ClusterThemeGuard(
     /**
      * 2.90 · R9 — DỌN rồi đọc lại tới khi chỉ còn placeholder (trần [PAUSE_READS] × [SETTLE_STEP_MS]), rồi QUYẾT LẠI toàn bộ từ bản
      * đọc mới (gồm nhánh gỡ ClusterBlack). Một lần mỗi lượt [admit]. Luật gửi không đổi — chỉ bản đọc đổi.
+     *
+     * 2.93 · CAST-OPEN-TIMEOUT — lượt đọc lại thứ hai trở đi chỉ chạy khi lượt mở còn đủ hạn ([affordable]); lượt đầu đã được bên gọi
+     * xin trước khi dọn. Dừng sớm ⇒ quyết từ bản đọc lại cuối (bóng còn ⇒ BUBBLE ⇒ KHÔNG gửi — rào an toàn giữ nguyên). Dòng log
+     * mang thời gian thật tới khi sạch (🚗 đo mod v2: OQ6 spec 290).
      */
     private fun pauseAndReread(op: Int, first: Read, pause: ClusterLayerPause.Pause): Read {
         val vds = first.displays?.vds ?: return first
@@ -216,13 +228,36 @@ class ClusterThemeGuard(
         if (hide) runCatching { layers.sendBubble(false) }.onFailure { log("dọn cụm: VM_BUBBLE_VIS lỗi ${it.message}") }
         log("dọn cụm: theme $op trên ${vds.sorted()} — lớp Kachi ${pause.ownWindows} cửa sổ, bóng ${pause.bubbleApps}" +
             " · VM_BUBBLE_VIS ${if (hide) "show=false" else "không gửi (app bóng không cài)"} rồi đọc lại")
+        val t0 = System.nanoTime()
+        var reads = 0
+        var cleared = false
         for (i in 0 until PAUSE_READS) {
+            if (i > 0 && !affordable("dọn cụm", op)) break
             sleepMs(SETTLE_STEP_MS)
             val t = readTasks()
             val w = readWindows()
-            if (t != null && w != null && ClusterLayerPause.cleared(t, w, vds, selfPackage)) break
+            reads++
+            if (t != null && w != null && ClusterLayerPause.cleared(t, w, vds, selfPackage)) { cleared = true; break }
         }
-        return readAndDecide(op)
+        log("dọn cụm: ${if (cleared) "SẠCH" else "chưa sạch"} sau ${(System.nanoTime() - t0) / 1_000_000L} ms · $reads/$PAUSE_READS lần đọc lại")
+        // Wave 2A · VM-BUBBLE-OLDMOD-MEMO: chỉ lượt TRỌN (đủ lượt đọc lại, bóng vẫn còn) mới ghi sổ; bóng ẩn ⇒ xoá sổ. Review Pass 1
+        // [P2]: lệnh ẩn chỉ là phép THỬ bản mod khi bản đọc ĐẦU có bóng — dọn chỉ lớp Kachi (VietMap không chạy) sạch ngay mà
+        // không chứng minh gì; bản trước coi đó là "bóng đã ẩn" ⇒ XOÁ sổ ⇒ mod v1 lại tốn ~5 s ở lượt mở kế có bóng.
+        val probed = hide && pause.bubbleApps.isNotEmpty()
+        return readAndDecide(op).also { oldMods.settle(probed, reads == PAUSE_READS, cleared, ClusterLayerPause.oldMod(it.decision)) }
+    }
+
+    /**
+     * 2.93 · CAST-OPEN-TIMEOUT — trong lượt MỞ, một lượt chờ/đọc lại nữa chỉ được chạy khi phần hạn còn lại của thao tác ([budgetLeftMs])
+     * lớn hơn [OPEN_TAIL_RESERVE_MS] — thứ lượt mở còn PHẢI làm sau quyết định theme. Ngoài lượt mở / ngoài executor (`null`) ⇒ luôn
+     * được (hành vi cũ). Không đủ ⇒ một dòng log; bên gọi thôi chờ và quyết từ bản đọc đang có — chỉ có thể ra "không gửi".
+     */
+    private fun affordable(what: String, op: Int): Boolean {
+        if (!openScope) return true
+        val left = runCatching { budgetLeftMs() }.getOrNull() ?: return true
+        if (left > OPEN_TAIL_RESERVE_MS) return true
+        log("$what (theme $op): lượt mở còn $left ms ≤ dự trữ đuôi $OPEN_TAIL_RESERVE_MS ms ⇒ thôi chờ, quyết từ bản đọc hiện có")
+        return false
     }
 
     private fun admitInner(op: Int): ThemeVerdict {
@@ -234,7 +269,14 @@ class ClusterThemeGuard(
             (d0.reason == ClusterThemePlan.Reason.FOREIGN || d0.reason == ClusterThemePlan.Reason.BUBBLE)
         ) {
             val pause = first.displays?.vds?.let { ClusterLayerPause.pausable(first.tasks, first.windows, it, selfPackage) }
-            if (pause != null) {
+            // Wave 2A · VM-BUBBLE-OLDMOD-MEMO: bản mod ĐANG CÀI đã chứng minh không ẩn bóng ⇒ bỏ dọn (0 broadcast, 0 lượt đọc lại);
+            // quyết = BUBBLE như lượt dọn thật sẽ ra — chỉ có thể là "không gửi". Không cần hạn (không chờ gì).
+            // 2.93 · CAST-OPEN-TIMEOUT (nhánh dọn thật): không đủ hạn cho dù MỘT lượt đọc lại ⇒ KHÔNG dọn (không ẩn bóng của người lái
+            // vô ích, không báo "mod cũ" oan) — quyết từ bản đọc đầu (BUBBLE/FOREIGN ⇒ bỏ theme).
+            if (pause != null && pause.bubbleApps.isNotEmpty() && oldMods.skip(op)) {
+                pausedBubbles = pause.bubbleApps
+                first = Read(first.displays, first.tasks, BubbleOldModMemo.skipDecision(pause.bubbleApps), first.vdBefore, first.windows)
+            } else if (pause != null && affordable("dọn cụm", op)) {
                 pausedBubbles = pause.bubbleApps
                 first = pauseAndReread(op, first, pause)
             }
@@ -247,6 +289,12 @@ class ClusterThemeGuard(
         // decide() chỉ ra RemovePlaceholder khi cả ba bản đọc có mặt (mức B — cờ hồ sơ bật).
         val vds = first.displays?.vds ?: return ThemeVerdict.ABORT
         val before = first.tasks ?: return ThemeVerdict.ABORT
+        // 2.93 · CAST-OPEN-TIMEOUT: không đủ hạn để gỡ rồi đọc lại ⇒ KHÔNG gỡ (0 lệnh ghi): gỡ mà không kịp thấy trống thì đằng nào cũng
+        // không gửi theme; ClusterBlack để nguyên, lượt mở tự dựng lại nó như mọi lần.
+        if (!affordable("gỡ ClusterBlack", op)) {
+            val late = ClusterThemePlan.Decision.Skip(ClusterThemePlan.Reason.NOT_REMOVABLE, "lượt mở không còn đủ hạn để gỡ ${removal.stackIds} rồi đọc lại")
+            return verdict(op, first.displays, late, vdBefore)
+        }
         val sentIds = removeStacks(removal.stackIds, before, vds)
         if (sentIds.isEmpty()) {
             val none = ClusterThemePlan.Decision.Skip(ClusterThemePlan.Reason.NOT_REMOVABLE, "lệnh gỡ ${removal.stackIds} không chạy được")
@@ -256,6 +304,7 @@ class ClusterThemeGuard(
         var tasks: List<StackEntry>? = before
         var windows: List<ClusterThemePlan.WindowOnDisplay>? = null
         for (i in 0 until SETTLE_READS) {
+            if (i > 0 && !affordable("gỡ ClusterBlack", op)) break
             sleepMs(SETTLE_STEP_MS)
             tasks = readTasks()
             windows = readWindows()
@@ -341,7 +390,12 @@ class ClusterThemeGuard(
         val bubbles = pausedBubbles
         pausedBubbles = emptyList()
         lastBubbleOldMod = bubbles.isNotEmpty() && ClusterLayerPause.oldMod(d)
-        if (lastBubbleOldMod) log("dọn cụm: bóng $bubbles VẪN còn sau VM_BUBBLE_VIS ⇒ bản mod chưa hỗ trợ ẩn — bỏ theme (BUBBLE)")
+        // Review wave 2A Pass 1 [P3]: [paused] = lượt này DỌN thật (đã gửi VM_BUBBLE_VIS); lượt bỏ dọn nhờ sổ mod cũ thì 0 broadcast —
+        // dòng log không được nói "sau VM_BUBBLE_VIS" (buổi xe đọc dòng này để biết lệnh ẩn có đi không).
+        if (lastBubbleOldMod) log(
+            if (paused) "dọn cụm: bóng $bubbles VẪN còn sau VM_BUBBLE_VIS ⇒ bản mod chưa hỗ trợ ẩn — bỏ theme (BUBBLE)"
+            else "dọn cụm: bóng $bubbles — sổ mod cũ, lượt này KHÔNG dọn (0 broadcast) ⇒ bỏ theme (BUBBLE)",
+        )
         val text = line(op, displays, d, v)
         lastVerdict = text
         log(text)
@@ -388,18 +442,30 @@ class ClusterThemeGuard(
         const val WINDOWS_CMD: String = "dumpsys window windows | grep -E 'Window #|mDisplayId='"
 
         /**
-         * Số lần đọc lại sau lệnh gỡ placeholder — bước 250 ms như `FloatingOrphanSweep`, nhưng 4 lần (≤ 1 s) thay vì 5: lượt
-         * mở chiếu chạy dưới trần cứng 15 s của executor. Hết lượt mà còn thấy ⇒ KHÔNG gửi theme (hướng an toàn).
-         * [CHƯA BIẾT] trên xe `am stack remove` một activity đen mất bao lâu ([ĐO 05/10] VietMap: > 1,25 s).
+         * Số lần đọc lại sau lệnh gỡ placeholder — bước 250 ms như `FloatingOrphanSweep`, 4 lần thay vì 5. Hết lượt mà còn thấy ⇒
+         * KHÔNG gửi theme (hướng an toàn). [CHƯA BIẾT] trên xe `am stack remove` một activity đen mất bao lâu ([ĐO 05/10] VietMap:
+         * > 1,25 s). ⚠ "≤ 1 s" chỉ là phần NGỦ: mỗi lượt còn hai lệnh đọc — [SUY log xe 06/10] ≈ 0,9 s/lượt trên xe ⇒ tới ~3,7 s;
+         * 2.93: lượt thứ hai trở đi chỉ chạy khi lượt mở còn đủ hạn ([OPEN_TAIL_RESERVE_MS]).
          */
         const val SETTLE_READS: Int = 4
 
         /**
-         * 2.90 · R9 — số lần đọc lại sau DỌN (bước [SETTLE_STEP_MS] ⇒ ≤ 1,5 s): broadcast tới mod rồi mod `removeView` trên luồng
-         * chính của nó. [CHƯA BIẾT] trên xe mất bao lâu (spec OQ6) — hết lượt mà còn bóng ⇒ coi như mod cũ, KHÔNG gửi (an toàn).
+         * 2.90 · R9 — số lần đọc lại sau DỌN: broadcast tới mod rồi mod `removeView` trên luồng chính của nó. [CHƯA BIẾT] trên xe mất
+         * bao lâu (spec 290 OQ6) — hết lượt mà còn bóng ⇒ coi như mod cũ, KHÔNG gửi (an toàn). ⚠ Bản 2.90 ghi "≤ 1,5 s" (chỉ tính phần
+         * ngủ); [ĐO log xe 06/10 13:49 · 15:13] cả 6 lượt mất ~4,5–5 s với mod v1 (bóng không bao giờ ẩn) — góp phần làm lượt mở
+         * chạm hạn 15 s. 2.93: lượt thứ hai trở đi chỉ chạy khi lượt mở còn đủ hạn ([OPEN_TAIL_RESERVE_MS]).
          */
         const val PAUSE_READS: Int = 6
         const val SETTLE_STEP_MS: Long = FloatingOrphanSweep.SETTLE_STEP_MS
+
+        /**
+         * 2.93 · CAST-OPEN-TIMEOUT — phần hạn lượt mở chiếu PHẢI còn sau mọi lượt chờ tuỳ chọn của cổng (dọn cụm, đọc lại sau gỡ
+         * ClusterBlack) để đuôi bắt buộc chạy xong trong hạn cứng ([BoundedCastExecutor.OPEN_TIMEOUT_MS]): đọc-quyết lại (3 lệnh) +
+         * gỡ/đọc display (2) + opcode theme · 16 · 35 (3 lệnh, ngủ 2 + 2 + 1 s) + điều kiện nền (~2) + dò cụm (≥ 1) + `wm` (3) +
+         * ClusterBlack (3 lệnh, ngủ 1 s) + nhận lại (1) ≈ 18 lệnh + 6 s ngủ ⇒ [SUY log xe 06/10, ≈ 0,27–0,33 s/lệnh] 11–12 s.
+         * Đuôi của nhánh bỏ theme ngắn hơn ⇒ dự trữ này là cận trên. Đo lại ở 🚗 (spec `kachi-293-cast.html`).
+         */
+        const val OPEN_TAIL_RESERVE_MS: Long = 12_000L
 
         private val DISPLAY0 = Regex("Display 0:")
     }

@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -24,9 +25,7 @@ class BubblePanelAlwaysVisibleContractTest {
     }
 
     private val nav by lazy {
-        app("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt").toFile().readText()
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        KotlinSource.stripComments(app("src/main/java/com/byd/clusternav/launcher/SettingsSectionsNav.kt").toFile().readText())
     }
 
     private fun body(fn: String): String {
@@ -73,9 +72,7 @@ class BubblePanelAlwaysVisibleContractTest {
             g.contains("bubbleX?.view") && g.contains("isEnabled"),
             "khoá qua view của hàng là khoá giả (View.setEnabled không lan xuống con) — dùng Stepper.isEnabled",
         )
-        val rowsSrc = app("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt").toFile().readText()
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        val rowsSrc = KotlinSource.stripComments(app("src/main/java/com/byd/clusternav/launcher/SettingsRows.kt").toFile().readText())
         val setter = rowsSrc.substringAfter("var isEnabled: Boolean", "").substringBefore("}\n")
         assertTrue(
             setter.contains("minus.isEnabled") && setter.contains("plus.isEnabled") && setter.contains("view.isEnabled"),

@@ -148,9 +148,12 @@ object VoiceOpenTurn {
      * Không nới sang họ khác (lệnh xe · nhạc · dẫn đường) vì chưa có một lượt đo nào cho chúng ([CHƯA BIẾT]); luật
      * *"cùng ý định, đầy đủ hơn"* viết theo **hình dạng** dữ liệu để khi có số đo thì thêm một nhánh `when`, không
      * thêm một bảng câu.
+     *
+     * @param vocab 2.93 VOICE-OPEN-TURN-DYNVOCAB — từ vựng ĐỘNG của phiên (hồ sơ · app máy · sổ địa chỉ · tên đã dạy) cho
+     *   phép hỏi [refine]; mặc định [VoiceDynVocab.STATIC] = hành vi 2.92. [isOpen] vẫn TĨNH (KDoc [mayAttach]).
      */
-    fun attach(head: String, tail: String): String? =
-        if (isOpen(head)) join(head, tail) else refine(head, tail)
+    fun attach(head: String, tail: String, vocab: VoiceDynVocab = VoiceDynVocab.STATIC): String? =
+        if (isOpen(head)) join(head, tail) else refine(head, tail, vocab)
 
     /**
      * ═══ Vế trước còn CHỖ để ghép không — cổng đọc **trước** khi bỏ công giải mã vế sau ([P2] soát 2026-09-27) ══════
@@ -168,26 +171,31 @@ object VoiceOpenTurn {
      * ⚠ KHÔNG gộp thêm cổng *"vế sau bắt đầu trong `OPEN_JOIN_WINDOW_MS`"* hay *"vế sau đủ dài"*: ca [ĐO] 27/09
      * 10:42:46 chính là một vế sau bắt đầu **trong lúc** lượt giải mã vế trước còn chạy (`speaking()` còn `true`,
      * chưa qua cửa sổ 1 200 ms) ⇒ hai cổng ấy sẽ bỏ đúng ca mà R6 sinh ra để cứu, và không có phép đo nào cho chúng.
+     *
+     * 2.93 VOICE-OPEN-TURN-DYNVOCAB: phép hỏi *"mở app chưa có ô"* dùng [vocab] — CÙNG từ vựng với [refine], nếu không
+     * cổng này chặn đúng vế trước (*"mở &lt;tên đã dạy&gt;"*) mà [refine] giờ ghép được. [isOpen] giữ TĨNH: nó chạy trong
+     * vòng đọc micro ở mọi lượt (`VoiceOpenTurnArm.stopReading`), còn dựng từ vựng động là một lượt hỏi `PackageManager`.
      */
-    fun mayAttach(head: String): Boolean {
+    fun mayAttach(head: String, vocab: VoiceDynVocab = VoiceDynVocab.STATIC): Boolean {
         if (isOpen(head)) return true
-        val before = VoiceIntentParser.parseOne(head)
+        val before = vocab.parseOne(head)
         return before is VoiceIntent.OpenApp && before.slot == null
     }
 
     /**
      * Câu ghép nếu nó là bản **đầy đủ hơn** của [head] (cùng ý định), ngược lại `null`. Xem KDoc [attach].
      *
-     * Đi qua đúng `VoiceIntentParser.parseOne` với từ vựng **tĩnh** (không nhãn app đã cài): *"vietmap"* giải qua
-     * bảng đích, còn nhãn máy (*"YouTube"*) thì đường khớp mờ/tiền tố cũng tới được vì cả hai đường đều đọc bảng
-     * đích. Nhãn app **chỉ có trên máy** (không trong bảng đích) ⇒ cả hai vế cùng ra `Unknown` ⇒ `null` — thành thật
-     * hơn là đoán: chỗ gọi không có danh sách app ở tầng nghe, và vế trước vẫn được xử lý y như 2.75.
+     * Đi qua đúng `VoiceIntentParser.parseOne` với từ vựng [vocab]. Tới 2.92 đây là từ vựng **tĩnh** (không nhãn app đã
+     * cài): *"vietmap"* giải qua bảng đích, còn nhãn app **chỉ có trên máy** hoặc tên đã dạy ⇒ cả hai vế ra `Unknown` ⇒
+     * `null`. 2.93 VOICE-OPEN-TURN-DYNVOCAB: chỗ gọi ở tầng nghe chở từ vựng ĐỘNG của phiên xuống ([VoiceDynVocab]) ⇒
+     * *"mở &lt;tên đã dạy&gt;"* + *"vào ô số hai"* ghép được. Cả hai vế phân tích bằng CÙNG một từ vựng nên luật *"cùng ý
+     * định, đầy đủ hơn"* không đổi; chỗ gọi không truyền ([VoiceDynVocab.STATIC]) ⇒ y nguyên 2.92.
      */
-    fun refine(head: String, tail: String): String? {
+    fun refine(head: String, tail: String, vocab: VoiceDynVocab = VoiceDynVocab.STATIC): String? {
         val joined = join(head, tail)
         if (joined == head.trim()) return null
-        val before = VoiceIntentParser.parseOne(head)
-        val after = VoiceIntentParser.parseOne(joined)
+        val before = vocab.parseOne(head)
+        val after = vocab.parseOne(joined)
         return if (refines(before, after)) joined else null
     }
 

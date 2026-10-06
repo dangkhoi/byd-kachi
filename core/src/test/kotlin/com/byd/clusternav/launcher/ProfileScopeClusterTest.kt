@@ -15,15 +15,21 @@ import org.junit.jupiter.api.Test
  */
 class ProfileScopeClusterTest {
 
-    private val cameraAll = CameraSettingsIa.USER_KEYS + CameraSettingsIa.NO_UI_KEYS
+    private val cameraAll = CameraSettingsIa.ALL_KEYS
 
     @Test
     fun `34 khoa camera = 8 theo ho so + 26 theo xe, khong khoa nao UNKNOWN`() {
         // 2.92 · CAMERA-FULL-VIEW: +`camera_projection` +`camera_zoom` (HỒ SƠ — cách trình bày, owner 30/09 "phần cụm
         // lưu hết thành profile") · +`camera_wide_kappa/_focal/_pan_x` (XE — quang học, cùng họ tám núm nắn).
-        assertEquals(34, cameraAll.size, "CameraSettingsIa đổi số khoá ⇒ xếp loại lại ở ProfileScopeCluster")
-        assertEquals(8, ProfileScopeCluster.CAMERA_PROFILE_KEYS.size)
-        assertEquals(26, ProfileScopeCluster.CAMERA_DEVICE_KEYS.size)
+        // 2.93 · CAMERA-PER-CAM-CONFIG: +22 khoá bộ chỉnh *Từng camera* — 18 theo HỒ SƠ (góc sau/trước · vị trí · cỡ · hình ·
+        // kiểu ×4) + 4 theo XE (xoay/lật camera sau/trước — sự thật lắp đặt). 34 → 56 · 8 → 26 · 26 → 30.
+        assertEquals(56, cameraAll.size, "CameraSettingsIa đổi số khoá ⇒ xếp loại lại ở ProfileScopeCluster")
+        assertEquals(26, ProfileScopeCluster.CAMERA_PROFILE_KEYS.size)
+        assertEquals(30, ProfileScopeCluster.CAMERA_DEVICE_KEYS.size)
+        com.byd.clusternav.launcher.camera.CameraCamConfig.PROFILE_KEYS
+            .forEach { assertTrue(it in ProfileScopeCluster.CAMERA_PROFILE_KEYS, "$it là sở thích trình bày ⇒ theo hồ sơ") }
+        com.byd.clusternav.launcher.camera.CameraCamConfig.DEVICE_KEYS
+            .forEach { assertTrue(it in ProfileScopeCluster.CAMERA_DEVICE_KEYS, "$it là sự thật lắp đặt ⇒ theo xe") }
         assertEquals(
             cameraAll.toSet(), ProfileScopeCluster.CAMERA_PROFILE_KEYS.keys + ProfileScopeCluster.CAMERA_DEVICE_KEYS.keys,
             "hợp hai bảng phải ĐÚNG bằng tập khoá camera — thêm khoá mà quên xếp loại là đỏ ở đây",

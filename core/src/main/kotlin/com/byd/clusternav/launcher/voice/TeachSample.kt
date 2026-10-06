@@ -51,6 +51,27 @@ object TeachSample {
 
     data class Rejected(val why: Reject) : Result
 
+    /** Câu hộp dạy gợi ý cho một lượt nói: *"mở &lt;tên&gt;"* ([PLAIN]) hay *"đưa &lt;tên&gt; vào ô số hai"* ([SLOT]). */
+    enum class Prompt { PLAIN, SLOT }
+
+    /**
+     * 2.93 VOICE-TEACH-CONTEXT — lượt nói thứ mấy (1-based) của MỘT lần dạy là câu CÓ Ô.
+     *
+     * [ĐO máy ảo 06/10, spec voice-app-names §9 F3] câu KHÁC đổi chuỗi tên: *"đưa &lt;tên&gt; vào ô số hai"* ra `google đy` /
+     * `cờ rôm` trong khi tên dạy bằng *"mở &lt;tên&gt;"* là `google đ` / `cửa rôm` ⇒ câu có ô không khớp (khớp mờ không cứu —
+     * neo 4 ký tự lệch). Lượt thứ hai — trong [MIN_SPOKEN_TAKES] lượt bắt buộc, để không ai lưu mà bỏ sót nó — nói câu có ô:
+     * chuỗi KHÁC ⇒ một tên nữa (vẫn trong trần 3 tên giọng của [TaughtNames]); chuỗi GIỐNG ⇒ gộp, thành lượt thứ hai của
+     * tên ấy (đủ điều kiện tên ngắn, [TeachGuard.MIN_TAKES_SHORT]). Cách cắt KHÔNG đổi: [normalize] vốn bỏ động từ MỞ (gồm
+     * *"đưa"*) + mệnh đề ô.
+     */
+    const val SLOT_TAKE = 2
+
+    /** Số lượt nói tối thiểu mỗi lần dạy (spec §7 OQ4) — hộp dạy bật Lưu từ lượt này; [SLOT_TAKE] phải nằm trong đó. */
+    const val MIN_SPOKEN_TAKES = 2
+
+    /** Câu gợi ý cho lượt nói thứ [take] (1-based). */
+    fun promptFor(take: Int): Prompt = if (take == SLOT_TAKE) Prompt.SLOT else Prompt.PLAIN
+
     fun normalize(heard: String): Result {
         val all = VoiceLexicon.tokenize(heard)
         if (all.isEmpty() || VoiceLexicon.isFillerOnly(heard)) return Rejected(Reject.EMPTY)

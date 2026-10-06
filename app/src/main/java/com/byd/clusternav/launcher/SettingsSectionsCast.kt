@@ -466,8 +466,10 @@ class SettingsCastSection(
         //
         // ⚠ Nút *Chẩn đoán và nhật ký* đã GỠ (owner 2026-09-21, bản release production): nó mở một màn đầy số cho
         // người viết code, và cả màn Cài đặt nay chỉ còn ĐÚNG một bề mặt đồ đo — công tắc *Chế độ kiểm thử qua adb*
-        // (`SettingsSections.testBridge`). `ClusterNavBridge.openDiagnostics()` **ở lại** cho đường adb:
-        // `am start -n <gói>/com.byd.clusternav.modules.clustercast.DiagActivity`.
+        // (`SettingsSections.testBridge`). ⚠ 2.93 CODE-FIX-AFTER-283: KHÔNG có "đường adb" tới `DiagActivity` —
+        // `exported=false` ⇒ `am start` từ uid shell bị từ chối (AOSP 10 r47 `ActivityStackSupervisor`
+        // `checkStartAnyActivityPermission`; [ĐO xe 29/09]); `openDiagnostics()` (0 chỗ gọi) gỡ ở 2.93 wave 2C. Đồ đo
+        // trên xe đi qua cầu kiểm thử (`a11ylog` · `diag` · 2.93 wave 2B `diag_screen` mở màn này) sau công tắc test-mode.
     }
 
     private companion object {

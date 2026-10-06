@@ -47,8 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * ## Chặn main bao lâu thì ANR? — [ĐO AOSP android-10.0.0_r47]
  * Trần SỚM NHẤT là **5 s** của input, vì tấm chữ là cửa sổ nhận chạm:
  * `wm/ActivityTaskManagerService.java` → `public static final int KEY_DISPATCHING_TIMEOUT_MS = 5 * 1000;`. Ba trần
- * còn lại rộng hơn nhiều: `am/ActiveServices.java:102-109` → `SERVICE_START_FOREGROUND_TIMEOUT = 10*1000` (grace của
- * `startForegroundService` — **10 s**, không phải 5 s như tài liệu Google viết) và `SERVICE_TIMEOUT = 20*1000`;
+ * còn lại rộng hơn nhiều: `am/ActiveServices.java:132` → `SERVICE_START_FOREGROUND_TIMEOUT = 10*1000` (grace của
+ * `startForegroundService` — **10 s**, không phải 5 s như tài liệu Google viết) và `:125` `SERVICE_TIMEOUT = 20*1000`;
  * `am/ActivityManagerService.java` → `BROADCAST_FG_TIMEOUT = 10*1000` (receiver `SCREEN_ON`/`SCREEN_OFF` của service
  * chạy trên main — chậm ≤ hạn chờ, không ANR). ⇒ hạn chờ ack **phải < 5 s**; [VoiceHomeRelay.ackTimeoutMs] trả tối đa
  * 4 s (`VoiceEntryRoute.ACK_COLD_MS`), còn 1 s lề. Đừng nới quá 4 s ở đây — nới là đổi ANR-lề lấy một lượt chờ.

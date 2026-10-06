@@ -83,7 +83,7 @@ class WindowCommandDispatcher internal constructor(
      */
     fun setCastDisplay(id: Int?) = ownership.setCastDisplay(id)
 
-    /** Đặt [pkg] vào display [displayId] (+ ô [slot] nếu ở màn launcher) — dùng ở biên openInSlot của launcher. */
+    /** Đặt [pkg] vào display [displayId] (+ ô [slot] nếu ở màn launcher) — dùng ở biên đặt ô của launcher (`LauncherWindows`). */
     fun place(pkg: String, displayId: Int, slot: Int?) = locations.place(pkg, displayId, slot)
 
     /** Gỡ [pkg] khỏi mọi vị trí — dùng ở biên closeSlot/clearSlot của launcher. */
@@ -91,7 +91,7 @@ class WindowCommandDispatcher internal constructor(
 
     /**
      * Cập nhật [locations] TỪ mutation đã dispatch (thô, KHÔNG có index ô): mở app trên display → [place]
-     * (slot = null); fullscreen/force-stop → [remove]. Biên openInSlot của launcher biết index ô nên gọi
+     * (slot = null); fullscreen/force-stop → [remove]. Biên đặt ô của launcher (`LauncherWindows`) biết index ô nên gọi
      * [place]/[remove] TRỰC TIẾP (chính xác hơn) — hai đường KHÔNG xung đột vì khác code-path.
      */
     private fun applyLocation(mutation: WindowMutation) {

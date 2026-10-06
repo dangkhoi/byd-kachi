@@ -48,6 +48,9 @@ class OverlayHeads(private val activity: Activity) {
             // owner 2026-09-25 (ảnh xe): "launcher KHÔNG cần thanh trắng đó cho bất cứ trường hợp nào" — thanh trắng
             // (strip che caption freeform) là bug: kẹt đè cả GMaps. Dùng [centered] TRONG SUỐT, chỉ nút ⇄, cao đúng
             // khung nút — không nền trắng, không phủ caption. Caption của hệ (nếu ROM vẽ) không phải việc của ta.
+            // 2.93 · SLOT-HEAD-OVERLAY-DISC (spec `kachi-293-slot.html` R6) — CỐ Ý không đĩa: từ READY-AT-HOME R1.3 Kachi không mở cửa sổ
+            // nổi nào nữa, nên ⇄ nổi chỉ còn hiện (không nhúng) đè lên THẺ app của Kachi — tương phản do thẻ lo, như ⇄ ô widget; ⇄
+            // trong khung ô nằm ngay dưới lệch `Sp.XS` ⇒ một đĩa ở đây là đĩa lệch trên một ⇄ khác.
             addOverlay(SlotSwapButton.centered(activity, SlotSwapButton.describe(activity, hd.slot, empty = false), onTap = hd.onSwap), hd.width, minH, hd.left, hd.top)
         }
     }

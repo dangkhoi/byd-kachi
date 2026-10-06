@@ -14,7 +14,6 @@ import android.view.WindowManager
 import com.byd.clusternav.modules.clustercast.ClusterOverlayDisplays
 import com.byd.clusternav.launcher.KachiSpace
 import com.byd.clusternav.launcher.KachiBars
-import com.byd.clusternav.launcher.camera.CameraSignalPolicy.Side
 
 /**
  * ═══ OVERLAY CAMERA — cửa sổ NHỎ, BO GÓC, ở một góc TRÊN của khung launcher ══════════════════════════════════
@@ -95,6 +94,8 @@ class CameraOverlayView(private val appCtx: Context) {
         var rotationEffective: Boolean,
         /** 2.92 — kiểu trọn dải: cửa sổ cụm VỪA trong vùng ([CameraClusterBand.place] `fitInside`), không phóng-cắt. */
         val letterbox: Boolean = false,
+        /** 2.93 — vị trí kéo-thả / cỡ riêng camera; `null` ⇒ đường đặt chỗ 2.73–2.92 nguyên văn ([geometry]). */
+        val place: CameraOverlayPlace? = null,
     )
 
     /** Vùng cho phép (px) + góc của nó so với mép màn — cửa sổ thật nằm GIỮA vùng này. */
@@ -114,13 +115,13 @@ class CameraOverlayView(private val appCtx: Context) {
         const val MATCH = android.view.ViewGroup.LayoutParams.MATCH_PARENT
         const val WRAP = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 
-        /** Cạnh VÙNG CHO PHÉP (vuông) = 50% CHIỀU CAO màn (owner 2026-09-25: to gấp 2 so với 26% trước). */
-        const val SQUARE_RATIO = 0.50f
+        /** Cạnh VÙNG CHO PHÉP (vuông) = 50% CHIỀU CAO màn (owner 2026-09-25) — hằng ở `:core` (2.93 dùng chung với vị trí riêng). */
+        const val SQUARE_RATIO = CameraPlacement.SQUARE_RATIO
 
         /** Lề trên màn CHÍNH = 14% chiều cao ⇒ nằm hẳn DƯỚI thanh trên (trước bị đè header). */
-        const val MAIN_TOP_RATIO = 0.14f
+        const val MAIN_TOP_RATIO = CameraPlacement.MAIN_TOP_RATIO
 
-        /** Lề bên màn CHÍNH = 3% bề rộng. */ const val SIDE_MARGIN_RATIO = 0.03f
+        /** Lề bên màn CHÍNH = 3% bề rộng. */ const val SIDE_MARGIN_RATIO = CameraPlacement.SIDE_MARGIN_RATIO
     }
 
     /**
@@ -129,8 +130,8 @@ class CameraOverlayView(private val appCtx: Context) {
      * [corner] đã được chỗ gọi tra từ pref `camera_pos_left`/`camera_pos_right` (`Prefs.cameraPos`) — lớp này
      * KHÔNG đọc prefs: nó là tầng vẽ, và một lượt đọc prefs ở đây sẽ thành cửa thứ hai vào cùng chỗ lưu.
      *
-     * [side] chỉ quyết **nhãn** *Camera trái/phải*, KHÔNG quyết vị trí (đó là việc của [corner]) — hai vai tách
-     * hẳn từ R4, vì xi-nhan trái được phép hiện ở góc trên-phải. `null` ⇒ không vẽ nhãn.
+     * [which] chỉ quyết **nhãn** *Camera trái/phải/sau/trước*, KHÔNG quyết vị trí (đó là việc của [corner]/[place]) —
+     * hai vai tách hẳn từ R4, vì xi-nhan trái được phép hiện ở góc trên-phải. `null` ⇒ không vẽ nhãn.
      *
      * [rotationDeg] (R7, owner 2026-09-26): góc xoay NỘI DUNG video quanh tâm view, độ, dương = cùng chiều kim
      * đồng hồ (↻). Chỗ gọi đã tính từ pref + bên xi-nhan (`CameraSignalPolicy.rotationDegrees`) — lớp này chỉ nhận
@@ -145,7 +146,7 @@ class CameraOverlayView(private val appCtx: Context) {
      */
     fun show(
         corner: String,
-        side: Side? = null,
+        which: CameraWhich? = null,
         onCluster: Boolean = false,
         crop: FloatArray? = null,
         rotationDeg: Int = 0,
@@ -159,6 +160,7 @@ class CameraOverlayView(private val appCtx: Context) {
         synthFile: String = "",
         band: ClusterBandSpec = ClusterBandSpec.SEAL_DL3,
         video: CameraVideoContent? = null,
+        place: CameraOverlayPlace? = null,
         onSurfaceReady: (Surface) -> Unit = {},
     ) {
         hide()
@@ -178,7 +180,7 @@ class CameraOverlayView(private val appCtx: Context) {
             val shape = CameraClusterBand.effectiveShape(shape, cluster)
             val round = shape == CameraSignalPolicy.SHAPE_ROUND
             val st = Live(corner, cluster, dctx ?: ctx, band, crop, rotationDeg, render, shape, streamW, streamH,
-                rotationEffective = rotDone, letterbox = video?.letterbox == true)
+                rotationEffective = rotDone, letterbox = video?.letterbox == true, place = place)
             val g = geometry(st)
             val f = g.f
             // Bo góc: dải cụm mang bán kính của hồ sơ; còn lại = bán kính khung launcher (2.73).
@@ -200,7 +202,7 @@ class CameraOverlayView(private val appCtx: Context) {
                 }
                 roundOutline(radius, round)
                 addView(child, videoLp(st, g))
-                labelFor(ctx, side)?.let { tvl ->
+                labelFor(ctx, which)?.let { tvl ->
                     addView(tvl, android.widget.FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP or Gravity.START))
                 }
             }
@@ -211,7 +213,9 @@ class CameraOverlayView(private val appCtx: Context) {
             // sau có số thật. Nói "chưa đo" thay vì in `0` là đúng luật §2 — chưa biết ≠ GPU trả 0.
             Log.i(
                 PanoramaHal.TAG,
-                "overlay show corner=$corner side=$side cluster=$cluster rot=$rotationDeg hình=$shape" +
+                // `side=` GIỮ tên khoá cũ (2.93 in tên camera: LEFT/RIGHT y như `Side` cũ, thêm REAR/FRONT) — bài máy ảo
+                // `scripts/emulator/camera-cluster-e2e.sh` so nguyên dòng này.
+                "overlay show corner=$corner side=$which cluster=$cluster rot=$rotationDeg hình=$shape" +
                     " kết xuất=$render khung=${f.w}x${f.h} ${g.note} nguồn-biết=${f.streamKnown}" +
                     " gl=${CameraGlInfo.summary()}" + (if (gl != null) " nắn=${gl.describe()}" else ""),
             )
@@ -386,6 +390,13 @@ class CameraOverlayView(private val appCtx: Context) {
      * Toán của cả hai ở `:core`; đây chỉ chọn đường và dịch sang [WindowManager.LayoutParams].
      */
     private fun geometry(st: Live): Geo {
+        // 2.93 — camera đã KÉO / đổi CỠ ⇒ đường đặt chỗ riêng (`:core` CameraPlacement); không ⇒ hai đường cũ y nguyên.
+        st.place?.let { p ->
+            val dm = st.ctx.resources.displayMetrics
+            val c = customOverlayGeo(dm.widthPixels, dm.heightPixels, st.onCluster, st.band, st.shape, st.corner, p,
+                CameraPlacement.Stream(st.streamW, st.streamH, st.crop, if (st.rotationEffective) st.rotationDeg else 0))
+            return Geo(c.f, c.lp, c.radiusPx, c.note)
+        }
         // 2.79 — rẽ theo **display THẬT**, không theo hình: cả ba hình trên cụm đều cao trọn dải, cân đối hai bên.
         if (st.onCluster) {
             val dm = st.ctx.resources.displayMetrics

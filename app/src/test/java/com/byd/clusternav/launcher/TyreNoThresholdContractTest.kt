@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -26,9 +27,7 @@ class TyreNoThresholdContractTest {
         Files.walk(root).use { s -> s.filter { it.extension == "kt" }.toList() }
     }
 
-    private fun stripComments(src: String): String = src
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun stripComments(src: String): String = KotlinSource.stripComments(src)
 
     /** Tên của bộ ngưỡng cũ và mọi biến thể đặt tên theo đơn vị áp suất (`*_BAR` · `*_KPA` · `*_PSI` · `KPA_PER_*`). */
     private val thresholdName = Regex("""\b(?:LOW_BAR|HIGH_BAR|SPREAD_BAR|KPA_PER_BAR|\w+_(?:BAR|KPA|PSI)|KPA_PER_\w+)\b""")

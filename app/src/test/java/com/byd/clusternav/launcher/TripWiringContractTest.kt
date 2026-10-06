@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -16,7 +17,7 @@ import org.junit.jupiter.api.Test
  *  - lối vào DUY NHẤT là dòng CUỐI chuỗi SẴN, và lối đó không chặn luồng `kachi-ready` (R2.3, R-nf4);
  *  - sổ chuyến CLAIMED ghi TRƯỚC mọi việc (CLAUDE.md §5) — một lượt mỗi chuyến kể cả khi Kachi tự force-stop;
  *  - nhạc đi qua PHIÊN nhạc trước; L4 · D3(ii): link mà phiên không nhận URI ⇒ ý-định VIEW CHỈ dựng ở `:core`
- *    (`TripMusicPlan.viewCmd`) và chỉ đi qua chuỗi dàn dựng (dấu + K12 khi app thoát lên trước màn nhà — [ĐO `p3/e2e-L4/m5a`]);
+ *    (`TripMusicPlan.viewCmd`) và chỉ đi qua chuỗi dàn dựng (dấu + K12 khi app thoát lên trước màn nhà — [ĐO `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)]);
  *  - đọc phiên TRƯỚC khi đụng gì, `null` ⇒ bỏ; L4 · D3(i): nguồn khác đang phát KHÔNG còn chặn khi chọn app cụ thể;
  *  - từ khoá đi qua LÕI giải bài của giọng nói (không đường thứ hai);
  *  - *Mở bình thường* chỉ bằng chuỗi có rào camera (K10).
@@ -225,8 +226,7 @@ class TripWiringContractTest {
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
         }.map { p ->
-            p.fileName.toString() to p.toFile().readText().replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                .lines().joinToString("\n") { it.substringBefore("//") }
+            p.fileName.toString() to KotlinSource.stripComments(p.toFile().readText())
         }
         assertTrue(all.size > 300, "quét được quá ít tệp (${all.size}) — đường dẫn sai thì bài này là test giả")
         mapOf(

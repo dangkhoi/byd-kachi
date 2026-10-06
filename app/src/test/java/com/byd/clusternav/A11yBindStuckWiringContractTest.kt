@@ -116,13 +116,17 @@ class A11yBindStuckWiringContractTest {
         val fn = escalate
         // 2.83-B (owner 29/09): lời gọi thêm tham số đuôi về nhà — chuỗi canh giữ NGUYÊN ba đối số cũ (gói lấy từ
         // chính app, component của mình) và khoá thêm tham số mới, không nới.
+        // 2.93 CODE-FIX-AFTER-283 (6): thêm tham số dấu camera của ĐỜI XE — giữ nguyên ba đối số cũ + đuôi, khoá thêm tham số mới.
         assertTrue(
             fn.contains(
-                "AccessibilityRebind.forceStopRebindCommand(cur, app.packageName, ACC_COMP, " +
-                    "homeTail = AccessibilityRebind.homeTailFor(userAsked))",
+                "AccessibilityRebind.forceStopRebindCommand(\n" +
+                    "            cur, app.packageName, ACC_COMP, homeTail = AccessibilityRebind.homeTailFor(userAsked),\n" +
+                    "            cameraSig = camSig ?: AccessibilityRebind.CAMERA_SCREEN_SIGNATURE,\n" +
+                    "        )",
             ),
             "phải dựng lệnh qua hàm có chốt cứng gói (lệch gói ⇒ chuỗi rỗng), không tự ghép chuỗi tại chỗ",
         )
+        assertTrue(fn.contains("ClusterProfile.resolveCached(app).cameraSignature"), "dấu camera lấy từ hồ sơ ĐỜI XE (§7)")
         assertFalse(
             Regex("\"am force-stop [^$]").containsMatchIn(fn),
             "KHÔNG được có literal `am force-stop <gói cố định>` trong đường này — gói phải lấy từ chính app",

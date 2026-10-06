@@ -64,7 +64,7 @@ object FitRules {
     /**
      * Hệ số áp cho một ICON cỡ cố định [w]×[h] (px gốc) khi lưới áp [k]: không lớn hơn chỗ [roomW]×[roomH] mà ô dành
      * cho nó (ô trừ lề trong của các khung bọc + lề ngoài của icon, đã nhân `k`), CÙNG một hệ số cho hai trục ⇒ icon
-     * giữ tỉ lệ, nằm giữa ô (cha căn giữa). QA 04/10 ([ĐO] `l5/icononly-zoom.png`, bản 149dcab): icon 60px trong ô 36px
+     * giữ tỉ lệ, nằm giữa ô (cha căn giữa). QA 04/10 ([ĐO] `icononly-zoom.png` (bằng chứng phiên, ngoài repo), bản 149dcab): icon 60px trong ô 36px
      * bị khung lề cắt còn một dải 12px giữa (`LinearLayout.java:1653-1655` canh giữa ra lề âm + `clipToPadding` mặc định
      * `ViewGroup.java:686-687` r47) — trông như hình bị bóp. Lưới đọc được thì hộp đo dò đã vừa ô ⇒ chặn này không đổi
      * gì; nó chỉ chặn ca lưới KHÔNG đọc được (giữ sàn, tràn ô). Tối thiểu 1px.

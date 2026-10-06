@@ -37,8 +37,13 @@ internal class FitValueRow private constructor(
     var yielded = false
         private set
 
-    /** Soát QA4 — khe giá trị/chú thích đang giữ TRONG [valueW] (px; 0 = không giữ — [FitValues.gapPx]). */
+    /**
+     * Soát QA4 — khe giá trị/chú thích (px; 0 = không giữ — [FitValues.gapPx]). 2.93 `FIT-GRAVITY`: khe là LỀ NGOÀI của giá trị
+     * phía chú thích ([gapMargin]), không nằm trong [valueW]; [applied] = phần lề ấy bộ áp đã ghi vào `LayoutParams` lần gần
+     * nhất — [flex] trừ lại nó (lề có chủ không được tính hai lần, không vòng lặp).
+     */
     private var gap = 0
+    private var applied = 0
 
     init {
         // Soát vòng 6 (P3): chú thích NHƯỜNG là view 0×0 ⇒ `getGlobalVisibleRect` false (r47 `View.java:17114-17125`) ⇒
@@ -77,8 +82,20 @@ internal class FitValueRow private constructor(
      */
     fun probe(rot: Boolean) {
         gap = if (rot) reserve(captions.filter { it.visibility == View.VISIBLE }) else 0
-        valueW = if (rot) needAt(value.textSize) + gap else -1
+        valueW = if (rot) needAt(value.textSize) else -1
         yielded = false
+    }
+
+    /**
+     * 2.93 `FIT-GRAVITY` — lề ngoài có chủ (trái, phải) mà bộ áp cộng thêm cho con [v] (`FitScale.params`): chỉ GIÁ TRỊ, chỉ
+     * hàng NGANG có chú thích đang hiện; phía = phía các chú thích (sau giá trị ⇒ phải). Ghi lại phần đã áp ([applied]).
+     */
+    fun gapMargin(v: View, rot: Boolean): Pair<Int, Int> {
+        if (v !== value) return 0 to 0
+        val g = if (rot && !yielded) gap else 0
+        applied = g
+        val after = captions.firstOrNull()?.let { main.indexOfChild(it) > main.indexOfChild(value) } ?: true
+        return if (after) 0 to g else g to 0
     }
 
     /** Khe phải giữ cho các chú thích đang hiện [shown] (chú thích có chữ — [FitValues.share] cũng chỉ giữ khe khi đó). */
@@ -113,23 +130,38 @@ internal class FitValueRow private constructor(
         if (main.measuredWidth <= 0 || main.measuredHeight <= 0) return false
         val shown = captions.filter { it.visibility == View.VISIBLE }
         if (rot) {
-            // Soát QA4: khe ([gap]) nằm trong [valueW] — chữ dài ra ăn vào khe cũng chia lại (không dán sát chú thích).
-            if (tick && !FitValues.wouldClip(valueW - gap, needAt(value.textSize))) return false
+            // 2.93 FIT-GRAVITY: khe là lề NGOÀI ⇒ chỗ của chữ = trọn [valueW] (QA4: chữ dài ra vượt chỗ ⇒ chia lại).
+            if (tick && !FitValues.wouldClip(valueW, needAt(value.textSize))) return false
             val flex = flex()
             val px = if (legible) fitPx else FitValues.valuePx(fitPx, floorPx, flex, ::needAt)
             val r = reserve(shown)
             val share = FitValues.share(
-                flex, needAt(px), shown.sumOf { contentNeed(it, it.textSize) + gaps(it) },
+                flex, needAt(px), captionNeed(shown),
                 shown.maxOfOrNull { FitValues.captionMinPx(it.textSize) } ?: 0, r,
             )
-            gap = if (share.captions) r else 0
-            return set(px, share.valueW, yield = shown.isNotEmpty() && !share.captions)
+            val g = if (share.captions) r else 0
+            val moved = g != gap
+            gap = g
+            return set(px, share.valueW, yield = shown.isNotEmpty() && !share.captions) || moved
         }
         // Khối DỌC: cỡ giá trị đã co theo bề rộng của chính nó (FitScale.fitValues); chú thích nhường khi cả khối cao hơn ô.
         gap = 0
         val yield = !legible && shown.isNotEmpty() && FitValues.stackYields(stackHeight(), main.measuredHeight)
         return set(value.textSize, -1, yield)
     }
+
+    /**
+     * 2.93 wave 2A · FIT-REGROW lớn MỘT PHẦN — hàng NGANG (bề rộng tĩnh [valueW] ≥ 0) theo phân chia ĐANG áp ([valueW] · [yielded]
+     * · [gap], kể cả chỗ nhịp đang GIỮ): không chú thích nào phải nhường — ẩn hay chỉ còn chỗ cho `…` ([FitValues.roomy]). Nhịp chỉ
+     * chia lại khi giá trị SẼ bị cắt ⇒ giá trị hẹp đi không trả chỗ lại ⇒ chưa `roomy` thì dấu lớn lại phải giữ (`FitScale.full`).
+     * Khối DỌC ([valueW] = −1) ⇒ `true`: chú thích nhường tính lại mỗi nhịp theo cỡ giá trị, mà cỡ ấy `FitScale.full` đã xét. Đo
+     * chữ bằng `Paint`, không lượt đo view.
+     */
+    fun roomy(): Boolean =
+        valueW < 0 || FitValues.roomy(FitValues.Share(valueW, !yielded), flex(), captionNeed(captions.filter { it.visibility == View.VISIBLE }), gap)
+
+    /** Tổng nhu cầu (px) của các chú thích đang hiện [shown]: chữ đã chừa chữ số + lề chữ + lề ngoài — chung cho [fit] và [roomy]. */
+    private fun captionNeed(shown: List<TextView>): Int = shown.sumOf { contentNeed(it, it.textSize) + gaps(it) }
 
     private fun set(px: Float, width: Int, yield: Boolean): Boolean {
         var changed = false
@@ -145,7 +177,7 @@ internal class FitValueRow private constructor(
             val c = main.getChildAt(i)
             if (c.visibility == View.GONE) continue
             if (!owns(c)) used += c.measuredWidth + horizontalMargins(c)
-            else if (c === value) used += horizontalMargins(c)
+            else if (c === value) used += horizontalMargins(c) - applied   // lề có chủ (khe) không phải của bộ dựng
         }
         return main.measuredWidth - used
     }
@@ -181,13 +213,33 @@ internal class FitValueRow private constructor(
         /** Bút đo nháp (luồng chính) — đo ở cỡ thử mà không đổi cỡ chữ đang hiện, không cấp phát mỗi lần đo. */
         private val scratch = TextPaint()
 
-        /** Bề rộng phần CHỮ phải dành cho [tv] ở cỡ [px]: chữ hiện tại đã chừa chữ số, đo bằng `Paint` của nó. */
+        /**
+         * Bề rộng phần CHỮ phải dành cho [tv] ở cỡ [px]: chữ hiện tại đã chừa chữ số, đo bằng `Paint` của nó. 2.93
+         * `FIT-WIDEST-CACHE`: chữ số rộng nhất nhớ theo bút ([PenKey]) + chuỗi đệm nhớ một lần gần nhất ⇒ ca thường 1
+         * `measureText` thay 11 lần + 10 chuỗi (kết quả y hệt — `FitValues.WidestMemo`, bài `FitValuesMemoTest`).
+         */
         fun contentNeed(tv: TextView, px: Float): Int {
             if (tv.text.isEmpty()) return 0
             scratch.set(tv.paint)
             scratch.textSize = px
-            val widest = FitValues.widestDigit { scratch.measureText(it.toString()) }
-            return FitValues.needPx(scratch.measureText(FitValues.headroom(tv.text, widest)))
+            val widest = widestMemo.get(PenKey.of(scratch)) { c -> scratch.measureText(DIGITS, c - '0', c - '0' + 1) }
+            return FitValues.needPx(scratch.measureText(headroomMemo.of(tv.text, widest)))
+        }
+
+        private const val DIGITS = "0123456789"
+        private val widestMemo = FitValues.WidestMemo<PenKey>()
+        private val headroomMemo = FitValues.HeadroomMemo()
+
+        /** Mọi thuộc tính bút đổi được bề rộng một chữ số (cùng phông + cỡ + giãn + nghiêng + cờ + ngôn ngữ ⇒ cùng kết quả). */
+        private data class PenKey(
+            val face: android.graphics.Typeface?, val size: Float, val scaleX: Float, val skewX: Float, val spacing: Float,
+            val flags: Int, val features: String?, val locales: android.os.LocaleList,
+        ) {
+            companion object {
+                fun of(p: TextPaint) = PenKey(
+                    p.typeface, p.textSize, p.textScaleX, p.textSkewX, p.letterSpacing, p.flags, p.fontFeatureSettings, p.textLocales,
+                )
+            }
         }
 
         /** Hàm đo cho [FitValues.valuePx] của một chữ giá trị bất kỳ (bề rộng phần chữ). */

@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -47,9 +48,9 @@ class SpeedSignSourceLifecycleTest {
     fun `nhanh Waze HLP da go — khong con poll logcat vo dieu kien`() {
         listOf("WazeHudSource", "startWazeHudSource", "stopWazeHudSource", "WazeHudLink")
             .forEach { token ->
-                val live = (listener + "\n" + pusher).lineSequence()
-                    .filterNot { it.trimStart().startsWith("//") || it.trimStart().startsWith("*") }
-                    .any { it.contains(token) }
+                // 2.93 wave 2C · TEST-STRIP-COPIES: bộ quét có trạng thái dùng chung thay lọc dòng mở đầu bằng `//`/`*`
+                // (bản cũ để lọt chú thích cuối dòng mã và KDoc một dòng — báo sai — còn `//` trong chuỗi thì cắt mất mã).
+                val live = KotlinSource.stripComments(listener + "\n" + pusher).contains(token)
                 assertFalse(live, "\"$token\" phải chỉ còn trong comment giải thích, không còn code sống")
             }
     }

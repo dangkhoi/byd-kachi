@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -42,13 +43,16 @@ class WidgetFitR5ContractTest {
         val fit = SourceRoots.body(row, "fun fit(rot: Boolean, fitPx: Float, legible: Boolean, floorPx: Float, tick: Boolean)")
         // Soát QA4 — ĐỔI GHIM có lý do: khe giá trị/chú thích (`gap`, FitValues.gapPx) nằm TRONG bề rộng giá trị ⇒ chỗ của CHỮ là
         // `valueW - gap`; chữ dài ra ăn vào khe cũng chia lại (không dán sát `08:3104/10`). WidgetFitR6ContractTest khoá phần khe.
-        assertTrue(fit.indexOf("if (tick && !FitValues.wouldClip(valueW - gap, needAt(value.textSize))) return false") in
+        // 2.93 FIT-GRAVITY (đổi ghim có lý do): khe là lề NGOÀI có chủ (`gapMargin`) ⇒ chỗ của chữ = trọn valueW.
+        assertTrue(fit.indexOf("if (tick && !FitValues.wouldClip(valueW, needAt(value.textSize))) return false") in
             0 until fit.indexOf("FitValues.share("), "đổ tại chỗ: chỉ chia lại khi giá trị SẼ bị cắt")
         assertTrue(fit.contains("val px = if (legible) fitPx else FitValues.valuePx(fitPx, floorPx, flex, ::needAt)"),
             "lưới không đọc được: giá trị co theo CẢ phần hàng (chú thích nhường trước)")
         assertTrue(fit.contains("FitValues.stackYields(stackHeight(), main.measuredHeight)"), "khối dọc: chú thích nhường khi khối cao hơn ô")
         val need = SourceRoots.body(row, "fun contentNeed(tv: TextView, px: Float)")
-        assertTrue(need.contains("FitValues.widestDigit {") && need.contains("FitValues.headroom(tv.text, widest)") &&
+        // 2.93 FIT-WIDEST-CACHE (đổi ghim có lý do): chữ số rộng nhất + chuỗi đệm qua bộ nhớ của `:core` (FitValues.WidestMemo /
+        // HeadroomMemo gọi đúng widestDigit/headroom — FitValuesMemoTest) — cùng phép đo, 1 measureText thay 11.
+        assertTrue(need.contains("widestMemo.get(PenKey.of(scratch))") && need.contains("headroomMemo.of(tv.text, widest)") &&
             need.contains("FitValues.needPx("), "chữ hiện tại đã chừa chữ số, đo bằng Paint của nó, làm tròn lên")
         val apply = SourceRoots.body(scale, "fun apply(k: Double, f: Form, n: Int, cw: Int = Int.MAX_VALUE, ch: Int = Int.MAX_VALUE)")
         assertTrue(apply.contains("row?.let { r -> r.probe(f == Form.HORIZONTAL); changed = rowParams(f == Form.HORIZONTAL) or changed }"),
@@ -118,8 +122,7 @@ class WidgetFitR5ContractTest {
     @Test
     fun `ham moi co cho goi that va tep duoi 500 dong`() {
         val app = SourceRoots.moduleSourceRoots().filter { it.toString().contains("app") }
-        fun strip(t: String) = t.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        fun strip(t: String) = KotlinSource.stripComments(t)
         fun uses(token: String, except: String): Boolean = app.any { root ->
             java.nio.file.Files.walk(root).use { s ->
                 s.filter { it.toString().endsWith(".kt") && it.fileName.toString() != except }
@@ -128,7 +131,7 @@ class WidgetFitR5ContractTest {
         }
         listOf(
             "FitValues.share(", "FitValues.wouldClip(", "FitValues.stackYields(", "FitValues.captionMinPx(", "FitValues.valuePx(",
-            "FitValues.headroom(", "FitValues.widestDigit", "FitValues.needPx(", "FitRules.iconCap(", "FitLabels.spoken(",
+            "FitValues.HeadroomMemo(", "FitValues.WidestMemo<", "FitValues.needPx(", "FitRules.iconCap(", "FitLabels.spoken(",
         ).forEach { assertTrue(uses(it, "-"), "$it chưa có chỗ gọi ở :app") }
         assertTrue(uses("FitValueRow.of(", "FitValueRow.kt"))
         assertTrue(uses("FitValueRow.needOf(", "FitValueRow.kt"))

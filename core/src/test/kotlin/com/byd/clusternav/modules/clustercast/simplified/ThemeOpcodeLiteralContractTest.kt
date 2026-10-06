@@ -1,5 +1,6 @@
 package com.byd.clusternav.modules.clustercast.simplified
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -31,10 +32,11 @@ class ThemeOpcodeLiteralContractTest {
         Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") || it.toString().endsWith(".java") }.collect(java.util.stream.Collectors.toList()) }
     }
 
-    /** Bỏ chú thích khối + dòng — cùng luật [SourceRoots.codeOf]. */
-    private fun code(file: Path): String = file.toFile().readText()
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    /**
+     * Bỏ chú thích khối + dòng — ĐÚNG bộ quét của [SourceRoots.codeOf] ([KotlinSource.stripComments]); `keepLines` để
+     * `tệp:dòng` trong lời báo là dòng THẬT của tệp (bản regex cũ gộp comment khối thành một khoảng trắng ⇒ số dòng trôi).
+     */
+    private fun code(file: Path): String = KotlinSource.stripComments(file.toFile().readText(), keepLines = true)
 
     private fun offenders(rule: Regex, skipAllowed: Boolean = true): List<String> = sources()
         .filter { !skipAllowed || !allowed(it) }

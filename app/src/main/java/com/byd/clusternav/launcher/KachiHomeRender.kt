@@ -21,6 +21,7 @@ package com.byd.clusternav.launcher
 internal fun KachiHomeActivity.applyThemeInPlace() {
     runCatching { KachiGlass.refresh(rootFrame) }; wall.restyle()   // nền kính + màu nền tổng theo palette (#4)
     topStrip.restyle(); dock.restyle(); workspace.restyle()            // chrome đổi màu; ô App giữ nguyên (app chạy tiếp)
+    panels.restyleSettings()   // 2.93 SETTINGS-RETHEME-INPLACE — màn Cài đặt đang mở cũng đổi màu tại chỗ
 }
 
 /**

@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -44,9 +45,7 @@ class AppPrereqsWiringContractTest {
                 s.filter { it.toString().endsWith(".kt") || it.toString().endsWith(".java") }.toList()
             }.map { p ->
                 val rel = root.relativize(p).toString()
-                rel to p.toFile().readText()
-                    .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .lines().joinToString("\n") { it.substringBefore("//") }
+                rel to KotlinSource.stripComments(p.toFile().readText())
             }
         }
     }

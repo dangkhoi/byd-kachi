@@ -20,9 +20,19 @@ import com.byd.clusternav.launcher.voice.VoiceLexicon.Token
  */
 internal object VoiceControlParse {
 
-    /** Câu điều khiển nút [id] với động từ [verb] + đuôi [after] ⇒ [VoiceIntent.Control] (hoặc Unknown/MISMATCH). */
-    @Suppress("ReturnCount")
-    fun control(id: String, verb: VoiceVerb, after: List<Token>, original: String, half: Boolean = false): VoiceIntent {
+    /**
+     * Câu điều khiển nút [id] với động từ [verb] + đuôi [after] ⇒ [VoiceIntent.Control] (hoặc Unknown/MISMATCH).
+     * [half] = vế có nói *"nửa"* ở đâu đó (mức nửa của COVER); [near] = dấu nửa đứng NGAY cạnh tên nút ([VoiceHalfButton.markedNear]).
+     */
+    @Suppress("ReturnCount", "LongParameterList")
+    fun control(
+        id: String,
+        verb: VoiceVerb,
+        after: List<Token>,
+        original: String,
+        half: Boolean = false,
+        near: Boolean = false,
+    ): VoiceIntent {
         val def = ControlRegistry.byId(id) ?: return VoiceIntent.Unknown(VoiceUnknownReason.NO_OBJECT, original)
         val num = firstNumber(after)
         // (c) [ĐO log xe 1.79] "mở/chỉnh điều hòa 25 độ" — "điều hòa"/"máy lạnh" khớp `ac_auto` (TOGGLE) nên MẤT
@@ -36,9 +46,13 @@ internal object VoiceControlParse {
         return when (def.kind) {
             ControlKind.TOGGLE, ControlKind.COVER -> when (verb) {
                 // COVER (kính) + «mở … một nửa / 50%» ⇒ mức NỬA (value 2 → HAL state 4 = ~50%). [ĐO] enum
-                // WINDOW_OPEN_HALF=4 proven per-window; TOGGLE không có mức nửa nên cờ half bị bỏ qua.
-                VoiceVerb.ON, VoiceVerb.OPEN ->
-                    if (half && def.kind == ControlKind.COVER) VoiceIntent.Control(id, 2) else VoiceIntent.Control(id, 1)
+                // WINDOW_OPEN_HALF=4 proven per-window; TOGGLE không có mức nửa ⇒ 2.93: dấu nửa NGAY cạnh tên nút ([near]) thì
+                // bấm nút "nửa" RIÊNG của nó nếu bộ đăng ký có (kính từ 1.94 — [VoiceHalfButton]), không có thì như cũ.
+                VoiceVerb.ON, VoiceVerb.OPEN -> when {
+                    half && def.kind == ControlKind.COVER -> VoiceIntent.Control(id, 2)
+                    near -> VoiceIntent.Control(VoiceHalfButton.of(id) ?: id, 1)
+                    else -> VoiceIntent.Control(id, 1)
+                }
                 // "dừng chiếu cụm" = tắt nút `cast`. Không có nhánh này thì đúng câu người ta hay nói nhất cho
                 // việc **dừng** một thứ đang chạy lại rơi vào MISMATCH.
                 VoiceVerb.OFF, VoiceVerb.CLOSE, VoiceVerb.PAUSE -> VoiceIntent.Control(id, 0)
@@ -235,8 +249,11 @@ internal object VoiceControlParse {
         return VoiceLexicon.tokenize(verb) + body
     }
 
-    /** Từ nối AN TOÀN có thể dính đuôi một vế MIX — cắt trước khi parse. KHÔNG gồm "sau"/"do" đơn (là "kính sau"). */
-    private val SEGMENT_TAIL_JOINERS = setOf("xong", "roi", "va", "then")
+    /**
+     * Từ nối AN TOÀN có thể dính đuôi một vế MIX — cắt trước khi parse. KHÔNG gồm "sau"/"do" đơn (là "kính sau").
+     * 2.93 VOICE-ROI-CONNECTOR: khai CÓ DẤU — chữ mang dấu *"rơi"* (tên bài *"Lá rơi"*) không bị cắt như *"rồi"* ([VoiceHomograph]).
+     */
+    private val SEGMENT_TAIL_JOINERS = VoiceHomograph.Words("xong", "rồi", "và", "then")
 
     /**
      * Tách câu MIX không liên từ ở ranh giới ĐỘNG TỪ HÀNH ĐỘNG ("hạ kính lấy gió ngoài tắt máy lạnh" = 3 lệnh).
@@ -254,7 +271,7 @@ internal object VoiceControlParse {
             val to = starts.getOrNull(k + 1) ?: t.size
             var end = to
             if (end - from >= 2 && t[end - 2].norm == "sau" && t[end - 1].norm == "do") end -= 2
-            while (end > from && t[end - 1].norm in SEGMENT_TAIL_JOINERS) end--
+            while (end > from && SEGMENT_TAIL_JOINERS.matches(t[end - 1])) end--
             if (end > from) out.add(t.subList(from, end))
         }
         return out.takeIf { it.size >= 2 }

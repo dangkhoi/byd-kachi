@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.testsupport.I18nScripts
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -343,15 +344,11 @@ class LauncherI18nContractTest {
         s.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }.sorted().toList()
     }
 
-    /** MÃ đã bỏ chú thích — KDoc của dự án viết bằng tiếng Việt nên quét thô sẽ báo sai gần như mọi tệp. */
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { line ->
-            // Cắt `//` chỉ khi nó KHÔNG nằm trong một chuỗi (đếm dấu ngoặc kép phía trước).
-            var i = line.indexOf("//")
-            while (i >= 0 && line.take(i).count { it == '"' } % 2 != 0) i = line.indexOf("//", i + 1)
-            if (i >= 0) line.take(i) else line
-        }
+    /**
+     * MÃ đã bỏ chú thích — KDoc của dự án viết bằng tiếng Việt nên quét thô sẽ báo sai gần như mọi tệp. Bộ quét có trạng
+     * thái dùng chung [KotlinSource.stripComments] (giữ string literal — thứ bài này soi) thay bản đếm dấu nháy từng dòng.
+     */
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 
     /** Chuỗi trần trong mã (bỏ chuỗi nhiều dòng — launcher không dùng). */
     private fun literals(src: String): List<String> =

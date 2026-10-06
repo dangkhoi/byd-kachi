@@ -74,7 +74,8 @@ class SlotParkWiringContractTest {
             "if (c != null) { unpark(c.parked); if (c.resize) resize(w, ht); return }", "dm.createVirtualDisplay(")
         val unpark = SourceRoots.body(host, "private fun unpark(")
         order(unpark, "vd = p.lease.vd", "launched = true",
-            "SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() }")
+            // 2.93 · R3 — ĐỔI GHIM có lý do: bộ đo báo kèm "ra khỏi ô, còn mở ở display khác" (`it`).
+            "SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed(it) }")
         assertFalse("attach(" in unpark, "gắn nằm trong ParkedApps.claim, không ở unpark")
         forbidden.forEach { assertFalse(it in unpark, "'$it' trong unpark — nhận lại không được mở lại / đổi cỡ app") }
         // Màn ảo đỗ mà app đã RỜI nó (mở toàn màn ở display 0 · chết lúc đỗ) ⇒ không để khung đen vĩnh viễn: nhịp đo chung
@@ -101,8 +102,18 @@ class SlotParkWiringContractTest {
         val sweep = SourceRoots.body(probe, "private fun sweep()")
         assertEquals(1, Regex("shell\\(\"am stack list\"\\)").findAll(sweep).count(), "không thêm lệnh nào — vẫn MỘT lệnh mỗi nhịp")
         order(sweep, "if (out.isNullOrBlank()) return@execute", "val readable = \"Stack id=\" in out",
-            "if (sub.onMissing != null && !readable) return@forEach", "if (sub.liveness.observe(alive))",
-            "val missing = sub.onMissing?.takeIf { sub.liveness.missing }", "if (missing != null) missing() else sub.onDead()")
+            // 2.93 · R3 — ĐỔI GHIM có lý do: nhịp vắng màn ảo ô mà gói còn task ở display khác nạp thêm `away` (cùng bản đọc,
+            // `SlotPresence`); màn ảo nhận lại vẫn ưu tiên `onMissing` (mở lại — PARK-2b), không đổi.
+            "if (sub.onMissing != null && !readable) return@forEach",
+            "val away = !alive && SlotPresence.of(out, sub.pkg, sub.displayId) == SlotPresence.ELSEWHERE",
+            // Senior review 2.93 Pass 2 [P3] — ĐỔI GHIM có lý do: (1) màn ảo ô còn app KHÁC ⇒ không tính cho kết luận chưa-từng-thấy-
+            // sống (đặt tạm `B_NOT_IN_SLOT`: A còn ở đỉnh — luật ở `SlotLivenessElsewhereTest`); (2) thôi đo ĐÚNG bản vừa kết luận,
+            // trên luồng chính, chỉ khi nó còn đăng ký — bản bị thay giữa nhịp không được gỡ nhầm bản mới cùng khoá / báo cho app mới.
+            "val othersInSlot = away && SlotLiveness.othersInSlot(out, sub.pkg, sub.displayId)",
+            "if (sub.liveness.observe(alive, away, othersInSlot))",
+            "val missing = sub.onMissing?.takeIf { sub.liveness.missing }",
+            "if (!subs.remove(sub))", "if (missing != null) missing() else sub.onDead(elsewhere)")
+        assertFalse("unwatch(sub.key)" in sweep, "luồng nền gỡ theo KHOÁ ⇒ gỡ nhầm bản đăng ký mới cùng khoá (Pass 2)")
         val reopen = SourceRoots.body(host, "private fun reopen()")
         assertTrue("maybeLaunch()" in reopen, "màn ảo trống ⇒ mở app như đường thường vào CHÍNH màn ảo đó")
         // PARK-2b: màn ảo nhận lại được đo NGAY (không chờ nhịp đang lùi tới 15 s), vẫn một chuỗi nhịp.

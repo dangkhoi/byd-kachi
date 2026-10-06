@@ -11,9 +11,15 @@ import kotlin.math.abs
  * ## Ba tính chất phải đúng CÙNG LÚC, và vì sao không tính chất nào bỏ được
  *  1. **Tự tắt sau [WINDOW_MS]** — một công tắc mở cho một buổi test mà sống mãi thì nó không còn là công tắc,
  *     nó là một cổng vào thường trực trên chiếc xe của người ta.
- *  2. **Chết theo lần nổ máy** — người bật nó đang ngồi trong xe với cáp adb; tắt máy là buổi test kết thúc.
+ *  2. **Chết khi TẮT MÁY** — người bật nó đang ngồi trong xe với cáp adb; tắt máy là buổi test kết thúc.
  *     Đây là ràng buộc §5 CLAUDE.md nói tới ở chiều ngược lại: state ghi ra ngoài **sống dai hơn tiến trình**,
  *     nên muốn nó chết theo máy thì phải **tự làm cho nó chết**, không thể trông vào việc process bị giết.
+ *     ⚠ 2.93 · TEST-MODE-ACC-OFF (bảo mật) — [ĐO xe 29/09, spec 2.83 §2.10] tắt máy BYD KHÔNG khởi động lại máy ⇒
+ *     `bootId` không đổi ⇒ trước bản này cửa sổ SỐNG QUA hai lần tắt máy (tới 60 phút, kể cả lúc xe đỗ không người),
+ *     trái câu UI. Nay [remainingMs] nhận thêm mốc *claim tắt-máy* (`a11y_tat_may_elapsed` — lớp 1 của 2.83 ghi
+ *     `commit()` mỗi lần tiến trình launcher dựng lại lúc màn TẮT, tức sau mỗi lượt BYD giết lúc tắt máy; cùng nguồn
+ *     `TripGate` dùng để đếm lần nổ máy): claim mới hơn lúc MỞ cửa sổ ⇒ ĐÓNG. Hướng an toàn — dựng lại lúc màn tắt mà
+ *     không phải tắt máy (D-10) cũng đóng; mở lại = bật tay trong Cài đặt.
  *  3. **Không tin một mình đồng hồ treo tường** — `System.currentTimeMillis` nhảy được (NTP, người dùng đổi giờ,
  *     đầu xe mất pin RTC). Một hạn dùng chỉ dựa vào nó thì vặn đồng hồ lùi lại là cửa mở thêm vài tiếng.
  *
@@ -40,7 +46,17 @@ object TestBridgeWindow {
      */
     fun encode(bootId: String, upMs: Long): String = "${bootId.trim()}$SEP${upMs + WINDOW_MS}"
 
-    fun remainingMs(stored: String?, bootId: String, upMs: Long): Long {
+    /** Mốc claim tắt-máy "chưa từng" (cùng quy ước `Prefs.a11yTatMayAt`: `< 0`). */
+    const val NEVER: Long = -1L
+
+    /**
+     * Thời gian còn lại của cửa sổ (ms), 0 = đóng.
+     *
+     * @param tatMayAt mốc `elapsedRealtime` của claim tắt-máy gần nhất (`Prefs.a11yTatMayAt`, [NEVER] = chưa từng). Claim
+     *   nằm SAU lúc mở cửa sổ và không ở "tương lai" (mốc lớn hơn [upMs] = đời máy trước, `elapsedRealtime` về 0 khi khởi
+     *   động lại — cùng luật `AccessibilityHealGates.escalatedThisBoot`) ⇒ đã tắt máy kể từ lúc bật ⇒ ĐÓNG.
+     */
+    fun remainingMs(stored: String?, bootId: String, upMs: Long, tatMayAt: Long = NEVER): Long {
         val raw = stored?.trim().orEmpty()
         val cut = raw.lastIndexOf(SEP)
         if (cut <= 0) return 0
@@ -49,13 +65,18 @@ object TestBridgeWindow {
         if (boot != bootId.trim() || boot.isEmpty()) return 0          // khác lần nổ máy ⇒ chưa bật
         val left = until - upMs
         if (left <= 0 || left > WINDOW_MS) return 0                     // hết hạn, hoặc giá trị bị sửa tay
+        if (closedByIgnitionOff(until - WINDOW_MS, upMs, tatMayAt)) return 0
         return left
     }
 
-    fun isOn(stored: String?, bootId: String, upMs: Long): Boolean = remainingMs(stored, bootId, upMs) > 0
+    /** TEST-MODE-ACC-OFF — có lần tắt máy (claim) nằm trong `(openedAt, upMs]` không. */
+    fun closedByIgnitionOff(openedAt: Long, upMs: Long, tatMayAt: Long): Boolean = tatMayAt > openedAt && tatMayAt <= upMs
 
-    fun remainingMinutes(stored: String?, bootId: String, upMs: Long): Int {
-        val left = remainingMs(stored, bootId, upMs)
+    fun isOn(stored: String?, bootId: String, upMs: Long, tatMayAt: Long = NEVER): Boolean =
+        remainingMs(stored, bootId, upMs, tatMayAt) > 0
+
+    fun remainingMinutes(stored: String?, bootId: String, upMs: Long, tatMayAt: Long = NEVER): Int {
+        val left = remainingMs(stored, bootId, upMs, tatMayAt)
         return if (left <= 0) 0 else ((left + 59_999L) / 60_000L).toInt()
     }
 }

@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -37,9 +38,8 @@ class BehindHomeWiringContractTest {
         }
     }
 
-    /** Mã đã bỏ chú thích — cùng luật [SourceRoots.codeOf], cho tệp tìm được bằng quét cây. */
-    private fun code(text: String) = text.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    /** Mã đã bỏ chú thích — ĐÚNG bộ quét của [SourceRoots.codeOf] ([KotlinSource.stripComments]), cho tệp tìm được bằng quét cây. */
+    private fun code(text: String) = KotlinSource.stripComments(text)
 
     @Test
     fun `move-task chi duoc dung o MOT cho, va chi chay sau doc lai + dau ben`() {
@@ -99,6 +99,42 @@ class BehindHomeWiringContractTest {
         assertTrue(ready.contains("if (!measured) ranThisProcess.set(false)"), "không đọc được ⇒ lượt sau của cùng tiến trình đo lại")
         val fn = SourceRoots.body(recovery, "private fun run(app: Context): Boolean {")
         order(fn, "if (marks.isEmpty()) return", "LocalDeviceShell.run(", "BehindMarks.surfaced(", "AccessibilityRebind.GO_HOME_UNLESS_CAMERA")
+    }
+
+    /**
+     * 2.93 · BEHIND-FELL-UNREAD-K12 (spec `docs/specs/kachi-293-slot.html` R4) — bằng chứng "lượt chờ đã THẤY X trước màn nhà" chỉ
+     * được dùng thay bản đọc lại hỏng ở chuỗi màn ảo ẨN (giữa hai lượt chỉ có gỡ che). Chuỗi qua ô sống (`startBehind`) còn K3 +
+     * cả lượt đẩy chen giữa ⇒ bản đọc lúc chờ đã cũ ⇒ không truyền (giữ `UNREAD`, 0 K12). Hành vi khoá ở `BehindHomeHiddenStageTest`.
+     */
+    @Test
+    fun `bang chung luot cho chi dung o chuoi man ao an`() {
+        assertTrue(SourceRoots.body(seq, "fun startBehindHidden(").contains("afterStage(tag, x, waited, out, homeWasTop, fellSeen = w.seen)"))
+        val visible = SourceRoots.body(seq, "fun startBehind(x: String")
+        assertTrue(visible.contains("afterStage(tag, x, waited, evict(stage.vd, x, stage.pkg), homeWasTop)") && !visible.contains("fellSeen"),
+            "chuỗi qua ô sống không được dùng bản đọc lúc chờ")
+        val wait = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/behind/StageWait.kt")
+        assertTrue(wait.contains("return StageWaited(waited, fell = true, seen = r)"), "bằng chứng = chính bản đọc thấy X rơi")
+    }
+
+    /**
+     * 2.93 · BEHIND-MARKS-BOOT (spec `docs/specs/kachi-293-slot.html` R5) — MỘT kho cho mọi bên đọc/ghi dấu, và kho đọc theo
+     * lần khởi động: dấu của đời máy trước không tới được lượt trả lại (K12) hay K8 về ô. Khoá = khoá của sổ chuyến
+     * (`TripStart.bootKey`, không phép đọc `BOOT_COUNT` thứ hai). Luật thuần ở `BehindMarksBootTest`.
+     */
+    @Test
+    fun `kho dau doc ghi theo lan khoi dong may, mot khoa voi so chuyen`() {
+        val store = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/behind/BehindMarksStore.kt")
+        assertTrue(store.contains("private val boot: String by lazy { TripStart.bootKey(app) }"))
+        assertTrue(SourceRoots.body(store, "fun read()").contains("BehindMarks.forBoot(prefs.getString(KEY, null), boot)"))
+        assertTrue(SourceRoots.body(store, "fun write(").contains("BehindMarks.encode(marks, boot)"))
+        assertFalse(store.contains("BehindMarks.decode("), "kho không được đọc dấu bỏ qua lần khởi động")
+        // Mọi chỗ đọc/ghi dấu ở :app đi qua kho (không ai đọc khoá prefs trực tiếp).
+        val all = SourceRoots.moduleSourceRoots().filter { "app" in it.toString() }.flatMap { root ->
+            Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
+        }.map { it.fileName.toString() to code(it.toFile().readText()) }
+        assertTrue(all.size > 100, "quét được quá ít tệp :app (${all.size}) — đường dẫn sai thì bài này là test giả")
+        val direct = all.filter { (name, src) -> name != "BehindMarksStore.kt" && src.contains("BehindMarks.decode(") }.map { it.first }
+        assertEquals(emptyList<String>(), direct, "đọc dấu thẳng bằng decode ⇒ lách luật lần khởi động")
     }
 
     /**
@@ -162,7 +198,7 @@ class BehindHomeWiringContractTest {
         order(full, "SlotLiveProbe.unwatch(probeKey)", "SlotReturnRun.detach(", "if (task != null) { done(true); return@detach }", "SlotLiveProbe.watch(")
         // Review lượt 4 [P2]: K7 đưa app rời ô rồi nó ẩn (HOME/camera trước lần đọc) ⇒ chuỗi đã về ô bằng K8; bên host chỉ đo
         // lại ô khi app THẬT ở ô (`null`/IN_SLOT), app đóng ⇒ thẻ "đã đóng", K8 không ăn ⇒ golden — không bao giờ ô đen câm.
-        order(full, "when (out.back) {", "null, SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(", "SlotReturn.Back.GONE -> onClosed()", "else -> reopen()")
+        order(full, "when (out.back) {", "null, SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(", "SlotReturn.Back.GONE -> onClosed(false)", "else -> reopen()")
         // Đổi app tại chỗ (đặt tạm) ⇒ trạng thái toàn màn của app CŨ bị bỏ TRƯỚC khi mở app mới (thẻ cũ không phủ app mới,
         // K8 không kéo app cũ đè lên, nhả ô vẫn dừng app mới).
         order(SourceRoots.body(host, "fun swapApp("), "SlotLiveProbe.unwatch(probeKey)", "full.reset()", "launchInto(displayId, newPkg, sh)")
@@ -171,7 +207,7 @@ class BehindHomeWiringContractTest {
         assertTrue(SourceRoots.body(host, "fun release()").contains("if (wasLaunched && p != null && sh != null && !full.isDetached)"))
         order(SourceRoots.body(run, "fun bringBack(vd: Int, pkg: String, sh: (String) -> String) {"),
             "SlotReturnRun.bringBack(", "SlotReturn.Back.KEEP) return@bringBack", "SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(",
-            "SlotReturn.Back.GONE -> onClosed()", "else -> reopen()")
+            "SlotReturn.Back.GONE -> onClosed(false)", "else -> reopen()")
         val act = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt")
         assertTrue(SourceRoots.body(act, "override fun onStart() {").contains("workspace.returnDetached()"))
         // Chuỗi K7 tách ô chỉ dựng ở :core (SlotReturn), host + lớp keo không tự viết lệnh display 0.

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 nhóm SLOT — ô, lối tắt, sau HOME</title>
+<!--
+  Spec Kiro-style (consolidated) theo docs/specs/_template.html.
+  Thứ tự: Changelog · Context · Requirements · Design · Tasks · Verification · Open Questions · References ·
+  Nhật ký triển khai · Reviewer Log. Diagram = HTML visual (không mermaid/ascii).
+-->
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--new:rgba(0,113,227,.12)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--new:rgba(41,151,255,.18)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px;max-width:220px}
+.fnode.new{background:var(--new);border-color:var(--accent)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 150px;min-width:130px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node.new{background:var(--new);border-color:var(--accent)}
+.layer .node b{display:block;font-size:14px}.layer .node span{color:var(--muted);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+.diagram svg{max-width:100%;height:auto;display:block;margin:0 auto}
+.diagram svg text{fill:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.diagram svg .mut{fill:var(--muted)}
+.diagram svg .frame{fill:none;stroke:var(--muted);stroke-width:1.5}
+.diagram svg .content{fill:var(--new);stroke:var(--accent);stroke-width:1.5}
+.diagram svg .view{fill:none;stroke:var(--warn);stroke-width:2;stroke-dasharray:6 4}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>Kachi 2.93 — nhóm SLOT: ô, lối tắt, sau HOME</h1>
+<p class="muted">Slug: <code>kachi-293-slot</code> · Branch <code>feat/key-source-split</code> (nhánh làm việc riêng từ 2.92 (194) <code>8fbdf96</code>) · Chủ: dangkhoi · Cập nhật 2026-10-06 · <span class="pill wait">Trạng thái: mã off-car xong · senior review Pass 2 xong (3 × [P3] vá, chưa chạy lại test) · chờ điều phối chạy bộ test + QA máy ảo</span></p>
+<p class="muted">Kế hoạch tổng: <code>docs/specs/kachi-293-plan.html</code> §4 nhóm SLOT. Owner 06/10: <i>"làm hết mọi thứ luôn đi"</i> — việc off-car làm hết; việc chờ quyết chọn mặc định an toàn, generic; không cơ chế xe MỚI khi chưa đo (CLAUDE.md §14) ⇒ chuẩn bị + 🚗. Không thư viện mới ⇒ không cần Context7 (máy chủ Context7 cũng không kết nối được phiên này).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 3 — 2026-10-07</b>: QA máy ảo F1 [ĐO] — R1 nạp lại TẠI CHỖ giữ bộ lọc xám của hình chung khi app trong dải được cài lại ⇒ vá <code>KachiIcons.untint</code> trước khi gắn icon thật (<code>ShortcutIconsView.load</code>) + ghim <code>ShortcutsWiringContractTest</code>; soát Opus APPROVED (§10 Pass 3); kiểm lại máy ảo nền tối + sáng: icon về đủ màu, cùng view, giữ cuộn. Backlog <code>SHORTCUT-REINSTALL-TINT</code> ✅.</li>
+<li><b>Pass 2 — 2026-10-06</b>: senior review độc lập (Opus) — 0 [P0]–[P2]; 3 × [P3] vá ở <code>SlotLiveness</code> / <code>SlotLiveProbe</code> / <code>SlotLivenessElsewhereTest</code> / <code>SlotParkWiringContractTest</code> (§4.2, §10 Pass 2); 5 × [P3] + 1 INFO để backlog/owner. Chưa chạy lại test (điều phối).</li>
+<li><b>Pass 1 — 2026-10-06</b>: mã + test off-car cho 8/9 việc (R1–R7); R8 (BEHIND-RESURFACE) chỉ phân tích — không mã, lý do + điều kiện mở khoá ở §4.8. Tự soát một lượt (§10 Pass 1).</li>
+<li><b>Pass 0 — 2026-10-06</b>: khởi tạo từ chín dòng backlog nhóm SLOT của kế hoạch 2.93.</li>
+</ul>
+
+<h2>2. Context</h2>
+<p>Chín dòng backlog còn mở quanh ô app, lối tắt và app được đưa ra sau màn nhà. Mỗi dòng dưới đây ghi mức bằng chứng có sẵn trong repo (CLAUDE.md §2) — không dòng nào có số đo xe mới trong phiên này.</p>
+<table>
+<tr><th>ID</th><th>Triệu chứng</th><th>Bằng chứng có sẵn</th></tr>
+<tr><td><code>SHORTCUT-GRID-SCROLL-KEEP</code> [P3]</td><td>Lưới <code>w_apps</code> cuộn về 0, cú kéo dở bị cắt mỗi lần <code>ShortcutIconsView.rebuild</code> — chạy ở MỌI phát tin cài/gỡ gói của hệ thống, đổi danh sách, gắn lại view.</td><td>[SUY đọc mã 2.92] <code>onPackages → rebuild → removeAllViews + ShortcutGridLayout mới</code>.</td></tr>
+<tr><td><code>SHORTCUT-SCROLL-DOCK-RELAYOUT</code> [P3]</td><td>Mở app từ dải lối tắt đã cuộn khi thanh nút ≠ 100 % ⇒ về HOME vị trí cuộn bị kẹp 264 → 43 px.</td><td>[ĐO máy ảo QA 2.92, 2/2 lần]; nhật ký <code>WidgetFit</code> xen kẽ 1558/1362 có từ 2.91.</td></tr>
+<tr><td><code>SLOT-APP-ESCAPE</code></td><td>App tự thoát màn ảo ô ra toàn màn display 0 (Waze) ⇒ Kachi coi là "app chết", widget LƯU về ô trong khi Waze phủ HOME; câu giọng nói "✓ Mở … vào ô 3" sai.</td><td>[ĐO máy ảo QA 04/10]. Cơ chế [ĐO nguồn A10/A12 + máy ảo 09-14]: activity thứ hai do CHÍNH app mở, không <code>allowEmbedded</code> ⇒ cả task về display 0 (<code>docs/diagnostics/waze-into-slot-research-2026-09-14.md</code> §1–2).</td></tr>
+<tr><td><code>SHORTCUTS-B-ESCAPE</code></td><td>Đặt TẠM app B vào ô mà B tự chuyển ra display 0: (a) thoát giữa lần đọc lại và <code>move-task</code>; (b) thoát SAU chuỗi ⇒ B toàn màn, ô trống.</td><td>[ĐO máy ảo 02/10] <code>behind-home-emulator-2026-10-01/finish/esc-race</code>, <code>esc-after-chain</code> (Waze <code>launchToSide</code> 1,05 s sau <code>MOVED</code>). (a) đã vá Pass 8 (dấu A/B + K12).</td></tr>
+<tr><td><code>SLOT-HEAD-OVERLAY-DISC</code></td><td>⇄ của ô App ở đường ActivityView / không máy chiếu / lớp phủ vẫn trần (không đĩa kính).</td><td>[ĐO đọc mã] D-L8-1 chỉ làm ở đường màn ảo (có cụm nút). [ĐO máy ảo QA 2.87] ⇄ trần 1,76–2,67 : 1 trên nội dung app.</td></tr>
+<tr><td><code>BEHIND-RESURFACE</code></td><td>Kachi bị dừng hẳn khi có app sau HOME ⇒ app đó toàn màn tới khi bấm HOME.</td><td>[ĐO máy ảo QA3 04/10] sau <code>am force-stop</code> (bước trả máy). Xe tự dựng lại HOME sau 0,25–0,33 s khi Kachi chết [ĐO xe 29/09, OQ-L4-2].</td></tr>
+<tr><td><code>BEHIND-MARKS-BOOT</code> [P3]</td><td>Dấu bền <code>kachi_behind_marks</code> = <code>taskId:gói</code> không kèm khoá lần khởi động ⇒ sau khởi động lại thật một dấu cũ có thể trùng id + gói ⇒ K12 đè app vừa mở một lần.</td><td>[SUY review lượt 7]; id task xe bắt đầu lại từ số nhỏ [ĐO dump xe 14/09: 4–10]; máy ảo giữ id 2 000+ qua 39 lần khởi động [ĐO].</td></tr>
+<tr><td><code>READY-AT-HOME-OQ6</code></td><td>Gỡ hẳn <code>IntentAppLauncher.openInSlot/moveToSlot</code> (đường cửa sổ nổi) — không còn lời gọi.</td><td>[ĐO grep 02/10] + [ĐO grep 06/10, §9].</td></tr>
+<tr><td><code>BEHIND-FELL-UNREAD-K12</code> (tuỳ chọn)</td><td>Chuỗi màn ảo ẩn: lượt chờ đã THẤY X rơi lên trước HOME mà bản đọc lại hỏng ⇒ <code>UNREAD</code>, 0 dấu, 0 K12 — X có thể đang che HOME.</td><td>[ĐO đọc mã] <code>BehindHomeSequence.afterStage</code>; bài ghim <code>BehindHomeHiddenStageTest</code>.</td></tr>
+</table>
+<div class="card"><b>Ranh giới:</b> nhóm WIDGET sở hữu khớp/hình widget; nhóm này chỉ chạm hành vi CUỘN của lưới lối tắt (<code>ShortcutGridLayout</code> / <code>ShortcutIconsView</code>) và logic ô / sau HOME / thoát ô. Không sửa <code>docs/PROJECT-BACKLOG.md</code>, <code>docs/README.md</code>, <code>project-context.md</code>, <code>apk/</code> — đề xuất dòng ở báo cáo cho điều phối.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 · SHORTCUT-GRID-SCROLL-KEEP.</b> Phát tin cài/gỡ/đổi gói NGOÀI danh sách lối tắt không chạm lưới. Gói TRONG danh sách ⇒ chỉ nạp lại icon/nhãn/mờ tại chỗ (không dựng lại cây view). Gắn lại view với cùng danh sách ⇒ chỉ làm mới. Danh sách đổi thật ⇒ dựng lại VÀ mang vị trí cuộn người lái đã chọn sang khung mới (kẹp theo quãng mới). AC: <code>ShortcutScrollKeepTest</code> (luật) + <code>ShortcutGridFitWiringContractTest.vi tri cuon song qua…</code> (dây nối).</li>
+<li><b>R2 · SHORTCUT-SCROLL-DOCK-RELAYOUT.</b> Một lượt đo ở khung lạ không được xoá vị trí người lái chọn: vị trí ÁP = vị trí CHỌN kẹp theo khung hiện tại; chỉ cuộn do người lái (kéo · trôi · trợ năng) ghi vị trí chọn. AC: ba số QA (22 app, 1362×148 ⇒ 264; 1558×123 ⇒ 43) tái lập bằng phép khớp thật và sau lượt lạ vị trí áp quay về 264. Nhật ký <code>WidgetFit</code> mang <code>pos=áp/chọn view=…</code> + <code>KachiBar [dock-area]</code> để chốt nguồn lượt đo lạ (§4.1, OQ3).</li>
+<li><b>R3 · SLOT-APP-ESCAPE + SHORTCUTS-B-ESCAPE (b).</b> App rời màn ảo ô mà task còn ở display khác ⇒ kết luận "ra khỏi ô, vẫn mở" (không phải "đã đóng"), kể cả khi bộ đo chưa từng thấy app trong ô (2 nhịp đọc được liên tiếp); ô đi CÙNG luật hoàn ô của app vừa rời (owner 04/10: trong suốt / widget LƯU về — không kéo app nào khác vào khung); một câu báo đúng, 5 tiếng. Không lệnh nào chạm app đó (§4.2 — mặc định an toàn, OQ1). 0 lệnh shell thêm.</li>
+<li><b>R4 · BEHIND-FELL-UNREAD-K12.</b> Chuỗi màn ảo ẩn: lượt chờ đã ĐỌC ĐƯỢC X đứng trước HOME rồi bản đọc lại hỏng ⇒ dấu theo chính bản đọc lúc chờ TRƯỚC K12 (rào camera), mã <code>X_FRONT_HOME_RESTORED</code> — cùng mã + thứ tự lệnh với đường đã đo <code>m5a</code>. Không có bằng chứng lúc chờ ⇒ vẫn <code>UNREAD</code>, 0 K12. Chuỗi qua ô sống không dùng bằng chứng cũ.</li>
+<li><b>R5 · BEHIND-MARKS-BOOT.</b> Dấu bền ghi kèm khoá lần khởi động (<code>@n&lt;BOOT_COUNT&gt;</code> ở mục đầu); mọi bên đọc chỉ thấy dấu của ĐÚNG lần khởi động hiện tại khi cả hai khoá là dạng <code>BOOT_COUNT</code>. Chuỗi của bản ≤ 2.92 (không khoá) và khoá lùi giờ tường ⇒ giữ như cũ. Bản cũ đọc chuỗi mới vẫn đúng (hạ cấp an toàn).</li>
+<li><b>R6 · SLOT-HEAD-OVERLAY-DISC.</b> ⇄ nằm trên đĩa kính NEUTRAL không mờ ở MỌI đường mà ngay dưới ⇄ là nội dung app bên thứ ba: màn ảo (D-L8-1, có sẵn) và ActivityView (mới). Đường không máy chiếu (dưới ⇄ là THẺ của Kachi) và ⇄ nổi <code>OverlayHeads</code> (từ R1.3 chỉ còn đè lên chính thẻ đó) giữ ⇄ trần — cùng luật ô widget, và tránh hai đĩa chồng lệch <code>Sp.XS</code> (§4.3). Bộ dựng ⇄ (<code>SlotSwapButton</code>) không đổi byte.</li>
+<li><b>R7 · READY-AT-HOME-OQ6.</b> <code>IntentAppLauncher</code> (startActivity + khung khởi chạy + freeform phản chiếu) gỡ hẳn; màn nhà chưa có kênh dùng <code>NoCar</code> (cùng hành vi: <code>closeSlot</code> rỗng). Không mã sản phẩm nào gọi <code>openInSlot</code>/<code>moveToSlot</code>. Không đổi hành vi.</li>
+<li><b>R8 · BEHIND-RESURFACE.</b> Không mã mới (§4.8): hướng owner chốt = <code>BehindHomeRecovery</code> đã có từ 02/10 (đo e6 / e8-3 với <code>kill</code>); ca <code>force-stop</code> không chạy được mã nào của Kachi ⇒ 🚗 + quyết định owner (OQ2).</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Generic: không rẽ nhánh theo tên gói (CLAUDE.md §7); khác biệt giữa app lộ ra qua phép đo (<code>am stack list</code> có sẵn của nhịp đo ô).</li>
+<li>R-nf2. Không lệnh đổi trạng thái hệ thống MỚI; lệnh duy nhất được bắn thêm (R4) là K12 đã đo (byte 2.83) — bốn câu CLAUDE.md §4 ở §4.4.</li>
+<li>R-nf3. Mỗi tệp Kotlin ≤ 500 dòng (<code>BehindHomeSequence.kt</code> 495 → 482 nhờ tách <code>StageWait.kt</code>; <code>WorkspaceView.kt</code> giữ 498).</li>
+<li>R-nf4. Mỗi sửa có test hồi quy, đã thấy ĐỎ một lần (đột biến §6).</li>
+</ul>
+
+<h2>4. Design</h2>
+
+<h3>4.1 R1/R2 — vị trí CHỌN tách khỏi vị trí ÁP</h3>
+<div class="flow">
+  <div class="fnode"><b>Người lái</b><span>kéo · trôi · trợ năng</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>scrollAlongTo</b><span>chỗ DUY NHẤT ghi <code>wanted</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>Wanted(trục, px)</b><span><code>ShortcutScrollKeep</code> (:core)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>settleScroll(fit)</b><span>áp = <code>applied(wanted, fit)</code> — chỉ đọc</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>scrollX / scrollY</b><span>vị trí đang vẽ</span></div>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 760 210" role="img" aria-label="Ba lượt đo: khung thật 1362 cuộn 264, khung lạ 1558 áp 43, khung thật áp lại 264">
+  <text x="10" y="22" font-size="13" font-weight="600">Lượt 1 · khung thật 1362×148 (thanh cạnh bên 150 %)</text>
+  <rect class="content" x="10" y="32" width="300" height="26" rx="5"/><rect class="view" x="58" y="30" width="251" height="30" rx="5"/>
+  <text x="320" y="50" font-size="12" class="mut">nội dung 1626 · max 264 · chọn = 264 · áp = 264</text>
+  <text x="10" y="92" font-size="13" font-weight="600">Lượt 2 · khung lạ 1558×123 (hình học thanh MẶC ĐỊNH: dưới, 100 %)</text>
+  <rect class="content" x="10" y="102" width="295" height="22" rx="5"/><rect class="view" x="18" y="100" width="287" height="26" rx="5"/>
+  <text x="320" y="118" font-size="12" class="mut">nội dung 1601 · max 43 · chọn = 264 (giữ) · áp = 43</text>
+  <text x="10" y="160" font-size="13" font-weight="600">Lượt 3 · khung thật 1362×148</text>
+  <rect class="content" x="10" y="170" width="300" height="26" rx="5"/><rect class="view" x="58" y="168" width="251" height="30" rx="5"/>
+  <text x="320" y="188" font-size="12" class="mut">2.92: áp 43 vĩnh viễn · 2.93: áp lại 264</text>
+</svg>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--new)"></span> nội dung lưới</span><span class="sw"><span class="box" style="border:2px dashed var(--warn)"></span> khung đang nhìn</span></div>
+</div>
+<ul>
+<li><b>Ba số QA ra đúng từ phép khớp thật</b> [SUY số học, khoá bằng <code>ShortcutScrollKeepTest</code>]: 22 app, khe 12 px, sàn 60 px — 1362×148 ⇒ nội dung 1626, max 264; 1558×123 ⇒ nội dung 1601, max 43. Khung 1558×123 = đúng hình học cấu hình thanh mặc định (<code>DockConfig()</code>: dưới, 100 %): cao 1 080 − 48 − 63 − 13 − 139 − 13 = 804, ô <code>2,0,10,1</code> ⇒ 1558×123; khung thật = thanh cạnh bên 150 % (99 dp × 2,25 = 222 px) ⇒ rộng vùng ô 1637 ⇒ 1362×148.</li>
+<li><b>Nguồn lượt đo lạ: [CHƯA BIẾT]</b>. Đọc mã không thấy đường nào đặt thanh theo cấu hình mặc định trên CÙNG màn (VM nạp state đồng bộ; <code>DockAreaLayout.apply</code> chỉ gọi ở <code>onCreate</code> + khi viền/ẩn/cỡ đổi). Hai giả thuyết: (a) cùng view có một lượt bố trí với thanh mặc định; (b) hai <code>KachiHomeActivity</code> cùng sống (đã đo H2 09-14: tới 4 màn) — khi đó dòng xen kẽ đến từ hai view. Bản vá R2 chữa (a) bất kể nguồn; (b) là lỗi khác. Chốt bằng nhật ký 2.93: dòng <code>WidgetFit … pos=áp/chọn view=&lt;mã&gt;</code> (cùng <code>view</code> ⇒ (a)) + <code>KachiBar [dock-area] edge=… scale=… area=&lt;mã&gt;</code> (CLAUDE.md §11/§15).</li>
+<li><b>R1</b>: <code>ShortcutIconsView</code> giữ <code>built</code> (danh sách đã dựng); <code>onPackages</code> lọc theo gói của chính các ô (<code>ShortcutScrollKeep.touches</code>) rồi <code>refresh()</code> = <code>load(generation) + paintDim()</code>; gắn lại ⇒ <code>needsRebuild(built, items)</code> mới dựng lại; <code>rebuild()</code> đọc <code>keep</code> của khung CŨ trước khi tháo và truyền vào khung mới. Setter <code>vertical</code>/<code>fillAcross</code> đặt <code>built = null</code> ⇒ lần gắn sau dựng lại (khối thanh nút không đổi hành vi).</li>
+</ul>
+
+<h3>4.2 R3 — "ra khỏi ô, vẫn mở" (0 lệnh thêm)</h3>
+<div class="flow">
+  <div class="fnode"><b>SlotLiveProbe.sweep</b><span>MỘT <code>am stack list</code> / nhịp</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>away</b><span>vắng màn ảo ô &amp; <code>SlotPresence.ELSEWHERE</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>SlotLiveness</b><span>2 nhịp ĐỌC ĐƯỢC liên tiếp ⇒ <code>elsewhere</code> (kể cả chưa từng thấy sống)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VdAppHost.onAppClosed(elsewhere)</b><span>giấu mặt vẽ · báo lên</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>onAppGone(…, elsewhere)</b><span>câu báo → <code>APP_ELSEWHERE</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>SlotRevertPlan</b><span>cùng bảng APP_DIED: trong suốt / widget LƯU</span></div>
+</div>
+<ul>
+<li>Phân loại dùng phép FIX286 có sẵn (<code>SlotPresence.of</code>: còn task ở display khác = <code>ELSEWHERE</code>; không task nào = <code>GONE</code>; đọc rỗng = <code>UNKNOWN</code>) trên CHÍNH bản đọc của nhịp — không lệnh mới. Fixture nguyên văn <code>esc-after-move</code> (máy ảo 02/10): Waze task 2668 trên display 0 ⇒ <code>ELSEWHERE</code>.</li>
+<li>Luật 1 của <code>SlotLiveness</code> ("chưa thấy sống thì không kết luận") giữ cho ca VẮNG thật (app chưa kịp lên); chỉ nới cho bằng chứng DƯƠNG (task còn ở chỗ khác). Màn ảo nhận lại từ ô 7 (<code>adopted</code>) giữ luật cũ: <code>onMissing</code> mở lại (PARK-2b).</li>
+<li>Câu báo đặt TRƯỚC luật hoàn ô (<code>sayIfStill</code> cần ô còn hiện gói đó). Chữ trung tính, đúng ở mọi nguồn rời ô (tự thoát · người lái mở toàn màn · chiếu cụm): VI <i>"%1$s đã rời ô — app vẫn mở ngoài ô"</i> · EN · ZH · TH · MS (<code>kachi_slot_app_elsewhere</code>).</li>
+<li><b>SHORTCUTS-B-ESCAPE</b>: (a) <code>esc-race</code> đã có dấu A/B + K12 từ Pass 8; nay ô (B chưa từng thấy sống) cũng kết luận được thay vì kẹt. (b) <code>esc-after-chain</code>: ô không còn "trống mãi" — đi luật hoàn ô + câu báo. Đề xuất 02/10 "K8 đưa A về ô + trả lớp tạm về A" bị THAY bởi quyết định owner 04/10 (<code>SlotRevertPlan</code> KDoc: app rời ô ⇒ trong suốt, không bao giờ kéo app LƯU khác vào khung) ⇒ A ở yên sau màn nhà (có dấu). B vẫn toàn màn (người lái thấy đúng app vừa xin) — không K12 (OQ1).</li>
+<li>Câu giọng nói "✓ Mở … vào ô n" vẫn nói ngay lúc ra lệnh (nhóm VOICE; đổi sang chờ kết quả là việc khác) — câu báo của R3 là lời đính chính.</li>
+<li><b>Pass 2 (senior review)</b>: (1) nhịp "ở chỗ khác" chỉ ĐẾM cho kết luận chưa-từng-thấy-sống khi màn ảo ô KHÔNG còn task của app khác (<code>SlotLiveness.othersInSlot</code> — cùng bản đọc, <code>StackParse</code> A10/A12, 0 lệnh): kết luận ⇒ luật hoàn ô ⇒ nhả màn ảo ⇒ cờ 256 kết thúc mọi activity còn trên đó, nên ô chưa trống thì không kết luận. Ca thấy khi đọc mã: đặt tạm tại chỗ (<code>swapApp</code> → <code>B_NOT_IN_SLOT</code> → <code>adoptShown(A)</code>) — đường này 0 chỗ gọi từ 2.89-thử1 [ĐO grep] ⇒ cổng giữ cho ngày nối lại. Đã thấy sống ⇒ không đổi. (2) Kết luận của nhịp đang bay chỉ áp khi bản đăng ký đó CÒN (gỡ đúng bản trên luồng chính) — không gỡ nhầm bản mới cùng khoá, không áp luật hoàn ô cho ô vừa ra toàn màn (⇱ gỡ đo trước K7).</li>
+</ul>
+
+<h3>4.3 R6 — đĩa sau ⇄ ở đúng chỗ ⇄ nằm trên nội dung app</h3>
+<div class="layers">
+  <div class="layer"><div class="node"><b>Ô App · màn ảo (VD)</b><span>dưới ⇄: app bên thứ ba · cụm [chạy nền] [⇄ trên đĩa] [tắt] — D-L8-1, không đổi</span></div>
+  <div class="node new"><b>Ô App · ActivityView</b><span>dưới ⇄: app bên thứ ba · 2.87: không nút cụm ⇒ <code>attach</code> trả null ⇒ ⇄ trần · 2.93: hàng chỉ mang đĩa, cùng nhịp ẩn/hiện</span></div></div>
+  <div class="layer"><div class="node"><b>Ô App · không máy chiếu</b><span>dưới ⇄: THẺ Kachi — giữ trần (như ô widget)</span></div>
+  <div class="node"><b>⇄ nổi (OverlayHeads)</b><span>chỉ hiện khi không nhúng ⇒ đè lên thẻ trên, lệch <code>Sp.XS</code> — giữ trần</span></div>
+  <div class="node"><b>Ô widget / ô trống</b><span>không đổi (⇄ trên thẻ / ô trống đã có đĩa)</span></div></div>
+</div>
+<p class="muted">Cụm không nút: <code>refresh</code>/<code>hits</code>/<code>restyle</code> lặp trên tập nút rỗng ⇒ không làm gì; <code>settle/show/hide</code> ẩn/hiện hàng (đĩa) cùng ⇄. Vì sao hai đường dưới giữ trần [SUY đọc mã]: <code>LauncherWindows.overlayUpdate</code> chỉ chạy khi KHÔNG nhúng và đặt ⇄ nổi ở <code>r.top + Sp.XS</code> — ngay trên ⇄ trong khung (tâm <code>SLOT_HEAD_CLEAR / 2</code>) ⇒ đĩa ở cả hai là hai đĩa 36 dp lệch 4 dp; từ READY-AT-HOME R1.3 không còn cửa sổ nổi nào của app dưới ⇄ nổi. Đường không máy chiếu là thẻ "Đang kết nối…" của XE lúc kênh chưa lên ⇒ bản đầu R6 (đĩa ở mọi đường) sẽ đổi hình trên xe — đã thu lại (§9). Đường ActivityView cần ROM ký nền tảng ⇒ máy ảo / xe hiện tại không đi đường này: chỉ khoá bằng bài canh.</p>
+
+<h3>4.4 R4 — bằng chứng lúc chờ thay bản đọc lại hỏng (chỉ chuỗi màn ảo ẩn)</h3>
+<div class="flow">
+  <div class="fnode"><b>K4 / K4-VIEW</b><span>X lên màn ảo ẩn</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>StageWait.top</b><span>bản đọc THẤY X trước HOME ⇒ <code>fell</code> + <code>seen</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>gỡ che</b><span>(không lệnh đổi cửa sổ)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode new"><b>afterStage</b><span>đọc lại hỏng ⇒ dấu theo <code>seen</code> + K12</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>vacate → nhả</b><span>theo bản đọc dọn</span></div>
+</div>
+<p>Bốn câu CLAUDE.md §4 của lệnh duy nhất được bắn thêm (K12 = <code>AccessibilityRebind.GO_HOME_UNLESS_CAMERA</code>, byte 2.83): (1) display 0; (2) HOME mặc định (không app nào khác); (3) chỉ đưa stack home lên, không đụng stack <code>standard</code>/<code>pinned</code> nào; (4) không state bền — hoàn tác = người lái mở lại app. Rào camera nằm trong chính lệnh. Chuỗi qua ô sống (<code>startBehind</code>) KHÔNG truyền <code>seen</code>: giữa lượt chờ và lượt đọc lại còn K3 + cả lượt đẩy ⇒ bằng chứng đã cũ.</p>
+
+<h3>4.5 R5 — dấu theo lần khởi động</h3>
+<div class="layers">
+  <div class="layer"><div class="node new"><b>Đĩa</b><span><code>kachi_behind_marks = "@n39,7:com.a,9:com.b"</code></span></div></div>
+  <div class="layer"><div class="node new"><b>BehindMarksStore.read()</b><span><code>BehindMarks.forBoot(raw, TripStart.bootKey)</code> — một khoá với sổ chuyến</span></div>
+  <div class="node new"><b>write()</b><span><code>encode(marks, boot)</code></span></div></div>
+  <div class="layer"><div class="node"><b>BehindHomeRecovery</b><span>K12 khi app có dấu nổi lên</span></div><div class="node"><b>SlotReturnRun</b><span>K8 app có dấu về ô</span></div><div class="node"><b>Chuỗi BEHIND-HOME / HiddenPark / TripMusicView</b><span>ghi dấu trước lệnh</span></div></div>
+</div>
+<p>Bỏ dấu khi CẢ HAI khoá là <code>n&lt;BOOT_COUNT&gt;</code> và khác nhau [ĐO nguồn: <code>BOOT_COUNT</code> tăng một lần mỗi lần khởi động — KDoc <code>TripGate</code>]. Vì sao không đợi đo id task trên xe như backlog đề xuất: bỏ dấu của đời máy trước luôn đúng bất kể id có lặp hay không — task Kachi đẩy ra sau màn nhà không sống qua khởi động lại thật như một "chỗ đỗ của Kachi" [SUY mô hình task Android]; chiều hỏng duy nhất là BỚT một K12. Không đọc được <code>BOOT_COUNT</code> (khoá lùi giờ tường) hoặc chuỗi cũ không khoá ⇒ giữ như ≤ 2.92.</p>
+
+<h3>4.6 R7 — OQ6</h3>
+<p><code>IntentAppLauncher.kt</code> xoá; <code>KachiHomeActivity.appLauncher</code> mặc định <code>NoCar</code> (đối tượng <code>:core</code> "off-car / chưa có kênh": <code>closeSlot</code> rỗng như bộ cũ). Lý do xoá hẳn thay vì để hai hàm trả <code>false</code>: tệp còn lại không chạm Android ⇒ vi phạm <code>LayeringRulesTest.so file thuan con nam trong app chi duoc giam</code> [ĐO lượt chạy đủ 06/10], và hành vi trùng <code>NoCar</code>. <code>ShellAppLauncher.openInSlot/moveToSlot</code> (<code>:core</code>, có golden test) KHÔNG gỡ: ngoài chữ của dòng backlog; đề xuất dòng mới (§7 OQ4).</p>
+
+<h3>4.7 Tệp</h3>
+<table>
+<tr><th>Tệp</th><th>Đổi</th></tr>
+<tr><td><code>core/…/launcher/ShortcutScrollKeep.kt</code> (mới)</td><td>Luật thuần R1/R2</td></tr>
+<tr><td><code>app/…/launcher/ShortcutGridLayout.kt</code> · <code>ShortcutIconsView.kt</code> · <code>DockAreaLayout.kt</code></td><td>R1/R2 + nhật ký chốt nguồn</td></tr>
+<tr><td><code>core/…/launcher/SlotLiveness.kt</code> · <code>SlotRevertPlan.kt</code></td><td>R3 luật</td></tr>
+<tr><td><code>app/…/launcher/SlotLiveProbe.kt</code> · <code>VdAppHost.kt</code> · <code>SlotReturnRun.kt</code> · <code>WorkspaceView.kt</code> · <code>SlotActionsCluster.kt</code> · <code>KachiHomeSlotActions.kt</code> · 5 × <code>strings_kachi.xml</code></td><td>R3 dây nối + câu báo (R6 cổng cụm cũng ở <code>SlotActionsCluster.kt</code>)</td></tr>
+<tr><td><code>app/…/launcher/OverlayHeads.kt</code></td><td>R6</td></tr>
+<tr><td><code>core/…/behind/BehindHomeSequence.kt</code> · <code>StageWait.kt</code> (mới)</td><td>R4 (+ tách theo trần 500 dòng)</td></tr>
+<tr><td><code>core/…/behind/BehindMarks.kt</code> · <code>core/…/trip/TripGate.kt</code> · <code>app/…/behind/BehindMarksStore.kt</code></td><td>R5</td></tr>
+<tr><td><code>app/…/launcher/IntentAppLauncher.kt</code> (xoá) · <code>KachiHomeActivity.kt</code> · <code>LauncherWindows.kt</code> · <code>AppOpener.kt</code> (KDoc)</td><td>R7</td></tr>
+</table>
+
+<h3>4.8 R8 — BEHIND-RESURFACE: vì sao không có mã</h3>
+<ul>
+<li>Hướng owner chốt (<i>"lúc thức dậy đầu tiên sau khi tiến trình mới, nếu stack trên cùng display 0 là app Kachi đã đánh dấu chạy nền ⇒ K12 (có rào camera)"</i>) = <code>BehindHomeRecovery.onReady</code>, chạy ở đầu chuỗi SẴN mỗi tiến trình — [ĐO máy ảo 02/10 <code>impl/e6</code>, <code>e8-3</code>]: <code>kill</code> Kachi ⇒ app có dấu nổi lên ⇒ <code>recovery … nổi-lên=true</code> ⇒ HOME.</li>
+<li>Ca QA3 là <code>am force-stop</code> (bước trả máy): tiến trình Kachi không được dựng lại bởi bất kỳ đường nào cho tới khi bấm HOME [ĐO máy ảo QA3 04/10: app toàn màn tới khi bấm HOME] ⇒ không mã nào của Kachi chạy được trong khoảng đó. Bấm HOME ⇒ Kachi lên ở đỉnh ⇒ không còn gì để chữa.</li>
+<li>Trên xe: Kachi chết (BYD giết lúc tắt máy / sập) ⇒ ROM tự dựng lại HOME sau 0,25–0,33 s [ĐO xe 29/09, OQ-L4-2] ⇒ ca này không xảy ra.</li>
+<li>App đỗ ở ô 7 (2.89 — <i>chạy nền</i> đầu ô) nằm trên màn ảo của Kachi và KHÔNG mang dấu: Kachi chết ⇒ màn ảo nhả, cờ <code>DESTROY_CONTENT_ON_REMOVAL</code> (256) ⇒ A10 kết thúc activity thay vì đẩy lên display 0 (<code>ActivityDisplay.remove</code> <code>:1120-1160</code>, trích ở spec autostart <code>startBehindHidden</code>) ⇒ không nổi lên; ROM BYD [CHƯA BIẾT — OC-L4-2]. Không đổi ở đây.</li>
+<li>Điều kiện mở khoá ca force-stop (cơ chế MỚI ⇒ cần đo, quyết định owner — OQ2): một tiến trình canh uid 2000 (cùng họ bộ bơm chạm <code>InputDaemonClient</code>) sống qua <code>force-stop</code> của gói Kachi [SUY: <code>force-stop</code> giết tiến trình theo uid của gói] để bắn K12 khi thấy Kachi chết.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R1/R2 luật + dây nối + test (<code>ShortcutScrollKeepTest</code>, ghim dây nối)</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T2</td><td>R3 luật + dây nối + chuỗi 5 tiếng + test (<code>SlotLivenessElsewhereTest</code>, ghim)</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T3</td><td>R4 + tách <code>StageWait</code> + đổi ghim có lý do</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T4</td><td>R5 + <code>BehindMarksBootTest</code> + ghim kho</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T5</td><td>R6 + ghim</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T6</td><td>R7 + ghim OQ6</td><td>—</td><td class="ok">xong off-car</td></tr>
+<tr><td>T7</td><td>Đột biến (thấy đỏ) + bộ đủ <code>:core:test :app:testDebugUnitTest</code></td><td>T1–T6</td><td class="ok">xong (§6)</td></tr>
+<tr><td>T8</td><td>Gộp + senior review (Opus) + QA máy ảo + quét bảo mật</td><td>T7</td><td class="warn">điều phối</td></tr>
+<tr><td>T9</td><td>🚗 OC-SLOT-2…4 (§6)</td><td>T8 + OTA</td><td class="warn">buổi xe</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 06/10, đếm từ JUnit XML, lệnh <code>./gradlew :core:test :app:testDebugUnitTest --continue --rerun-tasks</code> — 39/39 task chạy lại]: <code>:core</code> <b>4 507 / 0</b> (478 tệp kết quả) · <code>:app</code> <b>2 105 / 0</b> (261 tệp). Bài mới: <code>:core</code> +16 (<code>ShortcutScrollKeepTest</code> 6 · <code>SlotLivenessElsewhereTest</code> 6 · <code>BehindMarksBootTest</code> 4); <code>:app</code> +4 (một bài mỗi tệp: <code>ShortcutGridFitWiringContractTest</code> · <code>ReadyAtHomeWiringContractTest</code> · <code>BehindHomeWiringContractTest</code> ×2). Ghim đổi có lý do (ghi tại chỗ): <code>BehindHomeHiddenStageTest</code> (ca afterStage) · <code>SlotRevertPlanTest</code> (240 → 300 ô) · <code>SlotLifecycleWiringContractTest</code> · <code>SlotParkWiringContractTest</code> · <code>SlotHostingLifecycleContractTest</code> · <code>BehindHomeWiringContractTest</code> · <code>ShortcutGridFitWiringContractTest</code>.</li>
+<li><b>Pass 2 (senior review) — CHƯA chạy</b> (không gradle trong lượt review; điều phối chạy sau khi gộp): <code>:core</code> <code>SlotLivenessElsewhereTest</code> +2 bài (fixture nguyên văn <code>…-2026-10-03-l4-m1-stale-task.txt</code> + <code>esc-after-move</code>; màn ảo ô của lượt đo sửa 187 → 185) · <code>:app</code> <code>SlotParkWiringContractTest</code> đổi ghim có lý do (<code>othersInSlot</code>, <code>if (!subs.remove(sub))</code>, cấm <code>unwatch(sub.key)</code> trong nhịp). Đột biến nên thử: bỏ <code>&amp;&amp; !othersInSlot</code> ở <code>observe</code> ⇒ bài <code>o cho khac ma man ao o con app khac…</code> phải ĐỎ.</li>
+<li><b>Đột biến</b> [ĐO 06/10]: 10 đột biến, 10 đỏ, khôi phục khớp sha — <code>:core</code>: bỏ điều kiện trục của <code>applied</code> · <code>forBoot</code> luôn <code>decode</code> · không truyền <code>fellSeen</code> · bỏ nhánh "ở chỗ khác"; <code>:app</code>: <code>settleScroll</code> kẹp vị trí đang áp · phát tin gói ⇒ <code>rebuild</code> · cổng cụm cũ <code>possible.isEmpty()</code> · bỏ câu báo · kho đọc <code>decode</code> · cổng R6 bản đầu (đĩa cả đường không máy chiếu).</li>
+<li><b>QA máy ảo (điều phối)</b>:
+<ol>
+<li>R2: thanh cạnh bên 150 %, <code>w_apps</code> ô <code>2,0,10,1</code>, 22 app, cuộn tới cuối ⇒ mở app ⇒ HOME: dải về đúng cuối (không 43 px). <code>adb logcat -s WidgetFit KachiBar</code>: có lượt <code>frame=1558x123</code> không, <code>view=</code> trùng hay khác dòng 1362 (chốt OQ3), <code>[dock-area]</code> có lượt <code>edge=BOTTOM scale=100</code> không.</li>
+<li>R1: cài/gỡ một gói NGOÀI danh sách khi dải đang cuộn ⇒ không nhúc nhích; gỡ một gói TRONG danh sách ⇒ ô đó mờ, vị trí giữ.</li>
+<li>R3: voice "mở waze vào ô 1" (ô có VietMap LƯU) ⇒ Waze toàn màn; bấm HOME ⇒ ≤ ~10 s ô trong suốt + câu "Waze đã rời ô — app vẫn mở ngoài ô" (thử 1 tiếng khác); <code>logcat -s KachiVd KachiSlotLife</code>: <code>RA KHỎI ô</code> + <code>APP_ELSEWHERE</code>; VietMap sau HOME, không bị kéo vào ô.</li>
+<li>R6 (hồi quy): ô App lúc chưa có kênh (thẻ "Đang kết nối…") ⇒ ⇄ như 2.92 (không đĩa, không đĩa đôi); ô App có kênh không đổi (một đĩa dưới ⇄). Đường ActivityView không có trên máy ảo — không QA được.</li>
+<li>R5: <code>run-as</code> đọc <code>clusternav_state.xml</code> sau một lượt chạy nền ⇒ <code>kachi_behind_marks</code> bắt đầu bằng <code>@n&lt;boot_count&gt;</code> (= <code>settings get global boot_count</code>).</li>
+<li>Hồi quy: chạy nền / tắt ô app, đổi app tại chỗ, nâng cấp 2.92 → 2.93 khi có dấu cũ (chuỗi không khoá vẫn đọc được).</li>
+</ol></li>
+<li><b>🚗 xe</b>: OC-SLOT-1 (bỏ — R6 không đổi hình nào trên xe hiện tại) · OC-SLOT-2 app nào thật sự thoát ô trên xe (CHƯA BIẾT — Waze trên xe chưa đo) và câu báo · OC-SLOT-3 <code>settings get global boot_count</code> + dấu sau một lần khởi động lại THẬT (không phải tắt máy BYD) · OC-SLOT-4 <code>logcat -s WidgetFit KachiBar</code> khi về HOME với thanh ≠ 100 %.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li><b>OQ1</b> — App thoát ô (R3): mặc định 2.93 = để app toàn màn + một câu báo, ô theo luật hoàn ô, KHÔNG lệnh nào chạm app. Phương án khác (đều là cơ chế mới, cần đo trên app thật thoát ô — §14): (a) dấu + K12 đưa HOME lên (app chạy sau nhà — đề xuất backlog 02/10); (b) K8 kéo về ô (Waze sẽ thoát lại ở lần mở activity kế [ĐO nguồn]); (c) đường lùi cửa sổ tự do trên display 0 (<code>waze-into-slot-research</code> §4). <span class="muted">Chờ owner.</span></li>
+<li><b>OQ2</b> — BEHIND-RESURFACE ca <code>force-stop</code>: có làm tiến trình canh uid 2000 không (§4.8)? <span class="muted">Chờ owner; xe không gặp (ROM dựng lại HOME).</span></li>
+<li><b>OQ3</b> — Nguồn lượt đo khung 1558×123 (§4.1): cùng view hay màn thứ hai? <span class="muted">[CHƯA BIẾT] — chốt bằng nhật ký 2.93 ở QA máy ảo mục 1.</span></li>
+<li><b>OQ4</b> — <code>ShellAppLauncher.openInSlot/moveToSlot</code> + <code>FreeformLaunch.launchCmd/parseTaskId</code> cũng không còn chỗ gọi sản phẩm [ĐO grep 06/10]: gỡ (cùng golden test) hay giữ làm khối dựng cho đường lùi cửa sổ tự do? <span class="muted">Đề xuất dòng backlog mới, không làm ở đây.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-293-plan.html</code> §4 · <code>docs/specs/kachi-292-shortcut-widget.html</code> (R3 cuộn) · <code>docs/specs/kachi-287-look-and-keys.html</code> §4.6b D-L8-1, §6.1 QA3 · <code>docs/specs/kachi-launcher-shortcuts-autostart.html</code> §4.Z, §10 Pass 8, OQ-L4-2 · <code>docs/specs/kachi-ready-at-home.html</code> R1.3/OQ6.</li>
+<li><code>docs/diagnostics/waze-into-slot-research-2026-09-14.md</code> §1–4 · <code>docs/diagnostics/behind-home-emulator-2026-10-01/README.md</code> (<code>finish/esc-race</code>, <code>finish/esc-after-chain</code>, <code>impl/e6</code>, <code>e8-3</code>) · <code>docs/diagnostics/shortcut-widget-2026-10-06/README.md</code>.</li>
+<li>Fixture nguyên văn <code>core/src/test/resources/diagnostics/am-stack-list-emulator-2026-10-02-esc-after-move.txt</code>, <code>…-2026-10-03-l4-view-escaped.txt</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-07 · lỗi QA → vá</b> — F1: bộ lọc màu là của <code>ImageView</code>, áp lại lên MỌI drawable mới (AOSP 10/12 <code>updateDrawable</code> → <code>applyColorFilter</code>) ⇒ view tái dùng của R1 mang tint của hình chung sang icon thật. 2.92 không lộ vì dựng view MỚI ở mọi phát tin. Vá ở đúng chỗ gắn icon thật duy nhất (<code>load</code>); kiểm lại máy ảo đạt (nền tối + sáng; gói ngoài danh sách vẫn không chạm).</li>
+<li><b>2026-10-06 · quyết định</b> — R2 chữa bằng tách vị trí CHỌN/ÁP thay vì chặn lượt đo lạ: nguồn lượt đo [CHƯA BIẾT] (§4.1) nên mọi chữa ở nguồn là đoán; tách hai con số đúng cho MỌI nguồn (đo kép của <code>LinearLayout</code>, màn thứ hai, lượt bố trí trung gian). Thêm hai dòng nhật ký để lần QA sau chốt nguồn.</li>
+<li><b>2026-10-06 · quyết định</b> — R1 không hoãn lượt dựng lại khi đang kéo: sau lọc phát tin + làm mới tại chỗ, dựng lại chỉ còn khi danh sách đổi thật (sửa ở Cài đặt / đổi hồ sơ) — cùng lúc kéo gần như không có; vị trí vẫn được mang sang.</li>
+<li><b>2026-10-06 · sai lệch đề xuất backlog</b> — SHORTCUTS-B-ESCAPE: không làm "K8 đưa A về ô + trả lớp tạm về A" (đề xuất 02/10) vì quyết định owner 04/10 (app rời ô ⇒ trong suốt, không kéo app khác vào khung) đến SAU và trùng đúng ca này; không "dấu B + K12" (cơ chế mới, OQ1).</li>
+<li><b>2026-10-06 · sai lệch đề xuất backlog</b> — BEHIND-MARKS-BOOT: làm ngay không đợi đo id task trên xe (lý do §4.5); phép đo vẫn hữu ích để biết rủi ro cũ lớn cỡ nào (OC-SLOT-3).</li>
+<li><b>2026-10-06 · spec không work → đổi</b> — R7 lượt đầu để <code>IntentAppLauncher</code> với hai hàm trả <code>false</code>; bộ đủ đỏ <code>LayeringRulesTest</code> (tệp thuần nằm trong <code>:app</code>) ⇒ xoá hẳn tệp, dùng <code>NoCar</code> (hành vi trùng).</li>
+<li><b>2026-10-06 · spec không work → đổi</b> — R6 bản đầu đặt đĩa cho MỌI đường ô App + ⇄ nổi. Tự soát: đường không máy chiếu là thẻ "Đang kết nối…" của XE và ⇄ nổi nằm ngay trên ⇄ trong khung lệch <code>Sp.XS</code> ⇒ hai đĩa chồng lệch trên xe lúc kênh chưa lên. Thu lại: đĩa chỉ ở đường mà dưới ⇄ là app bên thứ ba (thêm ActivityView); hai đường kia trần như ô widget.</li>
+<li><b>2026-10-06 · trần 500 dòng</b> — <code>BehindHomeSequence.kt</code> 495 dòng: phép chờ tách sang <code>StageWait.kt</code> (byte của vòng chờ giữ nguyên, thêm <code>seen</code>) trước khi thêm R4 ⇒ 482 dòng.</li>
+<li><b>2026-10-06 · kết quả</b> — [ĐO] <code>:core</code> 4 507 / 0 · <code>:app</code> 2 105 / 0 (<code>--rerun-tasks</code>, đếm XML); 10/10 đột biến đỏ. Chưa: senior review độc lập, QA máy ảo, quét bảo mật, commit (việc của điều phối).</li>
+<li><b>2026-10-06 · senior review Pass 2 · quyết định</b> — cổng "màn ảo ô còn app khác" chỉ đặt ở đường MỚI (chưa từng thấy sống): thu hẹp R3, không đổi đường đã-thấy-sống của 2.92 (CLAUDE.md §6). Gỡ đo ở nhịp chuyển sang luồng chính theo ĐÚNG bản đăng ký (không theo khoá). Không thêm lệnh nào.</li>
+<li><b>2026-10-06 · senior review Pass 2 · để lại</b> — năm [P3] không vá (ngoài chữ R1/R3, ngoài tệp SLOT, hoặc cần đo DL5 — §14): xem §10 Pass 2 mục 4–8; đề xuất dòng backlog cho điều phối.</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<h3>Pass 1 — 2026-10-06 (tự soát của bên làm, không thay senior review)</h3>
+<ul>
+<li>Soát diff một lượt: hàm mới có chỗ gọi sản phẩm (<code>ShortcutScrollKeep.*</code> ở <code>ShortcutGridLayout</code>/<code>ShortcutIconsView</code>; <code>StageWait.top</code>; <code>BehindMarks.forBoot/bootOf</code>; <code>TripGate.stableBoot</code>; <code>SlotLiveness.elsewhere</code>; chuỗi <code>kachi_slot_app_elsewhere</code>) — CLAUDE.md §8.</li>
+<li>Không <code>os.environ</code>-tương đương, không bắt-hết mới (gỡ <code>runCatching</code> quanh <code>TripStart.bootKey</code> — hàm đó đã bắt đúng hai ngoại lệ), không tên gói cứng, không đường dẫn máy.</li>
+<li>Verdict: chờ senior review (Opus) của điều phối sau khi gộp.</li>
+</ul>
+
+<h3>Pass 2 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Phạm vi: diff <code>8fbdf96</code> của nhóm SLOT trong cây chính (mã :app/:core, 5 × <code>strings_kachi.xml</code>, các tệp test đổi ghim). Không chạy gradle (điều phối chạy sau khi gộp mọi nhóm 2.93) ⇒ mọi kết luận về test ở đây là [SUY] tới khi điều phối chạy lại. Context7 không kết nối được (ENOTFOUND) — không thư viện mới ⇒ không cần. Lăng kính bắt buộc: CLAUDE.md §4 (phạm vi lệnh) · §5 (state sống dai, quyết theo đo) · §6 (không đảo đường đang chạy) · §14 (không cơ chế xe mới khi chưa đo).</p>
+<table>
+<tr><th>Việc</th><th>Mã + chỗ gọi</th><th>Test</th><th>Kết luận</th></tr>
+<tr><td>SHORTCUT-GRID-SCROLL-KEEP</td><td><code>ShortcutScrollKeep.touches/needsRebuild</code> ở <code>ShortcutIconsView</code> (phát tin gói · gắn lại · bên nghe danh sách); <code>keep</code> → <code>ShortcutGridLayout(context, keep)</code> [ĐO grep]</td><td><code>ShortcutScrollKeepTest</code> · <code>ShortcutGridFitWiringContractTest</code></td><td class="ok">✅</td></tr>
+<tr><td>SHORTCUT-SCROLL-DOCK-RELAYOUT</td><td><code>applied(wanted, f)</code> trong <code>settleScroll</code>; MỘT chỗ ghi <code>wanted</code> (<code>scrollAlongTo</code>: kéo · trôi · trợ năng); nhật ký <code>pos=/view=</code> + <code>[dock-area]</code></td><td>như trên</td><td class="ok">✅ — gốc khung 1558×123 vẫn [CHƯA BIẾT] (OQ3)</td></tr>
+<tr><td>SLOT-APP-ESCAPE</td><td><code>SlotPresence</code> trên cùng bản đọc → <code>SlotLiveness.elsewhere</code> → cả 6 lối <code>watch</code> (<code>VdAppHost</code> ×4 · <code>SlotFullscreen</code> ×2) chuyển cờ [ĐO grep] → <code>onAppGone(…, away)</code> → câu báo + <code>APP_ELSEWHERE</code>; <code>relinquish</code> trước lượt nhả ⇒ 0 <code>force-stop</code>, 0 lệnh tới app đã thoát [SUY đọc mã]</td><td><code>SlotLivenessElsewhereTest</code> · <code>SlotLifecycleWiringContractTest</code> · <code>SlotParkWiringContractTest</code></td><td class="ok">✅</td></tr>
+<tr><td>SHORTCUTS-B-ESCAPE</td><td>(b) qua R3; (a) Pass 8 sẵn</td><td>như trên</td><td class="ok">✅</td></tr>
+<tr><td>SLOT-HEAD-OVERLAY-DISC</td><td>cổng <code>attach</code> (App + bộ chiếu ≠ NONE); cụm không nút: <code>hits</code> luôn <code>false</code>, hàng/đĩa không bấm được ⇒ chạm vẫn tới ActivityView</td><td><code>SlotLifecycleWiringContractTest</code></td><td class="ok">✅ (ActivityView không QA được trên máy ảo — đã ghi)</td></tr>
+<tr><td>BEHIND-MARKS-BOOT</td><td>kho đọc/ghi qua <code>forBoot</code>/<code>encode(boot)</code>; mọi bên đọc/ghi đi qua kho [ĐO grep: <code>SlotReturnRun</code> · <code>BehindHomeRunner</code> · <code>BehindHomeRecovery</code> · <code>TripStart</code>]</td><td><code>BehindMarksBootTest</code> · <code>BehindHomeWiringContractTest</code></td><td class="ok">✅</td></tr>
+<tr><td>READY-AT-HOME-OQ6</td><td>tệp xoá; 0 tham chiếu MÃ ở <code>main</code>/<code>test</code>/<code>vehicleTest</code>/<code>testVehicleTest</code> [ĐO grep]; <code>isFreeformAvailable</code> (true → false) 0 chỗ gọi sản phẩm [ĐO grep] ⇒ không đổi hành vi</td><td><code>ReadyAtHomeWiringContractTest</code></td><td class="ok">✅</td></tr>
+<tr><td>BEHIND-FELL-UNREAD-K12</td><td><code>StageWait.top</code> → <code>seen</code> → <code>afterStage(fellSeen)</code> chỉ ở <code>startBehindHidden</code>; K12 byte 2.83, dấu trước K12</td><td><code>BehindHomeHiddenStageTest</code> · <code>BehindHomeWiringContractTest</code></td><td class="ok">✅</td></tr>
+<tr><td>BEHIND-RESURFACE</td><td>không mã — theo spec (§4.8, OQ2)</td><td>—</td><td class="warn">owner quyết</td></tr>
+</table>
+<table>
+<tr><th>#</th><th>Mức</th><th>Chỗ</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>1</td><td>[P3]</td><td><code>SlotLiveness.observe</code> · <code>SlotLiveProbe.sweep</code></td><td>Đường mới "chưa từng thấy sống + ở chỗ khác" không xét màn ảo ô còn app KHÁC ⇒ có thể tới trước chuỗi đặt tạm tại chỗ (<code>swapApp</code> → <code>evictBehind</code> → <code>B_NOT_IN_SLOT</code> → <code>adoptShown(A)</code>): luật hoàn ô ⇒ nhả màn ảo ⇒ cờ 256 kết thúc A [SUY đọc mã]. Đường đó 0 chỗ gọi từ 2.89-thử1 (<code>swapInPlace(</code> — [ĐO grep]) ⇒ ẩn, không phải lỗi đang chạy.</td><td>VÁ: đầu vào <code>othersInSlot</code> (<code>SlotLiveness.othersInSlot</code>, cùng bản đọc, <code>StackParse</code> A10/A12, 0 lệnh) — nhịp chỉ đếm khi màn ảo ô không còn app khác; đường đã-thấy-sống không đổi. +2 bài <code>SlotLivenessElsewhereTest</code> (fixture nguyên văn <code>l4-m1-stale-task</code>: Waze ở display 0, VietMap còn ở màn ảo 272).</td></tr>
+<tr><td>2</td><td>[P3]</td><td><code>SlotLiveProbe.sweep</code></td><td>Kết luận của nhịp đang bay áp lên bản đăng ký đã bị gỡ/thay: <code>unwatch(sub.key)</code> ở luồng nền gỡ THEO KHOÁ (gỡ nhầm bản mới cùng khoá ⇒ ô thôi được đo) và <code>onDead</code> vẫn gọi dù bản đó đã bị gỡ (⇱ <code>SlotFullscreen.detach</code> gỡ đo trước K7 · <code>reviveInSlot</code>) ⇒ <code>onAppClosed</code> đọc <code>pkg</code>/<code>dead</code> lúc báo ⇒ có thể áp luật hoàn ô cho ô đang ra toàn màn. Có từ H2; R3 thêm một lối kết luận [SUY].</td><td>VÁ: gỡ ĐÚNG bản đó trên luồng chính, chỉ báo khi <code>subs.remove(sub)</code> thành công. Ghim <code>SlotParkWiringContractTest</code> (đổi có lý do).</td></tr>
+<tr><td>3</td><td>[P3]</td><td><code>SlotLivenessElsewhereTest</code></td><td>Màn ảo ô ghi 187, lượt đo của fixture dùng 185 (<code>esc-b-on-top</code>).</td><td>VÁ: 185; bộ nạp fixture nhận ngày.</td></tr>
+<tr><td>4</td><td>[P3]</td><td><code>WorkspaceView.restyle</code> · <code>rebuildWidgetSlots</code> · dựng lại Activity (uiMode/locale không trong <code>configChanges</code>)</td><td>Tạo <code>ShortcutIconsView</code> MỚI ⇒ vị trí cuộn <code>w_apps</code> về 0 (đổi sáng/tối, đổi đơn vị). Ngoài chữ R1 (R1 = dựng lại trong CÙNG view); có từ 2.92.</td><td>KHÔNG vá — đề xuất backlog nếu owner cần nhớ vị trí qua lượt dựng lại ô.</td></tr>
+<tr><td>5</td><td>[P3]</td><td><code>ShortcutGridLayout.computeScroll</code></td><td>Trôi đang chạy qua một lượt khớp ở khung lạ ⇒ <code>scrollAlongTo</code> ghi <code>wanted</code> = vị trí đã kẹp theo khung lạ. Cần khung đổi GIỮA lúc trôi — chưa thấy ca nào.</td><td>KHÔNG vá — vá là đổi hành vi trôi.</td></tr>
+<tr><td>6</td><td>[P3]</td><td>H2 — hai <code>KachiHomeActivity</code> cùng sống</td><td>Bộ đo của màn cũ (màn ảo đã bị <code>SlotVdOwner.adopt</code> của màn mới nhả) thấy app ở màn ảo mới ⇒ "ở chỗ khác" ⇒ 2.92 hoàn ô im lặng ở màn cũ; 2.93 thêm câu báo "đã rời ô" sai trong mắt người lái [SUY]. Có xảy ra trên xe không [CHƯA BIẾT].</td><td>KHÔNG vá (cần phép "host còn giữ ô" ở <code>SlotVdOwner</code> — ngoài tệp SLOT) — đề xuất backlog.</td></tr>
+<tr><td>7</td><td>[P3]</td><td><code>SlotLiveProbe.sweep</code> (<code>alive</code>)</td><td><code>alive</code> dùng <code>FreeformLaunch.parseTaskIdOnDisplay</code> (chỉ <code>Stack id=</code> A10) còn <code>away</code> dùng <code>StackParse</code> (A10 + A12): trên DL5 (<code>RootTask id=</code>) <code>alive</code> không bao giờ đúng ⇒ không bao giờ kết luận <code>APP_DIED</code>; 2.93 làm "ở chỗ khác" thành lối kết luận DUY NHẤT trên DL5 [SUY đọc mã].</td><td>KHÔNG vá — đổi bộ đọc là cơ chế xe chưa đo (§14); đề xuất backlog + đo DL5.</td></tr>
+<tr><td>8</td><td>[P3]</td><td><code>core/…/FloatingWindowLedger.kt:10</code> · <code>AccessibilityRebind.kt:396</code></td><td>KDoc còn nói <code>IntentAppLauncher.openInSlot</code> như đang sống (tệp đã xoá ở R7).</td><td>KHÔNG vá — ngoài tệp SLOT.</td></tr>
+<tr><td>9</td><td>INFO</td><td><code>values-th</code> · <code>values-ms</code></td><td>Chuỗi <code>kachi_slot_app_elsewhere</code> có đủ 5 tiếng; TH/MS cần người bản ngữ soát.</td><td>—</td></tr>
+</table>
+<ul>
+<li>Soát thêm, không ra lỗi: lệnh <code>am</code>/<code>wm</code> mới = 0 (R3 dùng bản đọc sẵn của nhịp; R4 chỉ bắn K12 byte 2.83, ở chuỗi màn ảo ẩn) [ĐO đọc diff]; trần 500 dòng [ĐO <code>wc -l</code>]: <code>WorkspaceView</code> 498 · <code>KachiHomeActivity</code> 495 · <code>VdAppHost</code> 484 · <code>BehindHomeSequence</code> 482 · <code>SlotLiveProbe</code> 201 · <code>SlotLiveness</code> 142; dấu bền hai chiều: 2.92 <code>decode</code> bỏ mục <code>@n…</code> (không có <code>:</code>) và ghi lại chuỗi không khoá ⇒ 2.93 đọc như cũ [SUY đọc mã <code>8fbdf96</code>, khoá ở <code>BehindMarksBootTest</code>]; <code>BOOT_COUNT</code> không đọc được ⇒ khoá <code>w…</code> ⇒ không bao giờ bỏ dấu; khoá lạ không lọt vào chuỗi (regex); không tên gói cứng, không bắt-hết mới.</li>
+<li>Soát lại chính bản vá (vòng lặp review): cân ngoặc 4 tệp đã sửa [ĐO bộ quét]; thứ tự ghim khớp mã; 0 phát hiện mới. Test CHƯA chạy.</li>
+<li>Bài cần chạy lại: <code>:core</code> <code>SlotLivenessElsewhereTest</code> · <code>SlotLivenessTest</code> · <code>SlotParkTest</code> · <code>SlotRevertPlanTest</code> · <code>ShortcutScrollKeepTest</code> · <code>behind.BehindMarksBootTest</code> · <code>behind.BehindHomeHiddenStageTest</code> · <code>behind.BehindHomeSequenceTest</code>; <code>:app</code> <code>SlotParkWiringContractTest</code> · <code>SlotHostingLifecycleContractTest</code> · <code>SlotLifecycleWiringContractTest</code> · <code>BehindHomeWiringContractTest</code> · <code>ShortcutGridFitWiringContractTest</code> · <code>ReadyAtHomeWiringContractTest</code> · <code>LayeringRulesTest</code> · <code>LauncherI18nLocalesContractTest</code>; rồi bộ đủ <code>./gradlew :core:test :app:testDebugUnitTest --continue --rerun-tasks</code>.</li>
+<li><b>Verdict: APPROVED (có điều kiện bộ test xanh)</b> — 8/8 việc có mã đã nối dây + có test; R8 để owner đúng spec; 0 [P0]–[P2]; 3 [P3] đã vá; 5 [P3] + 1 INFO để backlog/owner.</li>
+</ul>
+
+<h3>Pass 3 — 2026-10-07 (soát Opus — QA máy ảo F1: icon xám sau khi cài lại)</h3>
+<p class="muted">Phạm vi: bản vá F1 của điều phối (chưa stage) — <code>KachiIcons.untint</code> · <code>ShortcutIconsView.load</code> · bài ghim <code>ShortcutsWiringContractTest</code>. Triệu chứng [ĐO máy ảo 07/10, QA của điều phối]: app trong dải lối tắt bị gỡ rồi cài lại ⇒ icon thật xám tới lần dựng lại (trắng đọc 184 ≈ 0,72 × 255 — khớp hệ số mờ 0,72 của bộ lọc <code>UNSELECTED</code>, mặt lớn chủ đề tối [SUY]). Không chạy gradle/adb/máy ảo (điều phối chạy). Context7 không kết nối (ENOTFOUND) — không thư viện mới. Nguồn framework fetch thẳng android.googlesource.com: <code>ImageView.java</code> @ <code>android-10.0.0_r47</code> + <code>android-12.0.0_r34</code>; <code>PackageParser.java</code> · <code>PackageUserState.java</code> @ <code>android-10.0.0_r47</code>.</p>
+<ul>
+<li><b>Gốc [ĐO nguồn]</b> — bộ lọc là của VIEW, không của drawable: <code>ImageView.setColorFilter(ColorFilter)</code> ghi <code>mColorFilter</code> + <code>mHasColorFilter = true</code> (A10 <code>ImageView.java:1565-1572</code> · A12 <code>:1573-1580</code>); <code>updateDrawable</code> gọi <code>applyColorFilter()</code> cho MỌI drawable mới (A10 <code>:1068</code> · A12 <code>:1076</code>) = <code>mutate()</code> + <code>setColorFilter(mColorFilter)</code> (A10 <code>:1626-1631</code> · A12 <code>:1634-1639</code>) ⇒ <code>setImageDrawable(icon)</code> trên view vừa mang hình chung đã tint chở luôn bộ lọc sang icon thật. Hồi quy của R1: 2.92 dựng ô MỚI ở mọi phát tin gói và mọi lần gắn [ĐO <code>git show 8fbdf96</code>: <code>onPackages</code> · <code>onAttachedToWindow</code> đều <code>rebuild()</code>]; R1 nạp lại TẠI CHỖ ⇒ dùng lại view ⇒ lộ. Bản vá gỡ bộ lọc trước khi gắn ⇒ chữa đúng gốc.</li>
+</ul>
+<table>
+<tr><th>Đường icon thật thay hình chung trên CÙNG view</th><th>Kết luận</th></tr>
+<tr><td>Phát tin cài lại (<code>PACKAGE_ADDED</code>/<code>CHANGED</code>) → <code>refresh</code> → <code>load</code></td><td class="ok">✅ nhánh <code>icon != null</code> gỡ tint ngay trước khi gắn — chỗ DUY NHẤT gắn icon thật lên ô [ĐO grep: <code>setImage*</code> lên ô chỉ ở <code>genericIcon</code> (kèm <code>tint</code>) và <code>load</code> (kèm <code>untint</code>); <code>ShortcutGridLayout</code> · <code>ControlDockView</code> · <code>DockAreaLayout</code> 0 chỗ] ⇒ mọi lối vào được phủ theo cấu trúc</td></tr>
+<tr><td>Gắn lại cùng danh sách (<code>onAttachedToWindow</code> → <code>refresh</code>)</td><td class="ok">✅ cùng <code>load</code></td></tr>
+<tr><td>Bật lại sau khi tắt app</td><td class="ok">✅ theo cấu trúc. Thực tế app bị TẮT vẫn tra ra <code>ApplicationInfo</code> — cổng <code>generateApplicationInfo</code> chỉ xét installed + !hidden, không xét enabled [ĐO A10 <code>PackageParser.java:7732-7737</code>, <code>:640-655</code> · <code>PackageUserState.java:120-127</code>; lớp PMS bọc ngoài chưa đọc ⇒ cả đường [SUY]] ⇒ không đi qua hình chung. Ẩn/gỡ cho user ⇒ hình chung; hiện lại ⇒ <code>load</code> ⇒ ✅</td></tr>
+<tr><td>Dựng lại (<code>rebuild</code>) · lượt nạp đầu</td><td class="ok">✅ view MỚI chưa tint ⇒ <code>untint</code> không làm gì: <code>drawnBy[img]</code> (không <code>getOrPut</code>) không tạo mục; <code>setColorFilter(null)</code> khi <code>mColorFilter</code> đã null bị cổng <code>mColorFilter != cf</code> chặn ⇒ không <code>mutate</code>, 0 chi phí ở đường thường [ĐO nguồn]</td></tr>
+<tr><td><code>fitIcons</code> (lưới khớp cỡ mới)</td><td class="ok">✅ chạy luồng chính (<code>post</code> từ <code>ShortcutGridLayout.onLayout</code>), đọc <code>generic</code> lúc chạy; <code>load</code> đặt <code>generic</code> + (gỡ) tint trong CÙNG một tin ⇒ không xen giữa được</td></tr>
+<tr><td><code>KachiIcons.refit</code></td><td class="ok">không tới ô lối tắt: chỉ gọi từ <code>FitScale.params</code> (<code>FitScale.kt:362</code>), mà <code>FitGridLayout.selfFitting</code> gồm <code>ShortcutIconsView</code>/<code>ShortcutGridLayout</code> ⇒ không dựng <code>FitScale</code> [ĐO grep] ⇒ hạ cờ <code>tinted</code> là vệ sinh hợp đồng, không phải gốc F1</td></tr>
+</table>
+<table>
+<tr><th>#</th><th>Mức</th><th>Chỗ</th><th>Phát hiện</th><th>Xử lý</th></tr>
+<tr><td>1</td><td>[P3]</td><td>KDoc <code>KachiIcons.untint</code> · KDoc bài ghim <code>ShortcutsWiringContractTest</code></td><td>Viết "[refit] tô lại ở lần khớp cỡ sau" như cơ chế đang chạy của dải — <code>refit</code> không bao giờ tới ô lối tắt (bảng trên) ⇒ quy kết sai cơ chế (CLAUDE.md §2); gốc thật (bộ lọc của view áp lại lên drawable mới) không được nói.</td><td>VÁ chữ: nêu gốc (<code>updateDrawable</code> → <code>applyColorFilter</code>, AOSP 10/12) + cờ là vệ sinh hợp đồng. Không đổi mã, không đổi ghim.</td></tr>
+<tr><td>2</td><td>INFO</td><td><code>KachiIcons.Drawn</code></td><td>Không trường nào khác cần đặt lại: <code>selected</code>/<code>ink</code> chỉ được đọc khi <code>tinted</code> (ở <code>refit</code>) và bị <code>tint</code> ghi đè; <code>concept</code>/<code>level</code>/<code>tag</code> chỉ do <code>byLevel</code>, <code>offDim</code> chỉ do <code>fadeOff</code> (cả hai: ô điều khiển); <code>fittedDp</code> chỉ do <code>refit</code> (không tới) [ĐO grep].</td><td>—</td></tr>
+<tr><td>3</td><td>INFO</td><td><code>ShortcutIconsView.paintDim</code></td><td>Gỡ bộ lọc không phá bộ lọc chủ ý nào: <code>paintDim</code> chỉ ghi <code>View.alpha</code>; <code>ImageView</code> A10/A12 không có <code>onSetAlpha</code>, <code>mViewAlphaScale</code> là hằng 256 ⇒ alpha view không chạm drawable/bộ lọc [ĐO nguồn]; chỗ ghi bộ lọc duy nhất lên ô lối tắt là <code>tint</code> trong <code>genericIcon</code> (<code>SlotHeadAutoHide.restyleAll</code> chỉ tô con của ⇄ đầu ô) [ĐO grep]. Drawable nhận <code>setColorFilter(null)</code> chỉ ở view từng mang hình chung — trước bản vá chính drawable ấy nhận bộ lọc xám/mực ⇒ không có đường thoái lui.</td><td>—</td></tr>
+<tr><td>4</td><td>INFO</td><td>bề mặt icon khác</td><td>Không bề mặt nào khác đổi hình-chung-đã-tint → icon app trên CÙNG view: icon app thật chỉ ở <code>AppDrawerApps.tile</code> (ngăn kéo · chọn lối tắt · widget bên thứ ba), <code>SettingsVoiceNamesPage.appRow</code>, <code>WorkspaceViewCards.appCard</code> — đều <code>ImageView</code> mới, chưa từng tint; ô chọn lối tắt cố ý nằm ngoài <code>widgetTiles</code> nên <code>PickerBadge.retint</code> không nhuộm icon app; bề mặt tint (<code>AppDrawerTiles.widgetTile</code> · <code>PickerBadge</code> · <code>ControlTileFactory</code>) chỉ vẽ glyph tài nguyên [ĐO grep]. Lỗi chỉ có vì R1 dùng lại view ⇒ chỉ ở <code>ShortcutIconsView</code>.</td><td>—</td></tr>
+<tr><td>5</td><td>INFO</td><td><code>ShortcutIconsView.load</code> (hồ <code>IO</code> 2 luồng)</td><td>Hai lượt <code>refresh</code> bay cùng lúc cho một ô có thể gắn kết quả lệch thứ tự trong CÙNG lượt dựng (<code>generation</code> không phân biệt) — chỉ sai khi trạng thái gói đổi GIỮA hai lần tra (gỡ → cài trong vài ms); tự lành ở phát tin/lần gắn kế. Thay gói (<code>install -r</code>): nghi là cả hai phát tin tới sau khi gói mới đã vào ⇒ hai lần tra cùng "còn cài" [SUY — chưa đọc thứ tự phát tin của PMS]. Có từ R1, ngoài F1.</td><td>KHÔNG vá — ngoài phạm vi F1; ghi để biết.</td></tr>
+</table>
+<ul>
+<li>Luồng: <code>untint</code> chạy trong <code>MAIN.post</code> (<code>Handler(Looper.getMainLooper())</code>, <code>ShortcutIconsView.kt:252-263</code>, <code>:323</code>) ⇒ <code>drawnBy</code> vẫn chỉ luồng chính chạm [ĐO đọc mã].</li>
+<li>Thành ngữ/mật độ chú thích: khối <code>{ a; b }</code> một dòng cùng kiểu <code>AppDrawerTiles.kt:34</code> · <code>PickerBadge.kt:81</code>; <code>img.colorFilter = null</code> cùng idiom nhánh <code>selected</code> của <code>tint</code>; chú thích 2 dòng ở <code>load</code> đúng mật độ quanh đó. <code>KachiIcons.kt</code> 186 dòng (trần 500) [ĐO <code>wc -l</code>]; cân ngoặc 3 tệp [ĐO bộ quét].</li>
+<li>Bài ghim đủ sức: đảo thứ tự, đẩy <code>untint</code> sang nhánh <code>else</code>, hoặc bỏ một trong hai dòng của <code>untint</code> đều đỏ (<code>order</code> + hai <code>contains</code> trên mã đã bỏ chú thích) [SUY đọc bài]. <code>:app</code> không có Robolectric ⇒ không có bài hành vi cho <code>ImageView</code>; ghim mã nguồn là khuôn sẵn của dự án.</li>
+<li>Soát lại chính bản vá (vòng lặp review): chỉ đổi chú thích ⇒ không đổi mã/ghim (<code>codeOf</code> bỏ chú thích); 0 phát hiện mới. Test CHƯA chạy.</li>
+<li>Bài cần chạy lại: <code>:app</code> <code>ShortcutsWiringContractTest</code> · <code>ShortcutGridFitWiringContractTest</code> · <code>FitRulesWiringContractTest</code> (trần dòng <code>KachiIcons.kt</code>) · <code>IconStyleContractTest</code> · <code>Widget293ContrastTest</code> (cùng đọc <code>KachiIcons.kt</code>); rồi bộ đủ <code>./gradlew :core:test :app:testDebugUnitTest --continue --rerun-tasks</code>. QA máy ảo lặp F1: gỡ → cài lại một app trong dải, cả chủ đề tối lẫn sáng, cả lưới <code>w_apps</code> lẫn khối thanh nút ⇒ icon về màu gốc không cần dựng lại.</li>
+<li><b>Verdict: APPROVED (có điều kiện bộ test xanh + QA máy ảo lặp F1)</b> — bản vá chữa đúng gốc và phủ mọi đường icon thật thay hình chung trên cùng view; 0 [P0]–[P2]; 1 [P3] đã vá (chỉ chữ); 4 INFO. §1 Changelog / §9 chưa có dòng F1 — điều phối thêm (một chủ sửa spec một lúc).</li>
+</ul>
+
+</div></body>
+</html>

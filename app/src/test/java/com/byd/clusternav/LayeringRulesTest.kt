@@ -189,7 +189,7 @@ class LayeringRulesTest {
         // tách khỏi `VoiceDispatcher` vì trần 500 dòng. "Thuần" theo phép đo ở đây (không `import android.*`, không
         // nhắc chữ Context) nhưng nó **quyết chỗ đứng của một nhịp chờ 400 ms so với luồng VẼ** — `Thread.sleep` +
         // cặp lambda `onUi`/`background` của tầng giao diện. `:core` là tầng quyết định phải kiểm được off-car với
-        // đồng hồ giả, không phải chỗ giữ một lượt ngủ thật (đối chiếu: `MacroExec`/`ShellAppLauncher` ở `:core`
+        // đồng hồ giả, không phải chỗ giữ một lượt ngủ thật (đối chiếu: `ClusterThemeGuard`/`HealCastDeferral` ở `:core`
         // **nhận** `sleep` làm tham số chứ không tự gọi). Cùng lẽ với `VoiceReadback.kt` ngay trên.
         "VoiceClimateStep.kt" to "vai thi hành StepPlan tách khỏi VoiceDispatcher — giữ nhịp chờ 400 ms ngoài luồng vẽ",
         // VOICE-WRITE-LANE (2.76): `runControl` của `VoiceDispatcher` chuyển nguyên sang tệp riêng vì trần 500 dòng.
@@ -243,6 +243,10 @@ class LayeringRulesTest {
         // `HomeViewModel` (`:app`, giữ repository Android) — cùng khuôn `ShortcutSettingsPort` (khai trong tệp Settings của :app).
         // "Thuần" theo phép đo chỉ vì tệp không nhắc chữ View/Context; chuyển giao diện sang :core là tách nó khỏi bản thật duy nhất.
         "VoiceNamesPort.kt" to "cổng trang Dạy tên app + hàm mở rộng HomeViewModel (:app) — cùng khuôn ShortcutSettingsPort",
+        // 2.93 · CAMERA-PER-CAM-CONFIG: cầu Cài đặt ↔ bộ chỉnh *Từng camera* — hàm mở rộng của `ClusterNavBridge` (`:app`, giữ
+        // `app` Context: đọc/ghi prefs, `displayMetrics`, controller camera của tiến trình). "Thuần" theo phép đo chỉ vì tệp
+        // không nhắc chữ Context/View; cùng khuôn mọi tệp `ClusterNavBridge*.kt`. Phép tính đặt chỗ đã ở :core (CameraPlacement).
+        "ClusterNavBridgeCameraPerCam.kt" to "hàm mở rộng ClusterNavBridge (Context-bound: prefs + displayMetrics + controller camera)",
     )
 
     @Test

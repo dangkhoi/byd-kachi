@@ -127,8 +127,10 @@ internal object VoiceTailClause {
             // 2.91 VOICE-APP-NAMES (spec §4.6) — TÊN ĐÃ DẠY của một app thuộc bảng đích, đúng loại, khớp NGUYÊN dãy:
             // xét TRƯỚC mọi cách nói của bảng (chữ mô hình in cho giọng người này thắng bảng đoán). Tên đã dạy của
             // app KHÔNG thuộc bảng đích không có `target` ⇒ không cắt (Kachi không giao chuỗi cho app ấy được).
+            // 2.93 VOICE-TAUGHT-ACCENT-FUZZY: tên GIỌNG một âm tiết giữ luật dấu như mọi chỗ khớp tên ([VoiceHomograph.spelledOk]).
             terms.firstOrNull { t ->
-                t.target != null && t.words == words && VoiceAppTargets.byKey(t.target)?.kind == kind
+                t.target != null && t.words == words && VoiceAppTargets.byKey(t.target)?.kind == kind &&
+                    VoiceHomograph.spelledOk(after[i + 1], t.spelled)
             }?.target?.let { return it to i }
             if (len > VoiceAppTargets.LONGEST_SPOKEN) return@forEach
             // Ba tầng, nới dần, và **thứ tự là hợp đồng**: khớp CHÍNH XÁC trước; rồi cụm rụng âm cuối

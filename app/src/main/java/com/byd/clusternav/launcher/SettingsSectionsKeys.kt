@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.KeyEvent
 import android.widget.LinearLayout
 import com.byd.clusternav.R
+import com.byd.clusternav.launcher.camera.CameraDemand
 import com.byd.clusternav.voicekey.KeySourceKind
 import com.byd.clusternav.voicekey.KeySourceProbes
 import com.byd.clusternav.voicekey.KeySourceVerdict
@@ -153,14 +154,41 @@ class SettingsKeysSection(
      */
     private fun pickTarget(onSpec: (String) -> Unit) {
         val groups = KeyCtlTargets.groups()
+        // 2.93 · CAMERA-ON-DEMAND — loại đích thứ hai *"Camera theo yêu cầu"* (owner 06/10 *"trigger từ bind phím vật lý"*).
         SettingsDialogs.pick(
             context,
             context.getString(R.string.kachi_keys_pick_kind),
-            listOf(context.getString(R.string.kachi_keys_kind_apps)) + groups.map { it.displayLabel },
+            listOf(context.getString(R.string.kachi_keys_kind_apps), context.getString(R.string.kachi_keys_kind_camera)) +
+                groups.map { it.displayLabel },
             context.getString(R.string.kachi_keys_no_targets),
         ) { kind ->
-            if (kind == 0) pickApp(onSpec) else pickControl(groups[kind - 1], onSpec)
+            when (kind) {
+                0 -> pickApp(onSpec)
+                1 -> pickCamera(onSpec)
+                else -> pickControl(groups[kind - 2], onSpec)
+            }
         }
+    }
+
+    /**
+     * 2.93 — năm đích camera: bốn camera (mỗi phím = BẬT/TẮT camera ấy — owner *"các nút đều là toggle"*) + *Tắt camera*.
+     * Danh sách + mã bền sinh từ `:core` [CameraDemand.KEY_OPS] / [CameraDemand.keySpec] — không chép tay mã nào.
+     */
+    private fun pickCamera(onSpec: (String) -> Unit) {
+        val ops = CameraDemand.KEY_OPS
+        SettingsDialogs.pick(
+            context,
+            context.getString(R.string.kachi_keys_pick_camera),
+            ops.map { camOpLabel(it) },
+            context.getString(R.string.kachi_keys_no_targets),
+        ) { i -> CameraDemand.keySpec(ops[i])?.let(onSpec) }
+    }
+
+    /** Nhãn một đích camera: *"Camera sau — bật/tắt"* · *"Tắt camera"*. */
+    private fun camOpLabel(op: CameraDemand.Op): String = when (op) {
+        is CameraDemand.Op.Toggle ->
+            context.getString(R.string.kachi_key_cam_toggle, CameraSettingsLabels.cameraName(context, op.which))
+        else -> context.getString(R.string.kachi_key_cam_off)
     }
 
     private fun pickApp(onSpec: (String) -> Unit) {
@@ -279,7 +307,8 @@ class SettingsKeysSection(
      * (`kachi_key_custom_name_src` với tên hằng framework) để hai dòng núm / vô-lăng cùng mã không trông giống hệt nhau.
      */
     private fun buttonLabel(code: Int, source: KeySourceKind?, buttons: List<ButtonOption>): String =
-        buttons.firstOrNull { it.code == code && it.source == source }?.let { optionLabel(it) }
+        // 2.93 · KEY-LABEL-PRESET-SHADOW — nút tự học trùng mã thắng preset (tra cũ lấy mục khớp ĐẦU TIÊN = preset).
+        buttons.labelOwner(code, source)?.let { optionLabel(it) }
             ?: source?.let {
                 context.getString(
                     R.string.kachi_key_custom_name_src,
@@ -320,9 +349,12 @@ class SettingsKeysSection(
      * FIX286 · R-KC — đích nút xe (`ctl:…`) ⇒ nhãn sinh từ registry (*"Gió +1"*); mã hỏng/nút không còn ⇒ nguyên chuỗi
      * (vẫn nhận ra dòng để xoá).
      */
-    private fun targetLabel(spec: String, targets: List<TargetOption>): String =
-        if (KeyCtlTargets.isCtl(spec)) KeyCtlTargets.displayLabelOf(spec)
-        else targets.firstOrNull { it.spec == spec }?.let { targetOptionLabel(it, targets) } ?: spec
+    private fun targetLabel(spec: String, targets: List<TargetOption>): String = when {
+        KeyCtlTargets.isCtl(spec) -> KeyCtlTargets.displayLabelOf(spec)
+        // 2.93 — đích camera (`cam:…`): nhãn theo mã; mã hỏng ⇒ nguyên chuỗi (vẫn nhận ra dòng để xoá).
+        CameraDemand.isKey(spec) -> CameraDemand.parseKey(spec)?.let { camOpLabel(it) } ?: spec
+        else -> targets.firstOrNull { it.spec == spec }?.let { targetOptionLabel(it, targets) } ?: spec
+    }
 
     /**
      * Tên các mục đặc biệt (ba mục cũ + *"Kachi nghe"* của V1 pha NGHE), tra theo **THỨ TỰ KHAI** của `ClusterNavBridge.targetOptions()` chứ không so chuỗi

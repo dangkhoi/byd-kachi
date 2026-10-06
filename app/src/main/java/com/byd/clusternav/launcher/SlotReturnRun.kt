@@ -152,7 +152,8 @@ internal object SlotReturnRun {
  *
  * @param current host chưa nhả và vẫn đang giữ app [String] (kết quả về muộn của một app cũ phải im).
  * @param onClosed app đã rời ô hẳn ⇒ host giấu mặt vẽ + báo lên luật hoàn ô (L6 `SlotRevertPlan.Event.APP_DIED`: trong suốt /
- *   widget LƯU về — thẻ "app đã đóng — chạm để mở lại" cũ đã gỡ) · @param reopen đường mở ô golden (force-stop + mở lại).
+ *   widget LƯU về — thẻ "app đã đóng — chạm để mở lại" cũ đã gỡ); đối số = 2.93 · R3 app ra khỏi ô mà task còn ở display khác
+ *   (`APP_ELSEWHERE`) · @param reopen đường mở ô golden (force-stop + mở lại).
  * @param onTap chạm thẻ "Đang mở toàn màn" ⇒ host gọi lại [bringBack] với màn ảo/kênh hiện tại.
  */
 internal class SlotFullscreen(
@@ -160,7 +161,7 @@ internal class SlotFullscreen(
     private val surface: View,
     private val probeKey: String,
     private val current: (String) -> Boolean,
-    private val onClosed: () -> Unit,
+    private val onClosed: (Boolean) -> Unit,
     private val reopen: () -> Unit,
     private val onTap: () -> Unit,
 ) {
@@ -184,8 +185,8 @@ internal class SlotFullscreen(
                 // như lượt về ô — chỉ đo lại ô khi app THẬT ở ô, không thì ô đen mãi (bộ đo chưa từng thấy app sống ở đó).
                 // (Review lượt 5: ẩn dưới camera / app khác ⇒ `:core` trả `taskId` ⇒ nhánh thẻ "Đang mở toàn màn" bên dưới.)
                 when (out.back) {
-                    null, SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(probeKey, pkg, vd, sh) { onClosed() }
-                    SlotReturn.Back.GONE -> onClosed()
+                    null, SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(probeKey, pkg, vd, sh) { onClosed(it) }
+                    SlotReturn.Back.GONE -> onClosed(false)
                     else -> reopen()          // K8 không đưa được về ô ⇒ đường golden (force-stop + mở lại)
                 }
             } else {
@@ -217,8 +218,8 @@ internal class SlotFullscreen(
             card?.let { host.removeView(it) }; card = null
             surface.visibility = View.VISIBLE
             when (r) {
-                SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(probeKey, pkg, vd, sh) { onClosed() }
-                SlotReturn.Back.GONE -> onClosed()
+                SlotReturn.Back.IN_SLOT -> SlotLiveProbe.watch(probeKey, pkg, vd, sh) { onClosed(it) }
+                SlotReturn.Back.GONE -> onClosed(false)
                 else -> reopen()          // R1.8: K8 không đưa được về ô ⇒ đường golden (force-stop + mở lại)
             }
         }

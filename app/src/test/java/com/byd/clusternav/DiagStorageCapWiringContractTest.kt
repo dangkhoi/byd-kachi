@@ -9,6 +9,7 @@ import com.byd.clusternav.launcher.testbridge.TestBridgeReply
 import com.byd.clusternav.launcher.voice.VoiceModelSideload
 import com.byd.clusternav.launcher.voice.VoiceUtteranceLog
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -102,10 +103,8 @@ class DiagStorageCapWiringContractTest {
 
     private val call = Regex("""\bgetExternalFilesDirs?\(""")
 
-    /** Bỏ chú thích như [SourceRoots.codeOf] — KDoc nhắc tên hàm không phải lời gọi. */
-    private fun code(p: Path): String = Files.readString(p)
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    /** Bỏ chú thích bằng ĐÚNG bộ quét của [SourceRoots.codeOf] ([KotlinSource.stripComments]) — KDoc nhắc tên hàm không phải lời gọi. */
+    private fun code(p: Path): String = KotlinSource.stripComments(Files.readString(p))
 
     /**
      * Gốc quét = mã sản phẩm của `:app`/`:core`/`:car-integration` (spec R4) + nguồn RIÊNG của biến thể `vehicleTest`

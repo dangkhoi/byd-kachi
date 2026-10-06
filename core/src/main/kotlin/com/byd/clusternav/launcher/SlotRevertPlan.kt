@@ -42,6 +42,13 @@ object SlotRevertPlan {
         /** App của ô không còn task trên màn ảo của ô (nhịp `SlotLiveProbe`) — (a). */
         APP_DIED,
 
+        /**
+         * 2.93 · SLOT-APP-ESCAPE (spec `kachi-293-slot.html` R3) — app RỜI màn ảo của ô mà task còn ở display khác (tự
+         * `launchToSide` ra display 0 · người lái mở toàn màn · đang chiếu cụm): CÙNG bảng với [APP_DIED] (app không còn ở ô ⇒
+         * ô về như app vừa rời), khác ở câu báo của bên gọi ("đã rời ô, vẫn mở") và dòng nhật ký.
+         */
+        APP_ELSEWHERE,
+
         /** Người dùng bấm *tắt* trên ô app và stack của app trên màn ảo ô đã gỡ xong — (c). */
         APP_CLOSED,
 
@@ -75,7 +82,7 @@ object SlotRevertPlan {
     fun next(saved: SlotContent, shown: SlotContent, event: Event, pkg: String? = null): Next = when (event) {
         Event.WIDGET_CLOSED ->
             if (shown is SlotContent.Widget || shown is SlotContent.AppWidget) Next.Clear else Next.Keep
-        Event.APP_DIED, Event.APP_CLOSED, Event.APP_BACKGROUND -> {
+        Event.APP_DIED, Event.APP_ELSEWHERE, Event.APP_CLOSED, Event.APP_BACKGROUND -> {
             val app = shown as? SlotContent.App
             when {
                 app == null || (pkg != null && pkg != app.pkg) -> Next.Keep

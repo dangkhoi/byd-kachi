@@ -172,8 +172,9 @@ class VoiceIntentParserEverydayTest {
      * nhãn, LAUNCHER tra tên app) ⇒ qua, vì lúc ấy phần đuôi đã là đối số thật.
      */
     @Test fun `cong danh tu dau cau khong sieu qua tay`() = expect(
-        // ⚠ 1.90: ca *"chiếu cụm"* gỡ cùng nút `cast`; *"cốp"* vẫn phủ vế *"tên chiếm cả câu"*.
-        "cốp" to VoiceIntent.Control("trunk", 1),               // tên chiếm cả câu
+        // ⚠ 1.90: ca *"chiếu cụm"* gỡ cùng nút `cast`. ⚠ 2.93 VOICE-BARE-NOUN-IMPLICIT-VERB: *"cốp"* trần nay HỎI LẠI (bộ phận
+        // chuyển động không nhận động từ ngầm — `VoiceBareCoverTest`) ⇒ vế *"tên chiếm cả câu"* phủ bằng một nút bật/tắt.
+        "đèn đọc" to VoiceIntent.Control("readl", 1),           // tên chiếm cả câu
         "mở hết kính ra" to VoiceIntent.Macro("mac_win_open_all"), // có động từ ⇒ đuôi thừa không đổi ý định
         "nhiệt độ hai mươi bốn độ" to VoiceIntent.Control("temp", 24), // STEP đọc đuôi
         "gió mức ba" to VoiceIntent.Control("fan", 3),          // STEP đọc đuôi

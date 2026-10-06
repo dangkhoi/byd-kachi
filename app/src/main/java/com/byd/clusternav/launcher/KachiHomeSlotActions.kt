@@ -21,6 +21,7 @@ import com.byd.clusternav.launcher.behind.BehindReason
  * | Lối vào | Phần Android TRƯỚC khi state đổi | Sự kiện |
  * |---|---|---|
  * | nhịp đo thấy app rời màn ảo ([onAppGone]) | host thôi giữ app (không `force-stop`) | `APP_DIED` |
+ * | … mà task còn ở display khác (2.93 · R3: tự `launchToSide` / mở toàn màn / chiếu cụm) | như trên + một câu báo đúng | `APP_ELSEWHERE` |
  * | *tắt* ô app | `am stack remove` ĐÚNG stack của app trên màn ảo ô ([SlotCloseRun], luồng nền) → đọc lại → host thôi giữ | `APP_CLOSED` |
  * | *chạy nền* ô app | 2.89-thử1 (ô 7, spec 287 §4.6d): host ĐỖ app trong chính màn ảo của nó ([VdAppHost.park], 0 lệnh shell) — đường lớp che + BEHIND-HOME ([toBack]) giữ biên dịch, không gọi | `APP_BACKGROUND` |
  * | *tắt* ô widget | — (chỉ lớp tạm; id widget bên thứ ba ở lớp LƯU nên không bị thu hồi) | `WIDGET_CLOSED` |
@@ -69,8 +70,16 @@ internal class KachiHomeSlotActions(
         }
     }
 
-    override fun onAppGone(index: Int, pkg: String) {
-        revert(index, Event.APP_DIED, pkg)
+    /**
+     * 2.93 · SLOT-APP-ESCAPE + SHORTCUTS-B-ESCAPE (spec `kachi-293-slot.html` R3): [elsewhere] = app RA KHỎI ô mà vẫn mở ở display
+     * khác ([ĐO máy ảo] Waze `launchToSide` ⇒ toàn màn display 0). Ô đi CÙNG luật hoàn ô như app vừa rời (owner 04/10: trong suốt /
+     * widget LƯU về — không kéo app nào khác vào khung); khác duy nhất: một câu NÓI ĐÚNG (trước 2.93 coi là "app chết", câu giọng
+     * nói "✓ Mở … vào ô n" đứng không đính chính). Không lệnh nào chạm app đó (không K12, không kéo về ô — cơ chế MỚI, chưa đo
+     * trên app thật thoát ô, CLAUDE.md §14). Câu nói TRƯỚC [revert] để [sayIfStill] còn thấy ô hiện [pkg].
+     */
+    override fun onAppGone(index: Int, pkg: String, elsewhere: Boolean) {
+        if (elsewhere) sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)
+        revert(index, if (elsewhere) Event.APP_ELSEWHERE else Event.APP_DIED, pkg)
     }
 
     private fun shownAt(index: Int): SlotContent =

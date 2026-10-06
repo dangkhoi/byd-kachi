@@ -133,10 +133,29 @@ class VoiceListenWiringContractTest {
         // (VOICE-PROFILE-NAME-PHONETIC, [ĐO xe 2026-09-26] 8/8 lượt) — đúng bẫy CLAUDE.md §8, nên khoá bằng văn bản.
         // 2.91 VOICE-APP-NAMES (spec §4.8 Pass 1) — needle đổi CÓ CHỦ Ý: lời gọi nay mang thêm `taught` (tên app đã dạy,
         // nguồn giọng). Tính chất cũ GIỮ NGUYÊN (`profiles` có mặt) + thêm vế mới (`taught` có mặt, không rụng khỏi lời gọi).
-        assertTrue(rec.contains("SherpaBiasing.hotwordsFile(places, profiles, taught)"),
-            "tên hồ sơ + tên app đã dạy phải ĐI VÀO tệp hotword — `profiles`/`taught` không được rụng khỏi lời gọi")
-        assertTrue(rec.contains("VoiceTaughtSource.forHotwords(ctx, apps, installed)"),
+        // 2.93 VOICE-ALT-LABEL-HOTWORD (spec kachi-293-voice §9) — needle đổi CÓ CHỦ Ý lần nữa: thêm `labels` (nhãn app chữ
+        // Việt). Ba vế cũ giữ nguyên vị trí; vế mới cũng không được rụng (compile vẫn xanh nếu rụng — tham số có mặc định).
+        assertTrue(rec.contains("SherpaBiasing.hotwordsFile(places, profiles, taught, labels)"),
+            "tên hồ sơ + tên app đã dạy + nhãn app phải ĐI VÀO tệp hotword — không vế nào được rụng khỏi lời gọi")
+        // ĐỔI GHIM có lý do (2.93 soát giọng Pass 2 · P3 a): tên đã dạy đọc MỘT lần (`names`) rồi dùng chung cho hai vế
+        // dưới; engine không bpe vocab ⇒ trả sớm, không đọc/dựng gì. Tính chất cũ (nguồn đúng tiến trình) giữ nguyên.
+        assertTrue(rec.contains("if (!VoiceEngine.biasingReady()) return VoiceRecognizer(rec, \"\")"),
+            "không bpe vocab ⇒ không tính nhãn, không đọc tên đã dạy")
+        assertTrue(rec.contains("val names = VoiceTaughtSource.names(ctx)"),
             "tên đã dạy phải lấy từ VoiceTaughtSource (đúng tiến trình: prefs ở chính, ảnh chụp ở `:wake`)")
+        // Soát Pass 4 (P3): chỉ ghim CÓ MẶT thì dời lượt trả sớm xuống dưới lượt đọc vẫn xanh — ghim THỨ TỰ + đúng MỘT lượt đọc.
+        val open = SourceRoots.body(rec, "fun open(")
+        val early = open.indexOf("if (!VoiceEngine.biasingReady()) return VoiceRecognizer(rec, \"\")")
+        assertTrue(early >= 0 && early < open.indexOf("val names = VoiceTaughtSource.names(ctx)"),
+            "trả sớm phải đứng TRƯỚC lượt đọc tên đã dạy / tính nhãn")
+        assertEquals(1, Regex("""VoiceTaughtSource\.names\(""").findAll(open).count(),
+            "`open` đọc tên đã dạy đúng MỘT lần (lượt đọc của bảng gọi app nằm ngoài `open`, soát Pass 4 (b))")
+        assertTrue(rec.contains("VoiceTaughtSource.forHotwords(apps, installed, names)"),
+            "tên đã dạy được bias phải đi qua VoiceTaughtSource.forHotwords trên đúng lượt đọc của phiên")
+        // Nhãn lấy từ CHÍNH bảng gọi app của phiên (`apps`, có nhãn phụ ở cả `:wake`) và loại khoá là tên đã dạy theo ĐÚNG
+        // nguồn tiến trình (tên gõ không bias — OQ3); chọn nhãn là hàm thuần có test ở :core (`SherpaLabelHotwordsTest`).
+        assertTrue(rec.contains("SherpaLabelHotwords.labels(apps, names)"),
+            "nhãn app vào hotword phải đi qua SherpaLabelHotwords.labels trên bảng khoá của phiên")
         assertFalse(rec.contains("AudioRecord"),
             "bộ nhận dạng KHÔNG tự mở micro — micro chỉ ở [VoiceCapture] (trong trần 8 s + tầm bài canh mạng)")
     }

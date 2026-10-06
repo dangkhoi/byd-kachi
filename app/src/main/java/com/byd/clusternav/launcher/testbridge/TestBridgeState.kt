@@ -109,6 +109,7 @@ internal object TestBridgeState {
                 "voice_names" to TestBridgeTeach.stateJson(hooks),   // 2.91 VOICE-APP-NAMES — chỉ SỐ
                 "tts" to TestBridgeJson.Raw(tts(ctx)),
                 "cast_enabled" to castEnabled(ctx),
+                "camera" to TestBridgeJson.Raw(cameraDemand(ctx)),   // 2.93 · CAMERA-ON-DEMAND — QA máy ảo đọc lại
                 "test_mode_minutes_left" to TestBridgeStore.remainingMinutes(ctx),
             ),
         )
@@ -289,6 +290,19 @@ internal object TestBridgeState {
         return runCatching {
             ctx.getSharedPreferences(file, Context.MODE_PRIVATE).getBoolean(CAST_ENABLED_KEY, false)
         }.getOrDefault(false)
+    }
+
+    /**
+     * 2.93 — camera theo yêu cầu đang BẬT (`demand`) + camera của phiên đang TREO (`showing`), mã `rear|left|right|front`
+     * hoặc rỗng. Chỉ ĐỌC; controller chưa dựng ⇒ cả hai rỗng mà KHÔNG dựng nó (một lệnh đo không tạo thứ nó đo).
+     */
+    private fun cameraDemand(ctx: Context): String {
+        val c = com.byd.clusternav.AppContainer.get(ctx)
+        val cam = if (c.cameraSignalCreated) c.cameraSignal else null
+        return TestBridgeJson.obj(
+            "demand" to (cam?.demanded()?.code ?: ""),
+            "showing" to (cam?.showingCamera()?.code ?: ""),
+        )
     }
 
     private const val CAST_ENABLED_KEY = "cast_enabled"

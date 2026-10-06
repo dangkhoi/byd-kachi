@@ -210,6 +210,8 @@ object AccessibilityRebind {
         component: String = ACC_COMP,
         pauseSec: Int = 4,
         homeTail: HomeTail = HomeTail.IF_ORPHANED,
+        /** 2.93 CODE-FIX-AFTER-283 (6): dấu màn camera của ĐỜI XE (`ClusterProfile`); mặc định = dấu 2.83; hỏng ⇒ `""`. */
+        cameraSig: String = CAMERA_SCREEN_SIGNATURE,
     ): String {
         val owner = component.substringBefore('/').trim()
         if (pkg.isBlank() || owner.isBlank() || pkg.trim() != owner) return ""
@@ -221,9 +223,10 @@ object AccessibilityRebind {
         if (entries.any { !SAFE_ENTRY.matches(it) }) return ""
         val readd = (entries.filter { !sameComponent(it, component) } + component).joinToString(":")
         val pause = pauseSec.coerceIn(1, 30)
+        val (home, orphan) = try { goHomeUnlessCamera(cameraSig) to returnHomeIfOrphaned(cameraSig) } catch (e: IllegalArgumentException) { return "" }
         val tail = when (homeTail) {
-            HomeTail.IF_ORPHANED -> RETURN_HOME_IF_ORPHANED
-            HomeTail.ALWAYS -> "$GO_HOME_UNLESS_CAMERA ; sleep $ORPHAN_RECHECK_SEC ; $RETURN_HOME_IF_ORPHANED"
+            HomeTail.IF_ORPHANED -> orphan
+            HomeTail.ALWAYS -> "$home ; sleep $ORPHAN_RECHECK_SEC ; $orphan"
         }
         val inner = "am force-stop ${pkg.trim()} ; sleep $pause ; " +
             "settings put secure $KEY \"$readd\" ; " +
@@ -342,7 +345,10 @@ object AccessibilityRebind {
      * không state bền). Không có dấu `'` — cả chuỗi nằm trong `sh -c '…'`. Dựng bằng [CameraGuard] (bộ dựng rào DUY
      * NHẤT, spec shortcuts-autostart C8); `ForceStopReturnHomeTest` khoá chuỗi trùng từng byte bản 2.83.
      */
-    val GO_HOME_UNLESS_CAMERA: String = CameraGuard.unlessCamera(CAMERA_SCREEN_SIGNATURE, null, HomeActivityCmd.GO_HOME)
+    val GO_HOME_UNLESS_CAMERA: String = goHomeUnlessCamera(CAMERA_SCREEN_SIGNATURE)
+
+    /** [GO_HOME_UNLESS_CAMERA] với dấu camera [sig] của một đời xe (2.93); [sig] không an toàn ⇒ [CameraGuard] ném. */
+    fun goHomeUnlessCamera(sig: String): String = CameraGuard.unlessCamera(sig, null, HomeActivityCmd.GO_HOME)
 
     /** Người dùng tự bấm ⇒ [HomeTail.ALWAYS]; mọi đường TỰ ĐỘNG (lớp 1/2) ⇒ [HomeTail.IF_ORPHANED]. */
     fun homeTailFor(userAsked: Boolean): HomeTail = if (userAsked) HomeTail.ALWAYS else HomeTail.IF_ORPHANED
@@ -387,9 +393,9 @@ object AccessibilityRebind {
      * (trường 904 của `sysui_multi_action` = gói gọi; đối chứng: lượt `am start` từ shell in `904,com.android.shell`)
      * mở LẠI YouTube: `am_create_activity … 805306368` (= `NEW_TASK|SINGLE_TOP`) vào stack freeform MỚI
      * 32 trên display 0, khung = khung Ô. Lượt tắt máy (c2-logcat 11:33:26.526, 1,3 s sau `am_kill`) cũng y hệt.
-     * [SUY, khớp cờ + khung + gói gọi] người mở là `IntentAppLauncher.openInSlot` — đường dự phòng khi kênh shell
-     * chưa lên, bắt đầu bằng `setLaunchWindowingMode(5)` mà không có display đích. Chữa tận gốc chỗ đó là việc khác;
-     * đuôi này chỉ bảo đảm một lượt chữa của CHÍNH MÌNH không bỏ người dùng lại trước một cửa sổ lạc chỗ.
+     * [SUY, khớp cờ + khung + gói gọi] người mở là `IntentAppLauncher.openInSlot` của bản ≤ 2.92 — đường dự phòng khi kênh
+     * shell chưa lên, mở bằng `setLaunchWindowingMode(5)` không display đích; đường ấy GỠ HẲN từ 2.93 (READY-AT-HOME-OQ6, spec
+     * `kachi-293-slot.html` R7). Đuôi này vẫn giữ: bảo đảm lượt chữa của CHÍNH MÌNH không bỏ người dùng trước cửa sổ lạc chỗ.
      *
      * ## Vì sao bấm Home thì cửa sổ nổi biến mất [ĐO source android-10.0.0_r47]
      * Ý định HOME không component ⇒ loại HOME (`ActivityRecord.java:1283`); task home đã có ⇒
@@ -428,9 +434,12 @@ object AccessibilityRebind {
      * Android 10 29/09] trên đúng bộ công cụ của ROM: mksh R57 + BSD grep 2.5.1 + toybox `head`, với `am` giả in
      * fixture xe — cùng kết quả. Xe thật: chốt bằng một lượt "Sửa ngay" có app trong Ô, đọc `am stack list` sau ~8 s.
      */
-    val RETURN_HOME_IF_ORPHANED: String =
+    val RETURN_HOME_IF_ORPHANED: String = returnHomeIfOrphaned(CAMERA_SCREEN_SIGNATURE)
+
+    /** [RETURN_HOME_IF_ORPHANED] với dấu camera [sig] của một đời xe (2.93) — cùng phép đo, cùng rào. */
+    fun returnHomeIfOrphaned(sig: String): String =
         "t=\$(am stack list | grep -A1 \"displayId=0 \" | head -n 2) ; " +
-            "case \"\$t\" in *\"$ORPHAN_SIGNATURE\"*) $GO_HOME_UNLESS_CAMERA ;; esac"
+            "case \"\$t\" in *\"$ORPHAN_SIGNATURE\"*) ${goHomeUnlessCamera(sig)} ;; esac"
 
     /**
      * Cắt đúng khối `{...}` cân bằng ngoặc đi ngay sau tiêu đề [header] trong bản dump. Trả `null` khi không

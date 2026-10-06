@@ -1,14 +1,16 @@
 package com.byd.clusternav.launcher
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
  * STAGE 0 SAFETY NET — byte-locks the EXACT window/display shell command strings that the pure :core launcher
  * builders ([FreeformLaunch], [ShellAppLauncher]) emit today. These strings are PROVEN on the car (they reuse
- * the cluster-cast recipe: freeform `am ... --windowingMode 5` + `am task resize`). Every later refactor stage
+ * the cluster-cast recipe: `am task resize`, fullscreen return, resolve-activity). Every later refactor stage
  * MUST keep them byte-identical — this file is the tripwire.
+ *
+ * 2.93 · SLOT-DEAD-OPENSLOT (spec `kachi-293-wave2a.html` §4.4): the freeform OPEN path (`launchCmd` + `openInSlot` /
+ * `moveToSlot` sequences) was removed — 0 product call sites — so its three golden locks went with it.
  *
  * Relationship to the existing suite (REUSE/EXTEND, not duplicate):
  *  - [FreeformLaunchTest] already covers behaviour + `contains` checks for launch/fullscreen/flags and exact
@@ -25,15 +27,6 @@ class LauncherCommandGoldenTest {
     private val slot = SlotRect(index = 0, left = 0, top = 90, right = 1920, bottom = 630)
 
     // ─────────────────────────── FreeformLaunch: exact command templates ───────────────────────────
-
-    @Test
-    fun `launch command is byte-exact on the main display`() {
-        assertEquals(
-            "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER" +
-                " --display 0 --windowingMode 5 -n 'com.foo/.Main'",
-            FreeformLaunch.launchCmd("com.foo/.Main"),
-        )
-    }
 
     @Test
     fun `resolve-activity command is byte-exact`() {
@@ -113,40 +106,9 @@ class LauncherCommandGoldenTest {
     }
 
     @Test
-    fun `openInSlot emits the exact proven command sequence`() {
-        val calls = mutableListOf<String>()
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.foo/.Main"
-        val ok = ShellAppLauncher(recording(calls, stack), sleep = {}).openInSlot("com.foo", slot)
-        assertTrue(ok, "openInSlot should succeed when the task lands on display 0")
-        assertEquals(
-            listOf(
-                "cmd package resolve-activity --brief -a android.intent.action.MAIN" +
-                    " -c android.intent.category.LAUNCHER com.foo",
-                "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER" +
-                    " --display 0 --windowingMode 5 -n 'com.foo/.Main'",
-                "am stack list",
-                "am task resize 42 0 90 1920 630",
-            ),
-            calls,
-        )
-    }
-
-    @Test
-    fun `moveToSlot resizes the running task with no relaunch`() {
-        val calls = mutableListOf<String>()
-        val stack = "Stack id=2 bounds=[0,0][1920,720] displayId=0 userId=0\n  taskId=42: com.foo/.Main"
-        val ok = ShellAppLauncher(recording(calls, stack), sleep = {}).moveToSlot("com.foo", slot)
-        assertTrue(ok)
-        assertEquals(
-            listOf("am stack list", "am task resize 42 0 90 1920 630"),
-            calls,
-        )
-    }
-
-    @Test
     fun `closeSlot emits the exact fullscreen-return sequence`() {
         val calls = mutableListOf<String>()
-        ShellAppLauncher(recording(calls, stack = ""), sleep = {}).closeSlot("com.foo")
+        ShellAppLauncher(recording(calls, stack = "")).closeSlot("com.foo")
         assertEquals(
             listOf(
                 "cmd package resolve-activity --brief -a android.intent.action.MAIN" +
@@ -158,10 +120,7 @@ class LauncherCommandGoldenTest {
         )
     }
 
-    @Test
-    fun `isFreeformAvailable queries the exact global setting`() {
-        val calls = mutableListOf<String>()
-        ShellAppLauncher({ c -> calls += c; "1" }, sleep = {}).isFreeformAvailable()
-        assertEquals(listOf("settings get global enable_freeform_support"), calls)
-    }
+    // 2.93 wave 2C · SLOT-DEAD-FREEFORM-REST (spec `kachi-293-wave2c.html` R2): `isFreeformAvailable` (`settings get global
+    // enable_freeform_support`) removed with 0 product call sites — its golden lock went with it. The adapter's ONLY emitted
+    // sequence left is `closeSlot` above (pinned byte-for-byte; `ShellAppLauncherTest` pins the contract shape).
 }

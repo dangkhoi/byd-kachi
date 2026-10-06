@@ -250,7 +250,7 @@ private fun VoiceSession.listenOnce(
             val heard = capture.listen(
                 it, maxMs, { cancelled.get() || stale(my) }, keepPcm = true, beep = beep,
                 // [P0-1a] Lượt NỐI bỏ giải mã khi không có tiếng (im lặng là THƯỜNG; giải mã 1,3–2s chỉ để mô hình bịa "ừ" = nuôi loop) — xem `decodeOnlyIfSpeech`.
-                decodeOnlyIfSpeech = true, label = label, openTurn = true,
+                decodeOnlyIfSpeech = true, label = label, openTurn = true, openVocab = { sessionVocab(labels) },
                 onLevel = { rms -> post { if (!stale(my)) overlay?.level(rms) } },
             ) { partial ->
                 post { if (!stale(my)) overlay?.render(hint, partial) }

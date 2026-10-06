@@ -23,18 +23,17 @@ class CameraSettingsIaWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
+    // 2.93 · CAMERA-PER-CAM-CONFIG — bộ chỉnh *Từng camera* + bảng nhãn chip dùng chung.
+    private val perCam by lazy { app("launcher/SettingsSectionsCameraPerCam.kt") }
+    private val labels by lazy { app("launcher/CameraSettingsLabels.kt") }
     private val car by lazy { app("launcher/SettingsSectionsCar.kt") }
 
     /** Khoá người lái → mảnh getter qua cầu phải có trong `cameraUser`. */
     private val userRows = mapOf(
         "camera_signal_enabled" to "bridge.cameraSignal()",
         "camera_on_cluster" to "bridge.cameraOnCluster()",
-        "camera_pos_left" to "bridge.cameraPosLeft()",
-        "camera_pos_right" to "bridge.cameraPosRight()",
-        "camera_rot_left" to "bridge.cameraRotLeft()",
-        "camera_rot_right" to "bridge.cameraRotRight()",
-        "camera_mirror_left" to "bridge.cameraMirrorLeft()",     // 2.76 L7 — ô tích lật gương từng bên
-        "camera_mirror_right" to "bridge.cameraMirrorRight()",
+        // 2.93: sáu hàng góc/xoay/lật trái-phải (2.35 · 2.71 · 2.76 L7) RỜI khối này sang bộ chỉnh *Từng camera* — xem
+        // [perCamRows]; cùng sáu khoá, hàng theo camera.
         "camera_shape" to "bridge.cameraShape()",
         // 2.92 · CAMERA-FULL-VIEW — ô tích Nắn hình ⇒ hàng chip Kiểu hình + thanh kéo Thu phóng.
         "camera_projection" to "bridge.cameraProjection()",
@@ -45,6 +44,20 @@ class CameraSettingsIaWiringContractTest {
         "camera_view_right" to "bridge.cameraViewRight()",
         "camera_pano_left" to "bridge.cameraPanoLeft()",
         "camera_pano_right" to "bridge.cameraPanoRight()",
+    )
+
+    /**
+     * 2.93 — LOẠI khoá của bộ chỉnh *Từng camera* → mảnh getter theo camera (`w` = camera đang chọn ở hàng chip đầu). Một
+     * bộ hàng cho cả bốn camera (owner 27/09 *"nhiều option quá rối"* ⇒ không nhân bốn số hàng).
+     */
+    private val perCamRows = mapOf(
+        CameraCamConfig::cornerKey to "bridge.cameraCorner(w)",
+        CameraCamConfig::placeKey to "bridge.cameraPlace(w)",
+        CameraCamConfig::sizeKey to "bridge.cameraSize(w)",
+        CameraCamConfig::shapeKey to "bridge.cameraShapeChoice(w)",
+        CameraCamConfig::projectionKey to "bridge.cameraProjectionChoice(w)",
+        CameraCamConfig::rotationKey to "bridge.cameraRotationOf(w)",
+        CameraCamConfig::mirrorKey to "bridge.cameraMirrorOf(w)",
     )
 
     /** Khoá KHÔNG còn UI → mảnh getter của hàng đã gỡ. Mảnh nào xuất hiện lại trong tệp Cài đặt là hàng đã sống lại. */
@@ -71,6 +84,22 @@ class CameraSettingsIaWiringContractTest {
         val user = SourceRoots.body(settings, "private fun cameraUser(")
         assertEquals(CameraSettingsIa.USER_KEYS.toSet(), userRows.keys, "bảng canh phải khớp hợp đồng `:core`")
         userRows.forEach { (key, needle) -> assertTrue(needle in user, "khoá người lái $key không có hàng: thiếu `$needle`") }
+        // 2.93: PER_CAMERA_KEYS = đúng bảy loại khoá × bốn camera, mỗi LOẠI có một hàng ở bộ chỉnh *Từng camera*, và bộ
+        // chỉnh được dựng TỪ khối người lái (một lượt, không cổng).
+        assertTrue("SettingsCameraPerCamSection(context, rows, deps).build(body)" in user, "bộ chỉnh Từng camera phải được dựng")
+        assertEquals(
+            CameraSettingsIa.PER_CAMERA_KEYS.toSet(),
+            CameraWhich.ALL.flatMap { w -> perCamRows.keys.map { it(w) } }.toSet(),
+            "bảng canh Từng camera phải khớp hợp đồng `:core`",
+        )
+        val ed = SourceRoots.body(perCam, "private fun rebuild(")
+        perCamRows.values.forEach { needle -> assertTrue(needle in ed, "bộ chỉnh Từng camera thiếu hàng `$needle`") }
+        assertTrue("CameraWhich.ALL.map" in SourceRoots.body(perCam, "    fun build("), "hàng chip chọn camera SINH từ `:core` (đủ bốn)")
+        // Sáu hàng theo bên cũ không được sống lại ở khối chung (một khoá, một hàng).
+        listOf("bridge.cameraPosLeft()", "bridge.cameraPosRight()", "bridge.cameraRotLeft()", "bridge.cameraRotRight()",
+            "bridge.cameraMirrorLeft()", "bridge.cameraMirrorRight()").forEach {
+            assertFalse(it in settings, "`$it` đã dời vào bộ chỉnh Từng camera — hai hàng cho một khoá là hai nơi để lệch")
+        }
         // 2.92: "nhìn kiểu nào" = MỘT hàng chip sinh từ `:core` + MỘT thanh kéo; không núm −/+ nào.
         assertTrue("CameraViewMode.MODES.map" in user, "chip kiểu hình sinh từ `:core`, không gõ tay danh sách")
         assertTrue("rows.sliderRow(" in user && "CameraViewMode.ZOOM_POSITIONS" in user, "thanh kéo thu phóng, miền ở `:core`")
@@ -99,7 +128,7 @@ class CameraSettingsIaWiringContractTest {
         assertTrue("cameraUser(body)" in build)
         assertEquals(
             listOf("cameraUser(body)"),
-            build.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("//") && it !in setOf("{", "}") },
+            build.lines().map { it.trim() }.filter { it.isNotEmpty() && it !in setOf("{", "}") },   // đã qua codeOf: 0 dòng chú thích
             "build() chỉ còn đúng một lượt dựng — không cổng, không khối thứ hai",
         )
         // Tệp `ClusterNavBridgeCamera.kt` (hai câu hỏi chỉ-đọc của hàng Nguồn) đã xoá cùng hàng ấy.
@@ -115,13 +144,31 @@ class CameraSettingsIaWiringContractTest {
         }
         val vi = SourceRoots.text("src/main/res/values/strings_kachi.xml")
         val en = SourceRoots.text("src/main/res/values-en/strings_kachi.xml")
+        // 2.93: nhãn chip hình/kiểu dời vào bảng chung `CameraSettingsLabels`; chữ của bộ chỉnh Từng camera ở tệp riêng.
+        val used = settings + perCam + labels
         listOf(
             "kachi_camera_shape_cluster", "kachi_camera_projection_sub", "kachi_camera_projection_row",
             "kachi_camera_projection_straight", "kachi_camera_projection_wide", "kachi_camera_projection_fisheye",
             "kachi_camera_projection_note", "kachi_camera_zoom_row", "kachi_camera_zoom_desc",
+            // 2.93 · Từng camera + nút Xem thử.
+            "kachi_camera_percam_sub", "kachi_camera_percam_note", "kachi_camera_percam_row",
+            "kachi_camera_preview_on", "kachi_camera_preview_off", "kachi_camera_corner_row",
+            "kachi_camera_place_hint", "kachi_camera_place_reset", "kachi_camera_size_row", "kachi_camera_size_desc",
+            "kachi_camera_follow", "kachi_camera_shape_own_row", "kachi_camera_projection_own_row",
+            "kachi_camera_rot_own_row", "kachi_camera_mirror_own_title",
+            "kachi_cam_chip_rear", "kachi_cam_chip_left", "kachi_cam_chip_right", "kachi_cam_chip_front",
         ).forEach { k ->
             assertTrue("\"$k\"" in vi, "thiếu VI $k"); assertTrue("\"$k\"" in en, "thiếu EN $k")
-            assertTrue("R.string.$k" in settings, "chữ $k không được dùng ⇒ mồ côi")
+            assertTrue("R.string.$k" in used, "chữ $k không được dùng ⇒ mồ côi")
+        }
+        // 2.93: chữ của sáu hàng theo bên (góc/xoay/lật trái-phải) phải XOÁ — hàng của chúng đã gộp vào bộ chỉnh.
+        listOf(
+            "kachi_camera_pos_sub", "kachi_camera_pos_left", "kachi_camera_pos_right",
+            "kachi_camera_rot_sub", "kachi_camera_rot_row_left", "kachi_camera_rot_row_right",
+            "kachi_camera_mirror_sub", "kachi_camera_mirror_row_left", "kachi_camera_mirror_row_right",
+        ).forEach { k ->
+            assertFalse("\"$k\"" in vi, "chữ VI $k mồ côi — hàng của nó đã gộp vào bộ chỉnh Từng camera (2.93)")
+            assertFalse("\"$k\"" in en, "chữ EN $k mồ côi — hàng của nó đã gộp vào bộ chỉnh Từng camera (2.93)")
         }
         // Chữ của khối gập + hàng Nguồn + 16 hàng đo phải XOÁ khỏi cả hai tệp chữ (i18n mồ côi — CLAUDE.md §4.1).
         listOf(

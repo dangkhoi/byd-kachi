@@ -58,7 +58,9 @@ class SlotLifecycleWiringContractTest {
             "SlotHeadActions.possible(" to "SlotActionsCluster.kt",
             "SlotActionsCluster.attach(" to "SlotHeadAutoHide.kt",
             "heads.actions = slotActions" to "KachiHomeActivity.kt",
-            "heads.actions?.onAppGone(index, p)" to "WorkspaceView.kt",
+            // 2.93 · SLOT-APP-ESCAPE (R3) — ĐỔI GHIM có lý do: host báo thêm "ra khỏi ô, còn mở ở display khác".
+            "heads.actions?.onAppGone(index, p, away)" to "WorkspaceView.kt",
+            "R.string.kachi_slot_app_elsewhere" to "KachiHomeSlotActions.kt",
             "VdTouchExec.TOUCH_FALLBACK.execute" to "VdAppHost.kt",
             // Soát 2.87 (P1/P2/P3) — hàm mới phải có chỗ gọi production (CLAUDE.md §8).
             "slots::behindUsable" to "KachiHomeActivity.kt",
@@ -101,7 +103,12 @@ class SlotLifecycleWiringContractTest {
             // ảo của ô — `release()` thấy host không còn giữ gói ⇒ 0 `force-stop` (bài `host tha app thi release khong force-stop`).
             "if (pkg != null) workspace().hostAt(index)?.relinquish(pkg)",
             "viewModel.applySlotRevert(index, next)")
-        assertTrue("revert(index, Event.APP_DIED, pkg)" in SourceRoots.body(actions, "override fun onAppGone("))
+        // 2.93 · SLOT-APP-ESCAPE (R3) — ĐỔI GHIM có lý do: app rời ô mà còn mở ở display khác ⇒ sự kiện riêng (cùng bảng, câu báo
+        // đúng TRƯỚC khi ô đổi); không lệnh nào chạm app đó (không K12 / kéo về ô — cơ chế mới chưa đo, CLAUDE.md §14).
+        val gone = SourceRoots.body(actions, "override fun onAppGone(")
+        assertTrue("revert(index, if (elsewhere) Event.APP_ELSEWHERE else Event.APP_DIED, pkg)" in gone)
+        order(gone, "if (elsewhere) sayIfStill(index, R.string.kachi_slot_app_elsewhere, pkg)", "revert(index,")
+        listOf("sh(", "submitBg", "GO_HOME", "toBack(", "reviveInSlot").forEach { assertFalse(it in gone, "onAppGone không được '$it'") }
         val vm = code("HomeViewModel.kt")
         assertFalse("persist" in SourceRoots.body(vm, "fun applySlotRevert("), "luật hoàn ô chỉ đổi lớp TẠM (owner 01/10)")
         assertFalse("persist" in SourceRoots.body(vm, "fun slotRevert("))
@@ -310,7 +317,7 @@ class SlotLifecycleWiringContractTest {
     }
 
     /**
-     * QA 2.87 [P3] (D-L8-1) — ⇄ của ô App trần trên trang trắng Chrome gần như vô hình ([ĐO máy ảo `l4/s7-chrome-bg-toast.png`])
+     * QA 2.87 [P3] (D-L8-1) — ⇄ của ô App trần trên trang trắng Chrome gần như vô hình ([ĐO máy ảo `s7-chrome-bg-toast.png` (bằng chứng phiên, ngoài repo)])
      * trong khi hai nút cụm có ĐĨA KÍNH thì đọc được. Tương phản của đĩa là hợp đồng có sẵn — kính NEUTRAL không mờ R-OP giữ
      * `MUT ≥ 4.5:1` trên MỌI độ chói ảnh và mọi lựa chọn màu (`ColorChoiceContractTest.lop che kinh du…`) — nên bài này khoá
      * đúng ba mắt xích để ⇄ hưởng hợp đồng đó: (1) ô App dựng đĩa ở ô GIỮA của hàng (dưới ⇄) bằng CÙNG kính NEUTRAL `fade =
@@ -323,6 +330,13 @@ class SlotLifecycleWiringContractTest {
         val attach = SourceRoots.body(cluster, "fun attach(")
         assertTrue("b == null && kind == SlotHeadRest.Kind.APP -> swapDisc(ctx)" in attach, "ô giữa của hàng (dưới ⇄) của ô App = đĩa")
         order(attach, "listOf(Button.BACKGROUND, null, Button.CLOSE)", "slot.addView(row, slot.childCount - 1,")
+        // 2.93 · SLOT-HEAD-OVERLAY-DISC (spec `kachi-293-slot.html` R6) — ĐỔI GHIM có lý do: ô App CÓ bộ chiếu mà không nút cụm nào
+        // (đường ActivityView — nội dung app bên thứ ba dưới ⇄) vẫn dựng hàng chỉ mang đĩa. Ô App KHÔNG máy chiếu (thẻ của Kachi
+        // dưới ⇄) và ⇄ nổi (OverlayHeads — từ R1.3 chỉ còn đè lên chính thẻ đó, lệch `Sp.XS`) giữ ⇄ trần: không hai đĩa chồng lệch.
+        assertTrue("if (possible.isEmpty() && (kind != SlotHeadRest.Kind.APP || projector == SlotHeadRest.Projector.NONE)) return null" in attach,
+            "ô App có bộ chiếu mà không nút cụm vẫn phải có đĩa sau ⇄ (bản 2.87: trả null ⇒ ⇄ trần trên nội dung app)")
+        assertFalse(Regex("""if \(possible\.isEmpty\(\)\) return null""").containsMatchIn(attach), "cổng cũ trả null cho mọi ô không nút")
+        assertFalse("disc = true" in code("OverlayHeads.kt"), "⇄ nổi chỉ đè lên thẻ Kachi + ⇄ trong khung lệch Sp.XS ⇒ không đĩa thứ hai")
         val disc = SourceRoots.body(cluster, "private fun swapDisc(")
         assertTrue("KachiGlass.apply(disc, Sp.SWAP_DISC / 2, SurfaceTone.NEUTRAL, fade = false)" in disc, "cùng kính NEUTRAL không mờ với đĩa nút")
         assertTrue("addView(disc, discLp(ctx))" in disc && "addView(disc, discLp(ctx))" in SourceRoots.body(cluster, "private fun button("),

@@ -61,6 +61,8 @@ internal class SettingsVoiceNamesDialog(
     private var speechTakes = 0
     private var changed = false
     private val box = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    /** 2.93 VOICE-TEACH-CONTEXT — câu gợi ý cho LƯỢT NÓI KẾ TIẾP (lượt [TeachSample.SLOT_TAKE] là câu CÓ Ô). */
+    private val prompt = TextView(context)
     private val status = TextView(context)
     private var speak: TextView? = null
     private var dialog: AlertDialog? = null
@@ -81,6 +83,8 @@ internal class SettingsVoiceNamesDialog(
         }
         val rows = SettingsRows(context)
         root.addView(rows.note(context.getString(R.string.kachi_vn_dialog_hint, label)))
+        prompt.apply { setTextColor(c(KachiTheme.INK)); KachiType.apply(this, KachiType.BODY) }
+        root.addView(prompt)
         status.apply { setTextColor(c(KachiTheme.MUT)); KachiType.apply(this, KachiType.CAPTION) }
         root.addView(status)
         root.addView(box)
@@ -90,7 +94,9 @@ internal class SettingsVoiceNamesDialog(
             addView(page.pill(context.getString(R.string.kachi_vn_type), active = false) { typeName() })
         })
         if (!VoiceModelStore.isReady(context)) { speak?.isEnabled = false; speak?.alpha = DISABLED; status.text = context.getString(R.string.kachi_vn_no_model) }
-        if (port.readOnly()) { speak?.isEnabled = false; status.text = context.getString(R.string.kachi_vn_readonly) }
+        // 2.93: chỉ đọc ⇒ 🎤 tắt HẲN (alpha = DISABLED): `repaint` bật lại nút theo `alpha` — bản trước chỉ đặt `isEnabled`
+        // nên 🎤 sống lại ngay lượt vẽ đầu (lưu vẫn bị chặn, nhưng hộp mời nói cho một lượt không lưu được).
+        if (port.readOnly()) { speak?.isEnabled = false; speak?.alpha = DISABLED; status.text = context.getString(R.string.kachi_vn_readonly) }
         val d = AlertDialog.Builder(context)
             .setTitle(context.getString(R.string.kachi_vn_dialog_title, label))
             .setView(android.widget.ScrollView(context).apply { addView(root) })
@@ -105,7 +111,8 @@ internal class SettingsVoiceNamesDialog(
         dialog = d
         d.show()
         // Lối (c): mẫu đang chờ LÀ một lượt nói thật của người dùng (chữ mô hình in ở câu "mở …" không hiểu) ⇒ tính là lượt 1.
-        prefill?.let { speechTakes = 1; addSample(it, TaughtSource.SPEECH) }
+        // `paintPrompt` ngay: lượt KẾ là lượt câu có ô — không chờ phán quyết nền của mẫu chờ (senior review 2.93 Pass 1 · [P3]).
+        prefill?.let { speechTakes = 1; addSample(it, TaughtSource.SPEECH); paintPrompt() }
     }
 
     /** ▶ Thử — một lượt nghe, phân tích với từ vựng đầy đủ, nói Kachi hiểu thành gì. KHÔNG mở app. */
@@ -148,6 +155,10 @@ internal class SettingsVoiceNamesDialog(
                 status.text = ""
                 if (result.error != null) { status.text = errorText(result.error); return }
                 speechTakes++
+                // Senior review 2.93 Pass 1 · [P3]: câu gợi ý đổi NGAY theo lượt kế — phán quyết của mẫu vừa nghe chạy nền (bảng
+                // gọi app + phân tích thử) rồi mới `repaint`; trong khe ấy dòng cũ ("Lần 1: mở …") mời nói SAI câu cho lượt có ô.
+                // Chỉ vẽ dòng gợi ý — nút Lưu vẫn chờ `repaint` (bật sớm là lưu thiếu mẫu đang phán).
+                paintPrompt()
                 when (val s = TeachSample.normalize(result.heard)) {
                     is TeachSample.Sample -> addSample(s.accented, TaughtSource.SPEECH)
                     is TeachSample.Rejected -> { status.text = context.getString(R.string.kachi_vn_heard_bad, result.heard); repaint() }
@@ -213,11 +224,26 @@ internal class SettingsVoiceNamesDialog(
             })
         }
         speak?.let { it.isEnabled = speechTakes < MAX_TAKES && it.alpha != DISABLED }
+        paintPrompt()
         val canSave = (speechTakes >= MIN_TAKES || samples.any { it.source == TaughtSource.TYPED }) && savable().isNotEmpty()
         dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = canSave && !port.readOnly()
         val needTwo = context.getString(R.string.kachi_vn_need_two)
         if (!canSave && samples.isNotEmpty() && status.text.isNullOrEmpty()) status.text = needTwo
         if (canSave && status.text?.toString() == needTwo) status.text = ""
+    }
+
+    /**
+     * 2.93 VOICE-TEACH-CONTEXT — câu cho lượt nói KẾ TIẾP ([TeachSample.promptFor]): lượt [TeachSample.SLOT_TAKE] nói câu CÓ Ô
+     * (câu có ô hay làm mô hình in tên khác đi — dạng ấy được lưu thêm, gộp theo chuỗi chuẩn hoá như mọi lượt). Ẩn khi hết
+     * lượt hoặc 🎤 tắt (chưa có mô hình · dữ liệu chỉ đọc).
+     */
+    private fun paintPrompt() {
+        val next = speechTakes + 1
+        val live = speak?.isEnabled == true && next <= MAX_TAKES
+        prompt.visibility = if (live) View.VISIBLE else View.GONE
+        if (!live) return
+        val res = if (TeachSample.promptFor(next) == TeachSample.Prompt.SLOT) R.string.kachi_vn_take_slot else R.string.kachi_vn_take_plain
+        prompt.text = context.getString(res, next, label)
     }
 
     private fun savable(): List<Sample> = samples.filter {
@@ -350,11 +376,13 @@ internal class SettingsVoiceNamesDialog(
         TeachGuard.Code.NEAR_COMMAND -> context.getString(R.string.kachi_vn_r_near_command)
         TeachGuard.Code.NEAR_OTHER_APP -> context.getString(R.string.kachi_vn_r_near_app, r.detail)
         TeachGuard.Code.ONE_WORD -> context.getString(R.string.kachi_vn_r_one_word)
+        // 2.93 VOICE-TEACH-SHORT-HOMOGRAPH — chèn câu mẫu (có dấu) chứa chữ va chạm: chữ máy của `:core`, không phải câu dịch.
+        TeachGuard.Code.HOMOGRAPH -> context.getString(R.string.kachi_vn_r_homograph, r.detail)
     }
 
     private companion object {
-        /** OQ4 — tối thiểu 2, tối đa 3 lượt nói mỗi lần dạy. */
-        const val MIN_TAKES = 2
+        /** OQ4 — tối thiểu 2, tối đa 3 lượt nói mỗi lần dạy. Sàn đọc từ `:core` — lượt câu có ô phải nằm trong nó (2.93). */
+        const val MIN_TAKES = TeachSample.MIN_SPOKEN_TAKES
         const val MAX_TAKES = 3
         const val DISABLED = 0.4f
 

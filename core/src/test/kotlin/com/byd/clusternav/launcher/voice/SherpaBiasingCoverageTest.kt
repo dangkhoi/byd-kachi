@@ -98,9 +98,17 @@ class SherpaBiasingCoverageTest {
         assertTrue("MÁT GHẾ LÁI MỨC" in set); assertTrue("MÁT GHẾ LÁI" !in set)
     }
 
+    /**
+     * ĐỔI GHIM có lý do (2.93 soát giọng Pass 2 · P3 b): [SherpaBiasing.hotwordsFile] nay NHỚ tệp lượt trước theo bộ đầu
+     * vào ⇒ gọi nó hai lần chỉ so một giá trị với chính nó. Tính chất cũ (hai lượt DỰNG ra giống hệt) giữ nguyên bằng
+     * cách gọi thẳng phép dựng không nhớ; thêm vế: tệp nhớ phải bằng tệp dựng mới.
+     */
     @Test
     fun `tep hotwords sinh ra on dinh thu tu`() {
-        assertEquals(SherpaBiasing.hotwordsFile(), SherpaBiasing.hotwordsFile(), "hai lượt sinh phải giống hệt để diff được")
+        val a = SherpaBiasing.build(emptyList(), emptyList(), emptyList(), emptyList())
+        val b = SherpaBiasing.build(emptyList(), emptyList(), emptyList(), emptyList())
+        assertEquals(a, b, "hai lượt sinh phải giống hệt để diff được")
+        assertEquals(a, SherpaBiasing.hotwordsFile(), "tệp nhớ phải bằng tệp dựng mới")
     }
 
     /** T4 của spec: dump tệp thật để chạy lại ma trận host trên ĐÚNG tệp Kotlin sinh (không tái dựng bằng Python). */
@@ -110,6 +118,8 @@ class SherpaBiasingCoverageTest {
         dir.mkdirs()
         java.io.File(dir, "hotwords-phrases.txt").writeText(SherpaBiasing.hotwordsFile())
         java.io.File(dir, "hotwords-phrases-with-places.txt").writeText(SherpaBiasing.hotwordsFile(listOf("Nhà", "Công ty")))
+        // 2.93 VOICE-ALT-LABEL-HOTWORD — đúng bộ nhãn đã đo ở ma trận host (spec kachi-293-voice §9; nhãn chữ Anh tự rụng).
+        java.io.File(dir, "hotwords-phrases-with-labels.txt").writeText(SherpaBiasing.hotwordsFile(labels = MEASURED_LABELS))
         assertTrue(lines.size in 300..3000, "tệp ${lines.size} dòng — ngoài dải đã đo (756–1440 dòng cụm ổn)")
     }
 
@@ -316,6 +326,19 @@ class SherpaBiasingCoverageTest {
         assertEquals(
             emptyList<String>(), stillPresent,
             "cụm khai là 'cố ý không bias' mà vẫn nằm trong tệp hotword ⇒ danh sách trừ đang nói dối",
+        )
+    }
+
+    private companion object {
+        /**
+         * 26 nhãn app đã đo ở ma trận host 2.93 (`scripts/voice/hotword-matrix.py`, spec `kachi-293-voice.html` §9) —
+         * [SUY] bộ nhãn tiêu biểu AOSP/GMS tiếng Việt + vài app xe; danh sách app thật của xe [CHƯA BIẾT] 🚗. Có cả nhãn chữ Anh
+         * (*"Radio"* · *"YouTube"*…): đường sản phẩm tự bỏ chúng, tệp dump ra là ĐÚNG tệp đã đo (21 nhãn chữ Việt).
+         */
+        val MEASURED_LABELS = listOf(
+            "Cài đặt", "Máy ảnh", "Đồng hồ", "Danh bạ", "Điện thoại", "Lịch", "Tin nhắn", "Thư viện", "Hình nền",
+            "Máy tính", "Trình duyệt", "Ghi âm", "Thời tiết", "Âm nhạc", "Tệp", "Ảnh", "Bản đồ", "Tìm kiếm bằng giọng nói",
+            "Cửa hàng Play", "Hướng dẫn sử dụng", "Điều hòa", "Radio", "Video", "Bluetooth", "YouTube", "Chrome",
         )
     }
 }

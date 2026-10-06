@@ -73,12 +73,11 @@ internal class VoiceControlDispatch(
         // Cùng bảng quyết định THUẦN mà cú chạm −/+ dùng ([ClimateAuto.stepPlan] ← `ControlTileFactory.nudge`): nói
         // *"giảm gió"* ở mức 1 phải **bật gió tự động**, chứ không ghi mức 0 ([ĐO xe 2026-09-20] xe **bỏ qua** lệnh
         // ấy ⇒ ngón tay và câu nói làm hai việc khác nhau cho cùng một ô). Nút không khai `autoId` đi nhánh `SetLevel`
-        // y như trước — không một `if (def.id == "fan")` nào (CLAUDE.md §7). `autoOn` lấy từ ẢNH CHỤP đang có
-        // (`ac_auto` nạp cùng `fan` — `CarDataDemand.controlsOf`), KHÔNG đọc thêm một lượt HAL: ngân sách là MỘT lượt
-        // đọc cho MỘT câu ([ĐO xe 1.68] 33 lượt/phút), và `null` = *"chưa biết"* đã cho đúng nhánh bật-auto ở nấc đáy.
+        // y như trước — không một `if (def.id == "fan")` nào (CLAUDE.md §7). `autoOn` đọc TƯƠI cùng lượt với mốc mức, ảnh
+        // chụp (`ac_auto` nạp cùng `fan` — `CarDataDemand.controlsOf`) chỉ là đường lùi — [autoState].
         val plan = if (i.relative == 0) null else {
             val actual = runCatching { control().readState(def.id) }.getOrNull() ?: st.value(def)
-            val autoOn = ClimateAuto.autoOnFromControl(state().carStatus.controls[def.autoId])
+            val autoOn = ClimateAuto.autoOnFromControl(autoState(def))
             ClimateAuto.stepPlan(def, actual, i.relative * def.step, autoOn)
         }
         val arg = plan?.shown ?: (i.value ?: 1)
@@ -171,6 +170,23 @@ internal class VoiceControlDispatch(
         }
         if (plan == null) finish(runCatching { control().actByKind(def.id, arg) }.getOrDefault(false))
         else climate.apply(def, plan) { ok -> finish(ok) }
+    }
+
+    /**
+     * ═══ 2.93 VOICE-WAKE-AUTOON — cờ AUTO ([ControlDef.autoId]) của MỘT câu tương đối: đọc TƯƠI, ảnh chụp là đường lùi ═══
+     *
+     * [SUY nguồn 02/10, backlog] tới 2.92 chỉ đọc `state().carStatus.controls[autoId]` ⇒ trong `:wake` (`state()` = ảnh chụp
+     * ngữ pháp, `CarStatus()` rỗng — `VoiceWakeFakeStateContractTest`) và ở màn chính khi ô điều hoà không trên màn, cờ LUÔN
+     * `null` ⇒ đang AUTO mà nói *"tăng gió"* đi `SetLevel` thay vì `LeaveAuto` — giọng nói làm việc KHÁC cú chạm ô cho cùng
+     * một câu (ô có cờ nên chạm `+` ra `LeaveAuto`). Nay theo hướng backlog: ĐÚNG MỘT lượt `readState(autoId)` cùng lượt với
+     * mốc mức ngay trên (cùng luật H1 *"mốc là số THẬT của xe"*: ảnh chụp của ô có thể cũ tới một nhịp chậm, màn khuất thì cũ
+     * hàng phút) — cùng cửa đọc của NÚT, đã qua `applyInverted` ⇒ ước chung `1 = đang bật`, hợp `autoOnFromControl`. Đọc
+     * không được ⇒ ảnh chụp (hành vi 2.92); cả hai trống ⇒ `null` = *"chưa biết"*, hàng thiết kế cũ của [ClimateAuto.stepIntent].
+     * Nút không khai `autoId` ⇒ không đọc gì. Giá: +1 lượt HAL cho một câu/phím TƯƠNG ĐỐI trên nút có `autoId` (hiếm).
+     */
+    private fun autoState(def: ControlDef): Int? {
+        if (def.autoId.isBlank()) return null
+        return runCatching { control().readState(def.autoId) }.getOrNull() ?: state().carStatus.controls[def.autoId]
     }
 
     /**

@@ -92,7 +92,6 @@ internal fun bridgeMsgRes(msg: BridgeMsg): Int = when (msg) {
     BridgeMsg.GEMINI_ASSISTANT_FAILED -> R.string.kachi_bridge_gemini_failed
     BridgeMsg.CLEANING_AIR -> R.string.kachi_bridge_cleaning_air
     BridgeMsg.UPDATE_NEEDS_SCREEN -> R.string.kachi_bridge_update_needs_screen
-    BridgeMsg.SCREEN_OPEN_FAILED -> R.string.kachi_bridge_screen_open_failed
 }
 
 /**
@@ -218,7 +217,8 @@ internal fun Activity.controlDock(
             LauncherActions.APPS -> openAppList()
             LauncherActions.SETTINGS -> openSettings()
             LauncherActions.VOICE -> onVoice()
-            else -> Unit
+            // 2.93 · CAMERA-ON-DEMAND — nút camera = BẬT/TẮT camera ấy (owner *"các nút đều là toggle"*); mã lạ ⇒ không làm gì.
+            else -> com.byd.clusternav.launcher.camera.CameraDemandDispatch.tap(this@controlDock, id)
         }
     }
 }

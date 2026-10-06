@@ -195,15 +195,20 @@ object VoiceWiring {
         onUi = { block ->
             if (Looper.myLooper() == Looper.getMainLooper()) block() else Handler(Looper.getMainLooper()).post(block)
         },
+        // 2.93 · CAMERA-ON-DEMAND — một đường thi hành cho cả tiến trình chính lẫn `:wake` (tự rẽ theo tiến trình); wave 2B:
+        // kèm KẾT QUẢ thật (`:wake` = broadcast có thứ tự + `resultCode`) để câu trả lời nói đúng việc đã xảy ra.
+        onCamera = { op, done -> com.byd.clusternav.launcher.camera.CameraDemandDispatch.fireForResult(ctx, op, done) },
         // [SOÁT P1-1 · 2026-09-16] Cổng H1 giữ giá trị cũ cho datum ngoài màn ⇒ câu hỏi bằng giọng phải ghim
         // datum đó vào nhu cầu rồi đọc NGAY một lượt. `AppContainer.refreshForRead` tự trả `null` khi ảnh chụp
         // vốn đã tươi, nên chỗ này không phải biết gì về lịch poll.
+        // 2.93 VOICE-READ-STALE-BG — tiến trình CHÍNH mà màn đã khuất (nhu cầu `null`, poll dừng): `readFresh` đọc ĐÚNG một
+        // datum (cùng luật phím gán nút xe) thay vì trả `null` = "ảnh chụp đã tươi" trong khi nó cũ từ lúc màn còn hiện.
         freshCar = { id ->
             runCatching {
                 val c = AppContainer.get(ctx)
                 // Chỉ tiến trình KHÔNG màn; vẫn lười (chỉ khi có câu hỏi số liệu), không dựng gì ngoài đường đọc HAL.
                 if (screenless && c.carDemand.get() == null) c.carDemand.set(emptySet())
-                c.refreshForRead(id)
+                c.readFresh(id)
             }.getOrNull()
         },
         // App dẫn đường mặc định (owner chọn trong Cài đặt › Dẫn đường) — đọc mỗi lượt để đổi là ăn ngay.

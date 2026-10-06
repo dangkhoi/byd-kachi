@@ -5,16 +5,21 @@ package com.byd.clusternav.launcher
  * test được trên emulator + JVM. Adapter thật (freeform am/dadb + BydHal) ở :app; off-car/emulator dùng [NoCar].
  */
 
-/** Mở/di/đóng một app THẬT trong một ô workspace. Adapter xe reuse cast: freeform (`am --windowingMode 5`) + `am task resize` theo [SlotRect]. */
+/**
+ * Đóng một app THẬT khỏi ô workspace (bộ mở có kênh: [ShellAppLauncher]; chưa có kênh: [NoCar]).
+ *
+ * 2.93 · SLOT-DEAD-OPENSLOT (spec `kachi-293-wave2a.html` §4.4) — `openInSlot`/`moveToSlot` (cửa sổ nổi freeform + `am task
+ * resize` vào khung ô) đã GỠ: [ĐO grep 06/10] 0 chỗ gọi sản phẩm từ khi READY-AT-HOME R1.3 bỏ đường mở nổi và OQ6 gỡ
+ * `IntentAppLauncher`; app trong ô đi đường màn ảo (`VdAppHost`). Đường lùi cửa sổ tự do (nếu có ngày cần) dựng lại từ
+ * công thức cast đã proven, không từ khối chết.
+ *
+ * 2.93 wave 2C · SLOT-DEAD-FREEFORM-REST (spec `kachi-293-wave2c.html` R2) — `isFreeformAvailable` (đọc `settings get global
+ * enable_freeform_support`) cũng GỠ: [ĐO grep 07/10] 0 chỗ gọi sản phẩm (main · vehicleTest) — chỉ đường mở nổi đã gỡ từng
+ * hỏi nó. Hợp đồng còn đúng MỘT việc.
+ */
 interface AppLauncher {
-    /** Phóng [pkg] vào khung [slot] trên display chính. Trả true nếu đã phát lệnh đặt bound thành công. */
-    fun openInSlot(pkg: String, slot: SlotRect): Boolean
-    /** Đặt LẠI khung cho [pkg] ĐANG chạy (chỉ resize, KHÔNG relaunch → không cướp focus/flash). Fallback về [openInSlot] nếu chưa chạy/đang fullscreen. */
-    fun moveToSlot(pkg: String, slot: SlotRect): Boolean
     /** Đóng/đưa [pkg] ra khỏi ô (trả fullscreen / dừng). */
     fun closeSlot(pkg: String)
-    /** Thiết bị có hỗ trợ freeform (đặt nhiều cửa sổ theo bound) không. Emulator thường false → UI fallback/placeholder. */
-    fun isFreeformAvailable(): Boolean
 }
 
 /** Đọc dữ liệu xe LIVE cho widget/thanh trạng thái. Off-car trả null → UI hiện "—". */
@@ -154,14 +159,11 @@ fun CarControlPort.actByKind(id: String, arg: Int): Boolean = when (ControlRegis
 }
 
 /**
- * Mặc định OFF-CAR / EMULATOR: không freeform, dữ liệu null ("—"), điều khiển no-op.
+ * Mặc định OFF-CAR / EMULATOR: không đóng app nào (`closeSlot` rỗng), dữ liệu null ("—"), điều khiển no-op.
  * Nhờ [NoCar], toàn bộ vỏ launcher chạy + test được mà không cần xe.
  */
 object NoCar : AppLauncher, CarDataPort, CarControlPort {
-    override fun openInSlot(pkg: String, slot: SlotRect): Boolean = false
-    override fun moveToSlot(pkg: String, slot: SlotRect): Boolean = false
     override fun closeSlot(pkg: String) {}
-    override fun isFreeformAvailable(): Boolean = false
     override fun batteryPercent(): Int? = null
     override fun rangeKm(): Int? = null
     override fun tirePressuresBar(): List<Double>? = null

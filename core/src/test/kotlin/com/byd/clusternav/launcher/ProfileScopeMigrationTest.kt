@@ -183,21 +183,94 @@ class ProfileScopeMigrationTest {
         assertEquals(ProfileScope.Scope.DEVICE, ProfileScope.scopeOf(ProfileScopeMigration.FILLED_LEDGER_KEY), "sổ theo XE")
     }
 
-    /**
-     * Senior review 06/10 (Pass 1, [P2] tiềm ẩn) — sổ đã-rót CHỈ lo khoá cố định ở TỆP mà ảnh chụp đã có:
-     *  • "chưa có ảnh" của [ProfileScopeMigration.fillNewKeys] xét THEO TỆP. Khoá mới nằm ở một tệp prefs MỚI ⇒ ảnh của
-     *    tệp đó vắng ở MỌI hồ sơ ⇒ không hồ sơ nào được rót mà sổ vẫn ghi đã rót ⇒ R4 gãy im lặng (rò y ca QA 2.92).
-     *    Thêm tệp ⇒ đổi phép rót sang "hồ sơ ĐÃ TỪNG chụp ở bất kỳ tệp nào" trước, rồi mới sửa danh sách dưới;
-     *  • họ tiền tố không đi qua sổ: họ MỚI cần lượt rót có mốc riêng (khuôn [ProfileScopeMigration.rotDown] V-CLUSTER).
-     * Spec `kachi-292-profile-new-keys` §10 Pass 1.
-     */
+    // ── 2.93 · PROFILE-NEW-FILE-FILL — "đã chụp" trên MỌI tệp · họ tiền tố đi qua CÙNG sổ ─────────────────────────
+    //
+    // Senior review 2.92 Pass 1 (F1) khoá TẠM bảng tệp + họ bằng một bài canh ("thêm tệp/họ ⇒ đỏ, đọc KDoc trước khi sửa")
+    // vì phép rót xét "chưa có ảnh" THEO TỆP và sổ không có mục cho họ. Nay phép rót đã generic ⇒ bài canh tạm được THAY
+    // bằng các bài chạy thật dưới: tệp MỚI / họ MỚI được rót đúng một lần, hồ sơ chưa chụp ở đâu vẫn không bị đẻ ảnh.
+
+    private val newFile = "kachi_new_prefs"
+
     @Test
-    fun `bang anh chup chua co tep hay ho moi — so da rot khong lo hai ca do`() {
-        assertEquals(
-            setOf(ProfileScopeCluster.CAST_CATALOG_FILE, cn, "clusternav_theme", ProfileScopeCluster.SIMPLE_CAST_FILE),
-            ProfileScope.CLUSTERNAV_KEYS.keys,
-            "tệp MỚI trong bảng ảnh chụp: sổ đã-rót bỏ qua nó ở mọi hồ sơ — đọc KDoc bài này trước khi sửa",
+    fun `tep prefs MOI - ho so da chup o tep khac duoc rot, ho so chua chup o dau khong`() {
+        val shots = mapOf(
+            cn to mapOf("A" to mapOf<String, Any?>("enabled" to true), "B" to emptyMap()),
+            newFile to mapOf("A" to emptyMap(), "B" to emptyMap()),
         )
-        assertEquals(listOf("cast_geometry"), ProfileScopeCluster.FAMILIES.map { it.id }, "họ MỚI cần lượt rót có mốc riêng")
+        val captured = ProfileScopeMigration.captured(shots)
+        assertEquals(setOf("A"), captured, "đã chụp = ảnh khác rỗng ở BẤT KỲ tệp nào")
+        val live = mapOf<String, Any?>("new_key" to 7)
+        // Bệnh 2.92 (mô tả): xét "chưa có ảnh" theo tệp ⇒ không ai được rót, mà sổ vẫn ghi xong.
+        assertTrue(ProfileScopeMigration.fillNewKeys(shots.getValue(newFile), live, listOf("new_key", "gone_key")).isEmpty())
+        val out = ProfileScopeMigration.fillNewKeys(shots.getValue(newFile), live, listOf("new_key", "gone_key"), captured = captured)
+        assertEquals(setOf("A"), out.keys, "B chưa chụp ở tệp nào = bản sao của hiện tại (S4 · R5) — không đẻ ảnh")
+        assertEquals(7, out.getValue("A")["new_key"])
+        assertTrue(out.getValue("A").containsKey("gone_key") && out.getValue("A")["gone_key"] == null, "vắng ở tệp sống ⇒ null tường minh")
+    }
+
+    /** Họ MỚI giả lập (tiền tố `tf_`) ở tệp chiếu cụm — đúng hình [ProfileScopeCluster.CAST_GEOMETRY]. */
+    private val newFamily = SnapshotFamily(
+        id = "test_family", file = sc, prefixes = listOf("tf_"), owns = { it.startsWith("tf_") }, valueOk = { _, v -> v != "hong" },
+    )
+
+    @Test
+    fun `ho MOI di qua so - ho so da chup thieu moc nhan ho song va moc, ho so co moc giu`() {
+        val scope = ProfileScopeMigration.ledgerScope(ProfileScope.CLUSTERNAV_KEYS, ProfileScopeCluster.FAMILIES + newFamily)
+        val pending = ProfileScopeMigration.pendingKeys(scope, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS))
+        assertEquals(setOf(marker, newFamily.marker), pending.getValue(sc).toSet(), "sổ 2.92 chưa có mục họ ⇒ hai mốc chờ")
+        val shots = mapOf(
+            "A" to mapOf<String, Any?>(marker to true, "cast_enabled" to true),
+            "B" to mapOf<String, Any?>(marker to true, newFamily.marker to true, "tf_x" to "của-B"),
+        )
+        val live = mapOf<String, Any?>("tf_x" to "sống", "tf_y" to "hong", "cast_enabled" to false)
+        val out = ProfileScopeMigration.fillNewKeys(
+            shots, live, pending.getValue(sc), ProfileScopeCluster.DEFERRED, setOf("A", "B"), ProfileScopeCluster.FAMILIES + newFamily,
+        )
+        assertEquals(setOf("A"), out.keys, "B đã có mốc CẢ hai họ ⇒ của B; A có mốc cast_geometry ⇒ họ cũ không bị rót lại")
+        // Hồ sơ đã chụp mà THIẾU mốc một họ (ảnh nhập ở 2.84/2.85 từ tệp ≤ 2.83) ⇒ nhận họ SỐNG + mốc, đúng hợp đồng V-CLUSTER.
+        val noMark = ProfileScopeMigration.fillNewKeys(
+            mapOf("C" to mapOf<String, Any?>("cast_enabled" to true)), this.live, listOf(marker), captured = setOf("C"), families = families,
+        ).getValue("C")
+        assertEquals(true, noMark[marker]); assertEquals("320", noMark["config_density_vn.vietmap.live"])
+        val a = out.getValue("A")
+        assertEquals(true, a[newFamily.marker]); assertEquals("sống", a["tf_x"])
+        assertFalse(a.containsKey("tf_y"), "giá trị họ hỏng không được rót")
+        assertEquals(true, a["cast_enabled"], "khoá cố định có sẵn không bị đụng")
+        assertFalse(a.keys.any { it.startsWith("config_") }, "họ cast_geometry đã có mốc ⇒ không rót")
+    }
+
+    @Test
+    fun `nang cap tu so 2_92 - chi moc ho cu cho, anh da co moc khong doi byte`() {
+        val scope = ProfileScopeMigration.ledgerScope(ProfileScope.CLUSTERNAV_KEYS, ProfileScopeCluster.FAMILIES)
+        assertEquals(ProfileScope.CLUSTERNAV_KEYS.keys, scope.keys, "bảng sổ = đúng bảng tệp ảnh chụp")
+        val pending = ProfileScopeMigration.pendingKeys(scope, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS))
+        assertEquals(mapOf(sc to listOf(marker)), pending, "xe đã chạy 2.92: chỉ mục họ cast_geometry là mới")
+        val shots = mapOf("A" to mapOf<String, Any?>(marker to true, "config_density_a.b" to "240"))
+        assertTrue(
+            ProfileScopeMigration.fillNewKeys(shots, live, pending.getValue(sc), captured = setOf("A"), families = families).isEmpty(),
+            "mọi ảnh ≥ 2.84 có mốc ⇒ lượt rót đầu của 2.93 không ghi gì",
+        )
+        assertTrue(ProfileScopeMigration.pendingKeys(scope, ProfileScopeMigration.ledgerOf(scope)).isEmpty(), "sổ đủ ⇒ hết việc")
+        assertTrue(ProfileScopeMigration.ledgerOf(scope).none { it.count { c -> c == '/' } != 1 }, "mốc `@family:` không chứa '/'")
+    }
+
+    @Test
+    fun `anh VANG cua ho so da chup duoc dung du khoa cua tep - ca nhap tep cu`() {
+        val catalog = ProfileScopeCluster.CAST_CATALOG_FILE
+        val keys = ProfileScope.CLUSTERNAV_KEYS.getValue(catalog)
+        val live = mapOf<String, Any?>("bubbleX" to 120, "bubbleY" to 40)
+        val chua = ProfileScopeMigration.fillNewKeys(mapOf(catalog to emptyMap()), live, keys)
+        assertTrue(chua.isEmpty(), "tệp nhập không có ảnh ClusterNav nào ⇒ chưa chụp ⇒ giữ 'bản sao của hiện tại'")
+        val da = ProfileScopeMigration.fillNewKeys(mapOf(catalog to emptyMap()), live, keys, captured = setOf(catalog))
+        assertEquals(mapOf<String, Any?>("bubbleX" to 120, "bubbleY" to 40), da.getValue(catalog), "vị trí nút nổi của xe nhận")
+    }
+
+    /** Họ nằm ở tệp KHÔNG có hậu tố ảnh chụp thì không bao giờ được chụp/áp/rót — phải đỏ ngay khi ai khai như vậy. */
+    @Test
+    fun `moi ho deu nam o tep co anh chup`() {
+        val files = ProfileScope.CLUSTERNAV_KEYS.keys
+        assertTrue(ProfileScopeCluster.FAMILIES.all { it.file in files }, "${ProfileScopeCluster.FAMILIES} ⊄ $files")
+        val scope = ProfileScopeMigration.ledgerScope(ProfileScope.CLUSTERNAV_KEYS, ProfileScopeCluster.FAMILIES)
+        ProfileScopeCluster.FAMILIES.forEach { assertTrue(it.marker in scope.getValue(it.file), "$it thiếu mục sổ") }
     }
 }

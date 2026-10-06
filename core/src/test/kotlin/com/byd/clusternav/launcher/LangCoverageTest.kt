@@ -257,7 +257,9 @@ class LangCoverageTest {
         // "Auto-open VietMap for the bubble"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 2.91 VOICE-APP-NAMES (2026-10-06): **263 → 264 (+1)** = mục Cài đặt `voice_app_names_list` ("Dạy tên app" /
         // "Teach app names"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
-        assertEquals(264, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2.93 · CAMERA-ON-DEMAND (2026-10-06): **264 → 269 (+5)** = bốn việc *"Camera sau/trái/phải/trước"* + *"Tắt camera"*
+        // (`LauncherActions`), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
+        assertEquals(269, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

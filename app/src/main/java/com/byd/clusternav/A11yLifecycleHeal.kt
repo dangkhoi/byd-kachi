@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * API [ĐO AOSP android-10.0.0_r47 + Context7]: `Intent.ACTION_SCREEN_ON` "cannot receive through components declared
  * in manifests, only by explicitly registering … Context.registerReceiver()" (`Intent.java:2204-2226`); nó được gửi
- * kèm `FLAG_RECEIVER_REGISTERED_ONLY | FLAG_RECEIVER_FOREGROUND` dạng ordered (`Notifier.java:176-178`, `:748-754`)
+ * kèm `FLAG_RECEIVER_REGISTERED_ONLY | FLAG_RECEIVER_FOREGROUND` dạng ordered (`Notifier.java:176-183`, `:748-755`)
  * ⇒ `onReceive` phải trả ngay (chỉ lấy mốc + đẩy sang luồng nền). `PowerManager.isInteractive()` = "device is in an
  * interactive state", và SCREEN_ON/OFF được gửi mỗi khi trạng thái này đổi (`PowerManager.java:1342-1382`). Context7
  * (developer.android.com `ContextWrapper.registerReceiver`): cờ `RECEIVER_EXPORTED/NOT_EXPORTED` KHÔNG bắt buộc khi
@@ -127,6 +127,7 @@ object A11yLifecycleHeal {
         val startedAt = SystemClock.elapsedRealtime()
         val interactive = interactive(app)
         startedNonInteractive = interactive == false   // READY-AT-HOME §4.8 — xem [moXePending]
+        if (interactive != true) nonInteractiveStartAt = startedAt   // 2.93 TEST-MODE-ACC-OFF — xem [pendingTatMayAt]
         // Ân hạn khởi động: báo "đang xét" NGAY (trước khi luồng nền kịp chạy — cùng mẫu bộ thu màn bật), nhả trong
         // `finally` của lượt [onBootGrace]. Chỉ tiến trình bật lúc màn SÁNG mới có thể là ứng viên.
         bootGraceBusy.set(interactive == true)
@@ -140,9 +141,10 @@ object A11yLifecycleHeal {
         submit("khởi động (tương tác=$interactive)") { onProcessStart(app, interactive, startedAt) }
         // Đường MỚI xuống CUỐI (CLAUDE.md §6): xếp SAU lớp 1 trên cùng luồng nối tiếp — [onProcessStart] giữ nguyên.
         submit("ân hạn khởi động") { try { onBootGrace(app, interactive, startedAt) } finally { bootGraceBusy.set(false) } }
+        if (interactive != true) submit("test-mode") { com.byd.clusternav.launcher.testbridge.TestBridgeStore.closeAfterScreenOffStart(app) }
     }
 
-    /** `onReceive` của broadcast ORDERED: chỉ lấy mốc sự kiện rồi trả ngay (`Notifier.java:748-754`). */
+    /** `onReceive` của broadcast ORDERED: chỉ lấy mốc sự kiện rồi trả ngay (`Notifier.java:748-755`). */
     private class ScreenOnReceiver(private val app: Context) : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != Intent.ACTION_SCREEN_ON) return
@@ -326,6 +328,10 @@ object A11yLifecycleHeal {
     private val moXeBusy = AtomicBoolean(false)
     private val screenOnSeen = AtomicBoolean(false)
     @Volatile private var startedNonInteractive = false
+    @Volatile private var nonInteractiveStartAt = -1L
+
+    /** 2.93 TEST-MODE-ACC-OFF — mốc bật NÀY nếu màn TẮT/không hỏi được (fail-closed), không thì -1. Đóng BỀN: [install] → TestBridgeStore. */
+    internal fun pendingTatMayAt(): Long = nonInteractiveStartAt
 
     /** Lượt ân hạn khởi động ([onBootGrace]) chưa kết luận — đặt ở [install], nhả trong `finally`. Cùng lý do [moXeBusy]. */
     private val bootGraceBusy = AtomicBoolean(false)
@@ -361,8 +367,8 @@ object A11yLifecycleHeal {
     // ─── Chung ───────────────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Đo → chờ → đo lại → KẸT BỀN thì vào ĐÚNG đường leo thang sẵn có ([NavConnect.escalateOnLifecycle] →
-     * `escalateIfStuck` → `AccessibilityRebind.forceStopRebindCommand`). Không tự dựng lệnh nào ở đây.
+     * Đo → chờ → đo lại → KẸT BỀN → (2.93) chờ chiếu cụm yên ([HealCastWait]) → vào ĐÚNG đường leo thang sẵn có
+     * ([NavConnect.escalateOnLifecycle] → `escalateIfStuck` → `AccessibilityRebind.forceStopRebindCommand`). Không tự dựng lệnh nào ở đây.
      *
      * @return `true` = đã thấy KẸT nhưng lượt bị CẮT vì pha qua (chưa kết luận) — chỉ [onBootGrace] dùng (trao lớp 1).
      */
@@ -388,10 +394,13 @@ object A11yLifecycleHeal {
             Log.i(TAG, "$note: kẹt KHÔNG bền (lần 2 bound=${second.bound}, binding=${second.inBinding}) → không leo")
             return false
         }
-        // READY-AT-HOME — dòng `keys=` (summary + màn Chẩn đoán) nói đúng điều lượt này thấy. Dòng TRƯỚC khi leo là dòng
-        // duy nhất chắc ra kịp: lệnh bắn mở đầu bằng `am force-stop` ⇒ tiến trình này chết ngay sau đó.
-        KachiReadyLog.keys("STUCK($note)->ESCALATE")
-        val r = NavConnect.escalateOnLifecycle(app, phase) { stillInPhase(app, phase, screenOnAt) }
+        // 2.93 · READY-RESTART-MID-CAST — chiếu cụm đang dở ⇒ chờ trong pha, có trần; wave 2A HEAL-DEFER-GATE-RECHECK — cổng cuối
+        // tắt-máy hỏi LẠI mối nguy, thao tác mới bắt đầu lúc đọc ⇒ chờ + leo lại (KDoc HealCastWait); pha qua ⇒ CẮT như nhánh trên.
+        val r = HealCastWait.escalate(phase, screenOnAt, note, { stillInPhase(app, phase, screenOnAt) }) { gate ->
+            // READY-AT-HOME — dòng `keys=` TRƯỚC khi leo là dòng duy nhất chắc ra kịp (lệnh bắn mở đầu bằng `am force-stop`).
+            KachiReadyLog.keys("STUCK($note)->ESCALATE")
+            NavConnect.escalateOnLifecycle(app, phase) { gate() }
+        } ?: return true
         KachiReadyLog.keys("STUCK($note)->$r")
         Log.w(TAG, "$note: kẹt BỀN ${second.atElapsed - first.atElapsed} ms → leo thang: $r")
         // Cổng cuối của đường leo nói "pha qua" ⇒ không bắn ⇒ cũng là CẮT (cùng nghĩa với nhánh chờ ở trên).

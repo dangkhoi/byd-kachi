@@ -3,7 +3,7 @@ package com.byd.clusternav.voicekey
 /**
  * ═══ QA 2.87 [P3] — "Học phím" phải nuốt TRỌN lần nhấn đã học, không chỉ DOWN ═══════════════════════════════════════════
  *
- * [ĐO máy ảo QA 2.87 `l7/learn88-orphan-up.log`] học phím 88 (MEDIA_PREVIOUS): `02:36:21.524 learned voice keycode=88` →
+ * [ĐO máy ảo QA 2.87 `learn88-orphan-up.log` (bằng chứng phiên, ngoài repo)] học phím 88 (MEDIA_PREVIOUS): `02:36:21.524 learned voice keycode=88` →
  * `02:36:21.716 MediaSessionService Sending KeyEvent { action=ACTION_UP, keyCode=KEYCODE_MEDIA_PREVIOUS … } to … youtube.music`
  * → hệ thống BẬT tiến trình YT Music (`MediaButtonReceiver`) và phiên phát thành active. Cơ chế [ĐO mã]: lượt học tắt cờ học
  * NGAY trên DOWN rồi trả `true`; UP cùng lần nhấn tới khi cờ đã tắt ⇒ đi đường thường ⇒ 88 chưa gán ⇒ matcher trả IGNORE ⇒

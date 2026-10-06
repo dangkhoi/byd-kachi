@@ -13,10 +13,7 @@ import org.junit.jupiter.api.Test
  */
 class PermissionPreflightWiringContractTest {
 
-    private fun code(relative: String): String =
-        SourceRoots.text(relative)
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     private val pre by lazy { code("src/main/java/com/byd/clusternav/launcher/PermissionPreflight.kt") }
     private val act by lazy { code("src/main/java/com/byd/clusternav/launcher/KachiHomeActivity.kt") }

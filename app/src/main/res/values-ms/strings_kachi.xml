@@ -16,6 +16,8 @@
         <item quantity="other">Letak %1$d widget</item>
     </plurals>
     <string name="kachi_drawer_cap_note">Satu petak memuatkan maksimum %1$d item — buang satu untuk tambah yang lain</string>
+    <string name="kachi_drawer_fit_hint">Petak ini hanya muat %1$d item berlabel jelas (%2$d dipilih) — kurangkan item atau besarkan petak</string>
+    <string name="kachi_drawer_fit_none">Petak ini terlalu kecil untuk label yang boleh dibaca — besarkan petak</string>
     <string name="kachi_layout_title">Lukis susun atur</string>
     <string name="kachi_layout_close">Tutup</string>
     <string name="kachi_layout_hint">Seret bahagian tengah bingkai untuk mengalihkannya · seret sudut kanan bawah untuk ubah saiz. Bingkai sentiasa melekat pada grid.</string>
@@ -260,7 +262,6 @@
     <string name="kachi_bridge_gemini_failed">Tidak dapat menetapkan pembantu sistem.</string>
     <string name="kachi_bridge_cleaning_air">Membersihkan udara…</string>
     <string name="kachi_bridge_update_needs_screen">Buka skrin untuk menyemak kemas kini.</string>
-    <string name="kachi_bridge_screen_open_failed">Tidak dapat membuka skrin.</string>
     <string name="kachi_save">Simpan</string>
     <string name="kachi_dp_value">%1$d dp</string>
     <string name="kachi_px_value">%1$d px</string>
@@ -648,6 +649,7 @@
     <string name="kachi_voice_pill_title">Butang mikrofon pada bar status</string>
     <string name="kachi_voice_pill_sub">Sebut arahan dengan pantas, di sebelah Apl dan Tetapan</string>
     <string name="kachi_sc_place_failed">%1$s tidak dapat dibuka dalam petak</string>
+    <string name="kachi_slot_app_elsewhere">%1$s telah keluar dari petak — masih dibuka di luar petak</string>
     <string name="kachi_drawer_title_shortcuts">Pilih apl untuk pintasan</string>
     <string name="kachi_drawer_hint_shortcuts">Ketik untuk tambah atau buang apl · ketik Guna untuk simpan · ketik latar untuk tutup</string>
     <string name="kachi_sc_cap_note">Pintasan memuatkan maksimum %1$d apl — buang satu untuk tambah yang lain</string>
@@ -670,7 +672,7 @@
     <string name="kachi_sc_refuse_cast">%1$s sedang dipancar ke panel instrumen</string>
     <string name="kachi_sc_not_installed">%1$s tidak dipasang</string>
     <string name="kachi_sc_bg_failed">%1$s tidak dapat dimulakan di latar belakang</string>
-    <string name="kachi_sc_bg_failed_why">%1$s tidak dapat dimulakan di latar belakang (%2$s)</string>
+    <string name="kachi_sc_bg_failed_why">[%2$s] %1$s tidak dapat dimulakan di latar belakang</string>
     <string name="kachi_sc_full_card">Dipaparkan dalam skrin penuh — ketik untuk kembalikan ke petak</string>
     <string name="kachi_sc_full_failed">Tidak dapat membuka %1$s dalam skrin penuh</string>
     <string name="kachi_captest_title">Uji setiap fungsi kereta</string>
@@ -704,14 +706,8 @@
     <string name="kachi_captest_snapshot_done">Tangkapan log disimpan: %s</string>
     <string name="kachi_captest_report_saved">Laporan disimpan ke kad: %s</string>
     <string name="kachi_camera_cluster_title">Tunjukkan kamera pada panel instrumen</string>
-    <string name="kachi_camera_pos_sub">Kedudukan kamera pada skrin (sudut atas)</string>
-    <string name="kachi_camera_pos_left">Isyarat kiri dipaparkan di</string>
-    <string name="kachi_camera_pos_right">Isyarat kanan dipaparkan di</string>
     <string name="kachi_pos_tl">Kiri</string>
     <string name="kachi_pos_tr">Kanan</string>
-    <string name="kachi_camera_rot_sub">Putar video kamera setiap sisi (jika gambar mengiring atau terbalik)</string>
-    <string name="kachi_camera_rot_row_left">Isyarat kiri: putar video</string>
-    <string name="kachi_camera_rot_row_right">Isyarat kanan: putar video</string>
     <string name="kachi_camera_rot_none">Tanpa putaran</string>
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
@@ -724,9 +720,6 @@
     <string name="kachi_camera_pano_row_right">Isyarat kanan: jalur</string>
     <string name="kachi_camera_pano_auto">Automatik</string>
     <string name="kachi_camera_pano_none">Seluruh bingkai</string>
-    <string name="kachi_camera_mirror_sub">Cerminkan video kamera setiap sisi (jika gambar terbalik kiri-kanan berbanding cermin sebenar)</string>
-    <string name="kachi_camera_mirror_row_left">Isyarat kiri: cerminkan video</string>
-    <string name="kachi_camera_mirror_row_right">Isyarat kanan: cerminkan video</string>
     <string name="kachi_camera_mirror_row_sub">Menterbalikkan gambar kamera secara mendatar sebelum putaran — badan kereta sepatutnya berada di tepi dalam, seperti dalam cermin sebenar</string>
     <string name="kachi_camera_shape_sub">Bentuk tetingkap kamera (bingkai sahaja — untuk seluruh gambar yang herotannya belum dibetulkan, pilih «Cermin cembung» di bawah)</string>
     <string name="kachi_camera_shape_row">Bentuk tetingkap kamera</string>
@@ -820,7 +813,7 @@
     <string name="kachi_vn_row_title">Ajar Kachi nama aplikasi</string>
     <string name="kachi_vn_row_sub">Aplikasi diajar: %1$d · ajar nama aplikasi Inggeris atau sukar disebut di sini</string>
     <string name="kachi_vn_page_title">Ajar nama aplikasi</string>
-    <string name="kachi_vn_page_note">Suara hanya faham bahasa Vietnam. Untuk nama aplikasi Inggeris atau sukar disebut: ketik aplikasi dan sebut “mở &lt;tên&gt;” 2–3 kali seperti semasa memandu. Kachi menyimpan teks tepat yang didengarnya daripada suara anda (tiada audio disimpan). Ajar semula selepas menukar model pendengaran.</string>
+    <string name="kachi_vn_page_note">Suara hanya faham bahasa Vietnam. Untuk nama aplikasi Inggeris atau sukar disebut: ketik aplikasi dan ikut gesaan bagi setiap kali seperti semasa memandu (kali 1 “mở &lt;tên&gt;”, kali 2 bersama slot). Kachi menyimpan teks tepat yang didengarnya daripada suara anda (tiada audio disimpan). Ajar semula selepas menukar model pendengaran.</string>
     <string name="kachi_vn_search_hint">Cari aplikasi…</string>
     <string name="kachi_vn_filter_all">Semua %1$d</string>
     <string name="kachi_vn_filter_taught">Diajar %1$d</string>
@@ -837,7 +830,9 @@
     <string name="kachi_vn_readonly">Data daripada Kachi yang lebih baharu — lihat sahaja; kemas kini Kachi untuk mengedit</string>
     <string name="kachi_vn_pending">Sampel menunggu: «%1$s» — pilih aplikasi</string>
     <string name="kachi_vn_dialog_title">Ajar nama: %1$s</string>
-    <string name="kachi_vn_dialog_hint">Ketik 🎤 dan sebut “mở %1$s” seperti semasa memandu. Sebut 2–3 kali.</string>
+    <string name="kachi_vn_dialog_hint">Ketik 🎤 dan ikut gesaan bagi setiap kali, seperti semasa memandu: kali 1 sebut “mở %1$s”, kali 2 bersama slot. Sekurang-kurangnya 2 kali.</string>
+    <string name="kachi_vn_take_plain">Kali %1$d: sebut “mở %2$s”</string>
+    <string name="kachi_vn_take_slot">Kali %1$d: sebut bersama slot — “đưa %2$s vào ô số hai”. Ayat dengan slot boleh mengubah cara Kachi mendengar nama; Kachi turut menyimpan bentuk itu supaya arahan dengan slot juga difahami.</string>
     <string name="kachi_vn_speak">🎤 Cakap</string>
     <string name="kachi_vn_type">Taip nama…</string>
     <string name="kachi_vn_type_title">Taip nama sebutan untuk %1$s</string>
@@ -874,6 +869,7 @@
     <string name="kachi_vn_r_near_command">Mudah keliru dengan arahan kereta</string>
     <string name="kachi_vn_r_near_app">Hampir dengan nama aplikasi %1$s</string>
     <string name="kachi_vn_r_one_word">Satu perkataan boleh bertembung dengan percakapan biasa</string>
+    <string name="kachi_vn_r_homograph">Tanpa tanda diakritik ia sama dengan satu perkataan dalam arahan “%1$s” — ayat dengan perkataan itu mungkin membuka aplikasi ini</string>
     <string name="kachi_vn_still_save">Simpan juga</string>
     <string name="kachi_vn_warn_title">Nama dengan amaran</string>
     <string name="kachi_vn_checking">Menyemak %1$d arahan…</string>
@@ -891,4 +887,30 @@
     <string name="kachi_vn_heard">Didengar: «%1$s»</string>
     <string name="kachi_vn_heard_bad">«%1$s» — nama mesti 1–4 perkataan dengan sekurang-kurangnya 3 huruf</string>
     <string name="kachi_vn_named_reason">Nama «%1$s»: %2$s</string>
+    <!-- 2.93 · CAMERA-ON-DEMAND + CAMERA-PER-CAM-CONFIG (spec docs/specs/kachi-293-cam.html) -->
+    <string name="kachi_camera_rear">Kamera belakang</string>
+    <string name="kachi_camera_front">Kamera hadapan</string>
+    <string name="kachi_cam_chip_rear">Belakang</string>
+    <string name="kachi_cam_chip_left">Kiri</string>
+    <string name="kachi_cam_chip_right">Kanan</string>
+    <string name="kachi_cam_chip_front">Hadapan</string>
+    <string name="kachi_camera_percam_sub">Setiap kamera — tempat dipaparkan, saiz, gaya imej (belakang · kiri · kanan · hadapan)</string>
+    <string name="kachi_camera_percam_note">Terpakai pada kamera itu semasa isyarat membelok dan semasa dibuka atas permintaan. Buka/tutup: butang kamera Belakang/Kiri/Kanan/Hadapan pada bar butang kereta, kekunci stereng (Kekunci stereng › Kamera atas permintaan) atau dengan suara (buka/tutup kamera itu). Satu kamera pada satu masa; ia tidak tamat masa.</string>
+    <string name="kachi_camera_percam_row">Kamera</string>
+    <string name="kachi_camera_preview_on">▶ Pratonton kamera ini</string>
+    <string name="kachi_camera_preview_off">■ Sedang dipaparkan — ketik untuk tutup</string>
+    <string name="kachi_camera_corner_row">Sudut lalai</string>
+    <string name="kachi_camera_place_hint">Seret bingkai untuk meletakkannya</string>
+    <string name="kachi_camera_place_reset">Kembali ke sudut lalai</string>
+    <string name="kachi_camera_size_row">Saiz</string>
+    <string name="kachi_camera_size_desc">Saiz kamera: %1$s</string>
+    <string name="kachi_camera_follow">Ikut tetapan umum</string>
+    <string name="kachi_camera_shape_own_row">Bentuk tetingkap</string>
+    <string name="kachi_camera_projection_own_row">Gaya paparan</string>
+    <string name="kachi_camera_rot_own_row">Putar</string>
+    <string name="kachi_camera_mirror_own_title">Cerminkan video</string>
+    <string name="kachi_keys_kind_camera">Kamera atas permintaan</string>
+    <string name="kachi_keys_pick_camera">Langkah 3 — kamera mana</string>
+    <string name="kachi_key_cam_toggle">%1$s — hidup/mati</string>
+    <string name="kachi_key_cam_off">Matikan kamera</string>
 </resources>

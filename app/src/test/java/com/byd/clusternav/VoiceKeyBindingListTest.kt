@@ -247,7 +247,7 @@ class VoiceKeyBindingListTest {
     /**
      * QA 2.87 [P3] — học phím phải nuốt TRỌN lần nhấn (luật ở `:core` `KeyLearnTail`, bảng `KeyLearnTailTest`). Ở đây khoá dây
      * nối: đuôi học chặn TRƯỚC cờ học (UP tới khi cờ đã tắt), dấu ghi đúng trong nhánh DOWN của lượt học, reset khi nối lại.
-     * Thiếu một trong ba ⇒ [ĐO máy ảo `l7/learn88-orphan-up.log`] UP mồ côi của phím media bật YT Music.
+     * Thiếu một trong ba ⇒ [ĐO máy ảo `learn88-orphan-up.log` (bằng chứng phiên, ngoài repo)] UP mồ côi của phím media bật YT Music.
      *
      * 2.88: `onKeyEvent` đọc cờ học MỘT lần (`val learning`) và tính kết quả đuôi học (`val tail`) trước khi rẽ — để biết
      * đường nào được đọc nguồn đồng bộ (`kachi-288` §4.3). Thứ tự chặn KHÔNG đổi: `if (tail) return true` đứng trước nhánh học.

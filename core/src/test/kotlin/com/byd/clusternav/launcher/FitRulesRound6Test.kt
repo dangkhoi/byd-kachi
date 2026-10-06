@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 /**
  * Soát vòng 6 (2.87, 04/10) — quyết định thuần mới của tầng vẽ:
  *  - [FitRules.insetOf]: lề của icon tính theo DẠNG — dạng NGANG xoay lề "chỉ dọc" của con khối chính sang ngang (đúng như
- *    `FitScale.padding`/`params`). [ĐO máy ảo QA3 `qa3/a/th-dock-widgetfit.log`] `615x123 -> 3x2 cell=189x43 HORIZONTAL/1 k=0.969
+ *    `FitScale.padding`/`params`). [ĐO máy ảo QA3 `th-dock-widgetfit.log` (bằng chứng phiên, ngoài repo)] `615x123 -> 3x2 cell=189x43 HORIZONTAL/1 k=0.969
  *    legible=true`, icon nút kính 26px cạnh icon gói lệnh 29px — số học dưới đây tái lập ĐÚNG cả hai số;
  *  - [FitRules.iconShared]: trần icon chung không kéo icon của loại ô khác (to hơn hẳn) xuống theo ô chật nhất;
  *  - [FitRules.settleMore] / [FitRules.primaryOnly]: phép gộp dạng PHỤ đo lười (trước chỉ có bài canh chuỗi nguồn).

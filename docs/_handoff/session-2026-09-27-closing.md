@@ -1,6 +1,8 @@
 # Handoff — 27/09/2026: chốt 2.79 (180), dự án đã nghiệm thu trên xe
 
-> **Trạng thái**: Current · **Cập nhật**: 2026-09-27 (chiều) · **Mục đích**: mở file này ra là biết ngay **đang ở đâu · lát lên xe làm gì · tháng sau làm gì**. Thay `session-2026-09-27-275-after-car.md` (đã Superseded). Đánh giá đóng dự án: `docs/CLOSEOUT-2026-09-27.md`.
+> **Trạng thái**: Superseded — ảnh chụp chiều 27/09 (xem banner 2026-10-06) · **Cập nhật**: 2026-09-27 (chiều) · banner 2026-10-06 · **Mục đích**: mở file này ra là biết ngay **đang ở đâu · lát lên xe làm gì · tháng sau làm gì**. Thay `session-2026-09-27-275-after-car.md` (đã Superseded). Đánh giá đóng dự án: `docs/CLOSEOUT-2026-09-27.md`.
+
+> ⚠ **ĐÃ QUA NHIỀU PHIÊN (banner 2026-10-06, DOC-SYNC-0929-REST) — KHÔNG dùng bảng §1 làm trạng thái hiện tại.** Buổi xe **29/09** [ĐO, `docs/specs/kachi-283-key-heal-acc-off.html` §2] chốt gốc phím chết (BYD giết Kachi mỗi lần tắt máy, không `PACKAGE_RESTARTED` ⇒ kẹt `Binding`); xe owner lúc đó chạy **2.82 cài tay**, **2.83 (184) lên kênh OTA 29/09**. Lối "đọc nhật ký ở *Cài đặt › Chiếu cụm › Chẩn đoán*" của banner 28/09 dưới đây **không tồn tại** trên bản phát hành (nút gỡ 21/09, `DiagActivity` `exported=false`) — từ 2.83 đọc bằng lệnh `a11ylog` của cầu kiểm thử. Kênh OTA nay là **2.92 (194)** (06/10, commit `8fbdf96`); trạng thái sống ở `docs/PROJECT-BACKLOG.md` (`REL-2.9x`), bản tin từng bản ở `apk/README.md`.
 
 > ⚠ **ĐÃ QUA MỘT PHIÊN — đọc trước khi tin bảng dưới (2026-09-28).** Bảng §1 là trạng thái **chiều 27/09**. Nay: bản mới nhất là **2.81 (182)** (`apk/Kachi-2.81-release.apk`, **chưa đăng OTA** ⇒ kênh `main` và xe owner **vẫn 2.79 (180)**); **2.80 (181) đã rút và xoá** khỏi `apk/` vì lượt soát tìm ra 2 × [P0]. Dòng *"Không còn việc trên xe"* **hết đúng**: hai tính năng vào sau mốc nghiệm thu và **mỗi cái còn nợ một phép đo trên xe** — (1) tự chữa mối nối dịch vụ Hỗ trợ bị kẹt ⇒ để xe qua đêm rồi đọc nhật ký ở *Cài đặt › Chiếu cụm › Chẩn đoán* (`specs/kachi-a11y-bind-stuck-autofix.html` §6.2 V-oncar-1); (2) chọn nguồn camera hai bên ⇒ dò số camera nào lên hình trên Sealion 6 (`specs/kachi-camera-source-picker.html`). [ĐO 2026-09-28] `:app` 1 520 + `:core` 3 002 = **4 707 bài / 0 lỗi**, lint 0. Nhật ký từng bản: `apk/README.md`; task: `docs/PROJECT-BACKLOG.md`.
 
@@ -46,7 +48,7 @@ Ghi thẳng vào backlog, đừng để trong đầu: 1) hướng ảnh camera g
 - Đổi pref camera chỉ áp **sau** `camera none` → `camera left` (dựng lại overlay).
 - Chế độ kiểm thử **tắt** sau mỗi lần launcher khởi động lại.
 - Log: dòng `quyết định … không hiểu: MISMATCH` in **trước** nhánh hỏi lại — không có nghĩa Kachi bỏ cuộc (2.75 thêm dòng `hỏi lại:` cho rõ).
-- Nhiều agent chạy gradle song song ⇒ luôn qua `scratchpad/gradle-locked.sh`, và **đếm test từ XML**, đừng tin grep console.
+- Nhiều agent chạy gradle song song ⇒ luôn qua `gradle-locked.sh` (công cụ ngoài repo, thư mục nháp của phiên), và **đếm test từ XML**, đừng tin grep console.
 
 ## 7. Sự cố 27/09 tối — 7 ảnh xe lọt repo public ~10 phút (ĐÃ GỠ)
 

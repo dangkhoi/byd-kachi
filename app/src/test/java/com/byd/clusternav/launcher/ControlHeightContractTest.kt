@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -42,14 +43,12 @@ class ControlHeightContractTest {
 
     /**
      * Dòng mã đã **bỏ chú thích nhưng GIỮ số dòng** — bắt buộc: KDoc của chính các hàm này nhắc tên `minHeight`
-     * và cả hai hằng, nên quét thô sẽ báo sai hàng loạt rồi bị tắt đi (thà không có).
+     * và cả hai hằng, nên quét thô sẽ báo sai hàng loạt rồi bị tắt đi (thà không có). 2.93 wave 2C · TEST-STRIP-COPIES:
+     * bộ quét có trạng thái dùng chung (`keepLines`) thay regex khối + cắt `//` tay.
      */
     private fun codeLines(name: String): List<Pair<Int, String>> =
-        SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$name")
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL)) { m ->
-                m.value.replace(Regex("[^\n]"), " ")
-            }
-            .lines().mapIndexed { i, l -> (i + 1) to l.substringBefore("//") }
+        KotlinSource.stripComments(SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$name"), keepLines = true)
+            .lines().mapIndexed { i, l -> (i + 1) to l }
 
     /** Cả `minHeight` (thuộc tính Kotlin) lẫn `minimumHeight` (API View) — hai chính tả của cùng một việc. */
     private val declaresMinHeight = Regex("""\bmin(?:imum)?Height\s*=\s*(.+)""")

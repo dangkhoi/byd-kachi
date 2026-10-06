@@ -7,13 +7,24 @@
 # lỗi ASR (nghe sai) lẫn lỗi parser. Đây là thứ owner muốn: "test như thật, vài trăm case".
 #
 # Dùng:  scripts/emulator/voice-audio-e2e.sh [SERIAL]
-# Cần: emulator có Kachi 2.23 + voice model tải + testbridge BẬT (script tự bật qua prefs nếu có root).
+# Cần: emulator có Kachi + voice model tải. Script tự bật cầu kiểm thử (`run-as` hoặc root — voice-common.sh), tự TẮT
+# lúc thoát, và DỪNG nếu tiếng giọng nói của Kachi không phải tiếng Việt (2.93 VOICE-AUDIO-E2E-LANG, xem dưới).
 set -uo pipefail
 SERIAL="${1:-emulator-5554}"
-ADB="$HOME/Library/Android/sdk/platform-tools/adb -s $SERIAL"
+# shellcheck disable=SC2034  # PKG · OUT đọc trong voice-common.sh (bridge · enable_test_mode)
+PKG="com.byd.launcher"
+# Đường dẫn adb — mọi lời gọi đi `adbs` của voice-common.sh ("$ADB" -s "$SERIAL", có nháy). Senior review 2.93 Pass 1 · [P3]:
+# bỏ bản ghép `ADBX="$ADB -s $SERIAL"` dùng trần (tách từ theo dấu cách ⇒ vỡ khi đường dẫn adb có dấu cách).
+ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VOICE="${VOICE:-Linh}"
-WD=/tmp/kachi-audio-e2e; mkdir -p "$WD"
+WD=/tmp/kachi-audio-e2e; mkdir -p "$WD"; chmod 700 "$WD" 2>/dev/null || true
+# shellcheck disable=SC2034
+OUT="$WD"
 BRIDGE="am broadcast -a com.byd.launcher.TEST -n com.byd.launcher/com.byd.clusternav.launcher.testbridge.KachiTestBridge"
+# 2.93 DEBT-VOICE-COMMON-SH — bật/tắt cầu kiểm thử + kiểm ngôn ngữ đi MỘT bản dùng chung với voice-e2e.sh.
+# shellcheck source=voice-common.sh
+. "$HERE/voice-common.sh"
 
 # id \t câu \t kind_mong_đợi(Nav/Control/Read/Media/Launcher/Profile/EndSession/OpenApp; '-'=không kiểm)
 # Đa dạng như ĐỜI THẬT: biến thể cách nói · thêm lịch sự · câu dài · đọc tắt · số nhà đủ dạng.
@@ -94,18 +105,38 @@ e08	cảm ơn nhé	EndSession
 EOF
 )
 
-# bật testbridge (best-effort, cần root emulator)
-$ADB root >/dev/null 2>&1; sleep 1
-BID=$($ADB shell cat /proc/sys/kernel/random/boot_id 2>/dev/null | tr -d '\r')
-UP=$($ADB shell 'cat /proc/uptime | cut -d" " -f1' 2>/dev/null | tr -d '\r')
-UPMS=$(python3 -c "print(int(float('${UP:-0}')*1000))" 2>/dev/null || echo 0)
-if [ -n "$BID" ] && [ "$UPMS" != 0 ]; then
-  printf '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>\n<map>\n    <string name="test_bridge_until">%s:%s</string>\n</map>\n' "$BID" "$((UPMS+3600000))" > "$WD/tb.xml"
-  $ADB push "$WD/tb.xml" /data/local/tmp/tb.xml >/dev/null 2>&1
-  $ADB shell "su 0 sh -c 'cp /data/local/tmp/tb.xml /data/data/com.byd.launcher/shared_prefs/kachi_test_bridge.xml; chown u0_a163:u0_a163 /data/data/com.byd.launcher/shared_prefs/kachi_test_bridge.xml'" >/dev/null 2>&1
-  $ADB shell am force-stop com.byd.launcher >/dev/null 2>&1; sleep 2
-  $ADB shell am start -n com.byd.launcher/com.byd.clusternav.launcher.KachiHomeActivity >/dev/null 2>&1; sleep 4
-fi
+# ── bật cầu kiểm thử — `detect_data_mode` + `enable_test_mode` (voice-common.sh) ──────────────────────────────────
+# 2.93 DEBT-VOICE-COMMON-SH: bản cũ ở đây là bản chép THỨ BA của phép bật, kèm uid app GHI CỨNG của một máy ảo (chown hỏng im
+# lặng trên máy ảo khác ⇒ cửa không mở ⇒ mọi ca ra rỗng) và không bao giờ đóng lại cửa (receiver `exported` mở ~1 giờ —
+# đúng điều [SOÁT 2026-09-15 · P1] của voice-e2e.sh cấm). Nay: cùng hàm với voice-e2e.sh + đóng cửa qua `trap`.
+TEST_MODE_ON=0
+# WAV đẩy vào thư mục NGOÀI của riêng app — cùng chỗ T2 của voice-e2e.sh (app đọc được không cần quyền, không cần
+# `adb root`; bản cũ đẩy vào /data/local/tmp sau một lượt `adb root` mà đường bật cầu chung không còn gọi khi có `run-as`).
+WAV_DST="/sdcard/Android/data/$PKG/files/wavin"
+cleanup_audio() {
+  local rc=$?
+  adbs shell "rm -f $WAV_DST/audio-e2e.wav" >/dev/null 2>&1 || true
+  [ "$TEST_MODE_ON" = "1" ] && { disable_test_mode; echo "── đã tắt chế độ kiểm thử"; }
+  # `adb root` chỉ do `detect_data_mode` bật (bản không debuggable) ⇒ trả adbd về như cũ SAU khi đã dọn cửa cầu (nhánh root
+  # của `disable_test_mode` cần nó) — cùng lệ DEBT-E2E-SH(c) của voice-e2e.sh (senior review 2.93 Pass 1 · [P3]).
+  [ "$MODE" = "root" ] && adbs unroot >/dev/null 2>&1
+  return $rc
+}
+trap cleanup_audio EXIT
+require_emulator "harness đo đi qua adb root / cầu kiểm thử"
+adbs get-state >/dev/null 2>&1 || die "không thấy thiết bị $SERIAL"
+detect_data_mode
+TEST_MODE_ON=1
+enable_test_mode
+LEFT="$(state_json | json_get test_mode_minutes_left)"
+[ "${LEFT:-0}" -gt 0 ] 2>/dev/null || die "chế độ kiểm thử vẫn TẮT (còn ${LEFT:-?} phút) — xem reply: $(state_json | head -c 300)"
+adbs shell "mkdir -p $WAV_DST"
+
+# ═══ 2.93 VOICE-AUDIO-E2E-LANG — tiếng GIỌNG NÓI phải là tiếng Việt TRƯỚC khi đo ════════════════════════════════════
+# Vòng đo so `kind` (không phụ thuộc tiếng) NHƯNG đưa `preview` qua Piper tiếng Việt để đo giờ dựng câu ĐỌC (`synth_ms`):
+# Kachi để English ⇒ preview là câu tiếng Anh ⇒ số synth đo trên câu tiếng Anh qua giọng Việt — sai đại lượng, im lặng.
+# Cùng phép kiểm `look.voice_lang` của voice-e2e.sh (một bản, voice-common.sh).
+require_voice_vi "trước lượt đo audio"
 
 [ -n "${CASE_FILE:-}" ] && [ -f "$CASE_FILE" ] && CASES=$(cat "$CASE_FILE")
 
@@ -116,8 +147,8 @@ while IFS=$'\t' read -r -u 3 id s want; do
   total=$((total+1))
   say -v "$VOICE" -o "$WD/$id.aiff" "$s" 2>/dev/null
   afconvert -f WAVE -d LEI16@16000 -c 1 "$WD/$id.aiff" "$WD/$id.wav" 2>/dev/null
-  $ADB push "$WD/$id.wav" /data/local/tmp/e.wav </dev/null >/dev/null 2>&1
-  j=$($ADB shell "$BRIDGE --es cmd wav --es path /data/local/tmp/e.wav" </dev/null 2>&1)
+  adbs push "$WD/$id.wav" "$WAV_DST/audio-e2e.wav" >/dev/null 2>&1
+  j=$(adbs shell "$BRIDGE --es cmd wav --es path $WAV_DST/audio-e2e.wav" 2>&1)
   heard=$(printf '%s' "$j" | grep -oE '"heard":"[^"]*"' | head -1 | sed 's/"heard":"//;s/"$//')
   kind=$(printf '%s' "$j" | grep -oE '"kind":"[^"]*"' | head -1 | sed 's/"kind":"//;s/"$//')
   ms=$(printf '%s' "$j" | grep -oE '"ms":[0-9]*' | head -1 | sed 's/"ms"://')
@@ -125,7 +156,9 @@ while IFS=$'\t' read -r -u 3 id s want; do
   # ĐO TTS synth thật (feed preview qua Piper) — full-chain = decode+parse + synth
   synth=""
   if [ -n "$prev" ] && [ "${TTS_ON:-1}" = 1 ]; then
-    jt=$($ADB shell "$BRIDGE --es cmd tts --es text \"'$prev'\"" </dev/null 2>&1)
+    # `shq` (voice-common.sh): bản cũ `\"'$prev'\"` gửi cho Piper cả hai dấu nháy đơn, và một `"`/`$`/`` ` `` trong preview
+    # được shell của THIẾT BỊ diễn giải (cùng lý do [SOÁT 2026-09-15 · P2] của `shq`).
+    jt=$(adbs shell "$BRIDGE --es cmd tts --es text $(shq "$prev")" 2>&1)
     synth=$(printf '%s' "$jt" | grep -oE '"synth_ms":[0-9]*' | head -1 | sed 's/"synth_ms"://')
   fi
   # phân loại QUALITY

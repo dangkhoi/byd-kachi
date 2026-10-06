@@ -229,9 +229,15 @@ class VoiceLangWiringContractTest {
         assertTrue(bridge.contains("VoiceReply.preview(intent, com.byd.clusternav.launcher.Strings.current.voice)"), "preview theo tiếng giọng nói")
         assertTrue(code(l + "testbridge/TestBridgeState.kt").contains("\"voice_lang\" to Strings.current.voice.code"),
             "cầu phơi ĐÚNG tiếng mà preview dùng")
-        val sh = com.byd.clusternav.testsupport.I18nCallScanner.repoRoot().resolve("scripts/emulator/voice-e2e.sh").toFile().readText()
-        val fn = sh.substringAfter("require_voice_vi() {").substringBefore("\n}\n")
+        val root = com.byd.clusternav.testsupport.I18nCallScanner.repoRoot()
+        val sh = root.resolve("scripts/emulator/voice-e2e.sh").toFile().readText()
+        // 2.93 DEBT-VOICE-COMMON-SH (đổi chốt có lý do): thân `require_voice_vi` dời NGUYÊN sang voice-common.sh (pure move) để
+        // voice-audio-e2e.sh dùng CHUNG (VOICE-AUDIO-E2E-LANG). Chốt canh: một bản ở tệp chung · voice-e2e.sh source nó, không
+        // còn bản riêng · hai harness gọi nó TRƯỚC khi đo.
+        val common = root.resolve("scripts/emulator/voice-common.sh").toFile().readText()
+        val fn = common.substringAfter("require_voice_vi() {").substringBefore("\n}\n")
         assertTrue(fn.contains("get look.voice_lang") && fn.contains("[ \"\$vl\" = \"vi\" ] || die"), "đọc look.voice_lang, khác vi ⇒ dừng")
+        assertTrue(sh.contains(". \"\$HERE/voice-common.sh\"") && !sh.contains("require_voice_vi() {"), "voice-e2e.sh dùng bản chung, không bản riêng")
         val dispatch = sh.indexOf("case \"\$ONLY\" in")
         val pre = sh.indexOf("require_voice_vi \"trước lượt chạy\"")
         assertTrue(pre in 0 until dispatch, "kiểm TRƯỚC khi chạy T1/T2")
@@ -239,7 +245,27 @@ class VoiceLangWiringContractTest {
         // Soát vòng 2 [P3] — câu dừng nêu ĐÚNG TÊN hồ sơ mang ngôn ngữ sai (đọc từ cùng bản state). Sau ca đổi hồ sơ, `cleanup`
         // đã trả máy về hồ sơ lúc bắt đầu ⇒ "hồ sơ đang dùng" chỉ QA sửa nhầm chỗ (CLAUDE.md §2: chẩn đoán sai địa chỉ).
         assertTrue(fn.contains("get profile.active") && fn.contains("where=\"cho hồ sơ «\${prof:-?}»\""), "câu dừng nêu tên hồ sơ")
-        assertTrue(fn.contains("[ \"\$prof\" != \"\$ORIG_PROFILE\" ]") && fn.contains("harness đã trả máy về"), "nói rõ hồ sơ đã được trả về")
+        // Bản chung đọc ORIG_PROFILE qua biến cục bộ `orig` có mặc định rỗng (harness audio không đặt hồ sơ lúc bắt đầu, `set -u`).
+        assertTrue(fn.contains("orig=\"\${ORIG_PROFILE:-}\"") && fn.contains("[ \"\$prof\" != \"\$orig\" ]") &&
+            fn.contains("harness đã trả máy về"), "nói rõ hồ sơ đã được trả về")
         assertFalse(fn.contains("cho hồ sơ đang dùng"), "không còn câu chỉ nhầm hồ sơ")
+    }
+
+    /**
+     * 2.93 VOICE-AUDIO-E2E-LANG — harness audio so `kind` nhưng đưa `preview` qua Piper tiếng Việt để đo `synth_ms`: Kachi để
+     * English thì số synth đo trên câu tiếng Anh — sai đại lượng, im lặng. Chốt: harness audio source bản chung và gọi
+     * `require_voice_vi` SAU khi bật cầu kiểm thử, TRƯỚC vòng đo đầu tiên.
+     */
+    @Test
+    fun `voice-audio-e2e kiem tieng giong noi la tieng Viet truoc khi do`() {
+        val sh = com.byd.clusternav.testsupport.I18nCallScanner.repoRoot().resolve("scripts/emulator/voice-audio-e2e.sh").toFile().readText()
+        assertTrue(sh.contains(". \"\$HERE/voice-common.sh\""), "harness audio phải dùng bản kiểm chung")
+        val on = sh.indexOf("\nenable_test_mode")
+        val check = sh.indexOf("\nrequire_voice_vi \"")
+        val loop = sh.indexOf("while IFS=")
+        assertTrue(on in 0 until check, "kiểm ngôn ngữ cần cầu kiểm thử đã BẬT (đọc `state`)")
+        assertTrue(check in 0 until loop, "kiểm TRƯỚC vòng đo đầu tiên")
+        assertFalse(sh.contains("u0_a163"), "không uid ghi cứng — bật cầu qua `detect_data_mode`/`enable_test_mode` chung")
+        assertTrue(sh.contains("trap cleanup_audio EXIT") && sh.contains("disable_test_mode"), "đóng cửa cầu khi thoát")
     }
 }

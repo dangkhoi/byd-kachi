@@ -112,7 +112,7 @@ class HiddenPark(
     }
 
     /**
-     * X tự lên display 0 TRƯỚC màn nhà trong lúc chờ (activity trung chuyển mở NEW_TASK — [ĐO máy ảo `p3/e2e-L4/m5a`]) ⇒ dấu
+     * X tự lên display 0 TRƯỚC màn nhà trong lúc chờ (activity trung chuyển mở NEW_TASK — [ĐO máy ảo `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)]) ⇒ dấu
      * mọi task của X trên display 0 → K12 NGAY (mỗi bước thêm là thêm thời gian che màn nhà) → màn ảo: còn X ⇒ đỗ; trống ⇒ nhả.
      */
     private fun fell(tag: String, vd: Int, x: String, port: Port, r: List<StackEntry>, waited: Long): Outcome {

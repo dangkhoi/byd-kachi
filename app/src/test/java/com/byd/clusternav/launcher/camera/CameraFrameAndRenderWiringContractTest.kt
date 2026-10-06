@@ -27,6 +27,8 @@ class CameraFrameAndRenderWiringContractTest {
      */
     private val layer by lazy { app("launcher/camera/CameraVideoLayer.kt") }
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
+    // 2.93: lượt đọc pref + giải cỡ nguồn của MỘT phiên dời sang `CameraSessionSpec` (spec kachi-293-cam §4.2).
+    private val spec by lazy { app("launcher/camera/CameraSessionSpec.kt") }
     private val avm by lazy { app("launcher/camera/AvmCamera.kt") }
     private val settings by lazy { app("launcher/SettingsSectionsCamera.kt") }
     private val prefs by lazy { app("PrefsAutomation.kt") }
@@ -51,8 +53,11 @@ class CameraFrameAndRenderWiringContractTest {
         assertTrue("f.w, f.h," in lp, "WindowManager.LayoutParams phải nhận ĐÚNG cỡ khung đã tính")
         assertTrue("x = x0 + ((areaW - f.w) / 2).coerceAtLeast(0)" in lp, "x = lề + (vùng − khung)/2 ⇒ căn giữa vùng")
         assertTrue("y = y0 + ((areaH - f.h) / 2).coerceAtLeast(0)" in lp, "y = lề trên + (vùng − khung)/2")
-        // Vùng cho phép vẫn là ô vuông cũ (trần) — không được nới thêm chỗ khi đổi tỉ lệ.
-        assertTrue("SQUARE_RATIO = 0.50f" in overlay, "trần vùng giữ nguyên 50% chiều cao màn (2.72)")
+        // Vùng cho phép vẫn là ô vuông cũ (trần) — không được nới thêm chỗ khi đổi tỉ lệ. 2.93: hằng dời về `:core`
+        // `CameraPlacement` (đường kéo-thả/cỡ riêng dùng CHUNG một số — hai bản sao là hai số sẽ lệch).
+        assertTrue("SQUARE_RATIO = CameraPlacement.SQUARE_RATIO" in overlay, "overlay phải lấy trần vùng từ `:core`")
+        val placement = SourceRoots.codeOf("src/main/kotlin/com/byd/clusternav/launcher/camera/CameraPlacement.kt")
+        assertTrue("const val SQUARE_RATIO = 0.50f" in placement, "trần vùng giữ nguyên 50% chiều cao màn (2.72)")
     }
 
     /** Đo được cỡ nguồn ⇒ **dựng lại** cửa sổ: thiếu `updateViewLayout` thì khung đúng tỉ lệ chỉ đúng trên giấy. */
@@ -68,26 +73,29 @@ class CameraFrameAndRenderWiringContractTest {
 
     /** Cỡ ảnh nguồn phải ĐO, không hardcode trong `:app` (xe khác ghép 4-in-1 cỡ khác — CLAUDE.md §7). */
     @Test fun `co anh nguon khong hardcode trong app`() {
-        listOf(overlay, layer, controller, avm).forEach { src ->
+        listOf(overlay, layer, controller, spec, avm).forEach { src ->
             listOf("5120", "1280", "960", "720").forEach {
                 assertTrue(it !in src, "cỡ ảnh $it bị gõ cứng trong `:app` — gợi ý nằm ở `CamView.hintW/hintH`, số thật do HAL đo")
             }
         }
         // 2026-09-28: cỡ nguồn nay do `:core` giải một lần (ảnh ghép ⇒ 5120×960; còn lại ⇒ gợi ý của góc).
+        // 2.93: giải MỘT lần ở lượt đọc phiên (`CameraSessionSpec`), controller chỉ chuyển xuống.
         assertTrue(
-            "CameraPanoCrop.streamW(view, panoStrip)" in controller &&
-                "CameraPanoCrop.streamH(view, panoStrip)" in controller,
+            "streamW = CameraPanoCrop.streamW(view, panoStrip)" in spec &&
+                "streamH = CameraPanoCrop.streamH(view, panoStrip)" in spec,
             "cỡ nguồn phải lấy từ `:core`, không gõ số trong app",
         )
         // Cả BA chỗ dùng cùng một biến. Trước đây ba chỗ tự đọc `view.hintW` riêng ⇒ sửa một chỗ quên hai chỗ
         // là hình vừa bị kéo bẹp vừa cong lệch (lượt phản biện 2026-09-28).
+        listOf(controller, spec).forEach {
+            assertEquals(
+                0, Regex("view\\.hint[WH]").findAll(it).count(),
+                "không chỗ nào được đọc thẳng `view.hintW/hintH` nữa — phải đi qua biến đã giải",
+            )
+        }
         assertEquals(
-            0, Regex("view\\.hint[WH]").findAll(controller).count(),
-            "không chỗ nào được đọc thẳng `view.hintW/hintH` nữa — phải đi qua biến đã giải",
-        )
-        assertEquals(
-            2, Regex("streamW = streamW").findAll(controller).count(),
-            "đúng HAI chỗ truyền cỡ nguồn (uniform GL + overlay) và cả hai dùng biến chung",
+            2, Regex("streamW = s\\.streamW").findAll(controller).count(),
+            "đúng HAI chỗ truyền cỡ nguồn (uniform GL + overlay) và cả hai dùng biến chung của lượt đọc phiên",
         )
         assertTrue("avm.previewSize()" in controller, "số THẬT phải đo qua AVMCamera")
     }
@@ -108,7 +116,9 @@ class CameraFrameAndRenderWiringContractTest {
 
     /** Controller đọc pref kết xuất và báo lên tầng vẽ xoay có THẬT SỰ được áp hay không (CLAUDE.md §2). */
     @Test fun `controller truyen duong ket xuat va ket qua xoay that`() {
-        assertTrue("Prefs.cameraRender(appCtx)" in controller, "đường kết xuất đọc từ pref mỗi lượt dựng overlay")
+        // 2.93: lượt đọc nằm ở `CameraSessionSpec.read` (gọi MỖI lượt mở phiên) — controller nhận `s.render`.
+        assertTrue("val render = Prefs.cameraRender(ctx)" in spec, "đường kết xuất đọc từ pref mỗi lượt dựng overlay")
+        assertTrue("val render = s.render" in controller, "controller dùng đúng mã của lượt đọc phiên")
         assertTrue("render = render," in controller, "mã phải đi vào overlay.show(render = …)")
         assertTrue("avm.setDisplayOrientation(surface, rot)" in controller,
             "SurfaceView không có setTransform ⇒ phải THỬ đường HAL, không im lặng bỏ góc owner đã chọn")

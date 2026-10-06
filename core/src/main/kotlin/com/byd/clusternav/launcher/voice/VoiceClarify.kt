@@ -73,6 +73,8 @@ object VoiceClarify {
             -> return null
             else -> Unit
         }
+        // 2.93 VOICE-BARE-NOUN-IMPLICIT-VERB — tên bộ phận chuyển động trần ⇒ *"Mở hay đóng …?"* ([VoiceBareCover.ask]).
+        if (unknown.reason == VoiceUnknownReason.NO_VERB) VoiceBareCover.ask(unknown.text, terms, lang)?.let { return it }
         val raw = VoiceLexicon.tokenize(unknown.text)
         val tokens = raw.filterNot { it.norm in VoiceLexicon.FILLERS }
         if (tokens.isEmpty()) return null
@@ -161,11 +163,15 @@ object VoiceClarify {
      * Hôm nay không ai thấy vì [carry] luôn là `listOf(verb)` một từ (:76-80) — nhưng đó là một **bất biến ngầm**
      * không được ghi ở đâu và không được test nào giữ: đúng thứ hỏng im lặng ở lần ai đó mang theo cả cụm
      * *"bật đèn"*. Nay cả hai vế đi qua **cùng** [VoiceLexicon.tokenize].
+     *
+     * 2.93 — [carry] là một TÊN bộ phận chuyển động (câu hỏi *"Mở hay đóng …?"*) thì động từ trả lời đứng TRƯỚC nó:
+     * [VoiceBareCover.verbFirst]. Mọi [carry] khác (động từ · [READ_VERB] · vế hồ sơ) đi đúng đường cũ.
      */
     fun combine(carry: List<String>, answer: String): String {
         val a = answer.trim()
         if (a.isEmpty()) return carry.joinToString(" ")
         if (carry.isEmpty()) return a
+        VoiceBareCover.verbFirst(carry, a)?.let { return it }
         val answerNorms = VoiceLexicon.tokenize(a).map { it.norm }
         val carryNorms = carry.flatMap { c -> VoiceLexicon.tokenize(c).map { it.norm } }
         if (carryNorms.isNotEmpty() && answerNorms.take(carryNorms.size) == carryNorms) return a
@@ -285,9 +291,15 @@ object VoiceClarify {
         else -> leadVerb(tokens)?.let { listOf(it) } ?: if (asked) listOf(READ_VERB) else emptyList()
     }
 
-    /** Cụm động từ ở **vị trí 0**, trả về NGUYÊN VĂN (*"kiểm tra"*), hoặc `null`. Dài trước ngắn, như mọi nơi. */
+    /**
+     * Cụm động từ ở **vị trí 0**, trả về NGUYÊN VĂN (*"kiểm tra"*), hoặc `null`. Dài trước ngắn, như mọi nơi.
+     *
+     * 2.93 [P3] — chữ MANG dấu chỉ là động từ khi đúng cách viết ([VoiceVerbSpelling.isVerb]): [ĐO off-car 07/10] *"tất cả kính
+     * lên"* mang *"tất"* sang lượt sau như động từ *"tắt"* ⇒ trả lời *"mở cốp"* ghép thành *"tất mở cốp"* = `Control(trunk, 0)`.
+     */
     private fun leadVerb(tokens: List<VoiceLexicon.Token>): String? {
         val hit = VoiceGrammar.VERBS.firstOrNull { VoiceLexicon.phraseAt(tokens, 0, it.first) } ?: return null
+        if (!VoiceVerbSpelling.isVerb(tokens, hit.first.size)) return null
         return tokens.take(hit.first.size).joinToString(" ") { it.raw }
     }
 

@@ -200,6 +200,8 @@ lốp ổn	tyres OK	轮胎正常
 {0} {1}, chưa rõ	{0} {1}, unknown	{0} {1}，状态未知
 {0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1}，注意：{2}
 {0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1}，警告：{2}
+nổ lốp	burst	爆胎
+bất thường	abnormal	异常
 xì nhanh	fast leak	快速漏气
 báo đỏ	red alert	红色警告
 xì chậm	slow leak	缓慢漏气
@@ -263,6 +265,7 @@ Vẫn chưa rõ — thử nói "{0}"	Still not sure — try saying "{0}" in Viet
 {0} hay {1}	{0} or {1}	{0}还是{1}
 {0}, hay {1}	{0}, or {1}	{0}，还是{1}
 {0} nào — {1}?	Which {2} — {1}?	哪个{2}——{1}？
+Mở hay đóng {0}?	Open or close {0}?	打开还是关闭{0}？
 Nhạc	Music	音乐
 Dẫn đường	Navigation	导航
 Ứng dụng · ô · bố cục	Apps · slots · layout	应用 · 格位 · 布局
@@ -446,6 +449,8 @@ Trạng thái xe	Car status	车辆状态
 Bảng tổng hợp	Overview board	总览面板
 Trình chiếu ảnh	Photo slideshow	照片轮播
 Lưới lối tắt app	App shortcut grid	应用快捷方式网格
+Mở hết	Open all	全开
+Đóng hết	Close all	全关
 Mở hết kính	Open all	全部打开
 Đóng hết kính	Close all	全部关闭
 Màn hình chính	Home screen	主屏幕
@@ -638,7 +643,7 @@ sức khoẻ pin, điện áp ắc-quy	battery health, auxiliary battery voltage
 quãng đường, thời gian, điện tiêu thụ, odo	distance, time, energy used, odometer	里程、时间、电耗、总里程
 Bố cục và hình nền	Layout and wallpaper	布局和壁纸
 Chip trên đỉnh và thanh nút xe	Top chips and the car button bar	顶栏标签和车控栏
-Đơn vị đo, sáng/tối và ngôn ngữ	Units, light/dark theme and language	单位、浅色/深色主题和语言
+Đơn vị, sáng/tối, màu, độ trong suốt, cỡ thanh nút, ngôn ngữ	Units, light/dark, colours, transparency, bar size, language	单位、浅色/深色、颜色、透明度、车控栏大小、语言
 Mỗi hồ sơ giữ bố cục riêng	Each profile keeps its own layout	每个档案保存各自的布局
 Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	逐向导航、限速标志和气泡
 Đưa app lên cụm, chia đôi, tự chiếu	Apps on the cluster, split view, autostart	应用投屏到仪表、分屏、自动投屏
@@ -826,3 +831,14 @@ Thư viện ảnh: {0}	Gallery: {0}	相册：{0}
 📷 Khung thô trái	📷 Raw frame left	📷 左侧原始画面
 📷 Khung thô phải	📷 Raw frame right	📷 右侧原始画面
 Đang chụp khung thô…	Capturing raw frame…	正在拍摄原始画面…
+# 2.93 · CAMERA-ON-DEMAND (spec docs/specs/kachi-293-cam.html) — bốn camera theo yêu cầu + Tắt camera (LauncherActions)
+Camera sau	Rear camera	后摄像头
+Camera trái	Left camera	左摄像头
+Camera phải	Right camera	右摄像头
+Camera trước	Front camera	前摄像头
+Tắt camera	Camera off	关闭摄像头
+Camera theo yêu cầu	Camera on demand	按需摄像头
+Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang mở. Không tự tắt.	Tap to turn that camera on/off; opening another camera replaces the one showing. It never times out.	点按以开启/关闭该摄像头；打开另一个摄像头会替换当前显示的摄像头。不会自动关闭。
+Không có camera nào đang mở	No camera is open	没有正在打开的摄像头
+{0} đang không mở	{0} is not open	{0}未打开
+chưa liên lạc được màn hình chính	couldn't reach the home screen	无法连接主屏幕

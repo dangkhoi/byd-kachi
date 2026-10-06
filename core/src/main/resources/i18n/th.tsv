@@ -200,6 +200,8 @@ lốp ổn	tyres OK	ยางปกติ
 {0} {1}, chưa rõ	{0} {1}, unknown	{0} {1} ยังไม่ทราบสถานะ
 {0} {1}, chú ý: {2}	{0} {1}, caution: {2}	{0} {1} ระวัง: {2}
 {0} {1}, cảnh báo: {2}	{0} {1}, alert: {2}	{0} {1} เตือน: {2}
+nổ lốp	burst	ยางระเบิด
+bất thường	abnormal	ผิดปกติ
 xì nhanh	fast leak	รั่วเร็ว
 báo đỏ	red alert	เตือนสีแดง
 xì chậm	slow leak	รั่วช้า
@@ -263,6 +265,7 @@ Vẫn chưa rõ — thử nói "{0}"	Still not sure — try saying "{0}" in Viet
 {0} hay {1}	{0} or {1}	{0} หรือ {1}
 {0}, hay {1}	{0}, or {1}	{0} หรือ {1}
 {0} nào — {1}?	Which {2} — {1}?	{2}ไหน — {1}?
+Mở hay đóng {0}?	Open or close {0}?	เปิดหรือปิด {0}?
 Nhạc	Music	เพลง
 Dẫn đường	Navigation	การนำทาง
 Ứng dụng · ô · bố cục	Apps · slots · layout	แอป · ช่อง · เลย์เอาต์
@@ -446,6 +449,8 @@ Trạng thái xe	Car status	สถานะรถ
 Bảng tổng hợp	Overview board	แผงภาพรวม
 Trình chiếu ảnh	Photo slideshow	สไลด์โชว์ภาพ
 Lưới lối tắt app	App shortcut grid	ตารางทางลัดแอป
+Mở hết	Open all	เปิดทั้งหมด
+Đóng hết	Close all	ปิดทั้งหมด
 Mở hết kính	Open all	เปิดกระจกทั้งหมด
 Đóng hết kính	Close all	ปิดกระจกทั้งหมด
 Màn hình chính	Home screen	หน้าจอหลัก
@@ -638,7 +643,7 @@ sức khoẻ pin, điện áp ắc-quy	battery health, auxiliary battery voltage
 quãng đường, thời gian, điện tiêu thụ, odo	distance, time, energy used, odometer	ระยะทาง เวลา พลังงานที่ใช้ ระยะทางสะสม
 Bố cục và hình nền	Layout and wallpaper	เลย์เอาต์และภาพพื้นหลัง
 Chip trên đỉnh và thanh nút xe	Top chips and the car button bar	ชิปด้านบนและแถบปุ่มรถ
-Đơn vị đo, sáng/tối và ngôn ngữ	Units, light/dark theme and language	หน่วย ธีมสว่าง/มืด และภาษา
+Đơn vị, sáng/tối, màu, độ trong suốt, cỡ thanh nút, ngôn ngữ	Units, light/dark, colours, transparency, bar size, language	หน่วย สว่าง/มืด สี ความโปร่งใส ขนาดแถบปุ่มรถ ภาษา
 Mỗi hồ sơ giữ bố cục riêng	Each profile keeps its own layout	แต่ละโปรไฟล์มีเลย์เอาต์ของตัวเอง
 Chỉ đường, biển báo và bong bóng	Turn-by-turn, speed badge and bubble	บอกเส้นทาง ป้ายความเร็ว และบับเบิล
 Đưa app lên cụm, chia đôi, tự chiếu	Apps on the cluster, split view, autostart	แอปบนหน้าปัด แบ่งจอ ฉายอัตโนมัติ
@@ -826,3 +831,14 @@ Thư viện ảnh: {0}	Gallery: {0}	คลังภาพ: {0}
 📷 Khung thô trái	📷 Raw frame left	📷 ภาพดิบซ้าย
 📷 Khung thô phải	📷 Raw frame right	📷 ภาพดิบขวา
 Đang chụp khung thô…	Capturing raw frame…	กำลังถ่ายภาพดิบ…
+# 2.93 · CAMERA-ON-DEMAND (spec docs/specs/kachi-293-cam.html) — bốn camera theo yêu cầu + Tắt camera (LauncherActions)
+Camera sau	Rear camera	กล้องหลัง
+Camera trái	Left camera	กล้องซ้าย
+Camera phải	Right camera	กล้องขวา
+Camera trước	Front camera	กล้องหน้า
+Tắt camera	Camera off	ปิดกล้อง
+Camera theo yêu cầu	Camera on demand	กล้องตามสั่ง
+Chạm để bật/tắt camera đó; mở camera khác thì thay camera đang mở. Không tự tắt.	Tap to turn that camera on/off; opening another camera replaces the one showing. It never times out.	แตะเพื่อเปิด/ปิดกล้องนั้น เปิดกล้องอื่นจะแทนที่กล้องที่กำลังแสดง ไม่ปิดเองอัตโนมัติ
+Không có camera nào đang mở	No camera is open	ไม่มีกล้องที่เปิดอยู่
+{0} đang không mở	{0} is not open	{0} ไม่ได้เปิดอยู่
+chưa liên lạc được màn hình chính	couldn't reach the home screen	ติดต่อหน้าจอหลักไม่ได้

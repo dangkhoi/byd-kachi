@@ -53,7 +53,13 @@ object GroupTiles {
      */
     fun build(ctx: Context, id: String, data: WidgetData, tyreBoard: (Context, WidgetData) -> View): View {
         val tile = GroupTileView(ctx)
-        return if (tile.bind(id, data, tyreBoard)) tile else fallback(ctx, id)
+        if (!tile.bind(id, data, tyreBoard)) return fallback(ctx, id)
+        // 2.93 GROUPBOARD-1ROW — khung thấp (bảng đầy đủ tràn / ô vẽ dưới cao tối thiểu) ⇒ dạng tóm tắt GIÃN theo khung
+        // (GroupFitFrame); khung đủ ⇒ y bảng 2.92. Nhịp xe đổ tại chỗ vào cả hai — không dựng lại view nào.
+        val mini = mini(ctx, id, data)
+        return WidgetRefreshers.live(GroupFitFrame(ctx, tile, FitGridLayout.single(ctx, mini))) { d ->
+            tile.refresh(d); WidgetRefreshers.refresh(mini, d)
+        }
     }
 
     /**

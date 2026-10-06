@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -21,9 +22,7 @@ class ProfileLayoutLinkContractTest {
     }
 
     private fun code(name: String): String =
-        app("src/main/java/com/byd/clusternav/launcher/$name").toFile().readText()
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        KotlinSource.stripComments(app("src/main/java/com/byd/clusternav/launcher/$name").toFile().readText())
 
     @Test
     fun `hai nhom luu theo ho so mo dau bang cau noi ro ho so nao`() {

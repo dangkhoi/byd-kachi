@@ -137,6 +137,11 @@ internal class VoiceCapture(private val ctx: Context) {
          * và không giữ PCM (`keepPcm = false`). Cơ chế + bảng số: KDoc [VoiceOpenTurnArm] và [VoiceOpenTurn].
          */
         openTurn: Boolean = false,
+        /**
+         * 2.93 VOICE-OPEN-TURN-DYNVOCAB — từ vựng ĐỘNG của phiên cho phép ghép vế sau ([VoiceOpenTurnArm]); LƯỜI, chỉ gọi
+         * khi lượt có vế sau. Mặc định [VoiceDynVocab.STATIC] = hành vi 2.92 (chỗ gọi không tự tuyên bố thì y nguyên).
+         */
+        openVocab: () -> VoiceDynVocab = { VoiceDynVocab.STATIC },
         onPartial: (String) -> Unit,
     ): Heard {
         val kept = if (keepPcm) ShortArray(MAX_KEPT_SAMPLES) else EMPTY
@@ -172,7 +177,7 @@ internal class VoiceCapture(private val ctx: Context) {
         }
         try {
             return listenGranted(
-                rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onLevel, openTurn, onPartial,
+                rec, maxMs, cancelled, keepPcm, endpointer, beep, decodeOnlyIfSpeech, kept, onLevel, openTurn, openVocab, onPartial,
             )
         } finally {
             VoiceSingleFlight.release()
@@ -192,6 +197,7 @@ internal class VoiceCapture(private val ctx: Context) {
         kept: ShortArray,
         onLevel: (Int) -> Unit,
         openTurn: Boolean,
+        openVocab: () -> VoiceDynVocab,
         onPartial: (String) -> Unit,
     ): Heard {
         var keptN = 0
@@ -227,7 +233,7 @@ internal class VoiceCapture(private val ctx: Context) {
             var fed = 0
             var ended = false
             // VOICE-OPEN-TURN: `null` ⇒ lượt này chạy y hệt 2.72 (xem KDoc tham số `openTurn` + [VoiceOpenTurnArm]).
-            val arm = if (openTurn) VoiceOpenTurnArm(rec, ep) { head -> onPartial(head) } else null
+            val arm = if (openTurn) VoiceOpenTurnArm(rec, ep, openVocab) { head -> onPartial(head) } else null
             while (!cancelled() && System.currentTimeMillis() < deadline) {
                 val n = record.read(buf, 0, buf.size)
                 if (n <= 0) {

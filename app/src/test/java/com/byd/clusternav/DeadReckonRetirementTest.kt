@@ -1,5 +1,6 @@
 package com.byd.clusternav
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -54,8 +55,9 @@ class DeadReckonRetirementTest {
             paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }
                 .filter { !retired.containsMatchIn(it.parent.fileName.toString()) }
                 .forEach { file ->
-                    file.toFile().readText().lineSequence().forEachIndexed { index, line ->
-                        val code = line.substringBefore("//").substringBefore("* ")
+                    // 2.93 wave 2C · TEST-STRIP-COPIES — bộ quét có trạng thái dùng chung, GIỮ số dòng (bản cũ cắt `//` và
+                    // `* ` từng dòng: `a * MockLoc.x()` bị cắt mất, comment khối không dấu `*` lại bị coi là mã).
+                    KotlinSource.stripComments(file.toFile().readText(), keepLines = true).lineSequence().forEachIndexed { index, code ->
                         if (callSite.containsMatchIn(code)) offenders += "$file:${index + 1}"
                     }
                 }
@@ -121,9 +123,8 @@ class DeadReckonRetirementTest {
         val root = app("src/main/java/com/byd/clusternav")
         Files.walk(root).use { paths ->
             paths.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }.forEach { file ->
-                file.toFile().readText().lineSequence().forEachIndexed { index, line ->
-                    // Bỏ chú thích TRƯỚC khi soi — cùng cách bài `no active source…` ở trên làm.
-                    val code = line.substringBefore("//").substringBefore("* ")
+                // Bỏ chú thích TRƯỚC khi soi — cùng cách bài `no active source…` ở trên làm (bộ quét dùng chung, giữ số dòng).
+                KotlinSource.stripComments(file.toFile().readText(), keepLines = true).lineSequence().forEachIndexed { index, code ->
                     banned.forEach { needle ->
                         if (code.contains(needle)) offenders += "$file:${index + 1} → $needle"
                     }

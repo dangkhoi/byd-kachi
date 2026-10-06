@@ -115,7 +115,7 @@ class HiddenParkTest {
     }
 
     /**
-     * [ĐO máy ảo 03/10 `p3/e2e-L4/m5a`] YT Music tự mở activity chính NEW_TASK lên display 0 TRƯỚC màn nhà (`l4-view-escaped`
+     * [ĐO máy ảo 03/10 `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)] YT Music tự mở activity chính NEW_TASK lên display 0 TRƯỚC màn nhà (`l4-view-escaped`
      * nguyên văn; màn ảo ẩn của lượt = 284, trống — cùng cách ghép của `BehindHomeHiddenStageTest`). ⇒ dấu 3311 TRƯỚC K12, K12
      * NGAY; bản đọc sau (`l4-view-after-k12` nguyên văn) thấy màn ảo 284 trống ⇒ nhả SAU K12, không đỗ.
      */

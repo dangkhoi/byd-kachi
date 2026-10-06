@@ -92,6 +92,8 @@ object CameraViewPlan {
      *
      * @param strip chỉ số dải của phiên — quyết tâm quang ([CameraGlUniforms.sourceCentre]).
      * @param left bên xi-nhan — dấu của mọi phép dịch theo x ([CameraDewarpPrefs.panXSign]).
+     * @param panXSign 2.93 — dấu dịch x của CAMERA đang xem ([CameraWhich.panXSign]); mặc định = theo [left] (hai camera
+     *   gương, y như 2.92). Camera GIỮA (sau/trước) truyền `0` ⇒ hai núm dịch theo bên không áp (KDoc [CameraWhich]).
      */
     fun gl(
         mode: String,
@@ -105,18 +107,24 @@ object CameraViewPlan {
         left: Boolean,
         knobs: Knobs,
         texMatrix: Boolean,
+        panXSign: Int = CameraDewarpPrefs.panXSign(left),
     ): CameraGlUniforms {
         val m = if (CameraViewMode.isMode(mode)) mode else CameraViewMode.defaultMode()
         val centre = CameraGlUniforms.sourceCentre(crops.content, strip)
         val fit = fit(m, zoomPct, crops, streamW, streamH)
-        val sign = CameraDewarpPrefs.panXSign(left)
+        // 2.93 — camera GIỮA (`panXSign == 0`): hai núm dịch-x theo bên KHÔNG áp (pan 0, dấu +1 vô hại vì pan đã 0);
+        // camera gương: đúng dấu + đúng pref như 2.92 (bài `CameraViewPlanTest` ghim từng trường).
+        val centreCam = panXSign == 0
+        val sign = if (centreCam) 1 else panXSign
+        val widePanX = if (centreCam) CameraDewarpPrefs.PAN_DEFAULT else knobs.widePanXPct
+        val panX = if (centreCam) CameraDewarpPrefs.PAN_DEFAULT else knobs.panXPct
         return when (m) {
             CameraViewMode.WIDE -> CameraGlUniforms.of(
                 crop = crops.content, srcCentreX = centre[0], srcCentreY = centre[1],
                 streamW = streamW, streamH = streamH, rotationDeg = rotationDeg, flipH = mirror,
                 amountPct = CameraDewarpPrefs.AMOUNT_MAX, focalPct = knobs.wideFocalPct, kPct = knobs.kPct,
                 scalePct = knobs.scalePct, centerXPct = knobs.centerXPct, centerYPct = knobs.centerYPct,
-                panXPct = knobs.widePanXPct, panYPct = CameraDewarpPrefs.PAN_DEFAULT, panXSign = sign,
+                panXPct = widePanX, panYPct = CameraDewarpPrefs.PAN_DEFAULT, panXSign = sign,
                 texMatrix = texMatrix, kappaPct = knobs.wideKappaPct, fit = fit, mode = m,
             )
             CameraViewMode.FISHEYE -> CameraGlUniforms.of(
@@ -131,7 +139,7 @@ object CameraViewPlan {
                 crop = crops.content, srcCentreX = centre[0], srcCentreY = centre[1],
                 streamW = streamW, streamH = streamH, rotationDeg = rotationDeg, flipH = mirror,
                 amountPct = knobs.amountPct, focalPct = knobs.focalPct, kPct = knobs.kPct, scalePct = knobs.scalePct,
-                centerXPct = knobs.centerXPct, centerYPct = knobs.centerYPct, panXPct = knobs.panXPct,
+                centerXPct = knobs.centerXPct, centerYPct = knobs.centerYPct, panXPct = panX,
                 panYPct = knobs.panYPct, panXSign = sign, texMatrix = texMatrix, fit = fit, mode = m,
             )
         }

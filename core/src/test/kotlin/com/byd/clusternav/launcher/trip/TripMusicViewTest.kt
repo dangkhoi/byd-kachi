@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * L4 · D3(ii) — link vào app nhạc ĐANG Ở Ô bằng K4-VIEW ([TripMusicView]). [ĐO máy ảo 03/10 `p3/e2e-L4/m5a`, fixture
+ * L4 · D3(ii) — link vào app nhạc ĐANG Ở Ô bằng K4-VIEW ([TripMusicView]). [ĐO máy ảo 03/10 `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo), fixture
  * `l4-view-escaped` + `l4-view-after-k12` NGUYÊN VĂN]: VIEW vào màn ảo ô ⇒ trung chuyển YT Music ở lại màn ảo, activity chính
  * NEW_TASK lên display 0 TRƯỚC màn nhà (task 3311) ⇒ K12 đưa màn nhà lên (máy ảo: che ≈ 0,7 s, rồi phát Gangnam Style sau
  * màn nhà). Bản đọc "trước" và "sau K8" là DẪN XUẤT (ghi tại chỗ) vì lượt đo thật có VietMap — không phải YT Music — trong ô.

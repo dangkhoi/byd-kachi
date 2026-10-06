@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.launcher.trip.TripStepCode
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.Test
  * ═══ L4 (FIELD-286-BEHIND) — bài canh TĨNH cho phần `:app` của bản vá ═══════════════════════════════════════════════
  *
  * Owner 03/10 (xe thật, 2.86): chạy nền + nhạc YouTube không chạy, Cài đặt vẫn "đã chạy". Mỗi bài khoá một điều đã ĐO trên
- * máy ảo 03/10 (`p3/e2e-L4/…`) hoặc một quyết định D1–D5 của điều phối (thay owner):
+ * máy ảo 03/10 (`e2e-L4 · …` (bằng chứng phiên, ngoài repo)) hoặc một quyết định D1–D5 của điều phối (thay owner):
  *  - D2(a) màn ảo ẨN: cùng cờ 8|256 với màn ảo ô, KHÔNG lệnh `wm` (R0.7), đăng ký/gỡ đăng ký với cổng ownership;
  *  - lớp che phải `onResume` TRƯỚC khi dựng giữ chỗ ([ĐO `e6-hidden` lượt 1]: giữ chỗ bị tỉa `recent-task-trimmed`);
  *  - lớp che tự gỡ nếu bị đẩy sang display khác (rào an toàn cho ROM không tôn trọng cờ 256 — [CHƯA BIẾT] trên ROM BYD);
@@ -109,9 +110,8 @@ class L4TripBehindContractTest {
         assertEquals(1, Regex("""@Suppress\("DEPRECATION"\)""").findAll(cover).count(), "không chặn DEPRECATION ở chỗ khác của lớp che")
     }
 
-    /** Bỏ chú thích `//…` và `/* … */` (đủ cho bài canh import — không phải bộ phân tích Kotlin). */
-    private fun stripComments(src: String): String =
-        src.replace(Regex("""(?s)/\*.*?\*/"""), " ").replace(Regex("""//[^\n]*"""), " ")
+    /** Bỏ chú thích dòng + khối — ĐÚNG bộ quét của `SourceRoots.codeOf` ([KotlinSource.stripComments]: giữ chuỗi, khối lồng nhau). */
+    private fun stripComments(src: String): String = KotlinSource.stripComments(src)
 
     /** Import mà tên (hoặc bí danh) không xuất hiện trong MÃ (ngoài dòng import, ngoài chú thích) — Kotlin không báo lỗi. */
     private fun unusedImports(src: String): List<String> {

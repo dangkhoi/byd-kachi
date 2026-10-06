@@ -43,23 +43,34 @@ import com.byd.clusternav.launcher.KachiSpace as Sp
  * kênh · cài/gỡ gói) đăng ký ở [onAttachedToWindow], gỡ ở [onDetachedFromWindow] (mẫu `ShellAccessUi.tileHint`) ⇒ view
  * tháo khỏi cây không còn bị gọi, không rò Activity. Icon + nhãn bung trên luồng nền ([IO]) rồi gắn về luồng vẽ ([MAIN]),
  * cùng lẽ `AppDrawerApps.tile`: `rebuild` chạy ở mọi lần `setConfig`/`restyle` của thanh nút.
+ *
+ * 2.93 · SHORTCUT-GRID-SCROLL-KEEP (spec `kachi-293-slot.html` R1, luật `ShortcutScrollKeep`): DỰNG LẠI cấu trúc ([rebuild]) chỉ
+ * khi danh sách khác danh sách đã dựng ([built]) — gắn lại view cùng danh sách và phát tin cài/gỡ gói CỦA DANH SÁCH chỉ nạp lại
+ * icon tại chỗ ([refresh]); gói ngoài danh sách không chạm gì. Lượt dựng lại thật chuyển vị trí cuộn người lái đã chọn sang
+ * khung mới. 2.92 dựng lại cả lưới ở MỌI phát tin của hệ thống ⇒ vị trí về 0, cú kéo dở bị cắt.
+ *
+ * 2.93 wave 2A · SHORTCUT-SCROLL-REBUILD (spec `kachi-293-wave2a.html` §4.3, senior review SLOT Pass 2 mục 4): một view MỚI của
+ * cùng ô (đổi Sáng/Tối `WorkspaceView.restyle`, đổi đơn vị `rebuildWidgetSlots`, Activity dựng lại) bắt đầu từ vị trí người lái
+ * đã chọn ở view cũ — nhớ trong tiến trình theo [scrollKey] (ô + tổ hợp widget, [ShortcutScrollMemory]); `null` (khối thanh
+ * nút · bản nháp đo sức chứa) ⇒ như cũ.
  */
 internal class ShortcutIconsView @JvmOverloads constructor(
     context: Context,
     private val grid: Boolean = false,
     private val compact: Boolean = false,
+    private val scrollKey: String? = null,
 ) : LinearLayout(context) {
 
     /** Thanh nút đang DỌC (viền trái/phải) ⇒ khối cao ra; ngang ⇒ khối rộng ra. Chỉ có nghĩa khi [grid] = `false`. */
     var vertical: Boolean = false
-        set(v) { field = v; if (isAttachedToWindow) rebuild() }
+        set(v) { field = v; built = null; if (isAttachedToWindow) rebuild() }
 
     /**
      * 2.89 · B3 DOCK-SCALE — khối thanh nút ở cỡ ≠ 100 %: mỗi khe lấp TRỌN bề dày thanh (ngang trục) để vùng chạm của icon
      * = khe ≥ 48 dp thật × bề dày thanh, dù icon vẽ nhỏ theo %. `false` (100 % · lưới widget) ⇒ khe vuông như 2.88.
      */
     var fillAcross: Boolean = false
-        set(v) { field = v; if (isAttachedToWindow) rebuild() }
+        set(v) { field = v; built = null; if (isAttachedToWindow) rebuild() }
 
     private class Cell(val sc: AppShortcut, val view: ImageView) {
         var installed = true
@@ -70,19 +81,26 @@ internal class ShortcutIconsView @JvmOverloads constructor(
 
     private val cells = ArrayList<Cell>()
 
+    /** 2.93 · R1 — danh sách mà [cells] đang vẽ (`null` = chưa dựng / cấu hình khối đổi lúc tháo ⇒ lần gắn sau dựng lại). */
+    private var built: List<AppShortcut>? = null
+
     /** Lượt dựng — icon bung xong của lượt CŨ không được gắn vào ô của lượt mới. */
     private var generation = 0
 
     /** Cỡ icon (dp) lưới vừa khớp theo khung thật (R-SI1); 0 = chưa khớp lượt này ⇒ dùng [baseIconDp]. */
     private var fittedDp = 0
 
-    private val onList: () -> Unit = { MAIN.post { if (isAttachedToWindow) rebuild() } }
+    private val onList: () -> Unit = { MAIN.post { if (isAttachedToWindow && ShortcutScrollKeep.needsRebuild(built, ShortcutHub.items())) rebuild() } }
 
     // Đọc trạng thái MỚI NHẤT lúc vẽ (bên nghe có thể tới ngược thứ tự từ hai luồng) — cùng luật `ShellAccessUi.tileHint`.
     private val onReady: (ShellReadinessState) -> Unit = { _ -> MAIN.post { paintDim() } }
 
+    /** 2.93 · R1 — gói NGOÀI danh sách ⇒ không làm gì; gói trong danh sách ⇒ nạp lại icon/nhãn/mờ tại chỗ (không dựng lại). */
     private val onPackages = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context, intent: Intent) { MAIN.post { if (isAttachedToWindow) rebuild() } }
+        override fun onReceive(ctx: Context, intent: Intent) {
+            val pkg = intent.data?.schemeSpecificPart
+            MAIN.post { if (isAttachedToWindow && ShortcutScrollKeep.touches(pkg, cells.map { it.sc.pkg })) refresh() }
+        }
     }
     private var receiverOn = false
 
@@ -96,7 +114,8 @@ internal class ShortcutIconsView @JvmOverloads constructor(
         ShortcutHub.addListener(onList)
         ShellReadiness.addListener(onReady)
         registerPackages()
-        rebuild()
+        // 2.93 · R1 — gắn lại cùng danh sách ⇒ chỉ làm mới (gói có thể đã cài/gỡ lúc tháo); khác ⇒ dựng lại (giữ vị trí cuộn).
+        if (ShortcutScrollKeep.needsRebuild(built, ShortcutHub.items())) rebuild() else refresh()
     }
 
     override fun onDetachedFromWindow() {
@@ -112,11 +131,14 @@ internal class ShortcutIconsView @JvmOverloads constructor(
      * khung cuộn của thanh.
      */
     private fun rebuild() {
+        // R1: vị trí người lái chọn — view cũ cùng lượt; view MỚI của ô ⇒ bản nhớ trong tiến trình (wave 2A).
+        val keep = (getChildAt(0) as? ShortcutGridLayout)?.keep ?: scrollKey?.let(ShortcutScrollMemory::recall) ?: ShortcutScrollKeep.Wanted.ORIGIN
         generation++
         fittedDp = 0
         removeAllViews()
         cells.clear()
         val items = ShortcutHub.items()
+        built = items
         if (!grid) {
             orientation = if (vertical) VERTICAL else HORIZONTAL
             val pad = dpi(context, Bars.SHORTCUT_PAD)
@@ -129,7 +151,13 @@ internal class ShortcutIconsView @JvmOverloads constructor(
             }
         }
         if (items.isEmpty()) { if (fillAcross) addView(emptyCell(), cellLp()) else addView(emptyCell()); return }
-        if (grid) buildGrid(items) else items.forEach { addView(cell(it), cellLp()) }
+        if (grid) buildGrid(items, keep) else items.forEach { addView(cell(it), cellLp()) }
+        load(generation)
+        paintDim()
+    }
+
+    /** 2.93 · R1 — nạp lại icon + nhãn + "còn cài" của các ô ĐANG có (cùng lượt dựng) rồi tô mờ: không đổi cây view, không đổi vị trí cuộn. */
+    private fun refresh() {
         load(generation)
         paintDim()
     }
@@ -138,9 +166,11 @@ internal class ShortcutIconsView @JvmOverloads constructor(
      * R-SI1 — lưới widget (ô to + ô nén): MỘT [ShortcutGridLayout] lấp khung, đặt icon theo `ShortcutGridFit`. Báo cỡ
      * của lượt CŨ (khung đã tháo) bị bỏ qua nhờ [generation].
      */
-    private fun buildGrid(items: List<AppShortcut>) {
+    private fun buildGrid(items: List<AppShortcut>, keep: ShortcutScrollKeep.Wanted) {
         val gen = generation
-        val box = ShortcutGridLayout(context) { px -> if (gen == generation) fitIcons(px) }
+        val box = ShortcutGridLayout(context, keep, { w -> scrollKey?.let { ShortcutScrollMemory.remember(it, w) } }) { px ->
+            if (gen == generation) fitIcons(px)
+        }
         items.forEach { box.addView(cell(it)) }
         addView(box, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
@@ -225,7 +255,9 @@ internal class ShortcutIconsView @JvmOverloads constructor(
                     cell.generic = icon == null
                     // [ĐO máy ảo 02/10 m8] app đã gỡ không có icon ⇒ ô TRỐNG, "mờ" không nhìn ra được — vẽ hình app chung
                     // (cùng hình ô "chưa có lối tắt") để R1.2 "icon mờ" có thứ để mờ.
-                    if (icon != null) cell.view.setImageDrawable(icon) else genericIcon(cell.view)
+                    // 2.93 QA F1 [ĐO máy ảo 07/10]: nạp lại TẠI CHỖ (R1) ⇒ app cài lại nhận icon thật trên view vừa mang hình
+                    // chung đã tint — phải gỡ tint, không thì icon xám tới lần dựng lại.
+                    if (icon != null) { KachiIcons.untint(cell.view); cell.view.setImageDrawable(icon) } else genericIcon(cell.view)
                     label?.let { cell.view.contentDescription = it }
                     paintDim()
                 }

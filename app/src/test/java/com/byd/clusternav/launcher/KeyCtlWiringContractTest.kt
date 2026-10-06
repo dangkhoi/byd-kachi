@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -62,8 +63,17 @@ class KeyCtlWiringContractTest {
         val fire = SourceRoots.body(dispatch, "fun fire(ctx: Context, spec: String): Boolean")
         assertFalse(fire.contains("carControl") || fire.contains("readState"), "fire() chạy trong onKeyEvent — cấm chạm HAL")
         val fresh = SourceRoots.body(dispatch, "private fun fresh(app: Context, id: String): CarStatus?")
-        assertTrue(fresh.contains("c.refreshForRead(id) ?: c.carDemand.withSoloIfIdle(setOf(id)) { c.carStatusRepository.refreshNow() }"),
+        // 2.93 VOICE-READ-STALE-BG (đổi chốt có lý do): biểu thức dời NGUYÊN VĂN sang `AppContainer.readFresh` để giọng nói
+        // tiến trình chính dùng CHUNG (DRY, CLAUDE.md §4.1) — chốt canh cả lời gọi ở đây lẫn thân hàm ở AppContainer.
+        assertTrue(fresh.contains("AppContainer.get(app).readFresh(id)"), "phím gán nút phải đọc qua cửa đọc-tươi dùng chung")
+        val readFresh = SourceRoots.body(SourceRoots.codeOf("src/main/java/com/byd/clusternav/AppContainer.kt"), "fun readFresh(id: String)")
+        assertTrue(readFresh.contains("refreshForRead(id) ?: carDemand.withSoloIfIdle(setOf(id)) { carStatusRepository.refreshNow() }"),
             "màn nhà khuất (poll đã dừng) ⇒ đọc TƯƠI đúng một datum — luật ở CarDataDemand.Holder.withSoloIfIdle (:core)")
+        // Senior review 2.93 Pass 1 · [P2]: hộp nhu cầu chỉ giữ MỘT tập ghim, mà cửa này có hai người gọi trên hai luồng (giọng
+        // nói ở luồng vẽ · phím ở làn nền) ⇒ cả biểu thức phải nằm TRONG khoá, nếu không lượt sau ghi đè ghim của lượt trước và
+        // cổng tốc độ của cốp đọc ảnh chụp cũ.
+        assertTrue(readFresh.trimStart().startsWith("= synchronized(freshLock) {"),
+            "readFresh phải khoá TOÀN BỘ lượt ghim + đọc (một người ghim tại một lúc): $readFresh")
     }
 
     @Test
@@ -82,7 +92,13 @@ class KeyCtlWiringContractTest {
         assertTrue(add.contains("pickTarget {"), "bước 2 phải qua bộ chọn loại đích")
         val pick = SourceRoots.body(section, "private fun pickTarget(onSpec: (String) -> Unit)")
         assertTrue(pick.contains("KeyCtlTargets.groups()"), "nhóm SINH từ registry, không chép tay")
-        assertTrue(pick.contains("pickApp(onSpec)") && pick.contains("pickControl(groups[kind - 1], onSpec)"))
+        // 2.93 · CAMERA-ON-DEMAND: loại đích thứ hai là *Camera theo yêu cầu* ⇒ nhóm xe dời một chỉ số (kind − 2).
+        assertTrue(pick.contains("pickApp(onSpec)") && pick.contains("pickControl(groups[kind - 2], onSpec)"))
+        assertTrue(pick.contains("1 -> pickCamera(onSpec)"), "loại đích camera phải nối vào bộ chọn camera")
+        val cam = SourceRoots.body(section, "private fun pickCamera(onSpec: (String) -> Unit)")
+        assertTrue(cam.contains("CameraDemand.KEY_OPS") && cam.contains("CameraDemand.keySpec(ops[i])"),
+            "đích camera SINH từ `:core` (danh sách + mã bền), không chép tay `cam:…`")
+        assertTrue("\"cam:" !in section, "mã `cam:` không được chép trần trong Cài đặt")
         val ctl = SourceRoots.body(section, "private fun pickControl(group: KeyCtlGroup, onSpec: (String) -> Unit)")
         assertTrue(ctl.contains("KeyCtlTargets.displayLabel(it)") && ctl.contains("onSpec(group.targets[i].spec)"))
         val lbl = SourceRoots.body(section, "private fun targetLabel(spec: String, targets: List<TargetOption>): String")
@@ -134,9 +150,8 @@ class KeyCtlWiringContractTest {
     fun `call site cua cac ham moi`() {
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             root.toFile().walkTopDown().filter { it.isFile && it.extension == "kt" }.map { f ->
-                // Bỏ chú thích như [SourceRoots.codeOf]: token nằm trong KDoc không phải một call site.
-                f.readText().replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .replace(Regex("(?m)//.*$"), "")
+                // Bỏ chú thích bằng ĐÚNG bộ quét của [SourceRoots.codeOf]: token nằm trong KDoc không phải một call site.
+                KotlinSource.stripComments(f.readText())
             }.toList()
         }.joinToString("\n")
         mapOf(

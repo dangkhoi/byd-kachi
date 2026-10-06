@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -82,11 +83,8 @@ class SpacingScaleContractTest {
 
     /** Bỏ chú thích để không bắt số nằm trong câu giải thích (vd "22dp → 48dp"). */
     private fun codeLines(p: Path): List<Pair<Int, String>> {
-        val stripped = p.toFile().readText()
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL)) { m ->
-                m.value.replace(Regex("[^\n]"), " ")            // giữ số dòng
-            }
-        return stripped.lines().mapIndexed { i, l -> (i + 1) to l.substringBefore("//") }
+        val stripped = KotlinSource.stripComments(p.toFile().readText(), keepLines = true)   // giữ số dòng (bộ quét dùng chung)
+        return stripped.lines().mapIndexed { i, l -> (i + 1) to l }
     }
 
     /**
@@ -219,8 +217,7 @@ class SpacingScaleContractTest {
             "LauncherWindows.kt" to 1,
             "DockAreaLayout.kt" to 1,
         ).forEach { (file, least) ->
-            val code = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$file")
-                .lines().joinToString("\n") { it.substringBefore("//") }
+            val code = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/$file")
             val hits = Regex("""Sp\.SLOT_GAP""").findAll(code).count()
             assertTrue(
                 hits >= least,
@@ -304,8 +301,7 @@ class SpacingScaleContractTest {
     @Test
     fun `KachiSpaceBars chi duoc khai hang`() {
         val src = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/KachiSpaceBars.kt")
-        val code = src.replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        val code = KotlinSource.stripComments(src)
         assertTrue(
             !Regex("""\b(?:${dpHelperNames.joinToString("|")})\(""").containsMatchIn(code),
             "tệp thang không được GỌI hàm đổi dp — gọi tức là nó đang vẽ, không còn là thang",
@@ -341,9 +337,7 @@ class SpacingScaleContractTest {
             Files.walk(root).toList().filter { it.toString().endsWith(".kt") }.forEach { p ->
                 val name = p.fileName.toString()
                 if (!allowed[name].isNullOrBlank()) return@forEach
-                val code = p.toFile().readText()
-                    .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .lines().joinToString("\n") { it.substringBefore("//") }
+                val code = KotlinSource.stripComments(p.toFile().readText())
                 if (Regex("""\b(?:${dpHelperNames.joinToString("|")})\(""").containsMatchIn(code) ||
                     Regex("""\bconst val [A-Z_]*DP\b""").containsMatchIn(code)
                 ) {

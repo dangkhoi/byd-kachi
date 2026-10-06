@@ -1,6 +1,8 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.launcher.camera.CameraCamConfig
 import com.byd.clusternav.launcher.camera.CameraSettingsIa
+import com.byd.clusternav.launcher.camera.CameraWhich
 import com.byd.clusternav.modules.clustercast.simplified.CastEnableDeferral
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -64,8 +66,14 @@ class ClusterProfileScopeCoverageTest {
         val keys = Regex(""""(camera_[a-z_]+)"""").findAll(src).map { it.groupValues[1] }.toSet()
         assertTrue(keys.size >= 29, "bộ quét camera thấy ${keys.size}")
         assertEquals(emptySet<String>(), ProfileScope.unclassified(keys))
-        assertEquals(emptySet<String>(), keys - (CameraSettingsIa.USER_KEYS + CameraSettingsIa.NO_UI_KEYS).toSet() - "camera_rotation",
+        // 2.93: sáu khoá góc/xoay/lật của hai camera gương rời USER_KEYS sang PER_CAMERA_KEYS (bộ chỉnh *Từng camera*) —
+        // vẫn là khoá IA có hàng ⇒ so với hợp ĐỦ ba danh sách (`CameraSettingsIa.ALL_KEYS`).
+        assertEquals(emptySet<String>(), keys - CameraSettingsIa.ALL_KEYS.toSet() - "camera_rotation",
             "khoá camera ngoài danh sách IA (trừ khoá di trú đời 2.67)")
+        // Khoá SINH (tên dựng ở `:core` CameraCamConfig — không literal nào ở `:app`, bộ quét trên không thấy): cũng phải
+        // xếp loại hết và nằm trong danh sách IA.
+        assertEquals(emptySet<String>(), ProfileScope.unclassified(CameraCamConfig.ALL_KEYS.toSet()), "khoá Từng camera CHƯA xếp loại")
+        assertEquals(emptySet<String>(), CameraCamConfig.ALL_KEYS.toSet() - CameraSettingsIa.ALL_KEYS.toSet())
     }
 
     /** Khoá theo hồ sơ KHÔNG có mục Cài đặt phải có mặt NGUYÊN VĂN ở tệp khai nó (chặt ngang `ClusterNavKeysContractTest`). */
@@ -74,7 +82,14 @@ class ClusterProfileScopeCoverageTest {
         assertTrue(catalog.contains("\"${ProfileScopeCluster.CAST_CATALOG_FILE}\""), "tên tệp ảnh chụp phải khớp tệp thật")
         listOf("bubbleX", "bubbleY").forEach { assertTrue(catalog.contains("\"$it\""), it) }
         val cam = code("PrefsAutomation.kt") + code("PrefsCameraDewarp.kt")
-        ProfileScopeCluster.CAMERA_PROFILE_KEYS.keys.forEach { assertTrue(cam.contains("\"$it\""), it) }
+        // 2.93: khoá *Từng camera* MỚI không có literal — tên SINH ở `:core` [CameraCamConfig] (một chỗ khai, có test), và
+        // tệp đọc/ghi của chúng phải đi qua ĐÚNG các hàm tên khoá ấy (không tự ghép chuỗi lần hai).
+        val generated = CameraCamConfig.NEW_KEYS.toSet()
+        ProfileScopeCluster.CAMERA_PROFILE_KEYS.keys.filterNot { it in generated }.forEach { assertTrue(cam.contains("\"$it\""), it) }
+        val perCam = code("PrefsCameraPerCam.kt")
+        listOf("cornerKey(w)", "placeKey(w)", "sizeKey(w)", "shapeKey(w)", "projectionKey(w)", "rotationKey(w)", "mirrorKey(w)")
+            .forEach { assertTrue(perCam.contains("CameraCamConfig.$it"), "PrefsCameraPerCam phải dùng tên khoá `:core` $it") }
+        assertFalse(Regex(""""camera_[a-z_]+"""").containsMatchIn(perCam), "không literal khoá camera nào ở PrefsCameraPerCam")
         assertTrue(code("PrefsAutomation.kt").contains("getSharedPreferences(\"${ProfileScopeCluster.CLUSTERNAV_FILE}\""))
     }
 
@@ -113,12 +128,20 @@ class ClusterProfileScopeCoverageTest {
         assertTrue(cluster in 0 until fill, "thứ tự init: cụm → khoá mới ($cluster/$fill)")
         val fn = SourceRoots.body(migrations, "internal fun WorkspacePrefs.fillNewProfileKeysOnce()")
         assertEquals(1, Regex("""\bsp\.edit\(\)""").findAll(fn).count(), "một Editor duy nhất")
-        assertTrue(fn.contains("ProfileScopeMigration.pendingKeys(ProfileScope.CLUSTERNAV_KEYS, done)"), "sổ duyệt ĐÚNG bảng ảnh chụp")
+        // 2.93 · PROFILE-NEW-FILE-FILL — sổ duyệt bảng ảnh chụp + MỐC họ (họ mới cũng thành mục sổ).
+        assertTrue(
+            fn.contains("ProfileScopeMigration.ledgerScope(ProfileScope.CLUSTERNAV_KEYS, ProfileScopeCluster.FAMILIES)") &&
+                fn.contains("ProfileScopeMigration.pendingKeys(scope, done)"),
+            "sổ duyệt ĐÚNG bảng ảnh chụp + mốc họ",
+        )
+        // "Đã chụp" xét trên ảnh của MỌI tệp (không riêng tệp đang rót) — khoá ở tệp MỚI phải được rót. Thử ĐỎ: bỏ `captured`.
+        assertTrue(fn.contains("scope.keys.associateWith") && fn.contains("ProfileScopeMigration.captured(shots)"))
+        assertTrue(fn.contains("captured, ProfileScopeCluster.familiesOf(file)"), "fillNewKeys phải nhận tập đã-chụp + họ của tệp")
         assertTrue(fn.contains(".fillNewKeys(") && fn.contains("ProfileScopeCluster.DEFERRED"), "phép rót ở :core (có test chạy thật)")
         assertTrue(fn.contains("storedSnapshot(stored,"), "ảnh sai kiểu không được làm init ném")
         assertFalse(fn.contains("getStringSet("), "đọc sổ bằng ép kiểu an toàn, không getStringSet (ném ClassCastException ở init)")
         assertTrue(
-            fn.contains("e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(ProfileScope.CLUSTERNAV_KEYS)).apply()"),
+            fn.contains("e.putStringSet(K_PROFILE_KEYS_FILLED, ProfileScopeMigration.ledgerOf(scope)).apply()"),
             "sổ ghi trên CHÍNH Editor đã ghi dữ liệu",
         )
         assertTrue(
@@ -134,13 +157,20 @@ class ClusterProfileScopeCoverageTest {
     @Test
     fun `nhap tep cu - anh ClusterNav dien cho trong bang gia tri song, sau lam sach va merge`() {
         val importFn = SourceRoots.body(profileIo, "internal fun WorkspacePrefs.importProfile(data: String, name: String? = null)")
+        val captured = importFn.indexOf("val captured = importedCaptured(plan.writes)")
         val clean = importFn.indexOf("cleanImportedSnapshot(suffix, v)")
         val merge = importFn.indexOf("mergeImportedCast(suffix, clean)")
-        val fill = importFn.indexOf("val value = fillImportedSnapshot(suffix, merged)")
+        val fill = importFn.indexOf("val value = fillImportedSnapshot(suffix, merged, captured)")
+        assertTrue(captured in 0 until clean, "2.93 PROFILE-NEW-FILE-FILL: 'đã chụp' tính TRƯỚC vòng ghi, trên MỌI ảnh của tệp")
         assertTrue(clean in 0 until merge && merge < fill, "thứ tự: làm sạch → merge → điền ($clean/$merge/$fill)")
-        val fn = SourceRoots.body(snapshot, "internal fun WorkspacePrefs.fillImportedSnapshot(suffix: String, value: Any?)")
+        val fn = SourceRoots.body(snapshot, "internal fun WorkspacePrefs.fillImportedSnapshot(suffix: String, value: Any?, captured: Boolean)")
         assertTrue(fn.contains("ProfileScopeMigration.fillNewKeys(") && fn.contains("ProfileScope.CLUSTERNAV_KEYS"), "cùng phép :core")
         assertTrue(fn.contains("ProfileScopeCluster.DEFERRED"), "khoá hoãn đi đúng đường bản chờ")
+        // Ảnh VẮNG chỉ được dựng khi hồ sơ nhập đã chụp ở tệp khác (S4 · R5 giữ cho tệp không có ảnh ClusterNav nào).
+        assertTrue(fn.contains("if (value == null && captured) \"\" else return value"), fn)
+        val cap = SourceRoots.body(snapshot, "internal fun importedCaptured(writes: Map<String, Any?>): Boolean")
+        assertTrue(cap.contains("ClusterSnapshotPlan.sanitize(") && cap.contains("ProfileScopeCluster.DECLARED_TYPES"),
+            "'đã chụp' đo trên ảnh ĐÃ làm sạch bằng cùng phép của cleanImportedSnapshot")
     }
 
     // ── VC-R2/R7/R8 · chụp–áp–nhập đi qua phép thuần ──────────────────────────────────────────
@@ -244,7 +274,25 @@ class ClusterProfileScopeCoverageTest {
                 "modules/voicekey/VoiceKeyBindingStore.kt" to "sp.edit().putString(key, encode(bindings))",
             )
         ),
-    )
+    ) + perCamIndirect()
+
+    /**
+     * 2.93 · CAMERA-PER-CAM-CONFIG — khoá theo hồ sơ của bộ chỉnh *Từng camera* ghi bằng TÊN SINH (`CameraCamConfig.xKey(w)`)
+     * ⇒ bộ quét literal không nối được; bằng chứng là đúng lời ghi trong `PrefsCameraPerCam.kt` (một lời cho mỗi loại khoá,
+     * dùng chung cho bốn camera). Hai khoá góc của camera gương (`camera_pos_left/right`) đã có mục riêng ở trên.
+     */
+    private fun perCamIndirect(): Map<String, Pair<PrefType, List<Pair<String, String>>>> {
+        val f = "PrefsCameraPerCam.kt"
+        return CameraWhich.ALL.flatMap { w ->
+            listOfNotNull(
+                if (w.side) null else CameraCamConfig.cornerKey(w) to (PrefType.STRING to listOf(f to "putString(CameraCamConfig.cornerKey(w), v)")),
+                CameraCamConfig.placeKey(w) to (PrefType.STRING to listOf(f to "e.putString(CameraCamConfig.placeKey(w), p.encode())")),
+                CameraCamConfig.sizeKey(w) to (PrefType.INT to listOf(f to "putInt(CameraCamConfig.sizeKey(w), v)")),
+                CameraCamConfig.shapeKey(w) to (PrefType.STRING to listOf(f to "putString(CameraCamConfig.shapeKey(w), v)")),
+                CameraCamConfig.projectionKey(w) to (PrefType.STRING to listOf(f to "putString(CameraCamConfig.projectionKey(w), v)")),
+            )
+        }.toMap()
+    }
 
     /**
      * Khai SAI kiểu thì lượt đổi hồ sơ bỏ đúng giá trị HỢP LỆ của người lái ở mọi lượt — mất cấu hình im lặng, đắt

@@ -33,7 +33,7 @@ object IconRepeat {
 
     /**
      * Luật cho ô KHÔNG NHÃN (dạng chỉ-icon của lưới widget, L5): đếm theo [silhouette], không theo tên tệp. QA 04/10
-     * ([ĐO] máy ảo, ảnh `l5/icononly-zoom.png`): bốn nút kính mang bốn tên khác nhau nên luật theo tên cho bỏ nhãn,
+     * ([ĐO] máy ảo, ảnh `icononly-zoom.png` (bằng chứng phiên, ngoài repo)): bốn nút kính mang bốn tên khác nhau nên luật theo tên cho bỏ nhãn,
      * nhưng ở 20–40dp bốn bóng xe chỉ khác một dấu kính cỡ 1–2px — người lái không phân biệt được kính nào. Ô nhóm vẫn
      * dùng [distinguishable] theo tên vì ở đó nhãn LUÔN hiện cạnh icon (icon chỉ là phụ).
      *

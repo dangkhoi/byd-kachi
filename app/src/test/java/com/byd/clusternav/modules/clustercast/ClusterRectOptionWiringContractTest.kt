@@ -6,6 +6,7 @@ import com.byd.clusternav.launcher.ProfileSharePolicy
 import com.byd.clusternav.launcher.PrefType
 import com.byd.clusternav.launcher.SettingsCatalog
 import com.byd.clusternav.launcher.SettingsGroup
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -124,8 +125,7 @@ class ClusterRectOptionWiringContractTest {
         val all = SourceRoots.moduleSourceRoots().flatMap { root ->
             Files.walk(root).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() }
         }.joinToString("\n") { p ->
-            p.toFile().readText().replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                .lines().joinToString("\n") { it.substringBefore("//") }
+            KotlinSource.stripComments(p.toFile().readText())
         }
         mapOf(
             "applySessionPin(" to "fun SimpleCastCoordinator.applySessionPin(",

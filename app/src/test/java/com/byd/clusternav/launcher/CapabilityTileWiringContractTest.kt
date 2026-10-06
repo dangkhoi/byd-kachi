@@ -40,9 +40,7 @@ class CapabilityTileWiringContractTest {
      * với `OpenAppWiringContractTest.code` — (a) câu giải thích thường nhắc chính tên hàm đang bị cấm gọi ⇒ quét thô
      * sẽ báo sai; (b) chặn kiểu "đạt test" bằng cách viết token vào comment thay vì nối dây thật.
      */
-    private fun code(relative: String): String = SourceRoots.text(relative)
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        .replace(Regex("""//[^\n]*"""), "")
+    private fun code(relative: String): String = SourceRoots.codeOf(relative)
 
     // ── Đ4: thanh nút nhận trạng thái xe ─────────────────────────────────────────────────────────
 

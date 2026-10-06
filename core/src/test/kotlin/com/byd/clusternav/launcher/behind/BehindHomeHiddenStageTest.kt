@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test
  * bố cục chỉ có widget ⇒ `stagingSlot` = null ⇒ `NO_STAGE`, 0 lệnh. Bài này khoá:
  *  1. D2(a) — bố cục không ô app sống KHÔNG còn ra `NO_STAGE`: chọn màn ảo ẨN ([BehindHomePlan.stageFor]) — ô sống vẫn đứng
  *     trước (CLAUDE.md §6);
- *  2. chuỗi màn ảo ẩn đúng thứ tự đã đo (`p3/e2e-L4/e6c-hidden`, fixture `l4-hidden-*` nguyên văn): tạo → K4 → lớp che → giữ
+ *  2. chuỗi màn ảo ẩn đúng thứ tự đã đo (`e2e-L4 · e6c-hidden` (bằng chứng phiên, ngoài repo), fixture `l4-hidden-*` nguyên văn): tạo → K4 → lớp che → giữ
  *     chỗ → move-task → gỡ che → NHẢ màn ảo chỉ khi đọc thấy trống; 0 lệnh `--display 0`;
- *  3. X thoát lên display 0 trong lúc dàn (trung chuyển VIEW, [ĐO `p3/e2e-L4/m5a`]) ⇒ K12 NGAY, không dựng lớp che;
+ *  3. X thoát lên display 0 trong lúc dàn (trung chuyển VIEW, [ĐO `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)]) ⇒ K12 NGAY, không dựng lớp che;
  *  4. rào nhả: X kẹt màn ảo ẩn ⇒ K7 (rào màn nhà + camera) + dấu + K12 rồi mới nhả; K7 bị rào chặn ⇒ GIỮ màn ảo;
- *  5. D4 — task KHÔNG tiến trình ([ĐO `p3/e2e-L4/m1-stale-task-k4`]) là NGUỘI ⇒ K4 chạy (K4 kéo task cũ vào màn ảo).
+ *  5. D4 — task KHÔNG tiến trình ([ĐO `e2e-L4 · m1-stale-task-k4` (bằng chứng phiên, ngoài repo)]) là NGUỘI ⇒ K4 chạy (K4 kéo task cũ vào màn ảo).
  */
 class BehindHomeHiddenStageTest {
 
@@ -103,7 +103,7 @@ class BehindHomeHiddenStageTest {
     }
 
     /**
-     * [ĐO máy ảo 03/10 `p3/e2e-L4/m5a`]: K4-VIEW ⇒ trung chuyển YT Music trên màn ảo, activity chính NEW_TASK lên display 0
+     * [ĐO máy ảo 03/10 `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)]: K4-VIEW ⇒ trung chuyển YT Music trên màn ảo, activity chính NEW_TASK lên display 0
      * TRƯỚC màn nhà (fixture `l4-view-escaped` nguyên văn — ghép với `l4-hidden-before` làm bản đọc trước). Chuỗi phải K12 NGAY:
      * không dựng lớp che, không giữ chỗ, không move-task; dấu của task trên display 0 ghi TRƯỚC K12; màn ảo nhả SAU K12.
      */
@@ -188,19 +188,29 @@ class BehindHomeHiddenStageTest {
     }
 
     /**
-     * Soát vòng 2 [P3] (a) — afterStage: X ĐÃ được thấy tự lên display 0 trước màn nhà (trung chuyển VIEW, `m5a`), rồi bản đọc
-     * lại của afterStage hỏng một lượt. Bản cũ: `[]` ⇒ `fellFront` false ⇒ trả `KEPT_UNDER` (OK ⇒ Cài đặt nói "đang chạy ẩn")
-     * trong khi YT Music che màn nhà. Nay: `UNREAD`, 0 dấu, 0 K12 (không quyết trên bản đọc không có).
+     * Soát vòng 2 [P3] (a) → ĐỔI GHIM ở 2.93 · BEHIND-FELL-UNREAD-K12 (spec `docs/specs/kachi-293-slot.html` R4, có lý do): afterStage
+     * của chuỗi màn ảo ẩn — lượt chờ ĐÃ ĐỌC ĐƯỢC X tự lên display 0 trước màn nhà (trung chuyển VIEW, `m5a`: bản đọc thứ hai =
+     * `l4-view-escaped` nguyên văn), rồi bản đọc lại của afterStage hỏng một lượt. Bản vòng 2: `UNREAD`, 0 dấu, 0 K12 ⇒ YT Music che
+     * màn nhà tới khi người lái tự bấm Home (cùng lỗi mà soát vòng 3 đã chữa cho `vacate` sau K7). Nay: dấu theo CHÍNH bản đọc lúc
+     * chờ (task id thật — 3311) TRƯỚC K12 (rào camera), mã `X_FRONT_HOME_RESTORED` — CÙNG mã + cùng thứ tự lệnh với đường đã đo
+     * `m5a` khi bản đọc lại đọc được (bài `X thoat len display 0 khi dang dan…`); màn ảo nhả SAU K12 theo bản đọc dọn (đọc được,
+     * trống). Không có lượt chờ thấy X (bản đọc hỏng không kèm bằng chứng) ⇒ vẫn `UNREAD` — bài `doc lai hong sau K4…` ở trên.
      */
     @Test
-    fun `doc lai hong o afterStage sau khi thay X len truoc man nha - UNREAD, khong dau, khong K12`() {
+    fun `doc lai hong o afterStage sau khi luot cho DA THAY X truoc man nha - dau theo ban doc luc cho, VAN K12`() {
         val view: (Int) -> String = { vd -> "VIEW→$vd" }
         val r = Rig(listOf(text("l4-hidden-before"), text("l4-view-escaped"), "", text("l4-view-after-k12")), vd = 284)
         val out = r.seq.startBehindHidden(ytm, r.port, view = view)
-        assertEquals(Result.UNREAD, out.result, out.line)
-        assertFalse(r.log.any { it == k12 || it.startsWith("MARK") }, "đọc hỏng ⇒ không dấu, không K12: ${r.log}")
-        assertEquals(com.byd.clusternav.launcher.trip.TripStepCode.Result.UNCONFIRMED,
-            com.byd.clusternav.launcher.trip.TripOutcome.ofBehind(out.result).result, "sổ không được nói 'đã chạy ẩn'")
+        assertEquals(Result.X_FRONT_HOME_RESTORED, out.result, out.line)
+        assertTrue(out.line.contains("lượt chờ đã THẤY X trước màn nhà → dấu=1 (bản đọc lúc chờ) K12"), out.line)
+        val k12At = r.log.indexOf(k12)
+        assertTrue(k12At > 0, "K12 phải chạy: ${r.log}")
+        assertTrue(r.log.indexOf("MARK 3311 $ytm") in 0 until k12At, "dấu (task id của bản đọc lúc chờ) TRƯỚC K12: ${r.log}")
+        assertEquals(1, r.log.count { it == k12 }, "đúng MỘT K12: ${r.log}")
+        assertTrue(r.log.indexOf("RELEASE 284") > k12At, "nhả màn ảo SAU K12: ${r.log}")
+        assertFalse(r.log.any { it.startsWith("COVER") || it.startsWith("am stack move-task") }, "X đã tự lên ⇒ không lớp che, không move-task: ${r.log}")
+        assertEquals(com.byd.clusternav.launcher.trip.TripStepCode.HOME_RESTORED,
+            com.byd.clusternav.launcher.trip.TripOutcome.ofBehind(out.result), "cùng mã sổ của đường đã đo m5a (sống sau màn nhà, K12)")
     }
 
     /**
@@ -264,7 +274,7 @@ class BehindHomeHiddenStageTest {
     }
 
     /**
-     * D4 [ĐO máy ảo 03/10 `p3/e2e-L4/m1-stale-task-k4`, fixture `l4-m1-stale-task` nguyên văn]: Waze còn task 3245 trên
+     * D4 [ĐO máy ảo 03/10 `e2e-L4 · m1-stale-task-k4` (bằng chứng phiên, ngoài repo), fixture `l4-m1-stale-task` nguyên văn]: Waze còn task 3245 trên
      * display 0 mà tiến trình đã chết (`kill -9`) — bản 2.86 coi "có task" là đang chạy ⇒ `ALREADY_RUNNING`, 0 lệnh, chuyến ghi
      * đã chạy mà app không chạy. Nay: hỏi `pidof` ⇒ rỗng ⇒ NGUỘI ⇒ K4 (đã đo: K4 kéo task cũ vào màn ảo, `reparentToDisplay`).
      * Có pid ⇒ vẫn `ALREADY_RUNNING`, đúng hai lệnh chỉ đọc.

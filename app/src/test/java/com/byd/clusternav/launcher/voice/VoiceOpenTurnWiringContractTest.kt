@@ -95,7 +95,8 @@ class VoiceOpenTurnWiringContractTest {
     @Test
     fun `bo giu luot duoc noi that vao vong doc micro`() {
         val body = SourceRoots.body(capture, "private fun listenGranted(")
-        listOf("VoiceOpenTurnArm(rec, ep)", "arm.arm(fed)", "arm.stopReading(stop)", "arm?.result(fed)")
+        // 2.93 VOICE-OPEN-TURN-DYNVOCAB (đổi chốt có lý do): bộ giữ lượt nhận thêm từ vựng ĐỘNG của phiên (`openVocab`).
+        listOf("VoiceOpenTurnArm(rec, ep, openVocab)", "arm.arm(fed)", "arm.stopReading(stop)", "arm?.result(fed)")
             .forEach { assertTrue(body.contains(it), "vòng đọc micro thiếu lời gọi `$it` — hàm mới không có chỗ gọi") }
         // Giữ lượt phải xảy ra ĐÚNG tại điểm ngắt câu, không ở một nhánh nào khác.
         val stop = body.indexOf("if (stop) {")
@@ -172,6 +173,38 @@ class VoiceOpenTurnWiringContractTest {
         assertTrue(endpoint.contains("fun openTurnReady(): Boolean = vad != null"), "chỉ đường VAD mới giữ được lượt")
         assertTrue(endpoint.contains("fun segmentCount(): Int = vad?.segmentCount() ?: 0"), "đường lùi không có đoạn nào")
         assertTrue(endpoint.contains("fun speaking(): Boolean = vad?.speaking() ?: false"), "đường lùi không trả lời được")
+    }
+
+    /**
+     * ═══ 2.93 VOICE-OPEN-TURN-DYNVOCAB — phép ghép vế sau dùng từ vựng ĐỘNG của phiên, ở MỌI lối nghe có giữ lượt ═══
+     *
+     * Tới 2.92 `VoiceOpenTurn.refine` phân tích bằng từ vựng tĩnh ⇒ *"mở &lt;tên đã dạy / nhãn app máy&gt;"* ⟨ngừng⟩ *"vào
+     * ô số hai"* không ghép được (OQ10 spec voice-app-names). Bài `:core` `VoiceOpenTurnDynVocabTest` khoá phép ghép; bài
+     * này khoá DÂY: (1) mặc định của `VoiceCapture.listen` là tĩnh (chỗ gọi không tuyên bố ⇒ y nguyên); (2) cả ba lối nghe có
+     * `openTurn = true` truyền từ vựng phiên; (3) bộ giữ lượt hỏi `mayAttach`/`attach` bằng CÙNG một từ vựng, dựng SAU
+     * `tailRange` (lượt đủ nghĩa thường ngày không trả một lượt hỏi PackageManager nào); (4) đường đo WAV cũng vậy.
+     */
+    @Test
+    fun `tu vung dong cua phien di toi phep ghep o moi loi nghe`() {
+        assertTrue(capture.contains("openVocab: () -> VoiceDynVocab = { VoiceDynVocab.STATIC }"), "mặc định phải là từ vựng TĨNH")
+        assertTrue(listen.contains("openVocab = { sessionVocab() }"), "lượt nghe CHÍNH phải chở từ vựng phiên")
+        assertTrue(SourceRoots.body(turns, "): String = runCatching {").contains("openVocab = { sessionVocab(labels) }"),
+            "lượt NỐI chở từ vựng phiên (dùng lại bảng gọi app đã đọc — không hỏi PackageManager lần hai)")
+        assertTrue(code("src/main/java/com/byd/clusternav/launcher/voice/VoiceTeachSession.kt").contains("openVocab = { dynVocabOf("),
+            "lượt DẠY nghe bằng ĐÚNG cấu hình của lượt chính, kể cả phép ghép")
+        val result = SourceRoots.body(arm, "fun result(fedSamples: Int): Outcome?")
+        assertTrue(result.indexOf("ep.tailRange(") in 0 until result.indexOf("dynVocab()"), "dựng từ vựng chỉ khi CÓ vế sau")
+        // Senior review 2.93 Pass 1 · [P3]: vế trước DỞ ghép bằng `join` (không hỏi từ vựng) ⇒ không dựng — ca nói-tiếp chính.
+        assertTrue(result.contains("val dyn = if (VoiceOpenTurn.isOpen(head)) VoiceDynVocab.STATIC else dynVocab()"),
+            "vế dở không được trả một lượt hỏi PackageManager cho từ vựng mà join không dùng")
+        assertTrue(result.contains("VoiceOpenTurn.mayAttach(head, dyn)") && result.contains("VoiceOpenTurn.attach(head, tail, dyn)"),
+            "cổng rẻ và phép ghép phải hỏi CÙNG một từ vựng")
+        assertFalse(SourceRoots.body(arm, "fun stopReading(segmentClosed: Boolean): Boolean").contains("vocab"),
+            "vòng đọc micro không được dựng từ vựng động (một lượt hỏi PackageManager ở mọi lượt nói)")
+        assertTrue(probe.contains("VoiceOpenTurn.attach(head, tailText, vocab)"), "đường đo WAV ghép bằng từ vựng được truyền")
+        assertTrue(code("src/main/java/com/byd/clusternav/launcher/voice/VoiceSessionTerms.kt")
+            .contains("VoiceDynVocab(profiles, labels.keys.toList(), places, VoiceWiring.aliases(ctx, labels))"),
+            "từ vựng tầng nghe = CÙNG bốn nguồn mà VoiceDispatcher.parse dùng")
     }
 
     /** Đường đo WAV phải đi **cùng hai pha** với phiên thật, nếu không nó thôi nói về phiên thật. */

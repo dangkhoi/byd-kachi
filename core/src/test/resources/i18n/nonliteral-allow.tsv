@@ -6,6 +6,7 @@ core:launcher/Lang.kt:labelIn	Localized.labelIn — cùng dữ liệu với disp
 core:launcher/TelemetryRegistry.kt:shortLabelIn	nhãn ngắn datum (short/shortEn/labelEn) — runtime "telemetry:<id>.short"
 core:launcher/ControlDef.kt:shortLabelIn	nhãn ngắn nút (short/shortEn/labelEn) — runtime "control:<id>.short"
 core:launcher/ControlDef.kt:argsIn	lựa chọn của nút, cặp song song args[i]/argsEn[i] — runtime "control:<id>.args[i]"
+core:launcher/ActionMacros.kt:shortLabelIn	nhãn ngắn gói lệnh (short/shortEn/labelEn, 2.93) — runtime "macro:<id>.short"
 core:launcher/TyreBoard.kt:displayShortLabel	viết tắt góc bánh TyreCorner — runtime "TyreCorner.<X>.short"
 core:launcher/CapabilityGroupModel.kt:displaySub	dòng phụ nhóm (sub/subEn) — runtime "group:<id>.sub"
 core:launcher/SettingsCatalogGroups.kt:displaySub	dòng phụ nhóm Cài đặt (sub/subEn) — runtime "settings-group:<id>.sub"

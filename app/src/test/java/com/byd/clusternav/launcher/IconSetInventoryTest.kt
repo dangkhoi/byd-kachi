@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -147,7 +148,7 @@ class IconSetInventoryTest {
             s.filter { it.toString().endsWith(".kt") }.forEach { f ->
                 val name = f.fileName.toString()
                 if (name == "PickerBadge.kt") return@forEach
-                val code = f.toFile().readText().lines().joinToString("\n") { it.substringBefore("//") }
+                val code = KotlinSource.stripComments(f.toFile().readText())
                 Regex("""PickerBadge\.icon\(([^\n]*)\)""").findAll(code).forEach { m ->
                     callers++
                     val args = m.groupValues[1].split(',').size

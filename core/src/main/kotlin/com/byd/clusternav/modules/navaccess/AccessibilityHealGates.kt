@@ -341,6 +341,18 @@ object AccessibilityHealGates {
         }
 
     /**
+     * 2.93 · READY-RESTART-MID-CAST — mép THỜI GIAN của [lifecycleFireAllowed]: mốc `elapsedRealtime` muộn nhất mà pha còn cho bắn
+     * ([anchorAt] = mốc neo của lượt, như [lifecycleFireAllowed]). `null` = pha không có mép thời gian: [HealPhase.TAT_MAY] (cổng chỉ
+     * là "màn còn tắt") và [HealPhase.RUNNING] (không bao giờ bắn tự động). MỘT nguồn số với [withinMoXeGrace] / [withinBootGrace] —
+     * `HealCastDeferral` dùng nó để lượt chờ chiếu cụm không bao giờ đẩy lượt chữa ra khỏi cửa sổ.
+     */
+    fun fireWindowEnd(phase: HealPhase, anchorAt: Long): Long? = when (phase) {
+        HealPhase.MO_XE -> anchorAt + MO_XE_GRACE_MS
+        HealPhase.KHOI_DONG -> anchorAt + BOOT_GRACE_MS
+        HealPhase.TAT_MAY, HealPhase.RUNNING -> null
+    }
+
+    /**
      * Tiến trình này có phải vừa được dựng lại vì CHÍNH lượt force-stop trước không (mốc leo [escalatedAt] trong
      * lần nổ máy này và mới hơn [windowMs]) — để chấm điểm "chữa xong có ăn không" cho lượt tắt-máy, lượt mà
      * watchdog không chấm được (keep-alive chỉ lên lại lúc mở xe; nếu xe ngủ dài thì nhịp đầu đã nhả mốc).

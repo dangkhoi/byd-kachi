@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,9 +28,7 @@ class VmBubbleSwitchHonestyContractTest {
     private fun mainFiles(): List<Pair<String, String>> = SourceRoots.moduleSourceRoots().flatMap { root ->
         Files.walk(root).use { s ->
             s.filter { it.toString().endsWith(".kt") }.map { f ->
-                f.fileName.toString() to f.toFile().readText()
-                    .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                    .lines().joinToString("\n") { it.substringBefore("//") }
+                f.fileName.toString() to KotlinSource.stripComments(f.toFile().readText())
             }.toList()
         }
     }

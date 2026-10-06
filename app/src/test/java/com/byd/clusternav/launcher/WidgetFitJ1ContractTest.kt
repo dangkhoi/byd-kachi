@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -85,7 +86,8 @@ class WidgetFitJ1ContractTest {
         // được — FitValueRow); tầng không đọc được giữ phần co tới sàn như cũ (`if (!legible)` nay nằm TRONG fitValues).
         assertTrue(refit.contains("if (named.fold(false) { any, c -> c.fs.fitValues(floors.textPx, f.legible) || any })"))
         val hook = SourceRoots.body(layout, "private fun onContentChanged(")
-        assertTrue(hook.indexOf("items[child]?.fs?.fitValues(FitProbe.Floors.of(context).textPx, legible, tick = true)") in
+        // 2.93 FIT-REGROW (đổi ghim có lý do): luật giá trị ở nhịp nay trong `regrowOrShrink` (cùng thứ tự: TRƯỚC xét đo dò).
+        assertTrue(hook.indexOf("regrowOrShrink(child)") in
             0 until hook.indexOf("due(child, measured = false)"),
             "giá trị mới co / chia lại hàng NGAY, trước khi xét đo dò (lưới không đọc được ⇒ đo dò thưa 30 s)")
         val fv = SourceRoots.body(scale, "fun fitValues(floorPx: Float, legible: Boolean, tick: Boolean = false)")
@@ -116,8 +118,7 @@ class WidgetFitJ1ContractTest {
     @Test
     fun `ham moi co cho goi that va tep duoi 500 dong`() {
         val app = SourceRoots.moduleSourceRoots().filter { it.toString().contains("app") }
-        fun strip(t: String) = t.replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-            .lines().joinToString("\n") { it.substringBefore("//") }
+        fun strip(t: String) = KotlinSource.stripComments(t)
         fun uses(token: String, except: String): Boolean = app.any { root ->
             java.nio.file.Files.walk(root).use { s ->
                 s.filter { it.toString().endsWith(".kt") && it.fileName.toString() != except }

@@ -17,8 +17,7 @@ class TestBridgeCommandTest {
 
     private val files = setOf("kachi_workspace", "clusternav_prefs", "simple_cast_prefs")
 
-    private fun parse(vararg extras: Pair<String, Any?>) =
-        TestBridgeCommands.parse(mapOf(*extras), files)
+    private fun parse(vararg extras: Pair<String, Any?>) = TestBridgeCommands.parse(mapOf(*extras), files)
 
     private fun ok(vararg extras: Pair<String, Any?>): TestBridgeCommand {
         val r = parse(*extras)
@@ -51,8 +50,9 @@ class TestBridgeCommandTest {
                 extras[key] = when (key) {
                     TestBridgeCommands.EXTRA_SLOT -> 2
                     TestBridgeCommands.EXTRA_FILE -> files.first()
-                    // `prefs_set` kiểm khoá ngay ở tầng phân tích (danh sách trắng) ⇒ một chuỗi bừa là `bad_prefs_key`.
+                    // `prefs_set` · `diag_screen` (2.93 wave 2B) kiểm khoá / tên màn ngay ở tầng phân tích (danh sách trắng) ⇒ chuỗi bừa là lỗi.
                     TestBridgeCommands.EXTRA_KEY -> TestBridgeCommands.WRITABLE_PREFS_KEYS.first()
+                    TestBridgeCommands.EXTRA_ARG -> if (spec.name in TestBridgeScreenCommands.NAMES) TestBridgeScreenCommands.TARGETS.first() else "x"
                     else -> "x"
                 }
             }
@@ -376,7 +376,7 @@ class TestBridgeCommandTest {
         // Cả ba đợt là **móc ĐO** và đều đảo lại được bằng một cú chạm trong Cài đặt ⇒ ràng buộc (3) giữ.
         // ⚠ Danh sách nay ở [TestBridgeWritableKeys] (tách khỏi `TestBridgeCommands` ở 2.74 — CLAUDE.md §4.1);
         // `WRITABLE_PREFS_KEYS` là bí danh, bài này hỏi qua tên cũ **có chủ ý** vì đó là hợp đồng của `parse`.
-        assertEquals(49, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)   // 42 → 40 (2.77): lần đầu CO LẠI · 46 → 44 (2.83): −2 vạch chuẩn, owner "dẹp vạch đi" · 44 → 49 (2.92 CAMERA-FULL-VIEW): kiểu hình + thu phóng (chip/thanh kéo, đảo lại bằng một cú chạm ⇒ (3) giữ) + 3 núm Thẳng rộng [ĐOÁN] chốt bằng mắt trên xe
+        assertEquals(71, TestBridgeCommands.WRITABLE_PREFS_KEYS.size)   // 42 → 40 (2.77): lần đầu CO LẠI · 46 → 44 (2.83): −2 vạch chuẩn, owner "dẹp vạch đi" · 44 → 49 (2.92 CAMERA-FULL-VIEW): kiểu hình + thu phóng (chip/thanh kéo, đảo lại bằng một cú chạm ⇒ (3) giữ) + 3 núm Thẳng rộng [ĐOÁN] chốt bằng mắt trên xe · 49 → 71 (2.93 Từng camera: +22 `CameraCamConfig.NEW_KEYS`, mỗi khoá có hàng đảo lại được ⇒ (3) giữ)
         assertEquals(
             TestBridgeWritableKeys.ALL, TestBridgeCommands.WRITABLE_PREFS_KEYS,
             "bí danh phải trỏ ĐÚNG tập đã tách — một bản sao thứ hai ở đây là hai danh sách sẽ lệch",

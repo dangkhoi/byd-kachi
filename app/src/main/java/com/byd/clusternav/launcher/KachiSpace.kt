@@ -75,28 +75,31 @@ object KachiSpace {
      */
     const val STROKE = 2
 
+    // ⚠ 2.93 · EDGE-H-DEAD — ba hằng chết đã XOÁ: `DASH_ON`/`DASH_OFF` (chỗ đọc cuối gỡ ở f56c508; 0 `DashPathEffect` trong
+    // mã) và `CAPTION_COVER` (chỗ đọc cuối gỡ ở a549547 — dải phủ caption bỏ). Hằng không ai đọc là lời hứa sai về màn hình:
+    // `ScaleConstantsUsedContractTest` đỏ khi thang có hằng 0 chỗ dùng. [EDGE_H] (cùng lượt xoá) nay KHAI LẠI kèm chỗ đọc thật.
+
     /**
-     * **LỀ NGANG (trái+phải) của khung nội dung màn chính** — thanh trên · vùng ô · thanh nút.
+     * **LỀ NGANG (trái + phải) của khung nội dung màn chính** — thanh trên · vùng ô · thanh nút (13dp = 19px @1.5×).
      *
      * ## Owner 2026-09-20: *"canh lại margin header, taskbar, trái phải, bé lại còn 80%, đang dư thừa khoảng trắng phí"*
-     * `13` = **80 % của [L]** (16 × 0.8 = 12.8, làm tròn lên 13 để còn là số nguyên dp — làm tròn xuống 12 sẽ trùng
-     * đúng bậc [M] và bậc đó mang nghĩa khác, đọc code sẽ tưởng là lề-trong-thẻ).
+     * `13` = **80 % của [L]** (16 × 0,8 = 12,8, làm tròn LÊN để còn là số nguyên dp — làm tròn xuống 12 trùng đúng bậc [M],
+     * mà bậc đó mang nghĩa *lề-trong-thẻ*: đọc mã sẽ hiểu sai vai). [ĐO git f56c508] bản 1.87 KHAI hằng này mà không nối —
+     * khung giữ [L] cả bốn cạnh (S1b) ⇒ lời giao chưa từng lên màn; 2.93 wave 2A · HOME-EDGE-80 nối nó (spec
+     * `docs/specs/kachi-293-wave2a.html` §4.1). Bài canh: `HomeEdgeInsetContractTest`.
      *
-     * ## ⚠ Vì sao chỉ có MỘT con số cho cả ba thứ, không tách riêng header/taskbar
-     * Thanh trên, vùng ô và thanh nút đều là con của **cùng một** `LinearLayout` gốc ở [KachiHomeActivity]; lề ngang
-     * của chúng LÀ `paddingLeft/Right` của khung đó. Cho riêng hai thanh một lề nhỏ hơn thì phải dùng **lề âm** và
-     * hai thanh sẽ **lệch cột** với các ô ở giữa — một mép lệch 3dp đọc ra như lỗi vẽ, không như thiết kế. Nên lời
-     * giao *"header + taskbar còn 80 %"* thi hành bằng cách hạ đúng lề ngang dùng chung, và vùng ô đi theo (nó cũng
-     * đang thừa khoảng trắng ở đúng hai mép ấy).
+     * ## MỘT con số cho cả ba thứ, không tách header/taskbar
+     * Thanh trên, vùng ô và thanh nút là con của **cùng một** `LinearLayout` gốc ở [KachiHomeActivity]; lề ngang của chúng LÀ
+     * `paddingLeft/Right` của khung đó. Lề riêng cho hai thanh phải dùng lề âm ⇒ hai thanh LỆCH CỘT với các ô ở giữa (mép lệch
+     * 3dp đọc ra như lỗi vẽ). Nên hạ đúng lề ngang dùng chung; vùng ô đi theo. Cửa sổ app on-car (`LauncherWindows`
+     * `absoluteSlotRect`) lấy vị trí bằng `getLocationOnScreen` ⇒ tự theo lề mới, không có bẫy P-bug2.
      *
      * ## Chỉ NGANG — lề DỌC giữ [L]
-     * Lời giao ghi rõ *"Chỉ margin NGANG; không đổi chiều cao"*. Nên khung nội dung từ nay **không còn cách đều 4
-     * cạnh** như S1b (2026-09-14) chốt: trên/dưới [L], trái/phải bậc này. Đó là sai lệch có chủ đích với S1b và
-     * `HomeEdgeInsetContractTest` khoá cả hai con số để không ai "dọn cho đều" mất một nửa lời giao.
+     * Lời giao nói lề trái/phải; chiều cao không đổi. Khung nội dung từ nay KHÔNG còn cách đều 4 cạnh như S1b (2026-09-14) —
+     * sai lệch có chủ đích, bài canh khoá cả hai con số để không ai "dọn cho đều" mất một nửa lời giao.
      *
-     * **Không thể là một bậc của thang**: nó là 80 % của một bậc, tức nằm GIỮA [M] (12) và [L] (16) — thêm nó vào
-     * thang sẽ phá nhịp 4dp và mời "chọn số gần nhất" quay lại. Nó là một **hằng vai trò**, như [SLOT_GAP] (9 = 75 %
-     * của [M], cũng do owner chốt theo cảm nhận trên xe).
+     * **Không thể là một bậc của thang**: nằm GIỮA [M] và [L] — thêm vào thang là phá nhịp 4dp. Hằng VAI TRÒ như [SLOT_GAP]
+     * (9 = 75 % của [M], cũng do owner chốt theo cảm nhận trên xe).
      */
     const val EDGE_H = 13
 
@@ -193,7 +196,7 @@ object KachiSpace {
     /** Chấm chỉ báo tròn (badge "chưa kiểm trên xe", chấm màu ô). Trước T5 rải 6·7·9dp cho cùng một việc. */
     const val DOT = 8
 
-    // ── Vạch mảnh & nét đứt ──────────────────────────────────────────────────────────────────────────────
+    // ── Vạch mảnh ─────────────────────────────────────────────────────────────────────────────────────────
 
     /**
      * Chiều cao thanh tiến trình (4dp).
@@ -202,12 +205,6 @@ object KachiSpace {
      * Tách tên ra để sau này nới nhịp khoảng cách không âm thầm làm dày thanh tiến trình.
      */
     const val BAR_THIN = 4
-
-    /** Đoạn nét của viền đứt (ô trống). */
-    const val DASH_ON = 8
-
-    /** Đoạn trống của viền đứt. Ngắn hơn [DASH_ON] để viền còn đọc ra là một đường liền mạch. */
-    const val DASH_OFF = 4
 
     // ── Cỡ thành phần một-lần ────────────────────────────────────────────────────────────────────────────
     //
@@ -470,15 +467,6 @@ object KachiSpace {
      * kéo theo con số này — đổi nó là đổi một cách lách nền tảng đã đo trên máy thật.
      */
     const val CAPTION_INSET = 24
-
-    /**
-     * Cao của dải phủ che caption freeform, tính từ MÉP TRÊN cửa sổ app (dp). Caption do hệ vẽ, cao khác nhau theo
-     * ROM: [ĐO 2026-09-13 máy ảo google_apis 240dpi] cửa sổ app top=124px, caption xám tới y=187 ⇒ 63px = **42dp**;
-     * trên xe [CAPTION_INSET] = 24dp là số đã đo. Lấy trần 44dp để phủ hết cả hai mà không phải đo lại từng ROM;
-     * [OverlayHeads] cộng thêm khoảng từ mép trên ô tới mép trên cửa sổ app. Đổi số này là đổi một phép đo, không
-     * phải nhịp thang — nên nó đứng riêng như [CAPTION_INSET].
-     */
-    const val CAPTION_COVER = 44
 
     // ══ Tiện ích ════════════════════════════════════════════════════════════════════════════════════════
 

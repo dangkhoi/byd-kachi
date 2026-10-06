@@ -8,8 +8,8 @@ package com.byd.clusternav.launcher.camera
  * đi, bỏ luôn nguồn vì chốt là toàn cảnh khung ghép rồi"* và *"bỏ cái 1 cam ra, nhiều option quá rối cho người dùng,
  * bỏ luôn ở phần kỹ thuật"*.
  *
- * ## Hai danh sách, một khác biệt: có hàng trên màn hay không
- *  • [USER_KEYS] — **15 khoá** người lái quyết. Đây là TOÀN BỘ những gì màn Cài đặt bày ra. (10 khoá tới 2.79;
+ * ## Ba danh sách (2.93: + [PER_CAMERA_KEYS] — bộ chỉnh *Từng camera*, một bộ hàng cho camera đang chọn)
+ *  • [USER_KEYS] — **9 khoá** chung (2.93: sáu khoá góc/xoay/lật trái-phải dời sang [PER_CAMERA_KEYS]). (10 khoá tới 2.79;
  *    +2 *thử camera số* và +2 *dải hình* ở 2.80/2.81 — xem `specs/kachi-camera-source-picker.html`; 2.82 thêm +2
  *    *vạch chuẩn khoảng cách* rồi 2.83 **gỡ hẳn** theo owner, *"dẹp vạch đi"* ⇒ về lại 14; 2.92 ô tích *Nắn hình*
  *    nhường chỗ hàng chip *Kiểu hình* + thanh *Thu phóng* ⇒ 15 — `specs/kachi-292-camera-full-view.html`). Con số này
@@ -36,8 +36,8 @@ package com.byd.clusternav.launcher.camera
  * là quang học theo xe, không có hàng — cùng lẽ tám núm nắn.
  *
  * Danh sách là **chuỗi khoá prefs** (không phải mã UI) để bài canh so được với danh sách trắng của `prefs_set`:
- * hợp của hai danh sách phải bằng **đúng** tập `camera_*` mà cầu kiểm thử ghi được — một khoá mới sinh ra mà không
- * được xếp vào một trong hai là đỏ ngay (kể cả khoá chỉ dùng để đo).
+ * hợp của ba danh sách ([ALL_KEYS]) phải bằng **đúng** tập `camera_*` mà cầu kiểm thử ghi được — một khoá mới sinh ra
+ * mà không được xếp vào một trong ba là đỏ ngay (kể cả khoá chỉ dùng để đo).
  */
 object CameraSettingsIa {
 
@@ -49,13 +49,9 @@ object CameraSettingsIa {
     val USER_KEYS: List<String> = listOf(
         "camera_signal_enabled",
         "camera_on_cluster",
-        "camera_pos_left",
-        "camera_pos_right",
-        "camera_rot_left",
-        "camera_rot_right",
-        // 2.76 L7 — LẬT GƯƠNG từng bên. CAM-M1 (xe 27/09): owner so ảnh với gương thật ⇒ mặc định TẮT là ĐÚNG.
-        "camera_mirror_left",
-        "camera_mirror_right",
+        // ⚠ 2.93 · CAMERA-PER-CAM-CONFIG — sáu hàng *góc hiện* · *xoay* · *lật gương* trái/phải (2.35 · 2.71 · 2.76 L7)
+        // RỜI danh sách này sang bộ chỉnh *Từng camera* ([PER_CAMERA_KEYS]) — CÙNG sáu khoá, không khoá mới: một khoá có
+        // HAI hàng trên cùng một màn là hai chỗ để lệch (owner chạm hàng này, hàng kia vẽ giá trị cũ).
         "camera_shape",
         // 2.92 · CAMERA-FULL-VIEW (owner 06/10 *"mình cắt hơi lố"* · *"lấy hết được không?"*): ô tích *Nắn hình*
         // (`camera_dewarp_amount` 100/0) nhường chỗ cho MỘT hàng chip *Kiểu hình* (Nắn thẳng · Thẳng rộng · Gương cầu)
@@ -72,6 +68,18 @@ object CameraSettingsIa {
         "camera_pano_left",
         "camera_pano_right",
     )
+
+    /**
+     * 2.93 · CAMERA-PER-CAM-CONFIG — khoá của bộ chỉnh **Từng camera** (owner 06/10 *"cho chỉnh size và vị trí từng
+     * camera"*): một hàng chip chọn camera (sau · trái · phải · trước), rồi MỘT bộ hàng cho camera đang chọn — góc · vị trí
+     * kéo-thả · cỡ · hình khung · kiểu hình · xoay · lật. Nên số HÀNG trên màn không tăng theo số khoá (4 camera × 7
+     * khoá = 28 khoá, 9 hàng). Sáu khoá của hai camera gương là khoá CŨ dời từ [USER_KEYS] — thứ tự + tên ở
+     * [CameraCamConfig.ALL_KEYS] (một chỗ khai, bài canh so).
+     */
+    val PER_CAMERA_KEYS: List<String> = CameraCamConfig.ALL_KEYS
+
+    /** Mọi khoá camera ghi được qua `prefs_set` = ba danh sách rời nhau (bài canh `CameraSettingsIaTest`). */
+    val ALL_KEYS: List<String> get() = USER_KEYS + PER_CAMERA_KEYS + NO_UI_KEYS
 
     /**
      * Khoá **KHÔNG có hàng nào trên màn** — chỉ còn đường của cầu kiểm thử: ghi bằng `prefs_set`, đọc bằng

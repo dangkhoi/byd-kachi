@@ -44,6 +44,11 @@ COVER	chung	dai	đóng {n} giúp mình nhé
 COVER	trung	than_mat	mở {n} hí
 COVER	chung	ngan	bật {n}
 COVER	chung	ngan	tắt {n}
+# ── HALF (2.93 · câu "nửa" của một nút CÓ nút 50% riêng — từ 1.94 là kính; câu mang mã NÚT 50%, không mang mã nút gốc) ──
+# Cùng hai khuôn "nửa" của COVER. `gen-variants.py` ghép chúng với cách gọi của nút GỐC (`{n}` = "kính trước trái"…) rồi gắn mã
+# nút 50% của nó (quan hệ nhãn "50% <nhãn gốc>" — xem `half_buttons`); khuôn "nửa" của COVER thì bỏ cho các nút ấy.
+HALF	chung	ngan	mở nửa {n}
+HALF	chung	dai	mở {n} một nửa thôi
 # ── STEP (tăng/giảm/đặt mức) ────────────────────────────────────────────────────────────────────
 STEP	chung	ngan	tăng {n}
 STEP	chung	ngan	giảm {n}

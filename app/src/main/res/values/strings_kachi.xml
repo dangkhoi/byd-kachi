@@ -41,6 +41,9 @@
         <item quantity="other">Đặt %1$d widget</item>
     </plurals>
     <string name="kachi_drawer_cap_note">Ô chứa tối đa %1$d mục — bỏ một mục để thêm</string>
+    <!-- 2.93 WIDGET-CAPACITY-HINT — sức chứa của ô (GridFit.capacity trên hộp đo thật của các mục đang chọn). -->
+    <string name="kachi_drawer_fit_hint">Ô này chỉ vừa %1$d mục còn đọc được chữ (đang chọn %2$d) — bớt mục hoặc kéo ô to ra</string>
+    <string name="kachi_drawer_fit_none">Ô này quá nhỏ để chữ còn đọc được — kéo ô to ra</string>
 
     <!-- ── LayoutEditorPanel — bảng vẽ bố cục ── -->
     <string name="kachi_layout_title">Vẽ bố cục</string>
@@ -341,7 +344,6 @@
     <string name="kachi_bridge_gemini_failed">Chưa đặt được trợ lý hệ thống.</string>
     <string name="kachi_bridge_cleaning_air">Đang lọc bụi mịn…</string>
     <string name="kachi_bridge_update_needs_screen">Mở màn hình để kiểm tra cập nhật.</string>
-    <string name="kachi_bridge_screen_open_failed">Không mở được màn hình.</string>
 
     <!-- ── Dùng chung (hộp thoại của Cài đặt · SettingsDialogs) ── -->
     <string name="kachi_save">Lưu</string>
@@ -797,6 +799,8 @@
     <string name="kachi_voice_pill_sub">Nói nhanh một câu lệnh, cạnh Ứng dụng và Cài đặt</string>
     <!-- shortcuts-autostart §4.14 — lượt đặt TẠM không thành: app mới không vào được màn ảo của ô, ô trả về app cũ. -->
     <string name="kachi_sc_place_failed">%1$s không vào được ô</string>
+    <!-- 2.93 · SLOT-APP-ESCAPE (spec kachi-293-slot R3) — app rời màn ảo của ô mà vẫn mở ở display khác (tự thoát / mở toàn màn / chiếu cụm). -->
+    <string name="kachi_slot_app_elsewhere">%1$s đã rời ô — app vẫn mở ngoài ô</string>
     <!-- shortcuts-autostart §4.14 · nhóm B — lối tắt ứng dụng (ngăn kéo chọn app · Cài đặt · khối thanh nút · widget · lý do khi chạm) -->
     <string name="kachi_drawer_title_shortcuts">Chọn ứng dụng cho lối tắt</string>
     <string name="kachi_drawer_hint_shortcuts">Chạm để chọn hoặc bỏ một ứng dụng · bấm Áp dụng để lưu · chạm nền để đóng</string>
@@ -820,7 +824,8 @@
     <string name="kachi_sc_refuse_cast">%1$s đang chiếu lên cụm</string>
     <string name="kachi_sc_not_installed">%1$s chưa cài</string>
     <string name="kachi_sc_bg_failed">%1$s chưa chạy ngầm được</string>
-    <string name="kachi_sc_bg_failed_why">%1$s chưa chạy ngầm được (%2$s)</string>
+    <!-- 2.93 · TOAST-2LINE-DL5: mã lý do ĐỨNG ĐẦU — Android 12 cắt toast của app targetSdk ≥ 31 ở 2 dòng, ellipsize=end (AOSP r34 text_toast.xml). -->
+    <string name="kachi_sc_bg_failed_why">[%2$s] %1$s chưa chạy ngầm được</string>
     <!-- F1 · R1.5 dòng 9 (spec shortcuts-autostart): app của ô đang mở toàn màn (K7); về ô khi màn nhà hiện lại (K8). -->
     <string name="kachi_sc_full_card">Đang mở toàn màn — chạm để đưa về ô</string>
     <string name="kachi_sc_full_failed">Không mở toàn màn được %1$s</string>
@@ -855,14 +860,8 @@
     <string name="kachi_captest_snapshot_done">Đã chụp log: %s</string>
     <string name="kachi_captest_report_saved">Đã lưu báo cáo ra thẻ: %s</string>
     <string name="kachi_camera_cluster_title">Hiện camera lên màn cụm</string>
-    <string name="kachi_camera_pos_sub">Vị trí camera trên màn (góc trên)</string>
-    <string name="kachi_camera_pos_left">Xi-nhan trái hiện ở</string>
-    <string name="kachi_camera_pos_right">Xi-nhan phải hiện ở</string>
     <string name="kachi_pos_tl">Trái</string>
     <string name="kachi_pos_tr">Phải</string>
-    <string name="kachi_camera_rot_sub">Xoay video camera từng bên (nếu hình bị nằm ngang hay lộn đầu)</string>
-    <string name="kachi_camera_rot_row_left">Xi-nhan trái: xoay video</string>
-    <string name="kachi_camera_rot_row_right">Xi-nhan phải: xoay video</string>
     <string name="kachi_camera_rot_none">Không xoay</string>
     <string name="kachi_camera_rot_left">↺ 90°</string>
     <string name="kachi_camera_rot_right">↻ 90°</string>
@@ -875,9 +874,6 @@
     <string name="kachi_camera_pano_row_right">Xi-nhan phải: dải hình</string>
     <string name="kachi_camera_pano_auto">Tự động</string>
     <string name="kachi_camera_pano_none">Nguyên khung</string>
-    <string name="kachi_camera_mirror_sub">Lật gương video từng bên (nếu hình ngược tay so với gương kính)</string>
-    <string name="kachi_camera_mirror_row_left">Xi-nhan trái: lật gương</string>
-    <string name="kachi_camera_mirror_row_right">Xi-nhan phải: lật gương</string>
     <string name="kachi_camera_mirror_row_sub">Lật ngang ảnh camera trước khi xoay — thân xe phải ở mép trong như gương thật</string>
     <string name="kachi_camera_shape_sub">Hình khung camera (chỉ đổi viền — muốn thấy trọn ảnh, chưa nắn méo, thì chọn kiểu «Gương cầu» bên dưới)</string>
     <string name="kachi_camera_shape_row">Hình khung camera</string>
@@ -972,7 +968,7 @@
     <string name="kachi_vn_row_title">Dạy Kachi tên app</string>
     <string name="kachi_vn_row_sub">Đã dạy: %1$d app · app tên tiếng Anh/khó đọc thì dạy ở đây</string>
     <string name="kachi_vn_page_title">Dạy tên app</string>
-    <string name="kachi_vn_page_note">Giọng nói chỉ nghe tiếng Việt. App tên tiếng Anh/khó đọc: chạm vào app, nói “mở &lt;tên&gt;” 2–3 lần như lúc lái. Kachi lưu đúng chữ nó nghe được từ giọng bạn (không lưu tiếng). Đổi mô hình nghe thì nên dạy lại.</string>
+    <string name="kachi_vn_page_note">Giọng nói chỉ nghe tiếng Việt. App tên tiếng Anh/khó đọc: chạm vào app rồi nói theo dòng gợi ý của từng lần như lúc lái (lần 1 “mở &lt;tên&gt;”, lần 2 nói kèm ô). Kachi lưu đúng chữ nó nghe được từ giọng bạn (không lưu tiếng). Đổi mô hình nghe thì nên dạy lại.</string>
     <string name="kachi_vn_search_hint">Tìm app…</string>
     <string name="kachi_vn_filter_all">Tất cả %1$d</string>
     <string name="kachi_vn_filter_taught">Đã dạy %1$d</string>
@@ -989,7 +985,9 @@
     <string name="kachi_vn_readonly">Dữ liệu từ bản Kachi mới hơn — chỉ xem; cập nhật Kachi để sửa</string>
     <string name="kachi_vn_pending">Mẫu đang chờ: «%1$s» — chọn app</string>
     <string name="kachi_vn_dialog_title">Dạy tên: %1$s</string>
-    <string name="kachi_vn_dialog_hint">Bấm 🎤 rồi nói “mở %1$s” như lúc lái. Nói 2–3 lần.</string>
+    <string name="kachi_vn_dialog_hint">Bấm 🎤 rồi nói theo dòng gợi ý của từng lần, như lúc lái: lần 1 “mở %1$s”, lần 2 nói kèm ô. Cần ít nhất 2 lần.</string>
+    <string name="kachi_vn_take_plain">Lần %1$d: nói “mở %2$s”</string>
+    <string name="kachi_vn_take_slot">Lần %1$d: nói kèm ô — “đưa %2$s vào ô số hai”. Câu có ô hay làm Kachi nghe tên hơi khác; Kachi lưu thêm dạng ấy để câu có ô cũng hiểu.</string>
     <string name="kachi_vn_speak">🎤 Nói</string>
     <string name="kachi_vn_type">Gõ tên…</string>
     <string name="kachi_vn_type_title">Gõ tên gọi cho %1$s</string>
@@ -1026,6 +1024,7 @@
     <string name="kachi_vn_r_near_command">Dễ lẫn với một lệnh xe</string>
     <string name="kachi_vn_r_near_app">Gần tên app %1$s</string>
     <string name="kachi_vn_r_one_word">Một từ đơn dễ trùng câu nói thường</string>
+    <string name="kachi_vn_r_homograph">Bỏ dấu thì trùng một chữ trong câu lệnh “%1$s” — nói câu có chữ ấy có thể mở app này</string>
     <string name="kachi_vn_still_save">Vẫn lưu</string>
     <string name="kachi_vn_warn_title">Tên có cảnh báo</string>
     <string name="kachi_vn_checking">Đang soát %1$d câu lệnh…</string>
@@ -1043,4 +1042,30 @@
     <string name="kachi_vn_heard">Nghe được: «%1$s»</string>
     <string name="kachi_vn_heard_bad">«%1$s» — tên phải 1–4 từ, ít nhất 3 chữ cái</string>
     <string name="kachi_vn_named_reason">Tên «%1$s»: %2$s</string>
+    <!-- 2.93 · CAMERA-ON-DEMAND + CAMERA-PER-CAM-CONFIG (spec docs/specs/kachi-293-cam.html) -->
+    <string name="kachi_camera_rear">Camera sau</string>
+    <string name="kachi_camera_front">Camera trước</string>
+    <string name="kachi_cam_chip_rear">Sau</string>
+    <string name="kachi_cam_chip_left">Trái</string>
+    <string name="kachi_cam_chip_right">Phải</string>
+    <string name="kachi_cam_chip_front">Trước</string>
+    <string name="kachi_camera_percam_sub">Từng camera — chỗ hiện, cỡ, kiểu hình (sau · trái · phải · trước)</string>
+    <string name="kachi_camera_percam_note">Áp cho camera ấy cả khi xi-nhan lẫn khi mở theo yêu cầu. Mở/tắt: nút Camera sau/trái/phải/trước trên thanh nút, phím vô-lăng (Phím vô-lăng › Camera theo yêu cầu) hoặc nói «mở camera sau» / «tắt camera sau». Một camera một lúc; không tự tắt.</string>
+    <string name="kachi_camera_percam_row">Camera</string>
+    <string name="kachi_camera_preview_on">▶ Xem thử camera này</string>
+    <string name="kachi_camera_preview_off">■ Đang mở — chạm để tắt</string>
+    <string name="kachi_camera_corner_row">Góc mặc định</string>
+    <string name="kachi_camera_place_hint">Kéo khung để đặt chỗ</string>
+    <string name="kachi_camera_place_reset">Về góc mặc định</string>
+    <string name="kachi_camera_size_row">Cỡ</string>
+    <string name="kachi_camera_size_desc">Cỡ camera: %1$s</string>
+    <string name="kachi_camera_follow">Theo chung</string>
+    <string name="kachi_camera_shape_own_row">Hình khung</string>
+    <string name="kachi_camera_projection_own_row">Kiểu hình</string>
+    <string name="kachi_camera_rot_own_row">Xoay</string>
+    <string name="kachi_camera_mirror_own_title">Lật gương</string>
+    <string name="kachi_keys_kind_camera">Camera theo yêu cầu</string>
+    <string name="kachi_keys_pick_camera">Bước 3 — camera nào</string>
+    <string name="kachi_key_cam_toggle">%1$s — bật/tắt</string>
+    <string name="kachi_key_cam_off">Tắt camera</string>
 </resources>

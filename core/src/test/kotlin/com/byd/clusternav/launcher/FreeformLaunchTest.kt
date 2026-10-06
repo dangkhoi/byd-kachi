@@ -8,25 +8,9 @@ import org.junit.jupiter.api.Test
 class FreeformLaunchTest {
 
     @Test
-    fun `launch command uses freeform windowing mode 5 on the main display`() {
-        val c = FreeformLaunch.launchCmd("com.foo/.Main")
-        assertTrue(c.contains("--windowingMode 5"), c)
-        assertTrue(c.contains("--display 0"), c)
-        assertTrue(c.contains("-n 'com.foo/.Main'"), c)
-        assertTrue(c.contains("category.LAUNCHER"), c)
-    }
-
-    @Test
     fun `resize command emits left top right bottom from the slot rect`() {
         val r = SlotRect(0, 10, 20, 300, 400)
         assertEquals("am task resize 7 10 20 300 400", FreeformLaunch.resizeCmd(7, r))
-    }
-
-    @Test
-    fun `parse task id finds the package task and misses unknown packages`() {
-        val out = "  taskId=42: com.foo/.Main bounds=[0,0][100,100]\n  taskId=9: com.bar/.X"
-        assertEquals(42, FreeformLaunch.parseTaskId(out, "com.foo"))
-        assertNull(FreeformLaunch.parseTaskId(out, "com.baz"))
     }
 
     @Test

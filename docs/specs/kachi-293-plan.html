@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 kế hoạch tổng</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--diag:#0071e3;--user:#1a7f37;--deny:#bf5f00}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--diag:#2997ff;--user:#30d158;--deny:#ff9f0a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .root{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+svg .dg{fill:none;stroke:var(--diag);stroke-width:2}
+svg .us{fill:none;stroke:var(--user);stroke-width:2}
+svg .tx{fill:var(--fg);font-size:12px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .wire{stroke:var(--line);stroke-width:1.5}
+svg .x{stroke:var(--deny);stroke-width:2}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Kế hoạch tổng: camera theo yêu cầu + dọn hết việc tồn off-car</h1>
+<p class="muted">Slug: <code>kachi-293-plan</code> · Branch <code>feat/key-source-split</code> (từ 2.92 (194) <code>8fbdf96</code>) · Owner 06/10: <i>"rồi làm hết việc còn lại vào 2.93 hết luôn nhỉ"</i> · <i>"(a) đi, (b) rối lắm"</i> · <i>"ok làm đi hả? làm hết mọi thứ luôn đi"</i> · <span class="pill wait">Trạng thái: Draft — đang làm (owner đã duyệt hướng "làm hết")</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tài liệu điều phối: liệt kê MỌI việc mở ở <code>docs/PROJECT-BACKLOG.md</code> (96 dòng chưa xong lúc mở 2.93), xếp nhóm, ghi mặc định cho việc "chờ owner", và tách rõ việc cần xe / người dịch. Mỗi nhóm có spec riêng <code>docs/specs/kachi-293-&lt;nhóm&gt;.html</code> do bên làm viết (CLAUDE.md §1). Không thư viện mới dự kiến ⇒ Context7 chỉ cần nếu nhóm nào thêm phụ thuộc (máy chủ Context7 không kết nối được phiên này).</p>
+
+<h2>1. Changelog</h2>
+<ul><li><b>Pass 0 — 2026-10-06</b>: Lập kế hoạch sau khi 2.92 lên kênh.</li>
+<li><b>Pass 1 — 2026-10-07</b>: Đóng gói + đăng 2.93 (195): sáu nhóm + wave 2A/2B/2C/2D xong off-car; số đo ở §6.</li></ul>
+
+<h2>2. Context</h2>
+<ul>
+<li>2.92 (194) đã đăng (<code>8fbdf96</code>), chưa chạy trên xe. Lỗi hiện trường của 2.92 (nếu có) gom vào 2.93.</li>
+<li>Owner muốn KHÔNG còn nợ: việc làm được off-car thì làm hết; việc cần xe gom một buổi; việc chờ quyết thì chọn mặc định an toàn, generic, ghi rõ.</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<ul>
+<li><b>R1</b> — Camera theo yêu cầu (4 camera sau·trái·phải·trước × 3 kiểu nắn), bật/tắt TOGGLE bằng phím vật lý / nút widget / giọng; KHÔNG tự tắt; số R không xử lý riêng; MỘT camera tại một lúc (mở camera khác ⇒ thay; bấm lại đúng camera ⇒ tắt); hiện ở chỗ đã đặt cho camera xi-nhan; camera xi-nhan vẫn chạy như cũ.</li>
+<li><b>R2</b> — Cấu hình RIÊNG từng camera: vị trí (kéo thả), cỡ %, hình khung, kiểu nắn, xoay.</li>
+<li><b>R3</b> — Mọi việc mở off-car ở §4 được làm, có test hồi quy, có spec nhóm; việc không làm được phải có lý do + điều kiện mở khoá (trace-den-tan-cung).</li>
+<li><b>R4</b> — Không đụng đường đang chạy tốt ngoài phạm vi (CLAUDE.md §6); không cơ chế xe MỚI khi chưa đo trên xe (§14) — chuẩn bị + đánh dấu 🚗.</li>
+</ul>
+
+<h2>4. Design — nhóm việc</h2>
+<div class="flow">
+  <div class="fnode new"><b>CAM</b><span>camera theo yêu cầu + từng camera</span></div>
+  <div class="fnode new"><b>CAST</b><span>cụm / chiếu</span></div>
+  <div class="fnode new"><b>VOICE</b><span>giọng nói</span></div>
+  <div class="fnode new"><b>WIDGET</b><span>widget / co giãn</span></div>
+  <div class="fnode new"><b>SLOT</b><span>ô / lối tắt / sau HOME</span></div>
+  <div class="fnode new"><b>MISC</b><span>hồ sơ · Cài đặt · test · tài liệu · bảo mật</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span>một bên làm, một nhánh làm việc riêng; điều phối gộp + chạy bộ đủ + review + QA máy ảo + quét bảo mật</span></div>
+<table>
+<tr><th>Nhóm</th><th>Việc (ID backlog)</th><th>Mặc định cho việc chờ quyết</th></tr>
+<tr><td>CAM</td><td>CAMERA-ON-DEMAND (mới) · CAMERA-PER-CAM-CONFIG (mới) · CAM-WIDE-TUNE (mới, ảnh thô 27/09 NGOÀI repo) · đóng CAM-RAW-DIAG-REACH</td><td>Khung thô giữ đường adb/vehicleTest (owner nhận mặc định 06/10)</td></tr>
+<tr><td>CAST</td><td>READY-RESTART-MID-CAST · CAST-OPEN-TIMEOUT · VM-PREREQ-PKG-ADDED · TOAST-2LINE-DL5 · đóng CLUSTER-BUBBLE-STOP-OFFER</td><td>Không thêm nút force-stop app bên thứ ba (CLAUDE.md: không tự force-stop; mod v2 ẩn được bóng)</td></tr>
+<tr><td>VOICE</td><td>VOICE-TEACH-CONTEXT · VOICE-ROI-CONNECTOR · VOICE-OPEN-TURN-DYNVOCAB · VOICE-ALT-LABEL-HOTWORD · VOICE-WAKE-AUTOON · VOICE-READ-STALE-BG · VOICE-TEACH-SHORT-HOMOGRAPH · DEBT-VOICE-COMMON-SH · VOICE-AUDIO-E2E-LANG</td><td>Tên dạy ngắn trùng từ đồng hình ⇒ CẢNH BÁO (không chặn)</td></tr>
+<tr><td>WIDGET</td><td>CLOCK-SUN-DETACHED · WIDGET-CAR-STRIP-LAYOUT · APPWIDGET-SIZE-API31 · WALLART-CACHE-BOUND · SHORTCUT-FILL-WIDE · FIT-TINY-FRAME-NAMES · FIT-WIDEST-CACHE · FIT-GRAVITY · FIT-REGROW · FIT-TINY-MIXED · GROUPBOARD-1ROW · WF-MEDIA-SMALL · WIDGET-CAPACITY-HINT · ACTIONMACRO-SHORT-LABEL · BOARD-TYRE-MINI-GREY · TYRE-BURST-REASON · A11Y-STEPPER-NAME · SLIDER-RAIL-CONTRAST · WIDGET-ICON-OFF-FAINT · GRID-EDITOR-ASPECT</td><td>SHORTCUT-FILL-WIDE: bên làm chọn luật generic, ghi lý do</td></tr>
+<tr><td>SLOT</td><td>SHORTCUT-GRID-SCROLL-KEEP · SHORTCUT-SCROLL-DOCK-RELAYOUT · SHORTCUTS-B-ESCAPE · SLOT-APP-ESCAPE · SLOT-HEAD-OVERLAY-DISC · BEHIND-RESURFACE · BEHIND-MARKS-BOOT · READY-AT-HOME-OQ6 · BEHIND-FELL-UNREAD-K12</td><td>—</td></tr>
+<tr><td>MISC</td><td>PROFILE-NEW-FILE-FILL · SETTINGS-DISPLAY-SUBTITLE · SETTINGS-RETHEME-INPLACE · EDGE-H-DEAD · FIT-TEXT-MIN-DOC · KEY-LABEL-PRESET-SHADOW · HAL-PENDING-PARSE-DRY · TYRE-TEMP-BY-NAME · TEST-CODEOF-STRIP · CODE-FIX-AFTER-283 · DOCS-SCRATCH-PATHS · DOC-SYNC-0929-REST · CATALOG-REGEN · TEST-MODE-ACC-OFF · QA-CONTRAST-METHOD · A11Y-BIND-GATE-OD</td><td>TEST-MODE-ACC-OFF: cửa sổ Chế độ kiểm thử TỰ ĐÓNG khi tắt máy (hướng an toàn)</td></tr>
+</table>
+<h3>4.1 Cần XE — gom một buổi (không làm mò off-car, CLAUDE.md §14)</h3>
+<ul>
+<li>GMAPS-CAMERA-HISTORY (a/b) · CAST-OPEN-TIMEOUT đo lại với mod v2 · READY-RESTART-MID-CAST kiểm sau vá · opcode 42 · xoay/lật dải camera trước/sau · ONCAR-CAM-FULL-VIEW · TYRE-ONCAR-L1 · RAIN-DEFROST-V8-SL6 · FIT-COLD-COST · DL5-CAST-LIVE (cần xe DL5) · các dòng 🔨 chờ xác nhận xe của 2.89–2.92.</li>
+</ul>
+<h3>4.2 Chờ owner / người dịch — KHÔNG tự quyết</h3>
+<ul>
+<li>CAM-WIDE-ROUND-CAPS (mắt owner) · PROFILE-SWITCH-SLOTS-OQ7 · FIT-OWNER-0410 · SLOT-HEAD-OWNER-0410 (giữ hằng hiện tại) · I18N-MS-LABELS-REVIEW · I18N-TH-MS-TOUCH (người dịch) · BACKLOG-LOC-SCRUB phần xin GitHub Support xoá cache (owner); phần gỡ chữ trong tệp: điều phối làm.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Phụ thuộc</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>6 nhóm làm song song, mỗi nhóm một nhánh làm việc riêng, spec nhóm + mã + test chọn lọc</td><td>—</td><td>✅ xong (6 nhóm + wave 2A–2D)</td></tr>
+<tr><td>T2</td><td>Gộp về cây chính, xử lý xung đột (chuỗi 5 thứ tiếng, danh mục Cài đặt), bộ đủ + lint</td><td>T1</td><td>✅ xong</td></tr>
+<tr><td>T3</td><td>Senior review từng nhóm (Opus) + vòng vá</td><td>T2</td><td>✅ xong (mọi spec §10 APPROVED / CLEAN)</td></tr>
+<tr><td>T4</td><td>QA máy ảo (nâng cấp thật 2.92 → 2.93, camera theo yêu cầu với khung tổng hợp, widget, ô)</td><td>T3</td><td>✅ đạt — 0 lỗi chặn, 0 crash/ANR; 1 lỗi P3 (icon xám sau khi cài lại app) đã vá + kiểm lại đạt</td></tr>
+<tr><td>T5</td><td>Bump 195 / 2.93 · INDEX · BACKLOG · project-context · tin nhắn anh em · quét bảo mật · đăng OTA</td><td>T4</td><td>✅ đăng 07/10</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>Bộ đủ</b> [ĐO 2026-10-07 06:34, cây CUỐI (gồm vá QA F1), đếm JUnit XML]: <code>./gradlew clean :app:assembleRelease :app:assembleVehicleTest :app:lintRelease :app:testDebugUnitTest :app:testVehicleTestUnitTest :core:test :car-integration:test :vehicle-contracts:test :offcar-planner:test --continue</code> ⇒ <b>9 381 / 0</b> (core 4 784 · app debug 2 192 · vehicleTest 2 204 · car-integration 80 · vehicle-contracts 22 · offcar-planner 99) · lint 0 lỗi (591 cảnh báo, không lỗi mới). <code>offcar-planner</code> 99/0 đo bằng lượt chạy RIÊNG (<code>--rerun</code>): trong lượt chung, bài canh chụp TOÀN repo trước/sau <code>ExpansionTransportFenceTest</code> đỏ khi có tệp được ghi song song (tài liệu / thư mục <code>.kotlin/</code> của trình biên dịch) — nhiễu môi trường đã biết.</li>
+<li><b>APK</b> [ĐO]: <code>Kachi-2.93-release.apk</code> 46 531 688 B, sha256 <code>b318b451…32f8</code>, cert SHA-256 <code>92:57:…:99:17</code> (cùng khoá), vc195 / 2.93, không debuggable. Bản kiểm lại F1 trên máy ảo (<code>d7cadd06…fddb</code>) khác bản đăng CHỈ ở KDoc của <code>KachiIcons.untint</code> (soát Opus sửa chữ ⇒ bảng số dòng trong dex đổi); danh sách mục + cỡ từng mục trong gói y hệt, mã chạy y hệt.</li>
+<li><b>Senior review</b>: CAM Pass 1–2 · CAST Pass 1 (+ vá điều phối Pass 2) · VOICE Pass 1–5 (đóng vòng CLEAN) · WIDGET Pass 1 · SLOT Pass 1–2 · MISC Pass 1 · wave 2A Pass 1 · wave 2B/2C Pass 1 — đều APPROVED; điểm ghi lại không vá có dòng backlog.</li>
+<li><b>QA máy ảo</b>: đạt — 0 lỗi chặn, 0 crash/ANR; 1 lỗi P3 (icon xám sau khi cài lại app) đã vá + kiểm lại đạt.</li>
+<li><b>QA máy ảo — chi tiết</b> [ĐO 07/10, emulator-5554 A10 1920×1080 @240 dpi, một agent, sao lưu → nâng cấp thật 2.92 → 2.93 → trả nguyên 2.89 (191), so manifest/nhãn/appwidget/appops/settings: bằng nhau]: U ✅ (dòng rót khoá mới đúng một lần) · camera theo yêu cầu CAM-1…9 ✅ (mở/tắt/thay, xi-nhan đè rồi trả, áp lại theo từng camera + đổi hồ sơ, kết quả qua broadcast <code>:wake</code> → chính gồm hết hạn + tiến trình chết, ô thanh nút + widget sáng đúng, <code>diag_screen</code>) · giọng T1 108/108 · T2 23/27 (= mốc) · dạy 26/0 · audio 63/73 (4 ca là bảng kỳ vọng cũ — <code>VOICE-AUDIO-E2E-EXPECT</code>) · widget W1–W10 + W13–W14 ✅ · ô R1a/R2/R3/R5/R6 + giữ cuộn qua sáng/tối · đơn vị · ngôn ngữ · dựng lại ✅ · lề 80 % (x = 19 / 1900) ✅ · test mode đóng khi tắt máy ✅ · Cài đặt đổi chủ đề tại chỗ ✅ · VietMap cài lại ⇒ chạy điều kiện nền ✅ · <b>0 crash / 0 ANR</b> của Kachi. <b>Lỗi</b>: F1 [P3] icon xám sau khi cài lại app (mới do R1) ⇒ <b>đã vá</b> (<code>SHORTCUT-REINSTALL-TINT</code>) + soát Opus + kiểm lại máy ảo; F2 [P3] câu hỏi "Mở hay đóng …?" chỉ ở phiên micro ⇒ spec voice §6 sửa chữ, phần an toàn đạt (<code>VOICE-CLARIFY-TEXT-PATH</code>). BLOCKED trên máy ảo (không micro / không dữ liệu xe): giọng qua <code>:wake</code>, bước "Lần 2" của hộp dạy, W11. Ghi nhận cũ (từ 1.56): <code>VD-DISPLAY-SETTINGS-GROWTH</code>. R3 phát hiện app rời ô sau 20 s / 11 s — trong trần tài liệu của mã (lùi 15 s + 5 s).</li>
+<li><b>Quét bảo mật</b>: Opus, toàn bộ diff so <code>origin/main</code> + tệp mới + APK, rồi phần thêm của lượt đăng.</li>
+<li>🚗 Chưa chạy trên xe — gom ở §4.1 + các mục 🚗 của từng spec nhóm.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul><li>Không — mọi việc chờ quyết đã có mặc định ở §4 (owner duyệt hướng "làm hết").</li></ul>
+
+<h2>8. References</h2>
+<ul><li><code>docs/PROJECT-BACKLOG.md</code> · memory 2.93 camera (owner 06/10) · specs 2.92.</li></ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul><li>2026-10-06 — Kế hoạch Pass 0.</li>
+<li>2026-10-07 — Gộp, review, QA máy ảo, quét bảo mật, đăng OTA 2.93 (195).</li></ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Lượt soát chi tiết nằm ở §10 của từng spec nhóm.</p>
+<h3>Pass 1 — 2026-10-07 (điều phối — tổng hợp)</h3>
+<ul>
+<li>Mọi spec nhóm (<code>kachi-293-{cam,cast,voice,widget,slot,misc,wave2a,wave2c}.html</code>) có Reviewer Log với verdict APPROVED; giọng đợt 2 qua 4 lượt sau Pass 1, lượt cuối CLEAN.</li>
+<li>Scope: R1 ✅ (camera theo yêu cầu, một lúc một camera, không tự tắt) · R2 ✅ (chỉnh từng camera) · R3 ✅ (việc không làm được có lý do + điều kiện mở khoá ở backlog) · R4 ✅ (không cơ chế xe mới chưa đo; mục 🚗 đánh dấu).</li>
+</ul>
+
+</div></body>
+</html>

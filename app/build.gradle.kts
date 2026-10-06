@@ -99,8 +99,10 @@ android {
         // 2.92 (194) — widget lối tắt icon to/lề nhỏ/bỏ trần 8 (spec kachi-292-shortcut-widget) · camera Nắn thẳng /
         // Thẳng rộng / Gương cầu + thu phóng (spec kachi-292-camera-full-view) · DiagStorageCap chỉ tỉa thư mục chẩn đoán
         // (spec kachi-292-diag-cap, P1 mất ảnh người dùng).
-        versionCode = 194
-        versionName = "2.92"
+        // 2.93 (195) — camera theo yêu cầu 4 camera + chỉnh riêng từng camera (spec kachi-293-cam) · dọn hết việc tồn off-car
+        // (spec kachi-293-plan: cast · voice · widget · slot · misc · wave2a/2c).
+        versionCode = 195
+        versionName = "2.93"
 
         // ─── V1 pha NGHE · Vosk mang thư viện NATIVE, và APK chỉ chở ABI có thật trên xe ───────────────
         // [ĐO] 2026-09-14 `vosk-android-0.3.47.aar` (12,3 MB) chở `libvosk.so` cho BỐN ABI:

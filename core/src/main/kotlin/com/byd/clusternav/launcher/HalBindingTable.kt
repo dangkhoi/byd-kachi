@@ -119,12 +119,9 @@ class HalBindingTable(
      * [id] → Int (parse "int=.. float=.." của EventValue hoặc số thuần); sentinel/absent → null.
      *
      * 1.85: datum khai trong [HalReadTables.ARRAY_INDEX] lấy **phần tử thứ N** của getter trả mảng (bụi mịn NGOÀI
-     * xe = ô [1] của `getPM2p5Value()`), thay vì ô [0] mà `firstOfArray` lấy mặc định.
+     * xe = ô [1] của `getPM2p5Value()`), thay vì ô [0] mà `firstOfArray` lấy mặc định — phép parse ở [parseInt].
      */
-    fun readInt(id: String): Int? {
-        val idx = HalReadTables.ARRAY_INDEX[id] ?: return coerceInt(readRaw(id))
-        return coerceIntAt(readRaw(id), idx)
-    }
+    fun readInt(id: String): Int? = parseInt(id, readRaw(id))
 
     /** [id] → Double (float= của EventValue hoặc số thuần). */
     fun readDouble(id: String): Double? = coerceDouble(readRaw(id))
@@ -243,10 +240,24 @@ class HalBindingTable(
         /** Giá trị "không hợp lệ" riêng từng getter ⇒ unavailable — xem [HalReadTables.INVALID_VALUES]. */
         val INVALID_VALUES: Map<String, Set<Int>> get() = HalReadTables.INVALID_VALUES
 
-        /** [raw] (lời đáp của [answerRaw]) là một mã [INVALID_VALUES] của datum [id] ⇒ không phải con số để hiện. */
+        /**
+         * [raw] (lời đáp của [answerRaw]) là một mã [INVALID_VALUES] của datum [id] ⇒ không phải con số để hiện. Mã đọc bằng
+         * CÙNG [parseInt] với con số (senior review 2.93 Pass 1): datum có chỉ số mảng thì xét đúng phần tử sẽ hiện.
+         */
         fun isInvalidValue(id: String, raw: String): Boolean {
             val invalid = readPathOf(id)?.id?.let { INVALID_VALUES[it] } ?: return false
-            return coerceInt(raw)?.let { it in invalid } == true
+            return parseInt(id, raw)?.let { it in invalid } == true
+        }
+
+        /**
+         * 2.93 · HAL-PENDING-PARSE-DRY — chuỗi thô [raw] của datum [id] → Int: phép parse DUY NHẤT của mọi lượt đọc số
+         * nguyên ([readInt] và lối *"mã ⇒ chưa có số"* của `CarDataAdapter`). Datum ở [HalReadTables.ARRAY_INDEX] lấy
+         * ĐÚNG phần tử thứ N ([coerceIntAt] — không đường lùi về số thuần), còn lại [coerceInt]. Bản trước lối poll tự gọi
+         * [coerceInt] ⇒ một datum vừa có chỉ số mảng vừa *"mã ⇒ chưa có số"* sẽ đọc ô [0] (sai số, im lặng).
+         */
+        fun parseInt(id: String, raw: String?): Int? {
+            val idx = HalReadTables.ARRAY_INDEX[id] ?: return coerceInt(raw)
+            return coerceIntAt(raw, idx)
         }
 
         /** FQN thiết bị feature-id cho một [spec] ĐỌC: ưu tiên [TelemetrySpec.halDevice], nếu không thì theo [Domain]. */

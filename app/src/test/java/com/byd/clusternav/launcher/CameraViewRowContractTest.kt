@@ -19,6 +19,7 @@ class CameraViewRowContractTest {
     private val settings = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/SettingsSectionsCamera.kt")
     private val bridge = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/ClusterNavBridgeAutomation.kt")
     private val controller = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraSignalController.kt")
+    private val spec = SourceRoots.codeOf("src/main/java/com/byd/clusternav/launcher/camera/CameraSessionSpec.kt")
     private val vi = SourceRoots.codeOf("src/main/res/values/strings_kachi.xml")
     private val en = SourceRoots.codeOf("src/main/res/values-en/strings_kachi.xml")
 
@@ -80,12 +81,14 @@ class CameraViewRowContractTest {
 
     @Test
     fun `bo dieu khien PHAI doc pref, khong dung cung mac dinh`() {
+        // 2.93: lượt đọc của MỘT phiên dời sang `CameraSessionSpec.read` (bốn camera, một cửa) — controller gọi nó mỗi phiên.
+        assertTrue(controller.contains("CameraSessionSpec.read(appCtx, which)"), "mỗi phiên phải đọc lại cấu hình (không giữ bản cũ)")
         assertTrue(
-            controller.contains("CameraSignalPolicy.viewOf(Prefs.cameraView(appCtx"),
+            spec.contains("CameraSignalPolicy.viewOf(Prefs.cameraView(ctx, left = left))"),
             "chọn trong Cài đặt mà bộ điều khiển không đọc thì hàng đó chỉ để trang trí",
         )
         assertTrue(
-            controller.contains("?: CameraSignalPolicy.defaultView(turn)"),
+            spec.contains("?: CameraSignalPolicy.defaultView(if (left) CameraSignalPolicy.Turn.LEFT else CameraSignalPolicy.Turn.RIGHT)"),
             "vẫn phải lùi về mặc định cũ: xe không chạm Cài đặt thì không đổi một pixel nào (CLAUDE.md §6)",
         )
     }

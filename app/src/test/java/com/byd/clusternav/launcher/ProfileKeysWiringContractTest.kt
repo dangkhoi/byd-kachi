@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -43,9 +44,7 @@ class ProfileKeysWiringContractTest {
     private fun repo() = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/PrefsWorkspaceRepository.kt")
 
     /** MÃ đã bỏ chú thích — bắt buộc cho mọi phép "chuỗi X không được xuất hiện" (KDoc đầy đủ ở bài widget). */
-    private fun code(src: String): String = src
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .replace(Regex("""//[^\n]*"""), " ")
+    private fun code(src: String): String = KotlinSource.stripComments(src)
 
 
     /**

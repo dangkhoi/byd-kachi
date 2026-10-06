@@ -54,15 +54,17 @@ class FitValuesTest {
     private val clockPx = 17f * 1.5f * k          // ≈ 24,3px — cỡ lưới của số ô nén
     private val captionPx = 10.5f * 1.5f * k      // = 15px — chú thích ở sàn
     private val floorPx = 15f
-    private val gapPx = FitValues.gapPx(captionPx)      // soát QA4 — khe giá trị/chú thích (dành trong bề rộng giá trị)
+    private val gapPx = FitValues.gapPx(captionPx)      // soát QA4 — khe giá trị/chú thích (2.93 FIT-GRAVITY: lề NGOÀI giá trị)
 
     /**
      * Soát QA4 — khe NHÌN THẤY (px, ca tệ nhất: chữ rộng ĐÚNG nhu cầu) giữa giá trị và chú thích của phép chia [s] hàng [flex]: cả hai
-     * chữ căn GIỮA ô của nó (`WidgetViews.tv` — `Gravity.CENTER`), chú thích `…` lấp đầy ô của nó.
+     * chữ căn GIỮA ô của nó (`WidgetViews.tv` — `Gravity.CENTER`), chú thích `…` lấp đầy ô của nó. 2.93 `FIT-GRAVITY` (đổi có lý
+     * do): khe [gap] là lề NGOÀI giữa hai ô (không còn trong bề rộng giá trị) ⇒ ô chú thích = `flex − valueW − khe`.
      */
-    private fun visibleGap(flex: Int, s: FitValues.Share, v: Int, c: Int): Double {
-        val cw = flex - s.valueW
-        return (s.valueW - v) / 2.0 + (cw - minOf(c, cw)) / 2.0
+    private fun visibleGap(flex: Int, s: FitValues.Share, v: Int, c: Int, gap: Int = gapPx): Double {
+        val g = if (s.captions && c > 0) gap else 0
+        val cw = flex - s.valueW - g
+        return (s.valueW - v) / 2.0 + g + (cw - minOf(c, cw)) / 2.0
     }
 
     @Test
@@ -118,8 +120,8 @@ class FitValuesTest {
         val px = clockPx
         val flex = 79
         val cap = need("km/h", captionPx)
-        // Soát QA4 — ĐỔI có lý do: khe nằm TRONG bề rộng giá trị ⇒ chỗ của CHỮ = valueW − khe (đúng phép của `FitValueRow.fit`).
-        fun room(s: FitValues.Share) = s.valueW - if (s.captions) gapPx else 0
+        // 2.93 FIT-GRAVITY (đổi có lý do): khe là lề NGOÀI ⇒ chỗ của CHỮ = trọn valueW (đúng phép của `FitValueRow.fit`).
+        fun room(s: FitValues.Share) = s.valueW
         val s99 = FitValues.share(flex, need("99", px), cap, FitValues.captionMinPx(captionPx), gapPx)
         assertTrue(s99.captions)
         assertTrue(FitValues.wouldClip(room(s99), need("100", px)), "thêm chữ số ⇒ sẽ cắt ⇒ chia lại")
@@ -168,24 +170,25 @@ class FitValuesTest {
             val s = FitValues.share(flex, v, c, min, gapPx)
             assertTrue(s.valueW <= flex, "$value/$caption @$flex: không vượt hàng")
             if (flex >= v) assertTrue(s.valueW >= v, "$value/$caption @$flex: giá trị phải TRỌN (${s.valueW} < $v)")
-            if (s.captions) assertTrue(flex - s.valueW >= minOf(min, c), "$value/$caption @$flex: chú thích hiện thì trọn, hoặc còn ≥ 2 em")
+            if (s.captions) assertTrue(flex - s.valueW - gapPx >= minOf(min, c), "$value/$caption @$flex: chú thích hiện thì trọn, hoặc còn ≥ 2 em")
             // Soát QA4 — chú thích hiện thì KHÔNG BAO GIỜ dán sát giá trị (`08:3104/10`, `—km/h`).
             if (s.captions) assertTrue(visibleGap(flex, s, v, c) >= FitValues.GAP_EM * captionPx, "$value/$caption @$flex: khe ${visibleGap(flex, s, v, c)}")
             // Soát QA4 — ĐỔI có lý do: "đủ chỗ" nay gồm cả khe (hàng vừa khít v + c là đúng ca dán chữ của QA4).
-            if (flex >= v + c + gapPx) assertTrue(s.captions && flex - s.valueW >= c, "$value/$caption @$flex: đủ chỗ thì cả hai trọn")
+            if (flex >= v + c + gapPx) assertTrue(s.captions && flex - s.valueW - gapPx >= c, "$value/$caption @$flex: đủ chỗ thì cả hai trọn")
         }
     }
 
     @Test
     fun `du cho thi chia phan du deu hai ben, khong chu thich thi gia tri giu nhu cau + nua phan du`() {
-        // Khe 0 = phép chia của QA3 (giữ nguyên); khe 8 = soát QA4 (khe nằm trong bề rộng giá trị, giữ TRƯỚC chú thích).
+        // Khe 0 = phép chia của QA3 (giữ nguyên); khe 8 = soát QA4 (giữ TRƯỚC chú thích) — 2.93 FIT-GRAVITY: khe là lề NGOÀI
+        // giá trị ⇒ không còn cộng vào valueW (đổi có lý do: hai ca đầu dưới mất đúng 8 px khe so với bản QA4).
         assertEquals(FitValues.Share(40 + 10, true), FitValues.share(100, 40, 40, 30, 0))
         assertEquals(FitValues.Share(40, true), FitValues.share(75, 40, 40, 30, 0), "chú thích `…` còn 35px ≥ 30")
         assertEquals(FitValues.Share(75, false), FitValues.share(75, 40, 40, 36, 0), "còn 35 < 36 ⇒ ẩn, giá trị lấy cả hàng")
         assertEquals(FitValues.Share(40 + 30, true), FitValues.share(100, 40, 0, 0, 0), "không chú thích đang hiện")
         assertEquals(FitValues.Share(0, false), FitValues.share(-5, 40, 0, 0, 0))
-        assertEquals(FitValues.Share(40 + 8 + 6, true), FitValues.share(100, 40, 40, 30, 8), "đủ cả khe ⇒ khe + nửa phần dư")
-        assertEquals(FitValues.Share(40 + 8, true), FitValues.share(85, 40, 40, 30, 8), "sau khe chú thích còn 37 ≥ 30 ⇒ `…`")
+        assertEquals(FitValues.Share(40 + 6, true), FitValues.share(100, 40, 40, 30, 8), "đủ cả khe ⇒ nhu cầu + nửa phần dư (khe ngoài)")
+        assertEquals(FitValues.Share(40, true), FitValues.share(85, 40, 40, 30, 8), "sau khe chú thích còn 37 ≥ 30 ⇒ `…`")
         assertEquals(FitValues.Share(75, false), FitValues.share(75, 40, 40, 30, 8), "sau khe còn 27 < 30 ⇒ ẩn (không dán sát)")
         assertEquals(FitValues.Share(40 + 30, true), FitValues.share(100, 40, 0, 0, 8), "không chú thích có chữ ⇒ không giữ khe")
     }
@@ -222,14 +225,16 @@ class FitValuesTest {
         val c = need("04/10", captionPx)
         val min = FitValues.captionMinPx(captionPx)
         val flex = v + c
-        assertEquals(0.0, visibleGap(flex, FitValues.share(flex, v, c, min, 0), v, c), "bản QA3 (không khe): dán sát — điều QA4 thấy")
+        assertEquals(0.0, visibleGap(flex, FitValues.share(flex, v, c, min, 0), v, c, gap = 0), "bản QA3 (không khe): dán sát — điều QA4 thấy")
         val s = FitValues.share(flex, v, c, min, gapPx)
         assertTrue(s.valueW >= v, "giá trị vẫn TRỌN")
         if (s.captions) assertTrue(visibleGap(flex, s, v, c) >= FitValues.GAP_EM * captionPx, "khe ${visibleGap(flex, s, v, c)}")
-        assertTrue(gapPx >= 2 * FitValues.GAP_EM * captionPx, "dành gấp đôi khe: chữ giá trị căn giữa ⇒ nửa phần dành nằm phía chú thích")
+        // 2.93 FIT-GRAVITY (đổi có lý do): khe là lề NGOÀI có chủ ⇒ dành ĐÚNG một khe (bản QA4 dành gấp đôi trong bề rộng giá trị
+        // vì chữ căn giữa — nửa phần dành nằm phía ngoài, phí ≈ 0,25 em mỗi hàng).
+        assertTrue(gapPx >= FitValues.GAP_EM * captionPx && gapPx < 2 * FitValues.GAP_EM * captionPx, "một khe, không gấp đôi")
         // Đủ chỗ cho cả khe ⇒ cả hai trọn.
         val wide = FitValues.share(flex + gapPx, v, c, min, gapPx)
-        assertTrue(wide.captions && flex + gapPx - wide.valueW >= c && visibleGap(flex + gapPx, wide, v, c) >= FitValues.GAP_EM * captionPx)
+        assertTrue(wide.captions && flex + gapPx - wide.valueW - gapPx >= c && visibleGap(flex + gapPx, wide, v, c) >= FitValues.GAP_EM * captionPx)
     }
 
     /**

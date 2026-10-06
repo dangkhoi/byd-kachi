@@ -131,6 +131,26 @@
    "domain": "INFOTAINMENT",
    "note": "CAMERA 360 (`cam` · `camera_view`)"
   },
+  "cam_off": {
+   "domain": "INFOTAINMENT",
+   "note": "TẮT CAMERA theo yêu cầu (`launcher_cam_off`, 2.93 wave 2B · D4) — thân máy + thấu kính của ic_cam, gạch chéo một nét chính (khuôn ic_sensor_off)"
+  },
+  "cam_view_front": {
+   "domain": "INFOTAINMENT",
+   "note": "CAMERA TRƯỚC theo yêu cầu (`launcher_cam_front`, 2.93) — quạt tầm nhìn phía trước thân xe"
+  },
+  "cam_view_lf": {
+   "domain": "INFOTAINMENT",
+   "note": "CAMERA TRÁI theo yêu cầu (`launcher_cam_left`, 2.93) — camera dưới gương TRƯỚC-trái, quạt tầm nhìn bên trái thân xe"
+  },
+  "cam_view_rear": {
+   "domain": "INFOTAINMENT",
+   "note": "CAMERA SAU theo yêu cầu (`launcher_cam_rear`, 2.93) — quạt tầm nhìn phía đuôi thân xe"
+  },
+  "cam_view_rf": {
+   "domain": "INFOTAINMENT",
+   "note": "CAMERA PHẢI theo yêu cầu (`launcher_cam_right`, 2.93) — camera dưới gương TRƯỚC-phải, quạt tầm nhìn bên phải thân xe"
+  },
   "car": {
    "domain": "IDENTITY",
    "note": "XE nhìn ngang (`vehicle_type`; widget Trạng thái xe; nhận dạng nhóm Danh tính)",

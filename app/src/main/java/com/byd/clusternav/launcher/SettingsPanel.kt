@@ -225,10 +225,25 @@ class SettingsPanel(
     private val content = FrameLayout(context)
     private var current: SettingsGroup = SettingsCatalog.GROUPS.first()
 
+    /** Khung cuộn của rail — [restyle] giữ chỗ cuộn của nó khi dựng lại vỏ. */
+    private var railScroll: ScrollView? = null
+
     init {
-        setBackgroundColor(c(KachiTheme.SCRIM_PANEL))
         isClickable = true
         setOnClickListener { onClose() }        // chạm ra ngoài = đóng (giữ đúng thói quen của bảng cũ)
+        buildChrome()
+        show(current)
+    }
+
+    /**
+     * Vỏ bảng — nền mờ · thẻ · đầu bảng · rail — dựng bằng bảng màu HIỆN TẠI ([KachiTheme] đọc lúc dựng). [restyle] gọi lại
+     * khi bảng màu đổi; [content] (khung trang) được tháo khỏi vỏ cũ rồi gắn vào vỏ mới, không dựng lại.
+     */
+    private fun buildChrome() {
+        removeAllViews()
+        railCells.clear()
+        (content.parent as? ViewGroup)?.removeView(content)
+        setBackgroundColor(c(KachiTheme.SCRIM_PANEL))
 
         val panel = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -243,7 +258,7 @@ class SettingsPanel(
             // ⚠ [SOÁT ẢNH 2026-09-12] Thanh cuộn BẬT: rail lên 10 nhóm (IA v2 §4.1) nên nó cuộn được, mà không có
             // chỉ báo thì người dùng không có cách nào biết còn nhóm ở dưới — trên xe, thứ không thấy là thứ không
             // tồn tại. `isVerticalScrollBarEnabled = false` là mặc định cũ khi rail còn 7 nhóm và vừa một màn.
-            ScrollView(context).apply { addView(rail()); isVerticalScrollBarEnabled = true },
+            ScrollView(context).apply { addView(rail()); isVerticalScrollBarEnabled = true }.also { railScroll = it },
             LinearLayout.LayoutParams(dpi(context, Sp.RAIL_COL), LinearLayout.LayoutParams.MATCH_PARENT),
         )
         body.addView(
@@ -260,7 +275,27 @@ class SettingsPanel(
                 it.gravity = Gravity.CENTER
             },
         )
+    }
+
+    /**
+     * 2.93 · SETTINGS-RETHEME-INPLACE — bảng màu vừa đổi (Sáng/Tối · *Tự động* 06:00/18:00 · màu nhấn · tông thẻ · độ đục
+     * nền · màu trội của ảnh nền) khi bảng ĐANG MỞ ⇒ dựng lại vỏ + trang đang xem bằng bảng MỚI, giữ nhóm đang chọn và chỗ
+     * cuộn của trang đó + rail. [ĐO máy ảo QA 04/10] trước bản này màn chính đổi màu ngay (`applyThemeInPlace`) mà bảng
+     * Cài đặt giữ màu cũ tới lúc đóng-mở lại: mọi view của bảng tô màu LÚC DỰNG (`c(KachiTheme.…)`), không ai tô lại.
+     *
+     * Trang khác đã nhớ bị bỏ (dựng lại khi bấm sang — cùng lẽ [invalidateAll]) vì chúng cũng mang màu cũ; phiên "học
+     * phím" đang treo được đóng như lúc tháo bảng ([SettingsSections.dispose]). Chỗ gọi: `HomePanels.restyleSettings`.
+     */
+    fun restyle() {
+        val pageY = (pages[current] as? ScrollView)?.scrollY ?: 0
+        val railY = railScroll?.scrollY ?: 0
+        sections.dispose()
+        pages.clear()
+        content.removeAllViews()
+        buildChrome()
         show(current)
+        railScroll?.let { r -> r.post { r.scrollTo(0, railY) } }
+        (pages[current] as? ScrollView)?.let { p -> p.post { p.scrollTo(0, pageY) } }
     }
 
     /** Nhóm đang xem — chỗ gọi cần biết để nhật ký/đo, và để [invalidateAll] dựng lại đúng trang. */

@@ -25,6 +25,9 @@ class CameraFullViewWiringContractTest {
     private fun app(relative: String): String = SourceRoots.codeOf("src/main/java/com/byd/clusternav/$relative")
 
     private val controller by lazy { app("launcher/camera/CameraSignalController.kt") }
+    // 2.93: lượt đọc pref + quy kiểu của MỘT phiên dời sang `CameraSessionSpec` (spec kachi-293-cam §4.2).
+    private val spec by lazy { app("launcher/camera/CameraSessionSpec.kt") }
+    private val perCam by lazy { app("PrefsCameraPerCam.kt") }
     private val bridge by lazy { app("launcher/ClusterNavBridgeAutomation.kt") }
     private val raw by lazy { app("launcher/camera/CameraRawCapture.kt") }
     private val files by lazy { app("launcher/camera/CameraFrameFiles.kt") }
@@ -47,11 +50,17 @@ class CameraFullViewWiringContractTest {
     /** (1) R6 — kiểu đã QUY theo đường vẽ, đọc đường vẽ trước, và cả ba chỗ dùng nhận đúng biến ấy. */
     @Test fun `controller quy kieu theo duong ve roi dua cung mot kieu xuong ca ba cho`() {
         val open = SourceRoots.body(controller, "private fun openSession(")
-        val render = open.indexOf("Prefs.cameraRender(appCtx)")
-        val quantize = open.indexOf("CameraViewMode.effective(")
+        // 2.93: đọc + quy ở `CameraSessionSpec.read` (MỘT lượt mỗi phiên, cho cả bốn camera) — controller nhận kết quả.
+        assertTrue("CameraSessionSpec.read(appCtx, which)" in open, "mỗi phiên phải đọc cấu hình của ĐÚNG camera đang mở")
+        assertTrue("val mode = s.mode" in open, "controller dùng kiểu ĐÃ quy của lượt đọc phiên")
+        val read = SourceRoots.body(spec, "fun read(ctx: Context, which: CameraWhich): CameraSessionSpec?")
+        val render = read.indexOf("Prefs.cameraRender(ctx)")
+        val quantize = read.indexOf("CameraViewMode.effective(")
         assertTrue(render >= 0 && quantize > render, "phải đọc đường vẽ TRƯỚC rồi quy kiểu theo nó (TV không có shader)")
-        assertTrue("Prefs.cameraProjection(appCtx)" in open, "kiểu hình đọc từ pref mỗi lượt dựng")
-        val crops = args(open, "CameraViewPlan.crops(")
+        assertTrue("Prefs.cameraProjectionOf(ctx, which)" in read, "kiểu hình đọc từ pref (riêng camera → chung) mỗi lượt dựng")
+        assertTrue(", cameraProjection(ctx))" in SourceRoots.body(perCam, "fun Prefs.cameraProjectionOf("),
+            "*Theo chung* của kiểu riêng phải lùi về ĐÚNG pref chung `camera_projection`")
+        val crops = args(read, "CameraViewPlan.crops(")
         assertTrue("mode = mode" in crops, "vùng cắt khung/nội dung phải theo kiểu ĐÃ quy")
         val gl = args(open, "Prefs.cameraGlUniforms(")
         assertTrue("mode = mode" in gl && "crops = crops" in gl, "uniform GL phải theo kiểu ĐÃ quy + đúng vùng cắt vừa suy")
@@ -62,18 +71,29 @@ class CameraFullViewWiringContractTest {
 
     /** (2) R1 — áp ngay: hai setter của cầu Cài đặt cùng gọi một cửa, cửa ấy chỉ chạm khi controller đã dựng. */
     @Test fun `doi kieu hoac thu phong thi dung lai khung dang hien, khong cham HOLD`() {
-        listOf("fun ClusterNavBridge.setCameraProjection(", "fun ClusterNavBridge.setCameraZoom(").forEach { sig ->
-            assertTrue("reapplyCamera()" in SourceRoots.body(bridge, sig), "$sig phải áp lại khung đang hiện")
+        // 2.93 wave 2C · PREFS-SET-CAM-GLOBAL-REAPPLY: hai setter của cầu giao THẲNG cho cửa chung `CameraReapply` — CÙNG hàm
+        // `prefs_set` gọi; luật "ghi · nắn đủ · chỉ dựng lại khi đổi" sống ở đó (bài `CameraWave2CWiringContractTest`). Ý bài
+        // giữ nguyên: setter ⇒ áp lại khung đang hiện; cửa áp chỉ chạm khi controller đã dựng.
+        assertTrue("CameraReapply.setProjection(app, v)" in SourceRoots.body(bridge, "fun ClusterNavBridge.setCameraProjection("),
+            "chip kiểu hình phải đi cửa áp lại DÙNG CHUNG với prefs_set")
+        assertTrue("CameraReapply.setZoom(app, v)" in SourceRoots.body(bridge, "fun ClusterNavBridge.setCameraZoom("),
+            "thanh thu phóng phải đi cửa áp lại DÙNG CHUNG với prefs_set")
+        val door = app("launcher/camera/CameraReapply.kt")
+        listOf("fun setProjection(ctx: Context, v: String): Boolean", "fun setZoom(ctx: Context, v: Int): Boolean").forEach { sig ->
+            assertTrue("if (changed) anyShowing(ctx)" in SourceRoots.body(door, sig), "$sig phải áp lại khung đang hiện (chỉ khi đổi)")
         }
-        val reapply = SourceRoots.body(bridge, "private fun ClusterNavBridge.reapplyCamera(")
+        val reapply = SourceRoots.body(door, "fun anyShowing(ctx: Context)")
         assertTrue("cameraSignalCreated" in reapply, "không được DỰNG controller chỉ vì một lần chạm chip")
         assertTrue("cameraSignal.reapplyIfShowing()" in reapply, "phải gọi đúng cửa áp lại của controller")
 
         val body = SourceRoots.body(controller, "fun reapplyIfShowing(")
-        assertTrue("if (turn == Turn.NONE) return" in body, "không hiện gì ⇒ không bật khung bất ngờ")
-        assertTrue("closeSession(keepPano = true)" in body && "openSession(turn)" in body,
-            "dựng lại theo đường ĐỔI BÊN đã chạy hiện trường (dỡ phần cứng + cửa sổ, giữ panorama)")
-        assertFalse("hold." in body || "stop()" in body, "áp lại KHÔNG được chạm máy trạng thái HOLD (overlay chớp giữa chuyến)")
+        // 2.93: "đang hiện gì" là sự thật của CỬA SỔ (`showing` — xi-nhan hay theo yêu cầu), không còn là `turn`.
+        assertTrue("val which = showing ?: return" in body, "không hiện gì ⇒ không bật khung bất ngờ")
+        assertTrue("closeSession(keepPano = true)" in body && "openSession(which)" in body,
+            "dựng lại theo đường ĐỔI CAMERA đã chạy hiện trường (dỡ phần cứng + cửa sổ, giữ panorama)")
+        listOf("hold.", "stop()", "endBlinker()", "dropBlinker()", "od.").forEach {
+            assertFalse(it in body, "áp lại KHÔNG được chạm máy trạng thái (HOLD / theo yêu cầu) — overlay chớp giữa chuyến: $it")
+        }
     }
 
     /** (3) R8 — nút Chẩn đoán → xem thử → chờ khung → chụp → ghi + Thư viện → ĐÓNG; chỉ đọc cấu hình người lái. */
@@ -98,7 +118,8 @@ class CameraFullViewWiringContractTest {
         val grab = SourceRoots.body(raw, "private fun grab(")
         assertEquals(2, Regex("""c\.sessionSeq\(\) == seq""").findAll(grab).count(), "chụp CÙNG nhịp main với phép so phiên (GL lẫn TV)")
         val end = SourceRoots.body(controller, "fun endPreview(seq: Long)")
-        assertTrue("openedSessions == seq" in end && "stop()" in end, "endPreview chỉ dỡ khi phiên vẫn là phiên của nút")
+        // 2.93: dỡ = hạ PHẦN XI-NHAN (`endBlinker`) — camera theo yêu cầu đang bật (nếu có) quay lại, không bị tắt theo.
+        assertTrue("openedSessions == seq" in end && "endBlinker()" in end, "endPreview chỉ dỡ khi phiên vẫn là phiên của nút")
         assertTrue("openedSessions++" in SourceRoots.body(controller, "private fun openSession("), "mỗi lượt dựng = một số hiệu mới")
         // Hai lượt chạm liền tay (trái rồi phải) xếp hàng trên MỘT luồng — không giành một phiên camera.
         assertTrue("ThreadPoolExecutor(0, 1, IDLE_S" in raw && "worker.execute" in raw, "lượt chụp phải xếp hàng, luồng tự tắt khi rảnh")

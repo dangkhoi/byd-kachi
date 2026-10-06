@@ -302,7 +302,7 @@ lượt dựng nối lại gán nhầm tệp WAV của câu này cho câu kia, <
 <h2>5. Tasks (DAG)</h2>
 <table>
 <tr><th>#</th><th>Task</th><th>File</th></tr>
-<tr><td>T1</td><td><b>Xưởng — sinh 6 mẫu duyệt.</b> Clip mẫu (dài + ngắn), chạy nhân bản, chấm bằng máy (ASR đọc lại + cosine giọng), so cạnh Piper. <span class="pill ok">xong 2026-09-16</span></td><td><code>scratchpad/voice-clone/*.py</code> (ngoài repo)</td></tr>
+<tr><td>T1</td><td><b>Xưởng — sinh 6 mẫu duyệt.</b> Clip mẫu (dài + ngắn), chạy nhân bản, chấm bằng máy (ASR đọc lại + cosine giọng), so cạnh Piper. <span class="pill ok">xong 2026-09-16</span></td><td><code>voice-clone/*.py</code> ở thư mục nháp của phiên (ngoài repo)</td></tr>
 <tr><td>T2</td><td><b>Cổng G1</b> — owner nghe 6 mẫu, duyệt hoặc chỉnh. <span class="pill ok">xong 2026-09-17 — owner: <i>“Giọng bé ok đó”</i></span></td><td>—</td></tr>
 <tr><td>T3</td><td><b>Bộ liệt kê</b> — bản <b>Python chạy được</b> đã có: <code>enumerate-clips.py</code> dựng lại đúng <code>VoiceFeedbackPhrase</code> và sinh <b>1 546</b> chuỗi (§4.4). <span class="pill ok">xong (host)</span> · <span class="pill wait">còn: bản <code>:core</code> + bài canh đỏ khi registry mọc thêm nhãn (R2)</span></td><td><code>scripts/voice/clone/enumerate-clips.py</code> · <code>core/…/voice/VoiceClipInventory.kt(+Test)</code></td></tr>
 <tr><td>T4</td><td><b>Sinh gói</b> — <b>xưởng đã xong và đã đo</b>: nối lại được · seed theo băm nội dung clip · trọng tài ASR hai mức · gộp lượt · đóng ADTS AAC + <code>manifest.json</code>/<code>index.tsv</code>/<code>num.tsv</code> + bảng ghim sha256, chạy thông suốt đầu-tới-cuối. <b>Lượt dựng 1 546 clip thì CHƯA xong</b> — [ĐO] ~50 s/clip ở tầng <code>fixed</code> (tầng khó nhất) ⇒ còn nhiều giờ máy; tiến trình đang chạy nền, nối lại bằng đúng một lệnh (§5.1). <span class="pill ok">công cụ xong</span> <span class="pill wait">gói đang dựng</span></td><td><code>scripts/voice/clone/{synth-pack,build-pack,viclip,tts_pronunciation}.py</code> · <code>finish-pack.sh</code></td></tr>
@@ -494,7 +494,7 @@ chứ không phải cái mối nối:
 bậc (đường (a)) <b>không chữa được</b> ca này, vì <i>“Pin: 46 %”</i> là câu <b>đọc số đo</b>, không phải đặt bậc.
 Đường chữa đúng là làm mảnh <code>head</code> ngắn đọc cho ra hồn — hoặc chấp nhận và để những khung ấy rơi về Piper.
 <b>Quyết định cuối vẫn là tai owner</b>: 10 cặp <code>NN_ghep</code>/<code>NN_lien</code> đã nằm ở
-<code>scratchpad/voice-clone/t5-compose/</code>.</li>
+<code>t5-compose</code> ở thư mục nháp của phiên (ngoài repo; sinh lại bằng <code>scripts/voice/clone/compose-check.py</code>).</li>
 
 <li><b>2026-09-17 · registry đổi LẦN NỮA giữa lượt dựng — và lần này có số đo cho thấy thiết kế mã băm đáng giá</b>
 — lúc 02:01 một agent khác gỡ bớt khả năng: <b>54 → 47</b> nút, <b>112 → 100</b> dòng thông tin. Liệt kê lại:

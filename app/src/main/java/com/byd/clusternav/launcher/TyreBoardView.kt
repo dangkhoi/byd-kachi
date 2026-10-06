@@ -30,7 +30,7 @@ import android.widget.FrameLayout
  * Đỏ/vàng = xe báo; số thường = xe nói bình thường; xám mờ = chưa phán được (xe chưa trả mã nào — thay đổi thấy được:
  * trước 2.88 bánh có số mà chưa ai phán vẫn in đậm như "bình thường").
  */
-class TyreBoardView(context: Context) : FrameLayout(context) {
+class TyreBoardView(context: Context) : FrameLayout(context), MinUsefulHeight {
 
     private val carView = CarImageView(context).also { it.layoutRect = ::carDstIn }
     private val cells = CellsView(context)
@@ -71,6 +71,18 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
     }
 
     fun release() = carView.release()
+
+    /**
+     * 2.93 `GROUPBOARD-1ROW` — cao tối thiểu để thẻ bánh còn chữ trên sàn: thẻ cao [CELL_RATIO] × cao bảng phải chứa dòng số
+     * ([MIN_VALUE_SP]) + dòng phụ ([MIN_SUB_SP] × nhịp [CellTextLayout.SUB_LINE_GAP]) — tính từ chính sàn chữ của bảng.
+     */
+    override val minUsefulHeightPx: Int
+        get() {
+            val dm = resources.displayMetrics
+            val big = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_VALUE_SP, dm)
+            val sub = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_SUB_SP, dm)
+            return kotlin.math.ceil((big + sub * CellTextLayout.SUB_LINE_GAP) / CELL_RATIO).toInt()
+        }
 
     /**
      * Lớp NỀN vẽ lại (= ẢNH vừa nạp xong, xem [CarImageView]) ⇒ khung letterbox đổi ⇒ lớp thẻ phải kẹp LẠI theo
@@ -147,7 +159,7 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
             carView.contentRect(w, h, content)   // khung hình xe THẬT — bám bánh theo lớp nền
 
             val wheelSpanY = (CarLayout.wheel(TyreCorner.REAR_LEFT).y - CarLayout.wheel(TyreCorner.FRONT_LEFT).y) * content.height()
-            val cellH = minOf(h * 0.24f, wheelSpanY - m * 0.035f).coerceAtLeast(m * 0.10f)
+            val cellH = minOf(h * CELL_RATIO, wheelSpanY - m * 0.035f).coerceAtLeast(m * 0.10f)
 
             floorBig = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_VALUE_SP, resources.displayMetrics)
             floorSub = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_SUB_SP, resources.displayMetrics)
@@ -275,6 +287,8 @@ class TyreBoardView(context: Context) : FrameLayout(context) {
 
     private companion object {
         const val SEMANTIC_MIX = 0.20
+        /** Cao thẻ bánh theo cao bảng — số của bản trước (0.24), tách hằng cho [minUsefulHeightPx] dùng chung. */
+        const val CELL_RATIO = 0.24f
         const val MIN_VALUE_SP = 13f
         const val MIN_SUB_SP = 8f
         const val CAR_LEFT = 0.30f

@@ -107,7 +107,9 @@ class VoiceRelativeStepTest {
         ControlTileState.shared.setValue("fan", 4)
         r.dispatcher().execute(up("fan"))
         assertEquals(listOf("step:fan:2"), r.port.fired, "phải là 1 + 1 = 2; thấy 5 nghĩa là vẫn cộng vào RAM")
-        assertEquals(listOf("fan"), r.port.readIds, "đúng MỘT lượt đọc cho MỘT câu lệnh (ngân sách 33 đọc/phút)")
+        // 2.93 VOICE-WAKE-AUTOON (đổi chốt có lý do): nút có `autoId` ⇒ đọc TƯƠI thêm đúng MỘT lượt cờ `ac_auto` (mốc mức
+        // vẫn đọc trước) — bài `xe tra loi co AUTO …` dưới.
+        assertEquals(listOf("fan", "ac_auto"), r.port.readIds, "mức + cờ AUTO — không lượt nào khác")
     }
 
     @Test
@@ -298,7 +300,9 @@ class VoiceRelativeStepTest {
             listOf("toggle:ac_auto:false", "step:fan:2"), r.port.fired,
             "xuống nền rồi thì thứ tự vẫn y nguyên: tắt auto TRƯỚC, đặt mức SAU",
         )
-        assertEquals(listOf("fan"), r.port.readIds, "vẫn đúng MỘT lượt đọc HAL cho MỘT câu (ngân sách 33 đọc/phút)")
+        // 2.93 VOICE-WAKE-AUTOON (đổi chốt có lý do): cờ AUTO đọc TƯƠI cùng lượt với mốc mức ⇒ hai lượt đọc cho một câu tương
+        // đối trên nút có `autoId` (ảnh chụp chỉ là đường lùi); không lượt nào khác.
+        assertEquals(listOf("fan", "ac_auto"), r.port.readIds, "mức + cờ AUTO, mỗi thứ đúng MỘT lượt")
         assertEquals(1, r.said.size, "ghi xong thì phải nói lại đúng một câu (qua `onUi`): ${r.said}")
     }
 
@@ -358,7 +362,59 @@ class VoiceRelativeStepTest {
         ControlTileState.shared.setValue("fan", 4)
         r.dispatcher().execute(up("fan"))
         assertEquals(listOf("step:fan:3"), r.port.fired, "2 + 1 = 3, KHÔNG phải 4 + 1 = 5")
-        assertEquals(listOf("fan"), r.port.readIds, "phải HỎI XE trước khi cộng")
+        // 2.93 VOICE-WAKE-AUTOON: cờ `ac_auto` đọc TƯƠI ngay SAU mốc mức.
+        assertEquals(listOf("fan", "ac_auto"), r.port.readIds, "phải HỎI XE trước khi cộng")
+    }
+
+    // ══ 5 · 2.93 VOICE-WAKE-AUTOON — cờ AUTO đọc TƯƠI (ảnh chụp chỉ là đường lùi) ═════════════════════════════════════
+    //
+    // [SUY nguồn 02/10, backlog] `:wake` dựng dispatcher với `state()` = ảnh chụp ngữ pháp ⇒ `carStatus.controls` LUÔN rỗng ⇒
+    // tới 2.92 cờ AUTO luôn `null` ⇒ đang AUTO mà nói "tăng gió" đi `SetLevel` — trong khi cú chạm `+` trên ô (có cờ từ vòng
+    // poll) đi `LeaveAuto`. Cùng một câu, hai việc. Năm bài dưới khoá: ảnh chụp rỗng vẫn đúng việc · xe thắng ảnh chụp · xe
+    // không trả lời ⇒ ảnh chụp · nút không khai `autoId` không đọc gì · cả hai trống ⇒ "chưa biết" như cũ.
+
+    @Test
+    fun `anh chup khong biet AUTO ma xe dang AUTO - tang gio ROI auto roi dat muc nhu cu cham o`() {
+        val r = Rig(mapOf("fan" to 1, "ac_auto" to 1))   // `ac_auto` đã qua applyInverted ⇒ 1 = đang bật
+        r.dispatcher().execute(up("fan"))
+        assertEquals(listOf("toggle:ac_auto:false", "step:fan:2"), r.port.fired, "phải RỜI auto như cú chạm ô, không SetLevel trần")
+        assertEquals(listOf("fan", "ac_auto"), r.port.readIds)
+    }
+
+    @Test
+    fun `anh chup khong biet AUTO ma xe dang AUTO - giam gio khong ban gi va noi AUTO`() {
+        val r = Rig(mapOf("fan" to 3, "ac_auto" to 1))
+        r.dispatcher().execute(up("fan", steps = -1))
+        assertTrue(r.port.fired.isEmpty(), "đang AUTO mà giảm ⇒ không có nấc thấp hơn qua mã này: ${r.port.fired}")
+        assertTrue(r.said.single().contains("AUTO"), "${r.said}")
+    }
+
+    @Test
+    fun `xe tra loi co AUTO thi XE thang anh chup`() {
+        // Xe nói 0 (đang chỉnh TAY) nhưng ảnh chụp của vòng poll còn 1 (AUTO — người lái vừa tắt auto ở màn BYD gốc): cùng luật
+        // H1 với mốc mức — số THẬT của xe thắng ⇒ SetLevel trần, không bắn lệnh tắt auto thừa.
+        val r = Rig(mapOf("fan" to 1, "ac_auto" to 0), controls = mapOf("ac_auto" to 1))
+        r.dispatcher().execute(up("fan"))
+        assertEquals(listOf("fan", "ac_auto"), r.port.readIds)
+        assertEquals(listOf("step:fan:2"), r.port.fired, "xe đang chỉnh tay ⇒ tăng mức thẳng")
+    }
+
+    @Test
+    fun `xe khong tra loi co AUTO thi lui ve anh chup`() {
+        val r = Rig(mapOf("fan" to 1), controls = mapOf("ac_auto" to 1))   // `ac_auto` đọc ra null ⇒ ảnh chụp (2.92)
+        r.dispatcher().execute(up("fan"))
+        assertEquals(listOf("toggle:ac_auto:false", "step:fan:2"), r.port.fired, "đường lùi = đúng hành vi 2.92 khi ô có trên màn")
+    }
+
+    @Test
+    fun `doc co AUTO hong hoac nut khong co autoId thi giu hanh vi cu`() {
+        val unknown = Rig(mapOf("fan" to 1))   // ac_auto đọc ra null ⇒ "chưa biết"
+        unknown.dispatcher().execute(up("fan"))
+        assertEquals(listOf("step:fan:2"), unknown.port.fired, "chưa biết ⇒ SetLevel như 2.92")
+        val temp = Rig(mapOf("temp" to 18, "ac_auto" to 1))
+        temp.dispatcher().execute(up("temp", steps = -1))
+        assertEquals(listOf("temp"), temp.port.readIds, "nút không khai autoId không được hỏi cờ AUTO")
+        assertEquals(listOf("step:temp:17"), temp.port.fired)
     }
 
     /**

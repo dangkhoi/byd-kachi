@@ -1,0 +1,25 @@
+<!--
+  CAMERA PHẢI (`launcher_cam_right`, 2.93) — thân xe nhìn từ trên (nét, kính chắn gió mờ ở ĐẦU) + quạt tầm nhìn tô chuyển sắc mở ra bên PHẢI.
+  ── SINH BỞI scripts/design/gen-icons.py từ design/glyph/cam_view_rf.svg — ĐỪNG VÁ TAY (sửa SVG rồi sinh lại;
+  chế độ check so byte và đỏ nếu lệch). Ngữ pháp §4.2 spec kachi-visual-refresh: ≤ 3 lớp (main 1.0 · sub 0.38 ·
+  bg 0.16) · nét 1.8/1.2 tròn · khung 24 · ô quang học 20×20 · họ màu theo lĩnh vực trong design/icon-grammar.json.
+  Lĩnh vực INFOTAINMENT · họ màu media · cỡ 24dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M 7.6 3.4 L 9.2 3.4 A 2.2 2.2 0 0 1 11.4 5.6 L 11.4 18.4 A 2.2 2.2 0 0 1 9.2 20.6 L 7.6 20.6 A 2.2 2.2 0 0 1 5.4 18.4 L 5.4 5.6 A 2.2 2.2 0 0 1 7.6 3.4 Z"
+        android:fillColor="#00000000" android:strokeColor="#F59E0B" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M 12.8 12 L 21.6 6.8 L 21.6 17.2 Z"
+        >
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="12.8" android:startY="6.8" android:endX="21.6" android:endY="17.2">
+                <item android:offset="0" android:color="#FFC75A" />
+                <item android:offset="1" android:color="#B06F05" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M 6.8 6.8 L 10 6.8"
+        android:fillColor="#00000000" android:strokeColor="#FFFFFF" android:strokeWidth="1.2" android:strokeAlpha="0.38" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

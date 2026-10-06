@@ -51,7 +51,24 @@ data class ActionMacro(
     val steps: List<MacroStep>,
     /** Nhãn tiếng Anh (U5 · T2) — tham số mặc định ở CUỐI để mọi chỗ dựng cũ (kể cả test) không phải sửa. */
     override val labelEn: String? = null,
+    /**
+     * 2.93 `ACTIONMACRO-SHORT-LABEL` — nhãn NGẮN cho ô hẹp, CÙNG khuôn [ControlDef.short] (lưới widget khung nhỏ đổi chữ
+     * sang bản ngắn trước khi `…` — J1 `FitLabels`). [ĐO máy ảo QA3 04/10] gói lệnh không có bản ngắn ⇒ ô 2×1 hiện
+     * `Mở h…`, `Đóng…`, ZH `…打开`. `null` ⇒ [shortLabel] lùi về [label].
+     */
+    val short: String? = null,
+    /** Nhãn NGẮN tiếng Anh; `null` ⇒ [shortLabelIn] lùi về [labelEn] rồi [short]/[label] (cùng bậc [ControlDef.shortLabelIn]). */
+    val shortEn: String? = null,
 ) : Localized {
+    /** Nhãn ngắn tiếng Việt — luôn có giá trị (lùi về [label] khi chưa khai [short]). */
+    val shortLabel: String get() = short ?: label
+
+    /** Nhãn ngắn theo [Strings.current] — chỗ dựng ô gói lệnh khai cho lưới widget (`FitScale.named`). */
+    val displayShortLabel: String get() = shortLabelIn(Strings.current)
+
+    /** Bậc lùi: [shortEn] → [labelEn] → [short] → [label] — y hệt [ControlDef.shortLabelIn]. */
+    fun shortLabelIn(lang: Lang): String = Strings.pick(shortLabel, shortEn?.takeIf { it.isNotBlank() } ?: labelEn, lang)
+
     /** Mã bước trỏ tới nút KHÔNG tồn tại. Phải rỗng — bị test khoá (R3). */
     fun invalidSteps(): List<String> = steps.map { it.controlId }.filter { ControlRegistry.byId(it) == null }
 
@@ -179,10 +196,12 @@ object ActionMacros {
     val ALL: List<ActionMacro> = listOf(
         // Vì sao gộp 4 nút riêng thay vì dùng nút "Tất cả kính" đã có: nút gộp đó ở mức CHƯA KIỂM, còn 4 nút riêng
         // đều ĐÃ CHẠY trên xe owner ⇒ gói này khả năng ăn cao hơn. Đây là giá trị cụ thể của lớp gộp lệnh.
+        // 2.93 ACTIONMACRO-SHORT-LABEL: bản ngắn bỏ chữ "kính" (icon kính đã nói điều đó) — đề xuất làn J1 (spec 287
+        // OQ-WF8): VI `Mở hết`/`Đóng hết`, ZH `全开`/`全关`; EN giữ `Open all`/`Close all` (đã ngắn). TH/MS ở bảng dịch.
         ActionMacro("mac_win_open_all", "Mở hết kính", "ic-window-open", Domain.BODY, windows(open = true),
-            labelEn = "Open all"),
+            labelEn = "Open all", short = "Mở hết"),
         ActionMacro("mac_win_close_all", "Đóng hết kính", "ic-window-close", Domain.BODY, windows(open = false),
-            labelEn = "Close all"),
+            labelEn = "Close all", short = "Đóng hết"),
     )
 
     fun byId(id: String): ActionMacro? = ALL.firstOrNull { it.id == id }

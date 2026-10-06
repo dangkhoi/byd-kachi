@@ -45,9 +45,7 @@ import com.byd.clusternav.setCameraDewarpK
 import com.byd.clusternav.setCameraDewarpScale
 import com.byd.clusternav.setCameraGlTexMatrix
 import com.byd.clusternav.cameraProjection
-import com.byd.clusternav.setCameraProjection
 import com.byd.clusternav.cameraZoom
-import com.byd.clusternav.setCameraZoom
 import com.byd.clusternav.cameraWideKappa
 import com.byd.clusternav.setCameraWideKappa
 import com.byd.clusternav.cameraWideFocal
@@ -55,6 +53,8 @@ import com.byd.clusternav.setCameraWideFocal
 import com.byd.clusternav.cameraWidePanX
 import com.byd.clusternav.setCameraWidePanX
 import com.byd.clusternav.launcher.camera.CameraViewMode
+import com.byd.clusternav.launcher.camera.CameraCamConfig
+import com.byd.clusternav.launcher.camera.CameraReapply
 import com.byd.clusternav.launcher.camera.CameraDewarpPrefs
 import com.byd.clusternav.launcher.camera.CameraPanoCrop
 import com.byd.clusternav.launcher.camera.CameraSignalPolicy
@@ -268,11 +268,13 @@ internal object TestBridgePrefsSet {
             // Công tắc, không phải núm — nó là một PHÉP ĐO cho RE §7 Q17 (xem KDoc `Prefs.cameraGlTexMatrix`).
             "camera_gl_texmatrix" -> bool(raw)?.let { Prefs.setCameraGlTexMatrix(app, it); it.toString() }
             // 2.92 · CAMERA-FULL-VIEW: kiểu hình (mã `:core`) + thu phóng + ba núm *Thẳng rộng* — miền ở `:core`, ngoài
-            // miền ⇒ `bad_prefs_value:` (không kẹp im lặng), cùng lẽ sáu núm nắn ngay trên.
+            // miền ⇒ `bad_prefs_value:` (không kẹp im lặng), cùng lẽ sáu núm nắn ngay trên. 2.93 wave 2C ·
+            // PREFS-SET-CAM-GLOBAL-REAPPLY: hai khoá CHUNG đi ĐÚNG hàm của chip/thanh kéo Cài đặt ([CameraReapply.setProjection]
+            // · `setZoom`) ⇒ khung đang hiện dựng lại như Cài đặt (và *Nắn thẳng* lúc amount 0 ⇒ nắn đủ, cùng luật `:core`).
             "camera_projection" -> raw.trim().uppercase().takeIf { CameraViewMode.isMode(it) }
-                ?.let { Prefs.setCameraProjection(app, v = it); it }
+                ?.let { CameraReapply.setProjection(app, it); it }
             "camera_zoom" -> int(raw)?.takeIf { CameraViewMode.isZoomPct(it) }
-                ?.let { Prefs.setCameraZoom(app, v = it); it.toString() }
+                ?.let { CameraReapply.setZoom(app, it); it.toString() }
             "camera_wide_kappa" -> int(raw)?.takeIf { CameraDewarpPrefs.isKappaPct(it) }
                 ?.let { Prefs.setCameraWideKappa(app, v = it); it.toString() }
             "camera_wide_focal" -> int(raw)?.takeIf { CameraDewarpPrefs.isPct(it) }
@@ -285,14 +287,20 @@ internal object TestBridgePrefsSet {
                 h.setTopStripLabels(on)
                 on.toString()
             }
-            // Không thể tới đây: `:core` đã chặn khoá lạ ở tầng phân tích. Giữ nhánh để lượt thêm khoá mới mà quên
+            // 2.93 — 22 khoá mới của bộ chỉnh *Từng camera*: một nhánh THEO LOẠI ([TestBridgePerCam], tên khoá ở `:core`).
+            // Không thể tới phần còn lại: `:core` đã chặn khoá lạ ở tầng phân tích. Giữ nhánh để lượt thêm khoá mới mà quên
             // nối dây trả về một mã lỗi thay vì báo "đã ghi" cho một việc chưa xảy ra.
-            else -> return reply.fail(TestBridgeCommands.ERR_BAD_PREFS_KEY + cmd.key)
+            else -> if (TestBridgePerCam.owns(cmd.key)) TestBridgePerCam.write(app, cmd.key, raw)
+            else return reply.fail(TestBridgeCommands.ERR_BAD_PREFS_KEY + cmd.key)
         }
         if (applied == null) {
             reply.fail(ERR_BAD_VALUE + raw, "key" to cmd.key)
             return
         }
+        // 2.93 wave 2B · D2 — khoá của MỘT camera (28 khoá *Từng camera*, kể cả sáu khoá cũ của hai camera gương) ⇒ áp ngay
+        // nếu đúng camera ấy đang hiện: CÙNG cửa với Cài đặt ([CameraReapply.ifShowing]) — spec §6 *"áp ngay nếu đang hiện"*.
+        // Hai khoá CHUNG `camera_projection` · `camera_zoom` đã áp NGAY trong nhánh ghi của chúng (wave 2C — cửa chung với Cài đặt).
+        CameraCamConfig.cameraOf(cmd.key)?.let { CameraReapply.ifShowing(app, it) }
         reply.ok("key" to cmd.key, "value" to applied, "read_back" to readBack(app, cmd.key, hooks))
     }
 
@@ -355,12 +363,12 @@ internal object TestBridgePrefsSet {
             "camera_wide_pan_x" -> Prefs.cameraWidePanX(app).toString()
             KEY_TOP_STRIP_LABELS -> (hooks?.state()?.topStrip?.showLabels ?: WorkspacePrefs(app).topStrip().showLabels)
                 .toString()
-            else -> ""
+            else -> if (TestBridgePerCam.owns(key)) TestBridgePerCam.read(app, key) else ""
         }
     }.getOrDefault("")
 
     /** `1/0/true/false/on/off` — cố ý KHÔNG nhận chuỗi rỗng: *"quên truyền giá trị"* phải là một lỗi, không phải `false`. */
-    private fun bool(s: String): Boolean? = when (s.lowercase()) {
+    internal fun bool(s: String): Boolean? = when (s.lowercase()) {
         "1", "true", "on", "yes" -> true
         "0", "false", "off", "no" -> false
         else -> null

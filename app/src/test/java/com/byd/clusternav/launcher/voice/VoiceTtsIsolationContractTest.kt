@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.io.File
 import java.nio.file.Files
@@ -76,9 +77,7 @@ class VoiceTtsIsolationContractTest {
             root.toFile().walkTopDown()
                 .filter { it.isFile && it.name.endsWith(".kt") }
                 .filter { f ->
-                    val src = f.readText()
-                        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                        .lines().joinToString("\n") { it.substringBefore("//") }
+                    val src = KotlinSource.stripComments(f.readText())
                     construct.containsMatchIn(src)
                 }
                 .map { it.name }.toList()

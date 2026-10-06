@@ -12,6 +12,7 @@ import com.byd.clusternav.launcher.voice.VoicePlaces
 import com.byd.clusternav.launcher.voice.VoiceWakePhrase
 import com.byd.clusternav.launcher.voice.VoiceWavProbe
 import com.byd.clusternav.launcher.voice.VoiceWiring
+import com.byd.clusternav.launcher.voice.dynVocabOf
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -50,7 +51,9 @@ internal object TestBridgeTeach {
                     val stageError = TestBridgeWav.stage(app, cmd.path)
                     if (stageError != null) { reply.fail(stageError, "path" to cmd.path); return@Thread }
                     val labels = VoiceWiring.appsByLabel(app)
-                    val probe = VoiceWavProbe.run(app, hooks.state().profiles, labels.keys.toList(), labels.values.toSet())
+                    val st = hooks.state()
+                    val vocab = dynVocabOf(app, st.profiles, labels, VoicePlaces.labelsOf(st.savedPlaces))   // 2.93 DYNVOCAB
+                    val probe = VoiceWavProbe.run(app, st.profiles, labels.keys.toList(), labels.values.toSet(), vocab)
                     val sample = TeachSample.normalize(probe.heard)
                     val takes = (sample as? TeachSample.Sample)?.let { recordTake(cmd.pkg, it.norm) } ?: 0
                     judge(app, cmd, hooks, reply, probe.heard, sample, TaughtSource.SPEECH, probe.error, takes)

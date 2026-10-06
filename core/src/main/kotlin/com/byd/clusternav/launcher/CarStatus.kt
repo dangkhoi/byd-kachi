@@ -165,6 +165,19 @@ data class CarStatus(
         val lkRl: Int? = null,
         val lkRr: Int? = null,
         val sys: Int? = null,
+        /**
+         * 2.93 `TYRE-BURST-REASON` — MÃ mà getter áp suất của bánh TRẢ ở nhịp vừa đọc khi nó nằm trong
+         * `HalReadTables.INVALID_VALUES` của áp suất (4092..4095 — `CarDataAdapter` cổng `code`); `null` = số thường / chưa
+         * đọc / getter vắng. Áp suất của bánh ấy vẫn `null` ("—") như trước. Chỉ HAI mã thành CHỮ lý do ([TyreJudge] nhánh M1,
+         * màu cụm cùng chiều): [TyreJudge.PRESSURE_BURST] 4092 nổ lốp (cụm đỏ) · [TyreJudge.PRESSURE_ABNORMAL] 4093 bất
+         * thường (cụm vàng/đỏ). 4094/4095 ("chưa có số" lúc vừa nổ máy) chỉ vào dòng `TYRE raw … pc=` — đúng bằng chứng 🚗
+         * để chốt [SUY] "getter TPMS dùng cùng bộ mã với kênh cụm" mà không cần một lần nổ lốp thật (soát senior 2.93 Pass 1:
+         * KDoc cũ ghi `null` cho 4094/4095, mã thật vẫn giữ — sửa chữ theo mã).
+         */
+        val pcFl: Int? = null,
+        val pcFr: Int? = null,
+        val pcRl: Int? = null,
+        val pcRr: Int? = null,
     )
 
     /**

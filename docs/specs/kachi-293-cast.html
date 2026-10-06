@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.93 nhóm CAST</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7;--bad:#c9341f;--wait:#8e5cd9}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e;--bad:#ff6b5b;--wait:#bf9cf5}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;display:block;overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode.new{background:rgba(0,113,227,.12)}
+.fnode.stop{background:rgba(191,95,0,.12)}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+svg .axis{stroke:var(--muted);stroke-width:1.2}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .tx{fill:var(--fg);font-size:11.5px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .sm{fill:var(--muted);font-size:10px;font-family:-apple-system,"SF Pro Text",Roboto,sans-serif}
+svg .ev{fill:var(--accent)}
+svg .bad{stroke:var(--bad);stroke-width:2.4;fill:none}
+svg .badf{fill:var(--bad)}
+svg .okf{fill:var(--ok)}
+svg .waitband{fill:var(--wait);opacity:.28}
+svg .seg-pre{fill:#8e8e93;opacity:.55}
+svg .seg-gate{fill:var(--accent);opacity:.55}
+svg .seg-pause{fill:var(--warn);opacity:.75}
+svg .seg-op{fill:var(--wait);opacity:.65}
+svg .seg-tail{fill:var(--ok);opacity:.55}
+svg .lim{stroke:var(--bad);stroke-width:1.6;stroke-dasharray:5 4}
+svg .lim2{stroke:var(--ok);stroke-width:1.6;stroke-dasharray:5 4}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.93 — Nhóm CAST: lượt chữa phím không giết chiếu cụm đang dở · lượt mở chiếu nằm trong hạn · PACKAGE_ADDED · toast DL5</h1>
+<p class="muted">Slug: <code>kachi-293-cast</code> · Branch <code>feat/key-source-split</code> (nhánh làm việc riêng của nhóm, từ 2.92 <code>8fbdf96</code>) · Kế hoạch tổng <code>kachi-293-plan.html</code> nhóm CAST · <span class="pill wait">Trạng thái: Draft — mã + test off-car xong, chưa senior review / quét bảo mật / gộp; 🚗 chờ xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>CLAUDE.md</code> §2–§8 · §10 · §14 + <code>.kiro/steering/*</code> (nhãn [ĐO]/[SUY]/[ĐOÁN]/[CHƯA BIẾT]). Không thư viện mới: chỉ Kotlin stdlib, Android SDK và <code>androidx.core</code> 1.19.0 đã có (kiểm bằng <code>javap</code>); máy chủ Context7 không kết nối được phiên này (ENOTFOUND). Mọi khẳng định framework đọc NGUỒN AOSP <code>android-10.0.0_r47</code> / <code>android-12.0.0_r34</code> tải lại 06/10 (CLAUDE.md §3).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo + mã + test off-car cho 5 việc của nhóm CAST (kế hoạch 2.93): <code>READY-RESTART-MID-CAST</code> · <code>CAST-OPEN-TIMEOUT</code> · <code>VM-PREREQ-PKG-ADDED</code> · <code>TOAST-2LINE-DL5</code> · đóng <code>CLUSTER-BUBBLE-STOP-OFFER</code>. Nguồn: log xe 06/10 (xe chạy 2.91, Seal) + owner 06/10 <i>"làm hết mọi thứ luôn đi"</i>.</li>
+</ul>
+
+<h2>2. Context</h2>
+<h3>2.1 Bằng chứng</h3>
+<table>
+<tr><th>Việc</th><th>Bằng chứng</th><th>Mức</th></tr>
+<tr><td><code>READY-RESTART-MID-CAST</code></td><td>Log xe 06/10 (2.91): 15:17:27.751 <code>[SimpleCast] theme 31 cụm=[2] → SEND</code> → 27.754 <code>service call AutoContainer … 31</code> → 29.855 <code>… 16</code> → 30.725 <code>KachiReady: keys=STUCK(tat-may)->ESCALATE</code> → 31.392 <code>keys=STUCK(tat-may)->RESTARTING</code> → tiến trình mới 15:17:32 → 34.286 <code>theme 31 cụm=[2] → Skip(reason=TOO_SOON … còn 8468 ms) ⇒ SKIP_KNOWN</code> → 16 → 35 → phiên "chưa rõ kiểu" (UNKNOWN).</td><td>[ĐO] (log riêng tư, không vào repo — trích dòng)</td></tr>
+<tr><td><code>CAST-OPEN-TIMEOUT</code></td><td>Log xe 06/10 13:49 và 15:13: "dọn cụm" (gỡ lớp phủ của Kachi + <code>VM_BUBBLE_VIS show=false</code> rồi đọc lại) chờ ~4,5–5 s, bóng vẫn còn (mod v1 không ẩn được) ⇒ <code>bỏ theme (BUBBLE)</code> ⇒ 16/35 … ⇒ <code>TIMEOUT: openProjection</code> (hạn cứng 15 s) ⇒ <code>openProjection ngắt/lỗi giữa chừng (InterruptedException) — nhả state khỏi Opening</code>.</td><td>[ĐO]</td></tr>
+<tr><td>Độ trễ lệnh shell trên xe</td><td>6 lượt × (250 ms ngủ + 2 lệnh đọc) = 4,5–5 s ⇒ ≈ 0,27 s/lệnh; khoảng <code>31 → 16</code> = 2,10 s = 2 s ngủ + ~0,1 s lệnh <code>service call</code>; [ĐO usage-cycle2 29/09] 0,2–0,5 s/lệnh dadb lúc mở xe.</td><td>[SUY] từ [ĐO]</td></tr>
+<tr><td><code>VM-PREREQ-PKG-ADDED</code></td><td>Gỡ HẲN một gói (không phải cập nhật) ⇒ <code>DeviceIdleController</code> xoá gói khỏi danh sách miễn pin (<code>DeviceIdleController.java:585-592</code>, r47); cài lại ⇒ <code>ACTION_PACKAGE_ADDED</code> (<code>PackageManagerService.java:1919-1935</code> · <code>:13192-13206</code>). B2-OQ5 spec 2.89: lần mở VietMap ĐẦU TIÊN sau khi cài lại (Kachi đang sống) có thể hiện hộp "IVI không hỗ trợ" tới lượt chữa kế.</td><td>[ĐO nguồn] cơ chế · [SUY] ca xe</td></tr>
+<tr><td><code>TOAST-2LINE-DL5</code></td><td><code>packages/SystemUI/res/layout/text_toast.xml</code> (r34): TextView <code>maxLines="2"</code> + <code>ellipsize="end"</code>, khung <code>maxWidth=toast_width</code> = 300 dp (<code>core/res/res/values/dimens.xml:36</code>), lề 16+16 dp, icon 24+10 dp ⇒ ~234 dp chữ 14 sp; Kachi <code>targetSdk = 37</code>. Câu cũ đặt lý do <code>%2$s</code> ở CUỐI ⇒ bản EN/MS (≈ 57–63 ký tự + tên app) mất đúng phần lý do. A10 (xe owner): toast do app dựng, không giới hạn dòng (<code>transient_notification.xml</code> r47).</td><td>[ĐO nguồn] · [SUY] độ dài cắt</td></tr>
+<tr><td><code>CLUSTER-BUBBLE-STOP-OFFER</code></td><td>OQ3 spec 290 — owner 06/10 chọn mod tự ẩn bóng (<code>VM-BUBBLE-TOGGLE</code>); mod v2 ẩn được bóng (owner thử 06/10). CLAUDE.md: Kachi không tự force-stop app bên thứ ba.</td><td>[ĐO owner]</td></tr>
+</table>
+<h3>2.2 Đã có trong mã (đọc 06/10)</h3>
+<ul>
+<li>Lượt chữa phím 2.83/READY-AT-HOME: <code>A11yLifecycleHeal.healIfStuck</code> — đo → chờ 5 s → đo lại → KẸT BỀN → <code>NavConnect.escalateOnLifecycle</code> (lệnh tách rời mở đầu bằng <code>am force-stop</code> chính Kachi). Lớp 1 (tắt máy) chạy ngay lúc tiến trình bật khi màn tắt — CÙNG lúc với lượt tự chiếu khi khởi động (<code>BubbleAutostart</code>, <code>FloatingBubbleService</code> <code>START_STICKY</code>) ⇒ trùng nhau là ca thường.</li>
+<li>Chiếu cụm: một executor (<code>BoundedCastExecutor</code>, 1 chạy + 1 chờ), hạn cứng 15 s MỌI thao tác, hẹn giờ tính từ lúc GỬI; lượt mở = dò → cờ freeform → dọn → cổng theme (<code>ClusterThemeGuard</code>: đọc 3 lệnh, dọn cụm 6 lượt đọc lại, gỡ ClusterBlack 4 lượt đọc lại) → [theme] 16/35 (ngủ 2+2+1 s) → điều kiện nền → dò cụm → <code>wm</code> → ClusterBlack (ngủ 1 s) → nhận lại.</li>
+<li>Điều kiện nền app (B2): <code>AppPrereqs</code> — ba lối vào (SẴN · autostart · mở chiếu), MỘT hàm quyết <code>AppPrereqPlan.ensureAll</code>, dấu bền trước lệnh ghi, đường trả lại ở lượt SẴN.</li>
+</ul>
+<div class="card"><b>Cổng §14:</b> nhóm này KHÔNG thêm lệnh shell, opcode, hay cơ chế xe mới. R1 = chờ trong tiến trình trước một đường đã có; R2 = hạn executor + bớt lượt chờ (chỉ có thể ra "không gửi theme"); R3 = broadcast hệ thống chuẩn gọi đúng hàm chữa sẵn có; R4 = đổi thứ tự chữ. Mọi điều có hệ quả trên xe đánh dấu 🚗 ở §6.</div>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 · READY-RESTART-MID-CAST</b> — Lượt chữa phím tự động (lớp 1 tắt máy · lớp 2 mở xe · ân hạn khởi động) KHÔNG bắn lệnh tự force-stop khi chiếu cụm của chính tiến trình đang có thao tác bay (mở chiếu, chiếu app…) hoặc vừa gửi opcode theme chưa đủ 15 s. Chờ trong pha, có trần tuyệt đối; chờ không bao giờ đẩy lượt chữa ra khỏi cửa sổ thời gian của pha; pha qua trong lúc chờ ⇒ CẮT như nhánh chờ đo lại. Không có mối nguy ⇒ đường cũ y nguyên (không chờ, không hỏi thêm). <i>Chấp nhận</i>: dựng lại log 15:17 off-car — bắn SAU 15:17:42.751 (hết khoảng theme) ⇒ tiến trình kế mở chiếu gửi được theme (kiểu RECT), không <code>TOO_SOON</code>.</li>
+<li><b>R2 · CAST-OPEN-TIMEOUT</b> — Lượt mở chiếu nằm trong hạn: (a) lượt mở có hạn RIÊNG đủ cho chuỗi đo được trên xe; (b) mọi lượt chờ tuỳ chọn của cổng theme (dọn cụm, đọc lại sau gỡ ClusterBlack) chỉ chạy khi phần hạn còn lại > dự trữ cho đuôi bắt buộc; không đủ cho cả MỘT lượt ⇒ không dọn / không gỡ. Rào an toàn giữ nguyên: lớp còn trên màn ảo cụm ⇒ KHÔNG BAO GIỜ gửi opcode theme. <i>Chấp nhận</i>: test với hạn giả — mod v1 dừng đọc lại khi hạn chạm dự trữ, bỏ theme; hạn không đủ ⇒ 0 broadcast, không báo "mod cũ" oan; ngoài lượt mở / ngoài executor ⇒ hành vi cũ.</li>
+<li><b>R3 · VM-PREREQ-PKG-ADDED</b> — Gói trong phạm vi điều kiện nền vừa cài (Kachi đang sống) ⇒ đọc → áp phần thiếu → đọc lại NGAY, đúng phạm vi lượt kế sẽ chữa; gói ngoài phạm vi ⇒ 0 lệnh. Không đường ghi thứ hai.</li>
+<li><b>R4 · TOAST-2LINE-DL5</b> — Câu "chạy nền hỏng" mang lý do: mã lý do đứng ĐẦU (dòng 1 của toast 2 dòng), 5 thứ tiếng.</li>
+<li><b>R5 · CLUSTER-BUBBLE-STOP-OFFER</b> — Đóng bằng quyết định: KHÔNG thêm nút force-stop app bên thứ ba; Cài đặt giữ câu "tắt bóng VietMap rồi Áp ngay"; mod v2 tự ẩn.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li><b>N1</b> — 0 lệnh shell mới, 0 opcode mới, 0 thư viện mới.</li>
+<li><b>N2</b> — Lượt chữa phím: đo / chờ đo lại / nấc leo / cổng cuối / lệnh tách rời giữ nguyên từng bước (CLAUDE.md §6); nút "Sửa ngay" và watchdog không đổi.</li>
+<li><b>N3</b> — Không tệp Kotlin nào > 500 dòng (<code>SimpleCastCoordinator.kt</code> 499, <code>A11yLifecycleHeal.kt</code> 492 — hai tệp sát trần, bên gộp lưu ý).</li>
+<li><b>N4</b> — Chữ hiển thị đủ 5 thứ tiếng; không chữ mới ngoài R4.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 R1 — lượt chữa phím hỏi chiếu cụm trước khi bắn</h3>
+<div class="flow">
+  <div class="fnode"><b>Đo</b><span>binder / dumpsys</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Chờ 5 s, đo lại</b><span>KẸT BỀN?</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>HealCastWait</b><span>restartHazard() ?</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Chờ có trần</b><span>pha · trần · nhịp 250 ms</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>ESCALATE</b><span>escalateOnLifecycle</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>Cổng cuối</b><span>stillInPhase → bắn</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:var(--card)"></span>đường 2.83 / READY-AT-HOME giữ nguyên</span><span class="sw"><span class="box" style="background:rgba(0,113,227,.12)"></span>mới 2.93</span></div>
+<div class="diagram">
+<svg viewBox="0 0 860 250" width="860" role="img" aria-label="Dòng thời gian log xe 15:17 và hành vi 2.93">
+  <text class="tx" x="10" y="22">Giây sau 15:17:25 (đồng hồ log xe)</text>
+  <line class="axis" x1="40" y1="222" x2="832" y2="222"/>
+  <g class="sm">
+    <text x="40" y="238">:25</text><text x="112" y="238">:27</text><text x="184" y="238">:29</text><text x="256" y="238">:31</text>
+    <text x="328" y="238">:33</text><text x="400" y="238">:35</text><text x="472" y="238">:37</text><text x="544" y="238">:39</text>
+    <text x="616" y="238">:41</text><text x="688" y="238">:43</text><text x="760" y="238">:45</text><text x="820" y="238">:47</text>
+  </g>
+  <text class="tx" x="10" y="58">2.91 (log)</text>
+  <line class="grid" x1="40" y1="72" x2="832" y2="72"/>
+  <circle class="ev" cx="139" cy="72" r="5"/><text class="sm" x="118" y="92">31 SEND</text>
+  <circle class="ev" cx="215" cy="72" r="5"/><text class="sm" x="208" y="92">16</text>
+  <circle class="ev" cx="245" cy="72" r="4"/><text class="sm" x="222" y="60">ESCALATE</text>
+  <line class="bad" x1="263" y1="64" x2="277" y2="80"/><line class="bad" x1="277" y1="64" x2="263" y2="80"/>
+  <text class="sm" x="262" y="104">force-stop (giữa 16 và 35)</text>
+  <circle class="badf" cx="374" cy="72" r="5"/><text class="sm" x="352" y="60">TOO_SOON ⇒ UNKNOWN</text>
+  <text class="tx" x="10" y="150">2.93</text>
+  <rect class="waitband" x="245" y="140" width="442" height="22" rx="4"/>
+  <text class="sm" x="330" y="155">chờ: OP_IN_FLIGHT [SUY ~:39]</text><text class="sm" x="560" y="155">THEME_GAP tới :42.751</text>
+  <circle class="ev" cx="139" cy="151" r="5"/><circle class="ev" cx="215" cy="151" r="5"/>
+  <circle class="ev" cx="288" cy="151" r="4"/><text class="sm" x="281" y="182">35 [SUY]</text>
+  <line class="bad" x1="680" y1="143" x2="694" y2="159"/><line class="bad" x1="694" y1="143" x2="680" y2="159"/>
+  <text class="sm" x="640" y="182">bắn (≥ 15 s sau 31)</text>
+  <circle class="okf" cx="760" cy="151" r="5"/><text class="sm" x="726" y="200">mở lại: SEND ⇒ RECT</text>
+</svg>
+<p class="muted">Hàng trên = [ĐO] log xe; hàng dưới = hành vi 2.93 dựng lại off-car (<code>HealCastDeferralTest</code> · <code>CastRestartHazardTest</code>); mốc lượt mở xong <code>~:39</code> là [SUY] (ước lượng từ 0,27 s/lệnh) — bài test khoá phần [ĐO]: bắn không sớm hơn 31 + 15 s.</p>
+</div>
+<table>
+<tr><th>Pha (cổng cuối)</th><th>Mép thời gian của pha</th><th>Chờ được tới</th><th>Hệ quả</th></tr>
+<tr><td>TAT_MAY — màn còn tắt</td><td>không có</td><td>+<code>MAX_DEFER_MS</code> = 25 s (= hạn lượt mở)</td><td>ca log 15:17; màn bật giữa chừng ⇒ CẮT, lớp 2 lo như cũ</td></tr>
+<tr><td>MO_XE — màn bật, ≤ 10 s từ <code>SCREEN_ON</code></td><td><code>screenOnAt + 10 s</code></td><td>mép − 5 s (dự trữ nấc leo)</td><td>[SUY] tới đây ở +7…8 s ⇒ gần như không chờ = hành vi cũ</td></tr>
+<tr><td>KHOI_DONG — màn bật, ≤ 20 s từ lúc tiến trình bật</td><td><code>startedAt + 20 s</code></td><td>mép − 5 s</td><td>chờ được ~5–7 s; quá ⇒ bắn như cũ (không bao giờ trượt cửa sổ)</td></tr>
+<tr><td>RUNNING</td><td>—</td><td>không chờ</td><td>lớp 3 không vào nấc leo tự động</td></tr>
+</table>
+<p>Mối nguy (<code>CastRestartHazard</code>, chỉ đọc RAM + sổ theme, không shell): <code>OP_IN_FLIGHT</code> = executor chiếu bận (đang chạy HOẶC có thao tác chờ — thao tác đã quá hạn mà thân còn chạy vẫn tính bận) hoặc trạng thái <code>Opening</code>; <code>THEME_GAP</code> = <code>ClusterThemeGuard.remainingGapMs()</code> &gt; 0 (mốc muộn hơn giữa sổ bền và RAM — mục do tiến trình TRƯỚC ghi cũng tính, vì tiến trình kế vẫn phải chờ đúng khoảng ấy). Không có coordinator trong tiến trình ⇒ không mối nguy (không dựng coordinator chỉ để hỏi).</p>
+
+<h3>4.2 R2 — lượt mở chiếu nằm trong hạn</h3>
+<div class="diagram">
+<svg viewBox="0 0 860 230" width="860" role="img" aria-label="Ngân sách thời gian lượt mở chiếu">
+  <text class="tx" x="10" y="20">Lượt mở chiếu mức B, ước lượng [SUY] theo độ trễ lệnh đo được (giây)</text>
+  <line class="axis" x1="200" y1="196" x2="840" y2="196"/>
+  <g class="sm"><text x="196" y="212">0</text><text x="319" y="212">5</text><text x="442" y="212">10</text><text x="565" y="212">15</text><text x="688" y="212">20</text><text x="811" y="212">25</text></g>
+  <line class="lim" x1="569" y1="34" x2="569" y2="196"/><text class="sm" x="520" y="30">hạn cũ 15 s</text>
+  <line class="lim2" x1="815" y1="34" x2="815" y2="196"/><text class="sm" x="768" y="30">hạn lượt mở 25 s</text>
+  <text class="tx" x="10" y="62">Log 13:49/15:13 · mod v1</text><text class="sm" x="10" y="76">0,27 s/lệnh, bỏ theme</text>
+  <rect class="seg-pre" x="200" y="52" width="54" height="22"/>
+  <rect class="seg-pause" x="254" y="52" width="117" height="22"/>
+  <rect class="seg-gate" x="371" y="52" width="20" height="22"/>
+  <rect class="seg-op" x="391" y="52" width="87" height="22"/>
+  <rect class="seg-tail" x="478" y="52" width="91" height="22"/>
+  <text class="sm" x="268" y="67">dọn cụm ~4,75 s [ĐO]</text>
+  <text class="tx" x="10" y="112">Mod v2 + ClusterBlack mồ côi</text><text class="sm" x="10" y="126">0,27 s/lệnh, gửi theme</text>
+  <rect class="seg-pre" x="200" y="102" width="54" height="22"/>
+  <rect class="seg-pause" x="254" y="102" width="23" height="22"/>
+  <rect class="seg-gate" x="277" y="102" width="56" height="22"/>
+  <rect class="seg-op" x="333" y="102" width="143" height="22"/>
+  <rect class="seg-tail" x="476" y="102" width="91" height="22"/>
+  <text class="sm" x="578" y="117">≈ 14,9 s — sát hạn cũ</text>
+  <text class="tx" x="10" y="162">Như trên, lúc nổ máy</text><text class="sm" x="10" y="176">0,5 s/lệnh</text>
+  <rect class="seg-pre" x="200" y="152" width="98" height="22"/>
+  <rect class="seg-pause" x="298" y="152" width="31" height="22"/>
+  <rect class="seg-gate" x="329" y="152" width="92" height="22"/>
+  <rect class="seg-op" x="421" y="152" width="160" height="22"/>
+  <rect class="seg-tail" x="581" y="152" width="148" height="22"/>
+  <text class="sm" x="738" y="167">≈ 21,5 s</text>
+</svg>
+<div class="legend">
+  <span class="sw"><span class="box" style="background:#8e8e93;opacity:.55"></span>trước cổng (dò, cờ freeform, dọn, đọc đầu)</span>
+  <span class="sw"><span class="box" style="background:var(--warn)"></span>dọn cụm (lượt chờ tuỳ chọn)</span>
+  <span class="sw"><span class="box" style="background:var(--accent);opacity:.55"></span>đọc-quyết lại · gỡ ClusterBlack · đọc lại</span>
+  <span class="sw"><span class="box" style="background:var(--wait);opacity:.65"></span>[theme] 16 · 35 (ngủ 2+2+1 s)</span>
+  <span class="sw"><span class="box" style="background:var(--ok);opacity:.55"></span>đuôi (điều kiện nền, dò, wm, ClusterBlack 1 s, nhận lại)</span>
+</div>
+<p class="muted">Bảng trên là [SUY] số học: mỗi lệnh × độ trễ đo được + các nhịp ngủ ghi cứng trong mã. Ca đầu khớp [ĐO] hai lần TIMEOUT; ca giữa cho thấy hạn 15 s không đủ cả khi bóng ẩn ngay lượt đầu; ca dưới là lý do chọn 25 s. 🚗 đo lại toàn chuỗi với mod v2 (§6).</p>
+</div>
+<ul>
+<li><b>Hạn theo từng thao tác</b> — <code>BoundedCastExecutor.submit(tag, timeoutMs = castTimeoutMs)</code>: hạn ghi kèm thao tác (tính từ lúc GỬI như cũ); thân đang chạy đọc <code>BoundedCastExecutor.remainingMs()</code> (hạn treo trên <code>ThreadLocal</code> của luồng executor trong lúc thân chạy; ngoài thao tác ⇒ <code>null</code>). <code>openProjection</code> gửi với <code>openTimeoutMs</code> = <code>OPEN_TIMEOUT_MS</code> = 25 s; mọi thao tác khác giữ 15 s, Dừng 5 s.</li>
+<li><b>Cổng theme chờ trong phần hạn còn dư</b> — <code>ClusterThemeGuard.affordable()</code> (chỉ trong lượt MỞ, chỉ khi có hạn): còn &gt; <code>OPEN_TAIL_RESERVE_MS</code> = 12 s (đuôi bắt buộc ≈ 18 lệnh + 6 s ngủ ⇒ 11–12 s [SUY]) mới được: (1) bắt đầu dọn cụm — không đủ ⇒ không broadcast, không báo "mod cũ"; (2) lượt đọc lại thứ 2 trở đi sau dọn; (3) gỡ ClusterBlack — không đủ ⇒ 0 lệnh ghi, <code>Skip(NOT_REMOVABLE, "lượt mở không còn đủ hạn …")</code>; (4) lượt đọc lại thứ 2 trở đi sau gỡ. Lượt quyết cuối LUÔN từ một bản đọc mới ⇒ chỉ có thể ra "không gửi" sớm hơn, không bao giờ "gửi" khi còn lớp.</li>
+<li><b>Lưới an toàn "trả cụm"</b> (<code>ClusterLayerExecutor.PAUSE_MAX_MS</code>) bám hạn lượt mở: <code>OPEN_TIMEOUT_MS + 5 s</code> (bản 2.90: 20 s cho hạn 15 s — nếu giữ 20 s thì nó trả cụm giữa một lượt mở còn hợp lệ).</li>
+<li><b>Đo được trên xe</b> — dòng log mới <code>dọn cụm: SẠCH|chưa sạch sau N ms · k/6 lần đọc lại</code> (trả lời OQ6 spec 290) và <code>… lượt mở còn X ms ≤ dự trữ đuôi 12000 ms ⇒ thôi chờ</code>.</li>
+</ul>
+
+<h3>4.3 R3 — PACKAGE_ADDED</h3>
+<div class="flow">
+  <div class="fnode"><b>Lượt SẴN đầu tiên</b><span>AppPrereqs.onReady</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>Đăng ký 1 lần</b><span>PACKAGE_ADDED · package: · NOT_EXPORTED</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>onReceive (main)</b><span>chỉ lấy tên gói</span></div><div class="arrow">▶</div>
+  <div class="fnode new"><b>kachi-app-prereqs</b><span>forAddedPackage</span></div><div class="arrow">▶</div>
+  <div class="fnode"><b>runScope</b><span>đọc → áp phần thiếu → đọc lại</span></div>
+</div>
+<ul>
+<li>Phạm vi = <code>AppPrereqPlan.forAddedPackage(f, pkg)</code> = <b>cùng tập với <code>keep(f)</code></b> (chuẩn + lượt autostart + lượt mở chiếu cho VietMap) lọc theo gói ⇒ đúng thứ lượt kế sẽ chữa, không phạm vi mới, lượt ready sau không trả lại thứ vừa thêm. Gói ngoài phạm vi / chưa cài / tên lạ ⇒ rỗng, một dòng log, 0 shell.</li>
+<li>Đăng ký ở lượt SẴN: trước đó kênh shell chưa dùng được (cổng thi hành chặn phiên nền) ⇒ nghe sớm hơn cũng không chữa được gì. Đăng ký hỏng ⇒ nhả cờ, lượt SẴN sau thử lại.</li>
+<li>Nhận được tin: cài mới lẫn cập nhật đều phát <code>PACKAGE_ADDED</code> [ĐO nguồn r47 PMS]; <code>RECEIVER_NOT_EXPORTED</code> trên API 26–32 = đăng ký kèm quyền <code>…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION</code> [ĐO javap core-1.19.0] — người phát là <code>system_server</code> ⇒ luôn qua (<code>BroadcastQueue.java:635-643</code> → <code>ActivityManager.java:3732-3738</code>, r47); <code>QUERY_ALL_PACKAGES</code> ⇒ thấy mọi gói trên A11+.</li>
+</ul>
+
+<h3>4.4 R4 — toast DL5</h3>
+<p><code>kachi_sc_bg_failed_why</code>: <code>[%2$s] %1$s …</code> ở cả 5 thứ tiếng (chỉ đổi thứ tự, tham số vị trí — mã Kotlin không đổi). Đường đang chạy truyền mã ngắn <code>park: not-ready</code> (15 ký tự) ⇒ "<code>[park: not-ready] </code>" + tên app nằm gọn dòng 1 (~31 ký tự Latin ở 14 sp / 234 dp [SUY]); phần bị cắt (nếu có) là đuôi câu chung.</p>
+
+<h3>4.5 Quyết định</h3>
+<table>
+<tr><th>#</th><th>Quyết định</th><th>Lý do / trade-off</th></tr>
+<tr><td>D1</td><td>R1 hoãn ở tầng <code>healIfStuck</code> (TRƯỚC nấc leo), không ở cổng cuối trong phiên dadb</td><td>Không giữ phiên dadb nằm im tới 25 s; các bản đọc của nấc leo (<code>enabled_accessibility_services</code> dựng vào lệnh tách rời) vẫn tươi. Giá: một thao tác chiếu BẮT ĐẦU trong ~1–2,5 s đọc của nấc leo vẫn có thể bị giết [SUY hiếm — ghi ở §7].</td></tr>
+<tr><td>D2</td><td>Mối nguy gồm cả <code>THEME_GAP</code>, không chỉ "đang bay"</td><td>Chỉ chờ lượt mở xong thì tiến trình kế vẫn <code>TOO_SOON</code> (lượt mở xong ~:39 &lt; :42,751) ⇒ đúng triệu chứng log. Giá: tiến trình kế GỬI LẠI theme một lần (màn ảo dựng lại) — đường mức B đã đo an toàn trên Seal 138 [ĐO xe 06/10]; lần gửi trùng không tránh được khi kiểu tin không qua tiến trình (<code>CLUSTER-THEME-SAME-BOOT</code>).</td></tr>
+<tr><td>D3</td><td>Trần = <code>OPEN_TIMEOUT_MS</code>; pha có mép ⇒ dừng chờ trước mép 5 s</td><td>Một nguồn số; lượt chờ không bao giờ làm lượt chữa trượt khỏi cửa sổ (MO_XE gần như không chờ = hành vi cũ). Hết trần ⇒ bắn như cũ: không bỏ đói lượt chữa phím.</td></tr>
+<tr><td>D4</td><td>Hỏi mối nguy hỏng ⇒ coi như yên (fail-open)</td><td>Lượt chờ không được làm gãy lượt chữa (CLAUDE.md §6).</td></tr>
+<tr><td>D5</td><td>Chỉ lớp 1/2/khởi động đi qua lượt chờ; nút "Sửa ngay" và watchdog giữ nguyên</td><td>Người bấm tay đã thấy "giao diện khởi động lại một nhịp"; một cửa (bài canh đếm lời gọi).</td></tr>
+<tr><td>D6</td><td>R2: nâng hạn RIÊNG lượt mở lên 25 s + chặn lượt chờ theo phần hạn còn dư (cả hai)</td><td>Chặn lượt chờ một mình không đủ: đuôi bắt buộc của lượt gửi theme mức B đã ≈ 14,9 s ở 0,27 s/lệnh. Nâng hạn một mình không đủ trên xe chậm: lượt chờ tuỳ chọn có thể ăn hết hạn. Hạn chỉ chặn treo vĩnh viễn (mỗi lệnh đã có hạn đọc 10 s); Dừng vẫn huỷ ngay.</td></tr>
+<tr><td>D7</td><td>R2 không rút ngắn số lượt đọc lại (6 / 4) khi còn hạn</td><td>Rút ngắn = mod v2 ẩn chậm bị báo "mod cũ" oan + bỏ theme. Độ trễ ẩn của mod v2 [CHƯA BIẾT] ⇒ đo trước (dòng log mới), chỉnh sau.</td></tr>
+<tr><td>D8</td><td>R3 hành động cả khi cập nhật (<code>EXTRA_REPLACING</code>)</td><td>Đọc trước, chỉ ghi khi thiếu ⇒ cập nhật thường <code>ghi=-</code>; không phải phụ thuộc AppOps giữ quyền qua cập nhật hay không [CHƯA ĐỌC nguồn].</td></tr>
+<tr><td>D9</td><td>R5: không nút force-stop</td><td>Owner 06/10 + CLAUDE.md; mod v2 tự ẩn.</td></tr>
+</table>
+<h3>4.6 Bốn câu CLAUDE.md §4</h3>
+<p>Không lệnh <code>am</code>/<code>wm</code>/<code>service call</code> nào mới. R1 chỉ HOÃN lệnh tách rời có sẵn (bốn câu ở KDoc <code>AccessibilityRebind.forceStopRebindCommand</code>). R2 chỉ BỚT lượt đọc / lượt gỡ (lệnh gỡ có sẵn, bốn câu ở KDoc <code>ClusterThemePlan</code>). R3 gọi đúng <code>AppPrereqPlan.ensure</code> sẵn có (một gói, allow-list phạm vi, hoàn tác = <code>revertStale</code>).</p>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Việc</th><th>Tệp</th><th>Trạng thái</th></tr>
+<tr><td>T1</td><td>R1 luật thuần: <code>HealCastDeferral</code> + <code>AccessibilityHealGates.fireWindowEnd</code></td><td><code>core/…/navaccess/HealCastDeferral.kt</code> · <code>AccessibilityHealGates.kt</code> · test <code>HealCastDeferralTest</code></td><td class="ok">✅ off-car</td></tr>
+<tr><td>T2</td><td>R1 mối nguy: <code>CastRestartHazard</code> + <code>restartHazard()</code>; <code>executor</code> → <code>internal</code></td><td><code>core/…/simplified/CastRestartHazard.kt</code> · <code>SimpleCastCoordinator.kt</code> · test <code>CastRestartHazardTest</code></td><td class="ok">✅ off-car</td></tr>
+<tr><td>T3</td><td>R1 nối dây: <code>HealCastWait</code> + 1 dòng trong <code>healIfStuck</code> + <code>SimpleCastRuntime.restartHazard()</code></td><td><code>app/…/HealCastWait.kt</code> · <code>A11yLifecycleHeal.kt</code> · <code>SimpleCastRuntime.kt</code> · test <code>HealCastWaitWiringContractTest</code></td><td class="ok">✅ off-car · 🚗</td></tr>
+<tr><td>T4</td><td>R2 hạn theo thao tác + hạn riêng lượt mở</td><td><code>BoundedCastExecutor.kt</code> · <code>SimpleCastCoordinator.kt</code> · test <code>BoundedCastExecutorBudgetTest</code></td><td class="ok">✅ off-car</td></tr>
+<tr><td>T5</td><td>R2 cổng theme chờ trong hạn + log đo</td><td><code>ClusterThemeGuard.kt</code> · test <code>ClusterThemeBudgetTest</code></td><td class="ok">✅ off-car · 🚗</td></tr>
+<tr><td>T6</td><td>R2 lưới an toàn trả cụm theo hạn lượt mở; KDoc 15 s cũ</td><td><code>ClusterLayerExecutor.kt</code> · <code>ClusterDisplayResolver.kt</code> · <code>ThemeLedger.kt</code></td><td class="ok">✅</td></tr>
+<tr><td>T7</td><td>R3 phạm vi thuần + bộ thu</td><td><code>AppPrereqPlan.kt</code> · <code>AppPrereqs.kt</code> · test <code>AppPrereqAddedTest</code> · <code>AppPrereqsPackageAddedWiringTest</code></td><td class="ok">✅ off-car · 🚗</td></tr>
+<tr><td>T8</td><td>R4 chuỗi 5 thứ tiếng</td><td><code>values*/strings_kachi.xml</code> · test <code>BgFailedToastReasonFirstTest</code></td><td class="ok">✅ off-car · 🚗 DL5</td></tr>
+<tr><td>T9</td><td>R5 ghi quyết định; spec 290 OQ3/OQ6, spec 292 OQ2/OQ3 trỏ về đây</td><td>spec 290 · spec 292 · spec này</td><td class="ok">✅</td></tr>
+<tr><td>T10</td><td>Gộp · bộ đủ · senior review · quét bảo mật · backlog/INDEX/project-context</td><td>điều phối (T2–T5 kế hoạch tổng)</td><td class="warn">chờ</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li><b>V-unit</b> [ĐO 06/10, đếm JUnit XML]: <code>./gradlew :core:test :app:testDebugUnitTest --continue --rerun-tasks</code> (JAVA_HOME = openjdk@17) ⇒ <b>core 4 521 / 0</b> (480 tệp) · <b>app debug 2 111 / 0</b> (264 tệp); 2.92 là 4 491 / 2 101 ⇒ +40 bài mới (core 30: <code>HealCastDeferralTest</code> 10 · <code>CastRestartHazardTest</code> 3 · <code>BoundedCastExecutorBudgetTest</code> 5 · <code>ClusterThemeBudgetTest</code> 7 · <code>AppPrereqAddedTest</code> 5; app 10: <code>HealCastWaitWiringContractTest</code> 5 · <code>AppPrereqsPackageAddedWiringTest</code> 3 · <code>BgFailedToastReasonFirstTest</code> 2). Ba module còn lại (<code>car-integration</code>, <code>vehicle-contracts</code>, <code>offcar-planner</code>, <code>vehicleTest</code>) không chạy ở nhánh nhóm — điều phối chạy bộ đủ sau gộp.</li>
+<li><b>Phá thử</b> [ĐO 06/10, khôi phục từ bản sao rồi so <code>cmp</code>]: bỏ <code>THEME_GAP</code> ⇒ <code>CastRestartHazardTest</code> đỏ · bỏ chặn hạn ở vòng dọn cụm ⇒ <code>ClusterThemeBudgetTest</code> đỏ · lượt mở dùng hạn chung ⇒ <code>BoundedCastExecutorBudgetTest</code> đỏ · phạm vi PACKAGE_ADDED = phạm vi chuẩn ⇒ <code>AppPrereqAddedTest</code> đỏ · lượt chờ không bao giờ chờ ⇒ 6 bài <code>HealCastDeferralTest</code> đỏ · gỡ dòng nối trong <code>healIfStuck</code> ⇒ 2 bài <code>HealCastWaitWiringContractTest</code> đỏ · trả câu VI về lý do-cuối ⇒ <code>BgFailedToastReasonFirstTest</code> đỏ.</li>
+<li><b>V-máy ảo</b> (điều phối, T4 kế hoạch tổng): gỡ hẳn rồi cài lại một gói trong phạm vi (VietMap) lúc Kachi sống ⇒ màn Chẩn đoán › điều kiện nền: lượt gần nhất <code>package-added</code> có <code>ghi=DOZE_EXEMPT</code>; cài gói ngoài phạm vi ⇒ log "ngoài phạm vi", 0 shell.</li>
+<li><b>🚗 V-oncar R1</b>: Cast BẬT + tự chiếu, phím vô-lăng bật; tắt máy (BYD giết Kachi). Log <code>usage-*.log</code> phải có <code>KachiReady keys-defer note=tat-may hazard=OP_IN_FLIGHT waited=… -&gt; SETTLED</code> TRƯỚC <code>keys=STUCK(tat-may)-&gt;ESCALATE</code>; lệnh <code>16</code>/<code>35</code> của lượt mở đều có trước RESTARTING; lượt mở của tiến trình kế: <code>theme 31 … SEND</code> (không <code>TOO_SOON</code>) và kiểu tin RECT; phím sống sau đó (<code>HEALED-&gt;BOUND</code>). Nổ máy lại ngay trong lúc chờ ⇒ <code>-&gt; PHASE_GONE</code> rồi lớp 2 chữa như cũ.</li>
+<li><b>🚗 V-oncar R2</b> (mod v2): nổ máy với bóng VietMap đang trên cụm ⇒ log <code>dọn cụm: SẠCH sau N ms</code> (ghi N — trả lời OQ6 spec 290), không <code>TIMEOUT: openProjection</code>, đo tổng thời gian <code>Opening → Idle</code>. Mod v1 (nếu còn máy nào): <code>chưa sạch sau ~4,5–5 s · 6/6</code>, bỏ theme, vẫn không TIMEOUT.</li>
+<li><b>🚗 V-oncar R4</b> (cần xe DL5 — <code>DL5-CAST-LIVE</code>): toast chạy nền hỏng hiện <code>[park: not-ready] …</code> ở dòng 1.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. Mod v2 ẩn bóng mất bao lâu sau <code>VM_BUBBLE_VIS</code>? [CHƯA BIẾT] — dòng log mới đo được ở 🚗; nếu luôn &lt; 1 s thì có thể rút số lượt đọc lại (D7).</li>
+<li>OQ2. Hạn 25 s là cận trên an toàn chưa (DL5, xe tải nặng)? [SUY] — 🚗 đo <code>Opening → Idle</code>; nếu đo &lt; 15 s ổn định, cân nhắc hạ.</li>
+<li>OQ3. Đầu máy thức bao lâu sau khi tắt máy (lượt chờ lớp 1 tới 25 s có kịp bắn trước khi ngủ)? [CHƯA BIẾT] — ngủ giữa chừng ⇒ lần nổ máy kế lớp 2 chữa (hành vi cũ khi lớp 1 bị cắt). Log 15:17 cho thấy đầu máy còn chạy ≥ 9 s sau tiến trình D bật.</li>
+<li>OQ4. (Đề xuất, chưa làm) Nhớ "bóng không ẩn sau VM_BUBBLE_VIS" theo phiên bản gói VietMap để lượt mở sau bỏ qua 6 lượt đọc vô ích với mod v1 — chỉ đáng làm nếu còn người dùng mod v1.</li>
+<li>OQ5. Một thao tác chiếu bắt đầu đúng trong ~1–2,5 s đọc của nấc leo (sau lượt chờ, trước lệnh tách rời) vẫn bị giết (D1) [SUY hiếm] — 🚗 soát log; nếu gặp, thêm hỏi lại ở cổng cuối.</li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li>Spec <code>kachi-293-plan.html</code> (nhóm CAST) · <code>kachi-292-cluster-frame-chosen.html</code> OQ2/OQ3 · <code>kachi-290-cluster-rect-fix.html</code> §4.4 R9, OQ3/OQ6 · <code>kachi-289-field-fixes.html</code> B2 (B2-OQ5) · <code>kachi-283-key-heal-acc-off.html</code> · <code>kachi-ready-at-home.html</code>.</li>
+<li>AOSP r47: <code>DeviceIdleController.java:585-592</code> · <code>PackageManagerService.java:1919-1935</code>, <code>:13192-13206</code> · <code>BroadcastQueue.java:635-643</code> · <code>ActivityManager.java:3732-3738</code> · <code>transient_notification.xml</code>. AOSP r34: <code>packages/SystemUI/res/layout/text_toast.xml</code> · <code>core/res/res/values/dimens.xml:35-38</code>. <code>javap</code> <code>androidx.core:core:1.19.0</code> <code>ContextCompat.registerReceiver</code> / <code>Api26Impl</code>.</li>
+<li>Diagnostics: <code>docs/diagnostics/oncar-2026-10-06-cluster-rect.md</code> · <code>docs/diagnostics/vm-prereq-emulator-2026-10-05/</code>. Log xe 06/10 (riêng tư, không vào repo).</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định</b> — R1 đặt lượt chờ TRƯỚC <code>KachiReadyLog.keys("STUCK(…)->ESCALATE")</code>, không trong <code>fireGate</code> của <code>NavConnect</code> (D1): không đụng <code>NavConnect.kt</code> (460 dòng, đường đã chạy trên xe), các bài canh thứ tự cũ (<code>A11yLifecycleHealWiringContractTest</code>, <code>A11yBootGraceWiringContractTest</code>) giữ nguyên chữ.</li>
+<li><b>2026-10-06 · spec không work → đổi</b> — bản đầu của <code>HealCastDeferral.waitUntil</code> tự <code>when</code> trên bốn pha ⇒ bài canh "pha KHOI_DONG chỉ có MỘT lối vào" (<code>A11yBootGraceWiringContractTest</code>) sẽ đếm thêm một chỗ nhắc pha. Đổi: mép cửa sổ dời về <code>AccessibilityHealGates.fireWindowEnd</code> (nơi pha được phép nhắc) — cũng là một nguồn số với cổng cuối.</li>
+<li><b>2026-10-06 · trade-off</b> — <code>SimpleCastCoordinator.kt</code> 499 dòng: thêm tham số <code>openTimeoutMs</code> (một dòng) bù bằng gộp chú thích ba dòng thành hai; <code>executor</code> <code>private</code> → <code>internal</code> để <code>CastRestartHazard.kt</code> đọc <code>isIdle</code>.</li>
+<li><b>2026-10-06 · sai lệch nhỏ</b> — KDoc 2.90 nói lượt dọn cụm "≤ 1,5 s" và lượt đọc sau gỡ "≤ 1 s": chỉ là phần ngủ; [ĐO log] thật ~4,5–5 s. Sửa KDoc cho đúng sự thật (<code>ClusterThemeGuard</code> companion).</li>
+<li><b>2026-10-06 · quyết định</b> — R3 KHÔNG thêm <code>Role</code> mới: phạm vi = <code>keep(f)</code> lọc theo gói (D-R3) — tách <code>everyEntryTargets</code> dùng chung cho <code>keep</code> và <code>forAddedPackage</code>; vào lại đúng <code>runScope</code> (bài canh "MỘT hàm quyết: 2 lời gọi <code>ensureAll</code>" giữ nguyên).</li>
+<li><b>2026-10-06 · test</b> — chạy chọn lọc [ĐO XML]: core <code>clustercast.simplified</code> + <code>navaccess</code> + <code>AppPrereq*</code> 567 / 0; app dây nối A11y* · AppPrereqs* · ClusterLayer* · ClusterTheme* · Slot/Shortcuts · ReadyAtHome · NlsHeal + 3 bài mới 153 / 0. Phá thử 7 lần, mỗi lần đúng bài đỏ (§6), khôi phục bằng bản sao + <code>cmp</code>.</li>
+<li><b>2026-10-06 · test</b> — bộ đủ hai module [ĐO XML, <code>--rerun-tasks</code>]: core 4 521 / 0 · app debug 2 111 / 0 (§6).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<p class="muted">Append-only. Chưa có lượt senior review (điều phối chạy sau khi gộp — T3 kế hoạch tổng).</p>
+
+<h3>Pass 1 — 2026-10-06 (senior review độc lập — Opus)</h3>
+<p class="muted">Đọc mã trên cây CHÍNH (<code>git diff 8fbdf96</code>, chỉ tệp nhóm CAST) — KHÔNG chạy gradle (điều phối chạy bộ đủ sau khi gộp mọi nhóm 2.93), không adb/máy ảo/xe. Context7 không kết nối được (ENOTFOUND) — nhóm không thêm thư viện; API dùng (<code>ContextCompat.registerReceiver</code> + <code>RECEIVER_NOT_EXPORTED</code>, <code>java.util.concurrent</code>, <code>ThreadLocal</code>, <code>SystemClock</code>, <code>Intent.ACTION_PACKAGE_ADDED</code>) không deprecated [SUY: không đối chiếu được tài liệu mới nhất phiên này]. Nhãn bằng chứng: mọi kết luận dưới đây là [SUY đọc mã] trừ khi ghi khác.</p>
+
+<table>
+<tr><th>Việc</th><th>Mã · nối dây (grep call site)</th><th>Test</th><th>Kết luận</th></tr>
+<tr><td>R1 READY-RESTART-MID-CAST</td><td><code>HealCastDeferral</code> · <code>fireWindowEnd</code> · <code>CastRestartHazard</code>; <code>A11yLifecycleHeal.kt:392</code> (lời gọi DUY NHẤT) → <code>HealCastWait.kt:33</code> → <code>SimpleCastRuntime.restartHazard()</code> → <code>instance?.restartHazard()</code> (không dựng coordinator)</td><td>HealCastDeferralTest 10 · CastRestartHazardTest 3 · HealCastWaitWiringContractTest 5</td><td><span class="pill ok">✅ off-car</span> 🚗</td></tr>
+<tr><td>R2 CAST-OPEN-TIMEOUT</td><td><code>BoundedCastExecutor.submit(tag, timeoutMs)</code> + <code>remainingMs()</code>; <code>SimpleCastCoordinator.kt:237</code> (chỉ lượt mở); <code>ClusterThemeGuard.affordable</code> ở 4 chỗ (trước dọn · vòng dọn · trước gỡ · vòng đọc sau gỡ); <code>ClusterLayerExecutor.PAUSE_MAX_MS</code> = 30 s</td><td>BoundedCastExecutorBudgetTest 5 · ClusterThemeBudgetTest 7 + 1 (Pass 1)</td><td><span class="pill ok">✅ off-car</span> 🚗</td></tr>
+<tr><td>R3 VM-PREREQ-PKG-ADDED</td><td><code>AppPrereqPlan.forAddedPackage</code>; <code>listenPackageAdded</code> ← <code>onReady</code> (<code>EarlyShellChannel.kt:179</code> · <code>ClusterNavBridgeReapply.kt:80</code>) → <code>runScope</code></td><td>AppPrereqAddedTest 5 · AppPrereqsPackageAddedWiringTest 3</td><td><span class="pill ok">✅ off-car</span> 🚗 máy ảo</td></tr>
+<tr><td>R4 TOAST-2LINE-DL5</td><td>5 tệp <code>values*/strings_kachi.xml</code>; <code>KachiHomeSlotActions.kt:149</code> / <code>:178</code></td><td>BgFailedToastReasonFirstTest 2</td><td><span class="pill ok">✅</span> 🚗 DL5</td></tr>
+<tr><td>R5 CLUSTER-BUBBLE-STOP-OFFER</td><td>spec 290 OQ3 · 292 OQ2/OQ3 · R5 ở đây</td><td>—</td><td><span class="pill ok">✅</span></td></tr>
+<tr><td>N1–N4</td><td>0 lệnh shell / opcode / thư viện mới; <code>SimpleCastCoordinator.kt</code> 499 · <code>A11yLifecycleHeal.kt</code> 492 · <code>ClusterThemeGuard.kt</code> 455 (Pass 1 không chạm hai tệp sát trần)</td><td>—</td><td><span class="pill ok">✅</span></td></tr>
+</table>
+
+<div class="card">
+<p><b>Năm câu hỏi an toàn của lượt soát</b></p>
+<ul>
+<li><b>Khoá chết / bỏ đói giữa luồng chữa phím và executor chiếu</b> — không: luồng chữa chỉ ĐỌC (<code>isIdle</code> = hàng đợi + <code>activeCount</code>, <code>state</code> nguyên tử, sổ theme qua prefs), không giữ khoá nào executor cần; executor không bao giờ chờ luồng chữa. Luồng <code>kachi-a11y-lifecycle</code> bị chặn ≤ 25 s: lượt màn bật xếp sau thấy <code>PHASE_GONE</code> trong ≤ 250 ms.</li>
+<li><b>Lượt chữa vẫn bắn</b> — trần ≤ bây giờ + 25 s; pha có mép dừng trước mép 5 s; tiến trình chết giữa lúc chờ ⇒ lượt chờ không ghi gì (claim đã <code>commit()</code> trước khi đo) ⇒ luật dedupe cũ, lớp 2 lo; đầu máy ngủ giữa chờ ⇒ thức: màn bật ⇒ <code>PHASE_GONE</code> (lớp 2), màn tắt ⇒ <code>LIMIT</code> ⇒ bắn (cổng cuối vẫn hỏi pha).</li>
+<li><b>Hạn 25 s không mở đường gửi theme khi còn lớp / màn ảo đổi</b> — mọi nhánh mới chỉ BỚT lượt đọc / lượt gỡ tuỳ chọn; quyết cuối luôn từ bản đọc mới (dọn ⇒ <code>readAndDecide</code>; gỡ ⇒ ≥ 1 lượt đọc lại + <code>readDisplays</code> tươi) ⇒ chỉ thêm kết cục <code>Skip</code>. Nhánh "gỡ xong mà vòng đọc lại bị hạn cắt" trước Pass 1 chưa có bài khoá — đã thêm (mục 6).</li>
+<li><b>Tiến trình kế gửi lại 31</b> — đi CÙNG <code>admit()</code> (màn ảo trống + 15 s, mức B) — <code>CastRestartHazardTest</code> tiến trình E; đời xe mức A ⇒ <code>VD_PRESENT</code> ⇒ bỏ. An toàn theo cấu tạo.</li>
+<li><b>Ngắt / huỷ trong <code>BoundedCastExecutor</code></b> — <code>ThreadLocal</code> đặt và gỡ trong <code>finally</code>; <code>FutureTask</code> bị huỷ trước khi chạy không gọi <code>runGuarded</code>; <code>InterruptedException</code> ⇒ đặt lại cờ; <code>openProjection</code> bắt mọi lỗi ⇒ <code>setError</code> ⇒ rời <code>Opening</code>. Bộ thu PACKAGE_ADDED: CAS một lần, <code>NOT_EXPORTED</code> (người phát là <code>system_server</code>), <code>onReceive</code> chỉ đẩy sang <code>kachi-app-prereqs</code>, phạm vi = <code>keep(f)</code> lọc theo gói.</li>
+</ul>
+</div>
+
+<p><b>Phát hiện</b></p>
+<ol>
+<li><b>[P2] — thiết kế, CẦN OWNER CHỐT (không vá: đổi D3 / bảng §4.1 đã duyệt)</b> — lượt chờ pha <code>KHOI_DONG</code> đụng trần chờ của chuỗi SẴN. <code>KeyReadyPlan.KEY_HOLD_MAX_MS</code> = 8 s tính theo "5 s xác nhận kẹt + hai lần dump"; <code>bootGraceBusy</code> nay giữ thêm tới ~7 s khi chiếu cụm đang dở. Ca: tiến trình dựng lại lúc màn sáng + phím kẹt + tự chiếu đang mở ⇒ lượt chữa tới lượt chờ ở ~+7,5 s, trần <code>startedAt</code> + 15 s; lượt mở + khoảng 15 s sau theme thường kéo quá +15 s ⇒ <code>LIMIT</code>, bắn ~+16 s — tiến trình kế vẫn <code>TOO_SOON</code> (lượt chờ gần như VÔ ÍCH khi có gửi theme), trong khi <code>KeyReady.holdTileIfEscalating</code> / <code>KeyReady.prepare</code> hết 8 s trước ⇒ ô gắn app rồi bị force-stop ⇒ <b>app ô mở hai lần</b> (đúng thứ R-A2 2.83 chặn) + một lượt GRANT toggle thừa. Đề xuất (nghiêng về a): (a) chỉ chờ ở <code>TAT_MAY</code> (ca log 15:17; MO_XE vốn không chờ được — mục 3; KHOI_DONG có gửi theme thì chờ hay không tiến trình kế đều <code>TOO_SOON</code>) — đổi <code>HealCastDeferral.waitUntil</code> + bài <code>KHOI_DONG - cho toi mep…</code> + bảng §4.1/D3; hoặc (b) giữ, 🚗 soát <code>keys=HOLD(…)->TIMEOUT</code> đứng trước <code>keys-defer note=khoi-dong</code>.</li>
+<li><b>[P2] — có TỪ TRƯỚC 2.93, không vá (đổi hành vi đường đã chạy ⇒ cần spec)</b> — <code>submitStop</code> huỷ <code>activeFuture</code> = thao tác GỬI GẦN NHẤT (có thể đang chờ), không ngắt thao tác đang chạy; hạn Dừng 5 s tính từ lúc gửi ⇒ lượt mở còn chạy &gt; 5 s là Dừng bị huỷ trước khi chạy (<code>TIMEOUT: stop</code>). Hạn 25 s của lượt mở nới cửa sổ ấy. KDoc <code>OPEN_TIMEOUT_MS</code> ("Dừng vẫn ưu tiên huỷ ngay") đã sửa cho đúng (mục Vá). Backlog đề xuất: giữ handle thao tác ĐANG CHẠY + hạn Dừng tính từ lúc Dừng chạy.</li>
+<li><b>[P3] — thông tin</b> — <code>MO_XE</code> không bao giờ chờ được: lượt chữa tới lượt chờ ≥ <code>screenOnAt</code> + ~6 s (5 s xác nhận + hai lần đo) &gt; mép − dự trữ = +5 s ⇒ <code>until</code> = bây giờ; có mối nguy chỉ thêm dòng <code>keys-defer … waited=0 -> LIMIT</code>. Khớp "gần như không chờ" ở §4.1 — ghi để buổi xe đọc log không hiểu nhầm là "bị trần cắt".</li>
+<li><b>[P3] — có từ trước, không vá</b> — hẹn giờ của thao tác bị BỎ khỏi hàng (<code>DiscardOldestPolicy</code> / <code>queue.clear()</code> của Dừng) vẫn gọi <code>onTimeout</code> ⇒ có thể có <code>TIMEOUT: openProjection</code> GIẢ ở 25 s cho một lượt mở chưa từng chạy ([SUY hiếm]: <code>BubbleAutostart</code> chỉ gửi lại khi Off/Error). 🚗 R2: chỉ dòng <code>openProjection ngắt/lỗi giữa chừng</code> chứng minh một lượt mở THẬT chạm hạn.</li>
+<li><b>[P3] — không vá (bài 1 của ClusterThemeBudgetTest khoá có chủ ý)</b> — vòng dọn bị hạn cắt mà bóng còn ⇒ <code>lastBubbleOldMod</code> = true; mod v2 ẩn chậm hơn số lượt đọc lại còn kịp có thể bị báo "mod cũ" oan. Độ trễ mod v2 [CHƯA BIẾT] (OQ1); dòng <code>chưa sạch sau N ms · k/6</code> phân biệt được.</li>
+<li><b>[P2] — test thiếu → ĐÃ VÁ</b> — chưa có bài khoá rào an toàn ở nhánh "lệnh gỡ ClusterBlack đã gửi, hệ gỡ chậm, hạn chạm dự trữ giữa các lượt đọc lại". Thêm <code>ClusterThemeBudgetTest</code> › <code>go ClusterBlack xong ma he go cham, han cham du tru giua luot doc lai - KHONG gui</code>: 1 lệnh gỡ, 1 lượt đọc lại, <code>STILL_OCCUPIED</code>, không <code>SEND</code>.</li>
+<li><b>[P3] — ĐÃ VÁ</b> — <code>AppPrereqs.kt</code> chú thích lượt mở chiếu còn "executor có hạn 15 s".</li>
+<li><b>[P3] — gộp vào OQ2</b> — <code>OPEN_TAIL_RESERVE_MS</code> 12 s không phủ ca màn ảo KHÔNG dựng lại sau opcode theme (dò lặp 12 × 500 ms + 12 lệnh ≈ 9 s ⇒ đuôi ≈ 18–19 s) [SUY]; [ĐO xe 06/10] màn ảo dựng lại (4 → 9) nên ca thường chỉ 1–3 lượt dò. Đo Opening → Idle ở 🚗.</li>
+</ol>
+
+<p><b>Vá đã áp</b> (không đổi mã chạy): <code>BoundedCastExecutor.kt</code> KDoc <code>OPEN_TIMEOUT_MS</code> · <code>AppPrereqs.kt</code> chú thích · <code>ClusterThemeBudgetTest.kt</code> + 1 bài. Vì chỉ chú thích + bài test ⇒ không cần lượt soát mã lặp lại; điều phối chạy bài.</p>
+<p><b>Bài cần chạy lại</b>: <code>:core:test --tests '*.ClusterThemeBudgetTest' --tests '*.BoundedCastExecutorBudgetTest' --tests '*.CastRestartHazardTest' --tests '*.HealCastDeferralTest' --tests '*.AppPrereqAddedTest'</code> · <code>:app:testDebugUnitTest --tests '*.AppPrereqsWiringContractTest' --tests '*.AppPrereqsPackageAddedWiringTest' --tests '*.HealCastWaitWiringContractTest'</code>, rồi bộ đủ sau gộp.</p>
+<p><b>Kết luận Pass 1</b>: <span class="pill ok">APPROVED về phạm vi</span> — R1–R5 + N1–N4 có mã, nối dây, test thật. Còn mở: mục 1 ([P2] thiết kế — owner chọn (a)/(b) trước khi đăng), mục 2 ([P2] có từ trước — backlog), mục 3–5, 8 ([P3] thông tin / 🚗).</p>
+
+<h3>Pass 2 — 2026-10-07 (điều phối — vá theo senior review Pass 1)</h3>
+<ul>
+<li><b>F1 [P2] — VÁ:</b> chỉ pha <code>TAT_MAY</code> được chờ (<code>HealCastDeferral.waitUntil</code> + chốt sớm ở <code>HealCastWait.await</code>): chờ ở <code>KHOI_DONG</code> đụng lượt giữ 8 s của chuỗi sẵn sàng ⇒ app ô mở hai lần (2.83 R-A2) mà lượt chờ thường chạm trần. Ca hiện trường 15:17 là <code>STUCK(tat-may)</code> ⇒ vẫn được phủ. Test <code>HealCastDeferralTest</code> (KHOI_DONG không chờ) · <code>HealCastWaitWiringContractTest</code> (ghim thứ tự).</li>
+<li><b>F2 [P2] — VÁ (lỗi có từ trước, hạn 25 s làm nặng):</b> <code>BoundedCastExecutor</code> giữ <code>runningFuture</code> — Dừng ngắt thao tác ĐANG CHẠY (không chỉ thao tác chờ) và hạn của Dừng tính từ lúc nó chạy. Test <code>BoundedCastExecutorStopTest</code> (3).</li>
+<li><b>F4 [P3] — VÁ:</b> thao tác bị bỏ khỏi hàng (chưa từng chạy) không còn báo <code>TIMEOUT: &lt;tag&gt;</code> giả (cờ <code>started</code>).</li>
+<li>Đợt 2A thêm <code>HEAL-DEFER-GATE-RECHECK</code> (hỏi lại mối nguy ở cổng cuối, TAT_MAY) và <code>VM-BUBBLE-OLDMOD-MEMO</code> — xem <code>kachi-293-wave2a.html</code>.</li>
+<li>Bộ đủ sau gộp toàn đợt [ĐO XML 07/10]: 9 371 test, 0 lỗi (offcar-planner chạy riêng 99/0 — lỗi khi chạy song song là do test chụp cây repo lúc tệp .class đang ghi).</li>
+</ul>
+</div></body>
+</html>

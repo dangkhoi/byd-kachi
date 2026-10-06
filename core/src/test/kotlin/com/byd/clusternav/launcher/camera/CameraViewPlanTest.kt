@@ -186,4 +186,32 @@ class CameraViewPlanTest {
         assertTrue(whole.h < band.h, "hạ chiều cao thay vì cắt hai mép")
         assertTrue(CameraClusterBand.insideBand(whole))
     }
+
+    // ── 2.93 · camera theo yêu cầu: dấu dịch-x theo CAMERA ─────────────────────────────────────────────────────
+
+    /**
+     * Mặc định `panXSign` = theo [left] ⇒ hai camera gương y hệt 2.92 từng trường; camera GIỮA (`0`) ⇒ hai núm dịch-x
+     * theo bên (`camera_dewarp_pan_x` · `camera_wide_pan_x`) KHÔNG áp — không có *"phía đuôi theo bên"* cho camera sau/trước.
+     */
+    @Test fun `dau dich theo camera - guong y nhu cu, camera giua khong dich`() {
+        val k = seal.copy(panXPct = -20, panYPct = 7, widePanXPct = -20)
+        for (mode in CameraViewMode.MODES) for (left in listOf(true, false)) {
+            val c = crops(mode, left, CameraSignalPolicy.SPAN_STRIP, CameraSignalPolicy.SHAPE_RECT)
+            val strip = CameraPanoCrop.defaultStrip(left)
+            val implicit = CameraViewPlan.gl(mode, 100, c, strip, w, h, 0, false, left, k, true)
+            val explicit = CameraViewPlan.gl(mode, 100, c, strip, w, h, 0, false, left, k, true,
+                panXSign = if (left) CameraWhich.LEFT.panXSign else CameraWhich.RIGHT.panXSign)
+            assertEquals(implicit, explicit, "$mode $left: camera gương = 2.92")
+        }
+        for (mode in CameraViewMode.MODES) for (which in listOf(CameraWhich.REAR, CameraWhich.FRONT)) {
+            val c = CameraViewPlan.crops(mode, CamView.MIRROR_LEFT, true, which.strip, null, CameraSignalPolicy.SPAN_STRIP,
+                CameraSignalPolicy.SHAPE_RECT, pct)
+            assertArrayEquals(CameraPanoCrop.stripCrop(which.strip), c.content, 1e-6f, "$which: trọn dải ${which.strip}")
+            val u = CameraViewPlan.gl(mode, 100, c, which.strip, w, h, 0, false, true, k, true, panXSign = which.panXSign)
+            assertEquals(0f, u.panX, "$mode $which: không dịch-x theo bên")
+            val noKnobs = CameraViewPlan.gl(mode, 100, c, which.strip, w, h, 0, false, true, k.copy(panXPct = 0, widePanXPct = 0), true,
+                panXSign = which.panXSign)
+            assertEquals(noKnobs, u, "$mode $which: núm dịch-x theo bên không đổi gì cho camera giữa")
+        }
+    }
 }

@@ -51,7 +51,9 @@ internal object VoiceAppPrefix {
         val said = rest.take(headLen).joinToString("") { it.norm }
         if (said.length < MIN_PREFIX) return null
         // Cổng 3 — duy nhất theo nhãn (hoặc lồng nhau theo từ).
-        val matched = VoiceLastResort.candidates(terms).filter { (_, words) -> words.joinToString("").startsWith(said) }
+        // 2.93 VOICE-TAUGHT-ACCENT-FUZZY — tên GIỌNG một âm tiết giữ luật dấu ở cả đường tiền tố (KDoc [VoiceLastResort.candidates]).
+        val matched = VoiceLastResort.candidates(terms, rest.first())
+            .filter { (_, words) -> words.joinToString("").startsWith(said) }
         val label = unique(matched) ?: return null
         // Cùng nhãn có thể xuất hiện hai lần (nhãn máy `key = null` + dòng bảng đích có mã): giữ bản CÓ mã để chỗ
         // thi hành còn tra được gói qua bảng đích khi nhãn máy không trùng (`VoiceDispatcher.runOpenApp`).

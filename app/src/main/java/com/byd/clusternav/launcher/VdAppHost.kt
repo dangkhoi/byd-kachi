@@ -58,8 +58,11 @@ class VdAppHost(
     private val slot: Int = 0,
     /** H2: chủ (một cây workspace). Hai màn Kachi cùng sống ⇒ hai chủ khác nhau, cùng tranh một ô. */
     private val owner: String = "ws",
-    /** L6 · (a)/(b): app của ô đo là đã rời màn ảo (luồng chính) ⇒ màn chính áp luật hoàn ô. Mặc định no-op (test). */
-    private val onGone: (String) -> Unit = {},
+    /**
+     * L6 · (a)/(b): app của ô đo là đã rời màn ảo (luồng chính) ⇒ màn chính áp luật hoàn ô; đối số hai = 2.93 · R3 app RA KHỎI ô
+     * mà task còn ở display khác (`SlotLiveness.elsewhere`). Mặc định no-op (test).
+     */
+    private val onGone: (String, Boolean) -> Unit = { _, _ -> },
 ) : FrameLayout(context) {
 
     private val surface = SurfaceView(context)
@@ -226,7 +229,7 @@ class VdAppHost(
         // A4 (spec 289 §A4): app ĐANG sống (task ở chỗ khác ⇒ K8 · chỉ tiến trình ⇒ [cmd] không giết) ⇒ nhạc sống. Nguội ⇒ golden y byte.
         if (SlotReturnRun.bringBackMarked(context, displayId, p, sh) || SlotReturnRun.openLive(context, displayId, p, cmd, sh)) {
             runCatching { inputClient?.ensureStarted() }   // như đường golden: hâm nóng daemon bơm chạm (B4)
-            post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
+            post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed(it) } }
             return
         }
         if (released) return   // A4: lượt đọc / K8 vừa rồi tốn thời gian — ô có thể đã bị tháo, KHÔNG giết app cho màn ảo đã nhả
@@ -247,8 +250,9 @@ class VdAppHost(
         Thread.sleep(2000)
         if (!released && !FreeformLaunch.appRunning(p, sh)) { Log.i(TAG, "ô $slot: app $p chưa lên sau boot — thử mở lại 1 lần"); sh(cmd) }
         // H2·2: từ đây mới bắt đầu ĐO "còn task trên màn ảo không". [SlotLiveness] không kết luận chết trước
-        // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm.
-        post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed() } }
+        // khi thấy sống ít nhất một nhịp ⇒ ca "app chưa bao giờ vào được ô" (H1/Waze) KHÔNG bị nhận nhầm là chết (2.93 · R3: còn task
+        // ở display khác ⇒ kết luận "ra khỏi ô, vẫn mở" — `SlotLiveness.elsewhere`).
+        post { if (!released && pkg == p) SlotLiveProbe.watch(probeKey, p, displayId, sh) { onAppClosed(it) } }
     }
 
     /**
@@ -290,7 +294,7 @@ class VdAppHost(
         val sh = shell ?: return
         if (released) return
         pkg = shownPkg
-        SlotLiveProbe.watch(probeKey, shownPkg, v.display.displayId, sh) { onAppClosed() }
+        SlotLiveProbe.watch(probeKey, shownPkg, v.display.displayId, sh) { onAppClosed(it) }
     }
 
     /** F1 dòng 9 — Ô ⇄ TOÀN MÀN (K7 ra, K8 về; T-M2/T-M6 [ĐO]): trạng thái + thẻ + lệnh ở [SlotFullscreen]. */
@@ -345,7 +349,7 @@ class VdAppHost(
     private fun unpark(p: ParkedApps.Parked) {
         vd = p.lease.vd; vdDisplayId = p.lease.displayId; vdName = p.name; dispW = p.width; dispH = p.height; launched = true
         dispDpi = p.densityDpi; keepDpi = true
-        shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() } }
+        shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed(it) } }
         inputClient?.let { c -> Thread { runCatching { c.ensureStarted() } }.start() }   // như đường golden (B4)
     }
 
@@ -359,11 +363,11 @@ class VdAppHost(
      *  2. **Báo lên** ([onGone]) — L6 (owner 03/10): KHÔNG còn thẻ icon + *"chạm để mở lại"*; màn chính áp `SlotRevertPlan`
      *     (`APP_DIED`): ô LƯU widget ⇒ widget về · mọi ca khác ⇒ ô trong suốt (owner 04/10: không mở lại app LƯU khác).
      */
-    private fun onAppClosed() {
+    private fun onAppClosed(elsewhere: Boolean = false) {
         if (released || dead) return
         dead = true
         surface.visibility = GONE
-        pkg?.let(onGone)
+        pkg?.let { onGone(it, elsewhere) }   // 2.93 · R3: [elsewhere] = app ra khỏi ô, task còn ở display khác (không phải đã đóng)
     }
 
     /** Mở lại app trên đúng màn ảo của ô (không dựng lại view, không tạo VD mới) — lối tắt R-SC2 · lượt về-ô hỏng. */

@@ -1,5 +1,6 @@
 package com.byd.clusternav.system
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -105,9 +106,7 @@ class PackageQueriesContractTest {
             root.toFile().walkTopDown()
                 .filter { it.isFile && it.name.endsWith(".kt") && it.name != "PackageQueries.kt" }
                 .map { file ->
-                    val code = file.readText()
-                        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-                        .lines().joinToString("\n") { it.substringBefore("//") }
+                    val code = KotlinSource.stripComments(file.readText())
                     // '/' cứng: trên Windows `relativize` trả '\\' ⇒ allow-list so tên tệp sẽ trượt (CLAUDE.md §5 cross-platform).
                     root.relativize(file.toPath()).toString().replace('\\', '/') to code
                 }

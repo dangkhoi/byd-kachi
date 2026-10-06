@@ -1,6 +1,7 @@
 package com.byd.clusternav.launcher
 
 import com.byd.clusternav.modules.hal.BydHal
+import com.byd.clusternav.testsupport.KotlinSource
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -54,10 +55,14 @@ class BydHalGatewayLogOnceTest {
         assertFalse(Regex("""\}\.getOrNull\(\)""").containsMatchIn(halPaths), "mọi đường HAL đọc/ghi: getOrNull() ⇒ getOrElse { warnOnce }")
     }
 
-    /** Mã nguồn ĐÃ BỎ comment `//` — để một dòng bị comment-out không còn làm bài canh xanh giả (thử-làm-đỏ 2026-09-25). */
+    /**
+     * Mã nguồn ĐÃ BỎ chú thích — để một dòng bị comment-out không còn làm bài canh xanh giả (thử-làm-đỏ 2026-09-25).
+     * 2.93 wave 2C · TEST-STRIP-COPIES: bộ quét có trạng thái dùng chung [KotlinSource.stripComments] thay bản cắt `//` tay
+     * (bỏ cả chú thích khối; `//` nằm trong chuỗi không còn cắt mất phần mã phía sau trên cùng dòng).
+     */
     private fun source(rel: String): String {
         val cwd = File(System.getProperty("user.dir"))
         val text = listOf(cwd.resolve(rel), cwd.resolve("../$rel"), cwd.resolve(rel.removePrefix("app/"))).first { it.isFile }.readText()
-        return text.lines().joinToString("\n") { it.substringBefore("//") }
+        return KotlinSource.stripComments(text)
     }
 }

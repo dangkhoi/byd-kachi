@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import java.nio.file.Files
 import java.nio.file.Path
@@ -123,9 +124,11 @@ class SlotHostingLifecycleContractTest {
      */
     @Test
     fun `app trong o chet thi giau mat ve va BAO len luat hoan o, khong the cham-de-mo-lai`() {
-        val closed = SourceRoots.body(host, "private fun onAppClosed()")
+        // 2.93 · SLOT-APP-ESCAPE (R3) — ĐỔI GHIM có lý do: báo kèm "ra khỏi ô, còn mở ở display khác" (mặc định `false`, để
+        // `::onAppClosed` vẫn dùng được như `() -> Unit`).
+        val closed = SourceRoots.body(host, "private fun onAppClosed(elsewhere: Boolean = false)")
         assertTrue("surface.visibility = GONE" in closed, "phải giấu mặt vẽ — nếu không, khung cuối đóng băng vẫn nằm đó")
-        assertTrue("pkg?.let(onGone)" in closed, "phải báo lên màn chính (luật hoàn ô) — thiếu là ô kẹt khung trống không ai dọn")
+        assertTrue("pkg?.let { onGone(it, elsewhere) }" in closed, "phải báo lên màn chính (luật hoàn ô) — thiếu là ô kẹt khung trống không ai dọn")
         assertTrue("if (released || dead) return" in closed && "dead = true" in closed, "báo MỘT lần")
         assertFalse("kachi_slot_app_closed" in closed || "TextView" in closed || "setOnClickListener" in closed,
             "owner 03/10: không còn thẻ icon + 'chạm để mở lại'")
@@ -230,7 +233,5 @@ class SlotHostingLifecycleContractTest {
         }
 
     /** MÃ đã bỏ chú thích — KDoc dự án viết tiếng Việt và nhắc chính tên hàm đang canh, quét thô sẽ báo sai. */
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 }

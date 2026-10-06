@@ -332,7 +332,8 @@ object KachiTheme {
         "ic-temp" -> R.drawable.ic_temp
         "ic-fan" -> R.drawable.ic_fan
         "ic-defrost" -> R.drawable.ic_defrost
-        "ic-cam" -> R.drawable.ic_cam
+        "ic-cam" -> R.drawable.ic_cam; "ic-cam-off" -> R.drawable.ic_cam_off   // 2.93 ↓ camera theo yêu cầu (VỊ TRÍ, luật U7) · Tắt camera ≠ Camera 360 (2B · D4)
+        "ic-cam-view-rear" -> R.drawable.ic_cam_view_rear; "ic-cam-view-lf" -> R.drawable.ic_cam_view_lf; "ic-cam-view-rf" -> R.drawable.ic_cam_view_rf; "ic-cam-view-front" -> R.drawable.ic_cam_view_front
         "ic-door" -> R.drawable.ic_door
         "ic-hood" -> R.drawable.ic_hood
         "ic-light" -> R.drawable.ic_light

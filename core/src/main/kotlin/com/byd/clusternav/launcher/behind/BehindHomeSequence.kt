@@ -199,7 +199,7 @@ class BehindHomeSequence(
      * L4 · D2(a) — như [startBehind] nhưng chỗ dàn dựng là màn ảo ẨN của Kachi ([port]) — bố cục không có ô app sống.
      * Đường mới ⇒ ĐỨNG CUỐI chuỗi (CLAUDE.md §6): bên gọi chỉ tới đây khi [BehindHomePlan.stagingSlot] không có ô nào.
      *
-     * Thứ tự (đo trên máy ảo, `p3/e2e-L4`): tạo màn ảo → K4 (hoặc K4-VIEW [view]) mở X lên đó → chờ X lên đỉnh → mở
+     * Thứ tự (đo trên máy ảo, `e2e-L4` (bằng chứng phiên, ngoài repo)): tạo màn ảo → K4 (hoặc K4-VIEW [view]) mở X lên đó → chờ X lên đỉnh → mở
      * activity CHE của Kachi lên đỉnh màn ảo (thay app C của ô — điều kiện cứng R0.2: X ở ĐỈNH nguồn lúc `move-task` ⇒ S
      * lên che màn nhà, `TaskRecord.reparent` A10 `:728-749`) → [evict] với B = Kachi → gỡ che → đọc tới khi màn ảo TRỐNG
      * → mới nhả. Rào nhả (D2): KHÔNG BAO GIỜ nhả khi còn task của APP NGƯỜI DÙNG trên màn ảo (A10 `ActivityDisplay.remove`
@@ -220,13 +220,13 @@ class BehindHomeSequence(
         val k4 = view ?: resolveK4(x, xComp) ?: return Outcome(Result.X_NOT_STAGED, "$tag → không phân giải được component X, 0 lệnh đổi cửa sổ")
         val homeWasTop = BehindHomePlan.homeOnTop(before, homeComps)
         val vd = port.create()?.takeIf { it >= 1 } ?: return Outcome(Result.NO_STAGE, "$tag → không tạo được màn ảo ẩn, 0 lệnh")
-        var w = Waited(0L, fell = false)
+        var w = StageWaited(0L, fell = false)
         var out = Outcome(Result.KEPT_UNDER, "$tag → chưa đẩy")
         try {
             sh(k4(vd))
             w = waitTop(vd, x, homeWasTop)
             out = when {
-                // X tự lên display 0 TRƯỚC màn nhà trong lúc dàn (trung chuyển VIEW — [ĐO máy ảo `p3/e2e-L4/m5a`]) ⇒ không
+                // X tự lên display 0 TRƯỚC màn nhà trong lúc dàn (trung chuyển VIEW — [ĐO máy ảo `e2e-L4 · m5a` (bằng chứng phiên, ngoài repo)]) ⇒ không
                 // dựng lớp che, không đẩy: đưa màn nhà lên NGAY bên dưới (mỗi bước thêm ở đây là thêm thời gian che nhà).
                 w.fell -> Outcome(Result.KEPT_UNDER, "$tag → X tự lên display 0 khi đang dàn, 0 move-task")
                 port.cover(vd) && !waitTop(vd, selfPkg, false).timedOut -> evict(vd, x, selfPkg)
@@ -236,7 +236,7 @@ class BehindHomeSequence(
             runCatching { port.uncover() }
         }
         val waited = w.ms
-        val first = if (w.fell) afterStage(tag, x, waited, out, homeWasTop) else null
+        val first = if (w.fell) afterStage(tag, x, waited, out, homeWasTop, fellSeen = w.seen) else null
         val v = vacate(vd, x)
         // Rào nhả chỉ canh task của APP NGƯỜI DÙNG: lớp che của chính Kachi gỡ chậm (`finishAndRemoveTask` chờ activity dừng
         // hẳn — [ĐO máy ảo `e6-hidden` lượt 1]: 4,9 s) ⇒ còn trong bản đọc vẫn nhả, cờ 256 kết thúc nó; nó tự gỡ nếu bị hệ đẩy
@@ -337,26 +337,8 @@ class BehindHomeSequence(
         return { vd -> BehindHomePlan.stageCmd(vd, comp) }
     }
 
-    /** Kết quả chờ: số ms đã chờ; [fell] = X tự lên display 0 trước màn nhà trong lúc chờ; [timedOut] = hết trần mà chưa lên đỉnh. */
-    private data class Waited(val ms: Long, val fell: Boolean) {
-        val timedOut: Boolean get() = !fell && ms >= X_TOP_WAIT_MS
-    }
-
-    /**
-     * Chờ [pkg] lên đỉnh màn ảo [vd] tối đa [X_TOP_WAIT_MS]. L4: X TỰ lên display 0 trước màn nhà trong lúc chờ
-     * ([BehindHomePlan.fellFront] — Waze `launchToSide` [ĐO `p3/e2e-L4/m1-stale-task-k4`], trung chuyển VIEW [ĐO
-     * `p3/e2e-L4/m5a`, T-M3]) ⇒ thôi chờ ngay ([Waited.fell]): chờ tiếp 4 s là 4 s màn nhà bị che.
-     */
-    private fun waitTop(vd: Int, pkg: String, homeWasTop: Boolean): Waited {
-        var waited = 0L
-        while (waited < X_TOP_WAIT_MS) {
-            val r = read()
-            if (BehindHomePlan.topIs(r, vd, pkg)) return Waited(waited, fell = false)
-            if (homeWasTop && BehindHomePlan.fellFront(r, pkg)) return Waited(waited, fell = true)
-            sleep(X_TOP_STEP_MS); waited += X_TOP_STEP_MS
-        }
-        return Waited(waited, fell = false)
-    }
+    /** Chờ [pkg] lên đỉnh màn ảo [vd] — thân + luật "X tự lên display 0 thì thôi chờ" ở [StageWait.top] (tách theo trần 500 dòng). */
+    private fun waitTop(vd: Int, pkg: String, homeWasTop: Boolean): StageWaited = StageWait.top(::read, sleep, vd, pkg, homeWasTop)
 
     /**
      * Sau khi gỡ lớp che: đọc tới khi màn ảo ẩn [vd] chỉ còn (hoặc không còn) task của X. X còn ở đó (đẩy hỏng) ⇒ K7 qua
@@ -390,13 +372,18 @@ class BehindHomeSequence(
      * với bản đọc NGAY TRƯỚC move-task — nếu X đã có một task tự lên trước màn nhà từ lúc dàn (trung chuyển ở lại màn ảo,
      * task chính mở NEW_TASK lên display 0) thì đỉnh "không đổi" mà màn nhà vẫn bị che. Chỉ bỏ qua `MOVED_HOME_RESTORED`.
      */
-    private fun afterStage(tag: String, x: String, waited: Long, out: Outcome, homeWasTop: Boolean): Outcome {
+    private fun afterStage(tag: String, x: String, waited: Long, out: Outcome, homeWasTop: Boolean, fellSeen: List<StackEntry>? = null): Outcome {
         if (out.result == Result.MOVED_HOME_RESTORED || !homeWasTop) return out.copy(line = "$tag chờ=${waited}ms · ${out.line}")
         // Soát vòng 2 [P3]: đọc HỎNG ≠ "X không lên trước màn nhà" — trước đây `[]` ⇒ `fellFront` false ⇒ trả nguyên mã
         // (KEPT_UNDER/MOVED = OK) trong khi X có thể đang che màn nhà. Chưa rõ ⇒ UNREAD: không dấu (không có task id thật),
-        // không K12 (không quyết đổi cửa sổ trên một bản đọc không có).
-        val now = readOrNull()
-            ?: return Outcome(Result.UNREAD, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng ⇒ chưa rõ X có lên trước màn nhà, 0 dấu 0 K12")
+        // không K12 (không quyết đổi cửa sổ trên một bản đọc không có). 2.93 · BEHIND-FELL-UNREAD-K12 (spec `kachi-293-slot.html`
+        // R4): TRỪ khi lượt chờ NGAY TRƯỚC đó đã ĐỌC ĐƯỢC X đứng trước màn nhà ([fellSeen], chỉ chuỗi màn ảo ẩn truyền — giữa hai
+        // lượt chỉ có gỡ che) ⇒ cùng luật `vacate` sau K7 + [markMain]: dấu theo bản đọc đó + K12 (rào camera).
+        val now = readOrNull() ?: fellSeen?.let { seen ->
+            val marked = markMain(seen, setOf(x))
+            runCatching { sh(goHomeCmd) }
+            return Outcome(Result.X_FRONT_HOME_RESTORED, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng, lượt chờ đã THẤY X trước màn nhà → dấu=$marked (bản đọc lúc chờ) K12")
+        } ?: return Outcome(Result.UNREAD, "$tag chờ=${waited}ms · ${out.line} · đọc lại hỏng ⇒ chưa rõ X có lên trước màn nhà, 0 dấu 0 K12")
         if (BehindHomePlan.fellFront(now, x)) {
             // X không ở lại màn ảo mà tự lên display 0 TRƯỚC màn nhà (activity trung chuyển mở NEW_TASK — cùng cơ chế [ĐO]
             // T-M3 với ý-định VIEW của YT Music) ⇒ người dùng xin CHẠY NGẦM mà thấy X che màn nhà. K12 (rào camera, byte 2.83)

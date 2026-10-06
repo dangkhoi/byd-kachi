@@ -16,7 +16,7 @@ object VoiceDecision {
         is VoiceIntent.Control -> "Control(${i.id}" +
             (i.value?.let { "=$it" } ?: "") + (if (i.relative != 0) " ${if (i.relative > 0) "+" else ""}${i.relative}" else "") + ")"
         is VoiceIntent.Macro -> "Macro(${i.id})"
-        is VoiceIntent.Launcher -> "Launcher(${i.id})"
+        is VoiceIntent.Launcher -> "Launcher(${i.id}${if (i.off) " tắt" else ""})"
         is VoiceIntent.Profile -> "Profile(${i.name})"
         is VoiceIntent.Read -> "Read(${i.datumId}${if (i.aloud) " đọc to" else ""})"
         is VoiceIntent.Nav -> "Nav(${i.query}${i.app?.let { " bằng $it" } ?: ""})"

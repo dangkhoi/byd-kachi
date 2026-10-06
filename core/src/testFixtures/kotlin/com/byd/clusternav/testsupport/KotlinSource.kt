@@ -40,8 +40,13 @@ object KotlinSource {
      *
      * Thứ tự nhánh là thứ tự quét trái→phải, nên một comment mở trước sẽ nuốt mọi dấu nháy bên trong nó, và
      * một string mở trước sẽ nuốt mọi `//` bên trong nó — đúng ngữ nghĩa của lexer.
+     *
+     * @param keepLines `true` ⇒ giữ lại các dấu xuống dòng nằm TRONG comment khối (comment dòng vốn đã giữ `'\n'`), nên
+     *   dòng N của đầu ra đúng là dòng N của nguồn — cho bài canh báo `tệp:dòng` hoặc soi TỪNG dòng (2.93 wave 2C ·
+     *   TEST-STRIP-COPIES: các bản chép tay cũ thay comment khối bằng khoảng trắng để giữ số dòng). Mặc định `false` =
+     *   hành vi cũ từng byte (comment khối biến mất trọn, kể cả xuống dòng) — mọi chỗ gọi cũ không đổi.
      */
-    fun stripComments(src: String): String {
+    fun stripComments(src: String, keepLines: Boolean = false): String {
         val out = StringBuilder(src.length)
         var i = 0
         val n = src.length
@@ -63,7 +68,7 @@ object KotlinSource {
                     while (i < n) {
                         if (src.startsWith(BLOCK_OPEN, i)) { depth++; i += 2 }
                         else if (src.startsWith(BLOCK_CLOSE, i)) { depth--; i += 2; if (depth == 0) break }
-                        else i++
+                        else { if (keepLines && src[i] == '\n') out.append('\n'); i++ }
                     }
                 }
                 else -> { out.append(src[i]); i++ }

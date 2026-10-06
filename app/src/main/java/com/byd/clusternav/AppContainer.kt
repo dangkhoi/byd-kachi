@@ -151,6 +151,32 @@ class AppContainer internal constructor(
         return carDemand.withExtra(setOf(id)) { carStatusRepository.refreshNow() }
     }
 
+    /**
+     * Đọc TƯƠI một datum cho câu hỏi/cổng an toàn — [refreshForRead], và khi màn chính KHÔNG công bố nhu cầu (`null`: màn
+     * đã `onStop` ⇒ vòng poll ĐÃ DỪNG, ảnh chụp có thể cũ hàng phút) thì đọc ĐÚNG MỘT datum qua
+     * `CarDataDemand.Holder.withSoloIfIdle` (luật + bài kiểm ở `:core`). `null` = màn đang bày datum ⇒ ảnh chụp đã tươi.
+     *
+     * MỘT chỗ khai cho hai bề mặt (DRY): phím gán nút xe (`KeyCtlDispatch`, FIX286 · R-KC) và giọng nói tiến trình chính
+     * (`VoiceWiring.dispatcher` · 2.93 VOICE-READ-STALE-BG — phím thoại khi app khác toàn màn, wake TẮT: câu hỏi số liệu
+     * từng đọc ảnh chụp lúc màn còn hiện).
+     *
+     * ## Senior review 2.93 Pass 1 · [P2] — khoá [freshLock]: MỘT người ghim tại một lúc
+     * Hộp nhu cầu chỉ giữ MỘT tập ghim (`withExtra` · `withSoloIfIdle` không lồng, không chia nhau — KDoc ở `:core`), mà hai
+     * bề mặt trên chạy trên HAI luồng: giọng nói ở luồng vẽ, phím gán nút ở làn nền `ControlTileWrite.LANE`. Không khoá thì
+     * lượt sau ghi đè ghim của lượt trước giữa chừng ⇒ lượt trước nhận ảnh chụp CŨ của đúng datum nó cần — với cổng tốc độ
+     * của cốp là quyết *"xe đang đứng"* bằng một con số cũ. Tới 2.92 ca ấy chỉ có khi màn hiện (giọng nói chỉ ghim khi nhu
+     * cầu khác `null`); bản này cho giọng nói đi cả nhánh màn khuất ⇒ khoá ở cửa DUY NHẤT này. Thứ tự khoá luôn `freshLock`
+     * rồi khoá đọc của `CarStatusRepository.publish` (không đường nào đi chiều ngược) ⇒ không thắt nút; chờ thêm tối đa một
+     * lượt `refreshNow` của bề mặt kia (một datum ghim + nhu cầu màn nếu màn đang hiện) — lượt đọc HAL vốn đã nối hàng ở
+     * khoá đọc, nên luồng vẽ không chờ thứ gì mới về bản chất.
+     */
+    fun readFresh(id: String): com.byd.clusternav.launcher.CarStatus? = synchronized(freshLock) {
+        refreshForRead(id) ?: carDemand.withSoloIfIdle(setOf(id)) { carStatusRepository.refreshNow() }
+    }
+
+    /** Khoá của [readFresh] — lý do ở KDoc ấy. */
+    private val freshLock = Any()
+
     /** Cast folded BY REFERENCE — process-singleton object hiện có; KHÔNG sở hữu/không dựng coordinator ở đây. */
     val castRuntime: SimpleCastRuntime get() = SimpleCastRuntime
 

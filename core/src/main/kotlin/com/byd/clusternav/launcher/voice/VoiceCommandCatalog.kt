@@ -242,6 +242,10 @@ object VoiceCommandCatalog {
             LauncherActions.ALL.forEach { a ->
                 add("${verb(VoiceVerb.OPEN)} ${nounOf(a, VoiceTermKind.LAUNCHER)}" to VoiceIntent.Launcher(a.id))
             }
+            // 2.93 — camera theo yêu cầu TẮT bằng lời (*"tắt camera sau"*): một câu mẫu cho đúng việc ấy.
+            LauncherActions.ALL.filter { it.switchable }.forEach { a ->
+                add("${verb(VoiceVerb.OFF)} ${nounOf(a, VoiceTermKind.LAUNCHER)}" to VoiceIntent.Launcher(a.id, off = true))
+            }
             // Bố cục: giữ đúng những cụm mà [VoiceLayouts.match] THẬT SỰ nhận — cụm *"bố cục"* trần và *"đổi bố
             // cục"* nằm trong bảng vì tầng NGHE cần chúng, nhưng chúng không nêu bố cục nào nên không phải lệnh.
             VoiceLayouts.SPOKEN.forEach { s ->
@@ -445,7 +449,10 @@ object VoiceCommandCatalog {
         // *"battery health soh"*, cụm đầu không đủ để khớp) → nhãn đầy đủ. Đoạn nối lại là thứ giữ cho bản tiếng
         // Anh khỏi bày ra dấu ngoặc trong một câu người ta phải ĐỌC.
         val cands = listOfNotNull(cleaned.firstOrNull(), cleaned.takeIf { it.size > 1 }?.joinToString(" "))
-        return cands.firstOrNull { resolves(it, kind, id, terms) }?.lowercase() ?: full.lowercase()
+        // 2.93: tên camera TRẦN (*"camera"*) nay là của camera theo yêu cầu khi đi với TẮT (*"tắt camera"*) ⇒ lấy nhãn đầy đủ
+        // (*"camera 360"*) để câu mẫu của nút Camera 360 vẫn ra đúng nút ([VoiceCameraPhrases]).
+        return cands.firstOrNull { resolves(it, kind, id, terms) && !VoiceCameraPhrases.isCameraNoun(it) }?.lowercase()
+            ?: full.lowercase()
     }
 
     /** Mã của một dòng bộ đăng ký — bốn lớp khai `id` nhưng [Localized] không đòi nó, nên tra tại đây. */

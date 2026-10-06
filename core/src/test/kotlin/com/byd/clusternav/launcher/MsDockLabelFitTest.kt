@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 /**
  * ═══ QA 04/10 (P3) — nhãn tiếng Mã Lai trên ô THANH NÚT bị cắt `…` ═════════════════════════════════════════════════
  *
- * [ĐO] máy ảo (`l1/dock-compare.png`): ô "Pengudaraan tempat duduk pemandu" hiện `Pengudaraan tempat dudu…`. Ô thanh nút
+ * [ĐO] máy ảo (`dock-compare.png` (bằng chứng phiên, ngoài repo)): ô "Pengudaraan tempat duduk pemandu" hiện `Pengudaraan tempat dudu…`. Ô thanh nút
  * KHÔNG nằm trong phép khớp lưới (L5) — nó vẽ nhãn ĐẦY (`TileSize.DOCK`, `narrow = false` ⇒ `displayLabel`) trong
  * hai dòng cố định (`reserveTwoLines`, `maxLines = 2` + `…`). Nên luật ở đây là luật DỮ LIỆU: nhãn mọi nút/gói lệnh
  * (nút nào cũng đặt được lên thanh) phải xuống dòng được thành ≤ 2 dòng, mỗi dòng ≤ [LangCoverageFixtures.SHORT_CAP]

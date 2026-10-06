@@ -5,7 +5,7 @@
 > vẫn để owner trên xe (mic 4 kênh + ồn + RTF thật). Mọi số [ĐO] host, `/tmp/sherpa-venv` sherpa_onnx 1.13.8.
 
 ## 1. Bộ đo
-- **270 câu giọng THẬT** (`scratchpad/ft/real-all/{cases.tsv, *.wav}`): owner + con gái + 3 giọng miền Nam
+- **270 câu giọng THẬT** (bộ `real-all` — `cases.tsv` + `*.wav`, thư mục nháp của phiên, ngoài repo): owner + con gái + 3 giọng miền Nam
   (chậm/nhanh/có-nhạc), mỗi câu là một lệnh xe/nav/media thật. Đây là bộ **giữ riêng**, không nằm trong tập
   fine-tune.
 - **Phép đo**: exact-match transcript sau chuẩn hoá (bỏ dấu + thường + bỏ ký tự lạ). Khắt khe hơn "đúng ý định"
@@ -52,8 +52,8 @@ Trích (danh sách đầy đủ chạy lại bằng `scripts/voice/ft/bench-inte
 
 ## 5. Tái lập
 ```bash
-# bộ bench (chép 1 lần): scratchpad/ft/real-all → /tmp/kachi-bench
+# bộ bench (chép 1 lần): bộ real-all (thư mục nháp của phiên, ngoài repo) → /tmp/kachi-bench
 /tmp/sherpa-venv/bin/python scripts/voice/ft/bench-intent.py <model_dir> <nhãn>
-# RTF: scratchpad/ft/bench.py <model_dir> none   (đọc /tmp/kachi-voice-corpus/*.wav)
+# RTF: bench.py <model_dir> none   (công cụ ngoài repo; đọc /tmp/kachi-voice-corpus/*.wav)
 ```
-Model: SHIP = `scratchpad/model-int8-hf` · G = `~/.kachi/model-gip15-ep2` (sha256 ở `SherpaModelCatalog.GIPFORMER_VI_FT`).
+Model: SHIP = `model-int8-hf` (thư mục nháp của phiên, ngoài repo) · G = `~/.kachi/model-gip15-ep2` (sha256 ở `SherpaModelCatalog.GIPFORMER_VI_FT`).

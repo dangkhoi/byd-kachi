@@ -70,7 +70,7 @@ internal object VoiceLastResort {
         if (!VoiceGrammar.isAction(verb) || VoiceTailClause.closesApp(verb)) return null
         val headLen = headWords(rest)
         if (headLen == 0) return null
-        val cands = candidates(terms)
+        val cands = candidates(terms, rest.first())
         if (cands.isEmpty()) return null
         for (len in headLen downTo 1) {
             val said = rest.take(len).map { it.norm }
@@ -104,10 +104,20 @@ internal object VoiceLastResort {
      * Danh tính là [Named] mang nhãn + mã đích: `pickUnique` so theo `equals` của nó, nên hai dòng cùng nhãn (nhãn
      * thật và một cách gọi của cùng app) chỉ được tính là một — xem cổng 3 ở KDoc [appFuzzy]. Nhãn so **không phân
      * biệt hoa thường** để *"YouTube"* (nhãn máy) và `youtube` (bảng đích) không thành hai app.
+     *
+     * 2.93 VOICE-TAUGHT-ACCENT-FUZZY — [first] = token ĐẦU của dải sắp đem đi so: tên GIỌNG một âm tiết đã dạy ([VoiceTerm.spelled])
+     * chỉ vào bảng khi token ấy qua đúng luật dấu của [VoiceGrammar.matchAt] ([VoiceHomograph.spelledOk] — chữ MANG dấu phải là
+     * cách viết đã dạy, kể cả khác CHỖ đặt dấu thanh; chữ không dấu ⇒ không dữ liệu ⇒ như cũ). [ĐO off-car 07/10] thiếu nó thì
+     * khớp mờ / tiền tố so trên bản bỏ dấu và đi vòng luật ấy: dạy «thuỷ» ⇒ *"đưa thúy vào ô số hai"* mở app (tiền tố `thuy`),
+     * dạy «trường» ⇒ *"mở trượng vào ô hai"* mở app ([VoiceNameFuzzy.nearly] lệch 0).
      */
-    internal fun candidates(terms: List<VoiceTerm>): List<Pair<Named, List<String>>> {
+    internal fun candidates(terms: List<VoiceTerm>, first: Token? = null): List<Pair<Named, List<String>>> {
         val out = ArrayList<Pair<Named, List<String>>>(64)
-        terms.forEach { t -> if (t.kind == VoiceTermKind.APP) out.add(Named(t.id, null) to t.words) }
+        terms.forEach { t ->
+            if (t.kind != VoiceTermKind.APP) return@forEach
+            if (first != null && !VoiceHomograph.spelledOk(first, t.spelled)) return@forEach
+            out.add(Named(t.id, null) to t.words)
+        }
         VoiceAppTargets.ALL.forEach { target ->
             val named = Named(target.label, target.key)
             target.spoken.forEach { s ->

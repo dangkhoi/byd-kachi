@@ -2,7 +2,6 @@ package com.byd.clusternav.launcher
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -63,22 +62,14 @@ object MediaWidgetView {
             val p = dpi(ctx, Sp.M); setPadding(p, p, p, p)
         }
         val play = mbtn("ic-play")
-        val root = WidgetViews.col(ctx).apply {
-            addView(art, LinearLayout.LayoutParams(dpi(ctx, Sp.ART), dpi(ctx, Sp.ART)).also { it.bottomMargin = dpi(ctx, Sp.S) })
-            addView(title)
-            addView(artist)
-            addView(prog, LinearLayout.LayoutParams(dpi(ctx, Sp.PROGRESS_W), dpi(ctx, Sp.BAR_THIN)).also { it.topMargin = dpi(ctx, Sp.SLOT_GAP) })
-            addView(LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dpi(ctx, Sp.M), 0, 0)
-                // T5 — đích chạm nút nhạc 22dp → Sp.TOUCH (48dp). Đây là đích chạm NHỎ NHẤT của launcher trước T5
-                // (diện tích chỉ 1/4,7 mức tối thiểu) mà lại nằm ở widget hay dùng nhất. Glyph giữ ~24dp bằng lề
-                // trong của `mbtn`, nên nhìn gần như không đổi — chỉ VÙNG CHẠM to ra. Khe giữa hai nút hạ XL→S vì
-                // bản thân vùng chạm đã tách chúng ra.
-                addView(mbtn("ic-prev").apply { setOnClickListener { data.onMedia("prev") } }, LinearLayout.LayoutParams(dpi(ctx, Sp.TOUCH), dpi(ctx, Sp.TOUCH)).also { it.marginEnd = dpi(ctx, Sp.S) })
-                addView(play, LinearLayout.LayoutParams(dpi(ctx, Sp.TOUCH), dpi(ctx, Sp.TOUCH)).also { it.marginEnd = dpi(ctx, Sp.S) })
-                addView(mbtn("ic-next").apply { setOnClickListener { data.onMedia("next") } }, LinearLayout.LayoutParams(dpi(ctx, Sp.TOUCH), dpi(ctx, Sp.TOUCH)))
-            })
-        }
+        // T5 — đích chạm nút nhạc 22dp → Sp.TOUCH (48dp). Đây là đích chạm NHỎ NHẤT của launcher trước T5 (diện tích chỉ
+        // 1/4,7 mức tối thiểu) mà lại nằm ở widget hay dùng nhất. Glyph giữ ~24dp bằng lề trong của `mbtn`, nên nhìn gần như
+        // không đổi — chỉ VÙNG CHẠM to ra. Khe giữa hai nút Sp.S vì bản thân vùng chạm đã tách chúng ra.
+        val prev = mbtn("ic-prev").apply { setOnClickListener { data.onMedia("prev") } }
+        val next = mbtn("ic-next").apply { setOnClickListener { data.onMedia("next") } }
+        // 2.93 WF-MEDIA-SMALL — khung tự xếp (MediaFitLayout, luật `:core MediaFit`): khung nhỏ bỏ ẢNH → nghệ sĩ → tiến
+        // trình → tên trước, GIỮ ba nút ≥ 48 dp; khung một hàng rộng xếp ngang. Cùng các con, cùng lề trong Sp.S như `col`.
+        val root = MediaFitLayout(ctx, art, title, artist, prog, prev, play, next, MediaFitLayout.box(title, artist) { dpi(ctx, it) })
         fun weigh(v: View, w: Float) {
             v.layoutParams = (v.layoutParams as LinearLayout.LayoutParams).also { it.weight = w }
         }

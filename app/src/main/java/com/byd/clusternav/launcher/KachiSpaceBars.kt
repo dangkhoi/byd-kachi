@@ -247,11 +247,19 @@ object KachiBars {
     const val SHORTCUT_GRID_MAX_ICON = 120
 
     /**
-     * L5 WIDGET-FIT-ALL — SÀN cỡ chữ (đơn vị **sp**) khi lưới widget CO nội dung theo khung (`FitGridLayout`): chữ không
-     * bao giờ bị co dưới 10sp; khung nhỏ hơn mức đó thì đổi dạng (ngang · chỉ-icon) hoặc báo sức chứa, KHÔNG bóp chữ.
-     * Số SUY từ chữ đang ship, không tự chọn: 10 = nhãn nhỏ nhất trong một ô 2.86 ([ĐO mã] nhãn ô SELECT ở `DOCK` =
-     * 11.5 − 1.5sp, `ControlTileFactory.tileSelect`). Sống ở đây chứ không ở `KachiType` vì thang chữ khoá đúng 5 bậc
-     * (`TypeScaleContractTest`) và một SÀN không phải bậc — cùng lệ `KachiSpace.BOARD_LABEL_MIN`.
+     * L5 WIDGET-FIT-ALL — SÀN cỡ chữ (đơn vị **sp**) khi lưới widget CO nội dung theo khung (`FitGridLayout`): chữ dựng
+     * từ 10sp trở lên không bị co dưới 10sp; khung nhỏ hơn mức đó thì đổi dạng (ngang · chỉ-icon) hoặc báo sức chứa,
+     * KHÔNG bóp chữ. Số SUY từ chữ đang ship, không tự chọn: 10 = NHÃN nhỏ nhất trong một ô 2.86 ([ĐO mã] nhãn ô SELECT
+     * và nhãn ô ĐỌC ở `DOCK`/`GROUP` = 11.5 − 1.5sp — `ControlTileFactory.tileSelect`, `ReadTile`).
+     *
+     * ⚠ 2.93 · FIT-TEXT-MIN-DOC — 10 KHÔNG phải chữ nhỏ nhất đang ship: CHỮ VI MÔ dựng sẵn DƯỚI sàn — đơn vị của ô đọc
+     * (`ReadTile`, `labelSp − 2` = 9,5sp ở `DOCK`/`GROUP`) và dấu "chưa kiểm" (`WidgetTelemetry.badgeView`, 9,5sp). Sàn
+     * KHÔNG giữ chúng (`FitProbe.minScale` chỉ xét chữ có cỡ dựng ≥ sàn), nên khi ô co được (k < 1 — chữ ≥ sàn nhỏ nhất
+     * đang HIỆN lớn hơn 10sp, vd nhãn ẩn ở dạng chỉ-icon) chúng xuống dưới 9,5sp. `FitTextFloorDocContractTest` khoá
+     * đoạn này vào cỡ thật trong mã.
+     *
+     * Sống ở đây chứ không ở `KachiType` vì thang chữ khoá đúng 5 bậc (`TypeScaleContractTest`) và một SÀN không phải
+     * bậc — cùng lệ `KachiSpace.BOARD_LABEL_MIN`.
      */
     const val FIT_TEXT_MIN = 10
 }

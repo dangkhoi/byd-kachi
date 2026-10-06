@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -83,8 +84,12 @@ class CarDataDemandRendererContractTest {
         source("app/src/main/java/com/byd/clusternav/launcher/WidgetViews.kt")
     }
 
-    /** Dòng mã đã bỏ chú thích `//` — giữ phép đếm ngoặc khỏi bị một dấu `{` trong câu chữ làm lệch. */
-    private fun code(line: String) = line.substringBefore("//")
+    /**
+     * Dòng MÃ của [widgetViews] — bỏ MỌI chú thích, GIỮ số dòng (bộ quét có trạng thái dùng chung [KotlinSource]
+     * `keepLines`) — giữ phép đếm ngoặc khỏi bị một dấu `{` trong câu chữ làm lệch. 2.93 wave 2C · TEST-STRIP-COPIES: bản
+     * cũ cắt `//` từng dòng (KDoc nhiều dòng còn nguyên; `//` nằm trong chuỗi cắt mất phần mã phía sau).
+     */
+    private val widgetLines: List<String> by lazy { KotlinSource.stripComments(widgetViews, keepLines = true).lines() }
 
     /**
      * Thân hàm [name] trong [widgetViews].
@@ -93,15 +98,15 @@ class CarDataDemandRendererContractTest {
      * (không có ngoặc nào ⇒ thân là chính dòng ấy). `= col(ctx).apply {` rơi vào dạng đầu vì có `{`.
      */
     private fun body(name: String): String? {
-        val lines = widgetViews.lines()
-        val start = lines.indexOfFirst { Regex("""\bfun\s+$name\s*\(""").containsMatchIn(code(it)) }
+        val lines = widgetLines
+        val start = lines.indexOfFirst { Regex("""\bfun\s+$name\s*\(""").containsMatchIn(it) }
         if (start < 0) return null
-        val first = code(lines[start])
+        val first = lines[start]
         if (!first.contains('{')) return first
         val sb = StringBuilder()
         var depth = 0
         for (i in start until lines.size) {
-            val c = code(lines[i])
+            val c = lines[i]
             sb.append(c).append('\n')
             depth += c.count { it == '{' } - c.count { it == '}' }
             if (i > start && depth <= 0) break
@@ -112,7 +117,7 @@ class CarDataDemandRendererContractTest {
 
     /** Nhánh `"w_xxx" -> <biểu thức>` của một `when` (mỗi nhánh nằm gọn một dòng trong tệp này). */
     private fun branch(widgetId: String): List<String> =
-        widgetViews.lines().map { code(it) }
+        widgetLines
             .filter { Regex("""^\s*"$widgetId"\s*(->|\s+->)""").containsMatchIn(it) }
             .map { it.substringAfter("->") }
 
@@ -232,7 +237,8 @@ class CarDataDemandRendererContractTest {
         // `source()` `fail` nếu tệp không tồn tại ⇒ không có đường xanh giả.
         val src = source("core/src/main/kotlin/com/byd/clusternav/launcher/TopStripChips.kt")
         val access = Regex("""\bstatus\.(\w+)\.(\w+)""")
-        val lines = src.lines().map { code(it) }
+        // Dòng MÃ (bộ quét có trạng thái dùng chung, giữ số dòng — cùng [widgetLines]).
+        val lines = KotlinSource.stripComments(src, keepLines = true).lines()
         CarDataDemand.CHIPS.forEach { (chipConst, declared) ->
             // `TopStripConfig.PM25 -> { … }` — lấy khối của đúng chip ấy trong `when (id)` của `TopStripChips.chip`.
             val name = when (chipConst) {
@@ -274,8 +280,8 @@ class CarDataDemandRendererContractTest {
                 .flatMap { idsByGroup[it.groupValues[1]].orEmpty() }
                 .filterNot { chipConst == TopStripConfig.TYRES && it.startsWith("tyre_t_") }.toSet()
             if (chipConst == TopStripConfig.TYRES) {
-                val codeOnly = lines.filterNot { it.trimStart().startsWith("*") || it.trimStart().startsWith("/*") }
-                assertFalse(codeOnly.any { "tempC" in it }, "chip lốp không được đọc nhiệt — nếu đọc thì CHIPS phải khai `tyre_t_*`")
+                // `lines` đã là MÃ (mọi chú thích đã bỏ) — bản cũ lọc tay dòng mở đầu bằng `*` / mở-khối.
+                assertFalse(lines.any { "tempC" in it }, "chip lốp không được đọc nhiệt — nếu đọc thì CHIPS phải khai `tyre_t_*`")
             }
             val rendered = access.findAll(block).mapNotNull { fieldToId["${it.groupValues[1]}.${it.groupValues[2]}"] }
                 .toSet() + viaReadout + viaPairs + viaGroup

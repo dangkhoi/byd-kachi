@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -112,15 +113,19 @@ class TypeScaleContractTest {
     private val handWritten = listOf(rawTwoArg, rawOneArg, rawProperty)
 
     /**
-     * Dòng mã của một bề mặt, đã **xoá chú thích KHỐI nhưng GIỮ số dòng** (thay mọi ký tự ≠ newline bằng khoảng
-     * trắng) — để không bắt con số trong KDoc mà vẫn báo đúng số dòng của tệp gốc.
+     * Dòng MÃ của một bề mặt kèm dòng THÔ cùng số. Mã = đã **bỏ MỌI chú thích nhưng GIỮ số dòng** bằng bộ quét có trạng
+     * thái dùng chung ([KotlinSource.stripComments] `keepLines`) — để không bắt con số trong KDoc mà vẫn báo đúng số dòng
+     * của tệp gốc. Dòng thô để đọc marker [EXEMPT_MARKER]: marker là chú thích DÒNG đứng cuối chính dòng mã.
+     *
+     * 2.93 wave 2C · TEST-STRIP-COPIES — bản cũ xoá chú thích khối bằng regex `.*?` rồi cắt `//` tay ở mỗi dòng: một chuỗi
+     * chứa `//` cắt mất phần mã phía sau, một chuỗi chứa cặp mở-khối nuốt mã tới dấu đóng thật (FAIL-OPEN — KDoc
+     * [KotlinSource]). Marker nay đọc từ dòng THÔ (bản cũ: dòng đã xoá khối) ⇒ marker đặt trong một chú thích khối trên CÙNG
+     * dòng mã cũng được nhận — quy ước repo luôn đặt nó ở chú thích dòng (`AppDrawerTiles`), không dòng nào đổi kết quả.
      */
-    private fun codeLines(file: String): List<String> =
-        SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$file")
-            .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL)) { m ->
-                m.value.replace(Regex("[^\n]"), " ")
-            }
-            .lines()
+    private fun codeLines(file: String): List<Pair<String, String>> {
+        val raw = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$file")
+        return KotlinSource.stripComments(raw, keepLines = true).lines().zip(raw.lines())
+    }
 
     /** Lý do khai sau [EXEMPT_MARKER] trên chính dòng đó; `null` = dòng không khai ngoại lệ. */
     private fun exemptReason(line: String): String? {
@@ -131,33 +136,31 @@ class TypeScaleContractTest {
     /** Ngoại lệ HỢP LỆ = marker + lý do đủ dài. Marker trần KHÔNG miễn được gì. */
     private fun exemptOk(line: String): Boolean = (exemptReason(line)?.length ?: -1) >= EXEMPT_REASON_MIN
 
-    /** Dòng có đặt cỡ chữ bằng số tay (đã bỏ chú thích DÒNG). */
-    private fun handWrites(line: String): Boolean =
-        line.substringBefore("//").let { code -> handWritten.any { it.containsMatchIn(code) } }
+    /** Dòng MÃ (đã bỏ chú thích — [codeLines]) có đặt cỡ chữ bằng số tay. */
+    private fun handWrites(code: String): Boolean = handWritten.any { it.containsMatchIn(code) }
 
     @Test
     fun `Settings khong dat co chu bang so tay - phai qua KachiType`() {
         val offenders = mutableListOf<String>()
         SURFACES.forEach { f ->
-            val rawLines = SourceRoots.text("src/main/java/com/byd/clusternav/launcher/$f").lines()
             val lines = codeLines(f)
-            lines.forEachIndexed { i, line ->
-                val raw = handWrites(line)
+            lines.forEachIndexed { i, (code, rawLine) ->
+                val raw = handWrites(code)
                 // Ngoại lệ tường minh (glyph/ô lưới): dòng tự khai lý do bằng marker. Marker TRẦN không miễn —
                 // nếu không thì cửa miễn chỉ là một câu thần chú dán vào để bài canh im (xem [EXEMPT_REASON_MIN]).
-                if (exemptReason(line) != null) {
-                    if (raw && !exemptOk(line)) {
+                if (exemptReason(rawLine) != null) {
+                    if (raw && !exemptOk(rawLine)) {
                         offenders += "$f:${i + 1}: marker `$EXEMPT_MARKER` KHÔNG kèm lý do (cần ≥ " +
-                            "$EXEMPT_REASON_MIN ký tự): ${rawLines.getOrElse(i) { line }.trim()}"
+                            "$EXEMPT_REASON_MIN ký tự): ${rawLine.trim()}"
                     }
                     return@forEachIndexed
                 }
-                if (raw) offenders += "$f:${i + 1}:${rawLines.getOrElse(i) { line }.trim()}"
+                if (raw) offenders += "$f:${i + 1}:${rawLine.trim()}"
             }
             // Lời gọi VẮT NHIỀU DÒNG (`setTextSize(\n  TypedValue.COMPLEX_UNIT_SP,\n  14f)`) không hiện trên một
             // dòng nào ⇒ quét thêm cả tệp một lượt. Không có bước này thì chỉ cần bấm Enter là lách được bài canh.
             // Chỉ bỏ ra những dòng miễn HỢP LỆ: dòng mang marker trần vẫn phải đi qua phép quét này.
-            val flat = lines.filterNot { exemptOk(it) }.joinToString("\n") { it.substringBefore("//") }
+            val flat = lines.filterNot { exemptOk(it.second) }.joinToString("\n") { it.first }
             if (handWritten.any { it.containsMatchIn(flat) } && offenders.none { it.startsWith("$f:") }) {
                 offenders += "$f: (lời gọi vắt nhiều dòng)"
             }
@@ -179,8 +182,8 @@ class TypeScaleContractTest {
     @Test
     fun `so dong duoc mien tru bi ghim`() {
         val exempt = SURFACES.flatMap { f ->
-            codeLines(f).mapIndexedNotNull { i, line ->
-                if (handWrites(line) && exemptReason(line) != null) "$f:${i + 1}" else null
+            codeLines(f).mapIndexedNotNull { i, (code, rawLine) ->
+                if (handWrites(code) && exemptReason(rawLine) != null) "$f:${i + 1}" else null
             }
         }
         assertEquals(

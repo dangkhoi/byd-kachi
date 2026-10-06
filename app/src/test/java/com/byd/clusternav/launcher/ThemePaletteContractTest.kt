@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher
 
+import com.byd.clusternav.testsupport.KotlinSource
 import com.byd.clusternav.testsupport.SourceRoots
 import com.byd.clusternav.testsupport.SwapDiscModel
 import com.byd.clusternav.testsupport.Wcag.fmt
@@ -479,9 +480,7 @@ class ThemePaletteContractTest {
         .let { dir -> Files.list(dir).use { s -> s.filter { it.toString().endsWith(".kt") }.toList() } }
         .sortedBy { it.fileName.toString() }
 
-    private fun code(f: Path): String = f.toFile().readText()
-        .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), " ")
-        .lines().joinToString("\n") { it.substringBefore("//") }
+    private fun code(f: Path): String = KotlinSource.stripComments(f.toFile().readText())
 
     private companion object {
         /** Vai MỰC — thứ được vẽ dưới dạng chữ hoặc icon một màu. */

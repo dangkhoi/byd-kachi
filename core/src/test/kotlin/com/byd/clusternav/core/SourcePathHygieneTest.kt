@@ -80,6 +80,22 @@ class SourcePathHygieneTest {
         assertTrue(hits.isEmpty(), "chú thích/mã ghi đường dẫn thư mục nháp ngoài repo — viết 'công cụ ngoài repo': $hits")
     }
 
+    /**
+     * 2.93 · DOCS-QA-REL-PATHS (spec `kachi-293-wave2a.html` §4.6) — đường dẫn TƯƠNG ĐỐI vào thư mục QA của một phiên (dạng
+     * l5/<ảnh>.png · qa2/a/<nhật ký>.log · p3/e2e-L4/<lượt>, đặt trong dấu huyền) cũng chết theo phiên như thư mục nháp: người
+     * đọc sau không lần lại được, và nó trông như một đường dẫn trong repo. [ĐO grep 06/10] 46 lần ở 34 tệp mã/test ⇒ thay
+     * bằng TÊN tệp + "bằng chứng phiên, ngoài repo". Mẫu nhận đúng dạng đã gặp (thư mục phiên l<số> · p<số> · qa<số> đứng đầu
+     * chuỗi trong dấu huyền); đường dẫn mã nguồn RE (b1/RunnableC0170d) và tên fixture trong repo (l4-hidden-*) không khớp.
+     */
+    @Test
+    fun `ma test khong ghi duong dan tuong doi vao thu muc QA cua phien`() {
+        val roots = modules().map { "$it/src" } + EXTRA_ROOTS
+        val hits = roots.flatMap(::files).flatMap { f ->
+            QA_SESSION_PATH.findAll(f.readText()).map { "${rel(f)}: ${it.value}" }.toList()
+        }
+        assertTrue(hits.isEmpty(), "đường dẫn thư mục QA của phiên (chết theo phiên) — ghi tên tệp + 'bằng chứng phiên, ngoài repo': $hits")
+    }
+
     @Test
     fun `tai lieu khong them duong dan thu muc nhap moi`() {
         val counts = files("docs").associate { rel(it) to pathLike.findAll(it.readText()).count() }.filterValues { it > 0 }
@@ -94,34 +110,20 @@ class SourcePathHygieneTest {
 
         val SKIP_DIRS = setOf("build", ".git", ".gradle", ".idea", "node_modules")
 
+        /** Chuỗi trong dấu huyền mở đầu bằng thư mục QA của phiên (l5/ · p3/ · qa2/ …) — bài `ma test khong ghi duong dan tuong doi…`. */
+        val QA_SESSION_PATH = Regex("""`(?:qa\d+|[lp]\d)/[^`\s]*""")
+
         /** Cây có mã/script ngoài mô-đun Gradle. */
         val EXTRA_ROOTS = listOf("scripts", "voice", "tools", "hal-helper")
 
         /**
          * [ĐO 2026-10-04, `git ls-files -co --exclude-standard -- docs`] số lần dạng đường dẫn trong các tệp tài liệu CŨ — chỉ được
          * giảm. Đề xuất backlog: chép bằng chứng vào `docs/diagnostics/` rồi xoá dòng tương ứng ở đây.
+         *
+         * 2.93 · DOCS-SCRATCH-PATHS [ĐO grep 06/10]: 19 tệp đã thay đường dẫn bằng tên tệp + "bằng chứng phiên, ngoài repo" (thư
+         * mục nháp chết theo phiên — không còn gì để chép vào repo) ⇒ rút khỏi bảng; tệp đã rút mà mọc lại một lần ⇒ đỏ.
+         * 2.93 wave 2A · DOCS-QA-REL-PATHS: ba lần cuối ở `PROJECT-BACKLOG.md` đã gỡ ⇒ bảng RỖNG — mọi tệp tài liệu nay ở mức 0.
          */
-        val DOCS_LEGACY = mapOf(
-            "docs/_handoff/closeout-plan-2026-09-29.md" to 1,
-            "docs/_handoff/session-2026-09-17-visual-voice-touch.md" to 5,
-            "docs/_handoff/session-2026-09-27-closing.md" to 1,
-            "docs/archive/clusternav2-backlog-inherited-2026-09-10.md" to 1,
-            "docs/archive/review/HANDOFF-2026-07-23.md" to 8,
-            "docs/archive/review/README-v0.56.md" to 1,
-            "docs/catalog/features.json" to 1,
-            "docs/diagnostics/offcar-2026-09-27/camera-cluster-band.md" to 14,
-            "docs/diagnostics/offcar-2026-09-27/seat-level-glyphs-mirror.md" to 1,
-            "docs/diagnostics/ram-audit-2026-09-25.md" to 3,
-            "docs/diagnostics/voice-bench-ship-vs-ft-2026-09-17.md" to 4,
-            "docs/kachi-feature-catalog.html" to 1,
-            "docs/PROJECT-BACKLOG.md" to 3,
-            "docs/specs/kachi-276-closing.html" to 2,
-            "docs/specs/kachi-286-field-fixes.html" to 2,
-            "docs/specs/kachi-hal187-cast-remediation.html" to 1,
-            "docs/specs/kachi-launcher-shortcuts-autostart.html" to 1,
-            "docs/specs/kachi-ready-at-home.html" to 6,
-            "docs/specs/kachi-voice-clone.html" to 2,
-            "docs/specs/kachi-voice-fast-natural.html" to 3,
-        )
+        val DOCS_LEGACY: Map<String, Int> = emptyMap()
     }
 }

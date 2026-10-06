@@ -93,14 +93,14 @@ class TripOutcomeTest {
 
     @Test
     fun `so ket qua - truong s= khu hoi, ban ghi cu khong co s= van doc duoc`() {
-        // [ĐO máy ảo 03/10 `p3/e2e-L4/e6c-hidden`] bản ghi L4 nguyên văn.
+        // [ĐO máy ảo 03/10 `e2e-L4 · e6c-hidden` (bằng chứng phiên, ngoài repo)] bản ghi L4 nguyên văn.
         val l4 = "v=1;trip=n39.t302904423;code=RAN;at=1791024362549;d=ready after 20839ms;" +
             "s=com.waze:B:MOVED,com.google.android.apps.youtube.music:M:PLAYING"
         val r = TripGate.decodeResult(l4)!!
         assertEquals(TripGate.Code.RAN, r.code)
         assertEquals(listOf(TripStep(waze, TripStepKind.BACKGROUND, TripStepCode.MOVED), TripStep(ytm, TripStepKind.MUSIC, TripStepCode.PLAYING)), r.steps)
         assertEquals(l4, TripGate.encodeResult(r), "khứ hồi đúng từng byte")
-        // [ĐO máy ảo 03/10 `p3/e2e-L4/e9`] YouTube là app hệ thống ⇒ một bước SYSTEM_APP, chuyến NOOP.
+        // [ĐO máy ảo 03/10 `e2e-L4 · e9` (bằng chứng phiên, ngoài repo)] YouTube là app hệ thống ⇒ một bước SYSTEM_APP, chuyến NOOP.
         val sys = TripGate.decodeResult("v=1;trip=n39.t303484682;code=NOOP;at=1791024930687;d=ready after 20492ms;s=com.google.android.youtube:M:SYSTEM_APP")!!
         assertEquals(TripGate.Code.NOOP, sys.code)
         assertEquals(TripStepCode.SYSTEM_APP, sys.steps.single().code)
@@ -110,7 +110,7 @@ class TripOutcomeTest {
     }
 
     /**
-     * [ĐO máy ảo 03/10 `p3/e2e-L4/e12-channel-down`]: kênh `PORT_CLOSED` ⇒ chuỗi SẴN không chạy ⇒ chuyến không chạy, sổ giữ
+     * [ĐO máy ảo 03/10 `e2e-L4 · e12-channel-down` (bằng chứng phiên, ngoài repo)]: kênh `PORT_CLOSED` ⇒ chuỗi SẴN không chạy ⇒ chuyến không chạy, sổ giữ
      * nguyên kết quả chuyến TRƯỚC (`n39.t304770881`, RAN). Lần nổ máy mới (claim tắt-máy mới ⇒ id khác) ⇒ `NOT_RUN`: Cài đặt
      * phải nói "lần này chưa chạy", không để dòng kết quả cũ trông như của lần này.
      */

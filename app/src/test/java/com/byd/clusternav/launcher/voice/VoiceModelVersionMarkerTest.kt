@@ -1,5 +1,6 @@
 package com.byd.clusternav.launcher.voice
 
+import com.byd.clusternav.testsupport.KotlinSource
 import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -33,9 +34,10 @@ class VoiceModelVersionMarkerTest {
     @Test fun `install ghi marker trong staging TRUOC renameTo va huy goi khi ghi hong`() {
         val cwd = File(System.getProperty("user.dir"))
         val rel = "app/src/main/java/com/byd/clusternav/launcher/voice/VoiceModelStore.kt"
-        // Bỏ comment `//` để một dòng bị comment-out không làm bài canh xanh giả (thử-làm-đỏ 2026-09-25).
-        val src = listOf(cwd.resolve(rel), cwd.resolve("../$rel"), cwd.resolve(rel.removePrefix("app/"))).first { it.isFile }
-            .readText().lines().joinToString("\n") { it.substringBefore("//") }
+        // Bỏ chú thích (bộ quét có trạng thái dùng chung) để một dòng bị comment-out không làm bài canh xanh giả (thử-làm-đỏ 2026-09-25).
+        val src = KotlinSource.stripComments(
+            listOf(cwd.resolve(rel), cwd.resolve("../$rel"), cwd.resolve(rel.removePrefix("app/"))).first { it.isFile }.readText(),
+        )
         val body = src.substringAfter("onStep(Step.Extracting)").substringBefore("staging.deleteRecursively()")
         val marker = body.indexOf("writeVersionMarker(out, pack.version)")
         val rename = body.indexOf("out.renameTo(dest)")

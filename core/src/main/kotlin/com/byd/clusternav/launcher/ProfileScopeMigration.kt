@@ -75,8 +75,32 @@ object ProfileScopeMigration {
     fun pendingKeys(scope: Map<String, List<String>>, done: Set<String>): Map<String, List<String>> =
         scope.mapValues { (file, keys) -> keys.filter { ledgerEntry(file, it) !in done } }.filterValues { it.isNotEmpty() }
 
+    // ── 2.93 · PROFILE-NEW-FILE-FILL — "đã chụp" xét trên MỌI tệp ảnh chụp · họ tiền tố đi qua CÙNG sổ ────────────────
+
     /**
-     * Rót khoá MỚI vào phạm vi hồ sơ xuống ảnh **đã có** của mọi hồ sơ, chỉ điền chỗ trống.
+     * Bảng mà sổ đã-rót duyệt: khoá cố định của mỗi tệp ([keys] = `ProfileScope.CLUSTERNAV_KEYS`) + MỐC của mỗi họ tiền tố
+     * thuộc tệp đó ([families] = `ProfileScopeCluster.FAMILIES`). Mốc mang tiền tố [ClusterSnapshotPlan.FAMILY_MARKER_PREFIX]
+     * nên không trùng khoá prefs nào; họ ở tệp không có trong [keys] không có hậu tố ảnh chụp ⇒ không thuộc bảng.
+     *
+     * Vì sao (senior review 2.92 F1): bản 2.92 chỉ ghi khoá cố định vào sổ ⇒ một họ MỚI không bao giờ được rót mà không
+     * ai biết. Nay họ mới = một mục sổ mới ⇒ lượt rót kế tự rót nó (mốc + họ sống) cho hồ sơ đã chụp mà thiếu mốc.
+     */
+    fun ledgerScope(keys: Map<String, List<String>>, families: Collection<SnapshotFamily>): Map<String, List<String>> =
+        keys.mapValues { (file, ks) -> ks + families.filter { it.file == file }.map { it.marker } }
+
+    /**
+     * Hồ sơ **ĐÃ TỪNG CHỤP** = có ảnh KHÁC RỖNG ở ít nhất MỘT tệp ([shots] = tệp → (hồ sơ → ảnh đã giải mã)).
+     *
+     * Vì sao xét trên MỌI tệp chứ không riêng tệp đang rót (senior review 2.92 F1 · review Pass 2 G3): khoá ở một tệp prefs
+     * MỚI có ảnh VẮNG ở mọi hồ sơ (chưa bản nào chụp tệp đó) ⇒ phép lọc theo tệp coi mọi hồ sơ là *"chưa có ảnh"* ⇒ không
+     * rót cho ai mà sổ vẫn ghi xong ⇒ rò y ca QA 2.92 (giá trị của hồ sơ vừa rời đi theo sang). Hồ sơ chưa chụp ở tệp NÀO
+     * thì vẫn là *"bản sao của hiện tại"* (S4 · R5) — không đẻ ảnh cho nó.
+     */
+    fun captured(shots: Map<String, Map<String, Map<String, Any?>>>): Set<String> =
+        shots.values.flatMap { byProfile -> byProfile.filterValues { it.isNotEmpty() }.keys }.toSet()
+
+    /**
+     * Rót khoá MỚI vào phạm vi hồ sơ xuống ảnh của mọi hồ sơ **đã chụp**, chỉ điền chỗ trống.
      *
      * ## Bệnh nó chữa (QA máy ảo 2.92, [ĐO])
      * [rotDown] chạy MỘT lần cho một bảng khoá cố định. Khoá vào phạm vi hồ sơ ở bản SAU (2.89 `cast_style`, 2.90
@@ -84,18 +108,30 @@ object ProfileScopeMigration {
      * khoá ⇒ lượt áp không chạm ⇒ giá trị của hồ sơ vừa rời đi theo sang, rồi lượt rời hồ sơ đó chụp luôn giá trị lạc.
      *
      * Khác [rotDown] ở hai chỗ, đều có chủ ý:
-     *  • hồ sơ CHƯA có ảnh (map rỗng) ⇒ không chạm: chưa có ảnh = *"bản sao của hiện tại"* (S4 · R5) — lượt áp không ghi
-     *    gì nên không có gì rò; đẻ ảnh cho nó là đổi nghĩa R5;
-     *  • không chạm họ tiền tố: họ có mốc có mặt riêng (lượt V-CLUSTER + [ClusterSnapshotPlan.mergeImport] đã lo).
+     *  • hồ sơ CHƯA chụp ⇒ không chạm: chưa có ảnh = *"bản sao của hiện tại"* (S4 · R5) — lượt áp không ghi gì nên không có
+     *    gì rò; đẻ ảnh cho nó là đổi nghĩa R5. *"Đã chụp"* = ảnh của tệp này khác rỗng HOẶC hồ sơ thuộc [captured] (2.93 ·
+     *    PROFILE-NEW-FILE-FILL — có ảnh ở tệp khác; xem [ProfileScopeMigration.captured]). Ảnh tệp này VẮNG mà hồ sơ đã chụp
+     *    ⇒ ảnh mới chỉ gồm các khoá rót;
+     *  • chỉ rót họ có MỐC trong [newKeys] (mục sổ của họ — [ledgerScope]); họ có mốc trong ảnh ⇒ của hồ sơ đó, không chạm.
      *
      * Khoá đang VẮNG ở tệp sống ⇒ `null` tường minh (lượt áp XOÁ ⇒ về mặc định của hồ sơ đó — với khoá mới tinh đây đúng
      * là giá trị hồ sơ cũ đang có, vì lúc nó được chụp khoá chưa tồn tại).
+     *
+     * @param newKeys mục sổ chờ của tệp này: khoá cố định và/hoặc mốc họ.
+     * @param captured hồ sơ đã chụp ở BẤT KỲ tệp nào (mặc định rỗng = chỉ xét ảnh của tệp này, đúng hành vi 2.92).
+     * @param families họ của tệp này; chỉ họ có mốc nằm trong [newKeys] được rót.
      */
     fun fillNewKeys(
         shots: Map<String, Map<String, Any?>>,
         live: Map<String, Any?>,
         newKeys: Collection<String>,
         deferred: Map<String, String> = emptyMap(),
-    ): Map<String, Map<String, Any?>> =
-        rotDown(shots.filterValues { it.isNotEmpty() }, live, newKeys, emptyList(), deferred)
+        captured: Set<String> = emptySet(),
+        families: Collection<SnapshotFamily> = emptyList(),
+    ): Map<String, Map<String, Any?>> {
+        val pendingFamilies = families.filter { it.marker in newKeys }
+        val fixed = newKeys.filterNot { it.startsWith(ClusterSnapshotPlan.FAMILY_MARKER_PREFIX) }
+        val eligible = shots.filter { (profile, shot) -> shot.isNotEmpty() || profile in captured }
+        return rotDown(eligible, live, fixed, pendingFamilies, deferred)
+    }
 }
