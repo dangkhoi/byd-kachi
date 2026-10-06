@@ -13,8 +13,9 @@ import org.junit.jupiter.api.Test
  * một mắt xích mà bài thuần không thấy:
  *  - hàm mới có chỗ gọi production thật (CLAUDE.md §8): nút *chạy nền* → `park()`; lượt dựng lại ô → `parkLeaving` TRƯỚC
  *    `releaseSlotHost`; mặt vẽ ô mới → `ParkedApps.take` → `unpark` TRƯỚC khi tạo màn ảo mới;
- *  - đường đỗ / nhận lại chạy **0 lệnh shell** (owner: không đổi trạng thái hệ thống; [ĐO xe 05/10] đổi display / đổi cỡ =
- *    relaunch): không `am`, không `wm`, không `force-stop`, không `resize`, không `launchInto`;
+ *  - đường đỗ / nhận lại chạy **0 lệnh shell** (owner: không đổi trạng thái hệ thống; [ĐO xe 05/10] đổi display = relaunch):
+ *    không `am`, không `wm`, không `force-stop`, không `launchInto`; 2.91 · F2: nhận lại vào ô KHÁC cỡ đổi cỡ màn ảo bằng API
+ *    (`VdAppHost.resize`, cùng display) — không phải lệnh shell;
  *  - màn ảo đỗ đổi CHỦ (không nhả) ở `SlotVdOwner`, nhả màn ảo TRƯỚC khi đóng bề mặt ẩn;
  *  - đường cũ (lớp che + BEHIND-HOME · đổi-tại-chỗ `swapApp`) GIỮ biên dịch nhưng không còn chỗ gọi ở hai đường A/B.
  */
@@ -69,19 +70,21 @@ class SlotParkWiringContractTest {
     fun `C - mat ve o moi nhan lai man ao do TRUOC khi tao man ao moi, 0 lenh`() {
         val changed = SourceRoots.body(host, "override fun surfaceChanged(")
         order(changed, "if (released) return",
-            "val c = ParkedApps.claim(this@VdAppHost, surface, pkg, owner, slot, w, ht, pinned); pinned = c.pinned",
-            "if (c.parked != null) unpark(c.parked); if (c.wait || c.parked != null) return", "dm.createVirtualDisplay(")
+            "val c = ParkedApps.claim(surface, pkg, owner, slot, w, ht)",
+            "if (c != null) { unpark(c.parked); if (c.resize) resize(w, ht); return }", "dm.createVirtualDisplay(")
         val unpark = SourceRoots.body(host, "private fun unpark(")
         order(unpark, "vd = p.lease.vd", "launched = true",
             "SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() }")
-        assertFalse("attach(" in unpark || "fit(" in unpark, "PARK-1: gắn + khung nằm trong ParkedApps.claim (sau cổng cỡ), không ở unpark")
+        assertFalse("attach(" in unpark, "gắn nằm trong ParkedApps.claim, không ở unpark")
         forbidden.forEach { assertFalse(it in unpark, "'$it' trong unpark — nhận lại không được mở lại / đổi cỡ app") }
         // Màn ảo đỗ mà app đã RỜI nó (mở toàn màn ở display 0 · chết lúc đỗ) ⇒ không để khung đen vĩnh viễn: nhịp đo chung
         // (một `am stack list` cho mọi ô, đọc-chỉ) kết luận "trống" ⇒ `reopen` = mở như đường thường. Đó là chỗ DUY NHẤT
         // đường nhận lại có thể dẫn tới `force-stop` + `am start`, và chỉ khi app KHÔNG còn trên màn ảo.
         assertEquals(1, Regex("""::reopen""").findAll(unpark).count())
-        assertTrue("if (w <= 0 || h <= 0 || pinned) return" in SourceRoots.body(host, "fun resize("),
-            "màn ảo nhận lại khác cỡ ô GIỮ cỡ — đổi cỡ = đổi cấu hình = relaunch ([ĐO xe 05/10])")
+        // 2.91 · F2 — ĐỔI GHIM có lý do: bỏ ghim cỡ (nguồn viền đen [ĐO máy ảo QA 05/10]); màn ảo nhận lại đổi cỡ qua đường DUY NHẤT.
+        val resize = SourceRoots.body(host, "fun resize(")
+        order(resize, "if (w <= 0 || h <= 0) return", "if (w == dispW && h == dispH) return", "v.resize(w, h, slotDensity(w, h))", "dispW = w; dispH = h")
+        assertFalse("pinned" in host, "không còn cờ ghim cỡ màn ảo nhận lại")
     }
 
     @Test
@@ -121,42 +124,26 @@ class SlotParkWiringContractTest {
         assertTrue("private const val FORGET_DELAY_MS = 1_500L" in parked)
     }
 
+    /**
+     * 2.91 · F2 — ĐỔI GHIM có lý do (thay PARK-1 ghim cỡ + khung viền): QUYẾT ở `:core` (`SlotParkPlan.claim`, bảng ở `SlotParkTest`);
+     * ở đây canh THI HÀNH — gắn (đổi mặt vẽ) TRƯỚC, host đổi cỡ SAU (KDoc `ParkedApps.claim`, [ĐO nguồn A10]); không còn ghim/khung.
+     * Thử ĐỎ: bỏ `if (c.resize) resize(w, ht)` ⇒ lại viền đen.
+     */
     @Test
-    fun `PARK-1 - nhan lai khac co - co mat ve TRUOC, lay ra + gan SAU, ban do mat giua chung thi tra mat ve ve co o`() {
-        // Review 2.89 Pass 3 · whole-r2-6 — ĐỔI GHIM có lý do: QUYẾT ở `:core` (`SlotParkPlan.claim`/`lost` — bảng ở `SlotParkTest`),
-        // ở đây chỉ còn canh việc THI HÀNH từng bước đúng chỗ.
+    fun `F2 - nhan lai khac co - gan roi doi co man ao theo o, khong ghim, khong khung`() {
         val claim = SourceRoots.body(parked, "fun claim(")
-        order(claim, "val p = pkg?.let(ledger::peek)", "SlotParkPlan.claim(p?.width, p?.height, w, h, host.width, host.height, pinned)",
-            "SlotParkPlan.ClaimStep.FIT_WAIT ->", "fit(host, sv, p!!, w, h)", "Claim(null, wait = true, pinned = true)",
-            "SlotParkPlan.ClaimStep.ATTACH ->", "val taken = take(p!!.pkg)",
-            "if (taken != null && attach(taken, sv.holder.surface, owner, slot)) Claim(taken, wait = false, pinned = pinned)",
-            "else lostClaim(SlotParkPlan.lost(pinned, w, h, host.width, host.height), host, sv)",
-            "else -> lostClaim(SlotParkPlan.lost(pinned, w, h, host.width, host.height), host, sv)")
-        val lost = SourceRoots.body(parked, "private fun lostClaim(")
-        assertTrue("SlotParkPlan.ClaimStep.UNFIT_GOLDEN -> { unfit(host, sv); GOLDEN }" in lost, lost)
-        assertTrue("SlotParkPlan.ClaimStep.UNFIT_WAIT -> { unfit(host, sv); Claim(null, wait = true, pinned = false) }" in lost, lost)
-        // Chỉ claim được lấy ra / gắn — không lối nào gắn màn ảo đỗ vào mặt vẽ chưa đúng cỡ.
-        assertTrue("private fun take(" in parked && "private fun attach(" in parked && "private fun fit(" in parked)
-        listOf("ParkedApps.take", "ParkedApps.attach", "ParkedApps.fit").forEach { assertFalse(it in host, "'$it' ngoài claim") }
-        // setFixedSize ĐỒNG BỘ (lượt surfaceChanged kế mang đúng cỡ màn ảo đỗ), không nằm trong sv.post.
-        val fit = SourceRoots.body(parked, "private fun fit(")
-        assertFalse(Regex("""sv\.post \{[^}]*setFixedSize""").containsMatchIn(fit))
-        val unfit = SourceRoots.body(parked, "private fun unfit(")
-        order(unfit, "host.removeOnLayoutChangeListener(it.listener)", "sv.tag = null",
-            "sv.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)", "sv.holder.setSizeFromLayout()")
-    }
-
-    @Test
-    fun `khung vien theo luot bo tri cua o, khong dong cung co luot dau`() {
-        val fit = SourceRoots.body(parked, "private fun fit(")
-        order(fit, "SlotParkPlan.letterbox(p.width, p.height, w, h)", "sv.holder.setFixedSize(p.width, p.height)",
-            "host.removeOnLayoutChangeListener(it.listener)", "place(sv, p, r - l, b - t)", "sv.tag = Fit(p, onLayout)",
-            "host.addOnLayoutChangeListener(onLayout)", "sv.post { place(sv, p, host.width, host.height) }")
-        val place = SourceRoots.body(parked, "private fun place(")
-        order(place, "(sv.tag as? Fit)?.p !== p) return", "SlotParkPlan.letterbox(p.width, p.height, w, h)",
-            "FrameLayout.LayoutParams(box[0], box[1], Gravity.CENTER)", "cur.gravity == lp.gravity) return", "sv.layoutParams = lp")
+        order(claim, "val p = pkg?.let(ledger::peek)", "SlotParkPlan.claim(p?.width, p?.height, w, h)",
+            "if (p == null || step == SlotParkPlan.ClaimStep.GOLDEN) return null", "val taken = take(p.pkg) ?: return null",
+            "if (!attach(taken, sv.holder.surface, owner, slot)) return null",
+            "val resize = step == SlotParkPlan.ClaimStep.ATTACH_RESIZE", "return Claim(taken, resize)")
+        listOf("setFixedSize", "letterbox", "fun fit(", "fun unfit(", "fun place(", "Gravity", "FrameLayout").forEach {
+            assertFalse(it in parked, "'$it' — 2.91 bỏ ghim cỡ + khung viền (nguồn viền đen)")
+        }
+        assertFalse(".resize(" in parked, "ParkedApps không tự đổi cỡ — host đổi qua `VdAppHost.resize` (một đường, có đòn bẩy mật độ)")
+        assertTrue("private fun take(" in parked && "private fun attach(" in parked)
+        listOf("ParkedApps.take", "ParkedApps.attach").forEach { assertFalse(it in host, "'$it' ngoài claim") }
         assertTrue("SlotTouchMapper.toDisplay((e.x - surface.left).toInt(), (e.y - surface.top).toInt(), surface.width, surface.height, dispW, dispH)" in host,
-            "chạm map theo KHUNG mặt vẽ (giữa ô khi có viền), không theo cả ô")
+            "chạm map theo mặt vẽ ↔ cỡ màn ảo (dispW/dispH cập nhật trong resize)")
     }
 
     @Test
@@ -187,7 +174,7 @@ class SlotParkWiringContractTest {
             "p.sink.close()", "SlotVdOwner.move(owner, slot, p.name, p.lease)")
         order(SourceRoots.body(parked, "private fun drop("), "SlotVdOwner.release(OWNER, p.key)", "p.sink.close()")
         forbidden.forEach { assertFalse(it in parked, "'$it' trong ParkedApps") }
-        assertFalse("resize" in parked || "createVirtualDisplay" in parked, "ô 7 không tạo / đổi cỡ màn ảo nào")
+        assertFalse(".resize(" in parked || "createVirtualDisplay" in parked, "ô 7 không tạo / tự đổi cỡ màn ảo nào (đổi cỡ: host)")
         assertTrue("private val keys = AtomicInteger(-1_000_000)" in parked, "dải khoá riêng — không trùng ô thật / dàn dựng ẩn")
         val move = SourceRoots.body(code("SlotVdOwner.kt"), "fun move(")
         assertTrue("ledger.adopt(owner, slot, name, lease)" in move, "đổi chủ = adopt cùng tên (chỉ đổi khoá, không free)")

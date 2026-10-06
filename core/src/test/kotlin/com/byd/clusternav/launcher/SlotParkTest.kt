@@ -1,6 +1,5 @@
 package com.byd.clusternav.launcher
 
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -17,7 +16,8 @@ import org.junit.jupiter.api.assertThrows
  *  2. [SlotParkPlan.leave] — chỉ ĐỖ khi app cũ còn được dùng tiếp (app khác vào ô · chính nó sang ô khác); xoá ô / thành
  *     widget / cùng app dựng lại ⇒ NHẢ như hôm nay (CLAUDE.md §6). [SlotParkPlan.parkable] — lượt mở dở / app chết / toàn màn
  *     ⇒ không đỗ (đỗ màn ảo trống = khung đen vĩnh viễn khi nhận lại).
- *  3. [SlotParkPlan.letterbox] — nhận lại vào ô khác cỡ KHÔNG đổi cỡ màn ảo (đổi cỡ = relaunch, [ĐO xe 05/10]); khung giữ tỉ lệ.
+ *  3. [SlotParkPlan.claim] — 2.91 · F2: nhận lại vào ô khác cỡ ⇒ ĐỔI CỠ màn ảo theo ô (cùng display), không còn khung viền đen
+ *     ([ĐO máy ảo QA 05/10] 1129×610 trong ô 1129×804).
  */
 class SlotParkTest {
 
@@ -146,28 +146,6 @@ class SlotParkTest {
         assertFalse(p(watching = false), "lượt mở còn dở — đỗ màn ảo trống ⇒ khung đen khi nhận lại")
     }
 
-    // ══ (3) khung khi khác cỡ ═════════════════════════════════════════════════════════════════════════════════
-
-    @Test
-    fun `cung co - khong khung, duong thuong`() {
-        assertNull(SlotParkPlan.letterbox(1872, 956, 1872, 956))
-        assertNull(SlotParkPlan.letterbox(0, 956, 1872, 956))
-        assertNull(SlotParkPlan.letterbox(1872, 956, 1872, 0))
-    }
-
-    @Test
-    fun `khac co - giu ti le, cham bien theo truc chat`() {
-        // Màn ảo đỗ 1872×956 (ô rộng của xe, [ĐO 05/10]) vào ô 936×956 ⇒ chạm biên NGANG, viền trên/dưới.
-        assertArrayEquals(intArrayOf(936, 478), SlotParkPlan.letterbox(1872, 956, 936, 956))
-        // Màn ảo đỗ 936×956 vào ô 1872×956 ⇒ chạm biên DỌC, viền hai bên.
-        assertArrayEquals(intArrayOf(936, 956), SlotParkPlan.letterbox(936, 956, 1872, 956))
-        // Cùng tỉ lệ, khác cỡ ⇒ lấp đầy ô.
-        assertArrayEquals(intArrayOf(936, 478), SlotParkPlan.letterbox(1872, 956, 936, 478))
-        // Không bao giờ ra 0.
-        val tiny = SlotParkPlan.letterbox(10_000, 1, 10, 10)!!
-        assertTrue(tiny[0] >= 1 && tiny[1] >= 1)
-    }
-
     // ══ (3b) nhận lại một màn ảo đỗ mà app đã RỜI nó lúc đang đỗ ═══════════════════════════════════════════════════
 
     @Test
@@ -261,29 +239,23 @@ class SlotParkTest {
             "kéo-thả trùng lượt đổi hồ sơ: vẫn nhả")
     }
 
-    // ── Review 2.89 Pass 3 · whole-r2-6 — bảng quyết lượt NHẬN LẠI (PARK-1) ───────────────────────────────────────────────────
+    // ── 2.91 · F2 — bảng quyết lượt NHẬN LẠI (thay PARK-1 ghim cỡ + khung viền) ─────────────────────────────────────────────
 
     /**
-     * Bảng đủ ca của `ParkedApps.claim` (trước chỉ canh thứ tự dòng mã): cùng cỡ ⇒ gắn · khác cỡ ⇒ ghim + chờ (KHÔNG BAO GIỜ gắn vào
-     * mặt vẽ sai cỡ) · bản đỗ mất khi đang ghim ⇒ bỏ khung, đường thường ngay nếu host đã đúng cỡ, không thì chờ · chưa ghim ⇒ đường
-     * thường. Thử ĐỎ: đổi `w != parkedW` thành `w == parkedW`, hoặc trả `lost` luôn GOLDEN.
+     * Khoá lỗi [ĐO máy ảo QA 05/10]: app đỗ ở ô 1129×610 mở lại vào ô 1129×804 hiện 1129×610 giữa viền đen, góc trong vuông. Nay:
+     * có bản đỗ ⇒ LUÔN gắn (không bao giờ chờ / ghim), khác cỡ ⇒ đổi cỡ màn ảo theo ô; không bản đỗ ⇒ đường thường.
+     * Thử ĐỎ: trả `ATTACH` cho ca khác cỡ (màn ảo giữ cỡ cũ ⇒ lại viền), hoặc `GOLDEN` khi có bản đỗ (tạo màn ảo mới ⇒ relaunch).
      */
     @Test
-    fun `Pass 3 - bang quyet nhan lai`() {
-        fun c(pw: Int?, ph: Int?, w: Int, h: Int, hw: Int, hh: Int, pinned: Boolean) = SlotParkPlan.claim(pw, ph, w, h, hw, hh, pinned)
-        // cùng cỡ (ô = màn ảo đỗ) ⇒ gắn, giữ cờ ghim của lượt trước
-        assertEquals(SlotParkPlan.ClaimStep.ATTACH, c(1132, 768, 1132, 768, 1132, 768, pinned = false))
-        assertEquals(SlotParkPlan.ClaimStep.ATTACH, c(1132, 768, 1132, 768, 900, 600, pinned = true), "lượt sau setFixedSize: mặt vẽ đã đúng cỡ")
-        // khác cỡ ⇒ ghim cỡ mặt vẽ trước, CHỜ
-        assertEquals(SlotParkPlan.ClaimStep.FIT_WAIT, c(1132, 768, 900, 600, 900, 600, pinned = false))
-        assertEquals(SlotParkPlan.ClaimStep.FIT_WAIT, c(1132, 768, 1132, 767, 1132, 767, pinned = true))
-        // không đỗ / bản đỗ mất giữa hai lượt
-        assertEquals(SlotParkPlan.ClaimStep.GOLDEN, c(null, null, 900, 600, 900, 600, pinned = false))
-        assertEquals(SlotParkPlan.ClaimStep.UNFIT_GOLDEN, c(null, null, 900, 600, 900, 600, pinned = true), "host đã đúng cỡ ⇒ không có lượt kế")
-        assertEquals(SlotParkPlan.ClaimStep.UNFIT_WAIT, c(null, null, 1132, 768, 900, 600, pinned = true), "mặt vẽ ghim ≠ host ⇒ chờ lượt kế")
-        // lấy ra / gắn hỏng sau ATTACH ⇒ cùng luật `lost`
-        assertEquals(SlotParkPlan.ClaimStep.GOLDEN, SlotParkPlan.lost(pinned = false, 1132, 768, 1132, 768))
-        assertEquals(SlotParkPlan.ClaimStep.UNFIT_GOLDEN, SlotParkPlan.lost(pinned = true, 1132, 768, 1132, 768))
-        assertEquals(SlotParkPlan.ClaimStep.UNFIT_WAIT, SlotParkPlan.lost(pinned = true, 1132, 768, 1000, 768))
+    fun `F2 - bang quyet nhan lai - khac co thi doi co man ao theo o, khong vien`() {
+        fun c(pw: Int?, ph: Int?, w: Int, h: Int) = SlotParkPlan.claim(pw, ph, w, h)
+        assertEquals(SlotParkPlan.ClaimStep.ATTACH_RESIZE, c(1129, 610, 1129, 804), "ca QA 05/10: cao 610 → 804")
+        assertEquals(SlotParkPlan.ClaimStep.ATTACH_RESIZE, c(1872, 956, 936, 956), "ô hẹp hơn")
+        assertEquals(SlotParkPlan.ClaimStep.ATTACH_RESIZE, c(1920, 720, 1129, 804), "màn ảo ẩn của chuyến (cỡ display 0) vào ô")
+        assertEquals(SlotParkPlan.ClaimStep.ATTACH, c(1129, 804, 1129, 804), "cùng cỡ ⇒ chỉ gắn, không một lượt đổi cấu hình nào")
+        assertEquals(SlotParkPlan.ClaimStep.ATTACH, c(1129, 804, 0, 804), "cỡ ô hỏng ⇒ gắn, không đổi cỡ về 0")
+        assertEquals(SlotParkPlan.ClaimStep.GOLDEN, c(null, null, 1129, 804), "không đỗ ⇒ đường thường")
+        assertEquals(SlotParkPlan.ClaimStep.GOLDEN, c(1129, null, 1129, 804))
+        assertEquals(3, SlotParkPlan.ClaimStep.values().size, "không còn bước chờ / ghim / bỏ khung")
     }
 }

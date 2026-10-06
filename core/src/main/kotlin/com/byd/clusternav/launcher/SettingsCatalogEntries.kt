@@ -177,8 +177,11 @@ internal object SettingsCatalogEntries {
         // badge_placement_container (kéo-thả) · Prefs.setBadgeCenter ghi CẶP x/y — `badge_center_y` đi kèm, xem
         // [SettingsCatalog.CLUSTERNAV_COMPANION_KEYS]
         SettingsEntry("badge_center", SettingsGroup.NAV, "Vị trí biển báo", "badge_center_x", "Badge position"),
-        // switch_vm_bubble_enabled · Prefs.setVmBubbleEnabled
-        SettingsEntry("vm_bubble_enabled", SettingsGroup.NAV, "Bong bóng VietMap", "vm_bubble_enabled", "VietMap bubble"),
+        // 2.91 · F1 (spec kachi-291-small-fixes §4.1) — công tắc HIỆN bóng = `!vm_bubble_hidden` (sự thật bản mod theo) · bridge.setVmBubbleShown.
+        // Mã mục giữ nguyên (`vm_bubble_enabled`) — hàng người dùng đã quen; khoá nó GHI nay là `vm_bubble_hidden`.
+        SettingsEntry("vm_bubble_enabled", SettingsGroup.NAV, "Bong bóng VietMap", "vm_bubble_hidden", "VietMap bubble"),
+        // Hàng riêng "Tự mở VietMap cho bong bóng" — nghĩa CŨ của `vm_bubble_enabled` · bridge.setVmBubbleAutostart
+        SettingsEntry("vm_bubble_autostart", SettingsGroup.NAV, "Tự mở VietMap cho bong bóng", "vm_bubble_enabled", "Auto-open VietMap for the bubble"),
         // vm_bubble_placement_container · VmOverlayPosition.set ghi CẶP x/y rồi broadcast sang bản mod
         SettingsEntry("vm_bubble_pos", SettingsGroup.NAV, "Vị trí bong bóng", "vm_bubble_x", "Bubble position"),
 

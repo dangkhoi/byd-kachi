@@ -8,12 +8,8 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
 import android.view.Display
-import android.view.Gravity
 import android.view.Surface
 import android.view.SurfaceView
-import android.view.View
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.FrameLayout
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -58,8 +54,9 @@ internal class OffscreenSink private constructor(private val reader: ImageReader
  * Đỗ = `VirtualDisplay.setSurface(<ImageReader CÙNG cỡ>)`; nhận lại vào ô = `setSurface(<mặt vẽ ô>)`. [ĐO nguồn] A10 r47
  * `services/.../display/VirtualDisplayAdapter.java:291-301` (A12 r34 `:320-330`): đổi mặt vẽ khác-null → khác-null KHÔNG phát
  * `DISPLAY_DEVICE_EVENT_CHANGED`, không đổi cỡ / mật độ; ON/OFF của màn ảo là `mIsDisplayOn` (A10 `:237` · `:316-322` · `:396`)
- * — không đi theo mặt vẽ. Đổi CỠ thì có phát (`resizeLocked` A10 `:303-314`) ⇒ khớp phép đo relaunch. [SUY] app không nhận
- * đổi cấu hình nào ⇒ không relaunch, nhạc chạy tiếp — 🚗 chờ owner thử (§4.6d).
+ * — không đi theo mặt vẽ. Đổi CỠ thì có phát (`resizeLocked` A10 `:303-314`). [SUY] đỗ / nhận lại CÙNG cỡ: app không nhận đổi
+ * cấu hình nào ⇒ nhạc chạy tiếp — 🚗 chờ owner thử (§4.6d). 2.91 · F2: nhận lại vào ô KHÁC cỡ ⇒ màn ảo đổi cỡ theo ô (cùng
+ * display, cùng tiến trình — một lượt đổi cấu hình như mọi ô khi inset đổi), xem [claim].
  *
  * ## Bốn câu CLAUDE.md §4 — lượt đỗ / nhận lại chạy **0 lệnh shell**
  *  1. display = đúng màn ảo Kachi tạo và đã đăng ký cổng sở hữu ([SlotVdOwner]; id ≥ 1 BẤT KỲ — sau khởi động nguội màn ảo ô đầu
@@ -171,89 +168,36 @@ object ParkedApps {
     }
 
     /**
-     * Kết quả [claim]. [parked] khác `null` = đã LẤY RA và GẮN vào mặt vẽ ô (host nhận màn ảo) · [wait] = mặt vẽ đang đổi cỡ,
-     * chờ lượt `surfaceChanged` kế (KHÔNG tạo màn ảo) · cả hai rỗng = đường thường. [pinned] = mặt vẽ ghim cỡ màn ảo đỗ.
+     * Kết quả [claim]: [parked] = đã LẤY RA và GẮN vào mặt vẽ ô (host nhận màn ảo) · [resize] = cỡ ô ≠ cỡ màn ảo đỗ ⇒ host PHẢI
+     * đổi cỡ màn ảo theo ô ngay sau khi nhận ([SlotParkPlan.ClaimStep.ATTACH_RESIZE]). `claim` trả `null` = đường thường.
      */
-    class Claim internal constructor(val parked: Parked?, val wait: Boolean, val pinned: Boolean)
+    class Claim internal constructor(val parked: Parked, val resize: Boolean)
 
     /**
-     * ═══ PARK-1 — nhận lại: CỠ mặt vẽ TRƯỚC, gắn màn ảo SAU (luồng chính; `surfaceChanged` của host CHƯA có màn ảo) ═══
+     * ═══ Nhận lại vào ô (luồng chính; `surfaceChanged` của host CHƯA có màn ảo) — 2.91 · F2, spec `kachi-291-small-fixes.html` §4.2 ═══
      *
-     * [ĐO nguồn A10 r47 native] SurfaceFlinger đọc cỡ đích của màn ảo MỘT lần, lúc dựng `VirtualDisplaySurface` khi màn ảo
-     * đổi mặt vẽ (`VirtualDisplaySurface.cpp:88-92`), chỉ đổi lại khi màn ảo đổi CỠ (`resizeBuffers` `:288-292`) — màn ảo đỗ
-     * không bao giờ đổi cỡ; đệm xếp với `SCALING_MODE_FREEZE` (`:264-267`), cỡ báo ra = cỡ đã chốt (`:529-533`). [SUY, chưa
-     * thấy trên xe] gắn lúc mặt vẽ ô còn cỡ ô ⇒ khung đứng / đen (HWC) hoặc cắt góc + đen (GLES), không tự lành.
-     * ⇒ Cỡ ô ≠ cỡ màn ảo: `setFixedSize` ĐỒNG BỘ (A10 r47 `SurfaceView.java:1051-1056` → `requestLayout`; lượt sau
-     * `:566-569` lấy cỡ đã ghim, `:761-770` gọi lại `surfaceChanged`) + khung giữa ô, CHƯA lấy ra ([wait]). Đúng cỡ ⇒ lấy ra
-     * + gắn. Bản đỗ bị nhả (trần) / gắn hỏng giữa hai lượt ⇒ [unfit] trả mặt vẽ về cỡ ô rồi đường thường — không rò gì. Bảng
-     * quyết thuần: [SlotParkPlan.claim] (review 2.89 Pass 3 · whole-r2-6).
+     * Bảng quyết thuần: [SlotParkPlan.claim]. Có bản đỗ ⇒ lấy ra + đổi mặt vẽ sang mặt vẽ ô [sv] (đang ở CỠ Ô — 2.91 bỏ ghim
+     * `setFixedSize` + khung viền của PARK-1, nguồn của viền đen [ĐO máy ảo QA 05/10]); khác cỡ ⇒ [Claim.resize] để host gọi
+     * `VdAppHost.resize` (đường đổi cỡ DUY NHẤT của ô) ngay trong cùng lượt.
+     *
+     * Vì sao gắn TRƯỚC rồi đổi cỡ SAU (không ngược lại) [ĐO nguồn A10: framework r47, native LineageOS 17.1 = nhánh A10]:
+     * `VirtualDisplayAdapter.java:303-314` `resizeLocked` chỉ
+     * đặt `PENDING_RESIZE` + hẹn traversal; nếu traversal chạy khi màn ảo còn vẽ vào `ImageReader` cỡ cũ của ô 7 thì SurfaceFlinger đổi
+     * cỡ đệm của CHÍNH bề mặt ẩn đó (`SurfaceFlinger.cpp:2732-2733` → `VirtualDisplaySurface.cpp:288-292`). Gắn trước: lượt đổi mặt
+     * vẽ dựng lại thiết bị (`SurfaceFlinger.cpp:2709-2721`) và `VirtualDisplaySurface` đọc cỡ mặt vẽ = cỡ ô (`:89-92`); lượt đổi
+     * cỡ sau đó đưa nội dung về cùng cỡ — đúng thứ tự `v.surface = h.surface; resize(w, ht)` mà nhánh thường của `surfaceChanged`
+     * đã chạy ngoài hiện trường. Cả hai cờ chờ có thể rơi chung một traversal: `performTraversalLocked` áp cỡ TRƯỚC mặt vẽ (`:281-287`).
+     * Lấy ra hỏng / gắn hỏng ⇒ `null` (đường thường; [attach] đã nhả màn ảo).
      */
-    fun claim(host: View, sv: SurfaceView, pkg: String?, owner: String, slot: Int, w: Int, h: Int, pinned: Boolean): Claim {
-        // Review 2.89 Pass 3 · whole-r2-6: QUYẾT ở `:core` (`SlotParkPlan.claim` / `lost`, bảng test), ở đây chỉ THI HÀNH bước.
+    fun claim(sv: SurfaceView, pkg: String?, owner: String, slot: Int, w: Int, h: Int): Claim? {
         val p = pkg?.let(ledger::peek)
-        return when (SlotParkPlan.claim(p?.width, p?.height, w, h, host.width, host.height, pinned)) {
-            SlotParkPlan.ClaimStep.FIT_WAIT -> {
-                fit(host, sv, p!!, w, h)
-                Claim(null, wait = true, pinned = true)
-            }
-            SlotParkPlan.ClaimStep.ATTACH -> {
-                val taken = take(p!!.pkg)
-                if (taken != null && attach(taken, sv.holder.surface, owner, slot)) Claim(taken, wait = false, pinned = pinned)
-                else lostClaim(SlotParkPlan.lost(pinned, w, h, host.width, host.height), host, sv)
-            }
-            else -> lostClaim(SlotParkPlan.lost(pinned, w, h, host.width, host.height), host, sv)
-        }
-    }
-
-    /** Thi hành một bước "bản đỗ không còn" của [SlotParkPlan.lost]. */
-    private fun lostClaim(step: SlotParkPlan.ClaimStep, host: View, sv: SurfaceView): Claim = when (step) {
-        SlotParkPlan.ClaimStep.UNFIT_GOLDEN -> { unfit(host, sv); GOLDEN }
-        SlotParkPlan.ClaimStep.UNFIT_WAIT -> { unfit(host, sv); Claim(null, wait = true, pinned = false) }
-        else -> GOLDEN
-    }
-
-    private val GOLDEN = Claim(null, wait = false, pinned = false)
-
-    /** Khung đang áp lên mặt vẽ (giữ ở `tag` của chính nó — không giữ view ở bộ nhớ tĩnh): bản đỗ + bộ nghe bố trí của host. */
-    private class Fit(val p: Parked, val listener: View.OnLayoutChangeListener)
-
-    /**
-     * Cỡ ô [w]×[h] ≠ cỡ màn ảo đỗ ⇒ KHÔNG đổi cỡ màn ảo (đổi cỡ = relaunch): mặt vẽ [sv] ghim cỡ màn ảo (`setFixedSize`, đồng
-     * bộ — PARK-1) và nằm GIỮA khung [host], giữ tỉ lệ ([SlotParkPlan.letterbox]) — tính lại mỗi lượt bố trí của [host]
-     * (inset ẩn/hiện đổi cỡ ô). Gọi lại (lượt `surfaceChanged` chen giữa) ⇒ thay bộ nghe cũ, không chồng.
-     */
-    private fun fit(host: View, sv: SurfaceView, p: Parked, w: Int, h: Int) {
-        val box = SlotParkPlan.letterbox(p.width, p.height, w, h)
-        sv.holder.setFixedSize(p.width, p.height)
-        (sv.tag as? Fit)?.let { host.removeOnLayoutChangeListener(it.listener) }
-        val onLayout = View.OnLayoutChangeListener { _, l, t, r, b, _, _, _, _ -> sv.post { place(sv, p, r - l, b - t) } }
-        sv.tag = Fit(p, onLayout)
-        host.addOnLayoutChangeListener(onLayout)
-        sv.post { place(sv, p, host.width, host.height) }
-        Log.i(TAG, "nhận lại ${p.pkg}: ô ${w}x$h ≠ màn ảo ${p.width}x${p.height} ⇒ khung ${box?.get(0)}x${box?.get(1)} giữa ô, cỡ mặt vẽ trước — gắn ở lượt sau")
-    }
-
-    /**
-     * Bỏ khung (bản đỗ không còn để gắn): mặt vẽ về cỡ bố trí, phủ cả ô. Đường thường NGAY hay chờ lượt `surfaceChanged` kế do
-     * [SlotParkPlan.lost] quyết (host đã đúng cỡ ⇒ không có lượt kế).
-     */
-    private fun unfit(host: View, sv: SurfaceView) {
-        (sv.tag as? Fit)?.let { host.removeOnLayoutChangeListener(it.listener) }
-        sv.tag = null
-        sv.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        sv.holder.setSizeFromLayout()
-        Log.i(TAG, "bỏ khung: bản đỗ không còn ⇒ mặt vẽ về cỡ ô ${host.width}x${host.height}, mở như đường thường")
-    }
-
-    /** Đặt khung mặt vẽ theo cỡ ô [w]×[h] hiện tại; trùng khung đang có / khung đã bỏ ⇒ không làm gì (không vòng bố trí). */
-    private fun place(sv: SurfaceView, p: Parked, w: Int, h: Int) {
-        if (w <= 0 || h <= 0 || (sv.tag as? Fit)?.p !== p) return
-        val box = SlotParkPlan.letterbox(p.width, p.height, w, h)
-        val lp = if (box == null) FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        else FrameLayout.LayoutParams(box[0], box[1], Gravity.CENTER)
-        val cur = sv.layoutParams as? FrameLayout.LayoutParams
-        if (cur != null && cur.width == lp.width && cur.height == lp.height && cur.gravity == lp.gravity) return
-        sv.layoutParams = lp
+        val step = SlotParkPlan.claim(p?.width, p?.height, w, h)
+        if (p == null || step == SlotParkPlan.ClaimStep.GOLDEN) return null
+        val taken = take(p.pkg) ?: return null
+        if (!attach(taken, sv.holder.surface, owner, slot)) return null
+        val resize = step == SlotParkPlan.ClaimStep.ATTACH_RESIZE
+        if (resize) Log.i(TAG, "nhận lại ${taken.pkg}: ô ${w}x$h ≠ màn ảo ${taken.width}x${taken.height} ⇒ đổi cỡ màn ảo theo ô (cùng display)")
+        return Claim(taken, resize)
     }
 
     /** [pkg] đang đỗ (task của nó nằm trên một màn ảo ẩn) — `AppOpener` mở toàn màn phải nêu display 0. Luồng chính. */

@@ -11,7 +11,7 @@ package com.byd.clusternav.launcher
  * Ô 7 = app ở YÊN trong chính màn ảo của nó; chỉ mặt vẽ đổi sang một bề mặt không ai xem (`ParkedApps` ở `:app`).
  *
  * Hai phần thuần (test off-device): [ParkLedger] — sổ app đang đỗ (thứ tự, trần, đỗ lại cùng gói) · [SlotParkPlan] — app RỜI
- * ô ở một lượt dựng lại thì ĐỖ hay NHẢ như hôm nay, host đỗ được không, và khung viền đen khi cỡ ô ≠ cỡ màn ảo đỗ.
+ * ô ở một lượt dựng lại thì ĐỖ hay NHẢ như hôm nay, host đỗ được không, và lượt nhận lại có phải đổi cỡ màn ảo theo ô không.
  */
 class ParkLedger<T>(private val cap: Int = CAP) {
 
@@ -104,51 +104,26 @@ object SlotParkPlan {
     }
 
     /**
-     * Một bước của lượt NHẬN LẠI (PARK-1, `ParkedApps.claim` ở `:app` chỉ THI HÀNH bước này): [GOLDEN] = đường thường (tạo màn ảo mới)
-     * · [FIT_WAIT] = ghim cỡ mặt vẽ theo màn ảo đỗ + khung giữa ô, CHỜ lượt `surfaceChanged` kế (không lấy ra) · [ATTACH] = đúng cỡ ⇒
-     * lấy ra + gắn · [UNFIT_GOLDEN] = bỏ khung rồi đường thường NGAY (host đã đúng cỡ, không có lượt kế) · [UNFIT_WAIT] = bỏ khung,
-     * chờ lượt `surfaceChanged` kế ở cỡ ô.
+     * Một bước của lượt NHẬN LẠI (`ParkedApps.claim` ở `:app` chỉ THI HÀNH bước này): [GOLDEN] = không có bản đỗ ⇒ đường thường
+     * (tạo màn ảo mới) · [ATTACH] = cùng cỡ ⇒ lấy ra + gắn · [ATTACH_RESIZE] = khác cỡ ⇒ lấy ra + gắn rồi ĐỔI CỠ màn ảo theo ô
+     * (`VdAppHost.resize` — đúng đường đổi cỡ mọi ô đã chạy khi inset đổi).
      */
-    enum class ClaimStep { GOLDEN, FIT_WAIT, ATTACH, UNFIT_GOLDEN, UNFIT_WAIT }
+    enum class ClaimStep { GOLDEN, ATTACH, ATTACH_RESIZE }
 
     /**
-     * Review 2.89 Pass 3 · whole-r2-6 — QUYẾT lượt nhận lại (thuần, trước đây nằm rải trong `ParkedApps.claim` và chỉ được canh bằng
-     * thứ tự dòng mã). [parkedW]/[parkedH] = cỡ màn ảo đỗ của gói (`null` = không đỗ / bản đỗ đã mất), [w]×[h] = cỡ mặt vẽ ô của lượt
-     * `surfaceChanged` này, [hostW]×[hostH] = cỡ host hiện tại, [pinned] = mặt vẽ đang ghim cỡ màn ảo đỗ (lượt trước đã [ClaimStep.FIT_WAIT]).
-     * Cỡ ≠ ⇒ KHÔNG BAO GIỜ gắn ([ĐO nguồn A10 r47 native] SurfaceFlinger chốt cỡ đích lúc đổi mặt vẽ — KDoc `ParkedApps.claim`).
+     * 2.91 · F2 (spec `kachi-291-small-fixes.html` §4.2) — QUYẾT lượt nhận lại. [parkedW]/[parkedH] = cỡ màn ảo đỗ của gói (`null` =
+     * không đỗ / bản đỗ đã mất), [w]×[h] = cỡ mặt vẽ ô của lượt `surfaceChanged` này.
+     *
+     * Trước 2.91 khác cỡ ⇒ ghim cỡ mặt vẽ theo màn ảo đỗ + khung viền giữ tỉ lệ ⇒ [ĐO máy ảo QA 05/10] app 1129×610 nằm trong ô
+     * 1129×804: viền đen, góc trong vuông. Nay khác cỡ ⇒ màn ảo đổi cỡ theo ô (CÙNG display — app không dời màn, cùng tiến trình;
+     * app nhận một lượt đổi cấu hình như khi ô đổi cỡ do inset). Cỡ ô hỏng (≤ 0) ⇒ gắn, không đổi cỡ.
      */
-    fun claim(parkedW: Int?, parkedH: Int?, w: Int, h: Int, hostW: Int, hostH: Int, pinned: Boolean): ClaimStep = when {
-        parkedW == null || parkedH == null -> lost(pinned, w, h, hostW, hostH)
-        w != parkedW || h != parkedH -> ClaimStep.FIT_WAIT
-        else -> ClaimStep.ATTACH
-    }
-
-    /**
-     * Bản đỗ không còn để gắn (không đỗ · bị trần nhả giữa hai lượt · lấy ra hỏng · gắn hỏng): chưa ghim ⇒ đường thường; đang ghim ⇒
-     * bỏ khung, rồi đường thường ngay khi host đã đúng cỡ [w]×[h], không thì chờ lượt kế (cỡ mặt vẽ ĐỔI).
-     */
-    fun lost(pinned: Boolean, w: Int, h: Int, hostW: Int, hostH: Int): ClaimStep = when {
-        !pinned -> ClaimStep.GOLDEN
-        hostW == w && hostH == h -> ClaimStep.UNFIT_GOLDEN
-        else -> ClaimStep.UNFIT_WAIT
+    fun claim(parkedW: Int?, parkedH: Int?, w: Int, h: Int): ClaimStep = when {
+        parkedW == null || parkedH == null -> ClaimStep.GOLDEN
+        w <= 0 || h <= 0 || (w == parkedW && h == parkedH) -> ClaimStep.ATTACH
+        else -> ClaimStep.ATTACH_RESIZE
     }
 
     /** Gói app sẽ HIỆN trong bố cục [next] — được che chắn khỏi trần ô 7 ở lượt đỗ cùng lượt dựng lại ([ParkLedger.park]). */
     fun shown(next: List<SlotContent>): Set<String> = next.mapNotNullTo(HashSet()) { (it as? SlotContent.App)?.pkg }
-
-    /**
-     * Nhận lại vào ô có cỡ [w]×[h] một màn ảo đỗ cỡ [pw]×[ph]: KHÔNG đổi cỡ màn ảo (đổi cỡ = đổi cấu hình = relaunch — [ĐO
-     * xe 05/10] (2)); mặt vẽ ô giữ cỡ màn ảo và được thu/phóng GIỮ TỈ LỆ vào giữa ô (viền hai bên). Trả `[rộng, cao]` của
-     * khung vẽ, hoặc `null` = cùng cỡ (đường thường, không đổi gì) / cỡ hỏng.
-     */
-    fun letterbox(pw: Int, ph: Int, w: Int, h: Int): IntArray? {
-        if (pw <= 0 || ph <= 0 || w <= 0 || h <= 0) return null
-        if (pw == w && ph == h) return null
-        // So sánh chéo bằng Long: pw/ph và w/h — bên nào "rộng" hơn quyết trục chạm biên.
-        return if (pw.toLong() * h >= ph.toLong() * w) {
-            intArrayOf(w, maxOf(1, (ph.toLong() * w / pw).toInt()))
-        } else {
-            intArrayOf(maxOf(1, (pw.toLong() * h / ph).toInt()), h)
-        }
-    }
 }

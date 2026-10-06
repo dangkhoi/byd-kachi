@@ -411,6 +411,8 @@
     <string name="kachi_sub_bubble">VietMap气泡</string>
     <string name="kachi_bubble_enabled_title">在仪表上显示VietMap气泡</string>
     <string name="kachi_bubble_enabled_sub">由修改版VietMap绘制的逐向导航小窗。</string>
+    <string name="kachi_bubble_autostart_title">为气泡自动打开VietMap</string>
+    <string name="kachi_bubble_autostart_sub">车辆启动或打开Kachi时在后台打开VietMap，让气泡在仪表上随时可用。关闭时，气泡只在VietMap运行时显示。</string>
     <string name="kachi_bubble_need_cast">只有在仪表投屏时位置才会移动——设置仍会保存，但仪表暂不会跟随。</string>
     <string name="kachi_bubble_need_toggle">打开上方的气泡开关即可调整位置。</string>
     <string name="kachi_bubble_pos_x">气泡位置——横向</string>
@@ -430,7 +432,7 @@
     <string name="kachi_cast_style_label">仪表投屏样式</string>
     <string name="kachi_cast_style_curved">圆角</string>
     <string name="kachi_cast_style_rect">矩形</string>
-    <string name="kachi_cast_style_rect_note">矩形：右侧白色ADAS框是仪表的固定界面——菜单键只缩小车辆/道路画面，框仍然在。仪表会失去原车km/h（HUD、地图和VietMap悬浮球仍显示车速）。应用画面默认占满整个仪表——可在下方“画面”中自行调整位置、大小和DPI。</string>
+    <string name="kachi_cast_style_rect_note">矩形：此样式下右侧白色ADAS面板由车辆固件固定绘制，无法缩小（菜单键只切换框内画面，面板仍在）。想要小的ADAS窗口，请选择圆角——在圆角样式下菜单键可以缩小它。仪表会失去原车km/h（HUD、地图和VietMap悬浮球仍显示车速）。应用画面默认占满整个仪表——可在下方“画面”中自行调整位置、大小和DPI。</string>
     <string name="kachi_cast_style_apply_note">在仪表空闲（仪表上没有应用、没有窗口）时，于下一次打开投屏时生效。投屏期间不会向仪表发送任何指令。</string>
     <string name="kachi_cast_style_session">仪表当前：%1$s。新样式将在下次上电或仪表空闲时生效。</string>
     <string name="kachi_cast_style_unknown">样式未知</string>

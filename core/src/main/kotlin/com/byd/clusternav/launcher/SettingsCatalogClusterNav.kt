@@ -61,7 +61,7 @@ internal object SettingsCatalogClusterNav {
             "badge_enabled", "show_upcoming_badge", "show_alert_chip", "badge_size_dp",
             "badge_center_x", "badge_center_y",
             "vm_bubble_enabled", "vm_bubble_x", "vm_bubble_y",
-            // 2.90 · R8 — cờ "người lái CHỦ ĐỘNG ẩn bóng" (ghi cùng lượt với `vm_bubble_enabled`, xem [COMPANION_KEYS]).
+            // 2.90 · R8 — cờ "người lái CHỦ ĐỘNG ẩn bóng"; 2.91 · F1: chủ là công tắc hiện bóng (mục `vm_bubble_enabled`).
             "vm_bubble_hidden",
             "voicekey_enabled", "voicekey_bindings", "voicekey_custom_buttons", "voicekey_learn",
             "seat_comfort_enabled", "seat_comfort_mode", "seat_level_0",
@@ -123,9 +123,8 @@ internal object SettingsCatalogClusterNav {
     val COMPANION_KEYS: Map<String, String> = mapOf(
         "badge_center_y" to "badge_center",
         "vm_bubble_y" to "vm_bubble_pos",
-        // 2.90 · R8 — công tắc bóng VietMap ghi CẶP: `vm_bubble_enabled` (tự mở VietMap, nghĩa cũ) + `vm_bubble_hidden`
-        // (TẮT ⇒ true ⇒ gửi `VM_BUBBLE_VIS show=false`). Mặc định false ⇒ người chưa từng bật công tắc vẫn thấy bóng như trước 2.90.
-        "vm_bubble_hidden" to "vm_bubble_enabled",
+        // 2.91 · F1 — `vm_bubble_hidden` KHÔNG còn đi kèm: nó có mục riêng (công tắc hiện bóng), `vm_bubble_enabled` có mục
+        // "Tự mở VietMap cho bong bóng" (SettingsCatalogEntries). Hai khái niệm, hai hàng — không còn một công tắc ghi cặp.
         // S4-SEAT (owner 2026-09-23): 3 ghế còn lại đi kèm ghế lái. `Prefs.setSeatComfortLevel` ghi
         // `"seat_level_$seatIndex"` cho 4 ghế trong MỘT hàm; chỉ `seat_level_0` được khai trong CLUSTERNAV_KEYS nên
         // ProfileScope (sinh từ bảng đó) chỉ phủ ghế lái ⇒ đổi hồ sơ, 3 ghế kia giữ mức người trước. Khai đi-kèm để

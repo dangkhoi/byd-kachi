@@ -3,6 +3,7 @@ package com.byd.clusternav
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
+import com.byd.clusternav.carexec.WakeEpochPolicy
 import com.byd.clusternav.launcher.KachiPerf
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -25,9 +26,6 @@ internal object KachiReadyLog {
 
     const val TAG = "KachiReady"
 
-    /** Hai tín hiệu màn bật cách nhau dưới chừng này là CÙNG một lần thức (xem [wake]). */
-    private const val SAME_WAKE_MS = 10_000L
-
     /** Mỗi bên gọi bị chặn chỉ in một dòng `deny` mỗi chừng này (bộ đếm vẫn đếm hết). */
     private const val DENY_LOG_GAP_MS = 30_000L
 
@@ -37,6 +35,8 @@ internal object KachiReadyLog {
 
     private val procStart: Long = runCatching { Process.getStartElapsedRealtime() }.getOrDefault(SystemClock.elapsedRealtime())
     private val screenOnAt = AtomicLong(-1L)
+    /** 2.91 · F3 — lần màn TẮT gần nhất (`ACTION_SCREEN_OFF`); một lần tắt chen giữa ⇒ tín hiệu bật kế là lần thức MỚI. */
+    private val screenOffAt = AtomicLong(-1L)
     /** Lần THỨC đầu tiên của tiến trình (không bị lần thức sau ghi đè) — hạn chuyến lên xe tính từ đây (spec shortcuts R2.3). */
     private val firstScreenOnAt = AtomicLong(-1L)
     private val upAt = AtomicLong(-1L)
@@ -56,19 +56,25 @@ internal object KachiReadyLog {
 
     /**
      * Mốc MÀN BẬT của lần thức này = tín hiệu SỚM NHẤT trong hai: `ACTION_SCREEN_ON` hoặc HOME hiện lại lúc màn tương
-     * tác (`adopt`). Hai tín hiệu cách nhau < [SAME_WAKE_MS] là cùng một lần thức. Vì sao cần cả hai: [ĐO xe c2 29/09]
+     * tác (`adopt`). Hai tín hiệu cách nhau < `WakeEpochPolicy.SAME_WAKE_MS` mà màn KHÔNG tắt giữa chừng là cùng một lần thức
+     * (2.91 · F3: luật ở [WakeEpochPolicy.isNewWake] — trước 2.91 một lượt tắt-bật nhanh bị gộp vào lần thức cũ). Vì sao cần cả hai: [ĐO xe c2 29/09]
      * `on_restart` của HOME 11:34:13.153 đi TRƯỚC `power_screen_state` 11:34:14.236; [ĐO máy ảo 01/10] `home adopt`
      * 23:53:30.034 đi trước `screen_on` 23:53:30.444 — đo từ broadcast là đo hụt phần đầu.
      */
     fun wake(at: Long, src: String) {
-        val cur = screenOnAt.get()
-        if (cur >= 0 && at >= cur && at - cur < SAME_WAKE_MS) return
+        if (!WakeEpochPolicy.isNewWake(screenOnAt.get(), screenOffAt.get(), at)) return
         screenOnAt.set(at)
         firstScreenOnAt.compareAndSet(-1L, at)
         line("screen_on src=$src")
     }
 
     fun lastScreenOnAt(): Long = screenOnAt.get()
+
+    /** 2.91 · F3 — màn vừa TẮT (`ACTION_SCREEN_OFF`, `EarlyShellChannel`): chỉ ghi mốc, lần bật kế mở lần thức mới. */
+    fun screenOff(at: Long) {
+        screenOffAt.set(at)
+        line("screen_off")
+    }
 
     /** Mốc thức đầu tiên của tiến trình; `-1` = chưa thức lần nào (tiến trình bật lúc màn tắt và màn chưa bật lại). */
     fun firstWakeAt(): Long = firstScreenOnAt.get()

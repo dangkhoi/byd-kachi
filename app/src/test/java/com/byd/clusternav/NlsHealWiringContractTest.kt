@@ -42,7 +42,7 @@ class NlsHealWiringContractTest {
 
     @Test
     fun `chuoi SAN goi NlsHeal sau cong man sang va truoc chuyen len xe`() {
-        order(body(early, "private fun readyChain("), "interactive(app) != true", "NlsHeal.onReady(app)", "TripStart.onReady(app)")
+        order(body(early, "private fun readyChain("), "WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))", "NlsHeal.onReady(app)", "TripStart.onReady(app)")
     }
 
     @Test

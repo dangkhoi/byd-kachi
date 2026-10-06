@@ -495,6 +495,8 @@
     <string name="kachi_sub_bubble">VietMap bubble</string>
     <string name="kachi_bubble_enabled_title">Show the VietMap bubble on the cluster</string>
     <string name="kachi_bubble_enabled_sub">The small turn-by-turn box drawn by the modified VietMap build.</string>
+    <string name="kachi_bubble_autostart_title">Auto-open VietMap for the bubble</string>
+    <string name="kachi_bubble_autostart_sub">Start VietMap in the background when the car starts or Kachi opens, so the bubble is ready on the cluster. Off: the bubble only shows while VietMap is running.</string>
     <string name="kachi_bubble_need_cast">The position only moves while the cluster is casting — it is still saved, but the cluster will not follow yet.</string>
     <string name="kachi_bubble_need_toggle">Turn on the bubble switch above to adjust the position.</string>
     <string name="kachi_bubble_pos_x">Bubble position — across</string>
@@ -517,7 +519,7 @@
     <string name="kachi_cast_style_label">Cluster cast style</string>
     <string name="kachi_cast_style_curved">Rounded</string>
     <string name="kachi_cast_style_rect">Rectangle</string>
-    <string name="kachi_cast_style_rect_note">Rectangle: the white ADAS frame on the right is fixed cluster UI — the menu key only shrinks the car/road picture, the frame stays. The cluster loses its own km/h (the HUD, maps and the VietMap bubble still show speed). The app frame defaults to the whole cluster — adjust position, size and DPI in the Frame and DPI section below.</string>
+    <string name="kachi_cast_style_rect_note">Rectangle: in this style the white ADAS panel on the right is drawn by the car\'s own firmware and cannot be shrunk (the menu key only changes the picture inside, the panel stays). For a small ADAS window, choose Rounded — the menu key shrinks it there. The cluster loses its own km/h (the HUD, maps and the VietMap bubble still show speed). The app frame defaults to the whole cluster — adjust position, size and DPI in the Frame and DPI section below.</string>
     <string name="kachi_cast_style_apply_note">Applies at the next cast open while the cluster is empty (no app, no window on the cluster). Nothing is sent to the cluster while casting.</string>
     <string name="kachi_cast_style_session">Cluster now: %1$s. The new style applies at the next ignition or when the cluster is empty.</string>
     <string name="kachi_cast_style_unknown">unknown style</string>

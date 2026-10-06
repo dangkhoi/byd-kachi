@@ -411,6 +411,8 @@
     <string name="kachi_sub_bubble">Gelembung VietMap</string>
     <string name="kachi_bubble_enabled_title">Tunjukkan gelembung VietMap pada panel instrumen</string>
     <string name="kachi_bubble_enabled_sub">Kotak kecil panduan selekoh demi selekoh yang dilukis oleh versi VietMap yang diubah suai.</string>
+    <string name="kachi_bubble_autostart_title">Buka VietMap secara automatik untuk gelembung</string>
+    <string name="kachi_bubble_autostart_sub">Mulakan VietMap di latar belakang apabila kereta dihidupkan atau Kachi dibuka, supaya gelembung sedia pada panel instrumen. Mati: gelembung hanya muncul semasa VietMap berjalan.</string>
     <string name="kachi_bubble_need_cast">Kedudukan hanya berubah semasa panel instrumen memancar — ia tetap disimpan, tetapi panel instrumen belum akan mengikutinya.</string>
     <string name="kachi_bubble_need_toggle">Hidupkan suis gelembung di atas untuk melaras kedudukan.</string>
     <string name="kachi_bubble_pos_x">Kedudukan gelembung — melintang</string>
@@ -430,7 +432,7 @@
     <string name="kachi_cast_style_label">Gaya pancaran kluster</string>
     <string name="kachi_cast_style_curved">Bucu bulat</string>
     <string name="kachi_cast_style_rect">Segi empat</string>
-    <string name="kachi_cast_style_rect_note">Segi empat: bingkai ADAS putih di kanan ialah paparan tetap kluster — kekunci menu hanya mengecilkan gambar kereta/jalan, bingkai kekal. Kluster kehilangan km/h asalnya (HUD, peta dan gelembung VietMap masih menunjukkan kelajuan). Bingkai apl lalai memenuhi seluruh kluster — laraskan kedudukan, saiz dan DPI sendiri di bahagian Bingkai di bawah.</string>
+    <string name="kachi_cast_style_rect_note">Segi empat: dalam gaya ini panel ADAS putih di kanan dilukis tetap oleh perisian tegar kereta dan tidak boleh dikecilkan (kekunci menu hanya menukar gambar di dalamnya, panel kekal). Untuk tetingkap ADAS kecil, pilih Bucu bulat — di situ kekunci menu boleh mengecilkannya. Kluster kehilangan km/h asalnya (HUD, peta dan gelembung VietMap masih menunjukkan kelajuan). Bingkai apl lalai memenuhi seluruh kluster — laraskan kedudukan, saiz dan DPI sendiri di bahagian Bingkai di bawah.</string>
     <string name="kachi_cast_style_apply_note">Berkuat kuasa pada pembukaan pancaran seterusnya ketika kluster kosong (tiada apl, tiada tetingkap pada kluster). Tiada arahan dihantar ke kluster semasa memancar.</string>
     <string name="kachi_cast_style_session">Kluster kini: %1$s. Gaya baharu berkuat kuasa pada penghidupan enjin seterusnya atau apabila kluster kosong.</string>
     <string name="kachi_cast_style_unknown">gaya tidak diketahui</string>

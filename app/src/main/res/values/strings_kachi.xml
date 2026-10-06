@@ -511,6 +511,8 @@
     <string name="kachi_sub_bubble">Bong bóng VietMap</string>
     <string name="kachi_bubble_enabled_title">Hiện bong bóng VietMap trên cụm</string>
     <string name="kachi_bubble_enabled_sub">Ô chỉ đường thu nhỏ do bản VietMap sửa đổi vẽ.</string>
+    <string name="kachi_bubble_autostart_title">Tự mở VietMap cho bong bóng</string>
+    <string name="kachi_bubble_autostart_sub">Nổ máy hoặc mở Kachi thì mở VietMap chạy nền để bóng có sẵn trên cụm. Tắt thì bóng chỉ hiện khi VietMap đang chạy.</string>
     <string name="kachi_bubble_need_cast">Chỉ đổi được chỗ khi cụm đang chiếu — chưa chiếu thì giá trị vẫn lưu, nhưng cụm chưa đổi theo.</string>
     <string name="kachi_bubble_need_toggle">Bật công tắc bong bóng ở trên để chỉnh vị trí.</string>
     <string name="kachi_bubble_pos_x">Vị trí bong bóng — ngang</string>
@@ -534,7 +536,7 @@
     <string name="kachi_cast_style_label">Kiểu chiếu cụm</string>
     <string name="kachi_cast_style_curved">Bo tròn</string>
     <string name="kachi_cast_style_rect">Chữ nhật</string>
-    <string name="kachi_cast_style_rect_note">Chữ nhật: khung ADAS trắng bên phải là giao diện cố định của cụm — phím menu chỉ thu nhỏ hình xe/đường, khung vẫn còn. Cụm mất số km/h gốc (HUD, bản đồ và bóng VietMap vẫn có tốc độ). Khung app mặc định trọn cụm — tự chỉnh vị trí, kích thước, DPI ở mục \"Khung và DPI\" bên dưới.</string>
+    <string name="kachi_cast_style_rect_note">Chữ nhật: ở kiểu này khung ADAS trắng bên phải do phần mềm của xe vẽ cố định — không thu nhỏ được (phím menu chỉ đổi hình bên trong, khung vẫn còn). Muốn ô ADAS nhỏ thì chọn Bo tròn — ở kiểu đó phím menu thu nhỏ được. Cụm mất số km/h gốc (HUD, bản đồ và bóng VietMap vẫn có tốc độ). Khung app mặc định trọn cụm — tự chỉnh vị trí, kích thước, DPI ở mục \"Khung và DPI\" bên dưới.</string>
     <string name="kachi_cast_style_apply_note">Áp dụng ở lượt mở chiếu kế tiếp khi cụm trống (không app, không cửa sổ nào trên cụm). Không gửi lệnh nào tới cụm khi đang chiếu.</string>
     <string name="kachi_cast_style_session">Cụm đang: %1$s. Kiểu mới áp ở lần nổ máy sau hoặc khi cụm trống.</string>
     <string name="kachi_cast_style_unknown">chưa rõ kiểu</string>

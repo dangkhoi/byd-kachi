@@ -53,7 +53,8 @@ fun Prefs.setVmBubbleEnabled(ctx: Context, v: Boolean) = sp(ctx).edit().putBoole
 
 // 2.90 · R8 (review an toàn hiện trường) — người lái CHỦ ĐỘNG ẩn bóng VietMap trên cụm. MẶC ĐỊNH false: trước 2.90 bản mod
 // LUÔN hiện bóng, còn `vm_bubble_enabled` mặc định TẮT (nghĩa của nó vẫn là "tự mở VietMap") ⇒ suy "ẩn" từ nó sẽ gỡ bóng của
-// mọi người chưa từng bật công tắc sau khi nâng cấp. Chỉ [ClusterNavBridge.setVmBubbleEnabled] ghi cờ này (cùng lượt, TẮT ⇒ true).
+// mọi người chưa từng bật công tắc sau khi nâng cấp. Chỉ [ClusterNavBridge.setVmBubbleShown] ghi cờ này (2.91 · F1: công tắc hiện
+// bóng đọc/ghi CHÍNH cờ này; `vm_bubble_enabled` có hàng riêng "Tự mở VietMap cho bong bóng").
 private const val K_VM_BUBBLE_HIDDEN = "vm_bubble_hidden"
 fun Prefs.vmBubbleHidden(ctx: Context): Boolean = sp(ctx).getBoolean(K_VM_BUBBLE_HIDDEN, false)
 fun Prefs.setVmBubbleHidden(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean(K_VM_BUBBLE_HIDDEN, v).apply()

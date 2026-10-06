@@ -129,7 +129,7 @@ class ReadyAtHomeWiringContractTest {
             assertFalse(keyReady.contains(it), "không có đường chữa thứ hai ('$it') — DRY, dùng lại 2.83")
         }
         val chain = SourceRoots.body(early, "private fun readyChain(")
-        order(chain, "interactive(app) != true", "KeyReady.prepare(app)", "VoiceKeyKeepAliveService.sync(app)")
+        order(chain, "WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))", "KeyReady.prepare(app)", "VoiceKeyKeepAliveService.sync(app)")
     }
 
     // ── Review lượt 1 (02/10) — mỗi bài khoá một lỗi E2E/review đã thấy ─────────────────────────────────────

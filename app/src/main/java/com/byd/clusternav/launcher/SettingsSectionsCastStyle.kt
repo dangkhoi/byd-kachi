@@ -18,9 +18,12 @@ import com.byd.clusternav.modules.clustercast.simplified.CastStyle
  *     D4. Theme cụm KHÔNG BAO GIỜ được gửi từ màn này.
  *  2. **Cụm đang ở kiểu nào** khi phiên đang chạy khác lựa chọn (vd chọn Chữ nhật lúc đang chiếu Bo tròn) — đọc kiểu của
  *     PHIÊN (`castStyleSession`), không đọc lựa chọn.
- *  3. **Chữ nhật mất gì**: khung ADAS trắng bên phải là giao diện CỐ ĐỊNH của cụm ở kiểu này — phím menu chỉ đổi ADAS sang nhỏ,
- *     khung vẫn còn [ĐO QML fw 2602030 + owner trên xe 05/10 + 06/10]; số km/h gốc mất — 2.90 · R3: Kachi KHÔNG vẽ thay (HUD,
- *     bản đồ, bóng VietMap đều có tốc độ — owner 06/10). Khung app mặc định trọn cụm, người lái tự chỉnh (R4).
+ *  3. **Chữ nhật mất gì**: khung ADAS trắng bên phải là ảnh CỐ ĐỊNH của firmware ở kiểu này — hiện khi `adasInterfaceDisplay !== 0`,
+ *     mà xe bật máy thì giá trị luôn là 1 hoặc 2; phím menu vô-lăng chỉ đổi 1→2 (hình bên trong), không gỡ khung [ĐO nguồn QML +
+ *     disasm fw 2506030/2511080/2602030 · ĐO xe 06/10, `docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md`]; phía Android
+ *     không có opcode/HAL nào đặt về 0. ⇒ 2.91 · F4: câu nhắc nói thẳng "không thu nhỏ được" và chỉ đường thật: muốn ô ADAS
+ *     nhỏ thì chọn Bo tròn (phím menu thu nhỏ được ở đó). Số km/h gốc mất — 2.90 · R3: Kachi KHÔNG vẽ thay (HUD, bản đồ, bóng
+ *     VietMap đều có tốc độ — owner 06/10). Khung app mặc định trọn cụm, người lái tự chỉnh (R4).
  *  4. 2.90 — **vì sao chưa đổi được kiểu** (bóng nổi VietMap trên cụm ⇒ "tắt bóng VietMap rồi Áp ngay") và **cụm chưa rõ kiểu ⇒
  *     khung trọn cụm**.
  *

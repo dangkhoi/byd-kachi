@@ -146,7 +146,9 @@ class LangCoverageTest {
         // *"Cluster cast style"* (Bo tròn / Chữ nhật, khoá `cast_style` theo hồ sơ).
         // 2.89 · B3 DOCK-SCALE (owner 05/10, spec kachi-289-field-fixes B3): **81 → 82 (+1)** = `display_bar_scale` *"Cỡ thanh
         // nút xe"* / *"Car bar size"* (khoá `dock_scale` theo hồ sơ).
-        assertEquals(82, SettingsCatalog.ENTRIES.size)
+        // 2.91 · F1 (spec kachi-291-small-fixes §4.1): **82 → 83 (+1)** = `vm_bubble_autostart` *"Tự mở VietMap cho bong bóng"* /
+        // *"Auto-open VietMap for the bubble"* — tách nghĩa cũ của `vm_bubble_enabled` khỏi công tắc hiện bóng.
+        assertEquals(83, SettingsCatalog.ENTRIES.size)
         val badGroups = SettingsCatalog.GROUPS.filter { it.labelEn.isBlank() || it.subEn.isBlank() }.map { it.id }
         assertTrue(badGroups.isEmpty(), "nhóm cài đặt thiếu labelEn/subEn: $badGroups")
         val badEntries = SettingsCatalog.ENTRIES.filter { it.labelEn.isNullOrBlank() }.map { it.id }
@@ -249,7 +251,9 @@ class LangCoverageTest {
         // EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
         // 2.89 · B3 (2026-10-05): **261 → 262 (+1)** = mục Cài đặt `display_bar_scale` ("Cỡ thanh nút xe" / "Car bar size"),
         // EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
-        assertEquals(262, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
+        // 2.91 · F1 (2026-10-06): **262 → 263 (+1)** = mục Cài đặt `vm_bubble_autostart` ("Tự mở VietMap cho bong bóng" /
+        // "Auto-open VietMap for the bubble"), EN tại chỗ khai + dòng zh/th/ms trong `i18n/*.tsv`.
+        assertEquals(263, all.size, "số nhãn đổi — thêm mã mới thì phải dịch, rồi mới ghim số mới")
         val missing = all.filter { it.labelEn.isNullOrBlank() }.map { it.label }
         assertTrue(missing.isEmpty(), "còn nhãn chưa có bản EN: $missing")
     }

@@ -50,7 +50,7 @@ class TripWiringContractTest {
     @Test
     fun `chuyen chi vao tu dong CUOI chuoi SAN, dung mot loi goi, sau kiem phim va keep-alive`() {
         val chain = SourceRoots.body(early, "private fun readyChain(")
-        order(chain, "interactive(app) != true", "BehindHomeRecovery.onReady(app)", "KeyReady.prepare(app)",
+        order(chain, "WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))", "BehindHomeRecovery.onReady(app)", "KeyReady.prepare(app)",
             "VoiceKeyKeepAliveService.sync(app)", "TripStart.onReady(app)")
         assertTrue(chain.trimEnd().removeSuffix("}").trimEnd().endsWith("TripStart.onReady(app)"), "phải là dòng CUỐI thân:\n$chain")
         val everywhere = SourceRoots.moduleSourceRoots().flatMap { root ->

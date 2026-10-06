@@ -332,11 +332,17 @@ class SettingsNavSection(
      */
     private fun bubble(body: LinearLayout) {
         body.addView(rows.subHeader(context.getString(R.string.kachi_sub_bubble)))
+        // 2.91 · F1 — công tắc = bóng có HIỆN trên cụm không (`!vm_bubble_hidden`, sự thật bản mod theo); tự mở VietMap là hàng riêng.
         body.addView(rows.checkRow(
-            on = bridge.vmBubbleEnabled(),
+            on = bridge.vmBubbleShown(),
             title = context.getString(R.string.kachi_bubble_enabled_title),
             sub = context.getString(R.string.kachi_bubble_enabled_sub),
-        ) { on -> bridge.setVmBubbleEnabled(on); applyBubbleGate() })
+        ) { on -> bridge.setVmBubbleShown(on); applyBubbleGate() })
+        body.addView(rows.checkRow(
+            on = bridge.vmBubbleAutostart(),
+            title = context.getString(R.string.kachi_bubble_autostart_title),
+            sub = context.getString(R.string.kachi_bubble_autostart_sub),
+        ) { on -> bridge.setVmBubbleAutostart(on) })
 
         val (bx, by) = bridge.vmBubblePos()
         bubbleX = rows.stepperRow(
@@ -386,7 +392,7 @@ class SettingsNavSection(
      * [VmBubblePlacementView.onTouchEvent] thì tự chặn theo `isEnabled` nên đặt thẳng lên nó là đủ.
      */
     private fun applyBubbleGate() {
-        val enabled = bridge.vmBubbleEnabled()
+        val enabled = bridge.vmBubbleShown()
         val adjustable = bridge.vmBubbleAdjustable()
         val alpha = if (adjustable) 1f else GATE_ALPHA
         listOf(bubbleX, bubbleY).forEach { s ->

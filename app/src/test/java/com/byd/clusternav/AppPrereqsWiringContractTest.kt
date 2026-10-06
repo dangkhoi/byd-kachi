@@ -55,7 +55,7 @@ class AppPrereqsWiringContractTest {
 
     @Test
     fun `chuoi SAN goi AppPrereqs sau cong man sang va truoc chuyen len xe`() {
-        order(SourceRoots.body(early, "private fun readyChain("), "interactive(app) != true", "AppPrereqs.onReady(app)", "TripStart.onReady(app)")
+        order(SourceRoots.body(early, "private fun readyChain("), "WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))", "AppPrereqs.onReady(app)", "TripStart.onReady(app)")
         assertEquals(1, Regex(Regex.escape("AppPrereqs.onReady(")).findAll(early).count())
     }
 

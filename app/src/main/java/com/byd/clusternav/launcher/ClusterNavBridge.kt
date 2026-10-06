@@ -22,6 +22,7 @@ import com.byd.clusternav.setBadgeCenterY
 import com.byd.clusternav.vmBubbleEnabled
 import com.byd.clusternav.setVmBubbleEnabled
 import com.byd.clusternav.setVmBubbleHidden
+import com.byd.clusternav.vmBubbleHidden
 import com.byd.clusternav.ThemeMode
 import com.byd.clusternav.VietMapAutostartService
 import com.byd.clusternav.VmOverlayPosition
@@ -347,18 +348,27 @@ class ClusterNavBridge(
 
     // ── Bong bóng VietMap trên cụm — lặp lại MainActivity.kt:1086–1116 ───────────────────────────
 
-    /** `MainActivity.kt:1090`. */
-    fun vmBubbleEnabled(): Boolean = Prefs.vmBubbleEnabled(app)
-
     /**
-     * Lặp lại `MainActivity.kt:1091–1095`: persist rồi — khi BẬT — auto-start VietMap một lần (giống hành vi badge tốc độ).
-     * 2.90 · R8: gửi NGAY `VM_BUBBLE_VIS` theo công tắc (TẮT ⇒ bản mod gỡ bóng khỏi cụm thật; BẬT ⇒ hiện lại) — trước đây TẮT không làm gì.
-     * Cờ "ẩn" là `vm_bubble_hidden` (mặc định false ⇒ người chưa từng chạm công tắc vẫn thấy bóng như trước 2.90), CHỈ ghi ở đây.
+     * 2.91 · F1 (spec `kachi-291-small-fixes.html` §4.1) — công tắc "Hiện bong bóng VietMap trên cụm" phản ánh SỰ THẬT của
+     * bóng: bản mod hiện bóng trừ khi người lái đã ẩn (`vm_bubble_hidden`, mặc định false). Trước 2.91 hàng này đọc
+     * `vm_bubble_enabled` (tự mở VietMap, mặc định TẮT) ⇒ người chưa từng chạm thấy "tắt" trong khi bóng đang hiện.
      */
-    fun setVmBubbleEnabled(on: Boolean) {
-        Prefs.setVmBubbleEnabled(app, on)
+    fun vmBubbleShown(): Boolean = !Prefs.vmBubbleHidden(app)
+
+    /** Ghi cờ ẩn rồi gửi NGAY `VM_BUBBLE_VIS` (TẮT ⇒ bản mod gỡ bóng; BẬT ⇒ hiện lại). Không đổi việc tự mở VietMap. */
+    fun setVmBubbleShown(on: Boolean) {
         Prefs.setVmBubbleHidden(app, !on)
         com.byd.clusternav.VmBubbleVisibility.apply(app, "toggle=$on", force = true)
+    }
+
+    /**
+     * Hàng riêng "Tự mở VietMap cho bong bóng" — đúng nghĩa CŨ của `vm_bubble_enabled` (`MainActivity.kt:1090–1095`): nổ máy /
+     * mở Kachi ⇒ mở VietMap chạy nền để bóng sẵn (+ điều kiện nền `AppPrereqPlan` Role.BUBBLE). BẬT ⇒ tự mở MỘT lần ngay.
+     */
+    fun vmBubbleAutostart(): Boolean = Prefs.vmBubbleEnabled(app)
+
+    fun setVmBubbleAutostart(on: Boolean) {
+        Prefs.setVmBubbleEnabled(app, on)
         if (on) VietMapAutostartService.startForAppOpen(app)
     }
 
@@ -372,7 +382,7 @@ class ClusterNavBridge(
     fun setVmBubblePos(absX: Int, absY: Int) = VmOverlayPosition.setAbsoluteTopLeft(app, absX, absY)
 
     /** Cụm đã "live" chưa (điều kiện chỉnh vị trí bong bóng) — `MainActivity.kt:1131`. */
-    fun vmBubbleAdjustable(): Boolean = Prefs.vmBubbleEnabled(app) && VmOverlayPosition.castOn(app)
+    fun vmBubbleAdjustable(): Boolean = vmBubbleShown() && VmOverlayPosition.castOn(app)
 
     /**
      * Khung (W×H) và cỡ bong bóng (W×H) mà bộ kéo-thả PHẢI dùng — lặp lại `MainActivity.kt:1096–1100`.

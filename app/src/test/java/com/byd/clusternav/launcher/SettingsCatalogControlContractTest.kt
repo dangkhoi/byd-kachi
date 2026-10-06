@@ -121,7 +121,9 @@ class SettingsCatalogControlContractTest {
             "badge_alert_chip" to ("SettingsSectionsNav" to "bridge.setAlertChip("),
             "badge_size" to ("SettingsSectionsNav" to "bridge.setBadgeSizeDp("),
             "badge_center" to ("SettingsSectionsNav" to "bridge.setBadgeCenter("),
-            "vm_bubble_enabled" to ("SettingsSectionsNav" to "bridge.setVmBubbleEnabled("),
+            // 2.91 · F1 — mã mục giữ, công tắc nay ghi cờ HIỆN bóng; tự mở VietMap là mục riêng.
+            "vm_bubble_enabled" to ("SettingsSectionsNav" to "bridge.setVmBubbleShown("),
+            "vm_bubble_autostart" to ("SettingsSectionsNav" to "bridge.setVmBubbleAutostart("),
             "vm_bubble_pos" to ("SettingsSectionsNav" to "bridge.setVmBubblePos("),
             // Sổ địa chỉ (docs/specs/kachi-voice-addresses.html) — cùng nhóm NAV nhưng ở **tệp section riêng**:
             // `SettingsSectionsNav` đã 409 dòng, và hai khối không liên quan nhau (một bên là cấu hình cụm đọc

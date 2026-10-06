@@ -809,3 +809,5 @@ Cổng theme (chỉ đọc)	Theme gate (read-only)	ด่านธีมหน�
 Cổng theme: đã đọc (không gửi lệnh nào)	Theme gate: read (no command sent)	ด่านธีมหน้าปัด: อ่านแล้ว (ไม่ได้ส่งคำสั่งใด)
 # B3 DOCK-SCALE (2.89) — mục Cài đặt › Hiển thị "Cỡ thanh nút xe" (khoá dock_scale).
 Cỡ thanh nút xe	Car bar size	ขนาดแถบปุ่มรถ
+# 2.91 · F1 — mục Cài đặt › Dẫn đường "Tự mở VietMap cho bong bóng" (khoá vm_bubble_enabled, nghĩa cũ: tự mở VietMap).
+Tự mở VietMap cho bong bóng	Auto-open VietMap for the bubble	เปิด VietMap อัตโนมัติสำหรับบับเบิล

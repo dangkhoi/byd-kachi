@@ -70,8 +70,8 @@ class VdAppHost(
     private var pkg: String? = null
     private var shell: ((String) -> String)? = null
     private var launched = false
-    // Ô 7 (2.89-thử1, spec 287 §4.6d): tên màn ảo (khoá [SlotVdOwner] khi đỗ) · cỡ màn ảo bị GHIM (nhận lại từ ô 7 khác cỡ ô).
-    private var vdName: String? = null; private var pinned = false
+    // Ô 7 (2.89-thử1, spec 287 §4.6d): tên màn ảo (khoá [SlotVdOwner] khi đỗ).
+    private var vdName: String? = null
 
     /**
      * Đã nhả màn ảo chưa ⇒ mọi lời gọi [release] sau là no-op (một ô bị thay có thể gọi [release] rồi mới tháo
@@ -115,9 +115,9 @@ class VdAppHost(
                     // Đã nhả ⇒ host này là rác đang chờ tháo: KHÔNG được tạo màn ảo mới (đó đúng là cách một ô
                     // "đã đóng" lại mọc thêm một `kachi-slot-*` không ai cầm).
                     if (released) return
-                    // ô 7 · C · PARK-1: app ĐỖ ⇒ mặt vẽ về cỡ màn ảo đỗ TRƯỚC (chờ lượt sau), đúng cỡ mới lấy ra + gắn, không tạo mới
-                    val c = ParkedApps.claim(this@VdAppHost, surface, pkg, owner, slot, w, ht, pinned); pinned = c.pinned
-                    if (c.parked != null) unpark(c.parked); if (c.wait || c.parked != null) return
+                    // ô 7 · C · 2.91 F2: app ĐỖ ⇒ lấy ra + gắn màn ảo đỗ (không tạo mới); khác cỡ ô ⇒ đổi cỡ theo ô qua đường DUY NHẤT [resize]
+                    val c = ParkedApps.claim(surface, pkg, owner, slot, w, ht)
+                    if (c != null) { unpark(c.parked); if (c.resize) resize(w, ht); return }
                     val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
                     // 8 = OWN_CONTENT_ONLY (chỉ hiện app đặt lên VD, KHÔNG mirror display 0 → hết "gương đệ quy")
                     // 256 = DESTROY_CONTENT_ON_REMOVAL (dọn khi gỡ). Shell mở app lên VD vẫn được.
@@ -173,7 +173,7 @@ class VdAppHost(
      * đổi cấu hình vào app đang chạy trong ô).
      */
     fun resize(w: Int, h: Int) {
-        if (w <= 0 || h <= 0 || pinned) return   // ô 7: màn ảo nhận lại khác cỡ ô GIỮ cỡ (đổi cỡ = relaunch, §4.6d)
+        if (w <= 0 || h <= 0) return
         if (w == dispW && h == dispH) return
         val v = vd ?: return
         Log.i(TAG, "[slot-resize] ô $slot ${dispW}x$dispH → ${w}x$h")
@@ -361,7 +361,7 @@ class VdAppHost(
         return true
     }
 
-    /** Ô 7 · C — màn ảo đỗ [p] ĐÃ gắn ([ParkedApps.claim]): KHÔNG `force-stop`/`am start`/đổi cỡ; app đã rời nó ⇒ mở như thường. */
+    /** Ô 7 · C — màn ảo đỗ [p] ĐÃ gắn ([ParkedApps.claim]): KHÔNG `force-stop`/`am start` (đổi cỡ, nếu cần, do bên gọi qua [resize]); app đã rời nó ⇒ mở như thường. */
     private fun unpark(p: ParkedApps.Parked) {
         vd = p.lease.vd; vdDisplayId = p.lease.displayId; vdName = p.name; dispW = p.width; dispH = p.height; launched = true
         shell?.let { sh -> SlotLiveProbe.watch(probeKey, p.pkg, p.lease.displayId, sh, onMissing = ::reopen) { onAppClosed() } }

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kachi 2.91 sửa nhỏ</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--muted:#6e6e73;--line:#e5e5ea;--card:#f5f5f7;--accent:#0071e3;--warn:#bf5f00;--ok:#1a7f37;--code:#f2f2f7}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f7;--muted:#98989d;--line:#2c2c2e;--card:#1c1c1e;--accent:#2997ff;--warn:#ff9f0a;--ok:#30d158;--code:#1c1c1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 24px 120px}
+h1{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+h2{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:650;margin:24px 0 8px}
+p,li{font-size:15.5px}.muted{color:var(--muted)}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,monospace;font-size:13.5px}
+pre{background:var(--code);padding:14px 16px;border-radius:10px;overflow:auto;font-family:"SF Mono",ui-monospace,monospace;font-size:13px;line-height:1.5}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line)}
+.pill.wait{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.block{background:rgba(191,95,0,.12);color:var(--warn);border-color:transparent}
+.pill.ok{background:rgba(26,127,55,.12);color:var(--ok);border-color:transparent}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+ul{padding-left:22px}li{margin:3px 0}
+.tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--accent);color:#fff;margin-right:6px}
+.tag.p1{background:var(--warn)}.tag.p2{background:#8e8e93}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;background:var(--bg)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+
+/* ---- Diagram helpers (workflow.md §3.1): inline SVG hoặc box-and-arrow. Dark-mode qua CSS var. ---- */
+.diagram{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0;text-align:center}
+.diagram svg{max-width:100%;height:auto}
+/* layered stack: .layers > .layer > .node */
+.layers{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.layer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;justify-content:center}
+.layer .node{flex:1 1 140px;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center;font-size:13.5px}
+.layer .node b{display:block;font-size:14px}
+.layer .node span{color:var(--muted);font-size:12px}
+/* horizontal flow: .flow > .fnode (+ .arrow between) */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.fnode{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;font-size:13.5px;min-width:110px}
+.fnode b{display:block;font-size:14px}.fnode span{color:var(--muted);font-size:12px}
+.flow .arrow{color:var(--accent);font-weight:700;font-size:18px;padding:0 2px}
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+.legend .sw{display:inline-flex;align-items:center;gap:6px}
+.legend .box{width:12px;height:12px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>2.91 — sửa nhỏ: công tắc bóng VietMap · ô 7 khác cỡ · kiểm VietMap sau khởi động · câu nhắc Chữ nhật</h1>
+<p class="muted">Slug: <code>kachi-291-small-fixes</code> · Branch <code>fix/291-small</code> (từ 2.90 (192) <code>b7f312f</code>) · <span class="pill wait">Trạng thái: Draft — mã + test off-car, chờ owner duyệt · 🚗 chưa thử xe</span> · Cập nhật 2026-10-06 · Chủ: dangkhoi</p>
+<p class="muted">Tuân thủ <code>.kiro/steering/*</code> + CLAUDE.md repo §2/§3/§5/§8/§10. Không thư viện mới (chỉ Android SDK + khối đã có) ⇒ không cần Context7. Không bump phiên bản ở nhánh này (bản gom quyết).</p>
+
+<h2>1. Changelog</h2>
+<ul>
+<li><b>Pass 1 — 2026-10-06</b>: thêm F4 (câu nhắc kiểu Chữ nhật nói thẳng khung ADAS không thu nhỏ được, chỉ sang Bo tròn — 5 ngôn ngữ) + F5 (KDoc lý do cấm opcode 41) theo nghiên cứu 06/10 do điều phối chuyển.</li>
+<li><b>Pass 0 — 2026-10-06</b>: Khởi tạo spec + mã + test off-car cho ba sửa F1–F3 (giao từ phiên điều phối 2.91). F1 lỗi owner thấy được (công tắc nói sai); F2 từ QA máy ảo 05/10; F3 từ ghi chú QA 2.89 Q3 (lỗi có sẵn từ trước).</li>
+</ul>
+
+<h2>2. Context</h2>
+<ul>
+<li><b>F1</b> [ĐO nguồn 2.90] Cài đặt › Dẫn đường › hàng <i>“Hiện bong bóng VietMap trên cụm”</i> đọc <code>Prefs.vmBubbleEnabled</code> (khoá <code>vm_bubble_enabled</code>, nghĩa gốc từ <code>MainActivity.kt:1090–1095</code> = <b>tự mở VietMap</b> chạy nền, mặc định <b>TẮT</b>) — <code>SettingsSectionsNav.kt:336</code> bản 2.90. Bóng thật trên cụm đi theo khoá MỚI <code>vm_bubble_hidden</code> (mặc định false = hiện; <code>VmBubbleVisibility.kt:54</code>, <code>ClusterLayerExecutor</code>). ⇒ người chưa từng chạm công tắc thấy <b>“tắt”</b> trong khi bóng <b>đang hiện</b>; muốn ẩn phải bật rồi tắt.</li>
+<li><b>F2</b> [ĐO máy ảo QA 05/10] app đỗ ở “ô 7” (<code>kachi-287-look-and-keys.html</code> §4.6d) mở lại vào ô <b>khác cỡ</b> hiện letterbox: 1129×610 trong ô 1129×804, viền đen, góc trong vuông. Gốc [ĐO nguồn 2.90]: <code>SlotParkPlan.claim</code> khác cỡ ⇒ <code>FIT_WAIT</code> (ghim <code>setFixedSize</code> theo màn ảo đỗ + khung giữ tỉ lệ <code>SlotParkPlan.letterbox</code>) và <code>VdAppHost.resize</code> bị chặn bởi cờ <code>pinned</code> — thiết kế cố ý vì giả định “đổi cỡ = relaunch”. Giả định đó ở mức [SUY]: phép đo xe 05/10 (2) là <b>dời display</b> (display ô → display 0) mới relaunch; còn đổi cỡ màn ảo đang chạy là việc mọi ô đã làm ngoài hiện trường khi inset đổi (<code>VdAppHost.resize</code>, V3 · R15, [ĐO xe 16/09]).</li>
+<li><b>F3</b> [ĐO nguồn 2.90, triệu chứng từ ghi chú QA 2.89 Q3, chưa bắt trên xe] kiểm điều kiện nền VietMap (<code>AppPrereqs.onReady</code>) chạy trong chuỗi SẴN <code>EarlyShellChannel.readyChain</code> một lượt mỗi “lần thức”. Hai mắt xích: (1) <code>KachiReadyLog.wake</code> gộp mọi tín hiệu màn bật cách mốc &lt; 10 s vào một lần thức <i>kể cả khi màn đã tắt giữa chừng</i>; (2) <code>readyChain</code> ghi “đã chạy cho mốc” <b>trước</b> khi kiểm cổng (kênh lên + màn tương tác). Lượt xếp hàng của tín hiệu cũ chạy muộn trên luồng <code>kachi-ready</code> (sau lượt sớm dò kênh) lúc màn đã tắt ⇒ cổng hỏng nhưng mốc đã tiêu ⇒ lần thức thật &lt; 10 s sau bị coi là cùng lần ⇒ bỏ.</li>
+<li><b>F4/F5</b> [ĐO nguồn QML + disasm fw 2506030/2511080/2602030, ĐO xe 06/10 — nghiên cứu <code>docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md</code> (viết ở cây chính, chuyển qua điều phối; nhánh này không đọc tệp)]: ở theme2 (Chữ nhật) khung ADAS trắng lớn là ảnh cố định của firmware, hiện khi <code>adasInterfaceDisplay !== 0</code>; xe bật máy luôn là 1 hoặc 2; phím menu vô-lăng chỉ đổi 1→2 (hình bên trong), không gỡ khung; phía Android không opcode/HAL nào đặt về 0. Opcode 41 là đường thử đèn: đặt cứng mục 466 (<code>adasInterfaceDisplay</code>) = 2, ghi bền cấu hình cụm 49 và 53, CAN <code>0x40C03032</code> = 3; opcode 42 không hoàn tác 49/53 [ĐO disasm <code>libBydDataSource.so</code>]. Câu nhắc 2.90 nói “phím menu chỉ thu nhỏ hình xe/đường, khung vẫn còn” — đúng nhưng không nói người lái làm gì.</li>
+</ul>
+
+<h2>3. Requirements</h2>
+<h3>Chức năng</h3>
+<ul>
+<li><b>R1 (F1)</b>. Công tắc <i>“Hiện bong bóng VietMap trên cụm”</i> phản ánh đúng <code>!vm_bubble_hidden</code>; đổi nó ghi đúng khoá đó và gửi <code>VM_BUBBLE_VIS</code> ngay. Việc tự mở VietMap (nghĩa cũ của <code>vm_bubble_enabled</code>) là <b>hàng riêng có nhãn rõ</b> <i>“Tự mở VietMap cho bong bóng”</i>. Nhãn 5 ngôn ngữ (vi/en/zh/th/ms). <b>AC</b>: người chưa từng chạm thấy công tắc hiện = BẬT (đúng với cụm), hàng tự mở = TẮT (đúng với hành vi); không bước migrate nào ghi prefs; bộ chỉnh vị trí mở khoá theo công tắc hiện bóng + chiếu.</li>
+<li><b>R2 (F2)</b>. Nhận lại app đỗ vào ô khác cỡ ⇒ đổi cỡ màn ảo đỗ theo cỡ ô (cùng display, cùng tiến trình, không <code>am</code>/<code>wm</code>/<code>force-stop</code>), không còn viền. <b>AC</b>: bảng quyết thuần (<code>SlotParkPlan.claim</code>) trả <code>ATTACH_RESIZE</code> cho khác cỡ, <code>ATTACH</code> cho cùng cỡ, <code>GOLDEN</code> khi không đỗ; dây nối gọi <code>VdAppHost.resize</code> (đường đổi cỡ duy nhất, có đòn bẩy mật độ) ngay sau khi gắn.</li>
+<li><b>R4 (F4)</b>. Câu nhắc khi chọn Chữ nhật (<code>kachi_cast_style_rect_note</code>, <code>SettingsSectionsCastStyle</code>) nói thẳng: khung ADAS trắng bên phải do firmware xe vẽ cố định ở kiểu này, không thu nhỏ được; muốn ô ADAS nhỏ thì chọn Bo tròn (phím menu thu nhỏ được ở đó). 5 ngôn ngữ. <b>AC</b>: mỗi ngôn ngữ, câu nhắc chứa “ADAS” và đúng tên chip Bo tròn của chính ngôn ngữ đó.</li>
+<li><b>R5 (F5)</b>. KDoc <code>ProjectionRecipe.FORBIDDEN_OPS</code> ghi lý do đo được của opcode 41. Không đổi hành vi (tập cấm vẫn <code>{17, 41}</code>).</li>
+<li><b>R3 (F3)</b>. Chuỗi SẴN chạy ở <b>mỗi lần thức riêng biệt</b> (một lần tắt màn chen giữa ⇒ lần thức mới), vẫn gộp các tín hiệu của cùng một lần thức; một lượt hỏng cổng không tiêu mốc. <b>AC</b>: bài mô phỏng ca QA (bật 1 s · tắt 3 s · lượt muộn lúc tắt · bật 9 s) chạy đúng một lượt ở lần thức thật.</li>
+</ul>
+<h3>Phi chức năng</h3>
+<ul>
+<li>R-nf1. Không đảo thứ tự đường đang chạy tốt (CLAUDE.md §6): F2 dùng đúng thứ tự <code>setSurface → resize</code> của nhánh thường <code>surfaceChanged</code>.</li>
+<li>R-nf2. Luật thuần ở <code>:core</code> (test off-device); <code>:app</code> chỉ thi hành; mỗi lỗi một bài hồi quy (CLAUDE.md §10); tệp ≤ 500 dòng.</li>
+</ul>
+
+<h2>4. Design</h2>
+<h3>4.1 F1 — hai khái niệm, hai hàng</h3>
+<div class="flow">
+  <div class="fnode"><b>Hiện bóng trên cụm</b><span>đọc/ghi <code>!vm_bubble_hidden</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VmBubbleVisibility</b><span><code>VM_BUBBLE_VIS</code> ngay</span></div>
+</div>
+<div class="flow">
+  <div class="fnode"><b>Tự mở VietMap cho bong bóng</b><span>đọc/ghi <code>vm_bubble_enabled</code></span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VietMapAutostart · AppPrereqPlan</b><span>nghĩa cũ, không đổi</span></div>
+</div>
+<ul>
+<li><code>ClusterNavBridge</code>: <code>vmBubbleShown()/setVmBubbleShown()</code> + <code>vmBubbleAutostart()/setVmBubbleAutostart()</code> (thay <code>vmBubbleEnabled/setVmBubbleEnabled</code> ghi cặp). <code>vmBubbleAdjustable = vmBubbleShown() &amp;&amp; castOn</code>.</li>
+<li>Vì sao <b>không suy</b> “tự mở” từ “hiện”: người chưa từng chạm (enabled=false, hidden=false) sẽ bắt đầu bị tự mở VietMap mỗi lần nổ máy — đổi hành vi khi nâng cấp. Hàng riêng giữ nguyên hành vi của cả 4 tổ hợp:</li>
+</ul>
+<table>
+<tr><th>Prefs đang có</th><th>Ai</th><th>2.90 công tắc</th><th>2.91 Hiện bóng</th><th>2.91 Tự mở</th><th>Cụm / VietMap thay đổi?</th></tr>
+<tr><td>enabled=false · hidden=false</td><td>chưa từng chạm</td><td>TẮT (sai)</td><td>BẬT</td><td>TẮT</td><td>Không</td></tr>
+<tr><td>enabled=true · hidden=false</td><td>đã bật (≤2.89 hoặc 2.90)</td><td>BẬT</td><td>BẬT</td><td>BẬT</td><td>Không</td></tr>
+<tr><td>enabled=false · hidden=true</td><td>đã tắt ở 2.90</td><td>TẮT</td><td>TẮT</td><td>TẮT</td><td>Không</td></tr>
+<tr><td>enabled=true · hidden=true</td><td>(không đạt được qua UI 2.90)</td><td>BẬT (sai)</td><td>TẮT</td><td>BẬT</td><td>Không</td></tr>
+</table>
+<ul>
+<li>Danh mục cài đặt: mã mục <code>vm_bubble_enabled</code> giữ cho hàng người dùng quen, khoá của nó nay là <code>vm_bubble_hidden</code>; mục mới <code>vm_bubble_autostart</code> ↔ <code>vm_bubble_enabled</code>; bỏ cặp đi-kèm <code>vm_bubble_hidden → vm_bubble_enabled</code>. Phạm vi hồ sơ (<code>ProfileScopeCluster</code>) không đổi — cả hai khoá vẫn theo hồ sơ.</li>
+</ul>
+
+<h3>4.2 F2 — nhận lại khác cỡ: gắn rồi đổi cỡ</h3>
+<div class="flow">
+  <div class="fnode"><b>surfaceChanged</b><span>ô w×h, chưa có màn ảo</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>SlotParkPlan.claim</b><span>GOLDEN / ATTACH / ATTACH_RESIZE</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>ParkedApps.claim</b><span>take + setSurface(ô)</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>VdAppHost.resize(w,h)</b><span><code>VirtualDisplay.resize</code> + mật độ ô</span></div>
+</div>
+<ul>
+<li>Bỏ hẳn ghim cỡ + khung viền (PARK-1: <code>fit/unfit/place</code>, <code>letterbox</code>, cờ <code>pinned</code>, bước <code>FIT_WAIT/UNFIT_*</code>). Mặt vẽ ô luôn ở cỡ bố trí.</li>
+<li>Thứ tự [ĐO nguồn A10 — framework <code>android-10.0.0_r47</code>, native LineageOS 17.1 (nhánh A10, mirror r47 native không tải được)]: <code>VirtualDisplayAdapter.java:303-314</code> <code>resizeLocked</code> chỉ đặt <code>PENDING_RESIZE</code> + hẹn traversal; <code>:281-287</code> <code>performTraversalLocked</code> áp cỡ trước mặt vẽ. <code>SurfaceFlinger.cpp:2709-2721</code> đổi mặt vẽ ⇒ dựng lại thiết bị, <code>VirtualDisplaySurface.cpp:89-92</code> đọc cỡ của mặt vẽ đích (= cỡ ô); <code>SurfaceFlinger.cpp:2732-2733</code> đổi cỡ ⇒ <code>VirtualDisplaySurface.cpp:288-292</code> <code>resizeBuffers</code>. Đổi cỡ TRƯỚC khi gắn có thể làm SF đổi cỡ đệm của chính <code>ImageReader</code> ẩn (cấu hình cỡ cũ) — gắn trước rồi đổi cỡ (đúng thứ tự nhánh thường <code>v.surface = h.surface; resize(w, ht)</code>) tránh được.</li>
+<li>App: [ĐO nguồn] <code>resizeLocked</code> phát <code>DISPLAY_DEVICE_EVENT_CHANGED</code> ⇒ app nhận một lượt đổi cấu hình trên CÙNG display; không dời task, không giết tiến trình. Activity có tự dựng lại hay không tuỳ <code>configChanges</code> của app — [SUY] giống hệt lượt đổi cỡ do inset mà ô đã chạy; nhạc (dịch vụ) không phụ thuộc activity. 🚗 OC-291-2.</li>
+<li>Màn ảo ẩn của chuyến lên xe (<code>adoptHidden</code>, cỡ display 0 — spec 289 A2-OQ3) cũng đi đường này ⇒ hết khung viền ở ca đó.</li>
+</ul>
+
+<h3>4.3 F3 — lần thức theo sự thật màn tắt/bật</h3>
+<div class="flow">
+  <div class="fnode"><b>SCREEN_ON / HOME / kênh lên</b><span>tín hiệu bật</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>WakeEpochPolicy.isNewWake</b><span>&lt; 10 s và không tắt chen giữa ⇒ cùng lần</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>readyChain</b><span><code>shouldRun</code>: cổng TRƯỚC, tiêu mốc SAU</span></div>
+  <div class="arrow">▶</div>
+  <div class="fnode"><b>AppPrereqs.onReady</b><span>+ phím, NLS, chuyến lên xe</span></div>
+</div>
+<div class="legend"><span class="sw"><span class="box" style="background:rgba(0,113,227,.15)"></span> mới: <code>:core carexec/WakeEpochPolicy.kt</code> · bộ thu nghe thêm <code>ACTION_SCREEN_OFF</code> → <code>KachiReadyLog.screenOff</code></span></div>
+<ul>
+<li>Chống dồn giữ nguyên trong một lần thức (HOME hiện + broadcast + kênh lên). Nhiều lần tắt-bật thật ⇒ mỗi lần một lượt — mỗi lượt chuỗi SẴN vốn tự đọc sự thật rồi chỉ ghi phần thiếu (<code>AppPrereqPlan</code>), nên chạy thêm là vô hại.</li>
+<li><code>firstWakeAt</code> (hạn chuyến lên xe) không đổi.</li>
+</ul>
+
+<h3>4.4 F4 — câu nhắc Chữ nhật chỉ đường thật</h3>
+<ul>
+<li>Chỉ đổi chữ của <code>kachi_cast_style_rect_note</code> ×5 (giữ vế km/h và vế khung app) + KDoc mục 3 của <code>SettingsSectionsCastStyle</code>. Không đổi luồng: câu nhắc vẫn chỉ hiện khi lựa chọn là Chữ nhật.</li>
+<li>Bài khoá không phụ thuộc ngôn ngữ (<code>ClusterRectOptionWiringContractTest</code> › <i>cau nhac Chu nhat…</i>): câu nhắc gọi đúng tên chip <code>kachi_cast_style_curved</code> của ngôn ngữ đó ⇒ đổi tên chip mà quên câu nhắc là đỏ.</li>
+</ul>
+<h3>4.5 F5 — lý do cấm opcode 41 (KDoc)</h3>
+<ul>
+<li><code>ProjectionRecipe.FORBIDDEN_OPS</code>: thêm dòng lý do (thử đèn · 466 = 2 · ghi bền 49/53 · CAN <code>0x40C03032</code> = 3 · 42 không hoàn tác). Không đổi mã.</li>
+</ul>
+
+<h2>5. Tasks (DAG)</h2>
+<table>
+<tr><th>#</th><th>Task</th><th>File</th></tr>
+<tr><td>T1</td><td>F1 cầu + trang + 5 ngôn ngữ + danh mục</td><td><code>ClusterNavBridge.kt</code> · <code>SettingsSectionsNav.kt</code> · <code>strings_kachi.xml</code>×5 · <code>SettingsCatalogEntries.kt</code> · <code>SettingsCatalogClusterNav.kt</code> · <code>PrefsBadge.kt</code> (chú thích)</td></tr>
+<tr><td>T2</td><td>F1 test: <code>VmBubbleSwitchHonestyContractTest</code> (mới) + ghim lại 4 bài cũ có lý do</td><td><code>app/src/test/…</code></td></tr>
+<tr><td>T3</td><td>F2 luật + thi hành + bỏ ghim/khung</td><td><code>SlotPark.kt</code> · <code>ParkedApps.kt</code> · <code>VdAppHost.kt</code></td></tr>
+<tr><td>T4</td><td>F2 test: <code>SlotParkTest</code> bảng F2 · <code>SlotParkWiringContractTest</code> F2</td><td><code>core/…</code> · <code>app/…</code></td></tr>
+<tr><td>T5</td><td>F3 luật + dây</td><td><code>WakeEpochPolicy.kt</code> (mới) · <code>KachiReadyLog.kt</code> · <code>EarlyShellChannel.kt</code></td></tr>
+<tr><td>T6</td><td>F3 test: <code>WakeEpochPolicyTest</code> (mới) · <code>WakeEpochWiringContractTest</code> (mới) · 5 bài thứ tự <code>readyChain</code> ghim lại</td><td><code>core/…</code> · <code>app/…</code></td></tr>
+<tr><td>T7</td><td>F4 chữ ×5 + KDoc + bài mới trong <code>ClusterRectOptionWiringContractTest</code></td><td><code>strings_kachi.xml</code>×5 · <code>SettingsSectionsCastStyle.kt</code> · <code>app/src/test/…</code></td></tr>
+<tr><td>T8</td><td>F5 KDoc</td><td><code>ProjectionRecipe.kt</code></td></tr>
+<tr><td>T9</td><td>Bộ đủ test + lint; senior review + quét bảo mật trước khi gộp (phiên điều phối)</td><td>—</td></tr>
+</table>
+
+<h2>6. Verification</h2>
+<ul>
+<li>V-unit: <code>:core:test :app:testDebugUnitTest :app:testVehicleTestUnitTest :car-integration:test :offcar-planner:test</code> + <code>:app:lintDebug</code> — số ở §9.</li>
+<li>V-oncar 🚗 <b>OC-291-1</b>: máy chưa từng chạm công tắc bóng ⇒ Cài đặt › Dẫn đường: “Hiện bong bóng” BẬT, “Tự mở VietMap” TẮT; tắt “Hiện” ⇒ bóng rời cụm ngay. <b>OC-291-2</b>: YouTube Music phát trong ô 2 cột → ⇄/đặt tạm cho ô 7 → mở lại vào ô 3-ô (cỡ khác): kín ô, không viền, <code>pidof</code> không đổi, nhạc không ngắt (ghi lại activity có dựng lại không — <code>am stack list</code>/logcat). <b>OC-291-3</b>: khởi động, ≤ 5 s sau tắt màn, ≤ 10 s bật lại ⇒ <code>KachiReady</code> có hai dòng <code>screen_on</code> + dòng <code>AppPrereqs</code> của lượt thứ hai.</li>
+</ul>
+
+<h2>7. Open Questions</h2>
+<ul>
+<li>OQ1. App nào dựng lại activity khi màn ảo đổi cỡ (F2)? [CHƯA BIẾT] — đo ở OC-291-2; nếu YouTube/YT Music dựng lại mà mất nhạc thì cân nhắc chỉ đổi cỡ khi lệch tỉ lệ (owner chốt).</li>
+<li>OQ2. Có nên gộp hai hàng F1 thành một công tắc hiện bóng + tự mở theo nó cho người MỚI cài (không phải nâng cấp)? Hiện giữ hai hàng cho mọi người — <span class="muted">chờ owner.</span></li>
+</ul>
+
+<h2>8. References</h2>
+<ul>
+<li><code>docs/specs/kachi-290-cluster-rect-fix.html</code> R8 (<code>vm_bubble_hidden</code>) · <code>docs/specs/kachi-287-look-and-keys.html</code> §4.6d (ô 7, PARK-1) · <code>docs/specs/kachi-289-field-fixes.html</code> B2 / A2-OQ3 · <code>docs/specs/kachi-ready-at-home.html</code> §4.10.</li>
+<li>AOSP <code>android-10.0.0_r47</code> <code>services/core/java/com/android/server/display/VirtualDisplayAdapter.java</code>; LineageOS 17.1 <code>services/surfaceflinger/SurfaceFlinger.cpp</code>, <code>DisplayHardware/VirtualDisplaySurface.cpp</code>.</li>
+</ul>
+
+<h2>9. Nhật ký triển khai (Implementation Log)</h2>
+<ul>
+<li><b>2026-10-06 · quyết định (F1)</b> — hàng riêng thay vì suy “tự mở” từ “hiện” (bảng §4.1: suy sẽ đổi hành vi người chưa từng chạm). Mã mục danh mục giữ <code>vm_bubble_enabled</code>.</li>
+<li><b>2026-10-06 · sai lệch so với thiết kế cũ (F2)</b> — spec 287 §4.6d / PARK-1 nói “khác cỡ ⇒ giữ cỡ + viền vì đổi cỡ = relaunch”; nay đổi cỡ. Căn cứ: phép đo relaunch là dời display, không phải đổi cỡ; đổi cỡ đã chạy ở mọi ô (inset). Bài ghim cũ (<code>SlotParkWiringContractTest</code> PARK-1 + khung viền, <code>SlotParkTest</code> letterbox + bảng Pass 3) đổi ghim kèm lý do trong mã test.</li>
+<li><b>2026-10-06 · nguồn</b> — mirror r47 native trên GitHub không có; trích SurfaceFlinger/VirtualDisplaySurface từ LineageOS 17.1 (A10), ghi rõ ở KDoc <code>ParkedApps.claim</code>.</li>
+<li><b>2026-10-06 · F1 · i18n</b> — mục danh mục mới cần dòng zh/th/ms trong <code>core/src/main/resources/i18n/*.tsv</code> (<code>I18nCoverageTest</code>) và hai số ghim của <code>LangCoverageTest</code> tăng +1 (262 → 263 nhãn, 82 → 83 mục) — ghi lý do tại chỗ.</li>
+<li><b>2026-10-06 · F4 · tầng test</b> — bài khoá câu nhắc đặt trong <code>ClusterRectOptionWiringContractTest</code> (không tệp riêng): <code>LayeringRulesTest</code> từ chối bài <code>:app</code> chỉ quét tài nguyên mà không chạm lớp <code>:app</code>.</li>
+<li><b>2026-10-06 · kết quả</b> — <code>:core:test</code> 4 354/0 · <code>:app:testDebugUnitTest</code> 2 075/0 · <code>:app:testVehicleTestUnitTest</code> 2 087/0 · <code>:car-integration:test</code> 80/0 · <code>:offcar-planner:test</code> 99/0 (đếm XML) · <code>:app:lintDebug</code> 0 lỗi. Tệp chạm: <code>ClusterNavBridge.kt</code> 498 dòng · <code>VdAppHost.kt</code> 499 · <code>ParkedApps.kt</code> 245 · <code>SettingsSectionsNav.kt</code> 440 (trần 500).</li>
+<li><b>2026-10-06 · F3</b> — 5 bài thứ tự <code>readyChain</code> (ReadyAtHome, AppPrereqs, NlsHeal, Trip, BehindHome) ghim mốc cổng mới <code>WakeEpochPolicy.shouldRun(…)</code> thay <code>interactive(app) != true</code> — cùng ý (cổng đứng trước mọi việc).</li>
+</ul>
+
+<h2>10. Reviewer Log</h2>
+<ul>
+<li>(chưa có pass review — senior review + quét bảo mật do phiên điều phối chạy trước khi gộp.)</li>
+</ul>
+
+</div></body>
+</html>

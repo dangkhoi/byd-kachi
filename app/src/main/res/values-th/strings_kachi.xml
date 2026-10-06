@@ -411,6 +411,8 @@
     <string name="kachi_sub_bubble">บับเบิล VietMap</string>
     <string name="kachi_bubble_enabled_title">แสดงบับเบิล VietMap บนหน้าปัด</string>
     <string name="kachi_bubble_enabled_sub">กล่องบอกทางเลี้ยวขนาดเล็กที่วาดโดย VietMap เวอร์ชันดัดแปลง</string>
+    <string name="kachi_bubble_autostart_title">เปิด VietMap อัตโนมัติสำหรับบับเบิล</string>
+    <string name="kachi_bubble_autostart_sub">เปิด VietMap ในพื้นหลังเมื่อสตาร์ทรถหรือเปิด Kachi เพื่อให้บับเบิลพร้อมบนหน้าปัด ปิดไว้: บับเบิลจะแสดงเฉพาะขณะ VietMap ทำงาน</string>
     <string name="kachi_bubble_need_cast">ตำแหน่งจะขยับได้เฉพาะขณะหน้าปัดกำลังฉาย — ค่ายังถูกบันทึกไว้ แต่หน้าปัดจะยังไม่เปลี่ยนตาม</string>
     <string name="kachi_bubble_need_toggle">เปิดสวิตช์บับเบิลด้านบนเพื่อปรับตำแหน่ง</string>
     <string name="kachi_bubble_pos_x">ตำแหน่งบับเบิล — แนวนอน</string>
@@ -430,7 +432,7 @@
     <string name="kachi_cast_style_label">รูปแบบการฉายบนหน้าปัด</string>
     <string name="kachi_cast_style_curved">ขอบโค้ง</string>
     <string name="kachi_cast_style_rect">สี่เหลี่ยม</string>
-    <string name="kachi_cast_style_rect_note">สี่เหลี่ยม: กรอบ ADAS สีขาวทางขวาเป็นส่วนตายตัวของหน้าปัด — ปุ่มเมนูแค่ย่อภาพรถ/ถนน กรอบยังอยู่ หน้าปัดจะไม่แสดง km/h เดิม (HUD แผนที่ และบับเบิล VietMap ยังแสดงความเร็ว) กรอบแอปเริ่มต้นเต็มหน้าปัด — ปรับตำแหน่ง ขนาด และ DPI เองได้ในส่วนกรอบด้านล่าง</string>
+    <string name="kachi_cast_style_rect_note">สี่เหลี่ยม: ในรูปแบบนี้แผง ADAS สีขาวทางขวาถูกเฟิร์มแวร์ของรถวาดไว้ตายตัวและย่อไม่ได้ (ปุ่มเมนูแค่เปลี่ยนภาพข้างใน แผงยังอยู่) หากต้องการหน้าต่าง ADAS ขนาดเล็ก ให้เลือกขอบโค้ง — ในแบบนั้นปุ่มเมนูย่อได้ หน้าปัดจะไม่แสดง km/h เดิม (HUD แผนที่ และบับเบิล VietMap ยังแสดงความเร็ว) กรอบแอปเริ่มต้นเต็มหน้าปัด — ปรับตำแหน่ง ขนาด และ DPI เองได้ในส่วนกรอบด้านล่าง</string>
     <string name="kachi_cast_style_apply_note">มีผลเมื่อเปิดการฉายครั้งถัดไปขณะหน้าปัดว่าง (ไม่มีแอปและไม่มีหน้าต่างบนหน้าปัด) จะไม่ส่งคำสั่งใดไปที่หน้าปัดขณะกำลังฉาย</string>
     <string name="kachi_cast_style_session">หน้าปัดตอนนี้: %1$s รูปแบบใหม่จะมีผลเมื่อสตาร์ทรถครั้งถัดไปหรือเมื่อหน้าปัดว่าง</string>
     <string name="kachi_cast_style_unknown">ยังไม่ทราบรูปแบบ</string>

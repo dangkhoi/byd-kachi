@@ -116,7 +116,9 @@ class ClusterNavBridgeWiringContractTest {
             "fun setUpcomingBadge(on: Boolean)" to "Prefs.setShowUpcomingBadge(app, on)",
             "fun setAlertChip(on: Boolean)" to "Prefs.setShowAlertChip(app, on)",
             "fun setBadgeSizeDp(sizeDp: Int)" to "Prefs.setBadgeSizeDp(app,",
-            "fun setVmBubbleEnabled(on: Boolean)" to "Prefs.setVmBubbleEnabled(app, on)",
+            // 2.91 · F1 — hai hàng, hai khoá: tự mở VietMap (`vm_bubble_enabled`) · hiện bóng (`vm_bubble_hidden`, nghịch).
+            "fun setVmBubbleAutostart(on: Boolean)" to "Prefs.setVmBubbleEnabled(app, on)",
+            "fun setVmBubbleShown(on: Boolean)" to "Prefs.setVmBubbleHidden(app, !on)",
             "fun setSeatEnabled(on: Boolean)" to "Prefs.setSeatComfortEnabled(app, on)",
             "fun setSeatMode(mode: Int)" to "Prefs.setSeatComfortMode(app, mode)",
             "fun setSeatLevel(seatIndex: Int, level: Int)" to "Prefs.setSeatComfortLevel(app, seatIndex, level)",
@@ -153,7 +155,7 @@ class ClusterNavBridgeWiringContractTest {
     /** Badge/bong bóng bật ⇒ auto-start VietMap một lần (`BadgePlacementController.kt:52`, `MainActivity.kt:1094`). */
     @Test
     fun `bat badge va bong bong keo theo autostart VietMap`() {
-        listOf("fun setBadgeEnabled(on: Boolean)", "fun setVmBubbleEnabled(on: Boolean)").forEach { sig ->
+        listOf("fun setBadgeEnabled(on: Boolean)", "fun setVmBubbleAutostart(on: Boolean)").forEach { sig ->
             val b = body(bridge(), sig)
             assertTrue(
                 "if (on) VietMapAutostartService.startForAppOpen(app)" in b,

@@ -97,6 +97,9 @@ data class ProjectionRecipe(
          *    đổi bố cục (`docs/diagnostics/cluster-rect-seal-2026-10-05.md` §4).
          *  • 41 — [ĐO disasm @0x146ea8, nghiên cứu 05/10 `rect-design` F8] ghi `adasInterfaceDisplay` KÈM ghi bền
          *    `theme_index/navi_type` và gửi CAN — trạng thái ngoài hệ sống qua tắt máy, không đường trả lại (CLAUDE.md §5).
+         *    2.91 · F5 — [ĐO disasm `libBydDataSource.so`, nghiên cứu 06/10 `docs/diagnostics/cluster-rect-adas-shrink-2026-10-06.md`]:
+         *    41 là đường THỬ ĐÈN (lamp-test) — đặt CỨNG mục dữ liệu 466 (`adasInterfaceDisplay`) = 2, ghi BỀN cấu hình cụm 49 và 53,
+         *    và gửi CAN `0x40C03032` = 3; opcode 42 KHÔNG hoàn tác cấu hình 49/53. ⇒ không phải cần gạt thu nhỏ khung ADAS, và cấm.
          */
         val FORBIDDEN_OPS: Set<Int> = setOf(17, 41)
 

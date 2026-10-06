@@ -149,4 +149,26 @@ class ClusterRectOptionWiringContractTest {
             assertTrue(n >= 1, "`$call` không có call site ngoài định nghĩa (CLAUDE.md §8)")
         }
     }
+
+    /**
+     * 2.91 · F4 (spec `docs/specs/kachi-291-small-fixes.html` §4.4) — câu nhắc Chữ nhật nói THẬT và chỉ đường THẬT. [ĐO nguồn QML +
+     * disasm fw 2506030/2511080/2602030 · ĐO xe 06/10] ở theme2 khung ADAS trắng là ảnh cố định của firmware (hiện khi
+     * `adasInterfaceDisplay !== 0`, xe bật máy luôn 1/2; phím menu chỉ đổi 1→2) — Android không có cần gạt. Khoá không phụ thuộc
+     * ngôn ngữ: câu nhắc CHỈ hiện khi chọn Chữ nhật, và ở CẢ 5 ngôn ngữ nó nhắc "ADAS" + gọi ĐÚNG tên chip Bo tròn của chính ngôn
+     * ngữ đó (người đọc tìm được nút để bấm). Thử ĐỎ: xoá vế "chọn Bo tròn" ở một ngôn ngữ, hoặc đổi tên chip mà quên câu nhắc.
+     */
+    @Test
+    fun `cau nhac Chu nhat noi khung ADAS co dinh va chi sang Bo tron, du 5 ngon ngu`() {
+        assertTrue("if (chosen == CastStyle.RECT) box.addView(rows.note(context.getString(R.string.kachi_cast_style_rect_note)))" in
+            SourceRoots.body(section, "fun rebuild()"), "SettingsCastStyleBlock: câu nhắc chỉ ở lựa chọn Chữ nhật")
+        fun string(xml: String, name: String): String =
+            Regex("""<string name="$name">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.groupValues?.get(1) ?: error("thiếu $name")
+        listOf("values", "values-en", "values-zh-rCN", "values-th", "values-ms").forEach { d ->
+            val xml = SourceRoots.text("src/main/res/$d/strings_kachi.xml")
+            val note = string(xml, "kachi_cast_style_rect_note")
+            val curved = string(xml, "kachi_cast_style_curved")
+            assertTrue("ADAS" in note, "$d: câu nhắc phải nói về khung ADAS")
+            assertTrue(curved in note, "$d: câu nhắc phải chỉ sang '$curved' (đường thật để có ô ADAS nhỏ): $note")
+        }
+    }
 }

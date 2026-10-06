@@ -90,7 +90,7 @@ class BehindHomeWiringContractTest {
     @Test
     fun `luot tra lai chay o dau chuoi SAN, truoc kiem phim, dung mot lan`() {
         val chain = SourceRoots.body(early, "private fun readyChain(")
-        order(chain, "interactive(app) != true", "BehindHomeRecovery.onReady(app)", "KeyReady.prepare(app)")
+        order(chain, "WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))", "BehindHomeRecovery.onReady(app)", "KeyReady.prepare(app)")
         assertEquals(1, Regex(Regex.escape("BehindHomeRecovery.onReady(")).findAll(early).count())
         val ready = SourceRoots.body(recovery, "fun onReady(app: Context) {")
         // Một lượt mỗi TIẾN TRÌNH, chốt đặt TRƯỚC khi đọc dấu (chuỗi SẴN chạy lại mỗi lần màn bật — cùng tiến trình mà app

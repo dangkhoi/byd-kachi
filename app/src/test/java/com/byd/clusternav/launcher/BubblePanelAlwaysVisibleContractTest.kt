@@ -53,7 +53,7 @@ class BubblePanelAlwaysVisibleContractTest {
         listOf("kachi_bubble_need_toggle", "kachi_bubble_need_cast", "kachi_bubble_drag_hint").forEach {
             assertTrue(g.contains(it), "câu nhắc $it phải có trong cổng")
         }
-        assertTrue(body("bubble").contains("bridge.setVmBubbleEnabled(on); applyBubbleGate()"), "đổi công tắc ⇒ áp cổng ngay")
+        assertTrue(body("bubble").contains("bridge.setVmBubbleShown(on); applyBubbleGate()"), "đổi công tắc ⇒ áp cổng ngay")
     }
 
     /**

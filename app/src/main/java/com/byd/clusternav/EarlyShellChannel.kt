@@ -16,6 +16,7 @@ import com.byd.clusternav.carexec.ReadyEvent
 import com.byd.clusternav.carexec.ShellChannelPhase
 import com.byd.clusternav.carexec.ShellReadinessPolicy
 import com.byd.clusternav.carexec.ShellReadinessState
+import com.byd.clusternav.carexec.WakeEpochPolicy
 import com.byd.clusternav.launcher.ShellApprovalProbe
 import com.byd.clusternav.launcher.behind.BehindHomeRecovery
 import com.byd.clusternav.launcher.trip.TripStart
@@ -64,7 +65,8 @@ internal object EarlyShellChannel {
         val app = ctx.applicationContext
         KachiReadyLog.line("proc interactive=${interactive(app)}")
         try {
-            app.registerReceiver(ScreenOnReceiver(), IntentFilter(Intent.ACTION_SCREEN_ON))
+            // 2.91 · F3: cả SCREEN_OFF — một lần tắt chen giữa làm tín hiệu bật kế là lần thức MỚI (`WakeEpochPolicy.isNewWake`).
+            app.registerReceiver(ScreenOnReceiver(), IntentFilter(Intent.ACTION_SCREEN_ON).apply { addAction(Intent.ACTION_SCREEN_OFF) })
         } catch (e: RuntimeException) {
             // Không bao giờ làm sập Application.onCreate (HOME sập = crash-loop mỗi lần tắt máy). Mất bộ thu thì chuỗi
             // SẴN vẫn chạy khi kênh lên lúc màn bật, và màn chính vẫn nhận kênh.
@@ -76,6 +78,7 @@ internal object EarlyShellChannel {
 
     private class ScreenOnReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) { KachiReadyLog.screenOff(SystemClock.elapsedRealtime()); return }
             if (intent?.action != Intent.ACTION_SCREEN_ON) return
             KachiReadyLog.wake(SystemClock.elapsedRealtime(), "broadcast")
             val app = context?.applicationContext ?: return
@@ -153,9 +156,11 @@ internal object EarlyShellChannel {
 
     /** Một lượt mỗi lần màn bật: kiểm phím (2.83) rồi keep-alive + watchdog, nguồn HUD (FIX286), rồi chuyến lên xe. */
     private fun readyChain(app: Context, epoch: Long) {
+        // 2.91 · F3: cổng (kênh lên + màn tương tác) kiểm TRƯỚC, mốc chỉ bị TIÊU khi cổng đã qua — lượt xếp hàng chạy muộn lúc màn
+        // đã tắt không còn ăn mất lượt của lần thức đó (`WakeEpochPolicy.shouldRun`). Một luồng `worker` ⇒ không hai lượt chồng nhau.
         val prev = chainFor.get()
-        if (prev == epoch || !chainFor.compareAndSet(prev, epoch)) return
-        if (!ShellReadiness.isUp() || interactive(app) != true) return
+        if (!WakeEpochPolicy.shouldRun(prev, epoch, ShellReadiness.isUp(), interactive(app))) return
+        if (!chainFor.compareAndSet(prev, epoch)) return
         BehindHomeRecovery.onReady(app)   // app Kachi đẩy ra sau nhà nổi lên vì Kachi bị giết ⇒ HOME lên lại (§5)
         KeyReady.prepare(app)
         // R2.6 — best-effort: Android 12 (DL5) có thể chặn khởi FGS từ nền [SUY 2.83 §4.2] (`sync` tự bắt + log). Đường

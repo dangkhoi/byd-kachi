@@ -36,14 +36,17 @@ class ClusterLayerWiringContractTest {
     }
 
     @Test
-    fun `cong tac bong - TAT va BAT deu gui VM_BUBBLE_VIS ngay, BAT van tu mo VietMap`() {
+    fun `cong tac bong - TAT va BAT deu gui VM_BUBBLE_VIS ngay, tu mo VietMap la hang rieng`() {
+        // 2.91 · F1 — ĐỔI GHIM có lý do: công tắc hiện bóng chỉ ghi `vm_bubble_hidden`; tự mở VietMap sang hàng riêng.
         val bridge = code("src/main/java/com/byd/clusternav/launcher/ClusterNavBridge.kt")
-        val fn = bridge.substring(bridge.indexOf("fun setVmBubbleEnabled(on: Boolean)")).substringBefore("\n    }")
-        assertTrue(fn.contains("Prefs.setVmBubbleEnabled(app, on)"))
+        val fn = bridge.substring(bridge.indexOf("fun setVmBubbleShown(on: Boolean)")).substringBefore("\n    }")
         assertTrue(fn.contains("Prefs.setVmBubbleHidden(app, !on)"), "TẮT ⇒ hidden=true; BẬT ⇒ hidden=false")
         assertTrue(fn.indexOf("setVmBubbleHidden") < fn.indexOf("VmBubbleVisibility.apply"), "ghi cờ trước khi gửi")
         assertTrue(fn.contains("VmBubbleVisibility.apply(app,") && fn.contains("force = true"), "đổi công tắc ⇒ gửi ngay")
-        assertTrue(fn.contains("if (on) VietMapAutostartService.startForAppOpen(app)"), "BẬT giữ tự mở VietMap")
+        assertFalse(fn.contains("setVmBubbleEnabled") || fn.contains("VietMapAutostartService"), "hiện/ẩn bóng không đổi việc tự mở VietMap")
+        val auto = bridge.substring(bridge.indexOf("fun setVmBubbleAutostart(on: Boolean)")).substringBefore("\n    }")
+        assertTrue(auto.contains("Prefs.setVmBubbleEnabled(app, on)") && auto.contains("if (on) VietMapAutostartService.startForAppOpen(app)"))
+        assertFalse(auto.contains("setVmBubbleHidden"), "tự mở VietMap không ẩn/hiện bóng")
     }
 
     @Test
